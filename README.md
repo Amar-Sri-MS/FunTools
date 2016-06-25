@@ -2,7 +2,7 @@
 Toolchains for FunOS
 
 Please follow this basic structure for future cross toolchain builds.
-For a general overview, reefer to https://www.linux-mips.org/wiki/Toolchains#Roll-your-own
+For a general overview, refer to https://www.linux-mips.org/wiki/Toolchains#Roll-your-own
 
 Prebuilt binary package for linux-mips cross-compiler toolchain. 
 Unpack and install into /opt/cross on Linux.
