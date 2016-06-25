@@ -1,0 +1,14 @@
+
+Build Configuration
+
+export TARGET=mipsel-unknown-linux-gnu
+export PREFIX=/opt/cross
+
+
+../binutils-2.26/configure --target=$TARGET --prefix=$PREFIX
+
+../gcc-6.1.0/configure  --disable-libssp --disable-libmudflap --disable-decimal-float --with-mips-plt --target=$TARGET --prefix=$PREFIX --with-newlib --with-gnu-as --with-gnu-ld --enable-languages=c --without-headers --disable-threads --disable-shared --disable-libgomp --disable-libquadmath --disable-libatomic
+
+../gdb-7.11/configure --target=$TARGET --prefix=$PREFIX
+
+
