@@ -81,6 +81,34 @@ class TestDocBuilder(unittest.TestCase):
     self.assertEqual(63, firstField.end_bit)
     self.assertEqual('packet', firstField.name)
 
+  def testStructSize(self): 
+    builder = generator.DocBuilder()
+    doc = builder.current_document
+
+    builder.parseStructStart('STRUCT Foo')
+    builder.parseLine('0 0:63 uint64_t packet')
+    builder.parseEnd('END')
+
+    self.assertEqual(1, len(doc.structs))
+
+    struct = doc.structs[0]
+    self.assertEqual(8, struct.bytes())
+
+  def testNotPackedStructSize(self): 
+    builder = generator.DocBuilder()
+    doc = builder.current_document
+
+    builder.parseStructStart('STRUCT Foo')
+    builder.parseLine('0 0:63 uint64_t packet')
+    builder.parseLine('1 0:8 uint64_t bar')
+    builder.parseEnd('END')
+
+    self.assertEqual(1, len(doc.structs))
+
+    struct = doc.structs[0]
+    # TODO(bowdidge): Should be 9 bytes?
+    self.assertEqual(16, struct.bytes())
+
   def testValidFile(self):
     docBuilder = generator.DocBuilder()
     contents = ['STRUCT Foo', '0 0:63 uint64_t packet', 'END']
