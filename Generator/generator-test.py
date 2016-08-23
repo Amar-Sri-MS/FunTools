@@ -357,6 +357,14 @@ class CodeGeneratorTest(unittest.TestCase):
     field.bodyuser_comment = long_comment
     code = self.printer.visitField(field)
     self.assertEqual('/* %s */\nuint8_t foo;\n' % long_comment, code)
+
+  def testPrintEnum(self):
+    enum = generator.Enum("MyEnum")
+    var = generator.EnumVariable("MY_COMMAND", 1)
+    enum.variables.append(var)
+
+    code = self.printer.visitEnum(enum)
+    self.assertEqual('enum MyEnum {\n\tMY_COMMAND = 1,\n};\n', code)
     
 
 class PackerTest(unittest.TestCase):

@@ -401,11 +401,11 @@ class CodeGenerator:
 
   def visitEnum(self, enum):
     # Pretty print an enum declaration.  Returns enum as string.
-    out = 'enum {\n'
+    out = 'enum %s {\n' % enum.name
     self.incrementIndent()
     for enum_variable in enum.variables:
         out += self.visitEnumVariable(enum_variable)
-    out += '} %s;\n' % enum.name
+    out += '};\n'
     self.decrementIndent()
     return out
 
