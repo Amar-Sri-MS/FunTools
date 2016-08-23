@@ -1,0 +1,67 @@
+// Standard Work Unit format for all messages in F1.
+// Work units are the standard unit of computation inside the F1
+// chip, and can be sent by any unit.
+STRUCT WorkUnit
+  0 0:7 uint8_t destinationID /* DMA engine WU queue */
+  0 8:15 uint8_t sourceID /* Source (VP or hardware block) */
+  0 16:31 uint16_t frameSize /* number of 64B blocks referenced by frame ptr */
+  0 32:63 uint32_t listSize /* number of 16B blocks contained in command list. */
+  1 0:63 uint64_t framePtr
+  2 0:63 uint64_t reserved1
+  3 0:63 uint64_t reserved2
+  // WorkUnits are always 32 bytes.
+END
+
+// Possible sources for a memory copy in the DMA Engine.
+ENUM Source
+  SOURCE_HOST = 0
+  SOURCE_F1 = 1
+  SOURCE_GENERATE = 2  /* Generate data from pattern */
+END
+
+// Possible opcodes for commands in the GatherListFragment.
+ENUM Opcode
+  OPCODE_GATHER=0
+  OPCODE_OPERATE=1
+  OPCODE_SCATTER=2
+END
+
+// Fragment descriptor pointing to a 16 byte gather entry.
+STRUCT GatherListFragmentHeader
+  UNION Command u1
+    // GatherListFragment for 16 byte unit specifying bytes to insert
+    // at current offset
+    STRUCT GatherListInlineFragment inline_cmd
+      0 0:1 uint8_t opcode
+      0 2:3 uint8_t source /* will be OPCODE_GATHER */
+      0 4:7 uint8_t inlineByteCount
+      0 8:63 uint64_t bytes1 /* First seven bytes of inline copy. */
+      1 0:63 uint64_t bytes2
+    END
+    // Generate bytes from pattern.
+    STRUCT GatherListGenerateFragment generate_cmd
+      0 0:1 uint8_t opcode
+      0 2:3 uint8_t source /* will be SOURCE_GENERATE */
+      0 4:7 uint8_t reserved
+      0 8:63 uint64_t bytesToGenerate
+      1 0:63 uint64_t pattern0
+    END
+    // Generate bytes from pattern. opcode will be OPCODE_OPERATE.
+    STRUCT GatherListOperateFragment operate_cmd
+      0 0:1 uint8_t opcode
+      0 2:7 uint8_t source /* accelerator number and function number. */
+      0 8:15 uint8_t sizeOfData (in 8B words in addition to current 8B)
+      // Followed by 6-126B of data.
+    END
+    // Scatter data. Opcode will be OPCODE_SCATTER
+    STRUCT GatherListScatterFragment scatter_cmd
+      0 0:1 uint8_t opcode
+      0 2:3 uint8_t destination
+      0 4:5 uint8_t instance
+      0 6:7 uint8_t reserved
+      0 16:31 uint16_t length /* byte length of fragment */
+      0 32:63 uint32_t info /* metadata */
+      1 0:63 uint64_t address /* byte-aligned physical address of destination fragment. */
+    END
+  END
+END
