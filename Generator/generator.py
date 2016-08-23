@@ -69,6 +69,8 @@ def stripComment(the_str):
 def parseInt(the_str):
   # Returns int value of string, or None if not a number.
   base = 10
+  if the_str.startswith('0b'):
+    base = 2
   if the_str.startswith('0x'):
     base = 16
   try:

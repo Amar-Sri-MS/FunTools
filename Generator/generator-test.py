@@ -36,6 +36,9 @@ class TestParseInt(unittest.TestCase):
       self.assertEqual(32, generator.parseInt("0x20"))
       self.assertEqual(1, generator.parseInt("0x0000001"))
 
+      self.assertEqual(8, generator.parseInt("0b01000"))
+      self.assertEqual(15, generator.parseInt("0b1111"))
+
   def testInvalid(self):
     self.assertIsNone(generator.parseInt("foo"))
     self.assertIsNone(generator.parseInt("0xlose"))
