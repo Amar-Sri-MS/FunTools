@@ -15,4 +15,4 @@ To build and install the googletest library and headers perform the following st
 
 6/ ls $(SDK_DIR)/include/gtest/*.h and $(SDK_DIR)/lib/gtest.a just to verify everything is there.
 
-Now start writing tests.  This is a great framework.
+Now start writing tests !  This is a great framework.
