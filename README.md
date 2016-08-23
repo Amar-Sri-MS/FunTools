@@ -1,7 +1,7 @@
 # FunTools
 Tools and Toolchains for FunOS
 
-To build and install the googletest library and headers to your sdk directory, perform the following steps:
+To build and install the googletest library and headers perform the following steps:
 
 1/ ensure that you have an $(SDK_DIR) directory.  This should generally be a peer of FunOS.
 2/ cd FunTools/Test/googletest/googletest/make
