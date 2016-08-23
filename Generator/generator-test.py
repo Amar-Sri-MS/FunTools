@@ -16,12 +16,12 @@ class TestTypeWidth(unittest.TestCase):
 class TestIndentString(unittest.TestCase):
   def testSimple(self):
     # Tests only properties that hold true regardless of the formatting style.
-    codeGen = generator.CodeGenerator()
+    codeGen = generator.CodeGenerator(None)
     codeGen.indent = 1
     self.assertTrue(len(codeGen.indentString()) > 0)
 
   def testTwoIndentDoublesOneIndent(self):
-    codeGen = generator.CodeGenerator()
+    codeGen = generator.CodeGenerator(None)
     codeGen.indent = 1
     oneIndent = codeGen.indentString()
     codeGen.indent = 2
@@ -275,7 +275,7 @@ class TestDocBuilder(unittest.TestCase):
 
 class CodeGeneratorTest(unittest.TestCase):
   def setUp(self):
-    self.printer = generator.CodeGenerator()
+    self.printer = generator.CodeGenerator(None)
 
   def testPrintStructNoVar(self):
     builder = generator.DocBuilder()  
@@ -421,6 +421,16 @@ class CheckerTest(unittest.TestCase):
 
     self.assertEqual(1, len(checker.warnings))
     self.assertIn('allow alignment', checker.warnings[0])
+
+class CheckIncludeGuardName(unittest.TestCase):
+
+  def testNames(self):
+    self.assertEqual('AXI_H', generator.guardName("axi.h"))
+    self.assertEqual('A_XI_H', generator.guardName("aXi.h"))
+    self.assertEqual('AXI_H', generator.guardName("Axi.h"))
+
+    self.assertEqual('AXI_FOO_H', generator.guardName("axiFoo.h"))
+    self.assertEqual('AXI_FOO_BAR_H', generator.guardName("axiFooBar.h"))
 
 if __name__ == '__main__':
     unittest.main()

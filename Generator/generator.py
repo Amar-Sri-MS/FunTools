@@ -350,13 +350,19 @@ class HTMLGenerator(Visitor):
     out += '</tr>\n'
     return out
 
+def guardName(filename):
+  """Convert a filename to an all-caps string for an include guard."""
+  name = macroUpper(filename)
+  return re.sub('\.', '_', name).upper()
 
 class CodeGenerator:
   # Pretty-prints a parsed structure description into C headers.
   # The generated code should match the Linux coding style.
 
-  def __init__(self):
+  def __init__(self, output_file):
     self.indent = 0
+    # Name of file to create.
+    self.output_file = output_file
 
   def indentString(self):
     # Generates indenting spaces needed for current level of code.
@@ -375,6 +381,10 @@ class CodeGenerator:
     out = ""
     out += '// Header created by generator.py\n'
     out += '// Do not change this file; change the .gen file.\n\n'
+    if self.output_file is not None:
+      include_guard_name = guardName(self.output_file)
+      out += '#ifndef %s\n' % include_guard_name
+      out += '#define %s 1\n\n' % include_guard_name
     out += '#import "stdlib.h"\n'
     for enum in doc.enums:
       out += self.visitEnum(enum)
@@ -383,6 +393,8 @@ class CodeGenerator:
 
     for macro in doc.macros:
       out += macro + '\n'
+    if self.output_file is not None:
+      out += '#endif // %s' % include_guard_name
     return out
 
   def visitEnum(self, enum):
@@ -850,7 +862,7 @@ def generateFile(should_pack, should_gen_test_file, output_style, output_file,
     html_generator = HTMLGenerator()
     code = html_generator.visitDocument(doc)
   elif output_style is OutputStyleHeader:
-    code_generator = CodeGenerator()
+    code_generator = CodeGenerator(output_file)
     code = code_generator.visitDocument(doc)
   if output_file:
     f = open(output_file, 'w')
