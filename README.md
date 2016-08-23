@@ -13,6 +13,6 @@ To build and install the googletest library and headers perform the following st
 
 5/ the default $(SDK_DIR) is relative to where you checked out ../FunTools. If you have to override, then make install SDK_DIR=path-to-sdk
 
-6/ ls $(SDK_DIR)/include/gtest/*.h and $(SDK_DIR)/lib/gtest.a just to verify everything is there.
+6/ Check $(SDK_DIR)/include/gtest/*.h and $(SDK_DIR)/lib/gtest.a just to verify the install
 
 Now start writing tests !  This is a great framework.
