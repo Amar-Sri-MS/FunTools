@@ -4,34 +4,31 @@
 
 class TraceEvent:
   def __init__(self, start_time, end_time, label, vp):
+      # Attributes of event.
       self.start_time = start_time
       self.end_time = end_time
       self.label = label
       self.vp = vp
+
+      # Hierarchy.
+      # All WUs explicitly sent from this WU.
       self.next_wus = []
+      # All call and timer sequences sent from this WU.
       self.subevents = []
       self.parent = None
-      # For timers, the timestamp for when the timer was scheduled.
-      self.timerStart = None
       # Whether this TraceEvent is the root of all traces.
       self.is_root = False
-      self.is_transaction_root = False
-
-  def Color(self):
-      if self.label is None:
-        return '#ffa0a0'
-      if self.label == 'wuh_process_doorbell':
-          return 'yellow'
-      elif 'start' in self.label:
-          return 'red'
-      elif 'init' in self.label:
-          return 'red'
-      return '#ff8080'
+      
+      self.is_timer = False
+      # For timers, the timestamp for when the timer was scheduled.
+      self.timerStart = None
 
   def Range(self):
+      """Returns start and end time for this event alone."""
       return (self.start_time, self.end_time)
 
   def Duration(self):
+      """Returns time spent only in this event."""
       return self.end_time - self.start_time
 
   def Span(self):
@@ -43,25 +40,24 @@ class TraceEvent:
       """Returns time range spent in this event and subevents."""
       last_end_time = self.end_time
       first_start_time = self.start_time
-      for subevent in self.subevents:
-          (start, end) = subevent.Interval()
-          if end > last_end_time:
-              last_end_time = end
-          if start < first_start_time:
-              first_start_time = start
+      for subevent in self.subevents + self.next_wus:
+        (start, end) = subevent.Interval()
+        if end > last_end_time:
+            last_end_time = end
+        if start < first_start_time:
+            first_start_time = start
       return (first_start_time, last_end_time)
 
   def AddSubevent(self, event):
     self.subevents.append(event)
     event.parent = self
-    if event.label != 'timer trigger':
-      self.end_time = event.end_time
 
   def AddNext(self, event):
     self.next_wus.append(event)
     event.parent = self.parent
 
   def RemoveChild(self, event):
+    """Removes an event which is either a successor or a child of this event."""
     if event in self.subevents:
       self.subevents.remove(event)
     elif event in self.next_wus:
@@ -74,10 +70,6 @@ class TraceEvent:
           wu.next_wus.remove(event)
           return
         wus.remove(wu)
-  def LastEvent(self, event):
-    if len(self.subevents) == 0:
-      return None
-    return self.subevents[len(self.subevents) - 1]
 
   def __cmp__(self, other):
       return self.start_time.__cmp__(other.start_time)

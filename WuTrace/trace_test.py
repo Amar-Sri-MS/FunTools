@@ -1,3 +1,9 @@
+#
+# Unit tests for wu trace parsing.
+#
+# Copyright (c) 2017 Fungible Inc.  All rights reserved.
+#
+
 import sys
 import unittest
 

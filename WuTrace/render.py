@@ -18,7 +18,7 @@ def TimeString(microseconds):
     """Returns a string showing a specific time in human-readable form."""
     startSecs = TruncatedSecs(microseconds)
     startUsecs = TruncatedUsecs(microseconds)
-    return '%d.%06d' % (startSecs, startUsecs)
+    return '%02d.%06d' % (startSecs, startUsecs)
 
 def RangeString(start_time, end_time):
     """Prints start and end formatted nicely."""
@@ -26,74 +26,36 @@ def RangeString(start_time, end_time):
     startUsecs = TruncatedUsecs(start_time)
     endSecs = TruncatedSecs(end_time)
     endUsecs = TruncatedUsecs(end_time)
-    return '%d.%06d - %d.%06d' % (startSecs, startUsecs, endSecs, endUsecs)
+    return '%02d.%06d - %02d.%06d' % (startSecs, startUsecs, endSecs, endUsecs)
 
 def DurationString(duration):
+    """Returns a human-readable string representing duration as microseconds."""
     duration_secs = duration / 1000000
     duration_usecs = duration % 1000000
 
     if duration_secs == 0 and duration_usecs < 1000:
-        return '%d usecs' % duration_usecs
+        return '%d usec' % duration_usecs
     elif duration_secs == 0:
-        return '%0.3f ms' % (duration_usecs / 1000)
+        return '%0.3f msec' % (duration_usecs / 1000.0)
     else:
-        return '%0.6f secs' % (duration / 1000000)
+        return '%0.6f sec' % (duration / 1000000.0)
 
-# Number of microseconds to show in a bar.
-BAR_WIDTH = 40000
+def RenderEvent(output_file, event, group_start, group_duration):
+    """Render the HMTL for one event in a larger transaction."""
+    if group_duration == 0:
+        group_duration = 1
 
-def RenderEvent(output_file, event, start_time, full_bar_duration, indent):
-    if full_bar_duration == 0:
-        full_bar_duration = 1
-    """Renders HTML for a single event."""
-    leadingSpace = 100 * (event.start_time - start_time) / full_bar_duration
-    width = 100 * (event.end_time - event.start_time) / full_bar_duration
+    leadingSpace = 100 * (event.start_time - group_start) / group_duration
+    width = 100 * (event.end_time - event.start_time) / group_duration
     color = 'red'
-    indentString = '&nbsp;' * indent
 
-    if event.label == 'top':
-        output_file.write('<div class="row request">\n')
-        output_file.write('  <div class="label">All</div>\n')
-        output_file.write('  <div class="time">%s</div>\n' % RangeString(event.start_time, event.end_time))
-        output_file.write('  <div class="duration">%s</div>\n' % DurationString(event.end_time - event.start_time))
-        output_file.write('  <div class="vp"></div>\n')
-        output_file.write('  <div class="timeline">\n')
-        output_file.write('    <div style="width: %d%%"; class="bar allrow"></div>\n' % 100)
-        output_file.write('  </div>\n')
-        output_file.write('</div>\n')
-
-    elif event.label == 'wuh_request':
-        output_file.write('<div class="row request">\n')
-        output_file.write('  <div class="label">All</div>\n')
-        (start, end) = event.Interval()
-        output_file.write('  <div class="time">%s</div>\n' % RangeString(start, end))
-        output_file.write('  <div class="duration">%s</div>\n' % DurationString(event.Span()))
-        output_file.write('  <div class="vp"></div>\n')
-        output_file.write('  <div class="timeline">\n')
-        output_file.write('    <div style="width: %d%%"; class="bar allrow"></div>\n' % 100)
-        output_file.write('  </div>\n')
-        output_file.write('</div>\n')
-
-        output_file.write('<div class="row request">\n')
-        output_file.write('  <div class="label">wuh_request</div>\n')
-        output_file.write('  <div class="time">%s</div>\n' % RangeString(event.start_time, event.end_time))
-        output_file.write('  <div class="duration">%s</div>\n' % DurationString(event.end_time - event.start_time))
-        output_file.write('  <div class="vp">%s</div>\n' % event.vp)
-        output_file.write('  <div class="timeline">\n')
-        output_file.write('    <div style="width: %d%%"; class="space"></div>\n' % leadingSpace)
-        output_file.write('    <div style="width: %d%%"; class="bar"></div>\n' % width)
-        output_file.write('  </div>\n')
-        output_file.write('</div>\n')
-    else:
-        output_file.write('<div class="row">\n')
-
-    if event.label == 'timer trigger':
-        leadingSpace = 100 * (event.timerStart - start_time) / full_bar_duration
-        triggerSpace = 100 * (event.start_time - event.timerStart) / full_bar_duration
-        width = 100 * (event.end_time - event.start_time) / full_bar_duration
+    if event.is_timer is True:
+        leadingSpace = 100 * (event.timerStart - group_start) / group_duration
+        triggerSpace = 100 * (event.start_time - event.timerStart) / group_duration
+        width = 100 * (event.end_time - event.start_time) / group_duration
 
         
-        output_file.write('  <div class="label"><i>%s</i></div>\n' % (indentString + event.label))
+        output_file.write('  <div class="label"><i>%s</i></div>\n' % (event.label))
         output_file.write('  <div class="time"><i>%s</i></div>\n' % RangeString(event.start_time, event.end_time))
         output_file.write('  <div class="duration"><i>%s</i></div>\n' % (
                 DurationString(event.end_time - event.start_time)))
@@ -101,14 +63,14 @@ def RenderEvent(output_file, event, start_time, full_bar_duration, indent):
         output_file.write('  <div class="timeline">\n')
 
         output_file.write('    <div style="width: %d%%"; class="space"></div>\n' % leadingSpace)
-        output_file.write('    <div style="width: 0%%"; class="bar schedule tooltip">\n')
+        output_file.write('    <div style="width: 0%"; class="bar schedule tooltip">\n')
         output_file.write('    <div class="tooltiptext">timer set at %s</div></div>\n' % TimeString(event.timerStart))
         output_file.write('    <div style="width: %d%%"; class="space"></div>\n' % triggerSpace)
         output_file.write('    <div style="width: %d%%"; class="bar timer">\n' % width)
         output_file.write('    </div>\n')
         output_file.write('  </div>\n')
     else:
-        output_file.write('  <div class="label">%s</div>\n' % (indentString + event.label))
+        output_file.write('  <div class="label">%s</div>\n' % (event.label))
         output_file.write('  <div class="time">%s</div>\n' % RangeString(event.start_time, event.end_time))
         output_file.write('  <div class="duration">%s</div>\n' % (DurationString(event.end_time - event.start_time)))
         output_file.write('  <div class="vp">%s</div>\n' % event.vp)
@@ -119,8 +81,12 @@ def RenderEvent(output_file, event, start_time, full_bar_duration, indent):
         output_file.write('  </div>\n')
     output_file.write('</div>\n')
 
-    for subevent in event.subevents:
-        RenderEvent(output_file, subevent, start_time, full_bar_duration, indent + 2)
+    for wu in sorted(event.next_wus):
+        RenderEvent(output_file, wu, group_start, group_duration)
+
+
+    for subevent in sorted(event.subevents):
+        RenderEvent(output_file, subevent, group_start, group_duration)
 
 def RenderHeader(output_file):
     """Outputs HTML for the event visualization."""
@@ -239,24 +205,29 @@ request {
 </head>
 """)
 
-def RenderGroup(output_file, group, start_time, full_bar_duration):
-    sys.stderr.write('Rendering %s\n' % group.label)
-    if group.Span() > 500000:
-        for event in group.subevents:
-            RenderGroup(output_file, event, event.start_time, event.Span())
-    else:
-        RenderEvent(output_file, group, group.start_time, group.Span(), 0)
+def RenderGroup(output_file, group):
+    """Render an event which is the root of a transaction."""
+    sys.stderr.write("Rendering group for %s\n" % group.label)
+    (group_start, group_end) = group.Interval()
+    group_duration = group_end - group_start
+    output_file.write('<div class="row request">\n')
+    output_file.write('  <div class="label">All</div>\n')
+    output_file.write('  <div class="time">%s</div>\n' % RangeString(group_start, group_end))
+    output_file.write('  <div class="duration">%s</div>\n' % DurationString(group_duration))
+    output_file.write('  <div class="vp"></div>\n')
+    output_file.write('  <div class="timeline">\n')
+    output_file.write('    <div style="width: %d%%"; class="bar allrow"></div>\n' % 100)
+    output_file.write('  </div>\n')
+    output_file.write('</div>\n')
+
+    RenderEvent(output_file, group, group_start, group_duration)
 
 def RenderHTML(output_file, trace_events):
     """Generates HTML page showing the listed events."""
     RenderHeader(output_file)
     output_file.write('<body>\n')
 
-    firstEvent = trace_events.subevents[0]
-    lastEvent = trace_events.subevents[len(trace_events.subevents)-1]
-    # TODO(bowdidge): Break trace up into separate pieces.
-    # 1) Find things smaller than 15 ms.
-    # 2) Anything done on a repetitive timer in 
     for group in trace_events.subevents:
-        RenderGroup(output_file, group, firstEvent.start_time, group.Span())
+        (group_start, group_end) = group.Interval()
+        RenderGroup(output_file, group)
     output_file.write('</body></html>')

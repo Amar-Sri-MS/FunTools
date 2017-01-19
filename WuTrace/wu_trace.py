@@ -55,7 +55,7 @@ def Dump(output_file, group, indent):
 def ParseLogLine(line, file, line_number):
   """Parses a single log line from --wulog, or returns None if not a log line or if invalid."""
   values = {}
-  match = re.match('([0-9]+).([0-9]+) faddr (VP[0-9].[0-9].[0-9]) ([A-Z]+) ([A-Z]+)', line)
+  match = re.match('([0-9]+).([0-9]+) faddr (VP[0-9].[0-9].[0-9]) ([A-Z_]+) ([A-Z_]+)', line)
   if not match:
     return None
 
@@ -108,8 +108,12 @@ def ParseLogLine(line, file, line_number):
 
   elif values['verb'] == 'TRANSACTION' and values['noun'] == 'START':
     expect_keywords = []
+
+  elif values['verb'] == 'HU' and values['noun'] == 'SQ_DBL':
+    expect_keywords = ['sqid']
+
   else:
-    sys.stderr.write('%s:%d: unknown verb or noun: %s %s', (file, line_number, values['verb'], values['noun']))
+    sys.stderr.write('%s:%d: unknown verb or noun: %s %s\n' % (file, line_number, values['verb'], values['noun']))
     return None
 
   for expected_keyword in expect_keywords:
@@ -117,7 +121,7 @@ def ParseLogLine(line, file, line_number):
       sys.stderr.write('%s:%d: missing key %s\n' % (file, line_number, expected_keyword))
       return None
 
-  int_keywords = ['id', 'arg0', 'arg1']
+  int_keywords = ['id', 'arg0', 'arg1', 'sqid']
   for keyword in int_keywords:
     if keyword in values:
       string_value = values[keyword]
@@ -187,14 +191,14 @@ class TraceParser:
     elif log_keywords['verb'] == 'WU' and log_keywords['noun'] == 'END':
       # Identify the matching start event, and set the end time.
       if vp not in self.vp_to_event:
-        print('%s:%d: unexpected end' % (input_file, line_number))
+        sys.stderr.write('%s:%d: unexpected end\n' % (input_file, line_number))
         return
 
       current_event = self.vp_to_event[vp]
       del self.vp_to_event[vp]
 
       if current_event is None:
-        print('Line %d: unknown end' % line_number)
+        sys.stderr.write('Line %d: unknown end\n' % line_number)
         return
 
       current_event.end_time = timestamp
@@ -226,6 +230,9 @@ class TraceParser:
         sys.stderr.write('%s:%s: unknown vp in send\n' % (self.input_file, line_number))
         return
 
+      if arg0 not in self.frame_to_caller:
+        sys.stderr.write("%s:%d: unexpected call: parent is %s" % (self.input_file, line_number, prev))
+        return
       (prev, is_call) = self.frame_to_caller[arg0]
       if is_call:
         sys.stderr.write("%s:%d: unexpected call: parent is %s" % (self.input_file, line_number, prev))
@@ -233,7 +240,9 @@ class TraceParser:
 
     elif log_keywords['verb'] == 'HU' and log_keywords['noun'] == 'SQ_DBL':
       # Create new standalone event.
-      arg0 = log_keywords['arg0']
+      sqid = log_keywords['sqid']
+      hu0_id = 16
+      vp = "VP%d.0.%d" % (hu0_id, sqid)
 
       current_event = event.TraceEvent(timestamp, timestamp, 'Doorbell', '-')
       root_event.AddSubevent(current_event)
@@ -261,7 +270,9 @@ class TraceParser:
 
       group = self.timer_to_caller[timer]
       current_event = event.TraceEvent(timestamp, timestamp, 'timer trigger', vp)
+      current_event.is_timer = True
       current_event.timerStart = int(self.timer_to_start_time[timer])
+      self.vp_to_event[vp] = current_event
       group.AddSubevent(current_event)
 
       self.frame_to_caller[arg0] = (current_event, True)
@@ -273,10 +284,9 @@ class TraceParser:
       assert(current.parent is not None)
 
       if not current.parent.is_root:
+        # TODO(bowdidge): Consider creating shadow object so move is visible.
         current.parent.RemoveChild(current)
         self.root_event.AddSubevent(current)
-      
-
     else:
       sys.stderr.write('%s:%d: Invalid verb/noun %s %s\n' % (input_file, line_number,
                                                            log_keywords['verb'], log_keywords['noun']))
