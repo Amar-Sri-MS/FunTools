@@ -33,11 +33,11 @@ def DurationString(duration):
     duration_usecs = duration % 1000000
 
     if duration_secs == 0 and duration_usecs < 1000:
-        return "%d usecs" % duration_usecs
+        return '%d usecs' % duration_usecs
     elif duration_secs == 0:
-        return "%0.3f ms" % (duration_usecs / 1000)
+        return '%0.3f ms' % (duration_usecs / 1000)
     else:
-        return "%0.6f secs" % (duration / 1000000)
+        return '%0.6f secs' % (duration / 1000000)
 
 # Number of microseconds to show in a bar.
 BAR_WIDTH = 40000
@@ -240,7 +240,7 @@ request {
 """)
 
 def RenderGroup(output_file, group, start_time, full_bar_duration):
-    sys.stderr.write("Rendering %s\n" % group.label)
+    sys.stderr.write('Rendering %s\n' % group.label)
     if group.Span() > 500000:
         for event in group.subevents:
             RenderGroup(output_file, event, event.start_time, event.Span())
@@ -250,7 +250,7 @@ def RenderGroup(output_file, group, start_time, full_bar_duration):
 def RenderHTML(output_file, trace_events):
     """Generates HTML page showing the listed events."""
     RenderHeader(output_file)
-    output_file.write("<body>\n")
+    output_file.write('<body>\n')
 
     firstEvent = trace_events.subevents[0]
     lastEvent = trace_events.subevents[len(trace_events.subevents)-1]
@@ -259,4 +259,4 @@ def RenderHTML(output_file, trace_events):
     # 2) Anything done on a repetitive timer in 
     for group in trace_events.subevents:
         RenderGroup(output_file, group, firstEvent.start_time, group.Span())
-    output_file.write("</body></html>")
+    output_file.write('</body></html>')

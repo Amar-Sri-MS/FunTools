@@ -8,10 +8,14 @@ class TraceEvent:
       self.end_time = end_time
       self.label = label
       self.vp = vp
+      self.next_wus = []
       self.subevents = []
       self.parent = None
       # For timers, the timestamp for when the timer was scheduled.
       self.timerStart = None
+      # Whether this TraceEvent is the root of all traces.
+      self.is_root = False
+      self.is_transaction_root = False
 
   def Color(self):
       if self.label is None:
@@ -47,33 +51,42 @@ class TraceEvent:
               first_start_time = start
       return (first_start_time, last_end_time)
 
-  def Add(self, event):
+  def AddSubevent(self, event):
     self.subevents.append(event)
     event.parent = self
     if event.label != 'timer trigger':
       self.end_time = event.end_time
 
+  def AddNext(self, event):
+    self.next_wus.append(event)
+    event.parent = self.parent
+
+  def RemoveChild(self, event):
+    if event in self.subevents:
+      self.subevents.remove(event)
+    elif event in self.next_wus:
+      self.next_wus.remove(event)
+    else:
+      wus = self.next_wus
+      while len(wus) > 0:
+        wu = wus[0]
+        if event in wu.next_wus:
+          wu.next_wus.remove(event)
+          return
+        wus.remove(wu)
   def LastEvent(self, event):
     if len(self.subevents) == 0:
       return None
     return self.subevents[len(self.subevents) - 1]
-
-  def MoveUp(self, event):
-      if self.parent.parent:
-          self.subevents.remove(event)
-          self.parent.parent.Add(event)
-      else:
-          self.subevents.remove(event)
-          self.parent.Add(event)
 
   def __cmp__(self, other):
       return self.start_time.__cmp__(other.start_time)
 
   
   def __str__(self):
-    subeventMsg =  ""
+    subeventMsg =  ''
     if self.subevents is not None:
-      subeventMsg = "%d subevents" % len(self.subevents)
+      subeventMsg = '%d subevents' % len(self.subevents)
     
     str = '<TraceEvent: %s - %s %s, %s>' % (self.start_time, self.end_time,
                                            self.label, 
@@ -81,9 +94,9 @@ class TraceEvent:
     return str
 
   def __repl__(self):
-    subeventMsg =  ""
+    subeventMsg =  ''
     if self.subevents is not None:
-      subeventMsg = "%d subevents" % len(self.subevents)
+      subeventMsg = '%d subevents' % len(self.subevents)
     
     str = '<TraceEvent: %s - %s %s, %s>' % (self.start_time, self.end_time,
                                            self.label, 
