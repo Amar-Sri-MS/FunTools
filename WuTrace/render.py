@@ -242,23 +242,30 @@ def RenderGraphvizEvent(output_file, trace_event):
       output_file.write('%s -> %s [style=bold];\n' % (
               GraphvizSafeLabel(trace_event.label),
               GraphvizSafeLabel(successor.label)))
+      RenderGraphvizEvent(output_file, successor)
 
     for successor in trace_event.subevents:
       # Process calls and timers.
       if successor.is_timer:
-        style = '[style=dotted]'
+        # TODO(bowdidge): Consider representing timer as an edge from
+        # WU setting timer to WU receiving trigger rather than treating the
+        # timer like a WU.
+        assert(len(successor.next_wus) == 1)
+        timer_successor = successor.next_wus[0]
+
+        from_label = GraphvizSafeLabel(trace_event.label)
+        to_label = GraphvizSafeLabel(timer_successor.label)
+        # Create a node with the from/to embedded in the label so that
+        # different timers map to different nodes.
+        output_file.write('%s -> %s_to_timer_to_%s -> %s [style=dotted]; \n' % (
+          from_label, from_label, to_label, to_label))
+        RenderGraphvizEvent(output_file, timer_successor)
       else:
-        style = ''
-      output_file.write('%s -> %s %s;\n' % (
-              GraphvizSafeLabel(trace_event.label),
-              GraphvizSafeLabel(successor.label), style))
-
-    for successor in trace_event.next_wus:
-      RenderGraphvizEvent(output_file, successor)
-
-    for successor in trace_event.subevents:
-      RenderGraphvizEvent(output_file, successor)
-
+        style = '[style=bold]'
+        output_file.write('%s -> %s %s;\n' % (
+                GraphvizSafeLabel(trace_event.label),
+                GraphvizSafeLabel(successor.label), style))
+        RenderGraphvizEvent(output_file, successor)
 
 
 def RenderGraphviz(output_file, trace_events):
@@ -267,5 +274,7 @@ def RenderGraphviz(output_file, trace_events):
     """
     output_file.write('strict digraph foo {\n')
     for group in trace_events.subevents:
+      output_file.write('start -> %s;\n' % (
+              GraphvizSafeLabel(group.label)))
       RenderGraphvizEvent(output_file, group)
     output_file.write('}\n')
