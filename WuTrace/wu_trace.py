@@ -53,11 +53,16 @@ def Dump(output_file, group, indent):
     Dump(output_file, subevent, indent + 2)
 
 def ParseLogLine(line, file, line_number):
-  """Parses a single log line from --wulog, or returns None if not a log line or if invalid."""
+  """Parses a single log line from --wulog.
+  Returns a tuple of (dictionary of key-value pairs, error) where
+  error is None if parsing was successful, and the dictionary is not None
+  if the line represented a WU log entry.
+  """
   values = {}
   match = re.match('([0-9]+).([0-9]+) faddr (VP[0-9].[0-9].[0-9]) ([A-Z_]+) ([A-Z_]+)', line)
   if not match:
-    return None
+    # Not a log line, but not an error either.
+    return (None, None)
 
   values = {'timestamp': int(match.group(1)) * 1000000 + int(match.group(2)),
             'vp': match.group(3),
@@ -67,15 +72,16 @@ def ParseLogLine(line, file, line_number):
   remaining_string = line[len(match.group(0)):].lstrip()
 
   if len(remaining_string) == 0:
-    return values
+    return (values, None)
 
   token_iter = iter(remaining_string.split(' '))
 
   try:
     pairs = [(a, next(token_iter)) for a in token_iter]
   except StopIteration as e:
-    sys.stderr.write('%s:%d: Remaining arguments aren\'t pairs: %s\n' % (file, line_number, remaining_string))
-    return None
+    error = '%s:%d: malformed log line: "%s"\n' % (
+      file, line_number, line)
+    return (None, error)
 
   for (key, value) in pairs:
     values[key] = value
@@ -113,13 +119,13 @@ def ParseLogLine(line, file, line_number):
     expect_keywords = ['sqid']
 
   else:
-    sys.stderr.write('%s:%d: unknown verb or noun: %s %s\n' % (file, line_number, values['verb'], values['noun']))
-    return None
+    error = '%s:%d: unknown verb or noun: %s %s\n' % (file, line_number, values['verb'], values['noun'])
+    return (None, error)
 
   for expected_keyword in expect_keywords:
     if expected_keyword not in values:
-      sys.stderr.write('%s:%d: missing key %s\n' % (file, line_number, expected_keyword))
-      return None
+      error = '%s:%d: missing key "%s"\n' % (file, line_number, expected_keyword)
+      return (None, error)
 
   int_keywords = ['id', 'arg0', 'arg1', 'sqid']
   for keyword in int_keywords:
@@ -129,16 +135,20 @@ def ParseLogLine(line, file, line_number):
         try:
           values[keyword] = int(string_value, 16)
         except ValueError as e:
-          sys.stderr.write('%s:%d: malformed hex value %s for key %s\n' % (file, line_number, string_value, keyword))
+          error = '%s:%d: malformed hex value "%s" for key %s\n' % (
+          file, line_number, string_value, keyword)
+          return (None, error)
 
       else:
         try:
           values[keyword] = int(string_value)
         except ValueError as e:
-          sys.stderr.write('%s:%d: malformed integer %s for key %s\n' % (file, line_number, string_value, keyword))
+          error = '%s:%d: malformed integer "%s" for key %s\n' % (
+            file, line_number, string_value, keyword)
+          return (None, error)
 
 
-  return values
+  return (values, None)
 
 
 class TraceParser:
@@ -231,7 +241,7 @@ class TraceParser:
         return
 
       if arg0 not in self.frame_to_caller:
-        sys.stderr.write("%s:%d: unexpected call: parent is %s" % (self.input_file, line_number, prev))
+        sys.stderr.write("%s:%d: unexpected call: had not seen frame in previous send.  arg0 is %s" % (self.input_file, line_number, arg0))
         return
       (prev, is_call) = self.frame_to_caller[arg0]
       if is_call:
@@ -245,7 +255,7 @@ class TraceParser:
       vp = "VP%d.0.%d" % (hu0_id, sqid)
 
       current_event = event.TraceEvent(timestamp, timestamp, 'Doorbell', '-')
-      root_event.AddSubevent(current_event)
+      # TODO(bowdidge): Save event.
       # TODO(bowdidge): How to map to start of WUs?
 
     elif log_keywords['verb'] == 'TIMER' and log_keywords['noun'] == 'START':
@@ -268,6 +278,10 @@ class TraceParser:
       arg0 = log_keywords['arg0']
       timer = log_keywords['timer']
 
+      if timer not in self.timer_to_caller:
+        sys.stderr.write('%s:%d: unknown timer id %s\n' % (
+            self.input_file, line_number, timer))
+        return
       group = self.timer_to_caller[timer]
       current_event = event.TraceEvent(timestamp, timestamp, 'timer_trigger', vp)
       current_event.is_timer = True
@@ -301,7 +315,9 @@ def ParseFile(lines, input_filename):
     line_number += 1
     if DEBUG:
       sys.stderr.write('line %d\n' % line_number)
-    log_keywords = ParseLogLine(line, input_filename, line_number)
+    (log_keywords, error) = ParseLogLine(line, input_filename, line_number)
+    if error:
+      sys.stderr.write(error)
     if not log_keywords:
       continue
     trace_parser.HandleLogLine(log_keywords, line_number)

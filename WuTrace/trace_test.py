@@ -11,13 +11,16 @@ import wu_trace
 
 class TestParser(unittest.TestCase):
 
-  def testBadParse(self):
-    self.assertIsNone(wu_trace.ParseLogLine("foo", "filename", 1))
-    self.assertIsNone(wu_trace.ParseLogLine("1000.001000", "filename", 1))
+  def testNotALogLine(self):
+    self.assertEqual((None, None), wu_trace.ParseLogLine("foo", "filename", 1))
+    self.assertEqual((None, None), 
+                      wu_trace.ParseLogLine("1000.001000", "filename", 1))
 
   def testSimpleParse(self):
     line = "123123123.567890 faddr VP0.0.0 WU START src VP0.0.0 dest VP0.0.0 id 0x1 name foo arg0 1 arg1 2"
-    line_args = wu_trace.ParseLogLine(line, "filename", 1)
+    (line_args, error) = wu_trace.ParseLogLine(line, "filename", 1)
+
+    self.assertIsNone(error)
 
     self.assertEqual(123123123567890, line_args["timestamp"])
     self.assertEqual("VP0.0.0", line_args["vp"])
@@ -30,14 +33,50 @@ class TestParser(unittest.TestCase):
 
   def testParseTransactionStart(self):
     line = '1.000001 faddr VP0.0.0 TRANSACTION START'
-    line_args = wu_trace.ParseLogLine(line, 'filename', 1)
+    (line_args, error) = wu_trace.ParseLogLine(line, 'filename', 1)
     self.assertIsNotNone(line_args)
+    self.assertIsNone(error)
 
     line = '0.000006 faddr VP0.0.0 TRANSACTION START\n'
     line_args = wu_trace.ParseLogLine(line, 'filename', 1)
     self.assertIsNotNone(line_args)
+    self.assertIsNone(error)
     
-    
+  def testBadVerb(self):
+    # Colon after send is invalid.
+    line = '485375410.764454 faddr VP0.2.0 WU SEND: src VP0.2.0 dest VP0.0.0 id 0x60 name wuh_mp_notify arg0 0x0 arg1 0x0'
+    (line_args, error) = wu_trace.ParseLogLine(line, 'filename', 1)
+    self.assertIsNone(line_args)
+    self.assertIn('malformed log line', error)
+
+  def testUnknownVerb(self):
+    # Comma after VP is unexpected.
+    line = '485375410.764454 faddr VP0.2.0 FOO BAR src VP0.2.0, dest VP0.0.0, id 0x60 name wuh_mp_notify arg0 0x0 arg1 0x0'
+    (line_args, error) = wu_trace.ParseLogLine(line, 'filename', 1)
+    self.assertIsNone(line_args)
+    self.assertIn('unknown verb or noun', error)
+
+  def testMissingKey(self):
+    # Remove src.
+    line = '485375410.764454 faddr VP0.2.0 WU SEND dest VP0.0.0, id 0x60 name wuh_mp_notify arg0 0x0 arg1 0x0'
+    (line_args, error) = wu_trace.ParseLogLine(line, 'filename', 1)
+    self.assertIsNone(line_args)
+    self.assertIn('missing key "src"', error)
+
+  def testMalformedNumber(self):
+    # gg is not valid hex.
+    line = '485375410.764454 faddr VP0.2.0 WU SEND src VP0.0.0 dest VP0.0.0, id 0xgg name wuh_mp_notify arg0 0x0 arg1 0x0'
+    (line_args, error) = wu_trace.ParseLogLine(line, 'filename', 1)
+    self.assertIsNone(line_args)
+    self.assertIn('malformed hex value "0xgg"', error)
+
+  def testMalformedNumber(self):
+    # 1A is not valid decimal value.
+    line = '485375410.764454 faddr VP0.2.0 WU SEND src VP0.0.0 dest VP0.0.0, id 1A name wuh_mp_notify arg0 0x0 arg1 0x0'
+    (line_args, error) = wu_trace.ParseLogLine(line, 'filename', 1)
+    self.assertIsNone(line_args)
+    self.assertIn('malformed integer "1A"', error)
+
   def testStartEnd(self):
     log = ["1.000100 faddr VP0.0.0 WU START src VP0.0.0 dest VP0.0.0 id 0x1 name my_wu arg0 1 arg1 2",
            "1.000200 faddr VP0.0.0 WU END id 0x1 name my_wu arg0 1 arg1 2"]
