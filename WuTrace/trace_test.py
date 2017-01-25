@@ -7,6 +7,7 @@
 import sys
 import unittest
 
+import render
 import wu_trace
 
 class TestParser(unittest.TestCase):
@@ -174,6 +175,81 @@ class TestParser(unittest.TestCase):
       wu_trace.Dump(sys.stdout, events, 0)
       self.assertEqual(4, len(events.subevents))
 
+
+class FakeFile:
+  def __init__(self):
+    self.lines = []
+
+  def write(self, line):
+    self.lines.append(line)
+
+class EndToEndTest(unittest.TestCase):
+
+  def testMinimalGraphviz(self):
+    log = ['1.00100 faddr VP0.0.0 WU START src VP0.0.0 dest VP0.0.0 id 1 name fun_a arg0 1 arg1 2',
+           '1.00200 faddr VP0.0.0 TRANSACTION START',
+           '1.00300 faddr VP0.0.0 WU END id 1 name fun_a arg0 1 arg1 2'
+           ]
+    root_event = wu_trace.ParseFile(log, "foo.trace")
+    # First, make sure we can run the graphviz code.
+    outputFile = FakeFile()
+    render.RenderGraphviz(outputFile, root_event)
+
+    expected_output = ['strict digraph foo {\n',
+                       'start -> fun_a;\n',
+                       '}\n']
+
+    self.assertEqual(expected_output, outputFile.lines)
+
+  def testMinimalSend(self):
+    log = ['1.00100 faddr VP0.0.0 WU START src VP0.0.0 dest VP0.0.0 id 1 name fun_a arg0 1 arg1 2',
+           '1.00200 faddr VP0.0.0 TRANSACTION START',
+           '1.00300 faddr VP0.0.0 WU SEND src VP0.0.0 dest VP0.0.0 id 2 name bar arg0 2 arg1 3',
+           '1.00300 faddr VP0.0.0 WU END id 1 name fun_a arg0 1 arg1 2',
+           '1.00400 faddr VP0.0.0 WU START src VP0.0.0 dest VP0.0.0 id 2 name bar arg0 2 arg1 3',
+           '1.00500 faddr VP0.0.0 WU END id 2 name bar arg0 2 arg1 3'
+           ]
+    root_event = wu_trace.ParseFile(log, "foo.trace")
+    # First, make sure we can run the graphviz code.
+    outputFile = FakeFile()
+    render.RenderGraphviz(outputFile, root_event)
+
+    expected_output = ['strict digraph foo {\n',
+                       'start -> fun_a;\n',
+                       'fun_a -> bar [style=bold];\n',
+                       '}\n']
+
+    self.assertEqual(expected_output, outputFile.lines)
+
+  def testMinimalTimer(self):
+    log = """
+0.000001 faddr VP0.0.0 WU START src VP0.0.0 dest VP0.0.0 id 0 name foo arg0 0 arg1 0
+0.000002 faddr VP0.0.0 TIMER START timer 0x1 value 0x1 arg0 0x1
+0.000003 faddr VP0.0.0 WU END id 0 name foo arg0 0 arg1 0
+0.000004 faddr VP0.0.0 TIMER TRIGGER timer 0x1 arg0 0x1
+0.000005 faddr VP0.0.0 WU SEND src VP0.0.0 dest VP0.0.0 id 0x0 name foo arg0 1 arg1 0
+0.000006 faddr VP0.0.0 WU START src VP0.0.0 dest VP0.0.0 id 0 name foo arg0 0x1 arg1 0
+0.000006 faddr VP0.0.0 TRANSACTION START
+0.000007 faddr VP0.0.0 TIMER START timer 0x1 value 0x1 arg0 0x2
+0.000008 faddr VP0.0.0 WU END id 0 name foo arg0 0x1 arg1 0
+0.000009 faddr VP0.0.0 TIMER TRIGGER timer 0x1 arg0 0x2
+0.000010 faddr VP0.0.0 WU SEND src VP0.0.0 dest VP0.0.0 id 0x0 name foo arg0 2 arg1 0
+0.000011 faddr VP0.0.0 WU START src VP0.0.0 dest VP0.0.0 id 0 name foo arg0 0x2 arg1 0
+0.000011 faddr VP0.0.0 TRANSACTION START
+0.000012 faddr VP0.0.0 TIMER START timer 0x1 value 0x1 arg0 0x3
+0.000013 faddr VP0.0.0 WU END id 0 name foo arg0 0x2 arg1 0
+0.000014 faddr VP0.0.0 WU START src VP0.0.0 dest VP0.0.0 id 0 name foo arg0 0x3 arg1 0
+0.000015 faddr VP0.0.0 WU END id 0 name foo arg0 0x3 arg1 0
+
+    """.split('\n')
+    root_event = wu_trace.ParseFile(log, "foo.trace")
+    output_file = FakeFile()
+
+    render.RenderGraphviz(output_file, root_event)
+    
+    # TODO(bowdidge): Check more than just length of output.
+    self.assertEqual(9, len(output_file.lines))
+    
 if __name__ == '__main__':
   unittest.main()
 
