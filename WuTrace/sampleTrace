@@ -1,0 +1,126 @@
+[posix] FunOS posix platform starting...
+[posix] Done creating 8 PVPs
+1484855267.863715 faddr VP0.3.0 WU SEND src VP0.3.0 dest VP0.0.0 id 0x60 name wuh_mp_notify arg0 0x0 arg1 0x0
+1484855267.863747 faddr VP0.1.0 WU SEND src VP0.1.0 dest VP0.0.0 id 0x60 name wuh_mp_notify arg0 0x0 arg1 0x0
+1484855267.863759 faddr VP0.5.0 WU SEND src VP0.5.0 dest VP0.0.0 id 0x60 name wuh_mp_notify arg0 0x0 arg1 0x0
+1484855267.863764 faddr VP0.6.0 WU SEND src VP0.6.0 dest VP0.0.0 id 0x60 name wuh_mp_notify arg0 0x0 arg1 0x0
+1484855267.863790 faddr VP0.4.0 WU SEND src VP0.4.0 dest VP0.0.0 id 0x60 name wuh_mp_notify arg0 0x0 arg1 0x0
+1484855267.863802 faddr VP0.0.0 WU START src VP0.3.0 dest VP0.0.0 id 0x60 name wuh_mp_notify arg0 0x0 arg1 0x0
+1484855267.863802 faddr VP0.7.0 WU SEND src VP0.7.0 dest VP0.0.0 id 0x60 name wuh_mp_notify arg0 0x0 arg1 0x0
+1484855267.863805 faddr VP0.0.0 WU END id 0x60 name wuh_mp_notify arg0 0x0 arg1 0x0
+1484855267.863818 faddr VP0.0.0 WU START src VP0.1.0 dest VP0.0.0 id 0x60 name wuh_mp_notify arg0 0x0 arg1 0x0
+1484855267.863820 faddr VP0.0.0 WU END id 0x60 name wuh_mp_notify arg0 0x0 arg1 0x0
+1484855267.863821 faddr VP0.0.0 WU START src VP0.5.0 dest VP0.0.0 id 0x60 name wuh_mp_notify arg0 0x0 arg1 0x0
+1484855267.863822 faddr VP0.0.0 WU END id 0x60 name wuh_mp_notify arg0 0x0 arg1 0x0
+1484855267.863821 faddr VP0.2.0 WU SEND src VP0.2.0 dest VP0.0.0 id 0x60 name wuh_mp_notify arg0 0x0 arg1 0x0
+1484855267.863824 faddr VP0.0.0 WU START src VP0.6.0 dest VP0.0.0 id 0x60 name wuh_mp_notify arg0 0x0 arg1 0x0
+1484855267.863825 faddr VP0.0.0 WU END id 0x60 name wuh_mp_notify arg0 0x0 arg1 0x0
+1484855267.863826 faddr VP0.0.0 WU START src VP0.4.0 dest VP0.0.0 id 0x60 name wuh_mp_notify arg0 0x0 arg1 0x0
+1484855267.863828 faddr VP0.0.0 WU END id 0x60 name wuh_mp_notify arg0 0x0 arg1 0x0
+1484855267.863829 faddr VP0.0.0 WU START src VP0.7.0 dest VP0.0.0 id 0x60 name wuh_mp_notify arg0 0x0 arg1 0x0
+1484855267.863830 faddr VP0.0.0 WU END id 0x60 name wuh_mp_notify arg0 0x0 arg1 0x0
+1484855267.863831 faddr VP0.0.0 WU START src VP0.2.0 dest VP0.0.0 id 0x60 name wuh_mp_notify arg0 0x0 arg1 0x0
+all VPs online, sending bootstrap WU
+1484855267.863833 faddr VP0.0.0 WU SEND src VP0.0.0 dest VP0.0.0 id 0x61 name wuh_bootstrap arg0 0x0 arg1 0x0
+1484855267.863991 faddr VP0.0.0 WU END id 0x60 name wuh_mp_notify arg0 0x0 arg1 0x0
+1484855267.863993 faddr VP0.0.0 WU START src VP0.0.0 dest VP0.0.0 id 0x61 name wuh_bootstrap arg0 0x0 arg1 0x0
+Bootstrapping FunOS
+found partial: app app=funflix
+found more: app app=funflix
+1484855267.864003 faddr VP0.0.0 WU SEND src VP0.0.0 dest VP0.0.0 id 0xc8 name wuh_bootstrap_funflix arg0 0x0 arg1 0x0
+1484855267.864007 faddr VP0.0.0 WU END id 0x61 name wuh_bootstrap arg0 0x0 arg1 0x0
+1484855267.864008 faddr VP0.0.0 WU START src VP0.0.0 dest VP0.0.0 id 0xc8 name wuh_bootstrap_funflix arg0 0x0 arg1 0x0
+1484855267.864171 faddr VP0.0.0 TIMER START timer 0xd3a5d30 value 0x0 arg0 0x79c03240
+1484855267.864178 faddr VP0.0.0 WU END id 0xc8 name wuh_bootstrap_funflix arg0 0x0 arg1 0x0
+1484855267.864180 faddr VP0.0.0 TIMER TRIGGER timer 0xd3a5d30 arg0 0x79c03240
+1484855267.864181 faddr VP0.0.0 WU SEND src VP0.0.0 dest VP0.0.0 id 0xc7 name wuh_generate_request arg0 0x79c03240 arg1 0x0
+1484855267.864184 faddr VP0.0.0 WU START src VP0.0.0 dest VP0.0.0 id 0xc7 name wuh_generate_request arg0 0x79c03240 arg1 0x0
+Generating request #0
+1484855267.864191 faddr VP0.0.0 WU SEND src VP0.0.0 dest VP0.1.0 id 0xc6 name wuh_request arg0 0x79c03300 arg1 0x0
+1484855267.864193 faddr VP0.0.0 TIMER START timer 0xd3a5d30 value 0xc350 arg0 0x79c03240
+1484855267.864194 faddr VP0.0.0 WU END id 0xc7 name wuh_generate_request arg0 0x79c03240 arg1 0x0
+1484855267.864337 faddr VP0.1.0 WU START src VP0.0.0 dest VP0.1.0 id 0xc6 name wuh_request arg0 0x79c03300 arg1 0x0
+1484855267.864351 faddr VP0.1.0 TRANSACTION START
+Request: GET /film?title=brazil
+1484855267.864354 faddr VP0.1.0 TIMER START timer 0xd3a5d58 value 0x0 arg0 0x79d00490
+1484855267.864359 faddr VP0.1.0 WU END id 0xc6 name wuh_request arg0 0x79c03300 arg1 0x0
+1484855267.864491 faddr VP0.0.0 TIMER TRIGGER timer 0xd3a5d58 arg0 0x79d00490
+1484855267.864528 faddr VP0.0.0 WU SEND src VP0.0.0 dest VP0.2.0 id 0xc5 name wuh_retrieve_part arg0 0x79d00490 arg1 0x0
+1484855267.864642 faddr VP0.2.0 WU START src VP0.0.0 dest VP0.2.0 id 0xc5 name wuh_retrieve_part arg0 0x79d00490 arg1 0x0
+Retrieving part 0 of video GET /film?title=brazil
+1484855267.864660 faddr VP0.2.0 WU SEND src VP0.2.0 dest VP0.3.0 id 0xc4 name wuh_encrypt_part arg0 0x7a043ec0 arg1 0x79c03250
+1484855267.864662 faddr VP0.2.0 WU CALL id 196 name wuh_encrypt_part arg0 0x7a043ec0 arg1 0x79c03250
+1484855267.864664 faddr VP0.2.0 TIMER START timer 0xd3a5d58 value 0x2710 arg0 0x79d00490
+1484855267.864665 faddr VP0.2.0 WU END id 0xc5 name wuh_retrieve_part arg0 0x79d00490 arg1 0x0
+1484855267.864791 faddr VP0.3.0 WU START src VP0.2.0 dest VP0.3.0 id 0xc4 name wuh_encrypt_part arg0 0x7a043ec0 arg1 0x79c03250
+1484855267.864802 faddr VP0.3.0 WU SEND src VP0.3.0 dest VP0.4.0 id 0xc3 name wuh_add_headers arg0 0x7a043e80 arg1 0x79c03250
+1484855267.864804 faddr VP0.3.0 WU END id 0xc4 name wuh_encrypt_part arg0 0x7a043ec0 arg1 0x79c03250
+1484855267.864935 faddr VP0.4.0 WU START src VP0.3.0 dest VP0.4.0 id 0xc3 name wuh_add_headers arg0 0x7a043e80 arg1 0x79c03250
+1484855267.864953 faddr VP0.4.0 WU SEND src VP0.4.0 dest VP0.5.0 id 0xc2 name wuh_send_part arg0 0x7a043e40 arg1 0x79c03250
+1484855267.864954 faddr VP0.4.0 WU END id 0xc3 name wuh_add_headers arg0 0x7a043e80 arg1 0x79c03250
+1484855267.865081 faddr VP0.5.0 WU START src VP0.4.0 dest VP0.5.0 id 0xc2 name wuh_send_part arg0 0x7a043e40 arg1 0x79c03250
+1484855267.865089 faddr VP0.5.0 WU END id 0xc2 name wuh_send_part arg0 0x7a043e40 arg1 0x79c03250
+1484855267.874691 faddr VP0.0.0 TIMER TRIGGER timer 0xd3a5d58 arg0 0x79d00490
+1484855267.874696 faddr VP0.0.0 WU SEND src VP0.0.0 dest VP0.6.0 id 0xc5 name wuh_retrieve_part arg0 0x79d00490 arg1 0x0
+1484855267.874821 faddr VP0.6.0 WU START src VP0.0.0 dest VP0.6.0 id 0xc5 name wuh_retrieve_part arg0 0x79d00490 arg1 0x0
+Retrieving part 1 of video GET /film?title=brazil
+1484855267.874840 faddr VP0.6.0 WU SEND src VP0.6.0 dest VP0.7.0 id 0xc4 name wuh_encrypt_part arg0 0x7d030cc0 arg1 0x7b200000
+1484855267.874842 faddr VP0.6.0 WU CALL id 196 name wuh_encrypt_part arg0 0x7d030cc0 arg1 0x7b200000
+1484855267.874843 faddr VP0.6.0 TIMER START timer 0xd3a5d58 value 0x2710 arg0 0x79d00490
+1484855267.874844 faddr VP0.6.0 WU END id 0xc5 name wuh_retrieve_part arg0 0x79d00490 arg1 0x0
+1484855267.874985 faddr VP0.7.0 WU START src VP0.6.0 dest VP0.7.0 id 0xc4 name wuh_encrypt_part arg0 0x7d030cc0 arg1 0x7b200000
+1484855267.874992 faddr VP0.7.0 WU SEND src VP0.7.0 dest VP0.0.0 id 0xc3 name wuh_add_headers arg0 0x7d030c80 arg1 0x7b200000
+1484855267.874993 faddr VP0.7.0 WU END id 0xc4 name wuh_encrypt_part arg0 0x7d030cc0 arg1 0x7b200000
+1484855267.875117 faddr VP0.0.0 WU START src VP0.7.0 dest VP0.0.0 id 0xc3 name wuh_add_headers arg0 0x7d030c80 arg1 0x7b200000
+1484855267.875125 faddr VP0.0.0 WU SEND src VP0.0.0 dest VP0.1.0 id 0xc2 name wuh_send_part arg0 0x7d030c40 arg1 0x7b200000
+1484855267.875126 faddr VP0.0.0 WU END id 0xc3 name wuh_add_headers arg0 0x7d030c80 arg1 0x7b200000
+1484855267.875243 faddr VP0.1.0 WU START src VP0.0.0 dest VP0.1.0 id 0xc2 name wuh_send_part arg0 0x7d030c40 arg1 0x7b200000
+1484855267.875247 faddr VP0.1.0 WU END id 0xc2 name wuh_send_part arg0 0x7d030c40 arg1 0x7b200000
+1484855267.884903 faddr VP0.0.0 TIMER TRIGGER timer 0xd3a5d58 arg0 0x79d00490
+1484855267.884905 faddr VP0.0.0 WU SEND src VP0.0.0 dest VP0.2.0 id 0xc5 name wuh_retrieve_part arg0 0x79d00490 arg1 0x0
+1484855267.884952 faddr VP0.2.0 WU START src VP0.0.0 dest VP0.2.0 id 0xc5 name wuh_retrieve_part arg0 0x79d00490 arg1 0x0
+Retrieving part 2 of video GET /film?title=brazil
+1484855267.884960 faddr VP0.2.0 WU SEND src VP0.2.0 dest VP0.3.0 id 0xc4 name wuh_encrypt_part arg0 0x7a044ec0 arg1 0x79c03250
+1484855267.884962 faddr VP0.2.0 WU CALL id 196 name wuh_encrypt_part arg0 0x7a044ec0 arg1 0x79c03250
+1484855267.884963 faddr VP0.2.0 TIMER START timer 0xd3a5d58 value 0x2710 arg0 0x79d00490
+1484855267.884964 faddr VP0.2.0 WU END id 0xc5 name wuh_retrieve_part arg0 0x79d00490 arg1 0x0
+1484855267.885037 faddr VP0.3.0 WU START src VP0.2.0 dest VP0.3.0 id 0xc4 name wuh_encrypt_part arg0 0x7a044ec0 arg1 0x79c03250
+1484855267.885052 faddr VP0.3.0 WU SEND src VP0.3.0 dest VP0.4.0 id 0xc3 name wuh_add_headers arg0 0x7a044e80 arg1 0x79c03250
+1484855267.885053 faddr VP0.3.0 WU END id 0xc4 name wuh_encrypt_part arg0 0x7a044ec0 arg1 0x79c03250
+1484855267.885057 faddr VP0.4.0 WU START src VP0.3.0 dest VP0.4.0 id 0xc3 name wuh_add_headers arg0 0x7a044e80 arg1 0x79c03250
+1484855267.885074 faddr VP0.4.0 WU SEND src VP0.4.0 dest VP0.5.0 id 0xc2 name wuh_send_part arg0 0x7a044e40 arg1 0x79c03250
+1484855267.885076 faddr VP0.4.0 WU END id 0xc3 name wuh_add_headers arg0 0x7a044e80 arg1 0x79c03250
+1484855267.885184 faddr VP0.5.0 WU START src VP0.4.0 dest VP0.5.0 id 0xc2 name wuh_send_part arg0 0x7a044e40 arg1 0x79c03250
+1484855267.885198 faddr VP0.5.0 WU END id 0xc2 name wuh_send_part arg0 0x7a044e40 arg1 0x79c03250
+1484855267.895081 faddr VP0.0.0 TIMER TRIGGER timer 0xd3a5d58 arg0 0x79d00490
+1484855267.895084 faddr VP0.0.0 WU SEND src VP0.0.0 dest VP0.6.0 id 0xc5 name wuh_retrieve_part arg0 0x79d00490 arg1 0x0
+1484855267.895196 faddr VP0.6.0 WU START src VP0.0.0 dest VP0.6.0 id 0xc5 name wuh_retrieve_part arg0 0x79d00490 arg1 0x0
+Retrieving part 3 of video GET /film?title=brazil
+1484855267.895203 faddr VP0.6.0 WU SEND src VP0.6.0 dest VP0.7.0 id 0xc4 name wuh_encrypt_part arg0 0x7a0464c0 arg1 0x79c03250
+1484855267.895205 faddr VP0.6.0 WU CALL id 196 name wuh_encrypt_part arg0 0x7a0464c0 arg1 0x79c03250
+1484855267.895206 faddr VP0.6.0 TIMER START timer 0xd3a5d58 value 0x2710 arg0 0x79d00490
+1484855267.895207 faddr VP0.6.0 WU END id 0xc5 name wuh_retrieve_part arg0 0x79d00490 arg1 0x0
+1484855267.895328 faddr VP0.7.0 WU START src VP0.6.0 dest VP0.7.0 id 0xc4 name wuh_encrypt_part arg0 0x7a0464c0 arg1 0x79c03250
+1484855267.895334 faddr VP0.7.0 WU SEND src VP0.7.0 dest VP0.0.0 id 0xc3 name wuh_add_headers arg0 0x7a046480 arg1 0x79c03250
+1484855267.895335 faddr VP0.7.0 WU END id 0xc4 name wuh_encrypt_part arg0 0x7a0464c0 arg1 0x79c03250
+1484855267.895455 faddr VP0.0.0 WU START src VP0.7.0 dest VP0.0.0 id 0xc3 name wuh_add_headers arg0 0x7a046480 arg1 0x79c03250
+1484855267.895488 faddr VP0.0.0 WU SEND src VP0.0.0 dest VP0.1.0 id 0xc2 name wuh_send_part arg0 0x7a046440 arg1 0x79c03250
+1484855267.895490 faddr VP0.0.0 WU END id 0xc3 name wuh_add_headers arg0 0x7a046480 arg1 0x79c03250
+1484855267.895583 faddr VP0.1.0 WU START src VP0.0.0 dest VP0.1.0 id 0xc2 name wuh_send_part arg0 0x7a046440 arg1 0x79c03250
+1484855267.895597 faddr VP0.1.0 WU END id 0xc2 name wuh_send_part arg0 0x7a046440 arg1 0x79c03250
+1484855267.905301 faddr VP0.0.0 TIMER TRIGGER timer 0xd3a5d58 arg0 0x79d00490
+1484855267.905304 faddr VP0.0.0 WU SEND src VP0.0.0 dest VP0.2.0 id 0xc5 name wuh_retrieve_part arg0 0x79d00490 arg1 0x0
+1484855267.905428 faddr VP0.2.0 WU START src VP0.0.0 dest VP0.2.0 id 0xc5 name wuh_retrieve_part arg0 0x79d00490 arg1 0x0
+Retrieving part 4 of video GET /film?title=brazil
+1484855267.905435 faddr VP0.2.0 WU SEND src VP0.2.0 dest VP0.3.0 id 0xc4 name wuh_encrypt_part arg0 0x7c030cc0 arg1 0x7b000040
+1484855267.905437 faddr VP0.2.0 WU CALL id 196 name wuh_encrypt_part arg0 0x7c030cc0 arg1 0x7b000040
+1484855267.905438 faddr VP0.2.0 TIMER START timer 0xd3a5d58 value 0x2710 arg0 0x79d00490
+1484855267.905438 faddr VP0.2.0 WU END id 0xc5 name wuh_retrieve_part arg0 0x79d00490 arg1 0x0
+1484855267.905558 faddr VP0.3.0 WU START src VP0.2.0 dest VP0.3.0 id 0xc4 name wuh_encrypt_part arg0 0x7c030cc0 arg1 0x7b000040
+1484855267.905563 faddr VP0.3.0 WU SEND src VP0.3.0 dest VP0.4.0 id 0xc3 name wuh_add_headers arg0 0x7c030c80 arg1 0x7b000040
+1484855267.905564 faddr VP0.3.0 WU END id 0xc4 name wuh_encrypt_part arg0 0x7c030cc0 arg1 0x7b000040
+1484855267.905717 faddr VP0.4.0 WU START src VP0.3.0 dest VP0.4.0 id 0xc3 name wuh_add_headers arg0 0x7c030c80 arg1 0x7b000040
+1484855267.905727 faddr VP0.4.0 WU SEND src VP0.4.0 dest VP0.5.0 id 0xc2 name wuh_send_part arg0 0x7c030c40 arg1 0x7b000040
+1484855267.905741 faddr VP0.4.0 WU END id 0xc3 name wuh_add_headers arg0 0x7c030c80 arg1 0x7b000040
+1484855267.905850 faddr VP0.5.0 WU START src VP0.4.0 dest VP0.5.0 id 0xc2 name wuh_send_part arg0 0x7c030c40 arg1 0x7b000040
+1484855267.905855 faddr VP0.5.0 WU END id 0xc2 name wuh_send_part arg0 0x7c030c40 arg1 0x7b000040
