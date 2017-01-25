@@ -1,5 +1,5 @@
 #
-# render.py: Render trace data in HTML.
+# render.py: Render trace data in HTML or graphviz.
 #
 # Copyright (c) 2017 Fungible Inc.  All rights reserved.
 #
@@ -54,7 +54,7 @@ def RenderEvent(output_file, event, group_start, group_duration):
         triggerSpace = 100 * (event.start_time - event.timerStart) / group_duration
         width = 100 * (event.end_time - event.start_time) / group_duration
 
-        
+
         output_file.write('  <div class="label"><i>%s</i></div>\n' % (event.label))
         output_file.write('  <div class="time"><i>%s</i></div>\n' % RangeString(event.start_time, event.end_time))
         output_file.write('  <div class="duration"><i>%s</i></div>\n' % (
@@ -118,13 +118,13 @@ def RenderHeader(output_file):
 
 /* How to draw top-level objects. */
 .allrow {
-  background-color: gray; 
+  background-color: gray;
 }
 
 /* How to draw span representing a call. */
 .call {
   background-color: #ffe0e0;
-  
+
 }
 
 /* How to draw span representing a timer. */
@@ -231,3 +231,41 @@ def RenderHTML(output_file, trace_events):
         (group_start, group_end) = group.Interval()
         RenderGroup(output_file, group)
     output_file.write('</body></html>')
+
+def GraphvizSafeLabel(label):
+    return label.replace('$', 'dollar')
+
+def RenderGraphvizEvent(output_file, trace_event):
+    """Output all edges from trace_event in dot style."""
+    for successor in trace_event.next_wus:
+      # Process explicit sends.
+      output_file.write('%s -> %s [style=bold];\n' % (
+              GraphvizSafeLabel(trace_event.label),
+              GraphvizSafeLabel(successor.label)))
+
+    for successor in trace_event.subevents:
+      # Process calls and timers.
+      if successor.is_timer:
+        style = '[style=dotted]'
+      else:
+        style = ''
+      output_file.write('%s -> %s %s;\n' % (
+              GraphvizSafeLabel(trace_event.label),
+              GraphvizSafeLabel(successor.label), style))
+
+    for successor in trace_event.next_wus:
+      RenderGraphvizEvent(output_file, successor)
+
+    for successor in trace_event.subevents:
+      RenderGraphvizEvent(output_file, successor)
+
+
+
+def RenderGraphviz(output_file, trace_events):
+    """Generate the call graph for all events in trace_events in
+    dot format used by GraphViz.
+    """
+    output_file.write('strict digraph foo {\n')
+    for group in trace_events.subevents:
+      RenderGraphvizEvent(output_file, group)
+    output_file.write('}\n')

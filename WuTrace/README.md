@@ -12,13 +12,22 @@ Basic operation:
   wu_trace.py foo.trace > foo.html
 
 wu_trace.py also takes the following options:
-* --output_text generates the text dump rather than HTML.
+* --format xxxx changes the output style to HTML, text, or graphviz.
+* --debug prints out status messages during parsing.
+* --output sets the output file (not connected yet.)
+
+The --format flag changes the style of output.  'text' displays each
+individual sequence of events in a textual tree format.  'html' outputs
+the timeline-based view of each separate transaction.  'graphviz' draws
+the call graph of all events seen in a single graph.
 
 Note that the wu_log mechanism relies on the arguments passed to the
-wu - frame pointer in arg0 and flow pointer in arg1 - to identify related work units.
-It assumes that these values will be unique, and that only one WU can be running with the same
-flow (or frame).  If the same flow pointer is used for several simultaneous WUs (such as passing an
-integer rather than an explicit flow object), then the analysis can be confused.
+wu - frame pointer in arg0 and flow pointer in arg1 - to identify
+related work units.  It assumes that these values will be unique, and
+that only one WU can be running with the same flow (or frame).  If the
+same flow pointer is used for several simultaneous WUs (such as
+passing an integer rather than an explicit flow object), then the
+analysis can be confused.
 
 # What's part of the same operation.
 
