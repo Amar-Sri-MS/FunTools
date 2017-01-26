@@ -185,7 +185,7 @@ class TraceParser:
       arg0 = log_keywords['arg0']
       arg1 = log_keywords['arg1']
       is_call = False
-      if arg0 in self.frame_to_caller:
+      if arg0 is not 0 and arg0 in self.frame_to_caller:
         (prev, is_call)  = self.frame_to_caller[arg0]
         del self.frame_to_caller[arg0]
       elif arg1 in self.frame_to_caller:
@@ -201,7 +201,7 @@ class TraceParser:
     elif log_keywords['verb'] == 'WU' and log_keywords['noun'] == 'END':
       # Identify the matching start event, and set the end time.
       if vp not in self.vp_to_event:
-        sys.stderr.write('%s:%d: unexpected end\n' % (input_file, line_number))
+        sys.stderr.write('%s:%d: unexpected end\n' % (self.input_file, line_number))
         return
 
       current_event = self.vp_to_event[vp]
@@ -212,8 +212,6 @@ class TraceParser:
         return
 
       current_event.end_time = timestamp
-      if current_event.parent is not None and current_event.parent.end_time < timestamp:
-        current_event.parent.end_time = timestamp
 
     elif log_keywords['verb'] == 'WU' and log_keywords['noun'] == 'SEND':
       # Use arg0, the flow pointer, to match up the send with the WU when it starts.
@@ -293,6 +291,10 @@ class TraceParser:
       del self.timer_to_caller[timer]
 
     elif log_keywords['verb'] == 'TRANSACTION' and log_keywords['noun'] == 'START':
+      if vp not in self.vp_to_event:
+        sys.stderr.write('%s:%d: TRANSACTION START does not match running WU on %s' % (
+            self.input_file, line_number, vp))
+        return
       current = self.vp_to_event[vp]
       assert(current is not None)
       assert(current.parent is not None)

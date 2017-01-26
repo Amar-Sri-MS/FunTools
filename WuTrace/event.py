@@ -2,6 +2,8 @@
 #
 # Copyright (c) 2017 Fungible Inc.  All rights reserved.
 
+import sys
+
 class TraceEvent:
   def __init__(self, start_time, end_time, label, vp):
       # Attributes of event.
@@ -23,6 +25,9 @@ class TraceEvent:
       # For timers, the timestamp for when the timer was scheduled.
       self.timerStart = None
 
+      # Cache transitive closure of duration
+      self.interval = None
+
   def Range(self):
       """Returns start and end time for this event alone."""
       return (self.start_time, self.end_time)
@@ -38,6 +43,9 @@ class TraceEvent:
 
   def Interval(self):
       """Returns time range spent in this event and subevents."""
+      if self.interval is not None:
+        return self.interval
+
       last_end_time = self.end_time
       first_start_time = self.start_time
       for subevent in self.subevents + self.next_wus:
@@ -46,30 +54,46 @@ class TraceEvent:
             last_end_time = end
         if start < first_start_time:
             first_start_time = start
-      return (first_start_time, last_end_time)
+      self.interval = (first_start_time, last_end_time)
+      return self.interval
 
   def AddSubevent(self, event):
+    self.interval = None
     self.subevents.append(event)
     event.parent = self
 
   def AddNext(self, event):
+    self.interval = None
     self.next_wus.append(event)
     event.parent = self.parent
 
   def RemoveChild(self, event):
     """Removes an event which is either a successor or a child of this event."""
+    self.interval = None
     if event in self.subevents:
       self.subevents.remove(event)
+      return True
     elif event in self.next_wus:
       self.next_wus.remove(event)
-    else:
-      wus = self.next_wus
-      while len(wus) > 0:
-        wu = wus[0]
-        if event in wu.next_wus:
-          wu.next_wus.remove(event)
-          return
-        wus.remove(wu)
+      return True
+
+    wus = self.next_wus
+    while len(wus) > 0:
+      wu = wus[0]
+      if event in wu.next_wus:
+        wu.next_wus.remove(event)
+        return True
+      wus.remove(wu)
+
+    wus = self.subevents
+    while len(wus) > 0:
+      wu = wus[0]
+      if event in wu.next_wus:
+        wu.next_wus.remove(event)
+        return True
+      wus.remove(wu)
+
+    return False
 
   def __cmp__(self, other):
       return self.start_time.__cmp__(other.start_time)
