@@ -277,4 +277,5 @@ def RenderGraphviz(output_file, trace_events):
       output_file.write('start -> %s;\n' % (
               GraphvizSafeLabel(group.label)))
       RenderGraphvizEvent(output_file, group)
+    output_file.write('label="\\nbold: wu send\\nsolid: wu call\\ndot: timer"\n')
     output_file.write('}\n')
