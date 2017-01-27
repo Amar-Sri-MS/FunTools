@@ -35,6 +35,33 @@ class TestDisplay(unittest.TestCase):
         self.assertEqual('100.101 msec', render.DurationString(100101))
         self.assertEqual('23.435678 sec', render.DurationString(23435678))
 
+class TestPercentile(unittest.TestCase):
+    def testEdgeCases(self):
+        self.assertEqual(None, render.PercentileIndex(1, 0))
+        self.assertEqual(None, render.PercentileIndex(90, 0))
+        self.assertEqual(None, render.PercentileIndex(99, 0))
+
+        self.assertEqual(0, render.PercentileIndex(1, 1))
+        self.assertEqual(0, render.PercentileIndex(90, 1))
+        self.assertEqual(0, render.PercentileIndex(99, 1))
+
+        self.assertEqual(0, render.PercentileIndex(1, 2))
+        self.assertEqual(1, render.PercentileIndex(90, 2))
+        self.assertEqual(1, render.PercentileIndex(99, 2))
+
+        self.assertEqual(0, render.PercentileIndex(30, 3))
+        self.assertEqual(1, render.PercentileIndex(50, 3))
+        self.assertEqual(2, render.PercentileIndex(90, 3))
+        self.assertEqual(2, render.PercentileIndex(99, 3))
+
+    def testTen(self):
+        self.assertEqual(0, render.PercentileIndex(1, 10))
+        self.assertEqual(2, render.PercentileIndex(25, 10))
+        self.assertEqual(4, render.PercentileIndex(50, 10))
+        self.assertEqual(7, render.PercentileIndex(75, 10))
+        self.assertEqual(8, render.PercentileIndex(90, 10))
+        self.assertEqual(9, render.PercentileIndex(99, 10))
+
 if __name__ == '__main__':
   unittest.main()
 

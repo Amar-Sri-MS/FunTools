@@ -14,7 +14,7 @@ class TestParser(unittest.TestCase):
 
   def testNotALogLine(self):
     self.assertEqual((None, None), wu_trace.ParseLogLine("foo", "filename", 1))
-    self.assertEqual((None, None), 
+    self.assertEqual((None, None),
                       wu_trace.ParseLogLine("1000.001000", "filename", 1))
 
   def testSimpleParse(self):
@@ -42,7 +42,7 @@ class TestParser(unittest.TestCase):
     line_args = wu_trace.ParseLogLine(line, 'filename', 1)
     self.assertIsNotNone(line_args)
     self.assertIsNone(error)
-    
+
   def testBadVerb(self):
     # Colon after send is invalid.
     line = '485375410.764454 faddr VP0.2.0 WU SEND: src VP0.2.0 dest VP0.0.0 id 0x60 name wuh_mp_notify arg0 0x0 arg1 0x0'
@@ -86,7 +86,7 @@ class TestParser(unittest.TestCase):
     self.assertIsNotNone(root_event)
     self.assertEqual(1, len(root_event.subevents))
     self.assertEqual(0, len(root_event.next_wus))
-    
+
     event = root_event.subevents[0]
     self.assertEqual(100, event.Duration())
     self.assertEqual(1000100, event.start_time)
@@ -106,7 +106,7 @@ class TestParser(unittest.TestCase):
     self.assertEqual(1, len(root_event.subevents))
     my_wu = root_event.subevents[0]
     self.assertEqual(1, len(my_wu.next_wus))
-    
+
 
   def testTriggerTimer(self):
     log = ["1.000100 faddr VP0.0.0 WU START src VP0.0.0 dest VP0.0.0 id 0x1 name my_wu arg0 1 arg1 2",
@@ -140,7 +140,7 @@ class TestParser(unittest.TestCase):
     self.assertEqual(1, len(root_event.subevents))
     event = root_event.subevents[0]
     self.assertEqual(1, len(event.subevents))
-    
+
   def testTopLevelTransaction(self):
     log = ["1.00100 faddr VP0.0.0 WU START src VP0.0.0 dest VP0.0.0 id 1 name fun_a arg0 1 arg1 2",
            "1.00200 faddr VP0.0.0 TRANSACTION START",
@@ -222,6 +222,7 @@ class EndToEndTest(unittest.TestCase):
     self.assertEqual(expected_output, outputFile.lines)
 
   def testMinimalTimer(self):
+    # Run foo multiple times, triggered by a timer.
     log = """
 0.000001 faddr VP0.0.0 WU START src VP0.0.0 dest VP0.0.0 id 0 name foo arg0 0 arg1 0
 0.000002 faddr VP0.0.0 TIMER START timer 0x1 value 0x1 arg0 0x1
@@ -229,13 +230,11 @@ class EndToEndTest(unittest.TestCase):
 0.000004 faddr VP0.0.0 TIMER TRIGGER timer 0x1 arg0 0x1
 0.000005 faddr VP0.0.0 WU SEND src VP0.0.0 dest VP0.0.0 id 0x0 name foo arg0 1 arg1 0
 0.000006 faddr VP0.0.0 WU START src VP0.0.0 dest VP0.0.0 id 0 name foo arg0 0x1 arg1 0
-0.000006 faddr VP0.0.0 TRANSACTION START
 0.000007 faddr VP0.0.0 TIMER START timer 0x1 value 0x1 arg0 0x2
 0.000008 faddr VP0.0.0 WU END id 0 name foo arg0 0x1 arg1 0
 0.000009 faddr VP0.0.0 TIMER TRIGGER timer 0x1 arg0 0x2
 0.000010 faddr VP0.0.0 WU SEND src VP0.0.0 dest VP0.0.0 id 0x0 name foo arg0 2 arg1 0
 0.000011 faddr VP0.0.0 WU START src VP0.0.0 dest VP0.0.0 id 0 name foo arg0 0x2 arg1 0
-0.000011 faddr VP0.0.0 TRANSACTION START
 0.000012 faddr VP0.0.0 TIMER START timer 0x1 value 0x1 arg0 0x3
 0.000013 faddr VP0.0.0 WU END id 0 name foo arg0 0x2 arg1 0
 0.000014 faddr VP0.0.0 WU START src VP0.0.0 dest VP0.0.0 id 0 name foo arg0 0x3 arg1 0
@@ -246,10 +245,12 @@ class EndToEndTest(unittest.TestCase):
     output_file = FakeFile()
 
     render.RenderGraphviz(output_file, root_event)
-    
+
     # TODO(bowdidge): Check more than just length of output.
-    self.assertEqual(9, len(output_file.lines))
-    
+    self.assertIn('strict digraph foo {\n', output_file.lines)
+    self.assertIn('start -> foo;\n', output_file.lines)
+    self.assertIn('foo -> foo_to_timer_to_foo -> foo [style=dotted]; \n', output_file.lines)
+    self.assertIn('}\n', output_file.lines)
+
 if __name__ == '__main__':
   unittest.main()
-
