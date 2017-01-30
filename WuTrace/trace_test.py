@@ -197,7 +197,7 @@ class EndToEndTest(unittest.TestCase):
 
     expected_output = ['strict digraph foo {\n',
                        'start -> fun_a;\n',
-                       '}\n']
+                       'label="\\nbold: wu send\\nsolid: wu call\\ndot: timer"\n',                       '}\n']
 
     self.assertEqual(expected_output, outputFile.lines)
 
@@ -217,6 +217,7 @@ class EndToEndTest(unittest.TestCase):
     expected_output = ['strict digraph foo {\n',
                        'start -> fun_a;\n',
                        'fun_a -> bar [style=bold];\n',
+                       'label="\\nbold: wu send\\nsolid: wu call\\ndot: timer"\n',
                        '}\n']
 
     self.assertEqual(expected_output, outputFile.lines)

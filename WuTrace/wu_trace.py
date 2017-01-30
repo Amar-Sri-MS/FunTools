@@ -176,9 +176,9 @@ class TraceParser:
     if self.root_event.end_time < timestamp:
       self.root_event.end_time = timestamp
 
-    if log_keywords['verb'] == 'WU' and log_keywords['noun'] == 'START':
+    keywords = (log_keywords['verb'], log_keywords['noun'])
+    if keywords == ('WU', 'START'):
       # Identify the request (or timer action) that this WU is part of.
-
       current_event = event.TraceEvent(timestamp, timestamp, log_keywords['name'], vp)
       self.vp_to_event[vp] = current_event
 
@@ -198,7 +198,7 @@ class TraceParser:
       else:
         prev.AddNext(current_event)
 
-    elif log_keywords['verb'] == 'WU' and log_keywords['noun'] == 'END':
+    elif keywords == ('WU', 'END'):
       # Identify the matching start event, and set the end time.
       if vp not in self.vp_to_event:
         sys.stderr.write('%s:%d: unexpected end\n' % (self.input_file, line_number))
@@ -213,7 +213,7 @@ class TraceParser:
 
       current_event.end_time = timestamp
 
-    elif log_keywords['verb'] == 'WU' and log_keywords['noun'] == 'SEND':
+    elif keywords == ('WU', 'SEND'):
       # Use arg0, the flow pointer, to match up the send with the WU when it starts.
 
       arg0 = log_keywords['arg0']
@@ -230,7 +230,7 @@ class TraceParser:
         return
       self.frame_to_caller[arg0] = (prev, is_call)
 
-    elif log_keywords['verb'] == 'WU' and log_keywords['noun'] == 'CALL':
+    elif keywords == ('WU', 'CALL'):
       arg0 = log_keywords['arg0']
 
       # Previous WU SEND should be treated as sub-call
@@ -246,7 +246,7 @@ class TraceParser:
         sys.stderr.write("%s:%d: unexpected call: parent is %s" % (self.input_file, line_number, prev))
       self.frame_to_caller[arg0] = (prev, True)
 
-    elif log_keywords['verb'] == 'HU' and log_keywords['noun'] == 'SQ_DBL':
+    elif keywords == ('HU', 'SQ_DBL'):
       # Create new standalone event.
       sqid = log_keywords['sqid']
       hu0_id = 16
@@ -256,7 +256,7 @@ class TraceParser:
       # TODO(bowdidge): Save event.
       # TODO(bowdidge): How to map to start of WUs?
 
-    elif log_keywords['verb'] == 'TIMER' and log_keywords['noun'] == 'START':
+    elif keywords == ('TIMER', 'START'):
       # Use arg0 to remember which WU starts as a result of this timer.
       arg0 = log_keywords['arg0']
       timer = log_keywords['timer']
@@ -272,7 +272,7 @@ class TraceParser:
       self.timer_to_caller[timer] = current_event
       self.timer_to_start_time[timer] = timestamp
 
-    elif log_keywords['verb'] == 'TIMER' and log_keywords['noun'] == 'TRIGGER':
+    elif keywords == ('TIMER', 'TRIGGER'):
       arg0 = log_keywords['arg0']
       timer = log_keywords['timer']
 
@@ -290,7 +290,7 @@ class TraceParser:
       self.frame_to_caller[arg0] = (current_event, True)
       del self.timer_to_caller[timer]
 
-    elif log_keywords['verb'] == 'TRANSACTION' and log_keywords['noun'] == 'START':
+    elif keywords == ('TRANSACTION', 'START'):
       if vp not in self.vp_to_event:
         sys.stderr.write('%s:%d: TRANSACTION START does not match running WU on %s' % (
             self.input_file, line_number, vp))
