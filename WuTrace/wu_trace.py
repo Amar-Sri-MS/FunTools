@@ -88,34 +88,36 @@ def ParseLogLine(line, file, line_number):
 
   expect_keywords = []
 
-  if values['verb'] == 'WU' and values['noun'] == 'START':
+  event_type = (values['verb'], values['noun'])
+  
+  if event_type == ('WU', 'START'):
     # Should define src, dest, id, name, arg0, arg1.
     expect_keywords = ['src', 'dest', 'id', 'name', 'arg0', 'arg1']
 
-  elif values['verb'] == 'WU' and values['noun'] == 'END':
+  elif event_type == ('WU', 'END'):
     # should define id, name, arg0, arg1.
     expect_keywords = ['id', 'name', 'arg0', 'arg1']
 
-  elif values['verb'] == 'WU' and values['noun'] == 'CALL':
+  elif event_type == ('WU', 'CALL'):
     # should define id, name, arg0, arg1.
     expect_keywords = ['id', 'name', 'arg0', 'arg1']
 
-  elif values['verb'] == 'WU' and values['noun'] == 'SEND':
+  elif event_type == ('WU', 'SEND'):
     # Should define src, dest, id, name, arg0, arg1.
     expect_keywords = ['src', 'dest', 'id', 'name', 'arg0', 'arg1']
 
-  elif values['verb'] == 'TIMER' and values['noun'] == 'TRIGGER':
+  elif event_type == ('TIMER', 'TRIGGER'):
     # Should define timer and arg0.
     expect_keywords = ['timer', 'arg0']
 
-  elif values['verb'] == 'TIMER' and values['noun'] == 'START':
+  elif event_type == ('TIMER', 'START'):
     # Should define timer, value, and arg0.
     expect_keywords = ['timer', 'value', 'arg0']
 
-  elif values['verb'] == 'TRANSACTION' and values['noun'] == 'START':
+  elif event_type == ('TRANSACTION', 'START'):
     expect_keywords = []
 
-  elif values['verb'] == 'HU' and values['noun'] == 'SQ_DBL':
+  elif event_type == ('HU', 'SQ_DBL'):
     expect_keywords = ['sqid']
 
   else:
@@ -176,8 +178,8 @@ class TraceParser:
     if self.root_event.end_time < timestamp:
       self.root_event.end_time = timestamp
 
-    keywords = (log_keywords['verb'], log_keywords['noun'])
-    if keywords == ('WU', 'START'):
+    event_type = (log_keywords['verb'], log_keywords['noun'])
+    if event_type == ('WU', 'START'):
       # Identify the request (or timer action) that this WU is part of.
       current_event = event.TraceEvent(timestamp, timestamp, log_keywords['name'], vp)
       self.vp_to_event[vp] = current_event
@@ -198,7 +200,7 @@ class TraceParser:
       else:
         prev.AddNext(current_event)
 
-    elif keywords == ('WU', 'END'):
+    elif event_type == ('WU', 'END'):
       # Identify the matching start event, and set the end time.
       if vp not in self.vp_to_event:
         sys.stderr.write('%s:%d: unexpected end\n' % (self.input_file, line_number))
@@ -213,7 +215,7 @@ class TraceParser:
 
       current_event.end_time = timestamp
 
-    elif keywords == ('WU', 'SEND'):
+    elif event_type == ('WU', 'SEND'):
       # Use arg0, the flow pointer, to match up the send with the WU when it starts.
 
       arg0 = log_keywords['arg0']
@@ -230,7 +232,7 @@ class TraceParser:
         return
       self.frame_to_caller[arg0] = (prev, is_call)
 
-    elif keywords == ('WU', 'CALL'):
+    elif event_type == ('WU', 'CALL'):
       arg0 = log_keywords['arg0']
 
       # Previous WU SEND should be treated as sub-call
@@ -246,7 +248,7 @@ class TraceParser:
         sys.stderr.write("%s:%d: unexpected call: parent is %s" % (self.input_file, line_number, prev))
       self.frame_to_caller[arg0] = (prev, True)
 
-    elif keywords == ('HU', 'SQ_DBL'):
+    elif event_type == ('HU', 'SQ_DBL'):
       # Create new standalone event.
       sqid = log_keywords['sqid']
       hu0_id = 16
@@ -256,7 +258,7 @@ class TraceParser:
       # TODO(bowdidge): Save event.
       # TODO(bowdidge): How to map to start of WUs?
 
-    elif keywords == ('TIMER', 'START'):
+    elif event_type == ('TIMER', 'START'):
       # Use arg0 to remember which WU starts as a result of this timer.
       arg0 = log_keywords['arg0']
       timer = log_keywords['timer']
@@ -272,7 +274,7 @@ class TraceParser:
       self.timer_to_caller[timer] = current_event
       self.timer_to_start_time[timer] = timestamp
 
-    elif keywords == ('TIMER', 'TRIGGER'):
+    elif event_type == ('TIMER', 'TRIGGER'):
       arg0 = log_keywords['arg0']
       timer = log_keywords['timer']
 
@@ -290,7 +292,7 @@ class TraceParser:
       self.frame_to_caller[arg0] = (current_event, True)
       del self.timer_to_caller[timer]
 
-    elif keywords == ('TRANSACTION', 'START'):
+    elif event_type == ('TRANSACTION', 'START'):
       if vp not in self.vp_to_event:
         sys.stderr.write('%s:%d: TRANSACTION START does not match running WU on %s' % (
             self.input_file, line_number, vp))
