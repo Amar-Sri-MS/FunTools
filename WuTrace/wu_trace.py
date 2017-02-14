@@ -245,7 +245,7 @@ class TraceParser:
         return
       (prev, is_call) = self.frame_to_caller[arg0]
       if is_call:
-        sys.stderr.write("%s:%d: unexpected call: parent is %s" % (self.input_file, line_number, prev))
+        sys.stderr.write("%s:%d: unexpected call: parent is %s" % (self.input_file, line_number, call_info.caller_event))
       self.frame_to_caller[arg0] = (prev, True)
 
     elif event_type == ('HU', 'SQ_DBL'):
