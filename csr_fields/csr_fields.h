@@ -16,7 +16,7 @@
 #define DEBUG_WRITE
 #else
 // normal switches
-#define DEBUG_READ
+// #define DEBUG_READ
 // #define DEBUG_WRITE
 #endif
 
