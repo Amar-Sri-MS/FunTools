@@ -16,7 +16,7 @@
 #define DEBUG_WRITE
 #else
 // normal switches
-// #define DEBUG_READ
+#define DEBUG_READ
 // #define DEBUG_WRITE
 #endif
 
@@ -25,7 +25,8 @@
 #define BPW (8 * sizeof(uint64_t))
 
 static inline void
-csr_fld_write(unsigned reg_size,
+csr_fld_write(unsigned reg_padded_size,
+	      unsigned reg_size,
               unsigned fld_size,
               unsigned fld_pos,
               uint64_t *out_reg, uint64_t *in_fld)
@@ -34,12 +35,19 @@ csr_fld_write(unsigned reg_size,
 	unsigned out_idx, out_pos, out_size, out_size_hi, write_upper;
 	unsigned in_idx = 0;
 	unsigned rem_size = fld_size;
-	
-	assert(reg_size >= fld_size + fld_pos);
+
+	assert(reg_padded_size >= fld_size + fld_pos);
+	assert(reg_padded_size % 64 == 0);
+	assert(reg_size <= reg_padded_size);
+
+	/* find the LSB word on the input field */
+	assert(fld_size > 0);
+	in_idx = (fld_size - 1) / BPW;
 
 	while (rem_size > 0) {
-		/* find the first output word */
-		out_idx = fld_pos / BPW + in_idx;
+		/* find the LSB word on the output register */
+		assert((reg_padded_size - fld_pos - fld_size + rem_size) > 0);
+		out_idx = (reg_padded_size - fld_pos - fld_size + rem_size - 1) / BPW;
 
 		/* calculate the base bit position in this word */
 		out_pos = fld_pos % BPW;
@@ -81,8 +89,9 @@ csr_fld_write(unsigned reg_size,
 			mask = (1ULL << out_size_hi) - 1;
 
 			/* or in the value */
-			out_reg[out_idx+1] &= ~mask;
-			out_reg[out_idx+1] |= (in_fld[in_idx] >> out_size) & mask;
+			assert(out_idx > 0);
+			out_reg[out_idx-1] &= ~mask;
+			out_reg[out_idx-1] |= (in_fld[in_idx] >> out_size) & mask;
 		} else
 			out_size_hi = 0;
 
@@ -92,14 +101,15 @@ csr_fld_write(unsigned reg_size,
 #endif
 		
 		/* next output word */
-		in_idx++;
+		in_idx--;
 		rem_size -= out_size + out_size_hi;
 	}
 }
 
 
 static inline void
-csr_fld_read(unsigned reg_size,
+csr_fld_read(unsigned reg_padded_size,
+	     unsigned reg_size,
              unsigned fld_size,
              unsigned fld_pos,
              uint64_t *in_reg, uint64_t *out_fld)
@@ -109,14 +119,29 @@ csr_fld_read(unsigned reg_size,
 	unsigned out_idx = 0;
 	unsigned rem_size = fld_size;
 	
-	assert(reg_size >= fld_size + fld_pos);
+	assert(reg_padded_size >= fld_size + fld_pos);
+	assert(reg_padded_size % 64 == 0);
+	assert(reg_size <= reg_padded_size);
+	assert(fld_size > 0);
 
+	/* compute the last word of the output buffer because big
+	 * endian
+	 */
+	out_idx = (fld_size - 1) / BPW;
+
+#ifdef DEBUG_READ
+	printf("first output word: %u\n", out_idx);
+#endif
+	
+	/* count up bits from fld_pos*/
 	while (rem_size > 0) {
 		/* clear the output word */
+		assert(out_idx >= 0);
 		out_fld[out_idx] = 0;
 
-		/* find the first input word */
-		in_idx = fld_pos / BPW + out_idx;
+		/* find the input word for the lowest significant bit */
+		assert((reg_padded_size - fld_pos - fld_size + rem_size) > 0);
+		in_idx = (reg_padded_size - fld_pos - fld_size + rem_size - 1) / BPW;
 
 		/* calculate the base bit position in this word */
 		in_pos = fld_pos % BPW;
@@ -136,6 +161,7 @@ csr_fld_read(unsigned reg_size,
 			mask = (1ULL << in_size) - 1;
 
 #ifdef DEBUG_READ
+		printf("in_idx: %u\n", in_idx);
 		printf("mask: 0x%llx\n", mask);
 		printf("fld_size: %u -> %u\n", fld_size, in_size);
 #endif
@@ -156,7 +182,8 @@ csr_fld_read(unsigned reg_size,
 			mask = (1ULL << in_size_hi) - 1;
 
 			/* or in the value */
-			out_fld[out_idx] |= (in_reg[in_idx+1] & mask) << in_size;
+			assert((in_idx - 1) >= 0);
+			out_fld[out_idx] |= (in_reg[in_idx-1] & mask) << in_size;
 		} else
 			in_size_hi = 0;
 
@@ -166,7 +193,7 @@ csr_fld_read(unsigned reg_size,
 #endif
 		
 		/* next output word */
-		out_idx++;
+		out_idx--;
 		rem_size -= in_size + in_size_hi;
 	}
 }

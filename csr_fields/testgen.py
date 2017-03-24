@@ -34,19 +34,24 @@ def bits2words(bits, zerofill=False):
     if (len(bits) > NREGS * BPW):
         raise "list already too long!"
 
-    # pad the list randomly to word size, unless it's already full add
-    # a whole extra register if we're too short, unless we're the full
-    # length. padding is good for detecting bugs, and simplifies the
-    # integer conversion.
-    if (len(bits) != NREGS * BPW):
-        n = len(bits) % BPW
+    if (len(bits) == 0):
+        raise "empty bit list!"
+
+    print "// input %d bits" % len(bits)
+        
+    # pad the list randomly to word size
+    n = len(bits) % BPW
+    if (n):
         n = 64 - n
 
-        if (zerofill):
+        print "// n is %d bits" % n
+
+        if (zerofill or True):
             bits += [0] * n
         else:
             bits += randbitstring(n)
-        
+
+    print "// converting %d bits" % len(bits)
     # convert to a series of numbers
     words = []
     while(len(bits)):
@@ -54,7 +59,7 @@ def bits2words(bits, zerofill=False):
         for idx in range(0, BPW):
             word |= bits[0] << idx
             del(bits[0])
-        words.append(word)
+        words.insert(0, word)
     
     return words
 
@@ -85,6 +90,10 @@ def bitstring_update(in_regbit, in_fld, fld_pos):
 def gen_read_test(max_bits):
 
     # struct read_test {
+    #   const char *fname;
+    #   unsigned int line;
+    #
+    #   unsigned reg_padded_size;
     #	unsigned reg_size;
     #	unsigned fld_size;
     #	unsigned fld_pos;
@@ -96,8 +105,14 @@ def gen_read_test(max_bits):
     fld_pos = rand(0, reg_size - 1)
     fld_size = rand(1, reg_size - fld_pos)
     
+    # round up to nearest word size
+    reg_padded_size = ((reg_size + BPW - 1) / BPW) * BPW
+
+    # align the fld with the high-order bits
+    fld_pos += (reg_padded_size - reg_size)
+
     # generate a random bit string of that length
-    regbits = randbitstring(reg_size)
+    regbits = randbitstring(reg_padded_size)
 
     # extract the bits that would be output
     outbits = regbits[fld_pos:fld_pos+fld_size]
@@ -106,7 +121,7 @@ def gen_read_test(max_bits):
     inwords = bits2words(regbits)
     outwords = bits2words(outbits, True)
     
-    print "{ %s, %s, %s, { %s}, { %s} }," % (reg_size, fld_size, fld_pos, aprint(inwords), aprint(outwords))
+    print "{ ID, %s, %s, %s, %s, { %s}, { %s} }," % (reg_padded_size, reg_size, fld_size, fld_pos, aprint(inwords), aprint(outwords))
 
     
 ###
@@ -117,6 +132,10 @@ def gen_read_test(max_bits):
 def gen_write_test(max_bits):
 
     # struct write_test {
+    #   const char *fname;
+    #   unsigned int line;
+    #
+    #   unsigned reg_padded_size;
     #	unsigned reg_size;
     #	unsigned fld_size;
     #	unsigned fld_pos;
@@ -126,11 +145,17 @@ def gen_write_test(max_bits):
     # };
 
     reg_size = rand(1, max_bits - 1)
-    fld_pos = 0 # rand(0, reg_size - 1)
+    fld_pos = rand(0, reg_size - 1)
     fld_size = rand(1, reg_size - fld_pos)
+
+    # round up to nearest word size
+    reg_padded_size = ((reg_size + BPW - 1) / BPW) * BPW
     
+    # align the fld with the high-order bits
+    fld_pos += (reg_padded_size - reg_size)
+
     # generate a random bit string of that length that we're updating
-    in_regbits = randbitstring(reg_size)
+    in_regbits = randbitstring(reg_padded_size)
 
     # generate a random bit string of the field we're updating
     in_fld = randbitstring(fld_size)
@@ -143,7 +168,7 @@ def gen_write_test(max_bits):
     infldwords = bits2words(in_fld)
     outwords = bits2words(out_reg, True)
     
-    print "{ %s, %s, %s, { %s}, { %s}, { %s} }," % (reg_size, fld_size, fld_pos, aprint(inregwords), aprint(infldwords), aprint(outwords))
+    print "{ ID, %s, %s, %s, %s, { %s}, { %s}, { %s} }," % (reg_padded_size, reg_size, fld_size, fld_pos, aprint(inregwords), aprint(infldwords), aprint(outwords))
     
 ###
 ##  Entrypoint
