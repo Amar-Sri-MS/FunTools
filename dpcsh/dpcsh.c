@@ -70,15 +70,16 @@ static void _do_interactive(int sock) {
 
 /* XXX */
 extern int run_webserver(int jsock, int port);
+#define MAXLINE (512)
 
 int json_handle_req(int jsock, const char *path, char *buf, int *size)
 {
 	printf("got jsock request for '%s'\n", path);
-	char line[512];
+	char line[MAXLINE];
 	int r = -1;
 	int64_t tid = 1;
 	
-	sprintf(line, "peek %s", path);
+	snprintf(line, MAXLINE, "peek %s", path);
 	
         struct fun_json *json = fun_commander_line_to_command(line, &tid);
         if (!json) {
