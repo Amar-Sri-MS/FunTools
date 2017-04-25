@@ -14,7 +14,9 @@ CFLAGS ?= -I $(SDKDIR)/FunSDK
 
 # XXX: compatibility with FunOS build parameters
 LDFLAGS_ASAN ?= -fsanitize=address 
-LDFLAGS += -L $(SDKDIR)/lib/${OS}/ -lm $(LDFLAGS_ASAN)
+LDFLAGS += -L $(SDKDIR)/lib/${OS}/ -lfunclient -lm $(LDFLAGS_ASAN)
+
+SRC += jsonutil.c
 
 jsonutil: jsonutil.c
 	$(CC) -o jsonutil $(SRC) $(CFLAGS) $(LDFLAGS)

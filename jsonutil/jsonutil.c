@@ -10,7 +10,7 @@
 #include <getopt.h>
 #include <fcntl.h>
 
-#include "fun_json.h"
+#include <funos/fun_json.h>
 
 #define MAX_JSON (1024*1024)
 
@@ -89,7 +89,7 @@ static struct fun_json *_read_bjson(int fd)
 	buf = _read_input_file(fd, &size);
 	assert(buf);
 	
-	input = fun_json_create_from_parsing_binary(buf, size);
+	input = fun_json_create_from_parsing_binary((byte_t*)buf, size);
 
 	return input;
 }
