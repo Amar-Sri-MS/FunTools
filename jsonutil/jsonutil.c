@@ -1,4 +1,4 @@
-/* test dpcsock functionality */
+/* command-line wrapper around fun_json functionality */
 
 #define _XOPEN_SOURCE
 #define _GNU_SOURCE
