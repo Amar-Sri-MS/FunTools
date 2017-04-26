@@ -109,8 +109,8 @@ static void print_row_json(struct parameters *params, NULLABLE struct fun_json *
             struct word_parameters wparams = { .buf = current, .buf_max = width, .right_justified = just };
             print_atomic_json(&wparams, item);
             current += width;
+            if (current >= buf + params->line_max) break; // terminal too small
         }
-        assert(current < buf + params->line_max);
     }
 }
 
@@ -232,25 +232,31 @@ static struct parameters set_up_params(void) {
     return params;
 }
 
+static bool get_stats_and_display(struct parameters *params, int sock, struct fun_json **previous) {
+    params->num_rows = getmaxy(params->mainwin);
+    params->line_max = getmaxx(params->mainwin);
+    struct fun_json *wu_stats = get_wu_stats(sock, false);
+    if (!wu_stats) {
+        wclear(params->mainwin);
+        refresh();
+        return false;
+    }
+    struct fun_json *wu_durations = get_wu_stats(sock, true);
+    struct fun_json *array = sort_wu_stats_by_count(wu_stats, *previous, wu_durations);
+    print_sorted_stats(params, array);
+    fun_json_release(array);
+    if (*previous) fun_json_release(*previous);
+    *previous = wu_stats;
+    refresh();
+    return true;
+}
+
 int main(int argc, char *argv[]) {
     printf("TOP\n");
     int sock = _open_sock("/tmp/funos-dpc.sock");
     struct parameters params = set_up_params();
     struct fun_json *previous = NULL;
-    for (int i = 0; i < 9999; i++) {
-        struct fun_json *wu_stats = get_wu_stats(sock, false);
-        if (!wu_stats) {
-            wclear(params.mainwin);
-            refresh();
-            return 0;
-        }
-        struct fun_json *wu_durations = get_wu_stats(sock, true);
-        struct fun_json *array = sort_wu_stats_by_count(wu_stats, previous, wu_durations);
-        print_sorted_stats(&params, array);
-        fun_json_release(array);
-        if (previous) fun_json_release(previous);
-        previous = wu_stats;
-        refresh();
+    while (get_stats_and_display(&params, sock, &previous)) {
         usleep(100*1000);
     }
 }
