@@ -1,3 +1,8 @@
+# This file should house AFL build rules for jsonutil.
+# Currently that has deep dependencies on FunOS spititng out
+# AFL-compatible libraries, which we don't use yet. This make
+# fragment is fundamentally broken until we fix the other dependencies.
+# This should be used as a reference for how to structure AFL, though.
 ifeq ($(OS),Linux)
 
 # clear these for fuzzing
