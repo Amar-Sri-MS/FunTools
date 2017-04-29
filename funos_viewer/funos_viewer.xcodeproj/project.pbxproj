@@ -1,0 +1,602 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		A716FBCD1EA67C82008395EC /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FBCC1EA67C82008395EC /* AppDelegate.swift */; };
+		A716FBCF1EA67C82008395EC /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A716FBCE1EA67C82008395EC /* Assets.xcassets */; };
+		A716FBD21EA67C82008395EC /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = A716FBD01EA67C82008395EC /* MainMenu.xib */; };
+		A716FBDC1EA67D3C008395EC /* funos in Resources */ = {isa = PBXBuildFile; fileRef = A716FBDB1EA67D3C008395EC /* funos */; };
+		A716FBE01EA67EF5008395EC /* dpcclient.c in Sources */ = {isa = PBXBuildFile; fileRef = A716FBDE1EA67EF5008395EC /* dpcclient.c */; };
+		A716FBE21EA683C2008395EC /* posix in Resources */ = {isa = PBXBuildFile; fileRef = A716FBE11EA683C2008395EC /* posix */; };
+		A716FBE41EA83CBB008395EC /* apps in Resources */ = {isa = PBXBuildFile; fileRef = A716FBE31EA83CBB008395EC /* apps */; };
+		A716FBE61EAD33E0008395EC /* hw in Resources */ = {isa = PBXBuildFile; fileRef = A716FBE51EAD33E0008395EC /* hw */; };
+		A716FBE81EAD33EA008395EC /* kv in Resources */ = {isa = PBXBuildFile; fileRef = A716FBE71EAD33EA008395EC /* kv */; };
+		A716FBEA1EAD33F5008395EC /* libFunOS in Resources */ = {isa = PBXBuildFile; fileRef = A716FBE91EAD33F5008395EC /* libFunOS */; };
+		A716FBEC1EAD63FA008395EC /* PureSwiftExtras in Resources */ = {isa = PBXBuildFile; fileRef = A716FBEB1EAD63FA008395EC /* PureSwiftExtras */; };
+		A716FC131EAD667D008395EC /* ArrayExtras.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FC081EAD667D008395EC /* ArrayExtras.swift */; };
+		A716FC141EAD667D008395EC /* ByteExtras.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FC091EAD667D008395EC /* ByteExtras.swift */; };
+		A716FC151EAD667D008395EC /* DataExtras.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FC0A1EAD667D008395EC /* DataExtras.swift */; };
+		A716FC161EAD667D008395EC /* DictionaryExtras.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FC0B1EAD667D008395EC /* DictionaryExtras.swift */; };
+		A716FC171EAD667D008395EC /* NumbersExtras.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FC0C1EAD667D008395EC /* NumbersExtras.swift */; };
+		A716FC181EAD667D008395EC /* ProtocolsExtras.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FC0D1EAD667D008395EC /* ProtocolsExtras.swift */; };
+		A716FC191EAD667D008395EC /* RangeExtras.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FC0E1EAD667D008395EC /* RangeExtras.swift */; };
+		A716FC1A1EAD667D008395EC /* SequenceExtras.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FC0F1EAD667D008395EC /* SequenceExtras.swift */; };
+		A716FC1B1EAD667D008395EC /* SetExtras.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FC101EAD667D008395EC /* SetExtras.swift */; };
+		A716FC1C1EAD667D008395EC /* StringExtras.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FC111EAD667D008395EC /* StringExtras.swift */; };
+		A716FC1D1EAD667D008395EC /* TimeExtras.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FC121EAD667D008395EC /* TimeExtras.swift */; };
+		A716FC3C1EAD6687008395EC /* Async.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FC1F1EAD6687008395EC /* Async.swift */; };
+		A716FC3D1EAD6687008395EC /* Bitmap.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FC201EAD6687008395EC /* Bitmap.swift */; };
+		A716FC3E1EAD6687008395EC /* Cache.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FC211EAD6687008395EC /* Cache.swift */; };
+		A716FC3F1EAD6687008395EC /* CircularBuffer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FC221EAD6687008395EC /* CircularBuffer.swift */; };
+		A716FC401EAD6687008395EC /* Future.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FC231EAD6687008395EC /* Future.swift */; };
+		A716FC411EAD6687008395EC /* Heap.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FC241EAD6687008395EC /* Heap.swift */; };
+		A716FC421EAD6687008395EC /* Joiner.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FC251EAD6687008395EC /* Joiner.swift */; };
+		A716FC431EAD6687008395EC /* JSON.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FC261EAD6687008395EC /* JSON.swift */; };
+		A716FC441EAD6687008395EC /* Lexer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FC271EAD6687008395EC /* Lexer.swift */; };
+		A716FC451EAD6687008395EC /* LinkedList.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FC281EAD6687008395EC /* LinkedList.swift */; };
+		A716FC461EAD6687008395EC /* Lock.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FC291EAD6687008395EC /* Lock.swift */; };
+		A716FC471EAD6687008395EC /* Mask64.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FC2A1EAD6687008395EC /* Mask64.swift */; };
+		A716FC481EAD6687008395EC /* Misc.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FC2B1EAD6687008395EC /* Misc.swift */; };
+		A716FC491EAD6687008395EC /* Note.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FC2C1EAD6687008395EC /* Note.swift */; };
+		A716FC4A1EAD6687008395EC /* PriorityQueue.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FC2D1EAD6687008395EC /* PriorityQueue.swift */; };
+		A716FC4B1EAD6687008395EC /* Range64Map.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FC2E1EAD6687008395EC /* Range64Map.swift */; };
+		A716FC4C1EAD6687008395EC /* RePrioritizableQueue.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FC2F1EAD6687008395EC /* RePrioritizableQueue.swift */; };
+		A716FC4D1EAD6687008395EC /* SExpression.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FC301EAD6687008395EC /* SExpression.swift */; };
+		A716FC4E1EAD6687008395EC /* Signaling.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FC311EAD6687008395EC /* Signaling.swift */; };
+		A716FC4F1EAD6687008395EC /* Slice64.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FC321EAD6687008395EC /* Slice64.swift */; };
+		A716FC501EAD6687008395EC /* SortedRanges.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FC331EAD6687008395EC /* SortedRanges.swift */; };
+		A716FC511EAD6687008395EC /* Statistics.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FC341EAD6687008395EC /* Statistics.swift */; };
+		A716FC521EAD6687008395EC /* Stream.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FC351EAD6687008395EC /* Stream.swift */; };
+		A716FC531EAD6687008395EC /* StringParsing.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FC361EAD6687008395EC /* StringParsing.swift */; };
+		A716FC541EAD6687008395EC /* StringTrie.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FC371EAD6687008395EC /* StringTrie.swift */; };
+		A716FC551EAD6687008395EC /* Test.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FC381EAD6687008395EC /* Test.swift */; };
+		A716FC561EAD6687008395EC /* VantagePointTree.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FC391EAD6687008395EC /* VantagePointTree.swift */; };
+		A716FC571EAD6687008395EC /* WorkQueue.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FC3A1EAD6687008395EC /* WorkQueue.swift */; };
+		A716FC581EAD6687008395EC /* WorkSequencer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FC3B1EAD6687008395EC /* WorkSequencer.swift */; };
+		A716FC5A1EAD6741008395EC /* runtimeStubs.m in Sources */ = {isa = PBXBuildFile; fileRef = A716FC591EAD6741008395EC /* runtimeStubs.m */; };
+		A716FC5C1EAD69E4008395EC /* F1ChipView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FC5B1EAD69E4008395EC /* F1ChipView.swift */; };
+		A716FC5E1EAD6A2A008395EC /* F1Definitions.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FC5D1EAD6A2A008395EC /* F1Definitions.swift */; };
+		A716FC601EAD6A5F008395EC /* CocoaExtras.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FC5F1EAD6A5F008395EC /* CocoaExtras.swift */; };
+		A716FC641EAD6B36008395EC /* F1UIExtras.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FC631EAD6B36008395EC /* F1UIExtras.swift */; };
+		A716FC661EAD6B63008395EC /* SimulationParameters.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FC651EAD6B63008395EC /* SimulationParameters.swift */; };
+		A716FC681EAD6C3A008395EC /* SimulationSamples.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FC671EAD6C3A008395EC /* SimulationSamples.swift */; };
+		A716FC6A1EAD6C40008395EC /* SimulationSamplesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FC691EAD6C40008395EC /* SimulationSamplesView.swift */; };
+		A716FC6E1EAD7009008395EC /* F1FlowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FC6D1EAD7009008395EC /* F1FlowView.swift */; };
+		A716FC701EAD7040008395EC /* F1Tile.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FC6F1EAD7040008395EC /* F1Tile.swift */; };
+		A716FC721EAD7082008395EC /* F1MiscTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FC711EAD7082008395EC /* F1MiscTypes.swift */; };
+		A716FC761EAD73B6008395EC /* F1SimDocument.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FC751EAD73B6008395EC /* F1SimDocument.swift */; };
+		A716FC781EAD73BD008395EC /* F1ChipWindow.xib in Resources */ = {isa = PBXBuildFile; fileRef = A716FC771EAD73BD008395EC /* F1ChipWindow.xib */; };
+		A716FC7A1EAD73C7008395EC /* F1SelectionView.xib in Resources */ = {isa = PBXBuildFile; fileRef = A716FC791EAD73C7008395EC /* F1SelectionView.xib */; };
+		A716FC7E1EAD73E6008395EC /* F1SelectionController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FC7D1EAD73E6008395EC /* F1SelectionController.swift */; };
+		A7FD266E1EB51FCE0049E0C0 /* libfunclient.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A7FD266D1EB51FCE0049E0C0 /* libfunclient.a */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		A716FBC91EA67C82008395EC /* funos_viewer.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = funos_viewer.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A716FBCC1EA67C82008395EC /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		A716FBCE1EA67C82008395EC /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		A716FBD11EA67C82008395EC /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/MainMenu.xib; sourceTree = "<group>"; };
+		A716FBD31EA67C82008395EC /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		A716FBDB1EA67D3C008395EC /* funos */ = {isa = PBXFileReference; lastKnownFileType = folder; name = funos; path = ../../FunOS/funos; sourceTree = "<group>"; };
+		A716FBDD1EA67EF5008395EC /* funos_viewer-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "funos_viewer-Bridging-Header.h"; sourceTree = "<group>"; };
+		A716FBDE1EA67EF5008395EC /* dpcclient.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = dpcclient.c; sourceTree = "<group>"; };
+		A716FBDF1EA67EF5008395EC /* dpcclient.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = dpcclient.h; sourceTree = "<group>"; };
+		A716FBE11EA683C2008395EC /* posix */ = {isa = PBXFileReference; lastKnownFileType = folder; name = posix; path = ../../FunOS/platform/posix; sourceTree = "<group>"; };
+		A716FBE31EA83CBB008395EC /* apps */ = {isa = PBXFileReference; lastKnownFileType = folder; name = apps; path = ../../FunOS/apps; sourceTree = "<group>"; };
+		A716FBE51EAD33E0008395EC /* hw */ = {isa = PBXFileReference; lastKnownFileType = folder; name = hw; path = ../../FunOS/hw; sourceTree = "<group>"; };
+		A716FBE71EAD33EA008395EC /* kv */ = {isa = PBXFileReference; lastKnownFileType = folder; name = kv; path = ../../FunOS/kv; sourceTree = "<group>"; };
+		A716FBE91EAD33F5008395EC /* libFunOS */ = {isa = PBXFileReference; lastKnownFileType = folder; name = libFunOS; path = ../../FunOS/libFunOS; sourceTree = "<group>"; };
+		A716FBEB1EAD63FA008395EC /* PureSwiftExtras */ = {isa = PBXFileReference; lastKnownFileType = folder; name = PureSwiftExtras; path = /Users/bserlet/fun/Simulators/NSSimulator/PureSwiftExtras; sourceTree = "<absolute>"; };
+		A716FC081EAD667D008395EC /* ArrayExtras.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ArrayExtras.swift; sourceTree = "<group>"; };
+		A716FC091EAD667D008395EC /* ByteExtras.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ByteExtras.swift; sourceTree = "<group>"; };
+		A716FC0A1EAD667D008395EC /* DataExtras.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DataExtras.swift; sourceTree = "<group>"; };
+		A716FC0B1EAD667D008395EC /* DictionaryExtras.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DictionaryExtras.swift; sourceTree = "<group>"; };
+		A716FC0C1EAD667D008395EC /* NumbersExtras.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = NumbersExtras.swift; sourceTree = "<group>"; };
+		A716FC0D1EAD667D008395EC /* ProtocolsExtras.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ProtocolsExtras.swift; sourceTree = "<group>"; };
+		A716FC0E1EAD667D008395EC /* RangeExtras.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = RangeExtras.swift; sourceTree = "<group>"; };
+		A716FC0F1EAD667D008395EC /* SequenceExtras.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SequenceExtras.swift; sourceTree = "<group>"; };
+		A716FC101EAD667D008395EC /* SetExtras.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SetExtras.swift; sourceTree = "<group>"; };
+		A716FC111EAD667D008395EC /* StringExtras.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = StringExtras.swift; sourceTree = "<group>"; };
+		A716FC121EAD667D008395EC /* TimeExtras.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TimeExtras.swift; sourceTree = "<group>"; };
+		A716FC1F1EAD6687008395EC /* Async.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Async.swift; sourceTree = "<group>"; };
+		A716FC201EAD6687008395EC /* Bitmap.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Bitmap.swift; sourceTree = "<group>"; };
+		A716FC211EAD6687008395EC /* Cache.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Cache.swift; sourceTree = "<group>"; };
+		A716FC221EAD6687008395EC /* CircularBuffer.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CircularBuffer.swift; sourceTree = "<group>"; };
+		A716FC231EAD6687008395EC /* Future.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Future.swift; sourceTree = "<group>"; };
+		A716FC241EAD6687008395EC /* Heap.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Heap.swift; sourceTree = "<group>"; };
+		A716FC251EAD6687008395EC /* Joiner.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Joiner.swift; sourceTree = "<group>"; };
+		A716FC261EAD6687008395EC /* JSON.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = JSON.swift; sourceTree = "<group>"; };
+		A716FC271EAD6687008395EC /* Lexer.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Lexer.swift; sourceTree = "<group>"; };
+		A716FC281EAD6687008395EC /* LinkedList.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = LinkedList.swift; sourceTree = "<group>"; };
+		A716FC291EAD6687008395EC /* Lock.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Lock.swift; sourceTree = "<group>"; };
+		A716FC2A1EAD6687008395EC /* Mask64.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Mask64.swift; sourceTree = "<group>"; };
+		A716FC2B1EAD6687008395EC /* Misc.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Misc.swift; sourceTree = "<group>"; };
+		A716FC2C1EAD6687008395EC /* Note.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Note.swift; sourceTree = "<group>"; };
+		A716FC2D1EAD6687008395EC /* PriorityQueue.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PriorityQueue.swift; sourceTree = "<group>"; };
+		A716FC2E1EAD6687008395EC /* Range64Map.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Range64Map.swift; sourceTree = "<group>"; };
+		A716FC2F1EAD6687008395EC /* RePrioritizableQueue.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = RePrioritizableQueue.swift; sourceTree = "<group>"; };
+		A716FC301EAD6687008395EC /* SExpression.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SExpression.swift; sourceTree = "<group>"; };
+		A716FC311EAD6687008395EC /* Signaling.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Signaling.swift; sourceTree = "<group>"; };
+		A716FC321EAD6687008395EC /* Slice64.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Slice64.swift; sourceTree = "<group>"; };
+		A716FC331EAD6687008395EC /* SortedRanges.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SortedRanges.swift; sourceTree = "<group>"; };
+		A716FC341EAD6687008395EC /* Statistics.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Statistics.swift; sourceTree = "<group>"; };
+		A716FC351EAD6687008395EC /* Stream.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Stream.swift; sourceTree = "<group>"; };
+		A716FC361EAD6687008395EC /* StringParsing.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = StringParsing.swift; sourceTree = "<group>"; };
+		A716FC371EAD6687008395EC /* StringTrie.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = StringTrie.swift; sourceTree = "<group>"; };
+		A716FC381EAD6687008395EC /* Test.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Test.swift; sourceTree = "<group>"; };
+		A716FC391EAD6687008395EC /* VantagePointTree.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = VantagePointTree.swift; sourceTree = "<group>"; };
+		A716FC3A1EAD6687008395EC /* WorkQueue.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = WorkQueue.swift; sourceTree = "<group>"; };
+		A716FC3B1EAD6687008395EC /* WorkSequencer.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = WorkSequencer.swift; sourceTree = "<group>"; };
+		A716FC591EAD6741008395EC /* runtimeStubs.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = runtimeStubs.m; sourceTree = "<group>"; };
+		A716FC5B1EAD69E4008395EC /* F1ChipView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = F1ChipView.swift; sourceTree = "<group>"; };
+		A716FC5D1EAD6A2A008395EC /* F1Definitions.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = F1Definitions.swift; sourceTree = "<group>"; };
+		A716FC5F1EAD6A5F008395EC /* CocoaExtras.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CocoaExtras.swift; sourceTree = "<group>"; };
+		A716FC631EAD6B36008395EC /* F1UIExtras.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = F1UIExtras.swift; sourceTree = "<group>"; };
+		A716FC651EAD6B63008395EC /* SimulationParameters.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SimulationParameters.swift; sourceTree = "<group>"; };
+		A716FC671EAD6C3A008395EC /* SimulationSamples.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SimulationSamples.swift; sourceTree = "<group>"; };
+		A716FC691EAD6C40008395EC /* SimulationSamplesView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SimulationSamplesView.swift; sourceTree = "<group>"; };
+		A716FC6D1EAD7009008395EC /* F1FlowView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = F1FlowView.swift; sourceTree = "<group>"; };
+		A716FC6F1EAD7040008395EC /* F1Tile.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = F1Tile.swift; sourceTree = "<group>"; };
+		A716FC711EAD7082008395EC /* F1MiscTypes.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = F1MiscTypes.swift; sourceTree = "<group>"; };
+		A716FC751EAD73B6008395EC /* F1SimDocument.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = F1SimDocument.swift; sourceTree = "<group>"; };
+		A716FC771EAD73BD008395EC /* F1ChipWindow.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = F1ChipWindow.xib; sourceTree = "<group>"; };
+		A716FC791EAD73C7008395EC /* F1SelectionView.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = F1SelectionView.xib; sourceTree = "<group>"; };
+		A716FC7D1EAD73E6008395EC /* F1SelectionController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = F1SelectionController.swift; sourceTree = "<group>"; };
+		A7FD266D1EB51FCE0049E0C0 /* libfunclient.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libfunclient.a; path = ../../FunSDK/lib/Darwin/libfunclient.a; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		A716FBC61EA67C82008395EC /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A7FD266E1EB51FCE0049E0C0 /* libfunclient.a in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		A716FBC01EA67C82008395EC = {
+			isa = PBXGroup;
+			children = (
+				A716FC071EAD667D008395EC /* PureSwiftExtras */,
+				A716FC1E1EAD6687008395EC /* PureSwiftRuntime */,
+				A716FBE31EA83CBB008395EC /* apps */,
+				A7A811691EAFBFF1005BB2CE /* F1UI */,
+				A716FBCB1EA67C82008395EC /* funos_viewer */,
+				A716FBDB1EA67D3C008395EC /* funos */,
+				A716FBE11EA683C2008395EC /* posix */,
+				A716FBE51EAD33E0008395EC /* hw */,
+				A716FBE71EAD33EA008395EC /* kv */,
+				A716FBE91EAD33F5008395EC /* libFunOS */,
+				A716FBCA1EA67C82008395EC /* Products */,
+				A7FD266C1EB51FCD0049E0C0 /* Frameworks */,
+			);
+			sourceTree = "<group>";
+		};
+		A716FBCA1EA67C82008395EC /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A716FBC91EA67C82008395EC /* funos_viewer.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		A716FBCB1EA67C82008395EC /* funos_viewer */ = {
+			isa = PBXGroup;
+			children = (
+				A716FBCC1EA67C82008395EC /* AppDelegate.swift */,
+				A716FBDF1EA67EF5008395EC /* dpcclient.h */,
+				A716FBDE1EA67EF5008395EC /* dpcclient.c */,
+				A716FBCE1EA67C82008395EC /* Assets.xcassets */,
+				A716FBD01EA67C82008395EC /* MainMenu.xib */,
+				A716FBD31EA67C82008395EC /* Info.plist */,
+				A716FBDD1EA67EF5008395EC /* funos_viewer-Bridging-Header.h */,
+				A716FC591EAD6741008395EC /* runtimeStubs.m */,
+			);
+			path = funos_viewer;
+			sourceTree = "<group>";
+		};
+		A716FC071EAD667D008395EC /* PureSwiftExtras */ = {
+			isa = PBXGroup;
+			children = (
+				A716FC081EAD667D008395EC /* ArrayExtras.swift */,
+				A716FC091EAD667D008395EC /* ByteExtras.swift */,
+				A716FC0A1EAD667D008395EC /* DataExtras.swift */,
+				A716FC0B1EAD667D008395EC /* DictionaryExtras.swift */,
+				A716FC0C1EAD667D008395EC /* NumbersExtras.swift */,
+				A716FC0D1EAD667D008395EC /* ProtocolsExtras.swift */,
+				A716FC0E1EAD667D008395EC /* RangeExtras.swift */,
+				A716FC0F1EAD667D008395EC /* SequenceExtras.swift */,
+				A716FC101EAD667D008395EC /* SetExtras.swift */,
+				A716FC111EAD667D008395EC /* StringExtras.swift */,
+				A716FC121EAD667D008395EC /* TimeExtras.swift */,
+			);
+			name = PureSwiftExtras;
+			path = ../../Simulators/NSSimulator/PureSwiftExtras;
+			sourceTree = "<group>";
+		};
+		A716FC1E1EAD6687008395EC /* PureSwiftRuntime */ = {
+			isa = PBXGroup;
+			children = (
+				A716FC1F1EAD6687008395EC /* Async.swift */,
+				A716FC201EAD6687008395EC /* Bitmap.swift */,
+				A716FC211EAD6687008395EC /* Cache.swift */,
+				A716FC221EAD6687008395EC /* CircularBuffer.swift */,
+				A716FC231EAD6687008395EC /* Future.swift */,
+				A716FC241EAD6687008395EC /* Heap.swift */,
+				A716FC251EAD6687008395EC /* Joiner.swift */,
+				A716FC261EAD6687008395EC /* JSON.swift */,
+				A716FC271EAD6687008395EC /* Lexer.swift */,
+				A716FC281EAD6687008395EC /* LinkedList.swift */,
+				A716FC291EAD6687008395EC /* Lock.swift */,
+				A716FC2A1EAD6687008395EC /* Mask64.swift */,
+				A716FC2B1EAD6687008395EC /* Misc.swift */,
+				A716FC2C1EAD6687008395EC /* Note.swift */,
+				A716FC2D1EAD6687008395EC /* PriorityQueue.swift */,
+				A716FC2E1EAD6687008395EC /* Range64Map.swift */,
+				A716FC2F1EAD6687008395EC /* RePrioritizableQueue.swift */,
+				A716FC301EAD6687008395EC /* SExpression.swift */,
+				A716FC311EAD6687008395EC /* Signaling.swift */,
+				A716FC321EAD6687008395EC /* Slice64.swift */,
+				A716FC331EAD6687008395EC /* SortedRanges.swift */,
+				A716FC341EAD6687008395EC /* Statistics.swift */,
+				A716FC351EAD6687008395EC /* Stream.swift */,
+				A716FC361EAD6687008395EC /* StringParsing.swift */,
+				A716FC371EAD6687008395EC /* StringTrie.swift */,
+				A716FC381EAD6687008395EC /* Test.swift */,
+				A716FC391EAD6687008395EC /* VantagePointTree.swift */,
+				A716FC3A1EAD6687008395EC /* WorkQueue.swift */,
+				A716FC3B1EAD6687008395EC /* WorkSequencer.swift */,
+			);
+			name = PureSwiftRuntime;
+			path = ../../Simulators/NSSimulator/PureSwiftRuntime;
+			sourceTree = "<group>";
+		};
+		A7A811691EAFBFF1005BB2CE /* F1UI */ = {
+			isa = PBXGroup;
+			children = (
+				A716FC5F1EAD6A5F008395EC /* CocoaExtras.swift */,
+				A716FC671EAD6C3A008395EC /* SimulationSamples.swift */,
+				A716FC691EAD6C40008395EC /* SimulationSamplesView.swift */,
+				A716FC651EAD6B63008395EC /* SimulationParameters.swift */,
+				A716FC5B1EAD69E4008395EC /* F1ChipView.swift */,
+				A716FC5D1EAD6A2A008395EC /* F1Definitions.swift */,
+				A716FC6D1EAD7009008395EC /* F1FlowView.swift */,
+				A716FC7D1EAD73E6008395EC /* F1SelectionController.swift */,
+				A716FC631EAD6B36008395EC /* F1UIExtras.swift */,
+				A716FC6F1EAD7040008395EC /* F1Tile.swift */,
+				A716FC711EAD7082008395EC /* F1MiscTypes.swift */,
+				A716FC751EAD73B6008395EC /* F1SimDocument.swift */,
+				A716FC771EAD73BD008395EC /* F1ChipWindow.xib */,
+				A716FC791EAD73C7008395EC /* F1SelectionView.xib */,
+			);
+			name = F1UI;
+			path = funos_viewer;
+			sourceTree = "<group>";
+		};
+		A7FD266C1EB51FCD0049E0C0 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				A7FD266D1EB51FCE0049E0C0 /* libfunclient.a */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		A716FBC81EA67C82008395EC /* funos_viewer */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A716FBD61EA67C82008395EC /* Build configuration list for PBXNativeTarget "funos_viewer" */;
+			buildPhases = (
+				A716FBC51EA67C82008395EC /* Sources */,
+				A716FBC61EA67C82008395EC /* Frameworks */,
+				A716FBC71EA67C82008395EC /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = funos_viewer;
+			productName = funos_viewer;
+			productReference = A716FBC91EA67C82008395EC /* funos_viewer.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		A716FBC11EA67C82008395EC /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastSwiftUpdateCheck = 0820;
+				LastUpgradeCheck = 0820;
+				ORGANIZATIONNAME = Fungible;
+				TargetAttributes = {
+					A716FBC81EA67C82008395EC = {
+						CreatedOnToolsVersion = 8.2.1;
+						LastSwiftMigration = 0820;
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = A716FBC41EA67C82008395EC /* Build configuration list for PBXProject "funos_viewer" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = A716FBC01EA67C82008395EC;
+			productRefGroup = A716FBCA1EA67C82008395EC /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				A716FBC81EA67C82008395EC /* funos_viewer */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		A716FBC71EA67C82008395EC /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A716FBE21EA683C2008395EC /* posix in Resources */,
+				A716FBE81EAD33EA008395EC /* kv in Resources */,
+				A716FC781EAD73BD008395EC /* F1ChipWindow.xib in Resources */,
+				A716FBEA1EAD33F5008395EC /* libFunOS in Resources */,
+				A716FBE61EAD33E0008395EC /* hw in Resources */,
+				A716FBE41EA83CBB008395EC /* apps in Resources */,
+				A716FBDC1EA67D3C008395EC /* funos in Resources */,
+				A716FBEC1EAD63FA008395EC /* PureSwiftExtras in Resources */,
+				A716FBCF1EA67C82008395EC /* Assets.xcassets in Resources */,
+				A716FBD21EA67C82008395EC /* MainMenu.xib in Resources */,
+				A716FC7A1EAD73C7008395EC /* F1SelectionView.xib in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		A716FBC51EA67C82008395EC /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A716FC721EAD7082008395EC /* F1MiscTypes.swift in Sources */,
+				A716FC581EAD6687008395EC /* WorkSequencer.swift in Sources */,
+				A716FC571EAD6687008395EC /* WorkQueue.swift in Sources */,
+				A716FC161EAD667D008395EC /* DictionaryExtras.swift in Sources */,
+				A716FC1D1EAD667D008395EC /* TimeExtras.swift in Sources */,
+				A716FC1B1EAD667D008395EC /* SetExtras.swift in Sources */,
+				A716FBE01EA67EF5008395EC /* dpcclient.c in Sources */,
+				A716FC4B1EAD6687008395EC /* Range64Map.swift in Sources */,
+				A716FC7E1EAD73E6008395EC /* F1SelectionController.swift in Sources */,
+				A716FC6A1EAD6C40008395EC /* SimulationSamplesView.swift in Sources */,
+				A716FC641EAD6B36008395EC /* F1UIExtras.swift in Sources */,
+				A716FC411EAD6687008395EC /* Heap.swift in Sources */,
+				A716FC4F1EAD6687008395EC /* Slice64.swift in Sources */,
+				A716FC5C1EAD69E4008395EC /* F1ChipView.swift in Sources */,
+				A716FC521EAD6687008395EC /* Stream.swift in Sources */,
+				A716FC4E1EAD6687008395EC /* Signaling.swift in Sources */,
+				A716FC701EAD7040008395EC /* F1Tile.swift in Sources */,
+				A716FC4A1EAD6687008395EC /* PriorityQueue.swift in Sources */,
+				A716FC681EAD6C3A008395EC /* SimulationSamples.swift in Sources */,
+				A716FC5A1EAD6741008395EC /* runtimeStubs.m in Sources */,
+				A716FC661EAD6B63008395EC /* SimulationParameters.swift in Sources */,
+				A716FC481EAD6687008395EC /* Misc.swift in Sources */,
+				A716FC451EAD6687008395EC /* LinkedList.swift in Sources */,
+				A716FC471EAD6687008395EC /* Mask64.swift in Sources */,
+				A716FC3F1EAD6687008395EC /* CircularBuffer.swift in Sources */,
+				A716FC421EAD6687008395EC /* Joiner.swift in Sources */,
+				A716FC3D1EAD6687008395EC /* Bitmap.swift in Sources */,
+				A716FC401EAD6687008395EC /* Future.swift in Sources */,
+				A716FBCD1EA67C82008395EC /* AppDelegate.swift in Sources */,
+				A716FC5E1EAD6A2A008395EC /* F1Definitions.swift in Sources */,
+				A716FC1A1EAD667D008395EC /* SequenceExtras.swift in Sources */,
+				A716FC141EAD667D008395EC /* ByteExtras.swift in Sources */,
+				A716FC191EAD667D008395EC /* RangeExtras.swift in Sources */,
+				A716FC601EAD6A5F008395EC /* CocoaExtras.swift in Sources */,
+				A716FC1C1EAD667D008395EC /* StringExtras.swift in Sources */,
+				A716FC3E1EAD6687008395EC /* Cache.swift in Sources */,
+				A716FC431EAD6687008395EC /* JSON.swift in Sources */,
+				A716FC441EAD6687008395EC /* Lexer.swift in Sources */,
+				A716FC561EAD6687008395EC /* VantagePointTree.swift in Sources */,
+				A716FC181EAD667D008395EC /* ProtocolsExtras.swift in Sources */,
+				A716FC4D1EAD6687008395EC /* SExpression.swift in Sources */,
+				A716FC3C1EAD6687008395EC /* Async.swift in Sources */,
+				A716FC151EAD667D008395EC /* DataExtras.swift in Sources */,
+				A716FC531EAD6687008395EC /* StringParsing.swift in Sources */,
+				A716FC761EAD73B6008395EC /* F1SimDocument.swift in Sources */,
+				A716FC511EAD6687008395EC /* Statistics.swift in Sources */,
+				A716FC501EAD6687008395EC /* SortedRanges.swift in Sources */,
+				A716FC551EAD6687008395EC /* Test.swift in Sources */,
+				A716FC491EAD6687008395EC /* Note.swift in Sources */,
+				A716FC6E1EAD7009008395EC /* F1FlowView.swift in Sources */,
+				A716FC131EAD667D008395EC /* ArrayExtras.swift in Sources */,
+				A716FC541EAD6687008395EC /* StringTrie.swift in Sources */,
+				A716FC4C1EAD6687008395EC /* RePrioritizableQueue.swift in Sources */,
+				A716FC461EAD6687008395EC /* Lock.swift in Sources */,
+				A716FC171EAD667D008395EC /* NumbersExtras.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXVariantGroup section */
+		A716FBD01EA67C82008395EC /* MainMenu.xib */ = {
+			isa = PBXVariantGroup;
+			children = (
+				A716FBD11EA67C82008395EC /* Base */,
+			);
+			name = MainMenu.xib;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
+
+/* Begin XCBuildConfiguration section */
+		A716FBD41EA67C82008395EC /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "-";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.12;
+				MTL_ENABLE_DEBUG_INFO = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		A716FBD51EA67C82008395EC /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "-";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.12;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				SDKROOT = macosx;
+				SWIFT_OPTIMIZATION_LEVEL = "-Owholemodule";
+			};
+			name = Release;
+		};
+		A716FBD71EA67C82008395EC /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ENABLE_MODULES = YES;
+				COMBINE_HIDPI_IMAGES = YES;
+				HEADER_SEARCH_PATHS = ../../FunOS;
+				INFOPLIST_FILE = funos_viewer/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/funos_viewer",
+					"$(PROJECT_DIR)/../../FunSDK/lib/Darwin",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "fungible.com.funos-viewer";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_OBJC_BRIDGING_HEADER = "funos_viewer/funos_viewer-Bridging-Header.h";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 3.0;
+			};
+			name = Debug;
+		};
+		A716FBD81EA67C82008395EC /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ENABLE_MODULES = YES;
+				COMBINE_HIDPI_IMAGES = YES;
+				HEADER_SEARCH_PATHS = ../../FunOS;
+				INFOPLIST_FILE = funos_viewer/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/funos_viewer",
+					"$(PROJECT_DIR)/../../FunSDK/lib/Darwin",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "fungible.com.funos-viewer";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_OBJC_BRIDGING_HEADER = "funos_viewer/funos_viewer-Bridging-Header.h";
+				SWIFT_VERSION = 3.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		A716FBC41EA67C82008395EC /* Build configuration list for PBXProject "funos_viewer" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A716FBD41EA67C82008395EC /* Debug */,
+				A716FBD51EA67C82008395EC /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A716FBD61EA67C82008395EC /* Build configuration list for PBXNativeTarget "funos_viewer" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A716FBD71EA67C82008395EC /* Debug */,
+				A716FBD81EA67C82008395EC /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = A716FBC11EA67C82008395EC /* Project object */;
+}
