@@ -13,13 +13,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     @IBOutlet weak var window: NSWindow!
 
-    func applicationShouldOpenUntitledFile(_ sender: NSApplication) -> Bool {
-        return false
-    }
-
     func applicationDidFinishLaunching(_ aNotification: Notification) {
         // Insert code here to initialize your application
-        dpcclient_test();
         UserDefaults.standard.set(true, forKey: "NSConstraintBasedLayoutVisualizeMutuallyExclusiveConstraints")
         let docController = NSDocumentController.shared()
         let doc = F1SimDocument()

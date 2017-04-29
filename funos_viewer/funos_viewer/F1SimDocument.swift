@@ -20,11 +20,13 @@ import AppKit
     var parametersToControls = MappingOfParametersToControls()
     var dateLastUpdate: Date!
 
+    var socket: Int32 = 0;
+
     var window: FunSimWindow { return chipView.window as! FunSimWindow }
     override init() {
         super.init()
         self.loadNib()
-        window.title = ""
+        window.title = "F1 Viewer"
         window.delegate = self
     }
     func windowWillClose(_ notification: Notification) {
@@ -163,7 +165,6 @@ import AppKit
         view.sizeToFit()
         return (view, t)
     }
-    static var cascadeOrigin = NSZeroPoint
     func loadNib() {
         if selectionController != nil { return } // Already initialized
         let ok = Bundle.main.loadNibNamed("F1ChipWindow", owner: self, topLevelObjects: nil)
@@ -179,23 +180,21 @@ import AppKit
         selectionController.reinstantiateLayoutConstraints()
         selectionController.selectionTabView.frame = scf
 
-        F1SimDocument.cascadeOrigin = window.cascadeTopLeft(from: F1SimDocument.cascadeOrigin)
         window.makeKeyAndOrderFront(nil)
-        let winCon = NSWindowController(window: window)
-        winCon.shouldCascadeWindows = true  // does not seem to work
+        // let winCon = NSWindowController(window: window)
         // Next line is very bizarre but without it NSDocumentController.sharedDocumentController().currentDocument does not work
-        addWindowController(winCon)
-    }
-    override func write(to url: URL, ofType typeName: String) throws {
-    }
-    override func save(_ sender: Any?) {
-        saveAs(sender)
-    }
-    override func saveAs(_ sender: Any?) {
+//        addWindowController(winCon)
     }
     // Raise the window showing timelines for packets.
     @IBAction func doHelp(_ sender: NSObject?) {
-        dpcclient_test();
+        let r = dpcrun_command(&socket, "help", "[]")
+        if r == nil {
+            Swift.print("*** Error doing help")
+        } else {
+            let str: String = String(cString: r!)
+            let json: JSON = try! JSON(str)
+            Swift.print("output = \(json)")
+        }
     }
 
     @IBAction func fiddleWithOptions(_ sender: NSObject?) {

@@ -8,8 +8,11 @@
 
 #pragma once
 
+#include <funos/fun_json.h>
 
 // Returns <=0 on error
 extern int dpcclient_open_socket(void);
 
 extern void dpcclient_test(void);
+
+extern NULLABLE CALLER_TO_FREE const char *dpcrun_command(INOUT int *sock, const char *verb, const char *arguments_array);
