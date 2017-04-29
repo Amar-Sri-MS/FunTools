@@ -9,15 +9,15 @@ import AppKit
 
 @objc class F1SimDocument: NSDocument, NSTabViewDelegate, NSWindowDelegate {
     // Simulation Parameters
-    @IBOutlet var parameters: NSTabView!
+    @IBOutlet var inputPlaceholder: NSView! // replaced after loading XIB file
     // Chip
     @IBOutlet var chipView: NSChipView!
     // Selection
     @IBOutlet var selectionPlaceholder: NSView! // replaced after loading XIB file
 
+    var inputController: F1InputController! // All the parameters and such
     var selectionController: F1SelectionController! // Selection info
 
-    var parametersToControls = MappingOfParametersToControls()
     var dateLastUpdate: Date!
 
     var socket: Int32 = 0;
@@ -32,6 +32,7 @@ import AppKit
     func windowWillClose(_ notification: Notification) {
         window.delegate = nil
         // We need to force an explicit tear down, or else the document does not deinit
+        inputController = nil
         selectionController = nil
     }
     var updateLock = Lock()
@@ -116,62 +117,19 @@ import AppKit
     func noteSelectionChanged(_ note: Notification) {
         performSelector(onMainThread: #selector(F1SimDocument.noteSelectionChangedAndUpdate), with: nil, waitUntilDone: false)
     }
-    func parametersFromUI() -> FunChipSimulationParameters {
-        let allParameters = FunChipSimulationParameters()
-        let bold = parametersToControls.makeBoldForParameters(allParameters)
-        // Mark all the TABs in bold if necessary
-        for tabID in SimulationParametersTabs {
-            let tabItem = parameters.tabViewItem(at: tabID+1)
-            let title = tabItem.label
-            if bold.contains(tabID) && !title.hasSuffix("!") {
-                tabItem.label = title + "!"
-            } else if !bold.contains(tabID) && title.hasSuffix("!") {
-                tabItem.label = title.breakAt("!").before
-            }
-        }
-        // Then, all the speciall cases...
-        allParameters.fixupAfterReadingFromUI()
-        return allParameters
-    }
-    func addUIForAllParameters() {
-        let defaultParameters = FunChipSimulationParameters()
-        let bounds = parameters.bounds
-        for tabID in SimulationParametersTabs {
-            let tabItem = parameters.tabViewItem(at: tabID+1)
-            let boxContent = tabItem.view!
-            var y: CGFloat = bounds.height - 79.0
-            let width = bounds.size.width - 14.0
-            var keyView: NSView! = nil
-            for parameters in defaultParameters.allParametersWithUI {
-                let keys = parameters.keysForTab(tabID)
-                if keys.isEmpty { continue }
-                let name = parameters.name
-                let (section, t) = createParameterSection(parameters, startWithSectionLabel: tabID != 0, keys: keys, width: width, y: y, keyView: &keyView)
-                let height = section.bounds.size.height
-                y -= height - 7.0 // tighten things a bit
-                boxContent.addSubview(section)
-                parametersToControls.mergeInCategory(name, t: t)
-            }
-        }
-    }
-    func createParameterSection(_ parameters: SimulationParameters, startWithSectionLabel: Bool, keys: [SimulationParameterKey], width: CGFloat, y: CGFloat, keyView: inout NSView!) -> (view: NSView, map: [SimulationParameterKey: SimulationParameterControl]) {
-        let frame = NSRect(x: -8.0, y: y, width: width, height: 0)
-        let view = NSBox(frame: frame)
-        view.borderType = .noBorder
-        view.titlePosition = .noTitle
-        view.autoresizingMask = NSAutoresizingMaskOptions.viewMinYMargin
-        let y = startWithSectionLabel ? view.addParameterSectionName(parameters) : 0.0
-        let t = view.addParameterSection(parameters, yStart: y, keys: keys, keyView: &keyView)
-        view.sizeToFit()
-        return (view, t)
-    }
     func loadNib() {
-        if selectionController != nil { return } // Already initialized
+        if inputController != nil { return } // Already initialized
         let ok = Bundle.main.loadNibNamed("F1ChipWindow", owner: self, topLevelObjects: nil)
         assert(ok)
         let center = theNotificationCenter
         center.addObserver(self, selector: #selector(F1SimDocument.noteSelectionChanged(_:)), name: NSNotification.Name("SelectionChanged"), object: chipView)
-        addUIForAllParameters()
+
+        inputController = F1InputController(document: self)
+        let ipf = inputPlaceholder.frame
+        inputPlaceholder.superview!.replaceSubview(inputPlaceholder, with: inputController.view)
+        inputController.reinstantiateLayoutConstraints()
+        inputController.view.frame = ipf
+        inputController.addUIForAllParameters()
 
         selectionController = F1SelectionController(document: self)
         let scf = selectionPlaceholder.frame
