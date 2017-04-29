@@ -10,8 +10,9 @@
 #include <inttypes.h>
 #include <ctype.h>
 
-
-#define MIN(x,y) (x < y ? x : y)
+#ifndef MIN
+#define MIN(x,y) ((x) < (y) ? (x) : (y))
+#endif
 
 static int
 _open_sock(const char *name)
@@ -131,23 +132,11 @@ static void print_header_row(struct parameters *params, char *buf) {
     }
 }
 
-static void print_sorted_stats(struct parameters *params, struct fun_json *array) {
-    char buf[1024];
-    assert(params->line_max < 1024);
-    print_header_row(params, buf); buf[params->line_max] = 0;
-    mvwaddstr(params->mainwin, 0, 0, buf);
-    for (int i = 1; i < params->num_rows; i++) {
-        struct fun_json *sub = fun_json_array_at(array, i - 1);
-        print_row_json(params, sub, buf);
-        mvwaddstr(params->mainwin, i, 0, buf);
-    }
-}
-
-static NULLABLE CALLER_TO_RELEASE struct fun_json *get_wu_stats(int sock, bool durations) {
+static NULLABLE CALLER_TO_RELEASE struct fun_json *do_peek(int sock, const char *key_path) {
     static int64_t tid = 1;
-    const char *template = "{ verb: peek, tid: %ld, arguments: [wdi/%s] }";
+    const char *template = "{ verb: peek, tid: %ld, arguments: [%s] }";
     char input_text[1024];
-    sprintf(input_text, template, tid++, durations ? "durations" : "counts");
+    sprintf(input_text, template, tid++, key_path);
     struct fun_json *input = fun_json_create_from_text(input_text);
     if (!input) {
         printf("*** Can't parse command '%s'\n", fun_json_to_text(input));
@@ -156,7 +145,6 @@ static NULLABLE CALLER_TO_RELEASE struct fun_json *get_wu_stats(int sock, bool d
     bool ok = fun_json_write_to_fd(input, sock);
     fun_json_release(input);
     if (!ok) return NULL;
-    /* receive a reply */
     return fun_json_read_from_fd(sock);
 }
 
@@ -164,6 +152,7 @@ struct compare_by_count_context {
     struct fun_json *this;
     struct fun_json *previous;
 };
+
 static int compare_by_count(void *map_context, void *per_call_context, fun_map_key_t left, fun_map_key_t right) {
     struct compare_by_count_context *con = per_call_context;
     struct fun_json *jleft = fun_json_dict_at(con->this, (char *)left);
@@ -233,16 +222,61 @@ static struct parameters set_up_params(void) {
     return params;
 }
 
+static int get_num_VPs(int sock) {
+    struct fun_json *all_vps = do_peek(sock, "config/all_vps");
+    if (!all_vps) return 0;
+    if (all_vps->type != fun_json_array_type) return 0;
+    return all_vps->array->count;
+}
+
+static int num_VPs = 0;
+
+static void get_num_wus_received_sent(int sock, OUT uint64_t *received, OUT uint64_t *sent) {
+    *received = 0;
+    *sent = 0;
+    struct fun_json *per_vp = do_peek(sock, "stats/per_vp");
+    if (! per_vp) return;
+    if (per_vp->type != fun_json_dict_type) return;
+    size_t count;
+    const char **keys = fun_json_dict_all_keys(per_vp, &count);
+    if (!keys) return;
+    for (size_t i = 0; i < count; i++) {
+	struct fun_json *sub = fun_json_dict_at(per_vp, keys[i]);
+	if (!sub) continue;
+	int64_t n = 0;
+	if (fun_json_lookup_int64(sub, "wus_received", &n)) *received += n;
+	if (fun_json_lookup_int64(sub, "wus_sent", &n)) *sent += n;
+    }
+}
+
+static void print_sorted_stats(struct parameters *params, struct fun_json *array) {
+    char buf[1024];
+    assert(params->line_max < 1024);
+    print_header_row(params, buf); buf[params->line_max] = 0;
+    mvwaddstr(params->mainwin, 2, 0, buf);
+    for (int i = 3; i < params->num_rows; i++) {
+        struct fun_json *sub = fun_json_array_at(array, i - 3);
+        print_row_json(params, sub, buf);
+        mvwaddstr(params->mainwin, i, 0, buf);
+    }
+}
+
 static bool get_stats_and_display(struct parameters *params, int sock, struct fun_json **previous) {
     params->num_rows = getmaxy(params->mainwin);
     params->line_max = getmaxx(params->mainwin);
-    struct fun_json *wu_stats = get_wu_stats(sock, false);
+    struct fun_json *wu_stats = do_peek(sock, "stats/wus/counts");
     if (!wu_stats) {
         wclear(params->mainwin);
         refresh();
         return false;
     }
-    struct fun_json *wu_durations = get_wu_stats(sock, true);
+    uint64_t received = 0;
+    uint64_t sent = 0;
+    get_num_wus_received_sent(sock, &received, &sent);
+    char header[1024];
+    snprintf(header, 1024, "VPs: %d; WUs received: %" PRId64 "; WUs sent: %" PRId64, num_VPs, received, sent);
+    mvwaddstr(params->mainwin, 0, 0, header);
+    struct fun_json *wu_durations = do_peek(sock, "stats/wus/durations");
     struct fun_json *array = sort_wu_stats_by_count(wu_stats, *previous, wu_durations);
     print_sorted_stats(params, array);
     fun_json_release(array);
@@ -256,6 +290,7 @@ int main(int argc, char *argv[]) {
     printf("TOP\n");
     int sock = _open_sock("/tmp/funos-dpc.sock");
     struct parameters params = set_up_params();
+    num_VPs = get_num_VPs(sock);
     struct fun_json *previous = NULL;
     while (get_stats_and_display(&params, sock, &previous)) {
         usleep(100*1000);
