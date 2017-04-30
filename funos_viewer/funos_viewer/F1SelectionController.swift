@@ -7,7 +7,7 @@
 
 import AppKit
 
-class F1SelectionController: NSObject {
+class F1SelectionController: NSObject, NSTabViewDelegate, NSTableViewDelegate, NSTableViewDataSource {
     @IBOutlet var window: NSWindow!
     @IBOutlet var selectionTabView: NSTabView!
     @IBOutlet var selectionInfo: NSTextView!
@@ -16,17 +16,92 @@ class F1SelectionController: NSObject {
     @IBOutlet var selectionQueuesText: NSTextView!
     @IBOutlet var selectionRelativeHeat: NSButton!
 
+    @IBOutlet var wusTable: NSTableView!
+
+    var wuTimer: Timer!
     unowned let document: F1SimDocument
 
     init(document: F1SimDocument) {
         self.document = document
         super.init()
         loadNib()
+        selectionTabView.delegate = self
+        wusTable.delegate = self
+        wusTable.dataSource = self
     }
     // uncomment to debug leaks
 //    deinit {
 //        print("DESTROY F1SelectionController")
 //    }
+    public func tabView(_ tabView: NSTabView, didSelect tabViewItem: NSTabViewItem?) {
+//        print("Received notification tabView changed to \(tabViewItem!.label)")
+        if tabViewItem!.label == "WUs" {
+            wuTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true, block: { _ in
+                self.performSelector(onMainThread: #selector(F1SelectionController.refreshWU), with: nil, waitUntilDone: false)
+            })
+        }
+    }
+    func refreshWU() {
+        let tabViewItem = selectionTabView.selectedTabViewItem
+        if tabViewItem != nil && tabViewItem!.label == "WUs" {
+            doRefreshWUs()
+        } else {
+            wuTimer?.invalidate()
+        }
+    }
+    struct WUInfo {
+        var wu: String = ""
+        var count: Int = 0
+        var duration: Int = 0
+    }
+    var allInfo: [WUInfo] = []
+    func textFieldAt(atColumn col: Int, row: Int) -> NSTextField! {
+        return wusTable.view(atColumn: col, row: row, makeIfNecessary: false) as? NSTextField
+    }
+    func doRefreshWUs() {
+        let counts = document.doF1Command("peek", "stats/wus/counts")?.dictionaryValue
+        if counts == nil || counts!.isEmpty { return }
+        let durations = document.doF1Command("peek", "stats/wus/durations")?.dictionaryValue
+        if durations == nil || durations!.isEmpty { return }
+        let allExisting: Set<String> = Set(allInfo.map { $0.wu })
+        for i in 0 ..< allInfo.count {
+            var info = allInfo[i]
+            let key = info.wu
+            if counts![key] == nil { continue }
+            info.count = counts![key]!.integerValue
+            info.duration = durations![key]?.integerValue ?? 0
+            allInfo[i] = info
+        }
+        var newRows = false
+        for key in counts!.keys where !allExisting.contains(key) {
+            var info = WUInfo()
+            info.wu = key
+            info.count = counts![key]!.integerValue
+            info.duration = durations![key]?.integerValue ?? 0
+            allInfo |= info
+            newRows = true
+        }
+//        if newRows {
+//            wusTable.noteNumberOfRowsChanged()
+//        } else {
+            wusTable.reloadData()
+//        }
+    }
+    func numberOfRows(in tableView: NSTableView) -> Int {
+        return allInfo.count
+    }
+    func tableView(_ tableView: NSTableView, objectValueFor tableColumn: NSTableColumn?, row: Int) -> Any? {
+        let info = allInfo[row]
+        switch tableColumn!.title {
+            case "WU name": return info.wu
+            case "count": return info.count.description
+            case "duration": return info.duration.description
+            case "avg duration":
+                let d = info.count == 0 ? 0.0 : Double(info.duration) / Double(info.count)
+                return d.round2.description
+            default: fatalError("identifier = \(tableColumn!.title)")
+        }
+    }
     func loadNib() {
         let ok = Bundle.main.loadNibNamed("F1SelectionWindow", owner: self, topLevelObjects: nil)
         assert(ok)
@@ -67,18 +142,4 @@ class F1SelectionController: NSObject {
     @IBAction func fiddleWithOptions(_ sender: NSObject?) {
         document.noteSelectionChangedAndUpdate()
     }
-//    func reinstantiateLayoutConstraints() {
-//        let superView = selectionTabView.superview!
-//        selectionTabView.removeConstraints(selectionTabView.constraints)
-//        selectionTabView.translatesAutoresizingMaskIntoConstraints = false
-//        superView.addConstraint(NSLayoutConstraint(item: superView, attribute: .top, relatedBy: .equal, toItem: selectionTabView, attribute: .top, multiplier: 1.0, constant: -4.0))
-//        superView.addConstraint(NSLayoutConstraint(item: superView, attribute: .bottom, relatedBy: .equal, toItem: selectionTabView, attribute: .bottom, multiplier: 1.0, constant: 3.0))
-//        superView.addConstraint(NSLayoutConstraint(item: superView, attribute: .trailing, relatedBy: .equal, toItem: selectionTabView, attribute: .trailing, multiplier: 1.0, constant: 2.0))
-//        superView.addConstraint(NSLayoutConstraint(item: document.chipView, attribute: .trailing, relatedBy: .equal, toItem: selectionTabView, attribute: .leading, multiplier: 1.0, constant: -4.0))
-//        let width = selectionTabView.bounds.width
-//        selectionTabView.addConstraint(NSLayoutConstraint(item: selectionTabView, attribute: .width, relatedBy: .equal, toItem: nil, attribute: .notAnAttribute, multiplier: 1.0, constant: width))
-//        selectionTabView.needsLayout = true
-//        selectionTabView.delegate = document
-//    }
-
 }

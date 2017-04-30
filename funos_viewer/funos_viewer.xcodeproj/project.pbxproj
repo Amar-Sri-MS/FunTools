@@ -73,7 +73,7 @@
 		A716FC7A1EAD73C7008395EC /* F1SelectionWindow.xib in Resources */ = {isa = PBXBuildFile; fileRef = A716FC791EAD73C7008395EC /* F1SelectionWindow.xib */; };
 		A716FC7E1EAD73E6008395EC /* F1SelectionController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FC7D1EAD73E6008395EC /* F1SelectionController.swift */; };
 		A7FD266E1EB51FCE0049E0C0 /* libfunclient.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A7FD266D1EB51FCE0049E0C0 /* libfunclient.a */; };
-		A7FD26701EB54EF20049E0C0 /* F1InputView.xib in Resources */ = {isa = PBXBuildFile; fileRef = A7FD266F1EB54EF20049E0C0 /* F1InputView.xib */; };
+		A7FD26701EB54EF20049E0C0 /* F1InputWindow.xib in Resources */ = {isa = PBXBuildFile; fileRef = A7FD266F1EB54EF20049E0C0 /* F1InputWindow.xib */; };
 		A7FD26721EB54F9F0049E0C0 /* F1InputController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7FD26711EB54F9F0049E0C0 /* F1InputController.swift */; };
 		A7FD26741EB557CB0049E0C0 /* F1ChipWindow.xib in Resources */ = {isa = PBXBuildFile; fileRef = A7FD26731EB557CB0049E0C0 /* F1ChipWindow.xib */; };
 /* End PBXBuildFile section */
@@ -149,7 +149,7 @@
 		A716FC791EAD73C7008395EC /* F1SelectionWindow.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = F1SelectionWindow.xib; sourceTree = "<group>"; };
 		A716FC7D1EAD73E6008395EC /* F1SelectionController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = F1SelectionController.swift; sourceTree = "<group>"; };
 		A7FD266D1EB51FCE0049E0C0 /* libfunclient.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libfunclient.a; path = ../../FunSDK/lib/Darwin/libfunclient.a; sourceTree = "<group>"; };
-		A7FD266F1EB54EF20049E0C0 /* F1InputView.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = F1InputView.xib; sourceTree = "<group>"; };
+		A7FD266F1EB54EF20049E0C0 /* F1InputWindow.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = F1InputWindow.xib; sourceTree = "<group>"; };
 		A7FD26711EB54F9F0049E0C0 /* F1InputController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = F1InputController.swift; sourceTree = "<group>"; };
 		A7FD26731EB557CB0049E0C0 /* F1ChipWindow.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = F1ChipWindow.xib; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -267,6 +267,9 @@
 			isa = PBXGroup;
 			children = (
 				A716FC5F1EAD6A5F008395EC /* CocoaExtras.swift */,
+				A716FC631EAD6B36008395EC /* F1UIExtras.swift */,
+				A716FC711EAD7082008395EC /* F1MiscTypes.swift */,
+				A716FC6F1EAD7040008395EC /* F1Tile.swift */,
 				A716FC671EAD6C3A008395EC /* SimulationSamples.swift */,
 				A716FC691EAD6C40008395EC /* SimulationSamplesView.swift */,
 				A716FC651EAD6B63008395EC /* SimulationParameters.swift */,
@@ -275,12 +278,9 @@
 				A716FC6D1EAD7009008395EC /* F1FlowView.swift */,
 				A7FD26711EB54F9F0049E0C0 /* F1InputController.swift */,
 				A716FC7D1EAD73E6008395EC /* F1SelectionController.swift */,
-				A716FC631EAD6B36008395EC /* F1UIExtras.swift */,
-				A716FC6F1EAD7040008395EC /* F1Tile.swift */,
-				A716FC711EAD7082008395EC /* F1MiscTypes.swift */,
 				A716FC751EAD73B6008395EC /* F1SimDocument.swift */,
+				A7FD266F1EB54EF20049E0C0 /* F1InputWindow.xib */,
 				A7FD26731EB557CB0049E0C0 /* F1ChipWindow.xib */,
-				A7FD266F1EB54EF20049E0C0 /* F1InputView.xib */,
 				A716FC791EAD73C7008395EC /* F1SelectionWindow.xib */,
 			);
 			name = F1UI;
@@ -361,7 +361,7 @@
 				A716FBE61EAD33E0008395EC /* hw in Resources */,
 				A7FD26741EB557CB0049E0C0 /* F1ChipWindow.xib in Resources */,
 				A716FBE41EA83CBB008395EC /* apps in Resources */,
-				A7FD26701EB54EF20049E0C0 /* F1InputView.xib in Resources */,
+				A7FD26701EB54EF20049E0C0 /* F1InputWindow.xib in Resources */,
 				A716FBDC1EA67D3C008395EC /* funos in Resources */,
 				A716FBEC1EAD63FA008395EC /* PureSwiftExtras in Resources */,
 				A716FBCF1EA67C82008395EC /* Assets.xcassets in Resources */,

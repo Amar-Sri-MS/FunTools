@@ -307,3 +307,17 @@ extension NSText {
         string = text
     }
 }
+
+extension NSTextField {
+    func setJSONValue(_ json: JSON) {
+        switch json {
+        case let .integer(i): integerValue = i
+        case let .real(r): doubleValue = r
+        case let .bool(b): stringValue = b ? "true" : "false"
+        case .null: stringValue = "null"
+        case let .string(s): stringValue = s
+        case let .array(a): stringValue = "[\(a.count) items]"
+        case let .dictionary(d): stringValue = "{\(d.count) items}"
+        }
+    }
+}

@@ -8,6 +8,7 @@
 import AppKit
 
 class F1InputController: NSObject {
+    @IBOutlet var window: NSWindow!
     @IBOutlet var view: NSView!
 
     var tabView: NSTabView!
@@ -32,25 +33,11 @@ class F1InputController: NSObject {
 //        print("DESTROY F1InputController")
 //    }
     func loadNib() {
-        let ok = Bundle.main.loadNibNamed("F1InputView", owner: self, topLevelObjects: nil)
+        let ok = Bundle.main.loadNibNamed("F1InputWindow", owner: self, topLevelObjects: nil)
         assert(ok)
         assert(view != nil)
         tabView = view.subviews.first as! NSTabView
     }
-    func reinstantiateLayoutConstraints() {
-//        let superView = tabView.superview!
-//        tabView.removeConstraints(tabView.constraints)
-//        tabView.translatesAutoresizingMaskIntoConstraints = false
-//        superView.addConstraint(NSLayoutConstraint(item: superView, attribute: .top, relatedBy: .equal, toItem: tabView, attribute: .top, multiplier: 1.0, constant: -4.0))
-//        superView.addConstraint(NSLayoutConstraint(item: superView, attribute: .bottom, relatedBy: .equal, toItem: tabView, attribute: .bottom, multiplier: 1.0, constant: 3.0))
-//        superView.addConstraint(NSLayoutConstraint(item: superView, attribute: .leading, relatedBy: .equal, toItem: tabView, attribute: .leading, multiplier: 1.0, constant: 2.0))
-//        superView.addConstraint(NSLayoutConstraint(item: document.chipView, attribute: .leading, relatedBy: .equal, toItem: tabView, attribute: .trailing, multiplier: 1.0, constant: 4.0))
-//        let width = tabView.bounds.width
-//        tabView.addConstraint(NSLayoutConstraint(item: tabView, attribute: .width, relatedBy: .equal, toItem: nil, attribute: .notAnAttribute, multiplier: 1.0, constant: width))
-        tabView.needsLayout = true
-        tabView.delegate = document
-    }
-
     func firstF1Setup() {
         let json = document.doF1Command("help")
         if json != nil {

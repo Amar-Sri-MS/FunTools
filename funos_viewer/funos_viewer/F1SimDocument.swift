@@ -8,11 +8,7 @@
 import AppKit
 
 @objc class F1SimDocument: NSDocument, NSTabViewDelegate, NSWindowDelegate {
-    // Simulation Parameters
-    @IBOutlet var inputPlaceholder: NSView! // replaced after loading XIB file
-    // Chip
     @IBOutlet var chipView: NSChipView!
-
     var inputController: F1InputController! // All the parameters and such
     var selectionController: F1SelectionController! // Selection info
 
@@ -124,10 +120,7 @@ import AppKit
         center.addObserver(self, selector: #selector(F1SimDocument.noteSelectionChanged(_:)), name: NSNotification.Name("SelectionChanged"), object: chipView)
 
         inputController = F1InputController(document: self)
-        let ipf = inputPlaceholder.frame
-        inputPlaceholder.superview!.replaceSubview(inputPlaceholder, with: inputController.view)
-        inputController.reinstantiateLayoutConstraints()
-        inputController.view.frame = ipf
+//        inputController.reinstantiateLayoutConstraints()
         inputController.addUIForAllParameters()
 
         selectionController = F1SelectionController(document: self)
@@ -141,7 +134,7 @@ import AppKit
 //        addWindowController(winCon)
     }
     func doF1Command(_ verb: String, _ argsArray: [String]) -> JSON! {
-        let debug = true
+        let debug = foilNeverExecutedWarnings
         let argsArray: String = argsArray.joinDescriptions(", ")
         let r = dpcrun_command(&socket, verb, "[\(argsArray)]")
         if r == nil {
