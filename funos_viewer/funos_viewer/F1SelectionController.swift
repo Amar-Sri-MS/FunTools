@@ -28,7 +28,7 @@ class F1SelectionController: NSObject {
 //        print("DESTROY F1SelectionController")
 //    }
     func loadNib() {
-        let ok = Bundle.main.loadNibNamed("F1SelectionView", owner: self, topLevelObjects: nil)
+        let ok = Bundle.main.loadNibNamed("F1SelectionWindow", owner: self, topLevelObjects: nil)
         assert(ok)
         let view = window.contentView!.subviews.first!
         assert(view == selectionTabView)
@@ -36,6 +36,7 @@ class F1SelectionController: NSObject {
         selectionMessagesText.makeNonEditableFixedPitchOfSize(12.0)
         selectionQueuesText.makeNonEditableFixedPitchOfSize(12.0)
         clearSelectionTab()
+        window.makeKeyAndOrderFront(nil)
     }
     var isRelativeHeat: Bool { return selectionRelativeHeat.boolValue }
 
@@ -66,18 +67,18 @@ class F1SelectionController: NSObject {
     @IBAction func fiddleWithOptions(_ sender: NSObject?) {
         document.noteSelectionChangedAndUpdate()
     }
-    func reinstantiateLayoutConstraints() {
-        let superView = selectionTabView.superview!
-        selectionTabView.removeConstraints(selectionTabView.constraints)
-        selectionTabView.translatesAutoresizingMaskIntoConstraints = false
-        superView.addConstraint(NSLayoutConstraint(item: superView, attribute: .top, relatedBy: .equal, toItem: selectionTabView, attribute: .top, multiplier: 1.0, constant: -4.0))
-        superView.addConstraint(NSLayoutConstraint(item: superView, attribute: .bottom, relatedBy: .equal, toItem: selectionTabView, attribute: .bottom, multiplier: 1.0, constant: 3.0))
-        superView.addConstraint(NSLayoutConstraint(item: superView, attribute: .trailing, relatedBy: .equal, toItem: selectionTabView, attribute: .trailing, multiplier: 1.0, constant: 2.0))
-        superView.addConstraint(NSLayoutConstraint(item: document.chipView, attribute: .trailing, relatedBy: .equal, toItem: selectionTabView, attribute: .leading, multiplier: 1.0, constant: -4.0))
-        let width = selectionTabView.bounds.width
-        selectionTabView.addConstraint(NSLayoutConstraint(item: selectionTabView, attribute: .width, relatedBy: .equal, toItem: nil, attribute: .notAnAttribute, multiplier: 1.0, constant: width))
-        selectionTabView.needsLayout = true
-        selectionTabView.delegate = document
-    }
+//    func reinstantiateLayoutConstraints() {
+//        let superView = selectionTabView.superview!
+//        selectionTabView.removeConstraints(selectionTabView.constraints)
+//        selectionTabView.translatesAutoresizingMaskIntoConstraints = false
+//        superView.addConstraint(NSLayoutConstraint(item: superView, attribute: .top, relatedBy: .equal, toItem: selectionTabView, attribute: .top, multiplier: 1.0, constant: -4.0))
+//        superView.addConstraint(NSLayoutConstraint(item: superView, attribute: .bottom, relatedBy: .equal, toItem: selectionTabView, attribute: .bottom, multiplier: 1.0, constant: 3.0))
+//        superView.addConstraint(NSLayoutConstraint(item: superView, attribute: .trailing, relatedBy: .equal, toItem: selectionTabView, attribute: .trailing, multiplier: 1.0, constant: 2.0))
+//        superView.addConstraint(NSLayoutConstraint(item: document.chipView, attribute: .trailing, relatedBy: .equal, toItem: selectionTabView, attribute: .leading, multiplier: 1.0, constant: -4.0))
+//        let width = selectionTabView.bounds.width
+//        selectionTabView.addConstraint(NSLayoutConstraint(item: selectionTabView, attribute: .width, relatedBy: .equal, toItem: nil, attribute: .notAnAttribute, multiplier: 1.0, constant: width))
+//        selectionTabView.needsLayout = true
+//        selectionTabView.delegate = document
+//    }
 
 }

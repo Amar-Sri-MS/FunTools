@@ -12,8 +12,6 @@ import AppKit
     @IBOutlet var inputPlaceholder: NSView! // replaced after loading XIB file
     // Chip
     @IBOutlet var chipView: NSChipView!
-    // Selection
-    @IBOutlet var selectionPlaceholder: NSView! // replaced after loading XIB file
 
     var inputController: F1InputController! // All the parameters and such
     var selectionController: F1SelectionController! // Selection info
@@ -133,11 +131,6 @@ import AppKit
         inputController.addUIForAllParameters()
 
         selectionController = F1SelectionController(document: self)
-        let scf = selectionPlaceholder.frame
-        selectionPlaceholder.superview!.replaceSubview(selectionPlaceholder, with: selectionController.selectionTabView)
-        // We need to add constraints back
-        selectionController.reinstantiateLayoutConstraints()
-        selectionController.selectionTabView.frame = scf
 
         window.makeKeyAndOrderFront(nil)
         chipView.translatesAutoresizingMaskIntoConstraints = false

@@ -70,7 +70,7 @@
 		A716FC701EAD7040008395EC /* F1Tile.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FC6F1EAD7040008395EC /* F1Tile.swift */; };
 		A716FC721EAD7082008395EC /* F1MiscTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FC711EAD7082008395EC /* F1MiscTypes.swift */; };
 		A716FC761EAD73B6008395EC /* F1SimDocument.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FC751EAD73B6008395EC /* F1SimDocument.swift */; };
-		A716FC7A1EAD73C7008395EC /* F1SelectionView.xib in Resources */ = {isa = PBXBuildFile; fileRef = A716FC791EAD73C7008395EC /* F1SelectionView.xib */; };
+		A716FC7A1EAD73C7008395EC /* F1SelectionWindow.xib in Resources */ = {isa = PBXBuildFile; fileRef = A716FC791EAD73C7008395EC /* F1SelectionWindow.xib */; };
 		A716FC7E1EAD73E6008395EC /* F1SelectionController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FC7D1EAD73E6008395EC /* F1SelectionController.swift */; };
 		A7FD266E1EB51FCE0049E0C0 /* libfunclient.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A7FD266D1EB51FCE0049E0C0 /* libfunclient.a */; };
 		A7FD26701EB54EF20049E0C0 /* F1InputView.xib in Resources */ = {isa = PBXBuildFile; fileRef = A7FD266F1EB54EF20049E0C0 /* F1InputView.xib */; };
@@ -146,7 +146,7 @@
 		A716FC6F1EAD7040008395EC /* F1Tile.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = F1Tile.swift; sourceTree = "<group>"; };
 		A716FC711EAD7082008395EC /* F1MiscTypes.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = F1MiscTypes.swift; sourceTree = "<group>"; };
 		A716FC751EAD73B6008395EC /* F1SimDocument.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = F1SimDocument.swift; sourceTree = "<group>"; };
-		A716FC791EAD73C7008395EC /* F1SelectionView.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = F1SelectionView.xib; sourceTree = "<group>"; };
+		A716FC791EAD73C7008395EC /* F1SelectionWindow.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = F1SelectionWindow.xib; sourceTree = "<group>"; };
 		A716FC7D1EAD73E6008395EC /* F1SelectionController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = F1SelectionController.swift; sourceTree = "<group>"; };
 		A7FD266D1EB51FCE0049E0C0 /* libfunclient.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libfunclient.a; path = ../../FunSDK/lib/Darwin/libfunclient.a; sourceTree = "<group>"; };
 		A7FD266F1EB54EF20049E0C0 /* F1InputView.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = F1InputView.xib; sourceTree = "<group>"; };
@@ -281,7 +281,7 @@
 				A716FC751EAD73B6008395EC /* F1SimDocument.swift */,
 				A7FD26731EB557CB0049E0C0 /* F1ChipWindow.xib */,
 				A7FD266F1EB54EF20049E0C0 /* F1InputView.xib */,
-				A716FC791EAD73C7008395EC /* F1SelectionView.xib */,
+				A716FC791EAD73C7008395EC /* F1SelectionWindow.xib */,
 			);
 			name = F1UI;
 			path = funos_viewer;
@@ -366,7 +366,7 @@
 				A716FBEC1EAD63FA008395EC /* PureSwiftExtras in Resources */,
 				A716FBCF1EA67C82008395EC /* Assets.xcassets in Resources */,
 				A716FBD21EA67C82008395EC /* MainMenu.xib in Resources */,
-				A716FC7A1EAD73C7008395EC /* F1SelectionView.xib in Resources */,
+				A716FC7A1EAD73C7008395EC /* F1SelectionWindow.xib in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
