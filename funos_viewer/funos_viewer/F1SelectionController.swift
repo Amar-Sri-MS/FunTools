@@ -18,6 +18,15 @@ class F1SelectionController: NSObject, NSTabViewDelegate, NSTableViewDelegate, N
 
     @IBOutlet var wusTable: NSTableView!
 
+    class WUInfo: NSObject {
+        // we subclass NSObject to get valueForKeyPath
+        var wu: String = ""
+        var count: Int = 0
+        var duration: Int = 0
+        var avgDuration: Int { return count == 0 ? 0 : duration / count }
+    }
+    var allInfo: [WUInfo] = []
+
     var wuTimer: Timer!
     unowned let document: F1SimDocument
 
@@ -28,18 +37,27 @@ class F1SelectionController: NSObject, NSTabViewDelegate, NSTableViewDelegate, N
         selectionTabView.delegate = self
         wusTable.delegate = self
         wusTable.dataSource = self
+        // The next two lines are a horrible hack.  Without them, for some reason you need to go to the WUs TAB twice before you get any display.  Makes no sense.
+        async {
+            self.selectionTabView.performSelector(onMainThread: #selector(NSTabView.selectNextTabViewItem), with: nil, waitUntilDone: true)
+            self.selectionTabView.performSelector(onMainThread: #selector(NSTabView.selectPreviousTabViewItem), with: nil, waitUntilDone: true)
+        }
     }
     // uncomment to debug leaks
 //    deinit {
 //        print("DESTROY F1SelectionController")
 //    }
+    public func tabView(_ tabView: NSTabView, willSelect tabViewItem: NSTabViewItem?) {
+//        print("Received willSelect notification tabView changed to \(tabViewItem!.label)")
+        if tabViewItem!.label != "WUs" { return }
+        doRefreshWUs()
+    }
     public func tabView(_ tabView: NSTabView, didSelect tabViewItem: NSTabViewItem?) {
-//        print("Received notification tabView changed to \(tabViewItem!.label)")
-        if tabViewItem!.label == "WUs" {
-            wuTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true, block: { _ in
-                self.performSelector(onMainThread: #selector(F1SelectionController.refreshWU), with: nil, waitUntilDone: false)
-            })
-        }
+//        print("Received didSelect notification tabView changed to \(tabViewItem!.label)")
+        if tabViewItem!.label != "WUs" { return }
+        wuTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true, block: { _ in
+            self.performSelector(onMainThread: #selector(F1SelectionController.refreshWU), with: nil, waitUntilDone: false)
+        })
     }
     func refreshWU() {
         let tabViewItem = selectionTabView.selectedTabViewItem
@@ -49,58 +67,52 @@ class F1SelectionController: NSObject, NSTabViewDelegate, NSTableViewDelegate, N
             wuTimer?.invalidate()
         }
     }
-    struct WUInfo {
-        var wu: String = ""
-        var count: Int = 0
-        var duration: Int = 0
-    }
-    var allInfo: [WUInfo] = []
-    func textFieldAt(atColumn col: Int, row: Int) -> NSTextField! {
-        return wusTable.view(atColumn: col, row: row, makeIfNecessary: false) as? NSTextField
+    func updateAllInfo(counts: [String: JSON], durations: [String: JSON]) -> Bool {
+        // returns whether the number of rows changed
+        let allExisting: Set<String> = Set(allInfo.map { $0.wu })
+        for i in 0 ..< allInfo.count {
+            let info = allInfo[i]
+            let key = info.wu
+            if counts[key] == nil { continue }
+            info.count = counts[key]!.integerValue
+            info.duration = durations[key]?.integerValue ?? 0
+        }
+        let newKeysUnsorted = counts.keys.filter { !allExisting.contains($0) }
+        if newKeysUnsorted.isEmpty { return false }
+        let newKeys = newKeysUnsorted.sorted { counts[$0]!.integerValue > counts[$1]!.integerValue }
+        for key in newKeys {
+            let info = WUInfo()
+            info.wu = key
+            info.count = counts[key]!.integerValue
+            info.duration = durations[key]?.integerValue ?? 0
+            allInfo |= info
+        }
+        return true
     }
     func doRefreshWUs() {
+//        let tabViewItem = selectionTabView.selectedTabViewItem
+//        print("In doRefreshWUs() tabViewItem!.label=\(tabViewItem!.label)")
         let counts = document.doF1Command("peek", "stats/wus/counts")?.dictionaryValue
         if counts == nil || counts!.isEmpty { return }
         let durations = document.doF1Command("peek", "stats/wus/durations")?.dictionaryValue
         if durations == nil || durations!.isEmpty { return }
-        let allExisting: Set<String> = Set(allInfo.map { $0.wu })
-        for i in 0 ..< allInfo.count {
-            var info = allInfo[i]
-            let key = info.wu
-            if counts![key] == nil { continue }
-            info.count = counts![key]!.integerValue
-            info.duration = durations![key]?.integerValue ?? 0
-            allInfo[i] = info
-        }
-        var newRows = false
-        for key in counts!.keys where !allExisting.contains(key) {
-            var info = WUInfo()
-            info.wu = key
-            info.count = counts![key]!.integerValue
-            info.duration = durations![key]?.integerValue ?? 0
-            allInfo |= info
-            newRows = true
-        }
-//        if newRows {
-//            wusTable.noteNumberOfRowsChanged()
-//        } else {
-            wusTable.reloadData()
-//        }
+        let newRows = updateAllInfo(counts: counts!, durations: durations!)
+        if newRows { wusTable.noteNumberOfRowsChanged() }
+        wusTable.reloadData()
     }
     func numberOfRows(in tableView: NSTableView) -> Int {
         return allInfo.count
     }
     func tableView(_ tableView: NSTableView, objectValueFor tableColumn: NSTableColumn?, row: Int) -> Any? {
         let info = allInfo[row]
-        switch tableColumn!.title {
-            case "WU name": return info.wu
-            case "count": return info.count.description
-            case "duration": return info.duration.description
-            case "avg duration":
-                let d = info.count == 0 ? 0.0 : Double(info.duration) / Double(info.count)
-                return d.round2.description
-            default: fatalError("identifier = \(tableColumn!.title)")
-        }
+        let value: Any? = info.value(forKeyPath: tableColumn!.identifier)
+        return (value as! NSObject).description
+    }
+    func tableView(_ tableView: NSTableView, sortDescriptorsDidChange oldDescriptors: [NSSortDescriptor]) {
+        let allInfoAsMutableArray = NSMutableArray(array: allInfo)
+        allInfoAsMutableArray.sort(using: tableView.sortDescriptors)
+        allInfo = allInfoAsMutableArray as! [F1SelectionController.WUInfo]
+        tableView.reloadData()
     }
     func loadNib() {
         let ok = Bundle.main.loadNibNamed("F1SelectionWindow", owner: self, topLevelObjects: nil)

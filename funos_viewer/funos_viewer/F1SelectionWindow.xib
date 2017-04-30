@@ -29,9 +29,8 @@
                 <rect key="frame" x="0.0" y="0.0" width="470" height="689"/>
                 <autoresizingMask key="autoresizingMask"/>
                 <subviews>
-                    <tabView fixedFrame="YES" initialItem="r75-NT-SHv" translatesAutoresizingMaskIntoConstraints="NO" id="A0G-L6-Uxl">
+                    <tabView initialItem="r75-NT-SHv" translatesAutoresizingMaskIntoConstraints="NO" id="A0G-L6-Uxl">
                         <rect key="frame" x="-8" y="9" width="486" height="686"/>
-                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                         <font key="font" metaFont="system"/>
                         <tabViewItems>
                             <tabViewItem label="Output" identifier="0" id="r75-NT-SHv">
@@ -73,29 +72,29 @@
                                         </scrollView>
                                     </subviews>
                                     <constraints>
-                                        <constraint firstItem="MQc-4W-8IZ" firstAttribute="top" secondItem="7yC-Pe-ubq" secondAttribute="bottom" constant="5" id="Jvd-eJ-UoP"/>
-                                        <constraint firstItem="7yC-Pe-ubq" firstAttribute="leading" secondItem="Wxz-IZ-UgU" secondAttribute="leading" constant="2" id="O9Z-76-1SZ"/>
-                                        <constraint firstAttribute="bottom" secondItem="MQc-4W-8IZ" secondAttribute="bottom" id="OqP-aY-WWL"/>
-                                        <constraint firstItem="7yC-Pe-ubq" firstAttribute="top" secondItem="Wxz-IZ-UgU" secondAttribute="top" constant="3" id="PDl-kh-fIq"/>
-                                        <constraint firstItem="7yC-Pe-ubq" firstAttribute="leading" secondItem="MQc-4W-8IZ" secondAttribute="leading" id="dkA-lL-8VE"/>
-                                        <constraint firstItem="7yC-Pe-ubq" firstAttribute="trailing" secondItem="MQc-4W-8IZ" secondAttribute="trailing" id="p3P-Sf-b43"/>
-                                        <constraint firstItem="7yC-Pe-ubq" firstAttribute="centerX" secondItem="Wxz-IZ-UgU" secondAttribute="centerX" id="pCx-ND-Hqx"/>
-                                        <constraint firstItem="MQc-4W-8IZ" firstAttribute="top" secondItem="Wxz-IZ-UgU" secondAttribute="top" constant="552" id="pOw-7o-53Z"/>
+                                        <constraint firstItem="7yC-Pe-ubq" firstAttribute="trailing" secondItem="MQc-4W-8IZ" secondAttribute="trailing" id="H3u-Ka-vDQ"/>
+                                        <constraint firstItem="7yC-Pe-ubq" firstAttribute="centerX" secondItem="Wxz-IZ-UgU" secondAttribute="centerX" id="Ilz-7G-vmv"/>
+                                        <constraint firstAttribute="bottom" secondItem="MQc-4W-8IZ" secondAttribute="bottom" id="Qqj-8l-Yw6"/>
+                                        <constraint firstItem="MQc-4W-8IZ" firstAttribute="top" secondItem="Wxz-IZ-UgU" secondAttribute="top" constant="552" id="R7p-1G-wm6"/>
+                                        <constraint firstItem="7yC-Pe-ubq" firstAttribute="leading" secondItem="MQc-4W-8IZ" secondAttribute="leading" id="Zjj-RE-2FX"/>
+                                        <constraint firstItem="MQc-4W-8IZ" firstAttribute="top" secondItem="7yC-Pe-ubq" secondAttribute="bottom" constant="5" id="cop-hk-ssQ"/>
+                                        <constraint firstItem="7yC-Pe-ubq" firstAttribute="top" secondItem="Wxz-IZ-UgU" secondAttribute="top" constant="3" id="nk4-CZ-Stv"/>
+                                        <constraint firstItem="7yC-Pe-ubq" firstAttribute="leading" secondItem="Wxz-IZ-UgU" secondAttribute="leading" constant="2" id="xNY-ol-XNy"/>
                                     </constraints>
                                 </view>
                             </tabViewItem>
                             <tabViewItem label="WUs" identifier="2" id="BQx-W1-bVI">
-                                <view key="view" ambiguous="YES" id="sxf-kD-ppu">
+                                <view key="view" id="sxf-kD-ppu">
                                     <rect key="frame" x="10" y="33" width="466" height="640"/>
                                     <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                     <subviews>
-                                        <scrollView toolTip="Credits for the selected unit" ambiguous="YES" horizontalLineScroll="10" horizontalPageScroll="10" verticalLineScroll="10" verticalPageScroll="10" hasHorizontalScroller="NO" usesPredominantAxisScrolling="NO" translatesAutoresizingMaskIntoConstraints="NO" id="GPF-jm-n1j">
+                                        <scrollView toolTip="Credits for the selected unit" horizontalLineScroll="10" horizontalPageScroll="10" verticalLineScroll="10" verticalPageScroll="10" hasHorizontalScroller="NO" usesPredominantAxisScrolling="NO" translatesAutoresizingMaskIntoConstraints="NO" id="GPF-jm-n1j">
                                             <rect key="frame" x="-3" y="2" width="470" height="635"/>
-                                            <clipView key="contentView" ambiguous="YES" id="imt-7n-rDq">
+                                            <clipView key="contentView" id="imt-7n-rDq">
                                                 <rect key="frame" x="1" y="1" width="453" height="633"/>
                                                 <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                                 <subviews>
-                                                    <textView ambiguous="YES" importsGraphics="NO" richText="NO" usesFontPanel="YES" findStyle="panel" continuousSpellChecking="YES" allowsUndo="YES" usesRuler="YES" allowsNonContiguousLayout="YES" quoteSubstitution="YES" dashSubstitution="YES" spellingCorrection="YES" smartInsertDelete="YES" id="Q65-Ef-neu">
+                                                    <textView importsGraphics="NO" richText="NO" usesFontPanel="YES" findStyle="panel" continuousSpellChecking="YES" allowsUndo="YES" usesRuler="YES" allowsNonContiguousLayout="YES" quoteSubstitution="YES" dashSubstitution="YES" spellingCorrection="YES" smartInsertDelete="YES" id="Q65-Ef-neu">
                                                         <rect key="frame" x="0.0" y="0.0" width="453" height="633"/>
                                                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                                         <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
@@ -118,20 +117,20 @@
                                                 <autoresizingMask key="autoresizingMask"/>
                                             </scroller>
                                         </scrollView>
-                                        <scrollView wantsLayer="YES" ambiguous="YES" autohidesScrollers="YES" horizontalLineScroll="19" horizontalPageScroll="10" verticalLineScroll="19" verticalPageScroll="10" usesPredominantAxisScrolling="NO" translatesAutoresizingMaskIntoConstraints="NO" id="A8N-5g-iUW">
+                                        <scrollView wantsLayer="YES" autohidesScrollers="YES" horizontalLineScroll="19" horizontalPageScroll="10" verticalLineScroll="19" verticalPageScroll="10" usesPredominantAxisScrolling="NO" translatesAutoresizingMaskIntoConstraints="NO" id="A8N-5g-iUW">
                                             <rect key="frame" x="-3" y="-9" width="470" height="646"/>
-                                            <clipView key="contentView" ambiguous="YES" id="tFf-xt-R1Q">
+                                            <clipView key="contentView" id="tFf-xt-R1Q">
                                                 <rect key="frame" x="1" y="0.0" width="468" height="645"/>
                                                 <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                                 <subviews>
-                                                    <tableView verticalHuggingPriority="750" allowsExpansionToolTips="YES" columnAutoresizingStyle="firstColumnOnly" alternatingRowBackgroundColors="YES" columnSelection="YES" autosaveColumns="NO" autosaveName="Columns" headerView="sVR-xh-ZLF" id="rkh-eM-scR">
+                                                    <tableView verticalHuggingPriority="750" allowsExpansionToolTips="YES" columnAutoresizingStyle="lastColumnOnly" alternatingRowBackgroundColors="YES" columnReordering="NO" columnSelection="YES" autosaveColumns="NO" autosaveName="Columns" headerView="sVR-xh-ZLF" id="rkh-eM-scR">
                                                         <rect key="frame" x="0.0" y="0.0" width="468" height="622"/>
                                                         <autoresizingMask key="autoresizingMask"/>
                                                         <size key="intercellSpacing" width="3" height="2"/>
                                                         <color key="backgroundColor" name="controlBackgroundColor" catalog="System" colorSpace="catalog"/>
                                                         <color key="gridColor" name="gridColor" catalog="System" colorSpace="catalog"/>
                                                         <tableColumns>
-                                                            <tableColumn width="286" minWidth="40" maxWidth="1000" id="ySp-t4-Th3" userLabel="Name">
+                                                            <tableColumn identifier="wu" width="286" minWidth="40" maxWidth="1000" id="ySp-t4-Th3" userLabel="Name">
                                                                 <tableHeaderCell key="headerCell" lineBreakMode="truncatingTail" borderStyle="border" alignment="left" title="WU name">
                                                                     <font key="font" metaFont="smallSystem"/>
                                                                     <color key="textColor" name="headerTextColor" catalog="System" colorSpace="catalog"/>
@@ -142,9 +141,10 @@
                                                                     <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                                                                     <color key="backgroundColor" name="controlBackgroundColor" catalog="System" colorSpace="catalog"/>
                                                                 </textFieldCell>
+                                                                <sortDescriptor key="sortDescriptorPrototype" selector="compare:" sortKey="wu"/>
                                                                 <tableColumnResizingMask key="resizingMask" resizeWithTable="YES" userResizable="YES"/>
                                                             </tableColumn>
-                                                            <tableColumn width="70" minWidth="40" maxWidth="90" id="gDZ-Rr-BIk" userLabel="Count">
+                                                            <tableColumn identifier="count" width="70" minWidth="40" maxWidth="100" id="gDZ-Rr-BIk" userLabel="Count">
                                                                 <tableHeaderCell key="headerCell" lineBreakMode="truncatingTail" borderStyle="border" alignment="right" title="count">
                                                                     <font key="font" metaFont="smallSystem"/>
                                                                     <color key="textColor" name="headerTextColor" catalog="System" colorSpace="catalog"/>
@@ -155,10 +155,10 @@
                                                                     <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                                                                     <color key="backgroundColor" name="controlBackgroundColor" catalog="System" colorSpace="catalog"/>
                                                                 </textFieldCell>
-                                                                <sortDescriptor key="sortDescriptorPrototype" selector="compare:" sortKey="key" ascending="NO"/>
+                                                                <sortDescriptor key="sortDescriptorPrototype" selector="compare:" sortKey="count" ascending="NO"/>
                                                                 <tableColumnResizingMask key="resizingMask" resizeWithTable="YES" userResizable="YES"/>
                                                             </tableColumn>
-                                                            <tableColumn width="50" minWidth="40" maxWidth="70" id="eOM-7a-9GJ" userLabel="Duration">
+                                                            <tableColumn identifier="duration" width="50" minWidth="40" maxWidth="100" id="eOM-7a-9GJ" userLabel="Duration">
                                                                 <tableHeaderCell key="headerCell" lineBreakMode="truncatingTail" borderStyle="border" alignment="right" title="duration">
                                                                     <font key="font" metaFont="smallSystem"/>
                                                                     <color key="textColor" name="headerTextColor" catalog="System" colorSpace="catalog"/>
@@ -169,10 +169,10 @@
                                                                     <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                                                                     <color key="backgroundColor" name="controlBackgroundColor" catalog="System" colorSpace="catalog"/>
                                                                 </textFieldCell>
-                                                                <sortDescriptor key="sortDescriptorPrototype" selector="compare:" sortKey="key" ascending="NO"/>
+                                                                <sortDescriptor key="sortDescriptorPrototype" selector="compare:" sortKey="duration" ascending="NO"/>
                                                                 <tableColumnResizingMask key="resizingMask" resizeWithTable="YES" userResizable="YES"/>
                                                             </tableColumn>
-                                                            <tableColumn width="50" minWidth="40" maxWidth="60" id="WqN-Tr-YQn" userLabel="AvgDuration">
+                                                            <tableColumn identifier="avgDuration" width="50" minWidth="40" maxWidth="100" id="WqN-Tr-YQn" userLabel="AvgDuration">
                                                                 <tableHeaderCell key="headerCell" lineBreakMode="truncatingTail" borderStyle="border" alignment="right" title="avg duration">
                                                                     <font key="font" metaFont="smallSystem"/>
                                                                     <color key="textColor" name="headerTextColor" catalog="System" colorSpace="catalog"/>
@@ -183,7 +183,7 @@
                                                                     <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                                                                     <color key="backgroundColor" name="controlBackgroundColor" catalog="System" colorSpace="catalog"/>
                                                                 </textFieldCell>
-                                                                <sortDescriptor key="sortDescriptorPrototype" selector="compare:" sortKey="key" ascending="NO"/>
+                                                                <sortDescriptor key="sortDescriptorPrototype" selector="compare:" sortKey="avgDuration" ascending="NO"/>
                                                                 <tableColumnResizingMask key="resizingMask" resizeWithTable="YES" userResizable="YES"/>
                                                             </tableColumn>
                                                         </tableColumns>
@@ -205,13 +205,14 @@
                                         </scrollView>
                                     </subviews>
                                     <constraints>
-                                        <constraint firstAttribute="bottom" secondItem="A8N-5g-iUW" secondAttribute="bottom" constant="-9" id="3yC-38-f8O"/>
-                                        <constraint firstItem="A8N-5g-iUW" firstAttribute="top" secondItem="GPF-jm-n1j" secondAttribute="top" id="Bjd-49-lG5"/>
-                                        <constraint firstItem="A8N-5g-iUW" firstAttribute="leading" secondItem="sxf-kD-ppu" secondAttribute="leading" constant="-3" id="fe2-ph-dAU"/>
-                                        <constraint firstItem="A8N-5g-iUW" firstAttribute="trailing" secondItem="GPF-jm-n1j" secondAttribute="trailing" id="jcb-93-dhg"/>
-                                        <constraint firstAttribute="trailing" secondItem="A8N-5g-iUW" secondAttribute="trailing" constant="-1" id="ot0-aB-rvH"/>
-                                        <constraint firstItem="A8N-5g-iUW" firstAttribute="top" secondItem="sxf-kD-ppu" secondAttribute="top" constant="3" id="rDT-nl-WPh"/>
-                                        <constraint firstItem="A8N-5g-iUW" firstAttribute="leading" secondItem="GPF-jm-n1j" secondAttribute="leading" id="uDv-Ba-viZ"/>
+                                        <constraint firstItem="GPF-jm-n1j" firstAttribute="leading" secondItem="A8N-5g-iUW" secondAttribute="leading" id="Bf1-xv-Tsv"/>
+                                        <constraint firstItem="A8N-5g-iUW" firstAttribute="leading" secondItem="sxf-kD-ppu" secondAttribute="leading" constant="-3" id="KCV-JO-5ie"/>
+                                        <constraint firstItem="A8N-5g-iUW" firstAttribute="top" secondItem="GPF-jm-n1j" secondAttribute="top" id="Rv5-zw-Cb8"/>
+                                        <constraint firstAttribute="bottom" secondItem="GPF-jm-n1j" secondAttribute="bottom" constant="2" id="Umr-cq-nFZ"/>
+                                        <constraint firstItem="GPF-jm-n1j" firstAttribute="top" secondItem="sxf-kD-ppu" secondAttribute="top" constant="3" id="YGw-Yo-2bq"/>
+                                        <constraint firstAttribute="trailing" secondItem="A8N-5g-iUW" secondAttribute="trailing" constant="-1" id="ZUv-I8-twi"/>
+                                        <constraint firstItem="GPF-jm-n1j" firstAttribute="trailing" secondItem="A8N-5g-iUW" secondAttribute="trailing" id="ovZ-I7-Tvt"/>
+                                        <constraint firstAttribute="bottom" secondItem="A8N-5g-iUW" secondAttribute="bottom" constant="-9" id="w7P-rG-ghM"/>
                                     </constraints>
                                 </view>
                             </tabViewItem>
@@ -251,10 +252,10 @@
                                         </scrollView>
                                     </subviews>
                                     <constraints>
-                                        <constraint firstAttribute="trailing" secondItem="WuM-4n-mVe" secondAttribute="trailing" constant="-1" id="82D-gd-DZV"/>
-                                        <constraint firstItem="WuM-4n-mVe" firstAttribute="leading" secondItem="nhQ-IK-b0D" secondAttribute="leading" constant="-3" id="CkF-oJ-KOT"/>
-                                        <constraint firstItem="WuM-4n-mVe" firstAttribute="top" secondItem="nhQ-IK-b0D" secondAttribute="top" constant="3" id="SL3-DF-5cK"/>
-                                        <constraint firstAttribute="bottom" secondItem="WuM-4n-mVe" secondAttribute="bottom" constant="3" id="kj1-X0-dnr"/>
+                                        <constraint firstItem="WuM-4n-mVe" firstAttribute="top" secondItem="nhQ-IK-b0D" secondAttribute="top" constant="3" id="CCP-py-W4g"/>
+                                        <constraint firstAttribute="bottom" secondItem="WuM-4n-mVe" secondAttribute="bottom" constant="3" id="eRH-IF-Ond"/>
+                                        <constraint firstAttribute="trailing" secondItem="WuM-4n-mVe" secondAttribute="trailing" constant="-1" id="f29-bb-0C7"/>
+                                        <constraint firstItem="WuM-4n-mVe" firstAttribute="leading" secondItem="nhQ-IK-b0D" secondAttribute="leading" constant="-3" id="hZS-VJ-m7J"/>
                                     </constraints>
                                 </view>
                             </tabViewItem>
@@ -266,7 +267,7 @@
                                         <button translatesAutoresizingMaskIntoConstraints="NO" id="B6P-0L-emI">
                                             <rect key="frame" x="18" y="606" width="131" height="18"/>
                                             <constraints>
-                                                <constraint firstAttribute="width" constant="127" id="3mO-Lf-tAe"/>
+                                                <constraint firstAttribute="width" constant="127" id="bRb-I0-brS"/>
                                             </constraints>
                                             <buttonCell key="cell" type="check" title="Relative Heat" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="wxi-SL-88H">
                                                 <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
@@ -278,14 +279,20 @@
                                         </button>
                                     </subviews>
                                     <constraints>
-                                        <constraint firstItem="B6P-0L-emI" firstAttribute="leading" secondItem="Xgd-Wx-987" secondAttribute="leading" constant="20" id="3em-PQ-b6B"/>
-                                        <constraint firstItem="B6P-0L-emI" firstAttribute="top" secondItem="Xgd-Wx-987" secondAttribute="top" constant="18" id="Vwe-sl-Fry"/>
+                                        <constraint firstItem="B6P-0L-emI" firstAttribute="top" secondItem="Xgd-Wx-987" secondAttribute="top" constant="18" id="LuT-ks-joW"/>
+                                        <constraint firstItem="B6P-0L-emI" firstAttribute="leading" secondItem="Xgd-Wx-987" secondAttribute="leading" constant="20" id="j7c-ae-NRg"/>
                                     </constraints>
                                 </view>
                             </tabViewItem>
                         </tabViewItems>
                     </tabView>
                 </subviews>
+                <constraints>
+                    <constraint firstItem="A0G-L6-Uxl" firstAttribute="leading" secondItem="EiT-Mj-1SZ" secondAttribute="leading" constant="-1" id="Bx7-7u-hB7"/>
+                    <constraint firstAttribute="trailing" secondItem="A0G-L6-Uxl" secondAttribute="trailing" constant="-1" id="MEI-ub-Ijv"/>
+                    <constraint firstItem="A0G-L6-Uxl" firstAttribute="top" secondItem="EiT-Mj-1SZ" secondAttribute="top" id="jPO-kh-k0l"/>
+                    <constraint firstAttribute="bottom" secondItem="A0G-L6-Uxl" secondAttribute="bottom" constant="19" id="kC6-Px-gsB"/>
+                </constraints>
             </view>
             <point key="canvasLocation" x="397" y="444.5"/>
         </window>
