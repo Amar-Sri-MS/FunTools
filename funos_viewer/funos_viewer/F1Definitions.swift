@@ -340,17 +340,3 @@ struct FunChipSimulationParameters {
 
     }
 }
-
-class FunSimWindow: NSWindow {
-    var shiftDepressed = false
-    var noteShiftKeyChanged: VoidBlock!
-    override func sendEvent(_ theEvent: NSEvent) {
-        let shift = theEvent.modifierFlags.contains(NSEventModifierFlags.shift) // shift key
-        if shift != shiftDepressed {
-            shiftDepressed = shift
-            noteShiftKeyChanged?()
-        }
-        super.sendEvent(theEvent)
-    }
-
-}

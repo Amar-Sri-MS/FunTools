@@ -9,7 +9,12 @@ import AppKit
 
 class F1InputController: NSObject {
     @IBOutlet var view: NSView!
+
     var tabView: NSTabView!
+    @IBOutlet var numRegisteredCommands: NSTextField!
+    @IBOutlet var fiboArg: NSTextField!
+    @IBOutlet var keyPath: NSTextField!
+    @IBOutlet var pokeValue: NSTextField!
 
     var parametersToControls = MappingOfParametersToControls()
 
@@ -31,19 +36,26 @@ class F1InputController: NSObject {
         tabView = view.subviews.first as! NSTabView
     }
     func reinstantiateLayoutConstraints() {
-//        let superView = selectionTabView.superview!
-//        selectionTabView.removeConstraints(selectionTabView.constraints)
-//        selectionTabView.translatesAutoresizingMaskIntoConstraints = false
-//        superView.addConstraint(NSLayoutConstraint(item: superView, attribute: .top, relatedBy: .equal, toItem: selectionTabView, attribute: .top, multiplier: 1.0, constant: -4.0))
-//        superView.addConstraint(NSLayoutConstraint(item: superView, attribute: .bottom, relatedBy: .equal, toItem: selectionTabView, attribute: .bottom, multiplier: 1.0, constant: 3.0))
-//        superView.addConstraint(NSLayoutConstraint(item: superView, attribute: .trailing, relatedBy: .equal, toItem: selectionTabView, attribute: .trailing, multiplier: 1.0, constant: 2.0))
-//        superView.addConstraint(NSLayoutConstraint(item: document.chipView, attribute: .trailing, relatedBy: .equal, toItem: selectionTabView, attribute: .leading, multiplier: 1.0, constant: -4.0))
-//        let width = selectionTabView.bounds.width
-//        selectionTabView.addConstraint(NSLayoutConstraint(item: selectionTabView, attribute: .width, relatedBy: .equal, toItem: nil, attribute: .notAnAttribute, multiplier: 1.0, constant: width))
-//        selectionTabView.needsLayout = true
-//        selectionTabView.delegate = document
+//        let superView = tabView.superview!
+//        tabView.removeConstraints(tabView.constraints)
+//        tabView.translatesAutoresizingMaskIntoConstraints = false
+//        superView.addConstraint(NSLayoutConstraint(item: superView, attribute: .top, relatedBy: .equal, toItem: tabView, attribute: .top, multiplier: 1.0, constant: -4.0))
+//        superView.addConstraint(NSLayoutConstraint(item: superView, attribute: .bottom, relatedBy: .equal, toItem: tabView, attribute: .bottom, multiplier: 1.0, constant: 3.0))
+//        superView.addConstraint(NSLayoutConstraint(item: superView, attribute: .leading, relatedBy: .equal, toItem: tabView, attribute: .leading, multiplier: 1.0, constant: 2.0))
+//        superView.addConstraint(NSLayoutConstraint(item: document.chipView, attribute: .leading, relatedBy: .equal, toItem: tabView, attribute: .trailing, multiplier: 1.0, constant: 4.0))
+//        let width = tabView.bounds.width
+//        tabView.addConstraint(NSLayoutConstraint(item: tabView, attribute: .width, relatedBy: .equal, toItem: nil, attribute: .notAnAttribute, multiplier: 1.0, constant: width))
+        tabView.needsLayout = true
+        tabView.delegate = document
     }
 
+    func firstF1Setup() {
+        let json = document.doF1Command("help")
+        if json != nil {
+            let num = json!.dictionaryValue.count
+            numRegisteredCommands.intValue = Int32(num)
+        }
+    }
     func createParameterSection(_ parameters: SimulationParameters, startWithSectionLabel: Bool, keys: [SimulationParameterKey], width: CGFloat, y: CGFloat, keyView: inout NSView!) -> (view: NSView, map: [SimulationParameterKey: SimulationParameterControl]) {
         let frame = NSRect(x: -8.0, y: y, width: width, height: 0)
         let view = NSBox(frame: frame)

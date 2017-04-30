@@ -70,12 +70,12 @@
 		A716FC701EAD7040008395EC /* F1Tile.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FC6F1EAD7040008395EC /* F1Tile.swift */; };
 		A716FC721EAD7082008395EC /* F1MiscTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FC711EAD7082008395EC /* F1MiscTypes.swift */; };
 		A716FC761EAD73B6008395EC /* F1SimDocument.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FC751EAD73B6008395EC /* F1SimDocument.swift */; };
-		A716FC781EAD73BD008395EC /* F1ChipWindow.xib in Resources */ = {isa = PBXBuildFile; fileRef = A716FC771EAD73BD008395EC /* F1ChipWindow.xib */; };
 		A716FC7A1EAD73C7008395EC /* F1SelectionView.xib in Resources */ = {isa = PBXBuildFile; fileRef = A716FC791EAD73C7008395EC /* F1SelectionView.xib */; };
 		A716FC7E1EAD73E6008395EC /* F1SelectionController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FC7D1EAD73E6008395EC /* F1SelectionController.swift */; };
 		A7FD266E1EB51FCE0049E0C0 /* libfunclient.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A7FD266D1EB51FCE0049E0C0 /* libfunclient.a */; };
 		A7FD26701EB54EF20049E0C0 /* F1InputView.xib in Resources */ = {isa = PBXBuildFile; fileRef = A7FD266F1EB54EF20049E0C0 /* F1InputView.xib */; };
 		A7FD26721EB54F9F0049E0C0 /* F1InputController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7FD26711EB54F9F0049E0C0 /* F1InputController.swift */; };
+		A7FD26741EB557CB0049E0C0 /* F1ChipWindow.xib in Resources */ = {isa = PBXBuildFile; fileRef = A7FD26731EB557CB0049E0C0 /* F1ChipWindow.xib */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -146,12 +146,12 @@
 		A716FC6F1EAD7040008395EC /* F1Tile.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = F1Tile.swift; sourceTree = "<group>"; };
 		A716FC711EAD7082008395EC /* F1MiscTypes.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = F1MiscTypes.swift; sourceTree = "<group>"; };
 		A716FC751EAD73B6008395EC /* F1SimDocument.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = F1SimDocument.swift; sourceTree = "<group>"; };
-		A716FC771EAD73BD008395EC /* F1ChipWindow.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = F1ChipWindow.xib; sourceTree = "<group>"; };
 		A716FC791EAD73C7008395EC /* F1SelectionView.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = F1SelectionView.xib; sourceTree = "<group>"; };
 		A716FC7D1EAD73E6008395EC /* F1SelectionController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = F1SelectionController.swift; sourceTree = "<group>"; };
 		A7FD266D1EB51FCE0049E0C0 /* libfunclient.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libfunclient.a; path = ../../FunSDK/lib/Darwin/libfunclient.a; sourceTree = "<group>"; };
 		A7FD266F1EB54EF20049E0C0 /* F1InputView.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = F1InputView.xib; sourceTree = "<group>"; };
 		A7FD26711EB54F9F0049E0C0 /* F1InputController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = F1InputController.swift; sourceTree = "<group>"; };
+		A7FD26731EB557CB0049E0C0 /* F1ChipWindow.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = F1ChipWindow.xib; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -273,13 +273,13 @@
 				A716FC5B1EAD69E4008395EC /* F1ChipView.swift */,
 				A716FC5D1EAD6A2A008395EC /* F1Definitions.swift */,
 				A716FC6D1EAD7009008395EC /* F1FlowView.swift */,
-				A716FC7D1EAD73E6008395EC /* F1SelectionController.swift */,
 				A7FD26711EB54F9F0049E0C0 /* F1InputController.swift */,
+				A716FC7D1EAD73E6008395EC /* F1SelectionController.swift */,
 				A716FC631EAD6B36008395EC /* F1UIExtras.swift */,
 				A716FC6F1EAD7040008395EC /* F1Tile.swift */,
 				A716FC711EAD7082008395EC /* F1MiscTypes.swift */,
 				A716FC751EAD73B6008395EC /* F1SimDocument.swift */,
-				A716FC771EAD73BD008395EC /* F1ChipWindow.xib */,
+				A7FD26731EB557CB0049E0C0 /* F1ChipWindow.xib */,
 				A7FD266F1EB54EF20049E0C0 /* F1InputView.xib */,
 				A716FC791EAD73C7008395EC /* F1SelectionView.xib */,
 			);
@@ -357,9 +357,9 @@
 			files = (
 				A716FBE21EA683C2008395EC /* posix in Resources */,
 				A716FBE81EAD33EA008395EC /* kv in Resources */,
-				A716FC781EAD73BD008395EC /* F1ChipWindow.xib in Resources */,
 				A716FBEA1EAD33F5008395EC /* libFunOS in Resources */,
 				A716FBE61EAD33E0008395EC /* hw in Resources */,
+				A7FD26741EB557CB0049E0C0 /* F1ChipWindow.xib in Resources */,
 				A716FBE41EA83CBB008395EC /* apps in Resources */,
 				A7FD26701EB54EF20049E0C0 /* F1InputView.xib in Resources */,
 				A716FBDC1EA67D3C008395EC /* funos in Resources */,

@@ -22,7 +22,8 @@ import AppKit
 
     var socket: Int32 = 0;
 
-    var window: FunSimWindow { return chipView.window as! FunSimWindow }
+    var window: NSWindow! { return chipView.window }
+    
     override init() {
         super.init()
         self.loadNib()
@@ -139,20 +140,58 @@ import AppKit
         selectionController.selectionTabView.frame = scf
 
         window.makeKeyAndOrderFront(nil)
+        chipView.translatesAutoresizingMaskIntoConstraints = false
+        chipView.needsLayout = true
+        inputController.firstF1Setup()
         // let winCon = NSWindowController(window: window)
         // Next line is very bizarre but without it NSDocumentController.sharedDocumentController().currentDocument does not work
 //        addWindowController(winCon)
     }
+    func doF1Command(_ verb: String, _ args: String...) -> JSON! {
+        let debug = true
+        let argsArray: String = args.joinDescriptions(", ")
+        let r = dpcrun_command(&socket, verb, "[\(argsArray)]")
+        if r == nil {
+            Swift.print("*** Error executing \(verb): nil ; socket=\(socket)")
+            return nil
+        }
+        let str: String = String(cString: r!)
+        if debug {
+            Swift.print("command '\(verb)' returned '\(str)'")
+        }
+        return try? JSON(str)
+    }
     // Raise the window showing timelines for packets.
     @IBAction func doHelp(_ sender: NSObject?) {
-        let r = dpcrun_command(&socket, "help", "[]")
-        if r == nil {
-            Swift.print("*** Error doing help")
-        } else {
-            let str: String = String(cString: r!)
-            let json: JSON = try! JSON(str)
-            Swift.print("output = \(json)")
-        }
+        let json = doF1Command("help")
+        selectionController.selectionInfo.string = json?.toJSONString() ?? ""
+    }
+
+    @IBAction func doEnableCounters(_ sender: NSObject?) {
+        let json = doF1Command("enable_wdi")
+        selectionController.selectionInfo.string = json?.toJSONString() ?? ""
+    }
+    @IBAction func doFibo(_ sender: NSObject?) {
+        let n = inputController.fiboArg.intValue
+        let json = doF1Command("fibo", n.description)
+        selectionController.selectionInfo.string = json?.toJSONString() ?? ""
+    }
+
+    @IBAction func doPeek(_ sender: NSObject?) {
+        let key = inputController.keyPath.stringValue
+        let json = doF1Command("peek", key.quotedString())
+        selectionController.selectionInfo.string = json?.toJSONString() ?? ""
+    }
+    @IBAction func doPoke(_ sender: NSObject?) {
+        let key = inputController.keyPath.stringValue
+        let value = inputController.pokeValue.stringValue
+        let json = doF1Command("poke", key.quotedString(), value.quotedString())
+        selectionController.selectionInfo.string = json?.toJSONString() ?? ""
+    }
+    @IBAction func doFind(_ sender: NSObject?) {
+        let key = inputController.keyPath.stringValue
+        let json = doF1Command("find", key.quotedString())
+        selectionController.selectionInfo.string = json?.toJSONString() ?? ""
     }
 
     @IBAction func fiddleWithOptions(_ sender: NSObject?) {

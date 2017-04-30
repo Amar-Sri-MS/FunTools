@@ -9,55 +9,57 @@
     <objects>
         <customObject id="-2" userLabel="File's Owner" customClass="F1SimDocument" customModule="funos_viewer" customModuleProvider="target">
             <connections>
-                <outlet property="chipView" destination="IDJ-By-vVO" id="oCQ-AM-YoS"/>
-                <outlet property="inputPlaceholder" destination="f6o-Ex-sL9" id="1Lv-cc-CmG"/>
-                <outlet property="selectionPlaceholder" destination="57u-vu-bRY" id="tGf-oa-LTv"/>
-                <outlet property="window" destination="QvC-M9-y7g" id="bDS-Xk-9Cp"/>
+                <outlet property="chipView" destination="eEb-o7-K2m" id="3nz-Kd-GT7"/>
+                <outlet property="inputPlaceholder" destination="bUE-UP-0en" id="JoY-Ae-Pmb"/>
+                <outlet property="selectionPlaceholder" destination="QYn-CT-Sp9" id="HvI-Uj-K1T"/>
+                <outlet property="window" destination="QvC-M9-y7g" id="CqP-Lm-LRk"/>
             </connections>
         </customObject>
         <customObject id="-1" userLabel="First Responder" customClass="FirstResponder"/>
         <customObject id="-3" userLabel="Application" customClass="NSObject"/>
-        <window title="F1 Viewer" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" restorable="NO" deferred="NO" oneShot="NO" releasedWhenClosed="NO" animationBehavior="default" id="QvC-M9-y7g" customClass="FunSimWindow" customModule="funos_viewer" customModuleProvider="target">
+        <window title="Window" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" oneShot="NO" releasedWhenClosed="NO" animationBehavior="default" id="QvC-M9-y7g">
             <windowStyleMask key="styleMask" titled="YES" closable="YES" miniaturizable="YES" resizable="YES"/>
-            <windowPositionMask key="initialPositionMask" leftStrut="YES" topStrut="YES"/>
-            <rect key="contentRect" x="196" y="240" width="998" height="665"/>
+            <windowPositionMask key="initialPositionMask" leftStrut="YES" rightStrut="YES" topStrut="YES" bottomStrut="YES"/>
+            <rect key="contentRect" x="196" y="240" width="1081" height="600"/>
             <rect key="screenRect" x="0.0" y="0.0" width="1680" height="1027"/>
-            <value key="minSize" type="size" width="1000" height="665"/>
-            <view key="contentView" id="EiT-Mj-1SZ">
-                <rect key="frame" x="0.0" y="0.0" width="998" height="665"/>
-                <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+            <view key="contentView" wantsLayer="YES" id="EiT-Mj-1SZ">
+                <rect key="frame" x="0.0" y="0.0" width="1081" height="600"/>
+                <autoresizingMask key="autoresizingMask"/>
                 <subviews>
-                    <customView horizontalCompressionResistancePriority="1000" misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="IDJ-By-vVO" customClass="NSChipView" customModule="funos_viewer" customModuleProvider="target">
-                        <rect key="frame" x="263" y="5" width="460" height="647"/>
-                    </customView>
-                    <box borderType="line" title="Box" translatesAutoresizingMaskIntoConstraints="NO" id="57u-vu-bRY">
-                        <rect key="frame" x="728" y="-4" width="270" height="670"/>
-                        <view key="contentView" id="PTc-dE-pEK">
-                            <rect key="frame" x="1" y="1" width="268" height="654"/>
+                    <box title="Box" translatesAutoresizingMaskIntoConstraints="NO" id="bUE-UP-0en">
+                        <rect key="frame" x="3" y="-4" width="241" height="604"/>
+                        <view key="contentView" id="9FX-TM-wtp">
+                            <rect key="frame" x="2" y="2" width="237" height="587"/>
                             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         </view>
                     </box>
-                    <box fixedFrame="YES" borderType="line" title="Box" translatesAutoresizingMaskIntoConstraints="NO" id="f6o-Ex-sL9">
-                        <rect key="frame" x="-3" y="1" width="267" height="666"/>
-                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                        <view key="contentView" id="2Kq-8D-fUV">
-                            <rect key="frame" x="1" y="1" width="265" height="650"/>
+                    <customView misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="eEb-o7-K2m" customClass="NSChipView" customModule="funos_viewer" customModuleProvider="target">
+                        <rect key="frame" x="247" y="20" width="598" height="566"/>
+                    </customView>
+                    <box title="Box" translatesAutoresizingMaskIntoConstraints="NO" id="QYn-CT-Sp9">
+                        <rect key="frame" x="871" y="-4" width="213" height="597"/>
+                        <view key="contentView" id="cTK-Ya-OiX">
+                            <rect key="frame" x="2" y="2" width="209" height="580"/>
                             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         </view>
                     </box>
                 </subviews>
                 <constraints>
-                    <constraint firstAttribute="bottom" secondItem="IDJ-By-vVO" secondAttribute="bottom" constant="5" id="Ci8-kw-Y0K"/>
-                    <constraint firstAttribute="trailing" secondItem="57u-vu-bRY" secondAttribute="trailing" constant="3" id="F3M-EP-gCQ"/>
-                    <constraint firstItem="57u-vu-bRY" firstAttribute="leading" secondItem="IDJ-By-vVO" secondAttribute="trailing" constant="3" id="XHG-Z7-JgV"/>
-                    <constraint firstItem="57u-vu-bRY" firstAttribute="leading" secondItem="EiT-Mj-1SZ" secondAttribute="leading" constant="731" id="YjX-A4-srp"/>
-                    <constraint firstItem="IDJ-By-vVO" firstAttribute="top" secondItem="EiT-Mj-1SZ" secondAttribute="top" constant="13" id="e4t-b1-Iwn"/>
-                    <constraint firstItem="IDJ-By-vVO" firstAttribute="leading" secondItem="EiT-Mj-1SZ" secondAttribute="leading" constant="263" identifier="CHIP_LEAD" id="frZ-Z8-z72"/>
-                    <constraint firstItem="57u-vu-bRY" firstAttribute="centerY" secondItem="EiT-Mj-1SZ" secondAttribute="centerY" id="mxh-ak-dMw"/>
-                    <constraint firstAttribute="bottom" secondItem="57u-vu-bRY" secondAttribute="bottom" id="ndv-zE-Iek"/>
+                    <constraint firstItem="bUE-UP-0en" firstAttribute="leading" secondItem="EiT-Mj-1SZ" secondAttribute="leading" constant="6" id="4BB-vF-ixa"/>
+                    <constraint firstItem="QYn-CT-Sp9" firstAttribute="bottom" secondItem="bUE-UP-0en" secondAttribute="bottom" id="Cem-4p-c1P"/>
+                    <constraint firstItem="bUE-UP-0en" firstAttribute="top" secondItem="EiT-Mj-1SZ" secondAttribute="top" id="IsZ-zT-A3e"/>
+                    <constraint firstItem="QYn-CT-Sp9" firstAttribute="leading" secondItem="eEb-o7-K2m" secondAttribute="trailing" constant="29" id="MRA-Wa-q2T"/>
+                    <constraint firstItem="eEb-o7-K2m" firstAttribute="leading" secondItem="EiT-Mj-1SZ" secondAttribute="leading" constant="247" id="Oxx-6a-Wkn"/>
+                    <constraint firstItem="QYn-CT-Sp9" firstAttribute="top" secondItem="EiT-Mj-1SZ" secondAttribute="top" constant="7" id="Pzj-dK-PQG"/>
+                    <constraint firstAttribute="bottom" secondItem="eEb-o7-K2m" secondAttribute="bottom" id="Zds-DR-wec"/>
+                    <constraint firstAttribute="bottom" secondItem="bUE-UP-0en" secondAttribute="bottom" id="a6n-5c-uJr"/>
+                    <constraint firstItem="eEb-o7-K2m" firstAttribute="leading" secondItem="bUE-UP-0en" secondAttribute="trailing" constant="6" id="aut-GV-Fz4"/>
+                    <constraint firstAttribute="trailing" secondItem="QYn-CT-Sp9" secondAttribute="trailing" id="eE5-b7-ucX"/>
+                    <constraint firstItem="QYn-CT-Sp9" firstAttribute="leading" secondItem="EiT-Mj-1SZ" secondAttribute="leading" constant="874" id="fb5-Xs-d33"/>
+                    <constraint firstItem="eEb-o7-K2m" firstAttribute="top" secondItem="EiT-Mj-1SZ" secondAttribute="top" constant="14" id="zb5-ad-fOD"/>
                 </constraints>
             </view>
-            <point key="canvasLocation" x="-1307" y="30.5"/>
+            <point key="canvasLocation" x="-533.5" y="-34"/>
         </window>
     </objects>
 </document>

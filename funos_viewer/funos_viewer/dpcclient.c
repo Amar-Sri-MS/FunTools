@@ -46,7 +46,7 @@ void dpcclient_test(void) {
     /* receive a reply */
     struct fun_json *output = fun_json_read_from_fd(sock);
     if (!output) {
-        printf("invalid json returned\n");
+        printf("*** invalid json returned in dpcclient_test()\n");
         return;
     }
     char *pp2 = fun_json_to_text(output);
@@ -82,7 +82,7 @@ NULLABLE CALLER_TO_FREE const char *dpcrun_command(INOUT int *sock, const char *
     /* receive a reply */
     struct fun_json *output = fun_json_read_from_fd(*sock);
     if (!output) {
-        printf("*** invalid json returned\n");
+        printf("*** invalid json returned in dpcrun_command()\n");
         return NULL;
     }
     char *pp = fun_json_to_text(output);
