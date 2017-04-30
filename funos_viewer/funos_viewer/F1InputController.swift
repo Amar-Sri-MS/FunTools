@@ -15,6 +15,8 @@ class F1InputController: NSObject {
     @IBOutlet var fiboArg: NSTextField!
     @IBOutlet var keyPath: NSTextField!
     @IBOutlet var pokeValue: NSTextField!
+    @IBOutlet var testName: NSTextField!
+    @IBOutlet var repeatCheckbox: NSButton!
 
     var parametersToControls = MappingOfParametersToControls()
 

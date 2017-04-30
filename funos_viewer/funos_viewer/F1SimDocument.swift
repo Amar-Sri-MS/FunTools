@@ -147,9 +147,9 @@ import AppKit
         // Next line is very bizarre but without it NSDocumentController.sharedDocumentController().currentDocument does not work
 //        addWindowController(winCon)
     }
-    func doF1Command(_ verb: String, _ args: String...) -> JSON! {
+    func doF1Command(_ verb: String, _ argsArray: [String]) -> JSON! {
         let debug = true
-        let argsArray: String = args.joinDescriptions(", ")
+        let argsArray: String = argsArray.joinDescriptions(", ")
         let r = dpcrun_command(&socket, verb, "[\(argsArray)]")
         if r == nil {
             Swift.print("*** Error executing \(verb): nil ; socket=\(socket)")
@@ -161,37 +161,48 @@ import AppKit
         }
         return try? JSON(str)
     }
+    func doF1Command(_ verb: String, _ args: String...) -> JSON! {
+        return doF1Command(verb, args)
+    }
+    func doAndLogF1Command(_ verb: String, _ args: String...) {
+        selectionController.selectionInfo.string = ""
+        let json: JSON! = doF1Command(verb, args)
+        selectionController.selectionInfo.string = json?.toJSONString() ?? ""
+    }
     // Raise the window showing timelines for packets.
     @IBAction func doHelp(_ sender: NSObject?) {
-        let json = doF1Command("help")
-        selectionController.selectionInfo.string = json?.toJSONString() ?? ""
+        doAndLogF1Command("help")
     }
 
     @IBAction func doEnableCounters(_ sender: NSObject?) {
-        let json = doF1Command("enable_wdi")
-        selectionController.selectionInfo.string = json?.toJSONString() ?? ""
+        doAndLogF1Command("enable_wdi")
     }
     @IBAction func doFibo(_ sender: NSObject?) {
         let n = inputController.fiboArg.intValue
-        let json = doF1Command("fibo", n.description)
-        selectionController.selectionInfo.string = json?.toJSONString() ?? ""
+        doAndLogF1Command("fibo", n.description)
     }
 
     @IBAction func doPeek(_ sender: NSObject?) {
         let key = inputController.keyPath.stringValue
-        let json = doF1Command("peek", key.quotedString())
-        selectionController.selectionInfo.string = json?.toJSONString() ?? ""
+        doAndLogF1Command("peek", key.quotedString())
     }
     @IBAction func doPoke(_ sender: NSObject?) {
         let key = inputController.keyPath.stringValue
         let value = inputController.pokeValue.stringValue
-        let json = doF1Command("poke", key.quotedString(), value.quotedString())
-        selectionController.selectionInfo.string = json?.toJSONString() ?? ""
+        doAndLogF1Command("poke", key.quotedString(), value.quotedString())
     }
     @IBAction func doFind(_ sender: NSObject?) {
         let key = inputController.keyPath.stringValue
-        let json = doF1Command("find", key.quotedString())
-        selectionController.selectionInfo.string = json?.toJSONString() ?? ""
+        doAndLogF1Command("find", key.quotedString())
+    }
+    @IBAction func doExecuteTest(_ sender: NSObject?) {
+        let isRepeat = inputController.repeatCheckbox.state != 0
+        let testName = inputController.testName.stringValue
+        isRepeat ? doAndLogF1Command("repeat", "10", "execute", testName) : doAndLogF1Command("execute", testName)
+    }
+    @IBAction func doAsyncTest(_ sender: NSObject?) {
+        let testName = inputController.testName.stringValue
+        doAndLogF1Command("async", testName)
     }
 
     @IBAction func fiddleWithOptions(_ sender: NSObject?) {
