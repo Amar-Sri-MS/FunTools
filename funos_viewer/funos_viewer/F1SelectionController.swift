@@ -10,14 +10,16 @@ import AppKit
 class F1SelectionController: NSObject, NSTabViewDelegate, NSTableViewDelegate, NSTableViewDataSource {
     @IBOutlet var window: NSWindow!
     @IBOutlet var selectionTabView: NSTabView!
+
     @IBOutlet var selectionInfo: NSTextView!
     @IBOutlet var selectionSamples: SimulationSamplesView!
-    @IBOutlet var selectionMessagesText: NSTextView!
     @IBOutlet var selectionQueuesText: NSTextView!
     @IBOutlet var selectionRelativeHeat: NSButton!
 
     @IBOutlet var wusTable: NSTableView!
 
+    @IBOutlet var inUseField: NSTextField!
+    
     class WUInfo: NSObject {
         // we subclass NSObject to get valueForKeyPath
         var wu: String = ""
@@ -28,7 +30,10 @@ class F1SelectionController: NSObject, NSTabViewDelegate, NSTableViewDelegate, N
     var allInfo: [WUInfo] = []
 
     var wuTimer: Timer!
+    var miscStatsTimer: Timer!
+    let updateFrequency = 0.1
     unowned let document: F1SimDocument
+
 
     init(document: F1SimDocument) {
         self.document = document
@@ -40,7 +45,7 @@ class F1SelectionController: NSObject, NSTabViewDelegate, NSTableViewDelegate, N
         // The next two lines are a horrible hack.  Without them, for some reason you need to go to the WUs TAB twice before you get any display.  Makes no sense.
         async {
             self.selectionTabView.performSelector(onMainThread: #selector(NSTabView.selectNextTabViewItem), with: nil, waitUntilDone: true)
-            self.selectionTabView.performSelector(onMainThread: #selector(NSTabView.selectPreviousTabViewItem), with: nil, waitUntilDone: true)
+            self.selectionTabView.performSelector(onMainThread: #selector(NSTabView.selectPreviousTabViewItem), with: nil, waitUntilDone: false)
         }
     }
     // uncomment to debug leaks
@@ -49,15 +54,23 @@ class F1SelectionController: NSObject, NSTabViewDelegate, NSTableViewDelegate, N
 //    }
     public func tabView(_ tabView: NSTabView, willSelect tabViewItem: NSTabViewItem?) {
 //        print("Received willSelect notification tabView changed to \(tabViewItem!.label)")
-        if tabViewItem!.label != "WUs" { return }
-        doRefreshWUs()
+        if tabViewItem!.label == "WUs" {
+            doRefreshWUs()
+        } else if tabViewItem!.label == "Misc Stats" {
+            doRefreshMiscStats()
+        }
     }
     public func tabView(_ tabView: NSTabView, didSelect tabViewItem: NSTabViewItem?) {
 //        print("Received didSelect notification tabView changed to \(tabViewItem!.label)")
-        if tabViewItem!.label != "WUs" { return }
-        wuTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true, block: { _ in
-            self.performSelector(onMainThread: #selector(F1SelectionController.refreshWU), with: nil, waitUntilDone: false)
-        })
+        if tabViewItem!.label == "WUs" {
+            wuTimer = Timer.scheduledTimer(withTimeInterval: updateFrequency, repeats: true, block: { _ in
+                self.performSelector(onMainThread: #selector(F1SelectionController.refreshWU), with: nil, waitUntilDone: false)
+            })
+        } else if tabViewItem!.label == "Misc Stats" {
+            miscStatsTimer = Timer.scheduledTimer(withTimeInterval: updateFrequency, repeats: true, block: { _ in
+                self.performSelector(onMainThread: #selector(F1SelectionController.refreshMiscStats), with: nil, waitUntilDone: false)
+            })
+        }
     }
     func refreshWU() {
         let tabViewItem = selectionTabView.selectedTabViewItem
@@ -65,6 +78,14 @@ class F1SelectionController: NSObject, NSTabViewDelegate, NSTableViewDelegate, N
             doRefreshWUs()
         } else {
             wuTimer?.invalidate()
+        }
+    }
+    func refreshMiscStats() {
+        let tabViewItem = selectionTabView.selectedTabViewItem
+        if tabViewItem != nil && tabViewItem!.label == "Misc Stats" {
+            doRefreshMiscStats()
+        } else {
+            miscStatsTimer?.invalidate()
         }
     }
     func updateAllInfo(counts: [String: JSON], durations: [String: JSON]) -> Bool {
@@ -90,8 +111,6 @@ class F1SelectionController: NSObject, NSTabViewDelegate, NSTableViewDelegate, N
         return true
     }
     func doRefreshWUs() {
-//        let tabViewItem = selectionTabView.selectedTabViewItem
-//        print("In doRefreshWUs() tabViewItem!.label=\(tabViewItem!.label)")
         let counts = document.doF1Command("peek", "stats/wus/counts")?.dictionaryValue
         if counts == nil || counts!.isEmpty { return }
         let durations = document.doF1Command("peek", "stats/wus/durations")?.dictionaryValue
@@ -99,6 +118,13 @@ class F1SelectionController: NSObject, NSTabViewDelegate, NSTableViewDelegate, N
         let newRows = updateAllInfo(counts: counts!, durations: durations!)
         if newRows { wusTable.noteNumberOfRowsChanged() }
         wusTable.reloadData()
+    }
+    func doRefreshMiscStats() {
+        let wustacks = document.doF1Command("peek", "stats/wustacks")?.dictionaryValue
+        let inUse = wustacks?["in_use"]?.integerValue
+        if inUse != nil {
+            inUseField.integerValue = inUse!
+        }
     }
     func numberOfRows(in tableView: NSTableView) -> Int {
         return allInfo.count
@@ -120,7 +146,6 @@ class F1SelectionController: NSObject, NSTabViewDelegate, NSTableViewDelegate, N
         let view = window.contentView!.subviews.first!
         assert(view == selectionTabView)
         selectionInfo.makeNonEditableFixedPitchOfSize(12.0)   // try to speedup display
-        selectionMessagesText.makeNonEditableFixedPitchOfSize(12.0)
         selectionQueuesText.makeNonEditableFixedPitchOfSize(12.0)
         clearSelectionTab()
         window.makeKeyAndOrderFront(nil)
@@ -133,8 +158,7 @@ class F1SelectionController: NSObject, NSTabViewDelegate, NSTableViewDelegate, N
         case "0":
             selectionInfo.setStringPreservingSelection(unit.simulationInfoFullSummary())
             selectionSamples.setSamples(unit.samples)
-        case "1":
-            selectionMessagesText.setStringPreservingSelection(unit.simulationInfoMessaging())
+        case "1": break
         case "2":
             selectionQueuesText.setStringPreservingSelection(unit.simulationInfoQueues())
         case "3":
@@ -147,7 +171,6 @@ class F1SelectionController: NSObject, NSTabViewDelegate, NSTableViewDelegate, N
     func clearSelectionTab() {
         let message = ""
         selectionInfo.string = message
-        selectionMessagesText.string = message
         selectionQueuesText.string = message
         selectionRelativeHeat.isEnabled = false
     }

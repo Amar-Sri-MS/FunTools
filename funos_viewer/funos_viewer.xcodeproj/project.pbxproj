@@ -63,10 +63,8 @@
 		A716FC5E1EAD6A2A008395EC /* F1Definitions.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FC5D1EAD6A2A008395EC /* F1Definitions.swift */; };
 		A716FC601EAD6A5F008395EC /* CocoaExtras.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FC5F1EAD6A5F008395EC /* CocoaExtras.swift */; };
 		A716FC641EAD6B36008395EC /* F1UIExtras.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FC631EAD6B36008395EC /* F1UIExtras.swift */; };
-		A716FC661EAD6B63008395EC /* SimulationParameters.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FC651EAD6B63008395EC /* SimulationParameters.swift */; };
 		A716FC681EAD6C3A008395EC /* SimulationSamples.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FC671EAD6C3A008395EC /* SimulationSamples.swift */; };
 		A716FC6A1EAD6C40008395EC /* SimulationSamplesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FC691EAD6C40008395EC /* SimulationSamplesView.swift */; };
-		A716FC6E1EAD7009008395EC /* F1FlowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FC6D1EAD7009008395EC /* F1FlowView.swift */; };
 		A716FC701EAD7040008395EC /* F1Tile.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FC6F1EAD7040008395EC /* F1Tile.swift */; };
 		A716FC721EAD7082008395EC /* F1MiscTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FC711EAD7082008395EC /* F1MiscTypes.swift */; };
 		A716FC761EAD73B6008395EC /* F1SimDocument.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FC751EAD73B6008395EC /* F1SimDocument.swift */; };
@@ -139,10 +137,8 @@
 		A716FC5D1EAD6A2A008395EC /* F1Definitions.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = F1Definitions.swift; sourceTree = "<group>"; };
 		A716FC5F1EAD6A5F008395EC /* CocoaExtras.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CocoaExtras.swift; sourceTree = "<group>"; };
 		A716FC631EAD6B36008395EC /* F1UIExtras.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = F1UIExtras.swift; sourceTree = "<group>"; };
-		A716FC651EAD6B63008395EC /* SimulationParameters.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SimulationParameters.swift; sourceTree = "<group>"; };
 		A716FC671EAD6C3A008395EC /* SimulationSamples.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SimulationSamples.swift; sourceTree = "<group>"; };
 		A716FC691EAD6C40008395EC /* SimulationSamplesView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SimulationSamplesView.swift; sourceTree = "<group>"; };
-		A716FC6D1EAD7009008395EC /* F1FlowView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = F1FlowView.swift; sourceTree = "<group>"; };
 		A716FC6F1EAD7040008395EC /* F1Tile.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = F1Tile.swift; sourceTree = "<group>"; };
 		A716FC711EAD7082008395EC /* F1MiscTypes.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = F1MiscTypes.swift; sourceTree = "<group>"; };
 		A716FC751EAD73B6008395EC /* F1SimDocument.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = F1SimDocument.swift; sourceTree = "<group>"; };
@@ -267,15 +263,13 @@
 			isa = PBXGroup;
 			children = (
 				A716FC5F1EAD6A5F008395EC /* CocoaExtras.swift */,
+				A716FC671EAD6C3A008395EC /* SimulationSamples.swift */,
+				A716FC691EAD6C40008395EC /* SimulationSamplesView.swift */,
 				A716FC631EAD6B36008395EC /* F1UIExtras.swift */,
 				A716FC711EAD7082008395EC /* F1MiscTypes.swift */,
 				A716FC6F1EAD7040008395EC /* F1Tile.swift */,
-				A716FC671EAD6C3A008395EC /* SimulationSamples.swift */,
-				A716FC691EAD6C40008395EC /* SimulationSamplesView.swift */,
-				A716FC651EAD6B63008395EC /* SimulationParameters.swift */,
 				A716FC5B1EAD69E4008395EC /* F1ChipView.swift */,
 				A716FC5D1EAD6A2A008395EC /* F1Definitions.swift */,
-				A716FC6D1EAD7009008395EC /* F1FlowView.swift */,
 				A7FD26711EB54F9F0049E0C0 /* F1InputController.swift */,
 				A716FC7D1EAD73E6008395EC /* F1SelectionController.swift */,
 				A716FC751EAD73B6008395EC /* F1SimDocument.swift */,
@@ -397,7 +391,6 @@
 				A716FC4A1EAD6687008395EC /* PriorityQueue.swift in Sources */,
 				A716FC681EAD6C3A008395EC /* SimulationSamples.swift in Sources */,
 				A716FC5A1EAD6741008395EC /* runtimeStubs.m in Sources */,
-				A716FC661EAD6B63008395EC /* SimulationParameters.swift in Sources */,
 				A7FD26721EB54F9F0049E0C0 /* F1InputController.swift in Sources */,
 				A716FC481EAD6687008395EC /* Misc.swift in Sources */,
 				A716FC451EAD6687008395EC /* LinkedList.swift in Sources */,
@@ -427,7 +420,6 @@
 				A716FC501EAD6687008395EC /* SortedRanges.swift in Sources */,
 				A716FC551EAD6687008395EC /* Test.swift in Sources */,
 				A716FC491EAD6687008395EC /* Note.swift in Sources */,
-				A716FC6E1EAD7009008395EC /* F1FlowView.swift in Sources */,
 				A716FC131EAD667D008395EC /* ArrayExtras.swift in Sources */,
 				A716FC541EAD6687008395EC /* StringTrie.swift in Sources */,
 				A716FC4C1EAD6687008395EC /* RePrioritizableQueue.swift in Sources */,

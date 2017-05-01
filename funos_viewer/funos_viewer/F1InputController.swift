@@ -7,11 +7,13 @@
 
 import AppKit
 
-class F1InputController: NSObject {
+class F1InputController: NSObject, NSOutlineViewDataSource {
     @IBOutlet var window: NSWindow!
     @IBOutlet var view: NSView!
 
     var tabView: NSTabView!
+
+    // Commands TAB
     @IBOutlet var numRegisteredCommands: NSTextField!
     @IBOutlet var fiboArg: NSTextField!
     @IBOutlet var keyPath: NSTextField!
@@ -19,7 +21,9 @@ class F1InputController: NSObject {
     @IBOutlet var testName: NSTextField!
     @IBOutlet var repeatCheckbox: NSButton!
 
-    var parametersToControls = MappingOfParametersToControls()
+    // Tests TAB
+    @IBOutlet var tests: NSOutlineView!
+    @IBOutlet var testName2: NSTextField!
 
     unowned let document: F1SimDocument
 
@@ -27,6 +31,7 @@ class F1InputController: NSObject {
         self.document = document
         super.init()
         loadNib()
+        tests.dataSource = self
     }
     // uncomment to debug leaks
 //    deinit {
@@ -45,38 +50,29 @@ class F1InputController: NSObject {
             numRegisteredCommands.intValue = Int32(num)
         }
     }
-    func createParameterSection(_ parameters: SimulationParameters, startWithSectionLabel: Bool, keys: [SimulationParameterKey], width: CGFloat, y: CGFloat, keyView: inout NSView!) -> (view: NSView, map: [SimulationParameterKey: SimulationParameterControl]) {
-        let frame = NSRect(x: -8.0, y: y, width: width, height: 0)
-        let view = NSBox(frame: frame)
-        view.borderType = .noBorder
-        view.titlePosition = .noTitle
-        view.autoresizingMask = NSAutoresizingMaskOptions.viewMinYMargin
-        let y = startWithSectionLabel ? view.addParameterSectionName(parameters) : 0.0
-        let t = view.addParameterSection(parameters, yStart: y, keys: keys, keyView: &keyView)
-        view.sizeToFit()
-        return (view, t)
-    }
 
-    func addUIForAllParameters() {
-        let defaultParameters = FunChipSimulationParameters()
-        let bounds = tabView.bounds
-        for tabID in SimulationParametersTabs {
-            let tabItem = tabView.tabViewItem(at: tabID+1)
-            let boxContent = tabItem.view!
-            var y: CGFloat = bounds.height - 79.0
-            let width = bounds.size.width - 14.0
-            var keyView: NSView! = nil
-            for parameters in defaultParameters.allParametersWithUI {
-                let keys = parameters.keysForTab(tabID)
-                if keys.isEmpty { continue }
-                let name = parameters.name
-                let (section, t) = createParameterSection(parameters, startWithSectionLabel: tabID != 0, keys: keys, width: width, y: y, keyView: &keyView)
-                let height = section.bounds.size.height
-                y -= height - 7.0 // tighten things a bit
-                boxContent.addSubview(section)
-                parametersToControls.mergeInCategory(name, t: t)
+    func outlineView(_ outlineView: NSOutlineView, numberOfChildrenOfItem item: Any?) -> Int {
+        if item == nil { return 2 }
+        return 0
+    }
+    func outlineView(_ outlineView: NSOutlineView, isItemExpandable item: Any) -> Bool {
+        return false
+    }
+    func outlineView(_ outlineView: NSOutlineView, child index: Int, ofItem item: Any?) -> Any {
+        if item == nil {
+            switch index {
+            case 0: return "bstest" as NSString
+            case 1: return "counter" as NSString
+            default: return "???" as NSString
             }
         }
+        return "Error" as NSString
     }
-
+    func outlineView(_ outlineView: NSOutlineView, objectValueFor tableColumn: NSTableColumn?, byItem item: Any?) -> Any? {
+        return item
+    }
+    func selectedTest() -> String {
+        let row = tests.selectedRow
+        return tests.item(atRow: row) as! String
+    }
 }

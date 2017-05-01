@@ -8,8 +8,8 @@
     <objects>
         <customObject id="-2" userLabel="File's Owner" customClass="F1SelectionController" customModule="funos_viewer" customModuleProvider="target">
             <connections>
+                <outlet property="inUseField" destination="Dni-ri-584" id="ja8-wU-nLV"/>
                 <outlet property="selectionInfo" destination="PLh-KT-jdF" id="vr9-Px-8Bk"/>
-                <outlet property="selectionMessagesText" destination="bFz-2g-s47" id="s9N-AA-H2I"/>
                 <outlet property="selectionQueuesText" destination="Q65-Ef-neu" id="cwe-E5-xY7"/>
                 <outlet property="selectionRelativeHeat" destination="B6P-0L-emI" id="oLg-Y0-IXC"/>
                 <outlet property="selectionSamples" destination="MQc-4W-8IZ" id="G1f-s9-ey2"/>
@@ -216,46 +216,36 @@
                                     </constraints>
                                 </view>
                             </tabViewItem>
-                            <tabViewItem label="Queues" identifier="1" id="naw-xe-uXH">
+                            <tabViewItem label="Misc Stats" identifier="1" id="naw-xe-uXH">
                                 <view key="view" id="nhQ-IK-b0D">
                                     <rect key="frame" x="10" y="33" width="466" height="640"/>
                                     <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                     <subviews>
-                                        <scrollView toolTip="Messages to / from the selected unit" horizontalLineScroll="10" horizontalPageScroll="10" verticalLineScroll="10" verticalPageScroll="10" hasHorizontalScroller="NO" usesPredominantAxisScrolling="NO" translatesAutoresizingMaskIntoConstraints="NO" id="WuM-4n-mVe">
-                                            <rect key="frame" x="-3" y="3" width="470" height="634"/>
-                                            <clipView key="contentView" id="N3a-fn-iAS">
-                                                <rect key="frame" x="1" y="1" width="453" height="632"/>
-                                                <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
-                                                <subviews>
-                                                    <textView importsGraphics="NO" richText="NO" usesFontPanel="YES" findStyle="panel" continuousSpellChecking="YES" allowsUndo="YES" usesRuler="YES" allowsNonContiguousLayout="YES" quoteSubstitution="YES" dashSubstitution="YES" spellingCorrection="YES" smartInsertDelete="YES" id="bFz-2g-s47">
-                                                        <rect key="frame" x="0.0" y="0.0" width="453" height="632"/>
-                                                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
-                                                        <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
-                                                        <size key="minSize" width="453" height="632"/>
-                                                        <size key="maxSize" width="463" height="10000000"/>
-                                                        <color key="insertionPointColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
-                                                        <allowedInputSourceLocales>
-                                                            <string>NSAllRomanInputSourcesLocaleIdentifier</string>
-                                                        </allowedInputSourceLocales>
-                                                    </textView>
-                                                </subviews>
-                                                <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
-                                            </clipView>
-                                            <scroller key="horizontalScroller" hidden="YES" verticalHuggingPriority="750" doubleValue="1" horizontal="YES" id="ePu-RA-VOQ">
-                                                <rect key="frame" x="-100" y="-100" width="87" height="18"/>
-                                                <autoresizingMask key="autoresizingMask"/>
-                                            </scroller>
-                                            <scroller key="verticalScroller" verticalHuggingPriority="750" horizontal="NO" id="Gbp-dJ-rQB">
-                                                <rect key="frame" x="454" y="1" width="15" height="632"/>
-                                                <autoresizingMask key="autoresizingMask"/>
-                                            </scroller>
-                                        </scrollView>
+                                        <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" allowsCharacterPickerTouchBarItem="NO" translatesAutoresizingMaskIntoConstraints="NO" id="vUZ-a3-327">
+                                            <rect key="frame" x="7" y="598" width="144" height="17"/>
+                                            <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Num WU stacks in use:" id="H5E-4o-QaZ">
+                                                <font key="font" metaFont="system"/>
+                                                <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                                                <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
+                                            </textFieldCell>
+                                        </textField>
+                                        <textField verticalHuggingPriority="750" allowsCharacterPickerTouchBarItem="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Dni-ri-584">
+                                            <rect key="frame" x="157" y="595" width="96" height="22"/>
+                                            <constraints>
+                                                <constraint firstAttribute="width" constant="96" id="q2C-wR-hdu"/>
+                                            </constraints>
+                                            <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" sendsActionOnEndEditing="YES" state="on" borderStyle="bezel" drawsBackground="YES" id="YzJ-hC-X2S">
+                                                <font key="font" metaFont="system"/>
+                                                <color key="textColor" name="textColor" catalog="System" colorSpace="catalog"/>
+                                                <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                                            </textFieldCell>
+                                        </textField>
                                     </subviews>
                                     <constraints>
-                                        <constraint firstItem="WuM-4n-mVe" firstAttribute="top" secondItem="nhQ-IK-b0D" secondAttribute="top" constant="3" id="CCP-py-W4g"/>
-                                        <constraint firstAttribute="bottom" secondItem="WuM-4n-mVe" secondAttribute="bottom" constant="3" id="eRH-IF-Ond"/>
-                                        <constraint firstAttribute="trailing" secondItem="WuM-4n-mVe" secondAttribute="trailing" constant="-1" id="f29-bb-0C7"/>
-                                        <constraint firstItem="WuM-4n-mVe" firstAttribute="leading" secondItem="nhQ-IK-b0D" secondAttribute="leading" constant="-3" id="hZS-VJ-m7J"/>
+                                        <constraint firstItem="Dni-ri-584" firstAttribute="leading" secondItem="vUZ-a3-327" secondAttribute="trailing" constant="8" symbolic="YES" id="7eK-wX-s3E"/>
+                                        <constraint firstItem="Dni-ri-584" firstAttribute="top" secondItem="nhQ-IK-b0D" secondAttribute="top" constant="23" id="nPT-Nz-3ln"/>
+                                        <constraint firstItem="vUZ-a3-327" firstAttribute="leading" secondItem="nhQ-IK-b0D" secondAttribute="leading" constant="9" id="p0s-vI-fdk"/>
+                                        <constraint firstItem="vUZ-a3-327" firstAttribute="baseline" secondItem="Dni-ri-584" secondAttribute="baseline" id="uu5-av-7PQ"/>
                                     </constraints>
                                 </view>
                             </tabViewItem>

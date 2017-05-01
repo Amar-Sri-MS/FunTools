@@ -587,12 +587,8 @@ extension CALayer {
     func addOverallLayer(_ layers: ChipLayers, update: Bool, numCores: Int) {
         addAbutXSublayers(update, proportions: 1, 60, 1)
         let hlayer = sublayers![1]
-        hlayer.addAbutYSublayers(update, proportions: 1, 60, 2, 4, 2)
+        hlayer.addAbutYSublayers(update, proportions: 1, 60, 1)
         let chip = hlayer.sublayers![1]
-        let testers = hlayer.sublayers![3]
-        testers.addAbutXSublayers(update, proportions: 1, 3, 1, 3, 1)
-        testers.sublayers![1].addCenterBox(layers, update: update, unitName: "PacketGenerator", gray: true)
-        testers.sublayers![3].addCenterBox(layers, update: update, unitName: "HostGenerator", gray: true)
         chip.addChip(layers, update: update, numCores: numCores)
     }
 }

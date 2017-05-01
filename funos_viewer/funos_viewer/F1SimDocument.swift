@@ -15,6 +15,8 @@ import AppKit
     var dateLastUpdate: Date!
 
     var socket: Int32 = 0;
+    var heatTimer: Timer!
+    let updateFrequency = 0.2
 
     var window: NSWindow! { return chipView.window }
     
@@ -23,6 +25,9 @@ import AppKit
         self.loadNib()
         window.title = "F1 Viewer"
         window.delegate = self
+        heatTimer = Timer.scheduledTimer(withTimeInterval: updateFrequency, repeats: true, block: { _ in
+            self.performSelector(onMainThread: #selector(F1SimDocument.refreshHeat), with: nil, waitUntilDone: false)
+        })
     }
     func windowWillClose(_ notification: Notification) {
         window.delegate = nil
@@ -34,13 +39,6 @@ import AppKit
     var updateInProgress = false
     var cachedDNLinks: Set<F1Block>! = nil
     func reflectProgressOrSelectionChange() {
-        chipView.updateHotCores {
-            if chipView.selectedUnits.contains($0) { return nil }
-            if $0.hasPrefix("Core") || $0.hasPrefix("Cluster") || $0.hasPrefix("BlockCopy") {
-                return nil
-            }
-            return nil
-        }
         if chipView.selectedUnits.contains("DN") {
             let relative = selectionController.isRelativeHeat
             if relative {
@@ -73,6 +71,37 @@ import AppKit
                     (segmentStats[$0] ?? 0.0) / maxi
                 }
             }
+        }
+    }
+    func refreshHeat() {
+        let perVP = doF1Command("peek", "stats/per_vp")?.dictionaryValue
+        if perVP == nil || perVP!.isEmpty { return }
+        var perCluster: [String: Int] = [:]
+        var perCore: [String: Int] = [:]
+        var sum = 0
+        for vp in perVP!.keys {
+            let clusterCoreVP = vp.substringAfter(2).split(at: ".").map { $0 }
+            assert(clusterCoreVP.count == 3)
+            let times = perVP![vp]!.dictionaryValue["wus_received"]!.integerValue
+            let cluster = "Cluster\(clusterCoreVP[0])"
+            let core = "Core\(clusterCoreVP[0]).\(clusterCoreVP[1])"
+            perCluster[cluster] = (perCluster[cluster] ?? 0) + times
+            perCore[core] = (perCore[core] ?? 0) + times
+            sum += times
+        }
+        if sum == 0 { return }
+//        Swift.print("clusters = \(perCluster) ; cores = \(perCore)")
+        chipView.updateHotCores {
+            if chipView.selectedUnits.contains($0) { return nil }
+            if $0.hasPrefix("Core") {
+                let num = perCore[$0] ?? 0
+                return Double(num) / Double(sum)
+            }
+            if $0.hasPrefix("Cluster") {
+                let num = perCluster[$0] ?? 0
+                return Double(num) / Double(sum)
+            }
+            return nil
         }
     }
     
@@ -120,8 +149,6 @@ import AppKit
         center.addObserver(self, selector: #selector(F1SimDocument.noteSelectionChanged(_:)), name: NSNotification.Name("SelectionChanged"), object: chipView)
 
         inputController = F1InputController(document: self)
-//        inputController.reinstantiateLayoutConstraints()
-        inputController.addUIForAllParameters()
 
         selectionController = F1SelectionController(document: self)
 
@@ -181,13 +208,17 @@ import AppKit
         let key = inputController.keyPath.stringValue
         doAndLogF1Command("find", key.quotedString())
     }
-    @IBAction func doExecuteTest(_ sender: NSObject?) {
-        let isRepeat = inputController.repeatCheckbox.state != 0
-        let testName = inputController.testName.stringValue
-        isRepeat ? doAndLogF1Command("repeat", "10", "execute", testName) : doAndLogF1Command("execute", testName)
+
+    @IBAction func doExecuteTest2(_ sender: NSObject?) {
+        let testName = inputController.selectedTest()
+        doAndLogF1Command("execute", testName)
     }
-    @IBAction func doAsyncTest(_ sender: NSObject?) {
-        let testName = inputController.testName.stringValue
+    @IBAction func doExecute10xTest2(_ sender: NSObject?) {
+        let testName = inputController.selectedTest()
+        doAndLogF1Command("repeat", "10", "execute", testName)
+    }
+    @IBAction func doAsyncTest2(_ sender: NSObject?) {
+        let testName = inputController.selectedTest()
         doAndLogF1Command("async", testName)
     }
 
