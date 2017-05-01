@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A71563941EB7ACE600F32BAE /* bsd in Resources */ = {isa = PBXBuildFile; fileRef = A71563931EB7ACE600F32BAE /* bsd */; };
+		A71563971EB7ADD200F32BAE /* bsd_utils.c in Sources */ = {isa = PBXBuildFile; fileRef = A71563961EB7ADD200F32BAE /* bsd_utils.c */; };
 		A716FBCD1EA67C82008395EC /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FBCC1EA67C82008395EC /* AppDelegate.swift */; };
 		A716FBCF1EA67C82008395EC /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A716FBCE1EA67C82008395EC /* Assets.xcassets */; };
 		A716FBD21EA67C82008395EC /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = A716FBD01EA67C82008395EC /* MainMenu.xib */; };
@@ -77,6 +79,8 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		A71563931EB7ACE600F32BAE /* bsd */ = {isa = PBXFileReference; lastKnownFileType = folder; name = bsd; path = ../../FunOS/bsd; sourceTree = "<group>"; };
+		A71563961EB7ADD200F32BAE /* bsd_utils.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = bsd_utils.c; path = ../../FunOS/bsd/bsd_utils.c; sourceTree = "<group>"; };
 		A716FBC91EA67C82008395EC /* funos_viewer.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = funos_viewer.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A716FBCC1EA67C82008395EC /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		A716FBCE1EA67C82008395EC /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -165,6 +169,7 @@
 		A716FBC01EA67C82008395EC = {
 			isa = PBXGroup;
 			children = (
+				A71563961EB7ADD200F32BAE /* bsd_utils.c */,
 				A716FC071EAD667D008395EC /* PureSwiftExtras */,
 				A716FC1E1EAD6687008395EC /* PureSwiftRuntime */,
 				A716FBE31EA83CBB008395EC /* apps */,
@@ -175,6 +180,7 @@
 				A716FBE51EAD33E0008395EC /* hw */,
 				A716FBE71EAD33EA008395EC /* kv */,
 				A716FBE91EAD33F5008395EC /* libFunOS */,
+				A71563931EB7ACE600F32BAE /* bsd */,
 				A716FBCA1EA67C82008395EC /* Products */,
 				A7FD266C1EB51FCD0049E0C0 /* Frameworks */,
 			);
@@ -361,6 +367,7 @@
 				A716FBCF1EA67C82008395EC /* Assets.xcassets in Resources */,
 				A716FBD21EA67C82008395EC /* MainMenu.xib in Resources */,
 				A716FC7A1EAD73C7008395EC /* F1SelectionWindow.xib in Resources */,
+				A71563941EB7ACE600F32BAE /* bsd in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -371,6 +378,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A71563971EB7ADD200F32BAE /* bsd_utils.c in Sources */,
 				A716FC721EAD7082008395EC /* F1MiscTypes.swift in Sources */,
 				A716FC581EAD6687008395EC /* WorkSequencer.swift in Sources */,
 				A716FC571EAD6687008395EC /* WorkQueue.swift in Sources */,

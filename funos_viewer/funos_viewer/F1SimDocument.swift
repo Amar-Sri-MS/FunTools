@@ -160,10 +160,12 @@ import AppKit
         // Next line is very bizarre but without it NSDocumentController.sharedDocumentController().currentDocument does not work
 //        addWindowController(winCon)
     }
-    func doF1Command(_ verb: String, _ argsArray: [String]) -> JSON! {
+    func doF1Command( socket: inout Int32, _ verb: String, _ argsArray: [String]) -> JSON! {
         let debug = foilNeverExecutedWarnings
         let argsArray: String = argsArray.joinDescriptions(", ")
-        let r = dpcrun_command(&socket, verb, "[\(argsArray)]")
+        var s = socket
+        let r = dpcrun_command(&s, verb, "[\(argsArray)]")
+        socket = s
         if r == nil {
             Swift.print("*** Error executing \(verb): nil ; socket=\(socket)")
             return nil
@@ -175,12 +177,26 @@ import AppKit
         return try? JSON(str)
     }
     func doF1Command(_ verb: String, _ args: String...) -> JSON! {
-        return doF1Command(verb, args)
+        return doF1Command(socket: &socket, verb, args)
+    }
+    func log(string: String) {
+        selectionController.selectionInfo.string = string
     }
     func doAndLogF1Command(_ verb: String, _ args: String...) {
-        selectionController.selectionInfo.string = ""
-        let json: JSON! = doF1Command(verb, args)
-        selectionController.selectionInfo.string = json?.toJSONString() ?? ""
+        log(string: "");
+        let json: JSON! = doF1Command(socket: &socket, verb, args)
+        log(string: json?.toJSONString() ?? "")
+    }
+    func doAndLogF1CommandAsync(_ verb: String, _ args: String...) {
+        log(string: "");
+        async {
+            var tempSocket: Int32 = 0
+            let json: JSON! = self.doF1Command(socket: &tempSocket, verb, args)
+            _ = Darwin.close(tempSocket)
+            if json == nil { return }
+            let str = json.toJSONString()
+            self.performSelector(onMainThread: #selector(F1SimDocument.log), with: str, waitUntilDone: true)
+        }
     }
     // Raise the window showing timelines for packets.
     @IBAction func doHelp(_ sender: NSObject?) {
@@ -211,15 +227,15 @@ import AppKit
 
     @IBAction func doExecuteTest2(_ sender: NSObject?) {
         let testName = inputController.selectedTest()
-        doAndLogF1Command("execute", testName)
+        doAndLogF1CommandAsync("execute", testName)
     }
     @IBAction func doExecute10xTest2(_ sender: NSObject?) {
         let testName = inputController.selectedTest()
-        doAndLogF1Command("repeat", "10", "execute", testName)
+        doAndLogF1CommandAsync("repeat", "10", "execute", testName)
     }
     @IBAction func doAsyncTest2(_ sender: NSObject?) {
         let testName = inputController.selectedTest()
-        doAndLogF1Command("async", testName)
+        doAndLogF1CommandAsync("async", testName)
     }
 
     @IBAction func fiddleWithOptions(_ sender: NSObject?) {

@@ -20,11 +20,11 @@
         </customObject>
         <customObject id="-1" userLabel="First Responder" customClass="FirstResponder"/>
         <customObject id="-3" userLabel="Application" customClass="NSObject"/>
-        <window allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" oneShot="NO" releasedWhenClosed="NO" frameAutosaveName="Output" animationBehavior="default" id="QvC-M9-y7g" customClass="NSPanel">
+        <window allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" hidesOnDeactivate="YES" oneShot="NO" releasedWhenClosed="NO" frameAutosaveName="Output" animationBehavior="default" id="QvC-M9-y7g" customClass="NSPanel">
             <windowStyleMask key="styleMask" titled="YES" closable="YES" miniaturizable="YES" resizable="YES" utility="YES"/>
             <windowPositionMask key="initialPositionMask" rightStrut="YES" topStrut="YES" bottomStrut="YES"/>
             <rect key="contentRect" x="1188" y="204" width="470" height="689"/>
-            <rect key="screenRect" x="0.0" y="0.0" width="1680" height="1027"/>
+            <rect key="screenRect" x="0.0" y="0.0" width="1440" height="877"/>
             <view key="contentView" id="EiT-Mj-1SZ">
                 <rect key="frame" x="0.0" y="0.0" width="470" height="689"/>
                 <autoresizingMask key="autoresizingMask"/>
@@ -92,14 +92,14 @@
                                             <rect key="frame" x="-3" y="2" width="470" height="635"/>
                                             <clipView key="contentView" id="imt-7n-rDq">
                                                 <rect key="frame" x="1" y="1" width="453" height="633"/>
-                                                <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                                                <autoresizingMask key="autoresizingMask"/>
                                                 <subviews>
                                                     <textView importsGraphics="NO" richText="NO" usesFontPanel="YES" findStyle="panel" continuousSpellChecking="YES" allowsUndo="YES" usesRuler="YES" allowsNonContiguousLayout="YES" quoteSubstitution="YES" dashSubstitution="YES" spellingCorrection="YES" smartInsertDelete="YES" id="Q65-Ef-neu">
                                                         <rect key="frame" x="0.0" y="0.0" width="453" height="633"/>
                                                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                                         <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
                                                         <size key="minSize" width="453" height="633"/>
-                                                        <size key="maxSize" width="463" height="10000000"/>
+                                                        <size key="maxSize" width="470" height="10000000"/>
                                                         <color key="insertionPointColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                                                         <allowedInputSourceLocales>
                                                             <string>NSAllRomanInputSourcesLocaleIdentifier</string>
@@ -121,7 +121,7 @@
                                             <rect key="frame" x="-3" y="-9" width="470" height="646"/>
                                             <clipView key="contentView" id="tFf-xt-R1Q">
                                                 <rect key="frame" x="1" y="0.0" width="468" height="645"/>
-                                                <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                                                <autoresizingMask key="autoresizingMask"/>
                                                 <subviews>
                                                     <tableView verticalHuggingPriority="750" allowsExpansionToolTips="YES" columnAutoresizingStyle="lastColumnOnly" alternatingRowBackgroundColors="YES" columnReordering="NO" columnSelection="YES" autosaveColumns="NO" autosaveName="Columns" headerView="sVR-xh-ZLF" id="rkh-eM-scR">
                                                         <rect key="frame" x="0.0" y="0.0" width="468" height="622"/>

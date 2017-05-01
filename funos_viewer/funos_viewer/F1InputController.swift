@@ -52,7 +52,7 @@ class F1InputController: NSObject, NSOutlineViewDataSource {
     }
 
     func outlineView(_ outlineView: NSOutlineView, numberOfChildrenOfItem item: Any?) -> Int {
-        if item == nil { return 2 }
+        if item == nil { return 4 }
         return 0
     }
     func outlineView(_ outlineView: NSOutlineView, isItemExpandable item: Any) -> Bool {
@@ -62,7 +62,9 @@ class F1InputController: NSObject, NSOutlineViewDataSource {
         if item == nil {
             switch index {
             case 0: return "bstest" as NSString
-            case 1: return "counter" as NSString
+            case 1: return "snake" as NSString
+            case 2: return "counter" as NSString
+            case 3: return "nvme" as NSString
             default: return "???" as NSString
             }
         }
