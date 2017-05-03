@@ -770,7 +770,12 @@ class NSChipView: NSView {
         for (name, layer) in layers.units {
             let heat = info(name)
             if heat == nil { continue }
-            layer.backgroundColor = CGColor.red.blendWithWhite(CGFloat(1.0 - heat!))
+            let rounded = CGFloat(1.0 - heat!.round2)  // to make sure always teh same
+            let previous = layer.backgroundColor
+            let new = CGColor.red.blendWithWhite(rounded)
+            if previous != new {
+                layer.backgroundColor = new
+            }
         }
     }
     func updateHotSegments(networkName: UnitName, _ info: (UnitName) -> Double) {
