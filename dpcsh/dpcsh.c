@@ -11,27 +11,30 @@
 #include <funos/fun_json.h>
 #include <funos/fun_commander.h>
 
-static int
-_open_sock(const char *name)
-{
-	int sock;
-	int r;
+#define SOCK_NAME	"/tmp/funos-dpc.sock"
 
-	struct sockaddr_un server;
+static inline void _setnosigpipe(int const fd) {
+#ifdef __APPLE__
+    int yes = 1;
+    (void)setsockopt(fd, SOL_SOCKET, SO_NOSIGPIPE, &yes, sizeof(yes));
+#else
+    /* unfortunately Linux does not support SO_NOSIGPIPE... */
+    signal(SIGPIPE, SIG_IGN);
+#endif
+}
 
-	sock = socket(AF_UNIX, SOCK_STREAM, 0);
-	assert(sock > 0);
-
-	server.sun_family = AF_UNIX;
-	strcpy(server.sun_path, "/tmp/funos-dpc.sock");
-
-	r = connect(sock, (struct sockaddr *)&server, sizeof(server));
+static int _open_sock(const char *name) {
+	int sock = socket(AF_UNIX, SOCK_STREAM, 0);
+	if (sock <= 0) return sock;
+	_setnosigpipe(sock);
+	struct sockaddr_un server = { .sun_family = AF_UNIX };
+	strcpy(server.sun_path, name);
+	int r = connect(sock, (struct sockaddr *)&server, sizeof(server));
 	if (r) {
+		printf("*** Can't connect: %d\n", r);
 		perror("connect");
 		exit(1);
 	}
-		      
-
 	return sock;
 }
 
@@ -52,8 +55,22 @@ static void _do_interactive(int sock) {
         printf("input => %s\n", pp2);
         free(pp2);
         bool ok = fun_json_write_to_fd(json, sock);
+	if (!ok) {
+	    // try to reopen pipe
+	    printf("Write to socket failed - reopening socket\n");
+	    sock = _open_sock(SOCK_NAME);
+	    if (sock <= 0) {
+		printf("*** Can't reopen socket\n");
+	        fun_json_release(json);
+		return;
+	     }
+	     ok = fun_json_write_to_fd(json, sock);
+	}
         fun_json_release(json);
-        if (!ok) return;
+        if (!ok) {
+	    printf("*** Write to socket failed\n");
+	    return;
+	}
         /* receive a reply */
         struct fun_json *output = fun_json_read_from_fd(sock);
         if (!output) {
@@ -72,8 +89,7 @@ static void _do_interactive(int sock) {
 extern int run_webserver(int jsock, int port);
 #define MAXLINE (512)
 
-int json_handle_req(int jsock, const char *path, char *buf, int *size)
-{
+int json_handle_req(int jsock, const char *path, char *buf, int *size) {
 	printf("got jsock request for '%s'\n", path);
 	char line[MAXLINE];
 	int r = -1;
@@ -134,8 +150,11 @@ main(int argc, char *argv[])
 	       proxy_mode ? ": proxy mode" : "");
 
 	/* open a socket to FunOS */
-	sock = _open_sock("/tmp/funos-dpc.sock");
-
+	sock = _open_sock(SOCK_NAME);
+	if (sock <= 0) {
+	    printf("*** Can't open socket\n");
+	    exit(1);
+	}
 	if (!proxy_mode)
 		_do_interactive(sock);
 	else
