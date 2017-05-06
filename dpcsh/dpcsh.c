@@ -38,7 +38,8 @@ static int _open_sock(const char *name) {
 	return sock;
 }
 
-static void getline_with_history(char **line, OUT size_t *len) {
+static int getline_with_history(char **line, OUT size_t *len) {
+#if 0
     if (!len) {
 	len = 100;
 	*line = realloc(*line, len);
@@ -47,8 +48,8 @@ static void getline_with_history(char **line, OUT size_t *len) {
     if (ch < 'a' || ch > 'z') {
 	printf("got char %d '%c'\n", ch, ch);
     }
-    
-    return getline(&line, &len, stdin);
+#endif
+    return getline(line, len, stdin);
 }
 
 static void _do_interactive(int sock) {
@@ -57,7 +58,7 @@ static void _do_interactive(int sock) {
     ssize_t read;
     int64_t tid = 1;
 
-    while ((read = getline(&line, &len, stdin)) > 0) {
+    while ((read = getline_with_history(&line, &len)) > 0) {
         struct fun_json *json = fun_commander_line_to_command(line, &tid);
         if (!json) {
             printf("could not parse\n");
