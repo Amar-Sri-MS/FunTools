@@ -38,6 +38,19 @@ static int _open_sock(const char *name) {
 	return sock;
 }
 
+static void getline_with_history(char **line, OUT size_t *len) {
+    if (!len) {
+	len = 100;
+	*line = realloc(*line, len);
+    }
+    char ch = getchar();
+    if (ch < 'a' || ch > 'z') {
+	printf("got char %d '%c'\n", ch, ch);
+    }
+    
+    return getline(&line, &len, stdin);
+}
+
 static void _do_interactive(int sock) {
     char *line = NULL;
     size_t len = 0;
