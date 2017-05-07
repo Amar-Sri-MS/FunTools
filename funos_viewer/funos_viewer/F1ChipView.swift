@@ -597,8 +597,21 @@ extension CALayer {
 
 typealias CALayerChangeFunc = (CALayer) -> Void
 
+// Color bands to show an equalizer-like display
+// say the latest is sample X[n]
+// If you keep 1:
+//      last recorded = X[n-1] => show X[n]-X[n-1]
+// If you keep 2:
+//      lasts recorded: X[n-2],X[n-1] => show X[n]-X[n-1]+X[n-1]-X[n-2] = X[n] - X[n-2]
+// If you keep all:
+//      just keep X[n] and show X[n] - 0
+
+let hotnessBands = [10, 1000] // 1000 and above treated as infinite
+
 class ChipLayers {
     var units: [UnitName: CALayer] = [:]
+    var unitHotness: [UnitName: [[Double]]] = [:]
+    var unitHotnessLayers: [UnitName: [CALayer]] = [:]
     var DNSegments: [UnitName: BusWiring] = [:]
     var SNSegments: [UnitName: BusWiring] = [:]
     var CNSegments: [UnitName: BusWiring] = [:]
@@ -625,6 +638,12 @@ class NSChipView: NSView {
             animationLayer.sublayers!.forEach { $0.scaleFrameOrigin(xratio, yratio) }
         }
         unitNameToLayerCache.removeAll(keepingCapacity: true)
+        for (_, ls) in layers.unitHotnessLayers {
+            for l in ls {
+                l.removeFromSuperlayer()
+            }
+        }
+        layers.unitHotnessLayers = [:]
         setupTrackingAreas()
     }
     func setupTrackingAreas() {
@@ -770,12 +789,48 @@ class NSChipView: NSView {
         for (name, layer) in layers.units {
             let heat = info(name)
             if heat == nil { continue }
-            let rounded = CGFloat(1.0 - heat!.round2)  // to make sure always teh same
-            let previous = layer.backgroundColor
-            let new = CGColor.red.blendWithWhite(rounded)
-            if previous != new {
-                layer.backgroundColor = new
+            var hotnessLayers = layers.unitHotnessLayers[name]
+            let nbands = hotnessBands.count
+            if hotnessLayers == nil {
+                let size = layer.bounds.size
+                let hband = size.height / CGFloat(nbands)
+                hotnessLayers = []
+                for band in 0 ..< nbands {
+                    let l = CALayer()
+                    l.frame = CGRect(x: 0, y: size.height - CGFloat(band + 1) * hband, width: size.width, height: hband)
+                    l.zPosition = -100
+                    layer.addSublayer(l)
+                    hotnessLayers! |= l
+                }
+                layers.unitHotnessLayers[name] = hotnessLayers
             }
+            var hotness = layers.unitHotness[name] ?? [[Double]](repeating:[Double](), count: nbands)
+            for band in 0 ..< nbands {
+                // first record the last heat
+                var samples = hotness[band]
+                let maxToKeep = hotnessBands[band]
+                if maxToKeep >= 1000 {
+                    samples = [heat!]
+                } else {
+                    samples |= heat!
+                    while samples.count > maxToKeep {
+                        samples.remove(at: 0)
+                    }
+                }
+                hotness[band] = samples
+                let heatToDisplay = samples.last! - ((maxToKeep >= 1000) ? 0 : samples[0])
+//                if name == "Core0.0" {
+//                    Swift.print("For \(name) band #\(band) heatToDisplay=\(heatToDisplay) hotness=\(samples)")
+//                }
+                let hotLayer = hotnessLayers![band]
+                let rounded = CGFloat(1.0 - heatToDisplay.round2)  // to make sure always the same
+                let previous = hotLayer.backgroundColor
+                let new = CGColor.red.blendWithWhite(rounded)
+                if previous != new {
+                    hotLayer.backgroundColor = new
+                }
+            }
+            layers.unitHotness[name] = hotness
         }
     }
     func updateHotSegments(networkName: UnitName, _ info: (UnitName) -> Double) {
