@@ -7,7 +7,7 @@
 
 import AppKit
 
-class F1InputController: NSObject, NSOutlineViewDataSource {
+class F1InputController: NSObject, NSOutlineViewDataSource, NSTabViewDelegate {
     @IBOutlet var window: NSWindow!
     @IBOutlet var view: NSView!
 
@@ -18,12 +18,12 @@ class F1InputController: NSObject, NSOutlineViewDataSource {
     @IBOutlet var fiboArg: NSTextField!
     @IBOutlet var keyPath: NSTextField!
     @IBOutlet var pokeValue: NSTextField!
-    @IBOutlet var testName: NSTextField!
-    @IBOutlet var repeatCheckbox: NSButton!
 
     // Tests TAB
     @IBOutlet var tests: NSOutlineView!
-    @IBOutlet var testName2: NSTextField!
+
+    var numWUs: Int!
+    var topLevelWUs: [String]!
 
     unowned let document: F1SimDocument
 
@@ -32,6 +32,7 @@ class F1InputController: NSObject, NSOutlineViewDataSource {
         super.init()
         loadNib()
         tests.dataSource = self
+        tabView.delegate = self
     }
     // uncomment to debug leaks
 //    deinit {
@@ -50,9 +51,34 @@ class F1InputController: NSObject, NSOutlineViewDataSource {
             numRegisteredCommands.intValue = Int32(num)
         }
     }
+    public func tabView(_ tabView: NSTabView, willSelect tabViewItem: NSTabViewItem?) {
+        computeTopLevelWUs()
+    }
+    func computeTopLevelWUs() {
+        if numWUs != nil { return }
+        let wus = document.doF1Command("peek", "config/wu_handlers")?.dictionaryValue
+        if wus == nil || wus!.isEmpty {
+            // use the default, for now
+            topLevelWUs = ["bstest", "snake", "wuctest", "nvme"]
+        } else {
+            numWUs = wus!.count
+            topLevelWUs = wus!.flatMap {
+                if $1.dictionaryValue.isEmpty { return nil }
+                let attrs = $1.dictionaryValue["attrs"]?.integerValue ?? 0
+                // FIXME: 16 below...
+                let isTopLevel = (attrs & 16 /* WU_ATTR_TOP_LEVEL */) != 0
+                return isTopLevel ? $0.stringByDeletingSuffix("_wuh") : nil
+            }
+            print("TopLevel WUs: \(topLevelWUs!)")
+            topLevelWUs = topLevelWUs.sorted()
+            tests.tableColumns.last?.headerCell.stringValue = "TESTS (\(topLevelWUs.count)/\(numWUs!))"
+            tests.reloadData()
+        }
 
+    }
     func outlineView(_ outlineView: NSOutlineView, numberOfChildrenOfItem item: Any?) -> Int {
-        if item == nil { return 4 }
+        if topLevelWUs == nil { computeTopLevelWUs() }
+        if item == nil { return topLevelWUs.count }
         return 0
     }
     func outlineView(_ outlineView: NSOutlineView, isItemExpandable item: Any) -> Bool {
@@ -60,13 +86,7 @@ class F1InputController: NSObject, NSOutlineViewDataSource {
     }
     func outlineView(_ outlineView: NSOutlineView, child index: Int, ofItem item: Any?) -> Any {
         if item == nil {
-            switch index {
-            case 0: return "bstest" as NSString
-            case 1: return "snake" as NSString
-            case 2: return "counter" as NSString
-            case 3: return "nvme" as NSString
-            default: return "???" as NSString
-            }
+            return topLevelWUs[index]
         }
         return "Error" as NSString
     }

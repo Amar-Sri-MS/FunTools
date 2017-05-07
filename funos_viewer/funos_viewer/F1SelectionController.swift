@@ -31,7 +31,7 @@ class F1SelectionController: NSObject, NSTabViewDelegate, NSTableViewDelegate, N
 
     var wuTimer: Timer!
     var miscStatsTimer: Timer!
-    let updateFrequency = 0.1
+    let updateFrequency = 0.2
     unowned let document: F1SimDocument
 
 

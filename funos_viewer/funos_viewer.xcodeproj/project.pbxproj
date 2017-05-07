@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		A71563941EB7ACE600F32BAE /* bsd in Resources */ = {isa = PBXBuildFile; fileRef = A71563931EB7ACE600F32BAE /* bsd */; };
 		A71563971EB7ADD200F32BAE /* bsd_utils.c in Sources */ = {isa = PBXBuildFile; fileRef = A71563961EB7ADD200F32BAE /* bsd_utils.c */; };
+		A71563991EB95EDE00F32BAE /* cfg in Resources */ = {isa = PBXBuildFile; fileRef = A71563981EB95EDE00F32BAE /* cfg */; };
 		A716FBCD1EA67C82008395EC /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FBCC1EA67C82008395EC /* AppDelegate.swift */; };
 		A716FBCF1EA67C82008395EC /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A716FBCE1EA67C82008395EC /* Assets.xcassets */; };
 		A716FBD21EA67C82008395EC /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = A716FBD01EA67C82008395EC /* MainMenu.xib */; };
@@ -81,6 +82,7 @@
 /* Begin PBXFileReference section */
 		A71563931EB7ACE600F32BAE /* bsd */ = {isa = PBXFileReference; lastKnownFileType = folder; name = bsd; path = ../../FunOS/bsd; sourceTree = "<group>"; };
 		A71563961EB7ADD200F32BAE /* bsd_utils.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = bsd_utils.c; path = ../../FunOS/bsd/bsd_utils.c; sourceTree = "<group>"; };
+		A71563981EB95EDE00F32BAE /* cfg */ = {isa = PBXFileReference; lastKnownFileType = folder; name = cfg; path = ../../FunOS/cfg; sourceTree = "<group>"; };
 		A716FBC91EA67C82008395EC /* funos_viewer.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = funos_viewer.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A716FBCC1EA67C82008395EC /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		A716FBCE1EA67C82008395EC /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -172,12 +174,13 @@
 				A71563961EB7ADD200F32BAE /* bsd_utils.c */,
 				A716FC071EAD667D008395EC /* PureSwiftExtras */,
 				A716FC1E1EAD6687008395EC /* PureSwiftRuntime */,
-				A716FBE31EA83CBB008395EC /* apps */,
 				A7A811691EAFBFF1005BB2CE /* F1UI */,
 				A716FBCB1EA67C82008395EC /* funos_viewer */,
+				A716FBE31EA83CBB008395EC /* apps */,
 				A716FBDB1EA67D3C008395EC /* funos */,
 				A716FBE11EA683C2008395EC /* posix */,
 				A716FBE51EAD33E0008395EC /* hw */,
+				A71563981EB95EDE00F32BAE /* cfg */,
 				A716FBE71EAD33EA008395EC /* kv */,
 				A716FBE91EAD33F5008395EC /* libFunOS */,
 				A71563931EB7ACE600F32BAE /* bsd */,
@@ -358,6 +361,7 @@
 				A716FBE21EA683C2008395EC /* posix in Resources */,
 				A716FBE81EAD33EA008395EC /* kv in Resources */,
 				A716FBEA1EAD33F5008395EC /* libFunOS in Resources */,
+				A71563991EB95EDE00F32BAE /* cfg in Resources */,
 				A716FBE61EAD33E0008395EC /* hw in Resources */,
 				A7FD26741EB557CB0049E0C0 /* F1ChipWindow.xib in Resources */,
 				A716FBE41EA83CBB008395EC /* apps in Resources */,
