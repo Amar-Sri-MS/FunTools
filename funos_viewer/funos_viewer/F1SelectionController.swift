@@ -19,6 +19,7 @@ class F1SelectionController: NSObject, NSTabViewDelegate, NSTableViewDelegate, N
     @IBOutlet var wusTable: NSTableView!
 
     @IBOutlet var inUseField: NSTextField!
+    @IBOutlet var modulesInited: NSTextView!
     
     class WUInfo: NSObject {
         // we subclass NSObject to get valueForKeyPath
@@ -124,6 +125,11 @@ class F1SelectionController: NSObject, NSTabViewDelegate, NSTableViewDelegate, N
         let inUse = wustacks?["in_use"]?.integerValue
         if inUse != nil {
             inUseField.integerValue = inUse!
+        }
+        let modules = document.doF1Command("peek", "config/modules_inited")?.arrayValue
+        let modulesStr = modules?.joinDescriptions(", ")
+        if modulesStr != nil {
+            modulesInited.string = modulesStr
         }
     }
     func numberOfRows(in tableView: NSTableView) -> Int {

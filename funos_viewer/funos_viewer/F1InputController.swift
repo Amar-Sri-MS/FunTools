@@ -56,6 +56,7 @@ class F1InputController: NSObject, NSOutlineViewDataSource, NSTabViewDelegate {
     }
     func computeTopLevelWUs() {
         if numWUs != nil { return }
+//        print("Fetching WU Handlers")
         let wus = document.doF1Command("peek", "config/wu_handlers")?.dictionaryValue
         if wus == nil || wus!.isEmpty {
             // use the default, for now
@@ -69,7 +70,7 @@ class F1InputController: NSObject, NSOutlineViewDataSource, NSTabViewDelegate {
                 let isTopLevel = (attrs & 16 /* WU_ATTR_TOP_LEVEL */) != 0
                 return isTopLevel ? $0.stringByDeletingSuffix("_wuh") : nil
             }
-            print("TopLevel WUs: \(topLevelWUs!)")
+//            print("TopLevel WUs: \(topLevelWUs!)")
             topLevelWUs = topLevelWUs.sorted()
             tests.tableColumns.last?.headerCell.stringValue = "TESTS (\(topLevelWUs.count)/\(numWUs!))"
             tests.reloadData()

@@ -16,9 +16,20 @@
 #include <stdio.h>
 #include <funos/fun_json.h>
 
+static inline void _setnosigpipe(int const fd) {
+#ifdef __APPLE__
+    int yes = 1;
+    (void)setsockopt(fd, SOL_SOCKET, SO_NOSIGPIPE, &yes, sizeof(yes));
+#else
+    /* unfortunately Linux does not support SO_NOSIGPIPE... */
+    signal(SIGPIPE, SIG_IGN);
+#endif
+}
+
 int dpcclient_open_socket(void) {
     int sock = socket(AF_UNIX, SOCK_STREAM, 0);
-    assert(sock > 0);
+    if (sock <= 0) return sock;
+    _setnosigpipe(sock);
     struct sockaddr_un server = { .sun_family = AF_UNIX };
     strcpy(server.sun_path, "/tmp/funos-dpc.sock");
     int r = connect(sock, (struct sockaddr *)&server, sizeof(server));
