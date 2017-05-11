@@ -10,9 +10,13 @@
         <customObject id="-2" userLabel="File's Owner" customClass="F1InputController" customModule="funos_viewer" customModuleProvider="target">
             <connections>
                 <outlet property="fiboArg" destination="o88-3N-Dkq" id="uHH-dX-Ziu"/>
+                <outlet property="ikvRepeat" destination="wOw-hv-iQk" id="Pg4-Lg-i6o"/>
                 <outlet property="keyPath" destination="Qj0-bJ-dOK" id="8eU-m4-09g"/>
+                <outlet property="logPageSize" destination="Vk3-0O-QfZ" id="vGc-dT-u2d"/>
                 <outlet property="numRegisteredCommands" destination="88z-rv-2H0" id="Pxe-j5-iVE"/>
+                <outlet property="pageCacheKB" destination="7WN-Vx-b6Q" id="X9l-aV-FBM"/>
                 <outlet property="pokeValue" destination="FTh-1r-iLT" id="FxG-SA-8tH"/>
+                <outlet property="sizeClass" destination="3r4-9w-gts" id="qU3-85-xbw"/>
                 <outlet property="tests" destination="ck7-D3-nsu" id="c7T-R6-XmM"/>
                 <outlet property="view" destination="nqK-A3-mMl" id="OsH-34-8E8"/>
                 <outlet property="window" destination="dIm-XO-GOA" id="dgx-87-sRM"/>
@@ -220,7 +224,7 @@
                                             <rect key="frame" x="-3" y="350" width="261" height="252"/>
                                             <clipView key="contentView" drawsBackground="NO" id="NKb-7Z-49P">
                                                 <rect key="frame" x="1" y="0.0" width="259" height="251"/>
-                                                <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                                                <autoresizingMask key="autoresizingMask"/>
                                                 <subviews>
                                                     <outlineView verticalHuggingPriority="750" allowsExpansionToolTips="YES" columnAutoresizingStyle="lastColumnOnly" selectionHighlightStyle="sourceList" multipleSelection="NO" emptySelection="NO" autosaveColumns="NO" rowHeight="24" headerView="etx-nu-3Dm" indentationPerLevel="16" autoresizesOutlineColumn="YES" outlineTableColumn="t5L-7P-alC" id="ck7-D3-nsu">
                                                         <rect key="frame" x="0.0" y="0.0" width="259" height="228"/>
@@ -326,6 +330,9 @@
                                                 <color key="textColor" name="textColor" catalog="System" colorSpace="catalog"/>
                                                 <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
                                             </textFieldCell>
+                                            <connections>
+                                                <action selector="noteIKVParamsChanged:" target="-1" id="DVR-rr-73e"/>
+                                            </connections>
                                         </textField>
                                         <textField verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="09n-2P-Ovh">
                                             <rect key="frame" x="-13" y="491" width="157" height="17"/>
@@ -346,6 +353,9 @@
                                                 <color key="textColor" name="textColor" catalog="System" colorSpace="catalog"/>
                                                 <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
                                             </textFieldCell>
+                                            <connections>
+                                                <action selector="noteIKVParamsChanged:" target="-1" id="CQy-k0-uvr"/>
+                                            </connections>
                                         </textField>
                                         <textField verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="cWG-ZL-xyc">
                                             <rect key="frame" x="-8" y="435" width="157" height="34"/>
@@ -360,64 +370,75 @@
                                             <constraints>
                                                 <constraint firstAttribute="width" constant="77" id="wWD-g1-0mt"/>
                                             </constraints>
-                                            <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" state="on" borderStyle="bezel" title="4" drawsBackground="YES" id="gK5-0l-je0">
+                                            <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" state="on" borderStyle="bezel" title="12" drawsBackground="YES" id="gK5-0l-je0">
                                                 <font key="font" metaFont="system"/>
                                                 <color key="textColor" name="textColor" catalog="System" colorSpace="catalog"/>
                                                 <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
                                             </textFieldCell>
+                                            <connections>
+                                                <action selector="noteIKVParamsChanged:" target="-1" id="cYP-Sb-qRv"/>
+                                            </connections>
                                         </textField>
                                         <textField verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="ZZR-X6-rub">
                                             <rect key="frame" x="3" y="518" width="140" height="17"/>
-                                            <textFieldCell key="cell" sendsActionOnEndEditing="YES" alignment="right" title="Page size (KB):" id="e6Z-TI-jgN">
+                                            <textFieldCell key="cell" sendsActionOnEndEditing="YES" alignment="right" title="Log page size:" id="e6Z-TI-jgN">
                                                 <font key="font" metaFont="system"/>
                                                 <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
                                                 <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                                             </textFieldCell>
                                         </textField>
                                         <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="h73-es-Kjh">
-                                            <rect key="frame" x="7" y="300" width="240" height="32"/>
+                                            <rect key="frame" x="6" y="300" width="243" height="32"/>
                                             <buttonCell key="cell" type="push" title="Repeat * (1 PUT + 10 GET)" bezelStyle="rounded" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="XaU-Yw-nhX">
                                                 <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                                                 <font key="font" metaFont="system"/>
                                             </buttonCell>
+                                            <connections>
+                                                <action selector="doIKVPutAnd10Get:" target="-1" id="Sl3-7z-WIE"/>
+                                            </connections>
                                         </button>
                                         <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="hSE-om-ibA">
-                                            <rect key="frame" x="7" y="366" width="240" height="32"/>
+                                            <rect key="frame" x="6" y="366" width="243" height="32"/>
                                             <buttonCell key="cell" type="push" title="Repeat * PUT" bezelStyle="rounded" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="Bgr-KF-NGX">
                                                 <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                                                 <font key="font" metaFont="system"/>
+                                                <connections>
+                                                    <action selector="doIKVPut:" target="-1" id="xoW-hW-gcH"/>
+                                                </connections>
                                             </buttonCell>
                                         </button>
                                         <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="1XZ-u8-1cm">
-                                            <rect key="frame" x="7" y="333" width="240" height="32"/>
+                                            <rect key="frame" x="6" y="333" width="243" height="32"/>
                                             <buttonCell key="cell" type="push" title="Repeat * GET (present)" bezelStyle="rounded" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="xbH-7W-DgP">
                                                 <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                                                 <font key="font" metaFont="system"/>
                                             </buttonCell>
+                                            <connections>
+                                                <action selector="doIKVGet:" target="-1" id="LvH-tq-4IX"/>
+                                            </connections>
                                         </button>
                                         <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="cfe-IT-sgD">
-                                            <rect key="frame" x="7" y="267" width="240" height="32"/>
+                                            <rect key="frame" x="6" y="267" width="243" height="32"/>
                                             <buttonCell key="cell" type="push" title="Repeat * DELETE" bezelStyle="rounded" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="9HZ-ZX-bFP">
                                                 <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                                                 <font key="font" metaFont="system"/>
                                             </buttonCell>
+                                            <connections>
+                                                <action selector="doIKVDelete:" target="-1" id="wzk-2O-oUG"/>
+                                            </connections>
                                         </button>
                                         <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="JG6-TG-gLs">
-                                            <rect key="frame" x="7" y="234" width="242" height="32"/>
+                                            <rect key="frame" x="6" y="234" width="242" height="32"/>
                                             <buttonCell key="cell" type="push" title="Repeat * PUT + Repeat * DELETE" bezelStyle="rounded" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="AZo-3m-rjf">
                                                 <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                                                 <font key="font" metaFont="system"/>
                                             </buttonCell>
-                                        </button>
-                                        <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="xpO-VA-S8C">
-                                            <rect key="frame" x="37" y="399" width="180" height="32"/>
-                                            <buttonCell key="cell" type="push" title="Create IKV store" bezelStyle="rounded" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="9Vb-vA-Y1d">
-                                                <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
-                                                <font key="font" metaFont="system"/>
-                                            </buttonCell>
+                                            <connections>
+                                                <action selector="doIKVPutThenDelete:" target="-1" id="lHg-8Z-hUO"/>
+                                            </connections>
                                         </button>
                                         <matrix verticalHuggingPriority="750" allowsEmptySelection="NO" autosizesCells="NO" translatesAutoresizingMaskIntoConstraints="NO" id="3r4-9w-gts">
-                                            <rect key="frame" x="45" y="543" width="166" height="54"/>
+                                            <rect key="frame" x="40" y="543" width="175" height="54"/>
                                             <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                                             <size key="cellSize" width="166" height="18"/>
                                             <buttonCell key="prototype" type="radio" title="Small" bezelStyle="regularSquare" imagePosition="right" alignment="left" inset="2" id="7gb-7n-rS9">
@@ -440,7 +461,20 @@
                                                     </buttonCell>
                                                 </column>
                                             </cells>
+                                            <connections>
+                                                <action selector="noteIKVParamsChanged:" target="-1" id="slH-Ud-Ff3"/>
+                                            </connections>
                                         </matrix>
+                                        <button verticalHuggingPriority="750" misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="xpO-VA-S8C">
+                                            <rect key="frame" x="6" y="399" width="242" height="32"/>
+                                            <buttonCell key="cell" type="push" title="Create &amp; Open IKV store" bezelStyle="rounded" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="9Vb-vA-Y1d">
+                                                <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                                                <font key="font" metaFont="system"/>
+                                            </buttonCell>
+                                            <connections>
+                                                <action selector="doCreateIKVStore:" target="-1" id="fvI-2L-G2m"/>
+                                            </connections>
+                                        </button>
                                     </subviews>
                                     <constraints>
                                         <constraint firstAttribute="trailing" secondItem="Vk3-0O-QfZ" secondAttribute="trailing" constant="25" id="3JS-ej-HMH"/>

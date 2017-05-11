@@ -238,6 +238,33 @@ import AppKit
         doAndLogF1CommandAsync("async", testName)
     }
 
+    // IKV TAB
+    @IBAction func doCreateIKVStore(_ sender: NSObject?) {
+        let json = doF1Command("ikv", "create_and_open", inputController.paramsAsString)
+        let container = json?.dictionaryValue["ikv_container"]?.integerValue
+        if container != nil {
+            inputController.ikvContainer = container
+        }
+    }
+    @IBAction func doIKVPut(_ sender: NSObject?) {
+        doAndLogF1Command("ikv", "put", inputController.paramsAsString)
+    }
+    @IBAction func doIKVGet(_ sender: NSObject?) {
+        doAndLogF1Command("ikv", "get", inputController.paramsAsString)
+    }
+    @IBAction func doIKVPutAnd10Get(_ sender: NSObject?) {
+        doAndLogF1Command("ikv", "put_and_10_get", inputController.paramsAsString)
+    }
+    @IBAction func doIKVDelete(_ sender: NSObject?) {
+        doAndLogF1Command("ikv", "delete", inputController.paramsAsString)
+    }
+    @IBAction func doIKVPutThenDelete(_ sender: NSObject?) {
+        doAndLogF1Command("ikv", "put_then_delete", inputController.paramsAsString)
+    }
+    @IBAction func noteIKVParamsChanged(_ sender: NSObject?) {
+//        inputController.noteIKVParamsChanged()
+    }
+
     @IBAction func fiddleWithOptions(_ sender: NSObject?) {
         noteSelectionChangedAndUpdate()
     }

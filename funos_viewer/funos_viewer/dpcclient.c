@@ -79,7 +79,6 @@ NULLABLE CALLER_TO_FREE const char *dpcrun_command(INOUT int *sock, const char *
         return NULL;
     }
     bool ok = fun_json_write_to_fd(json, *sock);
-    fun_json_release(json);
     if (!ok) {
         // try to reopen socket
         *sock = dpcclient_open_socket();
@@ -90,6 +89,7 @@ NULLABLE CALLER_TO_FREE const char *dpcrun_command(INOUT int *sock, const char *
             return NULL;
         }
     }
+    fun_json_release(json);
     /* receive a reply */
     struct fun_json *output = fun_json_read_from_fd(*sock);
     if (!output) {
