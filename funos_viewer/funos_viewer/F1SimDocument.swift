@@ -244,6 +244,10 @@ import AppKit
         let container = json?.dictionaryValue["ikv_container"]?.integerValue
         if container != nil {
             inputController.ikvContainer = container
+            selectionController.ikvContainer.stringValue = container!.description
+            // We install an IKV bridge
+            let bridgePoint = "stats/ikv/" + container!.description
+            install_ikv_bridge_for_container(bridgePoint, OpaquePointer(bitPattern: container!))
         }
     }
     @IBAction func doIKVPut(_ sender: NSObject?) {

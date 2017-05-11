@@ -11,16 +11,31 @@ class F1SelectionController: NSObject, NSTabViewDelegate, NSTableViewDelegate, N
     @IBOutlet var window: NSWindow!
     @IBOutlet var selectionTabView: NSTabView!
 
+    // Output TAB
     @IBOutlet var selectionInfo: NSTextView!
     @IBOutlet var selectionSamples: SimulationSamplesView!
     @IBOutlet var selectionQueuesText: NSTextView!
-    @IBOutlet var selectionRelativeHeat: NSButton!
 
+    // WUs TAB
     @IBOutlet var wusTable: NSTableView!
 
+    // Misc Stats TAB
     @IBOutlet var inUseField: NSTextField!
     @IBOutlet var modulesInited: NSTextView!
-    
+
+    // Options TAB
+    @IBOutlet var selectionRelativeHeat: NSButton!
+
+    // IKV Raw TAB
+    @IBOutlet var ikvContainer: NSTextField!
+    @IBOutlet var ikvCount: NSTextField!
+    @IBOutlet var ikvPuts: NSTextField!
+    @IBOutlet var ikvGets: NSTextField!
+    @IBOutlet var ikvDeletes: NSTextField!
+    @IBOutlet var ikvRehash: NSTextField!
+
+    // IKV TAB
+
     class WUInfo: NSObject {
         // we subclass NSObject to get valueForKeyPath
         var wu: String = ""
@@ -30,8 +45,7 @@ class F1SelectionController: NSObject, NSTabViewDelegate, NSTableViewDelegate, N
     }
     var allInfo: [WUInfo] = []
 
-    var wuTimer: Timer!
-    var miscStatsTimer: Timer!
+    var refreshTimer: Timer!
     let updateFrequency = 0.2
     unowned let document: F1SimDocument
 
@@ -53,40 +67,36 @@ class F1SelectionController: NSObject, NSTabViewDelegate, NSTableViewDelegate, N
 //    deinit {
 //        print("DESTROY F1SelectionController")
 //    }
+    let tabsToRefresh: Set<String> = ["WUs", "Misc Stats", "IKV Raw"]
+
     public func tabView(_ tabView: NSTabView, willSelect tabViewItem: NSTabViewItem?) {
 //        print("Received willSelect notification tabView changed to \(tabViewItem!.label)")
-        if tabViewItem!.label == "WUs" {
-            doRefreshWUs()
-        } else if tabViewItem!.label == "Misc Stats" {
-            doRefreshMiscStats()
+        if tabsToRefresh.contains(tabViewItem!.label) {
+            doRefresh(tabViewItem!.label)
         }
     }
     public func tabView(_ tabView: NSTabView, didSelect tabViewItem: NSTabViewItem?) {
 //        print("Received didSelect notification tabView changed to \(tabViewItem!.label)")
-        if tabViewItem!.label == "WUs" {
-            wuTimer = Timer.scheduledTimer(withTimeInterval: updateFrequency, repeats: true, block: { _ in
-                self.performSelector(onMainThread: #selector(F1SelectionController.refreshWU), with: nil, waitUntilDone: false)
-            })
-        } else if tabViewItem!.label == "Misc Stats" {
-            miscStatsTimer = Timer.scheduledTimer(withTimeInterval: updateFrequency, repeats: true, block: { _ in
-                self.performSelector(onMainThread: #selector(F1SelectionController.refreshMiscStats), with: nil, waitUntilDone: false)
+        if tabsToRefresh.contains(tabViewItem!.label) {
+            refreshTimer = Timer.scheduledTimer(withTimeInterval: updateFrequency, repeats: true, block: { _ in
+                self.performSelector(onMainThread: #selector(F1SelectionController.refresh), with: nil, waitUntilDone: false)
             })
         }
     }
-    func refreshWU() {
+    func refresh() {
         let tabViewItem = selectionTabView.selectedTabViewItem
-        if tabViewItem != nil && tabViewItem!.label == "WUs" {
-            doRefreshWUs()
+        if tabViewItem != nil && tabsToRefresh.contains(tabViewItem!.label) {
+            doRefresh(tabViewItem!.label)
         } else {
-            wuTimer?.invalidate()
+            refreshTimer?.invalidate()
         }
     }
-    func refreshMiscStats() {
-        let tabViewItem = selectionTabView.selectedTabViewItem
-        if tabViewItem != nil && tabViewItem!.label == "Misc Stats" {
-            doRefreshMiscStats()
-        } else {
-            miscStatsTimer?.invalidate()
+    func doRefresh(_ label: String) {
+        switch label {
+            case "WUs": doRefreshWUs()
+            case "Misc Stats": doRefreshMiscStats()
+            case "IKV Raw": doRefreshIKVRaw()
+            default: break
         }
     }
     func updateAllInfo(counts: [String: JSON], durations: [String: JSON]) -> Bool {
@@ -130,6 +140,15 @@ class F1SelectionController: NSObject, NSTabViewDelegate, NSTableViewDelegate, N
         let modulesStr = modules?.joinDescriptions(", ")
         if modulesStr != nil {
             modulesInited.string = modulesStr
+        }
+    }
+    func doRefreshIKVRaw() {
+        let cont = ikvContainer!.stringValue
+        let propsName = "stats/ikv/\(cont)"
+        let stats = document.doF1Command("peek", propsName)?.dictionaryValue
+        if stats == nil || stats!.isEmpty { return }
+        for (ui, name) in [(ikvPuts!, "puts"), (ikvGets!, "gets"), (ikvDeletes!, "deletes"), (ikvRehash!, "rehash")] {
+            ui.integerValue = stats![name]!.integerValue
         }
     }
     func numberOfRows(in tableView: NSTableView) -> Int {

@@ -26,4 +26,3 @@ int64_t statSizeForFile(const char *cpath) {
     if (err == 0) return buf.st_size;
     return -1;
 }
-
