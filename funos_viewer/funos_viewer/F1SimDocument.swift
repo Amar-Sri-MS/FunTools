@@ -185,7 +185,7 @@ import AppKit
         selectionController.selectionInfo.string = string
     }
     func doAndLogF1Command(_ verb: String, _ args: String...) {
-        log(string: "");
+        log(string: "")
         let json: JSON! = doF1Command(socket: &socket, verb, args)
         log(string: json?.toJSONString() ?? "")
     }
@@ -244,28 +244,44 @@ import AppKit
     var truth: Set<UInt64> = []
 
     @IBAction func doCreateIKVStore(_ sender: NSObject?) {
+        log(string: "");
         let json = doF1Command("ikv", "create_and_open", inputController.paramsAsString)
         let container = json?.dictionaryValue["ikv_container"]?.integerValue
         if container != nil {
             inputController.ikvContainer = container
-            selectionController.ikvContainer.stringValue = container!.description
             truth = []
+            selectionController.ikvContainer.stringValue = container!.description
+            selectionController.startIKVTimer()
         }
+        log(string: json?.toJSONString() ?? "")
     }
     func doAndLogIKVCommand(_ subverb: String, _ ikvValues: [UInt64]! = nil) {
-        let params = inputController.paramsAsString;
-        if ikvValues == nil {
-            doAndLogF1Command("ikv", subverb, params)
-        } else {
-            let ikvValuesStr = "[" + ikvValues.joinDescriptions(", ") + "]"
-            doAndLogF1Command("ikv", subverb, params, ikvValuesStr)
+        let params = inputController.paramsAsString
+        let args: [String] = ikvValues == nil ? [subverb, params] : [subverb, params, "[" + ikvValues.joinDescriptions(", ") + "]"]
+        log(string: "")
+        let json: JSON! = doF1Command(socket: &socket, "ikv", args)
+        log(string: json?.toJSONString() ?? "")
+        selectionController.doRefreshIKVRaw()
+    }
+    func doAndLogIKVCommandAsync(_ subverb: String, _ ikvValues: [UInt64]! = nil) {
+        let params = inputController.paramsAsString
+        let args: [String] = ikvValues == nil ? [subverb, params] : [subverb, params, "[" + ikvValues.joinDescriptions(", ") + "]"]
+        log(string: "")
+        async {
+            var tempSocket: Int32 = 0
+            let json: JSON! = self.doF1Command(socket: &tempSocket, "ikv", args)
+            _ = Darwin.close(tempSocket)
+            if json == nil { return }
+            let str = json.toJSONString()
+            self.performSelector(onMainThread: #selector(F1SimDocument.log), with: str, waitUntilDone: true)
+            self.selectionController.performSelector(onMainThread: #selector(F1SelectionController.doRefreshIKVRaw), with: nil, waitUntilDone: true)
         }
     }
     @IBAction func doIKVPut(_ sender: NSObject?) {
         let repeatCount = inputController.ikvRepeat!.integerValue
         let ikvValues: [UInt64] = (0 ..< repeatCount).map { _ in UInt64.random() % 1_000_000 }
         ikvValues.forEach { truth.insert($0) }
-        doAndLogIKVCommand("put", ikvValues)
+        doAndLogIKVCommandAsync("put", ikvValues)
     }
     func pickExistingNAtRandom(_ n: Int) -> [UInt64] {
         let truthAsArray = truth.map { $0 }
@@ -278,7 +294,7 @@ import AppKit
     @IBAction func doIKVGet(_ sender: NSObject?) {
         let repeatCount = inputController.ikvRepeat!.integerValue
         if truth.isEmpty { return }
-        doAndLogIKVCommand("get", pickExistingNAtRandom(repeatCount))
+        doAndLogIKVCommandAsync("get", pickExistingNAtRandom(repeatCount))
     }
     @IBAction func doIKVPutAnd10Get(_ sender: NSObject?) {
         let repeatCount = inputController.ikvRepeat!.integerValue

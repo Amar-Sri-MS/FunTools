@@ -39,6 +39,11 @@ class F1SelectionController: NSObject, NSTabViewDelegate, NSTableViewDelegate, N
     @IBOutlet var ikvPagewrites: NSTextField!
     @IBOutlet var ikvKeywait: NSTextField!
     @IBOutlet var ikvPagewait: NSTextField!
+    var ikvCountSamples: SimulationSamples!
+    @IBOutlet var ikvCountSamplesView: SimulationSamplesView!
+
+    var ikvStartDate: Date!  // to substract to now
+    var ikvTimer: Timer!    // We start the timer whenever we have an IKV
 
     // IKV TAB
 
@@ -55,7 +60,6 @@ class F1SelectionController: NSObject, NSTabViewDelegate, NSTableViewDelegate, N
     let updateFrequency = 0.2
     unowned let document: F1SimDocument
 
-
     init(document: F1SimDocument) {
         self.document = document
         super.init()
@@ -63,6 +67,9 @@ class F1SelectionController: NSObject, NSTabViewDelegate, NSTableViewDelegate, N
         selectionTabView.delegate = self
         wusTable.delegate = self
         wusTable.dataSource = self
+        ikvCountSamples = SimulationSamples(title: "count") { _ in "" }
+        ikvCountSamples.record(0, value: 0.0)
+        ikvCountSamplesView.setSamples(ikvCountSamples!)
         // The next two lines are a horrible hack.  Without them, for some reason you need to go to the WUs TAB twice before you get any display.  Makes no sense.
         async {
             self.selectionTabView.performSelector(onMainThread: #selector(NSTabView.selectNextTabViewItem), with: nil, waitUntilDone: true)
@@ -73,7 +80,7 @@ class F1SelectionController: NSObject, NSTabViewDelegate, NSTableViewDelegate, N
 //    deinit {
 //        print("DESTROY F1SelectionController")
 //    }
-    let tabsToRefresh: Set<String> = ["WUs", "Misc Stats", "IKV Raw"]
+    let tabsToRefresh: Set<String> = ["WUs", "Misc Stats"]
 
     public func tabView(_ tabView: NSTabView, willSelect tabViewItem: NSTabViewItem?) {
 //        print("Received willSelect notification tabView changed to \(tabViewItem!.label)")
@@ -87,7 +94,16 @@ class F1SelectionController: NSObject, NSTabViewDelegate, NSTableViewDelegate, N
             refreshTimer = Timer.scheduledTimer(withTimeInterval: updateFrequency, repeats: true, block: { _ in
                 self.performSelector(onMainThread: #selector(F1SelectionController.refresh), with: nil, waitUntilDone: false)
             })
+        } else if tabViewItem!.label == "IKV Raw" {
+            doRefreshIKVRaw()
         }
+    }
+    func startIKVTimer() {
+        ikvTimer?.invalidate()
+        ikvStartDate = Date()
+        ikvTimer = Timer.scheduledTimer(withTimeInterval: updateFrequency, repeats: true, block: { _ in
+            self.performSelector(onMainThread: #selector(F1SelectionController.ikvRefresh), with: nil, waitUntilDone: false)
+        })
     }
     func refresh() {
         let tabViewItem = selectionTabView.selectedTabViewItem
@@ -96,6 +112,9 @@ class F1SelectionController: NSObject, NSTabViewDelegate, NSTableViewDelegate, N
         } else {
             refreshTimer?.invalidate()
         }
+    }
+    func ikvRefresh() {
+        doRefreshIKVRaw()
     }
     func doRefresh(_ label: String) {
         switch label {
@@ -153,12 +172,31 @@ class F1SelectionController: NSObject, NSTabViewDelegate, NSTableViewDelegate, N
         let propsName = "stats/ikv/\(cont)"
         let stats = document.doF1Command("peek", propsName)?.dictionaryValue
         if stats == nil || stats!.isEmpty { return }
-        for (ui, name) in [(ikvCount!, "count"), (ikvPuts!, "puts"), (ikvGets!, "gets"), (ikvDeletes!, "deletes"), (ikvRehash!, "rehash"), (ikvTombs!, "tombs"), (ikvReclaim!, "reclaim"), (ikvPagereads!, "pagereads"), (ikvPagewrites!, "pagewrites"), (ikvKeywait!, "keywait"), (ikvPagewait!, "pagewait"), ] {
+        let list: [(ui: NSTextField, name: String, samples: SimulationSamples?)] = [
+            (ikvCount!, "count", ikvCountSamples),
+            (ikvPuts!, "puts", nil),
+            (ikvGets!, "gets", nil),
+            (ikvDeletes!, "deletes", nil),
+            (ikvRehash!, "rehash", nil),
+            (ikvTombs!, "tombs", nil),
+            (ikvReclaim!, "reclaim", nil),
+            (ikvPagereads!, "pagereads", nil),
+            (ikvPagewrites!, "pagewrites", nil),
+            (ikvKeywait!, "keywait", nil),
+            (ikvPagewait!, "pagewait", nil)
+        ]
+        for (ui, name, samples) in list {
             let s = stats![name]
             if s != nil {
-                ui.integerValue = s!.integerValue
+                let v = s!.integerValue
+                ui.integerValue = v
+                if samples != nil && ikvStartDate != nil {
+                    let now = Int((Date() - ikvStartDate!) * 20.0)
+                    samples!.record(now, value: Double(v))
+                }
             }
         }
+        ikvCountSamplesView.setSamples(ikvCountSamples!)
     }
     func numberOfRows(in tableView: NSTableView) -> Int {
         return allInfo.count
