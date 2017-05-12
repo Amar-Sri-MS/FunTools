@@ -163,8 +163,10 @@ import AppKit
     func doF1Command( socket: inout Int32, _ verb: String, _ argsArray: [String]) -> JSON! {
         let debug = foilNeverExecutedWarnings
         let argsArray: String = argsArray.joinDescriptions(", ")
+        let argsStr = "[\(argsArray)]"
         var s = socket
-        let r = dpcrun_command(&s, verb, "[\(argsArray)]")
+        // Swift.print("=== COMMAND: \(argsStr)")
+        let r = dpcrun_command(&s, verb, argsStr)
         socket = s
         if r == nil {
             Swift.print("*** Error executing \(verb): nil ; socket=\(socket)")
@@ -236,6 +238,75 @@ import AppKit
     @IBAction func doAsyncTest2(_ sender: NSObject?) {
         let testName = inputController.selectedTest()
         doAndLogF1CommandAsync("async", testName)
+    }
+
+    // IKV TAB
+    var truth: Set<UInt64> = []
+
+    @IBAction func doCreateIKVStore(_ sender: NSObject?) {
+        let json = doF1Command("ikv", "create_and_open", inputController.paramsAsString)
+        let container = json?.dictionaryValue["ikv_container"]?.integerValue
+        if container != nil {
+            inputController.ikvContainer = container
+            selectionController.ikvContainer.stringValue = container!.description
+            truth = []
+        }
+    }
+    func doAndLogIKVCommand(_ subverb: String, _ ikvValues: [UInt64]! = nil) {
+        let params = inputController.paramsAsString;
+        if ikvValues == nil {
+            doAndLogF1Command("ikv", subverb, params)
+        } else {
+            let ikvValuesStr = "[" + ikvValues.joinDescriptions(", ") + "]"
+            doAndLogF1Command("ikv", subverb, params, ikvValuesStr)
+        }
+    }
+    @IBAction func doIKVPut(_ sender: NSObject?) {
+        let repeatCount = inputController.ikvRepeat!.integerValue
+        let ikvValues: [UInt64] = (0 ..< repeatCount).map { _ in UInt64.random() % 1_000_000 }
+        ikvValues.forEach { truth.insert($0) }
+        doAndLogIKVCommand("put", ikvValues)
+    }
+    func pickExistingNAtRandom(_ n: Int) -> [UInt64] {
+        let truthAsArray = truth.map { $0 }
+        var ikvValues: [UInt64] = []
+        while ikvValues.count < n {
+            ikvValues |= truthAsArray.randomElement()
+        }
+        return ikvValues
+    }
+    @IBAction func doIKVGet(_ sender: NSObject?) {
+        let repeatCount = inputController.ikvRepeat!.integerValue
+        if truth.isEmpty { return }
+        doAndLogIKVCommand("get", pickExistingNAtRandom(repeatCount))
+    }
+    @IBAction func doIKVPutAnd10Get(_ sender: NSObject?) {
+        let repeatCount = inputController.ikvRepeat!.integerValue
+        for _ in 0 ..< repeatCount {
+            let newValue = UInt64.random() % 1_000_000
+            doAndLogIKVCommand("put", [newValue])
+            truth.insert(newValue)
+            doAndLogIKVCommand("get", pickExistingNAtRandom(10))
+        }
+    }
+    @IBAction func doIKVDelete(_ sender: NSObject?) {
+        let repeatCount = inputController.ikvRepeat!.integerValue
+        let n = min(repeatCount, truth.count)
+        if n == 0 { return }
+        let truthAsArray = truth.map { $0 }
+        let toDelete = truthAsArray.prefix(n).map {$0 }
+        toDelete.forEach { truth.remove($0) }
+        doAndLogIKVCommand("delete", toDelete)
+    }
+    @IBAction func doIKVPutThenDelete(_ sender: NSObject?) {
+        let repeatCount = inputController.ikvRepeat!.integerValue
+        let ikvValues: [UInt64] = (0 ..< repeatCount).map { _ in UInt64.random() % 1_000_000 }
+        ikvValues.forEach { truth.insert($0) }
+        doAndLogIKVCommand("put", ikvValues)
+        doAndLogIKVCommand("delete", ikvValues)
+    }
+    @IBAction func noteIKVParamsChanged(_ sender: NSObject?) {
+//        inputController.noteIKVParamsChanged()
     }
 
     @IBAction func fiddleWithOptions(_ sender: NSObject?) {

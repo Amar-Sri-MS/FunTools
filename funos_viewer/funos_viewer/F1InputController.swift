@@ -22,6 +22,13 @@ class F1InputController: NSObject, NSOutlineViewDataSource, NSTabViewDelegate {
     // Tests TAB
     @IBOutlet var tests: NSOutlineView!
 
+    // IKV TAB
+    @IBOutlet var sizeClass: NSMatrix!
+    @IBOutlet var logPageSize: NSTextField!
+    @IBOutlet var pageCacheKB: NSTextField!
+    @IBOutlet var ikvRepeat: NSTextField!
+    var ikvContainer: Int! // token from the back-end
+
     var numWUs: Int!
     var topLevelWUs: [String]!
 
@@ -97,5 +104,37 @@ class F1InputController: NSObject, NSOutlineViewDataSource, NSTabViewDelegate {
     func selectedTest() -> String {
         let row = tests.selectedRow
         return tests.item(atRow: row) as! String
+    }
+
+    func gatherParameters() -> JSON {
+        var dict: [String: JSON] = [:]
+        switch sizeClass.selectedRow {
+            case 0: dict["size_param"] = "small"
+            case 1: dict["size_param"] = "large"
+            default: dict["size_param"] = "mix"
+        }
+        var logPageSizeInt = logPageSize.integerValue
+        if logPageSizeInt < 12 || logPageSizeInt > 16 {
+            logPageSizeInt = 12
+            logPageSize.integerValue = logPageSizeInt
+        }
+        dict["log_page_size"] = JSON.integer(logPageSizeInt)
+        var pageCacheKBInt = pageCacheKB.integerValue
+        if pageCacheKBInt < 1 || pageCacheKBInt > 10_000 {
+            pageCacheKBInt = 100
+            pageCacheKB.integerValue = pageCacheKBInt
+        }
+        dict["pages_cache_size"] = JSON.integer(pageCacheKBInt * 1024)
+        var cmdRepeat = ikvRepeat.integerValue
+        if cmdRepeat < 1 || cmdRepeat > 10_000 {
+            cmdRepeat = 100
+            ikvRepeat.integerValue = cmdRepeat
+        }
+        dict["command_repeat"] = JSON.integer(cmdRepeat)
+        if ikvContainer != nil { dict["ikv_container"] = JSON.integer(ikvContainer!) }
+        return JSON.dictionary(dict)
+    }
+    var paramsAsString: String {
+        return gatherParameters().description
     }
 }
