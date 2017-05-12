@@ -72,6 +72,7 @@
 		A716FC761EAD73B6008395EC /* F1SimDocument.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FC751EAD73B6008395EC /* F1SimDocument.swift */; };
 		A716FC7A1EAD73C7008395EC /* F1SelectionWindow.xib in Resources */ = {isa = PBXBuildFile; fileRef = A716FC791EAD73C7008395EC /* F1SelectionWindow.xib */; };
 		A716FC7E1EAD73E6008395EC /* F1SelectionController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FC7D1EAD73E6008395EC /* F1SelectionController.swift */; };
+		A791CEE61EC50356000125F0 /* bridgingCExtras.c in Sources */ = {isa = PBXBuildFile; fileRef = A791CEE51EC50356000125F0 /* bridgingCExtras.c */; };
 		A7FD266E1EB51FCE0049E0C0 /* libfunclient.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A7FD266D1EB51FCE0049E0C0 /* libfunclient.a */; };
 		A7FD26701EB54EF20049E0C0 /* F1InputWindow.xib in Resources */ = {isa = PBXBuildFile; fileRef = A7FD266F1EB54EF20049E0C0 /* F1InputWindow.xib */; };
 		A7FD26721EB54F9F0049E0C0 /* F1InputController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7FD26711EB54F9F0049E0C0 /* F1InputController.swift */; };
@@ -149,6 +150,7 @@
 		A716FC751EAD73B6008395EC /* F1SimDocument.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = F1SimDocument.swift; sourceTree = "<group>"; };
 		A716FC791EAD73C7008395EC /* F1SelectionWindow.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = F1SelectionWindow.xib; sourceTree = "<group>"; };
 		A716FC7D1EAD73E6008395EC /* F1SelectionController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = F1SelectionController.swift; sourceTree = "<group>"; };
+		A791CEE51EC50356000125F0 /* bridgingCExtras.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = bridgingCExtras.c; sourceTree = "<group>"; };
 		A7FD266D1EB51FCE0049E0C0 /* libfunclient.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libfunclient.a; path = ../../FunSDK/lib/Darwin/libfunclient.a; sourceTree = "<group>"; };
 		A7FD266F1EB54EF20049E0C0 /* F1InputWindow.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = F1InputWindow.xib; sourceTree = "<group>"; };
 		A7FD26711EB54F9F0049E0C0 /* F1InputController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = F1InputController.swift; sourceTree = "<group>"; };
@@ -207,6 +209,7 @@
 				A716FBD31EA67C82008395EC /* Info.plist */,
 				A716FBDD1EA67EF5008395EC /* funos_viewer-Bridging-Header.h */,
 				A716FC591EAD6741008395EC /* runtimeStubs.m */,
+				A791CEE51EC50356000125F0 /* bridgingCExtras.c */,
 			);
 			path = funos_viewer;
 			sourceTree = "<group>";
@@ -416,6 +419,7 @@
 				A716FC191EAD667D008395EC /* RangeExtras.swift in Sources */,
 				A716FC601EAD6A5F008395EC /* CocoaExtras.swift in Sources */,
 				A716FC1C1EAD667D008395EC /* StringExtras.swift in Sources */,
+				A791CEE61EC50356000125F0 /* bridgingCExtras.c in Sources */,
 				A716FC3E1EAD6687008395EC /* Cache.swift in Sources */,
 				A716FC431EAD6687008395EC /* JSON.swift in Sources */,
 				A716FC441EAD6687008395EC /* Lexer.swift in Sources */,

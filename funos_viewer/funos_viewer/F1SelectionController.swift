@@ -33,6 +33,12 @@ class F1SelectionController: NSObject, NSTabViewDelegate, NSTableViewDelegate, N
     @IBOutlet var ikvGets: NSTextField!
     @IBOutlet var ikvDeletes: NSTextField!
     @IBOutlet var ikvRehash: NSTextField!
+    @IBOutlet var ikvTombs: NSTextField!
+    @IBOutlet var ikvReclaim: NSTextField!
+    @IBOutlet var ikvPagereads: NSTextField!
+    @IBOutlet var ikvPagewrites: NSTextField!
+    @IBOutlet var ikvKeywait: NSTextField!
+    @IBOutlet var ikvPagewait: NSTextField!
 
     // IKV TAB
 
@@ -147,8 +153,11 @@ class F1SelectionController: NSObject, NSTabViewDelegate, NSTableViewDelegate, N
         let propsName = "stats/ikv/\(cont)"
         let stats = document.doF1Command("peek", propsName)?.dictionaryValue
         if stats == nil || stats!.isEmpty { return }
-        for (ui, name) in [(ikvPuts!, "puts"), (ikvGets!, "gets"), (ikvDeletes!, "deletes"), (ikvRehash!, "rehash")] {
-            ui.integerValue = stats![name]!.integerValue
+        for (ui, name) in [(ikvCount!, "count"), (ikvPuts!, "puts"), (ikvGets!, "gets"), (ikvDeletes!, "deletes"), (ikvRehash!, "rehash"), (ikvTombs!, "tombs"), (ikvReclaim!, "reclaim"), (ikvPagereads!, "pagereads"), (ikvPagewrites!, "pagewrites"), (ikvKeywait!, "keywait"), (ikvPagewait!, "pagewait"), ] {
+            let s = stats![name]
+            if s != nil {
+                ui.integerValue = s!.integerValue
+            }
         }
     }
     func numberOfRows(in tableView: NSTableView) -> Int {

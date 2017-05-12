@@ -447,7 +447,7 @@
                                             </buttonCell>
                                             <cells>
                                                 <column>
-                                                    <buttonCell type="radio" title="Small (value: 256B)" bezelStyle="regularSquare" imagePosition="left" alignment="left" inset="2" id="7gM-8O-eG0">
+                                                    <buttonCell type="radio" title="Small (value: 256B)" bezelStyle="regularSquare" imagePosition="left" alignment="left" state="on" inset="2" id="7gM-8O-eG0">
                                                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                                         <font key="font" metaFont="system"/>
                                                     </buttonCell>
@@ -455,7 +455,7 @@
                                                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                                         <font key="font" metaFont="system"/>
                                                     </buttonCell>
-                                                    <buttonCell type="radio" title="Mix" bezelStyle="regularSquare" imagePosition="left" alignment="left" state="on" inset="2" id="9tB-4d-HDN">
+                                                    <buttonCell type="radio" title="Mix" bezelStyle="regularSquare" imagePosition="left" alignment="left" inset="2" id="9tB-4d-HDN">
                                                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                                         <font key="font" metaFont="system"/>
                                                     </buttonCell>

@@ -71,9 +71,11 @@ static int tid = 1;
 NULLABLE CALLER_TO_FREE const char *dpcrun_command(INOUT int *sock, const char *verb, const char *arguments_array) {
     if (*sock <= 0) *sock = dpcclient_open_socket();
     if (*sock <= 0) return NULL;
-    char buf[1024];
-    snprintf(buf, sizeof(buf), "{arguments: %s, tid: %d, verb: %s}", arguments_array, tid++, verb);
+    size_t len = 100 + strlen(arguments_array);
+    char *buf = malloc(len);
+    snprintf(buf, len, "{arguments: %s, tid: %d, verb: %s}", arguments_array, tid++, verb);
     struct fun_json *json = fun_json_create_from_text(buf);
+    free(buf);
     if (!json) {
         printf("could not parse '%s'\n", buf);
         return NULL;
