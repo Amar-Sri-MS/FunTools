@@ -241,6 +241,7 @@ import AppKit
     }
 
     // IKV TAB
+    var truthLock = Lock()
     var truth: Set<UInt64> = []
 
     @IBAction func doCreateIKVStore(_ sender: NSObject?) {
@@ -255,17 +256,9 @@ import AppKit
         }
         log(string: json?.toJSONString() ?? "")
     }
-    func doAndLogIKVCommand(_ subverb: String, _ ikvValues: [UInt64]! = nil) {
+    func doAndLogIKVCommandAsync(_ subverb: String, _ ikvValues: [UInt64], _ whenDone: VoidBlock! = nil) {
         let params = inputController.paramsAsString
-        let args: [String] = ikvValues == nil ? [subverb, params] : [subverb, params, "[" + ikvValues.joinDescriptions(", ") + "]"]
-        log(string: "")
-        let json: JSON! = doF1Command(socket: &socket, "ikv", args)
-        log(string: json?.toJSONString() ?? "")
-        selectionController.doRefreshIKVRaw()
-    }
-    func doAndLogIKVCommandAsync(_ subverb: String, _ ikvValues: [UInt64]! = nil) {
-        let params = inputController.paramsAsString
-        let args: [String] = ikvValues == nil ? [subverb, params] : [subverb, params, "[" + ikvValues.joinDescriptions(", ") + "]"]
+        let args: [String] = [subverb, params, "[" + ikvValues.joinDescriptions(", ") + "]"]
         log(string: "")
         async {
             var tempSocket: Int32 = 0
@@ -275,16 +268,18 @@ import AppKit
             let str = json.toJSONString()
             self.performSelector(onMainThread: #selector(F1SimDocument.log), with: str, waitUntilDone: true)
             self.selectionController.performSelector(onMainThread: #selector(F1SelectionController.doRefreshIKVRaw), with: nil, waitUntilDone: true)
+            whenDone?()
         }
     }
     @IBAction func doIKVPut(_ sender: NSObject?) {
         let repeatCount = inputController.ikvRepeat!.integerValue
         let ikvValues: [UInt64] = (0 ..< repeatCount).map { _ in UInt64.random() % 1_000_000 }
-        ikvValues.forEach { truth.insert($0) }
-        doAndLogIKVCommandAsync("put", ikvValues)
+        doAndLogIKVCommandAsync("put", ikvValues) {
+            self.truthLock.apply { self.truth.formUnion(ikvValues) }
+        }
     }
     func pickExistingNAtRandom(_ n: Int) -> [UInt64] {
-        let truthAsArray = truth.map { $0 }
+        let truthAsArray = truthLock.apply { self.truth.map { $0 } }
         var ikvValues: [UInt64] = []
         while ikvValues.count < n {
             ikvValues |= truthAsArray.randomElement()
@@ -296,30 +291,59 @@ import AppKit
         if truth.isEmpty { return }
         doAndLogIKVCommandAsync("get", pickExistingNAtRandom(repeatCount))
     }
+    func do1PutAnd10Get() {
+        let sema1 = Semaphore()
+        let newValue = UInt64.random() % 1_000_000
+        doAndLogIKVCommandAsync("put", [newValue]) {
+            self.truthLock.apply { _ = self.truth.insert(newValue) }
+            sema1.signal()
+        }
+        sema1.wait()
+        let sema2 = Semaphore()
+        doAndLogIKVCommandAsync("get", pickExistingNAtRandom(10)) {
+            sema2.signal()
+        }
+        sema2.wait()
+    }
     @IBAction func doIKVPutAnd10Get(_ sender: NSObject?) {
         let repeatCount = inputController.ikvRepeat!.integerValue
-        for _ in 0 ..< repeatCount {
-            let newValue = UInt64.random() % 1_000_000
-            doAndLogIKVCommand("put", [newValue])
-            truth.insert(newValue)
-            doAndLogIKVCommand("get", pickExistingNAtRandom(10))
+        async {
+            for _ in 0 ..< repeatCount {
+                self.do1PutAnd10Get()
+            }
         }
     }
     @IBAction func doIKVDelete(_ sender: NSObject?) {
         let repeatCount = inputController.ikvRepeat!.integerValue
-        let n = min(repeatCount, truth.count)
+        let n = min(repeatCount, truthLock.apply { self.truth.count })
         if n == 0 { return }
-        let truthAsArray = truth.map { $0 }
+        let truthAsArray = truthLock.apply { self.truth.map { $0 } }
         let toDelete = truthAsArray.prefix(n).map {$0 }
-        toDelete.forEach { truth.remove($0) }
-        doAndLogIKVCommand("delete", toDelete)
+        // Remove from truth first
+        truthLock.apply { self.truth.formSymmetricDifference(toDelete) }
+        doAndLogIKVCommandAsync("delete", toDelete)
+    }
+    func doPutsThenDeletes(ikvValues: [UInt64]) {
+        let sema1 = Semaphore()
+        doAndLogIKVCommandAsync("put", ikvValues) {
+            self.truthLock.apply { self.truth.formUnion(ikvValues) }
+            sema1.signal()
+        }
+        sema1.wait()
+        let sema2 = Semaphore()
+        // Remove from truth first
+        truthLock.apply { self.truth.formSymmetricDifference(ikvValues) }
+        doAndLogIKVCommandAsync("delete", ikvValues) {
+            sema2.signal()
+        }
+        sema2.wait()
     }
     @IBAction func doIKVPutThenDelete(_ sender: NSObject?) {
         let repeatCount = inputController.ikvRepeat!.integerValue
         let ikvValues: [UInt64] = (0 ..< repeatCount).map { _ in UInt64.random() % 1_000_000 }
-        ikvValues.forEach { truth.insert($0) }
-        doAndLogIKVCommand("put", ikvValues)
-        doAndLogIKVCommand("delete", ikvValues)
+        async {
+            self.doPutsThenDeletes(ikvValues: ikvValues)
+        }
     }
     @IBAction func noteIKVParamsChanged(_ sender: NSObject?) {
 //        inputController.noteIKVParamsChanged()

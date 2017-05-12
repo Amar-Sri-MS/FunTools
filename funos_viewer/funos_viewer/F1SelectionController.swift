@@ -99,6 +99,8 @@ class F1SelectionController: NSObject, NSTabViewDelegate, NSTableViewDelegate, N
         }
     }
     func startIKVTimer() {
+        ikvCountSamples = SimulationSamples(title: "count") { _ in "" }
+        ikvCountSamples.record(0, value: 0.0)
         ikvTimer?.invalidate()
         ikvStartDate = Date()
         ikvTimer = Timer.scheduledTimer(withTimeInterval: updateFrequency, repeats: true, block: { _ in
