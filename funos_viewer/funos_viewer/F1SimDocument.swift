@@ -267,13 +267,16 @@ import AppKit
             if json == nil { return }
             let str = json.toJSONString()
             self.performSelector(onMainThread: #selector(F1SimDocument.log), with: str, waitUntilDone: true)
-            self.selectionController.performSelector(onMainThread: #selector(F1SelectionController.doRefreshIKVRaw), with: nil, waitUntilDone: true)
+            self.selectionController.performSelector(onMainThread: #selector(F1SelectionController.doRefreshIKV), with: nil, waitUntilDone: true)
             whenDone?()
         }
     }
+    func randomValue() -> UInt64 {
+        return (UInt64.random() % 9_000_000) + 1_000_000 // low probability of collision
+    }
     @IBAction func doIKVPut(_ sender: NSObject?) {
         let repeatCount = inputController.ikvRepeat!.integerValue
-        let ikvValues: [UInt64] = (0 ..< repeatCount).map { _ in UInt64.random() % 1_000_000 }
+        let ikvValues: [UInt64] = (0 ..< repeatCount).map { _ in randomValue() }
         doAndLogIKVCommandAsync("put", ikvValues) {
             self.truthLock.apply { self.truth.formUnion(ikvValues) }
         }
@@ -293,7 +296,7 @@ import AppKit
     }
     func do1PutAnd10Get() {
         let sema1 = Semaphore()
-        let newValue = UInt64.random() % 1_000_000
+        let newValue = randomValue()
         doAndLogIKVCommandAsync("put", [newValue]) {
             self.truthLock.apply { _ = self.truth.insert(newValue) }
             sema1.signal()
@@ -340,7 +343,7 @@ import AppKit
     }
     @IBAction func doIKVPutThenDelete(_ sender: NSObject?) {
         let repeatCount = inputController.ikvRepeat!.integerValue
-        let ikvValues: [UInt64] = (0 ..< repeatCount).map { _ in UInt64.random() % 1_000_000 }
+        let ikvValues: [UInt64] = (0 ..< repeatCount).map { _ in randomValue() }
         async {
             self.doPutsThenDeletes(ikvValues: ikvValues)
         }

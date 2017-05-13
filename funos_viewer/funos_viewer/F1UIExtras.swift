@@ -338,7 +338,7 @@ extension NSControl {
         }
     }
     var boolValue: Bool {
-        fatalError()
+        return !(integerValue == 0)
     }
 }
 
