@@ -608,7 +608,7 @@ typealias CALayerChangeFunc = (CALayer) -> Void
 // If you keep all:
 //      just keep X[n] and show X[n] - 0
 
-let hotnessBands = [1, 5, 10, 1000] // 1000 and above treated as infinite
+let hotnessBands = [2, 1000] // 1000 and above treated as infinite
 
 class ChipLayers {
     var units: [UnitName: CALayer] = [:]
@@ -821,8 +821,10 @@ class NSChipView: NSView {
                     }
                 }
                 hotness[band] = samples
-                let heatToDisplay = maxToKeep >= 1000 ? samples.last! : samples.last! - samples[0]
-                // let heatToDisplay = maxToKeep >= 1000 ? samples.last! : samples.miniMax().maximum - samples[0]
+//                let heatToDisplay = maxToKeep >= 1000 ? samples.last! : samples.last! - samples[0]
+//                 let heatToDisplay = maxToKeep >= 1000 ? samples.last! : samples.miniMax().maximum
+//                let heatToDisplay = maxToKeep >= 1000 ? samples.last! : samples.reduce(0.0) { $0 + $1 } / Double(samples.count)
+                let heatToDisplay = samples.last!
 //                if name == "Core0.0" {
 //                    Swift.print("For \(name) band #\(band) heatToDisplay=\(heatToDisplay) hotness=\(samples)")
 //                }

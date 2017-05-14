@@ -26,7 +26,7 @@ import AppKit
         self.loadNib()
         window.title = "F1 Viewer"
         window.delegate = self
-        heatTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true, block: { _ in
+        heatTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true, block: { _ in
             self.performSelector(onMainThread: #selector(F1SimDocument.refreshHeat), with: nil, waitUntilDone: false)
         })
     }
@@ -74,42 +74,46 @@ import AppKit
             }
         }
     }
-    func refreshHeat() {
-        if !clustersGreyedOut {
-            let allVPs = doF1Command("peek", "config/all_vps")?.arrayValue
-            if allVPs != nil && !allVPs!.isEmpty {
-                var clustersSeen: Set<String> = []
-                var coresSeen: Set<String> = []
-                for vp in allVPs! {
-                    let clusterCoreVP = vp.stringValue.substringAfter(2).split(at: ".").map { $0 }
-                    let cluster = "Cluster\(clusterCoreVP[0])"
-                    clustersSeen.insert(cluster)
-                    let core = "Core\(clusterCoreVP[0]).\(clusterCoreVP[1])"
-                    coresSeen.insert(core)
-                }
+    func grayOutClustersAndCores() {
+        let allVPs = doF1Command("peek", "config/all_vps")?.arrayValue
+        if allVPs != nil && !allVPs!.isEmpty {
+            var clustersSeen: Set<String> = []
+            var coresSeen: Set<String> = []
+            for vp in allVPs! {
+                let clusterCoreVP = vp.stringValue.substringAfter(2).split(at: ".").map { $0 }
+                let cluster = "Cluster\(clusterCoreVP[0])"
+                clustersSeen.insert(cluster)
+                let core = "Core\(clusterCoreVP[0]).\(clusterCoreVP[1])"
+                coresSeen.insert(core)
+            }
 
-                for i in 0 ..< F1.numClusters {
-                    if !clustersSeen.contains("Cluster\(i)") {
-                        let layer: CALayer = chipView.layers.units["PC\(i)"]!
-                        layer.setBackgroundColorRecursive(.extremelyLightGray, .lightGray)
-                    } else {
-                        for j in 0 ..< 6 {
-                            let core = "Core\(i).\(j)"
-                            if !coresSeen.contains(core) {
-                                let layer: CALayer = chipView.layers.units[core]!
-                                layer.setBackgroundColorRecursive(.extremelyLightGray, .lightGray)
-                            }
+            for i in 0 ..< F1.numClusters {
+                if !clustersSeen.contains("Cluster\(i)") {
+                    let layer: CALayer = chipView.layers.units["PC\(i)"]!
+                    layer.setBackgroundColorRecursive(.extremelyLightGray, .lightGray)
+                } else {
+                    for j in 0 ..< 6 {
+                        let core = "Core\(i).\(j)"
+                        if !coresSeen.contains(core) {
+                            let layer: CALayer = chipView.layers.units[core]!
+                            layer.setBackgroundColorRecursive(.extremelyLightGray, .lightGray)
                         }
                     }
                 }
-                let layer: CALayer = chipView.layers.units["CSU"]!
-                layer.setBackgroundColorRecursive(.veryLightGray, .lightGray)
-                clustersGreyedOut = true
             }
+            let layer: CALayer = chipView.layers.units["CSU"]!
+            layer.setBackgroundColorRecursive(.veryLightGray, .lightGray)
+        }
+    }
+    func refreshHeat() {
+        if !clustersGreyedOut {
+            // One-time for now; we may want to make it more dynamic based on a timer
+            grayOutClustersAndCores()
+            clustersGreyedOut = true
         }
         let perVP = doF1Command("peek", "stats/per_vp")?.dictionaryValue
         if perVP == nil || perVP!.isEmpty { return }
-        Swift.print("perVP = \(perVP!["VP2.0.1"]!)")
+        // Swift.print("perVP = \(perVP!["VP2.0.1"]!)")
         var perCluster: [String: Int] = [:]
         var perCore: [String: Int] = [:]
         var sum = 0
@@ -243,7 +247,7 @@ import AppKit
     }
 
     @IBAction func doEnableCounters(_ sender: NSObject?) {
-        doAndLogF1Command("enable_wdi")
+        doAndLogF1Command("enable_counters")
     }
     @IBAction func doFibo(_ sender: NSObject?) {
         let n = inputController.fiboArg.intValue
