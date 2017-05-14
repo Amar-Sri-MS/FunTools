@@ -182,8 +182,10 @@ extension CALayer {
             for j in [0, 2, 4] {
                 let cluster = tranche.sublayers![j]
                 if i == 2 && j == 2 {
+                    layers.units["CSU"] = cluster
                     cluster.addCSU(layers, update: update)
                 } else {
+                    layers.units["PC\(cc)"] = cluster
                     cluster.addCluster(layers, update: update, numCores: numCores, clusterNum: cc)
                     cc += 1
                 }
@@ -606,7 +608,7 @@ typealias CALayerChangeFunc = (CALayer) -> Void
 // If you keep all:
 //      just keep X[n] and show X[n] - 0
 
-let hotnessBands = [10, 1000] // 1000 and above treated as infinite
+let hotnessBands = [1, 5, 10, 1000] // 1000 and above treated as infinite
 
 class ChipLayers {
     var units: [UnitName: CALayer] = [:]
@@ -787,10 +789,11 @@ class NSChipView: NSView {
     }
     func updateHotCores( _ info: (UnitName) -> Double!) {
         for (name, layer) in layers.units {
+            let thisHotnessBand = name.hasPrefix("Core") ? hotnessBands : [1000]
+            let nbands = thisHotnessBand.count
             let heat = info(name)
             if heat == nil { continue }
             var hotnessLayers = layers.unitHotnessLayers[name]
-            let nbands = hotnessBands.count
             if hotnessLayers == nil {
                 let size = layer.bounds.size
                 let hband = size.height / CGFloat(nbands)
@@ -808,7 +811,7 @@ class NSChipView: NSView {
             for band in 0 ..< nbands {
                 // first record the last heat
                 var samples = hotness[band]
-                let maxToKeep = hotnessBands[band]
+                let maxToKeep = thisHotnessBand[band]
                 if maxToKeep >= 1000 {
                     samples = [heat!]
                 } else {
@@ -818,7 +821,8 @@ class NSChipView: NSView {
                     }
                 }
                 hotness[band] = samples
-                let heatToDisplay = samples.last! - ((maxToKeep >= 1000) ? 0 : samples[0])
+                let heatToDisplay = maxToKeep >= 1000 ? samples.last! : samples.last! - samples[0]
+                // let heatToDisplay = maxToKeep >= 1000 ? samples.last! : samples.miniMax().maximum - samples[0]
 //                if name == "Core0.0" {
 //                    Swift.print("For \(name) band #\(band) heatToDisplay=\(heatToDisplay) hotness=\(samples)")
 //                }

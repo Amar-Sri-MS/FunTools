@@ -17,6 +17,7 @@ import AppKit
     var socket: Int32 = 0;
     var heatTimer: Timer!
     let updateFrequency = 0.2
+    var clustersGreyedOut = false
 
     var window: NSWindow! { return chipView.window }
     
@@ -25,7 +26,7 @@ import AppKit
         self.loadNib()
         window.title = "F1 Viewer"
         window.delegate = self
-        heatTimer = Timer.scheduledTimer(withTimeInterval: updateFrequency, repeats: true, block: { _ in
+        heatTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true, block: { _ in
             self.performSelector(onMainThread: #selector(F1SimDocument.refreshHeat), with: nil, waitUntilDone: false)
         })
     }
@@ -74,8 +75,41 @@ import AppKit
         }
     }
     func refreshHeat() {
+        if !clustersGreyedOut {
+            let allVPs = doF1Command("peek", "config/all_vps")?.arrayValue
+            if allVPs != nil && !allVPs!.isEmpty {
+                var clustersSeen: Set<String> = []
+                var coresSeen: Set<String> = []
+                for vp in allVPs! {
+                    let clusterCoreVP = vp.stringValue.substringAfter(2).split(at: ".").map { $0 }
+                    let cluster = "Cluster\(clusterCoreVP[0])"
+                    clustersSeen.insert(cluster)
+                    let core = "Core\(clusterCoreVP[0]).\(clusterCoreVP[1])"
+                    coresSeen.insert(core)
+                }
+
+                for i in 0 ..< F1.numClusters {
+                    if !clustersSeen.contains("Cluster\(i)") {
+                        let layer: CALayer = chipView.layers.units["PC\(i)"]!
+                        layer.setBackgroundColorRecursive(.extremelyLightGray, .lightGray)
+                    } else {
+                        for j in 0 ..< 6 {
+                            let core = "Core\(i).\(j)"
+                            if !coresSeen.contains(core) {
+                                let layer: CALayer = chipView.layers.units[core]!
+                                layer.setBackgroundColorRecursive(.extremelyLightGray, .lightGray)
+                            }
+                        }
+                    }
+                }
+                let layer: CALayer = chipView.layers.units["CSU"]!
+                layer.setBackgroundColorRecursive(.veryLightGray, .lightGray)
+                clustersGreyedOut = true
+            }
+        }
         let perVP = doF1Command("peek", "stats/per_vp")?.dictionaryValue
         if perVP == nil || perVP!.isEmpty { return }
+        Swift.print("perVP = \(perVP!["VP2.0.1"]!)")
         var perCluster: [String: Int] = [:]
         var perCore: [String: Int] = [:]
         var sum = 0
@@ -94,8 +128,10 @@ import AppKit
         chipView.updateHotCores {
             if chipView.selectedUnits.contains($0) { return nil }
             if $0.hasPrefix("Core") {
+                let cluster = "Cluster\($0.substring(4 ..< 5))"
+                let thisCluster = perCluster[cluster] ?? 0
                 let num = perCore[$0] ?? 0
-                return Double(num) / Double(sum)
+                return Double(num) / Double(max(thisCluster, 1))
             }
             if $0.hasPrefix("Cluster") {
                 let num = perCluster[$0] ?? 0
@@ -165,7 +201,7 @@ import AppKit
         let argsArray: String = argsArray.joinDescriptions(", ")
         let argsStr = "[\(argsArray)]"
         var s = socket
-        // Swift.print("=== COMMAND: \(argsStr)")
+        // Swift.print("=== COMMAND: \(verb) \(argsStr)")
         let r = dpcrun_command(&s, verb, argsStr)
         socket = s
         if r == nil {
@@ -183,6 +219,7 @@ import AppKit
     }
     func log(string: String) {
         selectionController.selectionInfo.string = string
+        selectionController.window.viewsNeedDisplay = true
     }
     func doAndLogF1Command(_ verb: String, _ args: String...) {
         log(string: "")

@@ -72,11 +72,11 @@ class F1SelectionController: NSObject, NSTabViewDelegate, NSTableViewDelegate, N
     unowned let document: F1SimDocument
 
     func resetSamples() {
-        ikvCountSamples = SimulationSamples(title: "Count") { Int($0.maxValue).description }
+        ikvCountSamples = SimulationSamples(title: "Count") { Int($0.lastValue).description }
         ikvCountSamples.record(0, value: 0.0)
         ikvCountSamplesView.setSamples(ikvCountSamples!)
 
-        ikvCapacitySamples = SimulationSamples(title: "Capacity") { String(numberOfBytes: $0.maxValue) }
+        ikvCapacitySamples = SimulationSamples(title: "Capacity") { String(numberOfBytes: $0.lastValue) }
         ikvCapacitySamples.record(0, value: 0.0)
         ikvCapacitySamplesView.setSamples(ikvCapacitySamples!)
 

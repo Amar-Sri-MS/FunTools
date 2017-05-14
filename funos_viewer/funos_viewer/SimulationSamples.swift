@@ -23,6 +23,7 @@ protocol SimulationScaledSamples: class {
     // Actual range.  May be contained in overallRange, when overallRange is specified; or equal to spanningRange when automatic
     var range: ClosedRange<Double>? { get }
     var averageValue: Double { get }
+    var lastValue: Double { get }
     var title: String { get }
     var titleExtras: (SimulationScaledSamples) -> String { get set }
     // Request to increase the scale
@@ -143,6 +144,9 @@ class SimulationSamples: SimulationScaledSamples, CustomStringConvertible {
     }
     var averageValue: Double {
         return lock.apply { averageValueNoLock }
+    }
+    var lastValue: Double {
+        return lock.apply { recent.lastValue }
     }
     var mostRecentDate: Int {
         return lock.apply { past.countScaled + recent.numRecentValues - 1 }
@@ -482,6 +486,9 @@ class SimulationCombinedSamples: SimulationScaledSamples, CustomStringConvertibl
     var averageValue: Double {
         let sum = subs.reduce(0.0) { $0 + $1.averageValue }
         return normalize ? sum / Double(subs.count) : sum
+    }
+    var lastValue: Double {
+        return subs[0].lastValue
     }
     var title: String {
         return subs.first!.title
