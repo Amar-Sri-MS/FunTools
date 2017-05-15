@@ -169,17 +169,11 @@ void handle_json_request(int out_fd, char *jbuf, int jsize)
 {
     char buf[MAXLINE], m_time[32], size[16];
     struct stat statbuf;
-    sprintf(buf, "HTTP/1.1 200 OK\r\n%s%s%s%s%s",
-            "Content-Type: text/html\r\n\r\n",
-            "<html><head><style>",
-            "body{font-family: monospace; font-size: 13px;}",
-            "td {padding: 1.5px 6px;}",
-            "</style></head><body>\n");
+    sprintf(buf, "HTTP/1.1 200 OK\r\n%s",
+            "Content-Type: application/json\r\n\r\n");
 	
     writen(out_fd, buf, strlen(buf));
     writen(out_fd, jbuf, jsize);
-    sprintf(buf, "</body></html>");
-    writen(out_fd, buf, strlen(buf));
 }
 
 void handle_directory_request(int out_fd, int dir_fd, char *filename){
@@ -359,7 +353,7 @@ void process(int jsock, int out_fd, struct sockaddr_in *clientaddr)
     
     if(r < 0){
         status = 404;
-        char *msg = "File not found";
+        char *msg = "JSON RPC not found";
         client_error(out_fd, status, "Not found", msg);
     } else {
 	    handle_json_request(out_fd, json_buf, size);

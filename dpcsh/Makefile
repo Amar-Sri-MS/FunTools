@@ -5,7 +5,7 @@ OS := $(shell uname)
 SDKDIR ?= ../../FunSDK
 
 # define header and library location in FunSDK
-CFLAGS ?= -I $(SDKDIR)/FunSDK -L $(SDKDIR)/lib/${OS}/ -lfunclient
+CFLAGS ?= -I $(SDKDIR)/FunSDK -L $(SDKDIR)/lib/${OS}/ -lfunclient -g
 
 # XXX: compatibility with FunOS build parameters
 LDFLAGS += -fsanitize=address

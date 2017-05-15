@@ -197,6 +197,12 @@ int json_handle_req(int jsock, const char *path, char *buf, int *size) {
 	char line[MAXLINE];
 	int r = -1;
 	int64_t tid = 1;
+
+	/* rewrite request for root */
+	if (strcmp(path, "/") == 0)
+		path = "\"\"";
+	else if (strcmp(path, ".") == 0)
+		path = "\"\"";
 	
 	snprintf(line, MAXLINE, "peek %s", path);
 	
@@ -223,6 +229,9 @@ int json_handle_req(int jsock, const char *path, char *buf, int *size) {
         pp2 = fun_json_to_text(output);
         printf("output => %s\n", pp2);
 
+	if (!pp2)
+		return -1;
+	
 	/* copy it out */
 	if (strlen(pp2) < *size) {
 		strcpy(buf, pp2);
@@ -232,7 +241,6 @@ int json_handle_req(int jsock, const char *path, char *buf, int *size) {
 	
         free(pp2);
         fun_json_release(output);
-
 	
 	return r;
 }
