@@ -1,0 +1,39 @@
+<html>
+  <head>
+    <title>FunOS AJAX Top Demo</title>
+
+    <!-- Go out to Google here to get their AJAX Library -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+    <script src="ajaxtop.js"></script>
+
+    <!-- call the ajax handler when the document is loaded -->
+    <script>
+      $(function() {
+      ajaxtop_init()
+      });
+    </script>
+
+    <!-- nice style for info box -->
+    <style>
+      .center {
+      margin: auto;
+      width: 40%;
+      padding: 10px;
+      }
+    </style>
+
+
+  </head>
+
+  <body>
+    <center><h1>FunOS AJAX Top Demo</h1></center>
+
+
+    <div id="wuinfo-div" class="center" onclick="noinfo()"><left> </left></div>
+
+    <center>
+      <div id="ajaxtop-div"></div>
+    </center>
+    
+  </body>
+</html>
