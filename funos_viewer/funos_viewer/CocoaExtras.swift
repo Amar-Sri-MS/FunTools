@@ -97,14 +97,15 @@ extension CALayer {
         let absZero = motherOfAllLayers?.convert(CGPoint.zero, from: self)
         return CGAffineTransform(translationX: absZero!.x, y: absZero!.y)
     }
-    func setBackgroundColorRecursive(_ color: CGColor, _ textColor: CGColor) {
+    func setBackgroundColorRecursive(_ color: CGColor, _ textColor: CGColor, _ depth: Int) {
         backgroundColor = color
-        if sublayers != nil {
+        if let text = self as? CATextLayer {
+            text.foregroundColor = textColor
+        }
+        if sublayers != nil && depth > 0 {
             for sub in sublayers! {
-                if let text = sub as? CATextLayer {
-                    text.foregroundColor = textColor
-                }
-                sub.setBackgroundColorRecursive(color, textColor)
+                sub.backgroundColor = color
+                sub.setBackgroundColorRecursive(color, textColor, depth - 1)
             }
         }
     }

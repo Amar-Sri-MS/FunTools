@@ -90,19 +90,19 @@ import AppKit
             for i in 0 ..< F1.numClusters {
                 if !clustersSeen.contains("Cluster\(i)") {
                     let layer: CALayer = chipView.layers.units["PC\(i)"]!
-                    layer.setBackgroundColorRecursive(.extremelyLightGray, .lightGray)
+                    layer.setBackgroundColorRecursive(.extremelyLightGray, .lightGray, 4)
                 } else {
                     for j in 0 ..< 6 {
                         let core = "Core\(i).\(j)"
                         if !coresSeen.contains(core) {
                             let layer: CALayer = chipView.layers.units[core]!
-                            layer.setBackgroundColorRecursive(.extremelyLightGray, .lightGray)
+                            layer.setBackgroundColorRecursive(.extremelyLightGray, .lightGray, 1)
                         }
                     }
                 }
             }
             let layer: CALayer = chipView.layers.units["CSU"]!
-            layer.setBackgroundColorRecursive(.veryLightGray, .lightGray)
+            layer.setBackgroundColorRecursive(.extremelyLightGray, .lightGray, 4)
         }
     }
     func refreshHeat() {
@@ -111,33 +111,39 @@ import AppKit
             grayOutClustersAndCores()
             clustersGreyedOut = true
         }
-        let perVP = doF1Command("peek", "stats/per_vp")?.dictionaryValue
-        if perVP == nil || perVP!.isEmpty { return }
-        // Swift.print("perVP = \(perVP!["VP2.0.1"]!)")
+        let allVPs = doF1Command("peek", "stats/per_vp")?.dictionaryValue
+        if allVPs == nil || allVPs!.isEmpty { return }
+        // Swift.print("allVPs = \(allVPs!["VP2.0.1"]!)")
         var perCluster: [String: Int] = [:]
         var perCore: [String: Int] = [:]
+        var perVP: [String: Int] = [:]
         var sum = 0
-        for vp in perVP!.keys {
-            let clusterCoreVP = vp.substringAfter(2).split(at: ".").map { $0 }
-            assert(clusterCoreVP.count == 3)
-            let times = perVP![vp]!.dictionaryValue["wus_received"]!.integerValue
-            let cluster = "Cluster\(clusterCoreVP[0])"
-            let core = "Core\(clusterCoreVP[0]).\(clusterCoreVP[1])"
+        for vp in allVPs!.keys {
+            let ccv = vp.substringAfter(2).split(at: ".").map { $0 }
+            assert(ccv.count == 3)
+            let times = allVPs![vp]!.dictionaryValue["wus_received"]!.integerValue
+            let cluster = "Cluster\(ccv[0])"
+            let core = "Core\(ccv[0]).\(ccv[1])"
+            let vp = "VP\(ccv[0]).\(ccv[1]).\(ccv[2])"
             perCluster[cluster] = (perCluster[cluster] ?? 0) + times
             perCore[core] = (perCore[core] ?? 0) + times
+            perVP[vp] = times
             sum += times
         }
         if sum == 0 { return }
 //        Swift.print("clusters = \(perCluster) ; cores = \(perCore)")
         chipView.updateHotCores {
             if chipView.selectedUnits.contains($0) { return nil }
-            if $0.hasPrefix("Core") {
+            if $0.hasPrefix("VP") {
+                let core = "Core\($0.substring(2 ..< 3))"
+                let num = perVP[$0] ?? 0
+                return Double(num) / Double(max(perCore[core] ?? 0, 1))
+            } else if $0.hasPrefix("Core") {
                 let cluster = "Cluster\($0.substring(4 ..< 5))"
                 let thisCluster = perCluster[cluster] ?? 0
                 let num = perCore[$0] ?? 0
                 return Double(num) / Double(max(thisCluster, 1))
-            }
-            if $0.hasPrefix("Cluster") {
+            } else if $0.hasPrefix("Cluster") {
                 let num = perCluster[$0] ?? 0
                 return Double(num) / Double(sum)
             }

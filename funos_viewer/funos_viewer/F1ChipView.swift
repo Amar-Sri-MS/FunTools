@@ -96,15 +96,15 @@ extension CALayer {
     func addCluster(_ layers: ChipLayers, update: Bool, numCores: Int, clusterNum: Int) {
         let thin: CGFloat = 0.25
         borderWidth = 2.0
-        addAbutXSublayers(update, proportions: 60, 40) // 40 for the L2$ and BAM
+        addAbutXSublayers(update, proportions: 60, 20) // 40 for the L2$ and BAM
         let tile = Tile(cluster: clusterNum)
         let u = tile.unitName
         let clusterAndCores = sublayers![0]
-        clusterAndCores.addAbutYSublayers(update, proportions: 5, 5, 4, 6)
+        clusterAndCores.addAbutYSublayers(update, proportions: 6, 2, 5, 6)
         let coresRow0 = clusterAndCores.sublayers![0]
-        let coresRow1 = clusterAndCores.sublayers![1]
-        let blockCopy = clusterAndCores.sublayers![2]
-        let cluster = clusterAndCores.sublayers![3]
+        let blockCopy = clusterAndCores.sublayers![1]
+        let cluster = clusterAndCores.sublayers![2]
+        let coresRow1 = clusterAndCores.sublayers![3]
         cluster.borderWidth = thin
         cluster.makeOrUpdateBoxWith2Texts(update, unitName: u)
         if !update { layers.units[u] = cluster }
@@ -123,13 +123,41 @@ extension CALayer {
                 let coreNum = CoreNumber(rowCol: clusterNum, coreNum: UInt4(cnum))
                 let coreName = "Core" + coreNum.description
                 cnum += 1
-                let core = row.sublayers![i]
+                let coreAndVPs = row.sublayers![i]
+                coreAndVPs.backgroundColor = .white
+                coreAndVPs.addAbutYSublayers(update, proportions: 1, 1, 1, 1, 2)
+                let core = coreAndVPs.sublayers![4]
                 core.makeOrUpdateBoxWith2Texts(update, unitName: coreName)
-                core.borderWidth = thin
-                if !update { layers.units[coreName] = core }
-                let text = core.sublayers![0] as! CATextLayer
-                text.truncationMode = "start"
-                text.fontSize = 8.0
+                coreAndVPs.borderWidth = 0.75
+                if !update { 
+                    layers.units[coreName] = core
+                    for i in 0 ..< 4 {
+                        let vpName = "VP\(coreNum.description).\(i)"
+                        let vp = coreAndVPs.sublayers![i]
+                        if !update {
+                            let text = CATextLayer()
+                            vp.name = vpName
+                            vp.backgroundColor = .white
+                            vp.borderWidth = 0.0
+                            text.contentsScale = vp.contentsScale
+                            text.string = vpName
+                            text.fontSize = 3.0
+                            text.font = NSFont.boldSystemFont(ofSize: text.fontSize)
+                            text.foregroundColor = .gray
+                            text.alignmentMode = "left"
+                            vp.addSublayer(text)
+                        }
+                        let text = vp.sublayers![0] as! CATextLayer
+                        text.frame = CGRect(x: 3, y: vp.bounds.height - 16, width: min(150.0, vp.bounds.width+4), height: 16)
+                        backgroundColor = .white
+                        layers.units[vpName] = vp
+                        vp.borderWidth = thin
+                    }
+                    let text = core.sublayers![0] as! CATextLayer
+                    text.truncationMode = "start"
+                    text.fontSize = 8.0
+                    core.borderWidth = thin
+                }
             }
         }
         let a = "BAM" + Tile.gridRowColAsString(clusterNum)
@@ -148,7 +176,7 @@ extension CALayer {
     }
     func addCSU(_ layers: ChipLayers, update: Bool) {
         backgroundColor = .white
-        borderWidth = 1.0
+        borderWidth = 2.0
         borderColor = .black
         addAbutYSublayers(update, proportions: 2, 30, 10)
         let csu = sublayers![2]
@@ -162,6 +190,7 @@ extension CALayer {
             dirRow.addAbutXSublayers(update, proportions: [Int](repeating: 1, count: F1.numDirectories / 2))
             for d in dirRow.sublayers! {
                 d.makeOrUpdateBoxWith2Texts(update, unitName: "Dir\(i)")
+                d.borderWidth = 0.5
                 layers.units["Dir\(i)"] = d
                 let text = d.sublayers![0] as! CATextLayer
                 text.fontSize = 8.0
@@ -568,12 +597,12 @@ extension CALayer {
         zPosition = +5.0    // no idea why this is needed?!?
     }
     func addChip(_ layers: ChipLayers, update: Bool, numCores: Int) {
-        addAbutYSublayers(update, proportions: 2, 1, 16, 2)
+        addAbutYSublayers(update, proportions: 1, 1, 20, 1)
         let NUs = sublayers![3]
         let hcore = sublayers![2]
         let HBMs = sublayers![0]
         NUs.addNUs(layers, update: update)
-        hcore.addAbutXSublayers(update, proportions: 1, 12, 1)
+        hcore.addAbutXSublayers(update, proportions: 1, 20, 1)
         let left = hcore.sublayers![0]
         left.addLeftOrRight(layers, update: update, left: true)
         let right = hcore.sublayers![2]
@@ -587,9 +616,9 @@ extension CALayer {
         HBMs.addHBMs(layers, update: update)
     }
     func addOverallLayer(_ layers: ChipLayers, update: Bool, numCores: Int) {
-        addAbutXSublayers(update, proportions: 1, 60, 1)
+        addAbutXSublayers(update, proportions: 1, 80, 1)
         let hlayer = sublayers![1]
-        hlayer.addAbutYSublayers(update, proportions: 1, 60, 1)
+        hlayer.addAbutYSublayers(update, proportions: 1, 80, 1)
         let chip = hlayer.sublayers![1]
         chip.addChip(layers, update: update, numCores: numCores)
     }
@@ -608,7 +637,7 @@ typealias CALayerChangeFunc = (CALayer) -> Void
 // If you keep all:
 //      just keep X[n] and show X[n] - 0
 
-let hotnessBands = [2, 1000] // 1000 and above treated as infinite
+//let hotnessBands = [2, 1000] // 1000 and above treated as infinite
 
 class ChipLayers {
     var units: [UnitName: CALayer] = [:]
@@ -640,12 +669,12 @@ class NSChipView: NSView {
             animationLayer.sublayers!.forEach { $0.scaleFrameOrigin(xratio, yratio) }
         }
         unitNameToLayerCache.removeAll(keepingCapacity: true)
-        for (_, ls) in layers.unitHotnessLayers {
-            for l in ls {
-                l.removeFromSuperlayer()
-            }
-        }
-        layers.unitHotnessLayers = [:]
+//        for (_, ls) in layers.unitHotnessLayers {
+//            for l in ls {
+//                l.removeFromSuperlayer()
+//            }
+//        }
+//        layers.unitHotnessLayers = [:]
         setupTrackingAreas()
     }
     func setupTrackingAreas() {
@@ -789,54 +818,61 @@ class NSChipView: NSView {
     }
     func updateHotCores( _ info: (UnitName) -> Double!) {
         for (name, layer) in layers.units {
-            let thisHotnessBand = name.hasPrefix("Core") ? hotnessBands : [1000]
-            let nbands = thisHotnessBand.count
+//            let thisHotnessBand = name.hasPrefix("Core") ? hotnessBands : [1000]
+//            let nbands = thisHotnessBand.count
             let heat = info(name)
             if heat == nil { continue }
-            var hotnessLayers = layers.unitHotnessLayers[name]
-            if hotnessLayers == nil {
-                let size = layer.bounds.size
-                let hband = size.height / CGFloat(nbands)
-                hotnessLayers = []
-                for band in 0 ..< nbands {
-                    let l = CALayer()
-                    l.frame = CGRect(x: 0, y: size.height - CGFloat(band + 1) * hband, width: size.width, height: hband)
-                    l.zPosition = -100
-                    layer.addSublayer(l)
-                    hotnessLayers! |= l
-                }
-                layers.unitHotnessLayers[name] = hotnessLayers
-            }
-            var hotness = layers.unitHotness[name] ?? [[Double]](repeating:[Double](), count: nbands)
-            for band in 0 ..< nbands {
-                // first record the last heat
-                var samples = hotness[band]
-                let maxToKeep = thisHotnessBand[band]
-                if maxToKeep >= 1000 {
-                    samples = [heat!]
-                } else {
-                    samples |= heat!
-                    while samples.count > maxToKeep {
-                        samples.remove(at: 0)
-                    }
-                }
-                hotness[band] = samples
-//                let heatToDisplay = maxToKeep >= 1000 ? samples.last! : samples.last! - samples[0]
-//                 let heatToDisplay = maxToKeep >= 1000 ? samples.last! : samples.miniMax().maximum
-//                let heatToDisplay = maxToKeep >= 1000 ? samples.last! : samples.reduce(0.0) { $0 + $1 } / Double(samples.count)
-                let heatToDisplay = samples.last!
-//                if name == "Core0.0" {
-//                    Swift.print("For \(name) band #\(band) heatToDisplay=\(heatToDisplay) hotness=\(samples)")
+//            var hotnessLayers = layers.unitHotnessLayers[name]
+//            if hotnessLayers == nil {
+//                let size = layer.bounds.size
+//                let hband = size.height / CGFloat(nbands)
+//                hotnessLayers = []
+//                for band in 0 ..< nbands {
+//                    let l = CALayer()
+//                    l.frame = CGRect(x: 0, y: size.height - CGFloat(band + 1) * hband, width: size.width, height: hband)
+//                    l.zPosition = -100
+//                    layer.addSublayer(l)
+//                    hotnessLayers! |= l
 //                }
-                let hotLayer = hotnessLayers![band]
-                let rounded = CGFloat(1.0 - heatToDisplay.round2)  // to make sure always the same
-                let previous = hotLayer.backgroundColor
-                let new = CGColor.red.blendWithWhite(rounded)
-                if previous != new {
-                    hotLayer.backgroundColor = new
-                }
+//                layers.unitHotnessLayers[name] = hotnessLayers
+//            }
+//            var hotness = layers.unitHotness[name] ?? [[Double]](repeating:[Double](), count: nbands)
+//            for band in 0 ..< nbands {
+//                // first record the last heat
+//                var samples = hotness[band]
+//                let maxToKeep = thisHotnessBand[band]
+//                if maxToKeep >= 1000 {
+//                    samples = [heat!]
+//                } else {
+//                    samples |= heat!
+//                    while samples.count > maxToKeep {
+//                        samples.remove(at: 0)
+//                    }
+//                }
+//                hotness[band] = samples
+////                let heatToDisplay = maxToKeep >= 1000 ? samples.last! : samples.last! - samples[0]
+////                 let heatToDisplay = maxToKeep >= 1000 ? samples.last! : samples.miniMax().maximum
+////                let heatToDisplay = maxToKeep >= 1000 ? samples.last! : samples.reduce(0.0) { $0 + $1 } / Double(samples.count)
+//                let heatToDisplay = samples.last!
+////                if name == "Core0.0" {
+////                    Swift.print("For \(name) band #\(band) heatToDisplay=\(heatToDisplay) hotness=\(samples)")
+////                }
+////                let hotLayer = hotnessLayers![band]
+//                let rounded = CGFloat(1.0 - heatToDisplay.round2)  // to make sure always the same
+//                let previous = hotLayer.backgroundColor
+//                let new = CGColor.red.blendWithWhite(rounded)
+//                if previous != new {
+//                    hotLayer.backgroundColor = new
+//                }
+//            }
+//            layers.unitHotness[name] = hotness
+            let heatToDisplay = min(1.0, max(0.0, heat!))
+            let rounded = CGFloat(1.0 - heatToDisplay.round2)  // to make sure always the same
+            let previous = layer.backgroundColor
+            let new = CGColor.red.blendWithWhite(rounded)
+            if previous != new {
+                layer.backgroundColor = new
             }
-            layers.unitHotness[name] = hotness
         }
     }
     func updateHotSegments(networkName: UnitName, _ info: (UnitName) -> Double) {
@@ -957,6 +993,7 @@ class NSChipView: NSView {
             }
         }
         if unitName != nil && !(unitName?.isEmpty)! && layers.units[unitName!] != nil {
+            Swift.print("Selecting \(unitName!)")
             setSelection(Set([unitName!]))
             //            if theEvent.clickCount == 2 {
             //                let option = theEvent.modifierFlags.contains(NSEventModifierFlags.AlternateKeyMask)
