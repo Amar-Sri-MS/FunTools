@@ -8,6 +8,8 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <termios.h>            //termios, TCSANOW, ECHO, ICANON
+#include <sys/types.h>
+#include <signal.h>            //termios, TCSANOW, ECHO, ICANON
 
 #include <funos/fun_json.h>
 #include <funos/fun_commander.h>

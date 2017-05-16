@@ -97,7 +97,7 @@
 		A716FBE51EAD33E0008395EC /* hw */ = {isa = PBXFileReference; lastKnownFileType = folder; name = hw; path = ../../FunOS/hw; sourceTree = "<group>"; };
 		A716FBE71EAD33EA008395EC /* kv */ = {isa = PBXFileReference; lastKnownFileType = folder; name = kv; path = ../../FunOS/kv; sourceTree = "<group>"; };
 		A716FBE91EAD33F5008395EC /* libFunOS */ = {isa = PBXFileReference; lastKnownFileType = folder; name = libFunOS; path = ../../FunOS/libFunOS; sourceTree = "<group>"; };
-		A716FBEB1EAD63FA008395EC /* PureSwiftExtras */ = {isa = PBXFileReference; lastKnownFileType = folder; name = PureSwiftExtras; path = /Users/bserlet/fun/Simulators/NSSimulator/PureSwiftExtras; sourceTree = "<absolute>"; };
+		A716FBEB1EAD63FA008395EC /* PureSwiftExtras */ = {isa = PBXFileReference; lastKnownFileType = folder; name = PureSwiftExtras; path = ../../Simulators/NSSimulator/PureSwiftExtras; sourceTree = "<absolute>"; };
 		A716FC081EAD667D008395EC /* ArrayExtras.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ArrayExtras.swift; sourceTree = "<group>"; };
 		A716FC091EAD667D008395EC /* ByteExtras.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ByteExtras.swift; sourceTree = "<group>"; };
 		A716FC0A1EAD667D008395EC /* DataExtras.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DataExtras.swift; sourceTree = "<group>"; };
@@ -563,7 +563,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "fungible.com.funos-viewer";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "funos_viewer/funos_viewer-Bridging-Header.h";
-				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_OPTIMIZATION_LEVEL = "-Owholemodule";
 				SWIFT_VERSION = 3.0;
 			};
 			name = Debug;

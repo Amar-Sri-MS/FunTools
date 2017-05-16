@@ -19,6 +19,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <inttypes.h>
 
 #define LISTENQ  1024  /* second argument to listen() */
 #define MAXLINE 1024   /* max length of a line */
@@ -154,7 +155,7 @@ void format_size(char* buf, struct stat *stat){
     } else {
         off_t size = stat->st_size;
         if(size < 1024){
-            sprintf(buf, "%lld", size);
+            sprintf(buf, "%" PRId64"", size);
         } else if (size < 1024 * 1024){
             sprintf(buf, "%.1fK", (double)size / 1024);
         } else if (size < 1024 * 1024 * 1024){
@@ -293,7 +294,7 @@ void parse_request(int fd, http_request *req){
     while(buf[0] != '\n' && buf[1] != '\n') { /* \n || \r\n */
         rio_readlineb(&rio, buf, MAXLINE);
         if(buf[0] == 'R' && buf[1] == 'a' && buf[2] == 'n'){
-            sscanf(buf, "Range: bytes=%llu-%lu", &req->offset, &req->end);
+            sscanf(buf, "Range: bytes=%" PRIu64 "-%lu", &req->offset, &req->end);
             // Range: [start, end]
             if( req->end != 0) req->end ++;
         }
