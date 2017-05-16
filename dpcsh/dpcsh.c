@@ -249,7 +249,7 @@ main(int argc, char *argv[])
 	    && (strcmp(argv[1], "--proxy") == 0))
 		proxy_mode = 1;
 	
-	printf("FunOS Dataplane Control test%s\n",
+	printf("FunOS Dataplane Control Shell%s\n",
 	       proxy_mode ? ": proxy mode" : "");
 
 	/* open a socket to FunOS */

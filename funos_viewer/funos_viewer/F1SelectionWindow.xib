@@ -30,7 +30,6 @@
                 <outlet property="selectionInfo" destination="PLh-KT-jdF" id="vr9-Px-8Bk"/>
                 <outlet property="selectionQueuesText" destination="Q65-Ef-neu" id="cwe-E5-xY7"/>
                 <outlet property="selectionRelativeHeat" destination="B6P-0L-emI" id="oLg-Y0-IXC"/>
-                <outlet property="selectionSamples" destination="MQc-4W-8IZ" id="G1f-s9-ey2"/>
                 <outlet property="selectionTabView" destination="A0G-L6-Uxl" id="MGS-Bt-sog"/>
                 <outlet property="window" destination="QvC-M9-y7g" id="rdE-yF-oOe"/>
                 <outlet property="wusTable" destination="rkh-eM-scR" id="dYA-v1-Odo"/>
@@ -56,20 +55,17 @@
                                     <rect key="frame" x="10" y="33" width="466" height="640"/>
                                     <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                     <subviews>
-                                        <customView translatesAutoresizingMaskIntoConstraints="NO" id="MQc-4W-8IZ" customClass="SimulationSamplesView" customModule="funos_viewer" customModuleProvider="target">
-                                            <rect key="frame" x="2" y="0.0" width="462" height="88"/>
-                                        </customView>
                                         <scrollView toolTip="Summary information on the selected unit" horizontalLineScroll="10" horizontalPageScroll="10" verticalLineScroll="10" verticalPageScroll="10" hasHorizontalScroller="NO" usesPredominantAxisScrolling="NO" translatesAutoresizingMaskIntoConstraints="NO" id="7yC-Pe-ubq">
-                                            <rect key="frame" x="2" y="93" width="462" height="544"/>
+                                            <rect key="frame" x="2" y="-3" width="462" height="640"/>
                                             <clipView key="contentView" id="txm-Fa-uuC">
-                                                <rect key="frame" x="1" y="1" width="445" height="542"/>
+                                                <rect key="frame" x="1" y="1" width="445" height="638"/>
                                                 <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                                 <subviews>
                                                     <textView importsGraphics="NO" richText="NO" usesFontPanel="YES" findStyle="panel" continuousSpellChecking="YES" allowsUndo="YES" usesRuler="YES" allowsNonContiguousLayout="YES" quoteSubstitution="YES" dashSubstitution="YES" spellingCorrection="YES" smartInsertDelete="YES" id="PLh-KT-jdF">
-                                                        <rect key="frame" x="0.0" y="0.0" width="445" height="542"/>
+                                                        <rect key="frame" x="0.0" y="0.0" width="445" height="638"/>
                                                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                                         <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
-                                                        <size key="minSize" width="445" height="542"/>
+                                                        <size key="minSize" width="445" height="638"/>
                                                         <size key="maxSize" width="463" height="10000000"/>
                                                         <color key="insertionPointColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                                                         <allowedInputSourceLocales>
@@ -84,20 +80,16 @@
                                                 <autoresizingMask key="autoresizingMask"/>
                                             </scroller>
                                             <scroller key="verticalScroller" verticalHuggingPriority="750" horizontal="NO" id="wcl-8v-KmZ">
-                                                <rect key="frame" x="446" y="1" width="15" height="542"/>
+                                                <rect key="frame" x="446" y="1" width="15" height="638"/>
                                                 <autoresizingMask key="autoresizingMask"/>
                                             </scroller>
                                         </scrollView>
                                     </subviews>
                                     <constraints>
-                                        <constraint firstItem="7yC-Pe-ubq" firstAttribute="top" secondItem="Wxz-IZ-UgU" secondAttribute="top" constant="3" id="6Ek-zE-JAg"/>
-                                        <constraint firstItem="7yC-Pe-ubq" firstAttribute="leading" secondItem="MQc-4W-8IZ" secondAttribute="leading" id="7zL-qB-R6X"/>
-                                        <constraint firstItem="7yC-Pe-ubq" firstAttribute="trailing" secondItem="MQc-4W-8IZ" secondAttribute="trailing" id="O8o-wg-31A"/>
-                                        <constraint firstItem="MQc-4W-8IZ" firstAttribute="top" secondItem="7yC-Pe-ubq" secondAttribute="bottom" constant="5" id="ROb-Cf-urO"/>
-                                        <constraint firstAttribute="bottom" secondItem="MQc-4W-8IZ" secondAttribute="bottom" id="aaj-V8-SFQ"/>
-                                        <constraint firstItem="MQc-4W-8IZ" firstAttribute="top" secondItem="Wxz-IZ-UgU" secondAttribute="top" constant="552" id="eKA-kw-etr"/>
-                                        <constraint firstItem="7yC-Pe-ubq" firstAttribute="leading" secondItem="Wxz-IZ-UgU" secondAttribute="leading" constant="2" id="jch-eA-fb7"/>
-                                        <constraint firstItem="7yC-Pe-ubq" firstAttribute="centerX" secondItem="Wxz-IZ-UgU" secondAttribute="centerX" id="ofL-0Y-u6W"/>
+                                        <constraint firstItem="7yC-Pe-ubq" firstAttribute="top" secondItem="Wxz-IZ-UgU" secondAttribute="top" constant="3" id="Hf8-vv-Ils"/>
+                                        <constraint firstItem="7yC-Pe-ubq" firstAttribute="leading" secondItem="Wxz-IZ-UgU" secondAttribute="leading" constant="2" id="Hor-9L-JQ1"/>
+                                        <constraint firstItem="7yC-Pe-ubq" firstAttribute="centerX" secondItem="Wxz-IZ-UgU" secondAttribute="centerX" id="R5U-MH-j04"/>
+                                        <constraint firstAttribute="bottom" secondItem="7yC-Pe-ubq" secondAttribute="bottom" constant="-3" id="TmY-Qq-lay"/>
                                     </constraints>
                                 </view>
                             </tabViewItem>
