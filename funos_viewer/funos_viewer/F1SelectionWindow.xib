@@ -102,7 +102,7 @@
                                             <rect key="frame" x="-3" y="2" width="470" height="635"/>
                                             <clipView key="contentView" id="imt-7n-rDq">
                                                 <rect key="frame" x="1" y="1" width="453" height="633"/>
-                                                <autoresizingMask key="autoresizingMask"/>
+                                                <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                                 <subviews>
                                                     <textView importsGraphics="NO" richText="NO" usesFontPanel="YES" findStyle="panel" continuousSpellChecking="YES" allowsUndo="YES" usesRuler="YES" allowsNonContiguousLayout="YES" quoteSubstitution="YES" dashSubstitution="YES" spellingCorrection="YES" smartInsertDelete="YES" id="Q65-Ef-neu">
                                                         <rect key="frame" x="0.0" y="0.0" width="453" height="633"/>
@@ -131,7 +131,7 @@
                                             <rect key="frame" x="-3" y="-9" width="470" height="646"/>
                                             <clipView key="contentView" id="tFf-xt-R1Q">
                                                 <rect key="frame" x="1" y="0.0" width="468" height="645"/>
-                                                <autoresizingMask key="autoresizingMask"/>
+                                                <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                                 <subviews>
                                                     <tableView verticalHuggingPriority="750" allowsExpansionToolTips="YES" columnAutoresizingStyle="lastColumnOnly" alternatingRowBackgroundColors="YES" columnReordering="NO" columnSelection="YES" autosaveColumns="NO" autosaveName="Columns" headerView="sVR-xh-ZLF" id="rkh-eM-scR">
                                                         <rect key="frame" x="0.0" y="0.0" width="468" height="622"/>
@@ -262,7 +262,7 @@
                                             <rect key="frame" x="157" y="506" width="312" height="56"/>
                                             <clipView key="contentView" id="bKJ-Pw-qBt">
                                                 <rect key="frame" x="1" y="1" width="295" height="54"/>
-                                                <autoresizingMask key="autoresizingMask"/>
+                                                <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                                 <subviews>
                                                     <textView editable="NO" importsGraphics="NO" usesFontPanel="YES" findStyle="panel" continuousSpellChecking="YES" allowsUndo="YES" usesRuler="YES" allowsNonContiguousLayout="YES" quoteSubstitution="YES" dashSubstitution="YES" spellingCorrection="YES" smartInsertDelete="YES" id="9lU-UJ-GCj">
                                                         <rect key="frame" x="0.0" y="0.0" width="295" height="54"/>
@@ -344,10 +344,10 @@
                                                 <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
                                             </textFieldCell>
                                         </textField>
-                                        <customView identifier="count" translatesAutoresizingMaskIntoConstraints="NO" id="56g-x1-PXe" customClass="SimulationSamplesView" customModule="funos_viewer" customModuleProvider="target">
+                                        <customView identifier="capacity" translatesAutoresizingMaskIntoConstraints="NO" id="56g-x1-PXe" customClass="SimulationSamplesView" customModule="funos_viewer" customModuleProvider="target">
                                             <rect key="frame" x="3" y="366" width="459" height="71"/>
                                         </customView>
-                                        <customView identifier="count" translatesAutoresizingMaskIntoConstraints="NO" id="WG6-Zf-4Hp" customClass="SimulationSamplesView" customModule="funos_viewer" customModuleProvider="target">
+                                        <customView identifier="spaceAmp" translatesAutoresizingMaskIntoConstraints="NO" id="WG6-Zf-4Hp" customClass="SimulationSamplesView" customModule="funos_viewer" customModuleProvider="target">
                                             <rect key="frame" x="4" y="287" width="459" height="71"/>
                                         </customView>
                                         <customView identifier="count" translatesAutoresizingMaskIntoConstraints="NO" id="zd0-GU-pon" customClass="SimulationSamplesView" customModule="funos_viewer" customModuleProvider="target">
