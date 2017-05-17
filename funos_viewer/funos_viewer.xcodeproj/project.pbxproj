@@ -556,7 +556,7 @@
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)/funos_viewer",
-					"$(PROJECT_DIR)/../../FunSDK/lib/Darwin/noasan",
+					"$(PROJECT_DIR)/../../FunSDK/lib/Darwin",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "fungible.com.funos-viewer";
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -578,7 +578,7 @@
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)/funos_viewer",
-					"$(PROJECT_DIR)/../../FunSDK/lib/Darwin/noasan",
+					"$(PROJECT_DIR)/../../FunSDK/lib/Darwin",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "fungible.com.funos-viewer";
 				PRODUCT_NAME = "$(TARGET_NAME)";
