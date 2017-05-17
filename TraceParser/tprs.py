@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 # external libs
-import sys
+import sys, pickle, json
 
 # specific imports
 from optparse import OptionParser
@@ -9,6 +9,7 @@ from optparse import OptionParser
 # internal libs
 
 from ttypes import TEntry
+from ttypes import TTree
 
 
 import tutils_hdr as tutils
@@ -62,46 +63,144 @@ def filter_addr(addr):
 #
 #
 #
-def read_trace(trace_fname, ranges, vp, reverse_order, filterlist):
+def read_trace(trace_fname, ranges, filter_vp, reverse_order, filterlist):
+
+	# to be refined based on understanding of pipeline
+	cycles = [0,0,0,0]
+	idles = 0
+	instr_misses = 0
 
 	last_found_func = ["","","",""]
+	last_address = [0,0,0,0]
 
-	if vp == 15:
+	if filter_vp == 15:
 		print "%16s | %19s | %06s | %32s | %32s | %32s | %32s |" % ("Cycle", "addr", "OP", "VP0", "VP1", "VP2", "VP3")
 
 	# reverse order support to be re-implemented at a later date
 
+	callstack = [[],[],[],[]]
+	funcstats = [{},{},{},{}]
+
+	current_ttree = [None, None, None, None]
+
 	with open(trace_fname) as infile:
 		for line in infile:
-			if tutils.is_instruction(line):
+			if tutils.is_instruction(line): # XXX rename is_instruction
+
+
 				entry = TEntry(line, 0, ranges)
 	
+				vp = entry.get_vpid()
+				cycles[vp] = cycles[vp] + entry.get_ccount()
+
+				# XXX !! make sure we're not double counting idles
+				if entry.get_func() == "idle":
+					idles = idles + entry.get_ccount()
+
 				if entry.get_func() in filterlist:
 					continue
-	
-				if entry.get_func() == "NOT FOUND":
-					print "NF: %s" % line
 
-				if tutils.out_of_range(entry.get_func()):
-					newaddr = filter_addr(entry.get_addr())
-					entry.set_addr(newaddr, ranges)
+				if 'IM' in line.split():
+					instr_misses = instr_misses + 1
 
-				if entry.get_func() != last_found_func[entry.get_vpid()]:
+#				if tutils.out_of_range(entry.get_func()):
+#					newaddr = filter_addr(entry.get_addr())
+#					entry.set_addr(newaddr, ranges)
+#
+				if entry.get_func() != last_found_func[vp]:
 	
-					last_found_func[entry.get_vpid()] = entry.get_func()
-	
+					last_found_func[vp] = entry.get_func()
+
 					row_val = [tutils.get_address(line), "-", "-", "-", "-"]
-					row_val[entry.get_vpid()+1] = entry.get_func()				
+					row_val[vp+1] = entry.get_func()
 
-					if vp == 15:
-						print "%16s | %19s | %06s | %32s | %32s | %32s | %32s |" % (entry.get_cycle(), hex(row_val[0]), entry.get_op(), row_val[1], row_val[2], row_val[3], row_val[4])
-					elif entry.get_vpid() == vp:
+					if filter_vp == 15:
+						print "%16s | %19s | %06s | %32s | %32s | %32s | %32s |" % (cycles[vp], hex(row_val[0]), entry.get_op(), row_val[1], row_val[2], row_val[3], row_val[4])
+					elif vp == filter_vp:
 						print "%s" % (entry)
 
-				last_entry = entry
+					if entry.get_pos() == "START":
+						callstack[vp].append(entry)
+
+						new_ttree = TTree(entry.get_func(), current_ttree[vp], cycles[vp], idles, instr_misses)
+
+						if current_ttree[vp] != None:
+							current_ttree[vp].add_call(new_ttree)
+
+						current_ttree[vp] = new_ttree
+
+					else:
+						# gather stats on the function as it exits
+
+						if len(callstack[vp]) != 0:
+							top_of_stack = callstack[vp][-1]
+
+							while top_of_stack.get_func() != entry.get_func():
+
+								# everything that pops gets a stat
+								current_ttree[vp].set_end_cycle(cycles[vp])
+								current_ttree[vp].set_end_idle(idles)
+								current_ttree[vp].set_end_instr_miss(instr_misses)
+
+								# XXX should top of stack & current tree have same name?
+
+								if top_of_stack.get_func() in funcstats[vp].keys():
+									funcstats[vp][top_of_stack.get_func()].append(current_ttree[vp].get_ccount())
+								else:
+									funcstats[vp][top_of_stack.get_func()] = [current_ttree[vp].get_ccount()]
+
+								callstack[vp].pop()
+								parent_ttree = current_ttree[vp].get_parent()
+
+								# we might have started in the middle of a tree, add nodes on the way up
+								if parent_ttree is None:
+									new_ttree = TTree(entry.get_func(), None, current_ttree[vp].get_start_cycle(), current_ttree[vp].get_start_idle(), current_ttree[vp].get_start_instr_miss())
+									new_ttree.add_call(current_ttree[vp])
+									current_ttree[vp] = new_ttree
+								else:
+									current_ttree[vp] = current_ttree[vp].get_parent()
+
+								if len(callstack[vp]) == 0:
+									break
+
+								top_of_stack = callstack[vp][-1]
+
+
+				last_address[vp] = entry.get_addr()
 
 			elif tutils.is_data(line):
 				pass
+
+
+	roots = []
+
+	for i in range(0,4):
+		if current_ttree[i] != None:
+			current_ttree[i].propagate_up(cycles[vp], idles, instr_misses)
+			roots.append(current_ttree[i].get_root())
+			sc = roots[i].sanitycheck()
+			print "Sanity check for VP %s: %s" % (i, sc)
+		else:
+			print "No tree available for VP %s" % i
+
+	print_stats(funcstats[0])
+
+	statf = open('stats.json', 'w')
+	statf.write(json.dumps(funcstats[0]))
+	statf.close()
+
+	tutils.output_html(funcstats[0], 'stats2.json')
+
+	print "Total cycles: %s" % cycles[0]
+	print "Time elapsed @ 1GHz: %s seconds (%s ms)" % (cycles[0]/float(1000000000), (cycles[0]/float(1000000)))
+	print "Max call depth: TBD"
+	print "Total idles: %s" % idles
+
+	# XXX
+	f = open('fundata', 'w')
+	pickle.dump(roots, f)
+	f.close()
+	# XXX
 
 	return []
 
@@ -109,6 +208,14 @@ def print_funcs(ranges):
 
 	for item in ranges:
 		print "%s\t%s\t%s" % (hex(item[1]), hex(item[2]), item[0])
+
+def print_stats(funcstats):
+
+	for k in funcstats.keys():
+		lst = funcstats[k]
+		print "[%24s] # : %s | avg %s | min %s | max %s" % (k, len(lst), sum(lst)/float(len(lst)), min(lst), max(lst))
+		print "="*80
+
 
 #
 #
@@ -130,7 +237,7 @@ if __name__ == "__main__":
 		sys.exit(0)
 
 	ranges = create_range_list(options.asm_f)
-	filterlist = []
+	filterlist = ["idle", "sync", "mode"] # XXX we shouldn't need this, it should be handled by is_instruction (to be renamed)
 
 	if options.trc_f is None:
 		print_funcs(ranges)

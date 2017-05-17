@@ -1,6 +1,8 @@
 # goal: Make this file aware of different file formats and have the tprs.py
 # code stay stable
 
+import re
+
 def is_return(trace_line):
 	assert(0)
 
@@ -9,36 +11,50 @@ def is_data(trace_line):
 	return False
 
 def is_instruction(trace_line):
-	# TM format
-	tpc_found = False
-	va_found = False
+	# TM+DASM format
 
-	tokens = trace_line.split()
-	for token in tokens:
-		if 'tpc' in token.split('='):
-			tpc_found = True
-		if 'va[56]' in token.split('='):
-			va_found = True
+	regex = r"^\d+\.\d\d\d.*"
 
-	return tpc_found and va_found
+	return re.search(regex, trace_line.strip())
 
 
 def get_vpid(trace_line):
-	# XXX
-	return 0
+	return int(trace_line.split()[2])
 
 def get_return_addr(trace_line):
 	assert(0)
 
 def get_address(trace_line): 
-	# TM format
-	# tightly coupled to tt=ipc in TF3
-	tokens = trace_line.split()
-	for token in tokens:
-		if 'va[56]' in token.split('='):
-			return long(token.split('=')[1], 16)
+	# TM+DASM format
+	addr = 0
 
-	return 0
+	regex = "pc\s+(0x[A-Fa-f0-9]+)"
+
+	if (re.search(regex, trace_line)):
+
+		m = re.search(regex, trace_line)
+
+		addr = long(m.group(1),16)
+
+	return addr
+
+#1.075  0 0 0                 idle cycles 3
+#1.085  0 0 0                 S1 idle slot
+def get_ccount(trace_line):
+
+	ccount = 1
+	regex = r"idle cycles (\d+)"
+
+	if (re.search(regex, trace_line)):
+		m = re.search(regex, trace_line)
+
+		ccount = int(m.group(1))
+	elif "Sync" in trace_line:
+		ccount = 0
+	elif "mode" in trace_line:
+		ccount = 0
+
+	return ccount
 
 def get_asm(trace_line):
 	# XXX
