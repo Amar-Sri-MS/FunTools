@@ -176,7 +176,7 @@ def read_trace(trace_fname, ranges, filter_vp, reverse_order, filterlist):
 
 	for i in range(0,4):
 		if current_ttree[i] != None:
-			current_ttree[i].propagate_up(cycles[vp], idles, instr_misses)
+			current_ttree[i].propagate_up(cycles[i], idles, instr_misses)
 			roots.append(current_ttree[i].get_root())
 			sc = roots[i].sanitycheck()
 			print "Sanity check for VP %s: %s" % (i, sc)
