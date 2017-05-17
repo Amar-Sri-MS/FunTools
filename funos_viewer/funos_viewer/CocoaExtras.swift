@@ -97,6 +97,18 @@ extension CALayer {
         let absZero = motherOfAllLayers?.convert(CGPoint.zero, from: self)
         return CGAffineTransform(translationX: absZero!.x, y: absZero!.y)
     }
+    func setBackgroundColorRecursive(_ color: CGColor, _ textColor: CGColor, _ depth: Int) {
+        backgroundColor = color
+        if let text = self as? CATextLayer {
+            text.foregroundColor = textColor
+        }
+        if sublayers != nil && depth > 0 {
+            for sub in sublayers! {
+                sub.backgroundColor = color
+                sub.setBackgroundColorRecursive(color, textColor, depth - 1)
+            }
+        }
+    }
 }
 
 extension CGFloat {
@@ -203,6 +215,9 @@ extension CGColor {
     }
     static var veryLightGray: CGColor {
         return black.blendWithWhite(0.94)
+    }
+    static var extremelyLightGray: CGColor {
+        return black.blendWithWhite(0.97)
     }
     func invert() -> CGColor {
         return NSColor(cgColor: self)!.invert().cgColor

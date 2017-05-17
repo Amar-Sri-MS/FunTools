@@ -63,7 +63,7 @@ class F1InputController: NSObject, NSOutlineViewDataSource, NSTabViewDelegate {
     }
     func computeTopLevelWUs() {
         if numWUs != nil { return }
-//        print("Fetching WU Handlers")
+//        print("Fetching WU Handlers") 
         let wus = document.doF1Command("peek", "config/wu_handlers")?.dictionaryValue
         if wus == nil || wus!.isEmpty {
             // use the default, for now
@@ -119,7 +119,7 @@ class F1InputController: NSObject, NSOutlineViewDataSource, NSTabViewDelegate {
             logPageSize.integerValue = logPageSizeInt
         }
         dict["log_page_size"] = JSON.integer(logPageSizeInt)
-        var pageCacheKBInt = pageCacheKB.integerValue
+        var pageCacheKBInt = pageCacheKB?.integerValue ?? 100
         if pageCacheKBInt < 1 || pageCacheKBInt > 10_000 {
             pageCacheKBInt = 100
             pageCacheKB.integerValue = pageCacheKBInt

@@ -81,7 +81,6 @@
 
 /* Begin PBXFileReference section */
 		A71563931EB7ACE600F32BAE /* bsd */ = {isa = PBXFileReference; lastKnownFileType = folder; name = bsd; path = ../../FunOS/bsd; sourceTree = "<group>"; };
-		A71563961EB7ADD200F32BAE /* bsd_utils.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = bsd_utils.c; path = ../../FunOS/bsd/bsd_utils.c; sourceTree = "<group>"; };
 		A71563981EB95EDE00F32BAE /* cfg */ = {isa = PBXFileReference; lastKnownFileType = folder; name = cfg; path = ../../FunOS/cfg; sourceTree = "<group>"; };
 		A716FBC91EA67C82008395EC /* funos_viewer.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = funos_viewer.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A716FBCC1EA67C82008395EC /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
@@ -172,7 +171,6 @@
 		A716FBC01EA67C82008395EC = {
 			isa = PBXGroup;
 			children = (
-				A71563961EB7ADD200F32BAE /* bsd_utils.c */,
 				A716FC071EAD667D008395EC /* PureSwiftExtras */,
 				A716FC1E1EAD6687008395EC /* PureSwiftRuntime */,
 				A7A811691EAFBFF1005BB2CE /* F1UI */,
