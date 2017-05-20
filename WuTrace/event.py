@@ -4,119 +4,124 @@
 
 import sys
 
-class TraceEvent:
-  def __init__(self, start_time, end_time, label, vp):
-      # Attributes of event.
-      self.start_time = start_time
-      self.end_time = end_time
+class Transaction():
+  """Container for a sequence of related WU events."""
+  def __init__(self, root_event, label=None):
+    # List of work units and other events done as part of the transaction.
+    self.root_event = root_event
+    if label is not None:
       self.label = label
-      self.vp = vp
+    else:
+      self.label = root_event.label
 
-      # Hierarchy.
-      # All WUs explicitly sent from this WU.
-      self.next_wus = []
-      # All call and timer sequences sent from this WU.
-      self.subevents = []
-      self.parent = None
-      # Whether this TraceEvent is the root of all traces.
-      self.is_root = False
-      
-      self.is_timer = False
-      # For timers, the timestamp for when the timer was scheduled.
-      self.timerStart = None
+  def Label(self):
+    """Returns human-readable label describing event."""
+    return self.label
 
-      # Cache transitive closure of duration
-      self.interval = None
+  def StartTime(self):
+    """Time in microseconds since epoch when the first WU started."""
+    # TODO(bowdidge): Stop recalculating this each time.
+    if not self.root_event:
+      return 0
+    start = self.root_event.start_time
+    for e in self.Flatten():
+      if start > e.start_time:
+        start = e.start_time
+    return start
 
-  def Range(self):
-      """Returns start and end time for this event alone."""
-      return (self.start_time, self.end_time)
+  def EndTime(self):
+    """Time in microseconds since epoch when the last WU finished."""
+    if not self.root_event:
+      return 0
+    end = self.root_event.end_time
+    for e in self.Flatten():
+      if end < e.end_time:
+        end = e.end_time
+    return end
 
   def Duration(self):
-      """Returns time spent only in this event."""
-      return self.end_time - self.start_time
+    """Number of microseconds elapsed during transaction."""
+    return self.EndTime() - self.StartTime()
 
-  def Span(self):
-      """Returns overall time spent in this event and subevents."""
-      (start, end) = self.Interval()
-      return end - start
+  def Remove(self, event):
+    """Removes a specific WU event from a transaction."""
+    if event == self.root_event:
+      self.root_event = None
+      return
 
-  def Interval(self):
-      """Returns time range spent in this event and subevents."""
-      if self.interval is not None:
-        return self.interval
+    # walk through all elements 
+    for e in self.Flatten():
+      if event in e.successors:
+        e.successors.remove(event)
+        return
 
-      last_end_time = self.end_time
-      first_start_time = self.start_time
-      for subevent in self.subevents + self.next_wus:
-        (start, end) = subevent.Interval()
-        if end > last_end_time:
-            last_end_time = end
-        if start < first_start_time:
-            first_start_time = start
-      self.interval = (first_start_time, last_end_time)
-      return self.interval
+  def Flatten(self):
+    """Returns all events in this transaction in a single list."""
+    if self.root_event == None:
+      return []
+    result = []
+    worklist = [self.root_event]
+    while (len(worklist) > 0):
+      first = worklist[0]
+      worklist = worklist[1:]
+      if first not in result:
+        result.append(first)
+        worklist += first.successors
+    return sorted(result, key=lambda x: x.start_time)
 
-  def AddSubevent(self, event):
-    self.interval = None
-    self.subevents.append(event)
-    event.parent = self
 
-  def AddNext(self, event):
-    self.interval = None
-    self.next_wus.append(event)
-    event.parent = self.parent
+class TraceEvent:
+  """A work unit (WU) or other action that occurred during the trace,
+  Trace events can also represent timer set/trigger pairs.
+  """
+  def __init__(self, start_time, end_time, label, vp):
+    # When the event started.
+    self.start_time = start_time
 
-  def RemoveChild(self, event):
-    """Removes an event which is either a successor or a child of this event."""
-    self.interval = None
-    if event in self.subevents:
-      self.subevents.remove(event)
-      return True
-    elif event in self.next_wus:
-      self.next_wus.remove(event)
-      return True
+    # When the event ended.
+    self.end_time = end_time
 
-    wus = self.next_wus
-    while len(wus) > 0:
-      wu = wus[0]
-      if event in wu.next_wus:
-        wu.next_wus.remove(event)
-        return True
-      wus.remove(wu)
+    # Text label to display when showing this event.
+    self.label = label
 
-    wus = self.subevents
-    while len(wus) > 0:
-      wu = wus[0]
-      if event in wu.next_wus:
-        wu.next_wus.remove(event)
-        return True
-      wus.remove(wu)
+    # Virtual processor where this event ran.
+    # String of form VP.[0-9]+.[0-9]+.[0-9]+
+    self.vp = vp
 
-    return False
+    # Transactions holding this event.
+    self.transaction = None
+  
+    # True if this event represents a timer set and trigger.
+    # For timers, the start_time represents the time when the timer was set,
+    # and the end_time represents the time when the timer was triggered.
+    self.is_timer = False
+
+    # Work units or events that were instigated by this event.
+    self.successors = []
+
+  def Label(self):
+    """Returns a human-readable string describing this event."""
+    return self.label
+
+  def Range(self):
+    """Returns start and end time for this event alone."""
+    return (self.start_time, self.end_time)
+
+  def Duration(self):
+    """Returns time spent only in this event."""
+    return self.end_time - self.start_time
 
   def __cmp__(self, other):
-      return self.start_time.__cmp__(other.start_time)
+    if other is None:
+      return 1
+    return cmp((self.label, self.start_time, self.end_time), (other.label, other.start_time, other.end_time))
 
-  
   def __str__(self):
-    subeventMsg =  ''
-    if self.subevents is not None:
-      subeventMsg = '%d subevents' % len(self.subevents)
-    
-    str = '<TraceEvent: %s - %s %s, %s>' % (self.start_time, self.end_time,
-                                           self.label, 
-                                           subeventMsg)
-    return str
+    return '<TraceEvent: %s - %s %s>' % (self.start_time, self.end_time,
+                                         self.label)
 
   def __repl__(self):
-    subeventMsg =  ''
-    if self.subevents is not None:
-      subeventMsg = '%d subevents' % len(self.subevents)
-    
-    str = '<TraceEvent: %s - %s %s, %s>' % (self.start_time, self.end_time,
-                                           self.label, 
-                                           subeventMsg)
-    return str
+    return '<TraceEvent: %s - %s %s, %s>' % (self.start_time, self.end_time,
+                                             self.label)
 
 

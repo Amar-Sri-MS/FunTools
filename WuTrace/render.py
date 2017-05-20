@@ -53,7 +53,7 @@ def RenderEvent(out, event, group_start, group_duration):
     wholePercent = MAX_WIDTH
     out.write('<div class="row">\n')
     start_offset = event.start_time - group_start
-    duration = event.end_time - event.start_time
+    duration = event.Duration()
 
     leadingSpace = wholePercent * start_offset / group_duration
     width = wholePercent * duration / group_duration
@@ -66,7 +66,7 @@ def RenderEvent(out, event, group_start, group_duration):
         width = wholePercent * duration / group_duration
 
 
-        out.write('  <div class="label"><i>%s</i></div>\n' % (event.label))
+        out.write('  <div class="label"><i>%s</i></div>\n' % (event.Label()))
         out.write('  <div class="time"><i>%s</i></div>\n' % (
                 RangeString(event.start_time, event.end_time)))
         out.write('  <div class="duration"><i>%s</i></div>\n' % (
@@ -77,15 +77,15 @@ def RenderEvent(out, event, group_start, group_duration):
         out.write('    <div style="width: %d%%"; class="space"></div>\n' % (
                 leadingSpace))
         out.write('    <div style="width: 0%" class="bar schedule tooltip">\n')
-        out.write('    <div class="tooltiptext">timer set at %s</div>\n' % (
-                TimeString(event.timerStart)))
+        out.write('    <div class="tooltiptext">timer set at %s</div></div>\n' % (
+                TimeString(event.timer_start)))
         out.write('    <div style="width: %d%%"; class="space"></div>\n' % (
                 triggerSpace))
         out.write('    <div style="width: %d%%"; class="bar timer">\n' % width)
         out.write('    </div>\n')
         out.write('  </div>\n')
     else:
-        out.write('  <div class="label">%s</div>\n' % (event.label))
+        out.write('  <div class="label">%s</div>\n' % (event.Label()))
         out.write('  <div class="time">%s</div>\n' % (
                 RangeString(event.start_time, event.end_time)))
         out.write('  <div class="duration">%s</div>\n' % (
@@ -100,12 +100,6 @@ def RenderEvent(out, event, group_start, group_duration):
         out.write('  </div>\n')
     out.write('</div>\n')
 
-    for wu in sorted(event.next_wus):
-        RenderEvent(out, wu, group_start, group_duration)
-
-
-    for subevent in sorted(event.subevents):
-        RenderEvent(out, subevent, group_start, group_duration)
 
 def RenderHeader(out):
     """Outputs HTML for the event visualization."""
@@ -233,24 +227,24 @@ def RenderHeader(out):
 </head>
 """)
 
-def RenderGroup(out, group):
+def RenderTransaction(out, transaction):
     """Render an event which is the root of a transaction."""
-    sys.stderr.write('Rendering group for %s\n' % group.label)
-    (group_start, group_end) = group.Interval()
-    group_duration = group_end - group_start
-    out.write('<a name="%s"></a>\n' % TimeString(group_start))
+    sys.stderr.write('Rendering transaction for %s\n' % transaction.Label())
+    start_time = transaction.StartTime()
+    end_time = transaction.EndTime()
+    duration = transaction.EndTime() - transaction.StartTime()
+    out.write('<a name="%s"></a>\n' % TimeString(transaction.StartTime()))
     out.write('<div class="row request">\n')
     out.write('  <div class="label">All</div>\n')
-    out.write('  <div class="time">%s</div>\n' % RangeString(group_start, group_end))
-    out.write('  <div class="duration">%s</div>\n' % DurationString(group_duration))
+    out.write('  <div class="time">%s</div>\n' % RangeString(transaction.StartTime(), transaction.EndTime()))
+    out.write('  <div class="duration">%s</div>\n' % DurationString(duration))
     out.write('  <div class="vp"></div>\n')
     out.write('  <div class="timeline">\n')
     out.write('    <div style="width: %d%%"; class="bar allrow"></div>\n' % MAX_WIDTH)
     out.write('  </div>\n')
     out.write('</div>\n')
-    RenderEvent(out, group, group_start, group_duration)
-    #out.write('<div class="detail" style="font-size: small; padding-top: 20px;"> Calling sequence was:<ul> <li> A called B <li> B called C <li> C called D <li> D called E </ul> e</div>')
-
+    for event in transaction.Flatten():
+        RenderEvent(out, event, start_time, duration)
 
 def PercentileIndex(percent, itemCount):
     """Returns the index of element in an array representing the nth percentile."""
@@ -275,7 +269,7 @@ def DistributionString(durationArray):
     min = durationArray[0]
     max = durationArray[-1]
 
-    sum = sum(durationArray)
+    sum_duration = sum(durationArray)
 
     percentile50Index = PercentileIndex(50, count)
     percentile90Index = PercentileIndex(90, count)
@@ -286,12 +280,15 @@ def DistributionString(durationArray):
     percentile95Duration = values[percentile95Index]
 
     output = '<table border="1">'
+    output += '<tr><td>Number of occurrences:</td><td>%d</td></tr>\n' %(
+        count)
+
     output += '<tr><td>Minimum duration:</td><td>%s</td></tr>\n' % (
         DurationString(min))
     output += '<tr><td>Maximum duration:</td><td>%s</td></tr>\n' % (
         DurationString(max))
     output += '<tr><td>Average duration:</td><td>%s</td></tr>\n' % (
-        DurationString(sum / count))
+        DurationString(sum_duration / count))
     output += '<tr><td>50%%ile:</td><td>%s</td></tr>\n' % (
         DurationString(percentile50Duration))
     output += '<tr><td>90%%ile:</td><td>%s</td></tr>\n' % (
@@ -302,96 +299,123 @@ def DistributionString(durationArray):
     return output
 
 
-def RenderSummary(out, trace_events):
+def RenderSummary(out, transactions):
     """Generate summary data describing the kinds of WU sequences that
     we saw.  This data is grouped by the starting WU, and allows
     comparing runs of equivalent WUs.
     """
     root_to_group = {}
-    for group in trace_events.subevents:
-        if group.label not in root_to_group:
-            root_to_group[group.label] = []
-        root_to_group[group.label].append(group)
+    for transaction in transactions:
+        if transaction.Label() not in root_to_group:
+            root_to_group[transaction.Label()] = []
+        root_to_group[transaction.Label()].append(transaction)
 
     for label in root_to_group:
         root_to_group[label] = sorted(root_to_group[label],
-                                      key=lambda x: x.Span())
+                                      key=lambda x: x.Duration())
 
     out.write('<h1>Transactions</h1>\n')
     for label in root_to_group:
-        durations = [x.Span() for x in root_to_group[label]]
+        durations = [x.Duration() for x in root_to_group[label]]
         out.write('<b>WU sequence starting with %s:</b><br>' % label)
         out.write('Duration of sequence: %s\n' % (
                 DistributionString(durations)))
         out.write('<ul>\n')
-        for group in root_to_group[label]:
-          (start_time, end_time) = group.Interval()
-          out.write('<li> <a href="#%s">%s</a> %s\n' % (
-                  TimeString(start_time),
-                  RangeString(start_time, end_time),
-                  DurationString(group.Span())))
+        for transaction in root_to_group[label]:
+          out.write('<li> <a href="#%s">%s</a>\n' % (
+                  TimeString(transaction.StartTime()),
+                  DurationString(transaction.Duration())))
         out.write('</ul>\n')
 
-def RenderHTML(out, trace_events):
+def RenderHTML(out, transactions):
     """Generates HTML page showing the listed events."""
     RenderHeader(out)
     out.write('<body>\n')
 
-    RenderSummary(out, trace_events)
+    RenderSummary(out, transactions)
     out.write('<h1>Timelines</h1>\n')
-    for group in trace_events.subevents:
-        (group_start, group_end) = group.Interval()
-        RenderGroup(out, group)
+    for transaction in transactions:
+        RenderTransaction(out, transaction)
     out.write('</body></html>')
 
-def GraphvizSafeLabel(label):
+def GraphvizSafeLabel(event):
     """Generates a label that will be parsed as a single item by GraphViz."""
-    return label.replace('$', 'dollar')
+    return event.Label().replace('$', 'dollar')
 
-def RenderGraphvizEvent(out, trace_event):
-    """Output all edges from trace_event in dot style."""
-    for successor in trace_event.next_wus:
-      # Process explicit sends.
-      out.write('%s -> %s [style=bold];\n' % (
-              GraphvizSafeLabel(trace_event.label),
-              GraphvizSafeLabel(successor.label)))
-      RenderGraphvizEvent(out, successor)
+common_wus = ["timer_trigger", "wuh_join", "nop_wuh", "wuh_resource_lock"]
+common_prefixes = ["ikv_"]
 
-    for successor in trace_event.subevents:
-      # Process calls and timers.
-      if successor.is_timer:
-        # TODO(bowdidge): Consider representing timer as an edge from
-        # WU setting timer to WU receiving trigger rather than treating the
-        # timer like a WU.
-        if (len(successor.next_wus) != 1):
-            # Never saw trigger from timer.
-            continue
-        timer_successor = successor.next_wus[0]
+def IsCommon(label):
+    """Returns true if the WU in the label is an extremely common WU.
+    Common low level functions cause graphs for different transactions to get
+    tied together in inappropriate ways, so we create
+    separate nodes for these in each transaction.
+    """
+    if label in common_wus:
+        return True
+    for prefix in common_prefixes:
+        if label.startswith(prefix):
+            return True
+    return False
 
-        from_label = GraphvizSafeLabel(trace_event.label)
-        to_label = GraphvizSafeLabel(timer_successor.label)
-        # Create a node with the from/to embedded in the label so that
-        # different timers map to different nodes.
-        style = '[style=dotted]'
-        out.write('%s -> %s_to_timer_to_%s -> %s %s; \n' % (
-          from_label, from_label, to_label, to_label, style))
-        RenderGraphvizEvent(out, timer_successor)
-      else:
-        style = '[style=bold]'
-        out.write('%s -> %s %s;\n' % (
-                GraphvizSafeLabel(trace_event.label),
-                GraphvizSafeLabel(successor.label), style))
-        RenderGraphvizEvent(out, successor)
+def RenderGraphvizTransaction(out, transaction):
+    """Output all edges from trace_event in dot style.
+    The events in each transaction represent each time a function
+    was run.  For graphviz, we output only the label so duplicate
+    (predecessor, successor) pairs may be output multiple times.
+    """
+    all_nodes = transaction.Flatten()
+
+    for e in all_nodes:
+      for successor in e.successors:
+        # Process explicit sends.
+        style = "bold"
+        if successor.is_timer:
+            style = "dotted"
+        source_label = GraphvizSafeLabel(e)
+        dest_label = GraphvizSafeLabel(successor)
+
+        # Use separate node names for the common WUs so that the
+        # trees for different transactions don't get too jumbled.
+        if IsCommon(source_label):
+            source_label = '{%s [label="%s"]}' % (
+                source_label + '_' + transaction.label,
+                source_label)
+        if IsCommon(dest_label):
+            dest_label = '{%s [label="%s" style=%s]}' % (
+                dest_label + '_' + transaction.label,
+                dest_label, style)
+        else:
+            dest_label = '%s [style=%s]' % (dest_label, style)
+
+        out.write('%s -> %s;\n' % (
+                source_label, dest_label))
 
 
-def RenderGraphviz(out, trace_events):
+def RenderGraphviz(out, transactions):
     """Generate the call graph for all events in trace_events in
     dot format used by GraphViz.
     """
     out.write('strict digraph foo {\n')
-    for group in trace_events.subevents:
-        out.write('start -> %s;\n' % ( 
-            GraphvizSafeLabel(group.label)))
-        RenderGraphvizEvent(out, group)
-    out.write('label="\\nbold: wu send\\nsolid: wu call\\ndot: timer"\n')
+    for transaction in transactions:
+        RenderGraphvizTransaction(out, transaction)
+    out.write('label="\\nbold: wu send\\ndot: timer"\n')
     out.write('}\n')
+
+def Dump(output_file, transaction):
+  """Writes a text dump to the output file describing a set of trace events."""
+  output_file.write('%s (%s): transaction "%s"\n' % (
+      RangeString(transaction.StartTime(), transaction.EndTime()),
+      DurationString(transaction.Duration()),
+      transaction.label))
+  worklist = transaction.Flatten()
+  for event in worklist:
+    output_file.write('+ %s (%s): %s\n' % (RangeString(event.start_time, event.end_time),
+                                           DurationString(event.Duration()),
+                                           event.label))
+
+def DumpTransactions(output_file, transactions):
+  """Writes a text dump to the output file describing a set of traced transactions."""
+  for tr in transactions:
+    Dump(output_file, tr)
+

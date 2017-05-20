@@ -40,18 +40,6 @@ import render
 
 DEBUG = False
 
-def Dump(output_file, group, indent):
-  """Returns a text dump for a set of trace events."""
-  indentSpaces = ' ' * indent
-  output_file.write('%s + %s (%s) (%s): %s\n' % (indentSpaces,
-                                                 render.RangeString(group.start_time, group.end_time),
-                                                 render.DurationString(group.Duration()),
-                                                 render.DurationString(group.Span()),group.label))
-  for next_wu in sorted(group.next_wus):
-    Dump(output_file, next_wu, indent)
-  for subevent in sorted(group.subevents):
-    Dump(output_file, subevent, indent + 2)
-
 def ParseLogLine(line, file, line_number):
   """Parses a single log line from --wulog.
   Returns a tuple of (dictionary of key-value pairs, error) where
@@ -59,7 +47,7 @@ def ParseLogLine(line, file, line_number):
   if the line represented a WU log entry.
   """
   values = {}
-  match = re.match('([0-9]+).([0-9]+) faddr (VP[0-9].[0-9].[0-9]) ([A-Z_]+) ([A-Z_]+)', line)
+  match = re.match('([0-9]+).([0-9]+) faddr (VP[0-9]+.[0-9]+.[0-9]+) ([A-Z_]+) ([A-Z_]+)', line)
   if not match:
     # Not a log line, but not an error either.
     return (None, None)
@@ -154,56 +142,65 @@ def ParseLogLine(line, file, line_number):
 
 
 class TraceParser:
-  def __init__(self, input_file):
-    # Map from frame pointer to a pair of (previous event, true if call)
-    self.frame_to_caller = {}
-    # Map from timer id to group
-    self.timer_to_caller = {}
-    self.timer_to_start_time = {}
-    # Maps VP to the currently running WU on that VP.
-    self.vp_to_event = {}
-    self.input_file = input_file
+  """Converts event start/stop messages into sequences of events grouped by transaction."""
 
-    self.root_event = event.TraceEvent(999999999999999999, 0, 'top', '-')
-    self.root_event.is_root = True
+  def __init__(self, input_filename):
+    # Map from (arg0, arg1) from a WU send to the event that triggered the send.
+    self.frame_to_caller = {}
+
+    # Map from timer id to the event setting the timer.
+    self.timer_to_caller = {}
+
+    # Map from timer id to the time the timer was set.  For setting start_time for event.
+    self.timer_to_start_time = {}
+
+    # Map from VP to the currently running WU on that VP.
+    self.vp_to_event = {}
+
+    # String name of the file which is being read.
+    self.input_filename = input_filename
+
+    boot_event =  event.TraceEvent(0, 0, 'boot', None)
+    self.boot_transaction = event.Transaction(boot_event)
+    self.transactions = [self.boot_transaction]
 
   def HandleLogLine(self, log_keywords, line_number):
     """Reads in each logging event, and creates or updates any log events."""
     timestamp = log_keywords['timestamp']
     vp = log_keywords['vp']
 
-    if self.root_event.start_time > timestamp:
-      self.root_event.start_time = timestamp
-
-    if self.root_event.end_time < timestamp:
-      self.root_event.end_time = timestamp
-
     event_type = (log_keywords['verb'], log_keywords['noun'])
     if event_type == ('WU', 'START'):
-      # Identify the request (or timer action) that this WU is part of.
+      arg0 = log_keywords['arg0']
+      arg1 = log_keywords['arg1']
+
       current_event = event.TraceEvent(timestamp, timestamp, log_keywords['name'], vp)
       self.vp_to_event[vp] = current_event
 
-      arg0 = log_keywords['arg0']
-      arg1 = log_keywords['arg1']
-      is_call = False
-      if arg0 is not 0 and arg0 in self.frame_to_caller:
-        (prev, is_call)  = self.frame_to_caller[arg0]
-        del self.frame_to_caller[arg0]
-      elif arg1 in self.frame_to_caller:
-        (prev, is_call) = self.frame_to_caller[arg1]
-        del self.frame_to_caller[arg1]
+      if (arg0, arg1) in self.frame_to_caller:
+        # Regular send.  Connect to caller.
+        predecessor = self.frame_to_caller[(arg0, arg1)]
+        current_event.transaction = predecessor.transaction
+        predecessor.successors.append(current_event)
+
+      elif log_keywords['name'] == 'wuh_mp_notify':
+        # Bootstrap process. Connect to fake event.
+        current_event.transaction = self.boot_transaction
+        self.boot_transaction.root_event.successors.append(current_event)
+        if self.boot_transaction.root_event.start_time is None:
+          self.boot_transaction.root_event.start_time = timestamp
+          self.boot_transaction.root_event.end_time = timestamp
+
       else:
-        prev = self.root_event
-      if is_call or prev.is_root:
-        prev.AddSubevent(current_event)
-      else:
-        prev.AddNext(current_event)
+        # New event not initiated by a previous WU.
+        transaction = event.Transaction(current_event)
+        self.transactions.append(transaction)
+        current_event.transaction = transaction
 
     elif event_type == ('WU', 'END'):
       # Identify the matching start event, and set the end time.
       if vp not in self.vp_to_event:
-        sys.stderr.write('%s:%d: unexpected end\n' % (self.input_file, line_number))
+        sys.stderr.write('%s:%d: unexpected end\n' % (self.input_filename, line_number))
         return
 
       current_event = self.vp_to_event[vp]
@@ -212,64 +209,39 @@ class TraceParser:
       if current_event is None:
         sys.stderr.write('Line %d: unknown end\n' % line_number)
         return
-
       current_event.end_time = timestamp
-
     elif event_type == ('WU', 'SEND'):
       # Use arg0, the flow pointer, to match up the send with the WU when it starts.
-
       arg0 = log_keywords['arg0']
+      arg1 = log_keywords['arg1']
 
-      prev = None
-      is_call = False
+      curr = None
       if vp in self.vp_to_event:
-        prev = self.vp_to_event[vp]
-      elif arg0 in self.frame_to_caller:
-        # Send from timer_trigger.
-        (prev, is_call) = self.frame_to_caller[arg0]
-      else:
-        sys.stderr.write('%s:%d: Send from unknown WU.\n' % (self.input_file, line_number))
-        return
-      self.frame_to_caller[arg0] = (prev, is_call)
+        curr = self.vp_to_event[vp]
+        self.frame_to_caller[(arg0, arg1)] = curr
 
     elif event_type == ('WU', 'CALL'):
-      arg0 = log_keywords['arg0']
-
-      # Previous WU SEND should be treated as sub-call
-      if vp not in self.vp_to_event:
-        sys.stderr.write('%s:%s: unknown vp in send\n' % (self.input_file, line_number))
-        return
-
-      if arg0 not in self.frame_to_caller:
-        sys.stderr.write("%s:%d: unexpected call: had not seen frame in previous send.  arg0 is %s" % (self.input_file, line_number, arg0))
-        return
-      (prev, is_call) = self.frame_to_caller[arg0]
-      if is_call:
-        sys.stderr.write("%s:%d: unexpected call: parent is %s" % (self.input_file, line_number, call_info.caller_event))
-      self.frame_to_caller[arg0] = (prev, True)
+      # Ignore.  Calls don't say anything about control flow; knowing whether something is
+      # a continuation is a better signal for part of transaction vs. sub-part.
+      pass
 
     elif event_type == ('HU', 'SQ_DBL'):
-      # Create new standalone event.
-      sqid = log_keywords['sqid']
-      hu0_id = 16
-      vp = "VP%d.0.%d" % (hu0_id, sqid)
-
-      current_event = event.TraceEvent(timestamp, timestamp, 'Doorbell', '-')
-      # TODO(bowdidge): Save event.
-      # TODO(bowdidge): How to map to start of WUs?
+      label = 'HU doorbell: sqid=%d' % log_keywords['sqid']
+      current_event = event.TraceEvent(timestamp, timestamp, "HU doorbell: sqid=%d", vp)
+      transaction = event.Transaction(current_event)
+      self.transactions.append(transaction)
+      current_event.transaction = transaction
 
     elif event_type == ('TIMER', 'START'):
-      # Use arg0 to remember which WU starts as a result of this timer.
       arg0 = log_keywords['arg0']
       timer = log_keywords['timer']
-
       if vp not in self.vp_to_event:
-        sys.stderr.write('%s:%d: unknown vp in send\n' % (self.input_file, line_number))
+        sys.stderr.write('%s:%d: unknown vp in send\n' % (self.input_filename, line_number))
         return
 
       current_event = self.vp_to_event[vp]
       if current_event is None:
-        sys.stderr.write('%s:%d: unsure what WU started timer.\n' % (self.input_file, line_number))
+        sys.stderr.write('%s:%d: unsure what WU started timer.\n' % (self.input_filename, line_number))
         return
       self.timer_to_caller[timer] = current_event
       self.timer_to_start_time[timer] = timestamp
@@ -280,33 +252,36 @@ class TraceParser:
 
       if timer not in self.timer_to_caller:
         sys.stderr.write('%s:%d: unknown timer id %s\n' % (
-            self.input_file, line_number, timer))
+            self.input_filename, line_number, timer))
         return
-      group = self.timer_to_caller[timer]
+
+      prev = self.timer_to_caller[timer]
       current_event = event.TraceEvent(timestamp, timestamp, 'timer_trigger', vp)
       current_event.is_timer = True
-      current_event.timerStart = int(self.timer_to_start_time[timer])
+      current_event.transaction = prev.transaction
+      current_event.timer_start = int(self.timer_to_start_time[timer])
+      prev.successors.append(current_event)
+      # TODO(bowdidge): True?
       self.vp_to_event[vp] = current_event
-      group.AddSubevent(current_event)
 
-      self.frame_to_caller[arg0] = (current_event, True)
+      self.frame_to_caller[(arg0, 0)] = current_event
       del self.timer_to_caller[timer]
 
     elif event_type == ('TRANSACTION', 'START'):
-      if vp not in self.vp_to_event:
-        sys.stderr.write('%s:%d: TRANSACTION START does not match running WU on %s' % (
-            self.input_file, line_number, vp))
-        return
-      current = self.vp_to_event[vp]
-      assert(current is not None)
-      assert(current.parent is not None)
+       if vp not in self.vp_to_event:
+         sys.stderr.write('%s:%d: TRANSACTION START does not match running WU on %s' % (
+             self.input_filename, line_number, vp))
+         return
+       current_event = self.vp_to_event[vp]
 
-      if not current.parent.is_root:
-        # TODO(bowdidge): Consider creating shadow object so move is visible.
-        current.parent.RemoveChild(current)
-        self.root_event.AddSubevent(current)
+       if current_event.transaction:
+         current_event.transaction.Remove(current_event)
+       new_transaction = event.Transaction(current_event)
+       current_event.transaction = new_transaction
+       self.transactions.append(new_transaction)
+
     else:
-      sys.stderr.write('%s:%d: Invalid verb/noun %s %s\n' % (input_file, line_number,
+      sys.stderr.write('%s:%d: Invalid verb/noun %s %s\n' % (input_filename, line_number,
                                                            log_keywords['verb'], log_keywords['noun']))
       return
 
@@ -326,7 +301,7 @@ def ParseFile(lines, input_filename):
       continue
     trace_parser.HandleLogLine(log_keywords, line_number)
 
-  return trace_parser.root_event
+  return trace_parser.transactions
 
 def main(argv):
   global DEBUG
@@ -348,20 +323,29 @@ def main(argv):
   if args.format is not None:
     if args.format not in ['text', 'html', 'graphviz']:
       sys.stderr.write(
-        'Unknown option %s to --output.  Must be text, html, graphviz.\n')
+        'Unknown option %s to --format.  Must be text, html, graphviz.\n')
       exit(1)
 
-  trace_events = ParseFile(open(input_filename), input_filename)
-  if len(trace_events.subevents) == 0:
-    sys.stderr.write('No trace events found in file.\n')
-    exit(1)
+  transactions = ParseFile(open(input_filename), input_filename)
+
+  out_file = sys.stdout
+  if args.output is not None:
+    out_file = open(args.output[0], 'w')
+
+  # Hack: Update start and end time on fake event on boot.
+  boot_events = transactions[0].Flatten()
+  transactions[0].root_event.start_time = min({e.start_time for e in boot_events if e.start_time != 0})
+  transactions[0].root_event.end_time = min({e.end_time for e in boot_events if e.end_time != 0})
 
   if args.format == 'text':
-    Dump(sys.stdout, trace_events, 0)
+    for tr in transactions:
+      render.Dump(out_file, tr, 0)
+      print('\n')
   elif args.format == 'graphviz':
-    render.RenderGraphviz(sys.stdout, trace_events)
+    render.RenderGraphviz(out_file, transactions)
   elif args.format is None or args.format == 'html':
-    render.RenderHTML(sys.stdout, trace_events)
+    render.RenderHTML(out_file, transactions)
+  out_file.close()
 
 
 if __name__ == '__main__':
