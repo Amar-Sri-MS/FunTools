@@ -1,7 +1,7 @@
 # goal: Make this file aware of different file formats and have the tprs.py
 # code stay stable
 
-import re, json
+import re, json, numpy
 
 trace_fmt = 'PDT'
 if trace_fmt == 'SIM':
@@ -60,8 +60,10 @@ def data_section_start(dasm_line):
 #	{name: func1, dist: {1: 2, 2:1, ...} // dist is cycle count and number of occurrences
 #	XXX TBD: average, max, min, isspecial
 #
-def output_html(data, fname):
+def output_html(dataset, fname):
 	newdict = {}
+
+	data = dataset[0]
 
 	newdict["name"] = "Michael"
 	newdict["setup"] = {"runs": 5}
@@ -70,6 +72,10 @@ def output_html(data, fname):
 	for funcname in data.keys():
 		cntdict = {"name":funcname}
 		cntdict["dist"] = {}
+		cntdict["avg"] = sum(data[funcname])/len(data[funcname])
+		cntdict["min"] = min(data[funcname])
+		cntdict["max"] = max(data[funcname])
+		cntdict["std"] = numpy.std(data[funcname])
 
 		for el in data[funcname]:
 			if el in cntdict["dist"].keys():

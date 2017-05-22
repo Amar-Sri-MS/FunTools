@@ -96,6 +96,7 @@ def read_trace(trace_fname, ranges, filter_vp, reverse_order, filterlist):
 				# XXX !! make sure we're not double counting idles
 				if entry.get_func() == "idle":
 					idles = idles + entry.get_ccount()
+					#print "Adding %s idles:\t%s" % (entry.get_ccount(), line)
 
 				if entry.get_func() in filterlist:
 					continue
@@ -189,7 +190,7 @@ def read_trace(trace_fname, ranges, filter_vp, reverse_order, filterlist):
 	statf.write(json.dumps(funcstats[0]))
 	statf.close()
 
-	tutils.output_html(funcstats[0], 'stats2.json')
+	tutils.output_html(funcstats, 'stats2.json')
 
 	print "Total cycles: %s" % cycles[0]
 	print "Time elapsed @ 1GHz: %s seconds (%s ms)" % (cycles[0]/float(1000000000), (cycles[0]/float(1000000)))

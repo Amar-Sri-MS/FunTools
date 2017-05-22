@@ -40,6 +40,6 @@ if __name__ == "__main__":
 	f.close()
 
 	#filter_tree(funtrc, "int2base",10)
-	#filter_tree(funtrc, "verif_issue_loop",10)
+	filter_tree(funtrc[0], "verif_issue_loop",1)
 	#print ""
-	funtrc[int(options.vp)].print_tree(0)
+	#funtrc[int(options.vp)].print_tree(0)
