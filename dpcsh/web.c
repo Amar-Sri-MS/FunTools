@@ -168,8 +168,7 @@ void format_size(char* buf, struct stat *stat){
 
 void handle_json_request(int out_fd, char *jbuf, int jsize)
 {
-    char buf[MAXLINE], m_time[32], size[16];
-    struct stat statbuf;
+    char buf[MAXLINE];
     sprintf(buf, "HTTP/1.1 200 OK\r\n%s",
             "Content-Type: application/json\r\n\r\n");
 	
@@ -215,7 +214,7 @@ void handle_directory_request(int out_fd, int dir_fd, char *filename){
     closedir(d);
 }
 
-static const char* get_mime_type(char *filename){
+const char* get_mime_type(char *filename){
     char *dot = strrchr(filename, '.');
     if(dot){ // strrchar Locate last occurrence of character in string
         mime_map *map = meme_types;
@@ -344,7 +343,6 @@ void process(int jsock, int out_fd, struct sockaddr_in *clientaddr)
     http_request req;
     parse_request(out_fd, &req);
 
-    struct stat sbuf;
     int status = 200;
     int r;
 
@@ -368,8 +366,6 @@ int run_webserver(int jsock, int port)
     int default_port = port,
         listenfd,
         connfd;
-    char buf[256];
-    char *path = getcwd(buf, 256);
     socklen_t clientlen = sizeof clientaddr;
 
     listenfd = open_listenfd(default_port);
