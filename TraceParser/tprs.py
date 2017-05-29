@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 # external libs
-import sys, pickle, json
+import sys, pickle, json, os
 
 # specific imports
 from optparse import OptionParser
@@ -182,28 +182,25 @@ def read_trace(trace_fname, ranges, filter_vp, reverse_order, filterlist):
 			sc = roots[i].sanitycheck()
 			print "Sanity check for VP %s: %s" % (i, sc)
 		else:
+			roots.append(None)
 			print "No tree available for VP %s" % i
 
 	print_stats(funcstats[0])
 
-	statf = open('stats.json', 'w')
-	statf.write(json.dumps(funcstats[0]))
-	statf.close()
+	#statf = open('stats.json', 'w')
+	#statf.write(json.dumps(funcstats[0]))
+	#statf.close()
 
-	tutils.output_html(funcstats, 'stats2.json')
+	#tutils.output_html(funcstats, 'stats2.json')
 
 	print "Total cycles: %s" % cycles[0]
 	print "Time elapsed @ 1GHz: %s seconds (%s ms)" % (cycles[0]/float(1000000000), (cycles[0]/float(1000000)))
 	print "Max call depth: TBD"
 	print "Total idles: %s" % idles
 
-	# XXX
-	f = open('fundata', 'w')
-	pickle.dump(roots, f)
-	f.close()
-	# XXX
+	#roots.append(funcstats)
 
-	return []
+	return roots
 
 def print_funcs(ranges):
 
@@ -230,6 +227,8 @@ if __name__ == "__main__":
 	parser.add_option("-v", "--vpid", dest="vpid", help="VP to show (omit to show all)", default=15)
 	parser.add_option("-r", "--reverse", dest="reverse_order", help="order last instruction first", action="store_true")
 	parser.add_option("-f", "--filter", dest="filter_f", help="filter file", metavar="FILE")
+	parser.add_option("-c", "--core", dest="core_id", help="Core ID")
+	parser.add_option("-d", "--data", dest="data_f", help="Data folder", metavar="FOLDER")	
 
 	(options, args) = parser.parse_args()
 
@@ -239,6 +238,18 @@ if __name__ == "__main__":
 
 	ranges = create_range_list(options.asm_f)
 	filterlist = ["idle", "sync", "mode"] # XXX we shouldn't need this, it should be handled by is_instruction (to be renamed)
+
+	core_id = 0
+
+	if options.core_id != None:
+		core_id = int(options.core_id)
+
+	dst = ''
+	if options.data_f != None:
+		dst = os.path.abspath(options.data_f)
+		if not os.path.exists(dst):
+			print "Invalid folder for dst"
+			sys.exit(1)
 
 	if options.trc_f is None:
 		print_funcs(ranges)
@@ -256,6 +267,11 @@ if __name__ == "__main__":
 		print "Reverse order not currently supported, my apologies."
 		sys.exit(0)
 
-	table = read_trace(options.trc_f, ranges, int(options.vpid), options.reverse_order, filterlist)
+	data = read_trace(options.trc_f, ranges, int(options.vpid), options.reverse_order, filterlist)
 
+	# XXX
+	f = open(os.path.join(dst, 'fundata_c%s' % core_id), 'w')
+	pickle.dump(data, f)
+	f.close()
+	# XXX
 
