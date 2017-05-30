@@ -139,19 +139,13 @@ static int getline_with_history(OUT char **line, OUT size_t *capa) {
     }
 }
 
-static void _do_interactive(int sock) {
-    char *line = NULL;
-    size_t capa = 0;
-    ssize_t read;
-    uint64_t tid = 1;
-    static struct termios tios;
-    tcgetattr(STDIN_FILENO, &tios);
-    tios.c_lflag &= ~(ICANON | ECHO);          
-    tcsetattr(STDIN_FILENO, TCSANOW, &tios);
-    while ((read = getline_with_history(&line, &capa)) > 0) {
-	if ((read == 1) && (line[0] == '\n')) continue; // skip blank lines
+static void _do_process_cmd(int sock, char *line, ssize_t read, uint64_t *tid)
+{
+
+	if ((read == 1) && (line[0] == '\n')) return; // skip blank lines
+
 	const char *error;
-        struct fun_json *json = fun_commander_line_to_command(line, &tid, &error);
+        struct fun_json *json = fun_commander_line_to_command(line, tid, &error);
         if (!json) {
             printf("could not parse: %s\n", error);
             return;
@@ -182,7 +176,22 @@ static void _do_interactive(int sock) {
         }
         fun_json_printf("output => %s\n", output);
         fun_json_release(output);
+}
+
+static void _do_interactive(int sock) {
+    char *line = NULL;
+    size_t capa = 0;
+    ssize_t read;
+    uint64_t tid = 1;
+    static struct termios tios;
+    tcgetattr(STDIN_FILENO, &tios);
+    tios.c_lflag &= ~(ICANON | ECHO);          
+    tcsetattr(STDIN_FILENO, TCSANOW, &tios);
+
+    while ((read = getline_with_history(&line, &capa)) > 0) {
+	_do_process_cmd(sock, line, read, &tid);
     }
+
     free(line);
 }
 
@@ -242,15 +251,42 @@ int json_handle_req(int jsock, const char *path, char *buf, int *size) {
 
 #define PORTNO 9001
 
+#define nelm(n)	(sizeof(n)/sizeof(n[0]))
+char *help_str[] = {
+	"--help:	you know",
+	"--proxy:	webproxy",
+	"--nocli:	no cli mode, type cmd as arg"
+};
+
+void
+help(void)
+{
+	int i;
+	printf("Help:\n");
+	for (i = 0; i < nelm(help_str); i++) {
+		printf("\t%s\n", help_str[i]);
+	}
+}
+
 int
 main(int argc, char *argv[])
 {
 	int sock;
 	int proxy_mode = 0;
+	int interractive_mode = 1;
 	
-	if ((argc == 2)
-	    && (strcmp(argv[1], "--proxy") == 0))
-		proxy_mode = 1;
+	if (argc >= 2) {
+	    if (strcmp(argv[1], "--proxy") == 0) {
+			proxy_mode = 1;
+		}
+		else if (strcmp(argv[1], "--help") == 0) {
+			help();
+			return 0;
+		}
+		else if (argc > 2 && strcmp(argv[1], "--nocli") == 0) {
+			interractive_mode = 0;
+		}
+	}
 	
 	printf("FunOS Dataplane Control Shell%s\n",
 	       proxy_mode ? ": proxy mode" : "");
@@ -261,8 +297,31 @@ main(int argc, char *argv[])
 	    printf("*** Can't open socket\n");
 	    exit(1);
 	}
-	if (!proxy_mode)
-		_do_interactive(sock);
-	else
+	if (proxy_mode) {
 		run_webserver(sock, PORTNO);
+		return 0;
+	}
+
+	if (interractive_mode) {
+		_do_interactive(sock);
+		return 0;
+	}
+
+	uint64_t tid = 1;
+	int i, n;
+	ssize_t len;
+	char buf[512];
+
+	n = 0;
+	for (i = 2; i < argc; i++) {
+		n += snprintf(buf + n, sizeof(buf) - n, "%s ", argv[i]); 
+		printf("buf=%s n=%d\n", buf, n);
+	}
+
+	len = strlen(buf);
+	buf[--len] = 0;	// trim the last space
+	printf(">> single cmd [%s] len=%zd\n", buf, len);
+	_do_process_cmd(sock, buf, len, &tid);
+
+	return 0;
 }
