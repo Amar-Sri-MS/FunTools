@@ -144,15 +144,13 @@ static void _do_process_cmd(int sock, char *line, ssize_t read, uint64_t *tid)
 
 	if ((read == 1) && (line[0] == '\n')) return; // skip blank lines
 
-        struct fun_json *json = fun_commander_line_to_command(line, tid);
+	const char *error;
+        struct fun_json *json = fun_commander_line_to_command(line, tid, &error);
         if (!json) {
-            printf("could not parse\n");
+            printf("could not parse: %s\n", error);
             return;
         }
-        char *pp2;
-        pp2 = fun_json_to_text(json);
-        printf("input => %s\n", pp2);
-        free(pp2);
+        fun_json_printf("input => %s\n", json);
         bool ok = fun_json_write_to_fd(json, sock);
 	if (!ok) {
 	    // try to reopen pipe
@@ -176,9 +174,7 @@ static void _do_process_cmd(int sock, char *line, ssize_t read, uint64_t *tid)
             printf("invalid json returned\n");
             return;
         }
-        pp2 = fun_json_to_text(output);
-        printf("output => %s\n", pp2);
-        free(pp2);
+        fun_json_printf("output => %s\n", output);
         fun_json_release(output);
 }
 
@@ -191,7 +187,6 @@ static void _do_interactive(int sock) {
     tcgetattr(STDIN_FILENO, &tios);
     tios.c_lflag &= ~(ICANON | ECHO);          
     tcsetattr(STDIN_FILENO, TCSANOW, &tios);
-
     while ((read = getline_with_history(&line, &capa)) > 0) {
 	_do_process_cmd(sock, line, read, &tid);
     }
@@ -216,16 +211,13 @@ int json_handle_req(int jsock, const char *path, char *buf, int *size) {
 		path = "\"\"";
 	
 	snprintf(line, MAXLINE, "peek %s", path);
-	
-        struct fun_json *json = fun_commander_line_to_command(line, &tid);
+	const char *error;
+        struct fun_json *json = fun_commander_line_to_command(line, &tid, &error);
         if (!json) {
-		printf("could not parse '%s'\n", line);
+		printf("could not parse '%s': %s\n", line, error);
 		return -1;
         }
-        char *pp2;
-        pp2 = fun_json_to_text(json);
-        printf("input => %s\n", pp2);
-        free(pp2);
+        fun_json_printf("input => %s\n", json);
         bool ok = fun_json_write_to_fd(json, jsock);
         fun_json_release(json);
         if (!ok)
@@ -237,7 +229,7 @@ int json_handle_req(int jsock, const char *path, char *buf, int *size) {
             printf("invalid json returned\n");
             return -1;
         }
-        pp2 = fun_json_to_text(output);
+        char *pp2 = fun_json_to_text(output);
         printf("output => %s\n", pp2);
 
 	if (!pp2)
