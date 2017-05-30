@@ -139,7 +139,7 @@ static NULLABLE CALLER_TO_RELEASE struct fun_json *do_peek(int sock, const char 
     sprintf(input_text, template, tid++, key_path);
     struct fun_json *input = fun_json_create_from_text(input_text);
     if (!input) {
-        printf("*** Can't parse command '%s'\n", fun_json_to_text(input));
+        fun_json_printf("*** Can't parse command '%s'\n", input);
         return NULL;
     }
     bool ok = fun_json_write_to_fd(input, sock);
@@ -177,8 +177,8 @@ static int compare_by_count(void *map_context, void *per_call_context, fun_map_k
 static CALLER_TO_RELEASE struct fun_json *sort_wu_stats_by_count(struct fun_json *wu_stats, struct fun_json *previous, struct fun_json *durations) {
     assert(wu_stats->type == fun_json_dict_type);
     struct compare_by_count_context con = { .this = wu_stats, .previous = previous };
-    fun_map_key_t *keys = fun_map_sorted_keys(wu_stats->dict, &con, compare_by_count);
-    size_t c = fun_map_count(wu_stats->dict);
+    size_t c;
+    fun_map_key_t *keys = fun_map_sorted_keys(wu_stats->dict, &c, &con, compare_by_count);
     const struct fun_json **items = calloc(c, sizeof(void *));
     for (size_t i = 0; i < c; i++) {
         const char *key = (void *)keys[i];
