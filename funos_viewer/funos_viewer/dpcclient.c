@@ -60,9 +60,7 @@ void dpcclient_test(void) {
         printf("*** invalid json returned in dpcclient_test()\n");
         return;
     }
-    char *pp2 = fun_json_to_text(output);
-    printf("output => %s\n", pp2);
-    free(pp2);
+    fun_json_printf("output => %s\n", output);
     fun_json_release(output);
 }
 
