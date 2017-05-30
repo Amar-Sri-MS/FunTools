@@ -10,6 +10,15 @@ import unittest
 import render
 import wu_trace
 
+def firstTransaction(transactions):
+  """Returns the first transaction parsed, or None if no transaction was parsed.
+  The transactions list reserves the 0th transaction for the bootstrap code, so
+  transactions[1] would be the first transaction.
+  """
+  if len(transactions) < 2:
+    return None
+  return transactions[1]
+
 class TestParser(unittest.TestCase):
 
   def testNotALogLine(self):
@@ -81,17 +90,17 @@ class TestParser(unittest.TestCase):
   def testStartEnd(self):
     log = ["1.000100 faddr VP0.0.0 WU START src VP0.0.0 dest VP0.0.0 id 0x1 name my_wu arg0 1 arg1 2",
            "1.000200 faddr VP0.0.0 WU END id 0x1 name my_wu arg0 1 arg1 2"]
-    root_event = wu_trace.ParseFile(log, "foo.trace")
+    transactions = wu_trace.ParseFile(log, "foo.trace")
 
-    self.assertIsNotNone(root_event)
-    self.assertEqual(1, len(root_event.subevents))
-    self.assertEqual(0, len(root_event.next_wus))
+    self.assertIsNotNone(transactions)
+    tr = firstTransaction(transactions)
+    self.assertIsNotNone(tr)
+    self.assertEqual(1, len(tr.Flatten()))
 
-    event = root_event.subevents[0]
-    self.assertEqual(100, event.Duration())
-    self.assertEqual(1000100, event.start_time)
-    self.assertEqual("my_wu", event.label)
-    self.assertEqual(0, len(event.subevents))
+    self.assertEqual(100, tr.root_event.Duration())
+    self.assertEqual(1000100, tr.root_event.start_time)
+    self.assertEqual("my_wu", tr.root_event.label)
+    self.assertEqual(0, len(tr.root_event.successors))
 
   def testSendGroupsWithEvent(self):
     log = ["1.000100 faddr VP0.0.0 WU START src VP0.0.0 dest VP0.0.0 id 0x1 name my_wu arg0 1 arg1 2",
@@ -99,13 +108,12 @@ class TestParser(unittest.TestCase):
            "1.000200 faddr VP0.0.0 WU END id 0x1 name my_wu arg0 1 arg1 2",
            "1.000300 faddr VP0.0.0 WU START src VP0.0.0 dest VP0.0.0 id 0x2 name sent_wu arg0 1 arg1 1",
            "1.004000 faddr VP0.0.0 WU END id 0x2 name sent_wu arg0 1 arg1 2"]
-    root_event = wu_trace.ParseFile(log, "foo.trace")
-    wu_trace.Dump(sys.stdout, root_event, 0)
-    self.assertIsNotNone(root_event)
+    transactions = wu_trace.ParseFile(log, "foo.trace")
+    tr = firstTransaction(transactions)
+    render.DumpTransactions(sys.stdout, transactions)
+    self.assertIsNotNone(tr)
 
-    self.assertEqual(1, len(root_event.subevents))
-    my_wu = root_event.subevents[0]
-    self.assertEqual(1, len(my_wu.next_wus))
+    self.assertEqual(1, len(tr.root_event.successors))
 
 
   def testTriggerTimer(self):
@@ -115,12 +123,13 @@ class TestParser(unittest.TestCase):
            "1.000250 faddr VP0.0.0 TIMER TRIGGER timer 0x1 arg0 0x2",
            "1.000300 faddr VP0.0.0 WU START src VP0.0.0 dest VP0.0.0 id 0x2 name sent_wu arg0 0x2 arg1 0",
            "1.004000 faddr VP0.0.0 WU END id 0x2 name sent_wu arg0 1 arg1 2"]
-    root_event = wu_trace.ParseFile(log, "foo.trace")
+    transactions = wu_trace.ParseFile(log, "foo.trace")
 
-    self.assertIsNotNone(root_event)
-    self.assertEqual(1, len(root_event.subevents))
-    event = root_event.subevents[0]
-    self.assertEqual(1, len(event.subevents))
+    self.assertIsNotNone(transactions)
+    self.assertEqual(2, len(transactions))
+    tr = firstTransaction(transactions)
+
+    self.assertEqual(1, len(tr.root_event.successors))
 
   def testCall(self):
     log = ["1.000100 faddr VP0.0.0 WU START src VP0.0.0 dest VP0.0.0 id 0x1 name fun_a arg0 1 arg1 2",
@@ -132,26 +141,25 @@ class TestParser(unittest.TestCase):
            "1.004000 faddr VP0.0.0 WU END id 0x2 name fun_a_a arg0 1 arg1 2",
            "1.000300 faddr VP0.0.0 WU START src VP0.0.0 dest VP0.0.0 id 0x3 name fun_a_b arg0 12 arg1 13",
            "1.004000 faddr VP0.0.0 WU END id 0x3 name fun_a_b arg0 1 arg1 2"]
-    root_event = wu_trace.ParseFile(log, "foo.trace")
-    wu_trace.Dump(sys.stdout, root_event, 0)
+    transactions = wu_trace.ParseFile(log, "foo.trace")
 
-    self.assertIsNotNone(root_event)
-    # TODO(bowdidge): Should separate next vs. subevent.
-    self.assertEqual(1, len(root_event.subevents))
-    event = root_event.subevents[0]
-    self.assertEqual(1, len(event.subevents))
+    tr = firstTransaction(transactions)
+    self.assertIsNotNone(tr)
+    self.assertEqual(1, len(tr.root_event.successors))
 
   def testTopLevelTransaction(self):
     log = ["1.00100 faddr VP0.0.0 WU START src VP0.0.0 dest VP0.0.0 id 1 name fun_a arg0 1 arg1 2",
            "1.00200 faddr VP0.0.0 TRANSACTION START",
            "1.00300 faddr VP0.0.0 WU END id 1 name fun_a arg0 1 arg1 2"
            ]
-    root_event = wu_trace.ParseFile(log, "foo.trace")
-    wu_trace.Dump(sys.stdout, root_event, 0)
-    self.assertIsNotNone(root_event)
-    self.assertEqual(1, len(root_event.subevents))
+    transactions = wu_trace.ParseFile(log, "foo.trace")
+    self.assertEqual(3, len(transactions))
 
-  def testRecursionToIteration(self):
+    tr = transactions[2]
+    self.assertIsNotNone(tr.root_event)
+    self.assertEqual(0, len(tr.root_event.successors))
+
+  def testChainOfTransactions(self):
       trace = """
 0.000001 faddr VP0.0.0 WU START src VP0.0.0 dest VP0.0.0 id 0 name foo arg0 0 arg1 0
 0.000002 faddr VP0.0.0 TIMER START timer 0x1 value 0x1 arg0 0x1
@@ -169,11 +177,29 @@ class TestParser(unittest.TestCase):
 0.000012 faddr VP0.0.0 TIMER START timer 0x1 value 0x1 arg0 0x3
 0.000013 faddr VP0.0.0 WU END id 0 name foo arg0 0x2 arg1 0
 0.000014 faddr VP0.0.0 WU START src VP0.0.0 dest VP0.0.0 id 0 name foo arg0 0x3 arg1 0
-0.000015 faddr VP0.0.0 WU END id 0 name foo arg0 0x3 arg1 0
+0.000015 faddr VP0.0.0 TRANSACTION START
+0.000016 faddr VP0.0.0 WU END id 0 name foo arg0 0x3 arg1 0
 """
-      events = wu_trace.ParseFile(trace.split('\n'), "foo.trace")
-      wu_trace.Dump(sys.stdout, events, 0)
-      self.assertEqual(4, len(events.subevents))
+      
+      transactions = wu_trace.ParseFile(trace.split('\n'), "foo.trace")
+      output_file = FakeFile()
+      render.DumpTransactions(output_file, transactions)
+      print(output_file.lines)
+      expected = ['00.000000 - 00.000000 (0 usec): transaction "boot"\n',
+                  '+ 00.000000 - 00.000000 (0 usec): boot\n',
+                  '00.000001 - 00.000004 (3 usec): transaction "foo"\n',
+                  '+ 00.000001 - 00.000003 (2 usec): foo\n',
+                  '+ 00.000004 - 00.000004 (0 usec): timer_trigger\n',
+                  '00.000006 - 00.000009 (3 usec): transaction "foo"\n',
+                  '+ 00.000006 - 00.000008 (2 usec): foo\n',
+                  '+ 00.000009 - 00.000009 (0 usec): timer_trigger\n',
+                  '00.000011 - 00.000013 (2 usec): transaction "foo"\n',
+                  '+ 00.000011 - 00.000013 (2 usec): foo\n',
+                  '00.000000 - 00.000000 (0 usec): transaction "foo"\n',
+                  '00.000014 - 00.000016 (2 usec): transaction "foo"\n',
+                  '+ 00.000014 - 00.000016 (2 usec): foo\n']
+
+      self.assertEqual(expected, output_file.lines)
 
 
 class FakeFile:
@@ -190,14 +216,13 @@ class EndToEndTest(unittest.TestCase):
            '1.00200 faddr VP0.0.0 TRANSACTION START',
            '1.00300 faddr VP0.0.0 WU END id 1 name fun_a arg0 1 arg1 2'
            ]
-    root_event = wu_trace.ParseFile(log, "foo.trace")
+    transactions = wu_trace.ParseFile(log, "foo.trace")
     # First, make sure we can run the graphviz code.
     outputFile = FakeFile()
-    render.RenderGraphviz(outputFile, root_event)
+    render.RenderGraphviz(outputFile, transactions)
 
     expected_output = ['strict digraph foo {\n',
-                       'start -> fun_a;\n',
-                       'label="\\nbold: wu send\\nsolid: wu call\\ndot: timer"\n',                       '}\n']
+                       'label="\\nbold: wu send\\ndot: timer"\n',                       '}\n']
 
     self.assertEqual(expected_output, outputFile.lines)
 
@@ -209,17 +234,16 @@ class EndToEndTest(unittest.TestCase):
            '1.00400 faddr VP0.0.0 WU START src VP0.0.0 dest VP0.0.0 id 2 name bar arg0 2 arg1 3',
            '1.00500 faddr VP0.0.0 WU END id 2 name bar arg0 2 arg1 3'
            ]
-    root_event = wu_trace.ParseFile(log, "foo.trace")
+    transactions = wu_trace.ParseFile(log, "foo.trace")
     # First, make sure we can run the graphviz code.
     outputFile = FakeFile()
-    render.RenderGraphviz(outputFile, root_event)
+    render.RenderGraphviz(outputFile, transactions)
 
     expected_output = ['strict digraph foo {\n',
-                       'start -> fun_a;\n',
                        'fun_a -> bar [style=bold];\n',
-                       'label="\\nbold: wu send\\nsolid: wu call\\ndot: timer"\n',
+                       'label="\\nbold: wu send\\ndot: timer"\n',
                        '}\n']
-
+    
     self.assertEqual(expected_output, outputFile.lines)
 
   def testMinimalTimer(self):
@@ -242,15 +266,15 @@ class EndToEndTest(unittest.TestCase):
 0.000015 faddr VP0.0.0 WU END id 0 name foo arg0 0x3 arg1 0
 
     """.split('\n')
-    root_event = wu_trace.ParseFile(log, "foo.trace")
+    transactions = wu_trace.ParseFile(log, "foo.trace")
     output_file = FakeFile()
 
-    render.RenderGraphviz(output_file, root_event)
+    render.RenderGraphviz(output_file, transactions)
 
     # TODO(bowdidge): Check more than just length of output.
     self.assertIn('strict digraph foo {\n', output_file.lines)
-    self.assertIn('start -> foo;\n', output_file.lines)
-    self.assertIn('foo -> foo_to_timer_to_foo -> foo [style=dotted]; \n', output_file.lines)
+    self.assertIn('foo -> {timer_trigger_foo [label="timer_trigger" '
+                  + 'style=dotted]};\n', output_file.lines)
     self.assertIn('}\n', output_file.lines)
 
 if __name__ == '__main__':

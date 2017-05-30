@@ -14,7 +14,7 @@ Basic operation:
 wu_trace.py also takes the following options:
 * --format xxxx changes the output style to HTML, text, or graphviz.
 * --debug prints out status messages during parsing.
-* --output sets the output file (not connected yet.)
+* --output sets the output file.
 
 The --format flag changes the style of output.  'text' displays each
 individual sequence of events in a textual tree format.  'html' outputs
@@ -29,22 +29,8 @@ same flow pointer is used for several simultaneous WUs (such as
 passing an integer rather than an explicit flow object), then the
 analysis can be confused.
 
-# What's part of the same operation.
+# Development
 
-Describing and drawing WUs requires some way of grouping WUs related
-to a single purpose.  This falls into two categories: WUs that are
-completely unrelated (such as supporting different services), and WUs
-that represent sub-tasks of an existing WU that might deserve to be
-broken out separately.
-
-One possibly way of splitting things up is as follows:
-* WUs can be broken into transactions.
-* Transactions are either started by an incoming request, or by what
-appears to be iteration in WUs started from wuh_bootstrap.
-* From a WU at the start of the transaction, wu_send indicates a
-“next” event.  If a WU triggers more than one send, then there can be
-more than one next event.
-* Calls can be treated either as next events, or as sub-events.  Sub-events might make more sense.
-* Timer triggers, calls, and fork/joins count as sub-events for the event that triggered them.
-
-
+To test code, do:
+python trace_test.py
+python render_test.py
