@@ -187,7 +187,6 @@ static void _do_interactive(int sock) {
     tcgetattr(STDIN_FILENO, &tios);
     tios.c_lflag &= ~(ICANON | ECHO);          
     tcsetattr(STDIN_FILENO, TCSANOW, &tios);
-
     while ((read = getline_with_history(&line, &capa)) > 0) {
 	_do_process_cmd(sock, line, read, &tid);
     }
