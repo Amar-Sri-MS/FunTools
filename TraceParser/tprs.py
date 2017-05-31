@@ -60,13 +60,14 @@ def create_range_list(dasm_fname):
 def filter_addr(addr):
 	return (addr & 0xffffffffdfffffff)
 
+
 #
 #
 #
 def read_trace(trace_fname, ranges, filter_vp, reverse_order, filterlist):
 
 	# to be refined based on understanding of pipeline
-	cycles = [0,0,0,0]
+	cycles = 0
 	idles = 0
 	instr_misses = 0
 
@@ -78,22 +79,20 @@ def read_trace(trace_fname, ranges, filter_vp, reverse_order, filterlist):
 
 	# reverse order support to be re-implemented at a later date
 
-	callstack = [[],[],[],[]]
-	funcstats = [{},{},{},{}]
-
 	current_ttree = [None, None, None, None]
+
+	saved_sz = 10000000 # XXX TMP
 
 	with open(trace_fname) as infile:
 		for line in infile:
 			if tutils.is_instruction(line): # XXX rename is_instruction
 
-
 				entry = TEntry(line, 0, ranges)
 	
 				vp = entry.get_vpid()
-				cycles[vp] = cycles[vp] + entry.get_ccount()
+				cycles = cycles + entry.get_ccount()
 
-				# XXX !! make sure we're not double counting idles
+				# XXX rewrite idle handling
 				if entry.get_func() == "idle":
 					idles = idles + entry.get_ccount()
 					#print "Adding %s idles:\t%s" % (entry.get_ccount(), line)
@@ -116,14 +115,13 @@ def read_trace(trace_fname, ranges, filter_vp, reverse_order, filterlist):
 					row_val[vp+1] = entry.get_func()
 
 					if filter_vp == 15:
-						print "%16s | %19s | %06s | %32s | %32s | %32s | %32s |" % (cycles[vp], hex(row_val[0]), entry.get_op(), row_val[1], row_val[2], row_val[3], row_val[4])
+						print "%16s | %19s | %06s | %32s | %32s | %32s | %32s |" % (cycles, hex(row_val[0]), entry.get_op(), row_val[1], row_val[2], row_val[3], row_val[4])
 					elif vp == filter_vp:
-						print "%s" % (entry)
+						print "ENTRY: %s" % (entry)
 
 					if entry.get_pos() == "START":
-						callstack[vp].append(entry)
 
-						new_ttree = TTree(entry.get_func(), current_ttree[vp], cycles[vp], idles, instr_misses)
+						new_ttree = TTree(entry.get_func(), current_ttree[vp], cycles, idles, instr_misses)
 
 						if current_ttree[vp] != None:
 							current_ttree[vp].add_call(new_ttree)
@@ -131,40 +129,53 @@ def read_trace(trace_fname, ranges, filter_vp, reverse_order, filterlist):
 						current_ttree[vp] = new_ttree
 
 					else:
-						# gather stats on the function as it exits
 
-						if len(callstack[vp]) != 0:
-							top_of_stack = callstack[vp][-1]
+						need_new_node = True
 
-							while top_of_stack.get_func() != entry.get_func():
+						# 1. pop everything we can
+						if current_ttree[vp] != None:
 
-								# everything that pops gets a stat
-								current_ttree[vp].set_end_cycle(cycles[vp])
-								current_ttree[vp].set_end_idle(idles)
-								current_ttree[vp].set_end_instr_miss(instr_misses)
+							top_of_stack = current_ttree[vp]
 
-								# XXX should top of stack & current tree have same name?
+							while top_of_stack != None:
 
-								if top_of_stack.get_func() in funcstats[vp].keys():
-									funcstats[vp][top_of_stack.get_func()].append(current_ttree[vp].get_ccount())
-								else:
-									funcstats[vp][top_of_stack.get_func()] = [current_ttree[vp].get_ccount()]
-
-								callstack[vp].pop()
-								parent_ttree = current_ttree[vp].get_parent()
-
-								# we might have started in the middle of a tree, add nodes on the way up
-								if parent_ttree is None:
-									new_ttree = TTree(entry.get_func(), None, current_ttree[vp].get_start_cycle(), current_ttree[vp].get_start_idle(), current_ttree[vp].get_start_instr_miss())
-									new_ttree.add_call(current_ttree[vp])
-									current_ttree[vp] = new_ttree
-								else:
-									current_ttree[vp] = current_ttree[vp].get_parent()
-
-								if len(callstack[vp]) == 0:
+								# update end stats for all funcs that are being popped
+								if top_of_stack.get_name() == entry.get_func():
+									need_new_node = False
+									current_ttree[vp] = top_of_stack
 									break
 
-								top_of_stack = callstack[vp][-1]
+								#print "Popping function: %s" % top_of_stack.get_name()
+
+								top_of_stack.set_end_cycle(cycles)
+								top_of_stack.set_end_idle(idles)
+								top_of_stack.set_end_instr_miss(instr_misses)
+
+								top_of_stack = top_of_stack.get_parent()
+
+						# 2. If we popped all the way to no root, create a new root
+						if need_new_node == True:
+
+							new_ttree = TTree(entry.get_func(), None, cycles, idles, instr_misses)
+
+							if current_ttree[vp] != None:
+								# if we are adding a node, it is the root
+								# => it is the parent of the current root
+								ccyc = current_ttree[vp].get_start_cycle()
+								cid = current_ttree[vp].get_start_idle()
+								cim = current_ttree[vp].get_start_instr_miss()
+
+								new_ttree.add_call(current_ttree[vp].get_root())
+								new_ttree.start_cycle = current_ttree[vp].get_start_cycle()
+								new_ttree.start_idle = current_ttree[vp].get_start_cycle()
+								new_ttree.start_instr_miss = current_ttree[vp].get_start_instr_miss()
+
+								#current_ttree[vp].propagate_start(ccyc, cid, cim)
+
+							current_ttree[vp] = new_ttree
+					
+					#if vp == filter_vp:
+					#	current_ttree[vp].get_root().print_tree(0)
 
 
 				last_address[vp] = entry.get_addr()
@@ -177,7 +188,7 @@ def read_trace(trace_fname, ranges, filter_vp, reverse_order, filterlist):
 
 	for i in range(0,4):
 		if current_ttree[i] != None:
-			current_ttree[i].propagate_up(cycles[i], idles, instr_misses)
+			current_ttree[i].propagate_up(cycles, idles, instr_misses)
 			roots.append(current_ttree[i].get_root())
 			sc = roots[i].sanitycheck()
 			print "Sanity check for VP %s: %s" % (i, sc)
@@ -185,35 +196,33 @@ def read_trace(trace_fname, ranges, filter_vp, reverse_order, filterlist):
 			roots.append(None)
 			print "No tree available for VP %s" % i
 
-	print_stats(funcstats[0])
+	#roots[0].print_tree(0)
 
-	#statf = open('stats.json', 'w')
-	#statf.write(json.dumps(funcstats[0]))
-	#statf.close()
-
-	#tutils.output_html(funcstats, 'stats2.json')
-
-	print "Total cycles: %s" % cycles[0]
-	print "Time elapsed @ 1GHz: %s seconds (%s ms)" % (cycles[0]/float(1000000000), (cycles[0]/float(1000000)))
+	print "Total cycles: %s" % cycles
+	print "Time elapsed @ 1GHz: %s seconds (%s ms)" % (cycles/float(1000000000), (cycles/float(1000000)))
 	print "Max call depth: TBD"
 	print "Total idles: %s" % idles
-
-	#roots.append(funcstats)
 
 	return roots
 
 def print_funcs(ranges):
 
+	flist = []
+
+	query = 0xffffffff8010e2f8
+
 	for item in ranges:
-		print "%s\t%s\t%s" % (hex(item[1]), hex(item[2]), item[0])
+		flag = ""
+		if query >= item[1] and query < item[2]:
+			flag = "*"
 
-def print_stats(funcstats):
 
-	for k in funcstats.keys():
-		lst = funcstats[k]
-		print "[%24s] # : %s | avg %s | min %s | max %s" % (k, len(lst), sum(lst)/float(len(lst)), min(lst), max(lst))
-		print "="*80
+		print "%s\t%s\t%s\t%s" % (flag, hex(item[1]), hex(item[2]), item[0])
 
+		if item[0] in flist:
+			print "%s already in list" % item[0]
+		else:
+			flist.append(item[0])
 
 #
 #

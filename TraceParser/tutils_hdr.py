@@ -227,7 +227,8 @@ def parse_item(line):
 		fname = m.group(2)
 		
 		# ignore blocks
-		if fname.startswith('$') or fname.startswith('.') or '.' in fname:
+		#if fname.startswith('$') or fname.startswith('.') or '.' in fname:
+		if fname.startswith('.'):
 			found = False
 		else:
 			found = True

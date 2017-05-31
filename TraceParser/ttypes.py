@@ -133,7 +133,7 @@ class TTree():
 		return self.end_idle
 
 	def get_ccount(self):
-		assert(self.end_cycle - self.start_cycle > 0)
+		#assert(self.end_cycle - self.start_cycle > 0)
 		return self.end_cycle - self.start_cycle
 
 	def get_start_instr_miss(self):
@@ -204,10 +204,20 @@ class TTree():
 
 		return ht
 
+	def print_tree_annotated(self, depth, refobj):
+		ann = ""
+
+		if self is refobj:
+			ann= "*"
+
+		print "%s%s%s%s-> %s [%s cycle, %s idle, %s instr miss]" % (ann, '\t',' '*depth, depth, self.name, self.get_ccount(), self.get_idle_count(), self.get_imcount())
+
+		for subcall in self.calls:
+			subcall.print_tree_annotated(depth+1, refobj)
 
 	def print_tree(self, depth):
 
-		print "%s%s-> %s [%s cycle, %s idle, %s instr miss]" % (' '*depth, depth, self.name, self.get_ccount(), self.get_idle_count(), self.get_imcount())
+		print "[%12s]\t%s%s-> %s [%s cycle, %s idle, %s instr miss]" % (self.get_start_cycle(), ' '*depth, depth, self.name, self.get_ccount(), self.get_idle_count(), self.get_imcount())
 
 		for subcall in self.calls:
 			subcall.print_tree(depth+1)
@@ -230,6 +240,15 @@ class TTree():
 		else:
 			self.get_parent().print_context()
 
+
+	def propagate_start(self, cycle, idle, im):
+
+		self.start_cycle = cycle
+		self.start_idle = idle
+		self.start_instr_miss = im
+
+		if self.get_parent() != None:
+			self.get_parent().propagate_start(cycle, idle, im)
 
 	def propagate_up(self, cycles, idles, instr_misses):
 

@@ -49,6 +49,7 @@ def get_ccount(trace_line):
 		m = re.search(regex, trace_line)
 
 		ccount = int(m.group(1))
+		ccount = ccount*2 # both pipelines are stalled
 	elif "Sync" in trace_line:
 		ccount = 0
 	elif "mode" in trace_line:
