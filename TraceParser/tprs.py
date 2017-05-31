@@ -78,7 +78,6 @@ def read_trace(trace_fname, ranges, filter_vp, reverse_order, filterlist):
 
 	# reverse order support to be re-implemented at a later date
 
-<<<<<<< HEAD
 	current_ttree = [None, None, None, None]
 
 	saved_sz = 10000000 # XXX TMP
