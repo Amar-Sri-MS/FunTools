@@ -11,7 +11,6 @@ from optparse import OptionParser
 from ttypes import TEntry
 from ttypes import TTree
 
-
 import tutils_hdr as tutils
 #
 # 
@@ -79,6 +78,7 @@ def read_trace(trace_fname, ranges, filter_vp, reverse_order, filterlist):
 
 	# reverse order support to be re-implemented at a later date
 
+<<<<<<< HEAD
 	current_ttree = [None, None, None, None]
 
 	saved_sz = 10000000 # XXX TMP
@@ -205,6 +205,7 @@ def read_trace(trace_fname, ranges, filter_vp, reverse_order, filterlist):
 
 	return roots
 
+
 def print_funcs(ranges):
 
 	flist = []
@@ -223,6 +224,7 @@ def print_funcs(ranges):
 			print "%s already in list" % item[0]
 		else:
 			flist.append(item[0])
+
 
 #
 #

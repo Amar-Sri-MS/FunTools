@@ -75,12 +75,14 @@ class TEntry():
 		self.func = "(POTENTIAL) "
 		self.func = self.func + self.find_function(self.addr, ranges)
 
+	def get_cycle(self):
+		return self.cycle
+
 	def get_ts(self):
 		return self.ts
 
 	def get_op(self):
 		return ""
-
 
 
 
