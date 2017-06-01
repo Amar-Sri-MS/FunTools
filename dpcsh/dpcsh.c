@@ -436,7 +436,7 @@ static void run_text_proxy(const char *client_sock_name) {
 
 #define HELP	\
 	"\t--help: 	you know\n"\
-	"\t--proxy:	webproxy, browse 'http://localhost:9001'\n"\
+	"\t--http_proxy:	webproxy, browse 'http://localhost:9001'\n"\
 	"\t--nocli:	no cli mode, type cmd as arg\n"\
 	"\t--text_proxy:	text JSON proxy, use port '/tmp/funos-dpc-text.sock'\n"
 
@@ -456,14 +456,14 @@ static void _do_cli(int argc, char *argv[], int sock) {
 }
 
 int main(int argc, char *argv[]) {
-	bool proxy_mode = false;
+	bool http_proxy_mode = false;
 	bool text_proxy_mode = false;
 	bool interractive_mode = false;
 
 	if (argc < 2) {
 		interractive_mode = true;
-	} else if (strcmp(argv[1], "--proxy") == 0) {
-		proxy_mode = true;
+	} else if (strcmp(argv[1], "--http_proxy") == 0) {
+		http_proxy_mode = true;
 	} else if (strcmp(argv[1], "--text_proxy") == 0) {
 		text_proxy_mode = true;
 	} else if (strcmp(argv[1], "--help") == 0) {
@@ -475,7 +475,7 @@ int main(int argc, char *argv[]) {
 		printf("*** Usage: \n" HELP "\n");
 		exit(2);
 	}
-	printf("FunOS Dataplane Control Shell%s\n", proxy_mode ? ": proxy mode" : "");
+	printf("FunOS Dataplane Control Shell%s\n", http_proxy_mode ? ": HTTP proxy mode" : text_proxy_mode ? ": Text JSON proxy mode" : "");
 
 	/* open a socket to FunOS */
 	int sock = _open_sock(SOCK_NAME);
@@ -483,7 +483,7 @@ int main(int argc, char *argv[]) {
 		printf("*** Can't open socket\n");
 		exit(1);
 	}
-	if (proxy_mode) {
+	if (http_proxy_mode) {
 		run_webserver(sock, PORTNO);
 	} else if (text_proxy_mode) {
 		run_text_proxy("/tmp/funos-dpc-text.sock");

@@ -11,7 +11,7 @@ You can use dpcsh without its command line interface, e.g. to run certain comman
 	./dpcsh --nocli poke params/syslog/level 6
 
 You can use dpcsh as a proxy redirecting to a web client, by:
-	./dpcsh --proxy
+	./dpcsh --http_proxy
 and going to a browser to type URLs like:
 	localhost:9001/params
 	
