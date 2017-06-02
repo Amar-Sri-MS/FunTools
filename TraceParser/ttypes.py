@@ -269,7 +269,7 @@ class TTree():
 
 		if self.get_ccount() < subcount:
 			print "sanity check issue:"
-			print "[%s] ccount %s subcount %s" % (self.name, self.ccount, subcount)
+			print "[%s] ccount %s subcount %s" % (self.name, self.get_ccount(), subcount)
 			return False
 		else:
 			return True
