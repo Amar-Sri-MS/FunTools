@@ -63,17 +63,21 @@ def filter_addr(addr):
 #
 #
 #
-def read_trace(trace_fname, ranges, filter_vp, reverse_order, filterlist):
+def read_trace(trace_fname, ranges, filter_vp, reverse_order, filterlist, quiet):
 
 	# to be refined based on understanding of pipeline
 	cycles = 0
 	idles = 0
 	instr_misses = 0
+	nxtprint = 0
 
 	last_found_func = ["","","",""]
 	last_address = [0,0,0,0]
 
-	if filter_vp == 15:
+	if quiet:
+		print "Beginning trace in quiet mode"
+
+	if filter_vp == 15 and quiet == False:
 		print "%16s | %19s | %06s | %32s | %32s | %32s | %32s |" % ("Cycle", "addr", "OP", "VP0", "VP1", "VP2", "VP3")
 
 	# reverse order support to be re-implemented at a later date
@@ -94,7 +98,6 @@ def read_trace(trace_fname, ranges, filter_vp, reverse_order, filterlist):
 				# XXX rewrite idle handling
 				if entry.get_func() == "idle":
 					idles = idles + entry.get_ccount()
-					#print "Adding %s idles:\t%s" % (entry.get_ccount(), line)
 
 				if entry.get_func() in filterlist:
 					continue
@@ -113,10 +116,15 @@ def read_trace(trace_fname, ranges, filter_vp, reverse_order, filterlist):
 					row_val = [tutils.get_address(line), "-", "-", "-", "-"]
 					row_val[vp+1] = entry.get_func()
 
-					if filter_vp == 15:
-						print "%16s | %19s | %06s | %32s | %32s | %32s | %32s |" % (cycles, hex(row_val[0]), entry.get_op(), row_val[1], row_val[2], row_val[3], row_val[4])
-					elif vp == filter_vp:
-						print "ENTRY: %s" % (entry)
+					if quiet == False:
+						if filter_vp == 15:
+							print "%16s | %19s | %06s | %32s | %32s | %32s | %32s |" % (cycles, hex(row_val[0]), entry.get_op(), row_val[1], row_val[2], row_val[3], row_val[4])
+						elif vp == filter_vp:
+							print "ENTRY: %s" % (entry)
+					else:
+						if (cycles / 100000) == nxtprint:
+							print "Quiet mode still running; %s cycles complete" % cycles
+							nxtprint = nxtprint + 1
 
 					if entry.get_pos() == "START":
 
@@ -143,8 +151,6 @@ def read_trace(trace_fname, ranges, filter_vp, reverse_order, filterlist):
 									need_new_node = False
 									current_ttree[vp] = top_of_stack
 									break
-
-								#print "Popping function: %s" % top_of_stack.get_name()
 
 								top_of_stack.set_end_cycle(cycles)
 								top_of_stack.set_end_idle(idles)
@@ -173,9 +179,6 @@ def read_trace(trace_fname, ranges, filter_vp, reverse_order, filterlist):
 
 							current_ttree[vp] = new_ttree
 					
-					#if vp == filter_vp:
-					#	current_ttree[vp].get_root().print_tree(0)
-
 
 				last_address[vp] = entry.get_addr()
 
@@ -185,6 +188,8 @@ def read_trace(trace_fname, ranges, filter_vp, reverse_order, filterlist):
 
 	roots = []
 
+	print "Run complete..."
+
 	for i in range(0,4):
 		if current_ttree[i] != None:
 			current_ttree[i].propagate_up(cycles, idles, instr_misses)
@@ -193,7 +198,7 @@ def read_trace(trace_fname, ranges, filter_vp, reverse_order, filterlist):
 			print "Sanity check for VP %s: %s" % (i, sc)
 		else:
 			roots.append(None)
-			print "No tree available for VP %s" % i
+			print "No run data available for VP %s" % i
 
 	#roots[0].print_tree(0)
 
@@ -239,6 +244,7 @@ if __name__ == "__main__":
 	parser.add_option("-f", "--filter", dest="filter_f", help="filter file", metavar="FILE")
 	parser.add_option("-c", "--core", dest="core_id", help="Core ID")
 	parser.add_option("-d", "--data", dest="data_f", help="Data folder", metavar="FOLDER")	
+	parser.add_option("-q", "--quiet", action='store_true', default=False, dest="quiet", help="No output during parsing")
 
 	(options, args) = parser.parse_args()
 
@@ -277,7 +283,7 @@ if __name__ == "__main__":
 		print "Reverse order not currently supported, my apologies."
 		sys.exit(0)
 
-	data = read_trace(options.trc_f, ranges, int(options.vpid), options.reverse_order, filterlist)
+	data = read_trace(options.trc_f, ranges, int(options.vpid), options.reverse_order, filterlist, options.quiet)
 
 	# XXX
 	f = open(os.path.join(dst, 'fundata_c%s' % core_id), 'w')
