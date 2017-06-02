@@ -158,7 +158,7 @@ static int getline_with_history(OUT char **line, OUT size_t *capa) {
 #define OUTPUT_COLORIZE	PRELUDE BLUE POSTLUDE
 #define NORMAL_COLORIZE	PRELUDE BLACK POSTLUDE
 
-static void _do_process_cmd(int sock, char *line, ssize_t read, uint64_t *tid)
+static void _do_process_cmd(int *sock, char *line, ssize_t read, uint64_t *tid)
 {
 
 	if ((read == 1) && (line[0] == '\n')) return; // skip blank lines
@@ -170,17 +170,17 @@ static void _do_process_cmd(int sock, char *line, ssize_t read, uint64_t *tid)
             return;
         }
         fun_json_printf(INPUT_COLORIZE "input => %s" NORMAL_COLORIZE "\n", json);
-        bool ok = fun_json_write_to_fd(json, sock);
+        bool ok = fun_json_write_to_fd(json, *sock);
 	if (!ok) {
 	    // try to reopen pipe
 	    printf("Write to socket failed - reopening socket\n");
-	    sock = _open_sock(SOCK_NAME);
-	    if (sock <= 0) {
+	    *sock = _open_sock(SOCK_NAME);
+	    if (*sock <= 0) {
 		printf("*** Can't reopen socket\n");
 	        fun_json_release(json);
 		return;
 	     }
-	     ok = fun_json_write_to_fd(json, sock);
+	     ok = fun_json_write_to_fd(json, *sock);
 	}
         fun_json_release(json);
         if (!ok) {
@@ -188,7 +188,7 @@ static void _do_process_cmd(int sock, char *line, ssize_t read, uint64_t *tid)
 	    return;
 	}
         /* receive a reply */
-        struct fun_json *output = fun_json_read_from_fd(sock);
+        struct fun_json *output = fun_json_read_from_fd(*sock);
         if (!output) {
             printf("invalid json returned\n");
             return;
@@ -207,7 +207,7 @@ static void _do_interactive(int sock) {
     tios.c_lflag &= ~(ICANON | ECHO);          
     tcsetattr(STDIN_FILENO, TCSANOW, &tios);
     while ((read = getline_with_history(&line, &capa)) > 0) {
-	_do_process_cmd(sock, line, read, &tid);
+	_do_process_cmd(&sock, line, read, &tid);
     }
 
     free(line);
@@ -452,7 +452,7 @@ static void _do_cli(int argc, char *argv[], int sock) {
 	size_t len = strlen(buf);
 	buf[--len] = 0;	// trim the last space
 	printf(">> single cmd [%s] len=%zd\n", buf, len);
-	_do_process_cmd(sock, buf, len, &tid);
+	_do_process_cmd(&sock, buf, len, &tid);
 }
 
 int main(int argc, char *argv[]) {
