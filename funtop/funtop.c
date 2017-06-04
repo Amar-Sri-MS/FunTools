@@ -75,7 +75,7 @@ static void print_atomic_json(struct word_parameters *wparams, NULLABLE struct f
             return print_in_buf(wparams, temp);
         }
         case fun_json_string_type:
-            return print_in_buf(wparams, item->utf8_value);
+            return print_in_buf(wparams, item->string_value);
         case fun_json_bjson_type:
             return print_atomic_json(wparams, fun_json_expand_if_needed(item));
         default:
