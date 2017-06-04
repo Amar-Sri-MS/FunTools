@@ -158,7 +158,8 @@ static int getline_with_history(OUT char **line, OUT size_t *capa) {
 #define OUTPUT_COLORIZE	PRELUDE BLUE POSTLUDE
 #define NORMAL_COLORIZE	PRELUDE BLACK POSTLUDE
 
-static void _do_process_cmd(int *sock, char *line, ssize_t read, uint64_t *tid)
+// We pass the sock INOUT in order to be able to reestablish a connection if the server went down and up
+static void _do_process_cmd(INOUT int *sock, char *line, ssize_t read, uint64_t *tid)
 {
 
 	if ((read == 1) && (line[0] == '\n')) return; // skip blank lines
