@@ -8,6 +8,8 @@
 
 #pragma once
 
+#define static_assert(x,y)
+
 #include <funos/fun_json.h>
 
 // Returns <=0 on error
