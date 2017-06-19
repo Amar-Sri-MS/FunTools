@@ -182,6 +182,7 @@ class TraceParser:
         predecessor = self.frame_to_caller[(arg0, arg1)]
         current_event.transaction = predecessor.transaction
         predecessor.successors.append(current_event)
+        del self.frame_to_caller[(arg0, arg1)]
 
       elif log_keywords['name'] == 'wuh_mp_notify':
         # Bootstrap process. Connect to fake event.
@@ -227,7 +228,9 @@ class TraceParser:
 
     elif event_type == ('HU', 'SQ_DBL'):
       label = 'HU doorbell: sqid=%d' % log_keywords['sqid']
-      current_event = event.TraceEvent(timestamp, timestamp, "HU doorbell: sqid=%d", vp)
+      current_event = event.TraceEvent(timestamp, timestamp,
+                                       "HU doorbell: sqid=%d" % log_keywords['sqid'],
+                                       vp)
       transaction = event.Transaction(current_event)
       self.transactions.append(transaction)
       current_event.transaction = transaction
