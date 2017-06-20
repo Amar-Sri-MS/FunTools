@@ -62,17 +62,20 @@ def ParseLogLine(line, file, line_number):
   if len(remaining_string) == 0:
     return (values, None)
 
-  token_iter = iter(remaining_string.split(' '))
+  if values['verb'] == 'TRANSACTION' and values['noun'] == 'ANNOT':
+    values['msg'] = remaining_string
+  else:
+    token_iter = iter(remaining_string.split(' '))
 
-  try:
-    pairs = [(a, next(token_iter)) for a in token_iter]
-  except StopIteration as e:
-    error = '%s:%d: malformed log line: "%s"\n' % (
-      file, line_number, line)
-    return (None, error)
+    try:
+      pairs = [(a, next(token_iter)) for a in token_iter]
+    except StopIteration as e:
+      error = '%s:%d: malformed log line: "%s"\n' % (
+        file, line_number, line)
+      return (None, error)
 
-  for (key, value) in pairs:
-    values[key] = value
+    for (key, value) in pairs:
+      values[key] = value
 
   expect_keywords = []
 
@@ -104,6 +107,10 @@ def ParseLogLine(line, file, line_number):
 
   elif event_type == ('TRANSACTION', 'START'):
     expect_keywords = []
+
+  elif event_type == ('TRANSACTION', 'ANNOT'):
+    # Annotate uses rest of line as message.
+    expect_keywords = [ ]
 
   elif event_type == ('HU', 'SQ_DBL'):
     expect_keywords = ['sqid']
@@ -182,6 +189,7 @@ class TraceParser:
         predecessor = self.frame_to_caller[(arg0, arg1)]
         current_event.transaction = predecessor.transaction
         predecessor.successors.append(current_event)
+        del self.frame_to_caller[(arg0, arg1)]
 
       elif log_keywords['name'] == 'wuh_mp_notify':
         # Bootstrap process. Connect to fake event.
@@ -227,7 +235,9 @@ class TraceParser:
 
     elif event_type == ('HU', 'SQ_DBL'):
       label = 'HU doorbell: sqid=%d' % log_keywords['sqid']
-      current_event = event.TraceEvent(timestamp, timestamp, "HU doorbell: sqid=%d", vp)
+      current_event = event.TraceEvent(timestamp, timestamp,
+                                       "HU doorbell: sqid=%d" % log_keywords['sqid'],
+                                       vp)
       transaction = event.Transaction(current_event)
       self.transactions.append(transaction)
       current_event.transaction = transaction
@@ -280,6 +290,18 @@ class TraceParser:
        current_event.transaction = new_transaction
        self.transactions.append(new_transaction)
 
+    elif event_type == ('TRANSACTION', 'ANNOT'):
+       if vp not in self.vp_to_event:
+         sys.stderr.write('%s:%d: TRANSACTION START does not match running WU on %s' % (
+             self.input_filename, line_number, vp))
+         return
+       current_event = self.vp_to_event[vp]
+       annot_event = event.TraceEvent(timestamp, timestamp,
+                                      log_keywords['msg'],
+                                      vp)
+       annot_event.is_annotation = True
+       current_event.successors.append(annot_event)
+       
     else:
       sys.stderr.write('%s:%d: Invalid verb/noun %s %s\n' % (input_filename, line_number,
                                                            log_keywords['verb'], log_keywords['noun']))
