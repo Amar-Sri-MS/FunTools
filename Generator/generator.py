@@ -140,7 +140,7 @@ class Field(Node):
   
   def size(self): 
     # Returns the number of bits in the field.
-    return (self.end_bit - self.start_bit + 1)
+    return (self.start_bit - self.end_bit + 1)
 
   def mask(self):
     # Returns a hexadecimal number that can be used as a mask in the flit.
@@ -242,6 +242,8 @@ class Document(Node):
     self.enums = []
     # All macros declared in the file.
     self.macros = []
+    # Original filename containing the specifications.
+    self.filename = None
 
   def __str__(self):
     return('<Document>')
@@ -276,7 +278,8 @@ class HTMLGenerator(Visitor):
            '}\n')
 
     out = '<!-- Documentation created by generator.py.\n'
-    out += '     Do not change this file; change the .gen file instead. -->\n'
+    out += '     Do not change this file; '
+    out += 'change the gen file "%s" instead. -->\n' % doc.filename
     out += '<html>\n<head>\n'
     out += '<style>\n%s</style>\n' % css
     out += '</head>\n<body>\n'
@@ -336,7 +339,7 @@ class HTMLGenerator(Visitor):
     # Generates HTML documentation for a specific field.
     # Draw a solid line at start of each flit to visually separate flits.
     solid = ''
-    if field.start_bit == 0:
+    if field.start_bit == 63:
       solid = 'border-top: solid 1px'
     out = ''
     out += '<tr style="%s">\n' % solid
@@ -382,12 +385,13 @@ class CodeGenerator:
     # stdlib.h is needed for type names.
     out = ""
     out += '// Header created by generator.py\n'
-    out += '// Do not change this file; change the .gen file.\n\n'
+    out += '// Do not change this file; '
+    out += 'change the gen file "%s" instead.\n\n' % doc.filename
     if self.output_file is not None:
       include_guard_name = guardName(self.output_file)
       out += '#ifndef %s\n' % include_guard_name
       out += '#define %s 1\n\n' % include_guard_name
-    out += '#import "stdlib.h"\n'
+    out += '#import "stdlib.h"\n\n'
     for enum in doc.enums:
       out += self.visitEnum(enum)
     for struct in doc.structs:
@@ -477,7 +481,7 @@ class CodeGenerator:
       key_comment = ' // %s' % field.key_comment
      
     var_bits = ''
-    var_width = field.end_bit - field.start_bit + 1
+    var_width = field.start_bit - field.end_bit + 1
     type_width = typeWidth(field.type)
 
     if type_width != var_width:
@@ -500,17 +504,31 @@ class Checker:
 
   def visitStruct(self, the_struct):
     last_type = None
-    for field in the_struct.fields:
+    last_flit = None
+    last_start_bit = 0
+    last_field_name = None
+
+    # Iterate through the fields from 0 to make sure LSB is aligned
+    # correctly.
+    for field in reversed(the_struct.fields):
       if last_type is None:
         last_type = field.type
       elif last_type != field.type:
         # If the type of the variables changes, make sure the current offset would
         # allow the provided alignment.
         # TODO(bowdidge): Assumes type width = type alignment.
-        if field.start_bit % typeWidth(field.type) != 0:
+        if field.end_bit % typeWidth(field.type) != 0:
           self.warnings.append(
               "In structure %s, type won\'t allow alignment: '%s %s' at bit %d" %
-                (the_struct.name, field.type, field.name, field.start_bit))
+                (the_struct.name, field.type, field.name, field.end_bit))
+
+      if last_flit == field.flit and last_start_bit > field.end_bit:
+        self.warnings.append('*** field "%s" and "%s" not in bit order' % (
+            field.name, last_field_name))
+
+      last_flit = field.flit
+      last_start_bit = field.end_bit
+      last_field_name = field.name
 
     for struct in the_struct.structs:
       # Check adjacent structures match up with bit patterns.
@@ -568,7 +586,7 @@ class Packer:
         new_fields += fields_in_flit
         continue
 
-      new_field = Field('flit%d' % flit, 'uint64_t', flit, 0, 63)
+      new_field = Field('flit%d' % flit, 'uint64_t', flit, 63, 0)
       field_names = [x.name for x in fields_in_flit]
       new_field.generator_comment = 'combined from %s' % ','.join(field_names) 
       new_fields.append(new_field)
@@ -589,10 +607,10 @@ class Packer:
     # Compress all fields in the flit into one variable and generate accessor macros.
     for old_field in fields_in_flit:
       ident = macroUpper('%s_%s' % (struct.name, old_field.name))
-      shift = '#define SHIFT_%s %s' % (ident, old_field.end_bit)
-      mask = '#define MASK_%s %s' % (ident, old_field.mask())
-      value = '#define VALUE_%s(x) (x.flit%d << SHIFT_%s)' % (ident, flit_num, ident)
-      get = '#define GET_%s(x) ((x.flit%d >> SHIFT_%s) && MASK_%s)' % (
+      shift = '#define %s_S %s' % (ident, old_field.end_bit)
+      mask = '#define %s_M %s' % (ident, old_field.mask())
+      value = '#define %s_P(x) (x.flit%d << %s_S)' % (ident, flit_num, ident)
+      get = '#define %s_G(x) ((x.flit%d >> %s_S) && %s_M)' % (
         ident, flit_num, ident, ident)
 
       self.doc.addMacro(
@@ -772,13 +790,13 @@ class DocBuilder:
       self.errors.append('Invalid end bit "%s"' % end_bit_str)
       return None
 
-    if start_bit > end_bit:
+    if start_bit < end_bit:
       self.errors.append('Start bit %d greater than end bit %d in field %s' % 
                          (start_bit, end_bit, name))
 
-    if end_bit - start_bit > typeWidth(type):
+    if start_bit - end_bit > typeWidth(type):
       self.errors.append('Type "%s" too small to hold %d bits for field "%s".' % 
-                         (type, end_bit - start_bit, name))
+                         (type, start_bit - end_bit, name))
       return None
 
     if key_comment == '':
@@ -794,7 +812,7 @@ class DocBuilder:
     self.current_comment = ''
 
     type_width = typeWidth(new_field.type)
-    var_width = new_field.end_bit - new_field.start_bit + 1
+    var_width = new_field.start_bit - new_field.end_bit + 1
     if var_width < type_width:
       self.warnings.append('*** field "%s" doesn\'t fill field' % new_field.name)
     elif var_width > type_width:
@@ -849,6 +867,7 @@ def generateFile(should_pack, should_gen_test_file, output_style, output_file,
     sys.exit(1)
 
   doc = doc_builder.current_document
+  doc.filename = gen_file
 
   c = Checker()
   c.visitDocument(doc)
@@ -921,11 +940,11 @@ def main():
   output_style = OutputStyleHeader
   output_file = None
   should_output_test_c_file = False
-  
+
   for o, a in opts:
     if o == '-p':
       should_pack = True
-    if o == '-t':
+    elif o == '-t':
       should_output_test_c_file = True
     elif o in ('-h', '--help'):
       usage()

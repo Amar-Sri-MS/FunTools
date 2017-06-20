@@ -66,7 +66,7 @@ class TestDocBuilder(unittest.TestCase):
     self.assertEqual(0, len(doc.structs))
 
     builder.parseStructStart('STRUCT Foo')
-    builder.parseLine('0 0:63 uint64_t packet')
+    builder.parseLine('0 63:0 uint64_t packet')
     builder.parseEnd('END')
 
     doc = builder.current_document
@@ -80,8 +80,8 @@ class TestDocBuilder(unittest.TestCase):
 
     firstField = firstStruct.fields[0]
     self.assertEqual(0, firstField.flit)
-    self.assertEqual(0, firstField.start_bit)
-    self.assertEqual(63, firstField.end_bit)
+    self.assertEqual(63, firstField.start_bit)
+    self.assertEqual(0, firstField.end_bit)
     self.assertEqual('packet', firstField.name)
 
   def testStructSize(self): 
@@ -89,7 +89,7 @@ class TestDocBuilder(unittest.TestCase):
     doc = builder.current_document
 
     builder.parseStructStart('STRUCT Foo')
-    builder.parseLine('0 0:63 uint64_t packet')
+    builder.parseLine('0 63:0 uint64_t packet')
     builder.parseEnd('END')
 
     self.assertEqual(1, len(doc.structs))
@@ -102,8 +102,8 @@ class TestDocBuilder(unittest.TestCase):
     doc = builder.current_document
 
     builder.parseStructStart('STRUCT Foo')
-    builder.parseLine('0 0:63 uint64_t packet')
-    builder.parseLine('1 0:8 uint64_t bar')
+    builder.parseLine('0 63:0 uint64_t packet')
+    builder.parseLine('1 63:56 uint64_t bar')
     builder.parseEnd('END')
 
     self.assertEqual(1, len(doc.structs))
@@ -114,7 +114,7 @@ class TestDocBuilder(unittest.TestCase):
 
   def testValidFile(self):
     docBuilder = generator.DocBuilder()
-    contents = ['STRUCT Foo', '0 0:63 uint64_t packet', 'END']
+    contents = ['STRUCT Foo', '0 63:0 uint64_t packet', 'END']
     
     errors = docBuilder.parse(contents)
   
@@ -160,9 +160,9 @@ class TestDocBuilder(unittest.TestCase):
 
 
   def testInvalidFlit(self):
-    # Test that code correctly handles a packet with a non-numeric flit number.
+    # Test generator rejects a field with a non-numeric flit number.
     docBuilder = generator.DocBuilder()
-    line = 'flit 0:63 uint64_t packet'
+    line = 'flit 63:0 uint64_t packet'
 
     self.assertIsNone(docBuilder.parseFieldLine(line))
   
@@ -170,7 +170,7 @@ class TestDocBuilder(unittest.TestCase):
     self.assertIn('Invalid flit', docBuilder.errors[0])
 
   def testInvalidStart(self):
-    # Test that code correctly handles a packet with a non-numeric flit number.
+    # Test generator rejects field with a non-numeric start_bit.
     docBuilder = generator.DocBuilder()
     line = '2 foo:15 uint64_t packet'
     
@@ -180,7 +180,7 @@ class TestDocBuilder(unittest.TestCase):
     self.assertIn('Invalid start bit', docBuilder.errors[0])
 
   def testInvalidEnd(self):
-    # Test that code correctly handles a packet with a non-numeric flit number.
+    # Test generator rejects field with non-numeric end bit.
     docBuilder = generator.DocBuilder()
     line = '2 15:bar uint64_t packet'
     
@@ -189,20 +189,42 @@ class TestDocBuilder(unittest.TestCase):
     self.assertEqual(1, len(docBuilder.errors))
     self.assertIn('Invalid end bit', docBuilder.errors[0])
 
-  def testTypeTooSmall(self):
-    # Test that code correctly handles a packet with a non-numeric flit number.
+  def testWrongOrder(self):
+    # Test generator rejects field with high bit below low.
     docBuilder = generator.DocBuilder()
-    line = '2 0:40 uint8_t packet'
+    line = '2 3:10 uint64_t packet'
+    
+    self.assertIsNotNone(docBuilder.parseFieldLine(line))
+  
+    self.assertEqual(1, len(docBuilder.errors))
+    self.assertIn('greater than end bit', docBuilder.errors[0])
+
+  def testTypeTooSmall(self):
+    # Test generator rejects field with a non-numeric flit number.
+    docBuilder = generator.DocBuilder()
+    line = '2 40:0 uint8_t packet'
     
     self.assertIsNone(docBuilder.parseFieldLine(line))
   
     self.assertEqual(1, len(docBuilder.errors))
     self.assertIn('too small to hold', docBuilder.errors[0])
 
+  def testSingleBit(self):
+    # Test generator rejects field with a single-digit field number.
+    # TODO(bowdidge): Consider supporting.
+    docBuilder = generator.DocBuilder()
+    line = '2 38 uint8_t packet'
+    
+    field = docBuilder.parseFieldLine(line)
+
+    self.assertEqual(1, len(docBuilder.errors))
+    self.assertIn("Invalid field line", docBuilder.errors[0])
+
+
   def testMissingCommentIsNone(self):
     # Test that code correctly handles a packet with a non-numeric flit number.
     docBuilder = generator.DocBuilder()
-    line = '2 12:15 int64_t packet'
+    line = '2 15:12 int64_t packet'
     
     field = docBuilder.parseFieldLine(line)
   
@@ -218,10 +240,10 @@ class TestDocBuilder(unittest.TestCase):
 
     builder.parseStructStart('STRUCT Foo')
     builder.parseUnionStart('UNION Bar u')
-    builder.parseLine('0 0:63 uint64_t packet')
+    builder.parseLine('0 63:0 uint64_t packet')
     builder.parseEnd('END')
     builder.parseUnionStart('UNION Baz u')
-    builder.parseLine('0 0:63 uint64_t packet')
+    builder.parseLine('0 63:0 uint64_t packet')
     builder.parseEnd('END')
     builder.parseEnd('END')
 
@@ -235,15 +257,15 @@ class TestDocBuilder(unittest.TestCase):
     firstUnion = firstStruct.unions[0]
     firstField = firstUnion.fields[0]
     self.assertEqual(0, firstField.flit)
-    self.assertEqual(0, firstField.start_bit)
-    self.assertEqual(63, firstField.end_bit)
+    self.assertEqual(63, firstField.start_bit)
+    self.assertEqual(0, firstField.end_bit)
     self.assertEqual('packet', firstField.name)
 
   def testParseCommentInField(self):
     docBuilder = generator.DocBuilder()
 
     field = docBuilder.parseFieldLine(
-      '0 0:31 unsigned packet /* 6 byte packet to send out */')
+      '0 47:0 uint64_t packet /* 6 byte packet to send out */')
 
     self.assertEqual(0, len(docBuilder.errors))
 
@@ -255,7 +277,7 @@ class TestDocBuilder(unittest.TestCase):
     the_file = ['// Body comment\n',
                 'STRUCT Foo\n',
                 '// Packet body comment\n',
-                '0 0:63 uint64_t packet // Packet key comment\n',
+                '0 63:0 uint64_t packet // Packet key comment\n',
                 '// Tail comment\n',
                 'END\n']
     builder.parse(the_file)
@@ -283,7 +305,7 @@ class CodeGeneratorTest(unittest.TestCase):
   def testPrintStructNoVar(self):
     builder = generator.DocBuilder()  
     builder.parseStructStart('STRUCT Foo')
-    builder.parseLine('0 0:63 uint64_t packet')
+    builder.parseLine('0 63:0 uint64_t packet')
     builder.parseEnd('END')
     doc = builder.current_document
 
@@ -296,7 +318,7 @@ class CodeGeneratorTest(unittest.TestCase):
   def testPrintStructWithVar(self):
     builder = generator.DocBuilder()  
     builder.parseStructStart('STRUCT Foo foo_cmd')
-    builder.parseLine('0 0:63 uint64_t packet')
+    builder.parseLine('0 63:0 uint64_t packet')
     builder.parseEnd('END')
     doc = builder.current_document
 
@@ -333,24 +355,24 @@ class CodeGeneratorTest(unittest.TestCase):
     self.assertEquals('union Foo {\n} xxx;\n', code)
 
   def testPrintField(self):
-    field = generator.Field("foo", "uint8_t", 0, 0, 3)
+    field = generator.Field("foo", "uint8_t", 0, 3, 0)
     code = self.printer.visitField(field)
     self.assertEqual("uint8_t foo:4;\n", code)
 
   def testPrintFieldNotBitfield(self):
-    field = generator.Field("foo", "uint8_t", 0, 0, 7)
+    field = generator.Field("foo", "uint8_t", 0, 7, 0)
     code = self.printer.visitField(field)
     self.assertEqual("uint8_t foo;\n", code)
 
   def testPrintFieldWithComment(self):
-    field = generator.Field("foo", "uint8_t", 0, 0, 7)
+    field = generator.Field("foo", "uint8_t", 0, 7, 0)
     field.key_comment = 'A'
     field.body_comment = 'B'
     code = self.printer.visitField(field)
     self.assertEqual("/* B */\nuint8_t foo; // A\n", code)
 
   def testPrintFieldWithLongComment(self):
-    field = generator.Field("foo", "uint8_t", 0, 0, 7)
+    field = generator.Field("foo", "uint8_t", 0, 7, 0)
     long_comment = "long long long long long long long long long long comment"
     field.body_comment = long_comment
     print("long comment is %d" %len(long_comment))
@@ -370,7 +392,7 @@ class CodeGeneratorTest(unittest.TestCase):
 class PackerTest(unittest.TestCase):
   def testPackTwoFields(self):
     docBuilder = generator.DocBuilder()
-    contents = ['STRUCT Foo', '0 32:63 unsigned packet', '0 0:31 unsigned other','END']
+    contents = ['STRUCT Foo', '0 63:32 unsigned packet', '0 31:0 unsigned other','END']
     errors = docBuilder.parse(contents)
     self.assertIsNone(errors)
 
@@ -381,12 +403,12 @@ class PackerTest(unittest.TestCase):
     self.assertEqual(1, len(doc.structs[0].fields))
     field = doc.structs[0].fields[0]
     self.assertEqual("flit0", field.name)
-    self.assertEqual(0, field.start_bit)
-    self.assertEqual(63, field.end_bit)
+    self.assertEqual(63, field.start_bit)
+    self.assertEqual(0, field.end_bit)
 
   def testNoCompressSingleField(self):
     docBuilder = generator.DocBuilder()
-    contents = ['STRUCT Foo', '0 0:31 unsigned packet', 'END']
+    contents = ['STRUCT Foo', '0 31:0 unsigned packet', 'END']
     errors = docBuilder.parse(contents)
     self.assertIsNone(errors)
 
@@ -398,8 +420,8 @@ class PackerTest(unittest.TestCase):
     field = doc.structs[0].fields[0]
     # Packer doesn't change name.
     self.assertEqual("packet", field.name)
-    self.assertEqual(0, field.start_bit)
-    self.assertEqual(31, field.end_bit)
+    self.assertEqual(31, field.start_bit)
+    self.assertEqual(0, field.end_bit)
 
 
 class CheckerTest(unittest.TestCase):
@@ -407,8 +429,8 @@ class CheckerTest(unittest.TestCase):
   def testCheckerAdjacentTypesEqual(self):
     docBuilder = generator.DocBuilder()
     contents = ['STRUCT Foo',
-                '0 0:1 uint8_t a',
-                '0 2:3 uint8_t b',
+                '0 3:2 uint8_t b',
+                '0 1:0 uint8_t a',
                 'END']
     errors = docBuilder.parse(contents)
     self.assertIsNone(errors)
@@ -421,8 +443,8 @@ class CheckerTest(unittest.TestCase):
   def testCheckerAdjacentTypesDifferent(self):
     docBuilder = generator.DocBuilder()
     contents = ['STRUCT Foo',
-                '0 0:1 uint8_t a',
-                '0 2:3 uint16_t b',
+                '0 3:1 uint16_t b',
+                '0 1:0 uint8_t a',
                 'END']
     errors = docBuilder.parse(contents)
     self.assertIsNone(errors)
@@ -432,6 +454,21 @@ class CheckerTest(unittest.TestCase):
 
     self.assertEqual(1, len(checker.warnings))
     self.assertIn('allow alignment', checker.warnings[0])
+
+  def testFlagOutOfOrder(self):
+    docBuilder = generator.DocBuilder()
+    contents = ['STRUCT Foo',
+                '0 7:0 uint8_t b',
+                '0 15:8 uint8_t a',
+                'END']
+    errors = docBuilder.parse(contents)
+    self.assertIsNone(errors)
+
+    checker = generator.Checker()
+    checker.visitDocument(docBuilder.current_document)
+
+    self.assertEqual(1, len(checker.warnings))
+    self.assertIn('field "b" and "a" not in bit order', checker.warnings[0])
 
 class CheckIncludeGuardName(unittest.TestCase):
 
