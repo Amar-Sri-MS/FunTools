@@ -216,9 +216,12 @@ class TestDocBuilder(unittest.TestCase):
     line = '2 38 uint8_t packet'
     
     field = docBuilder.parseFieldLine(line)
+    self.assertIsNotNone(field)
+    self.assertEqual(0, len(docBuilder.errors))
 
-    self.assertEqual(1, len(docBuilder.errors))
-    self.assertIn("Invalid field line", docBuilder.errors[0])
+    self.assertEqual(2, field.flit)
+    self.assertEqual(38, field.start_bit)
+    self.assertEqual(38, field.end_bit)
 
 
   def testMissingCommentIsNone(self):

@@ -761,7 +761,7 @@ class DocBuilder:
     # Handle a line describing a field in a structure.
     # Struct line is:
     # flit start_bit:end_bit type name /* comment */
-    match = re.match('(\w+)\s+(\w+):(\w+)\s+(\w+)\s+(\w+)\s*(.*)', line)
+    match = re.match('(\w+)\s+(\w+:\w+|\w+)\s+(\w+)\s+(\w+)\s*(.*)', line)
 
     if match is None:
         # Flag error, or treat as comment.
@@ -769,12 +769,26 @@ class DocBuilder:
         return None
 
     flit_str = match.group(1)
-    start_bit_str = match.group(2)
-    end_bit_str = match.group(3)
-    type = match.group(4)
-    name = match.group(5)
-    key_comment = match.group(6)
+    bit_spec = match.group(2)
+    type = match.group(3)
+    name = match.group(4)
+    key_comment = match.group(5)
 
+    start_bit_str = None
+    end_bit_str = None
+
+    if ':' in bit_spec:
+      bits_match = re.match('(\w+):(\w+)', bit_spec)
+      if bits_match is None:
+        self.errors.append('Invalid bit pattern: "%s"' % bits)
+        return None
+      start_bit_str = bits_match.group(1)
+      end_bit_str = bits_match.group(2)
+    else:
+      # Assume single bit.
+      start_bit_str = bit_spec
+      end_bit_str = bit_spec
+        
     flit = parseInt(flit_str)
     if flit is None:
       self.errors.append('Invalid flit "%s"' % flit_str)
