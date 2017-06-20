@@ -8,6 +8,7 @@ import sys
 import unittest
 
 import render
+import StringIO
 import wu_trace
 
 def firstTransaction(transactions):
@@ -245,6 +246,24 @@ class EndToEndTest(unittest.TestCase):
                        '}\n']
     
     self.assertEqual(expected_output, outputFile.lines)
+
+  def testAnnotate(self):
+    log = """
+0.000001 faddr VP0.0.0 WU START src VP0.0.0 dest VP0.0.0 id 0 name wu_foo arg0 0 arg1 0
+0.000002 faddr VP0.0.0 TRANSACTION ANNOT Request to /movies/Star Wars
+0.000003 faddr VP0.0.0 WU END id 0 name wu_foo arg0 0 arg1 0
+    """.split('\n')
+
+    transactions = wu_trace.ParseFile(log, 'foo.trace')
+    self.assertEqual(2, len(transactions))
+
+    out_file = StringIO.StringIO()
+
+    render.Dump(out_file, transactions[1])
+
+    contents = out_file.getvalue();
+    self.assertIn('00.000002 (0 usec): Request to /movies/Star Wars',
+                  out_file.getvalue())
 
   def testMinimalTimer(self):
     # Run foo multiple times, triggered by a timer.
