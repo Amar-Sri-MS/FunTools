@@ -299,6 +299,7 @@ class TraceParser:
        annot_event = event.TraceEvent(timestamp, timestamp,
                                       log_keywords['msg'],
                                       vp)
+       annot_event.is_annotation = True
        current_event.successors.append(annot_event)
        
     else:

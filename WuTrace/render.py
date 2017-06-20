@@ -59,7 +59,7 @@ def RenderEvent(out, event, group_start, group_duration):
     width = wholePercent * duration / group_duration
     color = 'red'
 
-    if event.is_timer is True:
+    if event.is_timer:
         timer_offset = event.start_time - event.timer_start
         leadingSpace = wholePercent * start_offset / group_duration
         triggerSpace = wholePercent * timer_offset / group_duration
@@ -83,6 +83,20 @@ def RenderEvent(out, event, group_start, group_duration):
                 triggerSpace))
         out.write('    <div style="width: %d%%"; class="bar timer">\n' % width)
         out.write('    </div>\n')
+        out.write('  </div>\n')
+    elif event.is_annotation:
+        out.write('  <div class="label"></div>\n')
+        out.write('  <div class="time">%s</div>\n' % (
+                RangeString(event.start_time, event.end_time)))
+        out.write('  <div class="duration"></div>\n')
+        out.write('  <div class="vp">%s</div>\n' % event.vp)
+        out.write('  <div class="timeline">\n')
+
+        out.write('    <div style="width: %d%%" class="space"></div>\n' % (
+                leadingSpace))
+        out.write('    <div style="width: 0%%" class="bar annotation-bar"></div>\n')
+        out.write('    <div class="annotation">%s</div>\n' % (
+                    event.Label()))
         out.write('  </div>\n')
     else:
         out.write('  <div class="label">%s</div>\n' % (event.Label()))
@@ -122,11 +136,22 @@ def RenderHeader(out):
   height: 15px;
 }
 
+.annotation {
+  display: inline-block;
+  height: 15px;
+  color: #111111;
+  font-size: small;
+}
+
 /* CSS for kinds of bars. */
 
 /* How to draw WUs. */
 .wu {
   background-color: red;
+}
+
+.annotation-bar {
+  background-color: DarkGray;
 }
 
 /* How to draw top-level objects. */
