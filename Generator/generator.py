@@ -206,6 +206,14 @@ class Union(Node):
     # structures will be placed after any fields.
     self.structs = []
 
+  def bytes(self):
+    """Returns the total number of bytes for the union object."""
+    return max([s.bytes() for s in self.structs])
+
+  def flits(self):
+    """Returns the total number of flits (words) in the union object."""
+    return max([s.flits() for s in self.structs])
+
   def __str__(self):
     return('<Union %s, variable %s:\n fields: %s\n structs: %s\n>\n' % 
            (self.name, self.variable, self.fields, self.structs))
@@ -232,6 +240,9 @@ class Struct(Node):
   def __str__(self):
     return('<Struct %s, variable %s:\n fields: %s\n structs: %s\n unions: %s\n>\n' %
            (self.name, self.variable, self.fields, self.structs, self.unions))
+
+  def flits(self):
+    return max([field.flit for field in self.fields])
 
   def bytes(self):
     """Returns the number of bytes in the structure."""
@@ -322,6 +333,35 @@ class HTMLGenerator(Visitor):
     out += '</ul>\n'
     return out
 
+  def visitUnionInStruct(self, union):
+    """Draws a union as rows in a containing structure."""
+    out = '<tr>\n'
+
+    flit_str = "0"
+    if union.flits() > 1:
+      flit_str = "0 ... %d" % (union.flits() -1)
+
+    comment = ""
+    if union.key_comment:
+      comment = union.key_comment
+
+    out += '  <td class="structBits"h>%s</td>\n' % flit_str
+    out += '  <td class="structBits">%d-0</td>\n' % (union.bytes() * 8 - 1)
+    out += '  <td>union %s</td>\n' % union.name
+    out += '  <td>%s</td>\n' % union.variable
+    out += '  <td>%s</td>\n' % comment
+    out += '</tr>\n'
+
+    for s in union.structs:
+      out += '<tr>\n'
+      out += '  <td class="structBits">0..%d</td>\n' % (s.flits() - 1)
+      out += '  <td class="structBits">%d-0</td>\n' % (s.bytes() * 8 - 1)
+      out += '  <td></td>\n'
+      out += '  <td>%s</td>\n' % s.name
+      out += '  <td>%s</td>\n' % s.key_comment
+      out += '</tr>\n'
+    return out
+
   def visitStruct(self, struct):
     # Generates HTML documentation for a specific structure.
     out = ''
@@ -343,7 +383,14 @@ class HTMLGenerator(Visitor):
       out += '  <center>%s</center>\n' % struct.tail_comment
       out += '  </td>\n'
       out += '</tr>\n'
+    for union in struct.unions:
+      out += self.visitUnionInStruct(union)
     out += "</table>\n"
+
+    for union in struct.unions:
+      for s in union.structs:
+        out += self.visitStruct(s)
+
     return out
 
   def visitField(self, field):
