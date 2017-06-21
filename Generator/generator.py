@@ -5,9 +5,9 @@
 # and automatically generates header files, documentation, and other
 # products from the description.
 #
-# Generator can also compress structures with many small fields into
-# single fields accessed via macros.  By explicitly providing accessor macros,
-# we can avoid cases where compiled code may be inefficient.
+# Generator can also pack structures with many small fields into
+# single fields accessed via macros.  By explicitly providing accessor
+# macros, we can avoid cases where compiled code may be inefficient.
 #
 # TODO(bowdidge): Should create C code to test that structure compiles
 # and has correct size.
@@ -66,6 +66,17 @@ def stripComment(the_str):
     return match.group(1).lstrip(' ').rstrip(' ')
     
    
+def readableList(l):
+  """Generates a human-readable list of string items."""
+  if l is None or len(l) == 0:
+    return ""
+  if len(l) == 1:
+    return l[0]
+  if len(l) == 2:
+    return l[0] + " and " + l[1]
+
+  return ", ".join(l[0:-1]) + ", and " + l[-1]
+
 def parseInt(the_str):
   # Returns int value of string, or None if not a number.
   base = 10
@@ -543,8 +554,19 @@ class Checker:
   
 
 class Packer:
-  # Process a generated header to crunch many smaller fields into 8 byte flits,
-  # and define macros to access the fields.
+  """ Searches all structures for bitfields that can be combined.
+
+  We generally don't trust compilers to do a good job on accessing
+  bitfields, especially for registers.  By convention, we'd prefer to
+  combine those accesses into explicit shifts and masks so we know
+  what our code is doing.
+
+  This pass runs through all structures, and looks for adjacent
+  bitfields with identical types.  These bitfields are replaced with
+  a single field declaration; macros are then added for accessing
+  the contents of the field.
+  """
+
   def __init__(self):
     self.current_document = None
 
@@ -564,35 +586,74 @@ class Packer:
     self.packStruct(the_struct)
 
   def visitUnion(self, the_union):
-    # Handle compressing fields in union.
+    # Handle packing fields in union.
     # TODO(bowdidge): Union fields start the packing all over again, so if the 
     # common bit is not a full word, then need to copy fields over.
     for struct in the_union.structs:
       self.visitStruct(struct)
 
 
-  def shouldCompressFlit(self, the_struct, flit_number, the_fields):
-    # Returns true if flit should be compressed.
-    return len(the_fields) != 1
+  def packFlit(self, the_struct, flit_number, the_fields):
+    """Replaces contiguous sets of bitfields with macros to access.
+    the_struct: structure containing fields to be packed.
+    flit_number: which flit of the structure is handled this time.
+    the_fields: list of fields in this flit.
+    """
+    # All fields to pack. List of tuples of (type, [fields to pack])
+    fields_to_pack = []
+    # Contiguous fields to pack.  When we reach the end of a group
+    # move to fields_to_pack.
+    current_group = []
+    current_type = None
+
+    for field in the_fields:
+      if field.type != current_type:
+        if len(current_group) > 1:
+          fields_to_pack.append((current_type, current_group))
+        current_group = []
+        current_type = None
+
+      if (typeWidth(field.type) != field.size() and
+          (current_type == None or field.type == current_type)):
+        current_type = field.type
+        current_group.append(field)
+
+    if len(current_group) > 1:
+      # No need to pack if only one item in set of things to pack.
+      fields_to_pack.append((current_type, current_group))
+
+    if len(fields_to_pack) == 0:
+      # Nothing to pack.
+      return
+
+    for (type, fields) in fields_to_pack:
+      max_start_bit = max([f.start_bit for f in fields])
+      min_end_bit = min([f.end_bit for f in fields])
+      new_field_name = fields[0].name + "_to_" + fields[-1].name
+      new_field = Field(new_field_name, type, flit_number,
+                        max_start_bit, min_end_bit)
+      bitfield_name_str = readableList([f.name for f in fields])
+      new_field.body_comment = "Combines bitfields %s." % bitfield_name_str
+
+      # Replace first field to be removed with new field, and delete rest.
+      for i, f in enumerate(the_struct.fields):
+        if f == fields[0]:
+          the_struct.fields[i] = new_field
+          break
+      for f in fields[1:]:
+        the_struct.fields.remove(f)
+
+      self.createMacros(the_struct, new_field, fields)
+        
 
   def packStruct(self, the_struct):
-    # Get rid of old struct fields, and use macros on flit-sized fields to access.
+    # Get rid of old struct fields, and use macros on flit-sized 
+    # fields to access.
     new_fields = []
     flit_field_map = self.fieldsToFlits(the_struct)
 
     for flit, fields_in_flit in flit_field_map.iteritems():
-      if not self.shouldCompressFlit(the_struct, flit, fields_in_flit):
-        # Take fields as they are.
-        new_fields += fields_in_flit
-        continue
-
-      new_field = Field('flit%d' % flit, 'uint64_t', flit, 63, 0)
-      field_names = [x.name for x in fields_in_flit]
-      new_field.generator_comment = 'combined from %s' % ','.join(field_names) 
-      new_fields.append(new_field)
-      self.compressFieldsInFlit(the_struct, flit, new_field, fields_in_flit)
-
-    the_struct.fields = new_fields
+      self.packFlit(the_struct, flit, fields_in_flit)
 
   def fieldsToFlits(self, struct):
     # Return a map of (flit, fields) for all fields in the structure.
@@ -603,19 +664,30 @@ class Packer:
       flit_field_map[field.flit] = item
     return flit_field_map
 
-  def compressFieldsInFlit(self, struct, flit_num, new_field, fields_in_flit):
-    # Compress all fields in the flit into one variable and generate accessor macros.
-    for old_field in fields_in_flit:
+  def createMacros(self, struct, new_field, combined_fields):
+    """Creates macros to access all the bit fields we removed.
+    struct: structure containing the fields that was removed.
+    new_field: field combining the contents of the former fields.
+    combined_fields: fields that were removed.
+    """
+    min_end_bit = min([f.end_bit for f in combined_fields])
+
+    for old_field in combined_fields:
+      # No point in creating macros for fields that shouldn't be accessed.
+      if old_field.name == "reserved":
+        continue
+
       ident = macroUpper('%s_%s' % (struct.name, old_field.name))
-      shift = '#define %s_S %s' % (ident, old_field.end_bit)
+      shift = '#define %s_S %s' % (ident, old_field.end_bit - min_end_bit)
       mask = '#define %s_M %s' % (ident, old_field.mask())
-      value = '#define %s_P(x) (x.flit%d << %s_S)' % (ident, flit_num, ident)
-      get = '#define %s_G(x) ((x.flit%d >> %s_S) && %s_M)' % (
-        ident, flit_num, ident, ident)
+      value = '#define %s_P(x) (x.%s << %s_S)' % (ident, new_field.name,
+                                                  ident)
+      get = '#define %s_G(x) ((x.%s >> %s_S) && %s_M)' % (
+        ident, new_field.name, ident, ident)
 
       self.doc.addMacro(
-          '// For accessing %s field in %s.flit%d' % (
-          old_field.name, struct.name, flit_num))
+          '// For accessing "%s" field in %s.%s' % (
+          old_field.name, struct.name, new_field.name))
       self.doc.addMacro(shift)
       self.doc.addMacro(mask)
       self.doc.addMacro(value)

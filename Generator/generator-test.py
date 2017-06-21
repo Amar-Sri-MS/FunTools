@@ -13,6 +13,16 @@ class TestTypeWidth(unittest.TestCase):
       self.assertEqual(32, generator.typeWidth("uint32_t"))
 
 
+class TestReadableList(unittest.TestCase):
+  def testSimple(self):
+    self.assertEqual("", generator.readableList(None))
+
+    self.assertEqual("", generator.readableList([]))
+    self.assertEqual("", generator.readableList([]))
+    self.assertEqual("a", generator.readableList(["a"]))
+    self.assertEqual("a and b", generator.readableList(["a", "b"]))
+    self.assertEqual("a, c, and d", generator.readableList(["a", "c", "d"]))
+
 class TestIndentString(unittest.TestCase):
   def testSimple(self):
     # Tests only properties that hold true regardless of the formatting style.
@@ -393,9 +403,10 @@ class CodeGeneratorTest(unittest.TestCase):
     
 
 class PackerTest(unittest.TestCase):
-  def testPackTwoFields(self):
+  def testDontPackArgumentsFittingOwnType(self):
     docBuilder = generator.DocBuilder()
-    contents = ['STRUCT Foo', '0 63:32 unsigned packet', '0 31:0 unsigned other','END']
+    contents = ['STRUCT Foo', '0 63:32 unsigned packet',
+                '0 31:0 unsigned other','END']
     errors = docBuilder.parse(contents)
     self.assertIsNone(errors)
 
@@ -403,13 +414,10 @@ class PackerTest(unittest.TestCase):
     p = generator.Packer()
     p.visitDocument(doc)
 
-    self.assertEqual(1, len(doc.structs[0].fields))
-    field = doc.structs[0].fields[0]
-    self.assertEqual("flit0", field.name)
-    self.assertEqual(63, field.start_bit)
-    self.assertEqual(0, field.end_bit)
+    self.assertEqual(2, len(doc.structs[0].fields))
+    self.assertEqual("packet", doc.structs[0].fields[0].name)
 
-  def testNoCompressSingleField(self):
+  def testNoPackSingleField(self):
     docBuilder = generator.DocBuilder()
     contents = ['STRUCT Foo', '0 31:0 unsigned packet', 'END']
     errors = docBuilder.parse(contents)
@@ -422,9 +430,65 @@ class PackerTest(unittest.TestCase):
     self.assertEqual(1, len(doc.structs[0].fields))
     field = doc.structs[0].fields[0]
     # Packer doesn't change name.
-    self.assertEqual("packet", field.name)
+    self.assertEqual('packet', field.name)
     self.assertEqual(31, field.start_bit)
     self.assertEqual(0, field.end_bit)
+
+  def testPackBitfields(self):
+    docBuilder = generator.DocBuilder()
+    contents = [
+      'STRUCT Foo',
+      '0 63:56 uint8_t favorite_char',
+      '0 55 uint8_t is_valid_char',
+      '0 54:53 uint8_t foo',
+      '0 52:48 uint8_t reserved',
+      '0 47:40 uint8_t another_char',
+      '0 39:32 uint8_t third_char',
+      '0 31:0 uint32_t value',
+      'END'
+      ]
+    errors = docBuilder.parse(contents)
+    self.assertIsNone(errors)
+  
+    doc = docBuilder.current_document
+    p = generator.Packer()
+    p.visitDocument(doc)
+    self.assertEqual(5, len(doc.structs[0].fields))
+    self.assertEqual('favorite_char', doc.structs[0].fields[0].name)
+    self.assertEqual('is_valid_char_to_reserved',
+                     doc.structs[0].fields[1].name)
+    self.assertEqual('another_char', doc.structs[0].fields[2].name)
+    self.assertEqual('third_char', doc.structs[0].fields[3].name)
+    self.assertEqual('value', doc.structs[0].fields[4].name)
+
+  def testTypeChanges(self):
+    docBuilder = generator.DocBuilder()
+    contents = [
+      'STRUCT Foo',
+      '0 63:56 uint8_t favorite_char',
+      '0 55 uint8_t is_valid_char',
+      '0 54:53 char foo',
+      '0 52:48 char reserved',
+      '0 47:40 uint8_t another_char',
+      '0 39:32 uint8_t third_char',
+      '0 31:0 uint32_t value',
+      'END'
+      ]
+    errors = docBuilder.parse(contents)
+    self.assertIsNone(errors)
+  
+    doc = docBuilder.current_document
+    p = generator.Packer()
+    p.visitDocument(doc)
+    self.assertEqual(6, len(doc.structs[0].fields))
+    self.assertEqual('favorite_char', doc.structs[0].fields[0].name)
+    self.assertEqual('is_valid_char', doc.structs[0].fields[1].name)
+    self.assertEqual('foo_to_reserved', doc.structs[0].fields[2].name)
+    self.assertEqual('another_char', doc.structs[0].fields[3].name)
+    self.assertEqual('third_char', doc.structs[0].fields[4].name)
+    self.assertEqual('value', doc.structs[0].fields[5].name)
+
+    
 
 
 class CheckerTest(unittest.TestCase):
