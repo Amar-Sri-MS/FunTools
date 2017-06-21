@@ -727,10 +727,8 @@ class Packer:
       ident = macroUpper('%s_%s' % (struct.name, old_field.name))
       shift = '#define %s_S %s' % (ident, old_field.end_bit - min_end_bit)
       mask = '#define %s_M %s' % (ident, old_field.mask())
-      value = '#define %s_P(x) (x.%s << %s_S)' % (ident, new_field.name,
-                                                  ident)
-      get = '#define %s_G(x) ((x.%s >> %s_S) && %s_M)' % (
-        ident, new_field.name, ident, ident)
+      value = '#define %s_P(x) (x << %s_S)' % (ident, ident)
+      get = '#define %s_G(x) ((x >> %s_S) & %s_M)' % (ident, ident, ident)
 
       self.doc.addMacro(
           '// For accessing "%s" field in %s.%s' % (

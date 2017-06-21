@@ -59,6 +59,25 @@ In source code, the form would match the structure - key comment on
 the same line as the variable, body comment preceding, tail comment
 inside and at the end.
 
+Packed fields
+
+If you pass the -p option to generator.py, it packs contiguous bitfields
+into a single field value, and generates macros to access these fields.
+(Packing fields like this ensures that we keep control over how we set the
+values - helpful if we want to manipulate registers efficiently.)
+
+Packed fields must have the same base type, must be bitfields (not using all
+bits of the type), and must be contiguous in the layout.
+
+Macros created are:
+
+field_name_S: number of right shifts to get the final value aligned.
+field_name_M: Mask for bits (after shifting)
+field_name_G(struct): get value from packed structure.
+field_name_P(value): gets value to put into field.  Field should be cleared
+  beforehand by inserting the complement of the mask.
+
+
 To do:
 * Better formatting of comments.
 * Linux-style aligning of field names, etc.
