@@ -1,8 +1,8 @@
 generator.py and Data Structure Specification
 
 generator.py takes high-level descriptions of data structures expected
-by hardware, and converts them into other formats - HTML or Word for documentation,
-or a C header file for software.
+by hardware, and converts them into other formats - HTML or Word for
+documentation, or a C header file for software.
 
 The generator script can also transform the structures in various ways for
 efficiency.  The first conversion, "packing", avoids inefficient compiled code
@@ -22,7 +22,7 @@ A simple description is:
 /* Standard work unit format for all messages in F1. */
 STRUCT WorkUnit
   // destinationID is the only field in this.
-  0 0:7 uint8_t destinationID /* comment */
+  0 7:0 uint8_t destinationID /* comment */
   /* Fourteen more bytes */
 END
 
@@ -31,13 +31,17 @@ both.
 
 Here, the structure WorkUnit contains a single field called destinationID.
 destinationID is stored in the first flit - the first 8 bytes of the structure,
-covering bits 0:7 of the first flit.  The field's type is uint8_t.
+covering bits 7:0 of the first flit.  The field's type is uint8_t.
+Note that fields are declared from highest bit to lowest, and bit ranges
+for fields are always high:low.  Single bits can also be specified with
+a single number.
 
-Comments fall into two categories: inline (immediately following a directive)
-or block.  Inline comments always apply to the directive on the same line.
-Block comments always apply to the following directive.  Inline comments are always
-considered to be a title or summary description.  Comments at the end of a block
-are associated with the enclosing structure, and would either be considered lower
+Comments fall into two categories: inline (immediately following a
+directive) or block.  Inline comments always apply to the directive on
+the same line.  Block comments always apply to the following
+directive.  Inline comments are always considered to be a title or
+summary description.  Comments at the end of a block are associated
+with the enclosing structure, and would either be considered lower
 priority.  When rendering comments for documentation:
 
 /* Body comment */
@@ -51,15 +55,13 @@ Comments for work unit would print:
   body comment
   tail comment
 
-In source code, the form would match the structure - key comment on the same
-line as the variable, body comment preceding, tail comment inside and at the end.
-
-
-
+In source code, the form would match the structure - key comment on
+the same line as the variable, body comment preceding, tail comment
+inside and at the end.
 
 To do:
-Linux-style aligning of field names, etc.
-Linux-style types.
-
-Handle comments in fields.
+* Better formatting of comments.
+* Linux-style aligning of field names, etc.
+* Linux-style types.
+* multi-word variables.
 
