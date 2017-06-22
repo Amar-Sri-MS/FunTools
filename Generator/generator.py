@@ -40,13 +40,6 @@ type_widths = {
   'int64_t' : 64
 }
 
-def typeWidth(typename):
-  # Returns width of C type name in bits.
-  width = type_widths.get(typename)
-  if width is None:
-    return 0
-  return width
-
 def removeWhitespace(the_str):
   # Removes any spaces or carriage returns from the provided string.
   if the_str == None or len(the_str) == 0:
@@ -94,6 +87,73 @@ def macroUpper(the_str):
   s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', the_str)
   s2 = re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
   return s2.upper()
+
+class Type:
+  """Represents C type for a field."""
+
+  def __init__(self, base_name, array_size=None):
+    self.base_name = base_name
+    if array_size:
+      self.is_array = True
+      self.array_size = array_size
+    else:
+      self.is_array = False
+      self.array_size = None
+
+    self.bit_width = type_widths.get(base_name)
+    if self.bit_width is None:
+      print("Unknown base type name %s\n", base_name)
+      return None
+
+    if self.is_array:
+      self.bit_width = self.bit_width * array_size
+
+  def IsArray(self):
+    """Returns true if the type is an array type."""
+    return self.is_array
+
+  def BaseName(self):
+    """Returns base type name without array and other modifiers."""
+    return self.base_name
+
+  def ArraySize(self):
+    """Returns the size of an array.  Throws exception if not an array type."""
+    if not self.is_array:
+      raise ValueError('Not array')
+    return self.array_size
+
+  def TypeName(self):
+    """Returns type name."""
+    if self.is_array:
+      return "%s[%d]" % (base_name, array_size)
+    else:
+      return self.base_name
+
+  def BitWidth(self):
+    """Returns width of type in bits."""
+    return self.bit_width
+
+  def __cmp__(self, other_type):
+    if other_type is None:
+      return -1
+
+    if self.base_name != other_type.base_name:
+      if self.base_name < other_type.base_name:
+        return -1
+      else:
+        return 1
+    if self.is_array != other_type.is_array:
+      return self.is_array.__cmp__(other_type.is_array)
+    if self.is_array:
+      return self.array_size.__cmp__(other_type.array_size)
+    return 0
+
+  def __str__(self):
+    if self.is_array:
+      return '<Type: %s[%d]>' % (self.base_name, self.array_size)
+    else:
+      return '<Type: %s>' % (self.base_name)
+
 
 class Visitor:
   # Visitor abstract class for walking the specification tree.
@@ -145,12 +205,8 @@ class Field(Node):
     # Lowest order bit holding the contents of the field.
     self.end_bit = end_bit
 
-    self.is_array = False
-
-    self.array_size = 1
-
   def __str__(self):
-    return('<Field: name=%s, type=%s, is_array=%d array_size = %d flit=%d, bits=%d:%d>' %
+    return('<Field: name=%s, type=%s, flit=%d, bits=%d:%d>' %
            (self.name, self.type, self.flit, self.start_bit, self.end_bit))
   
   def size(self): 
@@ -407,9 +463,9 @@ class HTMLGenerator(Visitor):
     out += '<tr style="%s">\n' % solid
     out += '  <td class="structBits">%d</td>\n' % field.flit
     out += '  <td class="structBits">%d-%d</td>\n' % (field.start_bit, field.end_bit)
-    if field.is_array:
+    if field.type.IsArray():
       out += '  <td>%s[%d]</td>\n  <td>%s</td>\n' % (
-        field.type, field.array_size, field.name)
+        field.type, field.type.ArraySize(), field.name)
     else:
       out += '  <td>%s</td>\n  <td>%s</td>\n' % (field.type, field.name)
     out += '<td class="description">\n'
@@ -548,16 +604,17 @@ class CodeGenerator:
      
     var_bits = ''
     var_width = field.start_bit - field.end_bit + 1
-    type_width = typeWidth(field.type)
+    type_width = field.type.BitWidth()
 
     if type_width != var_width:
       var_bits = ':%d' % var_width
     out += self.indentString() 
-    if field.is_array:
-      out += '%s %s[%d];%s\n' % (field.type, field.name, field.array_size,
-                                 key_comment)
+    if field.type.IsArray():
+      out += '%s %s[%d];%s\n' % (field.type.BaseName(), field.name,
+                                 field.type.ArraySize(), key_comment)
     else:
-      out += '%s %s%s;%s\n' % (field.type, field.name, var_bits, key_comment)
+      out += '%s %s%s;%s\n' % (field.type.BaseName(), field.name, var_bits,
+                               key_comment)
     
     return out
 
@@ -589,7 +646,7 @@ class Checker:
         # If the type of the variables changes, make sure the current offset would
         # allow the provided alignment.
         # TODO(bowdidge): Assumes type width = type alignment.
-        if field.end_bit % typeWidth(field.type) != 0:
+        if field.end_bit % field.type.BitWidth() != 0:
           self.warnings.append(
               "In structure %s, type won\'t allow alignment: '%s %s' at bit %d" %
                 (the_struct.name, field.type, field.name, field.end_bit))
@@ -681,13 +738,13 @@ class Packer:
     current_type = None
 
     for field in the_fields:
-      if field.type != current_type:
+      if field.type != current_type or field.type.IsArray():
         if len(current_group) > 1:
           fields_to_pack.append((current_type, current_group))
         current_group = []
         current_type = None
 
-      if (typeWidth(field.type) != field.size() and
+      if (field.type.BitWidth() != field.size() and
           (current_type == None or field.type == current_type)):
         current_type = field.type
         current_group.append(field)
@@ -917,7 +974,7 @@ class DocBuilder:
 
     flit_str = match.group(1)
     bit_spec = match.group(2)
-    type = match.group(3)
+    type_name = match.group(3)
     name = match.group(4)
     if len(match.group(5)) != 0: 
       is_array = True
@@ -961,12 +1018,18 @@ class DocBuilder:
           name, start_bit))
       return None
  
-      
+    type = None
+    if is_array:
+      type = Type(type_name, array_size)
+    else:
+      type = Type(type_name)
+
     if start_bit < end_bit:
       self.errors.append('Start bit %d greater than end bit %d in field %s' % 
                          (start_bit, end_bit, name))
 
-    expected_width = typeWidth(type) * array_size
+    expected_width = type.BitWidth()
+
     actual_width = start_bit - end_bit + 1
     if is_array:
       if actual_width != expected_width:
@@ -992,10 +1055,7 @@ class DocBuilder:
       new_field.body_comment = self.current_comment
     self.current_comment = ''
     
-    new_field.is_array = is_array
-    new_field.array_size = array_size
-
-    type_width = typeWidth(new_field.type)
+    type_width = new_field.type.BitWidth()
     var_width = new_field.start_bit - new_field.end_bit + 1
     if var_width < type_width:
       self.warnings.append('*** field "%s" doesn\'t fill field' % new_field.name)

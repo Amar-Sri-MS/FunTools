@@ -8,9 +8,40 @@ import unittest
 import generator
 
 
-class TestTypeWidth(unittest.TestCase):
-  def testTypeWidths(self):
-      self.assertEqual(32, generator.typeWidth("uint32_t"))
+class TestTypes(unittest.TestCase):
+  def testBitWidth(self):
+    self.assertEqual(32, generator.Type("uint32_t").BitWidth())
+    self.assertEqual(32, generator.Type("unsigned").BitWidth())
+    self.assertEqual(8, generator.Type("char").BitWidth())
+    self.assertEqual(64, generator.Type("double").BitWidth())
+    self.assertEqual(8, generator.Type("uint8_t").BitWidth())
+
+    self.assertEqual(128, generator.Type("uint8_t", 16).BitWidth())
+    self.assertEqual(128, generator.Type("uint64_t", 2).BitWidth())
+
+  def testIsArray(self):
+    self.assertTrue(generator.Type("uint32_t", 4).IsArray())
+    self.assertTrue(generator.Type("char", 16).IsArray())
+
+    self.assertFalse(generator.Type("double").IsArray())
+    self.assertFalse(generator.Type("int").IsArray())
+
+  def testBaseName(self):
+    self.assertEqual("uint32_t", generator.Type("uint32_t").BaseName())
+    self.assertEqual("uint32_t", generator.Type("uint32_t", 4).BaseName())
+
+  def testCompare(self):
+    self.assertEqual(generator.Type("uint32_t"), generator.Type("uint32_t"))
+    self.assertEqual(generator.Type("uint8_t"), generator.Type("uint8_t"))
+
+    self.assertNotEqual(generator.Type("uint8_t"), generator.Type("char"))
+
+    self.assertEqual(generator.Type("uint8_t", 4), generator.Type("uint8_t", 4))
+
+    self.assertNotEqual(generator.Type("char", 4), generator.Type("uint16_t", 4))
+    self.assertNotEqual(generator.Type("char", 4), generator.Type("char", 8))
+
+    
 
 
 class TestReadableList(unittest.TestCase):
@@ -155,12 +186,13 @@ class TestDocBuilder(unittest.TestCase):
     my_field = my_struct.fields[0]
 
     self.assertEqual('chars', my_field.name)
-    self.assertEqual('uint8_t', my_field.type)
-    self.assertEqual(True, my_field.is_array)
-    self.assertEqual(8, my_field.array_size)
+    self.assertEqual(generator.Type('uint8_t', 8), my_field.type)
+    self.assertEqual(True, my_field.type.IsArray())
+    self.assertEqual(8, my_field.type.ArraySize())
     self.assertEqual(0, my_field.flit)
     self.assertEqual(64, my_field.size())
     self.assertEqual(0, my_field.flit)
+
 
   def testArraySizedTooSmall(self):
     docBuilder = generator.DocBuilder()
@@ -403,10 +435,7 @@ class CodeGeneratorTest(unittest.TestCase):
                       '} bar;\n', code)
 
   def testPrintArray(self):
-    field = generator.Field("foo", "char", 0, 64, 0)
-    field.is_array = True
-    field.array_size = 8
-
+    field = generator.Field("foo", generator.Type("char", 8), 0, 64, 0)
     code = self.printer.visitField(field)
   
     self.assertEquals('char foo[8];\n', code)
@@ -427,24 +456,24 @@ class CodeGeneratorTest(unittest.TestCase):
     self.assertEquals('union Foo {\n} xxx;\n', code)
 
   def testPrintField(self):
-    field = generator.Field("foo", "uint8_t", 0, 3, 0)
+    field = generator.Field("foo", generator.Type("uint8_t"), 0, 3, 0)
     code = self.printer.visitField(field)
     self.assertEqual("uint8_t foo:4;\n", code)
 
   def testPrintFieldNotBitfield(self):
-    field = generator.Field("foo", "uint8_t", 0, 7, 0)
+    field = generator.Field("foo", generator.Type("uint8_t"), 0, 7, 0)
     code = self.printer.visitField(field)
     self.assertEqual("uint8_t foo;\n", code)
 
   def testPrintFieldWithComment(self):
-    field = generator.Field("foo", "uint8_t", 0, 7, 0)
+    field = generator.Field("foo", generator.Type("uint8_t"), 0, 7, 0)
     field.key_comment = 'A'
     field.body_comment = 'B'
     code = self.printer.visitField(field)
     self.assertEqual("/* B */\nuint8_t foo; // A\n", code)
 
   def testPrintFieldWithLongComment(self):
-    field = generator.Field("foo", "uint8_t", 0, 7, 0)
+    field = generator.Field("foo", generator.Type("uint8_t"), 0, 7, 0)
     long_comment = "long long long long long long long long long long comment"
     field.body_comment = long_comment
     print("long comment is %d" %len(long_comment))
@@ -547,7 +576,43 @@ class PackerTest(unittest.TestCase):
     self.assertEqual('third_char', doc.structs[0].fields[4].name)
     self.assertEqual('value', doc.structs[0].fields[5].name)
 
-    
+  def testNoPackArrayAndRegularType(self):
+    docBuilder = generator.DocBuilder()
+    contents = ['STRUCT Foo', 
+                '0 63:8 uint8_t chars[7]',
+                '0 7:0 uint8_t opcode',
+                'END']
+
+    errors = docBuilder.parse(contents)
+
+    self.assertIsNone(errors)
+
+    doc = docBuilder.current_document
+    self.assertEqual(1, len(doc.structs))
+
+    p = generator.Packer()
+    p.visitDocument(doc)
+
+    self.assertEqual(2, len(doc.structs[0].fields))
+
+  def testNoPackArray(self):
+    docBuilder = generator.DocBuilder()
+    contents = ['STRUCT Foo', 
+                '0 63:32 uint8_t chars[4]',
+                '0 31:0 uint8_t opcode[4]',
+                'END']
+
+    errors = docBuilder.parse(contents)
+
+    self.assertIsNone(errors)
+
+    doc = docBuilder.current_document
+    self.assertEqual(1, len(doc.structs))
+
+    p = generator.Packer()
+    p.visitDocument(doc)
+
+    self.assertEqual(2, len(doc.structs[0].fields))
 
 
 class CheckerTest(unittest.TestCase):
