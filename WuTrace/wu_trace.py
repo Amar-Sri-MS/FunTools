@@ -15,7 +15,7 @@
 # where the initial number is the number of seconds and microseconds
 # since epoch, and the VP... is the fabric address of the unit sending
 # the log message.  Verb, for now, is either WU, TIMER, or HU.  For
-# WUs, VERB un can be START, END, SEND, or CALL.  For timers, VERB can
+# WUs, VERB un can be START, END, or SEND.  For timers, VERB can
 # be START or TRIGGER.  Remaining arguments are always of the form
 # 'name value', and should have no separators other than spaces.
 #
@@ -86,10 +86,6 @@ def ParseLogLine(line, file, line_number):
     expect_keywords = ['src', 'dest', 'id', 'name', 'arg0', 'arg1']
 
   elif event_type == ('WU', 'END'):
-    # should define id, name, arg0, arg1.
-    expect_keywords = ['id', 'name', 'arg0', 'arg1']
-
-  elif event_type == ('WU', 'CALL'):
     # should define id, name, arg0, arg1.
     expect_keywords = ['id', 'name', 'arg0', 'arg1']
 
@@ -227,11 +223,6 @@ class TraceParser:
       if vp in self.vp_to_event:
         curr = self.vp_to_event[vp]
         self.frame_to_caller[(arg0, arg1)] = curr
-
-    elif event_type == ('WU', 'CALL'):
-      # Ignore.  Calls don't say anything about control flow; knowing whether something is
-      # a continuation is a better signal for part of transaction vs. sub-part.
-      pass
 
     elif event_type == ('HU', 'SQ_DBL'):
       label = 'HU doorbell: sqid=%d' % log_keywords['sqid']

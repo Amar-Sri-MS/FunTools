@@ -132,22 +132,6 @@ class TestParser(unittest.TestCase):
 
     self.assertEqual(1, len(tr.root_event.successors))
 
-  def testCall(self):
-    log = ["1.000100 faddr VP0.0.0 WU START src VP0.0.0 dest VP0.0.0 id 0x1 name fun_a arg0 1 arg1 2",
-           "1.000060 faddr VP0.0.0 WU SEND src VP0.0.0 dest VP0.0.0 id 0x2 name fun_a_a arg0 10 arg1 11",
-           "1.000070 faddr VP0.0.0 WU CALL id 0x2 name fun_a_a arg0 10 arg1 11",
-           "1.000200 faddr VP0.0.0 WU END id 0x1 name fun_arg0 arg0 1 arg1 2",
-           "1.000300 faddr VP0.0.0 WU START src VP0.0.0 dest VP0.0.0 id 0x2 name fun_a_a arg0 10 arg1 11",
-           "1.000350 faddr VP0.0.0 WU SEND src VP0.0.0 dest VP0.0.0 id 0x3 name fun_a_b arg0 12 arg1 13",
-           "1.004000 faddr VP0.0.0 WU END id 0x2 name fun_a_a arg0 1 arg1 2",
-           "1.000300 faddr VP0.0.0 WU START src VP0.0.0 dest VP0.0.0 id 0x3 name fun_a_b arg0 12 arg1 13",
-           "1.004000 faddr VP0.0.0 WU END id 0x3 name fun_a_b arg0 1 arg1 2"]
-    transactions = wu_trace.ParseFile(log, "foo.trace")
-
-    tr = firstTransaction(transactions)
-    self.assertIsNotNone(tr)
-    self.assertEqual(1, len(tr.root_event.successors))
-
   def testTopLevelTransaction(self):
     log = ["1.00100 faddr VP0.0.0 WU START src VP0.0.0 dest VP0.0.0 id 1 name fun_a arg0 1 arg1 2",
            "1.00200 faddr VP0.0.0 TRANSACTION START",
