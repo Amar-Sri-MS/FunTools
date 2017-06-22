@@ -102,7 +102,8 @@ int main(int argc, char** argv) {
 
   // Change single value.
   // Clear.
-  fragPtr->u1.inline_cmd.opcode_to_inlineByteCount &= ~FUN_GATHER_LIST_INLINE_FRAGMENT_INLINE_BYTE_COUNT_M;
+  fragPtr->u1.inline_cmd.opcode_to_inlineByteCount &= 
+    ~FUN_GATHER_LIST_INLINE_FRAGMENT_INLINE_BYTE_COUNT_P(FUN_GATHER_LIST_INLINE_FRAGMENT_INLINE_BYTE_COUNT_M);
   fragPtr->u1.inline_cmd.opcode_to_inlineByteCount |= FUN_GATHER_LIST_INLINE_FRAGMENT_INLINE_BYTE_COUNT_P(7);
 
   ASSERT_EQUAL(7,
