@@ -145,8 +145,12 @@ class Field(Node):
     # Lowest order bit holding the contents of the field.
     self.end_bit = end_bit
 
+    self.is_array = False
+
+    self.array_size = 1
+
   def __str__(self):
-    return('<Field: name=%s, type=%s, flit=%d, bits=%d:%d>' %
+    return('<Field: name=%s, type=%s, is_array=%d array_size = %d flit=%d, bits=%d:%d>' %
            (self.name, self.type, self.flit, self.start_bit, self.end_bit))
   
   def size(self): 
@@ -403,7 +407,11 @@ class HTMLGenerator(Visitor):
     out += '<tr style="%s">\n' % solid
     out += '  <td class="structBits">%d</td>\n' % field.flit
     out += '  <td class="structBits">%d-%d</td>\n' % (field.start_bit, field.end_bit)
-    out += '  <td>%s</td>\n  <td>%s</td>\n' % (field.type, field.name)
+    if field.is_array:
+      out += '  <td>%s[%d]</td>\n  <td>%s</td>\n' % (
+        field.type, field.array_size, field.name)
+    else:
+      out += '  <td>%s</td>\n  <td>%s</td>\n' % (field.type, field.name)
     out += '<td class="description">\n'
     if field.key_comment:
       out += field.key_comment + '<br>'
@@ -545,7 +553,12 @@ class CodeGenerator:
     if type_width != var_width:
       var_bits = ':%d' % var_width
     out += self.indentString() 
-    out += '%s %s%s;%s\n' % (field.type, field.name, var_bits, key_comment)
+    if field.is_array:
+      out += '%s %s[%d];%s\n' % (field.type, field.name, field.array_size,
+                                 key_comment)
+    else:
+      out += '%s %s%s;%s\n' % (field.type, field.name, var_bits, key_comment)
+    
     return out
 
 
@@ -892,18 +905,26 @@ class DocBuilder:
     # Handle a line describing a field in a structure.
     # Struct line is:
     # flit start_bit:end_bit type name /* comment */
-    match = re.match('(\w+)\s+(\w+:\w+|\w+)\s+(\w+)\s+(\w+)\s*(.*)', line)
+    match = re.match('(\w+)\s+(\w+:\w+|\w+)\s+(\w+)\s+(\w+)(\[[0-9]+\]|)\s*(.*)', line)
 
     if match is None:
         # Flag error, or treat as comment.
         self.errors.append('Invalid field line: "%s"' % line)
         return None
 
+    is_array = False
+    array_size = 1
+
     flit_str = match.group(1)
     bit_spec = match.group(2)
     type = match.group(3)
     name = match.group(4)
-    key_comment = match.group(5)
+    if len(match.group(5)) != 0: 
+      is_array = True
+      array_size = parseInt(match.group(5).lstrip('[').rstrip(']'))
+      if array_size is None:
+        print("Eek, thought %s was a number, but didn't parse!\n" % match.group(5))
+    key_comment = match.group(6)
 
     start_bit_str = None
     end_bit_str = None
@@ -935,13 +956,28 @@ class DocBuilder:
       self.errors.append('Invalid end bit "%s"' % end_bit_str)
       return None
 
+    if start_bit > 63:
+      self.errors.append('Field "%s" has start bit "%d" too large for 8 byte flit.' % (
+          name, start_bit))
+      return None
+ 
+      
     if start_bit < end_bit:
       self.errors.append('Start bit %d greater than end bit %d in field %s' % 
                          (start_bit, end_bit, name))
 
-    if start_bit - end_bit > typeWidth(type):
+    expected_width = typeWidth(type) * array_size
+    actual_width = start_bit - end_bit + 1
+    if is_array:
+      if actual_width != expected_width:
+        self.errors.append('Field "%s" needed %d bytes to hold %s[%d], got %d.' %
+                         (name, expected_width, type, array_size,
+                          actual_width))
+
+
+    elif actual_width > expected_width:
       self.errors.append('Type "%s" too small to hold %d bits for field "%s".' % 
-                         (type, start_bit - end_bit, name))
+                         (type, actual_width, name))
       return None
 
     if key_comment == '':
@@ -955,6 +991,9 @@ class DocBuilder:
     if len(self.current_comment) > 0:
       new_field.body_comment = self.current_comment
     self.current_comment = ''
+    
+    new_field.is_array = is_array
+    new_field.array_size = array_size
 
     type_width = typeWidth(new_field.type)
     var_width = new_field.start_bit - new_field.end_bit + 1

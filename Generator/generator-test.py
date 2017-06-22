@@ -130,6 +130,55 @@ class TestDocBuilder(unittest.TestCase):
   
     self.assertIsNone(errors)
 
+  def testTooBigFlit(self):
+    docBuilder = generator.DocBuilder()
+    contents = ['STRUCT Foo', '0 64:0 uint64_t packet', 'END']
+    
+    errors = docBuilder.parse(contents)
+
+    self.assertEqual(1, len(errors))
+    self.assertIn('has start bit "64" too large', errors[0])
+
+  def testArray(self):
+    docBuilder = generator.DocBuilder()
+    contents = ['STRUCT Foo', '0 63:0 uint8_t chars[8]', 'END']
+
+    errors = docBuilder.parse(contents)
+
+    self.assertIsNone(errors)
+
+    doc = docBuilder.current_document
+    self.assertEqual(1, len(doc.structs))
+
+    my_struct = doc.structs[0]
+    self.assertEqual(1, len(my_struct.fields))
+    my_field = my_struct.fields[0]
+
+    self.assertEqual('chars', my_field.name)
+    self.assertEqual('uint8_t', my_field.type)
+    self.assertEqual(True, my_field.is_array)
+    self.assertEqual(8, my_field.array_size)
+    self.assertEqual(0, my_field.flit)
+    self.assertEqual(64, my_field.size())
+    self.assertEqual(0, my_field.flit)
+
+  def testArraySizedTooSmall(self):
+    docBuilder = generator.DocBuilder()
+    contents = ['STRUCT Foo', '0 63:0 uint8_t chars[2]', 'END']
+
+    errors = docBuilder.parse(contents)
+    self.assertEqual(1, len(errors))
+    self.assertIn('needed 16 bytes', errors[0])
+
+  def testArraySizedTooLarge(self):
+    docBuilder = generator.DocBuilder()
+    contents = ['STRUCT Foo', '0 63:0 uint8_t chars[16]', 'END']
+
+    errors = docBuilder.parse(contents)
+    self.assertEqual(1, len(errors))
+    self.assertIn('needed 128 bytes', errors[0])
+                     
+
   def testEnum(self):
     docBuilder = generator.DocBuilder()
     contents = ['ENUM Commands', 'A = 1', 'BBBBBB=0x02', 'END']
@@ -352,6 +401,16 @@ class CodeGeneratorTest(unittest.TestCase):
                       'body comment */\n'
                       'struct Foo {\n'
                       '} bar;\n', code)
+
+  def testPrintArray(self):
+    field = generator.Field("foo", "char", 0, 64, 0)
+    field.is_array = True
+    field.array_size = 8
+
+    code = self.printer.visitField(field)
+  
+    self.assertEquals('char foo[8];\n', code)
+
 
   def testPrintUnion(self):
     union = generator.Union("Foo", None)
