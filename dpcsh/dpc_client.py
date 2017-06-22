@@ -45,13 +45,13 @@ class DpcClient(object):
 
     def __recv_line(self):
         recv_size = 1024
-        buf = ""
-        while buf.find('\n') == -1:
+        line = ""
+        while line.find('\n') == -1:
             buf = self.__sock.recv(recv_size)
-            if buf == "":
+            if not buf:
                 break
-        line = buf[0:buf.find('\n')]
-        return line
+            line += buf
+        return line[0:line.find('\n')]
 
     def __send_line(self, line):
         self.__sock.sendall(line + '\n')
