@@ -1032,12 +1032,11 @@ class DocBuilder:
 def usage():
   sys.stderr.write('generator.py: usage: [-p] [-g [code, html] [-o file]\n')
   sys.stderr.write('-p: pack fields into 8 byte flits, and create accessor macros\n')
-  sys.stderr.write('-t: generate test C file for checking structure sizes.\n')
   sys.stderr.write('-g code: generate header file to stdout (default)\n')
   sys.stderr.write('-g html: generate HTML description of header\n')
   sys.stderr.write('-o filename: send output to named file\n')
 
-def generateFile(should_pack, should_gen_test_file, output_style, output_file,
+def generateFile(should_pack, output_style, output_file,
                  gen_file):
   # Process a single .gen file and create the appropriate header/docs.
   doc_builder = DocBuilder()
@@ -1076,39 +1075,6 @@ def generateFile(should_pack, should_gen_test_file, output_style, output_file,
   else:
     print code
 
-  if should_gen_test_file and output_file is not None:
-    writeTestCFile(output_file, doc.structs)
-
-def writeTestCFile(output_file, structs):
-  if not output_file.endswith('.h'):
-    print("Will not generate test C file because output file does not end with .h.\n")
-    return
-
-  c_file = re.sub('\.h$', '.c', output_file)
-
-  structs_and_sizes = [(struct.name, struct.bytes()) for struct in structs]
-  f = open(c_file, "w")
-  f.write('// Generated automatically by generator.py\n')
-  f.write('// For testing generated headers.\n')
-  f.write('#include "stdio.h"\n')
-  f.write('#include "%s"\n\n' % output_file)
-  f.write('int main(int argc, char** argv) {\n')
-  f.write('\n')
-  f.write('  int fail = 0;\n')
-  for (struct, struct_size) in structs_and_sizes:
-    f.write('  {\n')
-    f.write('    struct %s x;\n' % struct)
-    f.write('    if (sizeof(x) == %d) {\n' % struct_size)
-    f.write('      printf("PASS: structure %s size correct.\\n");\n' % struct)
-    f.write('    } else {\n')
-    f.write('      printf("FAIL Expected struct %s to be %d bytes, got %%lu bytes.\\n", sizeof(x));\n' % (struct, struct_size))
-    f.write('      fail = 1;\n')
-    f.write('    }\n')
-    f.write('  }\n')
-  f.write('  return fail;\n')
-  f.write('}\n')
-  f.close()
-
 OutputStyleHeader = 1
 OutputStyleHTML = 2
 
@@ -1123,13 +1089,10 @@ def main():
   should_pack = False
   output_style = OutputStyleHeader
   output_file = None
-  should_output_test_c_file = False
 
   for o, a in opts:
     if o == '-p':
       should_pack = True
-    elif o == '-t':
-      should_output_test_c_file = True
     elif o in ('-h', '--help'):
       usage()
       sys.exit(2)
@@ -1154,8 +1117,7 @@ def main():
       print('Can only process one gen file at a time.')
       sys.exit(2)
 
-  generateFile(should_pack, should_output_test_c_file, 
-               output_style, output_file, args[0])
+  generateFile(should_pack, output_style, output_file, args[0])
 
 if __name__ == '__main__':
   main()
