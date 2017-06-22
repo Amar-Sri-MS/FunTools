@@ -510,7 +510,7 @@ class CheckerTest(unittest.TestCase):
   def testCheckerAdjacentTypesDifferent(self):
     docBuilder = generator.DocBuilder()
     contents = ['STRUCT Foo',
-                '0 3:1 uint16_t b',
+                '0 3:2 uint16_t b',
                 '0 1:0 uint8_t a',
                 'END']
     errors = docBuilder.parse(contents)
@@ -536,6 +536,48 @@ class CheckerTest(unittest.TestCase):
 
     self.assertEqual(1, len(checker.warnings))
     self.assertIn('field "b" and "a" not in bit order', checker.warnings[0])
+
+  def testFlagOverlappingFields(self):
+    docBuilder = generator.DocBuilder()
+    contents = ['STRUCT Foo',
+                '0 15:8 uint8_t b',
+                '0 15:0 uint16_t a',
+                'END']
+    errors = docBuilder.parse(contents)
+    self.assertIsNone(errors)
+    checker = generator.Checker()
+    checker.visitDocument(docBuilder.current_document)
+
+    self.assertEqual(1, len(checker.warnings))
+    self.assertIn('field "b" and "a" not in bit order', checker.warnings[0])
+
+  def testFlagOverlappingFieldsEqualAtBottom(self):
+    docBuilder = generator.DocBuilder()
+    contents = ['STRUCT Foo',
+                '0 15:8 uint8_t b',
+                '0 12:8 uint8_t a',
+                'END']
+    errors = docBuilder.parse(contents)
+    self.assertIsNone(errors)
+    checker = generator.Checker()
+    checker.visitDocument(docBuilder.current_document)
+
+    self.assertEqual(1, len(checker.warnings))
+    self.assertIn('field "b" and "a" not in bit order', checker.warnings[0])
+
+  def testFlagOverlappingFieldsBottom(self):
+    docBuilder = generator.DocBuilder()
+    contents = ['STRUCT Foo',
+                '0 15:8 uint8_t b',
+                '0 9:7 uint8_t a',
+                'END']
+    errors = docBuilder.parse(contents)
+    self.assertIsNone(errors)
+    checker = generator.Checker()
+    checker.visitDocument(docBuilder.current_document)
+
+    self.assertEqual(1, len(checker.warnings))
+    self.assertIn('field "b" overlaps field "a"', checker.warnings[0])
 
 class CheckIncludeGuardName(unittest.TestCase):
 

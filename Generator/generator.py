@@ -564,6 +564,7 @@ class Checker:
     last_type = None
     last_flit = None
     last_start_bit = 0
+    last_end_bit = 0
     last_field_name = None
 
     # Iterate through the fields from 0 to make sure LSB is aligned
@@ -580,12 +581,19 @@ class Checker:
               "In structure %s, type won\'t allow alignment: '%s %s' at bit %d" %
                 (the_struct.name, field.type, field.name, field.end_bit))
 
-      if last_flit == field.flit and last_start_bit > field.end_bit:
-        self.warnings.append('*** field "%s" and "%s" not in bit order' % (
-            field.name, last_field_name))
+      if last_flit == field.flit:
+        # Note that fields are visited in reverse order - smallest to largest.
+        if (last_start_bit >= field.start_bit or 
+            last_end_bit >= field.end_bit):
+          self.warnings.append('*** field "%s" and "%s" not in bit order' % (
+              field.name, last_field_name))
+        elif field.end_bit <= last_start_bit:
+          self.warnings.append('*** field "%s" overlaps field "%s"' % (
+              field.name, last_field_name))
 
       last_flit = field.flit
-      last_start_bit = field.end_bit
+      last_start_bit = field.start_bit
+      last_end_bit = field.end_bit
       last_field_name = field.name
 
     for struct in the_struct.structs:
