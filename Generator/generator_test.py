@@ -41,8 +41,6 @@ class TestTypes(unittest.TestCase):
     self.assertNotEqual(generator.Type("char", 4), generator.Type("uint16_t", 4))
     self.assertNotEqual(generator.Type("char", 4), generator.Type("char", 8))
 
-    
-
 
 class TestReadableList(unittest.TestCase):
   def testSimple(self):
@@ -53,21 +51,6 @@ class TestReadableList(unittest.TestCase):
     self.assertEqual("a", generator.readableList(["a"]))
     self.assertEqual("a and b", generator.readableList(["a", "b"]))
     self.assertEqual("a, c, and d", generator.readableList(["a", "c", "d"]))
-
-class TestIndentString(unittest.TestCase):
-  def testSimple(self):
-    # Tests only properties that hold true regardless of the formatting style.
-    generator = codegen.CodeGenerator(None)
-    generator.indent = 1
-    self.assertTrue(len(generator.indentString()) > 0)
-
-  def testTwoIndentDoublesOneIndent(self):
-    generator = codegen.CodeGenerator(None)
-    generator.indent = 1
-    oneIndent = generator.indentString()
-    generator.indent = 2
-    twoIndent = generator.indentString()    
-    self.assertEqual(twoIndent, oneIndent + oneIndent)
 
 
 class TestParseInt(unittest.TestCase):
