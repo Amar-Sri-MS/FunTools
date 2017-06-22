@@ -66,3 +66,4 @@ int main(int argc, char** argv) {
   fragPtr->u1.inline_cmd.bytes2 = 0xfedcba987654321;
   PrintFragment(fragPtr);
 }
+

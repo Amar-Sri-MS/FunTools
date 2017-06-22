@@ -1,8 +1,8 @@
 generator.py and Data Structure Specification
 
 generator.py takes high-level descriptions of data structures expected
-by hardware, and converts them into other formats - HTML or Word for documentation,
-or a C header file for software.
+by hardware, and converts them into other formats - HTML or Word for
+documentation, or a C header file for software.
 
 The generator script can also transform the structures in various ways for
 efficiency.  The first conversion, "packing", avoids inefficient compiled code
@@ -22,7 +22,7 @@ A simple description is:
 /* Standard work unit format for all messages in F1. */
 STRUCT WorkUnit
   // destinationID is the only field in this.
-  0 0:7 uint8_t destinationID /* comment */
+  0 7:0 uint8_t destinationID /* comment */
   /* Fourteen more bytes */
 END
 
@@ -31,13 +31,17 @@ both.
 
 Here, the structure WorkUnit contains a single field called destinationID.
 destinationID is stored in the first flit - the first 8 bytes of the structure,
-covering bits 0:7 of the first flit.  The field's type is uint8_t.
+covering bits 7:0 of the first flit.  The field's type is uint8_t.
+Note that fields are declared from highest bit to lowest, and bit ranges
+for fields are always high:low.  Single bits can also be specified with
+a single number.
 
-Comments fall into two categories: inline (immediately following a directive)
-or block.  Inline comments always apply to the directive on the same line.
-Block comments always apply to the following directive.  Inline comments are always
-considered to be a title or summary description.  Comments at the end of a block
-are associated with the enclosing structure, and would either be considered lower
+Comments fall into two categories: inline (immediately following a
+directive) or block.  Inline comments always apply to the directive on
+the same line.  Block comments always apply to the following
+directive.  Inline comments are always considered to be a title or
+summary description.  Comments at the end of a block are associated
+with the enclosing structure, and would either be considered lower
 priority.  When rendering comments for documentation:
 
 /* Body comment */
@@ -51,15 +55,45 @@ Comments for work unit would print:
   body comment
   tail comment
 
-In source code, the form would match the structure - key comment on the same
-line as the variable, body comment preceding, tail comment inside and at the end.
+In source code, the form would match the structure - key comment on
+the same line as the variable, body comment preceding, tail comment
+inside and at the end.
 
+Types
 
+The following type names are allowed in generator files.
+
+unsigned, signed, char, uint8_t, uint16_t, int16_t, short, int,
+uint32_t, int32_t, long, float, double, uint64_t, int64_t.
+
+Fields can also have array type:
+
+STRUCT Document
+  0 63:32 char creatorCode[4]
+  0 31:0 char fileType[4]
+
+Packed fields
+
+If you pass the -p option to generator.py, it packs contiguous bitfields
+into a single field value, and generates macros to access these fields.
+(Packing fields like this ensures that we keep control over how we set the
+values - helpful if we want to manipulate registers efficiently.)
+
+Packed fields must have the same base type, must be bitfields (not using all
+bits of the type), and must be contiguous in the layout.
+
+Macros created are:
+
+field_name_S: number of right shifts to get the final value aligned.
+field_name_M: Mask for bits (after shifting)
+field_name_G(struct): get value from packed structure.
+field_name_P(value): gets value to put into field.  Field should be cleared
+  beforehand by inserting the complement of the mask.
 
 
 To do:
-Linux-style aligning of field names, etc.
-Linux-style types.
-
-Handle comments in fields.
+* Better formatting of comments.
+* Linux-style aligning of field names, etc.
+* Linux-style types.
+* multi-word variables.
 

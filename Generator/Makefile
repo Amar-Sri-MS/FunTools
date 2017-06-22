@@ -1,4 +1,4 @@
-tests: c-checker generator-test
+test: c-checker generator-test c-packed-checker
 
 generator-test:
 	python generator-test.py
@@ -8,5 +8,11 @@ c-checker:
 	gcc -o rdma -g -I. test_helper/rdma.c
 	./rdma
 
+c-packed-checker:
+	./generator.py -p -g code -o rdma_packed.h examples/rdma.gen
+	gcc -o rdma_packed -g -I. test_helper/rdma_packed.c
+	./rdma_packed
+
 clean:
-	rm -r generator.pyc rdma rdma.dSYM rdma.o rdma.h
+	rm generator.pyc rdma rdma.dSYM rdma_packed rdma_packed.dSYM
+	rm rdma.h rdma
