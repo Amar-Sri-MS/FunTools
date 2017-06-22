@@ -59,6 +59,19 @@ In source code, the form would match the structure - key comment on
 the same line as the variable, body comment preceding, tail comment
 inside and at the end.
 
+Types
+
+The following type names are allowed in generator files.
+
+unsigned, signed, char, uint8_t, uint16_t, int16_t, short, int,
+uint32_t, int32_t, long, float, double, uint64_t, int64_t.
+
+Fields can also have array type:
+
+STRUCT Document
+  0 63:32 char creatorCode[4]
+  0 31:0 char fileType[4]
+
 Packed fields
 
 If you pass the -p option to generator.py, it packs contiguous bitfields
