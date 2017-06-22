@@ -1,7 +1,8 @@
 test: c-checker generator-test c-packed-checker
 
 generator-test:
-	python generator-test.py
+	python generator_test.py
+	python codegen_test.py
 
 c-checker:
 	./generator.py -g code -o rdma.h examples/rdma.gen

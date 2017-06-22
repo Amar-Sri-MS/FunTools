@@ -20,6 +20,8 @@ import getopt
 import re
 import sys
 
+import codegen
+
 type_widths = {
   # width of type in bytes.
   'unsigned' : 32,
