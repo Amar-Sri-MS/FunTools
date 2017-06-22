@@ -579,6 +579,21 @@ class CheckerTest(unittest.TestCase):
     self.assertEqual(1, len(checker.warnings))
     self.assertIn('field "b" overlaps field "a"', checker.warnings[0])
 
+  def testFlagExtraSpace(self):
+    docBuilder = generator.DocBuilder()
+    contents = ['STRUCT Foo',
+                '0 15:8 uint8_t b',
+                '0 3:0 uint8_t a',
+                'END']
+    errors = docBuilder.parse(contents)
+    self.assertIsNone(errors)
+    checker = generator.Checker()
+    checker.visitDocument(docBuilder.current_document)
+
+    self.assertEqual(1, len(checker.warnings))
+    self.assertIn('unexpected space between field "b" and "a"',
+                  checker.warnings[0])
+
 class CheckIncludeGuardName(unittest.TestCase):
 
   def testNames(self):

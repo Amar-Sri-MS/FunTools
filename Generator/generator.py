@@ -590,6 +590,12 @@ class Checker:
         elif field.end_bit <= last_start_bit:
           self.warnings.append('*** field "%s" overlaps field "%s"' % (
               field.name, last_field_name))
+        elif last_start_bit != field.end_bit - 1:
+          self.warnings.append('*** unexpected space between field "%s" and "%s"' % (
+              field.name, last_field_name))
+              
+                              
+      
 
       last_flit = field.flit
       last_start_bit = field.start_bit
