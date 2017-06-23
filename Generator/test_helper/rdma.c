@@ -13,7 +13,7 @@
 #import <stddef.h> // offsetof
 #include <strings.h> // bzero.
 
-#import "rdma.h"
+#import "rdma_gen.h"
 
 #define EXPECT_SIZE(var, bytes, varStr)		\
   if (sizeof(var) != bytes) {						\
@@ -24,13 +24,13 @@
   }    
 
 #define EXPECT_OFFSET(var, field, offset, varStr)			\
-  if (offsetof(var, field) !=offset) {					\
+  if (offsetof(var, field) != offset) {					\
     fprintf(stderr, "FAIL: %s structure expected to be %d bytes, got %lu\n", \
 	    varStr, offset, offsetof(var, field));				\
     exit(1); \
   } else { \
     fprintf(stderr, "PASS\n"); \
-  }    
+  }
 
 void PrintFragment(struct GatherListFragmentHeader *hdr) {
   uint64_t* ptr = (uint64_t*) hdr;

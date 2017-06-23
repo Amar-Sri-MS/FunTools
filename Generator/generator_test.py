@@ -41,8 +41,6 @@ class TestTypes(unittest.TestCase):
     self.assertNotEqual(generator.Type("char", 4), generator.Type("uint16_t", 4))
     self.assertNotEqual(generator.Type("char", 4), generator.Type("char", 8))
 
-    
-
 
 class TestReadableList(unittest.TestCase):
   def testSimple(self):
@@ -53,21 +51,6 @@ class TestReadableList(unittest.TestCase):
     self.assertEqual("a", generator.readableList(["a"]))
     self.assertEqual("a and b", generator.readableList(["a", "b"]))
     self.assertEqual("a, c, and d", generator.readableList(["a", "c", "d"]))
-
-class TestIndentString(unittest.TestCase):
-  def testSimple(self):
-    # Tests only properties that hold true regardless of the formatting style.
-    codeGen = generator.CodeGenerator(None)
-    codeGen.indent = 1
-    self.assertTrue(len(codeGen.indentString()) > 0)
-
-  def testTwoIndentDoublesOneIndent(self):
-    codeGen = generator.CodeGenerator(None)
-    codeGen.indent = 1
-    oneIndent = codeGen.indentString()
-    codeGen.indent = 2
-    twoIndent = codeGen.indentString()    
-    self.assertEqual(twoIndent, oneIndent + oneIndent)
 
 
 class TestParseInt(unittest.TestCase):
@@ -190,7 +173,7 @@ class TestDocBuilder(unittest.TestCase):
     self.assertEqual(True, my_field.type.IsArray())
     self.assertEqual(8, my_field.type.ArraySize())
     self.assertEqual(0, my_field.flit)
-    self.assertEqual(64, my_field.size())
+    self.assertEqual(64, my_field.Size())
     self.assertEqual(0, my_field.flit)
 
 
@@ -392,104 +375,6 @@ class TestDocBuilder(unittest.TestCase):
     self.assertIsNone(the_field.tail_comment)
 
 
-class CodeGeneratorTest(unittest.TestCase):
-  def setUp(self):
-    self.printer = generator.CodeGenerator(None)
-
-  def testPrintStructNoVar(self):
-    builder = generator.DocBuilder()  
-    builder.parseStructStart('STRUCT Foo')
-    builder.parseLine('0 63:0 uint64_t packet')
-    builder.parseEnd('END')
-    doc = builder.current_document
-
-    code = self.printer.visitDocument(doc)
-
-    self.assertIn('struct Foo {', code)
-    # Should automatically create a field name for the struct.
-    self.assertIn('};', code)
-
-  def testPrintStructWithVar(self):
-    builder = generator.DocBuilder()  
-    builder.parseStructStart('STRUCT Foo foo_cmd')
-    builder.parseLine('0 63:0 uint64_t packet')
-    builder.parseEnd('END')
-    doc = builder.current_document
-
-    code = self.printer.visitDocument(doc)
-
-    self.assertIn('struct Foo {', code)
-    # Should automatically create a field name for the struct.
-    self.assertIn('} foo_cmd;', code)
-
-  def testPrintStructWithComments(self):
-    struct = generator.Struct('Foo', 'bar')
-    struct.key_comment = 'Key comment'
-    struct.body_comment = 'body comment\nbody comment'
-
-    code = self.printer.visitStruct(struct)
-    self.assertEquals('\n/* Key comment */\n'
-                      '/* body comment\n'
-                      'body comment */\n'
-                      'struct Foo {\n'
-                      '} bar;\n', code)
-
-  def testPrintArray(self):
-    field = generator.Field("foo", generator.Type("char", 8), 0, 64, 0)
-    code = self.printer.visitField(field)
-  
-    self.assertEquals('char foo[8];\n', code)
-
-
-  def testPrintUnion(self):
-    union = generator.Union("Foo", None)
-    
-    code = self.printer.visitUnion(union)
-
-    self.assertEquals('union Foo {\n};\n', code)
-
-  def testPrintUnionWithVar(self):
-    union = generator.Union("Foo", 'xxx')
-    
-    code = self.printer.visitUnion(union)
-
-    self.assertEquals('union Foo {\n} xxx;\n', code)
-
-  def testPrintField(self):
-    field = generator.Field("foo", generator.Type("uint8_t"), 0, 3, 0)
-    code = self.printer.visitField(field)
-    self.assertEqual("uint8_t foo:4;\n", code)
-
-  def testPrintFieldNotBitfield(self):
-    field = generator.Field("foo", generator.Type("uint8_t"), 0, 7, 0)
-    code = self.printer.visitField(field)
-    self.assertEqual("uint8_t foo;\n", code)
-
-  def testPrintFieldWithComment(self):
-    field = generator.Field("foo", generator.Type("uint8_t"), 0, 7, 0)
-    field.key_comment = 'A'
-    field.body_comment = 'B'
-    code = self.printer.visitField(field)
-    self.assertEqual("/* B */\nuint8_t foo; // A\n", code)
-
-  def testPrintFieldWithLongComment(self):
-    field = generator.Field("foo", generator.Type("uint8_t"), 0, 7, 0)
-    long_comment = "long long long long long long long long long long comment"
-    field.body_comment = long_comment
-    print("long comment is %d" %len(long_comment))
-    field.bodyuser_comment = long_comment
-    code = self.printer.visitField(field)
-    self.assertEqual('/* %s */\nuint8_t foo;\n' % long_comment, code)
-
-  def testPrintEnum(self):
-    enum = generator.Enum("MyEnum")
-    var = generator.EnumVariable("MY_COMMAND", 1)
-    enum.variables.append(var)
-
-    code = self.printer.visitEnum(enum)
-    self.assertEqual('enum MyEnum {\n\tMY_COMMAND = 1,\n};\n', code)
-    
-
 class PackerTest(unittest.TestCase):
   def testDontPackArgumentsFittingOwnType(self):
     docBuilder = generator.DocBuilder()
@@ -543,7 +428,7 @@ class PackerTest(unittest.TestCase):
     p.visitDocument(doc)
     self.assertEqual(5, len(doc.structs[0].fields))
     self.assertEqual('favorite_char', doc.structs[0].fields[0].name)
-    self.assertEqual('is_valid_char_to_reserved',
+    self.assertEqual('is_valid_char_to_foo',
                      doc.structs[0].fields[1].name)
     self.assertEqual('another_char', doc.structs[0].fields[2].name)
     self.assertEqual('third_char', doc.structs[0].fields[3].name)
@@ -556,7 +441,7 @@ class PackerTest(unittest.TestCase):
       '0 63:56 uint8_t favorite_char',
       '0 55 uint8_t is_valid_char',
       '0 54:53 char foo',
-      '0 52:48 char reserved',
+      '0 52:48 char bar',
       '0 47:40 uint8_t another_char',
       '0 39:32 uint8_t third_char',
       '0 31:0 uint32_t value',
@@ -571,7 +456,36 @@ class PackerTest(unittest.TestCase):
     self.assertEqual(6, len(doc.structs[0].fields))
     self.assertEqual('favorite_char', doc.structs[0].fields[0].name)
     self.assertEqual('is_valid_char', doc.structs[0].fields[1].name)
-    self.assertEqual('foo_to_reserved', doc.structs[0].fields[2].name)
+    self.assertEqual('foo_to_bar', doc.structs[0].fields[2].name)
+    self.assertEqual('another_char', doc.structs[0].fields[3].name)
+    self.assertEqual('third_char', doc.structs[0].fields[4].name)
+    self.assertEqual('value', doc.structs[0].fields[5].name)
+
+
+  def testReservedFieldIgnoredWhenPacking(self):
+    docBuilder = generator.DocBuilder()
+    contents = [
+      'STRUCT Foo',
+      '0 63:56 uint8_t favorite_char',
+      '0 55 uint8_t is_valid_char',
+      '0 54:53 char foo',
+      '0 52:51 char bar',
+      '0 50:48 char reserved',
+      '0 47:40 uint8_t another_char',
+      '0 39:32 uint8_t third_char',
+      '0 31:0 uint32_t value',
+      'END'
+      ]
+    errors = docBuilder.parse(contents)
+    self.assertIsNone(errors)
+  
+    doc = docBuilder.current_document
+    p = generator.Packer()
+    p.visitDocument(doc)
+    self.assertEqual(6, len(doc.structs[0].fields))
+    self.assertEqual('favorite_char', doc.structs[0].fields[0].name)
+    self.assertEqual('is_valid_char', doc.structs[0].fields[1].name)
+    self.assertEqual('foo_to_bar', doc.structs[0].fields[2].name)
     self.assertEqual('another_char', doc.structs[0].fields[3].name)
     self.assertEqual('third_char', doc.structs[0].fields[4].name)
     self.assertEqual('value', doc.structs[0].fields[5].name)
@@ -643,6 +557,7 @@ class CheckerTest(unittest.TestCase):
     checker = generator.Checker()
     checker.visitDocument(docBuilder.current_document)
 
+    print(checker.warnings)
     self.assertEqual(1, len(checker.warnings))
     self.assertIn('allow alignment', checker.warnings[0])
 
@@ -717,16 +632,6 @@ class CheckerTest(unittest.TestCase):
     self.assertEqual(1, len(checker.warnings))
     self.assertIn('unexpected space between field "b" and "a"',
                   checker.warnings[0])
-
-class CheckIncludeGuardName(unittest.TestCase):
-
-  def testNames(self):
-    self.assertEqual('AXI_H', generator.guardName("axi.h"))
-    self.assertEqual('A_XI_H', generator.guardName("aXi.h"))
-    self.assertEqual('AXI_H', generator.guardName("Axi.h"))
-
-    self.assertEqual('AXI_FOO_H', generator.guardName("axiFoo.h"))
-    self.assertEqual('AXI_FOO_BAR_H', generator.guardName("axiFooBar.h"))
 
 if __name__ == '__main__':
     unittest.main()
