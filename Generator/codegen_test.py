@@ -132,6 +132,19 @@ class HelperGeneratorTest(unittest.TestCase):
   
     self.assertEqual('  s->a = FUN_FOO_A1_P(a1) | FUN_FOO_A2_P(a2);', statement)
 
+  def testInitializePackedFieldWithAllCapStructureName(self):
+    gen = codegen.HelperGenerator()
+    s = generator.Struct('ffe_access_command', 'f1')
+    f = generator.Field('a', generator.Type('char'), 0, 63, 56)
+    f1 = generator.Field('a1', generator.Type('char'), 0, 63, 60)
+    f2 = generator.Field('a2', generator.Type('char'), 0, 59, 56)
+    f.packed_fields = [f1, f2]
+
+    statement = gen.GenerateInitializer(s, f, '')
+  
+    self.assertEqual('  s->a = FUN_FFE_ACCESS_COMMAND_A1_P(a1) | '
+                     'FUN_FFE_ACCESS_COMMAND_A2_P(a2);', statement)
+
 
   def testCreateSimpleInitializer(self):
     gen = codegen.HelperGenerator()

@@ -202,7 +202,8 @@ class HelperGenerator:
     for packed_field in field.packed_fields:
       if packed_field.IsReserved():
         continue
-      ident = utils.AsUppercaseMacro('FUN%s_%s' % (theStruct.name, packed_field.name))
+      ident = 'FUN_' + utils.AsUppercaseMacro('%s_%s' % (theStruct.name, 
+                                                         packed_field.name))
       packed_inits.append('%s_P(%s)' % (ident, packed_field.name))
     return '  s->%s%s = %s;' % (accessor_prefix, field.name,
                                 ' | '.join(packed_inits))
