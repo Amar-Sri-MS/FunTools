@@ -484,8 +484,15 @@ class HTMLGenerator(Visitor):
 
     return out
 
-  def visitField(self, field):
-    # Generates HTML documentation for a specific field.
+  def visitField(self, field, note=''):
+    """Generates HTML documentation for a specific field."""
+    if len(field.packed_fields) != 0:
+      out = ''
+      for packed_field in field.packed_fields:
+        out += self.visitField(packed_field, 
+                               'In packed field %s.' % field.name)
+      return out
+
     # Draw a solid line at start of each flit to visually separate flits.
     solid = ''
     if field.start_bit == 63:
@@ -502,8 +509,10 @@ class HTMLGenerator(Visitor):
     out += '<td class="description">\n'
     if field.key_comment:
       out += field.key_comment + '<br>'
+    if note:
+      out += '<i>' + note + '</i><br>'
     if field.body_comment:
-        out += '<p>%s</p>/' % field.body_comment
+        out += '<p>%s</p>/' % (field.body_comment)
     out += '</td>\n'
     out += '</tr>\n'
     return out
@@ -1037,22 +1046,29 @@ def generateFile(should_pack, output_style, output_base,
   if output_style is OutputStyleHTML:
     html_generator = HTMLGenerator()
     code = html_generator.visitDocument(doc)
+    if output_base:
+      f = open(output_base + '.html', 'w')
+      f.write(code)
+      f.close()
+    else:
+      print code
   elif output_style is OutputStyleHeader:
     code_generator = codegen.CodeGenerator(output_base)
     code_generator.output_file = output_base
     (header, source) = code_generator.visitDocument(doc)
-  if output_base:
-    f = open(output_base + '.h', 'w')
-    f.write(header)
-    f.close()
-    f = open(output_base + '.c', 'w')
-    f.write(source)
-    f.close()
-  else:
-    print '/* Header file */\n'
-    print header
-    print '/* Source file */\n'
-    print source
+
+    if output_base:
+      f = open(output_base + '.h', 'w')
+      f.write(header)
+      f.close()
+      f = open(output_base + '.c', 'w')
+      f.write(source)
+      f.close()
+    else:
+      print '/* Header file */\n'
+      print header
+      print '/* Source file */\n'
+      print source
 
 OutputStyleHeader = 1
 OutputStyleHTML = 2
