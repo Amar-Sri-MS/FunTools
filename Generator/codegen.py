@@ -13,10 +13,10 @@ class CodeGenerator:
   # Pretty-prints a parsed structure description into C headers.
   # The generated code should match the Linux coding style.
 
-  def __init__(self, output_file):
+  def __init__(self, output_file_base):
     self.indent = 0
     # Prefix of files to create.
-    self.output_file = output_file
+    self.output_file_base = output_file_base
 
   def indentString(self):
     # Generates indenting spaces needed for current level of code.
@@ -44,14 +44,14 @@ class CodeGenerator:
     src_out += '// change the gen file "%s" instead.\n\n' % doc.filename
     src_out += '\n'
     src_out += '#include <assert.h>\n'
-    if self.output_file:
-      src_out += '#include "%s"\n\n' % (os.path.basename(self.output_file) + '.h')
+    if self.output_file_base:
+      header_file = os.path.basename(self.output_file_base) + '.h'
+      src_out += '#include "%s"\n\n' % (header_file)
 
-    if self.output_file is not None:
-      include_guard_name = utils.AsGuardName(self.output_file)
+      include_guard_name = utils.AsGuardName(header_file)
       hdr_out += '#ifndef %s\n' % include_guard_name
       hdr_out += '#define %s\n' % include_guard_name
-    hdr_out += '#import "stdlib.h"\n\n'
+    hdr_out += '#include "stdlib.h"\n\n'
     for enum in doc.enums:
         hdr_out += self.visitEnum(enum)
     for struct in doc.structs:
@@ -61,7 +61,7 @@ class CodeGenerator:
 
     for macro in doc.macros:
       hdr_out += macro + '\n'
-    if self.output_file is not None:
+    if self.output_file_base is not None:
       hdr_out += '#endif // %s' % include_guard_name
     return (hdr_out, src_out)
 
