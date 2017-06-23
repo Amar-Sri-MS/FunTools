@@ -43,48 +43,6 @@ type_widths = {
   'int64_t' : 64
 }
 
-def removeWhitespace(the_str):
-  # Removes any spaces or carriage returns from the provided string.
-  if the_str == None or len(the_str) == 0:
-    return ''
-  return re.sub('\s+', '', the_str)
-
-def stripComment(the_str):
-  # Removes any C commenting from the comment so it can be reformatted as needed.
-  if the_str.startswith('//'):
-    return the_str[2:].lstrip(' ').rstrip(' ')
-  if the_str.startswith('/*'):
-    # Match /* */ with anything in between and whitespace after.
-    match = re.match('/\*\s*(.*)\*/\s*', the_str)
-    if not match:
-      print('Badly formatted comment "%s"' % the_str)
-      return the_str
-    return match.group(1).lstrip(' ').rstrip(' ')
-    
-   
-def readableList(l):
-  """Generates a human-readable list of string items."""
-  if l is None or len(l) == 0:
-    return ""
-  if len(l) == 1:
-    return l[0]
-  if len(l) == 2:
-    return l[0] + " and " + l[1]
-
-  return ", ".join(l[0:-1]) + ", and " + l[-1]
-
-def parseInt(the_str):
-  # Returns int value of string, or None if not a number.
-  base = 10
-  if the_str.startswith('0b'):
-    base = 2
-  if the_str.startswith('0x'):
-    base = 16
-  try:
-    return int(the_str, base)
-  except ValueError:
-    return None
-
 class Type:
   """Represents C type for a field."""
 
@@ -680,7 +638,8 @@ class Packer:
       new_field = Field(new_field_name, type, flit_number,
                         max_start_bit, min_end_bit)
       
-      bitfield_name_str = readableList([f.name for f in fields if not f.IsReserved()])
+      non_reserved_fields = [f.name for f in fields if not f.IsReserved()]
+      bitfield_name_str = utils.ReadableList(non_reserved_fields)
       bitfield_layout_str = ''
       for f in fields:
         bitfield_layout_str += '      %d:%d: %s\n' % (f.start_bit - min_end_bit,
@@ -791,8 +750,8 @@ class DocBuilder:
       self.errors.append('couldn\'t parse "%s"' % line)
       current_object = None
 
-    name = removeWhitespace(name)
-    variable = removeWhitespace(variable)
+    name = utils.RemoveWhitespace(name)
+    variable = utils.RemoveWhitespace(variable)
 
     current_struct = Struct(name, variable)
 
@@ -807,7 +766,7 @@ class DocBuilder:
     # Handle an ENUM directive opening a new enum.
     state, current_object = self.stack[len(self.stack)-1]
     _, name = line.split(' ')
-    name = removeWhitespace(name)
+    name = utils.RemoveWhitespace(name)
     current_enum = Enum(name)
 
     if len(self.current_comment) > 0:
@@ -829,7 +788,7 @@ class DocBuilder:
     var = match.group(1)
     # TODO(bowdidge): Test valid C identifier.
     value_str = match.group(2)
-    value = parseInt(value_str)
+    value = utils.ParseInt(value_str)
     if value is None:
       self.errors.append('Invalid enum value for %s: "%s"' % (value_str, var))
       return None
@@ -842,14 +801,14 @@ class DocBuilder:
     self.current_comment = ''
 
     if match.group(3):
-        new_enum.key_comment = stripComment(match.group(3))
+        new_enum.key_comment = utils.StripComment(match.group(3))
     return new_enum
  
   def parseLine(self, line):
     # Handle a line.  Use the state on top of the stack to decide what to do.
     state,current_object = self.stack[len(self.stack)-1]
     if line.startswith('//'):
-      self.current_comment += stripComment(line)
+      self.current_comment += utils.StripComment(line)
     elif state == DocBuilderTopLevel:
       return
     elif state == DocBuilderStateEnum:
@@ -873,8 +832,8 @@ class DocBuilder:
     # Handle a UNION directive opening a new union.
     state,current_object = self.stack[len(self.stack)-1]
     _, name, variable = line.split(' ')
-    name = removeWhitespace(name)
-    variable = removeWhitespace(variable)
+    name = utils.RemoveWhitespace(name)
+    variable = utils.RemoveWhitespace(variable)
     current_union = Union(name, variable)
     if len(self.current_comment) > 0:
       current_union.body_comment = self.current_comment
@@ -902,7 +861,7 @@ class DocBuilder:
     name = match.group(4)
     if len(match.group(5)) != 0: 
       is_array = True
-      array_size = parseInt(match.group(5).lstrip('[').rstrip(']'))
+      array_size = utils.ParseInt(match.group(5).lstrip('[').rstrip(']'))
       if array_size is None:
         print("Eek, thought %s was a number, but didn't parse!\n" % match.group(5))
     key_comment = match.group(6)
@@ -922,17 +881,17 @@ class DocBuilder:
       start_bit_str = bit_spec
       end_bit_str = bit_spec
         
-    flit = parseInt(flit_str)
+    flit = utils.ParseInt(flit_str)
     if flit is None:
       self.errors.append('Invalid flit "%s"' % flit_str)
       return None
 
-    start_bit = parseInt(start_bit_str)
+    start_bit = utils.ParseInt(start_bit_str)
     if start_bit is None:
       self.errors.append('Invalid start bit "%s"' % start_bit_str)
       return None
 
-    end_bit = parseInt(end_bit_str)
+    end_bit = utils.ParseInt(end_bit_str)
     if end_bit is None:
       self.errors.append('Invalid end bit "%s"' % end_bit_str)
       return None
@@ -970,7 +929,7 @@ class DocBuilder:
     if key_comment == '':
       key_comment = None
     else:
-      key_comment = stripComment(key_comment)
+      key_comment = utils.StripComment(key_comment)
 
     new_field = Field(name, type, flit, start_bit, end_bit)
 

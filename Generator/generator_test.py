@@ -42,42 +42,6 @@ class TestTypes(unittest.TestCase):
     self.assertNotEqual(generator.Type("char", 4), generator.Type("char", 8))
 
 
-class TestReadableList(unittest.TestCase):
-  def testSimple(self):
-    self.assertEqual("", generator.readableList(None))
-
-    self.assertEqual("", generator.readableList([]))
-    self.assertEqual("", generator.readableList([]))
-    self.assertEqual("a", generator.readableList(["a"]))
-    self.assertEqual("a and b", generator.readableList(["a", "b"]))
-    self.assertEqual("a, c, and d", generator.readableList(["a", "c", "d"]))
-
-
-class TestParseInt(unittest.TestCase):
-  def testSimple(self):
-      self.assertEqual(32, generator.parseInt("32"))
-      self.assertEqual(-32, generator.parseInt("-32"))
-      self.assertEqual(32, generator.parseInt("0x20"))
-      self.assertEqual(1, generator.parseInt("0x0000001"))
-
-      self.assertEqual(8, generator.parseInt("0b01000"))
-      self.assertEqual(15, generator.parseInt("0b1111"))
-
-  def testInvalid(self):
-    self.assertIsNone(generator.parseInt("foo"))
-    self.assertIsNone(generator.parseInt("0xlose"))
-    self.assertIsNone(generator.parseInt("0xlose"))
-    self.assertIsNone(generator.parseInt("0x0x"))
-
-
-class TestStripComment(unittest.TestCase):
-  def testSimple(self):
-     self.assertEqual("Foo", generator.stripComment("// Foo"))
-     self.assertEqual("Foo", generator.stripComment("/* Foo */"))
-     self.assertEqual("", generator.stripComment("//"))
-     self.assertEqual("", generator.stripComment("/* */"))
-                    
-
 class TestDocBuilder(unittest.TestCase):
   # Test that we correctly parse valid and invalid structure definitions.
   def testEmptyDoc(self):
