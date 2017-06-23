@@ -8,12 +8,13 @@
  * Copyright Fungible Inc. 2016.
  */
 
-#import <stdlib.h>
-#import <stdio.h>
-#import <stddef.h> // offsetof
+#include <assert.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <stddef.h> // offsetof
 #include <strings.h> // bzero.
 
-#import "rdma_packed.h"
+#import "rdma_packed_gen.h"
 
 #define ASSERT_SIZE(var, bytes, varStr)		\
   if (sizeof(var) != bytes) {						\
@@ -109,5 +110,30 @@ int main(int argc, char** argv) {
   ASSERT_EQUAL(7,
 	       FUN_GATHER_LIST_INLINE_FRAGMENT_INLINE_BYTE_COUNT_G(fragPtr->u1.inline_cmd.opcode_to_inlineByteCount),
 	       "Change single value returned wrong value.");
+
+  // Test initialization.
+  int expected_source = 2;
+  int expected_byte_count = 14;
+  uint64_t expected_bytes1 = 0xfefefefefefe;
+  uint64_t expected_bytes2 = 0x800000000;
+
+  struct GatherListFragmentHeader hdr;
+  InitGatherListInlineFragment(&hdr, OPCODE_SCATTER, expected_source,
+			       expected_byte_count,
+			       expected_bytes1, expected_bytes2);
+
+  ASSERT_EQUAL(OPCODE_SCATTER, 
+	       FUN_GATHER_LIST_INLINE_FRAGMENT_OPCODE_G(hdr.u1.inline_cmd.opcode_to_inlineByteCount),
+	       "opcode not initialized correctly.");
+  ASSERT_EQUAL(expected_source,
+	       FUN_GATHER_LIST_INLINE_FRAGMENT_SOURCE_G(hdr.u1.inline_cmd.opcode_to_inlineByteCount), 
+	       "source not initialized correctly.");
+  ASSERT_EQUAL(expected_byte_count,
+	       FUN_GATHER_LIST_INLINE_FRAGMENT_INLINE_BYTE_COUNT_G(hdr.u1.inline_cmd.opcode_to_inlineByteCount),
+	       "inlineByteCount not initialized correctly.");
+  ASSERT_EQUAL(expected_bytes1, hdr.u1.inline_cmd.bytes1,
+	       "bytes1 not initialized correctly");
+  ASSERT_EQUAL(expected_bytes2, hdr.u1.inline_cmd.bytes2,
+	       "bytes2 not initialized correctly");
 }
 

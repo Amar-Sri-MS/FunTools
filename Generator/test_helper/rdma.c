@@ -13,7 +13,7 @@
 #import <stddef.h> // offsetof
 #include <strings.h> // bzero.
 
-#import "rdma.h"
+#import "rdma_gen.h"
 
 #define EXPECT_SIZE(var, bytes, varStr)		\
   if (sizeof(var) != bytes) {						\

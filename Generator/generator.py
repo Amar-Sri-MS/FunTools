@@ -21,6 +21,7 @@ import re
 import sys
 
 import codegen
+import utils
 
 type_widths = {
   # width of type in bytes.
@@ -84,12 +85,6 @@ def parseInt(the_str):
   except ValueError:
     return None
 
-def macroUpper(the_str):
-  # Convert a CamelCase name to all uppercase with underbars.
-  s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', the_str)
-  s2 = re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
-  return s2.upper()
-
 class Type:
   """Represents C type for a field."""
 
@@ -127,7 +122,14 @@ class Type:
   def TypeName(self):
     """Returns type name."""
     if self.is_array:
-      return "%s[%d]" % (base_name, array_size)
+      return "%s[%d]" % (self.base_name, self.array_size)
+    else:
+      return self.base_name
+
+  def DeclarationType(self):
+    """Returns type name as function parameter type."""
+    if self.is_array:
+      return 's*' % self.base_name
     else:
       return self.base_name
 
@@ -206,18 +208,27 @@ class Field(Node):
     self.start_bit = start_bit
     # Lowest order bit holding the contents of the field.
     self.end_bit = end_bit
+    # Fields that have been packed in this field.
+    self.packed_fields = []
 
   def __str__(self):
     return('<Field: name=%s, type=%s, flit=%d, bits=%d:%d>' %
            (self.name, self.type, self.flit, self.start_bit, self.end_bit))
   
-  def size(self): 
+  def Size(self): 
     # Returns the number of bits in the field.
     return (self.start_bit - self.end_bit + 1)
 
-  def mask(self):
+  def Mask(self):
     # Returns a hexadecimal number that can be used as a mask in the flit.
-    return '0x%x' %  ((1 << self.size()) - 1)
+    return '0x%x' %  ((1 << self.Size()) - 1)
+
+  def SmallerThanType(self):
+    return self.Size() < self.type.BitWidth()
+
+  def IsReserved(self):
+    """True if the field is a placeholder that doesn't need to be initialized."""
+    return self.name.startswith('reserved') or self.name.startswith('rsvd')
 
 
 class EnumVariable(Node):
@@ -299,6 +310,23 @@ class Struct(Node):
     # union is the list of union fields in the struct.
     self.unions = []
 
+    # Source code for function declarations related to this structure.
+    self.declarations = []
+    
+    # Source code for function definitions related to this structure.
+    self.definitions = []
+
+  def AllFields(self):
+    """Returns all fields of the struct as seen before packing."""
+    fields = []
+
+    for field in self.fields:
+      if len(field.packed_fields) == 0:
+        fields.append(field)
+      else:
+        fields += field.packed_fields
+    return fields
+
   def __str__(self):
     return('<Struct %s, variable %s:\n fields: %s\n structs: %s\n unions: %s\n>\n' %
            (self.name, self.variable, self.fields, self.structs, self.unions))
@@ -324,8 +352,9 @@ class Document(Node):
     self.unions = []
     # All enums declared in the file.
     self.enums = []
-    # All macros declared in the file.
+    # All macros declared in the file in string form.
     self.macros = []
+    
     # Original filename containing the specifications.
     self.filename = None
 
@@ -479,148 +508,6 @@ class HTMLGenerator(Visitor):
     out += '</tr>\n'
     return out
 
-def guardName(filename):
-  """Convert a filename to an all-caps string for an include guard."""
-  name = macroUpper(filename)
-  return re.sub('\.', '_', name).upper()
-
-class CodeGenerator:
-  # Pretty-prints a parsed structure description into C headers.
-  # The generated code should match the Linux coding style.
-
-  def __init__(self, output_file):
-    self.indent = 0
-    # Name of file to create.
-    self.output_file = output_file
-
-  def indentString(self):
-    # Generates indenting spaces needed for current level of code.
-    return '\t' * self.indent
-
-  def incrementIndent(self):
-    self.indent += 1
-
-  def decrementIndent(self):
-    self.indent -= 1
-
-  def visitDocument(self, doc):
-    # Pretty-print a document.  Returns header as string.
-    indent = 0
-    # stdlib.h is needed for type names.
-    out = ""
-    out += '// Header created by generator.py\n'
-    out += '// Do not change this file; '
-    out += 'change the gen file "%s" instead.\n\n' % doc.filename
-    if self.output_file is not None:
-      include_guard_name = guardName(self.output_file)
-      out += '#ifndef %s\n' % include_guard_name
-      out += '#define %s 1\n\n' % include_guard_name
-    out += '#import "stdlib.h"\n\n'
-    for enum in doc.enums:
-      out += self.visitEnum(enum)
-    for struct in doc.structs:
-      out += self.visitStruct(struct)
-
-    for macro in doc.macros:
-      out += macro + '\n'
-    if self.output_file is not None:
-      out += '#endif // %s' % include_guard_name
-    return out
-
-  def visitEnum(self, enum):
-    # Pretty print an enum declaration.  Returns enum as string.
-    out = 'enum %s {\n' % enum.name
-    self.incrementIndent()
-    for enum_variable in enum.variables:
-        out += self.visitEnumVariable(enum_variable)
-    out += '};\n'
-    self.decrementIndent()
-    return out
-
-  def visitEnumVariable(self, enum_variable):
-    # Pretty-print a structure or union field declaration.  Returns string.
-    out = ''
-    if enum_variable.body_comment != None:
-      out += self.indentString() + ' /* %s */\n' % enum_variable.body_comment
-    out = self.indentString() + '%s = %s,' % (enum_variable.name, enum_variable.value)
-    if enum_variable.key_comment != None:
-      out += ' /* %s */' % enum_variable.key_comment
-    out += '\n'
-    return out
-
-  def visitUnion(self, union):
-    # Pretty-print a union declaration.  Returns string.
-    out = ''
-    if union.key_comment:
-      out += self.indentString() + '/* %s */\n' % union.key_comment    
-    if union.body_comment:
-      out += self.indentString() + '/* %s */\n' % union.body_comment
-    out += self.indentString() + 'union %s {\n' % union.name
-    for struct in union.structs:
-      out += self.visitStruct(struct)
-    variable_str = ''
-    if union.variable is not None:
-      variable_str = ' ' + union.variable
-    out += self.indentString() + '}%s;\n' % variable_str
-    return out
- 
-  def visitStruct(self, struct):
-    # Pretty-print a structure declaration.  Returns string.
-    out = '\n'
-    if struct.key_comment:
-      out += self.indentString() + '/* %s */\n' % struct.key_comment    
-    if struct.body_comment:
-      out += self.indentString() + '/* %s */\n' % struct.body_comment
-    out += self.indentString() + 'struct %s {\n' % struct.name
-    lastFlit = 0
-    self.incrementIndent()
-    for field in struct.fields:
-      if field.flit != lastFlit:
-        out += '\n'
-      out += self.visitField(field)
-      lastFlit = field.flit
-    self.decrementIndent()
-
-    self.incrementIndent()
-    for union in struct.unions:
-      out += self.visitUnion(union)
-    self.decrementIndent()
-    tag_str = ''
-    if len(struct.variable) > 0:
-      tag_str = ' %s' % struct.variable
-    out += self.indentString() + '}%s;\n' % tag_str
-    return out
-
-  def visitField(self, field):
-    # Pretty-print a field in a structure or union.  Returns string.
-    out = ''
-
-    if field.generator_comment is not None:
-      out += self.indentString() + '/* %s */\n' % field.generator_comment
-    if field.body_comment is not None:
-      # TODO(bowdidge): Break long comment.
-      out += self.indentString() + '/* %s */\n' % field.body_comment
-    key_comment = ''
-    if field.key_comment is not None:
-      key_comment = ' // %s' % field.key_comment
-     
-    var_bits = ''
-    var_width = field.start_bit - field.end_bit + 1
-    type_width = field.type.BitWidth()
-
-    if type_width != var_width:
-      var_bits = ':%d' % var_width
-    out += self.indentString() 
-    if field.type.IsArray():
-      out += '%s %s[%d];%s\n' % (field.type.BaseName(), field.name,
-                                 field.type.ArraySize(), key_comment)
-    else:
-      out += '%s %s%s;%s\n' % (field.type.BaseName(), field.name, var_bits,
-                               key_comment)
-    
-    return out
-
-
 class Checker:
   # Walk through a document and identify any likely problems.
   def __init__(self):
@@ -666,9 +553,6 @@ class Checker:
           self.warnings.append('*** unexpected space between field "%s" and "%s"' % (
               field.name, last_field_name))
               
-                              
-      
-
       last_flit = field.flit
       last_start_bit = field.start_bit
       last_end_bit = field.end_bit
@@ -676,7 +560,7 @@ class Checker:
 
     for struct in the_struct.structs:
       # Check adjacent structures match up with bit patterns.
-      self.visitStruct(struct)     
+      self.visitStruct(struct)
 
   def visitUnion(self, the_union):
     for struct in the_union.structs:
@@ -686,6 +570,19 @@ class Checker:
     pass
   
 
+def LastNonReservedName(field_list):
+  last_name = None
+  first_name = None
+  for field in field_list:
+    if not field.IsReserved():
+      last_name = field.name
+      if first_name is None:
+        first_name = field.name
+  if last_name is not None:
+    return last_name
+  if last_name is first_name:
+    return 'z'
+    
 class Packer:
   """ Searches all structures for bitfields that can be combined.
 
@@ -746,7 +643,7 @@ class Packer:
         current_group = []
         current_type = None
 
-      if (field.type.BitWidth() != field.size() and
+      if (field.type.BitWidth() != field.Size() and
           (current_type == None or field.type == current_type)):
         current_type = field.type
         current_group.append(field)
@@ -762,18 +659,27 @@ class Packer:
     for (type, fields) in fields_to_pack:
       max_start_bit = max([f.start_bit for f in fields])
       min_end_bit = min([f.end_bit for f in fields])
-      new_field_name = fields[0].name + "_to_" + fields[-1].name
+      new_field_name = fields[0].name + "_to_" + LastNonReservedName(fields)
       new_field = Field(new_field_name, type, flit_number,
                         max_start_bit, min_end_bit)
-      bitfield_name_str = readableList([f.name for f in fields])
-      new_field.body_comment = "Combines bitfields %s." % bitfield_name_str
+      
+      bitfield_name_str = readableList([f.name for f in fields if not f.IsReserved()])
+      bitfield_layout_str = ''
+      for f in fields:
+        bitfield_layout_str += '      %d:%d: %s\n' % (f.start_bit - min_end_bit,
+                                                      f.end_bit - min_end_bit,
+                                                      f.name)
+        new_field.body_comment = "Combines bitfields %s.\n%s" % (bitfield_name_str,
+                                                                bitfield_layout_str)
 
       # Replace first field to be removed with new field, and delete rest.
       for i, f in enumerate(the_struct.fields):
         if f == fields[0]:
+          new_field.packed_fields.append(f)
           the_struct.fields[i] = new_field
           break
       for f in fields[1:]:
+        new_field.packed_fields.append(f)
         the_struct.fields.remove(f)
 
       self.createMacros(the_struct, new_field, fields)
@@ -810,11 +716,11 @@ class Packer:
       if old_field.name == "reserved":
         continue
 
-      ident = macroUpper('FUN%s_%s' % (struct.name, old_field.name))
+      ident = utils.AsUppercaseMacro('FUN%s_%s' % (struct.name, old_field.name))
       shift = '#define %s_S %s' % (ident, old_field.end_bit - min_end_bit)
-      mask = '#define %s_M %s' % (ident, old_field.mask())
-      value = '#define %s_P(x) (x << %s_S)' % (ident, ident)
-      get = '#define %s_G(x) ((x >> %s_S) & %s_M)' % (ident, ident, ident)
+      mask = '#define %s_M %s' % (ident, old_field.Mask())
+      value = '#define %s_P(x) ((x) << %s_S)' % (ident, ident)
+      get = '#define %s_G(x) (((x) >> %s_S) & %s_M)' % (ident, ident, ident)
 
       self.doc.addMacro(
           '// For accessing "%s" field in %s.%s' % (
@@ -824,7 +730,6 @@ class Packer:
       self.doc.addMacro(value)
       self.doc.addMacro(get)
       self.doc.addMacro('\n')
-
 
 # Enums used to indicate the kind of object being processed.
 # Used on the stack.
@@ -1053,6 +958,7 @@ class DocBuilder:
     new_field = Field(name, type, flit, start_bit, end_bit)
 
     new_field.key_comment = key_comment
+
     if len(self.current_comment) > 0:
       new_field.body_comment = self.current_comment
     self.current_comment = ''
@@ -1096,9 +1002,10 @@ def usage():
   sys.stderr.write('-p: pack fields into 8 byte flits, and create accessor macros\n')
   sys.stderr.write('-g code: generate header file to stdout (default)\n')
   sys.stderr.write('-g html: generate HTML description of header\n')
-  sys.stderr.write('-o filename: send output to named file\n')
+  sys.stderr.write('-o filename_base: send output to named file\n')
+  sys.stderr.write('                  for code generation, appends correct extension.\n')
 
-def generateFile(should_pack, output_style, output_file,
+def generateFile(should_pack, output_style, output_base,
                  gen_file):
   # Process a single .gen file and create the appropriate header/docs.
   doc_builder = DocBuilder()
@@ -1124,18 +1031,28 @@ def generateFile(should_pack, output_style, output_file,
     p = Packer()
     p.visitDocument(doc)
 
+  helper = codegen.HelperGenerator()
+  helper.visitDocument(doc)
+
   if output_style is OutputStyleHTML:
     html_generator = HTMLGenerator()
     code = html_generator.visitDocument(doc)
   elif output_style is OutputStyleHeader:
-    code_generator = CodeGenerator(output_file)
-    code = code_generator.visitDocument(doc)
-  if output_file:
-    f = open(output_file, 'w')
-    f.write(code)
+    code_generator = codegen.CodeGenerator(output_base)
+    code_generator.output_file = output_base
+    (header, source) = code_generator.visitDocument(doc)
+  if output_base:
+    f = open(output_base + '.h', 'w')
+    f.write(header)
+    f.close()
+    f = open(output_base + '.c', 'w')
+    f.write(source)
     f.close()
   else:
-    print code
+    print '/* Header file */\n'
+    print header
+    print '/* Source file */\n'
+    print source
 
 OutputStyleHeader = 1
 OutputStyleHTML = 2
@@ -1150,7 +1067,7 @@ def main():
   
   should_pack = False
   output_style = OutputStyleHeader
-  output_file = None
+  output_base = None
 
   for o, a in opts:
     if o == '-p':
@@ -1159,7 +1076,7 @@ def main():
       usage()
       sys.exit(2)
     elif o in ('-o', '--output'):
-      output_file = a
+      output_base = a
     elif o == '-g':
       if a == 'code':
         output_style = OutputStyleHeader
@@ -1179,7 +1096,7 @@ def main():
       print('Can only process one gen file at a time.')
       sys.exit(2)
 
-  generateFile(should_pack, output_style, output_file, args[0])
+  generateFile(should_pack, output_style, output_base, args[0])
 
 if __name__ == '__main__':
   main()

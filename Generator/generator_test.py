@@ -173,7 +173,7 @@ class TestDocBuilder(unittest.TestCase):
     self.assertEqual(True, my_field.type.IsArray())
     self.assertEqual(8, my_field.type.ArraySize())
     self.assertEqual(0, my_field.flit)
-    self.assertEqual(64, my_field.size())
+    self.assertEqual(64, my_field.Size())
     self.assertEqual(0, my_field.flit)
 
 
@@ -428,7 +428,7 @@ class PackerTest(unittest.TestCase):
     p.visitDocument(doc)
     self.assertEqual(5, len(doc.structs[0].fields))
     self.assertEqual('favorite_char', doc.structs[0].fields[0].name)
-    self.assertEqual('is_valid_char_to_reserved',
+    self.assertEqual('is_valid_char_to_foo',
                      doc.structs[0].fields[1].name)
     self.assertEqual('another_char', doc.structs[0].fields[2].name)
     self.assertEqual('third_char', doc.structs[0].fields[3].name)
@@ -441,7 +441,7 @@ class PackerTest(unittest.TestCase):
       '0 63:56 uint8_t favorite_char',
       '0 55 uint8_t is_valid_char',
       '0 54:53 char foo',
-      '0 52:48 char reserved',
+      '0 52:48 char bar',
       '0 47:40 uint8_t another_char',
       '0 39:32 uint8_t third_char',
       '0 31:0 uint32_t value',
@@ -456,7 +456,36 @@ class PackerTest(unittest.TestCase):
     self.assertEqual(6, len(doc.structs[0].fields))
     self.assertEqual('favorite_char', doc.structs[0].fields[0].name)
     self.assertEqual('is_valid_char', doc.structs[0].fields[1].name)
-    self.assertEqual('foo_to_reserved', doc.structs[0].fields[2].name)
+    self.assertEqual('foo_to_bar', doc.structs[0].fields[2].name)
+    self.assertEqual('another_char', doc.structs[0].fields[3].name)
+    self.assertEqual('third_char', doc.structs[0].fields[4].name)
+    self.assertEqual('value', doc.structs[0].fields[5].name)
+
+
+  def testReservedFieldIgnoredWhenPacking(self):
+    docBuilder = generator.DocBuilder()
+    contents = [
+      'STRUCT Foo',
+      '0 63:56 uint8_t favorite_char',
+      '0 55 uint8_t is_valid_char',
+      '0 54:53 char foo',
+      '0 52:51 char bar',
+      '0 50:48 char reserved',
+      '0 47:40 uint8_t another_char',
+      '0 39:32 uint8_t third_char',
+      '0 31:0 uint32_t value',
+      'END'
+      ]
+    errors = docBuilder.parse(contents)
+    self.assertIsNone(errors)
+  
+    doc = docBuilder.current_document
+    p = generator.Packer()
+    p.visitDocument(doc)
+    self.assertEqual(6, len(doc.structs[0].fields))
+    self.assertEqual('favorite_char', doc.structs[0].fields[0].name)
+    self.assertEqual('is_valid_char', doc.structs[0].fields[1].name)
+    self.assertEqual('foo_to_bar', doc.structs[0].fields[2].name)
     self.assertEqual('another_char', doc.structs[0].fields[3].name)
     self.assertEqual('third_char', doc.structs[0].fields[4].name)
     self.assertEqual('value', doc.structs[0].fields[5].name)
@@ -602,16 +631,6 @@ class CheckerTest(unittest.TestCase):
     self.assertEqual(1, len(checker.warnings))
     self.assertIn('unexpected space between field "b" and "a"',
                   checker.warnings[0])
-
-class CheckIncludeGuardName(unittest.TestCase):
-
-  def testNames(self):
-    self.assertEqual('AXI_H', generator.guardName("axi.h"))
-    self.assertEqual('A_XI_H', generator.guardName("aXi.h"))
-    self.assertEqual('AXI_H', generator.guardName("Axi.h"))
-
-    self.assertEqual('AXI_FOO_H', generator.guardName("axiFoo.h"))
-    self.assertEqual('AXI_FOO_BAR_H', generator.guardName("axiFooBar.h"))
 
 if __name__ == '__main__':
     unittest.main()
