@@ -118,9 +118,9 @@ int main(int argc, char** argv) {
   uint64_t expected_bytes2 = 0x800000000;
 
   struct GatherListFragmentHeader hdr;
-  InitGatherListInlineFragment(&hdr, OPCODE_SCATTER, expected_source,
-			       expected_byte_count,
-			       expected_bytes1, expected_bytes2);
+  GatherListInlineFragment_init(&hdr, OPCODE_SCATTER, expected_source,
+				expected_byte_count,
+				expected_bytes1, expected_bytes2);
 
   ASSERT_EQUAL(OPCODE_SCATTER, 
 	       FUN_GATHER_LIST_INLINE_FRAGMENT_OPCODE_G(hdr.u1.inline_cmd.opcode_to_inlineByteCount),

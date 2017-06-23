@@ -557,6 +557,7 @@ class CheckerTest(unittest.TestCase):
     checker = generator.Checker()
     checker.visitDocument(docBuilder.current_document)
 
+    print(checker.warnings)
     self.assertEqual(1, len(checker.warnings))
     self.assertIn('allow alignment', checker.warnings[0])
 

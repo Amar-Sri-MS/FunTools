@@ -7,7 +7,7 @@ import re
 def AsGuardName(filename):
   """Convert a filename to an all-caps string for an include guard."""
   name = AsUppercaseMacro(filename)
-  return re.sub('\.', '_', name).upper()
+  return '__' + re.sub('\.', '_', name).upper() + '__'
 
 
 def AsUppercaseMacro(the_str):

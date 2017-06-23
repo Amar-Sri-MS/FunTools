@@ -50,7 +50,7 @@ class CodeGenerator:
     if self.output_file is not None:
       include_guard_name = utils.AsGuardName(self.output_file)
       hdr_out += '#ifndef %s\n' % include_guard_name
-      hdr_out += '#define %s 1\n\n' % include_guard_name
+      hdr_out += '#define %s\n' % include_guard_name
     hdr_out += '#import "stdlib.h"\n\n'
     for enum in doc.enums:
         hdr_out += self.visitEnum(enum)
@@ -183,6 +183,10 @@ class HelperGenerator:
     for struct in doc.structs:
       self.visitStruct(struct)
 
+  def InitializerName(self, struct_name):
+      """Returns name for the structure initialization function."""
+      return struct_name + "_init"
+
   def GenerateInitializer(self, theStruct, field, accessor_prefix):
     """Returns a C statement initializing the named variable.
 
@@ -199,9 +203,9 @@ class HelperGenerator:
       if packed_field.IsReserved():
         continue
       ident = utils.AsUppercaseMacro('FUN%s_%s' % (theStruct.name, packed_field.name))
-      packed_inits.append('%s_P(%s & %s_M)' % (ident, packed_field.name, ident))
+      packed_inits.append('%s_P(%s)' % (ident, packed_field.name))
     return '  s->%s%s = %s;' % (accessor_prefix, field.name,
-                                '\n  | '.join(packed_inits))
+                                ' | '.join(packed_inits))
 
   def GenerateInitRoutine(self, function_name, struct_name, 
                           accessor_prefix, theStruct):
@@ -256,7 +260,8 @@ class HelperGenerator:
     if len(validates) > 0:
       validate_block = '#ifdef DEBUG\n%s\n#endif\n\n' % '\n'.join(validates)
 
-    init_declaration = 'void %s(%s);\n' % (function_name, ', '.join(arg_list))
+    init_declaration = 'extern void %s(%s);\n' % (function_name,
+                                                  ', '.join(arg_list))
       
     init_definition = 'void %s(%s) {\n%s%s\n\n}' % (function_name,
                                                     ', '.join(arg_list),
@@ -271,10 +276,9 @@ class HelperGenerator:
     variables easily.
     """
     if len(theStruct.unions) == 0:
-      (decl, defn) = self.GenerateInitRoutine('Init%s' % theStruct.name,
-                                           theStruct.name,
-                                           '',
-                                           theStruct)
+      (decl, defn) = self.GenerateInitRoutine(
+          self.InitializerName(theStruct.name),
+          theStruct.name, '', theStruct)
       theStruct.declarations.append(decl)
       theStruct.definitions.append(defn)
     else:
@@ -283,7 +287,7 @@ class HelperGenerator:
       if len(theStruct.unions) == 1:
         union = theStruct.unions[0]
         for substruct in union.structs:
-          function_name = 'Init' + substruct.name
+          function_name = self.InitializerName(substruct.name)
           struct_name = theStruct.name
           accessor_prefix = '%s.%s.' % (union.variable, substruct.variable)
           (decl, defn) = self.GenerateInitRoutine(function_name, struct_name, 

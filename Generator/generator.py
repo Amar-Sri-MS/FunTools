@@ -97,13 +97,16 @@ class Type:
       self.is_array = False
       self.array_size = None
 
-    self.bit_width = type_widths.get(base_name)
-    if self.bit_width is None:
+    self.alignment = type_widths.get(base_name)
+    
+    if self.alignment is None:
       print("Unknown base type name %s\n", base_name)
       return None
 
     if self.is_array:
-      self.bit_width = self.bit_width * array_size
+      self.bit_width = self.alignment * array_size
+    else:
+      self.bit_width = self.alignment
 
   def IsArray(self):
     """Returns true if the type is an array type."""
@@ -129,9 +132,13 @@ class Type:
   def DeclarationType(self):
     """Returns type name as function parameter type."""
     if self.is_array:
-      return 's*' % self.base_name
+      return '%s[%d]' % (self.base_name, self.array_size)
     else:
       return self.base_name
+
+  def Alignment(self):
+    """Returns natural alignment for the type in bits."""
+    return self.alignment
 
   def BitWidth(self):
     """Returns width of type in bits."""
@@ -544,10 +551,11 @@ class Checker:
         # If the type of the variables changes, make sure the current offset would
         # allow the provided alignment.
         # TODO(bowdidge): Assumes type width = type alignment.
-        if field.end_bit % field.type.BitWidth() != 0:
+        if (field.end_bit % field.type.Alignment() != 0):
+
           self.warnings.append(
-              "In structure %s, type won\'t allow alignment: '%s %s' at bit %d" %
-                (the_struct.name, field.type, field.name, field.end_bit))
+            'In structure %s, type won\'t allow alignment: "%s %s" at bit %d' %
+            (the_struct.name, field.type, field.name, field.end_bit))
 
       if last_flit == field.flit:
         # Note that fields are visited in reverse order - smallest to largest.
@@ -1015,12 +1023,11 @@ def usage():
   sys.stderr.write('                  for code generation, appends correct extension.\n')
 
 def generateFile(should_pack, output_style, output_base,
-                 gen_file):
+                 input_stream, input_filename):
   # Process a single .gen file and create the appropriate header/docs.
   doc_builder = DocBuilder()
 
-  input_file = open(gen_file, 'r')
-  errors = doc_builder.parse(input_file)
+  errors = doc_builder.parse(input_stream)
 
   if errors is not None:
     for error in errors:
@@ -1028,7 +1035,7 @@ def generateFile(should_pack, output_style, output_base,
     sys.exit(1)
 
   doc = doc_builder.current_document
-  doc.filename = gen_file
+  doc.filename = input_filename
 
   c = Checker()
   c.visitDocument(doc)
@@ -1051,7 +1058,7 @@ def generateFile(should_pack, output_style, output_base,
       f.write(code)
       f.close()
     else:
-      print code
+      return code
   elif output_style is OutputStyleHeader:
     code_generator = codegen.CodeGenerator(output_base)
     code_generator.output_file = output_base
@@ -1065,10 +1072,8 @@ def generateFile(should_pack, output_style, output_base,
       f.write(source)
       f.close()
     else:
-      print '/* Header file */\n'
-      print header
-      print '/* Source file */\n'
-      print source
+      return '/* Header file */\n' +  header + '/* Source file */\n' + source
+    return None
 
 OutputStyleHeader = 1
 OutputStyleHTML = 2
@@ -1112,7 +1117,12 @@ def main():
       print('Can only process one gen file at a time.')
       sys.exit(2)
 
-  generateFile(should_pack, output_style, output_base, args[0])
+  input_stream = open(args[0], 'r')
+  out = generateFile(should_pack, output_style, output_base,
+                     input_stream, args[0])
+  input_stream.close()
+  if out:
+    print out              
 
 if __name__ == '__main__':
   main()

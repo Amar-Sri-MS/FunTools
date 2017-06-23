@@ -130,8 +130,7 @@ class HelperGeneratorTest(unittest.TestCase):
 
     statement = gen.GenerateInitializer(s, f, '')
   
-    self.assertEqual('  s->a = FUN_FOO_A1_P(a1 & FUN_FOO_A1_M)\n'
-                     '  | FUN_FOO_A2_P(a2 & FUN_FOO_A2_M);', statement)
+    self.assertEqual('  s->a = FUN_FOO_A1_P(a1) | FUN_FOO_A2_P(a2);', statement)
 
 
   def testCreateSimpleInitializer(self):
@@ -143,11 +142,60 @@ class HelperGeneratorTest(unittest.TestCase):
     (declaration, definition) = gen.GenerateInitRoutine("init", "MyStruct",
                                                         "foo.", s)
   
-    self.assertEqual('void init(struct MyStruct* s, char a1);\n', declaration)
+    self.assertEqual('extern void init(struct MyStruct* s, char a1);\n',
+                     declaration)
     self.assertEqual('void init(struct MyStruct* s, char a1) {\n'
                      '  s->foo.a1 = a1;\n\n'
                      '}', definition)
 
+  def testCreateArrayInitializer(self):
+    gen = codegen.HelperGenerator()
+    s = generator.Struct('Foo', 'f1')
+    f = generator.Field('a1', generator.Type('char', 8), 0, 63, 0)
+    s.fields = [f]
+
+    (declaration, definition) = gen.GenerateInitRoutine("init", "MyStruct",
+                                                        "foo.", s)
+  
+    self.assertEqual('extern void init(struct MyStruct* s, char[8] a1);\n',
+                     declaration),
+    self.assertEqual('void init(struct MyStruct* s, char[8] a1) {\n'
+                     '  s->foo.a1 = a1;\n\n'
+                     '}', definition)
+
+
+
+class CodegenEndToEnd(unittest.TestCase):
+  def testSimpleEndToEnd(self):
+    input = ['STRUCT Foo',
+             '0 63:56 uint8_t a /* comment about a */',
+             '0 55:54 uint8_t b',
+             '0 53:52 uint8_t c',
+             '0 51:48 uint8_t reserved',
+             '0 47:0 char d[6]',
+             'END']
+
+    out = generator.generateFile(True, generator.OutputStyleHeader, None,
+                                 input, 'foo.gen')
+    self.assertIsNotNone(out)
+
+    # Did structure get generated?
+    self.assertIn('struct Foo {', out)
+    # Did field a get rendered?
+    self.assertIn('uint8_t a; // comment about a', out)
+    # Did bitfield get packed?
+    self.assertIn('uint8_t b_to_c;', out)
+    # Did array get included?
+    self.assertIn('char d[6];', out)
+    # Did constructor get created?
+    self.assertIn('void Foo_init(struct Foo* s, uint8_t a, uint8_t b, '
+                  'uint8_t c, char[6] d);', out)
+    # Did accessor macro get created?
+    self.assertIn('#define FUN_FOO_B_P(x)', out)
+    # Did init function check range of bitfields?
+    self.assertIn('assert(b < 0x4);', out)
+    # Did bitfield get initialized?'
+    self.assertIn('s->b_to_c = FUN_FOO_B_P(b) | FUN_FOO_C_P(c);', out)
 
 
 class TestIndentString(unittest.TestCase):
