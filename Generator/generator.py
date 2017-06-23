@@ -574,12 +574,14 @@ class Packer:
 
   def __init__(self):
     self.current_document = None
+    self.warnings = []
 
   def VisitDocument(self, doc):
     # Pack all structures in the named documents.
     self.doc = doc
     for struct in doc.structs:
       self.VisitStruct(struct)
+    return self.warnings
 
   def VisitStruct(self, the_struct):
     # Gather fields by flit, then create macros for each.
@@ -612,19 +614,24 @@ class Packer:
     current_type = None
 
     for field in the_fields:
-      if field.type != current_type or field.type.IsArray():
+      # Loop through the fields, grouping contiguous bitfields into a larger
+      # single variable.
+      if field.type.BitWidth() != field.Size():
+         if current_type == None or field.type == current_type:
+           current_type = field.type
+           current_group.append(field)
+         else:
+           if len(current_group) > 1:
+             fields_to_pack.append((current_type, current_group))
+           current_group = [field]
+           current_type = field.type           
+      else:
         if len(current_group) > 1:
           fields_to_pack.append((current_type, current_group))
         current_group = []
         current_type = None
 
-      if (field.type.BitWidth() != field.Size() and
-          (current_type == None or field.type == current_type)):
-        current_type = field.type
-        current_group.append(field)
-
     if len(current_group) > 1:
-      # No need to pack if only one item in set of things to pack.
       fields_to_pack.append((current_type, current_group))
 
     if len(fields_to_pack) == 0:
@@ -634,6 +641,15 @@ class Packer:
     for (type, fields) in fields_to_pack:
       max_start_bit = max([f.start_bit for f in fields])
       min_end_bit = min([f.end_bit for f in fields])
+
+      packed_field_width = max_start_bit - min_end_bit + 1
+
+      if (packed_field_width > type.BitWidth()):
+        self.warnings.append('Unable to pack fields %s. '
+                             'Fields are %d bits, type is %d bits.' % (
+            utils.ReadableList([f.name for f in fields]),
+            packed_field_width,
+            type.BitWidth()))
       new_field_name = fields[0].name + "_to_" + LastNonReservedName(fields)
       new_field = Field(new_field_name, type, flit_number,
                         max_start_bit, min_end_bit)
@@ -1004,7 +1020,10 @@ def GenerateFile(should_pack, output_style, output_base,
  
   if should_pack:
     p = Packer()
-    p.VisitDocument(doc)
+    warnings = p.VisitDocument(doc)
+    if len(warnings) > 0:
+      for warning in warnings:
+        sys.stderr.write('Warning: %s\n' % warning)
 
   helper = codegen.HelperGenerator()
   helper.VisitDocument(doc)

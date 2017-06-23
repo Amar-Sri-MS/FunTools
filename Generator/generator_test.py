@@ -425,6 +425,62 @@ class PackerTest(unittest.TestCase):
     self.assertEqual('third_char', doc.structs[0].fields[4].name)
     self.assertEqual('value', doc.structs[0].fields[5].name)
 
+  def testPackOnlyContiguous(self):
+    """Tests that two sets of packed fields separated by a non-packed
+    variable are not merged.
+    """
+    
+    doc_builder = generator.DocBuilder()
+    contents = [
+      'STRUCT Foo',
+      '0 63:60 uint8_t a',
+      '0 59:56 uint8_t b',
+      '0 55:48 uint8_t c',
+      '0 47:44 uint8_t d',
+      '0 43:40 uint8_t e',
+      '0 39:0 uint64_t reserved',
+      'END'
+      ]
+
+    errors = doc_builder.Parse(contents)
+    self.assertIsNone(errors)
+  
+    doc = doc_builder.current_document
+    p = generator.Packer()
+    p.VisitDocument(doc)
+
+    # a, b, d, and e should not be packed.
+    self.assertEqual(4, len(doc.structs[0].fields))
+    self.assertEqual('a_to_b', doc.structs[0].fields[0].name)
+    self.assertEqual('c', doc.structs[0].fields[1].name)
+    self.assertEqual('d_to_e', doc.structs[0].fields[2].name)
+    self.assertEqual('reserved', doc.structs[0].fields[3].name)
+
+  def testWarningOnPackLargerThanBaseType(self):
+    """Tests that two sets of packed fields separated by a non-packed
+    variable are not merged.
+    """
+    
+    doc_builder = generator.DocBuilder()
+    contents = [
+      'STRUCT Foo',
+      '0 63:58 uint8_t a',
+      '0 57:54 uint8_t b',
+      '0 54:50 uint8_t c',
+      '0 50:48 uint8_t d',
+      '0 47:0 uint64_t reserved',
+      'END'
+      ]
+
+    errors = doc_builder.Parse(contents)
+    self.assertIsNone(errors)
+  
+    doc = doc_builder.current_document
+    p = generator.Packer()
+    warnings = p.VisitDocument(doc)
+    
+    self.assertTrue(1, len(warnings))
+    self.assertIn('Fields are 16 bits, type is 8 bits.', warnings[0])
 
   def testReservedFieldIgnoredWhenPacking(self):
     doc_builder = generator.DocBuilder()
@@ -445,7 +501,9 @@ class PackerTest(unittest.TestCase):
   
     doc = doc_builder.current_document
     p = generator.Packer()
-    p.VisitDocument(doc)
+    warnings = p.VisitDocument(doc)
+    self.assertEqual(0, len(warnings))
+
     self.assertEqual(6, len(doc.structs[0].fields))
     self.assertEqual('favorite_char', doc.structs[0].fields[0].name)
     self.assertEqual('is_valid_char', doc.structs[0].fields[1].name)
@@ -469,7 +527,9 @@ class PackerTest(unittest.TestCase):
     self.assertEqual(1, len(doc.structs))
 
     p = generator.Packer()
-    p.VisitDocument(doc)
+    warnings = p.VisitDocument(doc)
+    self.assertEqual(0, len(warnings))
+    
 
     self.assertEqual(2, len(doc.structs[0].fields))
 
