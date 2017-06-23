@@ -126,19 +126,19 @@ class Type:
 
 class Visitor:
   # Visitor abstract class for walking the specification tree.
-  def visitField(self, field):
+  def VisitField(self, field):
     pass
-  def visitStruct(self, struct):
+  def VisitStruct(self, struct):
     pass
-  def visitUnion(self, union):
+  def VisitUnion(self, union):
     pass
-  def visitEnum(self, enum):
+  def VisitEnum(self, enum):
     pass
-  def visitEnumVariable(self, enumVariable):
+  def VisitEnumVariable(self, enumVariable):
     pass
-  def visitComment(self, comment):
+  def VisitComment(self, comment):
     pass
-  def visitDocument(self, document):
+  def VisitDocument(self, document):
     pass
 
 
@@ -244,11 +244,11 @@ class Union(Node):
     # structures will be placed after any fields.
     self.structs = []
 
-  def bytes(self):
+  def Bytes(self):
     """Returns the total number of bytes for the union object."""
     return max([s.bytes() for s in self.structs])
 
-  def flits(self):
+  def Flits(self):
     """Returns the total number of flits (words) in the union object."""
     return max([s.flits() for s in self.structs])
 
@@ -296,10 +296,10 @@ class Struct(Node):
     return('<Struct %s, variable %s:\n fields: %s\n structs: %s\n unions: %s\n>\n' %
            (self.name, self.variable, self.fields, self.structs, self.unions))
 
-  def flits(self):
+  def Flits(self):
     return max([field.flit for field in self.fields])
 
-  def bytes(self):
+  def Bytes(self):
     """Returns the number of bytes in the structure."""
     if len(self.fields) == 0:
       return 0
@@ -326,14 +326,14 @@ class Document(Node):
   def __str__(self):
     return('<Document>')
 
-  def addMacro(self, macroStr):
+  def AddMacro(self, macro_str):
     # Record a macro to output.
-    self.macros.append(macroStr)
+    self.macros.append(macro_str)
 
 
 class HTMLGenerator(Visitor):
 
-  def visitDocument(self, doc):
+  def VisitDocument(self, doc):
     # Generates all the HTML to document the structures.
     css = ('.structTable {\n'
            '  border: solid 1px black;\n'
@@ -362,19 +362,19 @@ class HTMLGenerator(Visitor):
     out += '<style>\n%s</style>\n' % css
     out += '</head>\n<body>\n'
     for enum in doc.enums:
-      out += self.visitEnum(enum)
+      out += self.VisitEnum(enum)
     for struct in doc.structs:
-      out += self.visitStruct(struct)
+      out += self.VisitStruct(struct)
     for macro in doc.macros:
       pass
     out += '</body></html>'
     return out
 
-  def visitEnumVariable(self, enumVariable):
+  def VisitEnumVariable(self, enum_variable):
     # Generates HTML Documentation for a specific enum variable.
-    return '<li> <b>%s</b> = %s' % (enumVariable.name, enumVariable.value)
+    return '<li> <b>%s</b> = %s' % (enum_variable.name, enum_variable.value)
 
-  def visitEnum(self, enum):
+  def VisitEnum(self, enum):
     # Generates HTML documentation for a specific enum type.
     out = ''
     out += '<h3>enum %s</h3>\n' % enum.name
@@ -384,25 +384,25 @@ class HTMLGenerator(Visitor):
       out += '<p>%s</p>\n' % enum.body_comment
     out += '<b>Values</b><br>\n'
     out += '<ul>\n'
-    for enumVariable in enum.variables:
-      out += self.visitEnumVariable(enumVariable)
+    for enum_variable in enum.variables:
+      out += self.VisitEnumVariable(enum_variable)
     out += '</ul>\n'
     return out
 
-  def visitUnionInStruct(self, union):
+  def VisitUnionInStruct(self, union):
     """Draws a union as rows in a containing structure."""
     out = '<tr>\n'
 
     flit_str = "0"
-    if union.flits() > 1:
-      flit_str = "0 ... %d" % (union.flits() -1)
+    if union.Flits() > 1:
+      flit_str = "0 ... %d" % (union.Flits() -1)
 
     comment = ""
     if union.key_comment:
       comment = union.key_comment
 
     out += '  <td class="structBits"h>%s</td>\n' % flit_str
-    out += '  <td class="structBits">%d-0</td>\n' % (union.bytes() * 8 - 1)
+    out += '  <td class="structBits">%d-0</td>\n' % (union.Bytes() * 8 - 1)
     out += '  <td>union %s</td>\n' % union.name
     out += '  <td>%s</td>\n' % union.variable
     out += '  <td>%s</td>\n' % comment
@@ -410,15 +410,15 @@ class HTMLGenerator(Visitor):
 
     for s in union.structs:
       out += '<tr>\n'
-      out += '  <td class="structBits">0..%d</td>\n' % (s.flits() - 1)
-      out += '  <td class="structBits">%d-0</td>\n' % (s.bytes() * 8 - 1)
+      out += '  <td class="structBits">0..%d</td>\n' % (s.Flits() - 1)
+      out += '  <td class="structBits">%d-0</td>\n' % (s.Bytes() * 8 - 1)
       out += '  <td></td>\n'
       out += '  <td>%s</td>\n' % s.name
       out += '  <td>%s</td>\n' % s.key_comment
       out += '</tr>\n'
     return out
 
-  def visitStruct(self, struct):
+  def VisitStruct(self, struct):
     # Generates HTML documentation for a specific structure.
     out = ''
     out += '<h3>struct %s:\n</h3>\n' % struct.name
@@ -432,7 +432,7 @@ class HTMLGenerator(Visitor):
     out += '  <th>Type</th>'
     out += '  <th>Name</th><th>Description</th></tr>\n'
     for field in struct.fields:
-      out += self.visitField(field)
+      out += self.VisitField(field)
     if struct.tail_comment:
       out += '<tr>\n'
       out += '  <td class="description" colspan="5">\n'
@@ -440,21 +440,21 @@ class HTMLGenerator(Visitor):
       out += '  </td>\n'
       out += '</tr>\n'
     for union in struct.unions:
-      out += self.visitUnionInStruct(union)
+      out += self.VisitUnionInStruct(union)
     out += "</table>\n"
 
     for union in struct.unions:
       for s in union.structs:
-        out += self.visitStruct(s)
+        out += self.VisitStruct(s)
 
     return out
 
-  def visitField(self, field, note=''):
+  def VisitField(self, field, note=''):
     """Generates HTML documentation for a specific field."""
     if len(field.packed_fields) != 0:
       out = ''
       for packed_field in field.packed_fields:
-        out += self.visitField(packed_field, 
+        out += self.VisitField(packed_field, 
                                'In packed field %s.' % field.name)
       return out
 
@@ -489,11 +489,11 @@ class Checker:
     self.warnings = []
     self.current_document = None
 
-  def visitDocument(self, the_doc):
+  def VisitDocument(self, the_doc):
     for struct in the_doc.structs:
-      self.visitStruct(struct)
+      self.VisitStruct(struct)
 
-  def visitStruct(self, the_struct):
+  def VisitStruct(self, the_struct):
     last_type = None
     last_flit = None
     last_start_bit = 0
@@ -535,13 +535,13 @@ class Checker:
 
     for struct in the_struct.structs:
       # Check adjacent structures match up with bit patterns.
-      self.visitStruct(struct)
+      self.VisitStruct(struct)
 
-  def visitUnion(self, the_union):
+  def VisitUnion(self, the_union):
     for struct in the_union.structs:
-      self.visitStruct(struct)
+      self.VisitStruct(struct)
 
-  def visitField(self, the_field):
+  def VisitField(self, the_field):
     pass
   
 
@@ -575,30 +575,30 @@ class Packer:
   def __init__(self):
     self.current_document = None
 
-  def visitDocument(self, doc):
+  def VisitDocument(self, doc):
     # Pack all structures in the named documents.
     self.doc = doc
     for struct in doc.structs:
-      self.visitStruct(struct)
+      self.VisitStruct(struct)
 
-  def visitStruct(self, the_struct):
+  def VisitStruct(self, the_struct):
     # Gather fields by flit, then create macros for each.
     # Should make sure that adjacent fields are same types.
     for struct in the_struct.structs:
-      self.visitStruct(struct)
+      self.VisitStruct(struct)
     for union in the_struct.unions:
-      self.visitUnion(union)
-    self.packStruct(the_struct)
+      self.VisitUnion(union)
+    self.PackStruct(the_struct)
 
-  def visitUnion(self, the_union):
+  def VisitUnion(self, the_union):
     # Handle packing fields in union.
     # TODO(bowdidge): Union fields start the packing all over again, so if the 
     # common bit is not a full word, then need to copy fields over.
     for struct in the_union.structs:
-      self.visitStruct(struct)
+      self.VisitStruct(struct)
 
 
-  def packFlit(self, the_struct, flit_number, the_fields):
+  def PackFlit(self, the_struct, flit_number, the_fields):
     """Replaces contiguous sets of bitfields with macros to access.
     the_struct: structure containing fields to be packed.
     flit_number: which flit of the structure is handled this time.
@@ -658,17 +658,17 @@ class Packer:
         new_field.packed_fields.append(f)
         the_struct.fields.remove(f)
 
-      self.createMacros(the_struct, new_field, fields)
+      self.CreateMacros(the_struct, new_field, fields)
         
 
-  def packStruct(self, the_struct):
+  def PackStruct(self, the_struct):
     # Get rid of old struct fields, and use macros on flit-sized 
     # fields to access.
     new_fields = []
     flit_field_map = self.fieldsToFlits(the_struct)
 
     for flit, fields_in_flit in flit_field_map.iteritems():
-      self.packFlit(the_struct, flit, fields_in_flit)
+      self.PackFlit(the_struct, flit, fields_in_flit)
 
   def fieldsToFlits(self, struct):
     # Return a map of (flit, fields) for all fields in the structure.
@@ -679,7 +679,7 @@ class Packer:
       flit_field_map[field.flit] = item
     return flit_field_map
 
-  def createMacros(self, struct, new_field, combined_fields):
+  def CreateMacros(self, struct, new_field, combined_fields):
     """Creates macros to access all the bit fields we removed.
     struct: structure containing the fields that was removed.
     new_field: field combining the contents of the former fields.
@@ -698,14 +698,14 @@ class Packer:
       value = '#define %s_P(x) ((x) << %s_S)' % (ident, ident)
       get = '#define %s_G(x) (((x) >> %s_S) & %s_M)' % (ident, ident, ident)
 
-      self.doc.addMacro(
+      self.doc.AddMacro(
           '// For accessing "%s" field in %s.%s' % (
           old_field.name, struct.name, new_field.name))
-      self.doc.addMacro(shift)
-      self.doc.addMacro(mask)
-      self.doc.addMacro(value)
-      self.doc.addMacro(get)
-      self.doc.addMacro('\n')
+      self.doc.AddMacro(shift)
+      self.doc.AddMacro(mask)
+      self.doc.AddMacro(value)
+      self.doc.AddMacro(get)
+      self.doc.AddMacro('\n')
 
 # Enums used to indicate the kind of object being processed.
 # Used on the stack.
@@ -734,7 +734,7 @@ class DocBuilder:
     # Comment being formed for next object.
     self.current_comment = ''
 
-  def parseStructStart(self, line):
+  def ParseStructStart(self, line):
     # Handle a STRUCT directive opening a new structure.
     # Returns created structure.
     state, current_object = self.stack[len(self.stack)-1]
@@ -762,7 +762,7 @@ class DocBuilder:
     self.stack.append((DocBuilderStateStruct, current_struct))
     current_object.structs.append(current_struct)
 
-  def parseEnumStart(self, line):
+  def ParseEnumStart(self, line):
     # Handle an ENUM directive opening a new enum.
     state, current_object = self.stack[len(self.stack)-1]
     _, name = line.split(' ')
@@ -776,7 +776,7 @@ class DocBuilder:
     self.stack.append((DocBuilderStateEnum, current_enum))
     self.current_document.enums.append(current_enum)
 
-  def parseEnumLine(self, line):
+  def ParseEnumLine(self, line):
     # Parse the line describing a new enum variable.
     # This regexp matches:
     # Foo = 1 Abitrary following comment 
@@ -804,7 +804,7 @@ class DocBuilder:
         new_enum.key_comment = utils.StripComment(match.group(3))
     return new_enum
  
-  def parseLine(self, line):
+  def ParseLine(self, line):
     # Handle a line.  Use the state on top of the stack to decide what to do.
     state,current_object = self.stack[len(self.stack)-1]
     if line.startswith('//'):
@@ -812,15 +812,15 @@ class DocBuilder:
     elif state == DocBuilderTopLevel:
       return
     elif state == DocBuilderStateEnum:
-      enum = self.parseEnumLine(line)
+      enum = self.ParseEnumLine(line)
       if enum is not None:
         current_object.variables.append(enum)
     else:
-      field = self.parseFieldLine(line)
+      field = self.ParseFieldLine(line)
       if field is not None:
         current_object.fields.append(field)
 
-  def parseEnd(self, line):
+  def ParseEnd(self, line):
     # Handle an END directive.
     state,current_object = self.stack[len(self.stack)-1]
     if len(self.current_comment) > 0:
@@ -828,7 +828,7 @@ class DocBuilder:
     self.current_comment = ''
     self.stack.pop()
 
-  def parseUnionStart(self, line):
+  def ParseUnionStart(self, line):
     # Handle a UNION directive opening a new union.
     state,current_object = self.stack[len(self.stack)-1]
     _, name, variable = line.split(' ')
@@ -841,7 +841,7 @@ class DocBuilder:
     self.stack.append((DocBuilderStateUnion, current_union))
     current_object.unions.append(current_union)
 
-  def parseFieldLine(self, line):
+  def ParseFieldLine(self, line):
     # Handle a line describing a field in a structure.
     # Struct line is:
     # flit start_bit:end_bit type name /* comment */
@@ -948,11 +948,11 @@ class DocBuilder:
       self.warnings.append(warning)
     return new_field
 
-  def parsePlainLine(self, line):
+  def ParsePlainLine(self, line):
     # TODO(bowdidge): Save test in order for printing as comments.
     return
 
-  def parse(self, the_file):
+  def Parse(self, the_file):
     # Begin parsing a generated file provided as text.  Returns errors if any, or None.
     line_count = 0
     for line in the_file:
@@ -960,20 +960,20 @@ class DocBuilder:
       line = line.lstrip(' ')
       line_count += 1
       if line.startswith('STRUCT'):
-        self.parseStructStart(line)
+        self.ParseStructStart(line)
       elif line.startswith('UNION'):
-        self.parseUnionStart(line)
+        self.ParseUnionStart(line)
       elif line.startswith('ENUM'):
-        self.parseEnumStart(line)
+        self.ParseEnumStart(line)
       elif line.startswith('END'):
-        self.parseEnd(line)
+        self.ParseEnd(line)
       else:
-        self.parseLine(line)
+        self.ParseLine(line)
     if len(self.errors) > 0:
       return self.errors
     return None
 
-def usage():
+def Usage():
   sys.stderr.write('generator.py: usage: [-p] [-g [code, html] [-o file]\n')
   sys.stderr.write('-p: pack fields into 8 byte flits, and create accessor macros\n')
   sys.stderr.write('-g code: generate header file to stdout (default)\n')
@@ -981,12 +981,12 @@ def usage():
   sys.stderr.write('-o filename_base: send output to named file\n')
   sys.stderr.write('                  for code generation, appends correct extension.\n')
 
-def generateFile(should_pack, output_style, output_base,
+def GenerateFile(should_pack, output_style, output_base,
                  input_stream, input_filename):
   # Process a single .gen file and create the appropriate header/docs.
   doc_builder = DocBuilder()
 
-  errors = doc_builder.parse(input_stream)
+  errors = doc_builder.Parse(input_stream)
 
   if errors is not None:
     for error in errors:
@@ -997,21 +997,21 @@ def generateFile(should_pack, output_style, output_base,
   doc.filename = input_filename
 
   c = Checker()
-  c.visitDocument(doc)
+  c.VisitDocument(doc)
   if len(c.warnings) != 0:
     for warning in c.warnings:
       sys.stderr.write('Warning: %s\n' % warning)
  
   if should_pack:
     p = Packer()
-    p.visitDocument(doc)
+    p.VisitDocument(doc)
 
   helper = codegen.HelperGenerator()
-  helper.visitDocument(doc)
+  helper.VisitDocument(doc)
 
   if output_style is OutputStyleHTML:
     html_generator = HTMLGenerator()
-    code = html_generator.visitDocument(doc)
+    code = html_generator.VisitDocument(doc)
     if output_base:
       f = open(output_base + '.html', 'w')
       f.write(code)
@@ -1021,7 +1021,7 @@ def generateFile(should_pack, output_style, output_base,
   elif output_style is OutputStyleHeader:
     code_generator = codegen.CodeGenerator(output_base)
     code_generator.output_file = output_base
-    (header, source) = code_generator.visitDocument(doc)
+    (header, source) = code_generator.VisitDocument(doc)
 
     if output_base:
       f = open(output_base + '.h', 'w')
@@ -1042,7 +1042,7 @@ def main():
     opts, args = getopt.getopt(sys.argv[1:], 'tpg:o:', ['help', 'output='])
   except getopt.GetoptError as err:
     print str(err)
-    usage()
+    Usage()
     sys.exit(2)
   
   should_pack = False
@@ -1053,7 +1053,7 @@ def main():
     if o == '-p':
       should_pack = True
     elif o in ('-h', '--help'):
-      usage()
+      Usage()
       sys.exit(2)
     elif o in ('-o', '--output'):
       output_base = a
@@ -1077,7 +1077,7 @@ def main():
       sys.exit(2)
 
   input_stream = open(args[0], 'r')
-  out = generateFile(should_pack, output_style, output_base,
+  out = GenerateFile(should_pack, output_style, output_base,
                      input_stream, args[0])
   input_stream.close()
   if out:

@@ -9,12 +9,12 @@ class CodeGeneratorTest(unittest.TestCase):
 
   def testPrintStructNoVar(self):
     builder = generator.DocBuilder()  
-    builder.parseStructStart('STRUCT Foo')
-    builder.parseLine('0 63:0 uint64_t packet')
-    builder.parseEnd('END')
+    builder.ParseStructStart('STRUCT Foo')
+    builder.ParseLine('0 63:0 uint64_t packet')
+    builder.ParseEnd('END')
     doc = builder.current_document
 
-    (header, src) = self.printer.visitDocument(doc)
+    (header, src) = self.printer.VisitDocument(doc)
 
     self.assertIn('struct Foo {', header)
     # Should automatically create a field name for the struct.
@@ -22,12 +22,12 @@ class CodeGeneratorTest(unittest.TestCase):
 
   def testPrintStructWithVar(self):
     builder = generator.DocBuilder()  
-    builder.parseStructStart('STRUCT Foo foo_cmd')
-    builder.parseLine('0 63:0 uint64_t packet')
-    builder.parseEnd('END')
+    builder.ParseStructStart('STRUCT Foo foo_cmd')
+    builder.ParseLine('0 63:0 uint64_t packet')
+    builder.ParseEnd('END')
     doc = builder.current_document
 
-    (header, src) = self.printer.visitDocument(doc)
+    (header, src) = self.printer.VisitDocument(doc)
 
     self.assertIn('struct Foo {', header)
     # Should automatically create a field name for the struct.
@@ -38,7 +38,7 @@ class CodeGeneratorTest(unittest.TestCase):
     struct.key_comment = 'Key comment'
     struct.body_comment = 'body comment\nbody comment'
 
-    (header, src) = self.printer.visitStruct(struct)
+    (header, src) = self.printer.VisitStruct(struct)
     self.assertEquals('\n/* Key comment */\n'
                       '/* body comment\n'
                       'body comment */\n'
@@ -47,7 +47,7 @@ class CodeGeneratorTest(unittest.TestCase):
 
   def testPrintArray(self):
     field = generator.Field('foo', generator.Type('char', 8), 0, 64, 0)
-    code = self.printer.visitField(field)
+    code = self.printer.VisitField(field)
   
     self.assertEquals('char foo[8];\n', code)
 
@@ -55,32 +55,32 @@ class CodeGeneratorTest(unittest.TestCase):
   def testPrintUnion(self):
     union = generator.Union('Foo', None)
     
-    code = self.printer.visitUnion(union)
+    code = self.printer.VisitUnion(union)
 
     self.assertEquals(('union Foo {\n};\n', ''), code)
 
   def testPrintUnionWithVar(self):
     union = generator.Union('Foo', 'xxx')
     
-    code = self.printer.visitUnion(union)
+    code = self.printer.VisitUnion(union)
 
     self.assertEquals(('union Foo {\n} xxx;\n', ''), code)
 
   def testPrintField(self):
     field = generator.Field('foo', generator.Type('uint8_t'), 0, 3, 0)
-    code = self.printer.visitField(field)
+    code = self.printer.VisitField(field)
     self.assertEqual('uint8_t foo:4;\n', code)
 
   def testPrintFieldNotBitfield(self):
     field = generator.Field('foo', generator.Type('uint8_t'), 0, 7, 0)
-    code = self.printer.visitField(field)
+    code = self.printer.VisitField(field)
     self.assertEqual('uint8_t foo;\n', code)
 
   def testPrintFieldWithComment(self):
     field = generator.Field('foo', generator.Type('uint8_t'), 0, 7, 0)
     field.key_comment = 'A'
     field.body_comment = 'B'
-    code = self.printer.visitField(field)
+    code = self.printer.VisitField(field)
     self.assertEqual('/* B */\nuint8_t foo; // A\n', code)
 
   def testPrintFieldWithLongComment(self):
@@ -89,7 +89,7 @@ class CodeGeneratorTest(unittest.TestCase):
     field.body_comment = long_comment
     print('long comment is %d' %len(long_comment))
     field.bodyuser_comment = long_comment
-    code = self.printer.visitField(field)
+    code = self.printer.VisitField(field)
     self.assertEqual('/* %s */\nuint8_t foo;\n' % long_comment, code)
 
   def testPrintEnum(self):
@@ -97,7 +97,7 @@ class CodeGeneratorTest(unittest.TestCase):
     var = generator.EnumVariable('MY_COMMAND', 1)
     enum.variables.append(var)
 
-    code = self.printer.visitEnum(enum)
+    code = self.printer.VisitEnum(enum)
     self.assertEqual('enum MyEnum {\n\tMY_COMMAND = 1,\n};\n\n', code)
 
 
@@ -188,7 +188,7 @@ class CodegenEndToEnd(unittest.TestCase):
              '0 47:0 char d[6]',
              'END']
 
-    out = generator.generateFile(True, generator.OutputStyleHeader, None,
+    out = generator.GenerateFile(True, generator.OutputStyleHeader, None,
                                  input, 'foo.gen')
     self.assertIsNotNone(out)
 
@@ -216,14 +216,14 @@ class TestIndentString(unittest.TestCase):
     # Tests only properties that hold true regardless of the formatting style.
     generator = codegen.CodeGenerator(None)
     generator.indent = 1
-    self.assertTrue(len(generator.indentString()) > 0)
+    self.assertTrue(len(generator.IndentString()) > 0)
 
   def testTwoIndentDoublesOneIndent(self):
     generator = codegen.CodeGenerator(None)
     generator.indent = 1
-    oneIndent = generator.indentString()
+    oneIndent = generator.IndentString()
     generator.indent = 2
-    twoIndent = generator.indentString()    
+    twoIndent = generator.IndentString()    
     self.assertEqual(twoIndent, oneIndent + oneIndent)
 
 
