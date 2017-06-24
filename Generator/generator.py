@@ -157,6 +157,8 @@ class Node:
     # Contains either the comment, or None if never set.
     self.generator_comment = None
 
+    # All macros related to this Node in string form.
+    self.macros = []
 
 class Field(Node):
   # Representation of a field in a structure or union.
@@ -317,8 +319,6 @@ class Document(Node):
     self.unions = []
     # All enums declared in the file.
     self.enums = []
-    # All macros declared in the file in string form.
-    self.macros = []
     
     # Original filename containing the specifications.
     self.filename = None
@@ -674,8 +674,6 @@ class Packer:
       for f in fields[1:]:
         new_field.packed_fields.append(f)
         the_struct.fields.remove(f)
-
-      self.CreateMacros(the_struct, new_field, fields)
         
 
   def PackStruct(self, the_struct):
@@ -695,35 +693,6 @@ class Packer:
       item.append(field)
       flit_field_map[field.flit] = item
     return flit_field_map
-
-  def CreateMacros(self, struct, new_field, combined_fields):
-    """Creates macros to access all the bit fields we removed.
-    struct: structure containing the fields that was removed.
-    new_field: field combining the contents of the former fields.
-    combined_fields: fields that were removed.
-    """
-    min_end_bit = min([f.end_bit for f in combined_fields])
-
-    for old_field in combined_fields:
-      # No point in creating macros for fields that shouldn't be accessed.
-      if old_field.name == "reserved":
-        continue
-
-      ident = 'FUN_' + utils.AsUppercaseMacro('%s_%s' % (struct.name, 
-                                                         old_field.name))
-      shift = '#define %s_S %s' % (ident, old_field.end_bit - min_end_bit)
-      mask = '#define %s_M %s' % (ident, old_field.Mask())
-      value = '#define %s_P(x) ((x) << %s_S)' % (ident, ident)
-      get = '#define %s_G(x) (((x) >> %s_S) & %s_M)' % (ident, ident, ident)
-
-      self.doc.AddMacro(
-          '// For accessing "%s" field in %s.%s' % (
-          old_field.name, struct.name, new_field.name))
-      self.doc.AddMacro(shift)
-      self.doc.AddMacro(mask)
-      self.doc.AddMacro(value)
-      self.doc.AddMacro(get)
-      self.doc.AddMacro('\n')
 
 # Enums used to indicate the kind of object being processed.
 # Used on the stack.

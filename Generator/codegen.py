@@ -134,6 +134,9 @@ class CodeGenerator:
       tag_str = ' %s' % struct.variable
     hdr_out += self.IndentString() + '}%s;\n\n' % tag_str
 
+    for macro in struct.macros:
+        hdr_out += macro + '\n'
+
     for decl in struct.declarations:
         hdr_out += decl + '\n'
 
@@ -187,6 +190,34 @@ class HelperGenerator:
   def InitializerName(self, struct_name):
       """Returns name for the structure initialization function."""
       return struct_name + "_init"
+
+  def GenerateMacrosForPackedField(self, struct, field):
+    """Creates macros to access all the bit fields we removed.
+    struct: structure containing the fields that was removed.
+    field: field combining the contents of the former fields.
+    """
+    min_end_bit = min([f.end_bit for f in field.packed_fields])
+
+    for old_field in field.packed_fields:
+      # No point in creating macros for fields that shouldn't be accessed.
+      if old_field.name == "reserved":
+        continue
+
+      ident = 'FUN_' + utils.AsUppercaseMacro('%s_%s' % (struct.name, 
+                                                         old_field.name))
+      shift = '#define %s_S %s' % (ident, old_field.end_bit - min_end_bit)
+      mask = '#define %s_M %s' % (ident, old_field.Mask())
+      value = '#define %s_P(x) ((x) << %s_S)' % (ident, ident)
+      get = '#define %s_G(x) (((x) >> %s_S) & %s_M)' % (ident, ident, ident)
+
+      struct.macros.append(
+        '// For accessing "%s" field in %s.%s' % (
+          old_field.name, struct.name, field.name))
+      struct.macros.append(shift)
+      struct.macros.append(mask)
+      struct.macros.append(value)
+      struct.macros.append(get)
+      struct.macros.append('\n')
 
   def GenerateInitializer(self, the_struct, field, accessor_prefix):
     """Returns a C statement initializing the named variable.
@@ -277,6 +308,10 @@ class HelperGenerator:
                                             the_struct.name, '', the_struct)
     the_struct.declarations.append(decl)
     the_struct.definitions.append(defn)
+
+  def VisitField(self, the_struct, the_field):
+    if len(the_field.packed_fields) > 0:
+      self.GenerateMacrosForPackedField(the_struct, the_field)
     
   def VisitStruct(self, the_struct):
     """Creates accessor functions related to this structure.
@@ -297,3 +332,10 @@ class HelperGenerator:
                                                 substruct)
         the_struct.declarations.append(decl)
         the_struct.definitions.append(defn)
+
+        for field in substruct.fields:
+          self.VisitField(substruct, field)
+
+    for field in the_struct.fields:
+      self.VisitField(the_struct, field)
+    

@@ -240,6 +240,60 @@ class CodegenEndToEnd(unittest.TestCase):
     self.assertIn('void B1_init(struct B* s, uint8_t b11, uint8_t b12)', out)
     self.assertIn('void B2_init(struct B* s, uint8_t b21, uint8_t b22)', out)
 
+  def testMacrosCreated(self):
+    input = ['STRUCT A',
+             '0 63:60 uint8_t a',
+             '0 59:56 uint8_t b',
+             'END']
+    out = generator.GenerateFile(True, generator.OutputStyleHeader, None,
+                                 input, 'foo.gen')
+    self.assertIsNotNone(out)
+    self.assertIn('#define FUN_A_A_S 4', out)
+
+  def testMacrosCreatedInUnion(self):
+    input = ['STRUCT A',
+             'UNION CMD u1',
+             'STRUCT AX1',
+             '0 63:60 uint8_t a',
+             '0 59:56 uint8_t b',
+             'END',
+             'END',
+             'END']
+    out = generator.GenerateFile(True, generator.OutputStyleHeader, None,
+                                 input, 'foo.gen')
+    self.assertIsNotNone(out)
+    self.assertIn('#define FUN_AX1_A_S 4', out)
+
+  def testInitFunctionsCreated(self):
+    input = ['STRUCT A',
+             '0 63:0 uint64_t a',
+             'END',
+             'STRUCT B',
+             '0 63:56 uint8_t a',
+             'UNION Cmd u1',
+             'STRUCT B1',
+             '0 55:48 uint8_t b11',
+             '0 47:40 uint8_t b12',
+             'END',
+             'STRUCT B2',
+             '0 55:48 uint8_t b21',
+             '0 47:40 uint8_t b22',
+             'END',
+             'END',
+             '0 39:0 uint64_t c',
+             'END'
+             ]
+
+    out = generator.GenerateFile(True, generator.OutputStyleHeader, None,
+                                 input, 'foo.gen')
+    self.assertIsNotNone(out)
+
+    # Did structure get generated?
+    self.assertIn('void A_init(struct A* s, uint64_t a)', out)
+    self.assertIn('void B_init(struct B* s, uint8_t a, uint64_t c)', out)
+    self.assertIn('void B1_init(struct B* s, uint8_t b11, uint8_t b12)', out)
+    self.assertIn('void B2_init(struct B* s, uint8_t b21, uint8_t b22)', out)
+
   def disableTestInitFunctionsForNestedStructures(self):
     input = ['STRUCT A',
              '0 63:56 uint8_t a',
