@@ -210,6 +210,57 @@ class CodegenEndToEnd(unittest.TestCase):
     # Did bitfield get initialized?'
     self.assertIn('s->b_to_c = FUN_FOO_B_P(b) | FUN_FOO_C_P(c);', out)
 
+  def testInitFunctionsCreated(self):
+    input = ['STRUCT A',
+             '0 63:0 uint64_t a',
+             'END',
+             'STRUCT B',
+             '0 63:56 uint8_t a',
+             'UNION Cmd u1',
+             'STRUCT B1',
+             '0 55:48 uint8_t b11',
+             '0 47:40 uint8_t b12',
+             'END',
+             'STRUCT B2',
+             '0 55:48 uint8_t b21',
+             '0 47:40 uint8_t b22',
+             'END',
+             'END',
+             '0 39:0 uint64_t c',
+             'END'
+             ]
+
+    out = generator.GenerateFile(True, generator.OutputStyleHeader, None,
+                                 input, 'foo.gen')
+    self.assertIsNotNone(out)
+
+    # Did structure get generated?
+    self.assertIn('void A_init(struct A* s, uint64_t a)', out)
+    self.assertIn('void B_init(struct B* s, uint8_t a, uint64_t c)', out)
+    self.assertIn('void B1_init(struct B* s, uint8_t b11, uint8_t b12)', out)
+    self.assertIn('void B2_init(struct B* s, uint8_t b21, uint8_t b22)', out)
+
+  def disableTestInitFunctionsForNestedStructures(self):
+    input = ['STRUCT A',
+             '0 63:56 uint8_t a',
+             'STRUCT B',
+             '0 55:48 uint8_t b',
+             'STRUCT C',
+             '0 47:40 uint8_t c',
+             'END',
+             'END',
+             'END'
+             ]
+
+    out = generator.GenerateFile(True, generator.OutputStyleHeader, None,
+                                 input, 'foo.gen')
+    self.assertIsNotNone(out)
+
+    # Did structure get generated?
+    self.assertIn('void A_init(struct A* s, uint64_t a)', out)
+    self.assertNotIn('void B_init(struct B* s, uint8_t b)', out)
+    self.assertNotIn('void C_init(struct C* s, uint8_t c)', out)
+
 
 class TestIndentString(unittest.TestCase):
   def testSimple(self):

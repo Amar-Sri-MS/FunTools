@@ -650,6 +650,7 @@ class Packer:
             utils.ReadableList([f.name for f in fields]),
             packed_field_width,
             type.BitWidth()))
+
       new_field_name = fields[0].name + "_to_" + LastNonReservedName(fields)
       new_field = Field(new_field_name, type, flit_number,
                         max_start_bit, min_end_bit)
@@ -847,7 +848,11 @@ class DocBuilder:
   def ParseUnionStart(self, line):
     # Handle a UNION directive opening a new union.
     state,current_object = self.stack[len(self.stack)-1]
-    _, name, variable = line.split(' ')
+    union_args = line.split(' ')
+    if len(union_args) != 3:
+      self.errors.append('Malformed union declaration: %s\n' % line)
+      return
+    (_, name, variable) = union_args
     name = utils.RemoveWhitespace(name)
     variable = utils.RemoveWhitespace(variable)
     current_union = Union(name, variable)

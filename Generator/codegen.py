@@ -175,6 +175,7 @@ class CodeGenerator:
     return hdr_out
 
 class HelperGenerator:
+  """Generates helper functions for manipulating structures."""
   def __init__(self):
     self.current_document = None
 
@@ -270,29 +271,29 @@ class HelperGenerator:
                                                     '\n'.join(inits))
     return (init_declaration, init_definition)
 
+  def GenerateHelpersForStruct(self, the_struct):
+    """Generates helper functions for the provided structure."""
+    (decl, defn) = self.GenerateInitRoutine(self.InitializerName(the_struct.name),
+                                            the_struct.name, '', the_struct)
+    the_struct.declarations.append(decl)
+    the_struct.definitions.append(defn)
+    
   def VisitStruct(self, the_struct):
     """Creates accessor functions related to this structure.
 
     For each structure, we want an Init/constructor for initializing
     variables easily.
     """
-    if len(the_struct.unions) == 0:
-      (decl, defn) = self.GenerateInitRoutine(
-          self.InitializerName(the_struct.name),
-          the_struct.name, '', the_struct)
-      the_struct.declarations.append(decl)
-      the_struct.definitions.append(defn)
-    else:
-      # TODO(bowdidge): Create init routines for structures containing
-      # unions.
-      if len(the_struct.unions) == 1:
-        union = the_struct.unions[0]
-        for substruct in union.structs:
-          function_name = self.InitializerName(substruct.name)
-          struct_name = the_struct.name
-          accessor_prefix = '%s.%s.' % (union.variable, substruct.variable)
-          (decl, defn) = self.GenerateInitRoutine(function_name, struct_name, 
-                                                  accessor_prefix,
-                                                  substruct)
-          the_struct.declarations.append(decl)
-          the_struct.definitions.append(defn)
+    self.GenerateHelpersForStruct(the_struct)
+    if len(the_struct.unions) == 1:
+      # Generate constructor for each option.
+      union = the_struct.unions[0]
+      for substruct in union.structs:
+        function_name = self.InitializerName(substruct.name)
+        struct_name = the_struct.name
+        accessor_prefix = '%s.%s.' % (union.variable, substruct.variable)
+        (decl, defn) = self.GenerateInitRoutine(function_name, struct_name, 
+                                                accessor_prefix,
+                                                substruct)
+        the_struct.declarations.append(decl)
+        the_struct.definitions.append(defn)
