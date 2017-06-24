@@ -709,7 +709,8 @@ class Packer:
       if old_field.name == "reserved":
         continue
 
-      ident = utils.AsUppercaseMacro('FUN%s_%s' % (struct.name, old_field.name))
+      ident =o 'FUN_' + utils.AsUppercaseMacro('%s_%s' % (struct.name, 
+                                                         old_field.name))
       shift = '#define %s_S %s' % (ident, old_field.end_bit - min_end_bit)
       mask = '#define %s_M %s' % (ident, old_field.Mask())
       value = '#define %s_P(x) ((x) << %s_S)' % (ident, ident)
