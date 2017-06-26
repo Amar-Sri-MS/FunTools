@@ -287,11 +287,11 @@ class Union(Node):
 
   def Bytes(self):
     """Returns the total number of bytes for the union object."""
-    return max([s.bytes() for s in self.structs])
+    return max([s.Flits() * 8 for s in self.structs])
 
   def Flits(self):
     """Returns the total number of flits (words) in the union object."""
-    return max([s.flits() for s in self.structs])
+    return max([s.Flits() for s in self.structs])
 
   def __str__(self):
     return('<Union %s, variable %s:\n fields: %s\n structs: %s\n>\n' % 
@@ -501,15 +501,21 @@ class HTMLGenerator(Visitor):
     solid = ''
     if field.start_bit == 63:
       solid = 'border-top: solid 1px'
+    elif field.crosses_flit:
+      solid = 'border-bottom: solid 1px'
     out = ''
     out += '<tr style="%s">\n' % solid
-    out += '  <td class="structBits">%d</td>\n' % field.flit
-    out += '  <td class="structBits">%d-%d</td>\n' % (field.start_bit, field.end_bit)
-    if field.type.IsArray():
-      out += '  <td>%s[%d]</td>\n  <td>%s</td>\n' % (
-        field.type, field.type.ArraySize(), field.name)
+    if field.crosses_flit:
+      out += '  <td class="structBits" colspan=2>%d:%d-%d:%d</td>\n' % (
+        field.start_flit, field.start_bit, field.end_flit, field.end_bit)
+      out += '  <td>%s</td>\n  <td>%s</td>\n' % (field.type.DeclarationType(), 
+                                                 field.name)
     else:
-      out += '  <td>%s</td>\n  <td>%s</td>\n' % (field.type, field.name)
+      out += '  <td class="structBits">%d</td>\n' % field.start_flit
+      out += '  <td class="structBits">%d-%d</td>\n' % (field.start_bit, field.end_bit)
+      out += '  <td>%s</td>\n  <td>%s</td>\n' % (field.type.DeclarationType(),
+                                                 field.name)
+
     out += '<td class="description">\n'
     if field.key_comment:
       out += field.key_comment + '<br>'
