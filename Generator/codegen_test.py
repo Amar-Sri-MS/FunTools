@@ -316,6 +316,21 @@ class CodegenEndToEnd(unittest.TestCase):
     self.assertNotIn('void C_init(struct C* s, uint8_t c)', out)
 
 
+  def testMultiFlitField(self):
+    input = ['STRUCT A',
+             '0 63:56 uint8_t a',
+             '0 55:0 uint8_t b[19]',
+             '1 63:0 ...',
+             '2 63:32 ...',
+             'END'
+             ]
+
+    out = generator.GenerateFile(True, generator.OutputStyleHeader, None,
+                                 input, 'foo.gen')
+    self.assertIsNotNone(out)
+    print out
+    
+
 class TestIndentString(unittest.TestCase):
   def testSimple(self):
     # Tests only properties that hold true regardless of the formatting style.

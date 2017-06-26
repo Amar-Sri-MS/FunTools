@@ -58,4 +58,46 @@ def ParseInt(the_str):
   except ValueError:
     return None
 
+def ParseBitSpec(the_str):
+  """Returns the (flit number, start bit, end bit) by parsing start of field.
 
+  Returns None if invalid.
+  """
+  if ':' in the_str:
+    bits_match = re.match('(\w+)\s+(\w+):(\w+)$', the_str)
+    if bits_match is None:
+      return None
+    flit_str = bits_match.group(1)
+    start_bit_str = bits_match.group(2)
+    end_bit_str = bits_match.group(3)
+  else:
+    # Assume single bit.
+    bits_match = re.match('(\w+)\s+(\w+)$', the_str)
+    if bits_match is None:
+      return None
+
+    flit_str = bits_match.group(1)
+    start_bit_str = bits_match.group(2)
+    end_bit_str = start_bit_str
+
+  flit_number = ParseInt(flit_str)
+
+  if flit_number is None:
+    return None
+  if flit_number < 0:
+    return None
+  
+  start_bit = ParseInt(start_bit_str)
+
+  if start_bit is None:
+    return None
+  if start_bit < 0:
+    return None
+
+  end_bit = ParseInt(end_bit_str)
+  if end_bit is None:
+    return None
+  if end_bit < 0:
+    return None
+
+  return (flit_number, start_bit, end_bit)

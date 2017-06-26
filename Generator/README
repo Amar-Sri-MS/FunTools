@@ -7,7 +7,7 @@ documentation, or a C header file for software.
 The generator script can also transform the structures in various ways for
 efficiency.  The first conversion, "packing", avoids inefficient compiled code
 by replacing multiple bitfields with a single 8 byte field, then defining
-accessor macros to get and set from the correct fields.
+accessor macros to get and set from the multiple fields in a single access.
 
 INPUT FILE FORMAT
 
@@ -17,7 +17,8 @@ Descriptions of a data structure represent:
 * field descriptions
 * comments associated with any.
 
-A simple description is:
+The input format pairs up a precise bit specification with C-like structures.
+For example, a simple description is:
 
 /* Standard work unit format for all messages in F1. */
 STRUCT WorkUnit

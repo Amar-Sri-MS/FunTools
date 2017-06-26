@@ -160,6 +160,14 @@ class Node:
     # All macros related to this Node in string form.
     self.macros = []
 
+
+def BitFlitToString(bitflit):
+  """Converts an absolute bit offset from top of struct to a top=64 string."""
+  bit = 63 - (bitflit % 64)
+  flit = bitflit / 64
+  return "flit %d, bit %d" (flit, bit)
+
+
 class Field(Node):
   # Representation of a field in a structure or union.
 
@@ -170,18 +178,49 @@ class Field(Node):
     # String name of the C type, or a generic type for signed-ness.
     self.type = type
     # Integer representing the 8 byte "flit" that the field belongs to.
-    self.flit = flit
+    self.start_flit = flit
+    # Integer representing the 8 byte flit that the end bit belongs to.
+    # Not all fields fit in a single flit.
+    self.end_flit = flit
     # Highest bit holding the contents of the field.
     self.start_bit = start_bit
     # Lowest order bit holding the contents of the field.
     self.end_bit = end_bit
+    self.crosses_flit = False
     # Fields that have been packed in this field.
     self.packed_fields = []
 
   def __str__(self):
-    return('<Field: name=%s, type=%s, flit=%d, bits=%d:%d>' %
-           (self.name, self.type, self.flit, self.start_bit, self.end_bit))
+    if self.start_flit == self.end_flit:
+      return('<Field: name=%s, type=%s, flit=%d, bits=%d:%d>' %
+             (self.name, self.type, self.start_flit,
+              self.start_bit, self.end_bit))
+    else:
+      return('<Field: name=%s, type=%s, start: flit=%d, bit=%d, '
+             'end: flit=%d, bit=%d>' % (self.name, self.type,
+                                        self.start_flit, self.start_bit,
+                                        self.end_flit, self.end_bit))
+   
+  def StartFlit(self):
+    return self.start_flit
+
+  def EndFlit(self):
+    return self.end_flit
+
+  def StartBitFlit(self):
+    """Returns offset from top of first flit.
+
+    Bitflits are an absolute, always increasing index for a particular bit,
+    starting at 0.  The checker's tests for overlapping fields are done using
+    bitflits so the logic doesn't have to think about flits or about the fact that
+    we start bit ordering at 63 and go down.
+    """
+    return (63 - self.start_bit) + 64 * self.start_flit
   
+  def EndBitFlit(self):
+    """Returns offset from top of first flit."""
+    return (63 - self.end_bit) + 64 * self.end_flit
+    
   def Size(self): 
     # Returns the number of bits in the field.
     return (self.start_bit - self.end_bit + 1)
@@ -299,13 +338,13 @@ class Struct(Node):
            (self.name, self.variable, self.fields, self.structs, self.unions))
 
   def Flits(self):
-    return max([field.flit for field in self.fields])
+    return max([field.EndFlit() for field in self.fields])
 
   def Bytes(self):
     """Returns the number of bytes in the structure."""
     if len(self.fields) == 0:
       return 0
-    return (max([field.flit for field in self.fields]) + 1) * 8
+    return (max([field.EndFlit() for field in self.fields]) + 1) * 8
 
 
 class Document(Node):
@@ -495,42 +534,48 @@ class Checker:
 
   def VisitStruct(self, the_struct):
     last_type = None
-    last_flit = None
+    last_end_flit = None
     last_start_bit = 0
     last_end_bit = 0
     last_field_name = None
 
+
+    if len(the_struct.fields) == 0:
+      return
+
+    last_start_bitflit = the_struct.fields[0].StartBitFlit() - 1
+    last_end_bitflit = the_struct.fields[0].StartBitFlit() - 1
+
     # Iterate through the fields from 0 to make sure LSB is aligned
     # correctly.
-    for field in reversed(the_struct.fields):
+    for field in the_struct.fields:
       if last_type is None:
         last_type = field.type
       elif last_type != field.type:
         # If the type of the variables changes, make sure the current offset would
         # allow the provided alignment.
         # TODO(bowdidge): Assumes type width = type alignment.
-        if (field.end_bit % field.type.Alignment() != 0):
-
+        if (field.StartBitFlit() % field.type.Alignment() != 0):
           self.warnings.append(
             'In structure %s, type won\'t allow alignment: "%s %s" at bit %d' %
             (the_struct.name, field.type, field.name, field.end_bit))
 
-      if last_flit == field.flit:
-        # Note that fields are visited in reverse order - smallest to largest.
-        if (last_start_bit >= field.start_bit or 
-            last_end_bit >= field.end_bit):
-          self.warnings.append('*** field "%s" and "%s" not in bit order' % (
-              field.name, last_field_name))
-        elif field.end_bit <= last_start_bit:
-          self.warnings.append('*** field "%s" overlaps field "%s"' % (
-              field.name, last_field_name))
-        elif last_start_bit != field.end_bit - 1:
-          self.warnings.append('*** unexpected space between field "%s" and "%s"' % (
-              field.name, last_field_name))
+      start_bitflit = field.StartBitFlit()
+      end_bitflit = field.EndBitFlit()
+      # Note that fields are visited in reverse order - smallest to largest.
+      if (last_start_bitflit >= end_bitflit and
+           last_end_bitflit >= end_bitflit):
+        self.warnings.append('*** field "%s" and "%s" not in bit order' % (
+            last_field_name, field.name))
+      elif last_end_bitflit >= start_bitflit:
+        self.warnings.append('*** field "%s" overlaps field "%s"' % (
+            last_field_name, field.name))
+      elif start_bitflit != last_end_bitflit + 1:
+        self.warnings.append('*** unexpected space between field "%s" and "%s"'
+                             % (last_field_name, field.name))
               
-      last_flit = field.flit
-      last_start_bit = field.start_bit
-      last_end_bit = field.end_bit
+      last_start_bitflit = field.StartBitFlit()
+      last_end_bitflit = field.EndBitFlit()
       last_field_name = field.name
 
     for struct in the_struct.structs:
@@ -680,18 +725,18 @@ class Packer:
     # Get rid of old struct fields, and use macros on flit-sized 
     # fields to access.
     new_fields = []
-    flit_field_map = self.fieldsToFlits(the_struct)
+    flit_field_map = self.FieldsToStartFlits(the_struct)
 
     for flit, fields_in_flit in flit_field_map.iteritems():
       self.PackFlit(the_struct, flit, fields_in_flit)
 
-  def fieldsToFlits(self, struct):
+  def FieldsToStartFlits(self, struct):
     # Return a map of (flit, fields) for all fields in the structure.
     flit_field_map = {}
     for field in struct.fields:
-      item = flit_field_map.get(field.flit, [])
+      item = flit_field_map.get(field.StartFlit(), [])
       item.append(field)
-      flit_field_map[field.flit] = item
+      flit_field_map[field.StartFlit()] = item
     return flit_field_map
 
 # Enums used to indicate the kind of object being processed.
@@ -711,7 +756,7 @@ class DocBuilder:
     # current_document is the top level object.
     self.current_document = Document()
     # stack is a list of (state, object) pairs showing all objects
-    # currently being parsed.  New fields or structures are put in the
+    # currently being parsed.  New containers (enum, struct, union) are put in the
     # last object.
     self.stack = [(DocBuilderTopLevel, self.current_document)]
     # strings describing any errors encountered during parsing.
@@ -721,10 +766,17 @@ class DocBuilder:
     # Comment being formed for next object.
     self.current_comment = ''
 
+    # Current field that stretches across flits.
+    self.flit_crossing_field = None
+    # Number of extra bits still to be consumed by the flit_crossing_field
+    self.bits_remaining = 0
+    # Number of extra bits already cosumed.
+    self.bits_consumed = 0
+
   def ParseStructStart(self, line):
     # Handle a STRUCT directive opening a new structure.
     # Returns created structure.
-    state, current_object = self.stack[len(self.stack)-1]
+    (state, current_object) = self.stack[len(self.stack)-1]
     terms = line.split(' ')
 
     if len(terms) == 3:
@@ -792,8 +844,11 @@ class DocBuilder:
     return new_enum
  
   def ParseLine(self, line):
-    # Handle a line.  Use the state on top of the stack to decide what to do.
-    state,current_object = self.stack[len(self.stack)-1]
+    """Parse a single line of a gen file that wasn't the start or end of container.
+
+    Use the state on top of the stack to decide what to do.
+    """
+    (state, current_object) = self.stack[len(self.stack)-1]
     if line.startswith('//'):
       self.current_comment += utils.StripComment(line)
     elif state == DocBuilderTopLevel:
@@ -809,7 +864,14 @@ class DocBuilder:
 
   def ParseEnd(self, line):
     # Handle an END directive.
-    state,current_object = self.stack[len(self.stack)-1]
+    (state, current_object) = self.stack[len(self.stack)-1]
+
+    if self.flit_crossing_field:
+      self.errors.append('Field spec for "%s" too short: expected %d bits, got %d' %
+                         (self.flit_crossing_field.name,
+                          self.flit_crossing_field.type.BitWidth(),
+                          self.flit_crossing_field.type.BitWidth() - self.bits_remaining))
+
     if len(self.current_comment) > 0:
       current_object.tail_comment = self.current_comment
     self.current_comment = ''
@@ -817,7 +879,7 @@ class DocBuilder:
 
   def ParseUnionStart(self, line):
     # Handle a UNION directive opening a new union.
-    state,current_object = self.stack[len(self.stack)-1]
+    (state, current_object) = self.stack[len(self.stack)-1]
     union_args = line.split(' ')
     if len(union_args) != 3:
       self.errors.append('Malformed union declaration: %s\n' % line)
@@ -832,11 +894,89 @@ class DocBuilder:
     self.stack.append((DocBuilderStateUnion, current_union))
     current_object.unions.append(current_union)
 
+  def ParseMultiFlitFieldLine(self, line):
+    """Parse the current line as if it were a multi-flit line.
+
+    Return false if it were not a multi-flit line
+    """
+    match = re.match('(\w+\s+(\w+:\w+|\w+))\s+\.\.\.\s*(.*)', line)
+    if match is None:
+      return False
+
+    if self.flit_crossing_field is None:
+      self.errors.append('Multi-line flit continuation seen without pending field.')
+      return True
+
+    # Continuation.
+    flit_bit_spec_str = match.group(1)
+    key_comment = match.group(3)
+
+    result = utils.ParseBitSpec(flit_bit_spec_str)
+
+    if not result:
+      self.errors.append('Invalid bit pattern: "%s"' % flit_bit_spec_str)
+      return True
+
+    # Tests
+    # Flag error if uses more bits than was available in previous declaration.
+    # Flag error if larger than flit.
+    # Flag if flit number wasn't increasing.
+    # Checker will determine if there's overlap.
+    
+    result = utils.ParseBitSpec(flit_bit_spec_str)
+    if not result:
+      self.errors.append('Invalid bit pattern: "%s"' % flit_bit_spec_str)
+      return True
+    (flit, start_bit, end_bit) = result
+
+    size = start_bit - end_bit + 1
+
+    if not self.flit_crossing_field.tail_comment:
+      self.flit_crossing_field.tail_comment = key_comment
+    else:
+      self.flit_crossing_field.tail_comment += '\n' + key_comment
+
+    if self.bits_remaining < size:
+      self.errors.append('Continuation for multi-flit field "%s" too large: '
+                         'expected %d bits, got %d.' % (
+          self.flit_crossing_field.name,
+          self.flit_crossing_field.type.BitWidth(),
+          size + self.bits_consumed))
+      self.flit_crossing_field = None
+      return True
+
+    self.bits_remaining -= size
+    self.bits_consumed += size
+    self.flit_crossing_field.crosses_flit = True
+    
+    if self.bits_remaining == 0:
+      self.flit_crossing_field.end_flit = flit
+      self.flit_crossing_field.end_bit = end_bit
+      self.flit_crossing_field = None
+
+    return True
+      
+        
+
+
   def ParseFieldLine(self, line):
-    # Handle a line describing a field in a structure.
-    # Struct line is:
-    # flit start_bit:end_bit type name /* comment */
-    match = re.match('(\w+)\s+(\w+:\w+|\w+)\s+(\w+)\s+(\w+)(\[[0-9]+\]|)\s*(.*)', line)
+    """Parse a single line describing a field.
+    
+q    Struct line is one of the following
+
+    Defines field
+    flit start_bit:end_bit type name /* comment */
+    flit single_bit type name /* comment */
+    
+    Defines continuation of multi-flit field.
+    flit start_bit:end_bit ...
+    """
+    
+    # Try parsing as continuation of previous field.
+    if self.ParseMultiFlitFieldLine(line):
+      return 
+
+    match = re.match('(\w+\s+(\w+:\w+|\w+))\s+(\w+)\s+(\w+)(\[[0-9]+\]|)\s*(.*)', line)
 
     if match is None:
         # Flag error, or treat as comment.
@@ -846,8 +986,7 @@ class DocBuilder:
     is_array = False
     array_size = 1
 
-    flit_str = match.group(1)
-    bit_spec = match.group(2)
+    flit_bit_spec_str = match.group(1)
     type_name = match.group(3)
     name = match.group(4)
     if len(match.group(5)) != 0: 
@@ -857,35 +996,13 @@ class DocBuilder:
         print("Eek, thought %s was a number, but didn't parse!\n" % match.group(5))
     key_comment = match.group(6)
 
-    start_bit_str = None
-    end_bit_str = None
+    result = utils.ParseBitSpec(flit_bit_spec_str)
 
-    if ':' in bit_spec:
-      bits_match = re.match('(\w+):(\w+)', bit_spec)
-      if bits_match is None:
-        self.errors.append('Invalid bit pattern: "%s"' % bits)
-        return None
-      start_bit_str = bits_match.group(1)
-      end_bit_str = bits_match.group(2)
-    else:
-      # Assume single bit.
-      start_bit_str = bit_spec
-      end_bit_str = bit_spec
-        
-    flit = utils.ParseInt(flit_str)
-    if flit is None:
-      self.errors.append('Invalid flit "%s"' % flit_str)
+    if not result:
+      self.errors.append('Invalid bit pattern: "%s"' % flit_bit_spec_str)
       return None
 
-    start_bit = utils.ParseInt(start_bit_str)
-    if start_bit is None:
-      self.errors.append('Invalid start bit "%s"' % start_bit_str)
-      return None
-
-    end_bit = utils.ParseInt(end_bit_str)
-    if end_bit is None:
-      self.errors.append('Invalid end bit "%s"' % end_bit_str)
-      return None
+    (flit, start_bit, end_bit) = result
 
     if start_bit > 63:
       self.errors.append('Field "%s" has start bit "%d" too large for 8 byte flit.' % (
@@ -900,30 +1017,36 @@ class DocBuilder:
 
     if start_bit < end_bit:
       self.errors.append('Start bit %d greater than end bit %d in field %s' % 
-                         (start_bit, end_bit, name))
+                           (start_bit, end_bit, name))
+
+    new_field = Field(name, type, flit, start_bit, end_bit)
 
     expected_width = type.BitWidth()
-
     actual_width = start_bit - end_bit + 1
+
+    
     if is_array:
       if actual_width != expected_width:
-        self.errors.append('Field "%s" needed %d bytes to hold %s[%d], got %d.' %
-                         (name, expected_width, type, array_size,
-                          actual_width))
-
-
-    elif actual_width > expected_width:
-      self.errors.append('Type "%s" too small to hold %d bits for field "%s".' % 
-                         (type, actual_width, name))
-      return None
+        if end_bit == 0:
+          # Field may stretch across flits.
+          self.flit_crossing_field = new_field
+          self.bits_remaining = expected_width - actual_width
+          self.bits_consumed = actual_width
+        else:
+          self.errors.append('Field "%s" needed %d bytes to hold %s[%d], got %d.' %
+                             (name, expected_width, type, array_size,
+                              actual_width))
+          return None
+    else:
+      if actual_width > expected_width:
+        self.errors.append('Type "%s" too small to hold %d bits for field "%s".' %
+                           (type, actual_width, name))
+        return None
 
     if key_comment == '':
       key_comment = None
     else:
       key_comment = utils.StripComment(key_comment)
-
-    new_field = Field(name, type, flit, start_bit, end_bit)
-
     new_field.key_comment = key_comment
 
     if len(self.current_comment) > 0:

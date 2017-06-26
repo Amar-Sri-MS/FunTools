@@ -117,10 +117,11 @@ class CodeGenerator:
     lastFlit = 0
     self.IncrementIndent()
     for field in struct.fields:
-      if field.flit != lastFlit:
+      # Add blank line between flits.
+      if field.StartFlit() != lastFlit:
         hdr_out += '\n'
       hdr_out += self.VisitField(field)
-      lastFlit = field.flit
+      lastFlit = field.StartFlit()
     self.DecrementIndent()
 
     self.IncrementIndent()

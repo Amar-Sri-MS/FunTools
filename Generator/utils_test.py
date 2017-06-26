@@ -49,5 +49,19 @@ class TestStripComment(unittest.TestCase):
      self.assertEqual("", utils.StripComment("//"))
      self.assertEqual("", utils.StripComment("/* */"))
                     
+
+class TestParseBitSpec(unittest.TestCase):
+  def testSimple(self):
+    self.assertEqual((1, 63, 50), utils.ParseBitSpec('1 63:50'))
+    self.assertEqual((1, 63, 63), utils.ParseBitSpec('1 63'))
+    self.assertEqual((1, 63, 63), utils.ParseBitSpec('1 63:63'))
+    self.assertEqual((1, 21, 21), utils.ParseBitSpec('1 0x15:0x15'))
+
+  def testBadStrings(self):
+    self.assertEqual(None, utils.ParseBitSpec('A 0:0'))
+    self.assertEqual(None, utils.ParseBitSpec('1 -1'))
+    self.assertEqual(None, utils.ParseBitSpec('-1 1'))
+    self.assertEqual(None, utils.ParseBitSpec('0 1,2'))
+
 if __name__ == '__main__':
     unittest.main()

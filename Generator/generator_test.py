@@ -67,7 +67,8 @@ class TestDocBuilder(unittest.TestCase):
     self.assertEqual(1, len(firstStruct.fields))
 
     firstField = firstStruct.fields[0]
-    self.assertEqual(0, firstField.flit)
+    self.assertEqual(0, firstField.StartFlit())
+    self.assertEqual(0, firstField.EndFlit())
     self.assertEqual(63, firstField.start_bit)
     self.assertEqual(0, firstField.end_bit)
     self.assertEqual('packet', firstField.name)
@@ -136,9 +137,9 @@ class TestDocBuilder(unittest.TestCase):
     self.assertEqual(generator.Type('uint8_t', 8), my_field.type)
     self.assertEqual(True, my_field.type.IsArray())
     self.assertEqual(8, my_field.type.ArraySize())
-    self.assertEqual(0, my_field.flit)
+    self.assertEqual(0, my_field.StartFlit())
+    self.assertEqual(0, my_field.EndFlit())
     self.assertEqual(64, my_field.Size())
-    self.assertEqual(0, my_field.flit)
 
 
   def testArraySizedTooSmall(self):
@@ -147,7 +148,45 @@ class TestDocBuilder(unittest.TestCase):
 
     errors = doc_builder.Parse(contents)
     self.assertEqual(1, len(errors))
-    self.assertIn('needed 16 bytes', errors[0])
+    self.assertIn('expected 16 bits, got 64', errors[0])
+
+
+  def testMultiFlitTooSmall(self):
+    doc_builder = generator.DocBuilder()
+    contents = ['STRUCT Foo',
+                '0 63:0 uint8_t chars[10]',
+                '1 63:0 ...',
+                'END']
+
+    errors = doc_builder.Parse(contents)
+    self.assertEqual(1, len(errors))
+    self.assertIn('expected 80 bits, got 128', errors[0])
+
+
+  def testMultiFlitNotNeeded(self):
+    doc_builder = generator.DocBuilder()
+    contents = ['STRUCT Foo',
+                '0 63:0 uint8_t chars[8]',
+                '1 63:0 ...',
+                'END']
+
+    errors = doc_builder.Parse(contents)
+    self.assertEqual(1, len(errors))
+    self.assertIn('Multi-line flit continuation seen without', errors[0])
+
+
+  def testMultiFlitTooLarge(self):
+    doc_builder = generator.DocBuilder()
+    contents = ['STRUCT Foo',
+                '0 63:0 uint8_t chars[18]',
+                '1 63:0 ...',
+                '2 63:0 uint64_t value',
+                'END']
+
+    errors = doc_builder.Parse(contents)
+    self.assertEqual(1, len(errors))
+    self.assertIn('Field spec for "chars" too short: expected 144 bits, got 128',
+                  errors[0])
 
   def testArraySizedTooLarge(self):
     doc_builder = generator.DocBuilder()
@@ -155,7 +194,7 @@ class TestDocBuilder(unittest.TestCase):
 
     errors = doc_builder.Parse(contents)
     self.assertEqual(1, len(errors))
-    self.assertIn('needed 128 bytes', errors[0])
+    self.assertIn('expected 128 bits, got 64', errors[0])
                      
 
   def testEnum(self):
@@ -205,7 +244,7 @@ class TestDocBuilder(unittest.TestCase):
     self.assertIsNone(doc_builder.ParseFieldLine(line))
   
     self.assertEqual(1, len(doc_builder.errors))
-    self.assertIn('Invalid flit', doc_builder.errors[0])
+    self.assertIn('Invalid bit pattern', doc_builder.errors[0])
 
   def testInvalidStart(self):
     # Test generator rejects field with a non-numeric start_bit.
@@ -215,7 +254,7 @@ class TestDocBuilder(unittest.TestCase):
     self.assertIsNone(doc_builder.ParseFieldLine(line))
   
     self.assertEqual(1, len(doc_builder.errors))
-    self.assertIn('Invalid start bit', doc_builder.errors[0])
+    self.assertIn('Invalid bit pattern', doc_builder.errors[0])
 
   def testInvalidEnd(self):
     # Test generator rejects field with non-numeric end bit.
@@ -225,7 +264,7 @@ class TestDocBuilder(unittest.TestCase):
     self.assertIsNone(doc_builder.ParseFieldLine(line))
   
     self.assertEqual(1, len(doc_builder.errors))
-    self.assertIn('Invalid end bit', doc_builder.errors[0])
+    self.assertIn('Invalid bit pattern', doc_builder.errors[0])
 
   def testWrongOrder(self):
     # Test generator rejects field with high bit below low.
@@ -238,18 +277,16 @@ class TestDocBuilder(unittest.TestCase):
     self.assertIn('greater than end bit', doc_builder.errors[0])
 
   def testTypeTooSmall(self):
-    # Test generator rejects field with a non-numeric flit number.
+    # Test generator rejects field where bit size doesn't match type.
     doc_builder = generator.DocBuilder()
     line = '2 40:0 uint8_t packet'
-    
     self.assertIsNone(doc_builder.ParseFieldLine(line))
   
     self.assertEqual(1, len(doc_builder.errors))
     self.assertIn('too small to hold', doc_builder.errors[0])
 
   def testSingleBit(self):
-    # Test generator rejects field with a single-digit field number.
-    # TODO(bowdidge): Consider supporting.
+    # Test generator accepts field with a single-digit field number.
     doc_builder = generator.DocBuilder()
     line = '2 38 uint8_t packet'
     
@@ -257,13 +294,13 @@ class TestDocBuilder(unittest.TestCase):
     self.assertIsNotNone(field)
     self.assertEqual(0, len(doc_builder.errors))
 
-    self.assertEqual(2, field.flit)
+    self.assertEqual(2, field.StartFlit())
+    self.assertEqual(2, field.EndFlit())
     self.assertEqual(38, field.start_bit)
     self.assertEqual(38, field.end_bit)
 
 
   def testMissingCommentIsNone(self):
-    # Test that code correctly handles a packet with a non-numeric flit number.
     doc_builder = generator.DocBuilder()
     line = '2 15:12 int64_t packet'
     
@@ -297,7 +334,8 @@ class TestDocBuilder(unittest.TestCase):
 
     firstUnion = firstStruct.unions[0]
     firstField = firstUnion.fields[0]
-    self.assertEqual(0, firstField.flit)
+    self.assertEqual(0, firstField.StartFlit())
+    self.assertEqual(0, firstField.EndFlit())
     self.assertEqual(63, firstField.start_bit)
     self.assertEqual(0, firstField.end_bit)
     self.assertEqual('packet', firstField.name)
@@ -337,6 +375,37 @@ class TestDocBuilder(unittest.TestCase):
     self.assertEqual('Packet key comment', the_field.key_comment)
     self.assertEqual('Packet body comment\n', the_field.body_comment)
     self.assertIsNone(the_field.tail_comment)
+
+  def testParseMultiFlitDots(self):
+    doc_builder = generator.DocBuilder()
+    # ... allows a field to overflow into later flits.
+    contents = [
+      'STRUCT Foo',
+      '0 63:56 uint8_t command',
+      '0 55:0 uint8_t buf[23]',
+      '1 63:0 ...',
+      '2 63:0 ...',
+      'END'
+      ]
+    errors = doc_builder.Parse(contents)
+    self.assertIsNone(errors)
+  
+    doc = doc_builder.current_document
+
+    self.assertEqual(1, len(doc.structs))
+
+    struct = doc.structs[0]
+    self.assertEqual(2, struct.Flits())
+
+    self.assertEqual(2, len(struct.fields))
+    long_field = struct.fields[1]
+
+    self.assertTrue(long_field.crosses_flit)
+    self.assertEqual(55, long_field.start_bit)
+    self.assertEqual(0, long_field.end_bit)
+    self.assertEqual(0, long_field.start_flit)
+    self.assertEqual(2, long_field.end_flit)
+                
 
 
 class PackerTest(unittest.TestCase):
@@ -566,7 +635,6 @@ class CheckerTest(unittest.TestCase):
 
     checker = generator.Checker()
     checker.VisitDocument(doc_builder.current_document)
-
     self.assertEqual(0, len(checker.warnings))
 
   def testCheckerAdjacentTypesDifferent(self):
@@ -603,8 +671,8 @@ class CheckerTest(unittest.TestCase):
   def testFlagOverlappingFields(self):
     doc_builder = generator.DocBuilder()
     contents = ['STRUCT Foo',
-                '0 15:8 uint8_t b',
-                '0 15:0 uint16_t a',
+                '0 15:8 uint8_t a',
+                '0 15:0 uint16_t b',
                 'END']
     errors = doc_builder.Parse(contents)
     self.assertIsNone(errors)
@@ -612,13 +680,13 @@ class CheckerTest(unittest.TestCase):
     checker.VisitDocument(doc_builder.current_document)
 
     self.assertEqual(1, len(checker.warnings))
-    self.assertIn('field "b" and "a" not in bit order', checker.warnings[0])
+    self.assertIn('field "a" overlaps field "b"', checker.warnings[0])
 
   def testFlagOverlappingFieldsEqualAtBottom(self):
     doc_builder = generator.DocBuilder()
     contents = ['STRUCT Foo',
-                '0 15:8 uint8_t b',
-                '0 12:8 uint8_t a',
+                '0 15:8 uint8_t a',
+                '0 12:8 uint8_t b',
                 'END']
     errors = doc_builder.Parse(contents)
     self.assertIsNone(errors)
@@ -626,13 +694,13 @@ class CheckerTest(unittest.TestCase):
     checker.VisitDocument(doc_builder.current_document)
 
     self.assertEqual(1, len(checker.warnings))
-    self.assertIn('field "b" and "a" not in bit order', checker.warnings[0])
+    self.assertIn('field "a" overlaps field "b"', checker.warnings[0])
 
   def testFlagOverlappingFieldsBottom(self):
     doc_builder = generator.DocBuilder()
     contents = ['STRUCT Foo',
-                '0 15:8 uint8_t b',
-                '0 9:7 uint8_t a',
+                '0 15:8 uint8_t a',
+                '0 9:7 uint8_t b',
                 'END']
     errors = doc_builder.Parse(contents)
     self.assertIsNone(errors)
@@ -640,13 +708,13 @@ class CheckerTest(unittest.TestCase):
     checker.VisitDocument(doc_builder.current_document)
 
     self.assertEqual(1, len(checker.warnings))
-    self.assertIn('field "b" overlaps field "a"', checker.warnings[0])
+    self.assertIn('field "a" overlaps field "b"', checker.warnings[0])
 
   def testFlagExtraSpace(self):
     doc_builder = generator.DocBuilder()
     contents = ['STRUCT Foo',
-                '0 15:8 uint8_t b',
-                '0 3:0 uint8_t a',
+                '0 15:8 uint8_t a',
+                '0 3:0 uint8_t b',
                 'END']
     errors = doc_builder.Parse(contents)
     self.assertIsNone(errors)
@@ -654,7 +722,38 @@ class CheckerTest(unittest.TestCase):
     checker.VisitDocument(doc_builder.current_document)
 
     self.assertEqual(1, len(checker.warnings))
-    self.assertIn('unexpected space between field "b" and "a"',
+    self.assertIn('unexpected space between field "a" and "b"',
+                  checker.warnings[0])
+
+  def testMultiFlitFieldHandledOk(self):
+    doc_builder = generator.DocBuilder()
+    contents = ['STRUCT Foo',
+                '0 63:56 uint8_t cmd',
+                '0 55:0 uint8_t buf[15]',
+                '1 63:0 ...',
+                'END']
+    errors = doc_builder.Parse(contents)
+    self.assertIsNone(errors)
+    checker = generator.Checker()
+    checker.VisitDocument(doc_builder.current_document)
+
+    self.assertEqual(0, len(checker.warnings))
+
+  def testMultiFlitFieldOverlapGeneratesWarning(self):
+    doc_builder = generator.DocBuilder()
+    contents = ['STRUCT Foo',
+                '0 63:56 uint8_t cmd',
+                '0 55:0 uint8_t buf[15]',
+                '1 63:0 ...',
+                '1 63:0 uint64_t c',
+                'END']
+    errors = doc_builder.Parse(contents)
+    self.assertIsNone(errors)
+    checker = generator.Checker()
+    checker.VisitDocument(doc_builder.current_document)
+
+    self.assertEqual(1, len(checker.warnings))
+    self.assertIn('field "buf" overlaps field "c"',
                   checker.warnings[0])
 
 if __name__ == '__main__':
