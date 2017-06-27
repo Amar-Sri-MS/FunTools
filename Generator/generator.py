@@ -66,8 +66,8 @@ class Type:
     self.alignment = type_widths.get(base_name)
 
     if self.alignment is None:
-      print("Unknown base type name %s\n", base_name)
-      return None
+      sys.stderr.write('Unknown type name passed to Type: %s\n', base_name)
+      sys.exit(1)
 
     if self.is_array:
       self.bit_width = self.alignment * array_size
@@ -847,6 +847,14 @@ class DocBuilder:
     return True
 
 
+  def MakeType(self, base_name, array_size=None):
+    """Creates an instance of the named type, or None if no such type exists."""
+    if base_name not in type_widths:
+      return None
+    if array_size:
+      return Type(base_name, array_size)
+    else:
+      return Type(base_name)
 
 
   def ParseFieldLine(self, line):
@@ -900,10 +908,15 @@ class DocBuilder:
       return None
 
     type = None
+    
     if is_array:
-      type = Type(type_name, array_size)
+      type = self.MakeType(type_name, array_size)
     else:
-      type = Type(type_name)
+      type = self.MakeType(type_name)
+
+    if type is None:
+      self.AddError('Unknown type name "%s"' % type_name)
+      return None
 
     if start_bit < end_bit:
       self.AddError('Start bit %d greater than end bit %d in field %s' %

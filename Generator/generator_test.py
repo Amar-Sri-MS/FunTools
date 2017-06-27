@@ -250,6 +250,14 @@ class TestDocBuilder(unittest.TestCase):
     self.assertEqual(1, len(doc_builder.errors))
     self.assertIn('Invalid bit pattern', doc_builder.errors[0])
 
+  def testInvalidTypeName(self):
+    doc_builder = generator.DocBuilder()
+    line = '0 63:0 NotAValidType field_name'
+
+    self.assertIsNone(doc_builder.ParseFieldLine(line))
+    self.assertEqual(1, len(doc_builder.errors))
+    self.assertIn('Unknown type name', doc_builder.errors[0])
+
   def testInvalidStart(self):
     # Test generator rejects field with a non-numeric start_bit.
     doc_builder = generator.DocBuilder()
