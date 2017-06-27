@@ -1014,7 +1014,7 @@ def GenerateFile(should_pack, output_style, output_base,
   helper.VisitDocument(doc)
 
   if output_style is OutputStyleHTML:
-    html_generator = HTMLGenerator()
+    html_generator = htmlgen.HTMLGenerator()
     code = html_generator.VisitDocument(doc)
     if output_base:
       f = open(output_base + '.html', 'w')
