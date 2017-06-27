@@ -154,7 +154,6 @@ class TestDocBuilder(unittest.TestCase):
     self.assertEqual(1, len(errors))
     self.assertIn('is 64 bits, type "uint8_t[2]" is 16', errors[0])
 
-
   def testMultiFlitTooSmall(self):
     doc_builder = generator.DocBuilder()
     contents = ['STRUCT Foo',
@@ -166,7 +165,6 @@ class TestDocBuilder(unittest.TestCase):
     self.assertEqual(1, len(errors))
     self.assertIn('expected 80 bits, got 128', errors[0])
 
-
   def testMultiFlitNotNeeded(self):
     doc_builder = generator.DocBuilder()
     contents = ['STRUCT Foo',
@@ -177,7 +175,6 @@ class TestDocBuilder(unittest.TestCase):
     errors = doc_builder.Parse('filename', contents)
     self.assertEqual(1, len(errors))
     self.assertIn('Multi-line flit continuation seen without', errors[0])
-
 
   def testMultiFlitTooLarge(self):
     doc_builder = generator.DocBuilder()
@@ -239,13 +236,13 @@ class TestDocBuilder(unittest.TestCase):
     self.assertEqual(3, field.value)
     self.assertEqual("Foobar", field.key_comment)
 
-
   def testInvalidFlit(self):
     # Test generator rejects a field with a non-numeric flit number.
     doc_builder = generator.DocBuilder()
     line = 'flit 63:0 uint64_t packet'
 
     self.assertIsNone(doc_builder.ParseFieldLine(line))
+
   
     self.assertEqual(1, len(doc_builder.errors))
     self.assertIn('Invalid bit pattern', doc_builder.errors[0])
@@ -301,7 +298,6 @@ class TestDocBuilder(unittest.TestCase):
     self.assertEqual(2, field.EndFlit())
     self.assertEqual(38, field.start_bit)
     self.assertEqual(38, field.end_bit)
-
 
   def testMissingCommentIsNone(self):
     doc_builder = generator.DocBuilder()
@@ -408,7 +404,6 @@ class TestDocBuilder(unittest.TestCase):
     self.assertEqual(0, long_field.end_bit)
     self.assertEqual(0, long_field.start_flit)
     self.assertEqual(2, long_field.end_flit)
-                
 
 
 class PackerTest(unittest.TestCase):
