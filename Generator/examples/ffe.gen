@@ -1,0 +1,125 @@
+ENUM fun_ffe_subopcodes
+  FFE_ACCESS_SUBOP_TMP_TCAM_R = 0
+  FFE_ACCESS_SUBOP_TMP_TCAM_W = 1
+  FFE_ACCESS_SUBOP_FFE_TCAM_R = 2
+  FFE_ACCESS_SUBOP_FFE_TCAM_W = 3
+  FFE_ACCESS_SUBOP_FFE_TCAM_INV = 4
+  FFE_STASH_R = 5 
+  FFE_STASH_W = 6 
+  FFE_STASH_INV = 7 
+  FFE_HASH_R = 8 
+  FFE_HASH_W = 9 
+  FFE_HASH_INV = 10 
+  FFE_DIT_R = 11
+  FFE_DIT_W = 12
+  FFE_ACT_UCODE_R = 13
+  FFE_ACT_UCODE_W = 14
+  FFE_ACT_DMEM_R = 15
+  FFE_ACT_DMEM_W = 16
+END
+
+
+// Command interface for writing/reading the various tables available in the FFE
+STRUCT fun_ffe_cmd
+  0 63:56 uint8_t opcode /* Opcode 0xXX */
+  0 55 uint8_t read /* read bit */
+  0 54 uint8_t write /* write bit */
+  0 53 uint8_t delete /* delete bit */
+  0 52:48 uint8_t rsvd0
+  0 47:8 uint8_t rsvd1[5] /* reserved - set to 0 */
+  0 7:0 uint8_t len16 /* message length (in units of 16 bytes) */
+  1 63:0 uint64_t cookie /* cookie */
+  2 63:56 uint8_t stage /* stage number */
+  2 55:48 uint8_t rsvd2
+  2 47:32 uint16_t index /* index to access */
+  2 31:0 uint32_t rsvd3 /* TBD: Add nentries */
+  UNION fun_ffe_subops u
+    STRUCT fun_ffe_tmp_tcam tmp_tcam_rw
+      3 63:56 uint8_t subopcode /* SUBOPS: TMP_TCAM_R, TMP_TCAM_W */
+      3 55:48 uint8_t flags
+      3 47:32 uint16_t rsvd0
+      3 31:0 uint32_t data_size /* key microcode size (bytes) */
+      4 63:0 uint64_t key /* key (currently 26 bits) */
+      4 63:0 uint64_t mask /* mask (currently 26 bits) */
+      5 63:0 uint8_t data[46] /* uint8_t data[46] */
+      6 63:0 ...
+      7 63:0 ...
+      8 63:0 ...
+      9 63:0 ...
+      10 63:16 ...
+      10 15:0 uint8_t rsvd1[2]
+      10 63:0 uint64_t rsvd2
+      10 63:0 uint64_t rsvd3
+    END
+    STRUCT fun_ffe_tcam tcam_rwi
+      3 63:56 uint8_t subopcode /* SUBOPS: TCAM_R, TCAM_W, TCAM_INV */
+      3 55:48 uint8_t flags
+      3 47:44 uint8_t bank /* bank number */
+      3 43:40 uint8_t rsvd0
+      3 39:32 uint8_t table
+      3 31:16 uint16_t key_size /* entry width (bytes) */
+      3 15:0 uint16_t rsvd1
+      4 63:0 uint8_t key[21] /* uint8_t key[21] */
+      5 63:0 ...
+      6 63:24 ...
+      6 23:0 uint8_t rsvd2[3] /* ... */
+      7 63:0 uint64_t rsvd3 /* ... */
+      8 63:0 uint8_t mask[21] /* uint8_t mask[21] */
+      9 63:0 ...
+      10 63:24 ...
+      10 23:0 uint8_t rsvd4[3] /* ... */
+      11 63:0 uint64_t rsvd5 /* ... */
+      12 63:0 uint64_t at_index /* uint8_t at_index[2] */
+    END
+    STRUCT fun_ffe_hash_stash hash_stash_rwi
+      3 63:56 uint8_t subopcode /* SUBOPS: HASH_R, HASH_W, HASH_INV, STASH_R, STASH_W, STASH_INV */
+      3 55:48 uint8_t flags
+      3 47:44 uint8_t bank /* bank number */
+      3 43:40 uint8_t rsvd0
+      3 39:32 uint8_t table
+      3 31:16 uint16_t key_size /* entry width (bytes) */
+      3 15:0 uint16_t rsvd1
+      4 63:0 uint8_t data[13] /* uint8_t data[13] */
+      5 63:24 ...
+      5 23:0 uint8_t rsvd2[3] /* ... */
+      6 63:0 uint64_t rsvd3
+    END
+    STRUCT fun_ffe_dit dit_rw
+      3 63:56 uint8_t subopcode /* SUBOPS: DIT_R, DIT_W */
+      3 55:48 uint8_t flags
+      3 47:40 uint8_t rsvd0
+      3 39:32 uint8_t table
+      3 31:0 uint32_t rsvd1
+      4 63:0 uint64_t at_index /* uint8_t at_index[2] */
+    END
+    STRUCT fun_ffe_act_ucode action_ucode_rw
+      3 63:56 uint8_t subopcode /* SUBOPS: ACT_UCODE_R, ACT_UCODE_W */
+      3 55:48 uint8_t flags
+      3 47:32 uint16_t rsvd0
+      3 31:0 uint32_t rsvd1
+      4 63:0 uint8_t instr_data_wlst[24] /* uint8_t instr_data_wlst[24] */
+      5 63:0 ...
+      6 63:0 ...
+      7 63:0 uint64_t rsvd2[5]
+      8 63:0 ...
+      9 63:0 ...
+      10 63:0 ...
+      11 63:0 ...
+    END
+    STRUCT fun_ffe_act_dmem action_dmem_rw
+      3 63:56 uint8_t subopcode /* SUBOPS: ACT_DMEM_R, ACT_DMEM_W */
+      3 55:48 uint8_t flags
+      3 47:40 uint8_t rsvd0
+      3 39:32 uint8_t table
+      3 31:0 uint32_t rsvd1
+      4 63:0 uint8_t data_wlst[64] /* uint8_t data_wlst[64] */
+      5 63:0 ...
+      6 63:0 ...
+      7 63:0 ...
+      8 63:0 ...
+      9 63:0 ...
+      10 63:0 ...
+      11 63:0 ...
+    END
+  END
+END
