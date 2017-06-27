@@ -299,11 +299,11 @@ class Union(Node):
 
   def Bytes(self):
     """Returns the total number of bytes for the union object."""
-    return max([s.Flits() * 8 for s in self.structs])
+    return self.Flits() * 8
 
   def Flits(self):
     """Returns the total number of flits (words) in the union object."""
-    return max([s.Flits() for s in self.structs])
+    return max([s.Flits() for s in self.structs]) + 1
 
   def __str__(self):
     return('<Union %s, variable %s:\n fields: %s\n structs: %s\n>\n' %
@@ -350,7 +350,7 @@ class Struct(Node):
            (self.name, self.variable, self.fields, self.structs, self.unions))
 
   def Flits(self):
-    return max([field.EndFlit() for field in self.fields])
+    return max([field.EndFlit() for field in self.fields]) + 1
 
   def Bytes(self):
     """Returns the number of bytes in the structure."""
@@ -444,16 +444,12 @@ class HTMLGenerator(Visitor):
     """Draws a union as rows in a containing structure."""
     out = '<tr>\n'
 
-    flit_str = "0"
-    if union.Flits() > 1:
-      flit_str = "0 ... %d" % (union.Flits() -1)
-
     comment = ""
     if union.key_comment:
       comment = union.key_comment
 
-    out += '  <td class="structBits"h>%s</td>\n' % flit_str
-    out += '  <td class="structBits">%d-0</td>\n' % (union.Bytes() * 8 - 1)
+    out += '  <td class="structBits" colspan="2">0:63-%d:0</td>\n' % (
+      union.Flits() - 1)
     out += '  <td>union %s</td>\n' % union.name
     out += '  <td>%s</td>\n' % union.variable
     out += '  <td>%s</td>\n' % comment
@@ -461,8 +457,8 @@ class HTMLGenerator(Visitor):
 
     for s in union.structs:
       out += '<tr>\n'
-      out += '  <td class="structBits">0..%d</td>\n' % (s.Flits() - 1)
-      out += '  <td class="structBits">%d-0</td>\n' % (s.Bytes() * 8 - 1)
+      out += '  <td class="structBits" colspan="2">0:63 - %d:%d</td>\n' % (
+        s.Flits() - 1, 0)
       out += '  <td></td>\n'
       out += '  <td>%s</td>\n' % s.name
       out += '  <td>%s</td>\n' % s.key_comment

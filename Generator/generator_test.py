@@ -73,6 +73,8 @@ class TestDocBuilder(unittest.TestCase):
     self.assertEqual(0, firstField.end_bit)
     self.assertEqual('packet', firstField.name)
 
+    self.assertEqual(1, firstStruct.Flits())
+
   def testStructSize(self): 
     builder = generator.DocBuilder()
     doc = builder.current_document
@@ -96,10 +98,11 @@ class TestDocBuilder(unittest.TestCase):
     builder.ParseEnd('END')
 
     self.assertEqual(1, len(doc.structs))
-
+                     
     struct = doc.structs[0]
     # TODO(bowdidge): Should be 9 bytes?
     self.assertEqual(16, struct.Bytes())
+    self.assertEqual(2, struct.Flits())
 
   def testValidFile(self):
     doc_builder = generator.DocBuilder()
@@ -387,7 +390,7 @@ class TestDocBuilder(unittest.TestCase):
     self.assertEqual(1, len(doc.structs))
 
     struct = doc.structs[0]
-    self.assertEqual(2, struct.Flits())
+    self.assertEqual(3, struct.Flits())
 
     self.assertEqual(2, len(struct.fields))
     long_field = struct.fields[1]
