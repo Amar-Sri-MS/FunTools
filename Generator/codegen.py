@@ -18,17 +18,17 @@ class CodeGenerator:
     # Prefix of files to create.
     self.output_file_base = output_file_base
 
-  def indentString(self):
+  def IndentString(self):
     # Generates indenting spaces needed for current level of code.
     return '\t' * self.indent
 
-  def incrementIndent(self):
+  def IncrementIndent(self):
     self.indent += 1
 
-  def decrementIndent(self):
+  def DecrementIndent(self):
     self.indent -= 1
 
-  def visitDocument(self, doc):
+  def VisitDocument(self, doc):
     # Pretty-print a document.  Returns code as (header, source).
     indent = 0
     # stdlib.h is needed for type names.
@@ -53,9 +53,9 @@ class CodeGenerator:
       hdr_out += '#define %s\n' % include_guard_name
     hdr_out += '#include "stdlib.h"\n\n'
     for enum in doc.enums:
-        hdr_out += self.visitEnum(enum)
+        hdr_out += self.VisitEnum(enum)
     for struct in doc.structs:
-        (hdr, src) = self.visitStruct(struct)
+        (hdr, src) = self.VisitStruct(struct)
         hdr_out += hdr
         src_out += src
 
@@ -65,74 +65,78 @@ class CodeGenerator:
       hdr_out += '#endif // %s' % include_guard_name
     return (hdr_out, src_out)
 
-  def visitEnum(self, enum):
+  def VisitEnum(self, enum):
     # Pretty print an enum declaration.  Returns enum as string.
     hdr_out = 'enum %s {\n' % enum.name
-    self.incrementIndent()
+    self.IncrementIndent()
     for enum_variable in enum.variables:
-        hdr_out += self.visitEnumVariable(enum_variable)
+        hdr_out += self.VisitEnumVariable(enum_variable)
     hdr_out += '};\n\n'
-    self.decrementIndent()
+    self.DecrementIndent()
     return hdr_out
 
-  def visitEnumVariable(self, enum_variable):
+  def VisitEnumVariable(self, enum_variable):
     # Pretty-print a structure or union field declaration.  Returns string.
     hdr_out = ''
     if enum_variable.body_comment != None:
-      hdr_out += self.indentString() + ' /* %s */\n' % enum_variable.body_comment
-    hdr_out = self.indentString() + '%s = %s,' % (enum_variable.name, enum_variable.value)
+      hdr_out += self.IndentString() + ' /* %s */\n' % enum_variable.body_comment
+    hdr_out = self.IndentString() + '%s = %s,' % (enum_variable.name, enum_variable.value)
     if enum_variable.key_comment != None:
-      hdr_out += self.indentString() + ' /* %s */' % enum_variable.key_comment
+      hdr_out += self.IndentString() + ' /* %s */' % enum_variable.key_comment
     hdr_out += '\n'
     return hdr_out
 
-  def visitUnion(self, union):
+  def VisitUnion(self, union):
     # Pretty-print a union declaration.  Returns string.
     hdr_out = ''
     src_out = ''
     if union.key_comment:
-      hdr_out += self.indentString() + '/* %s */\n' % union.key_comment    
+      hdr_out += self.IndentString() + '/* %s */\n' % union.key_comment    
     if union.body_comment:
-      hdr_out += self.indentString() + '/* %s */\n' % union.body_comment
-    hdr_out += self.indentString() + 'union %s {\n' % union.name
+      hdr_out += self.IndentString() + '/* %s */\n' % union.body_comment
+    hdr_out += self.IndentString() + 'union %s {\n' % union.name
     for struct in union.structs:
-        (hdr, src) = self.visitStruct(struct)
+        (hdr, src) = self.VisitStruct(struct)
         hdr_out += hdr
         src_out += src
     variable_str = ''
     if union.variable is not None:
       variable_str = ' ' + union.variable
-    hdr_out += self.indentString() + '}%s;\n' % variable_str
+    hdr_out += self.IndentString() + '}%s;\n' % variable_str
     return (hdr_out, src_out)
  
-  def visitStruct(self, struct):
+  def VisitStruct(self, struct):
     # Pretty-print a structure declaration.  Returns string.
     hdr_out = '\n'
     src_out = ''
     if struct.key_comment:
-      hdr_out += self.indentString() + '/* %s */\n' % struct.key_comment    
+      hdr_out += self.IndentString() + '/* %s */\n' % struct.key_comment    
     if struct.body_comment:
-      hdr_out += self.indentString() + '/* %s */\n' % struct.body_comment
-    hdr_out += self.indentString() + 'struct %s {\n' % struct.name
+      hdr_out += self.IndentString() + '/* %s */\n' % struct.body_comment
+    hdr_out += self.IndentString() + 'struct %s {\n' % struct.name
     lastFlit = 0
-    self.incrementIndent()
+    self.IncrementIndent()
     for field in struct.fields:
-      if field.flit != lastFlit:
+      # Add blank line between flits.
+      if field.StartFlit() != lastFlit:
         hdr_out += '\n'
-      hdr_out += self.visitField(field)
-      lastFlit = field.flit
-    self.decrementIndent()
+      hdr_out += self.VisitField(field)
+      lastFlit = field.StartFlit()
+    self.DecrementIndent()
 
-    self.incrementIndent()
+    self.IncrementIndent()
     for union in struct.unions:
-      (hdr, src) = self.visitUnion(union)
+      (hdr, src) = self.VisitUnion(union)
       hdr_out += hdr
       src_out += src
-    self.decrementIndent()
+    self.DecrementIndent()
     tag_str = ''
     if len(struct.variable) > 0:
       tag_str = ' %s' % struct.variable
-    hdr_out += self.indentString() + '}%s;\n\n' % tag_str
+    hdr_out += self.IndentString() + '}%s;\n\n' % tag_str
+
+    for macro in struct.macros:
+        hdr_out += macro + '\n'
 
     for decl in struct.declarations:
         hdr_out += decl + '\n'
@@ -142,15 +146,15 @@ class CodeGenerator:
  
     return (hdr_out, src_out)
 
-  def visitField(self, field):
+  def VisitField(self, field):
     # Pretty-print a field in a structure or union.  Returns string.
     hdr_out = ''
 
     if field.generator_comment is not None:
-      hdr_out += self.indentString() + '/* %s */\n' % field.generator_comment
+      hdr_out += self.IndentString() + '/* %s */\n' % field.generator_comment
     if field.body_comment is not None:
       # TODO(bowdidge): Break long comment.
-      hdr_out += self.indentString() + '/* %s */\n' % field.body_comment
+      hdr_out += self.IndentString() + '/* %s */\n' % field.body_comment
     key_comment = ''
     if field.key_comment is not None:
       key_comment = ' // %s' % field.key_comment
@@ -161,33 +165,62 @@ class CodeGenerator:
 
     if type_width != var_width:
       var_bits = ':%d' % var_width
-    hdr_out += self.indentString() 
+    hdr_out += self.IndentString() 
     if field.type.IsArray():
-      hdr_out += self.indentString() + '%s %s[%d];%s\n' % (field.type.BaseName(),
+      hdr_out += self.IndentString() + '%s %s[%d];%s\n' % (field.type.BaseName(),
                                                            field.name,
                                                            field.type.ArraySize(),
                                                            key_comment)
     else:
-      hdr_out += self.indentString() + '%s %s%s;%s\n' % (field.type.BaseName(),
+      hdr_out += self.IndentString() + '%s %s%s;%s\n' % (field.type.BaseName(),
                                                          field.name, var_bits,
                                                          key_comment)
     
     return hdr_out
 
 class HelperGenerator:
+  """Generates helper functions for manipulating structures."""
   def __init__(self):
     self.current_document = None
 
-  def visitDocument(self, doc):
+  def VisitDocument(self, doc):
     self.current_document = doc
     for struct in doc.structs:
-      self.visitStruct(struct)
+      self.VisitStruct(struct)
 
   def InitializerName(self, struct_name):
       """Returns name for the structure initialization function."""
       return struct_name + "_init"
 
-  def GenerateInitializer(self, theStruct, field, accessor_prefix):
+  def GenerateMacrosForPackedField(self, struct, field):
+    """Creates macros to access all the bit fields we removed.
+    struct: structure containing the fields that was removed.
+    field: field combining the contents of the former fields.
+    """
+    min_end_bit = min([f.end_bit for f in field.packed_fields])
+
+    for old_field in field.packed_fields:
+      # No point in creating macros for fields that shouldn't be accessed.
+      if old_field.name == "reserved":
+        continue
+
+      ident = 'FUN_' + utils.AsUppercaseMacro('%s_%s' % (struct.name, 
+                                                         old_field.name))
+      shift = '#define %s_S %s' % (ident, old_field.end_bit - min_end_bit)
+      mask = '#define %s_M %s' % (ident, old_field.Mask())
+      value = '#define %s_P(x) ((x) << %s_S)' % (ident, ident)
+      get = '#define %s_G(x) (((x) >> %s_S) & %s_M)' % (ident, ident, ident)
+
+      struct.macros.append(
+        '// For accessing "%s" field in %s.%s' % (
+          old_field.name, struct.name, field.name))
+      struct.macros.append(shift)
+      struct.macros.append(mask)
+      struct.macros.append(value)
+      struct.macros.append(get)
+      struct.macros.append('\n')
+
+  def GenerateInitializer(self, the_struct, field, accessor_prefix):
     """Returns a C statement initializing the named variable.
 
     Assumes that variables with the same name as the field contain initial
@@ -202,14 +235,14 @@ class HelperGenerator:
     for packed_field in field.packed_fields:
       if packed_field.IsReserved():
         continue
-      ident = 'FUN_' + utils.AsUppercaseMacro('%s_%s' % (theStruct.name, 
+      ident = 'FUN_' + utils.AsUppercaseMacro('%s_%s' % (the_struct.name, 
                                                          packed_field.name))
       packed_inits.append('%s_P(%s)' % (ident, packed_field.name))
     return '  s->%s%s = %s;' % (accessor_prefix, field.name,
                                 ' | '.join(packed_inits))
 
   def GenerateInitRoutine(self, function_name, struct_name, 
-                          accessor_prefix, theStruct):
+                          accessor_prefix, the_struct):
     """Generate an initialization function for the named structure.
 
     The function takes all non reserved fields as arguments, test
@@ -222,7 +255,7 @@ class HelperGenerator:
       accessor_prefix is a bit of code to insert between the pointer token and
         field name token to access the field.  It is used to add the name of union
         fields.
-      theStruct (Struct) is the structure owning the init routine, used to find
+      the_struct (Struct) is the structure owning the init routine, used to find
         all its fields.
      
     Returns:
@@ -237,29 +270,33 @@ class HelperGenerator:
     validates = []
     # List of statements initializing fields of structure.
     inits = []
-    # All validates, wrapped in a #ifdef DEBUG (or empty if no checks to be done.)
+    # All C code to validate field inputs.
     validate_block = ''
 
     # First argument is always a pointer to the structure being initialized.
     arg_list.append('struct %s* s' % struct_name)
 
-    for field in theStruct.AllFields():
-      if field.IsReserved():
+    for field in the_struct.AllFields():
+      if field.IsReserved() or field.type.IsArray():
         continue
 
       arg_list.append('%s %s' % (field.type.DeclarationType(), field.name))
 
       if field.SmallerThanType():
-        max_value = 1 << field.Size()
+        max_value = 1 << field.BitWidth()
         validates.append('  assert(%s < 0x%x);' % (field.name, max_value))
 
-    for field in theStruct.fields:
-      if field.IsReserved():
-        continue
-      inits.append(self.GenerateInitializer(theStruct, field, accessor_prefix))
+    if len(arg_list) == 1:
+      # If no arguments other than structure, don't bother.
+      return ('', '')
 
-    if len(validates) > 0:
-      validate_block = '#ifdef DEBUG\n%s\n#endif\n\n' % '\n'.join(validates)
+    for field in the_struct.fields:
+      if field.IsReserved() or field.type.IsArray():
+        continue
+
+      inits.append(self.GenerateInitializer(the_struct, field, accessor_prefix))
+
+    validate_block = '\n'.join(validates)
 
     init_declaration = 'extern void %s(%s);\n' % (function_name,
                                                   ', '.join(arg_list))
@@ -270,29 +307,40 @@ class HelperGenerator:
                                                     '\n'.join(inits))
     return (init_declaration, init_definition)
 
-  def visitStruct(self, theStruct):
+  def GenerateHelpersForStruct(self, the_struct):
+    """Generates helper functions for the provided structure."""
+    (decl, defn) = self.GenerateInitRoutine(self.InitializerName(the_struct.name),
+                                            the_struct.name, '', the_struct)
+    the_struct.declarations.append(decl)
+    the_struct.definitions.append(defn)
+
+  def VisitField(self, the_struct, the_field):
+    if len(the_field.packed_fields) > 0:
+      self.GenerateMacrosForPackedField(the_struct, the_field)
+    
+  def VisitStruct(self, the_struct):
     """Creates accessor functions related to this structure.
 
     For each structure, we want an Init/constructor for initializing
     variables easily.
     """
-    if len(theStruct.unions) == 0:
-      (decl, defn) = self.GenerateInitRoutine(
-          self.InitializerName(theStruct.name),
-          theStruct.name, '', theStruct)
-      theStruct.declarations.append(decl)
-      theStruct.definitions.append(defn)
-    else:
-      # TODO(bowdidge): Create init routines for structures containing
-      # unions.
-      if len(theStruct.unions) == 1:
-        union = theStruct.unions[0]
-        for substruct in union.structs:
-          function_name = self.InitializerName(substruct.name)
-          struct_name = theStruct.name
-          accessor_prefix = '%s.%s.' % (union.variable, substruct.variable)
-          (decl, defn) = self.GenerateInitRoutine(function_name, struct_name, 
-                                                  accessor_prefix,
-                                                  substruct)
-          theStruct.declarations.append(decl)
-          theStruct.definitions.append(defn)
+    self.GenerateHelpersForStruct(the_struct)
+    if len(the_struct.unions) == 1:
+      # Generate constructor for each option.
+      union = the_struct.unions[0]
+      for substruct in union.structs:
+        function_name = self.InitializerName(substruct.name)
+        struct_name = the_struct.name
+        accessor_prefix = '%s.%s.' % (union.variable, substruct.variable)
+        (decl, defn) = self.GenerateInitRoutine(function_name, struct_name, 
+                                                accessor_prefix,
+                                                substruct)
+        the_struct.declarations.append(decl)
+        the_struct.definitions.append(defn)
+
+        for field in substruct.fields:
+          self.VisitField(substruct, field)
+
+    for field in the_struct.fields:
+      self.VisitField(the_struct, field)
+    

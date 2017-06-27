@@ -65,3 +65,11 @@ STRUCT GatherListFragmentHeader
     END
   END
 END
+
+STRUCT MultiFlitField
+0 63:56 uint8_t cmd
+0 55:0 uint8_t buf[19]
+1 63:0 ...
+2 63:32 ...
+2 31:0 uint32_t end
+END

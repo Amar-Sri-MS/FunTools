@@ -9,12 +9,12 @@ class CodeGeneratorTest(unittest.TestCase):
 
   def testPrintStructNoVar(self):
     builder = generator.DocBuilder()  
-    builder.parseStructStart('STRUCT Foo')
-    builder.parseLine('0 63:0 uint64_t packet')
-    builder.parseEnd('END')
+    builder.ParseStructStart('STRUCT Foo')
+    builder.ParseLine('0 63:0 uint64_t packet')
+    builder.ParseEnd('END')
     doc = builder.current_document
 
-    (header, src) = self.printer.visitDocument(doc)
+    (header, src) = self.printer.VisitDocument(doc)
 
     self.assertIn('struct Foo {', header)
     # Should automatically create a field name for the struct.
@@ -22,12 +22,12 @@ class CodeGeneratorTest(unittest.TestCase):
 
   def testPrintStructWithVar(self):
     builder = generator.DocBuilder()  
-    builder.parseStructStart('STRUCT Foo foo_cmd')
-    builder.parseLine('0 63:0 uint64_t packet')
-    builder.parseEnd('END')
+    builder.ParseStructStart('STRUCT Foo foo_cmd')
+    builder.ParseLine('0 63:0 uint64_t packet')
+    builder.ParseEnd('END')
     doc = builder.current_document
 
-    (header, src) = self.printer.visitDocument(doc)
+    (header, src) = self.printer.VisitDocument(doc)
 
     self.assertIn('struct Foo {', header)
     # Should automatically create a field name for the struct.
@@ -38,7 +38,7 @@ class CodeGeneratorTest(unittest.TestCase):
     struct.key_comment = 'Key comment'
     struct.body_comment = 'body comment\nbody comment'
 
-    (header, src) = self.printer.visitStruct(struct)
+    (header, src) = self.printer.VisitStruct(struct)
     self.assertEquals('\n/* Key comment */\n'
                       '/* body comment\n'
                       'body comment */\n'
@@ -47,7 +47,7 @@ class CodeGeneratorTest(unittest.TestCase):
 
   def testPrintArray(self):
     field = generator.Field('foo', generator.Type('char', 8), 0, 64, 0)
-    code = self.printer.visitField(field)
+    code = self.printer.VisitField(field)
   
     self.assertEquals('char foo[8];\n', code)
 
@@ -55,32 +55,32 @@ class CodeGeneratorTest(unittest.TestCase):
   def testPrintUnion(self):
     union = generator.Union('Foo', None)
     
-    code = self.printer.visitUnion(union)
+    code = self.printer.VisitUnion(union)
 
     self.assertEquals(('union Foo {\n};\n', ''), code)
 
   def testPrintUnionWithVar(self):
     union = generator.Union('Foo', 'xxx')
     
-    code = self.printer.visitUnion(union)
+    code = self.printer.VisitUnion(union)
 
     self.assertEquals(('union Foo {\n} xxx;\n', ''), code)
 
   def testPrintField(self):
     field = generator.Field('foo', generator.Type('uint8_t'), 0, 3, 0)
-    code = self.printer.visitField(field)
+    code = self.printer.VisitField(field)
     self.assertEqual('uint8_t foo:4;\n', code)
 
   def testPrintFieldNotBitfield(self):
     field = generator.Field('foo', generator.Type('uint8_t'), 0, 7, 0)
-    code = self.printer.visitField(field)
+    code = self.printer.VisitField(field)
     self.assertEqual('uint8_t foo;\n', code)
 
   def testPrintFieldWithComment(self):
     field = generator.Field('foo', generator.Type('uint8_t'), 0, 7, 0)
     field.key_comment = 'A'
     field.body_comment = 'B'
-    code = self.printer.visitField(field)
+    code = self.printer.VisitField(field)
     self.assertEqual('/* B */\nuint8_t foo; // A\n', code)
 
   def testPrintFieldWithLongComment(self):
@@ -89,7 +89,7 @@ class CodeGeneratorTest(unittest.TestCase):
     field.body_comment = long_comment
     print('long comment is %d' %len(long_comment))
     field.bodyuser_comment = long_comment
-    code = self.printer.visitField(field)
+    code = self.printer.VisitField(field)
     self.assertEqual('/* %s */\nuint8_t foo;\n' % long_comment, code)
 
   def testPrintEnum(self):
@@ -97,7 +97,7 @@ class CodeGeneratorTest(unittest.TestCase):
     var = generator.EnumVariable('MY_COMMAND', 1)
     enum.variables.append(var)
 
-    code = self.printer.visitEnum(enum)
+    code = self.printer.VisitEnum(enum)
     self.assertEqual('enum MyEnum {\n\tMY_COMMAND = 1,\n};\n\n', code)
 
 
@@ -161,7 +161,7 @@ class HelperGeneratorTest(unittest.TestCase):
                      '  s->foo.a1 = a1;\n\n'
                      '}', definition)
 
-  def testCreateArrayInitializer(self):
+  def testNoCreateArrayInitializer(self):
     gen = codegen.HelperGenerator()
     s = generator.Struct('Foo', 'f1')
     f = generator.Field('a1', generator.Type('char', 8), 0, 63, 0)
@@ -170,12 +170,8 @@ class HelperGeneratorTest(unittest.TestCase):
     (declaration, definition) = gen.GenerateInitRoutine("init", "MyStruct",
                                                         "foo.", s)
   
-    self.assertEqual('extern void init(struct MyStruct* s, char[8] a1);\n',
-                     declaration),
-    self.assertEqual('void init(struct MyStruct* s, char[8] a1) {\n'
-                     '  s->foo.a1 = a1;\n\n'
-                     '}', definition)
-
+    self.assertEqual('', declaration)
+    self.assertEqual('', definition)
 
 
 class CodegenEndToEnd(unittest.TestCase):
@@ -188,7 +184,7 @@ class CodegenEndToEnd(unittest.TestCase):
              '0 47:0 char d[6]',
              'END']
 
-    out = generator.generateFile(True, generator.OutputStyleHeader, None,
+    out = generator.GenerateFile(True, generator.OutputStyleHeader, None,
                                  input, 'foo.gen')
     self.assertIsNotNone(out)
 
@@ -202,7 +198,7 @@ class CodegenEndToEnd(unittest.TestCase):
     self.assertIn('char d[6];', out)
     # Did constructor get created?
     self.assertIn('void Foo_init(struct Foo* s, uint8_t a, uint8_t b, '
-                  'uint8_t c, char[6] d);', out)
+                  'uint8_t c);', out)
     # Did accessor macro get created?
     self.assertIn('#define FUN_FOO_B_P(x)', out)
     # Did init function check range of bitfields?
@@ -210,20 +206,140 @@ class CodegenEndToEnd(unittest.TestCase):
     # Did bitfield get initialized?'
     self.assertIn('s->b_to_c = FUN_FOO_B_P(b) | FUN_FOO_C_P(c);', out)
 
+  def testInitFunctionsCreated(self):
+    input = ['STRUCT A',
+             '0 63:0 uint64_t a',
+             'END',
+             'STRUCT B',
+             '0 63:56 uint8_t a',
+             'UNION Cmd u1',
+             'STRUCT B1',
+             '0 55:48 uint8_t b11',
+             '0 47:40 uint8_t b12',
+             'END',
+             'STRUCT B2',
+             '0 55:48 uint8_t b21',
+             '0 47:40 uint8_t b22',
+             'END',
+             'END',
+             '0 39:0 uint64_t c',
+             'END'
+             ]
+
+    out = generator.GenerateFile(True, generator.OutputStyleHeader, None,
+                                 input, 'foo.gen')
+    self.assertIsNotNone(out)
+
+    # Did structure get generated?
+    self.assertIn('void A_init(struct A* s, uint64_t a)', out)
+    self.assertIn('void B_init(struct B* s, uint8_t a, uint64_t c)', out)
+    self.assertIn('void B1_init(struct B* s, uint8_t b11, uint8_t b12)', out)
+    self.assertIn('void B2_init(struct B* s, uint8_t b21, uint8_t b22)', out)
+
+  def testMacrosCreated(self):
+    input = ['STRUCT A',
+             '0 63:60 uint8_t a',
+             '0 59:56 uint8_t b',
+             'END']
+    out = generator.GenerateFile(True, generator.OutputStyleHeader, None,
+                                 input, 'foo.gen')
+    self.assertIsNotNone(out)
+    self.assertIn('#define FUN_A_A_S 4', out)
+
+  def testMacrosCreatedInUnion(self):
+    input = ['STRUCT A',
+             'UNION CMD u1',
+             'STRUCT AX1',
+             '0 63:60 uint8_t a',
+             '0 59:56 uint8_t b',
+             'END',
+             'END',
+             'END']
+    out = generator.GenerateFile(True, generator.OutputStyleHeader, None,
+                                 input, 'foo.gen')
+    self.assertIsNotNone(out)
+    self.assertIn('#define FUN_AX1_A_S 4', out)
+
+  def testInitFunctionsCreated(self):
+    input = ['STRUCT A',
+             '0 63:0 uint64_t a',
+             'END',
+             'STRUCT B',
+             '0 63:56 uint8_t a',
+             'UNION Cmd u1',
+             'STRUCT B1',
+             '0 55:48 uint8_t b11',
+             '0 47:40 uint8_t b12',
+             'END',
+             'STRUCT B2',
+             '0 55:48 uint8_t b21',
+             '0 47:40 uint8_t b22',
+             'END',
+             'END',
+             '0 39:0 uint64_t c',
+             'END'
+             ]
+
+    out = generator.GenerateFile(True, generator.OutputStyleHeader, None,
+                                 input, 'foo.gen')
+    self.assertIsNotNone(out)
+
+    # Did structure get generated?
+    self.assertIn('void A_init(struct A* s, uint64_t a)', out)
+    self.assertIn('void B_init(struct B* s, uint8_t a, uint64_t c)', out)
+    self.assertIn('void B1_init(struct B* s, uint8_t b11, uint8_t b12)', out)
+    self.assertIn('void B2_init(struct B* s, uint8_t b21, uint8_t b22)', out)
+
+  def disableTestInitFunctionsForNestedStructures(self):
+    input = ['STRUCT A',
+             '0 63:56 uint8_t a',
+             'STRUCT B',
+             '0 55:48 uint8_t b',
+             'STRUCT C',
+             '0 47:40 uint8_t c',
+             'END',
+             'END',
+             'END'
+             ]
+
+    out = generator.GenerateFile(True, generator.OutputStyleHeader, None,
+                                 input, 'foo.gen')
+    self.assertIsNotNone(out)
+
+    # Did structure get generated?
+    self.assertIn('void A_init(struct A* s, uint64_t a)', out)
+    self.assertNotIn('void B_init(struct B* s, uint8_t b)', out)
+    self.assertNotIn('void C_init(struct C* s, uint8_t c)', out)
+
+
+  def testMultiFlitField(self):
+    input = ['STRUCT A',
+             '0 63:56 uint8_t a',
+             '0 55:0 uint8_t b[19]',
+             '1 63:0 ...',
+             '2 63:32 ...',
+             'END'
+             ]
+
+    out = generator.GenerateFile(True, generator.OutputStyleHeader, None,
+                                 input, 'foo.gen')
+    self.assertIsNotNone(out)
+    print out
+    
 
 class TestIndentString(unittest.TestCase):
   def testSimple(self):
     # Tests only properties that hold true regardless of the formatting style.
     generator = codegen.CodeGenerator(None)
     generator.indent = 1
-    self.assertTrue(len(generator.indentString()) > 0)
+    self.assertTrue(len(generator.IndentString()) > 0)
 
   def testTwoIndentDoublesOneIndent(self):
     generator = codegen.CodeGenerator(None)
     generator.indent = 1
-    oneIndent = generator.indentString()
+    oneIndent = generator.IndentString()
     generator.indent = 2
-    twoIndent = generator.indentString()    
+    twoIndent = generator.IndentString()    
     self.assertEqual(twoIndent, oneIndent + oneIndent)
 
 
