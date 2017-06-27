@@ -31,7 +31,7 @@ type_widths = {
   'char': 8,
   'uint8_t' : 8,
   'uint16_t': 16,
-  'int16_t': 16, 
+  'int16_t': 16,
   'short': 16,
   'int' : 32,
   'uint32_t': 32,
@@ -48,6 +48,13 @@ class Type:
 
   def __init__(self, base_name, array_size=None):
     self.base_name = base_name
+    # Number of elements in the array.
+    self.array_size = 0
+    # Size of the total object in bits.
+    self.bit_width = 0
+    # True if type represents an array type.
+    self.is_array = False
+
     if array_size:
       self.is_array = True
       self.array_size = array_size
@@ -56,7 +63,7 @@ class Type:
       self.array_size = None
 
     self.alignment = type_widths.get(base_name)
-    
+
     if self.alignment is None:
       print("Unknown base type name %s\n", base_name)
       return None
@@ -160,6 +167,9 @@ class Node:
     # All macros related to this Node in string form.
     self.macros = []
 
+    # Location where Node appeared in source.
+    self.line_number = 0
+
 
 def BitFlitToString(bitflit):
   """Converts an absolute bit offset from top of struct to a top=64 string."""
@@ -189,6 +199,8 @@ class Field(Node):
     self.crosses_flit = False
     # Fields that have been packed in this field.
     self.packed_fields = []
+    # True if field was explicitly defined to be less than its natural size.
+    self.is_bitfield = False
 
   def __str__(self):
     if self.start_flit == self.end_flit:
@@ -200,7 +212,7 @@ class Field(Node):
              'end: flit=%d, bit=%d>' % (self.name, self.type,
                                         self.start_flit, self.start_bit,
                                         self.end_flit, self.end_bit))
-   
+
   def StartFlit(self):
     return self.start_flit
 
@@ -216,21 +228,21 @@ class Field(Node):
     we start bit ordering at 63 and go down.
     """
     return (63 - self.start_bit) + 64 * self.start_flit
-  
+
   def EndBitFlit(self):
     """Returns offset from top of first flit."""
     return (63 - self.end_bit) + 64 * self.end_flit
-    
-  def Size(self): 
+
+  def BitWidth(self):
     # Returns the number of bits in the field.
-    return (self.start_bit - self.end_bit + 1)
+    return (self.EndBitFlit() - self.StartBitFlit() + 1)
 
   def Mask(self):
     # Returns a hexadecimal number that can be used as a mask in the flit.
-    return '0x%x' %  ((1 << self.Size()) - 1)
+    return '0x%x' %  ((1 << self.BitWidth()) - 1)
 
   def SmallerThanType(self):
-    return self.Size() < self.type.BitWidth()
+    return self.BitWidth() < self.type.BitWidth()
 
   def IsReserved(self):
     """True if the field is a placeholder that doesn't need to be initialized."""
@@ -294,7 +306,7 @@ class Union(Node):
     return max([s.Flits() for s in self.structs])
 
   def __str__(self):
-    return('<Union %s, variable %s:\n fields: %s\n structs: %s\n>\n' % 
+    return('<Union %s, variable %s:\n fields: %s\n structs: %s\n>\n' %
            (self.name, self.variable, self.fields, self.structs))
 
 
@@ -318,7 +330,7 @@ class Struct(Node):
 
     # Source code for function declarations related to this structure.
     self.declarations = []
-    
+
     # Source code for function definitions related to this structure.
     self.definitions = []
 
@@ -358,7 +370,7 @@ class Document(Node):
     self.unions = []
     # All enums declared in the file.
     self.enums = []
-    
+
     # Original filename containing the specifications.
     self.filename = None
 
@@ -493,7 +505,7 @@ class HTMLGenerator(Visitor):
     if len(field.packed_fields) != 0:
       out = ''
       for packed_field in field.packed_fields:
-        out += self.VisitField(packed_field, 
+        out += self.VisitField(packed_field,
                                'In packed field %s.' % field.name)
       return out
 
@@ -508,7 +520,7 @@ class HTMLGenerator(Visitor):
     if field.crosses_flit:
       out += '  <td class="structBits" colspan=2>%d:%d-%d:%d</td>\n' % (
         field.start_flit, field.start_bit, field.end_flit, field.end_bit)
-      out += '  <td>%s</td>\n  <td>%s</td>\n' % (field.type.DeclarationType(), 
+      out += '  <td>%s</td>\n  <td>%s</td>\n' % (field.type.DeclarationType(),
                                                  field.name)
     else:
       out += '  <td class="structBits">%d</td>\n' % field.start_flit
@@ -530,9 +542,16 @@ class HTMLGenerator(Visitor):
 class Checker:
   # Walk through a document and identify any likely problems.
   def __init__(self):
-    # Warnings noted.
-    self.warnings = []
+    # Errors noted.
+    self.errors = []
     self.current_document = None
+
+  def AddError(self, node, msg):
+    if self.current_document and self.current_document.filename:
+      location = '%s:%d: ' % (self.current_document.filename, node.line_number)
+    else:
+      location = '%d: ' % node.line_number
+    self.errors.append(location + msg)
 
   def VisitDocument(self, the_doc):
     for struct in the_doc.structs:
@@ -562,24 +581,24 @@ class Checker:
         # allow the provided alignment.
         # TODO(bowdidge): Assumes type width = type alignment.
         if (field.StartBitFlit() % field.type.Alignment() != 0):
-          self.warnings.append(
+          self.AddError(field,
             'In structure %s, type won\'t allow alignment: "%s %s" at bit %d' %
             (the_struct.name, field.type, field.name, field.end_bit))
 
       start_bitflit = field.StartBitFlit()
       end_bitflit = field.EndBitFlit()
-      # Note that fields are visited in reverse order - smallest to largest.
+
       if (last_start_bitflit >= end_bitflit and
            last_end_bitflit >= end_bitflit):
-        self.warnings.append('*** field "%s" and "%s" not in bit order' % (
+        self.AddError(field, 'field "%s" and "%s" not in bit order' % (
             last_field_name, field.name))
       elif last_end_bitflit >= start_bitflit:
-        self.warnings.append('*** field "%s" overlaps field "%s"' % (
+        self.AddError(field, 'field "%s" overlaps field "%s"' % (
             last_field_name, field.name))
       elif start_bitflit != last_end_bitflit + 1:
-        self.warnings.append('*** unexpected space between field "%s" and "%s"'
-                             % (last_field_name, field.name))
-              
+        self.AddError(field, 'unexpected space between field "%s" and "%s"'
+                      % (last_field_name, field.name))
+
       last_start_bitflit = field.StartBitFlit()
       last_end_bitflit = field.EndBitFlit()
       last_field_name = field.name
@@ -594,7 +613,7 @@ class Checker:
 
   def VisitField(self, the_field):
     pass
-  
+
 
 def LastNonReservedName(field_list):
   last_name = None
@@ -608,7 +627,7 @@ def LastNonReservedName(field_list):
     return last_name
   if last_name is first_name:
     return 'z'
-    
+
 class Packer:
   """ Searches all structures for bitfields that can be combined.
 
@@ -625,14 +644,21 @@ class Packer:
 
   def __init__(self):
     self.current_document = None
-    self.warnings = []
+    self.errors = []
+
+  def AddError(self, node, msg):
+    if self.current_document and self.current_document.filename:
+      location = '%s:%d: ' % (self.current_document.filename, node.line_number)
+    else:
+      location = '%d: ' % node.line_number
+    self.errors.append(location + msg)
 
   def VisitDocument(self, doc):
     # Pack all structures in the named documents.
     self.doc = doc
     for struct in doc.structs:
       self.VisitStruct(struct)
-    return self.warnings
+    return self.errors
 
   def VisitStruct(self, the_struct):
     # Gather fields by flit, then create macros for each.
@@ -645,7 +671,7 @@ class Packer:
 
   def VisitUnion(self, the_union):
     # Handle packing fields in union.
-    # TODO(bowdidge): Union fields start the packing all over again, so if the 
+    # TODO(bowdidge): Union fields start the packing all over again, so if the
     # common bit is not a full word, then need to copy fields over.
     for struct in the_union.structs:
       self.VisitStruct(struct)
@@ -667,7 +693,7 @@ class Packer:
     for field in the_fields:
       # Loop through the fields, grouping contiguous bitfields into a larger
       # single variable.
-      if field.type.BitWidth() != field.Size():
+      if field.type.BitWidth() != field.BitWidth():
          if current_type == None or field.type == current_type:
            current_type = field.type
            current_group.append(field)
@@ -675,7 +701,7 @@ class Packer:
            if len(current_group) > 1:
              fields_to_pack.append((current_type, current_group))
            current_group = [field]
-           current_type = field.type           
+           current_type = field.type
       else:
         if len(current_group) > 1:
           fields_to_pack.append((current_type, current_group))
@@ -696,8 +722,9 @@ class Packer:
       packed_field_width = max_start_bit - min_end_bit + 1
 
       if (packed_field_width > type.BitWidth()):
-        self.warnings.append('Unable to pack fields %s. '
-                             'Fields are %d bits, type is %d bits.' % (
+        self.AddError(the_struct,
+                      'Unable to pack fields %s. '
+                      'Fields are %d bits, type is %d bits.' % (
             utils.ReadableList([f.name for f in fields]),
             packed_field_width,
             type.BitWidth()))
@@ -705,7 +732,8 @@ class Packer:
       new_field_name = fields[0].name + "_to_" + LastNonReservedName(fields)
       new_field = Field(new_field_name, type, flit_number,
                         max_start_bit, min_end_bit)
-      
+      new_field.line_number = fields[0].line_number
+
       non_reserved_fields = [f.name for f in fields if not f.IsReserved()]
       bitfield_name_str = utils.ReadableList(non_reserved_fields)
       bitfield_layout_str = ''
@@ -725,10 +753,10 @@ class Packer:
       for f in fields[1:]:
         new_field.packed_fields.append(f)
         the_struct.fields.remove(f)
-        
+
 
   def PackStruct(self, the_struct):
-    # Get rid of old struct fields, and use macros on flit-sized 
+    # Get rid of old struct fields, and use macros on flit-sized
     # fields to access.
     new_fields = []
     flit_field_map = self.FieldsToStartFlits(the_struct)
@@ -767,17 +795,23 @@ class DocBuilder:
     self.stack = [(DocBuilderTopLevel, self.current_document)]
     # strings describing any errors encountered during parsing.
     self.errors = []
-    # strings describing any odd but non-fatal problems.
-    self.warnings = []
     # Comment being formed for next object.
     self.current_comment = ''
-
     # Current field that stretches across flits.
     self.flit_crossing_field = None
     # Number of extra bits still to be consumed by the flit_crossing_field
     self.bits_remaining = 0
     # Number of extra bits already cosumed.
     self.bits_consumed = 0
+    # Current line being parsed.
+    self.current_line = 0
+
+  def AddError(self, msg):
+    if self.current_document.filename:
+      location = '%s:%d: ' % (self.current_document.filename, self.current_line)
+    else:
+      location = '%d: ' % self.current_line
+    self.errors.append(location + msg)
 
   def ParseStructStart(self, line):
     # Handle a STRUCT directive opening a new structure.
@@ -792,13 +826,14 @@ class DocBuilder:
       name = terms[1]
       variable = None
     else:
-      self.errors.append('couldn\'t parse "%s"' % line)
+      self.AddError('couldn\'t parse "%s"' % line)
       current_object = None
 
     name = utils.RemoveWhitespace(name)
     variable = utils.RemoveWhitespace(variable)
 
     current_struct = Struct(name, variable)
+    current_struct.line_number = self.current_line
 
     if len(self.current_comment) > 0:
       current_struct.body_comment = self.current_comment
@@ -813,6 +848,7 @@ class DocBuilder:
     _, name = line.split(' ')
     name = utils.RemoveWhitespace(name)
     current_enum = Enum(name)
+    current_enum.line_number = self.current_line
 
     if len(self.current_comment) > 0:
       current_enum.body_comment = self.current_comment
@@ -824,10 +860,10 @@ class DocBuilder:
   def ParseEnumLine(self, line):
     # Parse the line describing a new enum variable.
     # This regexp matches:
-    # Foo = 1 Abitrary following comment 
+    # Foo = 1 Abitrary following comment
     match = re.match('(\w+)\s*=\s*(\w+)\s*(.*)', line)
     if match is None:
-      self.errors.append('Invalid enum line: "%s"' % line)
+      self.AddError('Invalid enum line: "%s"' % line)
       return None
 
     var = match.group(1)
@@ -835,11 +871,12 @@ class DocBuilder:
     value_str = match.group(2)
     value = utils.ParseInt(value_str)
     if value is None:
-      self.errors.append('Invalid enum value for %s: "%s"' % (value_str, var))
+      self.AddError('Invalid enum value for %s: "%s"' % (value_str, var))
       return None
     # Parse a line describing an enum variable.
     # TODO(bowdidge): Remember whether value was hex or decimal for better printing.
     new_enum = EnumVariable(var, value)
+    new_enum.line_number = self.current_line
 
     if len(self.current_comment) > 0:
       new_enum.body_comment = self.current_comment
@@ -848,7 +885,7 @@ class DocBuilder:
     if match.group(3):
         new_enum.key_comment = utils.StripComment(match.group(3))
     return new_enum
- 
+
   def ParseLine(self, line):
     """Parse a single line of a gen file that wasn't the start or end of container.
 
@@ -873,10 +910,10 @@ class DocBuilder:
     (state, current_object) = self.stack[len(self.stack)-1]
 
     if self.flit_crossing_field:
-      self.errors.append('Field spec for "%s" too short: expected %d bits, got %d' %
-                         (self.flit_crossing_field.name,
-                          self.flit_crossing_field.type.BitWidth(),
-                          self.flit_crossing_field.type.BitWidth() - self.bits_remaining))
+      self.AddError('Field spec for "%s" too short: expected %d bits, got %d' %
+                    (self.flit_crossing_field.name,
+                     self.flit_crossing_field.type.BitWidth(),
+                     self.flit_crossing_field.type.BitWidth() - self.bits_remaining))
 
     if len(self.current_comment) > 0:
       current_object.tail_comment = self.current_comment
@@ -888,12 +925,13 @@ class DocBuilder:
     (state, current_object) = self.stack[len(self.stack)-1]
     union_args = line.split(' ')
     if len(union_args) != 3:
-      self.errors.append('Malformed union declaration: %s\n' % line)
+      self.AddError('Malformed union declaration: %s\n' % line)
       return
     (_, name, variable) = union_args
     name = utils.RemoveWhitespace(name)
     variable = utils.RemoveWhitespace(variable)
     current_union = Union(name, variable)
+    current_union.line_number = self.current_line
     if len(self.current_comment) > 0:
       current_union.body_comment = self.current_comment
     self.current_comment = ''
@@ -910,7 +948,7 @@ class DocBuilder:
       return False
 
     if self.flit_crossing_field is None:
-      self.errors.append('Multi-line flit continuation seen without pending field.')
+      self.AddError('Multi-line flit continuation seen without pending field.')
       return True
 
     # Continuation.
@@ -920,7 +958,7 @@ class DocBuilder:
     result = utils.ParseBitSpec(flit_bit_spec_str)
 
     if not result:
-      self.errors.append('Invalid bit pattern: "%s"' % flit_bit_spec_str)
+      self.AddError('Invalid bit pattern: "%s"' % flit_bit_spec_str)
       return True
 
     # Tests
@@ -928,10 +966,10 @@ class DocBuilder:
     # Flag error if larger than flit.
     # Flag if flit number wasn't increasing.
     # Checker will determine if there's overlap.
-    
+
     result = utils.ParseBitSpec(flit_bit_spec_str)
     if not result:
-      self.errors.append('Invalid bit pattern: "%s"' % flit_bit_spec_str)
+      self.AddError('Invalid bit pattern: "%s"' % flit_bit_spec_str)
       return True
     (flit, start_bit, end_bit) = result
 
@@ -942,9 +980,13 @@ class DocBuilder:
     else:
       self.flit_crossing_field.tail_comment += '\n' + key_comment
 
+    self.flit_crossing_field.crosses_flit = True
+    self.flit_crossing_field.end_flit = flit
+    self.flit_crossing_field.end_bit = end_bit
+
     if self.bits_remaining < size:
-      self.errors.append('Continuation for multi-flit field "%s" too large: '
-                         'expected %d bits, got %d.' % (
+      self.AddError('Continuation for multi-flit field "%s" too large: '
+                    'expected %d bits, got %d.' % (
           self.flit_crossing_field.name,
           self.flit_crossing_field.type.BitWidth(),
           size + self.bits_consumed))
@@ -953,40 +995,37 @@ class DocBuilder:
 
     self.bits_remaining -= size
     self.bits_consumed += size
-    self.flit_crossing_field.crosses_flit = True
-    
+
     if self.bits_remaining == 0:
-      self.flit_crossing_field.end_flit = flit
-      self.flit_crossing_field.end_bit = end_bit
       self.flit_crossing_field = None
 
     return True
-      
-        
+
+
 
 
   def ParseFieldLine(self, line):
     """Parse a single line describing a field.
-    
-q    Struct line is one of the following
+
+     Struct line is one of the following
 
     Defines field
     flit start_bit:end_bit type name /* comment */
     flit single_bit type name /* comment */
-    
+
     Defines continuation of multi-flit field.
     flit start_bit:end_bit ...
     """
-    
+
     # Try parsing as continuation of previous field.
     if self.ParseMultiFlitFieldLine(line):
-      return 
+      return
 
     match = re.match('(\w+\s+(\w+:\w+|\w+))\s+(\w+)\s+(\w+)(\[[0-9]+\]|)\s*(.*)', line)
 
     if match is None:
         # Flag error, or treat as comment.
-        self.errors.append('Invalid field line: "%s"' % line)
+        self.AddError('Invalid field line: "%s"' % line)
         return None
 
     is_array = False
@@ -995,7 +1034,7 @@ q    Struct line is one of the following
     flit_bit_spec_str = match.group(1)
     type_name = match.group(3)
     name = match.group(4)
-    if len(match.group(5)) != 0: 
+    if len(match.group(5)) != 0:
       is_array = True
       array_size = utils.ParseInt(match.group(5).lstrip('[').rstrip(']'))
       if array_size is None:
@@ -1005,16 +1044,16 @@ q    Struct line is one of the following
     result = utils.ParseBitSpec(flit_bit_spec_str)
 
     if not result:
-      self.errors.append('Invalid bit pattern: "%s"' % flit_bit_spec_str)
+      self.AddError('Invalid bit pattern: "%s"' % flit_bit_spec_str)
       return None
 
     (flit, start_bit, end_bit) = result
 
     if start_bit > 63:
-      self.errors.append('Field "%s" has start bit "%d" too large for 8 byte flit.' % (
+      self.AddError('Field "%s" has start bit "%d" too large for 8 byte flit.' % (
           name, start_bit))
       return None
- 
+
     type = None
     if is_array:
       type = Type(type_name, array_size)
@@ -1022,32 +1061,21 @@ q    Struct line is one of the following
       type = Type(type_name)
 
     if start_bit < end_bit:
-      self.errors.append('Start bit %d greater than end bit %d in field %s' % 
-                           (start_bit, end_bit, name))
+      self.AddError('Start bit %d greater than end bit %d in field %s' %
+                    (start_bit, end_bit, name))
 
     new_field = Field(name, type, flit, start_bit, end_bit)
+    new_field.line_number = self.current_line
 
     expected_width = type.BitWidth()
-    actual_width = start_bit - end_bit + 1
+    actual_width = new_field.BitWidth()
 
-    
-    if is_array:
-      if actual_width != expected_width:
-        if end_bit == 0:
-          # Field may stretch across flits.
-          self.flit_crossing_field = new_field
-          self.bits_remaining = expected_width - actual_width
-          self.bits_consumed = actual_width
-        else:
-          self.errors.append('Field "%s" needed %d bytes to hold %s[%d], got %d.' %
-                             (name, expected_width, type, array_size,
-                              actual_width))
-          return None
-    else:
-      if actual_width > expected_width:
-        self.errors.append('Type "%s" too small to hold %d bits for field "%s".' %
-                           (type, actual_width, name))
-        return None
+
+    if is_array and end_bit == 0 and actual_width < expected_width:
+      # Field may stretch across flits.
+      self.flit_crossing_field = new_field
+      self.bits_remaining = expected_width - actual_width
+      self.bits_consumed = actual_width
 
     if key_comment == '':
       key_comment = None
@@ -1058,27 +1086,35 @@ q    Struct line is one of the following
     if len(self.current_comment) > 0:
       new_field.body_comment = self.current_comment
     self.current_comment = ''
-    
+
     type_width = new_field.type.BitWidth()
-    var_width = new_field.start_bit - new_field.end_bit + 1
-    if var_width < type_width:
-      self.warnings.append('*** field "%s" doesn\'t fill field' % new_field.name)
+    var_width = new_field.BitWidth()
+    if var_width < type_width and new_field.type.IsArray() and new_field.end_bit != 0:
+      # Using too few bits is only an error for arrays - scalar fields might always
+      # be treated as bitfields.  Arrays that end on a flit could continue, so don't
+      # flag an error in that case.
+      self.AddError('Field smaller than type: '
+                    'field "%s" is %d bits, type "%s" is %d.' % (
+          new_field.name, new_field.BitWidth(), new_field.type.TypeName(),
+          new_field.type.BitWidth()))
     elif var_width > type_width:
-      warning = '*** %s larger than field type %s' % (new_field.name, new_field.type)
-      self.warnings.append(warning)
+      warning = 'Field larger than type: field "%s" is %d bits, type "%s" is %d.' % (
+        new_field.name, new_field.BitWidth(), new_field.type.TypeName(),
+        new_field.type.BitWidth())
+      self.AddError(warning)
     return new_field
 
   def ParsePlainLine(self, line):
     # TODO(bowdidge): Save test in order for printing as comments.
     return
 
-  def Parse(self, the_file):
+  def Parse(self, input_filename, the_file):
     # Begin parsing a generated file provided as text.  Returns errors if any, or None.
-    line_count = 0
+    self.current_document.filename = input_filename
+    self.current_line = 1
     for line in the_file:
       # Remove whitespace to allow for meaningful indenting.
       line = line.lstrip(' ')
-      line_count += 1
       if line.startswith('STRUCT'):
         self.ParseStructStart(line)
       elif line.startswith('UNION'):
@@ -1089,6 +1125,7 @@ q    Struct line is one of the following
         self.ParseEnd(line)
       else:
         self.ParseLine(line)
+      self.current_line += 1
     if len(self.errors) > 0:
       return self.errors
     return None
@@ -1106,7 +1143,7 @@ def GenerateFile(should_pack, output_style, output_base,
   # Process a single .gen file and create the appropriate header/docs.
   doc_builder = DocBuilder()
 
-  errors = doc_builder.Parse(input_stream)
+  errors = doc_builder.Parse(input_filename, input_stream)
 
   if errors is not None:
     for error in errors:
@@ -1114,20 +1151,19 @@ def GenerateFile(should_pack, output_style, output_base,
     sys.exit(1)
 
   doc = doc_builder.current_document
-  doc.filename = input_filename
 
   c = Checker()
   c.VisitDocument(doc)
-  if len(c.warnings) != 0:
-    for warning in c.warnings:
-      sys.stderr.write('Warning: %s\n' % warning)
- 
+  if len(c.errors) != 0:
+    for checker_error in c.errors:
+      sys.stderr.write(checker_error + '\n')
+
   if should_pack:
     p = Packer()
-    warnings = p.VisitDocument(doc)
-    if len(warnings) > 0:
-      for warning in warnings:
-        sys.stderr.write('Warning: %s\n' % warning)
+    errors = p.VisitDocument(doc)
+    if len(errors) > 0:
+      for error in errors:
+        sys.stderr.write(warning + '\n')
 
   helper = codegen.HelperGenerator()
   helper.VisitDocument(doc)
@@ -1167,7 +1203,7 @@ def main():
     print str(err)
     Usage()
     sys.exit(2)
-  
+
   should_pack = False
   output_style = OutputStyleHeader
   output_base = None
@@ -1204,7 +1240,7 @@ def main():
                      input_stream, args[0])
   input_stream.close()
   if out:
-    print out              
+    print out
 
 if __name__ == '__main__':
   main()

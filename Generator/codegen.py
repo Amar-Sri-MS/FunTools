@@ -283,7 +283,7 @@ class HelperGenerator:
       arg_list.append('%s %s' % (field.type.DeclarationType(), field.name))
 
       if field.SmallerThanType():
-        max_value = 1 << field.Size()
+        max_value = 1 << field.BitWidth()
         validates.append('  assert(%s < 0x%x);' % (field.name, max_value))
 
     for field in the_struct.fields:
