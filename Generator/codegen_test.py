@@ -161,7 +161,7 @@ class HelperGeneratorTest(unittest.TestCase):
                      '  s->foo.a1 = a1;\n\n'
                      '}', definition)
 
-  def testCreateArrayInitializer(self):
+  def testNoCreateArrayInitializer(self):
     gen = codegen.HelperGenerator()
     s = generator.Struct('Foo', 'f1')
     f = generator.Field('a1', generator.Type('char', 8), 0, 63, 0)
@@ -170,12 +170,8 @@ class HelperGeneratorTest(unittest.TestCase):
     (declaration, definition) = gen.GenerateInitRoutine("init", "MyStruct",
                                                         "foo.", s)
   
-    self.assertEqual('extern void init(struct MyStruct* s, char[8] a1);\n',
-                     declaration),
-    self.assertEqual('void init(struct MyStruct* s, char[8] a1) {\n'
-                     '  s->foo.a1 = a1;\n\n'
-                     '}', definition)
-
+    self.assertEqual('', declaration)
+    self.assertEqual('', definition)
 
 
 class CodegenEndToEnd(unittest.TestCase):
@@ -202,7 +198,7 @@ class CodegenEndToEnd(unittest.TestCase):
     self.assertIn('char d[6];', out)
     # Did constructor get created?
     self.assertIn('void Foo_init(struct Foo* s, uint8_t a, uint8_t b, '
-                  'uint8_t c, char[6] d);', out)
+                  'uint8_t c);', out)
     # Did accessor macro get created?
     self.assertIn('#define FUN_FOO_B_P(x)', out)
     # Did init function check range of bitfields?

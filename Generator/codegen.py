@@ -277,7 +277,7 @@ class HelperGenerator:
     arg_list.append('struct %s* s' % struct_name)
 
     for field in the_struct.AllFields():
-      if field.IsReserved():
+      if field.IsReserved() or field.type.IsArray():
         continue
 
       arg_list.append('%s %s' % (field.type.DeclarationType(), field.name))
@@ -286,9 +286,14 @@ class HelperGenerator:
         max_value = 1 << field.BitWidth()
         validates.append('  assert(%s < 0x%x);' % (field.name, max_value))
 
+    if len(arg_list) == 1:
+      # If no arguments other than structure, don't bother.
+      return ('', '')
+
     for field in the_struct.fields:
-      if field.IsReserved():
+      if field.IsReserved() or field.type.IsArray():
         continue
+
       inits.append(self.GenerateInitializer(the_struct, field, accessor_prefix))
 
     validate_block = '\n'.join(validates)
