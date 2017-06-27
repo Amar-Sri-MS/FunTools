@@ -1,0 +1,37 @@
+ENUM Opcode
+Read=1
+Write=2
+Update=3
+END
+// Common structure for all NVME requests.
+STRUCT fun_admin_cmd_common
+0 63:56 uint8_t common_opcode;  // Use enum Opcode for these values.
+0 55:48 uint8_t common_flags // See documentation.
+0 47:40 uint8_t rsvd0
+// Length of raw data, as 8 bit value.
+0 39:32 uint8_t common_len8
+0 31:0 uint32_t common_status // Generally 0 or 1.
+1 63:0 uint64_t common_cookie
+END
+
+STRUCT fun_admin_epsq_cmd
+  // Common header.
+  0 63:0 fun_admin_cmd_common epsq_common
+  1 63:0 ...
+  UNION subob u
+    // Create a new submission queue.
+    STRUCT fun_admin_epsq_cmd_alloc epsq_alloc
+      2 63:56 uint8_t epsq_alloc_subopcode /* FUN_ADMIN_SUBOP_ALLOC */
+      2 47:32 uint16_t rsvd0
+      2 31:0 uint32_t epsq_alloc_epsqid
+      3 63:32 uint32_t epsq_alloc_epcqid
+    END
+    // Free a submission queue.
+    STRUCT fun_admin_epsq_cmd_free epsq_free
+      2 63:56 uint8_t epsq_free_subopcode /* FUN_ADMIN_SUBOP_FREE */
+      2 47:32 uint16_t rsvd0
+      2 31:0 uint32_t epsq_alloc_epsqid
+    END
+  END
+END
+
