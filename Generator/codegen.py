@@ -270,7 +270,7 @@ class HelperGenerator:
     validates = []
     # List of statements initializing fields of structure.
     inits = []
-    # All validates, wrapped in a #ifdef DEBUG (or empty if no checks to be done.)
+    # All C code to validate field inputs.
     validate_block = ''
 
     # First argument is always a pointer to the structure being initialized.
@@ -291,8 +291,7 @@ class HelperGenerator:
         continue
       inits.append(self.GenerateInitializer(the_struct, field, accessor_prefix))
 
-    if len(validates) > 0:
-      validate_block = '#ifdef DEBUG\n%s\n#endif\n\n' % '\n'.join(validates)
+    validate_block = '\n'.join(validates)
 
     init_declaration = 'extern void %s(%s);\n' % (function_name,
                                                   ', '.join(arg_list))
