@@ -98,7 +98,7 @@ class CodeGeneratorTest(unittest.TestCase):
     enum.variables.append(var)
 
     code = self.printer.VisitEnum(enum)
-    self.assertEqual('enum MyEnum {\n\tMY_COMMAND = 1,\n};\n\n', code)
+    self.assertEqual('enum MyEnum {\n\tMY_COMMAND = 0x1,\n};\n\n', code)
 
 
 class HelperGeneratorTest(unittest.TestCase):

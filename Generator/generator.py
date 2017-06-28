@@ -340,11 +340,11 @@ class EnumVariable(Node):
      Node.__init__(self)
      # name is a string.
      self.name = name
-     # value is an string value for the variable.
+     # value is an integer value for the variable.
      self.value = value
 
   def __str__(self):
-     return('<EnumVariable: %s = %s>' % self.name, self.value)
+     return('<EnumVariable: %s = 0x%d>' % self.name, self.value)
 
 
 class Enum(Node):

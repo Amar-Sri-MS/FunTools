@@ -80,7 +80,7 @@ class CodeGenerator:
     hdr_out = ''
     if enum_variable.body_comment != None:
       hdr_out += self.IndentString() + ' /* %s */\n' % enum_variable.body_comment
-    hdr_out = self.IndentString() + '%s = %s,' % (enum_variable.name, enum_variable.value)
+    hdr_out = self.IndentString() + '%s = 0x%d,' % (enum_variable.name, enum_variable.value)
     if enum_variable.key_comment != None:
       hdr_out += self.IndentString() + ' /* %s */' % enum_variable.key_comment
     hdr_out += '\n'
