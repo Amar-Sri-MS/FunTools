@@ -45,7 +45,16 @@ class HTMLGenerator:
 
   def VisitEnumVariable(self, enum_variable):
     # Generates HTML Documentation for a specific enum variable.
-    return '<li> <b>%s</b> = %s' % (enum_variable.name, enum_variable.value)
+    out = '<dt>%s = %d</dt>\n' % (enum_variable.name, enum_variable.value)
+    out += '<dd>\n'
+    if enum_variable.key_comment:
+        out += enum_variable.key_comment
+    if enum_variable.key_comment and enum_variable.body_comment:
+        out += '<br>'
+    if enum_variable.body_comment:
+        out += enum_variable.body_comment
+    out += '</dd>\n'
+    return out
 
   def VisitEnum(self, enum):
     # Generates HTML documentation for a specific enum type.
@@ -56,10 +65,12 @@ class HTMLGenerator:
     if enum.body_comment:
       out += '<p>%s</p>\n' % enum.body_comment
     out += '<b>Values</b><br>\n'
-    out += '<ul>\n'
+    out += '<dl>\n'
     for enum_variable in enum.variables:
       out += self.VisitEnumVariable(enum_variable)
-    out += '</ul>\n'
+    out += '</dl>\n'
+    if enum.tail_comment:
+        out += '<p>%s</p>' % enum.tail_comment
     return out
 
   def VisitUnionInStruct(self, union):
@@ -90,7 +101,7 @@ class HTMLGenerator:
   def VisitStruct(self, struct):
     # Generates HTML documentation for a specific structure.
     out = ''
-    out += '<h3>struct %s:\n</h3>\n' % struct.name
+    out += '<h3>struct %s:</h3>\n' % struct.name
     if struct.key_comment:
       out += '<p>%s</p>\n' % struct.key_comment
     out += '<p>%s</p>\n' % struct.body_comment

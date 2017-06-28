@@ -10,36 +10,44 @@ import generator
 
 class TestTypes(unittest.TestCase):
   def testBitWidth(self):
-    self.assertEqual(32, generator.Type("uint32_t").BitWidth())
-    self.assertEqual(32, generator.Type("unsigned").BitWidth())
-    self.assertEqual(8, generator.Type("char").BitWidth())
-    self.assertEqual(64, generator.Type("double").BitWidth())
-    self.assertEqual(8, generator.Type("uint8_t").BitWidth())
+    self.assertEqual(32, generator.TypeForName("uint32_t").BitWidth())
+    self.assertEqual(32, generator.TypeForName("unsigned").BitWidth())
+    self.assertEqual(8, generator.TypeForName("char").BitWidth())
+    self.assertEqual(64, generator.TypeForName("double").BitWidth())
+    self.assertEqual(8, generator.TypeForName("uint8_t").BitWidth())
 
-    self.assertEqual(128, generator.Type("uint8_t", 16).BitWidth())
-    self.assertEqual(128, generator.Type("uint64_t", 2).BitWidth())
+    self.assertEqual(128, generator.ArrayTypeForName("uint8_t", 16).BitWidth())
+    self.assertEqual(128, generator.ArrayTypeForName("uint64_t", 2).BitWidth())
 
   def testIsArray(self):
-    self.assertTrue(generator.Type("uint32_t", 4).IsArray())
-    self.assertTrue(generator.Type("char", 16).IsArray())
+    self.assertTrue(generator.ArrayTypeForName("uint32_t", 4).IsArray())
+    self.assertTrue(generator.ArrayTypeForName("char", 16).IsArray())
 
-    self.assertFalse(generator.Type("double").IsArray())
-    self.assertFalse(generator.Type("int").IsArray())
+    self.assertFalse(generator.TypeForName("double").IsArray())
+    self.assertFalse(generator.TypeForName("int").IsArray())
 
   def testBaseName(self):
-    self.assertEqual("uint32_t", generator.Type("uint32_t").BaseName())
-    self.assertEqual("uint32_t", generator.Type("uint32_t", 4).BaseName())
+    self.assertEqual("uint32_t", 
+                     generator.TypeForName("uint32_t").BaseName())
+    self.assertEqual("uint32_t",
+                     generator.ArrayTypeForName("uint32_t", 4).BaseName())
 
   def testCompare(self):
-    self.assertEqual(generator.Type("uint32_t"), generator.Type("uint32_t"))
-    self.assertEqual(generator.Type("uint8_t"), generator.Type("uint8_t"))
+    self.assertEqual(generator.TypeForName("uint32_t"),
+                     generator.TypeForName("uint32_t"))
+    self.assertEqual(generator.TypeForName("uint8_t"),
+                     generator.TypeForName("uint8_t"))
 
-    self.assertNotEqual(generator.Type("uint8_t"), generator.Type("char"))
+    self.assertNotEqual(generator.TypeForName("uint8_t"),
+                        generator.TypeForName("char"))
 
-    self.assertEqual(generator.Type("uint8_t", 4), generator.Type("uint8_t", 4))
+    self.assertEqual(generator.ArrayTypeForName("uint8_t", 4),
+                     generator.ArrayTypeForName("uint8_t", 4))
 
-    self.assertNotEqual(generator.Type("char", 4), generator.Type("uint16_t", 4))
-    self.assertNotEqual(generator.Type("char", 4), generator.Type("char", 8))
+    self.assertNotEqual(generator.ArrayTypeForName("char", 4),
+                        generator.ArrayTypeForName("uint16_t", 4))
+    self.assertNotEqual(generator.ArrayTypeForName("char", 4),
+                        generator.ArrayTypeForName("char", 8))
 
 
 class TestDocBuilder(unittest.TestCase):
@@ -121,15 +129,57 @@ class TestDocBuilder(unittest.TestCase):
     self.assertEqual(1, len(errors))
     self.assertIn('has start bit "64" too large', errors[0])
 
+  def testSimpleStructBitWidth(self):
+    doc_builder = generator.DocBuilder()
+    contents = ['STRUCT Foo', '0 63:0 uint64_t packet', 'END']
+    
+    errors = doc_builder.Parse('filename', contents)
+    self.assertIsNone(errors)
+    doc = doc_builder.current_document
+
+    self.assertEquals(1, len(doc.structs))
+
+    s = doc.structs[0]
+    self.assertEquals(64, s.BitWidth())
+  
+  def testPartialFlitBitWidth(self):
+    doc_builder = generator.DocBuilder()
+    contents = ['STRUCT Foo', '0 63:16 uint64_t packet', 'END']
+    
+    errors = doc_builder.Parse('filename', contents)
+    self.assertIsNone(errors)
+    doc = doc_builder.current_document
+
+    self.assertEquals(1, len(doc.structs))
+
+    s = doc.structs[0]
+    self.assertEquals(48, s.BitWidth())
+
+  def testPartialFlitBitWidth(self):
+    doc_builder = generator.DocBuilder()
+    contents = ['STRUCT Foo',
+                '0 63:32 uint32_t a', 
+                '0 31:0 uint32_t b', 
+                '1 63:32 uint32_t c', 
+                'END']
+    
+    errors = doc_builder.Parse('filename', contents)
+    self.assertIsNone(errors)
+    doc = doc_builder.current_document
+
+    self.assertEquals(1, len(doc.structs))
+
+    s = doc.structs[0]
+    self.assertEquals(96, s.BitWidth())
+
   def testArray(self):
     doc_builder = generator.DocBuilder()
     contents = ['STRUCT Foo', '0 63:0 uint8_t chars[8]', 'END']
 
     errors = doc_builder.Parse('filename', contents)
-
     self.assertIsNone(errors)
-
     doc = doc_builder.current_document
+
     self.assertEqual(1, len(doc.structs))
 
     my_struct = doc.structs[0]
@@ -137,7 +187,8 @@ class TestDocBuilder(unittest.TestCase):
     my_field = my_struct.fields[0]
 
     self.assertEqual('chars', my_field.name)
-    self.assertEqual(generator.Type('uint8_t', 8), my_field.type)
+    self.assertEqual(generator.ArrayTypeForName('uint8_t', 8),
+                     my_field.type)
     self.assertEqual(True, my_field.type.IsArray())
     self.assertEqual(8, my_field.type.ArraySize())
     self.assertEqual(0, my_field.StartFlit())
@@ -154,7 +205,6 @@ class TestDocBuilder(unittest.TestCase):
     self.assertEqual(1, len(errors))
     self.assertIn('is 64 bits, type "uint8_t[2]" is 16', errors[0])
 
-
   def testMultiFlitTooSmall(self):
     doc_builder = generator.DocBuilder()
     contents = ['STRUCT Foo',
@@ -166,7 +216,6 @@ class TestDocBuilder(unittest.TestCase):
     self.assertEqual(1, len(errors))
     self.assertIn('expected 80 bits, got 128', errors[0])
 
-
   def testMultiFlitNotNeeded(self):
     doc_builder = generator.DocBuilder()
     contents = ['STRUCT Foo',
@@ -177,7 +226,6 @@ class TestDocBuilder(unittest.TestCase):
     errors = doc_builder.Parse('filename', contents)
     self.assertEqual(1, len(errors))
     self.assertIn('Multi-line flit continuation seen without', errors[0])
-
 
   def testMultiFlitTooLarge(self):
     doc_builder = generator.DocBuilder()
@@ -239,16 +287,24 @@ class TestDocBuilder(unittest.TestCase):
     self.assertEqual(3, field.value)
     self.assertEqual("Foobar", field.key_comment)
 
-
   def testInvalidFlit(self):
     # Test generator rejects a field with a non-numeric flit number.
     doc_builder = generator.DocBuilder()
     line = 'flit 63:0 uint64_t packet'
 
     self.assertIsNone(doc_builder.ParseFieldLine(line))
+
   
     self.assertEqual(1, len(doc_builder.errors))
     self.assertIn('Invalid bit pattern', doc_builder.errors[0])
+
+  def testInvalidTypeName(self):
+    doc_builder = generator.DocBuilder()
+    line = '0 63:0 NotAValidType field_name'
+
+    self.assertIsNone(doc_builder.ParseFieldLine(line))
+    self.assertEqual(1, len(doc_builder.errors))
+    self.assertIn('Unknown type name', doc_builder.errors[0])
 
   def testInvalidStart(self):
     # Test generator rejects field with a non-numeric start_bit.
@@ -293,7 +349,6 @@ class TestDocBuilder(unittest.TestCase):
     self.assertEqual(2, field.EndFlit())
     self.assertEqual(38, field.start_bit)
     self.assertEqual(38, field.end_bit)
-
 
   def testMissingCommentIsNone(self):
     doc_builder = generator.DocBuilder()
@@ -400,8 +455,67 @@ class TestDocBuilder(unittest.TestCase):
     self.assertEqual(0, long_field.end_bit)
     self.assertEqual(0, long_field.start_flit)
     self.assertEqual(2, long_field.end_flit)
-                
 
+  def testNestedStruct(self):
+    doc_builder = generator.DocBuilder()
+    # ... allows a field to overflow into later flits.
+    contents = [
+      'STRUCT Foo',
+      '0 63:56 uint8_t command',
+      '0 55:48 uint8_t arg',
+      'END',
+      'STRUCT Bar',
+      '0 63:48 Foo header',
+      '0 47:0 uint8_t buf[6]',
+      'END',
+      'STRUCT Baz',
+      '0 63:48 Foo header',
+      '0 47:0 uint64_t arg2',
+      '1 63:32 uint32_t arg3',
+      'END'
+      ]
+    errors = doc_builder.Parse('filename', contents)
+    self.assertIsNone(errors)
+  
+    doc = doc_builder.current_document
+
+    self.assertEqual(3, len(doc.structs))
+    
+    foo = doc.structs[0]
+    bar = doc.structs[1]
+    baz = doc.structs[2]
+    
+    self.assertEqual(16, foo.BitWidth())
+    self.assertEqual(64, bar.BitWidth())
+    self.assertEqual(96, baz.BitWidth())
+
+
+  def testMultiFlitNestedStruct(self):
+    doc_builder = generator.DocBuilder()
+    # ... allows a field to overflow into later flits.
+    contents = [
+      'STRUCT fun_admin_cmd_common',
+      '0 63:00 uint64_t common_opcode',
+      '1 63:00 uint64_t arg',
+      'END',
+      'STRUCT fun_admin_epsq_cmd',
+      '0 63:00 fun_admin_cmd_common c',
+      '1 63:00 ...',
+      '2 63:0 uint64_t arg2',
+      'END'
+      ]
+    errors = doc_builder.Parse('filename', contents)
+    self.assertIsNone(errors)
+  
+    doc = doc_builder.current_document
+
+    self.assertEqual(2, len(doc.structs))
+    
+    common = doc.structs[0]
+    cmd = doc.structs[1]
+    
+    self.assertEqual(128, common.BitWidth())
+    self.assertEqual(192, cmd.BitWidth())
 
 class PackerTest(unittest.TestCase):
   def testDontPackArgumentsFittingOwnType(self):
@@ -647,6 +761,33 @@ class CheckerTest(unittest.TestCase):
     print(checker.errors)
     self.assertEqual(1, len(checker.errors))
     self.assertIn('allow alignment', checker.errors[0])
+
+
+  def testStructTooSmall(self):
+    doc_builder = generator.DocBuilder()
+    contents = ['STRUCT Foo',
+                '0 63:32 uint64_t a',
+                'END',
+                'STRUCT BAR',
+                '0 63:48 Foo f',
+                '0 47:32 uint16_t b',
+                'END']
+    errors = doc_builder.Parse('filename', contents)
+    self.assertEqual(1, len(errors))
+    self.assertIn('Field smaller than type', errors[0])
+
+  def testStructTooLarge(self):
+    doc_builder = generator.DocBuilder()
+    contents = ['STRUCT Foo',
+                '0 63:32 uint64_t a',
+                'END',
+                'STRUCT BAR',
+                '0 63:0 Foo f',
+                '1 63:32 uint32_t b',
+                'END']
+    errors = doc_builder.Parse('filename', contents)
+    self.assertEqual(1, len(errors))
+    self.assertIn('Field larger than type', errors[0])
 
   def testFlagOutOfOrder(self):
     doc_builder = generator.DocBuilder()

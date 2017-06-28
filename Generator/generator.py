@@ -24,7 +24,54 @@ import codegen
 import htmlgen
 import utils
 
-type_widths = {
+class BaseType:
+  """Represents a the base type name without qualifications.
+  
+  The base type only contains a scalar type, struct, or union.
+  Arrays, const, etc. would be represented in the Type class.
+  """
+  def __init__(self, name, width=0, node=None):
+    # Short name used in file.
+    self.name = name
+    # Number of bits.
+    self.width = width
+    # Parsed struct or union, or None if built-in.
+    self.node = node
+
+  def Name(self):
+    """Returns the name of the type."""
+    return self.name
+
+  def BitWidth(self):
+    """Returns the width of the base type itself."""
+    return self.width
+
+  def __cmp__(self, other):
+    if other is None:
+      return -1
+
+    if self.name != other.name:
+      if self.name < other.name:
+        return -1
+      else:
+        return 1
+    if self.width != other.width:
+      if self.width < other.width:
+        return -1
+      else:
+        return 1
+    if self.node or other.node:
+      if self.node.name != other.node.name:
+        if self.node.name < other.node.name:
+          return -1
+        else:
+          return 1
+    return 0
+  
+
+# Width of all known types.  Structures are added to this
+# dictionary during execution.
+builtin_type_widths = {
   # width of type in bytes.
   'unsigned' : 32,
   'signed' : 32,
@@ -44,11 +91,30 @@ type_widths = {
   'int64_t' : 64
 }
 
+def BaseTypeForName(name):
+  """Returns a BaseType for the builtin type with the provided name."""
+  if name not in builtin_type_widths:
+    sys.stderr.write('Invalid name in BaseTypeForName.')
+  return BaseType(name, builtin_type_widths[name])
+
+def TypeForName(name):
+  """Returns a type for the builtin type with the provided name."""
+  if name not in builtin_type_widths:
+    sys.stderr.write('Invalid name in BaseTypeForName.')
+  return Type(BaseType(name, builtin_type_widths[name]))
+
+def ArrayTypeForName(name, element_count):
+  """Returns a type for the builtin type with the provided name and size."""
+  if name not in builtin_type_widths:
+    sys.stderr.write('Invalid name in BaseTypeForName.')
+  return Type(BaseType(name, builtin_type_widths[name]), element_count)
+
+  
 class Type:
   """Represents C type for a field."""
 
-  def __init__(self, base_name, array_size=None):
-    self.base_name = base_name
+  def __init__(self, base_type, array_size=None):
+    self.base_type = base_type
     # Number of elements in the array.
     self.array_size = 0
     # Size of the total object in bits.
@@ -63,11 +129,7 @@ class Type:
       self.is_array = False
       self.array_size = None
 
-    self.alignment = type_widths.get(base_name)
-
-    if self.alignment is None:
-      print("Unknown base type name %s\n", base_name)
-      return None
+    self.alignment = base_type.BitWidth()
 
     if self.is_array:
       self.bit_width = self.alignment * array_size
@@ -78,9 +140,23 @@ class Type:
     """Returns true if the type is an array type."""
     return self.is_array
 
+  def IsScalar(self):
+    """Returns true if the type is a scalar, builtin type."""
+    # TODO(bowdidge): Should uint128_t count as scalar or not?
+    if self.is_array:
+      return False
+    if self.base_type.node:
+      return False
+    return True
+
   def BaseName(self):
     """Returns base type name without array and other modifiers."""
-    return self.base_name
+    return self.base_type.Name()
+
+  def DeclarationName(self):
+    if self.base_type.node:
+      return "struct " + self.base_type.name
+    return self.base_type.name
 
   def ArraySize(self):
     """Returns the size of an array.  Throws exception if not an array type."""
@@ -91,16 +167,18 @@ class Type:
   def TypeName(self):
     """Returns type name."""
     if self.is_array:
-      return "%s[%d]" % (self.base_name, self.array_size)
+      return "%s[%d]" % (self.base_type.Name(), self.array_size)
     else:
-      return self.base_name
+      return self.base_type.Name()
 
   def DeclarationType(self):
     """Returns type name as function parameter type."""
     if self.is_array:
-      return '%s[%d]' % (self.base_name, self.array_size)
+      return '%s[%d]' % (self.base_type.name, self.array_size)
+    elif self.base_type.node:
+      return 'struct %s' % self.base_type.name
     else:
-      return self.base_name
+      return self.base_type.Name()
 
   def Alignment(self):
     """Returns natural alignment for the type in bits."""
@@ -114,8 +192,8 @@ class Type:
     if other_type is None:
       return -1
 
-    if self.base_name != other_type.base_name:
-      if self.base_name < other_type.base_name:
+    if self.base_type != other_type.base_type:
+      if self.base_type < other_type.base_type:
         return -1
       else:
         return 1
@@ -127,9 +205,9 @@ class Type:
 
   def __str__(self):
     if self.is_array:
-      return '<Type: %s[%d]>' % (self.base_name, self.array_size)
+      return '<Type: %s[%d]>' % (self.base_type.Name(), self.array_size)
     else:
-      return '<Type: %s>' % (self.base_name)
+      return '<Type: %s>' % (self.base_type.Name())
 
 
 class Visitor:
@@ -170,6 +248,10 @@ class Node:
 
     # Location where Node appeared in source.
     self.line_number = 0
+
+  def IsType(self):
+    """Returns true if this node is something defining a type."""
+    return False
 
 
 def BitFlitToString(bitflit):
@@ -277,6 +359,9 @@ class Enum(Node):
     self.name = name
     self.variables = []
 
+  def BitWidth(self):
+    return 0
+
   def __str__(self):
     return('<Enum %s:\n  %s\n>\n' % (self.name, self.values))
 
@@ -298,9 +383,17 @@ class Union(Node):
     # structures will be placed after any fields.
     self.structs = []
 
+  def IsType(self):
+    return True
+
   def Bytes(self):
     """Returns the total number of bytes for the union object."""
     return self.Flits() * 8
+
+  def BitWidth(self):
+    if len(self.structs) == 0:
+      return 0
+    return max([s.BitWidth() for s in self.structs])
 
   def Flits(self):
     """Returns the total number of flits (words) in the union object."""
@@ -335,6 +428,9 @@ class Struct(Node):
     # Source code for function definitions related to this structure.
     self.definitions = []
 
+  def IsType(self):
+    return True
+
   def AllFields(self):
     """Returns all fields of the struct as seen before packing."""
     fields = []
@@ -349,6 +445,13 @@ class Struct(Node):
   def __str__(self):
     return('<Struct %s, variable %s:\n fields: %s\n structs: %s\n unions: %s\n>\n' %
            (self.name, self.variable, self.fields, self.structs, self.unions))
+
+  def BitWidth(self):
+    if len(self.fields) == 0:
+      return 0
+    last_field = self.fields[-1]
+    end_bitflit = last_field.EndBitFlit()
+    return end_bitflit + 1
 
   def Flits(self):
     return max([field.EndFlit() for field in self.fields]) + 1
@@ -453,6 +556,9 @@ class Checker:
       self.VisitStruct(struct)
 
   def VisitUnion(self, the_union):
+    if len(the_union.fields) != 0:
+      self.AddError(the_union, 'Union "%s" contains fields %s not inside a struct.' % (
+          the_union.name, utils.ReadableList([f.name for f in the_union.fields])))
     for struct in the_union.structs:
       self.VisitStruct(struct)
 
@@ -651,6 +757,10 @@ class DocBuilder:
     # Current line being parsed.
     self.current_line = 0
 
+    self.base_types = {}
+    for name in builtin_type_widths:
+      self.base_types[name] = BaseType(name, builtin_type_widths[name])
+
   def AddError(self, msg):
     if self.current_document.filename:
       location = '%s:%d: ' % (self.current_document.filename, self.current_line)
@@ -661,24 +771,22 @@ class DocBuilder:
   def ParseStructStart(self, line):
     # Handle a STRUCT directive opening a new structure.
     # Returns created structure.
-    (state, current_object) = self.stack[len(self.stack)-1]
-    terms = line.split(' ')
+    (state, current_object) = self.stack[-1]
+    # Struct syntax is STRUCT struct-identifier var-name comment
+    match = re.match('STRUCT\s+(\w+)(\s+\w+|)(\s*.*)$', line)
 
-    if len(terms) == 3:
-      name = terms[1]
-      variable = terms[2]
-    elif len(terms) == 2:
-      name = terms[1]
-      variable = None
-    else:
-      self.AddError('couldn\'t parse "%s"' % line)
-      current_object = None
+    if not match:
+      self.AddError('Invalid STRUCT line: "%s" % lne')
+      return None
 
-    name = utils.RemoveWhitespace(name)
-    variable = utils.RemoveWhitespace(variable)
+    identifier = match.group(1)
+    variable_name = match.group(2)
+    key_comment = match.group(3)
+    variable_name = utils.RemoveWhitespace(variable_name)
 
-    current_struct = Struct(name, variable)
+    current_struct = Struct(identifier, variable_name)
     current_struct.line_number = self.current_line
+    current_struct.key_comment = utils.StripComment(key_comment)
 
     if len(self.current_comment) > 0:
       current_struct.body_comment = self.current_comment
@@ -690,10 +798,18 @@ class DocBuilder:
   def ParseEnumStart(self, line):
     # Handle an ENUM directive opening a new enum.
     state, current_object = self.stack[len(self.stack)-1]
-    _, name = line.split(' ')
+    match = re.match('ENUM\s+(\w+)(.*)$', line)
+    if match is None:
+      self.AddError('Invalid enum start line: "%s"' % line)
+      return
+
+    name = match.group(1)
+    key_comment = match.group(2)
+
     name = utils.RemoveWhitespace(name)
     current_enum = Enum(name)
     current_enum.line_number = self.current_line
+    current_enum.key_comment = utils.StripComment(key_comment)
 
     if len(self.current_comment) > 0:
       current_enum.body_comment = self.current_comment
@@ -706,7 +822,7 @@ class DocBuilder:
     # Parse the line describing a new enum variable.
     # This regexp matches:
     # Foo = 1 Abitrary following comment
-    match = re.match('(\w+)\s*=\s*(\w+)\s*(.*)', line)
+    match = re.match('(\w+)\s*=\s*(\w+)\s*(.*)$', line)
     if match is None:
       self.AddError('Invalid enum line: "%s"' % line)
       return None
@@ -752,7 +868,12 @@ class DocBuilder:
 
   def ParseEnd(self, line):
     # Handle an END directive.
-    (state, current_object) = self.stack[len(self.stack)-1]
+    (state, current_object) = self.stack[-1]
+    
+    if current_object.IsType():
+      self.base_types[current_object.name] = BaseType(current_object.name,
+                                                      current_object.BitWidth(),
+                                                      current_object)
 
     if self.flit_crossing_field:
       self.AddError('Field spec for "%s" too short: expected %d bits, got %d' %
@@ -767,7 +888,7 @@ class DocBuilder:
 
   def ParseUnionStart(self, line):
     # Handle a UNION directive opening a new union.
-    (state, current_object) = self.stack[len(self.stack)-1]
+    (state, current_object) = self.stack[-1]
     union_args = line.split(' ')
     if len(union_args) != 3:
       self.AddError('Malformed union declaration: %s\n' % line)
@@ -847,6 +968,15 @@ class DocBuilder:
     return True
 
 
+  def MakeType(self, base_name, array_size=None):
+    """Creates an instance of the named type, or None if no such type exists."""
+    if base_name not in self.base_types:
+      return None
+    base_type = self.base_types[base_name]
+    if array_size:
+      return Type(base_type, array_size)
+    else:
+      return Type(base_type)
 
 
   def ParseFieldLine(self, line):
@@ -869,9 +999,8 @@ class DocBuilder:
     match = re.match('(\w+\s+(\w+:\w+|\w+))\s+(\w+)\s+(\w+)(\[[0-9]+\]|)\s*(.*)', line)
 
     if match is None:
-        # Flag error, or treat as comment.
-        self.AddError('Invalid field line: "%s"' % line)
-        return None
+      # Assume it's a comment.
+      return None
 
     is_array = False
     array_size = 1
@@ -900,10 +1029,15 @@ class DocBuilder:
       return None
 
     type = None
+    
     if is_array:
-      type = Type(type_name, array_size)
+      type = self.MakeType(type_name, array_size)
     else:
-      type = Type(type_name)
+      type = self.MakeType(type_name)
+
+    if type is None:
+      self.AddError('Unknown type name "%s"' % type_name)
+      return None
 
     if start_bit < end_bit:
       self.AddError('Start bit %d greater than end bit %d in field %s' %
@@ -916,7 +1050,7 @@ class DocBuilder:
     actual_width = new_field.BitWidth()
 
 
-    if is_array and end_bit == 0 and actual_width < expected_width:
+    if not type.IsScalar() and end_bit == 0 and actual_width < expected_width:
       # Field may stretch across flits.
       self.flit_crossing_field = new_field
       self.bits_remaining = expected_width - actual_width
@@ -934,7 +1068,8 @@ class DocBuilder:
 
     type_width = new_field.type.BitWidth()
     var_width = new_field.BitWidth()
-    if var_width < type_width and new_field.type.IsArray() and new_field.end_bit != 0:
+    if (var_width < type_width and not new_field.type.IsScalar()
+        and new_field.end_bit != 0):
       # Using too few bits is only an error for arrays - scalar fields might always
       # be treated as bitfields.  Arrays that end on a flit could continue, so don't
       # flag an error in that case.

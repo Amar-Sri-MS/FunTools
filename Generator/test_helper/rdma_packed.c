@@ -16,6 +16,7 @@
 
 #import "rdma_packed_gen.h"
 
+// TODO(bowdidge): Switch to gtest.
 #define ASSERT_SIZE(var, bytes, varStr)		\
   if (sizeof(var) != bytes) {						\
     fprintf(stderr, "FAIL: %s structure expected to be %d bytes, got %lu\n", \
@@ -42,6 +43,15 @@
     fprintf(stderr, "PASS: %s\n", msg);\
   }
 
+#define ASSERT_TRUE(gotten_value, msg) \
+  if (!gotten_value) { \
+    fprintf(stderr, "FAIL: %s: Expression not true.\n",\
+	    msg); \
+    exit(1); \
+  } else {\
+    fprintf(stderr, "PASS: %s\n", msg);\
+  }
+
   
 int main(int argc, char** argv) {
   struct GatherListFragmentHeader frag;
@@ -55,8 +65,7 @@ int main(int argc, char** argv) {
   // out unchanged.
   int source = 2;
   int byte_count = 11;
-  uint64_t bytes1_value = 0xba9876654321;
-  uint64_t bytes2_value = 0xffffffffffffffff;
+  const char* expected_bytes = "01234567890123";
 
   // Initialize with garbage.
   fragPtr->u1.inline_cmd.opcode_to_inlineByteCount = 0xff;
@@ -65,6 +74,7 @@ int main(int argc, char** argv) {
   uint8_t value =  FUN_GATHER_LIST_INLINE_FRAGMENT_OPCODE_P(FUN_GATHER_LIST_INLINE_FRAGMENT_OPCODE_M) 
     | FUN_GATHER_LIST_INLINE_FRAGMENT_SOURCE_P(FUN_GATHER_LIST_INLINE_FRAGMENT_SOURCE_M)
     | FUN_GATHER_LIST_INLINE_FRAGMENT_INLINE_BYTE_COUNT_P(FUN_GATHER_LIST_INLINE_FRAGMENT_INLINE_BYTE_COUNT_M);
+  strcmp((char*)fragPtr->u1.inline_cmd.bytes, expected_bytes);
 
    printf("value is %d\n", value);
   fragPtr->u1.inline_cmd.opcode_to_inlineByteCount &= ~value;
@@ -77,8 +87,6 @@ int main(int argc, char** argv) {
     FUN_GATHER_LIST_INLINE_FRAGMENT_OPCODE_P(OPCODE_SCATTER) |
     FUN_GATHER_LIST_INLINE_FRAGMENT_SOURCE_P(source) |
     FUN_GATHER_LIST_INLINE_FRAGMENT_INLINE_BYTE_COUNT_P(byte_count);
-  fragPtr->u1.inline_cmd.bytes1 = bytes1_value;
-  fragPtr->u1.inline_cmd.bytes2 = bytes2_value;
 
 
   ASSERT_EQUAL(0xab, fragPtr->u1.inline_cmd.opcode_to_inlineByteCount,
@@ -96,10 +104,8 @@ int main(int argc, char** argv) {
 	     FUN_GATHER_LIST_INLINE_FRAGMENT_INLINE_BYTE_COUNT_G(fragPtr->u1.inline_cmd.opcode_to_inlineByteCount),
 	     "inline byte count read doesn't return expected value.");
 
-  ASSERT_EQUAL(bytes1_value, fragPtr->u1.inline_cmd.bytes1,
-	      "check bytes1");
-  ASSERT_EQUAL(bytes2_value, fragPtr->u1.inline_cmd.bytes2,
-	      "check bytes2");
+  ASSERT_TRUE(0 == strncmp(expected_bytes, fragPtr->u1.inline_cmd.bytes, 14),
+	      "check bytes");
 
   // Change single value.
   // Clear.
@@ -114,13 +120,12 @@ int main(int argc, char** argv) {
   // Test initialization.
   int expected_source = 2;
   int expected_byte_count = 14;
-  uint64_t expected_bytes1 = 0xfefefefefefe;
-  uint64_t expected_bytes2 = 0x800000000;
 
   struct GatherListFragmentHeader hdr;
+  strcpy(hdr.u1.inline_cmd.bytes, expected_bytes);
+
   GatherListInlineFragment_init(&hdr, OPCODE_SCATTER, expected_source,
-				expected_byte_count,
-				expected_bytes1, expected_bytes2);
+				expected_byte_count);
 
   ASSERT_EQUAL(OPCODE_SCATTER, 
 	       FUN_GATHER_LIST_INLINE_FRAGMENT_OPCODE_G(hdr.u1.inline_cmd.opcode_to_inlineByteCount),
@@ -131,9 +136,7 @@ int main(int argc, char** argv) {
   ASSERT_EQUAL(expected_byte_count,
 	       FUN_GATHER_LIST_INLINE_FRAGMENT_INLINE_BYTE_COUNT_G(hdr.u1.inline_cmd.opcode_to_inlineByteCount),
 	       "inlineByteCount not initialized correctly.");
-  ASSERT_EQUAL(expected_bytes1, hdr.u1.inline_cmd.bytes1,
-	       "bytes1 not initialized correctly");
-  ASSERT_EQUAL(expected_bytes2, hdr.u1.inline_cmd.bytes2,
-	       "bytes2 not initialized correctly");
+  ASSERT_TRUE(0 == strncmp(expected_bytes, hdr.u1.inline_cmd.bytes, 14),
+	       "bytes not initialized correctly");
 }
 

@@ -163,7 +163,7 @@ class CodeGenerator:
     var_width = field.start_bit - field.end_bit + 1
     type_width = field.type.BitWidth()
 
-    if type_width != var_width:
+    if field.type.IsScalar() and type_width != var_width:
       var_bits = ':%d' % var_width
     hdr_out += self.IndentString() 
     if field.type.IsArray():
@@ -172,7 +172,7 @@ class CodeGenerator:
                                                            field.type.ArraySize(),
                                                            key_comment)
     else:
-      hdr_out += self.IndentString() + '%s %s%s;%s\n' % (field.type.BaseName(),
+      hdr_out += self.IndentString() + '%s %s%s;%s\n' % (field.type.DeclarationName(),
                                                          field.name, var_bits,
                                                          key_comment)
     
@@ -277,7 +277,7 @@ class HelperGenerator:
     arg_list.append('struct %s* s' % struct_name)
 
     for field in the_struct.AllFields():
-      if field.IsReserved() or field.type.IsArray():
+      if field.IsReserved() or not field.type.IsScalar():
         continue
 
       arg_list.append('%s %s' % (field.type.DeclarationType(), field.name))
@@ -291,7 +291,7 @@ class HelperGenerator:
       return ('', '')
 
     for field in the_struct.fields:
-      if field.IsReserved() or field.type.IsArray():
+      if field.IsReserved() or not field.type.IsScalar():
         continue
 
       inits.append(self.GenerateInitializer(the_struct, field, accessor_prefix))

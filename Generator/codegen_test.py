@@ -46,7 +46,7 @@ class CodeGeneratorTest(unittest.TestCase):
                       '} bar;\n\n', header)
 
   def testPrintArray(self):
-    field = generator.Field('foo', generator.Type('char', 8), 0, 64, 0)
+    field = generator.Field('foo', generator.ArrayTypeForName('char', 8), 0, 63, 0)
     code = self.printer.VisitField(field)
   
     self.assertEquals('char foo[8];\n', code)
@@ -67,24 +67,24 @@ class CodeGeneratorTest(unittest.TestCase):
     self.assertEquals(('union Foo {\n} xxx;\n', ''), code)
 
   def testPrintField(self):
-    field = generator.Field('foo', generator.Type('uint8_t'), 0, 3, 0)
+    field = generator.Field('foo', generator.TypeForName('uint8_t'), 0, 3, 0)
     code = self.printer.VisitField(field)
     self.assertEqual('uint8_t foo:4;\n', code)
 
   def testPrintFieldNotBitfield(self):
-    field = generator.Field('foo', generator.Type('uint8_t'), 0, 7, 0)
+    field = generator.Field('foo', generator.TypeForName('uint8_t'), 0, 7, 0)
     code = self.printer.VisitField(field)
     self.assertEqual('uint8_t foo;\n', code)
 
   def testPrintFieldWithComment(self):
-    field = generator.Field('foo', generator.Type('uint8_t'), 0, 7, 0)
+    field = generator.Field('foo', generator.TypeForName('uint8_t'), 0, 7, 0)
     field.key_comment = 'A'
     field.body_comment = 'B'
     code = self.printer.VisitField(field)
     self.assertEqual('/* B */\nuint8_t foo; // A\n', code)
 
   def testPrintFieldWithLongComment(self):
-    field = generator.Field('foo', generator.Type('uint8_t'), 0, 7, 0)
+    field = generator.Field('foo', generator.TypeForName('uint8_t'), 0, 7, 0)
     long_comment = 'long long long long long long long long long long comment'
     field.body_comment = long_comment
     print('long comment is %d' %len(long_comment))
@@ -105,7 +105,7 @@ class HelperGeneratorTest(unittest.TestCase):
   def testInitializeSimpleField(self):
     gen = codegen.HelperGenerator()
     s = generator.Struct('Foo', 'f1')
-    f = generator.Field('a1', generator.Type('char'), 0, 63, 56)
+    f = generator.Field('a1', generator.TypeForName('char'), 0, 63, 56)
 
     statement = gen.GenerateInitializer(s, f, 'pointer.')
   
@@ -114,7 +114,7 @@ class HelperGeneratorTest(unittest.TestCase):
   def testInitializeBitfield(self):
     gen = codegen.HelperGenerator()
     s = generator.Struct('Foo', 'f1')
-    f = generator.Field('a1', generator.Type('char'), 0, 63, 61)
+    f = generator.Field('a1', generator.TypeForName('char'), 0, 63, 61)
 
     statement = gen.GenerateInitializer(s, f, '')
   
@@ -123,9 +123,9 @@ class HelperGeneratorTest(unittest.TestCase):
   def testInitializePackedField(self):
     gen = codegen.HelperGenerator()
     s = generator.Struct('Foo', 'f1')
-    f = generator.Field('a', generator.Type('char'), 0, 63, 56)
-    f1 = generator.Field('a1', generator.Type('char'), 0, 63, 60)
-    f2 = generator.Field('a2', generator.Type('char'), 0, 59, 56)
+    f = generator.Field('a', generator.TypeForName('char'), 0, 63, 56)
+    f1 = generator.Field('a1', generator.TypeForName('char'), 0, 63, 60)
+    f2 = generator.Field('a2', generator.TypeForName('char'), 0, 59, 56)
     f.packed_fields = [f1, f2]
 
     statement = gen.GenerateInitializer(s, f, '')
@@ -135,9 +135,9 @@ class HelperGeneratorTest(unittest.TestCase):
   def testInitializePackedFieldWithAllCapStructureName(self):
     gen = codegen.HelperGenerator()
     s = generator.Struct('ffe_access_command', 'f1')
-    f = generator.Field('a', generator.Type('char'), 0, 63, 56)
-    f1 = generator.Field('a1', generator.Type('char'), 0, 63, 60)
-    f2 = generator.Field('a2', generator.Type('char'), 0, 59, 56)
+    f = generator.Field('a', generator.TypeForName('char'), 0, 63, 56)
+    f1 = generator.Field('a1', generator.TypeForName('char'), 0, 63, 60)
+    f2 = generator.Field('a2', generator.TypeForName('char'), 0, 59, 56)
     f.packed_fields = [f1, f2]
 
     statement = gen.GenerateInitializer(s, f, '')
@@ -149,7 +149,7 @@ class HelperGeneratorTest(unittest.TestCase):
   def testCreateSimpleInitializer(self):
     gen = codegen.HelperGenerator()
     s = generator.Struct('Foo', 'f1')
-    f = generator.Field('a1', generator.Type('char'), 0, 63, 56)
+    f = generator.Field('a1', generator.TypeForName('char'), 0, 63, 56)
     s.fields = [f]
 
     (declaration, definition) = gen.GenerateInitRoutine("init", "MyStruct",
@@ -164,7 +164,8 @@ class HelperGeneratorTest(unittest.TestCase):
   def testNoCreateArrayInitializer(self):
     gen = codegen.HelperGenerator()
     s = generator.Struct('Foo', 'f1')
-    f = generator.Field('a1', generator.Type('char', 8), 0, 63, 0)
+    f = generator.Field('a1', generator.ArrayTypeForName('char', 8),
+                        0, 63, 0)
     s.fields = [f]
 
     (declaration, definition) = gen.GenerateInitRoutine("init", "MyStruct",
@@ -325,6 +326,26 @@ class CodegenEndToEnd(unittest.TestCase):
                                  input, 'foo.gen')
     self.assertIsNotNone(out)
     print out
+
+  def testMultiFlitNestedStruct(self):
+    doc_builder = generator.DocBuilder()
+    # ... allows a field to overflow into later flits.
+    input = [
+      'STRUCT fun_admin_cmd_common',
+      '0 63:00 uint64_t common_opcode',
+      '1 63:00 uint64_t arg',
+      'END',
+      'STRUCT fun_admin_epsq_cmd',
+      '0 63:00 fun_admin_cmd_common c',
+      '1 63:00 ...',
+      '2 63:0 uint64_t arg2',
+      'END'
+      ]
+
+    out = generator.GenerateFile(True, generator.OutputStyleHeader, None,
+                                 input, 'foo.gen')
+    self.assertIsNotNone(out)
+    self.assertIn('struct fun_admin_cmd_common c;', out)
     
 
 class TestIndentString(unittest.TestCase):
