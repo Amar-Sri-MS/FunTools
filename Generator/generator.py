@@ -771,26 +771,22 @@ class DocBuilder:
   def ParseStructStart(self, line):
     # Handle a STRUCT directive opening a new structure.
     # Returns created structure.
-    if len(self.stack) == 0:
-      print("foo")
     (state, current_object) = self.stack[-1]
-    terms = line.split(' ')
+    # Struct syntax is STRUCT struct-identifier var-name comment
+    match = re.match('STRUCT\s+(\w+)(\s+\w+|)(\s*.*)$', line)
 
-    if len(terms) == 3:
-      name = terms[1]
-      variable = terms[2]
-    elif len(terms) == 2:
-      name = terms[1]
-      variable = None
-    else:
-      self.AddError('couldn\'t parse "%s"' % line)
-      current_object = None
+    if not match:
+      self.AddError('Invalid STRUCT line: "%s" % lne')
+      return None
 
-    name = utils.RemoveWhitespace(name)
-    variable = utils.RemoveWhitespace(variable)
+    identifier = match.group(1)
+    variable_name = match.group(2)
+    key_comment = match.group(3)
+    variable_name = utils.RemoveWhitespace(variable_name)
 
-    current_struct = Struct(name, variable)
+    current_struct = Struct(identifier, variable_name)
     current_struct.line_number = self.current_line
+    current_struct.key_comment = utils.StripComment(key_comment)
 
     if len(self.current_comment) > 0:
       current_struct.body_comment = self.current_comment
@@ -802,10 +798,18 @@ class DocBuilder:
   def ParseEnumStart(self, line):
     # Handle an ENUM directive opening a new enum.
     state, current_object = self.stack[len(self.stack)-1]
-    _, name = line.split(' ')
+    match = re.match('ENUM\s+(\w+)(.*)$', line)
+    if match is None:
+      self.AddError('Invalid enum start line: "%s"' % line)
+      return
+
+    name = match.group(1)
+    key_comment = match.group(2)
+
     name = utils.RemoveWhitespace(name)
     current_enum = Enum(name)
     current_enum.line_number = self.current_line
+    current_enum.key_comment = utils.StripComment(key_comment)
 
     if len(self.current_comment) > 0:
       current_enum.body_comment = self.current_comment
@@ -818,7 +822,7 @@ class DocBuilder:
     # Parse the line describing a new enum variable.
     # This regexp matches:
     # Foo = 1 Abitrary following comment
-    match = re.match('(\w+)\s*=\s*(\w+)\s*(.*)', line)
+    match = re.match('(\w+)\s*=\s*(\w+)\s*(.*)$', line)
     if match is None:
       self.AddError('Invalid enum line: "%s"' % line)
       return None

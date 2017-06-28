@@ -1,8 +1,9 @@
 test: c-checker generator-test c-packed-checker html-checker
 
 generator-test:
-	python generator_test.py
 	python codegen_test.py
+	python generator_test.py
+	python htmlgen_test.py
 	python utils_test.py
 
 c-checker:

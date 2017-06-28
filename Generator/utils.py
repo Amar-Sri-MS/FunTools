@@ -23,6 +23,7 @@ def RemoveWhitespace(the_str):
   return re.sub('\s+', '', the_str)
 
 def StripComment(the_str):
+  the_str = the_str.lstrip(' ')
   # Removes any C commenting from the comment so it can be reformatted as needed.
   if the_str.startswith('//'):
     return the_str[2:].lstrip(' ').rstrip(' ')
