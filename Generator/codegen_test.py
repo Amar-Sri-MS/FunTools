@@ -97,8 +97,12 @@ class CodeGeneratorTest(unittest.TestCase):
     var = generator.EnumVariable('MY_COMMAND', 1)
     enum.variables.append(var)
 
-    code = self.printer.VisitEnum(enum)
-    self.assertEqual('enum MyEnum {\n\tMY_COMMAND = 0x1,\n};\n\n', code)
+    (hdr, src) = self.printer.VisitEnum(enum)
+    self.assertIn('enum MyEnum {', hdr)
+    self.assertIn('MY_COMMAND = 0x1,\n', hdr)
+    self.assertIn('extern const char *myenum_names', hdr)
+    self.assertIn('const char *myenum_names', src)
+    self.assertIn('"MY_COMMAND"', src)
 
 
 class HelperGeneratorTest(unittest.TestCase):

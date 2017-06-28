@@ -53,7 +53,9 @@ class CodeGenerator:
       hdr_out += '#define %s\n' % include_guard_name
     hdr_out += '#include "stdlib.h"\n\n'
     for enum in doc.enums:
-        hdr_out += self.VisitEnum(enum)
+        (hdr, src) = self.VisitEnum(enum)
+        hdr_out += hdr
+        src_out += src
     for struct in doc.structs:
         (hdr, src) = self.VisitStruct(struct)
         hdr_out += hdr
@@ -67,13 +69,25 @@ class CodeGenerator:
 
   def VisitEnum(self, enum):
     # Pretty print an enum declaration.  Returns enum as string.
+    src_out = ''
     hdr_out = 'enum %s {\n' % enum.name
     self.IncrementIndent()
     for enum_variable in enum.variables:
         hdr_out += self.VisitEnumVariable(enum_variable)
     hdr_out += '};\n\n'
     self.DecrementIndent()
-    return hdr_out
+
+    hdr_out += '// Human-readable strings for enum values in %s.\n' % enum.name
+    hdr_out += 'extern const char *%s_names[%d];\n\n' % (enum.name.lower(),
+                                                         len(enum.variables));
+
+    src_out += 'const char *%s_names[%d] = {\n' % (enum.name.lower(),
+                                                   len(enum.variables))
+    for enum_variable in enum.variables:
+      src_out += '  "%s",  /* 0x%d */\n' % (enum_variable.name,
+                                            enum_variable.value)
+    src_out += '};\n'
+    return (hdr_out, src_out)
 
   def VisitEnumVariable(self, enum_variable):
     # Pretty-print a structure or union field declaration.  Returns string.
