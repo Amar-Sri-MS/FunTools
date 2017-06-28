@@ -58,12 +58,7 @@ int main(int argc, char** argv) {
   fragPtr->u1.inline_cmd.inlineByteCount = 15;
   PrintFragment(fragPtr);
 
-  printf("Set bytes1\n");
-  fragPtr->u1.inline_cmd.bytes1 = 0xba987654321;
-  PrintFragment(fragPtr);
-
-  printf("Set bytes2\n");
-  fragPtr->u1.inline_cmd.bytes2 = 0xfedcba987654321;
+  strcpy((char*)fragPtr->u1.inline_cmd.bytes, "01234567890123");
   PrintFragment(fragPtr);
 }
 

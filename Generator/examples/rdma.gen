@@ -6,8 +6,8 @@ STRUCT WorkUnit
   0 55:48 uint8_t sourceID /* Source (VP or hardware block) */
   0 47:32 uint16_t frameSize /* number of 64B blocks referenced by frame ptr */
   0 31:0 uint32_t listSize /* number of 16B blocks contained in command list. */
-  1 63:0 uint64_t framePtr
-  2 63:0 uint64_t reserved1
+  1 63:0 uint64_t flowPtr /* Usually reference to the flow data structure. */
+  2 63:0 uint64_t packetPtr /* Usually reference to payload to process. */
   3 63:0 uint64_t reserved2
   // WorkUnits are always 32 bytes.
 END
@@ -16,7 +16,8 @@ END
 ENUM Source
   SOURCE_HOST = 0
   SOURCE_F1 = 1
-  SOURCE_GENERATE = 2  /* Generate data from pattern */
+  SOURCE_GENERATE = 2  /* Generate data from pattern. */
+  // Remaining values refer to a specific VP.
 END
 
 // Possible opcodes for commands in the GatherListFragment.
@@ -35,8 +36,8 @@ STRUCT GatherListFragmentHeader
       0 63:62 uint8_t opcode
       0 61:60 uint8_t source /* will be OPCODE_GATHER */
       0 59:56 uint8_t inlineByteCount
-      0 55:0 uint64_t bytes1 /* First seven bytes of inline copy. */
-      1 63:0 uint64_t bytes2
+      0 55:0 uint8_t bytes[15] /* First seven bytes of inline copy. */
+      1 63:0 ...
     END
     // Generate bytes from pattern.
     STRUCT GatherListGenerateFragment generate_cmd
@@ -73,3 +74,4 @@ STRUCT MultiFlitField
 2 63:32 ...
 2 31:0 uint32_t end
 END
+
