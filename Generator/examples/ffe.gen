@@ -18,108 +18,179 @@ ENUM fun_ffe_subopcodes
   FFE_ACT_DMEM_W = 16
 END
 
+// Common header across all commands
+STRUCT fun_common
+  0 63:56 uint8_t opcode
+  0 55:48 uint8_t flags
+  0 47:32 uint16_t cmdid
+  0 31:16 uint16_t rsvd0
+  0 15:8 uint8_t ret
+  0 7:0 uint8_t len16
+  1 63:0 uint64_t cookie
+END
 
-// Command interface for writing/reading the various tables available in the FFE
+// FFE Template TCAM entry format
+STRUCT fun_ffe_tmp_tcam_entry
+  0 63:32 uint32_t rsvd0
+  0 31:26 uint32_t rsvd1
+  0 25:0 uint32_t key /* key (26 bits) */
+  1 63:32 uint32_t rsvd2
+  1 31:26 uint32_t rsvd3
+  1 25:0 uint32_t mask /* mask (26 bits) */
+  2 63:0 uint8_t data[46] /* uint8_t data[46] */
+  3 63:0 ...
+  4 63:0 ...
+  5 63:0 ...
+  6 63:0 ...
+  7 63:16 ...
+  7 15:0 uint8_t rsvd1[18]
+  8 63:0 ...
+  9 63:0 ...
+END
+
+// FFE TCAM entry format
+STRUCT fun_ffe_tcam_entry
+  0 63:48 uint16_t at_index
+  0 47:0 uint8_t rsvd0[6]
+  1 63:0 uint8_t key[21] /* uint8_t key[21] */
+  2 63:0 ...
+  3 63:24 ...
+  3 23:0 uint8_t rsvd1[11]
+  4 63:0 ...
+  5 63:0 uint8_t mask[21] /* uint8_t mask[21] */
+  6 63:0 ...
+  7 63:24 ...
+  7 23:0 uint8_t rsvd2[11] /* ... */
+  8 63:0 ...
+END
+
+// FFE Hash or Stash entry format
+STRUCT fun_hash_stash_entry
+  0 63:57 uint8_t rsvd0
+  0 56:56 uint8_t valid
+  0 55:0 uint8_t data[13]
+  1 63:16 ...
+  1 15:0 uint8_t rsvd1[10]
+  2 63:0 ...
+END
+
+// FFE DIT entry format
+STRUCT fun_dit_entry
+  0 63:16 uint8_t rsvd1[6]
+  0 15:0 uint16_t at_index
+END
+
+// FFE action microcode entry format
+STRUCT fun_ffe_act_ucode_entry
+  0 63:0 uint8_t instr_data_wlst[24] /* uint8_t instr_data_wlst[24] */
+  1 63:0 ...
+  2 63:0 ...
+  3 63:0 uint64_t rsvd0[5]
+  4 63:0 ...
+  5 63:0 ...
+  6 63:0 ...
+  7 63:0 ...
+END
+
+// FFE action dmem entry format
+STRUCT fun_ffe_act_dmem_entry
+  0 63:0 uint8_t data_wlst[64] /* uint8_t data_wlst[64] */
+  1 63:0 ...
+  2 63:0 ...
+  3 63:0 ...
+  4 63:0 ...
+  5 63:0 ...
+  6 63:0 ...
+  7 63:0 ...
+END
+
+// Immediate data
+STRUCT fun_subcmd_immediate
+  0 63:56 uint8_t subopcode
+  0 55:48 uint8_t imm_flags
+  0 47:32 uint16_t rsvd0
+  0 31:0 uint32_t imm_len /* after this, ideally imm_data[0] */
+END
+
+// SGL
+STRUCT fun_subcmd_sgl
+  0 63:56 uint8_t subopcode
+  0 55:48 uint8_t sgl_flags
+  0 47:40 uint8_t sgl_nfrags
+  0 39:32 uint8_t rsvd0;
+  0 31:0 uint32_t sgl0_len
+  1 63:0 uint64_t sgl0_dmaadr
+END
+
+
+// Command interface for writing/reading the various tables available in the FFE.
 STRUCT fun_ffe_cmd
-  0 63:56 uint8_t opcode /* Opcode 0xXX */
-  0 55 uint8_t read /* read bit */
-  0 54 uint8_t write /* write bit */
-  0 53 uint8_t delete /* delete bit */
-  0 52:48 uint8_t rsvd0
-  0 47:8 uint8_t rsvd1[5] /* reserved - set to 0 */
-  0 7:0 uint8_t len16 /* message length (in units of 16 bytes) */
-  1 63:0 uint64_t cookie /* cookie */
-  2 63:56 uint8_t stage /* stage number */
-  2 55:48 uint8_t rsvd2
-  2 47:32 uint16_t index /* index to access */
-  2 31:0 uint32_t rsvd3 /* TBD: Add nentries */
+  0 63:0 fun_common common
+  1 63:0 ...
+  2 63:0 uint64_t rsvd0 /* check if nentries is needed */
   UNION fun_ffe_subops u
+    // Header to refer to an FFE Template TCAM
     STRUCT fun_ffe_tmp_tcam tmp_tcam_rw
-      3 63:56 uint8_t subopcode /* SUBOPS: TMP_TCAM_R, TMP_TCAM_W */
+      3 63:56 uint8_t subopcode /* SUBOPS: FFE_ACCESS_SUBOP_TMP_TCAM_R, FFE_ACCESS_SUBOP_TMP_TCAM_W */
       3 55:48 uint8_t flags
-      3 47:32 uint16_t rsvd0
-      3 31:0 uint32_t data_size /* key microcode size (bytes) */
-      4 63:0 uint64_t key /* key (currently 26 bits) */
-      4 63:0 uint64_t mask /* mask (currently 26 bits) */
-      5 63:0 uint8_t data[46] /* uint8_t data[46] */
-      6 63:0 ...
-      7 63:0 ...
-      8 63:0 ...
-      9 63:0 ...
-      10 63:16 ...
-      10 15:0 uint8_t rsvd1[2]
-      10 63:0 uint64_t rsvd2
-      10 63:0 uint64_t rsvd3
+      3 47:32 uint16_t index
+      3 31:24 uint8_t stage
+      3 23:0 uint8_t rsvd0[3]
+      4 63:48 uint16_t data_size /* key microcode size */
+      4 47:0 uint8_t rsvd1[6]
     END
+    // Header to refer to an FFE TCAM
     STRUCT fun_ffe_tcam tcam_rwi
       3 63:56 uint8_t subopcode /* SUBOPS: TCAM_R, TCAM_W, TCAM_INV */
       3 55:48 uint8_t flags
-      3 47:44 uint8_t bank /* bank number */
-      3 43:40 uint8_t rsvd0
-      3 39:32 uint8_t table
-      3 31:16 uint16_t key_size /* entry width (bytes) */
-      3 15:0 uint16_t rsvd1
-      4 63:0 uint8_t key[21] /* uint8_t key[21] */
-      5 63:0 ...
-      6 63:24 ...
-      6 23:0 uint8_t rsvd2[3] /* ... */
-      7 63:0 uint64_t rsvd3 /* ... */
-      8 63:0 uint8_t mask[21] /* uint8_t mask[21] */
-      9 63:0 ...
-      10 63:24 ...
-      10 23:0 uint8_t rsvd4[3] /* ... */
-      11 63:0 uint64_t rsvd5 /* ... */
-      12 63:0 uint64_t at_index /* uint8_t at_index[2] */
+      3 47:32 uint16_t index
+      3 31:24 uint8_t stage
+      3 23:16 uint8_t bank
+      3 15:0 uint16_t table
+      4 63:48 uint16_t key_size
+      4 47:0 uint8_t rsvd1[6]
     END
+    // Header to refer to an FFE Hash or Stash
     STRUCT fun_ffe_hash_stash hash_stash_rwi
       3 63:56 uint8_t subopcode /* SUBOPS: HASH_R, HASH_W, HASH_INV, STASH_R, STASH_W, STASH_INV */
       3 55:48 uint8_t flags
-      3 47:44 uint8_t bank /* bank number */
-      3 43:40 uint8_t rsvd0
-      3 39:32 uint8_t table
-      3 31:16 uint16_t key_size /* entry width (bytes) */
-      3 15:0 uint16_t rsvd1
-      4 63:0 uint8_t data[13] /* uint8_t data[13] */
-      5 63:24 ...
-      5 23:0 uint8_t rsvd2[3] /* ... */
-      6 63:0 uint64_t rsvd3
+      3 47:32 uint16_t index
+      3 31:24 uint8_t stage
+      3 23:16 uint8_t bank
+      3 15:0 uint16_t table
+      4 63:48 uint16_t key_size
+      4 47:0 uint8_t rsvd1[6]
     END
+    // Header to refer to an FFE Direct Index Table
     STRUCT fun_ffe_dit dit_rw
       3 63:56 uint8_t subopcode /* SUBOPS: DIT_R, DIT_W */
       3 55:48 uint8_t flags
-      3 47:40 uint8_t rsvd0
-      3 39:32 uint8_t table
-      3 31:0 uint32_t rsvd1
-      4 63:0 uint64_t at_index /* uint8_t at_index[2] */
+      3 47:32 uint16_t index
+      3 31:24 uint8_t stage
+      3 23:16 uint8_t rsvd0
+      3 15:0 uint16_t table
     END
+    // Header to refer to an FFE Action Microcode Table
     STRUCT fun_ffe_act_ucode action_ucode_rw
       3 63:56 uint8_t subopcode /* SUBOPS: ACT_UCODE_R, ACT_UCODE_W */
       3 55:48 uint8_t flags
-      3 47:32 uint16_t rsvd0
-      3 31:0 uint32_t rsvd1
-      4 63:0 uint8_t instr_data_wlst[24] /* uint8_t instr_data_wlst[24] */
-      5 63:0 ...
-      6 63:0 ...
-      7 63:0 uint64_t rsvd2[5]
-      8 63:0 ...
-      9 63:0 ...
-      10 63:0 ...
-      11 63:0 ...
+      3 47:32 uint16_t index
+      3 31:24 uint8_t stage
+      3 23:0 uint8_t rsvd0[3]
     END
+    // Header to refer to an FFE Action DMEM Table
     STRUCT fun_ffe_act_dmem action_dmem_rw
       3 63:56 uint8_t subopcode /* SUBOPS: ACT_DMEM_R, ACT_DMEM_W */
       3 55:48 uint8_t flags
-      3 47:40 uint8_t rsvd0
-      3 39:32 uint8_t table
-      3 31:0 uint32_t rsvd1
-      4 63:0 uint8_t data_wlst[64] /* uint8_t data_wlst[64] */
-      5 63:0 ...
-      6 63:0 ...
-      7 63:0 ...
-      8 63:0 ...
-      9 63:0 ...
-      10 63:0 ...
-      11 63:0 ...
+      3 47:32 uint16_t index
+      3 31:24 uint8_t stage
+      3 23:16 uint8_t rsvd0
+      3 15:0 uint16_t table
     END
   END
+// The fun_ffe_cmd is followed by either a fun_subcmd_immediate or fun_subcmd_sgl
+// containing immediate or sgl information respectively. The data will be of the
+// type of the command (e.g. if it is a fun_ffe_tmp_tcam op, the data will be of
+// type fun_ffe_tmp_tcam_entry). 
+// Description to be expanded further.
 END
