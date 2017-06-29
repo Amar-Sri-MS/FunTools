@@ -340,11 +340,11 @@ class EnumVariable(Node):
      Node.__init__(self)
      # name is a string.
      self.name = name
-     # value is an string value for the variable.
+     # value is an integer value for the variable.
      self.value = value
 
   def __str__(self):
-     return('<EnumVariable: %s = %s>' % self.name, self.value)
+     return('<EnumVariable: %s = 0x%x>' % self.name, self.value)
 
 
 class Enum(Node):
@@ -519,22 +519,16 @@ class Checker:
     last_start_bitflit = the_struct.fields[0].StartBitFlit() - 1
     last_end_bitflit = the_struct.fields[0].StartBitFlit() - 1
 
-    # Iterate through the fields from 0 to make sure LSB is aligned
-    # correctly.
+    
     for field in the_struct.fields:
-      if last_type is None:
-        last_type = field.type
-      elif last_type != field.type:
-        # If the type of the variables changes, make sure the current offset would
-        # allow the provided alignment.
-        # TODO(bowdidge): Assumes type width = type alignment.
-        if (field.StartBitFlit() % field.type.Alignment() != 0):
-          self.AddError(field,
-            'In structure %s, type won\'t allow alignment: "%s %s" at bit %d' %
-            (the_struct.name, field.type, field.name, field.end_bit))
-
       start_bitflit = field.StartBitFlit()
       end_bitflit = field.EndBitFlit()
+
+      if field.BitWidth() == field.type.BitWidth():
+        if start_bitflit % field.type.Alignment() != 0:
+          self.AddError(field, 'Field "%s" cannot be placed in a location that '
+                        'does not match its natural alignment.' % field.name)
+
 
       if (last_start_bitflit >= end_bitflit and
            last_end_bitflit >= end_bitflit):

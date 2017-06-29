@@ -35,7 +35,17 @@ def StripComment(the_str):
       return the_str
     return match.group(1).lstrip(' ').rstrip(' ')
     
-   
+def AsComment(str):
+  """Returns string inside a C comment, removing any trailing whitespace."""
+  str = str.rstrip(' \n\t')
+  if len(str) == 0:
+    return ''
+
+  lines = str.split('\n')
+  if len(lines) < 2:
+    return '/* %s */' % str
+  return '/*\n' + '\n'.join([' * ' + l for l in lines]) + '\n */'
+
 def ReadableList(l):
   """Generates a human-readable list of string items."""
   if l is None or len(l) == 0:

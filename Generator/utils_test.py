@@ -63,5 +63,16 @@ class TestParseBitSpec(unittest.TestCase):
     self.assertEqual(None, utils.ParseBitSpec('-1 1'))
     self.assertEqual(None, utils.ParseBitSpec('0 1,2'))
 
+class TestCleanComment(unittest.TestCase):
+  def testEmpty(self):
+    self.assertEqual('', utils.AsComment('  '))
+  def testSingleLine(self):
+    self.assertEqual('/* a */', utils.AsComment('a'))
+
+  def testMultiLine(self):
+    self.assertEqual('/*\n * a\n * b\n */', utils.AsComment('a\nb\n'))
+
+                     
+
 if __name__ == '__main__':
     unittest.main()
