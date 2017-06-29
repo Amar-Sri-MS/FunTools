@@ -39,11 +39,14 @@ class CodeGeneratorTest(unittest.TestCase):
     struct.body_comment = 'body comment\nbody comment'
 
     (header, src) = self.printer.VisitStruct(struct)
-    self.assertEquals('\n/* Key comment */\n'
-                      '/* body comment\n'
-                      'body comment */\n'
+    self.assertEquals('\n'
+                      '/* Key comment */\n'
+                      '/*\n'
+                      ' * body comment\n'
+                      ' * body comment\n'
+                      ' */\n'
                       'struct Foo {\n'
-                      '} bar;\n\n', header)
+                      '} bar;\n', header)
 
   def testPrintArray(self):
     field = generator.Field('foo', generator.ArrayTypeForName('char', 8), 0, 63, 0)
@@ -81,7 +84,7 @@ class CodeGeneratorTest(unittest.TestCase):
     field.key_comment = 'A'
     field.body_comment = 'B'
     code = self.printer.VisitField(field)
-    self.assertEqual('/* B */\nuint8_t foo; // A\n', code)
+    self.assertEqual('/* B */\nuint8_t foo; /* A */\n', code)
 
   def testPrintFieldWithLongComment(self):
     field = generator.Field('foo', generator.TypeForName('uint8_t'), 0, 7, 0)
@@ -113,7 +116,7 @@ class HelperGeneratorTest(unittest.TestCase):
 
     statement = gen.GenerateInitializer(s, f, 'pointer.')
   
-    self.assertEqual('  s->pointer.a1 = a1;', statement)
+    self.assertEqual('\ts->pointer.a1 = a1;', statement)
 
   def testInitializeBitfield(self):
     gen = codegen.HelperGenerator()
@@ -122,7 +125,7 @@ class HelperGeneratorTest(unittest.TestCase):
 
     statement = gen.GenerateInitializer(s, f, '')
   
-    self.assertEqual('  s->a1 = a1;', statement)
+    self.assertEqual('\ts->a1 = a1;', statement)
 
   def testInitializePackedField(self):
     gen = codegen.HelperGenerator()
@@ -134,7 +137,7 @@ class HelperGeneratorTest(unittest.TestCase):
 
     statement = gen.GenerateInitializer(s, f, '')
   
-    self.assertEqual('  s->a = FUN_FOO_A1_P(a1) | FUN_FOO_A2_P(a2);', statement)
+    self.assertEqual('\ts->a = FUN_FOO_A1_P(a1) | FUN_FOO_A2_P(a2);', statement)
 
   def testInitializePackedFieldWithAllCapStructureName(self):
     gen = codegen.HelperGenerator()
@@ -146,7 +149,7 @@ class HelperGeneratorTest(unittest.TestCase):
 
     statement = gen.GenerateInitializer(s, f, '')
   
-    self.assertEqual('  s->a = FUN_FFE_ACCESS_COMMAND_A1_P(a1) | '
+    self.assertEqual('\ts->a = FUN_FFE_ACCESS_COMMAND_A1_P(a1) | '
                      'FUN_FFE_ACCESS_COMMAND_A2_P(a2);', statement)
 
 
@@ -162,7 +165,7 @@ class HelperGeneratorTest(unittest.TestCase):
     self.assertEqual('extern void init(struct MyStruct* s, char a1);\n',
                      declaration)
     self.assertEqual('void init(struct MyStruct* s, char a1) {\n'
-                     '  s->foo.a1 = a1;\n\n'
+                     '\ts->foo.a1 = a1;\n\n'
                      '}', definition)
 
   def testNoCreateArrayInitializer(self):
@@ -196,7 +199,7 @@ class CodegenEndToEnd(unittest.TestCase):
     # Did structure get generated?
     self.assertIn('struct Foo {', out)
     # Did field a get rendered?
-    self.assertIn('uint8_t a; // comment about a', out)
+    self.assertIn('uint8_t a; /* comment about a */', out)
     # Did bitfield get packed?
     self.assertIn('uint8_t b_to_c;', out)
     # Did array get included?
@@ -348,23 +351,108 @@ class CodegenEndToEnd(unittest.TestCase):
 
     out = generator.GenerateFile(True, generator.OutputStyleHeader, None,
                                  input, 'foo.gen')
+
     self.assertIsNotNone(out)
     self.assertIn('struct fun_admin_cmd_common c;', out)
+
+class TestComments(unittest.TestCase):
+
+  def testStructComments(self):
+    doc_builder = generator.DocBuilder()
+    # ... allows a field to overflow into later flits.
+    input = [
+      '// Body comment.',
+      'STRUCT fun_admin_cmd_common',
+      '// Field comment.',
+      '0 63:00 uint64_t common_opcode // Key comment',
+      '// Tail comment.',
+      'END'
+      ]
+
+    out = generator.GenerateFile(True, generator.OutputStyleHeader, None,
+                                 input, 'foo.gen')
+
+    self.assertIn('/* Body comment. */\n'
+                  'struct fun_admin_cmd_common {\n'
+                  '\t/* Field comment. */\n'
+                  '\tuint64_t common_opcode; /* Key comment */\n'
+                  '\t/* Tail comment. */\n'
+                  '};\n', out)
+
+  def testUnionComments(self):
+    doc_builder = generator.DocBuilder()
     
+    input = [
+      '// Struct comment.',
+      'STRUCT large ',
+      '// Union body comment.',
+      'UNION union_name u',
+      '// A comment',
+      'STRUCT a a',
+      '0 63:00 uint64_t a1',
+      'END',
+      '// B comment.',
+      'STRUCT b b',
+      '0 63:32 uint32_t b1',
+      'END',
+      'END',
+      'END']
+
+    out = generator.GenerateFile(True, generator.OutputStyleHeader, None,
+                                 input, 'foo.gen')
+
+    self.assertIn('/* Struct comment. */\n'
+                  'struct large {\n'
+                  '\t/* Union body comment. */\n'
+                  '\tunion union_name {\n'
+                  '\n'
+                  '\t\t/* A comment */\n'
+                  '\t\tstruct a {\n'
+                  '\t\t\tuint64_t a1;\n'
+                  '\t\t} a;\n'
+                  '\n'
+                  '\t\t/* B comment. */\n'
+                  '\t\tstruct b {\n'
+                  '\t\t\tuint32_t b1;\n'
+                  '\t\t} b;\n'
+                  '\t} u;\n'
+                  '};', out);
+
+  def testEnumComments(self):
+    doc_builder = generator.DocBuilder()
+    
+    input = [
+      '// Enum comment.',
+      'ENUM values',
+      '// Enum body comment',
+      'A = 1 // Enum key comment',
+      'B = 2 // Enum key comment',
+      '// Tail comment',
+      'END']
+
+    out = generator.GenerateFile(True, generator.OutputStyleHeader, None,
+                                 input, 'foo.gen')
+    self.assertIn('enum values {\n'
+                  '\tA = 0x1, /* Enum key comment */\n'
+                  '\tB = 0x2, /* Enum key comment */\n'
+                  '\t/* Tail comment */\n'
+                  '};\n', out)
+
+
 
 class TestIndentString(unittest.TestCase):
   def testSimple(self):
     # Tests only properties that hold true regardless of the formatting style.
     generator = codegen.CodeGenerator(None)
     generator.indent = 1
-    self.assertTrue(len(generator.IndentString()) > 0)
+    self.assertTrue(len(generator.Indent()) > 0)
 
   def testTwoIndentDoublesOneIndent(self):
     generator = codegen.CodeGenerator(None)
     generator.indent = 1
-    oneIndent = generator.IndentString()
+    oneIndent = generator.Indent()
     generator.indent = 2
-    twoIndent = generator.IndentString()    
+    twoIndent = generator.Indent()    
     self.assertEqual(twoIndent, oneIndent + oneIndent)
 
 

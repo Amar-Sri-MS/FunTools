@@ -18,9 +18,16 @@ class CodeGenerator:
     # Prefix of files to create.
     self.output_file_base = output_file_base
 
-  def IndentString(self):
-    # Generates indenting spaces needed for current level of code.
+  def Indent(self):
+    """Generates indenting spaces needed for current level of code."""
     return '\t' * self.indent
+
+  def PrintIndent(self, str):
+    """Prints the provided (possibly multi-lne) string with uniform indenting."""
+    result = ''
+    for l in str.split('\n'):
+      result += self.Indent() + l + '\n'
+    return result.rstrip('\n \t')
 
   def IncrementIndent(self):
     self.indent += 1
@@ -36,11 +43,11 @@ class CodeGenerator:
     src_out = ''
 
     hdr_out += '// Header created by generator.py\n'
-    hdr_out += '// Do not change this file; '
-    hdr_out += 'change the gen file "%s" instead.\n\n' % doc.filename
+    hdr_out += '// Do not change this file;\n'
+    hdr_out += '// change the gen file "%s" instead.\n\n' % doc.filename
 
     src_out += '// Header created by generator.py\n'
-    src_out += '// Do not change this file; '
+    src_out += '// Do not change this file;\n'
     src_out += '// change the gen file "%s" instead.\n\n' % doc.filename
     src_out += '\n'
     src_out += '#include <assert.h>\n'
@@ -74,17 +81,19 @@ class CodeGenerator:
     self.IncrementIndent()
     for enum_variable in enum.variables:
         hdr_out += self.VisitEnumVariable(enum_variable)
+    if enum.tail_comment:
+      hdr_out += self.PrintIndent(utils.AsComment(enum.tail_comment)) + '\n'
     hdr_out += '};\n\n'
     self.DecrementIndent()
 
-    hdr_out += '// Human-readable strings for enum values in %s.\n' % enum.name
+    hdr_out += '/* Human-readable strings for enum values in %s. */\n' % enum.name
     hdr_out += 'extern const char *%s_names[%d];\n\n' % (enum.name.lower(),
                                                          len(enum.variables));
 
     src_out += 'const char *%s_names[%d] = {\n' % (enum.name.lower(),
                                                    len(enum.variables))
     for enum_variable in enum.variables:
-      src_out += '  "%s",  /* 0x%d */\n' % (enum_variable.name,
+      src_out += '\t"%s",  /* 0x%d */\n' % (enum_variable.name,
                                             enum_variable.value)
     src_out += '};\n'
     return (hdr_out, src_out)
@@ -93,10 +102,10 @@ class CodeGenerator:
     # Pretty-print a structure or union field declaration.  Returns string.
     hdr_out = ''
     if enum_variable.body_comment != None:
-      hdr_out += self.IndentString() + ' /* %s */\n' % enum_variable.body_comment
-    hdr_out = self.IndentString() + '%s = 0x%d,' % (enum_variable.name, enum_variable.value)
+      hdr_out += self.PrintIndent(utils.AsComment(enum_variable.body_comment)) + '\n'
+    hdr_out = self.Indent() + '%s = 0x%d,' % (enum_variable.name, enum_variable.value)
     if enum_variable.key_comment != None:
-      hdr_out += self.IndentString() + ' /* %s */' % enum_variable.key_comment
+      hdr_out += ' ' + utils.AsComment(enum_variable.key_comment)
     hdr_out += '\n'
     return hdr_out
 
@@ -105,18 +114,22 @@ class CodeGenerator:
     hdr_out = ''
     src_out = ''
     if union.key_comment:
-      hdr_out += self.IndentString() + '/* %s */\n' % union.key_comment    
+      hdr_out += self.PrintIndent(utils.AsComment(union.key_comment)) + '\n'
     if union.body_comment:
-      hdr_out += self.IndentString() + '/* %s */\n' % union.body_comment
-    hdr_out += self.IndentString() + 'union %s {\n' % union.name
+      hdr_out += self.PrintIndent(utils.AsComment(union.body_comment)) + '\n'
+    hdr_out += self.Indent() + 'union %s {\n' % union.name
+    self.IncrementIndent();
     for struct in union.structs:
         (hdr, src) = self.VisitStruct(struct)
         hdr_out += hdr
         src_out += src
+    self.DecrementIndent();
     variable_str = ''
+    if union.tail_comment:
+      hdr_out += self.PrintIndent(utils.AsComment(union.tail_comment)) + '\n'
     if union.variable is not None:
       variable_str = ' ' + union.variable
-    hdr_out += self.IndentString() + '}%s;\n' % variable_str
+    hdr_out += self.Indent() + '}%s;\n' % variable_str
     return (hdr_out, src_out)
  
   def VisitStruct(self, struct):
@@ -124,10 +137,10 @@ class CodeGenerator:
     hdr_out = '\n'
     src_out = ''
     if struct.key_comment:
-      hdr_out += self.IndentString() + '/* %s */\n' % struct.key_comment    
+      hdr_out += self.PrintIndent(utils.AsComment(struct.key_comment)) + '\n'
     if struct.body_comment:
-      hdr_out += self.IndentString() + '/* %s */\n' % struct.body_comment
-    hdr_out += self.IndentString() + 'struct %s {\n' % struct.name
+      hdr_out += self.PrintIndent(utils.AsComment(struct.body_comment)) + '\n'
+    hdr_out += self.Indent() + 'struct %s {\n' % struct.name
     lastFlit = 0
     self.IncrementIndent()
     for field in struct.fields:
@@ -143,11 +156,13 @@ class CodeGenerator:
       (hdr, src) = self.VisitUnion(union)
       hdr_out += hdr
       src_out += src
+    if struct.tail_comment:
+      hdr_out += self.PrintIndent(utils.AsComment(struct.tail_comment)) + '\n'
     self.DecrementIndent()
     tag_str = ''
     if len(struct.variable) > 0:
       tag_str = ' %s' % struct.variable
-    hdr_out += self.IndentString() + '}%s;\n\n' % tag_str
+    hdr_out += self.Indent() + '}%s;\n' % tag_str
 
     for macro in struct.macros:
         hdr_out += macro + '\n'
@@ -165,13 +180,13 @@ class CodeGenerator:
     hdr_out = ''
 
     if field.generator_comment is not None:
-      hdr_out += self.IndentString() + '/* %s */\n' % field.generator_comment
+      hdr_out += self.PrintIndent(utils.AsComment(field.generator_comment)) + '\n'
     if field.body_comment is not None:
       # TODO(bowdidge): Break long comment.
-      hdr_out += self.IndentString() + '/* %s */\n' % field.body_comment
+      hdr_out += self.PrintIndent(utils.AsComment(field.body_comment)) + '\n'
     key_comment = ''
     if field.key_comment is not None:
-      key_comment = ' // %s' % field.key_comment
+      key_comment = ' ' + utils.AsComment(field.key_comment)
      
     var_bits = ''
     var_width = field.start_bit - field.end_bit + 1
@@ -179,14 +194,13 @@ class CodeGenerator:
 
     if field.type.IsScalar() and type_width != var_width:
       var_bits = ':%d' % var_width
-    hdr_out += self.IndentString() 
     if field.type.IsArray():
-      hdr_out += self.IndentString() + '%s %s[%d];%s\n' % (field.type.BaseName(),
+      hdr_out += self.Indent() + '%s %s[%d];%s\n' % (field.type.BaseName(),
                                                            field.name,
                                                            field.type.ArraySize(),
                                                            key_comment)
     else:
-      hdr_out += self.IndentString() + '%s %s%s;%s\n' % (field.type.DeclarationName(),
+      hdr_out += self.Indent() + '%s %s%s;%s\n' % (field.type.DeclarationName(),
                                                          field.name, var_bits,
                                                          key_comment)
     
@@ -243,7 +257,7 @@ class HelperGenerator:
     values are unpacked.
     """
     if len(field.packed_fields) == 0:
-        return '  s->%s%s = %s;' % (accessor_prefix, field.name, field.name)
+        return '\ts->%s%s = %s;' % (accessor_prefix, field.name, field.name)
 
     packed_inits = []
     for packed_field in field.packed_fields:
@@ -252,7 +266,7 @@ class HelperGenerator:
       ident = 'FUN_' + utils.AsUppercaseMacro('%s_%s' % (the_struct.name, 
                                                          packed_field.name))
       packed_inits.append('%s_P(%s)' % (ident, packed_field.name))
-    return '  s->%s%s = %s;' % (accessor_prefix, field.name,
+    return '\ts->%s%s = %s;' % (accessor_prefix, field.name,
                                 ' | '.join(packed_inits))
 
   def GenerateInitRoutine(self, function_name, struct_name, 
@@ -298,7 +312,7 @@ class HelperGenerator:
 
       if field.SmallerThanType():
         max_value = 1 << field.BitWidth()
-        validates.append('  assert(%s < 0x%x);' % (field.name, max_value))
+        validates.append('\tassert(%s < 0x%x);' % (field.name, max_value))
 
     if len(arg_list) == 1:
       # If no arguments other than structure, don't bother.
