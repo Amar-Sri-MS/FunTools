@@ -50,8 +50,8 @@ END
 
 // FFE TCAM entry format
 STRUCT fun_ffe_tcam_entry
-  0 63:48 uint16_t at_index
-  0 47:0 uint8_t rsvd0[6]
+  0 63:16 uint8_t rsvd0[6]
+  0 15:0 uint16_t at_index
   1 63:0 uint8_t key[21] /* uint8_t key[21] */
   2 63:0 ...
   3 63:24 ...
