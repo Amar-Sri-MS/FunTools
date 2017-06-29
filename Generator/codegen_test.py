@@ -34,13 +34,12 @@ class CodeGeneratorTest(unittest.TestCase):
     self.assertIn('} foo_cmd;', header)
 
   def testPrintStructWithComments(self):
-    struct = generator.Struct('Foo', 'bar')
+    struct = generator.Struct('Foo', 'bar', False)
     struct.key_comment = 'Key comment'
     struct.body_comment = 'body comment\nbody comment'
 
     (header, src) = self.printer.VisitStruct(struct)
-    self.assertEquals('\n'
-                      '/* Key comment */\n'
+    self.assertEquals('/* Key comment */\n'
                       '/*\n'
                       ' * body comment\n'
                       ' * body comment\n'
@@ -56,16 +55,16 @@ class CodeGeneratorTest(unittest.TestCase):
 
 
   def testPrintUnion(self):
-    union = generator.Union('Foo', None)
+    union = generator.Struct('Foo', '', True)
     
-    code = self.printer.VisitUnion(union)
+    code = self.printer.VisitStruct(union)
 
     self.assertEquals(('union Foo {\n};\n', ''), code)
 
   def testPrintUnionWithVar(self):
-    union = generator.Union('Foo', 'xxx')
+    union = generator.Struct('Foo', 'xxx', True)
     
-    code = self.printer.VisitUnion(union)
+    code = self.printer.VisitStruct(union)
 
     self.assertEquals(('union Foo {\n} xxx;\n', ''), code)
 
@@ -123,7 +122,7 @@ class CodeGeneratorTest(unittest.TestCase):
 class HelperGeneratorTest(unittest.TestCase):
   def testInitializeSimpleField(self):
     gen = codegen.HelperGenerator()
-    s = generator.Struct('Foo', 'f1')
+    s = generator.Struct('Foo', 'f1', False)
     f = generator.Field('a1', generator.TypeForName('char'), 0, 8)
 
     statement = gen.GenerateInitializer(s, f, 'pointer.')
@@ -132,7 +131,7 @@ class HelperGeneratorTest(unittest.TestCase):
 
   def testInitializeBitfield(self):
     gen = codegen.HelperGenerator()
-    s = generator.Struct('Foo', 'f1')
+    s = generator.Struct('Foo', 'f1', False)
     f = generator.Field('a1', generator.TypeForName('char'), 0, 2)
 
     statement = gen.GenerateInitializer(s, f, '')
@@ -141,7 +140,7 @@ class HelperGeneratorTest(unittest.TestCase):
 
   def testInitializePackedField(self):
     gen = codegen.HelperGenerator()
-    s = generator.Struct('Foo', 'f1')
+    s = generator.Struct('Foo', 'f1', False)
     f = generator.Field('a', generator.TypeForName('char'), 0, 8)
     f1 = generator.Field('a1', generator.TypeForName('char'), 8, 4)
     f2 = generator.Field('a2', generator.TypeForName('char'), 12, 4)
@@ -153,7 +152,7 @@ class HelperGeneratorTest(unittest.TestCase):
 
   def testInitializePackedFieldWithAllCapStructureName(self):
     gen = codegen.HelperGenerator()
-    s = generator.Struct('ffe_access_command', 'f1')
+    s = generator.Struct('ffe_access_command', 'f1', False)
     f = generator.Field('a', generator.TypeForName('char'), 0, 8)
     f1 = generator.Field('a1', generator.TypeForName('char'), 0, 4)
     f2 = generator.Field('a2', generator.TypeForName('char'), 4, 4)
@@ -167,7 +166,7 @@ class HelperGeneratorTest(unittest.TestCase):
 
   def testCreateSimpleInitializer(self):
     gen = codegen.HelperGenerator()
-    s = generator.Struct('Foo', 'f1')
+    s = generator.Struct('Foo', 'f1', False)
     f = generator.Field('a1', generator.TypeForName('char'), 0, 8)
     s.fields = [f]
 
@@ -182,7 +181,7 @@ class HelperGeneratorTest(unittest.TestCase):
 
   def testNoCreateArrayInitializer(self):
     gen = codegen.HelperGenerator()
-    s = generator.Struct('Foo', 'f1')
+    s = generator.Struct('Foo', 'f1', False)
     f = generator.Field('a1', generator.ArrayTypeForName('char', 8), 0, 64)
     s.fields = [f]
 
@@ -308,10 +307,11 @@ class CodegenEndToEnd(unittest.TestCase):
     self.assertIsNotNone(out)
 
     # Did structure get generated?
+    # TODO(bowdidge): Structures with unions should get union-specific
+    # constructors.
     self.assertIn('void A_init(struct A* s, uint64_t a)', out)
-    self.assertIn('void B_init(struct B* s, uint8_t a, uint64_t c)', out)
-    self.assertIn('void B1_init(struct B* s, uint8_t b11, uint8_t b12)', out)
-    self.assertIn('void B2_init(struct B* s, uint8_t b21, uint8_t b22)', out)
+    self.assertIn('void B_B1_init(struct B* s, uint8_t b11, uint8_t b12)', out)
+    self.assertIn('void B_B2_init(struct B* s, uint8_t b21, uint8_t b22)', out)
 
   def disableTestInitFunctionsForNestedStructures(self):
     input = ['STRUCT A',
@@ -436,22 +436,10 @@ class TestComments(unittest.TestCase):
     out = generator.GenerateFile(True, generator.OutputStyleHeader, None,
                                  input, 'foo.gen')
 
-    self.assertIn('/* Struct comment. */\n'
-                  'struct large {\n'
-                  '\t/* Union body comment. */\n'
-                  '\tunion union_name {\n'
-                  '\n'
-                  '\t\t/* A comment */\n'
-                  '\t\tstruct a {\n'
-                  '\t\t\tuint64_t a1;\n'
-                  '\t\t} a;\n'
-                  '\n'
-                  '\t\t/* B comment. */\n'
-                  '\t\tstruct b {\n'
-                  '\t\t\tuint32_t b1;\n'
-                  '\t\t} b;\n'
-                  '\t} u;\n'
-                  '};', out);
+    self.assertIn('/* Struct comment. */', out)
+    self.assertIn('/* Union body comment. */', out)
+    self.assertIn('/* A comment */', out)
+    self.assertIn('/* B comment. */', out)
 
   def testEnumComments(self):
     doc_builder = generator.DocBuilder()

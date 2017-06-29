@@ -124,7 +124,7 @@ int main(int argc, char** argv) {
   struct GatherListFragmentHeader hdr;
   strcpy(hdr.u1.inline_cmd.bytes, expected_bytes);
 
-  GatherListInlineFragment_init(&hdr, OPCODE_SCATTER, expected_source,
+  GatherListFragmentHeader_GatherListInlineFragment_init(&hdr, OPCODE_SCATTER, expected_source,
 				expected_byte_count);
 
   ASSERT_EQUAL(OPCODE_SCATTER, 

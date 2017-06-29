@@ -73,22 +73,22 @@ class HTMLGenerator:
         out += '<p>%s</p>' % enum.tail_comment
     return out
 
-  def VisitUnionInStruct(self, union):
-    """Draws a union as rows in a containing structure."""
+  def VisitStructInStruct(self, struct):
+    """Draws a struct as rows in a containing structure."""
     out = '<tr>\n'
 
     comment = ""
-    if union.key_comment:
-      comment = union.key_comment
+    if struct.key_comment:
+      comment = struct.key_comment
 
     out += '  <td class="structBits" colspan="2">0:63-%d:0</td>\n' % (
-      union.Flits() - 1)
-    out += '  <td>union %s</td>\n' % union.name
-    out += '  <td>%s</td>\n' % union.variable
+      struct.Flits() - 1)
+    out += '  <td>%s %s</td>\n' % (struct.Tag(), struct.Name())
+    out += '  <td>%s</td>\n' % struct.variable
     out += '  <td>%s</td>\n' % comment
     out += '</tr>\n'
 
-    for s in union.structs:
+    for s in struct.structs:
       out += '<tr>\n'
       out += '  <td class="structBits" colspan="2">0:63 - %d:%d</td>\n' % (
         s.Flits() - 1, 0)
@@ -111,12 +111,13 @@ class HTMLGenerator:
     out += '  <th class="structBits">Bits</th>\n'
     out += '  <th>Type</th>'
     out += '  <th>Name</th><th>Description</th></tr>\n'
-    # TODO(bowdidge): Fields and unions should be displayed in order
-    # of index.
+    # TODO(bowdidge): Fields and nested structures or unions should be
+    # displayed in order of index.
     for field in struct.fields:
       out += self.VisitField(field)
-    for union in struct.unions:
-      out += self.VisitUnionInStruct(union)
+
+    for struct in struct.structs:
+      out += self.VisitStructInStruct(struct)
 
     # Tail comment comes after everything else.
     if struct.tail_comment:
@@ -126,10 +127,6 @@ class HTMLGenerator:
       out += '  </td>\n'
       out += '</tr>\n'
     out += "</table>\n"
-
-    for union in struct.unions:
-      for s in union.structs:
-        out += self.VisitStruct(s)
 
     return out
 

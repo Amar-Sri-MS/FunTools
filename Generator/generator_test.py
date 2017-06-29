@@ -398,9 +398,9 @@ class TestDocBuilder(unittest.TestCase):
 
     firstStruct = doc.structs[0]
     self.assertEqual(0, len(firstStruct.fields))
-    self.assertEqual(2, len(firstStruct.unions))
+    self.assertEqual(2, len(firstStruct.structs))
 
-    firstUnion = firstStruct.unions[0]
+    firstUnion = firstStruct.structs[0]
     firstField = firstUnion.fields[0]
     self.assertEqual(0, firstField.StartFlit())
     self.assertEqual(0, firstField.EndFlit())
