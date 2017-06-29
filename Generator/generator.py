@@ -219,8 +219,6 @@ class Visitor:
     pass
   def VisitStruct(self, struct):
     pass
-  def VisitUnion(self, union):
-    pass
   def VisitEnum(self, enum):
     pass
   def VisitEnumVariable(self, enumVariable):
@@ -381,48 +379,10 @@ class Enum(Node):
     return('<Enum %s:\n  %s\n>\n' % (self.name, self.values))
 
 
-class Union(Node):
-  # Representation of a union declaration.
-
-  def __init__(self, name, variable):
-    # Create a union declaration.
-    Node.__init__(self)
-    # name is a string representing the name or variable of the union.
-    self.name = name
-    # variable is a string representing the variable to use for the union when
-    # accessing it within a structure.
-    self.variable = variable
-    # fields are the list of structure fields in the union.
-    self.fields = []
-    # structs are the list of nested structures in the union.
-    # structures will be placed after any fields.
-    self.structs = []
-
-  def IsType(self):
-    return True
-
-  def Bytes(self):
-    """Returns the total number of bytes for the union object."""
-    return self.Flits() * 8
-
-  def BitWidth(self):
-    if len(self.structs) == 0:
-      return 0
-    return max([s.BitWidth() for s in self.structs])
-
-  def Flits(self):
-    """Returns the total number of flits (words) in the union object."""
-    return max([s.Flits() for s in self.structs]) + 1
-
-  def __str__(self):
-    return('<Union %s, variable %s:\n fields: %s\n structs: %s\n>\n' %
-           (self.name, self.variable, self.fields, self.structs))
-
-
 class Struct(Node):
   # Representation of a structure.
 
-  def __init__(self, name, variable):
+  def __init__(self, name, variable, is_union):
     # Create a struct declaration.
     Node.__init__(self)
     # name is a string representing the name of the struct..
@@ -434,14 +394,16 @@ class Struct(Node):
     self.fields = []
     # structs is the nested structures in this struct.
     self.structs = []
-    # union is the list of union fields in the struct.
-    self.unions = []
+    # True if a union.
+    self.is_union = is_union
 
-    # Source code for function declarations related to this structure.
-    self.declarations = []
+  def Name(self):
+    return self.name
 
-    # Source code for function definitions related to this structure.
-    self.definitions = []
+  def Tag(self):
+    if self.is_union:
+      return 'union'
+    return 'struct'
 
   def IsType(self):
     return True
@@ -458,25 +420,31 @@ class Struct(Node):
     return fields
 
   def __str__(self):
-    return('<Struct %s, variable %s:\n fields: %s\n structs: %s\n unions: %s\n>\n' %
-           (self.name, self.variable, self.fields, self.structs, self.unions))
+    return('<Struct %s, isUnion: %d variable %s:\n fields: %s structs: %s\n\n\n>\n' %
+           (self.name, self.is_union, self.variable, self.fields, self.structs))
 
   def BitWidth(self):
     if len(self.fields) == 0:
       return 0
+
+    if self.is_union:
+      return max([f.BitWidth() for f in self.fields])
+
     last_field = self.fields[-1]
     end_offset = last_field.EndOffset()
     return end_offset + 1
 
   def Flits(self):
+    if len(self.fields) == 0:
+      return 0
     return max([field.EndFlit() for field in self.fields]) + 1
 
   def Bytes(self):
     """Returns the number of bytes in the structure."""
     if len(self.fields) == 0:
       return 0
-    return (max([field.EndFlit() for field in self.fields]) + 1) * 8
 
+    return max([(f.EndFlit() + 1) * 8 for f in self.fields])
 
 class Document(Node):
   # Representation of an entire generated header specification.
@@ -484,11 +452,15 @@ class Document(Node):
     Node.__init__(self)
     # structs is all the structures defined in the document.
     self.structs = []
-    # unions is all unions declared in the document.
-    # this should be empty - all unions should be inside a struct.
-    self.unions = []
+
     # All enums declared in the file.
     self.enums = []
+
+    # Source code for function declarations.
+    self.declarations = []
+
+    # Source code for function definitions.
+    self.definitions = []
 
     # Original filename containing the specifications.
     self.filename = None
@@ -564,13 +536,6 @@ class Checker:
       # Check adjacent structures match up with bit patterns.
       self.VisitStruct(struct)
 
-  def VisitUnion(self, the_union):
-    if len(the_union.fields) != 0:
-      self.AddError(the_union, 'Union "%s" contains fields %s not inside a struct.' % (
-          the_union.name, utils.ReadableList([f.name for f in the_union.fields])))
-    for struct in the_union.structs:
-      self.VisitStruct(struct)
-
   def VisitField(self, the_field):
     pass
 
@@ -625,17 +590,9 @@ class Packer:
     # Should make sure that adjacent fields are same types.
     for struct in the_struct.structs:
       self.VisitStruct(struct)
-    for union in the_struct.unions:
-      self.VisitUnion(union)
-    self.PackStruct(the_struct)
 
-  def VisitUnion(self, the_union):
-    # Handle packing fields in union.
-    # TODO(bowdidge): Union fields start the packing all over again, so if the
-    # common bit is not a full word, then need to copy fields over.
-    for struct in the_union.structs:
-      self.VisitStruct(struct)
-
+    if not the_struct.is_union:
+      self.PackStruct(the_struct)
 
   def PackFlit(self, the_struct, flit_number, the_fields):
     """Replaces contiguous sets of bitfields with macros to access.
@@ -737,7 +694,6 @@ class Packer:
 # Enums used to indicate the kind of object being processed.
 # Used on the stack.
 DocBuilderStateStruct = 1
-DocBuilderStateUnion = 2
 DocBuilderTopLevel = 3
 DocBuilderStateEnum = 4
 
@@ -794,7 +750,7 @@ class DocBuilder:
     key_comment = match.group(3)
     variable_name = utils.RemoveWhitespace(variable_name)
 
-    current_struct = Struct(identifier, variable_name)
+    current_struct = Struct(identifier, variable_name, False)
     current_struct.line_number = self.current_line
     current_struct.key_comment = utils.StripComment(key_comment)
 
@@ -906,13 +862,13 @@ class DocBuilder:
     (_, name, variable) = union_args
     name = utils.RemoveWhitespace(name)
     variable = utils.RemoveWhitespace(variable)
-    current_union = Union(name, variable)
+    current_union = Struct(name, variable, True)
     current_union.line_number = self.current_line
     if len(self.current_comment) > 0:
       current_union.body_comment = self.current_comment
     self.current_comment = ''
-    self.stack.append((DocBuilderStateUnion, current_union))
-    current_object.unions.append(current_union)
+    self.stack.append((DocBuilderStateStruct, current_union))
+    current_object.structs.append(current_union)
 
   def ParseMultiFlitFieldLine(self, line):
     """Parse the current line as if it were a multi-flit line.

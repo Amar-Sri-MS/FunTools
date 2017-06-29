@@ -70,6 +70,13 @@ class CodeGenerator:
 
     for macro in doc.macros:
       hdr_out += macro + '\n'
+
+    for decl in doc.declarations:
+        hdr_out += decl + '\n'
+
+    for definition in doc.definitions:
+        src_out += definition + '\n'
+ 
     if self.output_file_base is not None:
       hdr_out += '#endif // %s' % include_guard_name
     return (hdr_out, src_out)
@@ -109,70 +116,37 @@ class CodeGenerator:
     hdr_out += '\n'
     return hdr_out
 
-  def VisitUnion(self, union):
-    # Pretty-print a union declaration.  Returns string.
+  def VisitStruct(self, the_struct):
+    # Pretty-print a structure declaration.  Returns string.
     hdr_out = ''
     src_out = ''
-    if union.key_comment:
-      hdr_out += self.PrintIndent(utils.AsComment(union.key_comment)) + '\n'
-    if union.body_comment:
-      hdr_out += self.PrintIndent(utils.AsComment(union.body_comment)) + '\n'
-    hdr_out += self.Indent() + 'union %s {\n' % union.name
-    self.IncrementIndent();
-    for struct in union.structs:
-        (hdr, src) = self.VisitStruct(struct)
-        hdr_out += hdr
-        src_out += src
-    self.DecrementIndent();
-    variable_str = ''
-    if union.tail_comment:
-      hdr_out += self.PrintIndent(utils.AsComment(union.tail_comment)) + '\n'
-    if union.variable is not None:
-      variable_str = ' ' + union.variable
-    hdr_out += self.Indent() + '}%s;\n' % variable_str
-    return (hdr_out, src_out)
- 
-  def VisitStruct(self, struct):
-    # Pretty-print a structure declaration.  Returns string.
-    hdr_out = '\n'
-    src_out = ''
-    if struct.key_comment:
-      hdr_out += self.PrintIndent(utils.AsComment(struct.key_comment)) + '\n'
-    if struct.body_comment:
-      hdr_out += self.PrintIndent(utils.AsComment(struct.body_comment)) + '\n'
-    hdr_out += self.Indent() + 'struct %s {\n' % struct.name
+    if the_struct.key_comment:
+      hdr_out += self.PrintIndent(utils.AsComment(the_struct.key_comment)) + '\n'
+    if the_struct.body_comment:
+      hdr_out += self.PrintIndent(utils.AsComment(the_struct.body_comment)) + '\n'
+    hdr_out += self.Indent() + the_struct.Tag() + ' %s {\n' % the_struct.name
     lastFlit = 0
     self.IncrementIndent()
-    for field in struct.fields:
+    for field in the_struct.fields:
       # Add blank line between flits.
       if field.StartFlit() != lastFlit:
         hdr_out += '\n'
       hdr_out += self.VisitField(field)
       lastFlit = field.StartFlit()
-    self.DecrementIndent()
 
-    self.IncrementIndent()
-    for union in struct.unions:
-      (hdr, src) = self.VisitUnion(union)
+    for struct in the_struct.structs:
+      (hdr, src) = self.VisitStruct(struct)
       hdr_out += hdr
       src_out += src
-    if struct.tail_comment:
-      hdr_out += self.PrintIndent(utils.AsComment(struct.tail_comment)) + '\n'
+
+    if the_struct.tail_comment:
+      hdr_out += self.PrintIndent(utils.AsComment(the_struct.tail_comment)) + '\n'
     self.DecrementIndent()
     tag_str = ''
-    if len(struct.variable) > 0:
-      tag_str = ' %s' % struct.variable
+    if len(the_struct.variable) > 0:
+      tag_str = ' %s' % the_struct.variable
     hdr_out += self.Indent() + '}%s;\n' % tag_str
 
-    for macro in struct.macros:
-        hdr_out += macro + '\n'
-
-    for decl in struct.declarations:
-        hdr_out += decl + '\n'
-
-    for definition in struct.definitions:
-        src_out += definition + '\n'
- 
     return (hdr_out, src_out)
 
   def VisitField(self, field):
@@ -242,11 +216,10 @@ class HelperGenerator:
       struct.macros.append(
         '// For accessing "%s" field in %s.%s' % (
           old_field.name, struct.name, field.name))
-      struct.macros.append(shift)
-      struct.macros.append(mask)
-      struct.macros.append(value)
-      struct.macros.append(get)
-      struct.macros.append('\n')
+      self.current_document.macros.append(shift)
+      self.current_document.macros.append(mask)
+      self.current_document.macros.append(value)
+      self.current_document.macros.append(get)
 
   def GenerateInitializer(self, the_struct, field, accessor_prefix):
     """Returns a C statement initializing the named variable.
@@ -339,8 +312,9 @@ class HelperGenerator:
     """Generates helper functions for the provided structure."""
     (decl, defn) = self.GenerateInitRoutine(self.InitializerName(the_struct.name),
                                             the_struct.name, '', the_struct)
-    the_struct.declarations.append(decl)
-    the_struct.definitions.append(defn)
+    self.current_document.declarations.append(decl)
+    self.current_document.definitions.append(defn)
+ 
 
   def VisitField(self, the_struct, the_field):
     if len(the_field.packed_fields) > 0:
@@ -352,23 +326,33 @@ class HelperGenerator:
     For each structure, we want an Init/constructor for initializing
     variables easily.
     """
-    self.GenerateHelpersForStruct(the_struct)
-    if len(the_struct.unions) == 1:
-      # Generate constructor for each option.
-      union = the_struct.unions[0]
-      for substruct in union.structs:
-        function_name = self.InitializerName(substruct.name)
-        struct_name = the_struct.name
-        accessor_prefix = '%s.%s.' % (union.variable, substruct.variable)
-        (decl, defn) = self.GenerateInitRoutine(function_name, struct_name, 
-                                                accessor_prefix,
-                                                substruct)
-        the_struct.declarations.append(decl)
-        the_struct.definitions.append(defn)
+    has_unions = [True for s in the_struct.structs if s.is_union]
 
-        for field in substruct.fields:
-          self.VisitField(substruct, field)
+    if not has_unions:
+      self.GenerateHelpersForStruct(the_struct)
 
+    # TODO(bowdidge): Redo this code for deciding which constructors to create.
+    for union in the_struct.structs:
+      if union.is_union:
+        for struct in union.structs:
+          # Generate constructor for each option.
+          function_name = self.InitializerName(the_struct.name + "_" + struct.name)
+          struct_name = the_struct.name
+          accessor_prefix = '%s.%s.' % (union.variable, struct.variable)
+          (decl, defn) = self.GenerateInitRoutine(function_name, struct_name, 
+                                                  accessor_prefix,
+                                                  struct)
+          self.current_document.declarations.append(decl)
+          self.current_document.definitions.append(defn)
+
+          # Hack.  Don't recursively visit the structure; instead
+          # just visit fields to generate pack macros.
+          for field in struct.fields:
+            self.VisitField(struct, field)
+ 
     for field in the_struct.fields:
       self.VisitField(the_struct, field)
     
+    for struct in the_struct.structs:
+      if not struct.is_union:
+        self.VisitStruct(struct)
