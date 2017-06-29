@@ -111,16 +111,20 @@ class HTMLGenerator:
     out += '  <th class="structBits">Bits</th>\n'
     out += '  <th>Type</th>'
     out += '  <th>Name</th><th>Description</th></tr>\n'
+    # TODO(bowdidge): Fields and unions should be displayed in order
+    # of index.
     for field in struct.fields:
       out += self.VisitField(field)
+    for union in struct.unions:
+      out += self.VisitUnionInStruct(union)
+
+    # Tail comment comes after everything else.
     if struct.tail_comment:
       out += '<tr>\n'
       out += '  <td class="description" colspan="5">\n'
       out += '  <center>%s</center>\n' % struct.tail_comment
       out += '  </td>\n'
       out += '</tr>\n'
-    for union in struct.unions:
-      out += self.VisitUnionInStruct(union)
     out += "</table>\n"
 
     for union in struct.unions:
