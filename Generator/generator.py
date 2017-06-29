@@ -24,6 +24,9 @@ import codegen
 import htmlgen
 import utils
 
+# Default size of a word.  Input is specified in flits and bit offsets.
+FLIT_SIZE = 64
+
 class BaseType:
   """Represents a the base type name without qualifications.
   
@@ -254,31 +257,27 @@ class Node:
     return False
 
 
-def BitFlitToString(bitflit):
-  """Converts an absolute bit offset from top of struct to a top=64 string."""
-  bit = 63 - (bitflit % 64)
-  flit = bitflit / 64
-  return "flit %d, bit %d" (flit, bit)
-
-
 class Field(Node):
   # Representation of a field in a structure or union.
+  #
+  # Within the field, bit positions are relative to the high bit of the
+  # first flit; 0 is the high bit of the first flit, 63 is the low bit of
+  # the first flit, etc.  This choice makes math about packing easier.
+  # For the human descriptions (both input and output), bits are ordered
+  # in the opposite fashio with 63 as the high bit of the flit.
+  # The StartOffset and EndOffset use the high bit = 0 system;
+  # the StartBit and EndBit use high bit = 63.
 
-  def __init__(self, name, type, flit, start_bit, end_bit):
+  def __init__(self, name, type, offset_start, bit_width):
     Node.__init__(self)
     # name of the field declaration.
     self.name = name
     # String name of the C type, or a generic type for signed-ness.
     self.type = type
-    # Integer representing the 8 byte "flit" that the field belongs to.
-    self.start_flit = flit
-    # Integer representing the 8 byte flit that the end bit belongs to.
-    # Not all fields fit in a single flit.
-    self.end_flit = flit
-    # Highest bit holding the contents of the field.
-    self.start_bit = start_bit
-    # Lowest order bit holding the contents of the field.
-    self.end_bit = end_bit
+    # Bit offset from top of first word.
+    self.offset_start = offset_start
+    self.bit_width = bit_width
+
     self.crosses_flit = False
     # Fields that have been packed in this field.
     self.packed_fields = []
@@ -286,46 +285,62 @@ class Field(Node):
     self.is_bitfield = False
 
   def __str__(self):
-    if self.start_flit == self.end_flit:
+    if self.StartFlit() == self.EndFlit():
       return('<Field: name=%s, type=%s, flit=%d, bits=%d:%d>' %
-             (self.name, self.type, self.start_flit,
-              self.start_bit, self.end_bit))
+             (self.name, self.type, self.StartFlit(),
+              self.StartBit(), self.EndBit()))
     else:
       return('<Field: name=%s, type=%s, start: flit=%d, bit=%d, '
              'end: flit=%d, bit=%d>' % (self.name, self.type,
-                                        self.start_flit, self.start_bit,
-                                        self.end_flit, self.end_bit))
+                                        self.StartFlit(), self.StartBit(),
+
+                                        self.EndFlit(), self.EndBit()))
+
+  def ExtendSize(self, amount):
+    """Increases the size of the field.  Used for ... notation."""
+    self.bit_width += amount
+
+  def StartOffset(self):
+    """Returns the offset of the field from the top of the container."""
+    return self.offset_start
+
+  def EndOffset(self):
+    """Returns the bottom offset of the field from the top of the container."""
+    return self.offset_start + self.bit_width - 1
 
   def StartFlit(self):
-    return self.start_flit
+    """Returns the flit in the container holding the start of this field."""
+    return self.offset_start / FLIT_SIZE
 
   def EndFlit(self):
-    return self.end_flit
+    """Returns the flit in the container holding the end of this field."""
+    return (self.offset_start + self.bit_width - 1) / FLIT_SIZE
 
-  def StartBitFlit(self):
-    """Returns offset from top of first flit.
+  def StartBit(self):
+    """Returns the bit offset in the start flit.
 
-    Bitflits are an absolute, always increasing index for a particular bit,
-    starting at 0.  The checker's tests for overlapping fields are done using
-    bitflits so the logic doesn't have to think about flits or about the fact that
-    we start bit ordering at 63 and go down.
+    0 is the bottom of the flit.
     """
-    return (63 - self.start_bit) + 64 * self.start_flit
+    return FLIT_SIZE - (self.offset_start - (self.StartFlit() * FLIT_SIZE)) - 1
 
-  def EndBitFlit(self):
-    """Returns offset from top of first flit."""
-    return (63 - self.end_bit) + 64 * self.end_flit
+  def EndBit(self):
+    """Returns the bit offset in the end flit.
+
+    0 is the bottom of the flit.
+    """
+    return FLIT_SIZE - (self.offset_start + self.bit_width -
+                        (self.EndFlit() * FLIT_SIZE) - 1) - 1
 
   def BitWidth(self):
     # Returns the number of bits in the field.
-    return (self.EndBitFlit() - self.StartBitFlit() + 1)
+    return self.bit_width
 
   def Mask(self):
     # Returns a hexadecimal number that can be used as a mask in the flit.
-    return '0x%x' %  ((1 << self.BitWidth()) - 1)
+    return '0x%x' %  ((1 << self.bit_width) - 1)
 
   def SmallerThanType(self):
-    return self.BitWidth() < self.type.BitWidth()
+    return self.bit_width < self.type.BitWidth()
 
   def IsReserved(self):
     """True if the field is a placeholder that doesn't need to be initialized."""
@@ -450,8 +465,8 @@ class Struct(Node):
     if len(self.fields) == 0:
       return 0
     last_field = self.fields[-1]
-    end_bitflit = last_field.EndBitFlit()
-    return end_bitflit + 1
+    end_offset = last_field.EndOffset()
+    return end_offset + 1
 
   def Flits(self):
     return max([field.EndFlit() for field in self.fields]) + 1
@@ -516,33 +531,33 @@ class Checker:
     if len(the_struct.fields) == 0:
       return
 
-    last_start_bitflit = the_struct.fields[0].StartBitFlit() - 1
-    last_end_bitflit = the_struct.fields[0].StartBitFlit() - 1
+    last_start_offset = the_struct.fields[0].StartOffset() - 1
+    last_end_offset = the_struct.fields[0].StartOffset() - 1
 
     
     for field in the_struct.fields:
-      start_bitflit = field.StartBitFlit()
-      end_bitflit = field.EndBitFlit()
+      start_offset = field.StartOffset()
+      end_offset = field.EndOffset()
 
       if field.BitWidth() == field.type.BitWidth():
-        if start_bitflit % field.type.Alignment() != 0:
+        if start_offset % field.type.Alignment() != 0:
           self.AddError(field, 'Field "%s" cannot be placed in a location that '
                         'does not match its natural alignment.' % field.name)
 
 
-      if (last_start_bitflit >= end_bitflit and
-           last_end_bitflit >= end_bitflit):
+      if (last_start_offset >= end_offset and
+           last_end_offset >= end_offset):
         self.AddError(field, 'field "%s" and "%s" not in bit order' % (
             last_field_name, field.name))
-      elif last_end_bitflit >= start_bitflit:
+      elif last_end_offset >= start_offset:
         self.AddError(field, 'field "%s" overlaps field "%s"' % (
             last_field_name, field.name))
-      elif start_bitflit != last_end_bitflit + 1:
+      elif start_offset != last_end_offset + 1:
         self.AddError(field, 'unexpected space between field "%s" and "%s"'
                       % (last_field_name, field.name))
 
-      last_start_bitflit = field.StartBitFlit()
-      last_end_bitflit = field.EndBitFlit()
+      last_start_offset = field.StartOffset()
+      last_end_offset = field.EndOffset()
       last_field_name = field.name
 
     for struct in the_struct.structs:
@@ -659,12 +674,11 @@ class Packer:
     if len(fields_to_pack) == 0:
       # Nothing to pack.
       return
-
     for (type, fields) in fields_to_pack:
-      max_start_bit = max([f.start_bit for f in fields])
-      min_end_bit = min([f.end_bit for f in fields])
-
-      packed_field_width = max_start_bit - min_end_bit + 1
+      packed_field_width = 0
+      min_start_bit = min([f.StartBit() for f in fields])
+      for f in fields:
+        packed_field_width += f.BitWidth()
 
       if (packed_field_width > type.BitWidth()):
         self.AddError(the_struct,
@@ -675,16 +689,18 @@ class Packer:
             type.BitWidth()))
 
       new_field_name = fields[0].name + "_to_" + LastNonReservedName(fields)
-      new_field = Field(new_field_name, type, flit_number,
-                        max_start_bit, min_end_bit)
+      new_field = Field(new_field_name, type, min_start_bit, packed_field_width)
       new_field.line_number = fields[0].line_number
 
       non_reserved_fields = [f.name for f in fields if not f.IsReserved()]
       bitfield_name_str = utils.ReadableList(non_reserved_fields)
       bitfield_layout_str = ''
+
+      min_end_bit = min([f.EndBit() for f in fields])
       for f in fields:
-        bitfield_layout_str += '      %d:%d: %s\n' % (f.start_bit - min_end_bit,
-                                                      f.end_bit - min_end_bit,
+        # TODO(bowdidge): Fix.
+        bitfield_layout_str += '      %d:%d: %s\n' % (f.StartBit() - min_end_bit,
+                                                      f.EndBit() - min_end_bit, 
                                                       f.name)
         new_field.body_comment = "Combines bitfields %s.\n%s" % (bitfield_name_str,
                                                                 bitfield_layout_str)
@@ -941,8 +957,7 @@ class DocBuilder:
       self.flit_crossing_field.tail_comment += '\n' + key_comment
 
     self.flit_crossing_field.crosses_flit = True
-    self.flit_crossing_field.end_flit = flit
-    self.flit_crossing_field.end_bit = end_bit
+    self.flit_crossing_field.ExtendSize(size)
 
     if self.bits_remaining < size:
       self.AddError('Continuation for multi-flit field "%s" too large: '
@@ -1037,7 +1052,10 @@ class DocBuilder:
       self.AddError('Start bit %d greater than end bit %d in field %s' %
                     (start_bit, end_bit, name))
 
-    new_field = Field(name, type, flit, start_bit, end_bit)
+    start_offset = flit * 64 + (FLIT_SIZE - start_bit - 1)
+    end_offset = flit * 64 + (FLIT_SIZE - end_bit - 1)
+    bit_size = end_offset - start_offset + 1
+    new_field = Field(name, type, start_offset, bit_size)
     new_field.line_number = self.current_line
 
     expected_width = type.BitWidth()
@@ -1063,7 +1081,7 @@ class DocBuilder:
     type_width = new_field.type.BitWidth()
     var_width = new_field.BitWidth()
     if (var_width < type_width and not new_field.type.IsScalar()
-        and new_field.end_bit != 0):
+        and end_bit != 0):
       # Using too few bits is only an error for arrays - scalar fields might always
       # be treated as bitfields.  Arrays that end on a flit could continue, so don't
       # flag an error in that case.

@@ -189,7 +189,7 @@ class CodeGenerator:
       key_comment = ' ' + utils.AsComment(field.key_comment)
      
     var_bits = ''
-    var_width = field.start_bit - field.end_bit + 1
+    var_width = field.BitWidth()
     type_width = field.type.BitWidth()
 
     if field.type.IsScalar() and type_width != var_width:
@@ -225,7 +225,7 @@ class HelperGenerator:
     struct: structure containing the fields that was removed.
     field: field combining the contents of the former fields.
     """
-    min_end_bit = min([f.end_bit for f in field.packed_fields])
+    min_end_bit = min([f.EndBit() for f in field.packed_fields])
 
     for old_field in field.packed_fields:
       # No point in creating macros for fields that shouldn't be accessed.
@@ -234,7 +234,7 @@ class HelperGenerator:
 
       ident = 'FUN_' + utils.AsUppercaseMacro('%s_%s' % (struct.name, 
                                                          old_field.name))
-      shift = '#define %s_S %s' % (ident, old_field.end_bit - min_end_bit)
+      shift = '#define %s_S %s' % (ident, old_field.EndBit() - min_end_bit)
       mask = '#define %s_M %s' % (ident, old_field.Mask())
       value = '#define %s_P(x) ((x) << %s_S)' % (ident, ident)
       get = '#define %s_G(x) (((x) >> %s_S) & %s_M)' % (ident, ident, ident)
