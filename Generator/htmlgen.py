@@ -144,7 +144,7 @@ class HTMLGenerator:
 
     # Draw a solid line at start of each flit to visually separate flits.
     solid = ''
-    if field.start_bit == 63:
+    if field.StartBit()== 63:
       solid = 'border-top: solid 1px'
     elif field.crosses_flit:
       solid = 'border-bottom: solid 1px'
@@ -152,12 +152,13 @@ class HTMLGenerator:
     out += '<tr style="%s">\n' % solid
     if field.crosses_flit:
       out += '  <td class="structBits" colspan=2>%d:%d-%d:%d</td>\n' % (
-        field.start_flit, field.start_bit, field.end_flit, field.end_bit)
+        field.StartFlit(), field.StartBit(), field.EndFlit(), field.EndBit())
       out += '  <td>%s</td>\n  <td>%s</td>\n' % (field.type.DeclarationType(),
                                                  field.name)
     else:
-      out += '  <td class="structBits">%d</td>\n' % field.start_flit
-      out += '  <td class="structBits">%d-%d</td>\n' % (field.start_bit, field.end_bit)
+      out += '  <td class="structBits">%d</td>\n' % field.StartFlit()
+      out += '  <td class="structBits">%d-%d</td>\n' % (field.StartBit(), 
+                                                        field.EndBit())
       out += '  <td>%s</td>\n  <td>%s</td>\n' % (field.type.DeclarationType(),
                                                  field.name)
 
