@@ -221,6 +221,10 @@ class CodegenEndToEnd(unittest.TestCase):
                   'uint8_t c);', out)
     # Did accessor macro get created?
     self.assertIn('#define FUN_FOO_B_P(x)', out)
+
+    # Check macros weren't created for reserved fields.
+    self.assertNotIn('#define FUN_FOO_RESERVED', out)
+
     # Did init function check range of bitfields?
     self.assertIn('assert(b < 0x4);', out)
     # Did bitfield get initialized?'

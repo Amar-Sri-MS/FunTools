@@ -229,7 +229,7 @@ class HelperGenerator:
 
     for old_field in field.packed_fields:
       # No point in creating macros for fields that shouldn't be accessed.
-      if old_field.name == "reserved":
+      if old_field.IsReserved():
         continue
 
       ident = 'FUN_' + utils.AsUppercaseMacro('%s_%s' % (struct.name, 
