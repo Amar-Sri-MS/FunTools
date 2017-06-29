@@ -93,7 +93,7 @@ class CodeGenerator:
     src_out += 'const char *%s_names[%d] = {\n' % (enum.name.lower(),
                                                    len(enum.variables))
     for enum_variable in enum.variables:
-      src_out += '\t"%s",  /* 0x%d */\n' % (enum_variable.name,
+      src_out += '\t"%s",  /* 0x%x */\n' % (enum_variable.name,
                                             enum_variable.value)
     src_out += '};\n'
     return (hdr_out, src_out)
@@ -103,7 +103,7 @@ class CodeGenerator:
     hdr_out = ''
     if enum_variable.body_comment != None:
       hdr_out += self.PrintIndent(utils.AsComment(enum_variable.body_comment)) + '\n'
-    hdr_out = self.Indent() + '%s = 0x%d,' % (enum_variable.name, enum_variable.value)
+    hdr_out = self.Indent() + '%s = 0x%x,' % (enum_variable.name, enum_variable.value)
     if enum_variable.key_comment != None:
       hdr_out += ' ' + utils.AsComment(enum_variable.key_comment)
     hdr_out += '\n'

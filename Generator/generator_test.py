@@ -267,6 +267,24 @@ class TestDocBuilder(unittest.TestCase):
     self.assertEqual('BBBBBB', var_b.name)
     self.assertEqual(2, var_b.value)
 
+  def testLargeEnum(self):
+    doc_builder = generator.DocBuilder()
+    contents = ['ENUM Commands', 'A = 31', 'BBBBBB=0x3f', 'END']
+    
+    errors = doc_builder.Parse('filename', contents)
+    doc = doc_builder.current_document
+  
+    self.assertEqual(1, len(doc.enums))
+    my_enum = doc.enums[0]
+    self.assertEqual(2, len(my_enum.variables))
+    var_a = my_enum.variables[0]
+    var_b = my_enum.variables[1]
+    self.assertEqual('A', var_a.name)
+    self.assertEqual(31, var_a.value)
+                    
+    self.assertEqual('BBBBBB', var_b.name)
+    self.assertEqual(63, var_b.value)
+
   def testBadEnumFields(self):
     doc_builder = generator.DocBuilder()
     self.assertIsNone(doc_builder.ParseEnumLine("A"))

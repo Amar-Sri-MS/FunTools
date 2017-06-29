@@ -107,6 +107,18 @@ class CodeGeneratorTest(unittest.TestCase):
     self.assertIn('const char *myenum_names', src)
     self.assertIn('"MY_COMMAND"', src)
 
+  def testPrintLargeEnum(self):
+    enum = generator.Enum('MyEnum')
+    var = generator.EnumVariable('MY_COMMAND', 31)
+    enum.variables.append(var)
+
+    (hdr, src) = self.printer.VisitEnum(enum)
+    self.assertIn('enum MyEnum {', hdr)
+    self.assertIn('MY_COMMAND = 0x1f,\n', hdr)
+    self.assertIn('extern const char *myenum_names', hdr)
+    self.assertIn('const char *myenum_names', src)
+    self.assertIn('"MY_COMMAND",  /* 0x1f */', src)
+
 
 class HelperGeneratorTest(unittest.TestCase):
   def testInitializeSimpleField(self):
