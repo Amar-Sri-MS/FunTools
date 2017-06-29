@@ -519,10 +519,16 @@ class Checker:
     last_start_bitflit = the_struct.fields[0].StartBitFlit() - 1
     last_end_bitflit = the_struct.fields[0].StartBitFlit() - 1
 
-    # TODO(bowdidge): Add checks for alignment.
+    
     for field in the_struct.fields:
       start_bitflit = field.StartBitFlit()
       end_bitflit = field.EndBitFlit()
+
+      if field.BitWidth() == field.type.BitWidth():
+        if start_bitflit % field.type.Alignment() != 0:
+          self.AddError(field, 'Field "%s" cannot be placed in a location that '
+                        'does not match its natural alignment.' % field.name)
+
 
       if (last_start_bitflit >= end_bitflit and
            last_end_bitflit >= end_bitflit):

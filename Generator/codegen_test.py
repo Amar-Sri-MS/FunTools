@@ -355,6 +355,26 @@ class CodegenEndToEnd(unittest.TestCase):
     self.assertIsNotNone(out)
     self.assertIn('struct fun_admin_cmd_common c;', out)
 
+  def testNoBitfieldForAlignedVariables(self):
+    doc_builder = generator.DocBuilder()
+    input = [
+      'STRUCT s',
+      '0 63:56 uint8_t a',
+      '0 55:54 uint8_t b',
+      '0 53:48 uint8_t c',
+      '0 47:40 uint8_t d',
+      'END'
+      ]
+    
+    out = generator.GenerateFile(False, generator.OutputStyleHeader, None,
+                                 input, 'foo.gen')
+
+    self.assertIsNotNone(out)
+    self.assertIn('uint8_t a;', out)
+    self.assertIn('uint8_t b:2;', out)
+    self.assertIn('uint8_t c:6;', out)
+    self.assertIn('uint8_t d;', out)
+
 class TestComments(unittest.TestCase):
 
   def testStructComments(self):

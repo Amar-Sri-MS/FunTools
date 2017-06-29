@@ -763,6 +763,32 @@ class CheckerTest(unittest.TestCase):
     self.assertIn('allow alignment', checker.errors[0])
 
 
+  def testFlagErrorIfMisalignFullType(self):
+    doc_builder = generator.DocBuilder()
+    # Even with the packed attribute, llvm still treats uint8_t with
+    # the same number of bits as the type as something to align.
+    # We can misalign uint8_t only with a bitfield, and only if the
+    # bitfield is smaller than the type.
+    input = [
+      'STRUCT s',
+      '0 63:60 uint8_t a',
+      '0 59:52 uint8_t b:8',
+      '0 51:44 uint8_t c',
+      '0 43:36 uint8_t d:8',
+      'END'
+      ]
+
+    doc_builder = generator.DocBuilder()
+    errors = doc_builder.Parse('filename', input)
+    self.assertIsNone(errors)
+  
+    checker = generator.Checker()
+    checker.VisitDocument(doc_builder.current_document)
+    self.assertEqual(3, len(checker.errors))
+    self.assertIn('"b" cannot be placed', checker.errors[0])
+    self.assertIn('"c" cannot be placed', checker.errors[1])
+    self.assertIn('"d" cannot be placed', checker.errors[2])
+    
   def testStructTooSmall(self):
     doc_builder = generator.DocBuilder()
     contents = ['STRUCT Foo',
