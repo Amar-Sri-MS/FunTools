@@ -746,7 +746,7 @@ class CheckerTest(unittest.TestCase):
     checker.VisitDocument(doc_builder.current_document)
     self.assertEqual(0, len(checker.errors))
 
-  def testCheckerAdjacentTypesDifferent(self):
+  def disableTestCheckerAdjacentTypesDifferent(self):
     doc_builder = generator.DocBuilder()
     contents = ['STRUCT Foo',
                 '0 3:2 uint16_t b',
