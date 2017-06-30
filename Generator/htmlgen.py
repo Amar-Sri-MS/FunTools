@@ -37,7 +37,8 @@ class HTMLGenerator:
     for enum in doc.enums:
       out += self.VisitEnum(enum)
     for struct in doc.structs:
-      out += self.VisitStruct(struct)
+      if not struct.inline:
+        out += self.VisitStruct(struct)
     for macro in doc.macros:
      pass
     out += '</body></html>'
@@ -73,34 +74,48 @@ class HTMLGenerator:
         out += '<p>%s</p>' % enum.tail_comment
     return out
 
-  def VisitStructInStruct(self, struct):
-    """Draws a struct as rows in a containing structure."""
+  def VisitRecordField(self, field, struct, level):
+    """Draws a struct as rows in a containing structure.
+    
+    struct is the """
     out = '<tr>\n'
 
     comment = ""
     if struct.key_comment:
       comment = struct.key_comment
 
-    out += '  <td class="structBits" colspan="2">0:63-%d:0</td>\n' % (
-      struct.Flits() - 1)
-    out += '  <td>%s %s</td>\n' % (struct.Tag(), struct.Name())
-    out += '  <td>%s</td>\n' % struct.variable
+    if field.StartFlit() != field.EndFlit():
+      out += '  <td class="structBits" colspan=2>%d:%d-%d:%d</td>\n' % (
+        field.StartFlit(), field.StartBit(), field.EndFlit(), field.EndBit())
+    else:
+      out += '  <td class="structBits">%d</td>\n' % field.StartFlit()
+      out += '  <td class="structBits">%d-%d</td>\n' % (field.StartBit(), 
+                                                        field.EndBit())
+    indent = '&nbsp;' * level
+    if not struct.inline:
+      out += '  <td>%s%s <a href="#%s">%s</a></td>\n' % (indent, struct.Tag(), 
+                                                        struct.Name(),
+                                                        struct.Name())
+    else:
+      out += '  <td>%s%s %s</td>\n' % (indent, struct.Tag(), struct.Name())
+    out += '  <td>%s</td>\n' % field.name
     out += '  <td>%s</td>\n' % comment
     out += '</tr>\n'
 
-    for s in struct.structs:
-      out += '<tr>\n'
-      out += '  <td class="structBits" colspan="2">0:63 - %d:%d</td>\n' % (
-        s.Flits() - 1, 0)
-      out += '  <td></td>\n'
-      out += '  <td>%s</td>\n' % s.name
-      out += '  <td>%s</td>\n' % s.key_comment
-      out += '</tr>\n'
+    if not struct.inline:
+      return out
+
+    for f in field.subfields:
+      if f.type.IsRecord():
+        out += self.VisitRecordField(f, f.type.base_type.node, level + 2)
+      else:
+        out += self.VisitField(f, level + 1)
     return out
 
   def VisitStruct(self, struct):
     # Generates HTML documentation for a specific structure.
     out = ''
+    out += '<a name="%s"></a>' % struct.name
     out += '<h3>struct %s:</h3>\n' % struct.name
     if struct.key_comment:
       out += '<p>%s</p>\n' % struct.key_comment
@@ -114,10 +129,10 @@ class HTMLGenerator:
     # TODO(bowdidge): Fields and nested structures or unions should be
     # displayed in order of index.
     for field in struct.fields:
-      out += self.VisitField(field)
-
-    for struct in struct.structs:
-      out += self.VisitStructInStruct(struct)
+      if field.type.IsRecord():
+        out += self.VisitRecordField(field, field.type.base_type.node, 0)
+      else:
+        out += self.VisitField(field, 0)
 
     # Tail comment comes after everything else.
     if struct.tail_comment:
@@ -130,13 +145,12 @@ class HTMLGenerator:
 
     return out
 
-  def VisitField(self, field, note=''):
+  def VisitField(self, field, level):
     """Generates HTML documentation for a specific field."""
     if len(field.packed_fields) != 0:
       out = ''
       for packed_field in field.packed_fields:
-        out += self.VisitField(packed_field,
-                               'In packed field %s.' % field.name)
+        out += self.VisitField(packed_field, level + 1)
       return out
 
     # Draw a solid line at start of each flit to visually separate flits.
@@ -146,24 +160,24 @@ class HTMLGenerator:
     elif field.crosses_flit:
       solid = 'border-bottom: solid 1px'
     out = ''
+
+    indent = '&nbsp;' * level
+
     out += '<tr style="%s">\n' % solid
     if field.crosses_flit:
       out += '  <td class="structBits" colspan=2>%d:%d-%d:%d</td>\n' % (
         field.StartFlit(), field.StartBit(), field.EndFlit(), field.EndBit())
-      out += '  <td>%s</td>\n  <td>%s</td>\n' % (field.type.DeclarationType(),
-                                                 field.name)
     else:
       out += '  <td class="structBits">%d</td>\n' % field.StartFlit()
       out += '  <td class="structBits">%d-%d</td>\n' % (field.StartBit(), 
                                                         field.EndBit())
-      out += '  <td>%s</td>\n  <td>%s</td>\n' % (field.type.DeclarationType(),
+    out += '  <td>%s%s</td>\n  <td>%s</td>\n' % (indent,
+                                                 field.type.DeclarationType(),
                                                  field.name)
 
     out += '<td class="description">\n'
     if field.key_comment:
       out += field.key_comment + '<br>'
-    if note:
-      out += '<i>' + note + '</i><br>'
     if field.body_comment:
         out += '<p>%s</p>/' % (field.body_comment)
     out += '</td>\n'

@@ -31,42 +31,41 @@ class CodeGeneratorTest(unittest.TestCase):
 
     self.assertIn('struct Foo {', header)
     # Should automatically create a field name for the struct.
-    self.assertIn('} foo_cmd;', header)
+    self.assertIn('};', header)
 
   def testPrintStructWithComments(self):
-    struct = generator.Struct('Foo', 'bar', False)
+    struct = generator.Struct('Foo', False)
     struct.key_comment = 'Key comment'
     struct.body_comment = 'body comment\nbody comment'
 
-    (header, src) = self.printer.VisitStruct(struct)
-    self.assertEquals('/* Key comment */\n'
-                      '/*\n'
-                      ' * body comment\n'
-                      ' * body comment\n'
-                      ' */\n'
-                      'struct Foo {\n'
-                      '} bar;\n', header)
+    header = self.printer.VisitStruct(struct)
+    self.assertIn('/* Key comment */', header)
+    self.assertIn('/*\n'
+                  ' * body comment\n'
+                  ' * body comment\n'
+                  ' */', header)
+    self.assertIn('struct Foo {', header)
+    self.assertIn('};', header)
 
   def testPrintArray(self):
     field = generator.Field('foo', generator.ArrayTypeForName('char', 8), 0, 64)
     code = self.printer.VisitField(field)
   
-    self.assertEquals('char foo[8];\n', code)
+    self.assertIn('char foo[8];\n', code)
 
 
   def testPrintUnion(self):
-    union = generator.Struct('Foo', '', True)
+    union = generator.Struct('Foo', True)
+    hdr = self.printer.VisitStruct(union)
     
-    code = self.printer.VisitStruct(union)
-
-    self.assertEquals(('union Foo {\n};\n', ''), code)
+    self.assertIn('union Foo {', hdr)
 
   def testPrintUnionWithVar(self):
-    union = generator.Struct('Foo', 'xxx', True)
-    
-    code = self.printer.VisitStruct(union)
+    union = generator.Struct('Foo', True)
+    hdr = self.printer.VisitStruct(union)
 
-    self.assertEquals(('union Foo {\n} xxx;\n', ''), code)
+    self.assertIn('union Foo {', hdr)
+    self.assertIn('};', hdr)
 
   def testPrintField(self):
     field = generator.Field('foo', generator.TypeForName('uint8_t'), 0, 4)
@@ -122,7 +121,7 @@ class CodeGeneratorTest(unittest.TestCase):
 class HelperGeneratorTest(unittest.TestCase):
   def testInitializeSimpleField(self):
     gen = codegen.HelperGenerator()
-    s = generator.Struct('Foo', 'f1', False)
+    s = generator.Struct('Foo', False)
     f = generator.Field('a1', generator.TypeForName('char'), 0, 8)
 
     statement = gen.GenerateInitializer(s, f, 'pointer.')
@@ -131,7 +130,7 @@ class HelperGeneratorTest(unittest.TestCase):
 
   def testInitializeBitfield(self):
     gen = codegen.HelperGenerator()
-    s = generator.Struct('Foo', 'f1', False)
+    s = generator.Struct('Foo', False)
     f = generator.Field('a1', generator.TypeForName('char'), 0, 2)
 
     statement = gen.GenerateInitializer(s, f, '')
@@ -140,7 +139,7 @@ class HelperGeneratorTest(unittest.TestCase):
 
   def testInitializePackedField(self):
     gen = codegen.HelperGenerator()
-    s = generator.Struct('Foo', 'f1', False)
+    s = generator.Struct('Foo', False)
     f = generator.Field('a', generator.TypeForName('char'), 0, 8)
     f1 = generator.Field('a1', generator.TypeForName('char'), 8, 4)
     f2 = generator.Field('a2', generator.TypeForName('char'), 12, 4)
@@ -152,7 +151,7 @@ class HelperGeneratorTest(unittest.TestCase):
 
   def testInitializePackedFieldWithAllCapStructureName(self):
     gen = codegen.HelperGenerator()
-    s = generator.Struct('ffe_access_command', 'f1', False)
+    s = generator.Struct('ffe_access_command', False)
     f = generator.Field('a', generator.TypeForName('char'), 0, 8)
     f1 = generator.Field('a1', generator.TypeForName('char'), 0, 4)
     f2 = generator.Field('a2', generator.TypeForName('char'), 4, 4)
@@ -166,7 +165,7 @@ class HelperGeneratorTest(unittest.TestCase):
 
   def testCreateSimpleInitializer(self):
     gen = codegen.HelperGenerator()
-    s = generator.Struct('Foo', 'f1', False)
+    s = generator.Struct('Foo', False)
     f = generator.Field('a1', generator.TypeForName('char'), 0, 8)
     s.fields = [f]
 
@@ -181,7 +180,7 @@ class HelperGeneratorTest(unittest.TestCase):
 
   def testNoCreateArrayInitializer(self):
     gen = codegen.HelperGenerator()
-    s = generator.Struct('Foo', 'f1', False)
+    s = generator.Struct('Foo', False)
     f = generator.Field('a1', generator.ArrayTypeForName('char', 8), 0, 64)
     s.fields = [f]
 
@@ -366,7 +365,7 @@ class CodegenEndToEnd(unittest.TestCase):
 
     out = generator.GenerateFile(True, generator.OutputStyleHeader, None,
                                  input, 'foo.gen')
-
+    print out
     self.assertIsNotNone(out)
     self.assertIn('struct fun_admin_cmd_common c;', out)
 
@@ -407,12 +406,11 @@ class TestComments(unittest.TestCase):
     out = generator.GenerateFile(True, generator.OutputStyleHeader, None,
                                  input, 'foo.gen')
 
-    self.assertIn('/* Body comment. */\n'
-                  'struct fun_admin_cmd_common {\n'
-                  '\t/* Field comment. */\n'
-                  '\tuint64_t common_opcode; /* Key comment */\n'
-                  '\t/* Tail comment. */\n'
-                  '};\n', out)
+    self.assertIn('/* Body comment. */', out)
+    self.assertIn('struct fun_admin_cmd_common {', out)
+    self.assertIn('/* Field comment. */', out)
+    self.assertIn('uint64_t common_opcode; /* Key comment */', out)
+    self.assertIn('/* Tail comment. */', out)
 
   def testUnionComments(self):
     doc_builder = generator.DocBuilder()
@@ -448,19 +446,19 @@ class TestComments(unittest.TestCase):
       '// Enum comment.',
       'ENUM values',
       '// Enum body comment',
-      'A = 1 // Enum key comment',
-      'B = 2 // Enum key comment',
+      'A = 1 // Enum key comment 1',
+      'B = 2 // Enum key comment 2',
       '// Tail comment',
       'END']
 
     out = generator.GenerateFile(True, generator.OutputStyleHeader, None,
                                  input, 'foo.gen')
-    self.assertIn('enum values {\n'
-                  '\tA = 0x1, /* Enum key comment */\n'
-                  '\tB = 0x2, /* Enum key comment */\n'
-                  '\t/* Tail comment */\n'
-                  '};\n', out)
-
+    self.assertIn('enum values {', out)
+    self.assertIn('A = 0x1,' ,out)
+    self.assertIn('/* Enum key comment 1 */', out)
+    self.assertIn('B = 0x2,', out)
+    self.assertIn('/* Enum key comment 2 */', out)
+    self.assertIn('/* Tail comment */', out)
 
 
 class TestIndentString(unittest.TestCase):
