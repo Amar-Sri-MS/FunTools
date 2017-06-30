@@ -42,14 +42,6 @@ class TestParseInt(unittest.TestCase):
     self.assertIsNone(utils.ParseInt("0x0x"))
 
 
-class TestStripComment(unittest.TestCase):
-  def testSimple(self):
-     self.assertEqual("Foo", utils.StripComment("// Foo"))
-     self.assertEqual("Foo", utils.StripComment("/* Foo */"))
-     self.assertEqual("", utils.StripComment("//"))
-     self.assertEqual("", utils.StripComment("/* */"))
-                    
-
 class TestParseBitSpec(unittest.TestCase):
   def testSimple(self):
     self.assertEqual((1, 63, 50), utils.ParseBitSpec('1 63:50'))

@@ -801,7 +801,7 @@ class DocBuilder:
 
     current_struct = Struct(identifier, False)
     current_struct.line_number = self.current_line
-    current_struct.key_comment = utils.StripComment(key_comment)
+    current_struct.key_comment = self.StripKeyComment(key_comment)
 
     if len(self.current_comment) > 0:
       current_struct.body_comment = self.current_comment
@@ -838,7 +838,7 @@ class DocBuilder:
     name = utils.RemoveWhitespace(name)
     current_enum = Enum(name)
     current_enum.line_number = self.current_line
-    current_enum.key_comment = utils.StripComment(key_comment)
+    current_enum.key_comment = self.StripKeyComment(key_comment)
 
     if len(self.current_comment) > 0:
       current_enum.body_comment = self.current_comment
@@ -873,7 +873,7 @@ class DocBuilder:
     self.current_comment = ''
 
     if match.group(3):
-        new_enum.key_comment = utils.StripComment(match.group(3))
+        new_enum.key_comment = self.StripKeyComment(match.group(3))
     return new_enum
 
   def ParseLine(self, line):
@@ -883,7 +883,7 @@ class DocBuilder:
     """
     (state, containing_struct) = self.stack[len(self.stack)-1]
     if line.startswith('//'):
-      self.current_comment += utils.StripComment(line)
+      self.current_comment += self.StripKeyComment(line)
     elif state == DocBuilderTopLevel:
       return
     elif state == DocBuilderStateEnum:
@@ -941,13 +941,36 @@ class DocBuilder:
     self.current_document.structs.append(current_union)
 
     self.base_types[identifier] = BaseType(identifier, FAKE_WIDTH, current_union)
-
     if state != DocBuilderTopLevel:
       # Inline union.  Define the field.
       new_field = Field(variable, self.MakeType(identifier), 0, 0)
       new_field.line_number = self.current_line
       containing_object.fields.append(new_field)
       current_union.inline = True
+
+  def StripKeyComment(self, the_str):
+    """Removes C commenting from the comment at the end of a line.
+
+    Returns None if a valid comment was not found.
+    """
+    the_str = the_str.lstrip(' \t\n')
+    if the_str.startswith('//'):
+      return the_str[2:].lstrip(' ').rstrip(' ')
+
+    if len(the_str) == 0:
+      return None
+
+    if not the_str.startswith('/*'):
+      self.AddError('Unexpected stuff where comment should be: "%s".' % the_str)
+      return None
+
+    # Match /* */ with anything in between and whitespace after.
+    match = re.match('/\*\s*(.*)\*/\s*', the_str)
+    if not match:
+      self.AddError('Badly formatted comment "%s"' % the_str)
+      return None
+
+    return match.group(1).lstrip(' ').rstrip(' ')
 
   def ParseMultiFlitFieldLine(self, line):
     """Parse the current line as if it were a multi-flit line.
@@ -1109,7 +1132,7 @@ class DocBuilder:
     if key_comment == '':
       key_comment = None
     else:
-      key_comment = utils.StripComment(key_comment)
+      key_comment = self.StripKeyComment(key_comment)
     new_field.key_comment = key_comment
 
     if len(self.current_comment) > 0:

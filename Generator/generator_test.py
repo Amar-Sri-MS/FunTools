@@ -436,7 +436,7 @@ class TestDocBuilder(unittest.TestCase):
     self.assertEqual(1, len(builder.current_document.structs))
 
     the_struct = builder.current_document.structs[0]
-    self.assertIsNone(the_struct.key_comment)
+    self.assertEqual(None, the_struct.key_comment)
     self.assertEqual('Body comment\n', the_struct.body_comment)
     self.assertEqual('Tail comment\n', the_struct.tail_comment)
 
@@ -536,6 +536,32 @@ class TestDocBuilder(unittest.TestCase):
     
     self.assertEqual(128, common.BitWidth())
     self.assertEqual(192, cmd.BitWidth())
+
+
+class TestStripComment(unittest.TestCase):
+  def testSimple(self):
+    doc_builder = generator.DocBuilder()
+    self.assertEqual("Foo", doc_builder.StripKeyComment("// Foo"))
+    self.assertEqual("Foo", doc_builder.StripKeyComment("/* Foo */"))
+    self.assertEqual("", doc_builder.StripKeyComment("//"))
+    self.assertEqual("", doc_builder.StripKeyComment("/* */"))
+
+  def testNotTerminated(self):
+    doc_builder = generator.DocBuilder()
+    doc_builder.current_line = 15
+
+    self.assertEqual(None, doc_builder.StripKeyComment('/* foo bar'))
+    self.assertEquals(1, len(doc_builder.errors))
+    self.assertIn('15: Badly formatted comment',
+                  doc_builder.errors[0])
+
+  def testNotStarted(self):
+    doc_builder = generator.DocBuilder()
+    self.assertEqual(None, doc_builder.StripKeyComment('foo bar */'))
+    self.assertEquals(1, len(doc_builder.errors))
+    self.assertIn('0: Unexpected stuff where comment should be',
+                     doc_builder.errors[0])
+                                         
 
 class PackerTest(unittest.TestCase):
   def testDontPackArgumentsFittingOwnType(self):
@@ -794,9 +820,9 @@ class CheckerTest(unittest.TestCase):
     input = [
       'STRUCT s',
       '0 63:60 uint8_t a',
-      '0 59:52 uint8_t b:8',
+      '0 59:52 uint8_t b',
       '0 51:44 uint8_t c',
-      '0 43:36 uint8_t d:8',
+      '0 43:36 uint8_t d',
       'END'
       ]
 
