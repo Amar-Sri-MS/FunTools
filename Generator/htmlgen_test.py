@@ -54,7 +54,6 @@ class HTMLGeneratorTest(unittest.TestCase):
             ]
         out = generator.GenerateFile(True, generator.OutputStyleHTML, None,
                                      input, 'foo.gen')
-        print out
         self.assertIsNotNone(out)
 
 
