@@ -172,9 +172,8 @@ class HelperGeneratorTest(unittest.TestCase):
   
     self.assertEqual('extern void init(struct MyStruct* s, char a1);\n',
                      declaration)
-    self.assertEqual('void init(struct MyStruct* s, char a1) {\n'
-                     '\ts->foo.a1 = a1;\n\n'
-                     '}', definition)
+    self.assertIn('void init(struct MyStruct* s, char a1) {', definition)
+    self.assertIn('\ts->foo.a1 = a1;\n', definition)
 
   def testNoCreateArrayInitializer(self):
     gen = codegen.HelperGenerator()
@@ -479,6 +478,28 @@ class TestComments(unittest.TestCase):
     out = generator.GenerateFile(True, generator.OutputStyleHeader, None,
                                  contents, 'foo.gen')
     self.assertIn('struct Foo f[2];', out)
+
+  def testNameListCorrectlyHandlesEnumVariablesWithGaps(self):
+    contents = ['ENUM A',
+                'A = 1',
+                'C = 3',
+                'D = 4',
+                'E = 5',
+                'F = 7',
+                'G = 10'
+                ]
+    out = generator.GenerateFile(True, generator.OutputStyleHeader, None,
+                                 contents, 'foo.gen')
+
+    self.assertIn('"undefined",  /* 0x0 */', out)
+    self.assertIn('"A",  /* 0x1 */', out)
+    self.assertIn('"undefined",  /* 0x2 */', out)
+    self.assertIn('"C",  /* 0x3 */', out)
+    self.assertIn('"E",  /* 0x5 */', out)
+    self.assertIn('"undefined",  /* 0x6 */', out)
+    self.assertIn('"G",  /* 0xa */', out)
+    print out
+
 
 
 class TestIndentString(unittest.TestCase):
