@@ -387,21 +387,23 @@ class TestDocBuilder(unittest.TestCase):
     builder.ParseStructStart('STRUCT Foo')
     builder.ParseUnionStart('UNION Bar u')
     builder.ParseLine('0 63:0 uint64_t packet')
-    builder.ParseEnd('END')
-    builder.ParseUnionStart('UNION Baz u')
-    builder.ParseLine('0 63:0 uint64_t packet')
+    builder.ParseLine('0 63:0 uint64_t buf')
     builder.ParseEnd('END')
     builder.ParseEnd('END')
 
     doc = builder.current_document
-    self.assertEqual(1, len(doc.structs))
+    self.assertEqual(2, len(doc.structs))
 
     firstStruct = doc.structs[0]
-    self.assertEqual(0, len(firstStruct.fields))
-    self.assertEqual(2, len(firstStruct.structs))
 
-    firstUnion = firstStruct.structs[0]
-    firstField = firstUnion.fields[0]
+    self.assertEqual('Foo', firstStruct.Name())
+    self.assertEqual(1, len(firstStruct.fields))
+    self.assertEqual('u', firstStruct.fields[0].name)
+
+    union = builder.current_document.structs[1]
+    self.assertEqual('Bar', union.Name())
+
+    firstField = union.fields[0]
     self.assertEqual(0, firstField.StartFlit())
     self.assertEqual(0, firstField.EndFlit())
     self.assertEqual(63, firstField.StartBit())
