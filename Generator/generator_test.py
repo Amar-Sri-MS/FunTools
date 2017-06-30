@@ -863,6 +863,31 @@ class CheckerTest(unittest.TestCase):
     self.assertEqual(1, len(errors))
     self.assertIn('Field larger than type', errors[0])
 
+  def testArrayOfStructs(self):
+    doc_builder = generator.DocBuilder()
+    contents = ['STRUCT Foo',
+                '0 63:32 uint64_t a',
+                'END',
+                'STRUCT BAR',
+                '0 63:0 Foo f[2]',
+                'END']
+
+    errors = doc_builder.Parse('filename', contents)
+    self.assertEqual(None, errors)
+
+    checker = generator.Checker()
+    checker.VisitDocument(doc_builder.current_document)
+    self.assertEqual(0, len(checker.errors))
+
+    self.assertEqual(2, len(doc_builder.current_document.structs))
+    bar = doc_builder.current_document.structs[1]
+
+    self.assertEqual(1, len(bar.fields))
+
+    f = bar.fields[0]
+    self.assertTrue(f.type.IsRecord())
+    self.assertTrue(f.type.IsArray())
+
   def testFlagOutOfOrder(self):
     doc_builder = generator.DocBuilder()
     contents = ['STRUCT Foo',

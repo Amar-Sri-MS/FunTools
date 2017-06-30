@@ -88,7 +88,6 @@ class CodeGeneratorTest(unittest.TestCase):
     field = generator.Field('foo', generator.TypeForName('uint8_t'), 0, 8)
     long_comment = 'long long long long long long long long long long comment'
     field.body_comment = long_comment
-    print('long comment is %d' %len(long_comment))
     field.bodyuser_comment = long_comment
     code = self.printer.VisitField(field)
     self.assertEqual('/* %s */\nuint8_t foo;\n' % long_comment, code)
@@ -116,7 +115,6 @@ class CodeGeneratorTest(unittest.TestCase):
     self.assertIn('extern const char *myenum_names', hdr)
     self.assertIn('const char *myenum_names', src)
     self.assertIn('"MY_COMMAND",  /* 0x1f */', src)
-
 
 class HelperGeneratorTest(unittest.TestCase):
   def testInitializeSimpleField(self):
@@ -346,7 +344,6 @@ class CodegenEndToEnd(unittest.TestCase):
     out = generator.GenerateFile(True, generator.OutputStyleHeader, None,
                                  input, 'foo.gen')
     self.assertIsNotNone(out)
-    print out
 
   def testMultiFlitNestedStruct(self):
     doc_builder = generator.DocBuilder()
@@ -365,7 +362,6 @@ class CodegenEndToEnd(unittest.TestCase):
 
     out = generator.GenerateFile(True, generator.OutputStyleHeader, None,
                                  input, 'foo.gen')
-    print out
     self.assertIsNotNone(out)
     self.assertIn('struct fun_admin_cmd_common c;', out)
 
@@ -459,6 +455,30 @@ class TestComments(unittest.TestCase):
     self.assertIn('B = 0x2,', out)
     self.assertIn('/* Enum key comment 2 */', out)
     self.assertIn('/* Tail comment */', out)
+
+  def testArrayOfStructs(self):
+    contents = ['STRUCT Foo',
+                '0 63:32 uint64_t a',
+                'END',
+                'STRUCT BAR',
+                '0 63:0 Foo f[2]',
+                'END']
+
+    out = generator.GenerateFile(True, generator.OutputStyleHeader, None,
+                                 contents, 'foo.gen')
+    self.assertIn('struct Foo f[2];', out)
+
+  def disableTestUnknownArrayOfStructs(self):
+    contents = ['STRUCT Foo',
+                '0 63:32 uint64_t a',
+                'END',
+                'STRUCT BAR',
+                '0 0:0 Foo f[0]',
+                'END']
+
+    out = generator.GenerateFile(True, generator.OutputStyleHeader, None,
+                                 contents, 'foo.gen')
+    self.assertIn('struct Foo f[2];', out)
 
 
 class TestIndentString(unittest.TestCase):
