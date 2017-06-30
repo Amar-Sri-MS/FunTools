@@ -22,19 +22,6 @@ def RemoveWhitespace(the_str):
     return ''
   return re.sub('\s+', '', the_str)
 
-def StripComment(the_str):
-  the_str = the_str.lstrip(' ')
-  # Removes any C commenting from the comment so it can be reformatted as needed.
-  if the_str.startswith('//'):
-    return the_str[2:].lstrip(' ').rstrip(' ')
-  if the_str.startswith('/*'):
-    # Match /* */ with anything in between and whitespace after.
-    match = re.match('/\*\s*(.*)\*/\s*', the_str)
-    if not match:
-      print('Badly formatted comment "%s"' % the_str)
-      return the_str
-    return match.group(1).lstrip(' ').rstrip(' ')
-    
 def AsComment(str):
   """Returns string inside a C comment, removing any trailing whitespace."""
   str = str.rstrip(' \n\t')

@@ -51,7 +51,7 @@ STRUCT GatherListFragmentHeader
     STRUCT GatherListOperateFragment operate_cmd
       0 63:62 uint8_t opcode
       0 61:56 uint8_t source /* accelerator number and function number. */
-      0 55:48 uint8_t sizeOfData (in 8B words in addition to current 8B)
+      0 55:48 uint8_t sizeOfData /* in 8B words in addition to current 8B */
       // Followed by 6-126B of data.
     END
     // Scatter data. Opcode will be OPCODE_SCATTER
