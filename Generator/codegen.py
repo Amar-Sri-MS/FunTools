@@ -102,9 +102,15 @@ class CodeGenerator:
 
     src_out += 'const char *%s_names[%d] = {\n' % (enum.name.lower(),
                                                    len(enum.variables))
+    next_value = 0
     for enum_variable in enum.variables:
+      current_value = enum_variable.value
+      while (next_value < current_value):
+        src_out += '\t"undefined",  /* 0x%x */\n' % next_value
+        next_value += 1
       src_out += '\t"%s",  /* 0x%x */\n' % (enum_variable.name,
                                             enum_variable.value)
+      next_value = current_value + 1
     src_out += '};\n'
     return (hdr_out, src_out)
 
@@ -321,14 +327,16 @@ class HelperGenerator:
       inits.append(self.GenerateInitializer(the_struct, field, accessor_prefix))
 
     validate_block = '\n'.join(validates)
+    if validate_block:
+      validate_block += '\n'
 
     init_declaration = 'extern void %s(%s);\n' % (function_name,
                                                   ', '.join(arg_list))
       
-    init_definition = 'void %s(%s) {\n%s%s\n\n}' % (function_name,
-                                                    ', '.join(arg_list),
-                                                    validate_block,
-                                                    '\n'.join(inits))
+    init_definition = 'void %s(%s) {\n%s%s\n}' % (function_name,
+                                                  ', '.join(arg_list),
+                                                  validate_block,
+                                                  '\n'.join(inits))
     return (init_declaration, init_definition)
 
   def GenerateHelpersForStruct(self, the_struct):
