@@ -27,6 +27,10 @@ import utils
 # Default size of a word.  Input is specified in flits and bit offsets.
 FLIT_SIZE = 64
 
+# Fake value for width of field, used when we can't define the value
+# correctly on creation.
+FAKE_WIDTH = 8675309
+
 def BitFlitString(offset):
   """Returns a human-readable string describing the offset as flit/bit."""
   return '%d:%d' % (offset / FLIT_SIZE, 63 - offset % FLIT_SIZE)
@@ -807,7 +811,8 @@ class DocBuilder:
 
     self.current_document.structs.append(current_struct)
 
-    self.base_types[identifier] = BaseType(identifier, 900, current_struct)
+    # Add the struct to the symbol table.  We don't know
+    self.base_types[identifier] = BaseType(identifier, FAKE_WIDTH, current_struct)
 
     if state != DocBuilderTopLevel:
       new_field = Field(variable_name, self.MakeType(identifier), 0, 0)
@@ -935,9 +940,8 @@ class DocBuilder:
     self.stack.append((DocBuilderStateStruct, current_union))
     self.current_document.structs.append(current_union)
 
-    self.base_types[identifier] = BaseType(identifier,
-                                                   900,
-                                                   current_union)
+    self.base_types[identifier] = BaseType(identifier, FAKE_WIDTH, current_union)
+
     if state != DocBuilderTopLevel:
       # Inline union.  Define the field.
       new_field = Field(variable, self.MakeType(identifier), 0, 0)
