@@ -480,6 +480,13 @@ class Struct(Node):
     end_offset = last_field.EndOffset()
     return end_offset + 1
 
+  def StartOffset(self):
+    """Returns beginning offset for structure."""
+    if not self.fields:
+      return 0
+
+    return min([f.StartOffset() for f in self.fields])
+
   def Flits(self):
     """Returns the number of flits this structure would occupy.
 
@@ -918,7 +925,7 @@ class DocBuilder:
     self.current_comment = ''
     if state != DocBuilderTopLevel:
       new_field = containing_object.fields[-1]
-      new_field.offset_start = 0
+      new_field.offset_start = current_object.StartOffset()
       new_field.bit_width = current_object.BitWidth()
       new_field.CreateSubfields()
 
