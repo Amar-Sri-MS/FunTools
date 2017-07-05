@@ -32,7 +32,6 @@ class HTMLGeneratorTest(unittest.TestCase):
 
         out = generator.GenerateFile(True, generator.OutputStyleHTML, None,
                                      input, 'foo.gen')
-        print out
         self.assertIsNotNone(out)
         self.assertIn('<h3>struct A:</h3>\n'
                       '<p>Key comment for struct A.</p>\n'
@@ -40,6 +39,23 @@ class HTMLGeneratorTest(unittest.TestCase):
         self.assertIn('Body comment for a1.', out)
         self.assertIn('Key comment for a1.', out)
         self.assertIn('Tail comment for A', out)
+
+    def testPrintSubfields(self):
+        input = [
+            'STRUCT fun_admin_cmd_common',
+            '0 63:00 uint64_t common_opcode',
+            '1 63:00 uint64_t arg',
+            'END',
+            'STRUCT fun_admin_epsq_cmd',
+            '0 63:00 fun_admin_cmd_common c',
+            '1 63:00 ...',
+            '2 63:0 uint64_t arg2',
+            'END'
+            ]
+        out = generator.GenerateFile(True, generator.OutputStyleHTML, None,
+                                     input, 'foo.gen')
+        self.assertIsNotNone(out)
+
 
 
 if __name__ == '__main__':

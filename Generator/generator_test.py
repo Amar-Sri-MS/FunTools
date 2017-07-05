@@ -77,8 +77,8 @@ class TestDocBuilder(unittest.TestCase):
     firstField = firstStruct.fields[0]
     self.assertEqual(0, firstField.StartFlit())
     self.assertEqual(0, firstField.EndFlit())
-    self.assertEqual(63, firstField.start_bit)
-    self.assertEqual(0, firstField.end_bit)
+    self.assertEqual(63, firstField.StartBit())
+    self.assertEqual(0, firstField.EndBit())
     self.assertEqual('packet', firstField.name)
 
     self.assertEqual(1, firstStruct.Flits())
@@ -365,8 +365,8 @@ class TestDocBuilder(unittest.TestCase):
 
     self.assertEqual(2, field.StartFlit())
     self.assertEqual(2, field.EndFlit())
-    self.assertEqual(38, field.start_bit)
-    self.assertEqual(38, field.end_bit)
+    self.assertEqual(38, field.StartBit())
+    self.assertEqual(38, field.EndBit())
 
   def testMissingCommentIsNone(self):
     doc_builder = generator.DocBuilder()
@@ -387,25 +387,27 @@ class TestDocBuilder(unittest.TestCase):
     builder.ParseStructStart('STRUCT Foo')
     builder.ParseUnionStart('UNION Bar u')
     builder.ParseLine('0 63:0 uint64_t packet')
-    builder.ParseEnd('END')
-    builder.ParseUnionStart('UNION Baz u')
-    builder.ParseLine('0 63:0 uint64_t packet')
+    builder.ParseLine('0 63:0 uint64_t buf')
     builder.ParseEnd('END')
     builder.ParseEnd('END')
 
     doc = builder.current_document
-    self.assertEqual(1, len(doc.structs))
+    self.assertEqual(2, len(doc.structs))
 
     firstStruct = doc.structs[0]
-    self.assertEqual(0, len(firstStruct.fields))
-    self.assertEqual(2, len(firstStruct.unions))
 
-    firstUnion = firstStruct.unions[0]
-    firstField = firstUnion.fields[0]
+    self.assertEqual('Foo', firstStruct.Name())
+    self.assertEqual(1, len(firstStruct.fields))
+    self.assertEqual('u', firstStruct.fields[0].name)
+
+    union = builder.current_document.structs[1]
+    self.assertEqual('Bar', union.Name())
+
+    firstField = union.fields[0]
     self.assertEqual(0, firstField.StartFlit())
     self.assertEqual(0, firstField.EndFlit())
-    self.assertEqual(63, firstField.start_bit)
-    self.assertEqual(0, firstField.end_bit)
+    self.assertEqual(63, firstField.StartBit())
+    self.assertEqual(0, firstField.EndBit())
     self.assertEqual('packet', firstField.name)
 
   def testParseCommentInField(self):
@@ -434,7 +436,7 @@ class TestDocBuilder(unittest.TestCase):
     self.assertEqual(1, len(builder.current_document.structs))
 
     the_struct = builder.current_document.structs[0]
-    self.assertIsNone(the_struct.key_comment)
+    self.assertEqual(None, the_struct.key_comment)
     self.assertEqual('Body comment\n', the_struct.body_comment)
     self.assertEqual('Tail comment\n', the_struct.tail_comment)
 
@@ -469,10 +471,10 @@ class TestDocBuilder(unittest.TestCase):
     long_field = struct.fields[1]
 
     self.assertTrue(long_field.crosses_flit)
-    self.assertEqual(55, long_field.start_bit)
-    self.assertEqual(0, long_field.end_bit)
-    self.assertEqual(0, long_field.start_flit)
-    self.assertEqual(2, long_field.end_flit)
+    self.assertEqual(55, long_field.StartBit())
+    self.assertEqual(0, long_field.EndBit())
+    self.assertEqual(0, long_field.StartFlit())
+    self.assertEqual(2, long_field.EndFlit())
 
   def testNestedStruct(self):
     doc_builder = generator.DocBuilder()
@@ -535,6 +537,32 @@ class TestDocBuilder(unittest.TestCase):
     self.assertEqual(128, common.BitWidth())
     self.assertEqual(192, cmd.BitWidth())
 
+
+class TestStripComment(unittest.TestCase):
+  def testSimple(self):
+    doc_builder = generator.DocBuilder()
+    self.assertEqual("Foo", doc_builder.StripKeyComment("// Foo"))
+    self.assertEqual("Foo", doc_builder.StripKeyComment("/* Foo */"))
+    self.assertEqual("", doc_builder.StripKeyComment("//"))
+    self.assertEqual("", doc_builder.StripKeyComment("/* */"))
+
+  def testNotTerminated(self):
+    doc_builder = generator.DocBuilder()
+    doc_builder.current_line = 15
+
+    self.assertEqual(None, doc_builder.StripKeyComment('/* foo bar'))
+    self.assertEquals(1, len(doc_builder.errors))
+    self.assertIn('15: Badly formatted comment',
+                  doc_builder.errors[0])
+
+  def testNotStarted(self):
+    doc_builder = generator.DocBuilder()
+    self.assertEqual(None, doc_builder.StripKeyComment('foo bar */'))
+    self.assertEquals(1, len(doc_builder.errors))
+    self.assertIn('0: Unexpected stuff where comment should be',
+                     doc_builder.errors[0])
+                                         
+
 class PackerTest(unittest.TestCase):
   def testDontPackArgumentsFittingOwnType(self):
     doc_builder = generator.DocBuilder()
@@ -564,8 +592,8 @@ class PackerTest(unittest.TestCase):
     field = doc.structs[0].fields[0]
     # Packer doesn't change name.
     self.assertEqual('packet', field.name)
-    self.assertEqual(31, field.start_bit)
-    self.assertEqual(0, field.end_bit)
+    self.assertEqual(31, field.StartBit())
+    self.assertEqual(0, field.EndBit())
 
   def testPackBitfields(self):
     doc_builder = generator.DocBuilder()
@@ -593,6 +621,9 @@ class PackerTest(unittest.TestCase):
     self.assertEqual('another_char', doc.structs[0].fields[2].name)
     self.assertEqual('third_char', doc.structs[0].fields[3].name)
     self.assertEqual('value', doc.structs[0].fields[4].name)
+
+    # Make sure the comment describing the packed layout appears.
+    self.assertIn('6:5: foo', doc.structs[0].fields[1].body_comment)
 
   def testTypeChanges(self):
     doc_builder = generator.DocBuilder()
@@ -656,7 +687,6 @@ class PackerTest(unittest.TestCase):
     """Tests that two sets of packed fields separated by a non-packed
     variable are not merged.
     """
-    
     doc_builder = generator.DocBuilder()
     contents = [
       'STRUCT Foo',
@@ -676,7 +706,7 @@ class PackerTest(unittest.TestCase):
     errors = p.VisitDocument(doc)
     
     self.assertTrue(1, len(errors))
-    self.assertIn('Fields are 16 bits, type is 8 bits.', errors[0])
+    self.assertIn('Fields are 18 bits, type is 8 bits.', errors[0])
 
   def testReservedFieldIgnoredWhenPacking(self):
     doc_builder = generator.DocBuilder()
@@ -790,9 +820,9 @@ class CheckerTest(unittest.TestCase):
     input = [
       'STRUCT s',
       '0 63:60 uint8_t a',
-      '0 59:52 uint8_t b:8',
+      '0 59:52 uint8_t b',
       '0 51:44 uint8_t c',
-      '0 43:36 uint8_t d:8',
+      '0 43:36 uint8_t d',
       'END'
       ]
 
@@ -832,6 +862,31 @@ class CheckerTest(unittest.TestCase):
     errors = doc_builder.Parse('filename', contents)
     self.assertEqual(1, len(errors))
     self.assertIn('Field larger than type', errors[0])
+
+  def testArrayOfStructs(self):
+    doc_builder = generator.DocBuilder()
+    contents = ['STRUCT Foo',
+                '0 63:32 uint64_t a',
+                'END',
+                'STRUCT BAR',
+                '0 63:0 Foo f[2]',
+                'END']
+
+    errors = doc_builder.Parse('filename', contents)
+    self.assertEqual(None, errors)
+
+    checker = generator.Checker()
+    checker.VisitDocument(doc_builder.current_document)
+    self.assertEqual(0, len(checker.errors))
+
+    self.assertEqual(2, len(doc_builder.current_document.structs))
+    bar = doc_builder.current_document.structs[1]
+
+    self.assertEqual(1, len(bar.fields))
+
+    f = bar.fields[0]
+    self.assertTrue(f.type.IsRecord())
+    self.assertTrue(f.type.IsArray())
 
   def testFlagOutOfOrder(self):
     doc_builder = generator.DocBuilder()
