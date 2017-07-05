@@ -904,6 +904,10 @@ class DocBuilder:
 
   def ParseEnd(self, line):
     # Handle an END directive.
+    if len(self.stack) < 2:
+      self.AddError('END without matching STRUCT, UNION, or ENUM')
+      return None
+      
     (_, current_object) = self.stack[-1]
     self.stack.pop()
     (state, containing_object) = self.stack[-1]

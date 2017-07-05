@@ -791,6 +791,19 @@ class PackerTest(unittest.TestCase):
 
     self.assertEqual(2, len(doc.structs[0].fields))
 
+  def testTooManyEnds(self):
+    doc_builder = generator.DocBuilder()
+    contents = ['STRUCT Foo',
+                '0 63:0 uint64_t cmd',
+                'STRUCT Bar',
+                '1 63:0 uint64_t cmd',
+                'END',
+                'END',
+                'END']
+    errors = doc_builder.Parse('filename', contents)
+    self.assertEqual(1, len(errors))
+    self.assertIn('without matching', errors[0])
+                
 
 class CheckerTest(unittest.TestCase):
 
