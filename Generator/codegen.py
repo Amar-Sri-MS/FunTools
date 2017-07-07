@@ -190,19 +190,19 @@ class CodeGenerator:
     key_comment = ''
     if field.key_comment is not None:
       key_comment = ' ' + utils.AsComment(field.key_comment)
-     
-    var_bits = ''
-    var_width = field.BitWidth()
-    type_width = field.type.BitWidth()
 
-    if field.type.IsScalar() and type_width != var_width:
-      var_bits = ':%d' % var_width
     if field.type.IsArray():
       hdr_out += self.Indent() + '%s %s[%d];%s\n' % (type_name,
                                                      field.name,
                                                      field.type.ArraySize(),
                                                      key_comment)
     else:
+      var_width = field.BitWidth()
+      type_width = field.type.BitWidth()
+
+      var_bits = ''
+      if field.type.IsScalar() and type_width != var_width:
+        var_bits = ':%d' % var_width
       hdr_out += self.Indent() + '%s %s%s;%s\n' % (type_name,
                                                    field.name, var_bits,
                                                    key_comment)
