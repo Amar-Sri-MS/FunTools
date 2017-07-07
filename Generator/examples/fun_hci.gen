@@ -334,7 +334,8 @@ STRUCT fun_admin_vol_rsp
       2 63:56  uint8_t vol_rsp_create_subop /* SUBOP_CREATE */
       2 55:48  uint8_t rsvd0
       2 47:32 uint16_t flags
-      2 31:00 uint32_t vol_rsp_create_volid /* vol_rsp_common.rsp_common_status=0: volid, otherwise: N/A */
+      // vol_rsp_common.rsp_common_status=0: volid, otherwise: N/A
+      2 31:00 uint32_t vol_rsp_create_volid
     END
     STRUCT fun_admin_vol_rsp_destroy vol_rsp_destroy
       2 63:56  uint8_t vol_rsp_destroy_subop /* SUBOP_DESTROY */
@@ -372,7 +373,7 @@ END
 STRUCT fun_admin_bind_req
   0 63:00 fun_admin_req_common bind_req_common 
   1 63:00 ...
-  2 63:00 fun_admin_bind_req_entry bind_req_entry[0]
+  _ _:_ fun_admin_bind_req_entry bind_req_entry[0]
 END
 
 STRUCT fun_admin_bind_rsp
