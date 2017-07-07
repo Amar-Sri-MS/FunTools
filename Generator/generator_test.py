@@ -587,6 +587,33 @@ class TestDocBuilder(unittest.TestCase):
     self.assertEqual(0, array.BitWidth())
 
 
+  def testVariableLengthStructArray(self):
+    doc_builder = generator.DocBuilder()
+    contents = [
+      'STRUCT element',
+      '0 63:56 char item',
+      'END',
+      'STRUCT foo',
+      '0 63:56 char initial',
+      '_ _:_ element array[0]',
+      'END'
+      ]
+
+    errors = doc_builder.Parse('filename', contents)
+    self.assertIsNone(errors)
+
+    doc = doc_builder.current_document
+
+    self.assertEqual(2, len(doc.structs))
+    foo = doc.structs[1]
+    self.assertEqual(2, len(foo.fields))
+    array = foo.fields[1]
+    self.assertEquals('<Type: element[0]>', str(array.Type()))
+    
+    self.assertEqual(8, foo.BitWidth())
+    self.assertEqual(0, array.BitWidth())
+
+
 class TestStripComment(unittest.TestCase):
   def testSimple(self):
     doc_builder = generator.DocBuilder()
@@ -611,6 +638,38 @@ class TestStripComment(unittest.TestCase):
     self.assertIn('0: Unexpected stuff where comment should be',
                      doc_builder.errors[0])
                                          
+
+  def testStructureAndUnion(self):
+    doc_builder = generator.DocBuilder()
+    contents = [
+      'STRUCT foo',
+      '0 63:0 uint64_t a',
+      '1 63:0 uint64_t b',
+      'END',
+      'STRUCT bar',
+      '0 63:0 foo f',
+      '1 63:0 ...',
+      'UNION baz u',
+      '2 63:56 char c',
+      'END'
+      'END'
+      ]
+
+    errors = doc_builder.Parse('filename', contents)
+
+    self.assertIsNone(errors)
+    doc = doc_builder.current_document
+    self.assertEqual(3, len(doc.structs))
+
+    bar = doc.structs[1]
+    self.assertEqual("bar", bar.Name())
+    self.assertEqual(2, len(bar.fields))
+
+    f = bar.fields[0]
+    u = bar.fields[1]
+    self.assertEqual(128, f.BitWidth())
+    self.assertEqual(128, u.StartOffset())
+    
 
 class PackerTest(unittest.TestCase):
   def testDontPackArgumentsFittingOwnType(self):
@@ -1084,6 +1143,28 @@ class CheckerTest(unittest.TestCase):
       'STRUCT foo',
       '0 63:56 char initial',
       '_ _:_ char array[0]',
+      'END'
+      ]
+
+    errors = doc_builder.Parse('filename', contents)
+    self.assertIsNone(errors)
+
+    doc = doc_builder.current_document
+    self.assertIsNone(errors)
+
+    checker = generator.Checker()
+    checker.VisitDocument(doc_builder.current_document)
+    self.assertEqual(0, len(checker.errors))
+
+  def testVariableLengthStructureArray(self):
+    doc_builder = generator.DocBuilder()
+    contents = [
+      'STRUCT element',
+      '0 63:56 char value',
+      'END',
+      'STRUCT foo',
+      '0 63:56 char initial',
+      '_ _:_ element array[0]',
       'END'
       ]
 

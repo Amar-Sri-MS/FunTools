@@ -61,6 +61,30 @@ class HTMLGeneratorTest(unittest.TestCase):
         self.assertIn('Body comment for array.', out)
         self.assertIn('Tail comment for A', out)
 
+    def testPrintZeroSizeStructArray(self):
+        input = ['STRUCT element',
+                 '0 63:56 char a',
+                 'END',
+                 '// Body comment for struct A.',
+                 'STRUCT A // Key comment for struct A.',
+                 '// Body comment for a1.',
+                 '0 63:56 char value',
+                 '// Body comment for array.',
+                 '_ _:_ element array[0] /* Key comment for array. */',
+                 '// Tail comment for A.',
+                 'END']
+
+        out = generator.GenerateFile(True, generator.OutputStyleHTML, None,
+                                     input, 'foo.gen')
+        self.assertIsNotNone(out)
+        self.assertIn('<h3>struct A:</h3>\n'
+                      '<p>Key comment for struct A.</p>\n'
+                      '<p>Body comment for struct A.</p>', out)
+        self.assertIn('Body comment for a1.', out)
+        self.assertIn('Key comment for array.', out)
+        self.assertIn('Body comment for array.', out)
+        self.assertIn('Tail comment for A', out)
+
     def testPrintSubfields(self):
         input = [
             'STRUCT fun_admin_cmd_common',
