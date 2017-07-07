@@ -43,10 +43,10 @@ ENUM fun_admin_subop
   FUN_ADMIN_SUBOP_DESTROY = 0x02
 END
 
-// AMDIN CMD EPCQ
+// AMDIN EPCQ REQ/RSP
 
 ENUM fun_admin_epcq_create_flag
-  FUN_ADMIN_EPCQ_CREATE_FLAG_ALLOCATOR = 0x01 /* Enable EPCQ ID allocator */
+  FUN_ADMIN_EPCQ_CREATE_FLAG_ALLOCATOR = 0x01 /* Enable EPCQ allocator */
   FUN_ADMIN_EPCQ_CREATE_FLAG_INT_EPCQ = 0x02 /* Use a EPCQ as interrupt concentrator */
   FUN_ADMIN_EPCQ_CREATE_FLAG_ENTRY_WR_TPH = 0x04 /* Enable EPCQ entry write TPH */
   FUN_ADMIN_EPCQ_CREATE_FLAG_SL_WR_TPH = 0x08 /* Enable Scatter List write TPH */
@@ -61,11 +61,17 @@ STRUCT fun_admin_epcq_req
       2 55:48  uint8_t rsvd0
       2 47:32 uint16_t epcq_req_create_flag /* see fun_admin_epcq_create_flag enum */
       2 31:00 uint32_t epcq_req_create_id /* FLAG_ALLOCATOR=0: n/a, FLAG_ALLOCATOR=1: epcqid */
-      3 63:48 uint16_t epcq_req_create_esize_log2 /* log2 of epcq entry size in bytes */
-      3 47:32 uint16_t epcq_req_create_intid /* FLAG_INT_EPSQ=0: interrupt MSI/-X vectorid, FLAG_INT_EPSQ=1: interrupt concentrator epcqid */
-      3 31:16 uint16_t epcq_req_create_nentries /* number of entries in epcq */
-      3 15:00 uint16_t rsvd1
+      3 63:24  uint8_t rsvd1[5]
+      3 23:16  uint8_t epcq_req_create_entry_size_log2 /* log2 of epcq entry size in bytes */
+      3 15:00 uint16_t epcq_req_create_nentries /* number of entries in epcq */
       4 63:00 uint64_t epcq_req_create_address /* DMA address of epcq */
+      5 63:40  uint8_t rsvd2[3]
+      5 39:32  uint8_t epcq_req_create_intcoal_kbytes /* interrupt coalescing, number of kbytes or 0 to disable */
+      5 31:24  uint8_t epcq_req_create_intcoal_holdoff_nentries /* interrupt coalescing, number of entries or 0 to disable */
+      5 23:16  uint8_t epcq_req_create_intcoal_holdoff_usecs /* interrupt coalescing, number of usess or 0 to disable */
+      5 15:00 uint16_t epcq_req_create_intid /* FLAG_INT_EPSQ=0: interrupt MSI/-X vectorid, FLAG_INT_EPSQ=1: interrupt concentrator epcqid */
+      6 63:48 uint16_t epcq_req_create_tph_cpuid /* CPUID for TPH */
+      6 47:00  uint8_t rsvd3[6]
     END
     STRUCT fun_admin_epcq_req_destroy epcq_destroy
       2 63:56  uint8_t epcq_req_destroy_subop /* FUN_ADMIN_SUBOP_DESTROY */
@@ -84,7 +90,7 @@ STRUCT fun_admin_epcq_rsp
       2 55:32  uint8_t rsvd0[3]
       2 31:00 uint32_t epcq_rsp_create_id /* created epcqid if epcq_rsp_common.rsp_common_status = 0 or N/A */
     END
-    STRUCT fun_admin_epcq_rsp_destroy epcq_destroy
+    STRUCT fun_admin_epcq_rsp_destroy epcq_rsp_destroy
       2 63:56  uint8_t epcq_rsp_destroy_subop /* SUBOP_DESTROY */
       2 55:32  uint8_t rsvd0[3]
       2 31:00 uint32_t epcq_rsp_destroy_id /* epcqid to destroy */
@@ -93,11 +99,11 @@ STRUCT fun_admin_epcq_rsp
 END
 
 
-// AMDIN CMD EPSQ
+// AMDIN EPSQ REQ/RSP
 
 ENUM fun_admin_epsq_create_flag
   FUN_ADMIN_EPSQ_CREATE_FLAG_NONE = 0x00
-  FUN_ADMIN_EPSQ_CREATE_FLAG_ALLOCATOR = 0x01 /* Enable EPSQ ID allocator */
+  FUN_ADMIN_EPSQ_CREATE_FLAG_ALLOCATOR = 0x01 /* Enable EPSQ allocator */
   FUN_ADMIN_EPSQ_CREATE_FLAG_INT_EPSQ = 0x02 /* Use a EPSQ as interrupt concentrator */
   FUN_ADMIN_EPSQ_CREATE_FLAG_ENTRY_RD_TPH = 0x04 /* Enable EPSQ entry read TPH */
   FUN_ADMIN_EPSQ_CREATE_FLAG_GL_RD_TPH = 0x08 /* Enable Gather List read TPH */
@@ -115,14 +121,20 @@ STRUCT fun_admin_epsq_req
       2 55:48  uint8_t rsvd0
       2 47:32 uint16_t epsq_req_create_flag /* see fun_admin_epsq_create_flag enum */
       2 31:00 uint32_t epsq_req_create_id /* FLAG_ALLOCATOR=0: n/a, FLAG_ALLOCATOR=1: epsqid */
-      3 63:48 uint16_t epsq_req_create_entry_size_log2 /* log2 of epsq entry size in bytes */
-      3 47:32 uint16_t epsq_req_create_intid /* FLAG_INT_EPSQ=0: interrupt MSI/-X vectorid, FLAG_INT_EPSQ=1: interrupt concentrator epcqid */
-      3 31:16 uint16_t epsq_req_create_tph_cpuid /* CPUID for TPH */
+      3 63:32 uint32_t epsq_req_create_epcqid /* assiciated epcq */
+      3 31:24  uint8_t rsvd1
+      3 23:16  uint8_t epsq_req_create_entry_size_log2 /* log2 of epsq entry size in bytes */
       3 15:00 uint16_t epsq_req_create_nentries /* number of entries in epsq */
       4 63:00 uint64_t epsq_req_create_address /* DMA address of epsq */
-      5 63:56  uint8_t epsq_req_create_head_wb_size_log2 /* log2 of head write back size */
-      5 55:00  uint8_t rsvd1[7]
-      6 63:00 uint64_t epsq_req_create_head_wb_address /* DMA address for head writeback */
+      5 63:40  uint8_t rsvd2[3]
+      5 39:32  uint8_t epsq_req_create_intcoal_kbytes /* interrupt coalescing, number of kbytes or 0 to disable */
+      5 31:24  uint8_t epsq_req_create_intcoal_holdoff_nentries /* interrupt coalescing, number of entries or 0 to disable */
+      5 23:16  uint8_t epsq_req_create_intcoal_holdoff_usecs /* interrupt coalescing, number of usess or 0 to disable */
+      5 15:00 uint16_t epsq_req_create_intid /* FLAG_INT_EPSQ=0: interrupt MSI/-X vectorid, FLAG_INT_EPSQ=1: interrupt concentrator epsqid */
+      6 63:48 uint16_t epsq_req_create_tph_cpuid /* CPUID for TPH */
+      6 47:08  uint8_t rsvd3[5]
+      6 07:00  uint8_t epsq_req_create_head_wb_size_log2 /* log2 of head write back size */
+      7 63:00 uint64_t epsq_req_create_head_wb_address /* DMA address for head writeback */
     END
     STRUCT fun_admin_epsq_req_destroy epsq_req_destroy
       2 63:56  uint8_t epsq_req_destroy_subop /* SUBOP_DESTROY */
@@ -149,7 +161,7 @@ STRUCT fun_admin_epsq_rsp
   END
 END
 
-// ADMIN CMD EPRQ
+// ADMIN EPRQ REQ/RSP
 
 STRUCT fun_admin_eprq_req
   0 63:00 fun_admin_req_common eprq_req_common 
@@ -158,13 +170,8 @@ STRUCT fun_admin_eprq_req
     STRUCT fun_admin_eprq_req_create eprq_req_create
       2 63:56  uint8_t eprq_req_create_subop /* SUBOP_CREATE */
       2 55:48  uint8_t rsvd0
-      2 47:32 uint16_t epsq_req_create_flag /* see fun_admin_eprq_create_flag enum */
+      2 47:32 uint16_t eprq_req_create_flag /* see fun_admin_eprq_create_flag enum */
       2 31:00 uint32_t eprq_req_create_eprqid /* FLAG_ALLOCATOR=0: n/a, FLAG_ALLOCATOR=1: eprqid */
-      3 63:48 uint16_t eprq_req_create_esize_log2 /* log2 of eprq entry size in bytes */
-      3 47:32 uint16_t eprq_req_create_intid /* associated interrupt MSI/-X vectorid or eprqid if FUN_AMDIN_CREATE_FLAG_INT_EPRQ */
-      3 31:16 uint16_t eprq_req_create_nentries /* number of entries in eprq */
-      3 15:00 uint16_t rsvd1
-      4 63:00 uint64_t eprq_req_create_address /* DMA address of eprq */
     END
     STRUCT fun_admin_eprq_req_destroy eprq_req_destroy
       2 63:56  uint8_t eprq_req_destroy_subop /* SUBOP_DESTROY */
@@ -182,17 +189,21 @@ STRUCT fun_admin_eprq_rsp
       2 63:56  uint8_t eprq_rsp_create_subop /* SUBOP_CREATE */
       2 55:48  uint8_t rsvd0
       2 47:32 uint16_t flags
-      2 31:00 uint32_t eprq_rsp_create_eprqid /* created eprqid if eprq_rsp_common.rsp_common_status = 0 or N/A */
+      2 31:00 uint32_t eprq_rsp_create_id /* created eprqid if eprq_rsp_common.rsp_common_status = 0 or N/A */
     END
     STRUCT fun_admin_eprq_rsp_destroy eprq_rsp_destroy
       2 63:56  uint8_t eprq_rsp_destroy_subop /* SUBOP_DESTROY */
       2 55:32  uint8_t rsvd0[3]
-      2 31:00 uint32_t eprq_rsp_destroy_eprqid /* eprqid to destroy */
+      2 31:00 uint32_t eprq_rsp_destroy_id /* eprqid to destroy */
     END      
   END
 END
 
-// ADMIN CMD ETH
+// ADMIN ETH REQ/RSP
+
+ENUM fun_admin_eth_create_flag
+  FUN_ADMIN_ETH_CREATE_FLAG_ALLOCATOR = 0x01 /* Enable Ethernet allocator */
+END
 
 STRUCT fun_admin_eth_req
   0 63:00 fun_admin_req_common eth_req_common 
@@ -201,13 +212,13 @@ STRUCT fun_admin_eth_req
     STRUCT fun_admin_eth_req_create eth_req_create
       2 63:56  uint8_t eth_req_create_subop /* SUBOP_CREATE */
       2 55:48  uint8_t rsvd0
-      2 47:32 uint16_t epsq_req_create_flag /* see fun_admin_eth_create_flag enum */
-      2 31:00 uint32_t eth_req_create_ethid /* FLAG_ALLOCATOR=0: n/a, FLAG_ALLOCATOR=1: ethid */
+      2 47:32 uint16_t eth_req_create_flag /* see fun_admin_eth_create_flag enum */
+      2 31:00 uint32_t eth_req_create_id /* FLAG_ALLOCATOR=0: n/a, FLAG_ALLOCATOR=1: ethid */
     END
-    STRUCT fun_admin_eth_req_destroy eth_rsp_destroy
+    STRUCT fun_admin_eth_req_destroy eth_req_destroy
       2 63:56  uint8_t eth_req_destroy_subop /* SUBOP_DESTROY */
       2 55:32  uint8_t rsvd0[3]
-      2 31:00 uint32_t eth_req_destroy_ethid /* ethid to destroy */
+      2 31:00 uint32_t eth_req_destroy_id /* ethid to destroy */
     END      
   END
 END
@@ -220,17 +231,21 @@ STRUCT fun_admin_eth_rsp
       2 63:56  uint8_t eth_rsp_create_subop /* SUBOP_CREATE */
       2 55:48  uint8_t rsvd0
       2 47:32 uint16_t flags
-      2 31:00 uint32_t eth_rsp_create_ethid /* created ethid if eth_rsp_common.rsp_common_status = 0 or N/A */
+      2 31:00 uint32_t eth_rsp_create_id /* created ethid if eth_rsp_common.rsp_common_status = 0 or N/A */
     END
     STRUCT fun_admin_eth_rsp_destroy eth_rsp_destroy
       2 63:56  uint8_t eth_rsp_destroy_subop /* SUBOP_DESTROY */
       2 55:32  uint8_t rsvd0[3]
-      2 31:00 uint32_t eth_rsp_destroy_ethid /* destroyed ethid */
+      2 31:00 uint32_t eth_rsp_destroy_id /* destroyed ethid */
     END      
   END
 END
 
-// ADMIN CMD VI
+// ADMIN VI REQ/RSP
+
+ENUM fun_admin_vi_create_flag
+  FUN_ADMIN_VI_CREATE_FLAG_ALLOCATOR = 0x01 /* Enable Virtual Interface allocator */
+END
 
 STRUCT fun_admin_vi_req
   0 63:00 fun_admin_req_common vi_req_common 
@@ -239,13 +254,13 @@ STRUCT fun_admin_vi_req
     STRUCT fun_admin_vi_req_create vi_req_create
       2 63:56  uint8_t vi_req_create_subop /* SUBOP_CREATE */
       2 55:48  uint8_t rsvd0
-      2 47:32 uint16_t epsq_req_create_flag /* see fun_admin_vi_create_flag enum */
-      2 31:00 uint32_t vi_req_create_viid /* FLAG_ALLOCATOR=0: n/a, FLAG_ALLOCATOR=1: viid */
+      2 47:32 uint16_t vi_req_create_flag /* see fun_admin_vi_create_flag enum */
+      2 31:00 uint32_t vi_req_create_id /* FLAG_ALLOCATOR=0: n/a, FLAG_ALLOCATOR=1: viid */
     END
     STRUCT fun_admin_vi_req_destroy vi_req_destroy
       2 63:56  uint8_t vi_req_destroy_subop /* SUBOP_DESTROY */
       2 55:32  uint8_t rsvd0[3]
-      2 31:00 uint32_t vi_req_destroy_viid /* viid to destroy */
+      2 31:00 uint32_t vi_req_destroy_id /* viid to destroy */
     END      
   END
 END
@@ -258,17 +273,20 @@ STRUCT fun_admin_vi_rsp
       2 63:56  uint8_t vi_rsp_create_subop /* SUBOP_CREATE */
       2 55:48  uint8_t rsvd0
       2 47:32 uint16_t flags
-      2 31:00 uint32_t vi_rsp_create_viid /* vi_rsp_common.rsp_common_status=0: viid, otherwise: N/A */
+      2 31:00 uint32_t vi_rsp_create_id /* vi_rsp_common.rsp_common_status=0: viid, otherwise: N/A */
     END
     STRUCT fun_admin_vi_rsp_destroy vi_rsp_destroy
       2 63:56  uint8_t vi_rsp_destroy_subop /* SUBOP_DESTROY */
       2 55:32  uint8_t rsvd0[3]
-      2 31:00 uint32_t vi_rsp_destroy_viid /* destroyed viid */
+      2 31:00 uint32_t vi_rsp_destroy_id /* destroyed viid */
     END      
   END
 END
 
-// ADMIN NSS CMD 
+// ADMIN NSS REQ/RSP 
+ENUM fun_admin_nss_create_flag
+  FUN_ADMIN_NSS_CREATE_FLAG_ALLOCATOR = 0x01 /* Enable NSS allocator */
+END
 
 STRUCT fun_admin_nss_req
   0 63:00 fun_admin_req_common nss_req_common 
@@ -277,13 +295,13 @@ STRUCT fun_admin_nss_req
     STRUCT fun_admin_nss_req_create nss_req_create
       2 63:56  uint8_t nss_req_create_subop /* SUBOP_CREATE */
       2 55:48  uint8_t rsvd0
-      2 47:32 uint16_t epsq_req_create_flag /* see fun_admin_nss_create_flag enum */
-      2 31:00 uint32_t nss_req_create_nssid /* FLAG_ALLOCATOR=0: n/a, FLAG_ALLOCATOR=1: nssid */
+      2 47:32 uint16_t nss_req_create_flag /* see fun_admin_nss_create_flag enum */
+      2 31:00 uint32_t nss_req_create_id /* FLAG_ALLOCATOR=0: n/a, FLAG_ALLOCATOR=1: nssid */
     END
     STRUCT fun_admin_nss_req_destroy nss_req_destroy
       2 63:56  uint8_t nss_req_destroy_subop /* SUBOP_DESTROY */
       2 55:32  uint8_t rsvd0[3]
-      2 31:00 uint32_t nss_req_destroy_nssid /* nssid to destroy */
+      2 31:00 uint32_t nss_req_destroy_id /* nssid to destroy */
     END      
   END
 END
@@ -296,17 +314,20 @@ STRUCT fun_admin_nss_rsp
       2 63:56  uint8_t nss_rsp_create_subop /* SUBOP_CREATE */
       2 55:48  uint8_t rsvd0
       2 47:32 uint16_t flags
-      2 31:00 uint32_t nss_rsp_create_nssid /* nss_rsp_common.rsp_common_status=0: nssid, otherwise: N/A */
+      2 31:00 uint32_t nss_rsp_create_id /* nss_rsp_common.rsp_common_status=0: nssid, otherwise: N/A */
     END
     STRUCT fun_admin_nss_rsp_destroy nss_rsp_destroy
       2 63:56  uint8_t nss_rsp_destroy_subop /* SUBOP_DESTROY */
       2 55:32  uint8_t rsvd0[3]
-      2 31:00 uint32_t nss_rsp_destroy_nssid /* destroyed viid */
+      2 31:00 uint32_t nss_rsp_destroy_id /* destroyed nssid */
     END      
   END
 END
 
-// ADMIN VOL CMD 
+// ADMIN VOL REQ/RSP 
+ENUM fun_admin_vol_create_flag
+  FUN_ADMIN_VOL_CREATE_FLAG_ALLOCATOR = 0x01 /* Enable Volume allocator */
+END
 
 STRUCT fun_admin_vol_req
   0 63:00 fun_admin_req_common vol_req_common 
@@ -315,13 +336,19 @@ STRUCT fun_admin_vol_req
     STRUCT fun_admin_vol_req_create vol_req_create
       2 63:56  uint8_t vol_req_create_subop /* SUBOP_CREATE */
       2 55:48  uint8_t rsvd0
-      2 47:32 uint16_t epsq_req_create_flag /* see fun_admin_vol_create_flag enum */
-      2 31:00 uint32_t vol_req_create_volid /* FLAG_ALLOCATOR=0: n/a, FLAG_ALLOCATOR=1: volid */
+      2 47:32 uint16_t vol_req_create_flag /* see fun_admin_vol_create_flag enum */
+      2 31:00 uint32_t vol_req_create_id /* FLAG_ALLOCATOR=0: n/a, FLAG_ALLOCATOR=1: volid */
+      3 63:00 uint64_t rsvd1
+      4 63:00 uint64_t rsvd2
+      5 63:00 uint64_t rsvd3
+      6 63:00 uint64_t rsvd4
+      7 63:00 uint64_t rsvd5
+      8 63:00 uint64_t rsvd6
     END
     STRUCT fun_admin_vol_req_destroy vol_req_destroy
       2 63:56  uint8_t vol_req_destroy_subop /* SUBOP_DESTROY */
       2 55:32  uint8_t rsvd0[3]
-      2 31:00 uint32_t vol_req_destroy_volid /* volid to destroy */
+      2 31:00 uint32_t vol_req_destroy_id /* volid to destroy */
     END      
   END
 END
@@ -334,16 +361,75 @@ STRUCT fun_admin_vol_rsp
       2 63:56  uint8_t vol_rsp_create_subop /* SUBOP_CREATE */
       2 55:48  uint8_t rsvd0
       2 47:32 uint16_t flags
-      2 31:00 uint32_t vol_rsp_create_volid /* vol_rsp_common.rsp_common_status=0: volid, otherwise: N/A */
+      2 31:00 uint32_t vol_rsp_create_id /* vol_rsp_common.rsp_common_status=0: volid, otherwise: N/A */
+      3 63:00 uint64_t rsvd1
+      4 63:00 uint64_t rsvd2
+      5 63:00 uint64_t rsvd3
+      6 63:00 uint64_t rsvd4
+      7 63:00 uint64_t rsvd5
+      8 63:00 uint64_t rsvd6
     END
     STRUCT fun_admin_vol_rsp_destroy vol_rsp_destroy
       2 63:56  uint8_t vol_rsp_destroy_subop /* SUBOP_DESTROY */
       2 55:32  uint8_t rsvd0[3]
-      2 31:00 uint32_t vol_rsp_destroy_volid /* destroyed viid */
+      2 31:00 uint32_t vol_rsp_destroy_id /* destroyed volid */
     END      
   END
 END
 
+// ADMIN CRYPTO REQ/RSP 
+
+ENUM fun_admin_crypto_create_flag
+  FUN_ADMIN_CRYPTO_CREATE_FLAG_ALLOCATOR = 0x01 /* Enable Crypto allocator */
+END
+
+STRUCT fun_admin_crypto_req
+  0 63:00 fun_admin_req_common crypto_req_common 
+  1 63:00 ...
+  UNION crypto_req_subop u
+    STRUCT fun_admin_crypto_req_create crypto_req_create
+      2 63:56  uint8_t crypto_req_create_subop /* SUBOP_CREATE */
+      2 55:48  uint8_t rsvd0
+      2 47:32 uint16_t crypto_req_create_flag /* see fun_admin_crypto_create_flag enum */
+      2 31:00 uint32_t crypto_req_create_id /* FLAG_ALLOCATOR=0: n/a, FLAG_ALLOCATOR=1: cryptoid */
+      3 63:00 uint64_t rsvd1
+      4 63:00 uint64_t rsvd2
+      5 63:00 uint64_t rsvd3
+      6 63:00 uint64_t rsvd4
+      7 63:00 uint64_t rsvd5
+      8 63:00 uint64_t rsvd6
+    END
+    STRUCT fun_admin_crypto_req_destroy crypto_req_destroy
+      2 63:56  uint8_t crypto_req_destroy_subop /* SUBOP_DESTROY */
+      2 55:32  uint8_t rsvd0[3]
+      2 31:00 uint32_t crypto_req_destroy_id /* cryptoid to destroy */
+    END      
+  END
+END
+
+STRUCT fun_admin_crypto_rsp
+  0 63:00 fun_admin_rsp_common crypto_rsp_common
+  0 63:00 ...
+  UNION crypto_rsp_subop u
+    STRUCT fun_admin_crypto_rsp_create crypto_rsp_create
+      2 63:56  uint8_t crypto_rsp_create_subop /* SUBOP_CREATE */
+      2 55:48  uint8_t rsvd0
+      2 47:32 uint16_t flags
+      2 31:00 uint32_t crypto_rsp_create_id /* crypto_rsp_common.rsp_common_status=0: cryptoid, otherwise: N/A */
+      3 63:00 uint64_t rsvd1
+      4 63:00 uint64_t rsvd2
+      5 63:00 uint64_t rsvd3
+      6 63:00 uint64_t rsvd4
+      7 63:00 uint64_t rsvd5
+      8 63:00 uint64_t rsvd6
+    END
+    STRUCT fun_admin_crypto_rsp_destroy crypto_rsp_destroy
+      2 63:56  uint8_t crypto_rsp_destroy_subop /* SUBOP_DESTROY */
+      2 55:32  uint8_t rsvd0[3]
+      2 31:00 uint32_t crypto_rsp_destroy_id /* destroyed cryptoid */
+    END      
+  END
+END
 
 // BIND
 
