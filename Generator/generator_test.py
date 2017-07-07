@@ -476,6 +476,19 @@ class TestDocBuilder(unittest.TestCase):
     self.assertEqual(0, long_field.StartFlit())
     self.assertEqual(2, long_field.EndFlit())
 
+  def disableTestDuplicateBitfield(self):
+    """Test that we flag an error if the flit for a ... is incorrect."""
+    doc_builder = generator.DocBuilder()
+    contents = ['STRUCT Foo',
+                '0 63:0 uint8_t chars[16]',
+                '0 63:0 ...',
+                'END']
+
+    errors = doc_builder.Parse('filename', contents)
+    self.assertEqual(1, len(errors))
+    self.assertIn('reuse', errors[0])
+
+
   def testNestedStruct(self):
     doc_builder = generator.DocBuilder()
     # ... allows a field to overflow into later flits.
@@ -778,6 +791,19 @@ class PackerTest(unittest.TestCase):
 
     self.assertEqual(2, len(doc.structs[0].fields))
 
+  def testTooManyEnds(self):
+    doc_builder = generator.DocBuilder()
+    contents = ['STRUCT Foo',
+                '0 63:0 uint64_t cmd',
+                'STRUCT Bar',
+                '1 63:0 uint64_t cmd',
+                'END',
+                'END',
+                'END']
+    errors = doc_builder.Parse('filename', contents)
+    self.assertEqual(1, len(errors))
+    self.assertIn('without matching', errors[0])
+                
 
 class CheckerTest(unittest.TestCase):
 
@@ -990,6 +1016,40 @@ class CheckerTest(unittest.TestCase):
     self.assertEqual(1, len(checker.errors))
     self.assertIn('field "buf" overlaps field "c"',
                   checker.errors[0])
+
+  def testUnionNoOverlap(self):
+    doc_builder = generator.DocBuilder()
+    contents = ['STRUCT Foo',
+                '0 63:0 uint64_t cmd',
+                'UNION Bar u',
+                '1 63:0 uint64_t data',
+                'END',
+                'END']
+    errors = doc_builder.Parse('filename', contents)
+    self.assertIsNone(errors)
+
+    checker = generator.Checker()
+    checker.VisitDocument(doc_builder.current_document)
+
+    self.assertEqual(0, len(checker.errors))
+
+  def testUnionOverlap(self):
+    doc_builder = generator.DocBuilder()
+    contents = ['STRUCT Foo',
+                '0 63:0 uint64_t cmd',
+                'UNION Bar u',
+                '0 31:0 uint32_t data',
+                'END',
+                'END']
+    errors = doc_builder.Parse('filename', contents)
+    self.assertIsNone(errors)
+
+    checker = generator.Checker()
+    checker.VisitDocument(doc_builder.current_document)
+
+    self.assertEqual(1, len(checker.errors))
+    self.assertIn('"cmd" overlaps field "u"', checker.errors[0])
+
 
 if __name__ == '__main__':
     unittest.main()

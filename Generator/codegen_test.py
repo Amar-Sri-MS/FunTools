@@ -384,6 +384,28 @@ class CodegenEndToEnd(unittest.TestCase):
     self.assertIn('uint8_t c:6;', out)
     self.assertIn('uint8_t d;', out)
 
+  def testNoDuplicateFunctions(self):
+    contents = [
+      'STRUCT A',
+      '0 63:0 uint64_t a',
+      'UNION B u',
+      'STRUCT BA b1',
+      '1 63:0 uint64_t b',
+      'END',
+      'STRUCT BB b2',
+      '1 63:0 uint64_t b',
+      'END',
+      'END',
+      'END'
+      ]
+
+    out = generator.GenerateFile(True, generator.OutputStyleHeader, None,
+                                 contents, 'foo.gen')
+    self.assertEqual(2, out.count(' A_BA_init'))
+    self.assertEqual(2, out.count(' A_BB_init'))
+    self.assertEqual(2, out.count(' BA_init'))
+    self.assertEqual(2, out.count(' BB_init'))
+
 class TestComments(unittest.TestCase):
 
   def testStructComments(self):
@@ -498,8 +520,6 @@ class TestComments(unittest.TestCase):
     self.assertIn('"E",  /* 0x5 */', out)
     self.assertIn('"undefined",  /* 0x6 */', out)
     self.assertIn('"G",  /* 0xa */', out)
-    print out
-
 
 
 class TestIndentString(unittest.TestCase):
