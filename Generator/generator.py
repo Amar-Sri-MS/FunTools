@@ -953,9 +953,17 @@ class DocBuilder:
     self.base_types[current_object.Name()].bit_width = current_object.BitWidth()
     
     self.current_comment = ''
+
     if state != DocBuilderTopLevel:
+      # Sub-structures and sub-unions are numbered starting at 0.
+      # Check the previous field to find where this struct should start.
+      previous_fields = containing_object.fields[0:-1]
+      last_offset = 0
+      if len(previous_fields) > 0:
+        last_offset = previous_fields[-1].EndOffset()
+
       new_field = containing_object.fields[-1]
-      new_field.offset_start = 0
+      new_field.offset_start = last_offset + 1
       new_field.bit_width = current_object.BitWidth()
       new_field.CreateSubfields()
 
@@ -1052,6 +1060,7 @@ class DocBuilder:
       self.flit_crossing_field.tail_comment += '\n' + key_comment
 
     self.flit_crossing_field.crosses_flit = True
+
     self.flit_crossing_field.ExtendSize(size)
 
     if self.bits_remaining < size:

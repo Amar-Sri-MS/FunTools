@@ -80,11 +80,15 @@ class HTMLGenerator:
     struct is the """
     out = '<tr>\n'
 
-    comment = ""
-    if struct.key_comment:
-      comment = struct.key_comment
+    comment = ''
+    if field.key_comment:
+      comment += field.key_comment + '<br>'
+    if field.body_comment:
+      comment += '<p>%s</p>/' % (field.body_comment)
 
-    if field.StartFlit() != field.EndFlit():
+    if field.IsNoOffset():
+      out += '  <td class="structBits" colspan=2></td>\n'
+    elif field.StartFlit() != field.EndFlit():
       out += '  <td class="structBits" colspan=2>%d:%d-%d:%d</td>\n' % (
         field.StartFlit(), field.StartBit(), field.EndFlit(), field.EndBit())
     else:
@@ -167,7 +171,7 @@ class HTMLGenerator:
     if field.crosses_flit:
       out += '  <td class="structBits" colspan=2>%d:%d-%d:%d</td>\n' % (
         field.StartFlit(), field.StartBit(), field.EndFlit(), field.EndBit())
-    elif field.no_offset:
+    elif field.IsNoOffset():
       out += '  <td class="structBits" colspan=2></td>\n'
     else:
       out += '  <td class="structBits">%d</td>\n' % field.StartFlit()
