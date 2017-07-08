@@ -167,6 +167,8 @@ class HTMLGenerator:
     if field.crosses_flit:
       out += '  <td class="structBits" colspan=2>%d:%d-%d:%d</td>\n' % (
         field.StartFlit(), field.StartBit(), field.EndFlit(), field.EndBit())
+    elif field.no_offset:
+      out += '  <td class="structBits" colspan=2></td>\n'
     else:
       out += '  <td class="structBits">%d</td>\n' % field.StartFlit()
       out += '  <td class="structBits">%d-%d</td>\n' % (field.StartBit(), 
