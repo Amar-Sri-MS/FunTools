@@ -23,18 +23,18 @@ ENUM fun_admin_req_common_flag
 END
 
 STRUCT fun_admin_req_common
-  0 63:56  uint8_t req_common_op /* see fun_admin_op enum */
-  0 55:48  uint8_t req_common_len8 /* length of the request in units of 8-bytes */
-  0 47:32 uint16_t req_common_flags /* see fun_admin_req_common flag enum */
+  0 63:56  uint8_t admin_req_common_op /* see fun_admin_op enum */
+  0 55:48  uint8_t admin_req_common_len8 /* length of the request in units of 8-bytes */
+  0 47:32 uint16_t admin_req_common_flags /* see fun_admin_req_common flag enum */
   0 31:00 uint32_t rsvd0
-  1 63:00 uint64_t req_common_cookie /* caller cookie, returned in response message */
+  1 63:00 uint64_t admin_req_common_cookie /* caller cookie, returned in response message */
 END 
 
 STRUCT fun_admin_rsp_common
-  0 63:56  uint8_t rsp_common_op /* see fun_admin_op enum, copied from request */
-  0 55:32  uint8_t rsvd0[3]
-  0 31:00 uint32_t rsp_common_status /* status */
-  1 63:00 uint64_t rsp_common_cookie  /* caller cookie, copied from request */
+  0 63:56  uint8_t admin_rsp_common_op /* see fun_admin_op enum, copied from request */
+  0 55:32  uint8_t admin_rsvd0[3]
+  0 31:00 uint32_t admin_rsp_common_status /* status */
+  1 63:00 uint64_t admin_rsp_common_cookie  /* caller cookie, copied from request */
 END 
 
 ENUM fun_admin_subop
@@ -73,7 +73,7 @@ STRUCT fun_admin_epcq_req
       6 63:48 uint16_t epcq_req_create_tph_cpuid /* CPUID for TPH */
       6 47:00  uint8_t rsvd3[6]
     END
-    STRUCT fun_admin_epcq_req_destroy epcq_destroy
+    STRUCT fun_admin_epcq_req_destroy epcq_req_destroy
       2 63:56  uint8_t epcq_req_destroy_subop /* FUN_ADMIN_SUBOP_DESTROY */
       2 55:32  uint8_t rsvd0[3]
       2 31:00 uint32_t epcq_req_destroy_id /* epcqid to destroy */
@@ -465,4 +465,31 @@ STRUCT fun_admin_bind_rsp
   0 63:00 fun_admin_rsp_common bind_rsp_common 
   1 63:00 ...
 END
+
+
+
+
+
+
+
+
+
+
+
+
+
+STRUCT fun_req_common
+  0 63:56  uint8_t req_common_op /* see fun_admin_op enum */
+  0 55:48  uint8_t req_common_len8 /* length of the request in units of 8-bytes */
+  0 47:32 uint16_t req_common_flags /* see fun_admin_req_common flag enum */
+  0 31:00 uint32_t rsvd0
+  1 63:00 uint64_t req_common_cookie /* caller cookie, returned in response message */
+END 
+
+STRUCT fun_rsp_common
+  0 63:56  uint8_t rsp_common_op /* see fun_admin_op enum, copied from request */
+  0 55:32  uint8_t rsvd0[3]
+  0 31:00 uint32_t rsp_common_status /* status */
+  1 63:00 uint64_t rsp_common_cookie  /* caller cookie, copied from request */
+END 
 
