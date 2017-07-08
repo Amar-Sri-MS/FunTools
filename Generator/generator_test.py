@@ -518,6 +518,8 @@ class TestDocBuilder(unittest.TestCase):
       '0 63:48 Foo header',
       '0 47:0 uint64_t arg2',
       '1 63:32 uint32_t arg3',
+      '1 31:0 uint32_t arg4',
+      '2 63:0 Bar b',
       'END'
       ]
     errors = doc_builder.Parse('filename', contents)
@@ -533,9 +535,70 @@ class TestDocBuilder(unittest.TestCase):
     
     self.assertEqual(16, foo.BitWidth())
     self.assertEqual(64, bar.BitWidth())
-    self.assertEqual(96, baz.BitWidth())
+    self.assertEqual(192, baz.BitWidth())
 
+    self.assertEqual(0, baz.fields[0].StartOffset())
+    self.assertEqual(16, baz.fields[1].StartOffset())
+    self.assertEqual(64, baz.fields[2].StartOffset())
+    self.assertEqual(96, baz.fields[3].StartOffset())
+    self.assertEqual(128, baz.fields[4].StartOffset())
 
+    b = baz.fields[4]
+    self.assertEqual(2, b.StartFlit())
+    self.assertEqual(2, b.EndFlit())
+    self.assertEqual(63, b.StartBit())
+    self.assertEqual(0, b.EndBit())
+
+  def testNestedUnion(self):
+    doc_builder = generator.DocBuilder()
+    # ... allows a field to overflow into later flits.
+    contents = [
+      'STRUCT Foo',
+      '0 63:0 uint64_t command',
+      'UNION foo u',
+      'STRUCT A1 a1',
+      '0 63:0 uint64_t a1_value',
+      'END',
+      'STRUCT A2 a2',
+      '0 63:0 uint64_t a2_value',
+      'END',
+      'STRUCT A3 a3',
+      '0 63:0 uint64_t a3_value',
+      'END',
+      'END',
+      'END'
+      ]
+    errors = doc_builder.Parse('filename', contents)
+    self.assertIsNone(errors)
+  
+    doc = doc_builder.current_document
+
+    self.assertEqual(5, len(doc.structs))
+    
+    foo = doc.structs[0]
+    
+    self.assertEqual(128, foo.BitWidth())
+
+    self.assertEqual(2, len(foo.fields))
+
+    union = foo.fields[1]
+    self.assertEqual(64, union.StartOffset())
+    self.assertEqual(127, union.EndOffset())
+
+    self.assertEqual(3, len(union.subfields))
+
+    a1 = union.subfields[0]
+    self.assertEqual(64, a1.StartOffset())
+    self.assertEqual(127, a1.EndOffset())
+
+    a2 = union.subfields[0]
+    self.assertEqual(64, a2.StartOffset())
+    self.assertEqual(127, a2.EndOffset())
+
+    a3 = union.subfields[0]
+    self.assertEqual(64, a3.StartOffset())
+    self.assertEqual(127, a3.EndOffset())
+    
   def testMultiFlitNestedStruct(self):
     doc_builder = generator.DocBuilder()
     # ... allows a field to overflow into later flits.

@@ -101,6 +101,25 @@ class HTMLGeneratorTest(unittest.TestCase):
                                      input, 'foo.gen')
         self.assertIsNotNone(out)
 
+    def testPrintNestedSubfields(self):
+        input = [
+            'STRUCT outer'
+            '// Body comment for a.',
+            '0 63:00 uint64_t a // Key comment for a.',
+            'STRUCT inner',
+            '// Body comment for b.',
+            '0 63:00 uint64_t b // Key comment for b.',
+            'END',
+            'END'
+            ]
+        out = generator.GenerateFile(True, generator.OutputStyleHTML, None,
+                                     input, 'foo.gen')
+        self.assertIsNotNone(out)
+        self.assertIn('Key comment for a.', out)
+        self.assertIn('Key comment for b.', out)
+        self.assertIn('Body comment for a.', out)
+        self.assertIn('Body comment for b.', out)
+
 
 
 if __name__ == '__main__':
