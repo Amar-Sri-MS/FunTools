@@ -6,27 +6,171 @@
 
 class HTMLGenerator:
 
+  def Rows(self, struct):
+    """Returns an array of arrays of (field name, field width)"""
+    # TODO(Bowdidge): Support unions.  Perhaps create alternative structure without union?
+    fields = []
+    rows = []
+    current_row = []
+    next_color = 0
+    bytes_remaining = 64
+
+    lingering_field_name = None
+    lingering_field_width = 0
+    
+    fields = list(struct.fields)
+
+    while len(fields) > 0 or lingering_field_width > 0:
+      if lingering_field_width > 0:
+        if bytes_remaining > lingering_field_width:
+          current_row.append((lingering_field_name, lingering_field_width))
+        else:
+          current_row.append((lingering_field_name, bytes_remaining))
+          lingering_field_width = lingering_field_width - bytes_remaining
+      else:
+        next_field = fields.pop(0)
+        if next_field.type.IsRecord():
+          struct = next_field.type.base_type.node
+          fields = list(struct.fields) + fields
+        elif next_field.type.IsScalar() or next_field.type.IsArray():
+          if bytes_remaining >= next_field.BitWidth():
+            current_row.append((next_field.name, next_field.BitWidth()))
+            bytes_remaining -= next_field.BitWidth()
+        else:
+          lingering_field_name = next_field.name
+          lingering_field_width = next_field.BitWidth()
+
+      if bytes_remaining == 0:
+        rows.append(current_row)
+        current_row = []
+        bytes_remaining = 64
+    return rows        
+                            
+
+        
+    
+
+  def DrawFields(self, flit, row):
+    out = ''
+    out += '  <div class="bitRow">\n'
+    out += '    <div class="rowTitle">Flit %d</div>\n' % flit
+    for (name, width) in row:
+      bar_width = (1000 * width / 64) - 2
+      out += '    <div class="bar field" style="width: %dpx">%s</div>\n' % ( bar_width, name)
+    out += '  </div>\n'
+    return out
+
+  def BitmapForStruct(self, struct):
+    out = ''
+    out += '<div class="bitmap">\n'
+    out += '  <div class="bitRow">\n'
+    out += '    <div class="rowTitle">Bits</div>\n'
+    out += '    <div class="bar keybar" style="width: 123px">63-56</div>\n'
+    out += '    <div class="bar keybar" style="width: 123px">55-48</div>\n'
+    out += '    <div class="bar keybar" style="width: 123px">47-40</div>\n'
+    out += '    <div class="bar keybar" style="width: 123px">39-32</div>\n'
+    out += '    <div class="bar keybar" style="width: 123px">31-24</div>\n'
+    out += '    <div class="bar keybar" style="width: 123px">23-16</div>\n'
+    out += '    <div class="bar keybar" style="width: 123px">15-8</div>\n'
+    out += '    <div class="bar keybar" style="width: 123px">7-0</div>\n'
+    out += '  </div>\n'
+
+    rows = self.Rows(struct)
+    flit = 0
+    for row in rows:
+      out += self.DrawFields(flit, row)
+      flit += 1
+    out += '</div>\n'
+    return out
+
+
   def VisitDocument(self, doc):
     # Generates all the HTML to document the structures.
-    css = ('.structTable {\n'
-           '  border: solid 1px black;\n'
-           '  border-collapse: collapse;\n'
-           '}\n'
-           '.structTable td {\n'
-           '   font-family: "Courier"\n'
-           '}\n'
-           '.structTable .description {\n'
-           '  font-family: "Times New Roman"\n'
-           '}\n'
-           '.structBits {\n'
-           '  background: #eeeeee;\n'
-           '}\n'
-           '.structTable td {\n'
-           '  padding: 10px;\n'
-           '}\n'
-           '.structTable th {\n'
-           '  background: #dddddd;\n'
-           '}\n')
+    css = ("""
+.structTable {
+    border: solid 1px black;
+    border-collapse: collapse;
+}
+.structTable td {
+        font-family: "Courier"
+}
+.structTable .description {
+        font-family: "Times New Roman"
+}
+.structBits {
+        background: #eeeeee;
+        /* TODO(bowdidge): Mess with padding to get left column of both tables same width. */
+        width: 85px;
+}
+.structTable td {
+        padding: 10px;
+}
+.structTable th {
+        background: #dddddd;
+}
+
+/* Any row of the bitmap. */
+.bitRow {
+  width: 1200px;
+  display: inline-block;
+  padding: 0px;
+  margin: 0px;
+}
+/* Title bar of bitmap showing bit ranges. */
+.keybar {
+  background-color: #f0f0f0;
+  height: 30px;
+  border: 1px solid gray;
+  border-bottom: 1px solid black;
+  border-left: 1px  solid black;
+  border-right: 1px solid black;
+}
+
+/* Block representing a single non-nested field. */
+.field {
+  background-color: #f0ffff;
+  height: 40px;  
+  border: 1px solid black;
+}
+
+/* Block representing top line of a nested field listing the
+   contained structure. */
+.nested {
+  height: 25px;
+  background-color: #f0f0ff;
+  border-left: 1px solid black;
+  border-right: 1px solid black;
+  border-bottom: 0px solid black
+}
+/* Block representing lower line of a nested field listing the field. */
+.nestedfield {
+  background-color: #f0f0ff;
+  height: 40px;
+  border: 1px solid black;
+  border-bottom 2px solid black;
+  border-top: 0px solid black
+}
+
+/* Generic part of a bar in the bitmap. */
+.bar {
+ float: left;
+  margin: 0px;
+  padding: 0px;
+  text-align: center;
+}
+/* Left caption for a row. */
+.rowtitle {
+  width: 200px;
+  display: inline-block;
+  float: left;
+}
+/* Entire bitmap. */
+.bitmap {
+  border: solid 2px black;
+  margin-bottom: 10px;
+}
+
+""")
 
     out = '<!-- Documentation created by generator.py.\n'
     out += '     Do not change this file; '
@@ -34,6 +178,7 @@ class HTMLGenerator:
     out += '<html>\n<head>\n'
     out += '<style>\n%s</style>\n' % css
     out += '</head>\n<body>\n'
+    out += 'Documentation for structured defined in ' + doc.filename + '.<p>'
     for enum in doc.enums:
       out += self.VisitEnum(enum)
     for struct in doc.structs:
@@ -80,11 +225,15 @@ class HTMLGenerator:
     struct is the """
     out = '<tr>\n'
 
-    comment = ""
-    if struct.key_comment:
-      comment = struct.key_comment
+    comment = ''
+    if field.key_comment:
+      comment += field.key_comment + '<br>'
+    if field.body_comment:
+      comment += '<p>%s</p>/' % (field.body_comment)
 
-    if field.StartFlit() != field.EndFlit():
+    if field.IsNoOffset():
+      out += '  <td class="structBits" colspan=2></td>\n'
+    elif field.StartFlit() != field.EndFlit():
       out += '  <td class="structBits" colspan=2>%d:%d-%d:%d</td>\n' % (
         field.StartFlit(), field.StartBit(), field.EndFlit(), field.EndBit())
     else:
@@ -119,7 +268,11 @@ class HTMLGenerator:
     out += '<h3>struct %s:</h3>\n' % struct.name
     if struct.key_comment:
       out += '<p>%s</p>\n' % struct.key_comment
-    out += '<p>%s</p>\n' % struct.body_comment
+    if struct.body_comment:
+      out += '<p>%s</p>\n' % struct.body_comment
+
+    out += self.BitmapForStruct(struct)
+
     out += '<table class="structTable">\n'
     out += '<tr>\n'
     out += '  <th class="structBits">Flit</th>\n'
@@ -167,7 +320,7 @@ class HTMLGenerator:
     if field.crosses_flit:
       out += '  <td class="structBits" colspan=2>%d:%d-%d:%d</td>\n' % (
         field.StartFlit(), field.StartBit(), field.EndFlit(), field.EndBit())
-    elif field.no_offset:
+    elif field.IsNoOffset():
       out += '  <td class="structBits" colspan=2></td>\n'
     else:
       out += '  <td class="structBits">%d</td>\n' % field.StartFlit()
