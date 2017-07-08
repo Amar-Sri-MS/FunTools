@@ -458,7 +458,7 @@ END
 STRUCT fun_admin_bind_req
   0 63:00 fun_admin_req_common bind_req_common 
   1 63:00 ...
-  2 63:00 fun_admin_bind_req_entry bind_req_entry[0]
+  _ _:_ fun_admin_bind_req_entry bind_req_entry[0]
 END
 
 STRUCT fun_admin_bind_rsp
