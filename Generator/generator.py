@@ -365,8 +365,7 @@ class Field(Node):
     """
     if self.no_offset:
       return None
-    return FLIT_SIZE - (self.StartOffset() + self.BitWidth() -
-                        (self.EndFlit() * FLIT_SIZE) - 1) - 1
+    return FLIT_SIZE - (self.EndOffset() - (self.EndFlit() * FLIT_SIZE)) - 1
 
   def BitWidth(self):
     # Returns the number of bits in the field.
@@ -402,6 +401,17 @@ class Field(Node):
       new_subfield = Field(proto_field.Name(), proto_field.Type(),
                            self.StartOffset() + proto_field.StartOffset(),
                            proto_field.BitWidth())
+      # TODO(bowdidge): Consider an explicit copy method.
+      new_subfield.key_comment = proto_field.key_comment
+      new_subfield.body_comment = proto_field.body_comment
+      new_subfield.tail_comment = proto_field.tail_comment
+      new_subfield.generator_comment = proto_field.generator_comment
+      new_subfield.line_number = proto_field.line_number
+      new_subfield.crosses_flit = proto_field.crosses_flit
+      new_subfield.is_bitfield = proto_field.is_bitfield
+      new_subfield.no_offset = proto_field.no_offset
+
+
       self.subfields.append(new_subfield)
       if proto_field.type.IsRecord():
         new_subfield.CreateSubfields()
@@ -521,6 +531,17 @@ class Struct(Node):
       return 0
 
     return max([(f.EndFlit() + 1) * 8 for f in self.fields])
+
+  def FlitFieldMap(self):
+    # Return a map of (flit, fields) for all fields in the structure.
+    flit_field_map = {}
+    fields_with_offsets = [f for f in self.fields if not f.IsNoOffset()]
+
+    for field in fields_with_offsets:
+      item = flit_field_map.get(field.StartFlit(), [])
+      item.append(field)
+      flit_field_map[field.StartFlit()] = item
+    return flit_field_map
 
 class Document(Node):
   # Representation of an entire generated header specification.
@@ -759,21 +780,11 @@ class Packer:
     # Get rid of old struct fields, and use macros on flit-sized
     # fields to access.
     new_fields = []
-    flit_field_map = self.FieldsToStartFlits(the_struct)
+    flit_field_map = the_struct.FlitFieldMap()
 
     for flit, fields_in_flit in flit_field_map.iteritems():
       self.PackFlit(the_struct, flit, fields_in_flit)
 
-  def FieldsToStartFlits(self, struct):
-    # Return a map of (flit, fields) for all fields in the structure.
-    flit_field_map = {}
-    fields_with_offsets = [f for f in struct.fields if not f.IsNoOffset()]
-
-    for field in fields_with_offsets:
-      item = flit_field_map.get(field.StartFlit(), [])
-      item.append(field)
-      flit_field_map[field.StartFlit()] = item
-    return flit_field_map
 
 # Enums used to indicate the kind of object being processed.
 # Used on the stack.
@@ -957,10 +968,11 @@ class DocBuilder:
     if state != DocBuilderTopLevel:
       # Sub-structures and sub-unions are numbered starting at 0.
       # Check the previous field to find where this struct should start.
-      previous_fields = containing_object.fields[0:-1]
-      last_offset = 0
-      if len(previous_fields) > 0:
-        last_offset = previous_fields[-1].EndOffset()
+      last_offset = -1
+      if not containing_object.is_union:
+        previous_fields = containing_object.fields[0:-1]
+        if len(previous_fields) > 0:
+          last_offset = previous_fields[-1].EndOffset()
 
       new_field = containing_object.fields[-1]
       new_field.offset_start = last_offset + 1
