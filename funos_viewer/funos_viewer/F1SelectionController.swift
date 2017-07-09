@@ -21,7 +21,6 @@ class F1SelectionController: NSObject, NSTabViewDelegate {
 		setupSelectionInfo()
 		setupWUsTable()
 		resetIKVSamples()
-		setupMallocTable()
 		selectionTabView.delegate = self
 		selectionRelativeHeat.isEnabled = false
 		// The next two lines are a horrible hack.  Without them, for some reason you need to go to the WUs TAB twice before you get any display.  Makes no sense.
@@ -44,7 +43,7 @@ class F1SelectionController: NSObject, NSTabViewDelegate {
 	//    deinit {
 	//        print("DESTROY F1SelectionController")
 	//    }
-	let tabsToRefresh: Set<String> = ["WUs", "Misc Stats", "Malloc"]
+	let tabsToRefresh: Set<String> = ["WUs", "Misc Stats"]
 
 	public func tabView(_ tabView: NSTabView, willSelect tabViewItem: NSTabViewItem?) {
 		//        print("Received willSelect notification tabView changed to \(tabViewItem!.label)")
@@ -75,7 +74,6 @@ class F1SelectionController: NSObject, NSTabViewDelegate {
 			case "WUs": doRefreshWUs()
 			case "Misc Stats": doRefreshMiscStats()
 			case "IKV": doRefreshIKV()
-			case "Malloc": doRefreshMalloc()
 			default: break
 		}
 	}
@@ -265,22 +263,6 @@ class F1SelectionController: NSObject, NSTabViewDelegate {
 		ikvSpaceAmplificationSamplesView.setSamples(ikvSpaceAmplificationSamples!)
 	}
 
-	/*=============== MALLOC ===============*/
-	@IBOutlet var mallocInfoTable: NSTableView!
-
-	var mallocInfoSource = MallocRegionsDataSource()
-
-	func setupMallocTable() {
-		mallocInfoTable.dataSource = mallocInfoSource
-	}
-	func doRefreshMalloc() {
-		let regions = document.doF1Command("peek", "stats/malloc_agent/regions")?.arrayValue
-		if regions == nil || regions!.isEmpty { return }
-		if mallocInfoSource.updateAllInfo(regions!) {
-			mallocInfoTable.reloadData()
-		}
-	}
-
 }
 
 /*=============== WUs DATA SOURCE ===============*/
@@ -340,85 +322,3 @@ class WUInfoDataSource: NSObject, NSTableViewDataSource {
 
 }
 
-/*=============== MALLOC DATA SOURCE ===============*/
-
-class MallocRegionsDataSource: NSObject, NSTableViewDataSource {
-	class SummaryRegionInfo: NSObject {
-		// we subclass NSObject to get valueForKeyPath
-		var numRegions: Int = 0
-		var listLogRegionSizes: String = ""
-		var sumRegionSizesInBytes: UInt64 = 0
-		var sumWastedInBytes: UInt64 = 0
-		var numAllocs = 0
-		var numFrees = 0
-		var numInUse = 0
-		var sumInUseSizesInBytes: UInt64 = 0
-		var sumRegionSizes: Double {
-			return (Double(sumRegionSizesInBytes) / 1024.0 / 1024.0).round1
-		}
-		var percentInUse: Double {
-			return (sumRegionSizesInBytes == 0 ? 0.0 : Double(sumInUseSizesInBytes + sumWastedInBytes) / Double(sumRegionSizesInBytes) * 100.0).round1
-		}
-	}
-	var allRegions: [JSON] = []
-	var allInfo: [Int: SummaryRegionInfo] = [:] // logChunkSize -> Summary
-
-	func updateAllInfo(_ regions: [JSON]) -> Bool {
-		// returns whether something changed
-		if (regions == allRegions) { return false }
-		allRegions = regions
-		allInfo = [:]
-		for region in regions {
-			let lcs = region.dictionaryValue["log_chunk_size"]!.integerValue
-			let summary = allInfo[lcs] ?? SummaryRegionInfo()
-			summary.numRegions += 1
-			let lrs = region.dictionaryValue["log_region_size"]!.integerValue
-			summary.listLogRegionSizes += (summary.listLogRegionSizes.isEmpty ? "" : " ") + lrs.description
-			summary.sumRegionSizesInBytes = UInt64(1) << lrs
-			let w = region.dictionaryValue["wasted_size"]!.integerValue
-			summary.sumWastedInBytes += UInt64(w)
-			let na = region.dictionaryValue["num_alloc"]!.integerValue
-			summary.numAllocs += na
-			let nf = region.dictionaryValue["num_free"]!.integerValue
-			summary.numFrees += nf
-			let niu = region.dictionaryValue["num_in_use"]!.integerValue
-			summary.numInUse += niu
-			summary.sumInUseSizesInBytes += UInt64(niu) << lcs
-			allInfo[lcs] = summary
-		}
-		return true
-	}
-
-	var total: SummaryRegionInfo {
-		let total = SummaryRegionInfo()
-		for (_, summary) in allInfo {
-			total.numRegions += summary.numRegions
-			total.sumRegionSizesInBytes += summary.sumRegionSizesInBytes
-			total.sumWastedInBytes += summary.sumWastedInBytes
-			total.numAllocs += summary.numAllocs
-			total.numFrees += summary.numFrees
-			total.numInUse += summary.numInUse
-			total.sumInUseSizesInBytes += summary.sumInUseSizesInBytes
-		}
-		return total
-	}
-
-	func numberOfRows(in tableView: NSTableView) -> Int {
-		return allInfo.count + 1
-	}
-
-	func tableView(_ tableView: NSTableView, objectValueFor tableColumn: NSTableColumn?, row: Int) -> Any? {
-		let last = row >= allInfo.count
-		let lcss = allInfo.keys.sorted()
-		let ident = tableColumn!.identifier
-//		print("Got identifier '\(ident)'")
-		if (ident == "logChunk") {
-			return last ? "Total" : lcss[row].description
-		} else {
-			let info = last ? total : allInfo[lcss[row]]!
-			let value: Any? = info.value(forKeyPath: ident)
-			return (value as! NSObject).description
-		}
-	}
-
-}

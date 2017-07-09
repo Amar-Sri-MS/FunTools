@@ -220,6 +220,7 @@ import AppKit
 			Swift.print("*** Error executing \(verb): nil ; socket=\(socket)")
 			return nil
 		}
+//		Swift.print("Executed command '\(verb)'")
 		let str: String = String(cString: r!)
 		if debug {
 			Swift.print("command '\(verb)' returned '\(str)'")

@@ -8,22 +8,34 @@
 
 import Cocoa
 
-@NSApplicationMain class AppDelegate: NSObject, NSApplicationDelegate {
+fileprivate var document: F1SimDocument!
 
-    @IBOutlet weak var window: NSWindow!
+@NSApplicationMain class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ aNotification: Notification) {
         // Insert code here to initialize your application
         UserDefaults.standard.set(true, forKey: "NSConstraintBasedLayoutVisualizeMutuallyExclusiveConstraints")
         let docController = NSDocumentController.shared()
-        let doc = F1SimDocument()
-        docController.addDocument(doc)
+        document = F1SimDocument()
+        docController.addDocument(document)
     }
 
     func applicationWillTerminate(_ aNotification: Notification) {
         // Insert code here to tear down your application
     }
 
-
 }
 
+var mallocController: MallocWindowController! = nil
+
+extension NSApplication {
+	var theDocument: F1SimDocument! { return document }
+
+	@IBAction func mallocWindow(_ sender: NSObject?) {
+		if mallocController == nil {
+			mallocController = MallocWindowController()
+		}
+		mallocController.show()
+	}
+
+}
