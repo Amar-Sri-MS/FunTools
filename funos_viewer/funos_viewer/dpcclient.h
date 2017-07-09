@@ -8,6 +8,8 @@
 
 #pragma once
 
+// WORKAROUND
+// Not defining static_assert causes an error
 #define static_assert(x,y)
 
 #include <funos/fun_json.h>
