@@ -99,3 +99,26 @@ def ParseBitSpec(the_str):
     return None
 
   return (flit_number, start_bit, end_bit)
+
+def MaxBit(value):
+  """Returns the highest position bit set in the number provided."""
+  max_bits = 0
+  while (value != 0):
+    value = value >> 1
+    max_bits += 1
+
+  return max_bits
+
+def BitPatternString(value, max_bits):
+  """Returns a string showing the base-2 representation of the number provided.
+
+  max_bits sets how many leading zeros should be printed.
+  """
+  out = ''
+  for i in range(0, max_bits):
+    bit = max_bits - i - 1
+    if (value & (1 << bit)) != 0:
+      out += '1'
+    else:
+      out += '0'
+  return out
