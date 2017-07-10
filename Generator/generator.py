@@ -397,10 +397,14 @@ class Field(Node):
     """
     if not self.type.base_type.node:
       return
+
     for proto_field in self.type.base_type.node.fields:
-      new_subfield = Field(proto_field.Name(), proto_field.Type(),
-                           self.StartOffset() + proto_field.StartOffset(),
-                           proto_field.BitWidth())
+      if proto_field.no_offset:
+        new_subfield = Field(proto_field.Name(), proto_field.Type(), None, None)
+      else:
+        new_subfield = Field(proto_field.Name(), proto_field.Type(),
+                             self.StartOffset() + proto_field.StartOffset(),
+                             proto_field.BitWidth())
       # TODO(bowdidge): Consider an explicit copy method.
       new_subfield.key_comment = proto_field.key_comment
       new_subfield.body_comment = proto_field.body_comment

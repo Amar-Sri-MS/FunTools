@@ -962,6 +962,30 @@ class PackerTest(unittest.TestCase):
     self.assertEqual(1, len(errors))
     self.assertIn('without matching', errors[0])
                 
+  def disableParseVariableLengthArrayInSubStructure(self):
+    doc_builder = generator.DocBuilder()
+    contents = [
+      'STRUCT outer',
+      '0 63:56 char initial_outer',
+      'STRUCT inner',
+      '0 63:56 char initial_inner',
+      '_ _:_ char array[0]',
+      'END',
+      'END'
+      ]
+
+    errors = doc_builder.Parse('filename', contents)
+    self.assertIsNone(errors)
+
+    self.assertEqual(2, len(doc.structs))
+    inner = doc.structs[0]
+    self.assertEqual("inner", inner.name)
+    self.assertEqual(2, len(inner.fields))
+    var_length_array = inner.fields[1]
+    self.assertEqual("array", var_length_array.name)
+    self.assertTrue(var_length_array.no_offset)
+
+                     
 
 class CheckerTest(unittest.TestCase):
 
@@ -1248,6 +1272,27 @@ class CheckerTest(unittest.TestCase):
       '0 63:56 char initial',
       '_ _:_ char array[0]',
       '0 55:48 char end',
+      'END'
+      ]
+
+    errors = doc_builder.Parse('filename', contents)
+    self.assertIsNone(errors)
+
+    checker = generator.Checker()
+    checker.VisitDocument(doc_builder.current_document)
+
+    self.assertEqual(1, len(checker.errors))
+    self.assertIn('is not the last field', checker.errors[0])
+
+  def disableTestErrorIfVariableLengthArrayNotAtEndOfContainer(self):
+    doc_builder = generator.DocBuilder()
+    contents = [
+      'STRUCT outer',
+      '0 63:56 char initial_outer',
+      'STRUCT inner',
+      '0 63:56 char initial_inner',
+      '_ _:_ char array[0]',
+      'END',
       'END'
       ]
 
