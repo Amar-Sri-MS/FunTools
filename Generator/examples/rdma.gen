@@ -27,6 +27,14 @@ ENUM Opcode
   OPCODE_SCATTER=2
 END
 
+FLAGS Mask
+  EMPTY = 0
+  FOO = 1
+  BAR = 2
+  BAZ = 4
+  BAR_AND_BAZ = 0x6
+END
+
 // Fragment descriptor pointing to a 16 byte gather entry.
 STRUCT GatherListFragmentHeader
   UNION Command u1

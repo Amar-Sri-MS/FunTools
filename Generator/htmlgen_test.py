@@ -120,6 +120,36 @@ class HTMLGeneratorTest(unittest.TestCase):
         self.assertIn('Body comment for a.', out)
         self.assertIn('Body comment for b.', out)
 
+    def testPrintFlags(self):
+      contents = [
+        'FLAGS Foo',
+        'A = 1',
+        'B = 2',
+        'C = 4',
+        'D = 8',
+        'E = 16',
+        'F = 0x20',
+        'END'
+        ]
+      out = generator.GenerateFile(True, generator.OutputStyleHTML, None, contents, 'foo.gen')
+
+      self.assertIn('<h3>Flags: Foo</h3>', out)
+      self.assertIn('<td>A</td><td>0x00000001</td><td>0 0 0 0 0 1</td></tr>', out)
+      self.assertIn('<td>F</td><td>0x00000020</td><td>1 0 0 0 0 0</td></tr>', out)
+
+    def testPrintFlagsNonPowerOfTwo(self):
+      contents = [
+        'FLAGS Foo',
+        'A = 1',
+        'B = 2',
+        'C = 4',
+        'BC = 6',
+        'D = 8',
+        'END'
+        ]
+      out = generator.GenerateFile(True, generator.OutputStyleHTML, None, contents, 'foo.gen')
+
+      self.assertIn('<td>BC</td><td>0x00000006</td><td>0 1 1 0</td></tr>', out)
 
 
 if __name__ == '__main__':

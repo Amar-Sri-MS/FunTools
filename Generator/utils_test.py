@@ -64,7 +64,17 @@ class TestCleanComment(unittest.TestCase):
   def testMultiLine(self):
     self.assertEqual('/*\n * a\n * b\n */', utils.AsComment('a\nb\n'))
 
-                     
+
+class TestBitPatternString(unittest.TestCase):
+  def testSimple(self):
+
+    self.assertEqual('0', utils.BitPatternString(0, 1))
+    self.assertEqual('00', utils.BitPatternString(0, 2))
+    self.assertEqual('0000', utils.BitPatternString(0, 4))
+    self.assertEqual('1001', utils.BitPatternString(9, 4))
+    self.assertEqual('1101', utils.BitPatternString(13, 4))
+    self.assertEqual('0001', utils.BitPatternString(1, 4))
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -458,6 +458,36 @@ class Enum(Node):
     return('<Enum %s:\n  %s\n>\n' % (self.name, self.variables))
 
 
+class FlagSet(Node):
+  # Representation of an flags declaration.  FlagSet are like enums,
+  # but the values are expected to represent bitmasks, and the values
+  # are generated as ints rather than as an enum.
+
+  def __init__(self, name):
+    # Create an FlagSet declaration.
+    # name is a string.
+    # variables holds the EnumVariables associated with the enum.
+    Node.__init__(self)
+    self.name = name
+    self.variables = []
+
+  def Name(self):
+    return self.name
+
+  def BitWidth(self):
+    return 0
+
+  def MaxValue(self):
+    max_value = 0
+    for var in self.variables:
+      if var.value > max_value:
+        max_value = var.value
+    return max_value
+
+  def __str__(self):
+    return('<FlagSet %s:\n  %s\n>\n' % (self.name, self.variables))
+
+
 class Struct(Node):
   # Representation of a structure.
 
@@ -563,6 +593,9 @@ class Document(Node):
 
     # All enums declared in the file.
     self.enums = []
+
+    # All flag sets declared in the file.
+    self.flagsets = []
 
     # Source code for function declarations.
     self.declarations = []
@@ -802,6 +835,7 @@ class Packer:
 DocBuilderStateStruct = 1
 DocBuilderTopLevel = 3
 DocBuilderStateEnum = 4
+DocBuilderStateFlagSet = 5
 
 
 class DocBuilder:
@@ -904,6 +938,29 @@ class DocBuilder:
     self.stack.append((DocBuilderStateEnum, current_enum))
     self.current_document.enums.append(current_enum)
 
+  def ParseFlagSetStart(self, line):
+    # Handle an FLAGS directive opening a new type represeting bit flags.
+    state, containing_struct = self.stack[len(self.stack)-1]
+    match = re.match('FLAGS\s+(\w+)(.*)$', line)
+    if match is None:
+      self.AddError('Invalid flags start line: "%s"' % line)
+      return
+
+    name = match.group(1)
+    key_comment = match.group(2)
+
+    name = utils.RemoveWhitespace(name)
+    current_flags = FlagSet(name)
+    current_flags.line_number = self.current_line
+    current_flags.key_comment = self.StripKeyComment(key_comment)
+
+    if len(self.current_comment) > 0:
+      current_flags.body_comment = self.current_comment
+    self.current_comment = ''
+
+    self.stack.append((DocBuilderStateFlagSet, current_flags))
+    self.current_document.flagsets.append(current_flags)
+
   def ParseEnumLine(self, line):
     # Parse the line describing a new enum variable.
     # This regexp matches:
@@ -943,7 +1000,7 @@ class DocBuilder:
       self.current_comment += self.StripKeyComment(line)
     elif state == DocBuilderTopLevel:
       return
-    elif state == DocBuilderStateEnum:
+    elif state == DocBuilderStateEnum or state == DocBuilderStateFlagSet:
       enum = self.ParseEnumLine(line)
       if enum is not None:
         containing_struct.variables.append(enum)
@@ -1259,6 +1316,8 @@ class DocBuilder:
         self.ParseUnionStart(line)
       elif line.startswith('ENUM'):
         self.ParseEnumStart(line)
+      elif line.startswith('FLAGS'):
+        self.ParseFlagSetStart(line)
       elif line.startswith('END'):
         self.ParseEnd(line)
       else:
