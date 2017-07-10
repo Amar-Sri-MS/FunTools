@@ -20,6 +20,10 @@ class MallocWindowController: NSObject {
 	var mallocInfoSource = MallocRegionsDataSource()
 	var mallocCachesSource = MallocCachesDataSource()
 
+	@IBOutlet var allocUsesCache: NSButton!
+	@IBOutlet var freeRecycles: NSButton!
+	@IBOutlet var asyncReplenish: NSButton!
+
 	override init() {
 		super.init()
 		let ok = Bundle.main.loadNibNamed("MallocWindow", owner: self, topLevelObjects: nil)
@@ -62,6 +66,14 @@ class MallocWindowController: NSObject {
 		return NSApp.theDocument!
 	}
 
+	@IBAction func cacheSettingChanged(_ sender: NSObject?) {
+		let a = allocUsesCache.state
+		let f = freeRecycles.state
+		let r = asyncReplenish.state
+		for (name, value) in [("auto_replenish", r), ("consume_from", a), ("recycle_into", f)] {
+			_ = document.doF1Command("poke", "params/malloc_cache/\(name)", value.description)
+		}
+	}
 }
 
 /*=============== MALLOC AGENT DATA SOURCE ===============*/

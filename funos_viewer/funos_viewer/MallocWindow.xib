@@ -8,6 +8,9 @@
     <objects>
         <customObject id="-2" userLabel="File's Owner" customClass="MallocWindowController" customModule="funos_viewer" customModuleProvider="target">
             <connections>
+                <outlet property="allocUsesCache" destination="vxB-TG-bA7" id="e7X-yL-BTl"/>
+                <outlet property="asyncReplenish" destination="S1g-bv-G6V" id="wRJ-Ml-INq"/>
+                <outlet property="freeRecycles" destination="hMk-g0-6aa" id="Xaa-7B-eQP"/>
                 <outlet property="mallocCachesTable" destination="RYE-wL-yQl" id="dj2-m6-x9j"/>
                 <outlet property="mallocInfoTable" destination="BLr-C6-7jG" id="9Wc-gW-aeI"/>
                 <outlet property="window" destination="QvC-M9-y7g" id="DlP-Wg-eC9"/>
@@ -25,13 +28,13 @@
                 <autoresizingMask key="autoresizingMask"/>
                 <subviews>
                     <scrollView autohidesScrollers="YES" horizontalLineScroll="19" horizontalPageScroll="10" verticalLineScroll="19" verticalPageScroll="10" usesPredominantAxisScrolling="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Aje-cO-CxR">
-                        <rect key="frame" x="-1" y="306" width="598" height="268"/>
+                        <rect key="frame" x="-1" y="341" width="598" height="233"/>
                         <clipView key="contentView" id="5U4-qd-hyT">
-                            <rect key="frame" x="1" y="0.0" width="596" height="267"/>
+                            <rect key="frame" x="1" y="0.0" width="596" height="232"/>
                             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                             <subviews>
                                 <tableView verticalHuggingPriority="750" allowsExpansionToolTips="YES" columnAutoresizingStyle="lastColumnOnly" alternatingRowBackgroundColors="YES" columnReordering="NO" columnSelection="YES" multipleSelection="NO" autosaveColumns="NO" headerView="nOA-fZ-1rU" id="BLr-C6-7jG" userLabel="Regions">
-                                    <rect key="frame" x="0.0" y="0.0" width="596" height="244"/>
+                                    <rect key="frame" x="0.0" y="0.0" width="596" height="209"/>
                                     <autoresizingMask key="autoresizingMask"/>
                                     <size key="intercellSpacing" width="3" height="2"/>
                                     <color key="backgroundColor" name="controlBackgroundColor" catalog="System" colorSpace="catalog"/>
@@ -334,20 +337,56 @@
                             <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                         </textFieldCell>
                     </textField>
+                    <button translatesAutoresizingMaskIntoConstraints="NO" id="vxB-TG-bA7">
+                        <rect key="frame" x="18" y="304" width="124" height="18"/>
+                        <buttonCell key="cell" type="check" title="Alloc uses cache" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="L53-XJ-iSD">
+                            <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
+                            <font key="font" metaFont="system"/>
+                        </buttonCell>
+                        <connections>
+                            <action selector="cacheSettingChanged:" target="-2" id="TOG-tQ-QfI"/>
+                        </connections>
+                    </button>
+                    <button translatesAutoresizingMaskIntoConstraints="NO" id="hMk-g0-6aa">
+                        <rect key="frame" x="159" y="304" width="103" height="18"/>
+                        <buttonCell key="cell" type="check" title="Free recycles" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="qzZ-Bi-biP">
+                            <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
+                            <font key="font" metaFont="system"/>
+                        </buttonCell>
+                        <connections>
+                            <action selector="cacheSettingChanged:" target="-2" id="aFJ-Ey-m0S"/>
+                        </connections>
+                    </button>
+                    <button translatesAutoresizingMaskIntoConstraints="NO" id="S1g-bv-G6V">
+                        <rect key="frame" x="281" y="304" width="118" height="18"/>
+                        <buttonCell key="cell" type="check" title="Async replenish" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="s9W-az-aUY">
+                            <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
+                            <font key="font" metaFont="system"/>
+                        </buttonCell>
+                        <connections>
+                            <action selector="cacheSettingChanged:" target="-2" id="oh8-2Z-x7X"/>
+                        </connections>
+                    </button>
                 </subviews>
                 <constraints>
-                    <constraint firstItem="4Oh-oB-OzX" firstAttribute="leading" secondItem="ZQZ-1W-Op7" secondAttribute="leading" id="1zx-eg-jVA"/>
-                    <constraint firstItem="Aje-cO-CxR" firstAttribute="leading" secondItem="KqL-lE-1hw" secondAttribute="leading" id="4Bo-nV-XyJ"/>
-                    <constraint firstAttribute="bottom" secondItem="KqL-lE-1hw" secondAttribute="bottom" constant="-1" id="4oq-EC-kgj"/>
-                    <constraint firstItem="Aje-cO-CxR" firstAttribute="leading" secondItem="EiT-Mj-1SZ" secondAttribute="leading" constant="-1" id="67E-Eh-GeA"/>
-                    <constraint firstItem="KqL-lE-1hw" firstAttribute="top" secondItem="ZQZ-1W-Op7" secondAttribute="bottom" constant="1" id="Tkl-qS-Gy6"/>
-                    <constraint firstItem="4Oh-oB-OzX" firstAttribute="top" secondItem="EiT-Mj-1SZ" secondAttribute="top" id="aBe-R4-uuK"/>
-                    <constraint firstItem="Aje-cO-CxR" firstAttribute="top" secondItem="EiT-Mj-1SZ" secondAttribute="top" constant="20" symbolic="YES" id="ckk-dH-73e"/>
-                    <constraint firstItem="KqL-lE-1hw" firstAttribute="top" secondItem="EiT-Mj-1SZ" secondAttribute="top" constant="324" id="hab-x7-qAP"/>
-                    <constraint firstItem="ZQZ-1W-Op7" firstAttribute="top" secondItem="Aje-cO-CxR" secondAttribute="bottom" constant="15" id="lBH-Ge-WTZ"/>
-                    <constraint firstItem="Aje-cO-CxR" firstAttribute="trailing" secondItem="KqL-lE-1hw" secondAttribute="trailing" id="vZ3-6a-HVL"/>
-                    <constraint firstAttribute="trailing" secondItem="Aje-cO-CxR" secondAttribute="trailing" constant="-1" id="w7x-KF-W0y"/>
-                    <constraint firstItem="4Oh-oB-OzX" firstAttribute="leading" secondItem="EiT-Mj-1SZ" secondAttribute="leading" constant="4" id="xpP-a5-fQy"/>
+                    <constraint firstItem="Aje-cO-CxR" firstAttribute="leading" secondItem="KqL-lE-1hw" secondAttribute="leading" id="BVA-so-Spw"/>
+                    <constraint firstItem="vxB-TG-bA7" firstAttribute="top" secondItem="Aje-cO-CxR" secondAttribute="bottom" constant="21" id="C0J-47-HVk"/>
+                    <constraint firstItem="S1g-bv-G6V" firstAttribute="leading" secondItem="hMk-g0-6aa" secondAttribute="trailing" constant="23" id="CH1-mh-OAb"/>
+                    <constraint firstItem="4Oh-oB-OzX" firstAttribute="leading" secondItem="EiT-Mj-1SZ" secondAttribute="leading" constant="4" id="I97-EV-Xjf"/>
+                    <constraint firstItem="Aje-cO-CxR" firstAttribute="trailing" secondItem="KqL-lE-1hw" secondAttribute="trailing" id="P6A-Pm-XzI"/>
+                    <constraint firstItem="4Oh-oB-OzX" firstAttribute="leading" secondItem="ZQZ-1W-Op7" secondAttribute="leading" id="Rm3-j7-bi6"/>
+                    <constraint firstItem="vxB-TG-bA7" firstAttribute="leading" secondItem="EiT-Mj-1SZ" secondAttribute="leading" constant="20" symbolic="YES" id="WR3-FY-mzs"/>
+                    <constraint firstAttribute="bottom" secondItem="KqL-lE-1hw" secondAttribute="bottom" constant="-1" id="XbJ-p3-Yvh"/>
+                    <constraint firstItem="Aje-cO-CxR" firstAttribute="top" secondItem="EiT-Mj-1SZ" secondAttribute="top" constant="20" symbolic="YES" id="Yxx-6g-zo3"/>
+                    <constraint firstItem="vxB-TG-bA7" firstAttribute="top" secondItem="EiT-Mj-1SZ" secondAttribute="top" constant="274" id="ZtK-iJ-foI"/>
+                    <constraint firstItem="ZQZ-1W-Op7" firstAttribute="top" secondItem="vxB-TG-bA7" secondAttribute="bottom" constant="15" id="gvm-gT-nc8"/>
+                    <constraint firstItem="Aje-cO-CxR" firstAttribute="leading" secondItem="EiT-Mj-1SZ" secondAttribute="leading" constant="-1" id="gzp-D1-mvu"/>
+                    <constraint firstItem="hMk-g0-6aa" firstAttribute="leading" secondItem="vxB-TG-bA7" secondAttribute="trailing" constant="21" id="iFh-hK-P7h"/>
+                    <constraint firstItem="4Oh-oB-OzX" firstAttribute="top" secondItem="EiT-Mj-1SZ" secondAttribute="top" id="ncO-KC-3ye"/>
+                    <constraint firstAttribute="trailing" secondItem="Aje-cO-CxR" secondAttribute="trailing" constant="-1" id="olz-EC-iSX"/>
+                    <constraint firstItem="vxB-TG-bA7" firstAttribute="baseline" secondItem="hMk-g0-6aa" secondAttribute="baseline" id="otS-Kz-Upl"/>
+                    <constraint firstItem="KqL-lE-1hw" firstAttribute="top" secondItem="ZQZ-1W-Op7" secondAttribute="bottom" constant="1" id="xbI-Wo-q8w"/>
+                    <constraint firstItem="hMk-g0-6aa" firstAttribute="baseline" secondItem="S1g-bv-G6V" secondAttribute="baseline" id="zy9-um-5uS"/>
                 </constraints>
             </view>
             <point key="canvasLocation" x="46" y="189"/>
