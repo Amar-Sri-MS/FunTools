@@ -1256,6 +1256,7 @@ class CheckerTest(unittest.TestCase):
 
     checker = generator.Checker()
     checker.VisitDocument(doc_builder.current_document)
+
     self.assertEqual(1, len(checker.errors))
     self.assertIn('is not the last field', checker.errors[0])
 
