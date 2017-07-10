@@ -5,8 +5,10 @@
 ##  Copyright (C) 2017 Fungible. All rights reserved.
 ##
 
+from __future__ import print_function
 import json
 import socket
+
 
 # N.B. The user must start a dpcsh in text proxy mode before
 # creating a DpcClient, e.g.
@@ -43,15 +45,21 @@ class DpcClient(object):
         server_address = '/tmp/funos-dpc-text.sock'
         self.__sock.connect(server_address)
 
-    def __recv_line(self):
+    def __recv_lines(self):
         recv_size = 1024
-        line = ""
-        while line.find('\n') == -1:
+        lines = ""
+        while lines.find('\n') == -1:
             buf = self.__sock.recv(recv_size)
             if not buf:
                 break
-            line += buf
-        return line[0:line.find('\n')]
+            lines += buf
+        return lines
+
+    def __recv_json(self):
+        json = self.__recv_lines()
+        while (json.count('{') != json.count('}')) or (json.count('[') != json.count(']')):
+            json += self.__recv_lines()
+        return json.rstrip('\n')
 
     def __send_line(self, line):
         self.__sock.sendall(line + '\n')
@@ -60,14 +68,13 @@ class DpcClient(object):
     def set_verbose(self, verbose = True):
         self.__verbose = verbose
 
-    def __post_execute(self, command_line, result):
-        if self.__verbose == True:
-            print command_line + ' -> ' + result
-
     def execute_command_line(self, command_line):
+        if self.__verbose == True:
+            print(command_line + ' -> ', end='')
         self.__send_line(command_line)
-        result = self.__recv_line()
-        self.__post_execute(command_line, result)
+        result = self.__recv_json()
+        if self.__verbose == True:
+            print(result)
         return result
 
     def execute_command(self, command, args):
