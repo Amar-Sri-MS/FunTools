@@ -53,13 +53,6 @@ class CodeGeneratorTest(unittest.TestCase):
   
     self.assertIn('char foo[8];\n', code)
 
-
-  def testPrintUnion(self):
-    union = generator.Struct('Foo', True)
-    hdr = self.printer.VisitStruct(union)
-    
-    self.assertIn('union Foo {', hdr)
-
   def testPrintUnionWithVar(self):
     union = generator.Struct('Foo', True)
     hdr = self.printer.VisitStruct(union)
@@ -521,6 +514,19 @@ class TestComments(unittest.TestCase):
     self.assertIn('"undefined",  /* 0x6 */', out)
     self.assertIn('"G",  /* 0xa */', out)
 
+  def testVariableLengthArray(self):
+    doc_builder = generator.DocBuilder()
+    contents = [
+      'STRUCT foo',
+      '0 63:56 char initial',
+      '_ _:_ char array[0]',
+      'END'
+      ]
+
+    out = generator.GenerateFile(True, generator.OutputStyleHeader, None,
+                                 contents, 'foo.gen')
+
+    self.assertIn('char array[0];\n};', out)
 
 class TestIndentString(unittest.TestCase):
   def testSimple(self):

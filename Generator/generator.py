@@ -133,7 +133,7 @@ class Type:
     # True if type represents an array type.
     self.is_array = False
 
-    if array_size:
+    if array_size is not None:
       self.is_array = True
       self.array_size = array_size
     else:
@@ -285,6 +285,11 @@ class Field(Node):
     self.name = name
     # String name of the C type, or a generic type for signed-ness.
     self.type = type
+
+    # True if the field doesn't actually represent a specific bit pattern.
+    # Used for variable length arrays.
+    self.no_offset = False
+
     # Bit offset from top of first word.
     self.offset_start = offset_start
     self.bit_width = bit_width
@@ -322,18 +327,26 @@ class Field(Node):
 
   def StartOffset(self):
     """Returns the offset of the field from the top of the container."""
+    if self.no_offset:
+      return None
     return self.offset_start
 
   def EndOffset(self):
     """Returns the bottom offset of the field from the top of the container."""
+    if self.no_offset:
+      return None
     return self.offset_start + self.bit_width - 1
 
   def StartFlit(self):
     """Returns the flit in the container holding the start of this field."""
+    if self.no_offset:
+      return None
     return self.StartOffset() / FLIT_SIZE
 
   def EndFlit(self):
     """Returns the flit in the container holding the end of this field."""
+    if self.no_offset:
+      return None
     return (self.StartOffset() + self.BitWidth() - 1) / FLIT_SIZE
 
   def StartBit(self):
@@ -341,6 +354,8 @@ class Field(Node):
 
     0 is the bottom of the flit.
     """
+    if self.no_offset:
+      return None
     return FLIT_SIZE - (self.StartOffset() - (self.StartFlit() * FLIT_SIZE)) - 1
 
   def EndBit(self):
@@ -348,11 +363,14 @@ class Field(Node):
 
     0 is the bottom of the flit.
     """
-    return FLIT_SIZE - (self.StartOffset() + self.BitWidth() -
-                        (self.EndFlit() * FLIT_SIZE) - 1) - 1
+    if self.no_offset:
+      return None
+    return FLIT_SIZE - (self.EndOffset() - (self.EndFlit() * FLIT_SIZE)) - 1
 
   def BitWidth(self):
     # Returns the number of bits in the field.
+    if self.no_offset:
+      return 0
     return self.bit_width
 
   def Mask(self):
@@ -362,9 +380,13 @@ class Field(Node):
   def SmallerThanType(self):
     return self.bit_width < self.type.BitWidth()
 
+  def IsNoOffset(self):
+    return self.no_offset
+
   def IsReserved(self):
     """True if the field is a placeholder that doesn't need to be initialized."""
-    return self.name.startswith('reserved') or self.name.startswith('rsvd')
+    return (self.name.startswith('reserved') or self.name.startswith('rsvd')
+            or self.no_offset)
 
   def CreateSubfields(self):
     """Inserts sub-fields into this field based on the its type.
@@ -379,6 +401,17 @@ class Field(Node):
       new_subfield = Field(proto_field.Name(), proto_field.Type(),
                            self.StartOffset() + proto_field.StartOffset(),
                            proto_field.BitWidth())
+      # TODO(bowdidge): Consider an explicit copy method.
+      new_subfield.key_comment = proto_field.key_comment
+      new_subfield.body_comment = proto_field.body_comment
+      new_subfield.tail_comment = proto_field.tail_comment
+      new_subfield.generator_comment = proto_field.generator_comment
+      new_subfield.line_number = proto_field.line_number
+      new_subfield.crosses_flit = proto_field.crosses_flit
+      new_subfield.is_bitfield = proto_field.is_bitfield
+      new_subfield.no_offset = proto_field.no_offset
+
+
       self.subfields.append(new_subfield)
       if proto_field.type.IsRecord():
         new_subfield.CreateSubfields()
@@ -470,13 +503,16 @@ class Struct(Node):
 
   def BitWidth(self):
     """Returns the width in bits of the contents of this struct."""
-    if len(self.fields) == 0:
+
+    fields_with_offsets = [f for f in self.fields if not f.IsNoOffset()]
+
+    if len(fields_with_offsets) == 0:
       return 0
 
     if self.is_union:
-      return max([f.BitWidth() for f in self.fields])
+      return max([f.BitWidth() for f in fields_with_offsets])
 
-    last_field = self.fields[-1]
+    last_field = fields_with_offsets[-1]
     end_offset = last_field.EndOffset()
     return end_offset + 1
 
@@ -502,6 +538,17 @@ class Struct(Node):
       return 0
 
     return max([(f.EndFlit() + 1) * 8 for f in self.fields])
+
+  def FlitFieldMap(self):
+    # Return a map of (flit, fields) for all fields in the structure.
+    flit_field_map = {}
+    fields_with_offsets = [f for f in self.fields if not f.IsNoOffset()]
+
+    for field in fields_with_offsets:
+      item = flit_field_map.get(field.StartFlit(), [])
+      item.append(field)
+      flit_field_map[field.StartFlit()] = item
+    return flit_field_map
 
 class Document(Node):
   # Representation of an entire generated header specification.
@@ -556,16 +603,23 @@ class Checker:
     last_end_bit = 0
     last_field_name = None
 
+    for field in the_struct.fields:
+      if field.IsNoOffset():
+        if field != the_struct.fields[-1]:
+          self.AddError(field, 'field "%s" is an array of zero size, but is not the last field.')
+      
+    fields_with_offsets = [f for f in the_struct.fields if not f.IsNoOffset()]
 
-    if len(the_struct.fields) == 0:
+    if len(fields_with_offsets) == 0:
       return
 
-    last_start_offset = the_struct.fields[0].StartOffset() - 1
-    last_end_offset = the_struct.fields[0].StartOffset() - 1
+    last_start_offset = fields_with_offsets[0].StartOffset() - 1
+    last_end_offset = fields_with_offsets[0].StartOffset() - 1
 
-    for field in the_struct.fields:
+    for field in fields_with_offsets:
       start_offset = field.StartOffset()
       end_offset = field.EndOffset()
+
 
       if field.BitWidth() == field.type.BitWidth():
         if start_offset % field.type.Alignment() != 0:
@@ -733,19 +787,11 @@ class Packer:
     # Get rid of old struct fields, and use macros on flit-sized
     # fields to access.
     new_fields = []
-    flit_field_map = self.FieldsToStartFlits(the_struct)
+    flit_field_map = the_struct.FlitFieldMap()
 
     for flit, fields_in_flit in flit_field_map.iteritems():
       self.PackFlit(the_struct, flit, fields_in_flit)
 
-  def FieldsToStartFlits(self, struct):
-    # Return a map of (flit, fields) for all fields in the structure.
-    flit_field_map = {}
-    for field in struct.fields:
-      item = flit_field_map.get(field.StartFlit(), [])
-      item.append(field)
-      flit_field_map[field.StartFlit()] = item
-    return flit_field_map
 
 # Enums used to indicate the kind of object being processed.
 # Used on the stack.
@@ -898,9 +944,11 @@ class DocBuilder:
       if enum is not None:
         containing_struct.variables.append(enum)
     else:
-      field = self.ParseFieldLine(line)
-      if field is not None:
-        containing_struct.fields.append(field)
+      # Try parsing as continuation of previous field
+      if (not self.ParseMultiFlitFieldLine(line, containing_struct) and 
+          not self.ParseFieldLine(line, containing_struct)):
+        self.AddError('Invalid line: "%s"' % line)
+        return
 
   def ParseEnd(self, line):
     # Handle an END directive.
@@ -927,9 +975,18 @@ class DocBuilder:
     self.base_types[current_object.Name()].bit_width = current_object.BitWidth()
     
     self.current_comment = ''
+
     if state != DocBuilderTopLevel:
+      # Sub-structures and sub-unions are numbered starting at 0.
+      # Check the previous field to find where this struct should start.
+      next_offset = 0
+      if not containing_object.is_union:
+        previous_fields = containing_object.fields[0:-1]
+        if len(previous_fields) > 0:
+          next_offset = previous_fields[-1].EndOffset() + 1
+
       new_field = containing_object.fields[-1]
-      new_field.offset_start = current_object.StartOffset()
+      new_field.offset_start = next_offset
       new_field.bit_width = current_object.BitWidth()
       new_field.CreateSubfields()
 
@@ -983,7 +1040,7 @@ class DocBuilder:
 
     return match.group(1).lstrip(' ').rstrip(' ')
 
-  def ParseMultiFlitFieldLine(self, line):
+  def ParseMultiFlitFieldLine(self, line, containing_struct):
     """Parse the current line as if it were a multi-flit line.
 
     Return false if it were not a multi-flit line
@@ -1026,6 +1083,7 @@ class DocBuilder:
       self.flit_crossing_field.tail_comment += '\n' + key_comment
 
     self.flit_crossing_field.crosses_flit = True
+
     self.flit_crossing_field.ExtendSize(size)
 
     if self.bits_remaining < size:
@@ -1051,14 +1109,14 @@ class DocBuilder:
     if base_name not in self.base_types:
       return None
     base_type = self.base_types[base_name]
-    if array_size:
+    if array_size is not None:
       return Type(base_type, array_size)
     else:
       return Type(base_type)
 
 
-  def ParseFieldLine(self, line):
-    """Parse a single line describing a field.
+  def ParseFieldLine(self, line, containing_struct):
+    """Returns true if the line could be parsed as a field description.
 
      Struct line is one of the following
 
@@ -1070,15 +1128,11 @@ class DocBuilder:
     flit start_bit:end_bit ...
     """
 
-    # Try parsing as continuation of previous field.
-    if self.ParseMultiFlitFieldLine(line):
-      return
-
     match = re.match('(\w+\s+(\w+:\w+|\w+))\s+(\w+)\s+(\w+)(\[[0-9]+\]|)\s*(.*)', line)
 
     if match is None:
       # Assume it's a comment.
-      return None
+      return False
 
     is_array = False
     array_size = 1
@@ -1093,21 +1147,17 @@ class DocBuilder:
         print("Eek, thought %s was a number, but didn't parse!\n" % match.group(5))
     key_comment = match.group(6)
 
-    result = utils.ParseBitSpec(flit_bit_spec_str)
-
-    if not result:
-      self.AddError('Invalid bit pattern: "%s"' % flit_bit_spec_str)
-      return None
-
-    (flit, start_bit, end_bit) = result
-
-    if start_bit > 63:
-      self.AddError('Field "%s" has start bit "%d" too large for 8 byte flit.' % (
-          name, start_bit))
-      return None
+    if key_comment == '':
+      key_comment = None
+    else:
+      key_comment = self.StripKeyComment(key_comment)
+      
+    body_comment = None
+    if len(self.current_comment) > 0:
+      body_comment = self.current_comment
+      self.current_comment = ''
 
     type = None
-
     if is_array:
       type = self.MakeType(type_name, array_size)
     else:
@@ -1115,7 +1165,32 @@ class DocBuilder:
 
     if type is None:
       self.AddError('Unknown type name "%s"' % type_name)
-      return None
+      return True
+
+    if array_size == 0:
+      if flit_bit_spec_str != '_ _:_':
+        self.AddError('Bit pattern specified for zero-length array: "%s".' % flit_bit_spec_str)
+        return True
+
+      zero_array = Field(name, type, -1, -1)
+      zero_array.no_offset = True
+      zero_array.key_comment = key_comment
+      zero_array.body_comment = body_comment
+      containing_struct.fields.append(zero_array)
+      return True
+
+    result = utils.ParseBitSpec(flit_bit_spec_str)
+
+    if not result:
+      self.AddError('Invalid bit pattern: "%s"' % flit_bit_spec_str)
+      return True
+
+    (flit, start_bit, end_bit) = result
+
+    if start_bit > 63:
+      self.AddError('Field "%s" has start bit "%d" too large for 8 byte flit.' % (
+          name, start_bit))
+      return True
 
     if start_bit < end_bit:
       self.AddError('Start bit %d greater than end bit %d in field %s' %
@@ -1140,15 +1215,9 @@ class DocBuilder:
       self.bits_remaining = expected_width - actual_width
       self.bits_consumed = actual_width
 
-    if key_comment == '':
-      key_comment = None
-    else:
-      key_comment = self.StripKeyComment(key_comment)
     new_field.key_comment = key_comment
 
-    if len(self.current_comment) > 0:
-      new_field.body_comment = self.current_comment
-    self.current_comment = ''
+    new_field.body_comment = body_comment
 
     type_width = new_field.type.BitWidth()
     var_width = new_field.BitWidth()
@@ -1166,7 +1235,8 @@ class DocBuilder:
         new_field.name, new_field.BitWidth(), new_field.type.TypeName(),
         new_field.type.BitWidth())
       self.AddError(warning)
-    return new_field
+    containing_struct.fields.append(new_field)
+    return True
 
   def ParsePlainLine(self, line):
     # TODO(bowdidge): Save test in order for printing as comments.

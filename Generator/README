@@ -1,8 +1,10 @@
 generator.py and Data Structure Specification
 
-generator.py takes high-level descriptions of data structures expected
-by hardware, and converts them into other formats - HTML or Word for
-documentation, or a C header file for software.
+generator.py takes high-level descriptions of data structures used in
+interchange, and creates header files and documentations defining those
+data structures.  generator.py is intended for software-only structures.
+Hardware specifications (such as CSR descriptions) should use the existing
+Perl scripts for describing hardware registers.
 
 The generator script can also transform the structures in various ways for
 efficiency.  The first conversion, "packing", avoids inefficient compiled code
@@ -15,14 +17,18 @@ Descriptions of a data structure represent:
 * structures (or nested structures)
 * unions within structures for describing alternate contents
 * field descriptions
-* comments associated with any.
+* enum declarations for unique constant values.
+* const declarations for integer values that are not types and not used
+  exclusively.
+* comments associated with all elements.
 
-The input format pairs up a precise bit specification with C-like structures.
-For example, a simple description is:
+generator.py's input format interleaves a bitwise-description of the data structure
+with a C language-like description.  The bitwise description is at the beginning of each
+line; the C-like description is on the right hand side.
 
 /* Standard work unit format for all messages in F1. */
 STRUCT WorkUnit
-  // destinationID is the only field in this.
+  /* destinationID is the only field in this. */
   0 7:0 uint8_t destinationID /* comment */
   /* Fourteen more bytes */
 END
@@ -37,6 +43,16 @@ Note that fields are declared from highest bit to lowest, and bit ranges
 for fields are always high:low.  Single bits can also be specified with
 a single number.
 
+The generator also supports variable-length arrays at the end of structures.
+This is done by specifying a zero-size array at the end without specifying a bit
+pattern:
+
+STRUCT WorkUnit
+  0 32:0 uint32_t count
+  _ _:_ uint32 values[0]
+END
+
+Fun
 Comments fall into two categories: inline (immediately following a
 directive) or block.  Inline comments always apply to the directive on
 the same line.  Block comments always apply to the following
@@ -56,9 +72,17 @@ Comments for work unit would print:
   body comment
   tail comment
 
+Use C style comments for single lines ( /* ... */). 
+Generator only supports C++-style comments for multi-line comments ( // ... ).
+
 In source code, the form would match the structure - key comment on
 the same line as the variable, body comment preceding, tail comment
 inside and at the end.
+
+
+The generator also allows enums to be declared and generated.
+Enums define a type (so they can be used as types in declarations).
+Generated code also contains an array of enum value names.
 
 Types
 
@@ -73,6 +97,19 @@ STRUCT Document
   0 63:32 char creatorCode[4]
   0 31:0 char fileType[4]
 
+Array types must provide enough space for all elements.
+
+Future plan: Variable-length arrays will be permitted at the end of
+a top-level structure.  Variable length arrays are specified using the syntax
+
+STRUCT Document
+  0 63:56 char c
+  _ _:_   char additional_values[0]
+
+It is an error to use a variable length array at any place other than the
+end of a structure, or include a structure with a variable-length array
+at any place in another structure other than the end.
+
 Packed fields
 
 If you pass the -p option to generator.py, it packs contiguous bitfields
@@ -83,7 +120,29 @@ values - helpful if we want to manipulate registers efficiently.)
 Packed fields must have the same base type, must be bitfields (not using all
 bits of the type), and must be contiguous in the layout.
 
-Macros created are:
+Generated Code
+
+For each data structure, the generator creates the following bits of code.
+
+* Each top-level structure is turned into a C structure.  Unions and structs
+nested within each top-level structure are also nested into the structure.
+Types for each field are based on the defined type; if the field is packed,
+then the precise size of each field is specified as a bitfield.
+
+* Each top-level structure gets a setter function for setting the
+  values of all non-array fields.  If the top-level structure contains
+  a union, then separate setters are created for each union variant.
+  Setter functions are not created for structures defined inline inside
+  another structure.
+
+Setter functions always have the form "struct_name_init" or
+"struct_name_union_name_init".
+
+Setter functions do not fully initialize the structure; arrays and some
+other fields may not be initialized.
+
+* For packed fields, macros are created to access the value packed into
+the containing field.   Macros created are:
 
 field_name_S: number of right shifts to get the final value aligned.
 field_name_M: Mask for bits (after shifting)

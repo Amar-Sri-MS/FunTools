@@ -110,6 +110,7 @@ STRUCT fun_subcmd_immediate
   0 55:48 uint8_t imm_flags
   0 47:32 uint16_t rsvd0
   0 31:0 uint32_t imm_len /* after this, ideally imm_data[0] */
+  _ _:_ uint32_t imm_data[0]
 END
 
 // SGL
@@ -117,7 +118,7 @@ STRUCT fun_subcmd_sgl
   0 63:56 uint8_t subopcode
   0 55:48 uint8_t sgl_flags
   0 47:40 uint8_t sgl_nfrags
-  0 39:32 uint8_t rsvd0;
+  0 39:32 uint8_t rsvd0
   0 31:0 uint32_t sgl0_len
   1 63:0 uint64_t sgl0_dmaadr
 END

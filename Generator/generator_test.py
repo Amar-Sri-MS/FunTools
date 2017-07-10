@@ -123,7 +123,6 @@ class TestDocBuilder(unittest.TestCase):
   def testTooBigFlit(self):
     doc_builder = generator.DocBuilder()
     contents = ['STRUCT Foo', '0 64:0 uint64_t packet', 'END']
-    
     errors = doc_builder.Parse('filename', contents)
 
     self.assertEqual(1, len(errors))
@@ -310,8 +309,7 @@ class TestDocBuilder(unittest.TestCase):
     doc_builder = generator.DocBuilder()
     line = 'flit 63:0 uint64_t packet'
 
-    self.assertIsNone(doc_builder.ParseFieldLine(line))
-
+    doc_builder.ParseFieldLine(line, generator.Struct("fakeStruct", False))
   
     self.assertEqual(1, len(doc_builder.errors))
     self.assertIn('Invalid bit pattern', doc_builder.errors[0])
@@ -320,7 +318,8 @@ class TestDocBuilder(unittest.TestCase):
     doc_builder = generator.DocBuilder()
     line = '0 63:0 NotAValidType field_name'
 
-    self.assertIsNone(doc_builder.ParseFieldLine(line))
+    doc_builder.ParseFieldLine(line, generator.Struct("fakeStruct", False))
+
     self.assertEqual(1, len(doc_builder.errors))
     self.assertIn('Unknown type name', doc_builder.errors[0])
 
@@ -329,7 +328,7 @@ class TestDocBuilder(unittest.TestCase):
     doc_builder = generator.DocBuilder()
     line = '2 foo:15 uint64_t packet'
     
-    self.assertIsNone(doc_builder.ParseFieldLine(line))
+    doc_builder.ParseFieldLine(line, generator.Struct("fakeStruct", False))
   
     self.assertEqual(1, len(doc_builder.errors))
     self.assertIn('Invalid bit pattern', doc_builder.errors[0])
@@ -339,7 +338,7 @@ class TestDocBuilder(unittest.TestCase):
     doc_builder = generator.DocBuilder()
     line = '2 15:bar uint64_t packet'
     
-    self.assertIsNone(doc_builder.ParseFieldLine(line))
+    doc_builder.ParseFieldLine(line, generator.Struct("fakeStruct", False))
   
     self.assertEqual(1, len(doc_builder.errors))
     self.assertIn('Invalid bit pattern', doc_builder.errors[0])
@@ -349,7 +348,7 @@ class TestDocBuilder(unittest.TestCase):
     doc_builder = generator.DocBuilder()
     line = '2 3:10 uint64_t packet'
     
-    self.assertIsNotNone(doc_builder.ParseFieldLine(line))
+    doc_builder.ParseFieldLine(line, generator.Struct("fakeStruct", False))
   
     self.assertEqual(1, len(doc_builder.errors))
     self.assertIn('greater than end bit', doc_builder.errors[0])
@@ -359,7 +358,12 @@ class TestDocBuilder(unittest.TestCase):
     doc_builder = generator.DocBuilder()
     line = '2 38 uint8_t packet'
     
-    field = doc_builder.ParseFieldLine(line)
+    struct = generator.Struct("fakeStruct", False)
+    self.assertTrue(doc_builder.ParseFieldLine(line, struct))
+
+    self.assertEqual(1, len(struct.fields))
+    field = struct.fields[0]
+
     self.assertIsNotNone(field)
     self.assertEqual(0, len(doc_builder.errors))
 
@@ -372,8 +376,12 @@ class TestDocBuilder(unittest.TestCase):
     doc_builder = generator.DocBuilder()
     line = '2 15:12 int64_t packet'
     
-    field = doc_builder.ParseFieldLine(line)
-  
+    struct = generator.Struct("fakeStruct", False)
+    self.assertTrue(doc_builder.ParseFieldLine(line, struct))
+
+    self.assertEqual(1, len(struct.fields))
+    field = struct.fields[0]
+    
     self.assertIsNone(field.key_comment)
     self.assertIsNone(field.body_comment)
     self.assertIsNone(field.generator_comment)
@@ -413,11 +421,16 @@ class TestDocBuilder(unittest.TestCase):
   def testParseCommentInField(self):
     doc_builder = generator.DocBuilder()
 
-    field = doc_builder.ParseFieldLine(
-      '0 47:0 uint64_t packet /* 6 byte packet to send out */')
+    struct = generator.Struct("fakeStruct", False)
+    self.assertTrue(doc_builder.ParseFieldLine(
+      '0 47:0 uint64_t packet /* 6 byte packet to send out */',
+      struct))
 
     self.assertEqual(0, len(doc_builder.errors))
 
+    self.assertEqual(1, len(struct.fields))
+    field = struct.fields[0]
+                     
     self.assertEqual("packet", field.name)
     self.assertEqual("6 byte packet to send out", field.key_comment)
 
@@ -505,6 +518,8 @@ class TestDocBuilder(unittest.TestCase):
       '0 63:48 Foo header',
       '0 47:0 uint64_t arg2',
       '1 63:32 uint32_t arg3',
+      '1 31:0 uint32_t arg4',
+      '2 63:0 Bar b',
       'END'
       ]
     errors = doc_builder.Parse('filename', contents)
@@ -520,9 +535,70 @@ class TestDocBuilder(unittest.TestCase):
     
     self.assertEqual(16, foo.BitWidth())
     self.assertEqual(64, bar.BitWidth())
-    self.assertEqual(96, baz.BitWidth())
+    self.assertEqual(192, baz.BitWidth())
 
+    self.assertEqual(0, baz.fields[0].StartOffset())
+    self.assertEqual(16, baz.fields[1].StartOffset())
+    self.assertEqual(64, baz.fields[2].StartOffset())
+    self.assertEqual(96, baz.fields[3].StartOffset())
+    self.assertEqual(128, baz.fields[4].StartOffset())
 
+    b = baz.fields[4]
+    self.assertEqual(2, b.StartFlit())
+    self.assertEqual(2, b.EndFlit())
+    self.assertEqual(63, b.StartBit())
+    self.assertEqual(0, b.EndBit())
+
+  def testNestedUnion(self):
+    doc_builder = generator.DocBuilder()
+    # ... allows a field to overflow into later flits.
+    contents = [
+      'STRUCT Foo',
+      '0 63:0 uint64_t command',
+      'UNION foo u',
+      'STRUCT A1 a1',
+      '0 63:0 uint64_t a1_value',
+      'END',
+      'STRUCT A2 a2',
+      '0 63:0 uint64_t a2_value',
+      'END',
+      'STRUCT A3 a3',
+      '0 63:0 uint64_t a3_value',
+      'END',
+      'END',
+      'END'
+      ]
+    errors = doc_builder.Parse('filename', contents)
+    self.assertIsNone(errors)
+  
+    doc = doc_builder.current_document
+
+    self.assertEqual(5, len(doc.structs))
+    
+    foo = doc.structs[0]
+    
+    self.assertEqual(128, foo.BitWidth())
+
+    self.assertEqual(2, len(foo.fields))
+
+    union = foo.fields[1]
+    self.assertEqual(64, union.StartOffset())
+    self.assertEqual(127, union.EndOffset())
+
+    self.assertEqual(3, len(union.subfields))
+
+    a1 = union.subfields[0]
+    self.assertEqual(64, a1.StartOffset())
+    self.assertEqual(127, a1.EndOffset())
+
+    a2 = union.subfields[0]
+    self.assertEqual(64, a2.StartOffset())
+    self.assertEqual(127, a2.EndOffset())
+
+    a3 = union.subfields[0]
+    self.assertEqual(64, a3.StartOffset())
+    self.assertEqual(127, a3.EndOffset())
+    
   def testMultiFlitNestedStruct(self):
     doc_builder = generator.DocBuilder()
     # ... allows a field to overflow into later flits.
@@ -550,6 +626,56 @@ class TestDocBuilder(unittest.TestCase):
     self.assertEqual(128, common.BitWidth())
     self.assertEqual(192, cmd.BitWidth())
 
+  def testVariableLengthArray(self):
+    doc_builder = generator.DocBuilder()
+    contents = [
+      'STRUCT foo',
+      '0 63:56 char initial',
+      '_ _:_ char array[0]',
+      'END'
+      ]
+
+    errors = doc_builder.Parse('filename', contents)
+    self.assertIsNone(errors)
+
+    doc = doc_builder.current_document
+
+    self.assertEqual(1, len(doc.structs))
+    foo = doc.structs[0]
+    self.assertEqual(2, len(foo.fields))
+    array = foo.fields[1]
+    self.assertEquals('<Type: char[0]>', str(array.Type()))
+    
+    self.assertEqual(8, foo.BitWidth())
+    self.assertEqual(0, array.BitWidth())
+
+
+  def testVariableLengthStructArray(self):
+    doc_builder = generator.DocBuilder()
+    contents = [
+      'STRUCT element',
+      '0 63:56 char item',
+      'END',
+      'STRUCT foo',
+      '0 63:56 char initial',
+      '_ _:_ element array[0]',
+      'END'
+      ]
+
+    errors = doc_builder.Parse('filename', contents)
+    self.assertIsNone(errors)
+
+    doc = doc_builder.current_document
+
+    self.assertEqual(2, len(doc.structs))
+    foo = doc.structs[1]
+    self.assertEqual(2, len(foo.fields))
+    array = foo.fields[1]
+    self.assertEquals('<Type: element[0]>', str(array.Type()))
+    
+    self.assertEqual(8, foo.BitWidth())
+    self.assertEqual(0, array.BitWidth())
+
 
 class TestStripComment(unittest.TestCase):
   def testSimple(self):
@@ -575,6 +701,38 @@ class TestStripComment(unittest.TestCase):
     self.assertIn('0: Unexpected stuff where comment should be',
                      doc_builder.errors[0])
                                          
+
+  def testStructureAndUnion(self):
+    doc_builder = generator.DocBuilder()
+    contents = [
+      'STRUCT foo',
+      '0 63:0 uint64_t a',
+      '1 63:0 uint64_t b',
+      'END',
+      'STRUCT bar',
+      '0 63:0 foo f',
+      '1 63:0 ...',
+      'UNION baz u',
+      '2 63:56 char c',
+      'END'
+      'END'
+      ]
+
+    errors = doc_builder.Parse('filename', contents)
+
+    self.assertIsNone(errors)
+    doc = doc_builder.current_document
+    self.assertEqual(3, len(doc.structs))
+
+    bar = doc.structs[1]
+    self.assertEqual("bar", bar.Name())
+    self.assertEqual(2, len(bar.fields))
+
+    f = bar.fields[0]
+    u = bar.fields[1]
+    self.assertEqual(128, f.BitWidth())
+    self.assertEqual(128, u.StartOffset())
+    
 
 class PackerTest(unittest.TestCase):
   def testDontPackArgumentsFittingOwnType(self):
@@ -1041,6 +1199,58 @@ class CheckerTest(unittest.TestCase):
                 '0 31:0 uint32_t data',
                 'END',
                 'END']
+
+  def testVariableLengthArray(self):
+    doc_builder = generator.DocBuilder()
+    contents = [
+      'STRUCT foo',
+      '0 63:56 char initial',
+      '_ _:_ char array[0]',
+      'END'
+      ]
+
+    errors = doc_builder.Parse('filename', contents)
+    self.assertIsNone(errors)
+
+    doc = doc_builder.current_document
+    self.assertIsNone(errors)
+
+    checker = generator.Checker()
+    checker.VisitDocument(doc_builder.current_document)
+    self.assertEqual(0, len(checker.errors))
+
+  def testVariableLengthStructureArray(self):
+    doc_builder = generator.DocBuilder()
+    contents = [
+      'STRUCT element',
+      '0 63:56 char value',
+      'END',
+      'STRUCT foo',
+      '0 63:56 char initial',
+      '_ _:_ element array[0]',
+      'END'
+      ]
+
+    errors = doc_builder.Parse('filename', contents)
+    self.assertIsNone(errors)
+
+    doc = doc_builder.current_document
+    self.assertIsNone(errors)
+
+    checker = generator.Checker()
+    checker.VisitDocument(doc_builder.current_document)
+    self.assertEqual(0, len(checker.errors))
+
+  def testErrorIfVariableLengthArrayNotAtEnd(self):
+    doc_builder = generator.DocBuilder()
+    contents = [
+      'STRUCT foo',
+      '0 63:56 char initial',
+      '_ _:_ char array[0]',
+      '0 55:48 char end',
+      'END'
+      ]
+
     errors = doc_builder.Parse('filename', contents)
     self.assertIsNone(errors)
 
@@ -1048,8 +1258,7 @@ class CheckerTest(unittest.TestCase):
     checker.VisitDocument(doc_builder.current_document)
 
     self.assertEqual(1, len(checker.errors))
-    self.assertIn('"cmd" overlaps field "u"', checker.errors[0])
-
+    self.assertIn('is not the last field', checker.errors[0])
 
 if __name__ == '__main__':
     unittest.main()
