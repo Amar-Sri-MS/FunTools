@@ -43,6 +43,16 @@ Note that fields are declared from highest bit to lowest, and bit ranges
 for fields are always high:low.  Single bits can also be specified with
 a single number.
 
+The generator also supports variable-length arrays at the end of structures.
+This is done by specifying a zero-size array at the end without specifying a bit
+pattern:
+
+STRUCT WorkUnit
+  0 32:0 uint32_t count
+  _ _:_ uint32 values[0]
+END
+
+Fun
 Comments fall into two categories: inline (immediately following a
 directive) or block.  Inline comments always apply to the directive on
 the same line.  Block comments always apply to the following
@@ -62,9 +72,13 @@ Comments for work unit would print:
   body comment
   tail comment
 
+Use C style comments for single lines ( /* ... */). 
+Generator only supports C++-style comments for multi-line comments ( // ... ).
+
 In source code, the form would match the structure - key comment on
 the same line as the variable, body comment preceding, tail comment
 inside and at the end.
+
 
 The generator also allows enums to be declared and generated.
 Enums define a type (so they can be used as types in declarations).
