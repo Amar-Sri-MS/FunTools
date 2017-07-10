@@ -979,14 +979,14 @@ class DocBuilder:
     if state != DocBuilderTopLevel:
       # Sub-structures and sub-unions are numbered starting at 0.
       # Check the previous field to find where this struct should start.
-      last_offset = -1
+      next_offset = 0
       if not containing_object.is_union:
         previous_fields = containing_object.fields[0:-1]
         if len(previous_fields) > 0:
-          last_offset = previous_fields[-1].EndOffset()
+          next_offset = previous_fields[-1].EndOffset() + 1
 
       new_field = containing_object.fields[-1]
-      new_field.offset_start = current_object.StartOffset()
+      new_field.offset_start = next_offset
       new_field.bit_width = current_object.BitWidth()
       new_field.CreateSubfields()
 
