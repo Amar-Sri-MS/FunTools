@@ -569,6 +569,20 @@ class TestComments(unittest.TestCase):
 
     self.assertIn('char array[0];\n};', out)
 
+  def testPackedError(self):
+    contents = [
+	'STRUCT foo',
+	'0 63:60 uint8_t foo',
+        '0 59:55 uint8_t bar',
+        '0 54:50 uint8_t baz',
+	'0 49:48 uint8_t boof',
+	'END'
+	]
+    out = generator.GenerateFile(True, generator.OutputStyleHeader, None,
+                                 contents, 'foo.gen')
+    # TODO(bowdidge): check that errors were correctly emitted.
+    
+
 class TestIndentString(unittest.TestCase):
   def testSimple(self):
     # Tests only properties that hold true regardless of the formatting style.
