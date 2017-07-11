@@ -67,6 +67,11 @@ class CodeGenerator:
       hdr_out += hdr
       src_out += src
 
+    for flagset in doc.flagsets:
+      (hdr, src) = self.VisitFlagSet(flagset)
+      hdr_out += hdr
+      src_out += src
+
     for struct in doc.structs:
       if not struct.inline:
         hdr_out += self.VisitStruct(struct)
@@ -112,6 +117,51 @@ class CodeGenerator:
                                             enum_variable.value)
       next_value = current_value + 1
     src_out += '};\n'
+    return (hdr_out, src_out)
+
+  def VisitFlagSet(self, flagset):
+    # Pretty-print a flagset declaration.  Returns flag set as string.
+    # For flags, we define const ints for each value, and a *_names array
+    # that provides a string value for each power of two.
+    src_out = ''
+    hdr_out = ''
+
+    hdr_out += '/* Declarations for flag set %s */\n' % flagset.name
+    if flagset.key_comment:
+      hdr_out += flagset.key_comment + '\n'
+    if flagset.body_comment:
+      hdr_out += flagset.body_comment + '\n'
+
+    src_out += '/* Definitions for flag set %s */\n' % flagset.name
+
+    for var in flagset.variables:
+      hdr_out += 'const int %s;  /* 0x%x */\n' % (var.name, var.value)
+      src_out += 'const int %s = 0x%x;\n' % (var.name, var.value)
+
+    hdr_out += '\n'
+    src_out += '\n'
+
+    max_bits = utils.MaxBit(flagset.MaxValue())
+    hdr_out += '/* String names for all power-of-two flags in %s. */\n' % flagset.name
+    hdr_out += 'const char *%s_names[%d];' % (flagset.name, max_bits)
+    src_out += 'const char *%s_names[%d] = {\n' % (flagset.name, max_bits)
+
+    for i in range(0, utils.MaxBit(flagset.MaxValue())):
+      next_value = 1 << i
+      found = False
+      for var in flagset.variables:
+        if next_value == var.value:
+          src_out += '\t"%s",  /* 0x%x */ \n' % (var.name, var.value)
+          found = True
+          break
+      if not found:
+        src_out += '\t"0x%x",  /* 0x%x, not defined with flag. */ \n' % (next_value, next_value)
+
+    src_out += '};\n'
+
+    hdr_out += '\n'
+    src_out += '\n'
+
     return (hdr_out, src_out)
 
   def VisitEnumVariable(self, enum_variable):
