@@ -16,7 +16,7 @@ ENUM fun_admin_op
   FUN_ADMIN_OP_BIND = 0x20 /* Bind Nodes into Flow Graph */
 END
 
-ENUM fun_admin_req_common_flag
+FLAGS fun_admin_req_common_flag
   FUN_ADMIN_REQ_COMMON_FLAG_RSP = 0x0001 /* Generate a Request Response Message */
   FUN_ADMIN_REQ_COMMON_FLAG_HEAD_WB = 0x0002 /* Generate a HEAD Write Back */ 
   FUN_ADMIN_REQ_COMMON_FLAG_INT = 0x0004 /* Generate an Interrupt after request has been processed */
@@ -45,13 +45,12 @@ ENUM fun_admin_subop
   FUN_ADMIN_SUBOP_LIST_ACTIVE = 0x04
 END
 
-// AMDIN EPCQ REQ/RSP
 
-ENUM fun_admin_epcq_create_flag
-  FUN_ADMIN_EPCQ_CREATE_FLAG_ALLOCATOR = 0x01 /* Enable EPCQ allocator */
-  FUN_ADMIN_EPCQ_CREATE_FLAG_INT_EPCQ = 0x02 /* Use a EPCQ as interrupt concentrator */
-  FUN_ADMIN_EPCQ_CREATE_FLAG_ENTRY_WR_TPH = 0x04 /* Enable EPCQ entry write TPH */
-  FUN_ADMIN_EPCQ_CREATE_FLAG_SL_WR_TPH = 0x08 /* Enable Scatter List write TPH */
+FLAGS fun_admin_epcq_create_flag
+  FUN_ADMIN_EPCQ_CREATE_FLAG_ALLOCATOR = 0x01
+  FUN_ADMIN_EPCQ_CREATE_FLAG_INT_EPCQ = 0x02
+  FUN_ADMIN_EPCQ_CREATE_FLAG_ENTRY_WR_TPH = 0x04
+  FUN_ADMIN_EPCQ_CREATE_FLAG_SL_WR_TPH = 0x08
 END
 
 STRUCT fun_admin_epcq_req
@@ -107,9 +106,8 @@ STRUCT fun_admin_epcq_rsp
 END
 
 
-// AMDIN EPSQ REQ/RSP
 
-ENUM fun_admin_epsq_create_flag
+FLAGS fun_admin_epsq_create_flag
   FUN_ADMIN_EPSQ_CREATE_FLAG_NONE = 0x00
   FUN_ADMIN_EPSQ_CREATE_FLAG_ALLOCATOR = 0x01 /* Enable EPSQ allocator */
   FUN_ADMIN_EPSQ_CREATE_FLAG_INT_EPSQ = 0x02 /* Use a EPSQ as interrupt concentrator */
@@ -175,7 +173,7 @@ STRUCT fun_admin_epsq_rsp
   END
 END
 
-// ADMIN EPRQ REQ/RSP
+
 
 STRUCT fun_admin_eprq_req
   0 63:00 fun_admin_req_common eprq_req_common 
@@ -219,9 +217,9 @@ STRUCT fun_admin_eprq_rsp
   END
 END
 
-// ADMIN ETH REQ/RSP
 
-ENUM fun_admin_eth_create_flag
+
+FLAGS fun_admin_eth_create_flag
   FUN_ADMIN_ETH_CREATE_FLAG_ALLOCATOR = 0x01 /* Enable Ethernet allocator */
 END
 
@@ -267,9 +265,9 @@ STRUCT fun_admin_eth_rsp
   END
 END
 
-// ADMIN VI REQ/RSP
 
-ENUM fun_admin_vi_create_flag
+
+FLAGS fun_admin_vi_create_flag
   FUN_ADMIN_VI_CREATE_FLAG_ALLOCATOR = 0x01 /* Enable Virtual Interface allocator */
 END
 
@@ -315,8 +313,8 @@ STRUCT fun_admin_vi_rsp
   END
 END
 
-// ADMIN NSS REQ/RSP 
-ENUM fun_admin_nss_create_flag
+
+FLAGS fun_admin_nss_create_flag
   FUN_ADMIN_NSS_CREATE_FLAG_ALLOCATOR = 0x01 /* Enable NSS allocator */
 END
 
@@ -362,8 +360,9 @@ STRUCT fun_admin_nss_rsp
   END
 END
 
-// ADMIN VOL REQ/RSP 
-ENUM fun_admin_vol_create_flag
+
+
+FLAGS fun_admin_vol_create_flag
   FUN_ADMIN_VOL_CREATE_FLAG_ALLOCATOR = 0x01 /* Enable Volume allocator */
 END
 
@@ -421,9 +420,9 @@ STRUCT fun_admin_vol_rsp
   END
 END
 
-// ADMIN CRYPTO REQ/RSP 
 
-ENUM fun_admin_crypto_create_flag
+
+FLAGS fun_admin_crypto_create_flag
   FUN_ADMIN_CRYPTO_CREATE_FLAG_ALLOCATOR = 0x01 /* Enable Crypto allocator */
 END
 
