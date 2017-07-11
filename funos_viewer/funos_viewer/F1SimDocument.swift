@@ -220,6 +220,7 @@ import AppKit
 			Swift.print("*** Error executing \(verb): nil ; socket=\(socket)")
 			return nil
 		}
+//		Swift.print("Executed command '\(verb)'")
 		let str: String = String(cString: r!)
 		if debug {
 			Swift.print("command '\(verb)' returned '\(str)'")
@@ -278,7 +279,8 @@ import AppKit
 	@IBAction func doPoke(_ sender: NSObject?) {
 		let key = inputController.keyPath.stringValue
 		let value = inputController.pokeValue.stringValue
-		doAndLogF1Command("poke", key.quotedString(), value.quotedString())
+		let isNumber = (Int(value) != nil) || (value.hasPrefix("0x") && (Int(value.substringAfter("0x"), radix: 16) != nil))
+		doAndLogF1Command("poke", key.quotedString(), isNumber ? value: value.quotedString())
 	}
 	@IBAction func doFind(_ sender: NSObject?) {
 		let key = inputController.keyPath.stringValue

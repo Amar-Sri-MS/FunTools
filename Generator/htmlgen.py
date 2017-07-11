@@ -1,8 +1,9 @@
 #!/usr/bin/python
-
 # htmlgen.py
 # HTMLGenerator takes a DocBuilder describing various machine data structures,
 # and generates documentation for these.
+
+import utils
 
 class HTMLGenerator:
 
@@ -170,6 +171,11 @@ class HTMLGenerator:
   margin-bottom: 10px;
 }
 
+.bitfieldTable {
+  text-align: center;
+  border: solid 1px black;
+}
+
 """)
 
     out = '<!-- Documentation created by generator.py.\n'
@@ -178,9 +184,11 @@ class HTMLGenerator:
     out += '<html>\n<head>\n'
     out += '<style>\n%s</style>\n' % css
     out += '</head>\n<body>\n'
-    out += 'Documentation for structured defined in ' + doc.filename + '.<p>'
+    out += 'Documentation for structures defined in ' + doc.filename + '.<p>\n'
     for enum in doc.enums:
       out += self.VisitEnum(enum)
+    for flagset in doc.flagsets:
+      out += self.VisitFlagset(flagset)
     for struct in doc.structs:
       if not struct.inline:
         out += self.VisitStruct(struct)
@@ -203,7 +211,7 @@ class HTMLGenerator:
     return out
 
   def VisitEnum(self, enum):
-    # Generates HTML documentation for a specific enum type.
+    """Generates HTML documentation for a specific enum type."""
     out = ''
     out += '<h3>enum %s</h3>\n' % enum.name
     if enum.key_comment:
@@ -217,6 +225,25 @@ class HTMLGenerator:
     out += '</dl>\n'
     if enum.tail_comment:
         out += '<p>%s</p>' % enum.tail_comment
+    return out
+
+  def VisitFlagset(self, flagset):
+    """Generates HTML documentation for set of variables representing possible bitfield flags."""
+    out = ''
+    out += '<h3>Flags: %s</h3>\n' % flagset.name
+    if flagset.key_comment:
+      out += '<p>%s</p>\n' % flagset.key_comment
+    if flagset.body_comment:
+      out += '<p>%s</p>\n' % flagset.body_comment
+    out += '<b>Possible values</b><br>\n'
+    out += '<table class="bitfieldTable">\n'
+    out += '<tr><th>Name</th><th>Value</th><th>Bit pattern</th></tr>\n'
+    for var in flagset.variables:
+      max_bits = utils.MaxBit(flagset.MaxValue())
+      bit_pattern = ' '.join(utils.BitPatternString(var.value, max_bits))
+      
+      out += '<tr><td>%s</td><td>0x%08x</td><td>%s</td></tr>\n' % (var.name, var.value, bit_pattern)
+    out += '</table>'
     return out
 
   def VisitRecordField(self, field, struct, level):
@@ -262,7 +289,7 @@ class HTMLGenerator:
     return out
 
   def VisitStruct(self, struct):
-    # Generates HTML documentation for a specific structure.
+    """Generates HTML documentation for a specific structure."""
     out = ''
     out += '<a name="%s"></a>' % struct.name
     out += '<h3>struct %s:</h3>\n' % struct.name

@@ -397,10 +397,14 @@ class Field(Node):
     """
     if not self.type.base_type.node:
       return
+
     for proto_field in self.type.base_type.node.fields:
-      new_subfield = Field(proto_field.Name(), proto_field.Type(),
-                           self.StartOffset() + proto_field.StartOffset(),
-                           proto_field.BitWidth())
+      if proto_field.no_offset:
+        new_subfield = Field(proto_field.Name(), proto_field.Type(), None, None)
+      else:
+        new_subfield = Field(proto_field.Name(), proto_field.Type(),
+                             self.StartOffset() + proto_field.StartOffset(),
+                             proto_field.BitWidth())
       # TODO(bowdidge): Consider an explicit copy method.
       new_subfield.key_comment = proto_field.key_comment
       new_subfield.body_comment = proto_field.body_comment
@@ -452,6 +456,36 @@ class Enum(Node):
 
   def __str__(self):
     return('<Enum %s:\n  %s\n>\n' % (self.name, self.variables))
+
+
+class FlagSet(Node):
+  # Representation of an flags declaration.  FlagSet are like enums,
+  # but the values are expected to represent bitmasks, and the values
+  # are generated as ints rather than as an enum.
+
+  def __init__(self, name):
+    # Create an FlagSet declaration.
+    # name is a string.
+    # variables holds the EnumVariables associated with the enum.
+    Node.__init__(self)
+    self.name = name
+    self.variables = []
+
+  def Name(self):
+    return self.name
+
+  def BitWidth(self):
+    return 0
+
+  def MaxValue(self):
+    max_value = 0
+    for var in self.variables:
+      if var.value > max_value:
+        max_value = var.value
+    return max_value
+
+  def __str__(self):
+    return('<FlagSet %s:\n  %s\n>\n' % (self.name, self.variables))
 
 
 class Struct(Node):
@@ -516,6 +550,13 @@ class Struct(Node):
     end_offset = last_field.EndOffset()
     return end_offset + 1
 
+  def StartOffset(self):
+    """Returns beginning offset for structure."""
+    if not self.fields:
+      return 0
+
+    return min([f.StartOffset() for f in self.fields])
+
   def Flits(self):
     """Returns the number of flits this structure would occupy.
 
@@ -552,6 +593,9 @@ class Document(Node):
 
     # All enums declared in the file.
     self.enums = []
+
+    # All flag sets declared in the file.
+    self.flagsets = []
 
     # Source code for function declarations.
     self.declarations = []
@@ -791,6 +835,7 @@ class Packer:
 DocBuilderStateStruct = 1
 DocBuilderTopLevel = 3
 DocBuilderStateEnum = 4
+DocBuilderStateFlagSet = 5
 
 
 class DocBuilder:
@@ -893,6 +938,29 @@ class DocBuilder:
     self.stack.append((DocBuilderStateEnum, current_enum))
     self.current_document.enums.append(current_enum)
 
+  def ParseFlagSetStart(self, line):
+    # Handle an FLAGS directive opening a new type represeting bit flags.
+    state, containing_struct = self.stack[len(self.stack)-1]
+    match = re.match('FLAGS\s+(\w+)(.*)$', line)
+    if match is None:
+      self.AddError('Invalid flags start line: "%s"' % line)
+      return
+
+    name = match.group(1)
+    key_comment = match.group(2)
+
+    name = utils.RemoveWhitespace(name)
+    current_flags = FlagSet(name)
+    current_flags.line_number = self.current_line
+    current_flags.key_comment = self.StripKeyComment(key_comment)
+
+    if len(self.current_comment) > 0:
+      current_flags.body_comment = self.current_comment
+    self.current_comment = ''
+
+    self.stack.append((DocBuilderStateFlagSet, current_flags))
+    self.current_document.flagsets.append(current_flags)
+
   def ParseEnumLine(self, line):
     # Parse the line describing a new enum variable.
     # This regexp matches:
@@ -932,7 +1000,7 @@ class DocBuilder:
       self.current_comment += self.StripKeyComment(line)
     elif state == DocBuilderTopLevel:
       return
-    elif state == DocBuilderStateEnum:
+    elif state == DocBuilderStateEnum or state == DocBuilderStateFlagSet:
       enum = self.ParseEnumLine(line)
       if enum is not None:
         containing_struct.variables.append(enum)
@@ -945,6 +1013,10 @@ class DocBuilder:
 
   def ParseEnd(self, line):
     # Handle an END directive.
+    if len(self.stack) < 2:
+      self.AddError('END without matching STRUCT, UNION, or ENUM')
+      return None
+      
     (_, current_object) = self.stack[-1]
     self.stack.pop()
     (state, containing_object) = self.stack[-1]
@@ -968,14 +1040,14 @@ class DocBuilder:
     if state != DocBuilderTopLevel:
       # Sub-structures and sub-unions are numbered starting at 0.
       # Check the previous field to find where this struct should start.
-      last_offset = -1
+      next_offset = 0
       if not containing_object.is_union:
         previous_fields = containing_object.fields[0:-1]
         if len(previous_fields) > 0:
-          last_offset = previous_fields[-1].EndOffset()
+          next_offset = previous_fields[-1].EndOffset() + 1
 
       new_field = containing_object.fields[-1]
-      new_field.offset_start = last_offset + 1
+      new_field.offset_start = next_offset
       new_field.bit_width = current_object.BitWidth()
       new_field.CreateSubfields()
 
@@ -1244,6 +1316,8 @@ class DocBuilder:
         self.ParseUnionStart(line)
       elif line.startswith('ENUM'):
         self.ParseEnumStart(line)
+      elif line.startswith('FLAGS'):
+        self.ParseFlagSetStart(line)
       elif line.startswith('END'):
         self.ParseEnd(line)
       else:
@@ -1286,7 +1360,7 @@ def GenerateFile(should_pack, output_style, output_base,
     errors = p.VisitDocument(doc)
     if len(errors) > 0:
       for error in errors:
-        sys.stderr.write(warning + '\n')
+        sys.stderr.write(error + '\n')
 
   helper = codegen.HelperGenerator()
   helper.VisitDocument(doc)

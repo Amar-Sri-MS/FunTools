@@ -377,6 +377,69 @@ class CodegenEndToEnd(unittest.TestCase):
     self.assertIn('uint8_t c:6;', out)
     self.assertIn('uint8_t d;', out)
 
+  def testNoDuplicateFunctions(self):
+    contents = [
+      'STRUCT A',
+      '0 63:0 uint64_t a',
+      'UNION B u',
+      'STRUCT BA b1',
+      '1 63:0 uint64_t b',
+      'END',
+      'STRUCT BB b2',
+      '1 63:0 uint64_t b',
+      'END',
+      'END',
+      'END'
+      ]
+
+    out = generator.GenerateFile(True, generator.OutputStyleHeader, None,
+                                 contents, 'foo.gen')
+    self.assertEqual(2, out.count(' A_BA_init'))
+    self.assertEqual(2, out.count(' A_BB_init'))
+    self.assertEqual(2, out.count(' BA_init'))
+    self.assertEqual(2, out.count(' BB_init'))
+
+  def testSimpleFlags(self):
+    contents = [
+      'FLAGS Foo',
+      'A = 1',
+      'B = 2',
+      'C = 4',
+      'D = 8',
+      'E = 16',
+      'F = 0x20',
+      'END',
+      ]
+
+    out = generator.GenerateFile(True, generator.OutputStyleHeader, None,
+                                 contents, 'foo.gen')
+    self.assertIn('const int A = 0x1;', out)
+    self.assertIn('const int D = 0x8;', out)
+    self.assertIn('const int F = 0x20;', out)
+
+  def testFlagsNotPowerOfTwo(self):
+    contents = [
+      'FLAGS Foo',
+      'A = 1',
+      'B = 2',
+      'AB = 3',
+      'C = 4',
+      'D = 16',
+      'END',
+      ]
+
+    out = generator.GenerateFile(True, generator.OutputStyleHeader, None,
+                                 contents, 'foo.gen')
+    self.assertIn('const int A = 0x1;', out)
+    self.assertIn('const int AB = 0x3;', out)
+    self.assertIn('const int D = 0x10;', out)
+    self.assertIn('"A",  /* 0x1 */', out)
+    self.assertIn('"C",  /* 0x4 */', out)
+    self.assertIn('"D",  /* 0x10 */', out)
+    self.assertIn('"0x8",  /* 0x8, not defined with flag. */', out)
+    self.assertNotIn('"AB",  /* 0x3 */', out)
+
+
 class TestComments(unittest.TestCase):
 
   def testStructComments(self):
@@ -506,6 +569,19 @@ class TestComments(unittest.TestCase):
 
     self.assertIn('char array[0];\n};', out)
 
+  def testPackedError(self):
+    contents = [
+	'STRUCT foo',
+	'0 63:60 uint8_t foo',
+        '0 59:55 uint8_t bar',
+        '0 54:50 uint8_t baz',
+	'0 49:48 uint8_t boof',
+	'END'
+	]
+    out = generator.GenerateFile(True, generator.OutputStyleHeader, None,
+                                 contents, 'foo.gen')
+    # TODO(bowdidge): check that errors were correctly emitted.
+    
 
 class TestIndentString(unittest.TestCase):
   def testSimple(self):

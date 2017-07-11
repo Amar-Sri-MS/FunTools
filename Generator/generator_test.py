@@ -266,6 +266,27 @@ class TestDocBuilder(unittest.TestCase):
     self.assertEqual('BBBBBB', var_b.name)
     self.assertEqual(2, var_b.value)
 
+  def disableTestEnumReference(self):
+    # TODO(bowdidge): Should allow enum (and flag) declarations to be used as type names.
+    doc_builder = generator.DocBuilder()
+    contents = ['ENUM Commands',
+                'A = 1',
+                'BBBBBB=0x02',
+                'END',
+                'STRUCT Foo',
+                '0 63:56 Commands a',
+                'END'
+                ]
+    
+    errors = doc_builder.Parse('filename', contents)
+    doc = doc_builder.current_document
+    
+    self.assertEqual(1, len(doc.structs))
+    foo = doc.structs[0]
+
+    self.assertEqual(1, len(foo.fields))
+    self.assertEqual(8, foo.BitWidth())
+
   def testLargeEnum(self):
     doc_builder = generator.DocBuilder()
     contents = ['ENUM Commands', 'A = 31', 'BBBBBB=0x3f', 'END']
@@ -489,6 +510,19 @@ class TestDocBuilder(unittest.TestCase):
     self.assertEqual(0, long_field.StartFlit())
     self.assertEqual(2, long_field.EndFlit())
 
+  def disableTestDuplicateBitfield(self):
+    """Test that we flag an error if the flit for a ... is incorrect."""
+    doc_builder = generator.DocBuilder()
+    contents = ['STRUCT Foo',
+                '0 63:0 uint8_t chars[16]',
+                '0 63:0 ...',
+                'END']
+
+    errors = doc_builder.Parse('filename', contents)
+    self.assertEqual(1, len(errors))
+    self.assertIn('reuse', errors[0])
+
+
   def testNestedStruct(self):
     doc_builder = generator.DocBuilder()
     # ... allows a field to overflow into later flits.
@@ -663,6 +697,28 @@ class TestDocBuilder(unittest.TestCase):
     self.assertEqual(8, foo.BitWidth())
     self.assertEqual(0, array.BitWidth())
 
+  def testSimpleFlags(self):
+    doc_builder = generator.DocBuilder()
+    contents = [
+      'FLAGS Foo',
+      'A = 1',
+      'B = 2',
+      'C = 4',
+      'D = 8',
+      'E = 16',
+      'F = 0x20',
+      'END',
+      ]
+
+    errors = doc_builder.Parse('filename', contents)
+    self.assertIsNone(errors)
+  
+    doc = doc_builder.current_document
+    self.assertEqual(1,len(doc.flagsets))
+    foo = doc.flagsets[0]
+    
+    self.assertEqual(6, len(foo.variables))
+    
 
 class TestStripComment(unittest.TestCase):
   def testSimple(self):
@@ -936,6 +992,43 @@ class PackerTest(unittest.TestCase):
 
     self.assertEqual(2, len(doc.structs[0].fields))
 
+  def testTooManyEnds(self):
+    doc_builder = generator.DocBuilder()
+    contents = ['STRUCT Foo',
+                '0 63:0 uint64_t cmd',
+                'STRUCT Bar',
+                '1 63:0 uint64_t cmd',
+                'END',
+                'END',
+                'END']
+    errors = doc_builder.Parse('filename', contents)
+    self.assertEqual(1, len(errors))
+    self.assertIn('without matching', errors[0])
+                
+  def disableParseVariableLengthArrayInSubStructure(self):
+    doc_builder = generator.DocBuilder()
+    contents = [
+      'STRUCT outer',
+      '0 63:56 char initial_outer',
+      'STRUCT inner',
+      '0 63:56 char initial_inner',
+      '_ _:_ char array[0]',
+      'END',
+      'END'
+      ]
+
+    errors = doc_builder.Parse('filename', contents)
+    self.assertIsNone(errors)
+
+    self.assertEqual(2, len(doc.structs))
+    inner = doc.structs[0]
+    self.assertEqual("inner", inner.name)
+    self.assertEqual(2, len(inner.fields))
+    var_length_array = inner.fields[1]
+    self.assertEqual("array", var_length_array.name)
+    self.assertTrue(var_length_array.no_offset)
+
+                     
 
 class CheckerTest(unittest.TestCase):
 
@@ -1149,6 +1242,31 @@ class CheckerTest(unittest.TestCase):
     self.assertIn('field "buf" overlaps field "c"',
                   checker.errors[0])
 
+  def testUnionNoOverlap(self):
+    doc_builder = generator.DocBuilder()
+    contents = ['STRUCT Foo',
+                '0 63:0 uint64_t cmd',
+                'UNION Bar u',
+                '1 63:0 uint64_t data',
+                'END',
+                'END']
+    errors = doc_builder.Parse('filename', contents)
+    self.assertIsNone(errors)
+
+    checker = generator.Checker()
+    checker.VisitDocument(doc_builder.current_document)
+
+    self.assertEqual(0, len(checker.errors))
+
+  def testUnionOverlap(self):
+    doc_builder = generator.DocBuilder()
+    contents = ['STRUCT Foo',
+                '0 63:0 uint64_t cmd',
+                'UNION Bar u',
+                '0 31:0 uint32_t data',
+                'END',
+                'END']
+
   def testVariableLengthArray(self):
     doc_builder = generator.DocBuilder()
     contents = [
@@ -1205,7 +1323,28 @@ class CheckerTest(unittest.TestCase):
 
     checker = generator.Checker()
     checker.VisitDocument(doc_builder.current_document)
-    print checker.errors
+
+    self.assertEqual(1, len(checker.errors))
+    self.assertIn('is not the last field', checker.errors[0])
+
+  def disableTestErrorIfVariableLengthArrayNotAtEndOfContainer(self):
+    doc_builder = generator.DocBuilder()
+    contents = [
+      'STRUCT outer',
+      '0 63:56 char initial_outer',
+      'STRUCT inner',
+      '0 63:56 char initial_inner',
+      '_ _:_ char array[0]',
+      'END',
+      'END'
+      ]
+
+    errors = doc_builder.Parse('filename', contents)
+    self.assertIsNone(errors)
+
+    checker = generator.Checker()
+    checker.VisitDocument(doc_builder.current_document)
+
     self.assertEqual(1, len(checker.errors))
     self.assertIn('is not the last field', checker.errors[0])
 
