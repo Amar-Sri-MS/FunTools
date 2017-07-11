@@ -1360,7 +1360,7 @@ def GenerateFile(should_pack, output_style, output_base,
     errors = p.VisitDocument(doc)
     if len(errors) > 0:
       for error in errors:
-        sys.stderr.write(warning + '\n')
+        sys.stderr.write(error + '\n')
 
   helper = codegen.HelperGenerator()
   helper.VisitDocument(doc)
