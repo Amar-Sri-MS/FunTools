@@ -41,6 +41,8 @@ ENUM fun_admin_subop
   FUN_ADMIN_SUBOP_INVALID = 0x00
   FUN_ADMIN_SUBOP_CREATE = 0x01
   FUN_ADMIN_SUBOP_DESTROY = 0x02
+  FUN_ADMIN_SUBOP_LIST_CREATED = 0x03
+  FUN_ADMIN_SUBOP_LIST_ACTIVE = 0x04
 END
 
 // AMDIN EPCQ REQ/RSP
@@ -77,7 +79,13 @@ STRUCT fun_admin_epcq_req
       2 63:56  uint8_t epcq_req_destroy_subop /* FUN_ADMIN_SUBOP_DESTROY */
       2 55:32  uint8_t rsvd0[3]
       2 31:00 uint32_t epcq_req_destroy_id /* epcqid to destroy */
-    END      
+    END
+    STRUCT fun_admin_epcq_req_list epcq_req_list
+      2 63:56  uint8_t epcq_req_list_subop /* SUBOP_LIST */
+      2 55:48  uint8_t rsvd0
+      2 47:32 uint16_t epcq_req_list_flag /* see fun_admin_epcq_create_flag enum */
+      2 31:00 uint32_t epcq_req_list_startid /*  */
+    END
   END
 END
 
@@ -140,7 +148,13 @@ STRUCT fun_admin_epsq_req
       2 63:56  uint8_t epsq_req_destroy_subop /* SUBOP_DESTROY */
       2 55:32  uint8_t rsvd0[3]
       2 31:00 uint32_t epsq_req_destroy_id /* epsqid to destroy */
-    END      
+    END  
+    STRUCT fun_admin_epsq_req_list epsq_req_list
+      2 63:56  uint8_t epsq_req_list_subop /* SUBOP_LIST */
+      2 55:48  uint8_t rsvd0
+      2 47:32 uint16_t epsq_req_list_flag /* see fun_admin_epsq_create_flag enum */
+      2 31:00 uint32_t epsq_req_list_startid /*  */
+    END   
   END
 END
 
@@ -178,6 +192,12 @@ STRUCT fun_admin_eprq_req
       2 55:32  uint8_t rsvd0[3]
       2 31:00 uint32_t eprq_req_destroy_eprqid /* eprqid to destroy */
     END      
+    STRUCT fun_admin_eprq_req_list eprq_req_list
+      2 63:56  uint8_t eprq_req_list_subop /* SUBOP_LIST */
+      2 55:48  uint8_t rsvd0
+      2 47:32 uint16_t eprq_req_list_flag /* see fun_admin_eprq_create_flag enum */
+      2 31:00 uint32_t eprq_req_list_startid /*  */
+    END   
   END
 END
 
@@ -220,6 +240,12 @@ STRUCT fun_admin_eth_req
       2 55:32  uint8_t rsvd0[3]
       2 31:00 uint32_t eth_req_destroy_id /* ethid to destroy */
     END      
+    STRUCT fun_admin_eth_req_list eth_req_list
+      2 63:56  uint8_t eth_req_list_subop /* SUBOP_LIST */
+      2 55:48  uint8_t rsvd0
+      2 47:32 uint16_t eth_req_list_flag /* see fun_admin_eth_create_flag enum */
+      2 31:00 uint32_t eth_req_list_startid /*  */
+    END   
   END
 END
 
@@ -261,7 +287,13 @@ STRUCT fun_admin_vi_req
       2 63:56  uint8_t vi_req_destroy_subop /* SUBOP_DESTROY */
       2 55:32  uint8_t rsvd0[3]
       2 31:00 uint32_t vi_req_destroy_id /* viid to destroy */
-    END      
+    END 
+    STRUCT fun_admin_vi_req_list vi_req_list
+      2 63:56  uint8_t vi_req_list_subop /* SUBOP_LIST */
+      2 55:48  uint8_t rsvd0
+      2 47:32 uint16_t vi_req_list_flag /* see fun_admin_vi_create_flag enum */
+      2 31:00 uint32_t vi_req_list_startid /*  */
+    END   
   END
 END
 
@@ -302,7 +334,13 @@ STRUCT fun_admin_nss_req
       2 63:56  uint8_t nss_req_destroy_subop /* SUBOP_DESTROY */
       2 55:32  uint8_t rsvd0[3]
       2 31:00 uint32_t nss_req_destroy_id /* nssid to destroy */
-    END      
+    END
+    STRUCT fun_admin_nss_req_list nss_req_list
+      2 63:56  uint8_t nss_req_list_subop /* SUBOP_LIST */
+      2 55:48  uint8_t rsvd0
+      2 47:32 uint16_t nss_req_list_flag /* see fun_admin_nss_create_flag enum */
+      2 31:00 uint32_t nss_req_list_startid /*  */
+    END       
   END
 END
 
@@ -349,7 +387,13 @@ STRUCT fun_admin_vol_req
       2 63:56  uint8_t vol_req_destroy_subop /* SUBOP_DESTROY */
       2 55:32  uint8_t rsvd0[3]
       2 31:00 uint32_t vol_req_destroy_id /* volid to destroy */
-    END      
+    END
+    STRUCT fun_admin_vol_req_list vol_req_list
+      2 63:56  uint8_t vol_req_list_subop /* SUBOP_LIST */
+      2 55:48  uint8_t rsvd0
+      2 47:32 uint16_t vol_req_list_flag /* see fun_admin_vol_create_flag enum */
+      2 31:00 uint32_t vol_req_list_startid /*  */
+    END       
   END
 END
 
@@ -404,6 +448,12 @@ STRUCT fun_admin_crypto_req
       2 55:32  uint8_t rsvd0[3]
       2 31:00 uint32_t crypto_req_destroy_id /* cryptoid to destroy */
     END      
+    STRUCT fun_admin_crypto_req_list crypto_req_list
+      2 63:56  uint8_t crypto_req_list_subop /* SUBOP_LIST */
+      2 55:48  uint8_t rsvd0
+      2 47:32 uint16_t crypto_req_list_flag /* see fun_admin_crypto_create_flag enum */
+      2 31:00 uint32_t crypto_req_list_startid /*  */
+    END    
   END
 END
 
@@ -427,7 +477,7 @@ STRUCT fun_admin_crypto_rsp
       2 63:56  uint8_t crypto_rsp_destroy_subop /* SUBOP_DESTROY */
       2 55:32  uint8_t rsvd0[3]
       2 31:00 uint32_t crypto_rsp_destroy_id /* destroyed cryptoid */
-    END      
+    END
   END
 END
 
