@@ -580,6 +580,7 @@ class TestComments(unittest.TestCase):
 	]
     out = generator.GenerateFile(True, generator.OutputStyleHeader, None,
                                  contents, 'foo.gen')
+    # TODO(bowdidge): check that errors were correctly emitted.
     
 
 class TestIndentString(unittest.TestCase):
