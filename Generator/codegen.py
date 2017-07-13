@@ -102,11 +102,9 @@ class CodeGenerator:
     self.DecrementIndent()
 
     hdr_out += '/* Human-readable strings for enum values in %s. */\n' % enum.name
-    hdr_out += 'extern const char *%s_names[%d];\n\n' % (enum.name.lower(),
-                                                         len(enum.variables));
+    hdr_out += 'extern const char *%s_names[];\n\n' % enum.name.lower()
 
-    src_out += 'const char *%s_names[%d] = {\n' % (enum.name.lower(),
-                                                   len(enum.variables))
+    src_out += 'const char *%s_names[] = {\n' % enum.name.lower()
     next_value = 0
     for enum_variable in enum.variables:
       current_value = enum_variable.value
@@ -149,8 +147,8 @@ class CodeGenerator:
 
     max_bits = utils.MaxBit(flagset.MaxValue())
     hdr_out += '/* String names for all power-of-two flags in %s. */\n' % flagset.name
-    hdr_out += 'const char *%s_names[%d];' % (flagset.name, max_bits)
-    src_out += 'const char *%s_names[%d] = {\n' % (flagset.name, max_bits)
+    hdr_out += 'const char *%s_names[];' % flagset.name
+    src_out += 'const char *%s_names[] = {\n' % flagset.name
 
     for i in range(0, utils.MaxBit(flagset.MaxValue())):
       next_value = 1 << i
