@@ -299,8 +299,8 @@ class CodegenEndToEnd(unittest.TestCase):
     # TODO(bowdidge): Structures with unions should get union-specific
     # constructors.
     self.assertIn('void A_init(struct A* s, uint64_t a)', out)
-    self.assertIn('void B_B1_init(struct B* s, uint8_t b11, uint8_t b12)', out)
-    self.assertIn('void B_B2_init(struct B* s, uint8_t b21, uint8_t b22)', out)
+    self.assertIn('void B1_init(struct B* s, uint8_t b11, uint8_t b12)', out)
+    self.assertIn('void B2_init(struct B* s, uint8_t b21, uint8_t b22)', out)
 
   def disableTestInitFunctionsForNestedStructures(self):
     input = ['STRUCT A',
@@ -394,8 +394,6 @@ class CodegenEndToEnd(unittest.TestCase):
 
     out = generator.GenerateFile(True, generator.OutputStyleHeader, None,
                                  contents, 'foo.gen')
-    self.assertEqual(2, out.count(' A_BA_init'))
-    self.assertEqual(2, out.count(' A_BB_init'))
     self.assertEqual(2, out.count(' BA_init'))
     self.assertEqual(2, out.count(' BB_init'))
 

@@ -413,7 +413,7 @@ class HelperGenerator:
          if field.type.base_type.node.is_union:
           unions.append((field.name, field.type.base_type.node))
 
-    if not unions:
+    if not unions and not the_struct.inline:
       self.GenerateHelpersForStruct(the_struct)
 
     # TODO(bowdidge): Redo this code for deciding which constructors to create.
@@ -424,17 +424,17 @@ class HelperGenerator:
           structs_in_union.append((union_field.name, 
                                    union_field.type.base_type.node))
 
-      for (struct_var, struct) in structs_in_union:
+      for (struct_var, struct_in_union) in structs_in_union:
         # Generate constructor for each option.
-        function_name = self.InitializerName(the_struct.name + "_" + struct.name)
+        function_name = self.InitializerName(struct_in_union.name)
         accessor_prefix = '%s.%s.' % (union_var, struct_var)
         (decl, defn) = self.GenerateInitRoutine(function_name, the_struct.name, 
                                                 accessor_prefix,
-                                                struct)
+                                                struct_in_union)
         self.current_document.declarations.append(decl)
         self.current_document.definitions.append(defn)
-        for field in struct.fields:
-          self.VisitField(struct, field)
+        for field in struct_in_union.fields:
+          self.VisitField(struct_in_union, field)
  
     for field in the_struct.fields:
       self.VisitField(the_struct, field)
