@@ -128,14 +128,20 @@ class CodeGenerator:
 
     hdr_out += '/* Declarations for flag set %s */\n' % flagset.name
     if flagset.key_comment:
-      hdr_out += flagset.key_comment + '\n'
+      hdr_out += utils.AsComment(flagset.key_comment) + '\n'
     if flagset.body_comment:
-      hdr_out += flagset.body_comment + '\n'
+      hdr_out += utils.AsComment(flagset.body_comment) + '\n'
 
     src_out += '/* Definitions for flag set %s */\n' % flagset.name
 
-    for var in flagset.variables:
-      hdr_out += 'const int %s;  /* 0x%x */\n' % (var.name, var.value)
+    for var in flagset.variables: 
+      if var.body_comment:
+        hdr_out += '\t' + utils.AsComment(var.body_comment) + '\n'
+      key_comment = ''
+      if var.key_comment:
+        key_comment = ', ' + var.key_comment
+      hdr_out += 'const int %s;  /* 0x%x%s */\n' % (var.name, var.value,
+                                                    key_comment)
       src_out += 'const int %s = 0x%x;\n' % (var.name, var.value)
 
     hdr_out += '\n'
