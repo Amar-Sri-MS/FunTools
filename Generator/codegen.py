@@ -358,7 +358,7 @@ class HelperGenerator:
     validate_block = ''
 
     # First argument is always a pointer to the structure being initialized.
-    arg_list.append('struct %s* s' % struct_name)
+    arg_list.append('struct %s *s' % struct_name)
 
     for field in the_struct.AllFields():
       if field.IsReserved() or not field.type.IsScalar():
