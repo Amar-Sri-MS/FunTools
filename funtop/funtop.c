@@ -189,7 +189,7 @@ static CALLER_TO_RELEASE struct fun_json *sort_wu_stats_by_count(struct fun_json
         int64_t duration = 0;
         if (durations && (durations->type == fun_json_dict_type)) {
             struct fun_json *d = fun_json_dict_at(durations, key);
-            if (d && (d->type == fun_json_int_type)) duration = d->int_value;
+            if (d && (d->type == fun_json_int_type)) duration = d->int_value / 1000;
         }
         fun_json_dict_add(dict, "wu_duration", fun_json_no_copy_no_own, fun_json_create_int64(duration), true);
         double avg = count ? (double)duration / (double)count : 0.0;
@@ -203,7 +203,7 @@ static CALLER_TO_RELEASE struct fun_json *sort_wu_stats_by_count(struct fun_json
 }
 
 static struct parameters set_up_params(void) {
-    static const char *column_headers[] = { "WU NAME", "WU COUNT", "SUM DURATION", "AVG DURATION" };
+    static const char *column_headers[] = { "WU NAME", "WU COUNT", "SUM uSECS", "AVG uSECS" };
     static const char *column_keys[] = { "wu_name", "wu_count", "wu_duration", "wu_dur_avg" };
     static const size_t widths[] = { 40, 15, 15, 15 };
     static const bool right_just[] = { false, true, true, true };
