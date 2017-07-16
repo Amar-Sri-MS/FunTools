@@ -38,7 +38,7 @@ class MallocWindowController: NSObject {
 	func show() {
 		window.makeKeyAndOrderFront(nil)
 		refreshTimer = Timer.scheduledTimer(withTimeInterval: updateFrequency, repeats: true, block: { _ in
-			self.performSelector(onMainThread: #selector(F1SelectionController.refresh), with: nil, waitUntilDone: false)
+			self.performSelector(onMainThread: #selector(MallocWindowController.refresh), with: nil, waitUntilDone: false)
 		})
 	}
 	func refresh() {
@@ -143,7 +143,7 @@ class MallocRegionsDataSource: NSObject, NSTableViewDataSource {
 		return total
 	}
 	var totalInUse: UInt64 {
-		return total.sumInUseSizesInBytes
+		return allInfo.reduce(0) { $0 + $1.value.sumInUseSizesInBytes }
 	}
 	func numberOfRows(in tableView: NSTableView) -> Int {
 		return allInfo.count + 1
@@ -234,7 +234,7 @@ class MallocCachesDataSource: NSObject, NSTableViewDataSource {
 	}
 
 	var totalInUse: UInt64 {
-		return total.bytesAvail
+		return allInfo.reduce(0) { $0 + $1.bytesAvail }
 	}
 
 	func numberOfRows(in tableView: NSTableView) -> Int {

@@ -81,6 +81,8 @@
 		A766A4841F1C0FE50094C7B0 /* ViewerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A766A4831F1C0FE50094C7B0 /* ViewerApp.swift */; };
 		A766A4861F1C12D00094C7B0 /* ConsoleController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A766A4851F1C12D00094C7B0 /* ConsoleController.swift */; };
 		A766A4881F1C12FD0094C7B0 /* ConsoleWindow.xib in Resources */ = {isa = PBXBuildFile; fileRef = A766A4871F1C12FD0094C7B0 /* ConsoleWindow.xib */; };
+		A766A48A1F1C19680094C7B0 /* TopLikeWindow.xib in Resources */ = {isa = PBXBuildFile; fileRef = A766A4891F1C19680094C7B0 /* TopLikeWindow.xib */; };
+		A766A48C1F1C19E90094C7B0 /* TopLikeController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A766A48B1F1C19E90094C7B0 /* TopLikeController.swift */; };
 		A791CEE61EC50356000125F0 /* bridgingCExtras.c in Sources */ = {isa = PBXBuildFile; fileRef = A791CEE51EC50356000125F0 /* bridgingCExtras.c */; };
 		A7A68D001EE9C608004B5DDF /* props_bridges in Resources */ = {isa = PBXBuildFile; fileRef = A7A68CFF1EE9C608004B5DDF /* props_bridges */; };
 		A7FD266E1EB51FCE0049E0C0 /* libfunclient.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A7FD266D1EB51FCE0049E0C0 /* libfunclient.a */; };
@@ -168,6 +170,8 @@
 		A766A4831F1C0FE50094C7B0 /* ViewerApp.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ViewerApp.swift; sourceTree = "<group>"; };
 		A766A4851F1C12D00094C7B0 /* ConsoleController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ConsoleController.swift; sourceTree = "<group>"; };
 		A766A4871F1C12FD0094C7B0 /* ConsoleWindow.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = ConsoleWindow.xib; sourceTree = "<group>"; };
+		A766A4891F1C19680094C7B0 /* TopLikeWindow.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = TopLikeWindow.xib; sourceTree = "<group>"; };
+		A766A48B1F1C19E90094C7B0 /* TopLikeController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TopLikeController.swift; sourceTree = "<group>"; };
 		A791CEE51EC50356000125F0 /* bridgingCExtras.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = bridgingCExtras.c; sourceTree = "<group>"; };
 		A7A68CFF1EE9C608004B5DDF /* props_bridges */ = {isa = PBXFileReference; lastKnownFileType = folder; name = props_bridges; path = ../../FunOS/props_bridges; sourceTree = "<group>"; };
 		A7FD266D1EB51FCE0049E0C0 /* libfunclient.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libfunclient.a; path = ../../FunSDK/lib/Darwin/libfunclient.a; sourceTree = "<group>"; };
@@ -306,6 +310,7 @@
 				A716FC5D1EAD6A2A008395EC /* F1Definitions.swift */,
 				A7FD26711EB54F9F0049E0C0 /* F1InputController.swift */,
 				A766A4851F1C12D00094C7B0 /* ConsoleController.swift */,
+				A766A48B1F1C19E90094C7B0 /* TopLikeController.swift */,
 				A7614FB31F1280E40065A5B7 /* MallocWindowController.swift */,
 				A716FC7D1EAD73E6008395EC /* F1SelectionController.swift */,
 				A716FC751EAD73B6008395EC /* F1SimDocument.swift */,
@@ -313,6 +318,7 @@
 				A7FD26731EB557CB0049E0C0 /* F1ChipWindow.xib */,
 				A716FC791EAD73C7008395EC /* F1SelectionWindow.xib */,
 				A766A4871F1C12FD0094C7B0 /* ConsoleWindow.xib */,
+				A766A4891F1C19680094C7B0 /* TopLikeWindow.xib */,
 				A7614FB11F127E5E0065A5B7 /* MallocWindow.xib */,
 				A766A4811F1C0E550094C7B0 /* Buttons.xib */,
 			);
@@ -388,6 +394,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A766A48A1F1C19680094C7B0 /* TopLikeWindow.xib in Resources */,
 				A766A4801F1BD2D40094C7B0 /* services in Resources */,
 				A716FBE81EAD33EA008395EC /* kv in Resources */,
 				A7614FB21F127E5E0065A5B7 /* MallocWindow.xib in Resources */,
@@ -473,6 +480,7 @@
 				A716FC551EAD6687008395EC /* Test.swift in Sources */,
 				A716FC491EAD6687008395EC /* Note.swift in Sources */,
 				A716FC131EAD667D008395EC /* ArrayExtras.swift in Sources */,
+				A766A48C1F1C19E90094C7B0 /* TopLikeController.swift in Sources */,
 				A716FC541EAD6687008395EC /* StringTrie.swift in Sources */,
 				A716FC4C1EAD6687008395EC /* RePrioritizableQueue.swift in Sources */,
 				A716FC461EAD6687008395EC /* Lock.swift in Sources */,

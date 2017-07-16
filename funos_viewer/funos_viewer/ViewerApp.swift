@@ -20,6 +20,14 @@ class ViewerApp: NSApplication {
 		consoleController.show()
 	}
 
+	var topLikeController: TopLikeController!
+	@IBAction func topLikeWindow(_ sender: NSObject?) {
+		if topLikeController == nil {
+			topLikeController = TopLikeController()
+		}
+		topLikeController.show()
+	}
+
 	var mallocController: MallocWindowController! = nil
 	@IBAction func mallocWindow(_ sender: NSObject?) {
 		if mallocController == nil {

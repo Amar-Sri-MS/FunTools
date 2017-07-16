@@ -18,15 +18,9 @@ class F1SelectionController: NSObject, NSTabViewDelegate {
 		self.document = document
 		super.init()
 		loadNib()
-		setupWUsTable()
 		resetIKVSamples()
 		selectionTabView.delegate = self
 		selectionRelativeHeat.isEnabled = false
-		// The next two lines are a horrible hack.  Without them, for some reason you need to go to the WUs TAB twice before you get any display.  Makes no sense.
-		async {
-			self.selectionTabView.performSelector(onMainThread: #selector(NSTabView.selectNextTabViewItem), with: nil, waitUntilDone: true)
-			self.selectionTabView.performSelector(onMainThread: #selector(NSTabView.selectPreviousTabViewItem), with: nil, waitUntilDone: false)
-		}
 	}
 
 	func loadNib() {
@@ -42,7 +36,7 @@ class F1SelectionController: NSObject, NSTabViewDelegate {
 	//    deinit {
 	//        print("DESTROY F1SelectionController")
 	//    }
-	let tabsToRefresh: Set<String> = ["WUs", "Misc Stats"]
+	let tabsToRefresh: Set<String> = ["Misc Stats"]
 
 	public func tabView(_ tabView: NSTabView, willSelect tabViewItem: NSTabViewItem?) {
 		//        print("Received willSelect notification tabView changed to \(tabViewItem!.label)")
@@ -70,7 +64,6 @@ class F1SelectionController: NSObject, NSTabViewDelegate {
 	}
 	func doRefresh(_ label: String) {
 		switch label {
-			case "WUs": doRefreshWUs()
 			case "Misc Stats": doRefreshMiscStats()
 			case "IKV": doRefreshIKV()
 			default: break
@@ -86,25 +79,6 @@ class F1SelectionController: NSObject, NSTabViewDelegate {
 		}
 		selectionTabView.needsDisplay = true
 		unit.noteStateChanged() // we force taking a new sample
-	}
-
-	/*=============== WUS ===============*/
-
-	@IBOutlet var wusTable: NSTableView!
-
-	var wusInfo = WUInfoDataSource()
-
-	func setupWUsTable() {
-		wusTable.dataSource = wusInfo
-	}
-
-	func doRefreshWUs() {
-		let counts = document.doF1Command("peek", "stats/wus/counts")?.dictionaryValue
-		if counts == nil || counts!.isEmpty { return }
-		let durations = document.doF1Command("peek", "stats/wus/durations")?.dictionaryValue
-		if durations == nil || durations!.isEmpty { return }
-		wusInfo.updateAllInfo(counts: counts!, durations: durations!)
-		wusTable.reloadData()
 	}
 
 	/*=============== MISC ===============*/
@@ -240,63 +214,6 @@ class F1SelectionController: NSObject, NSTabViewDelegate {
 		ikvCountSamplesView.setSamples(ikvCountSamples!)
 		ikvCapacitySamplesView.setSamples(ikvCapacitySamples!)
 		ikvSpaceAmplificationSamplesView.setSamples(ikvSpaceAmplificationSamples!)
-	}
-
-}
-
-/*=============== WUs DATA SOURCE ===============*/
-
-class WUInfoDataSource: NSObject, NSTableViewDataSource {
-	class WUInfo: NSObject {
-		// we subclass NSObject to get valueForKeyPath
-		var wu: String = ""
-		var count: Int = 0
-		var duration: Int = 0	// usecs
-		var avgDuration: Int { return count == 0 ? 0 : duration / count }
-	}
-	
-	var allInfo: [WUInfo] = []
-
-	func updateAllInfo(counts: [String: JSON], durations: [String: JSON]) {
-		let allExisting: Set<String> = Set(allInfo.map { $0.wu })
-		for i in 0 ..< allInfo.count {
-			let info = allInfo[i]
-			let key = info.wu
-			if counts[key] == nil { continue }
-			info.count = counts[key]!.integerValue
-			info.duration = ((durations[key]?.integerValue ?? 0) + 500) / 1000
-		}
-		let newKeysUnsorted = counts.keys.filter { !allExisting.contains($0) }
-		if newKeysUnsorted.isEmpty { return }
-		let newKeys = newKeysUnsorted.sorted { counts[$0]!.integerValue > counts[$1]!.integerValue }
-		for key in newKeys {
-			let info = WUInfo()
-			info.wu = key
-			info.count = counts[key]!.integerValue
-			info.duration = ((durations[key]?.integerValue ?? 0) + 500) / 1000
-			allInfo |= info
-		}
-	}
-
-	func resort(_ sortDescriptors: [NSSortDescriptor]) {
-		let allInfoAsMutableArray = NSMutableArray(array: allInfo)
-		allInfoAsMutableArray.sort(using: sortDescriptors)
-		allInfo = allInfoAsMutableArray as! [WUInfo]
-	}
-
-	func numberOfRows(in tableView: NSTableView) -> Int {
-		return allInfo.count
-	}
-
-	func tableView(_ tableView: NSTableView, objectValueFor tableColumn: NSTableColumn?, row: Int) -> Any? {
-		let info = allInfo[row]
-		let value: Any? = info.value(forKeyPath: tableColumn!.identifier)
-		return (value as! NSObject).description
-	}
-
-	func tableView(_ tableView: NSTableView, sortDescriptorsDidChange oldDescriptors: [NSSortDescriptor]) {
-		resort(tableView.sortDescriptors)
-		tableView.reloadData()
 	}
 
 }

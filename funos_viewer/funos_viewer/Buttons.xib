@@ -31,6 +31,9 @@
                             <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                             <font key="font" metaFont="system"/>
                         </buttonCell>
+                        <connections>
+                            <action selector="topLikeWindow:" target="-2" id="HPb-Eg-Buo"/>
+                        </connections>
                     </button>
                     <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="i4f-u4-SEj">
                         <rect key="frame" x="3" y="4" width="90" height="32"/>
