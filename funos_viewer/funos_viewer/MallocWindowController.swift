@@ -15,14 +15,16 @@ class MallocWindowController: NSObject {
 	let updateFrequency = 0.2
 
 	@IBOutlet var mallocInfoTable: NSTableView!
-	@IBOutlet var mallocCachesTable: NSTableView!
-
 	var mallocInfoSource = MallocRegionsDataSource()
-	var mallocCachesSource = MallocCachesDataSource()
 
 	@IBOutlet var allocUsesCache: NSButton!
 	@IBOutlet var freeRecycles: NSButton!
 	@IBOutlet var asyncReplenish: NSButton!
+
+	@IBOutlet var totalInUse: NSTextField!
+
+	@IBOutlet var mallocCachesTable: NSTableView!
+	var mallocCachesSource = MallocCachesDataSource()
 
 	override init() {
 		super.init()
@@ -46,6 +48,8 @@ class MallocWindowController: NSObject {
 		}
 		refreshAgentInfo()
 		refreshCachesInfo()
+		// After both of these update total in use
+		totalInUse.stringValue = String(numberOfBytes: mallocInfoSource.totalInUse - mallocCachesSource.totalInUse)
 	}
 	func refreshAgentInfo() {
 		let regions = document.doF1Command("peek", "stats/malloc_agent/regions")?.arrayValue
@@ -138,7 +142,9 @@ class MallocRegionsDataSource: NSObject, NSTableViewDataSource {
 		}
 		return total
 	}
-
+	var totalInUse: UInt64 {
+		return total.sumInUseSizesInBytes
+	}
 	func numberOfRows(in tableView: NSTableView) -> Int {
 		return allInfo.count + 1
 	}
@@ -225,6 +231,10 @@ class MallocCachesDataSource: NSObject, NSTableViewDataSource {
 			total.replenished += summary.replenished
 		}
 		return total
+	}
+
+	var totalInUse: UInt64 {
+		return total.bytesAvail
 	}
 
 	func numberOfRows(in tableView: NSTableView) -> Int {

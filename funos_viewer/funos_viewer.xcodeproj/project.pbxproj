@@ -76,6 +76,11 @@
 		A7614FB41F1280E40065A5B7 /* MallocWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7614FB31F1280E40065A5B7 /* MallocWindowController.swift */; };
 		A766A47C1F1915F50094C7B0 /* utils in Resources */ = {isa = PBXBuildFile; fileRef = A766A47B1F1915F50094C7B0 /* utils */; };
 		A766A47E1F195D7A0094C7B0 /* nucleus in Resources */ = {isa = PBXBuildFile; fileRef = A766A47D1F195D7A0094C7B0 /* nucleus */; };
+		A766A4801F1BD2D40094C7B0 /* services in Resources */ = {isa = PBXBuildFile; fileRef = A766A47F1F1BD2D40094C7B0 /* services */; };
+		A766A4821F1C0E550094C7B0 /* Buttons.xib in Resources */ = {isa = PBXBuildFile; fileRef = A766A4811F1C0E550094C7B0 /* Buttons.xib */; };
+		A766A4841F1C0FE50094C7B0 /* ViewerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A766A4831F1C0FE50094C7B0 /* ViewerApp.swift */; };
+		A766A4861F1C12D00094C7B0 /* ConsoleController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A766A4851F1C12D00094C7B0 /* ConsoleController.swift */; };
+		A766A4881F1C12FD0094C7B0 /* ConsoleWindow.xib in Resources */ = {isa = PBXBuildFile; fileRef = A766A4871F1C12FD0094C7B0 /* ConsoleWindow.xib */; };
 		A791CEE61EC50356000125F0 /* bridgingCExtras.c in Sources */ = {isa = PBXBuildFile; fileRef = A791CEE51EC50356000125F0 /* bridgingCExtras.c */; };
 		A7A68D001EE9C608004B5DDF /* props_bridges in Resources */ = {isa = PBXBuildFile; fileRef = A7A68CFF1EE9C608004B5DDF /* props_bridges */; };
 		A7FD266E1EB51FCE0049E0C0 /* libfunclient.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A7FD266D1EB51FCE0049E0C0 /* libfunclient.a */; };
@@ -158,6 +163,11 @@
 		A7614FB31F1280E40065A5B7 /* MallocWindowController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MallocWindowController.swift; sourceTree = "<group>"; };
 		A766A47B1F1915F50094C7B0 /* utils */ = {isa = PBXFileReference; lastKnownFileType = folder; name = utils; path = ../../FunOS/utils; sourceTree = "<group>"; };
 		A766A47D1F195D7A0094C7B0 /* nucleus */ = {isa = PBXFileReference; lastKnownFileType = folder; name = nucleus; path = ../../FunOS/nucleus; sourceTree = "<group>"; };
+		A766A47F1F1BD2D40094C7B0 /* services */ = {isa = PBXFileReference; lastKnownFileType = folder; name = services; path = ../../FunOS/services; sourceTree = "<group>"; };
+		A766A4811F1C0E550094C7B0 /* Buttons.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = Buttons.xib; sourceTree = "<group>"; };
+		A766A4831F1C0FE50094C7B0 /* ViewerApp.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ViewerApp.swift; sourceTree = "<group>"; };
+		A766A4851F1C12D00094C7B0 /* ConsoleController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ConsoleController.swift; sourceTree = "<group>"; };
+		A766A4871F1C12FD0094C7B0 /* ConsoleWindow.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = ConsoleWindow.xib; sourceTree = "<group>"; };
 		A791CEE51EC50356000125F0 /* bridgingCExtras.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = bridgingCExtras.c; sourceTree = "<group>"; };
 		A7A68CFF1EE9C608004B5DDF /* props_bridges */ = {isa = PBXFileReference; lastKnownFileType = folder; name = props_bridges; path = ../../FunOS/props_bridges; sourceTree = "<group>"; };
 		A7FD266D1EB51FCE0049E0C0 /* libfunclient.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libfunclient.a; path = ../../FunSDK/lib/Darwin/libfunclient.a; sourceTree = "<group>"; };
@@ -189,6 +199,7 @@
 				A716FBDB1EA67D3C008395EC /* funos */,
 				A766A47D1F195D7A0094C7B0 /* nucleus */,
 				A766A47B1F1915F50094C7B0 /* utils */,
+				A766A47F1F1BD2D40094C7B0 /* services */,
 				A7A68CFF1EE9C608004B5DDF /* props_bridges */,
 				A74FE1471EE1D0210062128E /* platform */,
 				A716FBE51EAD33E0008395EC /* hw */,
@@ -213,6 +224,7 @@
 			isa = PBXGroup;
 			children = (
 				A716FBCC1EA67C82008395EC /* AppDelegate.swift */,
+				A766A4831F1C0FE50094C7B0 /* ViewerApp.swift */,
 				A716FBDF1EA67EF5008395EC /* dpcclient.h */,
 				A716FBDE1EA67EF5008395EC /* dpcclient.c */,
 				A716FBCE1EA67C82008395EC /* Assets.xcassets */,
@@ -293,13 +305,16 @@
 				A716FC5B1EAD69E4008395EC /* F1ChipView.swift */,
 				A716FC5D1EAD6A2A008395EC /* F1Definitions.swift */,
 				A7FD26711EB54F9F0049E0C0 /* F1InputController.swift */,
+				A766A4851F1C12D00094C7B0 /* ConsoleController.swift */,
 				A7614FB31F1280E40065A5B7 /* MallocWindowController.swift */,
 				A716FC7D1EAD73E6008395EC /* F1SelectionController.swift */,
 				A716FC751EAD73B6008395EC /* F1SimDocument.swift */,
 				A7FD266F1EB54EF20049E0C0 /* F1InputWindow.xib */,
 				A7FD26731EB557CB0049E0C0 /* F1ChipWindow.xib */,
 				A716FC791EAD73C7008395EC /* F1SelectionWindow.xib */,
+				A766A4871F1C12FD0094C7B0 /* ConsoleWindow.xib */,
 				A7614FB11F127E5E0065A5B7 /* MallocWindow.xib */,
+				A766A4811F1C0E550094C7B0 /* Buttons.xib */,
 			);
 			name = F1UI;
 			path = funos_viewer;
@@ -373,6 +388,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A766A4801F1BD2D40094C7B0 /* services in Resources */,
 				A716FBE81EAD33EA008395EC /* kv in Resources */,
 				A7614FB21F127E5E0065A5B7 /* MallocWindow.xib in Resources */,
 				A7A68D001EE9C608004B5DDF /* props_bridges in Resources */,
@@ -387,6 +403,8 @@
 				A716FBDC1EA67D3C008395EC /* funos in Resources */,
 				A716FBEC1EAD63FA008395EC /* PureSwiftExtras in Resources */,
 				A716FBCF1EA67C82008395EC /* Assets.xcassets in Resources */,
+				A766A4821F1C0E550094C7B0 /* Buttons.xib in Resources */,
+				A766A4881F1C12FD0094C7B0 /* ConsoleWindow.xib in Resources */,
 				A716FBD21EA67C82008395EC /* MainMenu.xib in Resources */,
 				A716FC7A1EAD73C7008395EC /* F1SelectionWindow.xib in Resources */,
 				A71563941EB7ACE600F32BAE /* bsd in Resources */,
@@ -434,6 +452,7 @@
 				A716FC1A1EAD667D008395EC /* SequenceExtras.swift in Sources */,
 				A716FC141EAD667D008395EC /* ByteExtras.swift in Sources */,
 				A716FC191EAD667D008395EC /* RangeExtras.swift in Sources */,
+				A766A4861F1C12D00094C7B0 /* ConsoleController.swift in Sources */,
 				A716FC601EAD6A5F008395EC /* CocoaExtras.swift in Sources */,
 				A716FC1C1EAD667D008395EC /* StringExtras.swift in Sources */,
 				A7614FB41F1280E40065A5B7 /* MallocWindowController.swift in Sources */,
@@ -442,6 +461,7 @@
 				A716FC431EAD6687008395EC /* JSON.swift in Sources */,
 				A716FC441EAD6687008395EC /* Lexer.swift in Sources */,
 				A716FC561EAD6687008395EC /* VantagePointTree.swift in Sources */,
+				A766A4841F1C0FE50094C7B0 /* ViewerApp.swift in Sources */,
 				A716FC181EAD667D008395EC /* ProtocolsExtras.swift in Sources */,
 				A716FC4D1EAD6687008395EC /* SExpression.swift in Sources */,
 				A716FC3C1EAD6687008395EC /* Async.swift in Sources */,

@@ -18,7 +18,6 @@ class F1SelectionController: NSObject, NSTabViewDelegate {
 		self.document = document
 		super.init()
 		loadNib()
-		setupSelectionInfo()
 		setupWUsTable()
 		resetIKVSamples()
 		selectionTabView.delegate = self
@@ -80,33 +79,13 @@ class F1SelectionController: NSObject, NSTabViewDelegate {
 	func updateSelectionTabForUnit(_ unit: F1Block) {
 		// Note that unit can be a single unit or a group of units
 		switch (selectionTabView.selectedTabViewItem!.identifier! as AnyObject).description {
-		case "0":
-			selectionInfo.setStringPreservingSelection(unit.simulationInfoFullSummary())
 		case "1": break
-		case "2":
-			selectionQueuesText.setStringPreservingSelection(unit.simulationInfoQueues())
 		case "3":
 			selectionRelativeHeat.isEnabled = unit.name == "DN" || unit.name == "SN"
 		default: fatalError()
 		}
 		selectionTabView.needsDisplay = true
 		unit.noteStateChanged() // we force taking a new sample
-	}
-
-	/*=============== OUTPUT ===============*/
-
-	@IBOutlet var selectionInfo: NSTextView!
-	@IBOutlet var selectionQueuesText: NSTextView!
-
-	func setupSelectionInfo() {
-		selectionInfo.makeNonEditableFixedPitchOfSize(12.0)   // try to speedup display
-		selectionQueuesText.makeNonEditableFixedPitchOfSize(12.0)
-		clearSelectionTab()
-	}
-
-	func clearSelectionTab() {
-		selectionInfo.string = ""
-		selectionQueuesText.string = ""
 	}
 
 	/*=============== WUS ===============*/

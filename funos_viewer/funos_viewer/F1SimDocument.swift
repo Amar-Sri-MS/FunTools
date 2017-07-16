@@ -182,7 +182,7 @@ import AppKit
 		noteSelectionChangedAndUpdate()
 	}
 	func noteSelectionChangedAndUpdate() {
-		selectionController.clearSelectionTab()
+		(NSApp as! ViewerApp).clearConsole()
 	}
 	func noteSelectionChanged(_ note: Notification) {
 		performSelector(onMainThread: #selector(F1SimDocument.noteSelectionChangedAndUpdate), with: nil, waitUntilDone: false)
@@ -231,8 +231,7 @@ import AppKit
 		return doF1Command(socket: &socket, verb, args)
 	}
 	func log(string: String) {
-		selectionController.selectionInfo.string = string
-		selectionController.window.viewsNeedDisplay = true
+		(NSApp as! ViewerApp).setConsole(string)
 	}
 	func doAndLogF1Command(_ verb: String, _ args: String...) {
 		log(string: "")
