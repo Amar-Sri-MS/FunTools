@@ -177,8 +177,9 @@ static int compare_by_count(void *map_context, void *per_call_context, fun_map_k
 static CALLER_TO_RELEASE struct fun_json *sort_wu_stats_by_count(struct fun_json *wu_stats, struct fun_json *previous, struct fun_json *durations) {
     assert(wu_stats->type == fun_json_dict_type);
     struct compare_by_count_context con = { .this = wu_stats, .previous = previous };
-    size_t c;
-    fun_map_key_t *keys = fun_map_sorted_keys(wu_stats->dict, &c, &con, compare_by_count);
+    size_t c = fun_map_count(wu_stats->dict);
+    fun_map_key_t *keys = calloc(c, sizeof(fun_map_key_t));
+    fun_map_get_sorted_keys(wu_stats->dict, keys, &con, compare_by_count);
     const struct fun_json **items = calloc(c, sizeof(void *));
     for (size_t i = 0; i < c; i++) {
         const char *key = (void *)keys[i];
