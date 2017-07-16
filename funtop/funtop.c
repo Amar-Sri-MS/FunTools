@@ -1,14 +1,15 @@
 /* Tool to display statistics from a running funos */
 
-#include <funos/fun_utils.h>
 #include <sys/socket.h>
 #include <sys/un.h>
-#include <funos/fun_json.h>
+#include <string.h>
 #include <unistd.h>
-#include <funos/fun_commander.h>
 #include <curses.h>
 #include <inttypes.h>
 #include <ctype.h>
+
+#include <utils/threaded/fun_json.h>
+#include <utils/threaded/fun_commander.h>
 
 #ifndef MIN
 #define MIN(x,y) ((x) < (y) ? (x) : (y))
