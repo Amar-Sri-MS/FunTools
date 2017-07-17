@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="12121" systemVersion="16F73" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES" customObjectInstantitationMethod="direct">
+    <dependencies>
+        <deployment identifier="macosx"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="12121"/>
+        <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
+    </dependencies>
+    <objects>
+        <customObject id="-2" userLabel="File's Owner" customClass="MiscWindowController" customModule="funos_viewer" customModuleProvider="target">
+            <connections>
+                <outlet property="inUseField" destination="RLR-uw-wGT" id="y3L-ka-F25"/>
+                <outlet property="modulesInited" destination="VJQ-0a-9Tq" id="h6u-NI-SkB"/>
+                <outlet property="window" destination="QvC-M9-y7g" id="evt-ON-g2x"/>
+            </connections>
+        </customObject>
+        <customObject id="-1" userLabel="First Responder" customClass="FirstResponder"/>
+        <customObject id="-3" userLabel="Application" customClass="NSObject"/>
+        <window title="Misc" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" oneShot="NO" releasedWhenClosed="NO" animationBehavior="default" id="QvC-M9-y7g" customClass="NSPanel">
+            <windowStyleMask key="styleMask" titled="YES" closable="YES" miniaturizable="YES" resizable="YES"/>
+            <windowPositionMask key="initialPositionMask" leftStrut="YES" rightStrut="YES" topStrut="YES" bottomStrut="YES"/>
+            <rect key="contentRect" x="278" y="180" width="480" height="270"/>
+            <rect key="screenRect" x="0.0" y="0.0" width="1680" height="1027"/>
+            <view key="contentView" wantsLayer="YES" id="EiT-Mj-1SZ">
+                <rect key="frame" x="0.0" y="0.0" width="480" height="270"/>
+                <autoresizingMask key="autoresizingMask"/>
+                <subviews>
+                    <view translatesAutoresizingMaskIntoConstraints="NO" id="rBI-dQ-pPy">
+                        <rect key="frame" x="7" y="104" width="466" height="154"/>
+                        <subviews>
+                            <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" allowsCharacterPickerTouchBarItem="NO" translatesAutoresizingMaskIntoConstraints="NO" id="U7U-aL-Qyu">
+                                <rect key="frame" x="7" y="112" width="144" height="17"/>
+                                <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Num WU stacks in use:" id="ked-nD-FAl">
+                                    <font key="font" metaFont="system"/>
+                                    <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                                    <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
+                                </textFieldCell>
+                            </textField>
+                            <textField verticalHuggingPriority="750" allowsCharacterPickerTouchBarItem="NO" translatesAutoresizingMaskIntoConstraints="NO" id="RLR-uw-wGT">
+                                <rect key="frame" x="157" y="109" width="96" height="22"/>
+                                <constraints>
+                                    <constraint firstAttribute="width" constant="96" id="8Uo-WR-c1c"/>
+                                </constraints>
+                                <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" sendsActionOnEndEditing="YES" state="on" borderStyle="bezel" drawsBackground="YES" id="cPC-gT-USk">
+                                    <font key="font" metaFont="system"/>
+                                    <color key="textColor" name="textColor" catalog="System" colorSpace="catalog"/>
+                                    <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                                </textFieldCell>
+                            </textField>
+                            <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" allowsCharacterPickerTouchBarItem="NO" translatesAutoresizingMaskIntoConstraints="NO" id="tIE-fv-7Zc">
+                                <rect key="frame" x="7" y="59" width="97" height="17"/>
+                                <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Modules inited:" id="BYN-vE-kqp">
+                                    <font key="font" metaFont="system"/>
+                                    <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                                    <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
+                                </textFieldCell>
+                            </textField>
+                            <scrollView horizontalLineScroll="10" horizontalPageScroll="10" verticalLineScroll="10" verticalPageScroll="10" hasHorizontalScroller="NO" usesPredominantAxisScrolling="NO" translatesAutoresizingMaskIntoConstraints="NO" id="gyV-Xm-aa6">
+                                <rect key="frame" x="157" y="20" width="312" height="56"/>
+                                <clipView key="contentView" id="obz-7S-icP">
+                                    <rect key="frame" x="1" y="1" width="295" height="54"/>
+                                    <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                                    <subviews>
+                                        <textView editable="NO" importsGraphics="NO" usesFontPanel="YES" findStyle="panel" continuousSpellChecking="YES" allowsUndo="YES" usesRuler="YES" allowsNonContiguousLayout="YES" quoteSubstitution="YES" dashSubstitution="YES" spellingCorrection="YES" smartInsertDelete="YES" id="VJQ-0a-9Tq">
+                                            <rect key="frame" x="0.0" y="0.0" width="295" height="54"/>
+                                            <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                                            <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
+                                            <size key="minSize" width="295" height="54"/>
+                                            <size key="maxSize" width="463" height="10000000"/>
+                                            <color key="insertionPointColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
+                                        </textView>
+                                    </subviews>
+                                    <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
+                                </clipView>
+                                <scroller key="horizontalScroller" hidden="YES" verticalHuggingPriority="750" doubleValue="1" horizontal="YES" id="3r8-cX-d2I">
+                                    <rect key="frame" x="-100" y="-100" width="87" height="18"/>
+                                    <autoresizingMask key="autoresizingMask"/>
+                                </scroller>
+                                <scroller key="verticalScroller" verticalHuggingPriority="750" doubleValue="1" horizontal="NO" id="HAY-nJ-vwP">
+                                    <rect key="frame" x="296" y="1" width="15" height="54"/>
+                                    <autoresizingMask key="autoresizingMask"/>
+                                </scroller>
+                            </scrollView>
+                        </subviews>
+                        <constraints>
+                            <constraint firstItem="RLR-uw-wGT" firstAttribute="leading" secondItem="gyV-Xm-aa6" secondAttribute="leading" id="36p-MN-6Qd"/>
+                            <constraint firstItem="RLR-uw-wGT" firstAttribute="top" secondItem="rBI-dQ-pPy" secondAttribute="top" constant="23" id="Lhi-P6-kUi"/>
+                            <constraint firstAttribute="trailing" secondItem="gyV-Xm-aa6" secondAttribute="trailing" constant="-3" id="NRB-lg-4Yf"/>
+                            <constraint firstAttribute="bottom" secondItem="gyV-Xm-aa6" secondAttribute="bottom" constant="20" symbolic="YES" id="OC2-90-uML"/>
+                            <constraint firstAttribute="bottom" secondItem="tIE-fv-7Zc" secondAttribute="bottom" constant="59" id="Pi7-1e-s5S"/>
+                            <constraint firstItem="RLR-uw-wGT" firstAttribute="leading" secondItem="U7U-aL-Qyu" secondAttribute="trailing" constant="8" symbolic="YES" id="S5C-tl-DUr"/>
+                            <constraint firstItem="U7U-aL-Qyu" firstAttribute="leading" secondItem="tIE-fv-7Zc" secondAttribute="leading" id="XZ0-cA-cG5"/>
+                            <constraint firstItem="gyV-Xm-aa6" firstAttribute="top" secondItem="RLR-uw-wGT" secondAttribute="bottom" constant="33" id="gvP-z8-Ahu"/>
+                            <constraint firstItem="tIE-fv-7Zc" firstAttribute="top" secondItem="gyV-Xm-aa6" secondAttribute="top" id="hbO-Qk-E9d"/>
+                            <constraint firstItem="U7U-aL-Qyu" firstAttribute="leading" secondItem="rBI-dQ-pPy" secondAttribute="leading" constant="9" id="oby-e8-jsh"/>
+                            <constraint firstItem="U7U-aL-Qyu" firstAttribute="baseline" secondItem="RLR-uw-wGT" secondAttribute="baseline" id="zUs-0Z-abB"/>
+                        </constraints>
+                    </view>
+                </subviews>
+                <constraints>
+                    <constraint firstItem="rBI-dQ-pPy" firstAttribute="leading" secondItem="EiT-Mj-1SZ" secondAttribute="leading" constant="7" id="AJf-af-GcC"/>
+                    <constraint firstItem="rBI-dQ-pPy" firstAttribute="centerX" secondItem="EiT-Mj-1SZ" secondAttribute="centerX" id="CQo-mB-0Vz"/>
+                    <constraint firstItem="rBI-dQ-pPy" firstAttribute="top" secondItem="EiT-Mj-1SZ" secondAttribute="top" constant="12" id="f43-VD-XEL"/>
+                </constraints>
+            </view>
+        </window>
+    </objects>
+</document>

@@ -28,12 +28,28 @@ class ViewerApp: NSApplication {
 		topLikeController.show()
 	}
 
+	var miscController: MiscWindowController! = nil
+	@IBAction func miscWindow(_ sender: NSObject?) {
+		if miscController == nil {
+			miscController = MiscWindowController()
+		}
+		miscController.show()
+	}
+
 	var mallocController: MallocWindowController! = nil
 	@IBAction func mallocWindow(_ sender: NSObject?) {
 		if mallocController == nil {
 			mallocController = MallocWindowController()
 		}
 		mallocController.show()
+	}
+
+	var ikvController: IKVController! = nil
+	@IBAction func ikvWindow(_ sender: NSObject?) {
+		if ikvController == nil {
+			ikvController = IKVController()
+		}
+		ikvController.show()
 	}
 
 	func clearConsole() {

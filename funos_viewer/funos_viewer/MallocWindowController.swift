@@ -49,7 +49,10 @@ class MallocWindowController: NSObject {
 		refreshAgentInfo()
 		refreshCachesInfo()
 		// After both of these update total in use
-		totalInUse.stringValue = String(numberOfBytes: mallocInfoSource.totalInUse - mallocCachesSource.totalInUse)
+		var inUse = Int64(mallocInfoSource.totalInUse) - Int64(mallocCachesSource.totalInUse)
+		var sign = ""
+		if inUse < 0 { sign = "-"; inUse = -inUse }
+		totalInUse.stringValue = sign + String(numberOfBytes: inUse)
 	}
 	func refreshAgentInfo() {
 		let regions = document.doF1Command("peek", "stats/malloc_agent/regions")?.arrayValue
@@ -103,6 +106,8 @@ class MallocRegionsDataSource: NSObject, NSTableViewDataSource {
 	var allRegions: [JSON] = []
 	var allInfo: [Int: SummaryRegionInfo] = [:] // logChunkSize -> Summary
 
+	var totalInUse: UInt64 = 0
+
 	func updateAllInfo(_ regions: [JSON]) -> Bool {
 		// returns whether something changed
 		if (regions == allRegions) { return false }
@@ -126,6 +131,7 @@ class MallocRegionsDataSource: NSObject, NSTableViewDataSource {
 			summary.sumInUseSizesInBytes += UInt64(niu) << lcs
 			allInfo[lcs] = summary
 		}
+		totalInUse = allInfo.reduce(0) { $0 + $1.value.sumInUseSizesInBytes }
 		return true
 	}
 
@@ -141,9 +147,6 @@ class MallocRegionsDataSource: NSObject, NSTableViewDataSource {
 			total.sumInUseSizesInBytes += summary.sumInUseSizesInBytes
 		}
 		return total
-	}
-	var totalInUse: UInt64 {
-		return allInfo.reduce(0) { $0 + $1.value.sumInUseSizesInBytes }
 	}
 	func numberOfRows(in tableView: NSTableView) -> Int {
 		return allInfo.count + 1
@@ -187,6 +190,8 @@ class MallocCachesDataSource: NSObject, NSTableViewDataSource {
 	var allVPs: [String: JSON] = [:]
 	var allInfo: [SummaryVPInfo] = [] // sorted by name
 
+	var totalInUse: UInt64 = 0
+
 	func updateAllInfo(_ vps: [String: JSON]) -> Bool {
 		// returns whether something changed
 		if (vps == allVPs) { return false }
@@ -215,6 +220,7 @@ class MallocCachesDataSource: NSObject, NSTableViewDataSource {
 			allInfo.append(summary)
 		}
 		allInfo.sort { $0.name < $1.name }
+		totalInUse = allInfo.reduce(0) { $0 + $1.bytesAvail }
 		return true
 	}
 	var total: SummaryVPInfo {
@@ -231,10 +237,6 @@ class MallocCachesDataSource: NSObject, NSTableViewDataSource {
 			total.replenished += summary.replenished
 		}
 		return total
-	}
-
-	var totalInUse: UInt64 {
-		return allInfo.reduce(0) { $0 + $1.bytesAvail }
 	}
 
 	func numberOfRows(in tableView: NSTableView) -> Int {

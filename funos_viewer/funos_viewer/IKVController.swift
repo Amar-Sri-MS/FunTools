@@ -1,115 +1,18 @@
 //
-//  F1SelectionController.swift
+//  IKVController.swift
+//  funos_viewer
 //
-//  Created by Bertrand Serlet on 5/20/16.
-//  Copyright © 2016 Fungible Inc. All rights reserved.
+//  Created by Bertrand Serlet on 7/16/17.
+//  Copyright © 2017 Fungible. All rights reserved.
 //
 
 import AppKit
 
-class F1SelectionController: NSObject, NSTabViewDelegate {
+class IKVController: NSObject {
 	@IBOutlet var window: NSWindow!
-	@IBOutlet var selectionTabView: NSTabView!
+
 	var refreshTimer: Timer!
 	let updateFrequency = 0.2
-	unowned let document: F1SimDocument
-
-	init(document: F1SimDocument) {
-		self.document = document
-		super.init()
-		loadNib()
-		resetIKVSamples()
-		selectionTabView.delegate = self
-		selectionRelativeHeat.isEnabled = false
-	}
-
-	func loadNib() {
-		let ok = Bundle.main.loadNibNamed("F1SelectionWindow", owner: self, topLevelObjects: nil)
-		assert(ok)
-		let view = window.contentView!.subviews.first!
-		assert(view == selectionTabView)
-		window.makeKeyAndOrderFront(nil)
-	}
-
-
-	// uncomment to debug leaks
-	//    deinit {
-	//        print("DESTROY F1SelectionController")
-	//    }
-	let tabsToRefresh: Set<String> = ["Misc Stats"]
-
-	public func tabView(_ tabView: NSTabView, willSelect tabViewItem: NSTabViewItem?) {
-		//        print("Received willSelect notification tabView changed to \(tabViewItem!.label)")
-		if tabsToRefresh.contains(tabViewItem!.label) {
-			doRefresh(tabViewItem!.label)
-		}
-	}
-	public func tabView(_ tabView: NSTabView, didSelect tabViewItem: NSTabViewItem?) {
-		//        print("Received didSelect notification tabView changed to \(tabViewItem!.label)")
-		if tabsToRefresh.contains(tabViewItem!.label) {
-			refreshTimer = Timer.scheduledTimer(withTimeInterval: updateFrequency, repeats: true, block: { _ in
-				self.performSelector(onMainThread: #selector(F1SelectionController.refresh), with: nil, waitUntilDone: false)
-			})
-		} else if tabViewItem!.label == "IKV" {
-			doRefreshIKV()
-		}
-	}
-	func refresh() {
-		let tabViewItem = selectionTabView.selectedTabViewItem
-		if tabViewItem != nil && tabsToRefresh.contains(tabViewItem!.label) {
-			doRefresh(tabViewItem!.label)
-		} else {
-			refreshTimer?.invalidate()
-		}
-	}
-	func doRefresh(_ label: String) {
-		switch label {
-			case "Misc Stats": doRefreshMiscStats()
-			case "IKV": doRefreshIKV()
-			default: break
-		}
-	}
-	func updateSelectionTabForUnit(_ unit: F1Block) {
-		// Note that unit can be a single unit or a group of units
-		switch (selectionTabView.selectedTabViewItem!.identifier! as AnyObject).description {
-		case "1": break
-		case "3":
-			selectionRelativeHeat.isEnabled = unit.name == "DN" || unit.name == "SN"
-		default: fatalError()
-		}
-		selectionTabView.needsDisplay = true
-		unit.noteStateChanged() // we force taking a new sample
-	}
-
-	/*=============== MISC ===============*/
-
-	@IBOutlet var inUseField: NSTextField!
-	@IBOutlet var modulesInited: NSTextView!
-
-	func doRefreshMiscStats() {
-		let wustacks = document.doF1Command("peek", "stats/wustacks")?.dictionaryValue
-		let inUse = wustacks?["in_use"]?.integerValue
-		if inUse != nil {
-			inUseField.integerValue = inUse!
-		}
-		let modules = document.doF1Command("peek", "config/modules_inited")?.arrayValue
-		let modulesStr = modules?.joinDescriptions(", ")
-		if modulesStr != nil {
-			modulesInited.string = modulesStr
-		}
-	}
-
-	/*=============== OPTIONS (CURRENTLY UNUSED) ===============*/
-
-	@IBOutlet var selectionRelativeHeat: NSButton!
-
-	var isRelativeHeat: Bool { return selectionRelativeHeat.boolValue }
-
-	@IBAction func fiddleWithOptions(_ sender: NSObject?) {
-		document.noteSelectionChangedAndUpdate()
-	}
-
-	/*=============== IKV ===============*/
 
 	@IBOutlet var ikvContainer: NSTextField!
 
@@ -141,6 +44,28 @@ class F1SelectionController: NSObject, NSTabViewDelegate {
 
 	let maxSpaceAmp = 5.0
 
+	override init() {
+		super.init()
+		let ok = Bundle.main.loadNibNamed("IKVWindow", owner: self, topLevelObjects: nil)
+		assert(ok)
+		resetIKVSamples()
+		show()
+	}
+
+	func show() {
+		window.makeKeyAndOrderFront(nil)
+		refreshTimer = Timer.scheduledTimer(withTimeInterval: updateFrequency, repeats: true, block: { _ in
+			self.performSelector(onMainThread: #selector(IKVController.refresh), with: nil, waitUntilDone: false)
+		})
+	}
+	func refresh() {
+		if !window.isVisible {
+			refreshTimer?.invalidate()
+			return
+		}
+		doRefreshIKV()
+	}
+
 	func resetIKVSamples() {
 		ikvCountSamples = SimulationSamples(title: "Count") { Int($0.lastValue).description }
 		ikvCountSamples.record(0, value: 0.0)
@@ -159,7 +84,7 @@ class F1SelectionController: NSObject, NSTabViewDelegate {
 		}
 		ikvSpaceAmplificationSamples.record(0, value: maxSpaceAmp)
 		ikvSpaceAmplificationSamplesView.setSamples(ikvSpaceAmplificationSamples!)
-		
+
 	}
 
 	func startIKVTimer() {
@@ -167,7 +92,7 @@ class F1SelectionController: NSObject, NSTabViewDelegate {
 		ikvTimer?.invalidate()
 		ikvStartDate = Date()
 		ikvTimer = Timer.scheduledTimer(withTimeInterval: updateFrequency, repeats: true, block: { _ in
-			self.performSelector(onMainThread: #selector(F1SelectionController.doRefreshIKV), with: nil, waitUntilDone: false)
+			self.performSelector(onMainThread: #selector(IKVController.doRefreshIKV), with: nil, waitUntilDone: false)
 		})
 	}
 
@@ -216,5 +141,8 @@ class F1SelectionController: NSObject, NSTabViewDelegate {
 		ikvSpaceAmplificationSamplesView.setSamples(ikvSpaceAmplificationSamples!)
 	}
 
-}
+	var document: F1SimDocument {
+		return NSApp.theDocument!
+	}
 
+}

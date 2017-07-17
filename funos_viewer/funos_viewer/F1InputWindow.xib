@@ -194,9 +194,9 @@
                                             </view>
                                         </box>
                                         <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="n6s-l5-W2n">
-                                            <rect key="frame" x="12" y="431" width="125" height="32"/>
+                                            <rect key="frame" x="12" y="431" width="133" height="32"/>
                                             <constraints>
-                                                <constraint firstAttribute="width" constant="113" id="ACT-0q-mlq"/>
+                                                <constraint firstAttribute="width" constant="121" id="ACT-0q-mlq"/>
                                             </constraints>
                                             <buttonCell key="cell" type="push" title="Enable Counters" bezelStyle="rounded" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="Mhx-Tu-byG">
                                                 <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
