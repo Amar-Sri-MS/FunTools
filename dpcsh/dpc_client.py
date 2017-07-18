@@ -53,13 +53,13 @@ class DpcClient(object):
             if not buf:
                 break
             lines += buf
-        return lines
+        return lines.rstrip('\n')
 
     def __recv_json(self):
         json = self.__recv_lines()
-        while (json.count('{') != json.count('}')) or (json.count('[') != json.count(']')):
+        while (not json) or (json.count('{') != json.count('}')) or (json.count('[') != json.count(']')):
             json += self.__recv_lines()
-        return json.rstrip('\n')
+        return json
 
     def __send_line(self, line):
         self.__sock.sendall(line + '\n')
