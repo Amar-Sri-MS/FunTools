@@ -60,7 +60,7 @@ class CodeGenerator:
       include_guard_name = utils.AsGuardName(header_file)
       hdr_out += '#ifndef %s\n' % include_guard_name
       hdr_out += '#define %s\n' % include_guard_name
-    hdr_out += '#include "stdlib.h"\n\n'
+    hdr_out += '#include "stdlib.h"\n'
     hdr_out += '#include "stdint.h"\n\n'
 
     for enum in doc.enums:
