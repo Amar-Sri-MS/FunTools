@@ -61,6 +61,7 @@ class CodeGenerator:
       hdr_out += '#ifndef %s\n' % include_guard_name
       hdr_out += '#define %s\n' % include_guard_name
     hdr_out += '#include "stdlib.h"\n\n'
+    hdr_out += '#include "stdint.h"\n\n'
 
     for enum in doc.enums:
       (hdr, src) = self.VisitEnum(enum)
