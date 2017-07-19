@@ -12,7 +12,8 @@ ENUM fun_admin_op
   FUN_ADMIN_OP_VI = 0x6 /* Virtual Interface Node */
   FUN_ADMIN_OP_NSS = 0x7 /* NVMe SubSystem Node */
   FUN_ADMIN_OP_VOL = 0x8 /* Volume Node */
-  FUN_ADMIN_OP_CRYPTO = 0x9 /* Crypto Node */
+  FUN_ADMIN_OP_CONCAT = 0x9 /* Concatinated Volume Node */
+  FUN_ADMIN_OP_CRYPTO = 0x10 /* Crypto Node */
   FUN_ADMIN_OP_BIND = 0x20 /* Bind Nodes into Flow Graph */
 END
 
@@ -420,6 +421,64 @@ STRUCT fun_admin_vol_rsp
   END
 END
 
+FLAGS fun_admin_concat_create_flag
+  FUN_ADMIN_CONCAT_CREATE_FLAG_ALLOCATOR = 0x01 /* Enable Concat allocator */
+END
+
+STRUCT fun_admin_concat_req
+  0 63:00 fun_admin_req_common common 
+  1 63:00 ...
+  UNION concat_req_subop u
+    STRUCT fun_admin_concat_req_create create
+      2 63:56  uint8_t concat_req_create_subop /* SUBOP_CREATE */
+      2 55:48  uint8_t rsvd0
+      2 47:32 uint16_t concat_req_create_flag /* see fun_admin_concat_create_flag enum */
+      2 31:00 uint32_t concat_req_create_id /* FLAG_ALLOCATOR=0: n/a, FLAG_ALLOCATOR=1: concatid */
+      3 63:00 uint64_t rsvd1
+      4 63:00 uint64_t rsvd2
+      5 63:00 uint64_t rsvd3
+      6 63:00 uint64_t rsvd4
+      7 63:00 uint64_t rsvd5
+      8 63:00 uint64_t rsvd6
+    END
+    STRUCT fun_admin_concat_req_destroy destroy
+      2 63:56  uint8_t concat_req_destroy_subop /* SUBOP_DESTROY */
+      2 55:32  uint8_t rsvd0[3]
+      2 31:00 uint32_t concat_req_destroy_id /* concatid to destroy */
+    END
+    STRUCT fun_admin_concat_req_list list
+      2 63:56  uint8_t concat_req_list_subop /* SUBOP_LIST */
+      2 55:48  uint8_t rsvd0
+      2 47:32 uint16_t concat_req_list_flag /* see fun_admin_concat_create_flag enum */
+      2 31:00 uint32_t concat_req_list_startid /*  */
+    END       
+  END
+END
+
+STRUCT fun_admin_concat_rsp
+  0 63:00 fun_admin_rsp_common common
+  0 63:00 ...
+  UNION concat_rsp_subop u
+    STRUCT fun_admin_concat_rsp_create create
+      2 63:56  uint8_t concat_rsp_create_subop /* SUBOP_CREATE */
+      2 55:48  uint8_t rsvd0
+      2 47:32 uint16_t flags
+      2 31:00 uint32_t concat_rsp_create_id /* concat_rsp_common.rsp_common_status=0: concatid, otherwise: N/A */
+      3 63:00 uint64_t rsvd1
+      4 63:00 uint64_t rsvd2
+      5 63:00 uint64_t rsvd3
+      6 63:00 uint64_t rsvd4
+      7 63:00 uint64_t rsvd5
+      8 63:00 uint64_t rsvd6
+    END
+    STRUCT fun_admin_concat_rsp_destroy destroy
+      2 63:56  uint8_t concat_rsp_destroy_subop /* SUBOP_DESTROY */
+      2 55:32  uint8_t rsvd0[3]
+      2 31:00 uint32_t concat_rsp_destroy_id /* destroyed concatid */
+    END      
+  END
+END
+
 
 
 FLAGS fun_admin_crypto_create_flag
@@ -491,7 +550,8 @@ ENUM fun_admin_bind_type
   FUN_ADMIN_BIND_TYPE_VI = 0x6
   FUN_ADMIN_BIND_TYPE_NSS = 0x7
   FUN_ADMIN_BIND_TYPE_VOL = 0x8
-  FUN_ADMIN_BIND_TYPE_CRYPTO = 0x9
+  FUN_ADMIN_BIND_TYPE_CONCAT = 0x9
+  FUN_ADMIN_BIND_TYPE_CRYPTO = 0x10
 END
 
 ENUM fun_admin_bind_const

@@ -147,8 +147,8 @@ class CodeGenerator:
 
     max_bits = utils.MaxBit(flagset.MaxValue())
     hdr_out += '/* String names for all power-of-two flags in %s. */\n' % flagset.name
-    hdr_out += 'const char *%s_names[];' % flagset.name
-    src_out += 'const char *%s_names[] = {\n' % flagset.name
+    hdr_out += 'const char *%s_names[%d];' % (flagset.name, max_bits)
+    src_out += 'const char *%s_names[%d] = {\n' % (flagset.name, max_bits)
 
     for i in range(0, utils.MaxBit(flagset.MaxValue())):
       next_value = 1 << i
