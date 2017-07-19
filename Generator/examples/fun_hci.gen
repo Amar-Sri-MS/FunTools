@@ -755,7 +755,7 @@ STRUCT fun_ffe_reqrsp
       2 15:0 uint16_t table
     END
     // Header to refer to an FFE Action Microcode Table
-    STRUCT fun_ffe_reqrsp_act_rw_ucode action_ucode_rw
+    STRUCT fun_ffe_reqrsp_act_ucode_rw action_ucode_rw
       2 63:56 uint8_t subopcode /* SUBOPS: ACT_UCODE_R, ACT_UCODE_W */
       2 55:48 uint8_t flags
       2 47:32 uint16_t index
