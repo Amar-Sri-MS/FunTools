@@ -52,6 +52,7 @@ class CodeGenerator:
     src_out += '// Do not change this file;\n'
     src_out += '// change the gen file "%s" instead.\n\n' % doc.filename
     src_out += '\n'
+    src_out += '#include <stdint.h>\n'
     src_out += '#include <assert.h>\n'
     if self.output_file_base:
       header_file = os.path.basename(self.output_file_base) + '.h'

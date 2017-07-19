@@ -440,6 +440,12 @@ STRUCT fun_admin_concat_req
       6 63:00 uint64_t rsvd4
       7 63:00 uint64_t rsvd5
       8 63:00 uint64_t rsvd6
+      9 63:00 uint64_t rsvd7
+      10 63:00 uint64_t rsvd8
+      11 63:00 uint64_t rsvd9
+      12 63:00 uint64_t rsvd10
+      13 63:00 uint64_t rsvd11
+      14 63:00 uint64_t rsvd12
     END
     STRUCT fun_admin_concat_req_destroy destroy
       2 63:56  uint8_t concat_req_destroy_subop /* SUBOP_DESTROY */
