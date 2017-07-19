@@ -10,7 +10,6 @@ import AppKit
 @objc class F1SimDocument: NSDocument, NSTabViewDelegate, NSWindowDelegate {
 	@IBOutlet var chipView: NSChipView!
 	var inputController: F1InputController! // All the parameters and such
-	var selectionController: F1SelectionController! // Selection info
 
 	var dateLastUpdate: Date!
 
@@ -34,46 +33,10 @@ import AppKit
 		window.delegate = nil
 		// We need to force an explicit tear down, or else the document does not deinit
 		inputController = nil
-		selectionController = nil
 	}
 	var updateLock = Lock()
 	var updateInProgress = false
 	var cachedDNLinks: Set<F1Block>! = nil
-	func reflectProgressOrSelectionChange() {
-		if chipView.selectedUnits.contains("DN") {
-			let relative = selectionController.isRelativeHeat
-			if relative {
-				let maximum = cachedDNLinks.maximize { $0.stats["MessagesEnqueued"] }
-				if maximum == nil { return } // nothing has been active yet
-			}
-		}
-		if chipView.selectedUnits.contains("SN") {
-			let segmentStats = SNSegmentStats(networkName: "SN")
-			var maxi: Double = 0
-			if !segmentStats.isEmpty {
-				if selectionController.isRelativeHeat {
-					maxi = segmentStats.maximize { $1}!.maximum
-				}
-				if maxi == 0.0 { return }
-				chipView.updateHotSegments(networkName: "SN") {
-					(segmentStats[$0] ?? 0.0) / maxi
-				}
-			}
-		}
-		if chipView.selectedUnits.contains("CN") {
-			let segmentStats = SNSegmentStats(networkName: "CN")
-			var maxi: Double = 0
-			if !segmentStats.isEmpty {
-				if selectionController.isRelativeHeat {
-					maxi = segmentStats.maximize { $1}!.maximum
-				}
-				if maxi == 0.0 { return }
-				chipView.updateHotSegments(networkName: "CN") {
-					(segmentStats[$0] ?? 0.0) / maxi
-				}
-			}
-		}
-	}
 	func grayOutClustersAndCores() {
 		let allVPs = doF1Command("peek", "config/all_vps")?.arrayValue
 		if allVPs != nil && !allVPs!.isEmpty {
@@ -164,7 +127,6 @@ import AppKit
 	}
 	func noteSimulationProgressedAndUpdate() {
 		updateLock.apply { updateInProgress = true }
-		reflectProgressOrSelectionChange()
 		noteSelectionChangedAndUpdate()
 		updateLock.apply { updateInProgress = false }
 	}
@@ -182,7 +144,7 @@ import AppKit
 		noteSelectionChangedAndUpdate()
 	}
 	func noteSelectionChangedAndUpdate() {
-		selectionController.clearSelectionTab()
+		(NSApp as! ViewerApp).clearConsole()
 	}
 	func noteSelectionChanged(_ note: Notification) {
 		performSelector(onMainThread: #selector(F1SimDocument.noteSelectionChangedAndUpdate), with: nil, waitUntilDone: false)
@@ -195,8 +157,6 @@ import AppKit
 		center.addObserver(self, selector: #selector(F1SimDocument.noteSelectionChanged(_:)), name: NSNotification.Name("SelectionChanged"), object: chipView)
 
 		inputController = F1InputController(document: self)
-
-		selectionController = F1SelectionController(document: self)
 
 		window.makeKeyAndOrderFront(nil)
 		chipView.translatesAutoresizingMaskIntoConstraints = false
@@ -231,8 +191,7 @@ import AppKit
 		return doF1Command(socket: &socket, verb, args)
 	}
 	func log(string: String) {
-		selectionController.selectionInfo.string = string
-		selectionController.window.viewsNeedDisplay = true
+		(NSApp as! ViewerApp).setConsole(string)
 	}
 	func doAndLogF1Command(_ verb: String, _ args: String...) {
 		log(string: "")
@@ -335,8 +294,8 @@ import AppKit
 		if container != nil {
 			inputController.ikvContainer = container
 			truth = []
-			selectionController.ikvContainer.stringValue = container!.description
-			selectionController.startIKVTimer()
+			(NSApp as! ViewerApp).ikvController.ikvContainer.stringValue = container!.description
+			(NSApp as! ViewerApp).ikvController.startIKVTimer()
 		}
 		log(string: json?.toJSONString() ?? "")
 	}
@@ -351,7 +310,7 @@ import AppKit
 			if json == nil { return }
 			let str = json.toJSONString()
 			self.performSelector(onMainThread: #selector(F1SimDocument.log), with: str, waitUntilDone: true)
-			self.selectionController.performSelector(onMainThread: #selector(F1SelectionController.doRefreshIKV), with: nil, waitUntilDone: true)
+			(NSApp as! ViewerApp).ikvController.performSelector(onMainThread: #selector(IKVController.doRefreshIKV), with: nil, waitUntilDone: true)
 			whenDone?()
 		}
 	}

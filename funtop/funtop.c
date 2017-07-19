@@ -1,14 +1,15 @@
 /* Tool to display statistics from a running funos */
 
-#include <funos/fun_utils.h>
 #include <sys/socket.h>
 #include <sys/un.h>
-#include <funos/fun_json.h>
+#include <string.h>
 #include <unistd.h>
-#include <funos/fun_commander.h>
 #include <curses.h>
 #include <inttypes.h>
 #include <ctype.h>
+
+#include <utils/threaded/fun_json.h>
+#include <utils/threaded/fun_commander.h>
 
 #ifndef MIN
 #define MIN(x,y) ((x) < (y) ? (x) : (y))
@@ -177,8 +178,9 @@ static int compare_by_count(void *map_context, void *per_call_context, fun_map_k
 static CALLER_TO_RELEASE struct fun_json *sort_wu_stats_by_count(struct fun_json *wu_stats, struct fun_json *previous, struct fun_json *durations) {
     assert(wu_stats->type == fun_json_dict_type);
     struct compare_by_count_context con = { .this = wu_stats, .previous = previous };
-    size_t c;
-    fun_map_key_t *keys = fun_map_sorted_keys(wu_stats->dict, &c, &con, compare_by_count);
+    size_t c = fun_map_count(wu_stats->dict);
+    fun_map_key_t *keys = calloc(c, sizeof(fun_map_key_t));
+    fun_map_get_sorted_keys(wu_stats->dict, keys, &con, compare_by_count);
     const struct fun_json **items = calloc(c, sizeof(void *));
     for (size_t i = 0; i < c; i++) {
         const char *key = (void *)keys[i];
@@ -189,7 +191,7 @@ static CALLER_TO_RELEASE struct fun_json *sort_wu_stats_by_count(struct fun_json
         int64_t duration = 0;
         if (durations && (durations->type == fun_json_dict_type)) {
             struct fun_json *d = fun_json_dict_at(durations, key);
-            if (d && (d->type == fun_json_int_type)) duration = d->int_value;
+            if (d && (d->type == fun_json_int_type)) duration = d->int_value / 1000;
         }
         fun_json_dict_add(dict, "wu_duration", fun_json_no_copy_no_own, fun_json_create_int64(duration), true);
         double avg = count ? (double)duration / (double)count : 0.0;
@@ -203,7 +205,7 @@ static CALLER_TO_RELEASE struct fun_json *sort_wu_stats_by_count(struct fun_json
 }
 
 static struct parameters set_up_params(void) {
-    static const char *column_headers[] = { "WU NAME", "WU COUNT", "SUM DURATION", "AVG DURATION" };
+    static const char *column_headers[] = { "WU NAME", "WU COUNT", "SUM uSECS", "AVG uSECS" };
     static const char *column_keys[] = { "wu_name", "wu_count", "wu_duration", "wu_dur_avg" };
     static const size_t widths[] = { 40, 15, 15, 15 };
     static const bool right_just[] = { false, true, true, true };
