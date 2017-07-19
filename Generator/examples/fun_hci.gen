@@ -13,8 +13,8 @@ ENUM fun_admin_op
   FUN_ADMIN_OP_NSS = 0x7 /* NVMe SubSystem Node */
   FUN_ADMIN_OP_VOL = 0x8 /* Volume Node */
   FUN_ADMIN_OP_CONCAT = 0x9 /* Concatinated Volume Node */
-  FUN_ADMIN_OP_CRYPTO = 0x10 /* Crypto Node */
-  FUN_ADMIN_OP_BIND = 0x20 /* Bind Nodes into Flow Graph */
+  FUN_ADMIN_OP_CRYPTO = 0xa /* Crypto Node */
+  FUN_ADMIN_OP_BIND = 0xb /* Bind Nodes into Flow Graph */
 END
 
 FLAGS fun_admin_req_common_flag
@@ -557,7 +557,7 @@ ENUM fun_admin_bind_type
   FUN_ADMIN_BIND_TYPE_NSS = 0x7
   FUN_ADMIN_BIND_TYPE_VOL = 0x8
   FUN_ADMIN_BIND_TYPE_CONCAT = 0x9
-  FUN_ADMIN_BIND_TYPE_CRYPTO = 0x10
+  FUN_ADMIN_BIND_TYPE_CRYPTO = 0xa
 END
 
 ENUM fun_admin_bind_const
