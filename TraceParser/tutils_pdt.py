@@ -12,10 +12,24 @@ def is_data(trace_line):
 
 def is_instruction(trace_line):
 	# TM+DASM format
+	noerr = True
 
 	regex = r"^\d+\.\d\d\d.*"
 
-	return re.search(regex, trace_line.strip())
+	rm = re.search(regex, trace_line.strip())
+
+	# Sample error messages as of 6/2/17
+	# We do not want to parse these...
+	# 76.121  0 0 0                 **** Unresolved Branch: ******
+	# 76.132  0 0 0                 **** Trace Message buffer limit reached*****
+	if "****" in trace_line:
+		noerr = False
+
+	# XXX to be investigated
+	if "no trace cycles" in trace_line:
+		noerr = False
+
+	return rm and noerr
 
 
 def get_vpid(trace_line):

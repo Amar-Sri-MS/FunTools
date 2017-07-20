@@ -139,6 +139,10 @@ def generate_all(dfolder):
 
 		print "Core[%s] HTML and stats generation complete" % core_id
 
+	# generate overview index.html
+
+	print "Complete output generation complete"
+
 	# save columns_c[0-5].txt
 	# gather stats for each VP
 	# generate c[0-5]_vp[0-3].html

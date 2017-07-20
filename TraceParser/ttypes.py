@@ -26,6 +26,9 @@ class TEntry():
 		else:
 			self.func = self.find_function(self.addr, ranges)
 
+		if self.func == "NOT FOUND":
+			print "NOT FOUND: %s" % trace_line
+
 		self.pos = self.find_func_pos(self.addr, ranges)
 
 	def __str__(self):
