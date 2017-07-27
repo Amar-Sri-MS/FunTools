@@ -583,8 +583,82 @@ END
 
 
 
+// PORT
+ENUM fun_port_subops
+  FUN_ADMIN_PORT_SUBOP_MTU = 0x00
+  FUN_ADMIN_PORT_SUBOP_FEC = 0x01
+  FUN_ADMIN_PORT_SUBOP_SPEED = 0x02
+  FUN_ADMIN_PORT_SUBOP_DEBOUNCE = 0x03
+  FUN_ADMIN_PORT_SUBOP_DUPLEX = 0x04
+  FUN_ADMIN_PORT_SUBOP_MAC = 0x05
+  FUN_ADMIN_PORT_SUBOP_LINKMODE = 0x05
+  FUN_ADMIN_PORT_SUBOP_INFO = 0x06
+  FUN_ADMIN_PORT_SUBOP_BREAK = 0x07
+  FUN_ADMIN_PORT_SUBOP_LPBK = 0x08
+  FUN_ADMIN_PORT_SUBOP_DIAG = 0x09
+  FUN_ADMIN_PORT_SUBOP_XCVR = 0x0a
+END
 
+ENUM fun_port_diags_ops
+  FUN_ADMIN_PORT_DIAG_OP_PRBS = 0x00
+END
 
+ENUM fun_port_xcvr_ops
+  FUN_ADMIN_PORT_XCVR_OP_EEPROM = 0x00
+  FUN_ADMIN_PORT_XCVR_OP_DOM = 0x01
+END
+
+STRUCT fun_admin_port_reqrsp
+  0 63:00 fun_admin_req_common common
+  1 63:00 ...
+  2 63:32 uint32_t port_id
+  2 31:00 uint32_t rsvd0
+  UNION fun_admin_port_ops u
+    // LINK PARAMS
+    //		port_mtu: MTU
+    //		port_fec: FEC mode
+    //		port_speed: Speed (use HW enum)
+    //		port_debounce: Timer [ms]
+    //		port_duplex: duplex mode
+    //		port_mac_addr: MAC address
+    //		port_breakout: Breakout mode
+    STRUCT fun_admin_port_reqrsp_params params
+      3 63:56 uint8_t port_subop
+      3 55:00 uint8_t data[7]
+    END
+    // LINK SM
+    //		port_mode: enable, disable, error_disabled
+    STRUCT fun_admin_port_reqrsp_mode mode
+      3 63:56 uint8_t port_subop
+      3 55:32 uint8_t rsvd0[3]
+      3 31:00 uint32_t en /* 0: dis, 1: en, 2: error disabled reduce bits... */
+    END
+    //		port_link up/down (async - rsp)
+    STRUCT fun_admin_port_reqrsp_info info
+      3 63:56 uint8_t port_subop
+      3 55:32 uint8_t rsvd0[3]
+      3 31:00 uint32_t en /* 0: dis, 1: en, 2: error disabled reduce bits... */
+      4 63:00 uint64_t info /* break down into all info on port (maybe add 1 flit) */
+    END
+    // DIAGS
+    //		port_loopback get/set
+    //		PRBS en/dis
+    STRUCT fun_admin_port_reqrsp_diag diag
+      3 63:56 uint8_t port_subop
+      3 55:48 uint8_t diag_op
+      3 47:00 uint8_t rsvd0[6]
+      4 63:00 uint64_t data /* diag data */
+    END
+    // XCVR
+    //		port_xcvr_eeprom get
+    //		port_xcvr_dom get	
+    STRUCT fun_admin_port_reqrsp_xcvr xcvr
+      3 63:56 uint8_t port_subop
+      3 55:48 uint8_t xcvr_op
+      3 47:00 uint8_t rsvd0[6]
+    END
+  END
+END
 
 
 
