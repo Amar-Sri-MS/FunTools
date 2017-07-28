@@ -304,6 +304,9 @@ class Field(Node):
     self.subfields = []
 
   def __str__(self):
+    if self.no_offset:
+      return('<Field: name=%s, type=%s, no offset>' %
+             (self.name, self.type))
     if self.StartFlit() == self.EndFlit():
       return('<Field: name=%s, type=%s, flit=%d, bits=%d:%d>' %
              (self.name, self.type, self.StartFlit(),
@@ -395,7 +398,13 @@ class Field(Node):
     and creates new sub-fields in this field from the fields of the prototype
     structure.  It sets the offset and size to match the prototype.
     """
-    if not self.type.base_type.node:
+    if not self.type.IsRecord():
+      # Doesn't have subfields to create.
+      return
+
+    if self.type.IsArray() and self.type.ArraySize() == 0:
+      # Subfields shouldn't be created because we can't know their
+      # positions.
       return
 
     for proto_field in self.type.base_type.node.fields:
