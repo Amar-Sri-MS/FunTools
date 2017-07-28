@@ -44,9 +44,28 @@ class CodeGenerator:
     hdr_out = ''
     src_out = ''
 
-    hdr_out += '// Header created by generator.py\n'
-    hdr_out += '// Do not change this file;\n'
-    hdr_out += '// change the gen file "%s" instead.\n\n' % doc.filename
+    hdr_out += ("""
+// Header created by generator.py
+// Do not change this file;
+// change the gen file "%s" instead.
+
+""") % doc.filename
+
+    src_out += ("""
+// Header created by generator.py
+// Do not change this file;
+// change the gen file "%s" instead.
+
+#include <stdint.h>
+#include <assert.h>
+#ifdef GENERATOR_TEST
+struct fun_json *fun_json_lookup(struct fun_json *container,
+                                 const char *name)
+{
+    return 0;
+}
+#endif
+""") % doc.filename
 
     src_out += '// Header created by generator.py\n'
     src_out += '// Do not change this file;\n'
@@ -61,8 +80,29 @@ class CodeGenerator:
       include_guard_name = utils.AsGuardName(header_file)
       hdr_out += '#ifndef %s\n' % include_guard_name
       hdr_out += '#define %s\n' % include_guard_name
-    hdr_out += '#include "stdlib.h"\n'
-    hdr_out += '#include "stdint.h"\n\n'
+
+    hdr_out += (
+"""
+#include <assert.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdlib.h>
+
+#ifdef GENERATOR_TEST
+// Fake declaration to test that generated code compiles.
+struct fun_json {
+       bool bool_value;
+       int64_t int_value;
+       double double_vlaue;
+       const char *string_value;
+};
+struct fun_json *fun_json_lookup(struct fun_json *container, const char *name);
+#define REQUIRE(x) assert(x != NULL)
+#else
+#include "utils/threaded/fun_json.h"
+#endif
+
+""")
 
     for enum in doc.enums:
       (hdr, src) = self.VisitEnum(enum)
@@ -74,12 +114,18 @@ class CodeGenerator:
       hdr_out += hdr
       src_out += src
 
+    hdr_out += '\n'
+
     for struct in doc.structs:
       if not struct.inline:
         hdr_out += self.VisitStruct(struct)
 
+    hdr_out += '\n'
+
     for macro in doc.macros:
       hdr_out += macro + '\n'
+
+    hdr_out += '\n'
 
     for decl in doc.declarations:
         hdr_out += decl + '\n'
@@ -279,6 +325,10 @@ class HelperGenerator:
       """Returns name for the structure initialization function."""
       return struct_name + "_init"
 
+  def JSONInitializerName(self, struct_name):
+      """Returns name for the structure initialization function."""
+      return struct_name + "_json_init"
+
   def GenerateMacrosForPackedField(self, struct, field):
     """Creates macros to access all the bit fields we removed.
     struct: structure containing the fields that was removed.
@@ -395,13 +445,63 @@ class HelperGenerator:
                                                   '\n'.join(inits))
     return (init_declaration, init_definition)
 
+  def GenerateJSONInitializer(self, the_struct, the_field, accessor_prefix):
+    json_accessor = 'int_value'
+    init = ''
+    init += '\tstruct fun_json *%s_j = fun_json_lookup(j, "%s");\n' % (
+      the_field.name, the_field.name)
+    init += '\tREQUIRE(%s_j);\n' % (the_field.name)
+    init += '\t%s %s = %s_j->%s;\n' % (the_field.type.DeclarationType(),
+                                       the_field.name, the_field.name,
+                                       json_accessor)
+    return init
+
+
+  def GenerateJSONInitRoutine(self, function_name, struct_name,
+                              accessor_prefix, the_struct):
+    """Generate function to initialize structure from JSON."""
+    arg_list = []
+    arg_list.append('struct fun_json *j')
+    arg_list.append('struct %s *s' % struct_name)
+    inits = []
+    for field in the_struct.AllFields():
+      if field.IsReserved() or not field.type.IsScalar():
+        continue
+      inits.append(self.GenerateJSONInitializer(the_struct, field,
+                                                accessor_prefix))
+
+    init_fields = ['s']
+    init_fields += [f.name for f in the_struct.AllFields()
+                    if f.type.IsScalar() and not f.IsReserved()]
+
+    final_init = '%s(%s);\n' % (self.InitializerName(the_struct.name),
+                                ', '.join(init_fields))
+    declaration_comment = (
+      '/* Initializes %s structure from JSON representation.\n'
+      ' * Caller responsible for determining correct init function.\n'
+      ' */\n' % struct_name)
+    init_declaration = '%sextern void %s(%s);\n' %  (
+      declaration_comment, function_name, ', '.join(arg_list))
+    init_definition = 'void %s(%s) {\n%s\n\t%s\n}\n' % (function_name,
+                                                        ', '.join(arg_list),
+                                                        '\n'.join(inits),
+                                                        final_init)
+    return (init_declaration, init_definition)
+
   def GenerateHelpersForStruct(self, the_struct):
     """Generates helper functions for the provided structure."""
-    (decl, defn) = self.GenerateInitRoutine(self.InitializerName(the_struct.name),
+    initializer_name = self.InitializerName(the_struct.name)
+    (decl, defn) = self.GenerateInitRoutine(initializer_name,
                                             the_struct.name, '', the_struct)
     self.current_document.declarations.append(decl)
     self.current_document.definitions.append(defn)
- 
+
+    json_initializer_name = self.JSONInitializerName(the_struct.name)
+    (json_decl, json_defn) = self.GenerateJSONInitRoutine(
+      json_initializer_name, the_struct.name, '', the_struct)
+
+    self.current_document.declarations.append(json_decl)
+    self.current_document.definitions.append(json_defn)
 
   def VisitField(self, the_struct, the_field):
     if len(the_field.packed_fields) > 0:
@@ -439,6 +539,14 @@ class HelperGenerator:
                                                 struct_in_union)
         self.current_document.declarations.append(decl)
         self.current_document.definitions.append(defn)
+
+        json_function_name = self.JSONInitializerName(struct_in_union.name)
+        (json_decl, json_defn) = self.GenerateJSONInitRoutine(json_function_name, the_struct.name,
+                                                    accessor_prefix,
+                                                    struct_in_union)
+        self.current_document.declarations.append(json_decl)
+        self.current_document.definitions.append(json_defn)
+
         for field in struct_in_union.fields:
           self.VisitField(struct_in_union, field)
  
