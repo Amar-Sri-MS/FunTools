@@ -8,12 +8,12 @@ generator-test:
 
 c-checker:
 	./generator.py -g code -o rdma_gen examples/rdma.gen
-	gcc -o rdma -g -I. -DDEBUG test_helper/rdma.c rdma_gen.c
+	gcc -o rdma -g -I. -DDEBUG -DGENERATOR_TEST test_helper/rdma.c rdma_gen.c
 	./rdma
 
 c-packed-checker:
 	./generator.py -p -g code -o rdma_packed_gen examples/rdma.gen
-	gcc -o rdma_packed -g -I. -DDEBUG test_helper/rdma_packed.c rdma_packed_gen.c
+	gcc -o rdma_packed -g -I. -DDEBUG -DGENERATOR_TEST test_helper/rdma_packed.c rdma_packed_gen.c
 	./rdma_packed
 
 html-checker:
