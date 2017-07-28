@@ -15,6 +15,7 @@ ENUM fun_admin_op
   FUN_ADMIN_OP_CONCAT = 0x9 /* Concatinated Volume Node */
   FUN_ADMIN_OP_CRYPTO = 0xa /* Crypto Node */
   FUN_ADMIN_OP_BIND = 0xb /* Bind Nodes into Flow Graph */
+  FUN_ADMIN_OP_PORT = 0xc /* Port-related actions */
 END
 
 FLAGS fun_admin_req_common_flag
@@ -585,74 +586,136 @@ END
 
 // PORT
 ENUM fun_port_subops
-  FUN_ADMIN_PORT_SUBOP_MTU = 0x00
-  FUN_ADMIN_PORT_SUBOP_FEC = 0x01
-  FUN_ADMIN_PORT_SUBOP_SPEED = 0x02
-  FUN_ADMIN_PORT_SUBOP_DEBOUNCE = 0x03
-  FUN_ADMIN_PORT_SUBOP_DUPLEX = 0x04
-  FUN_ADMIN_PORT_SUBOP_MAC = 0x05
-  FUN_ADMIN_PORT_SUBOP_LINKMODE = 0x05
-  FUN_ADMIN_PORT_SUBOP_INFO = 0x06
-  FUN_ADMIN_PORT_SUBOP_BREAK = 0x07
-  FUN_ADMIN_PORT_SUBOP_LPBK = 0x08
-  FUN_ADMIN_PORT_SUBOP_DIAG = 0x09
-  FUN_ADMIN_PORT_SUBOP_XCVR = 0x0a
+  FUN_ADMIN_PORT_SUBOP_MTU_R = 0x00
+  FUN_ADMIN_PORT_SUBOP_FEC_R = 0x01
+  FUN_ADMIN_PORT_SUBOP_SPEED_R = 0x02
+  FUN_ADMIN_PORT_SUBOP_DEBOUNCE_R = 0x03
+  FUN_ADMIN_PORT_SUBOP_DUPLEX_R = 0x04
+  FUN_ADMIN_PORT_SUBOP_MAC_R = 0x05
+  FUN_ADMIN_PORT_SUBOP_LINKMODE_R = 0x06
+  FUN_ADMIN_PORT_SUBOP_BREAK_R = 0x07
+  FUN_ADMIN_PORT_SUBOP_MTU_W = 0x80
+  FUN_ADMIN_PORT_SUBOP_FEC_W = 0x81
+  FUN_ADMIN_PORT_SUBOP_SPEED_W = 0x82
+  FUN_ADMIN_PORT_SUBOP_DEBOUNCE_W = 0x83
+  FUN_ADMIN_PORT_SUBOP_DUPLEX_W = 0x84
+  FUN_ADMIN_PORT_SUBOP_MAC_W = 0x85
+  FUN_ADMIN_PORT_SUBOP_LINKMODE_W = 0x86
+  FUN_ADMIN_PORT_SUBOP_BREAK_W = 0x87
 END
 
-ENUM fun_port_diags_ops
-  FUN_ADMIN_PORT_DIAG_OP_PRBS = 0x00
+STRUCT fun_admin_port_link_param
+ 0 63:56 uint64_t port_subop
+ 0 55:00 uint64_t data
 END
 
-ENUM fun_port_xcvr_ops
-  FUN_ADMIN_PORT_XCVR_OP_EEPROM = 0x00
-  FUN_ADMIN_PORT_XCVR_OP_DOM = 0x01
-END
-
-STRUCT fun_admin_port_reqrsp
+// LINK PARAMS
+//		port_mtu: MTU
+//		port_fec: FEC mode
+//		port_speed: Speed (use HW enum)
+//		port_debounce: Timer [ms]
+//		port_duplex: duplex mode
+//		port_mac_addr: MAC address
+//		port_breakout: Breakout mode
+// LINK SM
+//		port_mode: enable, disable, error_disabled
+STRUCT fun_admin_port_req
   0 63:00 fun_admin_req_common common
   1 63:00 ...
   2 63:32 uint32_t port_id
   2 31:00 uint32_t rsvd0
   UNION fun_admin_port_ops u
-    // LINK PARAMS
-    //		port_mtu: MTU
-    //		port_fec: FEC mode
-    //		port_speed: Speed (use HW enum)
-    //		port_debounce: Timer [ms]
-    //		port_duplex: duplex mode
-    //		port_mac_addr: MAC address
-    //		port_breakout: Breakout mode
-    STRUCT fun_admin_port_reqrsp_params params
-      3 63:56 uint8_t port_subop
-      3 55:00 uint8_t data[7]
+    STRUCT fun_admin_port_req_params_w params_w
+      3 63:00 uint64_t blah
+      _ _:_ fun_admin_port_link_param link_params[0]
     END
-    // LINK SM
-    //		port_mode: enable, disable, error_disabled
-    STRUCT fun_admin_port_reqrsp_mode mode
+    STRUCT fun_admin_port_req_params_r params_r
+      3 63:56 uint64_t port_subop
+      3 55:00 uint64_t rsvd
+    END
+    STRUCT fun_admin_port_req_mode mode
       3 63:56 uint8_t port_subop
       3 55:32 uint8_t rsvd0[3]
-      3 31:00 uint32_t en /* 0: dis, 1: en, 2: error disabled reduce bits... */
+      3 31:00 uint32_t mode /* 0: dis, 1: en, 2: error disabled reduce bits... */
     END
-    //		port_link up/down (async - rsp)
-    STRUCT fun_admin_port_reqrsp_info info
-      3 63:56 uint8_t port_subop
-      3 55:32 uint8_t rsvd0[3]
-      3 31:00 uint32_t en /* 0: dis, 1: en, 2: error disabled reduce bits... */
-      4 63:00 uint64_t info /* break down into all info on port (maybe add 1 flit) */
+  END
+END
+
+STRUCT fun_admin_port_rsp
+  0 63:00 fun_admin_rsp_common common
+  1 63:00 ...
+  2 63:32 uint32_t port_id
+  2 31:00 uint32_t rsvd0
+  UNION fun_admin_port_ops u
+    STRUCT fun_admin_port_rsp_params_r params_r
+      3 63:56 uint64_t port_subop
+      3 55:00 uint64_t data
     END
-    // DIAGS
-    //		port_loopback get/set
-    //		PRBS en/dis
-    STRUCT fun_admin_port_reqrsp_diag diag
-      3 63:56 uint8_t port_subop
-      3 55:48 uint8_t diag_op
-      3 47:00 uint8_t rsvd0[6]
-      4 63:00 uint64_t data /* diag data */
+  END
+END
+
+// DIAGS
+//		port_loopback get/set
+//		PRBS en/dis
+ENUM fun_port_diags_subops
+  FUN_ADMIN_PORT_DIAG_SUBOP_PRBS_R = 0x00
+  FUN_ADMIN_PORT_DIAG_SUBOP_LPBK_R = 0x01
+  FUN_ADMIN_PORT_DIAG_SUBOP_PRBS_W = 0x80
+  FUN_ADMIN_PORT_DIAG_SUBOP_LPBK_W = 0x81
+END
+
+
+STRUCT fun_admin_port_diags_req
+  0 63:00 fun_admin_req_common common
+  1 63:00 ...
+  2 63:32 uint32_t port_id
+  2 31:00 uint32_t rsvd0
+  UNION fun_admin_port_diags_req_ops u
+    STRUCT fun_admin_port_diags_req_lpbk lpbk
+      3 63:56 uint64_t port_diag_subop
+      3 55:00 uint64_t mode
     END
+    STRUCT fun_admin_port_diags_req_prbs prbs
+      3 63:56 uint8_t port_diag_subop
+      3 55:48 uint64_t mode
+      3 47:00 uint64_t rsvd0
+    END
+  END
+END
+
+STRUCT fun_admin_port_diags_req
+  0 63:00 fun_admin_req_common common
+  1 63:00 ...
+  2 63:32 uint32_t port_id
+  2 31:00 uint32_t rsvd0
+  UNION fun_admin_port_diags_req_ops u
+    STRUCT fun_admin_port_diags_req_lpbk lpbk
+      3 63:56 uint64_t port_diag_subop
+      3 55:00 uint64_t mode
+    END
+    STRUCT fun_admin_port_diags_req_prbs prbs
+      3 63:56 uint8_t port_diag_subop
+      3 55:48 uint64_t mode
+      3 47:00 uint64_t rsvd0
+    END
+  END
+END
+
+ENUM fun_port_xcvr_subops
+  FUN_ADMIN_PORT_XCVR_OP_EEPROM = 0x00
+  FUN_ADMIN_PORT_XCVR_OP_DOM = 0x01
+END
+
+STRUCT fun_admin_port_xcvr_req
+  0 63:00 fun_admin_req_common common
+  1 63:00 ...
+  2 63:32 uint32_t port_id
+  2 31:00 uint32_t rsvd0
+  UNION fun_admin_port_xcvr_req_ops u
     // XCVR
     //		port_xcvr_eeprom get
     //		port_xcvr_dom get	
-    STRUCT fun_admin_port_reqrsp_xcvr xcvr
+    STRUCT fun_admin_port_req_xcvr xcvr
       3 63:56 uint8_t port_subop
       3 55:48 uint8_t xcvr_op
       3 47:00 uint8_t rsvd0[6]
@@ -660,6 +723,14 @@ STRUCT fun_admin_port_reqrsp
   END
 END
 
+STRUCT fun_admin_port_async_req
+  0 63:00 fun_admin_req_common common
+  1 63:00 ...
+  2 63:32 uint32_t port_id
+  2 31:00 uint32_t rsvd0
+  3 63:00 uint64_t update_map[2]
+  4 63:00 ...
+END
 
 
 
