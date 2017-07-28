@@ -46,10 +46,6 @@ class HTMLGenerator:
         current_row = []
         bytes_remaining = 64
     return rows        
-                            
-
-        
-    
 
   def DrawFields(self, flit, row):
     out = ''
