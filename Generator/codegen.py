@@ -406,6 +406,7 @@ class HelperGenerator:
     # First argument is always a pointer to the structure being initialized.
     arg_list.append('struct %s *s' % struct_name)
 
+    # Pass in all non-packed fields.
     for field in the_struct.AllFields():
       if field.IsReserved() or not field.type.IsScalar():
         continue
@@ -420,6 +421,7 @@ class HelperGenerator:
       # If no arguments other than structure, don't bother.
       return ('', '')
 
+    # Initialize each packed field.
     for field in the_struct.fields:
       if field.IsReserved() or not field.type.IsScalar():
         continue
