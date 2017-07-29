@@ -174,7 +174,7 @@ import AppKit
 		if debug {
 			Swift.print("=== COMMAND: \(verb) \(argsStr)")
 		}
-		let r = dpcrun_command(&s, verb, argsStr)
+		let r = dpcrun_command(&s, verb, argsStr) // probably leaks here
 		socket = s
 		if r == nil {
 			Swift.print("*** Error executing \(verb): nil ; socket=\(socket)")

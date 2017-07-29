@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		A71563941EB7ACE600F32BAE /* bsd in Resources */ = {isa = PBXBuildFile; fileRef = A71563931EB7ACE600F32BAE /* bsd */; };
 		A71563991EB95EDE00F32BAE /* cfg in Resources */ = {isa = PBXBuildFile; fileRef = A71563981EB95EDE00F32BAE /* cfg */; };
 		A716FBCD1EA67C82008395EC /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FBCC1EA67C82008395EC /* AppDelegate.swift */; };
 		A716FBCF1EA67C82008395EC /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A716FBCE1EA67C82008395EC /* Assets.xcassets */; };
@@ -94,7 +93,6 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		A71563931EB7ACE600F32BAE /* bsd */ = {isa = PBXFileReference; lastKnownFileType = folder; name = bsd; path = ../../FunOS/bsd; sourceTree = "<group>"; };
 		A71563981EB95EDE00F32BAE /* cfg */ = {isa = PBXFileReference; lastKnownFileType = folder; name = cfg; path = ../../FunOS/cfg; sourceTree = "<group>"; };
 		A716FBC91EA67C82008395EC /* funos_viewer.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = funos_viewer.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A716FBCC1EA67C82008395EC /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
@@ -214,7 +212,6 @@
 				A71563981EB95EDE00F32BAE /* cfg */,
 				A716FBE71EAD33EA008395EC /* kv */,
 				A716FBE91EAD33F5008395EC /* libFunOS */,
-				A71563931EB7ACE600F32BAE /* bsd */,
 				A716FBCA1EA67C82008395EC /* Products */,
 				A7FD266C1EB51FCD0049E0C0 /* Frameworks */,
 			);
@@ -421,7 +418,6 @@
 				A766A4821F1C0E550094C7B0 /* Buttons.xib in Resources */,
 				A766A4881F1C12FD0094C7B0 /* ConsoleWindow.xib in Resources */,
 				A716FBD21EA67C82008395EC /* MainMenu.xib in Resources */,
-				A71563941EB7ACE600F32BAE /* bsd in Resources */,
 				A74FE1481EE1D0210062128E /* platform in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
