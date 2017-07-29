@@ -1,12 +1,13 @@
 /* Tool to display statistics from a running funos */
 
-#include <sys/socket.h>
-#include <sys/un.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include <curses.h>
 #include <inttypes.h>
 #include <ctype.h>
+#include <sys/socket.h>
+#include <sys/un.h>
 
 #include <utils/threaded/fun_json.h>
 #include <utils/threaded/fun_commander.h>
@@ -239,9 +240,9 @@ static void get_num_wus_received_sent(int sock, OUT uint64_t *received, OUT uint
     struct fun_json *per_vp = do_peek(sock, "stats/per_vp");
     if (! per_vp) return;
     if (per_vp->type != fun_json_dict_type) return;
-    size_t count;
-    const char **keys = fun_json_dict_all_keys(per_vp, &count);
-    if (!keys) return;
+    size_t count = fun_map_count(per_vp->dict);
+    const char **keys = calloc(count, sizeof(char *));
+    fun_json_dict_fill_and_sort_keys(per_vp, keys);
     for (size_t i = 0; i < count; i++) {
 	struct fun_json *sub = fun_json_dict_at(per_vp, keys[i]);
 	if (!sub) continue;
@@ -249,6 +250,7 @@ static void get_num_wus_received_sent(int sock, OUT uint64_t *received, OUT uint
 	if (fun_json_lookup_int64(sub, "wus_received", &n)) *received += n;
 	if (fun_json_lookup_int64(sub, "wus_sent", &n)) *sent += n;
     }
+    free(keys);
 }
 
 static void print_sorted_stats(struct parameters *params, struct fun_json *array) {

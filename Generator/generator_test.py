@@ -1005,7 +1005,7 @@ class PackerTest(unittest.TestCase):
     self.assertEqual(1, len(errors))
     self.assertIn('without matching', errors[0])
                 
-  def disableParseVariableLengthArrayInSubStructure(self):
+  def testParseVariableLengthArrayInSubStructure(self):
     doc_builder = generator.DocBuilder()
     contents = [
       'STRUCT outer',
@@ -1020,15 +1020,90 @@ class PackerTest(unittest.TestCase):
     errors = doc_builder.Parse('filename', contents)
     self.assertIsNone(errors)
 
+    doc = doc_builder.current_document
     self.assertEqual(2, len(doc.structs))
-    inner = doc.structs[0]
+    outer = doc.structs[0]
+    inner = doc.structs[1]
     self.assertEqual("inner", inner.name)
     self.assertEqual(2, len(inner.fields))
     var_length_array = inner.fields[1]
     self.assertEqual("array", var_length_array.name)
     self.assertTrue(var_length_array.no_offset)
 
-                     
+  def testParseVariableLengthArrayInUnion(self):
+    doc_builder = generator.DocBuilder()
+    contents = [
+      'STRUCT outer',
+      '0 63:56 char initial_outer',
+      'UNION theUnion u',
+      'STRUCT first s1',
+      '0 55:0 uint64_t value',
+      '_ _:_ char chars[0]',
+      'END',
+      'STRUCT second s2',
+      '0 55:0 uint64_t value',
+      'END',
+      'END',
+      'END'
+      ]
+
+    errors = doc_builder.Parse('filename', contents)
+    self.assertIsNone(errors)
+
+    doc = doc_builder.current_document
+    self.assertEqual(4, len(doc.structs))
+    outer = doc.structs[0]
+    union = doc.structs[1]
+    s1 = doc.structs[2]
+    s2 = doc.structs[3]
+    self.assertEqual("outer", outer.name)
+    self.assertEqual("theUnion", union.name)
+    self.assertEqual("first", s1.name)
+    self.assertEqual("second", s2.name)
+
+    self.assertEqual(2, len(s1.fields))
+    var_length_array = s1.fields[1]
+    self.assertEqual("chars", var_length_array.name)
+    self.assertTrue(var_length_array.no_offset)
+
+  def testParseVariableLengthStructArrayInUnion(self):
+    doc_builder = generator.DocBuilder()
+    contents = [
+      'STRUCT inside_union',
+      '0 63:00 uint64_t value',
+      'END',
+      'STRUCT outer',
+      '0 63:56 char initial_outer',
+      'UNION theUnion u',
+      'STRUCT first s1',
+      '0 63:32 uint32_t value',
+      '_ _:_ inside_union inside[0]',
+      'END',
+      'END',
+      'END'
+      ]
+
+    errors = doc_builder.Parse('filename', contents)
+    self.assertIsNone(errors)
+    doc = doc_builder.current_document
+
+    self.assertEqual(4, len(doc.structs))
+
+    inside_union = doc.structs[0]
+    outer = doc.structs[1]
+    the_union = doc.structs[2]
+    first = doc.structs[3]
+    self.assertEqual("inside_union", inside_union.name)
+    self.assertEqual("outer", outer.name)
+    self.assertEqual("theUnion", the_union.name)
+    self.assertEqual("first", first.name)
+
+    self.assertEqual(64, inside_union.BitWidth())
+    # TODO(bowdidge) - 32 bit struct can't be aligned right up against
+    # the char.
+    self.assertEqual(40, outer.BitWidth())
+    self.assertEqual(32, the_union.BitWidth())
+    self.assertEqual(32, first.BitWidth())
 
 class CheckerTest(unittest.TestCase):
 
