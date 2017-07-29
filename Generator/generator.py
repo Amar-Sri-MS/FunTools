@@ -583,7 +583,7 @@ class Struct(Node):
     return max([(f.EndFlit() + 1) * 8 for f in self.fields])
 
   def FlitFieldMap(self):
-    # Return a map of (flit, fields) for all fields in the structure.
+    """Return a map of (flit, fields) for all fields in the structure."""
     flit_field_map = {}
     fields_with_offsets = [f for f in self.fields if not f.IsNoOffset()]
 
@@ -592,6 +592,20 @@ class Struct(Node):
       item.append(field)
       flit_field_map[field.StartFlit()] = item
     return flit_field_map
+
+  def ContainsUnion(self):
+    """Returns union in this struct, or None if no unions exist."""
+    if self.is_union:
+      return self
+
+    for f in self.fields:
+      if f.type.IsRecord():
+        struct = f.type.base_type.node
+        the_union = struct.ContainsUnion()
+        if the_union:
+          return the_union
+    return None
+
 
 class Document(Node):
   # Representation of an entire generated header specification.
