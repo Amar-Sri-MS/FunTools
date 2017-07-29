@@ -626,7 +626,6 @@ STRUCT fun_admin_port_req
   2 31:00 uint32_t rsvd0
   UNION fun_admin_port_ops u
     STRUCT fun_admin_port_req_params_w params_w
-      3 63:00 uint64_t blah
       _ _:_ fun_admin_port_link_param link_params[0]
     END
     STRUCT fun_admin_port_req_params_r params_r
