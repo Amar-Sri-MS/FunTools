@@ -73,6 +73,7 @@ struct fun_json *fun_json_lookup(struct fun_json *container,
     src_out += '\n'
     src_out += '#include <stdint.h>\n'
     src_out += '#include <assert.h>\n'
+
     if self.output_file_base:
       header_file = os.path.basename(self.output_file_base) + '.h'
       src_out += '#include "%s"\n\n' % (header_file)
