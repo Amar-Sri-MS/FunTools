@@ -16,7 +16,6 @@
 		A716FBE41EA83CBB008395EC /* apps in Resources */ = {isa = PBXBuildFile; fileRef = A716FBE31EA83CBB008395EC /* apps */; };
 		A716FBE61EAD33E0008395EC /* hw in Resources */ = {isa = PBXBuildFile; fileRef = A716FBE51EAD33E0008395EC /* hw */; };
 		A716FBE81EAD33EA008395EC /* kv in Resources */ = {isa = PBXBuildFile; fileRef = A716FBE71EAD33EA008395EC /* kv */; };
-		A716FBEA1EAD33F5008395EC /* libFunOS in Resources */ = {isa = PBXBuildFile; fileRef = A716FBE91EAD33F5008395EC /* libFunOS */; };
 		A716FBEC1EAD63FA008395EC /* PureSwiftExtras in Resources */ = {isa = PBXBuildFile; fileRef = A716FBEB1EAD63FA008395EC /* PureSwiftExtras */; };
 		A716FC131EAD667D008395EC /* ArrayExtras.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FC081EAD667D008395EC /* ArrayExtras.swift */; };
 		A716FC141EAD667D008395EC /* ByteExtras.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FC091EAD667D008395EC /* ByteExtras.swift */; };
@@ -106,7 +105,6 @@
 		A716FBE31EA83CBB008395EC /* apps */ = {isa = PBXFileReference; lastKnownFileType = folder; name = apps; path = ../../FunOS/apps; sourceTree = "<group>"; };
 		A716FBE51EAD33E0008395EC /* hw */ = {isa = PBXFileReference; lastKnownFileType = folder; name = hw; path = ../../FunOS/hw; sourceTree = "<group>"; };
 		A716FBE71EAD33EA008395EC /* kv */ = {isa = PBXFileReference; lastKnownFileType = folder; name = kv; path = ../../FunOS/kv; sourceTree = "<group>"; };
-		A716FBE91EAD33F5008395EC /* libFunOS */ = {isa = PBXFileReference; lastKnownFileType = folder; name = libFunOS; path = ../../FunOS/libFunOS; sourceTree = "<group>"; };
 		A716FBEB1EAD63FA008395EC /* PureSwiftExtras */ = {isa = PBXFileReference; lastKnownFileType = folder; name = PureSwiftExtras; path = ../../Simulators/NSSimulator/PureSwiftExtras; sourceTree = "<absolute>"; };
 		A716FC081EAD667D008395EC /* ArrayExtras.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ArrayExtras.swift; sourceTree = "<group>"; };
 		A716FC091EAD667D008395EC /* ByteExtras.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ByteExtras.swift; sourceTree = "<group>"; };
@@ -211,7 +209,6 @@
 				A716FBE51EAD33E0008395EC /* hw */,
 				A71563981EB95EDE00F32BAE /* cfg */,
 				A716FBE71EAD33EA008395EC /* kv */,
-				A716FBE91EAD33F5008395EC /* libFunOS */,
 				A716FBCA1EA67C82008395EC /* Products */,
 				A7FD266C1EB51FCD0049E0C0 /* Frameworks */,
 			);
@@ -402,7 +399,6 @@
 				A716FBE81EAD33EA008395EC /* kv in Resources */,
 				A7614FB21F127E5E0065A5B7 /* MallocWindow.xib in Resources */,
 				A7A68D001EE9C608004B5DDF /* props_bridges in Resources */,
-				A716FBEA1EAD33F5008395EC /* libFunOS in Resources */,
 				A71563991EB95EDE00F32BAE /* cfg in Resources */,
 				A766A47C1F1915F50094C7B0 /* utils in Resources */,
 				A766A48E1F1C22920094C7B0 /* IKVWindow.xib in Resources */,
