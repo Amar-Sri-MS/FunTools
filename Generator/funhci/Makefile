@@ -24,11 +24,11 @@ all: code $(BUILD)/$(LIB_HCI)
 
 .PHONY: code
 code:
-	../generator.py -p -g code -o fun_hci ../examples/fun_hci.gen
+	../generator.py -p -g code -o fun_hci fun_hci.gen
 
 .PHONY: doc
 doc:
-	../generator.py -p -g html -o fun_hci ../examples/fun_hci.gen
+	../generator.py -p -g html -o fun_hci fun_hci.gen
 
 $(BUILD)/obj/fun_hci.o: fun_hci.c
 	@echo CC $<
