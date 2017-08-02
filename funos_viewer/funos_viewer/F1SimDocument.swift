@@ -174,7 +174,7 @@ import AppKit
 		if debug {
 			Swift.print("=== COMMAND: \(verb) \(argsStr)")
 		}
-		let r = dpcrun_command(&s, verb, argsStr)
+		let r = dpcrun_command(&s, verb, argsStr) // probably leaks here
 		socket = s
 		if r == nil {
 			Swift.print("*** Error executing \(verb): nil ; socket=\(socket)")
@@ -289,7 +289,7 @@ import AppKit
 
 	@IBAction func doCreateIKVStore(_ sender: NSObject?) {
 		log(string: "");
-		let json = doF1Command("ikv", "create_and_open", inputController.paramsAsString)
+		let json = doF1Command("ikvdemo", "create_and_open", inputController.paramsAsString)
 		let container = json?.dictionaryValue["ikv_container"]?.integerValue
 		if container != nil {
 			inputController.ikvContainer = container
@@ -305,7 +305,7 @@ import AppKit
 		log(string: "")
 		async {
 			var tempSocket: Int32 = 0
-			let json: JSON! = self.doF1Command(socket: &tempSocket, "ikv", args)
+			let json: JSON! = self.doF1Command(socket: &tempSocket, "ikvdemo", args)
 			_ = Darwin.close(tempSocket)
 			if json == nil { return }
 			let str = json.toJSONString()
