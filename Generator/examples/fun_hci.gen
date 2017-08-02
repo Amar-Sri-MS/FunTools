@@ -585,7 +585,7 @@ END
 
 
 // PORT
-ENUM fun_port_subops
+ENUM fun_admin_port_subops
   FUN_ADMIN_PORT_SUBOP_MTU_R = 0x00
   FUN_ADMIN_PORT_SUBOP_MTU_W = 0x01
   FUN_ADMIN_PORT_SUBOP_FEC_R = 0x02
@@ -624,7 +624,7 @@ STRUCT fun_admin_port_req
   1 63:00 ...
   2 63:32 uint32_t port_id
   2 31:00 uint32_t rsvd0
-  UNION fun_admin_port_ops u
+  UNION fun_admin_port_req_ops u
     STRUCT fun_admin_port_req_params_w params_w
       _ _:_ fun_admin_port_link_param link_params[0]
     END
@@ -645,7 +645,7 @@ STRUCT fun_admin_port_rsp
   1 63:00 ...
   2 63:32 uint32_t port_id
   2 31:00 uint32_t rsvd0
-  UNION fun_admin_port_ops u
+  UNION fun_admin_port_rsp_ops u
     STRUCT fun_admin_port_rsp_params_r params_r
       3 63:56 uint64_t port_subop
       3 55:00 uint64_t data
@@ -682,17 +682,17 @@ STRUCT fun_admin_port_diags_req
   END
 END
 
-STRUCT fun_admin_port_diags_req
+STRUCT fun_admin_port_diags_rsp
   0 63:00 fun_admin_req_common common
   1 63:00 ...
   2 63:32 uint32_t port_id
   2 31:00 uint32_t rsvd0
-  UNION fun_admin_port_diags_req_ops u
-    STRUCT fun_admin_port_diags_req_lpbk lpbk
+  UNION fun_admin_port_diags_rsp_ops u
+    STRUCT fun_admin_port_diags_rsp_lpbk lpbk
       3 63:56 uint64_t port_diag_subop
       3 55:00 uint64_t mode
     END
-    STRUCT fun_admin_port_diags_req_prbs prbs
+    STRUCT fun_admin_port_diags_rsp_prbs prbs
       3 63:56 uint8_t port_diag_subop
       3 55:48 uint64_t mode
       3 47:00 uint64_t rsvd0
