@@ -342,7 +342,7 @@ class HelperGenerator:
       if old_field.IsReserved():
         continue
 
-      ident = 'FUN_' + utils.AsUppercaseMacro('%s_%s' % (struct.name, 
+      ident = utils.AsUppercaseMacro('%s_%s' % (struct.name,
                                                          old_field.name))
       shift = '#define %s_S %s' % (ident, old_field.EndBit() - min_end_bit)
       mask = '#define %s_M %s' % (ident, old_field.Mask())
@@ -372,7 +372,7 @@ class HelperGenerator:
     for packed_field in field.packed_fields:
       if packed_field.IsReserved():
         continue
-      ident = 'FUN_' + utils.AsUppercaseMacro('%s_%s' % (the_struct.name, 
+      ident = utils.AsUppercaseMacro('%s_%s' % (the_struct.name,
                                                          packed_field.name))
       packed_inits.append('%s_P(%s)' % (ident, packed_field.name))
     return '\ts->%s%s = %s;' % (accessor_prefix, field.name,
