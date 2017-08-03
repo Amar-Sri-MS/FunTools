@@ -1105,6 +1105,78 @@ class PackerTest(unittest.TestCase):
     self.assertEqual(32, the_union.BitWidth())
     self.assertEqual(32, first.BitWidth())
 
+class PackedNameTest(unittest.TestCase):
+
+  def testPackedNameSimple(self):
+    fields = [generator.Field('a', None, 0, 0),
+              generator.Field('b', None, 0, 0)]
+    self.assertEqual('a_to_b', generator.ChoosePackedFieldName(fields))
+
+  def testPackedNameMultipleFields(self):
+    fields = [generator.Field('a', None, 0, 0),
+              generator.Field('c1', None, 0, 0),
+              generator.Field('c2', None, 0, 0),
+              generator.Field('c3', None, 0, 0),
+              generator.Field('c4', None, 0, 0),
+              generator.Field('b', None, 0, 0)]
+    self.assertEqual('a_to_b', generator.ChoosePackedFieldName(fields))
+
+  def testPackedNameFirstFieldReserved(self):
+    fields = [generator.Field('rsvd_bitfield', None, 0, 0),
+              generator.Field('b', None, 0, 0)]
+    self.assertEqual('b_pack', generator.ChoosePackedFieldName(fields))
+
+  def testPackedNameLastFieldReservedSingleField(self):
+    fields = [generator.Field('a', None, 0, 0),
+              generator.Field('reserved', None, 0, 0)]
+    self.assertEqual('a_pack', generator.ChoosePackedFieldName(fields))
+
+  def testPackedNameLastFieldReserved(self):
+    fields = [generator.Field('a', None, 0, 0),
+              generator.Field('b', None, 0, 0),
+              generator.Field('reserved', None, 0, 0)]
+    self.assertEqual('a_to_b', generator.ChoosePackedFieldName(fields))
+
+  def testPackedNameReservedInMiddle(self):
+    fields = [generator.Field('a', None, 0, 0),
+              generator.Field('reserved_foo', None, 0, 0),
+              generator.Field('b', None, 0, 0)]
+    self.assertEqual('a_to_b', generator.ChoosePackedFieldName(fields))
+
+  def testPackedNameMatchingPrefix(self):
+    fields = [generator.Field('prefix_a', None, 0, 0),
+              generator.Field('prefix_b', None, 0, 0),
+              generator.Field('prefix_c', None, 0, 0)]
+    self.assertEqual('prefix_pack', generator.ChoosePackedFieldName(fields))
+
+  def testPackedNameMatchingPrefixFirstTermOnly(self):
+    fields = [generator.Field('pre_fix_a', None, 0, 0),
+              generator.Field('pre_fix_b', None, 0, 0),
+              generator.Field('pre_fix_c', None, 0, 0)]
+    self.assertEqual('pre_pack', generator.ChoosePackedFieldName(fields))
+
+  def testPackedNameMatchingPrefixSimilarNames(self):
+    fields = [generator.Field('prefix_a', None, 0, 0),
+              generator.Field('pre_b', None, 0, 0),
+              generator.Field('pre_c', None, 0, 0)]
+    self.assertEqual('prefix_a_to_pre_c',
+                     generator.ChoosePackedFieldName(fields))
+
+  def testPackedNameMatchingPrefixReservedFieldAtStart(self):
+    fields = [generator.Field('reserved', None, 0, 0),
+              generator.Field('pre_b', None, 0, 0),
+              generator.Field('pre_c', None, 0, 0)]
+    self.assertEqual('pre_pack',
+                     generator.ChoosePackedFieldName(fields))
+
+  def testPackedNameMatchingPrefixReservedFieldAtEnd(self):
+    fields = [generator.Field('pre_a', None, 0, 0),
+              generator.Field('pre_b', None, 0, 0),
+              generator.Field('reserved', None, 0, 0)]
+    self.assertEqual('pre_pack',
+                     generator.ChoosePackedFieldName(fields))
+
+
 class CheckerTest(unittest.TestCase):
 
   def testCheckerAdjacentTypesEqual(self):
