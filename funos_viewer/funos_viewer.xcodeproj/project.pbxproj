@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		A71563941EB7ACE600F32BAE /* bsd in Resources */ = {isa = PBXBuildFile; fileRef = A71563931EB7ACE600F32BAE /* bsd */; };
 		A71563991EB95EDE00F32BAE /* cfg in Resources */ = {isa = PBXBuildFile; fileRef = A71563981EB95EDE00F32BAE /* cfg */; };
 		A716FBCD1EA67C82008395EC /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FBCC1EA67C82008395EC /* AppDelegate.swift */; };
 		A716FBCF1EA67C82008395EC /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A716FBCE1EA67C82008395EC /* Assets.xcassets */; };
@@ -69,11 +68,22 @@
 		A716FC701EAD7040008395EC /* F1Tile.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FC6F1EAD7040008395EC /* F1Tile.swift */; };
 		A716FC721EAD7082008395EC /* F1MiscTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FC711EAD7082008395EC /* F1MiscTypes.swift */; };
 		A716FC761EAD73B6008395EC /* F1SimDocument.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FC751EAD73B6008395EC /* F1SimDocument.swift */; };
-		A716FC7A1EAD73C7008395EC /* F1SelectionWindow.xib in Resources */ = {isa = PBXBuildFile; fileRef = A716FC791EAD73C7008395EC /* F1SelectionWindow.xib */; };
-		A716FC7E1EAD73E6008395EC /* F1SelectionController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FC7D1EAD73E6008395EC /* F1SelectionController.swift */; };
 		A74FE1481EE1D0210062128E /* platform in Resources */ = {isa = PBXBuildFile; fileRef = A74FE1471EE1D0210062128E /* platform */; };
 		A7614FB21F127E5E0065A5B7 /* MallocWindow.xib in Resources */ = {isa = PBXBuildFile; fileRef = A7614FB11F127E5E0065A5B7 /* MallocWindow.xib */; };
 		A7614FB41F1280E40065A5B7 /* MallocWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7614FB31F1280E40065A5B7 /* MallocWindowController.swift */; };
+		A766A47C1F1915F50094C7B0 /* utils in Resources */ = {isa = PBXBuildFile; fileRef = A766A47B1F1915F50094C7B0 /* utils */; };
+		A766A47E1F195D7A0094C7B0 /* nucleus in Resources */ = {isa = PBXBuildFile; fileRef = A766A47D1F195D7A0094C7B0 /* nucleus */; };
+		A766A4801F1BD2D40094C7B0 /* services in Resources */ = {isa = PBXBuildFile; fileRef = A766A47F1F1BD2D40094C7B0 /* services */; };
+		A766A4821F1C0E550094C7B0 /* Buttons.xib in Resources */ = {isa = PBXBuildFile; fileRef = A766A4811F1C0E550094C7B0 /* Buttons.xib */; };
+		A766A4841F1C0FE50094C7B0 /* ViewerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A766A4831F1C0FE50094C7B0 /* ViewerApp.swift */; };
+		A766A4861F1C12D00094C7B0 /* ConsoleController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A766A4851F1C12D00094C7B0 /* ConsoleController.swift */; };
+		A766A4881F1C12FD0094C7B0 /* ConsoleWindow.xib in Resources */ = {isa = PBXBuildFile; fileRef = A766A4871F1C12FD0094C7B0 /* ConsoleWindow.xib */; };
+		A766A48A1F1C19680094C7B0 /* TopLikeWindow.xib in Resources */ = {isa = PBXBuildFile; fileRef = A766A4891F1C19680094C7B0 /* TopLikeWindow.xib */; };
+		A766A48C1F1C19E90094C7B0 /* TopLikeController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A766A48B1F1C19E90094C7B0 /* TopLikeController.swift */; };
+		A766A48E1F1C22920094C7B0 /* IKVWindow.xib in Resources */ = {isa = PBXBuildFile; fileRef = A766A48D1F1C22920094C7B0 /* IKVWindow.xib */; };
+		A766A4901F1C23B60094C7B0 /* IKVController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A766A48F1F1C23B60094C7B0 /* IKVController.swift */; };
+		A766A4921F1C30D60094C7B0 /* MiscWindow.xib in Resources */ = {isa = PBXBuildFile; fileRef = A766A4911F1C30D60094C7B0 /* MiscWindow.xib */; };
+		A766A4941F1C31590094C7B0 /* MiscWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A766A4931F1C31590094C7B0 /* MiscWindowController.swift */; };
 		A791CEE61EC50356000125F0 /* bridgingCExtras.c in Sources */ = {isa = PBXBuildFile; fileRef = A791CEE51EC50356000125F0 /* bridgingCExtras.c */; };
 		A7A68D001EE9C608004B5DDF /* props_bridges in Resources */ = {isa = PBXBuildFile; fileRef = A7A68CFF1EE9C608004B5DDF /* props_bridges */; };
 		A7FD266E1EB51FCE0049E0C0 /* libfunclient.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A7FD266D1EB51FCE0049E0C0 /* libfunclient.a */; };
@@ -83,7 +93,6 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		A71563931EB7ACE600F32BAE /* bsd */ = {isa = PBXFileReference; lastKnownFileType = folder; name = bsd; path = ../../FunOS/bsd; sourceTree = "<group>"; };
 		A71563981EB95EDE00F32BAE /* cfg */ = {isa = PBXFileReference; lastKnownFileType = folder; name = cfg; path = ../../FunOS/cfg; sourceTree = "<group>"; };
 		A716FBC91EA67C82008395EC /* funos_viewer.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = funos_viewer.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A716FBCC1EA67C82008395EC /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
@@ -149,11 +158,22 @@
 		A716FC6F1EAD7040008395EC /* F1Tile.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = F1Tile.swift; sourceTree = "<group>"; };
 		A716FC711EAD7082008395EC /* F1MiscTypes.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = F1MiscTypes.swift; sourceTree = "<group>"; };
 		A716FC751EAD73B6008395EC /* F1SimDocument.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = F1SimDocument.swift; sourceTree = "<group>"; };
-		A716FC791EAD73C7008395EC /* F1SelectionWindow.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = F1SelectionWindow.xib; sourceTree = "<group>"; };
-		A716FC7D1EAD73E6008395EC /* F1SelectionController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = F1SelectionController.swift; sourceTree = "<group>"; };
 		A74FE1471EE1D0210062128E /* platform */ = {isa = PBXFileReference; lastKnownFileType = folder; name = platform; path = ../../FunOS/platform; sourceTree = "<group>"; };
 		A7614FB11F127E5E0065A5B7 /* MallocWindow.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = MallocWindow.xib; sourceTree = "<group>"; };
 		A7614FB31F1280E40065A5B7 /* MallocWindowController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MallocWindowController.swift; sourceTree = "<group>"; };
+		A766A47B1F1915F50094C7B0 /* utils */ = {isa = PBXFileReference; lastKnownFileType = folder; name = utils; path = ../../FunOS/utils; sourceTree = "<group>"; };
+		A766A47D1F195D7A0094C7B0 /* nucleus */ = {isa = PBXFileReference; lastKnownFileType = folder; name = nucleus; path = ../../FunOS/nucleus; sourceTree = "<group>"; };
+		A766A47F1F1BD2D40094C7B0 /* services */ = {isa = PBXFileReference; lastKnownFileType = folder; name = services; path = ../../FunOS/services; sourceTree = "<group>"; };
+		A766A4811F1C0E550094C7B0 /* Buttons.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = Buttons.xib; sourceTree = "<group>"; };
+		A766A4831F1C0FE50094C7B0 /* ViewerApp.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ViewerApp.swift; sourceTree = "<group>"; };
+		A766A4851F1C12D00094C7B0 /* ConsoleController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ConsoleController.swift; sourceTree = "<group>"; };
+		A766A4871F1C12FD0094C7B0 /* ConsoleWindow.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = ConsoleWindow.xib; sourceTree = "<group>"; };
+		A766A4891F1C19680094C7B0 /* TopLikeWindow.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = TopLikeWindow.xib; sourceTree = "<group>"; };
+		A766A48B1F1C19E90094C7B0 /* TopLikeController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TopLikeController.swift; sourceTree = "<group>"; };
+		A766A48D1F1C22920094C7B0 /* IKVWindow.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = IKVWindow.xib; sourceTree = "<group>"; };
+		A766A48F1F1C23B60094C7B0 /* IKVController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = IKVController.swift; sourceTree = "<group>"; };
+		A766A4911F1C30D60094C7B0 /* MiscWindow.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = MiscWindow.xib; sourceTree = "<group>"; };
+		A766A4931F1C31590094C7B0 /* MiscWindowController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MiscWindowController.swift; sourceTree = "<group>"; };
 		A791CEE51EC50356000125F0 /* bridgingCExtras.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = bridgingCExtras.c; sourceTree = "<group>"; };
 		A7A68CFF1EE9C608004B5DDF /* props_bridges */ = {isa = PBXFileReference; lastKnownFileType = folder; name = props_bridges; path = ../../FunOS/props_bridges; sourceTree = "<group>"; };
 		A7FD266D1EB51FCE0049E0C0 /* libfunclient.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libfunclient.a; path = ../../FunSDK/lib/Darwin/libfunclient.a; sourceTree = "<group>"; };
@@ -183,13 +203,15 @@
 				A716FBCB1EA67C82008395EC /* funos_viewer */,
 				A716FBE31EA83CBB008395EC /* apps */,
 				A716FBDB1EA67D3C008395EC /* funos */,
+				A766A47D1F195D7A0094C7B0 /* nucleus */,
+				A766A47B1F1915F50094C7B0 /* utils */,
+				A766A47F1F1BD2D40094C7B0 /* services */,
 				A7A68CFF1EE9C608004B5DDF /* props_bridges */,
 				A74FE1471EE1D0210062128E /* platform */,
 				A716FBE51EAD33E0008395EC /* hw */,
 				A71563981EB95EDE00F32BAE /* cfg */,
 				A716FBE71EAD33EA008395EC /* kv */,
 				A716FBE91EAD33F5008395EC /* libFunOS */,
-				A71563931EB7ACE600F32BAE /* bsd */,
 				A716FBCA1EA67C82008395EC /* Products */,
 				A7FD266C1EB51FCD0049E0C0 /* Frameworks */,
 			);
@@ -207,6 +229,7 @@
 			isa = PBXGroup;
 			children = (
 				A716FBCC1EA67C82008395EC /* AppDelegate.swift */,
+				A766A4831F1C0FE50094C7B0 /* ViewerApp.swift */,
 				A716FBDF1EA67EF5008395EC /* dpcclient.h */,
 				A716FBDE1EA67EF5008395EC /* dpcclient.c */,
 				A716FBCE1EA67C82008395EC /* Assets.xcassets */,
@@ -287,13 +310,20 @@
 				A716FC5B1EAD69E4008395EC /* F1ChipView.swift */,
 				A716FC5D1EAD6A2A008395EC /* F1Definitions.swift */,
 				A7FD26711EB54F9F0049E0C0 /* F1InputController.swift */,
+				A766A4851F1C12D00094C7B0 /* ConsoleController.swift */,
+				A766A48B1F1C19E90094C7B0 /* TopLikeController.swift */,
+				A766A4931F1C31590094C7B0 /* MiscWindowController.swift */,
 				A7614FB31F1280E40065A5B7 /* MallocWindowController.swift */,
-				A716FC7D1EAD73E6008395EC /* F1SelectionController.swift */,
+				A766A48F1F1C23B60094C7B0 /* IKVController.swift */,
 				A716FC751EAD73B6008395EC /* F1SimDocument.swift */,
 				A7FD266F1EB54EF20049E0C0 /* F1InputWindow.xib */,
 				A7FD26731EB557CB0049E0C0 /* F1ChipWindow.xib */,
-				A716FC791EAD73C7008395EC /* F1SelectionWindow.xib */,
+				A766A4871F1C12FD0094C7B0 /* ConsoleWindow.xib */,
+				A766A4891F1C19680094C7B0 /* TopLikeWindow.xib */,
+				A766A4911F1C30D60094C7B0 /* MiscWindow.xib */,
 				A7614FB11F127E5E0065A5B7 /* MallocWindow.xib */,
+				A766A48D1F1C22920094C7B0 /* IKVWindow.xib */,
+				A766A4811F1C0E550094C7B0 /* Buttons.xib */,
 			);
 			name = F1UI;
 			path = funos_viewer;
@@ -334,7 +364,7 @@
 			isa = PBXProject;
 			attributes = {
 				LastSwiftUpdateCheck = 0820;
-				LastUpgradeCheck = 0820;
+				LastUpgradeCheck = 0830;
 				ORGANIZATIONNAME = Fungible;
 				TargetAttributes = {
 					A716FBC81EA67C82008395EC = {
@@ -367,21 +397,27 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A766A48A1F1C19680094C7B0 /* TopLikeWindow.xib in Resources */,
+				A766A4801F1BD2D40094C7B0 /* services in Resources */,
 				A716FBE81EAD33EA008395EC /* kv in Resources */,
 				A7614FB21F127E5E0065A5B7 /* MallocWindow.xib in Resources */,
 				A7A68D001EE9C608004B5DDF /* props_bridges in Resources */,
 				A716FBEA1EAD33F5008395EC /* libFunOS in Resources */,
 				A71563991EB95EDE00F32BAE /* cfg in Resources */,
+				A766A47C1F1915F50094C7B0 /* utils in Resources */,
+				A766A48E1F1C22920094C7B0 /* IKVWindow.xib in Resources */,
+				A766A47E1F195D7A0094C7B0 /* nucleus in Resources */,
 				A716FBE61EAD33E0008395EC /* hw in Resources */,
+				A766A4921F1C30D60094C7B0 /* MiscWindow.xib in Resources */,
 				A7FD26741EB557CB0049E0C0 /* F1ChipWindow.xib in Resources */,
 				A716FBE41EA83CBB008395EC /* apps in Resources */,
 				A7FD26701EB54EF20049E0C0 /* F1InputWindow.xib in Resources */,
 				A716FBDC1EA67D3C008395EC /* funos in Resources */,
 				A716FBEC1EAD63FA008395EC /* PureSwiftExtras in Resources */,
 				A716FBCF1EA67C82008395EC /* Assets.xcassets in Resources */,
+				A766A4821F1C0E550094C7B0 /* Buttons.xib in Resources */,
+				A766A4881F1C12FD0094C7B0 /* ConsoleWindow.xib in Resources */,
 				A716FBD21EA67C82008395EC /* MainMenu.xib in Resources */,
-				A716FC7A1EAD73C7008395EC /* F1SelectionWindow.xib in Resources */,
-				A71563941EB7ACE600F32BAE /* bsd in Resources */,
 				A74FE1481EE1D0210062128E /* platform in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -397,11 +433,11 @@
 				A716FC581EAD6687008395EC /* WorkSequencer.swift in Sources */,
 				A716FC571EAD6687008395EC /* WorkQueue.swift in Sources */,
 				A716FC161EAD667D008395EC /* DictionaryExtras.swift in Sources */,
+				A766A4901F1C23B60094C7B0 /* IKVController.swift in Sources */,
 				A716FC1D1EAD667D008395EC /* TimeExtras.swift in Sources */,
 				A716FC1B1EAD667D008395EC /* SetExtras.swift in Sources */,
 				A716FBE01EA67EF5008395EC /* dpcclient.c in Sources */,
 				A716FC4B1EAD6687008395EC /* Range64Map.swift in Sources */,
-				A716FC7E1EAD73E6008395EC /* F1SelectionController.swift in Sources */,
 				A716FC6A1EAD6C40008395EC /* SimulationSamplesView.swift in Sources */,
 				A716FC641EAD6B36008395EC /* F1UIExtras.swift in Sources */,
 				A716FC411EAD6687008395EC /* Heap.swift in Sources */,
@@ -426,6 +462,7 @@
 				A716FC1A1EAD667D008395EC /* SequenceExtras.swift in Sources */,
 				A716FC141EAD667D008395EC /* ByteExtras.swift in Sources */,
 				A716FC191EAD667D008395EC /* RangeExtras.swift in Sources */,
+				A766A4861F1C12D00094C7B0 /* ConsoleController.swift in Sources */,
 				A716FC601EAD6A5F008395EC /* CocoaExtras.swift in Sources */,
 				A716FC1C1EAD667D008395EC /* StringExtras.swift in Sources */,
 				A7614FB41F1280E40065A5B7 /* MallocWindowController.swift in Sources */,
@@ -434,6 +471,7 @@
 				A716FC431EAD6687008395EC /* JSON.swift in Sources */,
 				A716FC441EAD6687008395EC /* Lexer.swift in Sources */,
 				A716FC561EAD6687008395EC /* VantagePointTree.swift in Sources */,
+				A766A4841F1C0FE50094C7B0 /* ViewerApp.swift in Sources */,
 				A716FC181EAD667D008395EC /* ProtocolsExtras.swift in Sources */,
 				A716FC4D1EAD6687008395EC /* SExpression.swift in Sources */,
 				A716FC3C1EAD6687008395EC /* Async.swift in Sources */,
@@ -445,8 +483,10 @@
 				A716FC551EAD6687008395EC /* Test.swift in Sources */,
 				A716FC491EAD6687008395EC /* Note.swift in Sources */,
 				A716FC131EAD667D008395EC /* ArrayExtras.swift in Sources */,
+				A766A48C1F1C19E90094C7B0 /* TopLikeController.swift in Sources */,
 				A716FC541EAD6687008395EC /* StringTrie.swift in Sources */,
 				A716FC4C1EAD6687008395EC /* RePrioritizableQueue.swift in Sources */,
+				A766A4941F1C31590094C7B0 /* MiscWindowController.swift in Sources */,
 				A716FC461EAD6687008395EC /* Lock.swift in Sources */,
 				A716FC171EAD667D008395EC /* NumbersExtras.swift in Sources */,
 			);
@@ -595,7 +635,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "fungible.com.funos-viewer";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "funos_viewer/funos_viewer-Bridging-Header.h";
-				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_OPTIMIZATION_LEVEL = "-Owholemodule";
 				SWIFT_VERSION = 3.0;
 			};
 			name = Release;

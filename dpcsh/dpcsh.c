@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <assert.h>
 #include <unistd.h>
 #include <sys/types.h>
@@ -12,9 +13,8 @@
 #include <signal.h>            //termios, TCSANOW, ECHO, ICANON
 #include <pthread.h>
 
-#include <funos/fun_utils.h>
-#include <funos/fun_json.h>
-#include <funos/fun_commander.h>
+#include <utils/threaded/fun_json.h>
+#include <utils/threaded/fun_commander.h>
 
 #define SOCK_NAME	"/tmp/funos-dpc.sock"
 

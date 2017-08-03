@@ -67,6 +67,13 @@ struct fun_json *fun_json_lookup(struct fun_json *container,
 #endif
 """) % doc.filename
 
+    src_out += '// Header created by generator.py\n'
+    src_out += '// Do not change this file;\n'
+    src_out += '// change the gen file "%s" instead.\n\n' % doc.filename
+    src_out += '\n'
+    src_out += '#include <stdint.h>\n'
+    src_out += '#include <assert.h>\n'
+
     if self.output_file_base:
       header_file = os.path.basename(self.output_file_base) + '.h'
       src_out += '#include "%s"\n\n' % (header_file)
@@ -174,7 +181,7 @@ struct fun_json *fun_json_lookup(struct fun_json *container, const char *name);
 
     src_out += '/* Definitions for flag set %s */\n' % flagset.name
 
-    for var in flagset.variables:
+    for var in flagset.variables: 
       if var.body_comment:
         hdr_out += '\t' + utils.AsComment(var.body_comment) + '\n'
       key_comment = ''

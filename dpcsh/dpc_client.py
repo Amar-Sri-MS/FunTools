@@ -41,6 +41,7 @@ class DpcClient(object):
     def __init__(self):
         self.__sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         self.__verbose = False
+        self.__truncate_long_lines = False
 
         server_address = '/tmp/funos-dpc-text.sock'
         self.__sock.connect(server_address)
@@ -53,13 +54,13 @@ class DpcClient(object):
             if not buf:
                 break
             lines += buf
-        return lines
+        return lines.rstrip('\n')
 
     def __recv_json(self):
         json = self.__recv_lines()
-        while (json.count('{') != json.count('}')) or (json.count('[') != json.count(']')):
+        while (not json) or (json.count('{') != json.count('}')) or (json.count('[') != json.count(']')):
             json += self.__recv_lines()
-        return json.rstrip('\n')
+        return json
 
     def __send_line(self, line):
         self.__sock.sendall(line + '\n')
@@ -68,13 +69,22 @@ class DpcClient(object):
     def set_verbose(self, verbose = True):
         self.__verbose = verbose
 
+    def set_truncate_long_lines(self, truncate = True):
+        self.__truncate_long_lines = truncate
+
+    def __print(self, text, end = '\n'):
+        if self.__verbose != True:
+            return
+        if self.__truncate_long_lines and len(text) > 255:
+            print(text[:252] + '...', end=end)
+        else:
+            print(text, end=end)
+
     def execute_command_line(self, command_line):
-        if self.__verbose == True:
-            print(command_line + ' -> ', end='')
+        self.__print(command_line, ' -> ')
         self.__send_line(command_line)
         result = self.__recv_json()
-        if self.__verbose == True:
-            print(result)
+        self.__print(result)
         return result
 
     def execute_command(self, command, args):
