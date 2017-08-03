@@ -304,6 +304,9 @@ class Field(Node):
     self.subfields = []
 
   def __str__(self):
+    if self.no_offset:
+      return('<Field: name=%s, type=%s, no offset>' %
+             (self.name, self.type))
     if self.StartFlit() == self.EndFlit():
       return('<Field: name=%s, type=%s, flit=%d, bits=%d:%d>' %
              (self.name, self.type, self.StartFlit(),
@@ -395,7 +398,13 @@ class Field(Node):
     and creates new sub-fields in this field from the fields of the prototype
     structure.  It sets the offset and size to match the prototype.
     """
-    if not self.type.base_type.node:
+    if not self.type.IsRecord():
+      # Doesn't have subfields to create.
+      return
+
+    if self.type.IsArray() and self.type.ArraySize() == 0:
+      # Subfields shouldn't be created because we can't know their
+      # positions.
       return
 
     for proto_field in self.type.base_type.node.fields:
@@ -574,7 +583,7 @@ class Struct(Node):
     return max([(f.EndFlit() + 1) * 8 for f in self.fields])
 
   def FlitFieldMap(self):
-    # Return a map of (flit, fields) for all fields in the structure.
+    """Return a map of (flit, fields) for all fields in the structure."""
     flit_field_map = {}
     fields_with_offsets = [f for f in self.fields if not f.IsNoOffset()]
 
@@ -583,6 +592,20 @@ class Struct(Node):
       item.append(field)
       flit_field_map[field.StartFlit()] = item
     return flit_field_map
+
+  def ContainsUnion(self):
+    """Returns union in this struct, or None if no unions exist."""
+    if self.is_union:
+      return self
+
+    for f in self.fields:
+      if f.type.IsRecord():
+        struct = f.type.base_type.node
+        the_union = struct.ContainsUnion()
+        if the_union:
+          return the_union
+    return None
+
 
 class Document(Node):
   # Representation of an entire generated header specification.
@@ -690,18 +713,63 @@ class Checker:
     pass
 
 
-def LastNonReservedName(field_list):
-  last_name = None
+def CommonPrefix(name_list):
+  """Returns the longest prefix (followed by underbar) of all names.
+  Returns None if no longest prefix.
+  """
+  if len(name_list) < 2:
+    return None
+
+  first_name = name_list[0]
+  if not '_' in first_name:
+    return None
+
+  prefix = name_list[0].split('_')[0]
+  for name in name_list[1:]:
+    if not name.startswith(prefix + '_'):
+      return None
+  return prefix
+
+def FirstNonReservedName(field_list):
+  """Returns name of first field that is not a reserved field.
+  Returns None if no such field exists.
+  """
   first_name = None
   for field in field_list:
     if not field.IsReserved():
+      return field.name
+  return None
+
+def LastNonReservedName(field_list):
+  """Returns name of last field that is not a reserved field.
+  Returns None if no such field exists.
+  """
+  last_name = None
+  for field in field_list:
+    if not field.IsReserved():
       last_name = field.name
-      if first_name is None:
-        first_name = field.name
-  if last_name is not None:
-    return last_name
-  if last_name is first_name:
-    return 'z'
+  return last_name
+
+def ChoosePackedFieldName(fields):
+  """Chooses the name for a packed field base on the fields in that field."""
+  not_reserved_names = [f.name for f in fields if not f.IsReserved()] 
+  common_prefix = CommonPrefix(not_reserved_names)
+
+  if common_prefix:
+    return common_prefix + '_pack'
+
+  first_name = FirstNonReservedName(fields)
+  last_name = LastNonReservedName(fields)
+  # No fields.
+  if first_name is None and last_name is None:
+    return "empty_pack"
+
+  # One field.
+  if first_name == last_name:
+    return first_name + '_pack'
+
+  return first_name + "_to_" + last_name
+
 
 class Packer:
   """ Searches all structures for bitfields that can be combined.
@@ -741,19 +809,16 @@ class Packer:
     if not the_struct.is_union:
       self.PackStruct(the_struct)
 
-  def PackFlit(self, the_struct, flit_number, the_fields):
-    """Replaces contiguous sets of bitfields with macros to access.
-    the_struct: structure containing fields to be packed.
-    flit_number: which flit of the structure is handled this time.
-    the_fields: list of fields in this flit.
+  def ChoosePackGroups(self, the_fields):
+    """Identify and group fields in a flit that deserve to be packed.
+    Returns array of proposed packed variables, with each group being
+    a tuple of (type, [fields to pack in variable) in that group.
     """
-    # All fields to pack. List of tuples of (type, [fields to pack])
-    fields_to_pack = []
     # Contiguous fields to pack.  When we reach the end of a group
     # move to fields_to_pack.
+    fields_to_pack = []
     current_group = []
     current_type = None
-
     for field in the_fields:
       # Loop through the fields, grouping contiguous bitfields into a larger
       # single variable.
@@ -774,6 +839,18 @@ class Packer:
 
     if len(current_group) > 1:
       fields_to_pack.append((current_type, current_group))
+    return fields_to_pack
+
+  def PackFlit(self, the_struct, flit_number, the_fields):
+    """Replaces contiguous sets of bitfields with macros to access.
+    the_struct: structure containing fields to be packed.
+    flit_number: which flit of the structure is handled this time.
+    the_fields: list of fields in this flit.
+    """
+    # All fields to pack. List of tuples of (type, [fields to pack])
+    fields_to_pack = []
+
+    fields_to_pack = self.ChoosePackGroups(the_fields)
 
     if len(fields_to_pack) == 0:
       # Nothing to pack.
@@ -792,7 +869,7 @@ class Packer:
             packed_field_width,
             type.BitWidth()))
 
-      new_field_name = fields[0].name + "_to_" + LastNonReservedName(fields)
+      new_field_name = ChoosePackedFieldName(fields)
       new_field = Field(new_field_name, type, min_start_bit, packed_field_width)
       new_field.line_number = fields[0].line_number
 

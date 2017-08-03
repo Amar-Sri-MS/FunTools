@@ -6,6 +6,7 @@
 //  Copyright © 2017 Fungible. All rights reserved.
 //
 
+// This include needs to be first
 #include "dpcclient.h"
 
 #include <stdlib.h>
@@ -14,7 +15,8 @@
 #include <sys/socket.h>
 #include <string.h>
 #include <stdio.h>
-#include <funos/fun_json.h>
+
+#include <utils/threaded/fun_json.h>
 
 static inline void _setnosigpipe(int const fd) {
 #ifdef __APPLE__

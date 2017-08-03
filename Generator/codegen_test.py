@@ -138,7 +138,7 @@ class HelperGeneratorTest(unittest.TestCase):
 
     statement = gen.GenerateInitializer(s, f, '')
   
-    self.assertEqual('\ts->a = FUN_FOO_A1_P(a1) | FUN_FOO_A2_P(a2);', statement)
+    self.assertEqual('\ts->a = FOO_A1_P(a1) | FOO_A2_P(a2);', statement)
 
   def testInitializePackedFieldWithAllCapStructureName(self):
     gen = codegen.HelperGenerator()
@@ -150,8 +150,8 @@ class HelperGeneratorTest(unittest.TestCase):
 
     statement = gen.GenerateInitializer(s, f, '')
   
-    self.assertEqual('\ts->a = FUN_FFE_ACCESS_COMMAND_A1_P(a1) | '
-                     'FUN_FFE_ACCESS_COMMAND_A2_P(a2);', statement)
+    self.assertEqual('\ts->a = FFE_ACCESS_COMMAND_A1_P(a1) | '
+                     'FFE_ACCESS_COMMAND_A2_P(a2);', statement)
 
 
   def testCreateSimpleInitializer(self):
@@ -163,22 +163,10 @@ class HelperGeneratorTest(unittest.TestCase):
     (declaration, definition) = gen.GenerateInitRoutine("init", "MyStruct",
                                                         "foo.", s)
   
-    self.assertEqual('extern void init(struct MyStruct* s, char a1);\n',
+    self.assertEqual('extern void init(struct MyStruct *s, char a1);\n',
                      declaration)
-    self.assertIn('void init(struct MyStruct* s, char a1) {', definition)
+    self.assertIn('void init(struct MyStruct *s, char a1) {', definition)
     self.assertIn('\ts->foo.a1 = a1;\n', definition)
-
-  def testNoCreateArrayInitializer(self):
-    gen = codegen.HelperGenerator()
-    s = generator.Struct('Foo', False)
-    f = generator.Field('a1', generator.ArrayTypeForName('char', 8), 0, 64)
-    s.fields = [f]
-
-    (declaration, definition) = gen.GenerateInitRoutine("init", "MyStruct",
-                                                        "foo.", s)
-  
-    self.assertEqual('', declaration)
-    self.assertEqual('', definition)
 
 
 class CodegenEndToEnd(unittest.TestCase):
@@ -204,18 +192,18 @@ class CodegenEndToEnd(unittest.TestCase):
     # Did array get included?
     self.assertIn('char d[6];', out)
     # Did constructor get created?
-    self.assertIn('void Foo_init(struct Foo* s, uint8_t a, uint8_t b, '
+    self.assertIn('void Foo_init(struct Foo *s, uint8_t a, uint8_t b, '
                   'uint8_t c);', out)
     # Did accessor macro get created?
-    self.assertIn('#define FUN_FOO_B_P(x)', out)
+    self.assertIn('#define FOO_B_P(x)', out)
 
     # Check macros weren't created for reserved fields.
-    self.assertNotIn('#define FUN_FOO_RESERVED', out)
+    self.assertNotIn('#define FOO_RESERVED', out)
 
     # Did init function check range of bitfields?
     self.assertIn('assert(b < 0x4);', out)
     # Did bitfield get initialized?'
-    self.assertIn('s->b_to_c = FUN_FOO_B_P(b) | FUN_FOO_C_P(c);', out)
+    self.assertIn('s->b_to_c = FOO_B_P(b) | FOO_C_P(c);', out)
 
   def testInitFunctionsCreated(self):
     input = ['STRUCT A',
@@ -242,10 +230,10 @@ class CodegenEndToEnd(unittest.TestCase):
     self.assertIsNotNone(out)
 
     # Did structure get generated?
-    self.assertIn('void A_init(struct A* s, uint64_t a)', out)
-    self.assertIn('void B_init(struct B* s, uint8_t a, uint64_t c)', out)
-    self.assertIn('void B1_init(struct B* s, uint8_t b11, uint8_t b12)', out)
-    self.assertIn('void B2_init(struct B* s, uint8_t b21, uint8_t b22)', out)
+    self.assertIn('void A_init(struct A *s, uint64_t a)', out)
+    self.assertIn('void B_init(struct B *s, uint8_t a, uint64_t c)', out)
+    self.assertIn('void B1_init(struct B *s, uint8_t b11, uint8_t b12)', out)
+    self.assertIn('void B2_init(struct B *s, uint8_t b21, uint8_t b22)', out)
 
   def testMacrosCreated(self):
     input = ['STRUCT A',
@@ -255,7 +243,7 @@ class CodegenEndToEnd(unittest.TestCase):
     out = generator.GenerateFile(True, generator.OutputStyleHeader, None,
                                  input, 'foo.gen')
     self.assertIsNotNone(out)
-    self.assertIn('#define FUN_A_A_S 4', out)
+    self.assertIn('#define A_A_S 4', out)
 
   def testMacrosCreatedInUnion(self):
     input = ['STRUCT A',
@@ -269,7 +257,7 @@ class CodegenEndToEnd(unittest.TestCase):
     out = generator.GenerateFile(True, generator.OutputStyleHeader, None,
                                  input, 'foo.gen')
     self.assertIsNotNone(out)
-    self.assertIn('#define FUN_AX1_A_S 4', out)
+    self.assertIn('#define AX1_A_S 4', out)
 
   def testInitFunctionsCreated(self):
     input = ['STRUCT A',
@@ -298,9 +286,9 @@ class CodegenEndToEnd(unittest.TestCase):
     # Did structure get generated?
     # TODO(bowdidge): Structures with unions should get union-specific
     # constructors.
-    self.assertIn('void A_init(struct A* s, uint64_t a)', out)
-    self.assertIn('void B1_init(struct B* s, uint8_t b11, uint8_t b12)', out)
-    self.assertIn('void B2_init(struct B* s, uint8_t b21, uint8_t b22)', out)
+    self.assertIn('void A_init(struct A *s, uint64_t a)', out)
+    self.assertIn('void B1_init(struct B *s, uint8_t b11, uint8_t b12)', out)
+    self.assertIn('void B2_init(struct B *s, uint8_t b21, uint8_t b22)', out)
 
   def disableTestInitFunctionsForNestedStructures(self):
     input = ['STRUCT A',

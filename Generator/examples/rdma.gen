@@ -27,11 +27,14 @@ ENUM Opcode
   OPCODE_SCATTER=2
 END
 
+// Bitfield for some unknown purpose.
 FLAGS Mask
   EMPTY = 0
-  FOO = 1
-  BAR = 2
+  FOO = 1 
+  // Body comment.
+  BAR = 2  // Key comment.
   BAZ = 4
+  // Bitfields can include both single bits and groups.
   BAR_AND_BAZ = 0x6
 END
 

@@ -18,6 +18,9 @@ fileprivate var document: F1SimDocument!
         let docController = NSDocumentController.shared()
         document = F1SimDocument()
         docController.addDocument(document)
+	let ok = Bundle.main.loadNibNamed("Buttons", owner: NSApp, topLevelObjects: nil)
+	assert(ok)
+	(NSApp as! ViewerApp).shortCuts.makeKeyAndOrderFront(nil)
     }
 
     func applicationWillTerminate(_ aNotification: Notification) {
@@ -26,16 +29,6 @@ fileprivate var document: F1SimDocument!
 
 }
 
-var mallocController: MallocWindowController! = nil
-
 extension NSApplication {
 	var theDocument: F1SimDocument! { return document }
-
-	@IBAction func mallocWindow(_ sender: NSObject?) {
-		if mallocController == nil {
-			mallocController = MallocWindowController()
-		}
-		mallocController.show()
-	}
-
 }
