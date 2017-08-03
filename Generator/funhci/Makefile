@@ -8,10 +8,11 @@ AR = ar
 
 BUILD = build
 
-SDKDIR = ../../../FunSDK
-FUNOSDIR = $(SDKDIR)/../FunOS_master
+SDKDIR ?= ../../../FunSDK
 
-LIB_HCI = libhci.a
+LIBS = $(SDKDIR)/lib/$(OS)/noasan/libfunclient.a
+
+LIB_HCI = libfunhci.a
 
 HCI_SRC = fun_hci.c
 HCI_HDR = fun_hci.h
@@ -19,8 +20,7 @@ HCI_HDR = fun_hci.h
 HCI_OBJS = $(patsubst %.c,$(BUILD)/obj/%.o,$(filter %c,$(HCI_SRC)))
 
 CFLAGS = -Wall -Werror
-CFLAGS += -I $(SDKDIR)/FunSDK\
-       	  -I $(FUNOSDIR)
+CFLAGS += -I $(SDKDIR)/FunSDK
 
 .PHONY: all
 all: code $(BUILD)/$(LIB_HCI)
