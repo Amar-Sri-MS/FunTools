@@ -13,7 +13,7 @@ class HTMLGeneratorTest(unittest.TestCase):
                  'END']
 
         out = generator.GenerateFile(True, generator.OutputStyleHTML, None,
-                                     input, 'foo.gen')
+                                     input, 'foo.gen', False)
         self.assertIsNotNone(out)
         self.assertIn('<h3>enum A</h3>\n'
                       '<p>Key comment for ENUM A</p>\n'
@@ -31,7 +31,7 @@ class HTMLGeneratorTest(unittest.TestCase):
                  'END']
 
         out = generator.GenerateFile(True, generator.OutputStyleHTML, None,
-                                     input, 'foo.gen')
+                                     input, 'foo.gen', False)
         self.assertIsNotNone(out)
         self.assertIn('<h3>struct A:</h3>\n'
                       '<p>Key comment for struct A.</p>\n'
@@ -51,7 +51,7 @@ class HTMLGeneratorTest(unittest.TestCase):
                  'END']
 
         out = generator.GenerateFile(True, generator.OutputStyleHTML, None,
-                                     input, 'foo.gen')
+                                     input, 'foo.gen', False)
         self.assertIsNotNone(out)
         self.assertIn('<h3>struct A:</h3>\n'
                       '<p>Key comment for struct A.</p>\n'
@@ -75,7 +75,7 @@ class HTMLGeneratorTest(unittest.TestCase):
                  'END']
 
         out = generator.GenerateFile(True, generator.OutputStyleHTML, None,
-                                     input, 'foo.gen')
+                                     input, 'foo.gen', False)
         self.assertIsNotNone(out)
         self.assertIn('<h3>struct A:</h3>\n'
                       '<p>Key comment for struct A.</p>\n'
@@ -98,7 +98,7 @@ class HTMLGeneratorTest(unittest.TestCase):
             'END'
             ]
         out = generator.GenerateFile(True, generator.OutputStyleHTML, None,
-                                     input, 'foo.gen')
+                                     input, 'foo.gen', False)
         self.assertIsNotNone(out)
 
     def testPrintNestedSubfields(self):
@@ -113,7 +113,7 @@ class HTMLGeneratorTest(unittest.TestCase):
             'END'
             ]
         out = generator.GenerateFile(True, generator.OutputStyleHTML, None,
-                                     input, 'foo.gen')
+                                     input, 'foo.gen', False)
         self.assertIsNotNone(out)
         self.assertIn('Key comment for a.', out)
         self.assertIn('Key comment for b.', out)
@@ -131,11 +131,14 @@ class HTMLGeneratorTest(unittest.TestCase):
         'F = 0x20',
         'END'
         ]
-      out = generator.GenerateFile(True, generator.OutputStyleHTML, None, contents, 'foo.gen')
+      out = generator.GenerateFile(True, generator.OutputStyleHTML, None,
+                                   contents, 'foo.gen', False)
 
       self.assertIn('<h3>Flags: Foo</h3>', out)
-      self.assertIn('<td>A</td><td>0x00000001</td><td>0 0 0 0 0 1</td></tr>', out)
-      self.assertIn('<td>F</td><td>0x00000020</td><td>1 0 0 0 0 0</td></tr>', out)
+      self.assertIn('<td>A</td><td>0x00000001</td><td>0 0 0 0 0 1</td></tr>',
+                    out)
+      self.assertIn('<td>F</td><td>0x00000020</td><td>1 0 0 0 0 0</td></tr>',
+                    out)
 
     def testPrintFlagsNonPowerOfTwo(self):
       contents = [
@@ -147,7 +150,8 @@ class HTMLGeneratorTest(unittest.TestCase):
         'D = 8',
         'END'
         ]
-      out = generator.GenerateFile(True, generator.OutputStyleHTML, None, contents, 'foo.gen')
+      out = generator.GenerateFile(True, generator.OutputStyleHTML, None,
+                                   contents, 'foo.gen', False)
 
       self.assertIn('<td>BC</td><td>0x00000006</td><td>0 1 1 0</td></tr>', out)
 

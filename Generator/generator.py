@@ -37,7 +37,7 @@ def BitFlitString(offset):
 
 class BaseType:
   """Represents a the base type name without qualifications.
-  
+
   The base type only contains a scalar type, struct, or union.
   Arrays, const, etc. would be represented in the Type class.
   """
@@ -78,7 +78,7 @@ class BaseType:
         else:
           return 1
     return 0
-  
+
 
 # Width of all known types.  Structures are added to this
 # dictionary during execution.
@@ -120,7 +120,7 @@ def ArrayTypeForName(name, element_count):
     sys.stderr.write('Invalid name in BaseTypeForName.')
   return Type(BaseType(name, builtin_type_widths[name]), element_count)
 
-  
+
 class Type:
   """Represents C type for a field."""
 
@@ -428,7 +428,7 @@ class Field(Node):
       self.subfields.append(new_subfield)
       if proto_field.type.IsRecord():
         new_subfield.CreateSubfields()
-        
+
 
 class EnumVariable(Node):
   # Representation of an enum variable in an enum declaration.
@@ -667,7 +667,7 @@ class Checker:
       if field.IsNoOffset():
         if field != the_struct.fields[-1]:
           self.AddError(field, 'field "%s" is an array of zero size, but is not the last field.')
-      
+
     fields_with_offsets = [f for f in the_struct.fields if not f.IsNoOffset()]
 
     if len(fields_with_offsets) == 0:
@@ -685,7 +685,7 @@ class Checker:
         if start_offset % field.type.Alignment() != 0:
           self.AddError(field, 'Field "%s" cannot be placed in a location that '
                         'does not match its natural alignment.' % field.name)
-          
+
       if not the_struct.is_union:
         if (last_start_offset >= end_offset and
              last_end_offset >= end_offset):
@@ -697,7 +697,7 @@ class Checker:
               last_field_name, field.name,
               last_field_name, BitFlitString(last_end_offset),
               field.name, BitFlitString(start_offset)))
-          
+
         elif start_offset != last_end_offset + 1:
           self.AddError(field, 'unexpected space between field "%s" and "%s".  '
                         '("%s" ends at %s, "%s" begins at %s)'
@@ -752,7 +752,7 @@ def LastNonReservedName(field_list):
 
 def ChoosePackedFieldName(fields):
   """Chooses the name for a packed field base on the fields in that field."""
-  not_reserved_names = [f.name for f in fields if not f.IsReserved()] 
+  not_reserved_names = [f.name for f in fields if not f.IsReserved()]
   common_prefix = CommonPrefix(not_reserved_names)
 
   if common_prefix:
@@ -881,7 +881,7 @@ class Packer:
       for f in fields:
         # TODO(bowdidge): Fix.
         bitfield_layout_str += '      %d:%d: %s\n' % (f.StartBit() - min_end_bit,
-                                                      f.EndBit() - min_end_bit, 
+                                                      f.EndBit() - min_end_bit,
                                                       f.name)
         new_field.body_comment = "Combines bitfields %s.\n%s" % (bitfield_name_str,
                                                                 bitfield_layout_str)
@@ -1083,7 +1083,7 @@ class DocBuilder:
         containing_struct.variables.append(enum)
     else:
       # Try parsing as continuation of previous field
-      if (not self.ParseMultiFlitFieldLine(line, containing_struct) and 
+      if (not self.ParseMultiFlitFieldLine(line, containing_struct) and
           not self.ParseFieldLine(line, containing_struct)):
         self.AddError('Invalid line: "%s"' % line)
         return
@@ -1093,7 +1093,7 @@ class DocBuilder:
     if len(self.stack) < 2:
       self.AddError('END without matching STRUCT, UNION, or ENUM')
       return None
-      
+
     (_, current_object) = self.stack[-1]
     self.stack.pop()
     (state, containing_object) = self.stack[-1]
@@ -1111,7 +1111,7 @@ class DocBuilder:
                      self.flit_crossing_field.type.BitWidth() - self.bits_remaining))
 
     self.base_types[current_object.Name()].bit_width = current_object.BitWidth()
-    
+
     self.current_comment = ''
 
     if state != DocBuilderTopLevel:
@@ -1289,7 +1289,7 @@ class DocBuilder:
       key_comment = None
     else:
       key_comment = self.StripKeyComment(key_comment)
-      
+
     body_comment = None
     if len(self.current_comment) > 0:
       body_comment = self.current_comment
@@ -1346,7 +1346,7 @@ class DocBuilder:
     # Copy the sub-fields in.
     if type.IsRecord():
       new_field.CreateSubfields()
-      
+
     if not type.IsScalar() and end_bit == 0 and actual_width < expected_width:
       # Field may stretch across flits.
       self.flit_crossing_field = new_field
@@ -1406,14 +1406,21 @@ class DocBuilder:
 
 def Usage():
   sys.stderr.write('generator.py: usage: [-p] [-g [code, html] [-o file]\n')
-  sys.stderr.write('-p: pack fields into 8 byte flits, and create accessor macros\n')
+  sys.stderr.write('-c options: change codegen options.\n')
   sys.stderr.write('-g code: generate header file to stdout (default)\n')
   sys.stderr.write('-g html: generate HTML description of header\n')
   sys.stderr.write('-o filename_base: send output to named file\n')
   sys.stderr.write('                  for code generation, appends correct extension.\n')
+  sys.stderr.write('Codegen options include:\n')
+  sys.stderr.write('  pack: combine multiple bitfields into a single:\n')
+  sys.stderr.write('        field, and create accessor macros.\n')
+  sys.stderr.write('  json: generate routines for initializing a structure\n')
+  sys.stderr.write('        from a JSON representation.')
+  sys.stderr.write('Example: -c json,nopack enables json, and disables packing.\n')
 
+# TODO(bowdidge): Create options dictionary to replace all these arguments.
 def GenerateFile(should_pack, output_style, output_base,
-                 input_stream, input_filename):
+                 input_stream, input_filename, generate_json):
   # Process a single .gen file and create the appropriate header/docs.
   doc_builder = DocBuilder()
 
@@ -1439,7 +1446,7 @@ def GenerateFile(should_pack, output_style, output_base,
       for error in errors:
         sys.stderr.write(error + '\n')
 
-  helper = codegen.HelperGenerator()
+  helper = codegen.HelperGenerator(generate_json)
   helper.VisitDocument(doc)
 
   if output_style is OutputStyleHTML:
@@ -1452,7 +1459,7 @@ def GenerateFile(should_pack, output_style, output_base,
     else:
       return code
   elif output_style is OutputStyleHeader:
-    code_generator = codegen.CodeGenerator(output_base)
+    code_generator = codegen.CodeGenerator(output_base, generate_json)
     code_generator.output_file = output_base
     (header, source) = code_generator.VisitDocument(doc)
 
@@ -1470,26 +1477,41 @@ def GenerateFile(should_pack, output_style, output_base,
 OutputStyleHeader = 1
 OutputStyleHTML = 2
 
+def SetFromArgs(key, codegen_args, default_value):
+  """Returns whether setting 'key' should be set based on provided args.
+  key is a name for a codegen setting.
+  codegen_args is an array of arguments provided by the user which can
+  include either name (to set the value) or noname (to not set the value).
+  default_value names the value for the key if it is not in codegen_args.
+  """
+
+  if key in codegen_args:
+    return True
+  if 'no' + key in codegen_args:
+    return False
+  return default_value
+
 def main():
   try:
-    opts, args = getopt.getopt(sys.argv[1:], 'tpg:o:', ['help', 'output='])
+    opts, args = getopt.getopt(sys.argv[1:], 'tc:g:o:',
+                               ['help', 'output=', 'codegen='])
   except getopt.GetoptError as err:
     print str(err)
     Usage()
     sys.exit(2)
 
-  should_pack = False
   output_style = OutputStyleHeader
   output_base = None
+  codegen_args = []
 
   for o, a in opts:
-    if o == '-p':
-      should_pack = True
-    elif o in ('-h', '--help'):
+    if o in ('-h', '--help'):
       Usage()
       sys.exit(2)
     elif o in ('-o', '--output'):
       output_base = a
+    elif o in ('-c', '--codegen'):
+      codegen_args = a.split(',')
     elif o == '-g':
       if a == 'code':
         output_style = OutputStyleHeader
@@ -1501,6 +1523,9 @@ def main():
     else:
       assert False, 'Unhandled option %s' % o
 
+  codegen_pack = SetFromArgs('pack', codegen_args, False)
+  codegen_json = SetFromArgs('json', codegen_args, False)
+
   if len(args) == 0:
       sys.stderr.write('No genfile named.\n')
       sys.exit(2)
@@ -1510,8 +1535,8 @@ def main():
       sys.exit(2)
 
   input_stream = open(args[0], 'r')
-  out = GenerateFile(should_pack, output_style, output_base,
-                     input_stream, args[0])
+  out = GenerateFile(codegen_pack, output_style, output_base,
+                     input_stream, args[0], codegen_json)
   input_stream.close()
   if out:
     print out

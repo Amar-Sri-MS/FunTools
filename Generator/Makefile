@@ -12,12 +12,12 @@ c-checker:
 	./rdma
 
 c-packed-checker:
-	./generator.py -p -g code -o rdma_packed_gen examples/rdma.gen
+	./generator.py --codegen pack,json -g code -o rdma_packed_gen examples/rdma.gen
 	gcc -o rdma_packed -g -I. -DDEBUG -DGENERATOR_TEST test_helper/rdma_packed.c rdma_packed_gen.c
 	./rdma_packed
 
 html-checker:
-	./generator.py -p -g html -o rdma.html examples/rdma.gen
+	./generator.py --codegen pack,json -g html -o rdma.html examples/rdma.gen
 
 clean:
 	rm generator.pyc rdma rdma.dSYM rdma_packed rdma_packed.dSYM
