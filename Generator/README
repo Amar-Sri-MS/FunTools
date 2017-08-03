@@ -1,15 +1,47 @@
 # generator.py and Data Structure Specification
 
-generator.py takes high-level descriptions of data structures used in
-interchange, and creates header files and documentations defining those
-data structures.  generator.py is intended for software-only structures.
-Hardware specifications (such as CSR descriptions) should use the existing
-Perl scripts for describing hardware registers.
+The Fungible Generator an interface generator used to create
+boilerplate functions related to data and control plane requests and
+responses sent from the central cluster or host server and the F1.
+Generator describes data structures used to communicate between CC-Linux
+and F1, or between the F1 and server.
 
-The generator script can also transform the structures in various ways for
-efficiency.  The first conversion, "packing", avoids inefficient compiled code
-by replacing multiple bitfields with a single 8 byte field, then defining
-accessor macros to get and set from the multiple fields in a single access.
+The Generator serves several purposes:
+* allows bit-accurate specification of how shared data structures are laid out in memory.
+* validates names and types.
+* creates valid C structures defining the shared data structures
+* packs variables that are bitfields and creates for efficiently accessing fields.
+* creates uniform initialization and serialization routines.
+* aware of conventions such as reserved fields (for unused variables).
+* generation of documentation for messages and sub-structures.
+
+Unlike other interface generators (rpcgen, protocol buffers, Thrift),
+the Generator is intended for data structures transferred via shared
+memory, efficiently manipulating these data structures, hiding
+differences between host systems in C, and avoiding overhead.  Most
+other systems are designed for communication over networks,
+efficiently marshaling and demarshaling data structures in the
+presence of optional fields, and supporting multiple languages
+at the expense of a straightforward C mapping and efficient access.
+
+These requests and results are implemented as C data structures copied
+via PCI.  Messages can have different sizes, and may contain
+variable-length parts.  At the current time, efficient processing in
+different languages is not a design goal for Generator.
+
+The generator's input takes high-level descriptions of data structures
+used in interchange.  It creates helper functions to initialize the
+data structure, access packed fields with predictable code. It also
+produces documentations defining those data structures.  generator.py
+is intended for software-only structures.  Hardware specifications
+(such as CSR descriptions) should use the existing Perl scripts for
+describing hardware registers.
+
+The generator script also transforms the structures in various ways
+for efficiency.  The first supported conversion, "packing", avoids
+inefficient compiled code by replacing multiple bitfields with a
+larger field to fit a full C type.  It defines accessor macros to get
+and set from the multiple fields in a single access.
 
 ## Input File Format
 
@@ -18,13 +50,14 @@ Descriptions of a data structure represent:
 * unions within structures for describing alternate contents
 * field descriptions
 * enum declarations for unique constant values.
-* const declarations for integer values that are not types and not used
-  exclusively.
+* flags declarations for a group of constants for a single purpose that
+are not types and may be or'd together.
 * comments associated with all elements.
 
-generator.py's input format interleaves a bitwise-description of the data structure
-with a C language-like description.  The bitwise description is at the beginning of each
-line; the C-like description is on the right hand side.
+generator.py's input format interleaves a bitwise-description of the
+data structure with a C language-like description.  The bitwise
+description is at the beginning of each line; the C-like description
+is on the right hand side.
 
 ```
 /* Standard work unit format for all messages in F1. */
@@ -106,7 +139,8 @@ Enums are generated as enum types in C code.  The symbolic names and meanings ar
 An array of strings called <enum_name>_names contains a table for looking up the symbolic name
 for each enum value.
 
-Flags are declared like this:
+Flags represent a set of related constants that should be implemented as
+separate values rather than an enum.
 
 ```
 /* Action flags */
@@ -118,15 +152,17 @@ DELAYED_AND_COMPLETED = 6
 END
 ```
 
-In the generated code, flags are represented by const int declarations and definitions.
-The symbolic name, bit pattern, and documentation is provided in HTML.
-An array of strings called <flag_name>_names contains a table for looking up the symbolic name
-for each power-of-two enum value.  Powers of two without a flag defined returns only the
-value.
+In the generated code, flags are represented by const int declarations
+and definitions.  The symbolic name, bit pattern, and documentation is
+provided in HTML.  An array of strings called <flag_name>_names
+contains a table for looking up the symbolic name for each
+power-of-two enum value.  Powers of two without a flag defined returns
+only the value.  Names are not available for non-power-of-two values.
 
-Enum and flag names will eventually be usable as type names.  However, support for enum and 
-flag names as a field type currently isn't implemented; using one of these as a type name
-will generate an unknown type error.
+Enum and flag names will eventually be usable as type names.  However,
+support for enum and flag names as a field type currently isn't
+implemented; using one of these as a type name will generate an
+unknown type error.
 
 ## Types
 
@@ -225,8 +261,16 @@ field_name_P(value): gets value to put into field.  Field should be cleared
 
 
 To do:
-* Better formatting of comments.
-* Linux-style aligning of field names, etc.
+* Better formatting of comments, and matching line length requirements.
+(Running the Generator's output through clang-format or another formatting
+tool improves code significantly, but doesn't touch comments.)
+* Match Linux coding patterns.
 * Linux-style types.
-* multi-word variables.
-
+* Explicitly mark which functions represent commands or messages.  Currently,
+we assume all top-level structs can be used individually, and require all
+generated functions.  Nested structs might not be used individually.
+Top level structures holding a union represent a set of related messages,
+and should have accessors generated for each item in the union.
+* Support enum names and flag names as type names.
+* Allow defining a default constant value for a field.  This would be
+particularly useful for specifying an opcode in a message.
