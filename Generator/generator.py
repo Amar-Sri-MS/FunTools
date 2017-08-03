@@ -764,19 +764,16 @@ class Packer:
     if not the_struct.is_union:
       self.PackStruct(the_struct)
 
-  def PackFlit(self, the_struct, flit_number, the_fields):
-    """Replaces contiguous sets of bitfields with macros to access.
-    the_struct: structure containing fields to be packed.
-    flit_number: which flit of the structure is handled this time.
-    the_fields: list of fields in this flit.
+  def ChoosePackGroups(self, the_fields):
+    """Identify and group fields in a flit that deserve to be packed.
+    Returns array of proposed packed variables, with each group being
+    a tuple of (type, [fields to pack in variable) in that group.
     """
-    # All fields to pack. List of tuples of (type, [fields to pack])
-    fields_to_pack = []
     # Contiguous fields to pack.  When we reach the end of a group
     # move to fields_to_pack.
+    fields_to_pack = []
     current_group = []
     current_type = None
-
     for field in the_fields:
       # Loop through the fields, grouping contiguous bitfields into a larger
       # single variable.
@@ -797,6 +794,18 @@ class Packer:
 
     if len(current_group) > 1:
       fields_to_pack.append((current_type, current_group))
+    return fields_to_pack
+
+  def PackFlit(self, the_struct, flit_number, the_fields):
+    """Replaces contiguous sets of bitfields with macros to access.
+    the_struct: structure containing fields to be packed.
+    flit_number: which flit of the structure is handled this time.
+    the_fields: list of fields in this flit.
+    """
+    # All fields to pack. List of tuples of (type, [fields to pack])
+    fields_to_pack = []
+
+    fields_to_pack = self.ChoosePackGroups(the_fields)
 
     if len(fields_to_pack) == 0:
       # Nothing to pack.
