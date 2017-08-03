@@ -9,6 +9,7 @@ AR = ar
 BUILD = build
 
 SDKDIR = ../../../FunSDK
+FUNOSDIR = $(SDKDIR)/../FunOS_master
 
 LIB_HCI = libhci.a
 
@@ -18,7 +19,8 @@ HCI_HDR = fun_hci.h
 HCI_OBJS = $(patsubst %.c,$(BUILD)/obj/%.o,$(filter %c,$(HCI_SRC)))
 
 CFLAGS = -Wall -Werror
-CFLAGS += -I $(SDKDIR)/FunSDK
+CFLAGS += -I $(SDKDIR)/FunSDK\
+       	  -I $(FUNOSDIR)
 
 .PHONY: all
 all: code $(BUILD)/$(LIB_HCI)
