@@ -227,6 +227,21 @@ values - helpful if we want to manipulate registers efficiently.)
 Packed fields must have the same base type, must be bitfields (not using all
 bits of the type), and must be contiguous in the layout.
 
+Packed field naming is as follows:
+* Packed fields can include reserved fields (fields beginning with reserved
+or rsvd), but the names of reserved fields aren't used in the packed field 
+name.
+* Packed fields are generally named after the first and last field:
+"a_to_z".
+* If only one field is in the packed field (after reserved fields are removed),
+then the name is "fieldname_pack".
+* If all non-reserved fields in a packed field have a similar prefix, then
+the packed field name is "prefix_pack".  The prefix must be delimited by
+a _, and prefixing does not look at multiple underbars. "pre_a" and "pre_b"
+will be combined into a pre_pack field, but "pre_foo_a and pre_foo_b" will
+also disregard that pre_foo is a prefix and again name the packed field
+"pre_pack".
+
 ## Generated Code
 
 For each data structure, the generator creates the following bits of code.
@@ -274,3 +289,4 @@ and should have accessors generated for each item in the union.
 * Support enum names and flag names as type names.
 * Allow defining a default constant value for a field.  This would be
 particularly useful for specifying an opcode in a message.
+* Endian-swappers?
