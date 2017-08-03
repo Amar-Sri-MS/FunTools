@@ -98,9 +98,6 @@ struct fun_json {
        const char *string_value;
 };
 struct fun_json *fun_json_lookup(struct fun_json *container, const char *name);
-#define REQUIRE(x) assert(x != NULL)
-#else
-#include "utils/threaded/fun_json.h"
 #endif
 
 """)
@@ -424,10 +421,6 @@ class HelperGenerator:
         max_value = 1 << field.BitWidth()
         validates.append('\tassert(%s < 0x%x);' % (field.name, max_value))
 
-    if len(arg_list) == 1:
-      # If no arguments other than structure, don't bother.
-      return ('', '')
-
     # Initialize each packed field.
     for field in the_struct.fields:
       if field.IsReserved() or not field.type.IsScalar():
@@ -442,10 +435,10 @@ class HelperGenerator:
     init_declaration = 'extern void %s(%s);\n' % (function_name,
                                                   ', '.join(arg_list))
       
-    init_definition = 'void %s(%s) {\n%s%s\n}' % (function_name,
-                                                  ', '.join(arg_list),
-                                                  validate_block,
-                                                  '\n'.join(inits))
+    init_definition = 'void %s(%s) {\n%s%s\n}\n' % (function_name,
+                                                    ', '.join(arg_list),
+                                                    validate_block,
+                                                    '\n'.join(inits))
     return (init_declaration, init_definition)
 
   def GenerateJSONInitializer(self, the_struct, the_field, accessor_prefix):
@@ -453,7 +446,8 @@ class HelperGenerator:
     init = ''
     init += '\tstruct fun_json *%s_j = fun_json_lookup(j, "%s");\n' % (
       the_field.name, the_field.name)
-    init += '\tREQUIRE(%s_j);\n' % (the_field.name)
+    init += '\tif (%s_j == NULL) {\n\t\treturn false;\n\t}\n' % (
+      the_field.name)
     init += '\t%s %s = %s_j->%s;\n' % (the_field.type.DeclarationType(),
                                        the_field.name, the_field.name,
                                        json_accessor)
@@ -477,18 +471,22 @@ class HelperGenerator:
     init_fields += [f.name for f in the_struct.AllFields()
                     if f.type.IsScalar() and not f.IsReserved()]
 
-    final_init = '%s(%s);\n' % (self.InitializerName(the_struct.name),
-                                ', '.join(init_fields))
+    final_init = '\t%s(%s);\n' % (self.InitializerName(the_struct.name),
+                                  ', '.join(init_fields))
     declaration_comment = (
       '/* Initializes %s structure from JSON representation.\n'
+      ' * Returns false if initialization failed.\n'
       ' * Caller responsible for determining correct init function.\n'
       ' */\n' % struct_name)
-    init_declaration = '%sextern void %s(%s);\n' %  (
-      declaration_comment, function_name, ', '.join(arg_list))
-    init_definition = 'void %s(%s) {\n%s\n\t%s\n}\n' % (function_name,
-                                                        ', '.join(arg_list),
-                                                        '\n'.join(inits),
-                                                        final_init)
+    init_declaration = declaration_comment
+    init_declaration += 'extern bool %s(%s);\n' %  (
+      function_name, ', '.join(arg_list))
+
+    init_definition = 'bool %s(%s) {\n' % (function_name, ','.join(arg_list))
+    init_definition += '%s\n' % '\n'.join(inits)
+    init_definition += '%s\n' % final_init
+    init_definition += '\treturn true;\n'
+    init_definition += '}\n'
     return (init_declaration, init_definition)
 
   def GenerateHelpersForStruct(self, the_struct):

@@ -168,18 +168,6 @@ class HelperGeneratorTest(unittest.TestCase):
     self.assertIn('void init(struct MyStruct *s, char a1) {', definition)
     self.assertIn('\ts->foo.a1 = a1;\n', definition)
 
-  def testNoCreateArrayInitializer(self):
-    gen = codegen.HelperGenerator()
-    s = generator.Struct('Foo', False)
-    f = generator.Field('a1', generator.ArrayTypeForName('char', 8), 0, 64)
-    s.fields = [f]
-
-    (declaration, definition) = gen.GenerateInitRoutine("init", "MyStruct",
-                                                        "foo.", s)
-  
-    self.assertEqual('', declaration)
-    self.assertEqual('', definition)
-
 
 class CodegenEndToEnd(unittest.TestCase):
   def testSimpleEndToEnd(self):
