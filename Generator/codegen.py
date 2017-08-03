@@ -424,10 +424,6 @@ class HelperGenerator:
         max_value = 1 << field.BitWidth()
         validates.append('\tassert(%s < 0x%x);' % (field.name, max_value))
 
-    if len(arg_list) == 1:
-      # If no arguments other than structure, don't bother.
-      return ('', '')
-
     # Initialize each packed field.
     for field in the_struct.fields:
       if field.IsReserved() or not field.type.IsScalar():
@@ -442,10 +438,10 @@ class HelperGenerator:
     init_declaration = 'extern void %s(%s);\n' % (function_name,
                                                   ', '.join(arg_list))
       
-    init_definition = 'void %s(%s) {\n%s%s\n}' % (function_name,
-                                                  ', '.join(arg_list),
-                                                  validate_block,
-                                                  '\n'.join(inits))
+    init_definition = 'void %s(%s) {\n%s%s\n}\n' % (function_name,
+                                                    ', '.join(arg_list),
+                                                    validate_block,
+                                                    '\n'.join(inits))
     return (init_declaration, init_definition)
 
   def GenerateJSONInitializer(self, the_struct, the_field, accessor_prefix):
@@ -486,9 +482,9 @@ class HelperGenerator:
     init_declaration = '%sextern void %s(%s);\n' %  (
       declaration_comment, function_name, ', '.join(arg_list))
     init_definition = 'void %s(%s) {\n%s\n\t%s\n}\n' % (function_name,
-                                                        ', '.join(arg_list),
-                                                        '\n'.join(inits),
-                                                        final_init)
+                                                          ', '.join(arg_list),
+                                                          '\n'.join(inits),
+                                                          final_init)
     return (init_declaration, init_definition)
 
   def GenerateHelpersForStruct(self, the_struct):
