@@ -230,22 +230,6 @@ class Type:
       return '<Type: %s>' % (self.base_type.Name())
 
 
-class Visitor:
-  # Visitor abstract class for walking the specification tree.
-  def VisitField(self, field):
-    pass
-  def VisitStruct(self, struct):
-    pass
-  def VisitEnum(self, enum):
-    pass
-  def VisitEnumVariable(self, enumVariable):
-    pass
-  def VisitComment(self, comment):
-    pass
-  def VisitDocument(self, document):
-    pass
-
-
 class Node:
   def __init__(self):
     # Primary, short comment for an item.  Appears on same line.
