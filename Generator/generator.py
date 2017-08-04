@@ -9,9 +9,6 @@
 # single fields accessed via macros.  By explicitly providing accessor
 # macros, we can avoid cases where compiled code may be inefficient.
 #
-# TODO(bowdidge): Should create C code to test that structure compiles
-# and has correct size.
-#
 # Robert Bowdidge August 8, 2016.
 # Copyright Fungible Inc. 2016.
 
@@ -228,22 +225,6 @@ class Type:
       return '<Type: %s[%d]>' % (self.base_type.Name(), self.array_size)
     else:
       return '<Type: %s>' % (self.base_type.Name())
-
-
-class Visitor:
-  # Visitor abstract class for walking the specification tree.
-  def VisitField(self, field):
-    pass
-  def VisitStruct(self, struct):
-    pass
-  def VisitEnum(self, enum):
-    pass
-  def VisitEnumVariable(self, enumVariable):
-    pass
-  def VisitComment(self, comment):
-    pass
-  def VisitDocument(self, document):
-    pass
 
 
 class Node:
@@ -612,6 +593,7 @@ class Document(Node):
   def __init__(self):
     Node.__init__(self)
     # structs is all the structures defined in the document.
+    # Structs nested in other structs are listed here.
     self.structs = []
 
     # All enums declared in the file.
@@ -631,11 +613,6 @@ class Document(Node):
 
   def __str__(self):
     return('<Document>')
-
-  def AddMacro(self, macro_str):
-    # Record a macro to output.
-    self.macros.append(macro_str)
-
 
 
 class Checker:
@@ -967,6 +944,14 @@ class DocBuilder:
     key_comment = match.group(3)
     variable_name = utils.RemoveWhitespace(variable_name)
 
+    if not utils.IsValidCIdentifier(identifier):
+      self.AddError(
+        'struct name "%s" is not a valid identifier name.' % identifier)
+
+    if variable_name and not utils.IsValidCIdentifier(variable_name):
+      self.AddError(
+        'variable "%s" is not a valid identifier name.' % variable_name)
+
     current_struct = Struct(identifier, False)
     current_struct.line_number = self.current_line
     current_struct.key_comment = self.StripKeyComment(key_comment)
@@ -1004,6 +989,10 @@ class DocBuilder:
     key_comment = match.group(2)
 
     name = utils.RemoveWhitespace(name)
+
+    if not utils.IsValidCIdentifier(name):
+      self.AddError('"%s" is not a valid identifier name.' % name)
+
     current_enum = Enum(name)
     current_enum.line_number = self.current_line
     current_enum.key_comment = self.StripKeyComment(key_comment)
@@ -1026,6 +1015,9 @@ class DocBuilder:
     name = match.group(1)
     key_comment = match.group(2)
 
+    if not utils.IsValidCIdentifier(name):
+      self.AddError('"%s" is not a valid identifier name.' % name)
+
     name = utils.RemoveWhitespace(name)
     current_flags = FlagSet(name)
     current_flags.line_number = self.current_line
@@ -1041,19 +1033,28 @@ class DocBuilder:
   def ParseEnumLine(self, line):
     # Parse the line describing a new enum variable.
     # This regexp matches:
-    # Foo = 1 Abitrary following comment
+    # Foo = 1 Arbitrary-following-comment
     match = re.match('(\w+)\s*=\s*(\w+)\s*(.*)$', line)
     if match is None:
       self.AddError('Invalid enum line: "%s"' % line)
       return None
 
     var = match.group(1)
-    # TODO(bowdidge): Test valid C identifier.
+
     value_str = match.group(2)
     value = utils.ParseInt(value_str)
     if value is None:
       self.AddError('Invalid enum value for %s: "%s"' % (value_str, var))
       return None
+
+    if not utils.IsValidCIdentifier(var):
+        self.AddError('"%s" is not a valid identifier name.' % var)
+
+    if value > 0x100000000:
+        self.AddError(
+          'Value for enum variable "%s" is %d, is larger than the 2^32 C allows.' % (
+            var, value))
+
     # Parse a line describing an enum variable.
     # TODO(bowdidge): Remember whether value was hex or decimal for better printing.
     new_enum = EnumVariable(var, value)
@@ -1138,6 +1139,13 @@ class DocBuilder:
     (_, name, variable) = union_args
     identifier = utils.RemoveWhitespace(name)
     variable = utils.RemoveWhitespace(variable)
+
+    if not utils.IsValidCIdentifier(name):
+      self.AddError('"%s" is not a valid union identifier name.' % name)
+
+    if not utils.IsValidCIdentifier(variable):
+      self.AddError('"%s" is not a valid identifier name.' % variable)
+
     current_union = Struct(name, True)
     current_union.line_number = self.current_line
     if len(self.current_comment) > 0:
@@ -1284,6 +1292,10 @@ class DocBuilder:
       if array_size is None:
         print("Eek, thought %s was a number, but didn't parse!\n" % match.group(5))
     key_comment = match.group(6)
+
+    if not utils.IsValidCIdentifier(name):
+      self.AddError(
+        'field name "%s" is not a valid identifier name.' % name)
 
     if key_comment == '':
       key_comment = None
