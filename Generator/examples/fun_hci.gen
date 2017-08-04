@@ -314,6 +314,47 @@ STRUCT fun_admin_vi_rsp
   END
 END
 
+STRUCT fun_admin_socket_req
+  0 63:00 fun_admin_req_common common 
+  1 63:00 ...
+  UNION socket_req_subop u
+    STRUCT fun_admin_socket_req_create create
+      2 63:56  uint8_t socket_req_create_subop /* SUBOP_CREATE */
+      2 55:48  uint8_t rsvd0
+      2 47:32 uint16_t socket_req_create_flag /* see fun_socket_create_flag enum */
+      2 31:00 uint32_t socket_req_create_id /* FLAG_ALLOCATOR=0: n/a, FLAG_ALLOCATOR=1: socketid */
+    END
+    STRUCT fun_admin_socket_req_destroy destroy
+      2 63:56  uint8_t socket_req_destroy_subop /* SUBOP_DESTROY */
+      2 55:32  uint8_t rsvd0[3]
+      2 31:00 uint32_t socket_req_destroy_id /* socketid to destroy */
+    END
+    STRUCT fun_admin_socket_req_list list
+      2 63:56  uint8_t socket_req_list_subop /* SUBOP_LIST */
+      2 55:48  uint8_t rsvd0
+      2 47:32 uint16_t socket_req_list_flag /* see fun_socket_create_flag enum */
+      2 31:00 uint32_t socket_req_list_startid /*  */
+    END       
+  END
+END
+
+STRUCT fun_admin_socket_rsp
+  0 63:00 fun_admin_rsp_common common
+  0 63:00 ...
+  UNION socket_admin_rsp_subop u
+    STRUCT fun_socket_rsp_create create
+      2 63:56  uint8_t socket_rsp_create_subop /* SUBOP_CREATE */
+      2 55:32  uint8_t rsvd0[3]
+      2 31:00 uint32_t socket_rsp_create_id /* socket_rsp_common.rsp_common_status=0: socketid, otherwise: N/A */
+    END
+    STRUCT fun_admin_socket_rsp_destroy destroy
+      2 63:56  uint8_t socket_rsp_destroy_subop /* SUBOP_DESTROY */
+      2 55:32  uint8_t rsvd0[3]
+      2 31:00 uint32_t socket_rsp_destroy_id /* destroyed socketid */
+    END      
+  END
+END
+
 STRUCT fun_admin_tcp_req
   0 63:00 fun_admin_req_common common 
   1 63:00 ...
@@ -323,12 +364,6 @@ STRUCT fun_admin_tcp_req
       2 55:48  uint8_t rsvd0
       2 47:32 uint16_t tcp_req_create_flag /* see fun_tcp_create_flag enum */
       2 31:00 uint32_t tcp_req_create_id /* FLAG_ALLOCATOR=0: n/a, FLAG_ALLOCATOR=1: tcpid */
-      3 63:00 uint64_t rsvd1
-      4 63:00 uint64_t rsvd2
-      5 63:00 uint64_t rsvd3
-      6 63:00 uint64_t rsvd4
-      7 63:00 uint64_t rsvd5
-      8 63:00 uint64_t rsvd6
     END
     STRUCT fun_admin_tcp_req_destroy destroy
       2 63:56  uint8_t tcp_req_destroy_subop /* SUBOP_DESTROY */
@@ -360,7 +395,6 @@ STRUCT fun_admin_tcp_rsp
     END      
   END
 END
-
 
 
 FLAGS fun_admin_nss_create_flag
