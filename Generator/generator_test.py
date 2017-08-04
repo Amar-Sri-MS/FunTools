@@ -719,6 +719,117 @@ class TestDocBuilder(unittest.TestCase):
     
     self.assertEqual(6, len(foo.variables))
     
+  def testValidStructName(self):
+    doc_builder = generator.DocBuilder()
+    contents = ['STRUCT 1',
+                'END']
+    errors = doc_builder.Parse('filename', contents)
+
+    self.assertEquals(1, len(errors))
+    self.assertIn('"1" is not a valid', errors[0])
+
+  def testValidUnionName(self):
+    doc_builder = generator.DocBuilder()
+    contents = ['STRUCT A',
+                'UNION 1_1 a',
+                'END',
+                'END']
+    errors = doc_builder.Parse('filename', contents)
+    print (errors)
+    self.assertEquals(1, len(errors))
+    self.assertIn('"1_1" is not a valid', errors[0])
+
+  def testValidUnionVariable(self):
+    doc_builder = generator.DocBuilder()
+    contents = ['STRUCT A',
+                'UNION A1 1_a',
+                'END',
+                'END']
+    errors = doc_builder.Parse('filename', contents)
+    print (errors)
+    self.assertEquals(1, len(errors))
+    self.assertIn('"1_a" is not a valid', errors[0])
+
+  def testValidFieldName(self):
+    doc_builder = generator.DocBuilder()
+    contents = ['STRUCT A',
+                '0 63:0 uint64_t 1dh',
+                'END']
+    errors = doc_builder.Parse('filename', contents)
+    self.assertEquals(1, len(errors))
+    self.assertIn('field name "1dh" is not a valid identifier', errors[0])
+
+
+  def testValidEnumName(self):
+    doc_builder = generator.DocBuilder()
+    contents = ['ENUM 1AA']
+    errors = doc_builder.Parse('filename', contents)
+
+    self.assertEquals(1, len(errors))
+    self.assertIn('"1AA" is not a valid identifier', errors[0])
+
+  def testValidEnumVarName(self):
+    doc_builder = generator.DocBuilder()
+    contents = ['ENUM A',
+                '1 = 3',
+                'END']
+    errors = doc_builder.Parse('filename', contents)
+    self.assertEquals(1, len(errors))
+    self.assertIn('"1" is not a valid identifier', errors[0])
+
+  def testValidEnumVarValue(self):
+    doc_builder = generator.DocBuilder()
+    contents = ['ENUM A',
+                'v = 999999999999',
+                'END']
+    errors = doc_builder.Parse('filename', contents)
+    self.assertEquals(1, len(errors))
+    self.assertIn('is larger than the 2^32', errors[0])
+
+  def testValidEnumVarValueInHex(self):
+    doc_builder = generator.DocBuilder()
+    contents = ['ENUM A',
+                'v = 0x10000000011',
+                'END']
+    errors = doc_builder.Parse('filename', contents)
+    self.assertEquals(1, len(errors))
+    self.assertIn('is larger than the 2^32', errors[0])
+
+  def testValidFlagName(self):
+    doc_builder = generator.DocBuilder()
+    contents = ['FLAGS 1AA']
+    errors = doc_builder.Parse('filename', contents)
+
+    self.assertEquals(1, len(errors))
+    self.assertIn('"1AA" is not a valid identifier', errors[0])
+
+  def testValidFlagVarName(self):
+    doc_builder = generator.DocBuilder()
+    contents = ['FLAGS A',
+                '1 = 3',
+                'END']
+    errors = doc_builder.Parse('filename', contents)
+    self.assertEquals(1, len(errors))
+    self.assertIn('"1" is not a valid identifier', errors[0])
+
+  def testValidFlagVarValue(self):
+    doc_builder = generator.DocBuilder()
+    contents = ['FLAGS A',
+                'v = 999999999999',
+                'END']
+    errors = doc_builder.Parse('filename', contents)
+    self.assertEquals(1, len(errors))
+    self.assertIn('is larger than the 2^32', errors[0])
+
+  def testValidFlagVarValueInHex(self):
+    doc_builder = generator.DocBuilder()
+    contents = ['FLAGS A',
+                'v = 0x10000000011',
+                'END']
+    errors = doc_builder.Parse('filename', contents)
+    self.assertEquals(1, len(errors))
+    self.assertIn('is larger than the 2^32', errors[0])
+
 
 class TestStripComment(unittest.TestCase):
   def testSimple(self):
