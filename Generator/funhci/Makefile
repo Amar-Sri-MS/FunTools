@@ -48,11 +48,11 @@ all: code $(BUILD)/$(LIB_HCI)
 
 .PHONY: code
 code:
-	../generator.py -p -g code -o fun_hci fun_hci.gen
+	../generator.py -c pack,json -g code -o fun_hci fun_hci.gen
 
 .PHONY: doc
 doc:
-	../generator.py -p -g html -o fun_hci fun_hci.gen
+	../generator.py -g html -o fun_hci fun_hci.gen
 
 $(BUILD)/obj/fun_hci.o: fun_hci.c
 	@echo CC $<
@@ -64,8 +64,9 @@ $(BUILD)/$(LIB_HCI): $(HCI_OBJS)
 
 .PHONY: install
 install: $(BUILD)/$(LIB_HCI)
-	mkdir -p $(SDKDIR)/FunSDK/hci/lib/$(LIBDST)/libfunhci.a
-	cp $(BUILD)/$(LIB_HCI) $(SDKDIR)/FunSDK/hci/lib/posix/$(OS)/
+	mkdir -p $(SDKDIR)/FunSDK/hci/lib/$(LIBDST)
+	mkdir -p $(SDKDIR)/FunSDK/hci/include
+	cp $(BUILD)/$(LIB_HCI) $(SDKDIR)/FunSDK/hci/lib/$(LIBDST)/libfunhci.a
 	cp $(HCI_HDR) $(SDKDIR)/FunSDK/hci/include
 
 .PHONY: clean

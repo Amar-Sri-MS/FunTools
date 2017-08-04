@@ -122,8 +122,8 @@ class TraceEvent:
     return '<TraceEvent: %s - %s %s>' % (self.start_time, self.end_time,
                                          self.label)
 
-  def __repl__(self):
-    return '<TraceEvent: %s - %s %s, %s>' % (self.start_time, self.end_time,
+  def __repr__(self):
+    return '<TraceEvent: %s - %s %s>' % (self.start_time, self.end_time,
                                              self.label)
 
 

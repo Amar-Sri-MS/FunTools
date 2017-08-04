@@ -46,24 +46,35 @@ def ParseLogLine(line, file, line_number):
   error is None if parsing was successful, and the dictionary is not None
   if the line represented a WU log entry.
   """
+  line = line.lstrip().rstrip()
   values = {}
-  match = re.match('([0-9]+).([0-9]+) faddr (VP[0-9]+.[0-9]+.[0-9]+) ([A-Z_]+) ([A-Z_]+)', line)
+  match = re.match('([0-9]+).([0-9]+) TRACE ([A-Z_]+) ([A-Z_]+)', line)
   if not match:
     # Not a log line, but not an error either.
     return (None, None)
 
-  values = {'timestamp': int(match.group(1)) * 1000000 + int(match.group(2)),
-            'vp': match.group(3),
-            'verb': match.group(4),
-            'noun': match.group(5)
+  time_nsec = int(match.group(1)) * 1000000000 + int(match.group(2))
+  values = {'timestamp': time_nsec / 1000,
+            'verb': match.group(3),
+            'noun': match.group(4)
             }
   remaining_string = line[len(match.group(0)):].lstrip()
 
   if len(remaining_string) == 0:
     return (values, None)
 
+  # Annotation is special - we need to find the faddr at the
+  # beginning, but the rest counts as the message.
   if values['verb'] == 'TRANSACTION' and values['noun'] == 'ANNOT':
-    values['msg'] = remaining_string
+    annot_match = re.match('faddr (VP[0-9]+.[0-9]+.[0-9]+) (.*)',
+                           remaining_string)
+    if not annot_match:
+      error = '%s:%d: malformed transaction annotation: "%s"\n' % (
+        file, line_number, line)
+      return (None, error)
+
+    values['faddr'] = annot_match.group(1)
+    values['msg'] = annot_match.group(2)
   else:
     token_iter = iter(remaining_string.split(' '))
 
@@ -83,30 +94,30 @@ def ParseLogLine(line, file, line_number):
   
   if event_type == ('WU', 'START'):
     # Should define src, dest, id, name, arg0, arg1.
-    expect_keywords = ['src', 'dest', 'id', 'name', 'arg0', 'arg1']
+    expect_keywords = ['faddr', 'wuid', 'name', 'arg0', 'arg1']
 
   elif event_type == ('WU', 'END'):
     # should define id, name, arg0, arg1.
-    expect_keywords = ['id', 'name', 'arg0', 'arg1']
+    expect_keywords = ['faddr']
 
   elif event_type == ('WU', 'SEND'):
     # Should define src, dest, id, name, arg0, arg1.
-    expect_keywords = ['src', 'dest', 'id', 'name', 'arg0', 'arg1']
+    expect_keywords = ['faddr', 'wuid', 'name', 'arg0', 'arg1']
 
   elif event_type == ('TIMER', 'TRIGGER'):
     # Should define timer and arg0.
-    expect_keywords = ['timer', 'arg0']
+    expect_keywords = ['faddr', 'timer', 'arg0']
 
   elif event_type == ('TIMER', 'START'):
     # Should define timer, value, and arg0.
-    expect_keywords = ['timer', 'value', 'arg0']
+    expect_keywords = ['faddr', 'timer', 'wuid', 'name']
 
   elif event_type == ('TRANSACTION', 'START'):
-    expect_keywords = []
+    expect_keywords = ['faddr']
 
   elif event_type == ('TRANSACTION', 'ANNOT'):
     # Annotate uses rest of line as message.
-    expect_keywords = [ ]
+    expect_keywords = ['faddr']
 
   elif event_type == ('HU', 'SQ_DBL'):
     expect_keywords = ['sqid']
@@ -117,10 +128,12 @@ def ParseLogLine(line, file, line_number):
 
   for expected_keyword in expect_keywords:
     if expected_keyword not in values:
-      error = '%s:%d: missing key "%s"\n' % (file, line_number, expected_keyword)
+      error = '%s:%d: missing key "%s" in command %s %s\n' % (
+        file, line_number, expected_keyword,
+        values['verb'], values['noun'])
       return (None, error)
 
-  int_keywords = ['id', 'arg0', 'arg1', 'sqid']
+  int_keywords = ['wuid', 'arg0', 'arg1', 'sqid']
   for keyword in int_keywords:
     if keyword in values:
       string_value = values[keyword]
@@ -169,10 +182,15 @@ class TraceParser:
 
   def HandleLogLine(self, log_keywords, line_number):
     """Reads in each logging event, and creates or updates any log events."""
-    timestamp = log_keywords['timestamp']
-    vp = log_keywords['vp']
-
     event_type = (log_keywords['verb'], log_keywords['noun'])
+
+    if event_type == ('FLUSH', 'FLUSH'):
+      return
+
+    timestamp = log_keywords['timestamp']
+
+    vp = log_keywords['faddr']
+
     if event_type == ('WU', 'START'):
       arg0 = log_keywords['arg0']
       arg1 = log_keywords['arg1']
@@ -234,10 +252,10 @@ class TraceParser:
       current_event.transaction = transaction
 
     elif event_type == ('TIMER', 'START'):
-      arg0 = log_keywords['arg0']
+      wuid = log_keywords['wuid']
       timer = log_keywords['timer']
       if vp not in self.vp_to_event:
-        sys.stderr.write('%s:%d: unknown vp in send\n' % (self.input_filename, line_number))
+        sys.stderr.write('%s:%d: unknown vp in TIMER START\n' % (self.input_filename, line_number))
         return
 
       current_event = self.vp_to_event[vp]
@@ -347,12 +365,13 @@ def main(argv):
 
   # Hack: Update start and end time on fake event on boot.
   boot_events = transactions[0].Flatten()
-  transactions[0].root_event.start_time = min({e.start_time for e in boot_events if e.start_time != 0})
-  transactions[0].root_event.end_time = min({e.end_time for e in boot_events if e.end_time != 0})
+
+  # transactions[0].root_event.start_time = min({e.start_time for e in boot_events if e.start_time != 0})
+  # transactions[0].root_event.end_time = min({e.end_time for e in boot_events if e.end_time != 0})
 
   if args.format == 'text':
     for tr in transactions:
-      render.Dump(out_file, tr, 0)
+      render.Dump(out_file, tr)
       print('\n')
   elif args.format == 'graphviz':
     render.RenderGraphviz(out_file, transactions)

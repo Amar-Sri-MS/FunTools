@@ -980,7 +980,7 @@ END
 // FFE
 
 
-ENUM fun_ffe_subopcodes
+ENUM fun_nu_ffe_subopcodes
   FFE_ACCESS_SUBOP_TMP_TCAM_R = 0
   FFE_ACCESS_SUBOP_TMP_TCAM_W = 1
   FFE_ACCESS_SUBOP_FFE_TCAM_R = 2
@@ -1001,7 +1001,7 @@ ENUM fun_ffe_subopcodes
 END
 
 // FFE Template TCAM entry format
-STRUCT fun_ffe_entry_tmp_tcam
+STRUCT fun_nu_ffe_entry_tmp_tcam
   0 63:32 uint32_t rsvd0
   0 31:26 uint32_t rsvd1
   0 25:0 uint32_t key /* key (26 bits) */
@@ -1020,7 +1020,7 @@ STRUCT fun_ffe_entry_tmp_tcam
 END
 
 // FFE TCAM entry format
-STRUCT fun_ffe_entry_tcam
+STRUCT fun_nu_ffe_entry_tcam
   0 63:16 uint8_t rsvd0[6]
   0 15:0 uint16_t at_index
   1 63:0 uint8_t key[21] /* uint8_t key[21] */
@@ -1036,7 +1036,7 @@ STRUCT fun_ffe_entry_tcam
 END
 
 // FFE Hash or Stash entry format
-STRUCT fun_ffe_entry_hash_stash
+STRUCT fun_nu_ffe_entry_hash_stash
   0 63:57 uint8_t rsvd0
   0 56:56 uint8_t valid
   0 55:0 uint8_t data[13]
@@ -1046,13 +1046,13 @@ STRUCT fun_ffe_entry_hash_stash
 END
 
 // FFE DIT entry format
-STRUCT fun_ffe_entry_dit
+STRUCT fun_nu_ffe_entry_dit
   0 63:16 uint8_t rsvd1[6]
   0 15:0 uint16_t at_index
 END
 
 // FFE action microcode entry format
-STRUCT fun_ffe_entry_act_ucode
+STRUCT fun_nu_ffe_entry_act_ucode
   0 63:0 uint8_t instr_data_wlst[24] /* uint8_t instr_data_wlst[24] */
   1 63:0 ...
   2 63:0 ...
@@ -1064,7 +1064,7 @@ STRUCT fun_ffe_entry_act_ucode
 END
 
 // FFE action dmem entry format
-STRUCT fun_ffe_entry_act_dmem
+STRUCT fun_nu_ffe_entry_act_dmem
   0 63:0 uint8_t data_wlst[64] /* uint8_t data_wlst[64] */
   1 63:0 ...
   2 63:0 ...
@@ -1076,12 +1076,12 @@ STRUCT fun_ffe_entry_act_dmem
 END
 
 // Command interface for writing/reading the various tables available in the FFE.
-STRUCT fun_ffe_reqrsp
+STRUCT fun_nu_ffe_reqrsp
   0 63:0 fun_req_common common
   1 63:0 ...
-  UNION fun_ffe_subops u
+  UNION fun_nu_ffe_subops u
     // Header to refer to an FFE Template TCAM
-    STRUCT fun_ffe_reqrsp_tmp_tcam_rw tmp_tcam_rw
+    STRUCT fun_nu_ffe_reqrsp_tmp_tcam_rw tmp_tcam_rw
       2 63:56 uint8_t subopcode /* SUBOPS: FFE_ACCESS_SUBOP_TMP_TCAM_R, FFE_ACCESS_SUBOP_TMP_TCAM_W */
       2 55:48 uint8_t flags
       2 47:32 uint16_t index
@@ -1091,7 +1091,7 @@ STRUCT fun_ffe_reqrsp
       3 47:0 uint8_t rsvd1[6]
     END
     // Header to refer to an FFE TCAM
-    STRUCT fun_ffe_reqrsp_tcam_rwi tcam_rwi
+    STRUCT fun_nu_ffe_reqrsp_tcam_rwi tcam_rwi
       2 63:56 uint8_t subopcode /* SUBOPS: TCAM_R, TCAM_W, TCAM_INV */
       2 55:48 uint8_t flags
       2 47:32 uint16_t index
@@ -1102,7 +1102,7 @@ STRUCT fun_ffe_reqrsp
       3 47:0 uint8_t rsvd1[6]
     END
     // Header to refer to an FFE Hash or Stash
-    STRUCT fun_ffe_reqrsp_hash_stash_rwi hash_stash_rwi
+    STRUCT fun_nu_ffe_reqrsp_hash_stash_rwi hash_stash_rwi
       2 63:56 uint8_t subopcode /* SUBOPS: HASH_R, HASH_W, HASH_INV, STASH_R, STASH_W, STASH_INV */
       2 55:48 uint8_t flags
       2 47:32 uint16_t index
@@ -1113,7 +1113,7 @@ STRUCT fun_ffe_reqrsp
       3 47:0 uint8_t rsvd1[6]
     END
     // Header to refer to an FFE Direct Index Table
-    STRUCT fun_ffe_reqrsp_dit_rw dit_rw
+    STRUCT fun_nu_ffe_reqrsp_dit_rw dit_rw
       2 63:56 uint8_t subopcode /* SUBOPS: DIT_R, DIT_W */
       2 55:48 uint8_t flags
       2 47:32 uint16_t index
@@ -1122,7 +1122,7 @@ STRUCT fun_ffe_reqrsp
       2 15:0 uint16_t table
     END
     // Header to refer to an FFE Action Microcode Table
-    STRUCT fun_ffe_reqrsp_act_ucode_rw action_ucode_rw
+    STRUCT fun_nu_ffe_reqrsp_act_ucode_rw action_ucode_rw
       2 63:56 uint8_t subopcode /* SUBOPS: ACT_UCODE_R, ACT_UCODE_W */
       2 55:48 uint8_t flags
       2 47:32 uint16_t index
@@ -1130,7 +1130,7 @@ STRUCT fun_ffe_reqrsp
       2 23:0 uint8_t rsvd0[3]
     END
     // Header to refer to an FFE Action DMEM Table
-    STRUCT fun_ffe_reqrsp_act_dmem_rw action_dmem_rw
+    STRUCT fun_nu_ffe_reqrsp_act_dmem_rw action_dmem_rw
       2 63:56 uint8_t subopcode /* SUBOPS: ACT_DMEM_R, ACT_DMEM_W */
       2 55:48 uint8_t flags
       2 47:32 uint16_t index
@@ -1139,10 +1139,10 @@ STRUCT fun_ffe_reqrsp
       2 15:0 uint16_t table
     END
   END
-// The fun_ffe_cmd is followed by either a fun_subcmd_immediate or fun_subcmd_sgl
+// The fun_nu_ffe_cmd is followed by either a fun_subcmd_immediate or fun_subcmd_sgl
 // containing immediate or sgl information respectively. The data will be of the
-// type of the command (e.g. if it is a fun_ffe_tmp_tcam op, the data will be of
-// type fun_ffe_entry_tmp_tcam).
+// type of the command (e.g. if it is a fun_nu_ffe_tmp_tcam op, the data will be of
+// type fun_nu_ffe_entry_tmp_tcam).
 // Description to be expanded further.
 END
 
