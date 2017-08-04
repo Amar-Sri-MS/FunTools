@@ -19,7 +19,7 @@ c-checker: $(BUILD)
 
 # Tests generated code with packed fields compiles correctly.
 c-packed-checker: $(BUILD)
-	./generator.py --codegen pack,json -g code -o \
+	./generator.py --codegen pack -g code -o \
                        $(BUILD)/rdma_packed_gen examples/rdma.gen
 	gcc -o $(BUILD)/rdma_packed -g -I$(BUILD) -DDEBUG -DGENERATOR_TEST \
             test_helper/rdma_packed.c $(BUILD)/rdma_packed_gen.c

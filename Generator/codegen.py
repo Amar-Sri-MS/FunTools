@@ -59,24 +59,8 @@ class CodeGenerator:
 
 #include <stdint.h>
 #include <assert.h>
-""") % doc.filename
-    if self.generate_json:
-      src_out += """
-#ifdef GENERATOR_TEST
-struct fun_json *fun_json_lookup(struct fun_json *container,
-                                 const char *name)
-{
-    return 0;
-}
-#endif
-"""
 
-    src_out += '// Header created by generator.py\n'
-    src_out += '// Do not change this file;\n'
-    src_out += '// change the gen file "%s" instead.\n\n' % doc.filename
-    src_out += '\n'
-    src_out += '#include <stdint.h>\n'
-    src_out += '#include <assert.h>\n'
+""") % doc.filename
 
     if self.output_file_base:
       header_file = os.path.basename(self.output_file_base) + '.h'
@@ -86,25 +70,15 @@ struct fun_json *fun_json_lookup(struct fun_json *container,
       hdr_out += '#ifndef %s\n' % include_guard_name
       hdr_out += '#define %s\n' % include_guard_name
 
-    hdr_out += (
-"""
+    hdr_out += """
 #include <assert.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
 
-#ifdef GENERATOR_TEST
-// Fake declaration to test that generated code compiles.
-struct fun_json {
-       bool bool_value;
-       int64_t int_value;
-       double double_vlaue;
-       const char *string_value;
-};
-struct fun_json *fun_json_lookup(struct fun_json *container, const char *name);
-#endif
-
-""")
+"""
+    if self.generate_json:
+      hdr_out += '#include <utils/threaded/fun_json.h>\n\n'
 
     for enum in doc.enums:
       (hdr, src) = self.VisitEnum(enum)
