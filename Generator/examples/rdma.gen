@@ -71,6 +71,7 @@ STRUCT GatherListFragmentHeader
       0 61:60 uint8_t destination
       0 59:58 uint8_t instance
       0 57:56 uint8_t reserved
+      0 55:48 uint8_t rsvd
       0 47:32 uint16_t length /* byte length of fragment */
       0 31:0 uint32_t info /* metadata */
       1 63:0 uint64_t address /* byte-aligned physical address of destination fragment. */
