@@ -1495,5 +1495,19 @@ class CheckerTest(unittest.TestCase):
     self.assertEqual(1, len(checker.errors))
     self.assertIn('is not the last field', checker.errors[0])
 
+class CodegenArgsTest(unittest.TestCase):
+
+  def testSimple(self):
+    codegen_args = ['pack', 'nojson']
+    
+    self.assertFalse(generator.SetFromArgs('missing', codegen_args, False))
+    self.assertTrue(generator.SetFromArgs('missing', codegen_args, True))
+
+    self.assertFalse(generator.SetFromArgs('json', codegen_args, False))
+    self.assertFalse(generator.SetFromArgs('json', codegen_args, True))
+
+    self.assertTrue(generator.SetFromArgs('pack', codegen_args, False))
+    self.assertTrue(generator.SetFromArgs('pack', codegen_args, True))
+      
 if __name__ == '__main__':
     unittest.main()

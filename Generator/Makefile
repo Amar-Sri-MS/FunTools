@@ -1,24 +1,35 @@
+# Where build products go.
+BUILD = build
+
 test: c-checker generator-test c-packed-checker html-checker
 
+# All tests for the Python generator script.
 generator-test:
 	python codegen_test.py
 	python generator_test.py
 	python htmlgen_test.py
 	python utils_test.py
 
-c-checker:
-	./generator.py -g code -o rdma_gen examples/rdma.gen
-	gcc -o rdma -g -I. -DDEBUG -DGENERATOR_TEST test_helper/rdma.c rdma_gen.c
+# Tests generated C code compiles correctly.
+c-checker: $(BUILD)
+	./generator.py -g code -o $(BUILD)/rdma_gen examples/rdma.gen
+	gcc -o rdma -g -I$(BUILD) -DDEBUG -DGENERATOR_TEST \
+                test_helper/rdma.c $(BUILD)/rdma_gen.c
 	./rdma
 
-c-packed-checker:
-	./generator.py -p -g code -o rdma_packed_gen examples/rdma.gen
-	gcc -o rdma_packed -g -I. -DDEBUG -DGENERATOR_TEST test_helper/rdma_packed.c rdma_packed_gen.c
-	./rdma_packed
+# Tests generated code with packed fields compiles correctly.
+c-packed-checker: $(BUILD)
+	./generator.py --codegen pack -g code -o \
+                       $(BUILD)/rdma_packed_gen examples/rdma.gen
+	gcc -o $(BUILD)/rdma_packed -g -I$(BUILD) -DDEBUG -DGENERATOR_TEST \
+            test_helper/rdma_packed.c $(BUILD)/rdma_packed_gen.c
 
-html-checker:
-	./generator.py -p -g html -o rdma.html examples/rdma.gen
+# Tests HTML generation works.
+html-checker: $(BUILD)
+	./generator.py -g html -o $(BUILD)/rdma-gen.html examples/rdma.gen
 
+$(BUILD): $(BUILD)
+	mkdir $(BUILD)
 clean:
-	rm generator.pyc rdma rdma.dSYM rdma_packed rdma_packed.dSYM
-	rm rdma.h rdma rdma_gen.[hc] rdma_packed_gen.[hc]
+	@rm generator.pyc rdma rdma.dSYM rdma_packed rdma_packed.dSYM \
+	    rdma.h rdma rdma_gen.[hc] rdma_packed_gen.[hc]
