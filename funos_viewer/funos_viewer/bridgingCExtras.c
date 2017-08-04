@@ -10,5 +10,5 @@
 
 #define __VPLOCAL_H__		// Hack to avoid importing platform/vplocal.h
 
-#include <kv/ikv_viewer.h>
+#include <kv/dpc/ikvdemo_dpc.h>
 

@@ -9,9 +9,6 @@
 # single fields accessed via macros.  By explicitly providing accessor
 # macros, we can avoid cases where compiled code may be inefficient.
 #
-# TODO(bowdidge): Should create C code to test that structure compiles
-# and has correct size.
-#
 # Robert Bowdidge August 8, 2016.
 # Copyright Fungible Inc. 2016.
 
@@ -37,7 +34,7 @@ def BitFlitString(offset):
 
 class BaseType:
   """Represents a the base type name without qualifications.
-  
+
   The base type only contains a scalar type, struct, or union.
   Arrays, const, etc. would be represented in the Type class.
   """
@@ -78,7 +75,7 @@ class BaseType:
         else:
           return 1
     return 0
-  
+
 
 # Width of all known types.  Structures are added to this
 # dictionary during execution.
@@ -120,7 +117,7 @@ def ArrayTypeForName(name, element_count):
     sys.stderr.write('Invalid name in BaseTypeForName.')
   return Type(BaseType(name, builtin_type_widths[name]), element_count)
 
-  
+
 class Type:
   """Represents C type for a field."""
 
@@ -230,22 +227,6 @@ class Type:
       return '<Type: %s>' % (self.base_type.Name())
 
 
-class Visitor:
-  # Visitor abstract class for walking the specification tree.
-  def VisitField(self, field):
-    pass
-  def VisitStruct(self, struct):
-    pass
-  def VisitEnum(self, enum):
-    pass
-  def VisitEnumVariable(self, enumVariable):
-    pass
-  def VisitComment(self, comment):
-    pass
-  def VisitDocument(self, document):
-    pass
-
-
 class Node:
   def __init__(self):
     # Primary, short comment for an item.  Appears on same line.
@@ -304,6 +285,9 @@ class Field(Node):
     self.subfields = []
 
   def __str__(self):
+    if self.no_offset:
+      return('<Field: name=%s, type=%s, no offset>' %
+             (self.name, self.type))
     if self.StartFlit() == self.EndFlit():
       return('<Field: name=%s, type=%s, flit=%d, bits=%d:%d>' %
              (self.name, self.type, self.StartFlit(),
@@ -395,7 +379,13 @@ class Field(Node):
     and creates new sub-fields in this field from the fields of the prototype
     structure.  It sets the offset and size to match the prototype.
     """
-    if not self.type.base_type.node:
+    if not self.type.IsRecord():
+      # Doesn't have subfields to create.
+      return
+
+    if self.type.IsArray() and self.type.ArraySize() == 0:
+      # Subfields shouldn't be created because we can't know their
+      # positions.
       return
 
     for proto_field in self.type.base_type.node.fields:
@@ -419,7 +409,7 @@ class Field(Node):
       self.subfields.append(new_subfield)
       if proto_field.type.IsRecord():
         new_subfield.CreateSubfields()
-        
+
 
 class EnumVariable(Node):
   # Representation of an enum variable in an enum declaration.
@@ -574,7 +564,7 @@ class Struct(Node):
     return max([(f.EndFlit() + 1) * 8 for f in self.fields])
 
   def FlitFieldMap(self):
-    # Return a map of (flit, fields) for all fields in the structure.
+    """Return a map of (flit, fields) for all fields in the structure."""
     flit_field_map = {}
     fields_with_offsets = [f for f in self.fields if not f.IsNoOffset()]
 
@@ -584,11 +574,26 @@ class Struct(Node):
       flit_field_map[field.StartFlit()] = item
     return flit_field_map
 
+  def ContainsUnion(self):
+    """Returns union in this struct, or None if no unions exist."""
+    if self.is_union:
+      return self
+
+    for f in self.fields:
+      if f.type.IsRecord():
+        struct = f.type.base_type.node
+        the_union = struct.ContainsUnion()
+        if the_union:
+          return the_union
+    return None
+
+
 class Document(Node):
   # Representation of an entire generated header specification.
   def __init__(self):
     Node.__init__(self)
     # structs is all the structures defined in the document.
+    # Structs nested in other structs are listed here.
     self.structs = []
 
     # All enums declared in the file.
@@ -608,11 +613,6 @@ class Document(Node):
 
   def __str__(self):
     return('<Document>')
-
-  def AddMacro(self, macro_str):
-    # Record a macro to output.
-    self.macros.append(macro_str)
-
 
 
 class Checker:
@@ -644,7 +644,7 @@ class Checker:
       if field.IsNoOffset():
         if field != the_struct.fields[-1]:
           self.AddError(field, 'field "%s" is an array of zero size, but is not the last field.')
-      
+
     fields_with_offsets = [f for f in the_struct.fields if not f.IsNoOffset()]
 
     if len(fields_with_offsets) == 0:
@@ -662,7 +662,7 @@ class Checker:
         if start_offset % field.type.Alignment() != 0:
           self.AddError(field, 'Field "%s" cannot be placed in a location that '
                         'does not match its natural alignment.' % field.name)
-          
+
       if not the_struct.is_union:
         if (last_start_offset >= end_offset and
              last_end_offset >= end_offset):
@@ -674,7 +674,7 @@ class Checker:
               last_field_name, field.name,
               last_field_name, BitFlitString(last_end_offset),
               field.name, BitFlitString(start_offset)))
-          
+
         elif start_offset != last_end_offset + 1:
           self.AddError(field, 'unexpected space between field "%s" and "%s".  '
                         '("%s" ends at %s, "%s" begins at %s)'
@@ -690,18 +690,63 @@ class Checker:
     pass
 
 
-def LastNonReservedName(field_list):
-  last_name = None
+def CommonPrefix(name_list):
+  """Returns the longest prefix (followed by underbar) of all names.
+  Returns None if no longest prefix.
+  """
+  if len(name_list) < 2:
+    return None
+
+  first_name = name_list[0]
+  if not '_' in first_name:
+    return None
+
+  prefix = name_list[0].split('_')[0]
+  for name in name_list[1:]:
+    if not name.startswith(prefix + '_'):
+      return None
+  return prefix
+
+def FirstNonReservedName(field_list):
+  """Returns name of first field that is not a reserved field.
+  Returns None if no such field exists.
+  """
   first_name = None
   for field in field_list:
     if not field.IsReserved():
+      return field.name
+  return None
+
+def LastNonReservedName(field_list):
+  """Returns name of last field that is not a reserved field.
+  Returns None if no such field exists.
+  """
+  last_name = None
+  for field in field_list:
+    if not field.IsReserved():
       last_name = field.name
-      if first_name is None:
-        first_name = field.name
-  if last_name is not None:
-    return last_name
-  if last_name is first_name:
-    return 'z'
+  return last_name
+
+def ChoosePackedFieldName(fields):
+  """Chooses the name for a packed field base on the fields in that field."""
+  not_reserved_names = [f.name for f in fields if not f.IsReserved()]
+  common_prefix = CommonPrefix(not_reserved_names)
+
+  if common_prefix:
+    return common_prefix + '_pack'
+
+  first_name = FirstNonReservedName(fields)
+  last_name = LastNonReservedName(fields)
+  # No fields.
+  if first_name is None and last_name is None:
+    return "empty_pack"
+
+  # One field.
+  if first_name == last_name:
+    return first_name + '_pack'
+
+  return first_name + "_to_" + last_name
+
 
 class Packer:
   """ Searches all structures for bitfields that can be combined.
@@ -741,19 +786,16 @@ class Packer:
     if not the_struct.is_union:
       self.PackStruct(the_struct)
 
-  def PackFlit(self, the_struct, flit_number, the_fields):
-    """Replaces contiguous sets of bitfields with macros to access.
-    the_struct: structure containing fields to be packed.
-    flit_number: which flit of the structure is handled this time.
-    the_fields: list of fields in this flit.
+  def ChoosePackGroups(self, the_fields):
+    """Identify and group fields in a flit that deserve to be packed.
+    Returns array of proposed packed variables, with each group being
+    a tuple of (type, [fields to pack in variable) in that group.
     """
-    # All fields to pack. List of tuples of (type, [fields to pack])
-    fields_to_pack = []
     # Contiguous fields to pack.  When we reach the end of a group
     # move to fields_to_pack.
+    fields_to_pack = []
     current_group = []
     current_type = None
-
     for field in the_fields:
       # Loop through the fields, grouping contiguous bitfields into a larger
       # single variable.
@@ -774,6 +816,18 @@ class Packer:
 
     if len(current_group) > 1:
       fields_to_pack.append((current_type, current_group))
+    return fields_to_pack
+
+  def PackFlit(self, the_struct, flit_number, the_fields):
+    """Replaces contiguous sets of bitfields with macros to access.
+    the_struct: structure containing fields to be packed.
+    flit_number: which flit of the structure is handled this time.
+    the_fields: list of fields in this flit.
+    """
+    # All fields to pack. List of tuples of (type, [fields to pack])
+    fields_to_pack = []
+
+    fields_to_pack = self.ChoosePackGroups(the_fields)
 
     if len(fields_to_pack) == 0:
       # Nothing to pack.
@@ -792,7 +846,7 @@ class Packer:
             packed_field_width,
             type.BitWidth()))
 
-      new_field_name = fields[0].name + "_to_" + LastNonReservedName(fields)
+      new_field_name = ChoosePackedFieldName(fields)
       new_field = Field(new_field_name, type, min_start_bit, packed_field_width)
       new_field.line_number = fields[0].line_number
 
@@ -804,7 +858,7 @@ class Packer:
       for f in fields:
         # TODO(bowdidge): Fix.
         bitfield_layout_str += '      %d:%d: %s\n' % (f.StartBit() - min_end_bit,
-                                                      f.EndBit() - min_end_bit, 
+                                                      f.EndBit() - min_end_bit,
                                                       f.name)
         new_field.body_comment = "Combines bitfields %s.\n%s" % (bitfield_name_str,
                                                                 bitfield_layout_str)
@@ -890,6 +944,14 @@ class DocBuilder:
     key_comment = match.group(3)
     variable_name = utils.RemoveWhitespace(variable_name)
 
+    if not utils.IsValidCIdentifier(identifier):
+      self.AddError(
+        'struct name "%s" is not a valid identifier name.' % identifier)
+
+    if variable_name and not utils.IsValidCIdentifier(variable_name):
+      self.AddError(
+        'variable "%s" is not a valid identifier name.' % variable_name)
+
     current_struct = Struct(identifier, False)
     current_struct.line_number = self.current_line
     current_struct.key_comment = self.StripKeyComment(key_comment)
@@ -927,6 +989,10 @@ class DocBuilder:
     key_comment = match.group(2)
 
     name = utils.RemoveWhitespace(name)
+
+    if not utils.IsValidCIdentifier(name):
+      self.AddError('"%s" is not a valid identifier name.' % name)
+
     current_enum = Enum(name)
     current_enum.line_number = self.current_line
     current_enum.key_comment = self.StripKeyComment(key_comment)
@@ -949,6 +1015,9 @@ class DocBuilder:
     name = match.group(1)
     key_comment = match.group(2)
 
+    if not utils.IsValidCIdentifier(name):
+      self.AddError('"%s" is not a valid identifier name.' % name)
+
     name = utils.RemoveWhitespace(name)
     current_flags = FlagSet(name)
     current_flags.line_number = self.current_line
@@ -964,19 +1033,28 @@ class DocBuilder:
   def ParseEnumLine(self, line):
     # Parse the line describing a new enum variable.
     # This regexp matches:
-    # Foo = 1 Abitrary following comment
+    # Foo = 1 Arbitrary-following-comment
     match = re.match('(\w+)\s*=\s*(\w+)\s*(.*)$', line)
     if match is None:
       self.AddError('Invalid enum line: "%s"' % line)
       return None
 
     var = match.group(1)
-    # TODO(bowdidge): Test valid C identifier.
+
     value_str = match.group(2)
     value = utils.ParseInt(value_str)
     if value is None:
       self.AddError('Invalid enum value for %s: "%s"' % (value_str, var))
       return None
+
+    if not utils.IsValidCIdentifier(var):
+        self.AddError('"%s" is not a valid identifier name.' % var)
+
+    if value > 0x100000000:
+        self.AddError(
+          'Value for enum variable "%s" is %d, is larger than the 2^32 C allows.' % (
+            var, value))
+
     # Parse a line describing an enum variable.
     # TODO(bowdidge): Remember whether value was hex or decimal for better printing.
     new_enum = EnumVariable(var, value)
@@ -1006,7 +1084,7 @@ class DocBuilder:
         containing_struct.variables.append(enum)
     else:
       # Try parsing as continuation of previous field
-      if (not self.ParseMultiFlitFieldLine(line, containing_struct) and 
+      if (not self.ParseMultiFlitFieldLine(line, containing_struct) and
           not self.ParseFieldLine(line, containing_struct)):
         self.AddError('Invalid line: "%s"' % line)
         return
@@ -1016,7 +1094,7 @@ class DocBuilder:
     if len(self.stack) < 2:
       self.AddError('END without matching STRUCT, UNION, or ENUM')
       return None
-      
+
     (_, current_object) = self.stack[-1]
     self.stack.pop()
     (state, containing_object) = self.stack[-1]
@@ -1034,7 +1112,7 @@ class DocBuilder:
                      self.flit_crossing_field.type.BitWidth() - self.bits_remaining))
 
     self.base_types[current_object.Name()].bit_width = current_object.BitWidth()
-    
+
     self.current_comment = ''
 
     if state != DocBuilderTopLevel:
@@ -1061,6 +1139,13 @@ class DocBuilder:
     (_, name, variable) = union_args
     identifier = utils.RemoveWhitespace(name)
     variable = utils.RemoveWhitespace(variable)
+
+    if not utils.IsValidCIdentifier(name):
+      self.AddError('"%s" is not a valid union identifier name.' % name)
+
+    if not utils.IsValidCIdentifier(variable):
+      self.AddError('"%s" is not a valid identifier name.' % variable)
+
     current_union = Struct(name, True)
     current_union.line_number = self.current_line
     if len(self.current_comment) > 0:
@@ -1208,11 +1293,15 @@ class DocBuilder:
         print("Eek, thought %s was a number, but didn't parse!\n" % match.group(5))
     key_comment = match.group(6)
 
+    if not utils.IsValidCIdentifier(name):
+      self.AddError(
+        'field name "%s" is not a valid identifier name.' % name)
+
     if key_comment == '':
       key_comment = None
     else:
       key_comment = self.StripKeyComment(key_comment)
-      
+
     body_comment = None
     if len(self.current_comment) > 0:
       body_comment = self.current_comment
@@ -1269,7 +1358,7 @@ class DocBuilder:
     # Copy the sub-fields in.
     if type.IsRecord():
       new_field.CreateSubfields()
-      
+
     if not type.IsScalar() and end_bit == 0 and actual_width < expected_width:
       # Field may stretch across flits.
       self.flit_crossing_field = new_field
@@ -1329,14 +1418,21 @@ class DocBuilder:
 
 def Usage():
   sys.stderr.write('generator.py: usage: [-p] [-g [code, html] [-o file]\n')
-  sys.stderr.write('-p: pack fields into 8 byte flits, and create accessor macros\n')
+  sys.stderr.write('-c options: change codegen options.\n')
   sys.stderr.write('-g code: generate header file to stdout (default)\n')
   sys.stderr.write('-g html: generate HTML description of header\n')
   sys.stderr.write('-o filename_base: send output to named file\n')
   sys.stderr.write('                  for code generation, appends correct extension.\n')
+  sys.stderr.write('Codegen options include:\n')
+  sys.stderr.write('  pack: combine multiple bitfields into a single:\n')
+  sys.stderr.write('        field, and create accessor macros.\n')
+  sys.stderr.write('  json: generate routines for initializing a structure\n')
+  sys.stderr.write('        from a JSON representation.')
+  sys.stderr.write('Example: -c json,nopack enables json, and disables packing.\n')
 
+# TODO(bowdidge): Create options dictionary to replace all these arguments.
 def GenerateFile(should_pack, output_style, output_base,
-                 input_stream, input_filename):
+                 input_stream, input_filename, generate_json):
   # Process a single .gen file and create the appropriate header/docs.
   doc_builder = DocBuilder()
 
@@ -1362,7 +1458,7 @@ def GenerateFile(should_pack, output_style, output_base,
       for error in errors:
         sys.stderr.write(error + '\n')
 
-  helper = codegen.HelperGenerator()
+  helper = codegen.HelperGenerator(generate_json)
   helper.VisitDocument(doc)
 
   if output_style is OutputStyleHTML:
@@ -1375,7 +1471,7 @@ def GenerateFile(should_pack, output_style, output_base,
     else:
       return code
   elif output_style is OutputStyleHeader:
-    code_generator = codegen.CodeGenerator(output_base)
+    code_generator = codegen.CodeGenerator(output_base, generate_json)
     code_generator.output_file = output_base
     (header, source) = code_generator.VisitDocument(doc)
 
@@ -1393,26 +1489,41 @@ def GenerateFile(should_pack, output_style, output_base,
 OutputStyleHeader = 1
 OutputStyleHTML = 2
 
+def SetFromArgs(key, codegen_args, default_value):
+  """Returns whether setting 'key' should be set based on provided args.
+  key is a name for a codegen setting.
+  codegen_args is an array of arguments provided by the user which can
+  include either name (to set the value) or noname (to not set the value).
+  default_value names the value for the key if it is not in codegen_args.
+  """
+
+  if key in codegen_args:
+    return True
+  if 'no' + key in codegen_args:
+    return False
+  return default_value
+
 def main():
   try:
-    opts, args = getopt.getopt(sys.argv[1:], 'tpg:o:', ['help', 'output='])
+    opts, args = getopt.getopt(sys.argv[1:], 'tc:g:o:',
+                               ['help', 'output=', 'codegen='])
   except getopt.GetoptError as err:
     print str(err)
     Usage()
     sys.exit(2)
 
-  should_pack = False
   output_style = OutputStyleHeader
   output_base = None
+  codegen_args = []
 
   for o, a in opts:
-    if o == '-p':
-      should_pack = True
-    elif o in ('-h', '--help'):
+    if o in ('-h', '--help'):
       Usage()
       sys.exit(2)
     elif o in ('-o', '--output'):
       output_base = a
+    elif o in ('-c', '--codegen'):
+      codegen_args = a.split(',')
     elif o == '-g':
       if a == 'code':
         output_style = OutputStyleHeader
@@ -1424,6 +1535,9 @@ def main():
     else:
       assert False, 'Unhandled option %s' % o
 
+  codegen_pack = SetFromArgs('pack', codegen_args, False)
+  codegen_json = SetFromArgs('json', codegen_args, False)
+
   if len(args) == 0:
       sys.stderr.write('No genfile named.\n')
       sys.exit(2)
@@ -1433,8 +1547,8 @@ def main():
       sys.exit(2)
 
   input_stream = open(args[0], 'r')
-  out = GenerateFile(should_pack, output_style, output_base,
-                     input_stream, args[0])
+  out = GenerateFile(codegen_pack, output_style, output_base,
+                     input_stream, args[0], codegen_json)
   input_stream.close()
   if out:
     print out

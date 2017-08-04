@@ -719,6 +719,117 @@ class TestDocBuilder(unittest.TestCase):
     
     self.assertEqual(6, len(foo.variables))
     
+  def testValidStructName(self):
+    doc_builder = generator.DocBuilder()
+    contents = ['STRUCT 1',
+                'END']
+    errors = doc_builder.Parse('filename', contents)
+
+    self.assertEquals(1, len(errors))
+    self.assertIn('"1" is not a valid', errors[0])
+
+  def testValidUnionName(self):
+    doc_builder = generator.DocBuilder()
+    contents = ['STRUCT A',
+                'UNION 1_1 a',
+                'END',
+                'END']
+    errors = doc_builder.Parse('filename', contents)
+    print (errors)
+    self.assertEquals(1, len(errors))
+    self.assertIn('"1_1" is not a valid', errors[0])
+
+  def testValidUnionVariable(self):
+    doc_builder = generator.DocBuilder()
+    contents = ['STRUCT A',
+                'UNION A1 1_a',
+                'END',
+                'END']
+    errors = doc_builder.Parse('filename', contents)
+    print (errors)
+    self.assertEquals(1, len(errors))
+    self.assertIn('"1_a" is not a valid', errors[0])
+
+  def testValidFieldName(self):
+    doc_builder = generator.DocBuilder()
+    contents = ['STRUCT A',
+                '0 63:0 uint64_t 1dh',
+                'END']
+    errors = doc_builder.Parse('filename', contents)
+    self.assertEquals(1, len(errors))
+    self.assertIn('field name "1dh" is not a valid identifier', errors[0])
+
+
+  def testValidEnumName(self):
+    doc_builder = generator.DocBuilder()
+    contents = ['ENUM 1AA']
+    errors = doc_builder.Parse('filename', contents)
+
+    self.assertEquals(1, len(errors))
+    self.assertIn('"1AA" is not a valid identifier', errors[0])
+
+  def testValidEnumVarName(self):
+    doc_builder = generator.DocBuilder()
+    contents = ['ENUM A',
+                '1 = 3',
+                'END']
+    errors = doc_builder.Parse('filename', contents)
+    self.assertEquals(1, len(errors))
+    self.assertIn('"1" is not a valid identifier', errors[0])
+
+  def testValidEnumVarValue(self):
+    doc_builder = generator.DocBuilder()
+    contents = ['ENUM A',
+                'v = 999999999999',
+                'END']
+    errors = doc_builder.Parse('filename', contents)
+    self.assertEquals(1, len(errors))
+    self.assertIn('is larger than the 2^32', errors[0])
+
+  def testValidEnumVarValueInHex(self):
+    doc_builder = generator.DocBuilder()
+    contents = ['ENUM A',
+                'v = 0x10000000011',
+                'END']
+    errors = doc_builder.Parse('filename', contents)
+    self.assertEquals(1, len(errors))
+    self.assertIn('is larger than the 2^32', errors[0])
+
+  def testValidFlagName(self):
+    doc_builder = generator.DocBuilder()
+    contents = ['FLAGS 1AA']
+    errors = doc_builder.Parse('filename', contents)
+
+    self.assertEquals(1, len(errors))
+    self.assertIn('"1AA" is not a valid identifier', errors[0])
+
+  def testValidFlagVarName(self):
+    doc_builder = generator.DocBuilder()
+    contents = ['FLAGS A',
+                '1 = 3',
+                'END']
+    errors = doc_builder.Parse('filename', contents)
+    self.assertEquals(1, len(errors))
+    self.assertIn('"1" is not a valid identifier', errors[0])
+
+  def testValidFlagVarValue(self):
+    doc_builder = generator.DocBuilder()
+    contents = ['FLAGS A',
+                'v = 999999999999',
+                'END']
+    errors = doc_builder.Parse('filename', contents)
+    self.assertEquals(1, len(errors))
+    self.assertIn('is larger than the 2^32', errors[0])
+
+  def testValidFlagVarValueInHex(self):
+    doc_builder = generator.DocBuilder()
+    contents = ['FLAGS A',
+                'v = 0x10000000011',
+                'END']
+    errors = doc_builder.Parse('filename', contents)
+    self.assertEquals(1, len(errors))
+    self.assertIn('is larger than the 2^32', errors[0])
+
 
 class TestStripComment(unittest.TestCase):
   def testSimple(self):
@@ -1005,7 +1116,7 @@ class PackerTest(unittest.TestCase):
     self.assertEqual(1, len(errors))
     self.assertIn('without matching', errors[0])
                 
-  def disableParseVariableLengthArrayInSubStructure(self):
+  def testParseVariableLengthArrayInSubStructure(self):
     doc_builder = generator.DocBuilder()
     contents = [
       'STRUCT outer',
@@ -1020,15 +1131,162 @@ class PackerTest(unittest.TestCase):
     errors = doc_builder.Parse('filename', contents)
     self.assertIsNone(errors)
 
+    doc = doc_builder.current_document
     self.assertEqual(2, len(doc.structs))
-    inner = doc.structs[0]
+    outer = doc.structs[0]
+    inner = doc.structs[1]
     self.assertEqual("inner", inner.name)
     self.assertEqual(2, len(inner.fields))
     var_length_array = inner.fields[1]
     self.assertEqual("array", var_length_array.name)
     self.assertTrue(var_length_array.no_offset)
 
-                     
+  def testParseVariableLengthArrayInUnion(self):
+    doc_builder = generator.DocBuilder()
+    contents = [
+      'STRUCT outer',
+      '0 63:56 char initial_outer',
+      'UNION theUnion u',
+      'STRUCT first s1',
+      '0 55:0 uint64_t value',
+      '_ _:_ char chars[0]',
+      'END',
+      'STRUCT second s2',
+      '0 55:0 uint64_t value',
+      'END',
+      'END',
+      'END'
+      ]
+
+    errors = doc_builder.Parse('filename', contents)
+    self.assertIsNone(errors)
+
+    doc = doc_builder.current_document
+    self.assertEqual(4, len(doc.structs))
+    outer = doc.structs[0]
+    union = doc.structs[1]
+    s1 = doc.structs[2]
+    s2 = doc.structs[3]
+    self.assertEqual("outer", outer.name)
+    self.assertEqual("theUnion", union.name)
+    self.assertEqual("first", s1.name)
+    self.assertEqual("second", s2.name)
+
+    self.assertEqual(2, len(s1.fields))
+    var_length_array = s1.fields[1]
+    self.assertEqual("chars", var_length_array.name)
+    self.assertTrue(var_length_array.no_offset)
+
+  def testParseVariableLengthStructArrayInUnion(self):
+    doc_builder = generator.DocBuilder()
+    contents = [
+      'STRUCT inside_union',
+      '0 63:00 uint64_t value',
+      'END',
+      'STRUCT outer',
+      '0 63:56 char initial_outer',
+      'UNION theUnion u',
+      'STRUCT first s1',
+      '0 63:32 uint32_t value',
+      '_ _:_ inside_union inside[0]',
+      'END',
+      'END',
+      'END'
+      ]
+
+    errors = doc_builder.Parse('filename', contents)
+    self.assertIsNone(errors)
+    doc = doc_builder.current_document
+
+    self.assertEqual(4, len(doc.structs))
+
+    inside_union = doc.structs[0]
+    outer = doc.structs[1]
+    the_union = doc.structs[2]
+    first = doc.structs[3]
+    self.assertEqual("inside_union", inside_union.name)
+    self.assertEqual("outer", outer.name)
+    self.assertEqual("theUnion", the_union.name)
+    self.assertEqual("first", first.name)
+
+    self.assertEqual(64, inside_union.BitWidth())
+    # TODO(bowdidge) - 32 bit struct can't be aligned right up against
+    # the char.
+    self.assertEqual(40, outer.BitWidth())
+    self.assertEqual(32, the_union.BitWidth())
+    self.assertEqual(32, first.BitWidth())
+
+class PackedNameTest(unittest.TestCase):
+
+  def testPackedNameSimple(self):
+    fields = [generator.Field('a', None, 0, 0),
+              generator.Field('b', None, 0, 0)]
+    self.assertEqual('a_to_b', generator.ChoosePackedFieldName(fields))
+
+  def testPackedNameMultipleFields(self):
+    fields = [generator.Field('a', None, 0, 0),
+              generator.Field('c1', None, 0, 0),
+              generator.Field('c2', None, 0, 0),
+              generator.Field('c3', None, 0, 0),
+              generator.Field('c4', None, 0, 0),
+              generator.Field('b', None, 0, 0)]
+    self.assertEqual('a_to_b', generator.ChoosePackedFieldName(fields))
+
+  def testPackedNameFirstFieldReserved(self):
+    fields = [generator.Field('rsvd_bitfield', None, 0, 0),
+              generator.Field('b', None, 0, 0)]
+    self.assertEqual('b_pack', generator.ChoosePackedFieldName(fields))
+
+  def testPackedNameLastFieldReservedSingleField(self):
+    fields = [generator.Field('a', None, 0, 0),
+              generator.Field('reserved', None, 0, 0)]
+    self.assertEqual('a_pack', generator.ChoosePackedFieldName(fields))
+
+  def testPackedNameLastFieldReserved(self):
+    fields = [generator.Field('a', None, 0, 0),
+              generator.Field('b', None, 0, 0),
+              generator.Field('reserved', None, 0, 0)]
+    self.assertEqual('a_to_b', generator.ChoosePackedFieldName(fields))
+
+  def testPackedNameReservedInMiddle(self):
+    fields = [generator.Field('a', None, 0, 0),
+              generator.Field('reserved_foo', None, 0, 0),
+              generator.Field('b', None, 0, 0)]
+    self.assertEqual('a_to_b', generator.ChoosePackedFieldName(fields))
+
+  def testPackedNameMatchingPrefix(self):
+    fields = [generator.Field('prefix_a', None, 0, 0),
+              generator.Field('prefix_b', None, 0, 0),
+              generator.Field('prefix_c', None, 0, 0)]
+    self.assertEqual('prefix_pack', generator.ChoosePackedFieldName(fields))
+
+  def testPackedNameMatchingPrefixFirstTermOnly(self):
+    fields = [generator.Field('pre_fix_a', None, 0, 0),
+              generator.Field('pre_fix_b', None, 0, 0),
+              generator.Field('pre_fix_c', None, 0, 0)]
+    self.assertEqual('pre_pack', generator.ChoosePackedFieldName(fields))
+
+  def testPackedNameMatchingPrefixSimilarNames(self):
+    fields = [generator.Field('prefix_a', None, 0, 0),
+              generator.Field('pre_b', None, 0, 0),
+              generator.Field('pre_c', None, 0, 0)]
+    self.assertEqual('prefix_a_to_pre_c',
+                     generator.ChoosePackedFieldName(fields))
+
+  def testPackedNameMatchingPrefixReservedFieldAtStart(self):
+    fields = [generator.Field('reserved', None, 0, 0),
+              generator.Field('pre_b', None, 0, 0),
+              generator.Field('pre_c', None, 0, 0)]
+    self.assertEqual('pre_pack',
+                     generator.ChoosePackedFieldName(fields))
+
+  def testPackedNameMatchingPrefixReservedFieldAtEnd(self):
+    fields = [generator.Field('pre_a', None, 0, 0),
+              generator.Field('pre_b', None, 0, 0),
+              generator.Field('reserved', None, 0, 0)]
+    self.assertEqual('pre_pack',
+                     generator.ChoosePackedFieldName(fields))
+
 
 class CheckerTest(unittest.TestCase):
 
@@ -1348,5 +1606,19 @@ class CheckerTest(unittest.TestCase):
     self.assertEqual(1, len(checker.errors))
     self.assertIn('is not the last field', checker.errors[0])
 
+class CodegenArgsTest(unittest.TestCase):
+
+  def testSimple(self):
+    codegen_args = ['pack', 'nojson']
+    
+    self.assertFalse(generator.SetFromArgs('missing', codegen_args, False))
+    self.assertTrue(generator.SetFromArgs('missing', codegen_args, True))
+
+    self.assertFalse(generator.SetFromArgs('json', codegen_args, False))
+    self.assertFalse(generator.SetFromArgs('json', codegen_args, True))
+
+    self.assertTrue(generator.SetFromArgs('pack', codegen_args, False))
+    self.assertTrue(generator.SetFromArgs('pack', codegen_args, True))
+      
 if __name__ == '__main__':
     unittest.main()
