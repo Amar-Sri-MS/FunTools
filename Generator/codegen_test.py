@@ -5,7 +5,7 @@ import generator
 
 class CodeGeneratorTest(unittest.TestCase):
   def setUp(self):
-    self.printer = codegen.CodeGenerator(None)
+    self.printer = codegen.CodeGenerator(None, True)
 
   def testPrintStructNoVar(self):
     builder = generator.DocBuilder()  
@@ -111,7 +111,7 @@ class CodeGeneratorTest(unittest.TestCase):
 
 class HelperGeneratorTest(unittest.TestCase):
   def testInitializeSimpleField(self):
-    gen = codegen.HelperGenerator()
+    gen = codegen.HelperGenerator(False)
     s = generator.Struct('Foo', False)
     f = generator.Field('a1', generator.TypeForName('char'), 0, 8)
 
@@ -120,7 +120,7 @@ class HelperGeneratorTest(unittest.TestCase):
     self.assertEqual('\ts->pointer.a1 = a1;', statement)
 
   def testInitializeBitfield(self):
-    gen = codegen.HelperGenerator()
+    gen = codegen.HelperGenerator(False)
     s = generator.Struct('Foo', False)
     f = generator.Field('a1', generator.TypeForName('char'), 0, 2)
 
@@ -129,7 +129,7 @@ class HelperGeneratorTest(unittest.TestCase):
     self.assertEqual('\ts->a1 = a1;', statement)
 
   def testInitializePackedField(self):
-    gen = codegen.HelperGenerator()
+    gen = codegen.HelperGenerator(False)
     s = generator.Struct('Foo', False)
     f = generator.Field('a', generator.TypeForName('char'), 0, 8)
     f1 = generator.Field('a1', generator.TypeForName('char'), 8, 4)
@@ -141,7 +141,7 @@ class HelperGeneratorTest(unittest.TestCase):
     self.assertEqual('\ts->a = FOO_A1_P(a1) | FOO_A2_P(a2);', statement)
 
   def testInitializePackedFieldWithAllCapStructureName(self):
-    gen = codegen.HelperGenerator()
+    gen = codegen.HelperGenerator(False)
     s = generator.Struct('ffe_access_command', False)
     f = generator.Field('a', generator.TypeForName('char'), 0, 8)
     f1 = generator.Field('a1', generator.TypeForName('char'), 0, 4)
@@ -155,7 +155,7 @@ class HelperGeneratorTest(unittest.TestCase):
 
 
   def testCreateSimpleInitializer(self):
-    gen = codegen.HelperGenerator()
+    gen = codegen.HelperGenerator(False)
     s = generator.Struct('Foo', False)
     f = generator.Field('a1', generator.TypeForName('char'), 0, 8)
     s.fields = [f]
@@ -180,7 +180,7 @@ class CodegenEndToEnd(unittest.TestCase):
              'END']
 
     out = generator.GenerateFile(True, generator.OutputStyleHeader, None,
-                                 input, 'foo.gen')
+                                 input, 'foo.gen', True)
     self.assertIsNotNone(out)
 
     # Did structure get generated?
@@ -226,7 +226,7 @@ class CodegenEndToEnd(unittest.TestCase):
              ]
 
     out = generator.GenerateFile(True, generator.OutputStyleHeader, None,
-                                 input, 'foo.gen')
+                                 input, 'foo.gen', False)
     self.assertIsNotNone(out)
 
     # Did structure get generated?
@@ -241,7 +241,7 @@ class CodegenEndToEnd(unittest.TestCase):
              '0 59:56 uint8_t b',
              'END']
     out = generator.GenerateFile(True, generator.OutputStyleHeader, None,
-                                 input, 'foo.gen')
+                                 input, 'foo.gen', False)
     self.assertIsNotNone(out)
     self.assertIn('#define A_A_S 4', out)
 
@@ -255,7 +255,7 @@ class CodegenEndToEnd(unittest.TestCase):
              'END',
              'END']
     out = generator.GenerateFile(True, generator.OutputStyleHeader, None,
-                                 input, 'foo.gen')
+                                 input, 'foo.gen', False)
     self.assertIsNotNone(out)
     self.assertIn('#define AX1_A_S 4', out)
 
@@ -280,7 +280,7 @@ class CodegenEndToEnd(unittest.TestCase):
              ]
 
     out = generator.GenerateFile(True, generator.OutputStyleHeader, None,
-                                 input, 'foo.gen')
+                                 input, 'foo.gen', False)
     self.assertIsNotNone(out)
 
     # Did structure get generated?
@@ -303,7 +303,7 @@ class CodegenEndToEnd(unittest.TestCase):
              ]
 
     out = generator.GenerateFile(True, generator.OutputStyleHeader, None,
-                                 input, 'foo.gen')
+                                 input, 'foo.gen', False)
     self.assertIsNotNone(out)
 
     # Did structure get generated?
@@ -322,7 +322,7 @@ class CodegenEndToEnd(unittest.TestCase):
              ]
 
     out = generator.GenerateFile(True, generator.OutputStyleHeader, None,
-                                 input, 'foo.gen')
+                                 input, 'foo.gen', False)
     self.assertIsNotNone(out)
 
   def testMultiFlitNestedStruct(self):
@@ -341,7 +341,7 @@ class CodegenEndToEnd(unittest.TestCase):
       ]
 
     out = generator.GenerateFile(True, generator.OutputStyleHeader, None,
-                                 input, 'foo.gen')
+                                 input, 'foo.gen', False)
     self.assertIsNotNone(out)
     self.assertIn('struct fun_admin_cmd_common c;', out)
 
@@ -357,7 +357,7 @@ class CodegenEndToEnd(unittest.TestCase):
       ]
     
     out = generator.GenerateFile(False, generator.OutputStyleHeader, None,
-                                 input, 'foo.gen')
+                                 input, 'foo.gen', False)
 
     self.assertIsNotNone(out)
     self.assertIn('uint8_t a;', out)
@@ -381,7 +381,7 @@ class CodegenEndToEnd(unittest.TestCase):
       ]
 
     out = generator.GenerateFile(True, generator.OutputStyleHeader, None,
-                                 contents, 'foo.gen')
+                                 contents, 'foo.gen', False)
     self.assertEqual(2, out.count(' BA_init'))
     self.assertEqual(2, out.count(' BB_init'))
 
@@ -398,7 +398,7 @@ class CodegenEndToEnd(unittest.TestCase):
       ]
 
     out = generator.GenerateFile(True, generator.OutputStyleHeader, None,
-                                 contents, 'foo.gen')
+                                 contents, 'foo.gen', False)
     self.assertIn('const int A = 0x1;', out)
     self.assertIn('const int D = 0x8;', out)
     self.assertIn('const int F = 0x20;', out)
@@ -415,7 +415,7 @@ class CodegenEndToEnd(unittest.TestCase):
       ]
 
     out = generator.GenerateFile(True, generator.OutputStyleHeader, None,
-                                 contents, 'foo.gen')
+                                 contents, 'foo.gen', False)
     self.assertIn('const int A = 0x1;', out)
     self.assertIn('const int AB = 0x3;', out)
     self.assertIn('const int D = 0x10;', out)
@@ -441,7 +441,7 @@ class TestComments(unittest.TestCase):
       ]
 
     out = generator.GenerateFile(True, generator.OutputStyleHeader, None,
-                                 input, 'foo.gen')
+                                 input, 'foo.gen', False)
 
     self.assertIn('/* Body comment. */', out)
     self.assertIn('struct fun_admin_cmd_common {', out)
@@ -469,7 +469,7 @@ class TestComments(unittest.TestCase):
       'END']
 
     out = generator.GenerateFile(True, generator.OutputStyleHeader, None,
-                                 input, 'foo.gen')
+                                 input, 'foo.gen', False)
 
     self.assertIn('/* Struct comment. */', out)
     self.assertIn('/* Union body comment. */', out)
@@ -489,7 +489,7 @@ class TestComments(unittest.TestCase):
       'END']
 
     out = generator.GenerateFile(True, generator.OutputStyleHeader, None,
-                                 input, 'foo.gen')
+                                 input, 'foo.gen', False)
     self.assertIn('enum values {', out)
     self.assertIn('A = 0x1,' ,out)
     self.assertIn('/* Enum key comment 1 */', out)
@@ -506,7 +506,7 @@ class TestComments(unittest.TestCase):
                 'END']
 
     out = generator.GenerateFile(True, generator.OutputStyleHeader, None,
-                                 contents, 'foo.gen')
+                                 contents, 'foo.gen', False)
     self.assertIn('struct Foo f[2];', out)
 
   def disableTestUnknownArrayOfStructs(self):
@@ -518,7 +518,7 @@ class TestComments(unittest.TestCase):
                 'END']
 
     out = generator.GenerateFile(True, generator.OutputStyleHeader, None,
-                                 contents, 'foo.gen')
+                                 contents, 'foo.gen', False)
     self.assertIn('struct Foo f[2];', out)
 
   def testNameListCorrectlyHandlesEnumVariablesWithGaps(self):
@@ -531,7 +531,7 @@ class TestComments(unittest.TestCase):
                 'G = 10'
                 ]
     out = generator.GenerateFile(True, generator.OutputStyleHeader, None,
-                                 contents, 'foo.gen')
+                                 contents, 'foo.gen', False)
 
     self.assertIn('"undefined",  /* 0x0 */', out)
     self.assertIn('"A",  /* 0x1 */', out)
@@ -551,7 +551,7 @@ class TestComments(unittest.TestCase):
       ]
 
     out = generator.GenerateFile(True, generator.OutputStyleHeader, None,
-                                 contents, 'foo.gen')
+                                 contents, 'foo.gen', False)
 
     self.assertIn('char array[0];\n};', out)
 
@@ -565,19 +565,53 @@ class TestComments(unittest.TestCase):
 	'END'
 	]
     out = generator.GenerateFile(True, generator.OutputStyleHeader, None,
-                                 contents, 'foo.gen')
+                                 contents, 'foo.gen', False)
     # TODO(bowdidge): check that errors were correctly emitted.
+
+  def testJSON(self):
+    contents = [
+	'STRUCT foo',
+	'0 63:48 uint16_t foo',
+        '0 47:32 uint16_t bar',
+        '0 31:0 uint32_t baz',
+	'END'
+	]
+    out = generator.GenerateFile(True, generator.OutputStyleHeader, None,
+                                 contents, 'foo.gen', True)
+    self.assertIn('bool foo_json_init(struct fun_json *j, struct foo *s)', out)
+    self.assertIn('struct fun_json *bar_j = fun_json_lookup(j, "bar");', out)
+
+  def disableTestNestedJSON(self):
+    # TODO(bowdidge): Support initializing nested structures from JSON.
+    contents = [
+	'STRUCT outer_struct',
+	'0 63:0 uint64_t outer_var',
+        'STRUCT inner_struct',
+        '1 63:0 uint64_t inner_var',
+	'END',
+        'END'
+	]
+    out = generator.GenerateFile(True, generator.OutputStyleHeader, None,
+                                 contents, 'foo.gen', True)
+    self.assertIn('struct fun_json *outer_struct_json_init', out)
+    # Need JSON for inner structure.
+    self.assertIn('struct fun_json *inner_struct_json_init', out)
+    # Should see call to outer and inner init.
+    self.assertIn('outer_struct_init(s, ', out)
+    self.assertIn('inner_struct_init(&inner_var, ', out)
+    
+
     
 
 class TestIndentString(unittest.TestCase):
   def testSimple(self):
     # Tests only properties that hold true regardless of the formatting style.
-    generator = codegen.CodeGenerator(None)
+    generator = codegen.CodeGenerator(None, False)
     generator.indent = 1
     self.assertTrue(len(generator.Indent()) > 0)
 
   def testTwoIndentDoublesOneIndent(self):
-    generator = codegen.CodeGenerator(None)
+    generator = codegen.CodeGenerator(None, False)
     generator.indent = 1
     oneIndent = generator.Indent()
     generator.indent = 2

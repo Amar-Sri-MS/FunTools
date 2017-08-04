@@ -76,5 +76,18 @@ class TestBitPatternString(unittest.TestCase):
     self.assertEqual('0001', utils.BitPatternString(1, 4))
 
 
+class TestValidIdentifier(unittest.TestCase):
+  def testSimple(self):
+    self.assertTrue(utils.IsValidCIdentifier('a'))
+    self.assertTrue(utils.IsValidCIdentifier('_'))
+    self.assertTrue(utils.IsValidCIdentifier('_ab123_'))
+    self.assertTrue(utils.IsValidCIdentifier('_1'))
+
+    self.assertFalse(utils.IsValidCIdentifier('^'))
+    self.assertFalse(utils.IsValidCIdentifier('1a'))
+    self.assertFalse(utils.IsValidCIdentifier(''))
+    self.assertFalse(utils.IsValidCIdentifier('0'))
+    self.assertFalse(utils.IsValidCIdentifier('-'))
+
 if __name__ == '__main__':
     unittest.main()

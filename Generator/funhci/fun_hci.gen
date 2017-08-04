@@ -17,6 +17,9 @@ ENUM fun_admin_op
   FUN_ADMIN_OP_VOL  = 0x19 /* Volume Node */
   FUN_ADMIN_OP_CONCAT = 0x1A /* Concatinated Volume Node */
   FUN_ADMIN_OP_CRYPTO = 0x1B /* Crypto Node */
+  FUN_ADMIN_OP_PORT_PARAM = 0x1C /* */
+  FUN_ADMIN_OP_PORT_DIAG = 0x1D /* */
+  FUN_ADMIN_OP_PORT_XCVR = 0x1E /* */
 END
 
 FLAGS fun_admin_req_common_flag
@@ -46,6 +49,8 @@ ENUM fun_admin_subop
   FUN_ADMIN_SUBOP_DESTROY = 0x02
   FUN_ADMIN_SUBOP_LIST_CREATED = 0x03
   FUN_ADMIN_SUBOP_LIST_ACTIVE = 0x04
+  FUN_ADMIN_SUBOP_READ = 0x05
+  FUN_ADMIN_SUBOP_WRITE = 0x06
 END
 
 
@@ -671,6 +676,159 @@ STRUCT fun_admin_bind_rsp
   1 63:00 ...
 END
 
+
+// PORT
+
+ENUM fun_admin_port_keys
+  FUN_ADMIN_PORT_SUBOP_MTU = 0x00
+  FUN_ADMIN_PORT_SUBOP_FEC = 0x01
+  FUN_ADMIN_PORT_SUBOP_SPEED = 0x02
+  FUN_ADMIN_PORT_SUBOP_DEBOUNCE = 0x03
+  FUN_ADMIN_PORT_SUBOP_DUPLEX = 0x04
+  FUN_ADMIN_PORT_SUBOP_MAC = 0x05
+  FUN_ADMIN_PORT_SUBOP_LINKMODE = 0x06
+  FUN_ADMIN_PORT_SUBOP_BREAK = 0x07
+END
+
+
+STRUCT fun_admin_read64_req
+ 0 63:56 uint8_t fun_admin_subop
+ 0 55:08 uint8_t rsvd[6]
+ 0 07:00 uint8_t key
+ 1 63:00 uint64_t rsvd1
+END
+
+STRUCT fun_admin_write64_req
+ 0 63:56 uint8_t fun_admin_subop
+ 0 55:08 uint8_t rsvd[6]
+ 0 07:00 uint8_t key
+ 1 63:00 uint64_t data
+END
+
+STRUCT fun_admin_read64_rsp
+ 0 63:56 uint8_t fun_admin_subop
+ 0 55:08 uint8_t rsvd[6]
+ 0 07:00 uint8_t key
+ 1 63:00 uint64_t data
+END
+
+STRUCT fun_admin_write64_rsp
+ 0 63:56 uint8_t fun_admin_subop
+ 0 55:08 uint8_t rsvd[6]
+ 0 07:00 uint8_t key
+ 1 63:00 uint64_t rsvd1
+END
+
+
+STRUCT fun_admin_port_req
+  0 63:00 fun_admin_req_common common
+  1 63:00 ...
+  2 63:32 uint32_t port_id
+  2 31:00 uint32_t rsvd0
+  UNION fun_admin_port_req_subop u
+    STRUCT fun_admin_port_req_write write
+      _ _:_ fun_admin_write64_req link_w[0]
+    END
+    STRUCT fun_admin_port_req_read read
+      _ _:_ fun_admin_read64_req link_r[0]
+    END
+  END
+END
+
+STRUCT fun_admin_port_rsp
+  0 63:00 fun_admin_rsp_common common
+  1 63:00 ...
+  2 63:32 uint32_t port_id
+  2 31:00 uint32_t rsvd0
+  UNION fun_admin_port_rsp_subop u
+    STRUCT fun_admin_port_rsp_read read
+      _ _:_ fun_admin_read64_rsp link_r[0]
+    END
+  END
+END
+
+// DIAGS
+ENUM fun_port_diags_key
+  FUN_ADMIN_PORT_DIAG_SUBOP_PRBS = 0x00
+  FUN_ADMIN_PORT_DIAG_SUBOP_LPBK = 0x01
+END
+
+
+// XXX Not really r/w, think about new naming
+
+STRUCT fun_admin_port_diags_req
+  0 63:00 fun_admin_req_common common
+  1 63:00 ...
+  2 63:32 uint32_t port_id
+  2 31:00 uint32_t rsvd0
+  UNION fun_admin_port_diags_req_subop u
+    STRUCT fun_admin_port_diags_req_write write
+      _ _:_ fun_admin_write64_req diags_w[0]
+    END
+    STRUCT fun_admin_port_diags_req_read read
+      _ _:_ fun_admin_read64_req diags_r[0]
+    END
+  END
+END
+
+STRUCT fun_admin_port_diags_rsp
+  0 63:00 fun_admin_rsp_common common
+  1 63:00 ...
+  2 63:32 uint32_t port_id
+  2 31:00 uint32_t rsvd0
+  UNION fun_admin_port_diags_rsp_subop u
+    STRUCT fun_admin_port_diags_rsp_write write
+      _ _:_ fun_admin_write64_rsp diags_w[0]
+    END
+    STRUCT fun_admin_port_diags_rsp_read read
+      _ _:_ fun_admin_read64_rsp diags_r[0]
+    END
+  END
+END
+
+ENUM fun_port_xcvr_key
+  FUN_ADMIN_PORT_XCVR_OP_EEPROM = 0x00
+  FUN_ADMIN_PORT_XCVR_OP_DOM = 0x01
+END
+
+STRUCT fun_admin_port_xcvr_req
+  0 63:00 fun_admin_req_common common
+  1 63:00 ...
+  2 63:32 uint32_t port_id
+  2 31:00 uint32_t rsvd0
+  UNION fun_admin_port_xcvr_req_subop u
+    STRUCT fun_admin_port_xcvr_req_write write
+      _ _:_ fun_admin_write64_req xcvr_w[0]
+    END
+    STRUCT fun_admin_port_xcvr_req_read read
+      _ _:_ fun_admin_read64_req xcvr_r[0]
+    END
+  END
+END
+
+STRUCT fun_admin_port_xcvr_rsp
+  0 63:00 fun_admin_rsp_common common
+  1 63:00 ...
+  2 63:32 uint32_t port_id
+  2 31:00 uint32_t rsvd0
+  UNION fun_admin_port_xcvr_rsp_subop u
+    STRUCT fun_admin_port_xcvr_rsp_write write
+      _ _:_ fun_admin_write64_rsp xcvr_w[0]
+    END
+    STRUCT fun_admin_port_xcvr_rsp_read read
+      _ _:_ fun_admin_read64_rsp xcvr_r[0]
+    END
+  END
+END
+
+
+STRUCT fun_admin_port_async_req
+  0 63:00 fun_admin_req_common common
+  1 63:00 ...
+  2 63:32 uint32_t port_id
+  2 31:00 uint32_t rsvd0
+  _ _:_ fun_admin_read64_req async_r[0]
+END
 
 
 

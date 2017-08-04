@@ -122,3 +122,9 @@ def BitPatternString(value, max_bits):
     else:
       out += '0'
   return out
+
+def IsValidCIdentifier(name):
+  match = re.match('[a-zA-Z_][a-zA-Z_0-9]*', name)
+  if match:
+    return True
+  return False
