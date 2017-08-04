@@ -2,9 +2,30 @@
 # Platform
 OS := $(shell uname)
 
-CC = gcc
-LD = gcc
-AR = ar
+MACHINE ?= posix
+
+ifeq ($(OS),Darwin)
+	TOOL_ROOT := /Users/Shared/cross-el/bin
+	TOOL_PREFIX := mips64el-
+else
+ifeq ($(OS),Linux)
+	TOOL_ROOT ?= /opt/cross/bin
+	TOOL_PREFIX ?= mipsel-unknown-linux-gnu-
+endif
+endif
+
+ifeq ($(MACHINE),posix)
+	FULLPREFIX =
+	LIBDST = posix/$(OS)
+else
+ifeq ($(MACHINE),mips)
+	FULLPREFIX = $(TOOL_ROOT)/$(TOOL_PREFIX)
+	LIBDST = mips64
+endif
+endif
+
+CC = $(FULLPREFIX)gcc
+AR = $(FULLPREFIX)ar
 
 BUILD = build
 
@@ -12,7 +33,7 @@ SDKDIR ?= ../../../FunSDK
 
 LIBS = $(SDKDIR)/lib/$(OS)/noasan/libfunclient.a
 
-LIB_HCI = libfunhci.a
+LIB_HCI = libfunhci-$(MACHINE).a
 
 HCI_SRC = fun_hci.c
 HCI_HDR = fun_hci.h
@@ -43,7 +64,7 @@ $(BUILD)/$(LIB_HCI): $(HCI_OBJS)
 
 .PHONY: install
 install: $(BUILD)/$(LIB_HCI)
-	mkdir -p $(SDKDIR)/FunSDK/hci/lib/posix/$(OS)/
+	mkdir -p $(SDKDIR)/FunSDK/hci/lib/$(LIBDST)/libfunhci.a
 	cp $(BUILD)/$(LIB_HCI) $(SDKDIR)/FunSDK/hci/lib/posix/$(OS)/
 	cp $(HCI_HDR) $(SDKDIR)/FunSDK/hci/include
 
