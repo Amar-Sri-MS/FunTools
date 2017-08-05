@@ -106,8 +106,8 @@ class TestParser(unittest.TestCase):
     log = ["1.000100000 TRACE WU START faddr VP0.0.0 wuid 0x1 name my_wu arg0 1 arg1 2",
            "1.000050000 TRACE WU SEND faddr VP0.0.0 wuid 0x2 name sent_wu arg0 1 arg1 1 dest VP0.2.0",
            "1.000200000 TRACE WU END faddr VP0.0.0 wuid 0x1 name my_wu arg0 1 arg1 2",
-           "1.000300000 TRACE WU START faddr VP0.0.0 wuid 0x2 name sent_wu arg0 1 arg1 1",
-           "1.004000000 TRACE WU END faddr VP0.0.0"]
+           "1.000300000 TRACE WU START faddr VP0.2.0 wuid 0x2 name sent_wu arg0 1 arg1 1",
+           "1.004000000 TRACE WU END faddr VP0.2.0"]
     transactions = wu_trace.ParseFile(log, "foo.trace")
     tr = firstTransaction(transactions)
     render.DumpTransactions(sys.stdout, transactions)
@@ -121,6 +121,7 @@ class TestParser(unittest.TestCase):
            "1.000050000 TRACE TIMER START faddr VP0.0.0 timer 0x1 wuid 0x1 name foo_bar",
            "1.000200000 TRACE WU END faddr VP0.0.0",
            "1.000250000 TRACE TIMER TRIGGER faddr VP0.0.0 timer 0x1 arg0 0x2",
+           "1.000260000 TRACE WU SEND faddr VP0.0.0 wuid 0x2 name sent_wu arg0 1 arg1 1 dest VP0.0.0",
            "1.000300000 TRACE WU START faddr VP0.0.0 wuid 0x2 name sent_wu arg0 0x2 arg1 0",
            "1.004000 faddr000 TRACE WU END VP0.0.0"]
     transactions = wu_trace.ParseFile(log, "foo.trace")

@@ -161,11 +161,14 @@ class TraceParser:
   """Converts event start/stop messages into sequences of events grouped by transaction."""
 
   def __init__(self, input_filename):
-    # Map from (arg0, arg1) from a WU send to the event that triggered the send.
-    self.frame_to_caller = {}
+    # Map of VPs to sent WUs that have not yet started.
+    # TODO(bowdidge): Use both queue and arg0/arg1 to correctly predict
+    # which send pairs with which start.
+    self.caller_queues = {}
 
     # Map from timer id to the event setting the timer.
     self.timer_to_caller = {}
+
 
     # Map from timer id to the time the timer was set.  For setting start_time for event.
     self.timer_to_start_time = {}
@@ -181,24 +184,32 @@ class TraceParser:
     self.transactions = [self.boot_transaction]
 
   def RememberSend(self, event, arg0, arg1, src, dest):
-    self.frame_to_caller[(arg0, arg1)] = event
+    """Records the WU send event for later matching with a start."""
+    if dest not in self.caller_queues:
+      self.caller_queues[dest] = []
+    self.caller_queues[dest].append(event)
 
   def FindPreviousSend(self, wu_id, arg0, arg1, dest):
-      if (arg0, arg1) in self.frame_to_caller:
-        # Regular send.  Connect to caller.
-        send = self.frame_to_caller[(arg0, arg1)]
-        del self.frame_to_caller[(arg0, arg1)]
-        return send
+    """Returns the WU send that would have started a WU with the arguments.
+    TODO(bowdidge): Check more than the destination alone.
+    """
+    if dest not in self.caller_queues:
       return None
+    if len(self.caller_queues[dest]) == 0:
+      return None
+    return self.caller_queues[dest].pop(0)
 
   def RememberTimer(self, timer, caller_event):
     """Marks the calling WU for a timer start."""
     self.timer_to_caller[timer] = caller_event
 
   def FindPreviousTimer(self, timer_id, arg0):
-      start_event = self.timer_to_caller[timer_id]
-      del self.timer_to_caller[timer_id]
-      return start_event
+    """Returns the timer start event that would have triggered the
+    specific timer id and arg0 value.
+    """
+    start_event = self.timer_to_caller[timer_id]
+    del self.timer_to_caller[timer_id]
+    return start_event
   
   def HandleLogLine(self, log_keywords, line_number):
     """Reads in each logging event, and creates or updates any log events."""
