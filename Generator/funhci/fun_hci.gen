@@ -122,6 +122,7 @@ FLAGS fun_admin_epsq_create_flag
   FUN_ADMIN_EPSQ_CREATE_FLAG_HEAD_WB_ADDRESS = 0x10 /* Enable HEAD WriteBack to address */
   FUN_ADMIN_EPSQ_CREATE_FLAG_HEAD_WB_ADDRESS_TPH = 0x20 /* Enable HEAD WriteBack TPH */
   FUN_ADMIN_EPSQ_CREATE_FLAG_HEAD_WB_EPCQ = 0x40 /* Enable HEAD WriteBack to EPCQ */
+  FUN_ADMIN_EPSQ_CREATE_FLAG_RQ = 0x80 /* Submission Queue is a RQ */
 END
 
 STRUCT fun_admin_epsq_req
@@ -685,24 +686,27 @@ ENUM fun_admin_port_subop
 END
 
 ENUM fun_admin_port_key
-  FUN_ADMIN_PORT_KEY_MTU = 0x00
-  FUN_ADMIN_PORT_KEY_FEC = 0x01
-  FUN_ADMIN_PORT_KEY_SPEED = 0x02
-  FUN_ADMIN_PORT_KEY_DEBOUNCE = 0x03
-  FUN_ADMIN_PORT_KEY_DUPLEX = 0x04
-  FUN_ADMIN_PORT_KEY_MAC = 0x05
-  FUN_ADMIN_PORT_KEY_LINKMODE = 0x06
-  FUN_ADMIN_PORT_KEY_BREAK = 0x07
+  FUN_ADMIN_PORT_KEY_ILLEGAL = 0x00
+  FUN_ADMIN_PORT_KEY_MTU = 0x01
+  FUN_ADMIN_PORT_KEY_FEC = 0x02
+  FUN_ADMIN_PORT_KEY_SPEED = 0x03
+  FUN_ADMIN_PORT_KEY_DEBOUNCE = 0x04
+  FUN_ADMIN_PORT_KEY_DUPLEX = 0x05
+  FUN_ADMIN_PORT_KEY_MAC = 0x06
+  FUN_ADMIN_PORT_KEY_LINKMODE = 0x07
+  FUN_ADMIN_PORT_KEY_BREAK = 0x08
 END
 
 ENUM fun_admin_port_diags_key
-  FUN_ADMIN_PORT_DIAGS_KEY_PRBS = 0x00
-  FUN_ADMIN_PORT_DIAGS_KEY_LPBK = 0x01
+  FUN_ADMIN_PORT_DIAGS_KEY_ILLEGAL = 0x00
+  FUN_ADMIN_PORT_DIAGS_KEY_PRBS = 0x01
+  FUN_ADMIN_PORT_DIAGS_KEY_LPBK = 0x02
 END
 
 ENUM fun_admin_port_xcvr_key
-  FUN_ADMIN_PORT_XCVR_KEY_EEPROM = 0x40
-  FUN_ADMIN_PORT_XCVR_KEY_DOM = 0x41
+  FUN_ADMIN_PORT_XCVR_KEY_ILLEGAL = 0x00
+  FUN_ADMIN_PORT_XCVR_KEY_EEPROM = 0x01
+  FUN_ADMIN_PORT_XCVR_KEY_DOM = 0x02
 END
 
 STRUCT fun_admin_write48_req
@@ -865,6 +869,78 @@ STRUCT fun_rsp_common
   0 31:00 uint32_t rsp_common_status /* status */
   1 63:00 uint64_t rsp_common_cookie  /* caller cookie, copied from request */
 END 
+
+STRUCT fun_cqe_info_xxx
+  0 63:01 uint64_t timestamps
+  0 00:00 uint64_t p  /* phase-bit */
+END
+
+ENUM fun_eprq_op
+  FUN_EPRQ_OP_ILLEGAL = 0x00
+  FUN_EPRQ_OP_RQBUFS = 0x01
+END
+
+STRUCT fun_eprq_rqbuf
+  0 63:08 uint64_t bufaddr     /* buffer (DMA) address */
+  0 07:00 uint64_t bufsize2K   /* buffer size in units of 2-Kbytes */
+END
+
+STRUCT fun_eprq_rqbufs_req
+  0 63:0 fun_req_common common
+  1 63:0 ...
+  _ _:_ fun_eprq_rqbuf rqbuf[0]
+END 
+
+STRUCT fun_eprq_rqbufs_rsp
+  0 63:0 fun_rsp_common common
+  1 63:0 ...
+END
+
+ENUM fun_eth_op
+  FUN_ETH_OP_ILLEGAL = 0x00
+  FUN_ETH_OP_TX = 0x01
+  FUN_ETH_OP_RX = 0x02
+END
+
+STRUCT fun_subop_imm
+  0 63:56  uint8_t subop
+  0 55:48  uint8_t flags
+  0 47:32 uint16_t rsvd
+  0 31:00 uint32_t len
+  _ _:_ uint8_t data[0]
+END
+
+STRUCT fun_subop_sgl
+  0 63:56  uint8_t subop
+  0 55:48  uint8_t flags
+  0 47:40  uint8_t nsgl
+  0 39:32  uint8_t rsvd0
+  0 31:00 uint32_t sgl_len
+  1 63:00 uint64_t sgl_data
+END
+
+STRUCT fun_eth_tx_req
+  0 63:0 fun_req_common common
+  1 63:0 ...
+  2 63:48  uint16_t rsvd0
+  2 47:32 uint16_t flag /* see fun_eth_flag enum */
+  2 31:00 uint32_t id /* ethid */
+  3 63:32 uint32_t pktlen
+  3 31:00 uint32_t rsvd1
+  _ _:_ uint8_t packet[0] /* via fun_subop_imm/sgl */
+END
+
+// F1 to Host
+STRUCT fun_eth_rx_req
+  0 63:0 fun_req_common common
+  1 63:0 ...
+  2 63:48  uint16_t rsvd0
+  2 47:32 uint16_t flag /* see fun_eth_flag enum */
+  2 31:00 uint32_t id /* ethid */
+  3 63:32 uint32_t pktlen
+  3 31:00 uint32_t rsvd1
+  _ _:_ fun_subop_imm imm[0]
+END
 
 ENUM fun_socket_op
   FUN_SOCKET_OP_ILLEGAL = 0x00
