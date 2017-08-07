@@ -69,40 +69,36 @@ int main(int argc, char** argv) {
   const char* expected_bytes = "01234567890123";
 
   // Initialize with garbage.
-  fragPtr->u1.inline_cmd.opcode_to_inlineByteCount = 0xff;
+  fragPtr->u1.inline_cmd.source_to_inlineByteCount = 0x3f;
 
   // Initialize opcode.
-  uint8_t value =  GATHER_LIST_INLINE_FRAGMENT_OPCODE_P(GATHER_LIST_INLINE_FRAGMENT_OPCODE_M) 
-    | GATHER_LIST_INLINE_FRAGMENT_SOURCE_P(GATHER_LIST_INLINE_FRAGMENT_SOURCE_M)
+  uint8_t value =  GATHER_LIST_INLINE_FRAGMENT_SOURCE_P(GATHER_LIST_INLINE_FRAGMENT_SOURCE_M)
     | GATHER_LIST_INLINE_FRAGMENT_INLINE_BYTE_COUNT_P(GATHER_LIST_INLINE_FRAGMENT_INLINE_BYTE_COUNT_M);
   strcpy((char*)fragPtr->u1.inline_cmd.bytes, expected_bytes);
 
    printf("value is %d\n", value);
-  fragPtr->u1.inline_cmd.opcode_to_inlineByteCount &= ~value;
+  fragPtr->u1.inline_cmd.source_to_inlineByteCount &= ~value;
 
-  ASSERT_EQUAL(0, fragPtr->u1.inline_cmd.opcode_to_inlineByteCount,
+  ASSERT_EQUAL(0, fragPtr->u1.inline_cmd.source_to_inlineByteCount,
 	     "field not initialized.");
 
+  fragPtr->opcode = OPCODE_SCATTER;
+
   // Set all fields to non-zero values, and make sure they read out ok.
-  fragPtr->u1.inline_cmd.opcode_to_inlineByteCount |=
-    GATHER_LIST_INLINE_FRAGMENT_OPCODE_P(OPCODE_SCATTER) |
+  fragPtr->u1.inline_cmd.source_to_inlineByteCount |=
     GATHER_LIST_INLINE_FRAGMENT_SOURCE_P(source) |
     GATHER_LIST_INLINE_FRAGMENT_INLINE_BYTE_COUNT_P(byte_count);
 
 
-  ASSERT_EQUAL(0xab, fragPtr->u1.inline_cmd.opcode_to_inlineByteCount,
+  ASSERT_EQUAL(0xab, fragPtr->u1.inline_cmd.source_to_inlineByteCount,
 	     "raw value not correct.");
 
-  ASSERT_EQUAL(OPCODE_SCATTER,
-	     GATHER_LIST_INLINE_FRAGMENT_OPCODE_G(fragPtr->u1.inline_cmd.opcode_to_inlineByteCount),
-	     "Opcode read doesn't return expected value.");
-
   ASSERT_EQUAL(source,
-	     GATHER_LIST_INLINE_FRAGMENT_SOURCE_G(fragPtr->u1.inline_cmd.opcode_to_inlineByteCount),
+	     GATHER_LIST_INLINE_FRAGMENT_SOURCE_G(fragPtr->u1.inline_cmd.source_to_inlineByteCount),
 	     "source read doesn't return expected value.");
 
   ASSERT_EQUAL(byte_count,
-	     GATHER_LIST_INLINE_FRAGMENT_INLINE_BYTE_COUNT_G(fragPtr->u1.inline_cmd.opcode_to_inlineByteCount),
+	     GATHER_LIST_INLINE_FRAGMENT_INLINE_BYTE_COUNT_G(fragPtr->u1.inline_cmd.source_to_inlineByteCount),
 	     "inline byte count read doesn't return expected value.");
 
   printf("'%s' vs '%s'\n", expected_bytes, (const char *) fragPtr->u1.inline_cmd.bytes);
@@ -111,12 +107,12 @@ int main(int argc, char** argv) {
 
   // Change single value.
   // Clear.
-  fragPtr->u1.inline_cmd.opcode_to_inlineByteCount &= 
+  fragPtr->u1.inline_cmd.source_to_inlineByteCount &= 
     ~GATHER_LIST_INLINE_FRAGMENT_INLINE_BYTE_COUNT_P(GATHER_LIST_INLINE_FRAGMENT_INLINE_BYTE_COUNT_M);
-  fragPtr->u1.inline_cmd.opcode_to_inlineByteCount |= GATHER_LIST_INLINE_FRAGMENT_INLINE_BYTE_COUNT_P(7);
+  fragPtr->u1.inline_cmd.source_to_inlineByteCount |= GATHER_LIST_INLINE_FRAGMENT_INLINE_BYTE_COUNT_P(7);
 
   ASSERT_EQUAL(7,
-	       GATHER_LIST_INLINE_FRAGMENT_INLINE_BYTE_COUNT_G(fragPtr->u1.inline_cmd.opcode_to_inlineByteCount),
+	       GATHER_LIST_INLINE_FRAGMENT_INLINE_BYTE_COUNT_G(fragPtr->u1.inline_cmd.source_to_inlineByteCount),
 	       "Change single value returned wrong value.");
 
   // Test initialization.
@@ -129,14 +125,13 @@ int main(int argc, char** argv) {
   GatherListInlineFragment_init(&hdr, OPCODE_SCATTER, expected_source,
 				expected_byte_count);
 
-  ASSERT_EQUAL(OPCODE_SCATTER, 
-	       GATHER_LIST_INLINE_FRAGMENT_OPCODE_G(hdr.u1.inline_cmd.opcode_to_inlineByteCount),
+  ASSERT_EQUAL(OPCODE_SCATTER, hdr.opcode,
 	       "opcode not initialized correctly.");
   ASSERT_EQUAL(expected_source,
-	       GATHER_LIST_INLINE_FRAGMENT_SOURCE_G(hdr.u1.inline_cmd.opcode_to_inlineByteCount), 
+	       GATHER_LIST_INLINE_FRAGMENT_SOURCE_G(hdr.u1.inline_cmd.source_to_inlineByteCount), 
 	       "source not initialized correctly.");
   ASSERT_EQUAL(expected_byte_count,
-	       GATHER_LIST_INLINE_FRAGMENT_INLINE_BYTE_COUNT_G(hdr.u1.inline_cmd.opcode_to_inlineByteCount),
+	       GATHER_LIST_INLINE_FRAGMENT_INLINE_BYTE_COUNT_G(hdr.u1.inline_cmd.source_to_inlineByteCount),
 	       "inlineByteCount not initialized correctly.");
   ASSERT_TRUE(0 == strncmp(expected_bytes, (const char *) hdr.u1.inline_cmd.bytes, 14),
 	       "bytes not initialized correctly");
