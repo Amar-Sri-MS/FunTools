@@ -1,23 +1,22 @@
-
-
-// COMMAND COMMON
+/*
+ *  A d m i n   R e q u e s t s   and   R e s p o n s e s
+ */
 
 ENUM fun_admin_op
   FUN_ADMIN_OP_INVALID = 0x00
   FUN_ADMIN_OP_BIND = 0x01 /* Bind Nodes into Flow Graph */
-  FUN_ADMIN_OP_EPFN = 0x10 /* PCIe EndPoint Function Node */
-  FUN_ADMIN_OP_EPCQ = 0x11 /* PCIe EndPoint Completion Queue Node */
-  FUN_ADMIN_OP_EPSQ = 0x12 /* PCIe EndPoint Submission Queue Node */
-  FUN_ADMIN_OP_EPRQ = 0x13 /* PCIe EndPoint Receive Queue Node */
-  FUN_ADMIN_OP_PORT = 0x1C  /* Port Node */
-  FUN_ADMIN_OP_ETH  = 0x14 /* Ethernet processedsing Node */
-  FUN_ADMIN_OP_VI   = 0x15 /* Virtual Interface Node */
-  FUN_ADMIN_OP_SOCKET = 0x16 /* Socket Node */
-  FUN_ADMIN_OP_TCP  = 0x17 /* TCP Node */
-  FUN_ADMIN_OP_NSS  = 0x18 /* NVMe SubSystem Node */
-  FUN_ADMIN_OP_VOL  = 0x19 /* Volume Node */
-  FUN_ADMIN_OP_CONCAT = 0x1A /* Concatinated Volume Node */
-  FUN_ADMIN_OP_CRYPTO = 0x1B /* Crypto Node */
+  FUN_ADMIN_OP_EPFN = 0x10 /* PCIe EndPoint Function Flow Node */
+  FUN_ADMIN_OP_EPCQ = 0x11 /* PCIe EndPoint Completion Queue Flow Node */
+  FUN_ADMIN_OP_EPSQ = 0x12 /* PCIe EndPoint Submission Queue Flow Node */
+  FUN_ADMIN_OP_PORT = 0x13 /* Switch Port Flow Node */
+  FUN_ADMIN_OP_ETH = 0x14 /* Ethernet processing Flow Node */
+  FUN_ADMIN_OP_VI = 0x15 /* Virtual Interface Flow Node */
+  FUN_ADMIN_OP_SOCKET = 0x16 /* Socket Flow Node */
+  FUN_ADMIN_OP_TCP = 0x17 /* TCP Flow Node */
+  FUN_ADMIN_OP_NSS = 0x18 /* NVMe SubSystem Flow Node */
+  FUN_ADMIN_OP_VOL = 0x19 /* Storage Volume Flow Node */
+  FUN_ADMIN_OP_CONCAT = 0x1A /* Storage Concatinated Volume Flow Node */
+  FUN_ADMIN_OP_CRYPTO = 0x1B /* Crypto Flow Node */
 END
 
 FLAGS fun_admin_req_common_flag
@@ -27,19 +26,81 @@ FLAGS fun_admin_req_common_flag
 END
 
 STRUCT fun_admin_req_common
-  0 63:56  uint8_t admin_req_common_op /* see fun_admin_op enum */
-  0 55:48  uint8_t admin_req_common_len8 /* length of the request in units of 8-bytes */
-  0 47:32 uint16_t admin_req_common_flags /* see fun_admin_req_common flag enum */
+  0 63:56  uint8_t op /* see fun_admin_op enum */
+  0 55:48  uint8_t len8 /* length of the request in units of 8-bytes */
+  0 47:32 uint16_t flags /* see fun_admin_req_common flag enum */
   0 31:00 uint32_t rsvd0
-  1 63:00 uint64_t admin_req_common_cookie /* caller cookie, returned in response message */
+  1 63:00 uint64_t cookie /* caller cookie, returned in response */
 END 
 
 STRUCT fun_admin_rsp_common
-  0 63:56  uint8_t admin_rsp_common_op /* see fun_admin_op enum, copied from request */
-  0 55:32  uint8_t admin_rsvd0[3]
-  0 31:00 uint32_t admin_rsp_common_status /* status */
-  1 63:00 uint64_t admin_rsp_common_cookie  /* caller cookie, copied from request */
+  0 63:56  uint8_t op /* see fun_admin_op enum, copied from request */
+  0 55:08  uint8_t rsvd0[6]
+  0 07:00  uint8_t ret /* see fun_ret enum */
+  1 63:00 uint64_t cookie /* caller cookie, copied from request */
 END 
+
+STRUCT fun_admin_write48_req
+  0 63:56 uint8_t key
+  0 55:48 uint8_t rsvd0
+  0 47:00 uint8_t data[6]
+END
+
+STRUCT fun_admin_write48_rsp
+  0 63:56 uint8_t key
+  0 55:48 uint8_t ret
+  0 47:00 uint8_t data[6]
+END
+
+STRUCT fun_admin_read48_req
+  0 63:56 uint8_t key
+  0 55:00 uint8_t rsvd0[7]
+END
+
+STRUCT fun_admin_read48_rsp
+  0 63:56 uint8_t key
+  0 55:48 uint8_t ret
+  0 47:00 uint8_t data[6]
+END
+
+/*
+ *  BIND Request/Response
+ */
+ENUM fun_admin_bind_type
+  FUN_ADMIN_BIND_TYPE_INVALID = 0x00
+  FUN_ADMIN_BIND_TYPE_EPCQ = 0x01
+  FUN_ADMIN_BIND_TYPE_EPSQ = 0x02
+  FUN_ADMIN_BIND_TYPE_PORT = 0x03 
+  FUN_ADMIN_BIND_TYPE_VI = 0x04
+  FUN_ADMIN_BIND_TYPE_ETH = 0x05
+  FUN_ADMIN_BIND_TYPE_SOCKET = 0x06
+  FUN_ADMIN_BIND_TYPE_TCP = 0x07
+  FUN_ADMIN_BIND_TYPE_NSS = 0x08
+  FUN_ADMIN_BIND_TYPE_VOL = 0x09
+  FUN_ADMIN_BIND_TYPE_CONCAT = 0x0a
+  FUN_ADMIN_BIND_TYPE_CRYPTO = 0x0b
+END
+
+ENUM fun_admin_bind_const
+  FUN_ADMIN_BIND_FLOW_MAX = 4
+END
+
+STRUCT fun_admin_bind_entry
+  0 63:56  uint8_t type
+  0 55:32  uint8_t rsvd0[3]
+  0 31:00 uint32_t id
+END
+
+STRUCT fun_admin_bind_req
+  0 63:00 fun_admin_req_common common 
+  1 63:00 ...
+  _ _:_ fun_admin_bind_entry entry[0]
+END
+
+STRUCT fun_admin_bind_rsp
+  0 63:00 fun_admin_rsp_common bind_rsp_common 
+  1 63:00 ...
+END
 
 ENUM fun_admin_subop
   FUN_ADMIN_SUBOP_INVALID = 0x00
@@ -51,7 +112,9 @@ ENUM fun_admin_subop
   FUN_ADMIN_SUBOP_WRITE = 0x13
 END
 
-
+/*
+ *  EPCQ Request/Response
+ */
 FLAGS fun_admin_epcq_create_flag
   FUN_ADMIN_EPCQ_CREATE_FLAG_ALLOCATOR = 0x01
   FUN_ADMIN_EPCQ_CREATE_FLAG_INT_EPCQ = 0x02
@@ -63,33 +126,34 @@ STRUCT fun_admin_epcq_req
   0 63:00 fun_admin_req_common common 
   1 63:00 ...
   UNION epcq_req_subop u
-    STRUCT fun_admin_epcq_req_create create
-      2 63:56  uint8_t epcq_req_create_subop /* SUBOP_CREATE */
+    STRUCT fun_admin_epcq_create_req create
+      2 63:56  uint8_t subop /* SUBOP_CREATE */
       2 55:48  uint8_t rsvd0
-      2 47:32 uint16_t epcq_req_create_flag /* see fun_admin_epcq_create_flag enum */
-      2 31:00 uint32_t epcq_req_create_id /* FLAG_ALLOCATOR=0: n/a, FLAG_ALLOCATOR=1: epcqid */
+      2 47:32 uint16_t flags /* see fun_admin_epcq_create_flag enum */
+      2 31:00 uint32_t id /* FLAG_ALLOCATOR=0: n/a, FLAG_ALLOCATOR=1: epcqid */
       3 63:24  uint8_t rsvd1[5]
-      3 23:16  uint8_t epcq_req_create_entry_size_log2 /* log2 of epcq entry size in bytes */
-      3 15:00 uint16_t epcq_req_create_nentries /* number of entries in epcq */
-      4 63:00 uint64_t epcq_req_create_address /* DMA address of epcq */
+      3 23:16  uint8_t entry_size_log2 /* log2 of epcq entry size in bytes */
+      3 15:00 uint16_t nentries /* number of entries in epcq */
+      4 63:00 uint64_t address /* DMA address of epcq */
       5 63:40  uint8_t rsvd2[3]
-      5 39:32  uint8_t epcq_req_create_intcoal_kbytes /* interrupt coalescing, number of kbytes or 0 to disable */
-      5 31:24  uint8_t epcq_req_create_intcoal_holdoff_nentries /* interrupt coalescing, number of entries or 0 to disable */
-      5 23:16  uint8_t epcq_req_create_intcoal_holdoff_usecs /* interrupt coalescing, number of usess or 0 to disable */
-      5 15:00 uint16_t epcq_req_create_intid /* FLAG_INT_EPSQ=0: interrupt MSI/-X vectorid, FLAG_INT_EPSQ=1: interrupt concentrator epcqid */
-      6 63:48 uint16_t epcq_req_create_tph_cpuid /* CPUID for TPH */
+      5 39:32  uint8_t intcoal_kbytes /* interrupt coalescing, number of kbytes or 0 to disable */
+      5 31:24  uint8_t intcoal_holdoff_nentries /* interrupt coalescing, number of entries or 0 to disable */
+      5 23:16  uint8_t intcoal_holdoff_usecs /* interrupt coalescing, number of usess or 0 to disable */
+      5 15:00 uint16_t intid /* FLAG_INT_EPSQ=0: interrupt MSI/-X vectorid, FLAG_INT_EPSQ=1: interrupt concentrator epcqid */
+      6 63:48 uint16_t tph_cpuid /* CPUID for TPH */
       6 47:00  uint8_t rsvd3[6]
     END
-    STRUCT fun_admin_epcq_req_destroy destroy
-      2 63:56  uint8_t epcq_req_destroy_subop /* FUN_ADMIN_SUBOP_DESTROY */
-      2 55:32  uint8_t rsvd0[3]
-      2 31:00 uint32_t epcq_req_destroy_id /* epcqid to destroy */
-    END
-    STRUCT fun_admin_epcq_req_list list
-      2 63:56  uint8_t epcq_req_list_subop /* SUBOP_LIST */
+    STRUCT fun_admin_epcq_destroy_req destroy
+      2 63:56  uint8_t subop /* SUBOP_DESTROY */
       2 55:48  uint8_t rsvd0
-      2 47:32 uint16_t epcq_req_list_flag /* see fun_admin_epcq_create_flag enum */
-      2 31:00 uint32_t epcq_req_list_startid /*  */
+      2 47:32 uint16_t flags
+      2 31:00 uint32_t id /* epcqid to destroy */
+    END
+    STRUCT fun_admin_epcq_list_req list
+      2 63:56  uint8_t subop /* SUBOP_LIST */
+      2 55:48  uint8_t rsvd0
+      2 47:32 uint16_t flags
+      2 31:00 uint32_t startid /*  */
     END
   END
 END
@@ -98,21 +162,22 @@ STRUCT fun_admin_epcq_rsp
   0 63:00 fun_admin_rsp_common common
   0 63:00 ...
   UNION epcq_rsp_subop u
-    STRUCT fun_admin_epcq_rsp_create create
-      2 63:56  uint8_t epcq_rsp_create_subop /* SUBOP_CREATE */
+    STRUCT fun_admin_epcq_create_rsp create
+      2 63:56  uint8_t subop /* SUBOP_CREATE */
       2 55:32  uint8_t rsvd0[3]
-      2 31:00 uint32_t epcq_rsp_create_id /* created epcqid if epcq_rsp_common.rsp_common_status = 0 or N/A */
+      2 31:00 uint32_t id
     END
-    STRUCT fun_admin_epcq_rsp_destroy destroy
+    STRUCT fun_admin_epcq_destroy_rsp destroy
       2 63:56  uint8_t epcq_rsp_destroy_subop /* SUBOP_DESTROY */
       2 55:32  uint8_t rsvd0[3]
-      2 31:00 uint32_t epcq_rsp_destroy_id /* epcqid to destroy */
+      2 31:00 uint32_t id
     END      
   END
 END
 
-
-
+/*
+ *  EPSQ Request/Response
+ */
 FLAGS fun_admin_epsq_create_flag
   FUN_ADMIN_EPSQ_CREATE_FLAG_NONE = 0x00
   FUN_ADMIN_EPSQ_CREATE_FLAG_ALLOCATOR = 0x01 /* Enable EPSQ allocator */
@@ -129,36 +194,37 @@ STRUCT fun_admin_epsq_req
   0 63:00 fun_admin_req_common common 
   1 63:00 ...
   UNION epsq_req_subop u
-    STRUCT fun_admin_epsq_req_create create
-      2 63:56  uint8_t epsq_req_create_subop /* SUBOP_CREATE */
+    STRUCT fun_admin_epsq_create_req create
+      2 63:56  uint8_t subop /* SUBOP_CREATE */
       2 55:48  uint8_t rsvd0
-      2 47:32 uint16_t epsq_req_create_flag /* see fun_admin_epsq_create_flag enum */
-      2 31:00 uint32_t epsq_req_create_id /* FLAG_ALLOCATOR=0: n/a, FLAG_ALLOCATOR=1: epsqid */
-      3 63:32 uint32_t epsq_req_create_epcqid /* assiciated epcq */
+      2 47:32 uint16_t flags /* see fun_admin_epsq_create_flag enum */
+      2 31:00 uint32_t id /* FLAG_ALLOCATOR=0: n/a, FLAG_ALLOCATOR=1: epsqid */
+      3 63:32 uint32_t epcqid /* assiciated epcq */
       3 31:24  uint8_t rsvd1
-      3 23:16  uint8_t epsq_req_create_entry_size_log2 /* log2 of epsq entry size in bytes */
-      3 15:00 uint16_t epsq_req_create_nentries /* number of entries in epsq */
-      4 63:00 uint64_t epsq_req_create_address /* DMA address of epsq */
+      3 23:16  uint8_t entry_size_log2 /* log2 of epsq entry size in bytes */
+      3 15:00 uint16_t nentries /* number of entries in epsq */
+      4 63:00 uint64_t address /* DMA address of epsq */
       5 63:40  uint8_t rsvd2[3]
-      5 39:32  uint8_t epsq_req_create_intcoal_kbytes /* interrupt coalescing, number of kbytes or 0 to disable */
-      5 31:24  uint8_t epsq_req_create_intcoal_holdoff_nentries /* interrupt coalescing, number of entries or 0 to disable */
-      5 23:16  uint8_t epsq_req_create_intcoal_holdoff_usecs /* interrupt coalescing, number of usess or 0 to disable */
-      5 15:00 uint16_t epsq_req_create_intid /* FLAG_INT_EPSQ=0: interrupt MSI/-X vectorid, FLAG_INT_EPSQ=1: interrupt concentrator epsqid */
-      6 63:48 uint16_t epsq_req_create_tph_cpuid /* CPUID for TPH */
+      5 39:32  uint8_t intcoal_kbytes /* interrupt coalescing, number of kbytes or 0 to disable */
+      5 31:24  uint8_t intcoal_holdoff_nentries /* interrupt coalescing, number of entries or 0 to disable */
+      5 23:16  uint8_t intcoal_holdoff_usecs /* interrupt coalescing, number of usess or 0 to disable */
+      5 15:00 uint16_t intid /* FLAG_INT_EPSQ=0: interrupt MSI/-X vectorid, FLAG_INT_EPSQ=1: interrupt concentrator epsqid */
+      6 63:48 uint16_t tph_cpuid /* CPUID for TPH */
       6 47:08  uint8_t rsvd3[5]
-      6 07:00  uint8_t epsq_req_create_head_wb_size_log2 /* log2 of head write back size */
-      7 63:00 uint64_t epsq_req_create_head_wb_address /* DMA address for head writeback */
+      6 07:00  uint8_t head_wb_size_log2 /* log2 of head write back size */
+      7 63:00 uint64_t head_wb_address /* DMA address for head writeback */
     END
-    STRUCT fun_admin_epsq_req_destroy destroy
-      2 63:56  uint8_t epsq_req_destroy_subop /* SUBOP_DESTROY */
-      2 55:32  uint8_t rsvd0[3]
-      2 31:00 uint32_t epsq_req_destroy_id /* epsqid to destroy */
-    END  
-    STRUCT fun_admin_epsq_req_list list
-      2 63:56  uint8_t epsq_req_list_subop /* SUBOP_LIST */
+    STRUCT fun_admin_epsq_destroy_req destroy
+      2 63:56  uint8_t subop /* SUBOP_DESTROY */
       2 55:48  uint8_t rsvd0
-      2 47:32 uint16_t epsq_req_list_flag /* see fun_admin_epsq_create_flag enum */
-      2 31:00 uint32_t epsq_req_list_startid /*  */
+      2 47:32 uint16_t flags
+      2 31:00 uint32_t id /* epsqid to destroy */
+    END  
+    STRUCT fun_admin_epsq_list_req list
+      2 63:56  uint8_t subop /* SUBOP_LIST */
+      2 55:48  uint8_t rsvd0
+      2 47:32 uint16_t flags /* see fun_admin_epsq_create_flag enum */
+      2 31:00 uint32_t startid /*  */
     END   
   END
 END
@@ -167,517 +233,22 @@ STRUCT fun_admin_epsq_rsp
   0 63:00 fun_admin_rsp_common common
   0 63:00 ...
   UNION epsq_rsp_subop u
-    STRUCT fun_admin_epsq_rsp_create create
-      2 63:56  uint8_t epsq_rsp_create_subop /* SUBOP_CREATE */
+    STRUCT fun_admin_epsq_create_rsp create
+      2 63:56  uint8_t subop /* SUBOP_CREATE */
       2 55:32  uint8_t rsvd0[3]
-      2 31:00 uint32_t epsq_rsp_create_id /* created epsqid if epsq_rsp_common.rsp_common_status = 0 or N/A */
+      2 31:00 uint32_t id /* created epsqid if epsq_rsp_common.rsp_common_status = 0 or N/A */
     END
     STRUCT fun_admin_epsq_rsp_destroy destroy
-      2 63:56  uint8_t epsq_rsp_destroy_subop /* SUBOP_DESTROY */
+      2 63:56  uint8_t subop /* SUBOP_DESTROY */
       2 55:32  uint8_t rsvd0[3]
-      2 31:00 uint32_t epsq_rsp_destroy_id /* epsqid to destroy */
+      2 31:00 uint32_t id
     END      
   END
 END
 
-
-
-STRUCT fun_admin_eprq_req
-  0 63:00 fun_admin_req_common common 
-  1 63:00 ...
-  UNION eprq_req_subop u
-    STRUCT fun_admin_eprq_req_create create
-      2 63:56  uint8_t eprq_req_create_subop /* SUBOP_CREATE */
-      2 55:48  uint8_t rsvd0
-      2 47:32 uint16_t eprq_req_create_flag /* see fun_admin_eprq_create_flag enum */
-      2 31:00 uint32_t eprq_req_create_id /* FLAG_ALLOCATOR=0: n/a, FLAG_ALLOCATOR=1: eprqid */
-    END
-    STRUCT fun_admin_eprq_req_destroy destroy
-      2 63:56  uint8_t eprq_req_destroy_subop /* SUBOP_DESTROY */
-      2 55:32  uint8_t rsvd0[3]
-      2 31:00 uint32_t eprq_req_destroy_id /* eprqid to destroy */
-    END      
-    STRUCT fun_admin_eprq_req_list list
-      2 63:56  uint8_t eprq_req_list_subop /* SUBOP_LIST */
-      2 55:48  uint8_t rsvd0
-      2 47:32 uint16_t eprq_req_list_flag /* see fun_admin_eprq_create_flag enum */
-      2 31:00 uint32_t eprq_req_list_startid /*  */
-    END   
-  END
-END
-
-STRUCT fun_admin_eprq_rsp
-  0 63:00 fun_admin_rsp_common common
-  0 63:00 ...
-  UNION eprq_rsp_subop u
-    STRUCT fun_admin_eprq_rsp_create create
-      2 63:56  uint8_t eprq_rsp_create_subop /* SUBOP_CREATE */
-      2 55:48  uint8_t rsvd0
-      2 47:32 uint16_t flags
-      2 31:00 uint32_t eprq_rsp_create_id /* created eprqid if eprq_rsp_common.rsp_common_status = 0 or N/A */
-    END
-    STRUCT fun_admin_eprq_rsp_destroy destroy
-      2 63:56  uint8_t eprq_rsp_destroy_subop /* SUBOP_DESTROY */
-      2 55:32  uint8_t rsvd0[3]
-      2 31:00 uint32_t eprq_rsp_destroy_id /* eprqid to destroy */
-    END      
-  END
-END
-
-FLAGS fun_admin_eth_create_flag
-  FUN_ADMIN_ETH_CREATE_FLAG_ALLOCATOR = 0x01 /* Enable Ethernet allocator */
-END
-
-STRUCT fun_admin_eth_req
-  0 63:00 fun_admin_req_common common 
-  1 63:00 ...
-  UNION eth_req_subop u
-    STRUCT fun_admin_eth_req_create create
-      2 63:56  uint8_t eth_req_create_subop /* SUBOP_CREATE */
-      2 55:48  uint8_t rsvd0
-      2 47:32 uint16_t eth_req_create_flag /* see fun_admin_eth_create_flag enum */
-      2 31:00 uint32_t eth_req_create_id /* FLAG_ALLOCATOR=0: n/a, FLAG_ALLOCATOR=1: ethid */
-    END
-    STRUCT fun_admin_eth_req_destroy destroy
-      2 63:56  uint8_t eth_req_destroy_subop /* SUBOP_DESTROY */
-      2 55:32  uint8_t rsvd0[3]
-      2 31:00 uint32_t eth_req_destroy_id /* ethid to destroy */
-    END      
-    STRUCT fun_admin_eth_req_list list
-      2 63:56  uint8_t eth_req_list_subop /* SUBOP_LIST */
-      2 55:48  uint8_t rsvd0
-      2 47:32 uint16_t eth_req_list_flag /* see fun_admin_eth_create_flag enum */
-      2 31:00 uint32_t eth_req_list_startid /*  */
-    END   
-  END
-END
-
-STRUCT fun_admin_eth_rsp
-  0 63:00 fun_admin_rsp_common common
-  0 63:00 ...
-  UNION eth_rsp_subop u
-    STRUCT fun_admin_eth_rsp_create create
-      2 63:56  uint8_t eth_rsp_create_subop /* SUBOP_CREATE */
-      2 55:48  uint8_t rsvd0
-      2 47:32 uint16_t flags
-      2 31:00 uint32_t eth_rsp_create_id /* created ethid if eth_rsp_common.rsp_common_status = 0 or N/A */
-    END
-    STRUCT fun_admin_eth_rsp_destroy destroy
-      2 63:56  uint8_t eth_rsp_destroy_subop /* SUBOP_DESTROY */
-      2 55:32  uint8_t rsvd0[3]
-      2 31:00 uint32_t eth_rsp_destroy_id /* destroyed ethid */
-    END      
-  END
-END
-
-
-
-FLAGS fun_admin_vi_create_flag
-  FUN_ADMIN_VI_CREATE_FLAG_ALLOCATOR = 0x01 /* Enable Virtual Interface allocator */
-END
-
-STRUCT fun_admin_vi_req
-  0 63:00 fun_admin_req_common common 
-  1 63:00 ...
-  UNION vi_req_subop u
-    STRUCT fun_admin_vi_req_create create
-      2 63:56  uint8_t vi_req_create_subop /* SUBOP_CREATE */
-      2 55:48  uint8_t rsvd0
-      2 47:32 uint16_t vi_req_create_flag /* see fun_admin_vi_create_flag enum */
-      2 31:00 uint32_t vi_req_create_id /* FLAG_ALLOCATOR=0: n/a, FLAG_ALLOCATOR=1: viid */
-    END
-    STRUCT fun_admin_vi_req_destroy destroy
-      2 63:56  uint8_t vi_req_destroy_subop /* SUBOP_DESTROY */
-      2 55:32  uint8_t rsvd0[3]
-      2 31:00 uint32_t vi_req_destroy_id /* viid to destroy */
-    END 
-    STRUCT fun_admin_vi_req_list list
-      2 63:56  uint8_t vi_req_list_subop /* SUBOP_LIST */
-      2 55:48  uint8_t rsvd0
-      2 47:32 uint16_t vi_req_list_flag /* see fun_admin_vi_create_flag enum */
-      2 31:00 uint32_t vi_req_list_startid /*  */
-    END   
-  END
-END
-
-STRUCT fun_admin_vi_rsp
-  0 63:00 fun_admin_rsp_common common
-  0 63:00 ...
-  UNION vi_rsp_subop u
-    STRUCT fun_admin_vi_rsp_create create
-      2 63:56  uint8_t vi_rsp_create_subop /* SUBOP_CREATE */
-      2 55:48  uint8_t rsvd0
-      2 47:32 uint16_t flags
-      2 31:00 uint32_t vi_rsp_create_id /* vi_rsp_common.rsp_common_status=0: viid, otherwise: N/A */
-    END
-    STRUCT fun_admin_vi_rsp_destroy destroy
-      2 63:56  uint8_t vi_rsp_destroy_subop /* SUBOP_DESTROY */
-      2 55:32  uint8_t rsvd0[3]
-      2 31:00 uint32_t vi_rsp_destroy_id /* destroyed viid */
-    END      
-  END
-END
-
-STRUCT fun_admin_socket_req
-  0 63:00 fun_admin_req_common common 
-  1 63:00 ...
-  UNION socket_req_subop u
-    STRUCT fun_admin_socket_req_create create
-      2 63:56  uint8_t socket_req_create_subop /* SUBOP_CREATE */
-      2 55:48  uint8_t rsvd0
-      2 47:32 uint16_t socket_req_create_flag /* see fun_socket_create_flag enum */
-      2 31:00 uint32_t socket_req_create_id /* FLAG_ALLOCATOR=0: n/a, FLAG_ALLOCATOR=1: socketid */
-    END
-    STRUCT fun_admin_socket_req_destroy destroy
-      2 63:56  uint8_t socket_req_destroy_subop /* SUBOP_DESTROY */
-      2 55:32  uint8_t rsvd0[3]
-      2 31:00 uint32_t socket_req_destroy_id /* socketid to destroy */
-    END
-    STRUCT fun_admin_socket_req_list list
-      2 63:56  uint8_t socket_req_list_subop /* SUBOP_LIST */
-      2 55:48  uint8_t rsvd0
-      2 47:32 uint16_t socket_req_list_flag /* see fun_socket_create_flag enum */
-      2 31:00 uint32_t socket_req_list_startid /*  */
-    END       
-  END
-END
-
-STRUCT fun_admin_socket_rsp
-  0 63:00 fun_admin_rsp_common common
-  0 63:00 ...
-  UNION socket_admin_rsp_subop u
-    STRUCT fun_socket_rsp_create create
-      2 63:56  uint8_t socket_rsp_create_subop /* SUBOP_CREATE */
-      2 55:32  uint8_t rsvd0[3]
-      2 31:00 uint32_t socket_rsp_create_id /* socket_rsp_common.rsp_common_status=0: socketid, otherwise: N/A */
-    END
-    STRUCT fun_admin_socket_rsp_destroy destroy
-      2 63:56  uint8_t socket_rsp_destroy_subop /* SUBOP_DESTROY */
-      2 55:32  uint8_t rsvd0[3]
-      2 31:00 uint32_t socket_rsp_destroy_id /* destroyed socketid */
-    END      
-  END
-END
-
-STRUCT fun_admin_tcp_req
-  0 63:00 fun_admin_req_common common 
-  1 63:00 ...
-  UNION tcp_req_subop u
-    STRUCT fun_admin_tcp_req_create create
-      2 63:56  uint8_t tcp_req_create_subop /* SUBOP_CREATE */
-      2 55:48  uint8_t rsvd0
-      2 47:32 uint16_t tcp_req_create_flag /* see fun_tcp_create_flag enum */
-      2 31:00 uint32_t tcp_req_create_id /* FLAG_ALLOCATOR=0: n/a, FLAG_ALLOCATOR=1: tcpid */
-    END
-    STRUCT fun_admin_tcp_req_destroy destroy
-      2 63:56  uint8_t tcp_req_destroy_subop /* SUBOP_DESTROY */
-      2 55:32  uint8_t rsvd0[3]
-      2 31:00 uint32_t tcp_req_destroy_id /* tcpid to destroy */
-    END
-    STRUCT fun_admin_tcp_req_list list
-      2 63:56  uint8_t tcp_req_list_subop /* SUBOP_LIST */
-      2 55:48  uint8_t rsvd0
-      2 47:32 uint16_t tcp_req_list_flag /* see fun_tcp_create_flag enum */
-      2 31:00 uint32_t tcp_req_list_startid /*  */
-    END       
-  END
-END
-
-STRUCT fun_admin_tcp_rsp
-  0 63:00 fun_admin_rsp_common common
-  0 63:00 ...
-  UNION tcp_admin_rsp_subop u
-    STRUCT fun_tcp_rsp_create create
-      2 63:56  uint8_t tcp_rsp_create_subop /* SUBOP_CREATE */
-      2 55:32  uint8_t rsvd0[3]
-      2 31:00 uint32_t tcp_rsp_create_id /* tcp_rsp_common.rsp_common_status=0: tcpid, otherwise: N/A */
-    END
-    STRUCT fun_admin_tcp_rsp_destroy destroy
-      2 63:56  uint8_t tcp_rsp_destroy_subop /* SUBOP_DESTROY */
-      2 55:32  uint8_t rsvd0[3]
-      2 31:00 uint32_t tcp_rsp_destroy_id /* destroyed tcpid */
-    END      
-  END
-END
-
-
-FLAGS fun_admin_nss_create_flag
-  FUN_ADMIN_NSS_CREATE_FLAG_ALLOCATOR = 0x01 /* Enable NSS allocator */
-END
-
-STRUCT fun_admin_nss_req
-  0 63:00 fun_admin_req_common common 
-  1 63:00 ...
-  UNION nss_req_subop u
-    STRUCT fun_admin_nss_req_create create
-      2 63:56  uint8_t nss_req_create_subop /* SUBOP_CREATE */
-      2 55:48  uint8_t rsvd0
-      2 47:32 uint16_t nss_req_create_flag /* see fun_admin_nss_create_flag enum */
-      2 31:00 uint32_t nss_req_create_id /* FLAG_ALLOCATOR=0: n/a, FLAG_ALLOCATOR=1: nssid */
-    END
-    STRUCT fun_admin_nss_req_destroy destroy
-      2 63:56  uint8_t nss_req_destroy_subop /* SUBOP_DESTROY */
-      2 55:32  uint8_t rsvd0[3]
-      2 31:00 uint32_t nss_req_destroy_id /* nssid to destroy */
-    END
-    STRUCT fun_admin_nss_req_list list
-      2 63:56  uint8_t nss_req_list_subop /* SUBOP_LIST */
-      2 55:48  uint8_t rsvd0
-      2 47:32 uint16_t nss_req_list_flag /* see fun_admin_nss_create_flag enum */
-      2 31:00 uint32_t nss_req_list_startid /*  */
-    END       
-  END
-END
-
-STRUCT fun_admin_nss_rsp
-  0 63:00 fun_admin_rsp_common common
-  0 63:00 ...
-  UNION nss_rsp_subop u
-    STRUCT fun_admin_nss_rsp_create create
-      2 63:56  uint8_t nss_rsp_create_subop /* SUBOP_CREATE */
-      2 55:48  uint8_t rsvd0
-      2 47:32 uint16_t flags
-      2 31:00 uint32_t nss_rsp_create_id /* nss_rsp_common.rsp_common_status=0: nssid, otherwise: N/A */
-    END
-    STRUCT fun_admin_nss_rsp_destroy destroy
-      2 63:56  uint8_t nss_rsp_destroy_subop /* SUBOP_DESTROY */
-      2 55:32  uint8_t rsvd0[3]
-      2 31:00 uint32_t nss_rsp_destroy_id /* destroyed nssid */
-    END      
-  END
-END
-
-
-
-FLAGS fun_admin_vol_create_flag
-  FUN_ADMIN_VOL_CREATE_FLAG_ALLOCATOR = 0x01 /* Enable Volume allocator */
-END
-
-STRUCT fun_admin_vol_req
-  0 63:00 fun_admin_req_common common 
-  1 63:00 ...
-  UNION vol_req_subop u
-    STRUCT fun_admin_vol_req_create create
-      2 63:56  uint8_t vol_req_create_subop /* SUBOP_CREATE */
-      2 55:48  uint8_t rsvd0
-      2 47:32 uint16_t vol_req_create_flag /* see fun_admin_vol_create_flag enum */
-      2 31:00 uint32_t vol_req_create_id /* FLAG_ALLOCATOR=0: n/a, FLAG_ALLOCATOR=1: volid */
-      3 63:00 uint64_t rsvd1
-      4 63:00 uint64_t rsvd2
-      5 63:00 uint64_t rsvd3
-      6 63:00 uint64_t rsvd4
-      7 63:00 uint64_t rsvd5
-      8 63:00 uint64_t rsvd6
-      9 63:00 uint64_t rsvd7
-      10 63:00 uint64_t rsvd8
-      11 63:00 uint64_t rsvd9
-      12 63:00 uint64_t rsvd10
-      13 63:00 uint64_t rsvd11
-      14 63:00 uint64_t rsvd12
-      15 63:00 uint64_t rsvd13
-      16 63:00 uint64_t rsvd14
-    END
-    STRUCT fun_admin_vol_req_destroy destroy
-      2 63:56  uint8_t vol_req_destroy_subop /* SUBOP_DESTROY */
-      2 55:32  uint8_t rsvd0[3]
-      2 31:00 uint32_t vol_req_destroy_id /* volid to destroy */
-    END
-    STRUCT fun_admin_vol_req_list list
-      2 63:56  uint8_t vol_req_list_subop /* SUBOP_LIST */
-      2 55:48  uint8_t rsvd0
-      2 47:32 uint16_t vol_req_list_flag /* see fun_admin_vol_create_flag enum */
-      2 31:00 uint32_t vol_req_list_startid /*  */
-    END       
-  END
-END
-
-STRUCT fun_admin_vol_rsp
-  0 63:00 fun_admin_rsp_common common
-  0 63:00 ...
-  UNION vol_rsp_subop u
-    STRUCT fun_admin_vol_rsp_create create
-      2 63:56  uint8_t vol_rsp_create_subop /* SUBOP_CREATE */
-      2 55:48  uint8_t rsvd0
-      2 47:32 uint16_t flags
-      2 31:00 uint32_t vol_rsp_create_id /* vol_rsp_common.rsp_common_status=0: volid, otherwise: N/A */
-      3 63:00 uint64_t rsvd1
-      4 63:00 uint64_t rsvd2
-      5 63:00 uint64_t rsvd3
-      6 63:00 uint64_t rsvd4
-      7 63:00 uint64_t rsvd5
-      8 63:00 uint64_t rsvd6
-    END
-    STRUCT fun_admin_vol_rsp_destroy destroy
-      2 63:56  uint8_t vol_rsp_destroy_subop /* SUBOP_DESTROY */
-      2 55:32  uint8_t rsvd0[3]
-      2 31:00 uint32_t vol_rsp_destroy_id /* destroyed volid */
-    END      
-  END
-END
-
-FLAGS fun_admin_concat_create_flag
-  FUN_ADMIN_CONCAT_CREATE_FLAG_ALLOCATOR = 0x01 /* Enable Concat allocator */
-END
-
-STRUCT fun_admin_concat_req
-  0 63:00 fun_admin_req_common common 
-  1 63:00 ...
-  UNION concat_req_subop u
-    STRUCT fun_admin_concat_req_create create
-      2 63:56  uint8_t concat_req_create_subop /* SUBOP_CREATE */
-      2 55:48  uint8_t rsvd0
-      2 47:32 uint16_t concat_req_create_flag /* see fun_admin_concat_create_flag enum */
-      2 31:00 uint32_t concat_req_create_id /* FLAG_ALLOCATOR=0: n/a, FLAG_ALLOCATOR=1: concatid */
-      3 63:00 uint64_t rsvd1
-      4 63:00 uint64_t rsvd2
-      5 63:00 uint64_t rsvd3
-      6 63:00 uint64_t rsvd4
-      7 63:00 uint64_t rsvd5
-      8 63:00 uint64_t rsvd6
-      9 63:00 uint64_t rsvd7
-      10 63:00 uint64_t rsvd8
-      11 63:00 uint64_t rsvd9
-      12 63:00 uint64_t rsvd10
-      13 63:00 uint64_t rsvd11
-      14 63:00 uint64_t rsvd12
-    END
-    STRUCT fun_admin_concat_req_destroy destroy
-      2 63:56  uint8_t concat_req_destroy_subop /* SUBOP_DESTROY */
-      2 55:32  uint8_t rsvd0[3]
-      2 31:00 uint32_t concat_req_destroy_id /* concatid to destroy */
-    END
-    STRUCT fun_admin_concat_req_list list
-      2 63:56  uint8_t concat_req_list_subop /* SUBOP_LIST */
-      2 55:48  uint8_t rsvd0
-      2 47:32 uint16_t concat_req_list_flag /* see fun_admin_concat_create_flag enum */
-      2 31:00 uint32_t concat_req_list_startid /*  */
-    END       
-  END
-END
-
-STRUCT fun_admin_concat_rsp
-  0 63:00 fun_admin_rsp_common common
-  0 63:00 ...
-  UNION concat_rsp_subop u
-    STRUCT fun_admin_concat_rsp_create create
-      2 63:56  uint8_t concat_rsp_create_subop /* SUBOP_CREATE */
-      2 55:48  uint8_t rsvd0
-      2 47:32 uint16_t flags
-      2 31:00 uint32_t concat_rsp_create_id /* concat_rsp_common.rsp_common_status=0: concatid, otherwise: N/A */
-      3 63:00 uint64_t rsvd1
-      4 63:00 uint64_t rsvd2
-      5 63:00 uint64_t rsvd3
-      6 63:00 uint64_t rsvd4
-      7 63:00 uint64_t rsvd5
-      8 63:00 uint64_t rsvd6
-    END
-    STRUCT fun_admin_concat_rsp_destroy destroy
-      2 63:56  uint8_t concat_rsp_destroy_subop /* SUBOP_DESTROY */
-      2 55:32  uint8_t rsvd0[3]
-      2 31:00 uint32_t concat_rsp_destroy_id /* destroyed concatid */
-    END      
-  END
-END
-
-
-
-FLAGS fun_admin_crypto_create_flag
-  FUN_ADMIN_CRYPTO_CREATE_FLAG_ALLOCATOR = 0x01 /* Enable Crypto allocator */
-END
-
-STRUCT fun_admin_crypto_req
-  0 63:00 fun_admin_req_common common 
-  1 63:00 ...
-  UNION crypto_req_subop u
-    STRUCT fun_admin_crypto_req_create create
-      2 63:56  uint8_t crypto_req_create_subop /* SUBOP_CREATE */
-      2 55:48  uint8_t rsvd0
-      2 47:32 uint16_t crypto_req_create_flag /* see fun_admin_crypto_create_flag enum */
-      2 31:00 uint32_t crypto_req_create_id /* FLAG_ALLOCATOR=0: n/a, FLAG_ALLOCATOR=1: cryptoid */
-      3 63:00 uint64_t rsvd1
-      4 63:00 uint64_t rsvd2
-      5 63:00 uint64_t rsvd3
-      6 63:00 uint64_t rsvd4
-      7 63:00 uint64_t rsvd5
-      8 63:00 uint64_t rsvd6
-    END
-    STRUCT fun_admin_crypto_req_destroy destroy
-      2 63:56  uint8_t crypto_req_destroy_subop /* SUBOP_DESTROY */
-      2 55:32  uint8_t rsvd0[3]
-      2 31:00 uint32_t crypto_req_destroy_id /* cryptoid to destroy */
-    END      
-    STRUCT fun_admin_crypto_req_list list
-      2 63:56  uint8_t crypto_req_list_subop /* SUBOP_LIST */
-      2 55:48  uint8_t rsvd0
-      2 47:32 uint16_t crypto_req_list_flag /* see fun_admin_crypto_create_flag enum */
-      2 31:00 uint32_t crypto_req_list_startid /*  */
-    END    
-  END
-END
-
-STRUCT fun_admin_crypto_rsp
-  0 63:00 fun_admin_rsp_common common
-  0 63:00 ...
-  UNION crypto_rsp_subop u
-    STRUCT fun_admin_crypto_rsp_create create
-      2 63:56  uint8_t crypto_rsp_create_subop /* SUBOP_CREATE */
-      2 55:48  uint8_t rsvd0
-      2 47:32 uint16_t flags
-      2 31:00 uint32_t crypto_rsp_create_id /* crypto_rsp_common.rsp_common_status=0: cryptoid, otherwise: N/A */
-      3 63:00 uint64_t rsvd1
-      4 63:00 uint64_t rsvd2
-      5 63:00 uint64_t rsvd3
-      6 63:00 uint64_t rsvd4
-      7 63:00 uint64_t rsvd5
-      8 63:00 uint64_t rsvd6
-    END
-    STRUCT fun_admin_crypto_rsp_destroy destroy
-      2 63:56  uint8_t crypto_rsp_destroy_subop /* SUBOP_DESTROY */
-      2 55:32  uint8_t rsvd0[3]
-      2 31:00 uint32_t crypto_rsp_destroy_id /* destroyed cryptoid */
-    END
-  END
-END
-
-// BIND
-
-ENUM fun_admin_bind_type
-  FUN_ADMIN_BIND_TYPE_INVALID = 0x00
-  FUN_ADMIN_BIND_TYPE_EPCQ = 0x02
-  FUN_ADMIN_BIND_TYPE_EPSQ = 0x03
-  FUN_ADMIN_BIND_TYPE_EPRQ = 0x04
-  FUN_ADMIN_BIND_TYPE_ETH = 0x5
-  FUN_ADMIN_BIND_TYPE_VI = 0x6
-  FUN_ADMIN_BIND_TYPE_NSS = 0x7
-  FUN_ADMIN_BIND_TYPE_VOL = 0x8
-  FUN_ADMIN_BIND_TYPE_CONCAT = 0x9
-  FUN_ADMIN_BIND_TYPE_CRYPTO = 0xa
-END
-
-ENUM fun_admin_bind_const
-  FUN_ADMIN_BIND_FLOW_MAX = 4
-END
-
-STRUCT fun_admin_bind_req_entry
-  0 63:56  uint8_t bind_req_type
-  0 55:32  uint8_t rsvd0[3]
-  0 31:00 uint32_t bind_req_id
-END
-
-STRUCT fun_admin_bind_req
-  0 63:00 fun_admin_req_common common 
-  1 63:00 ...
-  _ _:_ fun_admin_bind_req_entry bind_req_entry[0]
-END
-
-STRUCT fun_admin_bind_rsp
-  0 63:00 fun_admin_rsp_common bind_rsp_common 
-  1 63:00 ...
-END
-
-
-// PORT
-
+/*
+ *  PORT Request/Response
+ */
 ENUM fun_admin_port_subop
   FUN_ADMIN_PORT_SUBOP_DIAGS_WRITE = 0x20
   FUN_ADMIN_PORT_SUBOP_DIAGS_READ = 0x21
@@ -709,85 +280,68 @@ ENUM fun_admin_port_xcvr_key
   FUN_ADMIN_PORT_XCVR_KEY_DOM = 0x02
 END
 
-STRUCT fun_admin_write48_req
-  0 63:56 uint8_t key
-  0 55:48 uint8_t rsvd0
-  0 47:00 uint8_t data[6]
-END
-
-STRUCT fun_admin_write48_rsp
-  0 63:56 uint8_t key
-  0 55:48 uint8_t ret
-  0 47:00 uint8_t data[6]
-END
-
-STRUCT fun_admin_read48_req
-  0 63:56 uint8_t key
-  0 55:00 uint8_t rsvd0[7]
-END
-
-STRUCT fun_admin_read48_rsp
-  0 63:56 uint8_t key
-  0 55:48 uint8_t ret
-  0 47:00 uint8_t data[6]
-END
-
-
 
 STRUCT fun_admin_port_req
   0 63:00 fun_admin_req_common common
   1 63:00 ...
   UNION port_req_subop u
-    STRUCT fun_admin_port_req_create create
-      2 63:56  uint8_t port_req_create_subop /* SUBOP_CREATE */
+    STRUCT fun_admin_port_create_req create
+      2 63:56  uint8_t subop /* SUBOP_CREATE */
       2 55:48  uint8_t rsvd0
-      2 47:32 uint16_t port_req_create_flag /* see fun_admin_port_create_flag enum */
-      2 31:00 uint32_t port_req_create_id /* FLAG_ALLOCATOR=0: n/a, FLAG_ALLOCATOR=1: portid */
+      2 47:32 uint16_t flags
+      2 31:00 uint32_t id /* FLAG_ALLOCATOR=0: n/a, FLAG_ALLOCATOR=1: portid */
     END
-    STRUCT fun_admin_port_req_destroy destroy
-      2 63:56  uint8_t port_req_destroy_subop /* SUBOP_DESTROY */
-      2 55:32  uint8_t rsvd0[3]
-      2 31:00 uint32_t port_req_destroy_id /* portid to destroy */
-    END      
-    STRUCT fun_admin_port_req_list list
-      2 63:56  uint8_t port_req_list_subop /* SUBOP_LIST */
+    STRUCT fun_admin_port_destroy_req destroy
+      2 63:56  uint8_t subop /* SUBOP_DESTROY */
       2 55:48  uint8_t rsvd0
-      2 47:32 uint16_t port_req_list_flag /* see fun_admin_port_create_flag enum */
-      2 31:00 uint32_t port_req_list_startid /*  */
+      2 47:32 uint16_t flags
+      2 31:00 uint32_t id /* portid to destroy */
+    END      
+    STRUCT fun_admin_port_list_req list
+      2 63:56  uint8_t subop /* SUBOP_LIST */
+      2 55:48  uint8_t rsvd0
+      2 47:32 uint16_t flags
+      2 31:00 uint32_t startid /*  */
     END    
     STRUCT fun_admin_port_write_req write
       2 63:56  uint8_t subop /* SUBOP_WRITE */
-      2 55:32  uint8_t rsvd0[3]
+      2 55:48  uint8_t rsvd0
+      2 47:32 uint16_t flags
       2 31:00 uint32_t id /* portid */
       _ _:_ fun_admin_write48_req write48[0]
     END
     STRUCT fun_admin_port_read_req read
       2 63:56  uint8_t subop /* SUBOP_READ */
-      2 55:32  uint8_t rsvd0[3]
+      2 55:48  uint8_t rsvd0
+      2 47:32 uint16_t flags
       2 31:00 uint32_t id /* portid */
       _ _:_ fun_admin_read48_req read48[0] 
     END
     STRUCT fun_admin_port_diags_write_req diags_write
       2 63:56  uint8_t subop /* SUBOP_DIAGS_WRITE */
-      2 55:32  uint8_t rsvd0[3]
+      2 55:48  uint8_t rsvd0
+      2 47:32 uint16_t flags
       2 31:00 uint32_t id /* portid */
       _ _:_ fun_admin_write48_req write48[0]
     END
     STRUCT fun_admin_port_diags_read_req diags_read
       2 63:56  uint8_t subop /* SUBOP_DIAGS_READ */
-      2 55:32  uint8_t rsvd0[3]
+      2 55:48  uint8_t rsvd0
+      2 47:32 uint16_t flags
       2 31:00 uint32_t read_id /* portid */
       _ _:_ fun_admin_read48_req read48[0]
     END
      STRUCT fun_admin_port_xcvr_write_req xvcr_write
       2 63:56  uint8_t subop /* SUBOP_XCVR_WRITE */
-      2 55:32  uint8_t rsvd0[3]
+      2 55:48  uint8_t rsvd0
+      2 47:32 uint16_t flags
       2 31:00 uint32_t id /* portid */
       _ _:_ fun_admin_write48_req write48[0]
     END
     STRUCT fun_admin_port_xcvr_read_req xcvr_read
       2 63:56  uint8_t subop /* SUBOP_XCVR_READ */
-      2 55:32  uint8_t rsvd0[3]
+      2 55:48  uint8_t rsvd0
+      2 47:32 uint16_t flags
       2 31:00 uint32_t id /* portid */
       _ _:_ fun_admin_read48_req read48[0]
    END
@@ -797,7 +351,7 @@ END
 STRUCT fun_admin_port_rsp
   0 63:00 fun_admin_rsp_common common
   1 63:00 ...
-  UNION fun_admin_port_rsp_subop u
+  UNION port_rsp_subop u
     STRUCT fun_admin_port_write_rsp write
       2 63:56  uint8_t subop /* SUBOP_WRITE */
       2 55:32  uint8_t rsvd0[3]
@@ -837,37 +391,478 @@ STRUCT fun_admin_port_rsp
   END
 END
 
-STRUCT fun_admin_port_async_req
-  0 63:00 fun_admin_req_common common
+/*
+ *  VI Request/Response
+ */
+FLAGS fun_admin_vi_create_flag
+  FUN_ADMIN_VI_CREATE_FLAG_ALLOCATOR = 0x01 /* Enable Virtual Interface allocator */
+END
+
+STRUCT fun_admin_vi_req
+  0 63:00 fun_admin_req_common common 
   1 63:00 ...
-  2 63:32 uint32_t port_id
-  2 31:00 uint32_t rsvd0
+  UNION vi_req_subop u
+    STRUCT fun_admin_vi_create_req create
+      2 63:56  uint8_t subop /* SUBOP_CREATE */
+      2 55:48  uint8_t rsvd0
+      2 47:32 uint16_t flags /* see fun_admin_vi_create_flag enum */
+      2 31:00 uint32_t id /* FLAG_ALLOCATOR=0: n/a, FLAG_ALLOCATOR=1: viid */
+    END
+    STRUCT fun_admin_vi_destroy_req destroy
+      2 63:56  uint8_t subop /* SUBOP_DESTROY */
+      2 55:48  uint8_t rsvd0
+      2 47:32 uint16_t flags
+      2 31:00 uint32_t id /* viid to destroy */
+    END 
+    STRUCT fun_admin_vi_list_req list
+      2 63:56  uint8_t subop /* SUBOP_LIST */
+      2 55:48  uint8_t rsvd0
+      2 47:32 uint16_t flags
+      2 31:00 uint32_t startid /*  */
+    END   
+  END
+END
+
+STRUCT fun_admin_vi_rsp
+  0 63:00 fun_admin_rsp_common common
+  0 63:00 ...
+  UNION vi_rsp_subop u
+    STRUCT fun_admin_vi_create_rsp create
+      2 63:56  uint8_t subop /* SUBOP_CREATE */
+      2 55:32  uint8_t rsvd0[3]
+      2 31:00 uint32_t id /* vi_rsp_common.rsp_common_status=0: viid, otherwise: N/A */
+    END
+    STRUCT fun_admin_vi_destroy_rsp destroy
+      2 63:56  uint8_t subop /* SUBOP_DESTROY */
+      2 55:32  uint8_t rsvd0[3]
+      2 31:00 uint32_t id /* destroyed viid */
+    END      
+  END
+END
+
+/*
+ *  ETH Request/Response
+ */
+FLAGS fun_admin_eth_create_flag
+  FUN_ADMIN_ETH_CREATE_FLAG_ALLOCATOR = 0x01 /* Enable Ethernet allocator */
+END
+
+STRUCT fun_admin_eth_req
+  0 63:00 fun_admin_req_common common 
+  1 63:00 ...
+  UNION eth_req_subop u
+    STRUCT fun_admin_eth_create_req create
+      2 63:56  uint8_t subop /* SUBOP_CREATE */
+      2 55:48  uint8_t rsvd0
+      2 47:32 uint16_t flags /* see fun_admin_eth_create_flag enum */
+      2 31:00 uint32_t id /* FLAG_ALLOCATOR=0: n/a, FLAG_ALLOCATOR=1: ethid */
+    END
+    STRUCT fun_admin_eth_destroy_req destroy
+      2 63:56  uint8_t subop /* SUBOP_DESTROY */
+      2 55:48  uint8_t rsvd0
+      2 47:32 uint16_t flags
+      2 31:00 uint32_t id /* ethid to destroy */
+    END      
+    STRUCT fun_admin_eth_list_req list
+      2 63:56  uint8_t subop /* SUBOP_LIST */
+      2 55:48  uint8_t rsvd0
+      2 47:32 uint16_t flags
+      2 31:00 uint32_t startid /*  */
+    END   
+  END
+END
+
+STRUCT fun_admin_eth_rsp
+  0 63:00 fun_admin_rsp_common common
+  0 63:00 ...
+  UNION eth_rsp_subop u
+    STRUCT fun_admin_eth_create_rsp create
+      2 63:56  uint8_t subop /* SUBOP_CREATE */
+      2 55:48  uint8_t rsvd0
+      2 47:32 uint16_t flags
+      2 31:00 uint32_t id /* created ethid if eth_rsp_common.rsp_common_status = 0 or N/A */
+    END
+    STRUCT fun_admin_eth_destroy_rsp destroy
+      2 63:56  uint8_t destroy_subop /* SUBOP_DESTROY */
+      2 55:48  uint8_t rsvd0
+      2 47:32 uint16_t flags
+      2 31:00 uint32_t id /* destroyed ethid */
+    END      
+  END
+END
+
+/*
+ *  SOCKET Request/Response
+ */
+STRUCT fun_admin_socket_req
+  0 63:00 fun_admin_req_common common 
+  1 63:00 ...
+  UNION socket_req_subop u
+    STRUCT fun_admin_socket_create_req create
+      2 63:56  uint8_t subop /* SUBOP_CREATE */
+      2 55:48  uint8_t rsvd0
+      2 47:32 uint16_t flags /* see fun_socket_create_flag enum */
+      2 31:00 uint32_t id /* FLAG_ALLOCATOR=0: n/a, FLAG_ALLOCATOR=1: socketid */
+    END
+    STRUCT fun_admin_socket_destroy_req destroy
+      2 63:56  uint8_t subop /* SUBOP_DESTROY */
+      2 55:48  uint8_t rsvd0
+      2 47:32 uint16_t flags
+      2 31:00 uint32_t id /* socketid to destroy */
+    END
+    STRUCT fun_admin_socket_list_req list
+      2 63:56  uint8_t subop /* SUBOP_LIST */
+      2 55:48  uint8_t rsvd0
+      2 47:32 uint16_t flags
+      2 31:00 uint32_t startid /*  */
+    END       
+  END
+END
+
+STRUCT fun_admin_socket_rsp
+  0 63:00 fun_admin_rsp_common common
+  0 63:00 ...
+  UNION socket_admin_rsp_subop u
+    STRUCT fun_socket_create_rsp create
+      2 63:56  uint8_t subop /* SUBOP_CREATE */
+      2 55:32  uint8_t rsvd0[3]
+      2 31:00 uint32_t id /* socket_rsp_common.rsp_common_status=0: socketid, otherwise: N/A */
+    END
+    STRUCT fun_admin_socket_destroy_rsp destroy
+      2 63:56  uint8_t subop /* SUBOP_DESTROY */
+      2 55:32  uint8_t rsvd0[3]
+      2 31:00 uint32_t id /* destroyed socketid */
+    END      
+  END
+END
+
+/*
+ *  SOCKET Request/Response
+ */
+STRUCT fun_admin_tcp_req
+  0 63:00 fun_admin_req_common common 
+  1 63:00 ...
+  UNION tcp_req_subop u
+    STRUCT fun_admin_tcp_create_req create
+      2 63:56  uint8_t subop /* SUBOP_CREATE */
+      2 55:48  uint8_t rsvd0
+      2 47:32 uint16_t flags /* see fun_tcp_create_flag enum */
+      2 31:00 uint32_t id /* FLAG_ALLOCATOR=0: n/a, FLAG_ALLOCATOR=1: tcpid */
+    END
+    STRUCT fun_admin_tcp_destroy_req destroy
+      2 63:56  uint8_t subop /* SUBOP_DESTROY */
+      2 55:48  uint8_t rsvd0
+      2 47:32 uint16_t flags
+      2 31:00 uint32_t id /* tcpid to destroy */
+    END
+    STRUCT fun_admin_tcp_list_req list
+      2 63:56  uint8_t subop /* SUBOP_LIST */
+      2 55:48  uint8_t rsvd0
+      2 47:32 uint16_t flags
+      2 31:00 uint32_t startid /*  */
+    END       
+  END
+END
+
+STRUCT fun_admin_tcp_rsp
+  0 63:00 fun_admin_rsp_common common
+  0 63:00 ...
+  UNION tcp_admin_rsp_subop u
+    STRUCT fun_tcp_create_rsp create
+      2 63:56  uint8_t subop /* SUBOP_CREATE */
+      2 55:32  uint8_t rsvd0[3]
+      2 31:00 uint32_t id /* tcp_rsp_common.rsp_common_status=0: tcpid, otherwise: N/A */
+    END
+    STRUCT fun_admin_tcp_destroy_rsp destroy
+      2 63:56  uint8_t subop /* SUBOP_DESTROY */
+      2 55:32  uint8_t rsvd0[3]
+      2 31:00 uint32_t id /* destroyed tcpid */
+    END      
+  END
+END
+
+/*
+ *  NSS Request/Response
+ */
+FLAGS fun_admin_nss_create_flag
+  FUN_ADMIN_NSS_CREATE_FLAG_ALLOCATOR = 0x01 /* Enable NSS allocator */
+END
+
+STRUCT fun_admin_nss_req
+  0 63:00 fun_admin_req_common common 
+  1 63:00 ...
+  UNION nss_req_subop u
+    STRUCT fun_admin_nss_create_req create
+      2 63:56  uint8_t subop /* SUBOP_CREATE */
+      2 55:48  uint8_t rsvd0
+      2 47:32 uint16_t flags /* see fun_admin_nss_create_flag enum */
+      2 31:00 uint32_t id /* FLAG_ALLOCATOR=0: n/a, FLAG_ALLOCATOR=1: nssid */
+    END
+    STRUCT fun_admin_nss_destroy_req destroy
+      2 63:56  uint8_t subop /* SUBOP_DESTROY */
+      2 55:48  uint8_t rsvd0
+      2 47:32 uint16_t flags
+      2 31:00 uint32_t id /* nssid to destroy */
+    END
+    STRUCT fun_admin_nss_list_req list
+      2 63:56  uint8_t subop /* SUBOP_LIST */
+      2 55:48  uint8_t rsvd0
+      2 47:32 uint16_t flags /* see fun_admin_nss_create_flag enum */
+      2 31:00 uint32_t startid /*  */
+    END       
+  END
+END
+
+STRUCT fun_admin_nss_rsp
+  0 63:00 fun_admin_rsp_common common
+  0 63:00 ...
+  UNION nss_rsp_subop u
+    STRUCT fun_admin_nss_create_rsp create
+      2 63:56  uint8_t subop /* SUBOP_CREATE */
+      2 55:32  uint8_t rsvd0[3]
+      2 31:00 uint32_t id /* nss_rsp_common.rsp_common_status=0: nssid, otherwise: N/A */
+    END
+    STRUCT fun_admin_nss_destroy_rsp destroy
+      2 63:56  uint8_t subop /* SUBOP_DESTROY */
+      2 55:32  uint8_t rsvd0[3]
+      2 31:00 uint32_t id /* destroyed nssid */
+    END      
+  END
+END
+
+/*
+ *  VOL Request/Response
+ */
+FLAGS fun_admin_vol_create_flag
+  FUN_ADMIN_VOL_CREATE_FLAG_ALLOCATOR = 0x01 /* Enable Volume allocator */
+END
+
+STRUCT fun_admin_vol_req
+  0 63:00 fun_admin_req_common common 
+  1 63:00 ...
+  UNION vol_req_subop u
+    STRUCT fun_admin_vol_create_req create
+      2 63:56  uint8_t subop /* SUBOP_CREATE */
+      2 55:48  uint8_t rsvd0
+      2 47:32 uint16_t flags /* see fun_admin_vol_create_flag enum */
+      2 31:00 uint32_t id /* FLAG_ALLOCATOR=0: n/a, FLAG_ALLOCATOR=1: volid */
+      3 63:00 uint64_t rsvd1
+      4 63:00 uint64_t rsvd2
+      5 63:00 uint64_t rsvd3
+      6 63:00 uint64_t rsvd4
+      7 63:00 uint64_t rsvd5
+      8 63:00 uint64_t rsvd6
+      9 63:00 uint64_t rsvd7
+      10 63:00 uint64_t rsvd8
+      11 63:00 uint64_t rsvd9
+      12 63:00 uint64_t rsvd10
+      13 63:00 uint64_t rsvd11
+      14 63:00 uint64_t rsvd12
+      15 63:00 uint64_t rsvd13
+      16 63:00 uint64_t rsvd14
+    END
+    STRUCT fun_admin_vol_destroy_req destroy
+      2 63:56  uint8_t subop /* SUBOP_DESTROY */
+      2 55:48  uint8_t rsvd0
+      2 47:32 uint16_t flags
+      2 31:00 uint32_t id /* volid to destroy */
+    END
+    STRUCT fun_admin_vol_list_req list
+      2 63:56  uint8_t subop /* SUBOP_LIST */
+      2 55:48  uint8_t rsvd0
+      2 47:32 uint16_t flags
+      2 31:00 uint32_t startid /*  */
+    END       
+  END
+END
+
+STRUCT fun_admin_vol_rsp
+  0 63:00 fun_admin_rsp_common common
+  0 63:00 ...
+  UNION vol_rsp_subop u
+    STRUCT fun_admin_vol_create_rsp create
+      2 63:56  uint8_t subop /* SUBOP_CREATE */
+      2 55:32  uint8_t rsvd0[3]
+      2 31:00 uint32_t id /* vol_rsp_common.rsp_common_status=0: volid, otherwise: N/A */
+      3 63:00 uint64_t rsvd1
+      4 63:00 uint64_t rsvd2
+      5 63:00 uint64_t rsvd3
+      6 63:00 uint64_t rsvd4
+      7 63:00 uint64_t rsvd5
+      8 63:00 uint64_t rsvd6
+      9 63:00 uint64_t rsvd7
+      10 63:00 uint64_t rsvd8
+      11 63:00 uint64_t rsvd9
+      12 63:00 uint64_t rsvd10
+      13 63:00 uint64_t rsvd11
+      14 63:00 uint64_t rsvd12
+      15 63:00 uint64_t rsvd13
+      16 63:00 uint64_t rsvd14
+    END
+    STRUCT fun_admin_vol_destroy_rsp destroy
+      2 63:56  uint8_t subop /* SUBOP_DESTROY */
+      2 55:32  uint8_t rsvd0[3]
+      2 31:00 uint32_t id /* destroyed volid */
+    END      
+  END
+END
+
+/*
+ *  CONCAT Request/Response
+ */ 
+FLAGS fun_admin_concat_create_flag
+  FUN_ADMIN_CONCAT_CREATE_FLAG_ALLOCATOR = 0x01 /* Enable Volume allocator */
+END
+
+STRUCT fun_admin_concat_req
+  0 63:00 fun_admin_req_common common 
+  1 63:00 ...
+  UNION concat_req_subop u
+    STRUCT fun_admin_concat_create_req create
+      2 63:56  uint8_t subop /* SUBOP_CREATE */
+      2 55:48  uint8_t rsvd0
+      2 47:32 uint16_t flags /* see fun_admin_concat_create_flag enum */
+      2 31:00 uint32_t id /* FLAG_ALLOCATOR=0: n/a, FLAG_ALLOCATOR=1: concatid */
+      3 63:00 uint64_t rsvd1
+      4 63:00 uint64_t rsvd2
+      5 63:00 uint64_t rsvd3
+      6 63:00 uint64_t rsvd4
+      7 63:00 uint64_t rsvd5
+      8 63:00 uint64_t rsvd6
+      9 63:00 uint64_t rsvd7
+      10 63:00 uint64_t rsvd8
+      11 63:00 uint64_t rsvd9
+      12 63:00 uint64_t rsvd10
+      13 63:00 uint64_t rsvd11
+      14 63:00 uint64_t rsvd12
+      15 63:00 uint64_t rsvd13
+      16 63:00 uint64_t rsvd14
+    END
+    STRUCT fun_admin_concat_destroy_req destroy
+      2 63:56  uint8_t subop /* SUBOP_DESTROY */
+      2 55:48  uint8_t rsvd0
+      2 47:32 uint16_t flags
+      2 31:00 uint32_t id /* concatid to destroy */
+    END
+    STRUCT fun_admin_concat_list_req list
+      2 63:56  uint8_t subop /* SUBOP_LIST */
+      2 55:48  uint8_t rsvd0
+      2 47:32 uint16_t flags
+      2 31:00 uint32_t startid /*  */
+    END       
+  END
+END
+
+STRUCT fun_admin_concat_rsp
+  0 63:00 fun_admin_rsp_common common
+  0 63:00 ...
+  UNION concat_rsp_subop u
+    STRUCT fun_admin_concat_create_rsp create
+      2 63:56  uint8_t subop /* SUBOP_CREATE */
+      2 55:32  uint8_t rsvd0[3]
+      2 31:00 uint32_t id /* concat_rsp_common.rsp_common_status=0: concatid, otherwise: N/A */
+      3 63:00 uint64_t rsvd1
+      4 63:00 uint64_t rsvd2
+      5 63:00 uint64_t rsvd3
+      6 63:00 uint64_t rsvd4
+      7 63:00 uint64_t rsvd5
+      8 63:00 uint64_t rsvd6
+      9 63:00 uint64_t rsvd7
+      10 63:00 uint64_t rsvd8
+      11 63:00 uint64_t rsvd9
+      12 63:00 uint64_t rsvd10
+      13 63:00 uint64_t rsvd11
+      14 63:00 uint64_t rsvd12
+      15 63:00 uint64_t rsvd13
+      16 63:00 uint64_t rsvd14
+    END
+    STRUCT fun_admin_concat_destroy_rsp destroy
+      2 63:56  uint8_t subop /* SUBOP_DESTROY */
+      2 55:32  uint8_t rsvd0[3]
+      2 31:00 uint32_t id /* destroyed concatid */
+    END      
+  END
 END
 
 
+/*
+ *  CONCAT Request/Response
+ */ 
+FLAGS fun_admin_crypto_create_flag
+  FUN_ADMIN_CRYPTO_CREATE_FLAG_ALLOCATOR = 0x01 /* Enable Crypto allocator */
+END
+
+STRUCT fun_admin_crypto_req
+  0 63:00 fun_admin_req_common common 
+  1 63:00 ...
+  UNION crypto_req_subop u
+    STRUCT fun_admin_crypto_create_req create
+      2 63:56  uint8_t subop /* SUBOP_CREATE */
+      2 55:48  uint8_t rsvd0
+      2 47:32 uint16_t flags
+      2 31:00 uint32_t id /* FLAG_ALLOCATOR=0: n/a, FLAG_ALLOCATOR=1: cryptoid */
+      3 63:00 uint64_t rsvd1
+      4 63:00 uint64_t rsvd2
+      5 63:00 uint64_t rsvd3
+      6 63:00 uint64_t rsvd4
+      7 63:00 uint64_t rsvd5
+      8 63:00 uint64_t rsvd6
+    END
+    STRUCT fun_admin_crypto_destroy_req destroy
+      2 63:56  uint8_t subop /* SUBOP_DESTROY */
+      2 55:48  uint8_t rsvd0
+      2 47:32 uint16_t flags
+      2 31:00 uint32_t id /* cryptoid to destroy */
+    END      
+    STRUCT fun_admin_crypto_list_req list
+      2 63:56  uint8_t subop /* SUBOP_LIST */
+      2 55:48  uint8_t rsvd0
+      2 47:32 uint16_t flags /* see fun_admin_crypto_create_flag enum */
+      2 31:00 uint32_t startid /*  */
+    END    
+  END
+END
+
+STRUCT fun_admin_crypto_rsp
+  0 63:00 fun_admin_rsp_common common
+  0 63:00 ...
+  UNION crypto_rsp_subop u
+    STRUCT fun_admin_crypto_create_rsp create
+      2 63:56  uint8_t subop /* SUBOP_CREATE */
+      2 55:32  uint8_t rsvd0[3]
+      2 31:00 uint32_t id /* crypto_rsp_common.rsp_common_status=0: cryptoid, otherwise: N/A */
+      3 63:00 uint64_t rsvd1
+      4 63:00 uint64_t rsvd2
+      5 63:00 uint64_t rsvd3
+      6 63:00 uint64_t rsvd4
+      7 63:00 uint64_t rsvd5
+      8 63:00 uint64_t rsvd6
+    END
+    STRUCT fun_admin_crypto_destroy_rsp destroy
+      2 63:56  uint8_t subop /* SUBOP_DESTROY */
+      2 55:32  uint8_t rsvd0[3]
+      2 31:00 uint32_t id /* destroyed cryptoid */
+    END
+  END
+END
 
 
-
-
-
-
-
-
-
-
+/*
+ *  D a t a p a t h   R e q u e s t s   and   R e s p o n s e s
+ */
 STRUCT fun_req_common
-  0 63:56  uint8_t req_common_op /* see fun_admin_op enum */
-  0 55:48  uint8_t req_common_len8 /* length of the request in units of 8-bytes */
-  0 47:32 uint16_t req_common_flags /* see fun_admin_req_common flag enum */
+  0 63:56  uint8_t op
+  0 55:48  uint8_t len8 /* length of the request in units of 8-bytes */
+  0 47:32 uint16_t flags
   0 31:00 uint32_t rsvd0
-  1 63:00 uint64_t req_common_cookie /* caller cookie, returned in response message */
+  1 63:00 uint64_t cookie /* caller cookie, returned in response */
 END 
 
 STRUCT fun_rsp_common
-  0 63:56  uint8_t rsp_common_op /* see fun_admin_op enum, copied from request */
-  0 55:32  uint8_t rsvd0[3]
-  0 31:00 uint32_t rsp_common_status /* status */
-  1 63:00 uint64_t rsp_common_cookie  /* caller cookie, copied from request */
+  0 63:56  uint8_t op /* see fun_admin_op enum, copied from request */
+  0 55:08  uint8_t rsvd0[6]
+  0 07:00  uint8_t ret
+  1 63:00 uint64_t cookie  /* caller cookie, copied from request */
 END 
 
 STRUCT fun_cqe_info_xxx
@@ -944,7 +939,7 @@ END
 
 ENUM fun_socket_op
   FUN_SOCKET_OP_ILLEGAL = 0x00
-  FUN_SOCKET_OP_SOCKET = 0x01
+  FUN_SOCKET_OP_OPEN = 0x01
   FUN_SOCKET_OP_CLOSE = 0x02
   FUN_SOCKET_OP_SHUTDOWN = 0x03
   FUN_SOCKET_OP_ABORT = 0x04
@@ -956,116 +951,116 @@ ENUM fun_socket_op
   FUN_SOCKET_OP_RECVMSG = 0x0A
 END
 
-STRUCT fun_socket_req_socket
+STRUCT fun_socket_open_req
   0 63:0 fun_req_common common
   1 63:0 ...
   2 63:48  uint16_t rsvd0
-  2 47:32 uint16_t socket_req_socket_flag /* see fun_socket_socketflag enum */
-  2 31:00 uint32_t socket_req_socket_id /* FLAG_ALLOCATOR=0: n/a, FLAG_ALLOCATOR=1: socketid */
-  3 63:32  int32_t socket_req_socket_domain
-  3 31:00  int32_t socket_req_socket_type
-  4 63:32  int32_t socket_req_socket_protocol
+  2 47:32 uint16_t flags 
+  2 31:00 uint32_t id /* FLAG_ALLOCATOR=0: n/a, FLAG_ALLOCATOR=1: socketid */
+  3 63:32  int32_t domain
+  3 31:00  int32_t type
+  4 63:32  int32_t protocol
   4 31:00 uint32_t rsvd
 END
 
-STRUCT fun_socket_req_close
+STRUCT fun_socket_close_req
   0 63:0 fun_req_common common
   1 63:0 ...
   2 63:48 uint16_t rsvd0
-  2 47:32 uint16_t socket_req_close_flag
-  2 31:00 uint32_t socket_req_close_id
+  2 47:32 uint16_t flags
+  2 31:00 uint32_t id
 END
 
-STRUCT fun_socket_req_shutdown
+STRUCT fun_socket_shutdown_req
   0 63:0 fun_req_common common
   1 63:0 ...
   2 63:48 uint16_t rsvd0
-  2 47:32 uint16_t socket_req_shutdown_flag
-  2 31:00 uint32_t socket_req_shutdown_id
-  3 63:32  int32_t socket_req_shutdown_how
+  2 47:32 uint16_t flags
+  2 31:00 uint32_t id
+  3 63:32  int32_t how
   3 31:00 uint32_t rsvd1
 END
 
-STRUCT fun_socket_req_abort
+STRUCT fun_socket_abort_req
   0 63:0 fun_req_common common
   1 63:0 ...
   2 63:48 uint16_t rsvd0
-  2 47:32 uint16_t socket_req_abort_flag
-  2 31:00 uint32_t socket_req_abort_id
+  2 47:32 uint16_t flags
+  2 31:00 uint32_t id
 END
 
-STRUCT fun_socket_req_bind
+STRUCT fun_socket_bind_req
   0 63:0 fun_req_common common
   1 63:0 ...
   2 63:48 uint16_t rsvd0
-  2 47:32 uint16_t socket_req_bind_flag
-  2 31:00 uint32_t socket_req_bind_id
+  2 47:32 uint16_t flags
+  2 31:00 uint32_t id
 END
 
-STRUCT fun_socket_req_listen
+STRUCT fun_socket_listen_req
   0 63:0 fun_req_common common
   1 63:0 ...
   2 63:48 uint16_t rsvd0
-  2 47:32 uint16_t socket_req_listen_flag
-  2 31:00 uint32_t socket_req_listen_id
-  3 63:32  int32_t socket_req_listen_backlog
-  3 31:00 uint32_t rsvd
+  2 47:32 uint16_t flags
+  2 31:00 uint32_t id
+  3 63:32  int32_t backlog
+  3 31:00 uint32_t rsvd1
 END
 
-STRUCT fun_socket_req_accept
+STRUCT fun_socket_accept_req
   0 63:0 fun_req_common common
   1 63:0 ...
   2 63:48 uint16_t rsvd0
-  2 47:32 uint16_t socket_req_accept_flag
-  2 31:00 uint32_t socket_req_accept_id
+  2 47:32 uint16_t flags
+  2 31:00 uint32_t id
 END
 
-STRUCT fun_socket_req_connect
+STRUCT fun_socket_connect_req
   0 63:0 fun_req_common common
   1 63:0 ...
   2 63:48 uint16_t rsvd0
-  2 47:32 uint16_t socket_req_connect_flag
-  2 31:00 uint32_t socket_req_connect_id
+  2 47:32 uint16_t flags
+  2 31:00 uint32_t id
 END
 
-STRUCT fun_socket_req_sendmsg
+STRUCT fun_socket_sendmsg_req
   0 63:0 fun_req_common common
   1 63:0 ...
   2 63:48 uint16_t rsvd0
-  2 47:32 uint16_t socket_req_sendmsg_flag
-  2 31:00 uint32_t socket_req_sendmsg_id
+  2 47:32 uint16_t flags
+  2 31:00 uint32_t id
 END
 
-STRUCT fun_socket_req_recvmsg
+STRUCT fun_socket_recvmsg_req
   0 63:0 fun_req_common common
   1 63:0 ...
   2 63:48 uint16_t rsvd0
-  2 47:32 uint16_t socket_req_recvmsg_flag
-  2 31:00 uint32_t socket_req_recvmsg_id
+  2 47:32 uint16_t flags
+  2 31:00 uint32_t id
 END
 
 
 // FFE
 
 
-ENUM fun_nu_ffe_subopcodes
-  FFE_ACCESS_SUBOP_TMP_TCAM_R = 0
-  FFE_ACCESS_SUBOP_TMP_TCAM_W = 1
-  FFE_ACCESS_SUBOP_FFE_TCAM_R = 2
-  FFE_ACCESS_SUBOP_FFE_TCAM_W = 3
-  FFE_ACCESS_SUBOP_FFE_TCAM_INV = 4
-  FFE_STASH_R = 5
-  FFE_STASH_W = 6
-  FFE_STASH_INV = 7
-  FFE_HASH_R = 8
-  FFE_HASH_W = 9
-  FFE_HASH_INV = 10
-  FFE_DIT_R = 11
-  FFE_DIT_W = 12
-  FFE_ACT_UCODE_R = 13
-  FFE_ACT_UCODE_W = 14
-  FFE_ACT_DMEM_R = 15
-  FFE_ACT_DMEM_W = 16
+ENUM fun_nu_ffe_subop
+  FUN_NU_FFE_ACCESS_SUBOP_TMP_TCAM_R = 0
+  FUN_NU_FFE_ACCESS_SUBOP_TMP_TCAM_W = 1
+  FUN_NU_FFE_ACCESS_SUBOP_FFE_TCAM_R = 2
+  FUN_NU_FFE_ACCESS_SUBOP_FFE_TCAM_W = 3
+  FUN_NU_FFE_ACCESS_SUBOP_FFE_TCAM_INV = 4
+  FUN_NU_FFE_STASH_R = 5
+  FUN_NU_FFE_STASH_W = 6
+  FUN_NU_FFE_STASH_INV = 7
+  FUN_NU_FFE_HASH_R = 8
+  FUN_NU_FFE_HASH_W = 9
+  FUN_NU_FFE_HASH_INV = 10
+  FUN_NU_FFE_DIT_R = 11
+  FUN_NU_FFE_DIT_W = 12
+  FUN_NU_FFE_ACT_UCODE_R = 13
+  FUN_NU_FFE_ACT_UCODE_W = 14
+  FUN_NU_FFE_ACT_DMEM_R = 15
+  FUN_NU_FFE_ACT_DMEM_W = 16
 END
 
 // FFE Template TCAM entry format
@@ -1149,7 +1144,7 @@ STRUCT fun_nu_ffe_reqrsp
   1 63:0 ...
   UNION fun_nu_ffe_subops u
     // Header to refer to an FFE Template TCAM
-    STRUCT fun_nu_ffe_reqrsp_tmp_tcam_rw tmp_tcam_rw
+    STRUCT fun_nu_ffe_tmp_tcam_rw tmp_tcam_rw
       2 63:56 uint8_t subopcode /* SUBOPS: FFE_ACCESS_SUBOP_TMP_TCAM_R, FFE_ACCESS_SUBOP_TMP_TCAM_W */
       2 55:48 uint8_t flags
       2 47:32 uint16_t index
