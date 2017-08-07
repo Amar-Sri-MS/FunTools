@@ -156,17 +156,46 @@ class HelperGeneratorTest(unittest.TestCase):
 
   def testCreateSimpleInitializer(self):
     gen = codegen.HelperGenerator(False)
+    # Struct foo has a single field a1.
     s = generator.Struct('Foo', False)
     f = generator.Field('a1', generator.TypeForName('char'), 0, 8)
     s.fields = [f]
 
-    (declaration, definition) = gen.GenerateInitRoutine("init", "MyStruct",
-                                                        "foo.", s)
+    (declaration, definition) = gen.GenerateInitRoutine(s, None)
   
-    self.assertEqual('extern void init(struct MyStruct *s, char a1);\n',
+    self.assertIn('extern void Foo_init(struct Foo *s, char a1)',
                      declaration)
-    self.assertIn('void init(struct MyStruct *s, char a1) {', definition)
-    self.assertIn('\ts->foo.a1 = a1;\n', definition)
+    self.assertIn('void Foo_init(struct Foo *s, char a1) {', definition)
+    self.assertIn('\ts->a1 = a1;\n', definition)
+
+  def testCreateUnionInitializer(self):
+    gen = codegen.HelperGenerator(False)
+    # Struct Foo has field a0, and a union containing Message1 and Message2
+    # which each have one field f1 and f2.
+    s = generator.Struct('Foo', False)
+    f = generator.Field('a0', generator.TypeForName('char'), 0, 8)
+    s.fields.append(f)
+    u = generator.Struct('Union', True)
+    s1 = generator.Struct('Message1', False)
+    s1.fields.append(generator.Field('f1', generator.TypeForName('char'), 0, 8))
+    s2 = generator.Struct('Message2', False)
+    s2.fields.append(generator.Field('f2', generator.TypeForName('char'), 0, 8))
+    m1 = generator.Field('m1', generator.RecordTypeForStruct(s1), 0, 8)
+    m2 = generator.Field('m2', generator.RecordTypeForStruct(s2), 0, 8)
+    u.fields = [m1, m2]
+    s.fields.append(generator.Field('u', generator.RecordTypeForStruct(u), 0, 8))
+    
+    (decl, defn) = gen.GenerateInitRoutine(s, None)
+    # Foo initializer only gets a0 because it only gets non-union fielda.
+    self.assertIn('Foo_init(struct Foo *s, char a0);', decl)
+
+    # Initializer for Message1 doesn't get f2 because it's in Message2.
+    (decl, defn) = gen.GenerateInitRoutine(s, s1)
+    self.assertIn('Message1_init(struct Foo *s, char a0, char f1);', decl)
+    
+    # Initializer for Message2 doesn't get f1 because it's in Message1.
+    (decl, defn) = gen.GenerateInitRoutine(s, s2)
+    self.assertIn('Message2_init(struct Foo *s, char a0, char f2);', decl)
 
 
 class CodegenEndToEnd(unittest.TestCase):
@@ -269,6 +298,7 @@ class CodegenEndToEnd(unittest.TestCase):
              'STRUCT B1',
              '0 55:48 uint8_t b11',
              '0 47:40 uint8_t b12',
+             '0 39:32 uint8_t reserved',
              'END',
              'STRUCT B2',
              '0 55:48 uint8_t b21',
@@ -276,6 +306,7 @@ class CodegenEndToEnd(unittest.TestCase):
              'END',
              'END',
              '0 39:0 uint64_t c',
+             '1 63:0 uint64_t reserved',
              'END'
              ]
 
@@ -287,8 +318,10 @@ class CodegenEndToEnd(unittest.TestCase):
     # TODO(bowdidge): Structures with unions should get union-specific
     # constructors.
     self.assertIn('void A_init(struct A *s, uint64_t a)', out)
-    self.assertIn('void B1_init(struct B *s, uint8_t b11, uint8_t b12)', out)
-    self.assertIn('void B2_init(struct B *s, uint8_t b21, uint8_t b22)', out)
+    self.assertIn('void B1_init(struct B *s, uint8_t a, uint64_t c, '
+                  'uint8_t b11, uint8_t b12)', out)
+    self.assertIn('void B2_init(struct B *s, uint8_t a, uint64_t c, '
+                  'uint8_t b21, uint8_t b22)', out)
 
   def disableTestInitFunctionsForNestedStructures(self):
     input = ['STRUCT A',
