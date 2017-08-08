@@ -74,7 +74,7 @@ install: $(BUILD)/$(LIB_HCI)
 	mkdir -p $(SDKDIR)/FunSDK/hci/lib/$(LIBDST)
 	mkdir -p $(SDKDIR)/FunSDK/hci/include
 	cp $(BUILD)/$(LIB_HCI) $(SDKDIR)/FunSDK/hci/lib/$(LIBDST)/libfunhci.a
-	cp $(HCI_HDR) $(SDKDIR)/FunSDK/hci/include
+	cp out/$(HCI_HDR) $(SDKDIR)/FunSDK/hci/include
 
 .PHONY: clean
 clean:
