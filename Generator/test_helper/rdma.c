@@ -54,7 +54,7 @@ int main(int argc, char** argv) {
 
   PrintFragment(fragPtr);
   printf("Set gather opcode, and set byte count to 15\n");
-  fragPtr->u1.inline_cmd.opcode = OPCODE_GATHER;
+  fragPtr->opcode = OPCODE_GATHER;
   fragPtr->u1.inline_cmd.inlineByteCount = 15;
   PrintFragment(fragPtr);
 

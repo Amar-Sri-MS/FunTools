@@ -117,6 +117,12 @@ def ArrayTypeForName(name, element_count):
     sys.stderr.write('Invalid name in BaseTypeForName.')
   return Type(BaseType(name, builtin_type_widths[name]), element_count)
 
+def RecordTypeForStruct(the_struct):
+  """Returns a type for a field that would hold a single struct."""
+  base_type = BaseType(the_struct.name, 0, the_struct)
+  return Type(base_type)
+
+  
 
 class Type:
   """Represents C type for a field."""
@@ -362,6 +368,10 @@ class Field(Node):
     return '0x%x' %  ((1 << self.bit_width) - 1)
 
   def SmallerThanType(self):
+    """Returns true if the field does not fully fill its type.
+    Used for identifying packed fields.
+    """
+    # TODO(bowdidge): Create separate packed flag for packed fields?
     return self.bit_width < self.type.BitWidth()
 
   def IsNoOffset(self):
@@ -509,6 +519,19 @@ class Struct(Node):
     if self.is_union:
       return 'union'
     return 'struct'
+
+  def MatchingStructInUnionField(self, struct_in_union):
+    """Returns (accessor expr, field) for an instance of a structure
+    of the provided type inside a union inside the current structure.
+    """
+    for field in self.AllFields():
+      if field.type.IsRecord() and field.type.base_type.node.is_union:
+        union = field.type.base_type.node
+        for union_field in union.AllFields():
+          if (union_field.type.IsRecord() and
+              union_field.type.base_type.node == struct_in_union):
+            return (field.name + '.' + union_field.name + '.', union_field)
+    return ('', None)
 
   def AllFields(self):
     """Returns all fields of the struct as seen before packing."""

@@ -102,7 +102,7 @@ def ParseLogLine(line, file, line_number):
 
   elif event_type == ('WU', 'SEND'):
     # Should define src, dest, id, name, arg0, arg1.
-    expect_keywords = ['faddr', 'wuid', 'name', 'arg0', 'arg1']
+    expect_keywords = ['faddr', 'wuid', 'name', 'arg0', 'arg1', 'dest']
 
   elif event_type == ('TIMER', 'TRIGGER'):
     # Should define timer and arg0.
@@ -161,11 +161,14 @@ class TraceParser:
   """Converts event start/stop messages into sequences of events grouped by transaction."""
 
   def __init__(self, input_filename):
-    # Map from (arg0, arg1) from a WU send to the event that triggered the send.
-    self.frame_to_caller = {}
+    # Map of VPs to sent WUs that have not yet started.
+    # TODO(bowdidge): Use both queue and arg0/arg1 to correctly predict
+    # which send pairs with which start.
+    self.caller_queues = {}
 
     # Map from timer id to the event setting the timer.
     self.timer_to_caller = {}
+
 
     # Map from timer id to the time the timer was set.  For setting start_time for event.
     self.timer_to_start_time = {}
@@ -180,6 +183,34 @@ class TraceParser:
     self.boot_transaction = event.Transaction(boot_event)
     self.transactions = [self.boot_transaction]
 
+  def RememberSend(self, event, arg0, arg1, src, dest):
+    """Records the WU send event for later matching with a start."""
+    if dest not in self.caller_queues:
+      self.caller_queues[dest] = []
+    self.caller_queues[dest].append(event)
+
+  def FindPreviousSend(self, wu_id, arg0, arg1, dest):
+    """Returns the WU send that would have started a WU with the arguments.
+    TODO(bowdidge): Check more than the destination alone.
+    """
+    if dest not in self.caller_queues:
+      return None
+    if len(self.caller_queues[dest]) == 0:
+      return None
+    return self.caller_queues[dest].pop(0)
+
+  def RememberTimer(self, timer, caller_event):
+    """Marks the calling WU for a timer start."""
+    self.timer_to_caller[timer] = caller_event
+
+  def FindPreviousTimer(self, timer_id, arg0):
+    """Returns the timer start event that would have triggered the
+    specific timer id and arg0 value.
+    """
+    start_event = self.timer_to_caller[timer_id]
+    del self.timer_to_caller[timer_id]
+    return start_event
+  
   def HandleLogLine(self, log_keywords, line_number):
     """Reads in each logging event, and creates or updates any log events."""
     event_type = (log_keywords['verb'], log_keywords['noun'])
@@ -195,15 +226,14 @@ class TraceParser:
       arg0 = log_keywords['arg0']
       arg1 = log_keywords['arg1']
 
-      current_event = event.TraceEvent(timestamp, timestamp, log_keywords['name'], vp)
+      current_event = event.TraceEvent(timestamp, timestamp,
+                                       log_keywords['name'], vp)
       self.vp_to_event[vp] = current_event
 
-      if (arg0, arg1) in self.frame_to_caller:
-        # Regular send.  Connect to caller.
-        predecessor = self.frame_to_caller[(arg0, arg1)]
+      predecessor = self.FindPreviousSend(log_keywords['wuid'], arg0, arg1, vp)
+      if predecessor:
         current_event.transaction = predecessor.transaction
         predecessor.successors.append(current_event)
-        del self.frame_to_caller[(arg0, arg1)]
 
       elif log_keywords['name'] == 'wuh_mp_notify':
         # Bootstrap process. Connect to fake event.
@@ -240,7 +270,7 @@ class TraceParser:
       curr = None
       if vp in self.vp_to_event:
         curr = self.vp_to_event[vp]
-        self.frame_to_caller[(arg0, arg1)] = curr
+        self.RememberSend(curr, arg0, arg1, vp, log_keywords['dest'])
 
     elif event_type == ('HU', 'SQ_DBL'):
       label = 'HU doorbell: sqid=%d' % log_keywords['sqid']
@@ -261,8 +291,7 @@ class TraceParser:
       current_event = self.vp_to_event[vp]
       if current_event is None:
         sys.stderr.write('%s:%d: unsure what WU started timer.\n' % (self.input_filename, line_number))
-        return
-      self.timer_to_caller[timer] = current_event
+      self.RememberTimer(timer, current_event)
       self.timer_to_start_time[timer] = timestamp
 
     elif event_type == ('TIMER', 'TRIGGER'):
@@ -274,17 +303,16 @@ class TraceParser:
             self.input_filename, line_number, timer))
         return
 
-      prev = self.timer_to_caller[timer]
-      current_event = event.TraceEvent(timestamp, timestamp, 'timer_trigger', vp)
+      prev = self.FindPreviousTimer(timer, arg0)                    
+      current_event = event.TraceEvent(timestamp, timestamp, 'timer_trigger',
+                                       vp)
       current_event.is_timer = True
       current_event.transaction = prev.transaction
       current_event.timer_start = int(self.timer_to_start_time[timer])
       prev.successors.append(current_event)
       # TODO(bowdidge): True?
       self.vp_to_event[vp] = current_event
-
-      self.frame_to_caller[(arg0, 0)] = current_event
-      del self.timer_to_caller[timer]
+      self.RememberSend(current_event, arg0, 0, 0, 0)
 
     elif event_type == ('TRANSACTION', 'START'):
        if vp not in self.vp_to_event:
