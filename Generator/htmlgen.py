@@ -94,7 +94,7 @@ class HTMLGenerator:
     return out
 
   def BitmapForStruct(self, struct, union_map):
-    out += '<div class="bitmap">\n'
+    out = '<div class="bitmap">\n'
     out += '  <div class="bitRow">\n'
     out += '    <div class="rowTitle"><b>Bits</b></div>\n'
     out += '    <div class="bar keybar" style="width: 123px">63-56</div>\n'
