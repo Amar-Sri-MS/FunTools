@@ -35,8 +35,8 @@ LIBS = $(SDKDIR)/lib/$(OS)/noasan/libfunclient.a
 
 LIB_HCI = libfunhci-$(MACHINE).a
 
-HCI_SRC = fun_hci.c
-HCI_HDR = fun_hci.h
+HCI_SRC = fun_hci_json.c
+HCI_HDR = fun_hci_json.h
 
 HCI_OBJS = $(patsubst %.c,$(BUILD)/obj/%.o,$(filter %c,$(HCI_SRC)))
 
@@ -44,17 +44,24 @@ CFLAGS = -Wall -Werror
 CFLAGS += -I $(SDKDIR)/FunSDK
 
 .PHONY: all
-all: code $(BUILD)/$(LIB_HCI)
+all: funos_code host_code $(BUILD)/$(LIB_HCI)
 
-.PHONY: code
-code:
-	../generator.py -c pack,json -g code -o fun_hci fun_hci.gen
+.PHONY: funos_code
+funos_code:
+	@mkdir -p out
+	../generator.py -c pack,json -g code -o out/fun_hci_json fun_hci.gen
+
+.PHONY: host_code
+host_code:
+	@mkdir -p out
+	../generator.py -c pack -g code -o out/fun_hci fun_hci.gen
 
 .PHONY: doc
 doc:
-	../generator.py -g html -o fun_hci fun_hci.gen
+	@mkdir -p out
+	../generator.py -g html -o out/fun_hci fun_hci.gen
 
-$(BUILD)/obj/fun_hci.o: fun_hci.c
+$(BUILD)/obj/fun_hci_json.o: out/fun_hci_json.c
 	@echo CC $<
 	@mkdir -p `dirname $@`
 	$(CC) -o $@ $(CFLAGS) -c $<
@@ -71,5 +78,5 @@ install: $(BUILD)/$(LIB_HCI)
 
 .PHONY: clean
 clean:
-	rm -f fun_hci.c fun_hci.h
+	rm -rf out
 	rm  -rf $(BUILD)
