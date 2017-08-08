@@ -94,7 +94,6 @@ class HTMLGenerator:
     return out
 
   def BitmapForStruct(self, struct, union_map):
-    out = ''
     out += '<div class="bitmap">\n'
     out += '  <div class="bitRow">\n'
     out += '    <div class="rowTitle"><b>Bits</b></div>\n'
@@ -227,8 +226,6 @@ class HTMLGenerator:
     for struct in doc.structs:
       if not struct.inline:
         out += self.VisitStruct(struct)
-    for macro in doc.macros:
-     pass
     out += '</body></html>'
     return out
 
@@ -380,6 +377,21 @@ class HTMLGenerator:
       out += '</tr>\n'
     out += "</table>\n"
 
+    out += '<h4>Helper functions for %s</h4>\n' % name
+    out += '<dl>\n'
+    for function in struct.functions:
+      out += '  <dt>\n    <pre>%s</pre>\n  </dt>\n' % function.declaration
+      out += '  <dd>\n    %s\n  </dd>\n' % function.body_comment
+    out += '</dl>\n'
+
+    out += '<h4>Helper macros for %s</h4>\n' % name
+    out += '<dl>\n'
+    for macro in struct.macros:
+      if len(macro.body_comment) > 0:
+        out += '  <dt>\n    <pre>%s</pre>\n  </dt>\n'
+        out += '  <dd>\n    %s\n  </dd>\n' % (
+          macro.declaration, macro.body_comment)
+    out += '</dl>\n'
     return out
 
   def VisitField(self, field, level, union_map):
