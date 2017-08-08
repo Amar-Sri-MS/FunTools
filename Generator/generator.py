@@ -233,7 +233,7 @@ class Type:
       return '<Type: %s>' % (self.base_type.Name())
 
 
-class Node:
+class Declaration:
   def __init__(self):
     # Primary, short comment for an item.  Appears on same line.
     # Contains either the comment, or None if never set.
@@ -248,14 +248,38 @@ class Node:
     # Contains either the comment, or None if never set.
     self.generator_comment = None
 
-    # All macros related to this Node in string form.
+    # All macros related to this Declaration in string form.
     self.macros = []
 
-    # Location where Node appeared in source.
+    # Source code for functions related to this Declaration.
+    # List of Function objects.
+    self.functions = []
+
+    # Location where Declaration appeared in source.
     self.line_number = 0
 
+class Macro(Declaration):
+  """Representation of a generated macro.
+  Code generator should fill in comments for documentation.
+  """
+  def __init__(self, body, comment):
+    Declaration.__init__(self)
+    self.body = body
+    self.body_comment = comment
 
-class Field(Node):
+class Function(Declaration):
+  """Representation of a generated function.
+  Code generator should fill in comments for documentation.
+  """
+  def __init__(self, decl, defn, comment):
+    Declaration.__init__(self)
+    # Forward declaration of function.
+    self.declaration = decl
+    # Full function definition with body.
+    self.definition = defn
+    self.body_comment = comment
+    
+class Field(Declaration):
   # Representation of a field in a structure or union.
   #
   # Within the field, bit positions are relative to the high bit of the
@@ -267,7 +291,7 @@ class Field(Node):
   # the StartBit and EndBit use high bit = 63.
 
   def __init__(self, name, type, offset_start, bit_width):
-    Node.__init__(self)
+    Declaration.__init__(self)
     # name of the field declaration.
     self.name = name
     # String name of the C type, or a generic type for signed-ness.
@@ -421,12 +445,12 @@ class Field(Node):
         new_subfield.CreateSubfields()
 
 
-class EnumVariable(Node):
+class EnumVariable(Declaration):
   # Representation of an enum variable in an enum declaration.
 
   def __init__(self, name, value):
      # Create an EnumVariable.
-     Node.__init__(self)
+     Declaration.__init__(self)
      # name is a string.
      self.name = name
      # value is an integer value for the variable.
@@ -436,7 +460,7 @@ class EnumVariable(Node):
      return('<EnumVariable: %s = 0x%x>' % self.name, self.value)
 
 
-class Enum(Node):
+class Enum(Declaration):
   # Representation of an enum declaration.
 
   def __init__(self, name):
@@ -444,7 +468,7 @@ class Enum(Node):
     # name is a string.
     # variables holds the EnumVariables associated with the enum.
     # Multiple enum variables may hold the same value.
-    Node.__init__(self)
+    Declaration.__init__(self)
     self.name = name
     self.variables = []
 
@@ -458,7 +482,7 @@ class Enum(Node):
     return('<Enum %s:\n  %s\n>\n' % (self.name, self.variables))
 
 
-class FlagSet(Node):
+class FlagSet(Declaration):
   # Representation of an flags declaration.  FlagSet are like enums,
   # but the values are expected to represent bitmasks, and the values
   # are generated as ints rather than as an enum.
@@ -467,7 +491,7 @@ class FlagSet(Node):
     # Create an FlagSet declaration.
     # name is a string.
     # variables holds the EnumVariables associated with the enum.
-    Node.__init__(self)
+    Declaration.__init__(self)
     self.name = name
     self.variables = []
 
@@ -488,7 +512,7 @@ class FlagSet(Node):
     return('<FlagSet %s:\n  %s\n>\n' % (self.name, self.variables))
 
 
-class Struct(Node):
+class Struct(Declaration):
   # Representation of a structure.
 
   def __init__(self, name, is_union):
@@ -496,7 +520,7 @@ class Struct(Node):
 
     if is_union is true, then this is a union rather than a structure.
     """
-    Node.__init__(self)
+    Declaration.__init__(self)
     # name is a string representing the name of the struct.
     self.name = name
 
@@ -519,6 +543,16 @@ class Struct(Node):
     if self.is_union:
       return 'union'
     return 'struct'
+
+  def NestedStructs(self):
+    result = []
+    for field in self.fields:
+      if field.type.IsRecord():
+        struct = field.type.base_type.node
+        if struct.inline:
+          result.append(struct)
+          result += struct.NestedStructs()
+    return result
 
   def MatchingStructInUnionField(self, struct_in_union):
     """Returns (accessor expr, field) for an instance of a structure
@@ -611,10 +645,9 @@ class Struct(Node):
     return None
 
 
-class Document(Node):
+class Document:
   # Representation of an entire generated header specification.
   def __init__(self):
-    Node.__init__(self)
     # structs is all the structures defined in the document.
     # Structs nested in other structs are listed here.
     self.structs = []
@@ -624,12 +657,6 @@ class Document(Node):
 
     # All flag sets declared in the file.
     self.flagsets = []
-
-    # Source code for function declarations.
-    self.declarations = []
-
-    # Source code for function definitions.
-    self.definitions = []
 
     # Original filename containing the specifications.
     self.filename = None
@@ -1481,7 +1508,7 @@ def GenerateFile(should_pack, output_style, output_base,
       for error in errors:
         sys.stderr.write(error + '\n')
 
-  helper = codegen.HelperGenerator(generate_json)
+  helper = codegen.CodeGenerator(generate_json)
   helper.VisitDocument(doc)
 
   if output_style is OutputStyleHTML:
@@ -1494,7 +1521,7 @@ def GenerateFile(should_pack, output_style, output_base,
     else:
       return code
   elif output_style is OutputStyleHeader:
-    code_generator = codegen.CodeGenerator(output_base, generate_json)
+    code_generator = codegen.CodePrinter(output_base, generate_json)
     code_generator.output_file = output_base
     (header, source) = code_generator.VisitDocument(doc)
 

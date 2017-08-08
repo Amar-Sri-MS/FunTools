@@ -3,9 +3,10 @@ import unittest
 import codegen
 import generator
 
-class CodeGeneratorTest(unittest.TestCase):
+class CodePrinterTest(unittest.TestCase):
   def setUp(self):
-    self.printer = codegen.CodeGenerator(None, True)
+    self.codegen = codegen.CodeGenerator(True)
+    self.printer = codegen.CodePrinter(None, True)
 
   def testPrintStructNoVar(self):
     builder = generator.DocBuilder()  
@@ -38,7 +39,7 @@ class CodeGeneratorTest(unittest.TestCase):
     struct.key_comment = 'Key comment'
     struct.body_comment = 'body comment\nbody comment'
 
-    header = self.printer.VisitStruct(struct)
+    (header, source) = self.printer.VisitStruct(struct)
     self.assertIn('/* Key comment */', header)
     self.assertIn('/*\n'
                   ' * body comment\n'
@@ -55,7 +56,7 @@ class CodeGeneratorTest(unittest.TestCase):
 
   def testPrintUnionWithVar(self):
     union = generator.Struct('Foo', True)
-    hdr = self.printer.VisitStruct(union)
+    (hdr, src) = self.printer.VisitStruct(union)
 
     self.assertIn('union Foo {', hdr)
     self.assertIn('};', hdr)
@@ -90,7 +91,9 @@ class CodeGeneratorTest(unittest.TestCase):
     var = generator.EnumVariable('MY_COMMAND', 1)
     enum.variables.append(var)
 
+    self.codegen.VisitEnum(enum)
     (hdr, src) = self.printer.VisitEnum(enum)
+
     self.assertIn('enum MyEnum {', hdr)
     self.assertIn('MY_COMMAND = 0x1,\n', hdr)
     self.assertIn('extern const char *myenum_names', hdr)
@@ -102,6 +105,7 @@ class CodeGeneratorTest(unittest.TestCase):
     var = generator.EnumVariable('MY_COMMAND', 31)
     enum.variables.append(var)
 
+    self.codegen.VisitEnum(enum)
     (hdr, src) = self.printer.VisitEnum(enum)
     self.assertIn('enum MyEnum {', hdr)
     self.assertIn('MY_COMMAND = 0x1f,\n', hdr)
@@ -109,9 +113,9 @@ class CodeGeneratorTest(unittest.TestCase):
     self.assertIn('const char *myenum_names', src)
     self.assertIn('"MY_COMMAND",  /* 0x1f */', src)
 
-class HelperGeneratorTest(unittest.TestCase):
+class CodeGeneratorTest(unittest.TestCase):
   def testInitializeSimpleField(self):
-    gen = codegen.HelperGenerator(False)
+    gen = codegen.CodeGenerator(False)
     s = generator.Struct('Foo', False)
     f = generator.Field('a1', generator.TypeForName('char'), 0, 8)
 
@@ -120,7 +124,7 @@ class HelperGeneratorTest(unittest.TestCase):
     self.assertEqual('\ts->pointer.a1 = a1;', statement)
 
   def testInitializeBitfield(self):
-    gen = codegen.HelperGenerator(False)
+    gen = codegen.CodeGenerator(False)
     s = generator.Struct('Foo', False)
     f = generator.Field('a1', generator.TypeForName('char'), 0, 2)
 
@@ -129,7 +133,7 @@ class HelperGeneratorTest(unittest.TestCase):
     self.assertEqual('\ts->a1 = a1;', statement)
 
   def testInitializePackedField(self):
-    gen = codegen.HelperGenerator(False)
+    gen = codegen.CodeGenerator(False)
     s = generator.Struct('Foo', False)
     f = generator.Field('a', generator.TypeForName('char'), 0, 8)
     f1 = generator.Field('a1', generator.TypeForName('char'), 8, 4)
@@ -141,7 +145,7 @@ class HelperGeneratorTest(unittest.TestCase):
     self.assertEqual('\ts->a = FOO_A1_P(a1) | FOO_A2_P(a2);', statement)
 
   def testInitializePackedFieldWithAllCapStructureName(self):
-    gen = codegen.HelperGenerator(False)
+    gen = codegen.CodeGenerator(False)
     s = generator.Struct('ffe_access_command', False)
     f = generator.Field('a', generator.TypeForName('char'), 0, 8)
     f1 = generator.Field('a1', generator.TypeForName('char'), 0, 4)
@@ -155,21 +159,21 @@ class HelperGeneratorTest(unittest.TestCase):
 
 
   def testCreateSimpleInitializer(self):
-    gen = codegen.HelperGenerator(False)
+    gen = codegen.CodeGenerator(False)
     # Struct foo has a single field a1.
     s = generator.Struct('Foo', False)
     f = generator.Field('a1', generator.TypeForName('char'), 0, 8)
     s.fields = [f]
 
-    (declaration, definition) = gen.GenerateInitRoutine(s, None)
+    func = gen.GenerateInitRoutine(s, None)
   
     self.assertIn('extern void Foo_init(struct Foo *s, char a1)',
-                     declaration)
-    self.assertIn('void Foo_init(struct Foo *s, char a1) {', definition)
-    self.assertIn('\ts->a1 = a1;\n', definition)
+                     func.declaration)
+    self.assertIn('void Foo_init(struct Foo *s, char a1) {', func.definition)
+    self.assertIn('\ts->a1 = a1;\n', func.definition)
 
   def testCreateUnionInitializer(self):
-    gen = codegen.HelperGenerator(False)
+    gen = codegen.CodeGenerator(False)
     # Struct Foo has field a0, and a union containing Message1 and Message2
     # which each have one field f1 and f2.
     s = generator.Struct('Foo', False)
@@ -185,17 +189,19 @@ class HelperGeneratorTest(unittest.TestCase):
     u.fields = [m1, m2]
     s.fields.append(generator.Field('u', generator.RecordTypeForStruct(u), 0, 8))
     
-    (decl, defn) = gen.GenerateInitRoutine(s, None)
+    func = gen.GenerateInitRoutine(s, None)
     # Foo initializer only gets a0 because it only gets non-union fielda.
-    self.assertIn('Foo_init(struct Foo *s, char a0);', decl)
+    self.assertIn('Foo_init(struct Foo *s, char a0);', func.declaration)
 
     # Initializer for Message1 doesn't get f2 because it's in Message2.
-    (decl, defn) = gen.GenerateInitRoutine(s, s1)
-    self.assertIn('Message1_init(struct Foo *s, char a0, char f1);', decl)
+    func = gen.GenerateInitRoutine(s, s1)
+    self.assertIn('Message1_init(struct Foo *s, char a0, char f1);',
+                  func.declaration)
     
     # Initializer for Message2 doesn't get f1 because it's in Message1.
-    (decl, defn) = gen.GenerateInitRoutine(s, s2)
-    self.assertIn('Message2_init(struct Foo *s, char a0, char f2);', decl)
+    func = gen.GenerateInitRoutine(s, s2)
+    self.assertIn('Message2_init(struct Foo *s, char a0, char f2);',
+                  func.declaration)
 
 
 class CodegenEndToEnd(unittest.TestCase):
@@ -639,12 +645,12 @@ class TestComments(unittest.TestCase):
 class TestIndentString(unittest.TestCase):
   def testSimple(self):
     # Tests only properties that hold true regardless of the formatting style.
-    generator = codegen.CodeGenerator(None, False)
+    generator = codegen.CodePrinter(None, False)
     generator.indent = 1
     self.assertTrue(len(generator.Indent()) > 0)
 
   def testTwoIndentDoublesOneIndent(self):
-    generator = codegen.CodeGenerator(None, False)
+    generator = codegen.CodePrinter(None, False)
     generator.indent = 1
     oneIndent = generator.Indent()
     generator.indent = 2
