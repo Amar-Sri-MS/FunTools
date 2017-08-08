@@ -513,8 +513,7 @@ class CodeGenerator:
       ' Returns false if initialization failed.\n'
       'Caller responsible for determining correct init function.\n'
       % struct_name)
-    init_declaration = declaration_comment
-    init_declaration += 'extern bool %s(%s);\n' %  (
+    init_declaration = 'extern bool %s(%s);\n' %  (
       function_name, ', '.join(arg_list))
 
     init_definition = 'bool %s(%s) {\n' % (function_name, ', '.join(arg_list))
