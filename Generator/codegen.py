@@ -354,46 +354,67 @@ class HelperGenerator:
     return '\ts->%s%s = %s;' % (accessor_prefix, field.name,
                                 ' | '.join(packed_inits))
 
-  def GenerateInitRoutine(self, function_name, struct_name,
-                          accessor_prefix, the_struct):
+  def GenerateInitRoutine(self, the_struct, struct_in_union):
     """Generate an initialization function for the named structure.
+    If struct_in_union is not None and represents a structure inside
+    a union in the_struct, then the initializer created is for that
+    version of the structure.
 
-    The function takes all non reserved fields as arguments, test
+    The function takes all non-reserved scalar fields as arguments, test
     that any bitfields are valid, and sets the fields of the referenced
     structure.
 
     Arguments:
-      function_name (string) is the preferred name for the init function itself.
-      struct_name (string) is the name to use for the structure type.
-      accessor_prefix is a bit of code to insert between the pointer token and
-        field name token to access the field.  It is used to add the name of union
-        fields.
-      the_struct (Struct) is the structure owning the init routine, used to find
-        all its fields.
+      the_struct (Struct) is the structure owning the init routine, used to
+      find all its fields.
+
+      struct_in_union indicates the init should be customized to include
+      fields only in the union.
 
     Returns:
-      (declaration, definition) pair.
+      (declaration string, definition string) pair.
 
     Arguments to the Init function are unpacked fields, values set in the
     field are packed.
     """
+    # All non-packed fields.  Will become arguments.
+    all_fields = []
+
     # List of arguments to the function.
     arg_list = []
+
     # List of statements validating size of inputs.
     validates = []
+
     # List of statements initializing fields of structure.
     inits = []
+
     # All C code to validate field inputs.
     validate_block = ''
 
+    function_name = self.InitializerName(the_struct.name)
+    if struct_in_union:
+      function_name = self.InitializerName(struct_in_union.name)
+
     # First argument is always a pointer to the structure being initialized.
-    arg_list.append('struct %s *s' % struct_name)
+    arg_list.append('struct %s *s' % the_struct.name)
 
     # Pass in all non-packed fields.
     for field in the_struct.AllFields():
-      if field.IsReserved() or not field.type.IsScalar():
-        continue
+      if not field.IsReserved() and field.type.IsScalar():
+        all_fields.append(field)
 
+    accessor_prefix = ''
+    struct_field = None
+    if struct_in_union:
+      (accessor_prefix, struct_field) = (
+        the_struct.MatchingStructInUnionField(struct_in_union))
+
+      for field in struct_in_union.AllFields():
+        if not field.IsReserved() and field.type.IsScalar():
+          all_fields.append(field)
+
+    for field in all_fields:
       arg_list.append('%s %s' % (field.type.DeclarationType(), field.name))
 
       if field.SmallerThanType():
@@ -401,11 +422,18 @@ class HelperGenerator:
         validates.append('\tassert(%s < 0x%x);' % (field.name, max_value))
 
     # Initialize each packed field.
+
     for field in the_struct.fields:
       if field.IsReserved() or not field.type.IsScalar():
         continue
+      inits.append(self.GenerateInitializer(the_struct, field, ''))
 
-      inits.append(self.GenerateInitializer(the_struct, field, accessor_prefix))
+    if struct_in_union:
+      for field in struct_in_union.fields:
+        if field.IsReserved() or not field.type.IsScalar():
+          continue
+        inits.append(self.GenerateInitializer(struct_in_union, field, 
+                                              accessor_prefix))
 
     validate_block = '\n'.join(validates)
     if validate_block:
@@ -471,8 +499,7 @@ class HelperGenerator:
   def GenerateHelpersForStruct(self, the_struct):
     """Generates helper functions for the provided structure."""
     initializer_name = self.InitializerName(the_struct.name)
-    (decl, defn) = self.GenerateInitRoutine(initializer_name,
-                                            the_struct.name, '', the_struct)
+    (decl, defn) = self.GenerateInitRoutine(the_struct, None)
     self.current_document.declarations.append(decl)
     self.current_document.definitions.append(defn)
 
@@ -515,9 +542,7 @@ class HelperGenerator:
         # Generate constructor for each option.
         function_name = self.InitializerName(struct_in_union.name)
         accessor_prefix = '%s.%s.' % (union_var, struct_var)
-        (decl, defn) = self.GenerateInitRoutine(function_name, the_struct.name,
-                                                accessor_prefix,
-                                                struct_in_union)
+        (decl, defn) = self.GenerateInitRoutine(the_struct, struct_in_union)
         self.current_document.declarations.append(decl)
         self.current_document.definitions.append(defn)
 
