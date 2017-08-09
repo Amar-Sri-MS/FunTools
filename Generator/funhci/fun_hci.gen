@@ -328,10 +328,10 @@ STRUCT fun_admin_port_req
       2 63:56  uint8_t subop /* SUBOP_DIAGS_READ */
       2 55:48  uint8_t rsvd0
       2 47:32 uint16_t flags
-      2 31:00 uint32_t read_id /* portid */
+      2 31:00 uint32_t id /* portid */
       _ _:_ fun_admin_read48_req read48[0]
     END
-     STRUCT fun_admin_port_xcvr_write_req xvcr_write
+    STRUCT fun_admin_port_xcvr_write_req xcvr_write
       2 63:56  uint8_t subop /* SUBOP_XCVR_WRITE */
       2 55:48  uint8_t rsvd0
       2 47:32 uint16_t flags
