@@ -328,10 +328,10 @@ STRUCT fun_admin_port_req
       2 63:56  uint8_t subop /* SUBOP_DIAGS_READ */
       2 55:48  uint8_t rsvd0
       2 47:32 uint16_t flags
-      2 31:00 uint32_t read_id /* portid */
+      2 31:00 uint32_t id /* portid */
       _ _:_ fun_admin_read48_req read48[0]
     END
-     STRUCT fun_admin_port_xcvr_write_req xvcr_write
+    STRUCT fun_admin_port_xcvr_write_req xcvr_write
       2 63:56  uint8_t subop /* SUBOP_XCVR_WRITE */
       2 55:48  uint8_t rsvd0
       2 47:32 uint16_t flags
@@ -854,7 +854,7 @@ STRUCT fun_req_common
   0 63:56  uint8_t op
   0 55:48  uint8_t len8 /* length of the request in units of 8-bytes */
   0 47:32 uint16_t flags
-  0 31:00 uint32_t rsvd0
+  0 31:00 uint32_t rsvd0 // maybe turn this into 16-bit cid and dump cookie? or cookie can be used for host as timestamp field to figure out how long an io took
   1 63:00 uint64_t cookie /* caller cookie, returned in response */
 END 
 
@@ -865,10 +865,18 @@ STRUCT fun_rsp_common
   1 63:00 uint64_t cookie  /* caller cookie, copied from request */
 END 
 
-STRUCT fun_cqe_info_xxx
-  0 63:01 uint64_t timestamps
-  0 00:00 uint64_t p  /* phase-bit */
-END
+// at the end of CQE, if rsp is small enough, we can place it in the rqe itself, otherise into next rq buf
+struct fun_cqe_info_xxx {
+
+  0 63:32 uint32_t rqbuf_offset /* offset into rqbuf, to support coalescing */
+  0 31:00 uint32_t rsvd0
+  1 63:32 uint32_t sqid /* associated submission queue */ 
+  1 31:16 uint16_t sqhd /* sq head pointer value */
+  1 15:08  uint8_t cid /* command identifier */
+  1 07:02  uint8_t rsvd1
+  1 01:01  uint8_t rqbuf_written /* rq buffer was written */
+  1 00:00  uint8_t phase /* phase bit, 0 or 1*/
+};
 
 ENUM fun_eprq_op
   FUN_EPRQ_OP_ILLEGAL = 0x00
@@ -877,11 +885,11 @@ END
 
 STRUCT fun_eprq_rqbuf
   0 63:08 uint64_t bufaddr     /* buffer (DMA) address */
-  0 07:00 uint64_t bufsize2K   /* buffer size in units of 2-Kbytes */
+  0 07:00 uint64_t bufsize2K   /* buffer size in units of 2-Kbytes or driver could program a buf size table and this is index into the table */
 END
 
 STRUCT fun_eprq_rqbufs_req
-  0 63:0 fun_req_common common
+  0 63:0 fun_req_common common // we could consider removing the req_common to have more rqbufs in the request?
   1 63:0 ...
   _ _:_ fun_eprq_rqbuf rqbuf[0]
 END 
@@ -922,7 +930,15 @@ STRUCT fun_eth_tx_req
   2 31:00 uint32_t id /* ethid */
   3 63:32 uint32_t pktlen
   3 31:00 uint32_t rsvd1
-  _ _:_ uint8_t packet[0] /* via fun_subop_imm/sgl */
+  4 63:00 uint64_t metadata[8] // modelel after what NU generates
+  5 63:00 ...
+  6 63:00 ...
+  7 63:00 ...
+  8 63:00 ...
+  9 63:00 ...
+  10 63:00 ...
+  11 63:00 ...
+  _ _:_ fun_subop_imm imm[0] // must contain ethernet header, offsetted by 2-bytes, can be followed by sgl for payload of packet
 END
 
 // F1 to Host
@@ -934,7 +950,15 @@ STRUCT fun_eth_rx_req
   2 31:00 uint32_t id /* ethid */
   3 63:32 uint32_t pktlen
   3 31:00 uint32_t rsvd1
-  _ _:_ fun_subop_imm imm[0]
+  4 63:00 uint64_t metadata[8] // modelel after what NU generates
+  5 63:00 ...
+  6 63:00 ...
+  7 63:00 ...
+  8 63:00 ...
+  9 63:00 ...
+  10 63:00 ...
+  11 63:00 ...
+  _ _:_ fun_subop_imm imm[0] // actual packet, offsetted by 2-bytes  
 END
 
 ENUM fun_socket_op
