@@ -60,6 +60,7 @@ host_code:
 doc:
 	@mkdir -p out
 	../generator.py -g html -o out/fun_hci fun_hci.gen
+	../generator.py -g html -o out/port_enum fun_port.gen
 
 $(BUILD)/obj/fun_hci_json.o: out/fun_hci_json.c
 	@echo CC $<
