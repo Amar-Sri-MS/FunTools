@@ -55,11 +55,13 @@ funos_code:
 host_code:
 	@mkdir -p out
 	../generator.py -c pack -g code -o out/fun_hci fun_hci.gen
+	../generator.py -c pack -g code -o out/fun_port_enum fun_port.gen
 
 .PHONY: doc
 doc:
 	@mkdir -p out
 	../generator.py -g html -o out/fun_hci fun_hci.gen
+	../generator.py -g html -o out/fun_port_enum fun_port.gen
 
 $(BUILD)/obj/fun_hci_json.o: out/fun_hci_json.c
 	@echo CC $<
