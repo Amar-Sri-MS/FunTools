@@ -137,20 +137,16 @@ class CodePrinter:
     if flagset.body_comment:
       hdr_out += utils.AsComment(flagset.body_comment) + '\n'
 
-    src_out += '/* Definitions for flag set %s */\n' % flagset.name
-
     for var in flagset.variables:
       if var.body_comment:
         hdr_out += utils.AsComment(var.body_comment) + '\n'
       key_comment = ''
       if var.key_comment:
-        key_comment = ', ' + var.key_comment
-      hdr_out += 'extern const int %s;  /* 0x%x%s */\n' % (var.name, var.value,
-                                                    key_comment)
-      src_out += 'const int %s = 0x%x;\n' % (var.name, var.value)
-
+        key_comment = '  /* ' + var.key_comment + ' */'
+      hdr_out += 'static const int %s = 0x%x;%s\n' % (var.name,
+                                                      var.value,
+                                                      key_comment)
     hdr_out += '\n'
-    src_out += '\n'
 
     max_bits = utils.MaxBit(flagset.MaxValue())
     hdr_out += '/* String names for all power-of-two flags in %s. */\n' % flagset.name

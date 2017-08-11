@@ -432,16 +432,15 @@ class CodegenEndToEnd(unittest.TestCase):
       'C = 4',
       'D = 8',
       'E = 16',
-      'F = 0x20',
+      'F = 0x20 /* Comment */',
       'END',
       ]
 
     out = generator.GenerateFile(True, generator.OutputStyleHeader, None,
                                  contents, 'foo.gen', False)
-    self.assertIn('extern const int A;', out)
-    self.assertIn('const int A = 0x1;', out)
-    self.assertIn('const int D = 0x8;', out)
-    self.assertIn('const int F = 0x20;', out)
+    self.assertIn('static const int A = 0x1;', out)
+    self.assertIn('static const int D = 0x8;', out)
+    self.assertIn('static const int F = 0x20;  /* Comment */', out)
 
   def testFlagsNotPowerOfTwo(self):
     contents = [
