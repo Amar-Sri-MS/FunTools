@@ -145,7 +145,7 @@ class CodePrinter:
       key_comment = ''
       if var.key_comment:
         key_comment = ', ' + var.key_comment
-      hdr_out += 'const int %s;  /* 0x%x%s */\n' % (var.name, var.value,
+      hdr_out += 'extern const int %s;  /* 0x%x%s */\n' % (var.name, var.value,
                                                     key_comment)
       src_out += 'const int %s = 0x%x;\n' % (var.name, var.value)
 
