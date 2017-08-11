@@ -426,7 +426,7 @@ class CodegenEndToEnd(unittest.TestCase):
 
   def testSimpleFlags(self):
     contents = [
-      'FLAGS Foo',
+      'FLAGS foo',
       'A = 1',
       'B = 2',
       'C = 4',
@@ -441,6 +441,8 @@ class CodegenEndToEnd(unittest.TestCase):
     self.assertIn('static const int A = 0x1;', out)
     self.assertIn('static const int D = 0x8;', out)
     self.assertIn('static const int F = 0x20;  /* Comment */', out)
+    self.assertIn('extern const char *foo_names', out)
+    self.assertIn('const char *foo_names[6] = {', out)
 
   def testFlagsNotPowerOfTwo(self):
     contents = [
@@ -463,6 +465,10 @@ class CodegenEndToEnd(unittest.TestCase):
     self.assertIn('"D",  /* 0x10 */', out)
     self.assertIn('"0x8",  /* 0x8, not defined with flag. */', out)
     self.assertNotIn('"AB",  /* 0x3 */', out)
+    self.assertIn('extern const char *Foo_names', out)
+    self.assertIn('const char *Foo_names[5] = {', out)
+    self.assertIn('"0x8",  /* 0x8, not defined with flag. */', out)
+
 
 
 class TestComments(unittest.TestCase):
