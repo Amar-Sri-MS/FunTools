@@ -41,7 +41,7 @@ HCI_HDR = fun_hci_json.h
 HCI_OBJS = $(patsubst %.c,$(BUILD)/obj/%.o,$(filter %c,$(HCI_SRC)))
 
 CFLAGS = -Wall -Werror
-CFLAGS += -I $(SDKDIR)/FunSDK
+CFLAGS += -I $(SDKDIR)/FunSDK -I $(SDKDIR)
 
 .PHONY: all
 all: funos_code host_code $(BUILD)/$(LIB_HCI)
