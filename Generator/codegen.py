@@ -58,8 +58,17 @@ class CodePrinter:
 // Do not change this file;
 // change the gen file "%s" instead.
 
+#ifdef __KERNEL__
+/* For Linux kernel */
+#define assert(x)
+
+#else
+
+/* For FunOS and CC-Linux. */
 #include <stdint.h>
 #include <assert.h>
+
+#endif // __KERNEL__
 
 """) % doc.filename
 
@@ -71,15 +80,10 @@ class CodePrinter:
       hdr_out += '#ifndef %s\n' % include_guard_name
       hdr_out += '#define %s\n' % include_guard_name
 
-    hdr_out += """
-#include <assert.h>
-#include <stdbool.h>
-#include <stdint.h>
-#include <stdlib.h>
-
-"""
     if self.generate_json:
       hdr_out += '#include <utils/threaded/fun_json.h>\n\n'
+
+    hdr_out += '\n'
 
     for enum in doc.enums:
       (hdr, src) = self.VisitEnum(enum)
