@@ -80,25 +80,10 @@ class CodePrinter:
       hdr_out += '#ifndef %s\n' % include_guard_name
       hdr_out += '#define %s\n' % include_guard_name
 
-    hdr_out += """
-#ifdef __KERNEL__
-
-/* For Linux kernel. */
-#include <linux/types.h>
-
-#else
-
-/* For FunOS and CC-Linux. */
-#include <assert.h>
-#include <stdbool.h>
-#include <stdint.h>
-#include <stdlib.h>
-
-#endif  // __KERNEL__
-
-"""
     if self.generate_json:
       hdr_out += '#include <utils/threaded/fun_json.h>\n\n'
+
+    hdr_out += '\n'
 
     for enum in doc.enums:
       (hdr, src) = self.VisitEnum(enum)
