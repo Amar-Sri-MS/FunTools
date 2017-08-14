@@ -58,8 +58,17 @@ class CodePrinter:
 // Do not change this file;
 // change the gen file "%s" instead.
 
+#ifdef __KERNEL__
+/* For Linux kernel */
+#define assert(x)
+
+#else
+
+/* For FunOS and CC-Linux. */
 #include <stdint.h>
 #include <assert.h>
+
+#endif // __KERNEL__
 
 """) % doc.filename
 
@@ -72,10 +81,20 @@ class CodePrinter:
       hdr_out += '#define %s\n' % include_guard_name
 
     hdr_out += """
+#ifdef __KERNEL__
+
+/* For Linux kernel. */
+#include <linux/types.h>
+
+#else
+
+/* For FunOS and CC-Linux. */
 #include <assert.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
+
+#endif  // __KERNEL__
 
 """
     if self.generate_json:
