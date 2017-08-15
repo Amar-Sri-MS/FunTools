@@ -53,6 +53,24 @@ def standardize_json(in_cfg, out_cfg):
 
 	os.system('%s -i %s -o %s' % (jsonutil_tool, in_cfg, out_cfg));
 
+# Merge two dictionaries
+# If they have the same key, merge contents
+# This is necessary e.g. for the pipeline:
+# 	Both the PRS and FFE images fall under the "pipeline" key,
+#	so we need to merge them properly
+def merge_dicts(full_cfg, cfg_j):
+
+	new_cfg = full_cfg
+
+	for key in cfg_j.keys():
+		print "Adding key: %s" % key
+		if key in new_cfg.keys():
+			new_cfg[key].update(cfg_j[key])
+		else:
+			new_cfg[key] = cfg_j[key]
+
+	return new_cfg
+
 
 # Standardize and combine multiple configuration files
 # into one config that will be used by FunOS
@@ -63,6 +81,7 @@ def generate_config():
 	full_cfg = {}
 
 	for cfg in glob.glob("configs/*.cfg"):
+		print "handling %s" % cfg
 
 		standardize_json(cfg, cfg+'.tmp')
 
@@ -71,7 +90,7 @@ def generate_config():
 		f.close()
 		os.system('rm %s.tmp' % cfg)
 
-		full_cfg.update(cfg_j)
+		full_cfg = merge_dicts(full_cfg, cfg_j)
 
 	fout = open("out/default.cfg", 'w')
 
