@@ -1124,6 +1124,20 @@ STRUCT fun_socket_recvmsg_req
   2 31:00 uint32_t id
 END
 
+STRUCT fun_cqe_info
+  0 63:48 uint16_t sqhd /* sq head pointer value */
+  0 47:32 uint16_t sqid /* associated submission queue identifier or 0xffff */
+  0 31:16 uint16_t cid  /* command identifier */
+  0 15:00 uint16_t sf_p /* status field and phase-bit */
+END
+
+STRUCT fun_cqe_16
+  0 63:0  uint64_t value[1]
+  1 63:48 uint16_t sqhd /* sq head pointer value */
+  1 47:32 uint16_t sqid /* associated submission queue identifier or 0xffff */
+  1 31:16 uint16_t cid  /* command identifier */
+  1 15:00 uint16_t sf_p /* status field and phase-bit */
+END
 
 // FFE
 
