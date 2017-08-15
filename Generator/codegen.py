@@ -62,6 +62,8 @@ class CodePrinter:
 /* For Linux kernel */
 #define assert(x)
 
+#include <linux/types.h>
+
 #else
 
 /* For FunOS and CC-Linux. */
