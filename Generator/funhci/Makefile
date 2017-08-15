@@ -3,6 +3,7 @@
 OS := $(shell uname)
 
 MACHINE ?= posix
+DEST ?= out
 
 ifeq ($(OS),Darwin)
 	TOOL_ROOT := /Users/Shared/cross-el/bin
@@ -35,8 +36,11 @@ LIBS = $(SDKDIR)/lib/$(OS)/noasan/libfunclient.a
 
 LIB_HCI = libfunhci-$(MACHINE).a
 
-HCI_SRC = fun_hci_json.c
-HCI_HDR = fun_hci_json.h
+OUT_HCI = fun_hci
+OUT_PORT = port_enum
+
+HCI_SRC = $(OUT_HCI)_json.c
+HCI_HDR = $(OUT_HCI)_json.h
 
 HCI_OBJS = $(patsubst %.c,$(BUILD)/obj/%.o,$(filter %c,$(HCI_SRC)))
 
@@ -48,21 +52,21 @@ all: funos_code host_code $(BUILD)/$(LIB_HCI)
 
 .PHONY: funos_code
 funos_code:
-	@mkdir -p out
-	../generator.py -c pack,json -g code -o out/fun_hci_json fun_hci.gen
+	@mkdir -p $(DEST)
+	../generator.py -c pack,json -g code -o $(DEST)/$(OUT_HCI)_json fun_hci.gen
 
 .PHONY: host_code
 host_code:
-	@mkdir -p out
-	../generator.py -c pack -g code -o out/fun_hci fun_hci.gen
+	@mkdir -p $(DEST)
+	../generator.py -c pack -g code -o $(DEST)/$(OUT_HCI) fun_hci.gen
 
 .PHONY: doc
 doc:
-	@mkdir -p out
-	../generator.py -g html -o out/fun_hci fun_hci.gen
-	../generator.py -g html -o out/port_enum fun_port.gen
+	@mkdir -p $(DEST)
+	../generator.py -g html -o $(DEST)/$(OUT_HCI) fun_hci.gen
+	../generator.py -g html -o $(DEST)/$(OUT_PORT) fun_port.gen
 
-$(BUILD)/obj/fun_hci_json.o: out/fun_hci_json.c
+$(BUILD)/obj/fun_hci_json.o: $(DEST)/$(OUT_HCI)_json.c
 	@echo CC $<
 	@mkdir -p `dirname $@`
 	$(CC) -o $@ $(CFLAGS) -c $<
@@ -75,9 +79,12 @@ install: $(BUILD)/$(LIB_HCI)
 	mkdir -p $(SDKDIR)/FunSDK/hci/lib/$(LIBDST)
 	mkdir -p $(SDKDIR)/FunSDK/hci/include
 	cp $(BUILD)/$(LIB_HCI) $(SDKDIR)/FunSDK/hci/lib/$(LIBDST)/libfunhci.a
-	cp out/$(HCI_HDR) $(SDKDIR)/FunSDK/hci/include
+	cp $(DEST)/$(HCI_HDR) $(SDKDIR)/FunSDK/hci/include
 
 .PHONY: clean
 clean:
-	rm -rf out
+	rm -f $(DEST)/$(OUT_HCI).c
+	rm -f $(DEST)/$(OUT_HCI).h
+	rm -f $(DEST)/$(OUT_HCI)_json.c
+	rm -f $(DEST)/$(OUT_HCI)_json.h
 	rm  -rf $(BUILD)
