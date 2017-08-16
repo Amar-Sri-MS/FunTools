@@ -83,6 +83,7 @@
 		A766A4901F1C23B60094C7B0 /* IKVController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A766A48F1F1C23B60094C7B0 /* IKVController.swift */; };
 		A766A4921F1C30D60094C7B0 /* MiscWindow.xib in Resources */ = {isa = PBXBuildFile; fileRef = A766A4911F1C30D60094C7B0 /* MiscWindow.xib */; };
 		A766A4941F1C31590094C7B0 /* MiscWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A766A4931F1C31590094C7B0 /* MiscWindowController.swift */; };
+		A78F76A51F38B83B00E33523 /* datakit in Resources */ = {isa = PBXBuildFile; fileRef = A78F76A41F38B83B00E33523 /* datakit */; };
 		A791CEE61EC50356000125F0 /* bridgingCExtras.c in Sources */ = {isa = PBXBuildFile; fileRef = A791CEE51EC50356000125F0 /* bridgingCExtras.c */; };
 		A7A68D001EE9C608004B5DDF /* props_bridges in Resources */ = {isa = PBXBuildFile; fileRef = A7A68CFF1EE9C608004B5DDF /* props_bridges */; };
 		A7FD266E1EB51FCE0049E0C0 /* libfunclient.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A7FD266D1EB51FCE0049E0C0 /* libfunclient.a */; };
@@ -172,6 +173,7 @@
 		A766A48F1F1C23B60094C7B0 /* IKVController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = IKVController.swift; sourceTree = "<group>"; };
 		A766A4911F1C30D60094C7B0 /* MiscWindow.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = MiscWindow.xib; sourceTree = "<group>"; };
 		A766A4931F1C31590094C7B0 /* MiscWindowController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MiscWindowController.swift; sourceTree = "<group>"; };
+		A78F76A41F38B83B00E33523 /* datakit */ = {isa = PBXFileReference; lastKnownFileType = folder; name = datakit; path = ../../FunOS/datakit; sourceTree = "<group>"; };
 		A791CEE51EC50356000125F0 /* bridgingCExtras.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = bridgingCExtras.c; sourceTree = "<group>"; };
 		A7A68CFF1EE9C608004B5DDF /* props_bridges */ = {isa = PBXFileReference; lastKnownFileType = folder; name = props_bridges; path = ../../FunOS/props_bridges; sourceTree = "<group>"; };
 		A7FD266D1EB51FCE0049E0C0 /* libfunclient.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libfunclient.a; path = ../../FunSDK/lib/Darwin/libfunclient.a; sourceTree = "<group>"; };
@@ -209,6 +211,7 @@
 				A716FBE51EAD33E0008395EC /* hw */,
 				A71563981EB95EDE00F32BAE /* cfg */,
 				A716FBE71EAD33EA008395EC /* kv */,
+				A78F76A41F38B83B00E33523 /* datakit */,
 				A716FBCA1EA67C82008395EC /* Products */,
 				A7FD266C1EB51FCD0049E0C0 /* Frameworks */,
 			);
@@ -411,6 +414,7 @@
 				A716FBDC1EA67D3C008395EC /* funos in Resources */,
 				A716FBEC1EAD63FA008395EC /* PureSwiftExtras in Resources */,
 				A716FBCF1EA67C82008395EC /* Assets.xcassets in Resources */,
+				A78F76A51F38B83B00E33523 /* datakit in Resources */,
 				A766A4821F1C0E550094C7B0 /* Buttons.xib in Resources */,
 				A766A4881F1C12FD0094C7B0 /* ConsoleWindow.xib in Resources */,
 				A716FBD21EA67C82008395EC /* MainMenu.xib in Resources */,
@@ -545,6 +549,7 @@
 				MACOSX_DEPLOYMENT_TARGET = 10.12;
 				MTL_ENABLE_DEBUG_INFO = YES;
 				ONLY_ACTIVE_ARCH = YES;
+				OTHER_CFLAGS = "";
 				SDKROOT = macosx;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
@@ -587,6 +592,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 10.12;
 				MTL_ENABLE_DEBUG_INFO = NO;
+				OTHER_CFLAGS = "";
 				SDKROOT = macosx;
 				SWIFT_OPTIMIZATION_LEVEL = "-Owholemodule";
 			};
@@ -598,7 +604,10 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				COMBINE_HIDPI_IMAGES = YES;
-				HEADER_SEARCH_PATHS = ../../FunOS;
+				HEADER_SEARCH_PATHS = (
+					../../FunOS,
+					../../FunSDK,
+				);
 				INFOPLIST_FILE = funos_viewer/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				LIBRARY_SEARCH_PATHS = (
@@ -620,7 +629,10 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				COMBINE_HIDPI_IMAGES = YES;
-				HEADER_SEARCH_PATHS = ../../FunOS;
+				HEADER_SEARCH_PATHS = (
+					../../FunOS,
+					../../FunSDK,
+				);
 				INFOPLIST_FILE = funos_viewer/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				LIBRARY_SEARCH_PATHS = (
