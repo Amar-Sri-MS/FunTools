@@ -17,6 +17,7 @@ ENUM fun_admin_op
   FUN_ADMIN_OP_VOL = 0x19 /* Storage Volume Flow Node */
   FUN_ADMIN_OP_CONCAT = 0x1A /* Storage Concatinated Volume Flow Node */
   FUN_ADMIN_OP_CRYPTO = 0x1B /* Crypto Flow Node */
+  FUN_ADMIN_OP_NET = 0x1C /* Network Node */
 END
 
 FLAGS fun_admin_req_common_flag
@@ -448,6 +449,66 @@ STRUCT fun_admin_port_rsp
       2 55:32  uint8_t rsvd0[3]
       2 31:00 uint32_t id /* portid */
       _ _:_ fun_admin_read48_rsp read48[0]
+    END
+  END
+END
+
+/*
+ *	Networking Request/Response
+ */
+ENUM fun_admin_net_key
+  FUN_ADMIN_NET_KEY_ILLEGAL = 0x00
+  FUN_ADMIN_NET_KEY_SSE_MD = 0x01
+  FUN_ADMIN_NET_KEY_SSE_PRT_RNG = 0x02
+  FUN_ADMIN_NET_KEY_SSE_WRR_WT = 0x03
+  FUN_ADMIN_NET_KEY_SSE_ECC_SYM = 0x04
+END
+
+STRUCT fun_sse_md_entry
+  0 63:00 uint64_t stream /* shrink */
+  1 63:00 uint64_t data[6]
+  2 63:00 ...
+  3 63:00 ...
+  4 63:00 ...
+  5 63:00 ...
+  6 63:00 ...
+END
+
+STRUCT fun_sse_rng_entry
+  0 63:00 uint64_t param /* TBD */
+  1 63:00 uint64_t data /* TBD */
+END
+
+STRUCT fun_sse_efp_fae_wt_entry
+  0 63:00 uint64_t stream /* shrink */
+  1 63:00 uint64_t data /* TBD */
+END
+
+STRUCT fun_sse_mem_ecc_sym_entry
+  0 63:00 uint64_t param /* TBD */
+  1 63:00 uint64_t data /* TBD */
+END
+
+
+STRUCT fun_admin_net_req
+  0 63:00 fun_admin_req_common common
+  1 63:00 ...
+  2 63:56 uint8_t subop
+  2 55:48 uint8_t rsvd0
+  2 47:32 uint16_t flags
+  2 31:00 uint32_t rsvd1
+  UNION nu_writeop_options u
+    STRUCT fun_admin_net_writeops_sse_md
+      _ _:_ fun_sse_md_entry mdata[0]
+    END
+    STRUCT fun_admin_net_writeops_prt_rng
+      _ _:_ fun_sse_rng_entry port_ranges[0]
+    END
+    STRUCT fun_admin_net_writeops_wrr_wt
+      _ _:_ fun_sse_efp_fae_wt_entry wrr_weights[0]
+    END
+    STRUCT fun_admin_net_writeops_mem_ecc_sym
+      _ _:_ fun_sse_mem_ecc_sym_entry mem_ecc_sym[0]
     END
   END
 END
