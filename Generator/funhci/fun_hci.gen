@@ -496,7 +496,7 @@ STRUCT fun_admin_net_req
   2 63:56 uint8_t subop
   2 55:48 uint8_t rsvd0
   2 47:32 uint16_t flags
-  2 31:00 uint32_t rsvd1
+  2 31:00 uint32_t key
   UNION nu_writeop_options u
     STRUCT fun_admin_net_writeops_sse_md
       _ _:_ fun_sse_md_entry mdata[0]
