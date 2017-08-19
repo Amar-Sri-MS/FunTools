@@ -1218,8 +1218,11 @@ END
 
 // FFE TCAM entry format
 STRUCT fun_nu_ffe_entry_tcam
-  0 63:16 uint8_t rsvd0[6]
-  0 15:0 uint16_t at_index
+  0 63:32 uint32_t rsvd0
+  0 31:22 uint16_t rsvd1
+  0 21:16 uint16_t ucode_ix
+  0 15:10 uint16_t rsvd2
+  0 09:00 uint16_t dmem_ix
   1 63:0 uint64_t key[3]
   2 63:0 ...
   3 63:0 ...
@@ -1246,7 +1249,7 @@ STRUCT fun_nu_ffe_entry_dit
   0 31:22 uint16_t rsvd1
   0 21:16 uint16_t ucode_ix
   0 15:10 uint16_t rsvd2
-  0 9:0 uint16_t dmem_ix
+  0 09:00 uint16_t dmem_ix
 END
 
 // FFE action microcode entry format
