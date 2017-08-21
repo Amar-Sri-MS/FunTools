@@ -1238,9 +1238,13 @@ STRUCT fun_nu_ffe_entry_hash_stash
   0 63:57 uint8_t rsvd0
   0 56:56 uint8_t valid
   0 55:0 uint8_t rsvd1[7]
-  1 63:0 uint64_t data[2]
+  1 63:0 uint64_t key[2]
   2 63:0 ...
-  3 63:0 uint64_t rsvd2
+  3 63:32 uint32_t rsvd2
+  3 31:22 uint16_t rsvd3
+  3 21:16 uint16_t ucode_ix
+  3 15:10 uint16_t rsvd4
+  3 09:00 uint16_t dmem_ix
 END
 
 // FFE DIT entry format
