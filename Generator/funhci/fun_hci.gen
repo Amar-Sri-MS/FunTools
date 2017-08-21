@@ -493,21 +493,33 @@ END
 STRUCT fun_admin_net_req
   0 63:00 fun_admin_req_common common
   1 63:00 ...
-  2 63:56 uint8_t subop
-  2 55:48 uint8_t rsvd0
-  2 47:32 uint16_t flags
-  2 31:00 uint32_t key
   UNION nu_writeop_options u
-    STRUCT fun_admin_net_writeops_sse_md
+    STRUCT fun_admin_net_writeops_sse_md sse_md_write
+      2 63:56 uint8_t subop /* SUBOP_WRITE */
+      2 55:48 uint8_t rsvd0
+      2 47:32 uint16_t flags
+      2 31:00 uint32_t key /* FUN_ADMIN_NET_KEY_SSE_MD */
       _ _:_ fun_sse_md_entry mdata[0]
     END
-    STRUCT fun_admin_net_writeops_prt_rng
+    STRUCT fun_admin_net_writeops_prt_rng prt_rng_write
+      2 63:56 uint8_t subop /* SUBOP_WRITE */
+      2 55:48 uint8_t rsvd0
+      2 47:32 uint16_t flags
+      2 31:00 uint32_t key /* FUN_ADMIN_NET_KEY_SSE_PRT_RNG */
       _ _:_ fun_sse_rng_entry port_ranges[0]
     END
-    STRUCT fun_admin_net_writeops_wrr_wt
+    STRUCT fun_admin_net_writeops_wrr_wt wrr_wt_write
+      2 63:56 uint8_t subop /* SUBOP_WRITE */
+      2 55:48 uint8_t rsvd0
+      2 47:32 uint16_t flags
+      2 31:00 uint32_t key /* FUN_ADMIN_NET_KEY_SSE_WRR_WT */
       _ _:_ fun_sse_efp_fae_wt_entry wrr_weights[0]
     END
-    STRUCT fun_admin_net_writeops_mem_ecc_sym
+    STRUCT fun_admin_net_readops_mem_ecc_sym ecc_sym_read
+      2 63:56 uint8_t subop /* SUBOP_READ */
+      2 55:48 uint8_t rsvd0
+      2 47:32 uint16_t flags
+      2 31:00 uint32_t key /* FUN_ADMIN_NET_KEY_SSE_ECC_SYM */
       _ _:_ fun_sse_mem_ecc_sym_entry mem_ecc_sym[0]
     END
   END
