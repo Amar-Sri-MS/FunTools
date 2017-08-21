@@ -1008,6 +1008,37 @@ class PackerTest(unittest.TestCase):
     self.assertEqual('d_to_e', doc.structs[0].fields[2].name)
     self.assertEqual('reserved', doc.structs[0].fields[3].name)
 
+  def testPackSplitCorrectly(self):
+    """Tests that two sets of packed fields separated by a non-packed
+    variable are not merged.
+    """
+    
+    doc_builder = generator.DocBuilder()
+    contents = [
+      'STRUCT Foo',
+      '0 63:32 uint32_t rsvd0',
+      '0 31:22 uint16_t rsvd1',
+      '0 21:16 uint16_t ucode_ix',
+      '0 15:10 uint16_t rsvd2',
+      '0 9:0 uint16_t dmem_ix',
+      'END'
+      ]
+
+    errors = doc_builder.Parse('filename', contents)
+    self.assertIsNone(errors)
+  
+    doc = doc_builder.current_document
+    p = generator.Packer()
+    p.VisitDocument(doc)
+
+    self.assertEqual(0, len(p.errors))
+
+    # a, b, d, and e should not be packed.
+    self.assertEqual(3, len(doc.structs[0].fields))
+    self.assertEqual('rsvd0', doc.structs[0].fields[0].name)
+    self.assertEqual('ucode_ix_pack', doc.structs[0].fields[1].name)
+    self.assertEqual('dmem_ix_pack', doc.structs[0].fields[2].name)
+
   def testWarningOnPackLargerThanBaseType(self):
     """Tests that two sets of packed fields separated by a non-packed
     variable are not merged.
@@ -1031,7 +1062,7 @@ class PackerTest(unittest.TestCase):
     errors = p.VisitDocument(doc)
     
     self.assertTrue(1, len(errors))
-    self.assertIn('Fields are 18 bits, type is 8 bits.', errors[0])
+    self.assertIn('Width of packed bit-field containing a and b (10 bits) exceeds width of its type (8 bits).', errors[0])
 
   def testReservedFieldIgnoredWhenPacking(self):
     doc_builder = generator.DocBuilder()
