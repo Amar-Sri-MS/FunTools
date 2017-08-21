@@ -841,32 +841,41 @@ class Packer:
     Returns array of proposed packed variables, with each group being
     a tuple of (type, [fields to pack in variable) in that group.
     """
-    # Contiguous fields to pack.  When we reach the end of a group
-    # move to fields_to_pack.
+    # Contiguous fields to pack.  When we reach the end of a set of fields to be packed togther,
+    # we move them to fields_to_pack.
     fields_to_pack = []
+
+    # Current group of fields to be packed together.
     current_group = []
+
+    # Common type for all in current group of fields to be packed together.
     current_type = None
+    # total bits of space used by current_group
+    bits_occupied = 0
+
     for field in the_fields:
-      # Loop through the fields, grouping contiguous bitfields into a larger
-      # single variable.
-      if field.type.BitWidth() != field.BitWidth():
-         if current_type == None or field.type == current_type:
-           current_type = field.type
-           current_group.append(field)
-         else:
-           if len(current_group) > 1:
-             fields_to_pack.append((current_type, current_group))
-           current_group = [field]
-           current_type = field.type
-      else:
-        if len(current_group) > 1:
-          fields_to_pack.append((current_type, current_group))
+
+      # End the previous group of packed fields if the current field
+      # can be a field on its own, if the current field does not match the group's
+      # field, or if the packed field is already full (or too full).
+      # Code outside checks for packed fields too large for the type.
+      if (field.type.BitWidth() == field.BitWidth() or
+          current_type != field.type or
+          bits_occupied >= field.type.BitWidth()):
+        fields_to_pack.append((current_type, current_group))
         current_group = []
         current_type = None
+        bits_occupied = 0
 
-    if len(current_group) > 1:
-      fields_to_pack.append((current_type, current_group))
-    return fields_to_pack
+      current_group.append(field)
+      if (len(current_group) == 1):
+        current_type = field.type
+      bits_occupied += field.BitWidth()
+
+    fields_to_pack.append((current_type, current_group))
+
+    # Return only the groups that had more than one field in them.
+    return [pack_group for pack_group in fields_to_pack if len(pack_group[1]) > 1]
 
   def PackFlit(self, the_struct, flit_number, the_fields):
     """Replaces contiguous sets of bitfields with macros to access.
@@ -890,8 +899,7 @@ class Packer:
 
       if (packed_field_width > type.BitWidth()):
         self.AddError(the_struct,
-                      'Unable to pack fields %s. '
-                      'Fields are %d bits, type is %d bits.' % (
+                      'Width of packed bit-field containing %s (%d bits) exceeds width of its type (%d bits). '% (
             utils.ReadableList([f.name for f in fields]),
             packed_field_width,
             type.BitWidth()))
