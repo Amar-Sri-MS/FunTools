@@ -1200,7 +1200,8 @@ END
 
 // FFE Template TCAM entry format
 STRUCT fun_nu_ffe_entry_tmp_tcam
-  0 63:32 uint32_t rsvd0
+  0 63:48 uint16_t index
+  0 47:32 uint16_t rsvd0
   0 31:26 uint32_t rsvd1
   0 25:0 uint32_t key /* key (26 bits) */
   1 63:32 uint32_t rsvd2
@@ -1294,18 +1295,18 @@ END
 STRUCT fun_nu_ffe_req_tmp_tcam_rw
   0 63:0 fun_req_common common
   1 63:0 ...
-  2 63:48 uint16_t index
+  2 63:48 uint16_t rsvd0
   2 47:40 uint8_t stage
-  2 39:16 uint8_t rsvd0[3]
+  2 39:16 uint8_t rsvd1[3]
   2 15:0 uint16_t data_size /* key microcode size */
 END
 
 STRUCT fun_nu_ffe_rsp_tmp_tcam_rw
   0 63:0 fun_rsp_common common
   1 63:0 ...
-  2 63:48 uint16_t index
+  2 63:48 uint16_t rsvd0
   2 47:40 uint8_t stage
-  2 39:16 uint8_t rsvd0[3]
+  2 39:16 uint8_t rsvd1[3]
   2 15:0 uint16_t data_size /* key microcode size */
 END
 
