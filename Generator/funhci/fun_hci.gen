@@ -1218,7 +1218,9 @@ END
 
 // FFE TCAM entry format
 STRUCT fun_nu_ffe_entry_tcam
-  0 63:32 uint32_t rsvd0
+  0 63:48 uint16_t index
+  0 47:40 uint8_t rsvd0
+  0 39:32 uint8_t bank
   0 31:22 uint16_t rsvd1
   0 21:16 uint16_t ucode_ix
   0 15:10 uint16_t rsvd2
@@ -1235,9 +1237,12 @@ END
 
 // FFE Hash or Stash entry format
 STRUCT fun_nu_ffe_entry_hash_stash
-  0 63:57 uint8_t rsvd0
-  0 56:56 uint8_t valid
-  0 55:0 uint8_t rsvd1[7]
+  0 63:48 uint16_t index
+  0 47:40 uint8_t rsvd0
+  0 39:32 uint8_t bank
+  0 31:31 uint8_t valid
+  0 30:24 uint8_t rsvd0
+  0 23:0 uint8_t rsvd1[3]
   1 63:0 uint64_t key[2]
   2 63:0 ...
   3 63:32 uint32_t rsvd2
@@ -1249,7 +1254,8 @@ END
 
 // FFE DIT entry format
 STRUCT fun_nu_ffe_entry_dit
-  0 63:32 uint32_t rsvd0
+  0 63:48 uint16_t index
+  0 47:32 uint16_t rsvd0
   0 31:22 uint16_t rsvd1
   0 21:16 uint16_t ucode_ix
   0 15:10 uint16_t rsvd2
@@ -1258,19 +1264,23 @@ END
 
 // FFE action microcode entry format
 STRUCT fun_nu_ffe_entry_act_ucode
-  0 63:0 uint64_t instr_data_wlst[3]
-  1 63:0 ...
+  0 63:48 uint16_t index
+  0 47:0 uint8_t rsvd0[6]
+  1 63:0 uint64_t instr_data_wlst[3]
   2 63:0 ...
-  3 63:0 uint64_t rsvd0[5]
-  4 63:0 ...
+  3 63:0 ...
+  4 63:0 uint64_t rsvd1[5]
   5 63:0 ...
   6 63:0 ...
   7 63:0 ...
+  8 63:0 ...
 END
 
 // FFE action dmem entry format
 STRUCT fun_nu_ffe_entry_act_dmem
-  0 63:0 uint64_t data_wlst /* action data memory */
+  0 63:48 uint16_t index
+  0 47:0 uint8_t rsvd0[6]
+  1 63:0 uint64_t data_wlst /* action data memory */
 END
 
 
@@ -1303,9 +1313,9 @@ END
 STRUCT fun_nu_ffe_req_tcam_rwi
   0 63:0 fun_req_common common
   1 63:0 ...
-  2 63:48 uint16_t index
+  2 63:48 uint16_t rsvd0
   2 47:40 uint8_t stage
-  2 39:32 uint8_t bank
+  2 39:32 uint8_t rsvd1
   2 31:16 uint16_t table
   2 15:0 uint16_t key_size
 END
@@ -1313,9 +1323,9 @@ END
 STRUCT fun_nu_ffe_rsp_tcam_rwi
   0 63:0 fun_rsp_common common
   1 63:0 ...
-  2 63:48 uint16_t index
+  2 63:48 uint16_t rsvd0
   2 47:40 uint8_t stage
-  2 39:32 uint8_t bank
+  2 39:32 uint8_t rsvd1
   2 31:16 uint16_t table
   2 15:0 uint16_t key_size
 END
@@ -1324,9 +1334,9 @@ END
 STRUCT fun_nu_ffe_req_hash_stash_rwi
   0 63:0 fun_req_common common
   1 63:0 ...
-  2 63:48 uint16_t index
+  2 63:48 uint16_t rsvd0
   2 47:40 uint8_t stage
-  2 39:32 uint8_t bank
+  2 39:32 uint8_t rsvd1
   2 31:16 uint16_t table
   2 15:0 uint16_t key_size
 END
@@ -1334,9 +1344,9 @@ END
 STRUCT fun_nu_ffe_rsp_hash_stash_rwi
   0 63:0 fun_rsp_common common
   1 63:0 ...
-  2 63:48 uint16_t index
+  2 63:48 uint16_t rsvd0
   2 47:40 uint8_t stage
-  2 39:32 uint8_t bank
+  2 39:32 uint8_t rsvd1
   2 31:16 uint16_t table
   2 15:0 uint16_t key_size
 END
@@ -1345,59 +1355,59 @@ END
 STRUCT fun_nu_ffe_req_dit_rw
   0 63:0 fun_req_common common
   1 63:0 ...
-  2 63:48 uint16_t index
+  2 63:48 uint16_t rsvd0
   2 47:40 uint8_t stage
-  2 39:32 uint8_t rsvd0
+  2 39:32 uint8_t rsvd1
   2 31:16 uint16_t table
-  2 15:0 uint16_t rsvd1
+  2 15:0 uint16_t rsvd2
 END
 
 STRUCT fun_nu_ffe_rsp_dit_rw
   0 63:0 fun_rsp_common common
   1 63:0 ...
-  2 63:48 uint16_t index
+  2 63:48 uint16_t rsvd0
   2 47:40 uint8_t stage
-  2 39:32 uint8_t rsvd0
+  2 39:32 uint8_t rsvd1
   2 31:16 uint16_t table
-  2 15:0 uint16_t rsvd1
+  2 15:0 uint16_t rsvd2
 END
 
 // Header to refer to an FFE Action Microcode Table
 STRUCT fun_nu_ffe_req_act_ucode_rw
   0 63:0 fun_req_common common
   1 63:0 ...
-  2 63:48 uint16_t index
+  2 63:48 uint16_t rsvd0
   2 47:40 uint8_t stage
-  2 39:0 uint8_t rsvd0[5]
+  2 39:0 uint8_t rsvd1[5]
 END
 
 STRUCT fun_nu_ffe_rsp_act_ucode_rw
   0 63:0 fun_rsp_common common
   1 63:0 ...
-  2 63:48 uint16_t index
+  2 63:48 uint16_t rsvd0
   2 47:40 uint8_t stage
-  2 39:0 uint8_t rsvd0[5]
+  2 39:0 uint8_t rsvd1[5]
 END
 
 // Header to refer to an FFE Action DMEM Table
 STRUCT fun_nu_ffe_req_act_dmem_rw
   0 63:0 fun_req_common common
   1 63:0 ...
-  2 63:48 uint16_t index
+  2 63:48 uint16_t rsvd0
   2 47:40 uint8_t stage
-  2 39:32 uint8_t rsvd0
+  2 39:32 uint8_t rsvd1
   2 31:16 uint16_t table
-  2 15:0 uint16_t rsvd1
+  2 15:0 uint16_t rsvd2
 END
 
 STRUCT fun_nu_ffe_rsp_act_dmem_rw
   0 63:0 fun_rsp_common common
   1 63:0 ...
-  2 63:48 uint16_t index
+  2 63:48 uint16_t rsvd0
   2 47:40 uint8_t stage
-  2 39:32 uint8_t rsvd0
+  2 39:32 uint8_t rsvd1
   2 31:16 uint16_t table
-  2 15:0 uint16_t rsvd1
+  2 15:0 uint16_t rsvd2
 END
 
 
