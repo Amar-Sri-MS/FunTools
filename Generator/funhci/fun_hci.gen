@@ -484,8 +484,21 @@ STRUCT fun_nu_sse_md_w_req
   _ _:_ fun_nu_sse_md_entry mdata[0]
 END
 
+STRUCT fun_nu_sse_md_w_rsp
+  0 63:00 fun_admin_rsp_common common
+  1 63:00 ...
+  _ _:_ fun_nu_sse_md_entry mdata[0]
+END
+
+
 STRUCT fun_nu_sse_prt_rng_w_req
   0 63:00 fun_admin_req_common common
+  1 63:00 ...
+  _ _:_ fun_nu_sse_rng_entry port_ranges[0]
+END
+
+STRUCT fun_nu_sse_prt_rng_w_rsp
+  0 63:00 fun_admin_rsp_common common
   1 63:00 ...
   _ _:_ fun_nu_sse_rng_entry port_ranges[0]
 END
@@ -496,8 +509,20 @@ STRUCT fun_nu_sse_wrr_wt_w_req
   _ _:_ fun_nu_sse_efp_fae_wt_entry wrr_weights[0]
 END
 
+STRUCT fun_nu_sse_wrr_wt_w_rsp
+  0 63:00 fun_admin_rsp_common common
+  1 63:00 ...
+  _ _:_ fun_nu_sse_efp_fae_wt_entry wrr_weights[0]
+END
+
 STRUCT fun_nu_sse_mem_ecc_sym_r_req
   0 63:00 fun_admin_req_common common
+  1 63:00 ...
+  _ _:_ fun_nu_sse_mem_ecc_sym_entry mem_ecc_sym[0]
+END
+
+STRUCT fun_nu_sse_mem_ecc_sym_r_rsp
+  0 63:00 fun_admin_rsp common
   1 63:00 ...
   _ _:_ fun_nu_sse_mem_ecc_sym_entry mem_ecc_sym[0]
 END
