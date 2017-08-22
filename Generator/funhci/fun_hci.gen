@@ -1141,7 +1141,7 @@ END
 
 // FFE
 
-ENUM ffe_table_t
+ENUM fun_nu_ffe_table_t
   FUN_NU_TBL_TEMPLATE_TCAM_KEY = 0x00
   FUN_NU_TBL_TEMPLATE_TCAM_MASK = 0x01
   FUN_NU_TBL_KEY_UCODE_MEM = 0x02
@@ -1292,7 +1292,7 @@ END
 // Description to be expanded further.
 
 // Command interface for writing/reading the various tables available in the FFE.
-STRUCT fun_nu_ffe_req_tmp_tcam_rw
+STRUCT fun_nu_ffe_tmp_tcam_rw_req
   0 63:0 fun_req_common common
   1 63:0 ...
   2 63:48 uint16_t rsvd0
@@ -1301,7 +1301,7 @@ STRUCT fun_nu_ffe_req_tmp_tcam_rw
   2 15:0 uint16_t data_size /* key microcode size */
 END
 
-STRUCT fun_nu_ffe_rsp_tmp_tcam_rw
+STRUCT fun_nu_ffe_tmp_tcam_rw_rsp
   0 63:0 fun_rsp_common common
   1 63:0 ...
   2 63:48 uint16_t rsvd0
@@ -1311,7 +1311,7 @@ STRUCT fun_nu_ffe_rsp_tmp_tcam_rw
 END
 
 // Header to refer to an FFE TCAM
-STRUCT fun_nu_ffe_req_tcam_rwi
+STRUCT fun_nu_ffe_tcam_rwi_req
   0 63:0 fun_req_common common
   1 63:0 ...
   2 63:48 uint16_t rsvd0
@@ -1321,7 +1321,7 @@ STRUCT fun_nu_ffe_req_tcam_rwi
   2 15:0 uint16_t key_size
 END
 
-STRUCT fun_nu_ffe_rsp_tcam_rwi
+STRUCT fun_nu_ffe_tcam_rwi_rsp
   0 63:0 fun_rsp_common common
   1 63:0 ...
   2 63:48 uint16_t rsvd0
@@ -1332,7 +1332,7 @@ STRUCT fun_nu_ffe_rsp_tcam_rwi
 END
 
 // Header to refer to an FFE Hash or Stash
-STRUCT fun_nu_ffe_req_hash_stash_rwi
+STRUCT fun_nu_ffe_hash_stash_rwi_req
   0 63:0 fun_req_common common
   1 63:0 ...
   2 63:48 uint16_t rsvd0
@@ -1342,7 +1342,7 @@ STRUCT fun_nu_ffe_req_hash_stash_rwi
   2 15:0 uint16_t key_size
 END
 
-STRUCT fun_nu_ffe_rsp_hash_stash_rwi
+STRUCT fun_nu_ffe_hash_stash_rwi_rsp
   0 63:0 fun_rsp_common common
   1 63:0 ...
   2 63:48 uint16_t rsvd0
@@ -1353,7 +1353,7 @@ STRUCT fun_nu_ffe_rsp_hash_stash_rwi
 END
 
 // Header to refer to an FFE Direct Index Table
-STRUCT fun_nu_ffe_req_dit_rw
+STRUCT fun_nu_ffe_dit_rw_req
   0 63:0 fun_req_common common
   1 63:0 ...
   2 63:48 uint16_t rsvd0
@@ -1363,7 +1363,7 @@ STRUCT fun_nu_ffe_req_dit_rw
   2 15:0 uint16_t rsvd2
 END
 
-STRUCT fun_nu_ffe_rsp_dit_rw
+STRUCT fun_nu_ffe_dit_rw_rsp
   0 63:0 fun_rsp_common common
   1 63:0 ...
   2 63:48 uint16_t rsvd0
@@ -1374,7 +1374,7 @@ STRUCT fun_nu_ffe_rsp_dit_rw
 END
 
 // Header to refer to an FFE Action Microcode Table
-STRUCT fun_nu_ffe_req_act_ucode_rw
+STRUCT fun_nu_ffe_act_ucode_rw_req
   0 63:0 fun_req_common common
   1 63:0 ...
   2 63:48 uint16_t rsvd0
@@ -1382,7 +1382,7 @@ STRUCT fun_nu_ffe_req_act_ucode_rw
   2 39:0 uint8_t rsvd1[5]
 END
 
-STRUCT fun_nu_ffe_rsp_act_ucode_rw
+STRUCT fun_nu_ffe_act_ucode_rw_rsp
   0 63:0 fun_rsp_common common
   1 63:0 ...
   2 63:48 uint16_t rsvd0
@@ -1391,7 +1391,7 @@ STRUCT fun_nu_ffe_rsp_act_ucode_rw
 END
 
 // Header to refer to an FFE Action DMEM Table
-STRUCT fun_nu_ffe_req_act_dmem_rw
+STRUCT fun_nu_ffe_act_dmem_rw_req
   0 63:0 fun_req_common common
   1 63:0 ...
   2 63:48 uint16_t rsvd0
@@ -1401,7 +1401,7 @@ STRUCT fun_nu_ffe_req_act_dmem_rw
   2 15:0 uint16_t rsvd2
 END
 
-STRUCT fun_nu_ffe_rsp_act_dmem_rw
+STRUCT fun_nu_ffe_act_dmem_rw_rsp
   0 63:0 fun_rsp_common common
   1 63:0 ...
   2 63:48 uint16_t rsvd0
