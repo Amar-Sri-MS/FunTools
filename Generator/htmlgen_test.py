@@ -18,9 +18,9 @@ class HTMLGeneratorTest(unittest.TestCase):
         self.assertIn('<h3>enum A</h3>\n'
                       '<p>Key comment for ENUM A</p>\n'
                       '<p>Body comment for ENUM A</p>', out)
-        self.assertIn('<dt>A1 = 1</dt>\n'
-                      '<dd>\n'
-                      'key comment for A1<br>Body comment for ENUM A1</dd>', out)
+        self.assertIn('<dt><code>A1 = 1</code></dt>\n', out)
+        self.assertIn('<dd>\nkey comment for A1\n<br>\n', out)
+        self.assertIn('Body comment for ENUM A1\n</dd>', out)
 
     def testFieldPrinting(self):
         input = ['// Body comment for struct A.',
