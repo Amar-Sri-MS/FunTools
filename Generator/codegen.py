@@ -340,10 +340,14 @@ class CodeGenerator:
 
       ident = utils.AsUppercaseMacro('%s_%s' % (the_struct.name,
                                                          old_field.name))
-      shift = '#define %s_S %s' % (ident, old_field.EndBit() - min_end_bit)
-      mask = '#define %s_M %s' % (ident, old_field.Mask())
-      value = '#define %s_P(x) ((x) << %s_S)' % (ident, ident)
-      get = '#define %s_G(x) (((x) >> %s_S) & %s_M)' % (ident, ident, ident)
+      shift_name = '%s_S' % ident
+      shift = '#define %s %s' % (shift_name, old_field.EndBit() - min_end_bit)
+      mask_name = '%s_M' % ident
+      mask = '#define %s %s' % (mask_name, old_field.Mask())
+      value_name = '%s_P' % ident
+      value = '#define %s(x) ((x) << %s)' % (value_name, shift_name)
+      get_name = '%s_G' % ident
+      get = '#define %s(x) (((x) >> %s) & %s)' % (get_name, shift_name, mask_name)
 
       
       value_comment = 'Shifts value to place in packed field %s in %s.%s.' % (
@@ -352,10 +356,16 @@ class CodeGenerator:
       get_comment = 'Returns value for packed field %s in %s.%s.' % (
         old_field.name, the_struct.name, field.name)
 
-      the_struct.macros.append(generator.Macro(shift, ''))
-      the_struct.macros.append(generator.Macro(mask, ''))
-      the_struct.macros.append(generator.Macro(value, value_comment))
-      the_struct.macros.append(generator.Macro(get, get_comment))
+      offset_comment = 'Offset of field %s in packed field %s.%s' % (
+        old_field.name, the_struct.name, field.name)
+
+      mask_comment = 'Mask to extract field %s from packed field %s.%s' % (
+        old_field.name, the_struct.name, field.name)
+
+      the_struct.macros.append(generator.Macro(shift_name, shift, offset_comment))
+      the_struct.macros.append(generator.Macro(mask_name, mask, mask_comment))
+      the_struct.macros.append(generator.Macro(value_name, value, value_comment))
+      the_struct.macros.append(generator.Macro(get_name, get, get_comment))
 
   def GenerateInitializer(self, the_struct, field, accessor_prefix):
     """Returns a C statement initializing the named variable.
