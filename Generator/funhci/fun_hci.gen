@@ -17,7 +17,6 @@ ENUM fun_admin_op
   FUN_ADMIN_OP_VOL = 0x19 /* Storage Volume Flow Node */
   FUN_ADMIN_OP_CONCAT = 0x1A /* Storage Concatinated Volume Flow Node */
   FUN_ADMIN_OP_CRYPTO = 0x1B /* Crypto Flow Node */
-  FUN_ADMIN_OP_NET = 0x1C /* Network Node */
 END
 
 FLAGS fun_admin_req_common_flag
@@ -453,17 +452,6 @@ STRUCT fun_admin_port_rsp
   END
 END
 
-/*
- *	Networking Request/Response
- */
-ENUM fun_admin_net_key
-  FUN_NU_SSE_KEY_ILLEGAL = 0x00
-  FUN_NU_SSE_KEY_SSE_MD = 0x01
-  FUN_NU_SSE_KEY_SSE_PRT_RNG = 0x02
-  FUN_NU_SSE_KEY_SSE_WRR_WT = 0x03
-  FUN_NU_SSE_KEY_SSE_ECC_SYM = 0x04
-END
-
 STRUCT fun_nu_sse_md_entry
   0 63:00 uint64_t stream /* shrink */
   1 63:00 uint64_t data[6]
@@ -490,40 +478,30 @@ STRUCT fun_nu_sse_mem_ecc_sym_entry
 END
 
 
-STRUCT fun_nu_sse_req
+STRUCT fun_nu_sse_md_w_req
   0 63:00 fun_admin_req_common common
   1 63:00 ...
-  UNION nu_writeop_options u
-    STRUCT fun_admin_net_writeops_sse_md sse_md_write
-      2 63:56 uint8_t subop /* SUBOP_WRITE */
-      2 55:48 uint8_t rsvd0
-      2 47:32 uint16_t flags
-      2 31:00 uint32_t key /* FUN_NU_SSE_KEY_SSE_MD */
-      _ _:_ fun_nu_sse_md_entry mdata[0]
-    END
-    STRUCT fun_admin_net_writeops_prt_rng prt_rng_write
-      2 63:56 uint8_t subop /* SUBOP_WRITE */
-      2 55:48 uint8_t rsvd0
-      2 47:32 uint16_t flags
-      2 31:00 uint32_t key /* FUN_NU_SSE_KEY_SSE_PRT_RNG */
-      _ _:_ fun_nu_sse_rng_entry port_ranges[0]
-    END
-    STRUCT fun_admin_net_writeops_wrr_wt wrr_wt_write
-      2 63:56 uint8_t subop /* SUBOP_WRITE */
-      2 55:48 uint8_t rsvd0
-      2 47:32 uint16_t flags
-      2 31:00 uint32_t key /* FUN_NU_SSE_KEY_SSE_WRR_WT */
-      _ _:_ fun_nu_sse_efp_fae_wt_entry wrr_weights[0]
-    END
-    STRUCT fun_admin_net_readops_mem_ecc_sym ecc_sym_read
-      2 63:56 uint8_t subop /* SUBOP_READ */
-      2 55:48 uint8_t rsvd0
-      2 47:32 uint16_t flags
-      2 31:00 uint32_t key /* FUN_NU_SSE_KEY_SSE_ECC_SYM */
-      _ _:_ fun_nu_sse_mem_ecc_sym_entry mem_ecc_sym[0]
-    END
-  END
+  _ _:_ fun_nu_sse_md_entry mdata[0]
 END
+
+STRUCT fun_nu_sse_prt_rng_w_req
+  0 63:00 fun_admin_req_common common
+  1 63:00 ...
+  _ _:_ fun_nu_sse_rng_entry port_ranges[0]
+END
+
+STRUCT fun_nu_sse_wrr_wt_w_req
+  0 63:00 fun_admin_req_common common
+  1 63:00 ...
+  _ _:_ fun_nu_sse_efp_fae_wt_entry wrr_weights[0]
+END
+
+STRUCT fun_nu_sse_mem_ecc_sym_r_req
+  0 63:00 fun_admin_req_common common
+  1 63:00 ...
+  _ _:_ fun_nu_sse_mem_ecc_sym_entry mem_ecc_sym[0]
+END
+
 
 /*
  *  VI Request/Response
@@ -1216,7 +1194,7 @@ END
 
 
 ENUM fun_nu_op
-  FUN_NU_OP_FFE_TMP_TCAM_R = 0
+  FUN_NU_OP_FFE_TMP_TCAM_R = 0		/* FFE begin */
   FUN_NU_OP_FFE_TMP_TCAM_W = 1
   FUN_NU_OP_FFE_TCAM_R = 2
   FUN_NU_OP_FFE_TCAM_W = 3
@@ -1233,6 +1211,10 @@ ENUM fun_nu_op
   FUN_NU_OP_FFE_ACT_UCODE_W = 14
   FUN_NU_OP_FFE_ACT_DMEM_R = 15
   FUN_NU_OP_FFE_ACT_DMEM_W = 16
+  FUN_NU_OP_SSE_MD_W = 17		/* SSE begin */
+  FUN_NU_OP_SSE_PRT_RNG_W = 18
+  FUN_NU_OP_SSE_WRR_WT_W = 19
+  FUN_NU_OP_SSE_ECC_SYM_R = 20
 END
 
 // FFE Template TCAM entry format
