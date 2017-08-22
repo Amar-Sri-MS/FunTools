@@ -262,8 +262,9 @@ class Macro(Declaration):
   """Representation of a generated macro.
   Code generator should fill in comments for documentation.
   """
-  def __init__(self, body, comment):
+  def __init__(self, name, body, comment):
     Declaration.__init__(self)
+    self.name = name
     self.body = body
     self.body_comment = comment
 

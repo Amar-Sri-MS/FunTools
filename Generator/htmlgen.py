@@ -231,14 +231,15 @@ class HTMLGenerator:
 
   def VisitEnumVariable(self, enum_variable):
     # Generates HTML Documentation for a specific enum variable.
-    out = '<dt>%s = %d</dt>\n' % (enum_variable.name, enum_variable.value)
+    out = '<dt><code>%s = %d</code></dt>\n' % (enum_variable.name,
+                                               enum_variable.value)
     out += '<dd>\n'
     if enum_variable.key_comment:
-        out += enum_variable.key_comment
+        out += enum_variable.key_comment + '\n'
     if enum_variable.key_comment and enum_variable.body_comment:
-        out += '<br>'
+        out += '<br>\n'
     if enum_variable.body_comment:
-        out += enum_variable.body_comment
+        out += enum_variable.body_comment + '\n'
     out += '</dd>\n'
     return out
 
@@ -380,17 +381,18 @@ class HTMLGenerator:
     out += '<h4>Helper functions for %s</h4>\n' % name
     out += '<dl>\n'
     for function in struct.functions:
-      out += '  <dt>\n    <pre>%s</pre>\n  </dt>\n' % function.declaration
+      out += '  <dt>\n    <code>%s</code>\n  </dt>\n' % function.declaration
       out += '  <dd>\n    %s\n  </dd>\n' % function.body_comment
     out += '</dl>\n'
 
     out += '<h4>Helper macros for %s</h4>\n' % name
     out += '<dl>\n'
     for macro in struct.macros:
-      if len(macro.body_comment) > 0:
-        out += '  <dt>\n    <pre>%s</pre>\n  </dt>\n'
-        out += '  <dd>\n    %s\n  </dd>\n' % (
-          macro.declaration, macro.body_comment)
+        out += '  <dt>\n    <code>%s</code>\n  </dt>\n' % (macro.name)
+        out += '  <dd>\n    <code>%s</code>\n' % macro.body
+        if macro.body_comment:
+          out += '   <br>%s\n' % macro.body_comment
+        out += '  </dd>\n'
     out += '</dl>\n'
     return out
 
