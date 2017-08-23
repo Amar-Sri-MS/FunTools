@@ -7,15 +7,15 @@
 //
 
 class DKExpressionFuncCall: DKExpression {
-	let fun: DKValueFunc
+	let fun: DKFunction
 	let arguments: [DKExpression]
-	init(fun: DKValueFunc, arguments: [DKExpression]) {
+	init(fun: DKFunction, arguments: [DKExpression]) {
 		assert(arguments.count == fun.signature.numberOfArguments)
 		self.fun = fun
 		self.arguments = arguments
 	}
 	convenience init(oper: DKOperator, arguments: [DKExpression], _ uniquingTable: DKTypeTable) {
-		let fun = DKValueFuncOperator(oper: oper, uniquingTable)
+		let fun = DKFunctionOperator(oper: oper, uniquingTable)
 		self.init(fun: fun, arguments: arguments)
 	}
 	var signature: DKTypeSignature { return fun.signature }
@@ -30,19 +30,21 @@ class DKExpressionFuncCall: DKExpression {
 	}
 	override func expressionToJSON(_ uniquingTable: DKTypeTable) -> JSON {
 		let dict: [String: JSON] = [
-			"func": fun.valueToJSON(uniquingTable),
+			"func": .dictionary(fun.functionToJSON),
 			"args": .array(arguments.map { $0.expressionToJSON(uniquingTable) })
 		]
 		return .dictionary(dict)
 	}
 	override class func expressionFromJSON(_ uniquingTable: DKTypeTable, _ j: JSON) -> DKExpression! {
 		let dict = j.dictionaryValue
-		let v = dict["func"]?.toDKValue(uniquingTable) as? DKValueFunc
-		if v == nil { return nil }
+		let fd = dict["func"]
+		if fd == nil || !fd!.isDictionary { return nil }
+		let f = DKFunction.functionFromJSON(uniquingTable, fd!.dictionaryValue)
+		if f == nil { return nil }
 		let aj = dict["args"]
 		if aj == nil { return nil }
 		let args = aj!.arrayValue.flatMap { $0.toDKExpression(uniquingTable) }
-		return DKExpressionFuncCall(fun: v!, arguments: args)
+		return DKExpressionFuncCall(fun: f!, arguments: args)
 	}
 	override func sugaredDescription(_ knowns: [DKType: String]) -> (desc: String, needsParen: Bool) {
 		func parenthesized(_ arg: DKExpression) -> String {
@@ -51,13 +53,13 @@ class DKExpressionFuncCall: DKExpression {
 		}
 		if arguments.count == 1 {
 			let a0 = parenthesized(arguments[0])
-			if let oper = fun as? DKValueFuncOperator {
+			if let oper = fun as? DKFunctionOperator {
 				return (oper.oper.op + a0, true)
-			} else if let proj = fun as? DKValueFuncProjection {
+			} else if let proj = fun as? DKFunctionProjection {
 				return ("\(a0).\(proj.projectedFieldName)", false)
 			}
 		} else {
-			if let oper = fun as? DKValueFuncOperator {
+			if let oper = fun as? DKFunctionOperator {
 				return (arguments.joinDescriptions(" " + oper.oper.op + " ", parenthesized), true)
 			}
 		}
