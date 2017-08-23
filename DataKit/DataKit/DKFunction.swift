@@ -24,9 +24,6 @@ class DKFunction: Equatable, CustomStringConvertible {
 	static func ==(lhs: DKFunction, rhs: DKFunction) -> Bool {
 		return lhs.isEqualTo(rhs)
 	}
-	var description: String {
-		return sugaredDescription([:])
-	}
 	var functionToJSON: [String: JSON] {
 		fatalErrorMustBeImplementedBySubclass()
 	}
@@ -36,6 +33,9 @@ class DKFunction: Equatable, CustomStringConvertible {
 			if fun != nil { return fun }
 		}
 		return nil
+	}
+	var description: String {
+		return sugaredDescription([:])
 	}
 	func sugaredDescription(_ knowns: [DKType: String]) -> String {
 		fatalErrorMustBeImplementedBySubclass()
