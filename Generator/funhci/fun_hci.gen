@@ -41,26 +41,26 @@ STRUCT fun_admin_rsp_common
 END 
 
 STRUCT fun_admin_write48_req
-  0 63:56 uint8_t key
-  0 55:48 uint8_t rsvd0
-  0 47:00 uint8_t data[6]
+  0 63:56 uint64_t key
+  0 55:48 uint64_t rsvd0
+  0 47:00 uint64_t data
 END
 
 STRUCT fun_admin_write48_rsp
-  0 63:56 uint8_t key
-  0 55:48 uint8_t ret
-  0 47:00 uint8_t data[6]
+  0 63:56 uint64_t key
+  0 55:48 uint64_t ret
+  0 47:00 uint64_t data
 END
 
 STRUCT fun_admin_read48_req
-  0 63:56 uint8_t key
-  0 55:00 uint8_t rsvd0[7]
+  0 63:56 uint64_t key
+  0 55:00 uint64_t rsvd0
 END
 
 STRUCT fun_admin_read48_rsp
-  0 63:56 uint8_t key
-  0 55:48 uint8_t ret
-  0 47:00 uint8_t data[6]
+  0 63:56 uint64_t key
+  0 55:48 uint64_t ret
+  0 47:00 uint64_t data
 END
 
 /*
