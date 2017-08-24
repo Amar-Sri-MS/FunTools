@@ -1010,6 +1010,12 @@ STRUCT fun_eth_tx_req
   _ _:_ fun_subop_imm imm[0] // must contain ethernet header, offsetted by 2-bytes, can be followed by sgl for payload of packet
 END
 
+ENUM fun_eth_tx_subop
+  FUN_ETH_TX_SUBOP_ILLEGAL = 0x00
+  FUN_ETH_TX_SUBOP_IMM = 0x01
+  FUN_ETH_TX_SUBOP_SGL = 0x02
+END
+
 // F1 to Host
 STRUCT fun_eth_rx_req
   0 63:0 fun_req_common common
