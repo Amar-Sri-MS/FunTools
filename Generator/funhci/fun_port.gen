@@ -32,3 +32,66 @@ ENUM port_fsm_an
  PORT_ST_AN_DONE  = 0x0b
  PORT_ST_AN_ENABLED = 0x0c
 END
+
+ENUM port_xcvr_media_type
+ XCVR_MEDIA_TYPE_INVALID = 0x0
+ XCVR_MEDIA_TYPE_COPPER  = 0x1
+ XCVR_MEDIA_TYPE_FIBER   = 0x2
+END
+
+ENUM port_xcvr_phy_type
+ XCVR_UNKNOWN_TYPE                      = 0x0 
+ XCVR_SFP_10M_OPTIC_BX                  = 0x1 
+ XCVR_SFP_10M_OPTIC_PX                  = 0x2
+ XCVR_SFP_100M_OPTIC_FX                 = 0x3
+ XCVR_SFP_100M_OPTIC_LX                 = 0x4
+ XCVR_SFP_1G_COPPER                     = 0x10
+ XCVR_SFP_1G_TWINX                      = 0x11
+ XCVR_SFP_1G_OPTIC_SX                   = 0x12
+ XCVR_SFP_1G_OPTIC_LX                   = 0x13
+ XCVR_SFP_1G_OPTIC_BX                   = 0x14
+ XCVR_SFP_1G_OPTIC_LH                   = 0x15
+ XCVR_SFP_1G_OPTIC_ZX                   = 0x16
+ XCVR_SFP_1G_OPTIC_VX                   = 0x17
+ XCVR_SFP_10G_COPPER                    = 0x20
+ XCVR_SFP_10G_COPPER_ACTIVE             = 0x21
+ XCVR_SFP_10G_TWINX                     = 0x22
+ XCVR_SFP_10G_OPTIC_SR                  = 0x23 
+ XCVR_SFP_10G_OPTIC_LR                  = 0x24 
+ XCVR_SFP_10G_OPTIC_LRM                 = 0x25 
+ XCVR_SFP_10G_OPTIC_ZR                  = 0x26 
+ XCVR_SFP_10G_DWDM                      = 0x27 
+ XCVR_SFP_10G_OPTIC_ER                  = 0x28 
+ XCVR_SFP_10G_AOC                       = 0x29 
+ XCVR_SFP_25G_COPPER                    = 0x40
+ XCVR_SFP_25G_OPTIC                     = 0x41
+ XCVR_SFP_25G_AOC                       = 0x42           
+ XCVR_SFP_25G_SR                        = 0x43 
+ XCVR_SFP_25G_LR                        = 0x44 
+ XCVR_SFP_25G_ER                        = 0x45 
+ XCVR_QSFP_40G_COPPER_CR4_ACTIVE        = 0x50 
+ XCVR_QSFP_40G_OPTIC_CR4_PASSIVE        = 0x51  
+ XCVR_QSFP_40G_OPTIC_CR4_ACTIVE         = 0x52 
+ XCVR_QSFP_40G_OPTIC_LR4                = 0x53 
+ XCVR_QSFP_40G_OPTIC_SR4                = 0x54 
+ XCVR_QSFP_40G_OCTOPUS_CABLES           = 0x55 
+ XCVR_QSFP_40G_BIDI                     = 0x56 
+ XCVR_QSFP_40G_ACTIVE_OPTICAL           = 0x57 
+ XCVR_QSFP_40G_4X10G_OPTIC_LR           = 0x58 
+ XCVR_QSFP_40G_ACTIVE_OPTICAL_MOLEX     = 0x59
+ XCVR_QSFP_40G_ACU_COPPER               = 0x5a 
+ XCVR_QSFP_40G_OPTIC_FR                 = 0x5b
+ XCVR_QSFP_100G_CR4                     = 0x70 
+ XCVR_QSFP_100G_ACC                     = 0x71 
+ XCVR_QSFP_100G_OPTIC_LR                = 0x72
+ XCVR_QSFP_100G_OPTIC_SR4               = 0x73 
+ XCVR_QSFP_100G_OPTIC_ER4               = 0x74 
+ XCVR_QSFP_100G_OPTIC_SR10              = 0x75 
+ XCVR_QSFP_100G_CWDM4_MSA_FEC           = 0x76
+ XCVR_QSFP_100G_CWDM4_MSA_NOFEC         = 0x77 
+ XCVR_QSFP_100G_PSM4                    = 0x78 
+ XCVR_QSFP_100G_AOC                     = 0x79 
+ XCVR_QSFP_100G_SM_SR                   = 0x7a 
+ XCVR_QSFP_100G_OPTIC_DWDM              = 0x7b
+END
+

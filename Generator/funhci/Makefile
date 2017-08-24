@@ -59,6 +59,7 @@ funos_code:
 host_code:
 	@mkdir -p $(DEST)
 	../generator.py -c pack -g code -o $(DEST)/$(OUT_HCI) fun_hci.gen
+	../generator.py -c pack -g code -o $(DEST)/$(OUT_PORT) fun_port.gen
 
 .PHONY: doc
 doc:
