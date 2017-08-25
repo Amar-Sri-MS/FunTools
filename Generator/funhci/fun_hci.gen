@@ -975,7 +975,7 @@ ENUM fun_eth_op
 END
 
 STRUCT fun_subop_imm
-  0 63:56  uint8_t subop
+  0 63:56  uint8_t subop  /* see fun_data_subop enum */
   0 55:48  uint8_t flags
   0 47:32 uint16_t rsvd
   0 31:00 uint32_t len
@@ -983,7 +983,7 @@ STRUCT fun_subop_imm
 END
 
 STRUCT fun_subop_sgl
-  0 63:56  uint8_t subop
+  0 63:56  uint8_t subop  /* see fun_data_subop enum */
   0 55:48  uint8_t flags
   0 47:40  uint8_t nsgl
   0 39:32  uint8_t rsvd0
@@ -1010,10 +1010,10 @@ STRUCT fun_eth_tx_req
   _ _:_ fun_subop_imm imm[0] // must contain ethernet header, offsetted by 2-bytes, can be followed by sgl for payload of packet
 END
 
-ENUM fun_eth_tx_subop
-  FUN_ETH_TX_SUBOP_ILLEGAL = 0x00
-  FUN_ETH_TX_SUBOP_IMM = 0x01
-  FUN_ETH_TX_SUBOP_SGL = 0x02
+ENUM fun_data_op
+  FUN_DATAOP_ILLEGAL = 0x00
+  FUN_DATAOP_IMM = 0x01     /* immediate data */
+  FUN_DATAOP_SGL = 0x02     /* scatter-gather */
 END
 
 // F1 to Host
