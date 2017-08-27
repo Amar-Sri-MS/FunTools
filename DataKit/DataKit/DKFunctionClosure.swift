@@ -38,13 +38,11 @@ class DKFunctionClosure: DKFunction {
 		if body == nil { return nil }
 		return DKFunctionClosure(structParams: structParams!, body: body!, uniquingTable)
 	}
-	override var evaluator: DKNAryEvaluator {
-		return {  context, subs in
-			assert(subs.count == self.structParams.subs.count)
-			let evaluated = subs.map { $0.evaluate(context: context) }
-			let newContext = context.newContextWith(values: evaluated)
-			return self.body.evaluate(context: newContext)
-		}
+	override func evaluate(context: DKEvaluationContext, _ subs: [DKExpression]) -> DKValue {
+		assert(subs.count == self.structParams.subs.count)
+		let evaluated = subs.map { $0.evaluate(context: context) }
+		let newContext = context.newContextWith(values: evaluated)
+		return self.body.evaluate(context: newContext)
 	}
 	override func sugaredDescription(_ knowns: [DKType: String]) -> String {
 		let p = structParams.subs.joinDescriptions(", ") {

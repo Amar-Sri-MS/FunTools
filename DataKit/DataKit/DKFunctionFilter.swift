@@ -33,30 +33,28 @@ class DKFunctionFilter: DKFunction {
 	override func prepareToEvaluate(context: DKEvaluationContext) {
 		print("SHOULD PREPARE STREAM PAIR")
 	}
-	override var evaluator: DKNAryEvaluator {
-		return {  context, subs in
-			assert(subs.count == 1)
-			let x = subs[0].evaluate(context: context)
-			var output: DKMutableBitStream = DataAsMutableBitStream()
-			func applyPredicate(_ item: DKValue) {
-				let expr = DKExpressionConstant(item)
-				let r = self.predicate.evaluator(context, [expr])
-				let b = r.boolValue
-				if b {
-					item.append(to: &output)
-				}
+	override func evaluate(context: DKEvaluationContext, _ subs: [DKExpression]) -> DKValue {
+		assert(subs.count == 1)
+		let x = subs[0].evaluate(context: context)
+		var output: DKMutableBitStream = DataAsMutableBitStream()
+		func applyPredicate(_ item: DKValue) {
+			let expr = DKExpressionConstant(item)
+			let r = self.predicate.evaluate(context: context, [expr])
+			let b = r.boolValue
+			if b {
+				item.append(to: &output)
 			}
-			if let explicit = x as? DKValueSimple {
-				explicit.forEach(applyPredicate)
-			} else if let valueSeq = x as? DKValueLazySequence {
-				valueSeq.forEach(applyPredicate)
-			} else {
-				abort()
-			}
-			print("*** WRONG HERE: Input should be created right away")
-			let newInput = output.finishAndData()
-			return DKValueLazySequence(itemType: self.itemType, data: newInput)
 		}
+		if let explicit = x as? DKValueSimple {
+			explicit.forEach(applyPredicate)
+		} else if let valueSeq = x as? DKValueLazySequence {
+			valueSeq.forEach(applyPredicate)
+		} else {
+			abort()
+		}
+		print("*** WRONG HERE: Input should be created right away")
+		let newInput = output.finishAndData()
+		return DKValueLazySequence(itemType: self.itemType, data: newInput)
 	}
 	override func sugaredDescription(_ knowns: [DKType: String]) -> String {
 		return "filter(\(predicate.sugaredDescription(knowns)))"

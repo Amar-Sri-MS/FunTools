@@ -111,21 +111,38 @@ func dumpFilterJoe(input: Data, _ uniquingTable: DKTypeTable) {
 	let students = ts.fromDataLazy(input)
 	let con = DKEvaluationContext()
 	filterFunc.prepareToEvaluate(context: con)
-	let filtered = filterFunc.evaluator(con, [DKExpressionConstant(students!)])
+	let filtered = filterFunc.evaluate(context: con, [DKExpressionConstant(students!)])
 	print("Filtered Joes: \(filtered.description)")
 	let fullNameGen = generateFullName(uniquingTable)
 	print("Generate full name = \(fullNameGen.sugaredDescription(knowns))")
 	for student in filtered as! DKValueLazySequence {
-		let full = fullNameGen.evaluator(con, [DKExpressionConstant(student)])
+		let full = fullNameGen.evaluate(context: con, [DKExpressionConstant(student)])
 		print("-> \(full.stringValue)")
 	}
 }
 
 func studentsTest() {
 	let ts = studentsType()
+	let t = studentType()
 	let typeTable = DKTypeTable()
 
+	var count = 0
+	DKFunctionGenerator.registerItemGenerator(name: "Students") {
+		if count == 100 { return nil }
+		let studentArray = generateRandomStudent(id: count)
+		let student = t.valueFromRawJSON(typeTable, .array(studentArray))!
+		count += 1
+		return student
+	}
+	let generator = DKFunctionGenerator(typeTable, name: "Students", itemType: t)
+	let con = DKEvaluationContext()
+	let students = generator.evaluate(context: con, [])
+	var bs: DKMutableBitStream = DataAsMutableBitStream()
+	students.append(to: &bs)
+	let data1 = bs.finishAndData()
+
 	let data = generateDataWithStudents(typeTable, 100)
+	assert(data1 == data)
 
 	let tsShortcut = ts.toTypeShortcut(typeTable)
 
@@ -143,6 +160,7 @@ func studentsTest() {
 	dumpFilterJoe(input: data, typeTable)
 
 	try! data.write(to: "/tmp/students.data")
+	try! JSON.dictionary(generator.functionToJSON).writeToFile("/tmp/students_generator.json")
 	try! JSON.dictionary(filter.functionToJSON).writeToFile("/tmp/students_filter.json")
 	try! typeTable.typeTableAsJSON.writeToFile("/tmp/students_type.json")
 }

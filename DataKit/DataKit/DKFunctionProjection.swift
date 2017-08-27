@@ -31,19 +31,17 @@ class DKFunctionProjection: DKFunction {
 		let input = DKTypeStruct(funcParamType: structType, repeated: 1)
 		return DKTypeSignature(input: input, output: structType[fieldIndex])
 	}
-	override var evaluator: DKNAryEvaluator {
-		return {  context, subs in
-			assert(subs.count == 1)
-			let x = subs[0].evaluate(context: context)
-			if let s = x as? DKValueLazyStruct {
-				return s.subValueAt(self.fieldIndex)
-			}
-			if let structType = x.type as? DKTypeStruct {
-				let j = x.rawValueToJSON.arrayValue
-				return DKValueSimple(type: structType[self.fieldIndex], json: j[self.fieldIndex])
-			}
-			fatalError("*** Expecting a struct \(self.structType) instead got value \(x)")
+	override func evaluate(context: DKEvaluationContext, _ subs: [DKExpression]) -> DKValue {
+		assert(subs.count == 1)
+		let x = subs[0].evaluate(context: context)
+		if let s = x as? DKValueLazyStruct {
+			return s.subValueAt(self.fieldIndex)
 		}
+		if let structType = x.type as? DKTypeStruct {
+			let j = x.rawValueToJSON.arrayValue
+			return DKValueSimple(type: structType[self.fieldIndex], json: j[self.fieldIndex])
+		}
+		fatalError("*** Expecting a struct \(self.structType) instead got value \(x)")
 	}
 	override var functionToJSON: [String: JSON] {
 		return [
