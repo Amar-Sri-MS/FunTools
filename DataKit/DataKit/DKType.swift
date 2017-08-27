@@ -9,8 +9,6 @@
 // Denotes a type for arbitrary data
 // Immutable
 
-import Foundation
-
 class DKType: Equatable, Hashable, CustomStringConvertible {
 	typealias Shortcut = String
 
@@ -24,6 +22,7 @@ class DKType: Equatable, Hashable, CustomStringConvertible {
 	var hashValue: Int {
 		return description.hashValue
 	}
+	
 	var description: String {
 		let uniquingTable = DKTypeTable()
 		return typeToRawJSON(uniquingTable).description
