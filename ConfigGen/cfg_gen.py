@@ -92,6 +92,9 @@ def generate_config():
 
 		full_cfg = merge_dicts(full_cfg, cfg_j)
 
+	if not os.path.exists('out'):
+		os.mkdir('out')
+
 	fout = open("out/default.cfg", 'w')
 
 	# indent=4 does pretty printing for us
