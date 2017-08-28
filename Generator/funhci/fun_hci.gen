@@ -17,6 +17,7 @@ ENUM fun_admin_op
   FUN_ADMIN_OP_VOL = 0x19 /* Storage Volume Flow Node */
   FUN_ADMIN_OP_CONCAT = 0x1A /* Storage Concatinated Volume Flow Node */
   FUN_ADMIN_OP_CRYPTO = 0x1B /* Crypto Flow Node */
+  FUN_ADMIN_OP_NU = 0x1C /* NU Flow Node */
 END
 
 FLAGS fun_admin_req_common_flag
@@ -915,6 +916,53 @@ STRUCT fun_admin_crypto_rsp
   END
 END
 
+/*
+ *  NU Request/Response
+ */
+FLAGS fun_admin_nu_create_flag
+  FUN_ADMIN_NU_CREATE_FLAG_ALLOCATOR = 0x01 /* Enable NU allocator */
+END
+STRUCT fun_admin_nu_req
+  0 63:00 fun_admin_req_common common
+  1 63:00 ...
+  UNION nu_req_subop u
+    STRUCT fun_admin_nu_create_req create
+      2 63:56  uint8_t subop /* SUBOP_CREATE */
+      2 55:48  uint8_t rsvd0
+      2 47:32 uint16_t flags
+      2 31:00 uint32_t id /* FLAG_ALLOCATOR=0: n/a, FLAG_ALLOCATOR=1: nuid */
+    END
+    STRUCT fun_admin_nu_destroy_req destroy
+      2 63:56  uint8_t subop /* SUBOP_DESTROY */
+      2 55:48  uint8_t rsvd0
+      2 47:32 uint16_t flags
+      2 31:00 uint32_t id /* nuid to destroy */
+    END
+    STRUCT fun_admin_nu_list_req list
+      2 63:56  uint8_t subop /* SUBOP_LIST */
+      2 55:48  uint8_t rsvd0
+      2 47:32 uint16_t flags /* see fun_admin_nu_create_flag enum */
+      2 31:00 uint32_t startid /*  */
+    END
+  END
+END
+
+STRUCT fun_admin_nu_rsp
+  0 63:00 fun_admin_rsp_common common
+  0 63:00 ...
+  UNION nu_rsp_subop u
+    STRUCT fun_admin_nu_create_rsp create
+      2 63:56  uint8_t subop /* SUBOP_CREATE */
+      2 55:32  uint8_t rsvd0[3]
+      2 31:00 uint32_t id /* nu_rsp_common.rsp_common_status=0: nuid, otherwise: N/A */
+    END
+    STRUCT fun_admin_nu_destroy_rsp destroy
+      2 63:56  uint8_t subop /* SUBOP_DESTROY */
+      2 55:32  uint8_t rsvd0[3]
+      2 31:00 uint32_t id /* destroyed nuid */
+    END
+  END
+END
 
 /*
  *  D a t a p a t h   R e q u e s t s   and   R e s p o n s e s
