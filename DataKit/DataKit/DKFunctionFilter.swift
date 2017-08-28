@@ -14,7 +14,7 @@ class DKFunctionFilter: DKFunction {
 	}
 	var itemType: DKType { return predicate.signature.input[0] }
 	var sequenceType: DKType { return DKTypeSequence(subType: itemType) }
-	var paramsType: DKTypeStruct { return DKTypeStruct(funcParamType: sequenceType, repeated: 1) }
+	var paramsType: DKTypeStruct { return DKTypeStruct(funcParamType: sequenceType) }
 	override var signature: DKTypeSignature {
 		return DKTypeSignature(input: paramsType, output: sequenceType)
 	}

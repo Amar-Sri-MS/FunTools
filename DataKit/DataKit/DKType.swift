@@ -35,6 +35,10 @@ class DKType: Equatable, Hashable, CustomStringConvertible {
 		if j.isString { return j.stringValue }
 		return j.description
 	}
+	// Convenience
+	class var void: DKType {
+		return DKTypeStruct.void
+	}
 
 	// ===============  SERIALIZATION ===============
 

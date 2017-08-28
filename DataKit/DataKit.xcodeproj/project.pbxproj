@@ -58,6 +58,7 @@
 		A72CC7A11F4D1CC80058827F /* DKFunctionFilter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A72CC7A01F4D1CC80058827F /* DKFunctionFilter.swift */; };
 		A72CC7A31F4D1DE60058827F /* DKFunctionClosure.swift in Sources */ = {isa = PBXBuildFile; fileRef = A72CC7A21F4D1DE60058827F /* DKFunctionClosure.swift */; };
 		A72CC7A51F5366540058827F /* DKFunctionGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A72CC7A41F5366540058827F /* DKFunctionGenerator.swift */; };
+		A72CC7A71F53A6820058827F /* DKFunctionSink.swift in Sources */ = {isa = PBXBuildFile; fileRef = A72CC7A61F53A6820058827F /* DKFunctionSink.swift */; };
 		A76A56231F258858000A881A /* DKTypeString.swift in Sources */ = {isa = PBXBuildFile; fileRef = A76A56221F258858000A881A /* DKTypeString.swift */; };
 		A78C2B131F23D3E80086FAD6 /* DKType.swift in Sources */ = {isa = PBXBuildFile; fileRef = A78C2B0D1F23D3E80086FAD6 /* DKType.swift */; };
 		A78C2B161F23D3E80086FAD6 /* DKTypedData.swift in Sources */ = {isa = PBXBuildFile; fileRef = A78C2B101F23D3E80086FAD6 /* DKTypedData.swift */; };
@@ -154,6 +155,7 @@
 		A72CC7A01F4D1CC80058827F /* DKFunctionFilter.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKFunctionFilter.swift; sourceTree = "<group>"; };
 		A72CC7A21F4D1DE60058827F /* DKFunctionClosure.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKFunctionClosure.swift; sourceTree = "<group>"; };
 		A72CC7A41F5366540058827F /* DKFunctionGenerator.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKFunctionGenerator.swift; sourceTree = "<group>"; };
+		A72CC7A61F53A6820058827F /* DKFunctionSink.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKFunctionSink.swift; sourceTree = "<group>"; };
 		A76A56221F258858000A881A /* DKTypeString.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKTypeString.swift; sourceTree = "<group>"; };
 		A78C2AA41F23D34F0086FAD6 /* DataKit */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = DataKit; sourceTree = BUILT_PRODUCTS_DIR; };
 		A78C2B0D1F23D3E80086FAD6 /* DKType.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKType.swift; sourceTree = "<group>"; };
@@ -273,6 +275,7 @@
 				A72CC79E1F4D014B0058827F /* DKFunctionProjection.swift */,
 				A72CC7A01F4D1CC80058827F /* DKFunctionFilter.swift */,
 				A72CC7A41F5366540058827F /* DKFunctionGenerator.swift */,
+				A72CC7A61F53A6820058827F /* DKFunctionSink.swift */,
 				A72CC7A21F4D1DE60058827F /* DKFunctionClosure.swift */,
 				A78C2B3B1F2554F90086FAD6 /* DKOperator.swift */,
 				A7EB137D1F2D73F500760396 /* DKComparisonOperator.swift */,
@@ -471,6 +474,7 @@
 				A7EB13821F2DB43500760396 /* DKEvaluationContext.swift in Sources */,
 				A72CC7A11F4D1CC80058827F /* DKFunctionFilter.swift in Sources */,
 				A72CC7901F49F4C80058827F /* SortedRanges.swift in Sources */,
+				A72CC7A71F53A6820058827F /* DKFunctionSink.swift in Sources */,
 				A72CC7581F49F4BE0058827F /* ProtocolsExtras.swift in Sources */,
 				A78C2B381F254D360086FAD6 /* DKExpressionFuncCall.swift in Sources */,
 				A72CC78A1F49F4C80058827F /* PriorityQueue.swift in Sources */,
