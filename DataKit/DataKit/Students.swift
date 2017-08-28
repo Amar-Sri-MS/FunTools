@@ -156,6 +156,14 @@ func studentsTest() {
 	let regen = regenerateData(input: data)
 	printStudentsDataStream(data: regen)
 
+	let students2 = ts.fromDataLazy(data1)
+	let logger = DKFunctionSink(typeTable, name: "logger", itemType: t)
+	let con2 = DKEvaluationContext()
+	logger.prepareToEvaluate(context: con2)
+	print("Log should start here")
+	let result = logger.evaluate(context: con, [DKExpressionConstant(students2!)])
+	print("Log finished - result = \(result)")
+
 	assert(data == regen)
 	dumpFilterJoe(input: data, typeTable)
 

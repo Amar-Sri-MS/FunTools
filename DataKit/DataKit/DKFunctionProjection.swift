@@ -28,7 +28,7 @@ class DKFunctionProjection: DKFunction {
 		return false
 	}
 	override var signature: DKTypeSignature {
-		let input = DKTypeStruct(funcParamType: structType, repeated: 1)
+		let input = DKTypeStruct(funcParamType: structType)
 		return DKTypeSignature(input: input, output: structType[fieldIndex])
 	}
 	override func evaluate(context: DKEvaluationContext, _ subs: [DKExpression]) -> DKValue {

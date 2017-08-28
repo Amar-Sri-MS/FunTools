@@ -6,7 +6,7 @@
 //  Copyright © 2017 Fungible. All rights reserved.
 //
 
-// Generates a sequence of <T>
+// Generates a sequence of <T>, i.e. the signature is () -> [T]
 // For now, we have a name identifying the generator
 
 class DKFunctionGenerator: DKFunction {
