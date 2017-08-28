@@ -48,12 +48,17 @@ CFLAGS = -Wall -Werror
 CFLAGS += -I $(SDKDIR)/FunSDK -I $(SDKDIR)
 
 .PHONY: all
-all: funos_code host_code $(BUILD)/$(LIB_HCI)
+all: funos_code host_code funos_enum $(BUILD)/$(LIB_HCI)
 
 .PHONY: funos_code
 funos_code:
 	@mkdir -p $(DEST)
 	../generator.py -c pack,json -g code -o $(DEST)/$(OUT_HCI)_json fun_hci.gen
+
+.PHONY: funos_enum
+funos_enum:
+	@mkdir -p $(DEST)
+	../generator.py -c pack -g code -o $(DEST)/$(OUT_PORT) fun_port.gen
 
 .PHONY: host_code
 host_code:
@@ -85,6 +90,8 @@ install: $(BUILD)/$(LIB_HCI)
 clean:
 	rm -f $(DEST)/$(OUT_HCI).c
 	rm -f $(DEST)/$(OUT_HCI).h
+	rm -f $(DEST)/$(OUT_PORT).c
+	rm -f $(DEST)/$(OUT_PORT).h
 	rm -f $(DEST)/$(OUT_HCI)_json.c
 	rm -f $(DEST)/$(OUT_HCI)_json.h
 	rm  -rf $(BUILD)

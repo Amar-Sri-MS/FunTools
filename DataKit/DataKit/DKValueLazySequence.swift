@@ -57,5 +57,13 @@ class DKValueLazySequence: DKValue, DKValueIsEqualToOther, Sequence {
 		to.pad(toAlignmentInBits: type.requiredAlignmentInBits())
 		forEach { $0.append(to: &to) }
 	}
+	override func dumpDescription(indent: Int = 0) {
+		let spaces = String(repeating: "    ", count: indent);
+		print(spaces + "[")
+		for sub in self {
+			sub.dumpDescription(indent: indent + 1)
+		}
+		print(spaces + "]")
+	}
 }
 

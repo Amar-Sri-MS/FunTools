@@ -15,7 +15,7 @@ class DKTypeStruct: DKType, Cardinality {
 	let packed: Bool
 	let alignment: UInt64!
 	// If alignmentInBits==nil the only alignment constraints are derived from the subs
-	class var void: DKTypeStruct {
+	override class var void: DKTypeStruct {
 		if theVoid == nil { theVoid = DKTypeStruct() }
 		return theVoid
 	}
@@ -74,7 +74,7 @@ class DKTypeStruct: DKType, Cardinality {
 	convenience init(funcParams types: [DKType]) {
 		self.init(subTypes: types, subNames: nil, packed: false, alignmentInBits: 32)
 	}
-	convenience init(funcParamType type: DKType, repeated: Int) {
+	convenience init(funcParamType type: DKType, repeated: Int = 1) {
 		let types = [DKType](repeating: type, count: repeated)
 		self.init(subTypes: types, subNames: nil, packed: false, alignmentInBits: 32)
 	}
@@ -121,7 +121,7 @@ class DKTypeStruct: DKType, Cardinality {
 	}
 	override class func typeFromJSON(_ uniquingTable: DKTypeTable, _ j: JSON) -> DKType? {
 		if j.stringValue == "Void" {
-			return DKTypeStruct.void
+			return .void
 		}
 		let dict = j.dictionaryValue
 		if dict["genre"] != "struct" { return nil }

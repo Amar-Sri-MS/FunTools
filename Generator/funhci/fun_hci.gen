@@ -42,26 +42,26 @@ STRUCT fun_admin_rsp_common
 END 
 
 STRUCT fun_admin_write48_req
-  0 63:56 uint8_t key
-  0 55:48 uint8_t rsvd0
-  0 47:00 uint8_t data[6]
+  0 63:56 uint64_t key
+  0 55:48 uint64_t rsvd0
+  0 47:00 uint64_t data
 END
 
 STRUCT fun_admin_write48_rsp
-  0 63:56 uint8_t key
-  0 55:48 uint8_t ret
-  0 47:00 uint8_t data[6]
+  0 63:56 uint64_t key
+  0 55:48 uint64_t ret
+  0 47:00 uint64_t data
 END
 
 STRUCT fun_admin_read48_req
-  0 63:56 uint8_t key
-  0 55:00 uint8_t rsvd0[7]
+  0 63:56 uint64_t key
+  0 55:00 uint64_t rsvd0
 END
 
 STRUCT fun_admin_read48_rsp
-  0 63:56 uint8_t key
-  0 55:48 uint8_t ret
-  0 47:00 uint8_t data[6]
+  0 63:56 uint64_t key
+  0 55:48 uint64_t ret
+  0 47:00 uint64_t data
 END
 
 /*
@@ -250,24 +250,29 @@ END
 /*
  * PORT params enums
  */
+
+/*
+ * Breakout mode
+ */
 ENUM fun_port_brkout_mode 
- FUN_PORT_BRKMODE_NONE   = 0x00
- FUN_PORT_BRKMODE_2X40G  = 0x01
- FUN_PORT_BRKMODE_2X50G  = 0x02
- FUN_PORT_BRKMODE_4X10G  = 0x03
- FUN_PORT_BRKMODE_4X25G  = 0x04
+ FUN_PORT_BRKMODE_NONE  = 0x00
+ FUN_PORT_BRKMODE_2X    = 0x01
+ FUN_PORT_BRKMODE_4X    = 0x02
 END
 
-ENUM fun_port_speed 
- FUN_PORT_SPEED_10M  = 0x00
- FUN_PORT_SPEED_100M = 0x01
- FUN_PORT_SPEED_1G	 = 0x02
- FUN_PORT_SPEED_10G	 = 0x03
- FUN_PORT_SPEED_25G	 = 0x04
- FUN_PORT_SPEED_40G	 = 0x05
- FUN_PORT_SPEED_50G  = 0x06
- FUN_PORT_SPEED_100G = 0x07
- FUN_PORT_SPEED_MAX  = 0x08
+/*
+ * port speed - bitmap 
+ */
+FLAGS fun_port_speed
+ FUN_PORT_SPEED_AUTO = 0x00
+ FUN_PORT_SPEED_10M  = 0x01
+ FUN_PORT_SPEED_100M = 0x02
+ FUN_PORT_SPEED_1G	 = 0x04
+ FUN_PORT_SPEED_10G	 = 0x08
+ FUN_PORT_SPEED_25G	 = 0x10
+ FUN_PORT_SPEED_40G	 = 0x20
+ FUN_PORT_SPEED_50G  = 0x40
+ FUN_PORT_SPEED_100G = 0x80
 END
 
 ENUM fun_port_duplex_mode
@@ -325,9 +330,12 @@ ENUM fun_admin_port_key
   FUN_ADMIN_PORT_KEY_SPEED = 0x03
   FUN_ADMIN_PORT_KEY_DEBOUNCE = 0x04
   FUN_ADMIN_PORT_KEY_DUPLEX = 0x05
-  FUN_ADMIN_PORT_KEY_MAC = 0x06
+  FUN_ADMIN_PORT_KEY_MACADDR = 0x06
   FUN_ADMIN_PORT_KEY_LINKMODE = 0x07
-  FUN_ADMIN_PORT_KEY_BREAK = 0x08
+  FUN_ADMIN_PORT_KEY_BREAKOUT = 0x08
+  FUN_ADMIN_PORT_KEY_ENABLE = 0x09
+  FUN_ADMIN_PORT_KEY_DISABLE = 0x0a
+  FUN_ADMIN_PORT_KEY_ERR_DISABLE = 0x0b
 END
 
 ENUM fun_admin_port_diags_key
