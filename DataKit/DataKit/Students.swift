@@ -170,6 +170,7 @@ func studentsTest() {
 	try! data.write(to: "/tmp/students.data")
 	try! JSON.dictionary(generator.functionToJSON).writeToFile("/tmp/students_generator.json")
 	try! JSON.dictionary(filter.functionToJSON).writeToFile("/tmp/students_filter.json")
-	try! typeTable.typeTableAsJSON.writeToFile("/tmp/students_type.json")
+	try! JSON.dictionary(logger.functionToJSON).writeToFile("/tmp/students_logger.json")
+	try! typeTable.typeTableAsJSON.writeToFile("/tmp/students_types.json")
 }
 
