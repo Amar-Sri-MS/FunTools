@@ -18,7 +18,7 @@ class DKFunction: Equatable, CustomStringConvertible {
 	func prepareToEvaluate(context: DKEvaluationContext) {
 		// nothing by default
 	}
-	var evaluator: DKNAryEvaluator {
+	func evaluate(context: DKEvaluationContext, _ exprs: [DKExpression]) -> DKValue {
 		fatalErrorMustBeImplementedBySubclass()
 	}
 	static func ==(lhs: DKFunction, rhs: DKFunction) -> Bool {
@@ -28,7 +28,7 @@ class DKFunction: Equatable, CustomStringConvertible {
 		fatalErrorMustBeImplementedBySubclass()
 	}
 	class func functionFromJSON(_ uniquingTable: DKTypeTable, _ j: [String: JSON]) -> DKFunction! {
-		for f in [DKFunctionOperator.functionFromJSON, DKFunctionProjection.functionFromJSON, DKFunctionFilter.functionFromJSON, DKFunctionClosure.functionFromJSON] {
+		for f in [DKFunctionOperator.functionFromJSON, DKFunctionProjection.functionFromJSON, DKFunctionFilter.functionFromJSON, DKFunctionClosure.functionFromJSON, DKFunctionGenerator.functionFromJSON] {
 			let fun = f(uniquingTable, j)
 			if fun != nil { return fun }
 		}

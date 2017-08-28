@@ -19,14 +19,13 @@ class DKExpressionFuncCall: DKExpression {
 		self.init(fun: fun, arguments: arguments)
 	}
 	var signature: DKTypeSignature { return fun.signature }
-	var evaluator: DKNAryEvaluator { return fun.evaluator }
 	override var type: DKType { return signature.output }
 	override func prepareToEvaluate(context: DKEvaluationContext) {
 		fun.prepareToEvaluate(context: context)
 	}
 	override func evaluate(context: DKEvaluationContext) -> DKValue {
 		assert(arguments.count == signature.numberOfArguments)
-		return evaluator(context, arguments)
+		return fun.evaluate(context: context, arguments)
 	}
 	override func expressionToJSON(_ uniquingTable: DKTypeTable) -> JSON {
 		let dict: [String: JSON] = [

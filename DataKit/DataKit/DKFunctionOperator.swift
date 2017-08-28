@@ -51,8 +51,8 @@ class DKFunctionOperator: DKFunction {
 			return nil
 		}
 	}
-	override var evaluator: DKNAryEvaluator {
-		return oper.evaluator
+	override func evaluate(context: DKEvaluationContext, _ exprs: [DKExpression]) -> DKValue {
+		return oper.evaluator(context, exprs)
 	}
 	override var description: String {
 		return oper.op
