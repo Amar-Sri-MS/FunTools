@@ -1204,6 +1204,7 @@ ENUM fun_nu_op
   FUN_NU_OP_FFE_ACT_UCODE_W = 14
   FUN_NU_OP_FFE_ACT_DMEM_R = 15
   FUN_NU_OP_FFE_ACT_DMEM_W = 16
+  FUN_NU_OP_NH_W = 17
 END
 
 // FFE Template TCAM entry format
@@ -1417,6 +1418,26 @@ STRUCT fun_nu_ffe_act_dmem_rw_rsp
   2 39:32 uint8_t rsvd1
   2 31:16 uint16_t table
   2 15:0 uint16_t rsvd2
+END
+
+STRUCT fun_nu_nh_entry
+  0 63:60 uint8_t level
+  0 59:56 uint8_t type
+  0 55:32 uint8_t rsvd0[3]
+  0 31:16 uint16_t index
+  0 15:0 uint16_t len
+  _ _:_ uint64_t data[0]
+END
+
+// Next Hop write: Followed by a sequence of fun_nu_nh_entry structs
+STRUCT fun_nu_nh_w_req
+  0 63:0 fun_req_common common
+  1 63:0 ...
+END
+
+STRUCT fun_nu_nh_w_rsp
+  0 63:0 fun_rsp_common common
+  1 63:0 ...
 END
 
 
