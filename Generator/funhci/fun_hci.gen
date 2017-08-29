@@ -1429,6 +1429,21 @@ STRUCT fun_nu_nh_entry
   _ _:_ uint64_t data[0]
 END
 
+ENUM fun_nu_nh_lvl_t
+  FUN_NU_NH_LVL0 = 0
+  FUN_NU_NH_LVL1 = 1
+  FUN_NU_NH_LVL2 = 2
+END
+
+ENUM fun_nu_nh_type_t
+  FUN_NU_NH_TYPE_FINAL = 0
+  FUN_NU_NH_TYPE_INDIRECT = 1
+  FUN_NU_NH_TYPE_WECMP = 2
+  FUN_NU_NH_TYPE_ECMP = 3
+  FUN_NU_NH_TYPE_LFA = 4
+  FUN_NU_NH_TYPE_WECMP_LOC = 5
+END
+
 // Next Hop write: Followed by a sequence of fun_nu_nh_entry structs
 STRUCT fun_nu_nh_w_req
   0 63:0 fun_req_common common
