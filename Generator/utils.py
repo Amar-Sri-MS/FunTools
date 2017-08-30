@@ -4,6 +4,9 @@
 
 import re
 
+# Default size of a word.  Input is specified in flits and bit offsets.
+FLIT_SIZE = 64
+
 def AsGuardName(filename):
   """Convert a filename to an all-caps string for an include guard."""
   name = AsUppercaseMacro(filename)
@@ -128,3 +131,8 @@ def IsValidCIdentifier(name):
   if match:
     return True
   return False
+
+def BitFlitString(offset):
+  """Returns a human-readable string describing the offset as flit/bit."""
+  return '%d:%d' % (offset / FLIT_SIZE, 63 - offset % FLIT_SIZE)
+

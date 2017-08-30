@@ -6,49 +6,7 @@
 import unittest 
 
 import generator
-
-
-class TestTypes(unittest.TestCase):
-  def testBitWidth(self):
-    self.assertEqual(32, generator.TypeForName("uint32_t").BitWidth())
-    self.assertEqual(32, generator.TypeForName("unsigned").BitWidth())
-    self.assertEqual(8, generator.TypeForName("char").BitWidth())
-    self.assertEqual(64, generator.TypeForName("double").BitWidth())
-    self.assertEqual(8, generator.TypeForName("uint8_t").BitWidth())
-
-    self.assertEqual(128, generator.ArrayTypeForName("uint8_t", 16).BitWidth())
-    self.assertEqual(128, generator.ArrayTypeForName("uint64_t", 2).BitWidth())
-
-  def testIsArray(self):
-    self.assertTrue(generator.ArrayTypeForName("uint32_t", 4).IsArray())
-    self.assertTrue(generator.ArrayTypeForName("char", 16).IsArray())
-
-    self.assertFalse(generator.TypeForName("double").IsArray())
-    self.assertFalse(generator.TypeForName("int").IsArray())
-
-  def testBaseName(self):
-    self.assertEqual("uint32_t", 
-                     generator.TypeForName("uint32_t").BaseName())
-    self.assertEqual("uint32_t",
-                     generator.ArrayTypeForName("uint32_t", 4).BaseName())
-
-  def testCompare(self):
-    self.assertEqual(generator.TypeForName("uint32_t"),
-                     generator.TypeForName("uint32_t"))
-    self.assertEqual(generator.TypeForName("uint8_t"),
-                     generator.TypeForName("uint8_t"))
-
-    self.assertNotEqual(generator.TypeForName("uint8_t"),
-                        generator.TypeForName("char"))
-
-    self.assertEqual(generator.ArrayTypeForName("uint8_t", 4),
-                     generator.ArrayTypeForName("uint8_t", 4))
-
-    self.assertNotEqual(generator.ArrayTypeForName("char", 4),
-                        generator.ArrayTypeForName("uint16_t", 4))
-    self.assertNotEqual(generator.ArrayTypeForName("char", 4),
-                        generator.ArrayTypeForName("char", 8))
-
+import parser
 
 class TestDocBuilder(unittest.TestCase):
   # Test that we correctly parse valid and invalid structure definitions.
@@ -186,7 +144,7 @@ class TestDocBuilder(unittest.TestCase):
     my_field = my_struct.fields[0]
 
     self.assertEqual('chars', my_field.name)
-    self.assertEqual(generator.ArrayTypeForName('uint8_t', 8),
+    self.assertEqual(parser.ArrayTypeForName('uint8_t', 8),
                      my_field.type)
     self.assertEqual(True, my_field.type.IsArray())
     self.assertEqual(8, my_field.type.ArraySize())
@@ -330,7 +288,7 @@ class TestDocBuilder(unittest.TestCase):
     doc_builder = generator.DocBuilder()
     line = 'flit 63:0 uint64_t packet'
 
-    doc_builder.ParseFieldLine(line, generator.Struct("fakeStruct", False))
+    doc_builder.ParseFieldLine(line, parser.Struct("fakeStruct", False))
   
     self.assertEqual(1, len(doc_builder.errors))
     self.assertIn('Invalid bit pattern', doc_builder.errors[0])
@@ -339,7 +297,7 @@ class TestDocBuilder(unittest.TestCase):
     doc_builder = generator.DocBuilder()
     line = '0 63:0 NotAValidType field_name'
 
-    doc_builder.ParseFieldLine(line, generator.Struct("fakeStruct", False))
+    doc_builder.ParseFieldLine(line, parser.Struct("fakeStruct", False))
 
     self.assertEqual(1, len(doc_builder.errors))
     self.assertIn('Unknown type name', doc_builder.errors[0])
@@ -349,7 +307,7 @@ class TestDocBuilder(unittest.TestCase):
     doc_builder = generator.DocBuilder()
     line = '2 foo:15 uint64_t packet'
     
-    doc_builder.ParseFieldLine(line, generator.Struct("fakeStruct", False))
+    doc_builder.ParseFieldLine(line, parser.Struct("fakeStruct", False))
   
     self.assertEqual(1, len(doc_builder.errors))
     self.assertIn('Invalid bit pattern', doc_builder.errors[0])
@@ -359,7 +317,7 @@ class TestDocBuilder(unittest.TestCase):
     doc_builder = generator.DocBuilder()
     line = '2 15:bar uint64_t packet'
     
-    doc_builder.ParseFieldLine(line, generator.Struct("fakeStruct", False))
+    doc_builder.ParseFieldLine(line, parser.Struct("fakeStruct", False))
   
     self.assertEqual(1, len(doc_builder.errors))
     self.assertIn('Invalid bit pattern', doc_builder.errors[0])
@@ -369,7 +327,7 @@ class TestDocBuilder(unittest.TestCase):
     doc_builder = generator.DocBuilder()
     line = '2 3:10 uint64_t packet'
     
-    doc_builder.ParseFieldLine(line, generator.Struct("fakeStruct", False))
+    doc_builder.ParseFieldLine(line, parser.Struct("fakeStruct", False))
   
     self.assertEqual(1, len(doc_builder.errors))
     self.assertIn('greater than end bit', doc_builder.errors[0])
@@ -379,7 +337,7 @@ class TestDocBuilder(unittest.TestCase):
     doc_builder = generator.DocBuilder()
     line = '2 38 uint8_t packet'
     
-    struct = generator.Struct("fakeStruct", False)
+    struct = parser.Struct("fakeStruct", False)
     self.assertTrue(doc_builder.ParseFieldLine(line, struct))
 
     self.assertEqual(1, len(struct.fields))
@@ -397,7 +355,7 @@ class TestDocBuilder(unittest.TestCase):
     doc_builder = generator.DocBuilder()
     line = '2 15:12 int64_t packet'
     
-    struct = generator.Struct("fakeStruct", False)
+    struct = parser.Struct("fakeStruct", False)
     self.assertTrue(doc_builder.ParseFieldLine(line, struct))
 
     self.assertEqual(1, len(struct.fields))
@@ -442,7 +400,7 @@ class TestDocBuilder(unittest.TestCase):
   def testParseCommentInField(self):
     doc_builder = generator.DocBuilder()
 
-    struct = generator.Struct("fakeStruct", False)
+    struct = parser.Struct("fakeStruct", False)
     self.assertTrue(doc_builder.ParseFieldLine(
       '0 47:0 uint64_t packet /* 6 byte packet to send out */',
       struct))
@@ -1246,77 +1204,6 @@ class PackerTest(unittest.TestCase):
     self.assertEqual(40, outer.BitWidth())
     self.assertEqual(32, the_union.BitWidth())
     self.assertEqual(32, first.BitWidth())
-
-class PackedNameTest(unittest.TestCase):
-
-  def testPackedNameSimple(self):
-    fields = [generator.Field('a', None, 0, 0),
-              generator.Field('b', None, 0, 0)]
-    self.assertEqual('a_to_b', generator.ChoosePackedFieldName(fields))
-
-  def testPackedNameMultipleFields(self):
-    fields = [generator.Field('a', None, 0, 0),
-              generator.Field('c1', None, 0, 0),
-              generator.Field('c2', None, 0, 0),
-              generator.Field('c3', None, 0, 0),
-              generator.Field('c4', None, 0, 0),
-              generator.Field('b', None, 0, 0)]
-    self.assertEqual('a_to_b', generator.ChoosePackedFieldName(fields))
-
-  def testPackedNameFirstFieldReserved(self):
-    fields = [generator.Field('rsvd_bitfield', None, 0, 0),
-              generator.Field('b', None, 0, 0)]
-    self.assertEqual('b_pack', generator.ChoosePackedFieldName(fields))
-
-  def testPackedNameLastFieldReservedSingleField(self):
-    fields = [generator.Field('a', None, 0, 0),
-              generator.Field('reserved', None, 0, 0)]
-    self.assertEqual('a_pack', generator.ChoosePackedFieldName(fields))
-
-  def testPackedNameLastFieldReserved(self):
-    fields = [generator.Field('a', None, 0, 0),
-              generator.Field('b', None, 0, 0),
-              generator.Field('reserved', None, 0, 0)]
-    self.assertEqual('a_to_b', generator.ChoosePackedFieldName(fields))
-
-  def testPackedNameReservedInMiddle(self):
-    fields = [generator.Field('a', None, 0, 0),
-              generator.Field('reserved_foo', None, 0, 0),
-              generator.Field('b', None, 0, 0)]
-    self.assertEqual('a_to_b', generator.ChoosePackedFieldName(fields))
-
-  def testPackedNameMatchingPrefix(self):
-    fields = [generator.Field('prefix_a', None, 0, 0),
-              generator.Field('prefix_b', None, 0, 0),
-              generator.Field('prefix_c', None, 0, 0)]
-    self.assertEqual('prefix_pack', generator.ChoosePackedFieldName(fields))
-
-  def testPackedNameMatchingPrefixFirstTermOnly(self):
-    fields = [generator.Field('pre_fix_a', None, 0, 0),
-              generator.Field('pre_fix_b', None, 0, 0),
-              generator.Field('pre_fix_c', None, 0, 0)]
-    self.assertEqual('pre_pack', generator.ChoosePackedFieldName(fields))
-
-  def testPackedNameMatchingPrefixSimilarNames(self):
-    fields = [generator.Field('prefix_a', None, 0, 0),
-              generator.Field('pre_b', None, 0, 0),
-              generator.Field('pre_c', None, 0, 0)]
-    self.assertEqual('prefix_a_to_pre_c',
-                     generator.ChoosePackedFieldName(fields))
-
-  def testPackedNameMatchingPrefixReservedFieldAtStart(self):
-    fields = [generator.Field('reserved', None, 0, 0),
-              generator.Field('pre_b', None, 0, 0),
-              generator.Field('pre_c', None, 0, 0)]
-    self.assertEqual('pre_pack',
-                     generator.ChoosePackedFieldName(fields))
-
-  def testPackedNameMatchingPrefixReservedFieldAtEnd(self):
-    fields = [generator.Field('pre_a', None, 0, 0),
-              generator.Field('pre_b', None, 0, 0),
-              generator.Field('reserved', None, 0, 0)]
-    self.assertEqual('pre_pack',
-                     generator.ChoosePackedFieldName(fields))
 
 
 class CheckerTest(unittest.TestCase):
