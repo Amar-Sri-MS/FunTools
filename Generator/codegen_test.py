@@ -183,10 +183,21 @@ class CodeGeneratorTest(unittest.TestCase):
     f.packed_fields = [f1, f2]
 
     gen.GenerateMacrosForPackedField(s, f)
-    self.assertIn('#define FOO_A1_S 0', s.macros[0].body)
-    self.assertIn('#define FOO_A1_M 0x7fffffff', s.macros[1].body)
-    self.assertIn('#define FOO_A2_S 0', s.macros[4].body)
-    self.assertIn('#define FOO_A2_M 0x7fffffffffffffff', s.macros[5].body)
+    self.assertIn('#define FOO_A1_S 0', s.MacroWithName('FOO_A1_S').body)
+    self.assertIn('#define FOO_A1_M 0x7fffffff',
+                  s.MacroWithName('FOO_A1_M').body)
+    self.assertIn('#define FOO_A1_P(x) (((uint64_t) x) << FOO_A1_S)',
+                  s.MacroWithName('FOO_A1_P').body)
+    self.assertIn('#define FOO_A1_Z (~(((uint64_t) FOO_A1_M) << FOO_A1_S))',
+                  s.MacroWithName('FOO_A1_Z').body)
+
+    self.assertIn('#define FOO_A2_S 0', s.MacroWithName('FOO_A2_S').body)
+    self.assertIn('#define FOO_A2_P(x) (((uint64_t) x) << FOO_A2_S)',
+                  s.MacroWithName('FOO_A2_P').body)
+    self.assertIn('#define FOO_A2_M 0x7fffffffffffffff',
+                  s.MacroWithName('FOO_A2_M').body)
+    self.assertIn('#define FOO_A2_Z (~(((uint64_t) FOO_A2_M) << FOO_A2_S))',
+                  s.MacroWithName('FOO_A2_Z').body)
 
   def testMacrosForPackedField(self):
     gen = codegen.CodeGenerator(False)
@@ -197,10 +208,19 @@ class CodeGeneratorTest(unittest.TestCase):
     f.packed_fields = [f1, f2]
 
     gen.GenerateMacrosForPackedField(s, f)
-    self.assertIn('#define FOO_A1_S 14', s.macros[0].body)
-    self.assertIn('#define FOO_A1_M 0x3fff', s.macros[1].body)
-    self.assertIn('#define FOO_A2_S 0', s.macros[4].body)
-    self.assertIn('#define FOO_A2_M 0x3fff', s.macros[5].body)
+    self.assertIn('#define FOO_A1_S 14', s.MacroWithName('FOO_A1_S').body)
+    self.assertIn('#define FOO_A1_P(x) (((uint32_t) x) << FOO_A1_S)',
+                  s.MacroWithName('FOO_A1_P').body)
+    self.assertIn('#define FOO_A1_M 0x3fff', s.MacroWithName('FOO_A1_M').body)
+    self.assertIn('#define FOO_A1_Z (~(((uint32_t) FOO_A1_M) << FOO_A1_S))',
+                  s.MacroWithName('FOO_A1_Z').body)
+
+    self.assertIn('#define FOO_A2_S 0', s.MacroWithName('FOO_A2_S').body)
+    self.assertIn('#define FOO_A2_P(x) (((uint32_t) x) << FOO_A2_S)',
+                  s.MacroWithName('FOO_A2_P').body)
+    self.assertIn('#define FOO_A2_M 0x3fff', s.MacroWithName('FOO_A2_M').body)
+    self.assertIn('#define FOO_A2_Z (~(((uint32_t) FOO_A2_M) << FOO_A2_S))',
+                  s.MacroWithName('FOO_A2_Z').body)
 
 
   def testCreateSimpleInitializer(self):

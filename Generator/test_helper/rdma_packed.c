@@ -135,5 +135,21 @@ int main(int argc, char** argv) {
 	       "inlineByteCount not initialized correctly.");
   ASSERT_TRUE(0 == strncmp(expected_bytes, (const char *) hdr.u1.inline_cmd.bytes, 14),
 	       "bytes not initialized correctly");
+
+
+  // Test Zero macro.
+  hdr.u1.inline_cmd.source_to_inlineByteCount &= GATHER_LIST_INLINE_FRAGMENT_SOURCE_P(17);
+  hdr.u1.inline_cmd.source_to_inlineByteCount &= GATHER_LIST_INLINE_FRAGMENT_INLINE_BYTE_COUNT_P(10);
+
+  ASSERT_EQUAL(17, GATHER_LIST_INLINE_FRAGMENT_SOURCE_G(hdr.u1.inline_cmd.source_to_inlineByteCount),
+	       "Source had incorrect value before test.");
+
+  hdr.u1.inline_cmd.source_to_inlineByteCount &= GATHER_LIST_INLINE_FRAGMENT_SOURCE_Z;
+
+  ASSERT_EQUAL(0, GATHER_LIST_INLINE_FRAGMENT_SOURCE_G(hdr.u1.inline_cmd.source_to_inlineByteCount),
+	       "Source had incorrect value after test.");
+  ASSERT_EQUAL(10, GATHER_LIST_INLINE_FRAGMENT_INLINE_BYTE_COUNT_G(hdr.u1.inline_cmd.source_to_inlineByteCount),
+	       "inline_byte_count had wrong value after test, even though it"
+	       "wasn't supposed to change.");
 }
 

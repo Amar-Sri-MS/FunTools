@@ -338,6 +338,7 @@ class CodeGenerator:
       if old_field.IsReserved():
         continue
 
+      packed_type_name = field.Type().TypeName()
       ident = utils.AsUppercaseMacro('%s_%s' % (the_struct.name,
                                                          old_field.name))
       shift_name = '%s_S' % ident
@@ -345,27 +346,35 @@ class CodeGenerator:
       mask_name = '%s_M' % ident
       mask = '#define %s %s' % (mask_name, old_field.Mask())
       value_name = '%s_P' % ident
-      value = '#define %s(x) ((x) << %s)' % (value_name, shift_name)
+      value = '#define %s(x) (((%s) x) << %s)' % (value_name, packed_type_name,
+                                                  shift_name)
       get_name = '%s_G' % ident
       get = '#define %s(x) (((x) >> %s) & %s)' % (get_name, shift_name, mask_name)
+      zero_name = '%s_Z' % ident
+      zero = '#define %s (~(((%s) %s) << %s))' % (zero_name, packed_type_name,
+                                                     mask_name, shift_name)
 
       
-      value_comment = 'Shifts value to place in packed field %s in %s.%s.' % (
+      value_comment = 'Shifts value to place in packed field "%s" in "%s.%s".' % (
         old_field.name, the_struct.name, field.name)
 
-      get_comment = 'Returns value for packed field %s in %s.%s.' % (
+      get_comment = 'Returns value for packed field %s in "%s.%s".' % (
         old_field.name, the_struct.name, field.name)
 
-      offset_comment = 'Offset of field %s in packed field %s.%s' % (
+      offset_comment = 'Offset of field "%s" in packed field "%s.%s"' % (
         old_field.name, the_struct.name, field.name)
 
-      mask_comment = 'Mask to extract field %s from packed field %s.%s' % (
+      mask_comment = 'Mask to extract field "%s" from packed field "%s.%s"' % (
+        old_field.name, the_struct.name, field.name)
+
+      zero_comment = 'Zero out field "%s" in packed field "%s.%s".' % (
         old_field.name, the_struct.name, field.name)
 
       the_struct.macros.append(generator.Macro(shift_name, shift, offset_comment))
       the_struct.macros.append(generator.Macro(mask_name, mask, mask_comment))
       the_struct.macros.append(generator.Macro(value_name, value, value_comment))
       the_struct.macros.append(generator.Macro(get_name, get, get_comment))
+      the_struct.macros.append(generator.Macro(zero_name, zero, zero_comment))
 
   def GenerateInitializer(self, the_struct, field, accessor_prefix):
     """Returns a C statement initializing the named variable.
