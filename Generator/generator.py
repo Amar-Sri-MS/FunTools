@@ -258,6 +258,13 @@ class Declaration:
     # Location where Declaration appeared in source.
     self.line_number = 0
 
+  def MacroWithName(self, name):
+    """Returns a specific macro attached to this declaration."""
+    for macro in self.macros:
+      if macro.name == name:
+        return macro
+    return None
+
 class Macro(Declaration):
   """Representation of a generated macro.
   Code generator should fill in comments for documentation.
