@@ -9,6 +9,7 @@ generator-test:
 	python generator_test.py
 	python htmlgen_test.py
 	python utils_test.py
+	python parser_test.py
 
 # Tests generated C code compiles correctly.
 c-checker: $(BUILD)
