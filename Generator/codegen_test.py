@@ -66,6 +66,22 @@ class CodePrinterTest(unittest.TestCase):
     code = self.printer.VisitField(field)
     self.assertEqual('uint8_t foo:4;\n', code)
 
+  def testFieldMaskSmall(self):
+    field = generator.Field('foo', generator.TypeForName('uint16_t'), 0, 5)
+    self.assertEqual('0x1f', field.Mask())
+
+  def testFieldMaskChar(self):
+    field = generator.Field('foo', generator.TypeForName('uint8_t'), 0, 8)
+    self.assertEqual('0xff', field.Mask())
+
+  def testFieldMaskWord(self):
+    field = generator.Field('foo', generator.TypeForName('uint32_t'), 0, 16)
+    self.assertEqual('0xffff', field.Mask())
+
+  def testFieldMaskLong(self):
+    field = generator.Field('foo', generator.TypeForName('uint32_t'), 0, 40)
+    self.assertEqual('0xffffffffff', field.Mask())
+
   def testPrintFieldNotBitfield(self):
     field = generator.Field('foo', generator.TypeForName('uint8_t'), 0, 8)
     code = self.printer.VisitField(field)
@@ -156,6 +172,35 @@ class CodeGeneratorTest(unittest.TestCase):
   
     self.assertEqual('\ts->a = FFE_ACCESS_COMMAND_A1_P(a1) | '
                      'FFE_ACCESS_COMMAND_A2_P(a2);', statement)
+
+
+  def testMacrosForPackedLongField(self):
+    gen = codegen.CodeGenerator(False)
+    s = generator.Struct('Foo', False)
+    f = generator.Field('a', generator.TypeForName('uint64_t'), 0, 63)
+    f1 = generator.Field('a1', generator.TypeForName('uint32_t'), 0, 31)
+    f2 = generator.Field('a2', generator.TypeForName('uint32_t'), 32, 63)
+    f.packed_fields = [f1, f2]
+
+    gen.GenerateMacrosForPackedField(s, f)
+    self.assertIn('#define FOO_A1_S 0', s.macros[0].body)
+    self.assertIn('#define FOO_A1_M 0x7fffffff', s.macros[1].body)
+    self.assertIn('#define FOO_A2_S 0', s.macros[4].body)
+    self.assertIn('#define FOO_A2_M 0x7fffffffffffffff', s.macros[5].body)
+
+  def testMacrosForPackedField(self):
+    gen = codegen.CodeGenerator(False)
+    s = generator.Struct('Foo', False)
+    f = generator.Field('a', generator.TypeForName('uint32_t'), 0, 32)
+    f1 = generator.Field('a1', generator.TypeForName('uint16_t'), 0, 14)
+    f2 = generator.Field('a2', generator.TypeForName('uint16_t'), 14, 14)
+    f.packed_fields = [f1, f2]
+
+    gen.GenerateMacrosForPackedField(s, f)
+    self.assertIn('#define FOO_A1_S 14', s.macros[0].body)
+    self.assertIn('#define FOO_A1_M 0x3fff', s.macros[1].body)
+    self.assertIn('#define FOO_A2_S 0', s.macros[4].body)
+    self.assertIn('#define FOO_A2_M 0x3fff', s.macros[5].body)
 
 
   def testCreateSimpleInitializer(self):
