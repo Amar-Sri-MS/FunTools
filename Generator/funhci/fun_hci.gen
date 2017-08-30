@@ -79,6 +79,7 @@ ENUM fun_admin_bind_type
   FUN_ADMIN_BIND_TYPE_VOL = 0x09
   FUN_ADMIN_BIND_TYPE_CONCAT = 0x0a
   FUN_ADMIN_BIND_TYPE_CRYPTO = 0x0b
+  FUN_ADMIN_BIND_TYPE_NU = 0x0c
 END
 
 ENUM fun_admin_bind_const
@@ -914,7 +915,6 @@ STRUCT fun_admin_crypto_rsp
     END
   END
 END
-
 
 /*
  *  D a t a p a t h   R e q u e s t s   and   R e s p o n s e s
