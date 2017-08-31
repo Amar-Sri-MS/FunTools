@@ -1,7 +1,7 @@
 # Where build products go.
 BUILD = build
 
-test: c-checker generator-test c-packed-checker html-checker fun-hci
+test: c-checker generator-test c-packed-checker html-checker fun-hci hw_dmae
 
 # All tests for the Python generator script.
 generator-test:
@@ -31,6 +31,9 @@ fun-hci: $(BUILD)
 	./generator.py -g code -c pack,json -o $(BUILD)/fun_hci_pack funhci/fun_hci.gen
 	./generator.py -g html -c pack,json -o $(BUILD)/fun_hci_pack funhci/fun_hci.gen
 	
+hw_dmae: $(BUILD)
+	./generator.py -g code -c pack -o $(BUILD)/hw_dmae funhci/hw_dmae.gen
+	./generator.py -g html -c pack -o $(BUILD)/hw_dmae funhci/hw_dmae.gen
 
 # Tests HTML generation works.
 html-checker: $(BUILD)

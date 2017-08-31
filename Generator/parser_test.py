@@ -5,6 +5,7 @@
 
 import unittest 
 
+import generator
 import parser
 
 class TestTypes(unittest.TestCase):
@@ -47,6 +48,24 @@ class TestTypes(unittest.TestCase):
                         parser.ArrayTypeForName("uint16_t", 4))
     self.assertNotEqual(parser.ArrayTypeForName("char", 4),
                         parser.ArrayTypeForName("char", 8))
+
+
+class PrintingTest(unittest.TestCase):
+  def testSimpleType(self):
+    self.assertEqual('char', parser.TypeForName('char').DeclarationType())
+    self.assertEqual('char[6]',
+                     parser.ArrayTypeForName('char', 6).DeclarationType())
+
+
+  def testStructType(self):
+    s = parser.Struct('Bar', False)
+    struct_array_type = parser.RecordArrayTypeForStruct(s, 4)
+    self.assertEqual('Bar[4]', struct_array_type.DeclarationType())
+
+  def testZeroLengthStructArrayType(self):
+    s = parser.Struct('Bar', False)
+    struct_array_type = parser.RecordArrayTypeForStruct(s, 0)
+    self.assertEqual('Bar[0]', struct_array_type.DeclarationType())
 
 
 class PackedNameTest(unittest.TestCase):
@@ -119,3 +138,6 @@ class PackedNameTest(unittest.TestCase):
               parser.Field('reserved', None, 0, 0)]
     self.assertEqual('pre_pack',
                      generator.ChoosePackedFieldName(fields))
+
+if __name__ == '__main__':
+    unittest.main()

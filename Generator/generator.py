@@ -41,7 +41,7 @@ class Checker:
     self.errors.append(location + msg)
 
   def VisitDocument(self, the_doc):
-    for struct in the_doc.structs:
+    for struct in the_doc.Structs():
       self.VisitStruct(struct)
 
   def VisitStruct(self, the_struct):
@@ -188,7 +188,7 @@ class Packer:
   def VisitDocument(self, doc):
     # Pack all structures in the named documents.
     self.doc = doc
-    for struct in doc.structs:
+    for struct in doc.Structs():
       self.VisitStruct(struct)
     return self.errors
 
@@ -384,7 +384,7 @@ class DocBuilder:
 
     self.stack.append((DocBuilderStateStruct, current_struct))
 
-    self.current_document.structs.append(current_struct)
+    self.current_document.AddStruct(current_struct)
 
     # Add the struct to the symbol table.  We don't know
     self.base_types[identifier] = parser.BaseType(identifier, FAKE_WIDTH,
@@ -426,7 +426,7 @@ class DocBuilder:
     self.current_comment = ''
 
     self.stack.append((DocBuilderStateEnum, current_enum))
-    self.current_document.enums.append(current_enum)
+    self.current_document.AddEnum(current_enum)
 
   def ParseFlagSetStart(self, line):
     # Handle an FLAGS directive opening a new type represeting bit flags.
@@ -452,7 +452,7 @@ class DocBuilder:
     self.current_comment = ''
 
     self.stack.append((DocBuilderStateFlagSet, current_flags))
-    self.current_document.flagsets.append(current_flags)
+    self.current_document.AddFlagSet(current_flags)
 
   def ParseEnumLine(self, line):
     # Parse the line describing a new enum variable.
@@ -576,7 +576,7 @@ class DocBuilder:
       current_union.body_comment = self.current_comment
     self.current_comment = ''
     self.stack.append((DocBuilderStateStruct, current_union))
-    self.current_document.structs.append(current_union)
+    self.current_document.AddStruct(current_union)
 
     self.base_types[identifier] = parser.BaseType(identifier, FAKE_WIDTH,
                                                   current_union)

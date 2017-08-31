@@ -17,7 +17,7 @@ class TestDocBuilder(unittest.TestCase):
   def testParseSimpleStructLine(self):
     builder = generator.DocBuilder()  
     doc = builder.current_document
-    self.assertEqual(0, len(doc.structs))
+    self.assertEqual(0, len(doc.Structs()))
 
     builder.ParseStructStart('STRUCT Foo')
     builder.ParseLine('0 63:0 uint64_t packet')
@@ -27,9 +27,9 @@ class TestDocBuilder(unittest.TestCase):
     self.assertEqual(0, len(builder.errors))
 
     print("testParseSimpleStruct %s" % doc)
-    self.assertEqual(1, len(doc.structs))
+    self.assertEqual(1, len(doc.Structs()))
 
-    firstStruct = doc.structs[0]
+    firstStruct = doc.Structs()[0]
     self.assertEqual(1, len(firstStruct.fields))
 
     firstField = firstStruct.fields[0]
@@ -49,9 +49,9 @@ class TestDocBuilder(unittest.TestCase):
     builder.ParseLine('0 63:0 uint64_t packet')
     builder.ParseEnd('END')
 
-    self.assertEqual(1, len(doc.structs))
+    self.assertEqual(1, len(doc.Structs()))
 
-    struct = doc.structs[0]
+    struct = doc.Structs()[0]
     self.assertEqual(8, struct.Bytes())
 
   def testNotPackedStructSize(self): 
@@ -63,9 +63,9 @@ class TestDocBuilder(unittest.TestCase):
     builder.ParseLine('1 63:56 uint64_t bar')
     builder.ParseEnd('END')
 
-    self.assertEqual(1, len(doc.structs))
+    self.assertEqual(1, len(doc.Structs()))
                      
-    struct = doc.structs[0]
+    struct = doc.Structs()[0]
     # TODO(bowdidge): Should be 9 bytes?
     self.assertEqual(16, struct.Bytes())
     self.assertEqual(2, struct.Flits())
@@ -94,9 +94,9 @@ class TestDocBuilder(unittest.TestCase):
     self.assertIsNone(errors)
     doc = doc_builder.current_document
 
-    self.assertEquals(1, len(doc.structs))
+    self.assertEquals(1, len(doc.Structs()))
 
-    s = doc.structs[0]
+    s = doc.Structs()[0]
     self.assertEquals(64, s.BitWidth())
   
   def testPartialFlitBitWidth(self):
@@ -107,9 +107,9 @@ class TestDocBuilder(unittest.TestCase):
     self.assertIsNone(errors)
     doc = doc_builder.current_document
 
-    self.assertEquals(1, len(doc.structs))
+    self.assertEquals(1, len(doc.Structs()))
 
-    s = doc.structs[0]
+    s = doc.Structs()[0]
     self.assertEquals(48, s.BitWidth())
 
   def testPartialFlitBitWidth(self):
@@ -124,9 +124,9 @@ class TestDocBuilder(unittest.TestCase):
     self.assertIsNone(errors)
     doc = doc_builder.current_document
 
-    self.assertEquals(1, len(doc.structs))
+    self.assertEquals(1, len(doc.Structs()))
 
-    s = doc.structs[0]
+    s = doc.Structs()[0]
     self.assertEquals(96, s.BitWidth())
 
   def testArray(self):
@@ -137,9 +137,9 @@ class TestDocBuilder(unittest.TestCase):
     self.assertIsNone(errors)
     doc = doc_builder.current_document
 
-    self.assertEqual(1, len(doc.structs))
+    self.assertEqual(1, len(doc.Structs()))
 
-    my_struct = doc.structs[0]
+    my_struct = doc.Structs()[0]
     self.assertEqual(1, len(my_struct.fields))
     my_field = my_struct.fields[0]
 
@@ -213,8 +213,8 @@ class TestDocBuilder(unittest.TestCase):
     errors = doc_builder.Parse('filename', contents)
     doc = doc_builder.current_document
   
-    self.assertEqual(1, len(doc.enums))
-    my_enum = doc.enums[0]
+    self.assertEqual(1, len(doc.Enums()))
+    my_enum = doc.Enums()[0]
     self.assertEqual(2, len(my_enum.variables))
     var_a = my_enum.variables[0]
     var_b = my_enum.variables[1]
@@ -239,8 +239,8 @@ class TestDocBuilder(unittest.TestCase):
     errors = doc_builder.Parse('filename', contents)
     doc = doc_builder.current_document
     
-    self.assertEqual(1, len(doc.structs))
-    foo = doc.structs[0]
+    self.assertEqual(1, len(doc.Structs()))
+    foo = doc.Structs()[0]
 
     self.assertEqual(1, len(foo.fields))
     self.assertEqual(8, foo.BitWidth())
@@ -252,8 +252,8 @@ class TestDocBuilder(unittest.TestCase):
     errors = doc_builder.Parse('filename', contents)
     doc = doc_builder.current_document
   
-    self.assertEqual(1, len(doc.enums))
-    my_enum = doc.enums[0]
+    self.assertEqual(1, len(doc.Enums()))
+    my_enum = doc.Enums()[0]
     self.assertEqual(2, len(my_enum.variables))
     var_a = my_enum.variables[0]
     var_b = my_enum.variables[1]
@@ -369,7 +369,7 @@ class TestDocBuilder(unittest.TestCase):
     builder = generator.DocBuilder()  
     doc = builder.current_document
 
-    self.assertEqual(0, len(doc.structs))
+    self.assertEqual(0, len(doc.Structs()))
 
     builder.ParseStructStart('STRUCT Foo')
     builder.ParseUnionStart('UNION Bar u')
@@ -379,15 +379,15 @@ class TestDocBuilder(unittest.TestCase):
     builder.ParseEnd('END')
 
     doc = builder.current_document
-    self.assertEqual(2, len(doc.structs))
+    self.assertEqual(2, len(doc.Structs()))
 
-    firstStruct = doc.structs[0]
+    firstStruct = doc.Structs()[0]
 
     self.assertEqual('Foo', firstStruct.Name())
     self.assertEqual(1, len(firstStruct.fields))
     self.assertEqual('u', firstStruct.fields[0].name)
 
-    union = builder.current_document.structs[1]
+    union = builder.current_document.Structs()[1]
     self.assertEqual('Bar', union.Name())
 
     firstField = union.fields[0]
@@ -425,9 +425,9 @@ class TestDocBuilder(unittest.TestCase):
     
     self.assertEqual(0, len(builder.errors))
     self.assertIsNotNone(builder.current_document)
-    self.assertEqual(1, len(builder.current_document.structs))
+    self.assertEqual(1, len(builder.current_document.Structs()))
 
-    the_struct = builder.current_document.structs[0]
+    the_struct = builder.current_document.Structs()[0]
     self.assertEqual(None, the_struct.key_comment)
     self.assertEqual('Body comment\n', the_struct.body_comment)
     self.assertEqual('Tail comment\n', the_struct.tail_comment)
@@ -454,9 +454,9 @@ class TestDocBuilder(unittest.TestCase):
   
     doc = doc_builder.current_document
 
-    self.assertEqual(1, len(doc.structs))
+    self.assertEqual(1, len(doc.Structs()))
 
-    struct = doc.structs[0]
+    struct = doc.Structs()[0]
     self.assertEqual(3, struct.Flits())
 
     self.assertEqual(2, len(struct.fields))
@@ -506,11 +506,11 @@ class TestDocBuilder(unittest.TestCase):
   
     doc = doc_builder.current_document
 
-    self.assertEqual(3, len(doc.structs))
+    self.assertEqual(3, len(doc.Structs()))
     
-    foo = doc.structs[0]
-    bar = doc.structs[1]
-    baz = doc.structs[2]
+    foo = doc.Structs()[0]
+    bar = doc.Structs()[1]
+    baz = doc.Structs()[2]
     
     self.assertEqual(16, foo.BitWidth())
     self.assertEqual(64, bar.BitWidth())
@@ -552,9 +552,9 @@ class TestDocBuilder(unittest.TestCase):
   
     doc = doc_builder.current_document
 
-    self.assertEqual(5, len(doc.structs))
+    self.assertEqual(5, len(doc.Structs()))
     
-    foo = doc.structs[0]
+    foo = doc.Structs()[0]
     
     self.assertEqual(128, foo.BitWidth())
 
@@ -597,10 +597,10 @@ class TestDocBuilder(unittest.TestCase):
   
     doc = doc_builder.current_document
 
-    self.assertEqual(2, len(doc.structs))
+    self.assertEqual(2, len(doc.Structs()))
     
-    common = doc.structs[0]
-    cmd = doc.structs[1]
+    common = doc.Structs()[0]
+    cmd = doc.Structs()[1]
     
     self.assertEqual(128, common.BitWidth())
     self.assertEqual(192, cmd.BitWidth())
@@ -619,8 +619,8 @@ class TestDocBuilder(unittest.TestCase):
 
     doc = doc_builder.current_document
 
-    self.assertEqual(1, len(doc.structs))
-    foo = doc.structs[0]
+    self.assertEqual(1, len(doc.Structs()))
+    foo = doc.Structs()[0]
     self.assertEqual(2, len(foo.fields))
     array = foo.fields[1]
     self.assertEquals('<Type: char[0]>', str(array.Type()))
@@ -646,8 +646,8 @@ class TestDocBuilder(unittest.TestCase):
 
     doc = doc_builder.current_document
 
-    self.assertEqual(2, len(doc.structs))
-    foo = doc.structs[1]
+    self.assertEqual(2, len(doc.Structs()))
+    foo = doc.Structs()[1]
     self.assertEqual(2, len(foo.fields))
     array = foo.fields[1]
     self.assertEquals('<Type: element[0]>', str(array.Type()))
@@ -672,8 +672,8 @@ class TestDocBuilder(unittest.TestCase):
     self.assertIsNone(errors)
   
     doc = doc_builder.current_document
-    self.assertEqual(1,len(doc.flagsets))
-    foo = doc.flagsets[0]
+    self.assertEqual(1,len(doc.Flagsets()))
+    foo = doc.Flagsets()[0]
     
     self.assertEqual(6, len(foo.variables))
     
@@ -834,9 +834,9 @@ class TestStripComment(unittest.TestCase):
 
     self.assertIsNone(errors)
     doc = doc_builder.current_document
-    self.assertEqual(3, len(doc.structs))
+    self.assertEqual(3, len(doc.Structs()))
 
-    bar = doc.structs[1]
+    bar = doc.Structs()[1]
     self.assertEqual("bar", bar.Name())
     self.assertEqual(2, len(bar.fields))
 
@@ -858,8 +858,8 @@ class PackerTest(unittest.TestCase):
     p = generator.Packer()
     p.VisitDocument(doc)
 
-    self.assertEqual(2, len(doc.structs[0].fields))
-    self.assertEqual("packet", doc.structs[0].fields[0].name)
+    self.assertEqual(2, len(doc.Structs()[0].fields))
+    self.assertEqual("packet", doc.Structs()[0].fields[0].name)
 
   def testNoPackSingleField(self):
     doc_builder = generator.DocBuilder()
@@ -871,8 +871,8 @@ class PackerTest(unittest.TestCase):
     p = generator.Packer()
     p.VisitDocument(doc)
     
-    self.assertEqual(1, len(doc.structs[0].fields))
-    field = doc.structs[0].fields[0]
+    self.assertEqual(1, len(doc.Structs()[0].fields))
+    field = doc.Structs()[0].fields[0]
     # Packer doesn't change name.
     self.assertEqual('packet', field.name)
     self.assertEqual(31, field.StartBit())
@@ -897,16 +897,16 @@ class PackerTest(unittest.TestCase):
     doc = doc_builder.current_document
     p = generator.Packer()
     p.VisitDocument(doc)
-    self.assertEqual(5, len(doc.structs[0].fields))
-    self.assertEqual('favorite_char', doc.structs[0].fields[0].name)
+    self.assertEqual(5, len(doc.Structs()[0].fields))
+    self.assertEqual('favorite_char', doc.Structs()[0].fields[0].name)
     self.assertEqual('is_valid_char_to_foo',
-                     doc.structs[0].fields[1].name)
-    self.assertEqual('another_char', doc.structs[0].fields[2].name)
-    self.assertEqual('third_char', doc.structs[0].fields[3].name)
-    self.assertEqual('value', doc.structs[0].fields[4].name)
+                     doc.Structs()[0].fields[1].name)
+    self.assertEqual('another_char', doc.Structs()[0].fields[2].name)
+    self.assertEqual('third_char', doc.Structs()[0].fields[3].name)
+    self.assertEqual('value', doc.Structs()[0].fields[4].name)
 
     # Make sure the comment describing the packed layout appears.
-    self.assertIn('6:5: foo', doc.structs[0].fields[1].body_comment)
+    self.assertIn('6:5: foo', doc.Structs()[0].fields[1].body_comment)
 
   def testTypeChanges(self):
     doc_builder = generator.DocBuilder()
@@ -927,13 +927,13 @@ class PackerTest(unittest.TestCase):
     doc = doc_builder.current_document
     p = generator.Packer()
     p.VisitDocument(doc)
-    self.assertEqual(6, len(doc.structs[0].fields))
-    self.assertEqual('favorite_char', doc.structs[0].fields[0].name)
-    self.assertEqual('is_valid_char', doc.structs[0].fields[1].name)
-    self.assertEqual('foo_to_bar', doc.structs[0].fields[2].name)
-    self.assertEqual('another_char', doc.structs[0].fields[3].name)
-    self.assertEqual('third_char', doc.structs[0].fields[4].name)
-    self.assertEqual('value', doc.structs[0].fields[5].name)
+    self.assertEqual(6, len(doc.Structs()[0].fields))
+    self.assertEqual('favorite_char', doc.Structs()[0].fields[0].name)
+    self.assertEqual('is_valid_char', doc.Structs()[0].fields[1].name)
+    self.assertEqual('foo_to_bar', doc.Structs()[0].fields[2].name)
+    self.assertEqual('another_char', doc.Structs()[0].fields[3].name)
+    self.assertEqual('third_char', doc.Structs()[0].fields[4].name)
+    self.assertEqual('value', doc.Structs()[0].fields[5].name)
 
   def testPackOnlyContiguous(self):
     """Tests that two sets of packed fields separated by a non-packed
@@ -960,11 +960,11 @@ class PackerTest(unittest.TestCase):
     p.VisitDocument(doc)
 
     # a, b, d, and e should not be packed.
-    self.assertEqual(4, len(doc.structs[0].fields))
-    self.assertEqual('a_to_b', doc.structs[0].fields[0].name)
-    self.assertEqual('c', doc.structs[0].fields[1].name)
-    self.assertEqual('d_to_e', doc.structs[0].fields[2].name)
-    self.assertEqual('reserved', doc.structs[0].fields[3].name)
+    self.assertEqual(4, len(doc.Structs()[0].fields))
+    self.assertEqual('a_to_b', doc.Structs()[0].fields[0].name)
+    self.assertEqual('c', doc.Structs()[0].fields[1].name)
+    self.assertEqual('d_to_e', doc.Structs()[0].fields[2].name)
+    self.assertEqual('reserved', doc.Structs()[0].fields[3].name)
 
   def testPackSplitCorrectly(self):
     """Tests that two sets of packed fields separated by a non-packed
@@ -992,10 +992,10 @@ class PackerTest(unittest.TestCase):
     self.assertEqual(0, len(p.errors))
 
     # a, b, d, and e should not be packed.
-    self.assertEqual(3, len(doc.structs[0].fields))
-    self.assertEqual('rsvd0', doc.structs[0].fields[0].name)
-    self.assertEqual('ucode_ix_pack', doc.structs[0].fields[1].name)
-    self.assertEqual('dmem_ix_pack', doc.structs[0].fields[2].name)
+    self.assertEqual(3, len(doc.Structs()[0].fields))
+    self.assertEqual('rsvd0', doc.Structs()[0].fields[0].name)
+    self.assertEqual('ucode_ix_pack', doc.Structs()[0].fields[1].name)
+    self.assertEqual('dmem_ix_pack', doc.Structs()[0].fields[2].name)
 
   def testWarningOnPackLargerThanBaseType(self):
     """Tests that two sets of packed fields separated by a non-packed
@@ -1044,13 +1044,13 @@ class PackerTest(unittest.TestCase):
     errors = p.VisitDocument(doc)
     self.assertEqual(0, len(errors))
 
-    self.assertEqual(6, len(doc.structs[0].fields))
-    self.assertEqual('favorite_char', doc.structs[0].fields[0].name)
-    self.assertEqual('is_valid_char', doc.structs[0].fields[1].name)
-    self.assertEqual('foo_to_bar', doc.structs[0].fields[2].name)
-    self.assertEqual('another_char', doc.structs[0].fields[3].name)
-    self.assertEqual('third_char', doc.structs[0].fields[4].name)
-    self.assertEqual('value', doc.structs[0].fields[5].name)
+    self.assertEqual(6, len(doc.Structs()[0].fields))
+    self.assertEqual('favorite_char', doc.Structs()[0].fields[0].name)
+    self.assertEqual('is_valid_char', doc.Structs()[0].fields[1].name)
+    self.assertEqual('foo_to_bar', doc.Structs()[0].fields[2].name)
+    self.assertEqual('another_char', doc.Structs()[0].fields[3].name)
+    self.assertEqual('third_char', doc.Structs()[0].fields[4].name)
+    self.assertEqual('value', doc.Structs()[0].fields[5].name)
 
   def testNoPackArrayAndRegularType(self):
     doc_builder = generator.DocBuilder()
@@ -1064,14 +1064,14 @@ class PackerTest(unittest.TestCase):
     self.assertIsNone(errors)
 
     doc = doc_builder.current_document
-    self.assertEqual(1, len(doc.structs))
+    self.assertEqual(1, len(doc.Structs()))
 
     p = generator.Packer()
     errors = p.VisitDocument(doc)
     self.assertEqual(0, len(errors))
     
 
-    self.assertEqual(2, len(doc.structs[0].fields))
+    self.assertEqual(2, len(doc.Structs()[0].fields))
 
   def testNoPackArray(self):
     doc_builder = generator.DocBuilder()
@@ -1085,12 +1085,12 @@ class PackerTest(unittest.TestCase):
     self.assertIsNone(errors)
 
     doc = doc_builder.current_document
-    self.assertEqual(1, len(doc.structs))
+    self.assertEqual(1, len(doc.Structs()))
 
     p = generator.Packer()
     p.VisitDocument(doc)
 
-    self.assertEqual(2, len(doc.structs[0].fields))
+    self.assertEqual(2, len(doc.Structs()[0].fields))
 
   def testTooManyEnds(self):
     doc_builder = generator.DocBuilder()
@@ -1121,9 +1121,9 @@ class PackerTest(unittest.TestCase):
     self.assertIsNone(errors)
 
     doc = doc_builder.current_document
-    self.assertEqual(2, len(doc.structs))
-    outer = doc.structs[0]
-    inner = doc.structs[1]
+    self.assertEqual(2, len(doc.Structs()))
+    outer = doc.Structs()[0]
+    inner = doc.Structs()[1]
     self.assertEqual("inner", inner.name)
     self.assertEqual(2, len(inner.fields))
     var_length_array = inner.fields[1]
@@ -1151,11 +1151,11 @@ class PackerTest(unittest.TestCase):
     self.assertIsNone(errors)
 
     doc = doc_builder.current_document
-    self.assertEqual(4, len(doc.structs))
-    outer = doc.structs[0]
-    union = doc.structs[1]
-    s1 = doc.structs[2]
-    s2 = doc.structs[3]
+    self.assertEqual(4, len(doc.Structs()))
+    outer = doc.Structs()[0]
+    union = doc.Structs()[1]
+    s1 = doc.Structs()[2]
+    s2 = doc.Structs()[3]
     self.assertEqual("outer", outer.name)
     self.assertEqual("theUnion", union.name)
     self.assertEqual("first", s1.name)
@@ -1187,12 +1187,12 @@ class PackerTest(unittest.TestCase):
     self.assertIsNone(errors)
     doc = doc_builder.current_document
 
-    self.assertEqual(4, len(doc.structs))
+    self.assertEqual(4, len(doc.Structs()))
 
-    inside_union = doc.structs[0]
-    outer = doc.structs[1]
-    the_union = doc.structs[2]
-    first = doc.structs[3]
+    inside_union = doc.Structs()[0]
+    outer = doc.Structs()[1]
+    the_union = doc.Structs()[2]
+    first = doc.Structs()[3]
     self.assertEqual("inside_union", inside_union.name)
     self.assertEqual("outer", outer.name)
     self.assertEqual("theUnion", the_union.name)
@@ -1306,8 +1306,8 @@ class CheckerTest(unittest.TestCase):
     checker.VisitDocument(doc_builder.current_document)
     self.assertEqual(0, len(checker.errors))
 
-    self.assertEqual(2, len(doc_builder.current_document.structs))
-    bar = doc_builder.current_document.structs[1]
+    self.assertEqual(2, len(doc_builder.current_document.Structs()))
+    bar = doc_builder.current_document.Structs()[1]
 
     self.assertEqual(1, len(bar.fields))
 
