@@ -100,7 +100,6 @@ def RecordArrayTypeForStruct(the_struct, element_count):
   """Returns a type for a field that would hold a single struct."""
   base_type = BaseType(the_struct.name, 0, the_struct)
   return Type(base_type, element_count)
-
   
 
 class Type:
