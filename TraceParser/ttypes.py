@@ -166,6 +166,8 @@ class TTree():
 		return self.entry
 
 	def get_parent(self):
+		if (self.parent == self):
+			return None # XXX?
 		return self.parent
 
 	def __html(self, filterlist, indent):

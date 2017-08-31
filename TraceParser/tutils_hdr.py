@@ -3,7 +3,7 @@
 
 import re
 
-trace_fmt = 'PDT'
+trace_fmt = 'SIM'
 if trace_fmt == 'SIM':
 	import tutils_sim as tutils
 elif trace_fmt == 'PDT':
@@ -74,7 +74,7 @@ def parse_item(line):
 		
 		# ignore blocks
 		#if fname.startswith('$') or fname.startswith('.') or '.' in fname:
-		if fname.startswith('.'):
+		if fname.startswith('$') or fname.startswith('.'):
 			found = False
 		else:
 			found = True

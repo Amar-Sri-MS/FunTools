@@ -42,3 +42,6 @@ def get_cycle(trace_line):
 	return long(cycle)	
 
 
+# FIXME
+def get_ccount(trace_line):
+	return 1

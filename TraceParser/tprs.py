@@ -192,10 +192,14 @@ def read_trace(trace_fname, ranges, filter_vp, reverse_order, filterlist, quiet)
 
 	for i in range(0,4):
 		if current_ttree[i] != None:
-			current_ttree[i].propagate_up(cycles, idles, instr_misses)
-			roots.append(current_ttree[i].get_root())
-			sc = roots[i].sanitycheck()
-			print "Sanity check for VP %s: %s" % (i, sc)
+			try:
+				current_ttree[i].propagate_up(cycles, idles, instr_misses)
+				roots.append(current_ttree[i].get_root())
+				sc = roots[i].sanitycheck()
+				print "Sanity check for VP %s: %s" % (i, sc)
+			except:
+				print "Detected insanity in the sanity check. Continuing."
+				continue
 		else:
 			roots.append(None)
 			print "No run data available for VP %s" % i
