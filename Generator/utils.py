@@ -36,6 +36,12 @@ def AsComment(str):
     return '/* %s */' % str
   return '/*\n' + '\n'.join([' * ' + l for l in lines]) + '\n */'
 
+def AsHTMLComment(str):
+   """Returns human-readable string in form that maintains formatting
+   when converted to HTML.
+   """
+   return re.sub('\n', '\n<br>\n', str)
+
 def ReadableList(l):
   """Generates a human-readable list of string items."""
   if l is None or len(l) == 0:
