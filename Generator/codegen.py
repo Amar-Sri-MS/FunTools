@@ -8,6 +8,7 @@
 import os
 
 import generator
+import parser
 import utils
 
 class CodePrinter:
@@ -312,10 +313,9 @@ class CodeGenerator:
       next_value = current_value + 1
     defn += '};\n'
 
-    fun = generator.Function(
-      decl, defn,
-      'Human-readable strings for enum values in %s.' %
-      enum.name)
+    fun = parser.Function(decl, defn,
+                          'Human-readable strings for enum values in %s.' %
+                          enum.name)
     enum.functions.append(fun)
 
   def InitializerName(self, struct_name):
@@ -370,11 +370,11 @@ class CodeGenerator:
       zero_comment = 'Zero out field "%s" in packed field "%s.%s".' % (
         old_field.name, the_struct.name, field.name)
 
-      the_struct.macros.append(generator.Macro(shift_name, shift, offset_comment))
-      the_struct.macros.append(generator.Macro(mask_name, mask, mask_comment))
-      the_struct.macros.append(generator.Macro(value_name, value, value_comment))
-      the_struct.macros.append(generator.Macro(get_name, get, get_comment))
-      the_struct.macros.append(generator.Macro(zero_name, zero, zero_comment))
+      the_struct.macros.append(parser.Macro(shift_name, shift, offset_comment))
+      the_struct.macros.append(parser.Macro(mask_name, mask, mask_comment))
+      the_struct.macros.append(parser.Macro(value_name, value, value_comment))
+      the_struct.macros.append(parser.Macro(get_name, get, get_comment))
+      the_struct.macros.append(parser.Macro(zero_name, zero, zero_comment))
 
   def GenerateInitializer(self, the_struct, field, accessor_prefix):
     """Returns a C statement initializing the named variable.
@@ -494,8 +494,8 @@ class CodeGenerator:
                                                     ', '.join(arg_list),
                                                     validate_block,
                                                     '\n'.join(inits))
-    return generator.Function(init_declaration, init_definition,
-                              comment)
+    return parser.Function(init_declaration, init_definition,
+                           comment)
 
   def GenerateJSONInitializer(self, the_struct, the_field, accessor_prefix):
     json_accessor = 'int_value'
@@ -543,8 +543,8 @@ class CodeGenerator:
     init_definition += '\treturn true;\n'
     init_definition += '}\n'
 
-    return generator.Function(init_declaration, init_definition,
-                             declaration_comment)
+    return parser.Function(init_declaration, init_definition,
+                           declaration_comment)
 
   def GenerateHelpersForStruct(self, the_struct):
     """Generates helper functions for the provided structure."""
