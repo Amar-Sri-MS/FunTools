@@ -96,6 +96,10 @@ def RecordTypeForStruct(the_struct):
   base_type = BaseType(the_struct.name, 0, the_struct)
   return Type(base_type)
 
+def RecordArrayTypeForStruct(the_struct, element_count):
+  """Returns a type for a field that would hold a single struct."""
+  base_type = BaseType(the_struct.name, 0, the_struct)
+  return Type(base_type, element_count)
   
 
 class Type:
@@ -207,6 +211,18 @@ class Type:
       return '<Type: %s>' % (self.base_type.Name())
 
 
+UnknownKind = 0
+# Declarations in input.
+StructKind = 1
+EnumKind = 2
+FlagSetKind = 3
+
+MacroKind = 4
+FunctionKind = 5
+FieldKind = 6
+EnumVariableKind = 5
+
+
 class Declaration:
   def __init__(self):
     # Primary, short comment for an item.  Appears on same line.
@@ -232,6 +248,8 @@ class Declaration:
     # Location where Declaration appeared in source.
     self.line_number = 0
 
+    self.declarationKind = UnknownKind
+
   def MacroWithName(self, name):
     """Returns a specific macro attached to this declaration."""
     for macro in self.macros:
@@ -249,6 +267,7 @@ class Macro(Declaration):
     self.name = name
     self.body = body
     self.body_comment = comment
+    self.declaration_kind = MacroKind
 
 class Function(Declaration):
   """Representation of a generated function.
@@ -261,6 +280,7 @@ class Function(Declaration):
     # Full function definition with body.
     self.definition = defn
     self.body_comment = comment
+    self.declaration_kind = FunctionKind
     
 class Field(Declaration):
   # Representation of a field in a structure or union.
@@ -296,6 +316,7 @@ class Field(Declaration):
 
     # Fields for a composite object such as a struct or union.
     self.subfields = []
+    self.declaration_kind = FieldKind
 
   def __str__(self):
     if self.no_offset:
@@ -442,6 +463,7 @@ class EnumVariable(Declaration):
      self.name = name
      # value is an integer value for the variable.
      self.value = value
+     self.declaration_kind = EnumVariableKind
 
   def __str__(self):
      return('<EnumVariable: %s = 0x%x>' % self.name, self.value)
@@ -458,6 +480,7 @@ class Enum(Declaration):
     Declaration.__init__(self)
     self.name = name
     self.variables = []
+    self.declaration_kind = EnumKind
 
   def Name(self):
     return self.name
@@ -481,6 +504,7 @@ class FlagSet(Declaration):
     Declaration.__init__(self)
     self.name = name
     self.variables = []
+    self.declaration_kind = FlagSetKind
 
   def Name(self):
     return self.name
@@ -521,6 +545,7 @@ class Struct(Declaration):
     # used.  The inline flag is usually set depending on whether the
     # struct was defined inline in the gen file, or on its own.
     self.inline = False
+    self.declaration_kind = StructKind
 
   def Name(self):
     return self.name
@@ -635,18 +660,33 @@ class Struct(Declaration):
 class Document:
   # Representation of an entire generated header specification.
   def __init__(self):
-    # structs is all the structures defined in the document.
-    # Structs nested in other structs are listed here.
-    self.structs = []
+    # All structures, enums, and flagsets defined in file.
+    self.declarations_raw = []
 
-    # All enums declared in the file.
-    self.enums = []
-
-    # All flag sets declared in the file.
-    self.flagsets = []
 
     # Original filename containing the specifications.
     self.filename = None
+
+  def Declarations(self):
+    return self.declarations_raw
+
+  def Structs(self):
+    return [d for d in self.declarations_raw if d.declaration_kind == StructKind]
+
+  def Enums(self):
+    return [d for d in self.declarations_raw if d.declaration_kind == EnumKind]
+
+  def Flagsets(self):
+    return [d for d in self.declarations_raw if d.declaration_kind == FlagSetKind]
+
+  def AddStruct(self, s):
+    self.declarations_raw.append(s)
+
+  def AddEnum(self, e):
+    self.declarations_raw.append(e)
+
+  def AddFlagSet(self, f):
+    self.declarations_raw.append(f)
 
   def __str__(self):
     return('<Document>')

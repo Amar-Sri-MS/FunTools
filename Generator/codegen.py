@@ -88,19 +88,19 @@ class CodePrinter:
 
     hdr_out += '\n'
 
-    for enum in doc.enums:
+    for enum in doc.Enums():
       (hdr, src) = self.VisitEnum(enum)
       hdr_out += hdr
       src_out += src
 
-    for flagset in doc.flagsets:
+    for flagset in doc.Flagsets():
       (hdr, src) = self.VisitFlagSet(flagset)
       hdr_out += hdr
       src_out += src
 
     hdr_out += '\n'
 
-    for struct in doc.structs:
+    for struct in doc.Structs():
       if not struct.inline:
         (hdr, src) = self.VisitStruct(struct)
         hdr_out += hdr
@@ -293,9 +293,9 @@ class CodeGenerator:
     self.generate_json = generate_json
 
   def VisitDocument(self, doc):
-    for struct in doc.structs:
+    for struct in doc.Structs():
       self.VisitStruct(struct)
-    for enum in doc.enums:
+    for enum in doc.Enums():
       self.VisitEnum(enum)
 
   def VisitEnum(self, enum):
@@ -487,6 +487,11 @@ class CodeGenerator:
       comment = ('Initializes the %s structure assuming the %s union should '
                  'be filled in.' % (the_struct.name, struct_in_union.name))
 
+    comment += '\n\nArguments:\n'
+    comment += '  s: pointer to structure to be initialized.\n'
+    for field in all_fields:
+      comment += '  %s: Initial value for field %s\n' % (field.name,
+                                                         field.name)
     init_declaration = 'extern void %s(%s);\n' % (function_name,
                                                   ', '.join(arg_list))
 
