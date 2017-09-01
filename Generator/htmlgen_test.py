@@ -35,7 +35,7 @@ class HTMLGeneratorTest(unittest.TestCase):
                                      input, 'foo.gen', False)
         self.assertIsNotNone(out)
         self.assertIn('<h3>A: structure</h3>\n'
-                      '<p>Key comment for struct A.</p>\n'
+                      '<p><b>Key comment for struct A.</b></p>\n'
                       '<p>Body comment for struct A.</p>', out)
         self.assertIn('Body comment for a1.', out)
         self.assertIn('Key comment for a1.', out)
@@ -55,7 +55,7 @@ class HTMLGeneratorTest(unittest.TestCase):
                                      input, 'foo.gen', False)
         self.assertIsNotNone(out)
         self.assertIn('<h3>A: structure</h3>\n'
-                      '<p>Key comment for struct A.</p>\n'
+                      '<p><b>Key comment for struct A.</b></p>\n'
                       '<p>Body comment for struct A.</p>', out)
         self.assertIn('Body comment for a1.', out)
         self.assertIn('Key comment for array.', out)
@@ -79,7 +79,7 @@ class HTMLGeneratorTest(unittest.TestCase):
                                      input, 'foo.gen', False)
         self.assertIsNotNone(out)
         self.assertIn('<h3>A: structure</h3>\n'
-                      '<p>Key comment for struct A.</p>\n'
+                      '<p><b>Key comment for struct A.</b></p>\n'
                       '<p>Body comment for struct A.</p>', out)
         self.assertIn('Body comment for a1.', out)
         self.assertIn('Key comment for array.', out)

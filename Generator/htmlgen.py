@@ -429,7 +429,7 @@ dd {
     out += '<a name="%s"></a>' % name
     out += '<h3>%s: structure</h3>\n' % name
     if struct.key_comment:
-      out += '<p>%s</p>\n' % utils.AsHTMLComment(struct.key_comment)
+      out += '<p><b>%s</b></p>\n' % utils.AsHTMLComment(struct.key_comment)
     if struct.body_comment:
       out += '<p>%s</p>\n' % utils.AsHTMLComment(struct.body_comment)
 
