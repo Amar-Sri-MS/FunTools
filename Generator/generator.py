@@ -19,651 +19,12 @@ import sys
 
 import codegen
 import htmlgen
+import parser
 import utils
-
-# Default size of a word.  Input is specified in flits and bit offsets.
-FLIT_SIZE = 64
 
 # Fake value for width of field, used when we can't define the value
 # correctly on creation.
 FAKE_WIDTH = 8675309
-
-def BitFlitString(offset):
-  """Returns a human-readable string describing the offset as flit/bit."""
-  return '%d:%d' % (offset / FLIT_SIZE, 63 - offset % FLIT_SIZE)
-
-class BaseType:
-  """Represents a the base type name without qualifications.
-
-  The base type only contains a scalar type, struct, or union.
-  Arrays, const, etc. would be represented in the Type class.
-  """
-  def __init__(self, name, bit_width=0, node=None):
-    # Short name used in file.
-    self.name = name
-    # Number of bits.
-    self.bit_width = bit_width
-    # Parsed struct or union, or None if built-in.
-    self.node = node
-
-  def Name(self):
-    """Returns the name of the type."""
-    return self.name
-
-  def BitWidth(self):
-    """Returns the width of the base type itself."""
-    return self.bit_width
-
-  def __cmp__(self, other):
-    if other is None:
-      return -1
-
-    if self.name != other.name:
-      if self.name < other.name:
-        return -1
-      else:
-        return 1
-    if self.bit_width != other.bit_width:
-      if self.bit_width < other.bit_width:
-        return -1
-      else:
-        return 1
-    if self.node or other.node:
-      if self.node.name != other.node.name:
-        if self.node.name < other.node.name:
-          return -1
-        else:
-          return 1
-    return 0
-
-
-# Width of all known types.  Structures are added to this
-# dictionary during execution.
-builtin_type_widths = {
-  # width of type in bytes.
-  'unsigned' : 32,
-  'signed' : 32,
-
-  'char': 8,
-  'uint8_t' : 8,
-  'uint16_t': 16,
-  'int16_t': 16,
-  'short': 16,
-  'int' : 32,
-  'uint32_t': 32,
-  'int32_t': 32,
-  'long': 32,
-  'float' : 32,
-  'double': 64,
-  'uint64_t': 64,
-  'int64_t' : 64
-}
-
-def BaseTypeForName(name):
-  """Returns a BaseType for the builtin type with the provided name."""
-  if name not in builtin_type_widths:
-    sys.stderr.write('Invalid name in BaseTypeForName.')
-  return BaseType(name, builtin_type_widths[name])
-
-def TypeForName(name):
-  """Returns a type for the builtin type with the provided name."""
-  if name not in builtin_type_widths:
-    sys.stderr.write('Invalid name in BaseTypeForName.')
-  return Type(BaseType(name, builtin_type_widths[name]))
-
-def ArrayTypeForName(name, element_count):
-  """Returns a type for the builtin type with the provided name and size."""
-  if name not in builtin_type_widths:
-    sys.stderr.write('Invalid name in BaseTypeForName.')
-  return Type(BaseType(name, builtin_type_widths[name]), element_count)
-
-def RecordTypeForStruct(the_struct):
-  """Returns a type for a field that would hold a single struct."""
-  base_type = BaseType(the_struct.name, 0, the_struct)
-  return Type(base_type)
-
-  
-
-class Type:
-  """Represents C type for a field."""
-
-  def __init__(self, base_type, array_size=None):
-    self.base_type = base_type
-    # Number of elements in the array.
-    self.array_size = 0
-    # Size of the total object in bits.
-    self.bit_width = 0
-    # True if type represents an array type.
-    self.is_array = False
-
-    if array_size is not None:
-      self.is_array = True
-      self.array_size = array_size
-    else:
-      self.is_array = False
-      self.array_size = None
-
-    self.alignment = base_type.BitWidth()
-
-    if self.is_array:
-      self.bit_width = self.alignment * array_size
-    else:
-      self.bit_width = self.alignment
-
-  def IsArray(self):
-    """Returns true if the type is an array type."""
-    return self.is_array
-
-  def IsRecord(self):
-    """Returns true if the type contains other fields (union or struct)
-
-    Records can still be arrays too.
-    """
-    return self.base_type.node is not None
-
-  def IsScalar(self):
-    """Returns true if the type is a scalar, builtin type."""
-    # TODO(bowdidge): Should uint128_t count as scalar or not?
-    if self.is_array:
-      return False
-    if self.base_type.node:
-      return False
-    return True
-
-  def BaseName(self):
-    """Returns base type name without array and other modifiers."""
-    return self.base_type.Name()
-
-  def DeclarationName(self):
-    if self.base_type.node:
-      return "struct " + self.base_type.name
-    return self.base_type.name
-
-  def ArraySize(self):
-    """Returns the size of an array.  Throws exception if not an array type."""
-    if not self.is_array:
-      raise ValueError('Not array')
-    return self.array_size
-
-  def TypeName(self):
-    """Returns type name."""
-    if self.is_array:
-      return "%s[%d]" % (self.base_type.Name(), self.array_size)
-    else:
-      return self.base_type.Name()
-
-  def DeclarationType(self):
-    """Returns type name as function parameter type."""
-    if self.is_array:
-      return '%s[%d]' % (self.base_type.name, self.array_size)
-    elif self.base_type.node:
-      return 'struct %s' % self.base_type.name
-    else:
-      return self.base_type.Name()
-
-  def Alignment(self):
-    """Returns natural alignment for the type in bits."""
-    if self.alignment == 0:
-      return FLIT_SIZE / 8
-    return self.alignment
-
-  def BitWidth(self):
-    """Returns width of type in bits."""
-    return self.bit_width
-
-  def __cmp__(self, other_type):
-    if other_type is None:
-      return -1
-
-    if self.base_type != other_type.base_type:
-      if self.base_type < other_type.base_type:
-        return -1
-      else:
-        return 1
-    if self.is_array != other_type.is_array:
-      return self.is_array.__cmp__(other_type.is_array)
-    if self.is_array:
-      return self.array_size.__cmp__(other_type.array_size)
-    return 0
-
-  def __str__(self):
-    if self.is_array:
-      return '<Type: %s[%d]>' % (self.base_type.Name(), self.array_size)
-    else:
-      return '<Type: %s>' % (self.base_type.Name())
-
-
-class Declaration:
-  def __init__(self):
-    # Primary, short comment for an item.  Appears on same line.
-    # Contains either the comment, or None if never set.
-    self.key_comment = None
-    # Longer descriptive comment.  Always appears before the declaration.
-    # Contains either the comment, or None if never set.
-    self.body_comment = None
-    # Tail comment, usually inside structures.
-    # Contains either the comment, or None if never set.
-    self.tail_comment = None
-    # Short comment used by generator to hint at transformation.
-    # Contains either the comment, or None if never set.
-    self.generator_comment = None
-
-    # All macros related to this Declaration in string form.
-    self.macros = []
-
-    # Source code for functions related to this Declaration.
-    # List of Function objects.
-    self.functions = []
-
-    # Location where Declaration appeared in source.
-    self.line_number = 0
-
-class Macro(Declaration):
-  """Representation of a generated macro.
-  Code generator should fill in comments for documentation.
-  """
-  def __init__(self, body, comment):
-    Declaration.__init__(self)
-    self.body = body
-    self.body_comment = comment
-
-class Function(Declaration):
-  """Representation of a generated function.
-  Code generator should fill in comments for documentation.
-  """
-  def __init__(self, decl, defn, comment):
-    Declaration.__init__(self)
-    # Forward declaration of function.
-    self.declaration = decl
-    # Full function definition with body.
-    self.definition = defn
-    self.body_comment = comment
-    
-class Field(Declaration):
-  # Representation of a field in a structure or union.
-  #
-  # Within the field, bit positions are relative to the high bit of the
-  # first flit; 0 is the high bit of the first flit, 63 is the low bit of
-  # the first flit, etc.  This choice makes math about packing easier.
-  # For the human descriptions (both input and output), bits are ordered
-  # in the opposite fashio with 63 as the high bit of the flit.
-  # The StartOffset and EndOffset use the high bit = 0 system;
-  # the StartBit and EndBit use high bit = 63.
-
-  def __init__(self, name, type, offset_start, bit_width):
-    Declaration.__init__(self)
-    # name of the field declaration.
-    self.name = name
-    # String name of the C type, or a generic type for signed-ness.
-    self.type = type
-
-    # True if the field doesn't actually represent a specific bit pattern.
-    # Used for variable length arrays.
-    self.no_offset = False
-
-    # Bit offset from top of first word.
-    self.offset_start = offset_start
-    self.bit_width = bit_width
-
-    self.crosses_flit = False
-    # Fields that have been packed in this field.
-    self.packed_fields = []
-    # True if field was explicitly defined to be less than its natural size.
-    self.is_bitfield = False
-
-    # Fields for a composite object such as a struct or union.
-    self.subfields = []
-
-  def __str__(self):
-    if self.no_offset:
-      return('<Field: name=%s, type=%s, no offset>' %
-             (self.name, self.type))
-    if self.StartFlit() == self.EndFlit():
-      return('<Field: name=%s, type=%s, flit=%d, bits=%d:%d>' %
-             (self.name, self.type, self.StartFlit(),
-              self.StartBit(), self.EndBit()))
-    else:
-      return('<Field: name=%s, type=%s, start: flit=%d, bit=%d, '
-             'end: flit=%d, bit=%d>' % (self.name, self.type,
-                                        self.StartFlit(), self.StartBit(),
-
-                                        self.EndFlit(), self.EndBit()))
-
-  def Name(self):
-    return self.name
-
-  def Type(self):
-    return self.type
-
-  def ExtendSize(self, amount):
-    """Increases the size of the field.  Used for ... notation."""
-    self.bit_width += amount
-
-  def StartOffset(self):
-    """Returns the offset of the field from the top of the container."""
-    if self.no_offset:
-      return None
-    return self.offset_start
-
-  def EndOffset(self):
-    """Returns the bottom offset of the field from the top of the container."""
-    if self.no_offset:
-      return None
-    return self.offset_start + self.bit_width - 1
-
-  def StartFlit(self):
-    """Returns the flit in the container holding the start of this field."""
-    if self.no_offset:
-      return None
-    return self.StartOffset() / FLIT_SIZE
-
-  def EndFlit(self):
-    """Returns the flit in the container holding the end of this field."""
-    if self.no_offset:
-      return None
-    return (self.StartOffset() + self.BitWidth() - 1) / FLIT_SIZE
-
-  def StartBit(self):
-    """Returns the bit offset in the start flit.
-
-    0 is the bottom of the flit.
-    """
-    if self.no_offset:
-      return None
-    return FLIT_SIZE - (self.StartOffset() - (self.StartFlit() * FLIT_SIZE)) - 1
-
-  def EndBit(self):
-    """Returns the bit offset in the end flit.
-
-    0 is the bottom of the flit.
-    """
-    if self.no_offset:
-      return None
-    return FLIT_SIZE - (self.EndOffset() - (self.EndFlit() * FLIT_SIZE)) - 1
-
-  def BitWidth(self):
-    # Returns the number of bits in the field.
-    if self.no_offset:
-      return 0
-    return self.bit_width
-
-  def Mask(self):
-    # Returns a hexadecimal number that can be used as a mask in the flit.
-    return '0x%x' %  ((1 << self.bit_width) - 1)
-
-  def SmallerThanType(self):
-    """Returns true if the field does not fully fill its type.
-    Used for identifying packed fields.
-    """
-    # TODO(bowdidge): Create separate packed flag for packed fields?
-    return self.bit_width < self.type.BitWidth()
-
-  def IsNoOffset(self):
-    return self.no_offset
-
-  def IsReserved(self):
-    """True if the field is a placeholder that doesn't need to be initialized."""
-    return (self.name.startswith('reserved') or self.name.startswith('rsvd')
-            or self.no_offset)
-
-  def CreateSubfields(self):
-    """Inserts sub-fields into this field based on the its type.
-
-    For fields that are structures, this code walks the tree of structures
-    and creates new sub-fields in this field from the fields of the prototype
-    structure.  It sets the offset and size to match the prototype.
-    """
-    if not self.type.IsRecord():
-      # Doesn't have subfields to create.
-      return
-
-    if self.type.IsArray() and self.type.ArraySize() == 0:
-      # Subfields shouldn't be created because we can't know their
-      # positions.
-      return
-
-    for proto_field in self.type.base_type.node.fields:
-      if proto_field.no_offset:
-        new_subfield = Field(proto_field.Name(), proto_field.Type(), None, None)
-      else:
-        new_subfield = Field(proto_field.Name(), proto_field.Type(),
-                             self.StartOffset() + proto_field.StartOffset(),
-                             proto_field.BitWidth())
-      # TODO(bowdidge): Consider an explicit copy method.
-      new_subfield.key_comment = proto_field.key_comment
-      new_subfield.body_comment = proto_field.body_comment
-      new_subfield.tail_comment = proto_field.tail_comment
-      new_subfield.generator_comment = proto_field.generator_comment
-      new_subfield.line_number = proto_field.line_number
-      new_subfield.crosses_flit = proto_field.crosses_flit
-      new_subfield.is_bitfield = proto_field.is_bitfield
-      new_subfield.no_offset = proto_field.no_offset
-
-
-      self.subfields.append(new_subfield)
-      if proto_field.type.IsRecord():
-        new_subfield.CreateSubfields()
-
-
-class EnumVariable(Declaration):
-  # Representation of an enum variable in an enum declaration.
-
-  def __init__(self, name, value):
-     # Create an EnumVariable.
-     Declaration.__init__(self)
-     # name is a string.
-     self.name = name
-     # value is an integer value for the variable.
-     self.value = value
-
-  def __str__(self):
-     return('<EnumVariable: %s = 0x%x>' % self.name, self.value)
-
-
-class Enum(Declaration):
-  # Representation of an enum declaration.
-
-  def __init__(self, name):
-    # Create an Enum declaration.
-    # name is a string.
-    # variables holds the EnumVariables associated with the enum.
-    # Multiple enum variables may hold the same value.
-    Declaration.__init__(self)
-    self.name = name
-    self.variables = []
-
-  def Name(self):
-    return self.name
-
-  def BitWidth(self):
-    return 0
-
-  def __str__(self):
-    return('<Enum %s:\n  %s\n>\n' % (self.name, self.variables))
-
-
-class FlagSet(Declaration):
-  # Representation of an flags declaration.  FlagSet are like enums,
-  # but the values are expected to represent bitmasks, and the values
-  # are generated as ints rather than as an enum.
-
-  def __init__(self, name):
-    # Create an FlagSet declaration.
-    # name is a string.
-    # variables holds the EnumVariables associated with the enum.
-    Declaration.__init__(self)
-    self.name = name
-    self.variables = []
-
-  def Name(self):
-    return self.name
-
-  def BitWidth(self):
-    return 0
-
-  def MaxValue(self):
-    max_value = 0
-    for var in self.variables:
-      if var.value > max_value:
-        max_value = var.value
-    return max_value
-
-  def __str__(self):
-    return('<FlagSet %s:\n  %s\n>\n' % (self.name, self.variables))
-
-
-class Struct(Declaration):
-  # Representation of a structure.
-
-  def __init__(self, name, is_union):
-    """Create a struct declaration.
-
-    if is_union is true, then this is a union rather than a structure.
-    """
-    Declaration.__init__(self)
-    # name is a string representing the name of the struct.
-    self.name = name
-
-    # fields is the list of fields in the struct.
-    self.fields = []
-
-    # True if this struct actually represents a union.
-    self.is_union = is_union
-
-    # True if the struct or union should be drawn inline where it's
-    # used.  The inline flag is usually set depending on whether the
-    # struct was defined inline in the gen file, or on its own.
-    self.inline = False
-
-  def Name(self):
-    return self.name
-
-  def Tag(self):
-    """Returns the correct token to use when generating a declaration."""
-    if self.is_union:
-      return 'union'
-    return 'struct'
-
-  def NestedStructs(self):
-    result = []
-    for field in self.fields:
-      if field.type.IsRecord():
-        struct = field.type.base_type.node
-        if struct.inline:
-          result.append(struct)
-          result += struct.NestedStructs()
-    return result
-
-  def MatchingStructInUnionField(self, struct_in_union):
-    """Returns (accessor expr, field) for an instance of a structure
-    of the provided type inside a union inside the current structure.
-    """
-    for field in self.AllFields():
-      if field.type.IsRecord() and field.type.base_type.node.is_union:
-        union = field.type.base_type.node
-        for union_field in union.AllFields():
-          if (union_field.type.IsRecord() and
-              union_field.type.base_type.node == struct_in_union):
-            return (field.name + '.' + union_field.name + '.', union_field)
-    return ('', None)
-
-  def AllFields(self):
-    """Returns all fields of the struct as seen before packing."""
-    fields = []
-
-    for field in self.fields:
-      if len(field.packed_fields) == 0:
-        fields.append(field)
-      else:
-        fields += field.packed_fields
-    return fields
-
-  def __str__(self):
-    return('<Struct %s, isUnion: %d fields: %s>\n' %
-           (self.name, self.is_union, self.fields))
-
-  def BitWidth(self):
-    """Returns the width in bits of the contents of this struct."""
-
-    fields_with_offsets = [f for f in self.fields if not f.IsNoOffset()]
-
-    if len(fields_with_offsets) == 0:
-      return 0
-
-    if self.is_union:
-      return max([f.BitWidth() for f in fields_with_offsets])
-
-    last_field = fields_with_offsets[-1]
-    end_offset = last_field.EndOffset()
-    return end_offset + 1
-
-  def StartOffset(self):
-    """Returns beginning offset for structure."""
-    if not self.fields:
-      return 0
-
-    return min([f.StartOffset() for f in self.fields])
-
-  def Flits(self):
-    """Returns the number of flits this structure would occupy.
-
-    Assumes the struct is aligned at the top of a flit.
-    """
-    if len(self.fields) == 0:
-      return 0
-    return max([field.EndFlit() for field in self.fields]) + 1
-
-  def Bytes(self):
-    """Returns the number of bytes in the structure."""
-    if len(self.fields) == 0:
-      return 0
-
-    return max([(f.EndFlit() + 1) * 8 for f in self.fields])
-
-  def FlitFieldMap(self):
-    """Return a map of (flit, fields) for all fields in the structure."""
-    flit_field_map = {}
-    fields_with_offsets = [f for f in self.fields if not f.IsNoOffset()]
-
-    for field in fields_with_offsets:
-      item = flit_field_map.get(field.StartFlit(), [])
-      item.append(field)
-      flit_field_map[field.StartFlit()] = item
-    return flit_field_map
-
-  def ContainsUnion(self):
-    """Returns union in this struct, or None if no unions exist."""
-    if self.is_union:
-      return self
-
-    for f in self.fields:
-      if f.type.IsRecord():
-        struct = f.type.base_type.node
-        the_union = struct.ContainsUnion()
-        if the_union:
-          return the_union
-    return None
-
-
-class Document:
-  # Representation of an entire generated header specification.
-  def __init__(self):
-    # structs is all the structures defined in the document.
-    # Structs nested in other structs are listed here.
-    self.structs = []
-
-    # All enums declared in the file.
-    self.enums = []
-
-    # All flag sets declared in the file.
-    self.flagsets = []
-
-    # Original filename containing the specifications.
-    self.filename = None
-
-  def __str__(self):
-    return('<Document>')
-
 
 class Checker:
   # Walk through a document and identify any likely problems.
@@ -680,7 +41,7 @@ class Checker:
     self.errors.append(location + msg)
 
   def VisitDocument(self, the_doc):
-    for struct in the_doc.structs:
+    for struct in the_doc.Structs():
       self.VisitStruct(struct)
 
   def VisitStruct(self, the_struct):
@@ -722,15 +83,16 @@ class Checker:
           self.AddError(field, 'field "%s" overlaps field "%s"  '
                         '("%s" ends at %s, "%s" begins at %s)' % (
               last_field_name, field.name,
-              last_field_name, BitFlitString(last_end_offset),
-              field.name, BitFlitString(start_offset)))
+              last_field_name, utils.BitFlitString(last_end_offset),
+              field.name, utils.BitFlitString(start_offset)))
 
         elif start_offset != last_end_offset + 1:
           self.AddError(field, 'unexpected space between field "%s" and "%s".  '
                         '("%s" ends at %s, "%s" begins at %s)'
                         % (last_field_name, field.name,
-                           last_field_name, BitFlitString(last_end_offset),
-                           field.name, BitFlitString(start_offset)))
+                           last_field_name,
+                           utils.BitFlitString(last_end_offset),
+                           field.name, utils.BitFlitString(start_offset)))
 
       last_start_offset = field.StartOffset()
       last_end_offset = field.EndOffset()
@@ -826,7 +188,7 @@ class Packer:
   def VisitDocument(self, doc):
     # Pack all structures in the named documents.
     self.doc = doc
-    for struct in doc.structs:
+    for struct in doc.Structs():
       self.VisitStruct(struct)
     return self.errors
 
@@ -841,32 +203,41 @@ class Packer:
     Returns array of proposed packed variables, with each group being
     a tuple of (type, [fields to pack in variable) in that group.
     """
-    # Contiguous fields to pack.  When we reach the end of a group
-    # move to fields_to_pack.
+    # Contiguous fields to pack.  When we reach the end of a set of fields to be packed togther,
+    # we move them to fields_to_pack.
     fields_to_pack = []
+
+    # Current group of fields to be packed together.
     current_group = []
+
+    # Common type for all in current group of fields to be packed together.
     current_type = None
+    # total bits of space used by current_group
+    bits_occupied = 0
+
     for field in the_fields:
-      # Loop through the fields, grouping contiguous bitfields into a larger
-      # single variable.
-      if field.type.BitWidth() != field.BitWidth():
-         if current_type == None or field.type == current_type:
-           current_type = field.type
-           current_group.append(field)
-         else:
-           if len(current_group) > 1:
-             fields_to_pack.append((current_type, current_group))
-           current_group = [field]
-           current_type = field.type
-      else:
-        if len(current_group) > 1:
-          fields_to_pack.append((current_type, current_group))
+
+      # End the previous group of packed fields if the current field
+      # can be a field on its own, if the current field does not match the group's
+      # field, or if the packed field is already full (or too full).
+      # Code outside checks for packed fields too large for the type.
+      if (field.type.BitWidth() == field.BitWidth() or
+          current_type != field.type or
+          bits_occupied >= field.type.BitWidth()):
+        fields_to_pack.append((current_type, current_group))
         current_group = []
         current_type = None
+        bits_occupied = 0
 
-    if len(current_group) > 1:
-      fields_to_pack.append((current_type, current_group))
-    return fields_to_pack
+      current_group.append(field)
+      if (len(current_group) == 1):
+        current_type = field.type
+      bits_occupied += field.BitWidth()
+
+    fields_to_pack.append((current_type, current_group))
+
+    # Return only the groups that had more than one field in them.
+    return [pack_group for pack_group in fields_to_pack if len(pack_group[1]) > 1]
 
   def PackFlit(self, the_struct, flit_number, the_fields):
     """Replaces contiguous sets of bitfields with macros to access.
@@ -890,14 +261,14 @@ class Packer:
 
       if (packed_field_width > type.BitWidth()):
         self.AddError(the_struct,
-                      'Unable to pack fields %s. '
-                      'Fields are %d bits, type is %d bits.' % (
+                      'Width of packed bit-field containing %s (%d bits) exceeds width of its type (%d bits). '% (
             utils.ReadableList([f.name for f in fields]),
             packed_field_width,
             type.BitWidth()))
 
       new_field_name = ChoosePackedFieldName(fields)
-      new_field = Field(new_field_name, type, min_start_bit, packed_field_width)
+      new_field = parser.Field(new_field_name, type, min_start_bit,
+                               packed_field_width)
       new_field.line_number = fields[0].line_number
 
       non_reserved_fields = [f.name for f in fields if not f.IsReserved()]
@@ -949,7 +320,7 @@ class DocBuilder:
   def __init__(self):
     # Create a DocBuilder.
     # current_document is the top level object.
-    self.current_document = Document()
+    self.current_document = parser.Document()
     # stack is a list of (state, object) pairs showing all objects
     # currently being parsed.  New containers (enum, struct, union) are put in the
     # last object.
@@ -968,8 +339,9 @@ class DocBuilder:
     self.current_line = 0
 
     self.base_types = {}
-    for name in builtin_type_widths:
-      self.base_types[name] = BaseType(name, builtin_type_widths[name])
+    for name in parser.builtin_type_widths:
+      self.base_types[name] = parser.BaseType(name, 
+                                              parser.builtin_type_widths[name])
 
   def AddError(self, msg):
     if self.current_document.filename:
@@ -1002,7 +374,7 @@ class DocBuilder:
       self.AddError(
         'variable "%s" is not a valid identifier name.' % variable_name)
 
-    current_struct = Struct(identifier, False)
+    current_struct = parser.Struct(identifier, False)
     current_struct.line_number = self.current_line
     current_struct.key_comment = self.StripKeyComment(key_comment)
 
@@ -1012,13 +384,15 @@ class DocBuilder:
 
     self.stack.append((DocBuilderStateStruct, current_struct))
 
-    self.current_document.structs.append(current_struct)
+    self.current_document.AddStruct(current_struct)
 
     # Add the struct to the symbol table.  We don't know
-    self.base_types[identifier] = BaseType(identifier, FAKE_WIDTH, current_struct)
+    self.base_types[identifier] = parser.BaseType(identifier, FAKE_WIDTH,
+                                                  current_struct)
 
     if state != DocBuilderTopLevel:
-      new_field = Field(variable_name, self.MakeType(identifier), 0, 0)
+      new_field = parser.Field(variable_name, self.MakeType(identifier),
+                               0, 0)
       new_field.line_number = self.current_line
 
       current_object.fields.append(new_field)
@@ -1043,7 +417,7 @@ class DocBuilder:
     if not utils.IsValidCIdentifier(name):
       self.AddError('"%s" is not a valid identifier name.' % name)
 
-    current_enum = Enum(name)
+    current_enum = parser.Enum(name)
     current_enum.line_number = self.current_line
     current_enum.key_comment = self.StripKeyComment(key_comment)
 
@@ -1052,7 +426,7 @@ class DocBuilder:
     self.current_comment = ''
 
     self.stack.append((DocBuilderStateEnum, current_enum))
-    self.current_document.enums.append(current_enum)
+    self.current_document.AddEnum(current_enum)
 
   def ParseFlagSetStart(self, line):
     # Handle an FLAGS directive opening a new type represeting bit flags.
@@ -1069,7 +443,7 @@ class DocBuilder:
       self.AddError('"%s" is not a valid identifier name.' % name)
 
     name = utils.RemoveWhitespace(name)
-    current_flags = FlagSet(name)
+    current_flags = parser.FlagSet(name)
     current_flags.line_number = self.current_line
     current_flags.key_comment = self.StripKeyComment(key_comment)
 
@@ -1078,7 +452,7 @@ class DocBuilder:
     self.current_comment = ''
 
     self.stack.append((DocBuilderStateFlagSet, current_flags))
-    self.current_document.flagsets.append(current_flags)
+    self.current_document.AddFlagSet(current_flags)
 
   def ParseEnumLine(self, line):
     # Parse the line describing a new enum variable.
@@ -1107,7 +481,7 @@ class DocBuilder:
 
     # Parse a line describing an enum variable.
     # TODO(bowdidge): Remember whether value was hex or decimal for better printing.
-    new_enum = EnumVariable(var, value)
+    new_enum = parser.EnumVariable(var, value)
     new_enum.line_number = self.current_line
 
     if len(self.current_comment) > 0:
@@ -1152,7 +526,7 @@ class DocBuilder:
     if len(self.current_comment) > 0:
       current_object.tail_comment = self.current_comment
 
-    if not isinstance(current_object, Struct):
+    if not isinstance(current_object, parser.Struct):
       return
 
     if self.flit_crossing_field:
@@ -1196,18 +570,19 @@ class DocBuilder:
     if not utils.IsValidCIdentifier(variable):
       self.AddError('"%s" is not a valid identifier name.' % variable)
 
-    current_union = Struct(name, True)
+    current_union = parser.Struct(name, True)
     current_union.line_number = self.current_line
     if len(self.current_comment) > 0:
       current_union.body_comment = self.current_comment
     self.current_comment = ''
     self.stack.append((DocBuilderStateStruct, current_union))
-    self.current_document.structs.append(current_union)
+    self.current_document.AddStruct(current_union)
 
-    self.base_types[identifier] = BaseType(identifier, FAKE_WIDTH, current_union)
+    self.base_types[identifier] = parser.BaseType(identifier, FAKE_WIDTH,
+                                                  current_union)
     if state != DocBuilderTopLevel:
       # Inline union.  Define the field.
-      new_field = Field(variable, self.MakeType(identifier), 0, 0)
+      new_field = parser.Field(variable, self.MakeType(identifier), 0, 0)
       new_field.line_number = self.current_line
       containing_object.fields.append(new_field)
       current_union.inline = True
@@ -1306,9 +681,9 @@ class DocBuilder:
       return None
     base_type = self.base_types[base_name]
     if array_size is not None:
-      return Type(base_type, array_size)
+      return parser.Type(base_type, array_size)
     else:
-      return Type(base_type)
+      return parser.Type(base_type)
 
 
   def ParseFieldLine(self, line, containing_struct):
@@ -1372,7 +747,7 @@ class DocBuilder:
         self.AddError('Bit pattern specified for zero-length array: "%s".' % flit_bit_spec_str)
         return True
 
-      zero_array = Field(name, type, -1, -1)
+      zero_array = parser.Field(name, type, -1, -1)
       zero_array.no_offset = True
       zero_array.key_comment = key_comment
       zero_array.body_comment = body_comment
@@ -1396,10 +771,10 @@ class DocBuilder:
       self.AddError('Start bit %d greater than end bit %d in field %s' %
                     (start_bit, end_bit, name))
 
-    start_offset = flit * 64 + (FLIT_SIZE - start_bit - 1)
-    end_offset = flit * 64 + (FLIT_SIZE - end_bit - 1)
+    start_offset = flit * 64 + (utils.FLIT_SIZE - start_bit - 1)
+    end_offset = flit * 64 + (utils.FLIT_SIZE - end_bit - 1)
     bit_size = end_offset - start_offset + 1
-    new_field = Field(name, type, start_offset, bit_size)
+    new_field = parser.Field(name, type, start_offset, bit_size)
     new_field.line_number = self.current_line
 
     expected_width = type.BitWidth()

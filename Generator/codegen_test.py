@@ -1,7 +1,14 @@
+#!/usr/bin/python
+#
+# Unit tests for Generator's code generation.
+#
+# Copyright Fungible Inc. 2017.
+
 import unittest
 
 import codegen
 import generator
+import parser
 
 class CodePrinterTest(unittest.TestCase):
   def setUp(self):
@@ -35,7 +42,7 @@ class CodePrinterTest(unittest.TestCase):
     self.assertIn('};', header)
 
   def testPrintStructWithComments(self):
-    struct = generator.Struct('Foo', False)
+    struct = parser.Struct('Foo', False)
     struct.key_comment = 'Key comment'
     struct.body_comment = 'body comment\nbody comment'
 
@@ -49,37 +56,53 @@ class CodePrinterTest(unittest.TestCase):
     self.assertIn('};', header)
 
   def testPrintArray(self):
-    field = generator.Field('foo', generator.ArrayTypeForName('char', 8), 0, 64)
+    field = parser.Field('foo', parser.ArrayTypeForName('char', 8), 0, 64)
     code = self.printer.VisitField(field)
   
     self.assertIn('char foo[8];\n', code)
 
   def testPrintUnionWithVar(self):
-    union = generator.Struct('Foo', True)
+    union = parser.Struct('Foo', True)
     (hdr, src) = self.printer.VisitStruct(union)
 
     self.assertIn('union Foo {', hdr)
     self.assertIn('};', hdr)
 
   def testPrintField(self):
-    field = generator.Field('foo', generator.TypeForName('uint8_t'), 0, 4)
+    field = parser.Field('foo', parser.TypeForName('uint8_t'), 0, 4)
     code = self.printer.VisitField(field)
     self.assertEqual('uint8_t foo:4;\n', code)
 
+  def testFieldMaskSmall(self):
+    field = parser.Field('foo', parser.TypeForName('uint16_t'), 0, 5)
+    self.assertEqual('0x1f', field.Mask())
+
+  def testFieldMaskChar(self):
+    field = parser.Field('foo', parser.TypeForName('uint8_t'), 0, 8)
+    self.assertEqual('0xff', field.Mask())
+
+  def testFieldMaskWord(self):
+    field = parser.Field('foo', parser.TypeForName('uint32_t'), 0, 16)
+    self.assertEqual('0xffff', field.Mask())
+
+  def testFieldMaskLong(self):
+    field = parser.Field('foo', parser.TypeForName('uint32_t'), 0, 40)
+    self.assertEqual('0xffffffffff', field.Mask())
+
   def testPrintFieldNotBitfield(self):
-    field = generator.Field('foo', generator.TypeForName('uint8_t'), 0, 8)
+    field = parser.Field('foo', parser.TypeForName('uint8_t'), 0, 8)
     code = self.printer.VisitField(field)
     self.assertEqual('uint8_t foo;\n', code)
 
   def testPrintFieldWithComment(self):
-    field = generator.Field('foo', generator.TypeForName('uint8_t'), 0, 8)
+    field = parser.Field('foo', parser.TypeForName('uint8_t'), 0, 8)
     field.key_comment = 'A'
     field.body_comment = 'B'
     code = self.printer.VisitField(field)
     self.assertEqual('/* B */\nuint8_t foo; /* A */\n', code)
 
   def testPrintFieldWithLongComment(self):
-    field = generator.Field('foo', generator.TypeForName('uint8_t'), 0, 8)
+    field = parser.Field('foo', parser.TypeForName('uint8_t'), 0, 8)
     long_comment = 'long long long long long long long long long long comment'
     field.body_comment = long_comment
     field.bodyuser_comment = long_comment
@@ -87,8 +110,8 @@ class CodePrinterTest(unittest.TestCase):
     self.assertEqual('/* %s */\nuint8_t foo;\n' % long_comment, code)
 
   def testPrintEnum(self):
-    enum = generator.Enum('MyEnum')
-    var = generator.EnumVariable('MY_COMMAND', 1)
+    enum = parser.Enum('MyEnum')
+    var = parser.EnumVariable('MY_COMMAND', 1)
     enum.variables.append(var)
 
     self.codegen.VisitEnum(enum)
@@ -101,8 +124,8 @@ class CodePrinterTest(unittest.TestCase):
     self.assertIn('"MY_COMMAND"', src)
 
   def testPrintLargeEnum(self):
-    enum = generator.Enum('MyEnum')
-    var = generator.EnumVariable('MY_COMMAND', 31)
+    enum = parser.Enum('MyEnum')
+    var = parser.EnumVariable('MY_COMMAND', 31)
     enum.variables.append(var)
 
     self.codegen.VisitEnum(enum)
@@ -116,8 +139,8 @@ class CodePrinterTest(unittest.TestCase):
 class CodeGeneratorTest(unittest.TestCase):
   def testInitializeSimpleField(self):
     gen = codegen.CodeGenerator(False)
-    s = generator.Struct('Foo', False)
-    f = generator.Field('a1', generator.TypeForName('char'), 0, 8)
+    s = parser.Struct('Foo', False)
+    f = parser.Field('a1', parser.TypeForName('char'), 0, 8)
 
     statement = gen.GenerateInitializer(s, f, 'pointer.')
   
@@ -125,8 +148,8 @@ class CodeGeneratorTest(unittest.TestCase):
 
   def testInitializeBitfield(self):
     gen = codegen.CodeGenerator(False)
-    s = generator.Struct('Foo', False)
-    f = generator.Field('a1', generator.TypeForName('char'), 0, 2)
+    s = parser.Struct('Foo', False)
+    f = parser.Field('a1', parser.TypeForName('char'), 0, 2)
 
     statement = gen.GenerateInitializer(s, f, '')
   
@@ -134,10 +157,10 @@ class CodeGeneratorTest(unittest.TestCase):
 
   def testInitializePackedField(self):
     gen = codegen.CodeGenerator(False)
-    s = generator.Struct('Foo', False)
-    f = generator.Field('a', generator.TypeForName('char'), 0, 8)
-    f1 = generator.Field('a1', generator.TypeForName('char'), 8, 4)
-    f2 = generator.Field('a2', generator.TypeForName('char'), 12, 4)
+    s = parser.Struct('Foo', False)
+    f = parser.Field('a', parser.TypeForName('char'), 0, 8)
+    f1 = parser.Field('a1', parser.TypeForName('char'), 8, 4)
+    f2 = parser.Field('a2', parser.TypeForName('char'), 12, 4)
     f.packed_fields = [f1, f2]
 
     statement = gen.GenerateInitializer(s, f, '')
@@ -146,10 +169,10 @@ class CodeGeneratorTest(unittest.TestCase):
 
   def testInitializePackedFieldWithAllCapStructureName(self):
     gen = codegen.CodeGenerator(False)
-    s = generator.Struct('ffe_access_command', False)
-    f = generator.Field('a', generator.TypeForName('char'), 0, 8)
-    f1 = generator.Field('a1', generator.TypeForName('char'), 0, 4)
-    f2 = generator.Field('a2', generator.TypeForName('char'), 4, 4)
+    s = parser.Struct('ffe_access_command', False)
+    f = parser.Field('a', parser.TypeForName('char'), 0, 8)
+    f1 = parser.Field('a1', parser.TypeForName('char'), 0, 4)
+    f2 = parser.Field('a2', parser.TypeForName('char'), 4, 4)
     f.packed_fields = [f1, f2]
 
     statement = gen.GenerateInitializer(s, f, '')
@@ -158,11 +181,60 @@ class CodeGeneratorTest(unittest.TestCase):
                      'FFE_ACCESS_COMMAND_A2_P(a2);', statement)
 
 
+  def testMacrosForPackedLongField(self):
+    gen = codegen.CodeGenerator(False)
+    s = parser.Struct('Foo', False)
+    f = parser.Field('a', parser.TypeForName('uint64_t'), 0, 63)
+    f1 = parser.Field('a1', parser.TypeForName('uint32_t'), 0, 31)
+    f2 = parser.Field('a2', parser.TypeForName('uint32_t'), 32, 63)
+    f.packed_fields = [f1, f2]
+
+    gen.GenerateMacrosForPackedField(s, f)
+    self.assertIn('#define FOO_A1_S 0', s.MacroWithName('FOO_A1_S').body)
+    self.assertIn('#define FOO_A1_M 0x7fffffff',
+                  s.MacroWithName('FOO_A1_M').body)
+    self.assertIn('#define FOO_A1_P(x) (((uint64_t) x) << FOO_A1_S)',
+                  s.MacroWithName('FOO_A1_P').body)
+    self.assertIn('#define FOO_A1_Z (~(((uint64_t) FOO_A1_M) << FOO_A1_S))',
+                  s.MacroWithName('FOO_A1_Z').body)
+
+    self.assertIn('#define FOO_A2_S 0', s.MacroWithName('FOO_A2_S').body)
+    self.assertIn('#define FOO_A2_P(x) (((uint64_t) x) << FOO_A2_S)',
+                  s.MacroWithName('FOO_A2_P').body)
+    self.assertIn('#define FOO_A2_M 0x7fffffffffffffff',
+                  s.MacroWithName('FOO_A2_M').body)
+    self.assertIn('#define FOO_A2_Z (~(((uint64_t) FOO_A2_M) << FOO_A2_S))',
+                  s.MacroWithName('FOO_A2_Z').body)
+
+  def testMacrosForPackedField(self):
+    gen = codegen.CodeGenerator(False)
+    s = parser.Struct('Foo', False)
+    f = parser.Field('a', parser.TypeForName('uint32_t'), 0, 32)
+    f1 = parser.Field('a1', parser.TypeForName('uint16_t'), 0, 14)
+    f2 = parser.Field('a2', parser.TypeForName('uint16_t'), 14, 14)
+    f.packed_fields = [f1, f2]
+
+    gen.GenerateMacrosForPackedField(s, f)
+    self.assertIn('#define FOO_A1_S 14', s.MacroWithName('FOO_A1_S').body)
+    self.assertIn('#define FOO_A1_P(x) (((uint32_t) x) << FOO_A1_S)',
+                  s.MacroWithName('FOO_A1_P').body)
+    self.assertIn('#define FOO_A1_M 0x3fff', s.MacroWithName('FOO_A1_M').body)
+    self.assertIn('#define FOO_A1_Z (~(((uint32_t) FOO_A1_M) << FOO_A1_S))',
+                  s.MacroWithName('FOO_A1_Z').body)
+
+    self.assertIn('#define FOO_A2_S 0', s.MacroWithName('FOO_A2_S').body)
+    self.assertIn('#define FOO_A2_P(x) (((uint32_t) x) << FOO_A2_S)',
+                  s.MacroWithName('FOO_A2_P').body)
+    self.assertIn('#define FOO_A2_M 0x3fff', s.MacroWithName('FOO_A2_M').body)
+    self.assertIn('#define FOO_A2_Z (~(((uint32_t) FOO_A2_M) << FOO_A2_S))',
+                  s.MacroWithName('FOO_A2_Z').body)
+
+
   def testCreateSimpleInitializer(self):
     gen = codegen.CodeGenerator(False)
     # Struct foo has a single field a1.
-    s = generator.Struct('Foo', False)
-    f = generator.Field('a1', generator.TypeForName('char'), 0, 8)
+    s = parser.Struct('Foo', False)
+    f = parser.Field('a1', parser.TypeForName('char'), 0, 8)
     s.fields = [f]
 
     func = gen.GenerateInitRoutine(s, None)
@@ -176,18 +248,18 @@ class CodeGeneratorTest(unittest.TestCase):
     gen = codegen.CodeGenerator(False)
     # Struct Foo has field a0, and a union containing Message1 and Message2
     # which each have one field f1 and f2.
-    s = generator.Struct('Foo', False)
-    f = generator.Field('a0', generator.TypeForName('char'), 0, 8)
+    s = parser.Struct('Foo', False)
+    f = parser.Field('a0', parser.TypeForName('char'), 0, 8)
     s.fields.append(f)
-    u = generator.Struct('Union', True)
-    s1 = generator.Struct('Message1', False)
-    s1.fields.append(generator.Field('f1', generator.TypeForName('char'), 0, 8))
-    s2 = generator.Struct('Message2', False)
-    s2.fields.append(generator.Field('f2', generator.TypeForName('char'), 0, 8))
-    m1 = generator.Field('m1', generator.RecordTypeForStruct(s1), 0, 8)
-    m2 = generator.Field('m2', generator.RecordTypeForStruct(s2), 0, 8)
+    u = parser.Struct('Union', True)
+    s1 = parser.Struct('Message1', False)
+    s1.fields.append(parser.Field('f1', parser.TypeForName('char'), 0, 8))
+    s2 = parser.Struct('Message2', False)
+    s2.fields.append(parser.Field('f2', parser.TypeForName('char'), 0, 8))
+    m1 = parser.Field('m1', parser.RecordTypeForStruct(s1), 0, 8)
+    m2 = parser.Field('m2', parser.RecordTypeForStruct(s2), 0, 8)
     u.fields = [m1, m2]
-    s.fields.append(generator.Field('u', generator.RecordTypeForStruct(u), 0, 8))
+    s.fields.append(parser.Field('u', parser.RecordTypeForStruct(u), 0, 8))
     
     func = gen.GenerateInitRoutine(s, None)
     # Foo initializer only gets a0 because it only gets non-union fielda.
@@ -651,16 +723,16 @@ class TestComments(unittest.TestCase):
 class TestIndentString(unittest.TestCase):
   def testSimple(self):
     # Tests only properties that hold true regardless of the formatting style.
-    generator = codegen.CodePrinter(None, False)
-    generator.indent = 1
-    self.assertTrue(len(generator.Indent()) > 0)
+    printer = codegen.CodePrinter(None, False)
+    printer.indent = 1
+    self.assertTrue(len(printer.Indent()) > 0)
 
   def testTwoIndentDoublesOneIndent(self):
-    generator = codegen.CodePrinter(None, False)
-    generator.indent = 1
-    oneIndent = generator.Indent()
-    generator.indent = 2
-    twoIndent = generator.Indent()    
+    printer = codegen.CodePrinter(None, False)
+    printer.indent = 1
+    oneIndent = printer.Indent()
+    printer.indent = 2
+    twoIndent = printer.Indent()
     self.assertEqual(twoIndent, oneIndent + oneIndent)
 
 

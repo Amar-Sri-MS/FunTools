@@ -41,26 +41,26 @@ STRUCT fun_admin_rsp_common
 END 
 
 STRUCT fun_admin_write48_req
-  0 63:56 uint8_t key
-  0 55:48 uint8_t rsvd0
-  0 47:00 uint8_t data[6]
+  0 63:56 uint64_t key
+  0 55:48 uint64_t rsvd0
+  0 47:00 uint64_t data
 END
 
 STRUCT fun_admin_write48_rsp
-  0 63:56 uint8_t key
-  0 55:48 uint8_t ret
-  0 47:00 uint8_t data[6]
+  0 63:56 uint64_t key
+  0 55:48 uint64_t ret
+  0 47:00 uint64_t data
 END
 
 STRUCT fun_admin_read48_req
-  0 63:56 uint8_t key
-  0 55:00 uint8_t rsvd0[7]
+  0 63:56 uint64_t key
+  0 55:00 uint64_t rsvd0
 END
 
 STRUCT fun_admin_read48_rsp
-  0 63:56 uint8_t key
-  0 55:48 uint8_t ret
-  0 47:00 uint8_t data[6]
+  0 63:56 uint64_t key
+  0 55:48 uint64_t ret
+  0 47:00 uint64_t data
 END
 
 /*
@@ -79,6 +79,7 @@ ENUM fun_admin_bind_type
   FUN_ADMIN_BIND_TYPE_VOL = 0x09
   FUN_ADMIN_BIND_TYPE_CONCAT = 0x0a
   FUN_ADMIN_BIND_TYPE_CRYPTO = 0x0b
+  FUN_ADMIN_BIND_TYPE_NU = 0x0c
 END
 
 ENUM fun_admin_bind_const
@@ -249,24 +250,29 @@ END
 /*
  * PORT params enums
  */
+
+/*
+ * Breakout mode
+ */
 ENUM fun_port_brkout_mode 
- FUN_PORT_BRKMODE_NONE   = 0x00
- FUN_PORT_BRKMODE_2X40G  = 0x01
- FUN_PORT_BRKMODE_2X50G  = 0x02
- FUN_PORT_BRKMODE_4X10G  = 0x03
- FUN_PORT_BRKMODE_4X25G  = 0x04
+ FUN_PORT_BRKMODE_NONE  = 0x00
+ FUN_PORT_BRKMODE_2X    = 0x01
+ FUN_PORT_BRKMODE_4X    = 0x02
 END
 
-ENUM fun_port_speed 
- FUN_PORT_SPEED_10M  = 0x00
- FUN_PORT_SPEED_100M = 0x01
- FUN_PORT_SPEED_1G	 = 0x02
- FUN_PORT_SPEED_10G	 = 0x03
- FUN_PORT_SPEED_25G	 = 0x04
- FUN_PORT_SPEED_40G	 = 0x05
- FUN_PORT_SPEED_50G  = 0x06
- FUN_PORT_SPEED_100G = 0x07
- FUN_PORT_SPEED_MAX  = 0x08
+/*
+ * port speed - bitmap 
+ */
+FLAGS fun_port_speed
+ FUN_PORT_SPEED_AUTO = 0x00
+ FUN_PORT_SPEED_10M  = 0x01
+ FUN_PORT_SPEED_100M = 0x02
+ FUN_PORT_SPEED_1G	 = 0x04
+ FUN_PORT_SPEED_10G	 = 0x08
+ FUN_PORT_SPEED_25G	 = 0x10
+ FUN_PORT_SPEED_40G	 = 0x20
+ FUN_PORT_SPEED_50G  = 0x40
+ FUN_PORT_SPEED_100G = 0x80
 END
 
 ENUM fun_port_duplex_mode
@@ -324,9 +330,12 @@ ENUM fun_admin_port_key
   FUN_ADMIN_PORT_KEY_SPEED = 0x03
   FUN_ADMIN_PORT_KEY_DEBOUNCE = 0x04
   FUN_ADMIN_PORT_KEY_DUPLEX = 0x05
-  FUN_ADMIN_PORT_KEY_MAC = 0x06
+  FUN_ADMIN_PORT_KEY_MACADDR = 0x06
   FUN_ADMIN_PORT_KEY_LINKMODE = 0x07
-  FUN_ADMIN_PORT_KEY_BREAK = 0x08
+  FUN_ADMIN_PORT_KEY_BREAKOUT = 0x08
+  FUN_ADMIN_PORT_KEY_ENABLE = 0x09
+  FUN_ADMIN_PORT_KEY_DISABLE = 0x0a
+  FUN_ADMIN_PORT_KEY_ERR_DISABLE = 0x0b
 END
 
 ENUM fun_admin_port_diags_key
@@ -907,7 +916,6 @@ STRUCT fun_admin_crypto_rsp
   END
 END
 
-
 /*
  *  D a t a p a t h   R e q u e s t s   and   R e s p o n s e s
  */
@@ -967,7 +975,7 @@ ENUM fun_eth_op
 END
 
 STRUCT fun_subop_imm
-  0 63:56  uint8_t subop
+  0 63:56  uint8_t subop  /* see fun_data_subop enum */
   0 55:48  uint8_t flags
   0 47:32 uint16_t rsvd
   0 31:00 uint32_t len
@@ -975,7 +983,7 @@ STRUCT fun_subop_imm
 END
 
 STRUCT fun_subop_sgl
-  0 63:56  uint8_t subop
+  0 63:56  uint8_t subop  /* see fun_data_subop enum */
   0 55:48  uint8_t flags
   0 47:40  uint8_t nsgl
   0 39:32  uint8_t rsvd0
@@ -1000,6 +1008,12 @@ STRUCT fun_eth_tx_req
   10 63:00 ...
   11 63:00 ...
   _ _:_ fun_subop_imm imm[0] // must contain ethernet header, offsetted by 2-bytes, can be followed by sgl for payload of packet
+END
+
+ENUM fun_data_op
+  FUN_DATAOP_ILLEGAL = 0x00
+  FUN_DATAOP_IMM = 0x01     /* immediate data */
+  FUN_DATAOP_SGL = 0x02     /* scatter-gather */
 END
 
 // F1 to Host
@@ -1141,6 +1155,42 @@ END
 
 // FFE
 
+ENUM fun_nu_ffe_table_t
+  FUN_NU_TBL_TEMPLATE_TCAM_KEY = 0x00
+  FUN_NU_TBL_TEMPLATE_TCAM_MASK = 0x01
+  FUN_NU_TBL_KEY_UCODE_MEM = 0x02
+  FUN_NU_TBL_ACT_UCODE_MEM = 0x03
+  FUN_NU_TBL_ACT_DMEM_L1 = 0x04
+  FUN_NU_TBL_ACT_DMEM_S1 = 0x05
+  FUN_NU_TBL_ACT_DMEM_L2 = 0x06
+  FUN_NU_TBL_ACT_DMEM_S2 = 0x07
+  FUN_NU_TBL_HASH_MEM = 0x08
+  FUN_NU_TBL_STASH_TABLE = 0x09
+  FUN_NU_TBL_LG_TCAM = 0x0a
+  FUN_NU_TBL_SM_TCAM = 0x0b
+  FUN_NU_TBL_DIT_MEM_S1 = 0x0c
+  FUN_NU_TBL_DIT_MEM_S2 = 0x0d
+END
+
+ENUM ffe_stg_t
+  FUN_NU_FFE_STG0 = 0x00
+  FUN_NU_FFE_STG1 = 0x01
+  FUN_NU_FFE_STG2 = 0x02
+  FUN_NU_FFE_STG3 = 0x03
+  FUN_NU_FFE_STG4 = 0x04
+  FUN_NU_FFE_STG5 = 0x05
+END
+
+ENUM ffe_bank_t
+  FUN_NU_FFE_BANK0 = 0x00
+  FUN_NU_FFE_BANK1 = 0x01
+  FUN_NU_FFE_BANK2 = 0x02
+  FUN_NU_FFE_BANK3 = 0x03
+  FUN_NU_FFE_BANK4 = 0x04
+  FUN_NU_FFE_BANK5 = 0x05
+  FUN_NU_FFE_BANK6 = 0x06
+  FUN_NU_FFE_BANK7 = 0x07
+END
 
 ENUM fun_nu_op
   FUN_NU_OP_FFE_TMP_TCAM_R = 0		/* FFE begin */
@@ -1160,12 +1210,17 @@ ENUM fun_nu_op
   FUN_NU_OP_FFE_ACT_UCODE_W = 14
   FUN_NU_OP_FFE_ACT_DMEM_R = 15
   FUN_NU_OP_FFE_ACT_DMEM_W = 16
-  FUN_NU_OP_SSE_MD_W = 17		/* SSE begin */
+  FUN_NU_OP_NH_W = 17
+  FUN_NU_OP_RW_DATA_W = 18
+  FUN_NU_OP_RW_INSTR_W = 19
+  FUN_NU_OP_RW_PROF_TCAM_W = 20
+  FUN_NU_OP_SSE_MD_W = 21		/* SSE begin */
 END
 
 // FFE Template TCAM entry format
 STRUCT fun_nu_ffe_entry_tmp_tcam
-  0 63:32 uint32_t rsvd0
+  0 63:48 uint16_t index
+  0 47:32 uint16_t rsvd0
   0 31:26 uint32_t rsvd1
   0 25:0 uint32_t key /* key (26 bits) */
   1 63:32 uint32_t rsvd2
@@ -1183,8 +1238,13 @@ END
 
 // FFE TCAM entry format
 STRUCT fun_nu_ffe_entry_tcam
-  0 63:16 uint8_t rsvd0[6]
-  0 15:0 uint16_t at_index
+  0 63:48 uint16_t index
+  0 47:40 uint8_t rsvd0
+  0 39:32 uint8_t bank
+  0 31:22 uint16_t rsvd1
+  0 21:16 uint16_t ucode_ix
+  0 15:10 uint16_t rsvd2
+  0 09:00 uint16_t dmem_ix
   1 63:0 uint64_t key[3]
   2 63:0 ...
   3 63:0 ...
@@ -1197,42 +1257,50 @@ END
 
 // FFE Hash or Stash entry format
 STRUCT fun_nu_ffe_entry_hash_stash
-  0 63:57 uint8_t rsvd0
-  0 56:56 uint8_t valid
-  0 55:0 uint8_t rsvd1[7]
-  1 63:0 uint64_t data[2]
+  0 63:48 uint16_t index
+  0 47:40 uint8_t rsvd0
+  0 39:32 uint8_t bank
+  0 31:31 uint8_t valid
+  0 30:24 uint8_t rsvd0
+  0 23:0 uint8_t rsvd1[3]
+  1 63:0 uint64_t key[2]
   2 63:0 ...
-  3 63:0 uint64_t rsvd2
+  3 63:32 uint32_t rsvd2
+  3 31:22 uint16_t rsvd3
+  3 21:16 uint16_t ucode_ix
+  3 15:10 uint16_t rsvd4
+  3 09:00 uint16_t dmem_ix
 END
 
 // FFE DIT entry format
 STRUCT fun_nu_ffe_entry_dit
-  0 63:16 uint8_t rsvd1[6]
-  0 15:0 uint16_t at_index
+  0 63:48 uint16_t index
+  0 47:32 uint16_t rsvd0
+  0 31:22 uint16_t rsvd1
+  0 21:16 uint16_t ucode_ix
+  0 15:10 uint16_t rsvd2
+  0 09:00 uint16_t dmem_ix
 END
 
 // FFE action microcode entry format
 STRUCT fun_nu_ffe_entry_act_ucode
-  0 63:0 uint64_t instr_data_wlst[3]
-  1 63:0 ...
+  0 63:48 uint16_t index
+  0 47:0 uint8_t rsvd0[6]
+  1 63:0 uint64_t instr_data_wlst[3]
   2 63:0 ...
-  3 63:0 uint64_t rsvd0[5]
-  4 63:0 ...
+  3 63:0 ...
+  4 63:0 uint64_t rsvd1[5]
   5 63:0 ...
   6 63:0 ...
   7 63:0 ...
+  8 63:0 ...
 END
 
 // FFE action dmem entry format
 STRUCT fun_nu_ffe_entry_act_dmem
-  0 63:0 uint64_t data_wlst[8] /* action data memory */
-  1 63:0 ...
-  2 63:0 ...
-  3 63:0 ...
-  4 63:0 ...
-  5 63:0 ...
-  6 63:0 ...
-  7 63:0 ...
+  0 63:48 uint16_t index
+  0 47:0 uint8_t rsvd0[6]
+  1 63:0 uint64_t data_wlst /* action data memory */
 END
 
 
@@ -1243,125 +1311,243 @@ END
 // Description to be expanded further.
 
 // Command interface for writing/reading the various tables available in the FFE.
-STRUCT fun_nu_ffe_req_tmp_tcam_rw
+STRUCT fun_nu_ffe_tmp_tcam_rw_req
   0 63:0 fun_req_common common
   1 63:0 ...
-  2 63:48 uint16_t index
+  2 63:48 uint16_t rsvd0
   2 47:40 uint8_t stage
-  2 39:16 uint8_t rsvd0[3]
+  2 39:16 uint8_t rsvd1[3]
   2 15:0 uint16_t data_size /* key microcode size */
 END
 
-STRUCT fun_nu_ffe_rsp_tmp_tcam_rw
+STRUCT fun_nu_ffe_tmp_tcam_rw_rsp
   0 63:0 fun_rsp_common common
   1 63:0 ...
-  2 63:48 uint16_t index
+  2 63:48 uint16_t rsvd0
   2 47:40 uint8_t stage
-  2 39:16 uint8_t rsvd0[3]
+  2 39:16 uint8_t rsvd1[3]
   2 15:0 uint16_t data_size /* key microcode size */
 END
 
 // Header to refer to an FFE TCAM
-STRUCT fun_nu_ffe_req_tcam_rwi
+STRUCT fun_nu_ffe_tcam_rwi_req
   0 63:0 fun_req_common common
   1 63:0 ...
-  2 63:48 uint16_t index
+  2 63:48 uint16_t rsvd0
   2 47:40 uint8_t stage
-  2 39:32 uint8_t bank
+  2 39:32 uint8_t rsvd1
   2 31:16 uint16_t table
   2 15:0 uint16_t key_size
 END
 
-STRUCT fun_nu_ffe_rsp_tcam_rwi
+STRUCT fun_nu_ffe_tcam_rwi_rsp
   0 63:0 fun_rsp_common common
   1 63:0 ...
-  2 63:48 uint16_t index
+  2 63:48 uint16_t rsvd0
   2 47:40 uint8_t stage
-  2 39:32 uint8_t bank
+  2 39:32 uint8_t rsvd1
   2 31:16 uint16_t table
   2 15:0 uint16_t key_size
 END
 
 // Header to refer to an FFE Hash or Stash
-STRUCT fun_nu_ffe_req_hash_stash_rwi
+STRUCT fun_nu_ffe_hash_stash_rwi_req
   0 63:0 fun_req_common common
   1 63:0 ...
-  2 63:48 uint16_t index
+  2 63:48 uint16_t rsvd0
   2 47:40 uint8_t stage
-  2 39:32 uint8_t bank
+  2 39:32 uint8_t rsvd1
   2 31:16 uint16_t table
   2 15:0 uint16_t key_size
 END
 
-STRUCT fun_nu_ffe_rsp_hash_stash_rwi
+STRUCT fun_nu_ffe_hash_stash_rwi_rsp
   0 63:0 fun_rsp_common common
   1 63:0 ...
-  2 63:48 uint16_t index
+  2 63:48 uint16_t rsvd0
   2 47:40 uint8_t stage
-  2 39:32 uint8_t bank
+  2 39:32 uint8_t rsvd1
   2 31:16 uint16_t table
   2 15:0 uint16_t key_size
 END
 
 // Header to refer to an FFE Direct Index Table
-STRUCT fun_nu_ffe_req_dit_rw
+STRUCT fun_nu_ffe_dit_rw_req
   0 63:0 fun_req_common common
   1 63:0 ...
-  2 63:48 uint16_t index
+  2 63:48 uint16_t rsvd0
   2 47:40 uint8_t stage
-  2 39:32 uint8_t rsvd0
+  2 39:32 uint8_t rsvd1
   2 31:16 uint16_t table
-  2 15:0 uint16_t rsvd1
+  2 15:0 uint16_t rsvd2
 END
 
-STRUCT fun_nu_ffe_rsp_dit_rw
+STRUCT fun_nu_ffe_dit_rw_rsp
   0 63:0 fun_rsp_common common
   1 63:0 ...
-  2 63:48 uint16_t index
+  2 63:48 uint16_t rsvd0
   2 47:40 uint8_t stage
-  2 39:32 uint8_t rsvd0
+  2 39:32 uint8_t rsvd1
   2 31:16 uint16_t table
-  2 15:0 uint16_t rsvd1
+  2 15:0 uint16_t rsvd2
 END
 
 // Header to refer to an FFE Action Microcode Table
-STRUCT fun_nu_ffe_req_act_ucode_rw
+STRUCT fun_nu_ffe_act_ucode_rw_req
   0 63:0 fun_req_common common
   1 63:0 ...
-  2 63:48 uint16_t index
+  2 63:48 uint16_t rsvd0
   2 47:40 uint8_t stage
-  2 39:0 uint8_t rsvd0[5]
+  2 39:0 uint8_t rsvd1[5]
 END
 
-STRUCT fun_nu_ffe_rsp_act_ucode_rw
+STRUCT fun_nu_ffe_act_ucode_rw_rsp
   0 63:0 fun_rsp_common common
   1 63:0 ...
-  2 63:48 uint16_t index
+  2 63:48 uint16_t rsvd0
   2 47:40 uint8_t stage
-  2 39:0 uint8_t rsvd0[5]
+  2 39:0 uint8_t rsvd1[5]
 END
 
 // Header to refer to an FFE Action DMEM Table
-STRUCT fun_nu_ffe_req_act_dmem_rw
+STRUCT fun_nu_ffe_act_dmem_rw_req
   0 63:0 fun_req_common common
   1 63:0 ...
-  2 63:48 uint16_t index
+  2 63:48 uint16_t rsvd0
   2 47:40 uint8_t stage
-  2 39:32 uint8_t rsvd0
+  2 39:32 uint8_t rsvd1
   2 31:16 uint16_t table
-  2 15:0 uint16_t rsvd1
+  2 15:0 uint16_t rsvd2
 END
 
-STRUCT fun_nu_ffe_rsp_act_dmem_rw
+STRUCT fun_nu_ffe_act_dmem_rw_rsp
   0 63:0 fun_rsp_common common
   1 63:0 ...
-  2 63:48 uint16_t index
+  2 63:48 uint16_t rsvd0
   2 47:40 uint8_t stage
-  2 39:32 uint8_t rsvd0
+  2 39:32 uint8_t rsvd1
   2 31:16 uint16_t table
-  2 15:0 uint16_t rsvd1
+  2 15:0 uint16_t rsvd2
 END
 
+STRUCT fun_nu_nh_entry
+  0 63:60 uint8_t level
+  0 59:56 uint8_t type
+  0 55:32 uint8_t rsvd0[3]
+  0 31:16 uint16_t index
+  0 15:0 uint16_t len
+  _ _:_ uint64_t data[0]
+END
+
+ENUM fun_nu_nh_lvl_t
+  FUN_NU_NH_LVL0 = 0
+  FUN_NU_NH_LVL1 = 1
+  FUN_NU_NH_LVL2 = 2
+END
+
+ENUM fun_nu_nh_type_t
+  FUN_NU_NH_TYPE_FINAL = 0
+  FUN_NU_NH_TYPE_INDIRECT = 1
+  FUN_NU_NH_TYPE_WECMP = 2
+  FUN_NU_NH_TYPE_ECMP = 3
+  FUN_NU_NH_TYPE_LFA = 4
+  FUN_NU_NH_TYPE_WECMP_LOC = 5
+END
+
+// Next Hop write: Followed by a sequence of fun_nu_nh_entry structs
+STRUCT fun_nu_nh_w_req
+  0 63:0 fun_req_common common
+  1 63:0 ...
+END
+
+STRUCT fun_nu_nh_w_rsp
+  0 63:0 fun_rsp_common common
+  1 63:0 ...
+END
+
+
+STRUCT fun_nu_prw_data_entry
+  0 63:60 uint16_t rsvd0
+  0 59:48 uint16_t index
+  0 47:00 uint8_t rsvd1[6]
+  1 63:00 uint64_t data
+END
+
+STRUCT fun_nu_prw_instr_entry
+  0 63:60 uint16_t rsvd0
+  0 59:48 uint16_t index
+  0 47:00 uint8_t rsvd1[6]
+  1 63:00 uint64_t data[3]
+  2 63:00 ...
+  3 63:00 ...
+END
+
+STRUCT fun_nu_rw_prof_tcam_entry
+  0 63:60 uint16_t rsvd0
+  0 59:48 uint16_t index
+  0 47:32 uint16_t rsvd1
+  0 31:24 uint32_t rsvd2
+  0 23:0 uint32_t rw_prof_tcam
+END
+
+FLAGS fun_nu_other_flags
+  FUN_NU_RW_NH_OTHER_FLAG_ERP = 0x01
+END
+
+FLAGS fun_nu_fpg_flags
+  FUN_NU_RW_NH_FPG_FLAG_FPG0 = 0x01
+  FUN_NU_RW_NH_FPG_FLAG_FPG1 = 0x02
+  FUN_NU_RW_NH_FPG_FLAG_FPG2 = 0x04
+  FUN_NU_RW_NH_FPG_FLAG_FPG3 = 0x08
+  FUN_NU_RW_NH_FPG_FLAG_FPG4 = 0x10
+  FUN_NU_RW_NH_FPG_FLAG_FPG5 = 0x20
+END
+
+STRUCT fun_nu_prw_w_data_req
+  0 63:0 fun_req_common common /* op: FUN_NU_OP_RW_DATA_W */
+  1 63:0 ...
+  2 63:49 uint16_t rsvd0
+  2 48:48 uint16_t map_other /* see fun_nu_other_flags */
+  2 47:46 uint8_t rsvd1
+  2 45:40 uint8_t map_fpg /* see fun_nu_fpg_flags */
+  2 39:00 uint8_t rsvd0[5]
+  _ _:_ fun_nu_prw_data_entry entry[0]
+END
+
+STRUCT fun_nu_prw_w_data_rsp
+  0 63:0 fun_rsp_common common /* op: FUN_NU_OP_RW_DATA_W */
+  1 63:0 ...
+  2 63:49 uint16_t rsvd0
+  2 48:48 uint16_t map_other /* see fun_nu_other_flags */
+  2 47:46 uint8_t rsvd1
+  2 45:40 uint8_t map_fpg /* see fun_nu_fpg_flags */
+  2 39:00 uint8_t rsvd0[5]
+  _ _:_ fun_nu_prw_data_entry entry[0]
+END
+
+STRUCT fun_nu_prw_w_instr_req
+  0 63:0 fun_req_common common /* op: FUN_NU_OP_RW_INSTR_W */
+  1 63:0 ...
+  _ _:_ fun_nu_prw_instr_entry entry[0]
+END
+
+STRUCT fun_nu_prw_w_instr_rsp
+  0 63:0 fun_rsp_common common /* op: FUN_NU_OP_RW_INSTR_W */
+  1 63:0 ...
+  _ _:_ fun_nu_prw_instr_entry entry[0]
+END
+
+STRUCT fun_nu_prw_prof_tcam_req
+  0 63:0 fun_req_common common /* op: FUN_NU_OP_RW_PROF_TCAM_W */
+  1 63:0 ...
+  _ _:_ fun_nu_rw_prof_tcam_entry entry[0]
+END
+
+STRUCT fun_nu_prw_prof_tcam_rsp
+  0 63:0 fun_rsp_common common /* op: FUN_NU_OP_RW_PROF_TCAM_W */
+  1 63:0 ...
+  _ _:_ fun_nu_rw_prof_tcam_entry entry[0]
+END
 
 STRUCT fun_nu_sse_md_entry
   0 63:08 uint8_t rsvd0[7]

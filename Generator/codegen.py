@@ -8,6 +8,7 @@
 import os
 
 import generator
+import parser
 import utils
 
 class CodePrinter:
@@ -87,19 +88,19 @@ class CodePrinter:
 
     hdr_out += '\n'
 
-    for enum in doc.enums:
+    for enum in doc.Enums():
       (hdr, src) = self.VisitEnum(enum)
       hdr_out += hdr
       src_out += src
 
-    for flagset in doc.flagsets:
+    for flagset in doc.Flagsets():
       (hdr, src) = self.VisitFlagSet(flagset)
       hdr_out += hdr
       src_out += src
 
     hdr_out += '\n'
 
-    for struct in doc.structs:
+    for struct in doc.Structs():
       if not struct.inline:
         (hdr, src) = self.VisitStruct(struct)
         hdr_out += hdr
@@ -292,9 +293,9 @@ class CodeGenerator:
     self.generate_json = generate_json
 
   def VisitDocument(self, doc):
-    for struct in doc.structs:
+    for struct in doc.Structs():
       self.VisitStruct(struct)
-    for enum in doc.enums:
+    for enum in doc.Enums():
       self.VisitEnum(enum)
 
   def VisitEnum(self, enum):
@@ -312,10 +313,9 @@ class CodeGenerator:
       next_value = current_value + 1
     defn += '};\n'
 
-    fun = generator.Function(
-      decl, defn,
-      'Human-readable strings for enum values in %s.' %
-      enum.name)
+    fun = parser.Function(decl, defn,
+                          'Human-readable strings for enum values in %s.' %
+                          enum.name)
     enum.functions.append(fun)
 
   def InitializerName(self, struct_name):
@@ -338,24 +338,43 @@ class CodeGenerator:
       if old_field.IsReserved():
         continue
 
+      packed_type_name = field.Type().TypeName()
       ident = utils.AsUppercaseMacro('%s_%s' % (the_struct.name,
                                                          old_field.name))
-      shift = '#define %s_S %s' % (ident, old_field.EndBit() - min_end_bit)
-      mask = '#define %s_M %s' % (ident, old_field.Mask())
-      value = '#define %s_P(x) ((x) << %s_S)' % (ident, ident)
-      get = '#define %s_G(x) (((x) >> %s_S) & %s_M)' % (ident, ident, ident)
+      shift_name = '%s_S' % ident
+      shift = '#define %s %s' % (shift_name, old_field.EndBit() - min_end_bit)
+      mask_name = '%s_M' % ident
+      mask = '#define %s %s' % (mask_name, old_field.Mask())
+      value_name = '%s_P' % ident
+      value = '#define %s(x) (((%s) x) << %s)' % (value_name, packed_type_name,
+                                                  shift_name)
+      get_name = '%s_G' % ident
+      get = '#define %s(x) (((x) >> %s) & %s)' % (get_name, shift_name, mask_name)
+      zero_name = '%s_Z' % ident
+      zero = '#define %s (~(((%s) %s) << %s))' % (zero_name, packed_type_name,
+                                                     mask_name, shift_name)
 
       
-      value_comment = 'Shifts value to place in packed field %s in %s.%s.' % (
+      value_comment = 'Shifts value to place in packed field "%s" in "%s.%s".' % (
         old_field.name, the_struct.name, field.name)
 
-      get_comment = 'Returns value for packed field %s in %s.%s.' % (
+      get_comment = 'Returns value for packed field %s in "%s.%s".' % (
         old_field.name, the_struct.name, field.name)
 
-      the_struct.macros.append(generator.Macro(shift, ''))
-      the_struct.macros.append(generator.Macro(mask, ''))
-      the_struct.macros.append(generator.Macro(value, value_comment))
-      the_struct.macros.append(generator.Macro(get, get_comment))
+      offset_comment = 'Offset of field "%s" in packed field "%s.%s"' % (
+        old_field.name, the_struct.name, field.name)
+
+      mask_comment = 'Mask to extract field "%s" from packed field "%s.%s"' % (
+        old_field.name, the_struct.name, field.name)
+
+      zero_comment = 'Zero out field "%s" in packed field "%s.%s".' % (
+        old_field.name, the_struct.name, field.name)
+
+      the_struct.macros.append(parser.Macro(shift_name, shift, offset_comment))
+      the_struct.macros.append(parser.Macro(mask_name, mask, mask_comment))
+      the_struct.macros.append(parser.Macro(value_name, value, value_comment))
+      the_struct.macros.append(parser.Macro(get_name, get, get_comment))
+      the_struct.macros.append(parser.Macro(zero_name, zero, zero_comment))
 
   def GenerateInitializer(self, the_struct, field, accessor_prefix):
     """Returns a C statement initializing the named variable.
@@ -468,6 +487,11 @@ class CodeGenerator:
       comment = ('Initializes the %s structure assuming the %s union should '
                  'be filled in.' % (the_struct.name, struct_in_union.name))
 
+    comment += '\n\nArguments:\n'
+    comment += '  s: pointer to structure to be initialized.\n'
+    for field in all_fields:
+      comment += '  %s: Initial value for field %s\n' % (field.name,
+                                                         field.name)
     init_declaration = 'extern void %s(%s);\n' % (function_name,
                                                   ', '.join(arg_list))
 
@@ -475,8 +499,8 @@ class CodeGenerator:
                                                     ', '.join(arg_list),
                                                     validate_block,
                                                     '\n'.join(inits))
-    return generator.Function(init_declaration, init_definition,
-                              comment)
+    return parser.Function(init_declaration, init_definition,
+                           comment)
 
   def GenerateJSONInitializer(self, the_struct, the_field, accessor_prefix):
     json_accessor = 'int_value'
@@ -524,8 +548,8 @@ class CodeGenerator:
     init_definition += '\treturn true;\n'
     init_definition += '}\n'
 
-    return generator.Function(init_declaration, init_definition,
-                             declaration_comment)
+    return parser.Function(init_declaration, init_definition,
+                           declaration_comment)
 
   def GenerateHelpersForStruct(self, the_struct):
     """Generates helper functions for the provided structure."""

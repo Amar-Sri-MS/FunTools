@@ -2,6 +2,7 @@ import unittest
 
 import generator
 import htmlgen
+import parser
 
 class HTMLGeneratorTest(unittest.TestCase):
     def testEnumVariablePrinting(self):
@@ -15,12 +16,12 @@ class HTMLGeneratorTest(unittest.TestCase):
         out = generator.GenerateFile(True, generator.OutputStyleHTML, None,
                                      input, 'foo.gen', False)
         self.assertIsNotNone(out)
-        self.assertIn('<h3>enum A</h3>\n'
+        self.assertIn('<h3>A: enum declaration</h3>\n'
                       '<p>Key comment for ENUM A</p>\n'
                       '<p>Body comment for ENUM A</p>', out)
-        self.assertIn('<dt>A1 = 1</dt>\n'
-                      '<dd>\n'
-                      'key comment for A1<br>Body comment for ENUM A1</dd>', out)
+        self.assertIn('<dt><code>A1 = 1</code></dt>\n', out)
+        self.assertIn('<dd>\nkey comment for A1\n<br>\n', out)
+        self.assertIn('Body comment for ENUM A1\n</dd>', out)
 
     def testFieldPrinting(self):
         input = ['// Body comment for struct A.',
@@ -33,7 +34,7 @@ class HTMLGeneratorTest(unittest.TestCase):
         out = generator.GenerateFile(True, generator.OutputStyleHTML, None,
                                      input, 'foo.gen', False)
         self.assertIsNotNone(out)
-        self.assertIn('<h3>struct A:</h3>\n'
+        self.assertIn('<h3>A: structure</h3>\n'
                       '<p>Key comment for struct A.</p>\n'
                       '<p>Body comment for struct A.</p>', out)
         self.assertIn('Body comment for a1.', out)
@@ -53,7 +54,7 @@ class HTMLGeneratorTest(unittest.TestCase):
         out = generator.GenerateFile(True, generator.OutputStyleHTML, None,
                                      input, 'foo.gen', False)
         self.assertIsNotNone(out)
-        self.assertIn('<h3>struct A:</h3>\n'
+        self.assertIn('<h3>A: structure</h3>\n'
                       '<p>Key comment for struct A.</p>\n'
                       '<p>Body comment for struct A.</p>', out)
         self.assertIn('Body comment for a1.', out)
@@ -77,13 +78,15 @@ class HTMLGeneratorTest(unittest.TestCase):
         out = generator.GenerateFile(True, generator.OutputStyleHTML, None,
                                      input, 'foo.gen', False)
         self.assertIsNotNone(out)
-        self.assertIn('<h3>struct A:</h3>\n'
+        self.assertIn('<h3>A: structure</h3>\n'
                       '<p>Key comment for struct A.</p>\n'
                       '<p>Body comment for struct A.</p>', out)
         self.assertIn('Body comment for a1.', out)
         self.assertIn('Key comment for array.', out)
         self.assertIn('Body comment for array.', out)
         self.assertIn('Tail comment for A', out)
+        self.assertIn('element[0]', out)
+        self.assertIn('<td>array</td>', out)
 
     def testPrintSubfields(self):
         input = [
@@ -134,7 +137,7 @@ class HTMLGeneratorTest(unittest.TestCase):
       out = generator.GenerateFile(True, generator.OutputStyleHTML, None,
                                    contents, 'foo.gen', False)
 
-      self.assertIn('<h3>Flags: Foo</h3>', out)
+      self.assertIn('<h3>Foo: flagset</h3>', out)
       self.assertIn('<td>A</td><td>0x00000001</td><td>0 0 0 0 0 1</td></tr>',
                     out)
       self.assertIn('<td>F</td><td>0x00000020</td><td>1 0 0 0 0 0</td></tr>',
@@ -155,6 +158,56 @@ class HTMLGeneratorTest(unittest.TestCase):
 
       self.assertIn('<td>BC</td><td>0x00000006</td><td>0 1 1 0</td></tr>', out)
 
+class FieldTableTest(unittest.TestCase):
+    def testSimpleField(self):
+        f = parser.Field('foo', parser.TypeForName('char'), 0, 8)
+        f.key_comment = 'Key comment'
+
+        gen = htmlgen.HTMLGenerator()
+        out =  gen.VisitField(f, 0, {})
+        self.assertIn('<td class="structBits">0</td>', out)
+        self.assertIn('<td>foo</td>', out)
+        self.assertIn('<td>char</td>', out)
+        self.assertIn('Key comment<br>', out)
+
+    def testSimpleArrayField(self):
+        f = parser.Field('foo', parser.ArrayTypeForName('char', 8), 0, 8)
+        f.key_comment = 'Key comment'
+
+        gen = htmlgen.HTMLGenerator()
+        out =  gen.VisitField(f, 0, {})
+        self.assertIn('<td class="structBits">63-56</td>', out)
+        self.assertIn('<td>foo</td>', out)
+        self.assertIn('<td>char[8]</td>', out)
+        self.assertIn('Key comment<br>', out)
+        
+    def testSimpleArrayField(self):
+        s = parser.Struct('Bar', False)
+        struct_array_type = parser.RecordArrayTypeForStruct(s, 4)
+        f = parser.Field('foo', struct_array_type, 0, 8)
+        f.key_comment = 'Key comment'
+
+        gen = htmlgen.HTMLGenerator()
+        out =  gen.VisitField(f, 0, {})
+        self.assertIn('<td class="structBits">63-56</td>', out)
+        self.assertIn('<td>foo</td>', out)
+        self.assertIn('<td>Bar[4]</td>', out)
+        self.assertIn('Key comment<br>', out)
+
+    def testZeroLengthArrayField(self):
+        s = parser.Struct('Bar', False)
+        struct_array_type = parser.RecordArrayTypeForStruct(s, 0)
+        f = parser.Field('foo', struct_array_type, 0, 0)
+        f.key_comment = 'Key comment'
+
+        gen = htmlgen.HTMLGenerator()
+        out =  gen.VisitField(f, 0, {})
+        # TODO(bowdidge): Why 63-0?
+        self.assertIn('<td class="structBits">63-0</td>', out)
+        self.assertIn('<td>foo</td>', out)
+        self.assertIn('<td>Bar[0]</td>', out)
+        self.assertIn('Key comment<br>', out)
+        
 
 if __name__ == '__main__':
     unittest.main()

@@ -3,6 +3,7 @@
 # HTMLGenerator takes a DocBuilder describing various machine data structures,
 # and generates documentation for these.
 
+import parser
 import utils
 
 def ReplaceField(field, union_map):
@@ -34,7 +35,11 @@ def ReplaceField(field, union_map):
 class HTMLGenerator:
 
   def Rows(self, struct, union_map):
-    """Returns an array of arrays of (field name, field width)
+    """Returns an array of arrays of (field name, field width, struct_group)
+
+    struct_group is a number from 0 up that is the same for fields from
+    the same structure, and is used for similar background colors for
+    fields from the same structure.
 
     Each top-level array represents a flit and the fields in the flit.
     """
@@ -45,40 +50,58 @@ class HTMLGenerator:
     bytes_remaining = 64
 
     # Field wrapping to next row.
-    lingering_field_name = None
+    lingering_field = None
     # Number of bits in lingering field.
     lingering_field_width = 0
     
     fields = list(struct.fields)
+    field_groups = 1
+    field_group = {}
+    for f in fields:
+      field_group[f] = 0
 
     while len(fields) > 0 or lingering_field_width > 0:
       if lingering_field_width > 0:
         if bytes_remaining > lingering_field_width:
-          current_row.append((lingering_field_name, lingering_field_width))
+          current_row.append((lingering_field.name, lingering_field_width,
+                              field_group[lingering_field]))
+          bytes_remaining -= lingering_field_width
+          lingering_field_width = 0
         else:
-          current_row.append((lingering_field_name, bytes_remaining))
+          current_row.append((lingering_field.name, bytes_remaining,
+                              field_group[lingering_field]))
           lingering_field_width = lingering_field_width - bytes_remaining
+          bytes_remaining = 0
       else:
         next_field = fields.pop(0)
-
         if union_map:
           next_field = ReplaceField(next_field, union_map)
 
         if next_field.type.IsRecord():
           struct = next_field.type.base_type.node
           fields = list(struct.fields) + fields
+          field_groups += 1
+          for f in struct.fields:
+            field_group[f] = field_groups
+            
         elif next_field.type.IsScalar() or next_field.type.IsArray():
           if bytes_remaining >= next_field.BitWidth():
-            current_row.append((next_field.name, next_field.BitWidth()))
+            current_row.append((next_field.name, next_field.BitWidth(), 
+                                field_group[next_field]))
             bytes_remaining -= next_field.BitWidth()
-        else:
-          lingering_field_name = next_field.name
-          lingering_field_width = next_field.BitWidth()
+          else:
+            current_row.append((next_field.name, bytes_remaining,
+                                field_group[next_field]))
+            lingering_field = next_field
+            lingering_field_width = next_field.BitWidth() - bytes_remaining
+            bytes_remaining = 0
 
       if bytes_remaining == 0:
         rows.append(current_row)
         current_row = []
         bytes_remaining = 64
+    if current_row:
+      rows.append(current_row)
     return rows        
 
   def DrawFields(self, flit, row):
@@ -86,10 +109,11 @@ class HTMLGenerator:
     out = ''
     out += '  <div class="bitRow">\n'
     out += '    <div class="rowTitle">Flit %d</div>\n' % flit
-    for (name, width) in row:
+    for (name, width, field_group_num) in row:
       bar_width = (1000 * width / 64) - 2
-      out += '    <div class="bar field" style="width: %dpx">%s</div>\n' % ( 
-        bar_width, name)
+      class_name = 'bar field field-group-%d' % field_group_num
+      out += '    <div class="%s" style="width: %dpx">%s</div>\n' % ( 
+        class_name, bar_width, name)
     out += '  </div>\n'
     return out
 
@@ -115,6 +139,24 @@ class HTMLGenerator:
     out += '</div>\n'
     return out
 
+
+  def MakeIndex(self, doc):
+    """Generate list of all structs in file in a form acceptable
+    at the top of the documentation.
+    ."""
+    out = ''
+    if not doc.Structs():
+      return ''
+
+    out += '<h2>Structures</h2>\n'
+    out += '<ul>'
+    for struct in doc.Structs():
+      out += '<li><a href="#%s">%s</a>' % (struct.name, struct.name)
+      if struct.key_comment:
+        out += ':' + utils.AsHTMLComment(struct.key_comment)
+      out += '</li>\n'
+    out += '</ul>\n'
+    return out
 
   def VisitDocument(self, doc):
     # Generates all the HTML to document the structures.
@@ -162,9 +204,36 @@ class HTMLGenerator:
 
 /* Block representing a single non-nested field. */
 .field {
-  background-color: #f0ffff;
   height: 40px;  
   border: 1px solid black;
+}
+
+.field-group-0 {
+  background-color: #f0ffff;
+}
+
+.field-group-1 {
+  background-color: #f0f0ff;
+}
+
+.field-group-2 {
+  background-color: #f0fff0;
+}
+
+.field-group-3 {
+  background-color: #f0f0ff;
+}
+
+.field-group-4 {
+  background-color: #fff0f0;
+}
+
+.field-group-5 {
+  background-color: #f0f0f0;
+}
+
+dd {
+  padding-bottom:20px;
 }
 
 /* Block representing top line of a nested field listing the
@@ -203,6 +272,8 @@ class HTMLGenerator:
 /* Entire bitmap. */
 .bitmap {
   margin-bottom: 10px;
+  /* Force a width so the bit lines don't wrap. */
+  width: 1000px;
 }
 
 .bitfieldTable {
@@ -219,54 +290,61 @@ class HTMLGenerator:
     out += '<style>\n%s</style>\n' % css
     out += '</head>\n<body>\n'
     out += 'Documentation for structures defined in ' + doc.filename + '.<p>\n'
-    for enum in doc.enums:
-      out += self.VisitEnum(enum)
-    for flagset in doc.flagsets:
-      out += self.VisitFlagset(flagset)
-    for struct in doc.structs:
-      if not struct.inline:
-        out += self.VisitStruct(struct)
+
+    out += self.MakeIndex(doc)
+
+    for d in doc.Declarations():
+      if d.declaration_kind == parser.EnumKind:
+        out += self.VisitEnum(d)
+      elif d.declaration_kind == parser.FlagSetKind:
+        out += self.VisitFlagset(d)
+      elif d.declaration_kind == parser.StructKind:
+        if not d.inline:
+          out += self.VisitStruct(d)
+      else:
+        print('Unexpected declaration %s found in list of top level declarations in document.' % d.name)
     out += '</body></html>'
     return out
 
   def VisitEnumVariable(self, enum_variable):
     # Generates HTML Documentation for a specific enum variable.
-    out = '<dt>%s = %d</dt>\n' % (enum_variable.name, enum_variable.value)
+    out = '<dt><code>%s = %d</code></dt>\n' % (enum_variable.name,
+                                               enum_variable.value)
     out += '<dd>\n'
     if enum_variable.key_comment:
-        out += enum_variable.key_comment
+        out += utils.AsHTMLComment(enum_variable.key_comment) + '\n'
     if enum_variable.key_comment and enum_variable.body_comment:
-        out += '<br>'
+        out += '<br>\n'
     if enum_variable.body_comment:
-        out += enum_variable.body_comment
+        out += utils.AsHTMLComment(enum_variable.body_comment) + '\n'
     out += '</dd>\n'
     return out
 
   def VisitEnum(self, enum):
     """Generates HTML documentation for a specific enum type."""
     out = ''
-    out += '<h3>enum %s</h3>\n' % enum.name
+    out += '<h3>%s: enum declaration</h3>\n' % enum.name
     if enum.key_comment:
-      out += '<p>%s</p>\n' % enum.key_comment
+      out += '<p>%s</p>\n' % utils.AsHTMLComment(enum.key_comment)
     if enum.body_comment:
-      out += '<p>%s</p>\n' % enum.body_comment
+      out += '<p>%s</p>\n' % utils.AsHTMLComment(enum.body_comment)
     out += '<b>Values</b><br>\n'
     out += '<dl>\n'
     for enum_variable in enum.variables:
       out += self.VisitEnumVariable(enum_variable)
     out += '</dl>\n'
     if enum.tail_comment:
-        out += '<p>%s</p>' % enum.tail_comment
+        out += '<p>%s</p>' % utils.AsHTMLComment(enum.tail_comment)
     return out
 
   def VisitFlagset(self, flagset):
     """Generates HTML documentation for set of variables representing possible bitfield flags."""
     out = ''
-    out += '<h3>Flags: %s</h3>\n' % flagset.name
+    out += '<h3>%s: flagset</h3>\n' % flagset.name
     if flagset.key_comment:
-      out += '<p>%s</p>\n' % flagset.key_comment
+      out += '<p>%s</p>\n' % utils.AsHTMLComment(flagset.key_comment)
     if flagset.body_comment:
-      out += '<p>%s</p>\n' % flagset.body_comment
+      out += '<p>%s</p>\n' % utils.AsHTMLComment(flagset.body_comment)
     out += '<b>Possible values</b><br>\n'
     out += '<table class="bitfieldTable">\n'
     out += '<tr><th>Name</th><th>Value</th><th>Bit pattern</th></tr>\n'
@@ -278,7 +356,7 @@ class HTMLGenerator:
     out += '</table>'
     return out
 
-  def VisitRecordField(self, field, struct, level, union_map):
+  def VisitRecordField(self, field, level, union_map):
     """Draws a struct as rows in a containing structure.
     
     struct is the """
@@ -286,9 +364,9 @@ class HTMLGenerator:
 
     comment = ''
     if field.key_comment:
-      comment += field.key_comment + '<br>'
+      comment += utils.AsHTMLComment(field.key_comment) + '<br>'
     if field.body_comment:
-      comment += '<p>%s</p>/' % (field.body_comment)
+      comment += '<p>%s</p>/' % utils.AsHTMLComment(field.body_comment)
 
     if field.IsNoOffset():
       out += '  <td class="structBits" colspan=2></td>\n'
@@ -300,14 +378,15 @@ class HTMLGenerator:
       out += '  <td class="structBits">%d-%d</td>\n' % (field.StartBit(), 
                                                         field.EndBit())
     indent = '&nbsp;' * level
+    struct = field.type.base_type.node
     if not struct.inline:
-      out += '  <td>%s%s <a href="#%s">%s</a></td>\n' % (indent, struct.Tag(), 
-                                                        struct.Name(),
-                                                        struct.Name())
+      out += '  <td>%s <a href="#%s">%s</a></td>\n' % (indent,
+                                                       struct.Name(),
+                                                       field.Type().DeclarationType())
     else:
-      out += '  <td>%s%s %s</td>\n' % (indent, struct.Tag(), struct.Name())
+      out += '  <td>%s%s</td>\n' % (indent, field.Type().DeclarationType())
     out += '  <td>%s</td>\n' % field.name
-    out += '  <td>%s</td>\n' % comment
+    out += '  <td>%s</td>\n' % utils.AsHTMLComment(comment)
     out += '</tr>\n'
 
     if not struct.inline:
@@ -317,20 +396,25 @@ class HTMLGenerator:
       if union_map:
         f = ReplaceField(f, union_map)
       if f.type.IsRecord():
-        out += self.VisitRecordField(f, f.type.base_type.node, level + 2,
-                                     union_map)
+        out += self.VisitRecordField(f, level + 2, union_map)
       else:
         out += self.VisitField(f, level + 1, union_map)
     return out
 
   def VisitStruct(self, struct):
     out = ''
+
     union_inside = struct.ContainsUnion()
     if not union_inside:
       return self.VisitStructInternal(struct, struct.name, {})
 
-    out += '<h1>Commands Related To %s</h1>\n' % struct.name
-    out += '<p>There are several commands here.</p>'
+    out += '<h1>Structures Derived From %s</h1>\n' % struct.name
+    out += '<p>\n'
+    out += '%s contains %d unions, each defining a different message:\n' % (
+      struct.name, len(union_inside.fields))
+    out += utils.ReadableList([f.name for f in union_inside.fields])
+    out += '.\n'
+    out += '</p>\n'
     for f in union_inside.fields:
       if f.type.IsRecord():
         substruct = f.type.base_type.node
@@ -343,11 +427,11 @@ class HTMLGenerator:
     """Generates HTML documentation for a specific structure."""
     out = ''
     out += '<a name="%s"></a>' % name
-    out += '<h3>struct %s:</h3>\n' % name
+    out += '<h3>%s: structure</h3>\n' % name
     if struct.key_comment:
-      out += '<p>%s</p>\n' % struct.key_comment
+      out += '<p>%s</p>\n' % utils.AsHTMLComment(struct.key_comment)
     if struct.body_comment:
-      out += '<p>%s</p>\n' % struct.body_comment
+      out += '<p>%s</p>\n' % utils.AsHTMLComment(struct.body_comment)
 
     out += self.BitmapForStruct(struct, union_map)
 
@@ -363,8 +447,7 @@ class HTMLGenerator:
       if union_map:
         field = ReplaceField(field, union_map)
       if field.type.IsRecord():
-        out += self.VisitRecordField(field, field.type.base_type.node, 0,
-                                     union_map)
+        out += self.VisitRecordField(field, 0, union_map)
       else:
         out += self.VisitField(field, 0, union_map)
 
@@ -372,7 +455,8 @@ class HTMLGenerator:
     if struct.tail_comment:
       out += '<tr>\n'
       out += '  <td class="description" colspan="5">\n'
-      out += '  <center>%s</center>\n' % struct.tail_comment
+      out += '  <center>%s</center>\n' % (
+        utils.AsHTMLComment(struct.tail_comment))
       out += '  </td>\n'
       out += '</tr>\n'
     out += "</table>\n"
@@ -380,17 +464,19 @@ class HTMLGenerator:
     out += '<h4>Helper functions for %s</h4>\n' % name
     out += '<dl>\n'
     for function in struct.functions:
-      out += '  <dt>\n    <pre>%s</pre>\n  </dt>\n' % function.declaration
-      out += '  <dd>\n    %s\n  </dd>\n' % function.body_comment
+      out += '  <dt>\n    <code>%s</code>\n  </dt>\n' % function.declaration
+      out += '  <dd>\n    %s\n  </dd>\n' % (
+        utils.AsHTMLComment(function.body_comment))
     out += '</dl>\n'
 
     out += '<h4>Helper macros for %s</h4>\n' % name
     out += '<dl>\n'
     for macro in struct.macros:
-      if len(macro.body_comment) > 0:
-        out += '  <dt>\n    <pre>%s</pre>\n  </dt>\n'
-        out += '  <dd>\n    %s\n  </dd>\n' % (
-          macro.declaration, macro.body_comment)
+        out += '  <dt>\n    <code>%s</code>\n  </dt>\n' % (macro.name)
+        out += '  <dd>\n    <code>%s</code>\n' % macro.body
+        if macro.body_comment:
+          out += '   <br>%s\n' % utils.AsHTMLComment(macro.body_comment)
+        out += '  </dd>\n'
     out += '</dl>\n'
     return out
 

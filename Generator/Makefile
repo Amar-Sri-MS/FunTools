@@ -1,7 +1,7 @@
 # Where build products go.
 BUILD = build
 
-test: c-checker generator-test c-packed-checker html-checker
+test: c-checker generator-test c-packed-checker html-checker fun-hci hw_dmae
 
 # All tests for the Python generator script.
 generator-test:
@@ -9,6 +9,7 @@ generator-test:
 	python generator_test.py
 	python htmlgen_test.py
 	python utils_test.py
+	python parser_test.py
 
 # Tests generated C code compiles correctly.
 c-checker: $(BUILD)
@@ -23,6 +24,16 @@ c-packed-checker: $(BUILD)
                        $(BUILD)/rdma_packed_gen examples/rdma.gen
 	gcc -o $(BUILD)/rdma_packed -g -I$(BUILD) -DDEBUG -DGENERATOR_TEST \
             test_helper/rdma_packed.c $(BUILD)/rdma_packed_gen.c
+
+fun-hci: $(BUILD)
+	./generator.py -g code -o $(BUILD)/fun_hci funhci/fun_hci.gen
+	./generator.py -g html -o $(BUILD)/fun_hci funhci/fun_hci.gen
+	./generator.py -g code -c pack,json -o $(BUILD)/fun_hci_pack funhci/fun_hci.gen
+	./generator.py -g html -c pack,json -o $(BUILD)/fun_hci_pack funhci/fun_hci.gen
+	
+hw_dmae: $(BUILD)
+	./generator.py -g code -c pack -o $(BUILD)/hw_dmae funhci/hw_dmae.gen
+	./generator.py -g html -c pack -o $(BUILD)/hw_dmae funhci/hw_dmae.gen
 
 # Tests HTML generation works.
 html-checker: $(BUILD)

@@ -39,8 +39,8 @@ LIB_HCI = libfunhci-$(MACHINE).a
 OUT_HCI = fun_hci
 OUT_PORT = port_enum
 
-HCI_SRC = $(OUT_HCI)_json.c
-HCI_HDR = $(OUT_HCI)_json.h
+HCI_SRC = $(OUT_HCI).c
+HCI_HDR = $(OUT_HCI).h
 
 HCI_OBJS = $(patsubst %.c,$(BUILD)/obj/%.o,$(filter %c,$(HCI_SRC)))
 
@@ -48,25 +48,30 @@ CFLAGS = -Wall -Werror
 CFLAGS += -I $(SDKDIR)/FunSDK -I $(SDKDIR)
 
 .PHONY: all
-all: funos_code host_code $(BUILD)/$(LIB_HCI)
+all: funos_code host_code funos_enum $(BUILD)/$(LIB_HCI)
 
 .PHONY: funos_code
 funos_code:
-	@mkdir -p $(DEST)
-	../generator.py -c pack,json -g code -o $(DEST)/$(OUT_HCI)_json fun_hci.gen
+	@mkdir -p $(DEST)/funos
+	../generator.py -c pack,json -g code -o $(DEST)/funos/$(OUT_HCI) fun_hci.gen
+
+.PHONY: funos_enum
+funos_enum:
+	@mkdir -p $(DEST)/funos
+	../generator.py -c pack -g code -o $(DEST)/funos/$(OUT_PORT) fun_port.gen
 
 .PHONY: host_code
 host_code:
-	@mkdir -p $(DEST)
-	../generator.py -c pack -g code -o $(DEST)/$(OUT_HCI) fun_hci.gen
+	@mkdir -p $(DEST)/host
+	../generator.py -c pack -g code -o $(DEST)/host/$(OUT_HCI) fun_hci.gen
 
 .PHONY: doc
 doc:
-	@mkdir -p $(DEST)
-	../generator.py -g html -o $(DEST)/$(OUT_HCI) fun_hci.gen
-	../generator.py -g html -o $(DEST)/$(OUT_PORT) fun_port.gen
+	@mkdir -p $(DEST)/doc
+	../generator.py -g html -o $(DEST)/doc/$(OUT_HCI) fun_hci.gen
+	../generator.py -g html -o $(DEST)/doc/$(OUT_PORT) fun_port.gen
 
-$(BUILD)/obj/fun_hci_json.o: $(DEST)/$(OUT_HCI)_json.c
+$(BUILD)/obj/fun_hci.o: $(DEST)/funos/$(OUT_HCI).c
 	@echo CC $<
 	@mkdir -p `dirname $@`
 	$(CC) -o $@ $(CFLAGS) -c $<
@@ -79,12 +84,11 @@ install: $(BUILD)/$(LIB_HCI)
 	mkdir -p $(SDKDIR)/FunSDK/hci/lib/$(LIBDST)
 	mkdir -p $(SDKDIR)/FunSDK/hci/include
 	cp $(BUILD)/$(LIB_HCI) $(SDKDIR)/FunSDK/hci/lib/$(LIBDST)/libfunhci.a
-	cp $(DEST)/$(HCI_HDR) $(SDKDIR)/FunSDK/hci/include
+	cp $(DEST)/funos/$(HCI_HDR) $(SDKDIR)/FunSDK/hci/include
 
 .PHONY: clean
 clean:
-	rm -f $(DEST)/$(OUT_HCI).c
-	rm -f $(DEST)/$(OUT_HCI).h
-	rm -f $(DEST)/$(OUT_HCI)_json.c
-	rm -f $(DEST)/$(OUT_HCI)_json.h
+	rm -f $(DEST)/funos/*
+	rm -f $(DEST)/host/*
+	rm -f $(DEST)/doc/*
 	rm  -rf $(BUILD)
