@@ -1561,13 +1561,13 @@ STRUCT fun_nu_sse_md_entry
 END
 
 STRUCT fun_nu_sse_md_w_req
-  0 63:00 fun_admin_req_common common
+  0 63:00 fun_req_common common
   1 63:00 ...
   _ _:_ fun_nu_sse_md_entry mdata[0]
 END
 
 STRUCT fun_nu_sse_md_w_rsp
-  0 63:00 fun_admin_rsp_common common
+  0 63:00 fun_rsp_common common
   1 63:00 ...
   _ _:_ fun_nu_sse_md_entry mdata[0]
 END
