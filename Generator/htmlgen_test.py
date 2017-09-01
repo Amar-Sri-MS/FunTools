@@ -17,7 +17,7 @@ class HTMLGeneratorTest(unittest.TestCase):
                                      input, 'foo.gen', False)
         self.assertIsNotNone(out)
         self.assertIn('<h3>A: enum declaration</h3>\n'
-                      '<p>Key comment for ENUM A</p>\n'
+                      '<p><b>Key comment for ENUM A</b></p>\n'
                       '<p>Body comment for ENUM A</p>', out)
         self.assertIn('<dt><code>A1 = 1</code></dt>\n', out)
         self.assertIn('<dd>\nkey comment for A1\n<br>\n', out)

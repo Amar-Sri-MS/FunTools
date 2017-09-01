@@ -325,7 +325,7 @@ dd {
     out = ''
     out += '<h3>%s: enum declaration</h3>\n' % enum.name
     if enum.key_comment:
-      out += '<p>%s</p>\n' % utils.AsHTMLComment(enum.key_comment)
+      out += '<p><b>%s</b></p>\n' % utils.AsHTMLComment(enum.key_comment)
     if enum.body_comment:
       out += '<p>%s</p>\n' % utils.AsHTMLComment(enum.body_comment)
     out += '<b>Values</b><br>\n'
@@ -342,7 +342,7 @@ dd {
     out = ''
     out += '<h3>%s: flagset</h3>\n' % flagset.name
     if flagset.key_comment:
-      out += '<p>%s</p>\n' % utils.AsHTMLComment(flagset.key_comment)
+      out += '<p><b>%s</b></p>\n' % utils.AsHTMLComment(flagset.key_comment)
     if flagset.body_comment:
       out += '<p>%s</p>\n' % utils.AsHTMLComment(flagset.body_comment)
     out += '<b>Possible values</b><br>\n'
