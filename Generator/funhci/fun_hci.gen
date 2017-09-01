@@ -1456,3 +1456,99 @@ STRUCT fun_nu_nh_w_rsp
 END
 
 
+ENUM fun_nu_prw_subop
+  FUN_NU_PRW_SUBOP_INVALID = 0x00
+  FUN_NU_PRW_SUBOP_PRW_DATA = 0x01
+  FUN_NU_PRW_SUBOP_PRW_INSTR = 0x02
+  FUN_NU_PRW_SUBOP_PRW_NH_RW = 0x03
+END
+
+FLAGS fun_nu_other_flags
+  FUN_NU_RW_NH_OTHER_FLAG_ERP = 0x01
+END
+
+FLAGS fun_nu_fpg_flags
+  FUN_NU_RW_NH_FPG_FLAG_FPG0 = 0x01
+  FUN_NU_RW_NH_FPG_FLAG_FPG1 = 0x02
+  FUN_NU_RW_NH_FPG_FLAG_FPG2 = 0x04
+  FUN_NU_RW_NH_FPG_FLAG_FPG3 = 0x08
+  FUN_NU_RW_NH_FPG_FLAG_FPG4 = 0x10
+  FUN_NU_RW_NH_FPG_FLAG_FPG5 = 0x20
+END
+
+STRUCT fun_nu_prw_data_entry
+  0 63:60 uint16_t rsvd0
+  0 59:48 uint16_t index
+  0 47:00 uint8_t rsvd1[6]
+  1 63:00 uint64_t data
+END
+
+STRUCT fun_nu_prw_instr_entry
+  0 63:60 uint16_t rsvd0
+  0 59:48 uint16_t index
+  0 47:33 uint16_t rsvd1
+  0 32:32 uint16_t double_fl
+  0 31:24 uint32_t rsvd2
+  0 23:0 uint32_t instr
+END
+
+STRUCT fun_nu_prw_nh_rw_entry
+  0 63:60 uint16_t rsvd0
+  0 59:48 uint16_t index
+  0 47:32 uint16_t rsvd1
+  0 31:24 uint32_t rsvd2
+  0 23:0 uint32_t nh_rw
+END
+
+STRUCT fun_nu_prw_w_req
+  0 63:0 fun_req_common common
+  1 63:0 ...
+  UNION prw_w_req_subop u
+    STRUCT fun_nu_prw_w_data_req prw_data
+      2 63:56 uint8_t subop /* FUN_NU_PRW_SUBOP_PRW_DATA */
+      2 55:49 uint8_t rsvd0
+      2 48:48 uint8_t map_other /* see fun_nu_other_flags */
+      2 47:46 uint8_t rsvd1
+      2 45:40 uint8_t map_fpg /* see fun_nu_fpg_flags */
+      2 39:00 uint8_t rsvd0[5]
+      _ _:_ fun_nu_prw_data_entry entry[0]
+    END
+    STRUCT fun_nu_prw_w_instr_req prw_instr
+      2 63:56 uint8_t subop /* FUN_NU_PRW_SUBOP_PRW_INSTR */
+      2 55:00 uint8_t rsvd0[7]
+      _ _:_ fun_nu_prw_instr_entry entry[0]
+    END
+    STRUCT fun_nu_prw_w_nh_rw_req nh_rw
+      2 63:56 uint8_t subop /* FUN_NU_PRW_SUBOP_PRW_NH_RW */
+      2 55:00 uint8_t rsvd0[7]
+      _ _:_ fun_nu_prw_nh_rw_entry entry[0]
+    END
+  END
+END
+
+
+STRUCT fun_nu_prw_w_rsp
+  0 63:0 fun_rsp_common common
+  1 63:0 ...
+  UNION prw_w_rsp_subop u
+    STRUCT fun_nu_prw_w_data_rsp prw_data
+      2 63:56 uint8_t subop /* FUN_NU_PRW_SUBOP_PRW_DATA */
+      2 55:49 uint8_t rsvd0
+      2 48:48 uint8_t map_other /* see fun_nu_other_flags */
+      2 47:46 uint8_t rsvd1
+      2 45:40 uint8_t map_fpg /* see fun_nu_fpg_flags */
+      2 39:00 uint8_t rsvd0[5]
+      _ _:_ fun_nu_prw_data_entry entry[0]
+    END
+    STRUCT fun_nu_prw_w_instr_rsp prw_instr
+      2 63:56 uint8_t subop /* FUN_NU_PRW_SUBOP_PRW_INSTR */
+      2 55:00 uint8_t rsvd0[7]
+      _ _:_ fun_nu_prw_instr_entry entry[0]
+    END
+    STRUCT fun_nu_prw_w_nh_rw_rsp nh_rw
+      2 63:56 uint8_t subop /* FUN_NU_PRW_SUBOP_PRW_NH_RW */
+      2 55:00 uint8_t rsvd0[7]
+      _ _:_ fun_nu_prw_nh_rw_entry entry[0]
+    END
+  END
+END
