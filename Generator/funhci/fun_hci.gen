@@ -1211,6 +1211,9 @@ ENUM fun_nu_op
   FUN_NU_OP_FFE_ACT_DMEM_R = 15
   FUN_NU_OP_FFE_ACT_DMEM_W = 16
   FUN_NU_OP_NH_W = 17
+  FUN_NU_OP_RW_DATA_W = 18
+  FUN_NU_OP_RW_INSTR_W = 19
+  FUN_NU_OP_RW_PROF_TCAM_W = 20
 END
 
 // FFE Template TCAM entry format
@@ -1461,4 +1464,87 @@ STRUCT fun_nu_nh_w_rsp
   1 63:0 ...
 END
 
+
+STRUCT fun_nu_prw_data_entry
+  0 63:60 uint16_t rsvd0
+  0 59:48 uint16_t index
+  0 47:00 uint8_t rsvd1[6]
+  1 63:00 uint64_t data
+END
+
+STRUCT fun_nu_prw_instr_entry
+  0 63:60 uint16_t rsvd0
+  0 59:48 uint16_t index
+  0 47:00 uint8_t rsvd1[6]
+  1 63:00 uint64_t data[3]
+  2 63:00 ...
+  3 63:00 ...
+END
+
+STRUCT fun_nu_rw_prof_tcam_entry
+  0 63:60 uint16_t rsvd0
+  0 59:48 uint16_t index
+  0 47:32 uint16_t rsvd1
+  0 31:24 uint32_t rsvd2
+  0 23:0 uint32_t rw_prof_tcam
+END
+
+FLAGS fun_nu_other_flags
+  FUN_NU_RW_NH_OTHER_FLAG_ERP = 0x01
+END
+
+FLAGS fun_nu_fpg_flags
+  FUN_NU_RW_NH_FPG_FLAG_FPG0 = 0x01
+  FUN_NU_RW_NH_FPG_FLAG_FPG1 = 0x02
+  FUN_NU_RW_NH_FPG_FLAG_FPG2 = 0x04
+  FUN_NU_RW_NH_FPG_FLAG_FPG3 = 0x08
+  FUN_NU_RW_NH_FPG_FLAG_FPG4 = 0x10
+  FUN_NU_RW_NH_FPG_FLAG_FPG5 = 0x20
+END
+
+STRUCT fun_nu_prw_w_data_req
+  0 63:0 fun_req_common common /* op: FUN_NU_OP_RW_DATA_W */
+  1 63:0 ...
+  2 63:49 uint16_t rsvd0
+  2 48:48 uint16_t map_other /* see fun_nu_other_flags */
+  2 47:46 uint8_t rsvd1
+  2 45:40 uint8_t map_fpg /* see fun_nu_fpg_flags */
+  2 39:00 uint8_t rsvd0[5]
+  _ _:_ fun_nu_prw_data_entry entry[0]
+END
+
+STRUCT fun_nu_prw_w_data_rsp
+  0 63:0 fun_rsp_common common /* op: FUN_NU_OP_RW_DATA_W */
+  1 63:0 ...
+  2 63:49 uint16_t rsvd0
+  2 48:48 uint16_t map_other /* see fun_nu_other_flags */
+  2 47:46 uint8_t rsvd1
+  2 45:40 uint8_t map_fpg /* see fun_nu_fpg_flags */
+  2 39:00 uint8_t rsvd0[5]
+  _ _:_ fun_nu_prw_data_entry entry[0]
+END
+
+STRUCT fun_nu_prw_w_instr_req
+  0 63:0 fun_req_common common /* op: FUN_NU_OP_RW_INSTR_W */
+  1 63:0 ...
+  _ _:_ fun_nu_prw_instr_entry entry[0]
+END
+
+STRUCT fun_nu_prw_w_instr_rsp
+  0 63:0 fun_rsp_common common /* op: FUN_NU_OP_RW_INSTR_W */
+  1 63:0 ...
+  _ _:_ fun_nu_prw_instr_entry entry[0]
+END
+
+STRUCT fun_nu_prw_prof_tcam_req
+  0 63:0 fun_req_common common /* op: FUN_NU_OP_RW_PROF_TCAM_W */
+  1 63:0 ...
+  _ _:_ fun_nu_rw_prof_tcam_entry entry[0]
+END
+
+STRUCT fun_nu_prw_prof_tcam_rsp
+  0 63:0 fun_rsp_common common /* op: FUN_NU_OP_RW_PROF_TCAM_W */
+  1 63:0 ...
+  _ _:_ fun_nu_rw_prof_tcam_entry entry[0]
+END
 
