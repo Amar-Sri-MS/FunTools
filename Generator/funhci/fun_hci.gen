@@ -1480,7 +1480,10 @@ STRUCT fun_nu_rw_prof_tcam_entry
   0 59:48 uint16_t index
   0 47:32 uint16_t rsvd1
   0 31:24 uint32_t rsvd2
-  0 23:0 uint32_t rw_prof_tcam
+  0 23:00 uint32_t rw_prof_tcam_data
+  1 63:32 uint8_t rsvd3[4]
+  1 31:24 uint32_t rsvd4
+  1 23:00 uint32_t rw_prof_tcam_mask
 END
 
 FLAGS fun_nu_other_flags
