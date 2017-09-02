@@ -1193,7 +1193,7 @@ ENUM ffe_bank_t
 END
 
 ENUM fun_nu_op
-  FUN_NU_OP_FFE_TMP_TCAM_R = 0
+  FUN_NU_OP_FFE_TMP_TCAM_R = 0		/* FFE begin */
   FUN_NU_OP_FFE_TMP_TCAM_W = 1
   FUN_NU_OP_FFE_TCAM_R = 2
   FUN_NU_OP_FFE_TCAM_W = 3
@@ -1214,6 +1214,7 @@ ENUM fun_nu_op
   FUN_NU_OP_RW_DATA_W = 18
   FUN_NU_OP_RW_INSTR_W = 19
   FUN_NU_OP_RW_PROF_TCAM_W = 20
+  FUN_NU_OP_SSE_MD_W = 21		/* SSE begin */
 END
 
 // FFE Template TCAM entry format
@@ -1546,5 +1547,28 @@ STRUCT fun_nu_prw_prof_tcam_rsp
   0 63:0 fun_rsp_common common /* op: FUN_NU_OP_RW_PROF_TCAM_W */
   1 63:0 ...
   _ _:_ fun_nu_rw_prof_tcam_entry entry[0]
+END
+
+STRUCT fun_nu_sse_md_entry
+  0 63:08 uint8_t rsvd0[7]
+  0 07:00 uint8_t stream
+  1 63:00 uint64_t data[6]
+  2 63:00 ...
+  3 63:00 ...
+  4 63:00 ...
+  5 63:00 ...
+  6 63:00 ...
+END
+
+STRUCT fun_nu_sse_md_w_req
+  0 63:00 fun_req_common common
+  1 63:00 ...
+  _ _:_ fun_nu_sse_md_entry mdata[0]
+END
+
+STRUCT fun_nu_sse_md_w_rsp
+  0 63:00 fun_rsp_common common
+  1 63:00 ...
+  _ _:_ fun_nu_sse_md_entry mdata[0]
 END
 
