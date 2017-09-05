@@ -5,11 +5,13 @@
   },
   "DVTSourceControlWorkspaceBlueprintWorkingCopyStatesKey" : {
     "00FF21099A8B7140927D00B1CAF9D5DCEB7852A5" : 9223372036854775807,
+    "B85E13B5440676ED1F78D06D1C31AECAFE51F60E" : 9223372036854775807,
     "BB0B45EFBA73F7E243BF55DE879D97F6B3DD0770" : 9223372036854775807
   },
   "DVTSourceControlWorkspaceBlueprintIdentifierKey" : "D79DC5EE-EF75-42B2-8729-6651BE77FEB4",
   "DVTSourceControlWorkspaceBlueprintWorkingCopyPathsKey" : {
     "00FF21099A8B7140927D00B1CAF9D5DCEB7852A5" : "FunTools\/",
+    "B85E13B5440676ED1F78D06D1C31AECAFE51F60E" : "FunSDK\/",
     "BB0B45EFBA73F7E243BF55DE879D97F6B3DD0770" : "Simulators\/"
   },
   "DVTSourceControlWorkspaceBlueprintNameKey" : "DataKit",
@@ -20,6 +22,11 @@
       "DVTSourceControlWorkspaceBlueprintRemoteRepositoryURLKey" : "https:\/\/github.com\/fungible-inc\/FunTools.git",
       "DVTSourceControlWorkspaceBlueprintRemoteRepositorySystemKey" : "com.apple.dt.Xcode.sourcecontrol.Git",
       "DVTSourceControlWorkspaceBlueprintRemoteRepositoryIdentifierKey" : "00FF21099A8B7140927D00B1CAF9D5DCEB7852A5"
+    },
+    {
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryURLKey" : "github.com:fungible-inc\/FunSDK.git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositorySystemKey" : "com.apple.dt.Xcode.sourcecontrol.Git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryIdentifierKey" : "B85E13B5440676ED1F78D06D1C31AECAFE51F60E"
     },
     {
       "DVTSourceControlWorkspaceBlueprintRemoteRepositoryURLKey" : "https:\/\/github.com\/fungible-inc\/Simulators.git",

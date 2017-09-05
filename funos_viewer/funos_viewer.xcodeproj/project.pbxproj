@@ -67,6 +67,11 @@
 		A716FC701EAD7040008395EC /* F1Tile.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FC6F1EAD7040008395EC /* F1Tile.swift */; };
 		A716FC721EAD7082008395EC /* F1MiscTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FC711EAD7082008395EC /* F1MiscTypes.swift */; };
 		A716FC761EAD73B6008395EC /* F1SimDocument.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FC751EAD73B6008395EC /* F1SimDocument.swift */; };
+		A72CC7A91F587F210058827F /* storage in Resources */ = {isa = PBXBuildFile; fileRef = A72CC7A81F587F210058827F /* storage */; };
+		A72CC7AB1F587F3E0058827F /* devices in Resources */ = {isa = PBXBuildFile; fileRef = A72CC7AA1F587F3E0058827F /* devices */; };
+		A72CC7AD1F587F650058827F /* networking in Resources */ = {isa = PBXBuildFile; fileRef = A72CC7AC1F587F650058827F /* networking */; };
+		A72CC7B11F587FB00058827F /* props_bridges in Resources */ = {isa = PBXBuildFile; fileRef = A72CC7B01F587FB00058827F /* props_bridges */; };
+		A72CC7B31F587FCC0058827F /* tests in Resources */ = {isa = PBXBuildFile; fileRef = A72CC7B21F587FCC0058827F /* tests */; };
 		A74FE1481EE1D0210062128E /* platform in Resources */ = {isa = PBXBuildFile; fileRef = A74FE1471EE1D0210062128E /* platform */; };
 		A7614FB21F127E5E0065A5B7 /* MallocWindow.xib in Resources */ = {isa = PBXBuildFile; fileRef = A7614FB11F127E5E0065A5B7 /* MallocWindow.xib */; };
 		A7614FB41F1280E40065A5B7 /* MallocWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7614FB31F1280E40065A5B7 /* MallocWindowController.swift */; };
@@ -157,6 +162,11 @@
 		A716FC6F1EAD7040008395EC /* F1Tile.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = F1Tile.swift; sourceTree = "<group>"; };
 		A716FC711EAD7082008395EC /* F1MiscTypes.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = F1MiscTypes.swift; sourceTree = "<group>"; };
 		A716FC751EAD73B6008395EC /* F1SimDocument.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = F1SimDocument.swift; sourceTree = "<group>"; };
+		A72CC7A81F587F210058827F /* storage */ = {isa = PBXFileReference; lastKnownFileType = folder; name = storage; path = ../../FunOS/storage; sourceTree = "<group>"; };
+		A72CC7AA1F587F3E0058827F /* devices */ = {isa = PBXFileReference; lastKnownFileType = folder; name = devices; path = ../../FunOS/devices; sourceTree = "<group>"; };
+		A72CC7AC1F587F650058827F /* networking */ = {isa = PBXFileReference; lastKnownFileType = folder; name = networking; path = ../../FunOS/networking; sourceTree = "<group>"; };
+		A72CC7B01F587FB00058827F /* props_bridges */ = {isa = PBXFileReference; lastKnownFileType = folder; name = props_bridges; path = ../../FunOS/props_bridges; sourceTree = "<group>"; };
+		A72CC7B21F587FCC0058827F /* tests */ = {isa = PBXFileReference; lastKnownFileType = folder; name = tests; path = ../../FunOS/tests; sourceTree = "<group>"; };
 		A74FE1471EE1D0210062128E /* platform */ = {isa = PBXFileReference; lastKnownFileType = folder; name = platform; path = ../../FunOS/platform; sourceTree = "<group>"; };
 		A7614FB11F127E5E0065A5B7 /* MallocWindow.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = MallocWindow.xib; sourceTree = "<group>"; };
 		A7614FB31F1280E40065A5B7 /* MallocWindowController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MallocWindowController.swift; sourceTree = "<group>"; };
@@ -205,12 +215,17 @@
 				A716FBDB1EA67D3C008395EC /* funos */,
 				A766A47D1F195D7A0094C7B0 /* nucleus */,
 				A766A47B1F1915F50094C7B0 /* utils */,
-				A766A47F1F1BD2D40094C7B0 /* services */,
 				A7A68CFF1EE9C608004B5DDF /* props_bridges */,
-				A74FE1471EE1D0210062128E /* platform */,
-				A716FBE51EAD33E0008395EC /* hw */,
 				A71563981EB95EDE00F32BAE /* cfg */,
+				A72CC7AA1F587F3E0058827F /* devices */,
+				A716FBE51EAD33E0008395EC /* hw */,
 				A716FBE71EAD33EA008395EC /* kv */,
+				A72CC7AC1F587F650058827F /* networking */,
+				A74FE1471EE1D0210062128E /* platform */,
+				A72CC7B01F587FB00058827F /* props_bridges */,
+				A766A47F1F1BD2D40094C7B0 /* services */,
+				A72CC7A81F587F210058827F /* storage */,
+				A72CC7B21F587FCC0058827F /* tests */,
 				A78F76A41F38B83B00E33523 /* datakit */,
 				A716FBCA1EA67C82008395EC /* Products */,
 				A7FD266C1EB51FCD0049E0C0 /* Frameworks */,
@@ -397,11 +412,13 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A72CC7B31F587FCC0058827F /* tests in Resources */,
 				A766A48A1F1C19680094C7B0 /* TopLikeWindow.xib in Resources */,
 				A766A4801F1BD2D40094C7B0 /* services in Resources */,
 				A716FBE81EAD33EA008395EC /* kv in Resources */,
 				A7614FB21F127E5E0065A5B7 /* MallocWindow.xib in Resources */,
 				A7A68D001EE9C608004B5DDF /* props_bridges in Resources */,
+				A72CC7AD1F587F650058827F /* networking in Resources */,
 				A71563991EB95EDE00F32BAE /* cfg in Resources */,
 				A766A47C1F1915F50094C7B0 /* utils in Resources */,
 				A766A48E1F1C22920094C7B0 /* IKVWindow.xib in Resources */,
@@ -414,10 +431,13 @@
 				A716FBDC1EA67D3C008395EC /* funos in Resources */,
 				A716FBEC1EAD63FA008395EC /* PureSwiftExtras in Resources */,
 				A716FBCF1EA67C82008395EC /* Assets.xcassets in Resources */,
+				A72CC7A91F587F210058827F /* storage in Resources */,
+				A72CC7AB1F587F3E0058827F /* devices in Resources */,
 				A78F76A51F38B83B00E33523 /* datakit in Resources */,
 				A766A4821F1C0E550094C7B0 /* Buttons.xib in Resources */,
 				A766A4881F1C12FD0094C7B0 /* ConsoleWindow.xib in Resources */,
 				A716FBD21EA67C82008395EC /* MainMenu.xib in Resources */,
+				A72CC7B11F587FB00058827F /* props_bridges in Resources */,
 				A74FE1481EE1D0210062128E /* platform in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
