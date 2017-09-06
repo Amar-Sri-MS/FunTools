@@ -3,7 +3,7 @@
 
 import re
 
-trace_fmt = 'SIM'
+trace_fmt = 'PDT'
 if trace_fmt == 'SIM':
 	import tutils_sim as tutils
 elif trace_fmt == 'PDT':
@@ -65,9 +65,8 @@ def parse_item(line):
 
 	regex = r"([A-Fa-f0-9]+) <(.*)>\:"
 
-	if (re.search(regex, line)):
-
-		m = re.search(regex, line)
+	m = re.search(regex, line) 
+	if m is not None:
 
 		addr = long(m.group(1), 16)
 		fname = m.group(2)

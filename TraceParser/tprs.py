@@ -96,25 +96,26 @@ def read_trace(trace_fname, ranges, filter_vp, reverse_order, filterlist, quiet)
 				cycles = cycles + entry.get_ccount()
 
 				# XXX rewrite idle handling
-				if entry.get_func() == "idle":
+				func = entry.get_func()
+				if func == "idle":
 					idles = idles + entry.get_ccount()
 
-				if entry.get_func() in filterlist:
+				if func in filterlist:
 					continue
 
 				if 'IM' in line.split():
 					instr_misses = instr_misses + 1
 
-#				if tutils.out_of_range(entry.get_func()):
+#				if tutils.out_of_range(func):
 #					newaddr = filter_addr(entry.get_addr())
 #					entry.set_addr(newaddr, ranges)
 #
-				if entry.get_func() != last_found_func[vp]:
+				if func != last_found_func[vp]:
 	
-					last_found_func[vp] = entry.get_func()
+					last_found_func[vp] = func
 
 					row_val = [tutils.get_address(line), "-", "-", "-", "-"]
-					row_val[vp+1] = entry.get_func()
+					row_val[vp+1] = func
 
 					if quiet == False:
 						if filter_vp == 15:
@@ -128,7 +129,7 @@ def read_trace(trace_fname, ranges, filter_vp, reverse_order, filterlist, quiet)
 
 					if entry.get_pos() == "START":
 
-						new_ttree = TTree(entry.get_func(), current_ttree[vp], cycles, idles, instr_misses)
+						new_ttree = TTree(func, current_ttree[vp], cycles, idles, instr_misses)
 
 						if current_ttree[vp] != None:
 							current_ttree[vp].add_call(new_ttree)
@@ -147,7 +148,7 @@ def read_trace(trace_fname, ranges, filter_vp, reverse_order, filterlist, quiet)
 							while top_of_stack != None:
 
 								# update end stats for all funcs that are being popped
-								if top_of_stack.get_name() == entry.get_func():
+								if top_of_stack.get_name() == func:
 									need_new_node = False
 									current_ttree[vp] = top_of_stack
 									break
@@ -161,7 +162,7 @@ def read_trace(trace_fname, ranges, filter_vp, reverse_order, filterlist, quiet)
 						# 2. If we popped all the way to no root, create a new root
 						if need_new_node == True:
 
-							new_ttree = TTree(entry.get_func(), None, cycles, idles, instr_misses)
+							new_ttree = TTree(func, None, cycles, idles, instr_misses)
 
 							if current_ttree[vp] != None:
 								# if we are adding a node, it is the root
@@ -186,6 +187,7 @@ def read_trace(trace_fname, ranges, filter_vp, reverse_order, filterlist, quiet)
 				pass
 
 
+	infile.close()
 	roots = []
 
 	print "Run complete..."
