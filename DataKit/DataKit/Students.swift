@@ -172,5 +172,22 @@ func studentsTest() {
 	try! JSON.dictionary(filter.functionToJSON).writeToFile("/tmp/students_filter.json")
 	try! JSON.dictionary(logger.functionToJSON).writeToFile("/tmp/students_logger.json")
 	try! typeTable.typeTableAsJSON.writeToFile("/tmp/students_types.json")
+
+	let combined: JSON = .dictionary([
+		"type_table": typeTable.typeTableAsJSON,
+		"generator": JSON.dictionary(generator.functionToJSON),
+		"filter": JSON.dictionary(filter.functionToJSON),
+		"sink": JSON.dictionary(logger.functionToJSON)
+	])
+	let str = combined.description.replaceOccurrences("\n", " ")
+	print("Combined: \(str)")
+	var socket: Int32 = 0
+	let r = dpcrun_command_with_subverb_and_arg(&socket, "datakit", "setup", str)
+	let rs: String = r == nil ? "NOPE" : String(cString: r!)
+	print("r = \(rs)")
+	sleep(1)
+	let r2 = dpcrun_command_with_subverb(&socket, "datakit", "run")
+	let rs2: String = r2 == nil ? "NOPE" : String(cString: r2!)
+	print("r = \(rs2)")
 }
 

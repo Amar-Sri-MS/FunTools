@@ -63,12 +63,12 @@ class HTMLGenerator:
     while len(fields) > 0 or lingering_field_width > 0:
       if lingering_field_width > 0:
         if bytes_remaining > lingering_field_width:
-          current_row.append((lingering_field.name, lingering_field_width,
+          current_row.append((lingering_field, lingering_field_width,
                               field_group[lingering_field]))
           bytes_remaining -= lingering_field_width
           lingering_field_width = 0
         else:
-          current_row.append((lingering_field.name, bytes_remaining,
+          current_row.append((lingering_field, bytes_remaining,
                               field_group[lingering_field]))
           lingering_field_width = lingering_field_width - bytes_remaining
           bytes_remaining = 0
@@ -86,11 +86,11 @@ class HTMLGenerator:
             
         elif next_field.type.IsScalar() or next_field.type.IsArray():
           if bytes_remaining >= next_field.BitWidth():
-            current_row.append((next_field.name, next_field.BitWidth(), 
+            current_row.append((next_field, next_field.BitWidth(), 
                                 field_group[next_field]))
             bytes_remaining -= next_field.BitWidth()
           else:
-            current_row.append((next_field.name, bytes_remaining,
+            current_row.append((next_field, bytes_remaining,
                                 field_group[next_field]))
             lingering_field = next_field
             lingering_field_width = next_field.BitWidth() - bytes_remaining
@@ -104,16 +104,27 @@ class HTMLGenerator:
       rows.append(current_row)
     return rows        
 
+  def BarWidth(self, bits):
+    """Returns width of field bar in pixels."""
+    # 1000 is width of bitmap.  Subtract 2 for luck.
+    return (1000 * bits / 64) - 2
+
   def DrawFields(self, flit, row):
     """Draws a row representing a single flit."""
     out = ''
     out += '  <div class="bitRow">\n'
     out += '    <div class="rowTitle">Flit %d</div>\n' % flit
-    for (name, width, field_group_num) in row:
-      bar_width = (1000 * width / 64) - 2
+    width_sum = 0
+    for (field, width, field_group_num) in row:
       class_name = 'bar field field-group-%d' % field_group_num
+      if field.IsReserved():
+        class_name += ' reserved'
       out += '    <div class="%s" style="width: %dpx">%s</div>\n' % ( 
-        class_name, bar_width, name)
+        class_name, self.BarWidth(width), field.name)
+      width_sum += width
+    if width_sum < 64:
+      out += '  <div class="bar field" style="width: %dpx">&nbsp;</div>\n' % self.BarWidth(64 - width_sum)
+    
     out += '  </div>\n'
     return out
 
@@ -281,6 +292,10 @@ dd {
   border: solid 1px black;
 }
 
+/* Color reserved fields slightly lighter in bitmap. */
+.reserved {
+  opacity: 0.5;
+}
 """)
 
     out = '<!-- Documentation created by generator.py.\n'
@@ -325,7 +340,7 @@ dd {
     out = ''
     out += '<h3>%s: enum declaration</h3>\n' % enum.name
     if enum.key_comment:
-      out += '<p>%s</p>\n' % utils.AsHTMLComment(enum.key_comment)
+      out += '<p><b>%s</b></p>\n' % utils.AsHTMLComment(enum.key_comment)
     if enum.body_comment:
       out += '<p>%s</p>\n' % utils.AsHTMLComment(enum.body_comment)
     out += '<b>Values</b><br>\n'
@@ -342,7 +357,7 @@ dd {
     out = ''
     out += '<h3>%s: flagset</h3>\n' % flagset.name
     if flagset.key_comment:
-      out += '<p>%s</p>\n' % utils.AsHTMLComment(flagset.key_comment)
+      out += '<p><b>%s</b></p>\n' % utils.AsHTMLComment(flagset.key_comment)
     if flagset.body_comment:
       out += '<p>%s</p>\n' % utils.AsHTMLComment(flagset.body_comment)
     out += '<b>Possible values</b><br>\n'
@@ -429,7 +444,7 @@ dd {
     out += '<a name="%s"></a>' % name
     out += '<h3>%s: structure</h3>\n' % name
     if struct.key_comment:
-      out += '<p>%s</p>\n' % utils.AsHTMLComment(struct.key_comment)
+      out += '<p><b>%s</b></p>\n' % utils.AsHTMLComment(struct.key_comment)
     if struct.body_comment:
       out += '<p>%s</p>\n' % utils.AsHTMLComment(struct.body_comment)
 
