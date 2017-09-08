@@ -10,9 +10,6 @@ class DKExpression {
 	var type: DKType {
 		fatalErrorMustBeImplementedBySubclass()
 	}
-	func prepareToEvaluate(context: DKEvaluationContext) {
-		// Subclass should redefine
-	}
 	func evaluate(context: DKEvaluationContext) -> DKValue {
 		fatalErrorMustBeImplementedBySubclass()
 	}

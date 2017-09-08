@@ -110,7 +110,6 @@ func dumpFilterJoe(input: Data, _ uniquingTable: DKTypeTable) {
 	print("Filter = \(filterFunc.sugaredDescription(knowns))")
 	let students = ts.fromDataLazy(input)
 	let con = DKEvaluationContext()
-	filterFunc.prepareToEvaluate(context: con)
 	let filtered = filterFunc.evaluate(context: con, [DKExpressionConstant(students!)])
 	print("Filtered Joes: \(filtered.description)")
 	let fullNameGen = generateFullName(uniquingTable)
@@ -121,6 +120,21 @@ func dumpFilterJoe(input: Data, _ uniquingTable: DKTypeTable) {
 	}
 }
 
+var socket: Int32 = 0
+
+func sendToDPCServer(_ combined: JSON) {
+	print("Combined: \(combined)")
+	let str = combined.description.replaceOccurrences("\n", " ")
+	print("Single line: \n\(str)")
+	let r = dpcrun_command_with_subverb_and_arg(&socket, "datakit", "setup", str)
+	let rs: String = r == nil ? "NOPE" : String(cString: r!)
+	print("r = \(rs)")
+	sleep(1)
+	let r2 = dpcrun_command_with_subverb(&socket, "datakit", "run")
+	let rs2: String = r2 == nil ? "NOPE" : String(cString: r2!)
+	print("r = \(rs2)")
+}
+
 func studentsTest() {
 	let ts = studentsType()
 	let t = studentType()
@@ -128,13 +142,13 @@ func studentsTest() {
 
 	var count = 0
 	DKFunctionGenerator.registerItemGenerator(name: "Students") {
-		if count == 100 { return nil }
+		if count >= $0.integerValue { return nil }
 		let studentArray = generateRandomStudent(id: count)
 		let student = t.valueFromRawJSON(typeTable, .array(studentArray))!
 		count += 1
 		return student
 	}
-	let generator = DKFunctionGenerator(typeTable, name: "Students", itemType: t)
+	let generator = DKFunctionGenerator(typeTable, name: "Students", params: 100, itemType: t)
 	let con = DKEvaluationContext()
 	let students = generator.evaluate(context: con, [])
 	var bs: DKMutableBitStream = DataAsMutableBitStream()
@@ -158,8 +172,6 @@ func studentsTest() {
 
 	let students2 = ts.fromDataLazy(data1)
 	let logger = DKFunctionSink(typeTable, name: "logger", itemType: t)
-	let con2 = DKEvaluationContext()
-	logger.prepareToEvaluate(context: con2)
 	print("Log should start here")
 	let result = logger.evaluate(context: con, [DKExpressionConstant(students2!)])
 	print("Log finished - result = \(result)")
@@ -179,15 +191,15 @@ func studentsTest() {
 		"filter": JSON.dictionary(filter.functionToJSON),
 		"sink": JSON.dictionary(logger.functionToJSON)
 	])
-	let str = combined.description.replaceOccurrences("\n", " ")
-	print("Combined: \(str)")
-	var socket: Int32 = 0
-	let r = dpcrun_command_with_subverb_and_arg(&socket, "datakit", "setup", str)
-	let rs: String = r == nil ? "NOPE" : String(cString: r!)
-	print("r = \(rs)")
-	sleep(1)
-	let r2 = dpcrun_command_with_subverb(&socket, "datakit", "run")
-	let rs2: String = r2 == nil ? "NOPE" : String(cString: r2!)
-	print("r = \(rs2)")
+	sendToDPCServer(combined)
+
+	let pipeline = DKFunctionComposition(DKFunctionComposition(generator, filter), logger)
+	print("Signature of pipeline: \(pipeline.signature)")
+	let combined2: JSON = .dictionary([
+		"type_table": typeTable.typeTableAsJSON,
+		"pipeline": JSON.dictionary(pipeline.functionToJSON)
+		])
+	sendToDPCServer(combined2)
+
 }
 

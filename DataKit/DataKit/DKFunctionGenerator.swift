@@ -11,10 +11,12 @@
 
 class DKFunctionGenerator: DKFunction {
 	let name: String
+	let params: JSON
 	let itemType: DKType
 	let itemShortcut: DKType.Shortcut
-	init(_ uniquingTable: DKTypeTable, name: String, itemType: DKType) {
+	init(_ uniquingTable: DKTypeTable, name: String, params: JSON, itemType: DKType) {
 		self.name = name
+		self.params = params
 		self.itemType = itemType
 		itemShortcut = itemType.toTypeShortcut(uniquingTable)
 	}
@@ -24,7 +26,8 @@ class DKFunctionGenerator: DKFunction {
 	override var functionToJSON: [String: JSON] {
 		return [
 			"generator": .string(name),
-			"item_type": itemShortcut.toJSON
+			"item_type": itemShortcut.toJSON,
+			"params": params
 		]
 	}
 	override class func functionFromJSON(_ uniquingTable: DKTypeTable, _ dict: [String: JSON]) -> DKFunction! {
@@ -32,10 +35,8 @@ class DKFunctionGenerator: DKFunction {
 		if g == nil || !g!.isString { return nil }
 		let i = dict["item_type"]?.toDKType(uniquingTable)
 		if i == nil { return nil }
-		return DKFunctionGenerator(uniquingTable, name: g!.stringValue, itemType: i!)
-	}
-	override func prepareToEvaluate(context: DKEvaluationContext) {
-		print("SHOULD PREPARE GENERATION")
+		let params: JSON = dict["params"] ?? JSON.null
+		return DKFunctionGenerator(uniquingTable, name: g!.stringValue, params: params, itemType: i!)
 	}
 	override func evaluate(context: DKEvaluationContext, _ subs: [DKExpression]) -> DKValue {
 		assert(subs.count == 0)
@@ -43,7 +44,7 @@ class DKFunctionGenerator: DKFunction {
 		var stream: DKMutableBitStream = DataAsMutableBitStream()
 		// For now we generate the whole stream
 		while true {
-			let next = itemGen()
+			let next = itemGen(params)
 			if next == nil { break }
 			assert(next!.type == itemType)
 			stream.pad(toByteAlign: 4)
@@ -53,10 +54,10 @@ class DKFunctionGenerator: DKFunction {
 		return DKValueLazySequence(itemType: itemType, data: data)
 	}
 	override func sugaredDescription(_ knowns: [DKType: String]) -> String {
-		return "generator(\(name), \(itemType.sugaredDescription(knowns)))"
+		return "generator(\(name), \(itemType.sugaredDescription(knowns)), \(params))"
 	}
-	static var registry: [String: () -> DKValue?] = [:]
-	class func registerItemGenerator(name: String, _ itemGen: @escaping () -> DKValue?) {
+	static var registry: [String: (JSON) -> DKValue?] = [:]
+	class func registerItemGenerator(name: String, _ itemGen: @escaping (JSON) -> DKValue?) {
 		registry[name] = itemGen
 	}
 }

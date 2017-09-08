@@ -30,9 +30,6 @@ class DKFunctionFilter: DKFunction {
 		if p == nil { return nil }
 		return DKFunctionFilter(predicate: p!)
 	}
-	override func prepareToEvaluate(context: DKEvaluationContext) {
-		print("SHOULD PREPARE STREAM PAIR")
-	}
 	override func evaluate(context: DKEvaluationContext, _ subs: [DKExpression]) -> DKValue {
 		assert(subs.count == 1)
 		let x = subs[0].evaluate(context: context)
@@ -58,5 +55,8 @@ class DKFunctionFilter: DKFunction {
 	}
 	override func sugaredDescription(_ knowns: [DKType: String]) -> String {
 		return "filter(\(predicate.sugaredDescription(knowns)))"
+	}
+	override var isInputGroupable: Bool {
+		return true
 	}
 }

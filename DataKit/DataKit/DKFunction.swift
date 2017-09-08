@@ -15,9 +15,6 @@ class DKFunction: Equatable, CustomStringConvertible {
 	func isEqualTo(_ rhs: DKFunction) -> Bool {
 		fatalErrorMustBeImplementedBySubclass()
 	}
-	func prepareToEvaluate(context: DKEvaluationContext) {
-		// nothing by default
-	}
 	func evaluate(context: DKEvaluationContext, _ exprs: [DKExpression]) -> DKValue {
 		fatalErrorMustBeImplementedBySubclass()
 	}
@@ -39,6 +36,10 @@ class DKFunction: Equatable, CustomStringConvertible {
 	}
 	func sugaredDescription(_ knowns: [DKType: String]) -> String {
 		fatalErrorMustBeImplementedBySubclass()
+	}
+	// If function takes a [T] returns () or [U], is it OK to send smaller batches of its input and combine the output
+	var isInputGroupable: Bool {
+		return false
 	}
 }
 

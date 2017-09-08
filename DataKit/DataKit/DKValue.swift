@@ -34,6 +34,9 @@ class DKValue: Equatable, CustomStringConvertible {
 	class func string(_ s: String) -> DKValue {
 		return DKValueSimple(s)
 	}
+	class var null: DKValue {
+		return DKValueSimple(.null)
+	}
 
 	// ===============  ACCESS CONVENIENCES ===============
 
