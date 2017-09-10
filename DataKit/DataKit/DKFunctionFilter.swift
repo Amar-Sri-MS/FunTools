@@ -35,7 +35,7 @@ class DKFunctionFilter: DKFunction {
 		let x = subs[0].evaluate(context: context)
 		var output: DKMutableBitStream = DataAsMutableBitStream()
 		func applyPredicate(_ item: DKValue) {
-			let expr = DKExpressionConstant(item)
+			let expr = item.asExpressionConstant
 			let r = self.predicate.evaluate(context: context, [expr])
 			let b = r.boolValue
 			if b {

@@ -110,12 +110,12 @@ func dumpFilterJoe(input: Data, _ uniquingTable: DKTypeTable) {
 	print("Filter = \(filterFunc.sugaredDescription(knowns))")
 	let students = ts.fromDataLazy(input)
 	let con = DKEvaluationContext()
-	let filtered = filterFunc.evaluate(context: con, [DKExpressionConstant(students!)])
+	let filtered = filterFunc.evaluate(context: con, [students!.asExpressionConstant])
 	print("Filtered Joes: \(filtered.description)")
 	let fullNameGen = generateFullName(uniquingTable)
 	print("Generate full name = \(fullNameGen.sugaredDescription(knowns))")
 	for student in filtered as! DKValueLazySequence {
-		let full = fullNameGen.evaluate(context: con, [DKExpressionConstant(student)])
+		let full = fullNameGen.evaluate(context: con, [student.asExpressionConstant])
 		print("-> \(full.stringValue)")
 	}
 }
@@ -173,7 +173,7 @@ func studentsTest() {
 	let students2 = ts.fromDataLazy(data1)
 	let logger = DKFunctionSink(typeTable, name: "logger", itemType: t)
 	print("Log should start here")
-	let result = logger.evaluate(context: con, [DKExpressionConstant(students2!)])
+	let result = logger.evaluate(context: con, [students2!.asExpressionConstant])
 	print("Log finished - result = \(result)")
 
 	assert(data == regen)
@@ -193,7 +193,7 @@ func studentsTest() {
 	])
 	sendToDPCServer(combined)
 
-	let pipeline = DKFunctionComposition(DKFunctionComposition(generator, filter), logger)
+	let pipeline = DKFunctionComposition(outer: logger, inner: DKFunctionComposition(outer: filter, inner: generator))
 	print("Signature of pipeline: \(pipeline.signature)")
 	let combined2: JSON = .dictionary([
 		"type_table": typeTable.typeTableAsJSON,

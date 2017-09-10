@@ -6,26 +6,26 @@
 //  Copyright © 2017 Fungible. All rights reserved.
 //
 
-// Composes fun1: (T) -> U and fun2: (U) -> V
-// into composition(x) = fun2(fun1(x))
+// Composes inner: (T) -> U and outer: (U) -> V
+// into composition(x) = outer(inner(x))
 
 class DKFunctionComposition: DKFunction {
-	let fun1: DKFunction
-	let fun2: DKFunction
-	init(_ fun1: DKFunction, _ fun2: DKFunction) {
-		let sig1 = fun1.signature
-		let sig2 = fun2.signature
-		assert(sig2.numberOfArguments == 1)
-		assert(sig1.output == sig2[0])
-		self.fun1 = fun1
-		self.fun2 = fun2
+	let inner: DKFunction
+	let outer: DKFunction
+	init(outer: DKFunction, inner: DKFunction) {
+		let isig = inner.signature
+		let osig = outer.signature
+		assert(osig.numberOfArguments == 1)
+		assert(isig.output == osig[0])
+		self.inner = inner
+		self.outer = outer
 	}
 	override var signature: DKTypeSignature {
-		return DKTypeSignature(input: fun1.signature.input, output: fun2.signature.output)
+		return DKTypeSignature(input: inner.signature.input, output: outer.signature.output)
 	}
 	override var functionToJSON: [String: JSON] {
 		return [
-			"composition": [.dictionary(fun1.functionToJSON), .dictionary(fun2.functionToJSON)]
+			"composition": [.dictionary(inner.functionToJSON), .dictionary(outer.functionToJSON)]
 		]
 	}
 	override class func functionFromJSON(_ uniquingTable: DKTypeTable, _ dict: [String: JSON]) -> DKFunction! {
@@ -33,41 +33,39 @@ class DKFunctionComposition: DKFunction {
 		if c == nil || !c!.isArray { return nil }
 		let a = c!.arrayValue
 		if a.count != 2 { return nil }
-		let f1 = DKFunction.functionFromJSON(uniquingTable, a[0].dictionaryValue)
-		if f1 == nil { return nil }
-		let f2 = DKFunction.functionFromJSON(uniquingTable, a[1].dictionaryValue)
-		if f2 == nil { return nil }
-		return DKFunctionComposition(f1!, f2!)
+		let inner = DKFunction.functionFromJSON(uniquingTable, a[0].dictionaryValue)
+		if inner == nil { return nil }
+		let outer = DKFunction.functionFromJSON(uniquingTable, a[1].dictionaryValue)
+		if outer == nil { return nil }
+		return DKFunctionComposition(outer: outer!, inner: inner!)
 	}
 	override func evaluate(context: DKEvaluationContext, _ subs: [DKExpression]) -> DKValue {
-		assert(subs.count == 1)
-		let x = subs[0].evaluate(context: context)
-		func compose(_ item: DKValue) -> DKValue {
-			let expr = DKExpressionConstant(item)
-			let r1 = self.fun1.evaluate(context: context, [expr])
-			let expr2 = DKExpressionConstant(r1)
-			return self.fun2.evaluate(context: context, [expr2])
-		}
-		if !fun2.isInputGroupable || x is DKValueSimple {
-			return compose(x)
-		} else if let valueSeq = x as? DKValueLazySequence {
-			var output: DKMutableBitStream = DataAsMutableBitStream()
-			valueSeq.forEach {
-				compose($0).append(to: &output)
+		let evaled: [DKExpression] = subs.map { $0.evaluate(context: context).asExpressionConstant }
+		let r1 = inner.evaluate(context: context, evaled)
+		if r1.type is DKTypeSequence && outer.isInputGroupable {
+			if let valueSeq = r1 as? DKValueLazySequence {
+				var output: DKMutableBitStream = DataAsMutableBitStream()
+				valueSeq.forEach {
+					let v2 = outer.evaluate(context: context, [DKExpressionConstant($0)])
+					v2.append(to: &output)
+				}
+				let newInput = output.finishAndData()
+				if outer.signature.output == .void {
+					return DKValue.null
+				} else if let seq = outer.signature.output as? DKTypeSequence {
+					return DKValueLazySequence(itemType: seq.sub, data: newInput)
+				} else {
+					abort();
+				}
 			}
-			let newInput = output.finishAndData()
-			if fun2.signature.output == .void {
-				return DKValue.null
-			} else if let seq = fun2.signature.output as? DKTypeSequence {
-				return DKValueLazySequence(itemType: seq.sub, data: newInput)
-			} else {
-				abort();
-			}
-		} else {
-			abort()
 		}
+		let expr2 = r1.asExpressionConstant
+		return outer.evaluate(context: context, [expr2])
+	}
+	override var isInputGroupable: Bool {
+		return inner.isInputGroupable && outer.isInputGroupable
 	}
 	override func sugaredDescription(_ knowns: [DKType: String]) -> String {
-		return "composition(\(fun1.sugaredDescription(knowns)), \(fun2.sugaredDescription(knowns)))"
+		return "composition(\(inner.sugaredDescription(knowns)), \(outer.sugaredDescription(knowns)))"
 	}
 }

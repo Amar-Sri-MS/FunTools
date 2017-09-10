@@ -33,3 +33,9 @@ extension JSON {
 		return nil
 	}
 }
+
+extension DKValue {
+	var asExpressionConstant: DKExpression {
+		return DKExpressionConstant(self)
+	}
+}
