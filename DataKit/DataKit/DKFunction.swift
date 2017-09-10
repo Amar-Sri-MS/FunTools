@@ -15,9 +15,6 @@ class DKFunction: Equatable, CustomStringConvertible {
 	func isEqualTo(_ rhs: DKFunction) -> Bool {
 		fatalErrorMustBeImplementedBySubclass()
 	}
-	func prepareToEvaluate(context: DKEvaluationContext) {
-		// nothing by default
-	}
 	func evaluate(context: DKEvaluationContext, _ exprs: [DKExpression]) -> DKValue {
 		fatalErrorMustBeImplementedBySubclass()
 	}
@@ -28,7 +25,7 @@ class DKFunction: Equatable, CustomStringConvertible {
 		fatalErrorMustBeImplementedBySubclass()
 	}
 	class func functionFromJSON(_ uniquingTable: DKTypeTable, _ j: [String: JSON]) -> DKFunction! {
-		for f in [DKFunctionOperator.functionFromJSON, DKFunctionProjection.functionFromJSON, DKFunctionFilter.functionFromJSON, DKFunctionClosure.functionFromJSON, DKFunctionGenerator.functionFromJSON] {
+		for f in [DKFunctionOperator.functionFromJSON, DKFunctionProjection.functionFromJSON, DKFunctionFilter.functionFromJSON, DKFunctionComposition.functionFromJSON, DKFunctionClosure.functionFromJSON, DKFunctionGenerator.functionFromJSON] {
 			let fun = f(uniquingTable, j)
 			if fun != nil { return fun }
 		}
@@ -39,6 +36,10 @@ class DKFunction: Equatable, CustomStringConvertible {
 	}
 	func sugaredDescription(_ knowns: [DKType: String]) -> String {
 		fatalErrorMustBeImplementedBySubclass()
+	}
+	// If function takes a [T] and returns () or [U], is it OK to send smaller batches of its input and combine the output
+	var isInputGroupable: Bool {
+		return false
 	}
 }
 

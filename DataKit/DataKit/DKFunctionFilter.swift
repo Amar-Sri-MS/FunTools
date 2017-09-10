@@ -30,15 +30,12 @@ class DKFunctionFilter: DKFunction {
 		if p == nil { return nil }
 		return DKFunctionFilter(predicate: p!)
 	}
-	override func prepareToEvaluate(context: DKEvaluationContext) {
-		print("SHOULD PREPARE STREAM PAIR")
-	}
 	override func evaluate(context: DKEvaluationContext, _ subs: [DKExpression]) -> DKValue {
 		assert(subs.count == 1)
 		let x = subs[0].evaluate(context: context)
 		var output: DKMutableBitStream = DataAsMutableBitStream()
 		func applyPredicate(_ item: DKValue) {
-			let expr = DKExpressionConstant(item)
+			let expr = item.asExpressionConstant
 			let r = self.predicate.evaluate(context: context, [expr])
 			let b = r.boolValue
 			if b {
@@ -58,5 +55,8 @@ class DKFunctionFilter: DKFunction {
 	}
 	override func sugaredDescription(_ knowns: [DKType: String]) -> String {
 		return "filter(\(predicate.sugaredDescription(knowns)))"
+	}
+	override var isInputGroupable: Bool {
+		return true
 	}
 }

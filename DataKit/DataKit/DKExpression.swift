@@ -10,9 +10,6 @@ class DKExpression {
 	var type: DKType {
 		fatalErrorMustBeImplementedBySubclass()
 	}
-	func prepareToEvaluate(context: DKEvaluationContext) {
-		// Subclass should redefine
-	}
 	func evaluate(context: DKEvaluationContext) -> DKValue {
 		fatalErrorMustBeImplementedBySubclass()
 	}
@@ -34,5 +31,11 @@ extension JSON {
 			if e != nil { return e }
 		}
 		return nil
+	}
+}
+
+extension DKValue {
+	var asExpressionConstant: DKExpression {
+		return DKExpressionConstant(self)
 	}
 }

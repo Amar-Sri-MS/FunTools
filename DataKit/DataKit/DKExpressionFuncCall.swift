@@ -20,9 +20,6 @@ class DKExpressionFuncCall: DKExpression {
 	}
 	var signature: DKTypeSignature { return fun.signature }
 	override var type: DKType { return signature.output }
-	override func prepareToEvaluate(context: DKEvaluationContext) {
-		fun.prepareToEvaluate(context: context)
-	}
 	override func evaluate(context: DKEvaluationContext) -> DKValue {
 		assert(arguments.count == signature.numberOfArguments)
 		return fun.evaluate(context: context, arguments)

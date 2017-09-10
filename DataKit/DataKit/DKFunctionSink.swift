@@ -56,4 +56,7 @@ class DKFunctionSink: DKFunction {
 	class func registerItemGenerator(name: String, _ sink: @escaping (DKValue) -> Void) {
 		registry[name] = sink
 	}
+	override var isInputGroupable: Bool {
+		return true
+	}
 }
