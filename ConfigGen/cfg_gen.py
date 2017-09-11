@@ -53,6 +53,17 @@ def standardize_json(in_cfg, out_cfg):
 
 	os.system('%s -i %s -o %s' % (jsonutil_tool, in_cfg, out_cfg));
 
+# if the key is in the SKU file use it and replace the one on the common cfg 
+def replace_dicts(full_cfg, cfg_j):
+
+	new_cfg = full_cfg
+
+	for key in cfg_j.keys():
+		print "Adding sku key: %s" % key
+		new_cfg[key] = cfg_j[key]
+
+	return new_cfg
+
 # Merge two dictionaries
 # If they have the same key, merge contents
 # This is necessary e.g. for the pipeline:
@@ -116,7 +127,7 @@ def generate_config():
 			f.close()
 			os.system('rm %s.tmp' % cfg)
 
-			sku_cfg = merge_dicts(full_cfg, cfg_j)
+			sku_cfg = replace_dicts(full_cfg, cfg_j)
 			if not os.path.exists('out'):
 				os.mkdir('out')
 
