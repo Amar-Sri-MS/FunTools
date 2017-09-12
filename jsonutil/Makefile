@@ -10,7 +10,8 @@ all: jsonutil
 include build-afl.mk
 
 # define header and library location in FunSDK
-CFLAGS ?= -I $(SDKDIR)/FunSDK
+CFLAGS ?= -I $(SDKDIR)/FunSDK  \
+	-I $(SDKDIR)
 
 # XXX: compatibility with FunOS build parameters
 LDFLAGS_ASAN ?= -fsanitize=address 

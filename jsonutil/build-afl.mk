@@ -3,7 +3,7 @@
 # AFL-compatible libraries, which we don't use yet. This make
 # fragment is fundamentally broken until we fix the other dependencies.
 # This should be used as a reference for how to structure AFL, though.
-ifeq ($(OS),Linux)
+ifeq ($(BUILD_AFL),NOT_YET)
 
 # clear these for fuzzing
 CFLAGS :=
