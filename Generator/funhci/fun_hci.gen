@@ -1263,12 +1263,13 @@ STRUCT fun_nu_ffe_entry_hash_stash
   0 31:31 uint8_t valid
   0 30:24 uint8_t rsvd0
   0 23:0 uint8_t rsvd1[3]
-  1 63:0 uint64_t key[2]
-  2 63:0 ...
-  3 63:32 uint32_t rsvd2
-  3 31:22 uint16_t rsvd3
+  1 63:24 uint8_t rsvd2[5]
+  1 23:00 uint8_t key[11]
+  2 63:00 ...
+  3 63:32 uint32_t rsvd3
+  3 31:22 uint16_t rsvd4
   3 21:16 uint16_t ucode_ix
-  3 15:10 uint16_t rsvd4
+  3 15:10 uint16_t rsvd5
   3 09:00 uint16_t dmem_ix
 END
 
