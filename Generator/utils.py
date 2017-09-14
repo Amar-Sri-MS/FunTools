@@ -12,12 +12,14 @@ def AsGuardName(filename):
   name = AsUppercaseMacro(filename)
   return '__' + re.sub('\.', '_', name).upper() + '__'
 
-
 def AsUppercaseMacro(the_str):
+  if not the_str:
+    return ''
   # Convert a CamelCase name to all uppercase with underbars.
   s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', the_str)
   s2 = re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
-  return s2.upper()
+  
+  return s2.upper().replace('.', '_')
 
 def RemoveWhitespace(the_str):
   # Removes any spaces or carriage returns from the provided string.
@@ -27,6 +29,8 @@ def RemoveWhitespace(the_str):
 
 def AsComment(str):
   """Returns string inside a C comment, removing any trailing whitespace."""
+  if not str:
+    return ''
   str = str.rstrip(' \n\t')
   if len(str) == 0:
     return ''
@@ -142,3 +146,26 @@ def BitFlitString(offset):
   """Returns a human-readable string describing the offset as flit/bit."""
   return '%d:%d' % (offset / FLIT_SIZE, 63 - offset % FLIT_SIZE)
 
+def AsLine(str):
+  if not str:
+    return ''
+  str = str.rstrip(' \n\t')
+  str = str.lstrip(' \n\t')
+  str = str.replace('\n', ' ')
+  return str
+
+def AsLower(str):
+  if not str:
+    return ''
+  return str.lower()
+
+def Indent(str, offset):
+  """ Indents the provided string by the given offset."""
+  out = ''
+  lines = str.split('\n')
+  if len(lines[-1]) == 0:
+    lines = lines[0:-1]
+  for line in lines:
+    spaces = ' ' * offset
+    out += spaces + line + '\n'
+  return out
