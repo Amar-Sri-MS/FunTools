@@ -17,7 +17,7 @@
 # Created by Michael Boksanyi, August 10 2017
 # Copyright Fungible Inc. 2017
 
-import glob, os, sys
+import glob, os, sys, re
 
 import json
 
@@ -53,6 +53,17 @@ def standardize_json(in_cfg, out_cfg):
 
 	os.system('%s -i %s -o %s' % (jsonutil_tool, in_cfg, out_cfg));
 
+# if the key is in the SKU file use it and replace the one on the common cfg 
+def replace_dicts(full_cfg, cfg_j):
+
+	new_cfg = full_cfg
+
+	for key in cfg_j.keys():
+		print "Adding sku key: %s" % key
+		new_cfg[key] = cfg_j[key]
+
+	return new_cfg
+
 # Merge two dictionaries
 # If they have the same key, merge contents
 # This is necessary e.g. for the pipeline:
@@ -79,17 +90,20 @@ def merge_dicts(full_cfg, cfg_j):
 def generate_config():
 
 	full_cfg = {}
+	sku_cfg = {}
 
+	#get full_cfg
 	for cfg in glob.glob("configs/*.cfg"):
-		print "handling %s" % cfg
+		print "handling general %s" % cfg
+	    	skupattern = re.compile('configs/*sku*', re.IGNORECASE)
+	    	if skupattern.match(cfg):
+	        	continue
 
 		standardize_json(cfg, cfg+'.tmp')
-
 		f = open("%s.tmp" % cfg, 'r')
 		cfg_j = json.load(f)
 		f.close()
 		os.system('rm %s.tmp' % cfg)
-
 		full_cfg = merge_dicts(full_cfg, cfg_j)
 
 	if not os.path.exists('out'):
@@ -102,8 +116,31 @@ def generate_config():
 
 	fout.close()
 
-	# XXX next step: output bjson
+	#for each sku_cfg create a file in out dir
+	for cfg in glob.glob("configs/*.cfg"):
+	    	skupattern = re.compile('configs/*sku*', re.IGNORECASE)
+	    	if skupattern.match(cfg):
+			print "handling sku configs %s" % cfg
+			standardize_json(cfg, cfg+'.tmp')
+			f = open("%s.tmp" % cfg, 'r')
+			cfg_j = json.load(f)
+			f.close()
+			os.system('rm %s.tmp' % cfg)
 
+			sku_cfg = replace_dicts(full_cfg, cfg_j)
+			if not os.path.exists('out'):
+				os.mkdir('out')
+
+	    		skufilename = re.search(r'^(.*)/sku_(.*)', cfg, re.IGNORECASE)
+			filename = "out/"+ skufilename.group(2)
+			fout = open(filename, 'w')
+
+			# indent=4 does pretty printing for us
+			json.dump(sku_cfg, fout, indent=4)
+
+			fout.close()
+
+	# XXX next step: output bjson
 
 if __name__ == "__main__":
 
@@ -111,7 +148,7 @@ if __name__ == "__main__":
 	if rc == False:
 		print 'Failed to build jsonutil'
 		sys.exit(1)
-
+	
 	rc = generate_config()
 	if rc == False:
 		print 'Failed to generate config'
