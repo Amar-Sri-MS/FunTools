@@ -12,6 +12,7 @@
 #include <sys/types.h>
 #include <signal.h>            //termios, TCSANOW, ECHO, ICANON
 #include <pthread.h>
+#include <netinet/in.h>		// TCP socket
 
 #include <utils/threaded/fun_json.h>
 #include <utils/threaded/fun_commander.h>
@@ -386,22 +387,44 @@ static void *handle_text_thread(void *arg) {
 	return NULL;
 }
 
-static void run_text_proxy(const char *client_sock_name) {
-	printf("Publishing %s\n", client_sock_name);
+static void run_proxy(const char *client_sock_name, uint16_t port_num) {
 	int listen_sock;
-	struct sockaddr_un local = { 0 }, remote = { 0 };
+	struct sockaddr_in local_inet = { 0 }, remote_inet = { 0 };
+	struct sockaddr_un local_unix = { 0 }, remote_unix = { 0 };
+	struct sockaddr *local, *remote;
 	socklen_t s;
 
+
 	/* create a server socket */
-	listen_sock = socket(AF_UNIX, SOCK_STREAM, 0);
+	listen_sock = port_num ? socket(AF_INET, SOCK_STREAM, 0) : socket(AF_UNIX, SOCK_STREAM, 0);
 	assert(listen_sock > 0);
 
-	local.sun_family = AF_UNIX;
+	/* set socket parameters */
+	if(port_num){ /* tcp */
+		printf("Publishing on port %d\n", port_num);
 
-	snprintf(local.sun_path, sizeof(local.sun_path), "%s", client_sock_name);
-	unlink(local.sun_path);
+		local_inet.sin_family = AF_INET;
+		local_inet.sin_addr.s_addr = INADDR_ANY;
+		local_inet.sin_port = htons(port_num);
 
-	if (bind(listen_sock, (struct sockaddr *)&local, sizeof(local)) == -1) {
+		local = (struct sockaddr *) &local_inet;
+		remote = (struct sockaddr *) &remote_inet;
+		s = sizeof(struct sockaddr_in);
+
+	} else { /* unix */
+		printf("Publishing %s\n", client_sock_name);
+
+		local_unix.sun_family = AF_UNIX;
+
+		snprintf(local_unix.sun_path, sizeof(local_unix.sun_path), "%s", client_sock_name);
+		unlink(local_unix.sun_path);
+
+		local = (struct sockaddr *) &local_unix;
+		remote = (struct sockaddr *) &remote_unix;
+		s = sizeof(struct sockaddr_un);
+	}
+
+	if (bind(listen_sock, local, s) == -1) {
 		perror("bind");
 		exit(1);
 	}
@@ -410,13 +433,10 @@ static void run_text_proxy(const char *client_sock_name) {
 		perror("listen");
 		exit(1);
 	}
-
 	/* main server loop */
 	while(1) {
 		// printf("[dpcsock] Listening for connection\n");
-		s = sizeof(remote);
-		int rsock = accept(listen_sock,
-				   (struct sockaddr *)&remote, &s);
+		int rsock = accept(listen_sock, remote, &s);
 		_setnosigpipe(rsock);
 
 		if (rsock == -1) {
@@ -424,7 +444,7 @@ static void run_text_proxy(const char *client_sock_name) {
 		} else {
 			pthread_t _handle_thread;
 			int r = pthread_create(&_handle_thread, NULL,
-					   handle_text_thread, (void*)(uintptr_t)rsock);
+				handle_text_thread, (void*)(uintptr_t)rsock);
 			if (r) {
 				perror("pthread_create");
 				exit(1);
@@ -436,10 +456,11 @@ static void run_text_proxy(const char *client_sock_name) {
 #define PORTNO 9001
 
 #define HELP	\
-	"\t--help: 	you know\n"\
-	"\t--http_proxy:	webproxy, browse 'http://localhost:9001'\n"\
-	"\t--nocli:	no cli mode, type cmd as arg\n"\
-	"\t--text_proxy:	text JSON proxy, use port '/tmp/funos-dpc-text.sock'\n"
+	"\t--help: 		you know\n"\
+	"\t--http_proxy:		webproxy, browse 'http://localhost:9001'\n"\
+	"\t--nocli:		no cli mode, type cmd as arg\n"\
+	"\t--text_proxy:		text JSON proxy, use port '/tmp/funos-dpc-text.sock'\n"\
+	"\t--tcp_proxy <port num>:	listens on TCP socket, provide port number\n"
 
 static void _do_cli(int argc, char *argv[], int sock) {
 	uint64_t tid = 1;
@@ -459,7 +480,9 @@ static void _do_cli(int argc, char *argv[], int sock) {
 int main(int argc, char *argv[]) {
 	bool http_proxy_mode = false;
 	bool text_proxy_mode = false;
+	bool tcp_proxy_mode = false;
 	bool interractive_mode = false;
+	uint16_t port_num;
 
 	if (argc < 2) {
 		interractive_mode = true;
@@ -467,6 +490,15 @@ int main(int argc, char *argv[]) {
 		http_proxy_mode = true;
 	} else if (strcmp(argv[1], "--text_proxy") == 0) {
 		text_proxy_mode = true;
+	} else if (strcmp(argv[1], "--tcp_proxy") == 0) {
+		tcp_proxy_mode = true;
+		if (argc < 3) { // port number missing
+			printf("*** Plese provide tcp port number\n\n");
+			printf("Usage: \n" HELP "\n");
+			exit(1);
+		}
+		port_num = atoi(argv[2]);
+
 	} else if (strcmp(argv[1], "--help") == 0) {
 		printf("Help: \n" HELP "\n");
 		return 0;
@@ -476,7 +508,8 @@ int main(int argc, char *argv[]) {
 		printf("*** Usage: \n" HELP "\n");
 		exit(2);
 	}
-	printf("FunOS Dataplane Control Shell%s\n", http_proxy_mode ? ": HTTP proxy mode" : text_proxy_mode ? ": Text JSON proxy mode" : "");
+	printf("FunOS Dataplane Control Shell%s\n", http_proxy_mode ? ": HTTP proxy mode" : text_proxy_mode ? "\
+		: Text JSON proxy mode" : tcp_proxy_mode ? ": TCP proxy mode" : "");
 
 	/* open a socket to FunOS */
 	int sock = _open_sock(SOCK_NAME);
@@ -487,7 +520,9 @@ int main(int argc, char *argv[]) {
 	if (http_proxy_mode) {
 		run_webserver(sock, PORTNO);
 	} else if (text_proxy_mode) {
-		run_text_proxy("/tmp/funos-dpc-text.sock");
+		run_proxy("/tmp/funos-dpc-text.sock", 0);
+	} else if (tcp_proxy_mode) {
+		run_proxy(NULL, port_num);
 	} else if (interractive_mode) {
 		_do_interactive(sock);
 	} else {
