@@ -1303,7 +1303,8 @@ END
 STRUCT fun_nu_ffe_entry_act_dmem
   0 63:48 uint16_t index
   0 47:0 uint8_t rsvd0[6]
-  1 63:0 uint64_t data_wlst /* action data memory */
+  1 63:48 uint8_t data[2] /* action data memory */
+  1 47:00 uint8_t rsvd1[6]
 END
 
 
