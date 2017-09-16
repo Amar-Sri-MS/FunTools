@@ -1227,7 +1227,7 @@ STRUCT fun_nu_ffe_entry_tmp_tcam
   1 63:32 uint32_t rsvd2
   1 31:26 uint32_t rsvd3
   1 25:0 uint32_t mask /* mask (26 bits) */
-  2 63:0 uint64_t kuc[6] /* key microcode */
+  2 63:0 uint8_t kuc[48] /* key microcode */
   3 63:0 ...
   4 63:0 ...
   5 63:0 ...
@@ -1246,14 +1246,16 @@ STRUCT fun_nu_ffe_entry_tcam
   0 21:16 uint16_t ucode_ix
   0 15:10 uint16_t rsvd2
   0 09:00 uint16_t dmem_ix
-  1 63:0 uint64_t key[3]
-  2 63:0 ...
-  3 63:0 ...
-  4 63:0 uint64_t rsvd1
-  5 63:0 uint64_t mask[3]
-  6 63:0 ...
-  7 63:0 ...
-  8 63:0 uint64_t rsvd2
+  1 63:00 uint8_t key[25]
+  2 63:00 ...
+  3 63:00 ...
+  4 63:56 ...
+  4 55:00 uint8_t rsvd1[7]
+  5 63:00 uint8_t mask[25]
+  6 63:00 ...
+  7 63:00 ...
+  8 63:56 ...
+  8 55:00 uint8_t rsvd2[7]
 END
 
 // FFE Hash or Stash entry format
@@ -1264,12 +1266,13 @@ STRUCT fun_nu_ffe_entry_hash_stash
   0 31:31 uint8_t valid
   0 30:24 uint8_t rsvd0
   0 23:0 uint8_t rsvd1[3]
-  1 63:0 uint64_t key[2]
-  2 63:0 ...
-  3 63:32 uint32_t rsvd2
-  3 31:22 uint16_t rsvd3
+  1 63:24 uint8_t rsvd2[5]
+  1 23:00 uint8_t key[11]
+  2 63:00 ...
+  3 63:32 uint32_t rsvd3
+  3 31:22 uint16_t rsvd4
   3 21:16 uint16_t ucode_ix
-  3 15:10 uint16_t rsvd4
+  3 15:10 uint16_t rsvd5
   3 09:00 uint16_t dmem_ix
 END
 
@@ -1287,10 +1290,11 @@ END
 STRUCT fun_nu_ffe_entry_act_ucode
   0 63:48 uint16_t index
   0 47:0 uint8_t rsvd0[6]
-  1 63:0 uint64_t instr_data_wlst[3]
+  1 63:0 uint8_t instr_data_wlst[26]
   2 63:0 ...
   3 63:0 ...
-  4 63:0 uint64_t rsvd1[5]
+  4 63:48 ...
+  4 47:0 uint8_t rsvd1[38]
   5 63:0 ...
   6 63:0 ...
   7 63:0 ...
@@ -1301,7 +1305,7 @@ END
 STRUCT fun_nu_ffe_entry_act_dmem
   0 63:48 uint16_t index
   0 47:0 uint8_t rsvd0[6]
-  1 63:0 uint64_t data_wlst /* action data memory */
+  1 63:00 uint8_t data[8] /* action data memory */
 END
 
 
