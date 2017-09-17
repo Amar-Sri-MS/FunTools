@@ -21,11 +21,12 @@ class DKFunction: Equatable, CustomStringConvertible {
 	static func ==(lhs: DKFunction, rhs: DKFunction) -> Bool {
 		return lhs.isEqualTo(rhs)
 	}
-	var functionToJSON: [String: JSON] {
+	var functionToJSONDict: [String: JSON] {
 		fatalErrorMustBeImplementedBySubclass()
 	}
+	var functionToJSON: JSON { return .dictionary(functionToJSONDict) }
 	class func functionFromJSON(_ uniquingTable: DKTypeTable, _ j: [String: JSON]) -> DKFunction! {
-		for f in [DKFunctionOperator.functionFromJSON, DKFunctionProjection.functionFromJSON, DKFunctionFilter.functionFromJSON, DKFunctionComposition.functionFromJSON, DKFunctionClosure.functionFromJSON, DKFunctionGenerator.functionFromJSON] {
+		for f in [DKFunctionOperator.functionFromJSON, DKFunctionProjection.functionFromJSON, DKFunctionFilter.functionFromJSON, DKFunctionComposition.functionFromJSON, DKFunctionClosure.functionFromJSON, DKFunctionGenerator.functionFromJSON, DKFunctionGatherFromFifo.functionFromJSON] {
 			let fun = f(uniquingTable, j)
 			if fun != nil { return fun }
 		}

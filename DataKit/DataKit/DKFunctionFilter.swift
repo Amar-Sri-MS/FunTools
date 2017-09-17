@@ -18,9 +18,9 @@ class DKFunctionFilter: DKFunction {
 	override var signature: DKTypeSignature {
 		return DKTypeSignature(input: paramsType, output: sequenceType)
 	}
-	override var functionToJSON: [String: JSON] {
+	override var functionToJSONDict: [String: JSON] {
 		return [
-			"filter": .dictionary(predicate.functionToJSON)
+			"filter": predicate.functionToJSON
 		]
 	}
 	override class func functionFromJSON(_ uniquingTable: DKTypeTable, _ dict: [String: JSON]) -> DKFunction! {

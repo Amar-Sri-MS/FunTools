@@ -26,7 +26,7 @@ class DKExpressionFuncCall: DKExpression {
 	}
 	override func expressionToJSON(_ uniquingTable: DKTypeTable) -> JSON {
 		let dict: [String: JSON] = [
-			"func": .dictionary(fun.functionToJSON),
+			"func": fun.functionToJSON,
 			"args": .array(arguments.map { $0.expressionToJSON(uniquingTable) })
 		]
 		return .dictionary(dict)

@@ -23,7 +23,7 @@ class DKFunctionSink: DKFunction {
 		let seqType = DKTypeSequence(subType: itemType)
 		return DKTypeSignature(input: DKTypeStruct(funcParamType: seqType), output: .void)
 	}
-	override var functionToJSON: [String: JSON] {
+	override var functionToJSONDict: [String: JSON] {
 		return [
 			"sink": .string(name),
 			"item_type": itemShortcut.toJSON

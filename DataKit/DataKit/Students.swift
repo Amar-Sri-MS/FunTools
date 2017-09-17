@@ -76,9 +76,9 @@ func regenerateData(input: Data) -> Data {
 	return output.finishAndData()
 }
 
-func filterSpecificFirstName(_ uniquingTable: DKTypeTable, _ name: String) -> DKFunctionFilter {
+func filterSpecificFirstOrLastName(_ uniquingTable: DKTypeTable, _ first: Bool, _ name: String) -> DKFunctionFilter {
 	let t = studentType()
-	let studentFirstName: DKFunction = DKFunctionProjection(structType: t, fieldName: "first_name", uniquingTable)
+	let studentFirstName: DKFunction = DKFunctionProjection(structType: t, fieldName: first ? "first_name" : "last_name", uniquingTable)
 	let v0 = DKExpressionVariable(index: 0, type: t)
 	let expressionGetFirstName = DKExpressionFuncCall(fun: studentFirstName, arguments: [v0])
 	let isEqualFunc: DKFunction = DKFunctionOperator(oper: DKComparisonOperator(domain: DKTypeString.string, op: "==")!, uniquingTable)
@@ -106,7 +106,7 @@ func dumpFilter(input: Data, _ uniquingTable: DKTypeTable, _ name: String) {
 	let ts = studentsType()
 	let t = studentType()
 	let knowns = [t: "Student"]
-	let filterFunc = filterSpecificFirstName(uniquingTable, name)
+	let filterFunc = filterSpecificFirstOrLastName(uniquingTable, true, name)
 	print("Filter = \(filterFunc.sugaredDescription(knowns))")
 	let students = ts.fromDataLazy(input)
 	let con = DKEvaluationContext()
@@ -163,7 +163,7 @@ func studentsTest() {
 	print("Students type = \(tsShortcut)")
 
 	let name = "Mary"
-	let filter: DKFunctionFilter = filterSpecificFirstName(typeTable, name)
+	let filter: DKFunctionFilter = filterSpecificFirstOrLastName(typeTable, true, name)
 
 	print("Students = \(data.debugDescription)")
 	printStudentsDataStream(data: data)
@@ -176,32 +176,44 @@ func studentsTest() {
 	print("Log should start here")
 	let result = logger.evaluate(context: con, [students2!.asExpressionConstant])
 	print("Log finished - result = \(result)")
+	let knowns = [studentType(): "Student"]
 
 	assert(data == regen)
 	dumpFilter(input: data, typeTable, name)
 
 	try! data.write(to: "/tmp/students.data")
-	try! JSON.dictionary(generator.functionToJSON).writeToFile("/tmp/students_generator.json")
-	try! JSON.dictionary(filter.functionToJSON).writeToFile("/tmp/students_filter.json")
-	try! JSON.dictionary(logger.functionToJSON).writeToFile("/tmp/students_logger.json")
+	try! generator.functionToJSON.writeToFile("/tmp/students_generator.json")
+	try! filter.functionToJSON.writeToFile("/tmp/students_filter.json")
+	try! logger.functionToJSON.writeToFile("/tmp/students_logger.json")
 	try! typeTable.typeTableAsJSON.writeToFile("/tmp/students_types.json")
 
 	let combined: JSON = .dictionary([
 		"type_table": typeTable.typeTableAsJSON,
-		"generator": JSON.dictionary(generator.functionToJSON),
-		"filter": JSON.dictionary(filter.functionToJSON),
-		"sink": JSON.dictionary(logger.functionToJSON)
+		"generator": generator.functionToJSON,
+		"filter": filter.functionToJSON,
+		"sink": logger.functionToJSON
 	])
 	sendToDPCServer(combined)
+	print("\n")
 
-	if false {
-		let pipeline = DKFunctionComposition(outer: logger, inner: DKFunctionComposition(outer: filter, inner: generator))
+	if true {
+		let lastIsSmith = filterSpecificFirstOrLastName(typeTable, false, "Smith")
+		let pipeline = DKFunctionComposition(outer: logger, inner: DKFunctionComposition(outer: lastIsSmith, inner: filter))
 		print("Signature of pipeline: \(pipeline.signature)")
 		let combined2: JSON = .dictionary([
 			"type_table": typeTable.typeTableAsJSON,
-			"pipeline": JSON.dictionary(pipeline.functionToJSON)
+			"generator": generator.functionToJSON,
+			"pipeline": pipeline.functionToJSON
 			])
-		sendToDPCServer(combined2)
+		let flowGraphGen = DKFlowGraphGen(typeTable, generator, pipeline)
+		let r = flowGraphGen.generate()
+		for fifo in r.fifos {
+			print("\(fifo.sugaredDescription(knowns))")
+		}
+		let j = flowGraphGen.flowGraphToJSON
+		print("flow graph as JSON: \n\(j)")
+
+		//		sendToDPCServer(combined2)
 	}
 
 }

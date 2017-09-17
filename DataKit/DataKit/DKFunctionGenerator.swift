@@ -23,7 +23,7 @@ class DKFunctionGenerator: DKFunction {
 	override var signature: DKTypeSignature {
 		return DKTypeSignature(input: .void, output: DKTypeSequence(subType: itemType))
 	}
-	override var functionToJSON: [String: JSON] {
+	override var functionToJSONDict: [String: JSON] {
 		return [
 			"generator": .string(name),
 			"item_type": itemShortcut.toJSON,

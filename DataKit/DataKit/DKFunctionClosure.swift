@@ -25,7 +25,7 @@ class DKFunctionClosure: DKFunction {
 	override var signature: DKTypeSignature {
 		return DKTypeSignature(input: structParams, output: body.type)
 	}
-	override var functionToJSON: [String: JSON] {
+	override var functionToJSONDict: [String: JSON] {
 		return [
 			"closure": .string(paramsShortcut),
 			"body": bodyJSON
@@ -49,6 +49,17 @@ class DKFunctionClosure: DKFunction {
 			$0.sugaredDescription(knowns)
 		}
 		return "{ (\(p)) -> \(body.type.sugaredDescription(knowns)) in \(body.sugaredDescription(knowns).desc) }"
+	}
+	class func identity(_ uniquingTable: DKTypeTable, _ t: DKType) -> DKFunctionClosure {
+		let expr = DKExpressionVariable(index: 0, type: t)
+		return DKFunctionClosure(params: [t], body: expr, uniquingTable)
+	}
+
+	// Function returning always the same constant
+	class func constant(_ uniquingTable: DKTypeTable, _ value: DKValue) -> DKFunctionClosure {
+		let t = value.type
+		let expr = DKExpressionConstant(value)
+		return DKFunctionClosure(params: [t], body: expr, uniquingTable)
 	}
 }
 
