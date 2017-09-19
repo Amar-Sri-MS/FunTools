@@ -16,7 +16,7 @@ class DKFunctionGatherFromFifo: DKFunction {
 		self.fifoIndex = fifoIndex
 		self.itemType = itemType
 	}
-	var sequenceType: DKType { return DKTypeSequence(subType: itemType) }
+	var sequenceType: DKType { return itemType.makeSequence }
 	override var signature: DKTypeSignature {
 		return DKTypeSignature(input: DKTypeStruct.void, output: sequenceType)
 	}

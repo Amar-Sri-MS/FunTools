@@ -24,7 +24,7 @@ class DKFlowGraphGen {
 	func optimize(fifos: inout [DKFifo]) -> Bool {
 		// Currently, this optimization is pointless
 		for i in 1 ..< fifos.count - 1 {
-			if fifos[i].predicateOnInput == nil && fifos[i+1].predicateOnInput == nil && fifos[i].toAppend == .gatherByBatch {
+			if fifos[i].hasDefaultBehavior && fifos[i+1].predicateOnInput == nil {
 				print("Optimize away fifo #\(i)")
 				fifos.remove(at: i)
 				_ = optimize(fifos: &fifos) // try again
@@ -57,7 +57,7 @@ class DKFlowGraphGen {
 		if let filter = fun as? DKFunctionFilter {
 			var lastFifo = fifos.last!
 			let t = filter.itemType
-			if lastFifo.toAppend != .all || lastFifo.predicateOnInput != nil {
+			if !lastFifo.hasDefaultBehavior {
 				// make a new fifo
 				lastFifo = addFifo(t)
 			}
@@ -68,7 +68,7 @@ class DKFlowGraphGen {
 			let genInner = generate(comp.inner, &fifos)
 			if (genInner is DKFunctionGatherFromFifo) && comp.outer.isInputGroupable {
 				// Instead of composing the functions, we specify that the last Fifo gathers
-				fifos.last!.toAppend = .gatherByBatch
+				fifos.last!.toAppend = .all
 				let t = (genInner.signature.output as! DKTypeSequence).sub
 				_ = addFifo(t)	// we ignore for now the (trivial) result
 				return generate(comp.outer, &fifos)
@@ -76,6 +76,9 @@ class DKFlowGraphGen {
 				let genOuter = generate(comp.outer, &fifos)
 				return DKFunctionComposition(outer: genOuter, inner: genInner)
 			}
+		} else if let map = fun as? DKFunctionMap {
+			fifos.last!.compose(outer: map.each)
+			return DKFunctionGatherFromFifo(uniquingTable, fifos.count - 1, map.each.signature.output)
 		} else {
 			let prev = DKFunctionGatherFromFifo(uniquingTable, fifos.count - 1, fifos.last!.itemType)
 			return DKFunctionComposition(outer: fun, inner: prev)

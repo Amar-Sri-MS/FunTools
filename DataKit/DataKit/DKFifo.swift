@@ -15,7 +15,8 @@ class DKFifo: CustomStringConvertible {
 	enum AppendStyle {
 		case none
 		case all
-		case gatherByBatch	// gathers values to produce, consumed by batches
+		case gatherByBatch(DKFunction)	// gathers values to produce, consumed by batches
+		// if function is non-nil, it is applied
 	}
 	var toAppend: AppendStyle = .all
 	init(label: Int, itemType: DKType) {
@@ -32,7 +33,14 @@ class DKFifo: CustomStringConvertible {
 		return asSource!
 	}
 	func sugaredDescription(_ knowns: [DKType: String]) -> String {
-		return "FIFO#\(label)(t=\(itemType.sugaredDescription(knowns)); pred=\(predicateOnInput == nil ? "nil" : predicateOnInput.sugaredDescription(knowns)); append=\(toAppend))"
+		var app = ""
+		switch toAppend {
+			case .all: app = "all"
+			case .none: app = "none"
+			case let .gatherByBatch(fun):
+				app = "gather(\(fun.sugaredDescription(knowns)))"
+		}
+		return "FIFO#\(label)(t=\(itemType.sugaredDescription(knowns)); pred=\(predicateOnInput == nil ? "nil" : predicateOnInput.sugaredDescription(knowns)); append=\(app))"
 	}
 	var description: String {
 		return sugaredDescription([:])
@@ -45,9 +53,29 @@ class DKFifo: CustomStringConvertible {
 		if predicateOnInput != nil {
 			dict["predicate"] = predicateOnInput!.functionToJSON
 		}
-		if toAppend != .all {
-			dict["append"] = toAppend == .none ? "none" : "gather"
+		switch toAppend {
+			case .all: break // nothing
+			case .none:
+				dict["append"] = "none"
+			case let .gatherByBatch(fun):
+				dict["append"] = "gather"
+				dict["gather_fun"] = fun.functionToJSON
 		}
 		return .dictionary(dict)
+	}
+	var hasDefaultBehavior: Bool {
+		switch toAppend {
+			case .all: return predicateOnInput == nil
+			default: return false
+		}
+	}
+	func compose(outer: DKFunction) {
+		switch toAppend {
+			case .none: return
+			case .all: toAppend = .gatherByBatch(outer)
+			case let .gatherByBatch(inner):
+				let comp = DKFunctionComposition(outer: outer, inner: inner)
+				toAppend = .gatherByBatch(comp)
+		}
 	}
 }

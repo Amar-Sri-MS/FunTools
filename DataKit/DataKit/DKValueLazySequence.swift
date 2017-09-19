@@ -16,7 +16,7 @@ class DKValueLazySequence: DKValue, DKValueIsEqualToOther, Sequence {
 	func makeIterator() -> Iterator {
 		return LazyIterator(self)
 	}
-	override var type: DKType { return DKTypeSequence(subType: itemType) }
+	override var type: DKType { return itemType.makeSequence }
 	class LazyIterator: Iterator {
 		let seq: DKValueLazySequence
 		var addr: DKBitAddress

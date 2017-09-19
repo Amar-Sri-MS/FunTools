@@ -12,7 +12,7 @@ protocol DKValueStream {
 }
 
 extension DKValueStream {
-	var sequenceType: DKTypeSequence { return DKTypeSequence(subType: itemType) }
+	var sequenceType: DKType { return itemType.makeSequence }
 }
 
 class DKValueStreamSource: DKValueStream {

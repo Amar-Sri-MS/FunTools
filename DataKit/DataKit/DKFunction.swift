@@ -26,7 +26,7 @@ class DKFunction: Equatable, CustomStringConvertible {
 	}
 	var functionToJSON: JSON { return .dictionary(functionToJSONDict) }
 	class func functionFromJSON(_ uniquingTable: DKTypeTable, _ j: [String: JSON]) -> DKFunction! {
-		for f in [DKFunctionOperator.functionFromJSON, DKFunctionProjection.functionFromJSON, DKFunctionFilter.functionFromJSON, DKFunctionComposition.functionFromJSON, DKFunctionClosure.functionFromJSON, DKFunctionGenerator.functionFromJSON, DKFunctionGatherFromFifo.functionFromJSON] {
+		for f in [DKFunctionOperator.functionFromJSON, DKFunctionProjection.functionFromJSON, DKFunctionFilter.functionFromJSON, DKFunctionComposition.functionFromJSON, DKFunctionClosure.functionFromJSON, DKFunctionGenerator.functionFromJSON, DKFunctionGatherFromFifo.functionFromJSON, DKFunctionMap.functionFromJSON] {
 			let fun = f(uniquingTable, j)
 			if fun != nil { return fun }
 		}

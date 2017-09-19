@@ -35,7 +35,7 @@ class DKValue: Equatable, CustomStringConvertible {
 		return DKValueSimple(s)
 	}
 	class var null: DKValue {
-		return DKValueSimple(.null)
+		return DKValueSimple(type: .void, json: .null)
 	}
 
 	// ===============  ACCESS CONVENIENCES ===============

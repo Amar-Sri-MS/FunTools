@@ -20,8 +20,7 @@ class DKFunctionSink: DKFunction {
 		itemShortcut = itemType.toTypeShortcut(uniquingTable)
 	}
 	override var signature: DKTypeSignature {
-		let seqType = DKTypeSequence(subType: itemType)
-		return DKTypeSignature(input: DKTypeStruct(funcParamType: seqType), output: .void)
+		return DKTypeSignature(input: DKTypeStruct(funcParamType: itemType.makeSequence), output: .void)
 	}
 	override var functionToJSONDict: [String: JSON] {
 		return [
@@ -38,16 +37,15 @@ class DKFunctionSink: DKFunction {
 	}
 	override func evaluate(context: DKEvaluationContext, _ subs: [DKExpression]) -> DKValue {
 		assert(subs.count == 1)
-		let seqType = DKTypeSequence(subType: itemType)
 		let x = subs[0].evaluate(context: context)
-		assert(x.type == seqType)
+		assert(x.type == itemType.makeSequence)
 		if name == "logger" {
 			x.dumpDescription()
 		} else {
 			let sink = DKFunctionSink.registry[name]!
 			sink(x)
 		}
-		return DKValueSimple(type: .void, json: .null)
+		return .null
 	}
 	override func sugaredDescription(_ knowns: [DKType: String]) -> String {
 		return "sink(\(name), \(itemType.sugaredDescription(knowns)))"
