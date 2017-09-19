@@ -1440,7 +1440,7 @@ STRUCT fun_nu_nh_entry
   0 55:32 uint8_t rsvd0[3]
   0 31:16 uint16_t index
   0 15:0 uint16_t len
-  _ _:_ uint64_t data[0]
+  _ _:_ uint8_t data[0]
 END
 
 ENUM fun_nu_nh_lvl_t
@@ -1474,16 +1474,18 @@ STRUCT fun_nu_prw_data_entry
   0 63:60 uint16_t rsvd0
   0 59:48 uint16_t index
   0 47:00 uint8_t rsvd1[6]
-  1 63:00 uint64_t data
+  1 63:00 uint8_t data[8]
+  1 63:00 uint64_t rsvd2
 END
 
 STRUCT fun_nu_prw_instr_entry
   0 63:60 uint16_t rsvd0
   0 59:48 uint16_t index
   0 47:00 uint8_t rsvd1[6]
-  1 63:00 uint64_t data[3]
+  1 63:00 uint8_t data[19]
   2 63:00 ...
-  3 63:00 ...
+  3 63:40 ...
+  3 39:00 uint8_t rsvd2[5]
 END
 
 STRUCT fun_nu_rw_prof_tcam_entry
