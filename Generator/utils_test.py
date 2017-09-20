@@ -89,5 +89,23 @@ class TestValidIdentifier(unittest.TestCase):
     self.assertFalse(utils.IsValidCIdentifier('0'))
     self.assertFalse(utils.IsValidCIdentifier('-'))
 
+class TestAsLine(unittest.TestCase):
+  def testSimple(self):
+    self.assertEqual('a b c', utils.AsLine('a\nb\nc'))
+    self.assertEqual('', utils.AsLine(''))
+
+class TestAsLower(unittest.TestCase):
+  def testSimple(self):
+    self.assertEqual('abcd', utils.AsLower('Abcd'))
+    self.assertEqual('aaaa bbbb ccc', utils.AsLower('AAAA BbBb cCc'))
+
+class TestIndent(unittest.TestCase):
+  def testSimple(self):
+    self.assertEqual('  foo\n', utils.Indent('foo', 2))
+    self.assertEqual('    a\n    b\n', utils.Indent('a\nb', 4))
+    self.assertEqual('  a\n  b\n', utils.Indent('a\nb\n', 2))
+    self.assertEqual('    a\n    b\n    c\n', utils.Indent('a\nb\nc', 4))
+
+
 if __name__ == '__main__':
     unittest.main()

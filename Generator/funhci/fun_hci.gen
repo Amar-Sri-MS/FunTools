@@ -71,15 +71,16 @@ ENUM fun_admin_bind_type
   FUN_ADMIN_BIND_TYPE_EPCQ = 0x01
   FUN_ADMIN_BIND_TYPE_EPSQ = 0x02
   FUN_ADMIN_BIND_TYPE_PORT = 0x03 
-  FUN_ADMIN_BIND_TYPE_VI = 0x04
-  FUN_ADMIN_BIND_TYPE_ETH = 0x05
-  FUN_ADMIN_BIND_TYPE_SOCKET = 0x06
-  FUN_ADMIN_BIND_TYPE_TCP = 0x07
-  FUN_ADMIN_BIND_TYPE_NSS = 0x08
-  FUN_ADMIN_BIND_TYPE_VOL = 0x09
-  FUN_ADMIN_BIND_TYPE_CONCAT = 0x0a
-  FUN_ADMIN_BIND_TYPE_CRYPTO = 0x0b
-  FUN_ADMIN_BIND_TYPE_NU = 0x0c
+  FUN_ADMIN_BIND_TYPE_VI_TO_NETWORK = 0x04
+  FUN_ADMIN_BIND_TYPE_VI_TO_HOST = 0x05
+  FUN_ADMIN_BIND_TYPE_ETH = 0x06
+  FUN_ADMIN_BIND_TYPE_SOCKET = 0x07
+  FUN_ADMIN_BIND_TYPE_TCP = 0x08
+  FUN_ADMIN_BIND_TYPE_NSS = 0x09
+  FUN_ADMIN_BIND_TYPE_VOL = 0x0a
+  FUN_ADMIN_BIND_TYPE_CONCAT = 0x0b
+  FUN_ADMIN_BIND_TYPE_CRYPTO = 0x0c
+  FUN_ADMIN_BIND_TYPE_NU = 0x0d
 END
 
 ENUM fun_admin_bind_const
@@ -564,6 +565,10 @@ END
 /*
  *  SOCKET Request/Response
  */
+FLAGS fun_admin_socket_create_flag
+  FUN_ADMIN_SOCKET_CREATE_FLAG_ALLOCATOR = 0x01
+END
+
 STRUCT fun_admin_socket_req
   0 63:00 fun_admin_req_common common 
   1 63:00 ...
@@ -593,7 +598,7 @@ STRUCT fun_admin_socket_rsp
   0 63:00 fun_admin_rsp_common common
   0 63:00 ...
   UNION socket_admin_rsp_subop u
-    STRUCT fun_socket_create_rsp create
+    STRUCT fun_admin_socket_create_rsp create
       2 63:56  uint8_t subop /* SUBOP_CREATE */
       2 55:32  uint8_t rsvd0[3]
       2 31:00 uint32_t id /* socket_rsp_common.rsp_common_status=0: socketid, otherwise: N/A */
@@ -607,8 +612,12 @@ STRUCT fun_admin_socket_rsp
 END
 
 /*
- *  SOCKET Request/Response
+ *  TCP Request/Response
  */
+FLAGS fun_admin_tcp_create_flag
+  FUN_ADMIN_TCP_CREATE_FLAG_ALLOCATOR = 0x01
+END
+
 STRUCT fun_admin_tcp_req
   0 63:00 fun_admin_req_common common 
   1 63:00 ...
@@ -730,6 +739,10 @@ STRUCT fun_admin_vol_req
       14 63:00 uint64_t rsvd12
       15 63:00 uint64_t rsvd13
       16 63:00 uint64_t rsvd14
+      17 63:00 uint64_t rsvd15
+      18 63:00 uint64_t rsvd16
+      19 63:00 uint64_t rsvd17
+      20 63:00 uint64_t rsvd18
     END
     STRUCT fun_admin_vol_destroy_req destroy
       2 63:56  uint8_t subop /* SUBOP_DESTROY */
@@ -1048,6 +1061,22 @@ ENUM fun_socket_op
   FUN_SOCKET_OP_CONNECT = 0x08
   FUN_SOCKET_OP_SENDMSG = 0x09
   FUN_SOCKET_OP_RECVMSG = 0x0A
+END
+
+ENUM fun_socket_domain
+  FUN_SOCKET_DOMAIN_INET = 0x02
+  FUN_SOCKET_DOMAIN_INET6 = 0x0a
+END
+
+ENUM fun_socket_type
+  FUN_SOCKET_TYPE_DGRAM = 0x01
+  FUN_SOCKET_TYPE_STREAM = 0x02
+  FUN_SOCKET_TYPE_RAW = 0x03
+  FUN_SOCKET_TYPE_SEQPACKET = 0x05
+END
+
+ENUM fun_socket_protocol
+  FUN_SOCKET_PROTOCOL_TCP = 0x06
 END
 
 STRUCT fun_socket_open_req
