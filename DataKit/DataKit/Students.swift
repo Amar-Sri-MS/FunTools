@@ -118,9 +118,20 @@ func dumpFilter(input: Data, _ uniquingTable: DKTypeTable, _ name: String) {
 
 var socket: Int32 = 0
 
+extension String {
+	var asOneLine: String {
+		var t = replaceOccurrences("\n", " ").replaceOccurrences("\t", " ")
+		while true {
+			let u = t.replaceOccurrences("  ", " ")
+			if u == t { return t }
+			t = u
+		}
+	}
+}
+
 func sendToDPCServer(old: Bool, _ combined: JSON) {
 	print("Combined: \(combined)")
-	let str = combined.description.replaceOccurrences("\n", " ")
+	let str = combined.description.asOneLine
 	print("Single line: \n\(str)")
 	let rs: String
 	if old {
