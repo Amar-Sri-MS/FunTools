@@ -1243,7 +1243,8 @@ ENUM fun_nu_op
   FUN_NU_OP_RW_DATA_W = 18
   FUN_NU_OP_RW_INSTR_W = 19
   FUN_NU_OP_RW_PROF_TCAM_W = 20
-  FUN_NU_OP_SSE_MD_W = 21		/* SSE begin */
+  FUN_NU_OP_SSE_MD_W = 21
+  FUN_NU_OP_NH_OFF_MAP_W = 22
 END
 
 // FFE Template TCAM entry format
@@ -1542,7 +1543,7 @@ STRUCT fun_nu_nh_off_map_entry
 END
 
 STRUCT fun_nu_nh_off_req
-  0 63:00 fun_req_common common
+  0 63:00 fun_req_common common /* op: FUN_NU_OP_NH_OFF_MAP_W */
   1 63:00 ...
   _ _:_ fun_nu_nh_off_map_entry entry[0]
 END
