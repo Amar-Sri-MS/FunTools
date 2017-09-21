@@ -86,13 +86,14 @@ class DKFlowGraphGen {
 	}
 	var flowGraphToJSON: JSON {
 		let r = generate()
-		let dict: [String: JSON] = [
-			"types": uniquingTable.typeTableAsJSON,
+		var dict: [String: JSON] = [
 			"fifos": .array(r.fifos.map { $0.fifoToJSON(uniquingTable) }),
 			"generator": gen.functionToJSON,
 			"fun": fun.functionToJSON,
 			"last_fun": r.lastFunc.functionToJSON
 		]
+		// we do the table last, in case something got added there
+		dict["types"] = uniquingTable.typeTableAsJSON
 		return .dictionary(dict)
 	}
 }
