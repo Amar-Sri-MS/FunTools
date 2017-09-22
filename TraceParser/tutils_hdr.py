@@ -3,14 +3,24 @@
 
 import re
 
-trace_fmt = 'PDT'
-if trace_fmt == 'SIM':
-	import tutils_sim as tutils
-elif trace_fmt == 'PDT':
-	import tutils_pdt as tutils
-else:
-	print "unknown trace format"
-	assert(0)
+# gotta load 'em all (well we don't, but this is easier)
+import tutils_sim
+import tutils_pdt
+import tutils_qmu
+
+# default to nothing
+tutils = None
+
+# list of valid formats we support
+FORMAT_DECODER = {"sim": tutils_sim,
+                  "pdt": tutils_pdt,
+                  "qemu": tutils_qmu }
+VALID_FORMATS = FORMAT_DECODER.keys()
+
+# called by the trace parser when we know the user's intent
+def set_format(fname):
+        global tutils
+        tutils = FORMAT_DECODER[fname]
 
 
 LIVE_DEBUG = False
@@ -51,21 +61,23 @@ def get_ts(trace_line):
 def get_cycle(trace_line):
 	return tutils.get_cycle(trace_line)
 
+def text_section_start(dasm_line):
+	return dasm_line == "Disassembly of section .text:"
+
 def data_section_start(dasm_line):
-	return dasm_line.strip() == "Disassembly of section .data:"
+	return dasm_line == "Disassembly of section .data:"
 
+#
+#
+#
+REGEX = re.compile(r"([A-Fa-f0-9]+) <(.*)>\:")
 
-#
-#
-#
 def parse_item(line):
 	found = False
 	addr = 0
 	fname = ""
 
-	regex = r"([A-Fa-f0-9]+) <(.*)>\:"
-
-	m = re.search(regex, line) 
+	m = REGEX.search(line)
 	if m is not None:
 
 		addr = long(m.group(1), 16)

@@ -25,12 +25,23 @@ def create_range_list(dasm_fname):
 
 	coll = []
 
+        before_text = True
 	out_of_range = False
 
 	for line in f.readlines():
 
-		if tutils.data_section_start(line):
-			out_of_range = True
+                line = line.strip()
+
+                if (before_text):
+                        if tutils.text_section_start(line):
+                                before_text = False
+
+                        if (before_text):
+                                continue
+
+                if (not out_of_range):
+		        if tutils.data_section_start(line):
+			        out_of_range = True
 
 		[found, addr, fname] = tutils.parse_item(line)
 
@@ -239,6 +250,7 @@ def print_funcs(ranges):
 #
 #
 #
+VALID_FORMATS = ["pdt", "sim", "qemu"]
 if __name__ == "__main__":
 
 	parser = OptionParser()
@@ -249,14 +261,22 @@ if __name__ == "__main__":
 	parser.add_option("-r", "--reverse", dest="reverse_order", help="order last instruction first", action="store_true")
 	parser.add_option("-f", "--filter", dest="filter_f", help="filter file", metavar="FILE")
 	parser.add_option("-c", "--core", dest="core_id", help="Core ID")
-	parser.add_option("-d", "--data", dest="data_f", help="Data folder", metavar="FOLDER")	
+	parser.add_option("-d", "--data", dest="data_f", help="Data folder", metavar="FOLDER")
+        parser.add_option("-F", "--format", dest="format", help="Trace file format %s" % tutils.VALID_FORMATS, metavar="FORMAT", default=None)
 	parser.add_option("-q", "--quiet", action='store_true', default=False, dest="quiet", help="No output during parsing")
 
 	(options, args) = parser.parse_args()
 
 	if options.asm_f is None:
 		print "ASM file is mandatory. Use -h for more information"
-		sys.exit(0)
+		sys.exit(1)
+
+        if options.format not in tutils.VALID_FORMATS:
+		print "Format must be one of %s" % VALID_FORMATS
+		sys.exit(1)
+
+        # set the format
+        tutils.set_format(options.format)
 
 	ranges = create_range_list(options.asm_f)
 	filterlist = ["idle", "sync", "mode"] # XXX we shouldn't need this, it should be handled by is_instruction (to be renamed)

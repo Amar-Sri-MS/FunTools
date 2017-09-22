@@ -16,6 +16,7 @@ class TEntry():
 		self.ts = tutils.get_ts(trace_line)
 		self.asm = tutils.get_asm(trace_line)
 
+                is_start = False
 		self.ccount = tutils.get_ccount(trace_line)
 		if "idle" in trace_line:
 			self.func = "idle"
@@ -24,39 +25,53 @@ class TEntry():
 		elif "mode" in trace_line:
 			self.func = "mode"
 		else:
-			self.func = self.find_function(self.addr, ranges)
+			(self.func, is_start) = self.find_function(self.addr, ranges)
 
 		if self.func == "NOT FOUND":
 			print "NOT FOUND: %s" % trace_line
-
-		self.pos = self.find_func_pos(self.addr, ranges)
+                        
+                if (is_start):
+		        self.pos = "START"
+                else:
+                        self.pos = "---"
 
 	def __str__(self):
 		return "%24s: %2s cyc %24s (%s)" % (hex(self.addr),self.ccount,self.func,self.pos)
 
 	def find_function(self, addr, ranges):
 
-		for item in ranges:
-	
-			start = item[1]
-			end = item[2]
-	
-			try:
+                i0 = 0
+                iN = len(ranges)
+                im = (i0 + iN) / 2
+
+                # binary search it
+                while(1):
+			start = ranges[im][1]
+			end = ranges[im][2]
+
+                        # try
+			if (True):
+                                # found case
 				if addr >= start and addr <= end:
-					return item[0]
-			except:
-				return "INVALID"
+					return (ranges[im][0], addr == start)
 
-		return "NOT FOUND"
+                                # not found case
+                                if (i0 == iN):
+                                        return ("NOT FOUND", False)
+                                
+                                # less
+                                if addr < start:
+                                        iN = im
 
-	# XXX duplicate code
-	def find_func_pos(self, addr, ranges):
-		for item in ranges:
-			if addr == item[1]:
-				return "START"
+                                if addr > end:
+                                        i0 = im
 
-		return "---"
+                                im = (i0 + iN) / 2
 
+			#except:
+			#	return ("INVALID", False)
+
+                
 	def get_pos(self):
 		return self.pos
 
