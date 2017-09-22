@@ -1532,14 +1532,13 @@ END
 
 
 STRUCT fun_nu_nh_off_map_entry
-  0 63:56 uint8_t rsvd0
-  0 55:52 uint8_t rsvd1
-  0 51:48 uint8_t index
-  0 47:42 uint8_t rsvd2
-  0 41:40 uint8_t offset
-  0 39:34 uint8_t rsvd3
-  0 33:32 uint8_t strm_type
-  0 31:00 uint32_t rsvd4
+  0 63:48 uint16_t rsvd0
+  0 47:42 uint8_t rsvd1
+  0 41:40 uint8_t off_prof
+  0 39:34 uint8_t rsvd2
+  0 33:32 uint8_t in_stream
+  0 31:02 uint32_t rsvd4
+  0 01:00 uint32_t nh_offset
 END
 
 STRUCT fun_nu_nh_off_req
