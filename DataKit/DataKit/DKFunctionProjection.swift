@@ -43,7 +43,7 @@ class DKFunctionProjection: DKFunction {
 		}
 		fatalError("*** Expecting a struct \(self.structType) instead got value \(x)")
 	}
-	override var functionToJSON: [String: JSON] {
+	override var functionToJSONDict: [String: JSON] {
 		return [
 			"projection": .integer(fieldIndex),
 			"domain": domainShortcut.toJSON

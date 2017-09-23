@@ -19,7 +19,7 @@ class DKValueFunc: DKValue, DKValueIsEqualToOther {
 	}
 	override var type: DKType { return fun.signature }
 	override var rawValueToJSON: JSON {
-		return .dictionary(fun.functionToJSON)
+		return fun.functionToJSON
 	}
 	class func fromRawJSON(_ uniquingTable: DKTypeTable, _ j: JSON) -> DKValueFunc! {
 		if !j.isDictionary { return nil }

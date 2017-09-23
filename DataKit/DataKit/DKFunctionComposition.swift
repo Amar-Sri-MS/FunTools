@@ -23,9 +23,9 @@ class DKFunctionComposition: DKFunction {
 	override var signature: DKTypeSignature {
 		return DKTypeSignature(input: inner.signature.input, output: outer.signature.output)
 	}
-	override var functionToJSON: [String: JSON] {
+	override var functionToJSONDict: [String: JSON] {
 		return [
-			"composition": [.dictionary(inner.functionToJSON), .dictionary(outer.functionToJSON)]
+			"composition": [inner.functionToJSON, outer.functionToJSON]
 		]
 	}
 	override class func functionFromJSON(_ uniquingTable: DKTypeTable, _ dict: [String: JSON]) -> DKFunction! {

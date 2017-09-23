@@ -21,9 +21,9 @@ class DKFunctionGenerator: DKFunction {
 		itemShortcut = itemType.toTypeShortcut(uniquingTable)
 	}
 	override var signature: DKTypeSignature {
-		return DKTypeSignature(input: .void, output: DKTypeSequence(subType: itemType))
+		return DKTypeSignature(input: .void, output: itemType.makeSequence)
 	}
-	override var functionToJSON: [String: JSON] {
+	override var functionToJSONDict: [String: JSON] {
 		return [
 			"generator": .string(name),
 			"item_type": itemShortcut.toJSON,

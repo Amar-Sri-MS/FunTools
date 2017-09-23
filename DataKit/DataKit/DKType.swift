@@ -35,9 +35,16 @@ class DKType: Equatable, Hashable, CustomStringConvertible {
 		if j.isString { return j.stringValue }
 		return j.description
 	}
+
 	// Convenience
 	class var void: DKType {
 		return DKTypeStruct.void
+	}
+
+	// Convenience
+	// Note that a sequence of Void is just Void
+	var makeSequence: DKType {
+		return self == .void ? .void : DKTypeSequence(subType: self)
 	}
 
 	// ===============  SERIALIZATION ===============

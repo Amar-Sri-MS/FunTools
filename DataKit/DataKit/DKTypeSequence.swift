@@ -22,8 +22,7 @@ class DKTypeSequence: DKType {
 		let dict = j.dictionaryValue
 		if dict["genre"] != "sequence" { return nil }
 		let st = dict["sub"]?.toDKType(uniquingTable)
-		if st == nil { return nil }
-		return DKTypeSequence(subType: st!)
+		return st?.makeSequence
 	}
 	override func valueFromRawJSON(_ uniquingTable: DKTypeTable, _ j: JSON) -> DKValue? {
 		return DKValueSimple(type: self, json: j)

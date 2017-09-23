@@ -21,7 +21,7 @@ class DKFunctionOperator: DKFunction {
 		}
 		return false
 	}
-	override var functionToJSON: [String: JSON] {
+	override var functionToJSONDict: [String: JSON] {
 		var dict: [String: JSON] = [
 			"op": .string(oper.op),
 			"domain": domainShortcut.toJSON

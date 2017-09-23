@@ -6,6 +6,8 @@
 //  Copyright © 2017 Fungible. All rights reserved.
 //
 
+// Currently unused
+
 class DKGenC {
 	var knownTypes: [String: DKType]
 	init() {
