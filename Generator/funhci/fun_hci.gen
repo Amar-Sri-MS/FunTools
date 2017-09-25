@@ -1243,7 +1243,8 @@ ENUM fun_nu_op
   FUN_NU_OP_RW_DATA_W = 18
   FUN_NU_OP_RW_INSTR_W = 19
   FUN_NU_OP_RW_PROF_TCAM_W = 20
-  FUN_NU_OP_SSE_MD_W = 21		/* SSE begin */
+  FUN_NU_OP_SSE_MD_W = 21
+  FUN_NU_OP_NH_OFF_MAP_W = 22
 END
 
 // FFE Template TCAM entry format
@@ -1504,7 +1505,7 @@ STRUCT fun_nu_prw_data_entry
   0 59:48 uint16_t index
   0 47:00 uint8_t rsvd1[6]
   1 63:00 uint8_t data[8]
-  1 63:00 uint64_t rsvd2
+  2 63:00 uint64_t rsvd2
 END
 
 STRUCT fun_nu_prw_instr_entry
@@ -1528,6 +1529,24 @@ STRUCT fun_nu_rw_prof_tcam_entry
   1 31:24 uint32_t rsvd4
   1 23:0 uint32_t mask
 END
+
+
+STRUCT fun_nu_nh_off_map_entry
+  0 63:48 uint16_t rsvd0
+  0 47:42 uint8_t rsvd1
+  0 41:40 uint8_t off_prof
+  0 39:34 uint8_t rsvd2
+  0 33:32 uint8_t in_stream
+  0 31:02 uint32_t rsvd4
+  0 01:00 uint32_t nh_offset
+END
+
+STRUCT fun_nu_nh_off_req
+  0 63:00 fun_req_common common /* op: FUN_NU_OP_NH_OFF_MAP_W */
+  1 63:00 ...
+  _ _:_ fun_nu_nh_off_map_entry entry[0]
+END
+
 
 FLAGS fun_nu_other_flags
   FUN_NU_RW_NH_OTHER_FLAG_ERP = 0x01
