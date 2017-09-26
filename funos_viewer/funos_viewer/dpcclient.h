@@ -8,7 +8,11 @@
 
 #pragma once
 
-#include <funos/fun_json.h>
+// WORKAROUND
+// Not defining static_assert causes an error
+#define static_assert(x,y)
+
+#include <utils/threaded/fun_json.h>
 
 // Returns <=0 on error
 extern int dpcclient_open_socket(void);

@@ -15,7 +15,7 @@
 # where the initial number is the number of seconds and microseconds
 # since epoch, and the VP... is the fabric address of the unit sending
 # the log message.  Verb, for now, is either WU, TIMER, or HU.  For
-# WUs, VERB un can be START, END, SEND, or CALL.  For timers, VERB can
+# WUs, VERB un can be START, END, or SEND.  For timers, VERB can
 # be START or TRIGGER.  Remaining arguments are always of the form
 # 'name value', and should have no separators other than spaces.
 #
@@ -46,33 +46,47 @@ def ParseLogLine(line, file, line_number):
   error is None if parsing was successful, and the dictionary is not None
   if the line represented a WU log entry.
   """
+  line = line.lstrip().rstrip()
   values = {}
-  match = re.match('([0-9]+).([0-9]+) faddr (VP[0-9]+.[0-9]+.[0-9]+) ([A-Z_]+) ([A-Z_]+)', line)
+  match = re.match('([0-9]+).([0-9]+) TRACE ([A-Z_]+) ([A-Z_]+)', line)
   if not match:
     # Not a log line, but not an error either.
     return (None, None)
 
-  values = {'timestamp': int(match.group(1)) * 1000000 + int(match.group(2)),
-            'vp': match.group(3),
-            'verb': match.group(4),
-            'noun': match.group(5)
+  time_nsec = int(match.group(1)) * 1000000000 + int(match.group(2))
+  values = {'timestamp': time_nsec / 1000,
+            'verb': match.group(3),
+            'noun': match.group(4)
             }
   remaining_string = line[len(match.group(0)):].lstrip()
 
   if len(remaining_string) == 0:
     return (values, None)
 
-  token_iter = iter(remaining_string.split(' '))
+  # Annotation is special - we need to find the faddr at the
+  # beginning, but the rest counts as the message.
+  if values['verb'] == 'TRANSACTION' and values['noun'] == 'ANNOT':
+    annot_match = re.match('faddr (VP[0-9]+.[0-9]+.[0-9]+) (.*)',
+                           remaining_string)
+    if not annot_match:
+      error = '%s:%d: malformed transaction annotation: "%s"\n' % (
+        file, line_number, line)
+      return (None, error)
 
-  try:
-    pairs = [(a, next(token_iter)) for a in token_iter]
-  except StopIteration as e:
-    error = '%s:%d: malformed log line: "%s"\n' % (
-      file, line_number, line)
-    return (None, error)
+    values['faddr'] = annot_match.group(1)
+    values['msg'] = annot_match.group(2)
+  else:
+    token_iter = iter(remaining_string.split(' '))
 
-  for (key, value) in pairs:
-    values[key] = value
+    try:
+      pairs = [(a, next(token_iter)) for a in token_iter]
+    except StopIteration as e:
+      error = '%s:%d: malformed log line: "%s"\n' % (
+        file, line_number, line)
+      return (None, error)
+
+    for (key, value) in pairs:
+      values[key] = value
 
   expect_keywords = []
 
@@ -80,30 +94,30 @@ def ParseLogLine(line, file, line_number):
   
   if event_type == ('WU', 'START'):
     # Should define src, dest, id, name, arg0, arg1.
-    expect_keywords = ['src', 'dest', 'id', 'name', 'arg0', 'arg1']
+    expect_keywords = ['faddr', 'wuid', 'name', 'arg0', 'arg1']
 
   elif event_type == ('WU', 'END'):
     # should define id, name, arg0, arg1.
-    expect_keywords = ['id', 'name', 'arg0', 'arg1']
-
-  elif event_type == ('WU', 'CALL'):
-    # should define id, name, arg0, arg1.
-    expect_keywords = ['id', 'name', 'arg0', 'arg1']
+    expect_keywords = ['faddr']
 
   elif event_type == ('WU', 'SEND'):
     # Should define src, dest, id, name, arg0, arg1.
-    expect_keywords = ['src', 'dest', 'id', 'name', 'arg0', 'arg1']
+    expect_keywords = ['faddr', 'wuid', 'name', 'arg0', 'arg1', 'dest']
 
   elif event_type == ('TIMER', 'TRIGGER'):
     # Should define timer and arg0.
-    expect_keywords = ['timer', 'arg0']
+    expect_keywords = ['faddr', 'timer', 'arg0']
 
   elif event_type == ('TIMER', 'START'):
     # Should define timer, value, and arg0.
-    expect_keywords = ['timer', 'value', 'arg0']
+    expect_keywords = ['faddr', 'timer', 'wuid', 'name']
 
   elif event_type == ('TRANSACTION', 'START'):
-    expect_keywords = []
+    expect_keywords = ['faddr']
+
+  elif event_type == ('TRANSACTION', 'ANNOT'):
+    # Annotate uses rest of line as message.
+    expect_keywords = ['faddr']
 
   elif event_type == ('HU', 'SQ_DBL'):
     expect_keywords = ['sqid']
@@ -114,10 +128,12 @@ def ParseLogLine(line, file, line_number):
 
   for expected_keyword in expect_keywords:
     if expected_keyword not in values:
-      error = '%s:%d: missing key "%s"\n' % (file, line_number, expected_keyword)
+      error = '%s:%d: missing key "%s" in command %s %s\n' % (
+        file, line_number, expected_keyword,
+        values['verb'], values['noun'])
       return (None, error)
 
-  int_keywords = ['id', 'arg0', 'arg1', 'sqid']
+  int_keywords = ['wuid', 'arg0', 'arg1', 'sqid']
   for keyword in int_keywords:
     if keyword in values:
       string_value = values[keyword]
@@ -145,11 +161,14 @@ class TraceParser:
   """Converts event start/stop messages into sequences of events grouped by transaction."""
 
   def __init__(self, input_filename):
-    # Map from (arg0, arg1) from a WU send to the event that triggered the send.
-    self.frame_to_caller = {}
+    # Map of VPs to sent WUs that have not yet started.
+    # TODO(bowdidge): Use both queue and arg0/arg1 to correctly predict
+    # which send pairs with which start.
+    self.caller_queues = {}
 
     # Map from timer id to the event setting the timer.
     self.timer_to_caller = {}
+
 
     # Map from timer id to the time the timer was set.  For setting start_time for event.
     self.timer_to_start_time = {}
@@ -164,22 +183,55 @@ class TraceParser:
     self.boot_transaction = event.Transaction(boot_event)
     self.transactions = [self.boot_transaction]
 
+  def RememberSend(self, event, arg0, arg1, src, dest):
+    """Records the WU send event for later matching with a start."""
+    if dest not in self.caller_queues:
+      self.caller_queues[dest] = []
+    self.caller_queues[dest].append(event)
+
+  def FindPreviousSend(self, wu_id, arg0, arg1, dest):
+    """Returns the WU send that would have started a WU with the arguments.
+    TODO(bowdidge): Check more than the destination alone.
+    """
+    if dest not in self.caller_queues:
+      return None
+    if len(self.caller_queues[dest]) == 0:
+      return None
+    return self.caller_queues[dest].pop(0)
+
+  def RememberTimer(self, timer, caller_event):
+    """Marks the calling WU for a timer start."""
+    self.timer_to_caller[timer] = caller_event
+
+  def FindPreviousTimer(self, timer_id, arg0):
+    """Returns the timer start event that would have triggered the
+    specific timer id and arg0 value.
+    """
+    start_event = self.timer_to_caller[timer_id]
+    del self.timer_to_caller[timer_id]
+    return start_event
+  
   def HandleLogLine(self, log_keywords, line_number):
     """Reads in each logging event, and creates or updates any log events."""
-    timestamp = log_keywords['timestamp']
-    vp = log_keywords['vp']
-
     event_type = (log_keywords['verb'], log_keywords['noun'])
+
+    if event_type == ('FLUSH', 'FLUSH'):
+      return
+
+    timestamp = log_keywords['timestamp']
+
+    vp = log_keywords['faddr']
+
     if event_type == ('WU', 'START'):
       arg0 = log_keywords['arg0']
       arg1 = log_keywords['arg1']
 
-      current_event = event.TraceEvent(timestamp, timestamp, log_keywords['name'], vp)
+      current_event = event.TraceEvent(timestamp, timestamp,
+                                       log_keywords['name'], vp)
       self.vp_to_event[vp] = current_event
 
-      if (arg0, arg1) in self.frame_to_caller:
-        # Regular send.  Connect to caller.
-        predecessor = self.frame_to_caller[(arg0, arg1)]
+      predecessor = self.FindPreviousSend(log_keywords['wuid'], arg0, arg1, vp)
+      if predecessor:
         current_event.transaction = predecessor.transaction
         predecessor.successors.append(current_event)
 
@@ -218,32 +270,28 @@ class TraceParser:
       curr = None
       if vp in self.vp_to_event:
         curr = self.vp_to_event[vp]
-        self.frame_to_caller[(arg0, arg1)] = curr
-
-    elif event_type == ('WU', 'CALL'):
-      # Ignore.  Calls don't say anything about control flow; knowing whether something is
-      # a continuation is a better signal for part of transaction vs. sub-part.
-      pass
+        self.RememberSend(curr, arg0, arg1, vp, log_keywords['dest'])
 
     elif event_type == ('HU', 'SQ_DBL'):
       label = 'HU doorbell: sqid=%d' % log_keywords['sqid']
-      current_event = event.TraceEvent(timestamp, timestamp, "HU doorbell: sqid=%d", vp)
+      current_event = event.TraceEvent(timestamp, timestamp,
+                                       "HU doorbell: sqid=%d" % log_keywords['sqid'],
+                                       vp)
       transaction = event.Transaction(current_event)
       self.transactions.append(transaction)
       current_event.transaction = transaction
 
     elif event_type == ('TIMER', 'START'):
-      arg0 = log_keywords['arg0']
+      wuid = log_keywords['wuid']
       timer = log_keywords['timer']
       if vp not in self.vp_to_event:
-        sys.stderr.write('%s:%d: unknown vp in send\n' % (self.input_filename, line_number))
+        sys.stderr.write('%s:%d: unknown vp in TIMER START\n' % (self.input_filename, line_number))
         return
 
       current_event = self.vp_to_event[vp]
       if current_event is None:
         sys.stderr.write('%s:%d: unsure what WU started timer.\n' % (self.input_filename, line_number))
-        return
-      self.timer_to_caller[timer] = current_event
+      self.RememberTimer(timer, current_event)
       self.timer_to_start_time[timer] = timestamp
 
     elif event_type == ('TIMER', 'TRIGGER'):
@@ -255,17 +303,16 @@ class TraceParser:
             self.input_filename, line_number, timer))
         return
 
-      prev = self.timer_to_caller[timer]
-      current_event = event.TraceEvent(timestamp, timestamp, 'timer_trigger', vp)
+      prev = self.FindPreviousTimer(timer, arg0)                    
+      current_event = event.TraceEvent(timestamp, timestamp, 'timer_trigger',
+                                       vp)
       current_event.is_timer = True
       current_event.transaction = prev.transaction
       current_event.timer_start = int(self.timer_to_start_time[timer])
       prev.successors.append(current_event)
       # TODO(bowdidge): True?
       self.vp_to_event[vp] = current_event
-
-      self.frame_to_caller[(arg0, 0)] = current_event
-      del self.timer_to_caller[timer]
+      self.RememberSend(current_event, arg0, 0, 0, 0)
 
     elif event_type == ('TRANSACTION', 'START'):
        if vp not in self.vp_to_event:
@@ -280,6 +327,18 @@ class TraceParser:
        current_event.transaction = new_transaction
        self.transactions.append(new_transaction)
 
+    elif event_type == ('TRANSACTION', 'ANNOT'):
+       if vp not in self.vp_to_event:
+         sys.stderr.write('%s:%d: TRANSACTION START does not match running WU on %s' % (
+             self.input_filename, line_number, vp))
+         return
+       current_event = self.vp_to_event[vp]
+       annot_event = event.TraceEvent(timestamp, timestamp,
+                                      log_keywords['msg'],
+                                      vp)
+       annot_event.is_annotation = True
+       current_event.successors.append(annot_event)
+       
     else:
       sys.stderr.write('%s:%d: Invalid verb/noun %s %s\n' % (input_filename, line_number,
                                                            log_keywords['verb'], log_keywords['noun']))
@@ -334,12 +393,13 @@ def main(argv):
 
   # Hack: Update start and end time on fake event on boot.
   boot_events = transactions[0].Flatten()
-  transactions[0].root_event.start_time = min({e.start_time for e in boot_events if e.start_time != 0})
-  transactions[0].root_event.end_time = min({e.end_time for e in boot_events if e.end_time != 0})
+
+  # transactions[0].root_event.start_time = min({e.start_time for e in boot_events if e.start_time != 0})
+  # transactions[0].root_event.end_time = min({e.end_time for e in boot_events if e.end_time != 0})
 
   if args.format == 'text':
     for tr in transactions:
-      render.Dump(out_file, tr, 0)
+      render.Dump(out_file, tr)
       print('\n')
   elif args.format == 'graphviz':
     render.RenderGraphviz(out_file, transactions)

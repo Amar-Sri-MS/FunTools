@@ -1,0 +1,16 @@
+
+
+ENUM fun_ret
+  FUN_RET_OK	  = 0x00  /* success */
+  FUN_RET_EPERM	  = 0x01  /* operation not permitted */
+  FUN_RET_ENOENT  = 0x02  /* no such file or directory */
+  FUN_RET_EIO	  = 0x05  /* input/output error */
+  FUN_RET_E2BIG	  = 0x07  /* argument list too long */
+  FUN_RET_ENOEXEC = 0x08  /* exec format error */
+  FUN_RET_ENOMEM  = 0x0c  /* out of memory */
+  FUN_RET_EACCESS = 0x0d  /* permission denied */
+  FUN_RET_EBUSY	  = 0x10  /* device busy */
+  FUN_RET_EEXIST  = 0x11  /* file exists */
+  FUN_RET_EINVAL  = 0x16  /* operation not supported by device */
+  FUN_RET_ENOSYS  = 0x26  /* Function not implemented */
+END

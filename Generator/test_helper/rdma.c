@@ -13,7 +13,7 @@
 #import <stddef.h> // offsetof
 #include <strings.h> // bzero.
 
-#import "rdma.h"
+#import "rdma_gen.h"
 
 #define EXPECT_SIZE(var, bytes, varStr)		\
   if (sizeof(var) != bytes) {						\
@@ -24,13 +24,13 @@
   }    
 
 #define EXPECT_OFFSET(var, field, offset, varStr)			\
-  if (offsetof(var, field) !=offset) {					\
+  if (offsetof(var, field) != offset) {					\
     fprintf(stderr, "FAIL: %s structure expected to be %d bytes, got %lu\n", \
 	    varStr, offset, offsetof(var, field));				\
     exit(1); \
   } else { \
     fprintf(stderr, "PASS\n"); \
-  }    
+  }
 
 void PrintFragment(struct GatherListFragmentHeader *hdr) {
   uint64_t* ptr = (uint64_t*) hdr;
@@ -54,15 +54,11 @@ int main(int argc, char** argv) {
 
   PrintFragment(fragPtr);
   printf("Set gather opcode, and set byte count to 15\n");
-  fragPtr->u1.inline_cmd.opcode = OPCODE_GATHER;
+  fragPtr->opcode = OPCODE_GATHER;
   fragPtr->u1.inline_cmd.inlineByteCount = 15;
   PrintFragment(fragPtr);
 
-  printf("Set bytes1\n");
-  fragPtr->u1.inline_cmd.bytes1 = 0xba987654321;
-  PrintFragment(fragPtr);
-
-  printf("Set bytes2\n");
-  fragPtr->u1.inline_cmd.bytes2 = 0xfedcba987654321;
+  strcpy((char*)fragPtr->u1.inline_cmd.bytes, "01234567890123");
   PrintFragment(fragPtr);
 }
+

@@ -96,6 +96,8 @@ class TraceEvent:
     # and the end_time represents the time when the timer was triggered.
     self.is_timer = False
 
+    self.is_annotation = False
+
     # Work units or events that were instigated by this event.
     self.successors = []
 
@@ -120,8 +122,8 @@ class TraceEvent:
     return '<TraceEvent: %s - %s %s>' % (self.start_time, self.end_time,
                                          self.label)
 
-  def __repl__(self):
-    return '<TraceEvent: %s - %s %s, %s>' % (self.start_time, self.end_time,
+  def __repr__(self):
+    return '<TraceEvent: %s - %s %s>' % (self.start_time, self.end_time,
                                              self.label)
 
 

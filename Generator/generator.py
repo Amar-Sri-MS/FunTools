@@ -5,12 +5,9 @@
 # and automatically generates header files, documentation, and other
 # products from the description.
 #
-# Generator can also compress structures with many small fields into
-# single fields accessed via macros.  By explicitly providing accessor macros,
-# we can avoid cases where compiled code may be inefficient.
-#
-# TODO(bowdidge): Should create C code to test that structure compiles
-# and has correct size.
+# Generator can also pack structures with many small fields into
+# single fields accessed via macros.  By explicitly providing accessor
+# macros, we can avoid cases where compiled code may be inefficient.
 #
 # Robert Bowdidge August 8, 2016.
 # Copyright Fungible Inc. 2016.
@@ -20,597 +17,300 @@ import getopt
 import re
 import sys
 
-type_widths = {
-  # width of type in bytes.
-  'unsigned' : 32,
-  'signed' : 32,
+import codegen
+import htmlgen
+import parser
+import utils
 
-  'char': 8,
-  'uint8_t' : 8,
-  'uint16_t': 16,
-  'int16_t': 16, 
-  'short': 16,
-  'int' : 32,
-  'uint32_t': 32,
-  'int32_t': 32,
-  'long': 32,
-  'float' : 32,
-  'double': 64,
-  'uint64_t': 64,
-  'int64_t' : 64
-}
-
-def typeWidth(typename):
-  # Returns width of C type name in bits.
-  width = type_widths.get(typename)
-  if width is None:
-    return 0
-  return width
-
-def removeWhitespace(the_str):
-  # Removes any spaces or carriage returns from the provided string.
-  if the_str == None or len(the_str) == 0:
-    return ''
-  return re.sub('\s+', '', the_str)
-
-def stripComment(the_str):
-  # Removes any C commenting from the comment so it can be reformatted as needed.
-  if the_str.startswith('//'):
-    return the_str[2:].lstrip(' ').rstrip(' ')
-  if the_str.startswith('/*'):
-    # Match /* */ with anything in between and whitespace after.
-    match = re.match('/\*\s*(.*)\*/\s*', the_str)
-    if not match:
-      print('Badly formatted comment "%s"' % the_str)
-      return the_str
-    return match.group(1).lstrip(' ').rstrip(' ')
-    
-   
-def parseInt(the_str):
-  # Returns int value of string, or None if not a number.
-  base = 10
-  if the_str.startswith('0b'):
-    base = 2
-  if the_str.startswith('0x'):
-    base = 16
-  try:
-    return int(the_str, base)
-  except ValueError:
-    return None
-
-def macroUpper(the_str):
-  # Convert a CamelCase name to all uppercase with underbars.
-  s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', the_str)
-  s2 = re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
-  return s2.upper()
-
-class Visitor:
-  # Visitor abstract class for walking the specification tree.
-  def visitField(self, field):
-    pass
-  def visitStruct(self, struct):
-    pass
-  def visitUnion(self, union):
-    pass
-  def visitEnum(self, enum):
-    pass
-  def visitEnumVariable(self, enumVariable):
-    pass
-  def visitComment(self, comment):
-    pass
-  def visitDocument(self, document):
-    pass
-
-
-class Node:
-  def __init__(self):
-    # Primary, short comment for an item.  Appears on same line.
-    # Contains either the comment, or None if never set.
-    self.key_comment = None
-    # Longer descriptive comment.  Always appears before the declaration.
-    # Contains either the comment, or None if never set.
-    self.body_comment = None
-    # Tail comment, usually inside structures.
-    # Contains either the comment, or None if never set.
-    self.tail_comment = None
-    # Short comment used by generator to hint at transformation.
-    # Contains either the comment, or None if never set.
-    self.generator_comment = None
-
-
-class Field(Node):
-  # Representation of a field in a structure or union.
-
-  def __init__(self, name, type, flit, start_bit, end_bit):
-    Node.__init__(self)
-    # name of the field declaration.
-    self.name = name
-    # String name of the C type, or a generic type for signed-ness.
-    self.type = type
-    # Integer representing the 8 byte "flit" that the field belongs to.
-    self.flit = flit
-    # Highest bit holding the contents of the field.
-    self.start_bit = start_bit
-    # Lowest order bit holding the contents of the field.
-    self.end_bit = end_bit
-
-  def __str__(self):
-    return('<Field: name=%s, type=%s, flit=%d, bits=%d:%d>' %
-           (self.name, self.type, self.flit, self.start_bit, self.end_bit))
-  
-  def size(self): 
-    # Returns the number of bits in the field.
-    return (self.end_bit - self.start_bit + 1)
-
-  def mask(self):
-    # Returns a hexadecimal number that can be used as a mask in the flit.
-    return '0x%x' %  ((1 << self.size()) - 1)
-
-
-class EnumVariable(Node):
-  # Representation of an enum variable in an enum declaration.
-
-  def __init__(self, name, value):
-     # Create an EnumVariable.
-     Node.__init__(self)
-     # name is a string.
-     self.name = name
-     # value is an string value for the variable.
-     self.value = value
-
-  def __str__(self):
-     return('<EnumVariable: %s = %s>' % self.name, self.value)
-
-
-class Enum(Node):
-  # Representation of an enum declaration.
-
-  def __init__(self, name):
-    # Create an Enum declaration.
-    # name is a string.
-    # variables holds the EnumVariables associated with the enum.
-    # Multiple enum variables may hold the same value.
-    Node.__init__(self)
-    self.name = name
-    self.variables = []
-
-  def __str__(self):
-    return('<Enum %s:\n  %s\n>\n' % (self.name, self.values))
-
-
-class Union(Node):
-  # Representation of a union declaration.
-
-  def __init__(self, name, variable):
-    # Create a union declaration.
-    Node.__init__(self)
-    # name is a string representing the name or variable of the union.
-    self.name = name
-    # variable is a string representing the variable to use for the union when
-    # accessing it within a structure.
-    self.variable = variable
-    # fields are the list of structure fields in the union.
-    self.fields = []
-    # structs are the list of nested structures in the union.
-    # structures will be placed after any fields.
-    self.structs = []
-
-  def __str__(self):
-    return('<Union %s, variable %s:\n fields: %s\n structs: %s\n>\n' % 
-           (self.name, self.variable, self.fields, self.structs))
-
-
-class Struct(Node):
-  # Representation of a structure.
-
-  def __init__(self, name, variable):
-    # Create a struct declaration.
-    Node.__init__(self)
-    # name is a string representing the name of the struct..
-    self.name = name
-    # variable is a string representing the variable to use in a nested structure
-    # or none if no variable is specified.
-    self.variable = variable
-    # fields is the list of fields in the struct.
-    self.fields = []
-    # structs is the nested structures in this struct.
-    self.structs = []
-    # union is the list of union fields in the struct.
-    self.unions = []
-
-  def __str__(self):
-    return('<Struct %s, variable %s:\n fields: %s\n structs: %s\n unions: %s\n>\n' %
-           (self.name, self.variable, self.fields, self.structs, self.unions))
-
-  def bytes(self):
-    """Returns the number of bytes in the structure."""
-    if len(self.fields) == 0:
-      return 0
-    return (max([field.flit for field in self.fields]) + 1) * 8
-
-
-class Document(Node):
-  # Representation of an entire generated header specification.
-  def __init__(self):
-    Node.__init__(self)
-    # structs is all the structures defined in the document.
-    self.structs = []
-    # unions is all unions declared in the document.
-    # this should be empty - all unions should be inside a struct.
-    self.unions = []
-    # All enums declared in the file.
-    self.enums = []
-    # All macros declared in the file.
-    self.macros = []
-
-  def __str__(self):
-    return('<Document>')
-
-  def addMacro(self, macroStr):
-    # Record a macro to output.
-    self.macros.append(macroStr)
-
-
-class HTMLGenerator(Visitor):
-
-  def visitDocument(self, doc):
-    # Generates all the HTML to document the structures.
-    css = ('.structTable {\n'
-           '  border: solid 1px black;\n'
-           '  border-collapse: collapse;\n'
-           '}\n'
-           '.structTable td {\n'
-           '   font-family: "Courier"\n'
-           '}\n'
-           '.structTable .description {\n'
-           '  font-family: "Times New Roman"\n'
-           '}\n'
-           '.structBits {\n'
-           '  background: #eeeeee;\n'
-           '}\n'
-           '.structTable td {\n'
-           '  padding: 10px;\n'
-           '}\n'
-           '.structTable th {\n'
-           '  background: #dddddd;\n'
-           '}\n')
-
-    out = '<!-- Documentation created by generator.py.\n'
-    out += '     Do not change this file; change the .gen file instead. -->\n'
-    out += '<html>\n<head>\n'
-    out += '<style>\n%s</style>\n' % css
-    out += '</head>\n<body>\n'
-    for enum in doc.enums:
-      out += self.visitEnum(enum)
-    for struct in doc.structs:
-      out += self.visitStruct(struct)
-    for macro in doc.macros:
-      pass
-    out += '</body></html>'
-    return out
-
-  def visitEnumVariable(self, enumVariable):
-    # Generates HTML Documentation for a specific enum variable.
-    return '<li> <b>%s</b> = %s' % (enumVariable.name, enumVariable.value)
-
-  def visitEnum(self, enum):
-    # Generates HTML documentation for a specific enum type.
-    out = ''
-    out += '<h3>enum %s</h3>\n' % enum.name
-    if enum.key_comment:
-      out += '<p>%s</p>\n' % enum.key_comment
-    if enum.body_comment:
-      out += '<p>%s</p>\n' % enum.body_comment
-    out += '<b>Values</b><br>\n'
-    out += '<ul>\n'
-    for enumVariable in enum.variables:
-      out += self.visitEnumVariable(enumVariable)
-    out += '</ul>\n'
-    return out
-
-  def visitStruct(self, struct):
-    # Generates HTML documentation for a specific structure.
-    out = ''
-    out += '<h3>struct %s:\n</h3>\n' % struct.name
-    if struct.key_comment:
-      out += '<p>%s</p>\n' % struct.key_comment
-    out += '<p>%s</p>\n' % struct.body_comment
-    out += '<table class="structTable">\n'
-    out += '<tr>\n'
-    out += '  <th class="structBits">Flit</th>\n'
-    out += '  <th class="structBits">Bits</th>\n'
-    out += '  <th>Type</th>'
-    out += '  <th>Name</th><th>Description</th></tr>\n'
-    for field in struct.fields:
-      out += self.visitField(field)
-    if struct.tail_comment:
-      out += '<tr>\n'
-      out += '  <td class="description" colspan="5">\n'
-      out += '  <center>%s</center>\n' % struct.tail_comment
-      out += '  </td>\n'
-      out += '</tr>\n'
-    out += "</table>\n"
-    return out
-
-  def visitField(self, field):
-    # Generates HTML documentation for a specific field.
-    # Draw a solid line at start of each flit to visually separate flits.
-    solid = ''
-    if field.start_bit == 0:
-      solid = 'border-top: solid 1px'
-    out = ''
-    out += '<tr style="%s">\n' % solid
-    out += '  <td class="structBits">%d</td>\n' % field.flit
-    out += '  <td class="structBits">%d-%d</td>\n' % (field.start_bit, field.end_bit)
-    out += '  <td>%s</td>\n  <td>%s</td>\n' % (field.type, field.name)
-    out += '<td class="description">\n'
-    if field.key_comment:
-      out += field.key_comment + '<br>'
-    if field.body_comment:
-        out += '<p>%s</p>/' % field.body_comment
-    out += '</td>\n'
-    out += '</tr>\n'
-    return out
-
-def guardName(filename):
-  """Convert a filename to an all-caps string for an include guard."""
-  name = macroUpper(filename)
-  return re.sub('\.', '_', name).upper()
-
-class CodeGenerator:
-  # Pretty-prints a parsed structure description into C headers.
-  # The generated code should match the Linux coding style.
-
-  def __init__(self, output_file):
-    self.indent = 0
-    # Name of file to create.
-    self.output_file = output_file
-
-  def indentString(self):
-    # Generates indenting spaces needed for current level of code.
-    return '\t' * self.indent
-
-  def incrementIndent(self):
-    self.indent += 1
-
-  def decrementIndent(self):
-    self.indent -= 1
-
-  def visitDocument(self, doc):
-    # Pretty-print a document.  Returns header as string.
-    indent = 0
-    # stdlib.h is needed for type names.
-    out = ""
-    out += '// Header created by generator.py\n'
-    out += '// Do not change this file; change the .gen file.\n\n'
-    if self.output_file is not None:
-      include_guard_name = guardName(self.output_file)
-      out += '#ifndef %s\n' % include_guard_name
-      out += '#define %s 1\n\n' % include_guard_name
-    out += '#import "stdlib.h"\n'
-    for enum in doc.enums:
-      out += self.visitEnum(enum)
-    for struct in doc.structs:
-      out += self.visitStruct(struct)
-
-    for macro in doc.macros:
-      out += macro + '\n'
-    if self.output_file is not None:
-      out += '#endif // %s' % include_guard_name
-    return out
-
-  def visitEnum(self, enum):
-    # Pretty print an enum declaration.  Returns enum as string.
-    out = 'enum %s {\n' % enum.name
-    self.incrementIndent()
-    for enum_variable in enum.variables:
-        out += self.visitEnumVariable(enum_variable)
-    out += '};\n'
-    self.decrementIndent()
-    return out
-
-  def visitEnumVariable(self, enum_variable):
-    # Pretty-print a structure or union field declaration.  Returns string.
-    out = ''
-    if enum_variable.body_comment != None:
-      out += self.indentString() + ' /* %s */\n' % enum_variable.body_comment
-    out = self.indentString() + '%s = %s,' % (enum_variable.name, enum_variable.value)
-    if enum_variable.key_comment != None:
-      out += ' /* %s */' % enum_variable.key_comment
-    out += '\n'
-    return out
-
-  def visitUnion(self, union):
-    # Pretty-print a union declaration.  Returns string.
-    out = ''
-    if union.key_comment:
-      out += self.indentString() + '/* %s */\n' % union.key_comment    
-    if union.body_comment:
-      out += self.indentString() + '/* %s */\n' % union.body_comment
-    out += self.indentString() + 'union %s {\n' % union.name
-    for struct in union.structs:
-      out += self.visitStruct(struct)
-    variable_str = ''
-    if union.variable is not None:
-      variable_str = ' ' + union.variable
-    out += self.indentString() + '}%s;\n' % variable_str
-    return out
- 
-  def visitStruct(self, struct):
-    # Pretty-print a structure declaration.  Returns string.
-    out = '\n'
-    if struct.key_comment:
-      out += self.indentString() + '/* %s */\n' % struct.key_comment    
-    if struct.body_comment:
-      out += self.indentString() + '/* %s */\n' % struct.body_comment
-    out += self.indentString() + 'struct %s {\n' % struct.name
-    lastFlit = 0
-    self.incrementIndent()
-    for field in struct.fields:
-      if field.flit != lastFlit:
-        out += '\n'
-      out += self.visitField(field)
-      lastFlit = field.flit
-    self.decrementIndent()
-
-    self.incrementIndent()
-    for union in struct.unions:
-      out += self.visitUnion(union)
-    self.decrementIndent()
-    tag_str = ''
-    if len(struct.variable) > 0:
-      tag_str = ' %s' % struct.variable
-    out += self.indentString() + '}%s;\n' % tag_str
-    return out
-
-  def visitField(self, field):
-    # Pretty-print a field in a structure or union.  Returns string.
-    out = ''
-
-    if field.generator_comment is not None:
-      out += self.indentString() + '/* %s */\n' % field.generator_comment
-    if field.body_comment is not None:
-      # TODO(bowdidge): Break long comment.
-      out += self.indentString() + '/* %s */\n' % field.body_comment
-    key_comment = ''
-    if field.key_comment is not None:
-      key_comment = ' // %s' % field.key_comment
-     
-    var_bits = ''
-    var_width = field.end_bit - field.start_bit + 1
-    type_width = typeWidth(field.type)
-
-    if type_width != var_width:
-      var_bits = ':%d' % var_width
-    out += self.indentString() 
-    out += '%s %s%s;%s\n' % (field.type, field.name, var_bits, key_comment)
-    return out
-
+# Fake value for width of field, used when we can't define the value
+# correctly on creation.
+FAKE_WIDTH = 8675309
 
 class Checker:
   # Walk through a document and identify any likely problems.
   def __init__(self):
-    # Warnings noted.
-    self.warnings = []
+    # Errors noted.
+    self.errors = []
     self.current_document = None
 
-  def visitDocument(self, the_doc):
-    for struct in the_doc.structs:
-      self.visitStruct(struct)
+  def AddError(self, node, msg):
+    if self.current_document and self.current_document.filename:
+      location = '%s:%d: ' % (self.current_document.filename, node.line_number)
+    else:
+      location = '%d: ' % node.line_number
+    self.errors.append(location + msg)
 
-  def visitStruct(self, the_struct):
+  def VisitDocument(self, the_doc):
+    for struct in the_doc.Structs():
+      self.VisitStruct(struct)
+
+  def VisitStruct(self, the_struct):
     last_type = None
+    last_end_flit = None
+    last_start_bit = 0
+    last_end_bit = 0
+    last_field_name = None
+
     for field in the_struct.fields:
-      if last_type is None:
-        last_type = field.type
-      elif last_type != field.type:
-        # If the type of the variables changes, make sure the current offset would
-        # allow the provided alignment.
-        # TODO(bowdidge): Assumes type width = type alignment.
-        if field.start_bit % typeWidth(field.type) != 0:
-          self.warnings.append(
-              "In structure %s, type won\'t allow alignment: '%s %s' at bit %d" %
-                (the_struct.name, field.type, field.name, field.start_bit))
+      if field.IsNoOffset():
+        if field != the_struct.fields[-1]:
+          self.AddError(field, 'field "%s" is an array of zero size, but is not the last field.')
 
-    for struct in the_struct.structs:
-      # Check adjacent structures match up with bit patterns.
-      self.visitStruct(struct)     
+    fields_with_offsets = [f for f in the_struct.fields if not f.IsNoOffset()]
 
-  def visitUnion(self, the_union):
-    for struct in the_union.structs:
-      self.visitStruct(struct)
+    if len(fields_with_offsets) == 0:
+      return
 
-  def visitField(self, the_field):
+    last_start_offset = fields_with_offsets[0].StartOffset() - 1
+    last_end_offset = fields_with_offsets[0].StartOffset() - 1
+
+    for field in fields_with_offsets:
+      start_offset = field.StartOffset()
+      end_offset = field.EndOffset()
+
+
+      if field.BitWidth() == field.type.BitWidth():
+        if start_offset % field.type.Alignment() != 0:
+          self.AddError(field, 'Field "%s" cannot be placed in a location that '
+                        'does not match its natural alignment.' % field.name)
+
+      if not the_struct.is_union:
+        if (last_start_offset >= end_offset and
+             last_end_offset >= end_offset):
+          self.AddError(field, 'field "%s" and "%s" not in bit order' % (
+              last_field_name, field.name))
+        elif last_end_offset >= start_offset:
+          self.AddError(field, 'field "%s" overlaps field "%s"  '
+                        '("%s" ends at %s, "%s" begins at %s)' % (
+              last_field_name, field.name,
+              last_field_name, utils.BitFlitString(last_end_offset),
+              field.name, utils.BitFlitString(start_offset)))
+
+        elif start_offset != last_end_offset + 1:
+          self.AddError(field, 'unexpected space between field "%s" and "%s".  '
+                        '("%s" ends at %s, "%s" begins at %s)'
+                        % (last_field_name, field.name,
+                           last_field_name,
+                           utils.BitFlitString(last_end_offset),
+                           field.name, utils.BitFlitString(start_offset)))
+
+      last_start_offset = field.StartOffset()
+      last_end_offset = field.EndOffset()
+      last_field_name = field.name
+
+  def VisitField(self, the_field):
     pass
-  
+
+
+def CommonPrefix(name_list):
+  """Returns the longest prefix (followed by underbar) of all names.
+  Returns None if no longest prefix.
+  """
+  if len(name_list) < 2:
+    return None
+
+  first_name = name_list[0]
+  if not '_' in first_name:
+    return None
+
+  prefix = name_list[0].split('_')[0]
+  for name in name_list[1:]:
+    if not name.startswith(prefix + '_'):
+      return None
+  return prefix
+
+def FirstNonReservedName(field_list):
+  """Returns name of first field that is not a reserved field.
+  Returns None if no such field exists.
+  """
+  first_name = None
+  for field in field_list:
+    if not field.IsReserved():
+      return field.name
+  return None
+
+def LastNonReservedName(field_list):
+  """Returns name of last field that is not a reserved field.
+  Returns None if no such field exists.
+  """
+  last_name = None
+  for field in field_list:
+    if not field.IsReserved():
+      last_name = field.name
+  return last_name
+
+def ChoosePackedFieldName(fields):
+  """Chooses the name for a packed field base on the fields in that field."""
+  not_reserved_names = [f.name for f in fields if not f.IsReserved()]
+  common_prefix = CommonPrefix(not_reserved_names)
+
+  if common_prefix:
+    return common_prefix + '_pack'
+
+  first_name = FirstNonReservedName(fields)
+  last_name = LastNonReservedName(fields)
+  # No fields.
+  if first_name is None and last_name is None:
+    return "empty_pack"
+
+  # One field.
+  if first_name == last_name:
+    return first_name + '_pack'
+
+  return first_name + "_to_" + last_name
+
 
 class Packer:
-  # Process a generated header to crunch many smaller fields into 8 byte flits,
-  # and define macros to access the fields.
+  """ Searches all structures for bitfields that can be combined.
+
+  We generally don't trust compilers to do a good job on accessing
+  bitfields, especially for registers.  By convention, we'd prefer to
+  combine those accesses into explicit shifts and masks so we know
+  what our code is doing.
+
+  This pass runs through all structures, and looks for adjacent
+  bitfields with identical types.  These bitfields are replaced with
+  a single field declaration; macros are then added for accessing
+  the contents of the field.
+  """
+
   def __init__(self):
     self.current_document = None
+    self.errors = []
 
-  def visitDocument(self, doc):
+  def AddError(self, node, msg):
+    if self.current_document and self.current_document.filename:
+      location = '%s:%d: ' % (self.current_document.filename, node.line_number)
+    else:
+      location = '%d: ' % node.line_number
+    self.errors.append(location + msg)
+
+  def VisitDocument(self, doc):
     # Pack all structures in the named documents.
     self.doc = doc
-    for struct in doc.structs:
-      self.visitStruct(struct)
+    for struct in doc.Structs():
+      self.VisitStruct(struct)
+    return self.errors
 
-  def visitStruct(self, the_struct):
+  def VisitStruct(self, the_struct):
     # Gather fields by flit, then create macros for each.
     # Should make sure that adjacent fields are same types.
-    for struct in the_struct.structs:
-      self.visitStruct(struct)
-    for union in the_struct.unions:
-      self.visitUnion(union)
-    self.packStruct(the_struct)
+    if not the_struct.is_union:
+      self.PackStruct(the_struct)
 
-  def visitUnion(self, the_union):
-    # Handle compressing fields in union.
-    # TODO(bowdidge): Union fields start the packing all over again, so if the 
-    # common bit is not a full word, then need to copy fields over.
-    for struct in the_union.structs:
-      self.visitStruct(struct)
+  def ChoosePackGroups(self, the_fields):
+    """Identify and group fields in a flit that deserve to be packed.
+    Returns array of proposed packed variables, with each group being
+    a tuple of (type, [fields to pack in variable) in that group.
+    """
+    # Contiguous fields to pack.  When we reach the end of a set of fields to be packed togther,
+    # we move them to fields_to_pack.
+    fields_to_pack = []
+
+    # Current group of fields to be packed together.
+    current_group = []
+
+    # Common type for all in current group of fields to be packed together.
+    current_type = None
+    # total bits of space used by current_group
+    bits_occupied = 0
+
+    for field in the_fields:
+
+      # End the previous group of packed fields if the current field
+      # can be a field on its own, if the current field does not match the group's
+      # field, or if the packed field is already full (or too full).
+      # Code outside checks for packed fields too large for the type.
+      if (field.type.BitWidth() == field.BitWidth() or
+          current_type != field.type or
+          bits_occupied >= field.type.BitWidth()):
+        fields_to_pack.append((current_type, current_group))
+        current_group = []
+        current_type = None
+        bits_occupied = 0
+
+      current_group.append(field)
+      if (len(current_group) == 1):
+        current_type = field.type
+      bits_occupied += field.BitWidth()
+
+    fields_to_pack.append((current_type, current_group))
+
+    # Return only the groups that had more than one field in them.
+    return [pack_group for pack_group in fields_to_pack if len(pack_group[1]) > 1]
+
+  def PackFlit(self, the_struct, flit_number, the_fields):
+    """Replaces contiguous sets of bitfields with macros to access.
+    the_struct: structure containing fields to be packed.
+    flit_number: which flit of the structure is handled this time.
+    the_fields: list of fields in this flit.
+    """
+    # All fields to pack. List of tuples of (type, [fields to pack])
+    fields_to_pack = []
+
+    fields_to_pack = self.ChoosePackGroups(the_fields)
+
+    if len(fields_to_pack) == 0:
+      # Nothing to pack.
+      return
+    for (type, fields) in fields_to_pack:
+      packed_field_width = 0
+      min_start_bit = min([f.StartBit() for f in fields])
+      for f in fields:
+        packed_field_width += f.BitWidth()
+
+      if (packed_field_width > type.BitWidth()):
+        self.AddError(the_struct,
+                      'Width of packed bit-field containing %s (%d bits) exceeds width of its type (%d bits). '% (
+            utils.ReadableList([f.name for f in fields]),
+            packed_field_width,
+            type.BitWidth()))
+
+      new_field_name = ChoosePackedFieldName(fields)
+      new_field = parser.Field(new_field_name, type, min_start_bit,
+                               packed_field_width)
+      new_field.line_number = fields[0].line_number
+
+      non_reserved_fields = [f.name for f in fields if not f.IsReserved()]
+      bitfield_name_str = utils.ReadableList(non_reserved_fields)
+      bitfield_layout_str = ''
+
+      min_end_bit = min([f.EndBit() for f in fields])
+      for f in fields:
+        # TODO(bowdidge): Fix.
+        bitfield_layout_str += '      %d:%d: %s\n' % (f.StartBit() - min_end_bit,
+                                                      f.EndBit() - min_end_bit,
+                                                      f.name)
+        new_field.body_comment = "Combines bitfields %s.\n%s" % (bitfield_name_str,
+                                                                bitfield_layout_str)
+
+      # Replace first field to be removed with new field, and delete rest.
+      for i, f in enumerate(the_struct.fields):
+        if f == fields[0]:
+          new_field.packed_fields.append(f)
+          the_struct.fields[i] = new_field
+          break
+      for f in fields[1:]:
+        new_field.packed_fields.append(f)
+        the_struct.fields.remove(f)
 
 
-  def shouldCompressFlit(self, the_struct, flit_number, the_fields):
-    # Returns true if flit should be compressed.
-    return len(the_fields) != 1
-
-  def packStruct(self, the_struct):
-    # Get rid of old struct fields, and use macros on flit-sized fields to access.
+  def PackStruct(self, the_struct):
+    # Get rid of old struct fields, and use macros on flit-sized
+    # fields to access.
     new_fields = []
-    flit_field_map = self.fieldsToFlits(the_struct)
+    flit_field_map = the_struct.FlitFieldMap()
 
     for flit, fields_in_flit in flit_field_map.iteritems():
-      if not self.shouldCompressFlit(the_struct, flit, fields_in_flit):
-        # Take fields as they are.
-        new_fields += fields_in_flit
-        continue
-
-      new_field = Field('flit%d' % flit, 'uint64_t', flit, 0, 63)
-      field_names = [x.name for x in fields_in_flit]
-      new_field.generator_comment = 'combined from %s' % ','.join(field_names) 
-      new_fields.append(new_field)
-      self.compressFieldsInFlit(the_struct, flit, new_field, fields_in_flit)
-
-    the_struct.fields = new_fields
-
-  def fieldsToFlits(self, struct):
-    # Return a map of (flit, fields) for all fields in the structure.
-    flit_field_map = {}
-    for field in struct.fields:
-      item = flit_field_map.get(field.flit, [])
-      item.append(field)
-      flit_field_map[field.flit] = item
-    return flit_field_map
-
-  def compressFieldsInFlit(self, struct, flit_num, new_field, fields_in_flit):
-    # Compress all fields in the flit into one variable and generate accessor macros.
-    for old_field in fields_in_flit:
-      ident = macroUpper('%s_%s' % (struct.name, old_field.name))
-      shift = '#define SHIFT_%s %s' % (ident, old_field.end_bit)
-      mask = '#define MASK_%s %s' % (ident, old_field.mask())
-      value = '#define VALUE_%s(x) (x.flit%d << SHIFT_%s)' % (ident, flit_num, ident)
-      get = '#define GET_%s(x) ((x.flit%d >> SHIFT_%s) && MASK_%s)' % (
-        ident, flit_num, ident, ident)
-
-      self.doc.addMacro(
-          '// For accessing %s field in %s.flit%d' % (
-          old_field.name, struct.name, flit_num))
-      self.doc.addMacro(shift)
-      self.doc.addMacro(mask)
-      self.doc.addMacro(value)
-      self.doc.addMacro(get)
-      self.doc.addMacro('\n')
+      self.PackFlit(the_struct, flit, fields_in_flit)
 
 
 # Enums used to indicate the kind of object being processed.
 # Used on the stack.
 DocBuilderStateStruct = 1
-DocBuilderStateUnion = 2
 DocBuilderTopLevel = 3
 DocBuilderStateEnum = 4
+DocBuilderStateFlagSet = 5
 
 
 class DocBuilder:
@@ -620,228 +320,548 @@ class DocBuilder:
   def __init__(self):
     # Create a DocBuilder.
     # current_document is the top level object.
-    self.current_document = Document()
+    self.current_document = parser.Document()
     # stack is a list of (state, object) pairs showing all objects
-    # currently being parsed.  New fields or structures are put in the
+    # currently being parsed.  New containers (enum, struct, union) are put in the
     # last object.
     self.stack = [(DocBuilderTopLevel, self.current_document)]
     # strings describing any errors encountered during parsing.
     self.errors = []
-    # strings describing any odd but non-fatal problems.
-    self.warnings = []
     # Comment being formed for next object.
     self.current_comment = ''
+    # Current field that stretches across flits.
+    self.flit_crossing_field = None
+    # Number of extra bits still to be consumed by the flit_crossing_field
+    self.bits_remaining = 0
+    # Number of extra bits already cosumed.
+    self.bits_consumed = 0
+    # Current line being parsed.
+    self.current_line = 0
 
-  def parseStructStart(self, line):
+    self.base_types = {}
+    for name in parser.builtin_type_widths:
+      self.base_types[name] = parser.BaseType(name, 
+                                              parser.builtin_type_widths[name])
+
+  def AddError(self, msg):
+    if self.current_document.filename:
+      location = '%s:%d: ' % (self.current_document.filename, self.current_line)
+    else:
+      location = '%d: ' % self.current_line
+    self.errors.append(location + msg)
+
+  def ParseStructStart(self, line):
     # Handle a STRUCT directive opening a new structure.
     # Returns created structure.
-    state, current_object = self.stack[len(self.stack)-1]
-    terms = line.split(' ')
+    (state, current_object) = self.stack[-1]
+    # Struct syntax is STRUCT struct-identifier var-name comment
+    match = re.match('STRUCT\s+(\w+)(\s+\w+|)(\s*.*)$', line)
 
-    if len(terms) == 3:
-      name = terms[1]
-      variable = terms[2]
-    elif len(terms) == 2:
-      name = terms[1]
-      variable = None
-    else:
-      self.errors.append('couldn\'t parse "%s"' % line)
-      current_object = None
+    if not match:
+      self.AddError('Invalid STRUCT line: "%s" % lne')
+      return None
 
-    name = removeWhitespace(name)
-    variable = removeWhitespace(variable)
+    identifier = match.group(1)
+    variable_name = match.group(2)
+    key_comment = match.group(3)
+    variable_name = utils.RemoveWhitespace(variable_name)
 
-    current_struct = Struct(name, variable)
+    if not utils.IsValidCIdentifier(identifier):
+      self.AddError(
+        'struct name "%s" is not a valid identifier name.' % identifier)
+
+    if variable_name and not utils.IsValidCIdentifier(variable_name):
+      self.AddError(
+        'variable "%s" is not a valid identifier name.' % variable_name)
+
+    current_struct = parser.Struct(identifier, False)
+    current_struct.line_number = self.current_line
+    current_struct.key_comment = self.StripKeyComment(key_comment)
 
     if len(self.current_comment) > 0:
       current_struct.body_comment = self.current_comment
     self.current_comment = ''
 
     self.stack.append((DocBuilderStateStruct, current_struct))
-    current_object.structs.append(current_struct)
 
-  def parseEnumStart(self, line):
+    self.current_document.AddStruct(current_struct)
+
+    # Add the struct to the symbol table.  We don't know
+    self.base_types[identifier] = parser.BaseType(identifier, FAKE_WIDTH,
+                                                  current_struct)
+
+    if state != DocBuilderTopLevel:
+      new_field = parser.Field(variable_name, self.MakeType(identifier),
+                               0, 0)
+      new_field.line_number = self.current_line
+
+      current_object.fields.append(new_field)
+      current_struct.inline = True
+
+    # TODO(bowdidge): Instantiate field with struct if necessary.
+    # Need to pass variable.
+
+  def ParseEnumStart(self, line):
     # Handle an ENUM directive opening a new enum.
-    state, current_object = self.stack[len(self.stack)-1]
-    _, name = line.split(' ')
-    name = removeWhitespace(name)
-    current_enum = Enum(name)
+    state, containing_struct = self.stack[len(self.stack)-1]
+    match = re.match('ENUM\s+(\w+)(.*)$', line)
+    if match is None:
+      self.AddError('Invalid enum start line: "%s"' % line)
+      return
+
+    name = match.group(1)
+    key_comment = match.group(2)
+
+    name = utils.RemoveWhitespace(name)
+
+    if not utils.IsValidCIdentifier(name):
+      self.AddError('"%s" is not a valid identifier name.' % name)
+
+    current_enum = parser.Enum(name)
+    current_enum.line_number = self.current_line
+    current_enum.key_comment = self.StripKeyComment(key_comment)
 
     if len(self.current_comment) > 0:
       current_enum.body_comment = self.current_comment
     self.current_comment = ''
 
     self.stack.append((DocBuilderStateEnum, current_enum))
-    self.current_document.enums.append(current_enum)
+    self.current_document.AddEnum(current_enum)
 
-  def parseEnumLine(self, line):
+  def ParseFlagSetStart(self, line):
+    # Handle an FLAGS directive opening a new type represeting bit flags.
+    state, containing_struct = self.stack[len(self.stack)-1]
+    match = re.match('FLAGS\s+(\w+)(.*)$', line)
+    if match is None:
+      self.AddError('Invalid flags start line: "%s"' % line)
+      return
+
+    name = match.group(1)
+    key_comment = match.group(2)
+
+    if not utils.IsValidCIdentifier(name):
+      self.AddError('"%s" is not a valid identifier name.' % name)
+
+    name = utils.RemoveWhitespace(name)
+    current_flags = parser.FlagSet(name)
+    current_flags.line_number = self.current_line
+    current_flags.key_comment = self.StripKeyComment(key_comment)
+
+    if len(self.current_comment) > 0:
+      current_flags.body_comment = self.current_comment
+    self.current_comment = ''
+
+    self.stack.append((DocBuilderStateFlagSet, current_flags))
+    self.current_document.AddFlagSet(current_flags)
+
+  def ParseEnumLine(self, line):
     # Parse the line describing a new enum variable.
     # This regexp matches:
-    # Foo = 1 Abitrary following comment 
-    match = re.match('(\w+)\s*=\s*(\w+)\s*(.*)', line)
+    # Foo = 1 Arbitrary-following-comment
+    match = re.match('(\w+)\s*=\s*(\w+)\s*(.*)$', line)
     if match is None:
-      self.errors.append('Invalid enum line: "%s"' % line)
+      self.AddError('Invalid enum line: "%s"' % line)
       return None
 
     var = match.group(1)
-    # TODO(bowdidge): Test valid C identifier.
+
     value_str = match.group(2)
-    value = parseInt(value_str)
+    value = utils.ParseInt(value_str)
     if value is None:
-      self.errors.append('Invalid enum value for %s: "%s"' % (value_str, var))
+      self.AddError('Invalid enum value for %s: "%s"' % (value_str, var))
       return None
+
+    if not utils.IsValidCIdentifier(var):
+        self.AddError('"%s" is not a valid identifier name.' % var)
+
+    if value > 0x100000000:
+        self.AddError(
+          'Value for enum variable "%s" is %d, is larger than the 2^32 C allows.' % (
+            var, value))
+
     # Parse a line describing an enum variable.
     # TODO(bowdidge): Remember whether value was hex or decimal for better printing.
-    new_enum = EnumVariable(var, value)
+    new_enum = parser.EnumVariable(var, value)
+    new_enum.line_number = self.current_line
 
     if len(self.current_comment) > 0:
       new_enum.body_comment = self.current_comment
     self.current_comment = ''
 
     if match.group(3):
-        new_enum.key_comment = stripComment(match.group(3))
+        new_enum.key_comment = self.StripKeyComment(match.group(3))
     return new_enum
- 
-  def parseLine(self, line):
-    # Handle a line.  Use the state on top of the stack to decide what to do.
-    state,current_object = self.stack[len(self.stack)-1]
+
+  def ParseLine(self, line):
+    """Parse a single line of a gen file that wasn't the start or end of container.
+
+    Use the state on top of the stack to decide what to do.
+    """
+    (state, containing_struct) = self.stack[len(self.stack)-1]
     if line.startswith('//'):
-      self.current_comment += stripComment(line)
+      self.current_comment += self.StripKeyComment(line)
     elif state == DocBuilderTopLevel:
       return
-    elif state == DocBuilderStateEnum:
-      enum = self.parseEnumLine(line)
+    elif state == DocBuilderStateEnum or state == DocBuilderStateFlagSet:
+      enum = self.ParseEnumLine(line)
       if enum is not None:
-        current_object.variables.append(enum)
+        containing_struct.variables.append(enum)
     else:
-      field = self.parseFieldLine(line)
-      if field is not None:
-        current_object.fields.append(field)
+      # Try parsing as continuation of previous field
+      if (not self.ParseMultiFlitFieldLine(line, containing_struct) and
+          not self.ParseFieldLine(line, containing_struct)):
+        self.AddError('Invalid line: "%s"' % line)
+        return
 
-  def parseEnd(self, line):
+  def ParseEnd(self, line):
     # Handle an END directive.
-    state,current_object = self.stack[len(self.stack)-1]
+    if len(self.stack) < 2:
+      self.AddError('END without matching STRUCT, UNION, or ENUM')
+      return None
+
+    (_, current_object) = self.stack[-1]
+    self.stack.pop()
+    (state, containing_object) = self.stack[-1]
+
     if len(self.current_comment) > 0:
       current_object.tail_comment = self.current_comment
-    self.current_comment = ''
-    self.stack.pop()
 
-  def parseUnionStart(self, line):
+    if not isinstance(current_object, parser.Struct):
+      return
+
+    if self.flit_crossing_field:
+      self.AddError('Field spec for "%s" too short: expected %d bits, got %d' %
+                    (self.flit_crossing_field.name,
+                     self.flit_crossing_field.type.BitWidth(),
+                     self.flit_crossing_field.type.BitWidth() - self.bits_remaining))
+
+    self.base_types[current_object.Name()].bit_width = current_object.BitWidth()
+
+    self.current_comment = ''
+
+    if state != DocBuilderTopLevel:
+      # Sub-structures and sub-unions are numbered starting at 0.
+      # Check the previous field to find where this struct should start.
+      next_offset = 0
+      if not containing_object.is_union:
+        previous_fields = containing_object.fields[0:-1]
+        if len(previous_fields) > 0:
+          next_offset = previous_fields[-1].EndOffset() + 1
+
+      new_field = containing_object.fields[-1]
+      new_field.offset_start = next_offset
+      new_field.bit_width = current_object.BitWidth()
+      new_field.CreateSubfields()
+
+  def ParseUnionStart(self, line):
     # Handle a UNION directive opening a new union.
-    state,current_object = self.stack[len(self.stack)-1]
-    _, name, variable = line.split(' ')
-    name = removeWhitespace(name)
-    variable = removeWhitespace(variable)
-    current_union = Union(name, variable)
+    (state, containing_object) = self.stack[-1]
+    union_args = line.split(' ')
+    if len(union_args) != 3:
+      self.AddError('Malformed union declaration: %s\n' % line)
+      return
+    (_, name, variable) = union_args
+    identifier = utils.RemoveWhitespace(name)
+    variable = utils.RemoveWhitespace(variable)
+
+    if not utils.IsValidCIdentifier(name):
+      self.AddError('"%s" is not a valid union identifier name.' % name)
+
+    if not utils.IsValidCIdentifier(variable):
+      self.AddError('"%s" is not a valid identifier name.' % variable)
+
+    current_union = parser.Struct(name, True)
+    current_union.line_number = self.current_line
     if len(self.current_comment) > 0:
       current_union.body_comment = self.current_comment
     self.current_comment = ''
-    self.stack.append((DocBuilderStateUnion, current_union))
-    current_object.unions.append(current_union)
+    self.stack.append((DocBuilderStateStruct, current_union))
+    self.current_document.AddStruct(current_union)
 
-  def parseFieldLine(self, line):
-    # Handle a line describing a field in a structure.
-    # Struct line is:
-    # flit start_bit:end_bit type name /* comment */
-    match = re.match('(\w+)\s+(\w+):(\w+)\s+(\w+)\s+(\w+)\s*(.*)', line)
+    self.base_types[identifier] = parser.BaseType(identifier, FAKE_WIDTH,
+                                                  current_union)
+    if state != DocBuilderTopLevel:
+      # Inline union.  Define the field.
+      new_field = parser.Field(variable, self.MakeType(identifier), 0, 0)
+      new_field.line_number = self.current_line
+      containing_object.fields.append(new_field)
+      current_union.inline = True
+
+  def StripKeyComment(self, the_str):
+    """Removes C commenting from the comment at the end of a line.
+
+    Returns None if a valid comment was not found.
+    """
+    the_str = the_str.lstrip(' \t\n')
+    if the_str.startswith('//'):
+      return the_str[2:].lstrip(' ').rstrip(' ')
+
+    if len(the_str) == 0:
+      return None
+
+    if not the_str.startswith('/*'):
+      self.AddError('Unexpected stuff where comment should be: "%s".' % the_str)
+      return None
+
+    # Match /* */ with anything in between and whitespace after.
+    match = re.match('/\*\s*(.*)\*/\s*', the_str)
+    if not match:
+      self.AddError('Badly formatted comment "%s"' % the_str)
+      return None
+
+    return match.group(1).lstrip(' ').rstrip(' ')
+
+  def ParseMultiFlitFieldLine(self, line, containing_struct):
+    """Parse the current line as if it were a multi-flit line.
+
+    Return false if it were not a multi-flit line
+    """
+    match = re.match('(\w+\s+(\w+:\w+|\w+))\s+\.\.\.\s*(.*)', line)
+    if match is None:
+      return False
+
+    if self.flit_crossing_field is None:
+      self.AddError('Multi-line flit continuation seen without pending field.')
+      return True
+
+    # Continuation.
+    flit_bit_spec_str = match.group(1)
+    key_comment = match.group(3)
+
+    result = utils.ParseBitSpec(flit_bit_spec_str)
+
+    if not result:
+      self.AddError('Invalid bit pattern: "%s"' % flit_bit_spec_str)
+      return True
+
+    # Tests
+    # Flag error if uses more bits than was available in previous declaration.
+    # Flag error if larger than flit.
+    # Flag if flit number wasn't increasing.
+    # Checker will determine if there's overlap.
+
+    result = utils.ParseBitSpec(flit_bit_spec_str)
+    if not result:
+      self.AddError('Invalid bit pattern: "%s"' % flit_bit_spec_str)
+      return True
+    (flit, start_bit, end_bit) = result
+
+    size = start_bit - end_bit + 1
+
+    if not self.flit_crossing_field.tail_comment:
+      self.flit_crossing_field.tail_comment = key_comment
+    else:
+      self.flit_crossing_field.tail_comment += '\n' + key_comment
+
+    self.flit_crossing_field.crosses_flit = True
+
+    self.flit_crossing_field.ExtendSize(size)
+
+    if self.bits_remaining < size:
+      self.AddError('Continuation for multi-flit field "%s" too large: '
+                    'expected %d bits, got %d.' % (
+          self.flit_crossing_field.name,
+          self.flit_crossing_field.type.BitWidth(),
+          size + self.bits_consumed))
+      self.flit_crossing_field = None
+      return True
+
+    self.bits_remaining -= size
+    self.bits_consumed += size
+
+    if self.bits_remaining == 0:
+      self.flit_crossing_field = None
+
+    return True
+
+
+  def MakeType(self, base_name, array_size=None):
+    """Creates an instance of the named type, or None if no such type exists."""
+    if base_name not in self.base_types:
+      return None
+    base_type = self.base_types[base_name]
+    if array_size is not None:
+      return parser.Type(base_type, array_size)
+    else:
+      return parser.Type(base_type)
+
+
+  def ParseFieldLine(self, line, containing_struct):
+    """Returns true if the line could be parsed as a field description.
+
+     Struct line is one of the following
+
+    Defines field
+    flit start_bit:end_bit type name /* comment */
+    flit single_bit type name /* comment */
+
+    Defines continuation of multi-flit field.
+    flit start_bit:end_bit ...
+    """
+
+    match = re.match('(\w+\s+(\w+:\w+|\w+))\s+(\w+)\s+(\w+)(\[[0-9]+\]|)\s*(.*)', line)
 
     if match is None:
-        # Flag error, or treat as comment.
-        self.errors.append('Invalid field line: "%s"' % line)
-        return None
+      # Assume it's a comment.
+      return False
 
-    flit_str = match.group(1)
-    start_bit_str = match.group(2)
-    end_bit_str = match.group(3)
-    type = match.group(4)
-    name = match.group(5)
+    is_array = False
+    array_size = 1
+
+    flit_bit_spec_str = match.group(1)
+    type_name = match.group(3)
+    name = match.group(4)
+    if len(match.group(5)) != 0:
+      is_array = True
+      array_size = utils.ParseInt(match.group(5).lstrip('[').rstrip(']'))
+      if array_size is None:
+        print("Eek, thought %s was a number, but didn't parse!\n" % match.group(5))
     key_comment = match.group(6)
 
-    flit = parseInt(flit_str)
-    if flit is None:
-      self.errors.append('Invalid flit "%s"' % flit_str)
-      return None
-
-    start_bit = parseInt(start_bit_str)
-    if start_bit is None:
-      self.errors.append('Invalid start bit "%s"' % start_bit_str)
-      return None
-
-    end_bit = parseInt(end_bit_str)
-    if end_bit is None:
-      self.errors.append('Invalid end bit "%s"' % end_bit_str)
-      return None
-
-    if start_bit > end_bit:
-      self.errors.append('Start bit %d greater than end bit %d in field %s' % 
-                         (start_bit, end_bit, name))
-
-    if end_bit - start_bit > typeWidth(type):
-      self.errors.append('Type "%s" too small to hold %d bits for field "%s".' % 
-                         (type, end_bit - start_bit, name))
-      return None
+    if not utils.IsValidCIdentifier(name):
+      self.AddError(
+        'field name "%s" is not a valid identifier name.' % name)
 
     if key_comment == '':
       key_comment = None
     else:
-      key_comment = stripComment(key_comment)
+      key_comment = self.StripKeyComment(key_comment)
 
-    new_field = Field(name, type, flit, start_bit, end_bit)
+    body_comment = None
+    if len(self.current_comment) > 0:
+      body_comment = self.current_comment
+      self.current_comment = ''
+
+    type = None
+    if is_array:
+      type = self.MakeType(type_name, array_size)
+    else:
+      type = self.MakeType(type_name)
+
+    if type is None:
+      self.AddError('Unknown type name "%s"' % type_name)
+      return True
+
+    if array_size == 0:
+      if flit_bit_spec_str != '_ _:_':
+        self.AddError('Bit pattern specified for zero-length array: "%s".' % flit_bit_spec_str)
+        return True
+
+      zero_array = parser.Field(name, type, -1, -1)
+      zero_array.no_offset = True
+      zero_array.key_comment = key_comment
+      zero_array.body_comment = body_comment
+      containing_struct.fields.append(zero_array)
+      return True
+
+    result = utils.ParseBitSpec(flit_bit_spec_str)
+
+    if not result:
+      self.AddError('Invalid bit pattern: "%s"' % flit_bit_spec_str)
+      return True
+
+    (flit, start_bit, end_bit) = result
+
+    if start_bit > 63:
+      self.AddError('Field "%s" has start bit "%d" too large for 8 byte flit.' % (
+          name, start_bit))
+      return True
+
+    if start_bit < end_bit:
+      self.AddError('Start bit %d greater than end bit %d in field %s' %
+                    (start_bit, end_bit, name))
+
+    start_offset = flit * 64 + (utils.FLIT_SIZE - start_bit - 1)
+    end_offset = flit * 64 + (utils.FLIT_SIZE - end_bit - 1)
+    bit_size = end_offset - start_offset + 1
+    new_field = parser.Field(name, type, start_offset, bit_size)
+    new_field.line_number = self.current_line
+
+    expected_width = type.BitWidth()
+    actual_width = new_field.BitWidth()
+
+    # Copy the sub-fields in.
+    if type.IsRecord():
+      new_field.CreateSubfields()
+
+    if not type.IsScalar() and end_bit == 0 and actual_width < expected_width:
+      # Field may stretch across flits.
+      self.flit_crossing_field = new_field
+      self.bits_remaining = expected_width - actual_width
+      self.bits_consumed = actual_width
 
     new_field.key_comment = key_comment
-    if len(self.current_comment) > 0:
-      new_field.body_comment = self.current_comment
-    self.current_comment = ''
 
-    type_width = typeWidth(new_field.type)
-    var_width = new_field.end_bit - new_field.start_bit + 1
-    if var_width < type_width:
-      self.warnings.append('*** field "%s" doesn\'t fill field' % new_field.name)
+    new_field.body_comment = body_comment
+
+    type_width = new_field.type.BitWidth()
+    var_width = new_field.BitWidth()
+    if (var_width < type_width and not new_field.type.IsScalar()
+        and end_bit != 0):
+      # Using too few bits is only an error for arrays - scalar fields might always
+      # be treated as bitfields.  Arrays that end on a flit could continue, so don't
+      # flag an error in that case.
+      self.AddError('Field smaller than type: '
+                    'field "%s" is %d bits, type "%s" is %d.' % (
+          new_field.name, new_field.BitWidth(), new_field.type.TypeName(),
+          new_field.type.BitWidth()))
     elif var_width > type_width:
-      warning = '*** %s larger than field type %s' % (new_field.name, new_field.type)
-      self.warnings.append(warning)
-    return new_field
+      warning = 'Field larger than type: field "%s" is %d bits, type "%s" is %d.' % (
+        new_field.name, new_field.BitWidth(), new_field.type.TypeName(),
+        new_field.type.BitWidth())
+      self.AddError(warning)
+    containing_struct.fields.append(new_field)
+    return True
 
-  def parsePlainLine(self, line):
+  def ParsePlainLine(self, line):
     # TODO(bowdidge): Save test in order for printing as comments.
     return
 
-  def parse(self, the_file):
+  def Parse(self, input_filename, the_file):
     # Begin parsing a generated file provided as text.  Returns errors if any, or None.
-    line_count = 0
+    self.current_document.filename = input_filename
+    self.current_line = 1
     for line in the_file:
       # Remove whitespace to allow for meaningful indenting.
       line = line.lstrip(' ')
-      line_count += 1
       if line.startswith('STRUCT'):
-        self.parseStructStart(line)
+        self.ParseStructStart(line)
       elif line.startswith('UNION'):
-        self.parseUnionStart(line)
+        self.ParseUnionStart(line)
       elif line.startswith('ENUM'):
-        self.parseEnumStart(line)
+        self.ParseEnumStart(line)
+      elif line.startswith('FLAGS'):
+        self.ParseFlagSetStart(line)
       elif line.startswith('END'):
-        self.parseEnd(line)
+        self.ParseEnd(line)
       else:
-        self.parseLine(line)
+        self.ParseLine(line)
+      self.current_line += 1
     if len(self.errors) > 0:
       return self.errors
     return None
 
-def usage():
+def Usage():
   sys.stderr.write('generator.py: usage: [-p] [-g [code, html] [-o file]\n')
-  sys.stderr.write('-p: pack fields into 8 byte flits, and create accessor macros\n')
-  sys.stderr.write('-t: generate test C file for checking structure sizes.\n')
+  sys.stderr.write('-c options: change codegen options.\n')
   sys.stderr.write('-g code: generate header file to stdout (default)\n')
   sys.stderr.write('-g html: generate HTML description of header\n')
-  sys.stderr.write('-o filename: send output to named file\n')
+  sys.stderr.write('-o filename_base: send output to named file\n')
+  sys.stderr.write('                  for code generation, appends correct extension.\n')
+  sys.stderr.write('Codegen options include:\n')
+  sys.stderr.write('  pack: combine multiple bitfields into a single:\n')
+  sys.stderr.write('        field, and create accessor macros.\n')
+  sys.stderr.write('  json: generate routines for initializing a structure\n')
+  sys.stderr.write('        from a JSON representation.')
+  sys.stderr.write('Example: -c json,nopack enables json, and disables packing.\n')
 
-def generateFile(should_pack, should_gen_test_file, output_style, output_file,
-                 gen_file):
+# TODO(bowdidge): Create options dictionary to replace all these arguments.
+def GenerateFile(should_pack, output_style, output_base,
+                 input_stream, input_filename, generate_json):
   # Process a single .gen file and create the appropriate header/docs.
   doc_builder = DocBuilder()
 
-  input_file = open(gen_file, 'r')
-  errors = doc_builder.parse(input_file)
+  errors = doc_builder.Parse(input_filename, input_stream)
 
   if errors is not None:
     for error in errors:
@@ -851,87 +871,84 @@ def generateFile(should_pack, should_gen_test_file, output_style, output_file,
   doc = doc_builder.current_document
 
   c = Checker()
-  c.visitDocument(doc)
-  if len(c.warnings) != 0:
-    for warning in c.warnings:
-      sys.stderr.write('Warning: %s\n' % warning)
- 
+  c.VisitDocument(doc)
+  if len(c.errors) != 0:
+    for checker_error in c.errors:
+      sys.stderr.write(checker_error + '\n')
+
   if should_pack:
     p = Packer()
-    p.visitDocument(doc)
+    errors = p.VisitDocument(doc)
+    if len(errors) > 0:
+      for error in errors:
+        sys.stderr.write(error + '\n')
+
+  helper = codegen.CodeGenerator(generate_json)
+  helper.VisitDocument(doc)
 
   if output_style is OutputStyleHTML:
-    html_generator = HTMLGenerator()
-    code = html_generator.visitDocument(doc)
+    html_generator = htmlgen.HTMLGenerator()
+    code = html_generator.VisitDocument(doc)
+    if output_base:
+      f = open(output_base + '.html', 'w')
+      f.write(code)
+      f.close()
+    else:
+      return code
   elif output_style is OutputStyleHeader:
-    code_generator = CodeGenerator(output_file)
-    code = code_generator.visitDocument(doc)
-  if output_file:
-    f = open(output_file, 'w')
-    f.write(code)
-    f.close()
-  else:
-    print code
+    code_generator = codegen.CodePrinter(output_base, generate_json)
+    code_generator.output_file = output_base
+    (header, source) = code_generator.VisitDocument(doc)
 
-  if should_gen_test_file and output_file is not None:
-    writeTestCFile(output_file, doc.structs)
-
-def writeTestCFile(output_file, structs):
-  if not output_file.endswith('.h'):
-    print("Will not generate test C file because output file does not end with .h.\n")
-    return
-
-  c_file = re.sub('\.h$', '.c', output_file)
-
-  structs_and_sizes = [(struct.name, struct.bytes()) for struct in structs]
-  f = open(c_file, "w")
-  f.write('// Generated automatically by generator.py\n')
-  f.write('// For testing generated headers.\n')
-  f.write('#include "stdio.h"\n')
-  f.write('#include "%s"\n\n' % output_file)
-  f.write('int main(int argc, char** argv) {\n')
-  f.write('\n')
-  f.write('  int fail = 0;\n')
-  for (struct, struct_size) in structs_and_sizes:
-    f.write('  {\n')
-    f.write('    struct %s x;\n' % struct)
-    f.write('    if (sizeof(x) == %d) {\n' % struct_size)
-    f.write('      printf("PASS: structure %s size correct.\\n");\n' % struct)
-    f.write('    } else {\n')
-    f.write('      printf("FAIL Expected struct %s to be %d bytes, got %%lu bytes.\\n", sizeof(x));\n' % (struct, struct_size))
-    f.write('      fail = 1;\n')
-    f.write('    }\n')
-    f.write('  }\n')
-  f.write('  return fail;\n')
-  f.write('}\n')
-  f.close()
+    if output_base:
+      f = open(output_base + '.h', 'w')
+      f.write(header)
+      f.close()
+      f = open(output_base + '.c', 'w')
+      f.write(source)
+      f.close()
+    else:
+      return '/* Header file */\n' +  header + '/* Source file */\n' + source
+    return None
 
 OutputStyleHeader = 1
 OutputStyleHTML = 2
 
+def SetFromArgs(key, codegen_args, default_value):
+  """Returns whether setting 'key' should be set based on provided args.
+  key is a name for a codegen setting.
+  codegen_args is an array of arguments provided by the user which can
+  include either name (to set the value) or noname (to not set the value).
+  default_value names the value for the key if it is not in codegen_args.
+  """
+
+  if key in codegen_args:
+    return True
+  if 'no' + key in codegen_args:
+    return False
+  return default_value
+
 def main():
   try:
-    opts, args = getopt.getopt(sys.argv[1:], 'tpg:o:', ['help', 'output='])
+    opts, args = getopt.getopt(sys.argv[1:], 'tc:g:o:',
+                               ['help', 'output=', 'codegen='])
   except getopt.GetoptError as err:
     print str(err)
-    usage()
+    Usage()
     sys.exit(2)
-  
-  should_pack = False
+
   output_style = OutputStyleHeader
-  output_file = None
-  should_output_test_c_file = False
-  
+  output_base = None
+  codegen_args = []
+
   for o, a in opts:
-    if o == '-p':
-      should_pack = True
-    if o == '-t':
-      should_output_test_c_file = True
-    elif o in ('-h', '--help'):
-      usage()
+    if o in ('-h', '--help'):
+      Usage()
       sys.exit(2)
     elif o in ('-o', '--output'):
-      output_file = a
+      output_base = a
+    elif o in ('-c', '--codegen'):
+      codegen_args = a.split(',')
     elif o == '-g':
       if a == 'code':
         output_style = OutputStyleHeader
@@ -943,6 +960,9 @@ def main():
     else:
       assert False, 'Unhandled option %s' % o
 
+  codegen_pack = SetFromArgs('pack', codegen_args, False)
+  codegen_json = SetFromArgs('json', codegen_args, False)
+
   if len(args) == 0:
       sys.stderr.write('No genfile named.\n')
       sys.exit(2)
@@ -951,8 +971,12 @@ def main():
       print('Can only process one gen file at a time.')
       sys.exit(2)
 
-  generateFile(should_pack, should_output_test_c_file, 
-               output_style, output_file, args[0])
+  input_stream = open(args[0], 'r')
+  out = GenerateFile(codegen_pack, output_style, output_base,
+                     input_stream, args[0], codegen_json)
+  input_stream.close()
+  if out:
+    print out
 
 if __name__ == '__main__':
   main()
