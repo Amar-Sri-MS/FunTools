@@ -214,7 +214,10 @@ class TTree():
 	def __html_end(self):
 		return "</div></div>\n"
 
-	def html_tree(self, filterlist, depth):
+	def html_tree(self, filterlist, depth, exclude_filtered):
+
+		if self.name in filterlist and exclude_filtered:
+			return ""
 
 		ht = self.__html_start(filterlist, depth)
 

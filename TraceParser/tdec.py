@@ -85,6 +85,7 @@ if __name__ == "__main__":
 	parser.add_option("-f", "--filter", dest="filterlist_f", help="Filter list", metavar="FILE")
 	parser.add_option("-c", "--core", dest="core_id", help="Core ID")
 	parser.add_option("-d", "--data", dest="data_f", help="Data folder", metavar="FOLDER")
+	parser.add_option("-r", "--remove-filtered", dest="exclude_filtered", help="Do not put filtered functions in the output", action="store_true")
 
 	(options, args) = parser.parse_args()
 
@@ -143,7 +144,7 @@ if __name__ == "__main__":
 			pass
 			#print "VP did not run"
 		else:
-			report = report + funtrc[vpid].html_tree(filterlist, 0)
+			report = report + funtrc[vpid].html_tree(filterlist, 0, options.exclude_filtered)
 
 		#summarize(statsd[vpid])
 		report = report + html_gen.vpstats_output_html(statsd[vpid])
