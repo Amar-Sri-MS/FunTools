@@ -140,7 +140,7 @@ def read_trace(trace_fname, ranges, filter_vp, reverse_order, filterlist, quiet)
 
 					if entry.get_pos() == "START":
 
-						new_ttree = TTree(func, current_ttree[vp], cycles, idles, instr_misses)
+						new_ttree = TTree(func, current_ttree[vp], cycles, idles, instr_misses, line)
 
 						if current_ttree[vp] != None:
 							current_ttree[vp].add_call(new_ttree)

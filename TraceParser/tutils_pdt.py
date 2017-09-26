@@ -52,6 +52,9 @@ def get_address(trace_line):
 
 	return addr
 
+def get_num_pipelines():
+	return 2
+
 #1.075  0 0 0                 idle cycles 3
 #1.085  0 0 0                 S1 idle slot
 def get_ccount(trace_line):
@@ -69,7 +72,7 @@ def get_ccount(trace_line):
 	elif "mode" in trace_line:
 		ccount = 0
 
-	return ccount
+	return ccount/get_num_pipelines()
 
 def get_asm(trace_line):
 	# XXX

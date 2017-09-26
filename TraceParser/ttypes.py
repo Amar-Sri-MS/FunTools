@@ -111,7 +111,7 @@ class TEntry():
 
 class TTree():
 
-	def __init__(self, name, parent, start_cycle, start_idle, start_instr_miss):
+	def __init__(self, name, parent, start_cycle, start_idle, start_instr_miss, start_line):
 
 		self.name = name
 		self.parent = parent
@@ -125,6 +125,9 @@ class TTree():
 
 		self.start_instr_miss = start_instr_miss
 		self.end_instr_miss = start_instr_miss
+
+		self.start_line = start_line
+		self.end_line = start_line
 
 		#print "TTREE: init %s" % name
 
@@ -198,14 +201,25 @@ class TTree():
 		print "  <td>%s cycle, %s idle, %s instr miss</td>" % (self.get_ccount(), self.get_idle_count(), self.get_imcount())
 		print "</tr>"
 
-	def __html_start(self, filterlist, indent):
+	def __html_start(self, filterlist, indent, excl_sub_calls):
 		symbol = '-'
 		style = "block"
+
+		cycle_count = self.get_ccount()
+		idle_count = self.get_idle_count()
+		instr_miss_count = self.get_imcount()
+
+		if (excl_sub_calls):
+			for subcall in self.calls:
+				cycle_count = cycle_count - subcall.get_ccount()
+				idle_count = idle_count - subcall.get_idle_count()
+				instr_miss_count = instr_miss_count - subcall.get_imcount()
+
 		if self.name in filterlist:
 			symbol = '+'
 			style = "none"
 
-		st =  "<div class=\"line\"><span class=\"timestamp\">%s</span> %s<span class=\"collapseButton\" onclick=\"Collapse(this);\">%s</span> %s (%s cycles, %s idle, %s instr misses)\n" % (self.start_cycle, "&nbsp;"*4*indent, symbol, self.name, self.get_ccount(), self.get_idle_count(), self.get_imcount())
+		st =  "<div class=\"line\"><span class=\"timestamp\">l:%s-%s c:%s</span> %s<span class=\"collapseButton\" onclick=\"Collapse(this);\">%s</span> %s (%s cycles, %s idle, %s instr misses)\n" % (self.start_line, self.end_line, self.start_cycle, "&nbsp;"*4*indent, symbol, self.name, cycle_count, idle_count, instr_miss_count)
 		st = st +  "<div class=\"collapse\" style=\"display : %s;\">\n" % (style)
 
 		#st = st + "<div class=\"line\">%s %s<a href=\"#\" onclick=\"Collapse(this);\">--</a> %s (%s cycles, %s idle, %s instr misses)" % (self.start_cycle, "&nbsp;"*4*indent, self.name, self.get_ccount(), self.get_idle_count(), self.get_imcount())
@@ -214,13 +228,13 @@ class TTree():
 	def __html_end(self):
 		return "</div></div>\n"
 
-	def html_tree(self, filterlist, depth):
+	def html_tree(self, filterlist, depth, excl_sub_calls):
 
 		ht = self.__html_start(filterlist, depth)
 
 		#if self.name not in filterlist:
 		for subcall in self.calls:
-			ht = ht + subcall.html_tree(filterlist, depth+1)
+			ht = ht + subcall.html_tree(filterlist, depth+1, excl_sub_calls)
 
 		ht = ht + self.__html_end()
 
