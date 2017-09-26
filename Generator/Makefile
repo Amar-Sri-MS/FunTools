@@ -1,5 +1,14 @@
 # Where build products go.
+
+SDKDIR ?= ../../FunSDK
+
 BUILD = build
+
+GENERATOR_SRC = generator.py \
+		codegen.py \
+		htmlgen.py \
+		parser.py \
+		utils.py
 
 test: c-checker generator-test c-packed-checker html-checker fun-hci
 
@@ -26,10 +35,10 @@ c-packed-checker: $(BUILD)
             test_helper/rdma_packed.c $(BUILD)/rdma_packed_gen.c
 
 fun-hci: $(BUILD)
-	./generator.py -g code -o $(BUILD)/fun_hci funhci/fun_hci.gen
-	./generator.py -g html -o $(BUILD)/fun_hci funhci/fun_hci.gen
-	./generator.py -g code -c pack,json -o $(BUILD)/fun_hci_pack funhci/fun_hci.gen
-	./generator.py -g html -c pack,json -o $(BUILD)/fun_hci_pack funhci/fun_hci.gen
+	./generator.py -g code -o $(BUILD)/fun_hci $(SDKDIR)/hci/fun_hci.gen
+	./generator.py -g html -o $(BUILD)/fun_hci $(SDKDIR)/hci/fun_hci.gen
+	./generator.py -g code -c pack,json -o $(BUILD)/fun_hci_pack $(SDKDIR)/hci/fun_hci.gen
+	./generator.py -g html -c pack,json -o $(BUILD)/fun_hci_pack $(SDKDIR)/hci/fun_hci.gen
 	
 # Tests HTML generation works.
 html-checker: $(BUILD)
@@ -37,6 +46,13 @@ html-checker: $(BUILD)
 
 $(BUILD): $(BUILD)
 	mkdir $(BUILD)
+
+# install generator to SDK
+install:
+	mkdir -p $(SDKDIR)/bin/Generator
+	rsync -R $(GENERATOR_SRC) $(SDKDIR)/bin/Generator
+
+
 clean:
-	@rm generator.pyc rdma rdma.dSYM rdma_packed rdma_packed.dSYM \
+	@rm -rf generator.pyc rdma rdma.dSYM rdma_packed rdma_packed.dSYM \
 	    rdma.h rdma rdma_gen.[hc] rdma_packed_gen.[hc]
