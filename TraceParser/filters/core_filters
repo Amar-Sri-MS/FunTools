@@ -1,0 +1,13 @@
+next_l2cache_tag
+next_dcache_tag
+next_icache_tag
+next_ftlb_entry_pair
+verify_isa
+is_mips64
+init_gpr
+next_shadow_set
+is_cps
+init_cp0
+done_wr
+C0V0
+init_ftlb

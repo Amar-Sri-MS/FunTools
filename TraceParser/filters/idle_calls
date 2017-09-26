@@ -1,0 +1,12 @@
+wuh_idle
+vplocal_cpu_num
+platform_snooze
+wu_dispatch_loop
+wu_dispatch_loop_c
+vplocal_cmh
+vplocal_faddr
+fabric_lookup_cookie
+lookup_endpoint
+cmh_dequeue_wu
+spinlock_lock
+wufifo_pop
