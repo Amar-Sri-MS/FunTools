@@ -5,6 +5,7 @@ import sys, pickle, json, os
 
 # specific imports
 from optparse import OptionParser
+from operator import itemgetter
 
 # internal libs
 
@@ -63,7 +64,7 @@ def create_range_list(dasm_fname):
 
 	f.close()
 
-	return coll
+	return sorted(coll, key=itemgetter(1))
 
 
 # input and output are numbers, not strings
@@ -78,6 +79,7 @@ def read_trace(trace_fname, ranges, filter_vp, reverse_order, filterlist, quiet)
 
 	# to be refined based on understanding of pipeline
 	cycles = 0
+	real_cycles = 0
 	idles = 0
 	instr_misses = 0
 	nxtprint = 0
@@ -105,6 +107,7 @@ def read_trace(trace_fname, ranges, filter_vp, reverse_order, filterlist, quiet)
 	
 				vp = entry.get_vpid()
 				cycles = cycles + entry.get_ccount()
+				real_cycles = cycles/tutils.get_num_pipelines()
 
 				# XXX rewrite idle handling
 				func = entry.get_func()
@@ -130,17 +133,17 @@ def read_trace(trace_fname, ranges, filter_vp, reverse_order, filterlist, quiet)
 
 					if quiet == False:
 						if filter_vp == 15:
-							print "%16s | %19s | %06s | %32s | %32s | %32s | %32s |" % (cycles, hex(row_val[0]), entry.get_op(), row_val[1], row_val[2], row_val[3], row_val[4])
+							print "%16s | %19s | %06s | %32s | %32s | %32s | %32s |" % (real_cycles, hex(row_val[0]), entry.get_op(), row_val[1], row_val[2], row_val[3], row_val[4])
 						elif vp == filter_vp:
 							print "ENTRY: %s" % (entry)
 					else:
-						if (cycles / 100000) == nxtprint:
-							print "Quiet mode still running; %s cycles complete" % cycles
+						if (real_cycles / 100000) == nxtprint:
+							print "Quiet mode still running; %s cycles complete" % real_cycles
 							nxtprint = nxtprint + 1
 
 					if entry.get_pos() == "START":
 
-						new_ttree = TTree(func, current_ttree[vp], cycles, idles, instr_misses)
+						new_ttree = TTree(func, current_ttree[vp], real_cycles, idles, instr_misses)
 
 						if current_ttree[vp] != None:
 							current_ttree[vp].add_call(new_ttree)
@@ -164,7 +167,7 @@ def read_trace(trace_fname, ranges, filter_vp, reverse_order, filterlist, quiet)
 									current_ttree[vp] = top_of_stack
 									break
 
-								top_of_stack.set_end_cycle(cycles)
+								top_of_stack.set_end_cycle(real_cycles)
 								top_of_stack.set_end_idle(idles)
 								top_of_stack.set_end_instr_miss(instr_misses)
 
@@ -173,7 +176,7 @@ def read_trace(trace_fname, ranges, filter_vp, reverse_order, filterlist, quiet)
 						# 2. If we popped all the way to no root, create a new root
 						if need_new_node == True:
 
-							new_ttree = TTree(func, None, cycles, idles, instr_misses)
+							new_ttree = TTree(func, None, real_cycles, idles, instr_misses)
 
 							if current_ttree[vp] != None:
 								# if we are adding a node, it is the root
@@ -206,7 +209,7 @@ def read_trace(trace_fname, ranges, filter_vp, reverse_order, filterlist, quiet)
 	for i in range(0,4):
 		if current_ttree[i] != None:
 			try:
-				current_ttree[i].propagate_up(cycles, idles, instr_misses)
+				current_ttree[i].propagate_up(real_cycles, idles, instr_misses)
 				roots.append(current_ttree[i].get_root())
 				sc = roots[i].sanitycheck()
 				print "Sanity check for VP %s: %s" % (i, sc)
@@ -219,8 +222,8 @@ def read_trace(trace_fname, ranges, filter_vp, reverse_order, filterlist, quiet)
 
 	#roots[0].print_tree(0)
 
-	print "Total cycles: %s" % cycles
-	print "Time elapsed @ 1GHz: %s seconds (%s ms)" % (cycles/float(1000000000), (cycles/float(1000000)))
+	print "Total cycles: %s" % real_cycles
+	print "Time elapsed @ 1GHz: %s seconds (%s ms)" % (real_cycles/float(1000000000), (real_cycles/float(1000000)))
 	print "Max call depth: TBD"
 	print "Total idles: %s" % idles
 

@@ -54,3 +54,6 @@ def get_cycle(trace_line):
 # FIXME
 def get_ccount(trace_line):
 	return 1
+
+def get_num_pipelines():
+	return 1

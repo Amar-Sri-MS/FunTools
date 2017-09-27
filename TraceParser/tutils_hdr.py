@@ -61,6 +61,9 @@ def get_ts(trace_line):
 def get_cycle(trace_line):
 	return tutils.get_cycle(trace_line)
 
+def get_num_pipelines():
+	return tutils.get_num_pipelines()
+
 def text_section_start(dasm_line):
 	# catches the case where we have .text_*
 	return dasm_line.startswith("Disassembly of section .text")

@@ -83,4 +83,6 @@ def get_cycle(trace_line):
 	# XXX
 	return 0
 
+def get_num_pipelines():
+	return 2
 
