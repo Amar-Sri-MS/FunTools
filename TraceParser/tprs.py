@@ -81,6 +81,7 @@ def read_trace(trace_fname, ranges, filter_vp, reverse_order, filterlist, quiet)
 	cycles = 0
 	real_cycles = 0
 	idles = 0
+	real_idles = 0
 	instr_misses = 0
 	nxtprint = 0
 
@@ -113,6 +114,7 @@ def read_trace(trace_fname, ranges, filter_vp, reverse_order, filterlist, quiet)
 				func = entry.get_func()
 				if func == "idle":
 					idles = idles + entry.get_ccount()
+					real_idles = idles/tutils.get_num_pipelines()
 
 				if func in filterlist:
 					continue
@@ -143,7 +145,7 @@ def read_trace(trace_fname, ranges, filter_vp, reverse_order, filterlist, quiet)
 
 					if entry.get_pos() == "START":
 
-						new_ttree = TTree(func, current_ttree[vp], real_cycles, idles, instr_misses)
+						new_ttree = TTree(func, current_ttree[vp], real_cycles, real_idles, instr_misses)
 
 						if current_ttree[vp] != None:
 							current_ttree[vp].add_call(new_ttree)
@@ -168,7 +170,7 @@ def read_trace(trace_fname, ranges, filter_vp, reverse_order, filterlist, quiet)
 									break
 
 								top_of_stack.set_end_cycle(real_cycles)
-								top_of_stack.set_end_idle(idles)
+								top_of_stack.set_end_idle(real_idles)
 								top_of_stack.set_end_instr_miss(instr_misses)
 
 								top_of_stack = top_of_stack.get_parent()
@@ -176,7 +178,7 @@ def read_trace(trace_fname, ranges, filter_vp, reverse_order, filterlist, quiet)
 						# 2. If we popped all the way to no root, create a new root
 						if need_new_node == True:
 
-							new_ttree = TTree(func, None, real_cycles, idles, instr_misses)
+							new_ttree = TTree(func, None, real_cycles, real_idles, instr_misses)
 
 							if current_ttree[vp] != None:
 								# if we are adding a node, it is the root
@@ -209,7 +211,7 @@ def read_trace(trace_fname, ranges, filter_vp, reverse_order, filterlist, quiet)
 	for i in range(0,4):
 		if current_ttree[i] != None:
 			try:
-				current_ttree[i].propagate_up(real_cycles, idles, instr_misses)
+				current_ttree[i].propagate_up(real_cycles, real_idles, instr_misses)
 				roots.append(current_ttree[i].get_root())
 				sc = roots[i].sanitycheck()
 				print "Sanity check for VP %s: %s" % (i, sc)
@@ -225,7 +227,7 @@ def read_trace(trace_fname, ranges, filter_vp, reverse_order, filterlist, quiet)
 	print "Total cycles: %s" % real_cycles
 	print "Time elapsed @ 1GHz: %s seconds (%s ms)" % (real_cycles/float(1000000000), (real_cycles/float(1000000)))
 	print "Max call depth: TBD"
-	print "Total idles: %s" % idles
+	print "Total idles: %s" % real_idles
 
 	return roots
 
