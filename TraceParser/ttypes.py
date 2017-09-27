@@ -216,14 +216,14 @@ class TTree():
 
 	def html_tree(self, filterlist, depth, exclude_filtered):
 
-		if self.name in filterlist and exclude_filtered:
+		if self.name in filterlist and exclude_filtered == True:
 			return ""
 
 		ht = self.__html_start(filterlist, depth)
 
 		#if self.name not in filterlist:
 		for subcall in self.calls:
-			ht = ht + subcall.html_tree(filterlist, depth+1)
+			ht = ht + subcall.html_tree(filterlist, depth+1, exclude_filtered)
 
 		ht = ht + self.__html_end()
 
