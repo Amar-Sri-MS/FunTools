@@ -120,12 +120,16 @@ if __name__ == "__main__":
 		coreid = int(options.core_id)
 
 	if options.filterlist_f != None:
-		f = open(options.filterlist_f)
+		for fname in options.filterlist_f.split(','):
 
-		filterlist = f.readlines()
-		filterlist = [x.strip() for x in filterlist]
+			f = open(fname)
 
-		f.close()
+			flist = f.readlines()
+			flist = [x.strip() for x in flist]
+
+			filterlist = filterlist + flist
+
+			f.close()
 
 	statsd = [{}, {}, {}, {}]
 
