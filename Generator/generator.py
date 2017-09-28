@@ -14,7 +14,9 @@
 
 import fileinput
 import getopt
+import os
 import re
+import subprocess
 import sys
 
 import codegen
@@ -855,6 +857,88 @@ def Usage():
   sys.stderr.write('        from a JSON representation.')
   sys.stderr.write('Example: -c json,nopack enables json, and disables packing.\n')
 
+def ReformatCode(source):
+  """Rewrites the source to match Linux coding style.
+
+  Tries several tools to see what's available.
+  """
+  # We prefer clang-format because it reformats source code much nicer,
+  # and because it does a better job of removing blank lines.
+  out = ReformatCodeWithClangFormat(source)
+  if out:
+    return out
+
+  out = ReformatCodeWithIndent(source)
+  if out:
+    return out
+
+  # If no indent tool is available, just provide the un-formatted code.
+  return source
+
+
+def ReformatCodeWithIndent(source):
+  """Reformats provided source with GNU indent.
+
+  Returns None if indent not found.
+  """
+  possible_indent_binaries = ['/usr/bin/indent']
+
+  indent_path = None
+  for bin in possible_indent_binaries:
+    if os.path.isfile(bin):
+      indent_path = bin
+      break
+
+  if not indent_path:
+    return None
+
+  print("Fomatting with GNU indent.")
+  args = [indent_path, '-sob', '-nfc1', '-nfcb', '-nbad', '-bap',
+          '-nbc', '-br', '-brs', '-c33', '-cd33', '-ncdb', '-ce', '-ci4',
+          '-cli0', '-d0', '-i8', '-ip0', '-l80', '-lp', '-npcs', '-npsl',
+          # Don't format comments, get rid of extra blank lines.
+          # Don't add whitespace in the middle of declarations.
+          '-nsc', '-sob', '-di0']
+  p = subprocess.Popen(args,
+                       stdout=subprocess.PIPE,
+                       stdin=subprocess.PIPE,
+                       stderr=subprocess.STDOUT,
+                       bufsize=1)
+  # indent requires line feed after last line.
+  out = p.communicate(source + '\n')
+  return out[0]
+
+def ReformatCodeWithClangFormat(source):
+  """Reformats provided source with clang-format.
+
+  Returns None if indent not found.
+  """
+  possible_indent_binaries = ['/usr/bin/clang-format',
+                              '/usr/local/bin/clang-format']
+
+  indent_path = None
+  for bin in possible_indent_binaries:
+    if os.path.isfile(bin):
+      indent_path = bin
+      break
+
+  if not indent_path:
+    return None
+
+  args = [indent_path,
+          '-style={BasedOnStyle: LLVM, IndentWidth: 8, UseTab: Always, '
+          'BreakBeforeBraces: Linux, MaxEmptyLinesToKeep: 1, '
+          'ColumnLimit: 80}']
+
+  p = subprocess.Popen(args,
+                       stdout=subprocess.PIPE,
+                       stdin=subprocess.PIPE,
+                       stderr=subprocess.STDOUT,
+                       bufsize=1)
+  # Make sure there's a line feed after last line.
+  out = p.communicate(source + '\n')
+  return out[0]
+
 # TODO(bowdidge): Create options dictionary to replace all these arguments.
 def GenerateFile(output_style, output_base, input_stream, input_filename,
                  options):
@@ -899,6 +983,9 @@ def GenerateFile(output_style, output_base, input_stream, input_filename,
     code_generator = codegen.CodePrinter(output_base, options)
     code_generator.output_file = output_base
     (header, source) = code_generator.VisitDocument(doc)
+
+    header = ReformatCode(header)
+    source = ReformatCode(source)
 
     if output_base:
       f = open(output_base + '.h', 'w')

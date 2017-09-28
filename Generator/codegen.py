@@ -110,6 +110,7 @@ class CodePrinter:
 
     if self.output_file_base is not None:
       hdr_out += '#endif // %s' % include_guard_name
+
     return (hdr_out, src_out)
 
   def VisitEnum(self, enum):
@@ -280,7 +281,7 @@ class CodePrinter:
 
       var_bits = ''
       if field.type.IsScalar() and type_width != var_width:
-        var_bits = ':%d' % var_width
+        var_bits = ' : %d' % var_width
       hdr_out += self.Indent() + '%s %s%s;%s\n' % (type_name,
                                                    field.name, var_bits,
                                                    key_comment)
