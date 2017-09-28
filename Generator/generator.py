@@ -125,7 +125,7 @@ def FirstNonReservedName(field_list):
   """
   first_name = None
   for field in field_list:
-    if not field.IsReserved():
+    if not field.is_reserved:
       return field.name
   return None
 
@@ -135,13 +135,13 @@ def LastNonReservedName(field_list):
   """
   last_name = None
   for field in field_list:
-    if not field.IsReserved():
+    if not field.is_reserved:
       last_name = field.name
   return last_name
 
 def ChoosePackedFieldName(fields):
   """Chooses the name for a packed field base on the fields in that field."""
-  not_reserved_names = [f.name for f in fields if not f.IsReserved()]
+  not_reserved_names = [f.name for f in fields if not f.is_reserved]
   common_prefix = CommonPrefix(not_reserved_names)
 
   if common_prefix:
@@ -271,7 +271,7 @@ class Packer:
                                packed_field_width)
       new_field.line_number = fields[0].line_number
 
-      non_reserved_fields = [f.name for f in fields if not f.IsReserved()]
+      non_reserved_fields = [f.name for f in fields if not f.is_reserved]
       bitfield_name_str = utils.ReadableList(non_reserved_fields)
       bitfield_layout_str = ''
 
@@ -353,7 +353,7 @@ class DocBuilder:
   def ParseStructStart(self, line):
     # Handle a STRUCT directive opening a new structure.
     # Returns created structure.
-    (state, current_object) = self.stack[-1]
+    (state, containing_object) = self.stack[-1]
     # Struct syntax is STRUCT struct-identifier var-name comment
     match = re.match('STRUCT\s+(\w+)(\s+\w+|)(\s*.*)$', line)
 
@@ -395,7 +395,7 @@ class DocBuilder:
                                0, 0)
       new_field.line_number = self.current_line
 
-      current_object.fields.append(new_field)
+      containing_object.fields.append(new_field)
       current_struct.inline = True
 
     # TODO(bowdidge): Instantiate field with struct if necessary.
@@ -856,8 +856,8 @@ def Usage():
   sys.stderr.write('Example: -c json,nopack enables json, and disables packing.\n')
 
 # TODO(bowdidge): Create options dictionary to replace all these arguments.
-def GenerateFile(should_pack, output_style, output_base,
-                 input_stream, input_filename, generate_json):
+def GenerateFile(output_style, output_base, input_stream, input_filename,
+                 options):
   # Process a single .gen file and create the appropriate header/docs.
   doc_builder = DocBuilder()
 
@@ -876,14 +876,14 @@ def GenerateFile(should_pack, output_style, output_base,
     for checker_error in c.errors:
       sys.stderr.write(checker_error + '\n')
 
-  if should_pack:
+  if 'pack' in options:
     p = Packer()
     errors = p.VisitDocument(doc)
     if len(errors) > 0:
       for error in errors:
         sys.stderr.write(error + '\n')
 
-  helper = codegen.CodeGenerator(generate_json)
+  helper = codegen.CodeGenerator(options)
   helper.VisitDocument(doc)
 
   if output_style is OutputStyleHTML:
@@ -896,7 +896,7 @@ def GenerateFile(should_pack, output_style, output_base,
     else:
       return code
   elif output_style is OutputStyleHeader:
-    code_generator = codegen.CodePrinter(output_base, generate_json)
+    code_generator = codegen.CodePrinter(output_base, options)
     code_generator.output_file = output_base
     (header, source) = code_generator.VisitDocument(doc)
 
@@ -963,6 +963,13 @@ def main():
   codegen_pack = SetFromArgs('pack', codegen_args, False)
   codegen_json = SetFromArgs('json', codegen_args, False)
 
+  codegen_options = []
+
+  if codegen_pack:
+    codegen_options.append('pack')
+  if codegen_json:
+    codegen_options.append('json')
+
   if len(args) == 0:
       sys.stderr.write('No genfile named.\n')
       sys.exit(2)
@@ -972,8 +979,8 @@ def main():
       sys.exit(2)
 
   input_stream = open(args[0], 'r')
-  out = GenerateFile(codegen_pack, output_style, output_base,
-                     input_stream, args[0], codegen_json)
+  out = GenerateFile(output_style, output_base, input_stream, args[0],
+                     codegen_options)
   input_stream.close()
   if out:
     print out

@@ -4,6 +4,11 @@ import generator
 import htmlgen
 import parser
 
+# Common lists of codegen options.
+OPTIONS_GENERATE_JSON = ['json']
+OPTIONS_PACK = ['pack']
+OPTIONS_NONE = []
+
 class HTMLGeneratorTest(unittest.TestCase):
     def testEnumVariablePrinting(self):
         input = ['// Body comment for ENUM A',
@@ -13,8 +18,8 @@ class HTMLGeneratorTest(unittest.TestCase):
                  '// Tail comment for A',
                  'END']
 
-        out = generator.GenerateFile(True, generator.OutputStyleHTML, None,
-                                     input, 'foo.gen', False)
+        out = generator.GenerateFile(generator.OutputStyleHTML, None,
+                                     input, 'foo.gen', OPTIONS_PACK)
         self.assertIsNotNone(out)
         self.assertIn('<h3>A: enum declaration</h3>\n'
                       '<p><b>Key comment for ENUM A</b></p>\n'
@@ -31,8 +36,8 @@ class HTMLGeneratorTest(unittest.TestCase):
                  '// Tail comment for A.',
                  'END']
 
-        out = generator.GenerateFile(True, generator.OutputStyleHTML, None,
-                                     input, 'foo.gen', False)
+        out = generator.GenerateFile(generator.OutputStyleHTML, None,
+                                     input, 'foo.gen', OPTIONS_PACK)
         self.assertIsNotNone(out)
         self.assertIn('<h3>A: structure</h3>\n'
                       '<p><b>Key comment for struct A.</b></p>\n'
@@ -51,8 +56,8 @@ class HTMLGeneratorTest(unittest.TestCase):
                  '// Tail comment for A.',
                  'END']
 
-        out = generator.GenerateFile(True, generator.OutputStyleHTML, None,
-                                     input, 'foo.gen', False)
+        out = generator.GenerateFile(generator.OutputStyleHTML, None,
+                                     input, 'foo.gen', OPTIONS_PACK)
         self.assertIsNotNone(out)
         self.assertIn('<h3>A: structure</h3>\n'
                       '<p><b>Key comment for struct A.</b></p>\n'
@@ -75,8 +80,8 @@ class HTMLGeneratorTest(unittest.TestCase):
                  '// Tail comment for A.',
                  'END']
 
-        out = generator.GenerateFile(True, generator.OutputStyleHTML, None,
-                                     input, 'foo.gen', False)
+        out = generator.GenerateFile(generator.OutputStyleHTML, None,
+                                     input, 'foo.gen', OPTIONS_PACK)
         self.assertIsNotNone(out)
         self.assertIn('<h3>A: structure</h3>\n'
                       '<p><b>Key comment for struct A.</b></p>\n'
@@ -100,8 +105,8 @@ class HTMLGeneratorTest(unittest.TestCase):
             '2 63:0 uint64_t arg2',
             'END'
             ]
-        out = generator.GenerateFile(True, generator.OutputStyleHTML, None,
-                                     input, 'foo.gen', False)
+        out = generator.GenerateFile(generator.OutputStyleHTML, None,
+                                     input, 'foo.gen', OPTIONS_PACK)
         self.assertIsNotNone(out)
 
     def testPrintNestedSubfields(self):
@@ -115,8 +120,8 @@ class HTMLGeneratorTest(unittest.TestCase):
             'END',
             'END'
             ]
-        out = generator.GenerateFile(True, generator.OutputStyleHTML, None,
-                                     input, 'foo.gen', False)
+        out = generator.GenerateFile(generator.OutputStyleHTML, None,
+                                     input, 'foo.gen', OPTIONS_PACK)
         self.assertIsNotNone(out)
         self.assertIn('Key comment for a.', out)
         self.assertIn('Key comment for b.', out)
@@ -134,8 +139,8 @@ class HTMLGeneratorTest(unittest.TestCase):
         'F = 0x20',
         'END'
         ]
-      out = generator.GenerateFile(True, generator.OutputStyleHTML, None,
-                                   contents, 'foo.gen', False)
+      out = generator.GenerateFile(generator.OutputStyleHTML, None,
+                                   contents, 'foo.gen', OPTIONS_PACK)
 
       self.assertIn('<h3>Foo: flagset</h3>', out)
       self.assertIn('<td>A</td><td>0x00000001</td><td>0 0 0 0 0 1</td></tr>',
@@ -153,8 +158,8 @@ class HTMLGeneratorTest(unittest.TestCase):
         'D = 8',
         'END'
         ]
-      out = generator.GenerateFile(True, generator.OutputStyleHTML, None,
-                                   contents, 'foo.gen', False)
+      out = generator.GenerateFile(generator.OutputStyleHTML, None,
+                                   contents, 'foo.gen', OPTIONS_PACK)
 
       self.assertIn('<td>BC</td><td>0x00000006</td><td>0 1 1 0</td></tr>', out)
 
