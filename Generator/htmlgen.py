@@ -117,7 +117,7 @@ class HTMLGenerator:
     width_sum = 0
     for (field, width, field_group_num) in row:
       class_name = 'bar field field-group-%d' % field_group_num
-      if field.IsReserved():
+      if field.is_reserved:
         class_name += ' reserved'
       out += '    <div class="%s" style="width: %dpx">%s</div>\n' % ( 
         class_name, self.BarWidth(width), field.name)

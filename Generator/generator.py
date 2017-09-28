@@ -125,7 +125,7 @@ def FirstNonReservedName(field_list):
   """
   first_name = None
   for field in field_list:
-    if not field.IsReserved():
+    if not field.is_reserved:
       return field.name
   return None
 
@@ -135,13 +135,13 @@ def LastNonReservedName(field_list):
   """
   last_name = None
   for field in field_list:
-    if not field.IsReserved():
+    if not field.is_reserved:
       last_name = field.name
   return last_name
 
 def ChoosePackedFieldName(fields):
   """Chooses the name for a packed field base on the fields in that field."""
-  not_reserved_names = [f.name for f in fields if not f.IsReserved()]
+  not_reserved_names = [f.name for f in fields if not f.is_reserved]
   common_prefix = CommonPrefix(not_reserved_names)
 
   if common_prefix:
@@ -271,7 +271,7 @@ class Packer:
                                packed_field_width)
       new_field.line_number = fields[0].line_number
 
-      non_reserved_fields = [f.name for f in fields if not f.IsReserved()]
+      non_reserved_fields = [f.name for f in fields if not f.is_reserved]
       bitfield_name_str = utils.ReadableList(non_reserved_fields)
       bitfield_layout_str = ''
 
@@ -353,7 +353,7 @@ class DocBuilder:
   def ParseStructStart(self, line):
     # Handle a STRUCT directive opening a new structure.
     # Returns created structure.
-    (state, current_object) = self.stack[-1]
+    (state, containing_object) = self.stack[-1]
     # Struct syntax is STRUCT struct-identifier var-name comment
     match = re.match('STRUCT\s+(\w+)(\s+\w+|)(\s*.*)$', line)
 
@@ -395,7 +395,7 @@ class DocBuilder:
                                0, 0)
       new_field.line_number = self.current_line
 
-      current_object.fields.append(new_field)
+      containing_object.fields.append(new_field)
       current_struct.inline = True
 
     # TODO(bowdidge): Instantiate field with struct if necessary.

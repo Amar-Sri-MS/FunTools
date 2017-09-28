@@ -335,7 +335,7 @@ class CodeGenerator:
 
     for old_field in field.packed_fields:
       # No point in creating macros for fields that shouldn't be accessed.
-      if old_field.IsReserved():
+      if old_field.is_reserved:
         continue
 
       packed_type_name = field.Type().TypeName()
@@ -389,7 +389,7 @@ class CodeGenerator:
 
     packed_inits = []
     for packed_field in field.packed_fields:
-      if packed_field.IsReserved():
+      if packed_field.is_reserved:
         continue
       ident = utils.AsUppercaseMacro('%s_%s' % (the_struct.name,
                                                          packed_field.name))
@@ -444,7 +444,7 @@ class CodeGenerator:
 
     # Pass in all non-packed fields.
     for field in the_struct.AllFields():
-      if not field.IsReserved() and field.type.IsScalar():
+      if not field.is_reserved and field.type.IsScalar():
         all_fields.append(field)
 
     accessor_prefix = ''
@@ -454,7 +454,7 @@ class CodeGenerator:
         the_struct.MatchingStructInUnionField(struct_in_union))
 
       for field in struct_in_union.AllFields():
-        if not field.IsReserved() and field.type.IsScalar():
+        if not field.is_reserved and field.type.IsScalar():
           all_fields.append(field)
 
     for field in all_fields:
@@ -467,13 +467,13 @@ class CodeGenerator:
     # Initialize each packed field.
 
     for field in the_struct.fields:
-      if field.IsReserved() or not field.type.IsScalar():
+      if field.is_reserved or not field.type.IsScalar():
         continue
       inits.append(self.GenerateInitializer(the_struct, field, ''))
 
     if struct_in_union:
       for field in struct_in_union.fields:
-        if field.IsReserved() or not field.type.IsScalar():
+        if field.is_reserved or not field.type.IsScalar():
           continue
         inits.append(self.GenerateInitializer(struct_in_union, field, 
                                               accessor_prefix))
@@ -523,14 +523,14 @@ class CodeGenerator:
     arg_list.append('struct %s *s' % struct_name)
     inits = []
     for field in the_struct.AllFields():
-      if field.IsReserved() or not field.type.IsScalar():
+      if field.is_reserved or not field.type.IsScalar():
         continue
       inits.append(self.GenerateJSONInitializer(the_struct, field,
                                                 accessor_prefix))
 
     init_fields = ['s']
     init_fields += [f.name for f in the_struct.AllFields()
-                    if f.type.IsScalar() and not f.IsReserved()]
+                    if f.type.IsScalar() and not f.is_reserved]
 
     final_init = '\t%s(%s);\n' % (self.InitializerName(the_struct.name),
                                   ', '.join(init_fields))
