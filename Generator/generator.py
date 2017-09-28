@@ -856,8 +856,8 @@ def Usage():
   sys.stderr.write('Example: -c json,nopack enables json, and disables packing.\n')
 
 # TODO(bowdidge): Create options dictionary to replace all these arguments.
-def GenerateFile(should_pack, output_style, output_base,
-                 input_stream, input_filename, generate_json):
+def GenerateFile(output_style, output_base, input_stream, input_filename,
+                 options):
   # Process a single .gen file and create the appropriate header/docs.
   doc_builder = DocBuilder()
 
@@ -876,14 +876,14 @@ def GenerateFile(should_pack, output_style, output_base,
     for checker_error in c.errors:
       sys.stderr.write(checker_error + '\n')
 
-  if should_pack:
+  if 'pack' in options:
     p = Packer()
     errors = p.VisitDocument(doc)
     if len(errors) > 0:
       for error in errors:
         sys.stderr.write(error + '\n')
 
-  helper = codegen.CodeGenerator(generate_json)
+  helper = codegen.CodeGenerator(options)
   helper.VisitDocument(doc)
 
   if output_style is OutputStyleHTML:
@@ -896,7 +896,7 @@ def GenerateFile(should_pack, output_style, output_base,
     else:
       return code
   elif output_style is OutputStyleHeader:
-    code_generator = codegen.CodePrinter(output_base, generate_json)
+    code_generator = codegen.CodePrinter(output_base, options)
     code_generator.output_file = output_base
     (header, source) = code_generator.VisitDocument(doc)
 
@@ -963,6 +963,13 @@ def main():
   codegen_pack = SetFromArgs('pack', codegen_args, False)
   codegen_json = SetFromArgs('json', codegen_args, False)
 
+  codegen_options = []
+
+  if codegen_pack:
+    codegen_options.append('pack')
+  if codegen_json:
+    codegen_options.append('json')
+
   if len(args) == 0:
       sys.stderr.write('No genfile named.\n')
       sys.exit(2)
@@ -972,8 +979,8 @@ def main():
       sys.exit(2)
 
   input_stream = open(args[0], 'r')
-  out = GenerateFile(codegen_pack, output_style, output_base,
-                     input_stream, args[0], codegen_json)
+  out = GenerateFile(output_style, output_base, input_stream, args[0],
+                     codegen_options)
   input_stream.close()
   if out:
     print out

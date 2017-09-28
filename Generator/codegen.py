@@ -15,11 +15,11 @@ class CodePrinter:
   # Pretty-prints a parsed structure description into C headers.
   # The generated code should match the Linux coding style.
 
-  def __init__(self, output_file_base, generate_json):
+  def __init__(self, output_file_base, options):
     self.indent = 0
     # Prefix of files to create.
     self.output_file_base = output_file_base
-    self.generate_json = generate_json
+    self.generate_json = 'json' in options
 
   def Indent(self):
     """Generates indenting spaces needed for current level of code."""
@@ -289,8 +289,8 @@ class CodePrinter:
 
 class CodeGenerator:
   """Generates helper functions for manipulating structures."""
-  def __init__(self, generate_json):
-    self.generate_json = generate_json
+  def __init__(self, options):
+    self.generate_json = 'json' in options
 
   def VisitDocument(self, doc):
     for struct in doc.Structs():
