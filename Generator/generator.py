@@ -892,7 +892,6 @@ def ReformatCodeWithIndent(source):
   if not indent_path:
     return None
 
-  print("Fomatting with GNU indent.")
   args = [indent_path, '-sob', '-nfc1', '-nfcb', '-nbad', '-bap',
           '-nbc', '-br', '-brs', '-c33', '-cd33', '-ncdb', '-ce', '-ci4',
           '-cli0', '-d0', '-i8', '-ip0', '-l80', '-lp', '-npcs', '-npsl',
