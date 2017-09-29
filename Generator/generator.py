@@ -905,6 +905,12 @@ def ReformatCodeWithIndent(source):
                        bufsize=1)
   # indent requires line feed after last line.
   out = p.communicate(source + '\n')
+
+  # If there was an indent fail
+  if (p.returncode != 0):
+    print "%s returned error %d, ignoring output" % (indent_path, p.returncode)
+    return None
+
   return out[0]
 
 def ReformatCodeWithClangFormat(source):
