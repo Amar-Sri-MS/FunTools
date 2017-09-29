@@ -294,6 +294,13 @@ class Field(Declaration):
   # the StartBit and EndBit use high bit = 63.
 
   def __init__(self, name, type, offset_start, bit_width):
+    """Creates a new field in a struct.
+
+    name: name of the field.
+    type: Type object describing the type of the field.
+    offset_start: offset of the field in the structure, starting at 0.
+    bit_width: width of field in bits, or -1 if an array of undefined length.
+    """
     Declaration.__init__(self)
     # name of the field declaration.
     self.name = name
