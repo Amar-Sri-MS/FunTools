@@ -6,6 +6,8 @@
 
 import unittest
 
+import re
+
 import codegen
 import generator
 import parser
@@ -14,6 +16,10 @@ import parser
 OPTIONS_GENERATE_JSON = ['json']
 OPTIONS_PACK = ['pack']
 OPTIONS_NONE = []
+
+def RemoveWhitespace(str):
+  """Converts all whitespace to single spaces for consistent compares."""
+  return re.sub('\s+', ' ', str)
 
 class CodePrinterTest(unittest.TestCase):
   def setUp(self):
@@ -76,7 +82,7 @@ class CodePrinterTest(unittest.TestCase):
   def testPrintField(self):
     field = parser.Field('foo', parser.TypeForName('uint8_t'), 0, 4)
     code = self.printer.VisitField(field)
-    self.assertEqual('uint8_t foo:4;\n', code)
+    self.assertEqual('uint8_t foo : 4;\n', code)
 
   def testFieldMaskSmall(self):
     field = parser.Field('foo', parser.TypeForName('uint16_t'), 0, 5)
@@ -293,6 +299,9 @@ class CodegenEndToEnd(unittest.TestCase):
 
     out = generator.GenerateFile(generator.OutputStyleHeader, None,
                                  input, 'foo.gen', ['pack', 'json'])
+
+    out = RemoveWhitespace(out)
+
     self.assertIsNotNone(out)
 
     # Did structure get generated?
@@ -477,8 +486,11 @@ class CodegenEndToEnd(unittest.TestCase):
 
     self.assertIsNotNone(out)
     self.assertIn('uint8_t a;', out)
-    self.assertIn('uint8_t b:2;', out)
-    self.assertIn('uint8_t c:6;', out)
+    # Handle differences between clang-format and indent.
+    self.assertTrue('uint8_t b : 2;' in out
+                    or 'uint8_t b:2' in out)
+    self.assertTrue('uint8_t c : 6;' in out
+                    or 'uint8_t c:6;' in out)
     self.assertIn('uint8_t d;', out)
 
   def testNoDuplicateFunctions(self):
@@ -515,9 +527,12 @@ class CodegenEndToEnd(unittest.TestCase):
 
     out = generator.GenerateFile(generator.OutputStyleHeader, None,
                                  contents, 'foo.gen', OPTIONS_PACK)
+
+    out = RemoveWhitespace(out)
+
     self.assertIn('static const int A = 0x1;', out)
     self.assertIn('static const int D = 0x8;', out)
-    self.assertIn('static const int F = 0x20;  /* Comment */', out)
+    self.assertIn('static const int F = 0x20; /* Comment */', out)
     self.assertIn('extern const char *foo_names', out)
     self.assertIn('const char *foo_names[6] = {', out)
 
@@ -534,17 +549,19 @@ class CodegenEndToEnd(unittest.TestCase):
 
     out = generator.GenerateFile(generator.OutputStyleHeader, None,
                                  contents, 'foo.gen', OPTIONS_PACK)
+    out = RemoveWhitespace(out)
+
     self.assertIn('const int A = 0x1;', out)
     self.assertIn('const int AB = 0x3;', out)
     self.assertIn('const int D = 0x10;', out)
-    self.assertIn('"A",  /* 0x1 */', out)
-    self.assertIn('"C",  /* 0x4 */', out)
-    self.assertIn('"D",  /* 0x10 */', out)
-    self.assertIn('"0x8",  /* 0x8, not defined with flag. */', out)
-    self.assertNotIn('"AB",  /* 0x3 */', out)
+    self.assertIn('"A", /* 0x1 */', out)
+    self.assertIn('"C", /* 0x4 */', out)
+    self.assertIn('"D", /* 0x10 */', out)
+    self.assertIn('"0x8", /* 0x8, not defined with flag. */', out)
+    self.assertNotIn('"AB", /* 0x3 */', out)
     self.assertIn('extern const char *Foo_names', out)
     self.assertIn('const char *Foo_names[5] = {', out)
-    self.assertIn('"0x8",  /* 0x8, not defined with flag. */', out)
+    self.assertIn('"0x8", /* 0x8, not defined with flag. */', out)
 
 
 
@@ -564,6 +581,8 @@ class TestComments(unittest.TestCase):
 
     out = generator.GenerateFile(generator.OutputStyleHeader, None,
                                  input, 'foo.gen', OPTIONS_PACK)
+
+    out = RemoveWhitespace(out)
 
     self.assertIn('/* Body comment. */', out)
     self.assertIn('struct fun_admin_cmd_common {', out)
@@ -655,13 +674,15 @@ class TestComments(unittest.TestCase):
     out = generator.GenerateFile(generator.OutputStyleHeader, None,
                                  contents, 'foo.gen', OPTIONS_PACK)
 
-    self.assertIn('"undefined",  /* 0x0 */', out)
-    self.assertIn('"A",  /* 0x1 */', out)
-    self.assertIn('"undefined",  /* 0x2 */', out)
-    self.assertIn('"C",  /* 0x3 */', out)
-    self.assertIn('"E",  /* 0x5 */', out)
-    self.assertIn('"undefined",  /* 0x6 */', out)
-    self.assertIn('"G",  /* 0xa */', out)
+    out = RemoveWhitespace(out)
+
+    self.assertIn('"undefined", /* 0x0 */', out)
+    self.assertIn('"A", /* 0x1 */', out)
+    self.assertIn('"undefined", /* 0x2 */', out)
+    self.assertIn('"C", /* 0x3 */', out)
+    self.assertIn('"E", /* 0x5 */', out)
+    self.assertIn('"undefined", /* 0x6 */', out)
+    self.assertIn('"G", /* 0xa */', out)
 
   def testVariableLengthArray(self):
     doc_builder = generator.DocBuilder()
@@ -700,6 +721,9 @@ class TestComments(unittest.TestCase):
 	]
     out = generator.GenerateFile(generator.OutputStyleHeader, None,
                                  contents, 'foo.gen', ['pack', 'json'])
+
+    out = RemoveWhitespace(out)
+
     self.assertIn('bool foo_json_init(struct fun_json *j, struct foo *s)', out)
     self.assertIn('struct fun_json *bar_j = fun_json_lookup(j, "bar");', out)
 
