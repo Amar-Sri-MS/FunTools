@@ -1,0 +1,122 @@
+{#
+
+Standard Fungible template for header file for generated structures.
+Generates structures, accessor macros and functions, and enum declarations.
+
+#}
+// Header created by generator.py
+// Do not change this file;
+// change the gen file "{{gen_file}}" instead.
+
+#ifndef __{{output_base|as_macro}}_H__
+#define __{{output_base|as_macro}}_H__
+
+{% for enum in enums %}
+{{enum.body_comment|as_comment}}
+enum {{enum.name}} {  {{enum.key_comment|as_comment}}
+{% for enum_variable in enum.variables %}
+{{enum_variable.body_comment|as_comment}} {{enum_variable.name}} = {{enum_variable.value|as_hex}},  {{enum_variable.key_comment|as_comment}}
+{% endfor %}{{enum.tail_comment|as_comment}}
+};
+
+/* Human-readable strings for enum values in {{enum.name}}. */
+extern const char *{{enum.name|as_lower}}_names[];
+{% endfor %}
+
+{% for flagset in flagsets %}
+/*
+ * Declarations for flag set {{flagset.name}}.
+  */
+  {% if flagset.key_comment %}{{flagset.key_comment|as_comment}}{% endif %}
+  {% if flagset.body_comment %}{{flagset.body_comment|as_comment}}{% endif %}
+  {% for var in flagset.variables %}
+    {{var.body_comment|as_comment}}
+static const int {{var.name}} = {{var.value|as_hex}};  {{var.key_comment|as_comment}}
+  {% endfor %}
+
+  /* String names for all power-of-two flags in {{flagset.name}}. */
+extern const char *{{flagset.name|as_lower}}_names[];
+
+{% endfor %}
+
+{% for struct in structs %}
+{# Note: The structure declarations with containing unions are too complex
+   to generate in templates, so do that work in code instead.
+#}
+{% if not struct.inline %}
+{{ struct | as_definition }};
+{% endif %}
+
+/* Initializes the {{struct.name}} structure.
+ * Arguments:
+ *   s: pointer to structure to be initialized.
+   {% for field in struct.arg_fields() %}
+ *   {{field.name}}: {% if field.key_comment %} {{field.key_comment|as_line}} {% else %} {% endif %}
+
+   {% endfor %}
+
+{% if struct.non_arg_fields() | length > 0 %}
+ * Caller responsible for initializing these fields:
+     {% for f in struct.non_arg_fields() %}{% if not f.is_reserved %}
+ *   {{f.name}}
+     {% endif %}{% endfor %}
+{% endif %}
+ */
+extern void {{struct.name}}_init(struct {{struct.init_struct().name}} *s{% if struct.arg_fields() %},
+  {% for field in struct.arg_fields() %}
+  {{field | as_declaration}}{{ ", " if not loop.last }}
+  {% endfor %}
+  {% endif %}
+);
+
+{% if generate_json %}
+/*
+ * Initializes {{struct.name}} structure from JSON representation.
+ * Returns false if initialization failed.
+ * Caller responsible for determining correct init function(s).
+ */
+extern bool {{struct.name}}_json_init(struct fun_json *j, struct {{struct.init_struct().name}} *s);
+
+{% endif %}
+
+{# Generate macros for packed fields. #}
+{% for field in struct.fields %}
+   {% if field.packed_fields %}
+     {% for f in field.packed_fields %}
+       {% if f.is_reserved == false %}
+/* Offset of field "{{f.name}}" in packed field "{{field.name}}" */
+#define {{struct.name|as_macro}}_{{f.name|as_macro}}_S {{f.shift()}}
+
+/* Mask of field "{{f.name}}" in packed field "{{field.name}}" 
+   after shift. */
+#define {{struct.name|as_macro}}_{{f.name|as_macro}}_M {{f.mask}}
+
+/* Shifts a value to the location to be inserted in field {{f.name}} 
+ * inside packed field {{field.name}}.
+ */
+#define {{struct.name|as_macro}}_{{f.name|as_macro}}_P(x) (({{f.type | as_cast}} x) << {{struct.name|as_macro}}_{{f.name|as_macro}}_S)
+
+/* Returns value for field {{field.name}} from packed field
+ * {{field.name}}.
+ */
+#define {{struct.name|as_macro}}_{{f.name|as_macro}}_G(x) (((x) >> {{struct.name|as_macro}}_{{f.name|as_macro}}_S) & {{struct.name|as_macro}}_{{f.name|as_macro}}_M)
+
+/* Clears out the field {{f.name}} inside packed field
+ *  {{field.name}}
+ *  Usage:
+ *    x.{{field.name}} &= {{struct.name|as_macro}}_{{f.name_as_macro}}_Z;
+ */
+#define {{struct.name|as_macro}}_{{f.name|as_macro}}_Z \
+	(~(({{f.type|as_cast}} {{struct.name|as_macro}}_{{f.name|as_macro}}_M) \
+	<< {{struct.name|as_macro}}_{{f.name|as_macro}}_S))
+      {% endif %}
+    {% endfor %}
+  {% endif %}
+{% endfor %}
+
+/* End of helper macros for structure {{struct.name}} */
+
+{% endfor %}
+
+#endif // __{{output_base|as_macro}}_H__
+
