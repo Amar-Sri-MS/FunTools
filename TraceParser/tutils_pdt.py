@@ -14,7 +14,7 @@ def is_instruction(trace_line):
 	# TM+DASM format
 	noerr = True
 
-	regex = r"^\d+\.\d\d\d.*"
+	regex = r"^\d+\.\d\d\d  \d \d \d.*pc.*"
 
 	rm = re.search(regex, trace_line.strip())
 
@@ -31,6 +31,11 @@ def is_instruction(trace_line):
 
 	return rm and noerr
 
+def is_instruction_miss(trace_line):
+	return 'IM' in trace_line.split()
+
+def is_loadstore_miss(trace_line):
+	return 'LSM' in trace_line.split()
 
 def get_vpid(trace_line):
 	return int(trace_line.split()[2])
@@ -51,6 +56,9 @@ def get_address(trace_line):
 		addr = long(m.group(1),16)
 
 	return addr
+
+def get_num_pipelines():
+	return 2
 
 #1.075  0 0 0                 idle cycles 3
 #1.085  0 0 0                 S1 idle slot

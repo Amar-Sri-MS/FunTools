@@ -18,6 +18,12 @@ def is_instruction(trace_line):
         DEBUG("Not an instruction line")
     return is_inst
 
+def is_instruction_miss(trace_line):
+    return False
+
+def is_loadstore_miss(trace_line):
+    return False
+
 def get_vpid(trace_line):
     vpid = int(trace_line.split()[2])
     DEBUG("Returning vpid: %s" % vpid)

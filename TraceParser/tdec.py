@@ -86,12 +86,13 @@ if __name__ == "__main__":
 	parser.add_option("-c", "--core", dest="core_id", help="Core ID")
 	parser.add_option("-d", "--data", dest="data_f", help="Data folder", metavar="FOLDER")
 	parser.add_option("-r", "--remove-filtered", dest="exclude_filtered", help="Do not put filtered functions in the output", action="store_true")
+	parser.add_option("-e", "--excl-sub-calls", dest="excl_sub_calls", help="Only count this function's metrics, excluding its sub calls", action="store_true")
 
 	(options, args) = parser.parse_args()
 
 	if options.funtrc_f is None:
 		print "Need to specify a fungible option trace file"
-		sys.exit(0)
+		sys.exit(1)
 
 	dst = ''
 	if options.data_f != None:
@@ -148,7 +149,7 @@ if __name__ == "__main__":
 			pass
 			#print "VP did not run"
 		else:
-			report = report + funtrc[vpid].html_tree(filterlist, 0, options.exclude_filtered)
+			report = report + funtrc[vpid].html_tree(filterlist, 0, options.exclude_filtered, options.excl_sub_calls)
 
 		#summarize(statsd[vpid])
 		report = report + html_gen.vpstats_output_html(statsd[vpid])
