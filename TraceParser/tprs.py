@@ -84,6 +84,8 @@ def read_trace(trace_fname, ranges, filter_vp, reverse_order, filterlist, quiet,
 		while (True):
 
 			line = read_a_line(infile, follow)
+			if not line:
+				break
 
 			line_num = line_num + 1
       
