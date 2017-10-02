@@ -31,6 +31,7 @@ AR = $(FULLPREFIX)ar
 BUILD = build
 
 SDKDIR ?= ../../../FunSDK
+HCI_DIR = $(SDKDIR)/hci
 
 LIBS = $(SDKDIR)/lib/$(OS)/noasan/libfunclient.a
 
@@ -53,23 +54,23 @@ all: funos_code host_code funos_enum $(BUILD)/$(LIB_HCI)
 .PHONY: funos_code
 funos_code:
 	@mkdir -p $(DEST)/funos
-	../generator.py -c pack,json -g code -o $(DEST)/funos/$(OUT_HCI) fun_hci.gen
+	../generator.py -c pack,json -g code -o $(DEST)/funos/$(OUT_HCI) $(HCI_DIR)/fun_hci.gen
 
 .PHONY: funos_enum
 funos_enum:
 	@mkdir -p $(DEST)/funos
-	../generator.py -c pack -g code -o $(DEST)/funos/$(OUT_PORT) fun_port.gen
+	../generator.py -c pack -g code -o $(DEST)/funos/$(OUT_PORT) $(HCI_DIR)/fun_port.gen
 
 .PHONY: host_code
 host_code:
 	@mkdir -p $(DEST)/host
-	../generator.py -c pack -g code -o $(DEST)/host/$(OUT_HCI) fun_hci.gen
+	../generator.py -c pack -g code -o $(DEST)/host/$(OUT_HCI) $(HCI_DIR)/fun_hci.gen
 
 .PHONY: doc
 doc:
 	@mkdir -p $(DEST)/doc
-	../generator.py -g html -o $(DEST)/doc/$(OUT_HCI) fun_hci.gen
-	../generator.py -g html -o $(DEST)/doc/$(OUT_PORT) fun_port.gen
+	../generator.py -g html -o $(DEST)/doc/$(OUT_HCI) $(HCI_DIR)/fun_hci.gen
+	../generator.py -g html -o $(DEST)/doc/$(OUT_PORT) $(HCI_DIR)/fun_port.gen
 
 $(BUILD)/obj/fun_hci.o: $(DEST)/funos/$(OUT_HCI).c
 	@echo CC $<

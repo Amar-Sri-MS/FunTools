@@ -14,7 +14,9 @@
 
 import fileinput
 import getopt
+import os
 import re
+import subprocess
 import sys
 
 import codegen
@@ -125,7 +127,7 @@ def FirstNonReservedName(field_list):
   """
   first_name = None
   for field in field_list:
-    if not field.IsReserved():
+    if not field.is_reserved:
       return field.name
   return None
 
@@ -135,13 +137,13 @@ def LastNonReservedName(field_list):
   """
   last_name = None
   for field in field_list:
-    if not field.IsReserved():
+    if not field.is_reserved:
       last_name = field.name
   return last_name
 
 def ChoosePackedFieldName(fields):
   """Chooses the name for a packed field base on the fields in that field."""
-  not_reserved_names = [f.name for f in fields if not f.IsReserved()]
+  not_reserved_names = [f.name for f in fields if not f.is_reserved]
   common_prefix = CommonPrefix(not_reserved_names)
 
   if common_prefix:
@@ -271,7 +273,7 @@ class Packer:
                                packed_field_width)
       new_field.line_number = fields[0].line_number
 
-      non_reserved_fields = [f.name for f in fields if not f.IsReserved()]
+      non_reserved_fields = [f.name for f in fields if not f.is_reserved]
       bitfield_name_str = utils.ReadableList(non_reserved_fields)
       bitfield_layout_str = ''
 
@@ -353,7 +355,7 @@ class DocBuilder:
   def ParseStructStart(self, line):
     # Handle a STRUCT directive opening a new structure.
     # Returns created structure.
-    (state, current_object) = self.stack[-1]
+    (state, containing_object) = self.stack[-1]
     # Struct syntax is STRUCT struct-identifier var-name comment
     match = re.match('STRUCT\s+(\w+)(\s+\w+|)(\s*.*)$', line)
 
@@ -395,7 +397,7 @@ class DocBuilder:
                                0, 0)
       new_field.line_number = self.current_line
 
-      current_object.fields.append(new_field)
+      containing_object.fields.append(new_field)
       current_struct.inline = True
 
     # TODO(bowdidge): Instantiate field with struct if necessary.
@@ -855,9 +857,96 @@ def Usage():
   sys.stderr.write('        from a JSON representation.')
   sys.stderr.write('Example: -c json,nopack enables json, and disables packing.\n')
 
+def ReformatCode(source):
+  """Rewrites the source to match Linux coding style.
+
+  Tries several tools to see what's available.
+  """
+  # We prefer clang-format because it reformats source code much nicer,
+  # and because it does a better job of removing blank lines.
+  out = ReformatCodeWithClangFormat(source)
+  if out:
+    return out
+
+  out = ReformatCodeWithIndent(source)
+  if out:
+    return out
+
+  # If no indent tool is available, just provide the un-formatted code.
+  return source
+
+
+def ReformatCodeWithIndent(source):
+  """Reformats provided source with GNU indent.
+
+  Returns None if indent not found.
+  """
+  possible_indent_binaries = ['/usr/bin/indent']
+
+  indent_path = None
+  for bin in possible_indent_binaries:
+    if os.path.isfile(bin):
+      indent_path = bin
+      break
+
+  if not indent_path:
+    return None
+
+  args = [indent_path, '-sob', '-nfc1', '-nfcb', '-nbad', '-bap',
+          '-nbc', '-br', '-brs', '-c33', '-cd33', '-ncdb', '-ce', '-ci4',
+          '-cli0', '-d0', '-i8', '-ip0', '-l80', '-lp', '-npcs', '-npsl',
+          # Don't format comments, get rid of extra blank lines.
+          # Don't add whitespace in the middle of declarations.
+          '-nsc', '-sob', '-di0']
+  p = subprocess.Popen(args,
+                       stdout=subprocess.PIPE,
+                       stdin=subprocess.PIPE,
+                       stderr=subprocess.STDOUT,
+                       bufsize=1)
+  # indent requires line feed after last line.
+  out = p.communicate(source + '\n')
+
+  # If there was an indent fail
+  if (p.returncode != 0):
+    print "%s returned error %d, ignoring output" % (indent_path, p.returncode)
+    return None
+
+  return out[0]
+
+def ReformatCodeWithClangFormat(source):
+  """Reformats provided source with clang-format.
+
+  Returns None if indent not found.
+  """
+  possible_indent_binaries = ['/usr/bin/clang-format',
+                              '/usr/local/bin/clang-format']
+
+  indent_path = None
+  for bin in possible_indent_binaries:
+    if os.path.isfile(bin):
+      indent_path = bin
+      break
+
+  if not indent_path:
+    return None
+
+  args = [indent_path,
+          '-style={BasedOnStyle: LLVM, IndentWidth: 8, UseTab: Always, '
+          'BreakBeforeBraces: Linux, MaxEmptyLinesToKeep: 1, '
+          'ColumnLimit: 80}']
+
+  p = subprocess.Popen(args,
+                       stdout=subprocess.PIPE,
+                       stdin=subprocess.PIPE,
+                       stderr=subprocess.STDOUT,
+                       bufsize=1)
+  # Make sure there's a line feed after last line.
+  out = p.communicate(source + '\n')
+  return out[0]
+
 # TODO(bowdidge): Create options dictionary to replace all these arguments.
-def GenerateFile(should_pack, output_style, output_base,
-                 input_stream, input_filename, generate_json):
+def GenerateFile(output_style, output_base, input_stream, input_filename,
+                 options):
   # Process a single .gen file and create the appropriate header/docs.
   doc_builder = DocBuilder()
 
@@ -876,14 +965,14 @@ def GenerateFile(should_pack, output_style, output_base,
     for checker_error in c.errors:
       sys.stderr.write(checker_error + '\n')
 
-  if should_pack:
+  if 'pack' in options:
     p = Packer()
     errors = p.VisitDocument(doc)
     if len(errors) > 0:
       for error in errors:
         sys.stderr.write(error + '\n')
 
-  helper = codegen.CodeGenerator(generate_json)
+  helper = codegen.CodeGenerator(options)
   helper.VisitDocument(doc)
 
   if output_style is OutputStyleHTML:
@@ -896,9 +985,12 @@ def GenerateFile(should_pack, output_style, output_base,
     else:
       return code
   elif output_style is OutputStyleHeader:
-    code_generator = codegen.CodePrinter(output_base, generate_json)
+    code_generator = codegen.CodePrinter(output_base, options)
     code_generator.output_file = output_base
     (header, source) = code_generator.VisitDocument(doc)
+
+    header = ReformatCode(header)
+    source = ReformatCode(source)
 
     if output_base:
       f = open(output_base + '.h', 'w')
@@ -963,6 +1055,13 @@ def main():
   codegen_pack = SetFromArgs('pack', codegen_args, False)
   codegen_json = SetFromArgs('json', codegen_args, False)
 
+  codegen_options = []
+
+  if codegen_pack:
+    codegen_options.append('pack')
+  if codegen_json:
+    codegen_options.append('json')
+
   if len(args) == 0:
       sys.stderr.write('No genfile named.\n')
       sys.exit(2)
@@ -972,8 +1071,8 @@ def main():
       sys.exit(2)
 
   input_stream = open(args[0], 'r')
-  out = GenerateFile(codegen_pack, output_style, output_base,
-                     input_stream, args[0], codegen_json)
+  out = GenerateFile(output_style, output_base, input_stream, args[0],
+                     codegen_options)
   input_stream.close()
   if out:
     print out

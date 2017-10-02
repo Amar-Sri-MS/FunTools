@@ -289,11 +289,18 @@ class Field(Declaration):
   # first flit; 0 is the high bit of the first flit, 63 is the low bit of
   # the first flit, etc.  This choice makes math about packing easier.
   # For the human descriptions (both input and output), bits are ordered
-  # in the opposite fashio with 63 as the high bit of the flit.
+  # in the opposite fashion with 63 as the high bit of the flit.
   # The StartOffset and EndOffset use the high bit = 0 system;
   # the StartBit and EndBit use high bit = 63.
 
   def __init__(self, name, type, offset_start, bit_width):
+    """Creates a new field in a struct.
+
+    name: name of the field.
+    type: Type object describing the type of the field.
+    offset_start: offset of the field in the structure, starting at 0.
+    bit_width: width of field in bits, or -1 if an array of undefined length.
+    """
     Declaration.__init__(self)
     # name of the field declaration.
     self.name = name
@@ -313,6 +320,16 @@ class Field(Declaration):
     self.packed_fields = []
     # True if field was explicitly defined to be less than its natural size.
     self.is_bitfield = False
+
+    # True if field needs to be swapped when converting from a different
+    # ended processor.  Irrelevant for packed fields.
+    self.swappable = type is not None and type.bit_width > 8
+
+    # True if field appears to be a reserved field that doesn't need to be
+    # initialized or manipulated.
+    self.is_reserved = (name.startswith('reserved') or
+                        name.startswith('rsvd') or
+                        name.startswith('unused'))
 
     # Fields for a composite object such as a struct or union.
     self.subfields = []
@@ -408,11 +425,6 @@ class Field(Declaration):
 
   def IsNoOffset(self):
     return self.no_offset
-
-  def IsReserved(self):
-    """True if the field is a placeholder that doesn't need to be initialized."""
-    return (self.name.startswith('reserved') or self.name.startswith('rsvd')
-            or self.no_offset)
 
   def CreateSubfields(self):
     """Inserts sub-fields into this field based on the its type.

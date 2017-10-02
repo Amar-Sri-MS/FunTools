@@ -6,14 +6,25 @@
 
 import unittest
 
+import re
+
 import codegen
 import generator
 import parser
 
+# Common lists of codegen options.
+OPTIONS_GENERATE_JSON = ['json']
+OPTIONS_PACK = ['pack']
+OPTIONS_NONE = []
+
+def RemoveWhitespace(str):
+  """Converts all whitespace to single spaces for consistent compares."""
+  return re.sub('\s+', ' ', str)
+
 class CodePrinterTest(unittest.TestCase):
   def setUp(self):
-    self.codegen = codegen.CodeGenerator(True)
-    self.printer = codegen.CodePrinter(None, True)
+    self.codegen = codegen.CodeGenerator(OPTIONS_GENERATE_JSON)
+    self.printer = codegen.CodePrinter(None, OPTIONS_GENERATE_JSON)
 
   def testPrintStructNoVar(self):
     builder = generator.DocBuilder()  
@@ -71,7 +82,7 @@ class CodePrinterTest(unittest.TestCase):
   def testPrintField(self):
     field = parser.Field('foo', parser.TypeForName('uint8_t'), 0, 4)
     code = self.printer.VisitField(field)
-    self.assertEqual('uint8_t foo:4;\n', code)
+    self.assertEqual('uint8_t foo : 4;\n', code)
 
   def testFieldMaskSmall(self):
     field = parser.Field('foo', parser.TypeForName('uint16_t'), 0, 5)
@@ -138,7 +149,7 @@ class CodePrinterTest(unittest.TestCase):
 
 class CodeGeneratorTest(unittest.TestCase):
   def testInitializeSimpleField(self):
-    gen = codegen.CodeGenerator(False)
+    gen = codegen.CodeGenerator(OPTIONS_NONE)
     s = parser.Struct('Foo', False)
     f = parser.Field('a1', parser.TypeForName('char'), 0, 8)
 
@@ -147,7 +158,7 @@ class CodeGeneratorTest(unittest.TestCase):
     self.assertEqual('\ts->pointer.a1 = a1;', statement)
 
   def testInitializeBitfield(self):
-    gen = codegen.CodeGenerator(False)
+    gen = codegen.CodeGenerator(OPTIONS_NONE)
     s = parser.Struct('Foo', False)
     f = parser.Field('a1', parser.TypeForName('char'), 0, 2)
 
@@ -156,7 +167,7 @@ class CodeGeneratorTest(unittest.TestCase):
     self.assertEqual('\ts->a1 = a1;', statement)
 
   def testInitializePackedField(self):
-    gen = codegen.CodeGenerator(False)
+    gen = codegen.CodeGenerator(OPTIONS_NONE)
     s = parser.Struct('Foo', False)
     f = parser.Field('a', parser.TypeForName('char'), 0, 8)
     f1 = parser.Field('a1', parser.TypeForName('char'), 8, 4)
@@ -168,7 +179,7 @@ class CodeGeneratorTest(unittest.TestCase):
     self.assertEqual('\ts->a = FOO_A1_P(a1) | FOO_A2_P(a2);', statement)
 
   def testInitializePackedFieldWithAllCapStructureName(self):
-    gen = codegen.CodeGenerator(False)
+    gen = codegen.CodeGenerator(OPTIONS_NONE)
     s = parser.Struct('ffe_access_command', False)
     f = parser.Field('a', parser.TypeForName('char'), 0, 8)
     f1 = parser.Field('a1', parser.TypeForName('char'), 0, 4)
@@ -182,7 +193,7 @@ class CodeGeneratorTest(unittest.TestCase):
 
 
   def testMacrosForPackedLongField(self):
-    gen = codegen.CodeGenerator(False)
+    gen = codegen.CodeGenerator(OPTIONS_NONE)
     s = parser.Struct('Foo', False)
     f = parser.Field('a', parser.TypeForName('uint64_t'), 0, 63)
     f1 = parser.Field('a1', parser.TypeForName('uint32_t'), 0, 31)
@@ -207,7 +218,7 @@ class CodeGeneratorTest(unittest.TestCase):
                   s.MacroWithName('FOO_A2_Z').body)
 
   def testMacrosForPackedField(self):
-    gen = codegen.CodeGenerator(False)
+    gen = codegen.CodeGenerator(OPTIONS_NONE)
     s = parser.Struct('Foo', False)
     f = parser.Field('a', parser.TypeForName('uint32_t'), 0, 32)
     f1 = parser.Field('a1', parser.TypeForName('uint16_t'), 0, 14)
@@ -231,7 +242,7 @@ class CodeGeneratorTest(unittest.TestCase):
 
 
   def testCreateSimpleInitializer(self):
-    gen = codegen.CodeGenerator(False)
+    gen = codegen.CodeGenerator(OPTIONS_NONE)
     # Struct foo has a single field a1.
     s = parser.Struct('Foo', False)
     f = parser.Field('a1', parser.TypeForName('char'), 0, 8)
@@ -245,7 +256,7 @@ class CodeGeneratorTest(unittest.TestCase):
     self.assertIn('\ts->a1 = a1;\n', func.definition)
 
   def testCreateUnionInitializer(self):
-    gen = codegen.CodeGenerator(False)
+    gen = codegen.CodeGenerator(OPTIONS_NONE)
     # Struct Foo has field a0, and a union containing Message1 and Message2
     # which each have one field f1 and f2.
     s = parser.Struct('Foo', False)
@@ -286,8 +297,11 @@ class CodegenEndToEnd(unittest.TestCase):
              '0 47:0 char d[6]',
              'END']
 
-    out = generator.GenerateFile(True, generator.OutputStyleHeader, None,
-                                 input, 'foo.gen', True)
+    out = generator.GenerateFile(generator.OutputStyleHeader, None,
+                                 input, 'foo.gen', ['pack', 'json'])
+
+    out = RemoveWhitespace(out)
+
     self.assertIsNotNone(out)
 
     # Did structure get generated?
@@ -332,8 +346,8 @@ class CodegenEndToEnd(unittest.TestCase):
              'END'
              ]
 
-    out = generator.GenerateFile(True, generator.OutputStyleHeader, None,
-                                 input, 'foo.gen', False)
+    out = generator.GenerateFile(generator.OutputStyleHeader, None,
+                                 input, 'foo.gen', OPTIONS_PACK)
     self.assertIsNotNone(out)
 
     # Did structure get generated?
@@ -347,8 +361,8 @@ class CodegenEndToEnd(unittest.TestCase):
              '0 63:60 uint8_t a',
              '0 59:56 uint8_t b',
              'END']
-    out = generator.GenerateFile(True, generator.OutputStyleHeader, None,
-                                 input, 'foo.gen', False)
+    out = generator.GenerateFile(generator.OutputStyleHeader, None,
+                                 input, 'foo.gen', OPTIONS_PACK)
     self.assertIsNotNone(out)
     self.assertIn('#define A_A_S 4', out)
 
@@ -361,8 +375,8 @@ class CodegenEndToEnd(unittest.TestCase):
              'END',
              'END',
              'END']
-    out = generator.GenerateFile(True, generator.OutputStyleHeader, None,
-                                 input, 'foo.gen', False)
+    out = generator.GenerateFile(generator.OutputStyleHeader, None,
+                                 input, 'foo.gen', OPTIONS_PACK)
     self.assertIsNotNone(out)
     self.assertIn('#define AX1_A_S 4', out)
 
@@ -388,8 +402,8 @@ class CodegenEndToEnd(unittest.TestCase):
              'END'
              ]
 
-    out = generator.GenerateFile(True, generator.OutputStyleHeader, None,
-                                 input, 'foo.gen', False)
+    out = generator.GenerateFile(generator.OutputStyleHeader, None,
+                                 input, 'foo.gen', OPTIONS_PACK)
     self.assertIsNotNone(out)
 
     # Did structure get generated?
@@ -413,8 +427,8 @@ class CodegenEndToEnd(unittest.TestCase):
              'END'
              ]
 
-    out = generator.GenerateFile(True, generator.OutputStyleHeader, None,
-                                 input, 'foo.gen', False)
+    out = generator.GenerateFile(generator.OutputStyleHeader, None,
+                                 input, 'foo.gen', OPTIONS_PACK)
     self.assertIsNotNone(out)
 
     # Did structure get generated?
@@ -432,8 +446,8 @@ class CodegenEndToEnd(unittest.TestCase):
              'END'
              ]
 
-    out = generator.GenerateFile(True, generator.OutputStyleHeader, None,
-                                 input, 'foo.gen', False)
+    out = generator.GenerateFile(generator.OutputStyleHeader, None,
+                                 input, 'foo.gen', OPTIONS_PACK)
     self.assertIsNotNone(out)
 
   def testMultiFlitNestedStruct(self):
@@ -451,8 +465,8 @@ class CodegenEndToEnd(unittest.TestCase):
       'END'
       ]
 
-    out = generator.GenerateFile(True, generator.OutputStyleHeader, None,
-                                 input, 'foo.gen', False)
+    out = generator.GenerateFile(generator.OutputStyleHeader, None,
+                                 input, 'foo.gen', OPTIONS_PACK)
     self.assertIsNotNone(out)
     self.assertIn('struct fun_admin_cmd_common c;', out)
 
@@ -467,13 +481,16 @@ class CodegenEndToEnd(unittest.TestCase):
       'END'
       ]
     
-    out = generator.GenerateFile(False, generator.OutputStyleHeader, None,
-                                 input, 'foo.gen', False)
+    out = generator.GenerateFile(generator.OutputStyleHeader, None,
+                                 input, 'foo.gen', OPTIONS_NONE)
 
     self.assertIsNotNone(out)
     self.assertIn('uint8_t a;', out)
-    self.assertIn('uint8_t b:2;', out)
-    self.assertIn('uint8_t c:6;', out)
+    # Handle differences between clang-format and indent.
+    self.assertTrue('uint8_t b : 2;' in out
+                    or 'uint8_t b:2' in out)
+    self.assertTrue('uint8_t c : 6;' in out
+                    or 'uint8_t c:6;' in out)
     self.assertIn('uint8_t d;', out)
 
   def testNoDuplicateFunctions(self):
@@ -491,8 +508,8 @@ class CodegenEndToEnd(unittest.TestCase):
       'END'
       ]
 
-    out = generator.GenerateFile(True, generator.OutputStyleHeader, None,
-                                 contents, 'foo.gen', False)
+    out = generator.GenerateFile(generator.OutputStyleHeader, None,
+                                 contents, 'foo.gen', OPTIONS_PACK)
     self.assertEqual(2, out.count(' BA_init'))
     self.assertEqual(2, out.count(' BB_init'))
 
@@ -508,11 +525,14 @@ class CodegenEndToEnd(unittest.TestCase):
       'END',
       ]
 
-    out = generator.GenerateFile(True, generator.OutputStyleHeader, None,
-                                 contents, 'foo.gen', False)
+    out = generator.GenerateFile(generator.OutputStyleHeader, None,
+                                 contents, 'foo.gen', OPTIONS_PACK)
+
+    out = RemoveWhitespace(out)
+
     self.assertIn('static const int A = 0x1;', out)
     self.assertIn('static const int D = 0x8;', out)
-    self.assertIn('static const int F = 0x20;  /* Comment */', out)
+    self.assertIn('static const int F = 0x20; /* Comment */', out)
     self.assertIn('extern const char *foo_names', out)
     self.assertIn('const char *foo_names[6] = {', out)
 
@@ -527,19 +547,21 @@ class CodegenEndToEnd(unittest.TestCase):
       'END',
       ]
 
-    out = generator.GenerateFile(True, generator.OutputStyleHeader, None,
-                                 contents, 'foo.gen', False)
+    out = generator.GenerateFile(generator.OutputStyleHeader, None,
+                                 contents, 'foo.gen', OPTIONS_PACK)
+    out = RemoveWhitespace(out)
+
     self.assertIn('const int A = 0x1;', out)
     self.assertIn('const int AB = 0x3;', out)
     self.assertIn('const int D = 0x10;', out)
-    self.assertIn('"A",  /* 0x1 */', out)
-    self.assertIn('"C",  /* 0x4 */', out)
-    self.assertIn('"D",  /* 0x10 */', out)
-    self.assertIn('"0x8",  /* 0x8, not defined with flag. */', out)
-    self.assertNotIn('"AB",  /* 0x3 */', out)
+    self.assertIn('"A", /* 0x1 */', out)
+    self.assertIn('"C", /* 0x4 */', out)
+    self.assertIn('"D", /* 0x10 */', out)
+    self.assertIn('"0x8", /* 0x8, not defined with flag. */', out)
+    self.assertNotIn('"AB", /* 0x3 */', out)
     self.assertIn('extern const char *Foo_names', out)
     self.assertIn('const char *Foo_names[5] = {', out)
-    self.assertIn('"0x8",  /* 0x8, not defined with flag. */', out)
+    self.assertIn('"0x8", /* 0x8, not defined with flag. */', out)
 
 
 
@@ -557,8 +579,10 @@ class TestComments(unittest.TestCase):
       'END'
       ]
 
-    out = generator.GenerateFile(True, generator.OutputStyleHeader, None,
-                                 input, 'foo.gen', False)
+    out = generator.GenerateFile(generator.OutputStyleHeader, None,
+                                 input, 'foo.gen', OPTIONS_PACK)
+
+    out = RemoveWhitespace(out)
 
     self.assertIn('/* Body comment. */', out)
     self.assertIn('struct fun_admin_cmd_common {', out)
@@ -585,8 +609,8 @@ class TestComments(unittest.TestCase):
       'END',
       'END']
 
-    out = generator.GenerateFile(True, generator.OutputStyleHeader, None,
-                                 input, 'foo.gen', False)
+    out = generator.GenerateFile(generator.OutputStyleHeader, None,
+                                 input, 'foo.gen', OPTIONS_PACK)
 
     self.assertIn('/* Struct comment. */', out)
     self.assertIn('/* Union body comment. */', out)
@@ -605,8 +629,8 @@ class TestComments(unittest.TestCase):
       '// Tail comment',
       'END']
 
-    out = generator.GenerateFile(True, generator.OutputStyleHeader, None,
-                                 input, 'foo.gen', False)
+    out = generator.GenerateFile(generator.OutputStyleHeader, None,
+                                 input, 'foo.gen', OPTIONS_PACK)
     self.assertIn('enum values {', out)
     self.assertIn('A = 0x1,' ,out)
     self.assertIn('/* Enum key comment 1 */', out)
@@ -622,8 +646,8 @@ class TestComments(unittest.TestCase):
                 '0 63:0 Foo f[2]',
                 'END']
 
-    out = generator.GenerateFile(True, generator.OutputStyleHeader, None,
-                                 contents, 'foo.gen', False)
+    out = generator.GenerateFile(generator.OutputStyleHeader, None,
+                                 contents, 'foo.gen', OPTIONS_PACK)
     self.assertIn('struct Foo f[2];', out)
 
   def disableTestUnknownArrayOfStructs(self):
@@ -634,8 +658,8 @@ class TestComments(unittest.TestCase):
                 '0 0:0 Foo f[0]',
                 'END']
 
-    out = generator.GenerateFile(True, generator.OutputStyleHeader, None,
-                                 contents, 'foo.gen', False)
+    out = generator.GenerateFile(generator.OutputStyleHeader, None,
+                                 contents, 'foo.gen', OPTIONS_PACK)
     self.assertIn('struct Foo f[2];', out)
 
   def testNameListCorrectlyHandlesEnumVariablesWithGaps(self):
@@ -647,16 +671,18 @@ class TestComments(unittest.TestCase):
                 'F = 7',
                 'G = 10'
                 ]
-    out = generator.GenerateFile(True, generator.OutputStyleHeader, None,
-                                 contents, 'foo.gen', False)
+    out = generator.GenerateFile(generator.OutputStyleHeader, None,
+                                 contents, 'foo.gen', OPTIONS_PACK)
 
-    self.assertIn('"undefined",  /* 0x0 */', out)
-    self.assertIn('"A",  /* 0x1 */', out)
-    self.assertIn('"undefined",  /* 0x2 */', out)
-    self.assertIn('"C",  /* 0x3 */', out)
-    self.assertIn('"E",  /* 0x5 */', out)
-    self.assertIn('"undefined",  /* 0x6 */', out)
-    self.assertIn('"G",  /* 0xa */', out)
+    out = RemoveWhitespace(out)
+
+    self.assertIn('"undefined", /* 0x0 */', out)
+    self.assertIn('"A", /* 0x1 */', out)
+    self.assertIn('"undefined", /* 0x2 */', out)
+    self.assertIn('"C", /* 0x3 */', out)
+    self.assertIn('"E", /* 0x5 */', out)
+    self.assertIn('"undefined", /* 0x6 */', out)
+    self.assertIn('"G", /* 0xa */', out)
 
   def testVariableLengthArray(self):
     doc_builder = generator.DocBuilder()
@@ -667,8 +693,8 @@ class TestComments(unittest.TestCase):
       'END'
       ]
 
-    out = generator.GenerateFile(True, generator.OutputStyleHeader, None,
-                                 contents, 'foo.gen', False)
+    out = generator.GenerateFile(generator.OutputStyleHeader, None,
+                                 contents, 'foo.gen', OPTIONS_PACK)
 
     self.assertIn('char array[0];\n};', out)
 
@@ -681,8 +707,8 @@ class TestComments(unittest.TestCase):
 	'0 49:48 uint8_t boof',
 	'END'
 	]
-    out = generator.GenerateFile(True, generator.OutputStyleHeader, None,
-                                 contents, 'foo.gen', False)
+    out = generator.GenerateFile(generator.OutputStyleHeader, None,
+                                 contents, 'foo.gen', OPTIONS_PACK)
     # TODO(bowdidge): check that errors were correctly emitted.
 
   def testJSON(self):
@@ -693,8 +719,11 @@ class TestComments(unittest.TestCase):
         '0 31:0 uint32_t baz',
 	'END'
 	]
-    out = generator.GenerateFile(True, generator.OutputStyleHeader, None,
-                                 contents, 'foo.gen', True)
+    out = generator.GenerateFile(generator.OutputStyleHeader, None,
+                                 contents, 'foo.gen', ['pack', 'json'])
+
+    out = RemoveWhitespace(out)
+
     self.assertIn('bool foo_json_init(struct fun_json *j, struct foo *s)', out)
     self.assertIn('struct fun_json *bar_j = fun_json_lookup(j, "bar");', out)
 
@@ -708,8 +737,8 @@ class TestComments(unittest.TestCase):
 	'END',
         'END'
 	]
-    out = generator.GenerateFile(True, generator.OutputStyleHeader, None,
-                                 contents, 'foo.gen', True)
+    out = generator.GenerateFile(generator.OutputStyleHeader, None,
+                                 contents, 'foo.gen', ['pack', 'json'])
     self.assertIn('struct fun_json *outer_struct_json_init', out)
     # Need JSON for inner structure.
     self.assertIn('struct fun_json *inner_struct_json_init', out)
@@ -723,12 +752,12 @@ class TestComments(unittest.TestCase):
 class TestIndentString(unittest.TestCase):
   def testSimple(self):
     # Tests only properties that hold true regardless of the formatting style.
-    printer = codegen.CodePrinter(None, False)
+    printer = codegen.CodePrinter(None, OPTIONS_NONE)
     printer.indent = 1
     self.assertTrue(len(printer.Indent()) > 0)
 
   def testTwoIndentDoublesOneIndent(self):
-    printer = codegen.CodePrinter(None, False)
+    printer = codegen.CodePrinter(None, OPTIONS_NONE)
     printer.indent = 1
     oneIndent = printer.Indent()
     printer.indent = 2

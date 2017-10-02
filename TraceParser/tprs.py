@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 # external libs
-import sys, pickle, json, os
+import sys, pickle, json, os, time
 
 # specific imports
 from optparse import OptionParser
@@ -20,10 +20,40 @@ def filter_addr(addr):
 	return (addr & 0xffffffffdfffffff)
 
 
+def read_a_line(infile, follow):
+
+	# easy case
+	if (not follow):
+		return infile.readline()
+
+	# follow case
+	do_pause = False
+	line = ""
+	while (True):
+
+		if (do_pause):
+			time.sleep(1)
+
+		part_line = infile.readline()
+
+		do_pause = True
+
+		# if we read nothing
+		if (part_line == ""):
+			continue
+
+		line += part_line
+
+		# if we read a newline, we're good
+		if (line[-1] == "\n"):
+			return line
+			
+		# go back and try for more
+
 #
 #
 #
-def read_trace(trace_fname, ranges, filter_vp, reverse_order, filterlist, quiet):
+def read_trace(trace_fname, ranges, filter_vp, reverse_order, filterlist, quiet, follow):
 
 	# to be refined based on understanding of pipeline
 	cycles = 0
@@ -51,8 +81,13 @@ def read_trace(trace_fname, ranges, filter_vp, reverse_order, filterlist, quiet)
 	saved_sz = 10000000 # XXX TMP
 
 	with open(trace_fname) as infile:
-		for line in infile:
-			line_num = line_num + 1
+		while (True):
+
+			line = read_a_line(infile, follow)
+
+      line_num = line_num + 1
+      
+			# handle the actual line, now we have one
 
 			if tutils.is_instruction(line): # XXX rename is_instruction
 
@@ -164,6 +199,8 @@ def read_trace(trace_fname, ranges, filter_vp, reverse_order, filterlist, quiet)
 			elif tutils.is_data(line):
 				pass
 
+			
+
 
 	infile.close()
 	roots = []
@@ -229,6 +266,7 @@ if __name__ == "__main__":
 	parser.add_option("-c", "--core", dest="core_id", help="Core ID")
 	parser.add_option("-d", "--data", dest="data_f", help="Data folder", metavar="FOLDER")
         parser.add_option("-F", "--format", dest="format", help="Trace file format %s" % tutils.VALID_FORMATS, metavar="FORMAT", default=None)
+        parser.add_option("-w", "--follow", dest="follow", help="Keep polling trace file for new data to process", default=False, action="store_true")
 	parser.add_option("-q", "--quiet", action='store_true', default=False, dest="quiet", help="No output during parsing")
 
 	(options, args) = parser.parse_args()
@@ -275,7 +313,9 @@ if __name__ == "__main__":
 		print "Reverse order not currently supported, my apologies."
 		sys.exit(0)
 
-	data = read_trace(options.trc_f, ranges, int(options.vpid), options.reverse_order, filterlist, options.quiet)
+	data = read_trace(options.trc_f, ranges, int(options.vpid),
+			  options.reverse_order, filterlist,
+			  options.quiet, options.follow)
 
 	# XXX
 	f = open(os.path.join(dst, 'fundata_c%s' % core_id), 'w')
