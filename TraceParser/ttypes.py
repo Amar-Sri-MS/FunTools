@@ -153,6 +153,12 @@ class TTree():
 	def set_end_loadstore_miss(self, lsm):
 		self.end_loadstore_miss = lsm
 
+	def get_start_loadstore_miss(self):
+		return self.start_loadstore_miss
+
+	def get_end_loadstore_miss(self):
+		return self.end_loadstore_miss
+
 	def set_end_line(self, line_num):
 		self.end_line = line_num
 

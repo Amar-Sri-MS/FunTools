@@ -85,7 +85,7 @@ def read_trace(trace_fname, ranges, filter_vp, reverse_order, filterlist, quiet,
 
 			line = read_a_line(infile, follow)
 
-      line_num = line_num + 1
+			line_num = line_num + 1
       
 			# handle the actual line, now we have one
 
@@ -186,7 +186,7 @@ def read_trace(trace_fname, ranges, filter_vp, reverse_order, filterlist, quiet,
 								new_ttree.start_cycle = current_ttree[vp].get_start_cycle()
 								new_ttree.start_idle = current_ttree[vp].get_start_cycle()
 								new_ttree.start_instr_miss = current_ttree[vp].get_start_instr_miss()
-								new_ttree.start_data_miss = current_ttree[vp].get_start_data_miss()
+								new_ttree.start_loadstore_miss = current_ttree[vp].get_start_loadstore_miss()
 								new_ttree.start_line = current_ttree[vp].get_start_line()
 
 								#current_ttree[vp].propagate_start(ccyc, cid, cim)
