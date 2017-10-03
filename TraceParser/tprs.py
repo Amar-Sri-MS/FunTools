@@ -113,9 +113,6 @@ def read_trace(trace_fname, ranges, filter_vp, reverse_order, filterlist, quiet,
 				if tutils.is_instruction_miss(line):
 					instr_misses = instr_misses + 1
 
-				if tutils.is_loadstore_miss(line):
-					loadstore_misses = loadstore_misses + 1
-
 #				if tutils.out_of_range(func):
 #					newaddr = filter_addr(entry.get_addr())
 #					entry.set_addr(newaddr, ranges)
@@ -199,7 +196,8 @@ def read_trace(trace_fname, ranges, filter_vp, reverse_order, filterlist, quiet,
 				last_address[vp] = entry.get_addr()
 
 			elif tutils.is_data(line):
-				pass
+				if tutils.is_loadstore_miss(line):
+					loadstore_misses = loadstore_misses + 1
 
 			
 

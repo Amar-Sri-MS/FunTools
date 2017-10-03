@@ -8,7 +8,11 @@ def is_return(trace_line):
 
 def is_data(trace_line):
 	# XXX
-	return False
+	regex = r"^\d+\.\d\d\d  \d \d \d.*(\bld|\bst).*"
+
+	rm = re.search(regex, trace_line.strip())
+
+	return rm
 
 def is_instruction(trace_line):
 	# TM+DASM format
