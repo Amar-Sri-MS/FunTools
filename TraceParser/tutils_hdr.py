@@ -84,24 +84,25 @@ def data_section_start(dasm_line):
 #
 REGEX = re.compile(r"([A-Fa-f0-9]+) <(.*)>\:")
 
-def parse_item(line):
+def asm_isfunc(line):
 	found = False
 	addr = 0
 	fname = ""
 
 	m = REGEX.search(line)
 	if m is not None:
-
 		addr = long(m.group(1), 16)
 		fname = m.group(2)
-		
-		# ignore blocks
-		#if fname.startswith('$') or fname.startswith('.') or '.' in fname:
-		if fname.startswith('$') or fname.startswith('.'):
-			found = False
-		else:
-			found = True
+		found = True
 
+	return [found, addr, fname]
+
+def asm_get_fstart(line):
+
+	[found, addr, fname] = asm_isfunc(line)
+
+	if fname.startswith('$') or fname.startswith('.'):
+		found = False
 
 	return [found, addr, fname]
 
@@ -134,7 +135,7 @@ def create_range_list(dasm_fname):
 		        if data_section_start(line):
 			        out_of_range = True
 
-		[found, addr, fname] = parse_item(line)
+		[found, addr, fname] = asm_get_fstart(line)
 
 		if found:
 
