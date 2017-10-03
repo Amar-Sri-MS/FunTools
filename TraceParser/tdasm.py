@@ -53,7 +53,7 @@ def tdasm_print_lines(pdt_f, dasm_f, vpid, start_line, end_line):
 
 	f.close()
 
-def tdasm_show_func_rec(vpid, pdt_f, dasm_f, tree, funcname, printed, max_items, min_cycles, max_cycles):
+def tdasm_show_func_rec(vpid, pdt_f, dasm_f, tree, funcname, printed, max_prints, min_cycles, max_cycles):
 
 	if funcname == tree.get_name():
 
@@ -63,7 +63,7 @@ def tdasm_show_func_rec(vpid, pdt_f, dasm_f, tree, funcname, printed, max_items,
 
 			print "\n\n"
 
-			print "=========== NEW OCCURRENCE OF %s (count: %s) ===========" % (funcname, printed)
+			print "=========== NEW OCCURRENCE OF %s (count: %s/%s) ===========" % (funcname, printed, max_prints)
 			print "=========== cycle count: %s\t===========" % tree.get_ccount()
 			print "=========== vp: %s\t\t===========" % vpid
 
@@ -71,9 +71,9 @@ def tdasm_show_func_rec(vpid, pdt_f, dasm_f, tree, funcname, printed, max_items,
 
 
 	for sc in tree.get_calls():
-		printed  = tdasm_show_func_rec(vpid, pdt_f, dasm_f, sc, funcname, printed, max_items, min_cycles, max_cycles)
+		printed  = tdasm_show_func_rec(vpid, pdt_f, dasm_f, sc, funcname, printed, max_prints, min_cycles, max_cycles)
 
-		if printed >= max_items:
+		if printed >= max_prints:
 			return printed
 
 
@@ -81,17 +81,17 @@ def tdasm_show_func_rec(vpid, pdt_f, dasm_f, tree, funcname, printed, max_items,
 
 
 # returns: True if we hit the limit, False otherwise
-def tdasm_show_func(pdt_f, dasm_f, funtrc, funcname, max_items, min_cycles, max_cycles):
+def tdasm_show_func(pdt_f, dasm_f, funtrc, funcname, max_prints, min_cycles, max_cycles):
 
 	vpid = 0
 
 	for tree in funtrc:
 
-		printed = tdasm_show_func_rec(vpid, pdt_f, dasm_f, tree, funcname, 0, max_items, min_cycles, max_cycles)
+		printed = tdasm_show_func_rec(vpid, pdt_f, dasm_f, tree, funcname, 0, max_prints, min_cycles, max_cycles)
 
 		vpid = vpid + 1
 
-		if printed >= max_items:
+		if printed >= max_prints:
 			return True
 
 	return False
@@ -106,7 +106,7 @@ if __name__ == "__main__":
 	parser.add_option("-T", "--funtrc-txt", dest="fun_trc_txt_f", help="fungible trace txt", metavar="FILE")
         parser.add_option("-F", "--format", dest="format", help="Trace file format %s" % tutils.VALID_FORMATS, metavar="FORMAT", default=None)
 	parser.add_option("-q", "--quiet", action='store_true', default=False, dest="quiet", help="No output during parsing")
-	parser.add_option("-m", "--max", dest="max_items", help="maximum occurrences to show (default:10)")
+	parser.add_option("-m", "--max", dest="max_prints", help="maximum occurrences to show (default:10)")
 	parser.add_option("-r", "--range", dest="cycle_range", help="min/max num cycles to display")
 
 	(options, args) = parser.parse_args()
@@ -147,10 +147,10 @@ if __name__ == "__main__":
 		print "Format must be one of %s" % tutils.VALID_FORMATS
 		sys.exit(1)
 
-	max_items = 10
+	max_prints = 10
 
-	if options.max_items is not None:
-		max_items = int(options.max_items)
+	if options.max_prints is not None:
+		max_prints = int(options.max_prints)
 
         # set the format
         tutils.set_format(options.format)
@@ -159,9 +159,9 @@ if __name__ == "__main__":
 	funtrc = pickle.load(f)
 	f.close()
 
-	ret = tdasm_show_func(options.fun_trc_txt_f, options.fun_dasm_txt_f, funtrc, options.func, max_items, min_cycles, max_cycles)
+	ret = tdasm_show_func(options.fun_trc_txt_f, options.fun_dasm_txt_f, funtrc, options.func, max_prints, min_cycles, max_cycles)
 
 	if ret == True:
 
-		print "Printed the first %s occurrences of %s" % (max_items, options.func)
+		print "Printed the first %s occurrences of %s" % (max_prints, options.func)
 		print "Note: Iteration order is VP0-3 and then within the VP ordered by time, i.e. ALL VP0 entries will print before VP1."
