@@ -104,7 +104,7 @@ if __name__ == "__main__":
 	parser.add_option("-t", "--funtrc-data", dest="funtrc_data_f", help="fungible trace object", metavar="FILE")
 	parser.add_option("-f", "--func", dest="func", help="function name")
 	parser.add_option("-T", "--funtrc-txt", dest="fun_trc_txt_f", help="fungible trace txt", metavar="FILE")
-        parser.add_option("-F", "--format", dest="format", help="Trace file format %s" % tutils.VALID_FORMATS, metavar="FORMAT", default=None)
+	parser.add_option("-F", "--format", dest="format", help="Trace file format %s" % tutils.VALID_FORMATS, metavar="FORMAT", default=None)
 	parser.add_option("-q", "--quiet", action='store_true', default=False, dest="quiet", help="No output during parsing")
 	parser.add_option("-m", "--max", dest="max_prints", help="maximum occurrences to show (default:10)")
 	parser.add_option("-r", "--range", dest="cycle_range", help="min/max num cycles to display")
