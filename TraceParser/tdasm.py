@@ -26,7 +26,7 @@ def tdasm_get_dasm(dasm_f, find_addr):
 			if tutils.asm_isfunc(line)[0] == True:
 				continue
 
-			return line
+			return line.strip()
 
 	return "???"
 			

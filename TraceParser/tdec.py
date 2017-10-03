@@ -11,14 +11,14 @@ from ttypes import TTree
 import html_gen
 
 
-def filter_tree(tree, fname, depth):
+def filter_tree(tree, fname, depth, excl_sub_calls):
 	
 	if tree.get_name() == fname:
 		print ""
-		tree.print_tree_ltd(0, depth)
+		tree.print_tree_ltd(0, depth, excl_sub_calls)
 	else:
 		for el in tree.get_calls():
-			filter_tree(el, fname, depth)
+			filter_tree(el, fname, depth, excl_sub_calls)
 
 def gather_stats_rec(tree, statsd):
 
@@ -103,8 +103,8 @@ if __name__ == "__main__":
 	funtrc = pickle.load(f)
 	f.close()
 
-	#filter_tree(funtrc, "int2base",10)
-	#filter_tree(funtrc[0], "verif_issue_loop",1)
+	#filter_tree(funtrc, "int2base",10, options.excl_sub_calls)
+	#filter_tree(funtrc[0], "verif_issue_loop",1, options.excl_sub_calls)
 	#print ""
 
 	vpid_start = 0

@@ -138,6 +138,9 @@ class TTree():
 	def get_imcount(self):
 		return self.end_instr_miss - self.start_instr_miss
 
+	def get_lsmcount(self):
+		return self.end_loadstore_miss - self.start_loadstore_miss
+
 	def get_name(self):
 		return self.name
 
@@ -176,41 +179,33 @@ class TTree():
 	def get_end_line(self):
 		return self.end_line
 
-	def __html(self, filterlist, indent):
-		filtertext = ""
-
-		if self.name in filterlist:
-			filtertext = "(filtered)"
-
-		print "<tr>"
-		print "  <a name=\"%s\"></a>" % self.start_cycle
-		print "  <td class=\"cycleCol\">%s</td>" % self.start_cycle
-		print "  <td class=\"functionCol\">%s+ %s %s</td>" % ("&nbsp;"*4*indent, self.name, filtertext)
-		print "  <td>%s cycle, %s idle, %s instr miss</td>" % (self.get_ccount(), self.get_idle_count(), self.get_imcount())
-		print "</tr>"
-
-	def __html_start(self, filterlist, indent, excl_sub_calls):
-		symbol = '-'
-		style = "block"
-
+	def stats_str(self, excl_sub_calls):
 		cycle_count = self.get_ccount()
 		idle_count = self.get_idle_count()
 		instr_miss_count = self.get_imcount()
+		loadstore_miss_count = self.get_lsmcount()
 
 		if (excl_sub_calls):
 			for subcall in self.calls:
 				cycle_count = cycle_count - subcall.get_ccount()
 				idle_count = idle_count - subcall.get_idle_count()
 				instr_miss_count = instr_miss_count - subcall.get_imcount()
+				loadstore_miss_count = loadstore_miss_count - subcall.get_lsmcount()
+
+		return "%s cycle, %s idle, %s instr miss, %s load/store miss" % (cycle_count, idle_count, instr_miss_count, loadstore_miss_count)
+
+
+	def __html_start(self, filterlist, indent, excl_sub_calls):
+		symbol = '-'
+		style = "block"
 
 		if self.name in filterlist:
 			symbol = '+'
 			style = "none"
 
-		st =  "<div class=\"line\"><span class=\"timestamp\">%s</span> %s<span class=\"collapseButton\" onclick=\"Collapse(this);\">%s</span> %s (%s cycles, %s idle, %s instr misses)\n" % (self.start_cycle, "&nbsp;"*4*indent, symbol, self.name, cycle_count, idle_count, instr_miss_count)
+		st =  "<div class=\"line\"><span class=\"timestamp\">%s</span> %s<span class=\"collapseButton\" onclick=\"Collapse(this);\">%s</span> %s (%s)\n" % (self.start_cycle, "&nbsp;"*4*indent, symbol, self.name, self.stats_str(excl_sub_calls))
 		st = st +  "<div class=\"collapse\" style=\"display : %s;\">\n" % (style)
 
-		#st = st + "<div class=\"line\">%s %s<a href=\"#\" onclick=\"Collapse(this);\">--</a> %s (%s cycles, %s idle, %s instr misses)" % (self.start_cycle, "&nbsp;"*4*indent, self.name, self.get_ccount(), self.get_idle_count(), self.get_imcount())
 		return st
 
 	def __html_end(self):
@@ -237,27 +232,27 @@ class TTree():
 		if self is refobj:
 			ann= "*"
 
-		print "%s%s%s%s-> %s [%s cycle, %s idle, %s instr miss]" % (ann, '\t',' '*depth, depth, self.name, self.get_ccount(), self.get_idle_count(), self.get_imcount())
+		print "%s%s%s%s-> %s [%s]" % (ann, '\t',' '*depth, depth, self.name, self.stats_str())
 
 		for subcall in self.calls:
 			subcall.print_tree_annotated(depth+1, refobj)
 
 	def print_tree(self, depth):
 
-		print "[%12s]\t%s%s-> %s [%s cycle, %s idle, %s instr miss]" % (self.get_start_cycle(), ' '*depth, depth, self.name, self.get_ccount(), self.get_idle_count(), self.get_imcount())
+		print "[%12s]\t%s%s-> %s [%s]" % (self.get_start_cycle(), ' '*depth, depth, self.name, self.stats_str())
 
 		for subcall in self.calls:
 			subcall.print_tree(depth+1)
 
-	def print_tree_ltd(self, startdepth, maxdepth):
+	def print_tree_ltd(self, startdepth, maxdepth, excl_sub_calls):
 
 		if maxdepth == 0:
 			return
 
-		print "%s%s-> %s [%s cycle, %s idle, %s instr miss]" % (' '*startdepth, startdepth, self.name, self.get_ccount(), self.get_idle_count(), self.get_imcount())
+		print "%s%s-> %s [%s]" % (' '*startdepth, startdepth, self.name, self.stats_str(excl_sub_calls))
 
 		for subcall in self.calls:
-			subcall.print_tree_ltd(startdepth+1, maxdepth-1)
+			subcall.print_tree_ltd(startdepth+1, maxdepth-1, excl_sub_calls)
 
 	def print_context(self):
 

@@ -229,6 +229,7 @@ def read_trace(trace_fname, ranges, filter_vp, reverse_order, filterlist, quiet,
 	print "Time elapsed @ 1GHz: %s seconds (%s ms)" % (real_cycles/float(1000000000), (real_cycles/float(1000000)))
 	print "Max call depth: TBD"
 	print "Total idles: %s" % real_idles
+	print "Total load/store misses: %s" % loadstore_misses
 
 	return roots
 
