@@ -25,7 +25,7 @@ class TEntry():
 		elif "mode" in trace_line:
 			self.func = "mode"
 		else:
-			(self.func, is_start) = self.find_function(self.addr, ranges)
+			(self.func, is_start) = tutils.find_function(self.addr, ranges)
 
 		if self.func == "NOT FOUND":
 			print "NOT FOUND: %s" % trace_line
@@ -38,40 +38,6 @@ class TEntry():
 	def __str__(self):
 		return "%24s: %2s cyc %24s (%s)" % (hex(self.addr),self.ccount,self.func,self.pos)
 
-	def find_function(self, addr, ranges):
-
-                i0 = 0
-                iN = len(ranges)
-                im = (i0 + iN) / 2
-
-                # binary search it
-                while(1):
-			start = ranges[im][1]
-			end = ranges[im][2]
-
-                        # try
-			if (True):
-                                # found case
-				if addr >= start and addr <= end:
-					return (ranges[im][0], addr == start)
-
-                                # not found case
-                                if (i0 == iN):
-                                        return ("NOT FOUND", False)
-                                
-                                # less
-                                if addr < start:
-                                        iN = im
-
-                                if addr > end:
-                                        i0 = im
-
-                                im = (i0 + iN) / 2
-
-			#except:
-			#	return ("INVALID", False)
-
-                
 	def get_pos(self):
 		return self.pos
 
@@ -91,7 +57,7 @@ class TEntry():
 		self.addr = addr
 
 		self.func = "(POTENTIAL) "
-		self.func = self.func + self.find_function(self.addr, ranges)
+		self.func = self.func + tutils.find_function(self.addr, ranges)
 
 	def get_cycle(self):
 		return self.cycle
@@ -111,7 +77,7 @@ class TEntry():
 
 class TTree():
 
-	def __init__(self, name, parent, start_cycle, start_idle, start_instr_miss):
+	def __init__(self, name, parent, start_cycle, start_idle, start_instr_miss, start_loadstore_miss, start_line):
 
 		self.name = name
 		self.parent = parent
@@ -125,6 +91,12 @@ class TTree():
 
 		self.start_instr_miss = start_instr_miss
 		self.end_instr_miss = start_instr_miss
+
+		self.start_loadstore_miss = start_loadstore_miss
+		self.end_loadstore_miss = start_loadstore_miss
+
+		self.start_line = start_line
+		self.end_line = start_line
 
 		#print "TTREE: init %s" % name
 
@@ -154,7 +126,8 @@ class TTree():
 
 	def get_ccount(self):
 		#assert(self.end_cycle - self.start_cycle > 0)
-		return self.end_cycle - self.start_cycle
+		#print "getting ccount: %s to %s" % (self.start_cycle, self.end_cycle)
+		return self.end_cycle - self.start_cycle + 1
 
 	def get_start_instr_miss(self):
 		return self.start_instr_miss
@@ -164,6 +137,9 @@ class TTree():
 
 	def get_imcount(self):
 		return self.end_instr_miss - self.start_instr_miss
+
+	def get_lsmcount(self):
+		return self.end_loadstore_miss - self.start_loadstore_miss
 
 	def get_name(self):
 		return self.name
@@ -177,6 +153,18 @@ class TTree():
 	def set_end_instr_miss(self, im):
 		self.end_instr_miss = im
 
+	def set_end_loadstore_miss(self, lsm):
+		self.end_loadstore_miss = lsm
+
+	def get_start_loadstore_miss(self):
+		return self.start_loadstore_miss
+
+	def get_end_loadstore_miss(self):
+		return self.end_loadstore_miss
+
+	def set_end_line(self, line_num):
+		self.end_line = line_num
+
 	def get_entry(self):
 		return self.entry
 
@@ -185,42 +173,54 @@ class TTree():
 			return None # XXX?
 		return self.parent
 
-	def __html(self, filterlist, indent):
-		filtertext = ""
+	def get_start_line(self):
+		return self.start_line
 
-		if self.name in filterlist:
-			filtertext = "(filtered)"
+	def get_end_line(self):
+		return self.end_line
 
-		print "<tr>"
-		print "  <a name=\"%s\"></a>" % self.start_cycle
-		print "  <td class=\"cycleCol\">%s</td>" % self.start_cycle
-		print "  <td class=\"functionCol\">%s+ %s %s</td>" % ("&nbsp;"*4*indent, self.name, filtertext)
-		print "  <td>%s cycle, %s idle, %s instr miss</td>" % (self.get_ccount(), self.get_idle_count(), self.get_imcount())
-		print "</tr>"
+	def stats_str(self, excl_sub_calls):
+		cycle_count = self.get_ccount()
+		idle_count = self.get_idle_count()
+		instr_miss_count = self.get_imcount()
+		loadstore_miss_count = self.get_lsmcount()
 
-	def __html_start(self, filterlist, indent):
+		if (excl_sub_calls):
+			for subcall in self.calls:
+				cycle_count = cycle_count - subcall.get_ccount()
+				idle_count = idle_count - subcall.get_idle_count()
+				instr_miss_count = instr_miss_count - subcall.get_imcount()
+				loadstore_miss_count = loadstore_miss_count - subcall.get_lsmcount()
+
+		return "%s cycle, %s idle, %s instr miss, %s load/store miss" % (cycle_count, idle_count, instr_miss_count, loadstore_miss_count)
+
+
+	def __html_start(self, filterlist, indent, excl_sub_calls):
 		symbol = '-'
 		style = "block"
+
 		if self.name in filterlist:
 			symbol = '+'
 			style = "none"
 
-		st =  "<div class=\"line\"><span class=\"timestamp\">%s</span> %s<span class=\"collapseButton\" onclick=\"Collapse(this);\">%s</span> %s (%s cycles, %s idle, %s instr misses)\n" % (self.start_cycle, "&nbsp;"*4*indent, symbol, self.name, self.get_ccount(), self.get_idle_count(), self.get_imcount())
+		st =  "<div class=\"line\"><span class=\"timestamp\">%s</span> %s<span class=\"collapseButton\" onclick=\"Collapse(this);\">%s</span> %s (%s)\n" % (self.start_cycle, "&nbsp;"*4*indent, symbol, self.name, self.stats_str(excl_sub_calls))
 		st = st +  "<div class=\"collapse\" style=\"display : %s;\">\n" % (style)
 
-		#st = st + "<div class=\"line\">%s %s<a href=\"#\" onclick=\"Collapse(this);\">--</a> %s (%s cycles, %s idle, %s instr misses)" % (self.start_cycle, "&nbsp;"*4*indent, self.name, self.get_ccount(), self.get_idle_count(), self.get_imcount())
 		return st
 
 	def __html_end(self):
 		return "</div></div>\n"
 
-	def html_tree(self, filterlist, depth):
+	def html_tree(self, filterlist, depth, exclude_filtered, exclude_sub_calls):
 
-		ht = self.__html_start(filterlist, depth)
+		if self.name in filterlist and exclude_filtered == True:
+			return ""
+
+		ht = self.__html_start(filterlist, depth, exclude_sub_calls)
 
 		#if self.name not in filterlist:
 		for subcall in self.calls:
-			ht = ht + subcall.html_tree(filterlist, depth+1)
+			ht = ht + subcall.html_tree(filterlist, depth+1, exclude_filtered, exclude_sub_calls)
 
 		ht = ht + self.__html_end()
 
@@ -232,27 +232,27 @@ class TTree():
 		if self is refobj:
 			ann= "*"
 
-		print "%s%s%s%s-> %s [%s cycle, %s idle, %s instr miss]" % (ann, '\t',' '*depth, depth, self.name, self.get_ccount(), self.get_idle_count(), self.get_imcount())
+		print "%s%s%s%s-> %s [%s]" % (ann, '\t',' '*depth, depth, self.name, self.stats_str())
 
 		for subcall in self.calls:
 			subcall.print_tree_annotated(depth+1, refobj)
 
 	def print_tree(self, depth):
 
-		print "[%12s]\t%s%s-> %s [%s cycle, %s idle, %s instr miss]" % (self.get_start_cycle(), ' '*depth, depth, self.name, self.get_ccount(), self.get_idle_count(), self.get_imcount())
+		print "[%12s]\t%s%s-> %s [%s]" % (self.get_start_cycle(), ' '*depth, depth, self.name, self.stats_str())
 
 		for subcall in self.calls:
 			subcall.print_tree(depth+1)
 
-	def print_tree_ltd(self, startdepth, maxdepth):
+	def print_tree_ltd(self, startdepth, maxdepth, excl_sub_calls):
 
 		if maxdepth == 0:
 			return
 
-		print "%s%s-> %s [%s cycle, %s idle, %s instr miss]" % (' '*startdepth, startdepth, self.name, self.get_ccount(), self.get_idle_count(), self.get_imcount())
+		print "%s%s-> %s [%s]" % (' '*startdepth, startdepth, self.name, self.stats_str(excl_sub_calls))
 
 		for subcall in self.calls:
-			subcall.print_tree_ltd(startdepth+1, maxdepth-1)
+			subcall.print_tree_ltd(startdepth+1, maxdepth-1, excl_sub_calls)
 
 	def print_context(self):
 

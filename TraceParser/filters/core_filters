@@ -11,3 +11,4 @@ init_cp0
 done_wr
 C0V0
 init_ftlb
+printf

@@ -10,6 +10,11 @@ def is_data(trace_line):
 def is_instruction(trace_line):
 	return trace_line.startswith('I')
 
+def is_instruction_miss(trace_line):
+	return False
+
+def is_loadstore_miss(trace_line):
+	return False
 
 def get_vpid(trace_line):
 	return int(trace_line.split()[1])
@@ -44,4 +49,7 @@ def get_cycle(trace_line):
 
 # FIXME
 def get_ccount(trace_line):
+	return 1
+
+def get_num_pipelines():
 	return 1

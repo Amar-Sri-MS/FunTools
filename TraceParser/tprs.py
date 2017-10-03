@@ -14,57 +14,6 @@ from ttypes import TTree
 import tutils_hdr as tutils
 #
 # 
-# Create an entry with [funcname, start addr, end addr]
-def create_range_list(dasm_fname):
-
-	f = open(dasm_fname)
-
-	linenum = 0
-
-	fcurr = ""
-
-	coll = []
-
-        before_text = True
-	out_of_range = False
-
-	for line in f.readlines():
-
-                line = line.strip()
-
-                if (before_text):
-                        if tutils.text_section_start(line):
-                                before_text = False
-
-                        if (before_text):
-                                continue
-
-                if (not out_of_range):
-		        if tutils.data_section_start(line):
-			        out_of_range = True
-
-		[found, addr, fname] = tutils.parse_item(line)
-
-		if found:
-
-			if len(fcurr) != 0:
-				coll[len(coll)-1].append(addr-4)
-
-			fcurr = fname
-
-			if out_of_range == True:
-				coll.append([tutils.OUT_OF_RANGE, addr, 0xffffffffffffffff])
-				break
-
-			coll.append([fname, addr])
-
-	if not out_of_range:
-		coll[len(coll)-1].append(0xffffffffffffffff)
-
-	f.close()
-
-	return coll
-
 
 # input and output are numbers, not strings
 def filter_addr(addr):
@@ -108,9 +57,13 @@ def read_trace(trace_fname, ranges, filter_vp, reverse_order, filterlist, quiet,
 
 	# to be refined based on understanding of pipeline
 	cycles = 0
+	real_cycles = 0
 	idles = 0
+	real_idles = 0
 	instr_misses = 0
+	loadstore_misses = 0
 	nxtprint = 0
+	line_num = 0
 
 	last_found_func = ["","","",""]
 	last_address = [0,0,0,0]
@@ -131,25 +84,37 @@ def read_trace(trace_fname, ranges, filter_vp, reverse_order, filterlist, quiet,
 		while (True):
 
 			line = read_a_line(infile, follow)
+			if not line:
+				break
 
+			line_num = line_num + 1
+      
 			# handle the actual line, now we have one
+
 			if tutils.is_instruction(line): # XXX rename is_instruction
 
 				entry = TEntry(line, 0, ranges)
 	
 				vp = entry.get_vpid()
 				cycles = cycles + entry.get_ccount()
+				real_cycles = cycles/tutils.get_num_pipelines()
+
+				#print "%s: cycles %s real_cycles %s\t\t%s" % (line_num, cycles, real_cycles, line)
 
 				# XXX rewrite idle handling
 				func = entry.get_func()
 				if func == "idle":
 					idles = idles + entry.get_ccount()
+					real_idles = idles/tutils.get_num_pipelines()
 
 				if func in filterlist:
 					continue
 
-				if 'IM' in line.split():
+				if tutils.is_instruction_miss(line):
 					instr_misses = instr_misses + 1
+
+				if tutils.is_loadstore_miss(line):
+					loadstore_misses = loadstore_misses + 1
 
 #				if tutils.out_of_range(func):
 #					newaddr = filter_addr(entry.get_addr())
@@ -164,17 +129,17 @@ def read_trace(trace_fname, ranges, filter_vp, reverse_order, filterlist, quiet,
 
 					if quiet == False:
 						if filter_vp == 15:
-							print "%16s | %19s | %06s | %32s | %32s | %32s | %32s |" % (cycles, hex(row_val[0]), entry.get_op(), row_val[1], row_val[2], row_val[3], row_val[4])
+							print "%16s | %19s | %06s | %32s | %32s | %32s | %32s |" % (real_cycles, hex(row_val[0]), entry.get_op(), row_val[1], row_val[2], row_val[3], row_val[4])
 						elif vp == filter_vp:
 							print "ENTRY: %s" % (entry)
 					else:
-						if (cycles / 100000) == nxtprint:
-							print "Quiet mode still running; %s cycles complete" % cycles
+						if (real_cycles / 100000) == nxtprint:
+							print "Quiet mode still running; %s cycles complete" % real_cycles
 							nxtprint = nxtprint + 1
 
 					if entry.get_pos() == "START":
 
-						new_ttree = TTree(func, current_ttree[vp], cycles, idles, instr_misses)
+						new_ttree = TTree(func, current_ttree[vp], real_cycles, real_idles, instr_misses, loadstore_misses, line_num)
 
 						if current_ttree[vp] != None:
 							current_ttree[vp].add_call(new_ttree)
@@ -198,28 +163,33 @@ def read_trace(trace_fname, ranges, filter_vp, reverse_order, filterlist, quiet,
 									current_ttree[vp] = top_of_stack
 									break
 
-								top_of_stack.set_end_cycle(cycles)
-								top_of_stack.set_end_idle(idles)
+								top_of_stack.set_end_cycle(real_cycles)
+								top_of_stack.set_end_idle(real_idles)
 								top_of_stack.set_end_instr_miss(instr_misses)
+								top_of_stack.set_end_loadstore_miss(loadstore_misses)
+								top_of_stack.set_end_line(line_num)
 
 								top_of_stack = top_of_stack.get_parent()
 
 						# 2. If we popped all the way to no root, create a new root
 						if need_new_node == True:
 
-							new_ttree = TTree(func, None, cycles, idles, instr_misses)
+							new_ttree = TTree(func, None, real_cycles, real_idles, instr_misses, loadstore_misses, line_num)
 
 							if current_ttree[vp] != None:
 								# if we are adding a node, it is the root
 								# => it is the parent of the current root
-								ccyc = current_ttree[vp].get_start_cycle()
-								cid = current_ttree[vp].get_start_idle()
-								cim = current_ttree[vp].get_start_instr_miss()
+
+								#ccyc = current_ttree[vp].get_start_cycle()
+								#cid = current_ttree[vp].get_start_idle()
+								#cim = current_ttree[vp].get_start_instr_miss()
 
 								new_ttree.add_call(current_ttree[vp].get_root())
 								new_ttree.start_cycle = current_ttree[vp].get_start_cycle()
 								new_ttree.start_idle = current_ttree[vp].get_start_cycle()
 								new_ttree.start_instr_miss = current_ttree[vp].get_start_instr_miss()
+								new_ttree.start_loadstore_miss = current_ttree[vp].get_start_loadstore_miss()
+								new_ttree.start_line = current_ttree[vp].get_start_line()
 
 								#current_ttree[vp].propagate_start(ccyc, cid, cim)
 
@@ -242,7 +212,7 @@ def read_trace(trace_fname, ranges, filter_vp, reverse_order, filterlist, quiet,
 	for i in range(0,4):
 		if current_ttree[i] != None:
 			try:
-				current_ttree[i].propagate_up(cycles, idles, instr_misses)
+				current_ttree[i].propagate_up(real_cycles, real_idles, instr_misses)
 				roots.append(current_ttree[i].get_root())
 				sc = roots[i].sanitycheck()
 				print "Sanity check for VP %s: %s" % (i, sc)
@@ -255,10 +225,11 @@ def read_trace(trace_fname, ranges, filter_vp, reverse_order, filterlist, quiet,
 
 	#roots[0].print_tree(0)
 
-	print "Total cycles: %s" % cycles
-	print "Time elapsed @ 1GHz: %s seconds (%s ms)" % (cycles/float(1000000000), (cycles/float(1000000)))
+	print "Total cycles: %s" % real_cycles
+	print "Time elapsed @ 1GHz: %s seconds (%s ms)" % (real_cycles/float(1000000000), (real_cycles/float(1000000)))
 	print "Max call depth: TBD"
-	print "Total idles: %s" % idles
+	print "Total idles: %s" % real_idles
+	print "Total load/store misses: %s" % loadstore_misses
 
 	return roots
 
@@ -286,7 +257,6 @@ def print_funcs(ranges):
 #
 #
 #
-VALID_FORMATS = ["pdt", "sim", "qemu"]
 if __name__ == "__main__":
 
 	parser = OptionParser()
@@ -309,13 +279,13 @@ if __name__ == "__main__":
 		sys.exit(1)
 
         if options.format not in tutils.VALID_FORMATS:
-		print "Format must be one of %s" % VALID_FORMATS
+		print "Format must be one of %s" % tutils.VALID_FORMATS
 		sys.exit(1)
 
         # set the format
         tutils.set_format(options.format)
 
-	ranges = create_range_list(options.asm_f)
+	ranges = tutils.create_range_list(options.asm_f)
 	filterlist = ["idle", "sync", "mode"] # XXX we shouldn't need this, it should be handled by is_instruction (to be renamed)
 
 	core_id = 0

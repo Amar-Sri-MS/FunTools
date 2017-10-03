@@ -11,14 +11,14 @@ from ttypes import TTree
 import html_gen
 
 
-def filter_tree(tree, fname, depth):
+def filter_tree(tree, fname, depth, excl_sub_calls):
 	
 	if tree.get_name() == fname:
 		print ""
-		tree.print_tree_ltd(0, depth)
+		tree.print_tree_ltd(0, depth, excl_sub_calls)
 	else:
 		for el in tree.get_calls():
-			filter_tree(el, fname, depth)
+			filter_tree(el, fname, depth, excl_sub_calls)
 
 def gather_stats_rec(tree, statsd):
 
@@ -85,12 +85,14 @@ if __name__ == "__main__":
 	parser.add_option("-f", "--filter", dest="filterlist_f", help="Filter list", metavar="FILE")
 	parser.add_option("-c", "--core", dest="core_id", help="Core ID")
 	parser.add_option("-d", "--data", dest="data_f", help="Data folder", metavar="FOLDER")
+	parser.add_option("-r", "--remove-filtered", dest="exclude_filtered", help="Do not put filtered functions in the output", action="store_true")
+	parser.add_option("-e", "--excl-sub-calls", dest="excl_sub_calls", help="Only count this function's metrics, excluding its sub calls", action="store_true")
 
 	(options, args) = parser.parse_args()
 
 	if options.funtrc_f is None:
 		print "Need to specify a fungible option trace file"
-		sys.exit(0)
+		sys.exit(1)
 
 	dst = ''
 	if options.data_f != None:
@@ -101,8 +103,8 @@ if __name__ == "__main__":
 	funtrc = pickle.load(f)
 	f.close()
 
-	#filter_tree(funtrc, "int2base",10)
-	#filter_tree(funtrc[0], "verif_issue_loop",1)
+	#filter_tree(funtrc, "int2base",10, options.excl_sub_calls)
+	#filter_tree(funtrc[0], "verif_issue_loop",1, options.excl_sub_calls)
 	#print ""
 
 	vpid_start = 0
@@ -119,12 +121,16 @@ if __name__ == "__main__":
 		coreid = int(options.core_id)
 
 	if options.filterlist_f != None:
-		f = open(options.filterlist_f)
+		for fname in options.filterlist_f.split(','):
 
-		filterlist = f.readlines()
-		filterlist = [x.strip() for x in filterlist]
+			f = open(fname)
 
-		f.close()
+			flist = f.readlines()
+			flist = [x.strip() for x in flist]
+
+			filterlist = filterlist + flist
+
+			f.close()
 
 	statsd = [{}, {}, {}, {}]
 
@@ -143,7 +149,7 @@ if __name__ == "__main__":
 			pass
 			#print "VP did not run"
 		else:
-			report = report + funtrc[vpid].html_tree(filterlist, 0)
+			report = report + funtrc[vpid].html_tree(filterlist, 0, options.exclude_filtered, options.excl_sub_calls)
 
 		#summarize(statsd[vpid])
 		report = report + html_gen.vpstats_output_html(statsd[vpid])
