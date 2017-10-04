@@ -84,6 +84,7 @@
 		A78F76A71F3E6DB100E33523 /* DKBitAddress.swift in Sources */ = {isa = PBXBuildFile; fileRef = A78F76A61F3E6DB100E33523 /* DKBitAddress.swift */; };
 		A78F76A91F3E722200E33523 /* DKValueSimple.swift in Sources */ = {isa = PBXBuildFile; fileRef = A78F76A81F3E722200E33523 /* DKValueSimple.swift */; };
 		A78F76AB1F3E7F1400E33523 /* DKValueLazy.swift in Sources */ = {isa = PBXBuildFile; fileRef = A78F76AA1F3E7F1400E33523 /* DKValueLazy.swift */; };
+		A7A56A901F84BC82007B5391 /* DKParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7A56A8F1F84BC82007B5391 /* DKParser.swift */; };
 		A7B27D121F2580EE00C171BD /* DKType_Test.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7B27D111F2580EE00C171BD /* DKType_Test.swift */; };
 		A7B27D141F25817A00C171BD /* DKExpression_Test.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7B27D131F25817A00C171BD /* DKExpression_Test.swift */; };
 		A7DDFC7B1F2AE16200A4F6AC /* DKValue.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7DDFC7A1F2AE16200A4F6AC /* DKValue.swift */; };
@@ -191,6 +192,7 @@
 		A78F76A61F3E6DB100E33523 /* DKBitAddress.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKBitAddress.swift; sourceTree = "<group>"; };
 		A78F76A81F3E722200E33523 /* DKValueSimple.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKValueSimple.swift; sourceTree = "<group>"; };
 		A78F76AA1F3E7F1400E33523 /* DKValueLazy.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKValueLazy.swift; sourceTree = "<group>"; };
+		A7A56A8F1F84BC82007B5391 /* DKParser.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKParser.swift; sourceTree = "<group>"; };
 		A7B27D111F2580EE00C171BD /* DKType_Test.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKType_Test.swift; sourceTree = "<group>"; };
 		A7B27D131F25817A00C171BD /* DKExpression_Test.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKExpression_Test.swift; sourceTree = "<group>"; };
 		A7DDFC7A1F2AE16200A4F6AC /* DKValue.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKValue.swift; sourceTree = "<group>"; };
@@ -316,6 +318,7 @@
 				A7DDFC791F2AE14600A4F6AC /* Values */,
 				A72CC79B1F4CFA430058827F /* Functions */,
 				A78C2B281F23EAE00086FAD6 /* Expressions */,
+				A7A56A8E1F84BC5C007B5391 /* Parser */,
 				A78C2B1A1F23D4070086FAD6 /* CodeGen */,
 				A7EB13761F2D16E200760396 /* Test */,
 				A78C2AA61F23D34F0086FAD6 /* DataKit */,
@@ -383,6 +386,15 @@
 				A727FABF1F258DC3007BE1BD /* DKExpressionVariable.swift */,
 			);
 			name = Expressions;
+			path = DataKit;
+			sourceTree = "<group>";
+		};
+		A7A56A8E1F84BC5C007B5391 /* Parser */ = {
+			isa = PBXGroup;
+			children = (
+				A7A56A8F1F84BC82007B5391 /* DKParser.swift */,
+			);
+			name = Parser;
 			path = DataKit;
 			sourceTree = "<group>";
 		};
@@ -551,6 +563,7 @@
 				A72CC77D1F49F4C80058827F /* Bitmap.swift in Sources */,
 				A7EB13781F2D172700760396 /* Students.swift in Sources */,
 				A7EB137C1F2D717600760396 /* DKValueFunc.swift in Sources */,
+				A7A56A901F84BC82007B5391 /* DKParser.swift in Sources */,
 				A72CC79A1F4CFA370058827F /* DKFunction.swift in Sources */,
 				A78C2B251F23D54D0086FAD6 /* DKGenC.swift in Sources */,
 				A72CC7831F49F4C80058827F /* JSON.swift in Sources */,

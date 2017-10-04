@@ -78,6 +78,10 @@ class DKTypeStruct: DKType, Cardinality {
 		let types = [DKType](repeating: type, count: repeated)
 		self.init(subTypes: types, subNames: nil, packed: false, alignmentInBits: 32)
 	}
+	func realignForFuncParams() -> DKTypeStruct {
+		if alignment != nil { return self }
+		return DKTypeStruct(subTypes: subs, subNames: names, packed: false, alignmentInBits: 32)
+	}
 	var count: Int { return subs.count }
 	subscript(i: Int) -> DKType {
 		assert(i < count);

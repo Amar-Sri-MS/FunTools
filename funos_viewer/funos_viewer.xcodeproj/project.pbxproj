@@ -74,6 +74,7 @@
 		A72CC7B31F587FCC0058827F /* tests in Resources */ = {isa = PBXBuildFile; fileRef = A72CC7B21F587FCC0058827F /* tests */; };
 		A72CC7BB1F6A2B6B0058827F /* flows in Resources */ = {isa = PBXBuildFile; fileRef = A72CC7BA1F6A2B6B0058827F /* flows */; };
 		A74FE1481EE1D0210062128E /* platform in Resources */ = {isa = PBXBuildFile; fileRef = A74FE1471EE1D0210062128E /* platform */; };
+		A76107DF1F7AFAD2002B80A3 /* scripts in Resources */ = {isa = PBXBuildFile; fileRef = A76107DE1F7AFAD2002B80A3 /* scripts */; };
 		A7614FB21F127E5E0065A5B7 /* MallocWindow.xib in Resources */ = {isa = PBXBuildFile; fileRef = A7614FB11F127E5E0065A5B7 /* MallocWindow.xib */; };
 		A7614FB41F1280E40065A5B7 /* MallocWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7614FB31F1280E40065A5B7 /* MallocWindowController.swift */; };
 		A766A47C1F1915F50094C7B0 /* utils in Resources */ = {isa = PBXBuildFile; fileRef = A766A47B1F1915F50094C7B0 /* utils */; };
@@ -170,6 +171,7 @@
 		A72CC7B21F587FCC0058827F /* tests */ = {isa = PBXFileReference; lastKnownFileType = folder; name = tests; path = ../../FunOS/tests; sourceTree = "<group>"; };
 		A72CC7BA1F6A2B6B0058827F /* flows */ = {isa = PBXFileReference; lastKnownFileType = folder; name = flows; path = ../../FunOS/flows; sourceTree = "<group>"; };
 		A74FE1471EE1D0210062128E /* platform */ = {isa = PBXFileReference; lastKnownFileType = folder; name = platform; path = ../../FunOS/platform; sourceTree = "<group>"; };
+		A76107DE1F7AFAD2002B80A3 /* scripts */ = {isa = PBXFileReference; lastKnownFileType = folder; name = scripts; path = ../../FunOS/scripts; sourceTree = "<group>"; };
 		A7614FB11F127E5E0065A5B7 /* MallocWindow.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = MallocWindow.xib; sourceTree = "<group>"; };
 		A7614FB31F1280E40065A5B7 /* MallocWindowController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MallocWindowController.swift; sourceTree = "<group>"; };
 		A766A47B1F1915F50094C7B0 /* utils */ = {isa = PBXFileReference; lastKnownFileType = folder; name = utils; path = ../../FunOS/utils; sourceTree = "<group>"; };
@@ -226,6 +228,7 @@
 				A72CC7AC1F587F650058827F /* networking */,
 				A74FE1471EE1D0210062128E /* platform */,
 				A72CC7B01F587FB00058827F /* props_bridges */,
+				A76107DE1F7AFAD2002B80A3 /* scripts */,
 				A766A47F1F1BD2D40094C7B0 /* services */,
 				A72CC7A81F587F210058827F /* storage */,
 				A72CC7B21F587FCC0058827F /* tests */,
@@ -437,6 +440,7 @@
 				A716FBCF1EA67C82008395EC /* Assets.xcassets in Resources */,
 				A72CC7A91F587F210058827F /* storage in Resources */,
 				A72CC7AB1F587F3E0058827F /* devices in Resources */,
+				A76107DF1F7AFAD2002B80A3 /* scripts in Resources */,
 				A78F76A51F38B83B00E33523 /* datakit in Resources */,
 				A766A4821F1C0E550094C7B0 /* Buttons.xib in Resources */,
 				A766A4881F1C12FD0094C7B0 /* ConsoleWindow.xib in Resources */,

@@ -129,18 +129,12 @@ extension String {
 	}
 }
 
-func sendToDPCServer(old: Bool, _ combined: JSON) {
+func sendToDPCServer(_ combined: JSON) {
 	print("Combined: \(combined)")
 	let str = combined.description.asOneLine
 	print("Single line: \n\(str)")
-	let rs: String
-	if old {
-		let r = dpcrun_command_with_subverb_and_arg(&socket, "datakit", "setup", str)
-		rs = r == nil ? "NOPE" : String(cString: r!)
-	} else {
-		let r = dpcrun_command_with_subverb_and_arg(&socket, "datakit", "setup2", str)
-		rs = r == nil ? "NOPE" : String(cString: r!)
-	}
+	let r = dpcrun_command_with_subverb_and_arg(&socket, "datakit", "setup", str)
+	let rs: String = r == nil ? "NOPE" : String(cString: r!)
 	print("r = \(rs)")
 	sleep(1)
 	let r2 = dpcrun_command_with_subverb(&socket, "datakit", "run")
@@ -164,7 +158,7 @@ func studentsTestOld() {
 	let t = studentType()
 	let typeTable = DKTypeTable()
 	registerGeneratorOfStudents(typeTable: typeTable)
-	let generator = DKFunctionGenerator(typeTable, name: "Students", params: 100, itemType: t)
+	let generator = DKFunctionGenerator(typeTable, name: "Students", params: 10_000, itemType: t)
 	let con = DKEvaluationContext()
 	let students = generator.evaluate(context: con, [])
 	var bs: DKMutableBitStream = DataAsMutableBitStream()
@@ -200,16 +194,9 @@ func studentsTestOld() {
 	try! filter.functionToJSON.writeToFile("/tmp/students_filter.json")
 	try! logger.functionToJSON.writeToFile("/tmp/students_logger.json")
 	try! typeTable.typeTableAsJSON.writeToFile("/tmp/students_types.json")
-
-	let combined: JSON = .dictionary([
-		"type_table": typeTable.typeTableAsJSON,
-		"generator": generator.functionToJSON,
-		"filter": filter.functionToJSON,
-		"sink": logger.functionToJSON
-	])
-	sendToDPCServer(old: true, combined)
-	print("\n")
 }
+
+var twoFilters = false
 
 func studentsTestNew() {
 	let t = studentType()
@@ -217,10 +204,15 @@ func studentsTestNew() {
 	let knowns = [t: "Student"]
 	registerGeneratorOfStudents(typeTable: typeTable)
 	let filter: DKFunctionFilter = filterSpecificFirstOrLastName(typeTable, true, "Joe")
-	let generator = DKFunctionGenerator(typeTable, name: "Students", params: 100, itemType: t)
+	let generator = DKFunctionGenerator(typeTable, name: "Students", params: 1000, itemType: t)
 	let newLogger = DKFunctionMap(each: DKFunctionLogger(typeTable, t))
-	let lastIsSmith = filterSpecificFirstOrLastName(typeTable, false, "Smith")
-	let pipeline = DKFunctionComposition(outer: newLogger, inner: DKFunctionComposition(outer: lastIsSmith, inner: filter))
+	let pipeline: DKFunctionComposition
+	if twoFilters {
+		let lastIsSmith = filterSpecificFirstOrLastName(typeTable, false, "Smith")
+		pipeline = DKFunctionComposition(outer: newLogger, inner: DKFunctionComposition(outer: lastIsSmith, inner: filter))
+	} else {
+		pipeline = DKFunctionComposition(outer: newLogger, inner: filter)
+	}
 	print("Signature of pipeline: \(pipeline.signature)")
 	let flowGraphGen = DKFlowGraphGen(typeTable, generator, pipeline)
 	let r = flowGraphGen.generate()
@@ -229,7 +221,7 @@ func studentsTestNew() {
 	}
 	let j = flowGraphGen.flowGraphToJSON
 	print("flow graph as JSON: \n\(j)")
-	sendToDPCServer(old: false, j)
+	sendToDPCServer(j)
 }
 
 func studentsTest() {

@@ -6,6 +6,7 @@
 //  Copyright © 2017 Fungible. All rights reserved.
 //
 
+DKParser.selfTest()
 DKType.selfTest()
 DKExpression.selfTest()
 DKBitAddress.selfTest()

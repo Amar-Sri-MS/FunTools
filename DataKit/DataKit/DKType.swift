@@ -135,7 +135,7 @@ extension JSON {
 		if raw == nil && code.hasPrefix("T_") { return nil }
 		if raw == nil { raw = self }
 		// TODO: Need to avoid this...
-		for f in [DKTypeInt.typeFromJSON, DKTypeStruct.typeFromJSON, DKTypeArray.typeFromJSON, DKTypeSignature.typeFromJSON] {
+		for f in [DKTypeInt.typeFromJSON, DKTypeString.typeFromJSON, DKTypeStruct.typeFromJSON, DKTypeArray.typeFromJSON, DKTypeSignature.typeFromJSON] {
 			let t = f(uniquingTable, raw!)
 			if t != nil { return t }
 		}

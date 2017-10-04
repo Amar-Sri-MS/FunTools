@@ -47,7 +47,6 @@ class DKFifo: CustomStringConvertible {
 	}
 	func fifoToJSON(_ uniquingTable: DKTypeTable) -> JSON {
 		var dict: [String: JSON] = [
-			"label": .integer(label),
 			"item_type": .string(itemType.toTypeShortcut(uniquingTable)),
 			]
 		if predicateOnInput != nil {
