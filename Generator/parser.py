@@ -128,6 +128,12 @@ class Type:
     else:
       self.bit_width = self.alignment
 
+  def CastString(self):
+    """Returns a string casting something to this type.
+    Used in templates with {{x.type|as_cast}}
+    """
+    return '(%s)' % self.DeclarationType()
+
   def IsArray(self):
     """Returns true if the type is an array type."""
     return self.is_array
@@ -250,6 +256,16 @@ class Declaration:
 
     self.declarationKind = UnknownKind
 
+  def DefinitionString(self):
+    """Returns a text string that is a valid declaration.
+    For structures, this prints all the fields in the struct.
+    """
+    return '/* DefinitionString unimplemented for %s. */' % self
+
+  def DeclarationString(self):
+    """Returns text string that is valid parameter declaration for decl."""
+    return '/* DeclarationString unimplemented for %s. */' % self
+
   def MacroWithName(self, name):
     """Returns a specific macro attached to this declaration."""
     for macro in self.macros:
@@ -307,6 +323,10 @@ class Field(Declaration):
     # String name of the C type, or a generic type for signed-ness.
     self.type = type
 
+    # Does this field need to be swapped when converting from a different
+    # endian processor?
+    self.swappable = type is not None and type.bit_width > 8
+
     # True if the field doesn't actually represent a specific bit pattern.
     # Used for variable length arrays.
     self.no_offset = False
@@ -314,6 +334,21 @@ class Field(Declaration):
     # Bit offset from top of first word.
     self.offset_start = offset_start
     self.bit_width = bit_width
+
+    # True if the field the same width as the type.
+    self.is_natural_width = False
+    if self.type:
+      self.is_natural_width = self.type.bit_width == self.bit_width
+
+    # Minimum and maximum value allowed in the field.
+    # TODO(bowdidge): Handle signed types.
+    self.min_value = 0
+    self.max_value = 0
+    self.mask = '/* undefined */'
+
+    if self.bit_width >= 0:
+      self.max_value = (1 << self.bit_width) - 1
+      self.mask = '0x%x' % ((1 << self.bit_width) - 1)
 
     self.crosses_flit = False
     # Fields that have been packed in this field.
@@ -334,6 +369,13 @@ class Field(Declaration):
     # Fields for a composite object such as a struct or union.
     self.subfields = []
     self.declaration_kind = FieldKind
+    # None if a top-level field, or the packed field holding this field.
+    self.packed_field = None
+    self.parent_struct = None
+
+    self.is_reserved = (name.startswith('reserved') or 
+                        name.startswith('rsvd') or
+                        name.startswith('unused'))
 
   def __str__(self):
     if self.no_offset:
@@ -349,6 +391,13 @@ class Field(Declaration):
                                         self.StartFlit(), self.StartBit(),
 
                                         self.EndFlit(), self.EndBit()))
+  def fields_to_set(self):
+    """Returns a list of packed fields (fields actually holding multiple
+    other fields).
+
+    This method determines which fields get packed accessors.
+    """
+    return [x for x in self.packed_fields if not x.is_reserved]
 
   def Name(self):
     return self.name
@@ -412,9 +461,12 @@ class Field(Declaration):
       return 0
     return self.bit_width
 
-  def Mask(self):
-    # Returns a hexadecimal number that can be used as a mask in the flit.
-    return '0x%x' %  ((1 << self.bit_width) - 1)
+  def shift(self):
+    # TODO(bowdidge): subtract container.
+    if not self.packed_field:
+      return 0
+    min_end_bit = min([f.EndBit() for f in self.packed_field.packed_fields])
+    return '%d' % (self.EndBit() - min_end_bit)
 
   def SmallerThanType(self):
     """Returns true if the field does not fully fill its type.
@@ -425,6 +477,39 @@ class Field(Declaration):
 
   def IsNoOffset(self):
     return self.no_offset
+
+  #
+  # Helper functions neeeded by templates.
+  #
+
+  def init_accessor(self):
+    """String to access a field from the likely initial struct argument."""
+    if not self.parent_struct or not self.parent_struct.inline:
+      return ''
+    
+    container_base_type = RecordTypeForStruct(self.parent_struct).base_type
+    struct_field = self.parent_struct.parent_struct.FieldWithBaseType(container_base_type)
+
+    container_container_base_type = RecordTypeForStruct(self.parent_struct.parent_struct).base_type
+    union_field = self.parent_struct.parent_struct.parent_struct.FieldWithBaseType(container_container_base_type)
+    return union_field.name + '.' + struct_field.name + '.'
+
+  def IsInitable(self):
+    """Returns true if the field should be an argument to an init function,
+    or should be initialized in an init function.
+    """
+    return (not self.is_reserved and not self.type.IsRecord() 
+            and not self.type.IsArray())
+
+  def DeclarationString(self):
+    """Returns a string representing the declaration for variable to set field."""
+    if self.type.IsRecord() and self.type.base_type.node.inline:
+      return '%s {\n} %s;' % (self.type.DeclarationName(),
+                                 self.name)
+
+    if self.type.IsArray():
+      return "%s %s[%d]" % (self.type.DeclarationName(), self.name, self.type.array_size)
+    return "%s %s" % (self.type.DeclarationType(), self.name)
 
   def CreateSubfields(self):
     """Inserts sub-fields into this field based on the its type.
@@ -465,6 +550,47 @@ class Field(Declaration):
         new_subfield.CreateSubfields()
 
 
+  def DefinitionString(self):
+    """Pretty-print a field in a structure or union.  Returns string."""
+    str = ''
+    field_type = self.Type()
+    type_name = field_type.DeclarationName();
+
+    if field_type.IsRecord():
+      struct = field_type.base_type.node
+      if struct.inline:
+        type_name = struct.DefinitionString()
+
+    if self.generator_comment is not None:
+      str += utils.AsComment(self.generator_comment) + '\n'
+
+    if self.body_comment is not None:
+      # TODO(bowdidge): Break long comment.
+      str += utils.AsComment(self.body_comment) + '\n'
+
+    key_comment = ''
+    if self.key_comment is not None:
+      key_comment = ' ' + utils.AsComment(self.key_comment)
+
+    if self.type.IsArray():
+      str += '%s %s[%d];%s\n' % (type_name,
+                                     self.name,
+                                     self.type.ArraySize(),
+                                     key_comment)
+    else:
+      var_width = self.BitWidth()
+      type_width = self.type.BitWidth()
+
+      var_bits = ''
+      if self.type.IsScalar() and type_width != var_width:
+        var_bits = ':%d' % var_width
+      str += '%s %s%s;%s\n' % (type_name,
+                                   self.name, var_bits,
+                                   key_comment)
+
+    return str
+
+
 class EnumVariable(Declaration):
   # Representation of an enum variable in an enum declaration.
 
@@ -478,7 +604,7 @@ class EnumVariable(Declaration):
      self.declaration_kind = EnumVariableKind
 
   def __str__(self):
-     return('<EnumVariable: %s = 0x%x>' % self.name, self.value)
+    return('<EnumVariable: %s = 0x%x>' % (self.name, self.value))
 
 
 class Enum(Declaration):
@@ -493,16 +619,31 @@ class Enum(Declaration):
     self.name = name
     self.variables = []
     self.declaration_kind = EnumKind
+    self.last_value = 0
 
+  def AddVariable(self, var):
+    """Adds a new enum variable to the enum."""
+    self.variables.append(var)
+    if var.value > self.last_value:
+      self.last_value = var.value
+
+  def VariablesWithPlaceholders(self):
+    return ''
+    
   def Name(self):
     return self.name
 
   def BitWidth(self):
     return 0
 
+  def NameForValue(self, idx):
+    for var in self.variables:
+      if var.value == idx:
+        return var.name
+    return 'undefined'
+
   def __str__(self):
     return('<Enum %s:\n  %s\n>\n' % (self.name, self.variables))
-
 
 class FlagSet(Declaration):
   # Representation of an flags declaration.  FlagSet are like enums,
@@ -517,6 +658,13 @@ class FlagSet(Declaration):
     self.name = name
     self.variables = []
     self.declaration_kind = FlagSetKind
+    self.max_value = 0
+
+  def AddVariable(self, var):
+    """Adds a new flagset variable to the flagset."""
+    self.variables.append(var)
+    if var.value > self.max_value:
+      self.max_value = var.value
 
   def Name(self):
     return self.name
@@ -524,12 +672,21 @@ class FlagSet(Declaration):
   def BitWidth(self):
     return 0
 
-  def MaxValue(self):
-    max_value = 0
-    for var in self.variables:
-      if var.value > max_value:
-        max_value = var.value
-    return max_value
+  def VariablesWithNames(self):
+    """Returns set of variables which go in power-of-two array."""
+    result = []
+    for i in range(0, utils.MaxBit(self.max_value)):
+      next_value = 1 << i
+      found = False
+      for var in self.variables:
+        if next_value == var.value:
+          result.append(var)
+          found = True
+          break
+      if not found:
+        fake_var = EnumVariable('undefined', next_value)
+        result.append(fake_var)
+    return result
 
   def __str__(self):
     return('<FlagSet %s:\n  %s\n>\n' % (self.name, self.variables))
@@ -552,12 +709,34 @@ class Struct(Declaration):
 
     # True if this struct actually represents a union.
     self.is_union = is_union
+    if self.is_union:
+      self.keyword = 'union'
+    else:
+      self.keyword = 'struct'
 
     # True if the struct or union should be drawn inline where it's
     # used.  The inline flag is usually set depending on whether the
     # struct was defined inline in the gen file, or on its own.
     self.inline = False
+    self.parent_struct = None
     self.declaration_kind = StructKind
+
+  def FieldWithBaseType(self, base_type):
+    """Returns first field with the given type.
+
+    Used for finding structs and unions defined in this struct
+    when trying to figure out how to access fields in the nested structures.
+    """
+    for f in self.fields:
+      if f.type.base_type.node:
+        if f.type.base_type.node == base_type.node:
+          return f
+    return None
+
+  def AddField(self, field):
+    """Adds a new field to this structure."""
+    self.fields.append(field)
+    field.parent_struct = self
 
   def Name(self):
     return self.name
@@ -568,30 +747,20 @@ class Struct(Declaration):
       return 'union'
     return 'struct'
 
-  def NestedStructs(self):
-    result = []
-    for field in self.fields:
-      if field.type.IsRecord():
-        struct = field.type.base_type.node
-        if struct.inline:
-          result.append(struct)
-          result += struct.NestedStructs()
-    return result
-
   def MatchingStructInUnionField(self, struct_in_union):
     """Returns (accessor expr, field) for an instance of a structure
     of the provided type inside a union inside the current structure.
     """
-    for field in self.AllFields():
+    for field in self.FieldsBeforePacking():
       if field.type.IsRecord() and field.type.base_type.node.is_union:
         union = field.type.base_type.node
-        for union_field in union.AllFields():
+        for union_field in union.FieldsBeforePacking():
           if (union_field.type.IsRecord() and
               union_field.type.base_type.node == struct_in_union):
             return (field.name + '.' + union_field.name + '.', union_field)
     return ('', None)
 
-  def AllFields(self):
+  def FieldsBeforePacking(self):
     """Returns all fields of the struct as seen before packing."""
     fields = []
 
@@ -668,6 +837,113 @@ class Struct(Declaration):
           return the_union
     return None
 
+  def DeclarationString(self):
+    return self.Tag() + ' ' + self.name
+
+  def DefinitionString(self):
+    """Generate a structure without the semicolon.
+
+    This routine lets us have one way to print inline and standalone structs.
+    """
+    str = ''
+    if self.key_comment:
+      str += utils.AsComment(self.key_comment) + '\n'
+
+    if self.body_comment:
+      str += utils.AsComment(self.body_comment) + '\n'
+
+    str += self.Tag() + ' %s {\n' % self.name
+
+    flit_for_last_field = 0
+    for field in self.fields:
+      # Add blank line between flits.
+      if field.StartFlit() != flit_for_last_field:
+        str += '\n'
+
+      str += utils.Indent(field.DefinitionString(), 2)
+
+      flit_for_last_field = field.StartFlit()
+
+    if self.tail_comment:
+      str += utils.Indent(utils.AsComment(self.tail_comment), 2)
+
+    str += '}'
+    return str
+  
+  #
+  # Helpers for templates.
+  #
+
+  # When generating code or documentation for structures, we have several
+  # different sets of fields that may need to be identified:
+  #
+  # * fields that represent variables in the struct's generated code.
+  #   List in self.fields.
+  #
+  # * conceptual fields - struct fields before packing.
+  #   Get list with self.FieldsBeforePacking()
+  #
+  # * fields to pass as arguments to an initializer.  May include fields
+  #   from an enclosing structure.  May not include fields that can't be
+  #   passed easily to a function such as sub-structures or arrays, or
+  #   reserved fields.
+  #   
+  # * fields that need to be initialized in an initializer.  Every field
+  #   to be initialized maps to one or more arguments to the initializer.
+  #   Ignores arrays, sub-structures, and reserved fields.
+  #
+  # * fields that will not be initialized in an initializer.  Needed for
+  #   printing out what won't be done.
+  def init_fields(self):
+    """Returns the list of fields that should be set in an init routine.
+    
+    This should include all packed fields, and may include fields inside
+    nested structures.
+    """
+    arg_list = []
+    if self.inline:
+      arg_list += [x for x in self.init_struct().fields if x.IsInitable()]
+    arg_list += [f for f in self.fields if f.IsInitable()]
+    return arg_list
+      
+  def arg_fields(self):
+    """Returns list of fields that should be arguments to an init function.
+
+    May include fields from parent structures if this is an inlined
+    structure.  Ignores fields that cannot neatly be passed in an init
+    function, such as arrays or nested structures.
+    """
+    arg_list = []
+    
+    if self.inline:
+      arg_list += [x for x in self.init_struct().FieldsBeforePacking()
+                   if x.IsInitable()]
+    arg_list += [x for x in self.FieldsBeforePacking() if x.IsInitable()]
+    return arg_list
+
+  def non_arg_fields(self):
+    """Returns list of fields in the structure that will not be initialized
+    in an init routine.
+
+    Used for generating documentation.
+    """
+    return [x for x in self.FieldsBeforePacking() if not x.IsInitable()]
+
+  def init_struct(self):
+    """Returns the type of the self argument when initializing this
+    structure.
+
+    If the structure is inlined in another, then the init struct
+    container.
+    """
+    if not self.inline:
+      return self
+
+    parent = self.parent_struct
+
+    while parent.keyword == 'union' and parent.parent_struct != None:
+      parent = parent.parent_struct
+    return parent
 
 class Document:
   # Representation of an entire generated header specification.

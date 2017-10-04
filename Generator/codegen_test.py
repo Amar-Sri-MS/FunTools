@@ -21,132 +21,6 @@ def RemoveWhitespace(str):
   """Converts all whitespace to single spaces for consistent compares."""
   return re.sub('\s+', ' ', str)
 
-class CodePrinterTest(unittest.TestCase):
-  def setUp(self):
-    self.codegen = codegen.CodeGenerator(OPTIONS_GENERATE_JSON)
-    self.printer = codegen.CodePrinter(None, OPTIONS_GENERATE_JSON)
-
-  def testPrintStructNoVar(self):
-    builder = generator.DocBuilder()  
-    builder.ParseStructStart('STRUCT Foo')
-    builder.ParseLine('0 63:0 uint64_t packet')
-    builder.ParseEnd('END')
-    doc = builder.current_document
-
-    (header, src) = self.printer.VisitDocument(doc)
-
-    self.assertIn('struct Foo {', header)
-    # Should automatically create a field name for the struct.
-    self.assertIn('};', header)
-
-  def testPrintStructWithVar(self):
-    builder = generator.DocBuilder()  
-    builder.ParseStructStart('STRUCT Foo foo_cmd')
-    builder.ParseLine('0 63:0 uint64_t packet')
-    builder.ParseEnd('END')
-    doc = builder.current_document
-
-    (header, src) = self.printer.VisitDocument(doc)
-
-    self.assertIn('struct Foo {', header)
-    # Should automatically create a field name for the struct.
-    self.assertIn('};', header)
-
-  def testPrintStructWithComments(self):
-    struct = parser.Struct('Foo', False)
-    struct.key_comment = 'Key comment'
-    struct.body_comment = 'body comment\nbody comment'
-
-    (header, source) = self.printer.VisitStruct(struct)
-    self.assertIn('/* Key comment */', header)
-    self.assertIn('/*\n'
-                  ' * body comment\n'
-                  ' * body comment\n'
-                  ' */', header)
-    self.assertIn('struct Foo {', header)
-    self.assertIn('};', header)
-
-  def testPrintArray(self):
-    field = parser.Field('foo', parser.ArrayTypeForName('char', 8), 0, 64)
-    code = self.printer.VisitField(field)
-  
-    self.assertIn('char foo[8];\n', code)
-
-  def testPrintUnionWithVar(self):
-    union = parser.Struct('Foo', True)
-    (hdr, src) = self.printer.VisitStruct(union)
-
-    self.assertIn('union Foo {', hdr)
-    self.assertIn('};', hdr)
-
-  def testPrintField(self):
-    field = parser.Field('foo', parser.TypeForName('uint8_t'), 0, 4)
-    code = self.printer.VisitField(field)
-    self.assertEqual('uint8_t foo : 4;\n', code)
-
-  def testFieldMaskSmall(self):
-    field = parser.Field('foo', parser.TypeForName('uint16_t'), 0, 5)
-    self.assertEqual('0x1f', field.Mask())
-
-  def testFieldMaskChar(self):
-    field = parser.Field('foo', parser.TypeForName('uint8_t'), 0, 8)
-    self.assertEqual('0xff', field.Mask())
-
-  def testFieldMaskWord(self):
-    field = parser.Field('foo', parser.TypeForName('uint32_t'), 0, 16)
-    self.assertEqual('0xffff', field.Mask())
-
-  def testFieldMaskLong(self):
-    field = parser.Field('foo', parser.TypeForName('uint32_t'), 0, 40)
-    self.assertEqual('0xffffffffff', field.Mask())
-
-  def testPrintFieldNotBitfield(self):
-    field = parser.Field('foo', parser.TypeForName('uint8_t'), 0, 8)
-    code = self.printer.VisitField(field)
-    self.assertEqual('uint8_t foo;\n', code)
-
-  def testPrintFieldWithComment(self):
-    field = parser.Field('foo', parser.TypeForName('uint8_t'), 0, 8)
-    field.key_comment = 'A'
-    field.body_comment = 'B'
-    code = self.printer.VisitField(field)
-    self.assertEqual('/* B */\nuint8_t foo; /* A */\n', code)
-
-  def testPrintFieldWithLongComment(self):
-    field = parser.Field('foo', parser.TypeForName('uint8_t'), 0, 8)
-    long_comment = 'long long long long long long long long long long comment'
-    field.body_comment = long_comment
-    field.bodyuser_comment = long_comment
-    code = self.printer.VisitField(field)
-    self.assertEqual('/* %s */\nuint8_t foo;\n' % long_comment, code)
-
-  def testPrintEnum(self):
-    enum = parser.Enum('MyEnum')
-    var = parser.EnumVariable('MY_COMMAND', 1)
-    enum.variables.append(var)
-
-    self.codegen.VisitEnum(enum)
-    (hdr, src) = self.printer.VisitEnum(enum)
-
-    self.assertIn('enum MyEnum {', hdr)
-    self.assertIn('MY_COMMAND = 0x1,\n', hdr)
-    self.assertIn('extern const char *myenum_names', hdr)
-    self.assertIn('const char *myenum_names', src)
-    self.assertIn('"MY_COMMAND"', src)
-
-  def testPrintLargeEnum(self):
-    enum = parser.Enum('MyEnum')
-    var = parser.EnumVariable('MY_COMMAND', 31)
-    enum.variables.append(var)
-
-    self.codegen.VisitEnum(enum)
-    (hdr, src) = self.printer.VisitEnum(enum)
-    self.assertIn('enum MyEnum {', hdr)
-    self.assertIn('MY_COMMAND = 0x1f,\n', hdr)
-    self.assertIn('extern const char *myenum_names', hdr)
-    self.assertIn('const char *myenum_names', src)
-    self.assertIn('"MY_COMMAND",  /* 0x1f */', src)
-
 class CodeGeneratorTest(unittest.TestCase):
   def testInitializeSimpleField(self):
     gen = codegen.CodeGenerator(OPTIONS_NONE)
@@ -322,7 +196,7 @@ class CodegenEndToEnd(unittest.TestCase):
     self.assertNotIn('#define FOO_RESERVED', out)
 
     # Did init function check range of bitfields?
-    self.assertIn('assert(b < 0x4);', out)
+    self.assertIn('assert(b <= 0x3);', out)
     # Did bitfield get initialized?'
     self.assertIn('s->b_to_c = FOO_B_P(b) | FOO_C_P(c);', out)
 
@@ -406,6 +280,8 @@ class CodegenEndToEnd(unittest.TestCase):
                                  input, 'foo.gen', OPTIONS_PACK)
     self.assertIsNotNone(out)
 
+    out = RemoveWhitespace(out)
+
     # Did structure get generated?
     # TODO(bowdidge): Structures with unions should get union-specific
     # constructors.
@@ -483,9 +359,11 @@ class CodegenEndToEnd(unittest.TestCase):
     
     out = generator.GenerateFile(generator.OutputStyleHeader, None,
                                  input, 'foo.gen', OPTIONS_NONE)
+    out = RemoveWhitespace(out)
 
     self.assertIsNotNone(out)
     self.assertIn('uint8_t a;', out)
+
     # Handle differences between clang-format and indent.
     self.assertTrue('uint8_t b : 2;' in out
                     or 'uint8_t b:2' in out)
@@ -510,8 +388,11 @@ class CodegenEndToEnd(unittest.TestCase):
 
     out = generator.GenerateFile(generator.OutputStyleHeader, None,
                                  contents, 'foo.gen', OPTIONS_PACK)
-    self.assertEqual(2, out.count(' BA_init'))
-    self.assertEqual(2, out.count(' BB_init'))
+
+    out = RemoveWhitespace(out)
+
+    self.assertEqual(2, out.count('void BA_init'))
+    self.assertEqual(2, out.count('void BB_init'))
 
   def testSimpleFlags(self):
     contents = [
@@ -534,7 +415,7 @@ class CodegenEndToEnd(unittest.TestCase):
     self.assertIn('static const int D = 0x8;', out)
     self.assertIn('static const int F = 0x20; /* Comment */', out)
     self.assertIn('extern const char *foo_names', out)
-    self.assertIn('const char *foo_names[6] = {', out)
+    self.assertIn('const char *foo_names[] = {', out)
 
   def testFlagsNotPowerOfTwo(self):
     contents = [
@@ -557,12 +438,10 @@ class CodegenEndToEnd(unittest.TestCase):
     self.assertIn('"A", /* 0x1 */', out)
     self.assertIn('"C", /* 0x4 */', out)
     self.assertIn('"D", /* 0x10 */', out)
-    self.assertIn('"0x8", /* 0x8, not defined with flag. */', out)
+    self.assertIn('"undefined", /* 0x8 */', out)
     self.assertNotIn('"AB", /* 0x3 */', out)
-    self.assertIn('extern const char *Foo_names', out)
-    self.assertIn('const char *Foo_names[5] = {', out)
-    self.assertIn('"0x8", /* 0x8, not defined with flag. */', out)
-
+    self.assertIn('extern const char *foo_names', out)
+    self.assertIn('const char *foo_names[] = {', out)
 
 
 class TestComments(unittest.TestCase):
@@ -581,7 +460,6 @@ class TestComments(unittest.TestCase):
 
     out = generator.GenerateFile(generator.OutputStyleHeader, None,
                                  input, 'foo.gen', OPTIONS_PACK)
-
     out = RemoveWhitespace(out)
 
     self.assertIn('/* Body comment. */', out)
@@ -631,6 +509,8 @@ class TestComments(unittest.TestCase):
 
     out = generator.GenerateFile(generator.OutputStyleHeader, None,
                                  input, 'foo.gen', OPTIONS_PACK)
+    out = RemoveWhitespace(out)
+
     self.assertIn('enum values {', out)
     self.assertIn('A = 0x1,' ,out)
     self.assertIn('/* Enum key comment 1 */', out)
@@ -648,6 +528,9 @@ class TestComments(unittest.TestCase):
 
     out = generator.GenerateFile(generator.OutputStyleHeader, None,
                                  contents, 'foo.gen', OPTIONS_PACK)
+
+    out = RemoveWhitespace(out)
+
     self.assertIn('struct Foo f[2];', out)
 
   def disableTestUnknownArrayOfStructs(self):
@@ -696,7 +579,9 @@ class TestComments(unittest.TestCase):
     out = generator.GenerateFile(generator.OutputStyleHeader, None,
                                  contents, 'foo.gen', OPTIONS_PACK)
 
-    self.assertIn('char array[0];\n};', out)
+    out = RemoveWhitespace(out);
+
+    self.assertIn('char array[0]; };', out)
 
   def testPackedError(self):
     contents = [
@@ -724,7 +609,9 @@ class TestComments(unittest.TestCase):
 
     out = RemoveWhitespace(out)
 
-    self.assertIn('bool foo_json_init(struct fun_json *j, struct foo *s)', out)
+    self.assertIn('bool foo_json_init(struct fun_json *j,', out)
+    self.assertIn('struct foo *s)', out)
+
     self.assertIn('struct fun_json *bar_j = fun_json_lookup(j, "bar");', out)
 
   def disableTestNestedJSON(self):
@@ -745,26 +632,7 @@ class TestComments(unittest.TestCase):
     # Should see call to outer and inner init.
     self.assertIn('outer_struct_init(s, ', out)
     self.assertIn('inner_struct_init(&inner_var, ', out)
-    
 
     
-
-class TestIndentString(unittest.TestCase):
-  def testSimple(self):
-    # Tests only properties that hold true regardless of the formatting style.
-    printer = codegen.CodePrinter(None, OPTIONS_NONE)
-    printer.indent = 1
-    self.assertTrue(len(printer.Indent()) > 0)
-
-  def testTwoIndentDoublesOneIndent(self):
-    printer = codegen.CodePrinter(None, OPTIONS_NONE)
-    printer.indent = 1
-    oneIndent = printer.Indent()
-    printer.indent = 2
-    twoIndent = printer.Indent()
-    self.assertEqual(twoIndent, oneIndent + oneIndent)
-
-
-
 if __name__ == '__main__':
     unittest.main()
