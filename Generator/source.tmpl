@@ -16,8 +16,8 @@ Standard Fungible template for source code for generated structures.
 #else
 
 /* For FunOS and CC-Linux. */
-#include <stdint.h>
 #include <assert.h>
+#include <stdint.h>
 
 #endif // __KERNEL__
 
@@ -42,18 +42,17 @@ const char *{{flagset.name | as_lower }}_names[] = {
 {% endfor %}
 
 {% for struct in structs %}
-{% if struct.arg_fields() | length > 0 %}
-  /* Initializes the {{struct.name}} structure.
-
-     Arguments: 
-    {% for field in struct.arg_fields() %}
-       {{field.name}}: {% if field.key_comment %}{{field.key_comment}}{% endif %}
-
-     {% endfor %}
-   */
-  void {{struct.name}}_init(struct {{struct.init_struct().name}} *s, 
+/* Initializes the {{struct.name}} structure.
+ *
+ *  Arguments: 
   {% for field in struct.arg_fields() %}
-    {{field | as_declaration }} {{ ", " if not loop.last }} {% endfor %}) {
+ * {{field.name}}: {% if field.key_comment %}{{field.key_comment}}{% endif %}
+
+  {% endfor %}
+ */
+void {{struct.name}}_init(struct {{struct.init_struct().name}} *s{%if struct.arg_fields() %}, 
+{% for field in struct.arg_fields() %}
+  {{field | as_declaration }} {{ ", " if not loop.last }} {% endfor %}{% endif %}) {
 
   {% for field in struct.arg_fields() %} 
   {# TODO(bowdidge): Only do assert if field isn't natural size. #}
@@ -75,7 +74,6 @@ const char *{{flagset.name | as_lower }}_names[] = {
   {% endfor %}
 }
 
-{% endif %}
 {% if generate_json %}
 /*
  * Initializes {{struct.name}} structure from JSON representation.
@@ -92,13 +90,12 @@ extern bool {{struct.name}}_json_init(struct fun_json *j,
   {{field | as_declaration}} = {{field.name}}_j->int_value;
 {% endfor %}
 
-  {{struct.name}}.init(s
-  {% if struct.arg_fields() %},
-  {% for field in struct.arg_fields() %}{{field.name}}
-    {{", " if not loop.last}}
-   {% endfor %}
-  {% endif %}
-);
+  {{struct.name}}_init(s  {% if struct.arg_fields() %},
+    {% for field in struct.arg_fields() %}{{field.name}}
+      {{", " if not loop.last}}
+         {% endfor %}
+  {% endif %});
+  return true;
 }
 
 {% endif %}
