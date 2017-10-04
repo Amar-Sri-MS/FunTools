@@ -8,7 +8,11 @@ GENERATOR_SRC = generator.py \
 		codegen.py \
 		htmlgen.py \
 		parser.py \
-		utils.py
+		utils.py \
+		header.tmpl \
+		source.tmpl \
+		jinja2/*.py \
+ 		markupsafe/*.py
 
 test: c-checker generator-test c-packed-checker html-checker fun-hci
 
@@ -39,7 +43,7 @@ fun-hci: $(BUILD)
 	./generator.py -g html -o $(BUILD)/fun_hci $(SDKDIR)/hci/fun_hci.gen
 	./generator.py -g code -c pack,json -o $(BUILD)/fun_hci_pack $(SDKDIR)/hci/fun_hci.gen
 	./generator.py -g html -c pack,json -o $(BUILD)/fun_hci_pack $(SDKDIR)/hci/fun_hci.gen
-	
+
 # Tests HTML generation works.
 html-checker: $(BUILD)
 	./generator.py -g html -o $(BUILD)/rdma-gen.html examples/rdma.gen
@@ -54,5 +58,5 @@ install:
 
 
 clean:
-	@rm -rf generator.pyc rdma rdma.dSYM rdma_packed rdma_packed.dSYM \
+	@rm -rf *.pyc */*.pyc rdma rdma.dSYM rdma_packed rdma_packed.dSYM \
 	    rdma.h rdma rdma_gen.[hc] rdma_packed_gen.[hc]

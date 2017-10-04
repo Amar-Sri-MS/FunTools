@@ -8,9 +8,10 @@
  * Copyright Fungible Inc. 2016.
  */
 
-#import <stdlib.h>
-#import <stdio.h>
-#import <stddef.h> // offsetof
+#include <stddef.h> // offsetof
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <strings.h> // bzero.
 
 #import "rdma_gen.h"

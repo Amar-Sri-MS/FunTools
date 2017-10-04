@@ -15,6 +15,7 @@ def AsGuardName(filename):
 def AsUppercaseMacro(the_str):
   if not the_str:
     return ''
+
   # Convert a CamelCase name to all uppercase with underbars.
   s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', the_str)
   s2 = re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()

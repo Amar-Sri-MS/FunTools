@@ -24,6 +24,10 @@ import htmlgen
 import parser
 import utils
 
+from jinja2 import Environment
+from jinja2 import FileSystemLoader
+from jinja2 import Template
+
 # Fake value for width of field, used when we can't define the value
 # correctly on creation.
 FAKE_WIDTH = 8675309
@@ -291,9 +295,12 @@ class Packer:
         if f == fields[0]:
           new_field.packed_fields.append(f)
           the_struct.fields[i] = new_field
+          new_field.parent_struct = the_struct
+          f.packed_field = new_field
           break
       for f in fields[1:]:
         new_field.packed_fields.append(f)
+        f.packed_field = new_field
         the_struct.fields.remove(f)
 
 
@@ -397,8 +404,9 @@ class DocBuilder:
                                0, 0)
       new_field.line_number = self.current_line
 
-      containing_object.fields.append(new_field)
+      containing_object.AddField(new_field)
       current_struct.inline = True
+      current_struct.parent_struct = containing_object
 
     # TODO(bowdidge): Instantiate field with struct if necessary.
     # Need to pass variable.
@@ -499,7 +507,7 @@ class DocBuilder:
 
     Use the state on top of the stack to decide what to do.
     """
-    (state, containing_struct) = self.stack[len(self.stack)-1]
+    (state, containing_decl) = self.stack[len(self.stack)-1]
     if line.startswith('//'):
       self.current_comment += self.StripKeyComment(line)
     elif state == DocBuilderTopLevel:
@@ -507,11 +515,11 @@ class DocBuilder:
     elif state == DocBuilderStateEnum or state == DocBuilderStateFlagSet:
       enum = self.ParseEnumLine(line)
       if enum is not None:
-        containing_struct.variables.append(enum)
+        containing_decl.AddVariable(enum)
     else:
       # Try parsing as continuation of previous field
-      if (not self.ParseMultiFlitFieldLine(line, containing_struct) and
-          not self.ParseFieldLine(line, containing_struct)):
+      if (not self.ParseMultiFlitFieldLine(line, containing_decl) and
+          not self.ParseFieldLine(line, containing_decl)):
         self.AddError('Invalid line: "%s"' % line)
         return
 
@@ -587,7 +595,9 @@ class DocBuilder:
       new_field = parser.Field(variable, self.MakeType(identifier), 0, 0)
       new_field.line_number = self.current_line
       containing_object.fields.append(new_field)
+
       current_union.inline = True
+      current_union.parent_struct = containing_object
 
   def StripKeyComment(self, the_str):
     """Removes C commenting from the comment at the end of a line.
@@ -753,7 +763,7 @@ class DocBuilder:
       zero_array.no_offset = True
       zero_array.key_comment = key_comment
       zero_array.body_comment = body_comment
-      containing_struct.fields.append(zero_array)
+      containing_struct.AddField(zero_array)
       return True
 
     result = utils.ParseBitSpec(flit_bit_spec_str)
@@ -812,7 +822,7 @@ class DocBuilder:
         new_field.name, new_field.BitWidth(), new_field.type.TypeName(),
         new_field.type.BitWidth())
       self.AddError(warning)
-    containing_struct.fields.append(new_field)
+    containing_struct.AddField(new_field)
     return True
 
   def ParsePlainLine(self, line):
@@ -898,6 +908,7 @@ def ReformatCodeWithIndent(source):
           # Don't format comments, get rid of extra blank lines.
           # Don't add whitespace in the middle of declarations.
           '-nsc', '-sob', '-di0']
+
   p = subprocess.Popen(args,
                        stdout=subprocess.PIPE,
                        stdin=subprocess.PIPE,
@@ -942,11 +953,72 @@ def ReformatCodeWithClangFormat(source):
                        bufsize=1)
   # Make sure there's a line feed after last line.
   out = p.communicate(source + '\n')
+  # If there was an indent fail
+  if (p.returncode != 0):
+    print "%s returned error %d, ignoring output" % (indent_path, p.returncode)
+    return None
+
   return out[0]
+
+def GenerateFromTemplate(doc, template_filename, generator_file, output_base,
+                         extra_vars):
+  """Creates source file and header for parsed gen file from templates.
+  doc: reference to parsed gen file.
+  template_filename: the file containing the template to render.
+  generator_file: name of the .gen file, used for identifying origins in code.
+  output_base: prefix to use on output file
+  extra_vars: array of additional variables to set in template.
+  """
+  this_dir = os.path.dirname(os.path.abspath(__file__))
+
+  env = Environment(loader=FileSystemLoader(this_dir))
+  env.lstrip_blocks = True
+  env.trim_blocks = True
+
+  # Filters - to do more complex transformations.
+  # Filers for strings and names.
+  env.filters['as_macro'] = utils.AsUppercaseMacro
+  env.filters['as_html'] = utils.AsHTMLComment
+  env.filters['as_line'] = utils.AsLine
+  env.filters['as_lower'] = utils.AsLower
+  env.filters['as_comment'] = utils.AsComment
+
+  # Filters for numbers.
+  env.filters['as_hex'] = lambda num: "0x%x" % num
+
+  # Filters for declarations.
+  env.filters['as_definition'] = lambda decl : decl.DefinitionString()
+  env.filters['as_declaration'] = lambda decl : decl.DeclarationString()
+  env.filters['as_cast'] = lambda type : type.CastString()
+
+  if output_base:
+    output_base = os.path.basename(output_base)
+  else:
+    output_base = 'foo_gen'
+
+  jinja_docs = {
+    'gen_file' : os.path.basename(generator_file),
+    'output_base' : output_base,
+    'original_filename' : generator_file,
+    'enums': doc.Enums(),
+    'flagsets': doc.Flagsets(),
+    'structs' : [x for x in doc.Structs() if not x.is_union],
+    'extra_vars': extra_vars
+    }
+
+  for var in extra_vars:
+    jinja_docs[var] = True
+
+  template = env.get_template(template_filename)
+  return template.render(jinja_docs, env=env)
 
 # TODO(bowdidge): Create options dictionary to replace all these arguments.
 def GenerateFile(output_style, output_base, input_stream, input_filename,
                  options):
+  """Generate header or HTML based on options.
+
+  Return the generated source (if output_base was None) or None.
+  """
   # Process a single .gen file and create the appropriate header/docs.
   doc_builder = DocBuilder()
 
@@ -972,22 +1044,29 @@ def GenerateFile(output_style, output_base, input_stream, input_filename,
       for error in errors:
         sys.stderr.write(error + '\n')
 
-  helper = codegen.CodeGenerator(options)
-  helper.VisitDocument(doc)
-
+  # Convert list of extra codegen features into variables named
+  #  generate_{{codegen-style}} that will be in the template.
+  extra_vars = ['generate_' + o for o in options]
   if output_style is OutputStyleHTML:
     html_generator = htmlgen.HTMLGenerator()
-    code = html_generator.VisitDocument(doc)
+    codegen.CodeGenerator(options)
+    source = html_generator.VisitDocument(doc)
     if output_base:
-      f = open(output_base + '.html', 'w')
-      f.write(code)
+      fname = output_base + '.html'
+      f = open(fname, 'w')
+      f.write(source)
       f.close()
     else:
-      return code
+      return source
   elif output_style is OutputStyleHeader:
-    code_generator = codegen.CodePrinter(output_base, options)
-    code_generator.output_file = output_base
-    (header, source) = code_generator.VisitDocument(doc)
+    header = GenerateFromTemplate(doc, 'header.tmpl', input_filename,
+                                  output_base, extra_vars)
+    source = GenerateFromTemplate(doc, 'source.tmpl', input_filename,
+                                  output_base, extra_vars)
+
+    if not header or not source:
+      print("Not generating header and source -errors.")
+      return None
 
     header = ReformatCode(header)
     source = ReformatCode(source)
@@ -999,12 +1078,14 @@ def GenerateFile(output_style, output_base, input_stream, input_filename,
       f = open(output_base + '.c', 'w')
       f.write(source)
       f.close()
-    else:
-      return '/* Header file */\n' +  header + '/* Source file */\n' + source
-    return None
+      return None
+
+    return '/* Header file */\n' +  header + '/* Source file */\n' + source
+
 
 OutputStyleHeader = 1
 OutputStyleHTML = 2
+
 
 def SetFromArgs(key, codegen_args, default_value):
   """Returns whether setting 'key' should be set based on provided args.

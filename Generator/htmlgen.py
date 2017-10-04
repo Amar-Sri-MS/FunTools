@@ -364,7 +364,7 @@ dd {
     out += '<table class="bitfieldTable">\n'
     out += '<tr><th>Name</th><th>Value</th><th>Bit pattern</th></tr>\n'
     for var in flagset.variables:
-      max_bits = utils.MaxBit(flagset.MaxValue())
+      max_bits = utils.MaxBit(flagset.max_value)
       bit_pattern = ' '.join(utils.BitPatternString(var.value, max_bits))
       
       out += '<tr><td>%s</td><td>0x%08x</td><td>%s</td></tr>\n' % (var.name, var.value, bit_pattern)
