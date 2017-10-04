@@ -139,42 +139,5 @@ class PackedNameTest(unittest.TestCase):
     self.assertEqual('pre_pack',
                      generator.ChoosePackedFieldName(fields))
 
-
-class StringTest(unittest.TestCase):
-  def testDeclarationString(self):
-    inner = parser.Struct('container', False)
-
-    struct = parser.Struct('my_struct', False)
-    field1 = parser.Field('simple', parser.TypeForName('uint32_t'), 0, 32)
-    field2 = parser.Field('array', parser.ArrayTypeForName('uint8_t', 4),
-                          32, 32)
-    field3 = parser.Field('c', parser.RecordTypeForStruct(inner),
-                          64, 64)
-    struct.AddField(field1)
-    struct.AddField(field2)
-    struct.AddField(field3)
-
-    self.assertEqual('struct my_struct {\n'
-                     '  uint32_t simple;\n'
-                     '  uint8_t array[4];\n'
-                     '\n'  # Blank line between flits.
-                     '  struct container c;\n'
-                     '}', struct.DefinitionString())
-    self.assertEqual('struct my_struct', struct.DeclarationString())
-
-    self.assertEqual('uint32_t simple;\n', field1.DefinitionString())
-    self.assertEqual('uint32_t simple', field1.DeclarationString())
-
-    self.assertEqual('uint8_t array[4];\n', field2.DefinitionString())
-    self.assertEqual('uint8_t array[4]', field2.DeclarationString())
-
-    self.assertEqual('struct container c;\n', field3.DefinitionString())
-    self.assertEqual('struct container c', field3.DeclarationString())
-
-    container_type = parser.RecordTypeForStruct(inner)
-    self.assertEqual('(struct container)', container_type.CastString())
-    uint8_type = parser.TypeForName('uint8_t')
-    self.assertEqual('(uint8_t)', uint8_type.CastString())
-
 if __name__ == '__main__':
     unittest.main()

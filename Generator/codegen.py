@@ -11,8 +11,283 @@ import generator
 import parser
 import utils
 
-# TODO(bowdidge): Remove CodeGenerator after switching HTML generation to
-# templates.
+class CodePrinter:
+  # Pretty-prints a parsed structure description into C headers.
+  # The generated code should match the Linux coding style.
+
+  def __init__(self, output_file_base, options):
+    self.indent = 0
+    # Prefix of files to create.
+    self.output_file_base = output_file_base
+    self.generate_json = 'json' in options
+
+  def Indent(self):
+    """Generates indenting spaces needed for current level of code."""
+    return '\t' * self.indent
+
+  def PrintIndent(self, str):
+    """Prints the provided (possibly multi-line) string with uniform indenting."""
+    result = ''
+    for l in str.split('\n'):
+      result += self.Indent() + l + '\n'
+    return result.rstrip('\n \t')
+
+  def IncrementIndent(self):
+    """Add another level of indenting to everything printed."""
+    self.indent += 1
+
+  def DecrementIndent(self):
+    """Remove a level of indenting from everything printed."""
+    self.indent -= 1
+
+  def VisitDocument(self, doc):
+    """Pretty-print a document.  Returns code as (header, source)."""
+    indent = 0
+    # stdlib.h is needed for type names.
+    hdr_out = ''
+    src_out = ''
+
+    hdr_out += ("""
+// Header created by generator.py
+// Do not change this file;
+// change the gen file "%s" instead.
+
+""") % doc.filename
+
+    src_out += ("""
+// Header created by generator.py
+// Do not change this file;
+// change the gen file "%s" instead.
+
+#ifdef __KERNEL__
+/* For Linux kernel */
+#define assert(x)
+
+#include <linux/types.h>
+
+#else
+
+/* For FunOS and CC-Linux. */
+#include <stdint.h>
+#include <assert.h>
+
+#endif // __KERNEL__
+
+""") % doc.filename
+
+    if self.output_file_base:
+      header_file = os.path.basename(self.output_file_base) + '.h'
+      src_out += '#include "%s"\n\n' % (header_file)
+
+      include_guard_name = utils.AsGuardName(header_file)
+      hdr_out += '#ifndef %s\n' % include_guard_name
+      hdr_out += '#define %s\n' % include_guard_name
+
+    if self.generate_json:
+      hdr_out += '#include <utils/threaded/fun_json.h>\n\n'
+
+    hdr_out += '\n'
+
+    for enum in doc.Enums():
+      (hdr, src) = self.VisitEnum(enum)
+      hdr_out += hdr
+      src_out += src
+
+    for flagset in doc.Flagsets():
+      (hdr, src) = self.VisitFlagSet(flagset)
+      hdr_out += hdr
+      src_out += src
+
+    hdr_out += '\n'
+
+    for struct in doc.Structs():
+      if not struct.inline:
+        (hdr, src) = self.VisitStruct(struct)
+        hdr_out += hdr
+        src_out += src
+
+    hdr_out += '\n'
+
+    if self.output_file_base is not None:
+      hdr_out += '#endif // %s' % include_guard_name
+
+    return (hdr_out, src_out)
+
+  def VisitEnum(self, enum):
+    # Pretty print an enum declaration.  Returns enum as string.
+    src_out = ''
+    hdr_out = 'enum %s {\n' % enum.name
+    self.IncrementIndent()
+    for enum_variable in enum.variables:
+      hdr_out += self.VisitEnumVariable(enum_variable)
+    if enum.tail_comment:
+      hdr_out += self.PrintIndent(utils.AsComment(enum.tail_comment)) + '\n'
+    hdr_out += '};\n\n'
+    self.DecrementIndent()
+
+    for func in enum.functions:
+      hdr_out += utils.AsComment(func.body_comment) + '\n'
+      hdr_out += func.declaration + '\n\n'
+      src_out += func.definition + '\n\n'
+    
+    return (hdr_out, src_out)
+
+  def VisitFlagSet(self, flagset):
+    # Pretty-print a flagset declaration.  Returns flag set as string.
+    # For flags, we define const ints for each value, and a *_names array
+    # that provides a string value for each power of two.
+    src_out = ''
+    hdr_out = ''
+
+    hdr_out += '/* Declarations for flag set %s */\n' % flagset.name
+    if flagset.key_comment:
+      hdr_out += utils.AsComment(flagset.key_comment) + '\n'
+    if flagset.body_comment:
+      hdr_out += utils.AsComment(flagset.body_comment) + '\n'
+
+    for var in flagset.variables:
+      if var.body_comment:
+        hdr_out += utils.AsComment(var.body_comment) + '\n'
+      key_comment = ''
+      if var.key_comment:
+        key_comment = '  /* ' + var.key_comment + ' */'
+      hdr_out += 'static const int %s = 0x%x;%s\n' % (var.name,
+                                                      var.value,
+                                                      key_comment)
+    hdr_out += '\n'
+
+    max_bits = utils.MaxBit(flagset.MaxValue())
+    hdr_out += '/* String names for all power-of-two flags in %s. */\n' % flagset.name
+    hdr_out += 'extern const char *%s_names[%d];' % (flagset.name, max_bits)
+    src_out += 'const char *%s_names[%d] = {\n' % (flagset.name, max_bits)
+
+    for i in range(0, utils.MaxBit(flagset.MaxValue())):
+      next_value = 1 << i
+      found = False
+      for var in flagset.variables:
+        if next_value == var.value:
+          src_out += '\t"%s",  /* 0x%x */ \n' % (var.name, var.value)
+          found = True
+          break
+      if not found:
+        src_out += '\t"0x%x",  /* 0x%x, not defined with flag. */ \n' % (next_value, next_value)
+
+    src_out += '};\n'
+
+    hdr_out += '\n'
+    src_out += '\n'
+
+    return (hdr_out, src_out)
+
+  def VisitEnumVariable(self, enum_variable):
+    """Pretty-print a structure or union field declaration.  Returns string."""
+    hdr_out = ''
+    if enum_variable.body_comment != None:
+      hdr_out += self.PrintIndent(utils.AsComment(enum_variable.body_comment)) + '\n'
+    hdr_out = self.Indent() + '%s = 0x%x,' % (enum_variable.name, enum_variable.value)
+    if enum_variable.key_comment != None:
+      hdr_out += ' ' + utils.AsComment(enum_variable.key_comment)
+    hdr_out += '\n'
+    return hdr_out
+
+  def VisitStructRaw(self, the_struct):
+    """Generate a structure without the semicolon.
+
+    This routine lets us have one way to print inline and standalone structs.
+    """
+    hdr_out = ''
+    src_out = ''
+    if the_struct.key_comment:
+      hdr_out += self.PrintIndent(utils.AsComment(the_struct.key_comment)) + '\n'
+
+    if the_struct.body_comment:
+      hdr_out += self.PrintIndent(utils.AsComment(the_struct.body_comment)) + '\n'
+
+    hdr_out += self.Indent() + the_struct.Tag() + ' %s {\n' % the_struct.name
+
+    flit_for_last_field = 0
+    for field in the_struct.fields:
+      # Add blank line between flits.
+      if field.StartFlit() != flit_for_last_field:
+        hdr_out += '\n'
+
+      self.IncrementIndent()
+      hdr_out += self.VisitField(field)
+      self.DecrementIndent()
+
+      flit_for_last_field = field.StartFlit()
+
+    if the_struct.tail_comment:
+      self.IncrementIndent()
+      hdr_out += self.PrintIndent(utils.AsComment(the_struct.tail_comment)) + '\n'
+      self.DecrementIndent()
+
+    hdr_out += self.Indent() + '}'
+    return hdr_out
+
+  def VisitStruct(self, the_struct):
+    """Pretty-print a structure declaration.  Returns string."""
+    hdr_out = ''
+    src_out = ''
+
+    hdr_out += self.VisitStructRaw(the_struct)
+
+    var_str = ''
+    hdr_out += ';\n'
+
+    for s in [the_struct] + the_struct.NestedStructs():
+      for macro in s.macros:
+        if macro.body_comment:
+          hdr_out += utils.AsComment(macro.body_comment) + '\n'
+        hdr_out += macro.body + '\n\n'
+
+    for function in the_struct.functions:
+      hdr_out += utils.AsComment(function.body_comment) + '\n'
+      hdr_out += function.declaration + '\n'
+      src_out += function.definition + '\n'
+
+    return (hdr_out, src_out)
+
+  def VisitField(self, field):
+    """Pretty-print a field in a structure or union.  Returns string."""
+    hdr_out = ''
+    field_type = field.Type()
+    type_name = field_type.DeclarationName();
+
+    if field_type.IsRecord():
+      struct = field_type.base_type.node
+      if struct.inline:
+        type_name = self.VisitStructRaw(struct)
+
+    if field.generator_comment is not None:
+      hdr_out += self.PrintIndent(utils.AsComment(field.generator_comment)) + '\n'
+
+    if field.body_comment is not None:
+      # TODO(bowdidge): Break long comment.
+      hdr_out += self.PrintIndent(utils.AsComment(field.body_comment)) + '\n'
+
+    key_comment = ''
+    if field.key_comment is not None:
+      key_comment = ' ' + utils.AsComment(field.key_comment)
+
+    if field.type.IsArray():
+      hdr_out += self.Indent() + '%s %s[%d];%s\n' % (type_name,
+                                                     field.name,
+                                                     field.type.ArraySize(),
+                                                     key_comment)
+    else:
+      var_width = field.BitWidth()
+      type_width = field.type.BitWidth()
+
+      var_bits = ''
+      if field.type.IsScalar() and type_width != var_width:
+        var_bits = ' : %d' % var_width
+      hdr_out += self.Indent() + '%s %s%s;%s\n' % (type_name,
+                                                   field.name, var_bits,
+                                                   key_comment)
+
+    return hdr_out
+
 class CodeGenerator:
   """Generates helper functions for manipulating structures."""
   def __init__(self, options):
@@ -70,7 +345,7 @@ class CodeGenerator:
       shift_name = '%s_S' % ident
       shift = '#define %s %s' % (shift_name, old_field.EndBit() - min_end_bit)
       mask_name = '%s_M' % ident
-      mask = '#define %s %s' % (mask_name, old_field.mask)
+      mask = '#define %s %s' % (mask_name, old_field.Mask())
       value_name = '%s_P' % ident
       value = '#define %s(x) (((%s) x) << %s)' % (value_name, packed_type_name,
                                                   shift_name)
@@ -169,7 +444,7 @@ class CodeGenerator:
     arg_list.append('struct %s *s' % the_struct.name)
 
     # Pass in all non-packed fields.
-    for field in the_struct.FieldsBeforePacking():
+    for field in the_struct.AllFields():
       if not field.is_reserved and field.type.IsScalar():
         all_fields.append(field)
 
@@ -179,7 +454,7 @@ class CodeGenerator:
       (accessor_prefix, struct_field) = (
         the_struct.MatchingStructInUnionField(struct_in_union))
 
-      for field in struct_in_union.FieldsBeforePacking():
+      for field in struct_in_union.AllFields():
         if not field.is_reserved and field.type.IsScalar():
           all_fields.append(field)
 
@@ -248,12 +523,15 @@ class CodeGenerator:
     arg_list.append('struct fun_json *j')
     arg_list.append('struct %s *s' % struct_name)
     inits = []
-    for field in the_struct.init_fields():
+    for field in the_struct.AllFields():
+      if field.is_reserved or not field.type.IsScalar():
+        continue
       inits.append(self.GenerateJSONInitializer(the_struct, field,
                                                 accessor_prefix))
 
     init_fields = ['s']
-    init_fields += the_struct.init_fields()
+    init_fields += [f.name for f in the_struct.AllFields()
+                    if f.type.IsScalar() and not f.is_reserved]
 
     final_init = '\t%s(%s);\n' % (self.InitializerName(the_struct.name),
                                   ', '.join(init_fields))
