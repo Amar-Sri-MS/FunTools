@@ -18,6 +18,17 @@ class DKFunctionFilter: DKFunction {
 	override var signature: DKTypeSignature {
 		return DKTypeSignature(input: paramsType, output: sequenceType)
 	}
+	class func canBeFilterAndPredicateSignature(_ type: DKType) -> DKTypeSignature! {
+		if let signature = type as? DKTypeSignature {
+			let seqType = signature.output
+			if signature.numberOfArguments != 1 || !(signature.input[0] is DKTypeSequence) || (signature.input[0] != seqType) {
+				return nil
+			}
+			let itemType = (seqType as! DKTypeSequence).sub
+			return DKTypeSignature(input: DKTypeStruct(funcParamType: itemType), output: DKTypeInt.bool)
+		}
+		return nil
+	}
 	override var functionToJSONDict: [String: JSON] {
 		return [
 			"filter": predicate.functionToJSON

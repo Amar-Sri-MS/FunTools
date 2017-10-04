@@ -23,6 +23,25 @@ class DKFunctionMap: DKFunction {
 	override var signature: DKTypeSignature {
 		return DKTypeSignature(input: paramsType, output: outputSequenceType)
 	}
+	class func canBeMapAndPredicateSignature(_ type: DKType) -> DKTypeSignature! {
+		if let signature = type as? DKTypeSignature {
+			let outputSequenceType = signature.output
+			if signature.numberOfArguments != 1 || !(signature.input[0] is DKTypeSequence) {
+				return nil
+			}
+			let inputItemType = (signature.input[0] as! DKTypeSequence).sub
+			if outputSequenceType == DKType.void {
+				return DKTypeSignature(input: DKTypeStruct(funcParamType: inputItemType), output: DKType.void)
+			}
+			if let s = outputSequenceType as? DKTypeSequence {
+				let outputItemType = s.sub
+				return DKTypeSignature(input: DKTypeStruct(funcParamType: inputItemType), output: outputItemType)
+			} else {
+				return nil
+			}
+		}
+		return nil
+	}
 	override var functionToJSONDict: [String: JSON] {
 		return [
 			"map": each.functionToJSON

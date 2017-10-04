@@ -52,6 +52,9 @@ class DKComparisonOperator: DKOperator {
 		}
 		return false
 	}
+	class var operatorStrings: Set<String> {
+		return ["==", "!=", "<", ">", "<=", ">="]
+	}
 }
 
 

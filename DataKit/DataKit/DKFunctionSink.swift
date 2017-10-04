@@ -22,6 +22,15 @@ class DKFunctionSink: DKFunction {
 	override var signature: DKTypeSignature {
 		return DKTypeSignature(input: DKTypeStruct(funcParamType: itemType.makeSequence), output: .void)
 	}
+	class func canBeSinkAndItemType(_ type: DKType) -> DKType! {
+		if let signature = type as? DKTypeSignature {
+			if signature.numberOfArguments != 1 { return nil }
+			if signature.output != DKType.void { return nil }
+			let seqType = signature.input[0] as? DKTypeSequence
+			return seqType?.sub
+		}
+		return nil
+	}
 	override var functionToJSONDict: [String: JSON] {
 		return [
 			"sink": .string(name),

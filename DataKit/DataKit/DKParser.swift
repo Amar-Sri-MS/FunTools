@@ -17,14 +17,24 @@ class DKParser {
 		lexerState = lexer.makeIterator()
 		self.uniquingTable = uniquingTable
 	}
-	func parseType() throws -> DKType {
-		let t = try parseTypeInternal()
-		if token == nil { return t }
-		throw DKParsingError("Malformed type, after \(t)", token)
+	func parseJustType() throws -> DKType {
+		let t = try parseType()
+		try expectEOF()
+		return t
+	}
+	func parseJustValue(_ type: DKType) throws -> DKValue {
+		let v = try parseValue(type)
+		try expectEOF()
+		return v
+	}
+	func parseJustFunction(_ signature: DKTypeSignature!) throws -> DKFunction {
+		let f = try parseFunction(signature)
+		try expectEOF()
+		return f
 	}
 }
 
-/*=============== PRIVATE IMPLEMENTATION ===============*/
+/*=============== UTILITIES ===============*/
 
 extension DKParser {
 	var token: LexerToken! {
@@ -54,24 +64,54 @@ extension DKParser {
 		}
 		accept()
 	}
-	func parseIdent() -> String! {
+	func maybeIdent() -> String! {
 		if token == nil { return nil }
 		switch token!.type {
 		case let .identifier(s): return s
 		default: return nil
 		}
 	}
-	func parseTypeInternal() throws -> DKType {
-		// A type is:
-		// - a predefined name like UInt8
-		// - a type constructor like Int(8)
-		// - a struct like (first: String, last: String) or (String, String)
-		// - a sequence like [String]
-		// - a signature like T -> U
+	func parseIdent() throws -> String {
+		let s = maybeIdent()
+		if s == nil {
+			throw DKParsingError("Expected identifier", token)
+		}
+		accept()
+		return s!
+	}
+	func parseNumber() throws -> UInt64 {
+		if token == nil {
+			throw DKParsingError("Expecting number", token)
+		}
+		switch token!.type {
+		case let .natural(n):
+			accept()
+			return n
+		default: throw DKParsingError("Expecting number", token)
+		}
+	}
+	func expectEOF() throws {
+		if token != nil {
+			throw DKParsingError("Extraneous token", token)
+		}
+	}
+}
+
+/*=============== TYPES ===============*/
+
+// A type is:
+// - a predefined name like UInt8
+// - a type constructor like Int(8)
+// - a struct like (first: String, last: String) or (String, String)
+// - a sequence like [String]
+// - a signature like T -> U
+
+extension DKParser {
+	func parseType() throws -> DKType {
 		if token == nil {
 			throw DKParsingError("Malformed type, no token found", token)
 		}
-		let s = parseIdent()
+		let s = maybeIdent()
 		if s != nil {
 			accept()
 			let t = try finishParsingPredefOrConstructor(s!)
@@ -92,7 +132,7 @@ extension DKParser {
 	func maybeMakeSignature(_ base: DKTypeStruct) throws -> DKType {
 		if peekReservedWord("->") {
 			accept()
-			let u = try parseTypeInternal()
+			let u = try parseType()
 			let params = base.realignForFuncParams()
 			return DKTypeSignature(input: params, output: u)
 		}
@@ -137,7 +177,7 @@ extension DKParser {
 	}
 	func parseTypeSequence() throws -> DKTypeSequence {
 		try expectReservedWord("[")
-		let t = try parseTypeInternal()
+		let t = try parseType()
 		try expectReservedWord("]")
 		return DKTypeSequence(subType: t)
 	}
@@ -145,14 +185,14 @@ extension DKParser {
 		try expectReservedWord("(")
 		var names: [String]! = nil
 		var types: [DKType] = []
-		let f = parseIdent()
+		let f = maybeIdent()
 		if f != nil {
 			// We could have ':' for a field name, or not, in which case we have a type
 			accept()
 			if peekReservedWord(":") {
 				accept()
 				names = [f!]
-				let t = try parseTypeInternal()
+				let t = try parseType()
 				types |= t
 			} else {
 				let t = try finishParsingPredefOrConstructor(f!)
@@ -162,28 +202,264 @@ extension DKParser {
 			accept()
 			return DKTypeStruct.void
 		} else {
-			let t = try parseTypeInternal()
+			let t = try parseType()
 			types |= t
 		}
 		while peekReservedWord(",") {
 			accept()
 			if names == nil {
-				let t = try parseTypeInternal()
+				let t = try parseType()
 				types |= t
 			} else {
-				let f = parseIdent()
+				let f = maybeIdent()
 				if f == nil {
 					throw DKParsingError("Expecting field name", token)
 				}
 				accept()
 				try expectReservedWord(":")
-				let t = try parseTypeInternal()
+				let t = try parseType()
 				names! |= f!
 				types |= t
 			}
 		}
 		try expectReservedWord(")")
 		return DKTypeStruct(subTypes: types, subNames: names)
+	}
+}
+
+/*=============== VALUES ===============*/
+
+// A value is:
+// - a predefined name like nil, true, false
+// - a number like 42
+// - a string like "Donald"
+// - a struct like ("Abraham", "Lincoln")
+// - a sequence like [1, 2, 3]
+
+// TODO: real, functions
+
+extension DKParser {
+	func parseValue(_ type: DKType) throws -> DKValue {
+		if token == nil {
+			throw DKParsingError("Expecting value", token)
+		}
+		switch token!.type {
+		case let .natural(n):
+			accept()
+			return DKValueSimple(type: type, value: n)
+		case let .stringLiteral(s):
+			accept()
+			if type != DKTypeString.string {
+				throw DKParsingError("Parsed a string '\(s)' instead of a value of type \(type)", token)
+			}
+			return DKValueSimple(s)
+		case let .identifier(s):
+			accept()
+			if s == "nil" {
+				if type != DKType.void {
+					throw DKParsingError("Parsed nil instead of a value of type \(type)", token)
+				}
+				return .null
+			}
+			if s == "true" || s == "false" {
+				if type != DKTypeInt.bool {
+					throw DKParsingError("Parsed a bool '\(s)' instead of a value of type \(type)", token)
+				}
+				return .bool(s == "true")
+			}
+			throw DKParsingError("Unexpect identifier '\(s)' for value", token)
+		case let .reservedWord(s):
+			if s == "(" {
+				if !(type is DKTypeStruct) {
+					throw DKParsingError("Parsing a struct not \(type)", token)
+				}
+				return try parseValueStruct(type as! DKTypeStruct)
+			}
+			if s == "[" {
+				if !(type is DKTypeSequence) {
+					throw DKParsingError("Parsing an array not \(type)", token)
+				}
+				return try parseValueSequence(type as! DKTypeSequence)
+			}
+			throw DKParsingError("Unexpected word '\(s)' for value", token)
+		default:
+			throw DKParsingError("Unexpected token for value", token)
+		}
+	}
+	func parseValueStruct(_ type: DKTypeStruct) throws -> DKValue {
+		try expectReservedWord("(")
+		var jsons: [JSON] = []
+		for t in type.subs {
+			let v = try parseValue(t)
+			jsons |= v.rawValueToJSON
+			if peekReservedWord(")") { break }
+			try expectReservedWord(",")
+		}
+		if jsons.count != type.subs.count {
+			throw DKParsingError("Missing subvalues after \(jsons) for struct \(type)", token)
+		}
+		try expectReservedWord(")")
+		return DKValueSimple(type: type, json: .array(jsons))
+	}
+	func parseValueSequence(_ type: DKTypeSequence) throws -> DKValue {
+		try expectReservedWord("[")
+		var jsons: [JSON] = []
+		while !peekReservedWord("]") {
+			let v = try parseValue(type.sub)
+			jsons |= v.rawValueToJSON
+			if peekReservedWord("]") { break }
+			try expectReservedWord(",")
+		}
+		try expectReservedWord("]")
+		return DKValueSimple(type: type, json: .array(jsons))
+	}
+}
+
+/*=============== FUNCTIONS ===============*/
+
+// A function may be given a signature, or have an explicit type: <signature> | <body>
+// The body can be:
+// - an operator like + - * / && || ^ ! | < > == != <= >=
+// - a projection like .first_name
+// - a functional constructor like filter(<predicate>) or map(.first_name) or compose(<f1>, <f2>)
+//TODO
+// - a closure
+
+extension DKParser {
+	func parseFunction(_ signature: DKTypeSignature!) throws -> DKFunction {
+		var sig = signature
+		if sig == nil {
+			let t = try parseType()
+			if !(t is DKTypeSignature) {
+				throw DKParsingError("Function type is not a signature \(t)", token)
+			}
+			sig = t as? DKTypeSignature
+			try expectReservedWord("|")
+		}
+		return try parseFunctionBody(sig!)
+	}
+	func parseFunctionBody(_ signature: DKTypeSignature) throws -> DKFunction {
+		if token == nil {
+			throw DKParsingError("Parsing function: premature end", token)
+		}
+		switch token!.type {
+		case let .identifier(s):
+			return try parseFunctionConstructor(s, signature)
+		case let .punctuation(ch):
+			if ch == "." {
+				return try parseProjection(signature)
+			}
+			let s = String(ch)
+			if DKOperator.allOperatorStrings.contains(s) {
+				accept()
+				return try! parseOperatorFunction(s, signature)
+			}
+			throw DKParsingError("Function can't start with punctuation \(s) - signature \(signature)", token)
+		case let .reservedWord(s):
+			if DKOperator.allOperatorStrings.contains(s) {
+				accept()
+				return try! parseOperatorFunction(s, signature)
+			}
+			throw DKParsingError("Function can't start with word \(s) - signature \(signature)", token)
+		default: throw DKParsingError("Unknown function", token)
+		}
+	}
+	func parseOperatorFunction(_ op: String, _ signature: DKTypeSignature) throws -> DKFunction {
+		if signature.output == DKTypeInt.bool && signature.numberOfArguments == 2 && signature.input[0] == signature.input[1] {
+			let f = DKComparisonOperator(domain: signature.input[0], op: op)
+			if f != nil { return DKFunctionOperator(oper: f!, uniquingTable) }
+		}
+		let f = DKAlgebraicOperator(domain: signature.output, op: op, arity: signature.numberOfArguments)
+		if f != nil { return DKFunctionOperator(oper: f!, uniquingTable) }
+		throw DKParsingError("Can't find operator '\(op)' with signature \(signature)", token)
+	}
+	func parseFunctionConstructor(_ s: String, _ signature: DKTypeSignature) throws -> DKFunction {
+		enum Genre { case unary; case bookend }
+		let constructors: [String: Genre] = [
+			"filter": .unary,
+			"map": .unary,
+			"generator": .bookend,
+			"sink": .bookend
+		]
+		let genre = constructors[s]
+		if genre != nil {
+			accept()
+			try expectReservedWord("(")
+			var f: DKFunction
+			switch genre! {
+			case .unary: f = try parseUnaryFunctionConstructor(s, signature)
+			case .bookend: f = try parseSinkOrGen(s == "sink", signature)
+			}
+			try expectReservedWord(")")
+			return f
+		}
+		throw DKParsingError("Unknown function constructor '\(s)' with signature \(signature)", token)
+	}
+	func parseUnaryFunctionConstructor(_ s: String, _ signature: DKTypeSignature) throws -> DKFunction {
+		if s == "filter" {
+			let predSig = DKFunctionFilter.canBeFilterAndPredicateSignature(signature)
+			if predSig == nil {
+				throw DKParsingError("Filter has wrong signature \(signature)", token)
+			}
+			let pred = try parseFunction(predSig)
+			return DKFunctionFilter(predicate: pred)
+		}
+		if s == "map" {
+			let eachSig = DKFunctionMap.canBeMapAndPredicateSignature(signature)
+			if eachSig == nil {
+				throw DKParsingError("Map has wrong signature \(signature)", token)
+			}
+			let each = try parseFunction(eachSig)
+			return DKFunctionMap(each: each)
+		}
+		fatalError()
+	}
+	func parseSinkOrGen(_ sink: Bool, _ signature: DKTypeSignature) throws -> DKFunction {
+		let itemType = sink ? DKFunctionSink.canBeSinkAndItemType(signature) : DKFunctionGenerator.canBeGeneratorAndItemType(signature)
+		if itemType == nil {
+			throw DKParsingError("Generator has wrong signature \(signature)", token)
+		}
+		let name = try parseIdent()
+		// This is totally hackish
+		var params: JSON = JSON.null
+		if peekReservedWord(",") {
+			accept()
+			let num = try parseNumber()
+			params = .integer(Int(num))
+		}
+		if sink {
+			return DKFunctionSink(uniquingTable, name: name, itemType: itemType!)
+		} else {
+			return DKFunctionGenerator(uniquingTable, name: name, params: params, itemType: itemType!)
+		}
+	}
+	func parseProjection(_ signature: DKTypeSignature) throws -> DKFunction {
+		try expectReservedWord(".")
+		if signature.numberOfArguments != 1 {
+			throw DKParsingError("Projection has wrong signature \(signature)", token)
+		}
+		if let structType = signature.input[0] as? DKTypeStruct {
+			if token == nil {
+				throw DKParsingError("Premature end for projection", token)
+			}
+			var fieldIndex: Int! = nil
+			switch token!.type {
+			case let .natural(n):
+				if n <= UInt64(structType.count) {
+					fieldIndex = Int(n)
+				}
+			case let .identifier(s):
+				fieldIndex = structType[s]
+			default: break
+			}
+			if fieldIndex == nil {
+				throw DKParsingError("Field improper for \(structType)", token)
+			}
+			accept()
+			return DKFunctionProjection(structType: structType, fieldIndex: fieldIndex!, uniquingTable)
+		} else {
+			throw DKParsingError("Projection has wrong signature \(signature)", token)
+		}
 	}
 }
 
@@ -208,10 +484,20 @@ public struct DKParsingError: Error, CustomStringConvertible {
 extension DKParser {
 	class func selfTest() {
 		let uniquingTable = DKTypeTable()
-		for s in ["Bool", "UInt8", "Int(32)", "UInt(64)", "()", "(first: String, last: String)", "(first: String)", "(String, UInt8)", "[UInt8]", "(UInt32, String) -> UInt32"] {
+		for s in ["Bool", "Void", "UInt8", "Int(32)", "UInt(64)", "()", "(first: String, last: String)", "(first: String)", "(String, UInt8)", "[UInt8]", "(UInt32, String) -> UInt32"] {
 			let parser = DKParser(uniquingTable, s)
-			let t = try! parser.parseType()
-			print("String '\(s)' => '\(t)'")
+			let t = try! parser.parseJustType()
+			print(">>> Parsed string '\(s)' => '\(t)'")
 		}
+		for (ts, s) in [("()", "nil"), ("Bool", "true"), ("Bool", "false"), ("Int64", "42"), ("String", "\"Donald\""), ("(first: String, last: String, age: UInt8)", "(\"Jo\", \"Y\", 21)"), ("[UInt64]", "[1, 2, 3]")] {
+			let parser = DKParser(uniquingTable, ts)
+			let t = try! parser.parseJustType()
+			let parser2 = DKParser(uniquingTable, s)
+			let v = try! parser2.parseJustValue(t)
+			assert(v.type == t)
+			print(">>> Parsed type \(t) and value \(v)")
+		}
+		let f = try! DKParser(uniquingTable, "((first: String, last: String, age: UInt8)) -> String | .last").parseJustFunction(nil)
+		print("Projection = \(f) of type \(f.signature)")
 	}
 }

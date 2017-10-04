@@ -23,6 +23,14 @@ class DKFunctionGenerator: DKFunction {
 	override var signature: DKTypeSignature {
 		return DKTypeSignature(input: .void, output: itemType.makeSequence)
 	}
+	class func canBeGeneratorAndItemType(_ type: DKType) -> DKType! {
+		if let signature = type as? DKTypeSignature {
+			if signature.numberOfArguments != 0 { return nil }
+			let seqType = signature.output as? DKTypeSequence
+			return seqType?.sub
+		}
+		return nil
+	}
 	override var functionToJSONDict: [String: JSON] {
 		return [
 			"generator": .string(name),
