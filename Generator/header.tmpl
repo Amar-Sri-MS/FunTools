@@ -11,6 +11,10 @@ Generates structures, accessor macros and functions, and enum declarations.
 #ifndef __{{output_base|as_macro}}_H__
 #define __{{output_base|as_macro}}_H__
 
+{% if generate_json %}
+#include <utils/threaded/fun_json.h>
+{% endif %}
+
 {% for enum in enums %}
 {{enum.body_comment|as_comment}}
 enum {{enum.name}} {  {{enum.key_comment|as_comment}}
@@ -68,7 +72,6 @@ extern void {{struct.name}}_init(struct {{struct.init_struct().name}} *s{% if st
   {% endfor %}
   {% endif %}
 );
-
 {% if generate_json %}
 /*
  * Initializes {{struct.name}} structure from JSON representation.
@@ -104,7 +107,7 @@ extern bool {{struct.name}}_json_init(struct fun_json *j, struct {{struct.init_s
 /* Clears out the field {{f.name}} inside packed field
  *  {{field.name}}
  *  Usage:
- *    x.{{field.name}} &= {{struct.name|as_macro}}_{{f.name_as_macro}}_Z;
+ *    x.{{field.name}} &= {{struct.name|as_macro}}_{{f.name|as_macro}}_Z;
  */
 #define {{struct.name|as_macro}}_{{f.name|as_macro}}_Z \
 	(~(({{f.type|as_cast}} {{struct.name|as_macro}}_{{f.name|as_macro}}_M) \
