@@ -60,6 +60,7 @@ extension DKParser {
 				if signature == nil {
 					throw DKParsingError("Function closure needs a signature", token)
 				}
+				print("Going to parse closure with type \(signature)")
 				return try! parseClosure(signature!)
 			}
 			if DKOperator.allOperatorStrings.contains(s) {

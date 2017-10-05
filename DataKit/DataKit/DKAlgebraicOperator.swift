@@ -8,6 +8,7 @@
 
 class DKAlgebraicOperator: DKOperator {
 	let arity: Int
+	// domain for this function is both the argument and the result types
 	init?(domain t: DKType, op: String, arity: Int) {
 		let ev = DKAlgebraicOperator.evaluationForNaryOperator(domain: t, op: op, arity: arity)
 		if ev == nil { return nil }
@@ -116,7 +117,10 @@ class DKAlgebraicOperator: DKOperator {
 		return false
 	}
 	class var operatorStrings: Set<String> {
-		return ["+", "-", "*", "/", "%", "|", "!", "&&", "||"]
+		return ["+", "-", "*", "^", "/", "%", "|", "!", "&&", "||"]
+	}
+	class var nonUnaryOperatorStrings: Set<String> {
+		return operatorStrings - ["!"]
 	}
 }
 

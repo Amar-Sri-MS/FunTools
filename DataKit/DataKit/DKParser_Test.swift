@@ -34,7 +34,8 @@ extension DKParser {
 		for s in [
 			"(\(sc)) -> String : .last",
 			"(UInt8, UInt8) -> UInt8 : +",
-			"(\(sc)) -> Bool: { true }"
+			"(\(sc)) -> Bool: { true }",
+			"(\(sc)) -> Bool: { true || false }"
 			] {
 				let f = try! DKParser(uniquingTable, s).parseJustFunction(nil)
 				print(">>> Function '\(s)' is parsed as '\(f)' of type '\(f.signature)'")

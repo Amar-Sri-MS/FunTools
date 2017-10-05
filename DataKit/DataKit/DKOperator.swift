@@ -33,4 +33,7 @@ class DKOperator: Equatable, DKOperatorIsEqualToOtherOperator {
 	class var allOperatorStrings: Set<String> {
 		return DKComparisonOperator.operatorStrings + DKAlgebraicOperator.operatorStrings
 	}
+	class var allNonUnaryOperatorStrings: Set<String> {
+		return DKComparisonOperator.nonUnaryOperatorStrings + DKAlgebraicOperator.nonUnaryOperatorStrings
+	}
 }

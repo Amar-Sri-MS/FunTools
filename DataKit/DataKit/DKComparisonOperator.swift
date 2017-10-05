@@ -7,6 +7,7 @@
 //
 
 class DKComparisonOperator: DKOperator {
+	// domain for this function corresponds to the type of the arguments
 	init?(domain t: DKType, op: String) {
 		let ev = DKComparisonOperator.evaluationForComparator(domain: t, op: op)
 		if ev == nil { return nil }
@@ -54,6 +55,9 @@ class DKComparisonOperator: DKOperator {
 	}
 	class var operatorStrings: Set<String> {
 		return ["==", "!=", "<", ">", "<=", ">="]
+	}
+	class var nonUnaryOperatorStrings: Set<String> {
+		return operatorStrings
 	}
 }
 

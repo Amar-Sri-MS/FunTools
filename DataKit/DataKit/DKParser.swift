@@ -69,6 +69,14 @@ extension DKParser {
 		}
 		accept()
 	}
+	func peekAnyPunctuationOrReservedWord() -> String! {
+		if token == nil { return nil }
+		switch token!.type {
+		case let .reservedWord(s): return s
+		case let .punctuation(ch): return String(ch)
+		default: return nil
+		}
+	}
 	func maybeIdent() -> String! {
 		if token == nil { return nil }
 		switch token!.type {
