@@ -22,7 +22,7 @@ class DKFunctionClosure: DKFunction {
 			$0.sugaredDescription(uniquingTable)
 		}
 		let bodyTypeSugaredDesc = body.type.sugaredDescription(uniquingTable)
-		sugaredDesc = "{ (\(paramsSugaredDesc)) -> \(bodyTypeSugaredDesc) in \(body.sugaredDescription(uniquingTable).desc) }"
+		sugaredDesc = "(\(paramsSugaredDesc)) -> \(bodyTypeSugaredDesc): { \(body.sugaredDescription(uniquingTable).desc) }"
 		bodyJSON = body.expressionToJSON(uniquingTable)
 	}
 	convenience init(params: [DKType], body: DKExpression, _ uniquingTable: DKTypeTable) {

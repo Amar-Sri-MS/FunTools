@@ -12,6 +12,7 @@
 // - a projection like .first_name
 // - a functional constructor like filter(<predicate>) or map(.first_name) or compose(<f1>, <f2>)
 // - a closure like { $0.first == "Joe" }
+// - or a parenthesized function, e.g. ((Int8) -> Int8: -)
 
 extension DKParser {
 	func parseFunction(_ signature: DKTypeSignature!) throws -> DKFunction {
@@ -24,10 +25,17 @@ extension DKParser {
 			}
 			try expectReservedWord(":")
 			sig = t as? DKTypeSignature
+			if sig != nil && signature != nil && sig! != signature! {
+				throw DKParsingError("Function type mismatch \(sig!) vs. \(signature!)", token)
+			}
 		} catch _ {
 			(currentToken, lexerState) = saved
 		}
 		return try parseFunctionBody(sig)
+	}
+	func parseFunctionReturning(_ retType: DKType!) throws -> DKFunction {
+		// TODO: Implement this!
+		return try parseFunction(nil)
 	}
 	func parseFunctionBody(_ signature: DKTypeSignature!) throws -> DKFunction {
 		if token == nil {
@@ -67,11 +75,17 @@ extension DKParser {
 			}
 			throw DKParsingError("Function can't start with punctuation \(s) - signature \(signature)", token)
 		case let .reservedWord(s):
+			if s == "(" {
+				accept()
+				let f = try parseFunction(signature)
+				try expectReservedWord(")")
+				return f
+			}
 			if s == "{" {
 				if signature == nil {
 					throw DKParsingError("Function closure needs a signature", token)
 				}
-				print("Going to parse closure with type \(signature)")
+//				print("Going to parse closure with type \(signature)")
 				return try parseClosure(signature!)
 			}
 			if DKOperator.allOperatorStrings.contains(s) {

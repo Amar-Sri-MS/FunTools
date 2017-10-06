@@ -23,6 +23,7 @@ extension DKParser {
 		print("\nParsing values...")
 		for (ts, s) in [
 			("()", "nil"), ("Bool", "true"), ("Bool", "false"), ("Int64", "42"),
+			("Int64", "-99"), ("Int64", "- 101"),
 			("String", "\"Donald\""), ("\(sc)", "(\"Jo\", \"Y\", 21)"),
 			("[UInt64]", "[1, 2, 3]")] {
 			let parser = DKParser(uniquingTable, ts)
@@ -45,14 +46,24 @@ extension DKParser {
 			"(\(sc)) -> String: { $0.first }",
 			"(\(sc)) -> String: { $0.last }",
 			"(\(sc)) -> Bool: { $0.last == \"Joe\"}",
-			"(\(sc)) -> Bool: { $0.first == $0.last }"
+			"(\(sc)) -> Bool: { $0.first == $0.last }",
+			"([\(sc)]) -> [\(sc)]: filter( { true })",
+			"([\(sc)]) -> [String]: map(.first)",
+			"(UInt32, UInt32, UInt32) -> UInt32 : { $0 + $1 + $2 }",
+			"(UInt32, UInt32, UInt32) -> UInt32 : { $0 * $1 + $2 }",
+			"(UInt32, UInt32, UInt32) -> UInt32 : { $0 + $1 * $2 }",
+			"((Int8) -> Int8: -)"
 			] {
 				let f = try! DKParser(uniquingTable, s).parseJustFunction(nil)
 				print(">>> Function '\(s)' is parsed as '\(f)' of type '\(f.signature.sugaredDescription(uniquingTable))'")
 		}
 
 		print("\nParsing expressions...")
-		for s in ["42", "(69)", "(12, 34)"] {
+		for s in [
+			"42", "(69)", "(12, 34)",
+			"-42", "- 42", "-(42)",
+			"(UInt64, UInt64, UInt64) -> UInt64 : *(3, 4, 5)"
+			] {
 			let e = try! DKParser(uniquingTable, s).parseJustExpression(nil)
 			print(">>> Expression '\(s)' is parsed as '\(e.sugaredDescription(uniquingTable).desc)' of type '\(e.type.sugaredDescription(uniquingTable))'")
 		}

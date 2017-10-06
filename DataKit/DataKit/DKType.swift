@@ -27,14 +27,18 @@ class DKType: Equatable, Hashable, CustomStringConvertible {
 		let uniquingTable = DKTypeTable()
 		return typeToRawJSON(uniquingTable).description
 	}
-	func sugaredDescription(_ uniquingTable: DKTypeTable) -> String {
+	func subclassableSugaryDescription(_ uniquingTable: DKTypeTable) -> String {
+		let rawJSON = typeToRawJSON(uniquingTable)
+		return rawJSON.description
+	}
+	final func sugaredDescription(_ uniquingTable: DKTypeTable) -> String {
 		let rawJSON = typeToRawJSON(uniquingTable)
 		if rawJSON.isString {
 			return rawJSON.stringValue
 		}
 		let sc = rawJSON.asTypeShortcut
 		if uniquingTable[sc] != nil { return sc }
-		return rawJSON.description
+		return subclassableSugaryDescription(uniquingTable)
 	}
 
 	// Convenience

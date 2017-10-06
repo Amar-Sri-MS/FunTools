@@ -23,11 +23,7 @@ extension DKParser {
 		switch token!.type {
 		case let .natural(n):
 			accept()
-			if type != nil {
-				return DKValueSimple(type: type!, value: n)
-			} else {
-				return DKValueSimple(type: DKTypeInt.uint64, value: n)
-			}
+			return DKValueSimple(type: type ?? DKTypeInt.uint64, value: n)
 		case let .stringLiteral(s):
 			accept()
 			if type != nil && type! != DKTypeString.string {
@@ -63,6 +59,13 @@ extension DKParser {
 				return try parseValueSequence(type as? DKTypeSequence)
 			}
 			throw DKParsingError("Unexpected word '\(s)' for value", token)
+		case let .punctuation(ch):
+			if ch != "-" {
+				throw DKParsingError("Unexpected punctuation for value", token)
+			}
+			accept()
+			let n = try parseNumber()
+			return DKValueSimple(type: type ?? DKTypeInt.int64, value: -Int64(bitPattern: n))
 		default:
 			throw DKParsingError("Unexpected token for value", token)
 		}

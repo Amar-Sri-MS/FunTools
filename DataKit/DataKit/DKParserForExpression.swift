@@ -22,7 +22,7 @@ extension DKParser {
 		// We have a priority list of things to try
 		// First, we try parsing with operators as that will "absorb" more than 1 expression
 		// We try paren before constant so that "(42)" is a parentethical expression rather than a struct
-		var trials = [parseExpressionWithType, parseExpressionParen, parseExpressionConstant, parseExpressionVariable, parseExpressionApplication, parseExpressionUnary]
+		var trials = [parseExpressionWithType, parseExpressionParen, parseExpressionConstant, parseExpressionVariable, parseExpressionUnary, parseExpressionApplication]
 		if allowRecursive {
 			trials = [parseExpressionWithOperators] + trials
 		}
@@ -101,15 +101,42 @@ extension DKParser {
 			operators |= op!
 			exprs |= try parseExpression(nil, variables, false)
 		}
-		print("Got \(operators.count) operators")
+//		print("Got \(operators.count) operators")
 		// Now we make an expression tree from all that
 		return try makeExpression(type, exprs: exprs, operators: operators)
 	}
-	func parseExpressionApplication(_ type: DKType!, _ variables: [DKType]) throws -> DKExpression {
-		throw DKParsingError("NYI", token)
-	}
 	func parseExpressionUnary(_ type: DKType!, _ variables: [DKType]) throws -> DKExpression {
-		throw DKParsingError("NYI", token)
+		let op = peekAnyPunctuationOrReservedWord()
+		if op == nil || !DKAlgebraicOperator.unaryOperatorStrings.contains(op!) {
+			throw DKParsingError("Not a suitable unary operator", token)
+		}
+		accept()
+		let expr = try parseExpression(type, variables)
+		let oper = DKAlgebraicOperator(domain: type ?? expr.type, op: op!, arity: 1)
+		if oper == nil {
+			throw DKParsingError("Can't create unary expression for \(op!) \(expr)", token)
+		}
+		let f = DKFunctionOperator(oper: oper!, uniquingTable)
+		return DKExpressionFuncCall(fun: f, arguments: [expr])
+	}
+	func parseExpressionApplication(_ type: DKType!, _ variables: [DKType]) throws -> DKExpression {
+		let f = try parseFunctionReturning(type)
+		if type != nil && f.signature.output != type! {
+			throw DKParsingError("Type mismatch for application of function", token)
+		}
+		let n = f.signature.numberOfArguments
+		try expectReservedWord("(")
+		var exprs: [DKExpression] = []
+		for i in 0 ..< n {
+			exprs |= try parseExpression(f.signature[i], variables)
+			if i == n - 1 {
+				if peekReservedWord(",") { accept() }
+			} else {
+				try expectReservedWord(",")
+			}
+		}
+		try expectReservedWord(")")
+		return DKExpressionFuncCall(fun: f, arguments: exprs)
 	}
 }
 
@@ -120,7 +147,7 @@ extension DKParser {
 		assert(exprs.count == operators.count + 1)
 		// First, if we have 1 exprs only, that's it!
 		if operators.isEmpty { return exprs[0] }
-		print("In makeExpression with exprs=\(exprs) ops=\(operators)")
+//		print("In makeExpression with exprs=\(exprs) ops=\(operators)")
 		let priorities: [String: Int] = [
 			"==": 0, "!=": 0, "<": 0, ">": 0, "<=": 0, ">=": 0,
 			"+": 1, "-": 1, "|": 1,
@@ -161,7 +188,7 @@ extension DKParser {
 			throw DKParsingError("Can't create expression for \(exprs) and \(operators)", token)
 		}
 		let f = DKFunctionOperator(oper: oper!, uniquingTable)
-		print("In makeExpression with exprs=\(exprs) ops=\(operators) - f=\(f)")
+//		print("In makeExpression with exprs=\(exprs) ops=\(operators) - f=\(f)")
 		return DKExpressionFuncCall(fun: f, arguments: [left, right])
 	}
 }

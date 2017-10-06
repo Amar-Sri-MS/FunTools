@@ -119,6 +119,9 @@ class DKAlgebraicOperator: DKOperator {
 	class var operatorStrings: Set<String> {
 		return ["+", "-", "*", "^", "/", "%", "|", "!", "&&", "||"]
 	}
+	class var unaryOperatorStrings: Set<String> {
+		return ["+", "-", "!"]
+	}
 	class var nonUnaryOperatorStrings: Set<String> {
 		return operatorStrings - ["!"]
 	}

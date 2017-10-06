@@ -26,6 +26,11 @@ class DKValueSimple: DKValue, DKValueIsEqualToOther {
 		assert(type.canAcceptIntValue(i))
 		self.init(type: type, json: .integer(i))
 	}
+	convenience init(type: DKType, value: Int64) {
+		let i: Int = Int(value)
+		assert(type.canAcceptIntValue(i))
+		self.init(type: type, json: .integer(i))
+	}
 	convenience init(type: DKType, value: Int) {
 		assert(type.canAcceptIntValue(value))
 		self.init(type: type, json: .integer(value))
