@@ -33,7 +33,7 @@ class DKFunctionLogger: DKFunction {
 		x.dumpDescription()
 		return .null
 	}
-	override func sugaredDescription(_ knowns: [DKType: String]) -> String {
-		return "logger(\(type.sugaredDescription(knowns)))"
+	override var description: String {
+		return "logger(\(shortcut))"
 	}
 }

@@ -11,10 +11,12 @@ class DKFunctionGatherFromFifo: DKFunction {
 	let fifoIndex: Int
 	let itemType: DKType
 	let typeShortcut: DKType.Shortcut // derived from signature
+	let sugaredDesc: String	// derived
 	init(_ uniquingTable: DKTypeTable, _ fifoIndex: Int, _ itemType: DKType) {
 		typeShortcut = itemType.toTypeShortcut(uniquingTable)
 		self.fifoIndex = fifoIndex
 		self.itemType = itemType
+		sugaredDesc = "gatherFromFifo(\(fifoIndex), \(itemType.sugaredDescription(uniquingTable)))"
 	}
 	var sequenceType: DKType { return itemType.makeSequence }
 	override var signature: DKTypeSignature {
@@ -42,8 +44,8 @@ class DKFunctionGatherFromFifo: DKFunction {
 	override var isInputGroupable: Bool {
 		return true
 	}
-	override func sugaredDescription(_ knowns: [DKType: String]) -> String {
-		return "gatherFromFifo(\(fifoIndex), \(itemType.sugaredDescription(knowns)))"
+	override var description: String {
+		return sugaredDesc
 	}
 }
 

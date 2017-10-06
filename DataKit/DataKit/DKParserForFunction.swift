@@ -27,7 +27,7 @@ extension DKParser {
 		} catch _ {
 			(currentToken, lexerState) = saved
 		}
-		return try parseFunctionBody(sig!)
+		return try parseFunctionBody(sig)
 	}
 	func parseFunctionBody(_ signature: DKTypeSignature!) throws -> DKFunction {
 		if token == nil {
@@ -44,7 +44,18 @@ extension DKParser {
 				if signature == nil {
 					throw DKParsingError("Function projection needs a signature", token)
 				}
-				return try parseProjection(signature!)
+				if signature.numberOfArguments != 1 {
+					throw DKParsingError("Projection has wrong signature \(signature)", token)
+				}
+				if let structType = signature.input[0] as? DKTypeStruct {
+					let f = try parseFunctionProjection(structType)
+					if f.signature.output != signature.output {
+						throw DKParsingError("Projection has type mismatch \(f.signature.output) vs. \(signature.output)", token)
+					}
+					return f
+				} else {
+					throw DKParsingError("Projection has non-struct argument \(signature)", token)
+				}
 			}
 			let s = String(ch)
 			if DKOperator.allOperatorStrings.contains(s) {
@@ -52,7 +63,7 @@ extension DKParser {
 					throw DKParsingError("Function operator needs a signature", token)
 				}
 				accept()
-				return try! parseOperatorFunction(s, signature!)
+				return try parseOperatorFunction(s, signature!)
 			}
 			throw DKParsingError("Function can't start with punctuation \(s) - signature \(signature)", token)
 		case let .reservedWord(s):
@@ -61,14 +72,14 @@ extension DKParser {
 					throw DKParsingError("Function closure needs a signature", token)
 				}
 				print("Going to parse closure with type \(signature)")
-				return try! parseClosure(signature!)
+				return try parseClosure(signature!)
 			}
 			if DKOperator.allOperatorStrings.contains(s) {
 				if signature == nil {
 					throw DKParsingError("Function operator needs a signature", token)
 				}
 				accept()
-				return try! parseOperatorFunction(s, signature!)
+				return try parseOperatorFunction(s, signature!)
 			}
 			throw DKParsingError("Function can't start with word \(s) - signature \(signature)", token)
 		default: throw DKParsingError("Unknown function", token)
@@ -150,32 +161,25 @@ extension DKParser {
 			return DKFunctionGenerator(uniquingTable, name: name, params: params, itemType: itemType!)
 		}
 	}
-	func parseProjection(_ signature: DKTypeSignature) throws -> DKFunction {
+	func parseFunctionProjection(_ structType: DKTypeStruct) throws -> DKFunction {
 		try expectReservedWord(".")
-		if signature.numberOfArguments != 1 {
-			throw DKParsingError("Projection has wrong signature \(signature)", token)
+		if token == nil {
+			throw DKParsingError("Premature end for projection", token)
 		}
-		if let structType = signature.input[0] as? DKTypeStruct {
-			if token == nil {
-				throw DKParsingError("Premature end for projection", token)
+		var fieldIndex: Int! = nil
+		switch token!.type {
+		case let .natural(n):
+			if n <= UInt64(structType.count) {
+				fieldIndex = Int(n)
 			}
-			var fieldIndex: Int! = nil
-			switch token!.type {
-			case let .natural(n):
-				if n <= UInt64(structType.count) {
-					fieldIndex = Int(n)
-				}
-			case let .identifier(s):
-				fieldIndex = structType[s]
-			default: break
-			}
-			if fieldIndex == nil {
-				throw DKParsingError("Field improper for \(structType)", token)
-			}
-			accept()
-			return DKFunctionProjection(structType: structType, fieldIndex: fieldIndex!, uniquingTable)
-		} else {
-			throw DKParsingError("Projection has wrong signature \(signature)", token)
+		case let .identifier(s):
+			fieldIndex = structType[s]
+		default: break
 		}
+		if fieldIndex == nil {
+			throw DKParsingError("Field improper for \(structType)", token)
+		}
+		accept()
+		return DKFunctionProjection(structType: structType, fieldIndex: fieldIndex!, uniquingTable)
 	}
 }

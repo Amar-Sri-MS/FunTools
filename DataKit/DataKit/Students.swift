@@ -100,16 +100,14 @@ func generateFullName(_ uniquingTable: DKTypeTable) -> DKFunctionClosure {
 
 func dumpFilter(input: Data, _ uniquingTable: DKTypeTable, _ name: String) {
 	let ts = studentType().makeSequence
-	let t = studentType()
-	let knowns = [t: "Student"]
 	let filterFunc = filterSpecificFirstOrLastName(uniquingTable, true, name)
-	print("Filter = \(filterFunc.sugaredDescription(knowns))")
+	print("Filter = \(filterFunc)")
 	let students = ts.fromDataLazy(input)
 	let con = DKEvaluationContext()
 	let filtered = filterFunc.evaluate(context: con, [students!.asExpressionConstant])
 	print("Filtered: \(filtered.description)")
 	let fullNameGen = generateFullName(uniquingTable)
-	print("Generate full name = \(fullNameGen.sugaredDescription(knowns))")
+	print("Generate full name = \(fullNameGen)")
 	for student in filtered as! DKValueLazySequence {
 		let full = fullNameGen.evaluate(context: con, [student.asExpressionConstant])
 		print("-> \(full.stringValue)")
@@ -201,7 +199,6 @@ var twoFilters = false
 func studentsTestNew() {
 	let t = studentType()
 	let typeTable = DKTypeTable()
-	let knowns = [t: "Student"]
 	registerGeneratorOfStudents(typeTable: typeTable)
 	let filter: DKFunctionFilter = filterSpecificFirstOrLastName(typeTable, true, "Joe")
 	let generator = DKFunctionGenerator(typeTable, name: "Students", params: 1000, itemType: t)
@@ -217,7 +214,7 @@ func studentsTestNew() {
 	let flowGraphGen = DKFlowGraphGen(typeTable, generator, pipeline)
 	let r = flowGraphGen.generate()
 	for fifo in r.fifos {
-		print("\(fifo.sugaredDescription(knowns))")
+		print("\(fifo.sugaredDescription(typeTable))")
 	}
 	let j = flowGraphGen.flowGraphToJSON
 	print("flow graph as JSON: \n\(j)")

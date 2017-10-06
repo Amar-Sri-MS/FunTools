@@ -26,8 +26,8 @@ class DKValueFunc: DKValue, DKValueIsEqualToOther {
 		let fun = DKFunction.functionFromJSON(uniquingTable, j.dictionaryValue)
 		return fun == nil ? nil : DKValueFunc(fun!)
 	}
-	override func sugaredDescription(_ knowns: [DKType: String]) -> String {
-		return fun.sugaredDescription(knowns)
+	override var description: String {
+		return fun.description
 	}
 }
 

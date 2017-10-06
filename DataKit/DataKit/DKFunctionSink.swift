@@ -56,8 +56,8 @@ class DKFunctionSink: DKFunction {
 		}
 		return .null
 	}
-	override func sugaredDescription(_ knowns: [DKType: String]) -> String {
-		return "sink(\(name), \(itemType.sugaredDescription(knowns)))"
+	override var description: String {
+		return "sink(\(name), \(itemShortcut))"
 	}
 	static var registry: [String: (DKValue) -> Void] = [:]
 	class func registerItemGenerator(name: String, _ sink: @escaping (DKValue) -> Void) {

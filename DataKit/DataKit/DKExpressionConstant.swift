@@ -47,8 +47,8 @@ class DKExpressionConstant: DKExpression, Equatable, ExpressibleByBooleanLiteral
 		if ej == nil { return nil }
 		return DKExpressionConstant(ej!)
 	}
-	override func sugaredDescription(_ knowns: [DKType: String]) -> (desc: String, needsParen: Bool) {
-		return (value.sugaredDescription(knowns), false)
+	override func sugaredDescription(_ uniquingTable: DKTypeTable) -> (desc: String, needsParen: Bool) {
+		return (value.description, false)
 	}
 
 }

@@ -61,8 +61,8 @@ class DKFunctionGenerator: DKFunction {
 		let data = stream.finishAndData()
 		return DKValueLazySequence(itemType: itemType, data: data)
 	}
-	override func sugaredDescription(_ knowns: [DKType: String]) -> String {
-		return "generator(\(name), \(itemType.sugaredDescription(knowns)), \(params))"
+	override var description: String {
+		return "generator(\(name), \(itemShortcut), \(params))"
 	}
 	static var registry: [String: (JSON) -> DKValue?] = [:]
 	class func registerItemGenerator(name: String, _ itemGen: @escaping (JSON) -> DKValue?) {

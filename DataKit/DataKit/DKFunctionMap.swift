@@ -73,8 +73,8 @@ class DKFunctionMap: DKFunction {
 		let newInput = output.finishAndData()
 		return DKValueLazySequence(itemType: outputItemType, data: newInput)
 	}
-	override func sugaredDescription(_ knowns: [DKType: String]) -> String {
-		return "map(\(each.sugaredDescription(knowns)))"
+	override var description: String {
+		return "map(\(each))"
 	}
 	override var isInputGroupable: Bool {
 		return true

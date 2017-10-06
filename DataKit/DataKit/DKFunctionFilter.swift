@@ -64,8 +64,8 @@ class DKFunctionFilter: DKFunction {
 		let newInput = output.finishAndData()
 		return DKValueLazySequence(itemType: self.itemType, data: newInput)
 	}
-	override func sugaredDescription(_ knowns: [DKType: String]) -> String {
-		return "filter(\(predicate.sugaredDescription(knowns)))"
+	override var description: String {
+		return "filter(\(predicate))"
 	}
 	override var isInputGroupable: Bool {
 		return true

@@ -33,9 +33,6 @@ class DKFunction: Equatable, CustomStringConvertible {
 		return nil
 	}
 	var description: String {
-		return sugaredDescription([:])
-	}
-	func sugaredDescription(_ knowns: [DKType: String]) -> String {
 		fatalErrorMustBeImplementedBySubclass()
 	}
 	// If function takes a [T] and returns () or [U], is it OK to send smaller batches of its input and combine the output

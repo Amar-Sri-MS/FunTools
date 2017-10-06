@@ -56,6 +56,12 @@ class DKValueSimple: DKValue, DKValueIsEqualToOther {
 	}
 
 	override var description: String {
+		if type is DKTypeStruct {
+			return "(" + json.arrayValue.joinDescriptions(", ") + ")"
+		}
+		if  type is DKTypeSequence {
+			return "[" + json.arrayValue.joinDescriptions(", ") + "]"
+		}
 		if json.isArray || json.isDictionary {
 			return super.description
 		}

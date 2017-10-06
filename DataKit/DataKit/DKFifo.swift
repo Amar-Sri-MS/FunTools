@@ -32,18 +32,18 @@ class DKFifo: CustomStringConvertible {
 		if asSource == nil { asSource = DKValueStreamSource(itemType: itemType) }
 		return asSource!
 	}
-	func sugaredDescription(_ knowns: [DKType: String]) -> String {
+	func sugaredDescription(_ uniquingTable: DKTypeTable) -> String {
 		var app = ""
 		switch toAppend {
 			case .all: app = "all"
 			case .none: app = "none"
 			case let .gatherByBatch(fun):
-				app = "gather(\(fun.sugaredDescription(knowns)))"
+				app = "gather(\(fun))"
 		}
-		return "FIFO#\(label)(t=\(itemType.sugaredDescription(knowns)); pred=\(predicateOnInput == nil ? "nil" : predicateOnInput.sugaredDescription(knowns)); append=\(app))"
+		return "FIFO#\(label)(t=\(itemType.sugaredDescription(uniquingTable)); pred=\(predicateOnInput == nil ? "nil" : predicateOnInput.description); append=\(app))"
 	}
 	var description: String {
-		return sugaredDescription([:])
+		return sugaredDescription(DKTypeTable())
 	}
 	func fifoToJSON(_ uniquingTable: DKTypeTable) -> JSON {
 		var dict: [String: JSON] = [

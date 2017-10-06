@@ -59,7 +59,7 @@ class DKFunctionProjection: DKFunction {
 	var projectedFieldName: String {
 		return structType.names == nil ? fieldIndex.description : structType.names![fieldIndex]
 	}
-	override func sugaredDescription(_ knowns: [DKType: String]) -> String {
+	override var description: String {
 		return "{ $0.\(projectedFieldName) }"
 	}
 }

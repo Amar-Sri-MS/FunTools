@@ -120,6 +120,7 @@ public struct DKParsingError: Error, CustomStringConvertible {
 		message = m
 		position = token?.range.lowerBound ?? "".unicodeScalars.startIndex
 		line = token?.line ?? 0
+//		print("Creating parsing error \(self)")
 	}
 	public var description: String {
 		return "*** Parsing error: \(message) at line: \(line)"

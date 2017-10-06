@@ -11,7 +11,7 @@
 // - a type constructor like Int(8)
 // - a struct like (first: String, last: String) or (String, String)
 // - a sequence like [String]
-// - a signature like T -> U
+// - a signature like (T1, T2) -> U
 
 extension DKParser {
 	func parseType() throws -> DKType {

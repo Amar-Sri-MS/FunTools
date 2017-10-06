@@ -168,4 +168,12 @@ class DKTypeStruct: DKType, Cardinality {
 		}
 		return DKValueLazyStruct(type: self, data: data)
 	}
+	override func sugaredDescription(_ uniquingTable: DKTypeTable) -> String {
+		if names != nil {
+			return "(" + zip(names!, subs).joinDescriptions(", ") {
+				$0.0 + ": " + $0.1.sugaredDescription(uniquingTable)
+				} + ")"
+		}
+		return "(" + subs.joinDescriptions(", ") { $0.sugaredDescription(uniquingTable) } + ")"
+	}
 }

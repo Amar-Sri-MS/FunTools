@@ -27,13 +27,14 @@ class DKType: Equatable, Hashable, CustomStringConvertible {
 		let uniquingTable = DKTypeTable()
 		return typeToRawJSON(uniquingTable).description
 	}
-	func sugaredDescription(_ knowns: [DKType: String]) -> String {
-		let k = knowns[self]
-		if k != nil { return k! }
-		let uniquingTable = DKTypeTable()
-		let j = typeToRawJSON(uniquingTable)
-		if j.isString { return j.stringValue }
-		return j.description
+	func sugaredDescription(_ uniquingTable: DKTypeTable) -> String {
+		let rawJSON = typeToRawJSON(uniquingTable)
+		if rawJSON.isString {
+			return rawJSON.stringValue
+		}
+		let sc = rawJSON.asTypeShortcut
+		if uniquingTable[sc] != nil { return sc }
+		return rawJSON.description
 	}
 
 	// Convenience
@@ -55,9 +56,9 @@ class DKType: Equatable, Hashable, CustomStringConvertible {
 		if rawJSON.isString {
 			return rawJSON.stringValue
 		}
-		let typeCode = "T_" + rawJSON.description.toSHA256().word2.toHexString(true) // word 2 is as good as any; we only use 64b of a SHA2 as risk of colliding is low
-		uniquingTable[typeCode] = rawJSON
-		return typeCode
+		let sc = rawJSON.asTypeShortcut
+		uniquingTable[sc] = rawJSON
+		return sc
 	}
 	// Converts the type to JSON
 	func typeToRawJSON(_ uniquingTable: DKTypeTable) -> JSON {
@@ -140,6 +141,9 @@ extension JSON {
 			if t != nil { return t }
 		}
 		return nil
+	}
+	fileprivate var asTypeShortcut: String {
+		return "T_" + description.toSHA256().word2.toHexString(true) // word 2 is as good as any; we only use 64b of a SHA2 as risk of colliding is low
 	}
 }
 

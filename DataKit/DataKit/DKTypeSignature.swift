@@ -46,4 +46,8 @@ class DKTypeSignature: DKType {
 		if !isPredicate { return nil }
 		return self[0]
 	}
+	override func sugaredDescription(_ uniquingTable: DKTypeTable) -> String {
+		return input.sugaredDescription(uniquingTable) + " -> " + output.sugaredDescription(uniquingTable)
+	}
+
 }

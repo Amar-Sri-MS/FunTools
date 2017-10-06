@@ -37,7 +37,7 @@ class DKExpressionVariable: DKExpression {
 		if tj == nil { return nil }
 		return DKExpressionVariable(index: index, type: tj!)
 	}
-	override func sugaredDescription(_ knowns: [DKType: String]) -> (desc: String, needsParen: Bool) {
+	override func sugaredDescription(_ uniquingTable: DKTypeTable) -> (desc: String, needsParen: Bool) {
 		return ("$\(index)", false)
 	}
 }
