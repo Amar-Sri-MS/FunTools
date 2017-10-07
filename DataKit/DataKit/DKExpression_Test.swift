@@ -14,19 +14,19 @@ extension DKExpression {
 		let bfalse = DKValue.bool(false)
 		let ktrue = DKExpressionConstant(btrue)
 		let kfalse = DKExpressionConstant(bfalse)
-		let and0 = DKAlgebraicOperator(domain: DKTypeInt.bool, op: "&&", arity: 0)!
+		let and0 = DKAlgebraicOperator(domain: .bool, op: "&&", arity: 0)!
 		let boolExpr0 = DKExpressionFuncCall(oper: and0, arguments: [], uniquingTable)
 		let r0 = boolExpr0.evaluate(context: con)
 		assert(r0 == btrue)
-		let not = DKAlgebraicOperator(domain: DKTypeInt.bool, op: "!", arity: 1)!
+		let not = DKAlgebraicOperator(domain: .bool, op: "!", arity: 1)!
 		let boolExpr1 = DKExpressionFuncCall(oper: not, arguments: [kfalse], uniquingTable)
 		let r1 = boolExpr1.evaluate(context: con)
 		assert(r1 == btrue)
-		let and2 = DKAlgebraicOperator(domain: DKTypeInt.bool, op: "&&", arity: 2)!
+		let and2 = DKAlgebraicOperator(domain: .bool, op: "&&", arity: 2)!
 		let boolExpr2 = DKExpressionFuncCall(oper: and2, arguments: [ktrue, kfalse], uniquingTable)
 		let r2 = boolExpr2.evaluate(context: con)
 		assert(r2 == bfalse)
-		let or3 = DKAlgebraicOperator(domain: DKTypeInt.bool, op: "||", arity: 3)!
+		let or3 = DKAlgebraicOperator(domain: .bool, op: "||", arity: 3)!
 		let boolExpr3 = DKExpressionFuncCall(oper: or3, arguments: [kfalse, kfalse, kfalse], uniquingTable)
 		let r3 = boolExpr3.evaluate(context: con)
 		assert(r3 == bfalse)
@@ -42,7 +42,7 @@ extension DKExpression {
 
 		let s1: DKExpressionConstant = "foo"
 		let s2: DKExpressionConstant = "bar"
-		let concat2 = DKAlgebraicOperator(domain: DKTypeString.string, op: "|", arity: 2)!
+		let concat2 = DKAlgebraicOperator(domain: .string, op: "|", arity: 2)!
 		let sExpr = DKExpressionFuncCall(oper: concat2, arguments: [s1, s2], uniquingTable)
 		let ss = sExpr.evaluate(context: con)
 		assert(ss.stringValue == "foobar")

@@ -33,13 +33,13 @@ extension DKParser {
 			}
 			(currentToken, lexerState) = saved
 		}
-		throw DKParsingError("No match for expression", token)
+		throw DKParsingError("No match for expression", self)
 	}
 	func parseExpressionWithType(_ type: DKType!, _ variables: [DKType]) throws -> DKExpression {
 		let t = try parseType()
 		try expectReservedWord(":")
 		if type != nil && type! != t {
-			throw DKParsingError("Type mismatch \(type!) vs. \(t) for expression", token)
+			throw DKParsingError("Type mismatch \(type!) vs. \(t) for expression", self)
 		}
 		return try parseExpression(t, variables)
 	}
@@ -56,14 +56,14 @@ extension DKParser {
 	func parseExpressionVariable(_ type: DKType!, _ variables: [DKType]) throws -> DKExpression {
 		let s = maybeIdent()
 		if s == nil || s!.unichar0() != "$" {
-			throw DKParsingError("No match for expression variable", token)
+			throw DKParsingError("No match for expression variable", self)
 		}
 		let n = Int(s!.substringAfter(1))
 		if n == nil {
-			throw DKParsingError("No match for expression variable", token)
+			throw DKParsingError("No match for expression variable", self)
 		}
 		if n! >= variables.count {
-			throw DKParsingError("No match for variable $\(n!)", token)
+			throw DKParsingError("No match for variable $\(n!)", self)
 		}
 		accept()
 		var t = variables[n!]
@@ -71,13 +71,13 @@ extension DKParser {
 		while (t is DKTypeStruct) && peekReservedWord(".") {
 			let f = try parseFunctionProjection(t as! DKTypeStruct)
 			if f.signature.numberOfArguments != 1 || f.signature.input[0] != t {
-				throw DKParsingError("Mismatch for projection \(f) - t=\(t)", token)
+				throw DKParsingError("Mismatch for projection \(f) - t=\(t)", self)
 			}
 			expr = DKExpressionFuncCall(fun: f, arguments: [expr])
 			t = f.signature.output
 		}
 		if type != nil && type! != t {
-			throw DKParsingError("Mismatch for variable $\(n!)", token)
+			throw DKParsingError("Mismatch for variable $\(n!)", self)
 		}
 		return expr
 	}
@@ -87,7 +87,7 @@ extension DKParser {
 		exprs |= try parseExpression(nil, variables, false)
 		let op = peekAnyPunctuationOrReservedWord()
 		if op == nil || !DKOperator.allNonUnaryOperatorStrings.contains(op!) {
-			throw DKParsingError("Single sub-expression, not a suitable term", token)
+			throw DKParsingError("Single sub-expression, not a suitable term", self)
 		}
 		accept()
 		operators |= op!
@@ -108,13 +108,13 @@ extension DKParser {
 	func parseExpressionUnary(_ type: DKType!, _ variables: [DKType]) throws -> DKExpression {
 		let op = peekAnyPunctuationOrReservedWord()
 		if op == nil || !DKAlgebraicOperator.unaryOperatorStrings.contains(op!) {
-			throw DKParsingError("Not a suitable unary operator", token)
+			throw DKParsingError("Not a suitable unary operator", self)
 		}
 		accept()
 		let expr = try parseExpression(type, variables)
 		let oper = DKAlgebraicOperator(domain: type ?? expr.type, op: op!, arity: 1)
 		if oper == nil {
-			throw DKParsingError("Can't create unary expression for \(op!) \(expr)", token)
+			throw DKParsingError("Can't create unary expression for \(op!) \(expr)", self)
 		}
 		let f = DKFunctionOperator(oper: oper!, uniquingTable)
 		return DKExpressionFuncCall(fun: f, arguments: [expr])
@@ -122,7 +122,7 @@ extension DKParser {
 	func parseExpressionApplication(_ type: DKType!, _ variables: [DKType]) throws -> DKExpression {
 		let f = try parseFunctionReturning(type)
 		if type != nil && f.signature.output != type! {
-			throw DKParsingError("Type mismatch for application of function", token)
+			throw DKParsingError("Type mismatch for application of function", self)
 		}
 		let n = f.signature.numberOfArguments
 		try expectReservedWord("(")
@@ -173,7 +173,7 @@ extension DKParser {
 		let rops: [String] = operators[(i+1) ..< operators.count].map { $0 }
 		let right = try makeExpression(nil, exprs: rexprs, operators: rops)
 		if left.type != right.type {
-			throw DKParsingError("Type mismatch for comparison", token)
+			throw DKParsingError("Type mismatch for comparison", self)
 		}
 		var oper: DKOperator! = nil
 		if isComparison {
@@ -185,7 +185,7 @@ extension DKParser {
 			oper = DKAlgebraicOperator(domain: type ?? left.type, op: op, arity: 2)
 		}
 		if oper == nil {
-			throw DKParsingError("Can't create expression for \(exprs) and \(operators)", token)
+			throw DKParsingError("Can't create expression for \(exprs) and \(operators)", self)
 		}
 		let f = DKFunctionOperator(oper: oper!, uniquingTable)
 //		print("In makeExpression with exprs=\(exprs) ops=\(operators) - f=\(f)")

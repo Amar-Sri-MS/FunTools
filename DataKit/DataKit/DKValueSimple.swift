@@ -36,7 +36,7 @@ class DKValueSimple: DKValue, DKValueIsEqualToOther {
 		self.init(type: type, json: .integer(value))
 	}
 	convenience init(_ b: Bool) {
-		self.init(type: DKTypeInt.bool, value: b ? 1 : 0)
+		self.init(type: .bool, value: b ? 1 : 0)
 	}
 	convenience init(_ b: UInt8) {
 		self.init(type: DKTypeInt.uint8, value: UInt64(b))
@@ -45,7 +45,7 @@ class DKValueSimple: DKValue, DKValueIsEqualToOther {
 		self.init(type: DKTypeInt.uint64, value: w)
 	}
 	convenience init(_ s: String) {
-		self.init(type: DKTypeString.string, json: .string(s))
+		self.init(type: .string, json: .string(s))
 	}
 
 	// ===============  BASIC PROTOCOLS ===============

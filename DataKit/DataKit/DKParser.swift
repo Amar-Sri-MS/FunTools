@@ -17,24 +17,28 @@ class DKParser {
 		lexerState = lexer.makeIterator()
 		self.uniquingTable = uniquingTable
 	}
-	func parseJustType() throws -> DKType {
-		let t = try parseType()
-		try expectEOF()
+	class func parseType(_ uniquingTable: DKTypeTable, _ input: String) throws -> DKType {
+		let parser = DKParser(uniquingTable, input)
+		let t = try parser.parseType()
+		try parser.expectEOF()
 		return t
 	}
-	func parseJustValue(_ type: DKType!) throws -> DKValue {
-		let v = try parseValue(type)
-		try expectEOF()
+	class func parseValue(_ uniquingTable: DKTypeTable, _ input: String, _ type: DKType!) throws -> DKValue {
+		let parser = DKParser(uniquingTable, input)
+		let v = try parser.parseValue(type)
+		try parser.expectEOF()
 		return v
 	}
-	func parseJustFunction(_ signature: DKTypeSignature!) throws -> DKFunction {
-		let f = try parseFunction(signature)
-		try expectEOF()
+	class func parseFunction(_ uniquingTable: DKTypeTable, _ input: String, _ signature: DKTypeSignature! = nil) throws -> DKFunction {
+		let parser = DKParser(uniquingTable, input)
+		let f = try parser.parseFunction(signature)
+		try parser.expectEOF()
 		return f
 	}
-	func parseJustExpression(_ type: DKType!) throws -> DKExpression {
-		let e = try parseExpression(type, [])
-		try expectEOF()
+	class func parseExpression(_ uniquingTable: DKTypeTable, _ input: String, _ type: DKType! = nil) throws -> DKExpression {
+		let parser = DKParser(uniquingTable, input)
+		let e = try parser.parseExpression(type, [])
+		try parser.expectEOF()
 		return e
 	}
 }
@@ -62,10 +66,10 @@ extension DKParser {
 	}
 	func expectReservedWord(_ word: String) throws {
 		if token == nil {
-			throw DKParsingError("Premature end expecting '\(word)'", token)
+			throw DKParsingError("Premature end expecting '\(word)'", self)
 		}
 		if !peekReservedWord(word) {
-			throw DKParsingError("Expecting '\(word)' and got \(token!)", token)
+			throw DKParsingError("Expecting '\(word)' and got \(token!)", self)
 		}
 		accept()
 	}
@@ -87,25 +91,25 @@ extension DKParser {
 	func parseIdent() throws -> String {
 		let s = maybeIdent()
 		if s == nil {
-			throw DKParsingError("Expected identifier", token)
+			throw DKParsingError("Expected identifier", self)
 		}
 		accept()
 		return s!
 	}
 	func parseNumber() throws -> UInt64 {
 		if token == nil {
-			throw DKParsingError("Expecting number", token)
+			throw DKParsingError("Expecting number", self)
 		}
 		switch token!.type {
 		case let .natural(n):
 			accept()
 			return n
-		default: throw DKParsingError("Expecting number", token)
+		default: throw DKParsingError("Expecting number", self)
 		}
 	}
 	func expectEOF() throws {
 		if token != nil {
-			throw DKParsingError("Extraneous token", token)
+			throw DKParsingError("Extraneous token", self)
 		}
 	}
 }
@@ -116,14 +120,22 @@ public struct DKParsingError: Error, CustomStringConvertible {
 	let message: String
 	let position: LexerPosition
 	let line: LexerLine
-	init(_ m: String, _ token: LexerToken?) {
+	let parser: DKParser
+	let tokenRange: Range<LexerPosition>!	// nil => at end
+	init(_ m: String, _ parser: DKParser) {
+		self.parser = parser
 		message = m
+		let token = parser.token
 		position = token?.range.lowerBound ?? "".unicodeScalars.startIndex
 		line = token?.line ?? 0
+		tokenRange = token?.range
 //		print("Creating parsing error \(self)")
 	}
 	public var description: String {
-		return "*** Parsing error: \(message) at line: \(line)"
+		let rest: String = tokenRange == nil ? "<EOF>" : parser.lexer.originalString(from: tokenRange!.lowerBound)
+		let start = rest.truncate(50)
+		let more = start == rest ? "" : "..."
+		return "*** Parsing error: \(message) at line: \(line) starting with: '\(start)\(more)'"
 	}
 }
 

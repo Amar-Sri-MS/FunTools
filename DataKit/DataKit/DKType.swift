@@ -41,10 +41,10 @@ class DKType: Equatable, Hashable, CustomStringConvertible {
 		return subclassableSugaryDescription(uniquingTable)
 	}
 
-	// Convenience
-	class var void: DKType {
-		return DKTypeStruct.void
-	}
+	// Conveniences
+	class var void: DKType { return DKTypeStruct.void }
+	class var bool: DKType { return DKTypeInt.bool }
+	class var string: DKType { return DKTypeString.string }
 
 	// Convenience
 	// Note that a sequence of Void is just Void

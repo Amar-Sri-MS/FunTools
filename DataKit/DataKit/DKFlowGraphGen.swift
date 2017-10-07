@@ -23,6 +23,7 @@ class DKFlowGraphGen {
 	}
 	func optimize(fifos: inout [DKFifo]) -> Bool {
 		// Currently, this optimization is pointless
+		if fifos.count < 2 { return false }
 		for i in 1 ..< fifos.count - 1 {
 			if fifos[i].hasDefaultBehavior && fifos[i+1].predicateOnInput == nil {
 				print("Optimize away fifo #\(i)")

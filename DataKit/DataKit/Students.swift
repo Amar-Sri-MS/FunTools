@@ -31,7 +31,7 @@ func generateRandomStudent(id: Int) -> [JSON] {
 
 func studentType() -> DKTypeStruct {
 	let fields = ["first_name", "last_name", "age", "graduated", "has_grant", "id"]
-	let types = [DKTypeString.string, DKTypeString.string, DKTypeInt.uint8, DKTypeInt.bool, DKTypeInt.bool, DKTypeInt.uint32]
+	let types = [DKType.string, DKType.string, DKTypeInt.uint8, DKType.bool, DKType.bool, DKTypeInt.uint32]
 	return DKTypeStruct(subTypes: types, subNames: fields, packed: true, alignmentInBits: 32)
 }
 
@@ -74,28 +74,25 @@ func regenerateData(input: Data) -> Data {
 
 func filterSpecificFirstOrLastName(_ uniquingTable: DKTypeTable, _ first: Bool, _ name: String) -> DKFunctionFilter {
 	let t = studentType()
-	let studentFirstName: DKFunction = DKFunctionProjection(structType: t, fieldName: first ? "first_name" : "last_name", uniquingTable)
-	let v0 = DKExpressionVariable(index: 0, type: t)
-	let expressionGetFirstName = DKExpressionFuncCall(fun: studentFirstName, arguments: [v0])
-	let isEqualFunc: DKFunction = DKFunctionOperator(oper: DKComparisonOperator(domain: DKTypeString.string, op: "==")!, uniquingTable)
-	let k = DKExpressionConstant(.string(name))
-	let expressionFirstIsJoe: DKExpression = DKExpressionFuncCall(fun: isEqualFunc, arguments: [expressionGetFirstName, k])
-	let funcFirstIsJoe: DKFunction = DKFunctionClosure(params: [t], body: expressionFirstIsJoe, uniquingTable)
-	return DKFunctionFilter(predicate: funcFirstIsJoe)
+	let seq = DKTypeSequence(subType: t)
+	let sig = DKTypeSignature(unaryArg: seq, output: seq)
+	return try! DKParser.parseFunction(uniquingTable, "filter({ $0.\(first ? "first_name" : "last_name") == \"\(name)\" })", sig) as! DKFunctionFilter
 }
 
 func generateFullName(_ uniquingTable: DKTypeTable) -> DKFunctionClosure {
 	let t = studentType()
-	let v0 = DKExpressionVariable(index: 0, type: t)
-	let studentFirstName: DKFunction = DKFunctionProjection(structType: t, fieldName: "first_name", uniquingTable)
-	let expressionGetFirstName = DKExpressionFuncCall(fun: studentFirstName, arguments: [v0])
-	let studentLastName: DKFunction = DKFunctionProjection(structType: t, fieldName: "last_name", uniquingTable)
-	let expressionGetLastName = DKExpressionFuncCall(fun: studentLastName, arguments: [v0])
-	let kSpace: DKExpressionConstant = "_"
-	let oper = DKAlgebraicOperator(domain: DKTypeString.string, op: "|", arity: 3)!
-	let catted = DKFunctionOperator(oper: oper, uniquingTable)
-	let expressionFullName: DKExpression = DKExpressionFuncCall(fun: catted, arguments: [expressionGetFirstName, kSpace, expressionGetLastName])
-	return DKFunctionClosure(params: [t], body: expressionFullName, uniquingTable)
+//	let v0 = DKExpressionVariable(index: 0, type: t)
+//	let studentFirstName: DKFunction = DKFunctionProjection(structType: t, fieldName: "first_name", uniquingTable)
+//	let expressionGetFirstName = DKExpressionFuncCall(fun: studentFirstName, arguments: [v0])
+//	let studentLastName: DKFunction = DKFunctionProjection(structType: t, fieldName: "last_name", uniquingTable)
+//	let expressionGetLastName = DKExpressionFuncCall(fun: studentLastName, arguments: [v0])
+//	let kSpace: DKExpressionConstant = "_"
+//	let oper = DKAlgebraicOperator(domain: DKTypeString.string, op: "|", arity: 3)!
+//	let catted = DKFunctionOperator(oper: oper, uniquingTable)
+//	let expressionFullName: DKExpression = DKExpressionFuncCall(fun: catted, arguments: [expressionGetFirstName, kSpace, expressionGetLastName])
+//	return DKFunctionClosure(params: [t], body: expressionFullName, uniquingTable)
+	let sig = DKTypeSignature(unaryArg: t, output: .string)
+	return try! DKParser.parseFunction(uniquingTable, "{ $0.first | \"_\" | $0.last }", sig) as! DKFunctionClosure
 }
 
 func dumpFilter(input: Data, _ uniquingTable: DKTypeTable, _ name: String) {
@@ -152,65 +149,28 @@ func registerGeneratorOfStudents(typeTable: DKTypeTable) {
 	}
 
 }
-func studentsTestOld() {
-	let t = studentType()
-	let typeTable = DKTypeTable()
-	registerGeneratorOfStudents(typeTable: typeTable)
-	let generator = DKFunctionGenerator(typeTable, name: "Students", params: 10_000, itemType: t)
-	let con = DKEvaluationContext()
-	let students = generator.evaluate(context: con, [])
-	var bs: DKMutableBitStream = DataAsMutableBitStream()
-	students.append(to: &bs)
-	let data1 = bs.finishAndData()
 
-	let data = generateDataWithStudents(typeTable, 100)
-	assert(data1 == data)
-
-	let tsShortcut = t.makeSequence.toTypeShortcut(typeTable)
-	print("Students type = \(tsShortcut)")
-
-	let name = "Mary"
-	let filter: DKFunctionFilter = filterSpecificFirstOrLastName(typeTable, true, name)
-
-	print("Students = \(data.debugDescription)")
-	printStudentsDataStream(data: data)
-
-	let regen = regenerateData(input: data)
-	printStudentsDataStream(data: regen)
-
-	let students2 = t.makeSequence.fromDataLazy(data1)
-	let logger = DKFunctionSink(typeTable, name: "logger", itemType: t)
-	print("Log should start here")
-	let result = logger.evaluate(context: con, [students2!.asExpressionConstant])
-	print("Log finished - result = \(result)")
-
-	assert(data == regen)
-	dumpFilter(input: data, typeTable, name)
-
-	try! data.write(to: "/tmp/students.data")
-	try! generator.functionToJSON.writeToFile("/tmp/students_generator.json")
-	try! filter.functionToJSON.writeToFile("/tmp/students_filter.json")
-	try! logger.functionToJSON.writeToFile("/tmp/students_logger.json")
-	try! typeTable.typeTableAsJSON.writeToFile("/tmp/students_types.json")
-}
-
-var twoFilters = false
+var twoFilters = true
 
 func studentsTestNew() {
 	let t = studentType()
 	let typeTable = DKTypeTable()
 	registerGeneratorOfStudents(typeTable: typeTable)
-	let filter: DKFunctionFilter = filterSpecificFirstOrLastName(typeTable, true, "Joe")
 	let generator = DKFunctionGenerator(typeTable, name: "Students", params: 1000, itemType: t)
-	let newLogger = DKFunctionMap(each: DKFunctionLogger(typeTable, t))
-	let pipeline: DKFunctionComposition
-	if twoFilters {
-		let lastIsSmith = filterSpecificFirstOrLastName(typeTable, false, "Smith")
-		pipeline = DKFunctionComposition(outer: newLogger, inner: DKFunctionComposition(outer: lastIsSmith, inner: filter))
-	} else {
-		pipeline = DKFunctionComposition(outer: newLogger, inner: filter)
-	}
-	print("Signature of pipeline: \(pipeline.signature)")
+	let seq = DKTypeSequence(subType: t)
+	let sig = DKTypeSignature(unaryArg: seq, output: .void)
+	let sc = t.toTypeShortcut(typeTable)
+
+	let pipeString = "compose(" +
+		"map((Student) -> (): logger()), " +
+		"compose(" +
+			"filter((Student) -> Bool: { $0.first_name == \"Mary\"}), " +
+			"filter((Student) -> Bool: { $0.last_name == \"Smith\"})" +
+			")" +
+		")"
+
+	let pipeline = try! DKParser.parseFunction(typeTable, pipeString.replaceOccurrences("Student", sc), sig)
+	print("pipeline = \(pipeline)")
 	let flowGraphGen = DKFlowGraphGen(typeTable, generator, pipeline)
 	let r = flowGraphGen.generate()
 	for fifo in r.fifos {
@@ -222,6 +182,5 @@ func studentsTestNew() {
 }
 
 func studentsTest() {
-//	studentsTestOld()
 	studentsTestNew()
 }

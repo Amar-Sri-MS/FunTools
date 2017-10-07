@@ -18,7 +18,7 @@
 extension DKParser {
 	func parseValue(_ type: DKType!) throws -> DKValue {
 		if token == nil {
-			throw DKParsingError("Expecting value", token)
+			throw DKParsingError("Expecting value", self)
 		}
 		switch token!.type {
 		case let .natural(n):
@@ -26,48 +26,48 @@ extension DKParser {
 			return DKValueSimple(type: type ?? DKTypeInt.uint64, value: n)
 		case let .stringLiteral(s):
 			accept()
-			if type != nil && type! != DKTypeString.string {
-				throw DKParsingError("Parsed a string '\(s)' instead of a value of type \(type)", token)
+			if type != nil && type! != .string {
+				throw DKParsingError("Parsed a string '\(s)' instead of a value of type \(type)", self)
 			}
-			return DKValueSimple(s)
+			return DKValueSimple(s.unquotedString(LexingStyle.JSON))
 		case let .identifier(s):
 			accept()
 			if s == "nil" {
 				if type != DKType.void {
-					throw DKParsingError("Parsed nil instead of a value of type \(type)", token)
+					throw DKParsingError("Parsed nil instead of a value of type \(type)", self)
 				}
 				return .null
 			}
 			if s == "true" || s == "false" {
-				if type != nil && type! != DKTypeInt.bool {
-					throw DKParsingError("Parsed a bool '\(s)' instead of a value of type \(type)", token)
+				if type != nil && type! != .bool {
+					throw DKParsingError("Parsed a bool '\(s)' instead of a value of type \(type)", self)
 				}
 				return .bool(s == "true")
 			}
-			throw DKParsingError("Unexpect identifier '\(s)' for value", token)
+			throw DKParsingError("Unexpect identifier '\(s)' for value", self)
 		case let .reservedWord(s):
 			if s == "(" {
 				if type != nil && !(type is DKTypeStruct) {
-					throw DKParsingError("Parsing a struct not \(type)", token)
+					throw DKParsingError("Parsing a struct not \(type)", self)
 				}
 				return try parseValueStruct(type as? DKTypeStruct)
 			}
 			if s == "[" {
 				if type != nil && !(type is DKTypeSequence) {
-					throw DKParsingError("Parsing an array not \(type)", token)
+					throw DKParsingError("Parsing an array not \(type)", self)
 				}
 				return try parseValueSequence(type as? DKTypeSequence)
 			}
-			throw DKParsingError("Unexpected word '\(s)' for value", token)
+			throw DKParsingError("Unexpected word '\(s)' for value", self)
 		case let .punctuation(ch):
 			if ch != "-" {
-				throw DKParsingError("Unexpected punctuation for value", token)
+				throw DKParsingError("Unexpected punctuation for value", self)
 			}
 			accept()
 			let n = try parseNumber()
 			return DKValueSimple(type: type ?? DKTypeInt.int64, value: -Int64(bitPattern: n))
 		default:
-			throw DKParsingError("Unexpected token for value", token)
+			throw DKParsingError("Unexpected token for value", self)
 		}
 	}
 	func parseValueStruct(_ type: DKTypeStruct!) throws -> DKValue {
@@ -81,7 +81,7 @@ extension DKParser {
 				try expectReservedWord(",")
 			}
 			if jsons.count != type.subs.count {
-				throw DKParsingError("Missing subvalues after \(jsons) for struct \(type)", token)
+				throw DKParsingError("Missing subvalues after \(jsons) for struct \(type)", self)
 			}
 			try expectReservedWord(")")
 			return DKValueSimple(type: type, json: .array(jsons))
@@ -111,7 +111,7 @@ extension DKParser {
 		}
 		try expectReservedWord("]")
 		if t == nil {
-			throw DKParsingError("Need a type to parse an empty sequence of values", token)
+			throw DKParsingError("Need a type to parse an empty sequence of values", self)
 		}
 		return DKValueSimple(type: DKTypeSequence(subType: t!), json: .array(jsons))
 	}

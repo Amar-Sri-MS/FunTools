@@ -15,7 +15,7 @@ class DKFunctionLogger: DKFunction {
 		shortcut = type.toTypeShortcut(uniquingTable)
 	}
 	override var signature: DKTypeSignature {
-		return DKTypeSignature(input: DKTypeStruct(funcParamType: type), output: .void)
+		return DKTypeSignature(unaryArg: type, output: .void)
 	}
 	override var functionToJSONDict: [String: JSON] {
 		return ["logger": shortcut.toJSON]

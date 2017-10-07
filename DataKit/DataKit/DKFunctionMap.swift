@@ -31,11 +31,11 @@ class DKFunctionMap: DKFunction {
 			}
 			let inputItemType = (signature.input[0] as! DKTypeSequence).sub
 			if outputSequenceType == DKType.void {
-				return DKTypeSignature(input: DKTypeStruct(funcParamType: inputItemType), output: DKType.void)
+				return DKTypeSignature(unaryArg: inputItemType, output: .void)
 			}
 			if let s = outputSequenceType as? DKTypeSequence {
 				let outputItemType = s.sub
-				return DKTypeSignature(input: DKTypeStruct(funcParamType: inputItemType), output: outputItemType)
+				return DKTypeSignature(unaryArg: inputItemType, output: outputItemType)
 			} else {
 				return nil
 			}

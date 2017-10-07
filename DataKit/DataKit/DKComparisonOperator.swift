@@ -15,11 +15,11 @@ class DKComparisonOperator: DKOperator {
 	}
 	override var signature: DKTypeSignature {
 		let input = DKTypeStruct(funcParamType: baseType, repeated: 2)
-		return DKTypeSignature(input: input, output: DKTypeInt.bool)
+		return DKTypeSignature(input: input, output: .bool)
 	}
 	fileprivate class func evaluationForComparator(domain: DKType, op: String) -> DKNAryEvaluator? {
 		if (op == "==") || (op == "!=") || (op == "<") || (op == "<=") || (op == ">") || (op == ">=") {
-			if domain == DKTypeInt.bool {
+			if domain == .bool {
 				if (op != "==") && (op != "!=") { return nil }
 				return {  context, subs in
 					assert(subs.count == 2)

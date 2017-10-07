@@ -58,7 +58,6 @@
 		A72CC7A11F4D1CC80058827F /* DKFunctionFilter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A72CC7A01F4D1CC80058827F /* DKFunctionFilter.swift */; };
 		A72CC7A31F4D1DE60058827F /* DKFunctionClosure.swift in Sources */ = {isa = PBXBuildFile; fileRef = A72CC7A21F4D1DE60058827F /* DKFunctionClosure.swift */; };
 		A72CC7A51F5366540058827F /* DKFunctionGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A72CC7A41F5366540058827F /* DKFunctionGenerator.swift */; };
-		A72CC7A71F53A6820058827F /* DKFunctionSink.swift in Sources */ = {isa = PBXBuildFile; fileRef = A72CC7A61F53A6820058827F /* DKFunctionSink.swift */; };
 		A72CC7B51F5E211A0058827F /* libfunclient.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A72CC7B41F5E211A0058827F /* libfunclient.a */; };
 		A72CC7B71F620BA60058827F /* DKFunctionComposition.swift in Sources */ = {isa = PBXBuildFile; fileRef = A72CC7B61F620BA60058827F /* DKFunctionComposition.swift */; };
 		A72CC7BD1F6A2BD50058827F /* DKFifo.swift in Sources */ = {isa = PBXBuildFile; fileRef = A72CC7BC1F6A2BD50058827F /* DKFifo.swift */; };
@@ -169,7 +168,6 @@
 		A72CC7A01F4D1CC80058827F /* DKFunctionFilter.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKFunctionFilter.swift; sourceTree = "<group>"; };
 		A72CC7A21F4D1DE60058827F /* DKFunctionClosure.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKFunctionClosure.swift; sourceTree = "<group>"; };
 		A72CC7A41F5366540058827F /* DKFunctionGenerator.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKFunctionGenerator.swift; sourceTree = "<group>"; };
-		A72CC7A61F53A6820058827F /* DKFunctionSink.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKFunctionSink.swift; sourceTree = "<group>"; };
 		A72CC7B41F5E211A0058827F /* libfunclient.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libfunclient.a; path = ../../FunSDK/lib/Darwin/libfunclient.a; sourceTree = "<group>"; };
 		A72CC7B61F620BA60058827F /* DKFunctionComposition.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKFunctionComposition.swift; sourceTree = "<group>"; };
 		A72CC7BC1F6A2BD50058827F /* DKFifo.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKFifo.swift; sourceTree = "<group>"; };
@@ -197,11 +195,11 @@
 		A78F76A61F3E6DB100E33523 /* DKBitAddress.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKBitAddress.swift; sourceTree = "<group>"; };
 		A78F76A81F3E722200E33523 /* DKValueSimple.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKValueSimple.swift; sourceTree = "<group>"; };
 		A78F76AA1F3E7F1400E33523 /* DKValueLazy.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKValueLazy.swift; sourceTree = "<group>"; };
-		A7A56A8F1F84BC82007B5391 /* DKParser.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKParser.swift; sourceTree = "<group>"; };
+		A7A56A8F1F84BC82007B5391 /* DKParser.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; lineEnding = 0; path = DKParser.swift; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.swift; };
 		A7A56A911F862B80007B5391 /* DKParserForType.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKParserForType.swift; sourceTree = "<group>"; };
 		A7A56A931F862BAD007B5391 /* DKParserForValue.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKParserForValue.swift; sourceTree = "<group>"; };
-		A7A56A951F862BD6007B5391 /* DKParserForFunction.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKParserForFunction.swift; sourceTree = "<group>"; };
-		A7A56A971F862C05007B5391 /* DKParserForExpression.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKParserForExpression.swift; sourceTree = "<group>"; };
+		A7A56A951F862BD6007B5391 /* DKParserForFunction.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; lineEnding = 0; path = DKParserForFunction.swift; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.swift; };
+		A7A56A971F862C05007B5391 /* DKParserForExpression.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; lineEnding = 0; path = DKParserForExpression.swift; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.swift; };
 		A7A56A991F862D34007B5391 /* DKParser_Test.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKParser_Test.swift; sourceTree = "<group>"; };
 		A7B27D111F2580EE00C171BD /* DKType_Test.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKType_Test.swift; sourceTree = "<group>"; };
 		A7B27D131F25817A00C171BD /* DKExpression_Test.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKExpression_Test.swift; sourceTree = "<group>"; };
@@ -304,7 +302,6 @@
 				A72CC79E1F4D014B0058827F /* DKFunctionProjection.swift */,
 				A72CC7A01F4D1CC80058827F /* DKFunctionFilter.swift */,
 				A72CC7A41F5366540058827F /* DKFunctionGenerator.swift */,
-				A72CC7A61F53A6820058827F /* DKFunctionSink.swift */,
 				A738879C1F6F41E400A2F976 /* DKFunctionMap.swift */,
 				A738879E1F6F533B00A2F976 /* DKFunctionLogger.swift */,
 				A72CC7A21F4D1DE60058827F /* DKFunctionClosure.swift */,
@@ -528,7 +525,6 @@
 				A7EB13821F2DB43500760396 /* DKEvaluationContext.swift in Sources */,
 				A72CC7A11F4D1CC80058827F /* DKFunctionFilter.swift in Sources */,
 				A72CC7901F49F4C80058827F /* SortedRanges.swift in Sources */,
-				A72CC7A71F53A6820058827F /* DKFunctionSink.swift in Sources */,
 				A7A56A921F862B80007B5391 /* DKParserForType.swift in Sources */,
 				A7A56A941F862BAD007B5391 /* DKParserForValue.swift in Sources */,
 				A72CC7581F49F4BE0058827F /* ProtocolsExtras.swift in Sources */,

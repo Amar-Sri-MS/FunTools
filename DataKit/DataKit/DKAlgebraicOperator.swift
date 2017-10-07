@@ -67,7 +67,7 @@ class DKAlgebraicOperator: DKOperator {
 
 	fileprivate class func evaluationForNaryOperator(domain: DKType, op: String, arity: Int) -> DKNAryEvaluator? {
 		// First unary operators
-		if (arity == 1) && (op == "!") && (domain == DKTypeInt.bool) {
+		if (arity == 1) && (op == "!") && (domain == .bool) {
 			return {  context, subs in
 				assert(subs.count == 1)
 				let esub = subs[0].evaluate(context: context)
@@ -96,7 +96,7 @@ class DKAlgebraicOperator: DKOperator {
 			}
 		}
 		// First N-ary operators
-		if domain == DKTypeInt.bool {
+		if domain == .bool {
 			return evaluationForNaryBoolOperator(op: op)
 		}
 		if domain is DKTypeInt {

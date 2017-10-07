@@ -16,7 +16,7 @@
 extension DKParser {
 	func parseType() throws -> DKType {
 		if token == nil {
-			throw DKParsingError("Malformed type, no token found", token)
+			throw DKParsingError("Malformed type, no token found", self)
 		}
 		let s = maybeIdent()
 		if s != nil {
@@ -34,7 +34,7 @@ extension DKParser {
 		if peekReservedWord("[") {
 			return try parseTypeSequence()
 		}
-		throw DKParsingError("Malformed type, unexpected token", token)
+		throw DKParsingError("Malformed type, unexpected token", self)
 	}
 	func maybeMakeSignature(_ base: DKTypeStruct) throws -> DKType {
 		if peekReservedWord("->") {
@@ -49,14 +49,14 @@ extension DKParser {
 		if typeName == "Int" || typeName == "UInt" {
 			let params = try parseTypeParameters()
 			if params.count != 1 {
-				throw DKParsingError("For type constructor \(typeName), improper parameters \(params)", token)
+				throw DKParsingError("For type constructor \(typeName), improper parameters \(params)", self)
 			}
 			return DKTypeInt.shared(signed: typeName == "Int", numBits: UInt8(params[0]))
 		}
 		let j: JSON = .string(typeName)
 		let t = j.toDKType(uniquingTable)
 		if t == nil {
-			throw DKParsingError("Unknown predefined type '\(typeName)'", token)
+			throw DKParsingError("Unknown predefined type '\(typeName)'", self)
 		}
 		return t!
 	}
@@ -65,14 +65,14 @@ extension DKParser {
 		try expectReservedWord("(")
 		while !peekReservedWord(")") {
 			if token == nil {
-				throw DKParsingError("Premature end in parameter list", token)
+				throw DKParsingError("Premature end in parameter list", self)
 			}
 			switch token!.type {
 			case let .natural(i):
 				accept()
 				params |= Int(i)
 			default:
-				throw DKParsingError("Expecting number in parameter list", token)
+				throw DKParsingError("Expecting number in parameter list", self)
 			}
 			if !peekReservedWord(",") {
 				break
@@ -120,7 +120,7 @@ extension DKParser {
 			} else {
 				let f = maybeIdent()
 				if f == nil {
-					throw DKParsingError("Expecting field name", token)
+					throw DKParsingError("Expecting field name", self)
 				}
 				accept()
 				try expectReservedWord(":")

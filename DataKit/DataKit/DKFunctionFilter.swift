@@ -25,7 +25,7 @@ class DKFunctionFilter: DKFunction {
 				return nil
 			}
 			let itemType = (seqType as! DKTypeSequence).sub
-			return DKTypeSignature(input: DKTypeStruct(funcParamType: itemType), output: DKTypeInt.bool)
+			return DKTypeSignature(unaryArg: itemType, output: .bool)
 		}
 		return nil
 	}

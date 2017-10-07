@@ -66,6 +66,6 @@ class DKFunctionComposition: DKFunction {
 		return inner.isInputGroupable && outer.isInputGroupable
 	}
 	override var description: String {
-		return "composition(\(inner), \(outer))"
+		return "compose(\(outer), \(inner))"
 	}
 }
