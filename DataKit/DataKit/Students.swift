@@ -144,18 +144,18 @@ let pipe1 = "compose(" +
 let pipe2 = "compose(" +
 	"map((Student) -> (): logger()), " +
 	"compose(" +
-	"filter((Student) -> Bool: { $0.first_name == \"Mary\"}), " +
+	"filter((Student) -> Bool: { $0.first_name == \"Joe\"}), " +
 	"filter((Student) -> Bool: { $0.last_name == \"Smith\"})" +
 	")" +
 ")"
 
-let pipeFullNames = "compose(" +
-	"map((String) -> (): logger()), " +
-	"map((Student) -> String: { $0.first_name | \"_\" | $0.last_name })" +
-")"
+//let pipeFullNames = "compose(" +
+//	"map((String) -> (): logger()), " +
+//	"map((Student) -> String: { $0.first_name | \"_\" | $0.last_name })" +
+//")"
 
 func studentsTestNew() {
-	let pipeString = pipeFullNames
+	let pipeString = pipe2
 	let t = studentType()
 	let typeTable = DKTypeTable()
 	registerGeneratorOfStudents(typeTable: typeTable)
