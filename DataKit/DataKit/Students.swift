@@ -95,22 +95,6 @@ func generateFullName(_ uniquingTable: DKTypeTable) -> DKFunctionClosure {
 	return try! DKParser.parseFunction(uniquingTable, "{ $0.first | \"_\" | $0.last }", sig) as! DKFunctionClosure
 }
 
-func dumpFilter(input: Data, _ uniquingTable: DKTypeTable, _ name: String) {
-	let ts = studentType().makeSequence
-	let filterFunc = filterSpecificFirstOrLastName(uniquingTable, true, name)
-	print("Filter = \(filterFunc)")
-	let students = ts.fromDataLazy(input)
-	let con = DKEvaluationContext()
-	let filtered = filterFunc.evaluate(context: con, [students!.asExpressionConstant])
-	print("Filtered: \(filtered.description)")
-	let fullNameGen = generateFullName(uniquingTable)
-	print("Generate full name = \(fullNameGen)")
-	for student in filtered as! DKValueLazySequence {
-		let full = fullNameGen.evaluate(context: con, [student.asExpressionConstant])
-		print("-> \(full.stringValue)")
-	}
-}
-
 var socket: Int32 = 0
 
 extension String {
@@ -150,9 +134,28 @@ func registerGeneratorOfStudents(typeTable: DKTypeTable) {
 
 }
 
-var twoFilters = true
+let pipe0 = "map((Student) -> (): logger())"
+
+let pipe1 = "compose(" +
+	"map((Student) -> (): logger()), " +
+	"filter((Student) -> Bool: { $0.first_name == \"Joe\"})" +
+")"
+
+let pipe2 = "compose(" +
+	"map((Student) -> (): logger()), " +
+	"compose(" +
+	"filter((Student) -> Bool: { $0.first_name == \"Mary\"}), " +
+	"filter((Student) -> Bool: { $0.last_name == \"Smith\"})" +
+	")" +
+")"
+
+let pipeFullNames = "compose(" +
+	"map((String) -> (): logger()), " +
+	"map((Student) -> String: { $0.first_name | \"_\" | $0.last_name })" +
+")"
 
 func studentsTestNew() {
+	let pipeString = pipeFullNames
 	let t = studentType()
 	let typeTable = DKTypeTable()
 	registerGeneratorOfStudents(typeTable: typeTable)
@@ -160,15 +163,6 @@ func studentsTestNew() {
 	let seq = DKTypeSequence(subType: t)
 	let sig = DKTypeSignature(unaryArg: seq, output: .void)
 	let sc = t.toTypeShortcut(typeTable)
-
-	let pipeString = "compose(" +
-		"map((Student) -> (): logger()), " +
-		"compose(" +
-			"filter((Student) -> Bool: { $0.first_name == \"Mary\"}), " +
-			"filter((Student) -> Bool: { $0.last_name == \"Smith\"})" +
-			")" +
-		")"
-
 	let pipeline = try! DKParser.parseFunction(typeTable, pipeString.replaceOccurrences("Student", sc), sig)
 	print("pipeline = \(pipeline)")
 	let flowGraphGen = DKFlowGraphGen(typeTable, generator, pipeline)
