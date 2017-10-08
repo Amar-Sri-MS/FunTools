@@ -19,7 +19,7 @@ class DKExpression {
 	class func expressionFromJSON(_ uniquingTable: DKTypeTable, _ j: JSON) -> DKExpression! {
 		fatalErrorMustBeImplementedBySubclass()
 	}
-	func sugaredDescription(_ knowns: [DKType: String]) -> (desc: String, needsParen: Bool) {
+	func sugaredDescription(_ uniquingTable: DKTypeTable) -> (desc: String, needsParen: Bool) {
 		fatalErrorMustBeImplementedBySubclass()
 	}
 }

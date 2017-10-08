@@ -9,7 +9,7 @@
 private var theString: DKTypeString!
 
 class DKTypeString: DKType {
-	class var string: DKTypeString {
+	class override var string: DKTypeString {
 		if theString == nil { theString = DKTypeString() }
 		return theString
 	}

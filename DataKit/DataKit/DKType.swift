@@ -27,19 +27,24 @@ class DKType: Equatable, Hashable, CustomStringConvertible {
 		let uniquingTable = DKTypeTable()
 		return typeToRawJSON(uniquingTable).description
 	}
-	func sugaredDescription(_ knowns: [DKType: String]) -> String {
-		let k = knowns[self]
-		if k != nil { return k! }
-		let uniquingTable = DKTypeTable()
-		let j = typeToRawJSON(uniquingTable)
-		if j.isString { return j.stringValue }
-		return j.description
+	func subclassableSugaryDescription(_ uniquingTable: DKTypeTable) -> String {
+		let rawJSON = typeToRawJSON(uniquingTable)
+		return rawJSON.description
+	}
+	final func sugaredDescription(_ uniquingTable: DKTypeTable) -> String {
+		let rawJSON = typeToRawJSON(uniquingTable)
+		if rawJSON.isString {
+			return rawJSON.stringValue
+		}
+		let sc = rawJSON.asTypeShortcut
+		if uniquingTable[sc] != nil { return sc }
+		return subclassableSugaryDescription(uniquingTable)
 	}
 
-	// Convenience
-	class var void: DKType {
-		return DKTypeStruct.void
-	}
+	// Conveniences
+	class var void: DKType { return DKTypeStruct.void }
+	class var bool: DKType { return DKTypeInt.bool }
+	class var string: DKType { return DKTypeString.string }
 
 	// Convenience
 	// Note that a sequence of Void is just Void
@@ -55,9 +60,9 @@ class DKType: Equatable, Hashable, CustomStringConvertible {
 		if rawJSON.isString {
 			return rawJSON.stringValue
 		}
-		let typeCode = "T_" + rawJSON.description.toSHA256().word2.toHexString(true) // word 2 is as good as any; we only use 64b of a SHA2 as risk of colliding is low
-		uniquingTable[typeCode] = rawJSON
-		return typeCode
+		let sc = rawJSON.asTypeShortcut
+		uniquingTable[sc] = rawJSON
+		return sc
 	}
 	// Converts the type to JSON
 	func typeToRawJSON(_ uniquingTable: DKTypeTable) -> JSON {
@@ -135,11 +140,14 @@ extension JSON {
 		if raw == nil && code.hasPrefix("T_") { return nil }
 		if raw == nil { raw = self }
 		// TODO: Need to avoid this...
-		for f in [DKTypeInt.typeFromJSON, DKTypeStruct.typeFromJSON, DKTypeArray.typeFromJSON, DKTypeSignature.typeFromJSON] {
+		for f in [DKTypeInt.typeFromJSON, DKTypeString.typeFromJSON, DKTypeStruct.typeFromJSON, DKTypeArray.typeFromJSON, DKTypeSignature.typeFromJSON] {
 			let t = f(uniquingTable, raw!)
 			if t != nil { return t }
 		}
 		return nil
+	}
+	fileprivate var asTypeShortcut: String {
+		return "T_" + description.toSHA256().word2.toHexString(true) // word 2 is as good as any; we only use 64b of a SHA2 as risk of colliding is low
 	}
 }
 

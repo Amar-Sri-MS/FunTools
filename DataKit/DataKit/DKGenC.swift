@@ -11,7 +11,7 @@
 class DKGenC {
 	var knownTypes: [String: DKType]
 	init() {
-		knownTypes = ["Bool": DKTypeInt.bool, "UInt8": DKTypeInt.byte]
+		knownTypes = ["Bool": .bool, "UInt8": DKTypeInt.byte]
 	}
 	func findKnownType(_ type: DKType) -> String? {
 		return knownTypes.keysForValue(type).first

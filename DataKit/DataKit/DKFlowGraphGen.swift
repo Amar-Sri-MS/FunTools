@@ -23,6 +23,7 @@ class DKFlowGraphGen {
 	}
 	func optimize(fifos: inout [DKFifo]) -> Bool {
 		// Currently, this optimization is pointless
+		if fifos.count < 2 { return false }
 		for i in 1 ..< fifos.count - 1 {
 			if fifos[i].hasDefaultBehavior && fifos[i+1].predicateOnInput == nil {
 				print("Optimize away fifo #\(i)")
@@ -86,13 +87,14 @@ class DKFlowGraphGen {
 	}
 	var flowGraphToJSON: JSON {
 		let r = generate()
-		let dict: [String: JSON] = [
-			"types": uniquingTable.typeTableAsJSON,
+		var dict: [String: JSON] = [
 			"fifos": .array(r.fifos.map { $0.fifoToJSON(uniquingTable) }),
 			"generator": gen.functionToJSON,
 			"fun": fun.functionToJSON,
 			"last_fun": r.lastFunc.functionToJSON
 		]
+		// we do the table last, in case something got added there
+		dict["types"] = uniquingTable.typeTableAsJSON
 		return .dictionary(dict)
 	}
 }

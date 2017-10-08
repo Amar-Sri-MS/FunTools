@@ -42,9 +42,9 @@ class DKExpressionFuncCall: DKExpression {
 		let args = aj!.arrayValue.flatMap { $0.toDKExpression(uniquingTable) }
 		return DKExpressionFuncCall(fun: f!, arguments: args)
 	}
-	override func sugaredDescription(_ knowns: [DKType: String]) -> (desc: String, needsParen: Bool) {
+	override func sugaredDescription(_ uniquingTable: DKTypeTable) -> (desc: String, needsParen: Bool) {
 		func parenthesized(_ arg: DKExpression) -> String {
-			let d = arg.sugaredDescription(knowns)
+			let d = arg.sugaredDescription(uniquingTable)
 			return d.needsParen ? "(\(d.desc))" : d.desc
 		}
 		if arguments.count == 1 {

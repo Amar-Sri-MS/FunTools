@@ -78,6 +78,10 @@ class DKTypeStruct: DKType, Cardinality {
 		let types = [DKType](repeating: type, count: repeated)
 		self.init(subTypes: types, subNames: nil, packed: false, alignmentInBits: 32)
 	}
+	func realignForFuncParams() -> DKTypeStruct {
+		if alignment != nil { return self }
+		return DKTypeStruct(subTypes: subs, subNames: names, packed: false, alignmentInBits: 32)
+	}
 	var count: Int { return subs.count }
 	subscript(i: Int) -> DKType {
 		assert(i < count);
@@ -163,5 +167,13 @@ class DKTypeStruct: DKType, Cardinality {
 			return super.fromDataLazy(data)
 		}
 		return DKValueLazyStruct(type: self, data: data)
+	}
+	override func subclassableSugaryDescription(_ uniquingTable: DKTypeTable) -> String {
+		if names != nil {
+			return "(" + zip(names!, subs).joinDescriptions(", ") {
+				$0.0 + ": " + $0.1.sugaredDescription(uniquingTable)
+				} + ")"
+		}
+		return "(" + subs.joinDescriptions(", ") { $0.sugaredDescription(uniquingTable) } + ")"
 	}
 }

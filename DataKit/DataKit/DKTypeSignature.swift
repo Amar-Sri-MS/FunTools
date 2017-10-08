@@ -13,6 +13,9 @@ class DKTypeSignature: DKType {
 		self.input = input
 		self.output = output
 	}
+	convenience init(unaryArg u: DKType, output: DKType) {
+		self.init(input: DKTypeStruct(funcParamType:u), output: output)
+	}
 	var numberOfArguments: Int {
 		return input.count
 	}
@@ -40,10 +43,14 @@ class DKTypeSignature: DKType {
 		return DKValueFunc.fromRawJSON(uniquingTable, j)
 	}
 	var isPredicate: Bool {
-		return numberOfArguments == 1 && output == DKTypeInt.bool
+		return numberOfArguments == 1 && output == .bool
 	}
 	var predicateOf: DKType? {
 		if !isPredicate { return nil }
 		return self[0]
 	}
+	override func subclassableSugaryDescription(_ uniquingTable: DKTypeTable) -> String {
+		return input.subclassableSugaryDescription(uniquingTable) + " -> " + output.sugaredDescription(uniquingTable)
+	}
+
 }

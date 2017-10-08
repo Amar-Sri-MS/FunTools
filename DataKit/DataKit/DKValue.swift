@@ -68,9 +68,6 @@ class DKValue: Equatable, CustomStringConvertible {
 		let uniquingTable = DKTypeTable()
 		return valueToJSON(uniquingTable).description
 	}
-	func sugaredDescription(_ knowns: [DKType: String]) -> String {
-		return description
-	}
 	func dumpDescription(indent: Int = 0) {
 		let spaces = String(repeating: "    ", count: indent);
 		print(spaces + description)

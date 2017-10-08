@@ -57,7 +57,4 @@ class DKFunctionOperator: DKFunction {
 	override var description: String {
 		return oper.op
 	}
-	override func sugaredDescription(_ knowns: [DKType: String]) -> String {
-		return oper.op
-	}
 }

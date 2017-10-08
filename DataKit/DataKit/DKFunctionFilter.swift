@@ -18,6 +18,17 @@ class DKFunctionFilter: DKFunction {
 	override var signature: DKTypeSignature {
 		return DKTypeSignature(input: paramsType, output: sequenceType)
 	}
+	class func canBeFilterAndPredicateSignature(_ type: DKType) -> DKTypeSignature! {
+		if let signature = type as? DKTypeSignature {
+			let seqType = signature.output
+			if signature.numberOfArguments != 1 || !(signature.input[0] is DKTypeSequence) || (signature.input[0] != seqType) {
+				return nil
+			}
+			let itemType = (seqType as! DKTypeSequence).sub
+			return DKTypeSignature(unaryArg: itemType, output: .bool)
+		}
+		return nil
+	}
 	override var functionToJSONDict: [String: JSON] {
 		return [
 			"filter": predicate.functionToJSON
@@ -53,8 +64,8 @@ class DKFunctionFilter: DKFunction {
 		let newInput = output.finishAndData()
 		return DKValueLazySequence(itemType: self.itemType, data: newInput)
 	}
-	override func sugaredDescription(_ knowns: [DKType: String]) -> String {
-		return "filter(\(predicate.sugaredDescription(knowns)))"
+	override var description: String {
+		return "filter(\(predicate))"
 	}
 	override var isInputGroupable: Bool {
 		return true

@@ -10,7 +10,7 @@ extension DKType {
 
 	class func selfTest() {
 		// struct { bool, bool, byte }
-		let t1 = DKTypeInt.bool
+		let t1 = DKType.bool
 		let t2 = DKTypeInt.byte
 		let s1 = DKTypeStruct(subTypes: [t1, t1, t2], subNames: nil, packed: true, alignmentInBits: nil)
 		print("s1=\(s1)")

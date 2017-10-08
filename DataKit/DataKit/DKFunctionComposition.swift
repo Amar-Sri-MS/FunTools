@@ -65,7 +65,7 @@ class DKFunctionComposition: DKFunction {
 	override var isInputGroupable: Bool {
 		return inner.isInputGroupable && outer.isInputGroupable
 	}
-	override func sugaredDescription(_ knowns: [DKType: String]) -> String {
-		return "composition(\(inner.sugaredDescription(knowns)), \(outer.sugaredDescription(knowns)))"
+	override var description: String {
+		return "compose(\(outer), \(inner))"
 	}
 }

@@ -41,4 +41,7 @@ class DKTypeSequence: DKType {
 	override func fromDataLazy(_ data: DKBitStream) -> DKValue? {
 		return DKValueLazySequence(itemType: sub, data: data)
 	}
+	override func subclassableSugaryDescription(_ uniquingTable: DKTypeTable) -> String {
+		return "[" + sub.sugaredDescription(uniquingTable) + "]"
+	}
 }

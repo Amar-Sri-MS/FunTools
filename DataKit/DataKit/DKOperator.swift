@@ -30,7 +30,10 @@ class DKOperator: Equatable, DKOperatorIsEqualToOtherOperator {
 	func isEqualTo(_ rhs: DKOperator) -> Bool {
 		fatalErrorMustBeImplementedBySubclass()
 	}
-
+	class var allOperatorStrings: Set<String> {
+		return DKComparisonOperator.operatorStrings + DKAlgebraicOperator.operatorStrings
+	}
+	class var allNonUnaryOperatorStrings: Set<String> {
+		return DKComparisonOperator.nonUnaryOperatorStrings + DKAlgebraicOperator.nonUnaryOperatorStrings
+	}
 }
-
-

@@ -12,11 +12,17 @@ class DKFunctionClosure: DKFunction {
 	let structParams: DKTypeStruct
 	let body: DKExpression
 	let paramsShortcut: DKType.Shortcut	// derived
+	let sugaredDesc: String	// derived
 	let bodyJSON: JSON	// we compute the expression serialization at creation type to avoid needing to create types later
 	init(structParams: DKTypeStruct, body: DKExpression, _ uniquingTable: DKTypeTable) {
 		self.structParams = structParams
 		self.body = body
 		paramsShortcut = structParams.toTypeShortcut(uniquingTable)
+		let paramsSugaredDesc = structParams.subs.joinDescriptions(", ") {
+			$0.sugaredDescription(uniquingTable)
+		}
+		let bodyTypeSugaredDesc = body.type.sugaredDescription(uniquingTable)
+		sugaredDesc = "(\(paramsSugaredDesc)) -> \(bodyTypeSugaredDesc): { \(body.sugaredDescription(uniquingTable).desc) }"
 		bodyJSON = body.expressionToJSON(uniquingTable)
 	}
 	convenience init(params: [DKType], body: DKExpression, _ uniquingTable: DKTypeTable) {
@@ -44,11 +50,8 @@ class DKFunctionClosure: DKFunction {
 		let newContext = context.newContextWith(values: evaluated)
 		return self.body.evaluate(context: newContext)
 	}
-	override func sugaredDescription(_ knowns: [DKType: String]) -> String {
-		let p = structParams.subs.joinDescriptions(", ") {
-			$0.sugaredDescription(knowns)
-		}
-		return "{ (\(p)) -> \(body.type.sugaredDescription(knowns)) in \(body.sugaredDescription(knowns).desc) }"
+	override var description: String {
+		return sugaredDesc
 	}
 	class func identity(_ uniquingTable: DKTypeTable, _ t: DKType) -> DKFunctionClosure {
 		let expr = DKExpressionVariable(index: 0, type: t)

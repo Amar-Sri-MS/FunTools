@@ -31,7 +31,7 @@ func generateRandomStudent(id: Int) -> [JSON] {
 
 func studentType() -> DKTypeStruct {
 	let fields = ["first_name", "last_name", "age", "graduated", "has_grant", "id"]
-	let types = [DKTypeString.string, DKTypeString.string, DKTypeInt.uint8, DKTypeInt.bool, DKTypeInt.bool, DKTypeInt.uint32]
+	let types = [DKType.string, DKType.string, DKTypeInt.uint8, DKType.bool, DKType.bool, DKTypeInt.uint32]
 	return DKTypeStruct(subTypes: types, subNames: fields, packed: true, alignmentInBits: 32)
 }
 
@@ -74,46 +74,9 @@ func regenerateData(input: Data) -> Data {
 
 func filterSpecificFirstOrLastName(_ uniquingTable: DKTypeTable, _ first: Bool, _ name: String) -> DKFunctionFilter {
 	let t = studentType()
-	let studentFirstName: DKFunction = DKFunctionProjection(structType: t, fieldName: first ? "first_name" : "last_name", uniquingTable)
-	let v0 = DKExpressionVariable(index: 0, type: t)
-	let expressionGetFirstName = DKExpressionFuncCall(fun: studentFirstName, arguments: [v0])
-	let isEqualFunc: DKFunction = DKFunctionOperator(oper: DKComparisonOperator(domain: DKTypeString.string, op: "==")!, uniquingTable)
-	let k = DKExpressionConstant(.string(name))
-	let expressionFirstIsJoe: DKExpression = DKExpressionFuncCall(fun: isEqualFunc, arguments: [expressionGetFirstName, k])
-	let funcFirstIsJoe: DKFunction = DKFunctionClosure(params: [t], body: expressionFirstIsJoe, uniquingTable)
-	return DKFunctionFilter(predicate: funcFirstIsJoe)
-}
-
-func generateFullName(_ uniquingTable: DKTypeTable) -> DKFunctionClosure {
-	let t = studentType()
-	let v0 = DKExpressionVariable(index: 0, type: t)
-	let studentFirstName: DKFunction = DKFunctionProjection(structType: t, fieldName: "first_name", uniquingTable)
-	let expressionGetFirstName = DKExpressionFuncCall(fun: studentFirstName, arguments: [v0])
-	let studentLastName: DKFunction = DKFunctionProjection(structType: t, fieldName: "last_name", uniquingTable)
-	let expressionGetLastName = DKExpressionFuncCall(fun: studentLastName, arguments: [v0])
-	let kSpace: DKExpressionConstant = "_"
-	let oper = DKAlgebraicOperator(domain: DKTypeString.string, op: "|", arity: 3)!
-	let catted = DKFunctionOperator(oper: oper, uniquingTable)
-	let expressionFullName: DKExpression = DKExpressionFuncCall(fun: catted, arguments: [expressionGetFirstName, kSpace, expressionGetLastName])
-	return DKFunctionClosure(params: [t], body: expressionFullName, uniquingTable)
-}
-
-func dumpFilter(input: Data, _ uniquingTable: DKTypeTable, _ name: String) {
-	let ts = studentType().makeSequence
-	let t = studentType()
-	let knowns = [t: "Student"]
-	let filterFunc = filterSpecificFirstOrLastName(uniquingTable, true, name)
-	print("Filter = \(filterFunc.sugaredDescription(knowns))")
-	let students = ts.fromDataLazy(input)
-	let con = DKEvaluationContext()
-	let filtered = filterFunc.evaluate(context: con, [students!.asExpressionConstant])
-	print("Filtered: \(filtered.description)")
-	let fullNameGen = generateFullName(uniquingTable)
-	print("Generate full name = \(fullNameGen.sugaredDescription(knowns))")
-	for student in filtered as! DKValueLazySequence {
-		let full = fullNameGen.evaluate(context: con, [student.asExpressionConstant])
-		print("-> \(full.stringValue)")
-	}
+	let seq = DKTypeSequence(subType: t)
+	let sig = DKTypeSignature(unaryArg: seq, output: seq)
+	return try! DKParser.parseFunction(uniquingTable, "filter({ $0.\(first ? "first_name" : "last_name") == \"\(name)\" })", sig) as! DKFunctionFilter
 }
 
 var socket: Int32 = 0
@@ -129,18 +92,12 @@ extension String {
 	}
 }
 
-func sendToDPCServer(old: Bool, _ combined: JSON) {
+func sendToDPCServer(_ combined: JSON) {
 	print("Combined: \(combined)")
 	let str = combined.description.asOneLine
 	print("Single line: \n\(str)")
-	let rs: String
-	if old {
-		let r = dpcrun_command_with_subverb_and_arg(&socket, "datakit", "setup", str)
-		rs = r == nil ? "NOPE" : String(cString: r!)
-	} else {
-		let r = dpcrun_command_with_subverb_and_arg(&socket, "datakit", "setup2", str)
-		rs = r == nil ? "NOPE" : String(cString: r!)
-	}
+	let r = dpcrun_command_with_subverb_and_arg(&socket, "datakit", "setup", str)
+	let rs: String = r == nil ? "NOPE" : String(cString: r!)
 	print("r = \(rs)")
 	sleep(1)
 	let r2 = dpcrun_command_with_subverb(&socket, "datakit", "run")
@@ -160,79 +117,48 @@ func registerGeneratorOfStudents(typeTable: DKTypeTable) {
 	}
 
 }
-func studentsTestOld() {
-	let t = studentType()
-	let typeTable = DKTypeTable()
-	registerGeneratorOfStudents(typeTable: typeTable)
-	let generator = DKFunctionGenerator(typeTable, name: "Students", params: 100, itemType: t)
-	let con = DKEvaluationContext()
-	let students = generator.evaluate(context: con, [])
-	var bs: DKMutableBitStream = DataAsMutableBitStream()
-	students.append(to: &bs)
-	let data1 = bs.finishAndData()
 
-	let data = generateDataWithStudents(typeTable, 100)
-	assert(data1 == data)
+let pipe0 = "map((Student) -> (): logger())"
 
-	let tsShortcut = t.makeSequence.toTypeShortcut(typeTable)
-	print("Students type = \(tsShortcut)")
+let pipe1 = "compose(" +
+	"map((Student) -> (): logger()), " +
+	"filter({ $0.first_name == \"Joe\"})" +
+")"
 
-	let name = "Mary"
-	let filter: DKFunctionFilter = filterSpecificFirstOrLastName(typeTable, true, name)
+let pipe2 = "compose(" +
+	"map((Student) -> (): logger()), " +
+	"compose(" +
+	"filter((Student) -> Bool: { $0.first_name == \"Joe\"}), " +
+	"filter({ $0.last_name == \"Smith\"})" +
+	")" +
+")"
 
-	print("Students = \(data.debugDescription)")
-	printStudentsDataStream(data: data)
-
-	let regen = regenerateData(input: data)
-	printStudentsDataStream(data: regen)
-
-	let students2 = t.makeSequence.fromDataLazy(data1)
-	let logger = DKFunctionSink(typeTable, name: "logger", itemType: t)
-	print("Log should start here")
-	let result = logger.evaluate(context: con, [students2!.asExpressionConstant])
-	print("Log finished - result = \(result)")
-
-	assert(data == regen)
-	dumpFilter(input: data, typeTable, name)
-
-	try! data.write(to: "/tmp/students.data")
-	try! generator.functionToJSON.writeToFile("/tmp/students_generator.json")
-	try! filter.functionToJSON.writeToFile("/tmp/students_filter.json")
-	try! logger.functionToJSON.writeToFile("/tmp/students_logger.json")
-	try! typeTable.typeTableAsJSON.writeToFile("/tmp/students_types.json")
-
-	let combined: JSON = .dictionary([
-		"type_table": typeTable.typeTableAsJSON,
-		"generator": generator.functionToJSON,
-		"filter": filter.functionToJSON,
-		"sink": logger.functionToJSON
-	])
-	sendToDPCServer(old: true, combined)
-	print("\n")
-}
+//let pipeFullNames = "compose(" +
+//	"map((String) -> (): logger()), " +
+//	"map((Student) -> String: { $0.first_name | \"_\" | $0.last_name })" +
+//")"
 
 func studentsTestNew() {
+	let pipeString = pipe2
 	let t = studentType()
 	let typeTable = DKTypeTable()
-	let knowns = [t: "Student"]
 	registerGeneratorOfStudents(typeTable: typeTable)
-	let filter: DKFunctionFilter = filterSpecificFirstOrLastName(typeTable, true, "Joe")
-	let generator = DKFunctionGenerator(typeTable, name: "Students", params: 100, itemType: t)
-	let newLogger = DKFunctionMap(each: DKFunctionLogger(typeTable, t))
-	let lastIsSmith = filterSpecificFirstOrLastName(typeTable, false, "Smith")
-	let pipeline = DKFunctionComposition(outer: newLogger, inner: DKFunctionComposition(outer: lastIsSmith, inner: filter))
-	print("Signature of pipeline: \(pipeline.signature)")
+	let generator = DKFunctionGenerator(typeTable, name: "Students", params: 1000, itemType: t)
+	let seq = DKTypeSequence(subType: t)
+	let sig = DKTypeSignature(unaryArg: seq, output: .void)
+	let sc = t.toTypeShortcut(typeTable)
+	let pipeline = try! DKParser.parseFunction(typeTable, pipeString.replaceOccurrences("Student", sc), sig)
+	print("pipeline = \(pipeline)")
 	let flowGraphGen = DKFlowGraphGen(typeTable, generator, pipeline)
 	let r = flowGraphGen.generate()
 	for fifo in r.fifos {
-		print("\(fifo.sugaredDescription(knowns))")
+		print("\(fifo.sugaredDescription(typeTable))")
 	}
 	let j = flowGraphGen.flowGraphToJSON
 	print("flow graph as JSON: \n\(j)")
-	sendToDPCServer(old: false, j)
+	sendToDPCServer(j)
 }
 
 func studentsTest() {
-//	studentsTestOld()
 	studentsTestNew()
 }

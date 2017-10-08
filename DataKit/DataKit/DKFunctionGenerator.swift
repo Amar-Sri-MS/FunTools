@@ -23,6 +23,14 @@ class DKFunctionGenerator: DKFunction {
 	override var signature: DKTypeSignature {
 		return DKTypeSignature(input: .void, output: itemType.makeSequence)
 	}
+	class func canBeGeneratorAndItemType(_ type: DKType) -> DKType! {
+		if let signature = type as? DKTypeSignature {
+			if signature.numberOfArguments != 0 { return nil }
+			let seqType = signature.output as? DKTypeSequence
+			return seqType?.sub
+		}
+		return nil
+	}
 	override var functionToJSONDict: [String: JSON] {
 		return [
 			"generator": .string(name),
@@ -53,8 +61,8 @@ class DKFunctionGenerator: DKFunction {
 		let data = stream.finishAndData()
 		return DKValueLazySequence(itemType: itemType, data: data)
 	}
-	override func sugaredDescription(_ knowns: [DKType: String]) -> String {
-		return "generator(\(name), \(itemType.sugaredDescription(knowns)), \(params))"
+	override var description: String {
+		return "generator(\(name), \(itemShortcut), \(params))"
 	}
 	static var registry: [String: (JSON) -> DKValue?] = [:]
 	class func registerItemGenerator(name: String, _ itemGen: @escaping (JSON) -> DKValue?) {

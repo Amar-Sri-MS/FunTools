@@ -26,12 +26,17 @@ class DKValueSimple: DKValue, DKValueIsEqualToOther {
 		assert(type.canAcceptIntValue(i))
 		self.init(type: type, json: .integer(i))
 	}
+	convenience init(type: DKType, value: Int64) {
+		let i: Int = Int(value)
+		assert(type.canAcceptIntValue(i))
+		self.init(type: type, json: .integer(i))
+	}
 	convenience init(type: DKType, value: Int) {
 		assert(type.canAcceptIntValue(value))
 		self.init(type: type, json: .integer(value))
 	}
 	convenience init(_ b: Bool) {
-		self.init(type: DKTypeInt.bool, value: b ? 1 : 0)
+		self.init(type: .bool, value: b ? 1 : 0)
 	}
 	convenience init(_ b: UInt8) {
 		self.init(type: DKTypeInt.uint8, value: UInt64(b))
@@ -40,7 +45,7 @@ class DKValueSimple: DKValue, DKValueIsEqualToOther {
 		self.init(type: DKTypeInt.uint64, value: w)
 	}
 	convenience init(_ s: String) {
-		self.init(type: DKTypeString.string, json: .string(s))
+		self.init(type: .string, json: .string(s))
 	}
 
 	// ===============  BASIC PROTOCOLS ===============
@@ -56,6 +61,12 @@ class DKValueSimple: DKValue, DKValueIsEqualToOther {
 	}
 
 	override var description: String {
+		if type is DKTypeStruct {
+			return "(" + json.arrayValue.joinDescriptions(", ") + ")"
+		}
+		if  type is DKTypeSequence {
+			return "[" + json.arrayValue.joinDescriptions(", ") + "]"
+		}
 		if json.isArray || json.isDictionary {
 			return super.description
 		}
