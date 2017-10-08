@@ -25,8 +25,6 @@
 // Returns <=0 on error
 extern int dpcclient_open_socket(void);
 
-extern void dpcclient_test(void);
-
 extern NULLABLE CALLER_TO_FREE const char *dpcrun_command(INOUT int *sock, const char *verb, const char *arguments_array);
 
 
@@ -68,30 +66,6 @@ int dpcclient_open_socket(void) {
 		return 0;
 	}
 	return sock;
-}
-
-void dpcclient_test(void) {
-	int sock = dpcclient_open_socket();
-	if (sock <= 0) {
-		printf("*** Can't connect to dpcserver; try to run 'build/funos-posix --dpc-server'\n");
-		return;
-	}
-	struct fun_json *json = fun_json_create_from_text("{arguments: [], tid: 1, verb: help}");
-	if (!json) {
-		printf("could not parse\n");
-		return;
-	}
-	bool ok = fun_json_write_to_fd(json, sock);
-	fun_json_release(json);
-	if (!ok) return;
-	/* receive a reply */
-	struct fun_json *output = fun_json_read_from_fd(sock);
-	if (!output) {
-		printf("*** invalid json returned in dpcclient_test()\n");
-		return;
-	}
-	fun_json_printf("output => %s\n", output);
-	fun_json_release(output);
 }
 
 static int tid = 1;

@@ -199,7 +199,7 @@
 		A7A56A911F862B80007B5391 /* DKParserForType.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKParserForType.swift; sourceTree = "<group>"; };
 		A7A56A931F862BAD007B5391 /* DKParserForValue.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKParserForValue.swift; sourceTree = "<group>"; };
 		A7A56A951F862BD6007B5391 /* DKParserForFunction.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; lineEnding = 0; path = DKParserForFunction.swift; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.swift; };
-		A7A56A971F862C05007B5391 /* DKParserForExpression.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; lineEnding = 0; path = DKParserForExpression.swift; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.swift; };
+		A7A56A971F862C05007B5391 /* DKParserForExpression.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; lineEnding = 0; path = DKParserForExpression.swift; sourceTree = "<group>"; };
 		A7A56A991F862D34007B5391 /* DKParser_Test.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKParser_Test.swift; sourceTree = "<group>"; };
 		A7B27D111F2580EE00C171BD /* DKType_Test.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKType_Test.swift; sourceTree = "<group>"; };
 		A7B27D131F25817A00C171BD /* DKExpression_Test.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKExpression_Test.swift; sourceTree = "<group>"; };
