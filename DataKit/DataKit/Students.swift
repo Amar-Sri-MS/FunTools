@@ -79,22 +79,6 @@ func filterSpecificFirstOrLastName(_ uniquingTable: DKTypeTable, _ first: Bool, 
 	return try! DKParser.parseFunction(uniquingTable, "filter({ $0.\(first ? "first_name" : "last_name") == \"\(name)\" })", sig) as! DKFunctionFilter
 }
 
-func generateFullName(_ uniquingTable: DKTypeTable) -> DKFunctionClosure {
-	let t = studentType()
-//	let v0 = DKExpressionVariable(index: 0, type: t)
-//	let studentFirstName: DKFunction = DKFunctionProjection(structType: t, fieldName: "first_name", uniquingTable)
-//	let expressionGetFirstName = DKExpressionFuncCall(fun: studentFirstName, arguments: [v0])
-//	let studentLastName: DKFunction = DKFunctionProjection(structType: t, fieldName: "last_name", uniquingTable)
-//	let expressionGetLastName = DKExpressionFuncCall(fun: studentLastName, arguments: [v0])
-//	let kSpace: DKExpressionConstant = "_"
-//	let oper = DKAlgebraicOperator(domain: DKTypeString.string, op: "|", arity: 3)!
-//	let catted = DKFunctionOperator(oper: oper, uniquingTable)
-//	let expressionFullName: DKExpression = DKExpressionFuncCall(fun: catted, arguments: [expressionGetFirstName, kSpace, expressionGetLastName])
-//	return DKFunctionClosure(params: [t], body: expressionFullName, uniquingTable)
-	let sig = DKTypeSignature(unaryArg: t, output: .string)
-	return try! DKParser.parseFunction(uniquingTable, "{ $0.first | \"_\" | $0.last }", sig) as! DKFunctionClosure
-}
-
 var socket: Int32 = 0
 
 extension String {
@@ -138,14 +122,14 @@ let pipe0 = "map((Student) -> (): logger())"
 
 let pipe1 = "compose(" +
 	"map((Student) -> (): logger()), " +
-	"filter((Student) -> Bool: { $0.first_name == \"Joe\"})" +
+	"filter({ $0.first_name == \"Joe\"})" +
 ")"
 
 let pipe2 = "compose(" +
 	"map((Student) -> (): logger()), " +
 	"compose(" +
 	"filter((Student) -> Bool: { $0.first_name == \"Joe\"}), " +
-	"filter((Student) -> Bool: { $0.last_name == \"Smith\"})" +
+	"filter({ $0.last_name == \"Smith\"})" +
 	")" +
 ")"
 

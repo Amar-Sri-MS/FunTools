@@ -170,15 +170,22 @@ extension DKParser {
 	func parseBinaryFunctionConstructor(_ s: String, _ signature: DKTypeSignature!) throws -> DKFunction {
 		if s == "compose" {
 			let outer = try parseFunction(nil)
+			if outer.signature.numberOfArguments != 1 {
+				throw DKParsingError("Compose: uncomposable signatures", self)
+			}
 			try expectReservedWord(",")
-			let inner = try parseFunction(nil)
+			var innerSig: DKTypeSignature! = nil
+			if signature != nil {
+				innerSig = DKTypeSignature(input: signature.input, output: outer.signature.input[0])
+			}
+			let inner = try parseFunction(innerSig)
 			if signature != nil && signature.input != inner.signature.input {
 				throw DKParsingError("Compose: inner has unexpected signature", self)
 			}
 			if signature != nil && signature.output != outer.signature.output {
 				throw DKParsingError("Compose: outer has unexpected signature", self)
 			}
-			if outer.signature.numberOfArguments != 1 || inner.signature.output != outer.signature.input[0] {
+			if inner.signature.output != outer.signature.input[0] {
 				throw DKParsingError("Compose: uncomposable signatures", self)
 
 			}
