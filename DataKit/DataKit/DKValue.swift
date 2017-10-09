@@ -31,6 +31,9 @@ class DKValue: Equatable, CustomStringConvertible {
 	class func int(type: DKTypeInt, intValue v: Int) -> DKValue {
 		return DKValueSimple(type: type, value: v)
 	}
+	class func int(type: DKTypeInt, intValue v: UInt64) -> DKValue {
+		return DKValueSimple(type: type, value: v)
+	}
 	class func string(_ s: String) -> DKValue {
 		return DKValueSimple(s)
 	}

@@ -69,7 +69,6 @@ class DKFlowGraphGen {
 			let genInner = generate(comp.inner, &fifos)
 			if (genInner is DKFunctionGatherFromFifo) && comp.outer.isInputGroupable {
 				// Instead of composing the functions, we specify that the last Fifo gathers
-				fifos.last!.toAppend = .all
 				let t = (genInner.signature.output as! DKTypeSequence).sub
 				_ = addFifo(t)	// we ignore for now the (trivial) result
 				return generate(comp.outer, &fifos)
@@ -79,6 +78,10 @@ class DKFlowGraphGen {
 			}
 		} else if let map = fun as? DKFunctionMap {
 			fifos.last!.compose(outer: map.each)
+			if map.each is DKFunctionLogger {
+				// No point in returning anything
+				return map.each
+			}
 			return DKFunctionGatherFromFifo(uniquingTable, fifos.count - 1, map.each.signature.output)
 		} else {
 			let prev = DKFunctionGatherFromFifo(uniquingTable, fifos.count - 1, fifos.last!.itemType)

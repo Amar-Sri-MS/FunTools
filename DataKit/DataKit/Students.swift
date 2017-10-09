@@ -117,8 +117,20 @@ func registerGeneratorOfStudents(typeTable: DKTypeTable) {
 	}
 
 }
+func registerGeneratorOfRandomInts(typeTable: DKTypeTable) {
+	var count = 0
+	DKFunctionGenerator.registerItemGenerator(name: "Students") {
+		if count >= $0.integerValue { return nil }
+		let i = UInt64.random() % 1_000_000
+		let new = DKValue.int(type: DKTypeInt.uint64, intValue: i)
+		count += 1
+		return new
+	}
+}
 
-let pipe0 = "map((Student) -> (): logger())"
+let pipe0 = "map(logger())"
+
+let pipe0b = "map((Student) -> (): logger())"
 
 let pipe1 = "compose(" +
 	"map((Student) -> (): logger()), " +
