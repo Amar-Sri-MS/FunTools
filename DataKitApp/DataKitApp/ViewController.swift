@@ -8,6 +8,40 @@
 
 import Cocoa
 
+let predefArray = [
+	("all", "map(logger())"),
+	("", ""),
+	("all ints (typed)", "map((UInt64) -> (): logger())"),
+	("all * 100", "compose(\n" +
+		"    map((UInt64) -> (): logger()), \n" +
+		"    map({ $0 * 100 })\n" +
+	")"),
+	("all smaller than 10000", "compose(\n" +
+		"    map((UInt64) -> (): logger()), \n" +
+		"    filter({ $0 < 10000})\n" +
+	")"),
+	("more complex", "compose(\n" +
+		"    map((UInt64) -> (): logger()), \n" +
+		"    compose(\n" +
+		"        map((UInt64) -> UInt64: { $0 * 1000 + 42}), \n" +
+		"        filter({ $0 < 100000})\n" +
+		"    )\n" +
+		")"),
+	("", ""),
+	("all Students (typed)", "map((Student) -> (): logger())"),
+	("all Joes", "compose(\n" +
+		"    map((Student) -> (): logger()), \n" +
+		"    filter({ $0.first_name == \"Joe\"})\n" +
+	")"),
+	("all Joe Smith", "compose(\n" +
+		"    map((Student) -> (): logger()), \n" +
+		"    compose(\n" +
+		"        filter((Student) -> Bool: { $0.first_name == \"Joe\"}), \n" +
+		"        filter({ $0.last_name == \"Smith\"})\n" +
+		"    )\n" +
+	")")
+]
+
 class ViewController: NSViewController, NSTextViewDelegate {
 	@IBOutlet var sourcePopUp: NSPopUpButton!
 	@IBOutlet var transformation: NSTextView!
@@ -18,13 +52,14 @@ class ViewController: NSViewController, NSTextViewDelegate {
 
 	let typeTable = DKTypeTable()
 	var isStudents: Bool {
-		return sourcePopUp.indexOfSelectedItem == 0
+		return sourcePopUp.indexOfSelectedItem >= 2
 	}
 	func baseType() -> DKType {
 		return isStudents ? studentType() : DKTypeInt.uint64
 	}
 	func generator() -> DKFunctionGenerator {
-		return DKFunctionGenerator(typeTable, name: isStudents ? "Students" : "RandomInts", params: 1000, itemType: baseType())
+		let num = sourcePopUp.indexOfSelectedItem & 1 == 0 ? 100 : 1000
+		return DKFunctionGenerator(typeTable, name: isStudents ? "Students" : "RandomInts", params: .integer(num), itemType: baseType())
 	}
 	func pipelineString() -> String {
 		let pipeline = transformation.string!
@@ -48,6 +83,12 @@ class ViewController: NSViewController, NSTextViewDelegate {
 		generatedJSON.font = NSFont(name: "Menlo", size: 16)
 		registerGeneratorOfStudents(typeTable: typeTable)
 		transformation.delegate = self
+		predefs.removeAllItems()
+		predefs.addItems(withTitles: predefArray.map { $0.0 })
+//		let sep = NSMenuItem.separator()
+//		for i in 0 ..< predefs.numberOfItems where predefs.item(at: i)!.title == sep.title {
+//			predefs.itemArray[i] = sep
+//		}
 	}
 
 	override var representedObject: Any? {
@@ -61,31 +102,13 @@ class ViewController: NSViewController, NSTextViewDelegate {
 		status.stringValue = ""
 	}
 	@IBAction func sourceChanged(_ sender: NSObject?) {
-		transformation.string = ""
 		reset()
 	}
 	@IBAction func predefChanged(_ sender: NSObject?) {
+		let i = predefs.indexOfSelectedItem
+		let text = predefArray[i].1
+		if text == "" { return }
 		reset()
-		var text: String = ""
-		switch predefs.indexOfSelectedItem {
-		case 0:
-			text = "map(logger())"
-		case 1:
-			text = "map((Student) -> (): logger())"
-		case 2:
-			text = "compose(\n" +
-				"    map((Student) -> (): logger()), \n" +
-				"    filter({ $0.first_name == \"Joe\"})\n" +
-				")"
-		default:
-			text = "compose(\n" +
-				"    map((Student) -> (): logger()), \n" +
-				"    compose(\n" +
-				"        filter((Student) -> Bool: { $0.first_name == \"Joe\"}), \n" +
-				"        filter({ $0.last_name == \"Smith\"})\n" +
-				"    )\n" +
-				")"
-		}
 		transformation.string = text
 	}
 	func checkAndJSON() -> String! {

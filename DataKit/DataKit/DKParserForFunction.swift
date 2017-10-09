@@ -148,7 +148,7 @@ extension DKParser {
 			if signature != nil {
 				predSig = DKFunctionFilter.canBeFilterAndPredicateSignature(signature)
 				if predSig == nil {
-					throw DKParsingError("Filter has wrong signature \(signature)", self)
+					throw DKParsingError("Filter has wrong signature \(signature!)", self)
 				}
 			}
 			let pred = try parseFunction(predSig)

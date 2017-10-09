@@ -84,7 +84,18 @@ class DKAlgebraicOperator: DKOperator {
 			}
 		}
 		// Then binary operators
-		if (arity == 2) && (op == "-") && (domain is DKTypeInt) {
+		if (arity == 2) && ((op == "-") || (op == "/") || (op == "%")) && (domain is DKTypeInt) {
+			return { context, subs in
+				assert(subs.count == 2)
+				let esub1 = subs[0].evaluate(context: context)
+				let esub2 = subs[1].evaluate(context: context)
+				let x1 = esub1.intValue
+				let x2 = esub2.intValue
+				let x = op == "-" ? x1 - x2 : op == "/" ? x1 / x2 : x1 % x2
+				return .int(type: domain as! DKTypeInt, intValue: x)
+			}
+		}
+		if (arity == 2) && (op == "") && (domain is DKTypeInt) {
 			return { context, subs in
 				assert(subs.count == 2)
 				let esub1 = subs[0].evaluate(context: context)

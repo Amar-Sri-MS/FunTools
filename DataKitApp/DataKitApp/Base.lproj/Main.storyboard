@@ -687,15 +687,17 @@
                         <autoresizingMask key="autoresizingMask"/>
                         <subviews>
                             <popUpButton verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="avL-rc-qez">
-                                <rect key="frame" x="10" y="574" width="125" height="26"/>
+                                <rect key="frame" x="10" y="574" width="160" height="26"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                                <popUpButtonCell key="cell" type="push" title="Students" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" imageScaling="proportionallyDown" inset="2" selectedItem="9HQ-3r-om8" id="5Ed-7a-iXc">
+                                <popUpButtonCell key="cell" type="push" title="Random Ints (100)" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" imageScaling="proportionallyDown" inset="2" selectedItem="EG7-UW-oap" id="5Ed-7a-iXc">
                                     <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
                                     <font key="font" size="14" name=".AppleSystemUIFont"/>
                                     <menu key="menu" id="emC-PN-Cyl">
                                         <items>
-                                            <menuItem title="Students" state="on" id="9HQ-3r-om8"/>
-                                            <menuItem title="Random Ints" id="236-Kc-bqO"/>
+                                            <menuItem title="Random Ints (100)" state="on" id="EG7-UW-oap"/>
+                                            <menuItem title="Random Ints(1000)" id="P3G-DH-9MG"/>
+                                            <menuItem title="Students (100)" id="HnO-Wl-cjM"/>
+                                            <menuItem title="Students (1000)" id="QcW-8O-Dpn"/>
                                         </items>
                                     </menu>
                                     <connections>
@@ -713,7 +715,7 @@
                                 </textFieldCell>
                             </textField>
                             <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" fixedFrame="YES" allowsCharacterPickerTouchBarItem="NO" translatesAutoresizingMaskIntoConstraints="NO" id="mjz-Lp-LIj">
-                                <rect key="frame" x="128" y="605" width="167" height="30"/>
+                                <rect key="frame" x="162" y="605" width="167" height="30"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                 <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="center" title="Transformation" id="BgA-BC-9KQ">
                                     <font key="font" size="17" name="HelveticaNeue-Bold"/>
@@ -722,7 +724,7 @@
                                 </textFieldCell>
                             </textField>
                             <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" fixedFrame="YES" allowsCharacterPickerTouchBarItem="NO" translatesAutoresizingMaskIntoConstraints="NO" id="83b-DJ-qE5">
-                                <rect key="frame" x="116" y="361" width="84" height="21"/>
+                                <rect key="frame" x="116" y="362" width="84" height="21"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                 <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Num FiFos:" id="BNr-uJ-lXj">
                                     <font key="font" metaFont="system" size="15"/>
@@ -773,7 +775,7 @@
                                 </textFieldCell>
                             </textField>
                             <textField verticalHuggingPriority="750" fixedFrame="YES" allowsCharacterPickerTouchBarItem="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Zbv-7K-F5b">
-                                <rect key="frame" x="552" y="362" width="96" height="25"/>
+                                <rect key="frame" x="552" y="362" width="133" height="25"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                 <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" sendsActionOnEndEditing="YES" state="on" borderStyle="bezel" drawsBackground="YES" id="Bej-pM-11k">
                                     <font key="font" metaFont="system" size="15"/>
@@ -782,7 +784,7 @@
                                 </textFieldCell>
                             </textField>
                             <popUpButton verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="apM-SL-soa">
-                                <rect key="frame" x="787" y="612" width="104" height="26"/>
+                                <rect key="frame" x="703" y="612" width="188" height="26"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                 <popUpButtonCell key="cell" type="push" title="all" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" imageScaling="proportionallyDown" inset="2" selectedItem="rof-bN-3sR" id="as5-Xu-UDU">
                                     <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
@@ -828,18 +830,26 @@
                                 </scroller>
                             </scrollView>
                             <scrollView wantsLayer="YES" fixedFrame="YES" horizontalLineScroll="10" horizontalPageScroll="10" verticalLineScroll="10" verticalPageScroll="10" hasHorizontalScroller="NO" usesPredominantAxisScrolling="NO" translatesAutoresizingMaskIntoConstraints="NO" id="FkL-Ac-m62">
-                                <rect key="frame" x="142" y="415" width="740" height="182"/>
+                                <rect key="frame" x="182" y="415" width="700" height="182"/>
                                 <autoresizingMask key="autoresizingMask"/>
                                 <clipView key="contentView" ambiguous="YES" id="XbA-jv-ljk">
-                                    <rect key="frame" x="1" y="1" width="723" height="180"/>
+                                    <rect key="frame" x="1" y="1" width="683" height="180"/>
                                     <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                     <subviews>
                                         <textView ambiguous="YES" importsGraphics="NO" richText="NO" usesFontPanel="YES" findStyle="panel" allowsUndo="YES" usesRuler="YES" allowsNonContiguousLayout="YES" smartInsertDelete="YES" id="L20-SS-5Xf">
-                                            <rect key="frame" x="0.0" y="-0.5" width="723" height="180"/>
+                                            <rect key="frame" x="0.0" y="0.0" width="683" height="180"/>
                                             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                             <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
-                                            <size key="minSize" width="723" height="180"/>
+                                            <size key="minSize" width="683" height="180"/>
                                             <size key="maxSize" width="723" height="10000000"/>
+                                            <attributedString key="textStorage">
+                                                <fragment content="map(logger())">
+                                                    <attributes>
+                                                        <font key="NSFont" metaFont="smallSystem"/>
+                                                        <paragraphStyle key="NSParagraphStyle" alignment="natural" lineBreakMode="wordWrapping" baseWritingDirection="natural" tighteningFactorForTruncation="0.0"/>
+                                                    </attributes>
+                                                </fragment>
+                                            </attributedString>
                                             <color key="insertionPointColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                                         </textView>
                                     </subviews>
@@ -850,7 +860,7 @@
                                     <autoresizingMask key="autoresizingMask"/>
                                 </scroller>
                                 <scroller key="verticalScroller" verticalHuggingPriority="750" doubleValue="1" horizontal="NO" id="0VB-kl-cHr">
-                                    <rect key="frame" x="724" y="1" width="15" height="180"/>
+                                    <rect key="frame" x="684" y="1" width="15" height="180"/>
                                     <autoresizingMask key="autoresizingMask"/>
                                 </scroller>
                             </scrollView>
@@ -864,7 +874,7 @@
                                 </textFieldCell>
                             </textField>
                             <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" fixedFrame="YES" allowsCharacterPickerTouchBarItem="NO" translatesAutoresizingMaskIntoConstraints="NO" id="R6E-c3-Zya">
-                                <rect key="frame" x="722" y="614" width="61" height="21"/>
+                                <rect key="frame" x="638" y="615" width="61" height="21"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                 <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Predefs:" id="60q-sc-aS8">
                                     <font key="font" metaFont="system" size="15"/>
