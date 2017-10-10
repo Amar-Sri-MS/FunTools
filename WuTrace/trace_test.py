@@ -118,15 +118,14 @@ class TestParser(unittest.TestCase):
 
   def testTriggerTimer(self):
     log = ["1.000100000 TRACE WU START faddr VP0.0.0 wuid 0x1 name my_wu arg0 1 arg1 2",
-           "1.000050000 TRACE TIMER START faddr VP0.0.0 timer 0x1 wuid 0x1 name foo_bar",
+           "1.000050000 TRACE TIMER START faddr VP0.0.0 timer 0x1 wuid 0x2 name sent_wu dest VP0.0.0 arg0 0x2",
            "1.000200000 TRACE WU END faddr VP0.0.0",
-           "1.000250000 TRACE TIMER TRIGGER faddr VP0.0.0 timer 0x1 arg0 0x2",
-           "1.000260000 TRACE WU SEND faddr VP0.0.0 wuid 0x2 name sent_wu arg0 1 arg1 1 dest VP0.0.0",
            "1.000300000 TRACE WU START faddr VP0.0.0 wuid 0x2 name sent_wu arg0 0x2 arg1 0",
            "1.004000 faddr000 TRACE WU END VP0.0.0"]
     transactions = wu_trace.ParseFile(log, "foo.trace")
 
     self.assertIsNotNone(transactions)
+
     self.assertEqual(2, len(transactions))
     tr = firstTransaction(transactions)
 
@@ -147,42 +146,36 @@ class TestParser(unittest.TestCase):
   def testChainOfTransactions(self):
       trace = """
 0.000001000 TRACE WU START faddr VP0.0.0 wuid 0 name foo arg0 0 arg1 0
-0.000002000 TRACE TIMER START faddr VP0.0.0 timer 0x1 wuid 0x9 name timer_handler
+0.000002000 TRACE TIMER START faddr VP0.0.0 timer 0x1 wuid 0x9 name bar arg0 0x1 dest VP0.0.0
 0.000003000 TRACE WU END faddr VP0.0.0
-0.000004000 TRACE TIMER TRIGGER faddr VP0.0.0 timer 0x1 arg0 0x1
-0.000005000 TRACE WU SEND faddr VP0.0.0 wuid 0x0 name foo arg0 1 arg1 0 dest VP0.0.0
-0.000006000 TRACE WU START faddr VP0.0.0 wuid 0 name foo arg0 0x1 arg1 0
+0.000006000 TRACE WU START faddr VP0.0.0 wuid 0x9 name bar arg0 0x1 arg1 0
 0.000006000 TRACE TRANSACTION START faddr VP0.0.0
-0.000007000 TRACE TIMER START faddr VP0.0.0 timer 0x1 wuid 17 name timer_handler
+0.000007000 TRACE TIMER START faddr VP0.0.0 timer 0x1 wuid 17 name baz arg0 0x2 dest VP0.0.0
 0.000008000 TRACE WU END faddr VP0.0.0
-0.000009000 TRACE TIMER TRIGGER faddr VP0.0.0 timer 0x1 arg0 0x2
-0.000010000 TRACE WU SEND faddr VP0.0.0 src VP0.0.0 dest VP0.0.0 wuid 0x0 name foo arg0 2 arg1 0 dest VP0.0.0
-0.000011000 TRACE WU START faddr VP0.0.0 src VP0.0.0 dest VP0.0.0 wuid 0 name foo arg0 0x2 arg1 0
+0.000011000 TRACE WU START faddr VP0.0.0 src VP0.0.0 wuid 17 name baz arg0 0x2 arg1 0
 0.000011000 TRACE TRANSACTION START faddr VP0.0.0
-0.000012000 TRACE TIMER START faddr VP0.0.0 timer 0x1 wuid 17 name other_handler
-0.000013000 TRACE WU END faddr VP0.0.0 wuid 0 name foo arg0 0x2 arg1 0
-0.000014000 TRACE WU START faddr VP0.0.0 src VP0.0.0 dest VP0.0.0 wuid 0 name foo arg0 0x3 arg1 0
+0.000012000 TRACE TIMER START faddr VP0.0.0 timer 0x1 wuid 19 name boof arg0 0x3 dest VP0.0.0
+0.000013000 TRACE WU END faddr VP0.0.0
+0.000014000 TRACE WU START faddr VP0.0.0 src VP0.0.0 wuid 19 name boof arg0 0x3 arg1 0
 0.000015000 TRACE TRANSACTION START faddr VP0.0.0
-0.000016000 TRACE WU END faddr VP0.0.0 wuid 0 name foo arg0 0x3 arg1 0
+0.000016000 TRACE WU END faddr VP0.0.0
 """
       
       transactions = wu_trace.ParseFile(trace.split('\n'), "foo.trace")
       output_file = FakeFile()
       render.DumpTransactions(output_file, transactions)
-      print(output_file.lines)
+      for l in output_file.lines:
+        print(l)
       expected = ['00.000000 - 00.000000 (0 usec): transaction "boot"\n',
                   '+ 00.000000 - 00.000000 (0 usec): boot\n',
-                  '00.000001 - 00.000004 (3 usec): transaction "foo"\n',
+                  '00.000001 - 00.000003 (2 usec): transaction "foo"\n',
                   '+ 00.000001 - 00.000003 (2 usec): foo\n',
-                  '+ 00.000004 - 00.000004 (0 usec): timer_trigger\n',
-                  '00.000006 - 00.000009 (3 usec): transaction "foo"\n',
-                  '+ 00.000006 - 00.000008 (2 usec): foo\n',
-                  '+ 00.000009 - 00.000009 (0 usec): timer_trigger\n',
-                  '00.000011 - 00.000013 (2 usec): transaction "foo"\n',
-                  '+ 00.000011 - 00.000013 (2 usec): foo\n',
-                  '00.000000 - 00.000000 (0 usec): transaction "foo"\n',
-                  '00.000014 - 00.000016 (2 usec): transaction "foo"\n',
-                  '+ 00.000014 - 00.000016 (2 usec): foo\n']
+                  '00.000006 - 00.000008 (2 usec): transaction "bar"\n',
+                  '+ 00.000006 - 00.000008 (2 usec): bar\n',
+                  '00.000011 - 00.000013 (2 usec): transaction "baz"\n',
+                  '+ 00.000011 - 00.000013 (2 usec): baz\n',
+                  '00.000014 - 00.000016 (2 usec): transaction "boof"\n',
+                  '+ 00.000014 - 00.000016 (2 usec): boof\n']
 
       self.assertEqual(expected, output_file.lines)
 
@@ -253,17 +246,13 @@ class EndToEndTest(unittest.TestCase):
     # Run foo multiple times, triggered by a timer.
     log = """
 0.000001000 TRACE WU START faddr VP0.0.0 src VP0.0.0 dest VP0.0.0 wuid 0 name foo arg0 0 arg1 0
-0.000002000 TRACE TIMER START faddr VP0.0.0 timer 0x1 wuid 0x5 name timer_handler
+0.000002000 TRACE TIMER START faddr VP0.0.0 timer 0x1 wuid 0x5 name timer_handler dest VP0.0.0 arg0 1 wuid 0 name foo
 0.000003000 TRACE WU END faddr VP0.0.0 wuid 0 name foo arg0 0 arg1 0
-0.000004000 TRACE TIMER TRIGGER faddr VP0.0.0 timer 0x1 arg0 0x1
-0.000005000 TRACE WU SEND faddr VP0.0.0 src VP0.0.0 dest VP0.0.0 wuid 0x0 name foo arg0 1 arg1 0 dest VP0.0.0
 0.000006000 TRACE WU START faddr VP0.0.0 src VP0.0.0 dest VP0.0.0 wuid 0 name foo arg0 0x1 arg1 0
-0.000007000 TRACE TIMER START faddr VP0.0.0 timer 0x1 value 0x1 arg0 0x2
+0.000007000 TRACE TIMER START faddr VP0.0.0 timer 0x1 value 0x1 arg0 0x2 wuid 0 dest VP0.0.0 arg0 0x2 name foo
 0.000008000 TRACE WU END faddr VP0.0.0 wuid 0 name foo arg0 0x1 arg1 0
-0.000009000 TRACE TIMER TRIGGER faddr VP0.0.0 timer 0x1 arg0 0x2
-0.000010000 TRACE WU SEND faddr VP0.0.0 src VP0.0.0 dest VP0.0.0 wuid 0x0 name foo arg0 2 arg1 0 dest VP0.0.0
-0.000011000 TRACE WU START faddr VP0.0.0 src VP0.0.0 dest VP0.0.0 wuid 0 name foo arg0 0x2 arg1 0
-0.000012000 TRACE TIMER START faddr VP0.0.0 timer 0x1 value 0x1 arg0 0x3
+0.000011000 TRACE WU START faddr VP0.0.0 src VP0.0.0 wuid 0 name foo arg0 0x2 arg1 0
+0.000012000 TRACE TIMER START faddr VP0.0.0 timer 0x1 value 0x1 arg0 0x3 dest VP0.0.0 wuid 0 arg0 0x3 name foo
 0.000013000 TRACE WU END faddr VP0.0.0 wuid 0 name foo arg0 0x2 arg1 0
 0.000014000 TRACE WU START faddr VP0.0.0 src VP0.0.0 dest VP0.0.0 wuid 0 name foo arg0 0x3 arg1 0
 0.000015000 TRACE WU END faddr VP0.0.0 wuid 0 name foo arg0 0x3 arg1 0
@@ -276,8 +265,7 @@ class EndToEndTest(unittest.TestCase):
 
     # TODO(bowdidge): Check more than just length of output.
     self.assertIn('strict digraph foo {\n', output_file.lines)
-    self.assertIn('foo -> {timer_trigger_foo [label="timer_trigger" '
-                  + 'style=dotted]};\n', output_file.lines)
+    self.assertIn('foo -> foo [style=dotted];\n', output_file.lines)
     self.assertIn('}\n', output_file.lines)
 
 if __name__ == '__main__':
