@@ -363,11 +363,16 @@ class DocBuilder:
     # Handle a STRUCT directive opening a new structure.
     # Returns created structure.
     (state, containing_object) = self.stack[-1]
+    if state not in [DocBuilderTopLevel, DocBuilderStateStruct]:
+      self.AddError('Struct starting in inappropriate context')
+
+      return None
+
     # Struct syntax is STRUCT struct-identifier var-name comment
     match = re.match('STRUCT\s+(\w+)(\s+\w+|)(\s*.*)$', line)
 
     if not match:
-      self.AddError('Invalid STRUCT line: "%s" % lne')
+      self.AddError('Invalid STRUCT line: "%s"' % line)
       return None
 
     identifier = match.group(1)
@@ -1135,6 +1140,7 @@ def main():
 
   codegen_pack = SetFromArgs('pack', codegen_args, False)
   codegen_json = SetFromArgs('json', codegen_args, False)
+  codegen_swap = SetFromArgs('swap', codegen_args, False)
 
   codegen_options = []
 
@@ -1142,6 +1148,12 @@ def main():
     codegen_options.append('pack')
   if codegen_json:
     codegen_options.append('json')
+  if codegen_swap:
+    codegen_options.append('swap')
+
+  if (codegen_swap and not codegen_pack):
+    print('WARNING - swapping will not work correctly on '
+          'unpacked bitfields.')
 
   if len(args) == 0:
       sys.stderr.write('No genfile named.\n')
