@@ -1503,6 +1503,23 @@ class CheckerTest(unittest.TestCase):
     self.assertEqual(1, len(checker.errors))
     self.assertIn('is not the last field', checker.errors[0])
 
+  def testErrorIfFailToCloseEnum(self):
+    doc_builder = generator.DocBuilder()
+    contents = [
+      'ENUM x',
+      'A = 1',
+      'STRUCT Foo',
+      '0 63:0 uint64_t value',
+      'END'
+      ]
+    errors = doc_builder.Parse('filename', contents)
+    self.assertEqual(2, len(errors))
+    self.assertEqual('filename:3: Struct starting in inappropriate context',
+                     errors[0])
+    self.assertEqual('filename:4: ' +
+                     'Invalid enum line: "0 63:0 uint64_t value"',
+                     errors[1])
+
   def disableTestErrorIfVariableLengthArrayNotAtEndOfContainer(self):
     doc_builder = generator.DocBuilder()
     contents = [
