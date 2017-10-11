@@ -74,7 +74,7 @@ class TraceEvent:
   """A work unit (WU) or other action that occurred during the trace,
   Trace events can also represent timer set/trigger pairs.
   """
-  def __init__(self, start_time, end_time, label, vp):
+  def __init__(self, start_time, end_time, label, vp, keywords):
     # When the event started.
     self.start_time = start_time
 
@@ -100,6 +100,7 @@ class TraceEvent:
 
     # Work units or events that were instigated by this event.
     self.successors = []
+    self.keywords = keywords
 
   def Label(self):
     """Returns a human-readable string describing this event."""
