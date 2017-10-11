@@ -1,19 +1,18 @@
 # generator.py and Data Structure Specification
 
-The Fungible Generator an interface generator used to create
-boilerplate functions related to data and control plane requests and
-responses sent from the central cluster or host server and the F1.
-Generator describes data structures used to communicate between CC-Linux
+The Fungible Generator is an interface generator used to create
+boilerplate functions related to data and control plane requests.  The generator
+create the data structures used to communicate between CC-Linux
 and F1, or between the F1 and server.
 
 The Generator serves several purposes:
 * allows bit-accurate specification of how shared data structures are laid out in memory.
 * validates names and types.
 * creates valid C structures defining the shared data structures
-* packs variables that are bitfields and creates for efficiently accessing fields.
-* creates uniform initialization and serialization routines.
+* packs variables that are bitfields and creates macros for efficiently accessing fields.
+* creates uniform initialization, serialization, and byte-swapping macros or functions.
 * aware of conventions such as reserved fields (for unused variables).
-* generation of documentation for messages and sub-structures.
+* generates documentation for messages and sub-structures.
 
 Unlike other interface generators (rpcgen, protocol buffers, Thrift),
 the Generator is intended for data structures transferred via shared
@@ -28,20 +27,6 @@ These requests and results are implemented as C data structures copied
 via PCI.  Messages can have different sizes, and may contain
 variable-length parts.  At the current time, efficient processing in
 different languages is not a design goal for Generator.
-
-The generator's input takes high-level descriptions of data structures
-used in interchange.  It creates helper functions to initialize the
-data structure, access packed fields with predictable code. It also
-produces documentations defining those data structures.  generator.py
-is intended for software-only structures.  Hardware specifications
-(such as CSR descriptions) should use the existing Perl scripts for
-describing hardware registers.
-
-The generator script also transforms the structures in various ways
-for efficiency.  The first supported conversion, "packing", avoids
-inefficient compiled code by replacing multiple bitfields with a
-larger field to fit a full C type.  It defines accessor macros to get
-and set from the multiple fields in a single access.
 
 ## Input File Format
 
@@ -105,19 +90,21 @@ STRUCT WorkUnit /* key comment */
 END
 ```
 
-Comments for work unit would print:
-```
-key comment 
-body comment
-tail comment
+In the generated source code, the form would match the structure - key comment on
+the same line as the variable, body comment preceding, tail comment
+inside and at the end:
 ```
 
-Use C style comments for single lines ( /* ... */). 
+/* body comment */
+struct WorkUnit {  /* key comment */
+  uint8_t foo;
+  /* tail comment */
+```
+
+In the generator file, only use C style comments for single lines ( /* ... */). 
 Generator only supports C++-style comments for multi-line comments ( // ... ).
 
-In source code, the form would match the structure - key comment on
-the same line as the variable, body comment preceding, tail comment
-inside and at the end.
+
 
 The generator also defines two classes of constants: enums and flags.
 Enums represent symbolic names for ordinal values in a variable, such as
@@ -203,6 +190,27 @@ struct Container {
 };
 ```
 
+Structure can also be non-inline:
+STRUCT A
+  0 63:0 uint64_t arg0
+END
+
+STRUCT B
+  0 63:0 A arg0_container
+  1 63:0 uint64_t arg1;
+END
+
+This case would generate the following C code:
+```
+struct A {
+  uint64_t arg0;
+};
+struct B {
+  struct A arg0_container;
+  uint64_t arg1;
+};
+```
+
 Variable-length arrays are permitted at the end of
 a top-level structure.  Variable length arrays are specified using the syntax
 
@@ -216,31 +224,6 @@ END
 It is an error to use a variable length array at any place other than the
 end of a structure, or include a structure with a variable-length array
 at any place in another structure other than the end.
-
-## Packed fields
-
-If you pass the -p option to generator.py, it packs contiguous bitfields
-into a single field value, and generates macros to access these fields.
-(Packing fields like this ensures that we keep control over how we set the
-values - helpful if we want to manipulate registers efficiently.)
-
-Packed fields must have the same base type, must be bitfields (not using all
-bits of the type), and must be contiguous in the layout.
-
-Packed field naming is as follows:
-* Packed fields can include reserved fields (fields beginning with reserved
-or rsvd), but the names of reserved fields aren't used in the packed field 
-name.
-* Packed fields are generally named after the first and last field:
-"a_to_z".
-* If only one field is in the packed field (after reserved fields are removed),
-then the name is "fieldname_pack".
-* If all non-reserved fields in a packed field have a similar prefix, then
-the packed field name is "prefix_pack".  The prefix must be delimited by
-a _, and prefixing does not look at multiple underbars. "pre_a" and "pre_b"
-will be combined into a pre_pack field, but "pre_foo_a and pre_foo_b" will
-also disregard that pre_foo is a prefix and again name the packed field
-"pre_pack".
 
 ## Generated Code
 
@@ -275,11 +258,56 @@ field_name_P(value): gets value to put into field.  Field should be cleared
 ```
 
 
-To do:
+## Additional Codegen Options
+
+The -c option allows you to specify names of additional codegen passes to perform.
+-c pack combines bitfields into a single container field where individual fields are accessed via macros.
+-c json generates initialization routines that initialize the structure from JSON.
+-c swap generates endianness-swapping code.
+
+Each option is described in more detail below.
+
+The -c option supports multiple optinos. -c pack,json turns on both bitfield packing and JSON initialization.
+
+## Packed fields
+
+If you pass the '-c pack' option to generator.py, it packs contiguous bitfields
+into a single field value, and generates macros to access these fields.
+(Packing fields like this ensures that we keep control over how we set the
+values - helpful if we want to manipulate registers efficiently.)
+
+Packed fields must have the same base type, must be bitfields (not using all
+bits of the type), and must be contiguous in the layout.
+
+Packed field naming is as follows:
+* Packed fields can include reserved fields (fields beginning with reserved
+or rsvd), but the names of reserved fields aren't used in the packed field 
+name.
+* Packed fields are generally named after the first and last field:
+"a_to_z".
+* If only one field is in the packed field (after reserved fields are removed),
+then the name is "fieldname_pack".
+* If all non-reserved fields in a packed field have a similar prefix, then
+the packed field name is "prefix_pack".  The prefix must be delimited by
+a _, and prefixing does not look at multiple underbars. "pre_a" and "pre_b"
+will be combined into a pre_pack field, but "pre_foo_a and pre_foo_b" will
+also disregard that pre_foo is a prefix and again name the packed field
+"pre_pack".
+
+## JSON
+
+The '-c json' option causes initialization routines to be created that load values from
+JSON descriptions.  The JSON initialization routine always looks like:
+
+```
+bool struct_name_json_init(struct fun_json *j, struct struct_name *s);
+```
+
+## Future Work
 * Better formatting of comments, and matching line length requirements.
 (Running the Generator's output through clang-format or another formatting
 tool improves code significantly, but doesn't touch comments.)
-* Match Linux coding patterns.
+* Match Linux coding style.
 * Linux-style types.
 * Explicitly mark which functions represent commands or messages.  Currently,
 we assume all top-level structs can be used individually, and require all
@@ -289,4 +317,3 @@ and should have accessors generated for each item in the union.
 * Support enum names and flag names as type names.
 * Allow defining a default constant value for a field.  This would be
 particularly useful for specifying an opcode in a message.
-* Endian-swappers?
