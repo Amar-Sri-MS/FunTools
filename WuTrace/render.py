@@ -9,18 +9,40 @@ import sys
 
 import event
 
-def TruncatedSecs(time_usec):
-    """Returns the number of seconds, truncated to two digits, for more compact displays."""
-    return (time_usec / 1000000) % 100
+NSECS_PER_SEC = 1000000000
 
-def TruncatedUsecs(time_usec):
-    return time_usec % 1000000
+def TruncatedSecs(time_nsecs):
+    """Returns the number of seconds.
+    Time is truncated to two digits for more compact displays.
+    """
+    return (time_nsecs / NSECS_PER_SEC) % 100
 
-def TimeString(microseconds):
-    """Returns a string showing a specific time in human-readable form."""
-    startSecs = TruncatedSecs(microseconds)
-    startUsecs = TruncatedUsecs(microseconds)
+def TruncatedUsecs(time_nsecs):
+    """Returns number of microseconds in fractional seconds of given time."""
+    return (time_nsecs % NSECS_PER_SEC) / 1000
+
+def TruncatedNsecs(time_nsecs):
+    """Returns number of nanoseconds in fractional seconds of given time."""
+    return time_nsecs % NSECS_PER_SEC
+
+def TimeString(nanoseconds):
+    """Returns a string showing a specific time in human-readable form.
+
+    This function only displays time in microseconds so it's easier for a
+    human to read, and should be used for general output.
+    """
+    startSecs = TruncatedSecs(nanoseconds)
+    startUsecs = TruncatedUsecs(nanoseconds)
     return '%02d.%06d' % (startSecs, startUsecs)
+
+def NanosecondTimeString(nanoseconds):
+    """Returns a string showing a specific time in human-readable form.
+
+    This function displays time in nanoseconds to match file input.
+    """
+    startSecs = TruncatedSecs(nanoseconds)
+    startNsecs = TruncatedNsecs(nanoseconds)
+    return '%02d.%09d' % (startSecs, startNsecs)
 
 def RangeString(start_time, end_time):
     """Prints start and end formatted nicely."""
@@ -30,17 +52,14 @@ def RangeString(start_time, end_time):
     endUsecs = TruncatedUsecs(end_time)
     return '%02d.%06d - %02d.%06d' % (startSecs, startUsecs, endSecs, endUsecs)
 
-def DurationString(duration):
-    """Returns a human-readable string representing duration as microseconds."""
-    duration_secs = duration / 1000000
-    duration_usecs = duration % 1000000
-
-    if duration_secs == 0 and duration_usecs < 1000:
-        return '%d usec' % duration_usecs
-    elif duration_secs == 0:
-        return '%0.3f msec' % (duration_usecs / 1000.0)
+def DurationString(duration_nsecs):
+    """Returns a human-readable string showingduration as microseconds."""
+    if duration_nsecs < 1000000:
+        return '%d usec' % (duration_nsecs / 1000.0)
+    elif duration_nsecs < NSECS_PER_SEC:
+        return '%0.3f msec' % (duration_nsecs / 1000000.0)
     else:
-        return '%0.6f sec' % (duration / 1000000.0)
+        return '%0.6f sec' % (duration_nsecs / float(NSECS_PER_SEC))
 
 # Size the divs to 90% of full - 100% tends to cause problems
 # if a margin throws an object over 100%

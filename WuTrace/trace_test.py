@@ -20,20 +20,22 @@ def firstTransaction(transactions):
     return None
   return transactions[1]
 
-class TestParser(unittest.TestCase):
+class TestParseLine(unittest.TestCase):
+  def setUp(self):
+    self.file_parser = wu_trace.FileParser('filename')
 
   def testNotALogLine(self):
-    self.assertEqual((None, None), wu_trace.ParseLogLine("foo", "filename", 1))
+    self.assertEqual((None, None), self.file_parser.ParseLine("foo"))
     self.assertEqual((None, None),
-                      wu_trace.ParseLogLine("1000.001000000", "filename", 1))
+                     self.file_parser.ParseLine("1000.001000000"))
 
   def testSimpleParse(self):
     line = "123123123.567890000 TRACE WU START faddr VP0.0.0 wuid 0x1 name foo arg0 1 arg1 2"
-    (line_args, error) = wu_trace.ParseLogLine(line, "filename", 1)
+    (line_args, error) = self.file_parser.ParseLine(line)
 
     self.assertIsNone(error)
 
-    self.assertEqual(123123123567890, line_args["timestamp"])
+    self.assertEqual(123123123567890000, line_args["timestamp"])
     self.assertEqual("VP0.0.0", line_args["faddr"])
     self.assertEqual("WU", line_args["verb"])
     self.assertEqual("START", line_args["noun"])
@@ -43,72 +45,92 @@ class TestParser(unittest.TestCase):
 
   def testParseTransactionStart(self):
     line = '1.000001000 TRACE TRANSACTION START faddr VP0.0.0'
-    (line_args, error) = wu_trace.ParseLogLine(line, 'filename', 1)
+    (line_args, error) = self.file_parser.ParseLine(line)
     self.assertIsNotNone(line_args)
     self.assertIsNone(error)
 
     line = '0.000006000 TRACE TRANSACTION START faddr VP0.0.0\n'
-    line_args = wu_trace.ParseLogLine(line, 'filename', 1)
+    line_args = self.file_parser.ParseLine(line)
     self.assertIsNotNone(line_args)
     self.assertIsNone(error)
 
   def testBadVerb(self):
     # Colon after send is invalid.
     line = '485375410.764454000 TRACE WU SEND: faddr VP0.2.0 wuid 0x60 name wuh_mp_notify arg0 0x0 arg1 0x0 dest VP0.2.0'
-    (line_args, error) = wu_trace.ParseLogLine(line, 'filename', 1)
+    (line_args, error) = self.file_parser.ParseLine(line)
     self.assertIsNone(line_args)
     self.assertIn('malformed log line', error)
 
   def testUnknownVerb(self):
     # Comma after VP is unexpected.
     line = '485375410.764454000 TRACE FOO BAR faddr VP0.2.0 dest VP0.0.0, wuid 0x60 name wuh_mp_notify arg0 0x0 arg1 0x0'
-    (line_args, error) = wu_trace.ParseLogLine(line, 'filename', 1)
+    (line_args, error) = self.file_parser.ParseLine(line)
     self.assertIsNone(line_args)
     self.assertIn('unknown verb or noun', error)
 
   def testMissingKey(self):
     # Remove src.
     line = '485375410.764454000 TRACE WU START faddr VP0.2.0 wuid 0x60 name wuh_mp_notify arg1 0x0'
-    (line_args, error) = wu_trace.ParseLogLine(line, 'filename', 1)
+    (line_args, error) = self.file_parser.ParseLine(line)
     self.assertIsNone(line_args)
     self.assertIn('missing key "arg0"', error)
 
   def testMalformedNumber(self):
     # gg is not valid hex.
     line = '485375410.764454000 TRACE WU SEND faddr VP0.2.0 wuid 0xgg name wuh_mp_notify arg0 0x0 arg1 0x0 dest VP0.2.0'
-    (line_args, error) = wu_trace.ParseLogLine(line, 'filename', 1)
+    (line_args, error) = self.file_parser.ParseLine(line)
     self.assertIsNone(line_args)
     self.assertIn('malformed hex value "0xgg"', error)
 
   def testMalformedNumber(self):
     # 1A is not valid decimal value.
     line = '485375410.764454000 TRACE WU SEND faddr VP0.2.0 wuid 1A name wuh_mp_notify arg0 0x0 arg1 0x0 dest VP0.2.0'
-    (line_args, error) = wu_trace.ParseLogLine(line, 'filename', 1)
+    (line_args, error) = self.file_parser.ParseLine(line)
     self.assertIsNone(line_args)
     self.assertIn('malformed integer "1A"', error)
+
+  def testTimeGoesBackwards(self):
+    """Test that we correctly remember the last timestamp seen."""
+    line1 = "123123123.567890000 TRACE WU START faddr VP0.0.0 wuid 0x1 name foo arg0 1 arg1 2"
+
+    line2 = "123123123.467890000 TRACE WU START faddr VP1.0.0 wuid 0x1 name foo arg0 1 arg1 2"
+
+    (line_args, error) = self.file_parser.ParseLine(line1)
+    self.assertIsNotNone(line_args)
+    self.assertIsNone(error)
+
+    (line_args, error) = self.file_parser.ParseLine(line2)
+    self.assertIsNone(line_args)
+    self.assertIsNotNone(error)
+    self.assertIn('timestamp going backwards', error)
+
+
+class TestProcessFile(unittest.TestCase):
+  def setUp(self):
+    self.file_parser = wu_trace.FileParser('filename')
 
   def testStartEnd(self):
     log = ["1.000100000 TRACE WU START faddr VP0.0.0 wuid 0x1 name my_wu arg0 1 arg1 2",
            "1.000200000 TRACE WU END faddr VP0.0.0"]
-    transactions = wu_trace.ParseFile(log, "foo.trace")
+    transactions = self.file_parser.ProcessFile(log)
 
     self.assertIsNotNone(transactions)
     tr = firstTransaction(transactions)
     self.assertIsNotNone(tr)
     self.assertEqual(1, len(tr.Flatten()))
 
-    self.assertEqual(100, tr.root_event.Duration())
-    self.assertEqual(1000100, tr.root_event.start_time)
+    self.assertEqual(100000, tr.root_event.Duration())
+    self.assertEqual(1000100000, tr.root_event.start_time)
     self.assertEqual("my_wu", tr.root_event.label)
     self.assertEqual(0, len(tr.root_event.successors))
 
   def testSendGroupsWithEvent(self):
     log = ["1.000100000 TRACE WU START faddr VP0.0.0 wuid 0x1 name my_wu arg0 1 arg1 2",
-           "1.000050000 TRACE WU SEND faddr VP0.0.0 wuid 0x2 name sent_wu arg0 1 arg1 1 dest VP0.2.0",
+           "1.000150000 TRACE WU SEND faddr VP0.0.0 wuid 0x2 name sent_wu arg0 1 arg1 1 dest VP0.2.0",
            "1.000200000 TRACE WU END faddr VP0.0.0 wuid 0x1 name my_wu arg0 1 arg1 2",
            "1.000300000 TRACE WU START faddr VP0.2.0 wuid 0x2 name sent_wu arg0 1 arg1 1",
-           "1.004000000 TRACE WU END faddr VP0.2.0"]
-    transactions = wu_trace.ParseFile(log, "foo.trace")
+           "1.0004000000 TRACE WU END faddr VP0.2.0"]
+    transactions = self.file_parser.ProcessFile(log)
     tr = firstTransaction(transactions)
     render.DumpTransactions(sys.stdout, transactions)
     self.assertIsNotNone(tr)
@@ -118,11 +140,11 @@ class TestParser(unittest.TestCase):
 
   def testTriggerTimer(self):
     log = ["1.000100000 TRACE WU START faddr VP0.0.0 wuid 0x1 name my_wu arg0 1 arg1 2",
-           "1.000050000 TRACE TIMER START faddr VP0.0.0 timer 0x1 wuid 0x2 name sent_wu dest VP0.0.0 arg0 0x2",
+           "1.000150000 TRACE TIMER START faddr VP0.0.0 timer 0x1 wuid 0x2 name sent_wu dest VP0.0.0 arg0 0x2",
            "1.000200000 TRACE WU END faddr VP0.0.0",
            "1.000300000 TRACE WU START faddr VP0.0.0 wuid 0x2 name sent_wu arg0 0x2 arg1 0",
-           "1.004000 faddr000 TRACE WU END VP0.0.0"]
-    transactions = wu_trace.ParseFile(log, "foo.trace")
+           "1.0004000 faddr000 TRACE WU END VP0.0.0"]
+    transactions = self.file_parser.ProcessFile(log)
 
     self.assertIsNotNone(transactions)
 
@@ -136,7 +158,7 @@ class TestParser(unittest.TestCase):
            "1.00200000 TRACE TRANSACTION START faddr VP0.0.0",
            "1.00300000 TRACE WU END faddr VP0.0.0 wuid 1 name fun_a arg0 1 arg1 2"
            ]
-    transactions = wu_trace.ParseFile(log, "foo.trace")
+    transactions = self.file_parser.ProcessFile(log)
     self.assertEqual(3, len(transactions))
 
     tr = transactions[2]
@@ -161,7 +183,7 @@ class TestParser(unittest.TestCase):
 0.000016000 TRACE WU END faddr VP0.0.0
 """
       
-      transactions = wu_trace.ParseFile(trace.split('\n'), "foo.trace")
+      transactions = self.file_parser.ProcessFile(trace.split('\n'))
       output_file = FakeFile()
       render.DumpTransactions(output_file, transactions)
       for l in output_file.lines:
@@ -179,7 +201,6 @@ class TestParser(unittest.TestCase):
 
       self.assertEqual(expected, output_file.lines)
 
-
 class FakeFile:
   def __init__(self):
     self.lines = []
@@ -194,13 +215,15 @@ class EndToEndTest(unittest.TestCase):
            '1.00200000  TRACE TRANSACTION START faddr VP0.0.0',
            '1.00300000 TRACE WU END faddr VP0.0.0 wuid 1 name fun_a arg0 1 arg1 2'
            ]
-    transactions = wu_trace.ParseFile(log, "foo.trace")
+    file_parser = wu_trace.FileParser("foo.trace")
+    transactions = file_parser.ProcessFile(log)
     # First, make sure we can run the graphviz code.
     outputFile = FakeFile()
     render.RenderGraphviz(outputFile, transactions)
 
     expected_output = ['strict digraph foo {\n',
-                       'label="\\nbold: wu send\\ndot: timer"\n',                       '}\n']
+                       'label="\\nbold: wu send\\ndot: timer"\n',
+                       '}\n']
 
     self.assertEqual(expected_output, outputFile.lines)
 
@@ -212,7 +235,8 @@ class EndToEndTest(unittest.TestCase):
            '1.00400 TRACE WU START faddr VP0.0.0 src VP0.0.0 dest VP0.0.0 wuid 2 name bar arg0 2 arg1 3',
            '1.00500 TRACE WU END faddr VP0.0.0 wuid 2 name bar arg0 2 arg1 3'
            ]
-    transactions = wu_trace.ParseFile(log, "foo.trace")
+    file_parser = wu_trace.FileParser("foo.trace")
+    transactions = file_parser.ProcessFile(log)
     # First, make sure we can run the graphviz code.
     outputFile = FakeFile()
     render.RenderGraphviz(outputFile, transactions)
@@ -231,7 +255,8 @@ class EndToEndTest(unittest.TestCase):
 0.000003000 TRACE WU END faddr VP0.0.0
     """.split('\n')
 
-    transactions = wu_trace.ParseFile(log, 'foo.trace')
+    file_parser = wu_trace.FileParser('foo.trace')
+    transactions = file_parser.ProcessFile(log)
     self.assertEqual(2, len(transactions))
 
     out_file = StringIO.StringIO()
@@ -258,7 +283,9 @@ class EndToEndTest(unittest.TestCase):
 0.000015000 TRACE WU END faddr VP0.0.0 wuid 0 name foo arg0 0x3 arg1 0
 
     """.split('\n')
-    transactions = wu_trace.ParseFile(log, "foo.trace")
+
+    file_parser = wu_trace.FileParser('foo.trace')
+    transactions = file_parser.ProcessFile(log)
     output_file = FakeFile()
 
     render.RenderGraphviz(output_file, transactions)

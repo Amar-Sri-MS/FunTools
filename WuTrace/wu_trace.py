@@ -10,9 +10,9 @@
 #
 # All wu event messages are expected to start with:
 #
-# 9999999.999999 faddr VP9.9.9 VERB NOUN ...
+# 9999999.999999999 faddr VP9.9.9 VERB NOUN ...
 #
-# where the initial number is the number of seconds and microseconds
+# where the initial number is the number of seconds and nanoseconds
 # since epoch, and the VP... is the fabric address of the unit sending
 # the log message.  Verb, for now, is either WU, TIMER, or HU.  For
 # WUs, VERB un can be START, END, or SEND.  For timers, VERB must
@@ -40,120 +40,176 @@ import render
 
 DEBUG = False
 
-def ParseLogLine(line, file, line_number):
-  """Parses a single log line from --wulog.
-  Returns a tuple of (dictionary of key-value pairs, error) where
-  error is None if parsing was successful, and the dictionary is not None
-  if the line represented a WU log entry.
-  """
-  line = line.lstrip().rstrip()
-  values = {}
-  match = re.match('([0-9]+).([0-9]+) TRACE ([A-Z_]+) ([A-Z_]+)', line)
-  if not match:
-    # Not a log line, but not an error either.
-    return (None, None)
+last_time = 0
+saw_time_backwards = False
 
-  time_nsec = int(match.group(1)) * 1000000000 + int(match.group(2))
-  values = {'timestamp': time_nsec / 1000,
-            'verb': match.group(3),
-            'noun': match.group(4)
-            }
-  remaining_string = line[len(match.group(0)):].lstrip()
+class FileParser:
+  """Handles parsing and interpretation of file input."""
+  def __init__(self, filename):
+    self.filename = filename
+    self.line_number = 0
+    self.last_time = 0
+    self.saw_time_backwards = False
 
-  if len(remaining_string) == 0:
+  def ParseLine(self, line):
+    """Parses a single log line from --wulog.
+    Returns a tuple of (dictionary of key-value pairs, error) where
+    error is None if parsing was successful, and the dictionary is not None
+    if the line represented a WU log entry.
+    """
+
+    line = line.lstrip().rstrip()
+    values = {}
+    match = re.match('([0-9]+).([0-9]+) TRACE ([A-Z_]+) ([A-Z_]+)', line)
+    if not match:
+      # Not a log line, but not an error either.
+      return (None, None)
+
+    time_nsec = int(match.group(1)) * 1000000000 + int(match.group(2))
+
+    if time_nsec < self.last_time:
+      # Flag only the first occurrence.
+      if not self.saw_time_backwards:
+        error = ('%s:%d: timestamp going backwards.  Input must be sorted.\n'
+                 '    Previous time was %s, current time is %s.\n'
+                 '    "sort -n -k1,20 -s filename" will sort output.\n'
+                 '    All remaining out-of-order lines will be dropped.\n' % (
+            self.filename, self.line_number,
+            render.NanosecondTimeString(self.last_time),
+            render.NanosecondTimeString(time_nsec)))
+
+        self.saw_time_backwards = True
+        return (None, error)
+      else:
+        # Swallow remaining out-of-order events.
+        return (None, None)
+    self.last_time = time_nsec
+    
+    values = {'timestamp': time_nsec,
+              'verb': match.group(3),
+              'noun': match.group(4)
+              }
+    remaining_string = line[len(match.group(0)):].lstrip()
+
+    if len(remaining_string) == 0:
+      return (values, None)
+
+    # Annotation is special - we need to find the faddr at the
+    # beginning, but the rest counts as the message.
+    if values['verb'] == 'TRANSACTION' and values['noun'] == 'ANNOT':
+      annot_match = re.match('faddr (VP[0-9]+.[0-9]+.[0-9]+) (.*)',
+                             remaining_string)
+      if not annot_match:
+        error = '%s:%d: malformed transaction annotation: "%s"\n' % (
+          self.filename, self.line_number, line)
+        return (None, error)
+
+      values['faddr'] = annot_match.group(1)
+      values['msg'] = annot_match.group(2)
+    else:
+      token_iter = iter(remaining_string.split(' '))
+
+      try:
+        pairs = [(a, next(token_iter)) for a in token_iter]
+      except StopIteration as e:
+        error = '%s:%d: malformed log line: "%s"\n' % (
+          self.filename, self.line_number, line)
+        return (None, error)
+
+      for (key, value) in pairs:
+        values[key] = value
+
+    expect_keywords = []
+
+    event_type = (values['verb'], values['noun'])
+  
+    if event_type == ('WU', 'START'):
+      # Should define src, dest, id, name, arg0, arg1.
+      expect_keywords = ['faddr', 'wuid', 'name', 'arg0', 'arg1']
+
+    elif event_type == ('WU', 'END'):
+      # should define id, name, arg0, arg1.
+      expect_keywords = ['faddr']
+
+    elif event_type == ('WU', 'SEND'):
+      # Should define src, dest, id, name, arg0, arg1.
+      expect_keywords = ['faddr', 'wuid', 'name', 'arg0', 'arg1', 'dest']
+
+    elif event_type == ('TIMER', 'TRIGGER'):
+      # Should define timer and arg0.
+      expect_keywords = ['faddr', 'timer', 'arg0']
+
+    elif event_type == ('TIMER', 'START'):
+      expect_keywords = ['faddr', 'timer', 'wuid', 'name', 'dest', 'arg0']
+
+    elif event_type == ('TRANSACTION', 'START'):
+      expect_keywords = ['faddr']
+
+    elif event_type == ('TRANSACTION', 'ANNOT'):
+      # Annotate uses rest of line as message.
+      expect_keywords = ['faddr']
+
+    elif event_type == ('HU', 'SQ_DBL'):
+      expect_keywords = ['sqid']
+
+    else:
+      error = '%s:%d: unknown verb or noun: %s %s\n' % (self.filename,
+                                                        self.line_number,
+                                                        values['verb'],
+                                                        values['noun'])
+      return (None, error)
+
+    for expected_keyword in expect_keywords:
+      if expected_keyword not in values:
+        error = '%s:%d: missing key "%s" in command %s %s\n' % (
+          self.filename, self.line_number, expected_keyword,
+          values['verb'], values['noun'])
+        return (None, error)
+
+    int_keywords = ['wuid', 'arg0', 'arg1', 'sqid']
+    for keyword in int_keywords:
+      if keyword in values:
+        string_value = values[keyword]
+        if string_value.startswith('0x'):
+          try:
+            values[keyword] = int(string_value, 16)
+          except ValueError as e:
+            error = '%s:%d: malformed hex value "%s" for key %s\n' % (
+              self.filename, self.line_number, string_value, keyword)
+            return (None, error)
+
+        else:
+          try:
+            values[keyword] = int(string_value)
+          except ValueError as e:
+            error = '%s:%d: malformed integer "%s" for key %s\n' % (
+              self.filename, self.line_number, string_value, keyword)
+            return (None, error)
+
+
     return (values, None)
 
-  # Annotation is special - we need to find the faddr at the
-  # beginning, but the rest counts as the message.
-  if values['verb'] == 'TRANSACTION' and values['noun'] == 'ANNOT':
-    annot_match = re.match('faddr (VP[0-9]+.[0-9]+.[0-9]+) (.*)',
-                           remaining_string)
-    if not annot_match:
-      error = '%s:%d: malformed transaction annotation: "%s"\n' % (
-        file, line_number, line)
-      return (None, error)
+  def ProcessFile(self, lines):
+    """Process the provided list of input lines.
+    
+    This function parses each line, and also interprets them using the
+    trace parser.
+    """
+    trace_parser = TraceParser(self.filename)
 
-    values['faddr'] = annot_match.group(1)
-    values['msg'] = annot_match.group(2)
-  else:
-    token_iter = iter(remaining_string.split(' '))
+    self.line_number = 0
+    for line in lines:
+      self.line_number += 1
+      if DEBUG:
+        sys.stderr.write('line %d\n' % line_number)
+      (log_keywords, error) = self.ParseLine(line)
+      if error:
+        sys.stderr.write(error)
+      if not log_keywords:
+        continue
+      trace_parser.HandleLogLine(log_keywords, self.line_number)
 
-    try:
-      pairs = [(a, next(token_iter)) for a in token_iter]
-    except StopIteration as e:
-      error = '%s:%d: malformed log line: "%s"\n' % (
-        file, line_number, line)
-      return (None, error)
-
-    for (key, value) in pairs:
-      values[key] = value
-
-  expect_keywords = []
-
-  event_type = (values['verb'], values['noun'])
-  
-  if event_type == ('WU', 'START'):
-    # Should define src, dest, id, name, arg0, arg1.
-    expect_keywords = ['faddr', 'wuid', 'name', 'arg0', 'arg1']
-
-  elif event_type == ('WU', 'END'):
-    # should define id, name, arg0, arg1.
-    expect_keywords = ['faddr']
-
-  elif event_type == ('WU', 'SEND'):
-    # Should define src, dest, id, name, arg0, arg1.
-    expect_keywords = ['faddr', 'wuid', 'name', 'arg0', 'arg1', 'dest']
-
-  elif event_type == ('TIMER', 'TRIGGER'):
-    # Should define timer and arg0.
-    expect_keywords = ['faddr', 'timer', 'arg0']
-
-  elif event_type == ('TIMER', 'START'):
-    expect_keywords = ['faddr', 'timer', 'wuid', 'name', 'dest', 'arg0']
-
-  elif event_type == ('TRANSACTION', 'START'):
-    expect_keywords = ['faddr']
-
-  elif event_type == ('TRANSACTION', 'ANNOT'):
-    # Annotate uses rest of line as message.
-    expect_keywords = ['faddr']
-
-  elif event_type == ('HU', 'SQ_DBL'):
-    expect_keywords = ['sqid']
-
-  else:
-    error = '%s:%d: unknown verb or noun: %s %s\n' % (file, line_number, values['verb'], values['noun'])
-    return (None, error)
-
-  for expected_keyword in expect_keywords:
-    if expected_keyword not in values:
-      error = '%s:%d: missing key "%s" in command %s %s\n' % (
-        file, line_number, expected_keyword,
-        values['verb'], values['noun'])
-      return (None, error)
-
-  int_keywords = ['wuid', 'arg0', 'arg1', 'sqid']
-  for keyword in int_keywords:
-    if keyword in values:
-      string_value = values[keyword]
-      if string_value.startswith('0x'):
-        try:
-          values[keyword] = int(string_value, 16)
-        except ValueError as e:
-          error = '%s:%d: malformed hex value "%s" for key %s\n' % (
-          file, line_number, string_value, keyword)
-          return (None, error)
-
-      else:
-        try:
-          values[keyword] = int(string_value)
-        except ValueError as e:
-          error = '%s:%d: malformed integer "%s" for key %s\n' % (
-            file, line_number, string_value, keyword)
-          return (None, error)
-
-
-  return (values, None)
+    return trace_parser.transactions
 
 
 class TraceParser:
@@ -227,6 +283,9 @@ class TraceParser:
       if predecessor:
         current_event.transaction = predecessor.transaction
         current_event.is_timer = is_timer
+        if current_event.is_timer:
+          current_event.timer_start = predecessor.start_time
+        
         predecessor.successors.append(current_event)
 
       elif log_keywords['name'] == 'wuh_mp_notify':
@@ -246,14 +305,15 @@ class TraceParser:
     elif event_type == ('WU', 'END'):
       # Identify the matching start event, and set the end time.
       if vp not in self.vp_to_event:
-        sys.stderr.write('%s:%d: unexpected end\n' % (self.input_filename, line_number))
+        sys.stderr.write('%s:%d: unexpected WU END.\n' % (self.input_filename,
+                                                          line_number))
         return
 
       current_event = self.vp_to_event[vp]
       del self.vp_to_event[vp]
 
       if current_event is None:
-        sys.stderr.write('Line %d: unknown end\n' % line_number)
+        sys.stderr.write('Line %d: unexpected WU END.\n' % line_number)
         return
       current_event.end_time = timestamp
     elif event_type == ('WU', 'SEND'):
@@ -296,7 +356,8 @@ class TraceParser:
 
     elif event_type == ('TRANSACTION', 'START'):
        if vp not in self.vp_to_event:
-         sys.stderr.write('%s:%d: TRANSACTION START does not match running WU on %s' % (
+         sys.stderr.write('%s:%d: TRANSACTION START not occurring during '
+                          'running WU on %s\n' % (
              self.input_filename, line_number, vp))
          return
        current_event = self.vp_to_event[vp]
@@ -309,7 +370,8 @@ class TraceParser:
 
     elif event_type == ('TRANSACTION', 'ANNOT'):
        if vp not in self.vp_to_event:
-         sys.stderr.write('%s:%d: TRANSACTION START does not match running WU on %s' % (
+         sys.stderr.write('%s:%d: TRANSACTION ANNOT not occurring in running '
+                          'WU on %s\n' % (
              self.input_filename, line_number, vp))
          return
        current_event = self.vp_to_event[vp]
@@ -325,23 +387,6 @@ class TraceParser:
           log_keywords['noun']))
       return
 
-
-def ParseFile(lines, input_filename):
-  trace_parser = TraceParser(input_filename)
-
-  line_number = 0
-  for line in lines:
-    line_number += 1
-    if DEBUG:
-      sys.stderr.write('line %d\n' % line_number)
-    (log_keywords, error) = ParseLogLine(line, input_filename, line_number)
-    if error:
-      sys.stderr.write(error)
-    if not log_keywords:
-      continue
-    trace_parser.HandleLogLine(log_keywords, line_number)
-
-  return trace_parser.transactions
 
 def main(argv):
   global DEBUG
@@ -366,7 +411,8 @@ def main(argv):
         'Unknown option %s to --format.  Must be text, html, graphviz.\n')
       exit(1)
 
-  transactions = ParseFile(open(input_filename), input_filename)
+  file_parser = FileParser(input_filename)
+  transactions = file_parser.ProcessFile(open(input_filename))
 
   out_file = sys.stdout
   if args.output is not None:
