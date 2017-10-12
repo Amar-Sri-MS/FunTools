@@ -309,11 +309,11 @@ dd {
     out += self.MakeIndex(doc)
 
     for d in doc.Declarations():
-      if d.declaration_kind == parser.EnumKind:
+      if d.is_enum:
         out += self.VisitEnum(d)
-      elif d.declaration_kind == parser.FlagSetKind:
+      elif d.is_flagset:
         out += self.VisitFlagset(d)
-      elif d.declaration_kind == parser.StructKind:
+      elif d.is_struct:
         if not d.inline:
           out += self.VisitStruct(d)
       else:

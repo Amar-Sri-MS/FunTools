@@ -254,7 +254,12 @@ class Declaration:
     # Location where Declaration appeared in source.
     self.line_number = 0
 
-    self.declarationKind = UnknownKind
+    self.is_enum = False
+    self.is_flagset = False
+    self.is_struct = False
+    self.is_function = False
+    self.is_macro = False
+    self.is_field = False
 
   def DefinitionString(self):
     """Returns a text string that is a valid declaration.
@@ -283,7 +288,7 @@ class Macro(Declaration):
     self.name = name
     self.body = body
     self.body_comment = comment
-    self.declaration_kind = MacroKind
+    self.is_macro = True
 
 class Function(Declaration):
   """Representation of a generated function.
@@ -296,7 +301,7 @@ class Function(Declaration):
     # Full function definition with body.
     self.definition = defn
     self.body_comment = comment
-    self.declaration_kind = FunctionKind
+    self.is_function = True
     
 class Field(Declaration):
   # Representation of a field in a structure or union.
@@ -368,7 +373,7 @@ class Field(Declaration):
 
     # Fields for a composite object such as a struct or union.
     self.subfields = []
-    self.declaration_kind = FieldKind
+    self.is_field = True
     # None if a top-level field, or the packed field holding this field.
     self.packed_field = None
     self.parent_struct = None
@@ -601,7 +606,7 @@ class EnumVariable(Declaration):
      self.name = name
      # value is an integer value for the variable.
      self.value = value
-     self.declaration_kind = EnumVariableKind
+     self.is_enum_variable = True
 
   def __str__(self):
     return('<EnumVariable: %s = 0x%x>' % (self.name, self.value))
@@ -618,7 +623,7 @@ class Enum(Declaration):
     Declaration.__init__(self)
     self.name = name
     self.variables = []
-    self.declaration_kind = EnumKind
+    self.is_enum = True
     self.last_value = 0
 
   def AddVariable(self, var):
@@ -657,7 +662,7 @@ class FlagSet(Declaration):
     Declaration.__init__(self)
     self.name = name
     self.variables = []
-    self.declaration_kind = FlagSetKind
+    self.is_flagset = True
     self.max_value = 0
 
   def AddVariable(self, var):
@@ -719,7 +724,7 @@ class Struct(Declaration):
     # struct was defined inline in the gen file, or on its own.
     self.inline = False
     self.parent_struct = None
-    self.declaration_kind = StructKind
+    self.is_struct = True
 
   def FieldWithBaseType(self, base_type):
     """Returns first field with the given type.
@@ -959,13 +964,13 @@ class Document:
     return self.declarations_raw
 
   def Structs(self):
-    return [d for d in self.declarations_raw if d.declaration_kind == StructKind]
+    return [d for d in self.declarations_raw if d.is_struct]
 
   def Enums(self):
-    return [d for d in self.declarations_raw if d.declaration_kind == EnumKind]
+    return [d for d in self.declarations_raw if d.is_enum]
 
   def Flagsets(self):
-    return [d for d in self.declarations_raw if d.declaration_kind == FlagSetKind]
+    return [d for d in self.declarations_raw if d.is_flagset]
 
   def AddStruct(self, s):
     self.declarations_raw.append(s)

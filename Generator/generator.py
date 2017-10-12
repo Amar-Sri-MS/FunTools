@@ -1008,6 +1008,7 @@ def GenerateFromTemplate(doc, template_filename, generator_file, output_base,
     'enums': doc.Enums(),
     'flagsets': doc.Flagsets(),
     'structs' : [x for x in doc.Structs() if not x.is_union],
+    'declarations': doc.Declarations(),
     'extra_vars': extra_vars
     }
 
