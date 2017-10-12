@@ -19,7 +19,7 @@ class Transaction():
     return self.label
 
   def StartTime(self):
-    """Time in microseconds since epoch when the first WU started."""
+    """Time in nanosecondseconds since epoch when the first WU started."""
     # TODO(bowdidge): Stop recalculating this each time.
     if not self.root_event:
       return 0
@@ -30,7 +30,7 @@ class Transaction():
     return start
 
   def EndTime(self):
-    """Time in microseconds since epoch when the last WU finished."""
+    """Time in nanoseconds since epoch when the last WU finished."""
     if not self.root_event:
       return 0
     end = self.root_event.end_time
@@ -40,7 +40,7 @@ class Transaction():
     return end
 
   def Duration(self):
-    """Number of microseconds elapsed during transaction."""
+    """Number of nanoseconds elapsed during transaction."""
     return self.EndTime() - self.StartTime()
 
   def Remove(self, event):
@@ -111,7 +111,7 @@ class TraceEvent:
     return (self.start_time, self.end_time)
 
   def Duration(self):
-    """Returns time spent only in this event."""
+    """Returns time spent only in this event in nanoseconds."""
     return self.end_time - self.start_time
 
   def __cmp__(self, other):
