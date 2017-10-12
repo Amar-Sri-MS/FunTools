@@ -90,5 +90,7 @@ class DpcClient(object):
     def execute_command(self, command, args):
         encoded_args = json.dumps(args)
         results = self.execute_command_line(command + ' ' + encoded_args)
+        if (command == 'execute'):
+            return results
         decoded_results = json.loads(results)
         return decoded_results
