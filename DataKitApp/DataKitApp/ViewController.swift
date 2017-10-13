@@ -11,34 +11,33 @@ import Cocoa
 let predefArray = [
 	("all", "map(logger())"),
 	("", ""),
-	("all ints (typed)", "map((UInt64) -> (): logger())"),
+	("all ints (typed)", "map((UInt64) -> () | logger())"),
 	("all * 100", "compose(\n" +
-		"    map((UInt64) -> (): logger()), \n" +
-		"    map({ $0 * 100 })\n" +
+		"    first: map((UInt64) -> UInt64 | { $0 * 100 }),\n" +
+		"    then: map(logger())\n" +
 	")"),
 	("all smaller than 10000", "compose(\n" +
-		"    map((UInt64) -> (): logger()), \n" +
-		"    filter({ $0 < 10000})\n" +
+		"    first:  filter((UInt64) -> Bool | { $0 < 10000}),\n" +
+		"    then: map(logger())\n" +
 	")"),
 	("more complex", "compose(\n" +
-		"    map((UInt64) -> (): logger()), \n" +
-		"    compose(\n" +
-		"        map((UInt64) -> UInt64: { $0 * 1000 + 42}), \n" +
-		"        filter({ $0 < 100000})\n" +
-		"    )\n" +
+		"    first: compose(\n" +
+		"        first: filter((UInt64) -> Bool | { $0 < 100000}),\n" +
+		"        then: map((UInt64) -> UInt64 | { $0 * 1000 + 42})\n" +
+		"    ),\n" +
+		"    then: map(logger())\n" +
 		")"),
 	("", ""),
-	("all Students (typed)", "map((Student) -> (): logger())"),
+	("all Students (typed)", "map((Student) -> () | logger())"),
 	("all Joes", "compose(\n" +
-		"    map((Student) -> (): logger()), \n" +
-		"    filter({ $0.first_name == \"Joe\"})\n" +
+		"    first: filter((Student) -> Bool | { $0.first_name == \"Joe\"}), \n" +
+		"    then: map(logger())\n" +
 	")"),
 	("all Joe Smith", "compose(\n" +
-		"    map((Student) -> (): logger()), \n" +
-		"    compose(\n" +
-		"        filter((Student) -> Bool: { $0.first_name == \"Joe\"}), \n" +
-		"        filter({ $0.last_name == \"Smith\"})\n" +
-		"    )\n" +
+		"    first: compose(\n" +
+		"        first: filter((Student) -> Bool | { $0.last_name == \"Smith\"}),\n" +
+		"        then: filter((Student) -> Bool | { $0.first_name == \"Joe\"})),\n" +
+		"    then: map(logger())\n" +
 	")")
 ]
 

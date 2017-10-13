@@ -42,7 +42,7 @@ extension DKExpression {
 
 		let s1: DKExpressionConstant = "foo"
 		let s2: DKExpressionConstant = "bar"
-		let concat2 = DKAlgebraicOperator(domain: .string, op: "|", arity: 2)!
+		let concat2 = DKAlgebraicOperator(domain: .string, op: "+", arity: 2)!
 		let sExpr = DKExpressionFuncCall(oper: concat2, arguments: [s1, s2], uniquingTable)
 		let ss = sExpr.evaluate(context: con)
 		assert(ss.stringValue == "foobar")

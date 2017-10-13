@@ -37,7 +37,7 @@ extension DKParser {
 	}
 	func parseExpressionWithType(_ type: DKType!, _ variables: [DKType]) throws -> DKExpression {
 		let t = try parseType()
-		try expectReservedWord(":")
+		try expectReservedWord("|")
 		if type != nil && type! != t {
 			throw DKParsingError("Type mismatch \(type!) vs. \(t) for expression", self)
 		}
@@ -150,7 +150,7 @@ extension DKParser {
 //		print("In makeExpression with exprs=\(exprs) ops=\(operators)")
 		let priorities: [String: Int] = [
 			"==": 0, "!=": 0, "<": 0, ">": 0, "<=": 0, ">=": 0,
-			"+": 1, "-": 1, "|": 1,
+			"+": 1, "-": 1,
 			"*": 2, "/": 2, "%": 2, "^": 2,
 			"||": 3,
 			"&&": 4,

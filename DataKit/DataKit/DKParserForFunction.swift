@@ -24,7 +24,7 @@ extension DKParser {
 			if !(t is DKTypeSignature) {
 				throw DKParsingError("Function type is not a signature \(t)", self)
 			}
-			try expectReservedWord(":")
+			try expectReservedWord("|")
 			if sig != nil && signature != nil && sig! != signature! {
 				throw DKParsingError("Function type mismatch \(sig!) vs. \(signature!)", self)
 			}
@@ -169,27 +169,67 @@ extension DKParser {
 	}
 	func parseBinaryFunctionConstructor(_ s: String, _ signature: DKTypeSignature!) throws -> DKFunction {
 		if s == "compose" {
-			let outer = try parseFunction(nil)
-			if outer.signature.numberOfArguments != 1 {
-				throw DKParsingError("Compose: uncomposable signatures", self)
+			var intermediateType: DKType! = nil
+			var outer: DKFunction! = nil
+			var inner: DKFunction! = nil
+			func outerSig() -> DKTypeSignature! {
+				if signature == nil || intermediateType == nil {
+					return nil
+				}
+				return DKTypeSignature(unaryArg: intermediateType!, output: signature!.output)
 			}
-			try expectReservedWord(",")
-			var innerSig: DKTypeSignature! = nil
-			if signature != nil {
-				innerSig = DKTypeSignature(input: signature.input, output: outer.signature.input[0])
+			func innerSig() -> DKTypeSignature! {
+				if signature == nil || intermediateType == nil {
+					return nil
+				}
+				return DKTypeSignature(input: signature!.input, output: intermediateType!)
 			}
-			let inner = try parseFunction(innerSig)
-			if signature != nil && signature.input != inner.signature.input {
-				throw DKParsingError("Compose: inner has unexpected signature", self)
+			func setOuter(_ f: DKFunction) throws {
+				if f.signature.numberOfArguments != 1 {
+					throw DKParsingError("Compose: uncomposable signatures", self)
+				}
+				if intermediateType != nil && f.signature.input[0] != intermediateType! {
+					throw DKParsingError("Compose: outer has unexpected signature", self)
+				}
+				if outer != nil {
+					throw DKParsingError("Compose: outer set twice", self)
+				}
+				outer = f
+				intermediateType = f.signature.input[0]
 			}
-			if signature != nil && signature.output != outer.signature.output {
-				throw DKParsingError("Compose: outer has unexpected signature", self)
+			func setInner(_ f: DKFunction) throws {
+				if signature != nil && signature.input != f.signature.input {
+					throw DKParsingError("Compose: inner has unexpected signature", self)
+				}
+				if intermediateType != nil && f.signature.output != intermediateType! {
+					throw DKParsingError("Compose: inner has unexpected signature", self)
+				}
+				if inner != nil {
+					throw DKParsingError("Compose: inner set twice", self)
+				}
+				inner = f
+				intermediateType = f.signature.output
 			}
-			if inner.signature.output != outer.signature.input[0] {
-				throw DKParsingError("Compose: uncomposable signatures", self)
-
+			// First we try to parse a argument keywords
+			let keywords: Set<String> = ["first", "then"]
+			while outer == nil || inner == nil {
+				let keyword = maybeIdent()
+				var isInner: Bool
+				if keyword != nil && keywords.contains(keyword!) {
+					accept()
+					try expectReservedWord(":")
+					isInner = keyword == "first"
+				} else {
+					isInner = outer != nil
+				}
+				let sig = isInner ? innerSig() : outerSig()
+				let f = try parseFunction(sig)
+				try (isInner ? setInner : setOuter)(f)
+				if outer == nil || inner == nil {
+					try expectReservedWord(",")
+				}
 			}
-			return DKFunctionComposition(outer: outer, inner: inner)
+			return DKFunctionComposition(outer: outer!, inner: inner!)
 		}
 		fatalError()
 	}
