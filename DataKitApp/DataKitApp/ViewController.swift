@@ -8,6 +8,8 @@
 
 import Cocoa
 
+// The app logic is here
+
 let predefArray = [
 	("all", "map(logger())"),
 	("", ""),
