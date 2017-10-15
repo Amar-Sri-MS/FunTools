@@ -48,6 +48,7 @@ class ViewController: NSViewController, NSTextViewDelegate {
 	@IBOutlet var numFifos: NSTextField!
 	@IBOutlet var status: NSTextField!
 	@IBOutlet var generatedJSON: NSTextView!
+	@IBOutlet var commandToF1: NSTextField!
 
 	let typeTable = DKTypeTable()
 	var isStudents: Bool {
@@ -78,8 +79,9 @@ class ViewController: NSViewController, NSTextViewDelegate {
 	}
 	override func viewDidLoad() {
 		super.viewDidLoad()
-		transformation.font = NSFont(name: "Menlo", size: 16)
-		generatedJSON.font = NSFont(name: "Menlo", size: 16)
+		let bigFont = NSFont(name: "Menlo", size: 16)
+		transformation.font = bigFont
+		generatedJSON.font = bigFont
 		registerGeneratorOfStudents(typeTable: typeTable)
 		transformation.delegate = self
 		predefs.removeAllItems()
@@ -99,6 +101,7 @@ class ViewController: NSViewController, NSTextViewDelegate {
 		generatedJSON.string = ""
 		numFifos.stringValue = ""
 		status.stringValue = ""
+		commandToF1.stringValue = ""
 	}
 	@IBAction func sourceChanged(_ sender: NSObject?) {
 		reset()
@@ -110,6 +113,7 @@ class ViewController: NSViewController, NSTextViewDelegate {
 		reset()
 		transformation.string = text
 	}
+	// Returns the string as one line
 	func checkAndJSON() -> String! {
 		do {
 			let flowGraphGen = try flowGraphGenerator()
@@ -118,7 +122,9 @@ class ViewController: NSViewController, NSTextViewDelegate {
 			let j = flowGraphGen.flowGraphToJSON
 			let js = j.description
 			generatedJSON.string = js
-			return js
+			let oneLine = js.description.asOneLine
+			commandToF1.stringValue = "datakit setup \(oneLine)"
+			return oneLine
 		} catch let error {
 			generatedJSON.string = "*** Error parsing: \(error)"
 			return nil
@@ -134,12 +140,11 @@ class ViewController: NSViewController, NSTextViewDelegate {
 	@IBAction func setup(_ sender: NSObject?) {
 		let combined = checkAndJSON()
 		if combined == nil { return }
-		let str = combined!.description.asOneLine
-//		print("Single line: \n\(str)")
-		let r = dpcrun_command_with_subverb_and_arg(&socket, "datakit", "setup", str)
+		let r = dpcrun_command_with_subverb_and_arg(&socket, "datakit", "setup", combined!)
 		status.stringValue = r == nil ? "CAN'T CONNECT" : "OK"
 	}
 	@IBAction func run(_ sender: NSObject?) {
+		commandToF1.stringValue = "datakit run"
 		let r2 = dpcrun_command_with_subverb(&socket, "datakit", "run")
 		status.stringValue = r2 == nil ? "CAN'T CONNECT" : "OK"
 	}
