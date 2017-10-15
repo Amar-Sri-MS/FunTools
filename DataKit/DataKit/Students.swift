@@ -130,24 +130,24 @@ func registerGeneratorOfRandomInts(typeTable: DKTypeTable) {
 
 let pipe0 = "map(logger())"
 
-let pipe0b = "map((Student) -> (): logger())"
+let pipe0b = "map((Student) -> () | logger())"
 
 let pipe1 = "compose(" +
-	"map((Student) -> (): logger()), " +
+	"map((Student) -> () | logger()), " +
 	"filter({ $0.first_name == \"Joe\"})" +
 ")"
 
 let pipe2 = "compose(" +
-	"map((Student) -> (): logger()), " +
+	"map((Student) -> () | logger()), " +
 	"compose(" +
-	"filter((Student) -> Bool: { $0.first_name == \"Joe\"}), " +
+	"filter((Student) -> Bool | { $0.first_name == \"Joe\"}), " +
 	"filter({ $0.last_name == \"Smith\"})" +
 	")" +
 ")"
 
 //let pipeFullNames = "compose(" +
-//	"map((String) -> (): logger()), " +
-//	"map((Student) -> String: { $0.first_name | \"_\" | $0.last_name })" +
+//	"map((String) -> () | logger()), " +
+//	"map((Student) -> String | { $0.first_name + \"_\" + $0.last_name })" +
 //")"
 
 func studentsTestNew() {

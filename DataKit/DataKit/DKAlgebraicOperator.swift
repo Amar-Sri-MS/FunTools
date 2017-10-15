@@ -113,7 +113,7 @@ class DKAlgebraicOperator: DKOperator {
 		if domain is DKTypeInt {
 			return evaluationForNaryIntOperator(domain: domain as! DKTypeInt, op: op)
 		}
-		if (op == "|") && domain is DKTypeString {
+		if (op == "+") && domain is DKTypeString {
 			return { context, subs in
 				let r = subs.reduce("") { $0 + $1.evaluate(context: context).stringValue }
 				return .string(r)
@@ -128,7 +128,7 @@ class DKAlgebraicOperator: DKOperator {
 		return false
 	}
 	class var operatorStrings: Set<String> {
-		return ["+", "-", "*", "^", "/", "%", "|", "!", "&&", "||"]
+		return ["+", "-", "*", "^", "/", "%", "!", "&&", "||"]
 	}
 	class var unaryOperatorStrings: Set<String> {
 		return ["+", "-", "!"]
