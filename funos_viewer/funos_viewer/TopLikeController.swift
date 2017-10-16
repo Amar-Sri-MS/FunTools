@@ -19,13 +19,13 @@ class TopLikeController: NSObject {
 
 	override init() {
 		super.init()
-		let ok = Bundle.main.loadNibNamed("TopLikeWindow", owner: self, topLevelObjects: nil)
+		let ok = Bundle.main.loadNibNamed(NSNib.Name(rawValue: "TopLikeWindow"), owner: self, topLevelObjects: nil)
 		assert(ok)
 		wusTable.dataSource = wusInfo
 		wusTable.reloadData()
 		show()
 	}
-	func refresh() {
+	@objc func refresh() {
 		if !window.isVisible {
 			refreshTimer?.invalidate()
 			return
@@ -94,7 +94,7 @@ class WUInfoDataSource: NSObject, NSTableViewDataSource {
 
 	func tableView(_ tableView: NSTableView, objectValueFor tableColumn: NSTableColumn?, row: Int) -> Any? {
 		let info = allInfo[row]
-		let value: Any? = info.value(forKeyPath: tableColumn!.identifier)
+		let value: Any? = info.value(forKeyPath: tableColumn!.identifier.rawValue)
 		return (value as! NSObject).description
 	}
 

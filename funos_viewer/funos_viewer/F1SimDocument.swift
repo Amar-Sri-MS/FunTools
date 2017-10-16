@@ -68,7 +68,7 @@ import AppKit
 			layer.setBackgroundColorRecursive(.extremelyLightGray, .lightGray, 4)
 		}
 	}
-	func refreshHeat() {
+	@objc func refreshHeat() {
 		if !clustersGreyedOut {
 			// One-time for now; we may want to make it more dynamic based on a timer
 			grayOutClustersAndCores()
@@ -125,7 +125,7 @@ import AppKit
 	func noteMouseOverSNSegment(_ note: Notification) {
 		if !chipView.selectedUnits.contains("SN") { return }
 	}
-	func noteSimulationProgressedAndUpdate() {
+	@objc func noteSimulationProgressedAndUpdate() {
 		updateLock.apply { updateInProgress = true }
 		noteSelectionChangedAndUpdate()
 		updateLock.apply { updateInProgress = false }
@@ -143,15 +143,15 @@ import AppKit
 	func tabView(_ tabView: NSTabView, didSelect tabViewItem: NSTabViewItem?) {
 		noteSelectionChangedAndUpdate()
 	}
-	func noteSelectionChangedAndUpdate() {
+	@objc func noteSelectionChangedAndUpdate() {
 		(NSApp as! ViewerApp).clearConsole()
 	}
-	func noteSelectionChanged(_ note: Notification) {
+	@objc func noteSelectionChanged(_ note: Notification) {
 		performSelector(onMainThread: #selector(F1SimDocument.noteSelectionChangedAndUpdate), with: nil, waitUntilDone: false)
 	}
 	func loadNib() {
 		if inputController != nil { return } // Already initialized
-		let ok = Bundle.main.loadNibNamed("F1ChipWindow", owner: self, topLevelObjects: nil)
+		let ok = Bundle.main.loadNibNamed(NSNib.Name(rawValue: "F1ChipWindow"), owner: self, topLevelObjects: nil)
 		assert(ok)
 		let center = theNotificationCenter
 		center.addObserver(self, selector: #selector(F1SimDocument.noteSelectionChanged(_:)), name: NSNotification.Name("SelectionChanged"), object: chipView)
@@ -190,7 +190,7 @@ import AppKit
 	func doF1Command(_ verb: String, _ args: String...) -> JSON! {
 		return doF1Command(socket: &socket, verb, args)
 	}
-	func log(string: String) {
+	@objc func log(string: String) {
 		(NSApp as! ViewerApp).setConsole(string)
 	}
 	func doAndLogF1Command(_ verb: String, _ args: String...) {

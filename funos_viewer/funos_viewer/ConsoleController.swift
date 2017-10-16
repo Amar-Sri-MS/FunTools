@@ -14,7 +14,7 @@ class ConsoleController: NSObject {
 
 	override init() {
 		super.init()
-		let ok = Bundle.main.loadNibNamed("ConsoleWindow", owner: self, topLevelObjects: nil)
+		let ok = Bundle.main.loadNibNamed(NSNib.Name(rawValue: "ConsoleWindow"), owner: self, topLevelObjects: nil)
 		assert(ok)
 		show()
 		setupSelectionInfo()

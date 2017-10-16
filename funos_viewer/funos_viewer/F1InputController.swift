@@ -52,7 +52,7 @@ class F1InputController: NSObject, NSOutlineViewDataSource, NSTabViewDelegate {
 	//        print("DESTROY F1InputController")
 	//    }
 	func loadNib() {
-		let ok = Bundle.main.loadNibNamed("F1InputWindow", owner: self, topLevelObjects: nil)
+		let ok = Bundle.main.loadNibNamed(NSNib.Name(rawValue: "F1InputWindow"), owner: self, topLevelObjects: nil)
 		assert(ok)
 		assert(view != nil)
 		tabView = view.subviews.first as! NSTabView

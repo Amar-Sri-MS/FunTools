@@ -15,10 +15,10 @@ fileprivate var document: F1SimDocument!
     func applicationDidFinishLaunching(_ aNotification: Notification) {
         // Insert code here to initialize your application
         UserDefaults.standard.set(true, forKey: "NSConstraintBasedLayoutVisualizeMutuallyExclusiveConstraints")
-        let docController = NSDocumentController.shared()
+        let docController = NSDocumentController.shared
         document = F1SimDocument()
         docController.addDocument(document)
-	let ok = Bundle.main.loadNibNamed("Buttons", owner: NSApp, topLevelObjects: nil)
+	let ok = Bundle.main.loadNibNamed(NSNib.Name(rawValue: "Buttons"), owner: NSApp, topLevelObjects: nil)
 	assert(ok)
 	(NSApp as! ViewerApp).shortCuts.makeKeyAndOrderFront(nil)
     }

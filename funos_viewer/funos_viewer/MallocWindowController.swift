@@ -28,7 +28,7 @@ class MallocWindowController: NSObject {
 
 	override init() {
 		super.init()
-		let ok = Bundle.main.loadNibNamed("MallocWindow", owner: self, topLevelObjects: nil)
+		let ok = Bundle.main.loadNibNamed(NSNib.Name(rawValue: "MallocWindow"), owner: self, topLevelObjects: nil)
 		assert(ok)
 		show()
 		mallocInfoTable.dataSource = mallocInfoSource
@@ -41,7 +41,7 @@ class MallocWindowController: NSObject {
 			self.performSelector(onMainThread: #selector(MallocWindowController.refresh), with: nil, waitUntilDone: false)
 		})
 	}
-	func refresh() {
+	@objc func refresh() {
 		if !window.isVisible {
 			refreshTimer?.invalidate()
 			return
@@ -78,7 +78,7 @@ class MallocWindowController: NSObject {
 		let f = freeRecycles.state
 		let r = asyncReplenish.state
 		for (name, value) in [("auto_replenish", r), ("consume_from", a), ("recycle_into", f)] {
-			_ = document.doF1Command("poke", "params/malloc_cache/\(name)", value.description)
+			_ = document.doF1Command("poke", "params/malloc_cache/\(name)", value.rawValue.description)
 		}
 	}
 }
@@ -157,11 +157,11 @@ class MallocRegionsDataSource: NSObject, NSTableViewDataSource {
 		let lcss = allInfo.keys.sorted()
 		let ident = tableColumn!.identifier
 		//		print("Got identifier '\(ident)'")
-		if (ident == "logChunk") {
+		if (ident.rawValue == "logChunk") {
 			return last ? "Total" : lcss[row].description
 		} else {
 			let info = last ? total : allInfo[lcss[row]]!
-			let value: Any? = info.value(forKeyPath: ident)
+			let value: Any? = info.value(forKeyPath: ident.rawValue)
 			return (value as! NSObject).description
 		}
 	}
@@ -247,7 +247,7 @@ class MallocCachesDataSource: NSObject, NSTableViewDataSource {
 		let last = row >= allInfo.count
 		let info = last ? total : allInfo[row]
 		let ident = tableColumn!.identifier
-		let value: Any? = info.value(forKeyPath: ident)
+		let value: Any? = info.value(forKeyPath: ident.rawValue)
 		return (value as! NSObject).description
 	}
 }

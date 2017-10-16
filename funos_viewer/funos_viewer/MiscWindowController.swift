@@ -19,7 +19,7 @@ class MiscWindowController: NSObject {
 
 	override init() {
 		super.init()
-		let ok = Bundle.main.loadNibNamed("MiscWindow", owner: self, topLevelObjects: nil)
+		let ok = Bundle.main.loadNibNamed(NSNib.Name(rawValue: "MiscWindow"), owner: self, topLevelObjects: nil)
 		assert(ok)
 		show()
 	}
@@ -30,7 +30,7 @@ class MiscWindowController: NSObject {
 		})
 	}
 
-	func refresh() {
+	@objc func refresh() {
 		if !window.isVisible {
 			refreshTimer?.invalidate()
 			return
@@ -43,7 +43,7 @@ class MiscWindowController: NSObject {
 		let modules = document.doF1Command("peek", "config/modules_inited")?.arrayValue
 		let modulesStr = modules?.joinDescriptions(", ")
 		if modulesStr != nil {
-			modulesInited.string = modulesStr
+			modulesInited.string = modulesStr!
 		}
 	}
 	var document: F1SimDocument {
