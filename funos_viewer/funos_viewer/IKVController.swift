@@ -46,7 +46,7 @@ class IKVController: NSObject {
 
 	override init() {
 		super.init()
-		let ok = Bundle.main.loadNibNamed("IKVWindow", owner: self, topLevelObjects: nil)
+		let ok = Bundle.main.loadNibNamed(NSNib.Name(rawValue: "IKVWindow"), owner: self, topLevelObjects: nil)
 		assert(ok)
 		resetIKVSamples()
 		show()
@@ -58,7 +58,7 @@ class IKVController: NSObject {
 			self.performSelector(onMainThread: #selector(IKVController.refresh), with: nil, waitUntilDone: false)
 		})
 	}
-	func refresh() {
+	@objc func refresh() {
 		if !window.isVisible {
 			refreshTimer?.invalidate()
 			return
@@ -96,7 +96,7 @@ class IKVController: NSObject {
 		})
 	}
 
-	func doRefreshIKV() {
+	@objc func doRefreshIKV() {
 		let cont = ikvContainer!.stringValue
 		let propsName = "stats/ikv/\(cont)"
 		let stats = document.doF1Command("peek", propsName)?.dictionaryValue

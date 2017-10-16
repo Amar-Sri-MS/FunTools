@@ -64,7 +64,7 @@ class ViewController: NSViewController, NSTextViewDelegate {
 		return DKFunctionGenerator(typeTable, name: isStudents ? "Students" : "RandomInts", params: .integer(num), itemType: baseType())
 	}
 	func pipelineString() -> String {
-		let pipeline = transformation.string!
+		let pipeline = transformation.string
 		if isStudents {
 			let sc = baseType().toTypeShortcut(typeTable)
 			return pipeline.replaceOccurrences("Student", sc)

@@ -61,7 +61,7 @@ extension CGPath {
 extension NSFont {
     func sizeForString(_ string: String) -> CGSize {
         let maxSize = CGSize(width: 1E6, height: 1E6)
-        return string.boundingRect(with: maxSize, options: [.usesLineFragmentOrigin], attributes: [NSFontAttributeName: self], context: nil).size
+        return string.boundingRect(with: maxSize, options: [NSString.DrawingOptions.usesLineFragmentOrigin], attributes: [NSAttributedStringKey.font: self], context: nil).size
     }
 }
 
@@ -69,7 +69,7 @@ extension CALayer {
     func preventAnimations() {
         actions = ["borderColor": NSNull(), "backgroundColor": NSNull()]
     }
-    func positionForAnimation() -> CGPoint {
+    @objc func positionForAnimation() -> CGPoint {
         // When this layer is first used for the start of a SimulationMessageLayer, 
         // returns where the message layer should be positioned
         // Expressed in relative coordonates
@@ -337,14 +337,14 @@ extension NSControl {
             default: stringValue = description
         }
     }
-    var boolValue: Bool {
+    @objc var boolValue: Bool {
         return !(integerValue == 0)
     }
 }
 
 extension NSButton {
     override var boolValue: Bool {
-        return state == 1
+        return state.rawValue == 1
     }
 }
 

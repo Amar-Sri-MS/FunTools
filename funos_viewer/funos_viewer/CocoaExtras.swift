@@ -12,8 +12,6 @@ let theNotificationCenter = NotificationCenter.default
 
 /*=============== GEOMETRY EXTRAS ===============*/
 
-extension CGFloat: Algebraic {}
-
 extension CGPoint: Topological {
     public func distance(to: CGPoint) -> CGFloat {
         return abs(x - to.x) + abs(y - to.y)

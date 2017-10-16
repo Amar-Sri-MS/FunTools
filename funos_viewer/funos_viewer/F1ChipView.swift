@@ -681,7 +681,7 @@ class NSChipView: NSView {
         while !trackingAreas.isEmpty {
             removeTrackingArea(trackingAreas.first!)
         }
-        let options: NSTrackingAreaOptions = NSTrackingAreaOptions.mouseEnteredAndExited.union(.mouseMoved).union(.activeAlways)
+        let options: NSTrackingArea.Options = NSTrackingArea.Options.mouseEnteredAndExited.union(NSTrackingArea.Options.mouseMoved).union(NSTrackingArea.Options.activeAlways)
         let trackingArea = NSTrackingArea(rect: bounds, options: options, owner: self, userInfo: nil)
         addTrackingArea(trackingArea)
     }

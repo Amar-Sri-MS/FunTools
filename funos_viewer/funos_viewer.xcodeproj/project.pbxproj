@@ -70,7 +70,6 @@
 		A72CC7A91F587F210058827F /* storage in Resources */ = {isa = PBXBuildFile; fileRef = A72CC7A81F587F210058827F /* storage */; };
 		A72CC7AB1F587F3E0058827F /* devices in Resources */ = {isa = PBXBuildFile; fileRef = A72CC7AA1F587F3E0058827F /* devices */; };
 		A72CC7AD1F587F650058827F /* networking in Resources */ = {isa = PBXBuildFile; fileRef = A72CC7AC1F587F650058827F /* networking */; };
-		A72CC7B11F587FB00058827F /* props_bridges in Resources */ = {isa = PBXBuildFile; fileRef = A72CC7B01F587FB00058827F /* props_bridges */; };
 		A72CC7B31F587FCC0058827F /* tests in Resources */ = {isa = PBXBuildFile; fileRef = A72CC7B21F587FCC0058827F /* tests */; };
 		A72CC7BB1F6A2B6B0058827F /* flows in Resources */ = {isa = PBXBuildFile; fileRef = A72CC7BA1F6A2B6B0058827F /* flows */; };
 		A74FE1481EE1D0210062128E /* platform in Resources */ = {isa = PBXBuildFile; fileRef = A74FE1471EE1D0210062128E /* platform */; };
@@ -93,7 +92,7 @@
 		A78F76A51F38B83B00E33523 /* datakit in Resources */ = {isa = PBXBuildFile; fileRef = A78F76A41F38B83B00E33523 /* datakit */; };
 		A791CEE61EC50356000125F0 /* bridgingCExtras.c in Sources */ = {isa = PBXBuildFile; fileRef = A791CEE51EC50356000125F0 /* bridgingCExtras.c */; };
 		A7A68D001EE9C608004B5DDF /* props_bridges in Resources */ = {isa = PBXBuildFile; fileRef = A7A68CFF1EE9C608004B5DDF /* props_bridges */; };
-		A7FD266E1EB51FCE0049E0C0 /* libfunclient.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A7FD266D1EB51FCE0049E0C0 /* libfunclient.a */; };
+		A7EBED031F94909C00AFD2F0 /* libfunclient.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A7EBED021F948FEB00AFD2F0 /* libfunclient.a */; };
 		A7FD26701EB54EF20049E0C0 /* F1InputWindow.xib in Resources */ = {isa = PBXBuildFile; fileRef = A7FD266F1EB54EF20049E0C0 /* F1InputWindow.xib */; };
 		A7FD26721EB54F9F0049E0C0 /* F1InputController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7FD26711EB54F9F0049E0C0 /* F1InputController.swift */; };
 		A7FD26741EB557CB0049E0C0 /* F1ChipWindow.xib in Resources */ = {isa = PBXBuildFile; fileRef = A7FD26731EB557CB0049E0C0 /* F1ChipWindow.xib */; };
@@ -190,7 +189,7 @@
 		A78F76A41F38B83B00E33523 /* datakit */ = {isa = PBXFileReference; lastKnownFileType = folder; name = datakit; path = ../../FunOS/datakit; sourceTree = "<group>"; };
 		A791CEE51EC50356000125F0 /* bridgingCExtras.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = bridgingCExtras.c; sourceTree = "<group>"; };
 		A7A68CFF1EE9C608004B5DDF /* props_bridges */ = {isa = PBXFileReference; lastKnownFileType = folder; name = props_bridges; path = ../../FunOS/props_bridges; sourceTree = "<group>"; };
-		A7FD266D1EB51FCE0049E0C0 /* libfunclient.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libfunclient.a; path = ../../FunSDK/lib/Darwin/libfunclient.a; sourceTree = "<group>"; };
+		A7EBED021F948FEB00AFD2F0 /* libfunclient.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libfunclient.a; path = ../../FunSDK/lib/Darwin/libfunclient.a; sourceTree = "<group>"; };
 		A7FD266F1EB54EF20049E0C0 /* F1InputWindow.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = F1InputWindow.xib; sourceTree = "<group>"; };
 		A7FD26711EB54F9F0049E0C0 /* F1InputController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = F1InputController.swift; sourceTree = "<group>"; };
 		A7FD26731EB557CB0049E0C0 /* F1ChipWindow.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = F1ChipWindow.xib; sourceTree = "<group>"; };
@@ -201,7 +200,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A7FD266E1EB51FCE0049E0C0 /* libfunclient.a in Frameworks */,
+				A7EBED031F94909C00AFD2F0 /* libfunclient.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -234,7 +233,9 @@
 				A72CC7B21F587FCC0058827F /* tests */,
 				A78F76A41F38B83B00E33523 /* datakit */,
 				A716FBCA1EA67C82008395EC /* Products */,
+				A7EBED021F948FEB00AFD2F0 /* libfunclient.a */,
 				A7FD266C1EB51FCD0049E0C0 /* Frameworks */,
+				A7EBECFB1F94665500AFD2F0 /* Recovered References */,
 			);
 			sourceTree = "<group>";
 		};
@@ -350,10 +351,17 @@
 			path = funos_viewer;
 			sourceTree = "<group>";
 		};
+		A7EBECFB1F94665500AFD2F0 /* Recovered References */ = {
+			isa = PBXGroup;
+			children = (
+				A716FBEB1EAD63FA008395EC /* PureSwiftExtras */,
+			);
+			name = "Recovered References";
+			sourceTree = "<group>";
+		};
 		A7FD266C1EB51FCD0049E0C0 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				A7FD266D1EB51FCE0049E0C0 /* libfunclient.a */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -385,12 +393,12 @@
 			isa = PBXProject;
 			attributes = {
 				LastSwiftUpdateCheck = 0820;
-				LastUpgradeCheck = 0830;
+				LastUpgradeCheck = 0900;
 				ORGANIZATIONNAME = Fungible;
 				TargetAttributes = {
 					A716FBC81EA67C82008395EC = {
 						CreatedOnToolsVersion = 8.2.1;
-						LastSwiftMigration = 0820;
+						LastSwiftMigration = 0900;
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -445,7 +453,6 @@
 				A766A4821F1C0E550094C7B0 /* Buttons.xib in Resources */,
 				A766A4881F1C12FD0094C7B0 /* ConsoleWindow.xib in Resources */,
 				A716FBD21EA67C82008395EC /* MainMenu.xib in Resources */,
-				A72CC7B11F587FB00058827F /* props_bridges in Resources */,
 				A74FE1481EE1D0210062128E /* platform in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -543,7 +550,9 @@
 				CLANG_CXX_LIBRARY = "libc++";
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
 				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
 				CLANG_WARN_CONSTANT_CONVERSION = YES;
 				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
 				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
@@ -551,11 +560,15 @@
 				CLANG_WARN_ENUM_CONVERSION = YES;
 				CLANG_WARN_INFINITE_RECURSION = YES;
 				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
 				CLANG_WARN_SUSPICIOUS_MOVE = YES;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_IDENTITY = "";
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -593,7 +606,9 @@
 				CLANG_CXX_LIBRARY = "libc++";
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
 				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
 				CLANG_WARN_CONSTANT_CONVERSION = YES;
 				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
 				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
@@ -601,11 +616,15 @@
 				CLANG_WARN_ENUM_CONVERSION = YES;
 				CLANG_WARN_INFINITE_RECURSION = YES;
 				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
 				CLANG_WARN_SUSPICIOUS_MOVE = YES;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_IDENTITY = "";
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
@@ -641,13 +660,14 @@
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)/funos_viewer",
-					"$(PROJECT_DIR)/../../FunSDK/lib/Darwin",
+					"$(PROJECT_DIR)/../../FunSDK/lib/Darwin/noasan",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "fungible.com.funos-viewer";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "funos_viewer/funos_viewer-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
-				SWIFT_VERSION = 3.0;
+				SWIFT_SWIFT3_OBJC_INFERENCE = Default;
+				SWIFT_VERSION = 4.0;
 			};
 			name = Debug;
 		};
@@ -666,13 +686,14 @@
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)/funos_viewer",
-					"$(PROJECT_DIR)/../../FunSDK/lib/Darwin",
+					"$(PROJECT_DIR)/../../FunSDK/lib/Darwin/noasan",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "fungible.com.funos-viewer";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "funos_viewer/funos_viewer-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Owholemodule";
-				SWIFT_VERSION = 3.0;
+				SWIFT_SWIFT3_OBJC_INFERENCE = Default;
+				SWIFT_VERSION = 4.0;
 			};
 			name = Release;
 		};
