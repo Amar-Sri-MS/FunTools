@@ -58,7 +58,7 @@ extension DKParser {
 		if s == nil || s!.unichar0() != "$" {
 			throw DKParsingError("No match for expression variable", self)
 		}
-		let n = Int(s!.substringAfter(1))
+		let n = Int(String(s!.dropFirst(1)))
 		if n == nil {
 			throw DKParsingError("No match for expression variable", self)
 		}
