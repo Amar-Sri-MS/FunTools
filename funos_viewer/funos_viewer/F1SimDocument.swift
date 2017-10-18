@@ -43,7 +43,7 @@ import AppKit
 			var clustersSeen: Set<String> = []
 			var coresSeen: Set<String> = []
 			for vp in allVPs! {
-				let clusterCoreVP = vp.stringValue.substringAfter(2).split(at: ".").map { $0 }
+				let clusterCoreVP = String(vp.stringValue.dropFirst(2)).split(at: ".").map { $0 }
 				let cluster = "Cluster\(clusterCoreVP[0])"
 				clustersSeen.insert(cluster)
 				let core = "Core\(clusterCoreVP[0]).\(clusterCoreVP[1])"
@@ -82,7 +82,7 @@ import AppKit
 		var perVP: [String: Int] = [:]
 		var sum = 0
 		for vp in allVPs!.keys {
-			let ccv = vp.substringAfter(2).split(at: ".").map { $0 }
+			let ccv = String(vp.dropFirst(2)).split(at: ".").map { $0 }
 			assert(ccv.count == 3)
 			let times = allVPs![vp]!.dictionaryValue["wus_received"]!.integerValue
 			let cluster = "Cluster\(ccv[0])"

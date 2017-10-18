@@ -54,7 +54,7 @@ struct Tile: Hashable {
         }
         func numAfterPrefix(_ prefix: String, base: UInt8) -> Int {
             let len = prefix.utf8.count
-            let rest = name.substringAfter(len)
+            let rest = String(name.dropFirst(len))
             let digitChar = UInt8(rest.unichar0().value)
             return Int(digitChar.digitForBaseToInt(base))
         }

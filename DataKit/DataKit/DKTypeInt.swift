@@ -107,10 +107,10 @@ class DKTypeInt: DKType {
 			return DKTypeInt.bool
 		}
 		if s.hasPrefix("Int") {
-			let n = UInt8(s.substringAfter(3))
+			let n = UInt8(String(s.dropFirst(3)))
 			if n != nil { return DKTypeInt.shared(signed: true, numBits: n!) }
 		} else if s.hasPrefix("UInt") {
-			let n = UInt8(s.substringAfter(4))
+			let n = UInt8(String(s.dropFirst(4)))
 			if n != nil { return DKTypeInt.shared(signed: false, numBits: n!) }
 		}
 		return nil

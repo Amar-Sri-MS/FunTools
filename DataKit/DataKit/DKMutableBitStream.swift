@@ -27,11 +27,12 @@ extension DKMutableBitStream {
 		appendBits(numBits: 64) { u }
 	}
 	mutating func appendString(_ s: String) {
-		let utf8 = s.utf8CString
-		let len = Int(strlen(utf8))
-		for i in 0 ..< len + 1 {
-			let b: UInt8 = UInt8(utf8[i])
-			append(b)
+		s.withCString {
+			let len = Int(strlen($0))
+			for i in 0 ..< len + 1 {
+				let b: UInt8 = UInt8($0[i])
+				append(b)
+			}
 		}
 	}
 	mutating func pad(toByteAlign m: Int) {
@@ -50,11 +51,12 @@ extension DKMutableBitStream {
 
 extension Data {
 	mutating func appendString(_ string: String) {
-		let utf8 = string.utf8CString
-		let len = Int(strlen(utf8))
-		for i in 0 ..< len + 1 {
-			let b: UInt8 = UInt8(utf8[i])
-			append(b)
+		string.withCString {
+			let len = Int(strlen($0))
+			for i in 0 ..< len + 1 {
+				let b: UInt8 = UInt8($0[i])
+				append(b)
+			}
 		}
 	}
 	// Pad to a multiple of m (e.g. m==4 for 32-bit alignment)
