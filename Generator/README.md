@@ -28,6 +28,37 @@ via PCI.  Messages can have different sizes, and may contain
 variable-length parts.  At the current time, efficient processing in
 different languages is not a design goal for Generator.
 
+## Command line
+
+Usage:
+```
+generator.py [-g generator-style] [-c codgen-options] [-o output_prefix] description_file
+```
+
+* -g specifies the kind of output to generate.  Choices are code (default) or html.  With ```-g code```, the generator creates header and source files based on the data structure description file.  With ```-g html```, the generator creates HTML documentation for the data structures.
+* -c specifies the code generation options to use.  This is a comma-separated list of terms.  Valid code generation options are pack and json.  The pack option rewrites the data structures so adjacent bitfields are packed together into native-sized fields for the type, and creates macros to access the field (get, put, zero).  json generates a new initialization function to allow a data structure to be initialized from a JSON description.  
+* -o specifies the path prefix to be used for output.  The generator appends .c and .h to this prefix when generating source code, or .html when generating documentation.
+
+Example command line
+
+The following command line generates the source and header for the foo.gen file, and puts the output in /tmp/foo_gen.c and /tmp/foo_gen.h.
+
+```
+generator.py -g code -o /tmp/foo_gen foo.gen
+```
+
+The following command line packs the bitfields in foo.gen, and generates the JSON initialization:
+
+```
+generator.py -g code -c pack,json -o foo_gen /path/to/foo.gen
+```
+
+The following command creates the HTML documentation for foo.gen.  Note that the codegen options still need to be specified so that descriptions of the bitfield accessors are created.  The output documentation will be in foo_docs.html.
+
+```
+generator.py -g html -c pack,json -o foo_docs /path/to/foo.gen
+```
+
 ## Input File Format
 
 Descriptions of a data structure represent:
