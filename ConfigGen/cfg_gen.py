@@ -25,6 +25,8 @@ import json
 def jsonutil_path():
 	return os.path.join('..', 'jsonutil')
 
+sw_cfg = {}
+build_cfg = {}
 
 def build_jsonutil():
 
@@ -53,14 +55,14 @@ def standardize_json(in_cfg, out_cfg):
 
 	os.system('%s -i %s -o %s' % (jsonutil_tool, in_cfg, out_cfg));
 
-# if the key is in the SKU file use it and replace the one on the common cfg 
-def replace_dicts(full_cfg, cfg_j):
+# if the key is in the cfg_replace file use it and replace that on the cfg 
+def replace_dicts(cfg, cfg_replace):
 
-	new_cfg = full_cfg
+	new_cfg = cfg
 
-	for key in cfg_j.keys():
-		print "Adding sku key: %s" % key
-		new_cfg[key] = cfg_j[key]
+	for key in cfg_replace.keys():
+		print "Replace key: %s" % key
+		new_cfg[key] = cfg_replace[key]
 
 	return new_cfg
 
@@ -69,9 +71,9 @@ def replace_dicts(full_cfg, cfg_j):
 # This is necessary e.g. for the pipeline:
 # 	Both the PRS and FFE images fall under the "pipeline" key,
 #	so we need to merge them properly
-def merge_dicts(full_cfg, cfg_j):
+def merge_dicts(cfg, cfg_j):
 
-	new_cfg = full_cfg
+	new_cfg = cfg
 
 	for key in cfg_j.keys():
 		print "Adding key: %s" % key
@@ -83,42 +85,47 @@ def merge_dicts(full_cfg, cfg_j):
 	return new_cfg
 
 
-# Standardize and combine multiple configuration files
-# into one config that will be used by FunOS
-# TBD: handle cases where different files refer to
-# the same keys
-def generate_config():
+# generate the default sw config
+def generate_default_swconfig():
+	global sw_cfg
 
-	full_cfg = {}
-	sku_cfg = {}
-
-	#get full_cfg
+	print "==== sw config ===="
 	for cfg in glob.glob("configs/*.cfg"):
-		print "handling general %s" % cfg
-	    	skupattern = re.compile('configs/*sku*', re.IGNORECASE)
-	    	if skupattern.match(cfg):
-	        	continue
-
+		print "handling general sw %s" % cfg
 		standardize_json(cfg, cfg+'.tmp')
 		f = open("%s.tmp" % cfg, 'r')
 		cfg_j = json.load(f)
 		f.close()
 		os.system('rm %s.tmp' % cfg)
-		full_cfg = merge_dicts(full_cfg, cfg_j)
+		sw_cfg = merge_dicts(sw_cfg, cfg_j)
 
-	if not os.path.exists('out'):
-		os.mkdir('out')
+# generate build specific config
+def generate_build_specific_config(build):
+	global build_cfg
+	global sw_cfg
+	build_cfg.clear()
 
-	fout = open("out/default.cfg", 'w')
+	#update build specific config
+	if os.path.exists(build):
+		filename = build+ "/*cfg"
+		for cfg in glob.glob(filename):
+			print "handling " + build + " cfg %s" % cfg
+			standardize_json(cfg, cfg+'.tmp')
+			f = open("%s.tmp" % cfg, 'r')
+			cfg_replace = json.load(f)
+			f.close()
+			os.system('rm %s.tmp' % cfg)
+			build_cfg = replace_dicts(sw_cfg, cfg_replace)
+	else:
+		build_cfg = sw_cfg.copy()
 
-	# indent=4 does pretty printing for us
-	json.dump(full_cfg, fout, indent=4)
-
-	fout.close()
-
+# output a cfg file with sku data
+def output_per_skuconfig(build):
+	global build_cfg
+	sku_cfg = {}
 	#for each sku_cfg create a file in out dir
-	for cfg in glob.glob("configs/*.cfg"):
-	    	skupattern = re.compile('configs/*sku*', re.IGNORECASE)
+	for cfg in glob.glob("sku/*.cfg"):
+	    	skupattern = re.compile('sku/*sku*', re.IGNORECASE)
 	    	if skupattern.match(cfg):
 			print "handling sku configs %s" % cfg
 			standardize_json(cfg, cfg+'.tmp')
@@ -126,13 +133,9 @@ def generate_config():
 			cfg_j = json.load(f)
 			f.close()
 			os.system('rm %s.tmp' % cfg)
-
-			sku_cfg = replace_dicts(full_cfg, cfg_j)
-			if not os.path.exists('out'):
-				os.mkdir('out')
-
+			sku_cfg = replace_dicts(build_cfg, cfg_j)
 	    		skufilename = re.search(r'^(.*)/sku_(.*)', cfg, re.IGNORECASE)
-			filename = "out/"+ skufilename.group(2)
+			filename = "out/"+ build + "/" +  skufilename.group(2)
 			fout = open(filename, 'w')
 
 			# indent=4 does pretty printing for us
@@ -140,7 +143,33 @@ def generate_config():
 
 			fout.close()
 
-	# XXX next step: output bjson
+#output the default.cfg file
+def output_default_config(build):
+	global sw_cfg
+	if not os.path.exists('out'):
+		os.mkdir('out')
+
+	filepath = "out/" + build
+	if not os.path.exists(filepath):
+		os.mkdir(filepath)
+	
+	filename = "out/" + build + "/" + "default.cfg"
+	fout = open(filename, 'w')
+
+	# indent=4 does pretty printing for us
+	json.dump(sw_cfg, fout, indent=4)
+	fout.close()
+
+# Standardize and combine multiple configuration files
+# into one config that will be used by FunOS
+# TBD: handle cases where different files refer to
+# the same keys
+def generate_config(build):
+	print "====" + build + "===="
+	generate_build_specific_config(build)
+	output_default_config(build)
+	output_per_skuconfig(build)
+
 
 if __name__ == "__main__":
 
@@ -148,8 +177,17 @@ if __name__ == "__main__":
 	if rc == False:
 		print 'Failed to build jsonutil'
 		sys.exit(1)
-	
-	rc = generate_config()
+
+	#Generate the software config
+	generate_default_swconfig()
+
+	#ouput cfg for each build type
+	rc = generate_config("posix")
 	if rc == False:
 		print 'Failed to generate config'
+		sys.exit(1)
+
+	rc = generate_config("malta")
+	if rc == False:
+		print 'Failed to generate malta config'
 		sys.exit(1)
