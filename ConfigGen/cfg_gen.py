@@ -153,7 +153,7 @@ def output_default_config(build):
 	if not os.path.exists(filepath):
 		os.mkdir(filepath)
 	
-	filename = "out/" + build + "/" + "default.cfg"
+	filename = "out/" + build + "/" + "default_" + build + ".cfg"
 	fout = open(filename, 'w')
 
 	# indent=4 does pretty printing for us
