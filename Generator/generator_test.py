@@ -11,20 +11,20 @@ import parser
 class TestDocBuilder(unittest.TestCase):
   # Test that we correctly parse valid and invalid structure definitions.
   def testEmptyDoc(self):
-    doc = generator.DocBuilder()
-    self.assertIsNotNone(doc.current_document)
+    gen_parser = parser.GenParser()
+    self.assertIsNotNone(gen_parser.current_document)
 
   def testParseSimpleStructLine(self):
-    builder = generator.DocBuilder()  
-    doc = builder.current_document
+    gen_parser = parser.GenParser()  
+    doc = gen_parser.current_document
     self.assertEqual(0, len(doc.Structs()))
 
-    builder.ParseStructStart('STRUCT Foo')
-    builder.ParseLine('0 63:0 uint64_t packet')
-    builder.ParseEnd('END')
+    gen_parser.ParseStructStart('STRUCT Foo')
+    gen_parser.ParseLine('0 63:0 uint64_t packet')
+    gen_parser.ParseEnd('END')
 
-    doc = builder.current_document
-    self.assertEqual(0, len(builder.errors))
+    doc = gen_parser.current_document
+    self.assertEqual(0, len(gen_parser.errors))
 
     print("testParseSimpleStruct %s" % doc)
     self.assertEqual(1, len(doc.Structs()))
@@ -42,12 +42,12 @@ class TestDocBuilder(unittest.TestCase):
     self.assertEqual(1, firstStruct.Flits())
 
   def testStructSize(self): 
-    builder = generator.DocBuilder()
-    doc = builder.current_document
+    gen_parser = parser.GenParser()
+    doc = gen_parser.current_document
 
-    builder.ParseStructStart('STRUCT Foo')
-    builder.ParseLine('0 63:0 uint64_t packet')
-    builder.ParseEnd('END')
+    gen_parser.ParseStructStart('STRUCT Foo')
+    gen_parser.ParseLine('0 63:0 uint64_t packet')
+    gen_parser.ParseEnd('END')
 
     self.assertEqual(1, len(doc.Structs()))
 
@@ -55,13 +55,13 @@ class TestDocBuilder(unittest.TestCase):
     self.assertEqual(8, struct.Bytes())
 
   def testNotPackedStructSize(self): 
-    builder = generator.DocBuilder()
-    doc = builder.current_document
+    gen_parser = parser.GenParser()
+    doc = gen_parser.current_document
 
-    builder.ParseStructStart('STRUCT Foo')
-    builder.ParseLine('0 63:0 uint64_t packet')
-    builder.ParseLine('1 63:56 uint64_t bar')
-    builder.ParseEnd('END')
+    gen_parser.ParseStructStart('STRUCT Foo')
+    gen_parser.ParseLine('0 63:0 uint64_t packet')
+    gen_parser.ParseLine('1 63:56 uint64_t bar')
+    gen_parser.ParseEnd('END')
 
     self.assertEqual(1, len(doc.Structs()))
                      
@@ -71,28 +71,28 @@ class TestDocBuilder(unittest.TestCase):
     self.assertEqual(2, struct.Flits())
 
   def testValidFile(self):
-    doc_builder = generator.DocBuilder()
+    gen_parser = parser.GenParser()
     contents = ['STRUCT Foo', '0 63:0 uint64_t packet', 'END']
     
-    errors = doc_builder.Parse('filename', contents)
+    errors = gen_parser.Parse('filename', contents)
   
     self.assertIsNone(errors)
 
   def testTooBigFlit(self):
-    doc_builder = generator.DocBuilder()
+    gen_parser = parser.GenParser()
     contents = ['STRUCT Foo', '0 64:0 uint64_t packet', 'END']
-    errors = doc_builder.Parse('filename', contents)
+    errors = gen_parser.Parse('filename', contents)
 
     self.assertEqual(1, len(errors))
     self.assertIn('has start bit "64" too large', errors[0])
 
   def testSimpleStructBitWidth(self):
-    doc_builder = generator.DocBuilder()
+    gen_parser = parser.GenParser()
     contents = ['STRUCT Foo', '0 63:0 uint64_t packet', 'END']
     
-    errors = doc_builder.Parse('filename', contents)
+    errors = gen_parser.Parse('filename', contents)
     self.assertIsNone(errors)
-    doc = doc_builder.current_document
+    doc = gen_parser.current_document
 
     self.assertEquals(1, len(doc.Structs()))
 
@@ -100,12 +100,12 @@ class TestDocBuilder(unittest.TestCase):
     self.assertEquals(64, s.BitWidth())
   
   def testPartialFlitBitWidth(self):
-    doc_builder = generator.DocBuilder()
+    gen_parser = parser.GenParser()
     contents = ['STRUCT Foo', '0 63:16 uint64_t packet', 'END']
     
-    errors = doc_builder.Parse('filename', contents)
+    errors = gen_parser.Parse('filename', contents)
     self.assertIsNone(errors)
-    doc = doc_builder.current_document
+    doc = gen_parser.current_document
 
     self.assertEquals(1, len(doc.Structs()))
 
@@ -113,16 +113,16 @@ class TestDocBuilder(unittest.TestCase):
     self.assertEquals(48, s.BitWidth())
 
   def testPartialFlitBitWidth(self):
-    doc_builder = generator.DocBuilder()
+    gen_parser = parser.GenParser()
     contents = ['STRUCT Foo',
                 '0 63:32 uint32_t a', 
                 '0 31:0 uint32_t b', 
                 '1 63:32 uint32_t c', 
                 'END']
     
-    errors = doc_builder.Parse('filename', contents)
+    errors = gen_parser.Parse('filename', contents)
     self.assertIsNone(errors)
-    doc = doc_builder.current_document
+    doc = gen_parser.current_document
 
     self.assertEquals(1, len(doc.Structs()))
 
@@ -130,12 +130,12 @@ class TestDocBuilder(unittest.TestCase):
     self.assertEquals(96, s.BitWidth())
 
   def testArray(self):
-    doc_builder = generator.DocBuilder()
+    gen_parser = parser.GenParser()
     contents = ['STRUCT Foo', '0 63:0 uint8_t chars[8]', 'END']
 
-    errors = doc_builder.Parse('filename', contents)
+    errors = gen_parser.Parse('filename', contents)
     self.assertIsNone(errors)
-    doc = doc_builder.current_document
+    doc = gen_parser.current_document
 
     self.assertEqual(1, len(doc.Structs()))
 
@@ -154,64 +154,64 @@ class TestDocBuilder(unittest.TestCase):
 
 
   def testArraySizedTooSmall(self):
-    doc_builder = generator.DocBuilder()
+    gen_parser = parser.GenParser()
     contents = ['STRUCT Foo', 
                 '0 63:0 uint8_t chars[2]', 
                 'END']
-    errors = doc_builder.Parse('filename', contents)
+    errors = gen_parser.Parse('filename', contents)
     self.assertEqual(1, len(errors))
     self.assertIn('is 64 bits, type "uint8_t[2]" is 16', errors[0])
 
   def testMultiFlitTooSmall(self):
-    doc_builder = generator.DocBuilder()
+    gen_parser = parser.GenParser()
     contents = ['STRUCT Foo',
                 '0 63:0 uint8_t chars[10]',
                 '1 63:0 ...',
                 'END']
 
-    errors = doc_builder.Parse('filename', contents)
+    errors = gen_parser.Parse('filename', contents)
     self.assertEqual(1, len(errors))
     self.assertIn('expected 80 bits, got 128', errors[0])
 
   def testMultiFlitNotNeeded(self):
-    doc_builder = generator.DocBuilder()
+    gen_parser = parser.GenParser()
     contents = ['STRUCT Foo',
                 '0 63:0 uint8_t chars[8]',
                 '1 63:0 ...',
                 'END']
 
-    errors = doc_builder.Parse('filename', contents)
+    errors = gen_parser.Parse('filename', contents)
     self.assertEqual(1, len(errors))
     self.assertIn('Multi-line flit continuation seen without', errors[0])
 
   def testMultiFlitTooLarge(self):
-    doc_builder = generator.DocBuilder()
+    gen_parser = parser.GenParser()
     contents = ['STRUCT Foo',
                 '0 63:0 uint8_t chars[18]',
                 '1 63:0 ...',
                 '2 63:0 uint64_t value',
                 'END']
 
-    errors = doc_builder.Parse('filename', contents)
+    errors = gen_parser.Parse('filename', contents)
     self.assertEqual(1, len(errors))
     self.assertIn('Field spec for "chars" too short: expected 144 bits, got 128',
                   errors[0])
 
   def testArraySizedTooLarge(self):
-    doc_builder = generator.DocBuilder()
+    gen_parser = parser.GenParser()
     contents = ['STRUCT Foo', '0 63:0 uint8_t chars[16]', 'END']
 
-    errors = doc_builder.Parse('filename', contents)
+    errors = gen_parser.Parse('filename', contents)
     self.assertEqual(1, len(errors))
     self.assertIn('expected 128 bits, got 64', errors[0])
                      
 
   def testEnum(self):
-    doc_builder = generator.DocBuilder()
+    gen_parser = parser.GenParser()
     contents = ['ENUM Commands', 'A = 1', 'BBBBBB=0x02', 'END']
     
-    errors = doc_builder.Parse('filename', contents)
-    doc = doc_builder.current_document
+    errors = gen_parser.Parse('filename', contents)
+    doc = gen_parser.current_document
   
     self.assertEqual(1, len(doc.Enums()))
     my_enum = doc.Enums()[0]
@@ -226,7 +226,7 @@ class TestDocBuilder(unittest.TestCase):
 
   def disableTestEnumReference(self):
     # TODO(bowdidge): Should allow enum (and flag) declarations to be used as type names.
-    doc_builder = generator.DocBuilder()
+    gen_parser = parser.GenParser()
     contents = ['ENUM Commands',
                 'A = 1',
                 'BBBBBB=0x02',
@@ -236,8 +236,8 @@ class TestDocBuilder(unittest.TestCase):
                 'END'
                 ]
     
-    errors = doc_builder.Parse('filename', contents)
-    doc = doc_builder.current_document
+    errors = gen_parser.Parse('filename', contents)
+    doc = gen_parser.current_document
     
     self.assertEqual(1, len(doc.Structs()))
     foo = doc.Structs()[0]
@@ -246,11 +246,11 @@ class TestDocBuilder(unittest.TestCase):
     self.assertEqual(8, foo.BitWidth())
 
   def testLargeEnum(self):
-    doc_builder = generator.DocBuilder()
+    gen_parser = parser.GenParser()
     contents = ['ENUM Commands', 'A = 31', 'BBBBBB=0x3f', 'END']
     
-    errors = doc_builder.Parse('filename', contents)
-    doc = doc_builder.current_document
+    errors = gen_parser.Parse('filename', contents)
+    doc = gen_parser.current_document
   
     self.assertEqual(1, len(doc.Enums()))
     my_enum = doc.Enums()[0]
@@ -264,87 +264,87 @@ class TestDocBuilder(unittest.TestCase):
     self.assertEqual(63, var_b.value)
 
   def testBadEnumFields(self):
-    doc_builder = generator.DocBuilder()
-    self.assertIsNone(doc_builder.ParseEnumLine("A"))
-    self.assertIsNone(doc_builder.ParseEnumLine("3"))
-    self.assertIsNone(doc_builder.ParseEnumLine("A=A"))
-    self.assertIsNone(doc_builder.ParseEnumLine("A,A"))
+    gen_parser = parser.GenParser()
+    self.assertIsNone(gen_parser.ParseEnumLine("A"))
+    self.assertIsNone(gen_parser.ParseEnumLine("3"))
+    self.assertIsNone(gen_parser.ParseEnumLine("A=A"))
+    self.assertIsNone(gen_parser.ParseEnumLine("A,A"))
 
   def testGoodEnumFields(self):
-    doc_builder = generator.DocBuilder()
-    field = doc_builder.ParseEnumLine('A=1')
+    gen_parser = parser.GenParser()
+    field = gen_parser.ParseEnumLine('A=1')
     self.assertEqual('A', field.name)
     self.assertEqual(1, field.value)
     self.assertIsNone(field.key_comment)
     self.assertIsNone(field.body_comment)
 
-    field = doc_builder.ParseEnumLine('bb1 = 3 /* Foobar */')
+    field = gen_parser.ParseEnumLine('bb1 = 3 /* Foobar */')
     self.assertEqual('bb1', field.name)
     self.assertEqual(3, field.value)
     self.assertEqual("Foobar", field.key_comment)
 
   def testInvalidFlit(self):
     # Test generator rejects a field with a non-numeric flit number.
-    doc_builder = generator.DocBuilder()
+    gen_parser = parser.GenParser()
     line = 'flit 63:0 uint64_t packet'
 
-    doc_builder.ParseFieldLine(line, parser.Struct("fakeStruct", False))
+    gen_parser.ParseFieldLine(line, parser.Struct("fakeStruct", False))
   
-    self.assertEqual(1, len(doc_builder.errors))
-    self.assertIn('Invalid bit pattern', doc_builder.errors[0])
+    self.assertEqual(1, len(gen_parser.errors))
+    self.assertIn('Invalid bit pattern', gen_parser.errors[0])
 
   def testInvalidTypeName(self):
-    doc_builder = generator.DocBuilder()
+    gen_parser = parser.GenParser()
     line = '0 63:0 NotAValidType field_name'
 
-    doc_builder.ParseFieldLine(line, parser.Struct("fakeStruct", False))
+    gen_parser.ParseFieldLine(line, parser.Struct("fakeStruct", False))
 
-    self.assertEqual(1, len(doc_builder.errors))
-    self.assertIn('Unknown type name', doc_builder.errors[0])
+    self.assertEqual(1, len(gen_parser.errors))
+    self.assertIn('Unknown type name', gen_parser.errors[0])
 
   def testInvalidStart(self):
     # Test generator rejects field with a non-numeric start_bit.
-    doc_builder = generator.DocBuilder()
+    gen_parser = parser.GenParser()
     line = '2 foo:15 uint64_t packet'
     
-    doc_builder.ParseFieldLine(line, parser.Struct("fakeStruct", False))
+    gen_parser.ParseFieldLine(line, parser.Struct("fakeStruct", False))
   
-    self.assertEqual(1, len(doc_builder.errors))
-    self.assertIn('Invalid bit pattern', doc_builder.errors[0])
+    self.assertEqual(1, len(gen_parser.errors))
+    self.assertIn('Invalid bit pattern', gen_parser.errors[0])
 
   def testInvalidEnd(self):
     # Test generator rejects field with non-numeric end bit.
-    doc_builder = generator.DocBuilder()
+    gen_parser = parser.GenParser()
     line = '2 15:bar uint64_t packet'
     
-    doc_builder.ParseFieldLine(line, parser.Struct("fakeStruct", False))
+    gen_parser.ParseFieldLine(line, parser.Struct("fakeStruct", False))
   
-    self.assertEqual(1, len(doc_builder.errors))
-    self.assertIn('Invalid bit pattern', doc_builder.errors[0])
+    self.assertEqual(1, len(gen_parser.errors))
+    self.assertIn('Invalid bit pattern', gen_parser.errors[0])
 
   def testWrongOrder(self):
     # Test generator rejects field with high bit below low.
-    doc_builder = generator.DocBuilder()
+    gen_parser = parser.GenParser()
     line = '2 3:10 uint64_t packet'
     
-    doc_builder.ParseFieldLine(line, parser.Struct("fakeStruct", False))
+    gen_parser.ParseFieldLine(line, parser.Struct("fakeStruct", False))
   
-    self.assertEqual(1, len(doc_builder.errors))
-    self.assertIn('greater than end bit', doc_builder.errors[0])
+    self.assertEqual(1, len(gen_parser.errors))
+    self.assertIn('greater than end bit', gen_parser.errors[0])
 
   def testSingleBit(self):
     # Test generator accepts field with a single-digit field number.
-    doc_builder = generator.DocBuilder()
+    gen_parser = parser.GenParser()
     line = '2 38 uint8_t packet'
     
     struct = parser.Struct("fakeStruct", False)
-    self.assertTrue(doc_builder.ParseFieldLine(line, struct))
+    self.assertTrue(gen_parser.ParseFieldLine(line, struct))
 
     self.assertEqual(1, len(struct.fields))
     field = struct.fields[0]
 
     self.assertIsNotNone(field)
-    self.assertEqual(0, len(doc_builder.errors))
+    self.assertEqual(0, len(gen_parser.errors))
 
     self.assertEqual(2, field.StartFlit())
     self.assertEqual(2, field.EndFlit())
@@ -352,11 +352,11 @@ class TestDocBuilder(unittest.TestCase):
     self.assertEqual(38, field.EndBit())
 
   def testMissingCommentIsNone(self):
-    doc_builder = generator.DocBuilder()
+    gen_parser = parser.GenParser()
     line = '2 15:12 int64_t packet'
     
     struct = parser.Struct("fakeStruct", False)
-    self.assertTrue(doc_builder.ParseFieldLine(line, struct))
+    self.assertTrue(gen_parser.ParseFieldLine(line, struct))
 
     self.assertEqual(1, len(struct.fields))
     field = struct.fields[0]
@@ -366,19 +366,19 @@ class TestDocBuilder(unittest.TestCase):
     self.assertIsNone(field.generator_comment)
 
   def testSimpleUnion(self): 
-    builder = generator.DocBuilder()  
-    doc = builder.current_document
+    gen_parser = parser.GenParser()  
+    doc = gen_parser.current_document
 
     self.assertEqual(0, len(doc.Structs()))
 
-    builder.ParseStructStart('STRUCT Foo')
-    builder.ParseUnionStart('UNION Bar u')
-    builder.ParseLine('0 63:0 uint64_t packet')
-    builder.ParseLine('0 63:0 uint64_t buf')
-    builder.ParseEnd('END')
-    builder.ParseEnd('END')
+    gen_parser.ParseStructStart('STRUCT Foo')
+    gen_parser.ParseUnionStart('UNION Bar u')
+    gen_parser.ParseLine('0 63:0 uint64_t packet')
+    gen_parser.ParseLine('0 63:0 uint64_t buf')
+    gen_parser.ParseEnd('END')
+    gen_parser.ParseEnd('END')
 
-    doc = builder.current_document
+    doc = gen_parser.current_document
     self.assertEqual(2, len(doc.Structs()))
 
     firstStruct = doc.Structs()[0]
@@ -387,7 +387,7 @@ class TestDocBuilder(unittest.TestCase):
     self.assertEqual(1, len(firstStruct.fields))
     self.assertEqual('u', firstStruct.fields[0].name)
 
-    union = builder.current_document.Structs()[1]
+    union = gen_parser.current_document.Structs()[1]
     self.assertEqual('Bar', union.Name())
 
     firstField = union.fields[0]
@@ -398,14 +398,14 @@ class TestDocBuilder(unittest.TestCase):
     self.assertEqual('packet', firstField.name)
 
   def testParseCommentInField(self):
-    doc_builder = generator.DocBuilder()
+    gen_parser = parser.GenParser()
 
     struct = parser.Struct("fakeStruct", False)
-    self.assertTrue(doc_builder.ParseFieldLine(
+    self.assertTrue(gen_parser.ParseFieldLine(
       '0 47:0 uint64_t packet /* 6 byte packet to send out */',
       struct))
 
-    self.assertEqual(0, len(doc_builder.errors))
+    self.assertEqual(0, len(gen_parser.errors))
 
     self.assertEqual(1, len(struct.fields))
     field = struct.fields[0]
@@ -414,20 +414,20 @@ class TestDocBuilder(unittest.TestCase):
     self.assertEqual("6 byte packet to send out", field.key_comment)
 
   def testParseTailComment(self):
-    builder = generator.DocBuilder()
+    gen_parser = parser.GenParser()
     the_file = ['// Body comment\n',
                 'STRUCT Foo\n',
                 '// Packet body comment\n',
                 '0 63:0 uint64_t packet // Packet key comment\n',
                 '// Tail comment\n',
                 'END\n']
-    builder.Parse('filename', the_file)
+    gen_parser.Parse('filename', the_file)
     
-    self.assertEqual(0, len(builder.errors))
-    self.assertIsNotNone(builder.current_document)
-    self.assertEqual(1, len(builder.current_document.Structs()))
+    self.assertEqual(0, len(gen_parser.errors))
+    self.assertIsNotNone(gen_parser.current_document)
+    self.assertEqual(1, len(gen_parser.current_document.Structs()))
 
-    the_struct = builder.current_document.Structs()[0]
+    the_struct = gen_parser.current_document.Structs()[0]
     self.assertEqual(None, the_struct.key_comment)
     self.assertEqual('Body comment\n', the_struct.body_comment)
     self.assertEqual('Tail comment\n', the_struct.tail_comment)
@@ -439,7 +439,7 @@ class TestDocBuilder(unittest.TestCase):
     self.assertIsNone(the_field.tail_comment)
 
   def testParseMultiFlitDots(self):
-    doc_builder = generator.DocBuilder()
+    gen_parser = parser.GenParser()
     # ... allows a field to overflow into later flits.
     contents = [
       'STRUCT Foo',
@@ -449,10 +449,10 @@ class TestDocBuilder(unittest.TestCase):
       '2 63:0 ...',
       'END'
       ]
-    errors = doc_builder.Parse('filename', contents)
+    errors = gen_parser.Parse('filename', contents)
     self.assertIsNone(errors)
   
-    doc = doc_builder.current_document
+    doc = gen_parser.current_document
 
     self.assertEqual(1, len(doc.Structs()))
 
@@ -470,19 +470,19 @@ class TestDocBuilder(unittest.TestCase):
 
   def disableTestDuplicateBitfield(self):
     """Test that we flag an error if the flit for a ... is incorrect."""
-    doc_builder = generator.DocBuilder()
+    gen_parser = parser.GenParser()
     contents = ['STRUCT Foo',
                 '0 63:0 uint8_t chars[16]',
                 '0 63:0 ...',
                 'END']
 
-    errors = doc_builder.Parse('filename', contents)
+    errors = gen_parser.Parse('filename', contents)
     self.assertEqual(1, len(errors))
     self.assertIn('reuse', errors[0])
 
 
   def testNestedStruct(self):
-    doc_builder = generator.DocBuilder()
+    gen_parser = parser.GenParser()
     # ... allows a field to overflow into later flits.
     contents = [
       'STRUCT Foo',
@@ -501,10 +501,10 @@ class TestDocBuilder(unittest.TestCase):
       '2 63:0 Bar b',
       'END'
       ]
-    errors = doc_builder.Parse('filename', contents)
+    errors = gen_parser.Parse('filename', contents)
     self.assertIsNone(errors)
   
-    doc = doc_builder.current_document
+    doc = gen_parser.current_document
 
     self.assertEqual(3, len(doc.Structs()))
     
@@ -529,7 +529,7 @@ class TestDocBuilder(unittest.TestCase):
     self.assertEqual(0, b.EndBit())
 
   def testNestedUnion(self):
-    doc_builder = generator.DocBuilder()
+    gen_parser = parser.GenParser()
     # ... allows a field to overflow into later flits.
     contents = [
       'STRUCT Foo',
@@ -547,10 +547,10 @@ class TestDocBuilder(unittest.TestCase):
       'END',
       'END'
       ]
-    errors = doc_builder.Parse('filename', contents)
+    errors = gen_parser.Parse('filename', contents)
     self.assertIsNone(errors)
   
-    doc = doc_builder.current_document
+    doc = gen_parser.current_document
 
     self.assertEqual(5, len(doc.Structs()))
     
@@ -579,7 +579,7 @@ class TestDocBuilder(unittest.TestCase):
     self.assertEqual(127, a3.EndOffset())
     
   def testMultiFlitNestedStruct(self):
-    doc_builder = generator.DocBuilder()
+    gen_parser = parser.GenParser()
     # ... allows a field to overflow into later flits.
     contents = [
       'STRUCT fun_admin_cmd_common',
@@ -592,10 +592,10 @@ class TestDocBuilder(unittest.TestCase):
       '2 63:0 uint64_t arg2',
       'END'
       ]
-    errors = doc_builder.Parse('filename', contents)
+    errors = gen_parser.Parse('filename', contents)
     self.assertIsNone(errors)
   
-    doc = doc_builder.current_document
+    doc = gen_parser.current_document
 
     self.assertEqual(2, len(doc.Structs()))
     
@@ -606,7 +606,7 @@ class TestDocBuilder(unittest.TestCase):
     self.assertEqual(192, cmd.BitWidth())
 
   def testVariableLengthArray(self):
-    doc_builder = generator.DocBuilder()
+    gen_parser = parser.GenParser()
     contents = [
       'STRUCT foo',
       '0 63:56 char initial',
@@ -614,10 +614,10 @@ class TestDocBuilder(unittest.TestCase):
       'END'
       ]
 
-    errors = doc_builder.Parse('filename', contents)
+    errors = gen_parser.Parse('filename', contents)
     self.assertIsNone(errors)
 
-    doc = doc_builder.current_document
+    doc = gen_parser.current_document
 
     self.assertEqual(1, len(doc.Structs()))
     foo = doc.Structs()[0]
@@ -630,7 +630,7 @@ class TestDocBuilder(unittest.TestCase):
 
 
   def testVariableLengthStructArray(self):
-    doc_builder = generator.DocBuilder()
+    gen_parser = parser.GenParser()
     contents = [
       'STRUCT element',
       '0 63:56 char item',
@@ -641,10 +641,10 @@ class TestDocBuilder(unittest.TestCase):
       'END'
       ]
 
-    errors = doc_builder.Parse('filename', contents)
+    errors = gen_parser.Parse('filename', contents)
     self.assertIsNone(errors)
 
-    doc = doc_builder.current_document
+    doc = gen_parser.current_document
 
     self.assertEqual(2, len(doc.Structs()))
     foo = doc.Structs()[1]
@@ -656,7 +656,7 @@ class TestDocBuilder(unittest.TestCase):
     self.assertEqual(0, array.BitWidth())
 
   def testSimpleFlags(self):
-    doc_builder = generator.DocBuilder()
+    gen_parser = parser.GenParser()
     contents = [
       'FLAGS Foo',
       'A = 1',
@@ -668,154 +668,154 @@ class TestDocBuilder(unittest.TestCase):
       'END',
       ]
 
-    errors = doc_builder.Parse('filename', contents)
+    errors = gen_parser.Parse('filename', contents)
     self.assertIsNone(errors)
   
-    doc = doc_builder.current_document
+    doc = gen_parser.current_document
     self.assertEqual(1,len(doc.Flagsets()))
     foo = doc.Flagsets()[0]
     
     self.assertEqual(6, len(foo.variables))
     
   def testValidStructName(self):
-    doc_builder = generator.DocBuilder()
+    gen_parser = parser.GenParser()
     contents = ['STRUCT 1',
                 'END']
-    errors = doc_builder.Parse('filename', contents)
+    errors = gen_parser.Parse('filename', contents)
 
     self.assertEquals(1, len(errors))
     self.assertIn('"1" is not a valid', errors[0])
 
   def testValidUnionName(self):
-    doc_builder = generator.DocBuilder()
+    gen_parser = parser.GenParser()
     contents = ['STRUCT A',
                 'UNION 1_1 a',
                 'END',
                 'END']
-    errors = doc_builder.Parse('filename', contents)
+    errors = gen_parser.Parse('filename', contents)
     print (errors)
     self.assertEquals(1, len(errors))
     self.assertIn('"1_1" is not a valid', errors[0])
 
   def testValidUnionVariable(self):
-    doc_builder = generator.DocBuilder()
+    gen_parser = parser.GenParser()
     contents = ['STRUCT A',
                 'UNION A1 1_a',
                 'END',
                 'END']
-    errors = doc_builder.Parse('filename', contents)
+    errors = gen_parser.Parse('filename', contents)
     print (errors)
     self.assertEquals(1, len(errors))
     self.assertIn('"1_a" is not a valid', errors[0])
 
   def testValidFieldName(self):
-    doc_builder = generator.DocBuilder()
+    gen_parser = parser.GenParser()
     contents = ['STRUCT A',
                 '0 63:0 uint64_t 1dh',
                 'END']
-    errors = doc_builder.Parse('filename', contents)
+    errors = gen_parser.Parse('filename', contents)
     self.assertEquals(1, len(errors))
     self.assertIn('field name "1dh" is not a valid identifier', errors[0])
 
 
   def testValidEnumName(self):
-    doc_builder = generator.DocBuilder()
+    gen_parser = parser.GenParser()
     contents = ['ENUM 1AA']
-    errors = doc_builder.Parse('filename', contents)
+    errors = gen_parser.Parse('filename', contents)
 
     self.assertEquals(1, len(errors))
     self.assertIn('"1AA" is not a valid identifier', errors[0])
 
   def testValidEnumVarName(self):
-    doc_builder = generator.DocBuilder()
+    gen_parser = parser.GenParser()
     contents = ['ENUM A',
                 '1 = 3',
                 'END']
-    errors = doc_builder.Parse('filename', contents)
+    errors = gen_parser.Parse('filename', contents)
     self.assertEquals(1, len(errors))
     self.assertIn('"1" is not a valid identifier', errors[0])
 
   def testValidEnumVarValue(self):
-    doc_builder = generator.DocBuilder()
+    gen_parser = parser.GenParser()
     contents = ['ENUM A',
                 'v = 999999999999',
                 'END']
-    errors = doc_builder.Parse('filename', contents)
+    errors = gen_parser.Parse('filename', contents)
     self.assertEquals(1, len(errors))
     self.assertIn('is larger than the 2^32', errors[0])
 
   def testValidEnumVarValueInHex(self):
-    doc_builder = generator.DocBuilder()
+    gen_parser = parser.GenParser()
     contents = ['ENUM A',
                 'v = 0x10000000011',
                 'END']
-    errors = doc_builder.Parse('filename', contents)
+    errors = gen_parser.Parse('filename', contents)
     self.assertEquals(1, len(errors))
     self.assertIn('is larger than the 2^32', errors[0])
 
   def testValidFlagName(self):
-    doc_builder = generator.DocBuilder()
+    gen_parser = parser.GenParser()
     contents = ['FLAGS 1AA']
-    errors = doc_builder.Parse('filename', contents)
+    errors = gen_parser.Parse('filename', contents)
 
     self.assertEquals(1, len(errors))
     self.assertIn('"1AA" is not a valid identifier', errors[0])
 
   def testValidFlagVarName(self):
-    doc_builder = generator.DocBuilder()
+    gen_parser = parser.GenParser()
     contents = ['FLAGS A',
                 '1 = 3',
                 'END']
-    errors = doc_builder.Parse('filename', contents)
+    errors = gen_parser.Parse('filename', contents)
     self.assertEquals(1, len(errors))
     self.assertIn('"1" is not a valid identifier', errors[0])
 
   def testValidFlagVarValue(self):
-    doc_builder = generator.DocBuilder()
+    gen_parser = parser.GenParser()
     contents = ['FLAGS A',
                 'v = 999999999999',
                 'END']
-    errors = doc_builder.Parse('filename', contents)
+    errors = gen_parser.Parse('filename', contents)
     self.assertEquals(1, len(errors))
     self.assertIn('is larger than the 2^32', errors[0])
 
   def testValidFlagVarValueInHex(self):
-    doc_builder = generator.DocBuilder()
+    gen_parser = parser.GenParser()
     contents = ['FLAGS A',
                 'v = 0x10000000011',
                 'END']
-    errors = doc_builder.Parse('filename', contents)
+    errors = gen_parser.Parse('filename', contents)
     self.assertEquals(1, len(errors))
     self.assertIn('is larger than the 2^32', errors[0])
 
 
 class TestStripComment(unittest.TestCase):
   def testSimple(self):
-    doc_builder = generator.DocBuilder()
-    self.assertEqual("Foo", doc_builder.StripKeyComment("// Foo"))
-    self.assertEqual("Foo", doc_builder.StripKeyComment("/* Foo */"))
-    self.assertEqual("", doc_builder.StripKeyComment("//"))
-    self.assertEqual("", doc_builder.StripKeyComment("/* */"))
+    gen_parser = parser.GenParser()
+    self.assertEqual("Foo", gen_parser.StripKeyComment("// Foo"))
+    self.assertEqual("Foo", gen_parser.StripKeyComment("/* Foo */"))
+    self.assertEqual("", gen_parser.StripKeyComment("//"))
+    self.assertEqual("", gen_parser.StripKeyComment("/* */"))
 
   def testNotTerminated(self):
-    doc_builder = generator.DocBuilder()
-    doc_builder.current_line = 15
+    gen_parser = parser.GenParser()
+    gen_parser.current_line = 15
 
-    self.assertEqual(None, doc_builder.StripKeyComment('/* foo bar'))
-    self.assertEquals(1, len(doc_builder.errors))
+    self.assertEqual(None, gen_parser.StripKeyComment('/* foo bar'))
+    self.assertEquals(1, len(gen_parser.errors))
     self.assertIn('15: Badly formatted comment',
-                  doc_builder.errors[0])
+                  gen_parser.errors[0])
 
   def testNotStarted(self):
-    doc_builder = generator.DocBuilder()
-    self.assertEqual(None, doc_builder.StripKeyComment('foo bar */'))
-    self.assertEquals(1, len(doc_builder.errors))
+    gen_parser = parser.GenParser()
+    self.assertEqual(None, gen_parser.StripKeyComment('foo bar */'))
+    self.assertEquals(1, len(gen_parser.errors))
     self.assertIn('0: Unexpected stuff where comment should be',
-                     doc_builder.errors[0])
+                     gen_parser.errors[0])
                                          
 
   def testStructureAndUnion(self):
-    doc_builder = generator.DocBuilder()
+    gen_parser = parser.GenParser()
     contents = [
       'STRUCT foo',
       '0 63:0 uint64_t a',
@@ -830,10 +830,10 @@ class TestStripComment(unittest.TestCase):
       'END'
       ]
 
-    errors = doc_builder.Parse('filename', contents)
+    errors = gen_parser.Parse('filename', contents)
 
     self.assertIsNone(errors)
-    doc = doc_builder.current_document
+    doc = gen_parser.current_document
     self.assertEqual(3, len(doc.Structs()))
 
     bar = doc.Structs()[1]
@@ -848,13 +848,13 @@ class TestStripComment(unittest.TestCase):
 
 class PackerTest(unittest.TestCase):
   def testDontPackArgumentsFittingOwnType(self):
-    doc_builder = generator.DocBuilder()
+    gen_parser = parser.GenParser()
     contents = ['STRUCT Foo', '0 63:32 unsigned packet',
                 '0 31:0 unsigned other','END']
-    errors = doc_builder.Parse('filename', contents)
+    errors = gen_parser.Parse('filename', contents)
     self.assertIsNone(errors)
 
-    doc = doc_builder.current_document
+    doc = gen_parser.current_document
     p = generator.Packer()
     p.VisitDocument(doc)
 
@@ -862,12 +862,12 @@ class PackerTest(unittest.TestCase):
     self.assertEqual("packet", doc.Structs()[0].fields[0].name)
 
   def testNoPackSingleField(self):
-    doc_builder = generator.DocBuilder()
+    gen_parser = parser.GenParser()
     contents = ['STRUCT Foo', '0 31:0 unsigned packet', 'END']
-    errors = doc_builder.Parse('filename', contents)
+    errors = gen_parser.Parse('filename', contents)
     self.assertIsNone(errors)
 
-    doc = doc_builder.current_document
+    doc = gen_parser.current_document
     p = generator.Packer()
     p.VisitDocument(doc)
     
@@ -879,7 +879,7 @@ class PackerTest(unittest.TestCase):
     self.assertEqual(0, field.EndBit())
 
   def testPackBitfields(self):
-    doc_builder = generator.DocBuilder()
+    gen_parser = parser.GenParser()
     contents = [
       'STRUCT Foo',
       '0 63:56 uint8_t favorite_char',
@@ -891,10 +891,10 @@ class PackerTest(unittest.TestCase):
       '0 31:0 uint32_t value',
       'END'
       ]
-    errors = doc_builder.Parse('filename', contents)
+    errors = gen_parser.Parse('filename', contents)
     self.assertIsNone(errors)
   
-    doc = doc_builder.current_document
+    doc = gen_parser.current_document
     p = generator.Packer()
     p.VisitDocument(doc)
     self.assertEqual(5, len(doc.Structs()[0].fields))
@@ -909,7 +909,7 @@ class PackerTest(unittest.TestCase):
     self.assertIn('6:5: foo', doc.Structs()[0].fields[1].body_comment)
 
   def testTypeChanges(self):
-    doc_builder = generator.DocBuilder()
+    gen_parser = parser.GenParser()
     contents = [
       'STRUCT Foo',
       '0 63:56 uint8_t favorite_char',
@@ -921,10 +921,10 @@ class PackerTest(unittest.TestCase):
       '0 31:0 uint32_t value',
       'END'
       ]
-    errors = doc_builder.Parse('filename', contents)
+    errors = gen_parser.Parse('filename', contents)
     self.assertIsNone(errors)
   
-    doc = doc_builder.current_document
+    doc = gen_parser.current_document
     p = generator.Packer()
     p.VisitDocument(doc)
     self.assertEqual(6, len(doc.Structs()[0].fields))
@@ -940,7 +940,7 @@ class PackerTest(unittest.TestCase):
     variable are not merged.
     """
     
-    doc_builder = generator.DocBuilder()
+    gen_parser = parser.GenParser()
     contents = [
       'STRUCT Foo',
       '0 63:60 uint8_t a',
@@ -952,10 +952,10 @@ class PackerTest(unittest.TestCase):
       'END'
       ]
 
-    errors = doc_builder.Parse('filename', contents)
+    errors = gen_parser.Parse('filename', contents)
     self.assertIsNone(errors)
   
-    doc = doc_builder.current_document
+    doc = gen_parser.current_document
     p = generator.Packer()
     p.VisitDocument(doc)
 
@@ -971,7 +971,7 @@ class PackerTest(unittest.TestCase):
     variable are not merged.
     """
     
-    doc_builder = generator.DocBuilder()
+    gen_parser = parser.GenParser()
     contents = [
       'STRUCT Foo',
       '0 63:32 uint32_t rsvd0',
@@ -982,10 +982,10 @@ class PackerTest(unittest.TestCase):
       'END'
       ]
 
-    errors = doc_builder.Parse('filename', contents)
+    errors = gen_parser.Parse('filename', contents)
     self.assertIsNone(errors)
   
-    doc = doc_builder.current_document
+    doc = gen_parser.current_document
     p = generator.Packer()
     p.VisitDocument(doc)
 
@@ -1001,7 +1001,7 @@ class PackerTest(unittest.TestCase):
     """Tests that two sets of packed fields separated by a non-packed
     variable are not merged.
     """
-    doc_builder = generator.DocBuilder()
+    gen_parser = parser.GenParser()
     contents = [
       'STRUCT Foo',
       '0 63:58 uint8_t a',
@@ -1012,10 +1012,10 @@ class PackerTest(unittest.TestCase):
       'END'
       ]
 
-    errors = doc_builder.Parse('filename', contents)
+    errors = gen_parser.Parse('filename', contents)
     self.assertIsNone(errors)
   
-    doc = doc_builder.current_document
+    doc = gen_parser.current_document
     p = generator.Packer()
     errors = p.VisitDocument(doc)
     
@@ -1023,7 +1023,7 @@ class PackerTest(unittest.TestCase):
     self.assertIn('Width of packed bit-field containing a and b (10 bits) exceeds width of its type (8 bits).', errors[0])
 
   def testReservedFieldIgnoredWhenPacking(self):
-    doc_builder = generator.DocBuilder()
+    gen_parser = parser.GenParser()
     contents = [
       'STRUCT Foo',
       '0 63:56 uint8_t favorite_char',
@@ -1036,10 +1036,10 @@ class PackerTest(unittest.TestCase):
       '0 31:0 uint32_t value',
       'END'
       ]
-    errors = doc_builder.Parse('filename', contents)
+    errors = gen_parser.Parse('filename', contents)
     self.assertIsNone(errors)
   
-    doc = doc_builder.current_document
+    doc = gen_parser.current_document
     p = generator.Packer()
     errors = p.VisitDocument(doc)
     self.assertEqual(0, len(errors))
@@ -1053,17 +1053,17 @@ class PackerTest(unittest.TestCase):
     self.assertEqual('value', doc.Structs()[0].fields[5].name)
 
   def testNoPackArrayAndRegularType(self):
-    doc_builder = generator.DocBuilder()
+    gen_parser = parser.GenParser()
     contents = ['STRUCT Foo', 
                 '0 63:8 uint8_t chars[7]',
                 '0 7:0 uint8_t opcode',
                 'END']
 
-    errors = doc_builder.Parse('filename', contents)
+    errors = gen_parser.Parse('filename', contents)
 
     self.assertIsNone(errors)
 
-    doc = doc_builder.current_document
+    doc = gen_parser.current_document
     self.assertEqual(1, len(doc.Structs()))
 
     p = generator.Packer()
@@ -1074,17 +1074,17 @@ class PackerTest(unittest.TestCase):
     self.assertEqual(2, len(doc.Structs()[0].fields))
 
   def testNoPackArray(self):
-    doc_builder = generator.DocBuilder()
+    gen_parser = parser.GenParser()
     contents = ['STRUCT Foo', 
                 '0 63:32 uint8_t chars[4]',
                 '0 31:0 uint8_t opcode[4]',
                 'END']
 
-    errors = doc_builder.Parse('filename', contents)
+    errors = gen_parser.Parse('filename', contents)
 
     self.assertIsNone(errors)
 
-    doc = doc_builder.current_document
+    doc = gen_parser.current_document
     self.assertEqual(1, len(doc.Structs()))
 
     p = generator.Packer()
@@ -1093,7 +1093,7 @@ class PackerTest(unittest.TestCase):
     self.assertEqual(2, len(doc.Structs()[0].fields))
 
   def testTooManyEnds(self):
-    doc_builder = generator.DocBuilder()
+    gen_parser = parser.GenParser()
     contents = ['STRUCT Foo',
                 '0 63:0 uint64_t cmd',
                 'STRUCT Bar',
@@ -1101,12 +1101,12 @@ class PackerTest(unittest.TestCase):
                 'END',
                 'END',
                 'END']
-    errors = doc_builder.Parse('filename', contents)
+    errors = gen_parser.Parse('filename', contents)
     self.assertEqual(1, len(errors))
     self.assertIn('without matching', errors[0])
                 
   def testParseVariableLengthArrayInSubStructure(self):
-    doc_builder = generator.DocBuilder()
+    gen_parser = parser.GenParser()
     contents = [
       'STRUCT outer',
       '0 63:56 char initial_outer',
@@ -1117,10 +1117,10 @@ class PackerTest(unittest.TestCase):
       'END'
       ]
 
-    errors = doc_builder.Parse('filename', contents)
+    errors = gen_parser.Parse('filename', contents)
     self.assertIsNone(errors)
 
-    doc = doc_builder.current_document
+    doc = gen_parser.current_document
     self.assertEqual(2, len(doc.Structs()))
     outer = doc.Structs()[0]
     inner = doc.Structs()[1]
@@ -1131,7 +1131,7 @@ class PackerTest(unittest.TestCase):
     self.assertTrue(var_length_array.no_offset)
 
   def testParseVariableLengthArrayInUnion(self):
-    doc_builder = generator.DocBuilder()
+    gen_parser = parser.GenParser()
     contents = [
       'STRUCT outer',
       '0 63:56 char initial_outer',
@@ -1147,10 +1147,10 @@ class PackerTest(unittest.TestCase):
       'END'
       ]
 
-    errors = doc_builder.Parse('filename', contents)
+    errors = gen_parser.Parse('filename', contents)
     self.assertIsNone(errors)
 
-    doc = doc_builder.current_document
+    doc = gen_parser.current_document
     self.assertEqual(4, len(doc.Structs()))
     outer = doc.Structs()[0]
     union = doc.Structs()[1]
@@ -1167,7 +1167,7 @@ class PackerTest(unittest.TestCase):
     self.assertTrue(var_length_array.no_offset)
 
   def testParseVariableLengthStructArrayInUnion(self):
-    doc_builder = generator.DocBuilder()
+    gen_parser = parser.GenParser()
     contents = [
       'STRUCT inside_union',
       '0 63:00 uint64_t value',
@@ -1183,9 +1183,9 @@ class PackerTest(unittest.TestCase):
       'END'
       ]
 
-    errors = doc_builder.Parse('filename', contents)
+    errors = gen_parser.Parse('filename', contents)
     self.assertIsNone(errors)
-    doc = doc_builder.current_document
+    doc = gen_parser.current_document
 
     self.assertEqual(4, len(doc.Structs()))
 
@@ -1209,29 +1209,29 @@ class PackerTest(unittest.TestCase):
 class CheckerTest(unittest.TestCase):
 
   def testCheckerAdjacentTypesEqual(self):
-    doc_builder = generator.DocBuilder()
+    gen_parser = parser.GenParser()
     contents = ['STRUCT Foo',
                 '0 3:2 uint8_t b',
                 '0 1:0 uint8_t a',
                 'END']
-    errors = doc_builder.Parse('filename', contents)
+    errors = gen_parser.Parse('filename', contents)
     self.assertIsNone(errors)
 
     checker = generator.Checker()
-    checker.VisitDocument(doc_builder.current_document)
+    checker.VisitDocument(gen_parser.current_document)
     self.assertEqual(0, len(checker.errors))
 
   def disableTestCheckerAdjacentTypesDifferent(self):
-    doc_builder = generator.DocBuilder()
+    gen_parser = parser.GenParser()
     contents = ['STRUCT Foo',
                 '0 3:2 uint16_t b',
                 '0 1:0 uint8_t a',
                 'END']
-    errors = doc_builder.Parse('filename', contents)
+    errors = gen_parser.Parse('filename', contents)
     self.assertIsNone(errors)
 
     checker = generator.Checker()
-    checker.VisitDocument(doc_builder.current_document)
+    checker.VisitDocument(gen_parser.current_document)
 
     print(checker.errors)
     self.assertEqual(1, len(checker.errors))
@@ -1239,7 +1239,7 @@ class CheckerTest(unittest.TestCase):
 
 
   def testFlagErrorIfMisalignFullType(self):
-    doc_builder = generator.DocBuilder()
+    gen_parser = parser.GenParser()
     # Even with the packed attribute, llvm still treats uint8_t with
     # the same number of bits as the type as something to align.
     # We can misalign uint8_t only with a bitfield, and only if the
@@ -1253,19 +1253,19 @@ class CheckerTest(unittest.TestCase):
       'END'
       ]
 
-    doc_builder = generator.DocBuilder()
-    errors = doc_builder.Parse('filename', input)
+    gen_parser = parser.GenParser()
+    errors = gen_parser.Parse('filename', input)
     self.assertIsNone(errors)
   
     checker = generator.Checker()
-    checker.VisitDocument(doc_builder.current_document)
+    checker.VisitDocument(gen_parser.current_document)
     self.assertEqual(3, len(checker.errors))
     self.assertIn('"b" cannot be placed', checker.errors[0])
     self.assertIn('"c" cannot be placed', checker.errors[1])
     self.assertIn('"d" cannot be placed', checker.errors[2])
     
   def testStructTooSmall(self):
-    doc_builder = generator.DocBuilder()
+    gen_parser = parser.GenParser()
     contents = ['STRUCT Foo',
                 '0 63:32 uint64_t a',
                 'END',
@@ -1273,12 +1273,12 @@ class CheckerTest(unittest.TestCase):
                 '0 63:48 Foo f',
                 '0 47:32 uint16_t b',
                 'END']
-    errors = doc_builder.Parse('filename', contents)
+    errors = gen_parser.Parse('filename', contents)
     self.assertEqual(1, len(errors))
     self.assertIn('Field smaller than type', errors[0])
 
   def testStructTooLarge(self):
-    doc_builder = generator.DocBuilder()
+    gen_parser = parser.GenParser()
     contents = ['STRUCT Foo',
                 '0 63:32 uint64_t a',
                 'END',
@@ -1286,12 +1286,12 @@ class CheckerTest(unittest.TestCase):
                 '0 63:0 Foo f',
                 '1 63:32 uint32_t b',
                 'END']
-    errors = doc_builder.Parse('filename', contents)
+    errors = gen_parser.Parse('filename', contents)
     self.assertEqual(1, len(errors))
     self.assertIn('Field larger than type', errors[0])
 
   def testArrayOfStructs(self):
-    doc_builder = generator.DocBuilder()
+    gen_parser = parser.GenParser()
     contents = ['STRUCT Foo',
                 '0 63:32 uint64_t a',
                 'END',
@@ -1299,15 +1299,15 @@ class CheckerTest(unittest.TestCase):
                 '0 63:0 Foo f[2]',
                 'END']
 
-    errors = doc_builder.Parse('filename', contents)
+    errors = gen_parser.Parse('filename', contents)
     self.assertEqual(None, errors)
 
     checker = generator.Checker()
-    checker.VisitDocument(doc_builder.current_document)
+    checker.VisitDocument(gen_parser.current_document)
     self.assertEqual(0, len(checker.errors))
 
-    self.assertEqual(2, len(doc_builder.current_document.Structs()))
-    bar = doc_builder.current_document.Structs()[1]
+    self.assertEqual(2, len(gen_parser.current_document.Structs()))
+    bar = gen_parser.current_document.Structs()[1]
 
     self.assertEqual(1, len(bar.fields))
 
@@ -1316,126 +1316,126 @@ class CheckerTest(unittest.TestCase):
     self.assertTrue(f.type.IsArray())
 
   def testFlagOutOfOrder(self):
-    doc_builder = generator.DocBuilder()
+    gen_parser = parser.GenParser()
     contents = ['STRUCT Foo',
                 '0 7:0 uint8_t b',
                 '0 15:8 uint8_t a',
                 'END']
-    errors = doc_builder.Parse('filename', contents)
+    errors = gen_parser.Parse('filename', contents)
     self.assertIsNone(errors)
 
     checker = generator.Checker()
-    checker.VisitDocument(doc_builder.current_document)
+    checker.VisitDocument(gen_parser.current_document)
 
     self.assertEqual(1, len(checker.errors))
     self.assertIn('field "b" and "a" not in bit order', checker.errors[0])
 
   def testFlagOverlappingFields(self):
-    doc_builder = generator.DocBuilder()
+    gen_parser = parser.GenParser()
     contents = ['STRUCT Foo',
                 '0 15:8 uint8_t a',
                 '0 15:0 uint16_t b',
                 'END']
-    errors = doc_builder.Parse('filename', contents)
+    errors = gen_parser.Parse('filename', contents)
     self.assertIsNone(errors)
     checker = generator.Checker()
-    checker.VisitDocument(doc_builder.current_document)
+    checker.VisitDocument(gen_parser.current_document)
 
     self.assertEqual(1, len(checker.errors))
     self.assertIn('field "a" overlaps field "b"', checker.errors[0])
 
   def testFlagOverlappingFieldsEqualAtBottom(self):
-    doc_builder = generator.DocBuilder()
+    gen_parser = parser.GenParser()
     contents = ['STRUCT Foo',
                 '0 15:8 uint8_t a',
                 '0 12:8 uint8_t b',
                 'END']
-    errors = doc_builder.Parse('filename', contents)
+    errors = gen_parser.Parse('filename', contents)
     self.assertIsNone(errors)
     checker = generator.Checker()
-    checker.VisitDocument(doc_builder.current_document)
+    checker.VisitDocument(gen_parser.current_document)
 
     self.assertEqual(1, len(checker.errors))
     self.assertIn('field "a" overlaps field "b"', checker.errors[0])
 
   def testFlagOverlappingFieldsBottom(self):
-    doc_builder = generator.DocBuilder()
+    gen_parser = parser.GenParser()
     contents = ['STRUCT Foo',
                 '0 15:8 uint8_t a',
                 '0 9:7 uint8_t b',
                 'END']
-    errors = doc_builder.Parse('filename', contents)
+    errors = gen_parser.Parse('filename', contents)
     self.assertIsNone(errors)
     checker = generator.Checker()
-    checker.VisitDocument(doc_builder.current_document)
+    checker.VisitDocument(gen_parser.current_document)
 
     self.assertEqual(1, len(checker.errors))
     self.assertIn('field "a" overlaps field "b"', checker.errors[0])
 
   def testFlagExtraSpace(self):
-    doc_builder = generator.DocBuilder()
+    gen_parser = parser.GenParser()
     contents = ['STRUCT Foo',
                 '0 15:8 uint8_t a',
                 '0 3:0 uint8_t b',
                 'END']
-    errors = doc_builder.Parse('filename', contents)
+    errors = gen_parser.Parse('filename', contents)
     self.assertIsNone(errors)
     checker = generator.Checker()
-    checker.VisitDocument(doc_builder.current_document)
+    checker.VisitDocument(gen_parser.current_document)
 
     self.assertEqual(1, len(checker.errors))
     self.assertIn('unexpected space between field "a" and "b"',
                   checker.errors[0])
 
   def testMultiFlitFieldHandledOk(self):
-    doc_builder = generator.DocBuilder()
+    gen_parser = parser.GenParser()
     contents = ['STRUCT Foo',
                 '0 63:56 uint8_t cmd',
                 '0 55:0 uint8_t buf[15]',
                 '1 63:0 ...',
                 'END']
-    errors = doc_builder.Parse('filename', contents)
+    errors = gen_parser.Parse('filename', contents)
     self.assertIsNone(errors)
     checker = generator.Checker()
-    checker.VisitDocument(doc_builder.current_document)
+    checker.VisitDocument(gen_parser.current_document)
 
     self.assertEqual(0, len(checker.errors))
 
   def testMultiFlitFieldOverlapGeneratesWarning(self):
-    doc_builder = generator.DocBuilder()
+    gen_parser = parser.GenParser()
     contents = ['STRUCT Foo',
                 '0 63:56 uint8_t cmd',
                 '0 55:0 uint8_t buf[15]',
                 '1 63:0 ...',
                 '1 63:0 uint64_t c',
                 'END']
-    errors = doc_builder.Parse('filename', contents)
+    errors = gen_parser.Parse('filename', contents)
     self.assertIsNone(errors)
     checker = generator.Checker()
-    checker.VisitDocument(doc_builder.current_document)
+    checker.VisitDocument(gen_parser.current_document)
 
     self.assertEqual(1, len(checker.errors))
     self.assertIn('field "buf" overlaps field "c"',
                   checker.errors[0])
 
   def testUnionNoOverlap(self):
-    doc_builder = generator.DocBuilder()
+    gen_parser = parser.GenParser()
     contents = ['STRUCT Foo',
                 '0 63:0 uint64_t cmd',
                 'UNION Bar u',
                 '1 63:0 uint64_t data',
                 'END',
                 'END']
-    errors = doc_builder.Parse('filename', contents)
+    errors = gen_parser.Parse('filename', contents)
     self.assertIsNone(errors)
 
     checker = generator.Checker()
-    checker.VisitDocument(doc_builder.current_document)
+    checker.VisitDocument(gen_parser.current_document)
 
     self.assertEqual(0, len(checker.errors))
 
   def testUnionOverlap(self):
-    doc_builder = generator.DocBuilder()
+    gen_parser = parser.GenParser()
     contents = ['STRUCT Foo',
                 '0 63:0 uint64_t cmd',
                 'UNION Bar u',
@@ -1444,7 +1444,7 @@ class CheckerTest(unittest.TestCase):
                 'END']
 
   def testVariableLengthArray(self):
-    doc_builder = generator.DocBuilder()
+    gen_parser = parser.GenParser()
     contents = [
       'STRUCT foo',
       '0 63:56 char initial',
@@ -1452,18 +1452,18 @@ class CheckerTest(unittest.TestCase):
       'END'
       ]
 
-    errors = doc_builder.Parse('filename', contents)
+    errors = gen_parser.Parse('filename', contents)
     self.assertIsNone(errors)
 
-    doc = doc_builder.current_document
+    doc = gen_parser.current_document
     self.assertIsNone(errors)
 
     checker = generator.Checker()
-    checker.VisitDocument(doc_builder.current_document)
+    checker.VisitDocument(gen_parser.current_document)
     self.assertEqual(0, len(checker.errors))
 
   def testVariableLengthStructureArray(self):
-    doc_builder = generator.DocBuilder()
+    gen_parser = parser.GenParser()
     contents = [
       'STRUCT element',
       '0 63:56 char value',
@@ -1474,18 +1474,18 @@ class CheckerTest(unittest.TestCase):
       'END'
       ]
 
-    errors = doc_builder.Parse('filename', contents)
+    errors = gen_parser.Parse('filename', contents)
     self.assertIsNone(errors)
 
-    doc = doc_builder.current_document
+    doc = gen_parser.current_document
     self.assertIsNone(errors)
 
     checker = generator.Checker()
-    checker.VisitDocument(doc_builder.current_document)
+    checker.VisitDocument(gen_parser.current_document)
     self.assertEqual(0, len(checker.errors))
 
   def testErrorIfVariableLengthArrayNotAtEnd(self):
-    doc_builder = generator.DocBuilder()
+    gen_parser = parser.GenParser()
     contents = [
       'STRUCT foo',
       '0 63:56 char initial',
@@ -1494,17 +1494,17 @@ class CheckerTest(unittest.TestCase):
       'END'
       ]
 
-    errors = doc_builder.Parse('filename', contents)
+    errors = gen_parser.Parse('filename', contents)
     self.assertIsNone(errors)
 
     checker = generator.Checker()
-    checker.VisitDocument(doc_builder.current_document)
+    checker.VisitDocument(gen_parser.current_document)
 
     self.assertEqual(1, len(checker.errors))
     self.assertIn('is not the last field', checker.errors[0])
 
   def testErrorIfFailToCloseEnum(self):
-    doc_builder = generator.DocBuilder()
+    gen_parser = parser.GenParser()
     contents = [
       'ENUM x',
       'A = 1',
@@ -1512,7 +1512,7 @@ class CheckerTest(unittest.TestCase):
       '0 63:0 uint64_t value',
       'END'
       ]
-    errors = doc_builder.Parse('filename', contents)
+    errors = gen_parser.Parse('filename', contents)
     self.assertEqual(2, len(errors))
     self.assertEqual('filename:3: Struct starting in inappropriate context',
                      errors[0])
@@ -1521,7 +1521,7 @@ class CheckerTest(unittest.TestCase):
                      errors[1])
 
   def disableTestErrorIfVariableLengthArrayNotAtEndOfContainer(self):
-    doc_builder = generator.DocBuilder()
+    gen_parser = parser.GenParser()
     contents = [
       'STRUCT outer',
       '0 63:56 char initial_outer',
@@ -1532,11 +1532,11 @@ class CheckerTest(unittest.TestCase):
       'END'
       ]
 
-    errors = doc_builder.Parse('filename', contents)
+    errors = gen_parser.Parse('filename', contents)
     self.assertIsNone(errors)
 
     checker = generator.Checker()
-    checker.VisitDocument(doc_builder.current_document)
+    checker.VisitDocument(gen_parser.current_document)
 
     self.assertEqual(1, len(checker.errors))
     self.assertIn('is not the last field', checker.errors[0])

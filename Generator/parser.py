@@ -4,7 +4,12 @@
 #
 # Copyright Fungible Inc. 2017.
 
+import re
 import utils
+
+# Fake value for width of field, used when we can't define the value
+# correctly on creation.
+FAKE_WIDTH = 8675309
 
 class BaseType:
   """Represents a the base type name without qualifications.
@@ -1059,3 +1064,545 @@ class Checker:
 
   def VisitField(self, the_field):
     pass
+
+# Enums used to indicate the kind of object being processed.
+# Used on the stack.
+GenParserStateStruct = 1
+GenParserTopLevel = 3
+GenParserStateEnum = 4
+GenParserStateFlagSet = 5
+
+
+class GenParser:
+  # Parses a generated header document and creates the internal data structure
+  # describing the file.
+
+  def __init__(self):
+    # Create a GenParser.
+    # current_document is the top level object.
+    self.current_document = Document()
+    # stack is a list of (state, object) pairs showing all objects
+    # currently being parsed.  New containers (enum, struct, union) are put in the
+    # last object.
+    self.stack = [(GenParserTopLevel, self.current_document)]
+    # strings describing any errors encountered during parsing.
+    self.errors = []
+    # Comment being formed for next object.
+    self.current_comment = ''
+    # Current field that stretches across flits.
+    self.flit_crossing_field = None
+    # Number of extra bits still to be consumed by the flit_crossing_field
+    self.bits_remaining = 0
+    # Number of extra bits already cosumed.
+    self.bits_consumed = 0
+    # Current line being parsed.
+    self.current_line = 0
+
+    self.base_types = {}
+    for name in builtin_type_widths:
+      self.base_types[name] = BaseType(name, builtin_type_widths[name])
+
+  def AddError(self, msg):
+    if self.current_document.filename:
+      location = '%s:%d: ' % (self.current_document.filename, self.current_line)
+    else:
+      location = '%d: ' % self.current_line
+    self.errors.append(location + msg)
+
+  def ParseStructStart(self, line):
+    # Handle a STRUCT directive opening a new structure.
+    # Returns created structure.
+    (state, containing_object) = self.stack[-1]
+    if state not in [GenParserTopLevel, GenParserStateStruct]:
+      self.AddError('Struct starting in inappropriate context')
+
+      return None
+
+    # Struct syntax is STRUCT struct-identifier var-name comment
+    match = re.match('STRUCT\s+(\w+)(\s+\w+|)(\s*.*)$', line)
+
+    if not match:
+      self.AddError('Invalid STRUCT line: "%s"' % line)
+      return None
+
+    identifier = match.group(1)
+    variable_name = match.group(2)
+    key_comment = match.group(3)
+    variable_name = utils.RemoveWhitespace(variable_name)
+
+    if not utils.IsValidCIdentifier(identifier):
+      self.AddError(
+        'struct name "%s" is not a valid identifier name.' % identifier)
+
+    if variable_name and not utils.IsValidCIdentifier(variable_name):
+      self.AddError(
+        'variable "%s" is not a valid identifier name.' % variable_name)
+
+    current_struct = Struct(identifier, False)
+    current_struct.line_number = self.current_line
+    current_struct.key_comment = self.StripKeyComment(key_comment)
+
+    if len(self.current_comment) > 0:
+      current_struct.body_comment = self.current_comment
+    self.current_comment = ''
+
+    self.stack.append((GenParserStateStruct, current_struct))
+
+    self.current_document.AddStruct(current_struct)
+
+    # Add the struct to the symbol table.  We don't know
+    self.base_types[identifier] = BaseType(identifier, FAKE_WIDTH,
+                                           current_struct)
+
+    if state != GenParserTopLevel:
+      new_field = Field(variable_name, self.MakeType(identifier), 0, 0)
+      new_field.line_number = self.current_line
+
+      containing_object.AddField(new_field)
+      current_struct.inline = True
+      current_struct.parent_struct = containing_object
+
+    # TODO(bowdidge): Instantiate field with struct if necessary.
+    # Need to pass variable.
+
+  def ParseEnumStart(self, line):
+    # Handle an ENUM directive opening a new enum.
+    state, containing_struct = self.stack[len(self.stack)-1]
+    match = re.match('ENUM\s+(\w+)(.*)$', line)
+    if match is None:
+      self.AddError('Invalid enum start line: "%s"' % line)
+      return
+
+    name = match.group(1)
+    key_comment = match.group(2)
+
+    name = utils.RemoveWhitespace(name)
+
+    if not utils.IsValidCIdentifier(name):
+      self.AddError('"%s" is not a valid identifier name.' % name)
+
+    current_enum = Enum(name)
+    current_enum.line_number = self.current_line
+    current_enum.key_comment = self.StripKeyComment(key_comment)
+
+    if len(self.current_comment) > 0:
+      current_enum.body_comment = self.current_comment
+    self.current_comment = ''
+
+    self.stack.append((GenParserStateEnum, current_enum))
+    self.current_document.AddEnum(current_enum)
+
+  def ParseFlagSetStart(self, line):
+    # Handle an FLAGS directive opening a new type represeting bit flags.
+    state, containing_struct = self.stack[len(self.stack)-1]
+    match = re.match('FLAGS\s+(\w+)(.*)$', line)
+    if match is None:
+      self.AddError('Invalid flags start line: "%s"' % line)
+      return
+
+    name = match.group(1)
+    key_comment = match.group(2)
+
+    if not utils.IsValidCIdentifier(name):
+      self.AddError('"%s" is not a valid identifier name.' % name)
+
+    name = utils.RemoveWhitespace(name)
+    current_flags = FlagSet(name)
+    current_flags.line_number = self.current_line
+    current_flags.key_comment = self.StripKeyComment(key_comment)
+
+    if len(self.current_comment) > 0:
+      current_flags.body_comment = self.current_comment
+    self.current_comment = ''
+
+    self.stack.append((GenParserStateFlagSet, current_flags))
+    self.current_document.AddFlagSet(current_flags)
+
+  def ParseEnumLine(self, line):
+    # Parse the line describing a new enum variable.
+    # This regexp matches:
+    # Foo = 1 Arbitrary-following-comment
+    match = re.match('(\w+)\s*=\s*(\w+)\s*(.*)$', line)
+    if match is None:
+      self.AddError('Invalid enum line: "%s"' % line)
+      return None
+
+    var = match.group(1)
+
+    value_str = match.group(2)
+    value = utils.ParseInt(value_str)
+    if value is None:
+      self.AddError('Invalid enum value for %s: "%s"' % (value_str, var))
+      return None
+
+    if not utils.IsValidCIdentifier(var):
+        self.AddError('"%s" is not a valid identifier name.' % var)
+
+    if value > 0x100000000:
+        self.AddError(
+          'Value for enum variable "%s" is %d, is larger than the 2^32 C allows.' % (
+            var, value))
+
+    # Parse a line describing an enum variable.
+    # TODO(bowdidge): Remember whether value was hex or decimal for better printing.
+    new_enum = EnumVariable(var, value)
+    new_enum.line_number = self.current_line
+
+    if len(self.current_comment) > 0:
+      new_enum.body_comment = self.current_comment
+    self.current_comment = ''
+
+    if match.group(3):
+        new_enum.key_comment = self.StripKeyComment(match.group(3))
+    return new_enum
+
+  def ParseLine(self, line):
+    """Parse a single line of a gen file that wasn't the start or end of container.
+
+    Use the state on top of the stack to decide what to do.
+    """
+    (state, containing_decl) = self.stack[len(self.stack)-1]
+    if line.startswith('//'):
+      self.current_comment += self.StripKeyComment(line)
+    elif state == GenParserTopLevel:
+      return
+    elif state == GenParserStateEnum or state == GenParserStateFlagSet:
+      enum = self.ParseEnumLine(line)
+      if enum is not None:
+        containing_decl.AddVariable(enum)
+    else:
+      # Try parsing as continuation of previous field
+      if (not self.ParseMultiFlitFieldLine(line, containing_decl) and
+          not self.ParseFieldLine(line, containing_decl)):
+        self.AddError('Invalid line: "%s"' % line)
+        return
+
+  def ParseEnd(self, line):
+    # Handle an END directive.
+    if len(self.stack) < 2:
+      self.AddError('END without matching STRUCT, UNION, or ENUM')
+      return None
+
+    (_, current_object) = self.stack[-1]
+    self.stack.pop()
+    (state, containing_object) = self.stack[-1]
+
+    if len(self.current_comment) > 0:
+      current_object.tail_comment = self.current_comment
+
+    if not isinstance(current_object, Struct):
+      return
+
+    if self.flit_crossing_field:
+      self.AddError('Field spec for "%s" too short: expected %d bits, got %d' %
+                    (self.flit_crossing_field.name,
+                     self.flit_crossing_field.type.BitWidth(),
+                     self.flit_crossing_field.type.BitWidth() - self.bits_remaining))
+
+    self.base_types[current_object.Name()].bit_width = current_object.BitWidth()
+
+    self.current_comment = ''
+
+    if state != GenParserTopLevel:
+      # Sub-structures and sub-unions are numbered starting at 0.
+      # Check the previous field to find where this struct should start.
+      next_offset = 0
+      if not containing_object.is_union:
+        previous_fields = containing_object.fields[0:-1]
+        if len(previous_fields) > 0:
+          next_offset = previous_fields[-1].EndOffset() + 1
+
+      new_field = containing_object.fields[-1]
+      new_field.offset_start = next_offset
+      new_field.bit_width = current_object.BitWidth()
+      new_field.CreateSubfields()
+
+  def ParseUnionStart(self, line):
+    # Handle a UNION directive opening a new union.
+    (state, containing_object) = self.stack[-1]
+    union_args = line.split(' ')
+    if len(union_args) != 3:
+      self.AddError('Malformed union declaration: %s\n' % line)
+      return
+    (_, name, variable) = union_args
+    identifier = utils.RemoveWhitespace(name)
+    variable = utils.RemoveWhitespace(variable)
+
+    if not utils.IsValidCIdentifier(name):
+      self.AddError('"%s" is not a valid union identifier name.' % name)
+
+    if not utils.IsValidCIdentifier(variable):
+      self.AddError('"%s" is not a valid identifier name.' % variable)
+
+    current_union = Struct(name, True)
+    current_union.line_number = self.current_line
+    if len(self.current_comment) > 0:
+      current_union.body_comment = self.current_comment
+    self.current_comment = ''
+    self.stack.append((GenParserStateStruct, current_union))
+    self.current_document.AddStruct(current_union)
+
+    self.base_types[identifier] = BaseType(identifier, FAKE_WIDTH,
+                                           current_union)
+    if state != GenParserTopLevel:
+      # Inline union.  Define the field.
+      new_field = Field(variable, self.MakeType(identifier), 0, 0)
+      new_field.line_number = self.current_line
+      containing_object.fields.append(new_field)
+
+      current_union.inline = True
+      current_union.parent_struct = containing_object
+
+  def StripKeyComment(self, the_str):
+    """Removes C commenting from the comment at the end of a line.
+
+    Returns None if a valid comment was not found.
+    """
+    the_str = the_str.lstrip(' \t\n')
+    if the_str.startswith('//'):
+      return the_str[2:].lstrip(' ').rstrip(' ')
+
+    if len(the_str) == 0:
+      return None
+
+    if not the_str.startswith('/*'):
+      self.AddError('Unexpected stuff where comment should be: "%s".' % the_str)
+      return None
+
+    # Match /* */ with anything in between and whitespace after.
+    match = re.match('/\*\s*(.*)\*/\s*', the_str)
+    if not match:
+      self.AddError('Badly formatted comment "%s"' % the_str)
+      return None
+
+    return match.group(1).lstrip(' ').rstrip(' ')
+
+  def ParseMultiFlitFieldLine(self, line, containing_struct):
+    """Parse the current line as if it were a multi-flit line.
+
+    Return false if it were not a multi-flit line
+    """
+    match = re.match('(\w+\s+(\w+:\w+|\w+))\s+\.\.\.\s*(.*)', line)
+    if match is None:
+      return False
+
+    if self.flit_crossing_field is None:
+      self.AddError('Multi-line flit continuation seen without pending field.')
+      return True
+
+    # Continuation.
+    flit_bit_spec_str = match.group(1)
+    key_comment = match.group(3)
+
+    result = utils.ParseBitSpec(flit_bit_spec_str)
+
+    if not result:
+      self.AddError('Invalid bit pattern: "%s"' % flit_bit_spec_str)
+      return True
+
+    # Tests
+    # Flag error if uses more bits than was available in previous declaration.
+    # Flag error if larger than flit.
+    # Flag if flit number wasn't increasing.
+    # Checker will determine if there's overlap.
+
+    result = utils.ParseBitSpec(flit_bit_spec_str)
+    if not result:
+      self.AddError('Invalid bit pattern: "%s"' % flit_bit_spec_str)
+      return True
+    (flit, start_bit, end_bit) = result
+
+    size = start_bit - end_bit + 1
+
+    if not self.flit_crossing_field.tail_comment:
+      self.flit_crossing_field.tail_comment = key_comment
+    else:
+      self.flit_crossing_field.tail_comment += '\n' + key_comment
+
+    self.flit_crossing_field.crosses_flit = True
+
+    self.flit_crossing_field.ExtendSize(size)
+
+    if self.bits_remaining < size:
+      self.AddError('Continuation for multi-flit field "%s" too large: '
+                    'expected %d bits, got %d.' % (
+          self.flit_crossing_field.name,
+          self.flit_crossing_field.type.BitWidth(),
+          size + self.bits_consumed))
+      self.flit_crossing_field = None
+      return True
+
+    self.bits_remaining -= size
+    self.bits_consumed += size
+
+    if self.bits_remaining == 0:
+      self.flit_crossing_field = None
+
+    return True
+
+
+  def MakeType(self, base_name, array_size=None):
+    """Creates an instance of the named type, or None if no such type exists."""
+    if base_name not in self.base_types:
+      return None
+    base_type = self.base_types[base_name]
+    if array_size is not None:
+      return Type(base_type, array_size)
+    else:
+      return Type(base_type)
+
+
+  def ParseFieldLine(self, line, containing_struct):
+    """Returns true if the line could be parsed as a field description.
+
+     Struct line is one of the following
+
+    Defines field
+    flit start_bit:end_bit type name /* comment */
+    flit single_bit type name /* comment */
+
+    Defines continuation of multi-flit field.
+    flit start_bit:end_bit ...
+    """
+
+    match = re.match('(\w+\s+(\w+:\w+|\w+))\s+(\w+)\s+(\w+)(\[[0-9]+\]|)\s*(.*)', line)
+
+    if match is None:
+      # Assume it's a comment.
+      return False
+
+    is_array = False
+    array_size = 1
+
+    flit_bit_spec_str = match.group(1)
+    type_name = match.group(3)
+    name = match.group(4)
+    if len(match.group(5)) != 0:
+      is_array = True
+      array_size = utils.ParseInt(match.group(5).lstrip('[').rstrip(']'))
+      if array_size is None:
+        print("Eek, thought %s was a number, but didn't parse!\n" % match.group(5))
+    key_comment = match.group(6)
+
+    if not utils.IsValidCIdentifier(name):
+      self.AddError(
+        'field name "%s" is not a valid identifier name.' % name)
+
+    if key_comment == '':
+      key_comment = None
+    else:
+      key_comment = self.StripKeyComment(key_comment)
+
+    body_comment = None
+    if len(self.current_comment) > 0:
+      body_comment = self.current_comment
+      self.current_comment = ''
+
+    type = None
+    if is_array:
+      type = self.MakeType(type_name, array_size)
+    else:
+      type = self.MakeType(type_name)
+
+    if type is None:
+      self.AddError('Unknown type name "%s"' % type_name)
+      return True
+
+    if array_size == 0:
+      if flit_bit_spec_str != '_ _:_':
+        self.AddError('Bit pattern specified for zero-length array: "%s".' % flit_bit_spec_str)
+        return True
+
+      zero_array = Field(name, type, -1, -1)
+      zero_array.no_offset = True
+      zero_array.key_comment = key_comment
+      zero_array.body_comment = body_comment
+      containing_struct.AddField(zero_array)
+      return True
+
+    result = utils.ParseBitSpec(flit_bit_spec_str)
+
+    if not result:
+      self.AddError('Invalid bit pattern: "%s"' % flit_bit_spec_str)
+      return True
+
+    (flit, start_bit, end_bit) = result
+
+    if start_bit > 63:
+      self.AddError('Field "%s" has start bit "%d" too large for 8 byte flit.' % (
+          name, start_bit))
+      return True
+
+    if start_bit < end_bit:
+      self.AddError('Start bit %d greater than end bit %d in field %s' %
+                    (start_bit, end_bit, name))
+
+    start_offset = flit * 64 + (utils.FLIT_SIZE - start_bit - 1)
+    end_offset = flit * 64 + (utils.FLIT_SIZE - end_bit - 1)
+    bit_size = end_offset - start_offset + 1
+    new_field = Field(name, type, start_offset, bit_size)
+    new_field.line_number = self.current_line
+
+    expected_width = type.BitWidth()
+    actual_width = new_field.BitWidth()
+
+    # Copy the sub-fields in.
+    if type.IsRecord():
+      new_field.CreateSubfields()
+
+    if not type.IsScalar() and end_bit == 0 and actual_width < expected_width:
+      # Field may stretch across flits.
+      self.flit_crossing_field = new_field
+      self.bits_remaining = expected_width - actual_width
+      self.bits_consumed = actual_width
+
+    new_field.key_comment = key_comment
+
+    new_field.body_comment = body_comment
+
+    type_width = new_field.type.BitWidth()
+    var_width = new_field.BitWidth()
+    if (var_width < type_width and not new_field.type.IsScalar()
+        and end_bit != 0):
+      # Using too few bits is only an error for arrays - scalar fields might always
+      # be treated as bitfields.  Arrays that end on a flit could continue, so don't
+      # flag an error in that case.
+      self.AddError('Field smaller than type: '
+                    'field "%s" is %d bits, type "%s" is %d.' % (
+          new_field.name, new_field.BitWidth(), new_field.type.TypeName(),
+          new_field.type.BitWidth()))
+    elif var_width > type_width:
+      warning = 'Field larger than type: field "%s" is %d bits, type "%s" is %d.' % (
+        new_field.name, new_field.BitWidth(), new_field.type.TypeName(),
+        new_field.type.BitWidth())
+      self.AddError(warning)
+    containing_struct.AddField(new_field)
+    return True
+
+  def ParsePlainLine(self, line):
+    # TODO(bowdidge): Save test in order for printing as comments.
+    return
+
+  def Parse(self, input_filename, the_file):
+    # Begin parsing a generated file provided as text.  Returns errors if any, or None.
+    self.current_document.filename = input_filename
+    self.current_line = 1
+    for line in the_file:
+      # Remove whitespace to allow for meaningful indenting.
+      line = line.lstrip(' ')
+      if line.startswith('STRUCT'):
+        self.ParseStructStart(line)
+      elif line.startswith('UNION'):
+        self.ParseUnionStart(line)
+      elif line.startswith('ENUM'):
+        self.ParseEnumStart(line)
+      elif line.startswith('FLAGS'):
+        self.ParseFlagSetStart(line)
+      elif line.startswith('END'):
+        self.ParseEnd(line)
+      else:
+        self.ParseLine(line)
+      self.current_line += 1
+    if len(self.errors) > 0:
+      return self.errors
+    return None

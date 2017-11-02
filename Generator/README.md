@@ -286,6 +286,7 @@ field_name_M: Mask for bits (after shifting)
 field_name_G(struct): get value from packed structure.
 field_name_P(value): gets value to put into field.  Field should be cleared
   beforehand by inserting the complement of the mask.
+field_name_Z(value): Returns a value that can be and'd with a packed field to zero out the field.
 ```
 
 

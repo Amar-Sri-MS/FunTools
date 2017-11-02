@@ -327,7 +327,6 @@ class CodegenEndToEnd(unittest.TestCase):
     self.assertIsNotNone(out)
 
   def testMultiFlitNestedStruct(self):
-    doc_builder = generator.DocBuilder()
     # ... allows a field to overflow into later flits.
     input = [
       'STRUCT fun_admin_cmd_common',
@@ -347,7 +346,6 @@ class CodegenEndToEnd(unittest.TestCase):
     self.assertIn('struct fun_admin_cmd_common c;', out)
 
   def testNoBitfieldForAlignedVariables(self):
-    doc_builder = generator.DocBuilder()
     input = [
       'STRUCT s',
       '0 63:56 uint8_t a',
@@ -447,7 +445,6 @@ class CodegenEndToEnd(unittest.TestCase):
 class TestComments(unittest.TestCase):
 
   def testStructComments(self):
-    doc_builder = generator.DocBuilder()
     # ... allows a field to overflow into later flits.
     input = [
       '// Body comment.',
@@ -469,8 +466,6 @@ class TestComments(unittest.TestCase):
     self.assertIn('/* Tail comment. */', out)
 
   def testUnionComments(self):
-    doc_builder = generator.DocBuilder()
-    
     input = [
       '// Struct comment.',
       'STRUCT large ',
@@ -496,8 +491,6 @@ class TestComments(unittest.TestCase):
     self.assertIn('/* B comment. */', out)
 
   def testEnumComments(self):
-    doc_builder = generator.DocBuilder()
-    
     input = [
       '// Enum comment.',
       'ENUM values',
@@ -568,7 +561,6 @@ class TestComments(unittest.TestCase):
     self.assertIn('"G", /* 0xa */', out)
 
   def testVariableLengthArray(self):
-    doc_builder = generator.DocBuilder()
     contents = [
       'STRUCT foo',
       '0 63:56 char initial',
