@@ -35,8 +35,8 @@ class Checker:
     self.current_document = None
 
   def AddError(self, node, msg):
-    if self.current_document and self.current_document.filename:
-      location = '%s:%d: ' % (self.current_document.filename, node.line_number)
+    if node.filename:
+      location = '%s:%d: ' % (node.filename, node.line_number)
     else:
       location = '%d: ' % node.line_number
     self.errors.append(location + msg)
@@ -78,6 +78,7 @@ class Checker:
       if not the_struct.is_union:
         if (last_start_offset >= end_offset and
              last_end_offset >= end_offset):
+
           self.AddError(field, 'field "%s" and "%s" not in bit order' % (
               last_field_name, field.name))
         elif last_end_offset >= start_offset:
@@ -180,8 +181,8 @@ class Packer:
     self.errors = []
 
   def AddError(self, node, msg):
-    if self.current_document and self.current_document.filename:
-      location = '%s:%d: ' % (self.current_document.filename, node.line_number)
+    if node.filename:
+      location = '%s:%d: ' % (node.filename, node.line_number)
     else:
       location = '%d: ' % node.line_number
     self.errors.append(location + msg)
@@ -477,16 +478,28 @@ def GenerateFile(output_style, output_base, input_stream, input_filename,
   Return the generated source (if output_base was None) or None.
   """
   # Process a single .gen file and create the appropriate header/docs.
-  gen_parser = parser.GenParser()
+  doc = None
+  errors = None
 
-  errors = gen_parser.Parse(input_filename, input_stream)
+  if input_filename.endswith('.gen'):
+    gen_parser = parser.GenParser()
+    errors = gen_parser.Parse(input_filename, input_stream)
+    doc = gen_parser.current_document
+  elif input_filename.endswith('.yaml'):
+    yaml_parser = parser.YAMLParser()
+    errors = yaml_parser.Parse(input_filename)
+    doc = yaml_parser.current_document
+  else:
+    print 'Expected input filename to end in .gen or .yaml, got %s.' % (
+        input_filename)
+    print 'Rename file to match input file format.'
+    sys.exit(1)
 
   if errors is not None:
     for error in errors:
       print(error)
-    sys.exit(1)
+      sys.exit(1)
 
-  doc = gen_parser.current_document
 
   c = Checker()
   c.VisitDocument(doc)

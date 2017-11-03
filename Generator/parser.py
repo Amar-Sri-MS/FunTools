@@ -4,8 +4,14 @@
 #
 # Copyright Fungible Inc. 2017.
 
+import os
 import re
+import sys
 import utils
+
+import yaml
+import yaml.composer
+import yaml.constructor
 
 # Fake value for width of field, used when we can't define the value
 # correctly on creation.
@@ -75,8 +81,44 @@ builtin_type_widths = {
   'float' : 32,
   'double': 64,
   'uint64_t': 64,
-  'int64_t' : 64
+  'int64_t' : 64,
+  'uint128_t': 128,
 }
+
+def NoStraddle(width, offset, bound):
+  """Returns true if a field at (offset, offset+width) doesn't cross
+  a boundary at bound intervals.
+
+  Used for determining appropriate types for fields not aligned on obvious
+  boundaries.
+  """
+  return offset / bound == (offset + width - 1) / bound
+
+def DefaultTypeForWidth(width, offset):
+  """Chooses a default type for a field based on the width and current offset.
+
+  The offset is used to bump the field to a larger type if it is not
+  aligned correctly.
+  """
+  # TODO(bowdidge): Currently, field packing requires all fields
+  # that would be packed together must share the same type.  We should
+  # either make sure the chosen type allows packing, or change how we decide
+  # whether to pack fields.
+  if width <= 8 and NoStraddle(width, offset, 8):
+    return TypeForName('uint8_t')
+  elif width <= 16 and NoStraddle(width, offset, 16):
+    return TypeForName('uint16_t')
+  elif width <= 32 and NoStraddle(width, offset, 32):
+    return TypeForName('uint32_t')
+  elif width <= 64 and NoStraddle(width, offset, 64):
+    return TypeForName('uint64_t')
+  elif width <= 128 and NoStraddle(width, offset, 128):
+    return TypeForName('uint128_t')
+  elif width % 8 == 0:
+    # Not quite correct- can't align array at less than 8 bit boundary.
+    return ArrayTypeForName('char', width / 8)
+  else:
+    return TypeForName('uint64_t')
 
 def BaseTypeForName(name):
   """Returns a BaseType for the builtin type with the provided name."""
@@ -257,6 +299,7 @@ class Declaration:
     self.functions = []
 
     # Location where Declaration appeared in source.
+    self.filename = None
     self.line_number = 0
 
     self.is_enum = False
@@ -549,6 +592,7 @@ class Field(Declaration):
       new_subfield.body_comment = proto_field.body_comment
       new_subfield.tail_comment = proto_field.tail_comment
       new_subfield.generator_comment = proto_field.generator_comment
+      new_subfield.filename = proto_field.filename
       new_subfield.line_number = proto_field.line_number
       new_subfield.crosses_flit = proto_field.crosses_flit
       new_subfield.is_bitfield = proto_field.is_bitfield
@@ -644,7 +688,8 @@ class Enum(Declaration):
     return self.name
 
   def BitWidth(self):
-    return 0
+    """Width of an enum is the number of bits needed for all values."""
+    return utils.MaxBit(self.last_value)
 
   def NameForValue(self, idx):
     for var in self.variables:
@@ -961,7 +1006,6 @@ class Document:
     # All structures, enums, and flagsets defined in file.
     self.declarations_raw = []
 
-
     # Original filename containing the specifications.
     self.filename = None
 
@@ -971,8 +1015,22 @@ class Document:
   def Structs(self):
     return [d for d in self.declarations_raw if d.is_struct]
 
+  def StructWithName(self, name):
+    """Returns the structure with the requested name."""
+    for d in self.declarations_raw:
+      if d.is_struct and d.name == name:
+        return d
+    return None
+
   def Enums(self):
     return [d for d in self.declarations_raw if d.is_enum]
+
+  def EnumWithName(self, name):
+    """Returns the enum with the requested name,"""
+    for d in self.declarations_raw:
+      if d.is_enum and d.name == name:
+        return d
+    return None
 
   def Flagsets(self):
     return [d for d in self.declarations_raw if d.is_flagset]
@@ -998,8 +1056,8 @@ class Checker:
     self.current_document = None
 
   def AddError(self, node, msg):
-    if self.current_document and self.current_document.filename:
-      location = '%s:%d: ' % (self.current_document.filename, node.line_number)
+    if node.filename:
+      location = '%s:%d: ' % (node.filename, node.line_number)
     else:
       location = '%d: ' % node.line_number
     self.errors.append(location + msg)
@@ -1139,6 +1197,7 @@ class GenParser:
         'variable "%s" is not a valid identifier name.' % variable_name)
 
     current_struct = Struct(identifier, False)
+    current_struct.filename = self.current_document.filename
     current_struct.line_number = self.current_line
     current_struct.key_comment = self.StripKeyComment(key_comment)
 
@@ -1156,6 +1215,7 @@ class GenParser:
 
     if state != GenParserTopLevel:
       new_field = Field(variable_name, self.MakeType(identifier), 0, 0)
+      new_field.filename = self.current_document.filename
       new_field.line_number = self.current_line
 
       containing_object.AddField(new_field)
@@ -1182,6 +1242,7 @@ class GenParser:
       self.AddError('"%s" is not a valid identifier name.' % name)
 
     current_enum = Enum(name)
+    current_enum.filename = self.current_document.filename
     current_enum.line_number = self.current_line
     current_enum.key_comment = self.StripKeyComment(key_comment)
 
@@ -1208,6 +1269,7 @@ class GenParser:
 
     name = utils.RemoveWhitespace(name)
     current_flags = FlagSet(name)
+    current_flags.filename = self.current_document.filename
     current_flags.line_number = self.current_line
     current_flags.key_comment = self.StripKeyComment(key_comment)
 
@@ -1246,6 +1308,7 @@ class GenParser:
     # Parse a line describing an enum variable.
     # TODO(bowdidge): Remember whether value was hex or decimal for better printing.
     new_enum = EnumVariable(var, value)
+    new_enum.filename = self.current_document.filename
     new_enum.line_number = self.current_line
 
     if len(self.current_comment) > 0:
@@ -1335,6 +1398,7 @@ class GenParser:
       self.AddError('"%s" is not a valid identifier name.' % variable)
 
     current_union = Struct(name, True)
+    current_union.filename = self.current_document.filename
     current_union.line_number = self.current_line
     if len(self.current_comment) > 0:
       current_union.body_comment = self.current_comment
@@ -1347,6 +1411,7 @@ class GenParser:
     if state != GenParserTopLevel:
       # Inline union.  Define the field.
       new_field = Field(variable, self.MakeType(identifier), 0, 0)
+      new_field.current_filename = self.current_document.filename
       new_field.line_number = self.current_line
       containing_object.fields.append(new_field)
 
@@ -1541,6 +1606,7 @@ class GenParser:
     end_offset = flit * 64 + (utils.FLIT_SIZE - end_bit - 1)
     bit_size = end_offset - start_offset + 1
     new_field = Field(name, type, start_offset, bit_size)
+    new_field.filename = self.current_document.filename
     new_field.line_number = self.current_line
 
     expected_width = type.BitWidth()
@@ -1605,4 +1671,139 @@ class GenParser:
       self.current_line += 1
     if len(self.errors) > 0:
       return self.errors
+    return None
+
+class YAMLParser:
+  """Parser that accepts hardware definitions generated by Ravi's Perl scripts.
+  """
+
+  def __init__(self):
+    # Current document is the top-level object.
+    self.current_document = Document()
+
+    # Map from YAML file name to parsed yaml.
+    self.all_yamls = {}
+
+    # YAML for the top-level file to generate.
+    self.yaml_to_generate = None
+
+    self.errors = []
+    # Relative path to directory containing file.
+    # For finding dependent YAML files.
+    self.current_directory = None
+
+  def ParseYAML(self, yaml, input_filename):
+    # We've now seen all dependencies - start parsing this file.
+    if 'ENUMLIST' in yaml:
+      for enum in yaml['ENUMLIST']:
+        name = enum['NAME']
+        comment = enum.get('DESCRIPTION', None)
+        width = int(enum.get('WIDTH', 0))
+
+        enum_decl = Enum(name)
+        enum_decl.body_comment = comment
+        enum_decl.filename = input_filename
+        enum_decl.line_number = 0
+        self.current_document.AddEnum(enum_decl)
+
+        # TODO(bowdidge): Set limits on enum based on width,
+        # and double-check when we fill in values.
+
+        for enum_var in enum['ENUMS']:
+          name = enum_var['NAME']
+          comment = enum_var.get('DESCRIPTION', None)
+          value = int(enum_var.get('VALUE', 0))
+
+          var_decl = EnumVariable(name, value)
+          var_decl.key_comment = comment
+          var_decl.filename = input_filename
+          var_decl.line_number = 0
+          enum_decl.AddVariable(var_decl)
+
+    if 'IS_STRUCT' in yaml:
+      structs = yaml['LIST']
+      for struct in structs:
+        name = struct['NAME']
+        comment = struct.get('DESCRIPTION', None)
+        is_union = False
+        if 'IS_UNION' in struct and struct['IS_UNION'] == 1:
+          is_union = True
+        struct_decl = Struct(name, is_union)
+        struct_decl.body_comment = comment
+        struct_decl.filename = input_filename
+        struct_decl.line_number = 0
+
+        self.current_document.AddStruct(struct_decl)
+
+        offset = 0
+        for f in struct['SIGLIST']:
+          field_name = f['NAME']
+          width = int(f.get('WIDTH', 0))
+          comment = f.get('DESCRIPTION', None)
+          type = None
+          if 'ENUM_NAME' in f:
+            enum_name = f['ENUM_NAME']
+            enum_decl = self.current_document.EnumWithName(enum_name)
+            type = DefaultTypeForWidth(enum_decl.BitWidth(), offset)
+            width = enum_decl.BitWidth()
+          elif 'STRUCT_NAME' in f:
+            struct_name = f['STRUCT_NAME']
+            struct = self.current_document.StructWithName(struct_name)
+            if not struct:
+              print('Unknown struct %s\n', struct_name)
+              type = TypeForName('uint64_t')
+            else:
+              type = RecordTypeForStruct(struct)
+              width = struct.BitWidth()
+          else:
+            type = DefaultTypeForWidth(width, offset)
+          if width < 1:
+            import pdb
+            pdb.set_trace()
+          field_decl = Field(field_name, type, offset, width)
+          field_decl.body_comment = comment
+          field_decl.filename = input_filename
+          field_decl.line_number = 0
+          struct_decl.AddField(field_decl)
+          offset += width
+
+    return yaml
+
+  def ParseFile(self, input_filename, is_root=False):
+    """Parse an individual YAML file.
+
+    is_root is true if this is the top file to parse.
+
+    Called recursively to handle dependent YAML files.
+    """
+    result = yaml.load(file(input_filename, 'r').read())
+
+    self.all_yamls[input_filename] = result
+
+    if 'INCLIST' in result:
+      for included_file in result['INCLIST']:
+        included_path = included_file
+        if self.current_directory:
+          included_path = self.current_directory + '/' + included_file
+        included_path += '.yaml'
+
+        self.ParseFile(included_path, is_root=False)
+
+    # Need to provide file and line.
+    self.ParseYAML(result, input_filename)
+
+  def Parse(self, input_filename):
+    """Parses a generated file provided as text.
+
+    Parse the file and all dependent files, then add all to the parse
+    tree.
+
+    Returns array of errors, or None if no errors occurred.
+    """
+    self.current_document.filename = input_filename
+    self.current_directory = os.path.dirname(input_filename)
+
+    result = self.ParseFile(input_filename, is_root=True)
+
+    # Should return something like declarations in current file?
     return None
