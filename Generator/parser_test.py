@@ -3,6 +3,7 @@
 # Robert Bowdidge, August 8, 2016.
 # Copyright Fungible Inc. 2016.
 
+import tempfile
 import unittest 
 
 import generator
@@ -175,6 +176,152 @@ class StringTest(unittest.TestCase):
     self.assertEqual('(struct container)', container_type.CastString())
     uint8_type = parser.TypeForName('uint8_t')
     self.assertEqual('(uint8_t)', uint8_type.CastString())
+
+class DefaultTypeTest(unittest.TestCase):
+
+  def testSimple(self):
+    self.assertEqual('uint8_t',
+                     parser.DefaultTypeForWidth(8, 8).DeclarationType())
+
+    self.assertEqual('uint16_t',
+                     parser.DefaultTypeForWidth(8, 3).DeclarationType())
+
+    self.assertEqual('uint16_t',
+                     parser.DefaultTypeForWidth(8, 6).DeclarationType())
+
+    self.assertEqual('uint32_t',
+                     parser.DefaultTypeForWidth(8, 14).DeclarationType())
+
+    self.assertEqual('uint64_t',
+                     parser.DefaultTypeForWidth(8, 31).DeclarationType())
+
+    self.assertEqual('uint32_t',
+                     parser.DefaultTypeForWidth(12, 8).DeclarationType())
+
+    self.assertEqual('uint32_t',
+                     parser.DefaultTypeForWidth(16, 10).DeclarationType())
+
+    self.assertEqual('uint32_t',
+                     parser.DefaultTypeForWidth(16, 4).DeclarationType())
+
+
+class YAMLParserTest(unittest.TestCase):
+  def testEnum(self):
+    input = """
+---
+DESCRIPTION: ' Enums used in NU'
+ENUMLIST:
+  - DESCRIPTION: Ingress Stream Type Definition
+    ENUMS:
+      - DESCRIPTION: SF
+        NAME: SF
+        VALUE: 0
+      - DESCRIPTION: CX
+        NAME: CX
+        VALUE: 1
+      - DESCRIPTION: SX or DX
+        NAME: SX_DX
+        VALUE: 2
+      - DESCRIPTION: Reserved
+        NAME: RESV
+        VALUE: 3
+    NAME: nu_ig_stream_type_t
+    WIDTH: 2
+  - DESCRIPTION: Switch Type Definition
+    ENUMS:
+      - DESCRIPTION: SF
+        NAME: SF
+        VALUE: 0
+      - DESCRIPTION: SX
+        NAME: SX
+        VALUE: 1
+      - DESCRIPTION: DX
+        NAME: DX
+        VALUE: 2
+      - DESCRIPTION: DF
+        NAME: DF
+        VALUE: 3
+    NAME: nu_switch_type_t
+"""
+    temp_input = tempfile.NamedTemporaryFile()
+    temp_input.write(input)
+    temp_input.flush()
+    name = temp_input.name
+
+    yaml_parser = parser.YAMLParser()
+    yaml_parser.Parse(name)
+
+    document = yaml_parser.current_document
+
+    self.assertEqual(2, len(document.Enums()))
+    self.assertEqual(0, len(document.Structs()))
+
+    enum_a = document.Enums()[0]
+    self.assertEqual('nu_ig_stream_type_t', enum_a.name)
+    self.assertEqual(4, len(enum_a.variables))
+    self.assertEqual('SF', enum_a.variables[0].name)
+    self.assertEqual('RESV', enum_a.variables[3].name)
+    self.assertEqual(3, enum_a.last_value)
+
+    enum_b = document.Enums()[1]
+    self.assertEqual('nu_switch_type_t', enum_b.name)
+    self.assertEqual(4, len(enum_b.variables))
+    self.assertEqual('SX', enum_b.variables[1].name)
+    self.assertEqual('DX', enum_b.variables[2].name)
+    self.assertEqual(3, enum_b.last_value)
+
+    temp_input.close()
+
+  def testStruct(self):
+    input = """
+---
+IS_STRUCT: 1
+LIST:
+  - DESCRIPTION: Foo
+    NAME: my_struct
+    SIGLIST:
+      - DESCRIPTION: field a
+        NAME: a
+        WIDTH: 8
+
+      - DESCRIPTION: field b
+        NAME: b
+        WIDTH: 32
+
+      - DESCRIPTION: field c
+        NAME: c
+        WIDTH: 24
+"""
+    temp_input = tempfile.NamedTemporaryFile()
+    temp_input.write(input)
+    temp_input.flush()
+    name = temp_input.name
+
+    yaml_parser = parser.YAMLParser()
+    yaml_parser.Parse(name)
+    
+    document = yaml_parser.current_document
+    
+    self.assertEqual(0, len(document.Enums()))
+    self.assertEqual(1, len(document.Structs()))
+    
+    struct_a = document.Structs()[0]
+    self.assertEqual('my_struct', struct_a.name)
+    self.assertEqual(3, len(struct_a.fields))
+    self.assertEqual(64, struct_a.BitWidth())
+
+    field_a = struct_a.fields[0]
+    self.assertEqual('a', field_a.name)
+    self.assertEqual(8, field_a.BitWidth())
+
+    field_b = struct_a.fields[1]
+    self.assertEqual('b', field_b.name)
+    self.assertEqual(32, field_b.BitWidth())
+
+    field_c = struct_a.fields[2]
+    self.assertEqual('c', field_c.name)
+    self.assertEqual(24, field_c.BitWidth())
+
 
 if __name__ == '__main__':
     unittest.main()
