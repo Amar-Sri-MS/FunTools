@@ -5,5 +5,6 @@
 #include <CommonCrypto/CommonDigest.h> // for SHA-256
 
 #include "dpcclient.h"
+#include <stdint.h>
 
 extern int64_t statSizeForFile(const char *);

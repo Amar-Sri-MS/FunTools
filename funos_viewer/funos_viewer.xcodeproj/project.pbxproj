@@ -652,8 +652,10 @@
 				CLANG_ENABLE_MODULES = YES;
 				COMBINE_HIDPI_IMAGES = YES;
 				HEADER_SEARCH_PATHS = (
-					../../FunOS,
 					../../FunSDK,
+					../../FunOS,
+					../../FunOS/storage/include,
+					"../../FunOS/build/posix-noasan",
 				);
 				INFOPLIST_FILE = funos_viewer/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
@@ -678,8 +680,10 @@
 				CLANG_ENABLE_MODULES = YES;
 				COMBINE_HIDPI_IMAGES = YES;
 				HEADER_SEARCH_PATHS = (
-					../../FunOS,
 					../../FunSDK,
+					../../FunOS,
+					../../FunOS/storage/include,
+					"../../FunOS/build/posix-noasan",
 				);
 				INFOPLIST_FILE = funos_viewer/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";

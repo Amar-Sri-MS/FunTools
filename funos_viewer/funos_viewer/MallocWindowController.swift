@@ -102,6 +102,19 @@ class MallocRegionsDataSource: NSObject, NSTableViewDataSource {
 		var percentInUse: Double {
 			return (sumRegionSizesInBytes == 0 ? 0.0 : Double(sumInUseSizesInBytes + sumWastedInBytes) / Double(sumRegionSizesInBytes) * 100.0).round1
 		}
+		func descriptionForKey(_ key: String) -> String {
+			// The code at the end used to work but is broken with Swift4
+			if key == "numRegions" { return numRegions.description }
+			if key == "listLogRegionSizes" { return numRegions.description }
+			if key == "sumRegionSizes" { return sumRegionSizes.description }
+			if key == "percentInUse" { return percentInUse.description }
+			if key == "numAllocs" { return numAllocs.description }
+			if key == "numFrees" { return numFrees.description }
+			if key == "numInUse" { return numInUse.description }
+			print("*** Key not implemented \(key)")
+			fatalErrorNYI()
+//			return (value(forKey: key) as! NSObject).description
+		}
 	}
 	var allRegions: [JSON] = []
 	var allInfo: [Int: SummaryRegionInfo] = [:] // logChunkSize -> Summary
@@ -161,8 +174,7 @@ class MallocRegionsDataSource: NSObject, NSTableViewDataSource {
 			return last ? "Total" : lcss[row].description
 		} else {
 			let info = last ? total : allInfo[lcss[row]]!
-			let value: Any? = info.value(forKeyPath: ident.rawValue)
-			return (value as! NSObject).description
+			return info.descriptionForKey(ident.rawValue)
 		}
 	}
 
@@ -185,6 +197,23 @@ class MallocCachesDataSource: NSObject, NSTableViewDataSource {
 		var kbAvail: Int { return Int(bytesAvail >> UInt64(10)) }
 		var percentFull: Double {
 			return (maxAvail == 0 ? 0.0 : Double(numAvail) / Double(maxAvail) * 100.0).round1
+		}
+		func descriptionForKey(_ key: String) -> String {
+			// The code at the end used to work but is broken with Swift4
+			if key == "name" { return name.description }
+			if key == "bytesAvail" { return bytesAvail.description }
+			if key == "numAvail" { return numAvail.description }
+			if key == "maxAvail" { return maxAvail.description }
+			if key == "numAllocHits" { return numAllocHits.description }
+			if key == "numAllocMisses" { return numAllocMisses.description }
+			if key == "numRecycleHits" { return numRecycleHits.description }
+			if key == "numRecycleMisses" { return numRecycleMisses.description }
+			if key == "replenished" { return replenished.description }
+			if key == "kbAvail" { return kbAvail.description }
+			if key == "percentFull" { return percentFull.description }
+			print("*** Key not implemented \(key)")
+			fatalErrorNYI()
+			// return (value(forKey: key) as! NSObject).description
 		}
 	}
 	var allVPs: [String: JSON] = [:]
@@ -247,8 +276,7 @@ class MallocCachesDataSource: NSObject, NSTableViewDataSource {
 		let last = row >= allInfo.count
 		let info = last ? total : allInfo[row]
 		let ident = tableColumn!.identifier
-		let value: Any? = info.value(forKeyPath: ident.rawValue)
-		return (value as! NSObject).description
+		return info.descriptionForKey(ident.rawValue)
 	}
 }
 
