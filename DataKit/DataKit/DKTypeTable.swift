@@ -11,9 +11,9 @@
 
 class DKTypeTable {
 	typealias Shortcut = DKType.Shortcut
-	var shortcuts: [DKType.Shortcut: JSON]
+	var shortcuts: [Shortcut: JSON] = [:]
+	var aliases: [String: Shortcut] = [:]
 	init() {
-		shortcuts = [:]
 	}
 	subscript(sc: Shortcut) -> JSON? {
 		get { return shortcuts[sc] }
@@ -26,7 +26,25 @@ class DKTypeTable {
 			}
 		}
 	}
+	func noteAlias(_ name: String, _ sc: Shortcut) {
+		assert(aliases[name] == nil)
+		aliases[name] = sc
+	}
+	func noteAlias(_ name: String, _ type: DKType) {
+		let sc = type.toTypeShortcut(self)
+		noteAlias(name, sc)
+	}
+	func aliasFor(_ name: String) -> Shortcut? {
+		return aliases[name]
+	}
+	func aliasForShortcut(_ sc: Shortcut) -> String? {
+		return aliases.keysForValue(sc).first
+	}
 	var typeTableAsJSON: JSON {
-		return .dictionary(shortcuts)
+		var dict = shortcuts
+		for (alias, shortcut) in aliases {
+			dict[alias] = .string(shortcut)
+		}
+		return .dictionary(dict)
 	}
 }

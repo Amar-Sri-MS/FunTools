@@ -37,6 +37,8 @@ class DKType: Equatable, Hashable, CustomStringConvertible {
 			return rawJSON.stringValue
 		}
 		let sc = rawJSON.asTypeShortcut
+		let alias = uniquingTable.aliasForShortcut(sc)
+		if alias != nil { return alias! }
 		if uniquingTable[sc] != nil { return sc }
 		return subclassableSugaryDescription(uniquingTable)
 	}
@@ -137,7 +139,7 @@ extension JSON {
 		assert(isString)
 		let code: DKType.Shortcut = stringValue
 		var raw = uniquingTable[code]
-		if raw == nil && code.hasPrefix("T_") { return nil }
+		if raw == nil && code.hasPrefix("_T_") { return nil }
 		if raw == nil { raw = self }
 		// TODO: Need to avoid this...
 		for f in [DKTypeInt.typeFromJSON, DKTypeString.typeFromJSON, DKTypeStruct.typeFromJSON, DKTypeArray.typeFromJSON, DKTypeSignature.typeFromJSON] {
@@ -147,7 +149,7 @@ extension JSON {
 		return nil
 	}
 	fileprivate var asTypeShortcut: String {
-		return "T_" + description.toSHA256().word2.toHexString(true) // word 2 is as good as any; we only use 64b of a SHA2 as risk of colliding is low
+		return "_T_" + description.toSHA256().word2.toHexString(true) // word 2 is as good as any; we only use 64b of a SHA2 as risk of colliding is low
 	}
 }
 

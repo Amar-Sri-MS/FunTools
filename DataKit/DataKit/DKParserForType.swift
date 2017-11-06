@@ -53,7 +53,9 @@ extension DKParser {
 			}
 			return DKTypeInt.shared(signed: typeName == "Int", numBits: UInt8(params[0]))
 		}
-		let j: JSON = .string(typeName)
+		// Is it an alias?
+		let sc = uniquingTable.aliasFor(typeName)
+		let j: JSON = .string(sc == nil ? typeName : sc!)
 		let t = j.toDKType(uniquingTable)
 		if t == nil {
 			throw DKParsingError("Unknown predefined type '\(typeName)'", self)
