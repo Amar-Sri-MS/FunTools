@@ -85,6 +85,7 @@ class ViewController: NSViewController, NSTextViewDelegate {
 		transformation.font = bigFont
 		generatedJSON.font = bigFont
 		registerGeneratorOfStudents(typeTable: typeTable)
+		typeTable.noteAlias("Student", studentType())
 		transformation.delegate = self
 		predefs.removeAllItems()
 		predefs.addItems(withTitles: predefArray.map { $0.0 })
