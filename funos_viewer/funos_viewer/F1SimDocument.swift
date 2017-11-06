@@ -294,8 +294,10 @@ import AppKit
 		if container != nil {
 			inputController.ikvContainer = container
 			truth = []
-			(NSApp as! ViewerApp).ikvController.ikvContainer.stringValue = container!.description
-			(NSApp as! ViewerApp).ikvController.startIKVTimer()
+			let vapp = NSApp as! ViewerApp
+			let ikvController = vapp.ikvController
+			ikvController?.ikvContainer.stringValue = container!.description
+			ikvController?.startIKVTimer()
 		}
 		log(string: json?.toJSONString() ?? "")
 	}

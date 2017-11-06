@@ -57,6 +57,16 @@ class WUInfoDataSource: NSObject, NSTableViewDataSource {
 		var count: Int = 0
 		var duration: Int = 0	// usecs
 		var avgDuration: Int { return count == 0 ? 0 : duration / count }
+		func descriptionForKey(_ key: String) -> String {
+			// The code at the end used to work but is broken with Swift4
+			if key == "wu" { return wu.description }
+			if key == "count" { return count.description }
+			if key == "duration" { return duration.description }
+			if key == "avgDuration" { return avgDuration.description }
+			print("*** Key not implemented \(key)")
+			fatalErrorNYI()
+			// return (value(forKey: key) as! NSObject).description
+		}
 	}
 
 	var allInfo: [WUInfo] = []
@@ -94,8 +104,7 @@ class WUInfoDataSource: NSObject, NSTableViewDataSource {
 
 	func tableView(_ tableView: NSTableView, objectValueFor tableColumn: NSTableColumn?, row: Int) -> Any? {
 		let info = allInfo[row]
-		let value: Any? = info.value(forKeyPath: tableColumn!.identifier.rawValue)
-		return (value as! NSObject).description
+		return info.descriptionForKey(tableColumn!.identifier.rawValue)
 	}
 
 	func tableView(_ tableView: NSTableView, sortDescriptorsDidChange oldDescriptors: [NSSortDescriptor]) {

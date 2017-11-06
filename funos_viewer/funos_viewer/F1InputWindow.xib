@@ -10,12 +10,9 @@
         <customObject id="-2" userLabel="File's Owner" customClass="F1InputController" customModule="funos_viewer" customModuleProvider="target">
             <connections>
                 <outlet property="fiboArg" destination="PYO-9U-uvI" id="gcp-vl-nYZ"/>
-                <outlet property="fiboButton" destination="r8K-wX-owB" id="ddZ-qn-fxn"/>
                 <outlet property="genericArg" destination="FZ5-AQ-EQy" id="Knv-wQ-5sU"/>
-                <outlet property="genericButton" destination="cJj-lg-0Mv" id="EiU-a6-Zlc"/>
                 <outlet property="genericVerb" destination="AHM-5K-BSd" id="t26-af-a6o"/>
                 <outlet property="helpArg" destination="bxf-k7-wwP" id="X8z-Uh-YjP"/>
-                <outlet property="helpButton" destination="Qdn-m3-anY" id="LeA-ca-cbd"/>
                 <outlet property="ikvRepeat" destination="wOw-hv-iQk" id="Pg4-Lg-i6o"/>
                 <outlet property="keyPath" destination="Qj0-bJ-dOK" id="IFL-o3-yIR"/>
                 <outlet property="logPageSize" destination="Vk3-0O-QfZ" id="vGc-dT-u2d"/>
@@ -35,7 +32,7 @@
             <windowStyleMask key="styleMask" titled="YES" closable="YES" miniaturizable="YES" resizable="YES" utility="YES"/>
             <windowPositionMask key="initialPositionMask" leftStrut="YES" topStrut="YES" bottomStrut="YES"/>
             <rect key="contentRect" x="72" y="201" width="259" height="464"/>
-            <rect key="screenRect" x="0.0" y="0.0" width="2048" height="1129"/>
+            <rect key="screenRect" x="0.0" y="0.0" width="1680" height="1027"/>
             <view key="contentView" id="nqK-A3-mMl">
                 <rect key="frame" x="0.0" y="0.0" width="259" height="464"/>
                 <autoresizingMask key="autoresizingMask"/>
