@@ -8,6 +8,7 @@
  * Copyright Fungible Inc. 2016.
  */
 
+#include <inttypes.h>
 #include <stddef.h> // offsetof
 #include <stdint.h>
 #include <stdio.h>
@@ -16,22 +17,7 @@
 
 #import "rdma_gen.h"
 
-#define EXPECT_SIZE(var, bytes, varStr)		\
-  if (sizeof(var) != bytes) {						\
-    fprintf(stderr, "FAIL: %s structure expected to be %d bytes, got %lu\n", \
-	    varStr, bytes, sizeof(var)); \
-  } else { \
-    fprintf(stderr, "PASS\n"); \
-  }    
-
-#define EXPECT_OFFSET(var, field, offset, varStr)			\
-  if (offsetof(var, field) != offset) {					\
-    fprintf(stderr, "FAIL: %s structure expected to be %d bytes, got %lu\n", \
-	    varStr, offset, offsetof(var, field));				\
-    exit(1); \
-  } else { \
-    fprintf(stderr, "PASS\n"); \
-  }
+#include "test_macros.h"
 
 void PrintFragment(struct GatherListFragmentHeader *hdr) {
   uint64_t* ptr = (uint64_t*) hdr;
@@ -49,9 +35,9 @@ int main(int argc, char** argv) {
   printf("WorkUnit: 0x%lx bytes\n", sizeof(wu));
   printf("GatherListFragmentHeader: 0x%lx bytes\n", sizeof(frag));
 
-  EXPECT_SIZE(wu, 32, "wu");
+  ASSERT_SIZE(wu, 32, "wu");
   
-  EXPECT_SIZE(frag, 16, "frag");
+  ASSERT_SIZE(frag, 16, "frag");
 
   PrintFragment(fragPtr);
   printf("Set gather opcode, and set byte count to 15\n");
