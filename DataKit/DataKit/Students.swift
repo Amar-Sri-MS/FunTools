@@ -140,18 +140,18 @@ let pipe1 = "compose(" +
 let pipe2 = "compose(" +
 	"map((Student) -> () | logger()), " +
 	"compose(" +
-	"filter((Student) -> Bool | { $0.first_name == \"Joe\"}), " +
-	"filter({ $0.last_name == \"Smith\"})" +
+		"filter((Student) -> Bool | { $0.first_name == \"Joe\"}), " +
+		"filter({ $0.last_name == \"Smith\"})" +
 	")" +
 ")"
 
-//let pipeFullNames = "compose(" +
-//	"map((String) -> () | logger()), " +
-//	"map((Student) -> String | { $0.first_name + \"_\" + $0.last_name })" +
-//")"
+let pipeFullNames = "compose(" +
+	"map((String) -> () | logger()), " +
+	"map((Student) -> String | { $0.first_name + \" \" + $0.last_name } )" +
+")"
 
 func studentsTestNew() {
-	let pipeString = pipe2
+	let pipeString = pipeFullNames
 	let t = studentType()
 	let typeTable = DKTypeTable()
 	typeTable.noteAlias("Student", studentType())

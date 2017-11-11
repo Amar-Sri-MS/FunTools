@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A78C72481FB6632A005BCFD4 /* DataKitController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A78C72471FB6632A005BCFD4 /* DataKitController.swift */; };
 		A7A56B311F8AC0AC007B5391 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7A56B301F8AC0AC007B5391 /* AppDelegate.swift */; };
 		A7A56B331F8AC0AC007B5391 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7A56B321F8AC0AC007B5391 /* ViewController.swift */; };
 		A7A56B351F8AC0AC007B5391 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A7A56B341F8AC0AC007B5391 /* Assets.xcassets */; };
@@ -108,6 +109,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		A78C72471FB6632A005BCFD4 /* DataKitController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataKitController.swift; sourceTree = "<group>"; };
 		A7A56B2D1F8AC0AC007B5391 /* DataKitApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DataKitApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A7A56B301F8AC0AC007B5391 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		A7A56B321F8AC0AC007B5391 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
@@ -251,6 +253,7 @@
 			children = (
 				A7A56B301F8AC0AC007B5391 /* AppDelegate.swift */,
 				A7A56B321F8AC0AC007B5391 /* ViewController.swift */,
+				A78C72471FB6632A005BCFD4 /* DataKitController.swift */,
 				A7A56B341F8AC0AC007B5391 /* Assets.xcassets */,
 				A7A56B361F8AC0AC007B5391 /* Main.storyboard */,
 				A7A56B391F8AC0AC007B5391 /* Info.plist */,
@@ -534,6 +537,7 @@
 				A7A56BD41F8AC139007B5391 /* DKExpressionConstant.swift in Sources */,
 				A7A56BD81F8AC139007B5391 /* DKFlowGraphGen.swift in Sources */,
 				A7A56B871F8AC126007B5391 /* SExpression.swift in Sources */,
+				A78C72481FB6632A005BCFD4 /* DataKitController.swift in Sources */,
 				A7A56BFF1F8AC139007B5391 /* Students.swift in Sources */,
 				A7A56B761F8AC126007B5391 /* Async.swift in Sources */,
 				A7A56B4F1F8AC11D007B5391 /* DataExtras.swift in Sources */,

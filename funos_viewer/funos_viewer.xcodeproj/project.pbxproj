@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A70662F71FB57245005C19E0 /* accelerators in Resources */ = {isa = PBXBuildFile; fileRef = A70662F61FB57245005C19E0 /* accelerators */; };
 		A71563991EB95EDE00F32BAE /* cfg in Resources */ = {isa = PBXBuildFile; fileRef = A71563981EB95EDE00F32BAE /* cfg */; };
 		A716FBCD1EA67C82008395EC /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FBCC1EA67C82008395EC /* AppDelegate.swift */; };
 		A716FBCF1EA67C82008395EC /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A716FBCE1EA67C82008395EC /* Assets.xcassets */; };
@@ -16,7 +17,6 @@
 		A716FBE41EA83CBB008395EC /* apps in Resources */ = {isa = PBXBuildFile; fileRef = A716FBE31EA83CBB008395EC /* apps */; };
 		A716FBE61EAD33E0008395EC /* hw in Resources */ = {isa = PBXBuildFile; fileRef = A716FBE51EAD33E0008395EC /* hw */; };
 		A716FBE81EAD33EA008395EC /* kv in Resources */ = {isa = PBXBuildFile; fileRef = A716FBE71EAD33EA008395EC /* kv */; };
-		A716FBEC1EAD63FA008395EC /* PureSwiftExtras in Resources */ = {isa = PBXBuildFile; fileRef = A716FBEB1EAD63FA008395EC /* PureSwiftExtras */; };
 		A716FC131EAD667D008395EC /* ArrayExtras.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FC081EAD667D008395EC /* ArrayExtras.swift */; };
 		A716FC141EAD667D008395EC /* ByteExtras.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FC091EAD667D008395EC /* ByteExtras.swift */; };
 		A716FC151EAD667D008395EC /* DataExtras.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FC0A1EAD667D008395EC /* DataExtras.swift */; };
@@ -99,6 +99,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		A70662F61FB57245005C19E0 /* accelerators */ = {isa = PBXFileReference; lastKnownFileType = folder; name = accelerators; path = ../../FunOS/accelerators; sourceTree = "<group>"; };
 		A71563981EB95EDE00F32BAE /* cfg */ = {isa = PBXFileReference; lastKnownFileType = folder; name = cfg; path = ../../FunOS/cfg; sourceTree = "<group>"; };
 		A716FBC91EA67C82008395EC /* funos_viewer.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = funos_viewer.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A716FBCC1EA67C82008395EC /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
@@ -112,7 +113,6 @@
 		A716FBE31EA83CBB008395EC /* apps */ = {isa = PBXFileReference; lastKnownFileType = folder; name = apps; path = ../../FunOS/apps; sourceTree = "<group>"; };
 		A716FBE51EAD33E0008395EC /* hw */ = {isa = PBXFileReference; lastKnownFileType = folder; name = hw; path = ../../FunOS/hw; sourceTree = "<group>"; };
 		A716FBE71EAD33EA008395EC /* kv */ = {isa = PBXFileReference; lastKnownFileType = folder; name = kv; path = ../../FunOS/kv; sourceTree = "<group>"; };
-		A716FBEB1EAD63FA008395EC /* PureSwiftExtras */ = {isa = PBXFileReference; lastKnownFileType = folder; name = PureSwiftExtras; path = ../../Simulators/NSSimulator/PureSwiftExtras; sourceTree = "<absolute>"; };
 		A716FC081EAD667D008395EC /* ArrayExtras.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ArrayExtras.swift; sourceTree = "<group>"; };
 		A716FC091EAD667D008395EC /* ByteExtras.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ByteExtras.swift; sourceTree = "<group>"; };
 		A716FC0A1EAD667D008395EC /* DataExtras.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DataExtras.swift; sourceTree = "<group>"; };
@@ -219,6 +219,7 @@
 				A766A47D1F195D7A0094C7B0 /* nucleus */,
 				A72CC7BA1F6A2B6B0058827F /* flows */,
 				A766A47B1F1915F50094C7B0 /* utils */,
+				A70662F61FB57245005C19E0 /* accelerators */,
 				A7A68CFF1EE9C608004B5DDF /* props_bridges */,
 				A71563981EB95EDE00F32BAE /* cfg */,
 				A72CC7AA1F587F3E0058827F /* devices */,
@@ -235,7 +236,6 @@
 				A716FBCA1EA67C82008395EC /* Products */,
 				A7EBED021F948FEB00AFD2F0 /* libfunclient.a */,
 				A7FD266C1EB51FCD0049E0C0 /* Frameworks */,
-				A7EBECFB1F94665500AFD2F0 /* Recovered References */,
 			);
 			sourceTree = "<group>";
 		};
@@ -351,14 +351,6 @@
 			path = funos_viewer;
 			sourceTree = "<group>";
 		};
-		A7EBECFB1F94665500AFD2F0 /* Recovered References */ = {
-			isa = PBXGroup;
-			children = (
-				A716FBEB1EAD63FA008395EC /* PureSwiftExtras */,
-			);
-			name = "Recovered References";
-			sourceTree = "<group>";
-		};
 		A7FD266C1EB51FCD0049E0C0 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
@@ -435,6 +427,7 @@
 				A72CC7AD1F587F650058827F /* networking in Resources */,
 				A71563991EB95EDE00F32BAE /* cfg in Resources */,
 				A72CC7BB1F6A2B6B0058827F /* flows in Resources */,
+				A70662F71FB57245005C19E0 /* accelerators in Resources */,
 				A766A47C1F1915F50094C7B0 /* utils in Resources */,
 				A766A48E1F1C22920094C7B0 /* IKVWindow.xib in Resources */,
 				A766A47E1F195D7A0094C7B0 /* nucleus in Resources */,
@@ -444,7 +437,6 @@
 				A716FBE41EA83CBB008395EC /* apps in Resources */,
 				A7FD26701EB54EF20049E0C0 /* F1InputWindow.xib in Resources */,
 				A716FBDC1EA67D3C008395EC /* funos in Resources */,
-				A716FBEC1EAD63FA008395EC /* PureSwiftExtras in Resources */,
 				A716FBCF1EA67C82008395EC /* Assets.xcassets in Resources */,
 				A72CC7A91F587F210058827F /* storage in Resources */,
 				A72CC7AB1F587F3E0058827F /* devices in Resources */,

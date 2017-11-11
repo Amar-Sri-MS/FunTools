@@ -1,31 +1,22 @@
-{\rtf1\ansi\ansicpg1252\cocoartf1504\cocoasubrtf830
+{\rtf1\ansi\ansicpg1252\cocoartf1561\cocoasubrtf100
 {\fonttbl\f0\fswiss\fcharset0 Helvetica;\f1\fnil\fcharset0 Menlo-Regular;}
-{\colortbl;\red255\green255\blue255;\red38\green44\blue106;\red67\green81\blue56;\red0\green0\blue0;
-}
-{\*\expandedcolortbl;;\cssrgb\c19608\c24314\c49020;\csgenericrgb\c26300\c31900\c22000;\csgenericrgb\c0\c0\c0;
-}
+{\colortbl;\red255\green255\blue255;\red67\green81\blue56;}
+{\*\expandedcolortbl;;\csgenericrgb\c26300\c31900\c22000;}
 \margl1440\margr1440\vieww9000\viewh8400\viewkind0
 \pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
 
 \f0\fs24 \cf0 HOT\
-10_000 Students crashes\
-Generate fullname crashes\
-It seems nobody sets the EOF\
-in datakit use uniquingTable instead of knowns\
-value uses malloc\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\b \cf0 - flow control for stream - still uses non-flow-controlled???\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\b0 \cf0 It seems nobody sets the EOF\
 value does not own and cleanup the simple value\
 \pard\pardeftab720\partightenfactor0
 
 \f1\fs22 \cf0 \expnd0\expndtw0\kerning0
-#define FIFO_BUF_LEN	(\cf2 10\cf0 *\cf2 1024\cf0 )\
-\pard\pardeftab720\partightenfactor0
-
-\f0\fs24 \AppleTypeServices\AppleTypeServicesF65539 \cf0 	Does not work with 256\AppleTypeServices \kerning1\expnd0\expndtw0 \
-\pard\pardeftab720\partightenfactor0
-\cf0 \expnd0\expndtw0\kerning0
-- get rid of 
-\f1\fs22 datakit_bit_address and pass pointer so that ownership is clear\
-disabled \cf3 \kerning1\expnd0\expndtw0 \CocoaLigature0 datakit_bitstream_dest_flush() in append because it requires threaded WU.  Proper solution is either to make all these threaded, but then serialization??? or to have all the append function be WU_CONTINUATION based\cf0 \expnd0\expndtw0\kerning0
+disabled \cf2 \kerning1\expnd0\expndtw0 \CocoaLigature0 datakit_bitstream_dest_flush() in append because it requires threaded WU.  Proper solution is either to make all these threaded, but then serialization??? or to have all the append function be WU_CONTINUATION based\cf0 \expnd0\expndtw0\kerning0
 \CocoaLigature1 \
 \pard\pardeftab720\partightenfactor0
 
@@ -36,6 +27,10 @@ disabled \cf3 \kerning1\expnd0\expndtw0 \CocoaLigature0 datakit_bitstream_dest_f
 \pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
 
 \b0 \cf0 \
+Syntax:\
+: for Type\
+= for parameter keywords\
+\
 Object\
 \pard\pardeftab720\partightenfactor0
 \cf0 \expnd0\expndtw0\kerning0
@@ -45,44 +40,32 @@ Object\
 \pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
 \cf0 \kerning1\expnd0\expndtw0 \
 Function\
-- Introduce composition\
 - Introduce flatMap and replace filter\
 - Introduce reduce\
 \
 Type\
 \pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
 
-\b \cf0 - Generator = source of <T>\
+\b \cf0 - Generator = source of <T>; instead of generating all Ts right away, generate piecemeal\
 \pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
 
 \b0 \cf0 \expnd0\expndtw0\kerning0
 - get rid of lazy struct ? and replace with just lazy object\
 \pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
 \cf0 \kerning1\expnd0\expndtw0 - Introduce Optional?\
+- Add "description" to convert integer to string, or do casting automatically\
 \
 Value Tools\
-- Introduce Logger\
 \
 datakit\
+- group value func\
 \pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
-
-\b \cf0 - switch stream to mbufs\
-- flow control for stream\
-- 
-\f1\b0\fs22 \cf4 \CocoaLigature0 datakit_mutable_bitstream_gather should be a WU_CONTINUATION and return an mbuf
-\f0\b\fs24 \cf0 \CocoaLigature1 \
-\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
-
-\b0 \cf0 - group value func\
-- \expnd0\expndtw0\kerning0
-Fifo shrink size does not work\
+\cf0 \expnd0\expndtw0\kerning0
 - type table use Shortcuts (Array of pairs)\
 \
 Test\
-- have a 2nd filter (e.g. graduated) and pipe the 2\
 \pard\pardeftab720\partightenfactor0
-\cf0 - improve test - Later randomize how many taken\
-- develop console test test with \\n\
+\cf0 - develop console test test with \\n\
 \
 LATER\
 Type\
