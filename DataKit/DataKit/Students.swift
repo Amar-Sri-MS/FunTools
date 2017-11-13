@@ -115,12 +115,24 @@ func registerGeneratorOfStudents(typeTable: DKTypeTable) {
 		count += 1
 		return student
 	}
+	DKFunctionMaker.registerMaker(name: "studentMaker") { _ in
+		let studentArray = generateRandomStudent(id: count)
+		let student = t.valueFromRawJSON(typeTable, .array(studentArray))!
+		count += 1
+		return student
+	}
 
 }
 func registerGeneratorOfRandomInts(typeTable: DKTypeTable) {
 	var count = 0
-	DKFunctionGenerator.registerItemGenerator(name: "Students") {
+	DKFunctionGenerator.registerItemGenerator(name: "RandomInts") {
 		if count >= $0.integerValue { return nil }
+		let i = UInt64.random() % 1_000_000
+		let new = DKValue.int(type: DKTypeInt.uint64, intValue: i)
+		count += 1
+		return new
+	}
+	DKFunctionMaker.registerMaker(name: "randomInt") { _ in
 		let i = UInt64.random() % 1_000_000
 		let new = DKValue.int(type: DKTypeInt.uint64, intValue: i)
 		count += 1
@@ -157,11 +169,12 @@ func studentsTestNew() {
 	typeTable.noteAlias("Student", studentType())
 	registerGeneratorOfStudents(typeTable: typeTable)
 	let generator = DKFunctionGenerator(typeTable, name: "Students", params: 1000, itemType: t)
+	let maker = DKFunctionMaker(typeTable, name: "studentMaker", itemType: t)
 	let seq = DKTypeSequence(subType: t)
 	let sig = DKTypeSignature(unaryArg: seq, output: .void)
 	let pipeline = try! DKParser.parseFunction(typeTable, pipeString, sig)
 	print("pipeline = \(pipeline)")
-	let flowGraphGen = DKFlowGraphGen(typeTable, generator, pipeline)
+	let flowGraphGen = DKFlowGraphGen(typeTable, generator, maker, pipeline)
 	let r = flowGraphGen.generate()
 	for fifo in r.nodes {
 		print("\(fifo.sugaredDescription(typeTable))")

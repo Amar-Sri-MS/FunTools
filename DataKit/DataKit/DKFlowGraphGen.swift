@@ -8,9 +8,10 @@
 
 class DKFlowGraphGen {
 	let uniquingTable: DKTypeTable
-	let gen: DKFunctionGenerator
+	let gen: DKFunctionGenerator!
+	let maker: DKFunction!
 	let fun: DKFunction
-	init(_ uniquingTable: DKTypeTable, _ gen: DKFunctionGenerator, _ fun: DKFunction) {
+	init(_ uniquingTable: DKTypeTable, _ gen: DKFunctionGenerator, _ maker: DKFunction, _ fun: DKFunction) {
 		// We check the function takes 1 argument compatible with the generator
 		// And produces no output
 		// As we would not know what to do with the output
@@ -19,6 +20,7 @@ class DKFlowGraphGen {
 		assert(fun.signature.output == DKType.void)
 		self.uniquingTable = uniquingTable
 		self.gen = gen
+		self.maker = maker
 		self.fun = fun
 	}
 	func optimize(nodes: inout [DKNode]) -> Bool {
@@ -40,8 +42,15 @@ class DKFlowGraphGen {
 	}
 	func generate() -> (nodes: [DKNode], lastFunc: DKFunction) {
 		// Start with a fifo for the output of the generator
-		let fifo = DKNodeFifo(label: 0, itemType: gen.itemType)
-		var nodes: [DKNode] = [fifo]
+		var nodes: [DKNode] = []
+		let old = true
+		if (old) {
+			let fifo = DKNodeFifo(label: 0, itemType: gen!.itemType)
+			nodes |= fifo
+		} else {
+			let generator = DKNodeGenerator(graphIndex: 0, maker: maker!, max: 100)
+			nodes |= generator
+		}
 		let lastFunc = generate(fun, &nodes)
 		let opt = optimize(nodes: &nodes)
 		if opt {

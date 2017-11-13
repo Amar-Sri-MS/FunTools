@@ -107,6 +107,7 @@
 		A7C62C741FB9173900C2DC34 /* DKNodeFifo.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7C62C711FB9173800C2DC34 /* DKNodeFifo.swift */; };
 		A7C62C751FB9173900C2DC34 /* DKNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7C62C721FB9173900C2DC34 /* DKNode.swift */; };
 		A7C62C761FB9173900C2DC34 /* DKNodeGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7C62C731FB9173900C2DC34 /* DKNodeGenerator.swift */; };
+		A7C62C7A1FB9312800C2DC34 /* DKFunctionMaker.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7C62C791FB9312800C2DC34 /* DKFunctionMaker.swift */; };
 		A7EBED091F9494E800AFD2F0 /* libfunclient.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A7EBED071F9494E000AFD2F0 /* libfunclient.a */; };
 /* End PBXBuildFile section */
 
@@ -216,6 +217,7 @@
 		A7C62C711FB9173800C2DC34 /* DKNodeFifo.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKNodeFifo.swift; sourceTree = "<group>"; };
 		A7C62C721FB9173900C2DC34 /* DKNode.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKNode.swift; sourceTree = "<group>"; };
 		A7C62C731FB9173900C2DC34 /* DKNodeGenerator.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKNodeGenerator.swift; sourceTree = "<group>"; };
+		A7C62C791FB9312800C2DC34 /* DKFunctionMaker.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKFunctionMaker.swift; sourceTree = "<group>"; };
 		A7EBED071F9494E000AFD2F0 /* libfunclient.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libfunclient.a; path = ../../FunSDK/lib/Darwin/noasan/libfunclient.a; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -346,6 +348,7 @@
 				A7A56BA71F8AC139007B5391 /* DKFunctionGatherFromFifo.swift */,
 				A7A56BA81F8AC139007B5391 /* DKFunctionGenerator.swift */,
 				A7A56BA91F8AC139007B5391 /* DKFunctionLogger.swift */,
+				A7C62C791FB9312800C2DC34 /* DKFunctionMaker.swift */,
 				A7A56BAA1F8AC139007B5391 /* DKFunctionMap.swift */,
 				A7A56BAB1F8AC139007B5391 /* DKFunctionOperator.swift */,
 				A7A56BAC1F8AC139007B5391 /* DKFunctionProjection.swift */,
@@ -480,6 +483,7 @@
 				A7A56BF41F8AC139007B5391 /* DKTypeStruct.swift in Sources */,
 				A7A56BD21F8AC139007B5391 /* DKExpression.swift in Sources */,
 				A7A56B551F8AC11D007B5391 /* SetExtras.swift in Sources */,
+				A7C62C7A1FB9312800C2DC34 /* DKFunctionMaker.swift in Sources */,
 				A7A56B331F8AC0AC007B5391 /* ViewController.swift in Sources */,
 				A7A56B851F8AC126007B5391 /* Range64Map.swift in Sources */,
 				A7A56B7B1F8AC126007B5391 /* Heap.swift in Sources */,

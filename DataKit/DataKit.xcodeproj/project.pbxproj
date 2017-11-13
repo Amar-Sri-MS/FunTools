@@ -92,6 +92,7 @@
 		A7B27D141F25817A00C171BD /* DKExpression_Test.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7B27D131F25817A00C171BD /* DKExpression_Test.swift */; };
 		A7C62C6E1FB9081100C2DC34 /* DKNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7C62C6D1FB9081100C2DC34 /* DKNode.swift */; };
 		A7C62C701FB9084800C2DC34 /* DKNodeGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7C62C6F1FB9084800C2DC34 /* DKNodeGenerator.swift */; };
+		A7C62C781FB92A7C00C2DC34 /* DKFunctionMaker.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7C62C771FB92A7C00C2DC34 /* DKFunctionMaker.swift */; };
 		A7DDFC7B1F2AE16200A4F6AC /* DKValue.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7DDFC7A1F2AE16200A4F6AC /* DKValue.swift */; };
 		A7DDFC811F2AF49C00A4F6AC /* DKValueLazyStruct.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7DDFC801F2AF49C00A4F6AC /* DKValueLazyStruct.swift */; };
 		A7DDFC851F2BD01100A4F6AC /* DKValueLazySequence.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7DDFC841F2BD01100A4F6AC /* DKValueLazySequence.swift */; };
@@ -206,6 +207,7 @@
 		A7B27D131F25817A00C171BD /* DKExpression_Test.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKExpression_Test.swift; sourceTree = "<group>"; };
 		A7C62C6D1FB9081100C2DC34 /* DKNode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DKNode.swift; sourceTree = "<group>"; };
 		A7C62C6F1FB9084800C2DC34 /* DKNodeGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DKNodeGenerator.swift; sourceTree = "<group>"; };
+		A7C62C771FB92A7C00C2DC34 /* DKFunctionMaker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DKFunctionMaker.swift; sourceTree = "<group>"; };
 		A7DDFC7A1F2AE16200A4F6AC /* DKValue.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKValue.swift; sourceTree = "<group>"; };
 		A7DDFC801F2AF49C00A4F6AC /* DKValueLazyStruct.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKValueLazyStruct.swift; sourceTree = "<group>"; };
 		A7DDFC841F2BD01100A4F6AC /* DKValueLazySequence.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKValueLazySequence.swift; sourceTree = "<group>"; };
@@ -311,6 +313,7 @@
 				A72CC7A21F4D1DE60058827F /* DKFunctionClosure.swift */,
 				A72CC7B61F620BA60058827F /* DKFunctionComposition.swift */,
 				A738879A1F6F175800A2F976 /* DKFunctionGatherFromFifo.swift */,
+				A7C62C771FB92A7C00C2DC34 /* DKFunctionMaker.swift */,
 				A78C2B3B1F2554F90086FAD6 /* DKOperator.swift */,
 				A7EB137D1F2D73F500760396 /* DKComparisonOperator.swift */,
 				A7EB137F1F2D749D00760396 /* DKAlgebraicOperator.swift */,
@@ -539,6 +542,7 @@
 				A72CC7951F49F4C80058827F /* Test.swift in Sources */,
 				A7EB13821F2DB43500760396 /* DKEvaluationContext.swift in Sources */,
 				A72CC7A11F4D1CC80058827F /* DKFunctionFilter.swift in Sources */,
+				A7C62C781FB92A7C00C2DC34 /* DKFunctionMaker.swift in Sources */,
 				A72CC7901F49F4C80058827F /* SortedRanges.swift in Sources */,
 				A7A56A921F862B80007B5391 /* DKParserForType.swift in Sources */,
 				A7A56A941F862BAD007B5391 /* DKParserForValue.swift in Sources */,

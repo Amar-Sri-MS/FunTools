@@ -58,6 +58,9 @@ class DataKitController {
 	func generator() -> DKFunctionGenerator {
 		return DKFunctionGenerator(typeTable, name: isStudents ? "Students" : "RandomInts", params: .integer(numGenerated), itemType: baseType())
 	}
+	func maker() -> DKFunction {
+		return DKFunctionMaker(typeTable, name: isStudents ? "studentMaker" : "randomInt", itemType: baseType())
+	}
 	func flowGraphGenerator(_ pipeline: String) throws -> (DKFlowGraphGen, String) {
 		let sig = DKTypeSignature(unaryArg: DKTypeSequence(subType: baseType()), output: .void)
 		var pipeStringCooked = pipeline
@@ -66,7 +69,7 @@ class DataKitController {
 			pipeStringCooked = pipeline.replaceOccurrences("Student", sc)
 		}
 		let pipeline = try DKParser.parseFunction(typeTable, pipeStringCooked, sig)
-		let fgg = DKFlowGraphGen(typeTable, generator(), pipeline)
+		let fgg = DKFlowGraphGen(typeTable, generator(), maker(), pipeline)
 		return (fgg, pipeline.description)
 	}
 }
