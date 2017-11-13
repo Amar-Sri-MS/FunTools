@@ -1,6 +1,7 @@
 # Where build products go.
 
 SDKDIR ?= ../../FunSDK
+SDK_INSTALL_DIR ?= $(SDKDIR)
 
 BUILD = build
 
@@ -12,7 +13,7 @@ GENERATOR_SRC = generator.py \
 		header.tmpl \
 		source.tmpl \
 		jinja2/*.py \
- 		markupsafe/*.py
+		markupsafe/*.py
 
 test: c-checker generator-test c-packed-checker html-checker fun-hci
 
@@ -53,8 +54,8 @@ $(BUILD): $(BUILD)
 
 # install generator to SDK
 install:
-	mkdir -p $(SDKDIR)/bin/Generator
-	rsync -R $(GENERATOR_SRC) $(SDKDIR)/bin/Generator
+	mkdir -p $(SDK_INSTALL_DIR)/bin/Generator
+	rsync -R $(GENERATOR_SRC) $(SDK_INSTALL_DIR)/bin/Generator
 
 
 clean:
