@@ -163,7 +163,7 @@ func studentsTestNew() {
 	print("pipeline = \(pipeline)")
 	let flowGraphGen = DKFlowGraphGen(typeTable, generator, pipeline)
 	let r = flowGraphGen.generate()
-	for fifo in r.fifos {
+	for fifo in r.nodes {
 		print("\(fifo.sugaredDescription(typeTable))")
 	}
 	let j = flowGraphGen.flowGraphToJSON

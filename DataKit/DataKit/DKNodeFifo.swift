@@ -1,14 +1,12 @@
 //
-//  DKFifo.swift
+//  DKNodeFifo.swift
 //  DataKit
 //
 //  Created by Bertrand Serlet on 9/13/17.
 //  Copyright © 2017 Fungible. All rights reserved.
 //
 
-class DKFifo: CustomStringConvertible {
-	let label: Int
-	var itemType: DKType
+class DKNodeFifo: DKNode {
 	private var asDest: DKValueStreamDest!
 	private var asSource: DKValueStreamSource!
 	var predicateOnInput: DKFunction!	// predicate on input, nil => always
@@ -20,8 +18,7 @@ class DKFifo: CustomStringConvertible {
 	}
 	var toAppend: AppendStyle = .all
 	init(label: Int, itemType: DKType) {
-		self.label = label
-		self.itemType = itemType
+		super.init(label, itemType: itemType)
 	}
 	var sequenceType: DKTypeSequence { return DKTypeSequence(subType: itemType) }
 	var streamForProducer: DKValueStreamDest {
@@ -32,7 +29,7 @@ class DKFifo: CustomStringConvertible {
 		if asSource == nil { asSource = DKValueStreamSource(itemType: itemType) }
 		return asSource!
 	}
-	func sugaredDescription(_ uniquingTable: DKTypeTable) -> String {
+	override func sugaredDescription(_ uniquingTable: DKTypeTable) -> String {
 		var app = ""
 		switch toAppend {
 			case .all: app = "all"
@@ -40,12 +37,9 @@ class DKFifo: CustomStringConvertible {
 			case let .gatherByBatch(fun):
 				app = "gather(\(fun))"
 		}
-		return "FIFO#\(label)(t=\(itemType.sugaredDescription(uniquingTable)); pred=\(predicateOnInput == nil ? "nil" : predicateOnInput.description); append=\(app))"
+		return "FIFO#\(graphIndex)(t=\(itemType.sugaredDescription(uniquingTable)); pred=\(predicateOnInput == nil ? "nil" : predicateOnInput.description); append=\(app))"
 	}
-	var description: String {
-		return sugaredDescription(DKTypeTable())
-	}
-	func fifoToJSON(_ uniquingTable: DKTypeTable) -> JSON {
+	override func nodeToJSONDict(_ uniquingTable: DKTypeTable) -> [String: JSON] {
 		var dict: [String: JSON] = [
 			"item_type": .string(itemType.toTypeShortcut(uniquingTable)),
 			]
@@ -60,7 +54,7 @@ class DKFifo: CustomStringConvertible {
 				dict["append"] = "gather"
 				dict["gather_fun"] = fun.functionToJSON
 		}
-		return .dictionary(dict)
+		return dict
 	}
 	var hasDefaultBehavior: Bool {
 		switch toAppend {
