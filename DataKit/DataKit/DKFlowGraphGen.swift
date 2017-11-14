@@ -8,19 +8,19 @@
 
 class DKFlowGraphGen {
 	let uniquingTable: DKTypeTable
-	let gen: DKFunctionGenerator!
-	let maker: DKFunction!
+	let maker: DKFunction
+	let max: Int
 	let fun: DKFunction
-	init(_ uniquingTable: DKTypeTable, _ gen: DKFunctionGenerator, _ maker: DKFunction, _ fun: DKFunction) {
+	init(_ uniquingTable: DKTypeTable, _ maker: DKFunction, _ max: Int, _ fun: DKFunction) {
 		// We check the function takes 1 argument compatible with the generator
 		// And produces no output
 		// As we would not know what to do with the output
 		assert(fun.signature.numberOfArguments == 1)
-		assert(fun.signature[0] == gen.signature.output)
+		assert(fun.signature[0] == maker.signature.output.makeSequence)
 		assert(fun.signature.output == DKType.void)
 		self.uniquingTable = uniquingTable
-		self.gen = gen
 		self.maker = maker
+		self.max = max
 		self.fun = fun
 	}
 	func optimize(nodes: inout [DKNode]) -> Bool {
@@ -43,14 +43,8 @@ class DKFlowGraphGen {
 	func generate() -> (nodes: [DKNode], lastFunc: DKFunction) {
 		// Start with a fifo for the output of the generator
 		var nodes: [DKNode] = []
-		let old = true
-		if (old) {
-			let fifo = DKNodeFifo(label: 0, itemType: gen!.itemType)
-			nodes |= fifo
-		} else {
-			let generator = DKNodeGenerator(graphIndex: 0, maker: maker!, max: 100)
-			nodes |= generator
-		}
+		let generator = DKNodeGenerator(graphIndex: 0, maker: maker, max: max)
+		nodes |= generator
 		let lastFunc = generate(fun, &nodes)
 		let opt = optimize(nodes: &nodes)
 		if opt {
@@ -113,7 +107,6 @@ class DKFlowGraphGen {
 		}
 		var dict: [String: JSON] = [
 			"nodes": .array(r.nodes.map { $0.nodeToJSON(uniquingTable) }),
-			"generator": gen.functionToJSON,
 			"fun": fun.functionToJSON,
 			"last_fun": r.lastFunc.functionToJSON
 		]

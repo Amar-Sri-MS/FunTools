@@ -88,7 +88,7 @@ extension DKParser {
 		try expectReservedWord("[")
 		let t = try parseType()
 		try expectReservedWord("]")
-		return DKTypeSequence(subType: t)
+		return DKTypeSequence(t)
 	}
 	func parseTypeStruct() throws -> DKTypeStruct {
 		try expectReservedWord("(")

@@ -51,7 +51,7 @@ class DKType: Equatable, Hashable, CustomStringConvertible {
 	// Convenience
 	// Note that a sequence of Void is just Void
 	var makeSequence: DKType {
-		return self == .void ? .void : DKTypeSequence(subType: self)
+		return self == .void ? .void : DKTypeSequence(self)
 	}
 
 	// ===============  SERIALIZATION ===============

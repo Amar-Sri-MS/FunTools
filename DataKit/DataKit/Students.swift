@@ -74,7 +74,7 @@ func regenerateData(input: Data) -> Data {
 
 func filterSpecificFirstOrLastName(_ uniquingTable: DKTypeTable, _ first: Bool, _ name: String) -> DKFunctionFilter {
 	let t = studentType()
-	let seq = DKTypeSequence(subType: t)
+	let seq = t.makeSequence
 	let sig = DKTypeSignature(unaryArg: seq, output: seq)
 	return try! DKParser.parseFunction(uniquingTable, "filter({ $0.\(first ? "first_name" : "last_name") == \"\(name)\" })", sig) as! DKFunctionFilter
 }
@@ -168,13 +168,13 @@ func studentsTestNew() {
 	let typeTable = DKTypeTable()
 	typeTable.noteAlias("Student", studentType())
 	registerGeneratorOfStudents(typeTable: typeTable)
-	let generator = DKFunctionGenerator(typeTable, name: "Students", params: 1000, itemType: t)
+	let max = 1000
 	let maker = DKFunctionMaker(typeTable, name: "studentMaker", itemType: t)
-	let seq = DKTypeSequence(subType: t)
+	let seq = t.makeSequence
 	let sig = DKTypeSignature(unaryArg: seq, output: .void)
 	let pipeline = try! DKParser.parseFunction(typeTable, pipeString, sig)
 	print("pipeline = \(pipeline)")
-	let flowGraphGen = DKFlowGraphGen(typeTable, generator, maker, pipeline)
+	let flowGraphGen = DKFlowGraphGen(typeTable, maker, max, pipeline)
 	let r = flowGraphGen.generate()
 	for fifo in r.nodes {
 		print("\(fifo.sugaredDescription(typeTable))")

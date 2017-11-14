@@ -20,7 +20,7 @@ class DKNodeFifo: DKNode {
 	init(label: Int, itemType: DKType) {
 		super.init(label, itemType: itemType)
 	}
-	var sequenceType: DKTypeSequence { return DKTypeSequence(subType: itemType) }
+	var sequenceType: DKTypeSequence { return DKTypeSequence(itemType) }
 	var streamForProducer: DKValueStreamDest {
 		if asDest == nil { asDest = DKValueStreamDest(itemType: itemType) }
 		return asDest!
