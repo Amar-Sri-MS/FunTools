@@ -113,6 +113,6 @@ extension DKParser {
 		if t == nil {
 			throw DKParsingError("Need a type to parse an empty sequence of values", self)
 		}
-		return DKValueSimple(type: DKTypeSequence(subType: t!), json: .array(jsons))
+		return DKValueSimple(type: t!.makeSequence, json: .array(jsons))
 	}
 }
