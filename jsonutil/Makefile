@@ -31,8 +31,8 @@ jsonutil: jsonutil.c
 	$(CC) -o jsonutil $(SRC) $(CFLAGS) $(LDFLAGS)
 
 install: jsonutil
-	mkdir -p $(SDKDIR)/bin/$(OS)/$(ARCH)
-	cp jsonutil $(SDKDIR)/bin/$(OS)/$(ARCH)
+	mkdir -p $(SDK_INSTALL_DIR)/bin/$(OS)/$(ARCH)
+	cp jsonutil $(SDK_INSTALL_DIR)/bin/$(OS)/$(ARCH)
 
 clean:
 	rm jsonutil
