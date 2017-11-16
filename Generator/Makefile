@@ -1,6 +1,6 @@
 # Where build products go.
 
-SDKDIR ?= ../../FunSDK
+SDKDIR ?= ../../FunSDK/FunSDK
 
 BUILD = build
 
@@ -10,11 +10,10 @@ GENERATOR_SRC = generator.py \
 		parser.py \
 		utils.py \
 		header.tmpl \
-		source.tmpl \
-		jinja2/*.py \
- 		markupsafe/*.py
+		source.tmpl
 
-test: c-checker generator-test c-packed-checker html-checker fun-hci
+test: generator-test test_rdma test_rdma_packed test_rdma_html fun-hci
+test: test_swap
 
 # All tests for the Python generator script.
 generator-test:
@@ -24,28 +23,35 @@ generator-test:
 	python utils_test.py
 	python parser_test.py
 
-# Tests generated C code compiles correctly.
-c-checker: $(BUILD)
-	./generator.py -g code -o $(BUILD)/rdma_gen examples/rdma.gen
-	gcc -o rdma -g -I$(BUILD) -DDEBUG -DGENERATOR_TEST \
-                test_helper/rdma.c $(BUILD)/rdma_gen.c
-	./rdma
-
-# Tests generated code with packed fields compiles correctly.
-c-packed-checker: $(BUILD)
-	./generator.py --codegen pack -g code -o \
-                       $(BUILD)/rdma_packed_gen examples/rdma.gen
-	gcc -o $(BUILD)/rdma_packed -g -I$(BUILD) -DDEBUG -DGENERATOR_TEST \
-            test_helper/rdma_packed.c $(BUILD)/rdma_packed_gen.c
-
 fun-hci: $(BUILD)
 	./generator.py -g code -o $(BUILD)/fun_hci $(SDKDIR)/hci/fun_hci.gen
 	./generator.py -g html -o $(BUILD)/fun_hci $(SDKDIR)/hci/fun_hci.gen
 	./generator.py -g code -c pack,json -o $(BUILD)/fun_hci_pack $(SDKDIR)/hci/fun_hci.gen
 	./generator.py -g html -c pack,json -o $(BUILD)/fun_hci_pack $(SDKDIR)/hci/fun_hci.gen
 
+
+# Tests generated C code compiles correctly.
+test_rdma: $(BUILD)
+	./generator.py -g code -o $(BUILD)/rdma_gen examples/rdma.gen
+	gcc -o rdma -g -I$(BUILD) -DDEBUG -DGENERATOR_TEST \
+                test_helper/rdma.c $(BUILD)/rdma_gen.c
+	./rdma
+
+# Tests generated code with packed fields compiles correctly.
+test_rdma_packed: $(BUILD)
+	./generator.py --codegen pack -g code -o \
+                       $(BUILD)/rdma_packed_gen examples/rdma.gen
+	gcc -o $(BUILD)/rdma_packed -g -I$(BUILD) -DDEBUG -DGENERATOR_TEST \
+            test_helper/rdma_packed.c $(BUILD)/rdma_packed_gen.c
+
+test_swap: test_helper/swap.c examples/swap.gen
+	./generator.py -g code --codegen pack,swap -o $(BUILD)/swap_gen examples/swap.gen
+	gcc -o $(BUILD)/swap -g -I$(BUILD) -DDEBUG -DGENERATOR_TEST \
+	test_helper/swap.c $(BUILD)/swap_gen.c
+	$(BUILD)/swap
+
 # Tests HTML generation works.
-html-checker: $(BUILD)
+test_rdma_html: $(BUILD)
 	./generator.py -g html -o $(BUILD)/rdma-gen.html examples/rdma.gen
 
 $(BUILD): $(BUILD)

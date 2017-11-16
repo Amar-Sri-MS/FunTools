@@ -1000,6 +1000,13 @@ class Struct(Declaration):
       parent = parent.parent_struct
     return parent
 
+  def sub_fields(self):
+    """Returns set of fields in structure that are other structures."""
+    return [x for x in self.fields if x.type.IsRecord() and not
+            x.type.IsArray()]
+
+
+
 class Document:
   # Representation of an entire generated header specification.
   def __init__(self):
