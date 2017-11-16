@@ -13,6 +13,7 @@ GENERATOR_SRC = generator.py \
 		source.tmpl
 
 test: generator-test test_rdma test_rdma_packed test_rdma_html fun-hci
+test: test_swap
 
 # All tests for the Python generator script.
 generator-test:
