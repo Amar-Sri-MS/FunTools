@@ -6,6 +6,7 @@ OS := $(shell uname)
 ARCH := $(shell uname -m)
 
 SDKDIR ?= ../../FunSDK
+SDK_INSTALL_DIR ?= $(SDKDIR)
 
 all: jsonutil
 
