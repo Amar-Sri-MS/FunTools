@@ -1,7 +1,9 @@
-# Where build products go.
+# Makefile for Fungible header generator.
 
+# Location of FunSDK - so we can test with real fun_hci file.
 SDKDIR ?= ../../FunSDK/FunSDK
 
+# Where build products go.
 BUILD = build
 
 GENERATOR_SRC = generator.py \
@@ -12,8 +14,11 @@ GENERATOR_SRC = generator.py \
 		header.tmpl \
 		source.tmpl
 
-test: generator-test test_rdma test_rdma_packed test_rdma_html fun-hci
+test: generator-test test_rdma test_rdma_packed test_rdma_html
 test: test_swap
+# Test new generator with actual fun-hci file in the future.  For now,
+# it complicates configuring Jenkins.
+# test: fun-hci
 
 # All tests for the Python generator script.
 generator-test:
