@@ -200,6 +200,8 @@ class CodegenEndToEnd(unittest.TestCase):
     # Did bitfield get initialized?'
     self.assertIn('s->b_to_c = FOO_B_P(b) | FOO_C_P(c)', out)
 
+  # Test disabled because checker complains that the
+  # union is misaligned.
   def disableTestInitFunctionsCreated(self):
     input = ['STRUCT A',
              '0 63:0 uint64_t a',

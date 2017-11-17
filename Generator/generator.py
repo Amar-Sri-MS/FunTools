@@ -72,8 +72,8 @@ class Checker:
 
       if field.BitWidth() == field.type.BitWidth():
         if start_offset % field.type.Alignment() != 0:
-         self.AddError(field, 'Field "%s" cannot be placed in a location that '
-                       'does not match its natural alignment.' % field.name)
+          self.AddError(field, 'Field "%s" cannot be placed in a location that '
+                        'does not match its natural alignment.' % field.name)
 
       if not the_struct.is_union:
         if (last_start_offset >= end_offset and
@@ -474,13 +474,13 @@ def PrintErrors(error_list):
   """Prints the list of errors to stderr."""
   for e in error_list:
     sys.stderr.write("%s\n" % e)
-  
+
 # TODO(bowdidge): Create options dictionary to replace all these arguments.
 def GenerateFile(output_style, output_base, input_stream, input_filename,
                  options):
   """Generate header or HTML based on options.
 
-  Returns (generated source for output, errors). 
+  Returns (generated source for output, errors).
   Generated source may be "" if output_base specified output should go to a file.
   """
   # Process a single .gen file and create the appropriate header/docs.
