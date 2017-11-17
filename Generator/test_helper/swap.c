@@ -1,5 +1,4 @@
 #include <inttypes.h>
-#include <machine/endian.h>
 #include <stdio.h>
 #include <stdlib.h>
 
