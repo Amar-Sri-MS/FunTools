@@ -8,7 +8,7 @@ import unittest
 import generator
 import parser
 
-class TestDocBuilder(unittest.TestCase):
+class DocBuilderTest(unittest.TestCase):
   # Test that we correctly parse valid and invalid structure definitions.
   def testEmptyDoc(self):
     gen_parser = parser.GenParser()
@@ -789,7 +789,7 @@ class TestDocBuilder(unittest.TestCase):
     self.assertIn('is larger than the 2^32', errors[0])
 
 
-class TestStripComment(unittest.TestCase):
+class StripCommentTest(unittest.TestCase):
   def testSimple(self):
     gen_parser = parser.GenParser()
     self.assertEqual("Foo", gen_parser.StripKeyComment("// Foo"))
@@ -1442,6 +1442,7 @@ class CheckerTest(unittest.TestCase):
                 '0 31:0 uint32_t data',
                 'END',
                 'END']
+    # TODO(bowdidge): Finish.
 
   def testVariableLengthArray(self):
     gen_parser = parser.GenParser()
