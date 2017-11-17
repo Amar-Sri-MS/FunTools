@@ -13,7 +13,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h> // bzero.
+#include <string.h>
 #include <strings.h> // bzero.
 
 #include "rdma_gen.h"
