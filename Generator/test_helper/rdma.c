@@ -13,16 +13,17 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h> // bzero.
 #include <strings.h> // bzero.
 
-#import "rdma_gen.h"
+#include "rdma_gen.h"
 
 #include "test_macros.h"
 
 void PrintFragment(struct GatherListFragmentHeader *hdr) {
   uint64_t* ptr = (uint64_t*) hdr;
-  printf("0-7   0x%016llx\n", ptr[0]);
-  printf("8-15  0x%016llx\n", ptr[1]);
+  printf("0-7   0x%" PRIx64 "\n", ptr[0]);
+  printf("8-15  0x%" PRIx64 "\n", ptr[1]);
   printf("\n");
 }
 
@@ -32,8 +33,8 @@ int main(int argc, char** argv) {
   struct GatherListFragmentHeader *fragPtr = malloc(sizeof(struct GatherListFragmentHeader));
 
   bzero(fragPtr, sizeof(struct GatherListFragmentHeader));
-  printf("WorkUnit: 0x%lx bytes\n", sizeof(wu));
-  printf("GatherListFragmentHeader: 0x%lx bytes\n", sizeof(frag));
+  printf("WorkUnit: 0x%" PRIx64" bytes\n", sizeof(wu));
+  printf("GatherListFragmentHeader: 0x%" PRIx64 " bytes\n", sizeof(frag));
 
   ASSERT_SIZE(wu, 32, "wu");
   

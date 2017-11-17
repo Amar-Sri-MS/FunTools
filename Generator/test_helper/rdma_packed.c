@@ -13,9 +13,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stddef.h> // offsetof
+#include <string.h>
 #include <strings.h> // bzero.
 
-#import "rdma_packed_gen.h"
+#include "rdma_packed_gen.h"
 #include "test_macros.h"
  
 int main(int argc, char** argv) {
