@@ -198,7 +198,7 @@ class CodegenEndToEnd(unittest.TestCase):
     # Did init function check range of bitfields?
     self.assertIn('assert(b <= 0x3);', out)
     # Did bitfield get initialized?'
-    self.assertIn('s->b_to_c = FOO_B_P(b) | FOO_C_P(c);', out)
+    self.assertIn('s->b_to_c = FOO_B_P(b) | FOO_C_P(c)', out)
 
   def testInitFunctionsCreated(self):
     input = ['STRUCT A',
