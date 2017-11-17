@@ -8,7 +8,7 @@ import unittest
 import generator
 import parser
 
-class TestDocBuilder(unittest.TestCase):
+class DocBuilderTest(unittest.TestCase):
   # Test that we correctly parse valid and invalid structure definitions.
   def testEmptyDoc(self):
     gen_parser = parser.GenParser()
@@ -788,8 +788,44 @@ class TestDocBuilder(unittest.TestCase):
     self.assertEquals(1, len(errors))
     self.assertIn('is larger than the 2^32', errors[0])
 
+  def testBitSizeOfUnion(self):
+    gen_parser = parser.GenParser()
 
-class TestStripComment(unittest.TestCase):
+    input = ['STRUCT B',
+             '0 63:56 uint8_t a',
+             'UNION Cmd u1',
+             'STRUCT B1 b1',
+             '0 55:48 uint8_t b11',
+             'END',
+             'END'
+             ]
+
+    errors = gen_parser.Parse('filename', input)
+    
+    self.assertFalse(errors)
+    struct_a = gen_parser.current_document.StructWithName('B')
+
+    self.assertIsNotNone(struct_a)
+
+    union_cmd = gen_parser.current_document.StructWithName('Cmd')
+    self.assertIsNotNone(union_cmd)
+
+    b1_field = union_cmd.fields[0]
+    b1_struct = gen_parser.current_document.StructWithName('B1')
+
+    self.assertEqual('b1', b1_field.Name())
+
+    self.assertEqual(8, b1_struct.StartOffset())
+    self.assertEqual(15, b1_struct.EndOffset())
+
+    self.assertEqual(8, b1_struct.BitWidth())
+    self.assertEqual(8, b1_field.BitWidth())
+    self.assertEqual(8, union_cmd.BitWidth())
+    
+    # Fill in.
+
+
+class StripCommentTest(unittest.TestCase):
   def testSimple(self):
     gen_parser = parser.GenParser()
     self.assertEqual("Foo", gen_parser.StripKeyComment("// Foo"))
@@ -1442,6 +1478,7 @@ class CheckerTest(unittest.TestCase):
                 '0 31:0 uint32_t data',
                 'END',
                 'END']
+    # TODO(bowdidge): Finish.
 
   def testVariableLengthArray(self):
     gen_parser = parser.GenParser()

@@ -72,8 +72,8 @@ class Checker:
 
       if field.BitWidth() == field.type.BitWidth():
         if start_offset % field.type.Alignment() != 0:
-          self.AddError(field, 'Field "%s" cannot be placed in a location that '
-                        'does not match its natural alignment.' % field.name)
+         self.AddError(field, 'Field "%s" cannot be placed in a location that '
+                       'does not match its natural alignment.' % field.name)
 
       if not the_struct.is_union:
         if (last_start_offset >= end_offset and
@@ -470,12 +470,18 @@ def GenerateFromTemplate(doc, template_filename, generator_file, output_base,
   template = env.get_template(template_filename)
   return template.render(jinja_docs, env=env)
 
+def PrintErrors(error_list):
+  """Prints the list of errors to stderr."""
+  for e in error_list:
+    sys.stderr.write("%s\n" % e)
+  
 # TODO(bowdidge): Create options dictionary to replace all these arguments.
 def GenerateFile(output_style, output_base, input_stream, input_filename,
                  options):
   """Generate header or HTML based on options.
 
-  Return the generated source (if output_base was None) or None.
+  Returns (generated source for output, errors). 
+  Generated source may be "" if output_base specified output should go to a file.
   """
   # Process a single .gen file and create the appropriate header/docs.
   doc = None
@@ -490,29 +496,24 @@ def GenerateFile(output_style, output_base, input_stream, input_filename,
     errors = yaml_parser.Parse(input_filename)
     doc = yaml_parser.current_document
   else:
-    print 'Expected input filename to end in .gen or .yaml, got %s.' % (
+    error = 'Expected input filename to end in .gen or .yaml, got %s.' % (
         input_filename)
-    print 'Rename file to match input file format.'
-    sys.exit(1)
+    error += 'Rename file to match input file format.'
+    return (None, [error])
 
-  if errors is not None:
-    for error in errors:
-      print(error)
-      sys.exit(1)
-
+  if errors:
+    return (None, errors)
 
   c = Checker()
   c.VisitDocument(doc)
   if len(c.errors) != 0:
-    for checker_error in c.errors:
-      sys.stderr.write(checker_error + '\n')
+    return (None, c.errors)
 
   if 'pack' in options:
     p = Packer()
     errors = p.VisitDocument(doc)
-    if len(errors) > 0:
-      for error in errors:
-        sys.stderr.write(error + '\n')
+    if errors:
+      return (None, errors)
 
   # Convert list of extra codegen features into variables named
   #  generate_{{codegen-style}} that will be in the template.
@@ -526,8 +527,9 @@ def GenerateFile(output_style, output_base, input_stream, input_filename,
       f = open(fname, 'w')
       f.write(source)
       f.close()
+      return (None, [])
     else:
-      return source
+      return (source, [])
   elif output_style is OutputStyleHeader:
     header = GenerateFromTemplate(doc, 'header.tmpl', input_filename,
                                   output_base, extra_vars)
@@ -535,8 +537,7 @@ def GenerateFile(output_style, output_base, input_stream, input_filename,
                                   output_base, extra_vars)
 
     if not header or not source:
-      print("Not generating header and source -errors.")
-      return None
+      return (None, ["Problems generating output from templates."])
 
     header = ReformatCode(header)
     source = ReformatCode(source)
@@ -548,9 +549,10 @@ def GenerateFile(output_style, output_base, input_stream, input_filename,
       f = open(output_base + '.c', 'w')
       f.write(source)
       f.close()
-      return None
+      return ("", [])
 
-    return '/* Header file */\n' +  header + '/* Source file */\n' + source
+    out = '/* Header file */\n' +  header + '/* Source file */\n' + source
+    return (out, [])
 
 
 OutputStyleHeader = 1
@@ -629,9 +631,14 @@ def main():
       sys.exit(2)
 
   input_stream = open(args[0], 'r')
-  out = GenerateFile(output_style, output_base, input_stream, args[0],
-                     codegen_options)
-  input_stream.close()
+
+  (out, errors) = GenerateFile(output_style, output_base, input_stream, args[0],
+                               codegen_options)
+
+  if errors:
+    PrintErrors(errors)
+    sys.exit(1)
+
   if out:
     print out
 
