@@ -1,3 +1,10 @@
+// Various macros for testing alignment and size of structs in C
+// code.
+//
+// Used for testing structs created by Generator.
+//
+// Copyright Fungible Inc. 2017.
+
 // TODO(bowdidge): Switch to gtest.
 #define ASSERT_SIZE(var, bytes, varStr)					\
   { \
