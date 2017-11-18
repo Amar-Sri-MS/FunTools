@@ -35,7 +35,7 @@ Usage:
 generator.py [-g generator-style] [-c codgen-options] [-o output_prefix] description_file
 ```
 
-* -g specifies the kind of output to generate.  Choices are code (default) or html.  With ```-g code```, the generator creates header and source files based on the data structure description file.  With ```-g html```, the generator creates HTML documentation for the data structures.
+* -g specifies the kind of output to generate.  Choices are code (default) or html.  With ```-g code```, the generator creates header and source files based on the data structure description file.  With ```-g html```, the generator creates HTML documentation for the data structures.  With ```-g validate```, the generator creates test code to confirm that the size and layout of the data structures matches the specified bit ranges.
 * -c specifies the code generation options to use.  This is a comma-separated list of terms.  Valid code generation options are pack and json.  The pack option rewrites the data structures so adjacent bitfields are packed together into native-sized fields for the type, and creates macros to access the field (get, put, zero).  json generates a new initialization function to allow a data structure to be initialized from a JSON description.  
 * -o specifies the path prefix to be used for output.  The generator appends .c and .h to this prefix when generating source code, or .html when generating documentation.
 

@@ -530,6 +530,16 @@ def GenerateFile(output_style, output_base, input_stream, input_filename,
       return (None, [])
     else:
       return (source, [])
+  elif output_style is OutputStyleValidation:
+    # TODO(bowdidge): Compile and run the code too.
+    source = GenerateFromTemplate(doc, 'validate.tmpl', input_filename,
+                                  output_base, extra_vars)
+    if output_base:
+      f = open(output_base + '.validate.c', 'w')
+      f.write(source)
+      f.close()
+      return ('', [])
+    return (source, [])
   elif output_style is OutputStyleHeader:
     header = GenerateFromTemplate(doc, 'header.tmpl', input_filename,
                                   output_base, extra_vars)
@@ -557,6 +567,7 @@ def GenerateFile(output_style, output_base, input_stream, input_filename,
 
 OutputStyleHeader = 1
 OutputStyleHTML = 2
+OutputStyleValidation = 3
 
 
 def SetFromArgs(key, codegen_args, default_value):
@@ -599,6 +610,8 @@ def main():
         output_style = OutputStyleHeader
       elif a == 'html':
         output_style = OutputStyleHTML
+      elif a == 'validate':
+        output_style = OutputStyleValidation
       else:
         sys.stderr.write('Unknown output style "%s"' % a)
         sys.exit(2)
