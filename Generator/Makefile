@@ -15,7 +15,8 @@ GENERATOR_SRC = generator.py \
 		source.tmpl
 
 test: generator-test test_rdma test_rdma_packed test_rdma_html
-test: test_swap
+test: test_swap test_simple_validation
+
 # Test new generator with actual fun-hci file in the future.  For now,
 # it complicates configuring Jenkins.
 # test: fun-hci
@@ -56,8 +57,13 @@ test_swap: test_helper/swap.c examples/swap.gen
 	$(BUILD)/swap
 
 # Tests HTML generation works.
-test_rdma_html: $(BUILD)
-	./generator.py -g html -o $(BUILD)/rdma-gen.html examples/rdma.gen
+test_rdma_html: examples/rdma.gen $(GENERATOR_SRC)
+	./generator.py -g html -o $(BUILD)/rdma-gen examples/rdma.gen
+
+test_simple_validation: examples/simple.gen $(GENERATOR_SRC)
+	./generator.py -g validate -o $(BUILD)/simple_gen examples/simple.gen
+	gcc -o $(BUILD)/simple_gen.validate $(BUILD)/simple_gen.validate.c
+	$(BUILD)/simple_gen.validate
 
 $(BUILD): $(BUILD)
 	mkdir $(BUILD)

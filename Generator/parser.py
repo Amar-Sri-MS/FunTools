@@ -407,7 +407,7 @@ class Field(Declaration):
     # Fields that have been packed in this field.
     self.packed_fields = []
     # True if field was explicitly defined to be less than its natural size.
-    self.is_bitfield = False
+    self.is_bitfield = self.is_natural_width
 
     # True if field needs to be swapped when converting from a different
     # ended processor.  Irrelevant for packed fields.
