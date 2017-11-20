@@ -578,6 +578,19 @@ class DocBuilderTest(unittest.TestCase):
     self.assertEqual(64, a3.StartOffset())
     self.assertEqual(127, a3.EndOffset())
     
+  def testCatchMissingEnd(self):
+    """Tests that error generated if not all objects closed."""
+    gen_parser = parser.GenParser()
+    contents = [
+      'STRUCT A',
+      '0 63:00 uint64_t a'
+      ]
+
+    errors = gen_parser.Parse('filename', contents)
+    self.assertEqual(1, len(errors))
+    self.assertIn('END missing at end of file', errors[0])
+
+
   def testMultiFlitNestedStruct(self):
     gen_parser = parser.GenParser()
     # ... allows a field to overflow into later flits.
@@ -720,7 +733,7 @@ class DocBuilderTest(unittest.TestCase):
 
   def testValidEnumName(self):
     gen_parser = parser.GenParser()
-    contents = ['ENUM 1AA']
+    contents = ['ENUM 1AA', 'END']
     errors = gen_parser.Parse('filename', contents)
 
     self.assertEquals(1, len(errors))
@@ -755,7 +768,7 @@ class DocBuilderTest(unittest.TestCase):
 
   def testValidFlagName(self):
     gen_parser = parser.GenParser()
-    contents = ['FLAGS 1AA']
+    contents = ['FLAGS 1AA', 'END']
     errors = gen_parser.Parse('filename', contents)
 
     self.assertEquals(1, len(errors))
@@ -826,7 +839,7 @@ class StripCommentTest(unittest.TestCase):
       '1 63:0 ...',
       'UNION baz u',
       '2 63:56 char c',
-      'END'
+      'END',
       'END'
       ]
 
