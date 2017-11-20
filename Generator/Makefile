@@ -1,8 +1,11 @@
 # Makefile for Fungible header generator.
 
-# Location of FunSDK - so we can test with real fun_hci file.
+# Directory where we install the working version of the generator.
 FUNSDK_INSTALL_DIR = ../../FunSDK/bin/Generator
-FUN_HCI_DIR = ../../FunSDk/FunSDK/hci
+
+# Directory where the fun_hci.gen file is stored.
+# Used for testing generator on real example.
+FUN_HCI_DIR = ../../FunSDK/FunSDK/hci
 
 # Where build products go.
 BUILD = build
