@@ -1,7 +1,8 @@
 # Makefile for Fungible header generator.
 
 # Location of FunSDK - so we can test with real fun_hci file.
-SDKDIR ?= ../../FunSDK/FunSDK
+FUNSDK_INSTALL_DIR = ../../FunSDK/bin/Generator
+FUN_HCI_DIR = ../../FunSDk/FunSDK/hci
 
 # Where build products go.
 BUILD = build
@@ -30,10 +31,10 @@ generator-test:
 	python parser_test.py
 
 fun-hci: $(BUILD)
-	./generator.py -g code -o $(BUILD)/fun_hci $(SDKDIR)/hci/fun_hci.gen
-	./generator.py -g html -o $(BUILD)/fun_hci $(SDKDIR)/hci/fun_hci.gen
-	./generator.py -g code -c pack,json -o $(BUILD)/fun_hci_pack $(SDKDIR)/hci/fun_hci.gen
-	./generator.py -g html -c pack,json -o $(BUILD)/fun_hci_pack $(SDKDIR)/hci/fun_hci.gen
+	./generator.py -g code -o $(BUILD)/fun_hci $(FUN_HCI_DIR)/fun_hci.gen
+	./generator.py -g html -o $(BUILD)/fun_hci $(FUN_HCI_DIR)/fun_hci.gen
+	./generator.py -g code -c pack,json -o $(BUILD)/fun_hci_pack $(FUN_HCI_DIR)/fun_hci.gen
+	./generator.py -g html -c pack,json -o $(BUILD)/fun_hci_pack $(FUN_HCI_DIR)/fun_hci.gen
 
 
 # Tests generated C code compiles correctly.
@@ -70,8 +71,8 @@ $(BUILD): $(BUILD)
 
 # install generator to SDK
 install:
-	mkdir -p $(SDKDIR)/bin/Generator
-	rsync -R $(GENERATOR_SRC) $(SDKDIR)/bin/Generator
+	mkdir -p $(FUNSDK_INSTALL_DIR)
+	rsync -R $(GENERATOR_SRC) $(FUNSDK_INSTALL_DIR)
 
 
 clean:
