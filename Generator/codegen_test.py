@@ -570,7 +570,8 @@ class TestComments(unittest.TestCase):
                 'D = 4',
                 'E = 5',
                 'F = 7',
-                'G = 10'
+                'G = 10',
+                'END'
                 ]
     (out, errors) = generator.GenerateFile(generator.OutputStyleHeader, None,
                                            contents, 'foo.gen', OPTIONS_PACK)

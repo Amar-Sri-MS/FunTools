@@ -1676,6 +1676,12 @@ class GenParser:
       else:
         self.ParseLine(line)
       self.current_line += 1
+
+    if len(self.stack) != 1:
+      (last_state, last_object) = self.stack[-1]
+      self.AddError('END missing at end of file. "%s" is still open.' %
+                    last_object.name)
+
     if len(self.errors) > 0:
       return self.errors
     return None
