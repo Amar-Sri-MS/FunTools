@@ -285,7 +285,6 @@ class CodegenEndToEnd(unittest.TestCase):
 
     (out, errors) = generator.GenerateFile(generator.OutputStyleHeader, None,
                                            input, 'foo.gen', OPTIONS_PACK)
-    print errors
     self.assertEqual(0, len(errors))
     self.assertIsNotNone(out)
 
@@ -543,6 +542,7 @@ class TestComments(unittest.TestCase):
 
     (out, errors) = generator.GenerateFile(generator.OutputStyleHeader, None,
                                            contents, 'foo.gen', OPTIONS_PACK)
+
     self.assertEqual(0, len(errors))
 
     out = RemoveWhitespace(out)
