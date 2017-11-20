@@ -36,14 +36,14 @@ unsigned failed_tests = 0;
 
 #define ASSERT_OFFSET(var, field, offset, varStr)			\
 	{								\
-		if (offsetof(var, field) != offset) {			\
+		if (__builtin_offsetof(var, field) != offset) {			\
 			fprintf(stderr,					\
 				"%s:%d: "				\
 				"FAIL: %s structure expected to be %"	\
 				PRIu64 " bytes, got %" PRIu64 "\n",	\
 				__FILE__, __LINE,			\
 				varStr, (uint64_t) offset,		\
-				(uint64_t) offsetof(var, field));	\
+				(uint64_t) __builtin_offsetof(var, field));	\
 			fail = true;					\
 		}							\
 	}
@@ -113,7 +113,8 @@ int main(int argc, char **argv) {
       {% else %}
 
     ASSERT_EQUAL({{field.StartOffset()}} / 8,
-                 __offsetof({{decl.Tag()}}  {{decl.name}}, {{field.name}}),
+                 __builtin_offsetof({{decl.Tag()}} {{decl.name}},
+		                    {{field.name}}),
 		 "Wrong offset for field {{field.name}} in "
 		 "{{decl.Tag()}} {{decl.name}}");
       {% endif %}
