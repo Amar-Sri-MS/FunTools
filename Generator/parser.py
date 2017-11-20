@@ -1764,9 +1764,7 @@ class YAMLParser:
               width = struct.BitWidth()
           else:
             type = DefaultTypeForWidth(width, offset)
-          if width < 1:
-            import pdb
-            pdb.set_trace()
+
           field_decl = Field(field_name, type, offset, width)
           field_decl.body_comment = comment
           field_decl.filename = input_filename
