@@ -27,81 +27,6 @@ from jinja2 import Environment
 from jinja2 import FileSystemLoader
 from jinja2 import Template
 
-class Checker:
-  # Walk through a document and identify any likely problems.
-  def __init__(self):
-    # Errors noted.
-    self.errors = []
-    self.current_document = None
-
-  def AddError(self, node, msg):
-    if node.filename:
-      location = '%s:%d: ' % (node.filename, node.line_number)
-    else:
-      location = '%d: ' % node.line_number
-    self.errors.append(location + msg)
-
-  def VisitDocument(self, the_doc):
-    for struct in the_doc.Structs():
-      self.VisitStruct(struct)
-
-  def VisitStruct(self, the_struct):
-    last_type = None
-    last_end_flit = None
-    last_start_bit = 0
-    last_end_bit = 0
-    last_field_name = None
-
-    for field in the_struct.fields:
-      if field.IsNoOffset():
-        if field != the_struct.fields[-1]:
-          self.AddError(field, 'field "%s" is an array of zero size, but is not the last field.')
-
-    fields_with_offsets = [f for f in the_struct.fields if not f.IsNoOffset()]
-
-    if len(fields_with_offsets) == 0:
-      return
-
-    last_start_offset = fields_with_offsets[0].StartOffset() - 1
-    last_end_offset = fields_with_offsets[0].StartOffset() - 1
-
-    for field in fields_with_offsets:
-      start_offset = field.StartOffset()
-      end_offset = field.EndOffset()
-
-
-      if field.BitWidth() == field.type.BitWidth():
-        if start_offset % field.type.Alignment() != 0:
-          self.AddError(field, 'Field "%s" cannot be placed in a location that '
-                        'does not match its natural alignment.' % field.name)
-
-      if not the_struct.is_union:
-        if (last_start_offset >= end_offset and
-             last_end_offset >= end_offset):
-
-          self.AddError(field, 'field "%s" and "%s" not in bit order' % (
-              last_field_name, field.name))
-        elif last_end_offset >= start_offset:
-          self.AddError(field, 'field "%s" overlaps field "%s"  '
-                        '("%s" ends at %s, "%s" begins at %s)' % (
-              last_field_name, field.name,
-              last_field_name, utils.BitFlitString(last_end_offset),
-              field.name, utils.BitFlitString(start_offset)))
-
-        elif start_offset != last_end_offset + 1:
-          self.AddError(field, 'unexpected space between field "%s" and "%s".  '
-                        '("%s" ends at %s, "%s" begins at %s)'
-                        % (last_field_name, field.name,
-                           last_field_name,
-                           utils.BitFlitString(last_end_offset),
-                           field.name, utils.BitFlitString(start_offset)))
-
-      last_start_offset = field.StartOffset()
-      last_end_offset = field.EndOffset()
-      last_field_name = field.name
-
-  def VisitField(self, the_field):
-    pass
 
 
 def CommonPrefix(name_list):
@@ -505,7 +430,7 @@ def GenerateFile(output_style, output_base, input_stream, input_filename,
     # return (None, errors)
     pass
 
-  c = Checker()
+  c = parser.Checker()
   c.VisitDocument(doc)
   if len(c.errors) != 0:
     # return (None, c.errors)

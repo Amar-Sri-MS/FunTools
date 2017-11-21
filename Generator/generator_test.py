@@ -1230,7 +1230,7 @@ class CheckerTest(unittest.TestCase):
     errors = gen_parser.Parse('filename', contents)
     self.assertIsNone(errors)
 
-    checker = generator.Checker()
+    checker = parser.Checker()
     checker.VisitDocument(gen_parser.current_document)
     self.assertEqual(0, len(checker.errors))
 
@@ -1243,7 +1243,7 @@ class CheckerTest(unittest.TestCase):
     errors = gen_parser.Parse('filename', contents)
     self.assertIsNone(errors)
 
-    checker = generator.Checker()
+    checker = parser.Checker()
     checker.VisitDocument(gen_parser.current_document)
 
     print(checker.errors)
@@ -1270,7 +1270,7 @@ class CheckerTest(unittest.TestCase):
     errors = gen_parser.Parse('filename', input)
     self.assertIsNone(errors)
   
-    checker = generator.Checker()
+    checker = parser.Checker()
     checker.VisitDocument(gen_parser.current_document)
     self.assertEqual(3, len(checker.errors))
     self.assertIn('"b" cannot be placed', checker.errors[0])
@@ -1315,7 +1315,7 @@ class CheckerTest(unittest.TestCase):
     errors = gen_parser.Parse('filename', contents)
     self.assertEqual(None, errors)
 
-    checker = generator.Checker()
+    checker = parser.Checker()
     checker.VisitDocument(gen_parser.current_document)
     self.assertEqual(0, len(checker.errors))
 
@@ -1337,7 +1337,7 @@ class CheckerTest(unittest.TestCase):
     errors = gen_parser.Parse('filename', contents)
     self.assertIsNone(errors)
 
-    checker = generator.Checker()
+    checker = parser.Checker()
     checker.VisitDocument(gen_parser.current_document)
 
     self.assertEqual(1, len(checker.errors))
@@ -1351,7 +1351,7 @@ class CheckerTest(unittest.TestCase):
                 'END']
     errors = gen_parser.Parse('filename', contents)
     self.assertIsNone(errors)
-    checker = generator.Checker()
+    checker = parser.Checker()
     checker.VisitDocument(gen_parser.current_document)
 
     self.assertEqual(1, len(checker.errors))
@@ -1365,7 +1365,7 @@ class CheckerTest(unittest.TestCase):
                 'END']
     errors = gen_parser.Parse('filename', contents)
     self.assertIsNone(errors)
-    checker = generator.Checker()
+    checker = parser.Checker()
     checker.VisitDocument(gen_parser.current_document)
 
     self.assertEqual(1, len(checker.errors))
@@ -1379,7 +1379,7 @@ class CheckerTest(unittest.TestCase):
                 'END']
     errors = gen_parser.Parse('filename', contents)
     self.assertIsNone(errors)
-    checker = generator.Checker()
+    checker = parser.Checker()
     checker.VisitDocument(gen_parser.current_document)
 
     self.assertEqual(1, len(checker.errors))
@@ -1393,7 +1393,7 @@ class CheckerTest(unittest.TestCase):
                 'END']
     errors = gen_parser.Parse('filename', contents)
     self.assertIsNone(errors)
-    checker = generator.Checker()
+    checker = parser.Checker()
     checker.VisitDocument(gen_parser.current_document)
 
     self.assertEqual(1, len(checker.errors))
@@ -1409,7 +1409,7 @@ class CheckerTest(unittest.TestCase):
                 'END']
     errors = gen_parser.Parse('filename', contents)
     self.assertIsNone(errors)
-    checker = generator.Checker()
+    checker = parser.Checker()
     checker.VisitDocument(gen_parser.current_document)
 
     self.assertEqual(0, len(checker.errors))
@@ -1424,7 +1424,7 @@ class CheckerTest(unittest.TestCase):
                 'END']
     errors = gen_parser.Parse('filename', contents)
     self.assertIsNone(errors)
-    checker = generator.Checker()
+    checker = parser.Checker()
     checker.VisitDocument(gen_parser.current_document)
 
     self.assertEqual(1, len(checker.errors))
@@ -1442,7 +1442,7 @@ class CheckerTest(unittest.TestCase):
     errors = gen_parser.Parse('filename', contents)
     self.assertIsNone(errors)
 
-    checker = generator.Checker()
+    checker = parser.Checker()
     checker.VisitDocument(gen_parser.current_document)
 
     self.assertEqual(0, len(checker.errors))
@@ -1472,7 +1472,7 @@ class CheckerTest(unittest.TestCase):
     doc = gen_parser.current_document
     self.assertIsNone(errors)
 
-    checker = generator.Checker()
+    checker = parser.Checker()
     checker.VisitDocument(gen_parser.current_document)
     self.assertEqual(0, len(checker.errors))
 
@@ -1494,7 +1494,7 @@ class CheckerTest(unittest.TestCase):
     doc = gen_parser.current_document
     self.assertIsNone(errors)
 
-    checker = generator.Checker()
+    checker = parser.Checker()
     checker.VisitDocument(gen_parser.current_document)
     self.assertEqual(0, len(checker.errors))
 
@@ -1511,7 +1511,7 @@ class CheckerTest(unittest.TestCase):
     errors = gen_parser.Parse('filename', contents)
     self.assertIsNone(errors)
 
-    checker = generator.Checker()
+    checker = parser.Checker()
     checker.VisitDocument(gen_parser.current_document)
 
     self.assertEqual(1, len(checker.errors))
@@ -1549,7 +1549,7 @@ class CheckerTest(unittest.TestCase):
     errors = gen_parser.Parse('filename', contents)
     self.assertIsNone(errors)
 
-    checker = generator.Checker()
+    checker = parser.Checker()
     checker.VisitDocument(gen_parser.current_document)
 
     self.assertEqual(1, len(checker.errors))

@@ -1070,7 +1070,7 @@ class Checker:
     self.errors.append(location + msg)
 
   def VisitDocument(self, the_doc):
-    for struct in the_doc.structs:
+    for struct in the_doc.Structs():
       self.VisitStruct(struct)
 
   def VisitStruct(self, the_struct):
