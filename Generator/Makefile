@@ -1,14 +1,16 @@
 # Makefile for Fungible header generator.
 
-# Directory where we install the working version of the generator.
-FUNSDK_INSTALL_DIR = ../../FunSDK/bin/Generator
 
 SDKDIR ?= ../../FunSDK
 SDK_INSTALL_DIR ?= $(SDKDIR)
 
 # Directory where the fun_hci.gen file is stored.
 # Used for testing generator on real example.
-FUN_HCI_DIR = $(SDKDIR)/FunSDK/hci
+FUN_HCI_DIR = $(SDK_INSTALL_DIR)/FunSDK/hci
+
+# Directory where we install the working version of the generator.
+GENERATOR_INSTALL_DIR = $(SDK_INSTALL_DIR)/bin/Generator
+
 
 # Where build products go.
 BUILD = build
@@ -19,13 +21,9 @@ GENERATOR_SRC = generator.py \
 		parser.py \
 		utils.py \
 		header.tmpl \
-<<<<<<< HEAD
 		source.tmpl \
 		jinja2/*.py \
 		markupsafe/*.py
-=======
-		source.tmpl
->>>>>>> origin/master
 
 test: generator-test test_rdma test_rdma_packed test_rdma_html
 test: test_swap test_simple_validation
@@ -84,13 +82,8 @@ $(BUILD): $(BUILD)
 
 # install generator to SDK
 install:
-<<<<<<< HEAD
-	mkdir -p $(SDK_INSTALL_DIR)/bin/Generator
-	rsync -R $(GENERATOR_SRC) $(SDK_INSTALL_DIR)/bin/Generator
-=======
-	mkdir -p $(FUNSDK_INSTALL_DIR)
-	rsync -R $(GENERATOR_SRC) $(FUNSDK_INSTALL_DIR)
->>>>>>> origin/master
+	mkdir -p $(GENERATOR_INSTALL_DIR)
+	rsync -R $(GENERATOR_SRC) $(GENERATOR_INSTALL_DIR)
 
 
 clean:
