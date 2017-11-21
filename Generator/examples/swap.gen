@@ -1,0 +1,18 @@
+// Example generator file for testing swapping.
+// Test examples of every size of value, as well as larger bitfields.
+STRUCT SwapReq
+// Basic types.
+0 63:0 uint64_t value_64
+1 63:32 uint32_t value_32
+1 31:16 uint16_t value_16
+1 15:8 uint8_t value_8
+// Bitfields.
+1 7:5 uint8_t value_3
+1 4:2 uint8_t value_2
+1 1:1 uint8_t reserved1
+1 0:0 uint8_t value_1
+// bitfields larger than 8 bits.
+2 63:50 uint16_t value_14
+2 49:48 uint16_t reserved2
+2 47:0 uint64_t reserved3
+END

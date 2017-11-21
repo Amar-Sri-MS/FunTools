@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A78C72481FB6632A005BCFD4 /* DataKitController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A78C72471FB6632A005BCFD4 /* DataKitController.swift */; };
 		A7A56B311F8AC0AC007B5391 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7A56B301F8AC0AC007B5391 /* AppDelegate.swift */; };
 		A7A56B331F8AC0AC007B5391 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7A56B321F8AC0AC007B5391 /* ViewController.swift */; };
 		A7A56B351F8AC0AC007B5391 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A7A56B341F8AC0AC007B5391 /* Assets.xcassets */; };
@@ -63,7 +64,6 @@
 		A7A56BD41F8AC139007B5391 /* DKExpressionConstant.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7A56B9E1F8AC139007B5391 /* DKExpressionConstant.swift */; };
 		A7A56BD51F8AC139007B5391 /* DKExpressionFuncCall.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7A56B9F1F8AC139007B5391 /* DKExpressionFuncCall.swift */; };
 		A7A56BD61F8AC139007B5391 /* DKExpressionVariable.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7A56BA01F8AC139007B5391 /* DKExpressionVariable.swift */; };
-		A7A56BD71F8AC139007B5391 /* DKFifo.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7A56BA11F8AC139007B5391 /* DKFifo.swift */; };
 		A7A56BD81F8AC139007B5391 /* DKFlowGraphGen.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7A56BA21F8AC139007B5391 /* DKFlowGraphGen.swift */; };
 		A7A56BD91F8AC139007B5391 /* DKFunction.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7A56BA31F8AC139007B5391 /* DKFunction.swift */; };
 		A7A56BDA1F8AC139007B5391 /* DKFunctionClosure.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7A56BA41F8AC139007B5391 /* DKFunctionClosure.swift */; };
@@ -104,10 +104,15 @@
 		A7A56BFE1F8AC139007B5391 /* runtimeStubs.c in Sources */ = {isa = PBXBuildFile; fileRef = A7A56BC81F8AC139007B5391 /* runtimeStubs.c */; };
 		A7A56BFF1F8AC139007B5391 /* Students.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7A56BC91F8AC139007B5391 /* Students.swift */; };
 		A7A56C001F8AC139007B5391 /* ToDo.rtf in Resources */ = {isa = PBXBuildFile; fileRef = A7A56BCA1F8AC139007B5391 /* ToDo.rtf */; };
+		A7C62C741FB9173900C2DC34 /* DKNodeFifo.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7C62C711FB9173800C2DC34 /* DKNodeFifo.swift */; };
+		A7C62C751FB9173900C2DC34 /* DKNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7C62C721FB9173900C2DC34 /* DKNode.swift */; };
+		A7C62C761FB9173900C2DC34 /* DKNodeGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7C62C731FB9173900C2DC34 /* DKNodeGenerator.swift */; };
+		A7C62C7A1FB9312800C2DC34 /* DKFunctionMaker.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7C62C791FB9312800C2DC34 /* DKFunctionMaker.swift */; };
 		A7EBED091F9494E800AFD2F0 /* libfunclient.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A7EBED071F9494E000AFD2F0 /* libfunclient.a */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		A78C72471FB6632A005BCFD4 /* DataKitController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataKitController.swift; sourceTree = "<group>"; };
 		A7A56B2D1F8AC0AC007B5391 /* DataKitApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DataKitApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A7A56B301F8AC0AC007B5391 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		A7A56B321F8AC0AC007B5391 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
@@ -167,7 +172,6 @@
 		A7A56B9E1F8AC139007B5391 /* DKExpressionConstant.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKExpressionConstant.swift; sourceTree = "<group>"; };
 		A7A56B9F1F8AC139007B5391 /* DKExpressionFuncCall.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKExpressionFuncCall.swift; sourceTree = "<group>"; };
 		A7A56BA01F8AC139007B5391 /* DKExpressionVariable.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKExpressionVariable.swift; sourceTree = "<group>"; };
-		A7A56BA11F8AC139007B5391 /* DKFifo.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKFifo.swift; sourceTree = "<group>"; };
 		A7A56BA21F8AC139007B5391 /* DKFlowGraphGen.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKFlowGraphGen.swift; sourceTree = "<group>"; };
 		A7A56BA31F8AC139007B5391 /* DKFunction.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKFunction.swift; sourceTree = "<group>"; };
 		A7A56BA41F8AC139007B5391 /* DKFunctionClosure.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKFunctionClosure.swift; sourceTree = "<group>"; };
@@ -210,6 +214,10 @@
 		A7A56BC91F8AC139007B5391 /* Students.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Students.swift; sourceTree = "<group>"; };
 		A7A56BCA1F8AC139007B5391 /* ToDo.rtf */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.rtf; path = ToDo.rtf; sourceTree = "<group>"; };
 		A7A56C021F8AC1D4007B5391 /* DataKitApp-Bridging-Header.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "DataKitApp-Bridging-Header.h"; sourceTree = "<group>"; };
+		A7C62C711FB9173800C2DC34 /* DKNodeFifo.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKNodeFifo.swift; sourceTree = "<group>"; };
+		A7C62C721FB9173900C2DC34 /* DKNode.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKNode.swift; sourceTree = "<group>"; };
+		A7C62C731FB9173900C2DC34 /* DKNodeGenerator.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKNodeGenerator.swift; sourceTree = "<group>"; };
+		A7C62C791FB9312800C2DC34 /* DKFunctionMaker.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKFunctionMaker.swift; sourceTree = "<group>"; };
 		A7EBED071F9494E000AFD2F0 /* libfunclient.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libfunclient.a; path = ../../FunSDK/lib/Darwin/noasan/libfunclient.a; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -251,6 +259,7 @@
 			children = (
 				A7A56B301F8AC0AC007B5391 /* AppDelegate.swift */,
 				A7A56B321F8AC0AC007B5391 /* ViewController.swift */,
+				A78C72471FB6632A005BCFD4 /* DataKitController.swift */,
 				A7A56B341F8AC0AC007B5391 /* Assets.xcassets */,
 				A7A56B361F8AC0AC007B5391 /* Main.storyboard */,
 				A7A56B391F8AC0AC007B5391 /* Info.plist */,
@@ -331,7 +340,6 @@
 				A7A56B9E1F8AC139007B5391 /* DKExpressionConstant.swift */,
 				A7A56B9F1F8AC139007B5391 /* DKExpressionFuncCall.swift */,
 				A7A56BA01F8AC139007B5391 /* DKExpressionVariable.swift */,
-				A7A56BA11F8AC139007B5391 /* DKFifo.swift */,
 				A7A56BA21F8AC139007B5391 /* DKFlowGraphGen.swift */,
 				A7A56BA31F8AC139007B5391 /* DKFunction.swift */,
 				A7A56BA41F8AC139007B5391 /* DKFunctionClosure.swift */,
@@ -340,11 +348,15 @@
 				A7A56BA71F8AC139007B5391 /* DKFunctionGatherFromFifo.swift */,
 				A7A56BA81F8AC139007B5391 /* DKFunctionGenerator.swift */,
 				A7A56BA91F8AC139007B5391 /* DKFunctionLogger.swift */,
+				A7C62C791FB9312800C2DC34 /* DKFunctionMaker.swift */,
 				A7A56BAA1F8AC139007B5391 /* DKFunctionMap.swift */,
 				A7A56BAB1F8AC139007B5391 /* DKFunctionOperator.swift */,
 				A7A56BAC1F8AC139007B5391 /* DKFunctionProjection.swift */,
 				A7A56BAD1F8AC139007B5391 /* DKGenC.swift */,
 				A7A56BAE1F8AC139007B5391 /* DKMutableBitStream.swift */,
+				A7C62C721FB9173900C2DC34 /* DKNode.swift */,
+				A7C62C711FB9173800C2DC34 /* DKNodeFifo.swift */,
+				A7C62C731FB9173900C2DC34 /* DKNodeGenerator.swift */,
 				A7A56BAF1F8AC139007B5391 /* DKOperator.swift */,
 				A7A56BB01F8AC139007B5391 /* DKParser.swift */,
 				A7A56BB11F8AC139007B5391 /* DKParser_Test.swift */,
@@ -461,7 +473,6 @@
 				A7A56BDE1F8AC139007B5391 /* DKFunctionGenerator.swift in Sources */,
 				A7A56BD31F8AC139007B5391 /* DKExpression_Test.swift in Sources */,
 				A7A56B921F8AC126007B5391 /* WorkSequencer.swift in Sources */,
-				A7A56BD71F8AC139007B5391 /* DKFifo.swift in Sources */,
 				A7A56B911F8AC126007B5391 /* WorkQueue.swift in Sources */,
 				A7A56BD91F8AC139007B5391 /* DKFunction.swift in Sources */,
 				A7A56BF01F8AC139007B5391 /* DKTypeInt.swift in Sources */,
@@ -472,6 +483,7 @@
 				A7A56BF41F8AC139007B5391 /* DKTypeStruct.swift in Sources */,
 				A7A56BD21F8AC139007B5391 /* DKExpression.swift in Sources */,
 				A7A56B551F8AC11D007B5391 /* SetExtras.swift in Sources */,
+				A7C62C7A1FB9312800C2DC34 /* DKFunctionMaker.swift in Sources */,
 				A7A56B331F8AC0AC007B5391 /* ViewController.swift in Sources */,
 				A7A56B851F8AC126007B5391 /* Range64Map.swift in Sources */,
 				A7A56B7B1F8AC126007B5391 /* Heap.swift in Sources */,
@@ -494,6 +506,7 @@
 				A7A56BDA1F8AC139007B5391 /* DKFunctionClosure.swift in Sources */,
 				A7A56B791F8AC126007B5391 /* CircularBuffer.swift in Sources */,
 				A7A56BE91F8AC139007B5391 /* DKParserForFunction.swift in Sources */,
+				A7C62C741FB9173900C2DC34 /* DKNodeFifo.swift in Sources */,
 				A7A56BF31F8AC139007B5391 /* DKTypeString.swift in Sources */,
 				A7A56BCC1F8AC139007B5391 /* DKBitAddress.swift in Sources */,
 				A7A56B7C1F8AC126007B5391 /* Joiner.swift in Sources */,
@@ -523,6 +536,7 @@
 				A7A56BF91F8AC139007B5391 /* DKValueLazySequence.swift in Sources */,
 				A7A56BF71F8AC139007B5391 /* DKValueFunc.swift in Sources */,
 				A7A56B781F8AC126007B5391 /* Cache.swift in Sources */,
+				A7C62C761FB9173900C2DC34 /* DKNodeGenerator.swift in Sources */,
 				A7A56B7D1F8AC126007B5391 /* JSON.swift in Sources */,
 				A7A56B7E1F8AC126007B5391 /* Lexer.swift in Sources */,
 				A7A56BE21F8AC139007B5391 /* DKFunctionProjection.swift in Sources */,
@@ -531,9 +545,11 @@
 				A7A56BFC1F8AC139007B5391 /* DKValueStream.swift in Sources */,
 				A7A56BFA1F8AC139007B5391 /* DKValueLazyStruct.swift in Sources */,
 				A7A56B521F8AC11D007B5391 /* ProtocolsExtras.swift in Sources */,
+				A7C62C751FB9173900C2DC34 /* DKNode.swift in Sources */,
 				A7A56BD41F8AC139007B5391 /* DKExpressionConstant.swift in Sources */,
 				A7A56BD81F8AC139007B5391 /* DKFlowGraphGen.swift in Sources */,
 				A7A56B871F8AC126007B5391 /* SExpression.swift in Sources */,
+				A78C72481FB6632A005BCFD4 /* DataKitController.swift in Sources */,
 				A7A56BFF1F8AC139007B5391 /* Students.swift in Sources */,
 				A7A56B761F8AC126007B5391 /* Async.swift in Sources */,
 				A7A56B4F1F8AC11D007B5391 /* DataExtras.swift in Sources */,

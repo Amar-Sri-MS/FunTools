@@ -8,7 +8,7 @@ import unittest
 import generator
 import parser
 
-class TestDocBuilder(unittest.TestCase):
+class DocBuilderTest(unittest.TestCase):
   # Test that we correctly parse valid and invalid structure definitions.
   def testEmptyDoc(self):
     gen_parser = parser.GenParser()
@@ -578,6 +578,19 @@ class TestDocBuilder(unittest.TestCase):
     self.assertEqual(64, a3.StartOffset())
     self.assertEqual(127, a3.EndOffset())
     
+  def testCatchMissingEnd(self):
+    """Tests that error generated if not all objects closed."""
+    gen_parser = parser.GenParser()
+    contents = [
+      'STRUCT A',
+      '0 63:00 uint64_t a'
+      ]
+
+    errors = gen_parser.Parse('filename', contents)
+    self.assertEqual(1, len(errors))
+    self.assertIn('END missing at end of file', errors[0])
+
+
   def testMultiFlitNestedStruct(self):
     gen_parser = parser.GenParser()
     # ... allows a field to overflow into later flits.
@@ -720,7 +733,7 @@ class TestDocBuilder(unittest.TestCase):
 
   def testValidEnumName(self):
     gen_parser = parser.GenParser()
-    contents = ['ENUM 1AA']
+    contents = ['ENUM 1AA', 'END']
     errors = gen_parser.Parse('filename', contents)
 
     self.assertEquals(1, len(errors))
@@ -755,7 +768,7 @@ class TestDocBuilder(unittest.TestCase):
 
   def testValidFlagName(self):
     gen_parser = parser.GenParser()
-    contents = ['FLAGS 1AA']
+    contents = ['FLAGS 1AA', 'END']
     errors = gen_parser.Parse('filename', contents)
 
     self.assertEquals(1, len(errors))
@@ -789,7 +802,7 @@ class TestDocBuilder(unittest.TestCase):
     self.assertIn('is larger than the 2^32', errors[0])
 
 
-class TestStripComment(unittest.TestCase):
+class StripCommentTest(unittest.TestCase):
   def testSimple(self):
     gen_parser = parser.GenParser()
     self.assertEqual("Foo", gen_parser.StripKeyComment("// Foo"))
@@ -826,7 +839,7 @@ class TestStripComment(unittest.TestCase):
       '1 63:0 ...',
       'UNION baz u',
       '2 63:56 char c',
-      'END'
+      'END',
       'END'
       ]
 
@@ -1217,7 +1230,7 @@ class CheckerTest(unittest.TestCase):
     errors = gen_parser.Parse('filename', contents)
     self.assertIsNone(errors)
 
-    checker = generator.Checker()
+    checker = parser.Checker()
     checker.VisitDocument(gen_parser.current_document)
     self.assertEqual(0, len(checker.errors))
 
@@ -1230,7 +1243,7 @@ class CheckerTest(unittest.TestCase):
     errors = gen_parser.Parse('filename', contents)
     self.assertIsNone(errors)
 
-    checker = generator.Checker()
+    checker = parser.Checker()
     checker.VisitDocument(gen_parser.current_document)
 
     print(checker.errors)
@@ -1257,7 +1270,7 @@ class CheckerTest(unittest.TestCase):
     errors = gen_parser.Parse('filename', input)
     self.assertIsNone(errors)
   
-    checker = generator.Checker()
+    checker = parser.Checker()
     checker.VisitDocument(gen_parser.current_document)
     self.assertEqual(3, len(checker.errors))
     self.assertIn('"b" cannot be placed', checker.errors[0])
@@ -1302,7 +1315,7 @@ class CheckerTest(unittest.TestCase):
     errors = gen_parser.Parse('filename', contents)
     self.assertEqual(None, errors)
 
-    checker = generator.Checker()
+    checker = parser.Checker()
     checker.VisitDocument(gen_parser.current_document)
     self.assertEqual(0, len(checker.errors))
 
@@ -1324,7 +1337,7 @@ class CheckerTest(unittest.TestCase):
     errors = gen_parser.Parse('filename', contents)
     self.assertIsNone(errors)
 
-    checker = generator.Checker()
+    checker = parser.Checker()
     checker.VisitDocument(gen_parser.current_document)
 
     self.assertEqual(1, len(checker.errors))
@@ -1338,7 +1351,7 @@ class CheckerTest(unittest.TestCase):
                 'END']
     errors = gen_parser.Parse('filename', contents)
     self.assertIsNone(errors)
-    checker = generator.Checker()
+    checker = parser.Checker()
     checker.VisitDocument(gen_parser.current_document)
 
     self.assertEqual(1, len(checker.errors))
@@ -1352,7 +1365,7 @@ class CheckerTest(unittest.TestCase):
                 'END']
     errors = gen_parser.Parse('filename', contents)
     self.assertIsNone(errors)
-    checker = generator.Checker()
+    checker = parser.Checker()
     checker.VisitDocument(gen_parser.current_document)
 
     self.assertEqual(1, len(checker.errors))
@@ -1366,7 +1379,7 @@ class CheckerTest(unittest.TestCase):
                 'END']
     errors = gen_parser.Parse('filename', contents)
     self.assertIsNone(errors)
-    checker = generator.Checker()
+    checker = parser.Checker()
     checker.VisitDocument(gen_parser.current_document)
 
     self.assertEqual(1, len(checker.errors))
@@ -1380,7 +1393,7 @@ class CheckerTest(unittest.TestCase):
                 'END']
     errors = gen_parser.Parse('filename', contents)
     self.assertIsNone(errors)
-    checker = generator.Checker()
+    checker = parser.Checker()
     checker.VisitDocument(gen_parser.current_document)
 
     self.assertEqual(1, len(checker.errors))
@@ -1396,7 +1409,7 @@ class CheckerTest(unittest.TestCase):
                 'END']
     errors = gen_parser.Parse('filename', contents)
     self.assertIsNone(errors)
-    checker = generator.Checker()
+    checker = parser.Checker()
     checker.VisitDocument(gen_parser.current_document)
 
     self.assertEqual(0, len(checker.errors))
@@ -1411,7 +1424,7 @@ class CheckerTest(unittest.TestCase):
                 'END']
     errors = gen_parser.Parse('filename', contents)
     self.assertIsNone(errors)
-    checker = generator.Checker()
+    checker = parser.Checker()
     checker.VisitDocument(gen_parser.current_document)
 
     self.assertEqual(1, len(checker.errors))
@@ -1429,7 +1442,7 @@ class CheckerTest(unittest.TestCase):
     errors = gen_parser.Parse('filename', contents)
     self.assertIsNone(errors)
 
-    checker = generator.Checker()
+    checker = parser.Checker()
     checker.VisitDocument(gen_parser.current_document)
 
     self.assertEqual(0, len(checker.errors))
@@ -1442,6 +1455,7 @@ class CheckerTest(unittest.TestCase):
                 '0 31:0 uint32_t data',
                 'END',
                 'END']
+    # TODO(bowdidge): Finish.
 
   def testVariableLengthArray(self):
     gen_parser = parser.GenParser()
@@ -1458,7 +1472,7 @@ class CheckerTest(unittest.TestCase):
     doc = gen_parser.current_document
     self.assertIsNone(errors)
 
-    checker = generator.Checker()
+    checker = parser.Checker()
     checker.VisitDocument(gen_parser.current_document)
     self.assertEqual(0, len(checker.errors))
 
@@ -1480,7 +1494,7 @@ class CheckerTest(unittest.TestCase):
     doc = gen_parser.current_document
     self.assertIsNone(errors)
 
-    checker = generator.Checker()
+    checker = parser.Checker()
     checker.VisitDocument(gen_parser.current_document)
     self.assertEqual(0, len(checker.errors))
 
@@ -1497,7 +1511,7 @@ class CheckerTest(unittest.TestCase):
     errors = gen_parser.Parse('filename', contents)
     self.assertIsNone(errors)
 
-    checker = generator.Checker()
+    checker = parser.Checker()
     checker.VisitDocument(gen_parser.current_document)
 
     self.assertEqual(1, len(checker.errors))
@@ -1535,7 +1549,7 @@ class CheckerTest(unittest.TestCase):
     errors = gen_parser.Parse('filename', contents)
     self.assertIsNone(errors)
 
-    checker = generator.Checker()
+    checker = parser.Checker()
     checker.VisitDocument(gen_parser.current_document)
 
     self.assertEqual(1, len(checker.errors))

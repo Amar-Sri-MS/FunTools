@@ -20,7 +20,7 @@ class DKTypeArray: DKTypeSequence {
 		self.alignment = alignmentInBits
 		let w = subType.widthInBits()
 		assert(w != nil)	// or else we dont know how to layout this type
-		super.init(subType: subType)
+		super.init(subType)
 	}
 	var actualNumberOfBitsOfEach: UInt64 {
 		var w = sub.widthInBits()!

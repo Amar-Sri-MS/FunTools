@@ -407,7 +407,7 @@ class Field(Declaration):
     # Fields that have been packed in this field.
     self.packed_fields = []
     # True if field was explicitly defined to be less than its natural size.
-    self.is_bitfield = False
+    self.is_bitfield = self.is_natural_width
 
     # True if field needs to be swapped when converting from a different
     # ended processor.  Irrelevant for packed fields.
@@ -1000,6 +1000,13 @@ class Struct(Declaration):
       parent = parent.parent_struct
     return parent
 
+  def sub_fields(self):
+    """Returns set of fields in structure that are other structures."""
+    return [x for x in self.fields if x.type.IsRecord() and not
+            x.type.IsArray()]
+
+
+
 class Document:
   # Representation of an entire generated header specification.
   def __init__(self):
@@ -1063,7 +1070,7 @@ class Checker:
     self.errors.append(location + msg)
 
   def VisitDocument(self, the_doc):
-    for struct in the_doc.structs:
+    for struct in the_doc.Structs():
       self.VisitStruct(struct)
 
   def VisitStruct(self, the_struct):
@@ -1669,6 +1676,12 @@ class GenParser:
       else:
         self.ParseLine(line)
       self.current_line += 1
+
+    if len(self.stack) != 1:
+      (last_state, last_object) = self.stack[-1]
+      self.AddError('END missing at end of file. "%s" is still open.' %
+                    last_object.name)
+
     if len(self.errors) > 0:
       return self.errors
     return None
@@ -1757,9 +1770,7 @@ class YAMLParser:
               width = struct.BitWidth()
           else:
             type = DefaultTypeForWidth(width, offset)
-          if width < 1:
-            import pdb
-            pdb.set_trace()
+
           field_decl = Field(field_name, type, offset, width)
           field_decl.body_comment = comment
           field_decl.filename = input_filename

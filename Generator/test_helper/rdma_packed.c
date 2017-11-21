@@ -13,47 +13,12 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stddef.h> // offsetof
+#include <string.h>
 #include <strings.h> // bzero.
 
-#import "rdma_packed_gen.h"
-
-// TODO(bowdidge): Switch to gtest.
-#define ASSERT_SIZE(var, bytes, varStr)					\
-  if (sizeof(var) != (bytes)) {						\
-    fprintf(stderr, "FAIL: %s structure expected to be %" PRIu64 " bytes, got %" PRIu64 "\n", \
-	    varStr, (uint64_t) (bytes), (uint64_t) sizeof(var));		\
-  } else {								\
-    fprintf(stderr, "PASS: %s\n", varStr);				\
-  }    
-
-#define ASSERT_OFFSET(var, field, offset, varStr)			\
-  if (offsetof(var, field) !=offset) {					\
-    fprintf(stderr, "FAIL: %s structure expected to be %" PRIu64 " bytes, got %" PRIu64 "\n", \
-	    varStr, (uint64_t) offset, (uint64_t) offsetof(var, field)); \
-    exit(1);								\
-  } else {								\
-    fprintf(stderr, "PASS: %s\n", varStr);				\
-  }    
-
-#define ASSERT_EQUAL(expected_value, gotten_value, msg)			\
-  if ((expected_value) != (gotten_value)) {				\
-    fprintf(stderr, "FAIL: %s: Expected %" PRIu64 ", got %" PRIu64 "\n", \
-	    msg, (uint64_t) (expected_value), (uint64_t) (gotten_value)); \
-    exit(1);								\
-  } else {								\
-    fprintf(stderr, "PASS: %s\n", msg);					\
-  }
-
-#define ASSERT_TRUE(gotten_value, msg)			\
-  if (!(gotten_value)) {				\
-    fprintf(stderr, "FAIL: %s: Expression not true.\n",	\
-	    msg);					\
-    exit(1);						\
-  } else {						\
-    fprintf(stderr, "PASS: %s\n", msg);\
-  }
-
-  
+#include "rdma_packed_gen.h"
+#include "test_macros.h"
+ 
 int main(int argc, char** argv) {
   struct GatherListFragmentHeader frag;
   struct GatherListFragmentHeader *fragPtr = malloc(sizeof(struct GatherListFragmentHeader));
