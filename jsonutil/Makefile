@@ -36,4 +36,4 @@ install: jsonutil
 	cp jsonutil $(SDK_INSTALL_DIR)/bin/$(OS)/$(ARCH)
 
 clean:
-	rm jsonutil
+	rm -f jsonutil
