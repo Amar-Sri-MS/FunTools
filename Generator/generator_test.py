@@ -80,7 +80,7 @@ class DocBuilderTest(unittest.TestCase):
 
   def testTooBigFlit(self):
     gen_parser = parser.GenParser()
-    contents = ['STRUCT Foo', '0 64:0 uint64_t packet', 'END']
+    contents = ['STRUCT Foo', '0 64:49 uint16_t packet', 'END']
     errors = gen_parser.Parse('filename', contents)
 
     self.assertEqual(1, len(errors))
@@ -798,6 +798,41 @@ class DocBuilderTest(unittest.TestCase):
     errors = gen_parser.Parse('filename', contents)
     self.assertEquals(1, len(errors))
     self.assertIn('is larger than the 2^32', errors[0])
+
+  def testBitSizeOfUnion(self):
+    gen_parser = parser.GenParser()
+
+    input = ['STRUCT B',
+             '0 63:56 uint8_t a',
+             'UNION Cmd u1',
+             'STRUCT B1 b1',
+             '0 55:48 uint8_t b11',
+             'END',
+             'END',
+             'END'
+             ]
+
+    errors = gen_parser.Parse('filename', input)
+
+    self.assertFalse(errors)
+    struct_a = gen_parser.current_document.StructWithName('B')
+
+    self.assertIsNotNone(struct_a)
+
+    union_cmd = gen_parser.current_document.StructWithName('Cmd')
+    self.assertIsNotNone(union_cmd)
+
+    b1_field = union_cmd.fields[0]
+    b1_struct = gen_parser.current_document.StructWithName('B1')
+
+    self.assertEqual('b1', b1_field.Name())
+
+    self.assertEqual(8, b1_struct.StartOffset())
+    self.assertEqual(15, b1_struct.EndOffset())
+
+    self.assertEqual(8, b1_struct.BitWidth())
+    self.assertEqual(8, b1_field.BitWidth())
+    self.assertEqual(8, union_cmd.BitWidth())
 
 
 class StripCommentTest(unittest.TestCase):
@@ -1687,6 +1722,81 @@ class CheckerTest(unittest.TestCase):
     self.assertIn('Field "c" in union does not match start bit of previous',
                   checker.errors[0])
 
+
+  def testIncorrectStructLength(self):
+    gen_parser = parser.GenParser()
+    contents = [
+      'STRUCT A',
+      '0 63:00 uint64_t value',
+      'END',
+      'STRUCT B',
+      '0 63:00 A header',
+      '1 63:00 ...',
+      '2 63:48 uint16_t end',
+      'END'
+      ]
+    errors = gen_parser.Parse('filename', contents)
+
+    self.assertEqual(1, len(errors))
+    self.assertIn('Multi-line flit continuation seen without pending field.',
+                  errors[0])
+
+  def testIncorrectSmallStructLength(self):
+    gen_parser = parser.GenParser()
+    contents = [
+      'STRUCT A',
+      '0 63:32 uint32_t value',
+      'END',
+      'STRUCT B',
+      '0 63:16 A header',
+      '0 15:0 uint16_t value',
+      'END'
+      ]
+    errors = gen_parser.Parse('filename', contents)
+
+    self.assertEqual(1, len(errors))
+    self.assertIn('Field larger than type: field "header" is 48 bits, '
+                  'type "A" is 32.', errors[0])
+
+  def testIncorrectSmallIntPosition(self):
+    gen_parser = parser.GenParser()
+    contents = [
+      'STRUCT A',
+      '0 63:56 uint8_t a',
+      # b can't be exactly 16 bits because we'll assume it's
+      # not supposed to be a bitfield.
+      '0 55:40 uint16_t b',
+      'END',
+      ]
+    errors = gen_parser.Parse('filename', contents)
+    self.assertFalse(errors)
+
+    checker = parser.Checker()
+    checker.VisitDocument(gen_parser.current_document)
+
+    self.assertEqual(1, len(checker.errors))
+    self.assertIn('cannot be placed in a location that does not match its '
+                  'natural alignment',
+                  checker.errors[0])
+
+  def testOkForSmallIntIfDifferentType(self):
+    """Tests that it's ok for the 16 bit value to be in a 32 bit
+    type because we'll assume it'll have to be packed.
+    """
+    gen_parser = parser.GenParser()
+    contents = [
+      'STRUCT A',
+      '0 63:56 uint8_t a',
+      '0 55:40 uint32_t b',
+      'END',
+      ]
+    errors = gen_parser.Parse('filename', contents)
+    self.assertFalse(errors)
+
+    checker = parser.Checker()
+    checker.VisitDocument(gen_parser.current_document)
+
+    self.assertFalse(checker.errors)
 
 class CodegenArgsTest(unittest.TestCase):
 
