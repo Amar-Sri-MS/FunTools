@@ -1758,6 +1758,45 @@ class CheckerTest(unittest.TestCase):
     self.assertIn('Field larger than type: field "header" is 48 bits, '
                   'type "A" is 32.', errors[0])
 
+  def testIncorrectSmallIntPosition(self):
+    gen_parser = parser.GenParser()
+    contents = [
+      'STRUCT A',
+      '0 63:56 uint8_t a',
+      # b can't be exactly 16 bits because we'll assume it's
+      # not supposed to be a bitfield.
+      '0 55:40 uint16_t b',
+      'END',
+      ]
+    errors = gen_parser.Parse('filename', contents)
+    self.assertFalse(errors)
+
+    checker = parser.Checker()
+    checker.VisitDocument(gen_parser.current_document)
+
+    self.assertEqual(1, len(checker.errors))
+    self.assertIn('cannot be placed in a location that does not match its '
+                  'natural alignment',
+                  checker.errors[0])
+
+  def testOkForSmallIntIfDifferentType(self):
+    """Tests that it's ok for the 16 bit value to be in a 32 bit
+    type because we'll assume it'll have to be packed.
+    """
+    gen_parser = parser.GenParser()
+    contents = [
+      'STRUCT A',
+      '0 63:56 uint8_t a',
+      '0 55:40 uint32_t b',
+      'END',
+      ]
+    errors = gen_parser.Parse('filename', contents)
+    self.assertFalse(errors)
+
+    checker = parser.Checker()
+    checker.VisitDocument(gen_parser.current_document)
+
+    self.assertFalse(checker.errors)
 
 class CodegenArgsTest(unittest.TestCase):
 
