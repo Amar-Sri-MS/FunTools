@@ -28,7 +28,6 @@ from jinja2 import FileSystemLoader
 from jinja2 import Template
 
 
-
 def CommonPrefix(name_list):
   """Returns the longest prefix (followed by underbar) of all names.
   Returns None if no longest prefix.
@@ -455,6 +454,7 @@ def GenerateFile(output_style, output_base, input_stream, input_filename,
       return (None, [])
     else:
       return (source, [])
+
   elif output_style is OutputStyleValidation:
     # TODO(bowdidge): Compile and run the code too.
     source = GenerateFromTemplate(doc, 'validate.tmpl', input_filename,
@@ -465,6 +465,7 @@ def GenerateFile(output_style, output_base, input_stream, input_filename,
       f.close()
       return ('', [])
     return (source, [])
+
   elif output_style is OutputStyleHeader:
     header = GenerateFromTemplate(doc, 'header.tmpl', input_filename,
                                   output_base, extra_vars)
