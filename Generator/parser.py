@@ -39,6 +39,23 @@ class BaseType:
     """Returns the width of the base type itself."""
     return self.bit_width
 
+  def Alignment(self):
+    """Returns expected alignment of objects of this type in bits.
+
+    Default alignment isn't defined by C; it's a property of the compiler.
+    The Generator thinks about alignment because a field matching the
+    alignment and size of the specified type can be represented as a
+    native field in that structure, while an unaligned or differently-sized
+    type must be manipulated via bit shifting in a larger container.
+    """
+    if self.node is not None:
+      # Generally, compilers want to place fields at the alignment of the largest field.
+      if len(self.node.fields) == 0:
+        return 0
+      return max([f.type.Alignment() for f in self.node.fields])
+    # Assume remaining fields are aligned at same as bit size.
+    return self.bit_width
+
   def __cmp__(self, other):
     if other is None:
       return -1
@@ -168,11 +185,18 @@ class Type:
       self.is_array = False
       self.array_size = None
 
-    self.alignment = base_type.BitWidth()
-
     if self.is_array:
-      self.bit_width = self.alignment * array_size
+      self.alignment = base_type.Alignment()
+      self.bit_width = base_type.BitWidth() * array_size
+    elif self.IsRecord():
+      # Correct?
+      self.alignment = base_type.Alignment()
+      self.bit_width = base_type.BitWidth()
     else:
+      self.alignment = base_type.Alignment()
+      # Integer types generally align to size - 8 bit values
+      # aligning to bytes, 16 bit to nibble, 32 bits to 32 bits, etc.
+      # TODO(bowdidge): Revisit and match ABIs.
       self.bit_width = self.alignment
 
   def CastString(self):
@@ -859,6 +883,13 @@ class Struct(Declaration):
 
     return min([f.StartOffset() for f in self.fields])
 
+  def EndOffset(self):
+    """Returns last offset (numbered from 0) for any field in the structure."""
+    if not self.fields:
+      return 0
+
+    return max([f.EndOffset() for f in self.fields])
+
   def Flits(self):
     """Returns the number of flits this structure would occupy.
 
@@ -1140,7 +1171,6 @@ class Checker:
               last_field_name, field.name,
               last_field_name, utils.BitFlitString(last_end_offset),
               field.name, utils.BitFlitString(start_offset)))
-
         elif start_offset != last_end_offset + 1:
           self.AddError(field, 'unexpected space between field "%s" and "%s".  '
                         '("%s" ends at %s, "%s" begins at %s)'
@@ -1551,9 +1581,13 @@ class GenParser:
 
 
   def ParseFieldLine(self, line, containing_struct):
-    """Returns true if the line could be parsed as a field description.
+    """Parses a likely line describing a field in a structure or union.
 
-     Struct line is one of the following
+    Returns true if the line appears to be a field description.
+
+    Logs any errors when parsing the line.
+
+    A struct line is one of the following
 
     Defines field
     flit start_bit:end_bit type name /* comment */
@@ -1585,6 +1619,7 @@ class GenParser:
     if not utils.IsValidCIdentifier(name):
       self.AddError(
         'field name "%s" is not a valid identifier name.' % name)
+      return True
 
     if key_comment == '':
       key_comment = None
@@ -1629,7 +1664,6 @@ class GenParser:
     if start_bit > 63:
       self.AddError('Field "%s" has start bit "%d" too large for 8 byte flit.' % (
           name, start_bit))
-      return True
 
     if start_bit < end_bit:
       self.AddError('Start bit %d greater than end bit %d in field %s' %
@@ -1670,11 +1704,13 @@ class GenParser:
                     'field "%s" is %d bits, type "%s" is %d.' % (
           new_field.name, new_field.BitWidth(), new_field.type.TypeName(),
           new_field.type.BitWidth()))
+
     elif var_width > type_width:
       warning = 'Field larger than type: field "%s" is %d bits, type "%s" is %d.' % (
         new_field.name, new_field.BitWidth(), new_field.type.TypeName(),
         new_field.type.BitWidth())
       self.AddError(warning)
+
     containing_struct.AddField(new_field)
     return True
 
@@ -1802,6 +1838,7 @@ class YAMLParser:
           field_decl.filename = input_filename
           field_decl.line_number = 0
           struct_decl.AddField(field_decl)
+
           offset += width
 
     return yaml
