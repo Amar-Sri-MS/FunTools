@@ -590,7 +590,6 @@ class DocBuilderTest(unittest.TestCase):
     self.assertEqual(1, len(errors))
     self.assertIn('END missing at end of file', errors[0])
 
-
   def testMultiFlitNestedStruct(self):
     gen_parser = parser.GenParser()
     # ... allows a field to overflow into later flits.
@@ -640,7 +639,6 @@ class DocBuilderTest(unittest.TestCase):
     
     self.assertEqual(8, foo.BitWidth())
     self.assertEqual(0, array.BitWidth())
-
 
   def testVariableLengthStructArray(self):
     gen_parser = parser.GenParser()
@@ -1554,6 +1552,141 @@ class CheckerTest(unittest.TestCase):
 
     self.assertEqual(1, len(checker.errors))
     self.assertIn('is not the last field', checker.errors[0])
+
+  def testCheckOkPositionAfterUnion(self):
+    """Test that the positions of fields in structs in a union are
+    ignored, and the next field only cares about the size.
+    """
+    gen_parser = parser.GenParser()
+    contents = [
+      'STRUCT A',
+      '0 63:00 uint64_t a',
+      'UNION crypto_params crypto',
+      'STRUCT A1 a1',
+      '1 63:00 uint64_t b',
+      'END',
+      'STRUCT A2 a2',
+      # TODO(bowdidge): Checker should flag wrong flit here.
+      '2 63:00 uint64_t c',
+      'END',
+      'END',
+      # Checker doesn't complain because total size of the union
+      # is still one flit.
+      '2 63:00 uint64_t d',
+      'END'
+      ]
+    errors = gen_parser.Parse('filename', contents)
+
+    self.assertIsNone(errors)
+
+    checker = parser.Checker()
+    checker.VisitDocument(gen_parser.current_document)
+
+    self.assertEqual(0, len(checker.errors))
+
+  def testBadPositionAfterUnion(self):
+    """Test that a hole after the union is noticed."""
+    gen_parser = parser.GenParser()
+    contents = [
+      'STRUCT A',
+      '0 63:00 uint64_t a',
+      'UNION crypto_params crypto',
+      'STRUCT A1 a1',
+      '1 63:00 uint64_t b',
+      'END',
+      'STRUCT A2 a2',
+      '1 63:00 uint64_t c',
+      'END',
+      'END',
+      # Hole between unions and d.
+      # We should get an error.
+      '4 63:00 uint64_t d',
+      'END'
+      ]
+    errors = gen_parser.Parse('filename', contents)
+
+    self.assertIsNone(errors)
+
+    checker = parser.Checker()
+    checker.VisitDocument(gen_parser.current_document)
+
+    self.assertIsNotNone(checker.errors)
+    self.assertEqual(1, len(checker.errors))
+    self.assertIn('unexpected space between field "crypto" and "d".',
+                  checker.errors[0])
+
+  def testHoleInStructure(self):
+    """Tests that a gap between regular fields is noticed."""
+    gen_parser = parser.GenParser()
+    contents = [
+      'STRUCT A',
+      '0 63:00 uint64_t a',
+      # error: Nothing in flit 1.
+      '2 63:0 uint64_t b',
+      'END'
+      ]
+    errors = gen_parser.Parse('filename', contents)
+    self.assertIsNone(errors)
+
+    checker = parser.Checker()
+    checker.VisitDocument(gen_parser.current_document)
+
+    self.assertEqual(1, len(checker.errors))
+    self.assertIn('unexpected space between field "a" and "b"',
+                  checker.errors[0])
+
+  def disableTestErrorIfStructsInUnionHaveDifferentStarts(self):
+    """Test that a union with structs that start at different bits
+    are treated as an error.
+    """
+    gen_parser = parser.GenParser()
+    contents = [
+      'STRUCT A',
+      '0 63:00 uint64_t a',
+      'UNION crypto_params crypto',
+      'STRUCT A1 a1',
+      '1 63:00 uint64_t b',
+      'END',
+      'STRUCT A2 a2',
+      '2 63:00 uint64_t c',
+      'END',
+      'END',
+      ]
+    errors = gen_parser.Parse('filename', contents)
+
+    self.assertIsNone(errors)
+
+    checker = parser.Checker()
+    checker.VisitDocument(gen_parser.current_document)
+
+    self.assertEqual(1, len(checker.errors))
+    self.assertIn('field "a2" in union does not match start bit of previous.',
+                  checker.errors[1])
+
+  def testCatchUnionWithBadFields(self):
+    """Test that mismatched start positions are detected in unions."""
+    gen_parser = parser.GenParser()
+    contents = [
+      'STRUCT A',
+      '0 63:00 uint64_t a',
+      # Probably meant to do structure, instead does union.
+      'UNION crypto_params crypto',
+      '1 63:00 uint64_t b',
+      '2 63:00 uint64_t c',
+      'END',
+      'END'
+      ]
+    errors = gen_parser.Parse('filename', contents)
+
+    self.assertIsNone(errors)
+
+    checker = parser.Checker()
+    checker.VisitDocument(gen_parser.current_document)
+
+    self.assertEqual(1, len(checker.errors))
+    self.assertIn('Field "c" in union does not match start bit of previous',
+                  checker.errors[0])
+
 
 class CodegenArgsTest(unittest.TestCase):
 

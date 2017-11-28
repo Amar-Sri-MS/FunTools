@@ -760,6 +760,8 @@ class Struct(Declaration):
     self.name = name
 
     # fields is the list of fields in the struct.
+    # TODO(bowdidge): Change fields to all start at 0, rather than matching
+    # how they appeared in the gen file.
     self.fields = []
 
     # True if this struct actually represents a union.
@@ -839,11 +841,16 @@ class Struct(Declaration):
       return 0
 
     if self.is_union:
-      return max([f.BitWidth() for f in fields_with_offsets])
+      start_offset = min([f.StartOffset() for f in fields_with_offsets])
+      end_offset = max([f.EndOffset() for f in fields_with_offsets])
+      return end_offset - start_offset + 1
 
+    # TODO(bowdidge): normalize all structs to start at zero.
+    first_field = fields_with_offsets[0]
     last_field = fields_with_offsets[-1]
+    start_offset = first_field.StartOffset()
     end_offset = last_field.EndOffset()
-    return end_offset + 1
+    return end_offset - start_offset + 1
 
   def StartOffset(self):
     """Returns beginning offset for structure."""
@@ -1056,7 +1063,8 @@ class Document:
 
 
 class Checker:
-  # Walk through a document and identify any likely problems.
+  """Check alignment, location, etc of the defined structures."""
+
   def __init__(self):
     # Errors noted.
     self.errors = []
@@ -1093,6 +1101,24 @@ class Checker:
     last_start_offset = fields_with_offsets[0].StartOffset() - 1
     last_end_offset = fields_with_offsets[0].StartOffset() - 1
 
+    if the_struct.is_union:
+      if len(fields_with_offsets) > 1:
+        # Check all items in the union have the same start bit.
+        for i in range(1, len(fields_with_offsets)):
+          prev_field = fields_with_offsets[i-1]
+          field = fields_with_offsets[i]
+          if (prev_field.StartFlit() != field.StartFlit() or
+              prev_field.StartBit() != field.StartBit()):
+            self.AddError(field, 'Field "%s" in union does not '
+                          'match start bit of previous field "%s": '
+                          'flit %d bit %d vs flit %d bit %d' % (
+                field.name, prev_field.name,
+                field.StartFlit(), field.StartBit(),
+                prev_field.StartFlit(), prev_field.StartBit()))
+
+    # Check each field to make sure the alignment for non-bitfields is
+    # appropriate, and check that each field is adjacent to the previous
+    # and nest field.
     for field in fields_with_offsets:
       start_offset = field.StartOffset()
       end_offset = field.EndOffset()
