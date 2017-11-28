@@ -426,21 +426,18 @@ def GenerateFile(output_style, output_base, input_stream, input_filename,
     return (None, [error])
 
   if errors:
-    # return (None, errors)
-    pass
+    return (None, errors)
 
   c = parser.Checker()
   c.VisitDocument(doc)
   if len(c.errors) != 0:
-    # return (None, c.errors)
-    pass
+    return (None, c.errors)
 
   if 'pack' in options:
     p = Packer()
     errors = p.VisitDocument(doc)
     if errors:
-      # return (None, errors)
-      pass
+      return (None, errors)
 
   # Convert list of extra codegen features into variables named
   #  generate_{{codegen-style}} that will be in the template.
