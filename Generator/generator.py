@@ -577,7 +577,7 @@ def main():
   if errors:
     PrintErrors(errors)
     # Enable hard errors when fun_hci is clean.
-    # sys.exit(1)
+    sys.exit(1)
 
   if out:
     print out
