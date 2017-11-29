@@ -1433,6 +1433,21 @@ class CheckerTest(unittest.TestCase):
     self.assertIn('unexpected space between field "a" and "b"',
                   checker.errors[0])
 
+  def testExtraFlit(self):
+    gen_parser = parser.GenParser()
+    contents = ['STRUCT Foo',
+                '0 63:0 uint64_t a',
+                '2 63:0 uint64_t b',
+                'END']
+    errors = gen_parser.Parse('filename', contents)
+    self.assertIsNone(errors)
+    checker = parser.Checker()
+    checker.VisitDocument(gen_parser.current_document)
+
+    self.assertEqual(1, len(checker.errors))
+    self.assertIn('unexpected space between field "a" and "b"',
+                  checker.errors[0])
+
   def testMultiFlitFieldHandledOk(self):
     gen_parser = parser.GenParser()
     contents = ['STRUCT Foo',
