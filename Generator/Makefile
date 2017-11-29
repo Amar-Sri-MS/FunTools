@@ -6,6 +6,7 @@ FUNSDK_INSTALL_DIR = ../../FunSDK/bin/Generator
 # Directory where the fun_hci.gen file is stored.
 # Used for testing generator on real example.
 FUN_HCI_DIR = ../../FunSDK/FunSDK/hci
+FUN_HCI_DIR = ../../FunOS/hci
 
 # Where build products go.
 BUILD = build
@@ -33,11 +34,21 @@ generator-test:
 	python utils_test.py
 	python parser_test.py
 
-fun-hci: $(BUILD)
+# Tests building the current fun_hci.gen file to make sure generator
+# handles it well.
+test_fun_hci: $(BUILD)
 	./generator.py -g code -o $(BUILD)/fun_hci $(FUN_HCI_DIR)/fun_hci.gen
 	./generator.py -g html -o $(BUILD)/fun_hci $(FUN_HCI_DIR)/fun_hci.gen
 	./generator.py -g code -c pack,json -o $(BUILD)/fun_hci_pack $(FUN_HCI_DIR)/fun_hci.gen
 	./generator.py -g html -c pack,json -o $(BUILD)/fun_hci_pack $(FUN_HCI_DIR)/fun_hci.gen
+
+# Tests building the current fun_port.gen file to make sure generator
+# handles it well.
+test_fun_port: $(BUILD)
+	./generator.py -g code -o $(BUILD)/fun_hci $(FUN_HCI_DIR)/fun_port.gen
+	./generator.py -g html -o $(BUILD)/fun_hci $(FUN_HCI_DIR)/fun_port.gen
+	./generator.py -g code -c pack,json -o $(BUILD)/fun_port_pack $(FUN_HCI_DIR)/fun_port.gen
+	./generator.py -g html -c pack,json -o $(BUILD)/fun_port_pack $(FUN_HCI_DIR)/fun_port.gen
 
 
 # Tests generated C code compiles correctly.
