@@ -86,20 +86,7 @@ def ChoosePackedFieldName(fields):
   return first_name + "_to_" + last_name
 
 
-class Packer:
-  """ Searches all structures for bitfields that can be combined.
-
-  We generally don't trust compilers to do a good job on accessing
-  bitfields, especially for registers.  By convention, we'd prefer to
-  combine those accesses into explicit shifts and masks so we know
-  what our code is doing.
-
-  This pass runs through all structures, and looks for adjacent
-  bitfields with identical types.  These bitfields are replaced with
-  a single field declaration; macros are then added for accessing
-  the contents of the field.
-  """
-
+class Pass:
   def __init__(self):
     self.current_document = None
     self.errors = []
@@ -117,6 +104,43 @@ class Packer:
     for struct in doc.Structs():
       self.VisitStruct(struct)
     return self.errors
+
+  def VisitStruct(self, struct):
+    pass
+
+  def VisitEnum(self, enum):
+    pass
+
+  def VisitFlagset(self, enum):
+    pass
+
+
+class Splitter(Pass):
+  """Splits fields crossing flit boundaries into separate fields."""
+  def __init__(self):
+    Pass.__init__(self)
+
+  def VisitStruct(self, struct):
+    for f in struct.fields:
+      if f.StartFlit() != f.EndFlit():
+        # TODO(bowdidge): Implement splitter.
+        self.AddError(f, "TODO: split field %s" % f.name)
+
+class Packer(Pass):
+  """ Searches all structures for bitfields that can be combined.
+
+  We generally don't trust compilers to do a good job on accessing
+  bitfields, especially for registers.  By convention, we'd prefer to
+  combine those accesses into explicit shifts and masks so we know
+  what our code is doing.
+
+  This pass runs through all structures, and looks for adjacent
+  bitfields with identical types.  These bitfields are replaced with
+  a single field declaration; macros are then added for accessing
+  the contents of the field.
+  """
+  def __init__(self):
+    Pass.__init__(self)
 
   def VisitStruct(self, the_struct):
     # Gather fields by flit, then create macros for each.
@@ -399,6 +423,14 @@ def PrintErrors(error_list):
   for e in error_list:
     sys.stderr.write("%s\n" % e)
 
+
+def WriteFile(filename, contents):
+  """Writes generated code to a specified file."""
+  f = open(filename, 'w')
+  f.write(contents)
+  f.close()
+
+
 # TODO(bowdidge): Create options dictionary to replace all these arguments.
 def GenerateFile(output_style, output_base, input_stream, input_filename,
                  options):
@@ -439,6 +471,14 @@ def GenerateFile(output_style, output_base, input_stream, input_filename,
     if errors:
       return (None, errors)
 
+  if 'split' in options:
+    s = Splitter()
+    errors = s.VisitDocument(doc)
+    import pdb
+    pdb.set_trace()
+    if errors:
+      return (None, errors)
+
   # Convert list of extra codegen features into variables named
   #  generate_{{codegen-style}} that will be in the template.
   extra_vars = ['generate_' + o for o in options]
@@ -447,10 +487,7 @@ def GenerateFile(output_style, output_base, input_stream, input_filename,
     codegen.CodeGenerator(options)
     source = html_generator.VisitDocument(doc)
     if output_base:
-      fname = output_base + '.html'
-      f = open(fname, 'w')
-      f.write(source)
-      f.close()
+      WriteFile(output_base + '.html', source)
       return (None, [])
     else:
       return (source, [])
@@ -460,11 +497,22 @@ def GenerateFile(output_style, output_base, input_stream, input_filename,
     source = GenerateFromTemplate(doc, 'validate.tmpl', input_filename,
                                   output_base, extra_vars)
     if output_base:
-      f = open(output_base + '.validate.c', 'w')
-      f.write(source)
-      f.close()
+      WriteFile(output_base + '.validate.c', source)
       return ('', [])
     return (source, [])
+
+  elif output_style is OutputStyleKernel:
+    header = GenerateFromTemplate(doc, 'kernel.tmpl', input_filename,
+                                  output_base, extra_vars)
+    if not header:
+      return (None, ["Problems generating output from template."])
+    header = ReformatCode(header)
+    if output_base:
+      WriteFile(output_base + '.h', header)
+      return ("", [])
+    else:
+      return (header, [])
+      
 
   elif output_style is OutputStyleHeader:
     header = GenerateFromTemplate(doc, 'header.tmpl', input_filename,
@@ -479,21 +527,23 @@ def GenerateFile(output_style, output_base, input_stream, input_filename,
     source = ReformatCode(source)
 
     if output_base:
-      f = open(output_base + '.h', 'w')
-      f.write(header)
-      f.close()
-      f = open(output_base + '.c', 'w')
-      f.write(source)
-      f.close()
+      WriteFile(output_base + '.h', header)
+      WriteFile(output_base + '.c', source)
       return ("", [])
 
     out = '/* Header file */\n' +  header + '/* Source file */\n' + source
     return (out, [])
 
+# Output styles supported by generator.
 
+# Output in the FunHCI format with C structures.
 OutputStyleHeader = 1
+# Output HTML documentation for FunHCI structures.
 OutputStyleHTML = 2
+# Output validation code for FunHCI structure sizes.
 OutputStyleValidation = 3
+# Output kernel-style shift macros for hardware structures.
+OutputStyleKernel = 4
 
 
 def SetFromArgs(key, codegen_args, default_value):
@@ -538,6 +588,8 @@ def main():
         output_style = OutputStyleHTML
       elif a == 'validate':
         output_style = OutputStyleValidation
+      elif a == 'kernel':
+        output_style = OutputStyleKernel
       else:
         sys.stderr.write('Unknown output style "%s"' % a)
         sys.exit(2)
@@ -545,6 +597,7 @@ def main():
       assert False, 'Unhandled option %s' % o
 
   codegen_pack = SetFromArgs('pack', codegen_args, False)
+  codegen_split = SetFromArgs('split', codegen_args, False)
   codegen_json = SetFromArgs('json', codegen_args, False)
   codegen_swap = SetFromArgs('swap', codegen_args, False)
 
@@ -552,6 +605,8 @@ def main():
 
   if codegen_pack:
     codegen_options.append('pack')
+  if codegen_split:
+    codegen_options.append('split')
   if codegen_json:
     codegen_options.append('json')
   if codegen_swap:

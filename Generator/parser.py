@@ -541,7 +541,7 @@ class Field(Declaration):
   def shift(self):
     # TODO(bowdidge): subtract container.
     if not self.packed_field:
-      return 0
+      return self.EndBit() % utils.FLIT_SIZE
     min_end_bit = min([f.EndBit() for f in self.packed_field.packed_fields])
     return '%d' % (self.EndBit() - min_end_bit)
 
@@ -889,6 +889,15 @@ class Struct(Declaration):
       return 0
 
     return max([f.EndOffset() for f in self.fields])
+
+  def StartFlit(self):
+    """Returns the flit in the container holding the start of this field."""
+    return self.StartOffset() / utils.FLIT_SIZE
+
+  def EndFlit(self):
+    """Returns the flit in the container holding the end of this field."""
+    return (self.StartOffset() + self.BitWidth() - 1) / utils.FLIT_SIZE
+
 
   def Flits(self):
     """Returns the number of flits this structure would occupy.
@@ -1769,6 +1778,10 @@ class YAMLParser:
 
   def ParseYAML(self, yaml, input_filename):
     # We've now seen all dependencies - start parsing this file.
+    # Only render the structures if C_STRUCT is defined in the yaml file.
+    render_structures = False
+    if 'C_STRUCT' in yaml:
+      render_structures = True
     if 'ENUMLIST' in yaml:
       for enum in yaml['ENUMLIST']:
         name = enum['NAME']
@@ -1795,6 +1808,8 @@ class YAMLParser:
           var_decl.line_number = 0
           enum_decl.AddVariable(var_decl)
 
+    if not render_structures:
+      return yaml
     if 'IS_STRUCT' in yaml:
       structs = yaml['LIST']
       for struct in structs:
@@ -1839,7 +1854,8 @@ class YAMLParser:
           field_decl.line_number = 0
           struct_decl.AddField(field_decl)
 
-          offset += width
+          if not is_union:
+            offset += width
 
     return yaml
 

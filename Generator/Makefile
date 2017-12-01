@@ -17,7 +17,8 @@ GENERATOR_SRC = generator.py \
 		parser.py \
 		utils.py \
 		header.tmpl \
-		source.tmpl
+		source.tmpl \
+                kernel.tmpl
 
 test: generator-test test_rdma test_rdma_packed test_rdma_html
 test: test_swap test_simple_validation
