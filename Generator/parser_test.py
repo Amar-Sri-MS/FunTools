@@ -275,6 +275,7 @@ ENUMLIST:
   def testStruct(self):
     input = """
 ---
+C_STRUCT: 1
 IS_STRUCT: 1
 LIST:
   - DESCRIPTION: Foo
