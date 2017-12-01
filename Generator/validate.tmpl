@@ -1,0 +1,144 @@
+{#
+
+Standard Fungible template for validating structure size.
+
+This template takes a description of data structures and generates
+code to test that each structure is the correct size, and each field
+is at the correct offset.
+
+#}
+// SourceHeader created by generator.py
+// Do not change this file;
+// change the gen file "{{gen_file}}" instead.
+
+#include <inttypes.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+bool fail = false;
+unsigned test_count = 0;
+unsigned failed_tests = 0;
+
+#define ASSERT_SIZE(var, bytes, varStr)					\
+	{								\
+	  if (sizeof(var) != (bytes)) {					\
+		  fprintf(stderr,					\
+			  "%s:%d: FAIL: "				\
+			  "%s structure expected to be %" PRIu64	\
+			  " bytes, got %" PRIu64 "\n",			\
+			  __FILE__, __LINE__,				\
+			  (varStr), (uint64_t) (bytes),			\
+			  (uint64_t) sizeof(var));			\
+		  fail = true;						\
+	  }								\
+  }
+
+#define ASSERT_OFFSET(var, field, offset, varStr)			\
+	{								\
+		if (__builtin_offsetof(var, field) != offset) {			\
+			fprintf(stderr,					\
+				"%s:%d: "				\
+				"FAIL: %s structure expected to be %"	\
+				PRIu64 " bytes, got %" PRIu64 "\n",	\
+				__FILE__, __LINE,			\
+				varStr, (uint64_t) offset,		\
+				(uint64_t) __builtin_offsetof(var, field));	\
+			fail = true;					\
+		}							\
+	}
+
+#define ASSERT_EQUAL(expected_value, gotten_value, msg)			\
+	{								\
+		if ((expected_value) != (gotten_value)) {		\
+			fprintf(stderr, "%s:%d: "			\
+				"FAIL: %s: Expected %" PRIu64		\
+				", got %" PRIu64 "\n",			\
+				__FILE__, __LINE__,			\
+				msg, (uint64_t) (expected_value),	\
+				(uint64_t) (gotten_value));		\
+			fail = true;					\
+		}							\
+	}
+
+#define ASSERT_TRUE(gotten_value, msg)					\
+	{								\
+		if (!(gotten_value)) {					\
+			fprintf(stderr, "%s:%d: "			\
+				"FAIL: %s: Expression not true.\n",	\
+				__FILE__, __LINE__, msg);		\
+			fail = true;					\
+		}							\
+	}
+
+#define ASSERT_FAIL(msg)				                \
+	{								\
+		fprintf(stderr, "%s:%d: FAIL: %s\n",			\
+			__FILE__, __LINE__, msg);			\
+		fail = true;						\
+	}
+
+
+{% for decl in declarations %}
+  {% if decl.is_struct and not decl.inline %}
+  {{decl | as_definition }};
+  {% endif %}
+{% endfor %}
+
+int main(int argc, char **argv) {
+	const char *TERMINAL_COLOR_NORMAL = "\e[0m";
+	const char *TERMINAL_BOLD_RED = "\e[1;31m";
+	const char *TERMINAL_GREEN = "\e[32m";
+
+{% for decl in declarations %}
+        fail = false;
+  {% if decl.is_struct %}
+	printf("%s[RUN        ]%s %s: Validate sizes\n", TERMINAL_COLOR_NORMAL,
+	       TERMINAL_COLOR_NORMAL,
+	       "{{decl.Tag()}} {{decl.name}}");
+
+	/* Tests for struct {{decl.name}} */
+	/* Should be {{decl.BitWidth()}} bits wide. */
+	ASSERT_SIZE({{decl.Tag()}} {{decl.name}}, {{decl.BitWidth()}} / 8,
+		    "Wrong size for structure {{decl.name}}");
+    {% for field in decl.fields %}
+      {% if not field.is_natural_width %}
+      /* Bitfields in final output (when -c pack was passed to generator)
+       * is bad because the compiler will place those bits in inappropriate
+       * places.
+       */
+      ASSERT_FAIL("FAIL - field {{field.name}} in "
+		  "{{decl.Tag()}} {{decl.name}} is a bitfield, "
+		  "which should not be in a packed structure.\n");
+      {% else %}
+
+    ASSERT_EQUAL({{field.StartOffset()}} / 8,
+                 __builtin_offsetof({{decl.Tag()}} {{decl.name}},
+		                    {{field.name}}),
+		 "Wrong offset for field {{field.name}} in "
+		 "{{decl.Tag()}} {{decl.name}}");
+      {% endif %}
+    {% endfor %}
+        test_count++;
+	if (fail) {
+		printf("%s[     FAIL ]%s %s\n",
+		       TERMINAL_BOLD_RED, TERMINAL_COLOR_NORMAL,
+		       "{{decl.Tag()}} {{decl.name}}");
+		failed_tests++;
+	} else {
+		printf("%s[        OK ]%s %s\n",
+		       TERMINAL_COLOR_NORMAL, TERMINAL_COLOR_NORMAL,
+		       "{{decl.name}}");
+	}
+  {% endif %}
+{% endfor %}
+
+       printf("%s[==========]%s %u tests, %u failures\n",
+	      TERMINAL_GREEN, TERMINAL_COLOR_NORMAL, test_count, failed_tests);
+       if (failed_tests > 0) {
+	       printf("%s[  FAILED  ]%s %d tests\n",
+		      TERMINAL_BOLD_RED, TERMINAL_COLOR_NORMAL, failed_tests);
+	       return 1;
+       }
+       return 0;
+}

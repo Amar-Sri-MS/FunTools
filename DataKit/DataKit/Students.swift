@@ -74,7 +74,7 @@ func regenerateData(input: Data) -> Data {
 
 func filterSpecificFirstOrLastName(_ uniquingTable: DKTypeTable, _ first: Bool, _ name: String) -> DKFunctionFilter {
 	let t = studentType()
-	let seq = DKTypeSequence(subType: t)
+	let seq = t.makeSequence
 	let sig = DKTypeSignature(unaryArg: seq, output: seq)
 	return try! DKParser.parseFunction(uniquingTable, "filter({ $0.\(first ? "first_name" : "last_name") == \"\(name)\" })", sig) as! DKFunctionFilter
 }
@@ -115,12 +115,24 @@ func registerGeneratorOfStudents(typeTable: DKTypeTable) {
 		count += 1
 		return student
 	}
+	DKFunctionMaker.registerMaker(name: "studentMaker") { _ in
+		let studentArray = generateRandomStudent(id: count)
+		let student = t.valueFromRawJSON(typeTable, .array(studentArray))!
+		count += 1
+		return student
+	}
 
 }
 func registerGeneratorOfRandomInts(typeTable: DKTypeTable) {
 	var count = 0
-	DKFunctionGenerator.registerItemGenerator(name: "Students") {
+	DKFunctionGenerator.registerItemGenerator(name: "RandomInts") {
 		if count >= $0.integerValue { return nil }
+		let i = UInt64.random() % 1_000_000
+		let new = DKValue.int(type: DKTypeInt.uint64, intValue: i)
+		count += 1
+		return new
+	}
+	DKFunctionMaker.registerMaker(name: "randomInt") { _ in
 		let i = UInt64.random() % 1_000_000
 		let new = DKValue.int(type: DKTypeInt.uint64, intValue: i)
 		count += 1
@@ -140,30 +152,31 @@ let pipe1 = "compose(" +
 let pipe2 = "compose(" +
 	"map((Student) -> () | logger()), " +
 	"compose(" +
-	"filter((Student) -> Bool | { $0.first_name == \"Joe\"}), " +
-	"filter({ $0.last_name == \"Smith\"})" +
+		"filter((Student) -> Bool | { $0.first_name == \"Joe\"}), " +
+		"filter({ $0.last_name == \"Smith\"})" +
 	")" +
 ")"
 
-//let pipeFullNames = "compose(" +
-//	"map((String) -> () | logger()), " +
-//	"map((Student) -> String | { $0.first_name + \"_\" + $0.last_name })" +
-//")"
+let pipeFullNames = "compose(" +
+	"map((String) -> () | logger()), " +
+	"map((Student) -> String | { $0.first_name + \" \" + $0.last_name } )" +
+")"
 
 func studentsTestNew() {
-	let pipeString = pipe2
+	let pipeString = pipeFullNames
 	let t = studentType()
 	let typeTable = DKTypeTable()
 	typeTable.noteAlias("Student", studentType())
 	registerGeneratorOfStudents(typeTable: typeTable)
-	let generator = DKFunctionGenerator(typeTable, name: "Students", params: 1000, itemType: t)
-	let seq = DKTypeSequence(subType: t)
+	let max = 1000
+	let maker = DKFunctionMaker(typeTable, name: "studentMaker", itemType: t)
+	let seq = t.makeSequence
 	let sig = DKTypeSignature(unaryArg: seq, output: .void)
 	let pipeline = try! DKParser.parseFunction(typeTable, pipeString, sig)
 	print("pipeline = \(pipeline)")
-	let flowGraphGen = DKFlowGraphGen(typeTable, generator, pipeline)
+	let flowGraphGen = DKFlowGraphGen(typeTable, maker, max, pipeline)
 	let r = flowGraphGen.generate()
-	for fifo in r.fifos {
+	for fifo in r.nodes {
 		print("\(fifo.sugaredDescription(typeTable))")
 	}
 	let j = flowGraphGen.flowGraphToJSON

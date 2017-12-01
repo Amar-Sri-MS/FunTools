@@ -27,82 +27,6 @@ from jinja2 import Environment
 from jinja2 import FileSystemLoader
 from jinja2 import Template
 
-class Checker:
-  # Walk through a document and identify any likely problems.
-  def __init__(self):
-    # Errors noted.
-    self.errors = []
-    self.current_document = None
-
-  def AddError(self, node, msg):
-    if node.filename:
-      location = '%s:%d: ' % (node.filename, node.line_number)
-    else:
-      location = '%d: ' % node.line_number
-    self.errors.append(location + msg)
-
-  def VisitDocument(self, the_doc):
-    for struct in the_doc.Structs():
-      self.VisitStruct(struct)
-
-  def VisitStruct(self, the_struct):
-    last_type = None
-    last_end_flit = None
-    last_start_bit = 0
-    last_end_bit = 0
-    last_field_name = None
-
-    for field in the_struct.fields:
-      if field.IsNoOffset():
-        if field != the_struct.fields[-1]:
-          self.AddError(field, 'field "%s" is an array of zero size, but is not the last field.')
-
-    fields_with_offsets = [f for f in the_struct.fields if not f.IsNoOffset()]
-
-    if len(fields_with_offsets) == 0:
-      return
-
-    last_start_offset = fields_with_offsets[0].StartOffset() - 1
-    last_end_offset = fields_with_offsets[0].StartOffset() - 1
-
-    for field in fields_with_offsets:
-      start_offset = field.StartOffset()
-      end_offset = field.EndOffset()
-
-
-      if field.BitWidth() == field.type.BitWidth():
-        if start_offset % field.type.Alignment() != 0:
-          self.AddError(field, 'Field "%s" cannot be placed in a location that '
-                        'does not match its natural alignment.' % field.name)
-
-      if not the_struct.is_union:
-        if (last_start_offset >= end_offset and
-             last_end_offset >= end_offset):
-
-          self.AddError(field, 'field "%s" and "%s" not in bit order' % (
-              last_field_name, field.name))
-        elif last_end_offset >= start_offset:
-          self.AddError(field, 'field "%s" overlaps field "%s"  '
-                        '("%s" ends at %s, "%s" begins at %s)' % (
-              last_field_name, field.name,
-              last_field_name, utils.BitFlitString(last_end_offset),
-              field.name, utils.BitFlitString(start_offset)))
-
-        elif start_offset != last_end_offset + 1:
-          self.AddError(field, 'unexpected space between field "%s" and "%s".  '
-                        '("%s" ends at %s, "%s" begins at %s)'
-                        % (last_field_name, field.name,
-                           last_field_name,
-                           utils.BitFlitString(last_end_offset),
-                           field.name, utils.BitFlitString(start_offset)))
-
-      last_start_offset = field.StartOffset()
-      last_end_offset = field.EndOffset()
-      last_field_name = field.name
-
-  def VisitField(self, the_field):
-    pass
-
 
 def CommonPrefix(name_list):
   """Returns the longest prefix (followed by underbar) of all names.
@@ -470,12 +394,18 @@ def GenerateFromTemplate(doc, template_filename, generator_file, output_base,
   template = env.get_template(template_filename)
   return template.render(jinja_docs, env=env)
 
+def PrintErrors(error_list):
+  """Prints the list of errors to stderr."""
+  for e in error_list:
+    sys.stderr.write("%s\n" % e)
+
 # TODO(bowdidge): Create options dictionary to replace all these arguments.
 def GenerateFile(output_style, output_base, input_stream, input_filename,
                  options):
   """Generate header or HTML based on options.
 
-  Return the generated source (if output_base was None) or None.
+  Returns (generated source for output, errors).
+  Generated source may be "" if output_base specified output should go to a file.
   """
   # Process a single .gen file and create the appropriate header/docs.
   doc = None
@@ -490,29 +420,24 @@ def GenerateFile(output_style, output_base, input_stream, input_filename,
     errors = yaml_parser.Parse(input_filename)
     doc = yaml_parser.current_document
   else:
-    print 'Expected input filename to end in .gen or .yaml, got %s.' % (
+    error = 'Expected input filename to end in .gen or .yaml, got %s.' % (
         input_filename)
-    print 'Rename file to match input file format.'
-    sys.exit(1)
+    error += 'Rename file to match input file format.'
+    return (None, [error])
 
-  if errors is not None:
-    for error in errors:
-      print(error)
-      sys.exit(1)
+  if errors:
+    return (None, errors)
 
-
-  c = Checker()
+  c = parser.Checker()
   c.VisitDocument(doc)
   if len(c.errors) != 0:
-    for checker_error in c.errors:
-      sys.stderr.write(checker_error + '\n')
+    return (None, c.errors)
 
   if 'pack' in options:
     p = Packer()
     errors = p.VisitDocument(doc)
-    if len(errors) > 0:
-      for error in errors:
-        sys.stderr.write(error + '\n')
+    if errors:
+      return (None, errors)
 
   # Convert list of extra codegen features into variables named
   #  generate_{{codegen-style}} that will be in the template.
@@ -526,8 +451,21 @@ def GenerateFile(output_style, output_base, input_stream, input_filename,
       f = open(fname, 'w')
       f.write(source)
       f.close()
+      return (None, [])
     else:
-      return source
+      return (source, [])
+
+  elif output_style is OutputStyleValidation:
+    # TODO(bowdidge): Compile and run the code too.
+    source = GenerateFromTemplate(doc, 'validate.tmpl', input_filename,
+                                  output_base, extra_vars)
+    if output_base:
+      f = open(output_base + '.validate.c', 'w')
+      f.write(source)
+      f.close()
+      return ('', [])
+    return (source, [])
+
   elif output_style is OutputStyleHeader:
     header = GenerateFromTemplate(doc, 'header.tmpl', input_filename,
                                   output_base, extra_vars)
@@ -535,8 +473,7 @@ def GenerateFile(output_style, output_base, input_stream, input_filename,
                                   output_base, extra_vars)
 
     if not header or not source:
-      print("Not generating header and source -errors.")
-      return None
+      return (None, ["Problems generating output from templates."])
 
     header = ReformatCode(header)
     source = ReformatCode(source)
@@ -548,13 +485,15 @@ def GenerateFile(output_style, output_base, input_stream, input_filename,
       f = open(output_base + '.c', 'w')
       f.write(source)
       f.close()
-      return None
+      return ("", [])
 
-    return '/* Header file */\n' +  header + '/* Source file */\n' + source
+    out = '/* Header file */\n' +  header + '/* Source file */\n' + source
+    return (out, [])
 
 
 OutputStyleHeader = 1
 OutputStyleHTML = 2
+OutputStyleValidation = 3
 
 
 def SetFromArgs(key, codegen_args, default_value):
@@ -597,6 +536,8 @@ def main():
         output_style = OutputStyleHeader
       elif a == 'html':
         output_style = OutputStyleHTML
+      elif a == 'validate':
+        output_style = OutputStyleValidation
       else:
         sys.stderr.write('Unknown output style "%s"' % a)
         sys.exit(2)
@@ -629,9 +570,15 @@ def main():
       sys.exit(2)
 
   input_stream = open(args[0], 'r')
-  out = GenerateFile(output_style, output_base, input_stream, args[0],
-                     codegen_options)
-  input_stream.close()
+
+  (out, errors) = GenerateFile(output_style, output_base, input_stream, args[0],
+                               codegen_options)
+
+  if errors:
+    PrintErrors(errors)
+    # Enable hard errors when fun_hci is clean.
+    sys.exit(1)
+
   if out:
     print out
 

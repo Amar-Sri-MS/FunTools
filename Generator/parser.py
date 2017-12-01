@@ -39,6 +39,23 @@ class BaseType:
     """Returns the width of the base type itself."""
     return self.bit_width
 
+  def Alignment(self):
+    """Returns expected alignment of objects of this type in bits.
+
+    Default alignment isn't defined by C; it's a property of the compiler.
+    The Generator thinks about alignment because a field matching the
+    alignment and size of the specified type can be represented as a
+    native field in that structure, while an unaligned or differently-sized
+    type must be manipulated via bit shifting in a larger container.
+    """
+    if self.node is not None:
+      # Generally, compilers want to place fields at the alignment of the largest field.
+      if len(self.node.fields) == 0:
+        return 0
+      return max([f.type.Alignment() for f in self.node.fields])
+    # Assume remaining fields are aligned at same as bit size.
+    return self.bit_width
+
   def __cmp__(self, other):
     if other is None:
       return -1
@@ -168,11 +185,18 @@ class Type:
       self.is_array = False
       self.array_size = None
 
-    self.alignment = base_type.BitWidth()
-
     if self.is_array:
-      self.bit_width = self.alignment * array_size
+      self.alignment = base_type.Alignment()
+      self.bit_width = base_type.BitWidth() * array_size
+    elif self.IsRecord():
+      # Correct?
+      self.alignment = base_type.Alignment()
+      self.bit_width = base_type.BitWidth()
     else:
+      self.alignment = base_type.Alignment()
+      # Integer types generally align to size - 8 bit values
+      # aligning to bytes, 16 bit to nibble, 32 bits to 32 bits, etc.
+      # TODO(bowdidge): Revisit and match ABIs.
       self.bit_width = self.alignment
 
   def CastString(self):
@@ -407,7 +431,7 @@ class Field(Declaration):
     # Fields that have been packed in this field.
     self.packed_fields = []
     # True if field was explicitly defined to be less than its natural size.
-    self.is_bitfield = False
+    self.is_bitfield = self.is_natural_width
 
     # True if field needs to be swapped when converting from a different
     # ended processor.  Irrelevant for packed fields.
@@ -760,6 +784,8 @@ class Struct(Declaration):
     self.name = name
 
     # fields is the list of fields in the struct.
+    # TODO(bowdidge): Change fields to all start at 0, rather than matching
+    # how they appeared in the gen file.
     self.fields = []
 
     # True if this struct actually represents a union.
@@ -839,11 +865,16 @@ class Struct(Declaration):
       return 0
 
     if self.is_union:
-      return max([f.BitWidth() for f in fields_with_offsets])
+      start_offset = min([f.StartOffset() for f in fields_with_offsets])
+      end_offset = max([f.EndOffset() for f in fields_with_offsets])
+      return end_offset - start_offset + 1
 
+    # TODO(bowdidge): normalize all structs to start at zero.
+    first_field = fields_with_offsets[0]
     last_field = fields_with_offsets[-1]
+    start_offset = first_field.StartOffset()
     end_offset = last_field.EndOffset()
-    return end_offset + 1
+    return end_offset - start_offset + 1
 
   def StartOffset(self):
     """Returns beginning offset for structure."""
@@ -851,6 +882,13 @@ class Struct(Declaration):
       return 0
 
     return min([f.StartOffset() for f in self.fields])
+
+  def EndOffset(self):
+    """Returns last offset (numbered from 0) for any field in the structure."""
+    if not self.fields:
+      return 0
+
+    return max([f.EndOffset() for f in self.fields])
 
   def Flits(self):
     """Returns the number of flits this structure would occupy.
@@ -1000,6 +1038,13 @@ class Struct(Declaration):
       parent = parent.parent_struct
     return parent
 
+  def sub_fields(self):
+    """Returns set of fields in structure that are other structures."""
+    return [x for x in self.fields if x.type.IsRecord() and not
+            x.type.IsArray()]
+
+
+
 class Document:
   # Representation of an entire generated header specification.
   def __init__(self):
@@ -1049,7 +1094,8 @@ class Document:
 
 
 class Checker:
-  # Walk through a document and identify any likely problems.
+  """Check alignment, location, etc of the defined structures."""
+
   def __init__(self):
     # Errors noted.
     self.errors = []
@@ -1063,7 +1109,7 @@ class Checker:
     self.errors.append(location + msg)
 
   def VisitDocument(self, the_doc):
-    for struct in the_doc.structs:
+    for struct in the_doc.Structs():
       self.VisitStruct(struct)
 
   def VisitStruct(self, the_struct):
@@ -1086,6 +1132,24 @@ class Checker:
     last_start_offset = fields_with_offsets[0].StartOffset() - 1
     last_end_offset = fields_with_offsets[0].StartOffset() - 1
 
+    if the_struct.is_union:
+      if len(fields_with_offsets) > 1:
+        # Check all items in the union have the same start bit.
+        for i in range(1, len(fields_with_offsets)):
+          prev_field = fields_with_offsets[i-1]
+          field = fields_with_offsets[i]
+          if (prev_field.StartFlit() != field.StartFlit() or
+              prev_field.StartBit() != field.StartBit()):
+            self.AddError(field, 'Field "%s" in union does not '
+                          'match start bit of previous field "%s": '
+                          'flit %d bit %d vs flit %d bit %d' % (
+                field.name, prev_field.name,
+                field.StartFlit(), field.StartBit(),
+                prev_field.StartFlit(), prev_field.StartBit()))
+
+    # Check each field to make sure the alignment for non-bitfields is
+    # appropriate, and check that each field is adjacent to the previous
+    # and nest field.
     for field in fields_with_offsets:
       start_offset = field.StartOffset()
       end_offset = field.EndOffset()
@@ -1107,7 +1171,6 @@ class Checker:
               last_field_name, field.name,
               last_field_name, utils.BitFlitString(last_end_offset),
               field.name, utils.BitFlitString(start_offset)))
-
         elif start_offset != last_end_offset + 1:
           self.AddError(field, 'unexpected space between field "%s" and "%s".  '
                         '("%s" ends at %s, "%s" begins at %s)'
@@ -1518,9 +1581,13 @@ class GenParser:
 
 
   def ParseFieldLine(self, line, containing_struct):
-    """Returns true if the line could be parsed as a field description.
+    """Parses a likely line describing a field in a structure or union.
 
-     Struct line is one of the following
+    Returns true if the line appears to be a field description.
+
+    Logs any errors when parsing the line.
+
+    A struct line is one of the following
 
     Defines field
     flit start_bit:end_bit type name /* comment */
@@ -1552,6 +1619,7 @@ class GenParser:
     if not utils.IsValidCIdentifier(name):
       self.AddError(
         'field name "%s" is not a valid identifier name.' % name)
+      return True
 
     if key_comment == '':
       key_comment = None
@@ -1596,7 +1664,6 @@ class GenParser:
     if start_bit > 63:
       self.AddError('Field "%s" has start bit "%d" too large for 8 byte flit.' % (
           name, start_bit))
-      return True
 
     if start_bit < end_bit:
       self.AddError('Start bit %d greater than end bit %d in field %s' %
@@ -1637,11 +1704,13 @@ class GenParser:
                     'field "%s" is %d bits, type "%s" is %d.' % (
           new_field.name, new_field.BitWidth(), new_field.type.TypeName(),
           new_field.type.BitWidth()))
+
     elif var_width > type_width:
       warning = 'Field larger than type: field "%s" is %d bits, type "%s" is %d.' % (
         new_field.name, new_field.BitWidth(), new_field.type.TypeName(),
         new_field.type.BitWidth())
       self.AddError(warning)
+
     containing_struct.AddField(new_field)
     return True
 
@@ -1669,6 +1738,12 @@ class GenParser:
       else:
         self.ParseLine(line)
       self.current_line += 1
+
+    if len(self.stack) != 1:
+      (last_state, last_object) = self.stack[-1]
+      self.AddError('END missing at end of file. "%s" is still open.' %
+                    last_object.name)
+
     if len(self.errors) > 0:
       return self.errors
     return None
@@ -1757,14 +1832,13 @@ class YAMLParser:
               width = struct.BitWidth()
           else:
             type = DefaultTypeForWidth(width, offset)
-          if width < 1:
-            import pdb
-            pdb.set_trace()
+
           field_decl = Field(field_name, type, offset, width)
           field_decl.body_comment = comment
           field_decl.filename = input_filename
           field_decl.line_number = 0
           struct_decl.AddField(field_decl)
+
           offset += width
 
     return yaml

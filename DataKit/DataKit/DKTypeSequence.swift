@@ -8,7 +8,7 @@
 
 class DKTypeSequence: DKType {
 	let sub: DKType
-	init(subType: DKType) {
+	init(_ subType: DKType) {
 		self.sub = subType
 	}
 	override func typeToRawJSON(_ uniquingTable: DKTypeTable) -> JSON {
