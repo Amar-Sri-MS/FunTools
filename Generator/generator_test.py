@@ -162,17 +162,6 @@ class DocBuilderTest(unittest.TestCase):
     self.assertEqual(1, len(errors))
     self.assertIn('is 64 bits, type "uint8_t[2]" is 16', errors[0])
 
-  def testMultiFlitTooSmall(self):
-    gen_parser = parser.GenParser()
-    contents = ['STRUCT Foo',
-                '0 63:0 uint8_t chars[10]',
-                '1 63:0 ...',
-                'END']
-
-    errors = gen_parser.Parse('filename', contents)
-    self.assertEqual(1, len(errors))
-    self.assertIn('expected 80 bits, got 128', errors[0])
-
   def testMultiFlitNotNeeded(self):
     gen_parser = parser.GenParser()
     contents = ['STRUCT Foo',
@@ -196,6 +185,40 @@ class DocBuilderTest(unittest.TestCase):
     self.assertEqual(1, len(errors))
     self.assertIn('Field spec for "chars" too short: expected 144 bits, got 128',
                   errors[0])
+
+  def testContinuationNotAllowedAcrossFlitForBasicTypes(self):
+    gen_parser = parser.GenParser()
+    contents = ['STRUCT Foo',
+                '0 63:8 uint64_t fifty_six_bits',
+                # It's illegal to have a scalar straddling a flit because
+                # there's no way to tell its length.
+                '0 7:0 uint64_t sixteen_bits',
+                '1 63:56 ...',
+                'END']
+
+    errors = gen_parser.Parse('filename', contents)
+    self.assertEqual(1, len(errors))
+    self.assertIn('Multi-line flit continuation seen without pending field.',
+                  errors[0])
+
+  # TODO(bowdidge): Can we even turn this into a C structure?
+  def testContinuationAcrossFlitOkIfInStructure(self):
+    gen_parser = parser.GenParser()
+    contents = ['STRUCT Tiny',
+                '0 63:48 uint16_t foo',
+                'END',
+                'STRUCT Foo',
+                '0 63:8 uint64_t fifty_six_bits',
+                '0 7:0 Tiny sixteen_bits',
+                '1 63:56 ...',
+                'END']
+
+    errors = gen_parser.Parse('filename', contents)
+    self.assertFalse(errors)
+    
+    foo = gen_parser.current_document.Structs()[1]
+    self.assertEqual("Foo", foo.name)
+    self.assertEqual(72, foo.BitWidth())
 
   def testArraySizedTooLarge(self):
     gen_parser = parser.GenParser()
