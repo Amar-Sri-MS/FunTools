@@ -1,0 +1,18 @@
+// Example generator file for testing with bitfields.
+// This .gen file must use -c pack to pack the bitfields into
+// variables with standard integer types.
+
+STRUCT PackedReq
+// Basic types.
+0 63:62 uint8_t two_bit
+0 61:59 uint8_t three_bit
+0 58:56 uint8_t reserved
+0 55:48 uint8_t value1
+0 47:41 uint16_t value2
+0 40:32 uint16_t value3
+0 31:20 uint32_t value4
+0 19:0 uint32_t value5
+1 63:32 uint32_t value6
+1 31:16 uint32_t value7
+1 15:0 uint32_t value8
+END
