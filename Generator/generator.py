@@ -205,7 +205,7 @@ class Packer(Pass):
       return
     for (type, fields) in fields_to_pack:
       packed_field_width = 0
-      min_start_bit = min([f.StartBit() for f in fields])
+      min_start_offset = min([f.StartOffset() for f in fields])
       for f in fields:
         packed_field_width += f.BitWidth()
 
@@ -217,7 +217,7 @@ class Packer(Pass):
             type.BitWidth()))
 
       new_field_name = ChoosePackedFieldName(fields)
-      new_field = parser.Field(new_field_name, type, min_start_bit,
+      new_field = parser.Field(new_field_name, type, min_start_offset,
                                packed_field_width)
       new_field.line_number = fields[0].line_number
 
