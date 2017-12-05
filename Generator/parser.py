@@ -414,7 +414,9 @@ class Field(Declaration):
 
     # True if the field the same width as the type.
     self.is_natural_width = False
-    if self.type:
+    if self.type.IsRecord():
+      self.is_natural_width = True
+    else:
       self.is_natural_width = self.type.bit_width == self.bit_width
 
     # Minimum and maximum value allowed in the field.
