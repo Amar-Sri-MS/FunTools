@@ -77,19 +77,34 @@ def replace_dicts(cfg, cfg_replace):
 
 	return new_cfg
 
+def parser_handling_old(key, new_cfg, cfg_j):
+	matchparser = "PARSER"
+	for key2 in cfg_j[key].keys():
+		if key2 == matchparser:
+			new_cfg[key][key2] = new_cfg[key][key2] + cfg_j[key][key2]
+		else:
+			new_cfg[key].update(cfg_j[key])
+
+
+def spl_parser_handling(keyword1, keyword2, new_cfg, cfg_j):
+	new_cfg[keyword1][keyword2] = new_cfg[keyword1][keyword2] + cfg_j[keyword1][keyword2]
+
 # Merge two dictionaries
 # If they have the same key, merge contents
 # This is necessary e.g. for the pipeline:
 # 	Both the PRS and FFE images fall under the "pipeline" key,
 #	so we need to merge them properly
 def merge_dicts(cfg, cfg_j):
-
 	new_cfg = cfg
-
 	for key in cfg_j.keys():
 		print "Adding key: %s" % key
 		if key in new_cfg.keys():
-			new_cfg[key].update(cfg_j[key])
+			keyword1 = "pipeline"
+			keyword2 = 'PARSER'
+			if keyword1 == key and keyword2 in new_cfg[key].keys() and keyword2 in cfg_j[key].keys():
+				spl_parser_handling(keyword1, keyword2, new_cfg, cfg_j)
+			else:
+				new_cfg[key].update(cfg_j[key])
 		else:
 			new_cfg[key] = cfg_j[key]
 
