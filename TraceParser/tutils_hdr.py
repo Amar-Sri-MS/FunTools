@@ -159,33 +159,21 @@ def create_range_list(dasm_fname):
 
 def find_function(addr, ranges):
 
-        i0 = 0
-        iN = len(ranges)
-        im = (i0 + iN) / 2
+	l = 0
+	r = len(ranges)
 
-        # binary search it
-        while(1):
-		start = ranges[im][1]
-		end = ranges[im][2]
+	# binary search it
+	while l < r:
+		m = (l + r) / 2
+		start = ranges[m][1]
+		end = ranges[m][2]
 
-                # try
-		if (True):
-                        # found case
-			if addr >= start and addr <= end:
-				return (ranges[im][0], addr == start)
+		if addr < start:
+			r = m
+		elif addr > end:
+			l = m + 1
+		else:
+			# found it
+			return (ranges[m][0], addr == start)
 
-                        # not found case
-                        if (i0 == iN):
-                                return ("NOT FOUND", False)
-                        
-                        # less
-                        if addr < start:
-                                iN = im
-
-                        if addr > end:
-                                i0 = im
-
-                        im = (i0 + iN) / 2
-
-		#except:
-		#	return ("INVALID", False)
+	return ("NOT FOUND", False)
