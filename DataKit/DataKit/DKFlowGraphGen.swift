@@ -6,24 +6,14 @@
 //  Copyright © 2017 Fungible. All rights reserved.
 //
 
-class DKFlowGraphGen {
+class DKFlowGraph {
 	let uniquingTable: DKTypeTable
-	let maker: DKFunction
-	let max: Int
-	let fun: DKFunction
-	init(_ uniquingTable: DKTypeTable, _ maker: DKFunction, _ max: Int, _ fun: DKFunction) {
-		// We check the function takes 1 argument compatible with the generator
-		// And produces no output
-		// As we would not know what to do with the output
-		assert(fun.signature.numberOfArguments == 1)
-		assert(fun.signature[0] == maker.signature.output.makeSequence)
-		assert(fun.signature.output == DKType.void)
+	var nodes: [DKNode]
+	init(_ uniquingTable: DKTypeTable, _ generator: DKNodeGenerator) {
 		self.uniquingTable = uniquingTable
-		self.maker = maker
-		self.max = max
-		self.fun = fun
+		nodes = [generator]
 	}
-	func optimize(nodes: inout [DKNode]) -> Bool {
+	func optimize() -> Bool {
 		// Currently, this optimization is pointless
 		if nodes.count < 2 { return false }
 		for i in 1 ..< nodes.count - 1 {
@@ -32,7 +22,7 @@ class DKFlowGraphGen {
 					if fifo.hasDefaultBehavior && next.predicateOnInput == nil {
 						print("Optimize away fifo #\(i)")
 						nodes.remove(at: i)
-						_ = optimize(nodes: &nodes) // try again
+						_ = optimize() // try again
 						return true
 					}
 				}
@@ -40,26 +30,14 @@ class DKFlowGraphGen {
 		}
 		return false
 	}
-	func generate() -> (nodes: [DKNode], lastFunc: DKFunction) {
-		// Start with a fifo for the output of the generator
-		var nodes: [DKNode] = []
-		let generator = DKNodeGenerator(graphIndex: 0, maker: maker, max: max)
-		nodes |= generator
-		let lastFunc = generate(fun, &nodes)
-		let opt = optimize(nodes: &nodes)
-		if opt {
-			print("Fifo optimized, now: \(nodes)")
-		}
-		var compact = false
-		while compact {
-			compact = false
-		}
-		return (nodes, lastFunc)
-	}
-	func generate(_ fun: DKFunction, _ nodes: inout [DKNode]) -> DKFunction {
+	func generate(_ fun: DKFunction) -> DKFunction {
 		func addFifo(_ t: DKType) {
 			let fifo = DKNodeFifo(label: nodes.count, itemType: t)
 			nodes |= fifo
+		}
+		func addReduceNode(_ r: DKFunctionReduce) {
+			let node = DKNodeReduce(label: nodes.count, reduce: r)
+			nodes |= node
 		}
 		if let filter = fun as? DKFunctionFilter {
 			var lastFifo = nodes.last!
@@ -74,14 +52,17 @@ class DKFlowGraphGen {
 			return DKFunctionGatherFromFifo(uniquingTable, nodes.count - 1, t)
 		} else if let comp = fun as? DKFunctionComposition {
 			// First apply inner
-			let genInner = generate(comp.inner, &nodes)
+			let genInner = generate(comp.inner)
 			if (genInner is DKFunctionGatherFromFifo) && comp.outer.isInputGroupable {
 				// Instead of composing the functions, we specify that the last Fifo gathers
 				let t = (genInner.signature.output as! DKTypeSequence).sub
 				addFifo(t)	// we ignore for now the (trivial) result
-				return generate(comp.outer, &nodes)
+				return generate(comp.outer)
+			} else if (genInner is DKFunctionGetFromReduceNode) {
+				// We just compose the value coming from inner to outer
+				return DKFunctionComposition(outer: comp.outer, inner: genInner)
 			} else {
-				let genOuter = generate(comp.outer, &nodes)
+				let genOuter = generate(comp.outer)
 				return DKFunctionComposition(outer: genOuter, inner: genInner)
 			}
 		} else if let map = fun as? DKFunctionMap {
@@ -95,23 +76,70 @@ class DKFlowGraphGen {
 				return map.each
 			}
 			return DKFunctionGatherFromFifo(uniquingTable, nodes.count - 1, map.each.signature.output)
+		} else if let reduce = fun as? DKFunctionReduce {
+			if !(nodes.last! is DKNodeFifo) {
+				let t = reduce.inputItemType
+				addFifo(t)
+			}
+			addReduceNode(reduce)
+			return DKFunctionGetFromReduceNode(uniquingTable, nodes.count - 1, reduce.outputType)
 		} else {
-			let prev = DKFunctionGatherFromFifo(uniquingTable, nodes.count - 1, nodes.last!.itemType)
-			return DKFunctionComposition(outer: fun, inner: prev)
+			if nodes.last is DKNodeReduce {
+				let reduceNode = nodes.last as! DKNodeReduce
+				reduceNode.compose(outer: fun)
+				return DKFunctionGetFromReduceNode(uniquingTable, nodes.count - 1, fun.signature.output)
+			} else if nodes.last is DKNodeFifo {
+				let prev = DKFunctionGatherFromFifo(uniquingTable, nodes.count - 1, nodes.last!.itemType)
+				return DKFunctionComposition(outer: fun, inner: prev)
+			} else {
+				fatalErrorNYI()
+			}
 		}
 	}
-	var flowGraphToJSON: JSON {
-		let r = generate()
-		for i in r.nodes.indices {
-			assert(r.nodes[i].graphIndex == i)
+	func flowGraphToJSONDict(_ dict: inout [String: JSON]) {
+		for i in nodes.indices {
+			assert(nodes[i].graphIndex == i)
 		}
-		var dict: [String: JSON] = [
-			"nodes": .array(r.nodes.map { $0.nodeToJSON(uniquingTable) }),
-			"fun": fun.functionToJSON,
-			"last_fun": r.lastFunc.functionToJSON
-		]
+		dict["nodes"] = .array(nodes.map { $0.nodeToJSON(uniquingTable) })
 		// we do the table last, in case something got added there
 		dict["types"] = uniquingTable.typeTableAsJSON
+	}
+}
+
+class DKFlowGraphGen {
+	let uniquingTable: DKTypeTable
+	let fun: DKFunction
+	let maker: DKFunction
+	let max: Int
+	init(_ uniquingTable: DKTypeTable, _ maker: DKFunction, _ max: Int, _ fun: DKFunction) {
+		// We check the function takes 1 argument compatible with the generator
+		// And produces no output
+		// As we would not know what to do with the output
+		assert(fun.signature.numberOfArguments == 1)
+		assert(fun.signature[0] == maker.signature.output.makeSequence)
+		assert(fun.signature.output == DKType.void)
+		self.uniquingTable = uniquingTable
+		self.maker = maker
+		self.max = max
+		self.fun = fun
+	}
+	func generate() -> (graph: DKFlowGraph, lastFunc: DKFunction) {
+		let generator = DKNodeGenerator(graphIndex: 0, maker: maker, max: max)
+		let graph: DKFlowGraph = DKFlowGraph(uniquingTable, generator)
+		let lastFunc: DKFunction = graph.generate(fun)
+		let opt = graph.optimize()
+		if opt {
+			print("Fifo optimized, now: \(graph.nodes)")
+		}
+		return (graph, lastFunc)
+	}
+	var flowGraphToJSON: JSON {
+		let (graph, lastFunc) = generate()
+		var dict: [String: JSON] = [
+			"fun": fun.functionToJSON,
+			"last_fun": lastFunc.functionToJSON
+		]
+		graph.flowGraphToJSONDict(&dict)
 		return .dictionary(dict)
 	}
 }

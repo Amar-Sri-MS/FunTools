@@ -175,10 +175,6 @@ func studentsTestNew() {
 	let pipeline = try! DKParser.parseFunction(typeTable, pipeString, sig)
 	print("pipeline = \(pipeline)")
 	let flowGraphGen = DKFlowGraphGen(typeTable, maker, max, pipeline)
-	let r = flowGraphGen.generate()
-	for fifo in r.nodes {
-		print("\(fifo.sugaredDescription(typeTable))")
-	}
 	let j = flowGraphGen.flowGraphToJSON
 	print("flow graph as JSON: \n\(j)")
 	sendToDPCServer(j)

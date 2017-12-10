@@ -62,7 +62,7 @@ class ViewerApp: NSApplication {
 		if consoleController == nil {
 			consoleController = ConsoleController()
 		}
-		consoleController.selectionInfo.string = string
+//		consoleController.selectionInfo.string = string
 		consoleController.window.viewsNeedDisplay = true
 	}
 
