@@ -176,7 +176,7 @@ def output_cfg(fout):
 	global final_cfg
 
 	# indent=4 does pretty printing for us
-	json.dump(final_cfg, fout, indent=4)
+	json.dump(final_cfg, fout, indent=4, sort_keys=True)
 	
 #output the default.cfg file
 def output_default_config(build):
