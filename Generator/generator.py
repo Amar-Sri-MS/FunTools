@@ -270,6 +270,9 @@ def Usage():
   sys.stderr.write('        field, and create accessor macros.\n')
   sys.stderr.write('  json: generate routines for initializing a structure\n')
   sys.stderr.write('        from a JSON representation.')
+  sys.stderr.write('  cpacked: use __attribute__((packed)) on all structures\n')
+  sys.stderr.write('        to allow fields to be at non-natural alignments.\n')
+                   
   sys.stderr.write('Example: -c json,nopack enables json, and disables packing.\n')
 
 def ReformatCode(source):
@@ -600,6 +603,7 @@ def main():
   codegen_split = SetFromArgs('split', codegen_args, False)
   codegen_json = SetFromArgs('json', codegen_args, False)
   codegen_swap = SetFromArgs('swap', codegen_args, False)
+  codegen_cpacked = SetFromArgs('cpacked', codegen_args, False)
 
   codegen_options = []
 
@@ -611,6 +615,8 @@ def main():
     codegen_options.append('json')
   if codegen_swap:
     codegen_options.append('swap')
+  if codegen_cpacked:
+    codegen_options.append('cpacked')
 
   if (codegen_swap and not codegen_pack):
     print('WARNING - swapping will not work correctly on '
