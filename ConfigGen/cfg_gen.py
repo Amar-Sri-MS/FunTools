@@ -155,15 +155,13 @@ def generate_skuconfig(build):
 	final_cfg.clear()
 
 	for cfg in glob.glob("sku/*.cfg"):
-	    	skupattern = re.compile('sku/*sku*', re.IGNORECASE)
-	    	if skupattern.match(cfg):
-			print "handling sku configs %s" % cfg
-			standardize_json(cfg, cfg+'.tmp')
-			f = open("%s.tmp" % cfg, 'r')
-			cfg_j = json.load(f)
-			f.close()
-			os.system('rm %s.tmp' % cfg)
-			final_cfg = merge_dicts(build_override_cfg, cfg_j)
+		print "handling sku configs %s" % cfg
+		standardize_json(cfg, cfg+'.tmp')
+		f = open("%s.tmp" % cfg, 'r')
+		cfg_j = json.load(f)
+		f.close()
+		os.system('rm %s.tmp' % cfg)
+		final_cfg = merge_dicts(build_override_cfg, cfg_j)
 
 #output the header to the file
 def output_header(fout):
