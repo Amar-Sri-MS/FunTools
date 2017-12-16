@@ -1850,5 +1850,20 @@ class CodegenArgsTest(unittest.TestCase):
     self.assertTrue(generator.SetFromArgs('pack', codegen_args, False))
     self.assertTrue(generator.SetFromArgs('pack', codegen_args, True))
       
+
+  def testCPacked(self):
+    """Tests that cpacked argument adds correct __attribute__ in code."""
+    codegen_args = ['cpacked']
+  
+    input = ['STRUCT A',
+             '0 63:0 uint64_t foo',
+             'END']
+    (out, errs) = generator.GenerateFile(generator.OutputStyleHeader, None, 
+                                         input, 'input.gen',
+                                         ['cpacked'])
+    
+    self.assertEqual([], errs)
+    self.assertIn('} __attribute__((packed))', out)
+
 if __name__ == '__main__':
     unittest.main()
