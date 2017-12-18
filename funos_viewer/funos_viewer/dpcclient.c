@@ -16,6 +16,8 @@
 #include <string.h>
 #include <stdio.h>
 
+#define PLATFORM_POSIX	1
+
 #include <utils/threaded/fun_json.h>
 
 static inline void _setnosigpipe(int const fd) {
