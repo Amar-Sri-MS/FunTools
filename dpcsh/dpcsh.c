@@ -14,6 +14,8 @@
 #include <pthread.h>
 #include <netinet/in.h>		// TCP socket
 
+#define PLATFORM_POSIX	1
+
 #include <utils/threaded/fun_json.h>
 #include <utils/threaded/fun_commander.h>
 
