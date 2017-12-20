@@ -10,7 +10,7 @@ Generates structures, accessor macros and functions, and enum declarations.
 
 // Magic number to allow checking whether two interfaces were generated
 // from the same sources.
-#define GENERATOR_VERSION_HASH {{gen_file_version_hash}}
+#define {{gen_file|as_macro}}_VERSION_HASH {{gen_file_version_hash}}
 {#
 
 How to render each enum.
