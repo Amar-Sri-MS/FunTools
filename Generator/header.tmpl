@@ -11,6 +11,7 @@ Generates structures, accessor macros and functions, and enum declarations.
 // Magic number to allow checking whether two interfaces were generated
 // from the same sources.
 #define {{gen_file|as_macro}}_VERSION_HASH {{gen_file_version_hash}}
+
 {#
 
 How to render each enum.
@@ -60,38 +61,6 @@ How to render each struct
 {{ struct | as_definition }}{% if generate_cpacked %}__attribute__((packed)){% endif %};
 {% endif %}
 
-/* Initializes the {{struct.name}} structure.
- * Arguments:
- *   s: pointer to structure to be initialized.
-   {% for field in struct.arg_fields() %}
- *   {{field.name}}: {% if field.key_comment %} {{field.key_comment|as_line}} {% else %} {% endif %}
-
-   {% endfor %}
-
-{% if struct.non_arg_fields() | length > 0 %}
- * Caller responsible for initializing these fields:
-     {% for f in struct.non_arg_fields() %}{% if not f.is_reserved %}
- *   {{f.name}}
-     {% endif %}{% endfor %}
-{% endif %}
- */
-extern void {{struct.name}}_init(struct {{struct.init_struct().name}} *s{% if struct.arg_fields() %},
-  {% for field in struct.arg_fields() %}
-  {{field | as_declaration}}{{ ", " if not loop.last }}
-  {% endfor %}
-  {% endif %}
-);
-{% if generate_json %}
-
-/*
- * Initializes {{struct.name}} structure from JSON representation.
- * Returns false if initialization failed.
- * Caller responsible for determining correct init function(s).
- */
-extern bool {{struct.name}}_json_init(struct fun_json *j, struct {{struct.init_struct().name}} *s);
-
-{% endif %}
-
 {# Generate macros for packed fields. #}
 {% for field in struct.fields %}
    {% if field.packed_fields %}
@@ -134,6 +103,57 @@ extern bool {{struct.name}}_json_init(struct fun_json *j, struct {{struct.init_s
 #define {{struct.name|as_macro}}_SWAP(s) { {% for field in struct.init_fields() %} {% if field.swappable and not field.is_reserved %} (s).{{field.name}} = __builtin_bswap{{field.type.bit_width}} ((s).{{field.name}}); {% endif %} {% endfor %} {% for field in struct.sub_fields() %} {{field.type.base_type.node.name|as_macro}}_SWAP((s).{{field.name}}); {% endfor %} }
 
 {% endif %}
+
+/* Initializes the {{struct.name}} structure.
+ * Arguments:
+ *   s: pointer to structure to be initialized.
+   {% for field in struct.arg_fields() %}
+ *   {{field.name}}: {% if field.key_comment %} {{field.key_comment|as_line}} {% else %} {% endif %}
+
+   {% endfor %}
+
+{% if struct.non_arg_fields() | length > 0 %}
+ * Caller responsible for initializing these fields:
+     {% for f in struct.non_arg_fields() %}{% if not f.is_reserved %}
+ *   {{f.name}}
+     {% endif %}{% endfor %}
+{% endif %}
+ */
+static inline void {{struct.name}}_init(struct {{struct.init_struct().name}} *s{%if struct.arg_fields() %},
+{% for field in struct.arg_fields() %}
+  {{field | as_declaration }} {{ ", " if not loop.last }} {% endfor %}{% endif %}) {
+
+  {% for field in struct.arg_fields() %}
+  {# TODO(bowdidge): Only do assert if field isn't natural size. #}
+  {% if not field.is_natural_width %}
+  assert({{field.name}} <= {{field.max_value|as_hex}});
+  {% endif %}
+  {% endfor %}
+
+  {% for field in struct.init_fields() %}
+    {% if field.packed_fields %}
+      s->{{field.init_accessor()}}{{field.name}} =
+      {% for f in field.fields_to_set() %}
+	{{f.parent_struct.name|as_macro}}_{{f.name|as_macro}}_P({{f.name}}) {{" | " if not loop.last }}
+      {% endfor %}
+	;
+    {% else %}
+      s->{{field.init_accessor()}}{{field.name}} = {{field.name}};
+    {% endif %}
+  {% endfor %}
+}
+
+{% if generate_json %}
+
+/*
+ * Initializes {{struct.name}} structure from JSON representation.
+ * Returns false if initialization failed.
+ * Caller responsible for determining correct init function(s).
+ */
+extern bool {{struct.name}}_json_init(struct fun_json *j, struct {{struct.init_struct().name}} *s);
+
+{% endif %}
+
 /* End of helper macros for structure {{struct.name}} */
 {%- endmacro %}
 {#

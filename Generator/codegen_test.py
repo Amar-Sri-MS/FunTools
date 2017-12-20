@@ -403,8 +403,8 @@ class CodegenEndToEnd(unittest.TestCase):
 
     out = RemoveWhitespace(out)
 
-    self.assertEqual(2, out.count('void BA_init'))
-    self.assertEqual(2, out.count('void BB_init'))
+    self.assertEqual(1, out.count('void BA_init'))
+    self.assertEqual(1, out.count('void BB_init'))
 
   def testSimpleFlags(self):
     contents = [
