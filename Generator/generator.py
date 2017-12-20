@@ -446,7 +446,7 @@ def GenerateFile(output_style, output_base, input_stream, input_filename,
   doc = None
   errors = None
 
-  if input_filename.endswith('.gen'):
+  if input_filename.endswith('.gen') or input_filename.endswith('.pgen'):
     gen_parser = parser.GenParser()
     errors = gen_parser.Parse(input_filename, input_stream)
     doc = gen_parser.current_document
