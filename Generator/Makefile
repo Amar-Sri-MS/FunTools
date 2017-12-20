@@ -24,7 +24,7 @@ GENERATOR_SRC = generator.py \
                 kernel.tmpl
 
 test: generator-test test_rdma_packed test_rdma_packed_html
-test: test_swap test_validate
+test: test_simple_validation test_packed_validation test_swap
 
 # Test new generator with actual fun-hci file in the future.  For now,
 # it complicates configuring Jenkins.
@@ -60,12 +60,6 @@ test_rdma_packed: $(BUILD)
 	gcc -o $(BUILD)/rdma_packed -g -I$(BUILD) -DDEBUG -DGENERATOR_TEST \
             test_helper/rdma_packed.c $(BUILD)/rdma_packed_gen.c
 
-test_swap: test_helper/swap.c examples/swap.gen
-	./generator.py -g code --codegen pack,swap -o $(BUILD)/swap_gen examples/swap.gen
-	gcc -o $(BUILD)/swap -g -I$(BUILD) -DDEBUG -DGENERATOR_TEST \
-	test_helper/swap.c $(BUILD)/swap_gen.c
-	$(BUILD)/swap
-
 # Tests HTML generation works.
 test_rdma_packed_html: examples/rdma.gen $(GENERATOR_SRC)
 	./generator.py -g html -c pack -o $(BUILD)/rdma-gen examples/rdma.gen
@@ -83,6 +77,11 @@ test_fun_hci_validation:
 
 test_fun_port_validation:
 	./validate_gen $(FUN_HCI_DIR)/fun_port.gen pack
+
+test_fun_hci_validation: $(BUILD)
+	./generator.py -g validate -c pack,json -o $(BUILD)/packed_fun_hci $(FUN_HCI_DIR)/fun_hci.gen
+	gcc -o $(BUILD)/packed_fun_hci.validate $(BUILD)/packed_fun_hci.validate.c
+	$(BUILD)/packed_fun_hci.validate
 
 $(BUILD): $(BUILD)
 	mkdir $(BUILD)

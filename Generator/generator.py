@@ -718,7 +718,6 @@ def main():
   codegen_pack = SetFromArgs('pack', codegen_args, False)
   codegen_split = SetFromArgs('split', codegen_args, False)
   codegen_json = SetFromArgs('json', codegen_args, False)
-  codegen_swap = SetFromArgs('swap', codegen_args, False)
   codegen_cpacked = SetFromArgs('cpacked', codegen_args, False)
 
   codegen_options = []
@@ -729,14 +728,8 @@ def main():
     codegen_options.append('split')
   if codegen_json:
     codegen_options.append('json')
-  if codegen_swap:
-    codegen_options.append('swap')
   if codegen_cpacked:
     codegen_options.append('cpacked')
-
-  if (codegen_swap and not codegen_pack):
-    print('WARNING - swapping will not work correctly on '
-          'unpacked bitfields.')
 
   if len(args) == 0:
       sys.stderr.write('No genfile named.\n')

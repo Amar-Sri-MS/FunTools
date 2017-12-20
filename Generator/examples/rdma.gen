@@ -40,14 +40,14 @@ END
 
 // Fragment descriptor pointing to a 16 byte gather entry.
 STRUCT GatherListFragmentHeader
+  0 63:56 uint8_t opcode
   UNION Command u1
     // GatherListFragment for 16 byte unit specifying bytes to insert
     // at current offset
     STRUCT GatherListInlineFragment inline_cmd
-      0 63:62 uint8_t opcode
-      0 61:60 uint8_t source /* will be OPCODE_GATHER */
-      0 59:56 uint8_t inlineByteCount
-      0 55:0 uint8_t bytes[15] /* First seven bytes of inline copy. */
+      0 55:53 uint8_t source /* will be OPCODE_GATHER */
+      0 52:48 uint8_t inlineByteCount
+      0 47:0 uint8_t bytes[14] /* First seven bytes of inline copy. */
       1 63:0 ...
     END
     // Generate bytes from pattern.
