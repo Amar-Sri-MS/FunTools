@@ -14,6 +14,7 @@
 
 import fileinput
 import getopt
+import hashlib
 import os
 import subprocess
 import sys
@@ -368,6 +369,26 @@ def ReformatCodeWithClangFormat(source):
 
   return out[0]
 
+# Incremented whenever the generator's algorithm changes in ways that
+# would affect output.
+GENERATOR_VERSION = 0
+
+def FileHash(filename):
+  """Returns an integer representing the contents of the file.
+
+  Value will be unique for different contents, and will also be unique
+  if generator version changes.
+  """
+  try:
+    f = open(filename)
+  except Exception as err:
+    # No file?  Probably testing or stdin.
+    return GENERATOR_VERSION
+  readFile = f.read()
+  f.close()
+  hash_as_int = int(hashlib.md5(readFile).hexdigest(), 16)
+  return (hash_as_int & 0xfffffff) + GENERATOR_VERSION
+
 def GenerateFromTemplate(doc, template_filename, generator_file, output_base,
                          extra_vars):
   """Creates source file and header for parsed gen file from templates.
@@ -404,6 +425,8 @@ def GenerateFromTemplate(doc, template_filename, generator_file, output_base,
   else:
     output_base = 'foo_gen'
 
+  gen_file_version_hash = FileHash(generator_file)
+
   jinja_docs = {
     'gen_file' : os.path.basename(generator_file),
     'output_base' : output_base,
@@ -412,7 +435,8 @@ def GenerateFromTemplate(doc, template_filename, generator_file, output_base,
     'flagsets': doc.Flagsets(),
     'structs' : [x for x in doc.Structs() if not x.is_union],
     'declarations': doc.Declarations(),
-    'extra_vars': extra_vars
+    'extra_vars': extra_vars,
+    'gen_file_version_hash': gen_file_version_hash
     }
 
   for var in extra_vars:

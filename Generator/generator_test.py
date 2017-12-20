@@ -1865,5 +1865,22 @@ class CodegenArgsTest(unittest.TestCase):
     self.assertEqual([], errs)
     self.assertIn('} __attribute__((packed))', out)
 
+class HashTest(unittest.TestCase):
+  def testSimple(self):
+    generator.GENERATOR_VERSION = 0
+    self.assertEqual(43350302, generator.FileHash('examples/rdma.gen'))
+    self.assertEqual(148504078, generator.FileHash('examples/packed.gen'))
+    self.assertEqual(0, generator.FileHash('no/such/file.gen'))
+
+  def testDifferentVersion(self):
+    """Tests that the FileHash will return different values for the same
+    file if the generator version changes.
+    """
+    generator.GENERATOR_VERSION = 1
+    # These values should be different from values in testSimple.
+    self.assertEqual(43350303, generator.FileHash('examples/rdma.gen'))
+    self.assertEqual(148504079, generator.FileHash('examples/packed.gen'))
+    self.assertEqual(1, generator.FileHash('no/such/file.gen'))
+
 if __name__ == '__main__':
     unittest.main()

@@ -7,6 +7,10 @@ Generates structures, accessor macros and functions, and enum declarations.
 // Header created by generator.py
 // Do not change this file;
 // change the gen file "{{gen_file}}" instead.
+
+// Magic number to allow checking whether two interfaces were generated
+// from the same sources.
+#define GENERATOR_VERSION_HASH {{gen_file_version_hash}}
 {#
 
 How to render each enum.
