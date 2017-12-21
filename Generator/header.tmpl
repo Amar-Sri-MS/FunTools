@@ -20,12 +20,23 @@ Generates structures, accessor macros and functions, and enum declarations.
 #define cpu_to_dpu16(x) (x)
 #define cpu_to_dpu32(x) (x)
 #define cpu_to_dpu64(x) (x)
+
+#define dpu_to_cpu8(x) (x)
+#define dpu_to_cpu16(x) (x)
+#define dpu_to_cpu32(x) (x)
+#define dpu_to_cpu64(x) (x)
 #else
 #define cpu_to_dpu8(x) (x)
 #define cpu_to_dpu16(x) (__builtin_bswap16(x))
 #define cpu_to_dpu32(x) (__builtin_bswap32(x))
 #define cpu_to_dpu64(x) (__builtin_bswap64(x))
+
+#define dpu_to_cpu8(x) (x)
+#define dpu_to_cpu16(x) (__builtin_bswap16(x))
+#define dpu_to_cpu32(x) (__builtin_bswap32(x))
+#define dpu_to_cpu64(x) (__builtin_bswap64(x))
 #endif
+{% endif %}
 
 {#
 
@@ -91,12 +102,12 @@ How to render each struct
 /* Shifts a value to the location to be inserted in field {{f.name}} 
  * inside packed field {{field.name}}.
  */
-#define {{struct.name|as_macro}}_{{f.name|as_macro}}_P(x) (({{f.type | as_cast}} x) << {{struct.name|as_macro}}_{{f.name|as_macro}}_S)
+#define {{struct.name|as_macro}}_{{f.name|as_macro}}_P(x) (cpu_to_dpu{{field.bit_width}}(({{f.type | as_cast}} x) << {{struct.name|as_macro}}_{{f.name|as_macro}}_S))
 
 /* Returns value for field {{field.name}} from packed field
  * {{field.name}}.
  */
-#define {{struct.name|as_macro}}_{{f.name|as_macro}}_G(x) (((x) >> {{struct.name|as_macro}}_{{f.name|as_macro}}_S) & {{struct.name|as_macro}}_{{f.name|as_macro}}_M)
+#define {{struct.name|as_macro}}_{{f.name|as_macro}}_G(x) (dpu_to_cpu{{field.bit_width}}(((x) >> {{struct.name|as_macro}}_{{f.name|as_macro}}_S) & {{struct.name|as_macro}}_{{f.name|as_macro}}_M))
 
 /* Clears out the field {{f.name}} inside packed field
  *  {{field.name}}
@@ -104,8 +115,8 @@ How to render each struct
  *    x.{{field.name}} &= {{struct.name|as_macro}}_{{f.name|as_macro}}_Z;
  */
 #define {{struct.name|as_macro}}_{{f.name|as_macro}}_Z \
-	(~(({{f.type|as_cast}} {{struct.name|as_macro}}_{{f.name|as_macro}}_M) \
-       << {{struct.name|as_macro}}_{{f.name|as_macro}}_S))
+	(cpu_to_dpu{{field.bit_width}}(~(({{f.type|as_cast}} {{struct.name|as_macro}}_{{f.name|as_macro}}_M) \
+       << {{struct.name|as_macro}}_{{f.name|as_macro}}_S)))
       {% endif %}
     {% endfor %}
   {% endif %}

@@ -52,26 +52,23 @@ STRUCT GatherListFragmentHeader
     END
     // Generate bytes from pattern.
     STRUCT GatherListGenerateFragment generate_cmd
-      0 63:62 uint64_t opcode
-      0 61:60 uint64_t source /* will be SOURCE_GENERATE */
-      0 59:56 uint64_t reserved
-      0 55:0 uint64_t bytesToGenerate
+      0 55:53 uint8_t source /* will be SOURCE_GENERATE */
+      0 52:48 uint8_t reserved
+      0 47:0 uint64_t bytesToGenerate
       1 63:0 uint64_t pattern0
     END
     // Generate bytes from pattern. opcode will be OPCODE_OPERATE.
     STRUCT GatherListOperateFragment operate_cmd
-      0 63:62 uint8_t opcode
-      0 61:56 uint8_t source /* accelerator number and function number. */
-      0 55:48 uint8_t sizeOfData /* in 8B words in addition to current 8B */
+      0 55:53 uint8_t source /* accelerator number and function number. */
+      0 52:48 uint8_t sizeOfData /* in 8B words in addition to current 8B */
       // Followed by 6-126B of data.
     END
     // Scatter data. Opcode will be OPCODE_SCATTER
     STRUCT GatherListScatterFragment scatter_cmd
-      0 63:62 uint16_t opcode
-      0 61:60 uint16_t destination
-      0 59:58 uint16_t instance
-      0 57:56 uint16_t reserved
-      0 55:48 uint16_t rsvd
+      0 55:52 uint8_t destination
+      0 51:50 uint8_t instance
+      0 49:49 uint8_t reserved
+      0 48:48 uint8_t rsvd
       0 47:32 uint16_t length /* byte length of fragment */
       0 31:0 uint32_t info /* metadata */
       1 63:0 uint64_t address /* byte-aligned physical address of destination fragment. */
