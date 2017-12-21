@@ -212,12 +212,21 @@ class Packer(Pass):
 
       if (packed_field_width > type.BitWidth()):
         self.AddError(the_struct,
-                      'Width of packed bit-field containing %s (%d bits) exceeds width of its type (%d bits). '% (
+                      'Width of packed bit-field containing %s (%d bits) '
+                      'exceeds width of its type (%d bits). '% (
             utils.ReadableList([f.name for f in fields]),
             packed_field_width,
             type.BitWidth()))
 
       new_field_name = ChoosePackedFieldName(fields)
+
+      if the_struct.HasFieldWithName(new_field_name):
+        self.AddError(
+          'Can\'t create packed field: '
+          'Field with name "%s" already exists in struct "%s"' % (
+          new_field_name, the_struct.Name()))
+        return
+
       new_field = parser.Field(new_field_name, type, min_start_offset,
                                packed_field_width)
       new_field.line_number = fields[0].line_number
