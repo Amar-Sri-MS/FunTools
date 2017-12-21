@@ -195,8 +195,6 @@ class CodegenEndToEnd(unittest.TestCase):
     # Check macros weren't created for reserved fields.
     self.assertNotIn('#define FOO_RESERVED', out)
 
-    # Did init function check range of bitfields?
-    self.assertIn('assert(b <= 0x3);', out)
     # Did bitfield get initialized?'
     self.assertIn('s->b_to_c = FOO_B_P(b) | FOO_C_P(c)', out)
 

@@ -122,13 +122,6 @@ static inline void {{struct.name}}_init(struct {{struct.init_struct().name}} *s{
 {% for field in struct.arg_fields() %}
   {{field | as_declaration }} {{ ", " if not loop.last }} {% endfor %}{% endif %}) {
 
-  {% for field in struct.arg_fields() %}
-  {# TODO(bowdidge): Only do assert if field isn't natural size. #}
-  {% if not field.is_natural_width %}
-  assert({{field.name}} <= {{field.max_value|as_hex}});
-  {% endif %}
-  {% endfor %}
-
   {% for field in struct.init_fields() %}
     {% if field.packed_fields %}
       s->{{field.init_accessor()}}{{field.name}} =

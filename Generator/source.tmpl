@@ -8,15 +8,12 @@ Standard Fungible template for source code for generated structures.
 // change the gen file {{gen_file}} instead.
 
 #ifdef __KERNEL__
-/* For Linux kernel */
-#define assert(x)
 
 #include <linux/types.h>
 
 #else
 
 /* For FunOS and CC-Linux. */
-#include <assert.h>
 #include <stdint.h>
 
 #endif // __KERNEL__
