@@ -821,6 +821,13 @@ class Struct(Declaration):
     self.fields.append(field)
     field.parent_struct = self
 
+  def HasFieldWithName(self, name):
+    """Returns true if there's already a field with that name in struct."""
+    for f in self.fields:
+      if f.Name() == name:
+        return True
+    return False
+
   def Name(self):
     return self.name
 
@@ -1270,6 +1277,15 @@ class GenParser:
       self.AddError(
         'variable "%s" is not a valid identifier name.' % variable_name)
 
+    # TODO(bowdidge): Complain about nested structures without a field
+    # name.
+    if (state == GenParserStateStruct and variable_name and
+        containing_object.HasFieldWithName(variable_name)):
+      self.AddError(
+        'Field with name "%s" already exists in struct "%s"' % (
+          variable_name, containing_object.Name()))
+      return True
+
     current_struct = Struct(identifier, False)
     current_struct.filename = self.current_document.filename
     current_struct.line_number = self.current_line
@@ -1471,6 +1487,13 @@ class GenParser:
     if not utils.IsValidCIdentifier(variable):
       self.AddError('"%s" is not a valid identifier name.' % variable)
 
+    if (state == GenParserStateStruct and variable and
+        containing_object.HasFieldWithName(variable)):
+      self.AddError(
+        'Field with name "%s" already exists in struct "%s"' % (
+          variable, containing_object.Name()))
+      return True
+
     current_union = Struct(name, True)
     current_union.filename = self.current_document.filename
     current_union.line_number = self.current_line
@@ -1624,12 +1647,19 @@ class GenParser:
       is_array = True
       array_size = utils.ParseInt(match.group(5).lstrip('[').rstrip(']'))
       if array_size is None:
-        print("Eek, thought %s was a number, but didn't parse!\n" % match.group(5))
+        print("Eek, thought %s was a number, but didn't parse!\n" % (
+            match.group(5)))
     key_comment = match.group(6)
 
     if not utils.IsValidCIdentifier(name):
       self.AddError(
         'field name "%s" is not a valid identifier name.' % name)
+      return True
+
+    if containing_struct.HasFieldWithName(name):
+      self.AddError(
+        'Field with name "%s" already exists in struct "%s"' % (
+          name, containing_struct.Name()))
       return True
 
     if key_comment == '':
@@ -1850,10 +1880,17 @@ class YAMLParser:
           else:
             type = DefaultTypeForWidth(width, offset)
 
+          if struct_decl.HasFieldWithName(field_name):
+            self.AddError(
+              'Field with name "%s" already exists in struct "%s"' % (
+                field_name, struct_decl.Name()))
+            return True
+
           field_decl = Field(field_name, type, offset, width)
           field_decl.body_comment = comment
           field_decl.filename = input_filename
           field_decl.line_number = 0
+
           struct_decl.AddField(field_decl)
 
           if not is_union:
