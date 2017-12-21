@@ -889,6 +889,39 @@ class DocBuilderTest(unittest.TestCase):
     self.assertIn('fields cannot occur directly in a union', errors[0])
     self.assertIn('Field "other" not allowed', errors[1])
 
+  def testCatchDuplicateFields(self):
+    gen_parser = parser.GenParser()
+    input = ['STRUCT B',
+             '0 63:56 uint8_t a',
+             '0 55:48 uint8_t a',
+             'END']
+
+    errors = gen_parser.Parse('filename', input)
+    self.assertEqual(1, len(errors))
+    self.assertIn('Field with name "a" already exists in struct', errors[0])
+
+  def testCatchDuplicateStructureField(self):
+    gen_parser = parser.GenParser()
+    input = ['STRUCT B',
+             '0 63:56 uint8_t a',
+             'STRUCT A a',
+             'END']
+
+    errors = gen_parser.Parse('filename', input)
+    self.assertEqual(1, len(errors))
+    self.assertIn('Field with name "a" already exists in struct "B"', errors[0])
+
+  def testCatchDuplicateUnionField(self):
+    gen_parser = parser.GenParser()
+    input = ['STRUCT B',
+             '0 63:56 uint8_t a',
+             'UNION A a',
+             'END']
+
+    errors = gen_parser.Parse('filename', input)
+    self.assertEqual(1, len(errors))
+    self.assertIn('Field with name "a" already exists in struct', errors[0])
+
 
 class StripCommentTest(unittest.TestCase):
   def testSimple(self):
