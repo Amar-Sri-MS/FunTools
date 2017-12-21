@@ -394,31 +394,48 @@ class DocBuilderTest(unittest.TestCase):
 
     self.assertEqual(0, len(doc.Structs()))
 
-    gen_parser.ParseStructStart('STRUCT Foo')
-    gen_parser.ParseUnionStart('UNION Bar u')
-    gen_parser.ParseLine('0 63:0 uint64_t packet')
-    gen_parser.ParseLine('0 63:0 uint64_t buf')
-    gen_parser.ParseEnd('END')
-    gen_parser.ParseEnd('END')
+    contents = ['STRUCT Foo',
+                'UNION Bar u',
+                'STRUCT A a',
+                '0 63:0 uint64_t packet',
+                'END',
+                'STRUCT B b',
+                '0 63:0 uint64_t buf',
+                'END',
+                'END',
+                'END']
+
+    errors = gen_parser.Parse('filename', contents)
+    self.assertFalse(errors)
 
     doc = gen_parser.current_document
-    self.assertEqual(2, len(doc.Structs()))
+    self.assertEqual(4, len(doc.Structs()))
 
-    firstStruct = doc.Structs()[0]
+    first_struct = doc.Structs()[0]
 
-    self.assertEqual('Foo', firstStruct.Name())
-    self.assertEqual(1, len(firstStruct.fields))
-    self.assertEqual('u', firstStruct.fields[0].name)
+    self.assertEqual('Foo', first_struct.Name())
+    self.assertEqual(1, len(first_struct.fields))
+    self.assertEqual('u', first_struct.fields[0].name)
 
     union = gen_parser.current_document.Structs()[1]
     self.assertEqual('Bar', union.Name())
 
-    firstField = union.fields[0]
-    self.assertEqual(0, firstField.StartFlit())
-    self.assertEqual(0, firstField.EndFlit())
-    self.assertEqual(63, firstField.StartBit())
-    self.assertEqual(0, firstField.EndBit())
-    self.assertEqual('packet', firstField.name)
+    first_field = union.fields[0]
+    self.assertEqual(0, first_field.StartFlit())
+    self.assertEqual(0, first_field.EndFlit())
+    self.assertEqual(63, first_field.StartBit())
+    self.assertEqual(0, first_field.EndBit())
+    self.assertEqual('a', first_field.name)
+
+    struct_a = doc.Structs()[2]
+    self.assertEqual('A', struct_a.Name())
+    self.assertEqual(1, len(struct_a.fields))
+    self.assertEqual('packet', struct_a.fields[0].Name())
+
+    struct_b = doc.Structs()[3]
+    self.assertEqual('B', struct_b.Name())
+    self.assertEqual(1, len(struct_b.fields))
+    self.assertEqual('buf', struct_b.fields[0].Name())
 
   def testParseCommentInField(self):
     gen_parser = parser.GenParser()
@@ -857,6 +874,21 @@ class DocBuilderTest(unittest.TestCase):
     self.assertEqual(8, b1_field.BitWidth())
     self.assertEqual(8, union_cmd.BitWidth())
 
+  def testFieldNotAllowedInUnion(self):
+    gen_parser = parser.GenParser()
+    contents = [
+      'STRUCT Foo',
+      'UNION A u',
+      '0 63:56 uint8_t cmd',
+      '0 63:56 uint8_t other',
+      'END',
+      'END',
+      ]
+    errors = gen_parser.Parse('filename', contents)
+    self.assertEqual(2, len(errors))
+    self.assertIn('fields cannot occur directly in a union', errors[0])
+    self.assertIn('Field "other" not allowed', errors[1])
+
 
 class StripCommentTest(unittest.TestCase):
   def testSimple(self):
@@ -894,7 +926,9 @@ class StripCommentTest(unittest.TestCase):
       '0 63:0 foo f',
       '1 63:0 ...',
       'UNION baz u',
+      'STRUCT container',
       '2 63:56 char c',
+      'END',
       'END',
       'END'
       ]
@@ -903,7 +937,7 @@ class StripCommentTest(unittest.TestCase):
 
     self.assertIsNone(errors)
     doc = gen_parser.current_document
-    self.assertEqual(3, len(doc.Structs()))
+    self.assertEqual(4, len(doc.Structs()))
 
     bar = doc.Structs()[1]
     self.assertEqual("bar", bar.Name())
@@ -1507,7 +1541,9 @@ class CheckerTest(unittest.TestCase):
     contents = ['STRUCT Foo',
                 '0 63:0 uint64_t cmd',
                 'UNION Bar u',
+                'STRUCT B b',
                 '1 63:0 uint64_t data',
+                'END',
                 'END',
                 'END']
     errors = gen_parser.Parse('filename', contents)
@@ -1735,31 +1771,6 @@ class CheckerTest(unittest.TestCase):
     self.assertEqual(1, len(checker.errors))
     self.assertIn('field "a2" in union does not match start bit of previous.',
                   checker.errors[1])
-
-  def testCatchUnionWithBadFields(self):
-    """Test that mismatched start positions are detected in unions."""
-    gen_parser = parser.GenParser()
-    contents = [
-      'STRUCT A',
-      '0 63:00 uint64_t a',
-      # Probably meant to do structure, instead does union.
-      'UNION crypto_params crypto',
-      '1 63:00 uint64_t b',
-      '2 63:00 uint64_t c',
-      'END',
-      'END'
-      ]
-    errors = gen_parser.Parse('filename', contents)
-
-    self.assertIsNone(errors)
-
-    checker = parser.Checker()
-    checker.VisitDocument(gen_parser.current_document)
-
-    self.assertEqual(1, len(checker.errors))
-    self.assertIn('Field "c" in union does not match start bit of previous',
-                  checker.errors[0])
-
 
   def testIncorrectStructLength(self):
     gen_parser = parser.GenParser()
