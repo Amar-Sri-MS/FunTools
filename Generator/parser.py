@@ -288,18 +288,6 @@ class Type:
       return '<Type: %s>' % (self.base_type.Name())
 
 
-UnknownKind = 0
-# Declarations in input.
-StructKind = 1
-EnumKind = 2
-FlagSetKind = 3
-
-MacroKind = 4
-FunctionKind = 5
-FieldKind = 6
-EnumVariableKind = 5
-
-
 class Declaration:
   def __init__(self):
     # Primary, short comment for an item.  Appears on same line.
@@ -1626,6 +1614,12 @@ class GenParser:
       if array_size is None:
         print("Eek, thought %s was a number, but didn't parse!\n" % match.group(5))
     key_comment = match.group(6)
+
+    if containing_struct.is_union:
+      self.AddError('Field "%s" not allowed at location: '
+                    'fields cannot occur directly in a union. '
+                    'Wrap each in a struct.' % name)
+      return True
 
     if not utils.IsValidCIdentifier(name):
       self.AddError(
