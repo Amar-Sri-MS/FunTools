@@ -53,6 +53,10 @@ class DataKitController {
 		("count via reduce", "compose(\n" +
 			"    first: reduce(0, (UInt64, Student) -> UInt64 | { $0 + 1 }),\n"  +
 			"    then: logger()\n" +
+			")"),
+		("num books via reduce", "compose(\n" +
+			"    first: reduce(0, (UInt64, Student) -> UInt64 | { $0 + $1.num_books }),\n"  +
+			"    then: logger()\n" +
 			")")
 	]
 	let typeTable = DKTypeTable()

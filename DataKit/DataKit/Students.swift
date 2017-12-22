@@ -19,19 +19,21 @@ func generateRandomStudent(id: Int) -> [JSON] {
 	let age = 16 + (id % 7)
 	let graduated = id % 2 == 0
 	let hasGrant = id % 3 == 0
+	let numBooks = id % 11
 	return [
 		.string(first),
 		.string(last),
 		.integer(age),
 		.bool(graduated),
 		.bool(hasGrant),
-		.integer(id)
+		.integer(id),
+		.integer(numBooks)
 	]
 }
 
 func studentType() -> DKTypeStruct {
-	let fields = ["first_name", "last_name", "age", "graduated", "has_grant", "id"]
-	let types = [DKType.string, DKType.string, DKTypeInt.uint8, DKType.bool, DKType.bool, DKTypeInt.uint32]
+	let fields = ["first_name", "last_name", "age", "graduated", "has_grant", "id", "num_books"]
+	let types = [DKType.string, DKType.string, DKTypeInt.uint8, DKType.bool, DKType.bool, DKTypeInt.uint32, DKTypeInt.uint64]
 	return DKTypeStruct(subTypes: types, subNames: fields, packed: true, alignmentInBits: 32)
 }
 
