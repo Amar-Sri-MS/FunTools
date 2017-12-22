@@ -21,8 +21,7 @@ GENERATOR_SRC = generator.py \
                 kernel.tmpl
 
 test: generator-test test_rdma_packed test_rdma_packed_html
-test: test_swap test_fun_hci test_fun_port
-test: test_validate
+test: test_swap test_validate
 
 # Test new generator with actual fun-hci file in the future.  For now,
 # it complicates configuring Jenkins.
