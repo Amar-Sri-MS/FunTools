@@ -20,8 +20,9 @@ GENERATOR_SRC = generator.py \
 		source.tmpl \
                 kernel.tmpl
 
-test: generator-test test_rdma test_rdma_packed test_rdma_html
-test: test_swap test_simple_validation test_packed_validation
+test: generator-test test_rdma_packed test_rdma_packed_html
+test: test_swap test_fun_hci test_fun_port
+test: test_validate
 
 # Test new generator with actual fun-hci file in the future.  For now,
 # it complicates configuring Jenkins.
@@ -38,8 +39,6 @@ generator-test:
 # Tests building the current fun_hci.gen file to make sure generator
 # handles it well.
 test_fun_hci: $(BUILD)
-	./generator.py -g code -o $(BUILD)/fun_hci $(FUN_HCI_DIR)/fun_hci.gen
-	./generator.py -g html -o $(BUILD)/fun_hci $(FUN_HCI_DIR)/fun_hci.gen
 	./generator.py -g code -c pack,json -o $(BUILD)/fun_hci_pack $(FUN_HCI_DIR)/fun_hci.gen
 	./generator.py -g html -c pack,json -o $(BUILD)/fun_hci_pack $(FUN_HCI_DIR)/fun_hci.gen
 
@@ -52,16 +51,9 @@ test_fun_port: $(BUILD)
 	./generator.py -g html -c pack,json -o $(BUILD)/fun_port_pack $(FUN_HCI_DIR)/fun_port.gen
 
 
-# Tests generated C code compiles correctly.
-test_rdma: $(BUILD)
-	./generator.py -g code -o $(BUILD)/rdma_gen examples/rdma.gen
-	gcc -o rdma -g -I$(BUILD) -DDEBUG -DGENERATOR_TEST \
-                test_helper/rdma.c $(BUILD)/rdma_gen.c
-	./rdma
-
 # Tests generated code with packed fields compiles correctly.
 test_rdma_packed: $(BUILD)
-	./generator.py --codegen pack -g code -o \
+	./generator.py -c pack -g code -o \
                        $(BUILD)/rdma_packed_gen examples/rdma.gen
 	gcc -o $(BUILD)/rdma_packed -g -I$(BUILD) -DDEBUG -DGENERATOR_TEST \
             test_helper/rdma_packed.c $(BUILD)/rdma_packed_gen.c
@@ -73,23 +65,23 @@ test_swap: test_helper/swap.c examples/swap.gen
 	$(BUILD)/swap
 
 # Tests HTML generation works.
-test_rdma_html: examples/rdma.gen $(GENERATOR_SRC)
-	./generator.py -g html -o $(BUILD)/rdma-gen examples/rdma.gen
+test_rdma_packed_html: examples/rdma.gen $(GENERATOR_SRC)
+	./generator.py -g html -c pack -o $(BUILD)/rdma-gen examples/rdma.gen
 
-test_simple_validation: examples/simple.gen $(GENERATOR_SRC)
-	./generator.py -g validate -o $(BUILD)/simple_gen examples/simple.gen
-	gcc -o $(BUILD)/simple_gen.validate $(BUILD)/simple_gen.validate.c
-	$(BUILD)/simple_gen.validate
+test_validate: test_simple_validation test_packed_validation
+test_validate: test_fun_hci_validation test_fun_port_validation
 
-test_packed_validation: examples/packed.gen $(GENERATOR_SRC)
-	./generator.py -g validate -c pack -o $(BUILD)/packed_gen examples/packed.gen
-	gcc -o $(BUILD)/packed_gen.validate $(BUILD)/packed_gen.validate.c
-	$(BUILD)/packed_gen.validate
+test_simple_validation:
+	./validate_gen examples/simple.gen pack
 
-test_fun_hci_validation: $(BUILD)
-	./generator.py -g validate -c pack,json,swap -o $(BUILD)/packed_fun_hci $(FUN_HCI_DIR)/fun_hci.gen
-	gcc -o $(BUILD)/packed_fun_hci.validate $(BUILD)/packed_fun_hci.validate.c
-	$(BUILD)/packed_fun_hci.validate
+test_packed_validation:
+	./validate_gen examples/packed.gen pack
+
+test_fun_hci_validation:
+	./validate_gen $(FUN_HCI_DIR)/fun_hci.gen pack,json,swap
+
+test_fun_port_validation:
+	./validate_gen $(FUN_HCI_DIR)/fun_port.gen pack
 
 $(BUILD): $(BUILD)
 	mkdir $(BUILD)

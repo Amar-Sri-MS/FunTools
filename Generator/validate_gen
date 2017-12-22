@@ -1,0 +1,20 @@
+#!/bin/sh
+# Validate that a FunHCI data structure definition puts bits in the 
+# right place.
+#
+# Usage: validate_gen file.gen [options]
+# where options is a comma-separated list of codegen options accepted
+# by the fun_hci generator. (Ex: pack,swap,json).
+
+if [ $# -eq 1 ] ; then
+    OPTIONS=
+else
+    OPTIONS="-c $2"
+fi
+
+WORK_DIR=`mktemp -d`
+
+echo $WORK_DIR
+./generator.py -g validate $OPTIONS -o $WORK_DIR/tmp $1
+gcc -o $WORK_DIR/validate -g $WORK_DIR/tmp.validate.c
+$WORK_DIR/validate

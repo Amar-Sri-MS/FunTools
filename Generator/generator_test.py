@@ -618,6 +618,72 @@ class DocBuilderTest(unittest.TestCase):
     self.assertEqual(64, a3.StartOffset())
     self.assertEqual(127, a3.EndOffset())
     
+  def testOffsetForInlineStruct(self):
+    gen_parser = parser.GenParser()
+    contents = [
+      'STRUCT A',
+      '0 63:32 uint32_t a',
+      'STRUCT B',
+      '0 31:0 uint32_t b',
+      'END',
+      'END'
+      ]
+    errors = gen_parser.Parse('filename', contents)
+    self.assertIsNone(errors)
+
+    struct_b = gen_parser.current_document.StructWithName('B')
+    self.assertEqual(32, struct_b.StartOffset())
+
+    self.assertEqual(1, len(struct_b.fields))
+
+    field_b = struct_b.fields[0]
+    self.assertEqual(32, field_b.StartOffset())                   
+
+
+  def testOffsetForStructWithZeroDimArray(self):
+    gen_parser = parser.GenParser()
+    contents = [
+      'STRUCT A',
+      '0 63:32 uint32_t a',
+      '_ _:_ uint32_t rest[0]',
+      'END'
+      ]
+    errors = gen_parser.Parse('filename', contents)
+    self.assertIsNone(errors)
+
+    struct_b = gen_parser.current_document.StructWithName('A')
+    self.assertEqual(0, struct_b.StartOffset())
+    self.assertEqual(31, struct_b.EndOffset())
+
+
+  def testOffsetForStructWithContinuation(self):
+    gen_parser = parser.GenParser()
+    contents = [
+      'STRUCT A',
+      '0 63:0 uint64_t a[2]',
+      '1 63:0 ...',
+      'END',
+      'STRUCT B',
+      '0 63:0 A b',
+      '1 63:0 ...',
+      '2 63:0 uint64_t c',
+      'END'
+      ]
+    errors = gen_parser.Parse('filename', contents)
+    self.assertIsNone(errors)
+    
+    struct_b = gen_parser.current_document.StructWithName('B')
+
+    self.assertEqual(2, len(struct_b.fields))
+
+    field_b = struct_b.fields[0]
+    self.assertEqual(0, field_b.StartOffset())
+    self.assertEqual(127, field_b.EndOffset())
+
+    self.assertEqual(0, struct_b.StartOffset())
+    self.assertEqual(191, struct_b.EndOffset())
+
+
   def testCatchMissingEnd(self):
     """Tests that error generated if not all objects closed."""
     gen_parser = parser.GenParser()
@@ -1373,33 +1439,6 @@ class CheckerTest(unittest.TestCase):
     self.assertEqual(1, len(checker.errors))
     self.assertIn('allow alignment', checker.errors[0])
 
-
-  def testFlagErrorIfMisalignFullType(self):
-    gen_parser = parser.GenParser()
-    # Even with the packed attribute, llvm still treats uint8_t with
-    # the same number of bits as the type as something to align.
-    # We can misalign uint8_t only with a bitfield, and only if the
-    # bitfield is smaller than the type.
-    input = [
-      'STRUCT s',
-      '0 63:60 uint8_t a',
-      '0 59:52 uint8_t b',
-      '0 51:44 uint8_t c',
-      '0 43:36 uint8_t d',
-      'END'
-      ]
-
-    gen_parser = parser.GenParser()
-    errors = gen_parser.Parse('filename', input)
-    self.assertIsNone(errors)
-  
-    checker = parser.Checker()
-    checker.VisitDocument(gen_parser.current_document)
-    self.assertEqual(3, len(checker.errors))
-    self.assertIn('"b" cannot be placed', checker.errors[0])
-    self.assertIn('"c" cannot be placed', checker.errors[1])
-    self.assertIn('"d" cannot be placed', checker.errors[2])
-    
   def testStructTooSmall(self):
     gen_parser = parser.GenParser()
     contents = ['STRUCT Foo',
@@ -1840,27 +1879,6 @@ class CheckerTest(unittest.TestCase):
     self.assertIn('Field larger than type: field "header" is 48 bits, '
                   'type "A" is 32.', errors[0])
 
-  def testIncorrectSmallIntPosition(self):
-    gen_parser = parser.GenParser()
-    contents = [
-      'STRUCT A',
-      '0 63:56 uint8_t a',
-      # b can't be exactly 16 bits because we'll assume it's
-      # not supposed to be a bitfield.
-      '0 55:40 uint16_t b',
-      'END',
-      ]
-    errors = gen_parser.Parse('filename', contents)
-    self.assertFalse(errors)
-
-    checker = parser.Checker()
-    checker.VisitDocument(gen_parser.current_document)
-
-    self.assertEqual(1, len(checker.errors))
-    self.assertIn('cannot be placed in a location that does not match its '
-                  'natural alignment',
-                  checker.errors[0])
-
   def testOkForSmallIntIfDifferentType(self):
     """Tests that it's ok for the 16 bit value to be in a 32 bit
     type because we'll assume it'll have to be packed.
@@ -1912,7 +1930,7 @@ class CodegenArgsTest(unittest.TestCase):
 class HashTest(unittest.TestCase):
   def testSimple(self):
     generator.GENERATOR_VERSION = 0
-    self.assertEqual(43350302, generator.FileHash('examples/rdma.gen'))
+    self.assertEqual(245188804, generator.FileHash('examples/rdma.gen'))
     self.assertEqual(148504078, generator.FileHash('examples/packed.gen'))
     self.assertEqual(0, generator.FileHash('no/such/file.gen'))
 
@@ -1922,9 +1940,367 @@ class HashTest(unittest.TestCase):
     """
     generator.GENERATOR_VERSION = 1
     # These values should be different from values in testSimple.
-    self.assertEqual(43350303, generator.FileHash('examples/rdma.gen'))
+    self.assertEqual(245188805, generator.FileHash('examples/rdma.gen'))
     self.assertEqual(148504079, generator.FileHash('examples/packed.gen'))
     self.assertEqual(1, generator.FileHash('no/such/file.gen'))
+
+class AlignmentCheckerTest(unittest.TestCase):
+  def Parse(self, contents):
+    """Parses and checks the gen file for sanity.
+    Returns the parsed document, or None if errors.
+    """
+    gen_parser = parser.GenParser()
+    errors = gen_parser.Parse('filename', contents)
+    if errors:
+      print errors
+      return None
+
+    checker = parser.Checker()
+    checker.VisitDocument(gen_parser.current_document)
+    if len(checker.errors) > 0:
+      print checker.errors
+      return None
+
+    return gen_parser.current_document
+
+  def testSimpleAlignment(self):
+    contents = [
+      'STRUCT A',
+      '0 63:0 uint64_t a',
+      'END']
+    doc = self.Parse(contents)
+    self.assertIsNotNone(doc)
+
+    aligner = generator.AlignmentChecker(True)
+    aligner.VisitDocument(doc)
+    self.assertEquals(0, len(aligner.errors))
+
+  def testBadAlignment(self):
+    contents = [
+      'STRUCT A',
+      '0 63:56 uint8_t a',
+      '0 55:24 uint32_t b',  # Must be 32 bit aligned.
+      'END']
+    doc = self.Parse(contents)
+    self.assertIsNotNone(doc)
+
+    aligner = generator.AlignmentChecker(False)
+    aligner.VisitDocument(doc)
+    self.assertEquals(1, len(aligner.errors))
+    self.assertIn('Expected alignment: 32 bits', aligner.errors[0])
+
+  def testAlignmentOkIfPacked(self):
+    contents = [
+      'STRUCT A',
+      '0 63:56 uint8_t a',
+      '0 55:24 uint32_t b',  # OK for 8 bit alignment if packed.
+      'END']
+    doc = self.Parse(contents)
+    self.assertIsNotNone(doc)
+
+    aligner = generator.AlignmentChecker(True)
+    aligner.VisitDocument(doc)
+    print aligner.errors
+    self.assertEquals(0, len(aligner.errors))
+
+  def testBitfieldAlignmentOk(self):
+    contents = [
+      'STRUCT A',
+      '0 63:61 uint8_t a',
+      '0 60:56 uint8_t b',
+      'END'
+      ]
+    doc = self.Parse(contents)
+    self.assertIsNotNone(doc)
+
+    aligner = generator.AlignmentChecker(False)
+    aligner.VisitDocument(doc)
+    self.assertEquals(0, len(aligner.errors))
+
+
+  def testBitfieldDeservesNewWord(self):
+    contents = [
+      'STRUCT A',
+      '0 63:56 uint8_t a',
+      '0 55:53 uint8_t b',
+      '0 52:48 uint8_t c',
+      'END']
+    doc = self.Parse(contents)
+    self.assertIsNotNone(doc)
+
+    aligner = generator.AlignmentChecker(False)
+    aligner.VisitDocument(doc)
+    self.assertEquals(1, len(aligner.errors))
+    self.assertIn('because of switch from non-bitfield', aligner.errors[0])
+
+  def testNonBitfieldDeservesNewWord(self):
+    contents = [
+      'STRUCT A',
+      '0 63:61 uint8_t a',
+      '0 60:53 uint8_t b',
+      'END']
+    doc = self.Parse(contents)
+    self.assertIsNotNone(doc)
+
+    aligner = generator.AlignmentChecker(False)
+    aligner.VisitDocument(doc)
+    self.assertEquals(1, len(aligner.errors))
+    self.assertIn('because of switch from bitfield', aligner.errors[0])
+
+  def testBitfieldOkOnWordBoundary(self):
+    contents = [
+      'STRUCT A',
+      '0 63:32 uint32_t a',
+      '0 31:30 uint8_t b',
+      '0 29:24 uint8_t c',
+      'END']
+    doc = self.Parse(contents)
+    self.assertIsNotNone(doc)
+
+    aligner = generator.AlignmentChecker(False)
+    aligner.VisitDocument(doc)
+    self.assertEquals(0, len(aligner.errors))
+
+  def testNonBitfieldOkOnWordBoundary(self):
+    contents = [
+      'STRUCT A',
+      '0 63:42 uint32_t a',
+      '0 41:32 uint32_t b',
+      '0 31:0 uint32_t c',
+      'END']
+    doc = self.Parse(contents)
+    self.assertIsNotNone(doc)
+    aligner = generator.AlignmentChecker(False)
+    aligner.VisitDocument(doc)
+    self.assertEquals(0, len(aligner.errors))
+
+  def testBitfieldDeservesNewWordIfPacked(self):
+    contents = [
+      'STRUCT A',
+      '0 63:56 uint8_t a',
+      '0 55:53 uint8_t b',
+      '0 52:48 uint8_t c',
+      'END']
+    doc = self.Parse(contents)
+    self.assertIsNotNone(doc)
+
+    aligner = generator.AlignmentChecker(True)
+    aligner.VisitDocument(doc)
+    self.assertEquals(1, len(aligner.errors))
+    self.assertIn('because of switch from non-bitfield', aligner.errors[0])
+
+  def testNonBitfieldDeservesNewWordIfPacked(self):
+    contents = [
+      'STRUCT A',
+      '0 63:61 uint8_t a',
+      '0 60:53 uint8_t b',
+      'END']
+    doc = self.Parse(contents)
+    self.assertIsNotNone(doc)
+
+    aligner = generator.AlignmentChecker(True)
+    aligner.VisitDocument(doc)
+    self.assertEquals(1, len(aligner.errors))
+    self.assertIn('because of switch from bitfield', aligner.errors[0])
+
+  def testBitfieldOkOnWordBoundaryIfPacked(self):
+    contents = [
+      'STRUCT A',
+      '0 63:32 uint32_t a',
+      '0 31:30 uint8_t b',
+      '0 29:24 uint8_t c',
+      'END']
+    doc = self.Parse(contents)
+    self.assertIsNotNone(doc)
+
+    aligner = generator.AlignmentChecker(True)
+    aligner.VisitDocument(doc)
+    self.assertEquals(0, len(aligner.errors))
+
+  def testFlagErrorIfMisalignFullType(self):
+    gen_parser = parser.GenParser()
+    # Even with the packed attribute, llvm still treats uint8_t with
+    # the same number of bits as the type as something to align.
+    # We can misalign uint8_t only with a bitfield, and only if the
+    # bitfield is smaller than the type.
+    contents = [
+      'STRUCT s',
+      '0 63:60 uint8_t a',
+      '0 59:52 uint8_t b',
+      '0 51:44 uint8_t c',
+      '0 43:36 uint8_t d',
+      'END'
+      ]
+
+    doc = self.Parse(contents)
+    self.assertIsNotNone(doc)
+
+    aligner = generator.AlignmentChecker(False)
+    aligner.VisitDocument(doc)
+
+    self.assertEqual(3, len(aligner.errors))
+    print aligner.errors
+    self.assertIn('"b" cannot be placed', aligner.errors[0])
+    self.assertIn('"c" cannot be placed', aligner.errors[1])
+    self.assertIn('"d" cannot be placed', aligner.errors[2])
+
+  def testIncorrectSmallIntPosition(self):
+    contents = [
+      'STRUCT A',
+      '0 63:56 uint8_t a',
+      '0 55:40 uint16_t b',
+      'END',
+      ]
+
+    doc = self.Parse(contents)
+    self.assertIsNotNone(doc)
+
+    aligner = generator.AlignmentChecker(False)
+    aligner.VisitDocument(doc)
+    self.assertEquals(1, len(aligner.errors))
+    self.assertIn('Field "b" cannot be placed', aligner.errors[0])
+
+  def testAlignmentOnPackedField(self):
+    contents = [
+      'STRUCT A',
+      '0 63:51 uint32_t a',
+      '0 50:43 uint32_t b',
+      '0 42:32 uint32_t c',
+      'END']
+    doc = self.Parse(contents)
+    self.assertIsNotNone(doc)
+
+    packer = generator.Packer()
+    packer.VisitDocument(doc)
+    self.assertEquals(0, len(packer.errors))
+
+    aligner = generator.AlignmentChecker(True)
+    aligner.VisitDocument(doc)
+    self.assertEquals(0, len(aligner.errors))
+
+  def testOkAlignmentOnPackedFieldPackedStruct(self):
+    contents = [
+      'STRUCT A',
+      '0 63:56 uint8_t start',
+      # Ok to put a_to_c on 8 bit boundary because structure is packed.
+      '0 55:51 uint32_t a',
+      '0 50:43 uint32_t b',
+      '0 42:24 uint32_t c',
+      'END']
+    doc = self.Parse(contents)
+    self.assertIsNotNone(doc)
+
+    packer = generator.Packer()
+    packer.VisitDocument(doc)
+    self.assertEquals(0, len(packer.errors))
+
+    aligner = generator.AlignmentChecker(True)
+    aligner.VisitDocument(doc)
+    self.assertEquals(0, len(aligner.errors))
+
+  def testBadAlignmentOnPackedFieldNonPackedStruct(self):
+    contents = [
+      'STRUCT A',
+      '0 63:56 uint8_t start',
+      # Not ok to put a_to_c on 8 bit boundary if structure isn't packed.
+      '0 55:51 uint32_t a',
+      '0 50:43 uint32_t b',
+      '0 42:24 uint32_t c',
+      'END']
+    doc = self.Parse(contents)
+    self.assertIsNotNone(doc)
+
+    packer = generator.Packer()
+    packer.VisitDocument(doc)
+    self.assertEquals(0, len(packer.errors))
+
+    aligner = generator.AlignmentChecker(False)
+    aligner.VisitDocument(doc)
+
+    self.assertEquals(1, len(aligner.errors))
+    self.assertIn('Field "a_to_c" cannot be placed', aligner.errors[0])
+
+  def testZeroLengthArrayAlignmentCharArray(self):
+    contents = [
+      'STRUCT A',
+      '0 63:56 uint8_t a',
+      # Ok because aligned to 8 bits.
+      '_ _:_ uint8_t rest[0]',
+      'END']
+    doc = self.Parse(contents)
+    self.assertIsNotNone(doc)
+
+    aligner = generator.AlignmentChecker(False)
+    aligner.VisitDocument(doc)
+    self.assertEquals(0, len(aligner.errors))
+
+  def testZeroLengthArrayAlignmentCharArrayPackedStructure(self):
+    contents = [
+      'STRUCT A',
+      '0 63:56 uint8_t a',
+      # Ok because aligned to 8 bits.
+      '_ _:_ uint8_t rest[0]',
+      'END']
+    doc = self.Parse(contents)
+    self.assertIsNotNone(doc)
+
+    aligner = generator.AlignmentChecker(True)
+    aligner.VisitDocument(doc)
+    self.assertEquals(0, len(aligner.errors))
+
+  def testZeroLengthArrayAlignmentWordArray(self):
+    contents = [
+      'STRUCT A',
+      '0 63:56 uint8_t a',
+      # Not ok because array wants to be on 32 bit alignment.
+      '_ _:_ uint32_t rest[0]',
+      'END']
+    doc = self.Parse(contents)
+    self.assertIsNotNone(doc)
+
+    aligner = generator.AlignmentChecker(False)
+    aligner.VisitDocument(doc)
+    self.assertEquals(1, len(aligner.errors))
+    self.assertIn('Field "rest" cannot be placed at location',
+                  aligner.errors[0])
+
+  def testBitfieldNotAllowedEvenIfSameType(self):
+    contents = [
+      'STRUCT s',
+      '0 63:56 uint8_t a',
+      '0 55:54 uint8_t b',
+      '0 53:48 uint8_t c',
+      '0 47:40 uint8_t d',
+      'END'
+      ]
+    doc = self.Parse(contents)
+    self.assertIsNotNone(doc)
+
+    aligner = generator.AlignmentChecker(False)
+    aligner.VisitDocument(doc)
+    self.assertEquals(2, len(aligner.errors))
+    self.assertIn('Field "b" cannot be placed at location', aligner.errors[0])
+    self.assertIn('Field "d" cannot be placed at location', aligner.errors[1])
+
+  def testBitfieldNotAllowedEvenIfSameTypePackedStruct(self):
+    contents = [
+      'STRUCT A',
+      # Even if we're using packed attribute on A, bitfields will
+      # be in different word.
+      '0 63:56 uint8_t a',
+      '0 55:54 uint8_t b',
+      '0 53:48 uint8_t c',
+      '0 47:40 uint8_t d',
+      'END'
+      ]
+    doc = self.Parse(contents)
+    self.assertIsNotNone(doc)
+
+    aligner = generator.AlignmentChecker(True)
+    aligner.VisitDocument(doc)
+    self.assertEquals(2, len(aligner.errors))
+    self.assertIn('Field "b" cannot be placed at location', aligner.errors[0])
+    self.assertIn('Field "d" cannot be placed at location', aligner.errors[1])
 
 if __name__ == '__main__':
     unittest.main()
