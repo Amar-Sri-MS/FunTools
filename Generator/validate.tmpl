@@ -7,7 +7,7 @@ code to test that each structure is the correct size, and each field
 is at the correct offset.
 
 #}
-// SourceHeader created by generator.py
+// Struct size validation code created by generator.py
 // Do not change this file;
 // change the gen file "{{gen_file}}" instead.
 
@@ -104,7 +104,7 @@ int main(int argc, char **argv) {
 	ASSERT_SIZE({{decl.Tag()}} {{decl.name}}, {{decl.BitWidth()}},
 		    "Wrong size for structure {{decl.name}}");
     {% for field in decl.fields %}
-      {% if not field.is_natural_width %}
+      {% if field.Type().IsScalar() and not field.is_natural_width %}
       /* Bitfields in final output (when -c pack was passed to generator)
        * is bad because the compiler will place those bits in inappropriate
        * places.
@@ -117,7 +117,7 @@ int main(int argc, char **argv) {
         {% if not field.no_offset %}
 	{# Don't check offset for fields without, such as zero dim arrays #}
     ASSERT_OFFSET({{decl.Tag()}} {{decl.name}}, {{field.name}},
-                  ({{field.StartOffset()}}),
+                  ({{field.StartOffset()}} - {{decl.StartOffset()}}),
 		 "{{field.name}} in {{decl.Tag()}} {{decl.name}}");
          {% endif %}
       {% endif %}

@@ -127,6 +127,84 @@ class Splitter(Pass):
         # TODO(bowdidge): Implement splitter.
         self.AddError(f, "TODO: split field %s" % f.name)
 
+class AlignmentChecker(Pass):
+  """Checks all fields in data structures match packing rules."""
+
+  def __init__(self, packed):
+    """Creates an alignment checker.
+
+    If packed is false, then the checker assumes alignment will match
+    MIPS and x86 ABIs for clang and gcc.
+
+    If packed is true, then the checker assumes alignment must match
+    behavior if __attribute__((packed)) is attached to all structures.
+    """
+    Pass.__init__(self)
+    self.packed_attribute = packed
+
+  def IsNaturalWidth(self, field):
+    """Returns true if the field represents a non-bitfield."""
+    if field.type.IsRecord():
+      return True
+    return field.type.BitWidth() == field.BitWidth()
+
+  def Alignment(self, field):
+    """Returns alignment of field in bits.
+    General rules:
+    * bitfields are aligned to 1 bit boundaries (as long as grouped
+      together.)
+    * when the packed attribute is put on the structure, the compiler
+      will align to 8 bits.
+    * structures and pointers want to align to 32 bit boundaries.
+    * plain old data types align to their size.
+    * Arrays (both zero dimension and with finite dimension) follow
+      the same rules.  Unpacked structures align the array to the alignment
+      of the base type, and align to 1 byte boundaries if packed.
+    """
+    if not self.IsNaturalWidth(field):
+      return 1
+
+    if self.packed_attribute:
+      return 8
+
+    if field.type.IsRecord():
+      return 32
+
+    if field.type.IsArray():
+      return field.type.base_type.BitWidth()
+
+    return field.type.BitWidth()
+
+  def VisitStruct(self, struct):
+    """Checks whether all fields are correctly aligned."""
+    prev_field_was_bitfield = False
+    for field in struct.fields:
+      is_bitfield = not self.IsNaturalWidth(field)
+      reason = ''
+
+      alignment = self.Alignment(field)
+
+      if not prev_field_was_bitfield and is_bitfield:
+        alignment = 32
+        reason = ' because of switch from non-bitfield to bitfield'
+
+      if prev_field_was_bitfield and not is_bitfield:
+        alignment = 32
+        reason = ' because of switch from bitfield to non-bitfield'
+
+      # Start offset is None if field is a variable-sized array.
+      start_offset = field.StartOffset()
+      if start_offset is None:
+        start_offset = struct.EndOffset() + 1
+
+      if start_offset % alignment != 0:
+        self.AddError(field, 'Field "%s" cannot be placed at location.'
+                      'Expected alignment: %d bits%s.  '
+                      'Field at bit offset %d.' % (field.Name(), alignment,
+                                                   reason,
+                                                   start_offset))
+      prev_field_was_bitfield = is_bitfield
+
 class Packer(Pass):
   """ Searches all structures for bitfields that can be combined.
 
@@ -503,17 +581,22 @@ def GenerateFile(output_style, output_base, input_stream, input_filename,
 
   if 'pack' in options:
     p = Packer()
-    errors = p.VisitDocument(doc)
-    if errors:
-      return (None, errors)
+    p.VisitDocument(doc)
+    if len(p.errors) != 0:
+      return (None, p.errors)
+
+  # Check alignment of the final fields.
+  attr_packed_struct = 'pack' in options
+  aligner = AlignmentChecker(attr_packed_struct)
+  aligner.VisitDocument(doc)
+  if len(aligner.errors) != 0:
+    return (None, aligner.errors)
 
   if 'split' in options:
     s = Splitter()
-    errors = s.VisitDocument(doc)
-    import pdb
-    pdb.set_trace()
-    if errors:
-      return (None, errors)
+    s.VisitDocument(doc)
+    if len(s.errors) != 0:
+      return (None, s.errors)
 
   # Convert list of extra codegen features into variables named
   #  generate_{{codegen-style}} that will be in the template.

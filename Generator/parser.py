@@ -878,7 +878,12 @@ class Struct(Declaration):
     if not self.fields:
       return 0
 
-    return min([f.StartOffset() for f in self.fields])
+    # StartOffset is None for zero dimension arrays.
+    min_offsets = [f.StartOffset() for f in self.fields
+                   if f.StartOffset() is not None]
+    if min_offsets:
+      return min(min_offsets)
+    return 0
 
   def EndOffset(self):
     """Returns last offset (numbered from 0) for any field in the structure."""
@@ -1153,18 +1158,10 @@ class Checker:
                 field.StartFlit(), field.StartBit(),
                 prev_field.StartFlit(), prev_field.StartBit()))
 
-    # Check each field to make sure the alignment for non-bitfields is
-    # appropriate, and check that each field is adjacent to the previous
-    # and nest field.
+    # Check each field is adjacent to the previous.
     for field in fields_with_offsets:
       start_offset = field.StartOffset()
       end_offset = field.EndOffset()
-
-
-      if field.BitWidth() == field.type.BitWidth():
-        if start_offset % field.type.Alignment() != 0:
-          self.AddError(field, 'Field "%s" cannot be placed in a location that '
-                        'does not match its natural alignment.' % field.name)
 
       if not the_struct.is_union:
         if (last_start_offset >= end_offset and

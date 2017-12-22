@@ -353,32 +353,6 @@ class CodegenEndToEnd(unittest.TestCase):
     self.assertIsNotNone(out)
     self.assertIn('struct fun_admin_cmd_common c;', out)
 
-  def testNoBitfieldForAlignedVariables(self):
-    input = [
-      'STRUCT s',
-      '0 63:56 uint8_t a',
-      '0 55:54 uint8_t b',
-      '0 53:48 uint8_t c',
-      '0 47:40 uint8_t d',
-      'END'
-      ]
-    
-    (out, errors) = generator.GenerateFile(generator.OutputStyleHeader, None,
-                                           input, 'foo.gen', OPTIONS_NONE)
-
-    self.assertEqual(0, len(errors))
-    out = RemoveWhitespace(out)
-
-    self.assertIsNotNone(out)
-    self.assertIn('uint8_t a;', out)
-
-    # Handle differences between clang-format and indent.
-    self.assertTrue('uint8_t b : 2;' in out
-                    or 'uint8_t b:2' in out)
-    self.assertTrue('uint8_t c : 6;' in out
-                    or 'uint8_t c:6;' in out)
-    self.assertIn('uint8_t d;', out)
-
   def testNoDuplicateFunctions(self):
     contents = [
       'STRUCT A',

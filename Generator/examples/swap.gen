@@ -14,5 +14,6 @@ STRUCT SwapReq
 // bitfields larger than 8 bits.
 2 63:50 uint16_t value_14
 2 49:48 uint16_t reserved2
-2 47:0 uint64_t reserved3
+2 47:32 uint16_t reserved3
+2 31:0 uint32_t reserved4
 END
