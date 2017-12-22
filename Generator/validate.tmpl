@@ -94,7 +94,6 @@ int main(int argc, char **argv) {
 {% for decl in declarations %}
         fail = false;
   {% if decl.is_struct %}
-  {# TODO(bowdidge): Fix offsets for inline fields. #}
 	printf("%s[RUN        ]%s %s: Validate sizes\n", TERMINAL_COLOR_NORMAL,
 	       TERMINAL_COLOR_NORMAL,
 	       "{{decl.Tag()}} {{decl.name}}");
