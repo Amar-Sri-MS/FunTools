@@ -2,9 +2,10 @@
 # Validate that a FunHCI data structure definition puts bits in the 
 # right place.
 #
-# Usage: validate_gen file.gen code,options
+# Usage: validate_gen file.gen [options]
+# where options is a comma-separated list of codegen options accepted
+# by the fun_hci generator. (Ex: pack,swap,json).
 
-GEN_FILE_NAME=$(basename "$1")
 if [ $# -eq 1 ] ; then
     OPTIONS=
 else
