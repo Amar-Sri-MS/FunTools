@@ -21,9 +21,8 @@ GENERATOR_SRC = generator.py \
                 kernel.tmpl
 
 test: generator-test test_rdma_packed test_rdma_packed_html
-test: test_swap test_simple_validation test_packed_validation
-test: test_fun_hci test_fun_port
-test: test_fun_hci_validation test_fun_port_validation
+test: test_swap test_fun_hci test_fun_port
+test: test_validate
 
 # Test new generator with actual fun-hci file in the future.  For now,
 # it complicates configuring Jenkins.
@@ -69,26 +68,20 @@ test_swap: test_helper/swap.c examples/swap.gen
 test_rdma_packed_html: examples/rdma.gen $(GENERATOR_SRC)
 	./generator.py -g html -c pack -o $(BUILD)/rdma-gen examples/rdma.gen
 
-test_simple_validation: examples/simple.gen $(GENERATOR_SRC)
-	./generator.py -g validate -o $(BUILD)/simple_gen examples/simple.gen
-	gcc -o $(BUILD)/simple_gen.validate $(BUILD)/simple_gen.validate.c
-	$(BUILD)/simple_gen.validate
+test_validate: test_simple_validation test_packed_validation
+test_validate: test_fun_hci_validation test_fun_port_validation
 
-test_packed_validation: examples/packed.gen $(GENERATOR_SRC)
-	./generator.py -g validate -c pack -o $(BUILD)/packed_gen examples/packed.gen
-	gcc -o $(BUILD)/packed_gen.validate $(BUILD)/packed_gen.validate.c
-	$(BUILD)/packed_gen.validate
+test_simple_validation:
+	./validate_gen examples/simple.gen pack
 
-test_fun_hci_validation: $(BUILD)
-	./generator.py -g validate -c pack,json,swap -o $(BUILD)/packed_fun_hci $(FUN_HCI_DIR)/fun_hci.gen
-	gcc -o $(BUILD)/packed_fun_hci.validate $(BUILD)/packed_fun_hci.validate.c
-	$(BUILD)/packed_fun_hci.validate
+test_packed_validation:
+	./validate_gen examples/packed.gen pack
 
-test_fun_port_validation: $(BUILD)
-	./generator.py -g validate -c pack,json,swap -o $(BUILD)/packed_fun_port $(FUN_HCI_DIR)/fun_port.gen
-	gcc -o $(BUILD)/packed_fun_port.validate $(BUILD)/packed_fun_port.validate.c
-	$(BUILD)/packed_fun_hci.validate
+test_fun_hci_validation:
+	./validate_gen $(FUN_HCI_DIR)/fun_hci.gen pack,json,swap
 
+test_fun_port_validation:
+	./validate_gen $(FUN_HCI_DIR)/fun_port.gen pack
 
 $(BUILD): $(BUILD)
 	mkdir $(BUILD)

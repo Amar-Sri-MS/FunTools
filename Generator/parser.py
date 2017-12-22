@@ -866,7 +866,8 @@ class Struct(Declaration):
       end_offset = max([f.EndOffset() for f in fields_with_offsets])
       return end_offset - start_offset + 1
 
-    # TODO(bowdidge): normalize all structs to start at zero.
+    # The first field won't start at zero.  Check the struct's start
+    # offset to understand the real zero point.
     first_field = fields_with_offsets[0]
     last_field = fields_with_offsets[-1]
     start_offset = first_field.StartOffset()
@@ -1381,7 +1382,8 @@ class GenParser:
             var, value))
 
     # Parse a line describing an enum variable.
-    # TODO(bowdidge): Remember whether value was hex or decimal for better printing.
+    # TODO(bowdidge): Remember whether value was hex or decimal
+    # for better printing.
     new_enum = EnumVariable(var, value)
     new_enum.filename = self.current_document.filename
     new_enum.line_number = self.current_line

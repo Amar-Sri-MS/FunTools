@@ -82,7 +82,7 @@ unsigned failed_tests = 0;
 
 {% for decl in declarations %}
   {% if decl.is_struct and not decl.inline %}
-  {{decl | as_definition }};
+  {{decl | as_definition }}{% if generate_cpacked %}__attribute__((packed)){% endif %};
   {% endif %}
 {% endfor %}
 
