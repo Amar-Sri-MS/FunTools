@@ -57,7 +57,7 @@ How to render each struct
    to generate in templates, so do that work in code instead.
 #}
 {% if not struct.inline %}
-{{ struct | as_definition }}{% if generate_cpacked %}__attribute__((packed)){% endif %};
+{{ struct | as_definition }}{% if generate_cpacked %} __attribute__((packed)){% endif %};
 {% endif %}
 
 {# Generate macros for packed fields. #}
