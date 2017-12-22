@@ -187,8 +187,7 @@ class CodegenEndToEnd(unittest.TestCase):
     # Did array get included?
     self.assertIn('char d[6];', out)
     # Did constructor get created?
-    self.assertIn('void Foo_init(struct Foo *s, uint8_t a, uint8_t b, '
-                  'uint8_t c', out)
+    self.assertIn('void Foo_init(struct Foo *s, ', out)
     # Did accessor macro get created?
     self.assertIn('#define FOO_B_P(x)', out)
 
