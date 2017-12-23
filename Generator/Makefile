@@ -68,7 +68,6 @@ test_rdma_packed_html: examples/rdma.gen $(GENERATOR_SRC)
 	./generator.py -g html -c pack -o $(BUILD)/rdma-gen examples/rdma.gen
 
 test_validate: test_simple_validation test_packed_validation
-test_validate: test_fun_hci_validation test_fun_port_validation
 
 test_simple_validation:
 	./validate_gen examples/simple.gen pack
