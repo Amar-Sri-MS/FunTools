@@ -93,6 +93,8 @@
 		A7A56A9A1F862D34007B5391 /* DKParser_Test.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7A56A991F862D34007B5391 /* DKParser_Test.swift */; };
 		A7B27D121F2580EE00C171BD /* DKType_Test.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7B27D111F2580EE00C171BD /* DKType_Test.swift */; };
 		A7B27D141F25817A00C171BD /* DKExpression_Test.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7B27D131F25817A00C171BD /* DKExpression_Test.swift */; };
+		A7BDCE271FF0C0DC0008440B /* DKTypeAnnotated.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7BDCE261FF0C0DC0008440B /* DKTypeAnnotated.swift */; };
+		A7BDCE291FF0CAC70008440B /* DKFunctionCompression.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7BDCE281FF0CAC70008440B /* DKFunctionCompression.swift */; };
 		A7C62C6E1FB9081100C2DC34 /* DKNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7C62C6D1FB9081100C2DC34 /* DKNode.swift */; };
 		A7C62C701FB9084800C2DC34 /* DKNodeGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7C62C6F1FB9084800C2DC34 /* DKNodeGenerator.swift */; };
 		A7C62C781FB92A7C00C2DC34 /* DKFunctionMaker.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7C62C771FB92A7C00C2DC34 /* DKFunctionMaker.swift */; };
@@ -211,6 +213,8 @@
 		A7A56A991F862D34007B5391 /* DKParser_Test.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKParser_Test.swift; sourceTree = "<group>"; };
 		A7B27D111F2580EE00C171BD /* DKType_Test.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKType_Test.swift; sourceTree = "<group>"; };
 		A7B27D131F25817A00C171BD /* DKExpression_Test.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKExpression_Test.swift; sourceTree = "<group>"; };
+		A7BDCE261FF0C0DC0008440B /* DKTypeAnnotated.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DKTypeAnnotated.swift; sourceTree = "<group>"; };
+		A7BDCE281FF0CAC70008440B /* DKFunctionCompression.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DKFunctionCompression.swift; sourceTree = "<group>"; };
 		A7C62C6D1FB9081100C2DC34 /* DKNode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DKNode.swift; sourceTree = "<group>"; };
 		A7C62C6F1FB9084800C2DC34 /* DKNodeGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DKNodeGenerator.swift; sourceTree = "<group>"; };
 		A7C62C771FB92A7C00C2DC34 /* DKFunctionMaker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DKFunctionMaker.swift; sourceTree = "<group>"; };
@@ -319,6 +323,7 @@
 				A738879E1F6F533B00A2F976 /* DKFunctionLogger.swift */,
 				A72CC7A21F4D1DE60058827F /* DKFunctionClosure.swift */,
 				A72CC7B61F620BA60058827F /* DKFunctionComposition.swift */,
+				A7BDCE281FF0CAC70008440B /* DKFunctionCompression.swift */,
 				A738879A1F6F175800A2F976 /* DKFunctionGatherFromFifo.swift */,
 				A77C5CDC1FDCC754007264F5 /* DKFunctionGetFromReduceNode.swift */,
 				A7C62C771FB92A7C00C2DC34 /* DKFunctionMaker.swift */,
@@ -376,6 +381,7 @@
 			children = (
 				A72CC7441F4525990058827F /* DKTypeTable.swift */,
 				A78C2B0D1F23D3E80086FAD6 /* DKType.swift */,
+				A7BDCE261FF0C0DC0008440B /* DKTypeAnnotated.swift */,
 				A78C2B331F252A110086FAD6 /* DKTypeInt.swift */,
 				A76A56221F258858000A881A /* DKTypeString.swift */,
 				A78C2B111F23D3E80086FAD6 /* DKTypeStruct.swift */,
@@ -521,6 +527,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A7BDCE291FF0CAC70008440B /* DKFunctionCompression.swift in Sources */,
 				A78C2B231F23D4750086FAD6 /* main.swift in Sources */,
 				A72CC7531F49F4BE0058827F /* ArrayExtras.swift in Sources */,
 				A7C62C701FB9084800C2DC34 /* DKNodeGenerator.swift in Sources */,
@@ -536,6 +543,7 @@
 				A72CC7BF1F6A2C0C0058827F /* DKValueStream.swift in Sources */,
 				A72CC7981F49F4C80058827F /* WorkSequencer.swift in Sources */,
 				A72CC7541F49F4BE0058827F /* ByteExtras.swift in Sources */,
+				A7BDCE271FF0C0DC0008440B /* DKTypeAnnotated.swift in Sources */,
 				A72CC7571F49F4BE0058827F /* NumbersExtras.swift in Sources */,
 				A72CC7971F49F4C80058827F /* WorkQueue.swift in Sources */,
 				A72CC7A31F4D1DE60058827F /* DKFunctionClosure.swift in Sources */,
