@@ -138,6 +138,7 @@ def BitPatternString(value, max_bits):
   return out
 
 def IsValidCIdentifier(name):
+  """Returns false if name would be an invalid C or C++ field name."""
   c_keywords = ['auto', 'break', 'case', 'char', 'const', 'continue',
                 'default', 'do', 'double',' else', 'enum', 'extern',
                 'float', 'for', 'goto', 'if', 'int', 'long', 'register',
