@@ -119,4 +119,28 @@ class DKValueSimple: DKValue, DKValueIsEqualToOther {
 			abort()
 		}
 	}
+
+	// ===============  MISC ===============
+
+	class func canAcceptJSONForType(_ j: JSON, _ type: DKType) -> Bool {
+		if type is DKTypeInt {
+			if !j.isInteger  { return false }
+			return type.canAcceptIntValue(j.integerValue)
+		}
+		fatalErrorNYI()
+	}
+	convenience init?(potentialType: DKType!, json: JSON) {
+		if potentialType != nil {
+			if !DKValueSimple.canAcceptJSONForType(json, potentialType!) {
+				return nil
+			}
+			self.init(type: potentialType!, json: json)
+		} else if json.isInteger {
+			let t = json.integerValue >= 0 ? DKTypeInt.uint64 : DKTypeInt.int64
+			self.init(type: t, json: json)
+		} else {
+			fatalErrorNYI()
+		}
+	}
+
 }

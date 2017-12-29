@@ -186,12 +186,14 @@ extension DKParser {
 					throw DKParsingError("Reduce has wrong signature \(signature) - output limited to number", self)
 				}
 			}
-			let num = try parseNumber()
+			let initJSON = try parseJSON()
 			try expectReservedWord(",")
 			let each = try parseFunction(eachSig)
-			if initialValueType == nil { initialValueType = DKTypeInt.uint64 }
-			let initialValue = DKValue.int(type: initialValueType!, intValue: num)
-			let fun = DKFunctionReduce(initialValue: initialValue, each: each)
+			let initialValue = DKValueSimple(potentialType: initialValueType, json: initJSON)
+			if initialValue == nil {
+				throw DKParsingError("Reduce has wrong initial value", self)
+			}
+			let fun = DKFunctionReduce(initialValue: initialValue!, each: each)
 			return fun
 		}
 		if s == "compose" {

@@ -28,7 +28,7 @@ class DKTypeAnnotated: DKType {
 		return 8
 	}
 
-	// ===============  TO JSON ===============
+	// ===============  TO/FROM JSON ===============
 
 	override func typeToRawJSON(_ uniquingTable: DKTypeTable) -> JSON {
 		let dict: [String: JSON] = [
@@ -38,7 +38,7 @@ class DKTypeAnnotated: DKType {
 		]
 		return .dictionary(dict)
 	}
-	class func fromJSONInternal(_ uniquingTable: DKTypeTable, _ j: JSON) -> DKType? {
+	override class func typeFromJSON(_ uniquingTable: DKTypeTable, _ j: JSON) -> DKType? {
 		let dict = j.dictionaryValue
 		if dict["genre"] != "annotated" { return nil }
 		let base = dict["base"]?.toDKType(uniquingTable)
@@ -46,6 +46,23 @@ class DKTypeAnnotated: DKType {
 		let ann = dict["annotation"]
 		if ann == nil { return nil }
 		return DKTypeAnnotated(base: base!, annotation: ann!)
+	}
+
+	// ===============  MISC ===============
+
+	var isCompressedType: Bool {
+		return annotation.dictionaryValue["annotation"]?["compression"] != nil
+	}
+	var compressionMethod: String! {
+		return annotation.dictionaryValue["annotation"]?["compression"]?.stringValue
+	}
+
+	override func subclassableSugaryDescription(_ uniquingTable: DKTypeTable) -> String {
+		if isCompressedType {
+			let baseStr = base.sugaredDescription(uniquingTable)
+			return "Compressed<\(baseStr)>(\(compressionMethod!))"
+		}
+		return super.subclassableSugaryDescription(uniquingTable)
 	}
 
 }

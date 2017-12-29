@@ -39,7 +39,7 @@ class DKType: Equatable, Hashable, CustomStringConvertible {
 		let sc = rawJSON.asTypeShortcut
 		let alias = uniquingTable.aliasForShortcut(sc)
 		if alias != nil { return alias! }
-		if uniquingTable[sc] != nil { return sc }
+//		if uniquingTable[sc] != nil { return sc }
 		return subclassableSugaryDescription(uniquingTable)
 	}
 

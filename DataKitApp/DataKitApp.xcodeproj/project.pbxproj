@@ -110,6 +110,8 @@
 		A7A56B901F8AC126007B5391 /* VantagePointTree.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7A56B731F8AC126007B5391 /* VantagePointTree.swift */; };
 		A7A56B911F8AC126007B5391 /* WorkQueue.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7A56B741F8AC126007B5391 /* WorkQueue.swift */; };
 		A7A56B921F8AC126007B5391 /* WorkSequencer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7A56B751F8AC126007B5391 /* WorkSequencer.swift */; };
+		A7BDCE2D1FF690470008440B /* DKTypeAnnotated.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7BDCE2C1FF690470008440B /* DKTypeAnnotated.swift */; };
+		A7BDCE2F1FF690660008440B /* DKFunctionCompression.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7BDCE2E1FF690660008440B /* DKFunctionCompression.swift */; };
 		A7EBED091F9494E800AFD2F0 /* libfunclient.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A7EBED071F9494E000AFD2F0 /* libfunclient.a */; };
 /* End PBXBuildFile section */
 
@@ -220,6 +222,8 @@
 		A7A56B741F8AC126007B5391 /* WorkQueue.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = WorkQueue.swift; sourceTree = "<group>"; };
 		A7A56B751F8AC126007B5391 /* WorkSequencer.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = WorkSequencer.swift; sourceTree = "<group>"; };
 		A7A56C021F8AC1D4007B5391 /* DataKitApp-Bridging-Header.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "DataKitApp-Bridging-Header.h"; sourceTree = "<group>"; };
+		A7BDCE2C1FF690470008440B /* DKTypeAnnotated.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = DKTypeAnnotated.swift; path = ../DataKit/DataKit/DKTypeAnnotated.swift; sourceTree = "<group>"; };
+		A7BDCE2E1FF690660008440B /* DKFunctionCompression.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = DKFunctionCompression.swift; path = ../DataKit/DataKit/DKFunctionCompression.swift; sourceTree = "<group>"; };
 		A7EBED071F9494E000AFD2F0 /* libfunclient.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libfunclient.a; path = ../../FunSDK/lib/Darwin/noasan/libfunclient.a; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -238,6 +242,8 @@
 		A7A56B241F8AC0AC007B5391 = {
 			isa = PBXGroup;
 			children = (
+				A7BDCE2C1FF690470008440B /* DKTypeAnnotated.swift */,
+				A7BDCE2E1FF690660008440B /* DKFunctionCompression.swift */,
 				A77C5CDE1FDCC8CC007264F5 /* DKFunctionGetFromReduceNode.swift */,
 				A77C5CDA1FDCC380007264F5 /* DKNodeReduce.swift */,
 				A77C5C8D1FDC9D6B007264F5 /* DKAlgebraicOperator.swift */,
@@ -513,6 +519,7 @@
 				A77C5CCE1FDC9D6E007264F5 /* DKExpression_Test.swift in Sources */,
 				A77C5CCF1FDC9D6E007264F5 /* DKEvaluationContext.swift in Sources */,
 				A77C5CD01FDC9D6E007264F5 /* DKValueLazy.swift in Sources */,
+				A7BDCE2D1FF690470008440B /* DKTypeAnnotated.swift in Sources */,
 				A77C5CD11FDC9D6E007264F5 /* DKFunctionFilter.swift in Sources */,
 				A77C5CD21FDC9D6E007264F5 /* DKExpressionVariable.swift in Sources */,
 				A77C5CD31FDC9D6E007264F5 /* DKBitStream.swift in Sources */,
@@ -559,6 +566,7 @@
 				A7A56B8F1F8AC126007B5391 /* Test.swift in Sources */,
 				A7A56B831F8AC126007B5391 /* Note.swift in Sources */,
 				A7A56B4D1F8AC11D007B5391 /* ArrayExtras.swift in Sources */,
+				A7BDCE2F1FF690660008440B /* DKFunctionCompression.swift in Sources */,
 				A7A56B8E1F8AC126007B5391 /* StringTrie.swift in Sources */,
 				A7A56B861F8AC126007B5391 /* RePrioritizableQueue.swift in Sources */,
 				A7A56B801F8AC126007B5391 /* Lock.swift in Sources */,
