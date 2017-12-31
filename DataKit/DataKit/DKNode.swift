@@ -26,6 +26,7 @@ class DKNode: CustomStringConvertible {
 	func nodeToJSON(_ uniquingTable: DKTypeTable) -> JSON {
 		var dict: [String: JSON] = nodeToJSONDict(uniquingTable)
 		dict["graph_index"] = .integer(graphIndex)
+		dict["signature"] = .string(signature.toTypeShortcut(uniquingTable))
 		return .dictionary(dict)
 	}
 }

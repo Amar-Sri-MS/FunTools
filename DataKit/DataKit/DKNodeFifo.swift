@@ -45,9 +45,7 @@ class DKNodeFifo: DKNode {
 		return "FIFO#\(graphIndex)(t=\(itemType.sugaredDescription(uniquingTable)); pred=\(predicateOnInput == nil ? "nil" : predicateOnInput.description); append=\(app))"
 	}
 	override func nodeToJSONDict(_ uniquingTable: DKTypeTable) -> [String: JSON] {
-		var dict: [String: JSON] = [
-			"item_type": .string(itemType.toTypeShortcut(uniquingTable)),
-			]
+		var dict: [String: JSON] = [:]
 		if predicateOnInput != nil {
 			dict["predicate"] = predicateOnInput!.functionToJSON
 		}
