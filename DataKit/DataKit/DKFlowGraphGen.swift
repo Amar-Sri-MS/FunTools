@@ -30,71 +30,99 @@ class DKFlowGraph {
 		}
 		return false
 	}
+	func addFifoNode(_ t: DKType) {
+		let fifo = DKNodeFifo(label: nodes.count, itemType: t)
+		nodes |= fifo
+	}
+	func addReduceNode(_ r: DKFunctionReduce) {
+		let node = DKNodeReduce(label: nodes.count, reduce: r)
+		nodes |= node
+	}
+	func addCompressorNode(_ c: DKFunctionCompress) {
+		let node = DKNodeCompressor(label: nodes.count, compress: c)
+		nodes |= node
+	}
+	// Generate takes the node graph we have so far and a function to compute
+	// and transforms it into a more complex node graph but a simpler function
 	func generate(_ fun: DKFunction) -> DKFunction {
-		func addFifo(_ t: DKType) {
-			let fifo = DKNodeFifo(label: nodes.count, itemType: t)
-			nodes |= fifo
-		}
-		func addReduceNode(_ r: DKFunctionReduce) {
-			let node = DKNodeReduce(label: nodes.count, reduce: r)
-			nodes |= node
-		}
-		if let filter = fun as? DKFunctionFilter {
-			var lastFifo = nodes.last!
-			let t = filter.itemType
-			let appliesPredicate = (lastFifo is DKNodeFifo) && !(lastFifo as! DKNodeFifo).hasDefaultBehavior
-			if !(lastFifo is DKNodeFifo) || appliesPredicate {
-				// make a new fifo
-				addFifo(t)
-				lastFifo = nodes.last!
-			}
-			(lastFifo as! DKNodeFifo).predicateOnInput = filter.predicate
-			return DKFunctionGatherFromFifo(uniquingTable, nodes.count - 1, t)
-		} else if let comp = fun as? DKFunctionComposition {
-			// First apply inner
-			let genInner = generate(comp.inner)
-			if (genInner is DKFunctionGatherFromFifo) && comp.outer.isInputGroupable {
-				// Instead of composing the functions, we specify that the last Fifo gathers
-				let t = (genInner.signature.output as! DKTypeSequence).sub
-				addFifo(t)	// we ignore for now the (trivial) result
-				return generate(comp.outer)
-			} else if (genInner is DKFunctionGetFromReduceNode) {
-				// We just compose the value coming from inner to outer
-				return DKFunctionComposition(outer: comp.outer, inner: genInner)
-			} else {
-				let genOuter = generate(comp.outer)
-				return DKFunctionComposition(outer: genOuter, inner: genInner)
-			}
-		} else if let map = fun as? DKFunctionMap {
-			if !(nodes.last! is DKNodeFifo) {
-				let t = map.inputItemType
-				addFifo(t)
-			}
-			(nodes.last! as! DKNodeFifo).compose(outer: map.each)
-			if map.each is DKFunctionLogger {
-				// No point in returning anything
-				return map.each
-			}
-			return DKFunctionGatherFromFifo(uniquingTable, nodes.count - 1, map.each.signature.output)
-		} else if let reduce = fun as? DKFunctionReduce {
-			if !(nodes.last! is DKNodeFifo) {
-				let t = reduce.inputItemType
-				addFifo(t)
-			}
-			addReduceNode(reduce)
-			return DKFunctionGetFromReduceNode(uniquingTable, nodes.count - 1, reduce.outputType)
-		} else {
+		switch fun {
+		case let filter as DKFunctionFilter:
+			return generateForFilter(filter)
+		case let comp as DKFunctionComposition:
+			return generateForComposition(comp)
+		case let map as DKFunctionMap:
+			return generateForMap(map)
+		case let reduce as DKFunctionReduce:
+			return generateForReduce(reduce)
+		default:
 			if nodes.last is DKNodeReduce {
 				let reduceNode = nodes.last as! DKNodeReduce
 				reduceNode.compose(outer: fun)
 				return DKFunctionGetFromReduceNode(uniquingTable, nodes.count - 1, fun.signature.output)
 			} else if nodes.last is DKNodeFifo {
-				let prev = DKFunctionGatherFromFifo(uniquingTable, nodes.count - 1, nodes.last!.itemType)
+				let prev = DKFunctionGatherFromFifo(uniquingTable, nodes.last!)
 				return DKFunctionComposition(outer: fun, inner: prev)
 			} else {
 				fatalErrorNYI()
 			}
 		}
+	}
+	func generateForFilter(_ filter: DKFunctionFilter) -> DKFunction {
+		// If the last node is a fifo and does not have a filter yet, we add it to that node
+		// else we insert a fifo
+		var lastFifo = nodes.last!
+		let t = filter.itemType
+		let appliesPredicate = (lastFifo is DKNodeFifo) && !(lastFifo as! DKNodeFifo).hasDefaultBehavior
+		if !(lastFifo is DKNodeFifo) || appliesPredicate {
+			// make a new fifo
+			addFifoNode(t)
+			lastFifo = nodes.last!
+		}
+		assert((lastFifo as! DKNodeFifo).predicateOnInput == nil)
+		(lastFifo as! DKNodeFifo).predicateOnInput = filter.predicate
+		return DKFunctionGatherFromFifo(uniquingTable, nodes.last!)
+	}
+	func generateForComposition(_ comp: DKFunctionComposition) -> DKFunction {
+		// First apply inner
+		let genInner = generate(comp.inner)
+		if (genInner is DKFunctionGatherFromFifo) && comp.outer.isInputGroupable {
+			// Instead of composing the functions, we specify that the last Fifo gathers - this is an optimization
+			let t = (genInner.signature.output as! DKTypeSequence).sub
+			addFifoNode(t)	// we ignore for now the (trivial) result
+			return generate(comp.outer)
+		} else if (genInner is DKFunctionGetFromReduceNode) {
+			// We just compose the value coming from inner to outer
+			return DKFunctionComposition(outer: comp.outer, inner: genInner)
+		} else {
+			// We actually compose the values
+			// That means gathering all items of a sequence
+			let genOuter = generate(comp.outer)
+			return DKFunctionComposition(outer: genOuter, inner: genInner)
+		}
+
+	}
+	func generateForMap(_ map: DKFunctionMap) -> DKFunction {
+		// We make sure we come out of a fifo
+		if !(nodes.last! is DKNodeFifo) {
+			let t = map.inputItemType
+			addFifoNode(t)
+		}
+		(nodes.last! as! DKNodeFifo).compose(outer: map.each)
+		if map.each is DKFunctionLogger {
+			// No point in returning anything
+			return map.each
+		}
+		assert(map.each.signature.output == nodes.last!.signature.output)
+		return DKFunctionGatherFromFifo(uniquingTable, nodes.last!)
+	}
+	func generateForReduce(_ reduce: DKFunctionReduce) -> DKFunction {
+		// We make sure we come out of a fifo
+		if !(nodes.last! is DKNodeFifo) {
+			let t = reduce.inputItemType
+			addFifoNode(t)
+		}
+		addReduceNode(reduce)
+		return DKFunctionGetFromReduceNode(uniquingTable, nodes.count - 1, reduce.outputType)
 	}
 	func flowGraphToJSONDict(_ dict: inout [String: JSON]) {
 		for i in nodes.indices {

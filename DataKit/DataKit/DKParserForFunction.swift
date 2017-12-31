@@ -10,7 +10,7 @@
 // The body can be:
 // - an operator like + - * / && || ^ ! | < > == != <= >=
 // - a projection like .first_name
-// - a functional constructor like filter(<predicate>) or map(.first_name) or reduce(0, +) or compose(<f1>, <f2>) or logger()
+// - a functional constructor like filter(<predicate>) or map(.first_name) or reduce(0, +) or compose(<f1>, <f2>) or logger() or compress("deflate") or decompress("deflate")
 // - a closure like { $0.first == "Joe" }
 // - or a parenthesized function, e.g. ((Int8) -> Int8: -)
 
@@ -115,6 +115,8 @@ extension DKParser {
 			"logger": .noarg,
 			"filter": .unary,
 			"map": .unary,
+			"compress": .unary,
+			"decompress": .unary,
 			"reduce": .binary,
 			"compose": .binary,
 			"generator": .generator,
@@ -167,6 +169,21 @@ extension DKParser {
 			}
 			let each = try parseFunction(eachSig)
 			return DKFunctionMap(each: each)
+		}
+		if s == "compress" || s == "decompress" {
+			let c = s == "compress"
+			if signature == nil {
+				throw DKParsingError("Signature must be provided for \(s)", self)
+			}
+			if !DKFunctionCompress.canBeSignature(signature: signature!, compress: c) {
+				throw DKParsingError("Signature \(signature!) improper for \(s)", self)
+			}
+			let arg = try parseJSON()
+			if !arg.isString {
+				throw DKParsingError("Expecting compress method for \(s) instead of \(arg)", self)
+			}
+			let base = c ? signature!.input[0] : signature.output
+			return DKFunctionCompress(uniquingTable, base: base, compress: c, method: arg.stringValue)
 		}
 		fatalError()
 	}

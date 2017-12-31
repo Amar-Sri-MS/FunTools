@@ -8,23 +8,21 @@
 
 // Node that "absorbs" a stream of [T] and produces a value of type U
 class DKNodeReduce: DKNode {
-	private var asSource: DKValueStreamSource!
 	let reducer: DKFunctionReduce
 	var finalFunc: DKFunction!	// function to apply to the result
 	init(label: Int, reduce: DKFunctionReduce) {
 		self.reducer = reduce
-		super.init(label, itemType: reduce.inputItemType)
+		super.init(label)
 	}
-	var sequenceType: DKTypeSequence { return DKTypeSequence(itemType) }
+	var sequenceType: DKTypeSequence { return DKTypeSequence(reducer.inputItemType) }
 	var outputType: DKType {
 		return finalFunc == nil ? reducer.outputType : finalFunc.signature.output
 	}
-	var streamForConsumer: DKValueStreamSource {
-		if asSource == nil { asSource = DKValueStreamSource(itemType: itemType) }
-		return asSource!
+	override var signature: DKTypeSignature {
+		return DKTypeSignature(unaryArg: sequenceType, output: outputType)
 	}
 	override func sugaredDescription(_ uniquingTable: DKTypeTable) -> String {
-		let item = itemType.sugaredDescription(uniquingTable)
+		let item = reducer.inputItemType.sugaredDescription(uniquingTable)
 		let valueType = reducer.outputType
 		let ini = reducer.initialValue.description
 		return "FIFO#\(graphIndex)(initial=\(ini), u=\(valueType), t=\(item), final=\(finalFunc?.description ?? ""); each=\(reducer.each.description))"

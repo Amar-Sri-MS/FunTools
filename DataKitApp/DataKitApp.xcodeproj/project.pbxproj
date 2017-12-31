@@ -14,7 +14,6 @@
 		A77C5CA41FDC9D6E007264F5 /* DKGenC.swift in Sources */ = {isa = PBXBuildFile; fileRef = A77C5C6C1FDC9D66007264F5 /* DKGenC.swift */; };
 		A77C5CA51FDC9D6E007264F5 /* DKValueSimple.swift in Sources */ = {isa = PBXBuildFile; fileRef = A77C5C6D1FDC9D66007264F5 /* DKValueSimple.swift */; };
 		A77C5CA61FDC9D6E007264F5 /* DKFunction.swift in Sources */ = {isa = PBXBuildFile; fileRef = A77C5C6E1FDC9D66007264F5 /* DKFunction.swift */; };
-		A77C5CA71FDC9D6E007264F5 /* DKValueStream.swift in Sources */ = {isa = PBXBuildFile; fileRef = A77C5C6F1FDC9D66007264F5 /* DKValueStream.swift */; };
 		A77C5CA81FDC9D6E007264F5 /* DKTypeInt.swift in Sources */ = {isa = PBXBuildFile; fileRef = A77C5C701FDC9D66007264F5 /* DKTypeInt.swift */; };
 		A77C5CA91FDC9D6E007264F5 /* DKDataLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = A77C5C711FDC9D67007264F5 /* DKDataLayout.swift */; };
 		A77C5CAA1FDC9D6E007264F5 /* DKFlowGraphGen.swift in Sources */ = {isa = PBXBuildFile; fileRef = A77C5C721FDC9D67007264F5 /* DKFlowGraphGen.swift */; };
@@ -111,7 +110,8 @@
 		A7A56B911F8AC126007B5391 /* WorkQueue.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7A56B741F8AC126007B5391 /* WorkQueue.swift */; };
 		A7A56B921F8AC126007B5391 /* WorkSequencer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7A56B751F8AC126007B5391 /* WorkSequencer.swift */; };
 		A7BDCE2D1FF690470008440B /* DKTypeAnnotated.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7BDCE2C1FF690470008440B /* DKTypeAnnotated.swift */; };
-		A7BDCE2F1FF690660008440B /* DKFunctionCompression.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7BDCE2E1FF690660008440B /* DKFunctionCompression.swift */; };
+		A7BDCE331FF93B4A0008440B /* DKFunctionCompress.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7BDCE321FF93B4A0008440B /* DKFunctionCompress.swift */; };
+		A7BDCE351FF93B580008440B /* DKNodeCompressor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7BDCE341FF93B570008440B /* DKNodeCompressor.swift */; };
 		A7EBED091F9494E800AFD2F0 /* libfunclient.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A7EBED071F9494E000AFD2F0 /* libfunclient.a */; };
 /* End PBXBuildFile section */
 
@@ -123,7 +123,6 @@
 		A77C5C6C1FDC9D66007264F5 /* DKGenC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = DKGenC.swift; path = ../DataKit/DataKit/DKGenC.swift; sourceTree = "<group>"; };
 		A77C5C6D1FDC9D66007264F5 /* DKValueSimple.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = DKValueSimple.swift; path = ../DataKit/DataKit/DKValueSimple.swift; sourceTree = "<group>"; };
 		A77C5C6E1FDC9D66007264F5 /* DKFunction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = DKFunction.swift; path = ../DataKit/DataKit/DKFunction.swift; sourceTree = "<group>"; };
-		A77C5C6F1FDC9D66007264F5 /* DKValueStream.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = DKValueStream.swift; path = ../DataKit/DataKit/DKValueStream.swift; sourceTree = "<group>"; };
 		A77C5C701FDC9D66007264F5 /* DKTypeInt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = DKTypeInt.swift; path = ../DataKit/DataKit/DKTypeInt.swift; sourceTree = "<group>"; };
 		A77C5C711FDC9D67007264F5 /* DKDataLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = DKDataLayout.swift; path = ../DataKit/DataKit/DKDataLayout.swift; sourceTree = "<group>"; };
 		A77C5C721FDC9D67007264F5 /* DKFlowGraphGen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = DKFlowGraphGen.swift; path = ../DataKit/DataKit/DKFlowGraphGen.swift; sourceTree = "<group>"; };
@@ -223,7 +222,8 @@
 		A7A56B751F8AC126007B5391 /* WorkSequencer.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = WorkSequencer.swift; sourceTree = "<group>"; };
 		A7A56C021F8AC1D4007B5391 /* DataKitApp-Bridging-Header.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "DataKitApp-Bridging-Header.h"; sourceTree = "<group>"; };
 		A7BDCE2C1FF690470008440B /* DKTypeAnnotated.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = DKTypeAnnotated.swift; path = ../DataKit/DataKit/DKTypeAnnotated.swift; sourceTree = "<group>"; };
-		A7BDCE2E1FF690660008440B /* DKFunctionCompression.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = DKFunctionCompression.swift; path = ../DataKit/DataKit/DKFunctionCompression.swift; sourceTree = "<group>"; };
+		A7BDCE321FF93B4A0008440B /* DKFunctionCompress.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = DKFunctionCompress.swift; path = ../DataKit/DataKit/DKFunctionCompress.swift; sourceTree = "<group>"; };
+		A7BDCE341FF93B570008440B /* DKNodeCompressor.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = DKNodeCompressor.swift; path = ../DataKit/DataKit/DKNodeCompressor.swift; sourceTree = "<group>"; };
 		A7EBED071F9494E000AFD2F0 /* libfunclient.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libfunclient.a; path = ../../FunSDK/lib/Darwin/noasan/libfunclient.a; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -243,7 +243,8 @@
 			isa = PBXGroup;
 			children = (
 				A7BDCE2C1FF690470008440B /* DKTypeAnnotated.swift */,
-				A7BDCE2E1FF690660008440B /* DKFunctionCompression.swift */,
+				A7BDCE321FF93B4A0008440B /* DKFunctionCompress.swift */,
+				A7BDCE341FF93B570008440B /* DKNodeCompressor.swift */,
 				A77C5CDE1FDCC8CC007264F5 /* DKFunctionGetFromReduceNode.swift */,
 				A77C5CDA1FDCC380007264F5 /* DKNodeReduce.swift */,
 				A77C5C8D1FDC9D6B007264F5 /* DKAlgebraicOperator.swift */,
@@ -299,7 +300,6 @@
 				A77C5C771FDC9D68007264F5 /* DKValueLazySequence.swift */,
 				A77C5C6B1FDC9D66007264F5 /* DKValueLazyStruct.swift */,
 				A77C5C6D1FDC9D66007264F5 /* DKValueSimple.swift */,
-				A77C5C6F1FDC9D66007264F5 /* DKValueStream.swift */,
 				A77C5C741FDC9D67007264F5 /* runtimeStubs.c */,
 				A77C5C911FDC9D6C007264F5 /* Students.swift */,
 				A7A56B411F8AC11D007B5391 /* PureSwiftExtras */,
@@ -472,12 +472,12 @@
 				A77C5CDB1FDCC381007264F5 /* DKNodeReduce.swift in Sources */,
 				A77C5CA01FDC9D6E007264F5 /* DKParserForFunction.swift in Sources */,
 				A77C5CA11FDC9D6E007264F5 /* DKType.swift in Sources */,
+				A7BDCE331FF93B4A0008440B /* DKFunctionCompress.swift in Sources */,
 				A77C5CA21FDC9D6E007264F5 /* DKFunctionMaker.swift in Sources */,
 				A77C5CA31FDC9D6E007264F5 /* DKValueLazyStruct.swift in Sources */,
 				A77C5CA41FDC9D6E007264F5 /* DKGenC.swift in Sources */,
 				A77C5CA51FDC9D6E007264F5 /* DKValueSimple.swift in Sources */,
 				A77C5CA61FDC9D6E007264F5 /* DKFunction.swift in Sources */,
-				A77C5CA71FDC9D6E007264F5 /* DKValueStream.swift in Sources */,
 				A77C5CA81FDC9D6E007264F5 /* DKTypeInt.swift in Sources */,
 				A77C5CA91FDC9D6E007264F5 /* DKDataLayout.swift in Sources */,
 				A77C5CAA1FDC9D6E007264F5 /* DKFlowGraphGen.swift in Sources */,
@@ -518,6 +518,7 @@
 				A77C5CCD1FDC9D6E007264F5 /* DKNode.swift in Sources */,
 				A77C5CCE1FDC9D6E007264F5 /* DKExpression_Test.swift in Sources */,
 				A77C5CCF1FDC9D6E007264F5 /* DKEvaluationContext.swift in Sources */,
+				A7BDCE351FF93B580008440B /* DKNodeCompressor.swift in Sources */,
 				A77C5CD01FDC9D6E007264F5 /* DKValueLazy.swift in Sources */,
 				A7BDCE2D1FF690470008440B /* DKTypeAnnotated.swift in Sources */,
 				A77C5CD11FDC9D6E007264F5 /* DKFunctionFilter.swift in Sources */,
@@ -566,7 +567,6 @@
 				A7A56B8F1F8AC126007B5391 /* Test.swift in Sources */,
 				A7A56B831F8AC126007B5391 /* Note.swift in Sources */,
 				A7A56B4D1F8AC11D007B5391 /* ArrayExtras.swift in Sources */,
-				A7BDCE2F1FF690660008440B /* DKFunctionCompression.swift in Sources */,
 				A7A56B8E1F8AC126007B5391 /* StringTrie.swift in Sources */,
 				A7A56B861F8AC126007B5391 /* RePrioritizableQueue.swift in Sources */,
 				A7A56B801F8AC126007B5391 /* Lock.swift in Sources */,

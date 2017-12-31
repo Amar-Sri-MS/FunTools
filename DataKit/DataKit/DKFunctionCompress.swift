@@ -1,5 +1,5 @@
 //
-//  DKFunctionCompression.swift
+//  DKFunctionCompress.swift
 //  DataKit
 //
 //  Created by Bertrand Serlet on 12/25/17.
@@ -8,7 +8,7 @@
 
 // Expresses the explicit compression or decompression of data
 
-class DKFunctionCompression: DKFunction {
+class DKFunctionCompress: DKFunction {
 	let base: DKType	// Uncompressed type
 	let shortcut: DKType.Shortcut	// cache
 	let compress: Bool // false means de-compression
@@ -42,14 +42,32 @@ class DKFunctionCompression: DKFunction {
 		if t == nil { return nil }
 		let m = dict["method"]
 		if m == nil || !m!.isString { return nil }
-		return DKFunctionCompression(uniquingTable, base: t!, compress: b, method: m!.stringValue)
+		return DKFunctionCompress(uniquingTable, base: t!, compress: b, method: m!.stringValue)
 	}
 	override var description: String {
 		if compress {
-			return "compression(\(shortcut), \(method))"
+			return "compress(\(method.quotedString()))"
 		} else {
-			return "decompression(\(shortcut), \(method))"
+			return "decompress(\(method.quotedString()))"
 		}
 	}
-
+	class func canBeSignature(signature: DKTypeSignature, compress: Bool) -> Bool {
+		if signature.numberOfArguments != 1 {
+			return false
+		}
+		let input = signature.input[0]
+		if compress {
+			if let ann = signature.output as? DKTypeAnnotated {
+				return ann.base == input
+			} else {
+				return false
+			}
+		} else {
+			if let ann = input as? DKTypeAnnotated {
+				return ann.base == signature.output
+			} else {
+				return false
+			}
+		}
+	}
 }

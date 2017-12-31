@@ -7,11 +7,12 @@
 //
 
 class DKNode: CustomStringConvertible {
-	var itemType: DKType
 	let graphIndex: Int
-	init(_ graphIndex: Int, itemType: DKType) {
-		self.itemType = itemType
+	init(_ graphIndex: Int) {
 		self.graphIndex = graphIndex
+	}
+	var signature: DKTypeSignature {
+		fatalErrorMustBeImplementedBySubclass()
 	}
 	func sugaredDescription(_ uniquingTable: DKTypeTable) -> String {
 		fatalErrorMustBeImplementedBySubclass()

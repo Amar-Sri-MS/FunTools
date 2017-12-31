@@ -10,13 +10,22 @@
 class DKFunctionGatherFromFifo: DKFunction {
 	let fifoIndex: Int
 	let itemType: DKType
-	let typeShortcut: DKType.Shortcut // derived from signature
+	let itemTypeShortcut: DKType.Shortcut // derived from signature
 	let sugaredDesc: String	// derived
-	init(_ uniquingTable: DKTypeTable, _ fifoIndex: Int, _ itemType: DKType) {
-		typeShortcut = itemType.toTypeShortcut(uniquingTable)
+	private init(_ uniquingTable: DKTypeTable, _ fifoIndex: Int, _ itemType: DKType) {
+		itemTypeShortcut = itemType.toTypeShortcut(uniquingTable)
 		self.fifoIndex = fifoIndex
 		self.itemType = itemType
 		sugaredDesc = "gatherFromFifo(\(fifoIndex), \(itemType.sugaredDescription(uniquingTable)))"
+	}
+	init(_ uniquingTable: DKTypeTable, _ node: DKNode) {
+		// TODO -----------------
+		// REMOVE item type and instead have a signature in the node
+		let it = node.signature.output is DKTypeSequence ? (node.signature.output as! DKTypeSequence).sub : node.signature.output
+		itemTypeShortcut = it.toTypeShortcut(uniquingTable)
+		self.fifoIndex = node.graphIndex
+		self.itemType = it
+		sugaredDesc = "gatherFromFifo(\(node.graphIndex), \(it.sugaredDescription(uniquingTable)))"
 	}
 	var sequenceType: DKType { return itemType.makeSequence }
 	override var signature: DKTypeSignature {
@@ -25,7 +34,7 @@ class DKFunctionGatherFromFifo: DKFunction {
 	override var functionToJSONDict: [String: JSON] {
 		return [
 			"gather": .integer(fifoIndex),
-			"item": typeShortcut.toJSON
+			"item": itemTypeShortcut.toJSON
 		]
 	}
 	override class func functionFromJSON(_ uniquingTable: DKTypeTable, _ dict: [String: JSON]) -> DKFunctionGatherFromFifo! {
