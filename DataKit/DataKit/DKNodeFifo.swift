@@ -27,7 +27,7 @@ class DKNodeFifo: DKNode {
 		case let .gatherByBatch(fun):
 			assert(fun.signature.numberOfArguments == 1)
 			assert(fun.signature.input[0] == itemType)
-			return fun.signature.output
+			return DKTypeSequence(fun.signature.output)
 		}
 	}
 	override var signature: DKTypeSignature {

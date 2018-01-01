@@ -9,41 +9,42 @@
 // Conceptually gathers all the items from a Fifo and produces a (lazy) sequence
 class DKFunctionGatherFromFifo: DKFunction {
 	let fifoIndex: Int
-	let itemType: DKType
-	let itemTypeShortcut: DKType.Shortcut // derived from signature
+	let valueType: DKType
+	let valueTypeShortcut: DKType.Shortcut // derived from signature
+
 	let sugaredDesc: String	// derived
-	private init(_ uniquingTable: DKTypeTable, _ fifoIndex: Int, _ itemType: DKType) {
-		itemTypeShortcut = itemType.toTypeShortcut(uniquingTable)
+	private init(_ uniquingTable: DKTypeTable, _ fifoIndex: Int, _ valueType: DKType) {
 		self.fifoIndex = fifoIndex
-		self.itemType = itemType
-		sugaredDesc = "gatherFromFifo(\(fifoIndex), \(itemType.sugaredDescription(uniquingTable)))"
+		self.valueType = valueType
+		valueTypeShortcut = valueType.toTypeShortcut(uniquingTable)
+		sugaredDesc = "gatherFromFifo(\(fifoIndex), \(valueType.sugaredDescription(uniquingTable)))"
 	}
 	init(_ uniquingTable: DKTypeTable, _ node: DKNode) {
-		// TODO -----------------
-		// REMOVE item type and instead have a signature in the node
-		let it = node.signature.output is DKTypeSequence ? (node.signature.output as! DKTypeSequence).sub : node.signature.output
-		itemTypeShortcut = it.toTypeShortcut(uniquingTable)
 		self.fifoIndex = node.graphIndex
-		self.itemType = it
-		sugaredDesc = "gatherFromFifo(\(node.graphIndex), \(it.sugaredDescription(uniquingTable)))"
+		valueType = node.signature.output
+		valueTypeShortcut = valueType.toTypeShortcut(uniquingTable)
+		sugaredDesc = "gatherFromFifo(\(node.graphIndex), \(valueType.sugaredDescription(uniquingTable)))"
 	}
-	var sequenceType: DKType { return itemType.makeSequence }
+	var sequenceType: DKType {
+		assert(valueType is DKTypeSequence)
+		return valueType
+	}
 	override var signature: DKTypeSignature {
-		return DKTypeSignature(input: DKTypeStruct.void, output: sequenceType)
+		return DKTypeSignature(input: DKTypeStruct.void, output: valueType)
 	}
 	override var functionToJSONDict: [String: JSON] {
 		return [
 			"gather": .integer(fifoIndex),
-			"item": itemTypeShortcut.toJSON
+			"value_type": valueTypeShortcut.toJSON
 		]
 	}
 	override class func functionFromJSON(_ uniquingTable: DKTypeTable, _ dict: [String: JSON]) -> DKFunctionGatherFromFifo! {
 		let g = dict["gather"]
 		if g == nil || !g!.isInteger { return nil }
 		let fifoIndex = g!.integerValue
-		let itemType = dict["item"]?.toDKType(uniquingTable)
-		if itemType == nil { return nil }
-		return DKFunctionGatherFromFifo(uniquingTable, fifoIndex, itemType!)
+		let valueType = dict["value_type"]?.toDKType(uniquingTable)
+		if valueType == nil { return nil }
+		return DKFunctionGatherFromFifo(uniquingTable, fifoIndex, valueType!)
 	}
 	override func evaluate(context: DKEvaluationContext, _ subs: [DKExpression]) -> DKValue {
 		assert(subs.count == 0)

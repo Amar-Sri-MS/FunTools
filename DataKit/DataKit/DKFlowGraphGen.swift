@@ -85,9 +85,9 @@ class DKFlowGraph {
 	func generateForComposition(_ comp: DKFunctionComposition) -> DKFunction {
 		// First apply inner
 		let genInner = generate(comp.inner)
-		if (genInner is DKFunctionGatherFromFifo) && comp.outer.isInputGroupable {
+		if (genInner is DKFunctionGatherFromFifo) && ((genInner as! DKFunctionGatherFromFifo).valueType is DKTypeSequence) && comp.outer.isInputGroupable {
 			// Instead of composing the functions, we specify that the last Fifo gathers - this is an optimization
-			let t = (genInner.signature.output as! DKTypeSequence).sub
+			let t = ((genInner as! DKFunctionGatherFromFifo).valueType as! DKTypeSequence).sub
 			addFifoNode(t)	// we ignore for now the (trivial) result
 			return generate(comp.outer)
 		} else if (genInner is DKFunctionGetFromReduceNode) {
@@ -96,10 +96,11 @@ class DKFlowGraph {
 		} else {
 			// We actually compose the values
 			// That means gathering all items of a sequence
+			let s = genInner is DKFunctionGatherFromFifo ? (genInner as! DKFunctionGatherFromFifo).valueType.description : "Not_a_gather"
+			print("Will gather values coming for \(genInner) to appy \(comp.outer) genInner.value=\(s)")
 			let genOuter = generate(comp.outer)
 			return DKFunctionComposition(outer: genOuter, inner: genInner)
 		}
-
 	}
 	func generateForMap(_ map: DKFunctionMap) -> DKFunction {
 		// We make sure we come out of a fifo
@@ -112,7 +113,7 @@ class DKFlowGraph {
 			// No point in returning anything
 			return map.each
 		}
-		assert(map.each.signature.output == nodes.last!.signature.output)
+//		assert(map.each.signature.output == nodes.last!.signature.output)
 		return DKFunctionGatherFromFifo(uniquingTable, nodes.last!)
 	}
 	func generateForReduce(_ reduce: DKFunctionReduce) -> DKFunction {
