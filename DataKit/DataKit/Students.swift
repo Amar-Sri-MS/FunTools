@@ -165,9 +165,14 @@ let pipeFullNames = "compose(" +
 
 let pipeCompress = "compose(" +
 	"first: ([Student]) -> Compressed<[Student]>(test) | compress(test), " +
+	"then: logger()" +
+")"
+
+let pipeCompressDecompress = "compose(" +
+	"first: ([Student]) -> Compressed<[Student]>(test) | compress(test), " +
 	"then: compose(" +
-		"first: (Compressed<[Student]>(test)) -> [Student] | decompress(test), " +
-		"then: logger()" +
+	"first: (Compressed<[Student]>(test)) -> [Student] | decompress(test), " +
+	"then: logger()" +
 	")" +
 ")"
 
@@ -189,7 +194,7 @@ func studentsTestNew(_ pipeString: String, _ numStudents: Int = 100) {
 }
 
 func studentsTest() {
-	for p in [pipe0, pipe0b, pipe1, pipe2, pipeFullNames, pipeCompress] {
+	for p in [pipe0, pipe0b, pipe1, pipe2, pipeFullNames, pipeCompress, pipeCompressDecompress] {
 		studentsTestNew(p)
 	}
 }

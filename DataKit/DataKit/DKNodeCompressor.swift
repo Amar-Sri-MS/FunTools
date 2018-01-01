@@ -17,17 +17,10 @@ class DKNodeCompressor: DKNode {
 		super.init(label)
 	}
 	var compresses: Bool {
-		return compress.compress
+		return compress.compresses
 	}
 	override var signature: DKTypeSignature {
-		let bytes = DKTypeSequence(DKTypeInt.uint8)
-		if compresses {
-			// We compress into bytes
-			return DKTypeSignature(input: compress.signature.input, output: bytes)
-		} else {
-			// We decompress from bytes
-			return DKTypeSignature(unaryArg: bytes, output: compress.signature.output)
-		}
+		return compress.signature
 	}
 	var sequenceType: DKTypeSequence { return compress.base as! DKTypeSequence }
 	override func sugaredDescription(_ uniquingTable: DKTypeTable) -> String {
@@ -35,7 +28,7 @@ class DKNodeCompressor: DKNode {
 		return "\(typeStr)#\(graphIndex)(t=\(compress.signature.sugaredDescription(uniquingTable)); method=\(compress.method))"
 	}
 	override func nodeToJSONDict(_ uniquingTable: DKTypeTable) -> [String: JSON] {
-		return ["compressor": compress.functionToJSON]
+		return ["compressor_node": compress.functionToJSON]
 	}
 }
 

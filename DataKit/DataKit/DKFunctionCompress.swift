@@ -11,17 +11,17 @@
 class DKFunctionCompress: DKFunction {
 	let base: DKType	// Uncompressed type
 	let shortcut: DKType.Shortcut	// cache
-	let compress: Bool // false means de-compression
+	let compresses: Bool // false means de-compression
 	let method: String
 	init(_ uniquingTable: DKTypeTable, base: DKType, compress: Bool, method: String) {
 		self.base = base
 		shortcut = base.toTypeShortcut(uniquingTable)
-		self.compress = compress
+		self.compresses = compress
 		self.method = method
 	}
 	override var signature: DKTypeSignature {
 		let compressed = DKTypeAnnotated(base: base, compressed: method)
-		if compress {
+		if compresses {
 			return DKTypeSignature(input: DKTypeStruct(funcParamType: base), output: compressed)
 		} else {
 			return DKTypeSignature(input: DKTypeStruct(funcParamType: compressed), output: base)
@@ -29,7 +29,7 @@ class DKFunctionCompress: DKFunction {
 	}
 	override var functionToJSONDict: [String: JSON] {
 		return [
-			"compression": .bool(compress),
+			"compression": .bool(compresses),
 			"base": shortcut.toJSON,
 			"method": .string(method)
 		]
@@ -45,7 +45,7 @@ class DKFunctionCompress: DKFunction {
 		return DKFunctionCompress(uniquingTable, base: t!, compress: b, method: m!.stringValue)
 	}
 	override var description: String {
-		if compress {
+		if compresses {
 			return "compress(\(method.quotedString()))"
 		} else {
 			return "decompress(\(method.quotedString()))"

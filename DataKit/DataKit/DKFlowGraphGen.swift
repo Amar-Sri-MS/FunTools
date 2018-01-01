@@ -34,13 +34,8 @@ class DKFlowGraph {
 		let fifo = DKNodeFifo(label: nodes.count, itemType: t)
 		nodes |= fifo
 	}
-	func addReduceNode(_ r: DKFunctionReduce) {
-		let node = DKNodeReduce(label: nodes.count, reduce: r)
-		nodes |= node
-	}
-	func addCompressorNode(_ c: DKFunctionCompress) {
-		let node = DKNodeCompressor(label: nodes.count, compress: c)
-		nodes |= node
+	var gatherFromLast: DKFunction {
+		return DKFunctionGatherFromNode(uniquingTable, nodes.last!)
 	}
 	// Generate takes the node graph we have so far and a function to compute
 	// and transforms it into a more complex node graph but a simpler function
@@ -54,14 +49,17 @@ class DKFlowGraph {
 			return generateForMap(map)
 		case let reduce as DKFunctionReduce:
 			return generateForReduce(reduce)
+		case let compress as DKFunctionCompress:
+			return generateForCompress(compress)
 		default:
+			print("Falling into default case for node graph generation with \(fun)")
 			if nodes.last is DKNodeReduce {
 				let reduceNode = nodes.last as! DKNodeReduce
 				print("We compose the result of reduce node: \(reduceNode) with outer fun: \(fun) [A]")
 				reduceNode.compose(outer: fun)
-				return DKFunctionGatherFromNode(uniquingTable, nodes.last!)
+				return gatherFromLast
 			} else if nodes.last is DKNodeFifo {
-				let prev = DKFunctionGatherFromNode(uniquingTable, nodes.last!)
+				let prev = gatherFromLast
 				return DKFunctionComposition(outer: fun, inner: prev)
 			} else {
 				fatalErrorNYI()
@@ -81,7 +79,7 @@ class DKFlowGraph {
 		}
 		assert((lastFifo as! DKNodeFifo).predicateOnInput == nil)
 		(lastFifo as! DKNodeFifo).predicateOnInput = filter.predicate
-		return DKFunctionGatherFromNode(uniquingTable, nodes.last!)
+		return gatherFromLast
 	}
 	func generateForComposition(_ comp: DKFunctionComposition) -> DKFunction {
 		// First apply inner
@@ -95,7 +93,7 @@ class DKFlowGraph {
 			let reduceNode = nodes.last as! DKNodeReduce
 //			print("We compose the result of reduce node: \(reduceNode) with outer fun: \(comp.outer) [B]")
 			reduceNode.compose(outer: comp.outer)
-			return DKFunctionGatherFromNode(uniquingTable, nodes.last!)
+			return gatherFromLast
 		} else {
 			// We actually compose the values
 			// That means gathering all items of a sequence
@@ -116,7 +114,7 @@ class DKFlowGraph {
 			// No point in returning anything
 			return map.each
 		}
-		return DKFunctionGatherFromNode(uniquingTable, nodes.last!)
+		return gatherFromLast
 	}
 	func generateForReduce(_ reduce: DKFunctionReduce) -> DKFunction {
 		// We make sure we come out of a fifo
@@ -124,8 +122,21 @@ class DKFlowGraph {
 			let t = reduce.inputItemType
 			addFifoNode(t)
 		}
-		addReduceNode(reduce)
-		return DKFunctionGatherFromNode(uniquingTable, nodes.last!)
+		let node = DKNodeReduce(label: nodes.count, reduce: reduce)
+		nodes |= node
+		return gatherFromLast
+	}
+	func generateForCompress(_ compress: DKFunctionCompress) -> DKFunction {
+		assert(compress.signature.numberOfArguments == 1)
+		let inputType = compress.signature.input[0]
+		if !(nodes.last! is DKNodeFifo) {
+			assert(inputType is DKTypeSequence)
+			let itemType = (inputType as! DKTypeSequence).sub
+			addFifoNode(itemType)
+		}
+		let node = DKNodeCompressor(label: nodes.count, compress: compress)
+		nodes |= node
+		return gatherFromLast
 	}
 	func flowGraphToJSONDict(_ dict: inout [String: JSON]) {
 		for i in nodes.indices {
