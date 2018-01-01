@@ -39,7 +39,7 @@ class DKType: Equatable, Hashable, CustomStringConvertible {
 		let sc = rawJSON.asTypeShortcut
 		let alias = uniquingTable.aliasForShortcut(sc)
 		if alias != nil { return alias! }
-		if uniquingTable[sc] != nil { return sc }
+//		if uniquingTable[sc] != nil { return sc }
 		return subclassableSugaryDescription(uniquingTable)
 	}
 
@@ -142,7 +142,7 @@ extension JSON {
 		if raw == nil && code.hasPrefix("_T_") { return nil }
 		if raw == nil { raw = self }
 		// TODO: Need to avoid this...
-		for f in [DKTypeInt.typeFromJSON, DKTypeString.typeFromJSON, DKTypeStruct.typeFromJSON, DKTypeArray.typeFromJSON, DKTypeSignature.typeFromJSON] {
+		for f in [DKTypeInt.typeFromJSON, DKTypeString.typeFromJSON, DKTypeStruct.typeFromJSON, DKTypeArray.typeFromJSON, DKTypeSignature.typeFromJSON, DKTypeAnnotated.typeFromJSON] {
 			let t = f(uniquingTable, raw!)
 			if t != nil { return t }
 		}

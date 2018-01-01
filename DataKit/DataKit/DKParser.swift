@@ -107,6 +107,101 @@ extension DKParser {
 		default: throw DKParsingError("Expecting number", self)
 		}
 	}
+	private func parseJSONNumber() throws -> JSON {
+		switch token!.type {
+			case let .natural(i):
+				accept()
+				return .integer(Int(Int64(bitPattern: i)))
+			case .realPositive(let d):
+				accept()
+				return .real(d)
+			default:
+				throw DKParsingError("Error parsing JSON", self)
+		}
+	}
+	private func parseJSONString() throws -> JSON {
+		switch token!.type {
+			case .stringLiteral(let s):
+				accept()
+				return .string(s)
+			case .identifier(let s):
+				accept()
+				return .string(s)
+			default:
+				throw DKParsingError("Error parsing JSON", self)
+		}
+	}
+	private func parseJSONWithSpecial(_ str: String) throws -> JSON {
+		switch str {
+			case "+":
+				accept();
+				return try parseJSONNumber()
+			case "-":
+				accept()
+				let n = try parseJSONNumber()
+				return n.isReal ? .real(-n.doubleValue) : .integer(-n.integerValue)
+			case "(":
+				accept()
+				let array = try parseJSONList(butoir: ")")
+				try expectReservedWord(")")
+				return .array(array)
+			case "{":
+				accept()
+				let dict = try parseJSONPairs(butoir: "}")
+				try expectReservedWord("}")
+				return .dictionary(dict)
+			default:
+				throw DKParsingError("Error parsing JSON", self)
+		}
+	}
+	func parseJSON() throws -> JSON {
+		switch token!.type {
+			case .natural, .realPositive:
+				return try parseJSONNumber()
+			case .stringLiteral, .identifier:
+				return try parseJSONString()
+			case .punctuation(let ch):
+				let s = String(ch)
+				return try parseJSONWithSpecial(s)
+			case .reservedWord(let s):
+				return try parseJSONWithSpecial(s)
+			default:
+				throw DKParsingError("Error parsing JSON", self)
+		}
+	}
+	// parse a comma-separated list of JSON expressions; butoir is not accepted
+	func parseJSONList(butoir: String) throws -> [JSON] {
+		var list: [JSON] = []
+		while !peekReservedWord(butoir) {
+			if token == nil {
+				throw DKParsingError("Premature end in JSON list", self)
+			}
+			list |= try parseJSON()
+			if !peekReservedWord(",") {
+				break
+			}
+			accept()
+		}
+		return list
+	}
+	func parseJSONPairs(butoir: String) throws -> [String: JSON] {
+		var dict: [String: JSON] = [:]
+		while !peekReservedWord(butoir) {
+			if token == nil {
+				throw DKParsingError("Premature end in JSON list", self)
+			}
+			let keyj = try parseJSONString()
+			let key = keyj.stringValue
+			try expectReservedWord(":")
+			let value = try parseJSON()
+			dict[key] = value
+			if !peekReservedWord(",") {
+				break
+			}
+			accept()
+		}
+		return dict
+	}
 	func expectEOF() throws {
 		if token != nil {
 			throw DKParsingError("Extraneous token", self)

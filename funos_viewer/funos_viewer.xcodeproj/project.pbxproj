@@ -91,6 +91,7 @@
 		A78F76A51F38B83B00E33523 /* datakit in Resources */ = {isa = PBXBuildFile; fileRef = A78F76A41F38B83B00E33523 /* datakit */; };
 		A791CEE61EC50356000125F0 /* bridgingCExtras.c in Sources */ = {isa = PBXBuildFile; fileRef = A791CEE51EC50356000125F0 /* bridgingCExtras.c */; };
 		A7A68D001EE9C608004B5DDF /* props_bridges in Resources */ = {isa = PBXBuildFile; fileRef = A7A68CFF1EE9C608004B5DDF /* props_bridges */; };
+		A7BDCE2B1FF36A5B0008440B /* runtime in Resources */ = {isa = PBXBuildFile; fileRef = A7BDCE2A1FF36A5B0008440B /* runtime */; };
 		A7C62C7C1FBA226100C2DC34 /* hci in Resources */ = {isa = PBXBuildFile; fileRef = A7C62C7B1FBA226100C2DC34 /* hci */; };
 		A7EBED031F94909C00AFD2F0 /* libfunclient.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A7EBED021F948FEB00AFD2F0 /* libfunclient.a */; };
 		A7FD26701EB54EF20049E0C0 /* F1InputWindow.xib in Resources */ = {isa = PBXBuildFile; fileRef = A7FD266F1EB54EF20049E0C0 /* F1InputWindow.xib */; };
@@ -188,6 +189,7 @@
 		A78F76A41F38B83B00E33523 /* datakit */ = {isa = PBXFileReference; lastKnownFileType = folder; name = datakit; path = ../../FunOS/datakit; sourceTree = "<group>"; };
 		A791CEE51EC50356000125F0 /* bridgingCExtras.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = bridgingCExtras.c; sourceTree = "<group>"; };
 		A7A68CFF1EE9C608004B5DDF /* props_bridges */ = {isa = PBXFileReference; lastKnownFileType = folder; name = props_bridges; path = ../../FunOS/props_bridges; sourceTree = "<group>"; };
+		A7BDCE2A1FF36A5B0008440B /* runtime */ = {isa = PBXFileReference; lastKnownFileType = folder; name = runtime; path = ../../FunOS/runtime; sourceTree = "<group>"; };
 		A7C62C7B1FBA226100C2DC34 /* hci */ = {isa = PBXFileReference; lastKnownFileType = folder; name = hci; path = ../../FunOS/hci; sourceTree = "<group>"; };
 		A7EBED021F948FEB00AFD2F0 /* libfunclient.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libfunclient.a; path = ../../FunSDK/lib/Darwin/libfunclient.a; sourceTree = "<group>"; };
 		A7FD266F1EB54EF20049E0C0 /* F1InputWindow.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = F1InputWindow.xib; sourceTree = "<group>"; };
@@ -228,6 +230,7 @@
 				A72CC7AC1F587F650058827F /* networking */,
 				A74FE1471EE1D0210062128E /* platform */,
 				A72CC7B01F587FB00058827F /* props_bridges */,
+				A7BDCE2A1FF36A5B0008440B /* runtime */,
 				A76107DE1F7AFAD2002B80A3 /* scripts */,
 				A766A47F1F1BD2D40094C7B0 /* services */,
 				A72CC7A81F587F210058827F /* storage */,
@@ -431,6 +434,7 @@
 				A766A47C1F1915F50094C7B0 /* utils in Resources */,
 				A766A48E1F1C22920094C7B0 /* IKVWindow.xib in Resources */,
 				A766A47E1F195D7A0094C7B0 /* nucleus in Resources */,
+				A7BDCE2B1FF36A5B0008440B /* runtime in Resources */,
 				A716FBE61EAD33E0008395EC /* hw in Resources */,
 				A766A4921F1C30D60094C7B0 /* MiscWindow.xib in Resources */,
 				A7C62C7C1FBA226100C2DC34 /* hci in Resources */,

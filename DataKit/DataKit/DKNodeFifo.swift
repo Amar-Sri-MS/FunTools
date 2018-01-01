@@ -7,8 +7,7 @@
 //
 
 class DKNodeFifo: DKNode {
-	private var asDest: DKValueStreamDest!
-	private var asSource: DKValueStreamSource!
+	var itemType: DKType // type of items for the input
 	var predicateOnInput: DKFunction!	// predicate on input, nil => always
 	enum AppendStyle {
 		case none
@@ -18,17 +17,23 @@ class DKNodeFifo: DKNode {
 	}
 	var toAppend: AppendStyle = .all
 	init(label: Int, itemType: DKType) {
-		super.init(label, itemType: itemType)
+		self.itemType = itemType
+		super.init(label)
+	}
+	var outputType: DKType {
+		switch toAppend {
+		case .all: return DKTypeSequence(itemType)
+		case .none: return DKType.void
+		case let .gatherByBatch(fun):
+			assert(fun.signature.numberOfArguments == 1)
+			assert(fun.signature.input[0] == itemType)
+			return DKTypeSequence(fun.signature.output)
+		}
+	}
+	override var signature: DKTypeSignature {
+		return DKTypeSignature(unaryArg: sequenceType, output: outputType)
 	}
 	var sequenceType: DKTypeSequence { return DKTypeSequence(itemType) }
-	var streamForProducer: DKValueStreamDest {
-		if asDest == nil { asDest = DKValueStreamDest(itemType: itemType) }
-		return asDest!
-	}
-	var streamForConsumer: DKValueStreamSource {
-		if asSource == nil { asSource = DKValueStreamSource(itemType: itemType) }
-		return asSource!
-	}
 	override func sugaredDescription(_ uniquingTable: DKTypeTable) -> String {
 		var app = ""
 		switch toAppend {
@@ -40,9 +45,7 @@ class DKNodeFifo: DKNode {
 		return "FIFO#\(graphIndex)(t=\(itemType.sugaredDescription(uniquingTable)); pred=\(predicateOnInput == nil ? "nil" : predicateOnInput.description); append=\(app))"
 	}
 	override func nodeToJSONDict(_ uniquingTable: DKTypeTable) -> [String: JSON] {
-		var dict: [String: JSON] = [
-			"item_type": .string(itemType.toTypeShortcut(uniquingTable)),
-			]
+		var dict: [String: JSON] = ["fifo_node": .null]
 		if predicateOnInput != nil {
 			dict["predicate"] = predicateOnInput!.functionToJSON
 		}
