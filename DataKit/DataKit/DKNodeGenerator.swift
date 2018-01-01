@@ -22,7 +22,7 @@ class DKNodeGenerator: DKNode {
 	}
 	override func nodeToJSONDict(_ uniquingTable: DKTypeTable) -> [String: JSON] {
 		let dict: [String: JSON] = [
-			"maker": maker.functionToJSON,
+			"maker_node": maker.functionToJSON,
 			"max": .integer(max)
 			]
 		return dict

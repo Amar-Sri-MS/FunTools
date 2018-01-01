@@ -61,12 +61,11 @@
 		A72CC7B71F620BA60058827F /* DKFunctionComposition.swift in Sources */ = {isa = PBXBuildFile; fileRef = A72CC7B61F620BA60058827F /* DKFunctionComposition.swift */; };
 		A72CC7BD1F6A2BD50058827F /* DKNodeFifo.swift in Sources */ = {isa = PBXBuildFile; fileRef = A72CC7BC1F6A2BD50058827F /* DKNodeFifo.swift */; };
 		A72CC7C11F6A2C2F0058827F /* DKFlowGraphGen.swift in Sources */ = {isa = PBXBuildFile; fileRef = A72CC7C01F6A2C2F0058827F /* DKFlowGraphGen.swift */; };
-		A738879B1F6F175800A2F976 /* DKFunctionGatherFromFifo.swift in Sources */ = {isa = PBXBuildFile; fileRef = A738879A1F6F175800A2F976 /* DKFunctionGatherFromFifo.swift */; };
+		A738879B1F6F175800A2F976 /* DKFunctionGatherFromNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = A738879A1F6F175800A2F976 /* DKFunctionGatherFromNode.swift */; };
 		A738879D1F6F41E400A2F976 /* DKFunctionMap.swift in Sources */ = {isa = PBXBuildFile; fileRef = A738879C1F6F41E400A2F976 /* DKFunctionMap.swift */; };
 		A738879F1F6F533B00A2F976 /* DKFunctionLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = A738879E1F6F533B00A2F976 /* DKFunctionLogger.swift */; };
 		A76A56231F258858000A881A /* DKTypeString.swift in Sources */ = {isa = PBXBuildFile; fileRef = A76A56221F258858000A881A /* DKTypeString.swift */; };
 		A77C5CD91FDCBFB8007264F5 /* DKNodeReduce.swift in Sources */ = {isa = PBXBuildFile; fileRef = A77C5CD81FDCBFB8007264F5 /* DKNodeReduce.swift */; };
-		A77C5CDD1FDCC754007264F5 /* DKFunctionGetFromReduceNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = A77C5CDC1FDCC754007264F5 /* DKFunctionGetFromReduceNode.swift */; };
 		A78C2B131F23D3E80086FAD6 /* DKType.swift in Sources */ = {isa = PBXBuildFile; fileRef = A78C2B0D1F23D3E80086FAD6 /* DKType.swift */; };
 		A78C2B161F23D3E80086FAD6 /* DKTypedData.swift in Sources */ = {isa = PBXBuildFile; fileRef = A78C2B101F23D3E80086FAD6 /* DKTypedData.swift */; };
 		A78C2B171F23D3E80086FAD6 /* DKTypeStruct.swift in Sources */ = {isa = PBXBuildFile; fileRef = A78C2B111F23D3E80086FAD6 /* DKTypeStruct.swift */; };
@@ -179,12 +178,11 @@
 		A72CC7B61F620BA60058827F /* DKFunctionComposition.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKFunctionComposition.swift; sourceTree = "<group>"; };
 		A72CC7BC1F6A2BD50058827F /* DKNodeFifo.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKNodeFifo.swift; sourceTree = "<group>"; };
 		A72CC7C01F6A2C2F0058827F /* DKFlowGraphGen.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKFlowGraphGen.swift; sourceTree = "<group>"; };
-		A738879A1F6F175800A2F976 /* DKFunctionGatherFromFifo.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKFunctionGatherFromFifo.swift; sourceTree = "<group>"; };
+		A738879A1F6F175800A2F976 /* DKFunctionGatherFromNode.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKFunctionGatherFromNode.swift; sourceTree = "<group>"; };
 		A738879C1F6F41E400A2F976 /* DKFunctionMap.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKFunctionMap.swift; sourceTree = "<group>"; };
 		A738879E1F6F533B00A2F976 /* DKFunctionLogger.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKFunctionLogger.swift; sourceTree = "<group>"; };
 		A76A56221F258858000A881A /* DKTypeString.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKTypeString.swift; sourceTree = "<group>"; };
 		A77C5CD81FDCBFB8007264F5 /* DKNodeReduce.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKNodeReduce.swift; sourceTree = "<group>"; };
-		A77C5CDC1FDCC754007264F5 /* DKFunctionGetFromReduceNode.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKFunctionGetFromReduceNode.swift; sourceTree = "<group>"; };
 		A78C2AA41F23D34F0086FAD6 /* DataKit */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = DataKit; sourceTree = BUILT_PRODUCTS_DIR; };
 		A78C2B0D1F23D3E80086FAD6 /* DKType.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKType.swift; sourceTree = "<group>"; };
 		A78C2B101F23D3E80086FAD6 /* DKTypedData.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKTypedData.swift; sourceTree = "<group>"; };
@@ -324,8 +322,7 @@
 				A72CC7A21F4D1DE60058827F /* DKFunctionClosure.swift */,
 				A72CC7B61F620BA60058827F /* DKFunctionComposition.swift */,
 				A7BDCE281FF0CAC70008440B /* DKFunctionCompress.swift */,
-				A738879A1F6F175800A2F976 /* DKFunctionGatherFromFifo.swift */,
-				A77C5CDC1FDCC754007264F5 /* DKFunctionGetFromReduceNode.swift */,
+				A738879A1F6F175800A2F976 /* DKFunctionGatherFromNode.swift */,
 				A7C62C771FB92A7C00C2DC34 /* DKFunctionMaker.swift */,
 				A78C2B3B1F2554F90086FAD6 /* DKOperator.swift */,
 				A7EB137D1F2D73F500760396 /* DKComparisonOperator.swift */,
@@ -573,10 +570,9 @@
 				A76A56231F258858000A881A /* DKTypeString.swift in Sources */,
 				A72CC7801F49F4C80058827F /* Future.swift in Sources */,
 				A7EB13801F2D749D00760396 /* DKAlgebraicOperator.swift in Sources */,
-				A738879B1F6F175800A2F976 /* DKFunctionGatherFromFifo.swift in Sources */,
+				A738879B1F6F175800A2F976 /* DKFunctionGatherFromNode.swift in Sources */,
 				A7A56A9A1F862D34007B5391 /* DKParser_Test.swift in Sources */,
 				A72CC7941F49F4C80058827F /* StringTrie.swift in Sources */,
-				A77C5CDD1FDCC754007264F5 /* DKFunctionGetFromReduceNode.swift in Sources */,
 				A78C2B211F23D4220086FAD6 /* runtimeStubs.c in Sources */,
 				A72CC79F1F4D014B0058827F /* DKFunctionProjection.swift in Sources */,
 				A738879F1F6F533B00A2F976 /* DKFunctionLogger.swift in Sources */,

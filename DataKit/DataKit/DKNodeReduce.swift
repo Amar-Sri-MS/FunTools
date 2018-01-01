@@ -7,6 +7,7 @@
 //
 
 // Node that "absorbs" a stream of [T] and produces a value of type U
+// The reducer is a function of signature ([T]) -> U
 class DKNodeReduce: DKNode {
 	let reducer: DKFunctionReduce
 	var finalFunc: DKFunction!	// function to apply to the result
@@ -14,9 +15,12 @@ class DKNodeReduce: DKNode {
 		self.reducer = reduce
 		super.init(label)
 	}
-	var sequenceType: DKTypeSequence { return DKTypeSequence(reducer.inputItemType) }
+	var sequenceType: DKTypeSequence { return reducer.inputSequenceType as! DKTypeSequence }
 	var outputType: DKType {
-		return finalFunc == nil ? reducer.outputType : finalFunc.signature.output
+		if finalFunc == nil { return reducer.outputType }
+		assert(finalFunc.signature.numberOfArguments == 1)
+		assert(finalFunc.signature.input[0] == reducer.outputType)
+		return finalFunc.signature.output
 	}
 	override var signature: DKTypeSignature {
 		return DKTypeSignature(unaryArg: sequenceType, output: outputType)
@@ -29,10 +33,10 @@ class DKNodeReduce: DKNode {
 	}
 	override func nodeToJSONDict(_ uniquingTable: DKTypeTable) -> [String: JSON] {
 		var dict: [String: JSON] = [
-			"reducer": reducer.functionToJSON,
+			"reduce_node": reducer.functionToJSON,
 			]
 		if finalFunc != nil {
-			dict["final"] = finalFunc.functionToJSON
+			dict["final_func"] = finalFunc.functionToJSON
 		}
 		return dict
 	}
