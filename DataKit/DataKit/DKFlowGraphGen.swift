@@ -176,11 +176,8 @@ class DKFlowGraphGen {
 		return (graph, lastFunc)
 	}
 	var flowGraphToJSON: JSON {
-		let (graph, lastFunc) = generate()
-		var dict: [String: JSON] = [
-			"fun": fun.functionToJSON,
-			"last_fun": lastFunc.functionToJSON
-		]
+		let graph = generate().graph
+		var dict: [String: JSON] = [:]
 		graph.flowGraphToJSONDict(&dict)
 		return .dictionary(dict)
 	}
