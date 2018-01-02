@@ -16,13 +16,12 @@ class DKTypeAnnotated: DKType {
 	// ===============  CREATION ===============
 
 	init(base: DKType, annotation: JSON) {
+		assert(annotation.isDictionary)
 		self.base = base
 		self.annotation = annotation
 	}
-	init(base: DKType, compressed method: String) {
-		self.base = base
-		let comp = JSON.dictionary(["compression": JSON.string(method)])
-		annotation = .dictionary(["annotation": comp])
+	convenience init(base: DKType, compressed method: String) {
+		self.init(base: base, annotation: .dictionary(["compression": .string(method)]))
 	}
 	override func requiredAlignmentInBits() -> UInt64! {
 		return 8
@@ -51,10 +50,10 @@ class DKTypeAnnotated: DKType {
 	// ===============  MISC ===============
 
 	var isCompressedType: Bool {
-		return annotation.dictionaryValue["annotation"]?["compression"] != nil
+		return annotation.dictionaryValue["compression"] != nil
 	}
 	var compressionMethod: String! {
-		return annotation.dictionaryValue["annotation"]?["compression"]?.stringValue
+		return annotation.dictionaryValue["compression"]?.stringValue
 	}
 
 	override func subclassableSugaryDescription(_ uniquingTable: DKTypeTable) -> String {
