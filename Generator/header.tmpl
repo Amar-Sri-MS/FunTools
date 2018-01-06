@@ -8,9 +8,6 @@ Generates structures, accessor macros and functions, and enum declarations.
 // Do not change this file;
 // change the gen file "{{gen_file}}" instead.
 
-// Magic number to allow checking whether two interfaces were generated
-// from the same sources.
-#define {{gen_file|as_macro}}_VERSION_HASH {{gen_file_version_hash}}
 {#
 
 How to render each enum.
@@ -157,6 +154,14 @@ The body of the header.
 #ifndef __{{output_base|as_macro}}_H__
 #define __{{output_base|as_macro}}_H__
 
+// TODO(bowdidge): Consider removing init functions with no arguments.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+
+// Magic number to allow checking whether two interfaces were generated
+// from the same sources.
+#define {{gen_file|as_macro}}_VERSION_HASH {{gen_file_version_hash}}
+
 {% if generate_json %}
 #include <stdint.h> /* For basic integer types. */
 
@@ -175,5 +180,8 @@ The body of the header.
 {% endif %}
 
 {% endfor %}
+
+#pragma GCC diagnostic pop
+
 #endif // __{{output_base|as_macro}}_H__
 
