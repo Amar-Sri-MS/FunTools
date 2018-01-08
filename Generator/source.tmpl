@@ -8,15 +8,12 @@ Standard Fungible template for source code for generated structures.
 // change the gen file {{gen_file}} instead.
 
 #ifdef __KERNEL__
-/* For Linux kernel */
-#define assert(x)
 
 #include <linux/types.h>
 
 #else
 
 /* For FunOS and CC-Linux. */
-#include <assert.h>
 #include <stdint.h>
 
 #endif // __KERNEL__
@@ -42,37 +39,6 @@ const char *{{flagset.name | as_lower }}_names[] = {
 {% endfor %}
 
 {% for struct in structs %}
-/* Initializes the {{struct.name}} structure.
- *
- *  Arguments: 
-  {% for field in struct.arg_fields() %}
- * {{field.name}}: {% if field.key_comment %}{{field.key_comment}}{% endif %}
-
-  {% endfor %}
- */
-void {{struct.name}}_init(struct {{struct.init_struct().name}} *s{%if struct.arg_fields() %}, 
-{% for field in struct.arg_fields() %}
-  {{field | as_declaration }} {{ ", " if not loop.last }} {% endfor %}{% endif %}) {
-
-  {% for field in struct.arg_fields() %} 
-  {# TODO(bowdidge): Only do assert if field isn't natural size. #}
-  {% if not field.is_natural_width %}
-  assert({{field.name}} <= {{field.max_value|as_hex}});
-  {% endif %}
-  {% endfor %}
-
-  {% for field in struct.init_fields() %}
-    {% if field.packed_fields %}
-      s->{{field.init_accessor()}}{{field.name}} = 
-      {% for f in field.fields_to_set() %}
-	{{f.parent_struct.name|as_macro}}_{{f.name|as_macro}}_P({{f.name}}) {{" | " if not loop.last }}
-      {% endfor %}
-	;
-    {% else %}
-      s->{{field.init_accessor()}}{{field.name}} = {{field.name}};
-    {% endif %}
-  {% endfor %}
-}
 
 {% if generate_json %}
 /*

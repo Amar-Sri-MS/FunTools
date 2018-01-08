@@ -69,74 +69,78 @@ class PrintingTest(unittest.TestCase):
     self.assertEqual('Bar[0]', struct_array_type.DeclarationType())
 
 
+
 class PackedNameTest(unittest.TestCase):
+  # Simple type to use for all fields - Field constructor does
+  # need a type to look at.
+  CHAR_TYPE = parser.TypeForName("char")
 
   def testPackedNameSimple(self):
-    fields = [parser.Field('a', None, 0, 0),
-              parser.Field('b', None, 0, 0)]
+    fields = [parser.Field('a', self.CHAR_TYPE, 0, 0),
+              parser.Field('b', self.CHAR_TYPE, 0, 0)]
     self.assertEqual('a_to_b', generator.ChoosePackedFieldName(fields))
 
   def testPackedNameMultipleFields(self):
-    fields = [parser.Field('a', None, 0, 0),
-              parser.Field('c1', None, 0, 0),
-              parser.Field('c2', None, 0, 0),
-              parser.Field('c3', None, 0, 0),
-              parser.Field('c4', None, 0, 0),
-              parser.Field('b', None, 0, 0)]
+    fields = [parser.Field('a', self.CHAR_TYPE, 0, 0),
+              parser.Field('c1', self.CHAR_TYPE, 0, 0),
+              parser.Field('c2', self.CHAR_TYPE, 0, 0),
+              parser.Field('c3', self.CHAR_TYPE, 0, 0),
+              parser.Field('c4', self.CHAR_TYPE, 0, 0),
+              parser.Field('b', self.CHAR_TYPE, 0, 0)]
     self.assertEqual('a_to_b', generator.ChoosePackedFieldName(fields))
 
   def testPackedNameFirstFieldReserved(self):
-    fields = [parser.Field('rsvd_bitfield', None, 0, 0),
-              parser.Field('b', None, 0, 0)]
+    fields = [parser.Field('rsvd_bitfield', self.CHAR_TYPE, 0, 0),
+              parser.Field('b', self.CHAR_TYPE, 0, 0)]
     self.assertEqual('b_pack', generator.ChoosePackedFieldName(fields))
 
   def testPackedNameLastFieldReservedSingleField(self):
-    fields = [parser.Field('a', None, 0, 0),
-              parser.Field('reserved', None, 0, 0)]
+    fields = [parser.Field('a', self.CHAR_TYPE, 0, 0),
+              parser.Field('reserved', self.CHAR_TYPE, 0, 0)]
     self.assertEqual('a_pack', generator.ChoosePackedFieldName(fields))
 
   def testPackedNameLastFieldReserved(self):
-    fields = [parser.Field('a', None, 0, 0),
-              parser.Field('b', None, 0, 0),
-              parser.Field('reserved', None, 0, 0)]
+    fields = [parser.Field('a', self.CHAR_TYPE, 0, 0),
+              parser.Field('b', self.CHAR_TYPE, 0, 0),
+              parser.Field('reserved', self.CHAR_TYPE, 0, 0)]
     self.assertEqual('a_to_b', generator.ChoosePackedFieldName(fields))
 
   def testPackedNameReservedInMiddle(self):
-    fields = [parser.Field('a', None, 0, 0),
-              parser.Field('reserved_foo', None, 0, 0),
-              parser.Field('b', None, 0, 0)]
+    fields = [parser.Field('a', self.CHAR_TYPE, 0, 0),
+              parser.Field('reserved_foo', self.CHAR_TYPE, 0, 0),
+              parser.Field('b', self.CHAR_TYPE, 0, 0)]
     self.assertEqual('a_to_b', generator.ChoosePackedFieldName(fields))
 
   def testPackedNameMatchingPrefix(self):
-    fields = [parser.Field('prefix_a', None, 0, 0),
-              parser.Field('prefix_b', None, 0, 0),
-              parser.Field('prefix_c', None, 0, 0)]
+    fields = [parser.Field('prefix_a', self.CHAR_TYPE, 0, 0),
+              parser.Field('prefix_b', self.CHAR_TYPE, 0, 0),
+              parser.Field('prefix_c', self.CHAR_TYPE, 0, 0)]
     self.assertEqual('prefix_pack', generator.ChoosePackedFieldName(fields))
 
   def testPackedNameMatchingPrefixFirstTermOnly(self):
-    fields = [parser.Field('pre_fix_a', None, 0, 0),
-              parser.Field('pre_fix_b', None, 0, 0),
-              parser.Field('pre_fix_c', None, 0, 0)]
+    fields = [parser.Field('pre_fix_a', self.CHAR_TYPE, 0, 0),
+              parser.Field('pre_fix_b', self.CHAR_TYPE, 0, 0),
+              parser.Field('pre_fix_c', self.CHAR_TYPE, 0, 0)]
     self.assertEqual('pre_pack', generator.ChoosePackedFieldName(fields))
 
   def testPackedNameMatchingPrefixSimilarNames(self):
-    fields = [parser.Field('prefix_a', None, 0, 0),
-              parser.Field('pre_b', None, 0, 0),
-              parser.Field('pre_c', None, 0, 0)]
+    fields = [parser.Field('prefix_a', self.CHAR_TYPE, 0, 0),
+              parser.Field('pre_b', self.CHAR_TYPE, 0, 0),
+              parser.Field('pre_c', self.CHAR_TYPE, 0, 0)]
     self.assertEqual('prefix_a_to_pre_c',
                      generator.ChoosePackedFieldName(fields))
 
   def testPackedNameMatchingPrefixReservedFieldAtStart(self):
-    fields = [parser.Field('reserved', None, 0, 0),
-              parser.Field('pre_b', None, 0, 0),
-              parser.Field('pre_c', None, 0, 0)]
+    fields = [parser.Field('reserved', self.CHAR_TYPE, 0, 0),
+              parser.Field('pre_b', self.CHAR_TYPE, 0, 0),
+              parser.Field('pre_c', self.CHAR_TYPE, 0, 0)]
     self.assertEqual('pre_pack',
                      generator.ChoosePackedFieldName(fields))
 
   def testPackedNameMatchingPrefixReservedFieldAtEnd(self):
-    fields = [parser.Field('pre_a', None, 0, 0),
-              parser.Field('pre_b', None, 0, 0),
-              parser.Field('reserved', None, 0, 0)]
+    fields = [parser.Field('pre_a', self.CHAR_TYPE, 0, 0),
+              parser.Field('pre_b', self.CHAR_TYPE, 0, 0),
+              parser.Field('reserved', self.CHAR_TYPE, 0, 0)]
     self.assertEqual('pre_pack',
                      generator.ChoosePackedFieldName(fields))
 
@@ -275,6 +279,7 @@ ENUMLIST:
   def testStruct(self):
     input = """
 ---
+C_STRUCT: 1
 IS_STRUCT: 1
 LIST:
   - DESCRIPTION: Foo

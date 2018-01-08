@@ -138,6 +138,33 @@ def BitPatternString(value, max_bits):
   return out
 
 def IsValidCIdentifier(name):
+  """Returns false if name would be an invalid C or C++ field name."""
+  c_keywords = ['auto', 'break', 'case', 'char', 'const', 'continue',
+                'default', 'do', 'double',' else', 'enum', 'extern',
+                'float', 'for', 'goto', 'if', 'int', 'long', 'register',
+                'return', 'short', 'signed', 'sizeof', 'static', 'struct',
+                'switch', 'typedef', 'union', 'unsigned', 'void', 'volatile',
+                'while']
+
+  cpp_keywords = ['alignas', 'alignof', 'and', 'and_eq', 'asm', 'atomic_cancel',
+                  'atomic_commit', 'atomic_noexcept', 'bitand', 'bitor', 'bool',
+                  'catch', 'char16_t', 'char32_t', 'class', 'compl', 'concept',
+                  'constexpr', 'const_cast', 'co_await', 'co_return', 'co_yield',
+                  'decltype', 'delete', 'dynamic_cast', 'explicit', 'export',
+                  'false', 'friend', 'import', 'inline', 'module', 'mutable',
+                  'namespace', 'new', 'noexcept', 'not', 'not_eq', 'nullptr',
+                  'operator', 'or', 'or_eq', 'private', 'protected', 'public',
+                  'reinterpret_cast', 'rquires', 'static_assert', 'static_cast',
+                  'synchronized', 'template', 'this', 'thread_local', 'throw',
+                  'true', 'try', 'typeid', 'typename', 'using', 'virtual',
+                  'wchar_t', 'xor', 'xor_eq' ]
+
+  if name in c_keywords:
+    return False
+
+  if name in cpp_keywords:
+    return False
+  
   match = re.match('[a-zA-Z_][a-zA-Z_0-9]*', name)
   if match:
     return True

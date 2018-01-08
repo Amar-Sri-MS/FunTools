@@ -1,0 +1,91 @@
+{#
+
+Standard Fungible template for header file for generated structures.
+Generates structures, accessor macros and functions, and enum declarations.
+
+#}
+
+{% macro enumDecl(enum) %}
+{{enum.body_comment|as_comment}}
+enum {{enum.name}} {  {{enum.key_comment|as_comment}}
+{% for enum_variable in enum.variables %}
+{{enum_variable.body_comment|as_comment}} {{enum_variable.name}} = {{enum_variable.value|as_hex}},  {{enum_variable.key_comment|as_comment}}
+{% endfor %}{{enum.tail_comment|as_comment}}
+};
+{% endmacro %}
+
+{% macro structDecl(decl) %}
+/* Message '{{decl.name|as_macro}}'
+{% if decl.key_comment %} 
+  * {{decl.key_comment}}
+{% endif %}
+{% if decl.body_comment %} 
+  * {{decl.body_comment}}
+
+{%endif %}
+{% for f in decl.fields %}
+ {{f.StartFlit()}} {{f.StartBit()}}-{{f.EndBit()}}: {{f.name}} {% if f.key_comment %}{{f.key_comment|as_comment}}{% endif %}
+
+{% endfor %}
+ */
+{% set multiflit = false %}
+{% if decl.Flits() != 1 %}
+{% set multiflit = true %}
+/* MULTIFLIT */
+{% endif %}
+{% for f in decl.fields %}
+{% set flitlabel = "" %}
+
+
+
+/* Field {{f.name}} {% if f.key_comment %}: {{f.key_comment}}{% endif %}
+{% if f.body_comment %}
+
+{{f.body_comment}}{% endif %}
+Word {{f.StartFlit()}}, width {{f.BitWidth()}} */
+{% if multiflit %}
+{% set flitlabel = "W" ~ f.StartFlit() ~ "_"  %}
+{% endif %}
+#define {{decl.name | as_macro}}_{{flitlabel}}{{f.name | as_macro}}_SHIFT ({{f.shift()}})
+#define {{decl.name | as_macro}}_{{flitlabel}}{{f.name | as_macro}}_WIDTH ({{f.bit_width}})
+#define {{decl.name | as_macro}}_{{flitlabel}}{{f.name | as_macro}}_MASK ({{f.mask}})
+
+/* Shifts a value to the location to be inserted in f {{f.name}} 
+ * inside word x.
+ */
+#define {{decl.name|as_macro}}_{{flitlabel}}{{f.name|as_macro}}_PUT(x) (({{f.type | as_cast}} (x && {{decl.name|as_macro}}_{{flitlabel}}{{f.name|as_macro}}_MASK)) << {{decl.name|as_macro}}_{{flitlabel}}{{f.name|as_macro}}_SHIFT)
+
+/* Returns value for field {{f.name}} from packed field
+ * {{f.name}}.
+ */
+#define {{decl.name|as_macro}}_{{flitlabel}}{{f.name|as_macro}}_GET(x) (((x) >> {{decl.name|as_macro}}_{{flitlabel}}{{f.name|as_macro}}_SHIFT) & {{decl.name|as_macro}}_{{flitlabel}}{{f.name|as_macro}}_MASK)
+
+/* Clears out the field {{f.name}} inside packed field
+ *  {{f.name}}
+ *  Usage:
+ *    *word &= {{decl.name|as_macro}}_{{f.name|as_macro}}_ZERO;
+ */
+#define {{decl.name|as_macro}}_{{flitlabel}}{{f.name|as_macro}}_ZERO \
+	(~(({{f.type|as_cast}} {{decl.name|as_macro}}_{{flitlabel}}{{f.name|as_macro}}_MASK) \
+       << {{decl.name|as_macro}}_{{flitlabel}}{{f.name|as_macro}}_SHIFT))
+{% endfor %}
+
+/* Not quite correct - 
+#define {{decl.name|as_macro}}_print(x) \
+ 	{ \
+        	printf("{{decl.name}}:\n"); \
+{% for f in decl.fields %}
+{% set flitlabel = "" %}{% if multiflit %}{% set flitlabel = "W" ~ f.StartFlit() ~ "_"  %}{% endif %}                printf("{{f.name}}: %d\n", {{decl.name|as_macro}}_{{flitlabel}}{{f.name|as_macro}}_GET(x)); \
+{% endfor %}
+        }  	
+{% endmacro %}
+
+
+{% for decl in declarations %}
+  {% if decl.is_enum %}
+    {{ enumDecl(decl) }}
+  {% endif %}
+  {% if decl.is_struct and not decl.is_inline %}
+    {{ structDecl(decl) }}
+  {% endif %}
+{% endfor %}

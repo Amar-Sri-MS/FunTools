@@ -89,6 +89,9 @@ class TestValidIdentifier(unittest.TestCase):
     self.assertFalse(utils.IsValidCIdentifier('0'))
     self.assertFalse(utils.IsValidCIdentifier('-'))
 
+    self.assertFalse(utils.IsValidCIdentifier('default'))
+    self.assertFalse(utils.IsValidCIdentifier('private'))
+
 class TestAsLine(unittest.TestCase):
   def testSimple(self):
     self.assertEqual('a b c', utils.AsLine('a\nb\nc'))

@@ -7,7 +7,7 @@ code to test that each structure is the correct size, and each field
 is at the correct offset.
 
 #}
-// SourceHeader created by generator.py
+// Struct size validation code created by generator.py
 // Do not change this file;
 // change the gen file "{{gen_file}}" instead.
 
@@ -20,30 +20,31 @@ bool fail = false;
 unsigned test_count = 0;
 unsigned failed_tests = 0;
 
-#define ASSERT_SIZE(var, bytes, varStr)					\
+#define ASSERT_SIZE(var, bits, varStr)					\
 	{								\
-	  if (sizeof(var) != (bytes)) {					\
-		  fprintf(stderr,					\
+	  if (sizeof(var) * 8 != bits)  {				\
+	  		  fprintf(stderr,		  	        \
 			  "%s:%d: FAIL: "				\
-			  "%s structure expected to be %" PRIu64	\
-			  " bytes, got %" PRIu64 "\n",			\
+			  "%s structure expected size is %" PRIu64	\
+			  " bits, got %" PRIu64 "\n",			\
 			  __FILE__, __LINE__,				\
-			  (varStr), (uint64_t) (bytes),			\
-			  (uint64_t) sizeof(var));			\
+			  (varStr), (uint64_t) (bits),			\
+			  (uint64_t) sizeof(var) * 8);			\
 		  fail = true;						\
 	  }								\
   }
 
-#define ASSERT_OFFSET(var, field, offset, varStr)			\
+#define ASSERT_OFFSET(var, field, offset_bits, varStr)			\
 	{								\
-		if (__builtin_offsetof(var, field) != offset) {			\
+		if ((8 * __builtin_offsetof(var, field)) != offset_bits) {	\
 			fprintf(stderr,					\
 				"%s:%d: "				\
-				"FAIL: %s structure expected to be %"	\
-				PRIu64 " bytes, got %" PRIu64 "\n",	\
-				__FILE__, __LINE,			\
-				varStr, (uint64_t) offset,		\
-				(uint64_t) __builtin_offsetof(var, field));	\
+				"FAIL: field %s " \
+				"expected offset at %"	\
+				PRIu64 " bits, got %" PRIu64 "\n",	\
+				__FILE__, __LINE__,			\
+				varStr, (uint64_t) offset_bits,		\
+				(uint64_t) ((__builtin_offsetof(var, field) * 8)));	\
 			fail = true;					\
 		}							\
 	}
@@ -81,7 +82,7 @@ unsigned failed_tests = 0;
 
 {% for decl in declarations %}
   {% if decl.is_struct and not decl.inline %}
-  {{decl | as_definition }};
+  {{decl | as_definition }}{% if generate_cpacked %}__attribute__((packed)){% endif %};
   {% endif %}
 {% endfor %}
 
@@ -99,24 +100,25 @@ int main(int argc, char **argv) {
 
 	/* Tests for struct {{decl.name}} */
 	/* Should be {{decl.BitWidth()}} bits wide. */
-	ASSERT_SIZE({{decl.Tag()}} {{decl.name}}, {{decl.BitWidth()}} / 8,
+	ASSERT_SIZE({{decl.Tag()}} {{decl.name}}, {{decl.BitWidth()}},
 		    "Wrong size for structure {{decl.name}}");
     {% for field in decl.fields %}
-      {% if not field.is_natural_width %}
+      {% if field.Type().IsScalar() and not field.is_natural_width %}
       /* Bitfields in final output (when -c pack was passed to generator)
        * is bad because the compiler will place those bits in inappropriate
        * places.
+       * type width is {{field.type.BitWidth()}}, field is {{field.BitWidth()}}
        */
       ASSERT_FAIL("FAIL - field {{field.name}} in "
 		  "{{decl.Tag()}} {{decl.name}} is a bitfield, "
 		  "which should not be in a packed structure.\n");
       {% else %}
-
-    ASSERT_EQUAL({{field.StartOffset()}} / 8,
-                 __builtin_offsetof({{decl.Tag()}} {{decl.name}},
-		                    {{field.name}}),
-		 "Wrong offset for field {{field.name}} in "
-		 "{{decl.Tag()}} {{decl.name}}");
+        {% if not field.no_offset %}
+	{# Don't check offset for fields without, such as zero dim arrays #}
+    ASSERT_OFFSET({{decl.Tag()}} {{decl.name}}, {{field.name}},
+                  ({{field.StartOffset()}} - {{decl.StartOffset()}}),
+		 "{{field.name}} in {{decl.Tag()}} {{decl.name}}");
+         {% endif %}
       {% endif %}
     {% endfor %}
         test_count++;

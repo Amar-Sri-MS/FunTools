@@ -8,7 +8,7 @@
 
 // A type is:
 // - a predefined name like UInt8
-// - a type constructor like Int(8)
+// - a type constructor like Int(8), Compressed<[Student]>(deflate)
 // - a struct like (first: String, last: String) or (String, String)
 // - a sequence like [String]
 // - a signature like (T1, T2) -> U
@@ -48,10 +48,22 @@ extension DKParser {
 	func finishParsingPredefOrConstructor(_ typeName: String) throws -> DKType {
 		if typeName == "Int" || typeName == "UInt" {
 			let params = try parseTypeParameters()
-			if params.count != 1 {
+			if params.count != 1 || !params[0].isInteger {
 				throw DKParsingError("For type constructor \(typeName), improper parameters \(params)", self)
 			}
-			return DKTypeInt.shared(signed: typeName == "Int", numBits: UInt8(params[0]))
+			let numBits = UInt8(params[0].integerValue)
+			return DKTypeInt.shared(signed: typeName == "Int", numBits: numBits)
+		}
+		if typeName == "Compressed" {
+			try expectReservedWord("<")
+			let base = try parseType()
+			try expectReservedWord(">")
+			let params = try parseTypeParameters()
+			if params.count != 1 || !params[0].isString {
+				throw DKParsingError("For type constructor \(typeName), improper parameters \(params)", self)
+			}
+			let compMethod = params[0].stringValue
+			return DKTypeAnnotated(base: base, compressed: compMethod)
 		}
 		// Is it an alias?
 		let sc = uniquingTable.aliasFor(typeName)
@@ -62,25 +74,9 @@ extension DKParser {
 		}
 		return t!
 	}
-	func parseTypeParameters() throws -> [Int] {
-		var params: [Int] = []
+	func parseTypeParameters() throws -> [JSON] {
 		try expectReservedWord("(")
-		while !peekReservedWord(")") {
-			if token == nil {
-				throw DKParsingError("Premature end in parameter list", self)
-			}
-			switch token!.type {
-			case let .natural(i):
-				accept()
-				params |= Int(i)
-			default:
-				throw DKParsingError("Expecting number in parameter list", self)
-			}
-			if !peekReservedWord(",") {
-				break
-			}
-			accept()
-		}
+		let params = try parseJSONList(butoir: ")")
 		try expectReservedWord(")")
 		return params
 	}

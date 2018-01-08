@@ -1,5 +1,6 @@
 // Example generator file for testing without bitfields.
 // Test examples of every size of value.
+
 STRUCT SimpleReq
 // Basic types.
 0 63:0 uint64_t value_64
@@ -7,7 +8,6 @@ STRUCT SimpleReq
 1 31:16 uint16_t value_16
 1 15:8 uint8_t value_8
 1 7:0 uint8_t padding
-// Bitfields.
 END
 
 STRUCT SmallStructure
@@ -16,4 +16,15 @@ END
 
 STRUCT StructureWithArray
 0 63:0 uint8_t array[8]
+END
+
+STRUCT NestedReq
+0 63:56 uint8_t value
+0 55:48 uint8_t value1
+0 47:32 uint16_t value2
+STRUCT Inside inside_field
+0 63:32 uint32_t value3
+0 31:0 uint32_t value4
+END
+1 31:0 uint32_t value5
 END

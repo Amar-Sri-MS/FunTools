@@ -20,6 +20,8 @@
 // Not defining static_assert causes an error
 #define static_assert(x,y)
 
+#define PLATFORM_POSIX	1
+
 #include <utils/threaded/fun_json.h>
 
 // Returns <=0 on error

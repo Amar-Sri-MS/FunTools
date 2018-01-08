@@ -14,7 +14,7 @@ extension DKParser {
 		let sc = studentType.toTypeShortcut(uniquingTable)
 
 		print("\nParsing types...")
-		for s in ["Bool", "Void", "UInt8", "Int(32)", "UInt(64)", "()", "(first: String, last: String)", "(first: String)", "(String, UInt8)", "[UInt8]", "(UInt32, String) -> UInt32"] {
+		for s in ["Bool", "Void", "UInt8", "Int(32)", "UInt(64)", "()", "(first: String, last: String)", "(first: String)", "(String, UInt8)", "[UInt8]", "(UInt32, String) -> UInt32", "Compressed<[UInt64]>(test)"] {
 			let t = try! DKParser.parseType(uniquingTable, s)
 			print(">>> Parsed type string '\(s)' => '\(t.sugaredDescription(uniquingTable))'")
 		}

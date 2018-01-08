@@ -49,6 +49,14 @@ class DataKitController {
 		("all full names", "compose(\n" +
 			"    first: map((Student) -> String | { $0.first_name+\" \"+$0.last_name}),\n" +
 			"    then: map(logger())\n" +
+			")"),
+		("count via reduce", "compose(\n" +
+			"    first: reduce(0, (UInt64, Student) -> UInt64 | { $0 + 1 }),\n"  +
+			"    then: logger()\n" +
+			")"),
+		("num books via reduce", "compose(\n" +
+			"    first: reduce(0, (UInt64, Student) -> UInt64 | { $0 + $1.num_books }),\n"  +
+			"    then: logger()\n" +
 			")")
 	]
 	let typeTable = DKTypeTable()

@@ -10,7 +10,7 @@
 // The body can be:
 // - an operator like + - * / && || ^ ! | < > == != <= >=
 // - a projection like .first_name
-// - a functional constructor like filter(<predicate>) or map(.first_name) or compose(<f1>, <f2>) or logger()
+// - a functional constructor like filter(<predicate>) or map(.first_name) or reduce(0, +) or compose(<f1>, <f2>) or logger() or compress("deflate") or decompress("deflate")
 // - a closure like { $0.first == "Joe" }
 // - or a parenthesized function, e.g. ((Int8) -> Int8: -)
 
@@ -32,6 +32,7 @@ extension DKParser {
 		} catch _ {
 			(currentToken, lexerState) = saved
 		}
+//		print("In parseFunction(\(signature) got sig now=\(sig)")
 		return try parseFunctionBody(sig)
 	}
 	func parseFunctionReturning(_ retType: DKType!) throws -> DKFunction {
@@ -89,7 +90,7 @@ extension DKParser {
 				accept()
 				return try parseOperatorFunction(s, signature!)
 			}
-			throw DKParsingError("Function can't start with word \(s) - signature \(signature)", self)
+			throw DKParsingError("Function can't start with word '\(s)' - signature \(signature)", self)
 		default: throw DKParsingError("Unknown function", self)
 		}
 	}
@@ -114,6 +115,9 @@ extension DKParser {
 			"logger": .noarg,
 			"filter": .unary,
 			"map": .unary,
+			"compress": .unary,
+			"decompress": .unary,
+			"reduce": .binary,
 			"compose": .binary,
 			"generator": .generator,
 		]
@@ -142,6 +146,7 @@ extension DKParser {
 		}
 		fatalError()
 	}
+	// Does not parse the "(" nor ")"
 	func parseUnaryFunctionConstructor(_ s: String, _ signature: DKTypeSignature!) throws -> DKFunction {
 		if s == "filter" {
 			var predSig: DKTypeSignature! = nil
@@ -165,9 +170,49 @@ extension DKParser {
 			let each = try parseFunction(eachSig)
 			return DKFunctionMap(each: each)
 		}
+		if s == "compress" || s == "decompress" {
+			let c = s == "compress"
+			if signature == nil {
+				throw DKParsingError("Signature must be provided for \(s)", self)
+			}
+			if !DKFunctionCompress.canBeSignature(signature: signature!, compress: c) {
+				throw DKParsingError("Signature \(signature!) improper for \(s)", self)
+			}
+			let arg = try parseJSON()
+			if !arg.isString {
+				throw DKParsingError("Expecting compress method for \(s) instead of \(arg)", self)
+			}
+			let base = c ? signature!.input[0] : signature.output
+			return DKFunctionCompress(uniquingTable, base: base, compress: c, method: arg.stringValue)
+		}
 		fatalError()
 	}
+	// Does not parse the "(" nor ")"
 	func parseBinaryFunctionConstructor(_ s: String, _ signature: DKTypeSignature!) throws -> DKFunction {
+		if s == "reduce" {
+			var eachSig: DKTypeSignature! = nil
+			var initialValueType: DKTypeInt! = nil
+			if signature != nil {
+				eachSig = DKFunctionReduce.canBeReduceSignature(signature)
+				if eachSig == nil {
+					throw DKParsingError("Reduce has wrong signature \(signature)", self)
+				}
+				if signature.output is DKTypeInt {
+					initialValueType = signature.output as! DKTypeInt
+				} else {
+					throw DKParsingError("Reduce has wrong signature \(signature) - output limited to number", self)
+				}
+			}
+			let initJSON = try parseJSON()
+			try expectReservedWord(",")
+			let each = try parseFunction(eachSig)
+			let initialValue = DKValueSimple(potentialType: initialValueType, json: initJSON)
+			if initialValue == nil {
+				throw DKParsingError("Reduce has wrong initial value", self)
+			}
+			let fun = DKFunctionReduce(initialValue: initialValue!, each: each)
+			return fun
+		}
 		if s == "compose" {
 			var intermediateType: DKType! = nil
 			var outer: DKFunction! = nil

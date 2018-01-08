@@ -12,7 +12,6 @@
 		A716FBCD1EA67C82008395EC /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A716FBCC1EA67C82008395EC /* AppDelegate.swift */; };
 		A716FBCF1EA67C82008395EC /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A716FBCE1EA67C82008395EC /* Assets.xcassets */; };
 		A716FBD21EA67C82008395EC /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = A716FBD01EA67C82008395EC /* MainMenu.xib */; };
-		A716FBDC1EA67D3C008395EC /* funos in Resources */ = {isa = PBXBuildFile; fileRef = A716FBDB1EA67D3C008395EC /* funos */; };
 		A716FBE01EA67EF5008395EC /* dpcclient.c in Sources */ = {isa = PBXBuildFile; fileRef = A716FBDE1EA67EF5008395EC /* dpcclient.c */; };
 		A716FBE41EA83CBB008395EC /* apps in Resources */ = {isa = PBXBuildFile; fileRef = A716FBE31EA83CBB008395EC /* apps */; };
 		A716FBE61EAD33E0008395EC /* hw in Resources */ = {isa = PBXBuildFile; fileRef = A716FBE51EAD33E0008395EC /* hw */; };
@@ -92,6 +91,7 @@
 		A78F76A51F38B83B00E33523 /* datakit in Resources */ = {isa = PBXBuildFile; fileRef = A78F76A41F38B83B00E33523 /* datakit */; };
 		A791CEE61EC50356000125F0 /* bridgingCExtras.c in Sources */ = {isa = PBXBuildFile; fileRef = A791CEE51EC50356000125F0 /* bridgingCExtras.c */; };
 		A7A68D001EE9C608004B5DDF /* props_bridges in Resources */ = {isa = PBXBuildFile; fileRef = A7A68CFF1EE9C608004B5DDF /* props_bridges */; };
+		A7BDCE2B1FF36A5B0008440B /* runtime in Resources */ = {isa = PBXBuildFile; fileRef = A7BDCE2A1FF36A5B0008440B /* runtime */; };
 		A7C62C7C1FBA226100C2DC34 /* hci in Resources */ = {isa = PBXBuildFile; fileRef = A7C62C7B1FBA226100C2DC34 /* hci */; };
 		A7EBED031F94909C00AFD2F0 /* libfunclient.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A7EBED021F948FEB00AFD2F0 /* libfunclient.a */; };
 		A7FD26701EB54EF20049E0C0 /* F1InputWindow.xib in Resources */ = {isa = PBXBuildFile; fileRef = A7FD266F1EB54EF20049E0C0 /* F1InputWindow.xib */; };
@@ -107,7 +107,6 @@
 		A716FBCE1EA67C82008395EC /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A716FBD11EA67C82008395EC /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/MainMenu.xib; sourceTree = "<group>"; };
 		A716FBD31EA67C82008395EC /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		A716FBDB1EA67D3C008395EC /* funos */ = {isa = PBXFileReference; lastKnownFileType = folder; name = funos; path = ../../FunOS/funos; sourceTree = "<group>"; };
 		A716FBDD1EA67EF5008395EC /* funos_viewer-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "funos_viewer-Bridging-Header.h"; sourceTree = "<group>"; };
 		A716FBDE1EA67EF5008395EC /* dpcclient.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = dpcclient.c; sourceTree = "<group>"; };
 		A716FBDF1EA67EF5008395EC /* dpcclient.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = dpcclient.h; sourceTree = "<group>"; };
@@ -190,6 +189,7 @@
 		A78F76A41F38B83B00E33523 /* datakit */ = {isa = PBXFileReference; lastKnownFileType = folder; name = datakit; path = ../../FunOS/datakit; sourceTree = "<group>"; };
 		A791CEE51EC50356000125F0 /* bridgingCExtras.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = bridgingCExtras.c; sourceTree = "<group>"; };
 		A7A68CFF1EE9C608004B5DDF /* props_bridges */ = {isa = PBXFileReference; lastKnownFileType = folder; name = props_bridges; path = ../../FunOS/props_bridges; sourceTree = "<group>"; };
+		A7BDCE2A1FF36A5B0008440B /* runtime */ = {isa = PBXFileReference; lastKnownFileType = folder; name = runtime; path = ../../FunOS/runtime; sourceTree = "<group>"; };
 		A7C62C7B1FBA226100C2DC34 /* hci */ = {isa = PBXFileReference; lastKnownFileType = folder; name = hci; path = ../../FunOS/hci; sourceTree = "<group>"; };
 		A7EBED021F948FEB00AFD2F0 /* libfunclient.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libfunclient.a; path = ../../FunSDK/lib/Darwin/libfunclient.a; sourceTree = "<group>"; };
 		A7FD266F1EB54EF20049E0C0 /* F1InputWindow.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = F1InputWindow.xib; sourceTree = "<group>"; };
@@ -217,7 +217,6 @@
 				A7A811691EAFBFF1005BB2CE /* F1UI */,
 				A716FBCB1EA67C82008395EC /* funos_viewer */,
 				A716FBE31EA83CBB008395EC /* apps */,
-				A716FBDB1EA67D3C008395EC /* funos */,
 				A766A47D1F195D7A0094C7B0 /* nucleus */,
 				A72CC7BA1F6A2B6B0058827F /* flows */,
 				A766A47B1F1915F50094C7B0 /* utils */,
@@ -231,6 +230,7 @@
 				A72CC7AC1F587F650058827F /* networking */,
 				A74FE1471EE1D0210062128E /* platform */,
 				A72CC7B01F587FB00058827F /* props_bridges */,
+				A7BDCE2A1FF36A5B0008440B /* runtime */,
 				A76107DE1F7AFAD2002B80A3 /* scripts */,
 				A766A47F1F1BD2D40094C7B0 /* services */,
 				A72CC7A81F587F210058827F /* storage */,
@@ -388,7 +388,7 @@
 			isa = PBXProject;
 			attributes = {
 				LastSwiftUpdateCheck = 0820;
-				LastUpgradeCheck = 0900;
+				LastUpgradeCheck = 0910;
 				ORGANIZATIONNAME = Fungible;
 				TargetAttributes = {
 					A716FBC81EA67C82008395EC = {
@@ -434,13 +434,13 @@
 				A766A47C1F1915F50094C7B0 /* utils in Resources */,
 				A766A48E1F1C22920094C7B0 /* IKVWindow.xib in Resources */,
 				A766A47E1F195D7A0094C7B0 /* nucleus in Resources */,
+				A7BDCE2B1FF36A5B0008440B /* runtime in Resources */,
 				A716FBE61EAD33E0008395EC /* hw in Resources */,
 				A766A4921F1C30D60094C7B0 /* MiscWindow.xib in Resources */,
 				A7C62C7C1FBA226100C2DC34 /* hci in Resources */,
 				A7FD26741EB557CB0049E0C0 /* F1ChipWindow.xib in Resources */,
 				A716FBE41EA83CBB008395EC /* apps in Resources */,
 				A7FD26701EB54EF20049E0C0 /* F1InputWindow.xib in Resources */,
-				A716FBDC1EA67D3C008395EC /* funos in Resources */,
 				A716FBCF1EA67C82008395EC /* Assets.xcassets in Resources */,
 				A72CC7A91F587F210058827F /* storage in Resources */,
 				A72CC7AB1F587F3E0058827F /* devices in Resources */,
@@ -663,7 +663,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "fungible.com.funos-viewer";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "funos_viewer/funos_viewer-Bridging-Header.h";
-				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_SWIFT3_OBJC_INFERENCE = Default;
 				SWIFT_VERSION = 4.0;
 			};

@@ -187,16 +187,13 @@ class CodegenEndToEnd(unittest.TestCase):
     # Did array get included?
     self.assertIn('char d[6];', out)
     # Did constructor get created?
-    self.assertIn('void Foo_init(struct Foo *s, uint8_t a, uint8_t b, '
-                  'uint8_t c', out)
+    self.assertIn('void Foo_init(struct Foo *s, ', out)
     # Did accessor macro get created?
     self.assertIn('#define FOO_B_P(x)', out)
 
     # Check macros weren't created for reserved fields.
     self.assertNotIn('#define FOO_RESERVED', out)
 
-    # Did init function check range of bitfields?
-    self.assertIn('assert(b <= 0x3);', out)
     # Did bitfield get initialized?'
     self.assertIn('s->b_to_c = FOO_B_P(b) | FOO_C_P(c)', out)
 
@@ -355,32 +352,6 @@ class CodegenEndToEnd(unittest.TestCase):
     self.assertIsNotNone(out)
     self.assertIn('struct fun_admin_cmd_common c;', out)
 
-  def testNoBitfieldForAlignedVariables(self):
-    input = [
-      'STRUCT s',
-      '0 63:56 uint8_t a',
-      '0 55:54 uint8_t b',
-      '0 53:48 uint8_t c',
-      '0 47:40 uint8_t d',
-      'END'
-      ]
-    
-    (out, errors) = generator.GenerateFile(generator.OutputStyleHeader, None,
-                                           input, 'foo.gen', OPTIONS_NONE)
-
-    self.assertEqual(0, len(errors))
-    out = RemoveWhitespace(out)
-
-    self.assertIsNotNone(out)
-    self.assertIn('uint8_t a;', out)
-
-    # Handle differences between clang-format and indent.
-    self.assertTrue('uint8_t b : 2;' in out
-                    or 'uint8_t b:2' in out)
-    self.assertTrue('uint8_t c : 6;' in out
-                    or 'uint8_t c:6;' in out)
-    self.assertIn('uint8_t d;', out)
-
   def testNoDuplicateFunctions(self):
     contents = [
       'STRUCT A',
@@ -403,8 +374,8 @@ class CodegenEndToEnd(unittest.TestCase):
 
     out = RemoveWhitespace(out)
 
-    self.assertEqual(2, out.count('void BA_init'))
-    self.assertEqual(2, out.count('void BB_init'))
+    self.assertEqual(1, out.count('void BA_init'))
+    self.assertEqual(1, out.count('void BB_init'))
 
   def testSimpleFlags(self):
     contents = [

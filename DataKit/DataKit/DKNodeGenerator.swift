@@ -9,17 +9,20 @@
 class DKNodeGenerator: DKNode {
 	let maker: DKFunction
 	let max: Int
+	override var signature: DKTypeSignature {
+		return DKTypeSignature(input: .void, output: maker.signature.output)
+	}
 	init(graphIndex: Int, maker: DKFunction, max: Int) {
 		self.maker = maker
 		self.max = max
-		super.init(graphIndex, itemType: maker.signature.output)
+		super.init(graphIndex)
 	}
 	override func sugaredDescription(_ uniquingTable: DKTypeTable) -> String {
-		return "GENERATOR#\(graphIndex)(t=\(itemType.sugaredDescription(uniquingTable)); maker=\(maker.description))"
+		return "GENERATOR#\(graphIndex)(t=\(signature.sugaredDescription(uniquingTable)); maker=\(maker.description))"
 	}
 	override func nodeToJSONDict(_ uniquingTable: DKTypeTable) -> [String: JSON] {
 		let dict: [String: JSON] = [
-			"maker": maker.functionToJSON,
+			"maker_node": maker.functionToJSON,
 			"max": .integer(max)
 			]
 		return dict

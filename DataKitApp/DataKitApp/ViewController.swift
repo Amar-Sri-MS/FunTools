@@ -67,8 +67,8 @@ class ViewController: NSViewController, NSTextViewDelegate {
 		do {
 			let (flowGraphGen, str) = try dk.flowGraphGenerator(transformation.string)
 			generatedJSON.string = str
-			let r = flowGraphGen.generate()
-			numFifos.integerValue = r.nodes.count
+			let graph = flowGraphGen.generate().graph
+			numFifos.integerValue = graph.nodes.count
 			let j = flowGraphGen.flowGraphToJSON
 			let js = j.description
 			generatedJSON.string = js

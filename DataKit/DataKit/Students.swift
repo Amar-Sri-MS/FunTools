@@ -19,19 +19,21 @@ func generateRandomStudent(id: Int) -> [JSON] {
 	let age = 16 + (id % 7)
 	let graduated = id % 2 == 0
 	let hasGrant = id % 3 == 0
+	let numBooks = id % 11
 	return [
 		.string(first),
 		.string(last),
 		.integer(age),
 		.bool(graduated),
 		.bool(hasGrant),
-		.integer(id)
+		.integer(id),
+		.integer(numBooks)
 	]
 }
 
 func studentType() -> DKTypeStruct {
-	let fields = ["first_name", "last_name", "age", "graduated", "has_grant", "id"]
-	let types = [DKType.string, DKType.string, DKTypeInt.uint8, DKType.bool, DKType.bool, DKTypeInt.uint32]
+	let fields = ["first_name", "last_name", "age", "graduated", "has_grant", "id", "num_books"]
+	let types = [DKType.string, DKType.string, DKTypeInt.uint8, DKType.bool, DKType.bool, DKTypeInt.uint32, DKTypeInt.uint64]
 	return DKTypeStruct(subTypes: types, subNames: fields, packed: true, alignmentInBits: 32)
 }
 
@@ -93,7 +95,6 @@ extension String {
 }
 
 func sendToDPCServer(_ combined: JSON) {
-	print("Combined: \(combined)")
 	let str = combined.description.asOneLine
 	print("Single line: \n\(str)")
 	let r = dpcrun_command_with_subverb_and_arg(&socket, "datakit", "setup", str)
@@ -162,28 +163,38 @@ let pipeFullNames = "compose(" +
 	"map((Student) -> String | { $0.first_name + \" \" + $0.last_name } )" +
 ")"
 
-func studentsTestNew() {
-	let pipeString = pipeFullNames
+let pipeCompress = "compose(" +
+	"first: ([Student]) -> Compressed<[Student]>(test) | compress(test), " +
+	"then: logger()" +
+")"
+
+let pipeCompressDecompress = "compose(" +
+	"first: ([Student]) -> Compressed<[Student]>(test) | compress(test), " +
+	"then: compose(" +
+	"first: (Compressed<[Student]>(test)) -> [Student] | decompress(test), " +
+	"then: logger()" +
+	")" +
+")"
+
+func studentsTestNew(_ pipeString: String, _ numStudents: Int = 100) {
+	print("\n---------------- \(pipeString) -------")
 	let t = studentType()
 	let typeTable = DKTypeTable()
 	typeTable.noteAlias("Student", studentType())
 	registerGeneratorOfStudents(typeTable: typeTable)
-	let max = 1000
 	let maker = DKFunctionMaker(typeTable, name: "studentMaker", itemType: t)
 	let seq = t.makeSequence
 	let sig = DKTypeSignature(unaryArg: seq, output: .void)
 	let pipeline = try! DKParser.parseFunction(typeTable, pipeString, sig)
-	print("pipeline = \(pipeline)")
-	let flowGraphGen = DKFlowGraphGen(typeTable, maker, max, pipeline)
-	let r = flowGraphGen.generate()
-	for fifo in r.nodes {
-		print("\(fifo.sugaredDescription(typeTable))")
-	}
+	print("pipeline = \(pipeline)\n")
+	let flowGraphGen = DKFlowGraphGen(typeTable, maker, numStudents, pipeline)
 	let j = flowGraphGen.flowGraphToJSON
 	print("flow graph as JSON: \n\(j)")
 	sendToDPCServer(j)
 }
 
 func studentsTest() {
-	studentsTestNew()
+	for p in [pipe0, pipe0b, pipe1, pipe2, pipeFullNames, pipeCompress, pipeCompressDecompress] {
+		studentsTestNew(p)
+	}
 }

@@ -16,8 +16,6 @@
 #include <string.h>
 #include <stdio.h>
 
-#include <utils/threaded/fun_json.h>
-
 static inline void _setnosigpipe(int const fd) {
 #ifdef __APPLE__
     int yes = 1;
