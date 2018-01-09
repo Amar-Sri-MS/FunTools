@@ -19,7 +19,7 @@ ifeq ($(OS),Linux)
 #asan library linking does not work for Linux
 LDFLAGS += -L $(SDKDIR)/lib/${OS}/noasan/ -lfunclient -lm
 else
-LDFLAGS += -L $(SDKDIR)/lib/${OS}/ -lfunclient -lm $(LDFLAGS_ASAN)
+LDFLAGS += -L $(SDKDIR)/lib/${OS}/noasan/ -lfunclient -lm $(LDFLAGS_ASAN)
 endif
 
 SRC += jsonutil.c
@@ -28,7 +28,8 @@ jsonutil: jsonutil.c
 	$(CC) -o jsonutil $(SRC) $(CFLAGS) $(LDFLAGS)
 
 install: jsonutil
-	cp jsonutil $(SDKDIR)/bin
+	mkdir -p $(SDKDIR)/bin/jsonutil/$(OS)/
+	cp jsonutil $(SDKDIR)/bin/jsonutil/$(OS)/
 
 clean:
 	rm jsonutil
