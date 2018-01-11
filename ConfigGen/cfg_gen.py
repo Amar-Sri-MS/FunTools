@@ -131,8 +131,10 @@ def generate_build_override_config(build):
 	build_override_cfg.clear()
 
 	#update build specific config
-	if os.path.exists(build):
-		filename = input_base + "/" + build+ "/*cfg"
+	filedir = input_base + "/" + build
+	if os.path.exists(filedir):
+		filename = input_base + "/" + build+ "/*.cfg"
+		print filename
 		for cfg in glob.glob(filename):
 			print "handling " + build + " cfg %s" % cfg
 			standardize_json(cfg, cfg+'.tmp')
@@ -194,6 +196,7 @@ def output_default_config(build):
 	output_cfg(fout)
 
 	#TODO fred fix with build based runtime override
+	# for now use posix as default.cfg
 	if build == "posix":
 		filename = output_base + "default.cfg"
 		print filename
