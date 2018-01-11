@@ -194,6 +194,7 @@ def output_default_config(build):
 
 	output_header(fout)
 	output_cfg(fout)
+	fout.close()
 
 	#TODO fred fix with build based runtime override
 	# for now use posix as default.cfg
@@ -203,8 +204,8 @@ def output_default_config(build):
 		fout = open(filename, 'w')
 		output_header(fout)
 		output_cfg(fout)
+		fout.close()
 	
-	fout.close()
 
 # Standardize and combine multiple configuration files
 # into one config that will be used by FunOS
