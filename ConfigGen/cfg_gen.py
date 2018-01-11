@@ -57,7 +57,11 @@ def standardize_json(in_cfg, out_cfg):
 
 	jsonutil_tool = os.path.join(jsonutil_base, 'jsonutil')
 
-	r = os.system('%s -i %s -o %s' % (jsonutil_tool, in_cfg, out_cfg))
+        cmd = '%s -i %s -o %s' % (jsonutil_tool, in_cfg, out_cfg)
+
+        # print "running command '%s'" % cmd
+        
+	r = os.system(cmd)
 
         if (r != 0):
                 print "Error executing json util"
