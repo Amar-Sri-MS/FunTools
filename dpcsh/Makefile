@@ -3,6 +3,7 @@
 OS := $(shell uname)
 
 SDKDIR ?= ../../FunSDK
+SDK_INSTALL_DIR ?= $(SDKDIR)
 
 # define header and library location in FunSDK
 CFLAGS ?= -I $(SDKDIR) -I $(SDKDIR)/FunSDK  -g -Wall -Werror -Wno-multichar
@@ -20,7 +21,8 @@ dpcsh: $(OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
 install: dpcsh
-	cp dpcsh $(SDKDIR)/bin
+	mkdir -p $(SDK_INSTALL_DIR)/bin/$(OS)
+	cp dpcsh $(SDK_INSTALL_DIR)/bin/$(OS)
 
 clean:
 	rm -f dpcsh $(OBJS)
