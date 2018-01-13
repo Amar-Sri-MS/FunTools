@@ -13,6 +13,11 @@ LDFLAGS += -L $(SDKDIR)/lib/${OS}/x86_64 -lfunclient -fsanitize=address
 
 OBJS = dpcsh.o web.o
 
+# Deal with gcc versioning for ASAN
+ifeq ($(OS),Linux)
+CC := gcc$(GCC_SUFFIX)
+endif
+
 
 %.o: %.c $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS)
