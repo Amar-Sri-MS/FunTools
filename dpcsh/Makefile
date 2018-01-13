@@ -27,7 +27,9 @@ dpcsh: $(OBJS)
 
 install: dpcsh
 	mkdir -p $(SDK_INSTALL_DIR)/bin/$(OS)
-	cp dpcsh $(SDK_INSTALL_DIR)/bin/$(OS)
+	# FIXME: remove OS versioning on dpc_client.py when
+	# integration tests are fixed
+	cp dpc_client.py dpcsh $(SDK_INSTALL_DIR)/bin/$(OS)
 
 clean:
 	rm -f dpcsh $(OBJS)
