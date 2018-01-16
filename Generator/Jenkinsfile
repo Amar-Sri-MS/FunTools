@@ -1,10 +1,28 @@
-pipeline {
-  agent none
-  stages {
+node('funos') {
     stage('Check out') {
-      steps {
-        echo 'Hello world'
-      }
-    }        
-  }
+        timeout(time: 3, unit: 'MINUTES') {
+            dir('FunTools') {
+                git url: 'git@github.com:fungible-inc/FunTools.git'
+            }
+
+	    // We need FunOS to test on the real fun_hci.gen file.
+            dir('FunOS') {
+                git url: 'git@github.com:fungible-inc/FunOS.git'
+            }
+        }
+    }
+    stage('Unit Tests') {
+        // Run all unit tests in Generator code.
+        sh 'cd FunTools/Generator; make test'
+    }
+    stage('FunHCI') {
+        // Test that we can generate code for the FunHCI definition.
+        sh 'cd FunTools/Generator; make test_fun_hci'
+    }
+    // stage('FunHCI generated code.') {
+    // Test that we generated code for FunHCI matches expected size
+    // and position.
+    // TODO(bowdidge): Uncomment when fun_nu_erp_mhg_tbl_entry addressed.
+    //    sh 'cd FunTools/Generator; make test_fun_hci_validation'
+    // }
 }
