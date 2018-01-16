@@ -15,11 +15,11 @@ node('funos') {
         // Run all unit tests in Generator code.
         sh 'cd FunTools/Generator; make test'
     }
-    stage('FunHCI') {
+    stage('Generate FunHCI code') {
         // Test that we can generate code for the FunHCI definition.
         sh 'cd FunTools/Generator; make test_fun_hci'
     }
-    // stage('FunHCI generated code.') {
+    // stage('Validate FunHCI generated code.') {
     // Test that we generated code for FunHCI matches expected size
     // and position.
     // TODO(bowdidge): Uncomment when fun_nu_erp_mhg_tbl_entry addressed.
