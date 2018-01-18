@@ -28,7 +28,7 @@ FUNSDK_INSTALL_DIR = $(SDK_INSTALL_DIR)/bin/ConfigGen
 INPUT_DIR = $(FUNOSDIR)/Configfiles
 
 #Local output dir
-OUTPUT_DIR = .
+OUTPUT_DIR = out/
 
 #json util dir
 JSONUTIL_DIR = $(SDKDIR)/bin/$(OS)
@@ -43,4 +43,4 @@ install:
 	mkdir -p $(FUNSDK_INSTALL_DIR)
 	rsync -R $(SRC) $(FUNSDK_INSTALL_DIR)
 clean:
-	@rm -rf out 
+	@rm -rf out
