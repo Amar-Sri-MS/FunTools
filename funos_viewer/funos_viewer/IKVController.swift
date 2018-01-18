@@ -101,6 +101,7 @@ class IKVController: NSObject {
 		let propsName = "stats/ikv/\(cont)"
 		let stats = document.doF1Command("peek", propsName)?.dictionaryValue
 		if stats == nil || stats!.isEmpty || ikvStartDate == nil { return }
+		print("STATS=\(stats)")
 		let now = Int((Date() - ikvStartDate!) * 20.0)
 		let list: [(ui: NSTextField?, name: String, samples: SimulationSamples?)] = [
 			(ikvPuts, "puts", nil),

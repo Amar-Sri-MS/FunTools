@@ -10,6 +10,7 @@ import Foundation
 
 class DataKitController {
 	var isStudents = false
+	var isSequentialInts = false
 	var numGenerated = 100
 	init() {
 		registerGeneratorOfStudents(typeTable: typeTable)
@@ -33,6 +34,10 @@ class DataKitController {
 			"        then: map((UInt64) -> UInt64 | { $0 * 1000 + 42})\n" +
 			"    ),\n" +
 			"    then: map(logger())\n" +
+			")"),
+		("zipped ints", "compose(\n" +
+			"    first: ([UInt64]) -> Compressed<[UInt64]>(test) | compress(test),\n"  +
+			"    then: logger()\n" +
 			")"),
 		("", ""),
 		("all Students (typed)", "map((Student) -> () | logger())"),
@@ -64,7 +69,7 @@ class DataKitController {
 		return isStudents ? studentType() : DKTypeInt.uint64
 	}
 	func maker() -> DKFunction {
-		return DKFunctionMaker(typeTable, name: isStudents ? "studentMaker" : "randomInt", itemType: baseType())
+		return DKFunctionMaker(typeTable, name: isStudents ? "studentMaker" : isSequentialInts ? "sequentialInt" : "randomInt", itemType: baseType())
 	}
 	func flowGraphGenerator(_ pipeline: String) throws -> (DKFlowGraphGen, String) {
 		let sig = DKTypeSignature(unaryArg: baseType().makeSequence, output: .void)
