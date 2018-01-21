@@ -174,7 +174,7 @@ extension DKParser {
 				throw DKParsingError("Signature must be provided for \(s)", self)
 			}
 			if !DKFunctionCompress.canBeSignature(signature: signature!, compress: c) {
-				throw DKParsingError("Signature \(signature!) improper for \(s)", self)
+				throw DKParsingError("Signature '\(signature!.sugaredDescription(uniquingTable))' is improper for \(s)", self)
 			}
 			let arg = try parseJSON()
 			if !arg.isString {

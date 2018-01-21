@@ -20,7 +20,7 @@ class DKFunctionCompress: DKFunction {
 		self.method = method
 	}
 	override var signature: DKTypeSignature {
-		let compressed = DKTypeAnnotated(base: base, compressed: method)
+		let compressed = DKType.byteSequence
 		if compresses {
 			return DKTypeSignature(input: DKTypeStruct(funcParamType: base), output: compressed)
 		} else {
@@ -55,19 +55,10 @@ class DKFunctionCompress: DKFunction {
 		if signature.numberOfArguments != 1 {
 			return false
 		}
-		let input = signature.input[0]
 		if compress {
-			if let ann = signature.output as? DKTypeAnnotated {
-				return ann.base == input
-			} else {
-				return false
-			}
+			return signature.output == DKType.byteSequence
 		} else {
-			if let ann = input as? DKTypeAnnotated {
-				return ann.base == signature.output
-			} else {
-				return false
-			}
+			return signature.input[0] == DKType.byteSequence
 		}
 	}
 }

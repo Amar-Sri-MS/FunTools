@@ -47,6 +47,8 @@ class DKType: Equatable, Hashable, CustomStringConvertible {
 	class var void: DKType { return DKTypeStruct.void }
 	class var bool: DKType { return DKTypeInt.bool }
 	class var string: DKType { return DKTypeString.string }
+	class var byte: DKType { return DKTypeInt.uint8 }
+	class var byteSequence: DKType { return DKTypeSequence(DKType.byte) }
 
 	// Convenience
 	// Note that a sequence of Void is just Void

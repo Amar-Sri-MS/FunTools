@@ -36,8 +36,15 @@ class DataKitController {
 			"    then: map(logger())\n" +
 			")"),
 		("zipped ints", "compose(\n" +
-			"    first: ([UInt64]) -> Compressed<[UInt64]>(test) | compress(test),\n"  +
+			"    first: ([UInt64]) -> [UInt8] | compress(test),\n"  +
 			"    then: logger()\n" +
+			")"),
+		("zip-unzip ints", "compose(\n" +
+			"    first: ([UInt64]) -> [UInt8] | compress(test),\n"  +
+			"    then: compose(\n" +
+			"        first: ([UInt8]) -> [UInt64] | decompress(test),\n"  +
+			"        then: logger()\n" +
+			"    )" +
 			")"),
 		("", ""),
 		("all Students (typed)", "map((Student) -> () | logger())"),
