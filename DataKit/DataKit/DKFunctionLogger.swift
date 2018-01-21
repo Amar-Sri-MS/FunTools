@@ -36,4 +36,7 @@ class DKFunctionLogger: DKFunction {
 	override var description: String {
 		return "logger(\(shortcut))"
 	}
+	override var isInputGroupable: Bool {
+		return true
+	}
 }

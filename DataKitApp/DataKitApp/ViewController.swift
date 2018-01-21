@@ -22,7 +22,10 @@ class ViewController: NSViewController, NSTextViewDelegate {
 	var dk = DataKitController()
 
 	var isStudents: Bool {
-		return sourcePopUp.indexOfSelectedItem >= 2
+		return sourcePopUp.indexOfSelectedItem >= 3
+	}
+	var isSequentialInts: Bool {
+		return sourcePopUp.indexOfSelectedItem == 2
 	}
 	override func viewDidLoad() {
 		super.viewDidLoad()
@@ -50,9 +53,10 @@ class ViewController: NSViewController, NSTextViewDelegate {
 		commandToF1.stringValue = ""
 	}
 	@IBAction func sourceChanged(_ sender: NSObject?) {
-		let nums = [100, 1000, 100, 1000, 10_000, 100_000]
+		let nums = [100, 1000, 1000 /* sequential ints */, 100, 1000, 10_000, 100_000]
 		dk.numGenerated = nums[sourcePopUp.indexOfSelectedItem]
 		dk.isStudents = isStudents
+		dk.isSequentialInts = isSequentialInts
 		reset()
 	}
 	@IBAction func predefChanged(_ sender: NSObject?) {
