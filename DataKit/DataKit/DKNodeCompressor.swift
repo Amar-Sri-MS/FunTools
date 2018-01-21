@@ -22,7 +22,6 @@ class DKNodeCompressor: DKNode {
 	override var signature: DKTypeSignature {
 		return compress.signature
 	}
-	var sequenceType: DKTypeSequence { return compress.base as! DKTypeSequence }
 	override func sugaredDescription(_ uniquingTable: DKTypeTable) -> String {
 		let typeStr = compresses ? "COMP" : "DECOMP"
 		return "\(typeStr)#\(graphIndex)(t=\(compress.signature.sugaredDescription(uniquingTable)); method=\(compress.method))"

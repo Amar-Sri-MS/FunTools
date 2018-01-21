@@ -61,4 +61,7 @@ class DKFunctionCompress: DKFunction {
 			return signature.input[0] == DKType.byteSequence
 		}
 	}
+	override var isInputGroupable: Bool {
+		return true
+	}
 }
