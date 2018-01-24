@@ -9,6 +9,7 @@ from operator import itemgetter
 import tutils_sim
 import tutils_pdt
 import tutils_qmu
+import tutils_sbp
 
 # default to nothing
 tutils = None
@@ -16,7 +17,8 @@ tutils = None
 # list of valid formats we support
 FORMAT_DECODER = {"sim": tutils_sim,
                   "pdt": tutils_pdt,
-                  "qemu": tutils_qmu }
+                  "qemu": tutils_qmu,
+		  "sbp": tutils_sbp}
 VALID_FORMATS = FORMAT_DECODER.keys()
 
 # called by the trace parser when we know the user's intent
@@ -76,6 +78,9 @@ def text_section_start(dasm_line):
 	# catches the case where we have .text_*
 	return dasm_line.startswith("Disassembly of section .text")
 
+def exception_vector_start(dasm_line):
+	return dasm_line.startswith("Disassembly of section .exception_vector")
+
 def data_section_start(dasm_line):
 	return dasm_line == "Disassembly of section .data:"
 
@@ -128,6 +133,9 @@ def create_range_list(dasm_fname):
                         if text_section_start(line):
                                 before_text = False
 
+			if exception_vector_start(line):
+				before_text = False
+
                         if (before_text):
                                 continue
 
@@ -140,7 +148,7 @@ def create_range_list(dasm_fname):
 		if found:
 
 			if len(fcurr) != 0:
-				coll[len(coll)-1].append(addr-4)
+				coll[len(coll)-1].append(addr-2)
 
 			fcurr = fname
 
