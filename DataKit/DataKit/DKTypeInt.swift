@@ -47,9 +47,6 @@ class DKTypeInt: DKType {
 	override class var bool: DKTypeInt {
 		return DKTypeInt.shared(signed: false, numBits: 1, usualAlign: true, algebraic: false)
 	}
-	class var byte: DKTypeInt {
-		return DKTypeInt.shared(signed: false, numBits: 8, usualAlign: true, algebraic: false)
-	}
 
 	// ===============  LAYOUT ===============
 

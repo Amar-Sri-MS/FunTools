@@ -31,7 +31,6 @@
 		A77C5CB61FDC9D6E007264F5 /* DKExpressionConstant.swift in Sources */ = {isa = PBXBuildFile; fileRef = A77C5C7E1FDC9D69007264F5 /* DKExpressionConstant.swift */; };
 		A77C5CB71FDC9D6E007264F5 /* DKComparisonOperator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A77C5C7F1FDC9D69007264F5 /* DKComparisonOperator.swift */; };
 		A77C5CB81FDC9D6E007264F5 /* DKTypeStruct.swift in Sources */ = {isa = PBXBuildFile; fileRef = A77C5C801FDC9D69007264F5 /* DKTypeStruct.swift */; };
-		A77C5CB91FDC9D6E007264F5 /* DKFunctionGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A77C5C811FDC9D69007264F5 /* DKFunctionGenerator.swift */; };
 		A77C5CBA1FDC9D6E007264F5 /* DKBitStream_Test.swift in Sources */ = {isa = PBXBuildFile; fileRef = A77C5C821FDC9D69007264F5 /* DKBitStream_Test.swift */; };
 		A77C5CBB1FDC9D6E007264F5 /* DKExpression.swift in Sources */ = {isa = PBXBuildFile; fileRef = A77C5C831FDC9D6A007264F5 /* DKExpression.swift */; };
 		A77C5CBC1FDC9D6E007264F5 /* DKTypeSignature.swift in Sources */ = {isa = PBXBuildFile; fileRef = A77C5C841FDC9D6A007264F5 /* DKTypeSignature.swift */; };
@@ -139,7 +138,6 @@
 		A77C5C7E1FDC9D69007264F5 /* DKExpressionConstant.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = DKExpressionConstant.swift; path = ../DataKit/DataKit/DKExpressionConstant.swift; sourceTree = "<group>"; };
 		A77C5C7F1FDC9D69007264F5 /* DKComparisonOperator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = DKComparisonOperator.swift; path = ../DataKit/DataKit/DKComparisonOperator.swift; sourceTree = "<group>"; };
 		A77C5C801FDC9D69007264F5 /* DKTypeStruct.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = DKTypeStruct.swift; path = ../DataKit/DataKit/DKTypeStruct.swift; sourceTree = "<group>"; };
-		A77C5C811FDC9D69007264F5 /* DKFunctionGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = DKFunctionGenerator.swift; path = ../DataKit/DataKit/DKFunctionGenerator.swift; sourceTree = "<group>"; };
 		A77C5C821FDC9D69007264F5 /* DKBitStream_Test.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = DKBitStream_Test.swift; path = ../DataKit/DataKit/DKBitStream_Test.swift; sourceTree = "<group>"; };
 		A77C5C831FDC9D6A007264F5 /* DKExpression.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = DKExpression.swift; path = ../DataKit/DataKit/DKExpression.swift; sourceTree = "<group>"; };
 		A77C5C841FDC9D6A007264F5 /* DKTypeSignature.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = DKTypeSignature.swift; path = ../DataKit/DataKit/DKTypeSignature.swift; sourceTree = "<group>"; };
@@ -262,7 +260,6 @@
 				A77C5C751FDC9D67007264F5 /* DKFunctionClosure.swift */,
 				A77C5C791FDC9D68007264F5 /* DKFunctionComposition.swift */,
 				A77C5C991FDC9D6D007264F5 /* DKFunctionFilter.swift */,
-				A77C5C811FDC9D69007264F5 /* DKFunctionGenerator.swift */,
 				A77C5C8B1FDC9D6B007264F5 /* DKFunctionLogger.swift */,
 				A77C5C6A1FDC9D65007264F5 /* DKFunctionMaker.swift */,
 				A77C5C781FDC9D68007264F5 /* DKFunctionMap.swift */,
@@ -491,7 +488,6 @@
 				A77C5CB61FDC9D6E007264F5 /* DKExpressionConstant.swift in Sources */,
 				A77C5CB71FDC9D6E007264F5 /* DKComparisonOperator.swift in Sources */,
 				A77C5CB81FDC9D6E007264F5 /* DKTypeStruct.swift in Sources */,
-				A77C5CB91FDC9D6E007264F5 /* DKFunctionGenerator.swift in Sources */,
 				A77C5CBA1FDC9D6E007264F5 /* DKBitStream_Test.swift in Sources */,
 				A77C5CBB1FDC9D6E007264F5 /* DKExpression.swift in Sources */,
 				A77C5CBC1FDC9D6E007264F5 /* DKTypeSignature.swift in Sources */,

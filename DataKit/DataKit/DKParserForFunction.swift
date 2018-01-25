@@ -15,7 +15,7 @@
 // - or a parenthesized function, e.g. ((Int8) -> Int8: -)
 
 extension DKParser {
-	enum ConstructorGenre { case noarg; case unary; case binary; case generator }
+	enum ConstructorGenre { case noarg; case unary; case binary }
 	func parseFunction(_ signature: DKTypeSignature!) throws -> DKFunction {
 		var sig = signature
 		let saved = (token, lexerState)
@@ -119,13 +119,11 @@ extension DKParser {
 			"decompress": .unary,
 			"reduce": .binary,
 			"compose": .binary,
-			"generator": .generator,
 		]
 		let parserFunc: [ConstructorGenre: (String, DKTypeSignature?) throws -> DKFunction] = [
 			.noarg: parseNoargFunctionConstructor,
 			.unary: parseUnaryFunctionConstructor,
 			.binary: parseBinaryFunctionConstructor,
-			.generator: parseGen
 		]
 		let genre = constructors[s]
 		if genre != nil {
@@ -176,7 +174,7 @@ extension DKParser {
 				throw DKParsingError("Signature must be provided for \(s)", self)
 			}
 			if !DKFunctionCompress.canBeSignature(signature: signature!, compress: c) {
-				throw DKParsingError("Signature \(signature!) improper for \(s)", self)
+				throw DKParsingError("Signature '\(signature!.sugaredDescription(uniquingTable))' is improper for \(s)", self)
 			}
 			let arg = try parseJSON()
 			if !arg.isString {
@@ -277,24 +275,6 @@ extension DKParser {
 			return DKFunctionComposition(outer: outer!, inner: inner!)
 		}
 		fatalError()
-	}
-	func parseGen(_ s: String, _ signature: DKTypeSignature!) throws -> DKFunction {
-		if signature == nil {
-			throw DKParsingError("Function sink or generator needs a signature", self)
-		}
-		let itemType = DKFunctionGenerator.canBeGeneratorAndItemType(signature)
-		if itemType == nil {
-			throw DKParsingError("Generator has wrong signature \(signature)", self)
-		}
-		let name = try parseIdent()
-		// This is totally hackish
-		var params: JSON = JSON.null
-		if peekReservedWord(",") {
-			accept()
-			let num = try parseNumber()
-			params = .integer(Int(num))
-		}
-		return DKFunctionGenerator(uniquingTable, name: name, params: params, itemType: itemType!)
 	}
 	func parseFunctionProjection(_ structType: DKTypeStruct) throws -> DKFunction {
 		try expectReservedWord(".")
