@@ -61,7 +61,12 @@ def standardize_json(in_cfg, out_cfg):
 
 	jsonutil_tool = os.path.join(jsonutil_base, 'jsonutil')
 
-	os.system('%s -i %s -o %s' % (jsonutil_tool, in_cfg, out_cfg));
+	# Failures of jsontool are often caused by jsontool being built
+	# on a different system/OS than the one currently running.
+	rc = os.system('%s -i %s -o %s' % (jsonutil_tool, in_cfg, out_cfg));
+	if rc != 0:
+		sys.stderr.write('Unable to run jsonutil tool. Exiting.\n')
+		sys.exit(1)
 
 # if the key is in the cfg_replace file use it and replace that on the cfg 
 def replace_dicts(cfg, cfg_replace):
