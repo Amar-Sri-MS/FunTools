@@ -21,8 +21,8 @@ class Transaction():
     or that can be outputted as JSON.
     """
     all_events = [e.AsDict() for e in self.Flatten()]
-    min_time = min([x['start_time'] for x in all_events if not x.is_timer])
-    max_time = max([x['end_time'] for x in all_events if not x.is_timer])
+    min_time = min([x['start_time'] for x in all_events if not x['is_timer']])
+    max_time = max([x['end_time'] for x in all_events if not x['is_timer']])
     overall_duration = max_time - min_time
 
     # Limit bars to 98% of container so they don't trigger a new line.
