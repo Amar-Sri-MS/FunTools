@@ -4,7 +4,10 @@
 # Copyright (c) 2017 Fungible Inc.  All rights reserved.
 #
 
+import jinja2
+import json
 import math
+import os
 import sys
 
 import event
@@ -61,235 +64,6 @@ def DurationString(duration_nsecs):
     else:
         return '%0.6f sec' % (duration_nsecs / float(NSECS_PER_SEC))
 
-# Size the divs to 90% of full - 100% tends to cause problems
-# if a margin throws an object over 100%
-MAX_WIDTH = 90.0
-def RenderEvent(out, event, group_start, group_duration):
-    """Render the HMTL for one event in a larger transaction."""
-    if group_duration == 0:
-        group_duration = 1
-
-    wholePercent = MAX_WIDTH
-    out.write('<div class="row">\n')
-    start_offset = event.start_time - group_start
-    duration = event.Duration()
-
-    leadingSpace = wholePercent * start_offset / group_duration
-    width = wholePercent * duration / group_duration
-    color = 'red'
-
-    if event.is_timer:
-        timer_offset = event.start_time - event.timer_start
-        leadingSpace = wholePercent * start_offset / group_duration
-        triggerSpace = wholePercent * timer_offset / group_duration
-        width = wholePercent * duration / group_duration
-
-
-        out.write('  <div class="label"><i>%s</i></div>\n' % (event.Label()))
-        out.write('  <div class="time"><i>%s</i></div>\n' % (
-                RangeString(event.start_time, event.end_time)))
-        out.write('  <div class="duration"><i>%s</i></div>\n' % (
-                DurationString(event.end_time - event.start_time)))
-        out.write('  <div class="vp"></div>\n')
-        out.write('  <div class="timeline">\n')
-
-        out.write('    <div style="width: %d%%"; class="space"></div>\n' % (
-                leadingSpace))
-        out.write('    <div style="width: 0%" class="bar schedule tooltip">\n')
-        out.write('    <div class="tooltiptext">timer set at %s</div></div>\n' % (
-                TimeString(event.timer_start)))
-        out.write('    <div style="width: %d%%"; class="space"></div>\n' % (
-                triggerSpace))
-        out.write('    <div style="width: %d%%"; class="bar timer">\n' % width)
-        out.write('    </div>\n')
-        out.write('  </div>\n')
-    elif event.is_annotation:
-        out.write('  <div class="label"></div>\n')
-        out.write('  <div class="time">%s</div>\n' % (
-                RangeString(event.start_time, event.end_time)))
-        out.write('  <div class="duration"></div>\n')
-        out.write('  <div class="vp">%s</div>\n' % event.vp)
-        out.write('  <div class="timeline">\n')
-
-        out.write('    <div style="width: %d%%" class="space"></div>\n' % (
-                leadingSpace))
-        out.write('    <div style="width: 0%%" class="bar annotation-bar"></div>\n')
-        out.write('    <div class="annotation">%s</div>\n' % (
-                    event.Label()))
-        out.write('  </div>\n')
-    else:
-        out.write('  <div class="label">%s</div>\n' % (event.Label()))
-        out.write('  <div class="time">%s</div>\n' % (
-                RangeString(event.start_time, event.end_time)))
-        out.write('  <div class="duration">%s</div>\n' % (
-                DurationString(event.end_time - event.start_time)))
-        out.write('  <div class="vp">%s</div>\n' % event.vp)
-        out.write('  <div class="timeline">\n')
-
-        out.write('    <div style="width: %d%%" class="space"></div>\n' % (
-                leadingSpace))
-        out.write('    <div style="width: %d%%" class="bar wu"></div>\n' % (
-                    width))
-        out.write('  </div>\n')
-    out.write('</div>\n')
-
-
-def RenderHeader(out):
-    """Outputs HTML for the event visualization."""
-    out.write("""
-<html>
-<head>
-<style>
-/* CSS for the time bars. */
-
-/* formatting for div representing blank space */
-.space {
-  display: inline-block;
-  height: 15px;
-}
-
-/* formatting for div representing activity. */
-.bar {
-  display: inline-block;
-  border: solid 1px;
-  height: 15px;
-}
-
-.annotation {
-  display: inline-block;
-  height: 15px;
-  color: #111111;
-  font-size: small;
-}
-
-/* CSS for kinds of bars. */
-
-/* How to draw WUs. */
-.wu {
-  background-color: red;
-}
-
-.annotation-bar {
-  background-color: DarkGray;
-}
-
-/* How to draw top-level objects. */
-.allrow {
-  background-color: gray;
-}
-
-/* How to draw span representing a call. */
-.call {
-  background-color: #ffe0e0;
-
-}
-
-/* How to draw span representing a timer. */
-.timer {
-  background-color: #e0e0ff;
-  height: 10px;
-  margin-top: 5px;margin-bottom: 5px;
-  border: 1px solid blue;
-}
-
-/* Bar representing a timer start. */
-.schedule {
-  background-color: #0000ff;
-  height: 10px;
-  margin-top: 5px;margin-bottom: 5px;
-}
-
-/* How to format the rest of the display */
-/* Column with the WU name. */
-.label {
-   width: 15%;
-  display: inline-block;
-  font-size: small;
-}
-/* Column showing the time range in the WU. */
-.time {
-   width: 12%;
-  display: inline-block;
-  border-left: dotted 1px;
-  font-size: small;
-}
-
-/* Column represeting the duration of the WU. */
-.duration {
-  width: 8%;
-  display: inline-block;
-  border-left: dotted 1px;
-  font-size: small;
-}
-
-/* Column representing the VP where the WU ran. */
-.vp {
-  width: 5%;
-  display: inline-block;
-  border-left: dotted 1px;
-  font-size: small;
-}
-
-.row {
-  border: dotted 1px;
-}
-
-.timeline {
-  display: inline-block;
-  border-left : solid;
-  width: 55%;
-}
-
-.request {
-  margin-top: 40px;
-  padding-top: 10px;
-  border: none;
-  border-top: solid 2px;
-}
-
-/* CSS definitions needed to allow hover to show text */
-.tooltip {
-  position: relative;
-  display: inline-block;
-  border-bottom: 1px dotted black;
-}
-.tooltip .tooltiptext {
-  visibility: hidden;
-  width: 120px;
-  background-color:black;
-  color: #fff;
-  text-align:center;
-  padding: 5px 0;
-  border-radius: 6px;
-  position: absolute;
-  z-index: 1;
-}
-.tooltip:hover .tooltiptext { visibility: visible }
-</style>
-<script>
-</script>
-</head>
-""")
-
-def RenderTransaction(out, transaction):
-    """Render an event which is the root of a transaction."""
-    sys.stderr.write('Rendering transaction for %s\n' % transaction.Label())
-    start_time = transaction.StartTime()
-    end_time = transaction.EndTime()
-    duration = transaction.EndTime() - transaction.StartTime()
-    out.write('<a name="%s"></a>\n' % TimeString(transaction.StartTime()))
-    out.write('<div class="row request">\n')
-    out.write('  <div class="label">All</div>\n')
-    out.write('  <div class="time">%s</div>\n' % RangeString(transaction.StartTime(), transaction.EndTime()))
-    out.write('  <div class="duration">%s</div>\n' % DurationString(duration))
-    out.write('  <div class="vp"></div>\n')
-    out.write('  <div class="timeline">\n')
-    out.write('    <div style="width: %d%%"; class="bar allrow"></div>\n' % MAX_WIDTH)
-    out.write('  </div>\n')
-    out.write('</div>\n')
-    for event in transaction.Flatten():
-        RenderEvent(out, event, start_time, duration)
-
 def PercentileIndex(percent, itemCount):
     """Returns the index of element in an array representing the nth percentile."""
     if itemCount == 0:
@@ -299,94 +73,103 @@ def PercentileIndex(percent, itemCount):
     index = int(math.ceil(percent * itemCount / 100.0))
     return index - 1
 
-def DistributionString(durationArray):
-    """Returns HTML describing the distribution of durations of WU chains.
-    durationArray should be an array of durations for each
+def TransactionGroupStats(transactions):
+    """Returns dictionary describing stats on a set of transactions.
+
+    This is used to describe min, max, average, etc. times for the same
+    WU.
     """
-    count = len(durationArray)
+    result = {'count': 0,
+              'min_nsec': 0,
+              'max_nsec': 0,
+              'average_nsec': 0,
+              '50ile_nsec': 0,
+              '90ile_nsec': 0,
+              '95ile_nsec': 0
+              }
 
-    values = sorted(durationArray)
-
+    count = len(transactions)
     if count == 0:
-        return 'no samples'
+        return result
 
-    min = durationArray[0]
-    max = durationArray[-1]
+    durations = [x.Duration() for x in transactions]
+    sorted_durations = sorted(durations)
 
-    sum_duration = sum(durationArray)
+    result['min_nsec'] = sorted_durations[0]
+    result['max_nsec'] = sorted_durations[-1]
+    result['average_nsec'] = sum(durations) / len(transactions)
 
     percentile50Index = PercentileIndex(50, count)
     percentile90Index = PercentileIndex(90, count)
     percentile95Index = PercentileIndex(95, count)
 
-    percentile50Duration = values[percentile50Index]
-    percentile90Duration = values[percentile90Index]
-    percentile95Duration = values[percentile95Index]
+    result['50ile_nsec'] = sorted_durations[percentile50Index]
+    result['90ile_nsec'] = sorted_durations[percentile90Index]
+    result['95ile_nsec'] = sorted_durations[percentile95Index]
+    return result
 
-    output = '<table border="1">'
-    output += '<tr><td>Number of occurrences:</td><td>%d</td></tr>\n' %(
-        count)
-
-    output += '<tr><td>Minimum duration:</td><td>%s</td></tr>\n' % (
-        DurationString(min))
-    output += '<tr><td>Maximum duration:</td><td>%s</td></tr>\n' % (
-        DurationString(max))
-    output += '<tr><td>Average duration:</td><td>%s</td></tr>\n' % (
-        DurationString(sum_duration / count))
-    output += '<tr><td>50%%ile:</td><td>%s</td></tr>\n' % (
-        DurationString(percentile50Duration))
-    output += '<tr><td>90%%ile:</td><td>%s</td></tr>\n' % (
-        DurationString(percentile90Duration))
-    output += '<tr><td>95%%ile:</td><td>%s</td></tr>\n' % (
-        DurationString(percentile95Duration))
-    output += '</table>\n'
-    return output
-
-
-def RenderSummary(out, transactions):
+def GetGroups(transactions):
     """Generate summary data describing the kinds of WU sequences that
     we saw.  This data is grouped by the starting WU, and allows
     comparing runs of equivalent WUs.
     """
     root_to_group = {}
     for transaction in transactions:
-        if transaction.Label() not in root_to_group:
-            root_to_group[transaction.Label()] = []
-        root_to_group[transaction.Label()].append(transaction)
+        label = transaction.Label()
+        if label not in root_to_group:
+            root_to_group[label] = []
+        root_to_group[label].append(transaction)
 
     for label in root_to_group:
         root_to_group[label] = sorted(root_to_group[label],
                                       key=lambda x: x.Duration())
 
-    out.write('<h1>Transactions</h1>\n')
+    groups = []
     for label in root_to_group:
         durations = [x.Duration() for x in root_to_group[label]]
-        out.write('<b>WU sequence starting with %s:</b><br>' % label)
-        out.write('Duration of sequence: %s\n' % (
-                DistributionString(durations)))
-        out.write('<ul>\n')
-        for transaction in root_to_group[label]:
-          out.write('<li> <a href="#%s">%s</a>\n' % (
-                  TimeString(transaction.StartTime()),
-                  DurationString(transaction.Duration())))
-        out.write('</ul>\n')
+        group = {'count': len(root_to_group[label]),
+                 'label': label,
+                 'stats': TransactionGroupStats(transactions),
+                 'transactions': GetTransactionDicts(root_to_group[label])
+                 }
+        if label == 'boot':
+            boot_group = group
+        groups.append(group)
 
-def RenderHTML(out, transactions):
+    return groups
+
+def GetTransactionDicts(transactions):
+    result = []
+    for tr in transactions:
+        result.append(tr.AsDict())
+    return result
+
+def RenderHTML(transactions):
     """Generates HTML page showing the listed events."""
-    RenderHeader(out)
-    out.write('<body>\n')
+    this_dir = os.path.dirname(os.path.abspath(__file__))
+    env = jinja2.Environment(loader=jinja2.FileSystemLoader(this_dir))
+    env.filters['as_duration'] = lambda nsecs: DurationString(nsecs)
+    env.filters['as_time'] = lambda nsecs: TimeString(nsecs)
 
-    RenderSummary(out, transactions)
-    out.write('<h1>Timelines</h1>\n')
-    for transaction in transactions:
-        RenderTransaction(out, transaction)
-    out.write('</body></html>')
+    page_dict = {
+        'groups': GetGroups(transactions)
+        }
+
+    template = env.get_template('report.html')
+    return template.render(page_dict)
+
+def RenderJSON(transactions):
+    page_dict = {
+        'groups': GetGroups(transactions),
+        }
+    return json.dumps(page_dict)
+
 
 def GraphvizSafeLabel(event):
     """Generates a label that will be parsed as a single item by GraphViz."""
     return event.Label().replace('$', 'dollar')
 
-common_wus = ["timer_trigger", "wuh_join", "nop_wuh", "wuh_resource_lock"]
+common_wus = ["timer", "wuh_join", "nop_wuh", "wuh_resource_lock"]
 common_prefixes = ["ikv_"]
 
 def IsCommon(label):
