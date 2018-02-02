@@ -1,0 +1,190 @@
+{# Jinja template for WU trace reports. #}
+<html>
+<head>
+<style>
+/* CSS for the time bars. */
+
+/* formatting for div representing blank space */
+.space {
+  display: inline-block;
+  height: 15px;
+}
+
+/* formatting for div representing activity. */
+.bar {
+  display: inline-block;
+  border: solid 1px;
+  height: 15px;
+}
+
+.annotation-bar {
+  display: inline-block;
+  height: 15px;
+  color: #000000;
+  font-size: small;
+  background-color: #eeeeee;
+  border: 0px solid black;
+  width: 98%;
+}
+
+/* CSS for kinds of bars. */
+
+/* How to draw WUs. */
+.wu {
+  background-color: red;
+}
+
+/* How to draw top-level objects. */
+.allrow {
+  background-color: gray;
+}
+
+/* How to draw span representing a call. */
+.call {
+  background-color: #ffe0e0;
+
+}
+
+/* How to draw span representing a timer. */
+.timer {
+  background-color: #e0e0ff;
+  height: 3px;
+  margin-top: 5px;margin-bottom: 5px;
+  border: 1px solid blue;
+}
+
+/* Bar representing a timer start. */
+.schedule {
+  background-color: #0000ff;
+  height: 10px;
+  margin-top: 5px;margin-bottom: 5px;
+}
+
+/* How to format the rest of the display */
+/* Column with the WU name. */
+.label {
+   width: 15%;
+  display: inline-block;
+  font-size: small;
+}
+/* Column showing the time range in the WU. */
+.time {
+   width: 12%;
+  display: inline-block;
+  border-left: dotted 1px;
+  font-size: small;
+}
+
+/* Column represeting the duration of the WU. */
+.duration {
+  width: 8%;
+  display: inline-block;
+  border-left: dotted 1px;
+  font-size: small;
+}
+
+/* Column representing the VP where the WU ran. */
+.vp {
+  width: 5%;
+  display: inline-block;
+  border-left: dotted 1px;
+  font-size: small;
+}
+
+.row {
+  border: dotted 1px;
+}
+
+.timeline {
+  display: inline-block;
+  border-left : solid;
+  width: 55%;
+}
+
+.request {
+  margin-top: 40px;
+  padding-top: 10px;
+  border: none;
+  border-top: solid 2px;
+}
+
+/* CSS definitions needed to allow hover to show text */
+.tooltip {
+  position: relative;
+  display: inline-block;
+  border-bottom: 1px dotted black;
+}
+.tooltip .tooltiptext {
+  visibility: hidden;
+  width: 120px;
+  background-color:black;
+  color: #fff;
+  text-align:center;
+  padding: 5px 0;
+  border-radius: 6px;
+  position: absolute;
+  z-index: 1;
+}
+.tooltip:hover .tooltiptext { visibility: visible }
+</style>
+<script>
+</script>
+</head>
+<h1>Summary</h1>
+{% for group in groups %}
+<b>WU sequence starting with <tt>{{group['label']}}</tt>:</b>
+<br>
+{{group['count']}} occurrences,
+minimum duration {{group['stats']['min_nsec'] | as_duration }},
+average duration {{group['stats']['average_nsec']| as_duration }},
+maximum duration {{group['stats']['max_nsec'] | as_duration }},
+<br>
+50%ile: {{group['stats']['50ile_nsec'] | as_duration }},
+90%ile: {{group['stats']['90ile_nsec'] | as_duration }},
+95%ile: {{group['stats']['95ile_nsec'] | as_duration }},
+<br>
+List of sample transactions here:
+<br>
+{% endfor %}
+<h1>Individual Traces</h1>
+{% for group in groups %}
+{% for tr in group['transactions'] %}
+{{tr.label }}: {{tr.events | length}} events.
+
+{% for event in tr.events %}
+<div class="row">
+  {% if event['is_timer'] %}
+  <div class="label">&nbsp;&nbsp;timer </div>
+  <div class="time">{{ event['start_time'] | as_time }}-{{ event['end_time'] | as_time }}</div>
+  <div class="duration">{{event['duration'] | as_duration}}</div>
+  <div class="vp">{{event['vp']}}</div>
+  <div class="timeline">
+    <div style="width: {{event['offset_pct']}}%;" class="space"></div>
+    <div style="width: {{event['duration_pct']}}%;" class="bar timer"></div>
+  </div>
+  {% elif event['is_annotation'] %}
+  <div class="label"></div>
+  <div class="time">{{ event['start_time'] | as_time }}</div>
+  <div class="duration"></div>
+  <div class="vp">{{event['vp']}}</div>
+    <div class="timeline">
+      <div class="annotation-bar">{{event['label']}}</div>
+    </div>
+  {% else %}
+  <div class="label">{{ event['label'] }} </div>
+  <div class="time">{{ event['start_time'] | as_time }}-{{ event['end_time'] | as_time }}</div>
+  <div class="duration">{{event['duration'] | as_duration}}</div>
+  <div class="vp">{{event['vp']}}</div>
+  <div class="timeline">
+    <div style="width: {{event['offset_pct']}}%;" class="space"></div>
+    <div style="width: {{event['duration_pct']}}%;" class="bar wu"></div>
+  </div>
+  {% endif %}
+</div>
+{% endfor %}  
+<br>
+{% endfor %}
+{% endfor %}
+</body>
+</html>
+
