@@ -192,10 +192,13 @@ class TestProcessFile(unittest.TestCase):
                   '+ 00.000000 - 00.000000 (0 usec): boot\n',
                   '00.000001 - 00.000003 (2 usec): transaction "foo"\n',
                   '+ 00.000001 - 00.000003 (2 usec): foo\n',
+                  '+ 00.000002 - 00.000006 (4 usec): timer\n',
                   '00.000006 - 00.000008 (2 usec): transaction "bar"\n',
                   '+ 00.000006 - 00.000008 (2 usec): bar\n',
+                  '+ 00.000007 - 00.000011 (4 usec): timer\n',
                   '00.000011 - 00.000013 (2 usec): transaction "baz"\n',
                   '+ 00.000011 - 00.000013 (2 usec): baz\n',
+                  '+ 00.000012 - 00.000014 (2 usec): timer\n',
                   '00.000014 - 00.000016 (2 usec): transaction "boof"\n',
                   '+ 00.000014 - 00.000016 (2 usec): boof\n']
 
@@ -251,7 +254,7 @@ class EndToEndTest(unittest.TestCase):
   def testAnnotate(self):
     log = """
 0.000001000 TRACE WU START faddr VP0.0.0 src VP0.0.0 dest VP0.0.0 wuid 0 name wu_foo arg0 0 arg1 0
-0.000002000 TRACE TRANSACTION ANNOT faddr VP0.0.0 Request to /movies/Star Wars
+0.000002000 TRACE TRANSACTION ANNOT faddr VP0.0.0 msg Request to /movies/Star Wars
 0.000003000 TRACE WU END faddr VP0.0.0
     """.split('\n')
 
@@ -292,7 +295,10 @@ class EndToEndTest(unittest.TestCase):
 
     # TODO(bowdidge): Check more than just length of output.
     self.assertIn('strict digraph foo {\n', output_file.lines)
-    self.assertIn('foo -> foo [style=dotted];\n', output_file.lines)
+    self.assertIn('foo -> {timer_foo [label="timer" style=dotted]};\n',
+                  output_file.lines)
+    self.assertIn('{timer_foo [label="timer"]} -> foo [style=bold];\n',
+                  output_file.lines)
     self.assertIn('}\n', output_file.lines)
 
 if __name__ == '__main__':

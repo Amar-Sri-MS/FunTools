@@ -32,6 +32,7 @@
 
 
 import argparse
+import os
 import re
 import sys
 
@@ -97,7 +98,7 @@ class FileParser:
     # Annotation is special - we need to find the faddr at the
     # beginning, but the rest counts as the message.
     if values['verb'] == 'TRANSACTION' and values['noun'] == 'ANNOT':
-      annot_match = re.match('faddr (VP[0-9]+.[0-9]+.[0-9]+) (.*)',
+      annot_match = re.match('faddr (VP[0-9]+.[0-9]+.[0-9]+) msg (.*)',
                              remaining_string)
       if not annot_match:
         error = '%s:%d: malformed transaction annotation: "%s"\n' % (
@@ -238,26 +239,40 @@ class TraceParser:
     self.boot_transaction = event.Transaction(boot_event)
     self.transactions = [self.boot_transaction]
 
-  def RememberSend(self, event, wu_id, arg0, arg1, dest, is_timer):
-    """Records the WU send event for later matching with a start."""
+  def RememberSend(self, event, wu_id, arg0, arg1, dest, send_time, is_timer):
+    """Records the WU send event for later matching with a start.
+
+    event is the sending WU.
+    wu_id is the sent wu id.
+    arg0 and arg1 are arguments to send_wu to double-check we're correctly
+    matching WU order.
+    dest is the receiving VP.
+    send_time is when the wu send was sent.  This is less interesting for
+    WU sends (though it describes order), but important for timers.
+    is_timer is true if the send is a timer send.
+    """
     if dest not in self.caller_queues:
       self.caller_queues[dest] = []
-    self.caller_queues[dest].append((event, wu_id, arg0, arg1, is_timer))
+    self.caller_queues[dest].append((event, wu_id, arg0, arg1, send_time,
+                                     is_timer))
 
   def FindPreviousSend(self, wu_id, arg0, arg1, dest):
     """Returns the WU send that would have started a WU with the arguments,
+
+    Returns predecessor event, time that the message was sent, and true if
+    the send was a timer start and trigger.
     """
     if dest not in self.caller_queues:
-      return (None, False)
+      return (None, 0, False)
     if len(self.caller_queues[dest]) == 0:
-      return (None, False)
+      return (None, 0, False)
     for entry in self.caller_queues[dest]:
-      (sender, sent_wu_id, sent_arg0, sent_arg1, is_timer) = entry
+      (sender, sent_wu_id, sent_arg0, sent_arg1, send_time, is_timer) = entry
       if (sent_wu_id == wu_id and sent_arg0 == arg0 and
-          sent_arg1 == arg1):
+          (is_timer or sent_arg1 == arg1)):
         self.caller_queues[dest].remove(entry)
-        return (sender, is_timer)
-    return (None, False)
+        return (sender, send_time, is_timer)
+    return (None, 0, False)
 
   def HandleLogLine(self, log_keywords, line_number):
     """Reads in each logging event, and creates or updates any log events."""
@@ -273,19 +288,26 @@ class TraceParser:
     if event_type == ('WU', 'START'):
       arg0 = log_keywords['arg0']
       arg1 = log_keywords['arg1']
-
+      wu_id = log_keywords['wuid']
       current_event = event.TraceEvent(timestamp, timestamp,
                                        log_keywords['name'], vp, log_keywords)
       self.vp_to_event[vp] = current_event
 
-      (predecessor, is_timer) = self.FindPreviousSend(log_keywords['wuid'],
-                                                      arg0, arg1, vp)
+      (predecessor, send_time, is_timer) = self.FindPreviousSend(wu_id, arg0,
+                                                                 arg1, vp)
+
       if predecessor:
         current_event.transaction = predecessor.transaction
-        current_event.is_timer = is_timer
-        if current_event.is_timer:
-          current_event.timer_start = predecessor.start_time
-        
+        if is_timer:
+          timer_event = event.TraceEvent(send_time,
+                                         current_event.start_time,
+                                         'timer',
+                                         predecessor.vp,
+                                         [])
+          timer_event.is_timer = True
+          predecessor.successors.append(timer_event)
+          predecessor = timer_event
+
         predecessor.successors.append(current_event)
 
       elif log_keywords['name'] == 'wuh_mp_notify':
@@ -321,12 +343,13 @@ class TraceParser:
       wu_id = log_keywords['wuid']
       arg0 = log_keywords['arg0']
       arg1 = log_keywords['arg1']
+      send_time = log_keywords['timestamp']
 
       curr = None
       if vp in self.vp_to_event:
         curr = self.vp_to_event[vp]
         self.RememberSend(curr, wu_id, arg0, arg1, log_keywords['dest'],
-                          False)
+                          send_time, False)
 
     elif event_type == ('HU', 'SQ_DBL'):
       label = 'HU doorbell: sqid=%d' % log_keywords['sqid']
@@ -343,6 +366,7 @@ class TraceParser:
       wuid = log_keywords['wuid']
       timer = log_keywords['timer']
       arg0 = log_keywords['arg0']
+      start_time = log_keywords['timestamp']
       if vp not in self.vp_to_event:
         sys.stderr.write('%s:%d: unknown vp in TIMER START\n' % (self.input_filename, line_number))
         return
@@ -352,7 +376,7 @@ class TraceParser:
         sys.stderr.write('%s:%d: unsure what WU started timer.\n' % (self.input_filename, line_number))
 
       self.RememberSend(current_event, wuid, arg0, 0, log_keywords['dest'],
-                        True)
+                        start_time, True)
 
     elif event_type == ('TRANSACTION', 'START'):
        if vp not in self.vp_to_event:
@@ -406,9 +430,9 @@ def main(argv):
     DEBUG = True
 
   if args.format is not None:
-    if args.format not in ['text', 'html', 'graphviz']:
+    if args.format not in ['text', 'html', 'graphviz', 'json']:
       sys.stderr.write(
-        'Unknown option %s to --format.  Must be text, html, graphviz.\n')
+        'Unknown option %s to --format.  Must be text, html, graphviz, json.\n')
       exit(1)
 
   file_parser = FileParser(input_filename)
@@ -430,8 +454,11 @@ def main(argv):
       print('\n')
   elif args.format == 'graphviz':
     render.RenderGraphviz(out_file, transactions)
+  elif args.format == 'json':
+    json = render.RenderJSON(transactions)
+    out_file.write(json)
   elif args.format is None or args.format == 'html':
-    render.RenderHTML(out_file, transactions)
+    out_file.write(render.RenderHTML(transactions))
   out_file.close()
 
 

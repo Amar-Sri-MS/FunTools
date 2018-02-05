@@ -14,6 +14,38 @@ class Transaction():
     else:
       self.label = root_event.label
 
+  def AsDict(self):
+    """Returns transaction as a dictionary of explicit values.
+
+    The dictionary defines an API of values that templates can view,
+    or that can be outputted as JSON.
+    """
+    all_events = [e.AsDict() for e in self.Flatten()]
+    min_time = min([x['start_time'] for x in all_events if not x['is_timer']])
+    max_time = max([x['end_time'] for x in all_events if not x['is_timer']])
+    overall_duration = max_time - min_time
+
+    # Limit bars to 98% of container so they don't trigger a new line.
+    MAX_PCT = 98
+
+    for event in all_events:
+      offset_time = event['start_time'] - min_time
+      # Offset from start of tration to current event.
+      if max_time - min_time == 0:
+        event['offset_pct'] = 0
+        event['duration_pct'] = MAX_PCT
+      else:
+        event['offset_pct'] = MAX_PCT * offset_time / overall_duration
+        event['duration_pct'] = MAX_PCT * event['duration'] / overall_duration
+
+    return {
+      'label': self.label,
+      'start_time': self.StartTime(),
+      'end_time': self.EndTime(),
+      'duration_nsecs': self.Duration(),
+      'events': all_events
+      }
+
   def Label(self):
     """Returns human-readable label describing event."""
     return self.label
@@ -35,6 +67,8 @@ class Transaction():
       return 0
     end = self.root_event.end_time
     for e in self.Flatten():
+      if e.is_timer:
+        continue
       if end < e.end_time:
         end = e.end_time
     return end
@@ -100,7 +134,20 @@ class TraceEvent:
 
     # Work units or events that were instigated by this event.
     self.successors = []
+
+    # Raw key/value pairs from trace file.
     self.keywords = keywords
+
+  def AsDict(self):
+    return {'start_time': self.start_time,
+            'end_time': self.end_time,
+            'duration': self.Duration(),
+            'label': self.label,
+            'vp': self.vp,
+            # No transaction because it is an object.
+            'is_timer': self.is_timer,
+            'is_annotation': self.is_annotation
+            }
 
   def Label(self):
     """Returns a human-readable string describing this event."""
