@@ -4,6 +4,7 @@
 # Copyright (c) 2017 Fungible Inc.  All rights reserved.
 #
 
+import json
 import sys
 import unittest
 
@@ -300,6 +301,28 @@ class EndToEndTest(unittest.TestCase):
     self.assertIn('{timer_foo [label="timer"]} -> foo [style=bold];\n',
                   output_file.lines)
     self.assertIn('}\n', output_file.lines)
+
+
+class TestRenderJSON(unittest.TestCase):
+    def testIdsAreUnique(self):
+      filename = 'sampleTrace2'
+      file_parser = wu_trace.FileParser(filename)
+      transactions = file_parser.ProcessFile(open(filename, 'r').read())
+
+      json_string = render.RenderJSON(transactions)
+
+      json_dict = json.loads(json_string)
+      dict = {}
+
+      for group in json_dict['groups']:
+        self.assertTrue(group['id'] not in dict)
+        dict[group['id']] = group
+
+        # Transactions are in the same numbering space as groups.
+        for transaction in group['transactions']:
+          self.assertTrue(transaction['id'] not in dict)
+          dict[group['id']] = transaction
+
 
 if __name__ == '__main__':
   unittest.main()

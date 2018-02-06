@@ -108,6 +108,17 @@ def TransactionGroupStats(transactions):
     result['95ile_nsec'] = sorted_durations[percentile95Index]
     return result
 
+next_id = 0
+
+def GetUniqueId():
+    """Returns a unique global id for numbering nodes.
+    
+    TODO(bowdidge): Lock so supports multiple threads.
+    """
+    global next_id
+    next_id += 1
+    return next_id
+
 def GetGroups(transactions):
     """Generate summary data describing the kinds of WU sequences that
     we saw.  This data is grouped by the starting WU, and allows
@@ -130,7 +141,8 @@ def GetGroups(transactions):
         group = {'count': len(root_to_group[label]),
                  'label': label,
                  'stats': TransactionGroupStats(transactions),
-                 'transactions': GetTransactionDicts(root_to_group[label])
+                 'transactions': GetTransactionDicts(root_to_group[label]),
+                 'id': GetUniqueId()
                  }
         if label == 'boot':
             boot_group = group
@@ -141,7 +153,9 @@ def GetGroups(transactions):
 def GetTransactionDicts(transactions):
     result = []
     for tr in transactions:
-        result.append(tr.AsDict())
+        transaction_dict = tr.AsDict()
+        transaction_dict['id'] = GetUniqueId()
+        result.append(transaction_dict)
     return result
 
 def RenderHTML(transactions):
