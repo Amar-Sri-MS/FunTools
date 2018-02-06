@@ -1,7 +1,25 @@
 
 from datetime import date
-import numpy, json
+import json
 
+def standard_deviation(values):
+"""Returns the standard deviation for a set of values.
+
+values is assumed to be floating point or integer.
+"""
+# TODO(bowdidge): Implemented because numpy isn't installed on some
+# versions of Python on the lab machines.
+        count = 0
+        sum = 0.0
+        sum_squares = 0.0
+        for val in values:
+               count += 1
+               sum += val
+               sum_squares += val * val
+        if count < 2:
+               return 0.0
+        variance = (sum_squares - ((sum * sum) / count)) / (count - 1)
+        return math.sqrt(variance)
 
 # in:
 # { func1: [1, 2, 6, 2, 3, 12, 123, 1, 8]
@@ -28,7 +46,7 @@ def vpstats_output_html(data):
 		cntdict["avg"] = sum(data[funcname])/len(data[funcname])
 		cntdict["min"] = min(data[funcname])
 		cntdict["max"] = max(data[funcname])
-		cntdict["std"] = numpy.std(data[funcname])
+		cntdict["std"] = standard_deviation(data[funcname])
 		
 		for el in data[funcname]:
 			if el in cntdict["dist"].keys():
