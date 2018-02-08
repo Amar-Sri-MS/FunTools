@@ -256,7 +256,7 @@ def print_funcs(ranges):
 #
 #
 if __name__ == "__main__":
-
+	sys.setrecursionlimit(0x1000000)
 	parser = OptionParser()
 
 	parser.add_option("-a", "--asm", dest="asm_f", help="asm file", metavar="FILE")
