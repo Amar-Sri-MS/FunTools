@@ -8,12 +8,94 @@ from optparse import OptionParser
 
 # internal libs
 
+import ttypes
 from ttypes import TEntry
 from ttypes import TTree
 
 import tutils_hdr as tutils
 #
 # 
+
+def make_stat():
+	"""Create an empty stat dictionary for a single function.
+	We initialize all possible values so we know that the resulting JSON
+	will always have some value for each key.
+	"""
+	return {'calls': 0,
+		# Total cycles for function and callers.
+		'cycles': 0 ,
+		# Total idle time for tree.
+		'tree_idle': 0,
+		'instr_miss': 0,
+		'loadstore_miss': 0,
+		'cycle_values': [],
+		'cycles_average': 0,
+		'cycles_max': 0,
+		'cycles_min': 0,
+		'cycles_std_dev': 0 }
+
+def gather_stats_in_tree(root, stats):
+	"""Update stats for every function in the tree.
+	root is the root of the call tree to process.
+	stats is the dictionary mapping function names to stats that receives the
+	statistics.
+	"""
+	worklist = [root]
+	while worklist:
+		next = worklist.pop()
+		if next.name not in stats:
+			stats[next.name] = make_stat()
+
+		call_cycles = next.end_cycle - next.start_cycle
+		stats[next.name]['calls'] += 1
+		stats[next.name]['cycles'] += call_cycles
+		stats[next.name]['cycle_values'].append(call_cycles)
+		stats[next.name]['tree_idle'] += (next.end_idle - next.start_idle)
+		stats[next.name]['instr_miss'] += (next.end_instr_miss -
+							next.start_instr_miss)
+		stats[next.name]['loadstore_miss'] += (
+			next.end_loadstore_miss - next.start_loadstore_miss)
+
+		if next.calls:
+			worklist += next.calls
+
+def generate_function_stats_dict(roots):
+	"""Returns dictionary summarizing behavior of each function.
+
+	The result is a map of function names to dictionary of stat values for
+	that function.
+	"""
+	stats = {}
+	for root in roots:
+		gather_stats_in_tree(root, stats)
+		for fn_name in stats:
+			cycles_min = min(stats[fn_name]['cycle_values'])
+			cycles_max = max(stats[fn_name]['cycle_values'])
+			stats[fn_name]['cycles_min'] = cycles_min
+			stats[fn_name]['cycles_max'] = cycles_max
+			average = (sum(stats[fn_name]['cycle_values']) /
+				   stats[fn_name]['calls'])
+			stats[fn_name]['cycles_average'] = average
+	return stats
+
+def output_trace_as_json(output_stream, roots, stats):
+	"""Outputs trace information as JSON.
+	output_stream is the stream to write the output.
+	root is an array of the roots of the call trees.
+	stats is a map of function names to stats for the function.
+	"""
+	first = True
+	root_ids_str = ','.join([str(root.id) for root in roots])
+	out_stream.write('{"roots": [%s],\n' % root_ids_str)
+	out_stream.write(' "call_trees": [')
+	for root in roots:
+		if not first:
+			out_stream.write(',\n')
+		first = False
+		ttypes.write_nodes_as_json(root, out_stream)
+	out_stream.write('],\n')
+	out_stream.write('"function_stats": %s\n' % json.dumps(stats))
+	out_stream.write('}\n')
 
 # input and output are numbers, not strings
 def filter_addr(addr):
@@ -314,13 +396,27 @@ if __name__ == "__main__":
 		print "Reverse order not currently supported, my apologies."
 		sys.exit(0)
 
-	data = read_trace(options.trc_f, ranges, int(options.vpid),
-			  options.reverse_order, filterlist,
-			  options.quiet, options.follow)
+	roots = read_trace(options.trc_f, ranges, int(options.vpid),
+			   options.reverse_order, filterlist,
+			   options.quiet, options.follow)
+	next_id = 1
 
-	# XXX
+	for root in roots:
+		next_id = ttypes.number_nodes(root, next_id)
+
+	function_stats = generate_function_stats_dict(roots)
+
+	# Output the data in JSON format for consumption by the web pages.
+	out_path = os.path.join(dst, 'fundata_c%s.json' % core_id)
+	out_stream = open(out_path, 'w')
+	output_trace_as_json(out_stream, roots, function_stats)
+	out_stream.close()
+	
+	# Output the original pickle data for processing by tdec.
+	# TODO(bowdidge): Eventually use JSON as interchage - it's easier to
+	# test and mock up for testing.
 	f = open(os.path.join(dst, 'fundata_c%s' % core_id), 'w')
-	pickle.dump(data, f)
+	pickle.dump(roots, f)
 	f.close()
 	# XXX
-
+ 

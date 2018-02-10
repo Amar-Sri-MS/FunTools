@@ -1,3 +1,9 @@
+#
+# ttypes.py: Parse trees for trace parser.
+#
+# Copyright Fungible Inc. 2017.  All Rights Reserved.
+
+import json
 
 # internal libraries
 import tutils_hdr as tutils
@@ -76,18 +82,26 @@ class TEntry():
 # if parent is None, create one?
 
 class TTree():
-
+	"""A node in the call tree."""
 	def __init__(self, name, parent, start_cycle, start_idle, start_instr_miss, start_loadstore_miss, start_line):
-
+		# Name of the function called.
 		self.name = name
+
+		# ParentTTree
 		self.parent = parent
+
+		# Functions called by this function.
 		self.calls = []
 
+		# Unique integer identifier for this node.
+		self.id = 0
+
+		# Start and end cycle for this function call.
 		self.start_cycle = start_cycle
 		self.end_cycle = start_cycle
 
 		self.start_idle = start_idle
-		self.end_idle = start_idle
+		self.end_idle = 0
 
 		self.start_instr_miss = start_instr_miss
 		self.end_instr_miss = start_instr_miss
@@ -99,6 +113,35 @@ class TTree():
 		self.end_line = start_line
 
 		#print "TTREE: init %s" % name
+
+	def as_dict(self):
+		"""Presents the TTree in JSON format."""
+		result = {'name': self.name}
+		result['id' ] = self.id
+		if self.calls:
+			result['calls'] = [x.id for x in self.calls]
+		if self.start_cycle:
+			result['start_cycle'] = self.start_cycle
+		if self.end_cycle:
+			result['end_cycle'] = self.end_cycle
+		if self.start_idle:
+			result['start_idle'] = self.start_idle
+		if self.end_idle:
+			result['end_idle'] = self.end_idle
+		if self.start_instr_miss:
+			result['start_instr_miss'] = self.start_instr_miss
+		if self.end_instr_miss:
+			result['end_instr_miss'] = self.end_instr_miss
+		if self.start_loadstore_miss:
+			result['start_loadstore_miss'] = self.start_loadstore_miss
+		if self.end_loadstore_miss:
+			result['end_loadstore_miss'] = self.start_loadstore_miss
+		if self.start_line:
+			result['start_line'] = self.start_line
+		if self.end_line:
+			result['end_line'] = self.end_line
+
+		return result
 
 	def get_calls(self):
 		return self.calls
@@ -301,3 +344,57 @@ class TTree():
 		else:
 			return self.parent.get_root()
 
+#
+# Helper functions for trees.
+#
+
+def number_nodes(root, start_number):
+	"""Adds an id number to every parse tree node in the tree.
+
+	This is used to serialize the call tree without forcing nodes
+	to be nested in each other, and makes it easier to truncate
+	call trees if they're too large to process.
+
+	Returns next number to assign.
+	"""
+	worklist = [root]
+	next_id = start_number
+
+	while worklist:
+		next = worklist.pop()
+		next.id = next_id
+		next_id += 1
+		if next.calls:
+			worklist += next.calls
+	return next_id
+
+def max_tree_height(root):
+	"""Returns the maximum height of the call tree."""
+	max_height = 0
+	worklist = [(root, 0)]
+	while worklist:
+		(next, height) = worklist.pop()
+		if height > max_height:
+			max_height = height
+		if next.calls:
+			for call in next.calls:
+				worklist.append((call, height + 1))
+	return max_height
+
+def write_nodes_as_json(root, out_stream):
+	"""Writes the named call tree to out_stream in JSON format.
+
+	Output is a list of dictionaries separated by commas.
+	"""
+	worklist = [root]
+	first = True
+	while worklist:
+		next = worklist.pop()
+		if not first:
+			out_stream.write(',\n')
+		first = False
+		node_dict = next.as_dict()
+
+		json.dump(node_dict, out_stream)
+		if next.calls:
+			worklist += next.calls
