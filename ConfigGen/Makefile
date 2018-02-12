@@ -12,12 +12,17 @@ OS := $(shell uname)
 SDKDIR ?= ../../FunSDK
 
 ###
+##   Where install files go
+#
+SDK_INSTALL_DIR ?= $(SDKDIR)
+
+###
 ##   The FunOS dir where config files reside
 #
 FUNOSDIR ?= ../../FunOS
 
 # Directory where we install the working version of the ConfigGen
-FUNSDK_INSTALL_DIR = $(SDKDIR)/bin/ConfigGen
+FUNSDK_INSTALL_DIR = $(SDK_INSTALL_DIR)/bin/ConfigGen
 
 # Directory where the *.cfg file is stored.
 INPUT_DIR = $(FUNOSDIR)/Configfiles

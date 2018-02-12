@@ -1,12 +1,15 @@
 # Makefile for Fungible header generator.
 
-# Directory where we install the working version of the generator.
-FUNSDK_INSTALL_DIR = ../../FunSDK/bin/Generator
+
+SDKDIR ?= ../../FunSDK
+SDK_INSTALL_DIR ?= $(SDKDIR)
 
 # Directory where the fun_hci.gen file is stored.
 # Used for testing generator on real example.
-FUN_HCI_DIR = ../../FunSDK/FunSDK/hci
-FUN_HCI_DIR = ../../FunOS/hci
+FUN_HCI_DIR = $(SDK_INSTALL_DIR)/FunSDK/hci
+
+# Directory where we install the working version of the generator.
+GENERATOR_INSTALL_DIR = $(SDK_INSTALL_DIR)/bin/Generator
 
 # Where build products go.
 BUILD = build
@@ -86,8 +89,8 @@ $(BUILD): $(BUILD)
 
 # install generator to SDK
 install:
-	mkdir -p $(FUNSDK_INSTALL_DIR)
-	rsync -R $(GENERATOR_SRC) $(FUNSDK_INSTALL_DIR)
+	mkdir -p $(GENERATOR_INSTALL_DIR)
+	rsync -R $(GENERATOR_SRC) $(GENERATOR_INSTALL_DIR)
 
 
 clean:
