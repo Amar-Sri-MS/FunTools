@@ -67,7 +67,7 @@ def standardize_json(in_cfg, out_cfg):
 	        # Failures of jsontool are often caused by jsontool being built
 	        # on a different system/OS than the one currently running.
 		sys.stderr.write('Unable to run jsonutil tool. Exiting.\n')
-                sys.exit(os.WEXITSTATUS(r))
+                sys.exit(1)
 
 # if the key is in the cfg_replace file use it and replace that on the cfg 
 def replace_dicts(cfg, cfg_replace):
