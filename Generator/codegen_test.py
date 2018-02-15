@@ -195,6 +195,59 @@ class CodegenEndToEnd(unittest.TestCase):
     self.assertNotIn('#define FOO_RESERVED', out)
 
     # Did bitfield get initialized?'
+    self.assertIn('s->b_to_c = (FOO_B_P(b) | FOO_C_P(c))', out)
+
+  def testLinuxBadTypeNames(self):
+    """Linux mode limits type names to only uint8, uint16_t, uint32_t, and
+    uint64_t.
+    """
+    input = ['STRUCT Foo',
+             '0 63:48 int16_t a',
+             'END']
+    (out, errors) = generator.GenerateFile(generator.OutputStyleHeader, None,
+                                           input, 'foo.gen', ['linux'])
+    self.assertEquals(1, len(errors))
+    self.assertIn('Unknown type name "int16_t', errors[0])
+
+  def testLinuxEndToEnd(self):
+    input = ['STRUCT Foo',
+             '0 63:56 uint8_t a /* comment about a */',
+             '0 55:54 uint8_t b',
+             '0 53:52 uint8_t c',
+             '0 51:48 uint8_t reserved',
+             '0 47:0 uint8_t d[6]',
+             '1 63:32 uint32_t e',
+             'END']
+
+    (out, errors) = generator.GenerateFile(generator.OutputStyleHeader, None,
+                                           input, 'foo.gen',
+                                           ['pack', 'json', 'linux'])
+    self.assertEqual(0, len(errors))
+    self.assertIsNotNone(out)
+
+    out = RemoveWhitespace(out)
+
+    # Did structure get generated?
+    self.assertIn('struct Foo {', out)
+    # Did field a get rendered?
+    self.assertIn('__u8 a; /* comment about a */', out)
+    # Did bitfield get packed?
+    self.assertIn('__u8 b_to_c;', out)
+    # Did array get included?
+    self.assertIn('__u8 d[6];', out)
+    self.assertIn('__be32 e;', out)
+    # Did constructor get created?
+    self.assertIn('void Foo_init(struct Foo *s, uint8_t a , uint8_t b , '
+                  'uint8_t c', out)
+    # Did accessor macro get created?
+    self.assertIn('#define FOO_B_P(x)', out)
+
+    # Check macros weren't created for reserved fields.
+    self.assertNotIn('#define FOO_RESERVED', out)
+
+    # Did init function check range of bitfields?
+    self.assertIn('assert(b <= 0x3);', out)
+    # Did bitfield get initialized?'
     self.assertIn('s->b_to_c = cpu_to_dpu8(FOO_B_P(b) | FOO_C_P(c))', out)
 
   # Test disabled because checker complains that the

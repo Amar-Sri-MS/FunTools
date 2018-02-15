@@ -7,8 +7,6 @@ Standard Fungible template for source code for generated structures.
 // Do not change this file;
 // change the gen file {{gen_file}} instead.
 
-#ifdef __KERNEL__
-
 #include <linux/types.h>
 
 #else
@@ -16,7 +14,7 @@ Standard Fungible template for source code for generated structures.
 /* For FunOS and CC-Linux. */
 #include <stdint.h>
 
-#endif // __KERNEL__
+#endif // __linux__
 
 #include "{{output_base}}.h"
 
@@ -38,9 +36,10 @@ const char *{{flagset.name | as_lower }}_names[] = {
 
 {% endfor %}
 
+{% if generate_json %}
+#ifndef __linux__
 {% for struct in structs %}
 
-{% if generate_json %}
 /*
  * Initializes {{struct.name}} structure from JSON representation.
  * Returns false if initialization failed.
@@ -64,6 +63,6 @@ extern bool {{struct.name}}_json_init(struct fun_json *j,
   return true;
 }
 
-{% endif %}
-
 {% endfor %}
+#endif
+{% endif %}

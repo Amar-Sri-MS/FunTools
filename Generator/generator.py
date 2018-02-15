@@ -487,6 +487,9 @@ def GenerateFromTemplate(doc, template_filename, generator_file, output_base,
   """
   this_dir = os.path.dirname(os.path.abspath(__file__))
 
+  linux = 'generate_linux' in extra_vars
+  big_endian = True
+
   env = Environment(loader=FileSystemLoader(this_dir))
   env.lstrip_blocks = True
   env.trim_blocks = True
@@ -503,8 +506,13 @@ def GenerateFromTemplate(doc, template_filename, generator_file, output_base,
   env.filters['as_hex'] = lambda num: "0x%x" % num
 
   # Filters for declarations.
-  env.filters['as_definition'] = lambda decl : decl.DefinitionString()
+  env.filters['as_definition'] = (
+    lambda decl : decl.DefinitionString(linux, True))
+  env.filters['as_swapped_definition'] = (
+    lambda decl : decl.DefinitionString(linux, False))
   env.filters['as_declaration'] = lambda decl : decl.DeclarationString()
+  env.filters['as_swapped_declaration'] = (
+    lambda decl : decl.DeclarationString())
   env.filters['as_cast'] = lambda type : type.CastString()
 
   if output_base:
@@ -558,7 +566,8 @@ def GenerateFile(output_style, output_base, input_stream, input_filename,
   errors = None
 
   if input_filename.endswith('.gen') or input_filename.endswith('.pgen'):
-    gen_parser = parser.GenParser()
+    use_linux_types = 'linux' in options
+    gen_parser = parser.GenParser(use_linux_types)
     errors = gen_parser.Parse(input_filename, input_stream)
     doc = gen_parser.current_document
   elif input_filename.endswith('.yaml'):
@@ -719,6 +728,7 @@ def main():
   codegen_split = SetFromArgs('split', codegen_args, False)
   codegen_json = SetFromArgs('json', codegen_args, False)
   codegen_cpacked = SetFromArgs('cpacked', codegen_args, False)
+  codegen_linux = SetFromArgs('linux', codegen_args, False)
 
   codegen_options = []
 
@@ -730,6 +740,8 @@ def main():
     codegen_options.append('json')
   if codegen_cpacked:
     codegen_options.append('cpacked')
+  if codegen_linux:
+    codegen_options.append('linux')
 
   if len(args) == 0:
       sys.stderr.write('No genfile named.\n')

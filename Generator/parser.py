@@ -102,6 +102,29 @@ builtin_type_widths = {
   'uint128_t': 128,
 }
 
+# In Linux mode, only unsigned fixed widths are allowed,
+# and types are replaced with the __le* / __be* types.
+builtin_linux_type_widths = {
+  'uint8_t': 8,
+  'uint16_t': 16,
+  'uint32_t': 32,
+  'uint64_t': 64
+}
+
+big_endian_map = {
+  'uint8_t' : '__u8',
+  'uint16_t' : '__be16',
+  'uint32_t' : '__be32',
+  'uint64_t' : '__be64'
+}
+
+little_endian_map = {
+  'uint8_t' : '__u8',
+  'uint16_t' : '__le16',
+  'uint32_t' : '__le32',
+  'uint64_t' : '__le64'
+}
+
 def NoStraddle(width, offset, bound):
   """Returns true if a field at (offset, offset+width) doesn't cross
   a boundary at bound intervals.
@@ -133,27 +156,45 @@ def DefaultTypeForWidth(width, offset):
     return TypeForName('uint128_t')
   elif width % 8 == 0:
     # Not quite correct- can't align array at less than 8 bit boundary.
-    return ArrayTypeForName('char', width / 8)
+    return ArrayTypeForName('unsigned char', width / 8)
   else:
     return TypeForName('uint64_t')
 
-def BaseTypeForName(name):
+def DefaultTypeMap(linux_endian=False):
+  if linux_endian:
+    return builtin_linux_type_widths
+  else:
+    return builtin_type_widths
+
+def BaseTypeForName(name,linux_endian=False):
   """Returns a BaseType for the builtin type with the provided name."""
-  if name not in builtin_type_widths:
-    sys.stderr.write('Invalid name in BaseTypeForName.')
-  return BaseType(name, builtin_type_widths[name])
+  type_map = builtin_type_widths
+  if linux_endian:
+      type_map = builtin_linux_type_widths
 
-def TypeForName(name):
+  if name not in type_map:
+    return None
+  return BaseType(name, type_map[name])
+
+def TypeForName(name, linux_endian=False):
   """Returns a type for the builtin type with the provided name."""
-  if name not in builtin_type_widths:
-    sys.stderr.write('Invalid name in BaseTypeForName.')
-  return Type(BaseType(name, builtin_type_widths[name]))
+  type_map = builtin_type_widths
+  if linux_endian:
+    type_map = builtin_linux_type_widths
+  
+  if name not in type_map:
+    return None
+  return Type(BaseType(name, type_map[name]))
 
-def ArrayTypeForName(name, element_count):
+def ArrayTypeForName(name, element_count, linux_endian=False):
   """Returns a type for the builtin type with the provided name and size."""
-  if name not in builtin_type_widths:
-    sys.stderr.write('Invalid name in BaseTypeForName.')
-  return Type(BaseType(name, builtin_type_widths[name]), element_count)
+  type_map = builtin_type_widths
+  if linux_endian:
+    type_map = builtin_linux_type_widths
+
+  if name not in type_map:
+    return None
+  return Type(BaseType(name, type_map[name]), element_count)
 
 def RecordTypeForStruct(the_struct):
   """Returns a type for a field that would hold a single struct."""
@@ -199,11 +240,11 @@ class Type:
       # TODO(bowdidge): Revisit and match ABIs.
       self.bit_width = self.alignment
 
-  def CastString(self):
+  def CastString(self, linux_endian=False, big_endian=True):
     """Returns a string casting something to this type.
     Used in templates with {{x.type|as_cast}}
     """
-    return '(%s)' % self.DeclarationType()
+    return '(%s)' % self.ParameterTypeName(linux_endian, big_endian)
 
   def IsArray(self):
     """Returns true if the type is an array type."""
@@ -229,10 +270,19 @@ class Type:
     """Returns base type name without array and other modifiers."""
     return self.base_type.Name()
 
-  def DeclarationName(self):
+  def DeclarationName(self, linux_endian=False, big_endian=True):
     if self.base_type.node:
       return "struct " + self.base_type.name
-    return self.base_type.name
+
+    if linux_endian:
+      if big_endian:
+        if self.base_type.name in big_endian_map:
+          return big_endian_map[self.base_type.name]
+      else:
+        if self.base_type.name in little_endian_map:
+          return little_endian_map[self.base_type.name]
+
+    return self.base_type.Name()
 
   def ArraySize(self):
     """Returns the size of an array.  Throws exception if not an array type."""
@@ -247,7 +297,7 @@ class Type:
     else:
       return self.base_type.Name()
 
-  def DeclarationType(self):
+  def ParameterTypeName(self, linux_endian=False, big_endian=True):
     """Returns type name as function parameter type."""
     if self.is_array:
       return '%s[%d]' % (self.base_type.name, self.array_size)
@@ -321,13 +371,13 @@ class Declaration:
     self.is_macro = False
     self.is_field = False
 
-  def DefinitionString(self):
+  def DefinitionString(self, linux=False, big_endian=True):
     """Returns a text string that is a valid declaration.
     For structures, this prints all the fields in the struct.
     """
     return '/* DefinitionString unimplemented for %s. */' % self
 
-  def DeclarationString(self):
+  def DeclarationString(self, linux_endian=False, big_endian=True):
     """Returns text string that is valid parameter declaration for decl."""
     return '/* DeclarationString unimplemented for %s. */' % self
 
@@ -568,15 +618,19 @@ class Field(Declaration):
     return (not self.is_reserved and not self.type.IsRecord() 
             and not self.type.IsArray())
 
-  def DeclarationString(self):
+  def DeclarationString(self, linux_endian=False, big_endian=True):
     """Returns a string representing the declaration for variable to set field."""
     if self.type.IsRecord() and self.type.base_type.node.inline:
-      return '%s {\n} %s;' % (self.type.DeclarationName(),
+      return '%s {\n} %s;' % (self.type.DeclarationName(linux_endian,
+                                                        big_endian),
                                  self.name)
 
     if self.type.IsArray():
-      return "%s %s[%d]" % (self.type.DeclarationName(), self.name, self.type.array_size)
-    return "%s %s" % (self.type.DeclarationType(), self.name)
+      return "%s %s[%d]" % (self.type.DeclarationName(linux_endian,
+                                                      big_endian), self.name,
+                            self.type.array_size)
+    return "%s %s" % (self.type.ParameterTypeName(linux_endian,
+                                                  big_endian), self.name)
 
   def CreateSubfields(self):
     """Inserts sub-fields into this field based on the its type.
@@ -618,16 +672,16 @@ class Field(Declaration):
         new_subfield.CreateSubfields()
 
 
-  def DefinitionString(self):
+  def DefinitionString(self, linux_endian=False, big_endian=True):
     """Pretty-print a field in a structure or union.  Returns string."""
     str = ''
     field_type = self.Type()
-    type_name = field_type.DeclarationName();
+    type_name = field_type.DeclarationName(linux_endian, big_endian);
 
     if field_type.IsRecord():
       struct = field_type.base_type.node
       if struct.inline:
-        type_name = struct.DefinitionString()
+        type_name = struct.DefinitionString(linux_endian, big_endian)
 
     if self.generator_comment is not None:
       str += utils.AsComment(self.generator_comment) + '\n'
@@ -945,7 +999,7 @@ class Struct(Declaration):
   def DeclarationString(self):
     return self.Tag() + ' ' + self.name
 
-  def DefinitionString(self):
+  def DefinitionString(self, linux_endian=False, big_endian=True):
     """Generate a structure without the semicolon.
 
     This routine lets us have one way to print inline and standalone structs.
@@ -965,7 +1019,7 @@ class Struct(Declaration):
       if field.StartFlit() != flit_for_last_field:
         str += '\n'
 
-      str += utils.Indent(field.DefinitionString(), 2)
+      str += utils.Indent(field.DefinitionString(linux_endian, big_endian), 2)
 
       flit_for_last_field = field.StartFlit()
 
@@ -1202,7 +1256,7 @@ class GenParser:
   # Parses a generated header document and creates the internal data structure
   # describing the file.
 
-  def __init__(self):
+  def __init__(self, linux_endian=False):
     # Create a GenParser.
     # current_document is the top level object.
     self.current_document = Document()
@@ -1224,8 +1278,9 @@ class GenParser:
     self.current_line = 0
 
     self.base_types = {}
-    for name in builtin_type_widths:
-      self.base_types[name] = BaseType(name, builtin_type_widths[name])
+    type_map = DefaultTypeMap(linux_endian)
+    for name in type_map:
+      self.base_types[name] = BaseType(name, type_map[name])
 
   def AddError(self, msg):
     if self.current_document.filename:

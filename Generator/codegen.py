@@ -184,7 +184,7 @@ class CodeGenerator:
           all_fields.append(field)
 
     for field in all_fields:
-      arg_list.append('%s %s' % (field.type.DeclarationType(), field.name))
+      arg_list.append('%s %s' % (field.type.ParameterTypeName(), field.name))
 
       if field.SmallerThanType():
         max_value = 1 << field.BitWidth()
