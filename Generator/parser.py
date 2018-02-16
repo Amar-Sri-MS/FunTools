@@ -81,6 +81,7 @@ class BaseType:
 
 # Width of all known types.  Structures are added to this
 # dictionary during execution.
+# Only these types are allowed in gen files.
 builtin_type_widths = {
   # width of type in bytes.
   'unsigned' : 32,
@@ -102,8 +103,8 @@ builtin_type_widths = {
   'uint128_t': 128,
 }
 
-# In Linux mode, only unsigned fixed widths are allowed,
-# and types are replaced with the __le* / __be* types.
+# In Linux mode, only these unsigned fixed width type names are allowed.
+# They will be replaced with the __le* / __be* / __u8 types.
 builtin_linux_type_widths = {
   'uint8_t': 8,
   'uint16_t': 16,
@@ -111,6 +112,16 @@ builtin_linux_type_widths = {
   'uint64_t': 64
 }
 
+# Type names to use on Linux when endianness is unspecified.
+# Used for function arguments.
+no_endian_map = {
+  'uint8_t' : '__u8',
+  'uint16_t' : '__u16',
+  'uint32_t' : '__u32',
+  'uint64_t' : '__u64'
+}
+
+# Type names to use on Linux when a field is known to be big-endian.
 big_endian_map = {
   'uint8_t' : '__u8',
   'uint16_t' : '__be16',
@@ -118,6 +129,7 @@ big_endian_map = {
   'uint64_t' : '__be64'
 }
 
+# Type names to use on Linux when a field is known to be little-endian.
 little_endian_map = {
   'uint8_t' : '__u8',
   'uint16_t' : '__le16',
@@ -160,36 +172,55 @@ def DefaultTypeForWidth(width, offset):
   else:
     return TypeForName('uint64_t')
 
-def DefaultTypeMap(linux_endian=False):
-  if linux_endian:
+def DefaultTypeMap(linux_type=False):
+  """Returns the default type map to use for the given header file.
+
+  The type map allows us to replace standard C types (uint64_t, uint32_t, ...)
+  with system-specific types. 
+
+  linux_type is true if the header wants to generate Linux kernel's fixed
+  size types. (__u16, ...)
+  """
+  if linux_type:
     return builtin_linux_type_widths
   else:
     return builtin_type_widths
 
-def BaseTypeForName(name,linux_endian=False):
-  """Returns a BaseType for the builtin type with the provided name."""
+def BaseTypeForName(name,linux_type=False):
+  """Returns a BaseType for the builtin type with the provided name.
+
+  If linux_type is true, then substitute Linux type names for appropriate
+  C unsigned types.
+  """
   type_map = builtin_type_widths
-  if linux_endian:
+  if linux_type:
       type_map = builtin_linux_type_widths
 
   if name not in type_map:
     return None
   return BaseType(name, type_map[name])
 
-def TypeForName(name, linux_endian=False):
-  """Returns a type for the builtin type with the provided name."""
+def TypeForName(name, linux_type=False):
+  """Returns a type for the builtin type with the provided name.
+
+  If linux_type is true, substitute linux types.
+  """
   type_map = builtin_type_widths
-  if linux_endian:
+  if linux_type:
     type_map = builtin_linux_type_widths
   
   if name not in type_map:
     return None
   return Type(BaseType(name, type_map[name]))
 
-def ArrayTypeForName(name, element_count, linux_endian=False):
-  """Returns a type for the builtin type with the provided name and size."""
+def ArrayTypeForName(name, element_count, linux_type=False):
+  """Returns a type for the builtin type with the provided name and size.
+
+  name is the string name of the type name.
+  element_count is the size of the array.
+  linux_type is true if the type should use a """
   type_map = builtin_type_widths
-  if linux_endian:
+  if linux_type:
     type_map = builtin_linux_type_widths
 
   if name not in type_map:
@@ -240,11 +271,11 @@ class Type:
       # TODO(bowdidge): Revisit and match ABIs.
       self.bit_width = self.alignment
 
-  def CastString(self, linux_endian=False, big_endian=True):
+  def CastString(self, linux_type=False, big_endian=None):
     """Returns a string casting something to this type.
     Used in templates with {{x.type|as_cast}}
     """
-    return '(%s)' % self.ParameterTypeName(linux_endian, big_endian)
+    return '(%s)' % self.ParameterTypeName(linux_type, big_endian)
 
   def IsArray(self):
     """Returns true if the type is an array type."""
@@ -270,12 +301,21 @@ class Type:
     """Returns base type name without array and other modifiers."""
     return self.base_type.Name()
 
-  def DeclarationName(self, linux_endian=False, big_endian=True):
+  def DeclarationName(self, linux_type=False, big_endian=False):
+    """Returns a string for the declaration.
+
+    If linux_type is true, use Linux's preferred type names.
+    If big_endian is None, use an endian-agnostic type.  If big_endian is
+    False, use a little-endian type.  If big-endian is True, use a big-endian
+    type.
+    """
     if self.base_type.node:
       return "struct " + self.base_type.name
 
-    if linux_endian:
-      if big_endian:
+    if linux_type:
+      if big_endian is None:
+        return no_endian_map[self.base_type.name]
+      elif big_endian is True:
         if self.base_type.name in big_endian_map:
           return big_endian_map[self.base_type.name]
       else:
@@ -297,14 +337,15 @@ class Type:
     else:
       return self.base_type.Name()
 
-  def ParameterTypeName(self, linux_endian=False, big_endian=True):
+  def ParameterTypeName(self, linux_type=False, endian=True):
     """Returns type name as function parameter type."""
     if self.is_array:
-      return '%s[%d]' % (self.base_type.name, self.array_size)
+      return '%s[%d]' % (self.DeclarationName(linux_type, endian),
+                         self.array_size)
     elif self.base_type.node:
-      return 'struct %s' % self.base_type.name
+      return '%s' % self.DeclarationName(linux_type, endian)
     else:
-      return self.base_type.Name()
+      return self.DeclarationName(linux_type, endian)
 
   def Alignment(self):
     """Returns natural alignment for the type in bits."""
@@ -371,13 +412,13 @@ class Declaration:
     self.is_macro = False
     self.is_field = False
 
-  def DefinitionString(self, linux=False, big_endian=True):
+  def DefinitionString(self, linux=False):
     """Returns a text string that is a valid declaration.
     For structures, this prints all the fields in the struct.
     """
     return '/* DefinitionString unimplemented for %s. */' % self
 
-  def DeclarationString(self, linux_endian=False, big_endian=True):
+  def DeclarationString(self, linux_type=False, big_endian=None):
     """Returns text string that is valid parameter declaration for decl."""
     return '/* DeclarationString unimplemented for %s. */' % self
 
@@ -618,18 +659,18 @@ class Field(Declaration):
     return (not self.is_reserved and not self.type.IsRecord() 
             and not self.type.IsArray())
 
-  def DeclarationString(self, linux_endian=False, big_endian=True):
+  def DeclarationString(self, linux_type=False, big_endian=None):
     """Returns a string representing the declaration for variable to set field."""
     if self.type.IsRecord() and self.type.base_type.node.inline:
-      return '%s {\n} %s;' % (self.type.DeclarationName(linux_endian,
+      return '%s {\n} %s;' % (self.type.DeclarationName(linux_type,
                                                         big_endian),
                                  self.name)
 
     if self.type.IsArray():
-      return "%s %s[%d]" % (self.type.DeclarationName(linux_endian,
+      return "%s %s[%d]" % (self.type.DeclarationName(linux_type,
                                                       big_endian), self.name,
                             self.type.array_size)
-    return "%s %s" % (self.type.ParameterTypeName(linux_endian,
+    return "%s %s" % (self.type.ParameterTypeName(linux_type,
                                                   big_endian), self.name)
 
   def CreateSubfields(self):
@@ -672,16 +713,16 @@ class Field(Declaration):
         new_subfield.CreateSubfields()
 
 
-  def DefinitionString(self, linux_endian=False, big_endian=True):
+  def DefinitionString(self, linux_type=False, big_endian=None):
     """Pretty-print a field in a structure or union.  Returns string."""
     str = ''
     field_type = self.Type()
-    type_name = field_type.DeclarationName(linux_endian, big_endian);
+    type_name = field_type.DeclarationName(linux_type, big_endian);
 
     if field_type.IsRecord():
       struct = field_type.base_type.node
       if struct.inline:
-        type_name = struct.DefinitionString(linux_endian, big_endian)
+        type_name = struct.DefinitionString(linux_type, big_endian)
 
     if self.generator_comment is not None:
       str += utils.AsComment(self.generator_comment) + '\n'
@@ -999,7 +1040,7 @@ class Struct(Declaration):
   def DeclarationString(self):
     return self.Tag() + ' ' + self.name
 
-  def DefinitionString(self, linux_endian=False, big_endian=True):
+  def DefinitionString(self, linux_type=False, big_endian=None):
     """Generate a structure without the semicolon.
 
     This routine lets us have one way to print inline and standalone structs.
@@ -1019,7 +1060,7 @@ class Struct(Declaration):
       if field.StartFlit() != flit_for_last_field:
         str += '\n'
 
-      str += utils.Indent(field.DefinitionString(linux_endian, big_endian), 2)
+      str += utils.Indent(field.DefinitionString(linux_type, big_endian), 2)
 
       flit_for_last_field = field.StartFlit()
 
@@ -1256,7 +1297,7 @@ class GenParser:
   # Parses a generated header document and creates the internal data structure
   # describing the file.
 
-  def __init__(self, linux_endian=False):
+  def __init__(self, linux_type=False):
     # Create a GenParser.
     # current_document is the top level object.
     self.current_document = Document()
@@ -1278,7 +1319,7 @@ class GenParser:
     self.current_line = 0
 
     self.base_types = {}
-    type_map = DefaultTypeMap(linux_endian)
+    type_map = DefaultTypeMap(linux_type)
     for name in type_map:
       self.base_types[name] = BaseType(name, type_map[name])
 

@@ -7,14 +7,8 @@ Standard Fungible template for source code for generated structures.
 // Do not change this file;
 // change the gen file {{gen_file}} instead.
 
-#include <linux/types.h>
-
-#else
-
 /* For FunOS and CC-Linux. */
 #include <stdint.h>
-
-#endif // __linux__
 
 #include "{{output_base}}.h"
 
@@ -37,7 +31,6 @@ const char *{{flagset.name | as_lower }}_names[] = {
 {% endfor %}
 
 {% if generate_json %}
-#ifndef __linux__
 {% for struct in structs %}
 
 /*
@@ -64,5 +57,4 @@ extern bool {{struct.name}}_json_init(struct fun_json *j,
 }
 
 {% endfor %}
-#endif
 {% endif %}

@@ -61,12 +61,12 @@ class PrintingTest(unittest.TestCase):
   def testStructType(self):
     s = parser.Struct('Bar', False)
     struct_array_type = parser.RecordArrayTypeForStruct(s, 4)
-    self.assertEqual('Bar[4]', struct_array_type.ParameterTypeName())
+    self.assertEqual('struct Bar[4]', struct_array_type.ParameterTypeName())
 
   def testZeroLengthStructArrayType(self):
     s = parser.Struct('Bar', False)
     struct_array_type = parser.RecordArrayTypeForStruct(s, 0)
-    self.assertEqual('Bar[0]', struct_array_type.ParameterTypeName())
+    self.assertEqual('struct Bar[0]', struct_array_type.ParameterTypeName())
 
 
 
