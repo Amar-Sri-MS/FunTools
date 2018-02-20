@@ -4,14 +4,6 @@ Standard Fungible template for header file for generated structures.
 Generates structures, accessor macros and functions, and enum declarations.
 
 #}
-// Header created by generator.py
-// Do not change this file;
-// change the gen file "{{gen_file}}" instead.
-
-// Magic number to allow checking whether two interfaces were generated
-// from the same sources.
-#define {{gen_file|as_macro}}_VERSION_HASH {{gen_file_version_hash}}
-
 {#
 
 How to render each enum.
@@ -49,6 +41,15 @@ static const int {{var.name}} = {{var.value|as_hex}};  {{var.key_comment|as_comm
 extern const char *{{flagset.name|as_lower}}_names[];
 {%- endmacro %}
 
+{# Macros for hiding which size macro to use. #}
+{% macro toDpuWrapper(field) %}
+{% if generate_swap %}cpu_to_dpu{{field.type.bit_width}}{% endif %}
+{%- endmacro %}
+
+{% macro fromDpuWrapper(field) %}
+{% if generate_swap %}dpu_to_cpu{{field.type.bit_width}}{% endif %}
+{%- endmacro %}
+
 {#
 
 How to render each struct
@@ -59,7 +60,13 @@ How to render each struct
    to generate in templates, so do that work in code instead.
 #}
 {% if not struct.inline %}
-{{ struct | as_definition }}{% if generate_cpacked %} __attribute__((packed)){% endif %};
+{# Generate the structure definition twice, once for big-endian, once
+  for little-endian.  For development only. #}
+#if __DPU_BYTEORDER == __BIG_ENDIAN
+{{ struct.DefinitionString(True, True)}}{% if generate_cpacked %} __attribute__((packed)){% endif %};
+#else
+{{ struct.DefinitionString(True, False)}}{% if generate_cpacked %} __attribute__((packed)){% endif %};
+#endif
 {% endif %}
 
 {# Generate macros for packed fields. #}
@@ -76,13 +83,20 @@ How to render each struct
 
 /* Shifts a value to the location to be inserted in field {{f.name}} 
  * inside packed field {{field.name}}.
-*/
-#define {{struct.name|as_macro}}_{{f.name|as_macro}}_P(x) (({{field.type | as_cast}} x) << {{struct.name|as_macro}}_{{f.name|as_macro}}_S)
+ */
+#define {{struct.name|as_macro}}_{{f.name|as_macro}}_P(x) ({{toDpuWrapper(field)}}(({{f.type | as_cast}} x) << {{struct.name|as_macro}}_{{f.name|as_macro}}_S))
+
+/* Shifts a value to the location to be inserted in field {{f.name}} 
+ * inside packed field {{field.name}}.
+ * Caller responsible for swapping order of bytes in case storing to a
+ * different endianness.
+ */
+#define {{struct.name|as_macro}}_{{f.name|as_macro}}_P_NOSWAP(x) (({{f.type | as_cast}} x) << {{struct.name|as_macro}}_{{f.name|as_macro}}_S)
 
 /* Returns value for field {{field.name}} from packed field
  * {{field.name}}.
  */
-#define {{struct.name|as_macro}}_{{f.name|as_macro}}_G(x) (((x) >> {{struct.name|as_macro}}_{{f.name|as_macro}}_S) & {{struct.name|as_macro}}_{{f.name|as_macro}}_M)
+#define {{struct.name|as_macro}}_{{f.name|as_macro}}_G(x) (({{fromDpuWrapper(field)}}(x) >> {{struct.name|as_macro}}_{{f.name|as_macro}}_S) & {{struct.name|as_macro}}_{{f.name|as_macro}}_M)
 
 /* Clears out the field {{f.name}} inside packed field
  *  {{field.name}}
@@ -90,7 +104,7 @@ How to render each struct
  *    x.{{field.name}} &= {{struct.name|as_macro}}_{{f.name|as_macro}}_Z;
  */
 #define {{struct.name|as_macro}}_{{f.name|as_macro}}_Z \
-	(~(({{f.type|as_cast}} {{struct.name|as_macro}}_{{f.name|as_macro}}_M)\
+	(~(({{f.type|as_cast}} {{struct.name|as_macro}}_{{f.name|as_macro}}_M) \
        << {{struct.name|as_macro}}_{{f.name|as_macro}}_S))
       {% endif %}
     {% endfor %}
@@ -118,68 +132,19 @@ static inline void {{struct.name}}_init(struct {{struct.init_struct().name}} *s{
 
   {% for field in struct.init_fields() %}
     {% if field.packed_fields %}
-      s->{{field.init_accessor()}}{{field.name}} =
+      s->{{field.init_accessor()}}{{field.name}} = cpu_to_dpu{{field.type.bit_width}}(	
       {% for f in field.fields_to_set() %}
-	{{f.parent_struct.name|as_macro}}_{{f.name|as_macro}}_P({{f.name}}) {{" | " if not loop.last }}
-      {% endfor %}
-	;
+	{{f.parent_struct.name|as_macro}}_{{f.name|as_macro}}_P_NOSWAP({{f.name}}) {{" | " if not loop.last }}
+      {% endfor %});
     {% else %}
       {% if field.is_natural_width %}
-        s->{{field.init_accessor()}}{{field.name}} = {{field.name}};
+        s->{{field.init_accessor()}}{{field.name}} = {{toDpuWrapper(field)}}({{field.name}});
       {% else %}
-        /* Potential bug? Field isn't as wide as type. */
         s->{{field.init_accessor()}}{{field.name}} = {{field.name}};
       {% endif %}
     {% endif %}
   {% endfor %}
 }
-
-{% if generate_json %}
-#ifdef __cplusplus
-extern "C" {
-#endif
-/*
- * Initializes {{struct.name}} structure from JSON representation.
- * Returns false if initialization failed.
- * Caller responsible for determining correct init function(s).
- */
-extern bool {{struct.name}}_json_init(struct fun_json *j, struct {{struct.init_struct().name}} *s);
-
-#ifdef __cplusplus
-}
-#endif
-{% endif %}
-
-{#
-/* TODO(bowdidge): This implementation of swap is disabled.  Turn it on
- * if it'll be useful for someone.
- */
-
-/* Swaps the endianness of the structure {{struct.name}} in memory. 
- * This function is a no-op if __DPU_BYTEORDER matches the current endianness
- * of the processor.
- *  Arguments:
- *    s: structure to be swapped.
- */
-static inline void {{struct.name}}_swap(struct {{struct.init_struct().name}} *s) {
-       {% for field in struct.fields %}
-       {% if field.type.IsArray() %}
-       {% if field.type.ArraySize() == 0) %}
-       /* Caller responsible for fixing variable length array {{field.name}} */
-       {% else %}
-       for (int i=0; i < {{field.type.ArraySize()}}; i++) {
-           /* TODO(bowdidge): Should be size of elements. */
-           s->{{field.name}}[i] = cpu_to_dpu{{field.type.base_type.bit_width}}(s->{{field.name}}[i]);
-       }
-       {% endif %}
-       {% elif field.type.IsRecord() %}
-       {{field.type.BaseName()}}_swap(&(s->{{field.name}}));
-       {% else %}
-       s->{{field.name}} = cpu_to_dpu{{field.type.bit_width}}(s->{{field.name}});
-       {% endif %}
-       {% endfor %}
-}
-#}
 
 /* End of helper macros for structure {{struct.name}} */
 {%- endmacro %}
@@ -188,19 +153,50 @@ static inline void {{struct.name}}_swap(struct {{struct.init_struct().name}} *s)
 The body of the header.
 
 #}
-
 #ifndef __{{output_base|as_macro}}_H__
 #define __{{output_base|as_macro}}_H__
+
+// Header created by generator.py
+// Do not change this file;
+// change the gen file "{{gen_file}}" instead.
+
+// Magic number to allow checking whether two interfaces were generated
+// from the same sources.
+#define {{gen_file|as_macro}}_VERSION_HASH {{gen_file_version_hash}}
+
+{% if generate_swap %}
+/* Structures are always stored in DPU byte order.  Values are swapped
+ * going in and coming out.
+ */
+
+#if __DPU_BYTEORDER == __BIG_ENDIAN
+#define cpu_to_dpu8(x) (x)
+#define cpu_to_dpu16(x) (cpu_to_be16(x))
+#define cpu_to_dpu32(x) (cpu_to_be32(x))
+#define cpu_to_dpu64(x) (cpu_to_be64(x))
+
+#define dpu_to_cpu8(x) (x)
+#define dpu_to_cpu16(x) (cpu_to_be16(x))
+#define dpu_to_cpu32(x) (cpu_to_be32(x))
+#define dpu_to_cpu64(x) (cpu_to_be64(x))
+#elif __DPU_BYTEORDER == __LITTLE_ENDIAN
+#define cpu_to_dpu8(x) (x)
+#define cpu_to_dpu16(x) (cpu_to_be16(x))
+#define cpu_to_dpu32(x) (cpu_to_be32(x))
+#define cpu_to_dpu64(x) (cpu_to_be64(x))
+
+#define dpu_to_cpu8(x) (x)
+#define dpu_to_cpu16(x) (cpu_to_be16(x))
+#define dpu_to_cpu32(x) (cpu_to_be32(x))
+#define dpu_to_cpu64(x) (cpu_to_be64(x))
+#else
+#error __DPU_BYTEORDER not defined.
+#endif // __DPU_BYTEORDER == __BIG_ENDIAN
+{% endif %}
 
 // TODO(bowdidge): Consider removing init functions with no arguments.
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
-
-{% if generate_json %}
-#include <stdint.h> /* For basic integer types. */
-
-#include <utils/threaded/fun_json.h>
-{% endif %}
 
 {% for decl in declarations %}
 {% if decl.is_enum %}

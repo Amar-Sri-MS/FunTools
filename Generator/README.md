@@ -10,7 +10,7 @@ The Generator serves several purposes:
 * validates names and types.
 * creates valid C structures defining the shared data structures
 * packs variables that are bitfields and creates macros for efficiently accessing fields.
-* creates uniform initialization, serialization, and byte-swapping macros or functions.
+* creates uniform initialization and serialization macros or functions.
 * aware of conventions such as reserved fields (for unused variables).
 * generates documentation for messages and sub-structures.
 
@@ -295,8 +295,9 @@ field_name_Z(value): Returns a value that can be and'd with a packed field to ze
 The -c option allows you to specify names of additional codegen passes to perform.
 -c pack combines bitfields into a single container field where individual fields are accessed via macros.
 -c json generates initialization routines that initialize the structure from JSON.
--c swap generates endianness-swapping code.
-
+-c swap treats structures as having a specific endianness in memory, and
+swaps values when stored or retrieved.  (Supported only for Linux header
+generation.)
 -c cpacked adds the __attribute__((packed)) to all structures.
 
 Each option is described in more detail below.

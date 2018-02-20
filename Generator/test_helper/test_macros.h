@@ -10,8 +10,8 @@
   { \
     if (sizeof(var) != (bytes)) {					\
       fprintf(stderr,							\
-	      "%s:%d: FAIL: %s structure expected to be %" PRIu64	\
-	      " bytes, got %" PRIu64 "\n",				\
+	      "%s:%d: FAIL: %s structure expected to be %" PRIx64	\
+	      " bytes, got %" PRIx64 "\n",				\
 	      __FILE__, __LINE__,					\
 	      (varStr), (uint64_t) (bytes), (uint64_t) sizeof(var));	\
     } \
@@ -22,7 +22,7 @@
     if (offsetof(var, field) !=offset) {				\
       fprintf(stderr,							\
 	      "%s:%d: FAIL: %s structure expected to be %"		\
-	      PRIu64 " bytes, got %" PRIu64 "\n",			\
+	      PRIx64 " bytes, got %" PRIx64 "\n",			\
 	      __FILE__, __LINE,						\
 	      varStr, (uint64_t) offset,				\
 	      (uint64_t) offsetof(var, field));				\
@@ -31,7 +31,7 @@
 
 #define ASSERT_EQUAL(expected_value, gotten_value, msg)			\
   if ((expected_value) != (gotten_value)) {				\
-    fprintf(stderr, "%s:%d: FAIL: %s: Expected %" PRIu64 ", got %" PRIu64 "\n", \
+    fprintf(stderr, "%s:%d: FAIL: %s: Expected %" PRIx64 ", got %" PRIx64 "\n", \
 	    __FILE__, __LINE__,						\
 	    msg, (uint64_t) (expected_value), (uint64_t) (gotten_value)); \
     exit(1);								\

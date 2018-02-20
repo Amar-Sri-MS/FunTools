@@ -21,10 +21,12 @@ GENERATOR_SRC = generator.py \
 		utils.py \
 		header.tmpl \
 		source.tmpl \
-                kernel.tmpl
+                kernel.tmpl \
+	        header-linux.tmpl
 
 test: generator-test test_rdma_packed test_rdma_packed_html
-test: test_swap test_validate
+test: test_simple_validation test_packed_validation test_swap
+test: test_fun_hci test_fun_hci_linux
 
 # Test new generator with actual fun-hci file in the future.  For now,
 # it complicates configuring Jenkins.
@@ -44,6 +46,10 @@ test_fun_hci: $(BUILD)
 	./generator.py -g code -c pack,json -o $(BUILD)/fun_hci_pack $(FUN_HCI_DIR)/fun_hci.gen
 	./generator.py -g html -c pack,json -o $(BUILD)/fun_hci_pack $(FUN_HCI_DIR)/fun_hci.gen
 
+# Tests building the current fun_hci.gen file on Linux.
+test_fun_hci_linux: $(BUILD)
+	./generator.py -g linux -c pack,swap -o $(BUILD)/fun_hci_linux $(FUN_HCI_DIR)/fun_hci.gen
+
 # Tests building the current fun_port.gen file to make sure generator
 # handles it well.
 test_fun_port: $(BUILD)
@@ -61,9 +67,8 @@ test_rdma_packed: $(BUILD)
             test_helper/rdma_packed.c $(BUILD)/rdma_packed_gen.c
 
 test_swap: test_helper/swap.c examples/swap.gen
-	./generator.py -g code --codegen pack,swap -o $(BUILD)/swap_gen examples/swap.gen
-	gcc -o $(BUILD)/swap -g -I$(BUILD) -DDEBUG -DGENERATOR_TEST \
-	test_helper/swap.c $(BUILD)/swap_gen.c
+	./generator.py -g linux --codegen pack,swap -o $(BUILD)/swap_gen examples/swap.gen
+	gcc -o $(BUILD)/swap -g -I$(BUILD) -DDEBUG -DGENERATOR_TEST test_helper/swap.c
 	$(BUILD)/swap
 
 # Tests HTML generation works.

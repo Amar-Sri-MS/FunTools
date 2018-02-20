@@ -395,11 +395,13 @@ dd {
     indent = '&nbsp;' * level
     struct = field.type.base_type.node
     if not struct.inline:
-      out += '  <td>%s <a href="#%s">%s</a></td>\n' % (indent,
-                                                       struct.Name(),
-                                                       field.Type().DeclarationType())
+      out += '  <td>%s <a href="#%s">%s</a></td>\n' % (
+        indent,
+        struct.Name(),
+        field.Type().ParameterTypeName(False, False))
     else:
-      out += '  <td>%s%s</td>\n' % (indent, field.Type().DeclarationType())
+      out += '  <td>%s%s</td>\n' % (
+        indent, field.Type().ParameterTypeName(False, False))
     out += '  <td>%s</td>\n' % field.name
     out += '  <td>%s</td>\n' % utils.AsHTMLComment(comment)
     out += '</tr>\n'
@@ -524,7 +526,7 @@ dd {
       out += '  <td class="structBits">%d-%d</td>\n' % (field.StartBit(), 
                                                         field.EndBit())
     out += '  <td>%s%s</td>\n  <td>%s</td>\n' % (indent,
-                                                 field.type.DeclarationType(),
+                                                 field.type.ParameterTypeName(False, False),
                                                  field.name)
 
     out += '<td class="description">\n'

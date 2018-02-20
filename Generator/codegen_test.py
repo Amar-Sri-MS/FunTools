@@ -21,146 +21,6 @@ def RemoveWhitespace(str):
   """Converts all whitespace to single spaces for consistent compares."""
   return re.sub('\s+', ' ', str)
 
-class CodeGeneratorTest(unittest.TestCase):
-  def testInitializeSimpleField(self):
-    gen = codegen.CodeGenerator(OPTIONS_NONE)
-    s = parser.Struct('Foo', False)
-    f = parser.Field('a1', parser.TypeForName('char'), 0, 8)
-
-    statement = gen.GenerateInitializer(s, f, 'pointer.')
-  
-    self.assertEqual('\ts->pointer.a1 = a1;', statement)
-
-  def testInitializeBitfield(self):
-    gen = codegen.CodeGenerator(OPTIONS_NONE)
-    s = parser.Struct('Foo', False)
-    f = parser.Field('a1', parser.TypeForName('char'), 0, 2)
-
-    statement = gen.GenerateInitializer(s, f, '')
-  
-    self.assertEqual('\ts->a1 = a1;', statement)
-
-  def testInitializePackedField(self):
-    gen = codegen.CodeGenerator(OPTIONS_NONE)
-    s = parser.Struct('Foo', False)
-    f = parser.Field('a', parser.TypeForName('char'), 0, 8)
-    f1 = parser.Field('a1', parser.TypeForName('char'), 8, 4)
-    f2 = parser.Field('a2', parser.TypeForName('char'), 12, 4)
-    f.packed_fields = [f1, f2]
-
-    statement = gen.GenerateInitializer(s, f, '')
-  
-    self.assertEqual('\ts->a = FOO_A1_P(a1) | FOO_A2_P(a2);', statement)
-
-  def testInitializePackedFieldWithAllCapStructureName(self):
-    gen = codegen.CodeGenerator(OPTIONS_NONE)
-    s = parser.Struct('ffe_access_command', False)
-    f = parser.Field('a', parser.TypeForName('char'), 0, 8)
-    f1 = parser.Field('a1', parser.TypeForName('char'), 0, 4)
-    f2 = parser.Field('a2', parser.TypeForName('char'), 4, 4)
-    f.packed_fields = [f1, f2]
-
-    statement = gen.GenerateInitializer(s, f, '')
-  
-    self.assertEqual('\ts->a = FFE_ACCESS_COMMAND_A1_P(a1) | '
-                     'FFE_ACCESS_COMMAND_A2_P(a2);', statement)
-
-
-  def testMacrosForPackedLongField(self):
-    gen = codegen.CodeGenerator(OPTIONS_NONE)
-    s = parser.Struct('Foo', False)
-    f = parser.Field('a', parser.TypeForName('uint64_t'), 0, 63)
-    f1 = parser.Field('a1', parser.TypeForName('uint32_t'), 0, 31)
-    f2 = parser.Field('a2', parser.TypeForName('uint32_t'), 32, 63)
-    f.packed_fields = [f1, f2]
-
-    gen.GenerateMacrosForPackedField(s, f)
-    self.assertIn('#define FOO_A1_S 0', s.MacroWithName('FOO_A1_S').body)
-    self.assertIn('#define FOO_A1_M 0x7fffffff',
-                  s.MacroWithName('FOO_A1_M').body)
-    self.assertIn('#define FOO_A1_P(x) (((uint64_t) x) << FOO_A1_S)',
-                  s.MacroWithName('FOO_A1_P').body)
-    self.assertIn('#define FOO_A1_Z (~(((uint64_t) FOO_A1_M) << FOO_A1_S))',
-                  s.MacroWithName('FOO_A1_Z').body)
-
-    self.assertIn('#define FOO_A2_S 0', s.MacroWithName('FOO_A2_S').body)
-    self.assertIn('#define FOO_A2_P(x) (((uint64_t) x) << FOO_A2_S)',
-                  s.MacroWithName('FOO_A2_P').body)
-    self.assertIn('#define FOO_A2_M 0x7fffffffffffffff',
-                  s.MacroWithName('FOO_A2_M').body)
-    self.assertIn('#define FOO_A2_Z (~(((uint64_t) FOO_A2_M) << FOO_A2_S))',
-                  s.MacroWithName('FOO_A2_Z').body)
-
-  def testMacrosForPackedField(self):
-    gen = codegen.CodeGenerator(OPTIONS_NONE)
-    s = parser.Struct('Foo', False)
-    f = parser.Field('a', parser.TypeForName('uint32_t'), 0, 32)
-    f1 = parser.Field('a1', parser.TypeForName('uint16_t'), 0, 14)
-    f2 = parser.Field('a2', parser.TypeForName('uint16_t'), 14, 14)
-    f.packed_fields = [f1, f2]
-
-    gen.GenerateMacrosForPackedField(s, f)
-    self.assertIn('#define FOO_A1_S 14', s.MacroWithName('FOO_A1_S').body)
-    self.assertIn('#define FOO_A1_P(x) (((uint32_t) x) << FOO_A1_S)',
-                  s.MacroWithName('FOO_A1_P').body)
-    self.assertIn('#define FOO_A1_M 0x3fff', s.MacroWithName('FOO_A1_M').body)
-    self.assertIn('#define FOO_A1_Z (~(((uint32_t) FOO_A1_M) << FOO_A1_S))',
-                  s.MacroWithName('FOO_A1_Z').body)
-
-    self.assertIn('#define FOO_A2_S 0', s.MacroWithName('FOO_A2_S').body)
-    self.assertIn('#define FOO_A2_P(x) (((uint32_t) x) << FOO_A2_S)',
-                  s.MacroWithName('FOO_A2_P').body)
-    self.assertIn('#define FOO_A2_M 0x3fff', s.MacroWithName('FOO_A2_M').body)
-    self.assertIn('#define FOO_A2_Z (~(((uint32_t) FOO_A2_M) << FOO_A2_S))',
-                  s.MacroWithName('FOO_A2_Z').body)
-
-
-  def testCreateSimpleInitializer(self):
-    gen = codegen.CodeGenerator(OPTIONS_NONE)
-    # Struct foo has a single field a1.
-    s = parser.Struct('Foo', False)
-    f = parser.Field('a1', parser.TypeForName('char'), 0, 8)
-    s.fields = [f]
-
-    func = gen.GenerateInitRoutine(s, None)
-  
-    self.assertIn('extern void Foo_init(struct Foo *s, char a1)',
-                     func.declaration)
-    self.assertIn('void Foo_init(struct Foo *s, char a1) {', func.definition)
-    self.assertIn('\ts->a1 = a1;\n', func.definition)
-
-  def testCreateUnionInitializer(self):
-    gen = codegen.CodeGenerator(OPTIONS_NONE)
-    # Struct Foo has field a0, and a union containing Message1 and Message2
-    # which each have one field f1 and f2.
-    s = parser.Struct('Foo', False)
-    f = parser.Field('a0', parser.TypeForName('char'), 0, 8)
-    s.fields.append(f)
-    u = parser.Struct('Union', True)
-    s1 = parser.Struct('Message1', False)
-    s1.fields.append(parser.Field('f1', parser.TypeForName('char'), 0, 8))
-    s2 = parser.Struct('Message2', False)
-    s2.fields.append(parser.Field('f2', parser.TypeForName('char'), 0, 8))
-    m1 = parser.Field('m1', parser.RecordTypeForStruct(s1), 0, 8)
-    m2 = parser.Field('m2', parser.RecordTypeForStruct(s2), 0, 8)
-    u.fields = [m1, m2]
-    s.fields.append(parser.Field('u', parser.RecordTypeForStruct(u), 0, 8))
-    
-    func = gen.GenerateInitRoutine(s, None)
-    # Foo initializer only gets a0 because it only gets non-union fielda.
-    self.assertIn('Foo_init(struct Foo *s, char a0);', func.declaration)
-
-    # Initializer for Message1 doesn't get f2 because it's in Message2.
-    func = gen.GenerateInitRoutine(s, s1)
-    self.assertIn('Message1_init(struct Foo *s, char a0, char f1);',
-                  func.declaration)
-    
-    # Initializer for Message2 doesn't get f1 because it's in Message1.
-    func = gen.GenerateInitRoutine(s, s2)
-    self.assertIn('Message2_init(struct Foo *s, char a0, char f2);',
-                  func.declaration)
-
-
 class CodegenEndToEnd(unittest.TestCase):
   def testSimpleEndToEnd(self):
     input = ['STRUCT Foo',
@@ -196,6 +56,61 @@ class CodegenEndToEnd(unittest.TestCase):
 
     # Did bitfield get initialized?'
     self.assertIn('s->b_to_c = FOO_B_P(b) | FOO_C_P(c)', out)
+
+  def testLinuxBadTypeNames(self):
+    """Linux mode limits type names to only uint8, uint16_t, uint32_t, and
+    uint64_t.
+    """
+    input = ['STRUCT Foo',
+             '0 63:48 int16_t a',
+             'END']
+    (out, errors) = generator.GenerateFile(generator.OutputStyleLinux, None,
+                                           input, 'foo.gen', [])
+    self.assertEquals(1, len(errors))
+    self.assertIn('Unknown type name "int16_t', errors[0])
+
+  def testLinuxEndToEnd(self):
+    input = ['STRUCT Foo',
+             '0 63:56 uint8_t a /* comment about a */',
+             '0 55:54 uint8_t b',
+             '0 53:52 uint8_t c',
+             '0 51:48 uint8_t reserved',
+             '0 47:0 uint8_t d[6]',
+             '1 63:32 uint32_t e',
+             'END']
+
+    (out, errors) = generator.GenerateFile(generator.OutputStyleLinux, None,
+                                           input, 'foo.gen',
+                                           ['pack', 'json', 'swap'])
+    self.assertEqual(0, len(errors))
+    self.assertIsNotNone(out)
+
+    out = RemoveWhitespace(out)
+
+    # Did structure get generated?
+    self.assertIn('struct Foo {', out)
+    # Did field a get rendered?
+    self.assertIn('__u8 a; /* comment about a */', out)
+    # Did bitfield get packed?
+    self.assertIn('__u8 b_to_c;', out)
+    # Did array get included?
+    self.assertIn('__u8 d[6];', out)
+    self.assertIn('__be32 e;', out)
+    # Did constructor get created?
+    self.assertIn('void Foo_init(struct Foo *s, __u8 a, __u8 b, '
+                  '__u8 c', out)
+    # Did accessor macro get created?
+    self.assertIn('#define FOO_B_P(x)', out)
+
+    # Check macros weren't created for reserved fields.
+    self.assertNotIn('#define FOO_RESERVED', out)
+
+    # Did bitfield get initialized?'
+    self.assertIn('s->b_to_c = cpu_to_dpu8(FOO_B_P_NOSWAP(b) | '
+                  'FOO_C_P_NOSWAP(c))', out)
+
+    # Did full field get initialized?
+    self.assertIn('s->e = cpu_to_dpu32(e)', out)
 
   # Test disabled because checker complains that the
   # union is misaligned.
