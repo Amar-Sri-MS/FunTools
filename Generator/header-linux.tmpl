@@ -156,6 +156,10 @@ The body of the header.
 #ifndef __{{output_base|as_macro}}_H__
 #define __{{output_base|as_macro}}_H__
 
+#ifndef __KERNEL__
+#include <linux/types.h>
+#endif
+
 // Header created by generator.py
 // Do not change this file;
 // change the gen file "{{gen_file}}" instead.
