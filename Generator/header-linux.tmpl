@@ -62,7 +62,7 @@ How to render each struct
 {% if not struct.inline %}
 {# Generate the structure definition twice, once for big-endian, once
   for little-endian.  For development only. #}
-#if __DPU_BYTEORDER == __BIG_ENDIAN
+#ifdef __DPU_BYTEORDER_BIG
 {{ struct.DefinitionString(True, True)}}{% if generate_cpacked %} __attribute__((packed)){% endif %};
 #else
 {{ struct.DefinitionString(True, False)}}{% if generate_cpacked %} __attribute__((packed)){% endif %};
@@ -169,17 +169,7 @@ The body of the header.
  * going in and coming out.
  */
 
-#if __DPU_BYTEORDER == __BIG_ENDIAN
-#define cpu_to_dpu8(x) (x)
-#define cpu_to_dpu16(x) (cpu_to_be16(x))
-#define cpu_to_dpu32(x) (cpu_to_be32(x))
-#define cpu_to_dpu64(x) (cpu_to_be64(x))
-
-#define dpu_to_cpu8(x) (x)
-#define dpu_to_cpu16(x) (cpu_to_be16(x))
-#define dpu_to_cpu32(x) (cpu_to_be32(x))
-#define dpu_to_cpu64(x) (cpu_to_be64(x))
-#elif __DPU_BYTEORDER == __LITTLE_ENDIAN
+#ifdef __DPU_BYTEORDER_BIG
 #define cpu_to_dpu8(x) (x)
 #define cpu_to_dpu16(x) (cpu_to_be16(x))
 #define cpu_to_dpu32(x) (cpu_to_be32(x))
@@ -190,8 +180,16 @@ The body of the header.
 #define dpu_to_cpu32(x) (cpu_to_be32(x))
 #define dpu_to_cpu64(x) (cpu_to_be64(x))
 #else
-#error __DPU_BYTEORDER not defined.
-#endif // __DPU_BYTEORDER == __BIG_ENDIAN
+#define cpu_to_dpu8(x) (x)
+#define cpu_to_dpu16(x) (cpu_to_be16(x))
+#define cpu_to_dpu32(x) (cpu_to_be32(x))
+#define cpu_to_dpu64(x) (cpu_to_be64(x))
+
+#define dpu_to_cpu8(x) (x)
+#define dpu_to_cpu16(x) (cpu_to_be16(x))
+#define dpu_to_cpu32(x) (cpu_to_be32(x))
+#define dpu_to_cpu64(x) (cpu_to_be64(x))
+#endif // __DPU_BYTEORDER_BIG
 {% endif %}
 
 // TODO(bowdidge): Consider removing init functions with no arguments.
