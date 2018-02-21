@@ -176,19 +176,19 @@ The body of the header.
 #define cpu_to_dpu64(x) (cpu_to_be64(x))
 
 #define dpu_to_cpu8(x) (x)
-#define dpu_to_cpu16(x) (cpu_to_be16(x))
-#define dpu_to_cpu32(x) (cpu_to_be32(x))
-#define dpu_to_cpu64(x) (cpu_to_be64(x))
+#define dpu_to_cpu16(x) (be16_to_cpu(x))
+#define dpu_to_cpu32(x) (be32_to_cpu(x))
+#define dpu_to_cpu64(x) (be64_to_cpu(x))
 #else
 #define cpu_to_dpu8(x) (x)
-#define cpu_to_dpu16(x) (cpu_to_be16(x))
-#define cpu_to_dpu32(x) (cpu_to_be32(x))
-#define cpu_to_dpu64(x) (cpu_to_be64(x))
+#define cpu_to_dpu16(x) (cpu_to_le16(x))
+#define cpu_to_dpu32(x) (cpu_to_le32(x))
+#define cpu_to_dpu64(x) (cpu_to_le64(x))
 
 #define dpu_to_cpu8(x) (x)
-#define dpu_to_cpu16(x) (cpu_to_be16(x))
-#define dpu_to_cpu32(x) (cpu_to_be32(x))
-#define dpu_to_cpu64(x) (cpu_to_be64(x))
+#define dpu_to_cpu16(x) (le16_to_cpu(x))
+#define dpu_to_cpu32(x) (le32_to_cpu(x))
+#define dpu_to_cpu64(x) (le64_to_cpu(x))
 #endif // __DPU_BYTEORDER_BIG
 {% endif %}
 
