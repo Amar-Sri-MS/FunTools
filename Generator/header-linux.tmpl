@@ -157,6 +157,7 @@ The body of the header.
 #define __{{output_base|as_macro}}_H__
 
 #ifndef __KERNEL__
+#include <endian.h>
 #include <linux/types.h>
 #endif
 
@@ -167,6 +168,10 @@ The body of the header.
 // Magic number to allow checking whether two interfaces were generated
 // from the same sources.
 #define {{gen_file|as_macro}}_VERSION_HASH {{gen_file_version_hash}}
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 {% if generate_swap %}
 /* Structures are always stored in DPU byte order.  Values are swapped
@@ -214,6 +219,10 @@ The body of the header.
 {% endfor %}
 
 #pragma GCC diagnostic pop
+
+#ifdef __cplusplus
+};
+#endif
 
 #endif // __{{output_base|as_macro}}_H__
 
