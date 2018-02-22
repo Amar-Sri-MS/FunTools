@@ -97,8 +97,11 @@ class CodegenEndToEnd(unittest.TestCase):
     self.assertIn('__u8 d[6];', out)
     self.assertIn('__be32 e;', out)
     # Did constructor get created?
-    self.assertIn('void Foo_init(struct Foo *s, __u8 a, __u8 b, '
-                  '__u8 c', out)
+    # Test individually because of odd whitespace around the commas.
+    self.assertIn('void Foo_init(struct Foo *s, __u8 a', out)
+    self.assertIn('__u8 b', out)
+    self.assertIn('__u8 c', out)
+
     # Did accessor macro get created?
     self.assertIn('#define FOO_B_P(x)', out)
 
