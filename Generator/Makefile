@@ -68,7 +68,7 @@ test_rdma_packed: $(BUILD)
 
 test_swap: test_helper/swap.c examples/swap.gen
 	./generator.py -g linux --codegen pack,swap -o $(BUILD)/swap_gen examples/swap.gen
-	gcc -o $(BUILD)/swap -g -I$(BUILD) -DDEBUG -DGENERATOR_TEST test_helper/swap.c
+	gcc -o $(BUILD)/swap -g -I$(BUILD) -Itest_helper -DDEBUG -DGENERATOR_TEST test_helper/swap.c
 	$(BUILD)/swap
 
 # Tests HTML generation works.
