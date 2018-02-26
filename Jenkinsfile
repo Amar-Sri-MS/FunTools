@@ -140,25 +140,34 @@ def buildStages(label) {
 }
 
 def doCheckout(wsdir, repo, branch) {
+	def currentRepo = getCurrentRepo()
+
     dir (wsdir) {
-	checkout([$class: 'GitSCM',
-		  	userRemoteConfigs: [[url: "git@${repo}.git"]],
+	if ("${repo}" == "${currentRepo}") {
+		// Use scm step for clone to allow pre-build merge
+		// and update remote URL to ensure tag push works
+		checkout scm
+		sh "git remote set-url origin git@github.com:fungible-inc/${repo}.git"
+	} else {
+		// Use checkout step to clone, no pre-build merge
+		checkout([$class: 'GitSCM',
+				userRemoteConfigs: [[url: "git@github.com:fungible-inc/${repo}.git"]],
 				branches: [[name: branch]],
 				browser: [$class: 'GithubWeb',
-					 repoUrl: "https://${repo}"],
+				repoUrl: "https://github.com/fungible-inc/${repo}"],
 				extensions: [
 					[$class: 'CloneOption', shallow: true],
 					[$class: 'CloneOption', timeout: 20],
 					[$class: 'CheckoutOption', timeout: 20]
 				],
-	])
+		])
     }
-
+	}
 }
 
 def getCurrentRepo() {
 	// CHANGE_URL is "https://github.com/fungible-inc/<repo>/pull/<PR>"
-	if (env.CHANGE_URL != null) {
+	if (env.CHANGE_URL) {
 		String change = env.CHANGE_URL
 		String[] _segments = change.split("/")
 		return _segments[4]
@@ -179,80 +188,77 @@ def checkoutRepo() {
 	String BRANCH_ACC_COMPRESSION = "master"
 	String BRANCH_ACC_REGEX = "master"
 	String BRANCH_AAPL = "master"
-	String currentRepo = getCurrentRepo()
 
 	sh 'env'
 
-	if ("${currentRepo}") {
-		def checkoutDir = "${currentRepo}"
-		if ("${currentRepo}" == "FunSDK-small") {
-			checkoutDir = "FunSDK"
-		}
-		dir ("${checkoutDir}") {
-			checkout scm
-			// Update remote url for tag push
-			sh "git remote set-url origin git@github.com:fungible-inc/${currentRepo}.git"
-		}
-	}
-
-	if ("${currentRepo}" != 'FunOS') {
-		doCheckout('FunOS',
-				   'github.com:fungible-inc/FunOS',
-				   "*/${BRANCH_FUNOS}")
-	}
-	if ("${currentRepo}" != 'FunSDK-small') {
-		 	doCheckout('FunSDK',
-				'github.com:fungible-inc/FunSDK-small',
-				"*/${BRANCH_FUNSDK}")
-	}
-	if ("${currentRepo}" != 'qemu') {
-		 	doCheckout('qemu',
-				   'github.com:fungible-inc/qemu',
-				   "*/${BRANCH_QEMU}")
-	}
-
 	parallel (
-		 //checkout_funcp: {
-		 //	doCheckout('FunControlPlane',
-		 //		   'github.com:fungible-inc/FunControlPlane',
-		 //		   '*/cgray/FunSDKv2')
-		 //}, // checkout_qemu
-		 checkout_accelerators: {
-		 	doCheckout('Accelerators',
-				   'github.com:fungible-inc/Accelerators',
-				   "*/${BRANCH_ACCEL}")
-		 }, // checkout_accelerators
-		 checkout_funtools: {
-		 	doCheckout('FunTools',
-				   'github.com:fungible-inc/FunTools',
-				   "*/${BRANCH_FUNTOOLS}")
-		 }, // checkout_funtools
-		 checkout_funhw: {
-		 	doCheckout('FunHW',
-				   'github.com:fungible-inc/FunHW',
-				   "*/${BRANCH_FUNHW}")
-		 }, // checkout_funhw
-		 checkout_pdclibc: {
-		 	doCheckout('pdclibc',
-				   'github.com:fungible-inc/pdclibc',
-				   "*/${BRANCH_PDCLIBC}")
-		 }, // checkout_pdclibc
-		 checkout_accel_compression: {
-		 	doCheckout('accel-compression',
-				   'github.com:fungible-inc/accel-compression',
-				   "*/${BRANCH_ACC_COMPRESSION}")
-		 }, // checkout_accel_compression
+		checkout_funos: {
+		doCheckout('FunOS',
+				'FunOS',
+				"*/${BRANCH_FUNOS}")
+		}, // checkout_funos
+
+		checkout_funsdk: {
+		doCheckout('FunSDK',
+				'FunSDK-small',
+				"*/${BRANCH_FUNSDK}")
+		}, // checkout_fusdk
+
+		checkout_qemu: {
+		doCheckout('qemu',
+				'qemu',
+				"*/${BRANCH_QEMU}")
+		}, // checkout_qemu
+
+		//checkout_funcp: {
+		//	doCheckout('FunControlPlane',
+		//		   'FunControlPlane',
+		//		   '*/cgray/FunSDKv2')
+		//}, // checkout_qemu
+
+		checkout_accelerators: {
+		doCheckout('Accelerators',
+				'Accelerators',
+				"*/${BRANCH_ACCEL}")
+		}, // checkout_accelerators
+
+		checkout_funtools: {
+		doCheckout('FunTools',
+				'FunTools',
+				"*/${BRANCH_FUNTOOLS}")
+		}, // checkout_funtools
+
+		checkout_funhw: {
+		doCheckout('FunHW',
+				'FunHW',
+				"*/${BRANCH_FUNHW}")
+		}, // checkout_funhw
+
+		checkout_pdclibc: {
+		doCheckout('pdclibc',
+				'pdclibc',
+				"*/${BRANCH_PDCLIBC}")
+		}, // checkout_pdclibc
+
+		checkout_accel_compression: {
+		doCheckout('accel-compression',
+				'accel-compression',
+				"*/${BRANCH_ACC_COMPRESSION}")
+		}, // checkout_accel_compression
+
 		checkout_accel_regex: {
 			doCheckout('accel-regex',
-				'github.com:fungible-inc/accel-regex',
+				'accel-regex',
 				"*/${BRANCH_ACC_REGEX}")
 		}, // checkout_accel_regex
-		 checkout_aapl: {
-		 	doCheckout('aapl',
-				   'github.com:fungible-inc/aapl',
-				   "*/${BRANCH_AAPL}")
-		 }, // checkout_aapl
-		)
+
+		checkout_aapl: {
+		doCheckout('aapl',
+				'aapl',
+				"*/${BRANCH_AAPL}")
+		}, // checkout_aapl
+	)
+
 	} // timeout
 }
 
