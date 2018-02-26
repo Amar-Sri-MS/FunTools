@@ -4,31 +4,7 @@
 
 #include "test_macros.h"
 
-#define __BIG_ENDIAN 1
-#define __LITTLE_ENDIAN 2
-#define __DPU_BYTEORDER __BIG_ENDIAN
-
-
-#define __u8 uint8_t
-#define __u16 uint16_t
-#define __u32 uint32_t
-#define __u64 uint64_t
-
-#define __le16 __u16
-#define __le32 __u32
-#define __le64 __u64
-
-#define __be16 __u16
-#define __be32 __u32
-#define __be64 __u64
-
-#define cpu_to_le16(x) (x)
-#define cpu_to_le32(x) (x)
-#define cpu_to_le64(x) (x)
-
-#define cpu_to_be16(x) (__builtin_bswap16(x))
-#define cpu_to_be32(x) (__builtin_bswap32(x))
-#define cpu_to_be64(x) (__builtin_bswap64(x))
+#define __DPU_BYTEORDER_BIG 1
 
 #include "swap_gen.h"
 

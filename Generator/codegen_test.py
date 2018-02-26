@@ -110,7 +110,7 @@ class CodegenEndToEnd(unittest.TestCase):
 
     # Did bitfield get initialized?'
     self.assertIn('s->b_to_c = cpu_to_dpu8(FOO_B_P_NOSWAP(b) | '
-                  'FOO_C_P_NOSWAP(c))', out)
+                  'FOO_C_P_NOSWAP(c)', out)
 
     # Did full field get initialized?
     self.assertIn('s->e = cpu_to_dpu32(e)', out)
