@@ -3,10 +3,10 @@
 ## Summary
 
 This is a tool that provides the following features:
-    * Grab the most recent CSR definitions
-    * Slurp them in and generate C++ files
-    * Create a library out of these files that can then be integrated into other 
-      upstream tools to Peek/Poke CSR registers
+* Grab the most recent CSR definitions
+* Slurp them in and generate C++ files
+* Create a library out of these files that can then be integrated into other 
+  upstream tools to Peek/Poke CSR registers
 
 ## How to use
 
