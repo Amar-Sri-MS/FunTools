@@ -1,7 +1,15 @@
 #!/usr/bin/env python
-import argparse
+
+import os
+from csr.csr_pull import CSRPull
 
 
-class FETCH():
-    def __init__(self):
+if __name__ == '__main__':
+    cwd = os.getcwd()
+    dst_dir = os.path.join(cwd, 'csr_cfg')
+    if not os.path.exists(dst_dir):
+        assert False, "Script needs to be executed inside the csr-peek repo"
+    if not os.path.isdir(dst_dir):
+        assert False, "{} not a directory".format(dst_dir)
+    CSRPull(dst_dir)
         

@@ -4,14 +4,14 @@ SUDO = sudo
 
 all: build
 
-.PHONY: build clean csr cfg
+.PHONY: build clean csr cfg_upd
 build:
 	$(SUDO) python setup.py install --record files.txt
 csr: 
 	cd csr-rt; make
-cfg:
 
-
+cfg_upd:build
+	cd csr; csr-get
 
 clean:
 	cat files.txt | sudo xargs rm -rf
@@ -20,3 +20,5 @@ clean:
 	$(SUDO) rm -rf *.egg-info
 	$(SUDO) rm -f files.txt
 
+distclean: clean
+	cd csr/csr_cfg && rm -rf *

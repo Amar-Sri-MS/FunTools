@@ -1,6 +1,3 @@
 include csr/template/*.json
 include csr/template/*.j2
-include csr/csr_cfg/AMAP
-include csr/csr_cfg/*.yaml
-include csr/csr_cfg/yaml/*.yaml
 

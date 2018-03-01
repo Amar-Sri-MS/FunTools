@@ -69,8 +69,6 @@ class Slurper(object):
         print "{}".format(w)
        
         # Next, setup the collection such that for every
-        
-        p = CSR_Tree(w.
 
 
         #self.__get_csrs(self.root, yml_dir)
