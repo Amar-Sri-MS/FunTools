@@ -30,6 +30,8 @@ clean:
 	$(SUDO) rm -rf build
 	$(SUDO) rm -rf *.egg-info
 	$(SUDO) rm -f files.txt
+	cd csr-rt; make clean
 
 distclean: clean
 	cd csr/csr_cfg && rm -rf *
+	#cd csr-rt; make distclean

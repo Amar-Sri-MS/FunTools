@@ -36,7 +36,7 @@ class Slurper(object):
         assert os.path.exists(loc), "{}: directory does not exist".format(loc)    
         return loc
     def __check_yml_dir(self, y_dir):
-        yml_dir = os.path.join(y_dir, "yaml")
+        yml_dir = os.path.join(y_dir, "inc")
         if not os.path.exists(yml_dir):
             assert False, "Yaml directory: {} does not exist".format(yml_dir)
         
@@ -44,7 +44,7 @@ class Slurper(object):
             assert False, "Yaml: {} not a directory".format(yml_dir)
         if not os.path.exists(os.path.join(y_dir, "AMAP")):
             assert False, "AMAP file does not exist"
-        if not os.path.exists(os.path.join(y_dir, "ring_an.yaml")):
+        if not os.path.exists(os.path.join(y_dir, "ringAN.yaml")):
             assert False, "Ring file does not exist"
 
     def run(self):
@@ -53,9 +53,9 @@ class Slurper(object):
         args.gen_cc = self.__update_loc(args.gen_cc)
 
         self.__check_yml_dir(args.csr_defs) 
-        yml_dir = os.path.join(args.csr_defs, "yaml")
+        yml_dir = os.path.join(args.csr_defs, "inc")
         amap_file = os.path.join(args.csr_defs, "AMAP")
-        ring_file = os.path.join(args.csr_defs, "ring_an.yaml")
+        ring_file = os.path.join(args.csr_defs, "ringAN.yaml")
         self.root = None
 
         # First populate the top level root
