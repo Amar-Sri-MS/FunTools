@@ -1,0 +1,223 @@
+---
+ASIZE: 65536
+BASEADDRPORT: 1
+COUNT: 1
+DESCRIPTION: MUD Manager CSR Spec
+INTR: {}
+NAME: MUD_MNGR_AN
+PARENTNAME: MUD_1_AN_MUD_SOC_CLK_AN
+REGLST:
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: |-
+          Timeout Configuration. Cycles are RSU clk based.
+                            - 00 : 1024 cycles
+                            - 01 : 256 cycles
+                            - 10 : 4096 cycles
+                            - 11 : infinite
+        NAME: val
+        WIDTH: 2
+    NAME: mud_mngr_timeout_thresh_cfg
+  - ATTR: 9
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: "Timed out Status. Cycles are RSU clk based. Becomes 1 when timed out. Write any value to clear it.\n                  "
+        NAME: val
+        WIDTH: 1
+    NAME: mud_mngr_timedout_sta
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: |-
+          Clear Timeout Status. Data is ignored. A write
+                     will clear the timeout status bit
+        NAME: val
+        WIDTH: 1
+    NAME: mud_mngr_timeout_clr
+    TEST_ATTR: 1
+  - ATTR: 9
+    DESCRIPTION: Place Holder for now for MU_CFG Feature Register
+    FLDLST:
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Module ID
+        NAME: module_id
+        WIDTH: 8
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Version number of the module
+        NAME: version
+        WIDTH: 8
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Features enabled in the module.
+        NAME: features
+        WIDTH: 16
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Reserved Field.
+        NAME: Reserved
+        WIDTH: 32
+    NAME: mud_mngr_features
+    WIDTH: 64
+  - ATTR: 5
+    DESCRIPTION: ' Spare PIO register. These bits can be read and written by software. They can serve as control bits for late ECOs in the design.'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Spare PIO register.
+        NAME: val
+        WIDTH: 64
+    NAME: mud_mngr_spare_pio
+    WIDTH: 64
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: Scratchpad register.
+        NAME: val
+        WIDTH: 64
+    NAME: mud_mngr_scratchpad
+    WIDTH: 64
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: MUD manager non-fatal interrupt status. One per leaf level interrupt module.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: MU_SNA 0.
+        NAME: mu_sna_0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: MU_DNA 0.
+        NAME: mu_dna_0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: MU_CNA 0.
+        NAME: mu_cna_0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: MU_CNA 1.
+        NAME: mu_cna_1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: MU_QSYS 0.
+        NAME: mu_qsys_0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: MU_MCI 0.
+        NAME: mu_mci_0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: FEP 0.
+        NAME: fep_0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: FLA.
+        NAME: fla
+        WIDTH: 1
+    NAME: mud_mngr_non_fatal_interrupt_status
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: MUD manager fatal interrupt status. One per leaf level interrupt module.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: MU_SNA 0.
+        NAME: mu_sna_0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: MU_DNA 0.
+        NAME: mu_dna_0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: MU_CNA 0.
+        NAME: mu_cna_0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: MU_CNA 1.
+        NAME: mu_cna_1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: MU_QSYS 0.
+        NAME: mu_qsys_0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: MU_MCI 0.
+        NAME: mu_mci_0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: FEP 0.
+        NAME: fep_0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: FLA.
+        NAME: fla
+        WIDTH: 1
+    NAME: mud_mngr_fatal_interrupt_status
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: MU PHY slice CSR coarse clock gating
+    FLDLST:
+      - DEFAULT: 1
+        DESCRIPTION: CSR clock enable for MU PHY slice.
+        NAME: phy_slice
+        WIDTH: 1
+    NAME: mud_csr_clk_enable
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: MU PHY slice CSR reset.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: CSR rst_n for MU PHY slice.
+        NAME: phy_slice
+        WIDTH: 1
+    NAME: mud_csr_rst_n
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: MU Initialization Start
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: SNA 0 init_start
+        NAME: sna_0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: DNA 0 init_start
+        NAME: dna_0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: CNA 1 init_start
+        NAME: cna_1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: CNA 0 init_start
+        NAME: cna_0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: QSYS 0 init_start
+        NAME: qsys_0
+        WIDTH: 1
+    NAME: mud_soc_clk_init_start
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: MU Initialization Done
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: SNA 0 init_done
+        NAME: sna_0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: DNA 0 init_done
+        NAME: dna_0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: CNA 1 init_done
+        NAME: cna_1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: CNA 0 init_done
+        NAME: cna_0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: QSYS 0 init_done
+        NAME: qsys_0
+        WIDTH: 1
+    NAME: mud_soc_clk_init_done
+XASIZE: 65536

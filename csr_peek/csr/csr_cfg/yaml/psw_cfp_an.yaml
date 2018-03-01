@@ -1,0 +1,313 @@
+---
+BASEADDRPORT: 1
+COUNT: 1
+DESCRIPTION: PSW CFP CSR Spec
+INTR:
+  FATAL:
+    - DESCRIPTION: cct Memory Double Bit ECC Error
+      NAME: cct
+      WIDTH: 1
+    - DESCRIPTION: bitalloc Memory Double Bit ECC Error
+      NAME: bitalloc
+      WIDTH: 1
+  FATAL_MISC:
+    - DESCRIPTION: dealloc error from bitalloc macro.
+      NAME: fld_dealloc_err
+      WIDTH: 1
+  NON_FATAL:
+    - DESCRIPTION: cct Memory Single Bit ECC Error
+      NAME: cct
+      WIDTH: 1
+    - DESCRIPTION: bitalloc Memory Single Bit ECC Error
+      NAME: bitalloc
+      WIDTH: 1
+INTR_PORT_EN: 1
+NAME: PSW_CFP_AN
+PARENTNAME: NU_0_AN
+REGLST:
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: |-
+          Timeout Configuration. Cycles are RSU clk based.
+                            - 00 : 1024 cycles
+                            - 01 : 256 cycles
+                            - 10 : 4096 cycles
+                            - 11 : infinite
+        NAME: val
+        WIDTH: 2
+    NAME: psw_cfp_timeout_thresh_cfg
+  - ATTR: 9
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: "Timed out Status. Cycles are RSU clk based. Becomes 1 when timed out. Write any value to clear it.\n                  "
+        NAME: val
+        WIDTH: 1
+    NAME: psw_cfp_timedout_sta
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: |-
+          Clear Timeout Status. Data is ignored. A write
+                     will clear the timeout status bit
+        NAME: val
+        WIDTH: 1
+    NAME: psw_cfp_timeout_clr
+    TEST_ATTR: 1
+  - ATTR: 256
+    FLDLST:
+      - &1
+        DESCRIPTION: cct Memory Double Bit ECC Error
+        NAME: cct
+        WIDTH: 1
+      - &2
+        DESCRIPTION: bitalloc Memory Double Bit ECC Error
+        NAME: bitalloc
+        WIDTH: 1
+    NAME: psw_cfp_fatal_intr_cause
+  - ATTR: 512
+    FLDLST:
+      - *1
+      - *2
+    NAME: psw_cfp_fatal_intr_stat
+  - ATTR: 1024
+    FLDLST:
+      - *1
+      - *2
+    NAME: psw_cfp_fatal_intr_mask
+  - ATTR: 2048
+    FLDLST:
+      - *1
+      - *2
+    NAME: psw_cfp_fatal_intr_bset
+  - ATTR: 4096
+    FLDLST:
+      - *1
+      - *2
+    NAME: psw_cfp_fatal_intr_bclr
+  - ATTR: 256
+    FLDLST:
+      - &3
+        DESCRIPTION: dealloc error from bitalloc macro.
+        NAME: fld_dealloc_err
+        WIDTH: 1
+    NAME: psw_cfp_fatal_misc_intr_cause
+  - ATTR: 512
+    FLDLST:
+      - *3
+    NAME: psw_cfp_fatal_misc_intr_stat
+  - ATTR: 1024
+    FLDLST:
+      - *3
+    NAME: psw_cfp_fatal_misc_intr_mask
+  - ATTR: 2048
+    FLDLST:
+      - *3
+    NAME: psw_cfp_fatal_misc_intr_bset
+  - ATTR: 4096
+    FLDLST:
+      - *3
+    NAME: psw_cfp_fatal_misc_intr_bclr
+  - ATTR: 256
+    FLDLST:
+      - &4
+        DESCRIPTION: cct Memory Single Bit ECC Error
+        NAME: cct
+        WIDTH: 1
+      - &5
+        DESCRIPTION: bitalloc Memory Single Bit ECC Error
+        NAME: bitalloc
+        WIDTH: 1
+    NAME: psw_cfp_non_fatal_intr_cause
+  - ATTR: 512
+    FLDLST:
+      - *4
+      - *5
+    NAME: psw_cfp_non_fatal_intr_stat
+  - ATTR: 1024
+    FLDLST:
+      - *4
+      - *5
+    NAME: psw_cfp_non_fatal_intr_mask
+  - ATTR: 2048
+    FLDLST:
+      - *4
+      - *5
+    NAME: psw_cfp_non_fatal_intr_bset
+  - ATTR: 4096
+    FLDLST:
+      - *4
+      - *5
+    NAME: psw_cfp_non_fatal_intr_bclr
+  - ATTR: 9
+    DESCRIPTION: Place Holder for now for PSW CFP Feature Register
+    FLDLST:
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Module ID
+        NAME: module_id
+        WIDTH: 8
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Version number of the module
+        NAME: version
+        WIDTH: 8
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Features enabled in the module.
+        NAME: features
+        WIDTH: 16
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Reserved Field.
+        NAME: Reserved
+        WIDTH: 32
+    NAME: psw_cfp_features
+    WIDTH: 64
+  - ATTR: 5
+    DESCRIPTION: ' Spare PIO register. These bits can be read and written by software. They can serve as control bits for late ECOs in the design.'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Spare PIO register.
+        NAME: val
+        WIDTH: 64
+    NAME: psw_cfp_spare_pio
+    WIDTH: 64
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: Scratchpad register.
+        NAME: val
+        WIDTH: 64
+    NAME: psw_cfp_scratchpad
+    WIDTH: 64
+  - ATTR: 5
+    DESCRIPTION: ' '
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: .
+        NAME: cct
+        WIDTH: 1
+    NAME: psw_cfp_mem_init_start_cfg
+  - ATTR: 9
+    DESCRIPTION: ' '
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: .
+        NAME: cct
+        WIDTH: 1
+    NAME: psw_cfp_mem_init_done_status
+  - ATTR: 9
+    DESCRIPTION: CFP counter
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: ' - '
+        NAME: curr_val
+        WIDTH: 15
+      - DEFAULT: 0
+        DESCRIPTION: ' - '
+        NAME: hwm_val
+        WIDTH: 15
+    NAME: psw_cfp_cnt
+  - ATTR: 5
+    DESCRIPTION: 'CFP clear HWM counters '
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: ' - '
+        NAME: val
+        WIDTH: 1
+    NAME: psw_cfp_cfg_clear_hwm
+  - ATTR: 5
+    DESCRIPTION: Config register for memory error injection
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into cct memory
+        NAME: cct
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into bitalloc memory
+        NAME: bitalloc
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'Type of error to be injected applied to all memories.  0 - Uncorrectable error. 1 - Correctable error '
+        NAME: err_type
+        WIDTH: 1
+    NAME: psw_cfp_sram_err_inj_cfg
+  - ATTR: 9
+    DESCRIPTION: 'SRAM bit vector that has correctable error. Set when first error is detected. Reset when corresponding interrupt status bit is cleared. '
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: cct Memory Single Bit ECC Error
+        NAME: cct
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: bitalloc Memory Single Bit ECC Error
+        NAME: bitalloc
+        WIDTH: 1
+    NAME: psw_cfp_sram_log_cerr_vec
+  - ATTR: 9
+    DESCRIPTION: SRAM syndrome log register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: ' Syndrome related to error detected while reading data from SRAM '
+        NAME: val
+        WIDTH: 16
+    NAME: psw_cfp_sram_log_cerr_syndrome
+  - ATTR: 9
+    DESCRIPTION: SRAM address log register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: ' address related to error detected while reading data from SRAM '
+        NAME: val
+        WIDTH: 16
+    NAME: psw_cfp_sram_log_cerr_addr
+  - ATTR: 9
+    DESCRIPTION: 'SRAM bit vector that has uncorrectable error. Set when first error is detected. Reset when corresponding interrupt status bit is cleared. '
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: cct Memory Double Bit ECC Error
+        NAME: cct
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: bitalloc Memory Double Bit ECC Error
+        NAME: bitalloc
+        WIDTH: 1
+    NAME: psw_cfp_sram_log_uerr_vec
+  - ATTR: 9
+    DESCRIPTION: SRAM syndrome log register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: ' Syndrome related to error detected while reading data from SRAM '
+        NAME: val
+        WIDTH: 16
+    NAME: psw_cfp_sram_log_uerr_syndrome
+  - ATTR: 9
+    DESCRIPTION: SRAM address log register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: ' address related to error detected while reading data from SRAM '
+        NAME: val
+        WIDTH: 16
+    NAME: psw_cfp_sram_log_uerr_addr
+  - ATTR: 6
+    COUNT: 1
+    DESCRIPTION: CFP CCT memory
+    ENTRIES: 256
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: .
+        NAME: val
+        WIDTH: 64
+    NAME: psw_cfp_mem_cct
+  - ATTR: 6
+    COUNT: 1
+    DESCRIPTION: CFP bitalloc access
+    ENTRIES: 3072
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: .
+        NAME: val
+        WIDTH: 64
+    NAME: psw_cfp_bitalloc
+    TEST_ATTR: 0
+XASIZE: 0

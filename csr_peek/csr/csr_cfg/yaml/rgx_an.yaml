@@ -1,0 +1,2339 @@
+---
+COUNT: 1
+DESCRIPTION: RGX Coding CSR spec
+INTR:
+  FATAL:
+    - DESCRIPTION: Parity error is detected on RCP RESD.
+      NAME: rcp_resd2_perr
+      WIDTH: 1
+    - DESCRIPTION: Parity error is detected on RCP RESD.
+      NAME: rcp_resd1_perr
+      WIDTH: 1
+    - DESCRIPTION: Parity error is detected on RCP RESD.
+      NAME: rcp_resd0_perr
+      WIDTH: 1
+    - DESCRIPTION: Parity error is detected on RCP FTHD.
+      NAME: rcp_fthd2_perr
+      WIDTH: 1
+    - DESCRIPTION: Parity error is detected on RCP FTHD.
+      NAME: rcp_fthd1_perr
+      WIDTH: 1
+    - DESCRIPTION: Parity error is detected on RCP FTHD.
+      NAME: rcp_fthd0_perr
+      WIDTH: 1
+    - DESCRIPTION: Parity error is detected on RCP NSK.
+      NAME: rcp_nsk_perr
+      WIDTH: 1
+    - DESCRIPTION: Parity error is detected on RCP RES_NFA.
+      NAME: rcp_res_nfa_perr
+      WIDTH: 1
+    - DESCRIPTION: Parity error is detected on RCP LA_RES_DFA.
+      NAME: rcp_la_res_dfa_perr
+      WIDTH: 1
+    - DESCRIPTION: Parity error is detected on RCP IWQ.
+      NAME: rcp_iwq_perr
+      WIDTH: 1
+    - DESCRIPTION: Multiple bit ECC error is detected on RCP FSK.
+      NAME: rcp_fsk_merr
+      WIDTH: 1
+    - DESCRIPTION: rcp error.
+      NAME: rcp_error
+      WIDTH: 1
+    - DESCRIPTION: dmi bus error.
+      NAME: bus_error
+      WIDTH: 1
+    - DESCRIPTION: Multiple bit ECC error is detected.
+      NAME: mem_merr
+      WIDTH: 1
+    - DESCRIPTION: Parity error is detected on NFA ccmap buff.
+      NAME: nfa_ccmap_buff_perr
+      WIDTH: 1
+    - DESCRIPTION: Parity error is detected on NFA payload buff.
+      NAME: nfa_payload_buff_perr
+      WIDTH: 1
+    - DESCRIPTION: Parity error is detected on NFA stack.
+      NAME: nfa_stack_perr
+      WIDTH: 1
+  NON_FATAL:
+    - DESCRIPTION: NFA Result Overflow.
+      NAME: dfa2_result_overflow
+      WIDTH: 1
+    - DESCRIPTION: NFA Result Overflow.
+      NAME: dfa1_result_overflow
+      WIDTH: 1
+    - DESCRIPTION: NFA Result Overflow.
+      NAME: dfa0_result_overflow
+      WIDTH: 1
+    - DESCRIPTION: DFA asserts error.
+      NAME: dfa2_err
+      WIDTH: 1
+    - DESCRIPTION: DFA asserts error.
+      NAME: dfa1_err
+      WIDTH: 1
+    - DESCRIPTION: DFA asserts error.
+      NAME: dfa0_err
+      WIDTH: 1
+    - DESCRIPTION: NFA Result Overflow.
+      NAME: nfa_result_overflow
+      WIDTH: 1
+    - DESCRIPTION: NFA next stack Overflow.
+      NAME: nfa_next_stack_overflow
+      WIDTH: 1
+    - DESCRIPTION: NFA cur stack Overflow.
+      NAME: nfa_cur_stack_overflow
+      WIDTH: 1
+    - DESCRIPTION: NFA read resp error.
+      NAME: nfa_read_resp_error
+      WIDTH: 1
+    - DESCRIPTION: NFA bm read error.
+      NAME: nfa_bm_read_error
+      WIDTH: 1
+    - DESCRIPTION: NFA unknwon opcode error.
+      NAME: nfa_unknown_opcode_error
+      WIDTH: 1
+    - DESCRIPTION: Any WU programing error.
+      NAME: wu_err
+      WIDTH: 1
+    - DESCRIPTION: Single bit ECC error is detected on RCP FSK.
+      NAME: rcp_fsk_serr
+      WIDTH: 1
+    - DESCRIPTION: Single bit ECC error is detected and corrected.
+      NAME: mem_serr
+      WIDTH: 1
+INTR_PORT_EN: 1
+NAME: RGX_AN
+PARENTNAME: pc_soc_clk_an
+REGLST:
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: |-
+          Timeout Configuration. Cycles are RSU clk based.
+                            - 00 : 1024 cycles
+                            - 01 : 256 cycles
+                            - 10 : 4096 cycles
+                            - 11 : infinite
+        NAME: val
+        WIDTH: 2
+    NAME: rgx_timeout_thresh_cfg
+  - ATTR: 9
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: "Timed out Status. Cycles are RSU clk based. Becomes 1 when timed out. Write any value to clear it.\n                  "
+        NAME: val
+        WIDTH: 1
+    NAME: rgx_timedout_sta
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: |-
+          Clear Timeout Status. Data is ignored. A write
+                     will clear the timeout status bit
+        NAME: val
+        WIDTH: 1
+    NAME: rgx_timeout_clr
+    TEST_ATTR: 1
+  - ATTR: 256
+    FLDLST:
+      - &1
+        DESCRIPTION: Parity error is detected on RCP RESD.
+        NAME: rcp_resd2_perr
+        WIDTH: 1
+      - &2
+        DESCRIPTION: Parity error is detected on RCP RESD.
+        NAME: rcp_resd1_perr
+        WIDTH: 1
+      - &3
+        DESCRIPTION: Parity error is detected on RCP RESD.
+        NAME: rcp_resd0_perr
+        WIDTH: 1
+      - &4
+        DESCRIPTION: Parity error is detected on RCP FTHD.
+        NAME: rcp_fthd2_perr
+        WIDTH: 1
+      - &5
+        DESCRIPTION: Parity error is detected on RCP FTHD.
+        NAME: rcp_fthd1_perr
+        WIDTH: 1
+      - &6
+        DESCRIPTION: Parity error is detected on RCP FTHD.
+        NAME: rcp_fthd0_perr
+        WIDTH: 1
+      - &7
+        DESCRIPTION: Parity error is detected on RCP NSK.
+        NAME: rcp_nsk_perr
+        WIDTH: 1
+      - &8
+        DESCRIPTION: Parity error is detected on RCP RES_NFA.
+        NAME: rcp_res_nfa_perr
+        WIDTH: 1
+      - &9
+        DESCRIPTION: Parity error is detected on RCP LA_RES_DFA.
+        NAME: rcp_la_res_dfa_perr
+        WIDTH: 1
+      - &10
+        DESCRIPTION: Parity error is detected on RCP IWQ.
+        NAME: rcp_iwq_perr
+        WIDTH: 1
+      - &11
+        DESCRIPTION: Multiple bit ECC error is detected on RCP FSK.
+        NAME: rcp_fsk_merr
+        WIDTH: 1
+      - &12
+        DESCRIPTION: rcp error.
+        NAME: rcp_error
+        WIDTH: 1
+      - &13
+        DESCRIPTION: dmi bus error.
+        NAME: bus_error
+        WIDTH: 1
+      - &14
+        DESCRIPTION: Multiple bit ECC error is detected.
+        NAME: mem_merr
+        WIDTH: 1
+      - &15
+        DESCRIPTION: Parity error is detected on NFA ccmap buff.
+        NAME: nfa_ccmap_buff_perr
+        WIDTH: 1
+      - &16
+        DESCRIPTION: Parity error is detected on NFA payload buff.
+        NAME: nfa_payload_buff_perr
+        WIDTH: 1
+      - &17
+        DESCRIPTION: Parity error is detected on NFA stack.
+        NAME: nfa_stack_perr
+        WIDTH: 1
+    NAME: rgx_fatal_intr_cause
+  - ATTR: 512
+    FLDLST:
+      - *1
+      - *2
+      - *3
+      - *4
+      - *5
+      - *6
+      - *7
+      - *8
+      - *9
+      - *10
+      - *11
+      - *12
+      - *13
+      - *14
+      - *15
+      - *16
+      - *17
+    NAME: rgx_fatal_intr_stat
+  - ATTR: 1024
+    FLDLST:
+      - *1
+      - *2
+      - *3
+      - *4
+      - *5
+      - *6
+      - *7
+      - *8
+      - *9
+      - *10
+      - *11
+      - *12
+      - *13
+      - *14
+      - *15
+      - *16
+      - *17
+    NAME: rgx_fatal_intr_mask
+  - ATTR: 2048
+    FLDLST:
+      - *1
+      - *2
+      - *3
+      - *4
+      - *5
+      - *6
+      - *7
+      - *8
+      - *9
+      - *10
+      - *11
+      - *12
+      - *13
+      - *14
+      - *15
+      - *16
+      - *17
+    NAME: rgx_fatal_intr_bset
+  - ATTR: 4096
+    FLDLST:
+      - *1
+      - *2
+      - *3
+      - *4
+      - *5
+      - *6
+      - *7
+      - *8
+      - *9
+      - *10
+      - *11
+      - *12
+      - *13
+      - *14
+      - *15
+      - *16
+      - *17
+    NAME: rgx_fatal_intr_bclr
+  - ATTR: 256
+    FLDLST:
+      - &18
+        DESCRIPTION: NFA Result Overflow.
+        NAME: dfa2_result_overflow
+        WIDTH: 1
+      - &19
+        DESCRIPTION: NFA Result Overflow.
+        NAME: dfa1_result_overflow
+        WIDTH: 1
+      - &20
+        DESCRIPTION: NFA Result Overflow.
+        NAME: dfa0_result_overflow
+        WIDTH: 1
+      - &21
+        DESCRIPTION: DFA asserts error.
+        NAME: dfa2_err
+        WIDTH: 1
+      - &22
+        DESCRIPTION: DFA asserts error.
+        NAME: dfa1_err
+        WIDTH: 1
+      - &23
+        DESCRIPTION: DFA asserts error.
+        NAME: dfa0_err
+        WIDTH: 1
+      - &24
+        DESCRIPTION: NFA Result Overflow.
+        NAME: nfa_result_overflow
+        WIDTH: 1
+      - &25
+        DESCRIPTION: NFA next stack Overflow.
+        NAME: nfa_next_stack_overflow
+        WIDTH: 1
+      - &26
+        DESCRIPTION: NFA cur stack Overflow.
+        NAME: nfa_cur_stack_overflow
+        WIDTH: 1
+      - &27
+        DESCRIPTION: NFA read resp error.
+        NAME: nfa_read_resp_error
+        WIDTH: 1
+      - &28
+        DESCRIPTION: NFA bm read error.
+        NAME: nfa_bm_read_error
+        WIDTH: 1
+      - &29
+        DESCRIPTION: NFA unknwon opcode error.
+        NAME: nfa_unknown_opcode_error
+        WIDTH: 1
+      - &30
+        DESCRIPTION: Any WU programing error.
+        NAME: wu_err
+        WIDTH: 1
+      - &31
+        DESCRIPTION: Single bit ECC error is detected on RCP FSK.
+        NAME: rcp_fsk_serr
+        WIDTH: 1
+      - &32
+        DESCRIPTION: Single bit ECC error is detected and corrected.
+        NAME: mem_serr
+        WIDTH: 1
+    NAME: rgx_non_fatal_intr_cause
+  - ATTR: 512
+    FLDLST:
+      - *18
+      - *19
+      - *20
+      - *21
+      - *22
+      - *23
+      - *24
+      - *25
+      - *26
+      - *27
+      - *28
+      - *29
+      - *30
+      - *31
+      - *32
+    NAME: rgx_non_fatal_intr_stat
+  - ATTR: 1024
+    FLDLST:
+      - *18
+      - *19
+      - *20
+      - *21
+      - *22
+      - *23
+      - *24
+      - *25
+      - *26
+      - *27
+      - *28
+      - *29
+      - *30
+      - *31
+      - *32
+    NAME: rgx_non_fatal_intr_mask
+  - ATTR: 2048
+    FLDLST:
+      - *18
+      - *19
+      - *20
+      - *21
+      - *22
+      - *23
+      - *24
+      - *25
+      - *26
+      - *27
+      - *28
+      - *29
+      - *30
+      - *31
+      - *32
+    NAME: rgx_non_fatal_intr_bset
+  - ATTR: 4096
+    FLDLST:
+      - *18
+      - *19
+      - *20
+      - *21
+      - *22
+      - *23
+      - *24
+      - *25
+      - *26
+      - *27
+      - *28
+      - *29
+      - *30
+      - *31
+      - *32
+    NAME: rgx_non_fatal_intr_bclr
+  - ATTR: 9
+    DESCRIPTION: Identifier register.
+    FLDLST:
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Module ID
+        NAME: module_id
+        VALUE: 0
+        WIDTH: 8
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Version number of the module
+        NAME: version
+        VALUE: 0
+        WIDTH: 8
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Features enabled in the module.
+        NAME: features
+        VALUE: 0
+        WIDTH: 16
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Reserved Field.
+        NAME: Reserved
+        WIDTH: 32
+    NAME: rgx_features
+    WIDTH: 64
+  - ATTR: 5
+    DESCRIPTION: ' Spare PIO register. These bits can be read and written by software. They can serve as control bits for late ECOs in the design.'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Spare PIO register.
+        NAME: val
+        WIDTH: 64
+    NAME: rgx_spare_pio
+    WIDTH: 64
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: Scratchpad register.
+        NAME: val
+        WIDTH: 64
+    NAME: rgx_scratchpad
+    WIDTH: 64
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: ''
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: ' '
+        NAME: bp_phase_select
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ' '
+        NAME: bp_512k_select
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ' '
+        NAME: bp_even_if1_use_lower_b0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ' '
+        NAME: bp_odd_if1_use_lower_b0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ' '
+        NAME: dfa_dis
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: ' '
+        NAME: nfa_dis
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ' '
+        NAME: blk_dis
+        WIDTH: 1
+    NAME: rgx_cfg
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: ''
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: ' '
+        NAME: dfa_idle
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: ' '
+        NAME: nfa_idle
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ' '
+        NAME: rcp_idle
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ' '
+        NAME: rgx_init_done
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ' '
+        NAME: rgx_reset_done
+        WIDTH: 1
+    NAME: rgx_sta
+  - ATTR: 9
+    DESCRIPTION: SRAM bit vector that failed PARITY
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            First SRAM PARITY error detected (1-hot)
+                                            Set when first error is detected
+                                            Reset when corresponding interrupt status bit is cleared
+                                            [0]  - ccmap_buff_ucerr
+                                            [1]  - payload_buff_ucerr
+                                            [2]  - stack_ucerr
+                                           
+        NAME: val
+        WIDTH: 3
+    NAME: nfa_sram_log_err
+  - ATTR: 9
+    DESCRIPTION: SRAM syndrome log register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            Syndrome related to ECC error
+                                            detected while reading data from SRAM
+                                           
+        NAME: val
+        WIDTH: 16
+    NAME: nfa_sram_log_syndrome
+  - ATTR: 9
+    DESCRIPTION: SRAM address log register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            Address related to PARITY error
+                                            detected while reading data from SRAM
+                                           
+        NAME: val
+        WIDTH: 9
+    NAME: nfa_sram_log_addr
+  - ATTR: 9
+    DESCRIPTION: NFA non-fatal error log register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+          					Next Stack OVF thread id
+                                           
+        NAME: ns_ovf_thread_id
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+          					Cur Stack OVF thread id
+                                           
+        NAME: cs_ovf_thread_id
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+          					Result OVF thread id
+                                           
+        NAME: res_ovf_thread_id
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+          					Unknown Opcode thread id
+                                           
+        NAME: unknown_opc_thread_id
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+          					Read Resp Error thread id
+                                           
+        NAME: rd_resp_err_thread_id
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+          					BM Read Error tag
+                                           
+        NAME: bm_rd_err_tag
+        WIDTH: 4
+    NAME: nfa_non_fatal_error_log
+  - ATTR: 5
+    DESCRIPTION: FLA Ring Module ID
+    FLDLST:
+      - DEFAULT: 85
+        DESCRIPTION: '8-Bit Module ID to be used for Decoding Commands on FLA Command Ring, 0x0, 0xff are Reserved Values'
+        NAME: fld_val
+        WIDTH: 8
+    NAME: rgx_fla_ring_module_id_cfg
+  - ATTR: 5
+    DESCRIPTION: FLA Ring Output Select
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: '2-bit FLA Output Select: 0 - DFA0, 1 - DFA1, 2 - DFA2, 3 - NFA'
+        NAME: sel
+        WIDTH: 2
+    NAME: rgx_fla_out_sel
+  - ATTR: 9
+    COUNT: 64
+    DESCRIPTION: ''
+    FLDLST: &33
+      - DEFAULT: 0
+        DESCRIPTION: ' '
+        NAME: d0
+        WIDTH: 16
+      - DEFAULT: 0
+        DESCRIPTION: ' '
+        NAME: d1
+        WIDTH: 16
+      - DEFAULT: 0
+        DESCRIPTION: ' '
+        NAME: d2
+        WIDTH: 16
+      - DEFAULT: 0
+        DESCRIPTION: ' '
+        NAME: d3
+        WIDTH: 16
+    NAME: rgx_fla_dbus_0
+  - ATTR: 9
+    COUNT: 64
+    DESCRIPTION: ''
+    FLDLST: *33
+    NAME: rgx_fla_dbus_1
+  - ATTR: 9
+    COUNT: 64
+    DESCRIPTION: ''
+    FLDLST: *33
+    NAME: rgx_fla_dbus_2
+  - ATTR: 9
+    COUNT: 64
+    DESCRIPTION: ''
+    FLDLST: *33
+    NAME: rgx_fla_dbus_3
+  - ATTR: 9
+    COUNT: 64
+    DESCRIPTION: ''
+    FLDLST: *33
+    NAME: rgx_fla_dbus_4
+  - ATTR: 9
+    COUNT: 64
+    DESCRIPTION: ''
+    FLDLST: *33
+    NAME: rgx_fla_dbus_5
+  - ATTR: 9
+    COUNT: 64
+    DESCRIPTION: ''
+    FLDLST: *33
+    NAME: rgx_fla_dbus_6
+  - ATTR: 9
+    COUNT: 64
+    DESCRIPTION: ''
+    FLDLST: *33
+    NAME: rgx_fla_dbus_7
+  - ATTR: 9
+    COUNT: 64
+    DESCRIPTION: ''
+    FLDLST: *33
+    NAME: rgx_fla_dbus_8
+  - ATTR: 9
+    COUNT: 64
+    DESCRIPTION: ''
+    FLDLST: *33
+    NAME: rgx_fla_dbus_9
+  - ATTR: 9
+    COUNT: 64
+    DESCRIPTION: ''
+    FLDLST: *33
+    NAME: rgx_fla_dbus_10
+  - ATTR: 9
+    COUNT: 64
+    DESCRIPTION: ''
+    FLDLST: *33
+    NAME: rgx_fla_dbus_11
+  - ATTR: 9
+    COUNT: 64
+    DESCRIPTION: ''
+    FLDLST: *33
+    NAME: rgx_fla_dbus_12
+  - ATTR: 9
+    COUNT: 64
+    DESCRIPTION: ''
+    FLDLST: *33
+    NAME: rgx_fla_dbus_13
+  - ATTR: 9
+    COUNT: 64
+    DESCRIPTION: ''
+    FLDLST: *33
+    NAME: rgx_fla_dbus_14
+  - ATTR: 9
+    COUNT: 64
+    DESCRIPTION: ''
+    FLDLST: *33
+    NAME: rgx_fla_dbus_15
+  - ATTR: 9
+    COUNT: 64
+    DESCRIPTION: ''
+    FLDLST: *33
+    NAME: rgx_fla_dbus_16
+  - ATTR: 9
+    COUNT: 64
+    DESCRIPTION: ''
+    FLDLST: *33
+    NAME: rgx_fla_dbus_17
+  - ATTR: 9
+    COUNT: 64
+    DESCRIPTION: ''
+    FLDLST: *33
+    NAME: rgx_fla_dbus_18
+  - ATTR: 9
+    COUNT: 64
+    DESCRIPTION: ''
+    FLDLST: *33
+    NAME: rgx_fla_dbus_19
+  - ATTR: 9
+    COUNT: 64
+    DESCRIPTION: ''
+    FLDLST: *33
+    NAME: rgx_fla_dbus_20
+  - ATTR: 9
+    COUNT: 64
+    DESCRIPTION: ''
+    FLDLST: *33
+    NAME: rgx_fla_dbus_21
+  - ATTR: 9
+    COUNT: 64
+    DESCRIPTION: ''
+    FLDLST: *33
+    NAME: rgx_fla_dbus_22
+  - ATTR: 9
+    COUNT: 64
+    DESCRIPTION: ''
+    FLDLST: *33
+    NAME: rgx_fla_dbus_23
+  - ATTR: 9
+    COUNT: 64
+    DESCRIPTION: ''
+    FLDLST: *33
+    NAME: rgx_fla_dbus_24
+  - ATTR: 9
+    COUNT: 64
+    DESCRIPTION: ''
+    FLDLST: *33
+    NAME: rgx_fla_dbus_25
+  - ATTR: 9
+    COUNT: 64
+    DESCRIPTION: ''
+    FLDLST: *33
+    NAME: rgx_fla_dbus_26
+  - ATTR: 9
+    COUNT: 64
+    DESCRIPTION: ''
+    FLDLST: *33
+    NAME: rgx_fla_dbus_27
+  - ATTR: 9
+    COUNT: 64
+    DESCRIPTION: ''
+    FLDLST: *33
+    NAME: rgx_fla_dbus_28
+  - ATTR: 9
+    COUNT: 64
+    DESCRIPTION: ''
+    FLDLST: *33
+    NAME: rgx_fla_dbus_29
+  - ATTR: 9
+    COUNT: 64
+    DESCRIPTION: ''
+    FLDLST: *33
+    NAME: rgx_fla_dbus_30
+  - ATTR: 9
+    COUNT: 64
+    DESCRIPTION: ''
+    FLDLST: *33
+    NAME: rgx_fla_dbus_31
+  - ATTR: 9
+    COUNT: 64
+    DESCRIPTION: ''
+    FLDLST: *33
+    NAME: rgx_fla_dbus_32
+  - ATTR: 9
+    COUNT: 64
+    DESCRIPTION: ''
+    FLDLST: *33
+    NAME: rgx_fla_dbus_33
+  - ATTR: 9
+    COUNT: 64
+    DESCRIPTION: ''
+    FLDLST: *33
+    NAME: rgx_fla_dbus_34
+  - ATTR: 9
+    COUNT: 64
+    DESCRIPTION: ''
+    FLDLST: *33
+    NAME: rgx_fla_dbus_35
+  - ATTR: 9
+    COUNT: 64
+    DESCRIPTION: ''
+    FLDLST: *33
+    NAME: rgx_fla_dbus_36
+  - ATTR: 9
+    COUNT: 64
+    DESCRIPTION: ''
+    FLDLST: *33
+    NAME: rgx_fla_dbus_37
+  - ATTR: 9
+    COUNT: 64
+    DESCRIPTION: ''
+    FLDLST: *33
+    NAME: rgx_fla_dbus_38
+  - ATTR: 9
+    COUNT: 64
+    DESCRIPTION: ''
+    FLDLST: *33
+    NAME: rgx_fla_dbus_39
+  - ATTR: 9
+    COUNT: 64
+    DESCRIPTION: ''
+    FLDLST: *33
+    NAME: rgx_fla_dbus_40
+  - ATTR: 9
+    COUNT: 64
+    DESCRIPTION: ''
+    FLDLST: *33
+    NAME: rgx_fla_dbus_41
+  - ATTR: 9
+    COUNT: 64
+    DESCRIPTION: ''
+    FLDLST: *33
+    NAME: rgx_fla_dbus_42
+  - ATTR: 9
+    COUNT: 64
+    DESCRIPTION: ''
+    FLDLST: *33
+    NAME: rgx_fla_dbus_43
+  - ATTR: 9
+    COUNT: 64
+    DESCRIPTION: ''
+    FLDLST: *33
+    NAME: rgx_fla_dbus_44
+  - ATTR: 9
+    COUNT: 64
+    DESCRIPTION: ''
+    FLDLST: *33
+    NAME: rgx_fla_dbus_45
+  - ATTR: 9
+    COUNT: 64
+    DESCRIPTION: ''
+    FLDLST: *33
+    NAME: rgx_fla_dbus_46
+  - ATTR: 9
+    COUNT: 64
+    DESCRIPTION: ''
+    FLDLST: *33
+    NAME: rgx_fla_dbus_47
+  - ATTR: 9
+    COUNT: 64
+    DESCRIPTION: ''
+    FLDLST: *33
+    NAME: rgx_fla_dbus_48
+  - ATTR: 9
+    COUNT: 64
+    DESCRIPTION: ''
+    FLDLST: *33
+    NAME: rgx_fla_dbus_49
+  - ATTR: 9
+    COUNT: 64
+    DESCRIPTION: ''
+    FLDLST: *33
+    NAME: rgx_fla_dbus_50
+  - ATTR: 9
+    COUNT: 64
+    DESCRIPTION: ''
+    FLDLST: *33
+    NAME: rgx_fla_dbus_51
+  - ATTR: 9
+    COUNT: 64
+    DESCRIPTION: ''
+    FLDLST: *33
+    NAME: rgx_fla_dbus_52
+  - ATTR: 9
+    COUNT: 64
+    DESCRIPTION: ''
+    FLDLST: *33
+    NAME: rgx_fla_dbus_53
+  - ATTR: 9
+    COUNT: 64
+    DESCRIPTION: ''
+    FLDLST: *33
+    NAME: rgx_fla_dbus_54
+  - ATTR: 9
+    COUNT: 64
+    DESCRIPTION: ''
+    FLDLST: *33
+    NAME: rgx_fla_dbus_55
+  - ATTR: 9
+    COUNT: 64
+    DESCRIPTION: ''
+    FLDLST: *33
+    NAME: rgx_fla_dbus_56
+  - ATTR: 9
+    COUNT: 64
+    DESCRIPTION: ''
+    FLDLST: *33
+    NAME: rgx_fla_dbus_57
+  - ATTR: 9
+    COUNT: 64
+    DESCRIPTION: ''
+    FLDLST: *33
+    NAME: rgx_fla_dbus_58
+  - ATTR: 9
+    COUNT: 64
+    DESCRIPTION: ''
+    FLDLST: *33
+    NAME: rgx_fla_dbus_59
+  - ATTR: 9
+    COUNT: 64
+    DESCRIPTION: ''
+    FLDLST: *33
+    NAME: rgx_fla_dbus_60
+  - ATTR: 9
+    COUNT: 64
+    DESCRIPTION: ''
+    FLDLST: *33
+    NAME: rgx_fla_dbus_61
+  - ATTR: 9
+    COUNT: 64
+    DESCRIPTION: ''
+    FLDLST: *33
+    NAME: rgx_fla_dbus_62
+  - ATTR: 9
+    COUNT: 64
+    DESCRIPTION: ''
+    FLDLST: *33
+    NAME: rgx_fla_dbus_63
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: ''
+    FLDLST:
+      - DEFAULT: 160
+        DESCRIPTION: ' '
+        NAME: st
+        WIDTH: 8
+      - DEFAULT: 32
+        DESCRIPTION: ' '
+        NAME: lt
+        WIDTH: 8
+      - DEFAULT: 7
+        DESCRIPTION: ' '
+        NAME: log_chunk_size
+        WIDTH: 5
+    NAME: rgx_nfa_stack_ctl_cfg
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: ''
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: ' '
+        NAME: prefetch_en
+        WIDTH: 1
+      - DEFAULT: 2
+        DESCRIPTION: ' '
+        NAME: bmtrig
+        WIDTH: 2
+      - DEFAULT: 4
+        DESCRIPTION: ' '
+        NAME: exttrig
+        WIDTH: 3
+    NAME: rgx_nfa_instr_prefetch_cfg
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: Config register for memory error injection
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into nfa_payload_buff memory
+        NAME: nfa_payload_buff
+        WIDTH: 8
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into nfa_stack memory
+        NAME: nfa_stack
+        WIDTH: 16
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into nfaccmap_buff memory
+        NAME: nfa_ccmap_buff
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into rcp_iwq_storage memory
+        NAME: rcp_iwq_storage
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into rcp_frame_stack memory
+        NAME: rcp_frame_stack
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into rcp_mem_fth_dfa memory
+        NAME: rcp_mem_fth_dfa
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into rcp_mem_res_dfa memory
+        NAME: rcp_mem_res_dfa
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into rcp_mem_res_nfa memory
+        NAME: rcp_mem_res_nfa
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into rcp_next_stack_mem memory
+        NAME: rcp_next_stack_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into rcp_mem_la_res_dfa memory
+        NAME: rcp_mem_la_res_dfa
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: |-
+          Type of error to be injected
+                                            Applied to all memory error injection
+                                            0 - Uncorrectable error
+                                            1 - Correctable error 
+        NAME: err_type
+        WIDTH: 1
+    NAME: rgx_mem_err_inj_cfg
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: ''
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Return WU Code
+        NAME: wu_code_msk
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: ev_vec of dbg_macr_4
+        NAME: ev_vec_4
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: ev_vec of dbg_macr_3
+        NAME: ev_vec_3
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: ev_vec of dbg_macr_2
+        NAME: ev_vec_2
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: ev_vec of dbg_macr_1
+        NAME: ev_vec_1
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: 'Event Counter Enable '
+        NAME: evnt_cntr_en
+        WIDTH: 1
+    NAME: rgx_rcp_evnt_cfg
+  - ATTR: 10
+    DESCRIPTION: 'Uncorrrectable error counters. '
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Uncorrrectable counters. Software writable. No rollover.
+        NAME: cnt
+        WIDTH: 16
+    NAME: rgx_rcp_cnt_ecc_mb
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: DFA Thread Disable Register for RCP Scheduling
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Thread Scheduling Disable
+        NAME: thread_sch_dis
+        WIDTH: 16
+    NAME: rgx_rcp_dfa0_thread_dis
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: DFA Thread Disable Register for RCP Scheduling
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Thread Scheduling Disable
+        NAME: thread_sch_dis
+        WIDTH: 16
+    NAME: rgx_rcp_dfa1_thread_dis
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: DFA Thread Disable Register for RCP Scheduling
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Thread Scheduling Disable
+        NAME: thread_sch_dis
+        WIDTH: 16
+    NAME: rgx_rcp_dfa2_thread_dis
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: NFA Thread Disable Register for RCP Scheduling
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Thread Scheduling Disable
+        NAME: thread_sch_dis
+        WIDTH: 16
+    NAME: rgx_rcp_nfa_thread_dis
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: ' DMA DMI Config '
+    ENTRIES: 1
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: ' Value to use for opcode in LSN read req. '
+        NAME: rd_opcode
+        WIDTH: 5
+      - DEFAULT: 14
+        DESCRIPTION: ' Value to use for cache bits on the AXM interface. '
+        NAME: axm_cache
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: ' Value to use for prefetch bit on the AXM interface. '
+        NAME: axm_prefetch
+        WIDTH: 1
+    NAME: rgx_dmi_cfg
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: ' DMA GID Range Config '
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: minimum bm gid
+        NAME: bm_gid_min
+        WIDTH: 5
+      - DEFAULT: 8
+        DESCRIPTION: maximum bm gid
+        NAME: bm_gid_max
+        WIDTH: 5
+      - DEFAULT: 12
+        DESCRIPTION: minimum hbm gid
+        NAME: hbm_gid_min
+        WIDTH: 5
+      - DEFAULT: 15
+        DESCRIPTION: maximum bm gid
+        NAME: hbm_gid_max
+        WIDTH: 5
+      - DEFAULT: 22
+        DESCRIPTION: minimum ddr gid
+        NAME: ddr_gid_min
+        WIDTH: 5
+      - DEFAULT: 23
+        DESCRIPTION: maximum ddr gid
+        NAME: ddr_gid_max
+        WIDTH: 5
+    NAME: rgx_dmi_gid_range_cfg
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: ' DMA Rate Limit Config '
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: bm request rate limit
+        NAME: bm_rate_limit
+        WIDTH: 8
+      - DEFAULT: 0
+        DESCRIPTION: hbm request rate limit
+        NAME: hbm_rate_limit
+        WIDTH: 8
+      - DEFAULT: 8
+        DESCRIPTION: ddr request rate limit
+        NAME: ddr_rate_limit
+        WIDTH: 8
+    NAME: rgx_dmi_rate_limit_cfg
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: ' DMA Request Limit Config '
+    FLDLST:
+      - DEFAULT: 64
+        DESCRIPTION: bm outstanding write request limit
+        NAME: bm_wr_limit
+        WIDTH: 8
+      - DEFAULT: 128
+        DESCRIPTION: hbm outstanding write request limit
+        NAME: hbm_wr_limit
+        WIDTH: 8
+      - DEFAULT: 64
+        DESCRIPTION: ddr outstanding write request limit
+        NAME: ddr_wr_limit
+        WIDTH: 8
+      - DEFAULT: 64
+        DESCRIPTION: bm outstanding read request limit
+        NAME: bm_rd_limit
+        WIDTH: 8
+      - DEFAULT: 128
+        DESCRIPTION: hbm outstanding read request limit
+        NAME: hbm_rd_limit
+        WIDTH: 8
+      - DEFAULT: 64
+        DESCRIPTION: ddr outstanding read request limit
+        NAME: ddr_rd_limit
+        WIDTH: 8
+    NAME: rgx_dmi_req_limit_cfg
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: ' DMA Write Tag Config '
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Minimum tag value for scatter stage
+        NAME: str_tag_min
+        WIDTH: 8
+      - DEFAULT: 127
+        DESCRIPTION: Maximum tag for scatter stage
+        NAME: str_tag_max
+        WIDTH: 8
+      - DEFAULT: 128
+        DESCRIPTION: Minimum tag value for complete stage
+        NAME: cmp_tag_min
+        WIDTH: 8
+      - DEFAULT: 255
+        DESCRIPTION: Maximum tag for complete stage
+        NAME: cmp_tag_max
+        WIDTH: 8
+    NAME: rgx_dmi_wr_tag_cfg
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: ' DMI Read Tag Config'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Minimum tag for dispatch stage
+        NAME: dph_tag_min
+        WIDTH: 8
+      - DEFAULT: 63
+        DESCRIPTION: Maximum tag for dispatch stage
+        NAME: dph_tag_max
+        WIDTH: 8
+      - DEFAULT: 64
+        DESCRIPTION: Minimum tag for gather stage
+        NAME: gtr_tag_min
+        WIDTH: 9
+      - DEFAULT: 127
+        DESCRIPTION: Maximum tag for gather stage
+        NAME: gtr_tag_max
+        WIDTH: 9
+      - DEFAULT: 128
+        DESCRIPTION: Minimum tag for acceleration stage
+        NAME: acc_tag_min
+        WIDTH: 8
+      - DEFAULT: 255
+        DESCRIPTION: Maximum tag for acceleration stage
+        NAME: acc_tag_max
+        WIDTH: 8
+    NAME: rgx_dmi_rd_tag_cfg
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: DFA Control Register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Disable the Rule Cache
+        NAME: cache_disable
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Match All Nodes
+        NAME: match_all
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Clock Enable Override
+        NAME: clk_en_override
+        WIDTH: 1
+    NAME: rgx_dfa0_cfg
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: DFA Control Register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Disable the Rule Cache
+        NAME: cache_disable
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Match All Nodes
+        NAME: match_all
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Clock Enable Override
+        NAME: clk_en_override
+        WIDTH: 1
+    NAME: rgx_dfa1_cfg
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: DFA Control Register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Disable the Rule Cache
+        NAME: cache_disable
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Match All Nodes
+        NAME: match_all
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Clock Enable Override
+        NAME: clk_en_override
+        WIDTH: 1
+    NAME: rgx_dfa2_cfg
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: DFA Age Counter  Register
+    FLDLST:
+      - DEFAULT: 128
+        DESCRIPTION: Number of SOC_CLK cycles increasing age of cache location
+        NAME: age_cnt
+        WIDTH: 16
+    NAME: rgx_dfa0_age_counter_cfg
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: DFA Age Counter  Register
+    FLDLST:
+      - DEFAULT: 128
+        DESCRIPTION: Number of SOC_CLK cycles increasing age of cache location
+        NAME: age_cnt
+        WIDTH: 16
+    NAME: rgx_dfa1_age_counter_cfg
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: DFA Age Counter  Register
+    FLDLST:
+      - DEFAULT: 128
+        DESCRIPTION: Number of SOC_CLK cycles increasing age of cache location
+        NAME: age_cnt
+        WIDTH: 16
+    NAME: rgx_dfa2_age_counter_cfg
+  - ATTR: 9
+    COUNT: 16
+    DESCRIPTION: DFA Thread Status Register
+    FLDLST: &34
+      - DEFAULT: 0
+        DESCRIPTION: Average EXM latency in cycles
+        NAME: avg_exm_latency
+        WIDTH: 16
+      - DEFAULT: 0
+        DESCRIPTION: Number of non-idle cycles since found last node
+        NAME: active_cycles_since_last_node_found
+        WIDTH: 16
+      - DEFAULT: 0
+        DESCRIPTION: Thread Next Node State
+        NAME: find_state
+        WIDTH: 4
+    NAME: rgx_dfa0_thread_status_0
+  - ATTR: 9
+    COUNT: 16
+    DESCRIPTION: DFA Thread Status Register
+    FLDLST: *34
+    NAME: rgx_dfa0_thread_status_1
+  - ATTR: 9
+    COUNT: 16
+    DESCRIPTION: DFA Thread Status Register
+    FLDLST: *34
+    NAME: rgx_dfa0_thread_status_2
+  - ATTR: 9
+    COUNT: 16
+    DESCRIPTION: DFA Thread Status Register
+    FLDLST: *34
+    NAME: rgx_dfa0_thread_status_3
+  - ATTR: 9
+    COUNT: 16
+    DESCRIPTION: DFA Thread Status Register
+    FLDLST: *34
+    NAME: rgx_dfa0_thread_status_4
+  - ATTR: 9
+    COUNT: 16
+    DESCRIPTION: DFA Thread Status Register
+    FLDLST: *34
+    NAME: rgx_dfa0_thread_status_5
+  - ATTR: 9
+    COUNT: 16
+    DESCRIPTION: DFA Thread Status Register
+    FLDLST: *34
+    NAME: rgx_dfa0_thread_status_6
+  - ATTR: 9
+    COUNT: 16
+    DESCRIPTION: DFA Thread Status Register
+    FLDLST: *34
+    NAME: rgx_dfa0_thread_status_7
+  - ATTR: 9
+    COUNT: 16
+    DESCRIPTION: DFA Thread Status Register
+    FLDLST: *34
+    NAME: rgx_dfa0_thread_status_8
+  - ATTR: 9
+    COUNT: 16
+    DESCRIPTION: DFA Thread Status Register
+    FLDLST: *34
+    NAME: rgx_dfa0_thread_status_9
+  - ATTR: 9
+    COUNT: 16
+    DESCRIPTION: DFA Thread Status Register
+    FLDLST: *34
+    NAME: rgx_dfa0_thread_status_10
+  - ATTR: 9
+    COUNT: 16
+    DESCRIPTION: DFA Thread Status Register
+    FLDLST: *34
+    NAME: rgx_dfa0_thread_status_11
+  - ATTR: 9
+    COUNT: 16
+    DESCRIPTION: DFA Thread Status Register
+    FLDLST: *34
+    NAME: rgx_dfa0_thread_status_12
+  - ATTR: 9
+    COUNT: 16
+    DESCRIPTION: DFA Thread Status Register
+    FLDLST: *34
+    NAME: rgx_dfa0_thread_status_13
+  - ATTR: 9
+    COUNT: 16
+    DESCRIPTION: DFA Thread Status Register
+    FLDLST: *34
+    NAME: rgx_dfa0_thread_status_14
+  - ATTR: 9
+    COUNT: 16
+    DESCRIPTION: DFA Thread Status Register
+    FLDLST: *34
+    NAME: rgx_dfa0_thread_status_15
+  - ATTR: 9
+    COUNT: 16
+    DESCRIPTION: DFA Thread Status Register
+    FLDLST: &35
+      - DEFAULT: 0
+        DESCRIPTION: Average EXM latency in cycles
+        NAME: avg_exm_latency
+        WIDTH: 16
+      - DEFAULT: 0
+        DESCRIPTION: Number of non-idle cycles since found last node
+        NAME: active_cycles_since_last_node_found
+        WIDTH: 16
+      - DEFAULT: 0
+        DESCRIPTION: Thread Next Node State
+        NAME: find_state
+        WIDTH: 4
+    NAME: rgx_dfa1_thread_status_0
+  - ATTR: 9
+    COUNT: 16
+    DESCRIPTION: DFA Thread Status Register
+    FLDLST: *35
+    NAME: rgx_dfa1_thread_status_1
+  - ATTR: 9
+    COUNT: 16
+    DESCRIPTION: DFA Thread Status Register
+    FLDLST: *35
+    NAME: rgx_dfa1_thread_status_2
+  - ATTR: 9
+    COUNT: 16
+    DESCRIPTION: DFA Thread Status Register
+    FLDLST: *35
+    NAME: rgx_dfa1_thread_status_3
+  - ATTR: 9
+    COUNT: 16
+    DESCRIPTION: DFA Thread Status Register
+    FLDLST: *35
+    NAME: rgx_dfa1_thread_status_4
+  - ATTR: 9
+    COUNT: 16
+    DESCRIPTION: DFA Thread Status Register
+    FLDLST: *35
+    NAME: rgx_dfa1_thread_status_5
+  - ATTR: 9
+    COUNT: 16
+    DESCRIPTION: DFA Thread Status Register
+    FLDLST: *35
+    NAME: rgx_dfa1_thread_status_6
+  - ATTR: 9
+    COUNT: 16
+    DESCRIPTION: DFA Thread Status Register
+    FLDLST: *35
+    NAME: rgx_dfa1_thread_status_7
+  - ATTR: 9
+    COUNT: 16
+    DESCRIPTION: DFA Thread Status Register
+    FLDLST: *35
+    NAME: rgx_dfa1_thread_status_8
+  - ATTR: 9
+    COUNT: 16
+    DESCRIPTION: DFA Thread Status Register
+    FLDLST: *35
+    NAME: rgx_dfa1_thread_status_9
+  - ATTR: 9
+    COUNT: 16
+    DESCRIPTION: DFA Thread Status Register
+    FLDLST: *35
+    NAME: rgx_dfa1_thread_status_10
+  - ATTR: 9
+    COUNT: 16
+    DESCRIPTION: DFA Thread Status Register
+    FLDLST: *35
+    NAME: rgx_dfa1_thread_status_11
+  - ATTR: 9
+    COUNT: 16
+    DESCRIPTION: DFA Thread Status Register
+    FLDLST: *35
+    NAME: rgx_dfa1_thread_status_12
+  - ATTR: 9
+    COUNT: 16
+    DESCRIPTION: DFA Thread Status Register
+    FLDLST: *35
+    NAME: rgx_dfa1_thread_status_13
+  - ATTR: 9
+    COUNT: 16
+    DESCRIPTION: DFA Thread Status Register
+    FLDLST: *35
+    NAME: rgx_dfa1_thread_status_14
+  - ATTR: 9
+    COUNT: 16
+    DESCRIPTION: DFA Thread Status Register
+    FLDLST: *35
+    NAME: rgx_dfa1_thread_status_15
+  - ATTR: 9
+    COUNT: 16
+    DESCRIPTION: DFA Thread Status Register
+    FLDLST: &36
+      - DEFAULT: 0
+        DESCRIPTION: Average EXM latency in cycles
+        NAME: avg_exm_latency
+        WIDTH: 16
+      - DEFAULT: 0
+        DESCRIPTION: Number of non-idle cycles since found last node
+        NAME: active_cycles_since_last_node_found
+        WIDTH: 16
+      - DEFAULT: 0
+        DESCRIPTION: Thread Next Node State
+        NAME: find_state
+        WIDTH: 4
+    NAME: rgx_dfa2_thread_status_0
+  - ATTR: 9
+    COUNT: 16
+    DESCRIPTION: DFA Thread Status Register
+    FLDLST: *36
+    NAME: rgx_dfa2_thread_status_1
+  - ATTR: 9
+    COUNT: 16
+    DESCRIPTION: DFA Thread Status Register
+    FLDLST: *36
+    NAME: rgx_dfa2_thread_status_2
+  - ATTR: 9
+    COUNT: 16
+    DESCRIPTION: DFA Thread Status Register
+    FLDLST: *36
+    NAME: rgx_dfa2_thread_status_3
+  - ATTR: 9
+    COUNT: 16
+    DESCRIPTION: DFA Thread Status Register
+    FLDLST: *36
+    NAME: rgx_dfa2_thread_status_4
+  - ATTR: 9
+    COUNT: 16
+    DESCRIPTION: DFA Thread Status Register
+    FLDLST: *36
+    NAME: rgx_dfa2_thread_status_5
+  - ATTR: 9
+    COUNT: 16
+    DESCRIPTION: DFA Thread Status Register
+    FLDLST: *36
+    NAME: rgx_dfa2_thread_status_6
+  - ATTR: 9
+    COUNT: 16
+    DESCRIPTION: DFA Thread Status Register
+    FLDLST: *36
+    NAME: rgx_dfa2_thread_status_7
+  - ATTR: 9
+    COUNT: 16
+    DESCRIPTION: DFA Thread Status Register
+    FLDLST: *36
+    NAME: rgx_dfa2_thread_status_8
+  - ATTR: 9
+    COUNT: 16
+    DESCRIPTION: DFA Thread Status Register
+    FLDLST: *36
+    NAME: rgx_dfa2_thread_status_9
+  - ATTR: 9
+    COUNT: 16
+    DESCRIPTION: DFA Thread Status Register
+    FLDLST: *36
+    NAME: rgx_dfa2_thread_status_10
+  - ATTR: 9
+    COUNT: 16
+    DESCRIPTION: DFA Thread Status Register
+    FLDLST: *36
+    NAME: rgx_dfa2_thread_status_11
+  - ATTR: 9
+    COUNT: 16
+    DESCRIPTION: DFA Thread Status Register
+    FLDLST: *36
+    NAME: rgx_dfa2_thread_status_12
+  - ATTR: 9
+    COUNT: 16
+    DESCRIPTION: DFA Thread Status Register
+    FLDLST: *36
+    NAME: rgx_dfa2_thread_status_13
+  - ATTR: 9
+    COUNT: 16
+    DESCRIPTION: DFA Thread Status Register
+    FLDLST: *36
+    NAME: rgx_dfa2_thread_status_14
+  - ATTR: 9
+    COUNT: 16
+    DESCRIPTION: DFA Thread Status Register
+    FLDLST: *36
+    NAME: rgx_dfa2_thread_status_15
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: DFA Error Log Register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Error Information (contents vary based on type of error
+        NAME: error_log
+        WIDTH: 64
+    NAME: rgx_dfa0_error_log
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: DFA Error Log Register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Error Information (contents vary based on type of error
+        NAME: error_log
+        WIDTH: 64
+    NAME: rgx_dfa1_error_log
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: DFA Error Log Register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Error Information (contents vary based on type of error
+        NAME: error_log
+        WIDTH: 64
+    NAME: rgx_dfa2_error_log
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: Config register for memory error injection
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into lru memory
+        NAME: lru_mem
+        WIDTH: 8
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into rule memory
+        NAME: rule_mem
+        WIDTH: 8
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into state memory
+        NAME: state_mem
+        WIDTH: 1
+    NAME: rgx_dfa0_mem_err_inj_cfg
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: Config register for memory error injection
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into lru memory
+        NAME: lru_mem
+        WIDTH: 8
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into rule memory
+        NAME: rule_mem
+        WIDTH: 8
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into state memory
+        NAME: state_mem
+        WIDTH: 1
+    NAME: rgx_dfa1_mem_err_inj_cfg
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: Config register for memory error injection
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into lru memory
+        NAME: lru_mem
+        WIDTH: 8
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into rule memory
+        NAME: rule_mem
+        WIDTH: 8
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into state memory
+        NAME: state_mem
+        WIDTH: 1
+    NAME: rgx_dfa2_mem_err_inj_cfg
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: SRAM bit vector that failed Read
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                         First SRAM Parity error detected (1-hot)
+                                         Set when first error is detected
+                                         Reset when corresponding interrupt status bit is cleared
+                                         [0]  - state_mem_perr
+                                         [1]  - rule_mem_perr
+                                         [2]  - lru_mem_perr
+                                        
+        NAME: val
+        WIDTH: 3
+    NAME: rgx_dfa0_sram_log_err
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: SRAM bit vector that failed Read
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                         First SRAM Parity error detected (1-hot)
+                                         Set when first error is detected
+                                         Reset when corresponding interrupt status bit is cleared
+                                         [0]  - state_mem_perr
+                                         [1]  - rule_mem_perr
+                                         [2]  - lru_mem_perr
+                                        
+        NAME: val
+        WIDTH: 3
+    NAME: rgx_dfa1_sram_log_err
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: SRAM bit vector that failed Read
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                         First SRAM Parity error detected (1-hot)
+                                         Set when first error is detected
+                                         Reset when corresponding interrupt status bit is cleared
+                                         [0]  - state_mem_perr
+                                         [1]  - rule_mem_perr
+                                         [2]  - lru_mem_perr
+                                        
+        NAME: val
+        WIDTH: 3
+    NAME: rgx_dfa2_sram_log_err
+  - ATTR: 9
+    DESCRIPTION: SRAM address log register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                           Address related to Parity error
+                                           detected while reading data from SRAM
+                                          
+        NAME: val
+        WIDTH: 16
+    NAME: rgx_dfa0_sram_log_addr
+  - ATTR: 9
+    DESCRIPTION: SRAM address log register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                           Address related to Parity error
+                                           detected while reading data from SRAM
+                                          
+        NAME: val
+        WIDTH: 16
+    NAME: rgx_dfa1_sram_log_addr
+  - ATTR: 9
+    DESCRIPTION: SRAM address log register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                           Address related to Parity error
+                                           detected while reading data from SRAM
+                                          
+        NAME: val
+        WIDTH: 16
+    NAME: rgx_dfa2_sram_log_addr
+  - ATTR: 9
+    DESCRIPTION: SRAM bit vector that failed ECC
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                  First SRAM ECC error detected (1-hot)
+                                  Set when first error is detected
+                                  Reset when corresponding interrupt status bit is cleared
+                                  
+        NAME: val
+        WIDTH: 12
+    NAME: rgx_sram_log_err
+  - ATTR: 9
+    DESCRIPTION: SRAM syndrome log register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                  Syndrome related to ECC error
+                                  detected while reading data from SRAM
+                                  
+        NAME: val
+        WIDTH: 9
+    NAME: rgx_sram_log_syndrome
+  - ATTR: 9
+    DESCRIPTION: SRAM address log register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                  Address related to ECC error
+                                  detected while reading data from SRAM
+                                  
+        NAME: val
+        WIDTH: 9
+    NAME: rgx_sram_log_addr
+  - ATTR: 10
+    DESCRIPTION: RGX NFA debug probe counters
+    ENTRIES: 8
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: hdr Debug Probe
+        NAME: fld_count
+        WIDTH: 64
+    NAME: rgx_nfa_dbg_probe_hdr
+  - ATTR: 10
+    DESCRIPTION: RGX NFA debug probe counters
+    ENTRIES: 8
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: pkt Debug Probe
+        NAME: fld_count
+        WIDTH: 64
+    NAME: rgx_nfa_dbg_probe_pkt
+  - ATTR: 10
+    DESCRIPTION: RGX NFA debug probe counters
+    ENTRIES: 8
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: pf_pkt Debug Probe
+        NAME: fld_count
+        WIDTH: 64
+    NAME: rgx_nfa_dbg_probe_pf_pkt
+  - ATTR: 10
+    DESCRIPTION: RGX NFA debug probe counters
+    ENTRIES: 8
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: cmpl Debug Probe
+        NAME: fld_count
+        WIDTH: 64
+    NAME: rgx_nfa_dbg_probe_cmpl
+  - ATTR: 10
+    DESCRIPTION: RGX NFA debug probe counters
+    ENTRIES: 8
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: result_wr Debug Probe
+        NAME: fld_count
+        WIDTH: 64
+    NAME: rgx_nfa_dbg_probe_result_wr
+  - ATTR: 10
+    DESCRIPTION: RGX NFA debug probe counters
+    ENTRIES: 8
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: nxtstack_wr Debug Probe
+        NAME: fld_count
+        WIDTH: 64
+    NAME: rgx_nfa_dbg_probe_nxtstack_wr
+  - ATTR: 10
+    DESCRIPTION: RGX NFA debug probe counters
+    ENTRIES: 8
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: curstack_wr Debug Probe
+        NAME: fld_count
+        WIDTH: 64
+    NAME: rgx_nfa_dbg_probe_curstack_wr
+  - ATTR: 10
+    DESCRIPTION: RGX NFA debug probe counters
+    ENTRIES: 8
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: result_wr_resp Debug Probe
+        NAME: fld_count
+        WIDTH: 64
+    NAME: rgx_nfa_dbg_probe_result_wr_resp
+  - ATTR: 10
+    DESCRIPTION: RGX NFA debug probe counters
+    ENTRIES: 8
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: nxtstack_wr_resp Debug Probe
+        NAME: fld_count
+        WIDTH: 64
+    NAME: rgx_nfa_dbg_probe_nxtstack_wr_resp
+  - ATTR: 10
+    DESCRIPTION: RGX NFA debug probe counters
+    ENTRIES: 8
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: curstack_wr_resp Debug Probe
+        NAME: fld_count
+        WIDTH: 64
+    NAME: rgx_nfa_dbg_probe_curstack_wr_resp
+  - ATTR: 10
+    DESCRIPTION: RGX NFA debug probe counters
+    ENTRIES: 8
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: curstack_rd Debug Probe
+        NAME: fld_count
+        WIDTH: 64
+    NAME: rgx_nfa_dbg_probe_curstack_rd
+  - ATTR: 10
+    DESCRIPTION: RGX NFA debug probe counters
+    ENTRIES: 8
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: instr_rd Debug Probe
+        NAME: fld_count
+        WIDTH: 64
+    NAME: rgx_nfa_dbg_probe_instr_rd
+  - ATTR: 10
+    DESCRIPTION: RGX NFA debug probe counters
+    ENTRIES: 8
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: curstack_rd_resp Debug Probe
+        NAME: fld_count
+        WIDTH: 64
+    NAME: rgx_nfa_dbg_probe_curstack_rd_resp
+  - ATTR: 10
+    DESCRIPTION: RGX NFA debug probe counters
+    ENTRIES: 8
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: instr_rd_resp Debug Probe
+        NAME: fld_count
+        WIDTH: 64
+    NAME: rgx_nfa_dbg_probe_instr_rd_resp
+  - ATTR: 10
+    DESCRIPTION: RGX NFA debug probe counters
+    ENTRIES: 8
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: ccmap_wr Debug Probe
+        NAME: fld_count
+        WIDTH: 64
+    NAME: rgx_nfa_dbg_probe_ccmap_wr
+  - ATTR: 10
+    ENTRIES: 8
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Debug and Performance
+        NAME: rgx_dbg
+        WIDTH: 64
+    NAME: rgx_dbgperf0
+  - ATTR: 10
+    ENTRIES: 8
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Debug and Performance
+        NAME: rgx_dbg
+        WIDTH: 64
+    NAME: rgx_dbgperf1
+  - ATTR: 10
+    ENTRIES: 8
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Debug and Performance
+        NAME: rgx_dbg
+        WIDTH: 64
+    NAME: rgx_dbgperf2
+  - ATTR: 10
+    ENTRIES: 8
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Debug and Performance
+        NAME: rgx_dbg
+        WIDTH: 64
+    NAME: rgx_dbgperf3
+  - ATTR: 10
+    ENTRIES: 8
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Debug and Performance
+        NAME: rgx_dbg
+        WIDTH: 64
+    NAME: rgx_dbgperf4
+  - ATTR: 10
+    DESCRIPTION: RGX DFA 0 debug probe counters
+    ENTRIES: 8
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: DFA 0 c2 Debug Probe
+        NAME: fld_count
+        WIDTH: 64
+    NAME: rgx_dfa0_dbg_probe_c2
+  - ATTR: 10
+    DESCRIPTION: RGX DFA 0 debug probe counters
+    ENTRIES: 8
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: DFA 0 c5 Debug Probe
+        NAME: fld_count
+        WIDTH: 64
+    NAME: rgx_dfa0_dbg_probe_c5
+  - ATTR: 10
+    DESCRIPTION: RGX DFA 1 debug probe counters
+    ENTRIES: 8
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: DFA 1 c2 Debug Probe
+        NAME: fld_count
+        WIDTH: 64
+    NAME: rgx_dfa1_dbg_probe_c2
+  - ATTR: 10
+    DESCRIPTION: RGX DFA 1 debug probe counters
+    ENTRIES: 8
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: DFA 1 c5 Debug Probe
+        NAME: fld_count
+        WIDTH: 64
+    NAME: rgx_dfa1_dbg_probe_c5
+  - ATTR: 10
+    DESCRIPTION: RGX DFA 2 debug probe counters
+    ENTRIES: 8
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: DFA 2 c2 Debug Probe
+        NAME: fld_count
+        WIDTH: 64
+    NAME: rgx_dfa2_dbg_probe_c2
+  - ATTR: 10
+    DESCRIPTION: RGX DFA 2 debug probe counters
+    ENTRIES: 8
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: DFA 2 c5 Debug Probe
+        NAME: fld_count
+        WIDTH: 64
+    NAME: rgx_dfa2_dbg_probe_c5
+  - ATTR: 10
+    ENTRIES: 40
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: data
+        NAME: data
+        WIDTH: 192
+    NAME: rgx_rcp_mem_acc_iwq
+    TIMEOUT_OK: 1
+  - ATTR: 10
+    ENTRIES: 512
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: data
+        NAME: data
+        WIDTH: 128
+    NAME: rgx_rcp_mem_acc_stack
+    TIMEOUT_OK: 1
+  - ATTR: 10
+    ENTRIES: 32
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: data
+        NAME: data
+        WIDTH: 139
+    NAME: rgx_rcp_mem_acc_fth_dfa2
+    TIMEOUT_OK: 1
+  - ATTR: 10
+    ENTRIES: 32
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: data
+        NAME: data
+        WIDTH: 139
+    NAME: rgx_rcp_mem_acc_fth_dfa1
+    TIMEOUT_OK: 1
+  - ATTR: 10
+    ENTRIES: 32
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: data
+        NAME: data
+        WIDTH: 139
+    NAME: rgx_rcp_mem_acc_fth_dfa0
+    TIMEOUT_OK: 1
+  - ATTR: 10
+    ENTRIES: 144
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: data
+        NAME: data
+        WIDTH: 61
+    NAME: rgx_rcp_mem_acc_res_dfa2
+    TIMEOUT_OK: 1
+  - ATTR: 10
+    ENTRIES: 144
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: data
+        NAME: data
+        WIDTH: 61
+    NAME: rgx_rcp_mem_acc_res_dfa1
+    TIMEOUT_OK: 1
+  - ATTR: 10
+    ENTRIES: 144
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: data
+        NAME: data
+        WIDTH: 61
+    NAME: rgx_rcp_mem_acc_res_dfa0
+    TIMEOUT_OK: 1
+  - ATTR: 10
+    ENTRIES: 128
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: data
+        NAME: data
+        WIDTH: 43
+    NAME: rgx_rcp_mem_acc_res_nfa
+    TIMEOUT_OK: 1
+  - ATTR: 10
+    ENTRIES: 80
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: data
+        NAME: data
+        WIDTH: 128
+    NAME: rgx_rcp_mem_acc_nsk_nfa
+    TIMEOUT_OK: 1
+  - ATTR: 10
+    ENTRIES: 80
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: data
+        NAME: data
+        WIDTH: 80
+    NAME: rgx_rcp_mem_acc_la_res
+    TIMEOUT_OK: 1
+  - ATTR: 10
+    ENTRIES: 256
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: data
+        NAME: data
+        WIDTH: 256
+    NAME: rgx_nfa_ccmap_buff_acc
+    TIMEOUT_OK: 1
+  - ATTR: 10
+    ENTRIES: 192
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: data
+        NAME: data
+        WIDTH: 96
+    NAME: rgx_nfa_stack_acc15
+    TIMEOUT_OK: 1
+  - ATTR: 10
+    ENTRIES: 192
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: data
+        NAME: data
+        WIDTH: 96
+    NAME: rgx_nfa_stack_acc14
+    TIMEOUT_OK: 1
+  - ATTR: 10
+    ENTRIES: 192
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: data
+        NAME: data
+        WIDTH: 96
+    NAME: rgx_nfa_stack_acc13
+    TIMEOUT_OK: 1
+  - ATTR: 10
+    ENTRIES: 192
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: data
+        NAME: data
+        WIDTH: 96
+    NAME: rgx_nfa_stack_acc12
+    TIMEOUT_OK: 1
+  - ATTR: 10
+    ENTRIES: 192
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: data
+        NAME: data
+        WIDTH: 96
+    NAME: rgx_nfa_stack_acc11
+    TIMEOUT_OK: 1
+  - ATTR: 10
+    ENTRIES: 192
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: data
+        NAME: data
+        WIDTH: 96
+    NAME: rgx_nfa_stack_acc10
+    TIMEOUT_OK: 1
+  - ATTR: 10
+    ENTRIES: 192
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: data
+        NAME: data
+        WIDTH: 96
+    NAME: rgx_nfa_stack_acc9
+    TIMEOUT_OK: 1
+  - ATTR: 10
+    ENTRIES: 192
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: data
+        NAME: data
+        WIDTH: 96
+    NAME: rgx_nfa_stack_acc8
+    TIMEOUT_OK: 1
+  - ATTR: 10
+    ENTRIES: 192
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: data
+        NAME: data
+        WIDTH: 96
+    NAME: rgx_nfa_stack_acc7
+    TIMEOUT_OK: 1
+  - ATTR: 10
+    ENTRIES: 192
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: data
+        NAME: data
+        WIDTH: 96
+    NAME: rgx_nfa_stack_acc6
+    TIMEOUT_OK: 1
+  - ATTR: 10
+    ENTRIES: 192
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: data
+        NAME: data
+        WIDTH: 96
+    NAME: rgx_nfa_stack_acc5
+    TIMEOUT_OK: 1
+  - ATTR: 10
+    ENTRIES: 192
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: data
+        NAME: data
+        WIDTH: 96
+    NAME: rgx_nfa_stack_acc4
+    TIMEOUT_OK: 1
+  - ATTR: 10
+    ENTRIES: 192
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: data
+        NAME: data
+        WIDTH: 96
+    NAME: rgx_nfa_stack_acc3
+    TIMEOUT_OK: 1
+  - ATTR: 10
+    ENTRIES: 192
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: data
+        NAME: data
+        WIDTH: 96
+    NAME: rgx_nfa_stack_acc2
+    TIMEOUT_OK: 1
+  - ATTR: 10
+    ENTRIES: 192
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: data
+        NAME: data
+        WIDTH: 96
+    NAME: rgx_nfa_stack_acc1
+    TIMEOUT_OK: 1
+  - ATTR: 10
+    ENTRIES: 192
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: data
+        NAME: data
+        WIDTH: 96
+    NAME: rgx_nfa_stack_acc0
+    TIMEOUT_OK: 1
+  - ATTR: 10
+    ENTRIES: 512
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: data
+        NAME: data
+        WIDTH: 128
+    NAME: rgx_nfa_payload_buff_acc3
+    TIMEOUT_OK: 1
+  - ATTR: 10
+    ENTRIES: 512
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: data
+        NAME: data
+        WIDTH: 128
+    NAME: rgx_nfa_payload_buff_acc2
+    TIMEOUT_OK: 1
+  - ATTR: 10
+    ENTRIES: 512
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: data
+        NAME: data
+        WIDTH: 128
+    NAME: rgx_nfa_payload_buff_acc1
+    TIMEOUT_OK: 1
+  - ATTR: 10
+    ENTRIES: 512
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: data
+        NAME: data
+        WIDTH: 128
+    NAME: rgx_nfa_payload_buff_acc0
+    TIMEOUT_OK: 1
+XASIZE: 0

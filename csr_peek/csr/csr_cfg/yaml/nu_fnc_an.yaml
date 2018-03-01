@@ -1,0 +1,1169 @@
+---
+ASIZE: 8388608
+COUNT: 4
+DESCRIPTION: NU_FNC CSR Spec
+INTR:
+  FATAL:
+    - DESCRIPTION: Retry control Buffer Memory Double Bit ECC Error
+      NAME: rtry_cbuf_uerr
+      WIDTH: 1
+    - DESCRIPTION: Retry data Buffer Memory Double Bit ECC Error
+      NAME: rtry_dbuf_uerr
+      WIDTH: 1
+    - DESCRIPTION: Rx frame Buffer Memory Double Bit ECC Error
+      NAME: rx_frm_buf_uerr
+      WIDTH: 1
+    - DESCRIPTION: rx message Buffer Memory Double Bit ECC Error
+      NAME: rx_mbuf_uerr
+      WIDTH: 1
+    - DESCRIPTION: tx message Buffer Memory Double Bit ECC Error
+      NAME: tx_mbuf_uerr
+      WIDTH: 1
+  NON_FATAL:
+    - DESCRIPTION: Retry control Buffer Memory Single Bit ECC Error
+      NAME: rtry_cbuf_cerr
+      WIDTH: 1
+    - DESCRIPTION: Retry data Buffer Memory Single Bit ECC Error
+      NAME: rtry_dbuf_cerr
+      WIDTH: 1
+    - DESCRIPTION: Rx frame Buffer Memory Single Bit ECC Error
+      NAME: rx_frm_buf_cerr
+      WIDTH: 1
+    - DESCRIPTION: rx message Buffer Memory Single Bit ECC Error
+      NAME: rx_mbuf_cerr
+      WIDTH: 1
+    - DESCRIPTION: tx message Buffer Memory Single Bit ECC Error
+      NAME: tx_mbuf_cerr
+      WIDTH: 1
+INTR_PORT_EN: 1
+NAME: NU_FNC_AN
+PARENTNAME: NU_0_AN
+REGLST:
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: |-
+          Timeout Configuration. Cycles are RSU clk based.
+                            - 00 : 1024 cycles
+                            - 01 : 256 cycles
+                            - 10 : 4096 cycles
+                            - 11 : infinite
+        NAME: val
+        WIDTH: 2
+    NAME: nu_fnc_timeout_thresh_cfg
+  - ATTR: 9
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: "Timed out Status. Cycles are RSU clk based. Becomes 1 when timed out. Write any value to clear it.\n                  "
+        NAME: val
+        WIDTH: 1
+    NAME: nu_fnc_timedout_sta
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: |-
+          Clear Timeout Status. Data is ignored. A write
+                     will clear the timeout status bit
+        NAME: val
+        WIDTH: 1
+    NAME: nu_fnc_timeout_clr
+    TEST_ATTR: 1
+  - ATTR: 256
+    FLDLST:
+      - &1
+        DESCRIPTION: Retry control Buffer Memory Double Bit ECC Error
+        NAME: rtry_cbuf_uerr
+        WIDTH: 1
+      - &2
+        DESCRIPTION: Retry data Buffer Memory Double Bit ECC Error
+        NAME: rtry_dbuf_uerr
+        WIDTH: 1
+      - &3
+        DESCRIPTION: Rx frame Buffer Memory Double Bit ECC Error
+        NAME: rx_frm_buf_uerr
+        WIDTH: 1
+      - &4
+        DESCRIPTION: rx message Buffer Memory Double Bit ECC Error
+        NAME: rx_mbuf_uerr
+        WIDTH: 1
+      - &5
+        DESCRIPTION: tx message Buffer Memory Double Bit ECC Error
+        NAME: tx_mbuf_uerr
+        WIDTH: 1
+    NAME: nu_fnc_fatal_intr_cause
+  - ATTR: 512
+    FLDLST:
+      - *1
+      - *2
+      - *3
+      - *4
+      - *5
+    NAME: nu_fnc_fatal_intr_stat
+  - ATTR: 1024
+    FLDLST:
+      - *1
+      - *2
+      - *3
+      - *4
+      - *5
+    NAME: nu_fnc_fatal_intr_mask
+  - ATTR: 2048
+    FLDLST:
+      - *1
+      - *2
+      - *3
+      - *4
+      - *5
+    NAME: nu_fnc_fatal_intr_bset
+  - ATTR: 4096
+    FLDLST:
+      - *1
+      - *2
+      - *3
+      - *4
+      - *5
+    NAME: nu_fnc_fatal_intr_bclr
+  - ATTR: 256
+    FLDLST:
+      - &6
+        DESCRIPTION: Retry control Buffer Memory Single Bit ECC Error
+        NAME: rtry_cbuf_cerr
+        WIDTH: 1
+      - &7
+        DESCRIPTION: Retry data Buffer Memory Single Bit ECC Error
+        NAME: rtry_dbuf_cerr
+        WIDTH: 1
+      - &8
+        DESCRIPTION: Rx frame Buffer Memory Single Bit ECC Error
+        NAME: rx_frm_buf_cerr
+        WIDTH: 1
+      - &9
+        DESCRIPTION: rx message Buffer Memory Single Bit ECC Error
+        NAME: rx_mbuf_cerr
+        WIDTH: 1
+      - &10
+        DESCRIPTION: tx message Buffer Memory Single Bit ECC Error
+        NAME: tx_mbuf_cerr
+        WIDTH: 1
+    NAME: nu_fnc_non_fatal_intr_cause
+  - ATTR: 512
+    FLDLST:
+      - *6
+      - *7
+      - *8
+      - *9
+      - *10
+    NAME: nu_fnc_non_fatal_intr_stat
+  - ATTR: 1024
+    FLDLST:
+      - *6
+      - *7
+      - *8
+      - *9
+      - *10
+    NAME: nu_fnc_non_fatal_intr_mask
+  - ATTR: 2048
+    FLDLST:
+      - *6
+      - *7
+      - *8
+      - *9
+      - *10
+    NAME: nu_fnc_non_fatal_intr_bset
+  - ATTR: 4096
+    FLDLST:
+      - *6
+      - *7
+      - *8
+      - *9
+      - *10
+    NAME: nu_fnc_non_fatal_intr_bclr
+  - ATTR: 9
+    DESCRIPTION: Place Holder for now for NU_FNC Feature Register
+    FLDLST:
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Module ID
+        NAME: module_id
+        VALUE: 0
+        WIDTH: 8
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Version number of the module
+        NAME: version
+        VALUE: 0
+        WIDTH: 8
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Features enabled in the module.
+        NAME: features
+        VALUE: 0
+        WIDTH: 16
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Reserved Field.
+        NAME: Reserved
+        WIDTH: 32
+    NAME: nu_fnc_features
+    WIDTH: 64
+  - ATTR: 5
+    DESCRIPTION: ' Spare PIO register. These bits can be read and written by software. They can serve as control bits for late ECOs in the design.'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Spare PIO register.
+        NAME: val
+        WIDTH: 64
+    NAME: nu_fnc_spare_pio
+    WIDTH: 64
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: Scratchpad register.
+        NAME: val
+        WIDTH: 64
+    NAME: nu_fnc_scratchpad
+    WIDTH: 64
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: Configuration
+    FLDLST:
+      - DEFAULT: 170
+        DESCRIPTION: |-2
+          
+                                            Module ID to be used for Decoding Commands on FLA Command Ring, 0x0, 0xff are Reserved Values
+                                           
+        NAME: module_id
+        WIDTH: 8
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            bit vector to flush corresponding stream
+                                            bit[0] - stream0; bit[1] - stream1 ..so on
+                                           
+        NAME: flush_strm
+        WIDTH: 4
+      - DEFAULT: 85
+        DESCRIPTION: |-2
+          
+                                            Flink ether type
+                                           
+        NAME: ether_type
+        WIDTH: 16
+    NAME: nu_fnc_cfg
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: Configuration
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: stream number allocated for slot3
+        NAME: slot3
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: stream number allocated for slot2
+        NAME: slot2
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: stream number allocated for slot1
+        NAME: slot1
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: stream number allocated for slot0
+        NAME: slot0
+        WIDTH: 2
+    NAME: nu_fnc_tdm_cfg
+  - ATTR: 6
+    COUNT: 16
+    DESCRIPTION: TX message Buffer allocation per MQ
+    FLDLST: &11
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            End index of tx Msg Buffer partition
+                                           
+        NAME: end_addr
+        WIDTH: 9
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            start index of tx Msg Buffer partition
+                                           
+        NAME: start_addr
+        WIDTH: 9
+    NAME: nu_fnc_tx_mbuf_ptr_0
+  - ATTR: 6
+    COUNT: 16
+    DESCRIPTION: TX message Buffer allocation per MQ
+    FLDLST: *11
+    NAME: nu_fnc_tx_mbuf_ptr_1
+  - ATTR: 6
+    COUNT: 16
+    DESCRIPTION: TX message Buffer allocation per MQ
+    FLDLST: *11
+    NAME: nu_fnc_tx_mbuf_ptr_2
+  - ATTR: 6
+    COUNT: 16
+    DESCRIPTION: TX message Buffer allocation per MQ
+    FLDLST: *11
+    NAME: nu_fnc_tx_mbuf_ptr_3
+  - ATTR: 6
+    COUNT: 16
+    DESCRIPTION: TX message Buffer allocation per MQ
+    FLDLST: *11
+    NAME: nu_fnc_tx_mbuf_ptr_4
+  - ATTR: 6
+    COUNT: 16
+    DESCRIPTION: TX message Buffer allocation per MQ
+    FLDLST: *11
+    NAME: nu_fnc_tx_mbuf_ptr_5
+  - ATTR: 6
+    COUNT: 16
+    DESCRIPTION: TX message Buffer allocation per MQ
+    FLDLST: *11
+    NAME: nu_fnc_tx_mbuf_ptr_6
+  - ATTR: 6
+    COUNT: 16
+    DESCRIPTION: TX message Buffer allocation per MQ
+    FLDLST: *11
+    NAME: nu_fnc_tx_mbuf_ptr_7
+  - ATTR: 6
+    COUNT: 16
+    DESCRIPTION: TX message Buffer allocation per MQ
+    FLDLST: *11
+    NAME: nu_fnc_tx_mbuf_ptr_8
+  - ATTR: 6
+    COUNT: 16
+    DESCRIPTION: TX message Buffer allocation per MQ
+    FLDLST: *11
+    NAME: nu_fnc_tx_mbuf_ptr_9
+  - ATTR: 6
+    COUNT: 16
+    DESCRIPTION: TX message Buffer allocation per MQ
+    FLDLST: *11
+    NAME: nu_fnc_tx_mbuf_ptr_10
+  - ATTR: 6
+    COUNT: 16
+    DESCRIPTION: TX message Buffer allocation per MQ
+    FLDLST: *11
+    NAME: nu_fnc_tx_mbuf_ptr_11
+  - ATTR: 6
+    COUNT: 16
+    DESCRIPTION: TX message Buffer allocation per MQ
+    FLDLST: *11
+    NAME: nu_fnc_tx_mbuf_ptr_12
+  - ATTR: 6
+    COUNT: 16
+    DESCRIPTION: TX message Buffer allocation per MQ
+    FLDLST: *11
+    NAME: nu_fnc_tx_mbuf_ptr_13
+  - ATTR: 6
+    COUNT: 16
+    DESCRIPTION: TX message Buffer allocation per MQ
+    FLDLST: *11
+    NAME: nu_fnc_tx_mbuf_ptr_14
+  - ATTR: 6
+    COUNT: 16
+    DESCRIPTION: TX message Buffer allocation per MQ
+    FLDLST: *11
+    NAME: nu_fnc_tx_mbuf_ptr_15
+  - ATTR: 6
+    COUNT: 16
+    DESCRIPTION: RX message Buffer allocation per MQ
+    FLDLST: &12
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            End index of rx Msg Buffer partition
+                                           
+        NAME: end_addr
+        WIDTH: 12
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            start index of rx Msg Buffer partition
+                                           
+        NAME: start_addr
+        WIDTH: 12
+    NAME: nu_fnc_rx_mbuf_ptr_0
+  - ATTR: 6
+    COUNT: 16
+    DESCRIPTION: RX message Buffer allocation per MQ
+    FLDLST: *12
+    NAME: nu_fnc_rx_mbuf_ptr_1
+  - ATTR: 6
+    COUNT: 16
+    DESCRIPTION: RX message Buffer allocation per MQ
+    FLDLST: *12
+    NAME: nu_fnc_rx_mbuf_ptr_2
+  - ATTR: 6
+    COUNT: 16
+    DESCRIPTION: RX message Buffer allocation per MQ
+    FLDLST: *12
+    NAME: nu_fnc_rx_mbuf_ptr_3
+  - ATTR: 6
+    COUNT: 16
+    DESCRIPTION: RX message Buffer allocation per MQ
+    FLDLST: *12
+    NAME: nu_fnc_rx_mbuf_ptr_4
+  - ATTR: 6
+    COUNT: 16
+    DESCRIPTION: RX message Buffer allocation per MQ
+    FLDLST: *12
+    NAME: nu_fnc_rx_mbuf_ptr_5
+  - ATTR: 6
+    COUNT: 16
+    DESCRIPTION: RX message Buffer allocation per MQ
+    FLDLST: *12
+    NAME: nu_fnc_rx_mbuf_ptr_6
+  - ATTR: 6
+    COUNT: 16
+    DESCRIPTION: RX message Buffer allocation per MQ
+    FLDLST: *12
+    NAME: nu_fnc_rx_mbuf_ptr_7
+  - ATTR: 6
+    COUNT: 16
+    DESCRIPTION: RX message Buffer allocation per MQ
+    FLDLST: *12
+    NAME: nu_fnc_rx_mbuf_ptr_8
+  - ATTR: 6
+    COUNT: 16
+    DESCRIPTION: RX message Buffer allocation per MQ
+    FLDLST: *12
+    NAME: nu_fnc_rx_mbuf_ptr_9
+  - ATTR: 6
+    COUNT: 16
+    DESCRIPTION: RX message Buffer allocation per MQ
+    FLDLST: *12
+    NAME: nu_fnc_rx_mbuf_ptr_10
+  - ATTR: 6
+    COUNT: 16
+    DESCRIPTION: RX message Buffer allocation per MQ
+    FLDLST: *12
+    NAME: nu_fnc_rx_mbuf_ptr_11
+  - ATTR: 6
+    COUNT: 16
+    DESCRIPTION: RX message Buffer allocation per MQ
+    FLDLST: *12
+    NAME: nu_fnc_rx_mbuf_ptr_12
+  - ATTR: 6
+    COUNT: 16
+    DESCRIPTION: RX message Buffer allocation per MQ
+    FLDLST: *12
+    NAME: nu_fnc_rx_mbuf_ptr_13
+  - ATTR: 6
+    COUNT: 16
+    DESCRIPTION: RX message Buffer allocation per MQ
+    FLDLST: *12
+    NAME: nu_fnc_rx_mbuf_ptr_14
+  - ATTR: 6
+    COUNT: 16
+    DESCRIPTION: RX message Buffer allocation per MQ
+    FLDLST: *12
+    NAME: nu_fnc_rx_mbuf_ptr_15
+  - ATTR: 6
+    COUNT: 4
+    DESCRIPTION: Retry Buffer allocation per stream
+    FLDLST: &13
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            End index of tx Msg Buffer partition
+                                           
+        NAME: end_addr
+        WIDTH: 11
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            start index of tx Msg Buffer partition
+                                           
+        NAME: start_addr
+        WIDTH: 11
+    NAME: nu_fnc_rtry_dbuf_ptr_0
+  - ATTR: 6
+    COUNT: 4
+    DESCRIPTION: Retry Buffer allocation per stream
+    FLDLST: *13
+    NAME: nu_fnc_rtry_dbuf_ptr_1
+  - ATTR: 6
+    COUNT: 4
+    DESCRIPTION: Retry Buffer allocation per stream
+    FLDLST: *13
+    NAME: nu_fnc_rtry_dbuf_ptr_2
+  - ATTR: 6
+    COUNT: 4
+    DESCRIPTION: Retry Buffer allocation per stream
+    FLDLST: *13
+    NAME: nu_fnc_rtry_dbuf_ptr_3
+  - ATTR: 6
+    COUNT: 4
+    DESCRIPTION: Retry Buffer allocation per stream
+    FLDLST: &14
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            End index of tx Msg Buffer partition
+                                           
+        NAME: end_addr
+        WIDTH: 9
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            start index of tx Msg Buffer partition
+                                           
+        NAME: start_addr
+        WIDTH: 9
+    NAME: nu_fnc_rtry_cbuf_ptr_0
+  - ATTR: 6
+    COUNT: 4
+    DESCRIPTION: Retry Buffer allocation per stream
+    FLDLST: *14
+    NAME: nu_fnc_rtry_cbuf_ptr_1
+  - ATTR: 6
+    COUNT: 4
+    DESCRIPTION: Retry Buffer allocation per stream
+    FLDLST: *14
+    NAME: nu_fnc_rtry_cbuf_ptr_2
+  - ATTR: 6
+    COUNT: 4
+    DESCRIPTION: Retry Buffer allocation per stream
+    FLDLST: *14
+    NAME: nu_fnc_rtry_cbuf_ptr_3
+  - ATTR: 6
+    COUNT: 4
+    DESCRIPTION: Rx Frame Buffer allocation per stream
+    FLDLST: &15
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            End index of tx Msg Buffer partition
+                                           
+        NAME: end_addr
+        WIDTH: 9
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            start index of tx Msg Buffer partition
+                                           
+        NAME: start_addr
+        WIDTH: 9
+    NAME: nu_fnc_rfb_buf_ptr_0
+  - ATTR: 6
+    COUNT: 4
+    DESCRIPTION: Rx Frame Buffer allocation per stream
+    FLDLST: *15
+    NAME: nu_fnc_rfb_buf_ptr_1
+  - ATTR: 6
+    COUNT: 4
+    DESCRIPTION: Rx Frame Buffer allocation per stream
+    FLDLST: *15
+    NAME: nu_fnc_rfb_buf_ptr_2
+  - ATTR: 6
+    COUNT: 4
+    DESCRIPTION: Rx Frame Buffer allocation per stream
+    FLDLST: *15
+    NAME: nu_fnc_rfb_buf_ptr_3
+  - ATTR: 6
+    COUNT: 16
+    DESCRIPTION: Tx Init Link credits per MQ
+    FLDLST: &16
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            Tx init credit count value
+                                           
+        NAME: crd_cnt
+        WIDTH: 12
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            Tx init credit seqnum
+                                           
+        NAME: crd_seq
+        WIDTH: 12
+    NAME: nu_fnc_tx_link_crd_0
+  - ATTR: 6
+    COUNT: 16
+    DESCRIPTION: Tx Init Link credits per MQ
+    FLDLST: *16
+    NAME: nu_fnc_tx_link_crd_1
+  - ATTR: 6
+    COUNT: 16
+    DESCRIPTION: Tx Init Link credits per MQ
+    FLDLST: *16
+    NAME: nu_fnc_tx_link_crd_2
+  - ATTR: 6
+    COUNT: 16
+    DESCRIPTION: Tx Init Link credits per MQ
+    FLDLST: *16
+    NAME: nu_fnc_tx_link_crd_3
+  - ATTR: 6
+    COUNT: 16
+    DESCRIPTION: Tx Init Link credits per MQ
+    FLDLST: *16
+    NAME: nu_fnc_tx_link_crd_4
+  - ATTR: 6
+    COUNT: 16
+    DESCRIPTION: Tx Init Link credits per MQ
+    FLDLST: *16
+    NAME: nu_fnc_tx_link_crd_5
+  - ATTR: 6
+    COUNT: 16
+    DESCRIPTION: Tx Init Link credits per MQ
+    FLDLST: *16
+    NAME: nu_fnc_tx_link_crd_6
+  - ATTR: 6
+    COUNT: 16
+    DESCRIPTION: Tx Init Link credits per MQ
+    FLDLST: *16
+    NAME: nu_fnc_tx_link_crd_7
+  - ATTR: 6
+    COUNT: 16
+    DESCRIPTION: Tx Init Link credits per MQ
+    FLDLST: *16
+    NAME: nu_fnc_tx_link_crd_8
+  - ATTR: 6
+    COUNT: 16
+    DESCRIPTION: Tx Init Link credits per MQ
+    FLDLST: *16
+    NAME: nu_fnc_tx_link_crd_9
+  - ATTR: 6
+    COUNT: 16
+    DESCRIPTION: Tx Init Link credits per MQ
+    FLDLST: *16
+    NAME: nu_fnc_tx_link_crd_10
+  - ATTR: 6
+    COUNT: 16
+    DESCRIPTION: Tx Init Link credits per MQ
+    FLDLST: *16
+    NAME: nu_fnc_tx_link_crd_11
+  - ATTR: 6
+    COUNT: 16
+    DESCRIPTION: Tx Init Link credits per MQ
+    FLDLST: *16
+    NAME: nu_fnc_tx_link_crd_12
+  - ATTR: 6
+    COUNT: 16
+    DESCRIPTION: Tx Init Link credits per MQ
+    FLDLST: *16
+    NAME: nu_fnc_tx_link_crd_13
+  - ATTR: 6
+    COUNT: 16
+    DESCRIPTION: Tx Init Link credits per MQ
+    FLDLST: *16
+    NAME: nu_fnc_tx_link_crd_14
+  - ATTR: 6
+    COUNT: 16
+    DESCRIPTION: Tx Init Link credits per MQ
+    FLDLST: *16
+    NAME: nu_fnc_tx_link_crd_15
+  - ATTR: 6
+    COUNT: 16
+    DESCRIPTION: Rx init link credits per MQ
+    FLDLST: &17
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            Rx init credit seqnum
+                                           
+        NAME: crd_seq
+        WIDTH: 12
+    NAME: nu_fnc_rx_link_crd_0
+  - ATTR: 6
+    COUNT: 16
+    DESCRIPTION: Rx init link credits per MQ
+    FLDLST: *17
+    NAME: nu_fnc_rx_link_crd_1
+  - ATTR: 6
+    COUNT: 16
+    DESCRIPTION: Rx init link credits per MQ
+    FLDLST: *17
+    NAME: nu_fnc_rx_link_crd_2
+  - ATTR: 6
+    COUNT: 16
+    DESCRIPTION: Rx init link credits per MQ
+    FLDLST: *17
+    NAME: nu_fnc_rx_link_crd_3
+  - ATTR: 6
+    COUNT: 16
+    DESCRIPTION: Rx init link credits per MQ
+    FLDLST: *17
+    NAME: nu_fnc_rx_link_crd_4
+  - ATTR: 6
+    COUNT: 16
+    DESCRIPTION: Rx init link credits per MQ
+    FLDLST: *17
+    NAME: nu_fnc_rx_link_crd_5
+  - ATTR: 6
+    COUNT: 16
+    DESCRIPTION: Rx init link credits per MQ
+    FLDLST: *17
+    NAME: nu_fnc_rx_link_crd_6
+  - ATTR: 6
+    COUNT: 16
+    DESCRIPTION: Rx init link credits per MQ
+    FLDLST: *17
+    NAME: nu_fnc_rx_link_crd_7
+  - ATTR: 6
+    COUNT: 16
+    DESCRIPTION: Rx init link credits per MQ
+    FLDLST: *17
+    NAME: nu_fnc_rx_link_crd_8
+  - ATTR: 6
+    COUNT: 16
+    DESCRIPTION: Rx init link credits per MQ
+    FLDLST: *17
+    NAME: nu_fnc_rx_link_crd_9
+  - ATTR: 6
+    COUNT: 16
+    DESCRIPTION: Rx init link credits per MQ
+    FLDLST: *17
+    NAME: nu_fnc_rx_link_crd_10
+  - ATTR: 6
+    COUNT: 16
+    DESCRIPTION: Rx init link credits per MQ
+    FLDLST: *17
+    NAME: nu_fnc_rx_link_crd_11
+  - ATTR: 6
+    COUNT: 16
+    DESCRIPTION: Rx init link credits per MQ
+    FLDLST: *17
+    NAME: nu_fnc_rx_link_crd_12
+  - ATTR: 6
+    COUNT: 16
+    DESCRIPTION: Rx init link credits per MQ
+    FLDLST: *17
+    NAME: nu_fnc_rx_link_crd_13
+  - ATTR: 6
+    COUNT: 16
+    DESCRIPTION: Rx init link credits per MQ
+    FLDLST: *17
+    NAME: nu_fnc_rx_link_crd_14
+  - ATTR: 6
+    COUNT: 16
+    DESCRIPTION: Rx init link credits per MQ
+    FLDLST: *17
+    NAME: nu_fnc_rx_link_crd_15
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: MsgQ to VC Mapping register for MQ0-7
+    FLDLST: &18
+      - DEFAULT: 0
+        DESCRIPTION: ' Stream value mapped to MQ'
+        NAME: stream
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: ' VC value mapped to MQ'
+        NAME: vc
+        WIDTH: 4
+    NAME: nu_fnc_mq2vc_map_0
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: MsgQ to VC Mapping register for MQ0-7
+    FLDLST: *18
+    NAME: nu_fnc_mq2vc_map_1
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: MsgQ to VC Mapping register for MQ0-7
+    FLDLST: *18
+    NAME: nu_fnc_mq2vc_map_2
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: MsgQ to VC Mapping register for MQ0-7
+    FLDLST: *18
+    NAME: nu_fnc_mq2vc_map_3
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: MsgQ to VC Mapping register for MQ0-7
+    FLDLST: *18
+    NAME: nu_fnc_mq2vc_map_4
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: MsgQ to VC Mapping register for MQ0-7
+    FLDLST: *18
+    NAME: nu_fnc_mq2vc_map_5
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: MsgQ to VC Mapping register for MQ0-7
+    FLDLST: *18
+    NAME: nu_fnc_mq2vc_map_6
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: MsgQ to VC Mapping register for MQ0-7
+    FLDLST: *18
+    NAME: nu_fnc_mq2vc_map_7
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: MsgQ to VC Mapping register for MQ0-7
+    FLDLST: *18
+    NAME: nu_fnc_mq2vc_map_8
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: MsgQ to VC Mapping register for MQ0-7
+    FLDLST: *18
+    NAME: nu_fnc_mq2vc_map_9
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: MsgQ to VC Mapping register for MQ0-7
+    FLDLST: *18
+    NAME: nu_fnc_mq2vc_map_10
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: MsgQ to VC Mapping register for MQ0-7
+    FLDLST: *18
+    NAME: nu_fnc_mq2vc_map_11
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: MsgQ to VC Mapping register for MQ0-7
+    FLDLST: *18
+    NAME: nu_fnc_mq2vc_map_12
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: MsgQ to VC Mapping register for MQ0-7
+    FLDLST: *18
+    NAME: nu_fnc_mq2vc_map_13
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: MsgQ to VC Mapping register for MQ0-7
+    FLDLST: *18
+    NAME: nu_fnc_mq2vc_map_14
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: MsgQ to VC Mapping register for MQ0-7
+    FLDLST: *18
+    NAME: nu_fnc_mq2vc_map_15
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: VC to MQ Mapping register for stream0
+    FLDLST: &19
+      - DEFAULT: 0
+        DESCRIPTION: MQ value mapped to a VC for stream0
+        NAME: vc
+        WIDTH: 4
+    NAME: nu_fnc_strm0_vc2mq_map_0
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: VC to MQ Mapping register for stream0
+    FLDLST: *19
+    NAME: nu_fnc_strm0_vc2mq_map_1
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: VC to MQ Mapping register for stream0
+    FLDLST: *19
+    NAME: nu_fnc_strm0_vc2mq_map_2
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: VC to MQ Mapping register for stream0
+    FLDLST: *19
+    NAME: nu_fnc_strm0_vc2mq_map_3
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: VC to MQ Mapping register for stream0
+    FLDLST: *19
+    NAME: nu_fnc_strm0_vc2mq_map_4
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: VC to MQ Mapping register for stream0
+    FLDLST: *19
+    NAME: nu_fnc_strm0_vc2mq_map_5
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: VC to MQ Mapping register for stream0
+    FLDLST: *19
+    NAME: nu_fnc_strm0_vc2mq_map_6
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: VC to MQ Mapping register for stream0
+    FLDLST: *19
+    NAME: nu_fnc_strm0_vc2mq_map_7
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: VC to MQ Mapping register for stream0
+    FLDLST: *19
+    NAME: nu_fnc_strm0_vc2mq_map_8
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: VC to MQ Mapping register for stream0
+    FLDLST: *19
+    NAME: nu_fnc_strm0_vc2mq_map_9
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: VC to MQ Mapping register for stream0
+    FLDLST: *19
+    NAME: nu_fnc_strm0_vc2mq_map_10
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: VC to MQ Mapping register for stream0
+    FLDLST: *19
+    NAME: nu_fnc_strm0_vc2mq_map_11
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: VC to MQ Mapping register for stream0
+    FLDLST: *19
+    NAME: nu_fnc_strm0_vc2mq_map_12
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: VC to MQ Mapping register for stream0
+    FLDLST: *19
+    NAME: nu_fnc_strm0_vc2mq_map_13
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: VC to MQ Mapping register for stream0
+    FLDLST: *19
+    NAME: nu_fnc_strm0_vc2mq_map_14
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: VC to MQ Mapping register for stream0
+    FLDLST: *19
+    NAME: nu_fnc_strm0_vc2mq_map_15
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: VC to MQ Mapping register for stream1
+    FLDLST: &20
+      - DEFAULT: 0
+        DESCRIPTION: MQ value mapped to a VC for stream1
+        NAME: vc
+        WIDTH: 4
+    NAME: nu_fnc_strm1_vc2mq_map_0
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: VC to MQ Mapping register for stream1
+    FLDLST: *20
+    NAME: nu_fnc_strm1_vc2mq_map_1
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: VC to MQ Mapping register for stream1
+    FLDLST: *20
+    NAME: nu_fnc_strm1_vc2mq_map_2
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: VC to MQ Mapping register for stream1
+    FLDLST: *20
+    NAME: nu_fnc_strm1_vc2mq_map_3
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: VC to MQ Mapping register for stream1
+    FLDLST: *20
+    NAME: nu_fnc_strm1_vc2mq_map_4
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: VC to MQ Mapping register for stream1
+    FLDLST: *20
+    NAME: nu_fnc_strm1_vc2mq_map_5
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: VC to MQ Mapping register for stream1
+    FLDLST: *20
+    NAME: nu_fnc_strm1_vc2mq_map_6
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: VC to MQ Mapping register for stream1
+    FLDLST: *20
+    NAME: nu_fnc_strm1_vc2mq_map_7
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: VC to MQ Mapping register for stream1
+    FLDLST: *20
+    NAME: nu_fnc_strm1_vc2mq_map_8
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: VC to MQ Mapping register for stream1
+    FLDLST: *20
+    NAME: nu_fnc_strm1_vc2mq_map_9
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: VC to MQ Mapping register for stream1
+    FLDLST: *20
+    NAME: nu_fnc_strm1_vc2mq_map_10
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: VC to MQ Mapping register for stream1
+    FLDLST: *20
+    NAME: nu_fnc_strm1_vc2mq_map_11
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: VC to MQ Mapping register for stream1
+    FLDLST: *20
+    NAME: nu_fnc_strm1_vc2mq_map_12
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: VC to MQ Mapping register for stream1
+    FLDLST: *20
+    NAME: nu_fnc_strm1_vc2mq_map_13
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: VC to MQ Mapping register for stream1
+    FLDLST: *20
+    NAME: nu_fnc_strm1_vc2mq_map_14
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: VC to MQ Mapping register for stream1
+    FLDLST: *20
+    NAME: nu_fnc_strm1_vc2mq_map_15
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: VC to MQ Mapping register for stream2
+    FLDLST: &21
+      - DEFAULT: 0
+        DESCRIPTION: MQ value mapped to a VC for stream2
+        NAME: vc
+        WIDTH: 4
+    NAME: nu_fnc_strm2_vc2mq_map_0
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: VC to MQ Mapping register for stream2
+    FLDLST: *21
+    NAME: nu_fnc_strm2_vc2mq_map_1
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: VC to MQ Mapping register for stream2
+    FLDLST: *21
+    NAME: nu_fnc_strm2_vc2mq_map_2
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: VC to MQ Mapping register for stream2
+    FLDLST: *21
+    NAME: nu_fnc_strm2_vc2mq_map_3
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: VC to MQ Mapping register for stream2
+    FLDLST: *21
+    NAME: nu_fnc_strm2_vc2mq_map_4
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: VC to MQ Mapping register for stream2
+    FLDLST: *21
+    NAME: nu_fnc_strm2_vc2mq_map_5
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: VC to MQ Mapping register for stream2
+    FLDLST: *21
+    NAME: nu_fnc_strm2_vc2mq_map_6
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: VC to MQ Mapping register for stream2
+    FLDLST: *21
+    NAME: nu_fnc_strm2_vc2mq_map_7
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: VC to MQ Mapping register for stream2
+    FLDLST: *21
+    NAME: nu_fnc_strm2_vc2mq_map_8
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: VC to MQ Mapping register for stream2
+    FLDLST: *21
+    NAME: nu_fnc_strm2_vc2mq_map_9
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: VC to MQ Mapping register for stream2
+    FLDLST: *21
+    NAME: nu_fnc_strm2_vc2mq_map_10
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: VC to MQ Mapping register for stream2
+    FLDLST: *21
+    NAME: nu_fnc_strm2_vc2mq_map_11
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: VC to MQ Mapping register for stream2
+    FLDLST: *21
+    NAME: nu_fnc_strm2_vc2mq_map_12
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: VC to MQ Mapping register for stream2
+    FLDLST: *21
+    NAME: nu_fnc_strm2_vc2mq_map_13
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: VC to MQ Mapping register for stream2
+    FLDLST: *21
+    NAME: nu_fnc_strm2_vc2mq_map_14
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: VC to MQ Mapping register for stream2
+    FLDLST: *21
+    NAME: nu_fnc_strm2_vc2mq_map_15
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: VC to MQ Mapping register for stream3
+    FLDLST: &22
+      - DEFAULT: 0
+        DESCRIPTION: MQ value mapped to a VC for stream3
+        NAME: vc
+        WIDTH: 4
+    NAME: nu_fnc_strm3_vc2mq_map_0
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: VC to MQ Mapping register for stream3
+    FLDLST: *22
+    NAME: nu_fnc_strm3_vc2mq_map_1
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: VC to MQ Mapping register for stream3
+    FLDLST: *22
+    NAME: nu_fnc_strm3_vc2mq_map_2
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: VC to MQ Mapping register for stream3
+    FLDLST: *22
+    NAME: nu_fnc_strm3_vc2mq_map_3
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: VC to MQ Mapping register for stream3
+    FLDLST: *22
+    NAME: nu_fnc_strm3_vc2mq_map_4
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: VC to MQ Mapping register for stream3
+    FLDLST: *22
+    NAME: nu_fnc_strm3_vc2mq_map_5
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: VC to MQ Mapping register for stream3
+    FLDLST: *22
+    NAME: nu_fnc_strm3_vc2mq_map_6
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: VC to MQ Mapping register for stream3
+    FLDLST: *22
+    NAME: nu_fnc_strm3_vc2mq_map_7
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: VC to MQ Mapping register for stream3
+    FLDLST: *22
+    NAME: nu_fnc_strm3_vc2mq_map_8
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: VC to MQ Mapping register for stream3
+    FLDLST: *22
+    NAME: nu_fnc_strm3_vc2mq_map_9
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: VC to MQ Mapping register for stream3
+    FLDLST: *22
+    NAME: nu_fnc_strm3_vc2mq_map_10
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: VC to MQ Mapping register for stream3
+    FLDLST: *22
+    NAME: nu_fnc_strm3_vc2mq_map_11
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: VC to MQ Mapping register for stream3
+    FLDLST: *22
+    NAME: nu_fnc_strm3_vc2mq_map_12
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: VC to MQ Mapping register for stream3
+    FLDLST: *22
+    NAME: nu_fnc_strm3_vc2mq_map_13
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: VC to MQ Mapping register for stream3
+    FLDLST: *22
+    NAME: nu_fnc_strm3_vc2mq_map_14
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: VC to MQ Mapping register for stream3
+    FLDLST: *22
+    NAME: nu_fnc_strm3_vc2mq_map_15
+XASIZE: 8388608

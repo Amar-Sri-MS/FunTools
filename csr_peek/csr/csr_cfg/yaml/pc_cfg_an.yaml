@@ -1,0 +1,910 @@
+---
+COUNT: 1
+DESCRIPTION: PC_CFG CSR Spec
+INTR:
+  DEBUG:
+    - DESCRIPTION: fda reached buffer0 threshold
+      NAME: fda_buffer0_threshold
+      WIDTH: 1
+    - DESCRIPTION: fda reached buffer1 threshold
+      NAME: fda_buffer1_threshold
+      WIDTH: 1
+  FATAL:
+    - DESCRIPTION: buffer memory uncorrectable ecc error
+      NAME: buf_mem_ucerr
+      WIDTH: 1
+  NON_FATAL:
+    - DESCRIPTION: request size on aux axi aw interface is invalid for CSR
+      NAME: csr_size_aw_error
+      WIDTH: 1
+    - DESCRIPTION: request size on aux axi ar interface is invalid for CSR
+      NAME: csr_size_ar_error
+      WIDTH: 1
+    - DESCRIPTION: address map on aux axi aw interface doesn't match any region
+      NAME: addr_map_aw_error
+      WIDTH: 1
+    - DESCRIPTION: address map on aux axi aw interface doesn't match any region
+      NAME: addr_map_ar_error
+      WIDTH: 1
+    - DESCRIPTION: buffer memory correctable ecc error
+      NAME: buf_mem_cerr
+      WIDTH: 1
+INTR_DBG_PORT_EN: 1
+INTR_PORT_EN: 1
+NAME: PC_CFG_AN
+PARENTNAME: pc_soc_clk_an
+REGLST:
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: |-
+          Timeout Configuration. Cycles are RSU clk based.
+                            - 00 : 1024 cycles
+                            - 01 : 256 cycles
+                            - 10 : 4096 cycles
+                            - 11 : infinite
+        NAME: val
+        WIDTH: 2
+    NAME: pc_cfg_timeout_thresh_cfg
+  - ATTR: 9
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: "Timed out Status. Cycles are RSU clk based. Becomes 1 when timed out. Write any value to clear it.\n                  "
+        NAME: val
+        WIDTH: 1
+    NAME: pc_cfg_timedout_sta
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: |-
+          Clear Timeout Status. Data is ignored. A write
+                     will clear the timeout status bit
+        NAME: val
+        WIDTH: 1
+    NAME: pc_cfg_timeout_clr
+    TEST_ATTR: 1
+  - ATTR: 256
+    FLDLST:
+      - &1
+        DESCRIPTION: fda reached buffer0 threshold
+        NAME: fda_buffer0_threshold
+        WIDTH: 1
+      - &2
+        DESCRIPTION: fda reached buffer1 threshold
+        NAME: fda_buffer1_threshold
+        WIDTH: 1
+    NAME: pc_cfg_debug_intr_cause
+  - ATTR: 512
+    FLDLST:
+      - *1
+      - *2
+    NAME: pc_cfg_debug_intr_stat
+  - ATTR: 1024
+    FLDLST:
+      - *1
+      - *2
+    NAME: pc_cfg_debug_intr_mask
+  - ATTR: 2048
+    FLDLST:
+      - *1
+      - *2
+    NAME: pc_cfg_debug_intr_bset
+  - ATTR: 4096
+    FLDLST:
+      - *1
+      - *2
+    NAME: pc_cfg_debug_intr_bclr
+  - ATTR: 256
+    FLDLST:
+      - &3
+        DESCRIPTION: buffer memory uncorrectable ecc error
+        NAME: buf_mem_ucerr
+        WIDTH: 1
+    NAME: pc_cfg_fatal_intr_cause
+  - ATTR: 512
+    FLDLST:
+      - *3
+    NAME: pc_cfg_fatal_intr_stat
+  - ATTR: 1024
+    FLDLST:
+      - *3
+    NAME: pc_cfg_fatal_intr_mask
+  - ATTR: 2048
+    FLDLST:
+      - *3
+    NAME: pc_cfg_fatal_intr_bset
+  - ATTR: 4096
+    FLDLST:
+      - *3
+    NAME: pc_cfg_fatal_intr_bclr
+  - ATTR: 256
+    FLDLST:
+      - &4
+        DESCRIPTION: request size on aux axi aw interface is invalid for CSR
+        NAME: csr_size_aw_error
+        WIDTH: 1
+      - &5
+        DESCRIPTION: request size on aux axi ar interface is invalid for CSR
+        NAME: csr_size_ar_error
+        WIDTH: 1
+      - &6
+        DESCRIPTION: address map on aux axi aw interface doesn't match any region
+        NAME: addr_map_aw_error
+        WIDTH: 1
+      - &7
+        DESCRIPTION: address map on aux axi aw interface doesn't match any region
+        NAME: addr_map_ar_error
+        WIDTH: 1
+      - &8
+        DESCRIPTION: buffer memory correctable ecc error
+        NAME: buf_mem_cerr
+        WIDTH: 1
+    NAME: pc_cfg_non_fatal_intr_cause
+  - ATTR: 512
+    FLDLST:
+      - *4
+      - *5
+      - *6
+      - *7
+      - *8
+    NAME: pc_cfg_non_fatal_intr_stat
+  - ATTR: 1024
+    FLDLST:
+      - *4
+      - *5
+      - *6
+      - *7
+      - *8
+    NAME: pc_cfg_non_fatal_intr_mask
+  - ATTR: 2048
+    FLDLST:
+      - *4
+      - *5
+      - *6
+      - *7
+      - *8
+    NAME: pc_cfg_non_fatal_intr_bset
+  - ATTR: 4096
+    FLDLST:
+      - *4
+      - *5
+      - *6
+      - *7
+      - *8
+    NAME: pc_cfg_non_fatal_intr_bclr
+  - ATTR: 9
+    DESCRIPTION: Place Holder for now for PC_CFG Feature Register
+    FLDLST:
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Module ID
+        NAME: module_id
+        WIDTH: 8
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Version number of the module
+        NAME: version
+        WIDTH: 8
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Features enabled in the module.
+        NAME: features
+        WIDTH: 16
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Reserved Field.
+        NAME: Reserved
+        WIDTH: 32
+    NAME: pc_cfg_features
+    WIDTH: 64
+  - ATTR: 5
+    DESCRIPTION: ' Spare PIO register. These bits can be read and written by software. They can serve as control bits for late ECOs in the design.'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Spare PIO register.
+        NAME: val
+        WIDTH: 64
+    NAME: pc_cfg_spare_pio
+    WIDTH: 64
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: Scratchpad register.
+        NAME: val
+        WIDTH: 64
+    NAME: pc_cfg_scratchpad
+    WIDTH: 64
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: PC CFG Configuration
+    FLDLST:
+      - DEFAULT: 1
+        DESCRIPTION: |-
+          enables automatic generation of CSR write to user bits 
+                                              register in destination for cluster to cluster transcations
+        NAME: aux_axi_user_gen
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: enables posted writes on the AUX AXI interface
+        NAME: aux_axi_posted_wr
+        WIDTH: 1
+    NAME: pc_cfg_config
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: PC CFG ID Configuration
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-
+          change in value will trigger pc_cfg to send out the cluster_id based
+                                               on this register rather than the input signal
+        NAME: cluster_id
+        WIDTH: 6
+      - DEFAULT: 0
+        DESCRIPTION: |-
+          change in value will trigger pc_cfg to send out the fab_gid based
+                                               on this register rather than the input signal
+        NAME: fab_gid
+        WIDTH: 5
+      - DEFAULT: 0
+        DESCRIPTION: |-
+          change in value will trigger pc_cfg to send out the pc_id based
+                                               on this register rather than the input signal
+        NAME: pc_id
+        WIDTH: 3
+    NAME: pc_cfg_id_cfg
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: 'PC CFG Clock Enable. This register contains all fields required for both PC and CC, some fields may be unused in each version'
+    FLDLST:
+      - DEFAULT: 1
+        DESCRIPTION: clk enable for jpg
+        NAME: jpg
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: clk enable for cdu
+        NAME: cdu
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: clk enable for snx
+        NAME: snx
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: clk enable for bnm
+        NAME: bnm
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: clk enable for cmh
+        NAME: cmh
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: clk enable for ca
+        NAME: ca
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: clk enable for fep
+        NAME: fep
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: clk enable for eqm
+        NAME: eqm
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: clk enable for lsnmux
+        NAME: lsnmux
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: clk enable for snmux
+        NAME: snmux
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: clk enable for dam
+        NAME: dam
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: clk enable for le
+        NAME: le
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: clk enable for dma
+        NAME: dma
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: clk enable for rgx
+        NAME: rgx
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: clk enable for zip
+        NAME: zip
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: clk enable for bp
+        NAME: bp
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: clk enable for axm
+        NAME: axm
+        WIDTH: 1
+    NAME: pc_cfg_clk_enable
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: 'PC CFG Soft Reset. This register contains all fields required for both PC and CC, some fields may be unused in each version'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: active low soft reset for jpg
+        NAME: jpg
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: active low soft reset for cfg
+        NAME: cfg
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: active low soft reset for cdu
+        NAME: cdu
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: active low soft reset for snx
+        NAME: snx
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: active low soft reset for bnm
+        NAME: bnm
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: active low soft reset for eqm
+        NAME: eqm
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: active low soft reset for sbp
+        NAME: sbp
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: active low soft reset for css
+        NAME: css
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: active low soft reset for fep
+        NAME: fep
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: active low soft reset for lsnmux
+        NAME: lsnmux
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: active low soft reset for snmux
+        NAME: snmux
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: active low soft reset for dam
+        NAME: dam
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: active low soft reset for dma
+        NAME: dma
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: active low soft reset for rgx
+        NAME: rgx
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: active low soft reset for cmh
+        NAME: cmh
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: active low soft reset for le
+        NAME: le
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: active low soft reset for zip
+        NAME: zip
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: active low soft reset for bp
+        NAME: bp
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: active low soft reset for axm
+        NAME: axm
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: active low soft reset for ca
+        NAME: ca
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: active low soft reset for mdh
+        NAME: mdh
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: active low soft reset for cpc_reset
+        NAME: cpc_reset
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: active low soft reset for cluster_pwr_on
+        NAME: cluster_pwr_on
+        WIDTH: 1
+    NAME: pc_cfg_soft_reset_n
+  - ATTR: 5
+    DESCRIPTION: CFG FLA Ring Module ID
+    FLDLST:
+      - DEFAULT: 119
+        DESCRIPTION: '8-Bit Module ID to be used for Decoding Commands on FLA Command Ring, 0x0, 0xff are Reserved Values'
+        NAME: fld_val
+        WIDTH: 8
+    NAME: cfg_fla_ring_module_id_cfg
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: PC CFG Misc Configuration
+    FLDLST:
+      - DEFAULT: 22
+        DESCRIPTION: ddr0 global id used by the SN mux in CUT
+        NAME: ddr0_gid
+        WIDTH: 5
+      - DEFAULT: 23
+        DESCRIPTION: ddr1 global id used by the SN mux in CUT
+        NAME: ddr1_gid
+        WIDTH: 5
+      - DEFAULT: 24
+        DESCRIPTION: lsnmux global id. clients of lsnmux are scb and dam
+        NAME: lsnmux_gid
+        WIDTH: 5
+      - DEFAULT: 0
+        DESCRIPTION: 'for unused address regions, allow aliasing to fabric address [41:0]'
+        NAME: unused_addr_alias_en
+        WIDTH: 1
+    NAME: pc_cfg_misc_config
+  - ATTR: 5
+    DESCRIPTION: PC CFG Address Mapping Configuration
+    FLDLST:
+      - DEFAULT: 1
+        DESCRIPTION: 'enable the first range of fabric address, 0x0000_0000_0000 - 0x03FF_FFFF_FFFF'
+        NAME: fab_addr_range_0_en
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: 'enable the second range of fabric address, 0x0400_0000_0000 - 0x07FF_FFFF_FFFF'
+        NAME: fab_addr_range_1_en
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: 'enable the csr range, 0x0800_0000_0000 - 0x08FF_FFFF_FFFF'
+        NAME: csr_addr_range_en
+        WIDTH: 1
+    NAME: pc_cfg_addr_map_cfg
+  - ATTR: 5
+    COUNT: 7
+    DESCRIPTION: PC CFG Address Mapping Range Configuration
+    FLDLST: &9
+      - DEFAULT: 4294967295
+        DESCRIPTION: max address of region
+        NAME: max
+        WIDTH: 32
+      - DEFAULT: 0
+        DESCRIPTION: min address of region
+        NAME: min
+        WIDTH: 32
+    NAME: pc_cfg_addr_map_range_0
+  - ATTR: 5
+    COUNT: 7
+    DESCRIPTION: PC CFG Address Mapping Range Configuration
+    FLDLST: *9
+    NAME: pc_cfg_addr_map_range_1
+  - ATTR: 5
+    COUNT: 7
+    DESCRIPTION: PC CFG Address Mapping Range Configuration
+    FLDLST: *9
+    NAME: pc_cfg_addr_map_range_2
+  - ATTR: 5
+    COUNT: 7
+    DESCRIPTION: PC CFG Address Mapping Range Configuration
+    FLDLST: *9
+    NAME: pc_cfg_addr_map_range_3
+  - ATTR: 5
+    COUNT: 7
+    DESCRIPTION: PC CFG Address Mapping Range Configuration
+    FLDLST: *9
+    NAME: pc_cfg_addr_map_range_4
+  - ATTR: 5
+    COUNT: 7
+    DESCRIPTION: PC CFG Address Mapping Range Configuration
+    FLDLST: *9
+    NAME: pc_cfg_addr_map_range_5
+  - ATTR: 5
+    COUNT: 7
+    DESCRIPTION: PC CFG Address Mapping Range Configuration
+    FLDLST: *9
+    NAME: pc_cfg_addr_map_range_6
+  - ATTR: 5
+    COUNT: 7
+    DESCRIPTION: PC CFG Address Mapping Base Addr Configuration
+    FLDLST: &10
+      - DEFAULT: 1
+        DESCRIPTION: enable for region
+        NAME: enable
+        WIDTH: 1
+      - DEFAULT: 68719476736
+        DESCRIPTION: base address of region
+        NAME: addr
+        WIDTH: 42
+    NAME: pc_cfg_addr_map_base_0
+  - ATTR: 5
+    COUNT: 7
+    DESCRIPTION: PC CFG Address Mapping Base Addr Configuration
+    FLDLST: *10
+    NAME: pc_cfg_addr_map_base_1
+  - ATTR: 5
+    COUNT: 7
+    DESCRIPTION: PC CFG Address Mapping Base Addr Configuration
+    FLDLST: *10
+    NAME: pc_cfg_addr_map_base_2
+  - ATTR: 5
+    COUNT: 7
+    DESCRIPTION: PC CFG Address Mapping Base Addr Configuration
+    FLDLST: *10
+    NAME: pc_cfg_addr_map_base_3
+  - ATTR: 5
+    COUNT: 7
+    DESCRIPTION: PC CFG Address Mapping Base Addr Configuration
+    FLDLST: *10
+    NAME: pc_cfg_addr_map_base_4
+  - ATTR: 5
+    COUNT: 7
+    DESCRIPTION: PC CFG Address Mapping Base Addr Configuration
+    FLDLST: *10
+    NAME: pc_cfg_addr_map_base_5
+  - ATTR: 5
+    COUNT: 7
+    DESCRIPTION: PC CFG Address Mapping Base Addr Configuration
+    FLDLST: *10
+    NAME: pc_cfg_addr_map_base_6
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: PC CFG Address Mapping Range Configuration for CSR
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: max address of region
+        NAME: max
+        WIDTH: 32
+      - DEFAULT: 0
+        DESCRIPTION: min address of region
+        NAME: min
+        WIDTH: 32
+    NAME: pc_cfg_addr_map_range_csr
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: PC CFG Address Mapping Base Addr Configuration for CSR
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: enable for region
+        NAME: enable
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: base CSR address of region
+        NAME: addr
+        WIDTH: 42
+    NAME: pc_cfg_addr_map_base_csr
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: PC CFG Address Mapping Range Configuration for CSR
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: cmd field of sn message
+        NAME: cmd
+        WIDTH: 5
+      - DEFAULT: 0
+        DESCRIPTION: strict ordering bit of sn message
+        NAME: so
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: opcode of sn message
+        NAME: opcode
+        WIDTH: 24
+      - DEFAULT: 0
+        DESCRIPTION: 'data[63:48] of sn message'
+        NAME: data
+        WIDTH: 16
+    NAME: pc_cfg_lsn_msg_cfg
+  - ATTR: 5
+    DESCRIPTION: PC CFG FDA config
+    FLDLST:
+      - DEFAULT: 255
+        DESCRIPTION: tag value to use for LDN writes
+        NAME: tag
+        WIDTH: 8
+      - DEFAULT: 7
+        DESCRIPTION: trace 0 interface weight
+        NAME: trace0_wt
+        WIDTH: 3
+      - DEFAULT: 7
+        DESCRIPTION: trace 1 interface weight
+        NAME: trace1_wt
+        WIDTH: 3
+      - DEFAULT: 4
+        DESCRIPTION: limits on number of LDN requests outstanding
+        NAME: ldn_req_limit
+        WIDTH: 5
+    NAME: pc_cfg_fda_cfg
+  - ATTR: 9
+    DESCRIPTION: PC CFG FDA status
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: tag value to use for LDN writes
+        NAME: flags
+        WIDTH: 8
+      - DEFAULT: 0
+        DESCRIPTION: last address written
+        NAME: last_addr
+        WIDTH: 42
+      - DEFAULT: 0
+        DESCRIPTION: active buffer
+        NAME: active_buf
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: data buffer pointer
+        NAME: data_buffer_ptr
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: metadata buffer pointer
+        NAME: metadata_buffer_ptr
+        WIDTH: 4
+    NAME: pc_cfg_fda_sta
+  - ATTR: 9
+    DESCRIPTION: PC CFG FDA status
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: value of last timestamp written
+        NAME: val
+        WIDTH: 64
+    NAME: pc_cfg_fda_last_timestamp_sta
+  - ATTR: 5
+    COUNT: 4
+    DESCRIPTION: |-
+      PC CFG FDA buffer config, index 0 is for data buf0, index 1 for data buf1,
+                                      index 2 for metadata buf0, and index 3 for metadata buf1
+    FLDLST: &11
+      - DEFAULT: 0
+        DESCRIPTION: 1KB aligned start address for trace writes
+        NAME: addr
+        WIDTH: 38
+      - DEFAULT: 0
+        DESCRIPTION: reserved
+        NAME: rsvd
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: length of buffer in 1KB blocks
+        NAME: len
+        WIDTH: 16
+      - DEFAULT: 0
+        DESCRIPTION: '{valid(1), suspend on full (1), notification interval (1), reserved (4)}'
+        NAME: flags
+        WIDTH: 8
+    NAME: pc_cfg_fda_buffer_cfg_0
+  - ATTR: 5
+    COUNT: 4
+    DESCRIPTION: |-
+      PC CFG FDA buffer config, index 0 is for data buf0, index 1 for data buf1,
+                                      index 2 for metadata buf0, and index 3 for metadata buf1
+    FLDLST: *11
+    NAME: pc_cfg_fda_buffer_cfg_1
+  - ATTR: 5
+    COUNT: 4
+    DESCRIPTION: |-
+      PC CFG FDA buffer config, index 0 is for data buf0, index 1 for data buf1,
+                                      index 2 for metadata buf0, and index 3 for metadata buf1
+    FLDLST: *11
+    NAME: pc_cfg_fda_buffer_cfg_2
+  - ATTR: 5
+    COUNT: 4
+    DESCRIPTION: |-
+      PC CFG FDA buffer config, index 0 is for data buf0, index 1 for data buf1,
+                                      index 2 for metadata buf0, and index 3 for metadata buf1
+    FLDLST: *11
+    NAME: pc_cfg_fda_buffer_cfg_3
+  - ATTR: 10
+    DESCRIPTION: PC CFG FDA data buffer
+    ENTRIES: 1
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: data
+        WIDTH: 512
+    NAME: pc_cfg_fda_data_buffer
+  - ATTR: 10
+    DESCRIPTION: PC CFG FDA metadata buffer
+    ENTRIES: 1
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: metadata
+        WIDTH: 512
+    NAME: pc_cfg_fda_metadata_buffer
+  - ATTR: 10
+    DESCRIPTION: Counter for drop events seen by FDA
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: counter value
+        NAME: val
+        WIDTH: 36
+    NAME: pc_cfg_fda_drop_event_cnt
+  - ATTR: 10
+    DESCRIPTION: Counter for trace cells written by FDA
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: counter value
+        NAME: val
+        WIDTH: 36
+    NAME: pc_cfg_fda_trace_cell_cnt
+  - ATTR: 5
+    COUNT: 9
+    DESCRIPTION: PC CFG Reg TC Access
+    FLDLST: &12
+      - DEFAULT: 0
+        DESCRIPTION: 'indicates 4B read/write, else 8B'
+        NAME: four_byte
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+           User bits (21) are used to specify target block - 
+                                             guest_id[20:16], target_core[15:10], target_vp[9:6], dest_id[5:0] 
+        NAME: user
+        VFLDLST:
+          - DEFAULT: 0
+            DESCRIPTION: guest_id
+            NAME: gst_id
+            WIDTH: 5
+          - DEFAULT: 0
+            DESCRIPTION: target_core
+            NAME: tgt_core
+            WIDTH: 6
+          - DEFAULT: 0
+            DESCRIPTION: target_vp
+            NAME: tgt_vp
+            WIDTH: 4
+          - DEFAULT: 0
+            DESCRIPTION: dest_id
+            NAME: dst_id
+            WIDTH: 6
+        WIDTH: 21
+    NAME: pc_cfg_regtc_setup_csr_0
+  - ATTR: 5
+    COUNT: 9
+    DESCRIPTION: PC CFG Reg TC Access
+    FLDLST: *12
+    NAME: pc_cfg_regtc_setup_csr_1
+  - ATTR: 5
+    COUNT: 9
+    DESCRIPTION: PC CFG Reg TC Access
+    FLDLST: *12
+    NAME: pc_cfg_regtc_setup_csr_2
+  - ATTR: 5
+    COUNT: 9
+    DESCRIPTION: PC CFG Reg TC Access
+    FLDLST: *12
+    NAME: pc_cfg_regtc_setup_csr_3
+  - ATTR: 5
+    COUNT: 9
+    DESCRIPTION: PC CFG Reg TC Access
+    FLDLST: *12
+    NAME: pc_cfg_regtc_setup_csr_4
+  - ATTR: 5
+    COUNT: 9
+    DESCRIPTION: PC CFG Reg TC Access
+    FLDLST: *12
+    NAME: pc_cfg_regtc_setup_csr_5
+  - ATTR: 5
+    COUNT: 9
+    DESCRIPTION: PC CFG Reg TC Access
+    FLDLST: *12
+    NAME: pc_cfg_regtc_setup_csr_6
+  - ATTR: 5
+    COUNT: 9
+    DESCRIPTION: PC CFG Reg TC Access
+    FLDLST: *12
+    NAME: pc_cfg_regtc_setup_csr_7
+  - ATTR: 5
+    COUNT: 9
+    DESCRIPTION: PC CFG Reg TC Access
+    FLDLST: *12
+    NAME: pc_cfg_regtc_setup_csr_8
+  - ATTR: 5
+    DESCRIPTION: general purpose output instance 0
+    FLDLST:
+      - DEFAULT: 18102704384528470
+        DESCRIPTION: ''
+        NAME: data
+        WIDTH: 64
+    NAME: pc_cfg_gpo_0
+  - ATTR: 5
+    DESCRIPTION: general purpose output instance 1
+    FLDLST:
+      - DEFAULT: 8589934592
+        DESCRIPTION: ''
+        NAME: data
+        WIDTH: 64
+    NAME: pc_cfg_gpo_1
+  - ATTR: 5
+    DESCRIPTION: general purpose output instance 2
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: data
+        WIDTH: 64
+    NAME: pc_cfg_gpo_2
+  - ATTR: 9
+    DESCRIPTION: general purpose output instance 0
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: data
+        WIDTH: 64
+    NAME: pc_cfg_gpi_0
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: Config register for memory error injection
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: ' Inject error into Reorder WU Buffer Memory'
+        NAME: buf_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: |-
+          Type of error to be injected
+                                            Applied to all memory error injection
+                                            0 - Uncorrectable error
+                                            1 - Correctable error 
+        NAME: err_type
+        WIDTH: 1
+    NAME: pc_cfg_mem_err_inj_cfg
+  - ATTR: 9
+    DESCRIPTION: buf mem bit vector that failed ECC
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            First SRAM ECC error detected (1-hot)
+                                            Set when first error is detected
+                                            Reset when corresponding interrupt status bit is cleared
+                                            [0]  - buf_mem_ucerr
+                                            [1]  - buf_mem_cerr
+                                           
+        NAME: val
+        WIDTH: 2
+    NAME: pc_cfg_buf_mem_log_err
+  - ATTR: 9
+    DESCRIPTION: buf mem syndrome log register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            Syndrome related to ECC error
+                                            detected while reading data from buf mem
+                                           
+        NAME: val
+        WIDTH: 11
+    NAME: pc_cfg_buf_mem_log_syndrome
+  - ATTR: 9
+    DESCRIPTION: buf mem address log register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            Address related to ECC error
+                                            detected while reading data from buf mem
+                                           
+        NAME: val
+        WIDTH: 5
+    NAME: pc_cfg_buf_mem_log_addr
+  - ATTR: 9
+    DESCRIPTION: 'last CSR status returned to pc_cfg: {busy[4], claimed[3], response[2:0]}'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: CSR status
+        NAME: val
+        WIDTH: 5
+    NAME: pc_cfg_csr_status
+  - ATTR: 6
+    DESCRIPTION: PC CFG Reg TC Access
+    ENTRIES: 9437184
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: data
+        WIDTH: 64
+    NAME: pc_cfg_regtc_csr
+XASIZE: 0

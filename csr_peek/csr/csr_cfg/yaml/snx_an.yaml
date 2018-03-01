@@ -1,0 +1,2932 @@
+---
+COUNT: 1
+DESCRIPTION: SNX CSR spec
+INTR:
+  FATAL_0:
+    - DESCRIPTION: IBUF0 Memory Double Bit ECC Error
+      NAME: snx_ibuf0_mem_ucerr
+      WIDTH: 1
+    - DESCRIPTION: IBUF1 Memory Double Bit ECC Error
+      NAME: snx_ibuf1_mem_ucerr
+      WIDTH: 1
+    - DESCRIPTION: IBUF2 Memory Double Bit ECC Error
+      NAME: snx_ibuf2_mem_ucerr
+      WIDTH: 1
+    - DESCRIPTION: IBUF3 Memory Double Bit ECC Error
+      NAME: snx_ibuf3_mem_ucerr
+      WIDTH: 1
+    - DESCRIPTION: IBUF4 Memory Double Bit ECC Error
+      NAME: snx_ibuf4_mem_ucerr
+      WIDTH: 1
+    - DESCRIPTION: IBUF5 Memory Double Bit ECC Error
+      NAME: snx_ibuf5_mem_ucerr
+      WIDTH: 1
+    - DESCRIPTION: IBUF6 Memory Double Bit ECC Error
+      NAME: snx_ibuf6_mem_ucerr
+      WIDTH: 1
+    - DESCRIPTION: IBUF7 Memory Double Bit ECC Error
+      NAME: snx_ibuf7_mem_ucerr
+      WIDTH: 1
+    - DESCRIPTION: IBUF8 Memory Double Bit ECC Error
+      NAME: snx_ibuf8_mem_ucerr
+      WIDTH: 1
+    - DESCRIPTION: IBUF9 Memory Double Bit ECC Error
+      NAME: snx_ibuf9_mem_ucerr
+      WIDTH: 1
+    - DESCRIPTION: IBUF10 Memory Double Bit ECC Error
+      NAME: snx_ibuf10_mem_ucerr
+      WIDTH: 1
+    - DESCRIPTION: IBUF11 Memory Double Bit ECC Error
+      NAME: snx_ibuf11_mem_ucerr
+      WIDTH: 1
+    - DESCRIPTION: IBUF12 Memory Double Bit ECC Error
+      NAME: snx_ibuf12_mem_ucerr
+      WIDTH: 1
+    - DESCRIPTION: IBUF13 Memory Double Bit ECC Error
+      NAME: snx_ibuf13_mem_ucerr
+      WIDTH: 1
+    - DESCRIPTION: IBUF14 Memory Double Bit ECC Error
+      NAME: snx_ibuf14_mem_ucerr
+      WIDTH: 1
+    - DESCRIPTION: IBUF15 Memory Double Bit ECC Error
+      NAME: snx_ibuf15_mem_ucerr
+      WIDTH: 1
+    - DESCRIPTION: IBUF16 Memory Double Bit ECC Error
+      NAME: snx_ibuf16_mem_ucerr
+      WIDTH: 1
+    - DESCRIPTION: IBUF17 Memory Double Bit ECC Error
+      NAME: snx_ibuf17_mem_ucerr
+      WIDTH: 1
+    - DESCRIPTION: IBUF18 Memory Double Bit ECC Error
+      NAME: snx_ibuf18_mem_ucerr
+      WIDTH: 1
+    - DESCRIPTION: IBUF19 Memory Double Bit ECC Error
+      NAME: snx_ibuf19_mem_ucerr
+      WIDTH: 1
+    - DESCRIPTION: IBUF20 Memory Double Bit ECC Error
+      NAME: snx_ibuf20_mem_ucerr
+      WIDTH: 1
+    - DESCRIPTION: IBUF21 Memory Double Bit ECC Error
+      NAME: snx_ibuf21_mem_ucerr
+      WIDTH: 1
+    - DESCRIPTION: IBUF22 Memory Double Bit ECC Error
+      NAME: snx_ibuf22_mem_ucerr
+      WIDTH: 1
+    - DESCRIPTION: IBUF23 Memory Double Bit ECC Error
+      NAME: snx_ibuf23_mem_ucerr
+      WIDTH: 1
+    - DESCRIPTION: IBUF0 FBM has been oversunscribed. Adjust the per-LID credits so that the sum is less than 256
+      NAME: snx_ibuf0_empty_fbm_pop
+      WIDTH: 1
+    - DESCRIPTION: IBUF1 FBM has been oversunscribed. Adjust the per-LID credits so that the sum is less than 256
+      NAME: snx_ibuf1_empty_fbm_pop
+      WIDTH: 1
+    - DESCRIPTION: IBUF2 FBM has been oversunscribed. Adjust the per-LID credits so that the sum is less than 256
+      NAME: snx_ibuf2_empty_fbm_pop
+      WIDTH: 1
+    - DESCRIPTION: IBUF3 FBM has been oversunscribed. Adjust the per-LID credits so that the sum is less than 256
+      NAME: snx_ibuf3_empty_fbm_pop
+      WIDTH: 1
+    - DESCRIPTION: IBUF4 FBM has been oversunscribed. Adjust the per-LID credits so that the sum is less than 256
+      NAME: snx_ibuf4_empty_fbm_pop
+      WIDTH: 1
+    - DESCRIPTION: IBUF5 FBM has been oversunscribed. Adjust the per-LID credits so that the sum is less than 256
+      NAME: snx_ibuf5_empty_fbm_pop
+      WIDTH: 1
+    - DESCRIPTION: IBUF6 FBM has been oversunscribed. Adjust the per-LID credits so that the sum is less than 256
+      NAME: snx_ibuf6_empty_fbm_pop
+      WIDTH: 1
+    - DESCRIPTION: IBUF7 FBM has been oversunscribed. Adjust the per-LID credits so that the sum is less than 256
+      NAME: snx_ibuf7_empty_fbm_pop
+      WIDTH: 1
+    - DESCRIPTION: IBUF8 FBM has been oversunscribed. Adjust the per-LID credits so that the sum is less than 256
+      NAME: snx_ibuf8_empty_fbm_pop
+      WIDTH: 1
+    - DESCRIPTION: IBUF9 FBM has been oversunscribed. Adjust the per-LID credits so that the sum is less than 256
+      NAME: snx_ibuf9_empty_fbm_pop
+      WIDTH: 1
+    - DESCRIPTION: IBUF10 FBM has been oversunscribed. Adjust the per-LID credits so that the sum is less than 256
+      NAME: snx_ibuf10_empty_fbm_pop
+      WIDTH: 1
+    - DESCRIPTION: IBUF11 FBM has been oversunscribed. Adjust the per-LID credits so that the sum is less than 256
+      NAME: snx_ibuf11_empty_fbm_pop
+      WIDTH: 1
+    - DESCRIPTION: IBUF12 FBM has been oversunscribed. Adjust the per-LID credits so that the sum is less than 256
+      NAME: snx_ibuf12_empty_fbm_pop
+      WIDTH: 1
+    - DESCRIPTION: IBUF13 FBM has been oversunscribed. Adjust the per-LID credits so that the sum is less than 256
+      NAME: snx_ibuf13_empty_fbm_pop
+      WIDTH: 1
+    - DESCRIPTION: IBUF14 FBM has been oversunscribed. Adjust the per-LID credits so that the sum is less than 256
+      NAME: snx_ibuf14_empty_fbm_pop
+      WIDTH: 1
+    - DESCRIPTION: IBUF15 FBM has been oversunscribed. Adjust the per-LID credits so that the sum is less than 256
+      NAME: snx_ibuf15_empty_fbm_pop
+      WIDTH: 1
+    - DESCRIPTION: IBUF16 FBM has been oversunscribed. Adjust the per-LID credits so that the sum is less than 256
+      NAME: snx_ibuf16_empty_fbm_pop
+      WIDTH: 1
+    - DESCRIPTION: IBUF17 FBM has been oversunscribed. Adjust the per-LID credits so that the sum is less than 256
+      NAME: snx_ibuf17_empty_fbm_pop
+      WIDTH: 1
+    - DESCRIPTION: IBUF18 FBM has been oversunscribed. Adjust the per-LID credits so that the sum is less than 256
+      NAME: snx_ibuf18_empty_fbm_pop
+      WIDTH: 1
+    - DESCRIPTION: IBUF19 FBM has been oversunscribed. Adjust the per-LID credits so that the sum is less than 256
+      NAME: snx_ibuf19_empty_fbm_pop
+      WIDTH: 1
+    - DESCRIPTION: IBUF20 FBM has been oversunscribed. Adjust the per-LID credits so that the sum is less than 256
+      NAME: snx_ibuf20_empty_fbm_pop
+      WIDTH: 1
+    - DESCRIPTION: IBUF21 FBM has been oversunscribed. Adjust the per-LID credits so that the sum is less than 256
+      NAME: snx_ibuf21_empty_fbm_pop
+      WIDTH: 1
+    - DESCRIPTION: IBUF22 FBM has been oversunscribed. Adjust the per-LID credits so that the sum is less than 256
+      NAME: snx_ibuf22_empty_fbm_pop
+      WIDTH: 1
+    - DESCRIPTION: IBUF23 FBM has been oversunscribed. Adjust the per-LID credits so that the sum is less than 256
+      NAME: snx_ibuf23_empty_fbm_pop
+      WIDTH: 1
+  FATAL_1:
+    - DESCRIPTION: IBUF0 received an illegal dgid
+      NAME: snx_ibuf0_dgid_out_of_range
+      WIDTH: 1
+    - DESCRIPTION: IBUF1 received an illegal dgid
+      NAME: snx_ibuf1_dgid_out_of_range
+      WIDTH: 1
+    - DESCRIPTION: IBUF2 received an illegal dgid
+      NAME: snx_ibuf2_dgid_out_of_range
+      WIDTH: 1
+    - DESCRIPTION: IBUF3 received an illegal dgid
+      NAME: snx_ibuf3_dgid_out_of_range
+      WIDTH: 1
+    - DESCRIPTION: IBUF4 received an illegal dgid
+      NAME: snx_ibuf4_dgid_out_of_range
+      WIDTH: 1
+    - DESCRIPTION: IBUF5 received an illegal dgid
+      NAME: snx_ibuf5_dgid_out_of_range
+      WIDTH: 1
+    - DESCRIPTION: IBUF6 received an illegal dgid
+      NAME: snx_ibuf6_dgid_out_of_range
+      WIDTH: 1
+    - DESCRIPTION: IBUF7 received an illegal dgid
+      NAME: snx_ibuf7_dgid_out_of_range
+      WIDTH: 1
+    - DESCRIPTION: IBUF8 received an illegal dgid
+      NAME: snx_ibuf8_dgid_out_of_range
+      WIDTH: 1
+    - DESCRIPTION: IBUF9 received an illegal dgid
+      NAME: snx_ibuf9_dgid_out_of_range
+      WIDTH: 1
+    - DESCRIPTION: IBUF10 received an illegal dgid
+      NAME: snx_ibuf10_dgid_out_of_range
+      WIDTH: 1
+    - DESCRIPTION: IBUF11 received an illegal dgid
+      NAME: snx_ibuf11_dgid_out_of_range
+      WIDTH: 1
+    - DESCRIPTION: IBUF12 received an illegal dgid
+      NAME: snx_ibuf12_dgid_out_of_range
+      WIDTH: 1
+    - DESCRIPTION: IBUF13 received an illegal dgid
+      NAME: snx_ibuf13_dgid_out_of_range
+      WIDTH: 1
+    - DESCRIPTION: IBUF14 received an illegal dgid
+      NAME: snx_ibuf14_dgid_out_of_range
+      WIDTH: 1
+    - DESCRIPTION: IBUF15 received an illegal dgid
+      NAME: snx_ibuf15_dgid_out_of_range
+      WIDTH: 1
+    - DESCRIPTION: IBUF16 received an illegal dgid
+      NAME: snx_ibuf16_dgid_out_of_range
+      WIDTH: 1
+    - DESCRIPTION: IBUF17 received an illegal dgid
+      NAME: snx_ibuf17_dgid_out_of_range
+      WIDTH: 1
+    - DESCRIPTION: IBUF18 received an illegal dgid
+      NAME: snx_ibuf18_dgid_out_of_range
+      WIDTH: 1
+    - DESCRIPTION: IBUF19 received an illegal dgid
+      NAME: snx_ibuf19_dgid_out_of_range
+      WIDTH: 1
+    - DESCRIPTION: IBUF20 received an illegal dgid
+      NAME: snx_ibuf20_dgid_out_of_range
+      WIDTH: 1
+    - DESCRIPTION: IBUF21 received an illegal dgid
+      NAME: snx_ibuf21_dgid_out_of_range
+      WIDTH: 1
+    - DESCRIPTION: IBUF22 received an illegal dgid
+      NAME: snx_ibuf22_dgid_out_of_range
+      WIDTH: 1
+    - DESCRIPTION: IBUF23 received an illegal dgid
+      NAME: snx_ibuf23_dgid_out_of_range
+      WIDTH: 1
+  NON_FATAL_0:
+    - DESCRIPTION: IBUF0 Memory Single Bit ECC Error
+      NAME: snx_ibuf0_mem_cerr
+      WIDTH: 1
+    - DESCRIPTION: IBUF1 Memory Single Bit ECC Error
+      NAME: snx_ibuf1_mem_cerr
+      WIDTH: 1
+    - DESCRIPTION: IBUF2 Memory Single Bit ECC Error
+      NAME: snx_ibuf2_mem_cerr
+      WIDTH: 1
+    - DESCRIPTION: IBUF3 Memory Single Bit ECC Error
+      NAME: snx_ibuf3_mem_cerr
+      WIDTH: 1
+    - DESCRIPTION: IBUF4 Memory Single Bit ECC Error
+      NAME: snx_ibuf4_mem_cerr
+      WIDTH: 1
+    - DESCRIPTION: IBUF5 Memory Single Bit ECC Error
+      NAME: snx_ibuf5_mem_cerr
+      WIDTH: 1
+    - DESCRIPTION: IBUF6 Memory Single Bit ECC Error
+      NAME: snx_ibuf6_mem_cerr
+      WIDTH: 1
+    - DESCRIPTION: IBUF7 Memory Single Bit ECC Error
+      NAME: snx_ibuf7_mem_cerr
+      WIDTH: 1
+    - DESCRIPTION: IBUF8 Memory Single Bit ECC Error
+      NAME: snx_ibuf8_mem_cerr
+      WIDTH: 1
+    - DESCRIPTION: IBUF9 Memory Single Bit ECC Error
+      NAME: snx_ibuf9_mem_cerr
+      WIDTH: 1
+    - DESCRIPTION: IBUF10 Memory Single Bit ECC Error
+      NAME: snx_ibuf10_mem_cerr
+      WIDTH: 1
+    - DESCRIPTION: IBUF11 Memory Single Bit ECC Error
+      NAME: snx_ibuf11_mem_cerr
+      WIDTH: 1
+    - DESCRIPTION: IBUF12 Memory Single Bit ECC Error
+      NAME: snx_ibuf12_mem_cerr
+      WIDTH: 1
+    - DESCRIPTION: IBUF13 Memory Single Bit ECC Error
+      NAME: snx_ibuf13_mem_cerr
+      WIDTH: 1
+    - DESCRIPTION: IBUF14 Memory Single Bit ECC Error
+      NAME: snx_ibuf14_mem_cerr
+      WIDTH: 1
+    - DESCRIPTION: IBUF15 Memory Single Bit ECC Error
+      NAME: snx_ibuf15_mem_cerr
+      WIDTH: 1
+    - DESCRIPTION: IBUF16 Memory Single Bit ECC Error
+      NAME: snx_ibuf16_mem_cerr
+      WIDTH: 1
+    - DESCRIPTION: IBUF17 Memory Single Bit ECC Error
+      NAME: snx_ibuf17_mem_cerr
+      WIDTH: 1
+    - DESCRIPTION: IBUF18 Memory Single Bit ECC Error
+      NAME: snx_ibuf18_mem_cerr
+      WIDTH: 1
+    - DESCRIPTION: IBUF19 Memory Single Bit ECC Error
+      NAME: snx_ibuf19_mem_cerr
+      WIDTH: 1
+    - DESCRIPTION: IBUF20 Memory Single Bit ECC Error
+      NAME: snx_ibuf20_mem_cerr
+      WIDTH: 1
+    - DESCRIPTION: IBUF21 Memory Single Bit ECC Error
+      NAME: snx_ibuf21_mem_cerr
+      WIDTH: 1
+    - DESCRIPTION: IBUF22 Memory Single Bit ECC Error
+      NAME: snx_ibuf22_mem_cerr
+      WIDTH: 1
+    - DESCRIPTION: IBUF23 Memory Single Bit ECC Error
+      NAME: snx_ibuf23_mem_cerr
+      WIDTH: 1
+    - DESCRIPTION: Arb0 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb0_deadlock_det0
+      WIDTH: 1
+    - DESCRIPTION: Arb0 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb0_deadlock_det1
+      WIDTH: 1
+    - DESCRIPTION: Arb0 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb0_deadlock_det2
+      WIDTH: 1
+    - DESCRIPTION: Arb0 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb0_deadlock_det3
+      WIDTH: 1
+    - DESCRIPTION: Arb0 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb0_deadlock_det4
+      WIDTH: 1
+    - DESCRIPTION: Arb0 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb0_deadlock_det5
+      WIDTH: 1
+    - DESCRIPTION: Arb0 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb0_deadlock_det6
+      WIDTH: 1
+    - DESCRIPTION: Arb0 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb0_deadlock_det7
+      WIDTH: 1
+    - DESCRIPTION: Arb0 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb0_deadlock_det8
+      WIDTH: 1
+    - DESCRIPTION: Arb0 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb0_deadlock_det9
+      WIDTH: 1
+    - DESCRIPTION: Arb0 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb0_deadlock_det10
+      WIDTH: 1
+    - DESCRIPTION: Arb0 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb0_deadlock_det11
+      WIDTH: 1
+    - DESCRIPTION: Arb0 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb0_deadlock_det12
+      WIDTH: 1
+    - DESCRIPTION: Arb0 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb0_deadlock_det13
+      WIDTH: 1
+    - DESCRIPTION: Arb0 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb0_deadlock_det14
+      WIDTH: 1
+    - DESCRIPTION: Arb0 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb0_deadlock_det15
+      WIDTH: 1
+    - DESCRIPTION: Arb0 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb0_deadlock_det16
+      WIDTH: 1
+    - DESCRIPTION: Arb0 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb0_deadlock_det17
+      WIDTH: 1
+    - DESCRIPTION: Arb0 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb0_deadlock_det18
+      WIDTH: 1
+    - DESCRIPTION: Arb0 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb0_deadlock_det19
+      WIDTH: 1
+    - DESCRIPTION: Arb0 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb0_deadlock_det20
+      WIDTH: 1
+    - DESCRIPTION: Arb0 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb0_deadlock_det21
+      WIDTH: 1
+    - DESCRIPTION: Arb0 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb0_deadlock_det22
+      WIDTH: 1
+    - DESCRIPTION: Arb0 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb0_deadlock_det23
+      WIDTH: 1
+  NON_FATAL_1:
+    - DESCRIPTION: Arb1 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb1_deadlock_det0
+      WIDTH: 1
+    - DESCRIPTION: Arb1 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb1_deadlock_det1
+      WIDTH: 1
+    - DESCRIPTION: Arb1 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb1_deadlock_det2
+      WIDTH: 1
+    - DESCRIPTION: Arb1 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb1_deadlock_det3
+      WIDTH: 1
+    - DESCRIPTION: Arb1 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb1_deadlock_det4
+      WIDTH: 1
+    - DESCRIPTION: Arb1 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb1_deadlock_det5
+      WIDTH: 1
+    - DESCRIPTION: Arb1 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb1_deadlock_det6
+      WIDTH: 1
+    - DESCRIPTION: Arb1 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb1_deadlock_det7
+      WIDTH: 1
+    - DESCRIPTION: Arb1 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb1_deadlock_det8
+      WIDTH: 1
+    - DESCRIPTION: Arb1 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb1_deadlock_det9
+      WIDTH: 1
+    - DESCRIPTION: Arb1 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb1_deadlock_det10
+      WIDTH: 1
+    - DESCRIPTION: Arb1 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb1_deadlock_det11
+      WIDTH: 1
+    - DESCRIPTION: Arb1 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb1_deadlock_det12
+      WIDTH: 1
+    - DESCRIPTION: Arb1 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb1_deadlock_det13
+      WIDTH: 1
+    - DESCRIPTION: Arb1 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb1_deadlock_det14
+      WIDTH: 1
+    - DESCRIPTION: Arb1 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb1_deadlock_det15
+      WIDTH: 1
+    - DESCRIPTION: Arb1 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb1_deadlock_det16
+      WIDTH: 1
+    - DESCRIPTION: Arb1 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb1_deadlock_det17
+      WIDTH: 1
+    - DESCRIPTION: Arb1 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb1_deadlock_det18
+      WIDTH: 1
+    - DESCRIPTION: Arb1 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb1_deadlock_det19
+      WIDTH: 1
+    - DESCRIPTION: Arb1 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb1_deadlock_det20
+      WIDTH: 1
+    - DESCRIPTION: Arb1 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb1_deadlock_det21
+      WIDTH: 1
+    - DESCRIPTION: Arb1 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb1_deadlock_det22
+      WIDTH: 1
+    - DESCRIPTION: Arb1 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb1_deadlock_det23
+      WIDTH: 1
+    - DESCRIPTION: Arb2 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb2_deadlock_det0
+      WIDTH: 1
+    - DESCRIPTION: Arb2 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb2_deadlock_det1
+      WIDTH: 1
+    - DESCRIPTION: Arb2 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb2_deadlock_det2
+      WIDTH: 1
+    - DESCRIPTION: Arb2 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb2_deadlock_det3
+      WIDTH: 1
+    - DESCRIPTION: Arb2 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb2_deadlock_det4
+      WIDTH: 1
+    - DESCRIPTION: Arb2 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb2_deadlock_det5
+      WIDTH: 1
+    - DESCRIPTION: Arb2 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb2_deadlock_det6
+      WIDTH: 1
+    - DESCRIPTION: Arb2 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb2_deadlock_det7
+      WIDTH: 1
+    - DESCRIPTION: Arb2 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb2_deadlock_det8
+      WIDTH: 1
+    - DESCRIPTION: Arb2 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb2_deadlock_det9
+      WIDTH: 1
+    - DESCRIPTION: Arb2 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb2_deadlock_det10
+      WIDTH: 1
+    - DESCRIPTION: Arb2 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb2_deadlock_det11
+      WIDTH: 1
+    - DESCRIPTION: Arb2 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb2_deadlock_det12
+      WIDTH: 1
+    - DESCRIPTION: Arb2 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb2_deadlock_det13
+      WIDTH: 1
+    - DESCRIPTION: Arb2 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb2_deadlock_det14
+      WIDTH: 1
+    - DESCRIPTION: Arb2 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb2_deadlock_det15
+      WIDTH: 1
+    - DESCRIPTION: Arb2 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb2_deadlock_det16
+      WIDTH: 1
+    - DESCRIPTION: Arb2 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb2_deadlock_det17
+      WIDTH: 1
+    - DESCRIPTION: Arb2 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb2_deadlock_det18
+      WIDTH: 1
+    - DESCRIPTION: Arb2 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb2_deadlock_det19
+      WIDTH: 1
+    - DESCRIPTION: Arb2 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb2_deadlock_det20
+      WIDTH: 1
+    - DESCRIPTION: Arb2 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb2_deadlock_det21
+      WIDTH: 1
+    - DESCRIPTION: Arb2 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb2_deadlock_det22
+      WIDTH: 1
+    - DESCRIPTION: Arb2 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb2_deadlock_det23
+      WIDTH: 1
+  NON_FATAL_2:
+    - DESCRIPTION: Arb3 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb3_deadlock_det0
+      WIDTH: 1
+    - DESCRIPTION: Arb3 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb3_deadlock_det1
+      WIDTH: 1
+    - DESCRIPTION: Arb3 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb3_deadlock_det2
+      WIDTH: 1
+    - DESCRIPTION: Arb3 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb3_deadlock_det3
+      WIDTH: 1
+    - DESCRIPTION: Arb3 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb3_deadlock_det4
+      WIDTH: 1
+    - DESCRIPTION: Arb3 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb3_deadlock_det5
+      WIDTH: 1
+    - DESCRIPTION: Arb3 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb3_deadlock_det6
+      WIDTH: 1
+    - DESCRIPTION: Arb3 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb3_deadlock_det7
+      WIDTH: 1
+    - DESCRIPTION: Arb3 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb3_deadlock_det8
+      WIDTH: 1
+    - DESCRIPTION: Arb3 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb3_deadlock_det9
+      WIDTH: 1
+    - DESCRIPTION: Arb3 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb3_deadlock_det10
+      WIDTH: 1
+    - DESCRIPTION: Arb3 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb3_deadlock_det11
+      WIDTH: 1
+    - DESCRIPTION: Arb3 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb3_deadlock_det12
+      WIDTH: 1
+    - DESCRIPTION: Arb3 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb3_deadlock_det13
+      WIDTH: 1
+    - DESCRIPTION: Arb3 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb3_deadlock_det14
+      WIDTH: 1
+    - DESCRIPTION: Arb3 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb3_deadlock_det15
+      WIDTH: 1
+    - DESCRIPTION: Arb3 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb3_deadlock_det16
+      WIDTH: 1
+    - DESCRIPTION: Arb3 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb3_deadlock_det17
+      WIDTH: 1
+    - DESCRIPTION: Arb3 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb3_deadlock_det18
+      WIDTH: 1
+    - DESCRIPTION: Arb3 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb3_deadlock_det19
+      WIDTH: 1
+    - DESCRIPTION: Arb3 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb3_deadlock_det20
+      WIDTH: 1
+    - DESCRIPTION: Arb3 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb3_deadlock_det21
+      WIDTH: 1
+    - DESCRIPTION: Arb3 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb3_deadlock_det22
+      WIDTH: 1
+    - DESCRIPTION: Arb3 deadlock detected. Port i VC j corresponds to index i*4 + j
+      NAME: snx_arb3_deadlock_det23
+      WIDTH: 1
+INTR_PORT_EN: 1
+NAME: SNX_AN
+PARENTNAME: pc_soc_clk_an
+REGLST:
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: |-
+          Timeout Configuration. Cycles are RSU clk based.
+                            - 00 : 1024 cycles
+                            - 01 : 256 cycles
+                            - 10 : 4096 cycles
+                            - 11 : infinite
+        NAME: val
+        WIDTH: 2
+    NAME: snx_timeout_thresh_cfg
+  - ATTR: 9
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: "Timed out Status. Cycles are RSU clk based. Becomes 1 when timed out. Write any value to clear it.\n                  "
+        NAME: val
+        WIDTH: 1
+    NAME: snx_timedout_sta
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: |-
+          Clear Timeout Status. Data is ignored. A write
+                     will clear the timeout status bit
+        NAME: val
+        WIDTH: 1
+    NAME: snx_timeout_clr
+    TEST_ATTR: 1
+  - ATTR: 256
+    FLDLST:
+      - &1
+        DESCRIPTION: IBUF0 Memory Double Bit ECC Error
+        NAME: snx_ibuf0_mem_ucerr
+        WIDTH: 1
+      - &2
+        DESCRIPTION: IBUF1 Memory Double Bit ECC Error
+        NAME: snx_ibuf1_mem_ucerr
+        WIDTH: 1
+      - &3
+        DESCRIPTION: IBUF2 Memory Double Bit ECC Error
+        NAME: snx_ibuf2_mem_ucerr
+        WIDTH: 1
+      - &4
+        DESCRIPTION: IBUF3 Memory Double Bit ECC Error
+        NAME: snx_ibuf3_mem_ucerr
+        WIDTH: 1
+      - &5
+        DESCRIPTION: IBUF4 Memory Double Bit ECC Error
+        NAME: snx_ibuf4_mem_ucerr
+        WIDTH: 1
+      - &6
+        DESCRIPTION: IBUF5 Memory Double Bit ECC Error
+        NAME: snx_ibuf5_mem_ucerr
+        WIDTH: 1
+      - &7
+        DESCRIPTION: IBUF6 Memory Double Bit ECC Error
+        NAME: snx_ibuf6_mem_ucerr
+        WIDTH: 1
+      - &8
+        DESCRIPTION: IBUF7 Memory Double Bit ECC Error
+        NAME: snx_ibuf7_mem_ucerr
+        WIDTH: 1
+      - &9
+        DESCRIPTION: IBUF8 Memory Double Bit ECC Error
+        NAME: snx_ibuf8_mem_ucerr
+        WIDTH: 1
+      - &10
+        DESCRIPTION: IBUF9 Memory Double Bit ECC Error
+        NAME: snx_ibuf9_mem_ucerr
+        WIDTH: 1
+      - &11
+        DESCRIPTION: IBUF10 Memory Double Bit ECC Error
+        NAME: snx_ibuf10_mem_ucerr
+        WIDTH: 1
+      - &12
+        DESCRIPTION: IBUF11 Memory Double Bit ECC Error
+        NAME: snx_ibuf11_mem_ucerr
+        WIDTH: 1
+      - &13
+        DESCRIPTION: IBUF12 Memory Double Bit ECC Error
+        NAME: snx_ibuf12_mem_ucerr
+        WIDTH: 1
+      - &14
+        DESCRIPTION: IBUF13 Memory Double Bit ECC Error
+        NAME: snx_ibuf13_mem_ucerr
+        WIDTH: 1
+      - &15
+        DESCRIPTION: IBUF14 Memory Double Bit ECC Error
+        NAME: snx_ibuf14_mem_ucerr
+        WIDTH: 1
+      - &16
+        DESCRIPTION: IBUF15 Memory Double Bit ECC Error
+        NAME: snx_ibuf15_mem_ucerr
+        WIDTH: 1
+      - &17
+        DESCRIPTION: IBUF16 Memory Double Bit ECC Error
+        NAME: snx_ibuf16_mem_ucerr
+        WIDTH: 1
+      - &18
+        DESCRIPTION: IBUF17 Memory Double Bit ECC Error
+        NAME: snx_ibuf17_mem_ucerr
+        WIDTH: 1
+      - &19
+        DESCRIPTION: IBUF18 Memory Double Bit ECC Error
+        NAME: snx_ibuf18_mem_ucerr
+        WIDTH: 1
+      - &20
+        DESCRIPTION: IBUF19 Memory Double Bit ECC Error
+        NAME: snx_ibuf19_mem_ucerr
+        WIDTH: 1
+      - &21
+        DESCRIPTION: IBUF20 Memory Double Bit ECC Error
+        NAME: snx_ibuf20_mem_ucerr
+        WIDTH: 1
+      - &22
+        DESCRIPTION: IBUF21 Memory Double Bit ECC Error
+        NAME: snx_ibuf21_mem_ucerr
+        WIDTH: 1
+      - &23
+        DESCRIPTION: IBUF22 Memory Double Bit ECC Error
+        NAME: snx_ibuf22_mem_ucerr
+        WIDTH: 1
+      - &24
+        DESCRIPTION: IBUF23 Memory Double Bit ECC Error
+        NAME: snx_ibuf23_mem_ucerr
+        WIDTH: 1
+      - &25
+        DESCRIPTION: IBUF0 FBM has been oversunscribed. Adjust the per-LID credits so that the sum is less than 256
+        NAME: snx_ibuf0_empty_fbm_pop
+        WIDTH: 1
+      - &26
+        DESCRIPTION: IBUF1 FBM has been oversunscribed. Adjust the per-LID credits so that the sum is less than 256
+        NAME: snx_ibuf1_empty_fbm_pop
+        WIDTH: 1
+      - &27
+        DESCRIPTION: IBUF2 FBM has been oversunscribed. Adjust the per-LID credits so that the sum is less than 256
+        NAME: snx_ibuf2_empty_fbm_pop
+        WIDTH: 1
+      - &28
+        DESCRIPTION: IBUF3 FBM has been oversunscribed. Adjust the per-LID credits so that the sum is less than 256
+        NAME: snx_ibuf3_empty_fbm_pop
+        WIDTH: 1
+      - &29
+        DESCRIPTION: IBUF4 FBM has been oversunscribed. Adjust the per-LID credits so that the sum is less than 256
+        NAME: snx_ibuf4_empty_fbm_pop
+        WIDTH: 1
+      - &30
+        DESCRIPTION: IBUF5 FBM has been oversunscribed. Adjust the per-LID credits so that the sum is less than 256
+        NAME: snx_ibuf5_empty_fbm_pop
+        WIDTH: 1
+      - &31
+        DESCRIPTION: IBUF6 FBM has been oversunscribed. Adjust the per-LID credits so that the sum is less than 256
+        NAME: snx_ibuf6_empty_fbm_pop
+        WIDTH: 1
+      - &32
+        DESCRIPTION: IBUF7 FBM has been oversunscribed. Adjust the per-LID credits so that the sum is less than 256
+        NAME: snx_ibuf7_empty_fbm_pop
+        WIDTH: 1
+      - &33
+        DESCRIPTION: IBUF8 FBM has been oversunscribed. Adjust the per-LID credits so that the sum is less than 256
+        NAME: snx_ibuf8_empty_fbm_pop
+        WIDTH: 1
+      - &34
+        DESCRIPTION: IBUF9 FBM has been oversunscribed. Adjust the per-LID credits so that the sum is less than 256
+        NAME: snx_ibuf9_empty_fbm_pop
+        WIDTH: 1
+      - &35
+        DESCRIPTION: IBUF10 FBM has been oversunscribed. Adjust the per-LID credits so that the sum is less than 256
+        NAME: snx_ibuf10_empty_fbm_pop
+        WIDTH: 1
+      - &36
+        DESCRIPTION: IBUF11 FBM has been oversunscribed. Adjust the per-LID credits so that the sum is less than 256
+        NAME: snx_ibuf11_empty_fbm_pop
+        WIDTH: 1
+      - &37
+        DESCRIPTION: IBUF12 FBM has been oversunscribed. Adjust the per-LID credits so that the sum is less than 256
+        NAME: snx_ibuf12_empty_fbm_pop
+        WIDTH: 1
+      - &38
+        DESCRIPTION: IBUF13 FBM has been oversunscribed. Adjust the per-LID credits so that the sum is less than 256
+        NAME: snx_ibuf13_empty_fbm_pop
+        WIDTH: 1
+      - &39
+        DESCRIPTION: IBUF14 FBM has been oversunscribed. Adjust the per-LID credits so that the sum is less than 256
+        NAME: snx_ibuf14_empty_fbm_pop
+        WIDTH: 1
+      - &40
+        DESCRIPTION: IBUF15 FBM has been oversunscribed. Adjust the per-LID credits so that the sum is less than 256
+        NAME: snx_ibuf15_empty_fbm_pop
+        WIDTH: 1
+      - &41
+        DESCRIPTION: IBUF16 FBM has been oversunscribed. Adjust the per-LID credits so that the sum is less than 256
+        NAME: snx_ibuf16_empty_fbm_pop
+        WIDTH: 1
+      - &42
+        DESCRIPTION: IBUF17 FBM has been oversunscribed. Adjust the per-LID credits so that the sum is less than 256
+        NAME: snx_ibuf17_empty_fbm_pop
+        WIDTH: 1
+      - &43
+        DESCRIPTION: IBUF18 FBM has been oversunscribed. Adjust the per-LID credits so that the sum is less than 256
+        NAME: snx_ibuf18_empty_fbm_pop
+        WIDTH: 1
+      - &44
+        DESCRIPTION: IBUF19 FBM has been oversunscribed. Adjust the per-LID credits so that the sum is less than 256
+        NAME: snx_ibuf19_empty_fbm_pop
+        WIDTH: 1
+      - &45
+        DESCRIPTION: IBUF20 FBM has been oversunscribed. Adjust the per-LID credits so that the sum is less than 256
+        NAME: snx_ibuf20_empty_fbm_pop
+        WIDTH: 1
+      - &46
+        DESCRIPTION: IBUF21 FBM has been oversunscribed. Adjust the per-LID credits so that the sum is less than 256
+        NAME: snx_ibuf21_empty_fbm_pop
+        WIDTH: 1
+      - &47
+        DESCRIPTION: IBUF22 FBM has been oversunscribed. Adjust the per-LID credits so that the sum is less than 256
+        NAME: snx_ibuf22_empty_fbm_pop
+        WIDTH: 1
+      - &48
+        DESCRIPTION: IBUF23 FBM has been oversunscribed. Adjust the per-LID credits so that the sum is less than 256
+        NAME: snx_ibuf23_empty_fbm_pop
+        WIDTH: 1
+    NAME: snx_fatal_0_intr_cause
+  - ATTR: 512
+    FLDLST:
+      - *1
+      - *2
+      - *3
+      - *4
+      - *5
+      - *6
+      - *7
+      - *8
+      - *9
+      - *10
+      - *11
+      - *12
+      - *13
+      - *14
+      - *15
+      - *16
+      - *17
+      - *18
+      - *19
+      - *20
+      - *21
+      - *22
+      - *23
+      - *24
+      - *25
+      - *26
+      - *27
+      - *28
+      - *29
+      - *30
+      - *31
+      - *32
+      - *33
+      - *34
+      - *35
+      - *36
+      - *37
+      - *38
+      - *39
+      - *40
+      - *41
+      - *42
+      - *43
+      - *44
+      - *45
+      - *46
+      - *47
+      - *48
+    NAME: snx_fatal_0_intr_stat
+  - ATTR: 1024
+    FLDLST:
+      - *1
+      - *2
+      - *3
+      - *4
+      - *5
+      - *6
+      - *7
+      - *8
+      - *9
+      - *10
+      - *11
+      - *12
+      - *13
+      - *14
+      - *15
+      - *16
+      - *17
+      - *18
+      - *19
+      - *20
+      - *21
+      - *22
+      - *23
+      - *24
+      - *25
+      - *26
+      - *27
+      - *28
+      - *29
+      - *30
+      - *31
+      - *32
+      - *33
+      - *34
+      - *35
+      - *36
+      - *37
+      - *38
+      - *39
+      - *40
+      - *41
+      - *42
+      - *43
+      - *44
+      - *45
+      - *46
+      - *47
+      - *48
+    NAME: snx_fatal_0_intr_mask
+  - ATTR: 2048
+    FLDLST:
+      - *1
+      - *2
+      - *3
+      - *4
+      - *5
+      - *6
+      - *7
+      - *8
+      - *9
+      - *10
+      - *11
+      - *12
+      - *13
+      - *14
+      - *15
+      - *16
+      - *17
+      - *18
+      - *19
+      - *20
+      - *21
+      - *22
+      - *23
+      - *24
+      - *25
+      - *26
+      - *27
+      - *28
+      - *29
+      - *30
+      - *31
+      - *32
+      - *33
+      - *34
+      - *35
+      - *36
+      - *37
+      - *38
+      - *39
+      - *40
+      - *41
+      - *42
+      - *43
+      - *44
+      - *45
+      - *46
+      - *47
+      - *48
+    NAME: snx_fatal_0_intr_bset
+  - ATTR: 4096
+    FLDLST:
+      - *1
+      - *2
+      - *3
+      - *4
+      - *5
+      - *6
+      - *7
+      - *8
+      - *9
+      - *10
+      - *11
+      - *12
+      - *13
+      - *14
+      - *15
+      - *16
+      - *17
+      - *18
+      - *19
+      - *20
+      - *21
+      - *22
+      - *23
+      - *24
+      - *25
+      - *26
+      - *27
+      - *28
+      - *29
+      - *30
+      - *31
+      - *32
+      - *33
+      - *34
+      - *35
+      - *36
+      - *37
+      - *38
+      - *39
+      - *40
+      - *41
+      - *42
+      - *43
+      - *44
+      - *45
+      - *46
+      - *47
+      - *48
+    NAME: snx_fatal_0_intr_bclr
+  - ATTR: 256
+    FLDLST:
+      - &49
+        DESCRIPTION: IBUF0 received an illegal dgid
+        NAME: snx_ibuf0_dgid_out_of_range
+        WIDTH: 1
+      - &50
+        DESCRIPTION: IBUF1 received an illegal dgid
+        NAME: snx_ibuf1_dgid_out_of_range
+        WIDTH: 1
+      - &51
+        DESCRIPTION: IBUF2 received an illegal dgid
+        NAME: snx_ibuf2_dgid_out_of_range
+        WIDTH: 1
+      - &52
+        DESCRIPTION: IBUF3 received an illegal dgid
+        NAME: snx_ibuf3_dgid_out_of_range
+        WIDTH: 1
+      - &53
+        DESCRIPTION: IBUF4 received an illegal dgid
+        NAME: snx_ibuf4_dgid_out_of_range
+        WIDTH: 1
+      - &54
+        DESCRIPTION: IBUF5 received an illegal dgid
+        NAME: snx_ibuf5_dgid_out_of_range
+        WIDTH: 1
+      - &55
+        DESCRIPTION: IBUF6 received an illegal dgid
+        NAME: snx_ibuf6_dgid_out_of_range
+        WIDTH: 1
+      - &56
+        DESCRIPTION: IBUF7 received an illegal dgid
+        NAME: snx_ibuf7_dgid_out_of_range
+        WIDTH: 1
+      - &57
+        DESCRIPTION: IBUF8 received an illegal dgid
+        NAME: snx_ibuf8_dgid_out_of_range
+        WIDTH: 1
+      - &58
+        DESCRIPTION: IBUF9 received an illegal dgid
+        NAME: snx_ibuf9_dgid_out_of_range
+        WIDTH: 1
+      - &59
+        DESCRIPTION: IBUF10 received an illegal dgid
+        NAME: snx_ibuf10_dgid_out_of_range
+        WIDTH: 1
+      - &60
+        DESCRIPTION: IBUF11 received an illegal dgid
+        NAME: snx_ibuf11_dgid_out_of_range
+        WIDTH: 1
+      - &61
+        DESCRIPTION: IBUF12 received an illegal dgid
+        NAME: snx_ibuf12_dgid_out_of_range
+        WIDTH: 1
+      - &62
+        DESCRIPTION: IBUF13 received an illegal dgid
+        NAME: snx_ibuf13_dgid_out_of_range
+        WIDTH: 1
+      - &63
+        DESCRIPTION: IBUF14 received an illegal dgid
+        NAME: snx_ibuf14_dgid_out_of_range
+        WIDTH: 1
+      - &64
+        DESCRIPTION: IBUF15 received an illegal dgid
+        NAME: snx_ibuf15_dgid_out_of_range
+        WIDTH: 1
+      - &65
+        DESCRIPTION: IBUF16 received an illegal dgid
+        NAME: snx_ibuf16_dgid_out_of_range
+        WIDTH: 1
+      - &66
+        DESCRIPTION: IBUF17 received an illegal dgid
+        NAME: snx_ibuf17_dgid_out_of_range
+        WIDTH: 1
+      - &67
+        DESCRIPTION: IBUF18 received an illegal dgid
+        NAME: snx_ibuf18_dgid_out_of_range
+        WIDTH: 1
+      - &68
+        DESCRIPTION: IBUF19 received an illegal dgid
+        NAME: snx_ibuf19_dgid_out_of_range
+        WIDTH: 1
+      - &69
+        DESCRIPTION: IBUF20 received an illegal dgid
+        NAME: snx_ibuf20_dgid_out_of_range
+        WIDTH: 1
+      - &70
+        DESCRIPTION: IBUF21 received an illegal dgid
+        NAME: snx_ibuf21_dgid_out_of_range
+        WIDTH: 1
+      - &71
+        DESCRIPTION: IBUF22 received an illegal dgid
+        NAME: snx_ibuf22_dgid_out_of_range
+        WIDTH: 1
+      - &72
+        DESCRIPTION: IBUF23 received an illegal dgid
+        NAME: snx_ibuf23_dgid_out_of_range
+        WIDTH: 1
+    NAME: snx_fatal_1_intr_cause
+  - ATTR: 512
+    FLDLST:
+      - *49
+      - *50
+      - *51
+      - *52
+      - *53
+      - *54
+      - *55
+      - *56
+      - *57
+      - *58
+      - *59
+      - *60
+      - *61
+      - *62
+      - *63
+      - *64
+      - *65
+      - *66
+      - *67
+      - *68
+      - *69
+      - *70
+      - *71
+      - *72
+    NAME: snx_fatal_1_intr_stat
+  - ATTR: 1024
+    FLDLST:
+      - *49
+      - *50
+      - *51
+      - *52
+      - *53
+      - *54
+      - *55
+      - *56
+      - *57
+      - *58
+      - *59
+      - *60
+      - *61
+      - *62
+      - *63
+      - *64
+      - *65
+      - *66
+      - *67
+      - *68
+      - *69
+      - *70
+      - *71
+      - *72
+    NAME: snx_fatal_1_intr_mask
+  - ATTR: 2048
+    FLDLST:
+      - *49
+      - *50
+      - *51
+      - *52
+      - *53
+      - *54
+      - *55
+      - *56
+      - *57
+      - *58
+      - *59
+      - *60
+      - *61
+      - *62
+      - *63
+      - *64
+      - *65
+      - *66
+      - *67
+      - *68
+      - *69
+      - *70
+      - *71
+      - *72
+    NAME: snx_fatal_1_intr_bset
+  - ATTR: 4096
+    FLDLST:
+      - *49
+      - *50
+      - *51
+      - *52
+      - *53
+      - *54
+      - *55
+      - *56
+      - *57
+      - *58
+      - *59
+      - *60
+      - *61
+      - *62
+      - *63
+      - *64
+      - *65
+      - *66
+      - *67
+      - *68
+      - *69
+      - *70
+      - *71
+      - *72
+    NAME: snx_fatal_1_intr_bclr
+  - ATTR: 256
+    FLDLST:
+      - &73
+        DESCRIPTION: IBUF0 Memory Single Bit ECC Error
+        NAME: snx_ibuf0_mem_cerr
+        WIDTH: 1
+      - &74
+        DESCRIPTION: IBUF1 Memory Single Bit ECC Error
+        NAME: snx_ibuf1_mem_cerr
+        WIDTH: 1
+      - &75
+        DESCRIPTION: IBUF2 Memory Single Bit ECC Error
+        NAME: snx_ibuf2_mem_cerr
+        WIDTH: 1
+      - &76
+        DESCRIPTION: IBUF3 Memory Single Bit ECC Error
+        NAME: snx_ibuf3_mem_cerr
+        WIDTH: 1
+      - &77
+        DESCRIPTION: IBUF4 Memory Single Bit ECC Error
+        NAME: snx_ibuf4_mem_cerr
+        WIDTH: 1
+      - &78
+        DESCRIPTION: IBUF5 Memory Single Bit ECC Error
+        NAME: snx_ibuf5_mem_cerr
+        WIDTH: 1
+      - &79
+        DESCRIPTION: IBUF6 Memory Single Bit ECC Error
+        NAME: snx_ibuf6_mem_cerr
+        WIDTH: 1
+      - &80
+        DESCRIPTION: IBUF7 Memory Single Bit ECC Error
+        NAME: snx_ibuf7_mem_cerr
+        WIDTH: 1
+      - &81
+        DESCRIPTION: IBUF8 Memory Single Bit ECC Error
+        NAME: snx_ibuf8_mem_cerr
+        WIDTH: 1
+      - &82
+        DESCRIPTION: IBUF9 Memory Single Bit ECC Error
+        NAME: snx_ibuf9_mem_cerr
+        WIDTH: 1
+      - &83
+        DESCRIPTION: IBUF10 Memory Single Bit ECC Error
+        NAME: snx_ibuf10_mem_cerr
+        WIDTH: 1
+      - &84
+        DESCRIPTION: IBUF11 Memory Single Bit ECC Error
+        NAME: snx_ibuf11_mem_cerr
+        WIDTH: 1
+      - &85
+        DESCRIPTION: IBUF12 Memory Single Bit ECC Error
+        NAME: snx_ibuf12_mem_cerr
+        WIDTH: 1
+      - &86
+        DESCRIPTION: IBUF13 Memory Single Bit ECC Error
+        NAME: snx_ibuf13_mem_cerr
+        WIDTH: 1
+      - &87
+        DESCRIPTION: IBUF14 Memory Single Bit ECC Error
+        NAME: snx_ibuf14_mem_cerr
+        WIDTH: 1
+      - &88
+        DESCRIPTION: IBUF15 Memory Single Bit ECC Error
+        NAME: snx_ibuf15_mem_cerr
+        WIDTH: 1
+      - &89
+        DESCRIPTION: IBUF16 Memory Single Bit ECC Error
+        NAME: snx_ibuf16_mem_cerr
+        WIDTH: 1
+      - &90
+        DESCRIPTION: IBUF17 Memory Single Bit ECC Error
+        NAME: snx_ibuf17_mem_cerr
+        WIDTH: 1
+      - &91
+        DESCRIPTION: IBUF18 Memory Single Bit ECC Error
+        NAME: snx_ibuf18_mem_cerr
+        WIDTH: 1
+      - &92
+        DESCRIPTION: IBUF19 Memory Single Bit ECC Error
+        NAME: snx_ibuf19_mem_cerr
+        WIDTH: 1
+      - &93
+        DESCRIPTION: IBUF20 Memory Single Bit ECC Error
+        NAME: snx_ibuf20_mem_cerr
+        WIDTH: 1
+      - &94
+        DESCRIPTION: IBUF21 Memory Single Bit ECC Error
+        NAME: snx_ibuf21_mem_cerr
+        WIDTH: 1
+      - &95
+        DESCRIPTION: IBUF22 Memory Single Bit ECC Error
+        NAME: snx_ibuf22_mem_cerr
+        WIDTH: 1
+      - &96
+        DESCRIPTION: IBUF23 Memory Single Bit ECC Error
+        NAME: snx_ibuf23_mem_cerr
+        WIDTH: 1
+      - &97
+        DESCRIPTION: Arb0 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb0_deadlock_det0
+        WIDTH: 1
+      - &98
+        DESCRIPTION: Arb0 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb0_deadlock_det1
+        WIDTH: 1
+      - &99
+        DESCRIPTION: Arb0 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb0_deadlock_det2
+        WIDTH: 1
+      - &100
+        DESCRIPTION: Arb0 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb0_deadlock_det3
+        WIDTH: 1
+      - &101
+        DESCRIPTION: Arb0 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb0_deadlock_det4
+        WIDTH: 1
+      - &102
+        DESCRIPTION: Arb0 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb0_deadlock_det5
+        WIDTH: 1
+      - &103
+        DESCRIPTION: Arb0 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb0_deadlock_det6
+        WIDTH: 1
+      - &104
+        DESCRIPTION: Arb0 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb0_deadlock_det7
+        WIDTH: 1
+      - &105
+        DESCRIPTION: Arb0 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb0_deadlock_det8
+        WIDTH: 1
+      - &106
+        DESCRIPTION: Arb0 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb0_deadlock_det9
+        WIDTH: 1
+      - &107
+        DESCRIPTION: Arb0 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb0_deadlock_det10
+        WIDTH: 1
+      - &108
+        DESCRIPTION: Arb0 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb0_deadlock_det11
+        WIDTH: 1
+      - &109
+        DESCRIPTION: Arb0 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb0_deadlock_det12
+        WIDTH: 1
+      - &110
+        DESCRIPTION: Arb0 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb0_deadlock_det13
+        WIDTH: 1
+      - &111
+        DESCRIPTION: Arb0 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb0_deadlock_det14
+        WIDTH: 1
+      - &112
+        DESCRIPTION: Arb0 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb0_deadlock_det15
+        WIDTH: 1
+      - &113
+        DESCRIPTION: Arb0 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb0_deadlock_det16
+        WIDTH: 1
+      - &114
+        DESCRIPTION: Arb0 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb0_deadlock_det17
+        WIDTH: 1
+      - &115
+        DESCRIPTION: Arb0 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb0_deadlock_det18
+        WIDTH: 1
+      - &116
+        DESCRIPTION: Arb0 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb0_deadlock_det19
+        WIDTH: 1
+      - &117
+        DESCRIPTION: Arb0 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb0_deadlock_det20
+        WIDTH: 1
+      - &118
+        DESCRIPTION: Arb0 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb0_deadlock_det21
+        WIDTH: 1
+      - &119
+        DESCRIPTION: Arb0 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb0_deadlock_det22
+        WIDTH: 1
+      - &120
+        DESCRIPTION: Arb0 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb0_deadlock_det23
+        WIDTH: 1
+    NAME: snx_non_fatal_0_intr_cause
+  - ATTR: 512
+    FLDLST:
+      - *73
+      - *74
+      - *75
+      - *76
+      - *77
+      - *78
+      - *79
+      - *80
+      - *81
+      - *82
+      - *83
+      - *84
+      - *85
+      - *86
+      - *87
+      - *88
+      - *89
+      - *90
+      - *91
+      - *92
+      - *93
+      - *94
+      - *95
+      - *96
+      - *97
+      - *98
+      - *99
+      - *100
+      - *101
+      - *102
+      - *103
+      - *104
+      - *105
+      - *106
+      - *107
+      - *108
+      - *109
+      - *110
+      - *111
+      - *112
+      - *113
+      - *114
+      - *115
+      - *116
+      - *117
+      - *118
+      - *119
+      - *120
+    NAME: snx_non_fatal_0_intr_stat
+  - ATTR: 1024
+    FLDLST:
+      - *73
+      - *74
+      - *75
+      - *76
+      - *77
+      - *78
+      - *79
+      - *80
+      - *81
+      - *82
+      - *83
+      - *84
+      - *85
+      - *86
+      - *87
+      - *88
+      - *89
+      - *90
+      - *91
+      - *92
+      - *93
+      - *94
+      - *95
+      - *96
+      - *97
+      - *98
+      - *99
+      - *100
+      - *101
+      - *102
+      - *103
+      - *104
+      - *105
+      - *106
+      - *107
+      - *108
+      - *109
+      - *110
+      - *111
+      - *112
+      - *113
+      - *114
+      - *115
+      - *116
+      - *117
+      - *118
+      - *119
+      - *120
+    NAME: snx_non_fatal_0_intr_mask
+  - ATTR: 2048
+    FLDLST:
+      - *73
+      - *74
+      - *75
+      - *76
+      - *77
+      - *78
+      - *79
+      - *80
+      - *81
+      - *82
+      - *83
+      - *84
+      - *85
+      - *86
+      - *87
+      - *88
+      - *89
+      - *90
+      - *91
+      - *92
+      - *93
+      - *94
+      - *95
+      - *96
+      - *97
+      - *98
+      - *99
+      - *100
+      - *101
+      - *102
+      - *103
+      - *104
+      - *105
+      - *106
+      - *107
+      - *108
+      - *109
+      - *110
+      - *111
+      - *112
+      - *113
+      - *114
+      - *115
+      - *116
+      - *117
+      - *118
+      - *119
+      - *120
+    NAME: snx_non_fatal_0_intr_bset
+  - ATTR: 4096
+    FLDLST:
+      - *73
+      - *74
+      - *75
+      - *76
+      - *77
+      - *78
+      - *79
+      - *80
+      - *81
+      - *82
+      - *83
+      - *84
+      - *85
+      - *86
+      - *87
+      - *88
+      - *89
+      - *90
+      - *91
+      - *92
+      - *93
+      - *94
+      - *95
+      - *96
+      - *97
+      - *98
+      - *99
+      - *100
+      - *101
+      - *102
+      - *103
+      - *104
+      - *105
+      - *106
+      - *107
+      - *108
+      - *109
+      - *110
+      - *111
+      - *112
+      - *113
+      - *114
+      - *115
+      - *116
+      - *117
+      - *118
+      - *119
+      - *120
+    NAME: snx_non_fatal_0_intr_bclr
+  - ATTR: 256
+    FLDLST:
+      - &121
+        DESCRIPTION: Arb1 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb1_deadlock_det0
+        WIDTH: 1
+      - &122
+        DESCRIPTION: Arb1 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb1_deadlock_det1
+        WIDTH: 1
+      - &123
+        DESCRIPTION: Arb1 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb1_deadlock_det2
+        WIDTH: 1
+      - &124
+        DESCRIPTION: Arb1 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb1_deadlock_det3
+        WIDTH: 1
+      - &125
+        DESCRIPTION: Arb1 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb1_deadlock_det4
+        WIDTH: 1
+      - &126
+        DESCRIPTION: Arb1 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb1_deadlock_det5
+        WIDTH: 1
+      - &127
+        DESCRIPTION: Arb1 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb1_deadlock_det6
+        WIDTH: 1
+      - &128
+        DESCRIPTION: Arb1 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb1_deadlock_det7
+        WIDTH: 1
+      - &129
+        DESCRIPTION: Arb1 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb1_deadlock_det8
+        WIDTH: 1
+      - &130
+        DESCRIPTION: Arb1 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb1_deadlock_det9
+        WIDTH: 1
+      - &131
+        DESCRIPTION: Arb1 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb1_deadlock_det10
+        WIDTH: 1
+      - &132
+        DESCRIPTION: Arb1 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb1_deadlock_det11
+        WIDTH: 1
+      - &133
+        DESCRIPTION: Arb1 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb1_deadlock_det12
+        WIDTH: 1
+      - &134
+        DESCRIPTION: Arb1 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb1_deadlock_det13
+        WIDTH: 1
+      - &135
+        DESCRIPTION: Arb1 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb1_deadlock_det14
+        WIDTH: 1
+      - &136
+        DESCRIPTION: Arb1 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb1_deadlock_det15
+        WIDTH: 1
+      - &137
+        DESCRIPTION: Arb1 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb1_deadlock_det16
+        WIDTH: 1
+      - &138
+        DESCRIPTION: Arb1 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb1_deadlock_det17
+        WIDTH: 1
+      - &139
+        DESCRIPTION: Arb1 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb1_deadlock_det18
+        WIDTH: 1
+      - &140
+        DESCRIPTION: Arb1 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb1_deadlock_det19
+        WIDTH: 1
+      - &141
+        DESCRIPTION: Arb1 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb1_deadlock_det20
+        WIDTH: 1
+      - &142
+        DESCRIPTION: Arb1 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb1_deadlock_det21
+        WIDTH: 1
+      - &143
+        DESCRIPTION: Arb1 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb1_deadlock_det22
+        WIDTH: 1
+      - &144
+        DESCRIPTION: Arb1 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb1_deadlock_det23
+        WIDTH: 1
+      - &145
+        DESCRIPTION: Arb2 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb2_deadlock_det0
+        WIDTH: 1
+      - &146
+        DESCRIPTION: Arb2 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb2_deadlock_det1
+        WIDTH: 1
+      - &147
+        DESCRIPTION: Arb2 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb2_deadlock_det2
+        WIDTH: 1
+      - &148
+        DESCRIPTION: Arb2 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb2_deadlock_det3
+        WIDTH: 1
+      - &149
+        DESCRIPTION: Arb2 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb2_deadlock_det4
+        WIDTH: 1
+      - &150
+        DESCRIPTION: Arb2 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb2_deadlock_det5
+        WIDTH: 1
+      - &151
+        DESCRIPTION: Arb2 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb2_deadlock_det6
+        WIDTH: 1
+      - &152
+        DESCRIPTION: Arb2 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb2_deadlock_det7
+        WIDTH: 1
+      - &153
+        DESCRIPTION: Arb2 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb2_deadlock_det8
+        WIDTH: 1
+      - &154
+        DESCRIPTION: Arb2 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb2_deadlock_det9
+        WIDTH: 1
+      - &155
+        DESCRIPTION: Arb2 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb2_deadlock_det10
+        WIDTH: 1
+      - &156
+        DESCRIPTION: Arb2 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb2_deadlock_det11
+        WIDTH: 1
+      - &157
+        DESCRIPTION: Arb2 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb2_deadlock_det12
+        WIDTH: 1
+      - &158
+        DESCRIPTION: Arb2 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb2_deadlock_det13
+        WIDTH: 1
+      - &159
+        DESCRIPTION: Arb2 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb2_deadlock_det14
+        WIDTH: 1
+      - &160
+        DESCRIPTION: Arb2 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb2_deadlock_det15
+        WIDTH: 1
+      - &161
+        DESCRIPTION: Arb2 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb2_deadlock_det16
+        WIDTH: 1
+      - &162
+        DESCRIPTION: Arb2 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb2_deadlock_det17
+        WIDTH: 1
+      - &163
+        DESCRIPTION: Arb2 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb2_deadlock_det18
+        WIDTH: 1
+      - &164
+        DESCRIPTION: Arb2 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb2_deadlock_det19
+        WIDTH: 1
+      - &165
+        DESCRIPTION: Arb2 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb2_deadlock_det20
+        WIDTH: 1
+      - &166
+        DESCRIPTION: Arb2 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb2_deadlock_det21
+        WIDTH: 1
+      - &167
+        DESCRIPTION: Arb2 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb2_deadlock_det22
+        WIDTH: 1
+      - &168
+        DESCRIPTION: Arb2 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb2_deadlock_det23
+        WIDTH: 1
+    NAME: snx_non_fatal_1_intr_cause
+  - ATTR: 512
+    FLDLST:
+      - *121
+      - *122
+      - *123
+      - *124
+      - *125
+      - *126
+      - *127
+      - *128
+      - *129
+      - *130
+      - *131
+      - *132
+      - *133
+      - *134
+      - *135
+      - *136
+      - *137
+      - *138
+      - *139
+      - *140
+      - *141
+      - *142
+      - *143
+      - *144
+      - *145
+      - *146
+      - *147
+      - *148
+      - *149
+      - *150
+      - *151
+      - *152
+      - *153
+      - *154
+      - *155
+      - *156
+      - *157
+      - *158
+      - *159
+      - *160
+      - *161
+      - *162
+      - *163
+      - *164
+      - *165
+      - *166
+      - *167
+      - *168
+    NAME: snx_non_fatal_1_intr_stat
+  - ATTR: 1024
+    FLDLST:
+      - *121
+      - *122
+      - *123
+      - *124
+      - *125
+      - *126
+      - *127
+      - *128
+      - *129
+      - *130
+      - *131
+      - *132
+      - *133
+      - *134
+      - *135
+      - *136
+      - *137
+      - *138
+      - *139
+      - *140
+      - *141
+      - *142
+      - *143
+      - *144
+      - *145
+      - *146
+      - *147
+      - *148
+      - *149
+      - *150
+      - *151
+      - *152
+      - *153
+      - *154
+      - *155
+      - *156
+      - *157
+      - *158
+      - *159
+      - *160
+      - *161
+      - *162
+      - *163
+      - *164
+      - *165
+      - *166
+      - *167
+      - *168
+    NAME: snx_non_fatal_1_intr_mask
+  - ATTR: 2048
+    FLDLST:
+      - *121
+      - *122
+      - *123
+      - *124
+      - *125
+      - *126
+      - *127
+      - *128
+      - *129
+      - *130
+      - *131
+      - *132
+      - *133
+      - *134
+      - *135
+      - *136
+      - *137
+      - *138
+      - *139
+      - *140
+      - *141
+      - *142
+      - *143
+      - *144
+      - *145
+      - *146
+      - *147
+      - *148
+      - *149
+      - *150
+      - *151
+      - *152
+      - *153
+      - *154
+      - *155
+      - *156
+      - *157
+      - *158
+      - *159
+      - *160
+      - *161
+      - *162
+      - *163
+      - *164
+      - *165
+      - *166
+      - *167
+      - *168
+    NAME: snx_non_fatal_1_intr_bset
+  - ATTR: 4096
+    FLDLST:
+      - *121
+      - *122
+      - *123
+      - *124
+      - *125
+      - *126
+      - *127
+      - *128
+      - *129
+      - *130
+      - *131
+      - *132
+      - *133
+      - *134
+      - *135
+      - *136
+      - *137
+      - *138
+      - *139
+      - *140
+      - *141
+      - *142
+      - *143
+      - *144
+      - *145
+      - *146
+      - *147
+      - *148
+      - *149
+      - *150
+      - *151
+      - *152
+      - *153
+      - *154
+      - *155
+      - *156
+      - *157
+      - *158
+      - *159
+      - *160
+      - *161
+      - *162
+      - *163
+      - *164
+      - *165
+      - *166
+      - *167
+      - *168
+    NAME: snx_non_fatal_1_intr_bclr
+  - ATTR: 256
+    FLDLST:
+      - &169
+        DESCRIPTION: Arb3 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb3_deadlock_det0
+        WIDTH: 1
+      - &170
+        DESCRIPTION: Arb3 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb3_deadlock_det1
+        WIDTH: 1
+      - &171
+        DESCRIPTION: Arb3 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb3_deadlock_det2
+        WIDTH: 1
+      - &172
+        DESCRIPTION: Arb3 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb3_deadlock_det3
+        WIDTH: 1
+      - &173
+        DESCRIPTION: Arb3 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb3_deadlock_det4
+        WIDTH: 1
+      - &174
+        DESCRIPTION: Arb3 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb3_deadlock_det5
+        WIDTH: 1
+      - &175
+        DESCRIPTION: Arb3 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb3_deadlock_det6
+        WIDTH: 1
+      - &176
+        DESCRIPTION: Arb3 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb3_deadlock_det7
+        WIDTH: 1
+      - &177
+        DESCRIPTION: Arb3 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb3_deadlock_det8
+        WIDTH: 1
+      - &178
+        DESCRIPTION: Arb3 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb3_deadlock_det9
+        WIDTH: 1
+      - &179
+        DESCRIPTION: Arb3 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb3_deadlock_det10
+        WIDTH: 1
+      - &180
+        DESCRIPTION: Arb3 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb3_deadlock_det11
+        WIDTH: 1
+      - &181
+        DESCRIPTION: Arb3 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb3_deadlock_det12
+        WIDTH: 1
+      - &182
+        DESCRIPTION: Arb3 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb3_deadlock_det13
+        WIDTH: 1
+      - &183
+        DESCRIPTION: Arb3 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb3_deadlock_det14
+        WIDTH: 1
+      - &184
+        DESCRIPTION: Arb3 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb3_deadlock_det15
+        WIDTH: 1
+      - &185
+        DESCRIPTION: Arb3 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb3_deadlock_det16
+        WIDTH: 1
+      - &186
+        DESCRIPTION: Arb3 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb3_deadlock_det17
+        WIDTH: 1
+      - &187
+        DESCRIPTION: Arb3 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb3_deadlock_det18
+        WIDTH: 1
+      - &188
+        DESCRIPTION: Arb3 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb3_deadlock_det19
+        WIDTH: 1
+      - &189
+        DESCRIPTION: Arb3 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb3_deadlock_det20
+        WIDTH: 1
+      - &190
+        DESCRIPTION: Arb3 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb3_deadlock_det21
+        WIDTH: 1
+      - &191
+        DESCRIPTION: Arb3 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb3_deadlock_det22
+        WIDTH: 1
+      - &192
+        DESCRIPTION: Arb3 deadlock detected. Port i VC j corresponds to index i*4 + j
+        NAME: snx_arb3_deadlock_det23
+        WIDTH: 1
+    NAME: snx_non_fatal_2_intr_cause
+  - ATTR: 512
+    FLDLST:
+      - *169
+      - *170
+      - *171
+      - *172
+      - *173
+      - *174
+      - *175
+      - *176
+      - *177
+      - *178
+      - *179
+      - *180
+      - *181
+      - *182
+      - *183
+      - *184
+      - *185
+      - *186
+      - *187
+      - *188
+      - *189
+      - *190
+      - *191
+      - *192
+    NAME: snx_non_fatal_2_intr_stat
+  - ATTR: 1024
+    FLDLST:
+      - *169
+      - *170
+      - *171
+      - *172
+      - *173
+      - *174
+      - *175
+      - *176
+      - *177
+      - *178
+      - *179
+      - *180
+      - *181
+      - *182
+      - *183
+      - *184
+      - *185
+      - *186
+      - *187
+      - *188
+      - *189
+      - *190
+      - *191
+      - *192
+    NAME: snx_non_fatal_2_intr_mask
+  - ATTR: 2048
+    FLDLST:
+      - *169
+      - *170
+      - *171
+      - *172
+      - *173
+      - *174
+      - *175
+      - *176
+      - *177
+      - *178
+      - *179
+      - *180
+      - *181
+      - *182
+      - *183
+      - *184
+      - *185
+      - *186
+      - *187
+      - *188
+      - *189
+      - *190
+      - *191
+      - *192
+    NAME: snx_non_fatal_2_intr_bset
+  - ATTR: 4096
+    FLDLST:
+      - *169
+      - *170
+      - *171
+      - *172
+      - *173
+      - *174
+      - *175
+      - *176
+      - *177
+      - *178
+      - *179
+      - *180
+      - *181
+      - *182
+      - *183
+      - *184
+      - *185
+      - *186
+      - *187
+      - *188
+      - *189
+      - *190
+      - *191
+      - *192
+    NAME: snx_non_fatal_2_intr_bclr
+  - ATTR: 9
+    DESCRIPTION: SNX Feature Register
+    FLDLST:
+      - ATTR: 1
+        DEFAULT: 8'd12
+        DESCRIPTION: Module ID
+        NAME: module_id
+        VALUE: 8'd12
+        WIDTH: 8
+      - ATTR: 1
+        DEFAULT: 8'd0
+        DESCRIPTION: Version number of the module
+        NAME: version
+        VALUE: 8'd0
+        WIDTH: 8
+      - ATTR: 1
+        DEFAULT: 8'd0
+        DESCRIPTION: Features enabled in the module.
+        NAME: features
+        VALUE: 8'd0
+        WIDTH: 16
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Reserved Field.
+        NAME: Reserved
+        WIDTH: 32
+    NAME: snx_features
+    TEST_ATTR: 0
+    WIDTH: 64
+  - ATTR: 5
+    DESCRIPTION: ' Spare PIO register. These bits can be read and written by software. They can serve as control bits for late ECOs in the design.'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Spare PIO register.
+        NAME: val
+        WIDTH: 64
+    NAME: snx_spare_pio
+    WIDTH: 64
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: Scratchpad register.
+        NAME: val
+        WIDTH: 64
+    NAME: snx_scratchpad
+    WIDTH: 64
+  - ATTR: 5
+    DESCRIPTION: Per-VC weight config for WRR arbitration across VCs when multiple VCs are eligible for arbitration.
+    FLDLST:
+      - DEFAULT: 1
+        DESCRIPTION: Per-VC weight config.
+        NAME: vc0_wt
+        WIDTH: 2
+      - DEFAULT: 1
+        DESCRIPTION: Per-VC weight config.
+        NAME: vc1_wt
+        WIDTH: 2
+      - DEFAULT: 1
+        DESCRIPTION: Per-VC weight config.
+        NAME: vc2_wt
+        WIDTH: 2
+      - DEFAULT: 1
+        DESCRIPTION: Per-VC weight config.
+        NAME: vc3_wt
+        WIDTH: 2
+    NAME: snx_vc_arb_wt_cfg
+  - ATTR: 5
+    DESCRIPTION: Per-VC weight config for WRR arbitration across VCs when flits are being read out of the IBUF SRAM to the ordering queues.
+    FLDLST:
+      - DEFAULT: 1
+        DESCRIPTION: Per-VC weight config.
+        NAME: vc0_wt
+        WIDTH: 2
+      - DEFAULT: 1
+        DESCRIPTION: Per-VC weight config.
+        NAME: vc1_wt
+        WIDTH: 2
+      - DEFAULT: 1
+        DESCRIPTION: Per-VC weight config.
+        NAME: vc2_wt
+        WIDTH: 2
+      - DEFAULT: 1
+        DESCRIPTION: Per-VC weight config.
+        NAME: vc3_wt
+        WIDTH: 2
+    NAME: snx_sram_rd_vc_arb_wt_cfg
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Configurable additional delay on the credit return path if there is a need to equalize the credit RTT between different tiles and SNX
+    FLDLST: &193
+      - DEFAULT: 0
+        DESCRIPTION: 'Number of additional cycles to delay the credit return. 0: 0 cycles, 1: 2 cycles, 2: 4 cycles, 3: 6 cycles'
+        NAME: dly
+        WIDTH: 2
+    NAME: snx_ibuf_dly_cfg_0
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Configurable additional delay on the credit return path if there is a need to equalize the credit RTT between different tiles and SNX
+    FLDLST: *193
+    NAME: snx_ibuf_dly_cfg_1
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Configurable additional delay on the credit return path if there is a need to equalize the credit RTT between different tiles and SNX
+    FLDLST: *193
+    NAME: snx_ibuf_dly_cfg_2
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Configurable additional delay on the credit return path if there is a need to equalize the credit RTT between different tiles and SNX
+    FLDLST: *193
+    NAME: snx_ibuf_dly_cfg_3
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Configurable additional delay on the credit return path if there is a need to equalize the credit RTT between different tiles and SNX
+    FLDLST: *193
+    NAME: snx_ibuf_dly_cfg_4
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Configurable additional delay on the credit return path if there is a need to equalize the credit RTT between different tiles and SNX
+    FLDLST: *193
+    NAME: snx_ibuf_dly_cfg_5
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Configurable additional delay on the credit return path if there is a need to equalize the credit RTT between different tiles and SNX
+    FLDLST: *193
+    NAME: snx_ibuf_dly_cfg_6
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Configurable additional delay on the credit return path if there is a need to equalize the credit RTT between different tiles and SNX
+    FLDLST: *193
+    NAME: snx_ibuf_dly_cfg_7
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Configurable additional delay on the credit return path if there is a need to equalize the credit RTT between different tiles and SNX
+    FLDLST: *193
+    NAME: snx_ibuf_dly_cfg_8
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Configurable additional delay on the credit return path if there is a need to equalize the credit RTT between different tiles and SNX
+    FLDLST: *193
+    NAME: snx_ibuf_dly_cfg_9
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Configurable additional delay on the credit return path if there is a need to equalize the credit RTT between different tiles and SNX
+    FLDLST: *193
+    NAME: snx_ibuf_dly_cfg_10
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Configurable additional delay on the credit return path if there is a need to equalize the credit RTT between different tiles and SNX
+    FLDLST: *193
+    NAME: snx_ibuf_dly_cfg_11
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Configurable additional delay on the credit return path if there is a need to equalize the credit RTT between different tiles and SNX
+    FLDLST: *193
+    NAME: snx_ibuf_dly_cfg_12
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Configurable additional delay on the credit return path if there is a need to equalize the credit RTT between different tiles and SNX
+    FLDLST: *193
+    NAME: snx_ibuf_dly_cfg_13
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Configurable additional delay on the credit return path if there is a need to equalize the credit RTT between different tiles and SNX
+    FLDLST: *193
+    NAME: snx_ibuf_dly_cfg_14
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Configurable additional delay on the credit return path if there is a need to equalize the credit RTT between different tiles and SNX
+    FLDLST: *193
+    NAME: snx_ibuf_dly_cfg_15
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Configurable additional delay on the credit return path if there is a need to equalize the credit RTT between different tiles and SNX
+    FLDLST: *193
+    NAME: snx_ibuf_dly_cfg_16
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Configurable additional delay on the credit return path if there is a need to equalize the credit RTT between different tiles and SNX
+    FLDLST: *193
+    NAME: snx_ibuf_dly_cfg_17
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Configurable additional delay on the credit return path if there is a need to equalize the credit RTT between different tiles and SNX
+    FLDLST: *193
+    NAME: snx_ibuf_dly_cfg_18
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Configurable additional delay on the credit return path if there is a need to equalize the credit RTT between different tiles and SNX
+    FLDLST: *193
+    NAME: snx_ibuf_dly_cfg_19
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Configurable additional delay on the credit return path if there is a need to equalize the credit RTT between different tiles and SNX
+    FLDLST: *193
+    NAME: snx_ibuf_dly_cfg_20
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Configurable additional delay on the credit return path if there is a need to equalize the credit RTT between different tiles and SNX
+    FLDLST: *193
+    NAME: snx_ibuf_dly_cfg_21
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Configurable additional delay on the credit return path if there is a need to equalize the credit RTT between different tiles and SNX
+    FLDLST: *193
+    NAME: snx_ibuf_dly_cfg_22
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Configurable additional delay on the credit return path if there is a need to equalize the credit RTT between different tiles and SNX
+    FLDLST: *193
+    NAME: snx_ibuf_dly_cfg_23
+  - ATTR: 5
+    DESCRIPTION: 'SNX credit watchdog timer config. If forward progress is not made on an output VC within this period, an interrupt is raised.'
+    FLDLST:
+      - DEFAULT: 16777215
+        NAME: val
+        WIDTH: 24
+    NAME: snx_credit_watchdog_timer_cfg
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: Config register for memory error injection
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into IBUF0 Memory
+        NAME: snx_ibuf0_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into IBUF1 Memory
+        NAME: snx_ibuf1_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into IBUF2 Memory
+        NAME: snx_ibuf2_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into IBUF3 Memory
+        NAME: snx_ibuf3_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into IBUF4 Memory
+        NAME: snx_ibuf4_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into IBUF5 Memory
+        NAME: snx_ibuf5_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into IBUF6 Memory
+        NAME: snx_ibuf6_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into IBUF7 Memory
+        NAME: snx_ibuf7_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into IBUF8 Memory
+        NAME: snx_ibuf8_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into IBUF9 Memory
+        NAME: snx_ibuf9_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into IBUF10 Memory
+        NAME: snx_ibuf10_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into IBUF11 Memory
+        NAME: snx_ibuf11_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into IBUF12 Memory
+        NAME: snx_ibuf12_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into IBUF13 Memory
+        NAME: snx_ibuf13_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into IBUF14 Memory
+        NAME: snx_ibuf14_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into IBUF15 Memory
+        NAME: snx_ibuf15_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into IBUF16 Memory
+        NAME: snx_ibuf16_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into IBUF17 Memory
+        NAME: snx_ibuf17_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into IBUF18 Memory
+        NAME: snx_ibuf18_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into IBUF19 Memory
+        NAME: snx_ibuf19_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into IBUF20 Memory
+        NAME: snx_ibuf20_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into IBUF21 Memory
+        NAME: snx_ibuf21_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into IBUF22 Memory
+        NAME: snx_ibuf22_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into IBUF23 Memory
+        NAME: snx_ibuf23_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: |-
+          Type of error to be injected
+                                                 Applied to all memory error injection
+                                                 0 - Uncorrectable error
+                                                 1 - Correctable error
+        NAME: err_type
+        WIDTH: 1
+    NAME: snx_mem_err_inj_cfg
+    TEST_ATTR: 0
+  - ATTR: 5
+    DESCRIPTION: Default value of DGID if the incoming DGID is invalid.
+    FLDLST:
+      - DEFAULT: 8
+        DESCRIPTION: Default DGID
+        NAME: val
+        WIDTH: 5
+    NAME: snx_default_dgid_cfg
+  - ATTR: 9
+    DESCRIPTION: Interrupt log for dgid out of range interrupt
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: SN header of the transaction that raised the interrupt
+        NAME: sn_com_hdr
+        WIDTH: 40
+      - DEFAULT: 0
+        DESCRIPTION: Source port
+        NAME: src_port
+        WIDTH: 5
+    NAME: snx_intr_dgid_out_of_range_log
+  - ATTR: 9
+    DESCRIPTION: SRAM bit vector that failed ECC/Parity check
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-
+          First SRAM ECC/Parity error detected (1-hot)
+                                                 Set when first error is detected
+                                                 Reset when corresponding interrupt status bit is cleared
+        NAME: val
+        WIDTH: 48
+    NAME: snx_sram_log_err
+  - ATTR: 9
+    DESCRIPTION: SRAM syndrome log register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                                 Syndrome related to ECC error
+                                                 detected while reading data from SRAM
+                                                
+        NAME: val
+        WIDTH: 16
+    NAME: snx_sram_log_syndrome
+  - ATTR: 9
+    DESCRIPTION: SRAM address log register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                                 Address related to ECC error
+                                                 detected while reading data from SRAM
+                                                
+        NAME: val
+        WIDTH: 8
+    NAME: snx_sram_log_addr
+  - ATTR: 9
+    COUNT: 4
+    DESCRIPTION: IBUF debug register
+    FLDLST: &194
+      - DEFAULT: 16777215
+        DESCRIPTION: All output credits returned to initial value
+        NAME: init_credits_reached
+        WIDTH: 24
+    NAME: snx_arb_debug_0
+  - ATTR: 9
+    COUNT: 4
+    DESCRIPTION: IBUF debug register
+    FLDLST: *194
+    NAME: snx_arb_debug_1
+  - ATTR: 9
+    COUNT: 4
+    DESCRIPTION: IBUF debug register
+    FLDLST: *194
+    NAME: snx_arb_debug_2
+  - ATTR: 9
+    COUNT: 4
+    DESCRIPTION: IBUF debug register
+    FLDLST: *194
+    NAME: snx_arb_debug_3
+  - ATTR: 5
+    DESCRIPTION: FLA debug register for configured port
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Port selection for the FLA mux
+        NAME: val
+        WIDTH: 5
+    NAME: snx_fla_port_sel
+  - ATTR: 9
+    DESCRIPTION: FLA bus for the selected port
+    FLDLST:
+      - DEFAULT: 0
+        NAME: val
+        WIDTH: 46
+    NAME: snx_fla_bus
+    TEST_ATTR: 0
+  - ATTR: 5
+    DESCRIPTION: SNX FLA Ring Module ID
+    FLDLST:
+      - DEFAULT: 85
+        DESCRIPTION: '8-Bit Module ID to be used for Decoding Commands on FLA Command Ring, 0x0, 0xff are Reserved Values'
+        NAME: fld_val
+        WIDTH: 8
+    NAME: snx_fla_ring_module_id_cfg
+  - ATTR: 6
+    COUNT: 24
+    DESCRIPTION: 'LID to ordering queue mapping table. Same mapping is used for all VCs. Only used for PC and HU ports, which have more than one ordering queues.'
+    ENTRIES: 32
+    FLDLST: &195
+      - DESCRIPTION: Configured ordering queue
+        NAME: ordq
+        WIDTH: 2
+    NAME: snx_lid_ordq_map_0
+  - ATTR: 6
+    COUNT: 24
+    DESCRIPTION: 'LID to ordering queue mapping table. Same mapping is used for all VCs. Only used for PC and HU ports, which have more than one ordering queues.'
+    ENTRIES: 32
+    FLDLST: *195
+    NAME: snx_lid_ordq_map_1
+  - ATTR: 6
+    COUNT: 24
+    DESCRIPTION: 'LID to ordering queue mapping table. Same mapping is used for all VCs. Only used for PC and HU ports, which have more than one ordering queues.'
+    ENTRIES: 32
+    FLDLST: *195
+    NAME: snx_lid_ordq_map_2
+  - ATTR: 6
+    COUNT: 24
+    DESCRIPTION: 'LID to ordering queue mapping table. Same mapping is used for all VCs. Only used for PC and HU ports, which have more than one ordering queues.'
+    ENTRIES: 32
+    FLDLST: *195
+    NAME: snx_lid_ordq_map_3
+  - ATTR: 6
+    COUNT: 24
+    DESCRIPTION: 'LID to ordering queue mapping table. Same mapping is used for all VCs. Only used for PC and HU ports, which have more than one ordering queues.'
+    ENTRIES: 32
+    FLDLST: *195
+    NAME: snx_lid_ordq_map_4
+  - ATTR: 6
+    COUNT: 24
+    DESCRIPTION: 'LID to ordering queue mapping table. Same mapping is used for all VCs. Only used for PC and HU ports, which have more than one ordering queues.'
+    ENTRIES: 32
+    FLDLST: *195
+    NAME: snx_lid_ordq_map_5
+  - ATTR: 6
+    COUNT: 24
+    DESCRIPTION: 'LID to ordering queue mapping table. Same mapping is used for all VCs. Only used for PC and HU ports, which have more than one ordering queues.'
+    ENTRIES: 32
+    FLDLST: *195
+    NAME: snx_lid_ordq_map_6
+  - ATTR: 6
+    COUNT: 24
+    DESCRIPTION: 'LID to ordering queue mapping table. Same mapping is used for all VCs. Only used for PC and HU ports, which have more than one ordering queues.'
+    ENTRIES: 32
+    FLDLST: *195
+    NAME: snx_lid_ordq_map_7
+  - ATTR: 6
+    COUNT: 24
+    DESCRIPTION: 'LID to ordering queue mapping table. Same mapping is used for all VCs. Only used for PC and HU ports, which have more than one ordering queues.'
+    ENTRIES: 32
+    FLDLST: *195
+    NAME: snx_lid_ordq_map_8
+  - ATTR: 6
+    COUNT: 24
+    DESCRIPTION: 'LID to ordering queue mapping table. Same mapping is used for all VCs. Only used for PC and HU ports, which have more than one ordering queues.'
+    ENTRIES: 32
+    FLDLST: *195
+    NAME: snx_lid_ordq_map_9
+  - ATTR: 6
+    COUNT: 24
+    DESCRIPTION: 'LID to ordering queue mapping table. Same mapping is used for all VCs. Only used for PC and HU ports, which have more than one ordering queues.'
+    ENTRIES: 32
+    FLDLST: *195
+    NAME: snx_lid_ordq_map_10
+  - ATTR: 6
+    COUNT: 24
+    DESCRIPTION: 'LID to ordering queue mapping table. Same mapping is used for all VCs. Only used for PC and HU ports, which have more than one ordering queues.'
+    ENTRIES: 32
+    FLDLST: *195
+    NAME: snx_lid_ordq_map_11
+  - ATTR: 6
+    COUNT: 24
+    DESCRIPTION: 'LID to ordering queue mapping table. Same mapping is used for all VCs. Only used for PC and HU ports, which have more than one ordering queues.'
+    ENTRIES: 32
+    FLDLST: *195
+    NAME: snx_lid_ordq_map_12
+  - ATTR: 6
+    COUNT: 24
+    DESCRIPTION: 'LID to ordering queue mapping table. Same mapping is used for all VCs. Only used for PC and HU ports, which have more than one ordering queues.'
+    ENTRIES: 32
+    FLDLST: *195
+    NAME: snx_lid_ordq_map_13
+  - ATTR: 6
+    COUNT: 24
+    DESCRIPTION: 'LID to ordering queue mapping table. Same mapping is used for all VCs. Only used for PC and HU ports, which have more than one ordering queues.'
+    ENTRIES: 32
+    FLDLST: *195
+    NAME: snx_lid_ordq_map_14
+  - ATTR: 6
+    COUNT: 24
+    DESCRIPTION: 'LID to ordering queue mapping table. Same mapping is used for all VCs. Only used for PC and HU ports, which have more than one ordering queues.'
+    ENTRIES: 32
+    FLDLST: *195
+    NAME: snx_lid_ordq_map_15
+  - ATTR: 6
+    COUNT: 24
+    DESCRIPTION: 'LID to ordering queue mapping table. Same mapping is used for all VCs. Only used for PC and HU ports, which have more than one ordering queues.'
+    ENTRIES: 32
+    FLDLST: *195
+    NAME: snx_lid_ordq_map_16
+  - ATTR: 6
+    COUNT: 24
+    DESCRIPTION: 'LID to ordering queue mapping table. Same mapping is used for all VCs. Only used for PC and HU ports, which have more than one ordering queues.'
+    ENTRIES: 32
+    FLDLST: *195
+    NAME: snx_lid_ordq_map_17
+  - ATTR: 6
+    COUNT: 24
+    DESCRIPTION: 'LID to ordering queue mapping table. Same mapping is used for all VCs. Only used for PC and HU ports, which have more than one ordering queues.'
+    ENTRIES: 32
+    FLDLST: *195
+    NAME: snx_lid_ordq_map_18
+  - ATTR: 6
+    COUNT: 24
+    DESCRIPTION: 'LID to ordering queue mapping table. Same mapping is used for all VCs. Only used for PC and HU ports, which have more than one ordering queues.'
+    ENTRIES: 32
+    FLDLST: *195
+    NAME: snx_lid_ordq_map_19
+  - ATTR: 6
+    COUNT: 24
+    DESCRIPTION: 'LID to ordering queue mapping table. Same mapping is used for all VCs. Only used for PC and HU ports, which have more than one ordering queues.'
+    ENTRIES: 32
+    FLDLST: *195
+    NAME: snx_lid_ordq_map_20
+  - ATTR: 6
+    COUNT: 24
+    DESCRIPTION: 'LID to ordering queue mapping table. Same mapping is used for all VCs. Only used for PC and HU ports, which have more than one ordering queues.'
+    ENTRIES: 32
+    FLDLST: *195
+    NAME: snx_lid_ordq_map_21
+  - ATTR: 6
+    COUNT: 24
+    DESCRIPTION: 'LID to ordering queue mapping table. Same mapping is used for all VCs. Only used for PC and HU ports, which have more than one ordering queues.'
+    ENTRIES: 32
+    FLDLST: *195
+    NAME: snx_lid_ordq_map_22
+  - ATTR: 6
+    COUNT: 24
+    DESCRIPTION: 'LID to ordering queue mapping table. Same mapping is used for all VCs. Only used for PC and HU ports, which have more than one ordering queues.'
+    ENTRIES: 32
+    FLDLST: *195
+    NAME: snx_lid_ordq_map_23
+  - ATTR: 10
+    DESCRIPTION: IBUF debug register
+    ENTRIES: 24
+    FLDLST:
+      - DEFAULT: 1
+        DESCRIPTION: All FBM entries have been freed
+        NAME: fbm_all_free
+        WIDTH: 1
+      - DEFAULT: 65535
+        DESCRIPTION: 'Per-VC OQH FIFOs are empty. ORDQ = {VC[1:0], Q[1:0]}'
+        NAME: oqh_fifos_empty
+        WIDTH: 16
+      - DEFAULT: 65535
+        DESCRIPTION: 'Per-VC VOGQ FIFOs are empty. VOGQ = {VC[1:0], OG[1:0]}'
+        NAME: vogq_fifos_empty
+        WIDTH: 16
+      - DEFAULT: 0
+        DESCRIPTION: Sticky max occupancy count for FBM
+        NAME: fbm_sticky_max_occ_cnt
+        WIDTH: 9
+      - DEFAULT: 0
+        DESCRIPTION: Per-VC occupancy count in LLM
+        NAME: llm_vc0_occ_cnt
+        WIDTH: 9
+      - DEFAULT: 0
+        DESCRIPTION: Per-VC occupancy count in LLM
+        NAME: llm_vc1_occ_cnt
+        WIDTH: 9
+      - DEFAULT: 0
+        DESCRIPTION: Per-VC occupancy count in LLM
+        NAME: llm_vc2_occ_cnt
+        WIDTH: 9
+      - DEFAULT: 0
+        DESCRIPTION: Per-VC occupancy count in LLM
+        NAME: llm_vc3_occ_cnt
+        WIDTH: 9
+    NAME: snx_ibuf_debug
+  - ATTR: 6
+    COUNT: 1
+    DESCRIPTION: Access to SNX rx debug probe registers for port 0. The 4 registers correspond to different VCs.
+    ENTRIES: 192
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: SNX Rx Statistics Counters for ports in OG 0
+        NAME: fld_count
+        WIDTH: 64
+    NAME: snx_og0_rx_dbg_probe
+    TEST_ATTR: 0
+  - ATTR: 6
+    COUNT: 1
+    DESCRIPTION: Access to SNX rx debug probe registers for port 1. The 4 registers correspond to different VCs.
+    ENTRIES: 192
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: SNX Rx Statistics Counters for ports in OG 1
+        NAME: fld_count
+        WIDTH: 64
+    NAME: snx_og1_rx_dbg_probe
+    TEST_ATTR: 0
+  - ATTR: 6
+    COUNT: 1
+    DESCRIPTION: Access to SNX rx debug probe registers for port 2. The 4 registers correspond to different VCs.
+    ENTRIES: 192
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: SNX Rx Statistics Counters for ports in OG 2
+        NAME: fld_count
+        WIDTH: 64
+    NAME: snx_og2_rx_dbg_probe
+    TEST_ATTR: 0
+  - ATTR: 6
+    COUNT: 1
+    DESCRIPTION: Access to SNX rx debug probe registers for port 3. The 4 registers correspond to different VCs.
+    ENTRIES: 192
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: SNX Rx Statistics Counters for ports in OG 3
+        NAME: fld_count
+        WIDTH: 64
+    NAME: snx_og3_rx_dbg_probe
+    TEST_ATTR: 0
+  - ATTR: 6
+    COUNT: 1
+    DESCRIPTION: Access to SNX tx debug probe registers for port 0. The 4 registers correspond to different VCs.
+    ENTRIES: 192
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: SNX Tx Statistics Counters for ports in OG 0
+        NAME: fld_count
+        WIDTH: 64
+    NAME: snx_og0_tx_dbg_probe
+    TEST_ATTR: 0
+  - ATTR: 6
+    COUNT: 1
+    DESCRIPTION: Access to SNX tx debug probe registers for port 1. The 4 registers correspond to different VCs.
+    ENTRIES: 192
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: SNX Tx Statistics Counters for ports in OG 1
+        NAME: fld_count
+        WIDTH: 64
+    NAME: snx_og1_tx_dbg_probe
+    TEST_ATTR: 0
+  - ATTR: 6
+    COUNT: 1
+    DESCRIPTION: Access to SNX tx debug probe registers for port 2. The 4 registers correspond to different VCs.
+    ENTRIES: 192
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: SNX Tx Statistics Counters for ports in OG 2
+        NAME: fld_count
+        WIDTH: 64
+    NAME: snx_og2_tx_dbg_probe
+    TEST_ATTR: 0
+  - ATTR: 6
+    COUNT: 1
+    DESCRIPTION: Access to SNX tx debug probe registers for port 3. The 4 registers correspond to different VCs.
+    ENTRIES: 192
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: SNX Tx Statistics Counters for ports in OG 3
+        NAME: fld_count
+        WIDTH: 64
+    NAME: snx_og3_tx_dbg_probe
+    TEST_ATTR: 0
+XASIZE: 0

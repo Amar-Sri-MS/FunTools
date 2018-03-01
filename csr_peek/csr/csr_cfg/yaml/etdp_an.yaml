@@ -1,0 +1,1318 @@
+---
+ASIZE: 1048576
+BASEADDRPORT: 1
+COUNT: 3
+DESCRIPTION: Endpoint Transmit Data Pipe CSR Spec
+INTR:
+  FATAL:
+    - DESCRIPTION: PSWIF uncorrectable error interrupt
+      NAME: pswif_mem_ucerr_intr
+      WIDTH: 1
+    - DESCRIPTION: TMEM uncorrectable error interrupt
+      NAME: tmem_ucerr_intr
+      WIDTH: 1
+    - DESCRIPTION: LSO HMEM uncorrectable error interrupt
+      NAME: lso_hmem_i0_b0_ucerr_intr
+      WIDTH: 1
+    - DESCRIPTION: LSO HMEM uncorrectable error interrupt
+      NAME: lso_hmem_i0_b1_ucerr_intr
+      WIDTH: 1
+    - DESCRIPTION: LSO HMEM uncorrectable error interrupt
+      NAME: lso_hmem_i1_b0_ucerr_intr
+      WIDTH: 1
+    - DESCRIPTION: LSO HMEM uncorrectable error interrupt
+      NAME: lso_hmem_i1_b1_ucerr_intr
+      WIDTH: 1
+    - DESCRIPTION: LSO PMEM uncorrectable error interrupt
+      NAME: lso_pmem_ucerr_intr
+      WIDTH: 1
+    - DESCRIPTION: PSWIF Packet count overflow
+      NAME: pswif_pcnt_oflow
+      WIDTH: 1
+    - DESCRIPTION: PSWIF Packet length overflow
+      NAME: pswif_plen_oflow
+      WIDTH: 1
+    - DESCRIPTION: PSWIF WU length overflow
+      NAME: pswif_wlen_oflow
+      WIDTH: 1
+    - DESCRIPTION: PSWIF SOP and EOP asserted on same cycle.
+      NAME: pswif_sop_eop_scycle
+      WIDTH: 1
+    - DESCRIPTION: WUS Head Entry Watchdog
+      NAME: wus_hdr_entry_wdog
+      WIDTH: 1
+    - DESCRIPTION: Grant Watchdog
+      NAME: gnt_wdog
+      WIDTH: 1
+    - DESCRIPTION: DMA asserted SOP and EOP on same cycle
+      NAME: dma_sop_eop_same_cycle
+      WIDTH: 1
+    - DESCRIPTION: WU header and payload less than 17 bytes
+      NAME: wu_hdr_and_pld_lt_17
+      WIDTH: 1
+    - DESCRIPTION: WU MSS less than 32 bytes
+      NAME: wu_mss_lt_32
+      WIDTH: 1
+    - DESCRIPTION: WU packet count equal to 0 bytes
+      NAME: wu_pkt_cnt_eq_0
+      WIDTH: 1
+  NON_FATAL:
+    - DESCRIPTION: PSWIF correctable error interrupt
+      NAME: pswif_mem_cerr_intr
+      WIDTH: 1
+    - DESCRIPTION: TMEM correctable error interrupt
+      NAME: tmem_cerr_intr
+      WIDTH: 1
+    - DESCRIPTION: LSO HMEM correctable error interrupt
+      NAME: lso_hmem_i0_b0_cerr_intr
+      WIDTH: 1
+    - DESCRIPTION: LSO HMEM correctable error interrupt
+      NAME: lso_hmem_i0_b1_cerr_intr
+      WIDTH: 1
+    - DESCRIPTION: LSO HMEM correctable error interrupt
+      NAME: lso_hmem_i1_b0_cerr_intr
+      WIDTH: 1
+    - DESCRIPTION: LSO HMEM correctable error interrupt
+      NAME: lso_hmem_i1_b1_cerr_intr
+      WIDTH: 1
+    - DESCRIPTION: LSO PMEM correctable error interrupt
+      NAME: lso_pmem_cerr_intr
+      WIDTH: 1
+INTR_PORT_EN: 1
+NAME: ETDP_AN
+PARENTNAME: NU_0_AN
+REGLST:
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: |-
+          Timeout Configuration. Cycles are RSU clk based.
+                            - 00 : 1024 cycles
+                            - 01 : 256 cycles
+                            - 10 : 4096 cycles
+                            - 11 : infinite
+        NAME: val
+        WIDTH: 2
+    NAME: etdp_timeout_thresh_cfg
+  - ATTR: 9
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: "Timed out Status. Cycles are RSU clk based. Becomes 1 when timed out. Write any value to clear it.\n                  "
+        NAME: val
+        WIDTH: 1
+    NAME: etdp_timedout_sta
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: |-
+          Clear Timeout Status. Data is ignored. A write
+                     will clear the timeout status bit
+        NAME: val
+        WIDTH: 1
+    NAME: etdp_timeout_clr
+    TEST_ATTR: 1
+  - ATTR: 256
+    FLDLST:
+      - &1
+        DESCRIPTION: PSWIF uncorrectable error interrupt
+        NAME: pswif_mem_ucerr_intr
+        WIDTH: 1
+      - &2
+        DESCRIPTION: TMEM uncorrectable error interrupt
+        NAME: tmem_ucerr_intr
+        WIDTH: 1
+      - &3
+        DESCRIPTION: LSO HMEM uncorrectable error interrupt
+        NAME: lso_hmem_i0_b0_ucerr_intr
+        WIDTH: 1
+      - &4
+        DESCRIPTION: LSO HMEM uncorrectable error interrupt
+        NAME: lso_hmem_i0_b1_ucerr_intr
+        WIDTH: 1
+      - &5
+        DESCRIPTION: LSO HMEM uncorrectable error interrupt
+        NAME: lso_hmem_i1_b0_ucerr_intr
+        WIDTH: 1
+      - &6
+        DESCRIPTION: LSO HMEM uncorrectable error interrupt
+        NAME: lso_hmem_i1_b1_ucerr_intr
+        WIDTH: 1
+      - &7
+        DESCRIPTION: LSO PMEM uncorrectable error interrupt
+        NAME: lso_pmem_ucerr_intr
+        WIDTH: 1
+      - &8
+        DESCRIPTION: PSWIF Packet count overflow
+        NAME: pswif_pcnt_oflow
+        WIDTH: 1
+      - &9
+        DESCRIPTION: PSWIF Packet length overflow
+        NAME: pswif_plen_oflow
+        WIDTH: 1
+      - &10
+        DESCRIPTION: PSWIF WU length overflow
+        NAME: pswif_wlen_oflow
+        WIDTH: 1
+      - &11
+        DESCRIPTION: PSWIF SOP and EOP asserted on same cycle.
+        NAME: pswif_sop_eop_scycle
+        WIDTH: 1
+      - &12
+        DESCRIPTION: WUS Head Entry Watchdog
+        NAME: wus_hdr_entry_wdog
+        WIDTH: 1
+      - &13
+        DESCRIPTION: Grant Watchdog
+        NAME: gnt_wdog
+        WIDTH: 1
+      - &14
+        DESCRIPTION: DMA asserted SOP and EOP on same cycle
+        NAME: dma_sop_eop_same_cycle
+        WIDTH: 1
+      - &15
+        DESCRIPTION: WU header and payload less than 17 bytes
+        NAME: wu_hdr_and_pld_lt_17
+        WIDTH: 1
+      - &16
+        DESCRIPTION: WU MSS less than 32 bytes
+        NAME: wu_mss_lt_32
+        WIDTH: 1
+      - &17
+        DESCRIPTION: WU packet count equal to 0 bytes
+        NAME: wu_pkt_cnt_eq_0
+        WIDTH: 1
+    NAME: etdp_fatal_intr_cause
+  - ATTR: 512
+    FLDLST:
+      - *1
+      - *2
+      - *3
+      - *4
+      - *5
+      - *6
+      - *7
+      - *8
+      - *9
+      - *10
+      - *11
+      - *12
+      - *13
+      - *14
+      - *15
+      - *16
+      - *17
+    NAME: etdp_fatal_intr_stat
+  - ATTR: 1024
+    FLDLST:
+      - *1
+      - *2
+      - *3
+      - *4
+      - *5
+      - *6
+      - *7
+      - *8
+      - *9
+      - *10
+      - *11
+      - *12
+      - *13
+      - *14
+      - *15
+      - *16
+      - *17
+    NAME: etdp_fatal_intr_mask
+  - ATTR: 2048
+    FLDLST:
+      - *1
+      - *2
+      - *3
+      - *4
+      - *5
+      - *6
+      - *7
+      - *8
+      - *9
+      - *10
+      - *11
+      - *12
+      - *13
+      - *14
+      - *15
+      - *16
+      - *17
+    NAME: etdp_fatal_intr_bset
+  - ATTR: 4096
+    FLDLST:
+      - *1
+      - *2
+      - *3
+      - *4
+      - *5
+      - *6
+      - *7
+      - *8
+      - *9
+      - *10
+      - *11
+      - *12
+      - *13
+      - *14
+      - *15
+      - *16
+      - *17
+    NAME: etdp_fatal_intr_bclr
+  - ATTR: 256
+    FLDLST:
+      - &18
+        DESCRIPTION: PSWIF correctable error interrupt
+        NAME: pswif_mem_cerr_intr
+        WIDTH: 1
+      - &19
+        DESCRIPTION: TMEM correctable error interrupt
+        NAME: tmem_cerr_intr
+        WIDTH: 1
+      - &20
+        DESCRIPTION: LSO HMEM correctable error interrupt
+        NAME: lso_hmem_i0_b0_cerr_intr
+        WIDTH: 1
+      - &21
+        DESCRIPTION: LSO HMEM correctable error interrupt
+        NAME: lso_hmem_i0_b1_cerr_intr
+        WIDTH: 1
+      - &22
+        DESCRIPTION: LSO HMEM correctable error interrupt
+        NAME: lso_hmem_i1_b0_cerr_intr
+        WIDTH: 1
+      - &23
+        DESCRIPTION: LSO HMEM correctable error interrupt
+        NAME: lso_hmem_i1_b1_cerr_intr
+        WIDTH: 1
+      - &24
+        DESCRIPTION: LSO PMEM correctable error interrupt
+        NAME: lso_pmem_cerr_intr
+        WIDTH: 1
+    NAME: etdp_non_fatal_intr_cause
+  - ATTR: 512
+    FLDLST:
+      - *18
+      - *19
+      - *20
+      - *21
+      - *22
+      - *23
+      - *24
+    NAME: etdp_non_fatal_intr_stat
+  - ATTR: 1024
+    FLDLST:
+      - *18
+      - *19
+      - *20
+      - *21
+      - *22
+      - *23
+      - *24
+    NAME: etdp_non_fatal_intr_mask
+  - ATTR: 2048
+    FLDLST:
+      - *18
+      - *19
+      - *20
+      - *21
+      - *22
+      - *23
+      - *24
+    NAME: etdp_non_fatal_intr_bset
+  - ATTR: 4096
+    FLDLST:
+      - *18
+      - *19
+      - *20
+      - *21
+      - *22
+      - *23
+      - *24
+    NAME: etdp_non_fatal_intr_bclr
+  - ATTR: 9
+    DESCRIPTION: Place Holder for now for TDP Feature Register
+    FLDLST:
+      - ATTR: 1
+        DEFAULT: 2
+        DESCRIPTION: Module ID
+        NAME: module_id
+        VALUE: 2
+        WIDTH: 8
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Version number of the module
+        NAME: version
+        VALUE: 0
+        WIDTH: 8
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Features enabled in the module.
+        NAME: features
+        VALUE: 0
+        WIDTH: 16
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Reserved Field.
+        NAME: Reserved
+        WIDTH: 32
+    NAME: etdp_features
+    WIDTH: 64
+  - ATTR: 5
+    DESCRIPTION: ' Spare PIO register. These bits can be read and written by software. They can serve as control bits for late ECOs in the design.'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Spare PIO register.
+        NAME: val
+        WIDTH: 64
+    NAME: etdp_spare_pio
+    WIDTH: 64
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: Scratchpad register.
+        NAME: val
+        WIDTH: 64
+    NAME: etdp_scratchpad
+    WIDTH: 64
+  - ATTR: 5
+    DESCRIPTION: Configuration register for ETDP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: field to control UDP sport field.
+        ENUM: nu_enums::nu_etdp_fcp_udp_sport_ctrl_t
+        NAME: fcp_hdr_udp_sport_ctrl
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: field to stop transmission to PSW on packet boundary.
+        NAME: pswif_xmt_halt
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: field to control only packet type for LSO. Set to 1 if treated as last packet
+        NAME: lso_only_pkt_ctrl
+        WIDTH: 1
+    NAME: etdp_cfg
+  - ATTR: 9
+    DESCRIPTION: 'Status register, to record ETDP instance number. '
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: instance number
+        NAME: val
+        WIDTH: 2
+    NAME: etdp_instance_number
+    TEST_ATTR: 0
+  - ATTR: 5
+    DESCRIPTION: Configuration register to program block size of the data block.
+    FLDLST:
+      - DEFAULT: 1
+        DESCRIPTION: Data Block Size
+        ENUM: nu_enums::nu_fcp_blk_sz_t
+        NAME: val
+        WIDTH: 2
+    NAME: etdp_fcp_data_blk_sz_cfg
+  - ATTR: 5
+    DESCRIPTION: ETDP block sends packet length to FCB for data rate limiters. We would like IPG and ethernet CRC to be added to the packe length passed to FCB. Software can program this register for the adjust value.
+    FLDLST:
+      - DEFAULT: 20
+        DESCRIPTION: byte adjust value
+        NAME: val
+        WIDTH: 8
+    NAME: etdp_pkt_sz_adj
+  - ATTR: 5
+    DESCRIPTION: ETDP LSO First packet TCP flags
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'first packet tcp flags '
+        NAME: val
+        WIDTH: 8
+    NAME: etdp_fpkt_tcp_flags
+  - ATTR: 5
+    DESCRIPTION: ETDP LSO last packet TCP flags
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'last packet tcp flags '
+        NAME: val
+        WIDTH: 8
+    NAME: etdp_lpkt_tcp_flags
+  - ATTR: 5
+    DESCRIPTION: ETDP LSO middle packet TCP flags
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'middle packet tcp flags '
+        NAME: val
+        WIDTH: 8
+    NAME: etdp_mpkt_tcp_flags
+  - ATTR: 5
+    DESCRIPTION: Global configuration for FCP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: GPH size. It is the fabric global configuration
+        ENUM: nu_enums::nu_fcp_hdr_gph_sz_type_t
+        NAME: gph_size
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Number of traffic classes for FCP. It is the fabric global configuration
+        ENUM: nu_enums::nu_fcp_qos_count_t
+        NAME: fcp_qos_count
+        WIDTH: 2
+    NAME: fcp_cfg
+  - ATTR: 5
+    DESCRIPTION: FCP Header DMAC
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: FCP Header DMAC
+        NAME: val
+        WIDTH: 48
+    NAME: fcp_hdr_dmac
+  - ATTR: 5
+    DESCRIPTION: FCP Header SMAC
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: FCP Header SMAC
+        NAME: val
+        WIDTH: 48
+    NAME: fcp_hdr_smac
+  - ATTR: 5
+    DESCRIPTION: FCP Header IPv4 Ethertype
+    FLDLST:
+      - DEFAULT: 2048
+        DESCRIPTION: FCP Header V4 ethertype
+        NAME: val
+        WIDTH: 16
+    NAME: fcp_hdr_v4_etype
+  - ATTR: 5
+    DESCRIPTION: DSCP and ECN bits for FCP request header
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: DSCP and ECN
+        NAME: val
+        WIDTH: 8
+    NAME: fcp_hdr_req_dscp_ecn
+  - ATTR: 5
+    DESCRIPTION: DSCP and ECN bits for FCP grant header
+    FLDLST:
+      - DEFAULT: 4
+        DESCRIPTION: DSCP and ECN
+        NAME: val
+        WIDTH: 8
+    NAME: fcp_hdr_gnt_dscp_ecn
+  - ATTR: 5
+    DESCRIPTION: DSCP and ECN bits for FCP data header queue 0
+    FLDLST:
+      - DEFAULT: 8
+        DESCRIPTION: DSCP and ECN
+        NAME: val
+        WIDTH: 8
+    NAME: fcp_hdr_data_dscp_ecn_q0
+  - ATTR: 5
+    DESCRIPTION: DSCP and ECN bits for FCP data header queue 1
+    FLDLST:
+      - DEFAULT: 8
+        DESCRIPTION: DSCP and ECN
+        NAME: val
+        WIDTH: 8
+    NAME: fcp_hdr_data_dscp_ecn_q1
+  - ATTR: 5
+    DESCRIPTION: DSCP and ECN bits for FCP data header queue 2
+    FLDLST:
+      - DEFAULT: 8
+        DESCRIPTION: DSCP and ECN
+        NAME: val
+        WIDTH: 8
+    NAME: fcp_hdr_data_dscp_ecn_q2
+  - ATTR: 5
+    DESCRIPTION: DSCP and ECN bits for FCP data header queue 3
+    FLDLST:
+      - DEFAULT: 8
+        DESCRIPTION: DSCP and ECN
+        NAME: val
+        WIDTH: 8
+    NAME: fcp_hdr_data_dscp_ecn_q3
+  - ATTR: 5
+    DESCRIPTION: DSCP and ECN bits for FCP data header queue 4
+    FLDLST:
+      - DEFAULT: 8
+        DESCRIPTION: DSCP and ECN
+        NAME: val
+        WIDTH: 8
+    NAME: fcp_hdr_data_dscp_ecn_q4
+  - ATTR: 5
+    DESCRIPTION: DSCP and ECN bits for FCP data header queue 5
+    FLDLST:
+      - DEFAULT: 8
+        DESCRIPTION: DSCP and ECN
+        NAME: val
+        WIDTH: 8
+    NAME: fcp_hdr_data_dscp_ecn_q5
+  - ATTR: 5
+    DESCRIPTION: DSCP and ECN bits for FCP data header queue 6
+    FLDLST:
+      - DEFAULT: 8
+        DESCRIPTION: DSCP and ECN
+        NAME: val
+        WIDTH: 8
+    NAME: fcp_hdr_data_dscp_ecn_q6
+  - ATTR: 5
+    DESCRIPTION: DSCP and ECN bits for FCP data header queue 7
+    FLDLST:
+      - DEFAULT: 8
+        DESCRIPTION: DSCP and ECN
+        NAME: val
+        WIDTH: 8
+    NAME: fcp_hdr_data_dscp_ecn_q7
+  - ATTR: 5
+    DESCRIPTION: IPv4 identification field
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: IPv4 identification field
+        NAME: val
+        WIDTH: 16
+    NAME: fcp_hdr_ipv4_id
+  - ATTR: 5
+    DESCRIPTION: FCP Header fragment flags and offset
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: IPv4 fragment flags and offset
+        NAME: val
+        WIDTH: 16
+    NAME: fcp_hdr_frag_flags_offset
+  - ATTR: 5
+    DESCRIPTION: FCP Header IPv4 TTL
+    FLDLST:
+      - DEFAULT: 6
+        DESCRIPTION: IPv4 TTL value
+        NAME: val
+        WIDTH: 8
+    NAME: fcp_hdr_ipv4_ttl
+  - ATTR: 5
+    DESCRIPTION: FCP over UDP over IPv4 proto. Protocol should be set to UDP
+    FLDLST:
+      - DEFAULT: 17
+        DESCRIPTION: value
+        NAME: val
+        WIDTH: 8
+    NAME: udp_over_ipv4_proto
+  - ATTR: 5
+    DESCRIPTION: FCP over IPv4 proto. We need IP protocol encoding to indicate FCP.
+    FLDLST:
+      - DEFAULT: 254
+        DESCRIPTION: value
+        NAME: val
+        WIDTH: 8
+    NAME: fcp_over_ipv4_proto
+  - ATTR: 5
+    DESCRIPTION: FCP Header IPv4 source IP address
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: value
+        NAME: val
+        WIDTH: 32
+    NAME: fcp_hdr_ipv4_sip
+  - ATTR: 5
+    DESCRIPTION: FCP Header UDP header destination port
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: value
+        NAME: val
+        WIDTH: 16
+    NAME: fcp_hdr_udp_dport
+  - ATTR: 5
+    DESCRIPTION: FCP Header UDP header checksum
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: value
+        NAME: val
+        WIDTH: 16
+    NAME: fcp_hdr_udp_csum
+  - ATTR: 5
+    DESCRIPTION: FCP Header version
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: value
+        NAME: val
+        WIDTH: 2
+    NAME: fcp_hdr_ver
+  - ATTR: 5
+    DESCRIPTION: FCP Header reserved
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: value
+        NAME: val
+        WIDTH: 4
+    NAME: fcp_hdr_rsvd
+  - ATTR: 5
+    DESCRIPTION: ETDP FLA Ring Module ID
+    FLDLST:
+      - DEFAULT: 119
+        DESCRIPTION: '8-Bit Module ID to be used for Decoding Commands on FLA Command Ring, 0x0, 0xff are Reserved Values'
+        NAME: fld_val
+        WIDTH: 8
+    NAME: etdp_fla_ring_module_id_cfg
+    TEST_ATTR: 2
+  - ATTR: 5
+    COUNT: 17
+    DESCRIPTION: 'This regs table provides key, key_len and salt for a given spi'
+    FLDLST: &25
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: key
+        WIDTH: 64
+    NAME: etdp_key_lu_63_0_0
+  - ATTR: 5
+    COUNT: 17
+    DESCRIPTION: 'This regs table provides key, key_len and salt for a given spi'
+    FLDLST: *25
+    NAME: etdp_key_lu_63_0_1
+  - ATTR: 5
+    COUNT: 17
+    DESCRIPTION: 'This regs table provides key, key_len and salt for a given spi'
+    FLDLST: *25
+    NAME: etdp_key_lu_63_0_2
+  - ATTR: 5
+    COUNT: 17
+    DESCRIPTION: 'This regs table provides key, key_len and salt for a given spi'
+    FLDLST: *25
+    NAME: etdp_key_lu_63_0_3
+  - ATTR: 5
+    COUNT: 17
+    DESCRIPTION: 'This regs table provides key, key_len and salt for a given spi'
+    FLDLST: *25
+    NAME: etdp_key_lu_63_0_4
+  - ATTR: 5
+    COUNT: 17
+    DESCRIPTION: 'This regs table provides key, key_len and salt for a given spi'
+    FLDLST: *25
+    NAME: etdp_key_lu_63_0_5
+  - ATTR: 5
+    COUNT: 17
+    DESCRIPTION: 'This regs table provides key, key_len and salt for a given spi'
+    FLDLST: *25
+    NAME: etdp_key_lu_63_0_6
+  - ATTR: 5
+    COUNT: 17
+    DESCRIPTION: 'This regs table provides key, key_len and salt for a given spi'
+    FLDLST: *25
+    NAME: etdp_key_lu_63_0_7
+  - ATTR: 5
+    COUNT: 17
+    DESCRIPTION: 'This regs table provides key, key_len and salt for a given spi'
+    FLDLST: *25
+    NAME: etdp_key_lu_63_0_8
+  - ATTR: 5
+    COUNT: 17
+    DESCRIPTION: 'This regs table provides key, key_len and salt for a given spi'
+    FLDLST: *25
+    NAME: etdp_key_lu_63_0_9
+  - ATTR: 5
+    COUNT: 17
+    DESCRIPTION: 'This regs table provides key, key_len and salt for a given spi'
+    FLDLST: *25
+    NAME: etdp_key_lu_63_0_10
+  - ATTR: 5
+    COUNT: 17
+    DESCRIPTION: 'This regs table provides key, key_len and salt for a given spi'
+    FLDLST: *25
+    NAME: etdp_key_lu_63_0_11
+  - ATTR: 5
+    COUNT: 17
+    DESCRIPTION: 'This regs table provides key, key_len and salt for a given spi'
+    FLDLST: *25
+    NAME: etdp_key_lu_63_0_12
+  - ATTR: 5
+    COUNT: 17
+    DESCRIPTION: 'This regs table provides key, key_len and salt for a given spi'
+    FLDLST: *25
+    NAME: etdp_key_lu_63_0_13
+  - ATTR: 5
+    COUNT: 17
+    DESCRIPTION: 'This regs table provides key, key_len and salt for a given spi'
+    FLDLST: *25
+    NAME: etdp_key_lu_63_0_14
+  - ATTR: 5
+    COUNT: 17
+    DESCRIPTION: 'This regs table provides key, key_len and salt for a given spi'
+    FLDLST: *25
+    NAME: etdp_key_lu_63_0_15
+  - ATTR: 5
+    COUNT: 17
+    DESCRIPTION: 'This regs table provides key, key_len and salt for a given spi'
+    FLDLST: *25
+    NAME: etdp_key_lu_63_0_16
+  - ATTR: 5
+    COUNT: 17
+    DESCRIPTION: 'This regs table provides key, key_len and salt for a given spi'
+    FLDLST: &26
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: key
+        WIDTH: 64
+    NAME: etdp_key_lu_127_64_0
+  - ATTR: 5
+    COUNT: 17
+    DESCRIPTION: 'This regs table provides key, key_len and salt for a given spi'
+    FLDLST: *26
+    NAME: etdp_key_lu_127_64_1
+  - ATTR: 5
+    COUNT: 17
+    DESCRIPTION: 'This regs table provides key, key_len and salt for a given spi'
+    FLDLST: *26
+    NAME: etdp_key_lu_127_64_2
+  - ATTR: 5
+    COUNT: 17
+    DESCRIPTION: 'This regs table provides key, key_len and salt for a given spi'
+    FLDLST: *26
+    NAME: etdp_key_lu_127_64_3
+  - ATTR: 5
+    COUNT: 17
+    DESCRIPTION: 'This regs table provides key, key_len and salt for a given spi'
+    FLDLST: *26
+    NAME: etdp_key_lu_127_64_4
+  - ATTR: 5
+    COUNT: 17
+    DESCRIPTION: 'This regs table provides key, key_len and salt for a given spi'
+    FLDLST: *26
+    NAME: etdp_key_lu_127_64_5
+  - ATTR: 5
+    COUNT: 17
+    DESCRIPTION: 'This regs table provides key, key_len and salt for a given spi'
+    FLDLST: *26
+    NAME: etdp_key_lu_127_64_6
+  - ATTR: 5
+    COUNT: 17
+    DESCRIPTION: 'This regs table provides key, key_len and salt for a given spi'
+    FLDLST: *26
+    NAME: etdp_key_lu_127_64_7
+  - ATTR: 5
+    COUNT: 17
+    DESCRIPTION: 'This regs table provides key, key_len and salt for a given spi'
+    FLDLST: *26
+    NAME: etdp_key_lu_127_64_8
+  - ATTR: 5
+    COUNT: 17
+    DESCRIPTION: 'This regs table provides key, key_len and salt for a given spi'
+    FLDLST: *26
+    NAME: etdp_key_lu_127_64_9
+  - ATTR: 5
+    COUNT: 17
+    DESCRIPTION: 'This regs table provides key, key_len and salt for a given spi'
+    FLDLST: *26
+    NAME: etdp_key_lu_127_64_10
+  - ATTR: 5
+    COUNT: 17
+    DESCRIPTION: 'This regs table provides key, key_len and salt for a given spi'
+    FLDLST: *26
+    NAME: etdp_key_lu_127_64_11
+  - ATTR: 5
+    COUNT: 17
+    DESCRIPTION: 'This regs table provides key, key_len and salt for a given spi'
+    FLDLST: *26
+    NAME: etdp_key_lu_127_64_12
+  - ATTR: 5
+    COUNT: 17
+    DESCRIPTION: 'This regs table provides key, key_len and salt for a given spi'
+    FLDLST: *26
+    NAME: etdp_key_lu_127_64_13
+  - ATTR: 5
+    COUNT: 17
+    DESCRIPTION: 'This regs table provides key, key_len and salt for a given spi'
+    FLDLST: *26
+    NAME: etdp_key_lu_127_64_14
+  - ATTR: 5
+    COUNT: 17
+    DESCRIPTION: 'This regs table provides key, key_len and salt for a given spi'
+    FLDLST: *26
+    NAME: etdp_key_lu_127_64_15
+  - ATTR: 5
+    COUNT: 17
+    DESCRIPTION: 'This regs table provides key, key_len and salt for a given spi'
+    FLDLST: *26
+    NAME: etdp_key_lu_127_64_16
+  - ATTR: 5
+    COUNT: 17
+    DESCRIPTION: 'This regs table provides key, key_len and salt for a given spi'
+    FLDLST: &27
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: key
+        WIDTH: 64
+    NAME: etdp_key_lu_191_128_0
+  - ATTR: 5
+    COUNT: 17
+    DESCRIPTION: 'This regs table provides key, key_len and salt for a given spi'
+    FLDLST: *27
+    NAME: etdp_key_lu_191_128_1
+  - ATTR: 5
+    COUNT: 17
+    DESCRIPTION: 'This regs table provides key, key_len and salt for a given spi'
+    FLDLST: *27
+    NAME: etdp_key_lu_191_128_2
+  - ATTR: 5
+    COUNT: 17
+    DESCRIPTION: 'This regs table provides key, key_len and salt for a given spi'
+    FLDLST: *27
+    NAME: etdp_key_lu_191_128_3
+  - ATTR: 5
+    COUNT: 17
+    DESCRIPTION: 'This regs table provides key, key_len and salt for a given spi'
+    FLDLST: *27
+    NAME: etdp_key_lu_191_128_4
+  - ATTR: 5
+    COUNT: 17
+    DESCRIPTION: 'This regs table provides key, key_len and salt for a given spi'
+    FLDLST: *27
+    NAME: etdp_key_lu_191_128_5
+  - ATTR: 5
+    COUNT: 17
+    DESCRIPTION: 'This regs table provides key, key_len and salt for a given spi'
+    FLDLST: *27
+    NAME: etdp_key_lu_191_128_6
+  - ATTR: 5
+    COUNT: 17
+    DESCRIPTION: 'This regs table provides key, key_len and salt for a given spi'
+    FLDLST: *27
+    NAME: etdp_key_lu_191_128_7
+  - ATTR: 5
+    COUNT: 17
+    DESCRIPTION: 'This regs table provides key, key_len and salt for a given spi'
+    FLDLST: *27
+    NAME: etdp_key_lu_191_128_8
+  - ATTR: 5
+    COUNT: 17
+    DESCRIPTION: 'This regs table provides key, key_len and salt for a given spi'
+    FLDLST: *27
+    NAME: etdp_key_lu_191_128_9
+  - ATTR: 5
+    COUNT: 17
+    DESCRIPTION: 'This regs table provides key, key_len and salt for a given spi'
+    FLDLST: *27
+    NAME: etdp_key_lu_191_128_10
+  - ATTR: 5
+    COUNT: 17
+    DESCRIPTION: 'This regs table provides key, key_len and salt for a given spi'
+    FLDLST: *27
+    NAME: etdp_key_lu_191_128_11
+  - ATTR: 5
+    COUNT: 17
+    DESCRIPTION: 'This regs table provides key, key_len and salt for a given spi'
+    FLDLST: *27
+    NAME: etdp_key_lu_191_128_12
+  - ATTR: 5
+    COUNT: 17
+    DESCRIPTION: 'This regs table provides key, key_len and salt for a given spi'
+    FLDLST: *27
+    NAME: etdp_key_lu_191_128_13
+  - ATTR: 5
+    COUNT: 17
+    DESCRIPTION: 'This regs table provides key, key_len and salt for a given spi'
+    FLDLST: *27
+    NAME: etdp_key_lu_191_128_14
+  - ATTR: 5
+    COUNT: 17
+    DESCRIPTION: 'This regs table provides key, key_len and salt for a given spi'
+    FLDLST: *27
+    NAME: etdp_key_lu_191_128_15
+  - ATTR: 5
+    COUNT: 17
+    DESCRIPTION: 'This regs table provides key, key_len and salt for a given spi'
+    FLDLST: *27
+    NAME: etdp_key_lu_191_128_16
+  - ATTR: 5
+    COUNT: 17
+    DESCRIPTION: 'This regs table provides key, key_len and salt for a given spi'
+    FLDLST: &28
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: key
+        WIDTH: 64
+    NAME: etdp_key_lu_255_192_0
+  - ATTR: 5
+    COUNT: 17
+    DESCRIPTION: 'This regs table provides key, key_len and salt for a given spi'
+    FLDLST: *28
+    NAME: etdp_key_lu_255_192_1
+  - ATTR: 5
+    COUNT: 17
+    DESCRIPTION: 'This regs table provides key, key_len and salt for a given spi'
+    FLDLST: *28
+    NAME: etdp_key_lu_255_192_2
+  - ATTR: 5
+    COUNT: 17
+    DESCRIPTION: 'This regs table provides key, key_len and salt for a given spi'
+    FLDLST: *28
+    NAME: etdp_key_lu_255_192_3
+  - ATTR: 5
+    COUNT: 17
+    DESCRIPTION: 'This regs table provides key, key_len and salt for a given spi'
+    FLDLST: *28
+    NAME: etdp_key_lu_255_192_4
+  - ATTR: 5
+    COUNT: 17
+    DESCRIPTION: 'This regs table provides key, key_len and salt for a given spi'
+    FLDLST: *28
+    NAME: etdp_key_lu_255_192_5
+  - ATTR: 5
+    COUNT: 17
+    DESCRIPTION: 'This regs table provides key, key_len and salt for a given spi'
+    FLDLST: *28
+    NAME: etdp_key_lu_255_192_6
+  - ATTR: 5
+    COUNT: 17
+    DESCRIPTION: 'This regs table provides key, key_len and salt for a given spi'
+    FLDLST: *28
+    NAME: etdp_key_lu_255_192_7
+  - ATTR: 5
+    COUNT: 17
+    DESCRIPTION: 'This regs table provides key, key_len and salt for a given spi'
+    FLDLST: *28
+    NAME: etdp_key_lu_255_192_8
+  - ATTR: 5
+    COUNT: 17
+    DESCRIPTION: 'This regs table provides key, key_len and salt for a given spi'
+    FLDLST: *28
+    NAME: etdp_key_lu_255_192_9
+  - ATTR: 5
+    COUNT: 17
+    DESCRIPTION: 'This regs table provides key, key_len and salt for a given spi'
+    FLDLST: *28
+    NAME: etdp_key_lu_255_192_10
+  - ATTR: 5
+    COUNT: 17
+    DESCRIPTION: 'This regs table provides key, key_len and salt for a given spi'
+    FLDLST: *28
+    NAME: etdp_key_lu_255_192_11
+  - ATTR: 5
+    COUNT: 17
+    DESCRIPTION: 'This regs table provides key, key_len and salt for a given spi'
+    FLDLST: *28
+    NAME: etdp_key_lu_255_192_12
+  - ATTR: 5
+    COUNT: 17
+    DESCRIPTION: 'This regs table provides key, key_len and salt for a given spi'
+    FLDLST: *28
+    NAME: etdp_key_lu_255_192_13
+  - ATTR: 5
+    COUNT: 17
+    DESCRIPTION: 'This regs table provides key, key_len and salt for a given spi'
+    FLDLST: *28
+    NAME: etdp_key_lu_255_192_14
+  - ATTR: 5
+    COUNT: 17
+    DESCRIPTION: 'This regs table provides key, key_len and salt for a given spi'
+    FLDLST: *28
+    NAME: etdp_key_lu_255_192_15
+  - ATTR: 5
+    COUNT: 17
+    DESCRIPTION: 'This regs table provides key, key_len and salt for a given spi'
+    FLDLST: *28
+    NAME: etdp_key_lu_255_192_16
+  - ATTR: 5
+    COUNT: 17
+    DESCRIPTION: 'This regs table provides key, key_len and salt for a given spi'
+    FLDLST: &29
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: key_len
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: salt
+        WIDTH: 16
+    NAME: etdp_key_len_lu_0
+  - ATTR: 5
+    COUNT: 17
+    DESCRIPTION: 'This regs table provides key, key_len and salt for a given spi'
+    FLDLST: *29
+    NAME: etdp_key_len_lu_1
+  - ATTR: 5
+    COUNT: 17
+    DESCRIPTION: 'This regs table provides key, key_len and salt for a given spi'
+    FLDLST: *29
+    NAME: etdp_key_len_lu_2
+  - ATTR: 5
+    COUNT: 17
+    DESCRIPTION: 'This regs table provides key, key_len and salt for a given spi'
+    FLDLST: *29
+    NAME: etdp_key_len_lu_3
+  - ATTR: 5
+    COUNT: 17
+    DESCRIPTION: 'This regs table provides key, key_len and salt for a given spi'
+    FLDLST: *29
+    NAME: etdp_key_len_lu_4
+  - ATTR: 5
+    COUNT: 17
+    DESCRIPTION: 'This regs table provides key, key_len and salt for a given spi'
+    FLDLST: *29
+    NAME: etdp_key_len_lu_5
+  - ATTR: 5
+    COUNT: 17
+    DESCRIPTION: 'This regs table provides key, key_len and salt for a given spi'
+    FLDLST: *29
+    NAME: etdp_key_len_lu_6
+  - ATTR: 5
+    COUNT: 17
+    DESCRIPTION: 'This regs table provides key, key_len and salt for a given spi'
+    FLDLST: *29
+    NAME: etdp_key_len_lu_7
+  - ATTR: 5
+    COUNT: 17
+    DESCRIPTION: 'This regs table provides key, key_len and salt for a given spi'
+    FLDLST: *29
+    NAME: etdp_key_len_lu_8
+  - ATTR: 5
+    COUNT: 17
+    DESCRIPTION: 'This regs table provides key, key_len and salt for a given spi'
+    FLDLST: *29
+    NAME: etdp_key_len_lu_9
+  - ATTR: 5
+    COUNT: 17
+    DESCRIPTION: 'This regs table provides key, key_len and salt for a given spi'
+    FLDLST: *29
+    NAME: etdp_key_len_lu_10
+  - ATTR: 5
+    COUNT: 17
+    DESCRIPTION: 'This regs table provides key, key_len and salt for a given spi'
+    FLDLST: *29
+    NAME: etdp_key_len_lu_11
+  - ATTR: 5
+    COUNT: 17
+    DESCRIPTION: 'This regs table provides key, key_len and salt for a given spi'
+    FLDLST: *29
+    NAME: etdp_key_len_lu_12
+  - ATTR: 5
+    COUNT: 17
+    DESCRIPTION: 'This regs table provides key, key_len and salt for a given spi'
+    FLDLST: *29
+    NAME: etdp_key_len_lu_13
+  - ATTR: 5
+    COUNT: 17
+    DESCRIPTION: 'This regs table provides key, key_len and salt for a given spi'
+    FLDLST: *29
+    NAME: etdp_key_len_lu_14
+  - ATTR: 5
+    COUNT: 17
+    DESCRIPTION: 'This regs table provides key, key_len and salt for a given spi'
+    FLDLST: *29
+    NAME: etdp_key_len_lu_15
+  - ATTR: 5
+    COUNT: 17
+    DESCRIPTION: 'This regs table provides key, key_len and salt for a given spi'
+    FLDLST: *29
+    NAME: etdp_key_len_lu_16
+  - ATTR: 5
+    DESCRIPTION: 'FCP setup in epg TDP '
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: FCP stream number in EPG
+        NAME: fcp_stream
+        WIDTH: 3
+      - DEFAULT: 1
+        DESCRIPTION: 'FCP traffic is enabled. For HNU, software should set it to 0.'
+        NAME: fcp_present
+        WIDTH: 1
+    NAME: etdp_fcp_stream_map
+  - ATTR: 5
+    DESCRIPTION: 'Config register for SRAM error injection '
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: PSWIF
+        NAME: pswif_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: TMEM
+        NAME: tmem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: LSO Header Memory
+        NAME: lso_hmem_i1_b1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: LSO Header Memory
+        NAME: lso_hmem_i1_b0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: LSO Header Memory
+        NAME: lso_hmem_i0_b1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: LSO Header Memory
+        NAME: lso_hmem_i0_b0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: LSO payload Memory
+        NAME: lso_pmem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'Type of error. 0 - Uncorrectable error. 1 - Correctable error '
+        NAME: err_type
+        WIDTH: 1
+    NAME: etdp_sram_err_inj_cfg
+    TEST_ATTR: 2
+  - ATTR: 9
+    DESCRIPTION: 'Status register, SRAM error log vector, correctable errors '
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: PSWIF
+        NAME: pswif_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: TMEM
+        NAME: tmem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: LSO Header Memory
+        NAME: lso_hmem_i1_b1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: LSO Header Memory
+        NAME: lso_hmem_i1_b0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: LSO Header Memory
+        NAME: lso_hmem_i0_b1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: LSO Header Memory
+        NAME: lso_hmem_i0_b0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: LSO payload Memory
+        NAME: lso_pmem
+        WIDTH: 1
+    NAME: etdp_sram_cerr_log_vec
+  - ATTR: 9
+    DESCRIPTION: 'Status register, SRAM error log vector, uncorrectable errors '
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: PSWIF
+        NAME: pswif_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: TMEM
+        NAME: tmem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: LSO Header Memory
+        NAME: lso_hmem_i1_b1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: LSO Header Memory
+        NAME: lso_hmem_i1_b0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: LSO Header Memory
+        NAME: lso_hmem_i0_b1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: LSO Header Memory
+        NAME: lso_hmem_i0_b0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: LSO payload Memory
+        NAME: lso_pmem
+        WIDTH: 1
+    NAME: etdp_sram_ucerr_log_vec
+  - ATTR: 9
+    DESCRIPTION: 'Status register, SRAM error log syndrome '
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: error syndrome
+        NAME: val
+        WIDTH: 16
+    NAME: etdp_sram_log_syndrome
+  - ATTR: 9
+    DESCRIPTION: 'Status register, SRAM error log address '
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: error memory address
+        NAME: val
+        WIDTH: 16
+    NAME: etdp_sram_log_addr
+  - ATTR: 9
+    DESCRIPTION: End of test register of WUS block
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: end of test register of WUS
+        NAME: val
+        WIDTH: 64
+    NAME: etdp_wus_eot
+    TEST_ATTR: 0
+  - ATTR: 9
+    DESCRIPTION: End of test register of WUS block
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: end of test register of LSO
+        NAME: val
+        WIDTH: 64
+    NAME: etdp_lso_eot
+    TEST_ATTR: 0
+  - ATTR: 9
+    DESCRIPTION: End of test register of FCP block
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: end of test register of FCP
+        NAME: val
+        WIDTH: 64
+    NAME: etdp_fcp_eot
+    TEST_ATTR: 0
+  - ATTR: 9
+    DESCRIPTION: End of test register of pswif block
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: end of test register of pswif
+        NAME: val
+        WIDTH: 64
+    NAME: etdp_pswif_eot
+    TEST_ATTR: 0
+  - ATTR: 9
+    DESCRIPTION: ETDP Status
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: ready to reset. only valid if halt is asserted
+        NAME: ready_to_reset
+        WIDTH: 1
+    NAME: etdp_status
+  - ATTR: 10
+    DESCRIPTION: 'ETDP Flow Control Status - Sticky, Clear on Read'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Flow control from PSW
+        NAME: psw_fctl
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Flow control from Parser block
+        NAME: prs_fctl
+        WIDTH: 1
+    NAME: etdp_flow_ctrl_sta
+    TEST_ATTR: 0
+  - ATTR: 5
+    DESCRIPTION: Software plans the watchdog time period. Timer counter is 16 bit.
+    FLDLST:
+      - DEFAULT: 4096
+        DESCRIPTION: Watchdog timeout period value
+        NAME: val
+        WIDTH: 16
+    NAME: etdp_watchdog_timer_period
+  - ATTR: 6
+    DESCRIPTION: Access to ETDP Debug PSW Interface Packet Count Stats Counters
+    ENTRIES: 8
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: PSWIF Packet Statistics Counters
+        NAME: fld_count
+        WIDTH: 64
+    NAME: etdp_dbg_probe_pswif_pcnt_dhs
+    TEST_ATTR: 0
+  - ATTR: 6
+    DESCRIPTION: Access to ETDP Debug PSW Interface Packet Byte Stats Counters
+    ENTRIES: 8
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: PSWIF Byte Statistics Counters
+        NAME: fld_count
+        WIDTH: 64
+    NAME: etdp_dbg_probe_pswif_pbyte_dhs
+    TEST_ATTR: 0
+XASIZE: 1048576

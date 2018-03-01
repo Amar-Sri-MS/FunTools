@@ -1,0 +1,43 @@
+/*
+ *  csr.h
+ *
+ *  Created by Hariharan Thantry on 2018-02-26
+ *
+ *  Copyright © 2018 Fungible Inc. All rights reserved.
+ */
+#pragma once
+
+#include <iostream>
+#include <unordered_map>
+#include <vector>
+
+#include "csr_s.h"
+#include "ring_coll.h"
+
+#define CREATE_ENTRY(k0, v0, v1) {k0, fld_off_t(v0, v1)}
+
+
+typedef std::unordered_map<std::string, ring_coll_t, string_hash> ring_t;
+class F1NS {
+    public:
+        static F1NS& get() {
+             static F1NS m;
+             return m;
+        }
+        F1NS& operator=(const F1NS& other) =delete;
+        F1NS(const F1NS& other) =delete;
+
+        typedef ring_t::iterator iterator;
+        typedef ring_t::const_iterator const_iterator;
+        inline iterator begin() noexcept { return sys_rings.begin(); }
+        inline iterator end() noexcept { return sys_rings.end(); }
+        inline const_iterator cbegin() const noexcept { return sys_rings.cbegin(); }
+        inline const_iterator cend() const noexcept { return sys_rings.cend(); }
+        ring_coll_t& operator[](const std::string& name);
+    private:
+        /*
+         * For each ring, NU, HU, HNU etc
+         */
+        ring_t sys_rings;    
+        F1NS();
+};

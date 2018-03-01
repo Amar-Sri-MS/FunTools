@@ -1,0 +1,1669 @@
+---
+BASEADDRPORT: 1
+COUNT: 1
+DESCRIPTION: Flexible Forwarding Engine (FFE) CSR spec
+INTR:
+  FATAL:
+    - DESCRIPTION: |-
+        SMAC learning CAM is full, so a new learn event is dropped. This
+        			    is only implemented in Engine 2
+      NAME: smac_learn_drop
+      WIDTH: 1
+  NON_FATAL:
+    - DESCRIPTION: Hash Memory instance 0 parity error
+      NAME: hash_mem_perr_0
+      WIDTH: 1
+    - DESCRIPTION: Hash Memory instance 1 parity error
+      NAME: hash_mem_perr_1
+      WIDTH: 1
+    - DESCRIPTION: Hash Memory instance 2 parity error
+      NAME: hash_mem_perr_2
+      WIDTH: 1
+    - DESCRIPTION: Hash Memory instance 3 parity error
+      NAME: hash_mem_perr_3
+      WIDTH: 1
+    - DESCRIPTION: Hash Memory instance 4 parity error
+      NAME: hash_mem_perr_4
+      WIDTH: 1
+    - DESCRIPTION: Hash Memory instance 5 parity error
+      NAME: hash_mem_perr_5
+      WIDTH: 1
+    - DESCRIPTION: Hash Memory instance 6 parity error
+      NAME: hash_mem_perr_6
+      WIDTH: 1
+    - DESCRIPTION: Hash Memory instance 7 parity error
+      NAME: hash_mem_perr_7
+      WIDTH: 1
+    - DESCRIPTION: Large TCAM instance 0 parity error
+      NAME: lt_mem_perr_0
+      WIDTH: 1
+    - DESCRIPTION: Large TCAM instance 1 parity error
+      NAME: lt_mem_perr_1
+      WIDTH: 1
+    - DESCRIPTION: Large TCAM instance 2 parity error
+      NAME: lt_mem_perr_2
+      WIDTH: 1
+    - DESCRIPTION: Large TCAM instance 3 parity error
+      NAME: lt_mem_perr_3
+      WIDTH: 1
+    - DESCRIPTION: Large result TCAM instance 0 parity error
+      NAME: ltr_mem_perr_0
+      WIDTH: 1
+    - DESCRIPTION: Large result TCAM instance 1 parity error
+      NAME: ltr_mem_perr_1
+      WIDTH: 1
+    - DESCRIPTION: Large result TCAM instance 2 parity error
+      NAME: ltr_mem_perr_2
+      WIDTH: 1
+    - DESCRIPTION: Large result TCAM instance 3 parity error
+      NAME: ltr_mem_perr_3
+      WIDTH: 1
+    - DESCRIPTION: Small TCAM instance 0 parity error
+      NAME: st_mem_perr_0
+      WIDTH: 1
+    - DESCRIPTION: Small TCAM instance 1 parity error
+      NAME: st_mem_perr_1
+      WIDTH: 1
+    - DESCRIPTION: Small TCAM instance 2 parity error
+      NAME: st_mem_perr_2
+      WIDTH: 1
+    - DESCRIPTION: Small TCAM instance 3 parity error
+      NAME: st_mem_perr_3
+      WIDTH: 1
+    - DESCRIPTION: Small result TCAM instance 0 parity error
+      NAME: str_mem_perr_0
+      WIDTH: 1
+    - DESCRIPTION: Small result TCAM instance 1 parity error
+      NAME: str_mem_perr_1
+      WIDTH: 1
+    - DESCRIPTION: Small result TCAM instance 2 parity error
+      NAME: str_mem_perr_2
+      WIDTH: 1
+    - DESCRIPTION: Small result TCAM instance 3 parity error
+      NAME: str_mem_perr_3
+      WIDTH: 1
+    - DESCRIPTION: Small Direct index instance 0 parity error
+      NAME: sm_dit_mem_perr_0
+      WIDTH: 1
+    - DESCRIPTION: Small Direct index instance 1 parity error
+      NAME: sm_dit_mem_perr_1
+      WIDTH: 1
+    - DESCRIPTION: Action data memory instance 0 parity error
+      NAME: ad_mem_perr_0
+      WIDTH: 1
+    - DESCRIPTION: Action data memory instance 1 parity error
+      NAME: ad_mem_perr_1
+      WIDTH: 1
+    - DESCRIPTION: Action data memory instance 2 parity error
+      NAME: ad_mem_perr_2
+      WIDTH: 1
+    - DESCRIPTION: Action data memory instance 3 parity error
+      NAME: ad_mem_perr_3
+      WIDTH: 1
+    - DESCRIPTION: Action data memory instance 4 parity error
+      NAME: ad_mem_perr_4
+      WIDTH: 1
+    - DESCRIPTION: Action data memory instance 5 parity error
+      NAME: ad_mem_perr_5
+      WIDTH: 1
+    - DESCRIPTION: |-
+        SMAC learning event. This interrupt is set when the learning
+        			    event is installed in the CAM. This is only implemented in Engine 2
+      NAME: smac_learn_event
+      WIDTH: 1
+INTR_PORT_EN: 1
+MACROCNT: 7
+MACROID: stg4
+NAME: stg4_ffe_an
+PARENTNAME: NU_1_AN
+REGLST:
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: |-
+          Timeout Configuration. Cycles are RSU clk based.
+                            - 00 : 1024 cycles
+                            - 01 : 256 cycles
+                            - 10 : 4096 cycles
+                            - 11 : infinite
+        NAME: val
+        WIDTH: 2
+    NAME: ffe_timeout_thresh_cfg
+  - ATTR: 9
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: "Timed out Status. Cycles are RSU clk based. Becomes 1 when timed out. Write any value to clear it.\n                  "
+        NAME: val
+        WIDTH: 1
+    NAME: ffe_timedout_sta
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: |-
+          Clear Timeout Status. Data is ignored. A write
+                     will clear the timeout status bit
+        NAME: val
+        WIDTH: 1
+    NAME: ffe_timeout_clr
+    TEST_ATTR: 1
+  - ATTR: 256
+    FLDLST:
+      - &1
+        DESCRIPTION: |-
+          SMAC learning CAM is full, so a new learn event is dropped. This
+          			    is only implemented in Engine 2
+        NAME: smac_learn_drop
+        WIDTH: 1
+    NAME: ffe_fatal_intr_cause
+  - ATTR: 512
+    FLDLST:
+      - *1
+    NAME: ffe_fatal_intr_stat
+  - ATTR: 1024
+    FLDLST:
+      - *1
+    NAME: ffe_fatal_intr_mask
+  - ATTR: 2048
+    FLDLST:
+      - *1
+    NAME: ffe_fatal_intr_bset
+  - ATTR: 4096
+    FLDLST:
+      - *1
+    NAME: ffe_fatal_intr_bclr
+  - ATTR: 256
+    FLDLST:
+      - &2
+        DESCRIPTION: Hash Memory instance 0 parity error
+        NAME: hash_mem_perr_0
+        WIDTH: 1
+      - &3
+        DESCRIPTION: Hash Memory instance 1 parity error
+        NAME: hash_mem_perr_1
+        WIDTH: 1
+      - &4
+        DESCRIPTION: Hash Memory instance 2 parity error
+        NAME: hash_mem_perr_2
+        WIDTH: 1
+      - &5
+        DESCRIPTION: Hash Memory instance 3 parity error
+        NAME: hash_mem_perr_3
+        WIDTH: 1
+      - &6
+        DESCRIPTION: Hash Memory instance 4 parity error
+        NAME: hash_mem_perr_4
+        WIDTH: 1
+      - &7
+        DESCRIPTION: Hash Memory instance 5 parity error
+        NAME: hash_mem_perr_5
+        WIDTH: 1
+      - &8
+        DESCRIPTION: Hash Memory instance 6 parity error
+        NAME: hash_mem_perr_6
+        WIDTH: 1
+      - &9
+        DESCRIPTION: Hash Memory instance 7 parity error
+        NAME: hash_mem_perr_7
+        WIDTH: 1
+      - &10
+        DESCRIPTION: Large TCAM instance 0 parity error
+        NAME: lt_mem_perr_0
+        WIDTH: 1
+      - &11
+        DESCRIPTION: Large TCAM instance 1 parity error
+        NAME: lt_mem_perr_1
+        WIDTH: 1
+      - &12
+        DESCRIPTION: Large TCAM instance 2 parity error
+        NAME: lt_mem_perr_2
+        WIDTH: 1
+      - &13
+        DESCRIPTION: Large TCAM instance 3 parity error
+        NAME: lt_mem_perr_3
+        WIDTH: 1
+      - &14
+        DESCRIPTION: Large result TCAM instance 0 parity error
+        NAME: ltr_mem_perr_0
+        WIDTH: 1
+      - &15
+        DESCRIPTION: Large result TCAM instance 1 parity error
+        NAME: ltr_mem_perr_1
+        WIDTH: 1
+      - &16
+        DESCRIPTION: Large result TCAM instance 2 parity error
+        NAME: ltr_mem_perr_2
+        WIDTH: 1
+      - &17
+        DESCRIPTION: Large result TCAM instance 3 parity error
+        NAME: ltr_mem_perr_3
+        WIDTH: 1
+      - &18
+        DESCRIPTION: Small TCAM instance 0 parity error
+        NAME: st_mem_perr_0
+        WIDTH: 1
+      - &19
+        DESCRIPTION: Small TCAM instance 1 parity error
+        NAME: st_mem_perr_1
+        WIDTH: 1
+      - &20
+        DESCRIPTION: Small TCAM instance 2 parity error
+        NAME: st_mem_perr_2
+        WIDTH: 1
+      - &21
+        DESCRIPTION: Small TCAM instance 3 parity error
+        NAME: st_mem_perr_3
+        WIDTH: 1
+      - &22
+        DESCRIPTION: Small result TCAM instance 0 parity error
+        NAME: str_mem_perr_0
+        WIDTH: 1
+      - &23
+        DESCRIPTION: Small result TCAM instance 1 parity error
+        NAME: str_mem_perr_1
+        WIDTH: 1
+      - &24
+        DESCRIPTION: Small result TCAM instance 2 parity error
+        NAME: str_mem_perr_2
+        WIDTH: 1
+      - &25
+        DESCRIPTION: Small result TCAM instance 3 parity error
+        NAME: str_mem_perr_3
+        WIDTH: 1
+      - &26
+        DESCRIPTION: Small Direct index instance 0 parity error
+        NAME: sm_dit_mem_perr_0
+        WIDTH: 1
+      - &27
+        DESCRIPTION: Small Direct index instance 1 parity error
+        NAME: sm_dit_mem_perr_1
+        WIDTH: 1
+      - &28
+        DESCRIPTION: Action data memory instance 0 parity error
+        NAME: ad_mem_perr_0
+        WIDTH: 1
+      - &29
+        DESCRIPTION: Action data memory instance 1 parity error
+        NAME: ad_mem_perr_1
+        WIDTH: 1
+      - &30
+        DESCRIPTION: Action data memory instance 2 parity error
+        NAME: ad_mem_perr_2
+        WIDTH: 1
+      - &31
+        DESCRIPTION: Action data memory instance 3 parity error
+        NAME: ad_mem_perr_3
+        WIDTH: 1
+      - &32
+        DESCRIPTION: Action data memory instance 4 parity error
+        NAME: ad_mem_perr_4
+        WIDTH: 1
+      - &33
+        DESCRIPTION: Action data memory instance 5 parity error
+        NAME: ad_mem_perr_5
+        WIDTH: 1
+      - &34
+        DESCRIPTION: |-
+          SMAC learning event. This interrupt is set when the learning
+          			    event is installed in the CAM. This is only implemented in Engine 2
+        NAME: smac_learn_event
+        WIDTH: 1
+    NAME: ffe_non_fatal_intr_cause
+  - ATTR: 512
+    FLDLST:
+      - *2
+      - *3
+      - *4
+      - *5
+      - *6
+      - *7
+      - *8
+      - *9
+      - *10
+      - *11
+      - *12
+      - *13
+      - *14
+      - *15
+      - *16
+      - *17
+      - *18
+      - *19
+      - *20
+      - *21
+      - *22
+      - *23
+      - *24
+      - *25
+      - *26
+      - *27
+      - *28
+      - *29
+      - *30
+      - *31
+      - *32
+      - *33
+      - *34
+    NAME: ffe_non_fatal_intr_stat
+  - ATTR: 1024
+    FLDLST:
+      - *2
+      - *3
+      - *4
+      - *5
+      - *6
+      - *7
+      - *8
+      - *9
+      - *10
+      - *11
+      - *12
+      - *13
+      - *14
+      - *15
+      - *16
+      - *17
+      - *18
+      - *19
+      - *20
+      - *21
+      - *22
+      - *23
+      - *24
+      - *25
+      - *26
+      - *27
+      - *28
+      - *29
+      - *30
+      - *31
+      - *32
+      - *33
+      - *34
+    NAME: ffe_non_fatal_intr_mask
+  - ATTR: 2048
+    FLDLST:
+      - *2
+      - *3
+      - *4
+      - *5
+      - *6
+      - *7
+      - *8
+      - *9
+      - *10
+      - *11
+      - *12
+      - *13
+      - *14
+      - *15
+      - *16
+      - *17
+      - *18
+      - *19
+      - *20
+      - *21
+      - *22
+      - *23
+      - *24
+      - *25
+      - *26
+      - *27
+      - *28
+      - *29
+      - *30
+      - *31
+      - *32
+      - *33
+      - *34
+    NAME: ffe_non_fatal_intr_bset
+  - ATTR: 4096
+    FLDLST:
+      - *2
+      - *3
+      - *4
+      - *5
+      - *6
+      - *7
+      - *8
+      - *9
+      - *10
+      - *11
+      - *12
+      - *13
+      - *14
+      - *15
+      - *16
+      - *17
+      - *18
+      - *19
+      - *20
+      - *21
+      - *22
+      - *23
+      - *24
+      - *25
+      - *26
+      - *27
+      - *28
+      - *29
+      - *30
+      - *31
+      - *32
+      - *33
+      - *34
+    NAME: ffe_non_fatal_intr_bclr
+  - ATTR: 9
+    DESCRIPTION: 10 Place Holder for FFE Feature Register
+    FLDLST:
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Module ID
+        NAME: module_id
+        VALUE: 0
+        WIDTH: 8
+      - ATTR: 1
+        DEFAULT: 1
+        DESCRIPTION: Version number of the module
+        NAME: version
+        VALUE: 1
+        WIDTH: 8
+      - ATTR: 1
+        DEFAULT: 13107
+        DESCRIPTION: Features enabled in the module.
+        NAME: features
+        VALUE: 13107
+        WIDTH: 16
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Reserved Field.
+        NAME: Reserved
+        WIDTH: 32
+    NAME: ffe_features
+    WIDTH: 64
+  - ATTR: 5
+    DESCRIPTION: |-
+      Spare PIO register. These bits can be read and written by software. 
+       			 They can serve as control bits for late ECOs in the design.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Spare PIO register.
+        NAME: val
+        WIDTH: 64
+    NAME: ffe_spare_pio
+    WIDTH: 64
+  - ATTR: 5
+    DESCRIPTION: |-
+      Scratchpad register. These bits can be read and written by software 
+       			 and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: Scratchpad register.
+        NAME: val
+        WIDTH: 64
+    NAME: ffe_scratchpad
+    WIDTH: 64
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: |-
+      Static Configuration. This can only be set when traffic is not flowing 
+      		       through the block
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-
+          Bypass configuration of the FFE pipeline, this is mainly used to 
+          			      reduce latency.  ENUM type bypass_t is defined
+        NAME: stage_bypass
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: |-
+          Hash Bank assignment control. The design will allow 
+          			      flexibility in assigning the physical banks to the two lookup 
+          			      stages in the pipeline. There are four banks of Hash Memory 
+          			      and their assignment is described in ENUM lg_bank_t
+        NAME: lg_tbl_bnk_asgn
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: |-
+          Large TCAM Bank assignment control. The design will allow 
+          			      flexibility in assigning the physical banks to the two lookup 
+          			      stages in the pipeline. There are four banks of TCAM and 
+          			      their assignment is described in ENUM lg_bank_t
+        NAME: lg_tcam_bnk_asgn
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: |-
+          Small TCAM Bank assignment control. The design will allow 
+          			      flexibility in assigning the physical banks to the two lookup 
+          			      stages in the pipeline. There are four banks of TCAM and 
+          			      their assignment is described in ENUM lg_bank_t
+        NAME: sm_tcam_bnk_asgn
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: |-
+          Bypass ID. This can also be a signal which is hardwired depending
+          			      on the instance. RTL will extract four bits of bypass vector and
+          			      apply bit 0 to L1, bit 1 to S1, bit 2 to L2 and bit 3 to S2. 
+          			      When bypass_id == 3'd7 then there will be no bypass, IN ERP
+          			      the instance count should be programmed as 3'd7 so there will be no
+          			      bypass
+        NAME: bypass_id
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: When this bit is set the large hash table accesses for L1 engine are used as DIT
+        NAME: l1_hash_as_dit
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: When this bit is set the large hash table accesses for L2 engine are used as DIT
+        NAME: l2_hash_as_dit
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: |-
+          When this bit is set the logical table is enabled for 32 entries. When this is enabled
+          			      in the key we can only use 3 bits for flag and 5 bits for logical table. Flag zero lsb
+          			      in the kgen ucode is used as the 5th bit of the logical table and it is appended as the 
+          			      lsb bit to access the logical table memory
+        NAME: log_tbl_32_en
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: |-
+          SMAC logical Table ID. When a miss is detected for this logical ID  
+          			      in Engine 2 (stg1) then it is processed as an SMAC miss. This logical
+          			      table can be either doing a look up during L1/S1 stage or L2/S2 stage
+          			      (not in both)
+        NAME: smac_logical_tbl_id
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: SMAC logical port offset in the PRV bus. This is used to extract 2 bytes from this offset
+        NAME: logical_port_oset
+        WIDTH: 7
+    NAME: static_cfg
+  - ATTR: 5
+    DESCRIPTION: SRAM bit vector that failed Parity
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            First SRAM Parity error detected (1-hot)
+                                            Set when first error is detected
+                                            Reset when corresponding interrupt status bit is cleared
+                                            [0]  - hash_mem_pinj_0 (hash memory instance 0)
+                                            [1]  - hash_mem_pinj_1 (hash memory instance 1)
+                                            [2]  - hash_mem_pinj_2 (hash memory instance 2)
+                                            [3]  - hash_mem_pinj_3 (hash memory instance 3)
+                                            [4]  - hash_mem_pinj_4 (hash memory instance 4)
+                                            [5]  - hash_mem_pinj_5 (hash memory instance 5)
+                                            [6]  - hash_mem_pinj_6 (hash memory instance 6)
+                                            [7]  - hash_mem_pinj_7 (hash memory instance 7)
+                                            [8]  - lt_mem_pinj_0 (Large TCAM memory)
+                                            [9]  - lt_mem_pinj_1 (Large TCAM memory)
+                                            [10] - lt_mem_pinj_2 (Large TCAM memory)
+                                            [11] - lt_mem_pinj_3 (Large TCAM memory)
+                                            [12] - ltr_mem_pinj_0    (Large TCAM result memory instance 0)
+                                            [13] - ltr_mem_pinj_1   (Large TCAM result memory instance 1)
+                                            [14] - ltr_mem_pinj_2   (Large TCAM result memory instance 2)
+                                            [15] - ltr_mem_pinj_3   (Large TCAM result memory instance 3)
+                                            [16] - st_mem_pinj_0 (Large TCAM memory)
+                                            [17] - st_mem_pinj_1 (Large TCAM memory)
+                                            [18] - st_mem_pinj_2 (Large TCAM memory)
+                                            [19] - st_mem_pinj_3 (Large TCAM memory)
+                                            [20] - str_mem_pinj_0   (Small TCAM result memory instance 0)
+                                            [21] - str_mem_pinj_1   (Small TCAM result memory instance 1)
+                                            [22] - str_mem_pinj_2   (Small TCAM result memory instance 2)
+                                            [23] - str_mem_pinj_3   (Small TCAM result memory instance 3)
+                                            [24] - sm_dit_mem_pinj_0 (Small Direct index memory instance 0)
+                                            [25] - sm_dit_mem_pinj_1 (Small Direct index memory instance 1)
+                                            [26] - ad_mem_pinj_0	  (Action data memory instance 0)
+                                            [27] - ad_mem_pinj_1	  (Action data memory instance 1)
+                                            [28] - ad_mem_pinj_2	  (Action data memory instance 2)
+                                            [29] - ad_mem_pinj_3	  (Action data memory instance 3)
+                                            [30] - ad_mem_pinj_4	  (Action data memory instance 4)
+                                            [31] - ad_mem_pinj_5	  (Action data memory instance 5)
+                                           
+        NAME: val
+        WIDTH: 32
+    NAME: ffe_sram_err_inj
+  - ATTR: 9
+    DESCRIPTION: SRAM bit vector that failed Parity
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            First SRAM Parity error detected (1-hot)
+                                            Set when first error is detected
+                                            Reset when corresponding interrupt status bit is cleared
+                                            [0]  - hash_mem_perr_0 (hash memory instance 0)
+                                            [1]  - hash_mem_perr_1 (hash memory instance 1)
+                                            [2]  - hash_mem_perr_2 (hash memory instance 2)
+                                            [3]  - hash_mem_perr_3 (hash memory instance 3)
+                                            [4]  - hash_mem_perr_4 (hash memory instance 4)
+                                            [5]  - hash_mem_perr_5 (hash memory instance 5)
+                                            [6]  - hash_mem_perr_6 (hash memory instance 6)
+                                            [7]  - hash_mem_perr_7 (hash memory instance 7)
+                                            [8]  - lt_mem_perr_0 (Large TCAM memory)
+                                            [9]  - lt_mem_perr_1 (Large TCAM memory)
+                                            [10] - lt_mem_perr_2 (Large TCAM memory)
+                                            [11] - lt_mem_perr_3 (Large TCAM memory)
+                                            [12] - ltr_mem_perr_0    (Large TCAM result memory instance 0)
+                                            [13] - ltr_mem_perr_1   (Large TCAM result memory instance 1)
+                                            [14] - ltr_mem_perr_2   (Large TCAM result memory instance 2)
+                                            [15] - ltr_mem_perr_3   (Large TCAM result memory instance 3)
+                                            [16] - st_mem_perr_0 (Large TCAM memory)
+                                            [17] - st_mem_perr_1 (Large TCAM memory)
+                                            [18] - st_mem_perr_2 (Large TCAM memory)
+                                            [19] - st_mem_perr_3 (Large TCAM memory)
+                                            [20] - str_mem_perr_0   (Small TCAM result memory instance 0)
+                                            [21] - str_mem_perr_1   (Small TCAM result memory instance 1)
+                                            [22] - str_mem_perr_2   (Small TCAM result memory instance 2)
+                                            [23] - str_mem_perr_3   (Small TCAM result memory instance 3)
+                                            [24] - sm_dit_mem_perr_0 (Small Direct index memory instance 0)
+                                            [25] - sm_dit_mem_perr_1 (Small Direct index memory instance 1)
+                                            [26] - ad_mem_perr_0	  (Action data memory instance 0)
+                                            [27] - ad_mem_perr_1	  (Action data memory instance 1)
+                                            [28] - ad_mem_perr_2	  (Action data memory instance 2)
+                                            [29] - ad_mem_perr_3	  (Action data memory instance 3)
+                                            [30] - ad_mem_perr_4	  (Action data memory instance 4)
+                                            [31] - ad_mem_perr_5	  (Action data memory instance 5)
+                                           
+        NAME: val
+        WIDTH: 32
+    NAME: ffe_sram_log_err
+  - ATTR: 9
+    DESCRIPTION: SRAM address log register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            Address related to Parity error
+                                            detected while reading data from SRAM
+                                           
+        NAME: val
+        WIDTH: 14
+    NAME: ffe_sram_log_addr
+  - ATTR: 5
+    DESCRIPTION: Hash Function Seed Configuration
+    FLDLST:
+      - DEFAULT: 147
+        DESCRIPTION: |-
+          8-Bit Random Seed value initialized by the S/W for Hash Function H1 - 
+          				Should not be changed when in operation
+        NAME: seed_h1
+        WIDTH: 8
+      - DEFAULT: 147
+        DESCRIPTION: |-
+          8-Bit Random Seed value initialized by the S/W for Hash Function H2 - 
+          				Should not be changed when in operation
+        NAME: seed_h2
+        WIDTH: 8
+    NAME: hash_seed_cfg
+  - ATTR: 10
+    DESCRIPTION: SMAC CAM head pop. Only activated in Engine 2 (stg1)
+    FLDLST:
+      - DESCRIPTION: |-
+          During write number of entries to be popped from the CAM structure. When read
+          				  the hardware returns the number of valid entries at the head
+        NAME: cnt
+        WIDTH: 7
+    NAME: smac_cam_hd_pop
+  - ATTR: 5
+    DESCRIPTION: FFE FLA Ring Module ID
+    FLDLST:
+      - DEFAULT: 55
+        DESCRIPTION: '8-Bit Module ID to be used for Decoding Commands on FLA Command Ring, 0x0, 0xff are Reserved Values'
+        NAME: fld_val
+        WIDTH: 8
+    NAME: ffe_fla_ring_module_id_cfg
+  - ATTR: 10
+    DESCRIPTION: SMAC CAM head read. Only activated in Engine 2 (stg1)
+    ENTRIES: 64
+    FLDLST:
+      - DESCRIPTION: Valid bit of the CAM entry
+        NAME: vld
+        WIDTH: 1
+      - DESCRIPTION: |-
+          head address + idx entry is read out and sent back. A write operation writes the
+          			          CAM entry at tail address + idx. A write cannot be done when traffic is flowing.
+        NAME: smac_learn_event_t
+        WIDTH: 104
+    NAME: smac_cam_hd
+  - ATTR: 6
+    DESCRIPTION: |-
+      FFE Template TCAM key. This template TCAM will be implemented in flops.
+                             This template TCAM is only one per FFE.  It has four ports as all the key engines 
+                             can be active in the same cycle. This table is 16 deep and pattern field is 
+      		       26 bits {iter_cnt[3:0], port_number[1:0], metadata_flags[3:0], prv_template[15:0]}, 
+      		       tcam_key_format is describes as part of structs.
+      		       iter_cnt[3:0] is part of the mdata bus, port_number is used to create upto
+      		       four keys for four engines (L1, S1, L2 & S2). Once a match occurs the index 
+      		       is used to address the key ucode instruction memory. 
+      		       No Valid bit, iter_cnt[3:0] == 15 is used for invalid encoding. Hardware will
+      		       initialize the invalid entries so that SW doesn't need to program them
+    ENTRIES: 16
+    FLDLST:
+      - DESCRIPTION: |-
+          The ternary key to be matched. (s_key (search key 
+                                        from datapath) & mask) is compared to match key (m_key)
+          			      to determine if the s_key matched a TCAM rule.
+        NAME: value
+        WIDTH: 26
+    MAX_ENTRIES: 64
+    NAME: tmp_tcam_m_key
+  - ATTR: 6
+    DESCRIPTION: FFE Template TCAM mask. This template TCAM will be implemented in flops
+    ENTRIES: 16
+    FLDLST:
+      - DESCRIPTION: Mask for the lookup key corresponding to the pattern
+        NAME: value
+        WIDTH: 26
+    MAX_ENTRIES: 64
+    NAME: tmp_tcam_mask
+  - ATTR: 10
+    DESCRIPTION: FFE Hit entry index snap shot
+    ENTRIES: 1
+    FLDLST:
+      - DESCRIPTION: FFE does a snap shot of the entry index for SW debug
+        NAME: ffe_snap_shot_t
+        WIDTH: 62
+    MAX_ENTRIES: 8
+    NAME: snap_shot
+  - ATTR: 10
+    DESCRIPTION: FFE Table reference vector memory
+    ENTRIES: 137
+    FLDLST:
+      - DESCRIPTION: Reference bits for the large table entries. Each entry hold 64 bits
+        NAME: entry
+        WIDTH: 64
+    MAX_ENTRIES: 512
+    NAME: ref_vec_l1_mem
+  - ATTR: 10
+    DESCRIPTION: FFE Table reference vector memory
+    ENTRIES: 137
+    FLDLST:
+      - DESCRIPTION: Reference bits for the large table entries. Each entry hold 64 bits
+        NAME: entry
+        WIDTH: 64
+    MAX_ENTRIES: 512
+    NAME: ref_vec_l2_mem
+  - ATTR: 10
+    DESCRIPTION: FFE Table reference vector memory
+    ENTRIES: 8
+    FLDLST:
+      - DESCRIPTION: Reference bits for the small table entries. Each entry hold 64 bits
+        NAME: entry
+        WIDTH: 64
+    MAX_ENTRIES: 64
+    NAME: ref_vec_sm_mem
+  - ATTR: 6
+    DESCRIPTION: FFE key ucode memory. Defined as part of structs key_ucode_format_t
+    ENTRIES: 16
+    FLDLST:
+      - DESCRIPTION: Entry of the key ucode memory. Defined as part of structs
+        NAME: entry
+        WIDTH: 423
+    MAX_ENTRIES: 64
+    MAX_WIDTH: 512
+    NAME: key_ucode_mem
+  - ATTR: 6
+    DESCRIPTION: FFE logical table attributes memory. Defined as part of structs lt_attributes_t
+    ENTRIES: 16
+    FLDLST:
+      - DESCRIPTION: Entry of the logical table attributes. Defined as part of structs
+        NAME: entry
+        WIDTH: 39
+    MAX_ENTRIES: 32
+    NAME: lt_attributes_mem
+  - ATTR: 6
+    DESCRIPTION: |-
+      FFE Hash memory. Defined as part of structs hash_tbl_t. A write to this structure should be
+      		       used just to invalidate the entry
+    ENTRIES: 1024
+    FLDLST:
+      - DESCRIPTION: |-
+          The value field is ignored for writes. When a write happens to this register (irrespective 
+          			      of the value bit) the valid bit in the hash memory structure is cleared. When a read 
+          			      happens to this register then the valid value in the memory structure is returned.
+        NAME: value
+        WIDTH: 1
+    MAX_ENTRIES: 1024
+    NAME: hash_mem_vld_0
+    TEST_ATTR: 0
+  - ATTR: 6
+    DESCRIPTION: |-
+      FFE Hash memory. Defined as part of structs hash_tbl_t. A write to this structure should be
+      		       used just to invalidate the entry
+    ENTRIES: 1024
+    FLDLST:
+      - DESCRIPTION: |-
+          The value field is ignored for writes. When a write happens to this register (irrespective 
+          			      of the value bit) the valid bit in the hash memory structure is cleared. When a read 
+          			      happens to this register then the valid value in the memory structure is returned.
+        NAME: value
+        WIDTH: 1
+    MAX_ENTRIES: 1024
+    NAME: hash_mem_vld_1
+    TEST_ATTR: 0
+  - ATTR: 6
+    DESCRIPTION: |-
+      FFE Hash memory. Defined as part of structs hash_tbl_t. A write to this structure should be
+      		       used just to invalidate the entry
+    ENTRIES: 1024
+    FLDLST:
+      - DESCRIPTION: |-
+          The value field is ignored for writes. When a write happens to this register (irrespective 
+          			      of the value bit) the valid bit in the hash memory structure is cleared. When a read 
+          			      happens to this register then the valid value in the memory structure is returned.
+        NAME: value
+        WIDTH: 1
+    MAX_ENTRIES: 1024
+    NAME: hash_mem_vld_2
+    TEST_ATTR: 0
+  - ATTR: 6
+    DESCRIPTION: |-
+      FFE Hash memory. Defined as part of structs hash_tbl_t. A write to this structure should be
+      		       used just to invalidate the entry
+    ENTRIES: 1024
+    FLDLST:
+      - DESCRIPTION: |-
+          The value field is ignored for writes. When a write happens to this register (irrespective 
+          			      of the value bit) the valid bit in the hash memory structure is cleared. When a read 
+          			      happens to this register then the valid value in the memory structure is returned.
+        NAME: value
+        WIDTH: 1
+    MAX_ENTRIES: 1024
+    NAME: hash_mem_vld_3
+    TEST_ATTR: 0
+  - ATTR: 6
+    DESCRIPTION: |-
+      FFE Hash memory. Defined as part of structs hash_tbl_t. A write to this structure should be
+      		       used just to invalidate the entry
+    ENTRIES: 1024
+    FLDLST:
+      - DESCRIPTION: |-
+          The value field is ignored for writes. When a write happens to this register (irrespective 
+          			      of the value bit) the valid bit in the hash memory structure is cleared. When a read 
+          			      happens to this register then the valid value in the memory structure is returned.
+        NAME: value
+        WIDTH: 1
+    MAX_ENTRIES: 1024
+    NAME: hash_mem_vld_4
+    TEST_ATTR: 0
+  - ATTR: 6
+    DESCRIPTION: |-
+      FFE Hash memory. Defined as part of structs hash_tbl_t. A write to this structure should be
+      		       used just to invalidate the entry
+    ENTRIES: 1024
+    FLDLST:
+      - DESCRIPTION: |-
+          The value field is ignored for writes. When a write happens to this register (irrespective 
+          			      of the value bit) the valid bit in the hash memory structure is cleared. When a read 
+          			      happens to this register then the valid value in the memory structure is returned.
+        NAME: value
+        WIDTH: 1
+    MAX_ENTRIES: 1024
+    NAME: hash_mem_vld_5
+    TEST_ATTR: 0
+  - ATTR: 6
+    DESCRIPTION: |-
+      FFE Hash memory. Defined as part of structs hash_tbl_t. A write to this structure should be
+      		       used just to invalidate the entry
+    ENTRIES: 1024
+    FLDLST:
+      - DESCRIPTION: |-
+          The value field is ignored for writes. When a write happens to this register (irrespective 
+          			      of the value bit) the valid bit in the hash memory structure is cleared. When a read 
+          			      happens to this register then the valid value in the memory structure is returned.
+        NAME: value
+        WIDTH: 1
+    MAX_ENTRIES: 1024
+    NAME: hash_mem_vld_6
+    TEST_ATTR: 0
+  - ATTR: 6
+    DESCRIPTION: |-
+      FFE Hash memory. Defined as part of structs hash_tbl_t. A write to this structure should be
+      		       used just to invalidate the entry
+    ENTRIES: 1024
+    FLDLST:
+      - DESCRIPTION: |-
+          The value field is ignored for writes. When a write happens to this register (irrespective 
+          			      of the value bit) the valid bit in the hash memory structure is cleared. When a read 
+          			      happens to this register then the valid value in the memory structure is returned.
+        NAME: value
+        WIDTH: 1
+    MAX_ENTRIES: 1024
+    NAME: hash_mem_vld_7
+    TEST_ATTR: 0
+  - ATTR: 6
+    DESCRIPTION: |-
+      FFE Hash memory. Defined as part of structs hash_tbl_t. When a write happens to (key+result)
+      		       then the valid bit is written as one to validate the entry
+    ENTRIES: 1024
+    FLDLST:
+      - DESCRIPTION: key part of Hash table. Defined as part of structs
+        NAME: key
+        WIDTH: 200
+      - DESCRIPTION: Result from the Hash table. Defined as part of structs
+        NAME: result
+        WIDTH: 20
+    MAX_ENTRIES: 1024
+    MAX_WIDTH: 256
+    NAME: hash_mem_0
+  - ATTR: 6
+    DESCRIPTION: |-
+      FFE Hash memory. Defined as part of structs hash_tbl_t. When a write happens to (key+result)
+      		       then the valid bit is written as one to validate the entry
+    ENTRIES: 1024
+    FLDLST:
+      - DESCRIPTION: key part of Hash table. Defined as part of structs
+        NAME: key
+        WIDTH: 200
+      - DESCRIPTION: Result from the Hash table. Defined as part of structs
+        NAME: result
+        WIDTH: 20
+    MAX_ENTRIES: 1024
+    MAX_WIDTH: 256
+    NAME: hash_mem_1
+  - ATTR: 6
+    DESCRIPTION: |-
+      FFE Hash memory. Defined as part of structs hash_tbl_t. When a write happens to (key+result)
+      		       then the valid bit is written as one to validate the entry
+    ENTRIES: 1024
+    FLDLST:
+      - DESCRIPTION: key part of Hash table. Defined as part of structs
+        NAME: key
+        WIDTH: 200
+      - DESCRIPTION: Result from the Hash table. Defined as part of structs
+        NAME: result
+        WIDTH: 20
+    MAX_ENTRIES: 1024
+    MAX_WIDTH: 256
+    NAME: hash_mem_2
+  - ATTR: 6
+    DESCRIPTION: |-
+      FFE Hash memory. Defined as part of structs hash_tbl_t. When a write happens to (key+result)
+      		       then the valid bit is written as one to validate the entry
+    ENTRIES: 1024
+    FLDLST:
+      - DESCRIPTION: key part of Hash table. Defined as part of structs
+        NAME: key
+        WIDTH: 200
+      - DESCRIPTION: Result from the Hash table. Defined as part of structs
+        NAME: result
+        WIDTH: 20
+    MAX_ENTRIES: 1024
+    MAX_WIDTH: 256
+    NAME: hash_mem_3
+  - ATTR: 6
+    DESCRIPTION: |-
+      FFE Hash memory. Defined as part of structs hash_tbl_t. When a write happens to (key+result)
+      		       then the valid bit is written as one to validate the entry
+    ENTRIES: 1024
+    FLDLST:
+      - DESCRIPTION: key part of Hash table. Defined as part of structs
+        NAME: key
+        WIDTH: 200
+      - DESCRIPTION: Result from the Hash table. Defined as part of structs
+        NAME: result
+        WIDTH: 20
+    MAX_ENTRIES: 1024
+    MAX_WIDTH: 256
+    NAME: hash_mem_4
+  - ATTR: 6
+    DESCRIPTION: |-
+      FFE Hash memory. Defined as part of structs hash_tbl_t. When a write happens to (key+result)
+      		       then the valid bit is written as one to validate the entry
+    ENTRIES: 1024
+    FLDLST:
+      - DESCRIPTION: key part of Hash table. Defined as part of structs
+        NAME: key
+        WIDTH: 200
+      - DESCRIPTION: Result from the Hash table. Defined as part of structs
+        NAME: result
+        WIDTH: 20
+    MAX_ENTRIES: 1024
+    MAX_WIDTH: 256
+    NAME: hash_mem_5
+  - ATTR: 6
+    DESCRIPTION: |-
+      FFE Hash memory. Defined as part of structs hash_tbl_t. When a write happens to (key+result)
+      		       then the valid bit is written as one to validate the entry
+    ENTRIES: 1024
+    FLDLST:
+      - DESCRIPTION: key part of Hash table. Defined as part of structs
+        NAME: key
+        WIDTH: 200
+      - DESCRIPTION: Result from the Hash table. Defined as part of structs
+        NAME: result
+        WIDTH: 20
+    MAX_ENTRIES: 1024
+    MAX_WIDTH: 256
+    NAME: hash_mem_6
+  - ATTR: 6
+    DESCRIPTION: |-
+      FFE Hash memory. Defined as part of structs hash_tbl_t. When a write happens to (key+result)
+      		       then the valid bit is written as one to validate the entry
+    ENTRIES: 1024
+    FLDLST:
+      - DESCRIPTION: key part of Hash table. Defined as part of structs
+        NAME: key
+        WIDTH: 200
+      - DESCRIPTION: Result from the Hash table. Defined as part of structs
+        NAME: result
+        WIDTH: 20
+    MAX_ENTRIES: 1024
+    MAX_WIDTH: 256
+    NAME: hash_mem_7
+  - ATTR: 6
+    DESCRIPTION: |-
+      FFE Hash stash memory Valid. Defined as part of structs hash_tbl_t. A write to this structure should be
+      		       used just to invalidate the entry
+    ENTRIES: 4
+    FLDLST:
+      - DESCRIPTION: |-
+          The value field is ignored for writes. When a write happens to this register (irrespective 
+          			      of the value bit) the valid bit in the stash hash structure is cleared. When a read 
+          			      happens to this register then the valid value in the structure is returned.
+        NAME: value
+        WIDTH: 1
+    MAX_ENTRIES: 1024
+    NAME: stash_table_vld_0
+    TEST_ATTR: 0
+  - ATTR: 6
+    DESCRIPTION: |-
+      FFE Hash stash memory Valid. Defined as part of structs hash_tbl_t. A write to this structure should be
+      		       used just to invalidate the entry
+    ENTRIES: 4
+    FLDLST:
+      - DESCRIPTION: |-
+          The value field is ignored for writes. When a write happens to this register (irrespective 
+          			      of the value bit) the valid bit in the stash hash structure is cleared. When a read 
+          			      happens to this register then the valid value in the structure is returned.
+        NAME: value
+        WIDTH: 1
+    MAX_ENTRIES: 1024
+    NAME: stash_table_vld_1
+    TEST_ATTR: 0
+  - ATTR: 6
+    DESCRIPTION: |-
+      FFE Hash stash memory Valid. Defined as part of structs hash_tbl_t. A write to this structure should be
+      		       used just to invalidate the entry
+    ENTRIES: 4
+    FLDLST:
+      - DESCRIPTION: |-
+          The value field is ignored for writes. When a write happens to this register (irrespective 
+          			      of the value bit) the valid bit in the stash hash structure is cleared. When a read 
+          			      happens to this register then the valid value in the structure is returned.
+        NAME: value
+        WIDTH: 1
+    MAX_ENTRIES: 1024
+    NAME: stash_table_vld_2
+    TEST_ATTR: 0
+  - ATTR: 6
+    DESCRIPTION: |-
+      FFE Hash stash memory Valid. Defined as part of structs hash_tbl_t. A write to this structure should be
+      		       used just to invalidate the entry
+    ENTRIES: 4
+    FLDLST:
+      - DESCRIPTION: |-
+          The value field is ignored for writes. When a write happens to this register (irrespective 
+          			      of the value bit) the valid bit in the stash hash structure is cleared. When a read 
+          			      happens to this register then the valid value in the structure is returned.
+        NAME: value
+        WIDTH: 1
+    MAX_ENTRIES: 1024
+    NAME: stash_table_vld_3
+    TEST_ATTR: 0
+  - ATTR: 6
+    DESCRIPTION: |-
+      FFE Hash stash memory. Defined as part of structs hash_tbl_t. When a write happens to (key+result)
+      		       then the valid bit is written as one to validate the entry
+    ENTRIES: 4
+    FLDLST:
+      - DESCRIPTION: key part of Hash table. Defined as part of structs
+        NAME: key
+        WIDTH: 200
+      - DESCRIPTION: Result from the Hash table. Defined as part of structs
+        NAME: result
+        WIDTH: 20
+    MAX_ENTRIES: 4
+    MAX_WIDTH: 256
+    NAME: stash_table_0
+  - ATTR: 6
+    DESCRIPTION: |-
+      FFE Hash stash memory. Defined as part of structs hash_tbl_t. When a write happens to (key+result)
+      		       then the valid bit is written as one to validate the entry
+    ENTRIES: 4
+    FLDLST:
+      - DESCRIPTION: key part of Hash table. Defined as part of structs
+        NAME: key
+        WIDTH: 200
+      - DESCRIPTION: Result from the Hash table. Defined as part of structs
+        NAME: result
+        WIDTH: 20
+    MAX_ENTRIES: 4
+    MAX_WIDTH: 256
+    NAME: stash_table_1
+  - ATTR: 6
+    DESCRIPTION: |-
+      FFE Hash stash memory. Defined as part of structs hash_tbl_t. When a write happens to (key+result)
+      		       then the valid bit is written as one to validate the entry
+    ENTRIES: 4
+    FLDLST:
+      - DESCRIPTION: key part of Hash table. Defined as part of structs
+        NAME: key
+        WIDTH: 200
+      - DESCRIPTION: Result from the Hash table. Defined as part of structs
+        NAME: result
+        WIDTH: 20
+    MAX_ENTRIES: 4
+    MAX_WIDTH: 256
+    NAME: stash_table_2
+  - ATTR: 6
+    DESCRIPTION: |-
+      FFE Hash stash memory. Defined as part of structs hash_tbl_t. When a write happens to (key+result)
+      		       then the valid bit is written as one to validate the entry
+    ENTRIES: 4
+    FLDLST:
+      - DESCRIPTION: key part of Hash table. Defined as part of structs
+        NAME: key
+        WIDTH: 200
+      - DESCRIPTION: Result from the Hash table. Defined as part of structs
+        NAME: result
+        WIDTH: 20
+    MAX_ENTRIES: 4
+    MAX_WIDTH: 256
+    NAME: stash_table_3
+  - ATTR: 6
+    DESCRIPTION: |-
+      Large TCAM invalidate. This is used to issue an unload
+      		       command to the TCAM
+    ENTRIES: 128
+    FLDLST:
+      - DESCRIPTION: |-
+          The value field is ignored for writes. When a write happens to this register (irrespective 
+          			      of the value bit) an invalidate command is send to TCAM. When a read 
+          			      happens to this register then the value returned is always zero as there is no valid state
+          			      maintained in RTL
+        NAME: value
+        WIDTH: 1
+    MAX_ENTRIES: 4096
+    NAME: lg_tcam_vld_0
+    TEST_ATTR: 0
+  - ATTR: 6
+    DESCRIPTION: |-
+      Large TCAM invalidate. This is used to issue an unload
+      		       command to the TCAM
+    ENTRIES: 128
+    FLDLST:
+      - DESCRIPTION: |-
+          The value field is ignored for writes. When a write happens to this register (irrespective 
+          			      of the value bit) an invalidate command is send to TCAM. When a read 
+          			      happens to this register then the value returned is always zero as there is no valid state
+          			      maintained in RTL
+        NAME: value
+        WIDTH: 1
+    MAX_ENTRIES: 4096
+    NAME: lg_tcam_vld_1
+    TEST_ATTR: 0
+  - ATTR: 6
+    DESCRIPTION: |-
+      Large TCAM invalidate. This is used to issue an unload
+      		       command to the TCAM
+    ENTRIES: 128
+    FLDLST:
+      - DESCRIPTION: |-
+          The value field is ignored for writes. When a write happens to this register (irrespective 
+          			      of the value bit) an invalidate command is send to TCAM. When a read 
+          			      happens to this register then the value returned is always zero as there is no valid state
+          			      maintained in RTL
+        NAME: value
+        WIDTH: 1
+    MAX_ENTRIES: 4096
+    NAME: lg_tcam_vld_2
+    TEST_ATTR: 0
+  - ATTR: 6
+    DESCRIPTION: |-
+      Large TCAM invalidate. This is used to issue an unload
+      		       command to the TCAM
+    ENTRIES: 128
+    FLDLST:
+      - DESCRIPTION: |-
+          The value field is ignored for writes. When a write happens to this register (irrespective 
+          			      of the value bit) an invalidate command is send to TCAM. When a read 
+          			      happens to this register then the value returned is always zero as there is no valid state
+          			      maintained in RTL
+        NAME: value
+        WIDTH: 1
+    MAX_ENTRIES: 4096
+    NAME: lg_tcam_vld_3
+    TEST_ATTR: 0
+  - ATTR: 6
+    DESCRIPTION: |-
+      Large TCAM  to access X part of CAM. Used as part of the 
+      		       L1 and L2 look up processing
+    ENTRIES: 128
+    FLDLST:
+      - DESCRIPTION: CAM data
+        NAME: data
+        WIDTH: 200
+    MAX_ENTRIES: 4096
+    MAX_WIDTH: 256
+    NAME: lg_tcam_x_0
+  - ATTR: 6
+    DESCRIPTION: |-
+      Large TCAM  to access X part of CAM. Used as part of the 
+      		       L1 and L2 look up processing
+    ENTRIES: 128
+    FLDLST:
+      - DESCRIPTION: CAM data
+        NAME: data
+        WIDTH: 200
+    MAX_ENTRIES: 4096
+    MAX_WIDTH: 256
+    NAME: lg_tcam_x_1
+  - ATTR: 6
+    DESCRIPTION: |-
+      Large TCAM  to access X part of CAM. Used as part of the 
+      		       L1 and L2 look up processing
+    ENTRIES: 128
+    FLDLST:
+      - DESCRIPTION: CAM data
+        NAME: data
+        WIDTH: 200
+    MAX_ENTRIES: 4096
+    MAX_WIDTH: 256
+    NAME: lg_tcam_x_2
+  - ATTR: 6
+    DESCRIPTION: |-
+      Large TCAM  to access X part of CAM. Used as part of the 
+      		       L1 and L2 look up processing
+    ENTRIES: 128
+    FLDLST:
+      - DESCRIPTION: CAM data
+        NAME: data
+        WIDTH: 200
+    MAX_ENTRIES: 4096
+    MAX_WIDTH: 256
+    NAME: lg_tcam_x_3
+  - ATTR: 6
+    DESCRIPTION: |-
+      Large TCAM  to access Y part of CAM. Used as part of the 
+      		       L1 and L2 look up processing
+    ENTRIES: 128
+    FLDLST:
+      - DESCRIPTION: CAM data
+        NAME: data
+        WIDTH: 200
+    MAX_ENTRIES: 4096
+    MAX_WIDTH: 256
+    NAME: lg_tcam_y_0
+  - ATTR: 6
+    DESCRIPTION: |-
+      Large TCAM  to access Y part of CAM. Used as part of the 
+      		       L1 and L2 look up processing
+    ENTRIES: 128
+    FLDLST:
+      - DESCRIPTION: CAM data
+        NAME: data
+        WIDTH: 200
+    MAX_ENTRIES: 4096
+    MAX_WIDTH: 256
+    NAME: lg_tcam_y_1
+  - ATTR: 6
+    DESCRIPTION: |-
+      Large TCAM  to access Y part of CAM. Used as part of the 
+      		       L1 and L2 look up processing
+    ENTRIES: 128
+    FLDLST:
+      - DESCRIPTION: CAM data
+        NAME: data
+        WIDTH: 200
+    MAX_ENTRIES: 4096
+    MAX_WIDTH: 256
+    NAME: lg_tcam_y_2
+  - ATTR: 6
+    DESCRIPTION: |-
+      Large TCAM  to access Y part of CAM. Used as part of the 
+      		       L1 and L2 look up processing
+    ENTRIES: 128
+    FLDLST:
+      - DESCRIPTION: CAM data
+        NAME: data
+        WIDTH: 200
+    MAX_ENTRIES: 4096
+    MAX_WIDTH: 256
+    NAME: lg_tcam_y_3
+  - ATTR: 6
+    DESCRIPTION: FFE TCAM hit index to action table addresses
+    ENTRIES: 128
+    FLDLST:
+      - DESCRIPTION: Result to address the action tables. Defined as part of structs
+        NAME: result
+        WIDTH: 20
+    MAX_ENTRIES: 4096
+    NAME: lg_tcam_at_index_0
+  - ATTR: 6
+    DESCRIPTION: FFE TCAM hit index to action table addresses
+    ENTRIES: 128
+    FLDLST:
+      - DESCRIPTION: Result to address the action tables. Defined as part of structs
+        NAME: result
+        WIDTH: 20
+    MAX_ENTRIES: 4096
+    NAME: lg_tcam_at_index_1
+  - ATTR: 6
+    DESCRIPTION: FFE TCAM hit index to action table addresses
+    ENTRIES: 128
+    FLDLST:
+      - DESCRIPTION: Result to address the action tables. Defined as part of structs
+        NAME: result
+        WIDTH: 20
+    MAX_ENTRIES: 4096
+    NAME: lg_tcam_at_index_2
+  - ATTR: 6
+    DESCRIPTION: FFE TCAM hit index to action table addresses
+    ENTRIES: 128
+    FLDLST:
+      - DESCRIPTION: Result to address the action tables. Defined as part of structs
+        NAME: result
+        WIDTH: 20
+    MAX_ENTRIES: 4096
+    NAME: lg_tcam_at_index_3
+  - ATTR: 6
+    DESCRIPTION: |-
+      Small TCAM invalidate. This is used to issue an unload
+      		       command to the TCAM
+    ENTRIES: 128
+    FLDLST:
+      - DESCRIPTION: |-
+          The value field is ignored for writes. When a write happens to this register (irrespective 
+          			      of the value bit) an invalidate command is send to TCAM. When a read 
+          			      happens to this register then the value returned by TCAM is sent
+        NAME: value
+        WIDTH: 1
+    MAX_ENTRIES: 128
+    NAME: sm_tcam_vld_0
+    TEST_ATTR: 0
+  - ATTR: 6
+    DESCRIPTION: |-
+      Small TCAM invalidate. This is used to issue an unload
+      		       command to the TCAM
+    ENTRIES: 128
+    FLDLST:
+      - DESCRIPTION: |-
+          The value field is ignored for writes. When a write happens to this register (irrespective 
+          			      of the value bit) an invalidate command is send to TCAM. When a read 
+          			      happens to this register then the value returned by TCAM is sent
+        NAME: value
+        WIDTH: 1
+    MAX_ENTRIES: 128
+    NAME: sm_tcam_vld_1
+    TEST_ATTR: 0
+  - ATTR: 6
+    DESCRIPTION: |-
+      Small TCAM invalidate. This is used to issue an unload
+      		       command to the TCAM
+    ENTRIES: 128
+    FLDLST:
+      - DESCRIPTION: |-
+          The value field is ignored for writes. When a write happens to this register (irrespective 
+          			      of the value bit) an invalidate command is send to TCAM. When a read 
+          			      happens to this register then the value returned by TCAM is sent
+        NAME: value
+        WIDTH: 1
+    MAX_ENTRIES: 128
+    NAME: sm_tcam_vld_2
+    TEST_ATTR: 0
+  - ATTR: 6
+    DESCRIPTION: |-
+      Small TCAM invalidate. This is used to issue an unload
+      		       command to the TCAM
+    ENTRIES: 128
+    FLDLST:
+      - DESCRIPTION: |-
+          The value field is ignored for writes. When a write happens to this register (irrespective 
+          			      of the value bit) an invalidate command is send to TCAM. When a read 
+          			      happens to this register then the value returned by TCAM is sent
+        NAME: value
+        WIDTH: 1
+    MAX_ENTRIES: 128
+    NAME: sm_tcam_vld_3
+    TEST_ATTR: 0
+  - ATTR: 6
+    DESCRIPTION: |-
+      Small TCAM  to access X part of CAM. Used as part of the 
+      		       L1 and L2 look up processing
+    ENTRIES: 128
+    FLDLST:
+      - DESCRIPTION: CAM data
+        NAME: data
+        WIDTH: 200
+    MAX_ENTRIES: 128
+    MAX_WIDTH: 256
+    NAME: sm_tcam_x_0
+  - ATTR: 6
+    DESCRIPTION: |-
+      Small TCAM  to access X part of CAM. Used as part of the 
+      		       L1 and L2 look up processing
+    ENTRIES: 128
+    FLDLST:
+      - DESCRIPTION: CAM data
+        NAME: data
+        WIDTH: 200
+    MAX_ENTRIES: 128
+    MAX_WIDTH: 256
+    NAME: sm_tcam_x_1
+  - ATTR: 6
+    DESCRIPTION: |-
+      Small TCAM  to access X part of CAM. Used as part of the 
+      		       L1 and L2 look up processing
+    ENTRIES: 128
+    FLDLST:
+      - DESCRIPTION: CAM data
+        NAME: data
+        WIDTH: 200
+    MAX_ENTRIES: 128
+    MAX_WIDTH: 256
+    NAME: sm_tcam_x_2
+  - ATTR: 6
+    DESCRIPTION: |-
+      Small TCAM  to access X part of CAM. Used as part of the 
+      		       L1 and L2 look up processing
+    ENTRIES: 128
+    FLDLST:
+      - DESCRIPTION: CAM data
+        NAME: data
+        WIDTH: 200
+    MAX_ENTRIES: 128
+    MAX_WIDTH: 256
+    NAME: sm_tcam_x_3
+  - ATTR: 6
+    DESCRIPTION: |-
+      Small TCAM  to access Y part of CAM. Used as part of the 
+      		       L1 and L2 look up processing
+    ENTRIES: 128
+    FLDLST:
+      - DESCRIPTION: CAM data
+        NAME: data
+        WIDTH: 200
+    MAX_ENTRIES: 128
+    MAX_WIDTH: 256
+    NAME: sm_tcam_y_0
+  - ATTR: 6
+    DESCRIPTION: |-
+      Small TCAM  to access Y part of CAM. Used as part of the 
+      		       L1 and L2 look up processing
+    ENTRIES: 128
+    FLDLST:
+      - DESCRIPTION: CAM data
+        NAME: data
+        WIDTH: 200
+    MAX_ENTRIES: 128
+    MAX_WIDTH: 256
+    NAME: sm_tcam_y_1
+  - ATTR: 6
+    DESCRIPTION: |-
+      Small TCAM  to access Y part of CAM. Used as part of the 
+      		       L1 and L2 look up processing
+    ENTRIES: 128
+    FLDLST:
+      - DESCRIPTION: CAM data
+        NAME: data
+        WIDTH: 200
+    MAX_ENTRIES: 128
+    MAX_WIDTH: 256
+    NAME: sm_tcam_y_2
+  - ATTR: 6
+    DESCRIPTION: |-
+      Small TCAM  to access Y part of CAM. Used as part of the 
+      		       L1 and L2 look up processing
+    ENTRIES: 128
+    FLDLST:
+      - DESCRIPTION: CAM data
+        NAME: data
+        WIDTH: 200
+    MAX_ENTRIES: 128
+    MAX_WIDTH: 256
+    NAME: sm_tcam_y_3
+  - ATTR: 6
+    DESCRIPTION: FFE TCAM hit index to action table addresses
+    ENTRIES: 128
+    FLDLST:
+      - DESCRIPTION: Result to address the action tables. Defined as part of structs
+        NAME: result
+        WIDTH: 20
+    MAX_ENTRIES: 128
+    NAME: sm_tcam_at_index_0
+  - ATTR: 6
+    DESCRIPTION: FFE TCAM hit index to action table addresses
+    ENTRIES: 128
+    FLDLST:
+      - DESCRIPTION: Result to address the action tables. Defined as part of structs
+        NAME: result
+        WIDTH: 20
+    MAX_ENTRIES: 128
+    NAME: sm_tcam_at_index_1
+  - ATTR: 6
+    DESCRIPTION: FFE TCAM hit index to action table addresses
+    ENTRIES: 128
+    FLDLST:
+      - DESCRIPTION: Result to address the action tables. Defined as part of structs
+        NAME: result
+        WIDTH: 20
+    MAX_ENTRIES: 128
+    NAME: sm_tcam_at_index_2
+  - ATTR: 6
+    DESCRIPTION: FFE TCAM hit index to action table addresses
+    ENTRIES: 128
+    FLDLST:
+      - DESCRIPTION: Result to address the action tables. Defined as part of structs
+        NAME: result
+        WIDTH: 20
+    MAX_ENTRIES: 128
+    NAME: sm_tcam_at_index_3
+  - ATTR: 6
+    DESCRIPTION: Small direct index memory used as part of the S1 and S2 look up processing
+    ENTRIES: 1024
+    FLDLST:
+      - DESCRIPTION: Address of the action ucode and action data memory
+        NAME: ap_addr
+        WIDTH: 20
+    MAX_ENTRIES: 1024
+    NAME: sm_dit_mem_0
+  - ATTR: 6
+    DESCRIPTION: Small direct index memory used as part of the S1 and S2 look up processing
+    ENTRIES: 1024
+    FLDLST:
+      - DESCRIPTION: Address of the action ucode and action data memory
+        NAME: ap_addr
+        WIDTH: 20
+    MAX_ENTRIES: 1024
+    NAME: sm_dit_mem_1
+  - ATTR: 6
+    DESCRIPTION: Action ucode memory. Defined as part of structs ap_auc_inst_t
+    ENTRIES: 64
+    FLDLST:
+      - DESCRIPTION: Entry of the action ucode instruction memory. Defined as part of structs
+        NAME: entry_0
+        WIDTH: 29
+      - DESCRIPTION: Entry of the action ucode instruction memory. Defined as part of structs
+        NAME: entry_1
+        WIDTH: 29
+      - DESCRIPTION: Entry of the action ucode instruction memory. Defined as part of structs
+        NAME: entry_2
+        WIDTH: 29
+      - DESCRIPTION: Entry of the action ucode instruction memory. Defined as part of structs
+        NAME: entry_3
+        WIDTH: 29
+      - DESCRIPTION: Entry of the action ucode instruction memory. Defined as part of structs
+        NAME: entry_4
+        WIDTH: 29
+      - DESCRIPTION: Entry of the action ucode instruction memory. Defined as part of structs
+        NAME: entry_5
+        WIDTH: 29
+      - DESCRIPTION: Entry of the action flag ucode instruction memory. Defined as part of structs
+        NAME: flag_entry_0
+        WIDTH: 7
+      - DESCRIPTION: Entry of the action flag ucode instruction memory. Defined as part of structs
+        NAME: flag_entry_1
+        WIDTH: 7
+      - DESCRIPTION: Entry of the action flag ucode instruction memory. Defined as part of structs
+        NAME: flag_entry_2
+        WIDTH: 7
+      - DESCRIPTION: Entry of the action flag ucode instruction memory. Defined as part of structs
+        NAME: flag_entry_3
+        WIDTH: 7
+    MAX_ENTRIES: 64
+    NAME: act_ucode_mem
+  - ATTR: 6
+    DESCRIPTION: Action Data Memory
+    ENTRIES: 1024
+    FLDLST:
+      - DESCRIPTION: action data memory
+        NAME: data
+        WIDTH: 64
+    MAX_ENTRIES: 2048
+    NAME: act_dmem_0
+  - ATTR: 6
+    DESCRIPTION: Action Data Memory
+    ENTRIES: 1024
+    FLDLST:
+      - DESCRIPTION: action data memory
+        NAME: data
+        WIDTH: 64
+    MAX_ENTRIES: 2048
+    NAME: act_dmem_1
+  - ATTR: 6
+    DESCRIPTION: Action Data Memory
+    ENTRIES: 1024
+    FLDLST:
+      - DESCRIPTION: action data memory
+        NAME: data
+        WIDTH: 64
+    MAX_ENTRIES: 2048
+    NAME: act_dmem_2
+  - ATTR: 6
+    DESCRIPTION: Action Data Memory
+    ENTRIES: 1024
+    FLDLST:
+      - DESCRIPTION: action data memory
+        NAME: data
+        WIDTH: 64
+    MAX_ENTRIES: 2048
+    NAME: act_dmem_3
+  - ATTR: 6
+    DESCRIPTION: Action Data Memory
+    ENTRIES: 1024
+    FLDLST:
+      - DESCRIPTION: action data memory
+        NAME: data
+        WIDTH: 64
+    MAX_ENTRIES: 1024
+    NAME: act_dmem_4
+  - ATTR: 6
+    DESCRIPTION: Action Data Memory
+    ENTRIES: 1024
+    FLDLST:
+      - DESCRIPTION: action data memory
+        NAME: data
+        WIDTH: 64
+    MAX_ENTRIES: 1024
+    NAME: act_dmem_5
+XASIZE: 0

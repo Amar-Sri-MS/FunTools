@@ -1,0 +1,2162 @@
+---
+BASEADDRPORT: 1
+COUNT: 1
+DESCRIPTION: Flexible Forwarding Engine (SFG) CSR spec
+INTR:
+  FATAL_MEM:
+    - DESCRIPTION: RWT Instruction Bank0 Memory Uncorrectable ECC Error
+      NAME: fld_rwt_instr_bank0_mem
+      WIDTH: 1
+    - DESCRIPTION: RWT Instruction Bank1 Memory Uncorrectable ECC Error
+      NAME: fld_rwt_instr_bank1_mem
+      WIDTH: 1
+    - DESCRIPTION: 'Egress Policer, VLAN QoS, DSCP mapping table Memory Uncorrectable ECC Error'
+      NAME: fld_eg_qos_tbl_mem
+      WIDTH: 1
+  NON_FATAL_MEM:
+    - DESCRIPTION: RWT Instruction Bank0 Memory Correctable Bit ECC Error
+      NAME: fld_rwt_instr_bank0_mem
+      WIDTH: 1
+    - DESCRIPTION: RWT Instruction Bank1 Memory Correctable Bit ECC Error
+      NAME: fld_rwt_instr_bank1_mem
+      WIDTH: 1
+    - DESCRIPTION: 'Egress Policer, VLAN QoS, DSCP mapping table Memory Correctable Bit ECC Error'
+      NAME: fld_eg_qos_tbl_mem
+      WIDTH: 1
+  NON_FATAL_MISC:
+    - DESCRIPTION: Packet Tag IF Freelist Underflow Error
+      NAME: fld_pkt_tag_id_fl_undfl_err
+      WIDTH: 1
+    - DESCRIPTION: Total Processed FRV Instrctions Length for Main Copy exceeded 32B
+      NAME: fld_main_cpy_frv_rwt_instr_len_error
+      WIDTH: 1
+    - DESCRIPTION: Total Processed FRV Instrctions Length for Sample Copy exceeded 16B
+      NAME: fld_smpl_cpy_frv_rwt_instr_len_error
+      WIDTH: 1
+    - DESCRIPTION: Main Copy Instruction 0 Data Size Error
+      NAME: fld_main_cpy_rwt_instr0_proc_dat_sz_err
+      WIDTH: 1
+    - DESCRIPTION: Main Copy Instruction 0 Nibble/Byte Offset-Data Size Error
+      NAME: fld_main_cpy_rwt_instr0_proc_ofs_err
+      WIDTH: 1
+    - DESCRIPTION: Main Copy/Remove Instruction 0 IBP Consitency with EBN Error
+      NAME: fld_main_cpy_rwt_instr0_proc_ibp_err
+      WIDTH: 1
+    - DESCRIPTION: Main Copy Instruction 1 Data Size Error
+      NAME: fld_main_cpy_rwt_instr1_proc_dat_sz_err
+      WIDTH: 1
+    - DESCRIPTION: Main Copy Instruction 1 Nibble/Byte Offset-Data Size Error
+      NAME: fld_main_cpy_rwt_instr1_proc_ofs_err
+      WIDTH: 1
+    - DESCRIPTION: Main Copy/Remove Instruction 1 IBP Consitency with EBN Error
+      NAME: fld_main_cpy_rwt_instr1_proc_ibp_err
+      WIDTH: 1
+    - DESCRIPTION: Main Copy Instruction 2 Data Size Error
+      NAME: fld_main_cpy_rwt_instr2_proc_dat_sz_err
+      WIDTH: 1
+    - DESCRIPTION: Main Copy Instruction 2 Nibble/Byte Offset-Data Size Error
+      NAME: fld_main_cpy_rwt_instr2_proc_ofs_err
+      WIDTH: 1
+    - DESCRIPTION: Main Copy/Remove Instruction 2 IBP Consitency with EBN Error
+      NAME: fld_main_cpy_rwt_instr2_proc_ibp_err
+      WIDTH: 1
+    - DESCRIPTION: Main Copy Instruction 3 Data Size Error
+      NAME: fld_main_cpy_rwt_instr3_proc_dat_sz_err
+      WIDTH: 1
+    - DESCRIPTION: Main Copy Instruction 3 Nibble/Byte Offset-Data Size Error
+      NAME: fld_main_cpy_rwt_instr3_proc_ofs_err
+      WIDTH: 1
+    - DESCRIPTION: Main Copy/Remove Instruction 3 IBP Consitency with EBN Error
+      NAME: fld_main_cpy_rwt_instr3_proc_ibp_err
+      WIDTH: 1
+    - DESCRIPTION: Main Copy Instruction 4 Data Size Error
+      NAME: fld_main_cpy_rwt_instr4_proc_dat_sz_err
+      WIDTH: 1
+    - DESCRIPTION: Main Copy Instruction 4 Nibble/Byte Offset-Data Size Error
+      NAME: fld_main_cpy_rwt_instr4_proc_ofs_err
+      WIDTH: 1
+    - DESCRIPTION: Main Copy/Remove Instruction 4 IBP Consitency with EBN Error
+      NAME: fld_main_cpy_rwt_instr4_proc_ibp_err
+      WIDTH: 1
+    - DESCRIPTION: Main Copy Instruction 5 Data Size Error
+      NAME: fld_main_cpy_rwt_instr5_proc_dat_sz_err
+      WIDTH: 1
+    - DESCRIPTION: Main Copy Instruction 5 Nibble/Byte Offset-Data Size Error
+      NAME: fld_main_cpy_rwt_instr5_proc_ofs_err
+      WIDTH: 1
+    - DESCRIPTION: Main Copy/Remove Instruction 5 IBP Consitency with EBN Error
+      NAME: fld_main_cpy_rwt_instr5_proc_ibp_err
+      WIDTH: 1
+    - DESCRIPTION: Main Copy Instruction 6 Data Size Error
+      NAME: fld_main_cpy_rwt_instr6_proc_dat_sz_err
+      WIDTH: 1
+    - DESCRIPTION: Main Copy Instruction 6 Nibble/Byte Offset-Data Size Error
+      NAME: fld_main_cpy_rwt_instr6_proc_ofs_err
+      WIDTH: 1
+    - DESCRIPTION: Main Copy/Remove Instruction 6 IBP Consitency with EBN Error
+      NAME: fld_main_cpy_rwt_instr6_proc_ibp_err
+      WIDTH: 1
+    - DESCRIPTION: Main Copy Instruction 7 Data Size Error
+      NAME: fld_main_cpy_rwt_instr7_proc_dat_sz_err
+      WIDTH: 1
+    - DESCRIPTION: Main Copy Instruction 7 Nibble/Byte Offset-Data Size Error
+      NAME: fld_main_cpy_rwt_instr7_proc_ofs_err
+      WIDTH: 1
+    - DESCRIPTION: Main Copy/Remove Instruction 7 IBP Consitency with EBN Error
+      NAME: fld_main_cpy_rwt_instr7_proc_ibp_err
+      WIDTH: 1
+    - DESCRIPTION: Main Copy Instruction 8 Data Size Error
+      NAME: fld_main_cpy_rwt_instr8_proc_dat_sz_err
+      WIDTH: 1
+    - DESCRIPTION: Main Copy Instruction 8 Nibble/Byte Offset-Data Size Error
+      NAME: fld_main_cpy_rwt_instr8_proc_ofs_err
+      WIDTH: 1
+    - DESCRIPTION: Main Copy/Remove Instruction 8 IBP Consitency with EBN Error
+      NAME: fld_main_cpy_rwt_instr8_proc_ibp_err
+      WIDTH: 1
+    - DESCRIPTION: Main Copy Instruction 9 Data Size Error
+      NAME: fld_main_cpy_rwt_instr9_proc_dat_sz_err
+      WIDTH: 1
+    - DESCRIPTION: Main Copy Instruction 9 Nibble/Byte Offset-Data Size Error
+      NAME: fld_main_cpy_rwt_instr9_proc_ofs_err
+      WIDTH: 1
+    - DESCRIPTION: Main Copy/Remove Instruction 9 IBP Consitency with EBN Error
+      NAME: fld_main_cpy_rwt_instr9_proc_ibp_err
+      WIDTH: 1
+    - DESCRIPTION: Main Copy Instruction 10 Data Size Error
+      NAME: fld_main_cpy_rwt_instr10_proc_dat_sz_err
+      WIDTH: 1
+    - DESCRIPTION: Main Copy Instruction 10 Nibble/Byte Offset-Data Size Error
+      NAME: fld_main_cpy_rwt_instr10_proc_ofs_err
+      WIDTH: 1
+    - DESCRIPTION: Main Copy/Remove Instruction 10 IBP Consitency with EBN Error
+      NAME: fld_main_cpy_rwt_instr10_proc_ibp_err
+      WIDTH: 1
+    - DESCRIPTION: Main Copy Instruction 11 Data Size Error
+      NAME: fld_main_cpy_rwt_instr11_proc_dat_sz_err
+      WIDTH: 1
+    - DESCRIPTION: Main Copy Instruction 11 Nibble/Byte Offset-Data Size Error
+      NAME: fld_main_cpy_rwt_instr11_proc_ofs_err
+      WIDTH: 1
+    - DESCRIPTION: Main Copy/Remove Instruction 11 IBP Consitency with EBN Error
+      NAME: fld_main_cpy_rwt_instr11_proc_ibp_err
+      WIDTH: 1
+    - DESCRIPTION: Sample Copy Instruction 0 Data Size Error
+      NAME: fld_smpl_cpy_rwt_instr0_proc_dat_sz_err
+      WIDTH: 1
+    - DESCRIPTION: Sample Copy Instruction 0 Nibble/Byte Offset-Data Size Error
+      NAME: fld_smpl_cpy_rwt_instr0_proc_ofs_err
+      WIDTH: 1
+    - DESCRIPTION: Sample Copy/Remove Instruction 0 IBP Consitency with EB Error
+      NAME: fld_smpl_cpy_rwt_instr0_proc_ibp_err
+      WIDTH: 1
+    - DESCRIPTION: Sample Copy Instruction 1 Data Size Error
+      NAME: fld_smpl_cpy_rwt_instr1_proc_dat_sz_err
+      WIDTH: 1
+    - DESCRIPTION: Sample Copy Instruction 1 Nibble/Byte Offset-Data Size Error
+      NAME: fld_smpl_cpy_rwt_instr1_proc_ofs_err
+      WIDTH: 1
+    - DESCRIPTION: Sample Copy/Remove Instruction 1 IBP Consitency with EB Error
+      NAME: fld_smpl_cpy_rwt_instr1_proc_ibp_err
+      WIDTH: 1
+    - DESCRIPTION: Sample Copy Instruction 2 Data Size Error
+      NAME: fld_smpl_cpy_rwt_instr2_proc_dat_sz_err
+      WIDTH: 1
+    - DESCRIPTION: Sample Copy Instruction 2 Nibble/Byte Offset-Data Size Error
+      NAME: fld_smpl_cpy_rwt_instr2_proc_ofs_err
+      WIDTH: 1
+    - DESCRIPTION: Sample Copy/Remove Instruction 2 IBP Consitency with EB Error
+      NAME: fld_smpl_cpy_rwt_instr2_proc_ibp_err
+      WIDTH: 1
+    - DESCRIPTION: Sample Copy Instruction 3 Data Size Error
+      NAME: fld_smpl_cpy_rwt_instr3_proc_dat_sz_err
+      WIDTH: 1
+    - DESCRIPTION: Sample Copy Instruction 3 Nibble/Byte Offset-Data Size Error
+      NAME: fld_smpl_cpy_rwt_instr3_proc_ofs_err
+      WIDTH: 1
+    - DESCRIPTION: Sample Copy/Remove Instruction 3 IBP Consitency with EB Error
+      NAME: fld_smpl_cpy_rwt_instr3_proc_ibp_err
+      WIDTH: 1
+INTR_PORT_EN: 1
+NAME: SFG_AN
+PARENTNAME: EFP_RFP_AN
+REGLST:
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: |-
+          Timeout Configuration. Cycles are RSU clk based.
+                            - 00 : 1024 cycles
+                            - 01 : 256 cycles
+                            - 10 : 4096 cycles
+                            - 11 : infinite
+        NAME: val
+        WIDTH: 2
+    NAME: sfg_timeout_thresh_cfg
+  - ATTR: 9
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: "Timed out Status. Cycles are RSU clk based. Becomes 1 when timed out. Write any value to clear it.\n                  "
+        NAME: val
+        WIDTH: 1
+    NAME: sfg_timedout_sta
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: |-
+          Clear Timeout Status. Data is ignored. A write
+                     will clear the timeout status bit
+        NAME: val
+        WIDTH: 1
+    NAME: sfg_timeout_clr
+    TEST_ATTR: 1
+  - ATTR: 256
+    FLDLST:
+      - &1
+        DESCRIPTION: RWT Instruction Bank0 Memory Uncorrectable ECC Error
+        NAME: fld_rwt_instr_bank0_mem
+        WIDTH: 1
+      - &2
+        DESCRIPTION: RWT Instruction Bank1 Memory Uncorrectable ECC Error
+        NAME: fld_rwt_instr_bank1_mem
+        WIDTH: 1
+      - &3
+        DESCRIPTION: 'Egress Policer, VLAN QoS, DSCP mapping table Memory Uncorrectable ECC Error'
+        NAME: fld_eg_qos_tbl_mem
+        WIDTH: 1
+    NAME: sfg_fatal_mem_intr_cause
+  - ATTR: 512
+    FLDLST:
+      - *1
+      - *2
+      - *3
+    NAME: sfg_fatal_mem_intr_stat
+  - ATTR: 1024
+    FLDLST:
+      - *1
+      - *2
+      - *3
+    NAME: sfg_fatal_mem_intr_mask
+  - ATTR: 2048
+    FLDLST:
+      - *1
+      - *2
+      - *3
+    NAME: sfg_fatal_mem_intr_bset
+  - ATTR: 4096
+    FLDLST:
+      - *1
+      - *2
+      - *3
+    NAME: sfg_fatal_mem_intr_bclr
+  - ATTR: 256
+    FLDLST:
+      - &4
+        DESCRIPTION: RWT Instruction Bank0 Memory Correctable Bit ECC Error
+        NAME: fld_rwt_instr_bank0_mem
+        WIDTH: 1
+      - &5
+        DESCRIPTION: RWT Instruction Bank1 Memory Correctable Bit ECC Error
+        NAME: fld_rwt_instr_bank1_mem
+        WIDTH: 1
+      - &6
+        DESCRIPTION: 'Egress Policer, VLAN QoS, DSCP mapping table Memory Correctable Bit ECC Error'
+        NAME: fld_eg_qos_tbl_mem
+        WIDTH: 1
+    NAME: sfg_non_fatal_mem_intr_cause
+  - ATTR: 512
+    FLDLST:
+      - *4
+      - *5
+      - *6
+    NAME: sfg_non_fatal_mem_intr_stat
+  - ATTR: 1024
+    FLDLST:
+      - *4
+      - *5
+      - *6
+    NAME: sfg_non_fatal_mem_intr_mask
+  - ATTR: 2048
+    FLDLST:
+      - *4
+      - *5
+      - *6
+    NAME: sfg_non_fatal_mem_intr_bset
+  - ATTR: 4096
+    FLDLST:
+      - *4
+      - *5
+      - *6
+    NAME: sfg_non_fatal_mem_intr_bclr
+  - ATTR: 256
+    FLDLST:
+      - &7
+        DESCRIPTION: Packet Tag IF Freelist Underflow Error
+        NAME: fld_pkt_tag_id_fl_undfl_err
+        WIDTH: 1
+      - &8
+        DESCRIPTION: Total Processed FRV Instrctions Length for Main Copy exceeded 32B
+        NAME: fld_main_cpy_frv_rwt_instr_len_error
+        WIDTH: 1
+      - &9
+        DESCRIPTION: Total Processed FRV Instrctions Length for Sample Copy exceeded 16B
+        NAME: fld_smpl_cpy_frv_rwt_instr_len_error
+        WIDTH: 1
+      - &10
+        DESCRIPTION: Main Copy Instruction 0 Data Size Error
+        NAME: fld_main_cpy_rwt_instr0_proc_dat_sz_err
+        WIDTH: 1
+      - &11
+        DESCRIPTION: Main Copy Instruction 0 Nibble/Byte Offset-Data Size Error
+        NAME: fld_main_cpy_rwt_instr0_proc_ofs_err
+        WIDTH: 1
+      - &12
+        DESCRIPTION: Main Copy/Remove Instruction 0 IBP Consitency with EBN Error
+        NAME: fld_main_cpy_rwt_instr0_proc_ibp_err
+        WIDTH: 1
+      - &13
+        DESCRIPTION: Main Copy Instruction 1 Data Size Error
+        NAME: fld_main_cpy_rwt_instr1_proc_dat_sz_err
+        WIDTH: 1
+      - &14
+        DESCRIPTION: Main Copy Instruction 1 Nibble/Byte Offset-Data Size Error
+        NAME: fld_main_cpy_rwt_instr1_proc_ofs_err
+        WIDTH: 1
+      - &15
+        DESCRIPTION: Main Copy/Remove Instruction 1 IBP Consitency with EBN Error
+        NAME: fld_main_cpy_rwt_instr1_proc_ibp_err
+        WIDTH: 1
+      - &16
+        DESCRIPTION: Main Copy Instruction 2 Data Size Error
+        NAME: fld_main_cpy_rwt_instr2_proc_dat_sz_err
+        WIDTH: 1
+      - &17
+        DESCRIPTION: Main Copy Instruction 2 Nibble/Byte Offset-Data Size Error
+        NAME: fld_main_cpy_rwt_instr2_proc_ofs_err
+        WIDTH: 1
+      - &18
+        DESCRIPTION: Main Copy/Remove Instruction 2 IBP Consitency with EBN Error
+        NAME: fld_main_cpy_rwt_instr2_proc_ibp_err
+        WIDTH: 1
+      - &19
+        DESCRIPTION: Main Copy Instruction 3 Data Size Error
+        NAME: fld_main_cpy_rwt_instr3_proc_dat_sz_err
+        WIDTH: 1
+      - &20
+        DESCRIPTION: Main Copy Instruction 3 Nibble/Byte Offset-Data Size Error
+        NAME: fld_main_cpy_rwt_instr3_proc_ofs_err
+        WIDTH: 1
+      - &21
+        DESCRIPTION: Main Copy/Remove Instruction 3 IBP Consitency with EBN Error
+        NAME: fld_main_cpy_rwt_instr3_proc_ibp_err
+        WIDTH: 1
+      - &22
+        DESCRIPTION: Main Copy Instruction 4 Data Size Error
+        NAME: fld_main_cpy_rwt_instr4_proc_dat_sz_err
+        WIDTH: 1
+      - &23
+        DESCRIPTION: Main Copy Instruction 4 Nibble/Byte Offset-Data Size Error
+        NAME: fld_main_cpy_rwt_instr4_proc_ofs_err
+        WIDTH: 1
+      - &24
+        DESCRIPTION: Main Copy/Remove Instruction 4 IBP Consitency with EBN Error
+        NAME: fld_main_cpy_rwt_instr4_proc_ibp_err
+        WIDTH: 1
+      - &25
+        DESCRIPTION: Main Copy Instruction 5 Data Size Error
+        NAME: fld_main_cpy_rwt_instr5_proc_dat_sz_err
+        WIDTH: 1
+      - &26
+        DESCRIPTION: Main Copy Instruction 5 Nibble/Byte Offset-Data Size Error
+        NAME: fld_main_cpy_rwt_instr5_proc_ofs_err
+        WIDTH: 1
+      - &27
+        DESCRIPTION: Main Copy/Remove Instruction 5 IBP Consitency with EBN Error
+        NAME: fld_main_cpy_rwt_instr5_proc_ibp_err
+        WIDTH: 1
+      - &28
+        DESCRIPTION: Main Copy Instruction 6 Data Size Error
+        NAME: fld_main_cpy_rwt_instr6_proc_dat_sz_err
+        WIDTH: 1
+      - &29
+        DESCRIPTION: Main Copy Instruction 6 Nibble/Byte Offset-Data Size Error
+        NAME: fld_main_cpy_rwt_instr6_proc_ofs_err
+        WIDTH: 1
+      - &30
+        DESCRIPTION: Main Copy/Remove Instruction 6 IBP Consitency with EBN Error
+        NAME: fld_main_cpy_rwt_instr6_proc_ibp_err
+        WIDTH: 1
+      - &31
+        DESCRIPTION: Main Copy Instruction 7 Data Size Error
+        NAME: fld_main_cpy_rwt_instr7_proc_dat_sz_err
+        WIDTH: 1
+      - &32
+        DESCRIPTION: Main Copy Instruction 7 Nibble/Byte Offset-Data Size Error
+        NAME: fld_main_cpy_rwt_instr7_proc_ofs_err
+        WIDTH: 1
+      - &33
+        DESCRIPTION: Main Copy/Remove Instruction 7 IBP Consitency with EBN Error
+        NAME: fld_main_cpy_rwt_instr7_proc_ibp_err
+        WIDTH: 1
+      - &34
+        DESCRIPTION: Main Copy Instruction 8 Data Size Error
+        NAME: fld_main_cpy_rwt_instr8_proc_dat_sz_err
+        WIDTH: 1
+      - &35
+        DESCRIPTION: Main Copy Instruction 8 Nibble/Byte Offset-Data Size Error
+        NAME: fld_main_cpy_rwt_instr8_proc_ofs_err
+        WIDTH: 1
+      - &36
+        DESCRIPTION: Main Copy/Remove Instruction 8 IBP Consitency with EBN Error
+        NAME: fld_main_cpy_rwt_instr8_proc_ibp_err
+        WIDTH: 1
+      - &37
+        DESCRIPTION: Main Copy Instruction 9 Data Size Error
+        NAME: fld_main_cpy_rwt_instr9_proc_dat_sz_err
+        WIDTH: 1
+      - &38
+        DESCRIPTION: Main Copy Instruction 9 Nibble/Byte Offset-Data Size Error
+        NAME: fld_main_cpy_rwt_instr9_proc_ofs_err
+        WIDTH: 1
+      - &39
+        DESCRIPTION: Main Copy/Remove Instruction 9 IBP Consitency with EBN Error
+        NAME: fld_main_cpy_rwt_instr9_proc_ibp_err
+        WIDTH: 1
+      - &40
+        DESCRIPTION: Main Copy Instruction 10 Data Size Error
+        NAME: fld_main_cpy_rwt_instr10_proc_dat_sz_err
+        WIDTH: 1
+      - &41
+        DESCRIPTION: Main Copy Instruction 10 Nibble/Byte Offset-Data Size Error
+        NAME: fld_main_cpy_rwt_instr10_proc_ofs_err
+        WIDTH: 1
+      - &42
+        DESCRIPTION: Main Copy/Remove Instruction 10 IBP Consitency with EBN Error
+        NAME: fld_main_cpy_rwt_instr10_proc_ibp_err
+        WIDTH: 1
+      - &43
+        DESCRIPTION: Main Copy Instruction 11 Data Size Error
+        NAME: fld_main_cpy_rwt_instr11_proc_dat_sz_err
+        WIDTH: 1
+      - &44
+        DESCRIPTION: Main Copy Instruction 11 Nibble/Byte Offset-Data Size Error
+        NAME: fld_main_cpy_rwt_instr11_proc_ofs_err
+        WIDTH: 1
+      - &45
+        DESCRIPTION: Main Copy/Remove Instruction 11 IBP Consitency with EBN Error
+        NAME: fld_main_cpy_rwt_instr11_proc_ibp_err
+        WIDTH: 1
+      - &46
+        DESCRIPTION: Sample Copy Instruction 0 Data Size Error
+        NAME: fld_smpl_cpy_rwt_instr0_proc_dat_sz_err
+        WIDTH: 1
+      - &47
+        DESCRIPTION: Sample Copy Instruction 0 Nibble/Byte Offset-Data Size Error
+        NAME: fld_smpl_cpy_rwt_instr0_proc_ofs_err
+        WIDTH: 1
+      - &48
+        DESCRIPTION: Sample Copy/Remove Instruction 0 IBP Consitency with EB Error
+        NAME: fld_smpl_cpy_rwt_instr0_proc_ibp_err
+        WIDTH: 1
+      - &49
+        DESCRIPTION: Sample Copy Instruction 1 Data Size Error
+        NAME: fld_smpl_cpy_rwt_instr1_proc_dat_sz_err
+        WIDTH: 1
+      - &50
+        DESCRIPTION: Sample Copy Instruction 1 Nibble/Byte Offset-Data Size Error
+        NAME: fld_smpl_cpy_rwt_instr1_proc_ofs_err
+        WIDTH: 1
+      - &51
+        DESCRIPTION: Sample Copy/Remove Instruction 1 IBP Consitency with EB Error
+        NAME: fld_smpl_cpy_rwt_instr1_proc_ibp_err
+        WIDTH: 1
+      - &52
+        DESCRIPTION: Sample Copy Instruction 2 Data Size Error
+        NAME: fld_smpl_cpy_rwt_instr2_proc_dat_sz_err
+        WIDTH: 1
+      - &53
+        DESCRIPTION: Sample Copy Instruction 2 Nibble/Byte Offset-Data Size Error
+        NAME: fld_smpl_cpy_rwt_instr2_proc_ofs_err
+        WIDTH: 1
+      - &54
+        DESCRIPTION: Sample Copy/Remove Instruction 2 IBP Consitency with EB Error
+        NAME: fld_smpl_cpy_rwt_instr2_proc_ibp_err
+        WIDTH: 1
+      - &55
+        DESCRIPTION: Sample Copy Instruction 3 Data Size Error
+        NAME: fld_smpl_cpy_rwt_instr3_proc_dat_sz_err
+        WIDTH: 1
+      - &56
+        DESCRIPTION: Sample Copy Instruction 3 Nibble/Byte Offset-Data Size Error
+        NAME: fld_smpl_cpy_rwt_instr3_proc_ofs_err
+        WIDTH: 1
+      - &57
+        DESCRIPTION: Sample Copy/Remove Instruction 3 IBP Consitency with EB Error
+        NAME: fld_smpl_cpy_rwt_instr3_proc_ibp_err
+        WIDTH: 1
+    NAME: sfg_non_fatal_misc_intr_cause
+  - ATTR: 512
+    FLDLST:
+      - *7
+      - *8
+      - *9
+      - *10
+      - *11
+      - *12
+      - *13
+      - *14
+      - *15
+      - *16
+      - *17
+      - *18
+      - *19
+      - *20
+      - *21
+      - *22
+      - *23
+      - *24
+      - *25
+      - *26
+      - *27
+      - *28
+      - *29
+      - *30
+      - *31
+      - *32
+      - *33
+      - *34
+      - *35
+      - *36
+      - *37
+      - *38
+      - *39
+      - *40
+      - *41
+      - *42
+      - *43
+      - *44
+      - *45
+      - *46
+      - *47
+      - *48
+      - *49
+      - *50
+      - *51
+      - *52
+      - *53
+      - *54
+      - *55
+      - *56
+      - *57
+    NAME: sfg_non_fatal_misc_intr_stat
+  - ATTR: 1024
+    FLDLST:
+      - *7
+      - *8
+      - *9
+      - *10
+      - *11
+      - *12
+      - *13
+      - *14
+      - *15
+      - *16
+      - *17
+      - *18
+      - *19
+      - *20
+      - *21
+      - *22
+      - *23
+      - *24
+      - *25
+      - *26
+      - *27
+      - *28
+      - *29
+      - *30
+      - *31
+      - *32
+      - *33
+      - *34
+      - *35
+      - *36
+      - *37
+      - *38
+      - *39
+      - *40
+      - *41
+      - *42
+      - *43
+      - *44
+      - *45
+      - *46
+      - *47
+      - *48
+      - *49
+      - *50
+      - *51
+      - *52
+      - *53
+      - *54
+      - *55
+      - *56
+      - *57
+    NAME: sfg_non_fatal_misc_intr_mask
+  - ATTR: 2048
+    FLDLST:
+      - *7
+      - *8
+      - *9
+      - *10
+      - *11
+      - *12
+      - *13
+      - *14
+      - *15
+      - *16
+      - *17
+      - *18
+      - *19
+      - *20
+      - *21
+      - *22
+      - *23
+      - *24
+      - *25
+      - *26
+      - *27
+      - *28
+      - *29
+      - *30
+      - *31
+      - *32
+      - *33
+      - *34
+      - *35
+      - *36
+      - *37
+      - *38
+      - *39
+      - *40
+      - *41
+      - *42
+      - *43
+      - *44
+      - *45
+      - *46
+      - *47
+      - *48
+      - *49
+      - *50
+      - *51
+      - *52
+      - *53
+      - *54
+      - *55
+      - *56
+      - *57
+    NAME: sfg_non_fatal_misc_intr_bset
+  - ATTR: 4096
+    FLDLST:
+      - *7
+      - *8
+      - *9
+      - *10
+      - *11
+      - *12
+      - *13
+      - *14
+      - *15
+      - *16
+      - *17
+      - *18
+      - *19
+      - *20
+      - *21
+      - *22
+      - *23
+      - *24
+      - *25
+      - *26
+      - *27
+      - *28
+      - *29
+      - *30
+      - *31
+      - *32
+      - *33
+      - *34
+      - *35
+      - *36
+      - *37
+      - *38
+      - *39
+      - *40
+      - *41
+      - *42
+      - *43
+      - *44
+      - *45
+      - *46
+      - *47
+      - *48
+      - *49
+      - *50
+      - *51
+      - *52
+      - *53
+      - *54
+      - *55
+      - *56
+      - *57
+    NAME: sfg_non_fatal_misc_intr_bclr
+  - ATTR: 9
+    DESCRIPTION: Place Holder for SFG Feature Register
+    FLDLST:
+      - ATTR: 1
+        DEFAULT: 15
+        DESCRIPTION: Module ID
+        NAME: module_id
+        VALUE: 15
+        WIDTH: 8
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Version number of the module
+        NAME: version
+        VALUE: 0
+        WIDTH: 8
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Features enabled in the module.
+        NAME: features
+        VALUE: 0
+        WIDTH: 16
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Reserved Field.
+        NAME: Reserved
+        WIDTH: 32
+    NAME: sfg_features
+    WIDTH: 64
+  - ATTR: 5
+    DESCRIPTION: Spare PIO register. These bits can be read and written by software.  They can serve as control bits for late ECOs in the design.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Spare PIO register.
+        NAME: val
+        WIDTH: 64
+    NAME: sfg_spare_pio
+    WIDTH: 64
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: Scratchpad register.
+        NAME: val
+        WIDTH: 64
+    NAME: sfg_scratchpad
+    WIDTH: 64
+  - ATTR: 5
+    DESCRIPTION: SFG Memroy Init Start CFG
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: RWT Instruction Bank0 Memory Init Start
+        NAME: fld_rwt_instr_bank0_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: RWT Instruction Bank1 Memory Init Start
+        NAME: fld_rwt_instr_bank1_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'Egress Policer, VLAN QoS, DSCP mapping table Memory Init Start'
+        NAME: fld_eg_qos_tbl_mem
+        WIDTH: 1
+    NAME: sfg_mem_init_start_cfg
+    TEST_ATTR: 2
+  - ATTR: 9
+    DESCRIPTION: SFG Memroy Init Done STA
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: RWT Instruction Bank0 Memory Init Done Status
+        NAME: fld_rwt_instr_bank0_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: RWT Instruction Bank1 Memory Init Done Status
+        NAME: fld_rwt_instr_bank1_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'Egress Policer, VLAN QoS, DSCP mapping table Memory Init Done Status'
+        NAME: fld_eg_qos_tbl_mem
+        WIDTH: 1
+    NAME: sfg_mem_init_done_sta
+    TEST_ATTR: 2
+  - ATTR: 9
+    DESCRIPTION: SFG Memroy Init Done STA
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: RWT Instruction Bank0 Memory Uncorrectable ECC Error
+        NAME: fld_rwt_instr_bank0_mem_cerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: RWT Instruction Bank1 Memory Uncorrectable ECC Error
+        NAME: fld_rwt_instr_bank1_mem_cerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'Egress Policer, VLAN QoS, DSCP mapping table Memory Uncorrectable ECC Error'
+        NAME: fld_eg_qos_tbl_mem_cerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: RWT Instruction Bank0 Memory Correctable ECC Error
+        NAME: fld_rwt_instr_bank0_mem_ucerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: RWT Instruction Bank1 Memory Correctable ECC Error
+        NAME: fld_rwt_instr_bank1_mem_ucerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'Egress Policer, VLAN QoS, DSCP mapping table Memory Correctable ECC Error'
+        NAME: fld_eg_qos_tbl_mem_ucerr
+        WIDTH: 1
+    NAME: sfg_mem_log_err_sta
+    TEST_ATTR: 2
+  - ATTR: 9
+    DESCRIPTION: SFG Status Register for ECC Error Syndrome
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: ECC Error Syndrome Bits Related to Error Occuence
+        NAME: fld_val
+        WIDTH: 9
+    NAME: sfg_mem_log_syndrome_sta
+  - ATTR: 9
+    DESCRIPTION: SFG Status Register for ECC Error Syndrome
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: ECC Error Address Bits Related to Error Occuence
+        NAME: fld_val
+        WIDTH: 12
+    NAME: sfg_mem_log_addr_sta
+  - ATTR: 5
+    DESCRIPTION: SFG Configuration Register for Error Injection
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: RWT Instruction Bank0 Memory Error Inject Control
+        NAME: fld_rwt_instr_bank0_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: RWT Instruction Bank1 Memory Error Inject Control
+        NAME: fld_rwt_instr_bank1_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'Egress Policer, VLAN QoS, DSCP mapping table Memory Error Inject Control'
+        NAME: fld_eg_qos_tbl_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'Type of Error Injected, 0: Uncorrectable, 1: Correctable'
+        NAME: fld_err_type
+        WIDTH: 1
+    NAME: sfg_mem_err_inj_cfg
+    TEST_ATTR: 2
+  - ATTR: 5
+    DESCRIPTION: SFG FLA Ring Module ID
+    FLDLST:
+      - DEFAULT: 85
+        DESCRIPTION: '8-Bit Module ID to be used for Decoding Commands on FLA Command Ring, 0x0, 0xff are Reserved Values'
+        NAME: fld_val
+        WIDTH: 8
+    NAME: sfg_fla_ring_module_id_cfg
+    TEST_ATTR: 2
+  - ATTR: 5
+    DESCRIPTION: SFG ERP Mode Policer Drop Bit Generation
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Drop Bit when Color Value is Reserved(3)
+        NAME: fld_drop_col_rsvd
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Drop Bit when Color Value is RED(2)
+        NAME: fld_drop_col_red
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Drop Bit when Color Value is YELLOW(1)
+        NAME: fld_drop_col_yellow
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Drop Bit when Color Value is GREEN(0)
+        NAME: fld_drop_col_green
+        WIDTH: 1
+    NAME: sfg_erp_mode_pol_drop_lkup_cfg
+  - ATTR: 5
+    DESCRIPTION: Meter0 Color Lookup Configuration
+    FLDLST:
+      - DEFAULT: 24113020583717546
+        DESCRIPTION: 'Meter0 Color Look Up Indexed by Color Aware Mode, Pkt Color, Meter State'
+        NAME: fld_color
+        WIDTH: 64
+    NAME: sfg_meter0_color_lkup_cfg
+  - ATTR: 5
+    DESCRIPTION: Meter1 Color Lookup Configuration
+    FLDLST:
+      - DEFAULT: 24113020583717546
+        DESCRIPTION: 'Meter1 Color Look Up Indexed by Color Aware Mode, Pkt Color, Meter State'
+        NAME: fld_color
+        WIDTH: 64
+    NAME: sfg_meter1_color_lkup_cfg
+  - ATTR: 5
+    DESCRIPTION: Sampler PPS Timer CFG
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Enable Sampler Packets Per Second Credit Update Timer Tick
+        NAME: fld_enable
+        WIDTH: 1
+      - DEFAULT: 999999
+        DESCRIPTION: Sampler Packets Per Second Credit Update Timer Tick
+        NAME: fld_tick_cnt
+        WIDTH: 20
+    NAME: sfg_smpler_pps_timer_cfg
+  - ATTR: 9
+    DESCRIPTION: Packet TAG Freelist_sta
+    FLDLST:
+      - DEFAULT: 511
+        DESCRIPTION: Available Freelist Count Status for the Packet TAG ID Freelist
+        NAME: fld_cnt
+        WIDTH: 10
+    NAME: sfg_pkt_tag_id_fl_cnt_sta
+  - ATTR: 6
+    DESCRIPTION: Sampler LFSR Seed Programming
+    ENTRIES: 1
+    FLDLST:
+      - DEFAULT: 900847
+        DESCRIPTION: Sampler LFSR Seed Programming
+        NAME: fld_data
+        WIDTH: 20
+    NAME: sfg_smpler_lfsr_seed_cfg
+    TEST_ATTR: 2
+  - ATTR: 6
+    DESCRIPTION: Meter0 Configuration
+    ENTRIES: 4
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Meter0 Color Aware Mode Configuration
+        NAME: data
+        WIDTH: 64
+    NAME: sfg_meter0_cfg
+  - ATTR: 6
+    DESCRIPTION: Meter1 Configuration
+    ENTRIES: 4
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Meter1 Color Aware Mode Configuration
+        NAME: data
+        WIDTH: 64
+    NAME: sfg_meter1_cfg
+  - ATTR: 6
+    DESCRIPTION: RWIM Memory
+    ENTRIES: 64
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Sampler Packets Per Second Rate Limiter Enable
+        NAME: fld_pps_enable
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Sampler Credit Update Interface in units of 1uS
+        NAME: fld_pps_time_intvl
+        WIDTH: 20
+      - DEFAULT: 0
+        DESCRIPTION: Sampler Credits Burst Threshold
+        NAME: fld_pps_crdt_thresh
+        WIDTH: 7
+      - DEFAULT: 0
+        DESCRIPTION: Sampler Type Egress/Ingres
+        NAME: fld_smpl_type
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Sample Rate based on LFSR
+        NAME: fld_smpl_rate
+        WIDTH: 10
+      - DEFAULT: 0
+        DESCRIPTION: 'Sample Run Size - run length of upto 16 packets'
+        NAME: fld_smpl_run_size
+        WIDTH: 4
+    NAME: sfg_smpler_attr_cfg
+    TEST_ATTR: 2
+  - ATTR: 6
+    DESCRIPTION: Sampler RWT Instruction Memory
+    ENTRIES: 17
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Egress Stream Number
+        NAME: fld_egr_stream
+        WIDTH: 6
+      - DEFAULT: 0
+        DESCRIPTION: Egress Queue Number
+        NAME: fld_egr_que
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Sample first cell of 256B only
+        NAME: fld_first_cell_only
+        WIDTH: 1
+      - DEFAULT: 15
+        DESCRIPTION: Instruction Type
+        NAME: fld_itype0
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Common instruction which is an union of all FRV instructions.
+        NAME: fld_instr0
+        WIDTH: 20
+      - DEFAULT: 15
+        DESCRIPTION: Instruction Type
+        NAME: fld_itype1
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Common instruction which is an union of all FRV instructions.
+        NAME: fld_instr1
+        WIDTH: 20
+      - DEFAULT: 15
+        DESCRIPTION: Instruction Type
+        NAME: fld_itype2
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Common instruction which is an union of all FRV instructions.
+        NAME: fld_instr2
+        WIDTH: 20
+      - DEFAULT: 15
+        DESCRIPTION: Instruction Type
+        NAME: fld_itype3
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Common instruction which is an union of all FRV instructions.
+        NAME: fld_instr3
+        WIDTH: 20
+    NAME: sfg_smpler_rwt_instr_cfg
+    TEST_ATTR: 2
+  - ATTR: 6
+    DESCRIPTION: Sampler Flags Mask Programming
+    ENTRIES: 8
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Sampler 1 Flags Mask Vector
+        NAME: fld_mask
+        WIDTH: 64
+    NAME: sfg_smpler_flag_mask_cfg
+    TEST_ATTR: 2
+  - ATTR: 6
+    DESCRIPTION: SFG layer2 Length Check CAMg
+    ENTRIES: 4
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: CAM Entry Valid
+        NAME: fld_vld
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Metadata Flags 3:0
+        NAME: fld_key_flags
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: PRV Template
+        NAME: fld_key_template
+        WIDTH: 16
+      - DEFAULT: 0
+        DESCRIPTION: Metadata Flags 3:0
+        NAME: fld_msk_flags
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: PRV Template
+        NAME: fld_msk_template
+        WIDTH: 16
+      - DEFAULT: 0
+        DESCRIPTION: L2 Starting Header Number Index in PRV Header Offset Array
+        NAME: fld_l2_shn
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: L3 Starting Header Number Index in PRV Header Offset Array
+        NAME: fld_l3_shn
+        WIDTH: 3
+    NAME: sfg_l2_len_chk_cam_dhs
+    TEST_ATTR: 2
+  - ATTR: 6
+    DESCRIPTION: SFG Egress Stream MTU Value
+    ENTRIES: 24
+    FLDLST:
+      - DEFAULT: 9216
+        DESCRIPTION: CAM Entry Valid
+        NAME: fld_val
+        WIDTH: 14
+    NAME: sfg_eg_str_mtu_cfg_tbl
+  - ATTR: 38
+    DESCRIPTION: SFG Basic Stats Counters
+    ENTATTR:
+      - DEFAULT: 0
+        DESCRIPTION: Reserved
+        OFFSET: 7
+        SFX: resrved
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Sample Copy Count
+        OFFSET: 6
+        SFX: sample_copy
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: FAE Output Descriptors Count
+        OFFSET: 5
+        SFX: out_fae_desc
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: PSW Output Descriptors Count
+        OFFSET: 4
+        SFX: out_psw_desc
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Egress MTU Check Drop Counter
+        OFFSET: 3
+        SFX: egr_mtu_chk_drop
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Main Copy FRV with Instruction Length Error
+        OFFSET: 2
+        SFX: main_cpy_rw_instr_bad_len
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Main Copy FRV Drop Counter
+        OFFSET: 1
+        SFX: main_cpy_frv_drop
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Number of FFE Descriptors Received
+        OFFSET: 0
+        SFX: in_ffe_desc
+        SWA: 8388608
+        TYPE: 4096
+    ENTRIES: 8
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Stats Counters
+        NAME: fld_val
+        WIDTH: 48
+    NAME: sfg_stats_cntr
+    TEST_ATTR: 0
+  - ATTR: 6
+    DESCRIPTION: SFG Sampler Stats Counters
+    ENTATTR:
+      - DEFAULT: 0
+        DESCRIPTION: Sampler0 Packet Count
+        OFFSET: 0
+        SFX: sampler0_cnt
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Sampler1 Packet Count
+        OFFSET: 1
+        SFX: sampler1_cnt
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Sampler2 Packet Count
+        OFFSET: 2
+        SFX: sampler2_cnt
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Sampler3 Packet Count
+        OFFSET: 3
+        SFX: sampler3_cnt
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Sampler4 Packet Count
+        OFFSET: 4
+        SFX: sampler4_cnt
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Sampler5 Packet Count
+        OFFSET: 5
+        SFX: sampler5_cnt
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Sampler6 Packet Count
+        OFFSET: 6
+        SFX: sampler6_cnt
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Sampler7 Packet Count
+        OFFSET: 7
+        SFX: sampler7_cnt
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Sampler8 Packet Count
+        OFFSET: 8
+        SFX: sampler8_cnt
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Sampler9 Packet Count
+        OFFSET: 9
+        SFX: sampler9_cnt
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Sampler10 Packet Count
+        OFFSET: 10
+        SFX: sampler10_cnt
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Sampler11 Packet Count
+        OFFSET: 11
+        SFX: sampler11_cnt
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Sampler12 Packet Count
+        OFFSET: 12
+        SFX: sampler12_cnt
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Sampler13 Packet Count
+        OFFSET: 13
+        SFX: sampler13_cnt
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Sampler14 Packet Count
+        OFFSET: 14
+        SFX: sampler14_cnt
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Sampler15 Packet Count
+        OFFSET: 15
+        SFX: sampler15_cnt
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Sampler16 Packet Count
+        OFFSET: 16
+        SFX: sampler16_cnt
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Sampler17 Packet Count
+        OFFSET: 17
+        SFX: sampler17_cnt
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Sampler18 Packet Count
+        OFFSET: 18
+        SFX: sampler18_cnt
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Sampler19 Packet Count
+        OFFSET: 19
+        SFX: sampler19_cnt
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Sampler20 Packet Count
+        OFFSET: 20
+        SFX: sampler20_cnt
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Sampler21 Packet Count
+        OFFSET: 21
+        SFX: sampler21_cnt
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Sampler22 Packet Count
+        OFFSET: 22
+        SFX: sampler22_cnt
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Sampler23 Packet Count
+        OFFSET: 23
+        SFX: sampler23_cnt
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Sampler24 Packet Count
+        OFFSET: 24
+        SFX: sampler24_cnt
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Sampler25 Packet Count
+        OFFSET: 25
+        SFX: sampler25_cnt
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Sampler26 Packet Count
+        OFFSET: 26
+        SFX: sampler26_cnt
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Sampler27 Packet Count
+        OFFSET: 27
+        SFX: sampler27_cnt
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Sampler28 Packet Count
+        OFFSET: 28
+        SFX: sampler28_cnt
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Sampler29 Packet Count
+        OFFSET: 29
+        SFX: sampler29_cnt
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Sampler30 Packet Count
+        OFFSET: 30
+        SFX: sampler30_cnt
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Sampler31 Packet Count
+        OFFSET: 31
+        SFX: sampler31_cnt
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Sampler32 Packet Count
+        OFFSET: 32
+        SFX: sampler32_cnt
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Sampler33 Packet Count
+        OFFSET: 33
+        SFX: sampler33_cnt
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Sampler34 Packet Count
+        OFFSET: 34
+        SFX: sampler34_cnt
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Sampler35 Packet Count
+        OFFSET: 35
+        SFX: sampler35_cnt
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Sampler36 Packet Count
+        OFFSET: 36
+        SFX: sampler36_cnt
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Sampler37 Packet Count
+        OFFSET: 37
+        SFX: sampler37_cnt
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Sampler38 Packet Count
+        OFFSET: 38
+        SFX: sampler38_cnt
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Sampler39 Packet Count
+        OFFSET: 39
+        SFX: sampler39_cnt
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Sampler40 Packet Count
+        OFFSET: 40
+        SFX: sampler40_cnt
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Sampler41 Packet Count
+        OFFSET: 41
+        SFX: sampler41_cnt
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Sampler42 Packet Count
+        OFFSET: 42
+        SFX: sampler42_cnt
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Sampler43 Packet Count
+        OFFSET: 43
+        SFX: sampler43_cnt
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Sampler44 Packet Count
+        OFFSET: 44
+        SFX: sampler44_cnt
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Sampler45 Packet Count
+        OFFSET: 45
+        SFX: sampler45_cnt
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Sampler46 Packet Count
+        OFFSET: 46
+        SFX: sampler46_cnt
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Sampler47 Packet Count
+        OFFSET: 47
+        SFX: sampler47_cnt
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Sampler48 Packet Count
+        OFFSET: 48
+        SFX: sampler48_cnt
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Sampler49 Packet Count
+        OFFSET: 49
+        SFX: sampler49_cnt
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Sampler50 Packet Count
+        OFFSET: 50
+        SFX: sampler50_cnt
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Sampler51 Packet Count
+        OFFSET: 51
+        SFX: sampler51_cnt
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Sampler52 Packet Count
+        OFFSET: 52
+        SFX: sampler52_cnt
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Sampler53 Packet Count
+        OFFSET: 53
+        SFX: sampler53_cnt
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Sampler54 Packet Count
+        OFFSET: 54
+        SFX: sampler54_cnt
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Sampler55 Packet Count
+        OFFSET: 55
+        SFX: sampler55_cnt
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Sampler56 Packet Count
+        OFFSET: 56
+        SFX: sampler56_cnt
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Sampler57 Packet Count
+        OFFSET: 57
+        SFX: sampler57_cnt
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Sampler58 Packet Count
+        OFFSET: 58
+        SFX: sampler58_cnt
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Sampler59 Packet Count
+        OFFSET: 59
+        SFX: sampler59_cnt
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Sampler60 Packet Count
+        OFFSET: 60
+        SFX: sampler60_cnt
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Sampler61 Packet Count
+        OFFSET: 61
+        SFX: sampler61_cnt
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Sampler62 Packet Count
+        OFFSET: 62
+        SFX: sampler62_cnt
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Sampler63 Packet Count
+        OFFSET: 63
+        SFX: sampler63_cnt
+        SWA: 8388608
+        TYPE: 4096
+    ENTRIES: 64
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: SFG Sampler Stats Counters
+        NAME: val
+        WIDTH: 32
+    NAME: sfg_smpler_stats_cntrs_dhs
+    TEST_ATTR: 0
+  - ATTR: 6
+    DESCRIPTION: SFG PRV Snapshot Symptom
+    ENTATTR:
+      - DEFAULT: 0
+        DESCRIPTION: Symptom Valid
+        OFFSET: 32
+        SFX: fld_vls
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 0
+        DESCRIPTION: 'PRV 64-Bit Segment 13 : PRV[863-:32]'
+        OFFSET: 31
+        SFX: fld_prv_13
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 0
+        DESCRIPTION: 'PRV 64-Bit Segment 12 : PRV[831-:64]'
+        OFFSET: 30
+        SFX: fld_prv_12
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 0
+        DESCRIPTION: 'PRV 64-Bit Segment 11 : PRV[767-:64]'
+        OFFSET: 29
+        SFX: fld_prv_11
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 0
+        DESCRIPTION: 'PRV 64-Bit Segment 10 : PRV[703-:64]'
+        OFFSET: 28
+        SFX: fld_prv_10
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 0
+        DESCRIPTION: 'PRV 64-Bit Segment  9 : PRV[639-:64]'
+        OFFSET: 27
+        SFX: fld_prv_09
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 0
+        DESCRIPTION: 'PRV 64-Bit Segment  8 : PRV[575-:64]'
+        OFFSET: 26
+        SFX: fld_prv_08
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 0
+        DESCRIPTION: 'PRV 64-Bit Segment  7 : PRV[511-:64]'
+        OFFSET: 25
+        SFX: fld_prv_07
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 0
+        DESCRIPTION: 'PRV 64-Bit Segment  6 : PRV[447-:64]'
+        OFFSET: 24
+        SFX: fld_prv_06
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 0
+        DESCRIPTION: 'PRV 64-Bit Segment  5 : PRV[383-:64]'
+        OFFSET: 23
+        SFX: fld_prv_05
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 0
+        DESCRIPTION: 'PRV 64-Bit Segment  4 : PRV[319-:64]'
+        OFFSET: 22
+        SFX: fld_prv_04
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 0
+        DESCRIPTION: 'PRV 64-Bit Segment  3 : PRV[255-:64]'
+        OFFSET: 21
+        SFX: fld_prv_03
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 0
+        DESCRIPTION: 'PRV 64-Bit Segment  2 : PRV[191-:64]'
+        OFFSET: 20
+        SFX: fld_prv_02
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 0
+        DESCRIPTION: 'PRV 64-Bit Segment  1 : PRV[127-:64]'
+        OFFSET: 19
+        SFX: fld_prv_01
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 0
+        DESCRIPTION: 'PRV 64-Bit Segment  0 : PRV[ 63-:64]'
+        OFFSET: 18
+        SFX: fld_prv_00
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 0
+        DESCRIPTION: 'MD 64-Bit Segment   7 : MD[511-:64]'
+        OFFSET: 17
+        SFX: fld_md_07
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 0
+        DESCRIPTION: 'MD 64-Bit Segment   6 : MD[447-:64]'
+        OFFSET: 16
+        SFX: fld_md_06
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 0
+        DESCRIPTION: 'MD 64-Bit Segment   5 : MD[383-:64]'
+        OFFSET: 15
+        SFX: fld_md_05
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 0
+        DESCRIPTION: 'MD 64-Bit Segment   4 : MD[319-:64]'
+        OFFSET: 14
+        SFX: fld_md_04
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 0
+        DESCRIPTION: 'MD 64-Bit Segment   3 : MD[255-:64]'
+        OFFSET: 13
+        SFX: fld_md_03
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 0
+        DESCRIPTION: 'MD 64-Bit Segment   2 : MD[191-:64]'
+        OFFSET: 12
+        SFX: fld_md_02
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 0
+        DESCRIPTION: 'MD 64-Bit Segment   1 : MD[127-:64]'
+        OFFSET: 11
+        SFX: fld_md_01
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 0
+        DESCRIPTION: 'MD 64-Bit Segment   0 : MD[ 63-:64]'
+        OFFSET: 10
+        SFX: fld_md_00
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 0
+        DESCRIPTION: 'FRV 64-Bit Segment  7 : FRV[511-:64]'
+        OFFSET: 9
+        SFX: fld_frv_07
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 0
+        DESCRIPTION: 'FRV 64-Bit Segment  6 : FRV[447-:64]'
+        OFFSET: 8
+        SFX: fld_frv_06
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 0
+        DESCRIPTION: 'FRV 64-Bit Segment  5 : FRV[383-:64]'
+        OFFSET: 7
+        SFX: fld_frv_05
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 0
+        DESCRIPTION: 'FRV 64-Bit Segment  4 : FRV[319-:64]'
+        OFFSET: 6
+        SFX: fld_frv_04
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 0
+        DESCRIPTION: 'FRV 64-Bit Segment  3 : FRV[255-:64]'
+        OFFSET: 5
+        SFX: fld_frv_03
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 0
+        DESCRIPTION: 'FRV 64-Bit Segment  2 : FRV[191-:64]'
+        OFFSET: 4
+        SFX: fld_frv_02
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 0
+        DESCRIPTION: 'FRV 64-Bit Segment  1 : FRV[127-:64]'
+        OFFSET: 3
+        SFX: fld_frv_01
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 0
+        DESCRIPTION: 'FRV 64-Bit Segment  0 : FRV[ 63-:64]'
+        OFFSET: 2
+        SFX: fld_frv_00
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 0
+        DESCRIPTION: 'PSW CTL 64-Bit Segment  1 : PSW_CTL[80-: 16]'
+        OFFSET: 1
+        SFX: fld_psw_ctl_01
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 0
+        DESCRIPTION: 'PSW CTL 64-Bit Segment  0 : PSW_CTL[ 63-:64]'
+        OFFSET: 0
+        SFX: fld_psw_ctl_00
+        SWA: 2097152
+        TYPE: RE_CFG
+    ENTRIES: 33
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Double Instruction Valid
+        NAME: fld_val
+        WIDTH: 64
+    NAME: sfg_snapshot_sym
+    TEST_ATTR: 0
+  - ATTR: 6
+    DESCRIPTION: Egress queue QOS Memory
+    ENTRIES: 4096
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: To drop packets which are marked RED
+        NAME: fld_pol_drop
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Enable VLAN QOS Field to be overwritten from the Table
+        NAME: fld_vlan_qos_ovrt
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Egress VLAN QOS bits
+        NAME: fld_vlan_qos
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Enable Egress IP DSCP bits to be overwritten from the Table
+        NAME: fld_ip_dscp_ovrt
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Egress IP DSCP bits
+        NAME: fld_ip_dscp
+        WIDTH: 6
+      - DEFAULT: 0
+        DESCRIPTION: Egress Queue ID Override when SFG-Metering is not in bypass
+        NAME: fld_egr_queue
+        WIDTH: 4
+    NAME: sfg_eg_qos_tbl_mem_dhs
+    TEST_ATTR: 0
+  - ATTR: 6
+    DESCRIPTION: Bank0 RWIM Memory
+    ENTRIES: 2048
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Double Instruction Valid
+        NAME: fld_dbl_inst
+        WIDTH: 1
+      - DEFAULT: 15
+        DESCRIPTION: Instruction Type
+        NAME: fld_itype0
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Common instruction which is an union of all FRV instructions.
+        NAME: fld_instr0
+        WIDTH: 20
+      - DEFAULT: 15
+        DESCRIPTION: Instruction Type
+        NAME: fld_itype1
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Common instruction which is an union of all FRV instructions.
+        NAME: fld_instr1
+        WIDTH: 20
+      - DEFAULT: 15
+        DESCRIPTION: Instruction Type
+        NAME: fld_itype2
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Common instruction which is an union of all FRV instructions.
+        NAME: fld_instr2
+        WIDTH: 20
+      - DEFAULT: 15
+        DESCRIPTION: Instruction Type
+        NAME: fld_itype3
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Common instruction which is an union of all FRV instructions.
+        NAME: fld_instr3
+        WIDTH: 20
+      - DEFAULT: 15
+        DESCRIPTION: Instruction Type
+        NAME: fld_itype4
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Common instruction which is an union of all FRV instructions.
+        NAME: fld_instr4
+        WIDTH: 20
+      - DEFAULT: 15
+        DESCRIPTION: Instruction Type
+        NAME: fld_itype5
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Common instruction which is an union of all FRV instructions.
+        NAME: fld_instr5
+        WIDTH: 20
+    NAME: sfg_rwt_instr_bank0_mem_dhs
+    TEST_ATTR: 0
+  - ATTR: 6
+    DESCRIPTION: Bank1 RWIM Memory
+    ENTRIES: 2048
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Double Instruction Valid
+        NAME: fld_dbl_inst
+        WIDTH: 1
+      - DEFAULT: 15
+        DESCRIPTION: Instruction Type
+        NAME: fld_itype0
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Common instruction which is an union of all FRV instructions.
+        NAME: fld_instr0
+        WIDTH: 20
+      - DEFAULT: 15
+        DESCRIPTION: Instruction Type
+        NAME: fld_itype1
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Common instruction which is an union of all FRV instructions.
+        NAME: fld_instr1
+        WIDTH: 20
+      - DEFAULT: 15
+        DESCRIPTION: Instruction Type
+        NAME: fld_itype2
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Common instruction which is an union of all FRV instructions.
+        NAME: fld_instr2
+        WIDTH: 20
+      - DEFAULT: 15
+        DESCRIPTION: Instruction Type
+        NAME: fld_itype3
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Common instruction which is an union of all FRV instructions.
+        NAME: fld_instr3
+        WIDTH: 20
+      - DEFAULT: 15
+        DESCRIPTION: Instruction Type
+        NAME: fld_itype4
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Common instruction which is an union of all FRV instructions.
+        NAME: fld_instr4
+        WIDTH: 20
+      - DEFAULT: 15
+        DESCRIPTION: Instruction Type
+        NAME: fld_itype5
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Common instruction which is an union of all FRV instructions.
+        NAME: fld_instr5
+        WIDTH: 20
+    NAME: sfg_rwt_instr_bank1_mem_dhs
+    TEST_ATTR: 0
+  - ATTR: 6
+    DESCRIPTION: SFG Meter0 State Memory CFG
+    ENTRIES: 8
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Enrty0 Meter State
+        NAME: fld_0
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Enrty1 Meter State
+        NAME: fld_1
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Enrty2 Meter State
+        NAME: fld_2
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Enrty3 Meter State
+        NAME: fld_3
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Enrty4 Meter State
+        NAME: fld_4
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Enrty5 Meter State
+        NAME: fld_5
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Enrty6 Meter State
+        NAME: fld_6
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Enrty7 Meter State
+        NAME: fld_7
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Enrty8 Meter State
+        NAME: fld_8
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Enrty9 Meter State
+        NAME: fld_9
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Enrty10 Meter State
+        NAME: fld_10
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Enrty11 Meter State
+        NAME: fld_11
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Enrty12 Meter State
+        NAME: fld_12
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Enrty13 Meter State
+        NAME: fld_13
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Enrty14 Meter State
+        NAME: fld_14
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Enrty15 Meter State
+        NAME: fld_15
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Enrty16 Meter State
+        NAME: fld_16
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Enrty17 Meter State
+        NAME: fld_17
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Enrty18 Meter State
+        NAME: fld_18
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Enrty19 Meter State
+        NAME: fld_19
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Enrty20 Meter State
+        NAME: fld_20
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Enrty21 Meter State
+        NAME: fld_21
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Enrty22 Meter State
+        NAME: fld_22
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Enrty23 Meter State
+        NAME: fld_23
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Enrty24 Meter State
+        NAME: fld_24
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Enrty25 Meter State
+        NAME: fld_25
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Enrty26 Meter State
+        NAME: fld_26
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Enrty27 Meter State
+        NAME: fld_27
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Enrty28 Meter State
+        NAME: fld_28
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Enrty29 Meter State
+        NAME: fld_29
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Enrty30 Meter State
+        NAME: fld_30
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Enrty31 Meter State
+        NAME: fld_31
+        WIDTH: 2
+    NAME: sfg_meter0_state_mem_cfg
+    TEST_ATTR: 0
+  - ATTR: 6
+    DESCRIPTION: SFG Meter1 State Memory CFG
+    ENTRIES: 8
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Enrty0 Meter State
+        NAME: fld_0
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Enrty1 Meter State
+        NAME: fld_1
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Enrty2 Meter State
+        NAME: fld_2
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Enrty3 Meter State
+        NAME: fld_3
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Enrty4 Meter State
+        NAME: fld_4
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Enrty5 Meter State
+        NAME: fld_5
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Enrty6 Meter State
+        NAME: fld_6
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Enrty7 Meter State
+        NAME: fld_7
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Enrty8 Meter State
+        NAME: fld_8
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Enrty9 Meter State
+        NAME: fld_9
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Enrty10 Meter State
+        NAME: fld_10
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Enrty11 Meter State
+        NAME: fld_11
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Enrty12 Meter State
+        NAME: fld_12
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Enrty13 Meter State
+        NAME: fld_13
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Enrty14 Meter State
+        NAME: fld_14
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Enrty15 Meter State
+        NAME: fld_15
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Enrty16 Meter State
+        NAME: fld_16
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Enrty17 Meter State
+        NAME: fld_17
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Enrty18 Meter State
+        NAME: fld_18
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Enrty19 Meter State
+        NAME: fld_19
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Enrty20 Meter State
+        NAME: fld_20
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Enrty21 Meter State
+        NAME: fld_21
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Enrty22 Meter State
+        NAME: fld_22
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Enrty23 Meter State
+        NAME: fld_23
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Enrty24 Meter State
+        NAME: fld_24
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Enrty25 Meter State
+        NAME: fld_25
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Enrty26 Meter State
+        NAME: fld_26
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Enrty27 Meter State
+        NAME: fld_27
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Enrty28 Meter State
+        NAME: fld_28
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Enrty29 Meter State
+        NAME: fld_29
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Enrty30 Meter State
+        NAME: fld_30
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Enrty31 Meter State
+        NAME: fld_31
+        WIDTH: 2
+    NAME: sfg_meter1_state_mem_cfg
+    TEST_ATTR: 0
+XASIZE: 0

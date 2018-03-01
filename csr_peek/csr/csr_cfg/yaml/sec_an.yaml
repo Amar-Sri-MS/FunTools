@@ -1,0 +1,1584 @@
+---
+COUNT: 1
+DESCRIPTION: SEC Coding CSR spec
+INTR:
+  NON_FATAL:
+    - DESCRIPTION: SHA Configuration not valid.
+      NAME: sha_cfg_err
+      WIDTH: 1
+    - DESCRIPTION: AES Configuration not valid.
+      NAME: aes_cfg_err
+      WIDTH: 1
+    - DESCRIPTION: AES Output Memory read resulted in parity error.
+      NAME: aes_out_mem_perr
+      WIDTH: 1
+INTR_PORT_EN: 1
+NAME: SEC_AN
+PARENTNAME: pc_soc_clk_an
+REGLST:
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: |-
+          Timeout Configuration. Cycles are RSU clk based.
+                            - 00 : 1024 cycles
+                            - 01 : 256 cycles
+                            - 10 : 4096 cycles
+                            - 11 : infinite
+        NAME: val
+        WIDTH: 2
+    NAME: sec_timeout_thresh_cfg
+  - ATTR: 9
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: "Timed out Status. Cycles are RSU clk based. Becomes 1 when timed out. Write any value to clear it.\n                  "
+        NAME: val
+        WIDTH: 1
+    NAME: sec_timedout_sta
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: |-
+          Clear Timeout Status. Data is ignored. A write
+                     will clear the timeout status bit
+        NAME: val
+        WIDTH: 1
+    NAME: sec_timeout_clr
+    TEST_ATTR: 1
+  - ATTR: 256
+    FLDLST:
+      - &1
+        DESCRIPTION: SHA Configuration not valid.
+        NAME: sha_cfg_err
+        WIDTH: 1
+      - &2
+        DESCRIPTION: AES Configuration not valid.
+        NAME: aes_cfg_err
+        WIDTH: 1
+      - &3
+        DESCRIPTION: AES Output Memory read resulted in parity error.
+        NAME: aes_out_mem_perr
+        WIDTH: 1
+    NAME: sec_non_fatal_intr_cause
+  - ATTR: 512
+    FLDLST:
+      - *1
+      - *2
+      - *3
+    NAME: sec_non_fatal_intr_stat
+  - ATTR: 1024
+    FLDLST:
+      - *1
+      - *2
+      - *3
+    NAME: sec_non_fatal_intr_mask
+  - ATTR: 2048
+    FLDLST:
+      - *1
+      - *2
+      - *3
+    NAME: sec_non_fatal_intr_bset
+  - ATTR: 4096
+    FLDLST:
+      - *1
+      - *2
+      - *3
+    NAME: sec_non_fatal_intr_bclr
+  - ATTR: 9
+    DESCRIPTION: Identifier register.
+    FLDLST:
+      - ATTR: 1
+        DEFAULT: 11
+        DESCRIPTION: Module ID
+        NAME: module_id
+        VALUE: 11
+        WIDTH: 8
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Version number of the module
+        NAME: version
+        VALUE: 0
+        WIDTH: 8
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Features enabled in the module.
+        NAME: features
+        VALUE: 0
+        WIDTH: 16
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Reserved Field.
+        NAME: Reserved
+        WIDTH: 32
+    NAME: sec_features
+    WIDTH: 64
+  - ATTR: 5
+    DESCRIPTION: ' Spare PIO register. These bits can be read and written by software. They can serve as control bits for late ECOs in the design.'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Spare PIO register.
+        NAME: val
+        WIDTH: 64
+    NAME: sec_spare_pio
+    WIDTH: 64
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: Scratchpad register.
+        NAME: val
+        WIDTH: 64
+    NAME: sec_scratchpad
+    WIDTH: 64
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: ''
+    FLDLST:
+      - DEFAULT: 1
+        DESCRIPTION: AES Clock Enable Override
+        NAME: aes_clk_en_override
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: SHA Clock Enable Override
+        NAME: aes_enable
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: SHA Clock Enable Override
+        NAME: sha_clk_en_override
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: SHA Clock Enable Override
+        NAME: sha_enable
+        WIDTH: 1
+    NAME: sec_cfg
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: SEC Status
+    FLDLST:
+      - DEFAULT: 15
+        DESCRIPTION: AES Thread Idle
+        NAME: aes_idle
+        WIDTH: 4
+      - DEFAULT: 63
+        DESCRIPTION: SHA Thread Idle
+        NAME: sha_idle
+        WIDTH: 6
+      - DEFAULT: 1
+        DESCRIPTION: SHA Thread Idle
+        NAME: sec_init_done
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: SHA Thread Idle
+        NAME: sec_reset_done
+        WIDTH: 1
+    NAME: sec_stat
+  - ATTR: 5
+    DESCRIPTION: SEC FLA Ring Module ID
+    FLDLST:
+      - DEFAULT: 39
+        DESCRIPTION: '8-Bit Module ID to be used for Decoding Commands on FLA Command Ring, 0x0, 0xff are Reserved Values'
+        NAME: fld_val
+        WIDTH: 8
+    NAME: sec_fla_ring_module_id_cfg
+  - ATTR: 9
+    DESCRIPTION: SRAM bit vector that failed Read
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                                 First SRAM Parity error detected (1-hot)
+                                                 Set when first error is detected
+                                                 Reset when corresponding interrupt status bit is cleared
+                                                 [0]  - aes_out_mem_perr
+                                                
+        NAME: val
+        WIDTH: 1
+    NAME: sec_sram_log_err
+  - ATTR: 9
+    DESCRIPTION: SRAM address log register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                                 Address related to Parity error
+                                                 detected while reading data from SRAM
+                                                
+        NAME: val
+        WIDTH: 6
+    NAME: sec_sram_log_addr
+  - ATTR: 9
+    DESCRIPTION: Command/Configuration Error
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                                 First Command/Configuration error detected (1-hot)
+                                                 Set when first error is detected
+                                                 Reset when corresponding interrupt status bit is cleared
+                                                 [0]  - AES Thread 0 Configuration Error
+                                                 [1]  - AES Thread 1 Configuration Error
+                                                 [2]  - AES Thread 2 Configuration Error
+                                                 [3]  - AES Thread 3 Configuration Error
+                                                 [4]  - SHA Thread 0 Configuration Error
+                                                 [5]  - SHA Thread 1 Configuration Error
+                                                 [6]  - SHA Thread 2 Configuration Error
+                                                 [7]  - SHA Thread 3 Configuration Error
+                                                 [8]  - SHA Thread 4 Configuration Error
+                                                 [9]  - SHA Thread 5 Configuration Error
+                                                
+        NAME: val
+        WIDTH: 10
+    NAME: sec_cfg_log_err
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: SEC Error Log 0
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: SEC Command Flit 127:64
+        NAME: val
+        WIDTH: 64
+    NAME: sec_cfg_log_cmd_upper
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: SEC Error Log 1
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: SEC Command Flit 63:0
+        NAME: val
+        WIDTH: 64
+    NAME: sec_cfg_log_cmd_lower
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: SEC Error Count
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: SHA Configuration Error Count
+        NAME: sha_cfg_err_cnt
+        WIDTH: 8
+      - DEFAULT: 0
+        DESCRIPTION: AES Configuration Error Count
+        NAME: aes_cfg_err_cnt
+        WIDTH: 8
+      - DEFAULT: 0
+        DESCRIPTION: AES Output Memory Parity Error Count
+        NAME: aes_out_mem_perr_cnt
+        WIDTH: 8
+    NAME: sec_err_cnt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: Config register for memory error injection
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into aes_out_mem memory
+        NAME: aes_out_mem
+        WIDTH: 1
+    NAME: sec_mem_err_inj_cfg
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: SEC AES Thread Input SOP Count Register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Indicates the number of packets started on thread.  Value is incremented for each SOP observed on the DMA to AES interface. Only SOPs received while FSM Idle are counted (i.e. invalid SOPs are ignored).
+        NAME: val
+        WIDTH: 36
+    NAME: sec_aes_in_sop_cnt_0
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: SEC AES Thread Input SOP Count Register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Indicates the number of packets started on thread.  Value is incremented for each SOP observed on the DMA to AES interface. Only SOPs received while FSM Idle are counted (i.e. invalid SOPs are ignored).
+        NAME: val
+        WIDTH: 36
+    NAME: sec_aes_in_sop_cnt_1
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: SEC AES Thread Input SOP Count Register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Indicates the number of packets started on thread.  Value is incremented for each SOP observed on the DMA to AES interface. Only SOPs received while FSM Idle are counted (i.e. invalid SOPs are ignored).
+        NAME: val
+        WIDTH: 36
+    NAME: sec_aes_in_sop_cnt_2
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: SEC AES Thread Input SOP Count Register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Indicates the number of packets started on thread.  Value is incremented for each SOP observed on the DMA to AES interface. Only SOPs received while FSM Idle are counted (i.e. invalid SOPs are ignored).
+        NAME: val
+        WIDTH: 36
+    NAME: sec_aes_in_sop_cnt_3
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: SEC AES Thread Input EOP Count Register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Value is incremented for each EOP observed on the DMA to AES interface.
+        NAME: val
+        WIDTH: 36
+    NAME: sec_aes_in_eop_cnt_0
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: SEC AES Thread Input EOP Count Register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Value is incremented for each EOP observed on the DMA to AES interface.
+        NAME: val
+        WIDTH: 36
+    NAME: sec_aes_in_eop_cnt_1
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: SEC AES Thread Input EOP Count Register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Value is incremented for each EOP observed on the DMA to AES interface.
+        NAME: val
+        WIDTH: 36
+    NAME: sec_aes_in_eop_cnt_2
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: SEC AES Thread Input EOP Count Register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Value is incremented for each EOP observed on the DMA to AES interface.
+        NAME: val
+        WIDTH: 36
+    NAME: sec_aes_in_eop_cnt_3
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: SEC AES Thread Output sOP Count Register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Value is incremented for each SOP sent on the AES to DMA interface.
+        NAME: val
+        WIDTH: 36
+    NAME: sec_aes_out_sop_cnt_0
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: SEC AES Thread Output sOP Count Register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Value is incremented for each SOP sent on the AES to DMA interface.
+        NAME: val
+        WIDTH: 36
+    NAME: sec_aes_out_sop_cnt_1
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: SEC AES Thread Output sOP Count Register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Value is incremented for each SOP sent on the AES to DMA interface.
+        NAME: val
+        WIDTH: 36
+    NAME: sec_aes_out_sop_cnt_2
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: SEC AES Thread Output sOP Count Register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Value is incremented for each SOP sent on the AES to DMA interface.
+        NAME: val
+        WIDTH: 36
+    NAME: sec_aes_out_sop_cnt_3
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: SEC AES Thread Output EOP Count Register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Indicates the number of packets completed on thread.  Value is incremented for each EOP sent on the AES to DMA interface.
+        NAME: val
+        WIDTH: 36
+    NAME: sec_aes_out_eop_cnt_0
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: SEC AES Thread Output EOP Count Register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Indicates the number of packets completed on thread.  Value is incremented for each EOP sent on the AES to DMA interface.
+        NAME: val
+        WIDTH: 36
+    NAME: sec_aes_out_eop_cnt_1
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: SEC AES Thread Output EOP Count Register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Indicates the number of packets completed on thread.  Value is incremented for each EOP sent on the AES to DMA interface.
+        NAME: val
+        WIDTH: 36
+    NAME: sec_aes_out_eop_cnt_2
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: SEC AES Thread Output EOP Count Register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Indicates the number of packets completed on thread.  Value is incremented for each EOP sent on the AES to DMA interface.
+        NAME: val
+        WIDTH: 36
+    NAME: sec_aes_out_eop_cnt_3
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: SEC AES Thread Debug Register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: SEC AES Input FIFO Count.  Indicates the number of flits currently in the input FIFO.
+        NAME: in_fifo_cnt
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: SEC AES Output FIFO Count.  Indicates the number of flits currently in the output FIFO
+        NAME: out_fifo_cnt
+        WIDTH: 5
+      - DEFAULT: 4
+        DESCRIPTION: SEC AES Output Credit Count.  Indicates the number of credits owned by the AES Thread for the AES to DMA interface.
+        NAME: out_cdt_cnt
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: SEC AES FSM Block Count.  Indicates the current block being processed.  This counter is initially set to block_count and decrements as each block begins.
+        NAME: blk_cnt
+        WIDTH: 25
+      - DEFAULT: 0
+        DESCRIPTION: SEC AES Thread Stall.  Indicates if the thread is stalled.
+        NAME: stall
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: field_done
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: xts_penult
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: eop_seen
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: req
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: gnt
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: aes_vld
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: blk_vld
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: SEC AES Thread Idle.  Indicates if the thread is idle.
+        NAME: idle
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: SEC AES FSM State.  Indicates the current state of the AES FSM.
+        NAME: aes_fsm_cs
+        WIDTH: 5
+    NAME: sec_aes_dbg_0
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: SEC AES Thread Debug Register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: SEC AES Input FIFO Count.  Indicates the number of flits currently in the input FIFO.
+        NAME: in_fifo_cnt
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: SEC AES Output FIFO Count.  Indicates the number of flits currently in the output FIFO
+        NAME: out_fifo_cnt
+        WIDTH: 5
+      - DEFAULT: 4
+        DESCRIPTION: SEC AES Output Credit Count.  Indicates the number of credits owned by the AES Thread for the AES to DMA interface.
+        NAME: out_cdt_cnt
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: SEC AES FSM Block Count.  Indicates the current block being processed.  This counter is initially set to block_count and decrements as each block begins.
+        NAME: blk_cnt
+        WIDTH: 25
+      - DEFAULT: 0
+        DESCRIPTION: SEC AES Thread Stall.  Indicates if the thread is stalled.
+        NAME: stall
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: field_done
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: xts_penult
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: eop_seen
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: req
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: gnt
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: aes_vld
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: blk_vld
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: SEC AES Thread Idle.  Indicates if the thread is idle.
+        NAME: idle
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: SEC AES FSM State.  Indicates the current state of the AES FSM.
+        NAME: aes_fsm_cs
+        WIDTH: 5
+    NAME: sec_aes_dbg_1
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: SEC AES Thread Debug Register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: SEC AES Input FIFO Count.  Indicates the number of flits currently in the input FIFO.
+        NAME: in_fifo_cnt
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: SEC AES Output FIFO Count.  Indicates the number of flits currently in the output FIFO
+        NAME: out_fifo_cnt
+        WIDTH: 5
+      - DEFAULT: 4
+        DESCRIPTION: SEC AES Output Credit Count.  Indicates the number of credits owned by the AES Thread for the AES to DMA interface.
+        NAME: out_cdt_cnt
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: SEC AES FSM Block Count.  Indicates the current block being processed.  This counter is initially set to block_count and decrements as each block begins.
+        NAME: blk_cnt
+        WIDTH: 25
+      - DEFAULT: 0
+        DESCRIPTION: SEC AES Thread Stall.  Indicates if the thread is stalled.
+        NAME: stall
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: field_done
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: xts_penult
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: eop_seen
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: req
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: gnt
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: aes_vld
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: blk_vld
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: SEC AES Thread Idle.  Indicates if the thread is idle.
+        NAME: idle
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: SEC AES FSM State.  Indicates the current state of the AES FSM.
+        NAME: aes_fsm_cs
+        WIDTH: 5
+    NAME: sec_aes_dbg_2
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: SEC AES Thread Debug Register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: SEC AES Input FIFO Count.  Indicates the number of flits currently in the input FIFO.
+        NAME: in_fifo_cnt
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: SEC AES Output FIFO Count.  Indicates the number of flits currently in the output FIFO
+        NAME: out_fifo_cnt
+        WIDTH: 5
+      - DEFAULT: 4
+        DESCRIPTION: SEC AES Output Credit Count.  Indicates the number of credits owned by the AES Thread for the AES to DMA interface.
+        NAME: out_cdt_cnt
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: SEC AES FSM Block Count.  Indicates the current block being processed.  This counter is initially set to block_count and decrements as each block begins.
+        NAME: blk_cnt
+        WIDTH: 25
+      - DEFAULT: 0
+        DESCRIPTION: SEC AES Thread Stall.  Indicates if the thread is stalled.
+        NAME: stall
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: field_done
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: xts_penult
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: eop_seen
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: req
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: gnt
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: aes_vld
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: blk_vld
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: SEC AES Thread Idle.  Indicates if the thread is idle.
+        NAME: idle
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: SEC AES FSM State.  Indicates the current state of the AES FSM.
+        NAME: aes_fsm_cs
+        WIDTH: 5
+    NAME: sec_aes_dbg_3
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: 'SEC AES Thread Command Flit - Upper 64 bits'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: SEC Thread Command Flit 127:64.  Only valid after processing of packet has started.
+        NAME: val
+        WIDTH: 64
+    NAME: sec_aes_dbg_cmd_upper_0
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: 'SEC AES Thread Command Flit - Upper 64 bits'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: SEC Thread Command Flit 127:64.  Only valid after processing of packet has started.
+        NAME: val
+        WIDTH: 64
+    NAME: sec_aes_dbg_cmd_upper_1
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: 'SEC AES Thread Command Flit - Upper 64 bits'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: SEC Thread Command Flit 127:64.  Only valid after processing of packet has started.
+        NAME: val
+        WIDTH: 64
+    NAME: sec_aes_dbg_cmd_upper_2
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: 'SEC AES Thread Command Flit - Upper 64 bits'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: SEC Thread Command Flit 127:64.  Only valid after processing of packet has started.
+        NAME: val
+        WIDTH: 64
+    NAME: sec_aes_dbg_cmd_upper_3
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: 'SEC AES Thread Command Flit - Lower 64 bits'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: SEC Thread Command Flit 63:0.  Only valid after processing of packet has started.
+        NAME: val
+        WIDTH: 64
+    NAME: sec_aes_dbg_cmd_lower_0
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: 'SEC AES Thread Command Flit - Lower 64 bits'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: SEC Thread Command Flit 63:0.  Only valid after processing of packet has started.
+        NAME: val
+        WIDTH: 64
+    NAME: sec_aes_dbg_cmd_lower_1
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: 'SEC AES Thread Command Flit - Lower 64 bits'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: SEC Thread Command Flit 63:0.  Only valid after processing of packet has started.
+        NAME: val
+        WIDTH: 64
+    NAME: sec_aes_dbg_cmd_lower_2
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: 'SEC AES Thread Command Flit - Lower 64 bits'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: SEC Thread Command Flit 63:0.  Only valid after processing of packet has started.
+        NAME: val
+        WIDTH: 64
+    NAME: sec_aes_dbg_cmd_lower_3
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: SEC SHA Thread Input SOP Count Register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Indicates the number of packets started on thread.  Value is incremented for each SOP observed on the DMA to SHA interface.  Only SOPs received while FSM Idle are counted (i.e. invalid SOPs are ignored).
+        NAME: val
+        WIDTH: 36
+    NAME: sec_sha_in_sop_cnt_0
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: SEC SHA Thread Input SOP Count Register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Indicates the number of packets started on thread.  Value is incremented for each SOP observed on the DMA to SHA interface.  Only SOPs received while FSM Idle are counted (i.e. invalid SOPs are ignored).
+        NAME: val
+        WIDTH: 36
+    NAME: sec_sha_in_sop_cnt_1
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: SEC SHA Thread Input SOP Count Register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Indicates the number of packets started on thread.  Value is incremented for each SOP observed on the DMA to SHA interface.  Only SOPs received while FSM Idle are counted (i.e. invalid SOPs are ignored).
+        NAME: val
+        WIDTH: 36
+    NAME: sec_sha_in_sop_cnt_2
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: SEC SHA Thread Input SOP Count Register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Indicates the number of packets started on thread.  Value is incremented for each SOP observed on the DMA to SHA interface.  Only SOPs received while FSM Idle are counted (i.e. invalid SOPs are ignored).
+        NAME: val
+        WIDTH: 36
+    NAME: sec_sha_in_sop_cnt_3
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: SEC SHA Thread Input SOP Count Register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Indicates the number of packets started on thread.  Value is incremented for each SOP observed on the DMA to SHA interface.  Only SOPs received while FSM Idle are counted (i.e. invalid SOPs are ignored).
+        NAME: val
+        WIDTH: 36
+    NAME: sec_sha_in_sop_cnt_4
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: SEC SHA Thread Input SOP Count Register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Indicates the number of packets started on thread.  Value is incremented for each SOP observed on the DMA to SHA interface.  Only SOPs received while FSM Idle are counted (i.e. invalid SOPs are ignored).
+        NAME: val
+        WIDTH: 36
+    NAME: sec_sha_in_sop_cnt_5
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: SEC SHA Thread Input EOP Count Register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Value is incremented for each EOP observed on the DMA to SHA interface.
+        NAME: val
+        WIDTH: 36
+    NAME: sec_sha_in_eop_cnt_0
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: SEC SHA Thread Input EOP Count Register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Value is incremented for each EOP observed on the DMA to SHA interface.
+        NAME: val
+        WIDTH: 36
+    NAME: sec_sha_in_eop_cnt_1
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: SEC SHA Thread Input EOP Count Register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Value is incremented for each EOP observed on the DMA to SHA interface.
+        NAME: val
+        WIDTH: 36
+    NAME: sec_sha_in_eop_cnt_2
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: SEC SHA Thread Input EOP Count Register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Value is incremented for each EOP observed on the DMA to SHA interface.
+        NAME: val
+        WIDTH: 36
+    NAME: sec_sha_in_eop_cnt_3
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: SEC SHA Thread Input EOP Count Register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Value is incremented for each EOP observed on the DMA to SHA interface.
+        NAME: val
+        WIDTH: 36
+    NAME: sec_sha_in_eop_cnt_4
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: SEC SHA Thread Input EOP Count Register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Value is incremented for each EOP observed on the DMA to SHA interface.
+        NAME: val
+        WIDTH: 36
+    NAME: sec_sha_in_eop_cnt_5
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: SEC SHA Thread Output sOP Count Register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Value is incremented for each SOP sent on the SHA to DMA interface.
+        NAME: val
+        WIDTH: 36
+    NAME: sec_sha_out_sop_cnt_0
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: SEC SHA Thread Output sOP Count Register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Value is incremented for each SOP sent on the SHA to DMA interface.
+        NAME: val
+        WIDTH: 36
+    NAME: sec_sha_out_sop_cnt_1
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: SEC SHA Thread Output sOP Count Register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Value is incremented for each SOP sent on the SHA to DMA interface.
+        NAME: val
+        WIDTH: 36
+    NAME: sec_sha_out_sop_cnt_2
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: SEC SHA Thread Output sOP Count Register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Value is incremented for each SOP sent on the SHA to DMA interface.
+        NAME: val
+        WIDTH: 36
+    NAME: sec_sha_out_sop_cnt_3
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: SEC SHA Thread Output sOP Count Register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Value is incremented for each SOP sent on the SHA to DMA interface.
+        NAME: val
+        WIDTH: 36
+    NAME: sec_sha_out_sop_cnt_4
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: SEC SHA Thread Output sOP Count Register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Value is incremented for each SOP sent on the SHA to DMA interface.
+        NAME: val
+        WIDTH: 36
+    NAME: sec_sha_out_sop_cnt_5
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: SEC SHA Thread Output EOP Count Register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Indicates the number of packets completed on thread.  Value is incremented for each EOP sent on the SHA to DMA interface.
+        NAME: val
+        WIDTH: 36
+    NAME: sec_sha_out_eop_cnt_0
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: SEC SHA Thread Output EOP Count Register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Indicates the number of packets completed on thread.  Value is incremented for each EOP sent on the SHA to DMA interface.
+        NAME: val
+        WIDTH: 36
+    NAME: sec_sha_out_eop_cnt_1
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: SEC SHA Thread Output EOP Count Register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Indicates the number of packets completed on thread.  Value is incremented for each EOP sent on the SHA to DMA interface.
+        NAME: val
+        WIDTH: 36
+    NAME: sec_sha_out_eop_cnt_2
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: SEC SHA Thread Output EOP Count Register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Indicates the number of packets completed on thread.  Value is incremented for each EOP sent on the SHA to DMA interface.
+        NAME: val
+        WIDTH: 36
+    NAME: sec_sha_out_eop_cnt_3
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: SEC SHA Thread Output EOP Count Register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Indicates the number of packets completed on thread.  Value is incremented for each EOP sent on the SHA to DMA interface.
+        NAME: val
+        WIDTH: 36
+    NAME: sec_sha_out_eop_cnt_4
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: SEC SHA Thread Output EOP Count Register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Indicates the number of packets completed on thread.  Value is incremented for each EOP sent on the SHA to DMA interface.
+        NAME: val
+        WIDTH: 36
+    NAME: sec_sha_out_eop_cnt_5
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: SEC SHA Thread Common Debug Register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: SEC SHA Input FIFO Count.  Indicates the number of flits currently in the input FIFO.
+        NAME: in_fifo_cnt
+        WIDTH: 2
+      - DEFAULT: 1
+        DESCRIPTION: ''
+        NAME: inbuf_empty
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: inbuf_full
+        WIDTH: 1
+      - DEFAULT: 15
+        DESCRIPTION: ''
+        NAME: outbuf_empty
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: outbuf_full
+        WIDTH: 4
+      - DEFAULT: 4
+        DESCRIPTION: SEC SHA Output Credit Count.  Indicates the number of credits owned by the SHA Thread for the SHA to DMA interface.
+        NAME: out_cdt_cnt
+        WIDTH: 3
+      - DEFAULT: 1
+        DESCRIPTION: SEC SHA Thread Idle.  Indicates if the thread is idle.
+        NAME: idle
+        WIDTH: 1
+    NAME: sec_sha_cmn_dbg_0
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: SEC SHA Thread Common Debug Register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: SEC SHA Input FIFO Count.  Indicates the number of flits currently in the input FIFO.
+        NAME: in_fifo_cnt
+        WIDTH: 2
+      - DEFAULT: 1
+        DESCRIPTION: ''
+        NAME: inbuf_empty
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: inbuf_full
+        WIDTH: 1
+      - DEFAULT: 15
+        DESCRIPTION: ''
+        NAME: outbuf_empty
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: outbuf_full
+        WIDTH: 4
+      - DEFAULT: 4
+        DESCRIPTION: SEC SHA Output Credit Count.  Indicates the number of credits owned by the SHA Thread for the SHA to DMA interface.
+        NAME: out_cdt_cnt
+        WIDTH: 3
+      - DEFAULT: 1
+        DESCRIPTION: SEC SHA Thread Idle.  Indicates if the thread is idle.
+        NAME: idle
+        WIDTH: 1
+    NAME: sec_sha_cmn_dbg_1
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: SEC SHA Thread Common Debug Register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: SEC SHA Input FIFO Count.  Indicates the number of flits currently in the input FIFO.
+        NAME: in_fifo_cnt
+        WIDTH: 2
+      - DEFAULT: 1
+        DESCRIPTION: ''
+        NAME: inbuf_empty
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: inbuf_full
+        WIDTH: 1
+      - DEFAULT: 15
+        DESCRIPTION: ''
+        NAME: outbuf_empty
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: outbuf_full
+        WIDTH: 4
+      - DEFAULT: 4
+        DESCRIPTION: SEC SHA Output Credit Count.  Indicates the number of credits owned by the SHA Thread for the SHA to DMA interface.
+        NAME: out_cdt_cnt
+        WIDTH: 3
+      - DEFAULT: 1
+        DESCRIPTION: SEC SHA Thread Idle.  Indicates if the thread is idle.
+        NAME: idle
+        WIDTH: 1
+    NAME: sec_sha_cmn_dbg_2
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: SEC SHA Thread Common Debug Register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: SEC SHA Input FIFO Count.  Indicates the number of flits currently in the input FIFO.
+        NAME: in_fifo_cnt
+        WIDTH: 2
+      - DEFAULT: 1
+        DESCRIPTION: ''
+        NAME: inbuf_empty
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: inbuf_full
+        WIDTH: 1
+      - DEFAULT: 15
+        DESCRIPTION: ''
+        NAME: outbuf_empty
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: outbuf_full
+        WIDTH: 4
+      - DEFAULT: 4
+        DESCRIPTION: SEC SHA Output Credit Count.  Indicates the number of credits owned by the SHA Thread for the SHA to DMA interface.
+        NAME: out_cdt_cnt
+        WIDTH: 3
+      - DEFAULT: 1
+        DESCRIPTION: SEC SHA Thread Idle.  Indicates if the thread is idle.
+        NAME: idle
+        WIDTH: 1
+    NAME: sec_sha_cmn_dbg_3
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: SEC SHA Thread Common Debug Register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: SEC SHA Input FIFO Count.  Indicates the number of flits currently in the input FIFO.
+        NAME: in_fifo_cnt
+        WIDTH: 2
+      - DEFAULT: 1
+        DESCRIPTION: ''
+        NAME: inbuf_empty
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: inbuf_full
+        WIDTH: 1
+      - DEFAULT: 15
+        DESCRIPTION: ''
+        NAME: outbuf_empty
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: outbuf_full
+        WIDTH: 4
+      - DEFAULT: 4
+        DESCRIPTION: SEC SHA Output Credit Count.  Indicates the number of credits owned by the SHA Thread for the SHA to DMA interface.
+        NAME: out_cdt_cnt
+        WIDTH: 3
+      - DEFAULT: 1
+        DESCRIPTION: SEC SHA Thread Idle.  Indicates if the thread is idle.
+        NAME: idle
+        WIDTH: 1
+    NAME: sec_sha_cmn_dbg_4
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: SEC SHA Thread Common Debug Register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: SEC SHA Input FIFO Count.  Indicates the number of flits currently in the input FIFO.
+        NAME: in_fifo_cnt
+        WIDTH: 2
+      - DEFAULT: 1
+        DESCRIPTION: ''
+        NAME: inbuf_empty
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: inbuf_full
+        WIDTH: 1
+      - DEFAULT: 15
+        DESCRIPTION: ''
+        NAME: outbuf_empty
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: outbuf_full
+        WIDTH: 4
+      - DEFAULT: 4
+        DESCRIPTION: SEC SHA Output Credit Count.  Indicates the number of credits owned by the SHA Thread for the SHA to DMA interface.
+        NAME: out_cdt_cnt
+        WIDTH: 3
+      - DEFAULT: 1
+        DESCRIPTION: SEC SHA Thread Idle.  Indicates if the thread is idle.
+        NAME: idle
+        WIDTH: 1
+    NAME: sec_sha_cmn_dbg_5
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: SEC SHA Thread SHA1/SHA2 Engine Debug Register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: SEC SHA FSM Hash Count.  Indicates the current hash operation being processed.  This counter is initially set to hash_count and decrements as each block begins.
+        NAME: hash_cnt
+        WIDTH: 10
+      - DEFAULT: 0
+        DESCRIPTION: SEC SHA FSM Block Count.  Indicates the current block being processed.  This counter is initially set to block_count and decrements as each block begins.
+        NAME: blk_cnt
+        WIDTH: 10
+      - DEFAULT: 0
+        DESCRIPTION: SEC SHA FSM Word Count.  Indicates the current word being processed.  This counter is initially set to the number of words in a block for the selected operation and decrements as each word begins.
+        NAME: word_cnt
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: SEC SHA FSM Out Count.  Indicates the current word being output.  This counter is initially set to the number of words in the message digest for the selected operation and decrements as each word is output.
+        NAME: out_cnt
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: SEC SHA Feed FSM State.  Indicates the current state of the SHA Feed FSM.
+        NAME: sha_feed_cs
+        WIDTH: 5
+    NAME: sec_sha1_sha2_dbg_0
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: SEC SHA Thread SHA1/SHA2 Engine Debug Register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: SEC SHA FSM Hash Count.  Indicates the current hash operation being processed.  This counter is initially set to hash_count and decrements as each block begins.
+        NAME: hash_cnt
+        WIDTH: 10
+      - DEFAULT: 0
+        DESCRIPTION: SEC SHA FSM Block Count.  Indicates the current block being processed.  This counter is initially set to block_count and decrements as each block begins.
+        NAME: blk_cnt
+        WIDTH: 10
+      - DEFAULT: 0
+        DESCRIPTION: SEC SHA FSM Word Count.  Indicates the current word being processed.  This counter is initially set to the number of words in a block for the selected operation and decrements as each word begins.
+        NAME: word_cnt
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: SEC SHA FSM Out Count.  Indicates the current word being output.  This counter is initially set to the number of words in the message digest for the selected operation and decrements as each word is output.
+        NAME: out_cnt
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: SEC SHA Feed FSM State.  Indicates the current state of the SHA Feed FSM.
+        NAME: sha_feed_cs
+        WIDTH: 5
+    NAME: sec_sha1_sha2_dbg_1
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: SEC SHA Thread SHA1/SHA2 Engine Debug Register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: SEC SHA FSM Hash Count.  Indicates the current hash operation being processed.  This counter is initially set to hash_count and decrements as each block begins.
+        NAME: hash_cnt
+        WIDTH: 10
+      - DEFAULT: 0
+        DESCRIPTION: SEC SHA FSM Block Count.  Indicates the current block being processed.  This counter is initially set to block_count and decrements as each block begins.
+        NAME: blk_cnt
+        WIDTH: 10
+      - DEFAULT: 0
+        DESCRIPTION: SEC SHA FSM Word Count.  Indicates the current word being processed.  This counter is initially set to the number of words in a block for the selected operation and decrements as each word begins.
+        NAME: word_cnt
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: SEC SHA FSM Out Count.  Indicates the current word being output.  This counter is initially set to the number of words in the message digest for the selected operation and decrements as each word is output.
+        NAME: out_cnt
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: SEC SHA Feed FSM State.  Indicates the current state of the SHA Feed FSM.
+        NAME: sha_feed_cs
+        WIDTH: 5
+    NAME: sec_sha1_sha2_dbg_2
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: SEC SHA Thread SHA1/SHA2 Engine Debug Register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: SEC SHA FSM Hash Count.  Indicates the current hash operation being processed.  This counter is initially set to hash_count and decrements as each block begins.
+        NAME: hash_cnt
+        WIDTH: 10
+      - DEFAULT: 0
+        DESCRIPTION: SEC SHA FSM Block Count.  Indicates the current block being processed.  This counter is initially set to block_count and decrements as each block begins.
+        NAME: blk_cnt
+        WIDTH: 10
+      - DEFAULT: 0
+        DESCRIPTION: SEC SHA FSM Word Count.  Indicates the current word being processed.  This counter is initially set to the number of words in a block for the selected operation and decrements as each word begins.
+        NAME: word_cnt
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: SEC SHA FSM Out Count.  Indicates the current word being output.  This counter is initially set to the number of words in the message digest for the selected operation and decrements as each word is output.
+        NAME: out_cnt
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: SEC SHA Feed FSM State.  Indicates the current state of the SHA Feed FSM.
+        NAME: sha_feed_cs
+        WIDTH: 5
+    NAME: sec_sha1_sha2_dbg_3
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: SEC SHA Thread SHA1/SHA2 Engine Debug Register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: SEC SHA FSM Hash Count.  Indicates the current hash operation being processed.  This counter is initially set to hash_count and decrements as each block begins.
+        NAME: hash_cnt
+        WIDTH: 10
+      - DEFAULT: 0
+        DESCRIPTION: SEC SHA FSM Block Count.  Indicates the current block being processed.  This counter is initially set to block_count and decrements as each block begins.
+        NAME: blk_cnt
+        WIDTH: 10
+      - DEFAULT: 0
+        DESCRIPTION: SEC SHA FSM Word Count.  Indicates the current word being processed.  This counter is initially set to the number of words in a block for the selected operation and decrements as each word begins.
+        NAME: word_cnt
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: SEC SHA FSM Out Count.  Indicates the current word being output.  This counter is initially set to the number of words in the message digest for the selected operation and decrements as each word is output.
+        NAME: out_cnt
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: SEC SHA Feed FSM State.  Indicates the current state of the SHA Feed FSM.
+        NAME: sha_feed_cs
+        WIDTH: 5
+    NAME: sec_sha1_sha2_dbg_4
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: SEC SHA Thread SHA1/SHA2 Engine Debug Register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: SEC SHA FSM Hash Count.  Indicates the current hash operation being processed.  This counter is initially set to hash_count and decrements as each block begins.
+        NAME: hash_cnt
+        WIDTH: 10
+      - DEFAULT: 0
+        DESCRIPTION: SEC SHA FSM Block Count.  Indicates the current block being processed.  This counter is initially set to block_count and decrements as each block begins.
+        NAME: blk_cnt
+        WIDTH: 10
+      - DEFAULT: 0
+        DESCRIPTION: SEC SHA FSM Word Count.  Indicates the current word being processed.  This counter is initially set to the number of words in a block for the selected operation and decrements as each word begins.
+        NAME: word_cnt
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: SEC SHA FSM Out Count.  Indicates the current word being output.  This counter is initially set to the number of words in the message digest for the selected operation and decrements as each word is output.
+        NAME: out_cnt
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: SEC SHA Feed FSM State.  Indicates the current state of the SHA Feed FSM.
+        NAME: sha_feed_cs
+        WIDTH: 5
+    NAME: sec_sha1_sha2_dbg_5
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: SEC SHA Thread SHA3 Engine Debug Register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: SEC SHA FSM Hash Count.  Indicates the current hash operation being processed.  This counter is initially set to hash_count and decrements as each block begins.
+        NAME: hash_cnt
+        WIDTH: 10
+      - DEFAULT: 0
+        DESCRIPTION: SEC SHA FSM Block Count.  Indicates the current block being processed.  This counter is initially set to block_count and decrements as each block begins.
+        NAME: blk_cnt
+        WIDTH: 10
+      - DEFAULT: 0
+        DESCRIPTION: SEC SHA FSM Word Count.  Indicates the current word being processed.  This counter is initially set to the number of words in a block for the selected operation and decrements as each word begins.
+        NAME: word_cnt
+        WIDTH: 5
+      - DEFAULT: 0
+        DESCRIPTION: SEC SHA Feed FSM State.  Indicates the current state of the SHA Feed FSM.
+        NAME: sha_feed_cs
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: SEC SHA Permute FSM State.  Indicates the current state of the SHA Permute FSM.
+        NAME: sha_permute_cs
+        WIDTH: 3
+    NAME: sec_sha3_dbg_0
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: SEC SHA Thread SHA3 Engine Debug Register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: SEC SHA FSM Hash Count.  Indicates the current hash operation being processed.  This counter is initially set to hash_count and decrements as each block begins.
+        NAME: hash_cnt
+        WIDTH: 10
+      - DEFAULT: 0
+        DESCRIPTION: SEC SHA FSM Block Count.  Indicates the current block being processed.  This counter is initially set to block_count and decrements as each block begins.
+        NAME: blk_cnt
+        WIDTH: 10
+      - DEFAULT: 0
+        DESCRIPTION: SEC SHA FSM Word Count.  Indicates the current word being processed.  This counter is initially set to the number of words in a block for the selected operation and decrements as each word begins.
+        NAME: word_cnt
+        WIDTH: 5
+      - DEFAULT: 0
+        DESCRIPTION: SEC SHA Feed FSM State.  Indicates the current state of the SHA Feed FSM.
+        NAME: sha_feed_cs
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: SEC SHA Permute FSM State.  Indicates the current state of the SHA Permute FSM.
+        NAME: sha_permute_cs
+        WIDTH: 3
+    NAME: sec_sha3_dbg_1
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: SEC SHA Thread SHA3 Engine Debug Register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: SEC SHA FSM Hash Count.  Indicates the current hash operation being processed.  This counter is initially set to hash_count and decrements as each block begins.
+        NAME: hash_cnt
+        WIDTH: 10
+      - DEFAULT: 0
+        DESCRIPTION: SEC SHA FSM Block Count.  Indicates the current block being processed.  This counter is initially set to block_count and decrements as each block begins.
+        NAME: blk_cnt
+        WIDTH: 10
+      - DEFAULT: 0
+        DESCRIPTION: SEC SHA FSM Word Count.  Indicates the current word being processed.  This counter is initially set to the number of words in a block for the selected operation and decrements as each word begins.
+        NAME: word_cnt
+        WIDTH: 5
+      - DEFAULT: 0
+        DESCRIPTION: SEC SHA Feed FSM State.  Indicates the current state of the SHA Feed FSM.
+        NAME: sha_feed_cs
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: SEC SHA Permute FSM State.  Indicates the current state of the SHA Permute FSM.
+        NAME: sha_permute_cs
+        WIDTH: 3
+    NAME: sec_sha3_dbg_2
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: SEC SHA Thread SHA3 Engine Debug Register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: SEC SHA FSM Hash Count.  Indicates the current hash operation being processed.  This counter is initially set to hash_count and decrements as each block begins.
+        NAME: hash_cnt
+        WIDTH: 10
+      - DEFAULT: 0
+        DESCRIPTION: SEC SHA FSM Block Count.  Indicates the current block being processed.  This counter is initially set to block_count and decrements as each block begins.
+        NAME: blk_cnt
+        WIDTH: 10
+      - DEFAULT: 0
+        DESCRIPTION: SEC SHA FSM Word Count.  Indicates the current word being processed.  This counter is initially set to the number of words in a block for the selected operation and decrements as each word begins.
+        NAME: word_cnt
+        WIDTH: 5
+      - DEFAULT: 0
+        DESCRIPTION: SEC SHA Feed FSM State.  Indicates the current state of the SHA Feed FSM.
+        NAME: sha_feed_cs
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: SEC SHA Permute FSM State.  Indicates the current state of the SHA Permute FSM.
+        NAME: sha_permute_cs
+        WIDTH: 3
+    NAME: sec_sha3_dbg_3
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: SEC SHA Thread SHA3 Engine Debug Register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: SEC SHA FSM Hash Count.  Indicates the current hash operation being processed.  This counter is initially set to hash_count and decrements as each block begins.
+        NAME: hash_cnt
+        WIDTH: 10
+      - DEFAULT: 0
+        DESCRIPTION: SEC SHA FSM Block Count.  Indicates the current block being processed.  This counter is initially set to block_count and decrements as each block begins.
+        NAME: blk_cnt
+        WIDTH: 10
+      - DEFAULT: 0
+        DESCRIPTION: SEC SHA FSM Word Count.  Indicates the current word being processed.  This counter is initially set to the number of words in a block for the selected operation and decrements as each word begins.
+        NAME: word_cnt
+        WIDTH: 5
+      - DEFAULT: 0
+        DESCRIPTION: SEC SHA Feed FSM State.  Indicates the current state of the SHA Feed FSM.
+        NAME: sha_feed_cs
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: SEC SHA Permute FSM State.  Indicates the current state of the SHA Permute FSM.
+        NAME: sha_permute_cs
+        WIDTH: 3
+    NAME: sec_sha3_dbg_4
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: SEC SHA Thread SHA3 Engine Debug Register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: SEC SHA FSM Hash Count.  Indicates the current hash operation being processed.  This counter is initially set to hash_count and decrements as each block begins.
+        NAME: hash_cnt
+        WIDTH: 10
+      - DEFAULT: 0
+        DESCRIPTION: SEC SHA FSM Block Count.  Indicates the current block being processed.  This counter is initially set to block_count and decrements as each block begins.
+        NAME: blk_cnt
+        WIDTH: 10
+      - DEFAULT: 0
+        DESCRIPTION: SEC SHA FSM Word Count.  Indicates the current word being processed.  This counter is initially set to the number of words in a block for the selected operation and decrements as each word begins.
+        NAME: word_cnt
+        WIDTH: 5
+      - DEFAULT: 0
+        DESCRIPTION: SEC SHA Feed FSM State.  Indicates the current state of the SHA Feed FSM.
+        NAME: sha_feed_cs
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: SEC SHA Permute FSM State.  Indicates the current state of the SHA Permute FSM.
+        NAME: sha_permute_cs
+        WIDTH: 3
+    NAME: sec_sha3_dbg_5
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: 'SEC SHA Thread Command Flit - Upper 64 bits'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: SEC Thread Command Flit 127:64.  Only valid after processing of packet has started.
+        NAME: val
+        WIDTH: 64
+    NAME: sec_sha_dbg_cmd_upper_0
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: 'SEC SHA Thread Command Flit - Upper 64 bits'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: SEC Thread Command Flit 127:64.  Only valid after processing of packet has started.
+        NAME: val
+        WIDTH: 64
+    NAME: sec_sha_dbg_cmd_upper_1
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: 'SEC SHA Thread Command Flit - Upper 64 bits'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: SEC Thread Command Flit 127:64.  Only valid after processing of packet has started.
+        NAME: val
+        WIDTH: 64
+    NAME: sec_sha_dbg_cmd_upper_2
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: 'SEC SHA Thread Command Flit - Upper 64 bits'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: SEC Thread Command Flit 127:64.  Only valid after processing of packet has started.
+        NAME: val
+        WIDTH: 64
+    NAME: sec_sha_dbg_cmd_upper_3
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: 'SEC SHA Thread Command Flit - Upper 64 bits'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: SEC Thread Command Flit 127:64.  Only valid after processing of packet has started.
+        NAME: val
+        WIDTH: 64
+    NAME: sec_sha_dbg_cmd_upper_4
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: 'SEC SHA Thread Command Flit - Upper 64 bits'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: SEC Thread Command Flit 127:64.  Only valid after processing of packet has started.
+        NAME: val
+        WIDTH: 64
+    NAME: sec_sha_dbg_cmd_upper_5
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: 'SEC SHA Thread Command Flit - Lower 64 bits'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: SEC Thread Command Flit 63:0.  Only valid after processing of packet has started.
+        NAME: val
+        WIDTH: 64
+    NAME: sec_sha_dbg_cmd_lower_0
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: 'SEC SHA Thread Command Flit - Lower 64 bits'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: SEC Thread Command Flit 63:0.  Only valid after processing of packet has started.
+        NAME: val
+        WIDTH: 64
+    NAME: sec_sha_dbg_cmd_lower_1
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: 'SEC SHA Thread Command Flit - Lower 64 bits'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: SEC Thread Command Flit 63:0.  Only valid after processing of packet has started.
+        NAME: val
+        WIDTH: 64
+    NAME: sec_sha_dbg_cmd_lower_2
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: 'SEC SHA Thread Command Flit - Lower 64 bits'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: SEC Thread Command Flit 63:0.  Only valid after processing of packet has started.
+        NAME: val
+        WIDTH: 64
+    NAME: sec_sha_dbg_cmd_lower_3
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: 'SEC SHA Thread Command Flit - Lower 64 bits'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: SEC Thread Command Flit 63:0.  Only valid after processing of packet has started.
+        NAME: val
+        WIDTH: 64
+    NAME: sec_sha_dbg_cmd_lower_4
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: 'SEC SHA Thread Command Flit - Lower 64 bits'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: SEC Thread Command Flit 63:0.  Only valid after processing of packet has started.
+        NAME: val
+        WIDTH: 64
+    NAME: sec_sha_dbg_cmd_lower_5
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: SEC Memory Read Select/Address
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Memory Address
+        NAME: addr
+        WIDTH: 6
+    NAME: sec_mem_sel_addr
+  - ATTR: 10
+    COUNT: 1
+    DESCRIPTION: 'SEC Memory Read Data - Upper'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Upper 64 bits of Memory location specified by Memory Read Select/Address Register
+        NAME: val
+        WIDTH: 64
+    NAME: sec_mem_rd_data_upper
+  - ATTR: 10
+    COUNT: 1
+    DESCRIPTION: 'SEC Memory Read Data - Lower'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Lower 64 bits of Memory location specified by Memory Read Select/Address Register
+        NAME: val
+        WIDTH: 64
+    NAME: sec_mem_rd_data_lower
+XASIZE: 0

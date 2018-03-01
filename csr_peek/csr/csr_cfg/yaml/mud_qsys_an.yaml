@@ -1,0 +1,613 @@
+---
+ASIZE: 65536
+BASEADDRPORT: 1
+COUNT: 1
+DESCRIPTION: MUD Manager CSR Spec
+INTR:
+  FATAL:
+    - DESCRIPTION: Qsys write request buffer memory uncorrectable error.
+      NAME: wr_rq_buf_ucerr
+      WIDTH: 1
+    - DESCRIPTION: Qsys write buffer memory uncorrectable error.
+      NAME: wr_buf_ucerr
+      WIDTH: 1
+    - DESCRIPTION: Qsys write request free buffer memory uncorrectable error.
+      NAME: wr_rq_buf_fb_ucerr
+      WIDTH: 1
+    - DESCRIPTION: Qsys read request buffer memory uncorrectable error.
+      NAME: rd_rq_buf_ucerr
+      WIDTH: 1
+    - DESCRIPTION: Qsys read request free buffer memory uncorrectable error.
+      NAME: rd_rq_buf_fb_ucerr
+      WIDTH: 1
+    - DESCRIPTION: Qsys read reply buffer memory uncorrectable error.
+      NAME: rd_rpl_buf_ucerr
+      WIDTH: 1
+    - DESCRIPTION: Qsys read reply free buffer memory uncorrectable error.
+      NAME: rd_rpl_buf_fb_ucerr
+      WIDTH: 1
+  NON_FATAL:
+    - DESCRIPTION: Qsys write request buffer memory correctable error.
+      NAME: wr_rq_buf_cerr
+      WIDTH: 1
+    - DESCRIPTION: Qsys write buffer memory correctable error.
+      NAME: wr_buf_cerr
+      WIDTH: 1
+    - DESCRIPTION: Qsys write request free buffer memory correctable error.
+      NAME: wr_rq_buf_fb_cerr
+      WIDTH: 1
+    - DESCRIPTION: Qsys read request buffer memory correctable error.
+      NAME: rd_rq_buf_cerr
+      WIDTH: 1
+    - DESCRIPTION: Qsys read request free buffer memory correctable error.
+      NAME: rd_rq_buf_fb_cerr
+      WIDTH: 1
+    - DESCRIPTION: Qsys read reply buffer memory correctable error.
+      NAME: rd_rpl_buf_cerr
+      WIDTH: 1
+    - DESCRIPTION: Qsys read reply free buffer memory correctable error.
+      NAME: rd_rpl_buf_fb_cerr
+      WIDTH: 1
+INTR_PORT_EN: 1
+NAME: MUD_QSYS_AN
+PARENTNAME: MUD_1_AN_MUD_SOC_CLK_AN
+REGLST:
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: |-
+          Timeout Configuration. Cycles are RSU clk based.
+                            - 00 : 1024 cycles
+                            - 01 : 256 cycles
+                            - 10 : 4096 cycles
+                            - 11 : infinite
+        NAME: val
+        WIDTH: 2
+    NAME: mud_qsys_timeout_thresh_cfg
+  - ATTR: 9
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: "Timed out Status. Cycles are RSU clk based. Becomes 1 when timed out. Write any value to clear it.\n                  "
+        NAME: val
+        WIDTH: 1
+    NAME: mud_qsys_timedout_sta
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: |-
+          Clear Timeout Status. Data is ignored. A write
+                     will clear the timeout status bit
+        NAME: val
+        WIDTH: 1
+    NAME: mud_qsys_timeout_clr
+    TEST_ATTR: 1
+  - ATTR: 256
+    FLDLST:
+      - &1
+        DESCRIPTION: Qsys write request buffer memory uncorrectable error.
+        NAME: wr_rq_buf_ucerr
+        WIDTH: 1
+      - &2
+        DESCRIPTION: Qsys write buffer memory uncorrectable error.
+        NAME: wr_buf_ucerr
+        WIDTH: 1
+      - &3
+        DESCRIPTION: Qsys write request free buffer memory uncorrectable error.
+        NAME: wr_rq_buf_fb_ucerr
+        WIDTH: 1
+      - &4
+        DESCRIPTION: Qsys read request buffer memory uncorrectable error.
+        NAME: rd_rq_buf_ucerr
+        WIDTH: 1
+      - &5
+        DESCRIPTION: Qsys read request free buffer memory uncorrectable error.
+        NAME: rd_rq_buf_fb_ucerr
+        WIDTH: 1
+      - &6
+        DESCRIPTION: Qsys read reply buffer memory uncorrectable error.
+        NAME: rd_rpl_buf_ucerr
+        WIDTH: 1
+      - &7
+        DESCRIPTION: Qsys read reply free buffer memory uncorrectable error.
+        NAME: rd_rpl_buf_fb_ucerr
+        WIDTH: 1
+    NAME: mud_qsys_fatal_intr_cause
+  - ATTR: 512
+    FLDLST:
+      - *1
+      - *2
+      - *3
+      - *4
+      - *5
+      - *6
+      - *7
+    NAME: mud_qsys_fatal_intr_stat
+  - ATTR: 1024
+    FLDLST:
+      - *1
+      - *2
+      - *3
+      - *4
+      - *5
+      - *6
+      - *7
+    NAME: mud_qsys_fatal_intr_mask
+  - ATTR: 2048
+    FLDLST:
+      - *1
+      - *2
+      - *3
+      - *4
+      - *5
+      - *6
+      - *7
+    NAME: mud_qsys_fatal_intr_bset
+  - ATTR: 4096
+    FLDLST:
+      - *1
+      - *2
+      - *3
+      - *4
+      - *5
+      - *6
+      - *7
+    NAME: mud_qsys_fatal_intr_bclr
+  - ATTR: 256
+    FLDLST:
+      - &8
+        DESCRIPTION: Qsys write request buffer memory correctable error.
+        NAME: wr_rq_buf_cerr
+        WIDTH: 1
+      - &9
+        DESCRIPTION: Qsys write buffer memory correctable error.
+        NAME: wr_buf_cerr
+        WIDTH: 1
+      - &10
+        DESCRIPTION: Qsys write request free buffer memory correctable error.
+        NAME: wr_rq_buf_fb_cerr
+        WIDTH: 1
+      - &11
+        DESCRIPTION: Qsys read request buffer memory correctable error.
+        NAME: rd_rq_buf_cerr
+        WIDTH: 1
+      - &12
+        DESCRIPTION: Qsys read request free buffer memory correctable error.
+        NAME: rd_rq_buf_fb_cerr
+        WIDTH: 1
+      - &13
+        DESCRIPTION: Qsys read reply buffer memory correctable error.
+        NAME: rd_rpl_buf_cerr
+        WIDTH: 1
+      - &14
+        DESCRIPTION: Qsys read reply free buffer memory correctable error.
+        NAME: rd_rpl_buf_fb_cerr
+        WIDTH: 1
+    NAME: mud_qsys_non_fatal_intr_cause
+  - ATTR: 512
+    FLDLST:
+      - *8
+      - *9
+      - *10
+      - *11
+      - *12
+      - *13
+      - *14
+    NAME: mud_qsys_non_fatal_intr_stat
+  - ATTR: 1024
+    FLDLST:
+      - *8
+      - *9
+      - *10
+      - *11
+      - *12
+      - *13
+      - *14
+    NAME: mud_qsys_non_fatal_intr_mask
+  - ATTR: 2048
+    FLDLST:
+      - *8
+      - *9
+      - *10
+      - *11
+      - *12
+      - *13
+      - *14
+    NAME: mud_qsys_non_fatal_intr_bset
+  - ATTR: 4096
+    FLDLST:
+      - *8
+      - *9
+      - *10
+      - *11
+      - *12
+      - *13
+      - *14
+    NAME: mud_qsys_non_fatal_intr_bclr
+  - ATTR: 9
+    DESCRIPTION: Place Holder for now for MU_CFG Feature Register
+    FLDLST:
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Module ID
+        NAME: module_id
+        WIDTH: 8
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Version number of the module
+        NAME: version
+        WIDTH: 8
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Features enabled in the module.
+        NAME: features
+        WIDTH: 16
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Reserved Field.
+        NAME: Reserved
+        WIDTH: 32
+    NAME: mud_qsys_features
+    WIDTH: 64
+  - ATTR: 5
+    DESCRIPTION: ' Spare PIO register. These bits can be read and written by software. They can serve as control bits for late ECOs in the design.'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Spare PIO register.
+        NAME: val
+        WIDTH: 64
+    NAME: mud_qsys_spare_pio
+    WIDTH: 64
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: Scratchpad register.
+        NAME: val
+        WIDTH: 64
+    NAME: mud_qsys_scratchpad
+    WIDTH: 64
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: MU QSYS scheduler configuration regsiter 0.
+    FLDLST:
+      - DEFAULT: 3
+        DESCRIPTION: 'Number of idle cycles between activates scheduler inserts per channel. 0 for none, 1 for 1 cycle, ...  '
+        NAME: sch_act_idle_cyc
+        WIDTH: 2
+      - DEFAULT: 64
+        DESCRIPTION: Read activate mask.
+        NAME: rd_act_mask_num_cyc
+        WIDTH: 8
+      - DEFAULT: 64
+        DESCRIPTION: Write activate mask.
+        NAME: wr_act_mask_num_cyc
+        WIDTH: 8
+      - DEFAULT: 12
+        DESCRIPTION: Bank group activate mask.
+        NAME: bg_act_mask_num_cyc
+        WIDTH: 6
+      - DEFAULT: 160
+        DESCRIPTION: Refresh activate mask.
+        NAME: ref_act_mask_num_cyc
+        WIDTH: 12
+      - DEFAULT: 32
+        DESCRIPTION: DIMM slot 0 maximum read activates per scheduling rotation.
+        NAME: ds_0_max_rd_act
+        WIDTH: 9
+      - DEFAULT: 32
+        DESCRIPTION: DIMM slot 0 maximum write activates per scheduling rotation.
+        NAME: ds_0_max_wr_act
+        WIDTH: 9
+      - DEFAULT: 16
+        DESCRIPTION: DIMM slot 0 maximum activates per physical rank.
+        NAME: ds_0_max_pr_act
+        WIDTH: 9
+    NAME: mud_qsys_sch_cfg_0
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: MU QSYS scheduler configuration regsiter 1.
+    FLDLST:
+      - DEFAULT: 32
+        DESCRIPTION: DIMM slot 0 maximum read activates per scheduling rotation.
+        NAME: ds_1_max_rd_act
+        WIDTH: 9
+      - DEFAULT: 32
+        DESCRIPTION: DIMM slot 0 maximum write activates per scheduling rotation.
+        NAME: ds_1_max_wr_act
+        WIDTH: 9
+      - DEFAULT: 16
+        DESCRIPTION: DIMM slot 1 maximum activates per physical rank.
+        NAME: ds_1_max_pr_act
+        WIDTH: 9
+    NAME: mud_qsys_sch_cfg_1
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: MU QSYS Arbiter Weights.
+    FLDLST:
+      - DEFAULT: 1
+        DESCRIPTION: MU QSYS input SNA request weight.
+        NAME: qi_sna_wt
+        WIDTH: 4
+      - DEFAULT: 1
+        DESCRIPTION: MU QSYS input DNA request weight.
+        NAME: qi_dna_wt
+        WIDTH: 4
+      - DEFAULT: 1
+        DESCRIPTION: MU QSYS input CNA 1 request weight.
+        NAME: qi_cna_1_wt
+        WIDTH: 4
+      - DEFAULT: 1
+        DESCRIPTION: MU QSYS input CNA 0 request weight.
+        NAME: qi_cna_wt
+        WIDTH: 4
+      - DEFAULT: 1
+        DESCRIPTION: MU QSYS output coherent request weight.
+        NAME: qo_coh_wt
+        WIDTH: 4
+      - DEFAULT: 1
+        DESCRIPTION: MU QSYS output non-coherent request weight.
+        NAME: qo_ncoh_wt
+        WIDTH: 4
+      - DEFAULT: 16
+        DESCRIPTION: MU QSYS coherent write request reserved buffer space .
+        NAME: coh_wr_rq_rsvd
+        WIDTH: 6
+      - DEFAULT: 16
+        DESCRIPTION: MU QSYS coherent read request reserved buffer space .
+        NAME: coh_rd_rq_rsvd
+        WIDTH: 6
+    NAME: mud_qsys_wrr_arb_cfg
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: MU QSYS write reply configuration.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Memory commit guarantee. When set to 0, the write replies are returned when the request entered Qsys pipeline, same as HBM.  When set to 1, all write replies will be delayed until they are written to external memory. '
+        NAME: mcg
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'HW initiated stopping of delayed write reply mask.  When set to 1, the assertion of external ddr_hw_fail_int_l signal will stop all write replies. 0 ignores it.  This is used to mask the ddr_hw_fail_int_l signal during normal bringup and shutdown of system.   Note that once write replies are stopped, F1 needs to be reset.'
+        NAME: hw_stop_wr_rpl_mask
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'SW initiated stopping of delayed write reply.  Once set, MU stop sending write replies and an F1 reset is required.'
+        NAME: sw_stop_wr_rpl
+        WIDTH: 1
+    NAME: mud_qsys_wr_rpl_cfg
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: MU DIMM slot 0 configuration.
+    FLDLST:
+      - DEFAULT: 1
+        DESCRIPTION: Physical rank address bit enable.
+        NAME: phy_rank_en
+        WIDTH: 1
+      - DEFAULT: 32
+        DESCRIPTION: Physical rank address bit in the address hash.
+        NAME: phy_rank_sel
+        WIDTH: 6
+      - DEFAULT: 1
+        DESCRIPTION: Bank 3 address bit enable.
+        NAME: bank_3_en
+        WIDTH: 1
+      - DEFAULT: 8
+        DESCRIPTION: Bank 3 address bit in the address hash.
+        NAME: bank_3_sel
+        WIDTH: 6
+      - DEFAULT: 1
+        DESCRIPTION: Bank 2 address bit enable.
+        NAME: bank_2_en
+        WIDTH: 1
+      - DEFAULT: 7
+        DESCRIPTION: Bank 2 address bit in the address hash.
+        NAME: bank_2_sel
+        WIDTH: 6
+      - DEFAULT: 1
+        DESCRIPTION: Bank 1 address bit enable.
+        NAME: bank_1_en
+        WIDTH: 1
+      - DEFAULT: 10
+        DESCRIPTION: Bank 1 address bit in the address hash.
+        NAME: bank_1_sel
+        WIDTH: 6
+      - DEFAULT: 1
+        DESCRIPTION: Bank 0 address bit enable.
+        NAME: bank_0_en
+        WIDTH: 1
+      - DEFAULT: 9
+        DESCRIPTION: Bank 0 address bit in the address hash.
+        NAME: bank_0_sel
+        WIDTH: 6
+    NAME: mud_qsys_dimm_0_cfg
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: MU DIMM slot 0 configuration.
+    FLDLST:
+      - DEFAULT: 1
+        DESCRIPTION: Physical rank address bit enable.
+        NAME: phy_rank_en
+        WIDTH: 1
+      - DEFAULT: 32
+        DESCRIPTION: 'Physical rank address bit select, [39:6], 0 bit 6'
+        NAME: phy_rank_sel
+        WIDTH: 6
+      - DEFAULT: 1
+        DESCRIPTION: Bank 3 address bit enable.
+        NAME: bank_3_en
+        WIDTH: 1
+      - DEFAULT: 8
+        DESCRIPTION: 'Bank 3 address bit select, [39:6], 0 bit 6'
+        NAME: bank_3_sel
+        WIDTH: 6
+      - DEFAULT: 1
+        DESCRIPTION: Bank 2 address bit enable.
+        NAME: bank_2_en
+        WIDTH: 1
+      - DEFAULT: 7
+        DESCRIPTION: 'Bank 2 address bit select, [39:6], 0 bit 6'
+        NAME: bank_2_sel
+        WIDTH: 6
+      - DEFAULT: 1
+        DESCRIPTION: Bank 1 address bit enable.
+        NAME: bank_1_en
+        WIDTH: 1
+      - DEFAULT: 10
+        DESCRIPTION: 'Bank 1 address bit select, [39:6], 0 bit 6'
+        NAME: bank_1_sel
+        WIDTH: 6
+      - DEFAULT: 1
+        DESCRIPTION: Bank 0 address bit enable.
+        NAME: bank_0_en
+        WIDTH: 1
+      - DEFAULT: 9
+        DESCRIPTION: 'Bank 0 address bit select, [39:6], 0 bit 6'
+        NAME: bank_0_sel
+        WIDTH: 6
+    NAME: mud_qsys_dimm_1_cfg
+  - ATTR: 10
+    COUNT: 1
+    DESCRIPTION: MU QSYS read requests counter.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Number of read requests sent to external memory.
+        NAME: count
+        WIDTH: 64
+    NAME: mud_qsys_rd_rq_cntr
+  - ATTR: 10
+    COUNT: 1
+    DESCRIPTION: MU QSYS write requests counter.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Number of write requests sent to external memory.
+        NAME: count
+        WIDTH: 64
+    NAME: mud_qsys_wr_rq_cntr
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: MU QSYS memory error inject valid
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Qsys write request buffer memory
+        NAME: wr_rq_buf
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Qsys write buffer memory
+        NAME: wr_buf
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Qsys write request free buffer memory
+        NAME: wr_rq_buf_fb
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Qsys read request buffer memory
+        NAME: rd_rq_buf
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Qsys read request free buffer memory
+        NAME: rd_rq_buf_fb
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Qsys read reply buffer memory
+        NAME: rd_rpl_buf
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Qsys read reply free buffer memory
+        NAME: rd_rpl_buf_fb
+        WIDTH: 1
+    NAME: mud_qsys_err_inj_valid
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: MU QSYS memory error inject valid
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Qsys write request buffer memory
+        NAME: wr_rq_buf
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Qsys write buffer memory
+        NAME: wr_buf
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Qsys write request free buffer memory
+        NAME: wr_rq_buf_fb
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Qsys read request buffer memory
+        NAME: rd_rq_buf
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Qsys read request free buffer memory
+        NAME: rd_rq_buf_fb
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Qsys read reply buffer memory
+        NAME: rd_rpl_buf
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Qsys read reply free buffer memory
+        NAME: rd_rpl_buf_fb
+        WIDTH: 1
+    NAME: mud_qsys_err_inj_type
+  - ATTR: 9
+    DESCRIPTION: SRAM bit vector that failed ECC
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            First SRAM ECC error detected (1-hot)
+                                            Set when first error is detected
+                                            Reset when corresponding interrupt status bit is cleared
+                                            [13]"wr_rq_buf_cerr",
+                                            [12]"wr_buf_cerr",
+                                            [11]"wr_rq_buf_fb_cerr",
+                                            [10]"rd_rq_buf_cerr",
+                                            [9]"rd_rq_buf_fb_cerr",
+                                            [8]"rd_rpl_buf_cerr",
+                                            [7]"rd_rpl_buf_fb_cerr",
+                                            [6]"wr_rq_buf_ucerr",
+                                            [5]"wr_buf_ucerr",
+                                            [4]"wr_rq_buf_fb_ucerr",
+                                            [3]"rd_rq_buf_ucerr",
+                                            [2]"rd_rq_buf_fb_ucerr",
+                                            [1]"rd_rpl_buf_ucerr",
+                                            [0]"rd_rpl_buf_fb_ucerr",
+                                           
+        NAME: val
+        WIDTH: 14
+    NAME: mud_qsys_log_err
+    TEST_ATTR: 0
+  - ATTR: 9
+    DESCRIPTION: SRAM syndrome log register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            Syndrome related to ECC error
+                                            detected while reading data from SRAM
+                                           
+        NAME: val
+        WIDTH: 11
+    NAME: mud_qsys_log_syn
+    TEST_ATTR: 0
+  - ATTR: 9
+    DESCRIPTION: SRAM address log register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            Address related to ECC error
+                                            detected while reading data from SRAM
+                                           
+        NAME: val
+        WIDTH: 10
+    NAME: mud_qsys_log_addr
+    TEST_ATTR: 0
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: MU QSYS FLA slave module_id
+    FLDLST:
+      - DEFAULT: 10
+        DESCRIPTION: Module_id
+        NAME: data
+        WIDTH: 8
+    NAME: mud_qsys_fla_slave_module_id_cfg
+XASIZE: 65536

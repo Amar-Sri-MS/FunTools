@@ -1,0 +1,2055 @@
+---
+BASEADDRPORT: 1
+COUNT: 1
+DESCRIPTION: Fabric Endpoint CSR spec
+INTR:
+  FATAL:
+    - DESCRIPTION: fifo underrun
+      NAME: cfg_ldn_vc1_fifo_underrun
+      WIDTH: 1
+    - DESCRIPTION: fifo underrun
+      NAME: bp_ldn_vc1_fifo_underrun
+      WIDTH: 1
+    - DESCRIPTION: fifo underrun
+      NAME: eqm_ldn_vc1_fifo_underrun
+      WIDTH: 1
+    - DESCRIPTION: fifo underrun
+      NAME: cmh_ldn_vc1_fifo_underrun
+      WIDTH: 1
+    - DESCRIPTION: fifo underrun
+      NAME: ca_ldn_vc0_fifo_underrun
+      WIDTH: 1
+    - DESCRIPTION: fifo underrun
+      NAME: cfg_lsn_vc0_fifo_underrun
+      WIDTH: 1
+    - DESCRIPTION: fifo underrun
+      NAME: cfg_lsn_vc1_fifo_underrun
+      WIDTH: 1
+    - DESCRIPTION: fifo underrun
+      NAME: bp_lsn_vc0_fifo_underrun
+      WIDTH: 1
+    - DESCRIPTION: fifo underrun
+      NAME: bp_lsn_vc1_fifo_underrun
+      WIDTH: 1
+    - DESCRIPTION: fifo underrun
+      NAME: eqm_lsn_vc0_fifo_underrun
+      WIDTH: 1
+    - DESCRIPTION: fifo underrun
+      NAME: eqm_lsn_vc1_fifo_underrun
+      WIDTH: 1
+    - DESCRIPTION: fifo underrun
+      NAME: eqm_lsn_vc2_fifo_underrun
+      WIDTH: 1
+    - DESCRIPTION: fifo underrun
+      NAME: eqm_lsn_vc3_fifo_underrun
+      WIDTH: 1
+    - DESCRIPTION: fifo underrun
+      NAME: cmh_lsn_vc0_fifo_underrun
+      WIDTH: 1
+    - DESCRIPTION: fifo underrun
+      NAME: cmh_lsn_vc1_fifo_underrun
+      WIDTH: 1
+    - DESCRIPTION: fifo underrun
+      NAME: cmh_vp_lsn_vc0_fifo_underrun
+      WIDTH: 1
+    - DESCRIPTION: fifo underrun
+      NAME: cmh_vp_lsn_vc2_fifo_underrun
+      WIDTH: 1
+    - DESCRIPTION: fifo underrun
+      NAME: cmh_vp_lsn_vc3_fifo_underrun
+      WIDTH: 1
+    - DESCRIPTION: fifo underrun
+      NAME: snx_lsn_vc0_fifo_underrun
+      WIDTH: 1
+    - DESCRIPTION: fifo underrun
+      NAME: snx_lsn_vc1_fifo_underrun
+      WIDTH: 1
+    - DESCRIPTION: fifo underrun
+      NAME: snx_lsn_vc2_fifo_underrun
+      WIDTH: 1
+    - DESCRIPTION: fifo underrun
+      NAME: snx_lsn_vc3_fifo_underrun
+      WIDTH: 1
+    - DESCRIPTION: multibit ecc error in metadata from dn
+      NAME: dn_metadata_merr
+      WIDTH: 1
+    - DESCRIPTION: multibit ecc error in metadata from dn
+      NAME: dn_data_merr
+      WIDTH: 1
+    - DESCRIPTION: lid received from DNR does not match lid of any local clients.
+      NAME: dnr_ej_lid_err
+      WIDTH: 1
+    - DESCRIPTION: gid received from DNR does not match gid of this FEP instance.
+      NAME: dnr_ej_gid_err
+      WIDTH: 1
+  NON_FATAL:
+    - DESCRIPTION: single bit ecc error in metadata from dn
+      NAME: dn_metadata_serr
+      WIDTH: 1
+    - DESCRIPTION: single bit ecc error in metadata from dn
+      NAME: dn_data_serr
+      WIDTH: 1
+    - DESCRIPTION: no match for ldn address translation request
+      NAME: ldn_addr_trans_err
+      WIDTH: 1
+    - DESCRIPTION: no match for lsn address translation request
+      NAME: lsn_addr_trans_err
+      WIDTH: 1
+    - DESCRIPTION: unknown ldn destination from cfg
+      NAME: ldn_cfg_unknown_dest
+      WIDTH: 1
+    - DESCRIPTION: unknown ldn destination from bp
+      NAME: ldn_bp_unknown_dest
+      WIDTH: 1
+    - DESCRIPTION: unknown ldn destination from eqm
+      NAME: ldn_eqm_unknown_dest
+      WIDTH: 1
+    - DESCRIPTION: unknown ldn destination from cmh
+      NAME: ldn_cmh_unknown_dest
+      WIDTH: 1
+    - DESCRIPTION: unknown ldn destination from ca
+      NAME: ldn_ca_unknown_dest
+      WIDTH: 1
+    - DESCRIPTION: unknown ldn destination from dnr
+      NAME: ldn_dnr_unknown_dest
+      WIDTH: 1
+    - DESCRIPTION: unknown lsn destination from cfg
+      NAME: lsn_cfg_unknown_dest
+      WIDTH: 1
+    - DESCRIPTION: lsn message from cfg was dropped
+      NAME: lsn_cfg_msg_filter
+      WIDTH: 1
+    - DESCRIPTION: invalid vc from cfg
+      NAME: lsn_cfg_invalid_vc
+      WIDTH: 1
+    - DESCRIPTION: unknown lsn destination from bp
+      NAME: lsn_bp_unknown_dest
+      WIDTH: 1
+    - DESCRIPTION: lsn message from bp was dropped
+      NAME: lsn_bp_msg_filter
+      WIDTH: 1
+    - DESCRIPTION: invalid vc from bp
+      NAME: lsn_bp_invalid_vc
+      WIDTH: 1
+    - DESCRIPTION: unknown lsn destination from eqm
+      NAME: lsn_eqm_unknown_dest
+      WIDTH: 1
+    - DESCRIPTION: lsn message from eqm was dropped
+      NAME: lsn_eqm_msg_filter
+      WIDTH: 1
+    - DESCRIPTION: unknown lsn destination from cmh
+      NAME: lsn_cmh_unknown_dest
+      WIDTH: 1
+    - DESCRIPTION: lsn message from cmh was dropped
+      NAME: lsn_cmh_msg_filter
+      WIDTH: 1
+    - DESCRIPTION: invalid vc from cmh
+      NAME: lsn_cmh_invalid_vc
+      WIDTH: 1
+    - DESCRIPTION: unknown lsn destination from cmh_vp
+      NAME: lsn_cmh_vp_unknown_dest
+      WIDTH: 1
+    - DESCRIPTION: lsn message from cmh_vp was dropped
+      NAME: lsn_cmh_vp_msg_filter
+      WIDTH: 1
+    - DESCRIPTION: invalid vc from cmh_vp
+      NAME: lsn_cmh_vp_invalid_vc
+      WIDTH: 1
+    - DESCRIPTION: unknown lsn destination from snx
+      NAME: lsn_snx_unknown_dest
+      WIDTH: 1
+    - DESCRIPTION: lsn message from snx was dropped
+      NAME: lsn_snx_msg_filter
+      WIDTH: 1
+INTR_PORT_EN: 1
+NAME: FEP_CC_AN
+PARENTNAME: pc_soc_clk_an_FEPW_CC_AN
+REGLST:
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: |-
+          Timeout Configuration. Cycles are RSU clk based.
+                            - 00 : 1024 cycles
+                            - 01 : 256 cycles
+                            - 10 : 4096 cycles
+                            - 11 : infinite
+        NAME: val
+        WIDTH: 2
+    NAME: fep_cc_timeout_thresh_cfg
+  - ATTR: 9
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: "Timed out Status. Cycles are RSU clk based. Becomes 1 when timed out. Write any value to clear it.\n                  "
+        NAME: val
+        WIDTH: 1
+    NAME: fep_cc_timedout_sta
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: |-
+          Clear Timeout Status. Data is ignored. A write
+                     will clear the timeout status bit
+        NAME: val
+        WIDTH: 1
+    NAME: fep_cc_timeout_clr
+    TEST_ATTR: 1
+  - ATTR: 256
+    FLDLST:
+      - &1
+        DESCRIPTION: fifo underrun
+        NAME: cfg_ldn_vc1_fifo_underrun
+        WIDTH: 1
+      - &2
+        DESCRIPTION: fifo underrun
+        NAME: bp_ldn_vc1_fifo_underrun
+        WIDTH: 1
+      - &3
+        DESCRIPTION: fifo underrun
+        NAME: eqm_ldn_vc1_fifo_underrun
+        WIDTH: 1
+      - &4
+        DESCRIPTION: fifo underrun
+        NAME: cmh_ldn_vc1_fifo_underrun
+        WIDTH: 1
+      - &5
+        DESCRIPTION: fifo underrun
+        NAME: ca_ldn_vc0_fifo_underrun
+        WIDTH: 1
+      - &6
+        DESCRIPTION: fifo underrun
+        NAME: cfg_lsn_vc0_fifo_underrun
+        WIDTH: 1
+      - &7
+        DESCRIPTION: fifo underrun
+        NAME: cfg_lsn_vc1_fifo_underrun
+        WIDTH: 1
+      - &8
+        DESCRIPTION: fifo underrun
+        NAME: bp_lsn_vc0_fifo_underrun
+        WIDTH: 1
+      - &9
+        DESCRIPTION: fifo underrun
+        NAME: bp_lsn_vc1_fifo_underrun
+        WIDTH: 1
+      - &10
+        DESCRIPTION: fifo underrun
+        NAME: eqm_lsn_vc0_fifo_underrun
+        WIDTH: 1
+      - &11
+        DESCRIPTION: fifo underrun
+        NAME: eqm_lsn_vc1_fifo_underrun
+        WIDTH: 1
+      - &12
+        DESCRIPTION: fifo underrun
+        NAME: eqm_lsn_vc2_fifo_underrun
+        WIDTH: 1
+      - &13
+        DESCRIPTION: fifo underrun
+        NAME: eqm_lsn_vc3_fifo_underrun
+        WIDTH: 1
+      - &14
+        DESCRIPTION: fifo underrun
+        NAME: cmh_lsn_vc0_fifo_underrun
+        WIDTH: 1
+      - &15
+        DESCRIPTION: fifo underrun
+        NAME: cmh_lsn_vc1_fifo_underrun
+        WIDTH: 1
+      - &16
+        DESCRIPTION: fifo underrun
+        NAME: cmh_vp_lsn_vc0_fifo_underrun
+        WIDTH: 1
+      - &17
+        DESCRIPTION: fifo underrun
+        NAME: cmh_vp_lsn_vc2_fifo_underrun
+        WIDTH: 1
+      - &18
+        DESCRIPTION: fifo underrun
+        NAME: cmh_vp_lsn_vc3_fifo_underrun
+        WIDTH: 1
+      - &19
+        DESCRIPTION: fifo underrun
+        NAME: snx_lsn_vc0_fifo_underrun
+        WIDTH: 1
+      - &20
+        DESCRIPTION: fifo underrun
+        NAME: snx_lsn_vc1_fifo_underrun
+        WIDTH: 1
+      - &21
+        DESCRIPTION: fifo underrun
+        NAME: snx_lsn_vc2_fifo_underrun
+        WIDTH: 1
+      - &22
+        DESCRIPTION: fifo underrun
+        NAME: snx_lsn_vc3_fifo_underrun
+        WIDTH: 1
+      - &23
+        DESCRIPTION: multibit ecc error in metadata from dn
+        NAME: dn_metadata_merr
+        WIDTH: 1
+      - &24
+        DESCRIPTION: multibit ecc error in metadata from dn
+        NAME: dn_data_merr
+        WIDTH: 1
+      - &25
+        DESCRIPTION: lid received from DNR does not match lid of any local clients.
+        NAME: dnr_ej_lid_err
+        WIDTH: 1
+      - &26
+        DESCRIPTION: gid received from DNR does not match gid of this FEP instance.
+        NAME: dnr_ej_gid_err
+        WIDTH: 1
+    NAME: fep_cc_fatal_intr_cause
+  - ATTR: 512
+    FLDLST:
+      - *1
+      - *2
+      - *3
+      - *4
+      - *5
+      - *6
+      - *7
+      - *8
+      - *9
+      - *10
+      - *11
+      - *12
+      - *13
+      - *14
+      - *15
+      - *16
+      - *17
+      - *18
+      - *19
+      - *20
+      - *21
+      - *22
+      - *23
+      - *24
+      - *25
+      - *26
+    NAME: fep_cc_fatal_intr_stat
+  - ATTR: 1024
+    FLDLST:
+      - *1
+      - *2
+      - *3
+      - *4
+      - *5
+      - *6
+      - *7
+      - *8
+      - *9
+      - *10
+      - *11
+      - *12
+      - *13
+      - *14
+      - *15
+      - *16
+      - *17
+      - *18
+      - *19
+      - *20
+      - *21
+      - *22
+      - *23
+      - *24
+      - *25
+      - *26
+    NAME: fep_cc_fatal_intr_mask
+  - ATTR: 2048
+    FLDLST:
+      - *1
+      - *2
+      - *3
+      - *4
+      - *5
+      - *6
+      - *7
+      - *8
+      - *9
+      - *10
+      - *11
+      - *12
+      - *13
+      - *14
+      - *15
+      - *16
+      - *17
+      - *18
+      - *19
+      - *20
+      - *21
+      - *22
+      - *23
+      - *24
+      - *25
+      - *26
+    NAME: fep_cc_fatal_intr_bset
+  - ATTR: 4096
+    FLDLST:
+      - *1
+      - *2
+      - *3
+      - *4
+      - *5
+      - *6
+      - *7
+      - *8
+      - *9
+      - *10
+      - *11
+      - *12
+      - *13
+      - *14
+      - *15
+      - *16
+      - *17
+      - *18
+      - *19
+      - *20
+      - *21
+      - *22
+      - *23
+      - *24
+      - *25
+      - *26
+    NAME: fep_cc_fatal_intr_bclr
+  - ATTR: 256
+    FLDLST:
+      - &27
+        DESCRIPTION: single bit ecc error in metadata from dn
+        NAME: dn_metadata_serr
+        WIDTH: 1
+      - &28
+        DESCRIPTION: single bit ecc error in metadata from dn
+        NAME: dn_data_serr
+        WIDTH: 1
+      - &29
+        DESCRIPTION: no match for ldn address translation request
+        NAME: ldn_addr_trans_err
+        WIDTH: 1
+      - &30
+        DESCRIPTION: no match for lsn address translation request
+        NAME: lsn_addr_trans_err
+        WIDTH: 1
+      - &31
+        DESCRIPTION: unknown ldn destination from cfg
+        NAME: ldn_cfg_unknown_dest
+        WIDTH: 1
+      - &32
+        DESCRIPTION: unknown ldn destination from bp
+        NAME: ldn_bp_unknown_dest
+        WIDTH: 1
+      - &33
+        DESCRIPTION: unknown ldn destination from eqm
+        NAME: ldn_eqm_unknown_dest
+        WIDTH: 1
+      - &34
+        DESCRIPTION: unknown ldn destination from cmh
+        NAME: ldn_cmh_unknown_dest
+        WIDTH: 1
+      - &35
+        DESCRIPTION: unknown ldn destination from ca
+        NAME: ldn_ca_unknown_dest
+        WIDTH: 1
+      - &36
+        DESCRIPTION: unknown ldn destination from dnr
+        NAME: ldn_dnr_unknown_dest
+        WIDTH: 1
+      - &37
+        DESCRIPTION: unknown lsn destination from cfg
+        NAME: lsn_cfg_unknown_dest
+        WIDTH: 1
+      - &38
+        DESCRIPTION: lsn message from cfg was dropped
+        NAME: lsn_cfg_msg_filter
+        WIDTH: 1
+      - &39
+        DESCRIPTION: invalid vc from cfg
+        NAME: lsn_cfg_invalid_vc
+        WIDTH: 1
+      - &40
+        DESCRIPTION: unknown lsn destination from bp
+        NAME: lsn_bp_unknown_dest
+        WIDTH: 1
+      - &41
+        DESCRIPTION: lsn message from bp was dropped
+        NAME: lsn_bp_msg_filter
+        WIDTH: 1
+      - &42
+        DESCRIPTION: invalid vc from bp
+        NAME: lsn_bp_invalid_vc
+        WIDTH: 1
+      - &43
+        DESCRIPTION: unknown lsn destination from eqm
+        NAME: lsn_eqm_unknown_dest
+        WIDTH: 1
+      - &44
+        DESCRIPTION: lsn message from eqm was dropped
+        NAME: lsn_eqm_msg_filter
+        WIDTH: 1
+      - &45
+        DESCRIPTION: unknown lsn destination from cmh
+        NAME: lsn_cmh_unknown_dest
+        WIDTH: 1
+      - &46
+        DESCRIPTION: lsn message from cmh was dropped
+        NAME: lsn_cmh_msg_filter
+        WIDTH: 1
+      - &47
+        DESCRIPTION: invalid vc from cmh
+        NAME: lsn_cmh_invalid_vc
+        WIDTH: 1
+      - &48
+        DESCRIPTION: unknown lsn destination from cmh_vp
+        NAME: lsn_cmh_vp_unknown_dest
+        WIDTH: 1
+      - &49
+        DESCRIPTION: lsn message from cmh_vp was dropped
+        NAME: lsn_cmh_vp_msg_filter
+        WIDTH: 1
+      - &50
+        DESCRIPTION: invalid vc from cmh_vp
+        NAME: lsn_cmh_vp_invalid_vc
+        WIDTH: 1
+      - &51
+        DESCRIPTION: unknown lsn destination from snx
+        NAME: lsn_snx_unknown_dest
+        WIDTH: 1
+      - &52
+        DESCRIPTION: lsn message from snx was dropped
+        NAME: lsn_snx_msg_filter
+        WIDTH: 1
+    NAME: fep_cc_non_fatal_intr_cause
+  - ATTR: 512
+    FLDLST:
+      - *27
+      - *28
+      - *29
+      - *30
+      - *31
+      - *32
+      - *33
+      - *34
+      - *35
+      - *36
+      - *37
+      - *38
+      - *39
+      - *40
+      - *41
+      - *42
+      - *43
+      - *44
+      - *45
+      - *46
+      - *47
+      - *48
+      - *49
+      - *50
+      - *51
+      - *52
+    NAME: fep_cc_non_fatal_intr_stat
+  - ATTR: 1024
+    FLDLST:
+      - *27
+      - *28
+      - *29
+      - *30
+      - *31
+      - *32
+      - *33
+      - *34
+      - *35
+      - *36
+      - *37
+      - *38
+      - *39
+      - *40
+      - *41
+      - *42
+      - *43
+      - *44
+      - *45
+      - *46
+      - *47
+      - *48
+      - *49
+      - *50
+      - *51
+      - *52
+    NAME: fep_cc_non_fatal_intr_mask
+  - ATTR: 2048
+    FLDLST:
+      - *27
+      - *28
+      - *29
+      - *30
+      - *31
+      - *32
+      - *33
+      - *34
+      - *35
+      - *36
+      - *37
+      - *38
+      - *39
+      - *40
+      - *41
+      - *42
+      - *43
+      - *44
+      - *45
+      - *46
+      - *47
+      - *48
+      - *49
+      - *50
+      - *51
+      - *52
+    NAME: fep_cc_non_fatal_intr_bset
+  - ATTR: 4096
+    FLDLST:
+      - *27
+      - *28
+      - *29
+      - *30
+      - *31
+      - *32
+      - *33
+      - *34
+      - *35
+      - *36
+      - *37
+      - *38
+      - *39
+      - *40
+      - *41
+      - *42
+      - *43
+      - *44
+      - *45
+      - *46
+      - *47
+      - *48
+      - *49
+      - *50
+      - *51
+      - *52
+    NAME: fep_cc_non_fatal_intr_bclr
+  - ATTR: 9
+    DESCRIPTION: Features
+    FLDLST:
+      - ATTR: 1
+        DEFAULT: 254
+        DESCRIPTION: Module ID
+        NAME: module_id
+        WIDTH: 8
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Version number of the module
+        NAME: version
+        WIDTH: 8
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Features enabled in the module.
+        NAME: features
+        WIDTH: 16
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Reserved Field.
+        NAME: Reserved
+        WIDTH: 32
+    NAME: fep_cc_features
+    WIDTH: 64
+  - ATTR: 5
+    DESCRIPTION: ' Spare PIO register. These bits can be read and written by software. They can serve as control bits for late ECOs in the design.'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Spare PIO register.
+        NAME: val
+        WIDTH: 64
+    NAME: fep_cc_spare_pio
+    WIDTH: 64
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: Scratchpad register.
+        NAME: val
+        WIDTH: 64
+    NAME: fep_cc_scratchpad
+    WIDTH: 64
+  - ATTR: 5
+    DESCRIPTION: Misc config for FEP
+    FLDLST:
+      - DEFAULT: 1
+        DESCRIPTION: enable bit for address translation on LDN VC1
+        NAME: addr_trans_dn_vc1_en
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: enable bit for address translation on LSN VC3
+        NAME: addr_trans_sn_vc3_en
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: enable bit for address translation on LSN VC2
+        NAME: addr_trans_sn_vc2_en
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: enable bit for address translation on LSN VC1
+        NAME: addr_trans_sn_vc1_en
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: enable bit for address translation on LSN VC0
+        NAME: addr_trans_sn_vc0_en
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'on rising edge of this signal, the snx remote credit counters will be reloaded'
+        NAME: remote_crd_load
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'FEP enable bit, no traffic will leave FEP until this bit is set'
+        NAME: enable
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: disables dropping of DN messages due to multiple bit ecc error
+        NAME: metadata_err_drop_dis
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: HBM stacked mode enable. Changes HBM address hashing
+        NAME: hbm_stacked_mode
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: DDR stacked mode enable. Changes DDR address hashing
+        NAME: ddr_stacked_mode
+        WIDTH: 1
+    NAME: fep_cc_misc_cfg
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: Config register for memory error injection
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: ' Inject error into metadata of input buffer memory'
+        NAME: ibuf_mem_metadata
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ' Inject error into data of input buffer memory'
+        NAME: ibuf_mem_data
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: |-
+          Type of error to be injected
+                                            Applied to all memory error injection
+                                            0 - Uncorrectable error
+                                            1 - Correctable error 
+        NAME: err_type
+        WIDTH: 1
+    NAME: fep_cc_mem_err_inj_cfg
+  - ATTR: 5
+    DESCRIPTION: FEP FLA Ring Module ID
+    FLDLST:
+      - DEFAULT: 51
+        DESCRIPTION: '8-Bit Module ID to be used for Decoding Commands on FLA Command Ring, 0x0, 0xff are Reserved Values'
+        NAME: fld_val
+        WIDTH: 8
+    NAME: fep_cc_fla_ring_module_id_cfg
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: FLA Debug bus to CSR config
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: FLA debug bus mux selection
+        NAME: mux_sel_0
+        WIDTH: 7
+      - DEFAULT: 0
+        DESCRIPTION: FLA debug bus mux selection
+        NAME: mux_sel_1
+        WIDTH: 7
+      - DEFAULT: 0
+        DESCRIPTION: FLA debug bus mux selection
+        NAME: mux_sel_2
+        WIDTH: 7
+      - DEFAULT: 0
+        DESCRIPTION: FLA debug bus mux selection
+        NAME: mux_sel_3
+        WIDTH: 7
+    NAME: fep_cc_fla_cfg
+  - ATTR: 9
+    DESCRIPTION: FLA Debug buses after mux selection
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: dbus_0
+        WIDTH: 16
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: dbus_1
+        WIDTH: 16
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: dbus_2
+        WIDTH: 16
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: dbus_3
+        WIDTH: 16
+    NAME: fep_cc_fla_sta
+  - ATTR: 5
+    DESCRIPTION: Local IDS for FEP clients
+    FLDLST:
+      - DEFAULT: 1
+        DESCRIPTION: local id for cfg
+        NAME: cfg_local_id
+        WIDTH: 5
+      - DEFAULT: 2
+        DESCRIPTION: local id for bp
+        NAME: bp_local_id
+        WIDTH: 5
+      - DEFAULT: 4
+        DESCRIPTION: local id for eqm
+        NAME: eqm_local_id
+        WIDTH: 5
+      - DEFAULT: 7
+        DESCRIPTION: local id for cmh
+        NAME: cmh_local_id
+        WIDTH: 5
+      - DEFAULT: 8
+        DESCRIPTION: local id for cmh_vp_min
+        NAME: cmh_vp_min_local_id
+        WIDTH: 5
+      - DEFAULT: 0
+        DESCRIPTION: local id for ca
+        NAME: ca_local_id
+        WIDTH: 5
+      - DEFAULT: 31
+        DESCRIPTION: local id for cmh_vp_max
+        NAME: cmh_vp_max_local_id
+        WIDTH: 5
+    NAME: fep_cc_local_id
+  - ATTR: 5
+    DESCRIPTION: Enable strict ordering for local FEP clients
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: DN strict ordering enable for cfg
+        NAME: cfg_strict_ord
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: DN strict ordering enable for transactions from cfg with partial write bit set
+        NAME: cfg_strict_ord_for_pwr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: DN strict ordering enable for bp
+        NAME: bp_strict_ord
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: DN strict ordering enable for transactions from bp with partial write bit set
+        NAME: bp_strict_ord_for_pwr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: DN strict ordering enable for eqm
+        NAME: eqm_strict_ord
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: DN strict ordering enable for transactions from eqm with partial write bit set
+        NAME: eqm_strict_ord_for_pwr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: DN strict ordering enable for cmh
+        NAME: cmh_strict_ord
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: DN strict ordering enable for transactions from cmh with partial write bit set
+        NAME: cmh_strict_ord_for_pwr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: DN strict ordering enable for ca
+        NAME: ca_strict_ord
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: DN strict ordering enable for transactions from ca with partial write bit set
+        NAME: ca_strict_ord_for_pwr
+        WIDTH: 1
+    NAME: fep_cc_strict_order
+  - ATTR: 5
+    DESCRIPTION: SNX Remote Credit Initialization Values for cfg clients
+    FLDLST:
+      - DEFAULT: 4
+        DESCRIPTION: snx remote credit init value for cfg
+        NAME: cfg_vc0_cdt
+        WIDTH: 8
+      - DEFAULT: 4
+        DESCRIPTION: snx remote credit init value for cfg
+        NAME: cfg_vc1_cdt
+        WIDTH: 8
+    NAME: fep_cc_cfg_snx_cdt_init_val
+  - ATTR: 5
+    DESCRIPTION: SNX Remote Credit Initialization Values for bp clients
+    FLDLST:
+      - DEFAULT: 16
+        DESCRIPTION: snx remote credit init value for bp
+        NAME: bp_vc0_cdt
+        WIDTH: 8
+      - DEFAULT: 16
+        DESCRIPTION: snx remote credit init value for bp
+        NAME: bp_vc1_cdt
+        WIDTH: 8
+    NAME: fep_cc_bp_snx_cdt_init_val
+  - ATTR: 5
+    DESCRIPTION: SNX Remote Credit Initialization Values for eqm clients
+    FLDLST:
+      - DEFAULT: 8
+        DESCRIPTION: snx remote credit init value for eqm
+        NAME: eqm_vc0_cdt
+        WIDTH: 8
+      - DEFAULT: 2
+        DESCRIPTION: snx remote credit init value for eqm
+        NAME: eqm_vc1_cdt
+        WIDTH: 8
+      - DEFAULT: 6
+        DESCRIPTION: snx remote credit init value for eqm
+        NAME: eqm_vc2_cdt
+        WIDTH: 8
+      - DEFAULT: 8
+        DESCRIPTION: snx remote credit init value for eqm
+        NAME: eqm_vc3_cdt
+        WIDTH: 8
+    NAME: fep_cc_eqm_snx_cdt_init_val
+  - ATTR: 5
+    DESCRIPTION: SNX Remote Credit Initialization Values for cmh clients
+    FLDLST:
+      - DEFAULT: 16
+        DESCRIPTION: snx remote credit init value for cmh
+        NAME: cmh_vc0_cdt
+        WIDTH: 8
+      - DEFAULT: 8
+        DESCRIPTION: snx remote credit init value for cmh
+        NAME: cmh_vc1_cdt
+        WIDTH: 8
+    NAME: fep_cc_cmh_snx_cdt_init_val
+  - ATTR: 5
+    DESCRIPTION: This register controls message filtering per command
+    FLDLST:
+      - DEFAULT: 2147483647
+        DESCRIPTION: '1 bit for each of the 32 SN commands, 1 indicates command is permitted'
+        NAME: permitted_cmds
+        WIDTH: 32
+    NAME: fep_cc_cfg_sn_filter
+  - ATTR: 5
+    DESCRIPTION: This register controls message filtering per command
+    FLDLST:
+      - DEFAULT: 2147483647
+        DESCRIPTION: '1 bit for each of the 32 SN commands, 1 indicates command is permitted'
+        NAME: permitted_cmds
+        WIDTH: 32
+    NAME: fep_cc_bp_sn_filter
+  - ATTR: 5
+    DESCRIPTION: This register controls message filtering per command
+    FLDLST:
+      - DEFAULT: 2147483647
+        DESCRIPTION: '1 bit for each of the 32 SN commands, 1 indicates command is permitted'
+        NAME: permitted_cmds
+        WIDTH: 32
+    NAME: fep_cc_eqm_sn_filter
+  - ATTR: 5
+    DESCRIPTION: This register controls message filtering per command
+    FLDLST:
+      - DEFAULT: 2147483647
+        DESCRIPTION: '1 bit for each of the 32 SN commands, 1 indicates command is permitted'
+        NAME: permitted_cmds
+        WIDTH: 32
+    NAME: fep_cc_cmh_sn_filter
+  - ATTR: 5
+    DESCRIPTION: This register controls message filtering per command
+    FLDLST:
+      - DEFAULT: 2147483647
+        DESCRIPTION: '1 bit for each of the 32 SN commands, 1 indicates command is permitted'
+        NAME: permitted_cmds
+        WIDTH: 32
+    NAME: fep_cc_cmh_vp_sn_filter
+  - ATTR: 5
+    DESCRIPTION: This register controls message filtering per command
+    FLDLST:
+      - DEFAULT: 2147483647
+        DESCRIPTION: '1 bit for each of the 32 SN commands, 1 indicates command is permitted'
+        NAME: permitted_cmds
+        WIDTH: 32
+    NAME: fep_cc_snx_sn_filter
+  - ATTR: 5
+    DESCRIPTION: This register controls VC arbitration settings for the bp client
+    FLDLST:
+      - DEFAULT: 7
+        DESCRIPTION: guaranteed rate in 0
+        NAME: gr_wt_in0
+        WIDTH: 4
+      - DEFAULT: 7
+        DESCRIPTION: weighted round robin weight in 0
+        NAME: wrr_wt_in0
+        WIDTH: 4
+      - DEFAULT: 7
+        DESCRIPTION: guaranteed rate in 1
+        NAME: gr_wt_in1
+        WIDTH: 4
+      - DEFAULT: 7
+        DESCRIPTION: weighted round robin weight in 1
+        NAME: wrr_wt_in1
+        WIDTH: 4
+      - DEFAULT: 7
+        DESCRIPTION: guaranteed rate period in
+        NAME: gr_per_in
+        WIDTH: 8
+    NAME: fep_cc_bp_lsn_arb_cfg
+  - ATTR: 5
+    DESCRIPTION: This register controls VC arbitration settings for the eqm client
+    FLDLST:
+      - DEFAULT: 7
+        DESCRIPTION: guaranteed rate in 0
+        NAME: gr_wt_in0
+        WIDTH: 4
+      - DEFAULT: 7
+        DESCRIPTION: weighted round robin weight in 0
+        NAME: wrr_wt_in0
+        WIDTH: 4
+      - DEFAULT: 7
+        DESCRIPTION: guaranteed rate in 1
+        NAME: gr_wt_in1
+        WIDTH: 4
+      - DEFAULT: 7
+        DESCRIPTION: weighted round robin weight in 1
+        NAME: wrr_wt_in1
+        WIDTH: 4
+      - DEFAULT: 7
+        DESCRIPTION: guaranteed rate period in
+        NAME: gr_per_in
+        WIDTH: 8
+    NAME: fep_cc_eqm_lsn_arb_cfg
+  - ATTR: 5
+    DESCRIPTION: This register controls VC arbitration settings for the cmh client
+    FLDLST:
+      - DEFAULT: 7
+        DESCRIPTION: guaranteed rate in 0
+        NAME: gr_wt_in0
+        WIDTH: 4
+      - DEFAULT: 7
+        DESCRIPTION: weighted round robin weight in 0
+        NAME: wrr_wt_in0
+        WIDTH: 4
+      - DEFAULT: 7
+        DESCRIPTION: guaranteed rate in 1
+        NAME: gr_wt_in1
+        WIDTH: 4
+      - DEFAULT: 7
+        DESCRIPTION: weighted round robin weight in 1
+        NAME: wrr_wt_in1
+        WIDTH: 4
+      - DEFAULT: 7
+        DESCRIPTION: guaranteed rate in 2
+        NAME: gr_wt_in2
+        WIDTH: 4
+      - DEFAULT: 7
+        DESCRIPTION: weighted round robin weight in 2
+        NAME: wrr_wt_in2
+        WIDTH: 4
+      - DEFAULT: 7
+        DESCRIPTION: guaranteed rate in 3
+        NAME: gr_wt_in3
+        WIDTH: 4
+      - DEFAULT: 7
+        DESCRIPTION: weighted round robin weight in 3
+        NAME: wrr_wt_in3
+        WIDTH: 4
+      - DEFAULT: 7
+        DESCRIPTION: guaranteed rate period in
+        NAME: gr_per_in
+        WIDTH: 8
+    NAME: fep_cc_cmh_lsn_arb_cfg
+  - ATTR: 5
+    DESCRIPTION: This register controls VC arbitration settings for the snx client
+    FLDLST:
+      - DEFAULT: 7
+        DESCRIPTION: guaranteed rate in 0
+        NAME: gr_wt_in0
+        WIDTH: 4
+      - DEFAULT: 7
+        DESCRIPTION: weighted round robin weight in 0
+        NAME: wrr_wt_in0
+        WIDTH: 4
+      - DEFAULT: 7
+        DESCRIPTION: guaranteed rate in 1
+        NAME: gr_wt_in1
+        WIDTH: 4
+      - DEFAULT: 7
+        DESCRIPTION: weighted round robin weight in 1
+        NAME: wrr_wt_in1
+        WIDTH: 4
+      - DEFAULT: 7
+        DESCRIPTION: guaranteed rate in 2
+        NAME: gr_wt_in2
+        WIDTH: 4
+      - DEFAULT: 7
+        DESCRIPTION: weighted round robin weight in 2
+        NAME: wrr_wt_in2
+        WIDTH: 4
+      - DEFAULT: 7
+        DESCRIPTION: guaranteed rate in 3
+        NAME: gr_wt_in3
+        WIDTH: 4
+      - DEFAULT: 7
+        DESCRIPTION: weighted round robin weight in 3
+        NAME: wrr_wt_in3
+        WIDTH: 4
+      - DEFAULT: 7
+        DESCRIPTION: guaranteed rate period in
+        NAME: gr_per_in
+        WIDTH: 8
+    NAME: fep_cc_snx_lsn_arb_cfg
+  - ATTR: 5
+    DESCRIPTION: This register controls source arbitration settings for the bp client
+    FLDLST:
+      - DEFAULT: 7
+        DESCRIPTION: vc0 weight in for cfg
+        NAME: cfg_vc0_wt_in
+        WIDTH: 3
+      - DEFAULT: 7
+        DESCRIPTION: vc0 weight in for bp
+        NAME: bp_vc0_wt_in
+        WIDTH: 3
+      - DEFAULT: 7
+        DESCRIPTION: vc0 weight in for eqm
+        NAME: eqm_vc0_wt_in
+        WIDTH: 3
+      - DEFAULT: 7
+        DESCRIPTION: vc0 weight in for cmh
+        NAME: cmh_vc0_wt_in
+        WIDTH: 3
+      - DEFAULT: 7
+        DESCRIPTION: vc0 weight in for cmh_vp
+        NAME: cmh_vp_vc0_wt_in
+        WIDTH: 3
+      - DEFAULT: 7
+        DESCRIPTION: vc0 weight in for snx
+        NAME: snx_vc0_wt_in
+        WIDTH: 3
+      - DEFAULT: 7
+        DESCRIPTION: vc1 weight in for cfg
+        NAME: cfg_vc1_wt_in
+        WIDTH: 3
+      - DEFAULT: 7
+        DESCRIPTION: vc1 weight in for bp
+        NAME: bp_vc1_wt_in
+        WIDTH: 3
+      - DEFAULT: 7
+        DESCRIPTION: vc1 weight in for eqm
+        NAME: eqm_vc1_wt_in
+        WIDTH: 3
+      - DEFAULT: 7
+        DESCRIPTION: vc1 weight in for cmh
+        NAME: cmh_vc1_wt_in
+        WIDTH: 3
+      - DEFAULT: 7
+        DESCRIPTION: vc1 weight in for snx
+        NAME: snx_vc1_wt_in
+        WIDTH: 3
+    NAME: fep_cc_bp_lsn_wrr_arb_cfg
+  - ATTR: 5
+    DESCRIPTION: This register controls VC arbitration settings for the dnr client
+    FLDLST:
+      - DEFAULT: 7
+        DESCRIPTION: guaranteed rate in 0
+        NAME: gr_wt_in0
+        WIDTH: 4
+      - DEFAULT: 7
+        DESCRIPTION: weighted round robin weight in 0
+        NAME: wrr_wt_in0
+        WIDTH: 4
+      - DEFAULT: 7
+        DESCRIPTION: guaranteed rate in 1
+        NAME: gr_wt_in1
+        WIDTH: 4
+      - DEFAULT: 7
+        DESCRIPTION: weighted round robin weight in 1
+        NAME: wrr_wt_in1
+        WIDTH: 4
+      - DEFAULT: 7
+        DESCRIPTION: guaranteed rate period in
+        NAME: gr_per_in
+        WIDTH: 8
+    NAME: fep_cc_dnr_ldn_arb_cfg
+  - ATTR: 5
+    DESCRIPTION: This register controls source arbitration settings for the bp client
+    FLDLST:
+      - DEFAULT: 7
+        DESCRIPTION: vc1 weight in for cfg
+        NAME: cfg_vc1_wt_in
+        WIDTH: 3
+      - DEFAULT: 7
+        DESCRIPTION: vc1 weight in for bp
+        NAME: bp_vc1_wt_in
+        WIDTH: 3
+      - DEFAULT: 7
+        DESCRIPTION: vc1 weight in for eqm
+        NAME: eqm_vc1_wt_in
+        WIDTH: 3
+      - DEFAULT: 7
+        DESCRIPTION: vc1 weight in for cmh
+        NAME: cmh_vc1_wt_in
+        WIDTH: 3
+      - DEFAULT: 7
+        DESCRIPTION: vc1 weight in for dnr
+        NAME: dnr_vc1_wt_in
+        WIDTH: 3
+    NAME: fep_cc_bp_ldn_wrr_arb_cfg
+  - ATTR: 5
+    DESCRIPTION: This register controls for which dlids local traffic is forced to DNR
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: '1 bit for each of the 32 DLIDs, 1 indicates dlid is forced to DNR'
+        NAME: dlid
+        WIDTH: 32
+    NAME: fep_cc_force_remote_cfg
+  - ATTR: 5
+    DESCRIPTION: 'Enables forcing of specific message types to a programmable local ID. Does not overwrite DLID in message. For local destination messages only. Instance 0 is for commands 0-7, 1 for 8-15, etc'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: enable for cmd0 destination override
+        NAME: cmd0_vld
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: local ID for cmd0 destination override
+        NAME: cmd0_lid
+        WIDTH: 5
+      - DEFAULT: 0
+        DESCRIPTION: enable for cmd1 destination override
+        NAME: cmd1_vld
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: local ID for cmd1 destination override
+        NAME: cmd1_lid
+        WIDTH: 5
+      - DEFAULT: 0
+        DESCRIPTION: enable for cmd2 destination override
+        NAME: cmd2_vld
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: local ID for cmd2 destination override
+        NAME: cmd2_lid
+        WIDTH: 5
+      - DEFAULT: 0
+        DESCRIPTION: enable for cmd3 destination override
+        NAME: cmd3_vld
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: local ID for cmd3 destination override
+        NAME: cmd3_lid
+        WIDTH: 5
+      - DEFAULT: 0
+        DESCRIPTION: enable for cmd4 destination override
+        NAME: cmd4_vld
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: local ID for cmd4 destination override
+        NAME: cmd4_lid
+        WIDTH: 5
+      - DEFAULT: 0
+        DESCRIPTION: enable for cmd5 destination override
+        NAME: cmd5_vld
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: local ID for cmd5 destination override
+        NAME: cmd5_lid
+        WIDTH: 5
+      - DEFAULT: 0
+        DESCRIPTION: enable for cmd6 destination override
+        NAME: cmd6_vld
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: local ID for cmd6 destination override
+        NAME: cmd6_lid
+        WIDTH: 5
+      - DEFAULT: 0
+        DESCRIPTION: enable for cmd7 destination override
+        NAME: cmd7_vld
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: local ID for cmd7 destination override
+        NAME: cmd7_lid
+        WIDTH: 5
+    NAME: fep_cc_dest_cfg_cmd_0
+  - ATTR: 5
+    DESCRIPTION: 'Enables forcing of specific message types to a programmable local ID. Does not overwrite DLID in message. For local destination messages only. Instance 0 is for commands 0-7, 1 for 8-15, etc'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: enable for cmd8 destination override
+        NAME: cmd8_vld
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: local ID for cmd8 destination override
+        NAME: cmd8_lid
+        WIDTH: 5
+      - DEFAULT: 0
+        DESCRIPTION: enable for cmd9 destination override
+        NAME: cmd9_vld
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: local ID for cmd9 destination override
+        NAME: cmd9_lid
+        WIDTH: 5
+      - DEFAULT: 0
+        DESCRIPTION: enable for cmd10 destination override
+        NAME: cmd10_vld
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: local ID for cmd10 destination override
+        NAME: cmd10_lid
+        WIDTH: 5
+      - DEFAULT: 0
+        DESCRIPTION: enable for cmd11 destination override
+        NAME: cmd11_vld
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: local ID for cmd11 destination override
+        NAME: cmd11_lid
+        WIDTH: 5
+      - DEFAULT: 0
+        DESCRIPTION: enable for cmd12 destination override
+        NAME: cmd12_vld
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: local ID for cmd12 destination override
+        NAME: cmd12_lid
+        WIDTH: 5
+      - DEFAULT: 0
+        DESCRIPTION: enable for cmd13 destination override
+        NAME: cmd13_vld
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: local ID for cmd13 destination override
+        NAME: cmd13_lid
+        WIDTH: 5
+      - DEFAULT: 0
+        DESCRIPTION: enable for cmd14 destination override
+        NAME: cmd14_vld
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: local ID for cmd14 destination override
+        NAME: cmd14_lid
+        WIDTH: 5
+      - DEFAULT: 1
+        DESCRIPTION: enable for cmd15 destination override
+        NAME: cmd15_vld
+        WIDTH: 1
+      - DEFAULT: 7
+        DESCRIPTION: local ID for cmd15 destination override
+        NAME: cmd15_lid
+        WIDTH: 5
+    NAME: fep_cc_dest_cfg_cmd_1
+  - ATTR: 5
+    DESCRIPTION: 'Enables forcing of specific message types to a programmable local ID. Does not overwrite DLID in message. For local destination messages only. Instance 0 is for commands 0-7, 1 for 8-15, etc'
+    FLDLST:
+      - DEFAULT: 1
+        DESCRIPTION: enable for cmd16 destination override
+        NAME: cmd16_vld
+        WIDTH: 1
+      - DEFAULT: 7
+        DESCRIPTION: local ID for cmd16 destination override
+        NAME: cmd16_lid
+        WIDTH: 5
+      - DEFAULT: 1
+        DESCRIPTION: enable for cmd17 destination override
+        NAME: cmd17_vld
+        WIDTH: 1
+      - DEFAULT: 7
+        DESCRIPTION: local ID for cmd17 destination override
+        NAME: cmd17_lid
+        WIDTH: 5
+      - DEFAULT: 0
+        DESCRIPTION: enable for cmd18 destination override
+        NAME: cmd18_vld
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: local ID for cmd18 destination override
+        NAME: cmd18_lid
+        WIDTH: 5
+      - DEFAULT: 0
+        DESCRIPTION: enable for cmd19 destination override
+        NAME: cmd19_vld
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: local ID for cmd19 destination override
+        NAME: cmd19_lid
+        WIDTH: 5
+      - DEFAULT: 0
+        DESCRIPTION: enable for cmd20 destination override
+        NAME: cmd20_vld
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: local ID for cmd20 destination override
+        NAME: cmd20_lid
+        WIDTH: 5
+      - DEFAULT: 0
+        DESCRIPTION: enable for cmd21 destination override
+        NAME: cmd21_vld
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: local ID for cmd21 destination override
+        NAME: cmd21_lid
+        WIDTH: 5
+      - DEFAULT: 0
+        DESCRIPTION: enable for cmd22 destination override
+        NAME: cmd22_vld
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: local ID for cmd22 destination override
+        NAME: cmd22_lid
+        WIDTH: 5
+      - DEFAULT: 0
+        DESCRIPTION: enable for cmd23 destination override
+        NAME: cmd23_vld
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: local ID for cmd23 destination override
+        NAME: cmd23_lid
+        WIDTH: 5
+    NAME: fep_cc_dest_cfg_cmd_2
+  - ATTR: 5
+    DESCRIPTION: 'Enables forcing of specific message types to a programmable local ID. Does not overwrite DLID in message. For local destination messages only. Instance 0 is for commands 0-7, 1 for 8-15, etc'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: enable for cmd24 destination override
+        NAME: cmd24_vld
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: local ID for cmd24 destination override
+        NAME: cmd24_lid
+        WIDTH: 5
+      - DEFAULT: 0
+        DESCRIPTION: enable for cmd25 destination override
+        NAME: cmd25_vld
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: local ID for cmd25 destination override
+        NAME: cmd25_lid
+        WIDTH: 5
+      - DEFAULT: 0
+        DESCRIPTION: enable for cmd26 destination override
+        NAME: cmd26_vld
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: local ID for cmd26 destination override
+        NAME: cmd26_lid
+        WIDTH: 5
+      - DEFAULT: 0
+        DESCRIPTION: enable for cmd27 destination override
+        NAME: cmd27_vld
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: local ID for cmd27 destination override
+        NAME: cmd27_lid
+        WIDTH: 5
+      - DEFAULT: 0
+        DESCRIPTION: enable for cmd28 destination override
+        NAME: cmd28_vld
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: local ID for cmd28 destination override
+        NAME: cmd28_lid
+        WIDTH: 5
+      - DEFAULT: 0
+        DESCRIPTION: enable for cmd29 destination override
+        NAME: cmd29_vld
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: local ID for cmd29 destination override
+        NAME: cmd29_lid
+        WIDTH: 5
+      - DEFAULT: 0
+        DESCRIPTION: enable for cmd30 destination override
+        NAME: cmd30_vld
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: local ID for cmd30 destination override
+        NAME: cmd30_lid
+        WIDTH: 5
+      - DEFAULT: 0
+        DESCRIPTION: enable for cmd31 destination override
+        NAME: cmd31_vld
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: local ID for cmd31 destination override
+        NAME: cmd31_lid
+        WIDTH: 5
+    NAME: fep_cc_dest_cfg_cmd_3
+  - ATTR: 5
+    DESCRIPTION: Address translation configuration for HBM
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'hash mode. 0 - hashed shard, 1 - fixed shard, 2 - no shard'
+        NAME: ddr_buf_mode
+        WIDTH: 2
+      - DEFAULT: 2
+        DESCRIPTION: 'hash mode. 0 - hashed shard, 1 - fixed shard, 2 - no shard'
+        NAME: ddr_coh_mode
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: 'hash mode. 0 - hashed shard, 1 - fixed shard, 2 - no shard'
+        NAME: hbm_buf_mode
+        WIDTH: 2
+      - DEFAULT: 2
+        DESCRIPTION: 'hash mode. 0 - hashed shard, 1 - fixed shard, 2 - no shard'
+        NAME: hbm_coh_mode
+        WIDTH: 2
+      - DEFAULT: 3
+        DESCRIPTION: 'Number of HBM shards. Value of 0 means 1 shard, 1 -> 2 shards, 2/3 -> 4 shards'
+        NAME: num_shard_log2
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Mask 0 value used in HBM hash
+        NAME: mask0
+        WIDTH: 26
+      - DEFAULT: 0
+        DESCRIPTION: Mask 1 value used in HBM hash
+        NAME: mask1
+        WIDTH: 26
+    NAME: fep_cc_hbm_ddr_hash
+  - ATTR: 5
+    DESCRIPTION: Address translation configuration for DDR
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Mask 0 value used in DDR hash
+        NAME: mask0
+        WIDTH: 32
+      - DEFAULT: 0
+        DESCRIPTION: Mask 1 value used in DDR hash
+        NAME: mask1
+        WIDTH: 32
+    NAME: fep_cc_ddr_hash
+  - ATTR: 5
+    DESCRIPTION: 'Address translation configuration for HBM, PC, and RSVD0'
+    FLDLST:
+      - &53
+        DEFAULT: 8
+        DESCRIPTION: base GID for coherent range
+        NAME: coh_base
+        WIDTH: 5
+      - &54
+        DEFAULT: 2
+        DESCRIPTION: LID for coherent range
+        NAME: coh_lid
+        WIDTH: 5
+      - DEFAULT: 12
+        DESCRIPTION: base GID for HBM non-coherent range
+        NAME: buf_base
+        WIDTH: 5
+      - DEFAULT: 1
+        DESCRIPTION: LID for HBM non-coherent range
+        NAME: buf_lid
+        WIDTH: 5
+      - DEFAULT: 0
+        DESCRIPTION: GID for RSVD0 range
+        NAME: rsvd0_gid
+        WIDTH: 5
+      - DEFAULT: 0
+        DESCRIPTION: LID for RSVD0 range
+        NAME: rsvd0_lid
+        WIDTH: 5
+      - DEFAULT: 0
+        DESCRIPTION: minimum GID for PC
+        NAME: pc_gid_min
+        WIDTH: 5
+      - DEFAULT: 7
+        DESCRIPTION: maximum GID for PC
+        NAME: pc_gid_max
+        WIDTH: 5
+      - DEFAULT: 2
+        DESCRIPTION: LID for PC range 0
+        NAME: pc_lid0
+        WIDTH: 5
+      - DEFAULT: 2
+        DESCRIPTION: LID for PC range 1
+        NAME: pc_lid1
+        WIDTH: 5
+      - DEFAULT: 2
+        DESCRIPTION: LID for PC range 2
+        NAME: pc_lid2
+        WIDTH: 5
+      - DEFAULT: 7
+        DESCRIPTION: LID for PC range 3
+        NAME: pc_lid3
+        WIDTH: 5
+    NAME: fep_cc_addr_trans_hbm_pc_rsvd0_cfg
+  - ATTR: 5
+    DESCRIPTION: Address translation configuration for NU and MU
+    FLDLST:
+      - DEFAULT: 9
+        DESCRIPTION: min GID for NU range
+        NAME: nu_gid_min
+        WIDTH: 5
+      - DEFAULT: 11
+        DESCRIPTION: max GID for NU range
+        NAME: nu_gid_max
+        WIDTH: 5
+      - DEFAULT: 0
+        DESCRIPTION: LID for NU range 0
+        NAME: nu_lid0
+        WIDTH: 5
+      - DEFAULT: 0
+        DESCRIPTION: LID for NU range 1
+        NAME: nu_lid1
+        WIDTH: 5
+      - DEFAULT: 0
+        DESCRIPTION: LID for NU range 2
+        NAME: nu_lid2
+        WIDTH: 5
+      - DEFAULT: 0
+        DESCRIPTION: LID for NU range 3
+        NAME: nu_lid3
+        WIDTH: 5
+      - DEFAULT: 12
+        DESCRIPTION: min GID for MU range
+        NAME: mu_gid_min
+        WIDTH: 5
+      - DEFAULT: 15
+        DESCRIPTION: max GID for MU range
+        NAME: mu_gid_max
+        WIDTH: 5
+      - DEFAULT: 0
+        DESCRIPTION: LID for MU range 0
+        NAME: mu_lid0
+        WIDTH: 5
+      - DEFAULT: 0
+        DESCRIPTION: LID for MU range 1
+        NAME: mu_lid1
+        WIDTH: 5
+      - DEFAULT: 0
+        DESCRIPTION: LID for MU range 2
+        NAME: mu_lid2
+        WIDTH: 5
+      - DEFAULT: 0
+        DESCRIPTION: LID for MU range 3
+        NAME: mu_lid3
+        WIDTH: 5
+    NAME: fep_cc_addr_trans_nu_mu_cfg
+  - ATTR: 5
+    DESCRIPTION: Address translation configuration for NU and MU
+    FLDLST:
+      - DEFAULT: 16
+        DESCRIPTION: min GID for HU range
+        NAME: hu_gid_min
+        WIDTH: 5
+      - DEFAULT: 21
+        DESCRIPTION: max GID for HU range
+        NAME: hu_gid_max
+        WIDTH: 5
+      - DEFAULT: 0
+        DESCRIPTION: LID for HU range 0
+        NAME: hu_lid0
+        WIDTH: 5
+      - DEFAULT: 0
+        DESCRIPTION: LID for HU range 1
+        NAME: hu_lid1
+        WIDTH: 5
+      - DEFAULT: 0
+        DESCRIPTION: LID for HU range 2
+        NAME: hu_lid2
+        WIDTH: 5
+      - DEFAULT: 0
+        DESCRIPTION: LID for HU range 3
+        NAME: hu_lid3
+        WIDTH: 5
+      - DEFAULT: 12
+        DESCRIPTION: base GID for NVRAM range
+        NAME: nvram_base
+        WIDTH: 5
+      - DEFAULT: 1
+        DESCRIPTION: LID for NVRAM range
+        NAME: nvram_lid
+        WIDTH: 5
+      - *53
+      - *54
+      - DEFAULT: 22
+        DESCRIPTION: base GID for DDR non-coherent range
+        NAME: buf_base
+        WIDTH: 5
+      - DEFAULT: 1
+        DESCRIPTION: LID for DDR non-coherent range
+        NAME: buf_lid
+        WIDTH: 5
+    NAME: fep_cc_addr_trans_hu_nvram_ddr_cfg
+  - ATTR: 5
+    DESCRIPTION: Address translation configuration for RSVD1
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: min addr for RSVD1 range
+        NAME: addr_min
+        WIDTH: 13
+      - DEFAULT: 0
+        DESCRIPTION: max addr for RSVD1 range
+        NAME: addr_max
+        WIDTH: 13
+      - DEFAULT: 0
+        DESCRIPTION: GID for RSVD1 range
+        NAME: gid
+        WIDTH: 5
+      - DEFAULT: 0
+        DESCRIPTION: LID for RSVD1 range
+        NAME: lid
+        WIDTH: 5
+    NAME: fep_cc_addr_trans_rsvd1_cfg
+  - ATTR: 5
+    DESCRIPTION: Address translation configuration for RSVD2
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: min addr for RSVD2 range
+        NAME: addr_min
+        WIDTH: 13
+      - DEFAULT: 0
+        DESCRIPTION: max addr for RSVD2 range
+        NAME: addr_max
+        WIDTH: 13
+      - DEFAULT: 0
+        DESCRIPTION: GID for RSVD2 range
+        NAME: gid
+        WIDTH: 5
+      - DEFAULT: 0
+        DESCRIPTION: LID for RSVD2 range
+        NAME: lid
+        WIDTH: 5
+    NAME: fep_cc_addr_trans_rsvd2_cfg
+  - ATTR: 5
+    DESCRIPTION: Address translation configuration for no address translation match
+    FLDLST:
+      - DEFAULT: 8
+        DESCRIPTION: GID for no addr translation match
+        NAME: gid
+        WIDTH: 5
+      - DEFAULT: 2
+        DESCRIPTION: LID for no addr translation match
+        NAME: lid
+        WIDTH: 5
+    NAME: fep_cc_addr_trans_default_cfg
+  - ATTR: 6
+    DESCRIPTION: Counter for number of packets sent from FEP to SNX
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: counter value
+        NAME: val
+        WIDTH: 36
+    NAME: fep_cc_sn_sent_cnt
+  - ATTR: 6
+    DESCRIPTION: Counter for number of packets received by FEP from SNX
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: counter value
+        NAME: val
+        WIDTH: 36
+    NAME: fep_cc_sn_rcvd_cnt
+  - ATTR: 6
+    DESCRIPTION: Counter for number of lsn address translation errors
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: counter value
+        NAME: val
+        WIDTH: 8
+    NAME: fep_cc_lsn_addr_trans_err_cnt
+  - ATTR: 6
+    DESCRIPTION: Counter for number of lsn unknown destination errors
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: counter value
+        NAME: val
+        WIDTH: 8
+    NAME: fep_cc_lsn_unknown_dest_err_cnt
+  - ATTR: 6
+    DESCRIPTION: Counter for number of filtered lsn messages
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: counter value
+        NAME: val
+        WIDTH: 8
+    NAME: fep_cc_lsn_msg_filter_err_cnt
+  - ATTR: 5
+    DESCRIPTION: 'Per {client,VC} counter enable'
+    FLDLST:
+      - DEFAULT: ''
+        DESCRIPTION: counter enable for cfg vc0
+        NAME: cfg_vc0_en
+        WIDTH: 1
+      - DEFAULT: ''
+        DESCRIPTION: counter enable for cfg vc1
+        NAME: cfg_vc1_en
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: counter enable for cfg vc2
+        NAME: cfg_vc2_en
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: counter enable for cfg vc3
+        NAME: cfg_vc3_en
+        WIDTH: 1
+      - DEFAULT: ''
+        DESCRIPTION: counter enable for bp vc0
+        NAME: bp_vc0_en
+        WIDTH: 1
+      - DEFAULT: ''
+        DESCRIPTION: counter enable for bp vc1
+        NAME: bp_vc1_en
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: counter enable for bp vc2
+        NAME: bp_vc2_en
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: counter enable for bp vc3
+        NAME: bp_vc3_en
+        WIDTH: 1
+      - DEFAULT: ''
+        DESCRIPTION: counter enable for eqm vc0
+        NAME: eqm_vc0_en
+        WIDTH: 1
+      - DEFAULT: ''
+        DESCRIPTION: counter enable for eqm vc1
+        NAME: eqm_vc1_en
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: counter enable for eqm vc2
+        NAME: eqm_vc2_en
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: counter enable for eqm vc3
+        NAME: eqm_vc3_en
+        WIDTH: 1
+      - DEFAULT: ''
+        DESCRIPTION: counter enable for cmh vc0
+        NAME: cmh_vc0_en
+        WIDTH: 1
+      - DEFAULT: ''
+        DESCRIPTION: counter enable for cmh vc1
+        NAME: cmh_vc1_en
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: counter enable for cmh vc2
+        NAME: cmh_vc2_en
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: counter enable for cmh vc3
+        NAME: cmh_vc3_en
+        WIDTH: 1
+      - DEFAULT: ''
+        DESCRIPTION: counter enable for cmh_vp vc0
+        NAME: cmh_vp_vc0_en
+        WIDTH: 1
+      - DEFAULT: ''
+        DESCRIPTION: counter enable for cmh_vp vc1
+        NAME: cmh_vp_vc1_en
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: counter enable for cmh_vp vc2
+        NAME: cmh_vp_vc2_en
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: counter enable for cmh_vp vc3
+        NAME: cmh_vp_vc3_en
+        WIDTH: 1
+      - DEFAULT: ''
+        DESCRIPTION: counter enable for snx vc0
+        NAME: snx_vc0_en
+        WIDTH: 1
+      - DEFAULT: ''
+        DESCRIPTION: counter enable for snx vc1
+        NAME: snx_vc1_en
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: counter enable for snx vc2
+        NAME: snx_vc2_en
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: counter enable for snx vc3
+        NAME: snx_vc3_en
+        WIDTH: 1
+    NAME: fep_cc_sn_msg_sent_incr_en
+  - ATTR: 6
+    DESCRIPTION: Counter for number of packets sent from SN cfg client to FEP. Counter is incremented if VC is enabled in lcsr_sn_msg_sent_incr_en
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: counter value
+        NAME: val
+        WIDTH: 36
+    NAME: fep_cc_cfg_sn_sent_cnt
+  - ATTR: 6
+    DESCRIPTION: Counter for number of packets sent from SN bp client to FEP. Counter is incremented if VC is enabled in lcsr_sn_msg_sent_incr_en
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: counter value
+        NAME: val
+        WIDTH: 36
+    NAME: fep_cc_bp_sn_sent_cnt
+  - ATTR: 6
+    DESCRIPTION: Counter for number of packets sent from SN eqm client to FEP. Counter is incremented if VC is enabled in lcsr_sn_msg_sent_incr_en
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: counter value
+        NAME: val
+        WIDTH: 36
+    NAME: fep_cc_eqm_sn_sent_cnt
+  - ATTR: 6
+    DESCRIPTION: Counter for number of packets sent from SN cmh client to FEP. Counter is incremented if VC is enabled in lcsr_sn_msg_sent_incr_en
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: counter value
+        NAME: val
+        WIDTH: 36
+    NAME: fep_cc_cmh_sn_sent_cnt
+  - ATTR: 6
+    DESCRIPTION: Counter for number of packets sent from SN cmh_vp client to FEP. Counter is incremented if VC is enabled in lcsr_sn_msg_sent_incr_en
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: counter value
+        NAME: val
+        WIDTH: 36
+    NAME: fep_cc_cmh_vp_sn_sent_cnt
+  - ATTR: 6
+    DESCRIPTION: Counter for number of packets sent from SN snx client to FEP. Counter is incremented if VC is enabled in lcsr_sn_msg_sent_incr_en
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: counter value
+        NAME: val
+        WIDTH: 36
+    NAME: fep_cc_snx_sn_sent_cnt
+  - ATTR: 6
+    DESCRIPTION: Counter for number of packets send from DNR ej interface to FEP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: counter value
+        NAME: val
+        WIDTH: 36
+    NAME: fep_cc_dn_ej_cnt
+  - ATTR: 6
+    DESCRIPTION: Counter for number of packets send from DNR inj interface to FEP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: counter value
+        NAME: val
+        WIDTH: 36
+    NAME: fep_cc_dn_inj_cnt
+  - ATTR: 6
+    DESCRIPTION: Counter for number of ldn address translation errors
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: counter value
+        NAME: val
+        WIDTH: 8
+    NAME: fep_cc_ldn_addr_trans_err_cnt
+  - ATTR: 6
+    DESCRIPTION: Counter for number of ldn unknown destination errors
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: counter value
+        NAME: val
+        WIDTH: 8
+    NAME: fep_cc_ldn_unknown_dest_err_cnt
+  - ATTR: 6
+    DESCRIPTION: Counter for number of packets from DNR with multibit metadata errors
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: counter value
+        NAME: val
+        WIDTH: 8
+    NAME: fep_cc_dn_metadata_merr_cnt
+  - ATTR: 6
+    DESCRIPTION: Counter for number of packets from DNR with single bit metadata errors
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: counter value
+        NAME: val
+        WIDTH: 8
+    NAME: fep_cc_dn_metadata_serr_cnt
+  - ATTR: 6
+    DESCRIPTION: Counter for number of packets from DNR with multibit data errors
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: counter value
+        NAME: val
+        WIDTH: 8
+    NAME: fep_cc_dn_data_merr_cnt
+  - ATTR: 6
+    DESCRIPTION: Counter for number of packets from DNR with single bit data errors
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: counter value
+        NAME: val
+        WIDTH: 8
+    NAME: fep_cc_dn_data_serr_cnt
+  - ATTR: 10
+    DESCRIPTION: 'Log of the first message filtered, sw clear of valid bit will enable new capture'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: valid message
+        NAME: vld
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: message filtered
+        NAME: message
+        WIDTH: 128
+    NAME: fep_cc_lsn_msg_filter_log
+  - ATTR: 10
+    DESCRIPTION: 'Log of the first message with addr trans err, sw clear of valid bit will enable new capture'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: valid message
+        NAME: vld
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: message with addr translation error
+        NAME: message
+        WIDTH: 128
+    NAME: fep_cc_lsn_addr_trans_log
+  - ATTR: 10
+    DESCRIPTION: 'Log of the first message with unknown destination, sw clear of valid bit will enable new capture'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: valid message
+        NAME: vld
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: message with unknown destination
+        NAME: message
+        WIDTH: 128
+    NAME: fep_cc_lsn_unknown_dest_log
+  - ATTR: 10
+    DESCRIPTION: 'Log of the first message with addr trans err, sw clear of valid bit will enable new capture'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: valid message
+        NAME: vld
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: metadata of message with addr translation error
+        NAME: message
+        WIDTH: 80
+    NAME: fep_cc_ldn_addr_trans_log
+  - ATTR: 10
+    DESCRIPTION: 'Log of the first message with unknown destination, sw clear of valid bit will enable new capture'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: valid message
+        NAME: vld
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: metadata of message with unknown destination
+        NAME: message
+        WIDTH: 80
+    NAME: fep_cc_ldn_unknown_dest_log
+  - ATTR: 10
+    DESCRIPTION: 'Log of the first address with ecc error, sw clear of valid bit will enable new capture'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: valid message
+        NAME: vld
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: address of memory entry with ecc error
+        NAME: address
+        WIDTH: 7
+    NAME: fep_cc_dn_ecc_err_addr_log
+XASIZE: 0

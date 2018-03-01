@@ -1,0 +1,1448 @@
+---
+COUNT: 1
+DESCRIPTION: CC_DAM CSR Spec
+INTR:
+  FATAL:
+    - DESCRIPTION: Pool0 BitAlloc 2b Error
+      NAME: pool0_bitalloc_sram_2bit_err
+      WIDTH: 1
+    - DESCRIPTION: Pool1 BitAlloc 2b Error
+      NAME: pool1_bitalloc_sram_2bit_err
+      WIDTH: 1
+    - DESCRIPTION: Pool2 BitAlloc 2b Error
+      NAME: pool2_bitalloc_sram_2bit_err
+      WIDTH: 1
+    - DESCRIPTION: Pool3 BitAlloc 2b Error
+      NAME: pool3_bitalloc_sram_2bit_err
+      WIDTH: 1
+    - DESCRIPTION: Pool4 BitAlloc 2b Error
+      NAME: pool4_bitalloc_sram_2bit_err
+      WIDTH: 1
+    - DESCRIPTION: Pool5 BitAlloc 2b Error
+      NAME: pool5_bitalloc_sram_2bit_err
+      WIDTH: 1
+    - DESCRIPTION: Pool6 BitAlloc 2b Error
+      NAME: pool6_bitalloc_sram_2bit_err
+      WIDTH: 1
+    - DESCRIPTION: Pool7 BitAlloc 2b Error
+      NAME: pool7_bitalloc_sram_2bit_err
+      WIDTH: 1
+    - DESCRIPTION: Pool0 RefCnt 2b Error
+      NAME: pool0_refcnt_sram_2bit_err
+      WIDTH: 1
+    - DESCRIPTION: Pool1 RefCnt 2b Error
+      NAME: pool1_refcnt_sram_2bit_err
+      WIDTH: 1
+    - DESCRIPTION: Pool2 RefCnt 2b Error
+      NAME: pool2_refcnt_sram_2bit_err
+      WIDTH: 1
+    - DESCRIPTION: Pool3 RefCnt 2b Error
+      NAME: pool3_refcnt_sram_2bit_err
+      WIDTH: 1
+    - DESCRIPTION: Pool4 RefCnt 2b Error
+      NAME: pool4_refcnt_sram_2bit_err
+      WIDTH: 1
+    - DESCRIPTION: Pool5 RefCnt 2b Error
+      NAME: pool5_refcnt_sram_2bit_err
+      WIDTH: 1
+    - DESCRIPTION: Pool6 RefCnt 2b Error
+      NAME: pool6_refcnt_sram_2bit_err
+      WIDTH: 1
+    - DESCRIPTION: Pool7 RefCnt 2b Error
+      NAME: pool7_refcnt_sram_2bit_err
+      WIDTH: 1
+    - DESCRIPTION: WU/SN Req SRAM has 2b Error
+      NAME: wu_req_sram_2b_err
+      WIDTH: 1
+    - DESCRIPTION: SN Rsp SRAM 2b Error
+      NAME: sn_rsp_sne_sram_2bit_err
+      WIDTH: 1
+    - DESCRIPTION: WU Lo SRAM 2b Error
+      NAME: wu_lo_sne_sram_2bit_err
+      WIDTH: 1
+    - DESCRIPTION: WU Hi SRAM 2b Error
+      NAME: wu_hi_sne_sram_2bit_err
+      WIDTH: 1
+  NON_FATAL:
+    - DESCRIPTION: Pool0 BitAlloc 1b Error
+      NAME: pool0_bitalloc_sram_1bit_err
+      WIDTH: 1
+    - DESCRIPTION: Pool1 BitAlloc 1b Error
+      NAME: pool1_bitalloc_sram_1bit_err
+      WIDTH: 1
+    - DESCRIPTION: Pool2 BitAlloc 1b Error
+      NAME: pool2_bitalloc_sram_1bit_err
+      WIDTH: 1
+    - DESCRIPTION: Pool3 BitAlloc 1b Error
+      NAME: pool3_bitalloc_sram_1bit_err
+      WIDTH: 1
+    - DESCRIPTION: Pool4 BitAlloc 1b Error
+      NAME: pool4_bitalloc_sram_1bit_err
+      WIDTH: 1
+    - DESCRIPTION: Pool5 BitAlloc 1b Error
+      NAME: pool5_bitalloc_sram_1bit_err
+      WIDTH: 1
+    - DESCRIPTION: Pool6 BitAlloc 1b Error
+      NAME: pool6_bitalloc_sram_1bit_err
+      WIDTH: 1
+    - DESCRIPTION: Pool7 BitAlloc 1b Error
+      NAME: pool7_bitalloc_sram_1bit_err
+      WIDTH: 1
+    - DESCRIPTION: Pool0 RefCnt 1b Error
+      NAME: pool0_refcnt_sram_1bit_err
+      WIDTH: 1
+    - DESCRIPTION: Pool1 RefCnt 1b Error
+      NAME: pool1_refcnt_sram_1bit_err
+      WIDTH: 1
+    - DESCRIPTION: Pool2 RefCnt 1b Error
+      NAME: pool2_refcnt_sram_1bit_err
+      WIDTH: 1
+    - DESCRIPTION: Pool3 RefCnt 1b Error
+      NAME: pool3_refcnt_sram_1bit_err
+      WIDTH: 1
+    - DESCRIPTION: Pool4 RefCnt 1b Error
+      NAME: pool4_refcnt_sram_1bit_err
+      WIDTH: 1
+    - DESCRIPTION: Pool5 RefCnt 1b Error
+      NAME: pool5_refcnt_sram_1bit_err
+      WIDTH: 1
+    - DESCRIPTION: Pool6 RefCnt 1b Error
+      NAME: pool6_refcnt_sram_1bit_err
+      WIDTH: 1
+    - DESCRIPTION: Pool7 RefCnt 1b Error
+      NAME: pool7_refcnt_sram_1bit_err
+      WIDTH: 1
+    - DESCRIPTION: WU/SN Req SRAM has 1b Error
+      NAME: wu_req_sram_1b_err
+      WIDTH: 1
+    - DESCRIPTION: Refcnt decrement value is larger than the count
+      NAME: refcnt_udf_err
+      WIDTH: 1
+    - DESCRIPTION: Allocation request is received and pool is empty
+      NAME: alloc_err
+      WIDTH: 1
+    - DESCRIPTION: Refcnt increment results in wraparound of count
+      NAME: refcnt_ovf_err
+      WIDTH: 1
+    - DESCRIPTION: Alloc Count programmed to zero by SW
+      NAME: alloc_cnt_eq0_err
+      WIDTH: 1
+    - DESCRIPTION: Update Count programmed to zero by SW
+      NAME: updt_cnt_eq0_err
+      WIDTH: 1
+    - DESCRIPTION: SN Rsp SRAM 1b Error
+      NAME: sn_rsp_sne_sram_1bit_err
+      WIDTH: 1
+    - DESCRIPTION: WU Lo SRAM 1b Error
+      NAME: wu_lo_sne_sram_1bit_err
+      WIDTH: 1
+    - DESCRIPTION: WU Hi SRAM 1b Error
+      NAME: wu_hi_sne_sram_1bit_err
+      WIDTH: 1
+INTR_PORT_EN: 1
+NAME: CC_DAM_AN
+PARENTNAME: pc_soc_clk_an
+REGLST:
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: |-
+          Timeout Configuration. Cycles are RSU clk based.
+                            - 00 : 1024 cycles
+                            - 01 : 256 cycles
+                            - 10 : 4096 cycles
+                            - 11 : infinite
+        NAME: val
+        WIDTH: 2
+    NAME: cc_dam_timeout_thresh_cfg
+  - ATTR: 9
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: "Timed out Status. Cycles are RSU clk based. Becomes 1 when timed out. Write any value to clear it.\n                  "
+        NAME: val
+        WIDTH: 1
+    NAME: cc_dam_timedout_sta
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: |-
+          Clear Timeout Status. Data is ignored. A write
+                     will clear the timeout status bit
+        NAME: val
+        WIDTH: 1
+    NAME: cc_dam_timeout_clr
+    TEST_ATTR: 1
+  - ATTR: 256
+    FLDLST:
+      - &1
+        DESCRIPTION: Pool0 BitAlloc 2b Error
+        NAME: pool0_bitalloc_sram_2bit_err
+        WIDTH: 1
+      - &2
+        DESCRIPTION: Pool1 BitAlloc 2b Error
+        NAME: pool1_bitalloc_sram_2bit_err
+        WIDTH: 1
+      - &3
+        DESCRIPTION: Pool2 BitAlloc 2b Error
+        NAME: pool2_bitalloc_sram_2bit_err
+        WIDTH: 1
+      - &4
+        DESCRIPTION: Pool3 BitAlloc 2b Error
+        NAME: pool3_bitalloc_sram_2bit_err
+        WIDTH: 1
+      - &5
+        DESCRIPTION: Pool4 BitAlloc 2b Error
+        NAME: pool4_bitalloc_sram_2bit_err
+        WIDTH: 1
+      - &6
+        DESCRIPTION: Pool5 BitAlloc 2b Error
+        NAME: pool5_bitalloc_sram_2bit_err
+        WIDTH: 1
+      - &7
+        DESCRIPTION: Pool6 BitAlloc 2b Error
+        NAME: pool6_bitalloc_sram_2bit_err
+        WIDTH: 1
+      - &8
+        DESCRIPTION: Pool7 BitAlloc 2b Error
+        NAME: pool7_bitalloc_sram_2bit_err
+        WIDTH: 1
+      - &9
+        DESCRIPTION: Pool0 RefCnt 2b Error
+        NAME: pool0_refcnt_sram_2bit_err
+        WIDTH: 1
+      - &10
+        DESCRIPTION: Pool1 RefCnt 2b Error
+        NAME: pool1_refcnt_sram_2bit_err
+        WIDTH: 1
+      - &11
+        DESCRIPTION: Pool2 RefCnt 2b Error
+        NAME: pool2_refcnt_sram_2bit_err
+        WIDTH: 1
+      - &12
+        DESCRIPTION: Pool3 RefCnt 2b Error
+        NAME: pool3_refcnt_sram_2bit_err
+        WIDTH: 1
+      - &13
+        DESCRIPTION: Pool4 RefCnt 2b Error
+        NAME: pool4_refcnt_sram_2bit_err
+        WIDTH: 1
+      - &14
+        DESCRIPTION: Pool5 RefCnt 2b Error
+        NAME: pool5_refcnt_sram_2bit_err
+        WIDTH: 1
+      - &15
+        DESCRIPTION: Pool6 RefCnt 2b Error
+        NAME: pool6_refcnt_sram_2bit_err
+        WIDTH: 1
+      - &16
+        DESCRIPTION: Pool7 RefCnt 2b Error
+        NAME: pool7_refcnt_sram_2bit_err
+        WIDTH: 1
+      - &17
+        DESCRIPTION: WU/SN Req SRAM has 2b Error
+        NAME: wu_req_sram_2b_err
+        WIDTH: 1
+      - &18
+        DESCRIPTION: SN Rsp SRAM 2b Error
+        NAME: sn_rsp_sne_sram_2bit_err
+        WIDTH: 1
+      - &19
+        DESCRIPTION: WU Lo SRAM 2b Error
+        NAME: wu_lo_sne_sram_2bit_err
+        WIDTH: 1
+      - &20
+        DESCRIPTION: WU Hi SRAM 2b Error
+        NAME: wu_hi_sne_sram_2bit_err
+        WIDTH: 1
+    NAME: cc_dam_fatal_intr_cause
+  - ATTR: 512
+    FLDLST:
+      - *1
+      - *2
+      - *3
+      - *4
+      - *5
+      - *6
+      - *7
+      - *8
+      - *9
+      - *10
+      - *11
+      - *12
+      - *13
+      - *14
+      - *15
+      - *16
+      - *17
+      - *18
+      - *19
+      - *20
+    NAME: cc_dam_fatal_intr_stat
+  - ATTR: 1024
+    FLDLST:
+      - *1
+      - *2
+      - *3
+      - *4
+      - *5
+      - *6
+      - *7
+      - *8
+      - *9
+      - *10
+      - *11
+      - *12
+      - *13
+      - *14
+      - *15
+      - *16
+      - *17
+      - *18
+      - *19
+      - *20
+    NAME: cc_dam_fatal_intr_mask
+  - ATTR: 2048
+    FLDLST:
+      - *1
+      - *2
+      - *3
+      - *4
+      - *5
+      - *6
+      - *7
+      - *8
+      - *9
+      - *10
+      - *11
+      - *12
+      - *13
+      - *14
+      - *15
+      - *16
+      - *17
+      - *18
+      - *19
+      - *20
+    NAME: cc_dam_fatal_intr_bset
+  - ATTR: 4096
+    FLDLST:
+      - *1
+      - *2
+      - *3
+      - *4
+      - *5
+      - *6
+      - *7
+      - *8
+      - *9
+      - *10
+      - *11
+      - *12
+      - *13
+      - *14
+      - *15
+      - *16
+      - *17
+      - *18
+      - *19
+      - *20
+    NAME: cc_dam_fatal_intr_bclr
+  - ATTR: 256
+    FLDLST:
+      - &21
+        DESCRIPTION: Pool0 BitAlloc 1b Error
+        NAME: pool0_bitalloc_sram_1bit_err
+        WIDTH: 1
+      - &22
+        DESCRIPTION: Pool1 BitAlloc 1b Error
+        NAME: pool1_bitalloc_sram_1bit_err
+        WIDTH: 1
+      - &23
+        DESCRIPTION: Pool2 BitAlloc 1b Error
+        NAME: pool2_bitalloc_sram_1bit_err
+        WIDTH: 1
+      - &24
+        DESCRIPTION: Pool3 BitAlloc 1b Error
+        NAME: pool3_bitalloc_sram_1bit_err
+        WIDTH: 1
+      - &25
+        DESCRIPTION: Pool4 BitAlloc 1b Error
+        NAME: pool4_bitalloc_sram_1bit_err
+        WIDTH: 1
+      - &26
+        DESCRIPTION: Pool5 BitAlloc 1b Error
+        NAME: pool5_bitalloc_sram_1bit_err
+        WIDTH: 1
+      - &27
+        DESCRIPTION: Pool6 BitAlloc 1b Error
+        NAME: pool6_bitalloc_sram_1bit_err
+        WIDTH: 1
+      - &28
+        DESCRIPTION: Pool7 BitAlloc 1b Error
+        NAME: pool7_bitalloc_sram_1bit_err
+        WIDTH: 1
+      - &29
+        DESCRIPTION: Pool0 RefCnt 1b Error
+        NAME: pool0_refcnt_sram_1bit_err
+        WIDTH: 1
+      - &30
+        DESCRIPTION: Pool1 RefCnt 1b Error
+        NAME: pool1_refcnt_sram_1bit_err
+        WIDTH: 1
+      - &31
+        DESCRIPTION: Pool2 RefCnt 1b Error
+        NAME: pool2_refcnt_sram_1bit_err
+        WIDTH: 1
+      - &32
+        DESCRIPTION: Pool3 RefCnt 1b Error
+        NAME: pool3_refcnt_sram_1bit_err
+        WIDTH: 1
+      - &33
+        DESCRIPTION: Pool4 RefCnt 1b Error
+        NAME: pool4_refcnt_sram_1bit_err
+        WIDTH: 1
+      - &34
+        DESCRIPTION: Pool5 RefCnt 1b Error
+        NAME: pool5_refcnt_sram_1bit_err
+        WIDTH: 1
+      - &35
+        DESCRIPTION: Pool6 RefCnt 1b Error
+        NAME: pool6_refcnt_sram_1bit_err
+        WIDTH: 1
+      - &36
+        DESCRIPTION: Pool7 RefCnt 1b Error
+        NAME: pool7_refcnt_sram_1bit_err
+        WIDTH: 1
+      - &37
+        DESCRIPTION: WU/SN Req SRAM has 1b Error
+        NAME: wu_req_sram_1b_err
+        WIDTH: 1
+      - &38
+        DESCRIPTION: Refcnt decrement value is larger than the count
+        NAME: refcnt_udf_err
+        WIDTH: 1
+      - &39
+        DESCRIPTION: Allocation request is received and pool is empty
+        NAME: alloc_err
+        WIDTH: 1
+      - &40
+        DESCRIPTION: Refcnt increment results in wraparound of count
+        NAME: refcnt_ovf_err
+        WIDTH: 1
+      - &41
+        DESCRIPTION: Alloc Count programmed to zero by SW
+        NAME: alloc_cnt_eq0_err
+        WIDTH: 1
+      - &42
+        DESCRIPTION: Update Count programmed to zero by SW
+        NAME: updt_cnt_eq0_err
+        WIDTH: 1
+      - &43
+        DESCRIPTION: SN Rsp SRAM 1b Error
+        NAME: sn_rsp_sne_sram_1bit_err
+        WIDTH: 1
+      - &44
+        DESCRIPTION: WU Lo SRAM 1b Error
+        NAME: wu_lo_sne_sram_1bit_err
+        WIDTH: 1
+      - &45
+        DESCRIPTION: WU Hi SRAM 1b Error
+        NAME: wu_hi_sne_sram_1bit_err
+        WIDTH: 1
+    NAME: cc_dam_non_fatal_intr_cause
+  - ATTR: 512
+    FLDLST:
+      - *21
+      - *22
+      - *23
+      - *24
+      - *25
+      - *26
+      - *27
+      - *28
+      - *29
+      - *30
+      - *31
+      - *32
+      - *33
+      - *34
+      - *35
+      - *36
+      - *37
+      - *38
+      - *39
+      - *40
+      - *41
+      - *42
+      - *43
+      - *44
+      - *45
+    NAME: cc_dam_non_fatal_intr_stat
+  - ATTR: 1024
+    FLDLST:
+      - *21
+      - *22
+      - *23
+      - *24
+      - *25
+      - *26
+      - *27
+      - *28
+      - *29
+      - *30
+      - *31
+      - *32
+      - *33
+      - *34
+      - *35
+      - *36
+      - *37
+      - *38
+      - *39
+      - *40
+      - *41
+      - *42
+      - *43
+      - *44
+      - *45
+    NAME: cc_dam_non_fatal_intr_mask
+  - ATTR: 2048
+    FLDLST:
+      - *21
+      - *22
+      - *23
+      - *24
+      - *25
+      - *26
+      - *27
+      - *28
+      - *29
+      - *30
+      - *31
+      - *32
+      - *33
+      - *34
+      - *35
+      - *36
+      - *37
+      - *38
+      - *39
+      - *40
+      - *41
+      - *42
+      - *43
+      - *44
+      - *45
+    NAME: cc_dam_non_fatal_intr_bset
+  - ATTR: 4096
+    FLDLST:
+      - *21
+      - *22
+      - *23
+      - *24
+      - *25
+      - *26
+      - *27
+      - *28
+      - *29
+      - *30
+      - *31
+      - *32
+      - *33
+      - *34
+      - *35
+      - *36
+      - *37
+      - *38
+      - *39
+      - *40
+      - *41
+      - *42
+      - *43
+      - *44
+      - *45
+    NAME: cc_dam_non_fatal_intr_bclr
+  - ATTR: 9
+    DESCRIPTION: Place Holder for now for CC_DAM Feature Register
+    FLDLST:
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Module ID
+        NAME: module_id
+        VALUE: 0
+        WIDTH: 8
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Version number of the module
+        NAME: version
+        VALUE: 0
+        WIDTH: 8
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Features enabled in the module.
+        NAME: features
+        VALUE: 0
+        WIDTH: 16
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Reserved Field.
+        NAME: Reserved
+        WIDTH: 32
+    NAME: cc_dam_features
+    TEST_ATTR: 0
+    WIDTH: 64
+  - ATTR: 5
+    DESCRIPTION: ' Spare PIO register. These bits can be read and written by software. They can serve as control bits for late ECOs in the design.'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Spare PIO register.
+        NAME: val
+        WIDTH: 64
+    NAME: cc_dam_spare_pio
+    WIDTH: 64
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: Scratchpad register.
+        NAME: val
+        WIDTH: 64
+    NAME: cc_dam_scratchpad
+    WIDTH: 64
+  - ATTR: 6
+    COUNT: 8
+    DESCRIPTION: Free Count Adjustment per Pool
+    ENTRIES: 1
+    FLDLST: &46
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            When this register is written, value is added/subtracted to the Free Count per Pool. The msb is the sign bit - when 1, indicates subtraction, when 0 it indicates addition; A read of this register gives the updated value of the free_count
+                                           
+        NAME: val
+        WIDTH: 16
+    NAME: pic_free_cnt_adj_0
+  - ATTR: 6
+    COUNT: 8
+    DESCRIPTION: Free Count Adjustment per Pool
+    ENTRIES: 1
+    FLDLST: *46
+    NAME: pic_free_cnt_adj_1
+  - ATTR: 6
+    COUNT: 8
+    DESCRIPTION: Free Count Adjustment per Pool
+    ENTRIES: 1
+    FLDLST: *46
+    NAME: pic_free_cnt_adj_2
+  - ATTR: 6
+    COUNT: 8
+    DESCRIPTION: Free Count Adjustment per Pool
+    ENTRIES: 1
+    FLDLST: *46
+    NAME: pic_free_cnt_adj_3
+  - ATTR: 6
+    COUNT: 8
+    DESCRIPTION: Free Count Adjustment per Pool
+    ENTRIES: 1
+    FLDLST: *46
+    NAME: pic_free_cnt_adj_4
+  - ATTR: 6
+    COUNT: 8
+    DESCRIPTION: Free Count Adjustment per Pool
+    ENTRIES: 1
+    FLDLST: *46
+    NAME: pic_free_cnt_adj_5
+  - ATTR: 6
+    COUNT: 8
+    DESCRIPTION: Free Count Adjustment per Pool
+    ENTRIES: 1
+    FLDLST: *46
+    NAME: pic_free_cnt_adj_6
+  - ATTR: 6
+    COUNT: 8
+    DESCRIPTION: Free Count Adjustment per Pool
+    ENTRIES: 1
+    FLDLST: *46
+    NAME: pic_free_cnt_adj_7
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: Dequeue Arbiter WRR Configuration for SN Requests
+    FLDLST:
+      - DEFAULT: 1
+        DESCRIPTION: |-2
+          
+                                            WRR weight for WU HI.
+                                           
+        NAME: wrr_wt_wu_hi
+        WIDTH: 4
+      - DEFAULT: 1
+        DESCRIPTION: |-2
+          
+                                            WRR weight for WU LO.
+                                           
+        NAME: wrr_wt_wu_lo
+        WIDTH: 4
+      - DEFAULT: 1
+        DESCRIPTION: |-2
+          
+                                            WRR weight for SN ALLOC.
+                                           
+        NAME: wrr_wt_sn_alloc
+        WIDTH: 4
+    NAME: sni_dq_arb_wrr_cfg
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: Pool Index Configuration
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            Enable allocate of index from a Pool.
+                                           
+        NAME: pool_ena
+        WIDTH: 8
+    NAME: dam_pool_index_cfg
+  - ATTR: 6
+    COUNT: 16
+    DESCRIPTION: |-2
+      
+                                  Pool NCV Threshold Set Configuration
+                                  The current pool occupancy is compared to the thresholds in descending order.
+                                  If the current occupancy is greater than or equal to a threshold, the threshold index is returned as the NCV.
+                                  The threshold values should be in the following order:
+                                     ... >= ncv_th_3 >= ncv_th_2 >= ncv_th_1 >= ncv_th_0
+                                 
+    ENTRIES: 1
+    FLDLST: &47
+      - DEFAULT: 30720
+        DESCRIPTION: |-2
+          
+                                            NCV Threshold
+                                           
+        NAME: th
+        WIDTH: 15
+    NAME: dam_pool_ncv_th_cfg_0
+  - ATTR: 6
+    COUNT: 16
+    DESCRIPTION: |-2
+      
+                                  Pool NCV Threshold Set Configuration
+                                  The current pool occupancy is compared to the thresholds in descending order.
+                                  If the current occupancy is greater than or equal to a threshold, the threshold index is returned as the NCV.
+                                  The threshold values should be in the following order:
+                                     ... >= ncv_th_3 >= ncv_th_2 >= ncv_th_1 >= ncv_th_0
+                                 
+    ENTRIES: 1
+    FLDLST: *47
+    NAME: dam_pool_ncv_th_cfg_1
+  - ATTR: 6
+    COUNT: 16
+    DESCRIPTION: |-2
+      
+                                  Pool NCV Threshold Set Configuration
+                                  The current pool occupancy is compared to the thresholds in descending order.
+                                  If the current occupancy is greater than or equal to a threshold, the threshold index is returned as the NCV.
+                                  The threshold values should be in the following order:
+                                     ... >= ncv_th_3 >= ncv_th_2 >= ncv_th_1 >= ncv_th_0
+                                 
+    ENTRIES: 1
+    FLDLST: *47
+    NAME: dam_pool_ncv_th_cfg_2
+  - ATTR: 6
+    COUNT: 16
+    DESCRIPTION: |-2
+      
+                                  Pool NCV Threshold Set Configuration
+                                  The current pool occupancy is compared to the thresholds in descending order.
+                                  If the current occupancy is greater than or equal to a threshold, the threshold index is returned as the NCV.
+                                  The threshold values should be in the following order:
+                                     ... >= ncv_th_3 >= ncv_th_2 >= ncv_th_1 >= ncv_th_0
+                                 
+    ENTRIES: 1
+    FLDLST: *47
+    NAME: dam_pool_ncv_th_cfg_3
+  - ATTR: 6
+    COUNT: 16
+    DESCRIPTION: |-2
+      
+                                  Pool NCV Threshold Set Configuration
+                                  The current pool occupancy is compared to the thresholds in descending order.
+                                  If the current occupancy is greater than or equal to a threshold, the threshold index is returned as the NCV.
+                                  The threshold values should be in the following order:
+                                     ... >= ncv_th_3 >= ncv_th_2 >= ncv_th_1 >= ncv_th_0
+                                 
+    ENTRIES: 1
+    FLDLST: *47
+    NAME: dam_pool_ncv_th_cfg_4
+  - ATTR: 6
+    COUNT: 16
+    DESCRIPTION: |-2
+      
+                                  Pool NCV Threshold Set Configuration
+                                  The current pool occupancy is compared to the thresholds in descending order.
+                                  If the current occupancy is greater than or equal to a threshold, the threshold index is returned as the NCV.
+                                  The threshold values should be in the following order:
+                                     ... >= ncv_th_3 >= ncv_th_2 >= ncv_th_1 >= ncv_th_0
+                                 
+    ENTRIES: 1
+    FLDLST: *47
+    NAME: dam_pool_ncv_th_cfg_5
+  - ATTR: 6
+    COUNT: 16
+    DESCRIPTION: |-2
+      
+                                  Pool NCV Threshold Set Configuration
+                                  The current pool occupancy is compared to the thresholds in descending order.
+                                  If the current occupancy is greater than or equal to a threshold, the threshold index is returned as the NCV.
+                                  The threshold values should be in the following order:
+                                     ... >= ncv_th_3 >= ncv_th_2 >= ncv_th_1 >= ncv_th_0
+                                 
+    ENTRIES: 1
+    FLDLST: *47
+    NAME: dam_pool_ncv_th_cfg_6
+  - ATTR: 6
+    COUNT: 16
+    DESCRIPTION: |-2
+      
+                                  Pool NCV Threshold Set Configuration
+                                  The current pool occupancy is compared to the thresholds in descending order.
+                                  If the current occupancy is greater than or equal to a threshold, the threshold index is returned as the NCV.
+                                  The threshold values should be in the following order:
+                                     ... >= ncv_th_3 >= ncv_th_2 >= ncv_th_1 >= ncv_th_0
+                                 
+    ENTRIES: 1
+    FLDLST: *47
+    NAME: dam_pool_ncv_th_cfg_7
+  - ATTR: 6
+    COUNT: 16
+    DESCRIPTION: |-2
+      
+                                  Pool NCV Threshold Set Configuration
+                                  The current pool occupancy is compared to the thresholds in descending order.
+                                  If the current occupancy is greater than or equal to a threshold, the threshold index is returned as the NCV.
+                                  The threshold values should be in the following order:
+                                     ... >= ncv_th_3 >= ncv_th_2 >= ncv_th_1 >= ncv_th_0
+                                 
+    ENTRIES: 1
+    FLDLST: *47
+    NAME: dam_pool_ncv_th_cfg_8
+  - ATTR: 6
+    COUNT: 16
+    DESCRIPTION: |-2
+      
+                                  Pool NCV Threshold Set Configuration
+                                  The current pool occupancy is compared to the thresholds in descending order.
+                                  If the current occupancy is greater than or equal to a threshold, the threshold index is returned as the NCV.
+                                  The threshold values should be in the following order:
+                                     ... >= ncv_th_3 >= ncv_th_2 >= ncv_th_1 >= ncv_th_0
+                                 
+    ENTRIES: 1
+    FLDLST: *47
+    NAME: dam_pool_ncv_th_cfg_9
+  - ATTR: 6
+    COUNT: 16
+    DESCRIPTION: |-2
+      
+                                  Pool NCV Threshold Set Configuration
+                                  The current pool occupancy is compared to the thresholds in descending order.
+                                  If the current occupancy is greater than or equal to a threshold, the threshold index is returned as the NCV.
+                                  The threshold values should be in the following order:
+                                     ... >= ncv_th_3 >= ncv_th_2 >= ncv_th_1 >= ncv_th_0
+                                 
+    ENTRIES: 1
+    FLDLST: *47
+    NAME: dam_pool_ncv_th_cfg_10
+  - ATTR: 6
+    COUNT: 16
+    DESCRIPTION: |-2
+      
+                                  Pool NCV Threshold Set Configuration
+                                  The current pool occupancy is compared to the thresholds in descending order.
+                                  If the current occupancy is greater than or equal to a threshold, the threshold index is returned as the NCV.
+                                  The threshold values should be in the following order:
+                                     ... >= ncv_th_3 >= ncv_th_2 >= ncv_th_1 >= ncv_th_0
+                                 
+    ENTRIES: 1
+    FLDLST: *47
+    NAME: dam_pool_ncv_th_cfg_11
+  - ATTR: 6
+    COUNT: 16
+    DESCRIPTION: |-2
+      
+                                  Pool NCV Threshold Set Configuration
+                                  The current pool occupancy is compared to the thresholds in descending order.
+                                  If the current occupancy is greater than or equal to a threshold, the threshold index is returned as the NCV.
+                                  The threshold values should be in the following order:
+                                     ... >= ncv_th_3 >= ncv_th_2 >= ncv_th_1 >= ncv_th_0
+                                 
+    ENTRIES: 1
+    FLDLST: *47
+    NAME: dam_pool_ncv_th_cfg_12
+  - ATTR: 6
+    COUNT: 16
+    DESCRIPTION: |-2
+      
+                                  Pool NCV Threshold Set Configuration
+                                  The current pool occupancy is compared to the thresholds in descending order.
+                                  If the current occupancy is greater than or equal to a threshold, the threshold index is returned as the NCV.
+                                  The threshold values should be in the following order:
+                                     ... >= ncv_th_3 >= ncv_th_2 >= ncv_th_1 >= ncv_th_0
+                                 
+    ENTRIES: 1
+    FLDLST: *47
+    NAME: dam_pool_ncv_th_cfg_13
+  - ATTR: 6
+    COUNT: 16
+    DESCRIPTION: |-2
+      
+                                  Pool NCV Threshold Set Configuration
+                                  The current pool occupancy is compared to the thresholds in descending order.
+                                  If the current occupancy is greater than or equal to a threshold, the threshold index is returned as the NCV.
+                                  The threshold values should be in the following order:
+                                     ... >= ncv_th_3 >= ncv_th_2 >= ncv_th_1 >= ncv_th_0
+                                 
+    ENTRIES: 1
+    FLDLST: *47
+    NAME: dam_pool_ncv_th_cfg_14
+  - ATTR: 6
+    COUNT: 16
+    DESCRIPTION: |-2
+      
+                                  Pool NCV Threshold Set Configuration
+                                  The current pool occupancy is compared to the thresholds in descending order.
+                                  If the current occupancy is greater than or equal to a threshold, the threshold index is returned as the NCV.
+                                  The threshold values should be in the following order:
+                                     ... >= ncv_th_3 >= ncv_th_2 >= ncv_th_1 >= ncv_th_0
+                                 
+    ENTRIES: 1
+    FLDLST: *47
+    NAME: dam_pool_ncv_th_cfg_15
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: BN Resource ID
+    ENTRIES: 1
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            Resource ID Base; for subsequent pools, ID = Base+offset
+                                           
+        NAME: rid
+        WIDTH: 15
+    NAME: cfg_pool_bn_rid_base
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: BN Message Enabe
+    ENTRIES: 1
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            Enable Sending BN Messages
+                                           
+        NAME: Enable
+        WIDTH: 1
+    NAME: cfg_pool_bn_msg_en
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: Credits between SNE and SNI
+    ENTRIES: 1
+    FLDLST:
+      - DEFAULT: 24
+        DESCRIPTION: |-2
+          
+                                            Number of credits between SNE and SNI
+                                           
+        NAME: Credit
+        WIDTH: 6
+    NAME: cfg_sne_sni_crd_cnt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: Enable Backpressure between PIC and SNI
+    ENTRIES: 1
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            Enable Backpressure between PIC and SNI
+                                           
+        NAME: BP_EN
+        WIDTH: 1
+    NAME: cfg_pic_sni_bp_en
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: Pool Number to Read/Write Refcnt Mem
+    ENTRIES: 1
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            Refcnt Pool Number to Read/Write from; SW needs to generate one hot vector only; Bit 0 implies Pool0 needs to be written, Bit1 for Pool1 and so on.
+                                           
+        NAME: pool
+        WIDTH: 8
+    NAME: refcnt_mem_pool_cfg
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: Config for Debug/Stats
+    ENTRIES: 1
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            Debug Config for DAM; used as Mux Sel for different debug busses in SNI
+                                           
+        NAME: sni_fla_dbg_cfg
+        WIDTH: 8
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            Debug Config for DAM; used as Mux Sel for different debug busses in PIC to FLA
+                                           
+        NAME: pic_fla_dbg_cfg
+        WIDTH: 8
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            Debug Config for DAM; used as Mux Sel for different debug busses in SNE to FLA
+                                           
+        NAME: sne_fla_dbg_cfg
+        WIDTH: 8
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            Debug Config for DAM; used as Mux Sel for different debug busses in BNI to FLA
+                                           
+        NAME: bni_fla_dbg_cfg
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            Debug Config for DAM; Spare bits
+                                           
+        NAME: dam_spare_dbg_cfg
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            Debug Config for DAM; used as Mux Sel for different debug busses in PIC to CSR
+                                           
+        NAME: pic_csr_dbg_cfg
+        WIDTH: 4
+    NAME: dam_dbg_stat_cfg
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: DAM FLA Ring Module ID
+    FLDLST:
+      - DEFAULT: 85
+        DESCRIPTION: '8-Bit Module ID to be used for Decoding Commands on FLA Command Ring, 0x0, 0xff are Reserved Values'
+        NAME: fld_val
+        WIDTH: 8
+    NAME: dam_fla_ring_module_id_cfg
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: 'Debug counters and Stats for DAM - SNI Pipe'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            Debug Info, Stats from SNI Pipe
+                                           
+        NAME: Dbg_Stat
+        WIDTH: 32
+    NAME: cc_dam_sni_dbg
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: 'Debug counters and Stats for DAM - PIC Pipe'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            Debug Info, Stats from PIC Pipe 
+                                           
+        NAME: Dbg_Stat
+        WIDTH: 32
+    NAME: cc_dam_pic_dbg
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: 'Debug counters and Stats for DAM - SNE Pipe'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            Debug Info, Stats from SNE Pipe
+                                           
+        NAME: Dbg_Stat
+        WIDTH: 32
+    NAME: cc_dam_sne_dbg
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: 'Debug counters and Stats for DAM - BNI Pipe'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            Debug Info, Stats from BNI Pipe
+                                           
+        NAME: Dbg_Stat
+        WIDTH: 32
+    NAME: cc_dam_bni_dbg
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: Config register for memory error injection
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: ' Inject error into SNI Ingress WU Memory'
+        NAME: sni_mem_inj_valid
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ' Inject error into BitAlloc Memory'
+        NAME: ba_mem_inj_valid
+        WIDTH: 8
+      - DEFAULT: 0
+        DESCRIPTION: ' Inject error into RefCount Memory'
+        NAME: rc_mem_inj_valid
+        WIDTH: 8
+      - DEFAULT: 0
+        DESCRIPTION: ' Inject error into SNE VC Memory'
+        NAME: sne_mem_inj_valid
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: |-
+          Type of error to be injected
+                                            Applied to all memory error injection
+                                            0 - Uncorrectable error
+                                            1 - Correctable error
+                                            
+        NAME: err_inj_type
+        WIDTH: 1
+    NAME: dam_mem_err_inj_cfg
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: DAM Alloc Error Status
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            Current value of Alloc errors.
+                                           
+        NAME: Alloc_Err
+        WIDTH: 32
+    NAME: dam_alloc_err_cnt
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: DAM Underflow Error Count
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            Count of Underflow errors.
+                                           
+        NAME: UDF_Err_Count
+        WIDTH: 32
+    NAME: dam_udf_err_cnt
+  - ATTR: 9
+    COUNT: 4
+    DESCRIPTION: DAM Underflow Error Header
+    FLDLST: &48
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            Header of Command which generated Underflow
+                                           
+        NAME: UDF_Err_Header
+        WIDTH: 64
+    NAME: dam_udf_err_hdr_0
+  - ATTR: 9
+    COUNT: 4
+    DESCRIPTION: DAM Underflow Error Header
+    FLDLST: *48
+    NAME: dam_udf_err_hdr_1
+  - ATTR: 9
+    COUNT: 4
+    DESCRIPTION: DAM Underflow Error Header
+    FLDLST: *48
+    NAME: dam_udf_err_hdr_2
+  - ATTR: 9
+    COUNT: 4
+    DESCRIPTION: DAM Underflow Error Header
+    FLDLST: *48
+    NAME: dam_udf_err_hdr_3
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: DAM Overflow Error Count
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            Count of Overflow errors.
+                                           
+        NAME: OVF_Err_Count
+        WIDTH: 32
+    NAME: dam_ovf_err_cnt
+  - ATTR: 9
+    COUNT: 4
+    DESCRIPTION: DAM Overflow Error Header
+    FLDLST: &49
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            Header of Command which generated Overflow
+                                           
+        NAME: OVF_Err_Header
+        WIDTH: 64
+    NAME: dam_ovf_err_hdr_0
+  - ATTR: 9
+    COUNT: 4
+    DESCRIPTION: DAM Overflow Error Header
+    FLDLST: *49
+    NAME: dam_ovf_err_hdr_1
+  - ATTR: 9
+    COUNT: 4
+    DESCRIPTION: DAM Overflow Error Header
+    FLDLST: *49
+    NAME: dam_ovf_err_hdr_2
+  - ATTR: 9
+    COUNT: 4
+    DESCRIPTION: DAM Overflow Error Header
+    FLDLST: *49
+    NAME: dam_ovf_err_hdr_3
+  - ATTR: 9
+    DESCRIPTION: SRAM bit vector that failed ECC
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            First SRAM ECC error detected (1-hot)
+                                            Set when first error is detected
+                                            Reset when corresponding interrupt status bit is cleared
+                                            [0]  - sni_mem_ucerr
+                                            [1]  - sni_mem_cerr
+                                           
+        NAME: val
+        WIDTH: 45
+    NAME: dam_sram_log_err
+  - ATTR: 9
+    DESCRIPTION: SRAM syndrome log register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            Syndrome related to ECC error
+                                            detected while reading data from SRAM
+                                           
+        NAME: val
+        WIDTH: 16
+    NAME: dam_sram_log_syndrome
+  - ATTR: 9
+    DESCRIPTION: SRAM address log register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            Address related to ECC error
+                                            detected while reading data from SRAM
+                                           
+        NAME: val
+        WIDTH: 16
+    NAME: dam_sram_log_addr
+  - ATTR: 10
+    DESCRIPTION: Address log register for Ref Count Underflow
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            Address of Refnt SRAM for which underflow happened
+                                           
+        NAME: val
+        WIDTH: 14
+    NAME: dam_udf_log_addr
+  - ATTR: 10
+    DESCRIPTION: Address log register for Ref Count Overflow
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            Address of Refnt SRAM for which overflow happened
+                                           
+        NAME: val
+        WIDTH: 14
+    NAME: dam_ovf_log_addr
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: Count of SN Messages on Ingress and Egress Responses
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            Count of SN Messages on Ingress
+                                           
+        NAME: sn_ingress_count
+        WIDTH: 32
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            Count of SN Messages on Egress
+                                           
+        NAME: sn_egress_count
+        WIDTH: 32
+    NAME: cc_dam_sn_count
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: Count of WU-Hi Messages on Ingress and Egress Responses
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            Count of WUH Messages on Ingress
+                                           
+        NAME: wuh_ingress_count
+        WIDTH: 32
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            Count of WUH Messages on Egress
+                                           
+        NAME: wuh_egress_count
+        WIDTH: 32
+    NAME: cc_dam_wuh_count
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: Count of WU-Lo Messages on Ingress and Egress Responses
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            Count of WUL Messages on Ingress
+                                           
+        NAME: wul_ingress_count
+        WIDTH: 32
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            Count of WUL Messages on Egress
+                                           
+        NAME: wul_egress_count
+        WIDTH: 32
+    NAME: cc_dam_wul_count
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: Count of Alloc Messages on Ingress and Egress Responses
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            Count of Alloc Messages on Ingress
+                                           
+        NAME: alloc_ingress_count
+        WIDTH: 32
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            Count of Alloc Messages on Egress
+                                           
+        NAME: alloc_egress_count
+        WIDTH: 32
+    NAME: cc_dam_alloc_count
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: Count of Update Messages on Ingress and Egress Responses
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            Count of Update Messages on Ingress
+                                           
+        NAME: updt_ingress_count
+        WIDTH: 32
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            Count of Update Messages on Egress
+                                           
+        NAME: updt_egress_count
+        WIDTH: 32
+    NAME: cc_dam_updt_count
+  - ATTR: 9
+    DESCRIPTION: Debug log register for PIC Module
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            32b debug value
+                                           
+        NAME: dbg0
+        WIDTH: 32
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            32b debug value
+                                           
+        NAME: dbg1
+        WIDTH: 32
+    NAME: cc_dam_pic_dbg_reg
+  - ATTR: 6
+    COUNT: 8
+    DESCRIPTION: Access to PA Freelist Memory
+    ENTRIES: 4096
+    FLDLST: &50
+      - DEFAULT: 4294967295
+        DESCRIPTION: |-2
+          
+                                            PA freelist data.
+                                           
+        NAME: fld_data
+        WIDTH: 32
+    NAME: pic_fl_bitalloc_cfg_0
+  - ATTR: 6
+    COUNT: 8
+    DESCRIPTION: Access to PA Freelist Memory
+    ENTRIES: 4096
+    FLDLST: *50
+    NAME: pic_fl_bitalloc_cfg_1
+  - ATTR: 6
+    COUNT: 8
+    DESCRIPTION: Access to PA Freelist Memory
+    ENTRIES: 4096
+    FLDLST: *50
+    NAME: pic_fl_bitalloc_cfg_2
+  - ATTR: 6
+    COUNT: 8
+    DESCRIPTION: Access to PA Freelist Memory
+    ENTRIES: 4096
+    FLDLST: *50
+    NAME: pic_fl_bitalloc_cfg_3
+  - ATTR: 6
+    COUNT: 8
+    DESCRIPTION: Access to PA Freelist Memory
+    ENTRIES: 4096
+    FLDLST: *50
+    NAME: pic_fl_bitalloc_cfg_4
+  - ATTR: 6
+    COUNT: 8
+    DESCRIPTION: Access to PA Freelist Memory
+    ENTRIES: 4096
+    FLDLST: *50
+    NAME: pic_fl_bitalloc_cfg_5
+  - ATTR: 6
+    COUNT: 8
+    DESCRIPTION: Access to PA Freelist Memory
+    ENTRIES: 4096
+    FLDLST: *50
+    NAME: pic_fl_bitalloc_cfg_6
+  - ATTR: 6
+    COUNT: 8
+    DESCRIPTION: Access to PA Freelist Memory
+    ENTRIES: 4096
+    FLDLST: *50
+    NAME: pic_fl_bitalloc_cfg_7
+  - ATTR: 6
+    COUNT: 1
+    DESCRIPTION: Read/Write Access into RefCnt SRAM
+    ENTRIES: 4096
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: .
+        NAME: val
+        WIDTH: 32
+    NAME: dam_pic_mem_refcnt
+XASIZE: 0

@@ -1,0 +1,694 @@
+---
+ASIZE: 8388608
+COUNT: 2
+DESCRIPTION: HSU_FLINK_SHIM CSR Spec
+INTR:
+  FATAL:
+    - DESCRIPTION: ''
+      NAME: iram_merr
+      WIDTH: 1
+    - DESCRIPTION: ''
+      NAME: eram_ctrl_merr
+      WIDTH: 1
+    - DESCRIPTION: ''
+      NAME: eram_data_merr
+      WIDTH: 1
+  NON_FATAL:
+    - DESCRIPTION: ''
+      NAME: iram_serr
+      WIDTH: 1
+    - DESCRIPTION: ''
+      NAME: eram_ctrl_serr
+      WIDTH: 1
+    - DESCRIPTION: ''
+      NAME: eram_data_serr
+      WIDTH: 1
+INTR_PORT_EN: 1
+NAME: HSU_FLINK_SHIM_AN
+PARENTNAME: NU_0_AN
+REGLST:
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: |-
+          Timeout Configuration. Cycles are RSU clk based.
+                            - 00 : 1024 cycles
+                            - 01 : 256 cycles
+                            - 10 : 4096 cycles
+                            - 11 : infinite
+        NAME: val
+        WIDTH: 2
+    NAME: hsu_flink_shim_timeout_thresh_cfg
+  - ATTR: 9
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: "Timed out Status. Cycles are RSU clk based. Becomes 1 when timed out. Write any value to clear it.\n                  "
+        NAME: val
+        WIDTH: 1
+    NAME: hsu_flink_shim_timedout_sta
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: |-
+          Clear Timeout Status. Data is ignored. A write
+                     will clear the timeout status bit
+        NAME: val
+        WIDTH: 1
+    NAME: hsu_flink_shim_timeout_clr
+    TEST_ATTR: 1
+  - ATTR: 256
+    FLDLST:
+      - &1
+        DESCRIPTION: ''
+        NAME: iram_merr
+        WIDTH: 1
+      - &2
+        DESCRIPTION: ''
+        NAME: eram_ctrl_merr
+        WIDTH: 1
+      - &3
+        DESCRIPTION: ''
+        NAME: eram_data_merr
+        WIDTH: 1
+    NAME: hsu_flink_shim_fatal_intr_cause
+  - ATTR: 512
+    FLDLST:
+      - *1
+      - *2
+      - *3
+    NAME: hsu_flink_shim_fatal_intr_stat
+  - ATTR: 1024
+    FLDLST:
+      - *1
+      - *2
+      - *3
+    NAME: hsu_flink_shim_fatal_intr_mask
+  - ATTR: 2048
+    FLDLST:
+      - *1
+      - *2
+      - *3
+    NAME: hsu_flink_shim_fatal_intr_bset
+  - ATTR: 4096
+    FLDLST:
+      - *1
+      - *2
+      - *3
+    NAME: hsu_flink_shim_fatal_intr_bclr
+  - ATTR: 256
+    FLDLST:
+      - &4
+        DESCRIPTION: ''
+        NAME: iram_serr
+        WIDTH: 1
+      - &5
+        DESCRIPTION: ''
+        NAME: eram_ctrl_serr
+        WIDTH: 1
+      - &6
+        DESCRIPTION: ''
+        NAME: eram_data_serr
+        WIDTH: 1
+    NAME: hsu_flink_shim_non_fatal_intr_cause
+  - ATTR: 512
+    FLDLST:
+      - *4
+      - *5
+      - *6
+    NAME: hsu_flink_shim_non_fatal_intr_stat
+  - ATTR: 1024
+    FLDLST:
+      - *4
+      - *5
+      - *6
+    NAME: hsu_flink_shim_non_fatal_intr_mask
+  - ATTR: 2048
+    FLDLST:
+      - *4
+      - *5
+      - *6
+    NAME: hsu_flink_shim_non_fatal_intr_bset
+  - ATTR: 4096
+    FLDLST:
+      - *4
+      - *5
+      - *6
+    NAME: hsu_flink_shim_non_fatal_intr_bclr
+  - ATTR: 9
+    DESCRIPTION: Place Holder for now for HSU_FLINK_SHIM Feature Register
+    FLDLST:
+      - ATTR: 1
+        DEFAULT: '{hsu_flink_shim}{mod_id}'
+        DESCRIPTION: Module ID
+        NAME: module_id
+        VALUE: '{hsu_flink_shim}{mod_id}'
+        WIDTH: 8
+      - ATTR: 1
+        DEFAULT: '{hsu_flink_shim}{version}'
+        DESCRIPTION: Version number of the module
+        NAME: version
+        VALUE: '{hsu_flink_shim}{version}'
+        WIDTH: 8
+      - ATTR: 1
+        DEFAULT: '{hsu_flink_shim}{features}'
+        DESCRIPTION: Features enabled in the module.
+        NAME: features
+        VALUE: '{hsu_flink_shim}{features}'
+        WIDTH: 16
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Reserved Field.
+        NAME: Reserved
+        WIDTH: 32
+    NAME: hsu_flink_shim_features
+    WIDTH: 64
+  - ATTR: 5
+    DESCRIPTION: ' Spare PIO register. These bits can be read and written by software. They can serve as control bits for late ECOs in the design.'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Spare PIO register.
+        NAME: val
+        WIDTH: 64
+    NAME: hsu_flink_shim_spare_pio
+    WIDTH: 64
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: Scratchpad register.
+        NAME: val
+        WIDTH: 64
+    NAME: hsu_flink_shim_scratchpad
+    WIDTH: 64
+  - ATTR: 5
+    DESCRIPTION: csr_gen1
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: bif_mode
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: is_root_port
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: fnc# for cid0_p_cpl
+        NAME: fnc_flow0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ' vc# for cid0_p_cpl'
+        NAME: vc_flow0
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: fnc# for cid1_p_cpl
+        NAME: fnc_flow1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ' vc# for cid1_p_cpl'
+        NAME: vc_flow1
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: fnc# for cid2_p_cpl
+        NAME: fnc_flow2
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ' vc# for cid2_p_cpl'
+        NAME: vc_flow2
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: fnc# for cid3_p_cpl
+        NAME: fnc_flow3
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ' vc# for cid3_p_cpl'
+        NAME: vc_flow3
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: fnc# for cid0_np
+        NAME: fnc_flow4
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ' vc# for cid0_np'
+        NAME: vc_flow4
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: fnc# for cid1_np
+        NAME: fnc_flow5
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ' vc# for cid1_np'
+        NAME: vc_flow5
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: fnc# for cid2_np
+        NAME: fnc_flow6
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ' vc# for cid2_np'
+        NAME: vc_flow6
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: fnc# for cid3_np
+        NAME: fnc_flow7
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ' vc# for cid3_np'
+        NAME: vc_flow7
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: ignore stall from mem_wrp
+        NAME: dis_csr_stall
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: traffic initiator enable bit
+        NAME: egr_enable
+        WIDTH: 1
+      - DEFAULT: 15
+        DESCRIPTION: timeout for tx p_ack packet accumulation
+        NAME: p_ack_timer
+        WIDTH: 8
+      - DEFAULT: 15
+        DESCRIPTION: timeout for tx bn packet accumulation
+        NAME: bn_timer
+        WIDTH: 8
+    NAME: csr_gen1
+  - ATTR: 5
+    DESCRIPTION: csr_gen2
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'fnc#, vc#'
+        NAME: bn_brdcst_vc
+        WIDTH: 32
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: ack_vc_fnc0_s0
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: ack_vc_fnc0_s1
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: ack_vc_fnc0_s2
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: ack_vc_fnc0_s3
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: ack_vc_fnc1_s0
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: ack_vc_fnc1_s1
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: ack_vc_fnc1_s2
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: ack_vc_fnc1_s3
+        WIDTH: 4
+    NAME: csr_gen2
+  - ATTR: 5
+    DESCRIPTION: csr_gen3
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'fnc0, vc00 to Schip map'
+        NAME: fnc0_map0
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: 'fnc0, vc01 to Schip map'
+        NAME: fnc0_map1
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: 'fnc0, vc02 to Schip map'
+        NAME: fnc0_map2
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: 'fnc0, vc03 to Schip map'
+        NAME: fnc0_map3
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: 'fnc0, vc04 to Schip map'
+        NAME: fnc0_map4
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: 'fnc0, vc05 to Schip map'
+        NAME: fnc0_map5
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: 'fnc0, vc06 to Schip map'
+        NAME: fnc0_map6
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: 'fnc0, vc07 to Schip map'
+        NAME: fnc0_map7
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: 'fnc0, vc08 to Schip map'
+        NAME: fnc0_map8
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: 'fnc0, vc09 to Schip map'
+        NAME: fnc0_map9
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: 'fnc0, vc10 to Schip map'
+        NAME: fnc0_map10
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: 'fnc0, vc11 to Schip map'
+        NAME: fnc0_map11
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: 'fnc0, vc12 to Schip map'
+        NAME: fnc0_map12
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: 'fnc0, vc13 to Schip map'
+        NAME: fnc0_map13
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: 'fnc0, vc14 to Schip map'
+        NAME: fnc0_map14
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: 'fnc0, vc15 to Schip map'
+        NAME: fnc0_map15
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: 'fnc1, vc00 to Schip map'
+        NAME: fnc1_map0
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: 'fnc1, vc01 to Schip map'
+        NAME: fnc1_map1
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: 'fnc1, vc02 to Schip map'
+        NAME: fnc1_map2
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: 'fnc1, vc03 to Schip map'
+        NAME: fnc1_map3
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: 'fnc1, vc04 to Schip map'
+        NAME: fnc1_map4
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: 'fnc1, vc05 to Schip map'
+        NAME: fnc1_map5
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: 'fnc1, vc06 to Schip map'
+        NAME: fnc1_map6
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: 'fnc1, vc07 to Schip map'
+        NAME: fnc1_map7
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: 'fnc1, vc08 to Schip map'
+        NAME: fnc1_map8
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: 'fnc1, vc09 to Schip map'
+        NAME: fnc1_map9
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: 'fnc1, vc10 to Schip map'
+        NAME: fnc1_map10
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: 'fnc1, vc11 to Schip map'
+        NAME: fnc1_map11
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: 'fnc1, vc12 to Schip map'
+        NAME: fnc1_map12
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: 'fnc1, vc13 to Schip map'
+        NAME: fnc1_map13
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: 'fnc1, vc14 to Schip map'
+        NAME: fnc1_map14
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: 'fnc1, vc15 to Schip map'
+        NAME: fnc1_map15
+        WIDTH: 2
+    NAME: csr_gen3
+  - ATTR: 5
+    DESCRIPTION: csr_gen4
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: bnh_match_val
+        WIDTH: 15
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: bnh_mask_val
+        WIDTH: 15
+    NAME: csr_gen4
+  - ATTR: 5
+    DESCRIPTION: ''
+    FLDLST:
+      - DEFAULT: 2
+        DESCRIPTION: see hsu_pcie_max_payload_size_t
+        NAME: mps_pf0
+        WIDTH: 3
+      - DEFAULT: 2
+        DESCRIPTION: see hsu_pcie_max_payload_size_t
+        NAME: mps_pf1
+        WIDTH: 3
+      - DEFAULT: 2
+        DESCRIPTION: see hsu_pcie_max_payload_size_t
+        NAME: mps_pf2
+        WIDTH: 3
+      - DEFAULT: 2
+        DESCRIPTION: see hsu_pcie_max_payload_size_t
+        NAME: mps_pf3
+        WIDTH: 3
+      - DEFAULT: 2
+        DESCRIPTION: see hsu_pcie_max_payload_size_t
+        NAME: mps_pf4
+        WIDTH: 3
+      - DEFAULT: 2
+        DESCRIPTION: see hsu_pcie_max_payload_size_t
+        NAME: mps_pf5
+        WIDTH: 3
+      - DEFAULT: 2
+        DESCRIPTION: see hsu_pcie_max_payload_size_t
+        NAME: mps_pf6
+        WIDTH: 3
+      - DEFAULT: 2
+        DESCRIPTION: see hsu_pcie_max_payload_size_t
+        NAME: mps_pf7
+        WIDTH: 3
+      - DEFAULT: 2
+        DESCRIPTION: see hsu_pcie_max_payload_size_t
+        NAME: mps_pf8
+        WIDTH: 3
+      - DEFAULT: 2
+        DESCRIPTION: see hsu_pcie_max_payload_size_t
+        NAME: mps_pf9
+        WIDTH: 3
+      - DEFAULT: 2
+        DESCRIPTION: see hsu_pcie_max_payload_size_t
+        NAME: mps_pf10
+        WIDTH: 3
+      - DEFAULT: 2
+        DESCRIPTION: see hsu_pcie_max_payload_size_t
+        NAME: mps_pf11
+        WIDTH: 3
+      - DEFAULT: 2
+        DESCRIPTION: see hsu_pcie_max_payload_size_t
+        NAME: mps_pf12
+        WIDTH: 3
+      - DEFAULT: 2
+        DESCRIPTION: see hsu_pcie_max_payload_size_t
+        NAME: mps_pf13
+        WIDTH: 3
+      - DEFAULT: 2
+        DESCRIPTION: see hsu_pcie_max_payload_size_t
+        NAME: mps_pf14
+        WIDTH: 3
+      - DEFAULT: 2
+        DESCRIPTION: see hsu_pcie_max_payload_size_t
+        NAME: mps_pf15
+        WIDTH: 3
+    NAME: csr_pf_size_settings_mps
+  - ATTR: 5
+    DESCRIPTION: ''
+    FLDLST:
+      - DEFAULT: 2
+        DESCRIPTION: see hsu_pcie_read_request_size_t
+        NAME: mrs_pf0
+        WIDTH: 3
+      - DEFAULT: 2
+        DESCRIPTION: see hsu_pcie_read_request_size_t
+        NAME: mrs_pf1
+        WIDTH: 3
+      - DEFAULT: 2
+        DESCRIPTION: see hsu_pcie_read_request_size_t
+        NAME: mrs_pf2
+        WIDTH: 3
+      - DEFAULT: 2
+        DESCRIPTION: see hsu_pcie_read_request_size_t
+        NAME: mrs_pf3
+        WIDTH: 3
+      - DEFAULT: 2
+        DESCRIPTION: see hsu_pcie_read_request_size_t
+        NAME: mrs_pf4
+        WIDTH: 3
+      - DEFAULT: 2
+        DESCRIPTION: see hsu_pcie_read_request_size_t
+        NAME: mrs_pf5
+        WIDTH: 3
+      - DEFAULT: 2
+        DESCRIPTION: see hsu_pcie_read_request_size_t
+        NAME: mrs_pf6
+        WIDTH: 3
+      - DEFAULT: 2
+        DESCRIPTION: see hsu_pcie_read_request_size_t
+        NAME: mrs_pf7
+        WIDTH: 3
+      - DEFAULT: 2
+        DESCRIPTION: see hsu_pcie_read_request_size_t
+        NAME: mrs_pf8
+        WIDTH: 3
+      - DEFAULT: 2
+        DESCRIPTION: see hsu_pcie_read_request_size_t
+        NAME: mrs_pf9
+        WIDTH: 3
+      - DEFAULT: 2
+        DESCRIPTION: see hsu_pcie_read_request_size_t
+        NAME: mrs_pf10
+        WIDTH: 3
+      - DEFAULT: 2
+        DESCRIPTION: see hsu_pcie_read_request_size_t
+        NAME: mrs_pf11
+        WIDTH: 3
+      - DEFAULT: 2
+        DESCRIPTION: see hsu_pcie_read_request_size_t
+        NAME: mrs_pf12
+        WIDTH: 3
+      - DEFAULT: 2
+        DESCRIPTION: see hsu_pcie_read_request_size_t
+        NAME: mrs_pf13
+        WIDTH: 3
+      - DEFAULT: 2
+        DESCRIPTION: see hsu_pcie_read_request_size_t
+        NAME: mrs_pf14
+        WIDTH: 3
+      - DEFAULT: 2
+        DESCRIPTION: see hsu_pcie_read_request_size_t
+        NAME: mrs_pf15
+        WIDTH: 3
+    NAME: csr_pf_size_settings_mrs
+  - ATTR: 5
+    DESCRIPTION: flink_shim FLA Ring Module ID
+    FLDLST:
+      - DEFAULT: 1
+        DESCRIPTION: '8-Bit Module ID to be used for Decoding Commands on FLA Command Ring, 0x0, 0xff are Reserved Values'
+        NAME: module_id
+        WIDTH: 8
+    NAME: flink_shim_fla_ring_module_id_cfg
+  - ATTR: 5
+    DESCRIPTION: flink_shim mem error injection
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: iram
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: eram_ctrl
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: eram_data
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: '0=UC, 1=Correctable'
+        NAME: err_type
+        WIDTH: 1
+    NAME: flink_shim_mem_err_inj_cfg
+    TEST_ATTR: 0
+  - ATTR: 9
+    DESCRIPTION: SRAM bit vector that failed ECC
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                                   First SRAM ECC error detected (1-hot)
+                                                   Set when first error is detected
+                                                   Reset when corresponding interrupt status bit is cleared
+                                                   [0]  - iram uncorr err
+                                                   [1]  - eram_ctrl uncorr err
+                                                   [2]  - eram_data uncorr err
+                                                   [3]  - iram corr err
+                                                   [4]  - eram_ctrl corr err
+                                                   [5]  - eram_data corr err
+                                                  
+        NAME: val
+        WIDTH: 6
+    NAME: flink_shim_sram_log_err
+  - ATTR: 9
+    DESCRIPTION: SRAM syndrome log register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Syndrome related to ECC error detected while reading data from SRAM
+        NAME: val
+        WIDTH: 16
+    NAME: flink_shim_sram_log_syndrome
+  - ATTR: 9
+    DESCRIPTION: SRAM address log register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Address related to ECC error detected while reading data from SRAM
+        NAME: val
+        WIDTH: 8
+    NAME: flink_shim_sram_log_addr
+  - ATTR: 10
+    DESCRIPTION: csr_cpl_pending
+    ENTRIES: 2
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: cpl_pending
+        WIDTH: 256
+    NAME: csr_cpl_pending
+  - ATTR: 10
+    DESCRIPTION: iram
+    ENTRIES: 46
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: value
+        WIDTH: 259
+    NAME: csr_iram
+  - ATTR: 10
+    DESCRIPTION: eram_ctrl
+    ENTRIES: 160
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: value
+        WIDTH: 198
+    NAME: csr_eram_ctrl
+  - ATTR: 10
+    DESCRIPTION: eram_data
+    ENTRIES: 160
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: value
+        WIDTH: 256
+    NAME: csr_eram_data
+XASIZE: 8388608
