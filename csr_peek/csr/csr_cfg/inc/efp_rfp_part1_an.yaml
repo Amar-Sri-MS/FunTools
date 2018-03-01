@@ -1,0 +1,327 @@
+---
+BASEADDRPORT: 1
+COUNT: 1
+DESCRIPTION: EFP RFP CSR Spec
+INTR:
+  FATAL:
+    - DESCRIPTION: ''
+      NAME: efp_rfp_mdi_mem_ucerr_intr
+      WIDTH: 1
+  NON_FATAL:
+    - DESCRIPTION: ''
+      NAME: efp_rfp_mdi_mem_cerr_intr
+      WIDTH: 1
+INTR_PORT_EN: 1
+NAME: EFP_RFP_PART1_AN
+PARENTNAME: NU_0_AN
+REGLST:
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: |-
+          Timeout Configuration. Cycles are RSU clk based.
+                            - 00 : 1024 cycles
+                            - 01 : 256 cycles
+                            - 10 : 4096 cycles
+                            - 11 : infinite
+        NAME: val
+        WIDTH: 2
+    NAME: efp_rfp_part1_timeout_thresh_cfg
+  - ATTR: 9
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: "Timed out Status. Cycles are RSU clk based. Becomes 1 when timed out. Write any value to clear it.\n                  "
+        NAME: val
+        WIDTH: 1
+    NAME: efp_rfp_part1_timedout_sta
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: |-
+          Clear Timeout Status. Data is ignored. A write
+                     will clear the timeout status bit
+        NAME: val
+        WIDTH: 1
+    NAME: efp_rfp_part1_timeout_clr
+    TEST_ATTR: 1
+  - ATTR: 256
+    FLDLST:
+      - &1
+        DESCRIPTION: ''
+        NAME: efp_rfp_mdi_mem_ucerr_intr
+        WIDTH: 1
+    NAME: efp_rfp_part1_fatal_intr_cause
+  - ATTR: 512
+    FLDLST:
+      - *1
+    NAME: efp_rfp_part1_fatal_intr_stat
+  - ATTR: 1024
+    FLDLST:
+      - *1
+    NAME: efp_rfp_part1_fatal_intr_mask
+  - ATTR: 2048
+    FLDLST:
+      - *1
+    NAME: efp_rfp_part1_fatal_intr_bset
+  - ATTR: 4096
+    FLDLST:
+      - *1
+    NAME: efp_rfp_part1_fatal_intr_bclr
+  - ATTR: 256
+    FLDLST:
+      - &2
+        DESCRIPTION: ''
+        NAME: efp_rfp_mdi_mem_cerr_intr
+        WIDTH: 1
+    NAME: efp_rfp_part1_non_fatal_intr_cause
+  - ATTR: 512
+    FLDLST:
+      - *2
+    NAME: efp_rfp_part1_non_fatal_intr_stat
+  - ATTR: 1024
+    FLDLST:
+      - *2
+    NAME: efp_rfp_part1_non_fatal_intr_mask
+  - ATTR: 2048
+    FLDLST:
+      - *2
+    NAME: efp_rfp_part1_non_fatal_intr_bset
+  - ATTR: 4096
+    FLDLST:
+      - *2
+    NAME: efp_rfp_part1_non_fatal_intr_bclr
+  - ATTR: 9
+    DESCRIPTION: Place Holder for now for EFP rfp Feature Register
+    FLDLST:
+      - ATTR: 1
+        DEFAULT: 1
+        DESCRIPTION: Module ID
+        NAME: module_id
+        VALUE: 1
+        WIDTH: 8
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Version number of the module
+        NAME: version
+        VALUE: 0
+        WIDTH: 8
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Features enabled in the module.
+        NAME: features
+        VALUE: 0
+        WIDTH: 16
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Reserved Field.
+        NAME: Reserved
+        WIDTH: 32
+    NAME: efp_rfp_part1_features
+    WIDTH: 64
+  - ATTR: 5
+    DESCRIPTION: ' Spare PIO register. These bits can be read and written by software. They can serve as control bits for late ECOs in the design.'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Spare PIO register.
+        NAME: val
+        WIDTH: 64
+    NAME: efp_rfp_part1_spare_pio
+    WIDTH: 64
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: Scratchpad register.
+        NAME: val
+        WIDTH: 64
+    NAME: efp_rfp_part1_scratchpad
+    WIDTH: 64
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: L4 Port lookup range CAM
+    ENTRIES: 1
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-
+          0=Find first match (md_fv.range_id[7:0]  = {2.b0, find_first_bit_set(source_port_match_vector[63:0])},
+                                                          md_fv.range_id[15:8] = {2.b0, find_first_bit_set(destination_port_match_vector[63:0])}),
+          	                    1=Match vector (md_fv.range_id[15:0] = source_port_match_vector[15:0] | desingation_port_match_vector[15:0])
+        NAME: mode
+        WIDTH: 1
+    NAME: efp_rfp_rng_cfg
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: ''
+    ENTRIES: 1
+    FLDLST:
+      - DEFAULT: 6
+        DESCRIPTION: Max iteration count around FFE
+        NAME: itr_cnt
+        WIDTH: 3
+    NAME: efp_rfp_ffe_icount_cfg
+  - ATTR: 5
+    DESCRIPTION: EFP RFP FLA Ring Module ID
+    FLDLST:
+      - DEFAULT: 136
+        DESCRIPTION: '8-Bit Module ID to be used for Decoding Commands on FLA Command Ring, 0x0, 0xff are Reserved Values'
+        NAME: fld_val
+        WIDTH: 8
+    NAME: efp_rfp_part1_fla_ring_module_id_cfg
+  - ATTR: 5
+    DESCRIPTION: efp_rfp snapshot configuration.  Enable snapshot and fields for specifying which bytes to extract from PRV.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Enable snapshot comparison. If set to 0, snap_shot_en field from MDI will be used'
+        NAME: enable
+        WIDTH: 1
+      - DESCRIPTION: 'Instruction for forming snap shot match key. '
+        NAME: prv_fld_extr
+        STRUCT_NAME: sse_snpsht_key_extr_t
+        WIDTH: 56
+    NAME: efp_rfp_snpsht_cfg
+  - ATTR: 5
+    DESCRIPTION: efp_rfp snapshot configuration mask. This field is ANDed with snapshot key when doing comparison with snapshot value.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Snapshot comparison mask
+        NAME: val
+        WIDTH: 64
+    NAME: efp_rfp_snpsht_mask_0
+  - ATTR: 5
+    DESCRIPTION: efp_rfp snapshot configuration mask. This field is ANDed with snapshot key when doing comparison with snapshot value.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Snapshot comparison mask
+        NAME: val
+        WIDTH: 64
+    NAME: efp_rfp_snpsht_mask_1
+  - ATTR: 5
+    DESCRIPTION: efp_rfp snapshot configuration mask. This field is ANDed with snapshot key when doing comparison with snapshot value.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Snapshot comparison mask
+        NAME: val
+        WIDTH: 64
+    NAME: efp_rfp_snpsht_mask_2
+  - ATTR: 5
+    DESCRIPTION: efp_rfp snapshot configuration mask. This field is ANDed with snapshot key when doing comparison with snapshot value.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Snapshot comparison mask
+        NAME: val
+        WIDTH: 64
+    NAME: efp_rfp_snpsht_mask_3
+  - ATTR: 5
+    DESCRIPTION: efp_rfp snapshot configuration mask. This field is ANDed with snapshot key when doing comparison with snapshot value.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Snapshot comparison mask
+        NAME: val
+        WIDTH: 64
+    NAME: efp_rfp_snpsht_mask_4
+  - ATTR: 5
+    DESCRIPTION: efp_rfp snapshot configuration value. Snapshot match occurs if snapshot_key & snapshot_mask == snapshot_val.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Snapshot comparison value
+        NAME: val
+        WIDTH: 64
+    NAME: efp_rfp_snpsht_val_0
+  - ATTR: 5
+    DESCRIPTION: efp_rfp snapshot configuration value. Snapshot match occurs if snapshot_key & snapshot_mask == snapshot_val.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Snapshot comparison value
+        NAME: val
+        WIDTH: 64
+    NAME: efp_rfp_snpsht_val_1
+  - ATTR: 5
+    DESCRIPTION: efp_rfp snapshot configuration value. Snapshot match occurs if snapshot_key & snapshot_mask == snapshot_val.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Snapshot comparison value
+        NAME: val
+        WIDTH: 64
+    NAME: efp_rfp_snpsht_val_2
+  - ATTR: 5
+    DESCRIPTION: efp_rfp snapshot configuration value. Snapshot match occurs if snapshot_key & snapshot_mask == snapshot_val.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Snapshot comparison value
+        NAME: val
+        WIDTH: 64
+    NAME: efp_rfp_snpsht_val_3
+  - ATTR: 5
+    DESCRIPTION: efp_rfp snapshot configuration value. Snapshot match occurs if snapshot_key & snapshot_mask == snapshot_val.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Snapshot comparison value
+        NAME: val
+        WIDTH: 64
+    NAME: efp_rfp_snpsht_val_4
+  - ATTR: 5
+    DESCRIPTION: 'Config register for SRAM error injection '
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: efp_rfp_mdi_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'Type of error. 0 - Uncorrectable error. 1 - Correctable error '
+        NAME: err_type
+        WIDTH: 1
+    NAME: efp_rfp_part1_sram_err_inj_cfg
+  - ATTR: 9
+    DESCRIPTION: 'Status register, SRAM error log vector, correctable errors '
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: efp_rfp_mdi_mem
+        WIDTH: 1
+    NAME: efp_rfp_part1_sram_cerr_log_vec
+  - ATTR: 9
+    DESCRIPTION: 'Status register, SRAM error log vector, uncorrectable errors '
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: efp_rfp_mdi_mem
+        WIDTH: 1
+    NAME: efp_rfp_part1_sram_ucerr_log_vec
+  - ATTR: 9
+    DESCRIPTION: 'Status register, SRAM error log syndrome '
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: error syndrome
+        NAME: val
+        WIDTH: 16
+    NAME: efp_rfp_part1_sram_log_syndrome
+  - ATTR: 9
+    DESCRIPTION: 'Status register, SRAM error log address '
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: error memory address
+        NAME: val
+        WIDTH: 16
+    NAME: efp_rfp_part1_sram_log_addr
+  - ATTR: 6
+    COUNT: 1
+    DESCRIPTION: L4 Port lookup range TCAM
+    ENTRIES: 64
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Each line contains vld + 64 ranges to compare ports against.  Match occurs if port >= low_range && <= high range
+        NAME: data
+        STRUCT_NAME: sse_rng_cam_t
+        WIDTH: 36
+    NAME: efp_rfp_rng_cam
+  - ATTR: 6
+    COUNT: 1
+    DESCRIPTION: Metadata init fields based on lookup of ig_stream field.
+    ENTRIES: 24
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Each line contains all fields to initialize metadata bus except for range which is derived from cam lookup
+        NAME: data
+        STRUCT_NAME: erp_md_fv_imem_t
+        WIDTH: 400
+    NAME: efp_rfp_mdi_mem_dhs
+XASIZE: 0

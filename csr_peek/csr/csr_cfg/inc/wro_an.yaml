@@ -1,0 +1,3398 @@
+---
+BASEADDRPORT: 1
+COUNT: 1
+DESCRIPTION: WRO CSR Spec
+INTR:
+  FATAL_MEM:
+    - DESCRIPTION: Hash Table H10 Memory Uncorrectable ECC Error
+      NAME: fld_hash_tbl_h10_mem
+      WIDTH: 1
+    - DESCRIPTION: Hash Table H11 Memory Uncorrectable ECC Error
+      NAME: fld_hash_tbl_h11_mem
+      WIDTH: 1
+    - DESCRIPTION: Hash Table H12 Memory Uncorrectable ECC Error
+      NAME: fld_hash_tbl_h12_mem
+      WIDTH: 1
+    - DESCRIPTION: Hash Table H13 Memory Uncorrectable ECC Error
+      NAME: fld_hash_tbl_h13_mem
+      WIDTH: 1
+    - DESCRIPTION: Hash Table H20 Memory Uncorrectable ECC Error
+      NAME: fld_hash_tbl_h20_mem
+      WIDTH: 1
+    - DESCRIPTION: Hash Table H21 Memory Uncorrectable ECC Error
+      NAME: fld_hash_tbl_h21_mem
+      WIDTH: 1
+    - DESCRIPTION: Hash Table H22 Memory Uncorrectable ECC Error
+      NAME: fld_hash_tbl_h22_mem
+      WIDTH: 1
+    - DESCRIPTION: Hash Table H23 Memory Uncorrectable ECC Error
+      NAME: fld_hash_tbl_h23_mem
+      WIDTH: 1
+    - DESCRIPTION: Hash Table H30 Memory Uncorrectable ECC Error
+      NAME: fld_hash_tbl_h30_mem
+      WIDTH: 1
+    - DESCRIPTION: Hash Table H31 Memory Uncorrectable ECC Error
+      NAME: fld_hash_tbl_h31_mem
+      WIDTH: 1
+    - DESCRIPTION: Hash Table H32 Memory Uncorrectable ECC Error
+      NAME: fld_hash_tbl_h32_mem
+      WIDTH: 1
+    - DESCRIPTION: Hash Table H33 Memory Uncorrectable ECC Error
+      NAME: fld_hash_tbl_h33_mem
+      WIDTH: 1
+    - DESCRIPTION: Hash Table H40 Memory Uncorrectable ECC Error
+      NAME: fld_hash_tbl_h40_mem
+      WIDTH: 1
+    - DESCRIPTION: Hash Table H41 Memory Uncorrectable ECC Error
+      NAME: fld_hash_tbl_h41_mem
+      WIDTH: 1
+    - DESCRIPTION: Hash Table H42 Memory Uncorrectable ECC Error
+      NAME: fld_hash_tbl_h42_mem
+      WIDTH: 1
+    - DESCRIPTION: Hash Table H43 Memory Uncorrectable ECC Error
+      NAME: fld_hash_tbl_h43_mem
+      WIDTH: 1
+    - DESCRIPTION: Hash Table Valid MAP H41 Memory Uncorrectable ECC Error
+      NAME: fld_hash_tbl_vldmap_h1_mem
+      WIDTH: 1
+    - DESCRIPTION: Hash Table Valid MAP H42 Memory Uncorrectable ECC Error
+      NAME: fld_hash_tbl_vldmap_h2_mem
+      WIDTH: 1
+    - DESCRIPTION: Hash Table Valid MAP H43 Memory Uncorrectable ECC Error
+      NAME: fld_hash_tbl_vldmap_h3_mem
+      WIDTH: 1
+    - DESCRIPTION: Hash Table Valid MAP H44 Memory Uncorrectable ECC Error
+      NAME: fld_hash_tbl_vldmap_h4_mem
+      WIDTH: 1
+    - DESCRIPTION: Dequeue FIFO0 Memory Uncorrectable ECC Error
+      NAME: fld_dequeue_fifo0_mem
+      WIDTH: 1
+    - DESCRIPTION: Dequeue FIFO1 Memory Uncorrectable ECC Error
+      NAME: fld_dequeue_fifo1_mem
+      WIDTH: 1
+    - DESCRIPTION: WU Notification Data Base Memory Uncorrectable ECC Error
+      NAME: fld_wun_db_mem
+      WIDTH: 1
+    - DESCRIPTION: FCB Packet Context Memory Uncorrectable ECC Error
+      NAME: fld_fcb_pkt_ctx_mem
+      WIDTH: 1
+    - DESCRIPTION: WU Notification DB Freelist Memory Uncorrectable ECC Error
+      NAME: fld_wun_fl_mem
+      WIDTH: 1
+    - DESCRIPTION: Tunnel Context PSN Memory Uncorrectable ECC Error
+      NAME: fld_tunnel_ctx_psn_mem
+      WIDTH: 1
+    - DESCRIPTION: Tunnel Context Packet Count Memory Uncorrectable ECC Error
+      NAME: fld_tunnel_ctx_pktcnt_mem
+      WIDTH: 1
+    - DESCRIPTION: Tunnel Config Role Table Memory Uncorrectable ECC Error
+      NAME: fld_tunnel_cfg_role_tbl_mem
+      WIDTH: 1
+    - DESCRIPTION: Tunnel Timeout Error Event Log Memory Uncorrectable ECC Error
+      NAME: fld_tunnel_timeout_event_log_mem
+      WIDTH: 1
+    - DESCRIPTION: Tunnel Sequence Error Event Log Memory Uncorrectable ECC Error
+      NAME: fld_tunnel_seqn_error_event_log_mem
+      WIDTH: 1
+  FATAL_MISC:
+    - DESCRIPTION: WU Notification Database Freelist Dealloc Error
+      NAME: fld_wun_fl_dealloc_error
+      WIDTH: 1
+  NON_FATAL_MEM:
+    - DESCRIPTION: Hash Table H10 Memory Correctable Bit ECC Error
+      NAME: fld_hash_tbl_h10_mem
+      WIDTH: 1
+    - DESCRIPTION: Hash Table H11 Memory Correctable Bit ECC Error
+      NAME: fld_hash_tbl_h11_mem
+      WIDTH: 1
+    - DESCRIPTION: Hash Table H12 Memory Correctable Bit ECC Error
+      NAME: fld_hash_tbl_h12_mem
+      WIDTH: 1
+    - DESCRIPTION: Hash Table H13 Memory Correctable Bit ECC Error
+      NAME: fld_hash_tbl_h13_mem
+      WIDTH: 1
+    - DESCRIPTION: Hash Table H20 Memory Correctable Bit ECC Error
+      NAME: fld_hash_tbl_h20_mem
+      WIDTH: 1
+    - DESCRIPTION: Hash Table H21 Memory Correctable Bit ECC Error
+      NAME: fld_hash_tbl_h21_mem
+      WIDTH: 1
+    - DESCRIPTION: Hash Table H22 Memory Correctable Bit ECC Error
+      NAME: fld_hash_tbl_h22_mem
+      WIDTH: 1
+    - DESCRIPTION: Hash Table H23 Memory Correctable Bit ECC Error
+      NAME: fld_hash_tbl_h23_mem
+      WIDTH: 1
+    - DESCRIPTION: Hash Table H30 Memory Correctable Bit ECC Error
+      NAME: fld_hash_tbl_h30_mem
+      WIDTH: 1
+    - DESCRIPTION: Hash Table H31 Memory Correctable Bit ECC Error
+      NAME: fld_hash_tbl_h31_mem
+      WIDTH: 1
+    - DESCRIPTION: Hash Table H32 Memory Correctable Bit ECC Error
+      NAME: fld_hash_tbl_h32_mem
+      WIDTH: 1
+    - DESCRIPTION: Hash Table H33 Memory Correctable Bit ECC Error
+      NAME: fld_hash_tbl_h33_mem
+      WIDTH: 1
+    - DESCRIPTION: Hash Table H40 Memory Correctable Bit ECC Error
+      NAME: fld_hash_tbl_h40_mem
+      WIDTH: 1
+    - DESCRIPTION: Hash Table H41 Memory Correctable Bit ECC Error
+      NAME: fld_hash_tbl_h41_mem
+      WIDTH: 1
+    - DESCRIPTION: Hash Table H42 Memory Correctable Bit ECC Error
+      NAME: fld_hash_tbl_h42_mem
+      WIDTH: 1
+    - DESCRIPTION: Hash Table H43 Memory Correctable Bit ECC Error
+      NAME: fld_hash_tbl_h43_mem
+      WIDTH: 1
+    - DESCRIPTION: Hash Table Valid MAP H41 Memory Correctable Bit ECC Error
+      NAME: fld_hash_tbl_vldmap_h1_mem
+      WIDTH: 1
+    - DESCRIPTION: Hash Table Valid MAP H42 Memory Correctable Bit ECC Error
+      NAME: fld_hash_tbl_vldmap_h2_mem
+      WIDTH: 1
+    - DESCRIPTION: Hash Table Valid MAP H43 Memory Correctable Bit ECC Error
+      NAME: fld_hash_tbl_vldmap_h3_mem
+      WIDTH: 1
+    - DESCRIPTION: Hash Table Valid MAP H44 Memory Correctable Bit ECC Error
+      NAME: fld_hash_tbl_vldmap_h4_mem
+      WIDTH: 1
+    - DESCRIPTION: Dequeue FIFO0 Memory Correctable Bit ECC Error
+      NAME: fld_dequeue_fifo0_mem
+      WIDTH: 1
+    - DESCRIPTION: Dequeue FIFO1 Memory Correctable Bit ECC Error
+      NAME: fld_dequeue_fifo1_mem
+      WIDTH: 1
+    - DESCRIPTION: WU Notification Data Base Memory Correctable Bit ECC Error
+      NAME: fld_wun_db_mem
+      WIDTH: 1
+    - DESCRIPTION: FCB Packet Context Memory Correctable Bit ECC Error
+      NAME: fld_fcb_pkt_ctx_mem
+      WIDTH: 1
+    - DESCRIPTION: WU Notification DB Freelist Memory Correctable Bit ECC Error
+      NAME: fld_wun_fl_mem
+      WIDTH: 1
+    - DESCRIPTION: Tunnel Context PSN Memory Correctable Bit ECC Error
+      NAME: fld_tunnel_ctx_psn_mem
+      WIDTH: 1
+    - DESCRIPTION: Tunnel Context Packet Count Memory Correctable Bit ECC Error
+      NAME: fld_tunnel_ctx_pktcnt_mem
+      WIDTH: 1
+    - DESCRIPTION: Tunnel Config Role Table Memory Correctable Bit ECC Error
+      NAME: fld_tunnel_cfg_role_tbl_mem
+      WIDTH: 1
+    - DESCRIPTION: Tunnel Timeout Error Event Log Memory Correctable Bit ECC Error
+      NAME: fld_tunnel_timeout_event_log_mem
+      WIDTH: 1
+    - DESCRIPTION: Tunnel Sequence Error Event Log Memory Correctable Bit ECC Error
+      NAME: fld_tunnel_seqn_error_event_log_mem
+      WIDTH: 1
+  NON_FATAL_MISC:
+    - DESCRIPTION: SN IF0 VC0 Credit Overflow Error
+      NAME: fld_sn_if0_vc0_crdt_ovfl_err
+      WIDTH: 1
+    - DESCRIPTION: SN IF0 VC1 Credit Overflow Error
+      NAME: fld_sn_if0_vc1_crdt_ovfl_err
+      WIDTH: 1
+    - DESCRIPTION: SN IF0 VC2 Credit Overflow Error
+      NAME: fld_sn_if0_vc2_crdt_ovfl_err
+      WIDTH: 1
+    - DESCRIPTION: SN IF0 VC3 Credit Overflow Error
+      NAME: fld_sn_if0_vc3_crdt_ovfl_err
+      WIDTH: 1
+    - DESCRIPTION: SN IF1 VC0 Credit Overflow Error
+      NAME: fld_sn_if1_vc0_crdt_ovfl_err
+      WIDTH: 1
+    - DESCRIPTION: SN IF1 VC1 Credit Overflow Error
+      NAME: fld_sn_if1_vc1_crdt_ovfl_err
+      WIDTH: 1
+    - DESCRIPTION: SN IF1 VC2 Credit Overflow Error
+      NAME: fld_sn_if1_vc2_crdt_ovfl_err
+      WIDTH: 1
+    - DESCRIPTION: SN IF1 VC3 Credit Overflow Error
+      NAME: fld_sn_if1_vc3_crdt_ovfl_err
+      WIDTH: 1
+    - DESCRIPTION: SN IF2 VC0 Credit Overflow Error
+      NAME: fld_sn_if2_vc0_crdt_ovfl_err
+      WIDTH: 1
+    - DESCRIPTION: SN IF2 VC1 Credit Overflow Error
+      NAME: fld_sn_if2_vc1_crdt_ovfl_err
+      WIDTH: 1
+    - DESCRIPTION: SN IF2 VC2 Credit Overflow Error
+      NAME: fld_sn_if2_vc2_crdt_ovfl_err
+      WIDTH: 1
+    - DESCRIPTION: SN IF2 VC3 Credit Overflow Error
+      NAME: fld_sn_if2_vc3_crdt_ovfl_err
+      WIDTH: 1
+    - DESCRIPTION: WRO-FCB RO Interface Credit Overflow Error
+      NAME: fld_fcb_ro_info_crdt_ovfl_err
+      WIDTH: 1
+    - DESCRIPTION: Internal WU Message FIFO Credit Overflow Error
+      NAME: fld_wu_msg_fifo_crdt_ovfl_err
+      WIDTH: 1
+    - DESCRIPTION: Internal Dispatch FIFO Credit Overflow Error
+      NAME: fld_dispatch_fifo_crdt_ovfl_err
+      WIDTH: 1
+    - DESCRIPTION: Internal Flush Command FIFO Credit Overflow Error
+      NAME: fld_flush_proc_fifo_crdt_ovfl_err
+      WIDTH: 1
+INTR_PORT_EN: 1
+NAME: WRO_AN
+PARENTNAME: NU_0_AN
+REGLST:
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: |-
+          Timeout Configuration. Cycles are RSU clk based.
+                            - 00 : 1024 cycles
+                            - 01 : 256 cycles
+                            - 10 : 4096 cycles
+                            - 11 : infinite
+        NAME: val
+        WIDTH: 2
+    NAME: wro_timeout_thresh_cfg
+  - ATTR: 9
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: "Timed out Status. Cycles are RSU clk based. Becomes 1 when timed out. Write any value to clear it.\n                  "
+        NAME: val
+        WIDTH: 1
+    NAME: wro_timedout_sta
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: |-
+          Clear Timeout Status. Data is ignored. A write
+                     will clear the timeout status bit
+        NAME: val
+        WIDTH: 1
+    NAME: wro_timeout_clr
+    TEST_ATTR: 1
+  - ATTR: 256
+    FLDLST:
+      - &1
+        DESCRIPTION: Hash Table H10 Memory Uncorrectable ECC Error
+        NAME: fld_hash_tbl_h10_mem
+        WIDTH: 1
+      - &2
+        DESCRIPTION: Hash Table H11 Memory Uncorrectable ECC Error
+        NAME: fld_hash_tbl_h11_mem
+        WIDTH: 1
+      - &3
+        DESCRIPTION: Hash Table H12 Memory Uncorrectable ECC Error
+        NAME: fld_hash_tbl_h12_mem
+        WIDTH: 1
+      - &4
+        DESCRIPTION: Hash Table H13 Memory Uncorrectable ECC Error
+        NAME: fld_hash_tbl_h13_mem
+        WIDTH: 1
+      - &5
+        DESCRIPTION: Hash Table H20 Memory Uncorrectable ECC Error
+        NAME: fld_hash_tbl_h20_mem
+        WIDTH: 1
+      - &6
+        DESCRIPTION: Hash Table H21 Memory Uncorrectable ECC Error
+        NAME: fld_hash_tbl_h21_mem
+        WIDTH: 1
+      - &7
+        DESCRIPTION: Hash Table H22 Memory Uncorrectable ECC Error
+        NAME: fld_hash_tbl_h22_mem
+        WIDTH: 1
+      - &8
+        DESCRIPTION: Hash Table H23 Memory Uncorrectable ECC Error
+        NAME: fld_hash_tbl_h23_mem
+        WIDTH: 1
+      - &9
+        DESCRIPTION: Hash Table H30 Memory Uncorrectable ECC Error
+        NAME: fld_hash_tbl_h30_mem
+        WIDTH: 1
+      - &10
+        DESCRIPTION: Hash Table H31 Memory Uncorrectable ECC Error
+        NAME: fld_hash_tbl_h31_mem
+        WIDTH: 1
+      - &11
+        DESCRIPTION: Hash Table H32 Memory Uncorrectable ECC Error
+        NAME: fld_hash_tbl_h32_mem
+        WIDTH: 1
+      - &12
+        DESCRIPTION: Hash Table H33 Memory Uncorrectable ECC Error
+        NAME: fld_hash_tbl_h33_mem
+        WIDTH: 1
+      - &13
+        DESCRIPTION: Hash Table H40 Memory Uncorrectable ECC Error
+        NAME: fld_hash_tbl_h40_mem
+        WIDTH: 1
+      - &14
+        DESCRIPTION: Hash Table H41 Memory Uncorrectable ECC Error
+        NAME: fld_hash_tbl_h41_mem
+        WIDTH: 1
+      - &15
+        DESCRIPTION: Hash Table H42 Memory Uncorrectable ECC Error
+        NAME: fld_hash_tbl_h42_mem
+        WIDTH: 1
+      - &16
+        DESCRIPTION: Hash Table H43 Memory Uncorrectable ECC Error
+        NAME: fld_hash_tbl_h43_mem
+        WIDTH: 1
+      - &17
+        DESCRIPTION: Hash Table Valid MAP H41 Memory Uncorrectable ECC Error
+        NAME: fld_hash_tbl_vldmap_h1_mem
+        WIDTH: 1
+      - &18
+        DESCRIPTION: Hash Table Valid MAP H42 Memory Uncorrectable ECC Error
+        NAME: fld_hash_tbl_vldmap_h2_mem
+        WIDTH: 1
+      - &19
+        DESCRIPTION: Hash Table Valid MAP H43 Memory Uncorrectable ECC Error
+        NAME: fld_hash_tbl_vldmap_h3_mem
+        WIDTH: 1
+      - &20
+        DESCRIPTION: Hash Table Valid MAP H44 Memory Uncorrectable ECC Error
+        NAME: fld_hash_tbl_vldmap_h4_mem
+        WIDTH: 1
+      - &21
+        DESCRIPTION: Dequeue FIFO0 Memory Uncorrectable ECC Error
+        NAME: fld_dequeue_fifo0_mem
+        WIDTH: 1
+      - &22
+        DESCRIPTION: Dequeue FIFO1 Memory Uncorrectable ECC Error
+        NAME: fld_dequeue_fifo1_mem
+        WIDTH: 1
+      - &23
+        DESCRIPTION: WU Notification Data Base Memory Uncorrectable ECC Error
+        NAME: fld_wun_db_mem
+        WIDTH: 1
+      - &24
+        DESCRIPTION: FCB Packet Context Memory Uncorrectable ECC Error
+        NAME: fld_fcb_pkt_ctx_mem
+        WIDTH: 1
+      - &25
+        DESCRIPTION: WU Notification DB Freelist Memory Uncorrectable ECC Error
+        NAME: fld_wun_fl_mem
+        WIDTH: 1
+      - &26
+        DESCRIPTION: Tunnel Context PSN Memory Uncorrectable ECC Error
+        NAME: fld_tunnel_ctx_psn_mem
+        WIDTH: 1
+      - &27
+        DESCRIPTION: Tunnel Context Packet Count Memory Uncorrectable ECC Error
+        NAME: fld_tunnel_ctx_pktcnt_mem
+        WIDTH: 1
+      - &28
+        DESCRIPTION: Tunnel Config Role Table Memory Uncorrectable ECC Error
+        NAME: fld_tunnel_cfg_role_tbl_mem
+        WIDTH: 1
+      - &29
+        DESCRIPTION: Tunnel Timeout Error Event Log Memory Uncorrectable ECC Error
+        NAME: fld_tunnel_timeout_event_log_mem
+        WIDTH: 1
+      - &30
+        DESCRIPTION: Tunnel Sequence Error Event Log Memory Uncorrectable ECC Error
+        NAME: fld_tunnel_seqn_error_event_log_mem
+        WIDTH: 1
+    NAME: wro_fatal_mem_intr_cause
+  - ATTR: 512
+    FLDLST:
+      - *1
+      - *2
+      - *3
+      - *4
+      - *5
+      - *6
+      - *7
+      - *8
+      - *9
+      - *10
+      - *11
+      - *12
+      - *13
+      - *14
+      - *15
+      - *16
+      - *17
+      - *18
+      - *19
+      - *20
+      - *21
+      - *22
+      - *23
+      - *24
+      - *25
+      - *26
+      - *27
+      - *28
+      - *29
+      - *30
+    NAME: wro_fatal_mem_intr_stat
+  - ATTR: 1024
+    FLDLST:
+      - *1
+      - *2
+      - *3
+      - *4
+      - *5
+      - *6
+      - *7
+      - *8
+      - *9
+      - *10
+      - *11
+      - *12
+      - *13
+      - *14
+      - *15
+      - *16
+      - *17
+      - *18
+      - *19
+      - *20
+      - *21
+      - *22
+      - *23
+      - *24
+      - *25
+      - *26
+      - *27
+      - *28
+      - *29
+      - *30
+    NAME: wro_fatal_mem_intr_mask
+  - ATTR: 2048
+    FLDLST:
+      - *1
+      - *2
+      - *3
+      - *4
+      - *5
+      - *6
+      - *7
+      - *8
+      - *9
+      - *10
+      - *11
+      - *12
+      - *13
+      - *14
+      - *15
+      - *16
+      - *17
+      - *18
+      - *19
+      - *20
+      - *21
+      - *22
+      - *23
+      - *24
+      - *25
+      - *26
+      - *27
+      - *28
+      - *29
+      - *30
+    NAME: wro_fatal_mem_intr_bset
+  - ATTR: 4096
+    FLDLST:
+      - *1
+      - *2
+      - *3
+      - *4
+      - *5
+      - *6
+      - *7
+      - *8
+      - *9
+      - *10
+      - *11
+      - *12
+      - *13
+      - *14
+      - *15
+      - *16
+      - *17
+      - *18
+      - *19
+      - *20
+      - *21
+      - *22
+      - *23
+      - *24
+      - *25
+      - *26
+      - *27
+      - *28
+      - *29
+      - *30
+    NAME: wro_fatal_mem_intr_bclr
+  - ATTR: 256
+    FLDLST:
+      - &31
+        DESCRIPTION: WU Notification Database Freelist Dealloc Error
+        NAME: fld_wun_fl_dealloc_error
+        WIDTH: 1
+    NAME: wro_fatal_misc_intr_cause
+  - ATTR: 512
+    FLDLST:
+      - *31
+    NAME: wro_fatal_misc_intr_stat
+  - ATTR: 1024
+    FLDLST:
+      - *31
+    NAME: wro_fatal_misc_intr_mask
+  - ATTR: 2048
+    FLDLST:
+      - *31
+    NAME: wro_fatal_misc_intr_bset
+  - ATTR: 4096
+    FLDLST:
+      - *31
+    NAME: wro_fatal_misc_intr_bclr
+  - ATTR: 256
+    FLDLST:
+      - &32
+        DESCRIPTION: Hash Table H10 Memory Correctable Bit ECC Error
+        NAME: fld_hash_tbl_h10_mem
+        WIDTH: 1
+      - &33
+        DESCRIPTION: Hash Table H11 Memory Correctable Bit ECC Error
+        NAME: fld_hash_tbl_h11_mem
+        WIDTH: 1
+      - &34
+        DESCRIPTION: Hash Table H12 Memory Correctable Bit ECC Error
+        NAME: fld_hash_tbl_h12_mem
+        WIDTH: 1
+      - &35
+        DESCRIPTION: Hash Table H13 Memory Correctable Bit ECC Error
+        NAME: fld_hash_tbl_h13_mem
+        WIDTH: 1
+      - &36
+        DESCRIPTION: Hash Table H20 Memory Correctable Bit ECC Error
+        NAME: fld_hash_tbl_h20_mem
+        WIDTH: 1
+      - &37
+        DESCRIPTION: Hash Table H21 Memory Correctable Bit ECC Error
+        NAME: fld_hash_tbl_h21_mem
+        WIDTH: 1
+      - &38
+        DESCRIPTION: Hash Table H22 Memory Correctable Bit ECC Error
+        NAME: fld_hash_tbl_h22_mem
+        WIDTH: 1
+      - &39
+        DESCRIPTION: Hash Table H23 Memory Correctable Bit ECC Error
+        NAME: fld_hash_tbl_h23_mem
+        WIDTH: 1
+      - &40
+        DESCRIPTION: Hash Table H30 Memory Correctable Bit ECC Error
+        NAME: fld_hash_tbl_h30_mem
+        WIDTH: 1
+      - &41
+        DESCRIPTION: Hash Table H31 Memory Correctable Bit ECC Error
+        NAME: fld_hash_tbl_h31_mem
+        WIDTH: 1
+      - &42
+        DESCRIPTION: Hash Table H32 Memory Correctable Bit ECC Error
+        NAME: fld_hash_tbl_h32_mem
+        WIDTH: 1
+      - &43
+        DESCRIPTION: Hash Table H33 Memory Correctable Bit ECC Error
+        NAME: fld_hash_tbl_h33_mem
+        WIDTH: 1
+      - &44
+        DESCRIPTION: Hash Table H40 Memory Correctable Bit ECC Error
+        NAME: fld_hash_tbl_h40_mem
+        WIDTH: 1
+      - &45
+        DESCRIPTION: Hash Table H41 Memory Correctable Bit ECC Error
+        NAME: fld_hash_tbl_h41_mem
+        WIDTH: 1
+      - &46
+        DESCRIPTION: Hash Table H42 Memory Correctable Bit ECC Error
+        NAME: fld_hash_tbl_h42_mem
+        WIDTH: 1
+      - &47
+        DESCRIPTION: Hash Table H43 Memory Correctable Bit ECC Error
+        NAME: fld_hash_tbl_h43_mem
+        WIDTH: 1
+      - &48
+        DESCRIPTION: Hash Table Valid MAP H41 Memory Correctable Bit ECC Error
+        NAME: fld_hash_tbl_vldmap_h1_mem
+        WIDTH: 1
+      - &49
+        DESCRIPTION: Hash Table Valid MAP H42 Memory Correctable Bit ECC Error
+        NAME: fld_hash_tbl_vldmap_h2_mem
+        WIDTH: 1
+      - &50
+        DESCRIPTION: Hash Table Valid MAP H43 Memory Correctable Bit ECC Error
+        NAME: fld_hash_tbl_vldmap_h3_mem
+        WIDTH: 1
+      - &51
+        DESCRIPTION: Hash Table Valid MAP H44 Memory Correctable Bit ECC Error
+        NAME: fld_hash_tbl_vldmap_h4_mem
+        WIDTH: 1
+      - &52
+        DESCRIPTION: Dequeue FIFO0 Memory Correctable Bit ECC Error
+        NAME: fld_dequeue_fifo0_mem
+        WIDTH: 1
+      - &53
+        DESCRIPTION: Dequeue FIFO1 Memory Correctable Bit ECC Error
+        NAME: fld_dequeue_fifo1_mem
+        WIDTH: 1
+      - &54
+        DESCRIPTION: WU Notification Data Base Memory Correctable Bit ECC Error
+        NAME: fld_wun_db_mem
+        WIDTH: 1
+      - &55
+        DESCRIPTION: FCB Packet Context Memory Correctable Bit ECC Error
+        NAME: fld_fcb_pkt_ctx_mem
+        WIDTH: 1
+      - &56
+        DESCRIPTION: WU Notification DB Freelist Memory Correctable Bit ECC Error
+        NAME: fld_wun_fl_mem
+        WIDTH: 1
+      - &57
+        DESCRIPTION: Tunnel Context PSN Memory Correctable Bit ECC Error
+        NAME: fld_tunnel_ctx_psn_mem
+        WIDTH: 1
+      - &58
+        DESCRIPTION: Tunnel Context Packet Count Memory Correctable Bit ECC Error
+        NAME: fld_tunnel_ctx_pktcnt_mem
+        WIDTH: 1
+      - &59
+        DESCRIPTION: Tunnel Config Role Table Memory Correctable Bit ECC Error
+        NAME: fld_tunnel_cfg_role_tbl_mem
+        WIDTH: 1
+      - &60
+        DESCRIPTION: Tunnel Timeout Error Event Log Memory Correctable Bit ECC Error
+        NAME: fld_tunnel_timeout_event_log_mem
+        WIDTH: 1
+      - &61
+        DESCRIPTION: Tunnel Sequence Error Event Log Memory Correctable Bit ECC Error
+        NAME: fld_tunnel_seqn_error_event_log_mem
+        WIDTH: 1
+    NAME: wro_non_fatal_mem_intr_cause
+  - ATTR: 512
+    FLDLST:
+      - *32
+      - *33
+      - *34
+      - *35
+      - *36
+      - *37
+      - *38
+      - *39
+      - *40
+      - *41
+      - *42
+      - *43
+      - *44
+      - *45
+      - *46
+      - *47
+      - *48
+      - *49
+      - *50
+      - *51
+      - *52
+      - *53
+      - *54
+      - *55
+      - *56
+      - *57
+      - *58
+      - *59
+      - *60
+      - *61
+    NAME: wro_non_fatal_mem_intr_stat
+  - ATTR: 1024
+    FLDLST:
+      - *32
+      - *33
+      - *34
+      - *35
+      - *36
+      - *37
+      - *38
+      - *39
+      - *40
+      - *41
+      - *42
+      - *43
+      - *44
+      - *45
+      - *46
+      - *47
+      - *48
+      - *49
+      - *50
+      - *51
+      - *52
+      - *53
+      - *54
+      - *55
+      - *56
+      - *57
+      - *58
+      - *59
+      - *60
+      - *61
+    NAME: wro_non_fatal_mem_intr_mask
+  - ATTR: 2048
+    FLDLST:
+      - *32
+      - *33
+      - *34
+      - *35
+      - *36
+      - *37
+      - *38
+      - *39
+      - *40
+      - *41
+      - *42
+      - *43
+      - *44
+      - *45
+      - *46
+      - *47
+      - *48
+      - *49
+      - *50
+      - *51
+      - *52
+      - *53
+      - *54
+      - *55
+      - *56
+      - *57
+      - *58
+      - *59
+      - *60
+      - *61
+    NAME: wro_non_fatal_mem_intr_bset
+  - ATTR: 4096
+    FLDLST:
+      - *32
+      - *33
+      - *34
+      - *35
+      - *36
+      - *37
+      - *38
+      - *39
+      - *40
+      - *41
+      - *42
+      - *43
+      - *44
+      - *45
+      - *46
+      - *47
+      - *48
+      - *49
+      - *50
+      - *51
+      - *52
+      - *53
+      - *54
+      - *55
+      - *56
+      - *57
+      - *58
+      - *59
+      - *60
+      - *61
+    NAME: wro_non_fatal_mem_intr_bclr
+  - ATTR: 256
+    FLDLST:
+      - &62
+        DESCRIPTION: SN IF0 VC0 Credit Overflow Error
+        NAME: fld_sn_if0_vc0_crdt_ovfl_err
+        WIDTH: 1
+      - &63
+        DESCRIPTION: SN IF0 VC1 Credit Overflow Error
+        NAME: fld_sn_if0_vc1_crdt_ovfl_err
+        WIDTH: 1
+      - &64
+        DESCRIPTION: SN IF0 VC2 Credit Overflow Error
+        NAME: fld_sn_if0_vc2_crdt_ovfl_err
+        WIDTH: 1
+      - &65
+        DESCRIPTION: SN IF0 VC3 Credit Overflow Error
+        NAME: fld_sn_if0_vc3_crdt_ovfl_err
+        WIDTH: 1
+      - &66
+        DESCRIPTION: SN IF1 VC0 Credit Overflow Error
+        NAME: fld_sn_if1_vc0_crdt_ovfl_err
+        WIDTH: 1
+      - &67
+        DESCRIPTION: SN IF1 VC1 Credit Overflow Error
+        NAME: fld_sn_if1_vc1_crdt_ovfl_err
+        WIDTH: 1
+      - &68
+        DESCRIPTION: SN IF1 VC2 Credit Overflow Error
+        NAME: fld_sn_if1_vc2_crdt_ovfl_err
+        WIDTH: 1
+      - &69
+        DESCRIPTION: SN IF1 VC3 Credit Overflow Error
+        NAME: fld_sn_if1_vc3_crdt_ovfl_err
+        WIDTH: 1
+      - &70
+        DESCRIPTION: SN IF2 VC0 Credit Overflow Error
+        NAME: fld_sn_if2_vc0_crdt_ovfl_err
+        WIDTH: 1
+      - &71
+        DESCRIPTION: SN IF2 VC1 Credit Overflow Error
+        NAME: fld_sn_if2_vc1_crdt_ovfl_err
+        WIDTH: 1
+      - &72
+        DESCRIPTION: SN IF2 VC2 Credit Overflow Error
+        NAME: fld_sn_if2_vc2_crdt_ovfl_err
+        WIDTH: 1
+      - &73
+        DESCRIPTION: SN IF2 VC3 Credit Overflow Error
+        NAME: fld_sn_if2_vc3_crdt_ovfl_err
+        WIDTH: 1
+      - &74
+        DESCRIPTION: WRO-FCB RO Interface Credit Overflow Error
+        NAME: fld_fcb_ro_info_crdt_ovfl_err
+        WIDTH: 1
+      - &75
+        DESCRIPTION: Internal WU Message FIFO Credit Overflow Error
+        NAME: fld_wu_msg_fifo_crdt_ovfl_err
+        WIDTH: 1
+      - &76
+        DESCRIPTION: Internal Dispatch FIFO Credit Overflow Error
+        NAME: fld_dispatch_fifo_crdt_ovfl_err
+        WIDTH: 1
+      - &77
+        DESCRIPTION: Internal Flush Command FIFO Credit Overflow Error
+        NAME: fld_flush_proc_fifo_crdt_ovfl_err
+        WIDTH: 1
+    NAME: wro_non_fatal_misc_intr_cause
+  - ATTR: 512
+    FLDLST:
+      - *62
+      - *63
+      - *64
+      - *65
+      - *66
+      - *67
+      - *68
+      - *69
+      - *70
+      - *71
+      - *72
+      - *73
+      - *74
+      - *75
+      - *76
+      - *77
+    NAME: wro_non_fatal_misc_intr_stat
+  - ATTR: 1024
+    FLDLST:
+      - *62
+      - *63
+      - *64
+      - *65
+      - *66
+      - *67
+      - *68
+      - *69
+      - *70
+      - *71
+      - *72
+      - *73
+      - *74
+      - *75
+      - *76
+      - *77
+    NAME: wro_non_fatal_misc_intr_mask
+  - ATTR: 2048
+    FLDLST:
+      - *62
+      - *63
+      - *64
+      - *65
+      - *66
+      - *67
+      - *68
+      - *69
+      - *70
+      - *71
+      - *72
+      - *73
+      - *74
+      - *75
+      - *76
+      - *77
+    NAME: wro_non_fatal_misc_intr_bset
+  - ATTR: 4096
+    FLDLST:
+      - *62
+      - *63
+      - *64
+      - *65
+      - *66
+      - *67
+      - *68
+      - *69
+      - *70
+      - *71
+      - *72
+      - *73
+      - *74
+      - *75
+      - *76
+      - *77
+    NAME: wro_non_fatal_misc_intr_bclr
+  - ATTR: 9
+    DESCRIPTION: Place Holder for now for WRO Feature Register
+    FLDLST:
+      - ATTR: 1
+        DEFAULT: 7
+        DESCRIPTION: Module ID
+        NAME: module_id
+        VALUE: 7
+        WIDTH: 8
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Version number of the module
+        NAME: version
+        VALUE: 0
+        WIDTH: 8
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Features enabled in the module.
+        NAME: features
+        VALUE: 0
+        WIDTH: 16
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Reserved Field.
+        NAME: Reserved
+        WIDTH: 32
+    NAME: wro_features
+    WIDTH: 64
+  - ATTR: 5
+    DESCRIPTION: ' Spare PIO register. These bits can be read and written by software. They can serve as control bits for late ECOs in the design.'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Spare PIO register.
+        NAME: val
+        WIDTH: 64
+    NAME: wro_spare_pio
+    WIDTH: 64
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: Scratchpad register.
+        NAME: val
+        WIDTH: 64
+    NAME: wro_scratchpad
+    WIDTH: 64
+  - ATTR: 5
+    DESCRIPTION: WRO Memroy Init Start CFG
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H10 Memory Init Start
+        NAME: fld_hash_tbl_h10_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H11 Memory Init Start
+        NAME: fld_hash_tbl_h11_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H12 Memory Init Start
+        NAME: fld_hash_tbl_h12_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H13 Memory Init Start
+        NAME: fld_hash_tbl_h13_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H20 Memory Init Start
+        NAME: fld_hash_tbl_h20_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H21 Memory Init Start
+        NAME: fld_hash_tbl_h21_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H22 Memory Init Start
+        NAME: fld_hash_tbl_h22_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H23 Memory Init Start
+        NAME: fld_hash_tbl_h23_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H30 Memory Init Start
+        NAME: fld_hash_tbl_h30_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H31 Memory Init Start
+        NAME: fld_hash_tbl_h31_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H32 Memory Init Start
+        NAME: fld_hash_tbl_h32_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H33 Memory Init Start
+        NAME: fld_hash_tbl_h33_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H40 Memory Init Start
+        NAME: fld_hash_tbl_h40_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H41 Memory Init Start
+        NAME: fld_hash_tbl_h41_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H42 Memory Init Start
+        NAME: fld_hash_tbl_h42_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H43 Memory Init Start
+        NAME: fld_hash_tbl_h43_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table Valid MAP H41 Memory Init Start
+        NAME: fld_hash_tbl_vldmap_h1_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table Valid MAP H42 Memory Init Start
+        NAME: fld_hash_tbl_vldmap_h2_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table Valid MAP H43 Memory Init Start
+        NAME: fld_hash_tbl_vldmap_h3_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table Valid MAP H44 Memory Init Start
+        NAME: fld_hash_tbl_vldmap_h4_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Dequeue FIFO0 Memory Init Start
+        NAME: fld_dequeue_fifo0_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Dequeue FIFO1 Memory Init Start
+        NAME: fld_dequeue_fifo1_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: WU Notification Data Base Memory Init Start
+        NAME: fld_wun_db_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: FCB Packet Context Memory Init Start
+        NAME: fld_fcb_pkt_ctx_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: WU Notification DB Freelist Memory Init Start
+        NAME: fld_wun_fl_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Tunnel Context PSN Memory Init Start
+        NAME: fld_tunnel_ctx_psn_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Tunnel Context Packet Count Memory Init Start
+        NAME: fld_tunnel_ctx_pktcnt_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Tunnel Config Role Table Memory Init Start
+        NAME: fld_tunnel_cfg_role_tbl_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Tunnel Timeout Error Event Log Memory Init Start
+        NAME: fld_tunnel_timeout_event_log_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Tunnel Sequence Error Event Log Memory Init Start
+        NAME: fld_tunnel_seqn_error_event_log_mem
+        WIDTH: 1
+    NAME: wro_mem_init_start_cfg
+    TEST_ATTR: 0
+  - ATTR: 9
+    DESCRIPTION: WRO Memroy Init Done STA
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H10 Memory Init Done Status
+        NAME: fld_hash_tbl_h10_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H11 Memory Init Done Status
+        NAME: fld_hash_tbl_h11_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H12 Memory Init Done Status
+        NAME: fld_hash_tbl_h12_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H13 Memory Init Done Status
+        NAME: fld_hash_tbl_h13_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H20 Memory Init Done Status
+        NAME: fld_hash_tbl_h20_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H21 Memory Init Done Status
+        NAME: fld_hash_tbl_h21_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H22 Memory Init Done Status
+        NAME: fld_hash_tbl_h22_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H23 Memory Init Done Status
+        NAME: fld_hash_tbl_h23_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H30 Memory Init Done Status
+        NAME: fld_hash_tbl_h30_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H31 Memory Init Done Status
+        NAME: fld_hash_tbl_h31_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H32 Memory Init Done Status
+        NAME: fld_hash_tbl_h32_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H33 Memory Init Done Status
+        NAME: fld_hash_tbl_h33_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H40 Memory Init Done Status
+        NAME: fld_hash_tbl_h40_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H41 Memory Init Done Status
+        NAME: fld_hash_tbl_h41_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H42 Memory Init Done Status
+        NAME: fld_hash_tbl_h42_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H43 Memory Init Done Status
+        NAME: fld_hash_tbl_h43_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table Valid MAP H41 Memory Init Done Status
+        NAME: fld_hash_tbl_vldmap_h1_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table Valid MAP H42 Memory Init Done Status
+        NAME: fld_hash_tbl_vldmap_h2_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table Valid MAP H43 Memory Init Done Status
+        NAME: fld_hash_tbl_vldmap_h3_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table Valid MAP H44 Memory Init Done Status
+        NAME: fld_hash_tbl_vldmap_h4_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Dequeue FIFO0 Memory Init Done Status
+        NAME: fld_dequeue_fifo0_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Dequeue FIFO1 Memory Init Done Status
+        NAME: fld_dequeue_fifo1_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: WU Notification Data Base Memory Init Done Status
+        NAME: fld_wun_db_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: FCB Packet Context Memory Init Done Status
+        NAME: fld_fcb_pkt_ctx_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: WU Notification DB Freelist Memory Init Done Status
+        NAME: fld_wun_fl_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Tunnel Context PSN Memory Init Done Status
+        NAME: fld_tunnel_ctx_psn_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Tunnel Context Packet Count Memory Init Done Status
+        NAME: fld_tunnel_ctx_pktcnt_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Tunnel Config Role Table Memory Init Done Status
+        NAME: fld_tunnel_cfg_role_tbl_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Tunnel Timeout Error Event Log Memory Init Done Status
+        NAME: fld_tunnel_timeout_event_log_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Tunnel Sequence Error Event Log Memory Init Done Status
+        NAME: fld_tunnel_seqn_error_event_log_mem
+        WIDTH: 1
+    NAME: wro_mem_init_done_sta
+  - ATTR: 9
+    DESCRIPTION: WRO Memroy Init Done STA
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H10 Memory Uncorrectable ECC Error
+        NAME: fld_hash_tbl_h10_mem_cerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H11 Memory Uncorrectable ECC Error
+        NAME: fld_hash_tbl_h11_mem_cerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H12 Memory Uncorrectable ECC Error
+        NAME: fld_hash_tbl_h12_mem_cerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H13 Memory Uncorrectable ECC Error
+        NAME: fld_hash_tbl_h13_mem_cerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H20 Memory Uncorrectable ECC Error
+        NAME: fld_hash_tbl_h20_mem_cerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H21 Memory Uncorrectable ECC Error
+        NAME: fld_hash_tbl_h21_mem_cerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H22 Memory Uncorrectable ECC Error
+        NAME: fld_hash_tbl_h22_mem_cerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H23 Memory Uncorrectable ECC Error
+        NAME: fld_hash_tbl_h23_mem_cerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H30 Memory Uncorrectable ECC Error
+        NAME: fld_hash_tbl_h30_mem_cerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H31 Memory Uncorrectable ECC Error
+        NAME: fld_hash_tbl_h31_mem_cerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H32 Memory Uncorrectable ECC Error
+        NAME: fld_hash_tbl_h32_mem_cerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H33 Memory Uncorrectable ECC Error
+        NAME: fld_hash_tbl_h33_mem_cerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H40 Memory Uncorrectable ECC Error
+        NAME: fld_hash_tbl_h40_mem_cerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H41 Memory Uncorrectable ECC Error
+        NAME: fld_hash_tbl_h41_mem_cerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H42 Memory Uncorrectable ECC Error
+        NAME: fld_hash_tbl_h42_mem_cerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H43 Memory Uncorrectable ECC Error
+        NAME: fld_hash_tbl_h43_mem_cerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table Valid MAP H41 Memory Uncorrectable ECC Error
+        NAME: fld_hash_tbl_vldmap_h1_mem_cerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table Valid MAP H42 Memory Uncorrectable ECC Error
+        NAME: fld_hash_tbl_vldmap_h2_mem_cerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table Valid MAP H43 Memory Uncorrectable ECC Error
+        NAME: fld_hash_tbl_vldmap_h3_mem_cerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table Valid MAP H44 Memory Uncorrectable ECC Error
+        NAME: fld_hash_tbl_vldmap_h4_mem_cerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Dequeue FIFO0 Memory Uncorrectable ECC Error
+        NAME: fld_dequeue_fifo0_mem_cerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Dequeue FIFO1 Memory Uncorrectable ECC Error
+        NAME: fld_dequeue_fifo1_mem_cerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: WU Notification Data Base Memory Uncorrectable ECC Error
+        NAME: fld_wun_db_mem_cerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: FCB Packet Context Memory Uncorrectable ECC Error
+        NAME: fld_fcb_pkt_ctx_mem_cerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: WU Notification DB Freelist Memory Uncorrectable ECC Error
+        NAME: fld_wun_fl_mem_cerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Tunnel Context PSN Memory Uncorrectable ECC Error
+        NAME: fld_tunnel_ctx_psn_mem_cerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Tunnel Context Packet Count Memory Uncorrectable ECC Error
+        NAME: fld_tunnel_ctx_pktcnt_mem_cerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Tunnel Config Role Table Memory Uncorrectable ECC Error
+        NAME: fld_tunnel_cfg_role_tbl_mem_cerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Tunnel Timeout Error Event Log Memory Uncorrectable ECC Error
+        NAME: fld_tunnel_timeout_event_log_mem_cerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Tunnel Sequence Error Event Log Memory Uncorrectable ECC Error
+        NAME: fld_tunnel_seqn_error_event_log_mem_cerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H10 Memory Correctable ECC Error
+        NAME: fld_hash_tbl_h10_mem_ucerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H11 Memory Correctable ECC Error
+        NAME: fld_hash_tbl_h11_mem_ucerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H12 Memory Correctable ECC Error
+        NAME: fld_hash_tbl_h12_mem_ucerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H13 Memory Correctable ECC Error
+        NAME: fld_hash_tbl_h13_mem_ucerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H20 Memory Correctable ECC Error
+        NAME: fld_hash_tbl_h20_mem_ucerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H21 Memory Correctable ECC Error
+        NAME: fld_hash_tbl_h21_mem_ucerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H22 Memory Correctable ECC Error
+        NAME: fld_hash_tbl_h22_mem_ucerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H23 Memory Correctable ECC Error
+        NAME: fld_hash_tbl_h23_mem_ucerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H30 Memory Correctable ECC Error
+        NAME: fld_hash_tbl_h30_mem_ucerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H31 Memory Correctable ECC Error
+        NAME: fld_hash_tbl_h31_mem_ucerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H32 Memory Correctable ECC Error
+        NAME: fld_hash_tbl_h32_mem_ucerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H33 Memory Correctable ECC Error
+        NAME: fld_hash_tbl_h33_mem_ucerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H40 Memory Correctable ECC Error
+        NAME: fld_hash_tbl_h40_mem_ucerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H41 Memory Correctable ECC Error
+        NAME: fld_hash_tbl_h41_mem_ucerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H42 Memory Correctable ECC Error
+        NAME: fld_hash_tbl_h42_mem_ucerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H43 Memory Correctable ECC Error
+        NAME: fld_hash_tbl_h43_mem_ucerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table Valid MAP H41 Memory Correctable ECC Error
+        NAME: fld_hash_tbl_vldmap_h1_mem_ucerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table Valid MAP H42 Memory Correctable ECC Error
+        NAME: fld_hash_tbl_vldmap_h2_mem_ucerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table Valid MAP H43 Memory Correctable ECC Error
+        NAME: fld_hash_tbl_vldmap_h3_mem_ucerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table Valid MAP H44 Memory Correctable ECC Error
+        NAME: fld_hash_tbl_vldmap_h4_mem_ucerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Dequeue FIFO0 Memory Correctable ECC Error
+        NAME: fld_dequeue_fifo0_mem_ucerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Dequeue FIFO1 Memory Correctable ECC Error
+        NAME: fld_dequeue_fifo1_mem_ucerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: WU Notification Data Base Memory Correctable ECC Error
+        NAME: fld_wun_db_mem_ucerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: FCB Packet Context Memory Correctable ECC Error
+        NAME: fld_fcb_pkt_ctx_mem_ucerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: WU Notification DB Freelist Memory Correctable ECC Error
+        NAME: fld_wun_fl_mem_ucerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Tunnel Context PSN Memory Correctable ECC Error
+        NAME: fld_tunnel_ctx_psn_mem_ucerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Tunnel Context Packet Count Memory Correctable ECC Error
+        NAME: fld_tunnel_ctx_pktcnt_mem_ucerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Tunnel Config Role Table Memory Correctable ECC Error
+        NAME: fld_tunnel_cfg_role_tbl_mem_ucerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Tunnel Timeout Error Event Log Memory Correctable ECC Error
+        NAME: fld_tunnel_timeout_event_log_mem_ucerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Tunnel Sequence Error Event Log Memory Correctable ECC Error
+        NAME: fld_tunnel_seqn_error_event_log_mem_ucerr
+        WIDTH: 1
+    NAME: wro_mem_log_err_sta
+  - ATTR: 9
+    DESCRIPTION: WRO Status Register for ECC Error Syndrome
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: ECC Error Syndrome Bits Related to Error Occuence
+        NAME: fld_val
+        WIDTH: 8
+    NAME: wro_mem_log_syndrome_sta
+  - ATTR: 9
+    DESCRIPTION: WRO Status Register for ECC Error Syndrome
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: ECC Error Address Bits Related to Error Occuence
+        NAME: fld_val
+        WIDTH: 14
+    NAME: wro_mem_log_addr_sta
+  - ATTR: 5
+    DESCRIPTION: WRO Configuration Register for Error Injection
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H10 Memory Error Inject Control
+        NAME: fld_hash_tbl_h10_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H11 Memory Error Inject Control
+        NAME: fld_hash_tbl_h11_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H12 Memory Error Inject Control
+        NAME: fld_hash_tbl_h12_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H13 Memory Error Inject Control
+        NAME: fld_hash_tbl_h13_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H20 Memory Error Inject Control
+        NAME: fld_hash_tbl_h20_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H21 Memory Error Inject Control
+        NAME: fld_hash_tbl_h21_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H22 Memory Error Inject Control
+        NAME: fld_hash_tbl_h22_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H23 Memory Error Inject Control
+        NAME: fld_hash_tbl_h23_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H30 Memory Error Inject Control
+        NAME: fld_hash_tbl_h30_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H31 Memory Error Inject Control
+        NAME: fld_hash_tbl_h31_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H32 Memory Error Inject Control
+        NAME: fld_hash_tbl_h32_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H33 Memory Error Inject Control
+        NAME: fld_hash_tbl_h33_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H40 Memory Error Inject Control
+        NAME: fld_hash_tbl_h40_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H41 Memory Error Inject Control
+        NAME: fld_hash_tbl_h41_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H42 Memory Error Inject Control
+        NAME: fld_hash_tbl_h42_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H43 Memory Error Inject Control
+        NAME: fld_hash_tbl_h43_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table Valid MAP H41 Memory Error Inject Control
+        NAME: fld_hash_tbl_vldmap_h1_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table Valid MAP H42 Memory Error Inject Control
+        NAME: fld_hash_tbl_vldmap_h2_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table Valid MAP H43 Memory Error Inject Control
+        NAME: fld_hash_tbl_vldmap_h3_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table Valid MAP H44 Memory Error Inject Control
+        NAME: fld_hash_tbl_vldmap_h4_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Dequeue FIFO0 Memory Error Inject Control
+        NAME: fld_dequeue_fifo0_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Dequeue FIFO1 Memory Error Inject Control
+        NAME: fld_dequeue_fifo1_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: WU Notification Data Base Memory Error Inject Control
+        NAME: fld_wun_db_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: FCB Packet Context Memory Error Inject Control
+        NAME: fld_fcb_pkt_ctx_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: WU Notification DB Freelist Memory Error Inject Control
+        NAME: fld_wun_fl_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Tunnel Context PSN Memory Error Inject Control
+        NAME: fld_tunnel_ctx_psn_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Tunnel Context Packet Count Memory Error Inject Control
+        NAME: fld_tunnel_ctx_pktcnt_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Tunnel Config Role Table Memory Error Inject Control
+        NAME: fld_tunnel_cfg_role_tbl_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Tunnel Timeout Error Event Log Memory Error Inject Control
+        NAME: fld_tunnel_timeout_event_log_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Tunnel Sequence Error Event Log Memory Error Inject Control
+        NAME: fld_tunnel_seqn_error_event_log_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'Type of Error Injected, 0: Uncorrectable, 1: Correctable'
+        NAME: fld_err_type
+        WIDTH: 1
+    NAME: wro_mem_err_inj_cfg
+    TEST_ATTR: 2
+  - ATTR: 5
+    DESCRIPTION: Timer Control Configuration
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Enable Timeout Operation
+        NAME: fld_enable
+        WIDTH: 1
+      - DEFAULT: 4
+        DESCRIPTION: Timer Tick Count that triggers a Timer Scan of 4 values at a time
+        NAME: fld_tick_cnt
+        WIDTH: 8
+      - DEFAULT: 4
+        DESCRIPTION: Normal Time Out Value in terms of (fld_tick_cnt*1024)ns
+        NAME: fld_normal_tov
+        WIDTH: 4
+      - DEFAULT: 2
+        DESCRIPTION: Fast Time Out Value in terms of (fld_tick_cnt*1024)ns
+        NAME: fld_fast_tov
+        WIDTH: 4
+      - DEFAULT: 999
+        DESCRIPTION: Max Timestamp Count Set (N+1)* (TickCNT+1)*1 = 10uS
+        NAME: fld_timestamp_cnt_max
+        WIDTH: 10
+      - DEFAULT: 512
+        DESCRIPTION: OO Packet /Available Free Count Threshold for Fast Time Out
+        NAME: fld_fast_tov_pkt_thrsh
+        WIDTH: 15
+    NAME: wro_timer_ctrl_cfg
+    TEST_ATTR: 2
+  - ATTR: 5
+    DESCRIPTION: Misc. Debug Configuration
+    FLDLST:
+      - DEFAULT: 1
+        DESCRIPTION: Enable Flush when in HNU Mode
+        NAME: fld_hnu_mode_flush_enable
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Enable Flow Control Stats Counter
+        NAME: fld_flow_ctrl_cnt_enable
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: WRO Pipeline Scheduler TDM Enable
+        NAME: fld_tdm_enable
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'Wrap Around Packet SEQN Range: 0b: 24-bit, 1b:12-bit'
+        NAME: fld_psn_range
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'Cuckoo Hash Index Mask 00b: 10-bit, 01b: 8-bit, 10b: 6-bit, 11b:4-bit'
+        NAME: fld_cuckoo_hash_idx_mask
+        WIDTH: 2
+      - DEFAULT: 1
+        DESCRIPTION: Enable Tunnel 0 RO Bypass .. Used for NFCP Streams
+        NAME: fld_tunnel0_byp_enable
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'WU Message Spray based on CRC10Hash of Tunnel ID to selec SN interface - FIXME: Later Change to Always Enable'
+        NAME: fld_sn_spray_hash_disable
+        WIDTH: 1
+      - DEFAULT: 8
+        DESCRIPTION: Stash CAM Full Entry count Head Room
+        NAME: fld_stash_cam_full_thresh
+        WIDTH: 8
+    NAME: wro_misc_dbg_cfg
+  - ATTR: 5
+    DESCRIPTION: WRO FLA Ring Module ID
+    FLDLST:
+      - DEFAULT: 85
+        DESCRIPTION: '8-Bit Module ID to be used for Decoding Commands on FLA Command Ring, 0x0, 0xff are Reserved Values'
+        NAME: fld_val
+        WIDTH: 8
+    NAME: wro_fla_ring_module_id_cfg
+    TEST_ATTR: 2
+  - ATTR: 5
+    DESCRIPTION: Misc.wHash Function Seed Configuration
+    FLDLST:
+      - DEFAULT: 147
+        DESCRIPTION: '8-Bit Random Seed value initialized by the S/W hor Hash Function H1 - Should not be changed when in operation'
+        NAME: fld_seed_h1
+        WIDTH: 8
+      - DEFAULT: 147
+        DESCRIPTION: '8-Bit Random Seed value initialized by the S/W hor Hash Function H2 - Should not be changed when in operation'
+        NAME: fld_seed_h2
+        WIDTH: 8
+      - DEFAULT: 147
+        DESCRIPTION: '8-Bit Random Seed value initialized by the S/W hor Hash Function H3 - Should not be changed when in operation'
+        NAME: fld_seed_h3
+        WIDTH: 8
+      - DEFAULT: 147
+        DESCRIPTION: '8-Bit Random Seed value initialized by the S/W hor Hash Function H4 - Should not be changed when in operation'
+        NAME: fld_seed_h4
+        WIDTH: 8
+    NAME: wro_cuckoo_hash_seed_cfg
+  - ATTR: 10
+    DESCRIPTION: Tunnel Status for the Queried Tunnel
+    ENTATTR:
+      - DEFAULT: 0
+        DESCRIPTION: 'Command Execution Status - Clears on Read.'
+        OFFSET: 0
+        SFX: val
+        SWA: 16777216
+        TYPE: RE_CFG
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Command Execution Status 0: pending, 1: Done '
+        NAME: fld_done
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: '00b:Query , 01b:Restart , 10b: Sync , 11b: Flush'
+        NAME: fld_cmd
+        WIDTH: 2
+      - DESCRIPTION: Number of Flush Command Credits Available
+        NAME: fld_flush_crdt
+        WIDTH: 5
+      - DEFAULT: 0
+        DESCRIPTION: Carries the FCP Tunnel Number Identifier as defined in the FCP Header or Tunnel ID for Timeout/Retire descritors
+        NAME: fld_tunnel_id
+        WIDTH: 14
+      - DEFAULT: 0
+        DESCRIPTION: '0b:Pass , 1b:Fail'
+        NAME: fld_fail
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'Reoder State: IDLE, DEQ_INORDER, TIMEOUT, FLUSH'
+        NAME: fld_ro_state
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: FLUSH Flag
+        NAME: fld_flush_flag
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: SYNC Flag
+        NAME: fld_sync_flag
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Last In Order Sequence number received on the Tunnel
+        NAME: fld_psn
+        WIDTH: 24
+      - DEFAULT: 0
+        DESCRIPTION: Number of Out of Order Packets per Tunnel
+        NAME: fld_oo_pkt_cnt
+        WIDTH: 14
+    NAME: wro_query_tunnel_sta
+  - ATTR: 6
+    DESCRIPTION: WRO Tunnel Command FIFO Maximum of only 16 Outstanding Flush Commands can be issued.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: '00b:Query , 01b:Restart , 10b: Sync , 11b: Flush'
+        NAME: fld_cmd
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Carries the FCP Tunnel Number Identifier as defined in the FCP Header or Tunnel ID for Timeout/Retire descritors
+        NAME: fld_tunnel_id
+        WIDTH: 14
+    NAME: wro_tunnel_cmd_fifo
+    TEST_ATTR: 0
+  - ATTR: 6
+    DESCRIPTION: A Single Command to disable all Tunnels
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Self Clearing bit, This Command sequentially triggers all 16K Tunnels in Flush Mode'
+        NAME: fld_cmd
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'Pending Status, is Set to 1 the Flush All process is triggered and clears when complet'
+        NAME: fld_pending_status
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'Done Status, is Set to 1 when the 16K Tunnel Flush is complete'
+        NAME: fld_done_status
+        WIDTH: 1
+    NAME: wro_flush_all_cmd_cfg
+    TEST_ATTR: 0
+  - ATTR: 5
+    DESCRIPTION: WU Message Map Configuration
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: WU SO Field Value for Packet Arrival Event WU message
+        NAME: fld_so
+        WIDTH: 1
+      - DEFAULT: 2
+        DESCRIPTION: 'WU VC[1:0] Field Value based on wu_queue_id[0] '
+        NAME: fld_vc0
+        WIDTH: 2
+      - DEFAULT: 3
+        DESCRIPTION: 'WU VC[1:0] Field Value based on wu_queue_id[0] '
+        NAME: fld_vc1
+        WIDTH: 2
+      - DEFAULT: 9
+        DESCRIPTION: WU SGID Field (9-11) based on EFP Pipe ID
+        NAME: fld_sgid_base
+        WIDTH: 5
+      - DEFAULT: 5
+        DESCRIPTION: WU SLID Field Value for Packet Arrival Event WU message
+        NAME: fld_slid
+        WIDTH: 5
+      - DEFAULT: 1
+        DESCRIPTION: Insert Buffer Address in WU Message  Field ARG1
+        NAME: fld_en_arg1_buf_addr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Insert Buffer Address in WU Message  Field ARG2
+        NAME: fld_en_arg2_buf_addr
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Insert Buffer Address in WU Message  Field OPAQUE1
+        NAME: fld_en_opaq1_buf_addr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Insert Buffer Address in WU Message  Field OPAQUE2
+        NAME: fld_en_opaq2_buf_addr
+        WIDTH: 1
+    NAME: wro_wu_msg_map_cfg
+  - ATTR: 5
+    DESCRIPTION: VPP WU Message Format Type Map Configuration
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'DLID0 to WU Format Type 0: VPP, 1: LE'
+        NAME: fld_dlid0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'DLID1 to WU Format Type 0: VPP, 1: LE'
+        NAME: fld_dlid1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'DLID2 to WU Format Type 0: VPP, 1: LE'
+        NAME: fld_dlid2
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'DLID3 to WU Format Type 0: VPP, 1: LE'
+        NAME: fld_dlid3
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'DLID4 to WU Format Type 0: VPP, 1: LE'
+        NAME: fld_dlid4
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: 'DLID to WU Format Type 0: VPP, 1: LE'
+        NAME: fld_dlid5
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'DLID6 to WU Format Type 0: VPP, 1: LE'
+        NAME: fld_dlid6
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'DLID7 to WU Format Type 0: VPP, 1: LE'
+        NAME: fld_dlid7
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'DLID8 to WU Format Type 0: VPP, 1: LE'
+        NAME: fld_dlid8
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'DLID9 to WU Format Type 0: VPP, 1: LE'
+        NAME: fld_dlid9
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'DLID10 to WU Format Type 0: VPP, 1: LE'
+        NAME: fld_dlid10
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'DLID11 to WU Format Type 0: VPP, 1: LE'
+        NAME: fld_dlid11
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'DLID12 to WU Format Type 0: VPP, 1: LE'
+        NAME: fld_dlid12
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'DLID13 to WU Format Type 0: VPP, 1: LE'
+        NAME: fld_dlid13
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'DLID14 to WU Format Type 0: VPP, 1: LE'
+        NAME: fld_dlid14
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'DLID15 to WU Format Type 0: VPP, 1: LE'
+        NAME: fld_dlid15
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'DLID16 to WU Format Type 0: VPP, 1: LE'
+        NAME: fld_dlid16
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'DLID17 to WU Format Type 0: VPP, 1: LE'
+        NAME: fld_dlid17
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'DLID18 to WU Format Type 0: VPP, 1: LE'
+        NAME: fld_dlid18
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'DLID19 to WU Format Type 0: VPP, 1: LE'
+        NAME: fld_dlid19
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'DLID20 to WU Format Type 0: VPP, 1: LE'
+        NAME: fld_dlid20
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'DLID21 to WU Format Type 0: VPP, 1: LE'
+        NAME: fld_dlid21
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'DLID22 to WU Format Type 0: VPP, 1: LE'
+        NAME: fld_dlid22
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'DLID23 to WU Format Type 0: VPP, 1: LE'
+        NAME: fld_dlid23
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'DLID24 to WU Format Type 0: VPP, 1: LE'
+        NAME: fld_dlid24
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'DLID25 to WU Format Type 0: VPP, 1: LE'
+        NAME: fld_dlid25
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'DLID26 to WU Format Type 0: VPP, 1: LE'
+        NAME: fld_dlid26
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'DLID27 to WU Format Type 0: VPP, 1: LE'
+        NAME: fld_dlid27
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'DLID28 to WU Format Type 0: VPP, 1: LE'
+        NAME: fld_dlid28
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'DLID29 to WU Format Type 0: VPP, 1: LE'
+        NAME: fld_dlid29
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'DLID30 to WU Format Type 0: VPP, 1: LE'
+        NAME: fld_dlid30
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'DLID31 to WU Format Type 0: VPP, 1: LE'
+        NAME: fld_dlid31
+        WIDTH: 1
+    NAME: wro_vp_wu_msg_type_map_cfg
+  - ATTR: 6
+    DESCRIPTION: WU Message Map Configuration
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Cluster ID to DGID Mapping Register Entry 0
+        NAME: fld_cluster0
+        WIDTH: 5
+      - DEFAULT: 1
+        DESCRIPTION: Cluster ID to DGID Mapping Register Entry 1
+        NAME: fld_cluster1
+        WIDTH: 5
+      - DEFAULT: 2
+        DESCRIPTION: Cluster ID to DGID Mapping Register Entry 2
+        NAME: fld_cluster2
+        WIDTH: 5
+      - DEFAULT: 3
+        DESCRIPTION: Cluster ID to DGID Mapping Register Entry 3
+        NAME: fld_cluster3
+        WIDTH: 5
+      - DEFAULT: 4
+        DESCRIPTION: Cluster ID to DGID Mapping Register Entry 4
+        NAME: fld_cluster4
+        WIDTH: 5
+      - DEFAULT: 5
+        DESCRIPTION: Cluster ID to DGID Mapping Register Entry 5
+        NAME: fld_cluster5
+        WIDTH: 5
+      - DEFAULT: 6
+        DESCRIPTION: Cluster ID to DGID Mapping Register Entry 6
+        NAME: fld_cluster6
+        WIDTH: 5
+      - DEFAULT: 7
+        DESCRIPTION: Cluster ID to DGID Mapping Register Entry 7
+        NAME: fld_cluster7
+        WIDTH: 5
+      - DEFAULT: 8
+        DESCRIPTION: Cluster ID to DGID Mapping Register Entry 8
+        NAME: fld_cluster8
+        WIDTH: 5
+      - DEFAULT: 9
+        DESCRIPTION: Cluster ID to DGID Mapping Register Entry 9
+        NAME: fld_cluster9
+        WIDTH: 5
+      - DEFAULT: 10
+        DESCRIPTION: Cluster ID to DGID Mapping Register Entry 10
+        NAME: fld_cluster10
+        WIDTH: 5
+      - DEFAULT: 11
+        DESCRIPTION: Cluster ID to DGID Mapping Register Entry 11
+        NAME: fld_cluster11
+        WIDTH: 5
+      - DEFAULT: 20
+        DESCRIPTION: Cluster ID to DGID Mapping Register Entry 12
+        NAME: fld_cluster12
+        WIDTH: 5
+      - DEFAULT: 21
+        DESCRIPTION: Cluster ID to DGID Mapping Register Entry 13
+        NAME: fld_cluster13
+        WIDTH: 5
+      - DEFAULT: 31
+        DESCRIPTION: Cluster ID to DGID Mapping Register Entry 14
+        NAME: fld_cluster14
+        WIDTH: 5
+      - DEFAULT: 31
+        DESCRIPTION: Cluster ID to DGID Mapping Register Entry 15
+        NAME: fld_cluster15
+        WIDTH: 5
+    NAME: wro_wu_msg_dgid_map_cfg
+  - ATTR: 5
+    DESCRIPTION: VPP WU Message ARG0-2 16-MSB bits for Buffer address before storing in ARG0-2
+    FLDLST:
+      - DEFAULT: 34816
+        DESCRIPTION: 'WU ARG0 top 16 MSB bits '
+        NAME: fld_arg0
+        WIDTH: 16
+      - DEFAULT: 34816
+        DESCRIPTION: 'WU ARG1 top 16 MSB bits '
+        NAME: fld_arg1
+        WIDTH: 16
+      - DEFAULT: 34816
+        DESCRIPTION: 'WU ARG2 top 16 MSB bits '
+        NAME: fld_arg2
+        WIDTH: 16
+    NAME: wro_vpp_wu_msg_cfg
+  - ATTR: 5
+    DESCRIPTION: PC/LE WU Message Keyptr 16 SMB bits for Buffer address before storing Keyptr/Opaque data
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 16 MSB bits of Key PTR Value in WU message
+        NAME: fld_keyptr
+        WIDTH: 16
+      - DEFAULT: 0
+        DESCRIPTION: 16 MSB bits of OPAQUE0 Value in WU message
+        NAME: fld_opaque1
+        WIDTH: 16
+      - DEFAULT: 0
+        DESCRIPTION: 16 MSB bits of OPAQUE1 Key PTR Value in WU message
+        NAME: fld_opaque2
+        WIDTH: 16
+    NAME: wro_le_wu_msg_cfg
+  - ATTR: 5
+    DESCRIPTION: NU/HNU WU Message 16-bit MSB Command List Ptr
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Error/SW Opcode in WU message
+        NAME: fld_err_sw_opcode
+        WIDTH: 24
+      - DEFAULT: 8
+        DESCRIPTION: Command List Flags in WU message
+        NAME: fld_cmdlist_ptr_flags
+        WIDTH: 8
+      - DEFAULT: 0
+        DESCRIPTION: Command List size in WU message
+        NAME: fld_cmdlist_size
+        WIDTH: 8
+      - DEFAULT: 0
+        DESCRIPTION: Command List size in WU message
+        NAME: fld_arg1_rsvd
+        WIDTH: 24
+    NAME: wro_nu_wu_msg_cfg
+  - ATTR: 5
+    DESCRIPTION: Buffer Address Map Configuration
+    FLDLST:
+      - DEFAULT: 15
+        DESCRIPTION: Buffer Handle Position in the Buffer address
+        NAME: fld_buffer_handle_pos
+        WIDTH: 6
+      - DEFAULT: 31
+        DESCRIPTION: Position of Buffer type field (Direct/Mapped/Mapped SMMU)
+        NAME: fld_pc_pos
+        WIDTH: 6
+      - DEFAULT: 206695301120
+        DESCRIPTION: Base Value for Buffer Address
+        NAME: fld_base_val
+        WIDTH: 48
+    NAME: wro_buffer_address_cfg
+  - ATTR: 5
+    DESCRIPTION: SN Buffer Free Message Map Configuration
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: BM Free Request Tag Field Value for Packet Arrival Event WU message
+        NAME: fld_tag
+        WIDTH: 8
+      - DEFAULT: 0
+        DESCRIPTION: BM Free Request Flags Field Value for Packet Arrival Event WU message
+        NAME: fld_bm_flags
+        WIDTH: 8
+      - DEFAULT: 0
+        DESCRIPTION: BM Free Request SO Field Value for Packet Arrival Event WU message
+        NAME: fld_so
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'BM Free Request VC[1:0] Field Value'
+        NAME: fld_vc
+        WIDTH: 2
+      - DEFAULT: 5
+        DESCRIPTION: BM Free Request SLID Field Value for Packet Arrival Event WU message
+        NAME: fld_slid
+        WIDTH: 5
+      - DEFAULT: 4
+        DESCRIPTION: BM Free Request DLID Field Value
+        NAME: fld_dlid
+        WIDTH: 5
+      - DEFAULT: 9
+        DESCRIPTION: BM Free Request SGID Base Field (9-11) based on EFP Pipe ID
+        NAME: fld_sgid_base
+        WIDTH: 5
+    NAME: wro_sn_msg_map_cfg
+  - ATTR: 5
+    DESCRIPTION: WU Message Map Configuration
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: PC Num to dgid Mapping Register Entry 0
+        NAME: fld_pc0
+        WIDTH: 5
+      - DEFAULT: 1
+        DESCRIPTION: PC Num to dgid Mapping Register Entry 1
+        NAME: fld_pc1
+        WIDTH: 5
+      - DEFAULT: 2
+        DESCRIPTION: PC Num to dgid Mapping Register Entry 2
+        NAME: fld_pc2
+        WIDTH: 5
+      - DEFAULT: 3
+        DESCRIPTION: PC Num to dgid Mapping Register Entry 3
+        NAME: fld_pc3
+        WIDTH: 5
+      - DEFAULT: 4
+        DESCRIPTION: PC Num to dgid Mapping Register Entry 4
+        NAME: fld_pc4
+        WIDTH: 5
+      - DEFAULT: 5
+        DESCRIPTION: PC Num to dgid Mapping Register Entry 5
+        NAME: fld_pc5
+        WIDTH: 5
+      - DEFAULT: 6
+        DESCRIPTION: PC Num to dgid Mapping Register Entry 6
+        NAME: fld_pc6
+        WIDTH: 5
+      - DEFAULT: 7
+        DESCRIPTION: PC Num to dgid Mapping Register Entry 7
+        NAME: fld_pc7
+        WIDTH: 5
+    NAME: wro_sn_msg_dgid_map_cfg
+  - ATTR: 6
+    DESCRIPTION: Buffer Address Map Configuration
+    FLDLST:
+      - DEFAULT: 32
+        DESCRIPTION: Internal Dispatch FIFO Initial Credit value. Used for asserting BP to EFP
+        NAME: fld_ini_crdt_val
+        WIDTH: 6
+    NAME: wro_dispatch_fifo_crdt_init_cfg
+    TEST_ATTR: 2
+  - ATTR: 5
+    DESCRIPTION: Freelist Configuration
+    FLDLST:
+      - DEFAULT: 512
+        DESCRIPTION: WUN Database Freelist PSW Backpressure XOFF Threshold
+        NAME: fld_psw_xoff_thresh
+        WIDTH: 15
+      - DEFAULT: 544
+        DESCRIPTION: WUN Database Freelist PSW Backpressure XON Threshold
+        NAME: fld_psw_xon_thresh
+        WIDTH: 15
+      - DEFAULT: 12288
+        DESCRIPTION: WUN Database Freelist FCB Backpressure XOFF Threshold
+        NAME: fld_fcb_xoff_thresh
+        WIDTH: 15
+      - DEFAULT: 12416
+        DESCRIPTION: WUN Database Freelist FCB Backpressure XON Threshold
+        NAME: fld_fcb_xon_thresh
+        WIDTH: 15
+    NAME: wro_wun_fl_cfg
+  - ATTR: 9
+    DESCRIPTION: Freelist Configuration
+    FLDLST:
+      - DEFAULT: 16384
+        DESCRIPTION: WUN DB Freelist Available Entries Count Status
+        NAME: fld_avail_cnt
+        WIDTH: 15
+    NAME: wro_wun_fl_sta
+  - ATTR: 9
+    DESCRIPTION: Interface Flow Control Status
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: FC Status for EFP interface
+        NAME: fld_efp_if
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'FC Status for SN Interface 0, VC0 interface'
+        NAME: fld_sn_if0
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: 'FC Status for SN Interface 1, VC0 interface'
+        NAME: fld_sn_if1
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: 'FC Status for SN Interface 2, VC0 interface'
+        NAME: fld_sn_if2
+        WIDTH: 4
+    NAME: wro_intf_flow_control_sta
+  - ATTR: 10
+    DESCRIPTION: WRO Flow Control Sticky Status.. Clear on Read
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: WRO-Dispatch FIFO Flow Control Count
+        NAME: fld_dispatch_fifo_flow_ctrl
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: WRO-Flush Processing Flow Control Count
+        NAME: fld_flush_proc_fifo_flow_ctrl
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: WRO-FCB RO Update Interface Flow Control Count
+        NAME: fld_wu_msg_fifo_flow_ctrl
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: WRO-FCB RO Update Interface Flow Control Count
+        NAME: fld_fcb_ro_intf_flow_ctrl
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: WRO SN Interface 2 VC3 Flow Control Count
+        NAME: fld_sn_if2_vc3_flow_ctrl
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: WRO SN Interface 2 VC2 Flow Control Count
+        NAME: fld_sn_if2_vc2_flow_ctrl
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: WRO SN Interface 2 VC1 Flow Control Count
+        NAME: fld_sn_if2_vc1_flow_ctrl
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: WRO SN Interface 2 VC0 Flow Control Count
+        NAME: fld_sn_if2_vc0_flow_ctrl
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: WRO SN Interface 1 VC3 Flow Control Count
+        NAME: fld_sn_if1_vc3_flow_ctrl
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: WRO SN Interface 1 VC2 Flow Control Count
+        NAME: fld_sn_if1_vc2_flow_ctrl
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: WRO SN Interface 1 VC1 Flow Control Count
+        NAME: fld_sn_if1_vc1_flow_ctrl
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: WRO SN Interface 1 VC0 Flow Control Count
+        NAME: fld_sn_if1_vc0_flow_ctrl
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: WRO SN Interface 0 VC3 Flow Control Count
+        NAME: fld_sn_if0_vc3_flow_ctrl
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: WRO SN Interface 0 VC2 Flow Control Count
+        NAME: fld_sn_if0_vc2_flow_ctrl
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: WRO SN Interface 0 VC1 Flow Control Count
+        NAME: fld_sn_if0_vc1_flow_ctrl
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: WRO SN Interface 0 VC0 Flow Control Count
+        NAME: fld_sn_if0_vc0_flow_ctrl
+        WIDTH: 1
+    NAME: wro_flow_control_sta
+    TEST_ATTR: 0
+  - ATTR: 6
+    DESCRIPTION: WU Message ARG0 Offset to be added to Buffer address before storing in ARG0Configuration
+    ENTRIES: 4
+    FLDLST:
+      - DEFAULT: 8192
+        DESCRIPTION: Maximum Allowed Forward SEQN Range from Last received inorder SEQN. Default 8192
+        NAME: fld_max_future_seqn_range
+        WIDTH: 24
+      - DEFAULT: 0
+        DESCRIPTION: Maximum Allowed Backward SEQN Range from Last received inorder SEQN. Default 8192
+        NAME: fld_max_past_seqn_range
+        WIDTH: 24
+    NAME: wro_tunnel_role_cfg
+  - ATTR: 6
+    DESCRIPTION: SN Interface(0-2) Initial Credit Value Configiration
+    ENTATTR:
+      - DEFAULT: 16
+        DESCRIPTION: SN Interface0 VC Crdit Configuration
+        OFFSET: 0
+        SFX: SN_IF0
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 16
+        DESCRIPTION: SN Interface1 VC Crdit Configuration
+        OFFSET: 1
+        SFX: SN_IF1
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 16
+        DESCRIPTION: SN Interface2 VC Crdit Configuration
+        OFFSET: 2
+        SFX: SN_IF2
+        SWA: 2097152
+        TYPE: RE_CFG
+    ENTRIES: 3
+    FLDLST:
+      - DEFAULT: 16
+        DESCRIPTION: SN Interface(0-2) VC0 Initial Credit Value VC 0
+        NAME: fld_init_vc0_val
+        WIDTH: 5
+      - DEFAULT: 16
+        DESCRIPTION: SN Interface(0-2) VC0 Initial Credit Value VC 1
+        NAME: fld_init_vc1_val
+        WIDTH: 5
+      - DEFAULT: 16
+        DESCRIPTION: SN Interface(0-2) VC0 Initial Credit Value VC 2
+        NAME: fld_init_vc2_val
+        WIDTH: 5
+      - DEFAULT: 16
+        DESCRIPTION: SN Interface(0-2) VC0 Initial Credit Value VC 3
+        NAME: fld_init_vc3_val
+        WIDTH: 5
+    NAME: wro_sn_if_crdt_cfg
+    TEST_ATTR: 2
+  - ATTR: 6
+    DESCRIPTION: Access to Packet Work Descriptor DB  Freelist Memory
+    ENTATTR:
+      - DEFAULT: 0
+        DESCRIPTION: 'S/W Dealloc Bits End : Range 0-3FF'
+        OFFSET: 3071
+        SFX: sw_dealloc_bits_end
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 0
+        DESCRIPTION: S/W Dealloc Bits Start
+        OFFSET: 2048
+        SFX: sw_dealloc_bits_start
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 0
+        DESCRIPTION: S/W Memory Access End Range 0-3FF
+        OFFSET: 2047
+        SFX: sw_mem_access_end
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 0
+        DESCRIPTION: S/W Memory Access Start
+        OFFSET: 1024
+        SFX: sw_mem_access_start
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 0
+        DESCRIPTION: Memory Leak Monitor Bits End Range 0-0x1F
+        OFFSET: 95
+        SFX: mem_leak_mon_bits_end
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 0
+        DESCRIPTION: Memory Leak Monitor Bits Start
+        OFFSET: 64
+        SFX: mem_leak_mon_bits_start
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 0
+        DESCRIPTION: Debug Page End Range 0-0x1F
+        OFFSET: 63
+        SFX: debug_page_end
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 0
+        DESCRIPTION: Debug Page Start
+        OFFSET: 32
+        SFX: debug_page_start
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 0
+        DESCRIPTION: Debug Page Status
+        OFFSET: 13
+        SFX: debug_page_stat
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 0
+        DESCRIPTION: S/W Alloc Request
+        OFFSET: 12
+        SFX: sw_alloc_req
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 0
+        DESCRIPTION: S/W Alloc Row Bits
+        OFFSET: 11
+        SFX: sw_alloc_row_bits
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 0
+        DESCRIPTION: S/W Alloc Row Address
+        OFFSET: 10
+        SFX: sw_alloc_row_addr
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 0
+        DESCRIPTION: Memory Init Rwo Mask2 Address
+        OFFSET: 9
+        SFX: mem_init_row_mask2_addr
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 0
+        DESCRIPTION: Memory Init Rwo Mask2 Value
+        OFFSET: 8
+        SFX: mem_init_row_mask2_val
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 0
+        DESCRIPTION: Memory Init Rwo Mask1 Address
+        OFFSET: 7
+        SFX: mem_init_row_mask1_addr
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 0
+        DESCRIPTION: Memory Init Rwo Mask1 Value
+        OFFSET: 6
+        SFX: mem_init_row_mask1_val
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 0
+        DESCRIPTION: Memory Init Status
+        OFFSET: 5
+        SFX: mem_init_stat
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 0
+        DESCRIPTION: Memory Init Control
+        OFFSET: 4
+        SFX: mem_init_ctl
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 0
+        DESCRIPTION: Memory Leak Control
+        OFFSET: 3
+        SFX: mem_leak_mon_ctrl
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 0
+        DESCRIPTION: Bit Allocate Client Alloc Count
+        OFFSET: 1
+        SFX: client_alloc_cnt
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 0
+        DESCRIPTION: Bit Allocate Enable
+        OFFSET: 0
+        SFX: enable
+        SWA: 2097152
+        TYPE: RE_CFG
+    ENTRIES: 3072
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: wun Memory Data Structure
+        NAME: fld_data
+        WIDTH: 32
+    NAME: wro_wun_fl_bitallocate_pio_cfg
+    TEST_ATTR: 0
+  - ATTR: 6
+    DESCRIPTION: Access to WRO Stats Counters
+    ENTATTR:
+      - DEFAULT: 0
+        DESCRIPTION: WRO Debug Probe Status
+        OFFSET: 7
+        SFX: ev_status
+        SWA: 1048576
+        TYPE: RE_STA
+      - DEFAULT: 0
+        DESCRIPTION: WRO Debug Probe Max Usage Value
+        OFFSET: 6
+        SFX: ev_max_usage
+        SWA: 1048576
+        TYPE: RE_STA
+      - DEFAULT: 0
+        DESCRIPTION: WRO Debug Probe Usage Count
+        OFFSET: 5
+        SFX: ev_usage_count
+        SWA: 1048576
+        TYPE: RE_STA
+      - DEFAULT: 0
+        DESCRIPTION: WRO Debug Probe Event Count
+        OFFSET: 4
+        SFX: ev_count
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: WRO Debug Probe EV Match Value
+        OFFSET: 3
+        SFX: ev_match_val
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 0
+        DESCRIPTION: WRO Debug Probe EV Mask Value
+        OFFSET: 2
+        SFX: ev_mask_val
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 0
+        DESCRIPTION: WRO Debug Probe Clear state
+        OFFSET: 1
+        SFX: ev_clear
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 0
+        DESCRIPTION: WRO Debug Probe Enable/ARB
+        OFFSET: 0
+        SFX: ev_enable
+        SWA: 2097152
+        TYPE: RE_CFG
+    ENTRIES: 8
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: WRO Debug Probe
+        NAME: fld_val
+        WIDTH: 64
+    NAME: wro_dbg_probe_dhs
+    TEST_ATTR: 0
+  - ATTR: 38
+    DESCRIPTION: 'Access to WRO Stats Counters FIXME: Add Documentation'
+    ENTATTR:
+      - DEFAULT: 0
+        DESCRIPTION: Count for all Packet Flushed due to Inactive Tunnel
+        OFFSET: 22
+        SFX: flushed_pkts
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Count for all Packet Received from ERP
+        OFFSET: 21
+        SFX: in_pkts
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Count for all FCP Packet Received from ERP
+        OFFSET: 20
+        SFX: in_fcp_pkts
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Count for all NFCP Packet Received from ERP
+        OFFSET: 19
+        SFX: in_nfcp_pkts
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Count for all WU Messages Sent
+        OFFSET: 18
+        SFX: out_wus
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Count for all BM Free Command Messages Sent
+        OFFSET: 17
+        SFX: out_bm_free
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Count for Past Packet Seqeunce Dropped packets
+        OFFSET: 16
+        SFX: past_seqn_err
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Count for Future Packet Seqeunce Error Dropped packets
+        OFFSET: 15
+        SFX: future_seqn_err
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Count for all Timeout Out Packets Count
+        OFFSET: 14
+        SFX: pkt_timeout
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Count for all paacket Skipped due to normal timeout
+        OFFSET: 13
+        SFX: pkt_timeout_skip
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Count for Packets timed out by the Timer Scan
+        OFFSET: 12
+        SFX: pkt_timeout_lkup
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: 'Count for received packets with drop set & tunnel_id=0, flagged as Error by EFP'
+        OFFSET: 11
+        SFX: in_pkt_err_drop
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: 'Count for received packets with drop set, flagged as policy drop by EFP'
+        OFFSET: 10
+        SFX: in_pkt_policy_drop
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Count for Packets Evicted by the Hash due to new packet arrivals or Cuckoo Move
+        OFFSET: 9
+        SFX: hash_tbl_evct
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Count for a Successful Cuckoo Move w/o eviction
+        OFFSET: 8
+        SFX: cuckoo_move
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Count for a Cuckoo Move that resulted in Hash Eviction to Stash
+        OFFSET: 7
+        SFX: cuckoo_thrash
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Count for Duplicate Packet Sequence Error dropped packets
+        OFFSET: 6
+        SFX: duplicate_seqn_err
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Count for all WU Sent to VPP
+        OFFSET: 5
+        SFX: wu_cnt_vpp
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Count for all WU Sent to LE
+        OFFSET: 4
+        SFX: wu_cnt_le
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Count for all WU Sent to NU
+        OFFSET: 3
+        SFX: wu_cnt_nu
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Count for all WU Sent to HNU
+        OFFSET: 2
+        SFX: wu_cnt_hnu
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Count for BM Free Msgs Sent for any Packets with Sequence Error or Tunnel 0 Error
+        OFFSET: 1
+        SFX: bm_free_err
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Count for BM Free Msgs Sent for FCP Packets with Policy Drop
+        OFFSET: 0
+        SFX: bm_free_pol_drop
+        SWA: 8388608
+        TYPE: 4096
+    ENTRIES: 23
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: WRO Statistics Counters
+        NAME: fld_count
+        WIDTH: 48
+    NAME: wro_stats_cntr
+    TEST_ATTR: 0
+  - ATTR: 10
+    DESCRIPTION: Access to Stash CAM
+    ENTRIES: 128
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Indicates if the Entry is valid
+        NAME: fld_vld
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Packet Tunnel ID from FCP Header
+        NAME: fld_tunnel_id
+        WIDTH: 14
+      - DEFAULT: 0
+        DESCRIPTION: Packet Sequence Number from FCP Header
+        NAME: fld_psn
+        WIDTH: 24
+      - DEFAULT: 0
+        DESCRIPTION: Packet Work Unit Descriptor for the packet key
+        NAME: fld_rslt
+        WIDTH: 14
+      - DEFAULT: 0
+        DESCRIPTION: WRO Time Stamp /Color ID
+        NAME: fld_timestamp
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: 'WRO Time Out State 0: Normal 1: Timed Out'
+        NAME: fld_to_state
+        WIDTH: 1
+    NAME: wro_stash_cam_dhs
+  - ATTR: 6
+    DESCRIPTION: Access to Packet Work Descriptor DB Memory
+    ENTRIES: 16384
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Carries the Drop Bit
+        NAME: fld_drop
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: WU Trace Flag
+        NAME: f_trace
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Carries the ERP Pipe Identifier
+        NAME: fld_efp_id
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: WU Cluster number
+        NAME: fld_cluster_id
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Destination Group Local ID
+        NAME: fld_dlid
+        WIDTH: 5
+      - DEFAULT: 0
+        DESCRIPTION: WU Queue/TAG ID  Number
+        NAME: fld_queue_id
+        WIDTH: 8
+      - DEFAULT: 0
+        DESCRIPTION: WU PC Number
+        NAME: fld_pc_num
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: WU Buffer handle
+        NAME: fld_buffer_handle
+        WIDTH: 13
+      - DEFAULT: 0
+        DESCRIPTION: Software Opcode
+        NAME: fld_sw_opcode
+        WIDTH: 24
+    NAME: wro_wun_db_mem_dhs
+  - ATTR: 6
+    DESCRIPTION: Access to FCB Packet Context Memory
+    ENTRIES: 16384
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Packet Tunnel ID
+        NAME: fld_tunnel_id
+        WIDTH: 14
+      - DEFAULT: 0
+        DESCRIPTION: Packet Queue ID
+        NAME: fld_qos
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: FCP Data Block Number as carried in the FCP Header
+        NAME: fld_block_num
+        WIDTH: 16
+    NAME: wro_fcb_pkt_ctx_mem_dhs
+  - ATTR: 6
+    DESCRIPTION: Access to Tunnel Context PSN Memor
+    ENTRIES: 16384
+    FLDLST:
+      - DEFAULT: 3
+        DESCRIPTION: 'Reoder State: IDLE, DEQ_INORDER, TIMEOUT, RESERVED'
+        NAME: fld_ro_state
+        WIDTH: 2
+      - DEFAULT: 1
+        DESCRIPTION: Flush State Flag
+        NAME: fld_flush
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Sync State Flag
+        NAME: fld_sync
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Last In Order Sequence number received on the Tunnel
+        NAME: fld_last_psn
+        WIDTH: 24
+    NAME: wro_tunnel_ctx_psn_mem_dhs
+  - ATTR: 6
+    DESCRIPTION: Access to Tunnel Context OOO Packet Count Memory
+    ENTRIES: 16384
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Tunnel Context Out of Order Packet Count
+        NAME: fld_oo_pkt_cnt
+        WIDTH: 14
+    NAME: wro_tunnel_ctx_pktcnt_mem_dhs
+  - ATTR: 6
+    DESCRIPTION: Access to Tunnel Configuration Role Table Memory
+    ENTRIES: 2048
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Selection from 4 allowed configuration roles
+        NAME: fld_entry0_role
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: bypass Reorder
+        NAME: fld_entry0_bypass_ro
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Selection from 4 allowed configuration roles
+        NAME: fld_entry1_role
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: bypass Reorder
+        NAME: fld_entry1_bypass_ro
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Selection from 4 allowed configuration roles
+        NAME: fld_entry2_role
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: bypass Reorder
+        NAME: fld_entry2_bypass_ro
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Selection from 4 allowed configuration roles
+        NAME: fld_entry3_role
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: bypass Reorder
+        NAME: fld_entry3_bypass_ro
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Selection from 4 allowed configuration roles
+        NAME: fld_entry4_role
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: bypass Reorder
+        NAME: fld_entry4_bypass_ro
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Selection from 4 allowed configuration roles
+        NAME: fld_entry5_role
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: bypass Reorder
+        NAME: fld_entry5_bypass_ro
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Selection from 4 allowed configuration roles
+        NAME: fld_entry6_role
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: bypass Reorder
+        NAME: fld_entry6_bypass_ro
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Selection from 4 allowed configuration roles
+        NAME: fld_entry7_role
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: bypass Reorder
+        NAME: fld_entry7_bypass_ro
+        WIDTH: 1
+    NAME: wro_tunnel_cfg_role_tbl_mem_dhs
+  - ATTR: 6
+    DESCRIPTION: Access to iTunnel SEQN Error Log Memory
+    ENTRIES: 512
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Sequence Error Event Log memory structure Entries 0-31
+        NAME: fld_seqn_error
+        WIDTH: 32
+    NAME: wro_tunnel_seqn_error_event_log_mem_dhs
+    TEST_ATTR: 0
+  - ATTR: 6
+    DESCRIPTION: Access to Tunnel Timeout Error Log Memory
+    ENTRIES: 512
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Timeout Event Log memory structure
+        NAME: fld_timeout_error
+        WIDTH: 32
+    NAME: wro_tunnel_timeout_event_log_mem_dhs
+    TEST_ATTR: 0
+  - ATTR: 6
+    DESCRIPTION: Access to Dequeue FIFO Memor
+    ENTRIES: 256
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H1 ValidMap Set 0 Data Structure
+        NAME: fld_set0_vldmap
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H1 ValidMap Set 1 Data Structure
+        NAME: fld_set1_vldmap
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H1 ValidMap Set 2 Data Structure
+        NAME: fld_set2_vldmap
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H1 ValidMap Set 3 Data Structure
+        NAME: fld_set3_vldmap
+        WIDTH: 4
+    NAME: wro_hash_tbl_vldmap_h1_mem_dhs
+  - ATTR: 6
+    DESCRIPTION: Access to Dequeue FIFO Memor
+    ENTRIES: 256
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H1 ValidMap Set 0 Data Structure
+        NAME: fld_set0_vldmap
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H1 ValidMap Set 1 Data Structure
+        NAME: fld_set1_vldmap
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H1 ValidMap Set 2 Data Structure
+        NAME: fld_set2_vldmap
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H1 ValidMap Set 3 Data Structure
+        NAME: fld_set3_vldmap
+        WIDTH: 4
+    NAME: wro_hash_tbl_vldmap_h2_mem_dhs
+  - ATTR: 6
+    DESCRIPTION: Access to Dequeue FIFO Memor
+    ENTRIES: 256
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H1 ValidMap Set 0 Data Structure
+        NAME: fld_set0_vldmap
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H1 ValidMap Set 1 Data Structure
+        NAME: fld_set1_vldmap
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H1 ValidMap Set 2 Data Structure
+        NAME: fld_set2_vldmap
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H1 ValidMap Set 3 Data Structure
+        NAME: fld_set3_vldmap
+        WIDTH: 4
+    NAME: wro_hash_tbl_vldmap_h3_mem_dhs
+  - ATTR: 6
+    DESCRIPTION: Access to Dequeue FIFO Memor
+    ENTRIES: 256
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H1 ValidMap Set 0 Data Structure
+        NAME: fld_set0_vldmap
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H1 ValidMap Set 1 Data Structure
+        NAME: fld_set1_vldmap
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H1 ValidMap Set 2 Data Structure
+        NAME: fld_set2_vldmap
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Hash Table H1 ValidMap Set 3 Data Structure
+        NAME: fld_set3_vldmap
+        WIDTH: 4
+    NAME: wro_hash_tbl_vldmap_h4_mem_dhs
+  - ATTR: 6
+    DESCRIPTION: Access to Hash Table H10 Memory
+    ENTRIES: 1024
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Packet Tunnel ID from FCP Header
+        NAME: fld_tunnel_id
+        WIDTH: 14
+      - DEFAULT: 0
+        DESCRIPTION: Packet Sequence Number from FCP Header
+        NAME: fld_psn
+        WIDTH: 24
+      - DEFAULT: 0
+        DESCRIPTION: Packet Work Unit Descriptor for the packet key
+        NAME: fld_rslt
+        WIDTH: 14
+      - DEFAULT: 0
+        DESCRIPTION: WRO Time Stamp /Color ID
+        NAME: fld_timestamp
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: 'WRO Time Out State 0: Normal 1: Timed Out'
+        NAME: fld_to_state
+        WIDTH: 1
+    NAME: wro_hash_tbl_h10_mem_dhs
+  - ATTR: 6
+    DESCRIPTION: Access to Hash Table H11 Memory
+    ENTRIES: 1024
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Packet Tunnel ID from FCP Header
+        NAME: fld_tunnel_id
+        WIDTH: 14
+      - DEFAULT: 0
+        DESCRIPTION: Packet Sequence Number from FCP Header
+        NAME: fld_psn
+        WIDTH: 24
+      - DEFAULT: 0
+        DESCRIPTION: Packet Work Unit Descriptor for the packet key
+        NAME: fld_rslt
+        WIDTH: 14
+      - DEFAULT: 0
+        DESCRIPTION: WRO Time Stamp /Color ID
+        NAME: fld_timestamp
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: 'WRO Time Out State 0: Normal 1: Timed Out'
+        NAME: fld_to_state
+        WIDTH: 1
+    NAME: wro_hash_tbl_h11_mem_dhs
+  - ATTR: 6
+    DESCRIPTION: Access to Hash Table H12 Memory
+    ENTRIES: 1024
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Packet Tunnel ID from FCP Header
+        NAME: fld_tunnel_id
+        WIDTH: 14
+      - DEFAULT: 0
+        DESCRIPTION: Packet Sequence Number from FCP Header
+        NAME: fld_psn
+        WIDTH: 24
+      - DEFAULT: 0
+        DESCRIPTION: Packet Work Unit Descriptor for the packet key
+        NAME: fld_rslt
+        WIDTH: 14
+      - DEFAULT: 0
+        DESCRIPTION: WRO Time Stamp /Color ID
+        NAME: fld_timestamp
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: 'WRO Time Out State 0: Normal 1: Timed Out'
+        NAME: fld_to_state
+        WIDTH: 1
+    NAME: wro_hash_tbl_h12_mem_dhs
+  - ATTR: 6
+    DESCRIPTION: Access to Hash Table H13 Memory
+    ENTRIES: 1024
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Packet Tunnel ID from FCP Header
+        NAME: fld_tunnel_id
+        WIDTH: 14
+      - DEFAULT: 0
+        DESCRIPTION: Packet Sequence Number from FCP Header
+        NAME: fld_psn
+        WIDTH: 24
+      - DEFAULT: 0
+        DESCRIPTION: Packet Work Unit Descriptor for the packet key
+        NAME: fld_rslt
+        WIDTH: 14
+      - DEFAULT: 0
+        DESCRIPTION: WRO Time Stamp /Color ID
+        NAME: fld_timestamp
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: 'WRO Time Out State 0: Normal 1: Timed Out'
+        NAME: fld_to_state
+        WIDTH: 1
+    NAME: wro_hash_tbl_h13_mem_dhs
+  - ATTR: 6
+    DESCRIPTION: Access to Hash Table H10 Memory
+    ENTRIES: 1024
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Packet Tunnel ID from FCP Header
+        NAME: fld_tunnel_id
+        WIDTH: 14
+      - DEFAULT: 0
+        DESCRIPTION: Packet Sequence Number from FCP Header
+        NAME: fld_psn
+        WIDTH: 24
+      - DEFAULT: 0
+        DESCRIPTION: Packet Work Unit Descriptor for the packet key
+        NAME: fld_rslt
+        WIDTH: 14
+      - DEFAULT: 0
+        DESCRIPTION: WRO Time Stamp /Color ID
+        NAME: fld_timestamp
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: 'WRO Time Out State 0: Normal 1: Timed Out'
+        NAME: fld_to_state
+        WIDTH: 1
+    NAME: wro_hash_tbl_h20_mem_dhs
+  - ATTR: 6
+    DESCRIPTION: Access to Hash Table H11 Memory
+    ENTRIES: 1024
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Packet Tunnel ID from FCP Header
+        NAME: fld_tunnel_id
+        WIDTH: 14
+      - DEFAULT: 0
+        DESCRIPTION: Packet Sequence Number from FCP Header
+        NAME: fld_psn
+        WIDTH: 24
+      - DEFAULT: 0
+        DESCRIPTION: Packet Work Unit Descriptor for the packet key
+        NAME: fld_rslt
+        WIDTH: 14
+      - DEFAULT: 0
+        DESCRIPTION: WRO Time Stamp /Color ID
+        NAME: fld_timestamp
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: 'WRO Time Out State 0: Normal 1: Timed Out'
+        NAME: fld_to_state
+        WIDTH: 1
+    NAME: wro_hash_tbl_h21_mem_dhs
+  - ATTR: 6
+    DESCRIPTION: Access to Hash Table H12 Memory
+    ENTRIES: 1024
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Packet Tunnel ID from FCP Header
+        NAME: fld_tunnel_id
+        WIDTH: 14
+      - DEFAULT: 0
+        DESCRIPTION: Packet Sequence Number from FCP Header
+        NAME: fld_psn
+        WIDTH: 24
+      - DEFAULT: 0
+        DESCRIPTION: Packet Work Unit Descriptor for the packet key
+        NAME: fld_rslt
+        WIDTH: 14
+      - DEFAULT: 0
+        DESCRIPTION: WRO Time Stamp /Color ID
+        NAME: fld_timestamp
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: 'WRO Time Out State 0: Normal 1: Timed Out'
+        NAME: fld_to_state
+        WIDTH: 1
+    NAME: wro_hash_tbl_h22_mem_dhs
+  - ATTR: 6
+    DESCRIPTION: Access to Hash Table H13 Memory
+    ENTRIES: 1024
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Packet Tunnel ID from FCP Header
+        NAME: fld_tunnel_id
+        WIDTH: 14
+      - DEFAULT: 0
+        DESCRIPTION: Packet Sequence Number from FCP Header
+        NAME: fld_psn
+        WIDTH: 24
+      - DEFAULT: 0
+        DESCRIPTION: Packet Work Unit Descriptor for the packet key
+        NAME: fld_rslt
+        WIDTH: 14
+      - DEFAULT: 0
+        DESCRIPTION: WRO Time Stamp /Color ID
+        NAME: fld_timestamp
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: 'WRO Time Out State 0: Normal 1: Timed Out'
+        NAME: fld_to_state
+        WIDTH: 1
+    NAME: wro_hash_tbl_h23_mem_dhs
+  - ATTR: 6
+    DESCRIPTION: Access to Hash Table H10 Memory
+    ENTRIES: 1024
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Packet Tunnel ID from FCP Header
+        NAME: fld_tunnel_id
+        WIDTH: 14
+      - DEFAULT: 0
+        DESCRIPTION: Packet Sequence Number from FCP Header
+        NAME: fld_psn
+        WIDTH: 24
+      - DEFAULT: 0
+        DESCRIPTION: Packet Work Unit Descriptor for the packet key
+        NAME: fld_rslt
+        WIDTH: 14
+      - DEFAULT: 0
+        DESCRIPTION: WRO Time Stamp /Color ID
+        NAME: fld_timestamp
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: 'WRO Time Out State 0: Normal 1: Timed Out'
+        NAME: fld_to_state
+        WIDTH: 1
+    NAME: wro_hash_tbl_h30_mem_dhs
+  - ATTR: 6
+    DESCRIPTION: Access to Hash Table H11 Memory
+    ENTRIES: 1024
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Packet Tunnel ID from FCP Header
+        NAME: fld_tunnel_id
+        WIDTH: 14
+      - DEFAULT: 0
+        DESCRIPTION: Packet Sequence Number from FCP Header
+        NAME: fld_psn
+        WIDTH: 24
+      - DEFAULT: 0
+        DESCRIPTION: Packet Work Unit Descriptor for the packet key
+        NAME: fld_rslt
+        WIDTH: 14
+      - DEFAULT: 0
+        DESCRIPTION: WRO Time Stamp /Color ID
+        NAME: fld_timestamp
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: 'WRO Time Out State 0: Normal 1: Timed Out'
+        NAME: fld_to_state
+        WIDTH: 1
+    NAME: wro_hash_tbl_h31_mem_dhs
+  - ATTR: 6
+    DESCRIPTION: Access to Hash Table H12 Memory
+    ENTRIES: 1024
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Packet Tunnel ID from FCP Header
+        NAME: fld_tunnel_id
+        WIDTH: 14
+      - DEFAULT: 0
+        DESCRIPTION: Packet Sequence Number from FCP Header
+        NAME: fld_psn
+        WIDTH: 24
+      - DEFAULT: 0
+        DESCRIPTION: Packet Work Unit Descriptor for the packet key
+        NAME: fld_rslt
+        WIDTH: 14
+      - DEFAULT: 0
+        DESCRIPTION: WRO Time Stamp /Color ID
+        NAME: fld_timestamp
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: 'WRO Time Out State 0: Normal 1: Timed Out'
+        NAME: fld_to_state
+        WIDTH: 1
+    NAME: wro_hash_tbl_h32_mem_dhs
+  - ATTR: 6
+    DESCRIPTION: Access to Hash Table H13 Memory
+    ENTRIES: 1024
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Packet Tunnel ID from FCP Header
+        NAME: fld_tunnel_id
+        WIDTH: 14
+      - DEFAULT: 0
+        DESCRIPTION: Packet Sequence Number from FCP Header
+        NAME: fld_psn
+        WIDTH: 24
+      - DEFAULT: 0
+        DESCRIPTION: Packet Work Unit Descriptor for the packet key
+        NAME: fld_rslt
+        WIDTH: 14
+      - DEFAULT: 0
+        DESCRIPTION: WRO Time Stamp /Color ID
+        NAME: fld_timestamp
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: 'WRO Time Out State 0: Normal 1: Timed Out'
+        NAME: fld_to_state
+        WIDTH: 1
+    NAME: wro_hash_tbl_h33_mem_dhs
+  - ATTR: 6
+    DESCRIPTION: Access to Hash Table H10 Memory
+    ENTRIES: 1024
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Packet Tunnel ID from FCP Header
+        NAME: fld_tunnel_id
+        WIDTH: 14
+      - DEFAULT: 0
+        DESCRIPTION: Packet Sequence Number from FCP Header
+        NAME: fld_psn
+        WIDTH: 24
+      - DEFAULT: 0
+        DESCRIPTION: Packet Work Unit Descriptor for the packet key
+        NAME: fld_rslt
+        WIDTH: 14
+      - DEFAULT: 0
+        DESCRIPTION: WRO Time Stamp /Color ID
+        NAME: fld_timestamp
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: 'WRO Time Out State 0: Normal 1: Timed Out'
+        NAME: fld_to_state
+        WIDTH: 1
+    NAME: wro_hash_tbl_h40_mem_dhs
+  - ATTR: 6
+    DESCRIPTION: Access to Hash Table H11 Memory
+    ENTRIES: 1024
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Packet Tunnel ID from FCP Header
+        NAME: fld_tunnel_id
+        WIDTH: 14
+      - DEFAULT: 0
+        DESCRIPTION: Packet Sequence Number from FCP Header
+        NAME: fld_psn
+        WIDTH: 24
+      - DEFAULT: 0
+        DESCRIPTION: Packet Work Unit Descriptor for the packet key
+        NAME: fld_rslt
+        WIDTH: 14
+      - DEFAULT: 0
+        DESCRIPTION: WRO Time Stamp /Color ID
+        NAME: fld_timestamp
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: 'WRO Time Out State 0: Normal 1: Timed Out'
+        NAME: fld_to_state
+        WIDTH: 1
+    NAME: wro_hash_tbl_h41_mem_dhs
+  - ATTR: 6
+    DESCRIPTION: Access to Hash Table H12 Memory
+    ENTRIES: 1024
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Packet Tunnel ID from FCP Header
+        NAME: fld_tunnel_id
+        WIDTH: 14
+      - DEFAULT: 0
+        DESCRIPTION: Packet Sequence Number from FCP Header
+        NAME: fld_psn
+        WIDTH: 24
+      - DEFAULT: 0
+        DESCRIPTION: Packet Work Unit Descriptor for the packet key
+        NAME: fld_rslt
+        WIDTH: 14
+      - DEFAULT: 0
+        DESCRIPTION: WRO Time Stamp /Color ID
+        NAME: fld_timestamp
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: 'WRO Time Out State 0: Normal 1: Timed Out'
+        NAME: fld_to_state
+        WIDTH: 1
+    NAME: wro_hash_tbl_h42_mem_dhs
+  - ATTR: 6
+    DESCRIPTION: Access to Hash Table H13 Memory
+    ENTRIES: 1024
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Packet Tunnel ID from FCP Header
+        NAME: fld_tunnel_id
+        WIDTH: 14
+      - DEFAULT: 0
+        DESCRIPTION: Packet Sequence Number from FCP Header
+        NAME: fld_psn
+        WIDTH: 24
+      - DEFAULT: 0
+        DESCRIPTION: Packet Work Unit Descriptor for the packet key
+        NAME: fld_rslt
+        WIDTH: 14
+      - DEFAULT: 0
+        DESCRIPTION: WRO Time Stamp /Color ID
+        NAME: fld_timestamp
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: 'WRO Time Out State 0: Normal 1: Timed Out'
+        NAME: fld_to_state
+        WIDTH: 1
+    NAME: wro_hash_tbl_h43_mem_dhs
+XASIZE: 0

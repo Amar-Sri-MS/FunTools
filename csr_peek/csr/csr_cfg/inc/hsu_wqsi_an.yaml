@@ -1,0 +1,1632 @@
+---
+COUNT: 1
+DESCRIPTION: HSU_WQSI CSR Spec
+INTR:
+  FATAL:
+    - DESCRIPTION: Bit Allocation Memory Mulit Bit ECC Error
+      NAME: bitalloc_mem_merr
+      WIDTH: 1
+    - DESCRIPTION: Head-Tail Pointer Memory Multi Bit ECC Error
+      NAME: headtail_mem_merr
+      WIDTH: 1
+    - DESCRIPTION: Next Pointer Memory Multi Bit ECC Error
+      NAME: nextptr_mem_merr
+      WIDTH: 1
+    - DESCRIPTION: DoorBell Cache Memory Multi Bit ECC Error
+      NAME: db_cache_mem_merr
+      WIDTH: 1
+    - DESCRIPTION: PTA Burst Buffer 0 Memory Multi Bit ECC Error
+      NAME: burst_rx_pta_adp0_mem_merr
+      WIDTH: 1
+    - DESCRIPTION: PTA Burst Buffer 1 Memory Multi Bit ECC Error
+      NAME: burst_rx_pta_adp1_mem_merr
+      WIDTH: 1
+    - DESCRIPTION: PTA Burst Buffer 2 Memory Multi Bit ECC Error
+      NAME: burst_rx_pta_adp2_mem_merr
+      WIDTH: 1
+    - DESCRIPTION: HDMA Burst Buffer 0 Memory Multi Bit ECC Error
+      NAME: burst_rx_hdma_adp0_mem_merr
+      WIDTH: 1
+    - DESCRIPTION: HDMA Burst Buffer 1 Memory Multi Bit ECC Error
+      NAME: burst_rx_hdma_adp1_mem_merr
+      WIDTH: 1
+    - DESCRIPTION: HDMA Burst Buffer 2 Memory Multi Bit ECC Error
+      NAME: burst_rx_hdma_adp2_mem_merr
+      WIDTH: 1
+    - DESCRIPTION: 'RWU IBuf Memory Multi Bit ECC '
+      NAME: rwu_ibuf_mem_merr
+      WIDTH: 1
+    - DESCRIPTION: 'CWU IBuf 0 Memory Multi Bit ECC Error '
+      NAME: cwu_slc0_mem_merr
+      WIDTH: 1
+    - DESCRIPTION: 'CWU IBuf 1 Memory Multi Bit ECC Error '
+      NAME: cwu_slc1_mem_merr
+      WIDTH: 1
+    - DESCRIPTION: 'CWU IBuf 2 Memory Multi Bit ECC Error '
+      NAME: cwu_slc2_mem_merr
+      WIDTH: 1
+    - DESCRIPTION: 'Function Operation Counter Memory Multi Bit ECC Error. '
+      NAME: funcop_cnt_mem_merr
+      WIDTH: 1
+  NON_FATAL:
+    - DESCRIPTION: |-
+        When DB_Cache access missed, and the logic tries to find an invalid or an unlocked Cache block to replace, but cannot find any 
+                                      candidate due to all blocks in the Cache line are locked.
+      NAME: db_cache_alloc_failed
+      WIDTH: 1
+    - DESCRIPTION: |-
+        When SW gives a command to lock a SQ/CQ Tag in the DB_Cache, and the lock-requesting Cache block is not in the DB_Cache, 
+                                      then the logic tries to find an invalid or an unlocked Cache block to replace, but cannot find any block due to all blocks
+                                      in the Cache line are already locked.
+      NAME: db_cache_lock_failed
+      WIDTH: 1
+    - DESCRIPTION: |-
+        When SW gives a command to unlock a SQ/CQ Tag in the DB_Cache, and the unlock-requesting Cache block is not in the DB_Cache. 
+                                      The logic failed to unlock the given SQ/CQ Tag. This may be caused by excessive Unlock commands for the same SQ/CQ Tag.
+      NAME: db_cache_unlock_failed
+      WIDTH: 1
+    - DESCRIPTION: |-
+        When SW gives a command to unlock a SQ/CQ Tag in the DB_Cache, and the unlock-requesting Cache block is hit in the DB_Cache 
+                                      with lock bit of 0. This may be caused by excessive Unlock commands for the same SQ/CQ Tag.
+      NAME: db_cache_unlock_done_before
+      WIDTH: 1
+    - DESCRIPTION: Bit Allocation Memory Single Bit ECC Error
+      NAME: bitalloc_mem_serr
+      WIDTH: 1
+    - DESCRIPTION: Head-Tail Pointer Memory Single Bit ECC Error
+      NAME: headtail_mem_serr
+      WIDTH: 1
+    - DESCRIPTION: Next Pointer Memory Single Bit ECC Error
+      NAME: nextptr_mem_serr
+      WIDTH: 1
+    - DESCRIPTION: DoorBell Cache Memory Single Bit ECC Error
+      NAME: db_cache_mem_serr
+      WIDTH: 1
+    - DESCRIPTION: PTA Burst Buffer 0 Memory Single Bit ECC Error
+      NAME: burst_rx_pta_adp0_mem_serr
+      WIDTH: 1
+    - DESCRIPTION: PTA Burst Buffer 1 Memory Single Bit ECC Error
+      NAME: burst_rx_pta_adp1_mem_serr
+      WIDTH: 1
+    - DESCRIPTION: PTA Burst Buffer 2 Memory Single Bit ECC Error
+      NAME: burst_rx_pta_adp2_mem_serr
+      WIDTH: 1
+    - DESCRIPTION: HDMA Burst Buffer 0 Memory Single Bit ECC Error
+      NAME: burst_rx_hdma_adp0_mem_serr
+      WIDTH: 1
+    - DESCRIPTION: HDMA Burst Buffer 1 Memory Single Bit ECC Error
+      NAME: burst_rx_hdma_adp1_mem_serr
+      WIDTH: 1
+    - DESCRIPTION: HDMA Burst Buffer 2 Memory Single Bit ECC Error
+      NAME: burst_rx_hdma_adp2_mem_serr
+      WIDTH: 1
+    - DESCRIPTION: RWU IBuf Memory Single Bit ECC Error
+      NAME: rwu_ibuf_mem_serr
+      WIDTH: 1
+    - DESCRIPTION: CWU IBuf 0 Memory Single Bit ECC Error
+      NAME: cwu_slc0_mem_serr
+      WIDTH: 1
+    - DESCRIPTION: CWU IBuf 1 Memory Single Bit ECC Error
+      NAME: cwu_slc1_mem_serr
+      WIDTH: 1
+    - DESCRIPTION: CWU IBuf 2 Memory Single Bit ECC Error
+      NAME: cwu_slc2_mem_serr
+      WIDTH: 1
+    - DESCRIPTION: Function Operation Counter Memory Single Bit ECC Error
+      NAME: funcop_cnt_mem_serr
+      WIDTH: 1
+INTR_PORT_EN: 1
+NAME: HSU_WQSI_AN
+PARENTNAME: HSU_3_AN
+REGLST:
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: |-
+          Timeout Configuration. Cycles are RSU clk based.
+                            - 00 : 1024 cycles
+                            - 01 : 256 cycles
+                            - 10 : 4096 cycles
+                            - 11 : infinite
+        NAME: val
+        WIDTH: 2
+    NAME: hsu_wqsi_timeout_thresh_cfg
+  - ATTR: 9
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: "Timed out Status. Cycles are RSU clk based. Becomes 1 when timed out. Write any value to clear it.\n                  "
+        NAME: val
+        WIDTH: 1
+    NAME: hsu_wqsi_timedout_sta
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: |-
+          Clear Timeout Status. Data is ignored. A write
+                     will clear the timeout status bit
+        NAME: val
+        WIDTH: 1
+    NAME: hsu_wqsi_timeout_clr
+    TEST_ATTR: 1
+  - ATTR: 256
+    FLDLST:
+      - &1
+        DESCRIPTION: Bit Allocation Memory Mulit Bit ECC Error
+        NAME: bitalloc_mem_merr
+        WIDTH: 1
+      - &2
+        DESCRIPTION: Head-Tail Pointer Memory Multi Bit ECC Error
+        NAME: headtail_mem_merr
+        WIDTH: 1
+      - &3
+        DESCRIPTION: Next Pointer Memory Multi Bit ECC Error
+        NAME: nextptr_mem_merr
+        WIDTH: 1
+      - &4
+        DESCRIPTION: DoorBell Cache Memory Multi Bit ECC Error
+        NAME: db_cache_mem_merr
+        WIDTH: 1
+      - &5
+        DESCRIPTION: PTA Burst Buffer 0 Memory Multi Bit ECC Error
+        NAME: burst_rx_pta_adp0_mem_merr
+        WIDTH: 1
+      - &6
+        DESCRIPTION: PTA Burst Buffer 1 Memory Multi Bit ECC Error
+        NAME: burst_rx_pta_adp1_mem_merr
+        WIDTH: 1
+      - &7
+        DESCRIPTION: PTA Burst Buffer 2 Memory Multi Bit ECC Error
+        NAME: burst_rx_pta_adp2_mem_merr
+        WIDTH: 1
+      - &8
+        DESCRIPTION: HDMA Burst Buffer 0 Memory Multi Bit ECC Error
+        NAME: burst_rx_hdma_adp0_mem_merr
+        WIDTH: 1
+      - &9
+        DESCRIPTION: HDMA Burst Buffer 1 Memory Multi Bit ECC Error
+        NAME: burst_rx_hdma_adp1_mem_merr
+        WIDTH: 1
+      - &10
+        DESCRIPTION: HDMA Burst Buffer 2 Memory Multi Bit ECC Error
+        NAME: burst_rx_hdma_adp2_mem_merr
+        WIDTH: 1
+      - &11
+        DESCRIPTION: 'RWU IBuf Memory Multi Bit ECC '
+        NAME: rwu_ibuf_mem_merr
+        WIDTH: 1
+      - &12
+        DESCRIPTION: 'CWU IBuf 0 Memory Multi Bit ECC Error '
+        NAME: cwu_slc0_mem_merr
+        WIDTH: 1
+      - &13
+        DESCRIPTION: 'CWU IBuf 1 Memory Multi Bit ECC Error '
+        NAME: cwu_slc1_mem_merr
+        WIDTH: 1
+      - &14
+        DESCRIPTION: 'CWU IBuf 2 Memory Multi Bit ECC Error '
+        NAME: cwu_slc2_mem_merr
+        WIDTH: 1
+      - &15
+        DESCRIPTION: 'Function Operation Counter Memory Multi Bit ECC Error. '
+        NAME: funcop_cnt_mem_merr
+        WIDTH: 1
+    NAME: hsu_wqsi_fatal_intr_cause
+  - ATTR: 512
+    FLDLST:
+      - *1
+      - *2
+      - *3
+      - *4
+      - *5
+      - *6
+      - *7
+      - *8
+      - *9
+      - *10
+      - *11
+      - *12
+      - *13
+      - *14
+      - *15
+    NAME: hsu_wqsi_fatal_intr_stat
+  - ATTR: 1024
+    FLDLST:
+      - *1
+      - *2
+      - *3
+      - *4
+      - *5
+      - *6
+      - *7
+      - *8
+      - *9
+      - *10
+      - *11
+      - *12
+      - *13
+      - *14
+      - *15
+    NAME: hsu_wqsi_fatal_intr_mask
+  - ATTR: 2048
+    FLDLST:
+      - *1
+      - *2
+      - *3
+      - *4
+      - *5
+      - *6
+      - *7
+      - *8
+      - *9
+      - *10
+      - *11
+      - *12
+      - *13
+      - *14
+      - *15
+    NAME: hsu_wqsi_fatal_intr_bset
+  - ATTR: 4096
+    FLDLST:
+      - *1
+      - *2
+      - *3
+      - *4
+      - *5
+      - *6
+      - *7
+      - *8
+      - *9
+      - *10
+      - *11
+      - *12
+      - *13
+      - *14
+      - *15
+    NAME: hsu_wqsi_fatal_intr_bclr
+  - ATTR: 256
+    FLDLST:
+      - &16
+        DESCRIPTION: |-
+          When DB_Cache access missed, and the logic tries to find an invalid or an unlocked Cache block to replace, but cannot find any 
+                                        candidate due to all blocks in the Cache line are locked.
+        NAME: db_cache_alloc_failed
+        WIDTH: 1
+      - &17
+        DESCRIPTION: |-
+          When SW gives a command to lock a SQ/CQ Tag in the DB_Cache, and the lock-requesting Cache block is not in the DB_Cache, 
+                                        then the logic tries to find an invalid or an unlocked Cache block to replace, but cannot find any block due to all blocks
+                                        in the Cache line are already locked.
+        NAME: db_cache_lock_failed
+        WIDTH: 1
+      - &18
+        DESCRIPTION: |-
+          When SW gives a command to unlock a SQ/CQ Tag in the DB_Cache, and the unlock-requesting Cache block is not in the DB_Cache. 
+                                        The logic failed to unlock the given SQ/CQ Tag. This may be caused by excessive Unlock commands for the same SQ/CQ Tag.
+        NAME: db_cache_unlock_failed
+        WIDTH: 1
+      - &19
+        DESCRIPTION: |-
+          When SW gives a command to unlock a SQ/CQ Tag in the DB_Cache, and the unlock-requesting Cache block is hit in the DB_Cache 
+                                        with lock bit of 0. This may be caused by excessive Unlock commands for the same SQ/CQ Tag.
+        NAME: db_cache_unlock_done_before
+        WIDTH: 1
+      - &20
+        DESCRIPTION: Bit Allocation Memory Single Bit ECC Error
+        NAME: bitalloc_mem_serr
+        WIDTH: 1
+      - &21
+        DESCRIPTION: Head-Tail Pointer Memory Single Bit ECC Error
+        NAME: headtail_mem_serr
+        WIDTH: 1
+      - &22
+        DESCRIPTION: Next Pointer Memory Single Bit ECC Error
+        NAME: nextptr_mem_serr
+        WIDTH: 1
+      - &23
+        DESCRIPTION: DoorBell Cache Memory Single Bit ECC Error
+        NAME: db_cache_mem_serr
+        WIDTH: 1
+      - &24
+        DESCRIPTION: PTA Burst Buffer 0 Memory Single Bit ECC Error
+        NAME: burst_rx_pta_adp0_mem_serr
+        WIDTH: 1
+      - &25
+        DESCRIPTION: PTA Burst Buffer 1 Memory Single Bit ECC Error
+        NAME: burst_rx_pta_adp1_mem_serr
+        WIDTH: 1
+      - &26
+        DESCRIPTION: PTA Burst Buffer 2 Memory Single Bit ECC Error
+        NAME: burst_rx_pta_adp2_mem_serr
+        WIDTH: 1
+      - &27
+        DESCRIPTION: HDMA Burst Buffer 0 Memory Single Bit ECC Error
+        NAME: burst_rx_hdma_adp0_mem_serr
+        WIDTH: 1
+      - &28
+        DESCRIPTION: HDMA Burst Buffer 1 Memory Single Bit ECC Error
+        NAME: burst_rx_hdma_adp1_mem_serr
+        WIDTH: 1
+      - &29
+        DESCRIPTION: HDMA Burst Buffer 2 Memory Single Bit ECC Error
+        NAME: burst_rx_hdma_adp2_mem_serr
+        WIDTH: 1
+      - &30
+        DESCRIPTION: RWU IBuf Memory Single Bit ECC Error
+        NAME: rwu_ibuf_mem_serr
+        WIDTH: 1
+      - &31
+        DESCRIPTION: CWU IBuf 0 Memory Single Bit ECC Error
+        NAME: cwu_slc0_mem_serr
+        WIDTH: 1
+      - &32
+        DESCRIPTION: CWU IBuf 1 Memory Single Bit ECC Error
+        NAME: cwu_slc1_mem_serr
+        WIDTH: 1
+      - &33
+        DESCRIPTION: CWU IBuf 2 Memory Single Bit ECC Error
+        NAME: cwu_slc2_mem_serr
+        WIDTH: 1
+      - &34
+        DESCRIPTION: Function Operation Counter Memory Single Bit ECC Error
+        NAME: funcop_cnt_mem_serr
+        WIDTH: 1
+    NAME: hsu_wqsi_non_fatal_intr_cause
+  - ATTR: 512
+    FLDLST:
+      - *16
+      - *17
+      - *18
+      - *19
+      - *20
+      - *21
+      - *22
+      - *23
+      - *24
+      - *25
+      - *26
+      - *27
+      - *28
+      - *29
+      - *30
+      - *31
+      - *32
+      - *33
+      - *34
+    NAME: hsu_wqsi_non_fatal_intr_stat
+  - ATTR: 1024
+    FLDLST:
+      - *16
+      - *17
+      - *18
+      - *19
+      - *20
+      - *21
+      - *22
+      - *23
+      - *24
+      - *25
+      - *26
+      - *27
+      - *28
+      - *29
+      - *30
+      - *31
+      - *32
+      - *33
+      - *34
+    NAME: hsu_wqsi_non_fatal_intr_mask
+  - ATTR: 2048
+    FLDLST:
+      - *16
+      - *17
+      - *18
+      - *19
+      - *20
+      - *21
+      - *22
+      - *23
+      - *24
+      - *25
+      - *26
+      - *27
+      - *28
+      - *29
+      - *30
+      - *31
+      - *32
+      - *33
+      - *34
+    NAME: hsu_wqsi_non_fatal_intr_bset
+  - ATTR: 4096
+    FLDLST:
+      - *16
+      - *17
+      - *18
+      - *19
+      - *20
+      - *21
+      - *22
+      - *23
+      - *24
+      - *25
+      - *26
+      - *27
+      - *28
+      - *29
+      - *30
+      - *31
+      - *32
+      - *33
+      - *34
+    NAME: hsu_wqsi_non_fatal_intr_bclr
+  - ATTR: 9
+    DESCRIPTION: Place Holder for now for HSU_WQSI Feature Register
+    FLDLST:
+      - ATTR: 1
+        DEFAULT: 7
+        DESCRIPTION: Module ID
+        NAME: module_id
+        WIDTH: 8
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Version number of the module
+        NAME: version
+        WIDTH: 8
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Features enabled in the module.
+        NAME: features
+        WIDTH: 16
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Reserved Field.
+        NAME: Reserved
+        WIDTH: 32
+    NAME: hsu_wqsi_features
+    WIDTH: 64
+  - ATTR: 5
+    DESCRIPTION: Spare CSR register. These bits can be read and written by software. They can serve as control bits for late ECOs in the design.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Spare PIO register.
+        NAME: val
+        WIDTH: 64
+    NAME: hsu_wqsi_spare_pio
+    WIDTH: 64
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: Scratchpad register.
+        NAME: val
+        WIDTH: 64
+    NAME: hsu_wqsi_scratchpad
+    WIDTH: 64
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: HSU WQSI Configuration
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Enable ENQ_PIPE
+        NAME: enq_pipe_enable
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Enable DEQ_PIPE
+        NAME: deq_pipe_enable
+        WIDTH: 1
+      - DEFAULT: 2
+        DESCRIPTION: |-
+          Enable DoorBell Cache for SQ/CQ coalescing. 
+                                            Bit 1: Enable DoorBell Cache for SQ coalescing. Set to 0 to disable DB_Cache for SQ coalescing, then all SQ will not  
+                                            query the DB Cache. 
+                                            
+                                            Bit 0: Enable DoorBell Cache for CQ coalescing. Set to 0 to disable DB_Cache for CQ coalescing, then all CQ will not 
+                                            query the DB Cache.
+                                           
+        NAME: dbcache_enable
+        WIDTH: 2
+    NAME: hsu_wqsi_configs
+  - ATTR: 5
+    COUNT: 12
+    DESCRIPTION: RWU Allocation Configuration per PCI-E controller
+    FLDLST: &35
+      - DEFAULT: 128
+        DESCRIPTION: |-2
+          
+                                            The fraction of the WU_IBUF reserved for each of PCI-E Controller 0~11. 
+                                            Slice0: controller 0~3;
+                                            Slice1: controller 4~7;
+                                            Slice2: controller 8~11;
+                                            Note: PCI-E controllers only generate RWU.
+                                            Note: The sum of ctrl_reserve of all controllers cannot exceed 4096 - 1.
+                                            Note: The ctrl_reserve is static configuration, does not re-allocate more entries after traffic start. 
+                                           
+        NAME: ctrl_reserve
+        WIDTH: 12
+      - DEFAULT: 256
+        DESCRIPTION: |-2
+          
+                                            The maximum number of RWUs can be stored in the WU_IBUF for each of PCI-E Controller 0~11.
+                                            Note: The maximum number is 4095.
+                                            Note: The ctrl_max is dynamic configuration, can add or remove some entries with online traffic. 
+                                           
+        NAME: ctrl_max
+        WIDTH: 12
+    NAME: hsu_wqsi_ctrl_alloc_cfg_0
+  - ATTR: 5
+    COUNT: 12
+    DESCRIPTION: RWU Allocation Configuration per PCI-E controller
+    FLDLST: *35
+    NAME: hsu_wqsi_ctrl_alloc_cfg_1
+  - ATTR: 5
+    COUNT: 12
+    DESCRIPTION: RWU Allocation Configuration per PCI-E controller
+    FLDLST: *35
+    NAME: hsu_wqsi_ctrl_alloc_cfg_2
+  - ATTR: 5
+    COUNT: 12
+    DESCRIPTION: RWU Allocation Configuration per PCI-E controller
+    FLDLST: *35
+    NAME: hsu_wqsi_ctrl_alloc_cfg_3
+  - ATTR: 5
+    COUNT: 12
+    DESCRIPTION: RWU Allocation Configuration per PCI-E controller
+    FLDLST: *35
+    NAME: hsu_wqsi_ctrl_alloc_cfg_4
+  - ATTR: 5
+    COUNT: 12
+    DESCRIPTION: RWU Allocation Configuration per PCI-E controller
+    FLDLST: *35
+    NAME: hsu_wqsi_ctrl_alloc_cfg_5
+  - ATTR: 5
+    COUNT: 12
+    DESCRIPTION: RWU Allocation Configuration per PCI-E controller
+    FLDLST: *35
+    NAME: hsu_wqsi_ctrl_alloc_cfg_6
+  - ATTR: 5
+    COUNT: 12
+    DESCRIPTION: RWU Allocation Configuration per PCI-E controller
+    FLDLST: *35
+    NAME: hsu_wqsi_ctrl_alloc_cfg_7
+  - ATTR: 5
+    COUNT: 12
+    DESCRIPTION: RWU Allocation Configuration per PCI-E controller
+    FLDLST: *35
+    NAME: hsu_wqsi_ctrl_alloc_cfg_8
+  - ATTR: 5
+    COUNT: 12
+    DESCRIPTION: RWU Allocation Configuration per PCI-E controller
+    FLDLST: *35
+    NAME: hsu_wqsi_ctrl_alloc_cfg_9
+  - ATTR: 5
+    COUNT: 12
+    DESCRIPTION: RWU Allocation Configuration per PCI-E controller
+    FLDLST: *35
+    NAME: hsu_wqsi_ctrl_alloc_cfg_10
+  - ATTR: 5
+    COUNT: 12
+    DESCRIPTION: RWU Allocation Configuration per PCI-E controller
+    FLDLST: *35
+    NAME: hsu_wqsi_ctrl_alloc_cfg_11
+  - ATTR: 5
+    DESCRIPTION: RWU Allocation Reserve Field Configuration is done for all PCI-E controllers
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+           The reserve field of ctrl_alloc_cfg requires to configure all PCI-E controllers at F1 initialization step. After 
+                                             indicated by this signal, the logic will calculate the freepool counter based on reserve field value, and will not
+                                             take new reserve values with online traffic. 
+                                           
+        NAME: cfg_reserve_done
+        WIDTH: 1
+    NAME: hsu_wqsi_ctrl_alloc_reserve_cfg_done
+  - ATTR: 5
+    COUNT: 3
+    DESCRIPTION: 'Ignore VP Color at Deque Arbitration Cycle - per VP basis'
+    FLDLST: &36
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+            
+                                            One bit per VP. When enabled, the corresponding Queues ignores Color from destination VP WU Queue. 
+                                            Set0:bit0 maps to VP0,   Set0:bit63 maps to VP63.
+                                            Set1:bit0 maps to VP64,  Set1:bit63 maps to VP127.
+                                            Set2:bit0 maps to VP128, Set2:bit63 maps to VP191.
+                                           
+        NAME: ignore
+        WIDTH: 64
+    NAME: hsu_wqsi_ignore_vp_color_0
+  - ATTR: 5
+    COUNT: 3
+    DESCRIPTION: 'Ignore VP Color at Deque Arbitration Cycle - per VP basis'
+    FLDLST: *36
+    NAME: hsu_wqsi_ignore_vp_color_1
+  - ATTR: 5
+    COUNT: 3
+    DESCRIPTION: 'Ignore VP Color at Deque Arbitration Cycle - per VP basis'
+    FLDLST: *36
+    NAME: hsu_wqsi_ignore_vp_color_2
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: RWU Global Flow Control Threshold
+    FLDLST:
+      - DEFAULT: 8
+        DESCRIPTION: |-2
+          
+                                            If the color of total pending RWUs across all VP Clusters is more than this value, no more RWU can be dequeued from any RWU Queue.
+                                           
+        NAME: thresh
+        WIDTH: 4
+    NAME: hsu_wqsi_rwu_global_xoff_thresh
+  - ATTR: 5
+    COUNT: 15
+    DESCRIPTION: WU_IBUF Region Threshold Configuration
+    FLDLST: &37
+      - DEFAULT: 4095
+        DESCRIPTION: |-2
+          
+                                            These 15 thresholds partition the 4K space into 16 regions.
+                                            Threshold0 must not be 0. The thresholds must in in strict ascending order with Threshold0 being the smallest.
+                                            Region0:  [0, threshold0-1]
+                                            Regioni:  [threshold(i-1) , threshold(i)-1], i=1~14
+                                            Region15: [threshold14, 4095]
+                                            Each region is assigned a color codepoint.
+                                            When the WU_IBUF occupancy falls into a region, then that region's color codepoint used as the XOFF color  
+                                            codepoint: Dequeue from a RWU Queue i is disabled if the color of VP i is bigger than this XOFF codepoint 
+                                            unless ignore_vp_color[i]==1.
+          
+                                            This occupancy-modulated XOFF color codepoint is expected to deliver more RWUs to Doorbell VPs to trigger the 
+                                            VPs to process RWUs more aggressively to avoid choking all the 12 PCI-E controllers in a HUT. This is especially
+                                            useful to trigger doorbell coalescing logic in SW to quickly offload doorbells from destination VP WU Queues.
+                                            
+                                            Note: Must programe the values with strict ascending order for normal operations.
+                                           
+        NAME: thresh
+        WIDTH: 12
+    NAME: hsu_wqsi_region_threshold_0
+  - ATTR: 5
+    COUNT: 15
+    DESCRIPTION: WU_IBUF Region Threshold Configuration
+    FLDLST: *37
+    NAME: hsu_wqsi_region_threshold_1
+  - ATTR: 5
+    COUNT: 15
+    DESCRIPTION: WU_IBUF Region Threshold Configuration
+    FLDLST: *37
+    NAME: hsu_wqsi_region_threshold_2
+  - ATTR: 5
+    COUNT: 15
+    DESCRIPTION: WU_IBUF Region Threshold Configuration
+    FLDLST: *37
+    NAME: hsu_wqsi_region_threshold_3
+  - ATTR: 5
+    COUNT: 15
+    DESCRIPTION: WU_IBUF Region Threshold Configuration
+    FLDLST: *37
+    NAME: hsu_wqsi_region_threshold_4
+  - ATTR: 5
+    COUNT: 15
+    DESCRIPTION: WU_IBUF Region Threshold Configuration
+    FLDLST: *37
+    NAME: hsu_wqsi_region_threshold_5
+  - ATTR: 5
+    COUNT: 15
+    DESCRIPTION: WU_IBUF Region Threshold Configuration
+    FLDLST: *37
+    NAME: hsu_wqsi_region_threshold_6
+  - ATTR: 5
+    COUNT: 15
+    DESCRIPTION: WU_IBUF Region Threshold Configuration
+    FLDLST: *37
+    NAME: hsu_wqsi_region_threshold_7
+  - ATTR: 5
+    COUNT: 15
+    DESCRIPTION: WU_IBUF Region Threshold Configuration
+    FLDLST: *37
+    NAME: hsu_wqsi_region_threshold_8
+  - ATTR: 5
+    COUNT: 15
+    DESCRIPTION: WU_IBUF Region Threshold Configuration
+    FLDLST: *37
+    NAME: hsu_wqsi_region_threshold_9
+  - ATTR: 5
+    COUNT: 15
+    DESCRIPTION: WU_IBUF Region Threshold Configuration
+    FLDLST: *37
+    NAME: hsu_wqsi_region_threshold_10
+  - ATTR: 5
+    COUNT: 15
+    DESCRIPTION: WU_IBUF Region Threshold Configuration
+    FLDLST: *37
+    NAME: hsu_wqsi_region_threshold_11
+  - ATTR: 5
+    COUNT: 15
+    DESCRIPTION: WU_IBUF Region Threshold Configuration
+    FLDLST: *37
+    NAME: hsu_wqsi_region_threshold_12
+  - ATTR: 5
+    COUNT: 15
+    DESCRIPTION: WU_IBUF Region Threshold Configuration
+    FLDLST: *37
+    NAME: hsu_wqsi_region_threshold_13
+  - ATTR: 5
+    COUNT: 15
+    DESCRIPTION: WU_IBUF Region Threshold Configuration
+    FLDLST: *37
+    NAME: hsu_wqsi_region_threshold_14
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: WU_IBUF Region Color Codepoint
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            Region Color codepoint.
+                                            [63:60] for region15;
+                                            ...
+                                            [3:0] for region0;
+                                           
+        NAME: cp
+        WIDTH: 64
+    NAME: hsu_wqsi_region_color_codepoints
+  - ATTR: 5
+    COUNT: 3
+    DESCRIPTION: Deque Output WRR Credits per HSU Slice
+    FLDLST: &38
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            The credits of weighted round-robin arbiter for each of HSU Slice0~2.
+                                            Bit23:16 maps to Normal CWU credits;
+                                            Bit15:8 maps to Special CWU credits;
+                                            Bit7:0 maps to RWU credits.
+          
+                                            Note: Each slice interface can have 250MWu/s bandwidth, as RWU can have maximal 125MWu/s, so do not allocate over 50% bus bandwidth for RWU.
+                                            Note: When RWU has the max weight credit, the credit difference between RWU and the larger CWU should not be greater than 5. For example, 
+                                            N-CWU: 3; S-CWU: 7; and RWU: 10 is a valid configuration. 
+                                           
+        NAME: credits
+        WIDTH: 24
+    NAME: hsu_wqsi_wrr_credit_0
+  - ATTR: 5
+    COUNT: 3
+    DESCRIPTION: Deque Output WRR Credits per HSU Slice
+    FLDLST: *38
+    NAME: hsu_wqsi_wrr_credit_1
+  - ATTR: 5
+    COUNT: 3
+    DESCRIPTION: Deque Output WRR Credits per HSU Slice
+    FLDLST: *38
+    NAME: hsu_wqsi_wrr_credit_2
+  - ATTR: 6
+    COUNT: 3
+    DESCRIPTION: WQSI to PTA Interface Flit Credits
+    FLDLST: &39
+      - DEFAULT: 32
+        DESCRIPTION: |-2
+          
+                                            The number of credits of WQSI deque interface from 
+                                            WQSI to PTA, unit: 8B.  Read to this register will return 
+                                            current credit value.  Software should always program 
+                                            this register with multiple of 4. 
+                                           
+        NAME: credit
+        WIDTH: 8
+    NAME: hsu_wqsi_pta_credit_0
+  - ATTR: 6
+    COUNT: 3
+    DESCRIPTION: WQSI to PTA Interface Flit Credits
+    FLDLST: *39
+    NAME: hsu_wqsi_pta_credit_1
+  - ATTR: 6
+    COUNT: 3
+    DESCRIPTION: WQSI to PTA Interface Flit Credits
+    FLDLST: *39
+    NAME: hsu_wqsi_pta_credit_2
+  - ATTR: 6
+    COUNT: 3
+    DESCRIPTION: WQSI to TGT Interface Flit Credits
+    FLDLST: &40
+      - DEFAULT: 32
+        DESCRIPTION: |-2
+          
+                                            The number of credits of WQSI deque interface from 
+                                            WQSI to TGT, unit: 8B.  Read to this register will return 
+                                            current credit value.  Software should always program 
+                                            this register with multiple of 4. 
+                                           
+        NAME: credit
+        WIDTH: 8
+    NAME: hsu_wqsi_tgt_credit_0
+  - ATTR: 6
+    COUNT: 3
+    DESCRIPTION: WQSI to TGT Interface Flit Credits
+    FLDLST: *40
+    NAME: hsu_wqsi_tgt_credit_1
+  - ATTR: 6
+    COUNT: 3
+    DESCRIPTION: WQSI to TGT Interface Flit Credits
+    FLDLST: *40
+    NAME: hsu_wqsi_tgt_credit_2
+  - ATTR: 6
+    COUNT: 1
+    DESCRIPTION: |-2
+       Lock/Unlock DB_Cache with specified information, 
+                                  Write to this register will trigger the CSR Lock/Unlock with specified 
+                                  information of this register in the WQSI pipeline.
+                                  Read this register has no meaning, will return last-write spcified values.
+                                  If no write before, read will return all 0s. 
+                                
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                             If set, indicate this write will be a Lock/Unlock operation.
+                                             If not, then this write just provides sid/fid/qid information for 
+                                             dbcache_query register. The locked field has no meaning in this case. 
+                                           
+        NAME: trigger
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                             1-bit lock, if trigger is 1, then this field will specify 
+                                             whether this write is a Lock or Unlock operations.
+                                           
+        NAME: lock
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                             2-bit Slice_ID;
+                                           
+        NAME: sid
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                             9-bit FUNC_ID;
+                                           
+        NAME: fid
+        WIDTH: 9
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                             25-bit QID.
+                                           
+        NAME: qid
+        WIDTH: 25
+    NAME: hsu_wqsi_dbcache_lock
+  - ATTR: 10
+    COUNT: 1
+    DESCRIPTION: |-2
+       
+                                  Read this register will return the corresponding cache block contents.
+                                  The cache index and tags are provided by dbcache_lock.sid/fid/qid.
+                                  Write the address informaton to dbcache_lock first, then read this 
+                                  dbcache_query register will provide internal DB_Cache information 
+                                  if this is DB_Cache hit. 
+                                  If the DB_Cache is not hit by the given information, then 
+                                  the locked, tag, buffer_ptr, and msb_or are meaningless.
+                                  Note: this read will not trigger any LRU operations for DB Cache line.
+                                 
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                             1-bit valid; set to 1 when the DB_Cache query is hit.
+                                           
+        NAME: valid
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                             1-bit locked; only meaningful when valid is 1;
+                                           
+        NAME: locked
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                             tag; only meaningful when valid is 1;
+                                           
+        NAME: tag
+        WIDTH: 26
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                             buffer_ptr; only meaningful when valid is 1;
+                                           
+        NAME: buffer_ptr
+        WIDTH: 12
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                             1-bit msb_or; only meaningful when valid is 1;
+                                           
+        NAME: msb_or
+        WIDTH: 1
+    NAME: hsu_wqsi_dbcache_query
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: 'WQSI MEM Initialization Trigger, Rising edge triggered'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: ' Init HeadTail Memory '
+        NAME: headtail_init
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ' Init DB_Cache Memory '
+        NAME: db_cache_init
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ' Init Per Function Operation Counter Memory '
+        NAME: funcop_cnt_init
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ' Init NextPtr Memory Done '
+        NAME: nextptr_init
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ' Init RWU IBuf Memory Done '
+        NAME: rwu_ibuf_init
+        WIDTH: 1
+    NAME: hsu_wqsi_mem_init_trigger
+    TEST_ATTR: 0
+  - ATTR: 10
+    COUNT: 1
+    DESCRIPTION: WQSI MEM Initialization Status
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: ' Init HeadTail Memory Done'
+        NAME: headtail_done
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ' Init DB_Cache Memory Done'
+        NAME: db_cache_done
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ' Init Per Function Operation Counter Memory Done '
+        NAME: funcop_cnt_done
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ' Init NextPtr Memory Done '
+        NAME: nextptr_done
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ' Init RWU IBuf Memory Done '
+        NAME: rwu_ibuf_done
+        WIDTH: 1
+    NAME: hsu_wqsi_mem_init_done
+    TEST_ATTR: 0
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Queue Selection for queue_op_cnt
+    FLDLST: &41
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+           Indicate which Queue the corresponding queue_op_cnt is monitoring.
+                                             Ranges 0~575 for RWU Queue only. 
+                                           
+        NAME: sel
+        WIDTH: 10
+    NAME: hsu_wqsi_queue_cnt_sel_0
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Queue Selection for queue_op_cnt
+    FLDLST: *41
+    NAME: hsu_wqsi_queue_cnt_sel_1
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Queue Selection for queue_op_cnt
+    FLDLST: *41
+    NAME: hsu_wqsi_queue_cnt_sel_2
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Queue Selection for queue_op_cnt
+    FLDLST: *41
+    NAME: hsu_wqsi_queue_cnt_sel_3
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Queue Selection for queue_op_cnt
+    FLDLST: *41
+    NAME: hsu_wqsi_queue_cnt_sel_4
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Queue Selection for queue_op_cnt
+    FLDLST: *41
+    NAME: hsu_wqsi_queue_cnt_sel_5
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Queue Selection for queue_op_cnt
+    FLDLST: *41
+    NAME: hsu_wqsi_queue_cnt_sel_6
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Queue Selection for queue_op_cnt
+    FLDLST: *41
+    NAME: hsu_wqsi_queue_cnt_sel_7
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Queue Selection for queue_op_cnt
+    FLDLST: *41
+    NAME: hsu_wqsi_queue_cnt_sel_8
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Queue Selection for queue_op_cnt
+    FLDLST: *41
+    NAME: hsu_wqsi_queue_cnt_sel_9
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Queue Selection for queue_op_cnt
+    FLDLST: *41
+    NAME: hsu_wqsi_queue_cnt_sel_10
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Queue Selection for queue_op_cnt
+    FLDLST: *41
+    NAME: hsu_wqsi_queue_cnt_sel_11
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Queue Selection for queue_op_cnt
+    FLDLST: *41
+    NAME: hsu_wqsi_queue_cnt_sel_12
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Queue Selection for queue_op_cnt
+    FLDLST: *41
+    NAME: hsu_wqsi_queue_cnt_sel_13
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Queue Selection for queue_op_cnt
+    FLDLST: *41
+    NAME: hsu_wqsi_queue_cnt_sel_14
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Queue Selection for queue_op_cnt
+    FLDLST: *41
+    NAME: hsu_wqsi_queue_cnt_sel_15
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: Queue Counter Mode
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+           Indicate which mode the corresponding queue_op_cnt is working at. 
+                                             When mode is set to 1, then the corresponding 
+                                             queue_op_cnt will treat coalescing enques as separate enque 
+                                             operations, thus enque count will be deque count + coalescing count; 
+                                             when mode is set to 0, then the corresponding queue_op_cnt will treat 
+                                             coalescing enques as one enque operation, thus enque count will be 
+                                             the same as deque count.
+          
+                                             Each bit controls one queue_op_cnt. Bit[15] maps to 
+                                             queue_op_cnt[15].
+                                           
+        NAME: mode
+        WIDTH: 16
+    NAME: hsu_wqsi_queue_cnt_mode
+  - ATTR: 6
+    COUNT: 1
+    DESCRIPTION: Total Enque/Deque Statistic Counter for all Queues
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            Enque counter, the total number of enque operations all queues.
+                                            Rollover, not clear on read.
+                                            Note: enque counter will NOT treet a coalescing eqnue as a separate enque. 
+                                           
+        NAME: enq_cnt
+        WIDTH: 32
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            Deque counter, the total number of deque operations all queues.
+                                            Rollover, not clear on read.
+                                           
+        NAME: deq_cnt
+        WIDTH: 32
+    NAME: hsu_wqsi_glb_queue_op_cnt
+  - ATTR: 10
+    COUNT: 1
+    DESCRIPTION: Current RWU Buffer Occupancy
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            The number of allocated WU_IBUF entries.
+                                           
+        NAME: num
+        WIDTH: 12
+    NAME: hsu_wqsi_rwu_ibuf_occupancy
+  - ATTR: 6
+    COUNT: 1
+    DESCRIPTION: Current RWU Buffer Freepool counter
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            The number of freepool counter of WU_IBUF.
+                                            For normal appliations, software should never write to this register. 
+                                           
+        NAME: num
+        WIDTH: 12
+    NAME: hsu_wqsi_rwu_ibuf_freepool_cnt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: WU CMD Field
+    FLDLST:
+      - DEFAULT: 16
+        DESCRIPTION: |-2
+          
+                                            See HSU - WU format for details. 
+                                           
+        NAME: cmd
+        WIDTH: 5
+    NAME: hsu_wqsi_wu_cmd
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: WU QUEUE Field
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            See HSU - WU format for details. 
+                                           
+        NAME: queue
+        WIDTH: 8
+    NAME: hsu_wqsi_wu_queue
+  - ATTR: 5
+    COUNT: 5
+    DESCRIPTION: WU SW_OPCODES Field
+    FLDLST: &42
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            Reg0-SQ; Reg1-CQ; Reg2-INTR; Reg3-REG; Reg4-MISC 
+                                           
+        NAME: sw_opcodes
+        WIDTH: 24
+    NAME: hsu_wqsi_wu_sw_opcodes_0
+  - ATTR: 5
+    COUNT: 5
+    DESCRIPTION: WU SW_OPCODES Field
+    FLDLST: *42
+    NAME: hsu_wqsi_wu_sw_opcodes_1
+  - ATTR: 5
+    COUNT: 5
+    DESCRIPTION: WU SW_OPCODES Field
+    FLDLST: *42
+    NAME: hsu_wqsi_wu_sw_opcodes_2
+  - ATTR: 5
+    COUNT: 5
+    DESCRIPTION: WU SW_OPCODES Field
+    FLDLST: *42
+    NAME: hsu_wqsi_wu_sw_opcodes_3
+  - ATTR: 5
+    COUNT: 5
+    DESCRIPTION: WU SW_OPCODES Field
+    FLDLST: *42
+    NAME: hsu_wqsi_wu_sw_opcodes_4
+  - ATTR: 6
+    COUNT: 1
+    DESCRIPTION: ENQ_PIPE DB_Cache Access Counter
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            Access hit counter. The number of SQ/CQ 
+                                            Enque operations with DB_Cache access hit without NULL 
+                                            pointer.
+                                            
+                                            Rollover, not clear on read.
+                                           
+        NAME: enq_hit_cnt
+        WIDTH: 32
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            Access miss counter. The number of SQ/CQ 
+                                            Enque operations with DB_Cache access miss, including the 
+                                            Tags matches but buffer_ptr is NULL cases.
+                                           
+        NAME: enq_miss_cnt
+        WIDTH: 32
+    NAME: hsu_wqsi_dbcache_enq_cnt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: DB_Cache Counter Function Selection
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: " Indicate which Slice the dbcache_func_enq_access is monitoring. \n                                 "
+        NAME: sid
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: " Indicate which PCI-E Function the dbcache_func_enq_access is monitoring. \n                                 "
+        NAME: func
+        WIDTH: 9
+    NAME: hsu_wqsi_dbcache_func_enq_sel
+  - ATTR: 6
+    COUNT: 1
+    DESCRIPTION: ENQ_PIPE DB_Cache Miss Access Counter of a selected PCI-E Function
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            Access hit counter. The number of SQ/CQ 
+                                            Enque operations with DB_Cache access hit without NULL 
+                                            pointer for a specific PCI-E Function.
+                                            
+                                            Rollover, not clear on read.
+                                           
+        NAME: enq_hit_cnt
+        WIDTH: 32
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            Access miss counter. The number of SQ/CQ 
+                                            Enque operations with DB_Cache access miss for a specific PCI-E Function, including the 
+                                            Tags matches but buffer_ptr is NULL cases.
+                                           
+        NAME: enq_miss_cnt
+        WIDTH: 32
+    NAME: hsu_wqsi_dbcache_func_enq_cnt
+  - ATTR: 6
+    COUNT: 1
+    DESCRIPTION: DB_Cache Block Evict Operation Counter
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                             The number of Cache block evicted because of SQ/CQ Enque operation and Cache Lock operations.
+                                             Rollover, not clear on read.
+                                           
+        NAME: evict_num
+        WIDTH: 32
+    NAME: hsu_wqsi_dbcache_block_evict_cnt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: Debug Configuration
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+           Set merr to all enque/deque logic, such that all enque/deque operations will stop.
+                                             For normal operations, set to 0. 
+                                           
+        NAME: merr_set
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: " Mask hardware merr to all enque/deque logic, such that when ECC merr happens, all enque/deque operations will ignore this merr.\n                                 "
+        NAME: merr_mask
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+           FLA debug bus selection, valid range 0~25. 0 will select core_dbus0~3, 1 will select core_dbus1~4, 
+                                             25 will select core_dbus25~28. 
+        NAME: fla_mux_sel
+        WIDTH: 5
+    NAME: hsu_wqsi_dbg_config
+  - ATTR: 9
+    DESCRIPTION: FLA Debug buses after mux selection
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: dbus
+        WIDTH: 64
+    NAME: hsu_wqsi_fla_dbus
+    TEST_ATTR: 0
+  - ATTR: 5
+    DESCRIPTION: HSU WQSI FLA Ring Module ID
+    FLDLST:
+      - DEFAULT: 100
+        DESCRIPTION: '8-Bit Module ID to be used for Decoding Commands on FLA Command Ring, 0x0, 0xff are Reserved Values'
+        NAME: fld_val
+        WIDTH: 8
+    NAME: hsu_wqsi_fla_ring_module_id_cfg
+  - ATTR: 9
+    DESCRIPTION: SRAM bit vector that failed ECC
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                             First SRAM ECC error detected (1-hot)
+                                             Set when first error is detected
+                                             Reset when corresponding interrupt status bit is cleared.
+          
+                                             [29]  bitalloc_mem_serr      
+                                             [28]  headtail_mem_serr        
+                                             [27]  nextptr_mem_serr      
+                                             [26]  db_cache_mem_serr     
+                                             [25]  burst_rx_pta_adp0_mem_serr    
+                                             [24]  burst_rx_pta_adp1_mem_serr    
+                                             [23]  burst_rx_pta_adp2_mem_serr    
+                                             [22]  burst_rx_hdma_adp0_mem_serr   
+                                             [21]  burst_rx_hdma_adp1_mem_serr   
+                                             [20]  burst_rx_hdma_adp2_mem_serr   
+                                             [19]  rwu_ibuf_mem_serr      
+                                             [18]  cwu_slc0_mem_serr     
+                                             [17]  cwu_slc1_mem_serr     
+                                             [16]  cwu_slc2_mem_serr     
+                                             [15]  funcop_cnt_mem_serr    
+          
+                                             [14]  bitalloc_mem_merr      
+                                             [13]  headtail_mem_merr        
+                                             [12]  nextptr_mem_merr      
+                                             [11]  db_cache_mem_merr      
+                                             [10]  burst_rx_pta_adp0_mem_merr  
+                                             [9]   burst_rx_pta_adp1_mem_merr  
+                                             [8]   burst_rx_pta_adp2_mem_merr  
+                                             [7]   burst_rx_hdma_adp0_mem_merr 
+                                             [6]   burst_rx_hdma_adp1_mem_merr 
+                                             [5]   burst_rx_hdma_adp2_mem_merr 
+                                             [4]   rwu_ibuf_mem_merr      
+                                             [3]   cwu_slc0_mem_merr     
+                                             [2]   cwu_slc1_mem_merr     
+                                             [1]   cwu_slc2_mem_merr     
+                                             [0]   funcop_cnt_mem_merr    
+                                           
+        NAME: val
+        WIDTH: 30
+    NAME: hsu_wqsi_sram_log_err
+  - ATTR: 9
+    DESCRIPTION: SRAM syndrome log register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            Syndrome related to ECC error
+                                            detected while reading data from SRAM
+                                           
+        NAME: val
+        WIDTH: 10
+    NAME: hsu_wqsi_sram_log_syndrome
+  - ATTR: 9
+    DESCRIPTION: SRAM address log register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            Address related to ECC error
+                                            detected while reading data from SRAM
+                                           
+        NAME: val
+        WIDTH: 12
+    NAME: hsu_wqsi_sram_log_addr
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: Config register for memory error injection
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Inject error to bitalloc memory
+        NAME: bitalloc_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error to headtail memory
+        NAME: headtail_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error to next pointer memory
+        NAME: nextptr_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error to DB cache memory
+        NAME: db_cache_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error to RWU ibuf memory
+        NAME: rwu_ibuf_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error to function operaton counter memory
+        NAME: funcop_cnt_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'Inject error to PTA Rx burst adapter memory, bit0 maps to slice0'
+        NAME: burst_rx_pta_adp_mem
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: 'Inject error to HDMA Rx burst adapter memory, bit0 maps to slice0'
+        NAME: burst_rx_hdma_adp_mem
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: 'Inject error to CWU ibuf memory, bit0 maps to slice0'
+        NAME: cwu_slc_mem
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: |-
+          Type of error to be injected
+                                            Applied to all memory error injection
+                                            0 - Uncorrectable error
+                                            1 - Correctable error 
+        NAME: err_type
+        WIDTH: 1
+    NAME: hsu_wqsi_mem_err_inj_cfg
+    TEST_ATTR: 0
+  - ATTR: 6
+    COUNT: 1
+    DESCRIPTION: Bit Allocation Macro CSR Access
+    ENTRIES: 3072
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                             BitAlloc CSR address:
+                                             REG_ENABLE__ADDR                          = 'h0,
+                                             REG_CLIENT_ALLOC_CNT__ADDR                = 'h1,
+                                             REG_MEM_LEAK_MON_CTL__ADDR                = 'h3,
+                                             REG_MEM_INIT_CTL__ADDR                    = 'h4,
+                                             REG_MEM_INIT_STAT__ADDR                   = 'h5,
+                                             REG_MEM_INIT_ROW_MASK1_VAL__ADDR          = 'h6,
+                                             REG_MEM_INIT_ROW_MASK1_ADDR__ADDR         = 'h7,
+                                             REG_MEM_INIT_ROW_MASK2_VAL__ADDR          = 'h8,
+                                             REG_MEM_INIT_ROW_MASK2_ADDR__ADDR         = 'h9,
+                                             REG_SW_ALLOC_ROW_ADDR__ADDR               = 'hA,
+                                             REG_SW_ALLOC_ROW_BITS__ADDR               = 'hB,
+                                             
+                                             Pipeline access address:
+                                             REG_SW_ALLOC_REQ__ADDR                    = 'hC,
+                                             REG_DEBUG_PAGE_STAT__ADDR                 = 'hD,
+                                             REG_DEBUG_ROW_STAT__START_ADDR            = 'h20,
+                                             REG_DEBUG_ROW_STAT__END_ADDR              = 'h3F,
+                                             REG_MEM_LEAK_MON_BITS__START_ADDR         = 'h40,
+                                             REG_MEM_LEAK_MON_BITS__END_ADDR           = 'h5F,
+                                             REG_SW_MEM_ACCESS__START_ADDR             = 'h400,
+                                             REG_SW_MEM_ACCESS__END_ADDR               = 'h7FF,
+                                             REG_SW_DEALLOC_BITS__START_ADDR           = 'h800,
+                                             REG_SW_DEALLOC_BITS__END_ADDR             = 'hBFF;
+                       
+                                             Note: in order to remove 4095 in the allocate table;
+                                             write addr = REG_SW_MEM_ACCESS__START_ADDR + 63
+                                             write data = 64'h7fff_ffff_ffff_ffff_ffff_ffff_ffff_ffff; 
+                                           
+        NAME: entry
+        WIDTH: 64
+    NAME: hsu_wqsi_bitalloc
+    TEST_ATTR: 0
+  - ATTR: 6
+    COUNT: 1
+    DESCRIPTION: Enque/Deque Statistic Counter for Selected Queues
+    ENTRIES: 16
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            Enque counter, the total number of enque operations for this selected queue.
+                                            Rollover, not clear on read.
+                                           
+        NAME: enq_cnt
+        WIDTH: 32
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            Deque counter, the total number of deque operations per this selected queue. 
+                                            The difference is the queue depth.
+                                            Rollover, not clear on read.
+                                           
+        NAME: deq_cnt
+        WIDTH: 32
+    NAME: hsu_wqsi_queue_op_cnt
+  - ATTR: 6
+    COUNT: 1
+    DESCRIPTION: Enque/Deque Statistic Counter per PCI-E Function basis
+    ENTRIES: 816
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            Enque counter, the total number of enque operations per PCI-E Function.
+                                            Note: enque counter will NOT treet a coalescing eqnue as a separate enque. 
+                                            Rollover, not clear on read.
+                                           
+        NAME: enq_cnt
+        WIDTH: 32
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            Deque counter, the total number of deque operations per PCI-E Function. 
+                                            The difference between enq_cnt and deq_cnt is the number outstanding WUs in WU_IBUF for this PCI-E function.
+                                            Rollover, not clear on read.
+                                           
+        NAME: deq_cnt
+        WIDTH: 32
+    NAME: hsu_wqsi_per_func_op_cnt
+  - ATTR: 6
+    COUNT: 1
+    DESCRIPTION: Flit Statistic Counter for each of Input Interface0~5
+    ENTRIES: 6
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+           
+                                            The total number of enque flits of Interface0~5.
+                                            Rollover, not clear on read.
+                                            The reg [5:3] maps to HDMA interface 2~0;
+                                            The reg [2:0] maps to PTA interface 2~0;
+                                           
+        NAME: cnt
+        WIDTH: 32
+    NAME: hsu_wqsi_per_enq_infc_flit_cnt
+  - ATTR: 6
+    COUNT: 1
+    DESCRIPTION: Flit Statistic Counter for each of Output Interface0~5
+    ENTRIES: 6
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            The total number of deque flits of Interface0~5.
+                                            Rollover, not clear on read.
+                                            The reg [5:3] maps to TGT interface 2~0;
+                                            The reg [2:0] maps to PTA interface 2~0;
+                                           
+        NAME: cnt
+        WIDTH: 32
+    NAME: hsu_wqsi_per_deq_infc_flit_cnt
+  - ATTR: 10
+    COUNT: 1
+    DESCRIPTION: Current CWU Occupancy
+    ENTRIES: 6
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            The number of allocated WU_IBUF entries of CWU.
+                                           
+        NAME: num
+        WIDTH: 9
+    NAME: hsu_wqsi_cwu_occupancy
+  - ATTR: 10
+    COUNT: 1
+    DESCRIPTION: Current RWU Occupancy for each of PCI-E Controller 0~11
+    ENTRIES: 12
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            The number of allocated WU_IBUF entries of RWU for each of PCI-E controller0~11.
+                                           
+        NAME: num
+        WIDTH: 12
+    NAME: hsu_wqsi_rwu_occupancy
+  - ATTR: 6
+    COUNT: 1
+    DESCRIPTION: Head/Tail Pointer per Queue basis
+    ENTRIES: 576
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+           
+                                             See Uarch for detailed field desriptions.
+                                             Debug-purpose.
+                                           
+        NAME: head_tail
+        WIDTH: 61
+    NAME: hsu_wqsi_head_tail_ptr
+  - ATTR: 6
+    COUNT: 1
+    DESCRIPTION: Next Pointer per WU basis
+    ENTRIES: 4096
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+           
+                                             See Uarch for detailed field desriptions.
+                                             Debug-purpose.
+                                           
+        NAME: next_wu
+        WIDTH: 49
+    NAME: hsu_wqsi_nxt_wu_ptr
+  - ATTR: 6
+    COUNT: 1
+    DESCRIPTION: WU Ingress Buffer Entries
+    ENTRIES: 4096
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+           
+                                             See Uarch for detailed field desriptions.
+                                             Debug-purpose.
+                                           
+        NAME: wu
+        WIDTH: 135
+    NAME: hsu_wqsi_rwu_ibuf_entry
+XASIZE: 0

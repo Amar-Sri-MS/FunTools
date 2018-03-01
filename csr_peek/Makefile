@@ -1,16 +1,27 @@
-# Need this to cleanly uninstall funnel-as
+# Basic Makefile
+# First, install this module
+# Then do a make cfg_upd to pull in the CSR configs from NFS Mount
+# Then, do a make csr to create the csr-library
+#
+# Do a make clean to remove the derived files (except the pulled in CSR)
+# Do a make distclean to remove all the CSR configurations as well
 
 SUDO = sudo
 
 all: build
 
-.PHONY: build clean csr cfg_upd
+.PHONY: build clean libcsr cfg_pull cfg
 build:
 	$(SUDO) python setup.py install --record files.txt
-csr: 
+
+libcsr: 
 	cd csr-rt; make
 
-cfg_upd:build
+cfg:build
+	csr-slurp -i csr/csr_cfg -o csr-rt/gen
+
+
+cfg_pull:build
 	cd csr; csr-get
 
 clean:

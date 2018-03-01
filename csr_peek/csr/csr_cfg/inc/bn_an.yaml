@@ -1,0 +1,1413 @@
+---
+COUNT: 1
+DESCRIPTION: BN CSR Spec
+INTR:
+  FATAL:
+    - DESCRIPTION: place_holder_fatal_bn
+      NAME: place_holder_fatal_bn
+      WIDTH: 1
+  NON_FATAL:
+    - DESCRIPTION: 'Invalid txn - placeholder'
+      NAME: invalid_txn
+      WIDTH: 1
+    - DESCRIPTION: 'Invalid txn2 - placeholder'
+      NAME: invalid_txn2
+      WIDTH: 1
+NAME: BN_AN
+PARENTNAME: pc_soc_clk_an
+REGLST:
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: |-
+          Timeout Configuration. Cycles are RSU clk based.
+                            - 00 : 1024 cycles
+                            - 01 : 256 cycles
+                            - 10 : 4096 cycles
+                            - 11 : infinite
+        NAME: val
+        WIDTH: 2
+    NAME: bn_timeout_thresh_cfg
+  - ATTR: 9
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: "Timed out Status. Cycles are RSU clk based. Becomes 1 when timed out. Write any value to clear it.\n                  "
+        NAME: val
+        WIDTH: 1
+    NAME: bn_timedout_sta
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: |-
+          Clear Timeout Status. Data is ignored. A write
+                     will clear the timeout status bit
+        NAME: val
+        WIDTH: 1
+    NAME: bn_timeout_clr
+    TEST_ATTR: 1
+  - ATTR: 256
+    FLDLST:
+      - &1
+        DESCRIPTION: place_holder_fatal_bn
+        NAME: place_holder_fatal_bn
+        WIDTH: 1
+    NAME: bn_fatal_intr_cause
+  - ATTR: 512
+    FLDLST:
+      - *1
+    NAME: bn_fatal_intr_stat
+  - ATTR: 1024
+    FLDLST:
+      - *1
+    NAME: bn_fatal_intr_mask
+  - ATTR: 2048
+    FLDLST:
+      - *1
+    NAME: bn_fatal_intr_bset
+  - ATTR: 4096
+    FLDLST:
+      - *1
+    NAME: bn_fatal_intr_bclr
+  - ATTR: 256
+    FLDLST:
+      - &2
+        DESCRIPTION: 'Invalid txn - placeholder'
+        NAME: invalid_txn
+        WIDTH: 1
+      - &3
+        DESCRIPTION: 'Invalid txn2 - placeholder'
+        NAME: invalid_txn2
+        WIDTH: 1
+    NAME: bn_non_fatal_intr_cause
+  - ATTR: 512
+    FLDLST:
+      - *2
+      - *3
+    NAME: bn_non_fatal_intr_stat
+  - ATTR: 1024
+    FLDLST:
+      - *2
+      - *3
+    NAME: bn_non_fatal_intr_mask
+  - ATTR: 2048
+    FLDLST:
+      - *2
+      - *3
+    NAME: bn_non_fatal_intr_bset
+  - ATTR: 4096
+    FLDLST:
+      - *2
+      - *3
+    NAME: bn_non_fatal_intr_bclr
+  - ATTR: 9
+    DESCRIPTION: Place Holder for now for BN Feature Register
+    FLDLST:
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Module ID
+        NAME: module_id
+        WIDTH: 8
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Version number of the module
+        NAME: version
+        WIDTH: 8
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Features enabled in the module.
+        NAME: features
+        WIDTH: 16
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Reserved Field.
+        NAME: Reserved
+        WIDTH: 32
+    NAME: bn_features
+    WIDTH: 64
+  - ATTR: 5
+    DESCRIPTION: ' Spare PIO register. These bits can be read and written by software. They can serve as control bits for late ECOs in the design.'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Spare PIO register.
+        NAME: val
+        WIDTH: 64
+    NAME: bn_spare_pio
+    WIDTH: 64
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: Scratchpad register.
+        NAME: val
+        WIDTH: 64
+    NAME: bn_scratchpad
+    WIDTH: 64
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: 'BN Control - enable/disable, etc'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Enables the master port credit monitors that watch cycles where credit limits may block BN master packet transmit operations.
+        NAME: master_credit_monitor_enable
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: 'Defines number of occupancy registers managed (0=32, 1=64)'
+        NAME: BP_occupancy_Limit
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Number of BP (count) intervals that peak BPA values are captured for
+        NAME: BPA_peak_interval
+        WIDTH: 8
+      - DEFAULT: 0
+        DESCRIPTION: BN enable statistics gathering and broadcast operations
+        NAME: bn_enable
+        WIDTH: 1
+    NAME: bn_control
+  - ATTR: 10
+    COUNT: 1
+    DESCRIPTION: 'Dynamic Occupancy Statistics Status, 0=in progress, 1=completed. Writing 0 to this register restarts the dynamic interval'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Dynamic Occupancy Statistics Status, 0=in progress, 1=completed. Writing 0 to this register restarts the dynamic interval'
+        NAME: dyn_occ_status
+        WIDTH: 1
+    NAME: dyn_occ_status
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: BP Occupancy Interval
+    FLDLST:
+      - DEFAULT: 3072
+        DESCRIPTION: BP Occupancy Timer count. The value determines number of clocks between updates.
+        NAME: bp_interval_count
+        WIDTH: 32
+    NAME: bp_interval_count
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: Wu Occupancy Interval
+    FLDLST:
+      - DEFAULT: 2048
+        DESCRIPTION: Wu Occupancy Timer count. The value determines number of clocks between updates.
+        NAME: wuo_interval_count
+        WIDTH: 32
+    NAME: wuo_interval_count
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Bc Mask
+    FLDLST: &4
+      - DEFAULT: 0
+        DESCRIPTION: Mask to indicate which clients get (re)broadcast of client updates
+        NAME: broadcast_mask
+        WIDTH: 16
+    NAME: broadcast_mask_0
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Bc Mask
+    FLDLST: *4
+    NAME: broadcast_mask_1
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Bc Mask
+    FLDLST: *4
+    NAME: broadcast_mask_2
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Bc Mask
+    FLDLST: *4
+    NAME: broadcast_mask_3
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Bc Mask
+    FLDLST: *4
+    NAME: broadcast_mask_4
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Bc Mask
+    FLDLST: *4
+    NAME: broadcast_mask_5
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Bc Mask
+    FLDLST: *4
+    NAME: broadcast_mask_6
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Bc Mask
+    FLDLST: *4
+    NAME: broadcast_mask_7
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Bc Mask
+    FLDLST: *4
+    NAME: broadcast_mask_8
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Bc Mask
+    FLDLST: *4
+    NAME: broadcast_mask_9
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Bc Mask
+    FLDLST: *4
+    NAME: broadcast_mask_10
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Bc Mask
+    FLDLST: *4
+    NAME: broadcast_mask_11
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Bc Mask
+    FLDLST: *4
+    NAME: broadcast_mask_12
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Bc Mask
+    FLDLST: *4
+    NAME: broadcast_mask_13
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Bc Mask
+    FLDLST: *4
+    NAME: broadcast_mask_14
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Bc Mask
+    FLDLST: *4
+    NAME: broadcast_mask_15
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: Bc Mask
+    FLDLST:
+      - DEFAULT: 65535
+        DESCRIPTION: 'Indicate client is present. 0=not present, 1=present. Not present clients gets no broadcasts. Used for binning to disable selected clients.'
+        NAME: broadcast_present
+        WIDTH: 16
+    NAME: broadcast_present
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: FLA Ring Module ID
+    FLDLST:
+      - DEFAULT: 1
+        DESCRIPTION: '8-Bit Module ID to be used for Decoding Commands on FLA Command Ring, 0x0, 0xff are Reserved Values - SW must program actual value'
+        NAME: bnm_ring_module_id
+        WIDTH: 8
+    NAME: bnm_ring_module_id
+  - ATTR: 10
+    COUNT: 1
+    DESCRIPTION: |-
+      Special debug support register that allows SW to disable credit limit checks on individual client ports
+                                                 - one bit per master port. This is for cases where leaking credits are an issue that cause the BNM to 
+                                                 freeze due to lack of credits from clients. Toggling this bit to 1 means credit availability will not 
+                                                 be checked on the selected port. Toggling the bit back to zero will cause the master port credit value
+                                                 reset to the default value and normal credit checking limits then followed.
+                                                
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Controls override of credit checkers - setting a bit to one means no credit checks performed on that port. Setting back to zero resets the credit count value (requires a 0-> 1-> 0 sequence). Used for debug or cases where we have a credit leak on a client and need to periodically reset or disable the credit counters.'
+        NAME: bnm_credit_control
+        WIDTH: 16
+    NAME: bnm_credit_control
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Buffer Memory Near Color Value thresholds
+    FLDLST: &5
+      - DEFAULT: 0
+        DESCRIPTION: This (table) holds the threshold values to map buffer memory occupancy to the 16 NCV
+        NAME: ncv_threshold
+        WIDTH: 17
+    NAME: ncv_threshold_0
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Buffer Memory Near Color Value thresholds
+    FLDLST: *5
+    NAME: ncv_threshold_1
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Buffer Memory Near Color Value thresholds
+    FLDLST: *5
+    NAME: ncv_threshold_2
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Buffer Memory Near Color Value thresholds
+    FLDLST: *5
+    NAME: ncv_threshold_3
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Buffer Memory Near Color Value thresholds
+    FLDLST: *5
+    NAME: ncv_threshold_4
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Buffer Memory Near Color Value thresholds
+    FLDLST: *5
+    NAME: ncv_threshold_5
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Buffer Memory Near Color Value thresholds
+    FLDLST: *5
+    NAME: ncv_threshold_6
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Buffer Memory Near Color Value thresholds
+    FLDLST: *5
+    NAME: ncv_threshold_7
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Buffer Memory Near Color Value thresholds
+    FLDLST: *5
+    NAME: ncv_threshold_8
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Buffer Memory Near Color Value thresholds
+    FLDLST: *5
+    NAME: ncv_threshold_9
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Buffer Memory Near Color Value thresholds
+    FLDLST: *5
+    NAME: ncv_threshold_10
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Buffer Memory Near Color Value thresholds
+    FLDLST: *5
+    NAME: ncv_threshold_11
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Buffer Memory Near Color Value thresholds
+    FLDLST: *5
+    NAME: ncv_threshold_12
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Buffer Memory Near Color Value thresholds
+    FLDLST: *5
+    NAME: ncv_threshold_13
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Buffer Memory Near Color Value thresholds
+    FLDLST: *5
+    NAME: ncv_threshold_14
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Buffer Memory Near Color Value thresholds
+    FLDLST: *5
+    NAME: ncv_threshold_15
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: BPA Near Color Value thresholds for the Global BM Pool Occupancy Result
+    FLDLST: &6
+      - DEFAULT: 0
+        DESCRIPTION: This (table) is used to map threshold values to NCV values for the Global BM Occupancy result.
+        NAME: bm_glbl_ncv_threshold
+        WIDTH: 17
+    NAME: bm_glbl_ncv_threshold_0
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: BPA Near Color Value thresholds for the Global BM Pool Occupancy Result
+    FLDLST: *6
+    NAME: bm_glbl_ncv_threshold_1
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: BPA Near Color Value thresholds for the Global BM Pool Occupancy Result
+    FLDLST: *6
+    NAME: bm_glbl_ncv_threshold_2
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: BPA Near Color Value thresholds for the Global BM Pool Occupancy Result
+    FLDLST: *6
+    NAME: bm_glbl_ncv_threshold_3
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: BPA Near Color Value thresholds for the Global BM Pool Occupancy Result
+    FLDLST: *6
+    NAME: bm_glbl_ncv_threshold_4
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: BPA Near Color Value thresholds for the Global BM Pool Occupancy Result
+    FLDLST: *6
+    NAME: bm_glbl_ncv_threshold_5
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: BPA Near Color Value thresholds for the Global BM Pool Occupancy Result
+    FLDLST: *6
+    NAME: bm_glbl_ncv_threshold_6
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: BPA Near Color Value thresholds for the Global BM Pool Occupancy Result
+    FLDLST: *6
+    NAME: bm_glbl_ncv_threshold_7
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: BPA Near Color Value thresholds for the Global BM Pool Occupancy Result
+    FLDLST: *6
+    NAME: bm_glbl_ncv_threshold_8
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: BPA Near Color Value thresholds for the Global BM Pool Occupancy Result
+    FLDLST: *6
+    NAME: bm_glbl_ncv_threshold_9
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: BPA Near Color Value thresholds for the Global BM Pool Occupancy Result
+    FLDLST: *6
+    NAME: bm_glbl_ncv_threshold_10
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: BPA Near Color Value thresholds for the Global BM Pool Occupancy Result
+    FLDLST: *6
+    NAME: bm_glbl_ncv_threshold_11
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: BPA Near Color Value thresholds for the Global BM Pool Occupancy Result
+    FLDLST: *6
+    NAME: bm_glbl_ncv_threshold_12
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: BPA Near Color Value thresholds for the Global BM Pool Occupancy Result
+    FLDLST: *6
+    NAME: bm_glbl_ncv_threshold_13
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: BPA Near Color Value thresholds for the Global BM Pool Occupancy Result
+    FLDLST: *6
+    NAME: bm_glbl_ncv_threshold_14
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: BPA Near Color Value thresholds for the Global BM Pool Occupancy Result
+    FLDLST: *6
+    NAME: bm_glbl_ncv_threshold_15
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the NUT Wu Occupancy Result
+    FLDLST: &7
+      - DEFAULT: 0
+        DESCRIPTION: This (table) is used to map threshold values to NCV values for the NUT Wu occupancy values)
+        NAME: nut_wu_ncv_threshold
+        WIDTH: 17
+    NAME: nut_wu_ncv_threshold_0
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the NUT Wu Occupancy Result
+    FLDLST: *7
+    NAME: nut_wu_ncv_threshold_1
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the NUT Wu Occupancy Result
+    FLDLST: *7
+    NAME: nut_wu_ncv_threshold_2
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the NUT Wu Occupancy Result
+    FLDLST: *7
+    NAME: nut_wu_ncv_threshold_3
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the NUT Wu Occupancy Result
+    FLDLST: *7
+    NAME: nut_wu_ncv_threshold_4
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the NUT Wu Occupancy Result
+    FLDLST: *7
+    NAME: nut_wu_ncv_threshold_5
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the NUT Wu Occupancy Result
+    FLDLST: *7
+    NAME: nut_wu_ncv_threshold_6
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the NUT Wu Occupancy Result
+    FLDLST: *7
+    NAME: nut_wu_ncv_threshold_7
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the NUT Wu Occupancy Result
+    FLDLST: *7
+    NAME: nut_wu_ncv_threshold_8
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the NUT Wu Occupancy Result
+    FLDLST: *7
+    NAME: nut_wu_ncv_threshold_9
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the NUT Wu Occupancy Result
+    FLDLST: *7
+    NAME: nut_wu_ncv_threshold_10
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the NUT Wu Occupancy Result
+    FLDLST: *7
+    NAME: nut_wu_ncv_threshold_11
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the NUT Wu Occupancy Result
+    FLDLST: *7
+    NAME: nut_wu_ncv_threshold_12
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the NUT Wu Occupancy Result
+    FLDLST: *7
+    NAME: nut_wu_ncv_threshold_13
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the NUT Wu Occupancy Result
+    FLDLST: *7
+    NAME: nut_wu_ncv_threshold_14
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the NUT Wu Occupancy Result
+    FLDLST: *7
+    NAME: nut_wu_ncv_threshold_15
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the HUT0 Wu Occupancy Result
+    FLDLST: &8
+      - DEFAULT: 0
+        DESCRIPTION: This (table) is used to map threshold values to NCV values for the HUT0 Wu occupancy values)
+        NAME: hut0_wu_ncv_threshold
+        WIDTH: 17
+    NAME: hut0_wu_ncv_threshold_0
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the HUT0 Wu Occupancy Result
+    FLDLST: *8
+    NAME: hut0_wu_ncv_threshold_1
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the HUT0 Wu Occupancy Result
+    FLDLST: *8
+    NAME: hut0_wu_ncv_threshold_2
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the HUT0 Wu Occupancy Result
+    FLDLST: *8
+    NAME: hut0_wu_ncv_threshold_3
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the HUT0 Wu Occupancy Result
+    FLDLST: *8
+    NAME: hut0_wu_ncv_threshold_4
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the HUT0 Wu Occupancy Result
+    FLDLST: *8
+    NAME: hut0_wu_ncv_threshold_5
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the HUT0 Wu Occupancy Result
+    FLDLST: *8
+    NAME: hut0_wu_ncv_threshold_6
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the HUT0 Wu Occupancy Result
+    FLDLST: *8
+    NAME: hut0_wu_ncv_threshold_7
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the HUT0 Wu Occupancy Result
+    FLDLST: *8
+    NAME: hut0_wu_ncv_threshold_8
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the HUT0 Wu Occupancy Result
+    FLDLST: *8
+    NAME: hut0_wu_ncv_threshold_9
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the HUT0 Wu Occupancy Result
+    FLDLST: *8
+    NAME: hut0_wu_ncv_threshold_10
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the HUT0 Wu Occupancy Result
+    FLDLST: *8
+    NAME: hut0_wu_ncv_threshold_11
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the HUT0 Wu Occupancy Result
+    FLDLST: *8
+    NAME: hut0_wu_ncv_threshold_12
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the HUT0 Wu Occupancy Result
+    FLDLST: *8
+    NAME: hut0_wu_ncv_threshold_13
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the HUT0 Wu Occupancy Result
+    FLDLST: *8
+    NAME: hut0_wu_ncv_threshold_14
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the HUT0 Wu Occupancy Result
+    FLDLST: *8
+    NAME: hut0_wu_ncv_threshold_15
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the HUT1 Wu Occupancy Result
+    FLDLST: &9
+      - DEFAULT: 0
+        DESCRIPTION: This (table) is used to map threshold values to NCV values for the HUT1 Wu occupancy values)
+        NAME: hut1_wu_ncv_threshold
+        WIDTH: 17
+    NAME: hut1_wu_ncv_threshold_0
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the HUT1 Wu Occupancy Result
+    FLDLST: *9
+    NAME: hut1_wu_ncv_threshold_1
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the HUT1 Wu Occupancy Result
+    FLDLST: *9
+    NAME: hut1_wu_ncv_threshold_2
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the HUT1 Wu Occupancy Result
+    FLDLST: *9
+    NAME: hut1_wu_ncv_threshold_3
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the HUT1 Wu Occupancy Result
+    FLDLST: *9
+    NAME: hut1_wu_ncv_threshold_4
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the HUT1 Wu Occupancy Result
+    FLDLST: *9
+    NAME: hut1_wu_ncv_threshold_5
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the HUT1 Wu Occupancy Result
+    FLDLST: *9
+    NAME: hut1_wu_ncv_threshold_6
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the HUT1 Wu Occupancy Result
+    FLDLST: *9
+    NAME: hut1_wu_ncv_threshold_7
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the HUT1 Wu Occupancy Result
+    FLDLST: *9
+    NAME: hut1_wu_ncv_threshold_8
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the HUT1 Wu Occupancy Result
+    FLDLST: *9
+    NAME: hut1_wu_ncv_threshold_9
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the HUT1 Wu Occupancy Result
+    FLDLST: *9
+    NAME: hut1_wu_ncv_threshold_10
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the HUT1 Wu Occupancy Result
+    FLDLST: *9
+    NAME: hut1_wu_ncv_threshold_11
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the HUT1 Wu Occupancy Result
+    FLDLST: *9
+    NAME: hut1_wu_ncv_threshold_12
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the HUT1 Wu Occupancy Result
+    FLDLST: *9
+    NAME: hut1_wu_ncv_threshold_13
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the HUT1 Wu Occupancy Result
+    FLDLST: *9
+    NAME: hut1_wu_ncv_threshold_14
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the HUT1 Wu Occupancy Result
+    FLDLST: *9
+    NAME: hut1_wu_ncv_threshold_15
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the HNUT Wu Occupancy Result
+    FLDLST: &10
+      - DEFAULT: 0
+        DESCRIPTION: This (table) is used to map threshold values to NCV values for the HNUT Wu occupancy values)
+        NAME: hnut_wu_ncv_threshold
+        WIDTH: 17
+    NAME: hnut_wu_ncv_threshold_0
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the HNUT Wu Occupancy Result
+    FLDLST: *10
+    NAME: hnut_wu_ncv_threshold_1
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the HNUT Wu Occupancy Result
+    FLDLST: *10
+    NAME: hnut_wu_ncv_threshold_2
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the HNUT Wu Occupancy Result
+    FLDLST: *10
+    NAME: hnut_wu_ncv_threshold_3
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the HNUT Wu Occupancy Result
+    FLDLST: *10
+    NAME: hnut_wu_ncv_threshold_4
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the HNUT Wu Occupancy Result
+    FLDLST: *10
+    NAME: hnut_wu_ncv_threshold_5
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the HNUT Wu Occupancy Result
+    FLDLST: *10
+    NAME: hnut_wu_ncv_threshold_6
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the HNUT Wu Occupancy Result
+    FLDLST: *10
+    NAME: hnut_wu_ncv_threshold_7
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the HNUT Wu Occupancy Result
+    FLDLST: *10
+    NAME: hnut_wu_ncv_threshold_8
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the HNUT Wu Occupancy Result
+    FLDLST: *10
+    NAME: hnut_wu_ncv_threshold_9
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the HNUT Wu Occupancy Result
+    FLDLST: *10
+    NAME: hnut_wu_ncv_threshold_10
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the HNUT Wu Occupancy Result
+    FLDLST: *10
+    NAME: hnut_wu_ncv_threshold_11
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the HNUT Wu Occupancy Result
+    FLDLST: *10
+    NAME: hnut_wu_ncv_threshold_12
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the HNUT Wu Occupancy Result
+    FLDLST: *10
+    NAME: hnut_wu_ncv_threshold_13
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the HNUT Wu Occupancy Result
+    FLDLST: *10
+    NAME: hnut_wu_ncv_threshold_14
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the HNUT Wu Occupancy Result
+    FLDLST: *10
+    NAME: hnut_wu_ncv_threshold_15
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the HUE0 Wu Occupancy Result
+    FLDLST: &11
+      - DEFAULT: 0
+        DESCRIPTION: This (table) is used to map threshold values to NCV values for the HUE0 Wu occupancy values)
+        NAME: hue0_wu_ncv_threshold
+        WIDTH: 17
+    NAME: hue0_wu_ncv_threshold_0
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the HUE0 Wu Occupancy Result
+    FLDLST: *11
+    NAME: hue0_wu_ncv_threshold_1
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the HUE0 Wu Occupancy Result
+    FLDLST: *11
+    NAME: hue0_wu_ncv_threshold_2
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the HUE0 Wu Occupancy Result
+    FLDLST: *11
+    NAME: hue0_wu_ncv_threshold_3
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the HUE0 Wu Occupancy Result
+    FLDLST: *11
+    NAME: hue0_wu_ncv_threshold_4
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the HUE0 Wu Occupancy Result
+    FLDLST: *11
+    NAME: hue0_wu_ncv_threshold_5
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the HUE0 Wu Occupancy Result
+    FLDLST: *11
+    NAME: hue0_wu_ncv_threshold_6
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the HUE0 Wu Occupancy Result
+    FLDLST: *11
+    NAME: hue0_wu_ncv_threshold_7
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the HUE0 Wu Occupancy Result
+    FLDLST: *11
+    NAME: hue0_wu_ncv_threshold_8
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the HUE0 Wu Occupancy Result
+    FLDLST: *11
+    NAME: hue0_wu_ncv_threshold_9
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the HUE0 Wu Occupancy Result
+    FLDLST: *11
+    NAME: hue0_wu_ncv_threshold_10
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the HUE0 Wu Occupancy Result
+    FLDLST: *11
+    NAME: hue0_wu_ncv_threshold_11
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the HUE0 Wu Occupancy Result
+    FLDLST: *11
+    NAME: hue0_wu_ncv_threshold_12
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the HUE0 Wu Occupancy Result
+    FLDLST: *11
+    NAME: hue0_wu_ncv_threshold_13
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the HUE0 Wu Occupancy Result
+    FLDLST: *11
+    NAME: hue0_wu_ncv_threshold_14
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the HUE0 Wu Occupancy Result
+    FLDLST: *11
+    NAME: hue0_wu_ncv_threshold_15
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the HUE1 Wu Occupancy Result
+    FLDLST: &12
+      - DEFAULT: 0
+        DESCRIPTION: This (table) is used to map threshold values to NCV values for the HUE1 Wu occupancy values)
+        NAME: hue1_wu_ncv_threshold
+        WIDTH: 17
+    NAME: hue1_wu_ncv_threshold_0
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the HUE1 Wu Occupancy Result
+    FLDLST: *12
+    NAME: hue1_wu_ncv_threshold_1
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the HUE1 Wu Occupancy Result
+    FLDLST: *12
+    NAME: hue1_wu_ncv_threshold_2
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the HUE1 Wu Occupancy Result
+    FLDLST: *12
+    NAME: hue1_wu_ncv_threshold_3
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the HUE1 Wu Occupancy Result
+    FLDLST: *12
+    NAME: hue1_wu_ncv_threshold_4
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the HUE1 Wu Occupancy Result
+    FLDLST: *12
+    NAME: hue1_wu_ncv_threshold_5
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the HUE1 Wu Occupancy Result
+    FLDLST: *12
+    NAME: hue1_wu_ncv_threshold_6
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the HUE1 Wu Occupancy Result
+    FLDLST: *12
+    NAME: hue1_wu_ncv_threshold_7
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the HUE1 Wu Occupancy Result
+    FLDLST: *12
+    NAME: hue1_wu_ncv_threshold_8
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the HUE1 Wu Occupancy Result
+    FLDLST: *12
+    NAME: hue1_wu_ncv_threshold_9
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the HUE1 Wu Occupancy Result
+    FLDLST: *12
+    NAME: hue1_wu_ncv_threshold_10
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the HUE1 Wu Occupancy Result
+    FLDLST: *12
+    NAME: hue1_wu_ncv_threshold_11
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the HUE1 Wu Occupancy Result
+    FLDLST: *12
+    NAME: hue1_wu_ncv_threshold_12
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the HUE1 Wu Occupancy Result
+    FLDLST: *12
+    NAME: hue1_wu_ncv_threshold_13
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the HUE1 Wu Occupancy Result
+    FLDLST: *12
+    NAME: hue1_wu_ncv_threshold_14
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the HUE1 Wu Occupancy Result
+    FLDLST: *12
+    NAME: hue1_wu_ncv_threshold_15
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the EQM Wu Occupancy Result
+    FLDLST: &13
+      - DEFAULT: 0
+        DESCRIPTION: This (table) is used to map threshold values to NCV values for the EQM Wu occupancy values)
+        NAME: eqm_wu_ncv_threshold
+        WIDTH: 17
+    NAME: eqm_wu_ncv_threshold_0
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the EQM Wu Occupancy Result
+    FLDLST: *13
+    NAME: eqm_wu_ncv_threshold_1
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the EQM Wu Occupancy Result
+    FLDLST: *13
+    NAME: eqm_wu_ncv_threshold_2
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the EQM Wu Occupancy Result
+    FLDLST: *13
+    NAME: eqm_wu_ncv_threshold_3
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the EQM Wu Occupancy Result
+    FLDLST: *13
+    NAME: eqm_wu_ncv_threshold_4
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the EQM Wu Occupancy Result
+    FLDLST: *13
+    NAME: eqm_wu_ncv_threshold_5
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the EQM Wu Occupancy Result
+    FLDLST: *13
+    NAME: eqm_wu_ncv_threshold_6
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the EQM Wu Occupancy Result
+    FLDLST: *13
+    NAME: eqm_wu_ncv_threshold_7
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the EQM Wu Occupancy Result
+    FLDLST: *13
+    NAME: eqm_wu_ncv_threshold_8
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the EQM Wu Occupancy Result
+    FLDLST: *13
+    NAME: eqm_wu_ncv_threshold_9
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the EQM Wu Occupancy Result
+    FLDLST: *13
+    NAME: eqm_wu_ncv_threshold_10
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the EQM Wu Occupancy Result
+    FLDLST: *13
+    NAME: eqm_wu_ncv_threshold_11
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the EQM Wu Occupancy Result
+    FLDLST: *13
+    NAME: eqm_wu_ncv_threshold_12
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the EQM Wu Occupancy Result
+    FLDLST: *13
+    NAME: eqm_wu_ncv_threshold_13
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the EQM Wu Occupancy Result
+    FLDLST: *13
+    NAME: eqm_wu_ncv_threshold_14
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the EQM Wu Occupancy Result
+    FLDLST: *13
+    NAME: eqm_wu_ncv_threshold_15
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the ALL Wu Occupancy Result
+    FLDLST: &14
+      - DEFAULT: 0
+        DESCRIPTION: This (table) is used to map threshold values to NCV values for the ALL Wu occupancy values)
+        NAME: all_wu_ncv_threshold
+        WIDTH: 17
+    NAME: all_wu_ncv_threshold_0
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the ALL Wu Occupancy Result
+    FLDLST: *14
+    NAME: all_wu_ncv_threshold_1
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the ALL Wu Occupancy Result
+    FLDLST: *14
+    NAME: all_wu_ncv_threshold_2
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the ALL Wu Occupancy Result
+    FLDLST: *14
+    NAME: all_wu_ncv_threshold_3
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the ALL Wu Occupancy Result
+    FLDLST: *14
+    NAME: all_wu_ncv_threshold_4
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the ALL Wu Occupancy Result
+    FLDLST: *14
+    NAME: all_wu_ncv_threshold_5
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the ALL Wu Occupancy Result
+    FLDLST: *14
+    NAME: all_wu_ncv_threshold_6
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the ALL Wu Occupancy Result
+    FLDLST: *14
+    NAME: all_wu_ncv_threshold_7
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the ALL Wu Occupancy Result
+    FLDLST: *14
+    NAME: all_wu_ncv_threshold_8
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the ALL Wu Occupancy Result
+    FLDLST: *14
+    NAME: all_wu_ncv_threshold_9
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the ALL Wu Occupancy Result
+    FLDLST: *14
+    NAME: all_wu_ncv_threshold_10
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the ALL Wu Occupancy Result
+    FLDLST: *14
+    NAME: all_wu_ncv_threshold_11
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the ALL Wu Occupancy Result
+    FLDLST: *14
+    NAME: all_wu_ncv_threshold_12
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the ALL Wu Occupancy Result
+    FLDLST: *14
+    NAME: all_wu_ncv_threshold_13
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the ALL Wu Occupancy Result
+    FLDLST: *14
+    NAME: all_wu_ncv_threshold_14
+  - ATTR: 5
+    COUNT: 16
+    DESCRIPTION: Near Color Value thresholds for the ALL Wu Occupancy Result
+    FLDLST: *14
+    NAME: all_wu_ncv_threshold_15
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: Wall Clock Timer Interval
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Timer interval to help measure credit-stall cycles encountered on BN master interfaces due to clients not returning credits promptly.
+        NAME: master_credit_interval_count
+        WIDTH: 32
+    NAME: master_credit_interval_count
+  - ATTR: 10
+    COUNT: 1
+    DESCRIPTION: Wall Clock Timer Interval
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: This count value denotes how many times per interval) that the BN master was stalled due to insufficient credits being available on one or more ports
+        NAME: master_arbiter_credit_stall
+        WIDTH: 32
+    NAME: master_arbiter_credit_stall
+  - ATTR: 10
+    DESCRIPTION: SW generated BN packet to send out to all clients as per client 12 mask settings
+    ENTRIES: 1
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Contains the exact packet value to be transmitted to all clients. Must be legal command.
+        NAME: sw_gen_bn_packet
+        WIDTH: 24
+    NAME: sw_generated_bn_packet
+  - ATTR: 5
+    DESCRIPTION: Determines if SW generated BN packet are repeated at predetermined intervals
+    ENTRIES: 1
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-
+          When set to zero, Sw generated packets are sent once immediately. When set to non-zero
+                                                        value, the SW BN packet register is transmitted every N clocks, where N is value of this
+                                                        register.
+        NAME: sw_gen_bn_packet_period
+        WIDTH: 32
+    NAME: sw_generated_bn_packet_period
+  - ATTR: 10
+    DESCRIPTION: SW generated BN packet to send out to all clients
+    ENTRIES: 1
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Contains Wall Clock Timer flit to be transmitted to all clients.
+        NAME: wct_generated_bn_packet
+        WIDTH: 24
+    NAME: wct_generated_bn_packet
+  - ATTR: 10
+    DESCRIPTION: 'BP client bus occupancy registers - 64 per client'
+    ENTRIES: 64
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'This (table) holds the clients (latest) bus occupancy values. 64 register per client, 8 clients'
+        NAME: bp_occ_0
+        WIDTH: 14
+    NAME: bp_occ_0
+  - ATTR: 10
+    DESCRIPTION: 'Client WuH occupancy registers - 8 per client'
+    ENTRIES: 8
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: This (table) holds the clients (latest) wuh occupancy values. 8 register per client
+        NAME: wu_occ_0
+        WIDTH: 14
+    NAME: wu_occ_0
+  - ATTR: 10
+    DESCRIPTION: 'BP client bus occupancy registers - 64 per client'
+    ENTRIES: 64
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'This (table) holds the clients (latest) bus occupancy values. 64 register per client, 8 clients'
+        NAME: bp_occ_1
+        WIDTH: 14
+    NAME: bp_occ_1
+  - ATTR: 10
+    DESCRIPTION: 'Client WuH occupancy registers - 8 per client'
+    ENTRIES: 8
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: This (table) holds the clients (latest) wuh occupancy values. 8 register per client
+        NAME: wu_occ_1
+        WIDTH: 14
+    NAME: wu_occ_1
+  - ATTR: 10
+    DESCRIPTION: 'BP client bus occupancy registers - 64 per client'
+    ENTRIES: 64
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'This (table) holds the clients (latest) bus occupancy values. 64 register per client, 8 clients'
+        NAME: bp_occ_2
+        WIDTH: 14
+    NAME: bp_occ_2
+  - ATTR: 10
+    DESCRIPTION: 'Client WuH occupancy registers - 8 per client'
+    ENTRIES: 8
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: This (table) holds the clients (latest) wuh occupancy values. 8 register per client
+        NAME: wu_occ_2
+        WIDTH: 14
+    NAME: wu_occ_2
+  - ATTR: 10
+    DESCRIPTION: 'BP client bus occupancy registers - 64 per client'
+    ENTRIES: 64
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'This (table) holds the clients (latest) bus occupancy values. 64 register per client, 8 clients'
+        NAME: bp_occ_3
+        WIDTH: 14
+    NAME: bp_occ_3
+  - ATTR: 10
+    DESCRIPTION: 'Client WuH occupancy registers - 8 per client'
+    ENTRIES: 8
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: This (table) holds the clients (latest) wuh occupancy values. 8 register per client
+        NAME: wu_occ_3
+        WIDTH: 14
+    NAME: wu_occ_3
+  - ATTR: 10
+    DESCRIPTION: 'BP client bus occupancy registers - 64 per client'
+    ENTRIES: 64
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'This (table) holds the clients (latest) bus occupancy values. 64 register per client, 8 clients'
+        NAME: bp_occ_4
+        WIDTH: 14
+    NAME: bp_occ_4
+  - ATTR: 10
+    DESCRIPTION: 'Client WuH occupancy registers - 5 per client'
+    ENTRIES: 8
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: This (table) holds the clients (latest) wuh occupancy values. 8 register per client
+        NAME: wu_occ_4
+        WIDTH: 14
+    NAME: wu_occ_4
+  - ATTR: 10
+    DESCRIPTION: 'BP client bus occupancy registers - 64 per client'
+    ENTRIES: 64
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'This (table) holds the clients (latest) bus occupancy values. 64 register per client, 8 clients'
+        NAME: bp_occ_5
+        WIDTH: 14
+    NAME: bp_occ_5
+  - ATTR: 10
+    DESCRIPTION: 'Client WuH occupancy registers - 8 per client'
+    ENTRIES: 8
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: This (table) holds the clients (latest) wuh occupancy values. 5 register per client
+        NAME: wu_occ_5
+        WIDTH: 14
+    NAME: wu_occ_5
+  - ATTR: 10
+    DESCRIPTION: 'BP client bus occupancy registers - 64 per client'
+    ENTRIES: 64
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'This (table) holds the clients (latest) bus occupancy values. 64 register per client, 8 clients'
+        NAME: bp_occ_6
+        WIDTH: 14
+    NAME: bp_occ_6
+  - ATTR: 10
+    DESCRIPTION: 'Client WuH occupancy registers - 8 per client'
+    ENTRIES: 8
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: This (table) holds the clients (latest) wuh occupancy values. 8 register per client
+        NAME: wu_occ_6
+        WIDTH: 14
+    NAME: wu_occ_6
+  - ATTR: 10
+    DESCRIPTION: 'BP client bus occupancy registers - 64 per client'
+    ENTRIES: 64
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'This (table) holds the clients (latest) bus occupancy values. 64 register per client, 8 clients'
+        NAME: bp_occ_7
+        WIDTH: 14
+    NAME: bp_occ_7
+  - ATTR: 10
+    DESCRIPTION: 'Client WuH occupancy registers - 8 per client'
+    ENTRIES: 8
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: This (table) holds the clients (latest) wuh occupancy values. 8 register per client
+        NAME: wu_occ_7
+        WIDTH: 14
+    NAME: wu_occ_7
+  - ATTR: 10
+    DESCRIPTION: 'Client WuH occupancy registers - 8 per client'
+    ENTRIES: 8
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: This (table) holds the CC clients (latest) wuh occupancy values. 8 register per client
+        NAME: wu_occ_8
+        WIDTH: 14
+    NAME: wu_occ_8
+  - ATTR: 10
+    DESCRIPTION: 'Client BP and WU aggregated occupancy registers - 8 (Wu), 32 or 64 for BP'
+    ENTRIES: 64
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'This (table) holds the clients (last) aggregated occupancy values - Wu or BP depending on which one finished last. Up to 64 registers'
+        NAME: bp_wu_agg
+        WIDTH: 17
+    NAME: bp_wu_agg
+  - ATTR: 10
+    DESCRIPTION: 'Client BP aggregated occupancy registers - 64'
+    ENTRIES: 64
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: This (table) holds the clients (latest) bp aggregated occupancy values. 64 register
+        NAME: bp_wu_ncv
+        WIDTH: 4
+    NAME: bp_wu_ncv
+  - ATTR: 10
+    DESCRIPTION: "Master interface counter results that show how many cycle - during the current sample interval - that the interface lacked credits sufficient to allow packets to be transmitted. This does not necessarily mean it stalled anything if the BN master wasn't transmitting for some of those cycles. One per BN Master interface. Note: Master 12 is BN own master port which is unused."
+    ENTRIES: 16
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: This (table) holds the master port interfaces cycle count of stalls due to lack of credits. The interval over this accumulation is SW defined and resets at the start of each interval.
+        NAME: master_stall_cycles
+        WIDTH: 32
+    NAME: master_stall_cycles
+  - ATTR: 10
+    DESCRIPTION: BPA high water mark values
+    ENTRIES: 64
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: This holds the maximum BPA value seen (one per BPA value).
+        NAME: bpa_peak_value
+        WIDTH: 17
+    NAME: bpa_peak_value
+  - ATTR: 10
+    DESCRIPTION: BPA dynamic high water mark values over limited time period
+    ENTRIES: 64
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Holds the maximum BPA value over N BPA update intervals (one per BPA value).
+        NAME: bpa_dyn_peak_value
+        WIDTH: 17
+    NAME: bpa_dyn_peak_value
+  - ATTR: 10
+    DESCRIPTION: Wu Occupancy aggregated high water mark values.
+    ENTRIES: 5
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Holds the maximum Wu Aggregated Occupancy value discovered.
+        NAME: wu_occ_peak_value
+        WIDTH: 17
+    NAME: wu_peak_value
+  - ATTR: 10
+    DESCRIPTION: Wu Occupancy dynamic high water mark values.
+    ENTRIES: 5
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Holds the dynamic maximum Wu Aggregated Occupancy value discovered.
+        NAME: wu_occ_dyn_peak_value
+        WIDTH: 17
+    NAME: wu_dyn_peak_value
+XASIZE: 0

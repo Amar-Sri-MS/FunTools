@@ -1,0 +1,295 @@
+---
+DESCRIPTION: Address map and field descriptions for PC CFG GPIOs
+NAME: pc_cfg_gpio
+REGLST:
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: |-
+          Timeout Configuration. Cycles are RSU clk based.
+                            - 00 : 1024 cycles
+                            - 01 : 256 cycles
+                            - 10 : 4096 cycles
+                            - 11 : infinite
+        NAME: val
+        WIDTH: 2
+    NAME: pc_cfg_gpio_timeout_thresh_cfg
+  - ATTR: 9
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: "Timed out Status. Cycles are RSU clk based. Becomes 1 when timed out. Write any value to clear it.\n                  "
+        NAME: val
+        WIDTH: 1
+    NAME: pc_cfg_gpio_timedout_sta
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: |-
+          Clear Timeout Status. Data is ignored. A write
+                     will clear the timeout status bit
+        NAME: val
+        WIDTH: 1
+    NAME: pc_cfg_gpio_timeout_clr
+    TEST_ATTR: 1
+  - DESCRIPTION: GPI 0 fields
+    FLDLST:
+      - DESCRIPTION: 'Reserved bits - should be driven to 0'
+        NAME: reserved_1
+        WIDTH: 16
+      - DESCRIPTION: System specific signals to be used as needed to control interrupt and reset masking or other system-level operation. Output state may be set by debug software
+        NAME: mips_co_ej_dbg_out
+        WIDTH: 8
+      - DESCRIPTION: 'Reserved bits - should be driven to 0'
+        NAME: reserved_0
+        WIDTH: 5
+      - DESCRIPTION: Indicates debug mode of the Trace logic
+        NAME: mips_co_tc_ej_debug_mode
+        WIDTH: 1
+      - DESCRIPTION: 'Trace PIB calibration indication - unused'
+        NAME: mips_co_tc_calibrate
+        WIDTH: 1
+      - DESCRIPTION: 'This is the Trace clock ratio that is configured, but should not affect any clock frequencies for our application - unused'
+        NAME: mips_co_tc_clock_ratio
+        WIDTH: 3
+      - DESCRIPTION: Indicates that the CM memory access path is sleeping
+        NAME: mips_co_cm_mem_sleep
+        WIDTH: 1
+      - DESCRIPTION: External debug interrupt from the cores. This signal can be used to stop an external module synchronously with MIPS Cores
+        NAME: mips_co_external_ej_dint_out
+        WIDTH: 1
+      - DESCRIPTION: Indicates that the IOCU is going through a clock frequency change.  This signal should never be active
+        NAME: mips_co_io_clk_change_active
+        WIDTH: 1
+      - DESCRIPTION: Indicates DBU is in the power up state U5 or U6.  Used as a handshake feedback to the DBU Power Up signal driven by GPO.  This is also the signal driven to the MDH to indicate device power on
+        NAME: mips_co_dbu_domain_ready
+        WIDTH: 1
+      - DESCRIPTION: Indicates CM is in the power up state U5 or U6.  Used as a handshake feedback to the CM Power Up signal driven by GPO
+        NAME: mips_co_cm_domain_ready
+        WIDTH: 1
+      - DESCRIPTION: 'Ack of the DBU VDD power domain. Used as a handshake feedback to the VDD OK signal driven by GPO - unused'
+        NAME: mips_co_dbu_vdd_ack
+        WIDTH: 1
+      - DESCRIPTION: 'Ack of the CM VDD power domain. Used as a handshake feedback to the VDD OK signal driven by GPO - unused'
+        NAME: mips_co_cm_vdd_ack
+        WIDTH: 1
+      - DESCRIPTION: 'Power gate enable for the DBU power domain - unused'
+        NAME: mips_co_dbu_rail_enable
+        WIDTH: 1
+      - DESCRIPTION: 'Power gate enable for the CM power domain - unused'
+        NAME: mips_co_cm_rail_enable
+        WIDTH: 1
+      - DESCRIPTION: Qualifies mips_co_cm_reset_n as a cold or warm reset
+        NAME: mips_co_cm_cold_reset
+        WIDTH: 1
+      - DESCRIPTION: Shows the CPC reset to the CM.  Initiated by power-on reset or WDT requested system reset
+        NAME: mips_co_cm_reset_n
+        WIDTH: 1
+      - DESCRIPTION: Domain Ready for Core <corenum> power domain that indicates operations state of U5 or U6.  Used as a handshake feedback to the Power Up signal which is driven by GPO0
+        NAME: mips_co_core5_domain_ready
+        WIDTH: 1
+      - DESCRIPTION: VDD ACK for Core <corenum> power domain.  connected directly to the VDD OK input which should be driven to 1
+        NAME: mips_co_core5_vdd_ack
+        WIDTH: 1
+      - DESCRIPTION: Power gate enable for Core <corenum> power domain
+        NAME: mips_co_core5_rail_enable
+        WIDTH: 1
+      - DESCRIPTION: Domain Ready for Core <corenum> power domain that indicates operations state of U5 or U6.  Used as a handshake feedback to the Power Up signal which is driven by GPO0
+        NAME: mips_co_core4_domain_ready
+        WIDTH: 1
+      - DESCRIPTION: VDD ACK for Core <corenum> power domain.  connected directly to the VDD OK input which should be driven to 1
+        NAME: mips_co_core4_vdd_ack
+        WIDTH: 1
+      - DESCRIPTION: Power gate enable for Core <corenum> power domain
+        NAME: mips_co_core4_rail_enable
+        WIDTH: 1
+      - DESCRIPTION: Domain Ready for Core <corenum> power domain that indicates operations state of U5 or U6.  Used as a handshake feedback to the Power Up signal which is driven by GPO0
+        NAME: mips_co_core3_domain_ready
+        WIDTH: 1
+      - DESCRIPTION: VDD ACK for Core <corenum> power domain.  connected directly to the VDD OK input which should be driven to 1
+        NAME: mips_co_core3_vdd_ack
+        WIDTH: 1
+      - DESCRIPTION: Power gate enable for Core <corenum> power domain
+        NAME: mips_co_core3_rail_enable
+        WIDTH: 1
+      - DESCRIPTION: Domain Ready for Core <corenum> power domain that indicates operations state of U5 or U6.  Used as a handshake feedback to the Power Up signal which is driven by GPO0
+        NAME: mips_co_core2_domain_ready
+        WIDTH: 1
+      - DESCRIPTION: VDD ACK for Core <corenum> power domain.  connected directly to the VDD OK input which should be driven to 1
+        NAME: mips_co_core2_vdd_ack
+        WIDTH: 1
+      - DESCRIPTION: Power gate enable for Core <corenum> power domain
+        NAME: mips_co_core2_rail_enable
+        WIDTH: 1
+      - DESCRIPTION: Domain Ready for Core <corenum> power domain that indicates operations state of U5 or U6.  Used as a handshake feedback to the Power Up signal which is driven by GPO0
+        NAME: mips_co_core1_domain_ready
+        WIDTH: 1
+      - DESCRIPTION: VDD ACK for Core <corenum> power domain.  connected directly to the VDD OK input which should be driven to 1
+        NAME: mips_co_core1_vdd_ack
+        WIDTH: 1
+      - DESCRIPTION: Power gate enable for Core <corenum> power domain
+        NAME: mips_co_core1_rail_enable
+        WIDTH: 1
+      - DESCRIPTION: Domain Ready for Core <corenum> power domain that indicates operations state of U5 or U6.  Used as a handshake feedback to the Power Up signal which is driven by GPO0
+        NAME: mips_co_core0_domain_ready
+        WIDTH: 1
+      - DESCRIPTION: VDD ACK for Core <corenum> power domain.  connected directly to the VDD OK input which should be driven to 1
+        NAME: mips_co_core0_vdd_ack
+        WIDTH: 1
+      - DESCRIPTION: Power gate enable for Core <corenum> power domain
+        NAME: mips_co_core0_rail_enable
+        WIDTH: 1
+    NAME: GPI_0
+    WIDTH: 64
+  - DESCRIPTION: GP0 0 fields
+    FLDLST:
+      - DESCRIPTION: 'Reserved - unused'
+        NAME: reserved_0
+        WIDTH: 8
+      - DESCRIPTION: Used to stall the reset state machine for DBU
+        NAME: mips_ci_dbu_reset_hold
+        WIDTH: 1
+      - DESCRIPTION: Power up policy for DBU 0=power down 1=clock off 2=operational
+        NAME: mips_ci_dbu_cold_pwr_up
+        WIDTH: 2
+      - DESCRIPTION: Used to stall the reset state machine for CM
+        NAME: mips_ci_cm_reset_hold
+        WIDTH: 1
+      - DESCRIPTION: Default boot enable for all <VCs> in <Core>.  This value is loaded while cpc_reset_n is asserted or on the rising edge of vc_run_init_load_en
+        NAME: mips_ci_core5_vc_run_init
+        WIDTH: 4
+      - DESCRIPTION: 'Used to stall the reset state machine for <Core>'
+        NAME: mips_ci_core5_reset_hold
+        WIDTH: 1
+      - DESCRIPTION: Power up policy for <Core> 0=power down 1=clock off 2=operational
+        NAME: mips_ci_core5_cold_pwr_up
+        WIDTH: 2
+      - DESCRIPTION: Power up the <Core> and make it operational
+        NAME: mips_ci_core5_pwr_up
+        WIDTH: 1
+      - DESCRIPTION: Default boot enable for all <VCs> in <Core>.  This value is loaded while cpc_reset_n is asserted or on the rising edge of vc_run_init_load_en
+        NAME: mips_ci_core4_vc_run_init
+        WIDTH: 4
+      - DESCRIPTION: 'Used to stall the reset state machine for <Core>'
+        NAME: mips_ci_core4_reset_hold
+        WIDTH: 1
+      - DESCRIPTION: Power up policy for <Core> 0=power down 1=clock off 2=operational
+        NAME: mips_ci_core4_cold_pwr_up
+        WIDTH: 2
+      - DESCRIPTION: Power up the <Core> and make it operational
+        NAME: mips_ci_core4_pwr_up
+        WIDTH: 1
+      - DESCRIPTION: Default boot enable for all <VCs> in <Core>.  This value is loaded while cpc_reset_n is asserted or on the rising edge of vc_run_init_load_en
+        NAME: mips_ci_core3_vc_run_init
+        WIDTH: 4
+      - DESCRIPTION: 'Used to stall the reset state machine for <Core>'
+        NAME: mips_ci_core3_reset_hold
+        WIDTH: 1
+      - DESCRIPTION: Power up policy for <Core> 0=power down 1=clock off 2=operational
+        NAME: mips_ci_core3_cold_pwr_up
+        WIDTH: 2
+      - DESCRIPTION: Power up the <Core> and make it operational
+        NAME: mips_ci_core3_pwr_up
+        WIDTH: 1
+      - DESCRIPTION: Default boot enable for all <VCs> in <Core>.  This value is loaded while cpc_reset_n is asserted or on the rising edge of vc_run_init_load_en
+        NAME: mips_ci_core2_vc_run_init
+        WIDTH: 4
+      - DESCRIPTION: 'Used to stall the reset state machine for <Core>'
+        NAME: mips_ci_core2_reset_hold
+        WIDTH: 1
+      - DESCRIPTION: Power up policy for <Core> 0=power down 1=clock off 2=operational
+        NAME: mips_ci_core2_cold_pwr_up
+        WIDTH: 2
+      - DESCRIPTION: Power up the <Core> and make it operational
+        NAME: mips_ci_core2_pwr_up
+        WIDTH: 1
+      - DESCRIPTION: Default boot enable for all <VCs> in <Core>.  This value is loaded while cpc_reset_n is asserted or on the rising edge of vc_run_init_load_en
+        NAME: mips_ci_core1_vc_run_init
+        WIDTH: 4
+      - DESCRIPTION: 'Used to stall the reset state machine for <Core>'
+        NAME: mips_ci_core1_reset_hold
+        WIDTH: 1
+      - DESCRIPTION: Power up policy for <Core> 0=power down 1=clock off 2=operational
+        NAME: mips_ci_core1_cold_pwr_up
+        WIDTH: 2
+      - DESCRIPTION: Power up the <Core> and make it operational
+        NAME: mips_ci_core1_pwr_up
+        WIDTH: 1
+      - DESCRIPTION: Default boot enable for all <VCs> in <Core>.  This value is loaded while cpc_reset_n is asserted or on the rising edge of vc_run_init_load_en
+        NAME: mips_ci_core0_vc_run_init
+        WIDTH: 4
+      - DESCRIPTION: 'Used to stall the reset state machine for <Core>'
+        NAME: mips_ci_core0_reset_hold
+        WIDTH: 1
+      - DESCRIPTION: Power up policy for <Core> 0=power down 1=clock off 2=operational
+        NAME: mips_ci_core0_cold_pwr_up
+        WIDTH: 2
+      - DESCRIPTION: Power up the <Core> and make it operational
+        NAME: mips_ci_core0_pwr_up
+        WIDTH: 1
+      - DESCRIPTION: Disable HW init of the L2 tag rams
+        NAME: mips_ci_cpc_l2_hw_init_inhibit
+        WIDTH: 1
+      - DESCRIPTION: Level sensitive signal to power up the DBU and make it operational
+        NAME: mips_ci_dbu_pwr_up
+        WIDTH: 1
+      - DESCRIPTION: Level sensitive signal to power up the CM and make it operational
+        NAME: mips_ci_cm_pwr_up
+        WIDTH: 1
+      - DESCRIPTION: 'On the rising edge of this signal, the values driven on the <core>_vc_run_init_<vc> are loaded into the corresponding CPC VP run registers.'
+        NAME: mips_ci_vc_run_init_load_en
+        WIDTH: 1
+    NAME: GP0_0
+    WIDTH: 64
+  - DESCRIPTION: GP0 1 fields
+    FLDLST:
+      - DESCRIPTION: 'Reserved - unused'
+        NAME: reserved_0
+        WIDTH: 3
+      - DESCRIPTION: 'New Boot Exception Vector Mode - sets the KX bit'
+        NAME: mips_ci_new_bev_base_mode
+        WIDTH: 1
+      - DESCRIPTION: New Boot Exception Vector
+        NAME: mips_ci_new_bev_base
+        WIDTH: 20
+      - DESCRIPTION: 'Load New Boot Exception Vector - can be driven out of reset'
+        NAME: mips_ci_new_bev_base_load_en
+        WIDTH: 1
+      - DESCRIPTION: 'Reserved - unused'
+        NAME: reserved_1
+        WIDTH: 3
+      - DESCRIPTION: Drives external debug interrupt to the Cores
+        NAME: mips_ci_external_ej_debug_m
+        WIDTH: 1
+      - DESCRIPTION: Debug Interrupt meant to be driven by the debug probe
+        NAME: mips_ci_ej_dint_in
+        WIDTH: 1
+      - DESCRIPTION: Sets Big Endian mode
+        NAME: mips_ci_big_endian
+        WIDTH: 1
+      - DESCRIPTION: 'Reserved - unused'
+        NAME: reserved_2
+        WIDTH: 2
+      - DESCRIPTION: Sets the Manufacturer ID
+        NAME: mips_ci_ej_manuf_id
+        WIDTH: 11
+      - DESCRIPTION: Sets the Version number
+        NAME: mips_ci_ej_version
+        WIDTH: 4
+      - DESCRIPTION: Sets the Part number
+        NAME: mips_ci_ej_part_num
+        WIDTH: 16
+    NAME: GP0.1
+    WIDTH: 64
+  - DESCRIPTION: GP0 2 fields
+    FLDLST:
+      - DESCRIPTION: Places CMH in Standalone mode that makes the cluster able to send and receive WUs locally without requiring allocations from other PC/CC/NU Tiles.  It is used mainly for early bringup
+        NAME: CMH Standalone Mode
+        WIDTH: 1
+      - DESCRIPTION: 'Trace min clock ratio - unused'
+        NAME: mips_ci_tc_cr_min
+        WIDTH: 3
+      - DESCRIPTION: 'Trace max clock ratio - unused'
+        NAME: mips_ci_tc_cr_max
+        WIDTH: 3
+    NAME: GP0_2
+    WIDTH: 64

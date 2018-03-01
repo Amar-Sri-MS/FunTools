@@ -1,0 +1,449 @@
+---
+COUNT: 1
+DESCRIPTION: MIO2 Group 0 Spec
+INTR:
+  FATAL:
+    - DESCRIPTION: place_holder_fatal_bn
+      NAME: place_holder_fatal_bn
+      WIDTH: 1
+  NON_FATAL:
+    - DESCRIPTION: 'Invalid txn - placeholder'
+      NAME: invalid_txn
+      WIDTH: 1
+    - DESCRIPTION: 'Invalid txn2 - placeholder'
+      NAME: invalid_txn2
+      WIDTH: 1
+NAME: MIO2_AN
+PARENTNAME: MIO2_0_AN
+REGLST:
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: |-
+          Timeout Configuration. Cycles are RSU clk based.
+                            - 00 : 1024 cycles
+                            - 01 : 256 cycles
+                            - 10 : 4096 cycles
+                            - 11 : infinite
+        NAME: val
+        WIDTH: 2
+    NAME: mio2_timeout_thresh_cfg
+  - ATTR: 9
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: "Timed out Status. Cycles are RSU clk based. Becomes 1 when timed out. Write any value to clear it.\n                  "
+        NAME: val
+        WIDTH: 1
+    NAME: mio2_timedout_sta
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: |-
+          Clear Timeout Status. Data is ignored. A write
+                     will clear the timeout status bit
+        NAME: val
+        WIDTH: 1
+    NAME: mio2_timeout_clr
+    TEST_ATTR: 1
+  - ATTR: 256
+    FLDLST:
+      - &1
+        DESCRIPTION: place_holder_fatal_bn
+        NAME: place_holder_fatal_bn
+        WIDTH: 1
+    NAME: mio2_fatal_intr_cause
+  - ATTR: 512
+    FLDLST:
+      - *1
+    NAME: mio2_fatal_intr_stat
+  - ATTR: 1024
+    FLDLST:
+      - *1
+    NAME: mio2_fatal_intr_mask
+  - ATTR: 2048
+    FLDLST:
+      - *1
+    NAME: mio2_fatal_intr_bset
+  - ATTR: 4096
+    FLDLST:
+      - *1
+    NAME: mio2_fatal_intr_bclr
+  - ATTR: 256
+    FLDLST:
+      - &2
+        DESCRIPTION: 'Invalid txn - placeholder'
+        NAME: invalid_txn
+        WIDTH: 1
+      - &3
+        DESCRIPTION: 'Invalid txn2 - placeholder'
+        NAME: invalid_txn2
+        WIDTH: 1
+    NAME: mio2_non_fatal_intr_cause
+  - ATTR: 512
+    FLDLST:
+      - *2
+      - *3
+    NAME: mio2_non_fatal_intr_stat
+  - ATTR: 1024
+    FLDLST:
+      - *2
+      - *3
+    NAME: mio2_non_fatal_intr_mask
+  - ATTR: 2048
+    FLDLST:
+      - *2
+      - *3
+    NAME: mio2_non_fatal_intr_bset
+  - ATTR: 4096
+    FLDLST:
+      - *2
+      - *3
+    NAME: mio2_non_fatal_intr_bclr
+  - ATTR: 9
+    DESCRIPTION: Place Holder for now for MIO2 Feature Register
+    FLDLST:
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Module ID
+        NAME: module_id
+        WIDTH: 8
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Version number of the module
+        NAME: version
+        WIDTH: 8
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Features enabled in the module.
+        NAME: features
+        WIDTH: 16
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Reserved Field.
+        NAME: Reserved
+        WIDTH: 32
+    NAME: mio2_grp0_features
+    WIDTH: 64
+  - ATTR: 5
+    DESCRIPTION: ' Spare PIO register. These bits can be read and written by software. They can serve as control bits for late ECOs in the design.'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Spare PIO register.
+        NAME: val
+        WIDTH: 64
+    NAME: mio2_grp0_spare_pio
+    WIDTH: 64
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: Scratchpad register.
+        NAME: val
+        WIDTH: 64
+    NAME: mio2_grp0_scratchpad
+    WIDTH: 64
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: |-
+      MIO Clock Power Control Register to allow clock and reset control over all 
+                                                 sub-blocks in MIO2. Currently this includes UARTS and I2C cores. 
+                                                
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Reserved (unused) fine grain local resets for MIO.
+        NAME: mio2_reset_reserved
+        WIDTH: 27
+      - DEFAULT: 0
+        DESCRIPTION: 'Reset control for I2C 2 controller. This allows fine grain control of the I2C 2 block independent of the other blocks in MIO2. Active low 0 (default on POR), 1=reset inactive'
+        NAME: i2c_2_reset_n
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'Reset control for I2C 1 controller. This allows fine grain control of the I2C 1 block independent of the other blocks in MIO2. Active low 0 (default on POR), 1=reset inactive'
+        NAME: i2c_1_reset_n
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'Reset control for I2C 0 controller. This allows fine grain control of the I2C 0 block independent of the other blocks in MIO2. Active low 0 (default on POR), 1=reset inactive'
+        NAME: i2c_0_reset_n
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'Reset control for UART 1 controller. This allows fine grain control of the UART 1 block independent of the other blocks in MIO2. Active low 0 (default on POR), 1=reset inactive'
+        NAME: uart_1_reset_n
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'Reset control for UART 0 controller. This allows fine grain control of the UART 0 block independent of the other blocks in MIO2. Active low 0 (default on POR), 1=reset inactive'
+        NAME: uart_0_reset_n
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Reserved (unused) Coarse grain clock control for F1.
+        NAME: mio2_clock_enable_reserved
+        WIDTH: 31
+      - DEFAULT: 1
+        DESCRIPTION: Clock enable for all logic in MIO2 (except I2C slave which is always enabled). Clocks are enabled by default at POR.
+        NAME: mio2_clock_enable
+        WIDTH: 1
+    NAME: mio2_cpc_reg
+  - ATTR: 10
+    COUNT: 1
+    DESCRIPTION: |-
+      Indicates the source of the interrupt from MIO2: 
+      
+                                                  0 = UART 0
+                                                  1 = UART 1 
+                                                  2 = I2C  0 
+                                                  3 = I2C  1 
+                                                  4 = I2C  2 
+      
+                                                 All interrupts are level sensitive and deasserted when 
+                                                 cleared at the source. 
+                                                
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Source of MIO2 interrupt - UART0, UART1, I2C0, I2C1, or I2C2.'
+        NAME: mio2_interrupt
+        WIDTH: 5
+    NAME: mio2_interrupt
+  - ATTR: 10
+    COUNT: 1
+    DESCRIPTION: 'Lower half - bits 63:0 - of test fuse binning bits'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Lower half of the 128 bit test (fuse) binning bits. This register contains [63:0] of the 128 bit word.'
+        NAME: mio2_test_fuse_bin_low
+        WIDTH: 64
+    NAME: mio2_test_fuse_bin_low
+  - ATTR: 10
+    COUNT: 1
+    DESCRIPTION: 'Upper half - bits 127:64 - of test fuse binning bits'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Upper half of the 128 bit test (fuse) binning bits. This register contains bits [127:64] of the 128 bit word.'
+        NAME: mio2_test_fuse_bin_high
+        WIDTH: 64
+    NAME: mio2_test_fuse_bin_high
+  - ATTR: 10
+    COUNT: 1
+    DESCRIPTION: Contains status bits for efuse configuration and memory repair status
+    FLDLST:
+      - DESCRIPTION: 'Unused bits - Reserved'
+        NAME: mio2_test_status_reserved
+        WIDTH: 62
+      - DESCRIPTION: 'Status bit indicating whether memory repair function has completed F1 memory repair. 1=done, 0=in progress.'
+        NAME: mio2_test_memory_repair_status
+        WIDTH: 1
+      - DESCRIPTION: 'Status bit indicating whether eFuse controller has finished loading fuse bits. 1=done, 0=in progress.'
+        NAME: mio2_test_fuse_bin_status
+        WIDTH: 1
+    NAME: mio2_test_status
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: I2C Master 0 pad Configuration
+    FLDLST:
+      - DEFAULT: 3
+        DESCRIPTION: Configures drive impedance
+        NAME: i2cm0_drv_imp_config
+        WIDTH: 2
+      - DEFAULT: 1
+        DESCRIPTION: Disables driver on power up
+        NAME: i2cm0_power_up_drv_disable_l
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Spare bits
+        NAME: i2cm0_reserved
+        WIDTH: 3
+    NAME: i2c_m0_pad_cfg
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: I2C Master 0 pad Configuration
+    FLDLST:
+      - DEFAULT: 3
+        DESCRIPTION: Configures drive impedance
+        NAME: i2cm1_drv_imp_config
+        WIDTH: 2
+      - DEFAULT: 1
+        DESCRIPTION: Disables driver on power up
+        NAME: i2cm1_power_up_drv_disable_l
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Spare bits
+        NAME: i2cm1_reserved
+        WIDTH: 3
+    NAME: i2c_m1_pad_cfg
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: I2C Master 0 pad Configuration
+    FLDLST:
+      - DEFAULT: 3
+        DESCRIPTION: Configures drive impedance
+        NAME: i2cm2_drv_imp_config
+        WIDTH: 2
+      - DEFAULT: 1
+        DESCRIPTION: Disables driver on power up
+        NAME: i2cm2_power_up_drv_disable_l
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Spare bits
+        NAME: i2cm2_reserved
+        WIDTH: 3
+    NAME: i2c_m2_pad_cfg
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: I2C Master 0 pad Configuration
+    FLDLST:
+      - DEFAULT: 2
+        DESCRIPTION: Configures drive impedance
+        NAME: i2csl_drv_imp_config
+        WIDTH: 2
+      - DEFAULT: 1
+        DESCRIPTION: Disables driver on power up
+        NAME: i2csl_power_up_drv_disable_l
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Spare bits
+        NAME: i2csl_reserved
+        WIDTH: 3
+    NAME: i2c_sl_pad_cfg
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: UART input pad Configuration
+    FLDLST:
+      - DEFAULT: 3
+        DESCRIPTION: Configures drive impedance
+        NAME: uart_in_drv_imp_config
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Determines direction of pull up or down
+        NAME: uart_in_pull_up_dn_dir
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Disables driver on power up
+        NAME: uart_in_power_up_drv_disable_l
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Disables termination on power up
+        NAME: uart_in_power_up_term_disable_l
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Enables termination on IO
+        NAME: uart_in_term_enable
+        WIDTH: 1
+    NAME: uart_pad_in_cfg
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: UART output pad Configuration
+    FLDLST:
+      - DEFAULT: 3
+        DESCRIPTION: Configures drive impedance
+        NAME: uart_out_drv_imp_config
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Determines direction of pull up or down
+        NAME: uart_out_pull_up_dn_dir
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Disables driver on power up
+        NAME: uart_out_power_up_drv_disable_l
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Disables termination on power up
+        NAME: uart_out_power_up_term_disable_l
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Enables termination on IO
+        NAME: uart_out_term_enable
+        WIDTH: 1
+    NAME: uart_pad_out_cfg
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: NOR Pad Configuration
+    FLDLST:
+      - DEFAULT: 3
+        DESCRIPTION: Configures drive impedance
+        NAME: nor_drv_imp_config
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Determines direction of pull up or down
+        NAME: nor_pull_up_dn_dir
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Disables termination on power up
+        NAME: nor_power_up_term_disable_l
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Disables driver on power up
+        NAME: nor_power_up_drv_disable_l
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Enables termination on IO
+        NAME: nor_term_enable
+        WIDTH: 1
+    NAME: nor_pad_cfg
+  - ATTR: 6
+    COUNT: 1
+    DESCRIPTION: Address of APB access via bridge
+    ENTRIES: 1024
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Reserved bits - unimplemented.'
+        NAME: reserved
+        WIDTH: 32
+      - DEFAULT: 0
+        DESCRIPTION: Address of APB access (via bridge)
+        NAME: apb0_bridge_uart0
+        WIDTH: 32
+    NAME: apb0_bridge_uart0
+  - ATTR: 6
+    COUNT: 1
+    DESCRIPTION: Address of APB access via bridge
+    ENTRIES: 1024
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Reserved bits - unimplemented.'
+        NAME: reserved
+        WIDTH: 32
+      - DEFAULT: 0
+        DESCRIPTION: Address of APB access (via bridge)
+        NAME: apb1_bridge_uart1
+        WIDTH: 32
+    NAME: apb1_bridge_uart1
+  - ATTR: 6
+    COUNT: 1
+    DESCRIPTION: Address of APB access via bridge
+    ENTRIES: 256
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Reserved bits - unimplemented.'
+        NAME: reserved
+        WIDTH: 32
+      - DEFAULT: 0
+        DESCRIPTION: Address of APB access (via bridge)
+        NAME: apb2_bridge_i2c0
+        WIDTH: 32
+    NAME: apb2_bridge_i2c0
+  - ATTR: 6
+    COUNT: 1
+    DESCRIPTION: Address of APB access via bridge
+    ENTRIES: 256
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Reserved bits - unimplemented.'
+        NAME: reserved
+        WIDTH: 32
+      - DEFAULT: 0
+        DESCRIPTION: Address of APB access (via bridge)
+        NAME: apb3_bridge_i2c1
+        WIDTH: 32
+    NAME: apb3_bridge_i2c1
+  - ATTR: 6
+    COUNT: 1
+    DESCRIPTION: Address of APB access via bridge
+    ENTRIES: 256
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Reserved bits - unimplemented.'
+        NAME: reserved
+        WIDTH: 32
+      - DEFAULT: 0
+        DESCRIPTION: Address of APB access (via bridge)
+        NAME: apb4_bridge_i2c2
+        WIDTH: 32
+    NAME: apb4_bridge_i2c2
+XASIZE: 0

@@ -12,7 +12,7 @@ import os
 from module_path import module_locator
 from csr.utils.yml import YML_Reader, CSR_YML_Reader
 from csr.utils.artifacts import CSRRoot, Walker
-from csr.schema.csr_tree import CSRTree
+#from csr.schema.csr_tree import CSRTree
 
 class Slurper(object):
     def __init__(self, cwd):

@@ -1,0 +1,369 @@
+---
+ASIZE: 16777216
+BASEADDRPORT: 1
+COUNT: 1
+DESCRIPTION: MUD Memory Controller Interface CSR Spec
+INTR:
+  FATAL:
+    - DESCRIPTION: Received ddr_hw_fail_int_l signal
+      NAME: ddr_hw_fail_int
+      WIDTH: 1
+    - DESCRIPTION: DDR memory uncorrectable error
+      NAME: ddr_ecc_ucerr
+      WIDTH: 1
+    - DESCRIPTION: SOC to DFI fifo memory uncorrectable error
+      NAME: soc_dfi_fifo_ucerr
+      WIDTH: 1
+    - DESCRIPTION: DFI to SOC fifo memory uncorrectable error
+      NAME: dfi_soc_fifo_ucerr
+      WIDTH: 1
+  NON_FATAL:
+    - DESCRIPTION: DIMM 1 thermal event interrupt
+      NAME: dimm_1_event_int
+      WIDTH: 1
+    - DESCRIPTION: DIMM 0 thermal event interrupt
+      NAME: dimm_0_event_int
+      WIDTH: 1
+    - DESCRIPTION: Cadence DDR controller interrupt
+      NAME: controller_int
+      WIDTH: 1
+    - DESCRIPTION: DDR memory correctable error
+      NAME: ddr_ecc_cerr
+      WIDTH: 1
+    - DESCRIPTION: SOC to DFI fifo memory correctable error
+      NAME: soc_dfi_fifo_cerr
+      WIDTH: 1
+    - DESCRIPTION: DFI to SOC fifo memory correctable error
+      NAME: dfi_soc_fifo_cerr
+      WIDTH: 1
+INTR_PORT_EN: 1
+NAME: MUD_MCI_AN
+PARENTNAME: MUD_1_AN_MUD_DFI_CLK_AN
+REGLST:
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: |-
+          Timeout Configuration. Cycles are RSU clk based.
+                            - 00 : 1024 cycles
+                            - 01 : 256 cycles
+                            - 10 : 4096 cycles
+                            - 11 : infinite
+        NAME: val
+        WIDTH: 2
+    NAME: mud_mci_timeout_thresh_cfg
+  - ATTR: 9
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: "Timed out Status. Cycles are RSU clk based. Becomes 1 when timed out. Write any value to clear it.\n                  "
+        NAME: val
+        WIDTH: 1
+    NAME: mud_mci_timedout_sta
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: |-
+          Clear Timeout Status. Data is ignored. A write
+                     will clear the timeout status bit
+        NAME: val
+        WIDTH: 1
+    NAME: mud_mci_timeout_clr
+    TEST_ATTR: 1
+  - ATTR: 256
+    FLDLST:
+      - &1
+        DESCRIPTION: Received ddr_hw_fail_int_l signal
+        NAME: ddr_hw_fail_int
+        WIDTH: 1
+      - &2
+        DESCRIPTION: DDR memory uncorrectable error
+        NAME: ddr_ecc_ucerr
+        WIDTH: 1
+      - &3
+        DESCRIPTION: SOC to DFI fifo memory uncorrectable error
+        NAME: soc_dfi_fifo_ucerr
+        WIDTH: 1
+      - &4
+        DESCRIPTION: DFI to SOC fifo memory uncorrectable error
+        NAME: dfi_soc_fifo_ucerr
+        WIDTH: 1
+    NAME: mud_mci_fatal_intr_cause
+  - ATTR: 512
+    FLDLST:
+      - *1
+      - *2
+      - *3
+      - *4
+    NAME: mud_mci_fatal_intr_stat
+  - ATTR: 1024
+    FLDLST:
+      - *1
+      - *2
+      - *3
+      - *4
+    NAME: mud_mci_fatal_intr_mask
+  - ATTR: 2048
+    FLDLST:
+      - *1
+      - *2
+      - *3
+      - *4
+    NAME: mud_mci_fatal_intr_bset
+  - ATTR: 4096
+    FLDLST:
+      - *1
+      - *2
+      - *3
+      - *4
+    NAME: mud_mci_fatal_intr_bclr
+  - ATTR: 256
+    FLDLST:
+      - &5
+        DESCRIPTION: DIMM 1 thermal event interrupt
+        NAME: dimm_1_event_int
+        WIDTH: 1
+      - &6
+        DESCRIPTION: DIMM 0 thermal event interrupt
+        NAME: dimm_0_event_int
+        WIDTH: 1
+      - &7
+        DESCRIPTION: Cadence DDR controller interrupt
+        NAME: controller_int
+        WIDTH: 1
+      - &8
+        DESCRIPTION: DDR memory correctable error
+        NAME: ddr_ecc_cerr
+        WIDTH: 1
+      - &9
+        DESCRIPTION: SOC to DFI fifo memory correctable error
+        NAME: soc_dfi_fifo_cerr
+        WIDTH: 1
+      - &10
+        DESCRIPTION: DFI to SOC fifo memory correctable error
+        NAME: dfi_soc_fifo_cerr
+        WIDTH: 1
+    NAME: mud_mci_non_fatal_intr_cause
+  - ATTR: 512
+    FLDLST:
+      - *5
+      - *6
+      - *7
+      - *8
+      - *9
+      - *10
+    NAME: mud_mci_non_fatal_intr_stat
+  - ATTR: 1024
+    FLDLST:
+      - *5
+      - *6
+      - *7
+      - *8
+      - *9
+      - *10
+    NAME: mud_mci_non_fatal_intr_mask
+  - ATTR: 2048
+    FLDLST:
+      - *5
+      - *6
+      - *7
+      - *8
+      - *9
+      - *10
+    NAME: mud_mci_non_fatal_intr_bset
+  - ATTR: 4096
+    FLDLST:
+      - *5
+      - *6
+      - *7
+      - *8
+      - *9
+      - *10
+    NAME: mud_mci_non_fatal_intr_bclr
+  - ATTR: 9
+    DESCRIPTION: Place Holder for now for MU_CFG Feature Register
+    FLDLST:
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Module ID
+        NAME: module_id
+        WIDTH: 8
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Version number of the module
+        NAME: version
+        WIDTH: 8
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Features enabled in the module.
+        NAME: features
+        WIDTH: 16
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Reserved Field.
+        NAME: Reserved
+        WIDTH: 32
+    NAME: mud_mci_features
+    WIDTH: 64
+  - ATTR: 5
+    DESCRIPTION: ' Spare PIO register. These bits can be read and written by software. They can serve as control bits for late ECOs in the design.'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Spare PIO register.
+        NAME: val
+        WIDTH: 64
+    NAME: mud_mci_spare_pio
+    WIDTH: 64
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: Scratchpad register.
+        NAME: val
+        WIDTH: 64
+    NAME: mud_mci_scratchpad
+    WIDTH: 64
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: 'MU MCI configuration '
+    FLDLST:
+      - DEFAULT: 15
+        DESCRIPTION: 'Highest number of address bits, 64B aligned, used for both DIMM slot. 33 bits is maximum and addresses 512GB of memory. 0xF for 33 bits, 0xE for 32, ... 0 for 18. This will determine where the DIMM slot bit is appended for the denali address space.'
+        NAME: num_addr_bits
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: 'HW initiated NVDIMM backup mask.  When set to 1, the NVDIMM backup will be done when the external ddr_hw_fail_int_l signal is asserted.  0 ignores it.  This is used to mask the ddr_hw_fail_int_l signal during normal bringup and shutdown of system.   Note that once a backup operation is iniated, F1 needs to be reset.'
+        NAME: hw_nvdimm_backup_mask
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'SW initiated NVDIMM backup.  Once set, MU MCI will do the NVDIMM backup and an F1 reset is required.'
+        NAME: sw_nvdimm_backup
+        WIDTH: 1
+      - DEFAULT: 256
+        DESCRIPTION: 'Number of DFI cycles to wait for DIMM to enter self refresh. 0 for 1 cycle, ... .'
+        NAME: dimm_self_ref_cyc_cnt
+        WIDTH: 16
+      - DEFAULT: 0
+        DESCRIPTION: 'Number of times save_n is asserted for backup. 0 for 1 pulse, 1 for 2 pulses, ... .  3 pulses is the maximum needed but the logic will do up to 4 pulses. nvdimm_save_low_cyc_cnt and nvdimm_save_high_cyc_cnt will determine the pulse widths.'
+        NAME: nvdimm_num_save_pulse
+        WIDTH: 2
+      - DEFAULT: 600
+        DESCRIPTION: 'Number of DFI cycles the save_l signal is asserted for backup. 0 for 1 cycle, ... .'
+        NAME: nvdimm_save_low_cyc_cnt
+        WIDTH: 16
+      - DEFAULT: 600
+        DESCRIPTION: 'Number of DFI cycles the save_l signal is de-asserted for backup. 0 for 1 cycle, ... . '
+        NAME: nvdimm_save_high_cyc_cnt
+        WIDTH: 16
+    NAME: mud_mci_cfg
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: MU NVDIMM backup status
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'When 1, backup is completed and F1 is ready for reset.'
+        NAME: done
+        WIDTH: 1
+    NAME: mud_nvdimm_backup_status
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: MU MCI external memory ECC configuration.
+    FLDLST:
+      - DEFAULT: 1
+        DESCRIPTION: 'Bypass external memory ECC computation, use value in mu_ext_ecc_byp register. '
+        NAME: bypass
+        WIDTH: 1
+    NAME: mud_ext_ecc_cfg
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: MU MCI external memory ECC bypass value.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: ECC bypass value.
+        NAME: data
+        WIDTH: 64
+    NAME: mud_ext_ecc_byp
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: MU MCI memory error inject valid
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: SOC to DFI fifo memory
+        NAME: soc_dfi_fifo
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: DFI to SOC fifo memory
+        NAME: dfi_soc_fifo
+        WIDTH: 1
+    NAME: mud_mci_err_inj_valid
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: MU MCI memory error inject type
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: SOC to DFI fifo memory
+        NAME: soc_dfi_fifo
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: DFI to SOC fifo memory
+        NAME: dfi_soc_fifo
+        WIDTH: 1
+    NAME: mud_mci_err_inj_type
+  - ATTR: 9
+    DESCRIPTION: SRAM bit vector that failed ECC
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            First SRAM ECC error detected (1-hot)
+                                            Set when first error is detected
+                                            Reset when corresponding interrupt status bit is cleared
+          
+                                            [5] "ddr_ecc_cerr",
+                                            [4] "soc_dfi_fifo_cerr",
+                                            [3] "dfi_soc_fifo_cerr",
+          
+                                            [2] "ddr_ecc_ucerr",
+                                            [1] "soc_dfi_fifo_ucerr",
+                                            [0] "dfi_soc_fifo_ucerr",
+                                           
+        NAME: val
+        WIDTH: 6
+    NAME: mud_mci_log_err
+    TEST_ATTR: 0
+  - ATTR: 9
+    DESCRIPTION: SRAM syndrome log register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            Syndrome related to ECC error
+                                            detected while reading data from SRAM
+                                           
+        NAME: val
+        WIDTH: 11
+    NAME: mud_mci_log_syn
+    TEST_ATTR: 0
+  - ATTR: 9
+    DESCRIPTION: SRAM address log register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            Address related to ECC error
+                                            detected while reading data from on-chip
+                                            or off-chip memories.
+                                            For offchip, {dimmslot, 36 bit word address}
+                                           
+        NAME: val
+        WIDTH: 37
+    NAME: mud_mci_log_addr
+    TEST_ATTR: 0
+  - ATTR: 6
+    DESCRIPTION: "Cadence DDR4 controller's Denali port access to MCI configuration, control, and status registers"
+    ENTRIES: 512
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: ' - '
+        NAME: val
+        WIDTH: 32
+    NAME: mud_mci_ddr4_cfg
+XASIZE: 16777216

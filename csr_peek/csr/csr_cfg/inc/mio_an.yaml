@@ -1,0 +1,3694 @@
+---
+COUNT: 1
+DESCRIPTION: MIO Group 0 Spec
+INTR:
+  FATAL:
+    - DESCRIPTION: place_holder_fatal_mio
+      NAME: place_holder_fatal_mio
+      WIDTH: 1
+  NON_FATAL:
+    - DESCRIPTION: place_holder_non_fatal_mio
+      NAME: place_holder_non_fatal_mio
+      WIDTH: 1
+NAME: MIO_AN
+PARENTNAME: MIO_0_AN
+REGLST:
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: |-
+          Timeout Configuration. Cycles are RSU clk based.
+                            - 00 : 1024 cycles
+                            - 01 : 256 cycles
+                            - 10 : 4096 cycles
+                            - 11 : infinite
+        NAME: val
+        WIDTH: 2
+    NAME: mio_timeout_thresh_cfg
+  - ATTR: 9
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: "Timed out Status. Cycles are RSU clk based. Becomes 1 when timed out. Write any value to clear it.\n                  "
+        NAME: val
+        WIDTH: 1
+    NAME: mio_timedout_sta
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: |-
+          Clear Timeout Status. Data is ignored. A write
+                     will clear the timeout status bit
+        NAME: val
+        WIDTH: 1
+    NAME: mio_timeout_clr
+    TEST_ATTR: 1
+  - ATTR: 256
+    FLDLST:
+      - &1
+        DESCRIPTION: place_holder_fatal_mio
+        NAME: place_holder_fatal_mio
+        WIDTH: 1
+    NAME: mio_fatal_intr_cause
+  - ATTR: 512
+    FLDLST:
+      - *1
+    NAME: mio_fatal_intr_stat
+  - ATTR: 1024
+    FLDLST:
+      - *1
+    NAME: mio_fatal_intr_mask
+  - ATTR: 2048
+    FLDLST:
+      - *1
+    NAME: mio_fatal_intr_bset
+  - ATTR: 4096
+    FLDLST:
+      - *1
+    NAME: mio_fatal_intr_bclr
+  - ATTR: 256
+    FLDLST:
+      - &2
+        DESCRIPTION: place_holder_non_fatal_mio
+        NAME: place_holder_non_fatal_mio
+        WIDTH: 1
+    NAME: mio_non_fatal_intr_cause
+  - ATTR: 512
+    FLDLST:
+      - *2
+    NAME: mio_non_fatal_intr_stat
+  - ATTR: 1024
+    FLDLST:
+      - *2
+    NAME: mio_non_fatal_intr_mask
+  - ATTR: 2048
+    FLDLST:
+      - *2
+    NAME: mio_non_fatal_intr_bset
+  - ATTR: 4096
+    FLDLST:
+      - *2
+    NAME: mio_non_fatal_intr_bclr
+  - ATTR: 9
+    DESCRIPTION: Place Holder for now for BN Feature Register
+    FLDLST:
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Module ID
+        NAME: module_id
+        WIDTH: 8
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Version number of the module
+        NAME: version
+        WIDTH: 8
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Features enabled in the module.
+        NAME: features
+        WIDTH: 16
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Reserved Field.
+        NAME: Reserved
+        WIDTH: 32
+    NAME: mio_grp0_features
+    WIDTH: 64
+  - ATTR: 5
+    DESCRIPTION: ' Spare PIO register. These bits can be read and written by software. They can serve as control bits for late ECOs in the design.'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Spare PIO register.
+        NAME: val
+        WIDTH: 64
+    NAME: mio_grp0_spare_pio
+    WIDTH: 64
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: Scratchpad register.
+        NAME: val
+        WIDTH: 64
+    NAME: mio_grp0_scratchpad
+    WIDTH: 64
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: |-
+      F1 Clock Power Control Register: 
+      
+                                                      [63:32] 
+      
+                                                      Block level reset to tiles, 1-bit per tile. Active low bits, so 0=reset asserted and 1=reset  
+                                                      inactive. All blocks are in reset at power on reset and left that way - except for SBP.  
+      
+                                                      bit  0 = SBP 
+                                                      bit  1 = PC 0  
+                                                      bit  2 = PC 1  
+                                                      bit  3 = PC 2  
+                                                      bit  4 = PC 3  
+                                                      bit  5 = PC 4  
+                                                      bit  6 = PC 5  
+                                                      bit  7 = PC 6  
+                                                      bit  8 = PC 7  
+                                                      bit  9 = CC    
+                                                      bit 10 = NUT   
+                                                      bit 11 = HNUT   
+                                                      bit 12 = HUT 0 
+                                                      bit 13 = HUT 4 
+                                                      bit 14 = MUD 0 
+                                                      bit 15 = MUD 1 
+                                                      bit 16 = MUH   
+                                                      bit 17 = MIO   
+                                                      bit 18 = MIO2   
+      
+                                                      [31: 0] 
+      
+                                                      Block level clock enables to tiles, 1-bit per tile. Active high bits, so 1=clock enabled to  
+                                                      block and 0=clock disabled. . All blocks are set to clock enabled mode at power on reset and left 
+                                                      that way - to allow synchronous resets to propagate. 
+                                                      bit  0 = SBP 
+                                                      bit  1 = PC 0  
+                                                      bit  2 = PC 1  
+                                                      bit  3 = PC 2  
+                                                      bit  4 = PC 3  
+                                                      bit  5 = PC 4  
+                                                      bit  6 = PC 5  
+                                                      bit  7 = PC 6  
+                                                      bit  8 = PC 7  
+                                                      bit  9 = CC    
+                                                      bit 10 = NUT   
+                                                      bit 11 = HNUT   
+                                                      bit 12 = HUT 0 
+                                                      bit 13 = HUT 4 
+                                                      bit 14 = MUD 0 
+                                                      bit 15 = MUD 1 
+                                                      bit 16 = MUH   
+                                                      bit 17 = MIO   
+                                                      bit 18 = MIO2   
+      
+                                                      Unused bits are reserved. 
+                                                
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Reserved (unused) Coarse grain clock control for F1.
+        NAME: block_reset_reserved
+        WIDTH: 13
+      - DEFAULT: 0
+        DESCRIPTION: Block level reset for MIO2. 0=reset active. POR is active (0).
+        NAME: block_mio2_reset_n
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block level reset for MIO. 0=reset active. POR is active (0).
+        NAME: block_mio_reset_n
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block level reset for MUH. 0=reset active. POR is active (0).
+        NAME: block_muh_reset_n
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block level reset for MUD 1. 0=reset active. POR is active (0).
+        NAME: block_mud_1_reset_n
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block level reset for MUD 0. 0=reset active. POR is active (0).
+        NAME: block_mud_0_reset_n
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block level reset for HUT 4. 0=reset active. POR is active (0).
+        NAME: block_hut_4_reset_n
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block level reset for HUT 0. 0=reset active. POR is active (0).
+        NAME: block_hut_0_reset_n
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block level reset for HNUT. 0=reset active. POR is active (0).
+        NAME: block_hnut_reset_n
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block level reset for NUT. 0=reset active. POR is active (0).
+        NAME: block_nut_reset_n
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block level reset for PC 7. 0=reset active. POR is active (0).
+        NAME: block_put_3_3_reset_n
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block level reset for PC 6. 0=reset active. POR is active (0).
+        NAME: block_put_2_3_reset_n
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block level reset for PC 5. 0=reset active. POR is active (0).
+        NAME: block_put_1_3_reset_n
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block level reset for PC 4. 0=reset active. POR is active (0).
+        NAME: block_put_3_2_reset_n
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block level reset for CC. 0=reset active. POR is active (0).
+        NAME: block_cut_2_2_reset_n
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block level reset for PC 3. 0=reset active. POR is active (0).
+        NAME: block_put_1_2_reset_n
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block level reset for PC 2. 0=reset active. POR is active (0).
+        NAME: block_put_3_1_reset_n
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block level reset for PC 1. 0=reset active. POR is active (0).
+        NAME: block_put_2_1_reset_n
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block level reset for PC 0. 0=reset active. POR is active (0).
+        NAME: block_put_1_1_reset_n
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'Block level reset for SBP. 0=reset active. POR is not used for SBP - reserved.'
+        NAME: block_sbp_reset_n
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Reserved (unused) Coarse grain clock control for F1.
+        NAME: block_clk_enable_reserved
+        WIDTH: 13
+      - DEFAULT: 1
+        DESCRIPTION: Coarse grain clock control for MIO 2 block. 1=clock enabled. POR is inactive (1).
+        NAME: mio_2_clk_enable
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Coarse grain clock control for MIO block. 1=clock enabled. POR is inactive (1).
+        NAME: mio_clk_enable
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Coarse grain clock control for MUH block. 1=clock enabled. POR is inactive (1).
+        NAME: muh_clk_enable
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Coarse grain clock control for MUD 1 block. 1=clock enabled. POR is inactive (1).
+        NAME: mud_1_clk_enable
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Coarse grain clock control for MUD 0 block. 1=clock enabled. POR is inactive (1).
+        NAME: mud_0_clk_enable
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Coarse grain clock control for HUT 4 block. 1=clock enabled. POR is inactive (1).
+        NAME: hut_4_clk_enable
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Coarse grain clock control for HUT 0 block. 1=clock enabled. POR is inactive (1).
+        NAME: hut_0_clk_enable
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Coarse grain clock control for HNUT block. 1=clock enabled. POR is inactive (1).
+        NAME: hnut_clk_enable
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Coarse grain clock control for NUT block. 1=clock enabled. POR is inactive (1).
+        NAME: nut_clk_enable
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Coarse grain clock control for CC block. 1=clock enabled. POR is inactive (1).
+        NAME: cut_2_2_clk_enable
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Coarse grain clock control for PUT 7 block. 1=clock enabled. POR is inactive (1).
+        NAME: put_3_3_clk_enable
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Coarse grain clock control for PUT 6 block. 1=clock enabled. POR is inactive (1).
+        NAME: put_2_3_clk_enable
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Coarse grain clock control for PUT 5 block. 1=clock enabled. POR is inactive (1).
+        NAME: put_1_3_clk_enable
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Coarse grain clock control for PUT 4 block. 1=clock enabled. POR is inactive (1).
+        NAME: put_3_2_clk_enable
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Coarse grain clock control for PUT 3 block. 1=clock enabled. POR is inactive (1).
+        NAME: put_1_2_clk_enable
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Coarse grain clock control for PUT 2 block. 1=clock enabled. POR is inactive (1).
+        NAME: put_3_1_clk_enable
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Coarse grain clock control for PUT 1 block. 1=clock enabled. POR is inactive (1).
+        NAME: put_2_1_clk_enable
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Coarse grain clock control for PUT 0 block. 1=clock enabled. POR is inactive (1).
+        NAME: put_1_1_clk_enable
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Coarse grain clock control for SBP block. Currently reserved and unused.
+        NAME: sbp_clk_enable
+        WIDTH: 1
+    NAME: f1_subsystem_cpc_reg
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: |-
+      MIO Clock Power Control Register to allow clock and reset control over all 
+                                                 sub-blocks in MIO. Currently this is limited to the eMMC block
+                                                
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Reserved (unused) fine grain local resets for MIO.
+        NAME: mio_reset_reserved
+        WIDTH: 31
+      - DEFAULT: 0
+        DESCRIPTION: 'Reset control for eMMC controller. This allows fine grain control of the eMMC block independent of the other blocks in MIO. Active low 0 (default on POR), 1=reset inactive'
+        NAME: emmc_reset_n
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Reserved (unused) Coarse grain clock control for F1.
+        NAME: mio_clock_enable_reserved
+        WIDTH: 31
+      - DEFAULT: 1
+        DESCRIPTION: 'Clock enable for eMMC. Active high 1 (default on POR), 0=clock disabled'
+        NAME: emmc_clock_enable
+        WIDTH: 1
+    NAME: mio_cpc_reg
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: |-
+      Software controlled resets to each of the eight PLLs (1-bit per PLL). 
+                                                 Active low bits, so 0=reset asserted and 1=reset inactive. 
+                                                 All blocks are in reset at power on reset and left that way until 
+                                                 changed by software (during boot). 
+                                                 bit  0 = PCIE0 PLL 
+                                                 bit  1 = PCIE4 PLL 
+                                                 bit  2 = SOC PLL   
+                                                 bit  3 = PC PLL    
+                                                 bit  4 = MUD 0 (DDR4) PLL  
+                                                 bit  5 = MUD 1 (DDR4) PLL 
+                                                 bit  6 = MUH 0 (HBM)  PLL 
+                                                 bit  7 = MUH 0 (HBM)  PLL 
+                                                
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Reserved bits - unimplemented.'
+        NAME: pll_reset_reserved
+        WIDTH: 56
+      - DEFAULT: 0
+        DESCRIPTION: 'Direct reset control to MUH 1 PLL (active low), so 0=reset active. Default at POR is active (0).'
+        NAME: muh_1_pll_reset_n
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'Direct reset control to MUH 0 PLL (active low), so 0=reset active. Default at POR is active (0).'
+        NAME: muh_0_pll_reset_n
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'Direct reset control to MUD 1 PLL (active low), so 0=reset active. Default at POR is active (0).'
+        NAME: mud_1_pll_reset_n
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'Direct reset control to MUD 0 PLL (active low), so 0=reset active. Default at POR is active (0).'
+        NAME: mud_0_pll_reset_n
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'Direct reset control to PC PLL (active low), so 0=reset active. Default at POR is active (0).'
+        NAME: pc_pll_reset_n
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'Direct reset control to SOC PLL (active low), so 0=reset active. Default at POR is active (0).'
+        NAME: soc_pll_reset_n
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'Direct reset control to PCIE 4 PLL (active low), so 0=reset active. Default at POR is active (0).'
+        NAME: pcie_4_pll_reset_n
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'Direct reset control to PCIE 0 PLL (active low), so 0=reset active. Default at POR is active (0).'
+        NAME: pcie_0_pll_reset_n
+        WIDTH: 1
+    NAME: f1_pll_reset_n
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: Control selecting use of a GPIO to be an interrupt from the CC Interrupt controller to the external system controller
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Reserved bits - unimplemented.'
+        NAME: gpio_cic_interrupt_reserved
+        WIDTH: 58
+      - DEFAULT: 0
+        DESCRIPTION: 'Enable use of one GPIO pin to drive out a CIC interrupt to the external system controller, 1=enable, 0=disable. See gpio_cic_pin_mapping to determine which pin is used'
+        NAME: gpio_cic_interrupt_enable
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'Selects the polarity of the CIC interrupt sent out to the external system controller, 1=active low, 0=active high.'
+        NAME: gpio_cic_interrupt_polarity
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Select a GPIO pins to be used to send the CIC interrupt to the external system controller
+        NAME: gpio_cic_interrupt_pin_map
+        WIDTH: 4
+    NAME: gpio_cic_interrupt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: Control enabling and mapping of GPIO pins used as interrupts to the local interrupt register.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Reserved bits - unimplemented.'
+        NAME: gpio_non_fatal_interrupt_enable_reserved
+        WIDTH: 48
+      - DEFAULT: 0
+        DESCRIPTION: 'Enable which GPIO bits are part of parallel non-fatal GPIO register. 1=enable as non-fatal interrupt, 0=not used as non-fatal interrupt.'
+        NAME: gpio_non_fatal_interrupt_enable
+        WIDTH: 16
+    NAME: gpio_non_fatal_interrupt_enable
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: 'This fields controls the logical polarity of the interrupt pins used for non-fatal interrupts from GPIP pins. '
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Reserved bits - unimplemented.'
+        NAME: gpio_non_fatal_interrupt_polarity_reserved
+        WIDTH: 48
+      - DEFAULT: 0
+        DESCRIPTION: 'Selects the polarity (per GPIO bit) that is used as a non-fatal interrupt pin. 0=active high polarity, 1=active low polarity.'
+        NAME: gpio_non_fatal_interrupt_polarity
+        WIDTH: 16
+    NAME: gpio_non_fatal_interrupt_polarity
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: |-
+      This 2-bit field (one set per GPIO) determines the type of interrupt: 
+      
+                                                   00 = level sensitive  
+                                                   01 = single edge, active going transition 
+                                                   10 = single edge, inactive going transition 
+                                                   11 = both edges (toggle) 
+      
+                                                  Since there are 16 GPIO pins, there are 2 x 16, 32 bits for the total field size 
+                                                  by pairs of bits. So bits[1:0] = GPIO 0, bits[3:2] = GPIO 1, etc. 
+                                                 
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Selects the type of interrupt, 00=level, 01=singled edge active going edge, 10= singled edge active, negative going edge, and 11 = toggle.'
+        NAME: gpio_non_fatal_interrupt_type
+        WIDTH: 32
+    NAME: gpio_non_fatal_interrupt_type
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: Each bit in the parallel non-fatal interrupt register is mapped uniquely from one of the GPIO pins enabled as an interrupt using a 4-bit vector (per GPIO pin) to uniquely define where SW wants the interrupt to be mapped to in this (up to) 16 bit register. This mapping allows the non-fatal interrupts to be read with a single register access to the non-fatal interrupt register.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Each bit in the parallel non-fatal interrupt register is mapped uniquely from one of the GPIO pins enabled as an interrupt using a 4-bit vector (per GPIO pin) to uniquely define where SW wants the interrupt to be mapped to in this (up to) 16 bit register. This mapping allows the non-fatal interrupts to be read with a single register access to the non-fatal interrupt register.
+        NAME: gpio_pin_non_fatal_interrupt_re_map
+        WIDTH: 64
+    NAME: gpio_pin_non_fatal_interrupt_remap
+  - ATTR: 10
+    COUNT: 1
+    DESCRIPTION: 'Current values of external non-fatal interrupts - post synchronization mapped to a single 16-bit register, i.e., each bit, 1=active, 0=inactive. If one or more of these bits is active, then a non-fatal interrupt is generated to the CC.'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Reserved bits - unimplemented.'
+        NAME: gpio_non_fatal_interrupts_reserved
+        WIDTH: 48
+      - DESCRIPTION: 'Current values of external non-fatal interrupts - post synchronization mapped to a single 16-bit register, i.e., each bit, 1=active, 0=inactive. If one or more of these bits is active, then a non-fatal interrupt is generated to the CC. If the interrupt is level sensitive, it must be cleared by the source. For edge sensitive interrupts, writing to a 1 to the interupt register bit position will clear the interrupt.'
+        NAME: gpio_non_fatal_interrupts
+        WIDTH: 16
+    NAME: gpio_non_fatal_interrupts
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: 'Control enabling and mapping of GPIO pins used as fatal interrupts to the local interrupt register. '
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Reserved bits - unimplemented.'
+        NAME: gpio_fatal_interrupt_enable_reserved
+        WIDTH: 48
+      - DEFAULT: 0
+        DESCRIPTION: 'Enable which GPIO bits are part of parallel non-fatal GPIO register. 1=enable as non-fatal interrupt, 0=not used as non-fatal interrupt.'
+        NAME: gpio_fatal_interrupt_enable
+        WIDTH: 16
+    NAME: gpio_fatal_interrupt_enable
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: 'This fields controls the logical polarity of the interrupt pins used for fatal interrupts from GPIP pins. '
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Reserved bits - unimplemented.'
+        NAME: gpio_fatal_interrupt_polarity_reserved
+        WIDTH: 48
+      - DEFAULT: 0
+        DESCRIPTION: 'Selects the polarity (per GPIO bit) that is used as a fatal interrupt pin. 0=active high polarity, 1=active low polarity.'
+        NAME: gpio_fatal_interrupt_polarity
+        WIDTH: 16
+    NAME: gpio_fatal_interrupt_polarity
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: |-
+      This 2-bit field (one set per GPIO) determines the type of interrupt: 
+      
+                                                   00 = level sensitive  
+                                                   01 = single edge, active going transition 
+                                                   10 = single edge, inactive going transition 
+                                                   11 = both edges (toggle) 
+      
+                                                  Since there are 16 GPIO pins, there are 2 x 16, 32 bits for the total field size 
+                                                  by pairs of bits. So bits[1:0] = GPIO 0, bits[3:2] = GPIO 1, etc. 
+                                                 
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Selects the type of interrupt, 00=level, 01=singled edge active going edge, 10= singled edge active, negative going edge, and 11 = toggle.'
+        NAME: gpio_fatal_interrupt_type
+        WIDTH: 32
+    NAME: gpio_fatal_interrupt_type
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: Each bit in the parallel fatal interrupt register is mapped uniquely from one of the GPIO pins enabled as an interrupt using a 4-bit vector (per GPIO pin) to uniquely define where SW wants the interrupt to be mapped to in this (up to) 16 bit register. This mapping allows the fatal interrupt values to be read with a single register access to the fatal interrupt register.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Each bit in the parallel fatal interrupt register is mapped uniquely from one of the GPIO pins enabled as an interrupt using a 4-bit vector (per GPIO pin) to uniquely define where SW wants the interrupt to be mapped to in this (up to) 16 bit register. This mapping allows the fatal interrupts to be read with a single register access to the fatal_interrupt register.
+        NAME: gpio_pin_fatal_interrupt_re_map
+        WIDTH: 64
+    NAME: gpio_pin_fatal_interrupt_remap
+  - ATTR: 10
+    COUNT: 1
+    DESCRIPTION: 'Current values of external fatal interrupts - post synchronization mapped to a single 16-bit register, i.e., each bit, 1=active, 0=inactive. If one or more of these bits is active, then a fatal interrupts is generated to the CC.'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Reserved bits - unimplemented.'
+        NAME: gpio_fatal_interrupts_reserved
+        WIDTH: 48
+      - DESCRIPTION: 'Current values of external fatal interrupts - post synchronization mapped to a single 16-bit register, i.e., each bit, 1=active, 0=inactive. If one or more of these bits is active, then a fatal interrupts is generated to the CC.'
+        NAME: gpio_fatal_interrupts
+        WIDTH: 16
+    NAME: gpio_fatal_interrupts
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: Data output per bit
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Reserved bits - unimplemented.'
+        NAME: gpio_data_out_reserved
+        WIDTH: 48
+      - DEFAULT: 0
+        DESCRIPTION: (Write) data to set the output per bit
+        NAME: gpio_data_out
+        WIDTH: 16
+    NAME: gpio_data_out
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: Data output enable per bit
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Reserved bits - unimplemented.'
+        NAME: gpio_data_oe_reserved
+        WIDTH: 48
+      - DEFAULT: 0
+        DESCRIPTION: Data output enable (per bit)
+        NAME: gpio_data_oe
+        WIDTH: 16
+    NAME: gpio_data_oe
+  - ATTR: 10
+    COUNT: 1
+    DESCRIPTION: Data input from GPIO pins
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Reserved bits - unimplemented.'
+        NAME: gpio_data_in_reserved
+        WIDTH: 48
+      - DEFAULT: 0
+        DESCRIPTION: Data input from GPIO pins (synchronized to SOC clock). Any bits that are used as interrupts or output only need to be masked by software.
+        NAME: gpio_data_in
+        WIDTH: 16
+    NAME: gpio_data_in
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: 'Control register for eMMC controller - reset et al'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Currently only 1 bit (bit 0)- eMMC reset (0=reset, 1=normal operation'
+        NAME: emmc_control
+        WIDTH: 1
+    NAME: emmc_control
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: 'eMMC Pad Configuration - MMC_CMD pin'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Reserved bits - unimplemented.'
+        NAME: emmc_pad_cfg_0_reserved
+        WIDTH: 58
+      - DEFAULT: 2
+        DESCRIPTION: Configures drive impedance
+        NAME: emmc_drv_imp_config
+        WIDTH: 2
+      - DEFAULT: 1
+        DESCRIPTION: 'Determines direction of pull up or down - 0=weak pull down, 1=weak pullup'
+        NAME: emmc_pull_up_dn_dir
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: 'Disables termination on power up - active low (0=enabled, 1=disabled)'
+        NAME: emmc_power_up_term_disable_l
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: 'Disables driver on power up - active low (0=enabled, 1=disabled)'
+        NAME: emmc_power_up_drv_disable_l
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Enables termination on IO
+        NAME: emmc_term_enable
+        WIDTH: 1
+    NAME: emmc_pad_cfg_0
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: 'eMMC Pad Configuration - MMC CLK'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Reserved bits - unimplemented.'
+        NAME: emmc_pad_cfg_1_reserved
+        WIDTH: 58
+      - DEFAULT: 2
+        DESCRIPTION: Configures drive impedance
+        NAME: emmc_drv_imp_config
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: 'Determines direction of pull up or down - 0=weak pull down, 1=weak pullup'
+        NAME: emmc_pull_up_dn_dir
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: 'Disables termination on power up - active low (0=enabled, 1=disabled)'
+        NAME: emmc_power_up_term_disable_l
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: 'Disables driver on power up - active low (0=enabled, 1=disabled)'
+        NAME: emmc_power_up_drv_disable_l
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Enables termination on IO
+        NAME: emmc_term_enable
+        WIDTH: 1
+    NAME: emmc_pad_cfg_1
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: 'eMMC Pad Configuration - MMC_DS'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Reserved bits - unimplemented.'
+        NAME: emmc_pad_cfg_2_reserved
+        WIDTH: 58
+      - DEFAULT: 2
+        DESCRIPTION: Configures drive impedance
+        NAME: emmc_drv_imp_config
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: 'Determines direction of pull up or down - 0=weak pull down, 1=weak pullup'
+        NAME: emmc_pull_up_dn_dir
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: 'Disables termination on power up - active low (0=enabled, 1=disabled)'
+        NAME: emmc_power_up_term_disable_l
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: 'Disables driver on power up - active low (0=enabled, 1=disabled)'
+        NAME: emmc_power_up_drv_disable_l
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Enables termination on IO
+        NAME: emmc_term_enable
+        WIDTH: 1
+    NAME: emmc_pad_cfg_2
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: 'eMMC Pad Configuration - MMC_DATA0'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Reserved bits - unimplemented.'
+        NAME: emmc_pad_cfg_3_reserved
+        WIDTH: 58
+      - DEFAULT: 2
+        DESCRIPTION: Configures drive impedance
+        NAME: emmc_drv_imp_config
+        WIDTH: 2
+      - DEFAULT: 1
+        DESCRIPTION: 'Determines direction of pull up or down  - 0=weak pull down, 1=weak pullup'
+        NAME: emmc_pull_up_dn_dir
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: 'Disables termination on power up - active low (0=enabled, 1=disabled)'
+        NAME: emmc_power_up_term_disable_l
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: 'Disables driver on power up - active low (0=enabled, 1=disabled)'
+        NAME: emmc_power_up_drv_disable_l
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Enables termination on IO
+        NAME: emmc_term_enable
+        WIDTH: 1
+    NAME: emmc_pad_cfg_3
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: 'eMMC Pad Configuration - MMC_DATA1'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Reserved bits - unimplemented.'
+        NAME: emmc_pad_cfg_4_reserved
+        WIDTH: 58
+      - DEFAULT: 2
+        DESCRIPTION: Configures drive impedance
+        NAME: emmc_drv_imp_config
+        WIDTH: 2
+      - DEFAULT: 1
+        DESCRIPTION: 'Determines direction of pull up or down  - 0=weak pull down, 1=weak pullup'
+        NAME: emmc_pull_up_dn_dir
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: 'Disables termination on power up - active low (0=enabled, 1=disabled)'
+        NAME: emmc_power_up_term_disable_l
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: 'Disables driver on power up - active low (0=enabled, 1=disabled)'
+        NAME: emmc_power_up_drv_disable_l
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Enables termination on IO
+        NAME: emmc_term_enable
+        WIDTH: 1
+    NAME: emmc_pad_cfg_4
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: 'eMMC Pad Configuration - MMC_DATA2'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Reserved bits - unimplemented.'
+        NAME: emmc_pad_cfg_5_reserved
+        WIDTH: 58
+      - DEFAULT: 2
+        DESCRIPTION: Configures drive impedance
+        NAME: emmc_drv_imp_config
+        WIDTH: 2
+      - DEFAULT: 1
+        DESCRIPTION: 'Determines direction of pull up or down - 0=weak pull down, 1=weak pullup'
+        NAME: emmc_pull_up_dn_dir
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: 'Disables termination on power up - active low (0=enabled, 1=disabled)'
+        NAME: emmc_power_up_term_disable_l
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: 'Disables driver on power up - active low (0=enabled, 1=disabled)'
+        NAME: emmc_power_up_drv_disable_l
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Enables termination on IO
+        NAME: emmc_term_enable
+        WIDTH: 1
+    NAME: emmc_pad_cfg_5
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: 'eMMC Pad Configuration - MMC_DATA3'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Reserved bits - unimplemented.'
+        NAME: emmc_pad_cfg_6_reserved
+        WIDTH: 58
+      - DEFAULT: 2
+        DESCRIPTION: Configures drive impedance
+        NAME: emmc_drv_imp_config
+        WIDTH: 2
+      - DEFAULT: 1
+        DESCRIPTION: 'Determines direction of pull up or down - 0=weak pull down, 1=weak pullup'
+        NAME: emmc_pull_up_dn_dir
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: 'Disables termination on power up - active low (0=enabled, 1=disabled)'
+        NAME: emmc_power_up_term_disable_l
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: 'Disables driver on power up - active low (0=enabled, 1=disabled)'
+        NAME: emmc_power_up_drv_disable_l
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Enables termination on IO
+        NAME: emmc_term_enable
+        WIDTH: 1
+    NAME: emmc_pad_cfg_6
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: 'eMMC Pad Configuration - MMC_DATA4'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Reserved bits - unimplemented.'
+        NAME: emmc_pad_cfg_7_reserved
+        WIDTH: 58
+      - DEFAULT: 2
+        DESCRIPTION: Configures drive impedance
+        NAME: emmc_drv_imp_config
+        WIDTH: 2
+      - DEFAULT: 1
+        DESCRIPTION: 'Determines direction of pull up or down - 0=weak pull down, 1=weak pullup'
+        NAME: emmc_pull_up_dn_dir
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: 'Disables termination on power up - active low (0=enabled, 1=disabled)'
+        NAME: emmc_power_up_term_disable_l
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: 'Disables driver on power up - active low (0=enabled, 1=disabled)'
+        NAME: emmc_power_up_drv_disable_l
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Enables termination on IO
+        NAME: emmc_term_enable
+        WIDTH: 1
+    NAME: emmc_pad_cfg_7
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: 'eMMC Pad Configuration - MMC_DATA5'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Reserved bits - unimplemented.'
+        NAME: emmc_pad_cfg_8_reserved
+        WIDTH: 58
+      - DEFAULT: 2
+        DESCRIPTION: Configures drive impedance
+        NAME: emmc_drv_imp_config
+        WIDTH: 2
+      - DEFAULT: 1
+        DESCRIPTION: 'Determines direction of pull up or down - 0=weak pull down, 1=weak pullup'
+        NAME: emmc_pull_up_dn_dir
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: 'Disables termination on power up - active low (0=enabled, 1=disabled)'
+        NAME: emmc_power_up_term_disable_l
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: 'Disables driver on power up - active low (0=enabled, 1=disabled)'
+        NAME: emmc_power_up_drv_disable_l
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Enables termination on IO
+        NAME: emmc_term_enable
+        WIDTH: 1
+    NAME: emmc_pad_cfg_8
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: 'eMMC Pad Configuration - MMC_DATA6'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Reserved bits - unimplemented.'
+        NAME: emmc_pad_cfg_9_reserved
+        WIDTH: 58
+      - DEFAULT: 2
+        DESCRIPTION: Configures drive impedance
+        NAME: emmc_drv_imp_config
+        WIDTH: 2
+      - DEFAULT: 1
+        DESCRIPTION: 'Determines direction of pull up or down - 0=weak pull down, 1=weak pullup'
+        NAME: emmc_pull_up_dn_dir
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: 'Disables termination on power up - active low (0=enabled, 1=disabled)'
+        NAME: emmc_power_up_term_disable_l
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: 'Disables driver on power up - active low (0=enabled, 1=disabled)'
+        NAME: emmc_power_up_drv_disable_l
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Enables termination on IO
+        NAME: emmc_term_enable
+        WIDTH: 1
+    NAME: emmc_pad_cfg_9
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: 'eMMC Pad Configuration - MMC_DATA7'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Reserved bits - unimplemented.'
+        NAME: emmc_pad_cfg_10_reserved
+        WIDTH: 58
+      - DEFAULT: 2
+        DESCRIPTION: Configures drive impedance
+        NAME: emmc_drv_imp_config
+        WIDTH: 2
+      - DEFAULT: 1
+        DESCRIPTION: 'Determines direction of pull up or down  - 0=weak pull down, 1=weak pullup'
+        NAME: emmc_pull_up_dn_dir
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: 'Disables termination on power up - active low (0=enabled, 1=disabled)'
+        NAME: emmc_power_up_term_disable_l
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: 'Disables driver on power up - active low (0=enabled, 1=disabled)'
+        NAME: emmc_power_up_drv_disable_l
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Enables termination on IO
+        NAME: emmc_term_enable
+        WIDTH: 1
+    NAME: emmc_pad_cfg_10
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: 'eMMC OC Pad Configuration - MMC_RST_L'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Reserved bits - unimplemented.'
+        NAME: emmc_pad_cfg_11_reserved
+        WIDTH: 57
+      - DEFAULT: 2
+        DESCRIPTION: Configures drive impedance
+        NAME: emmc_drv_imp_config
+        WIDTH: 2
+      - DEFAULT: 1
+        DESCRIPTION: 'Determines direction of pull up or down - 0=weak pull down, 1=weak pullup'
+        NAME: emmc_pull_up_dn_dir
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: 'Disables termination on power up - active low (0=enabled, 1=disabled)'
+        NAME: emmc_power_up_term_disable_l
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: 'Disables driver on power up - active low (0=enabled, 1=disabled)'
+        NAME: emmc_power_up_drv_disable_l
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Enables termination on IO
+        NAME: emmc_term_enable
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Disables IO on powerup power
+        NAME: emmc_power_up_disable_
+        WIDTH: 1
+    NAME: emmc_pad_cfg_11
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: NVDIMM OC Pad Configuration
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Reserved bits - unimplemented.'
+        NAME: nvdimm_pad_cfg_0_reserved
+        WIDTH: 58
+      - DEFAULT: 0
+        DESCRIPTION: Configures drive impedance
+        NAME: nvdimm_oc_drv_imp_config
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Disables IO on power up
+        NAME: nvdimm_oc_power_up_disable
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Reserved bits in OC drivers
+        NAME: nvdimm_oc_reserved
+        WIDTH: 3
+    NAME: nvdimm_pad_cfg_0
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: NVDIMM OC Pad Configuration
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Reserved bits - unimplemented.'
+        NAME: nvdimm_pad_cfg_1_reserved
+        WIDTH: 58
+      - DEFAULT: 0
+        DESCRIPTION: Configures drive impedance
+        NAME: nvdimm_oc_drv_imp_config
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Disables IO on power up
+        NAME: nvdimm_oc_power_up_disable
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Reserved bits in OC drivers
+        NAME: nvdimm_oc_reserved
+        WIDTH: 3
+    NAME: nvdimm_pad_cfg_1
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: NVDIMM OC Pad Configuration
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Reserved bits - unimplemented.'
+        NAME: nvdimm_pad_cfg_2_reserved
+        WIDTH: 58
+      - DEFAULT: 0
+        DESCRIPTION: Configures drive impedance
+        NAME: nvdimm_oc_drv_imp_config
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Disables IO on power up
+        NAME: nvdimm_oc_power_up_disable
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Reserved bits in OC drivers
+        NAME: nvdimm_oc_reserved
+        WIDTH: 3
+    NAME: nvdimm_pad_cfg_2
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: NVDIMM OC Pad Configuration
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Reserved bits - unimplemented.'
+        NAME: nvdimm_pad_cfg_3_reserved
+        WIDTH: 58
+      - DEFAULT: 0
+        DESCRIPTION: Configures drive impedance
+        NAME: nvdimm_oc_drv_imp_config
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Disables IO on power up
+        NAME: nvdimm_oc_power_up_disable
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Reserved bits in OC drivers
+        NAME: nvdimm_oc_reserved
+        WIDTH: 3
+    NAME: nvdimm_pad_cfg_3
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: NVDIMM OC Pad Configuration
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Reserved bits - unimplemented.'
+        NAME: nvdimm_pad_cfg_4_reserved
+        WIDTH: 58
+      - DEFAULT: 0
+        DESCRIPTION: Configures drive impedance
+        NAME: nvdimm_oc_drv_imp_config
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Disables IO on power up
+        NAME: nvdimm_oc_power_up_disable
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Reserved bits in OC drivers
+        NAME: nvdimm_oc_reserved
+        WIDTH: 3
+    NAME: nvdimm_pad_cfg_4
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: NVDIMM OC Pad Configuration
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Reserved bits - unimplemented.'
+        NAME: nvdimm_pad_cfg_5_reserved
+        WIDTH: 58
+      - DEFAULT: 0
+        DESCRIPTION: Configures drive impedance
+        NAME: nvdimm_oc_drv_imp_config
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Disables IO on power up
+        NAME: nvdimm_oc_power_up_disable
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Reserved bits in OC drivers
+        NAME: nvdimm_oc_reserved
+        WIDTH: 3
+    NAME: nvdimm_pad_cfg_5
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: GPIO Pad Configuration
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Reserved bits - unimplemented.'
+        NAME: nvdimm_hw_fail_int_reserved
+        WIDTH: 57
+      - DEFAULT: 0
+        DESCRIPTION: Configures drive impedance
+        NAME: hw_fail_int_l_drv_imp_config
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Determines direction of pull up or down
+        NAME: hw_fail_int_l_pull_up_dn_dir
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Disables termination on power up
+        NAME: hw_fail_int_l_power_up_term_disable
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Disables driver on power up
+        NAME: hw_fail_int_l_power_up_drv_disable
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Enables termination on IO
+        NAME: hw_fail_int_l_term_enable
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Disables IO on power up
+        NAME: hw_fail_int_l_power_up_disable
+        WIDTH: 1
+    NAME: nvdimm_hw_fail_int_l_cfg
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: GPIO Pad Configuration
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Reserved bits - unimplemented.'
+        NAME: gpio_pad_cfg_0_reserved
+        WIDTH: 58
+      - DEFAULT: 0
+        DESCRIPTION: Configures drive impedance
+        NAME: gpio16_drv_imp_config
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Determines direction of pull up or down
+        NAME: gpio16_pull_up_dn_dir
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'Disables termination on power up - active low (0=enabled, 1=disabled)'
+        NAME: gpio16_power_up_term_disable_l
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'Disables driver on power up - active low (0=enabled, 1=disabled)'
+        NAME: gpio16_power_up_drv_disable_l
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Enables termination on IO
+        NAME: gpio16_term_enable
+        WIDTH: 1
+    NAME: gpio_pad_cfg_0
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: GPIO Pad Configuration
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Reserved bits - unimplemented.'
+        NAME: gpio_pad_cfg_1_reserved
+        WIDTH: 58
+      - DEFAULT: 0
+        DESCRIPTION: Configures drive impedance
+        NAME: gpio16_drv_imp_config
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Determines direction of pull up or down
+        NAME: gpio16_pull_up_dn_dir
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'Disables termination on power up - active low (0=enabled, 1=disabled)'
+        NAME: gpio16_power_up_term_disable_l
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'Disables driver on power up - active low (0=enabled, 1=disabled)'
+        NAME: gpio16_power_up_drv_disable_l
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Enables termination on IO
+        NAME: gpio16_term_enable
+        WIDTH: 1
+    NAME: gpio_pad_cfg_1
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: GPIO Pad Configuration
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Reserved bits - unimplemented.'
+        NAME: gpio_pad_cfg_2_reserved
+        WIDTH: 58
+      - DEFAULT: 0
+        DESCRIPTION: Configures drive impedance
+        NAME: gpio16_drv_imp_config
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Determines direction of pull up or down
+        NAME: gpio16_pull_up_dn_dir
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'Disables termination on power up - active low (0=enabled, 1=disabled)'
+        NAME: gpio16_power_up_term_disable_l
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'Disables driver on power up - active low (0=enabled, 1=disabled)'
+        NAME: gpio16_power_up_drv_disable_l
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Enables termination on IO
+        NAME: gpio16_term_enable
+        WIDTH: 1
+    NAME: gpio_pad_cfg_2
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: GPIO Pad Configuration
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Reserved bits - unimplemented.'
+        NAME: gpio_pad_cfg_3_reserved
+        WIDTH: 58
+      - DEFAULT: 0
+        DESCRIPTION: Configures drive impedance
+        NAME: gpio16_drv_imp_config
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Determines direction of pull up or down
+        NAME: gpio16_pull_up_dn_dir
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'Disables termination on power up - active low (0=enabled, 1=disabled)'
+        NAME: gpio16_power_up_term_disable_l
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'Disables driver on power up - active low (0=enabled, 1=disabled)'
+        NAME: gpio16_power_up_drv_disable_l
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Enables termination on IO
+        NAME: gpio16_term_enable
+        WIDTH: 1
+    NAME: gpio_pad_cfg_3
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: GPIO Pad Configuration
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Reserved bits - unimplemented.'
+        NAME: gpio_pad_cfg_4_reserved
+        WIDTH: 58
+      - DEFAULT: 0
+        DESCRIPTION: Configures drive impedance
+        NAME: gpio16_drv_imp_config
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Determines direction of pull up or down
+        NAME: gpio16_pull_up_dn_dir
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'Disables termination on power up - active low (0=enabled, 1=disabled)'
+        NAME: gpio16_power_up_term_disable_l
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'Disables driver on power up - active low (0=enabled, 1=disabled)'
+        NAME: gpio16_power_up_drv_disable_l
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Enables termination on IO
+        NAME: gpio16_term_enable
+        WIDTH: 1
+    NAME: gpio_pad_cfg_4
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: GPIO Pad Configuration
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Reserved bits - unimplemented.'
+        NAME: gpio_pad_cfg_5_reserved
+        WIDTH: 58
+      - DEFAULT: 0
+        DESCRIPTION: Configures drive impedance
+        NAME: gpio16_drv_imp_config
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Determines direction of pull up or down
+        NAME: gpio16_pull_up_dn_dir
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'Disables termination on power up - active low (0=enabled, 1=disabled)'
+        NAME: gpio16_power_up_term_disable_l
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'Disables driver on power up - active low (0=enabled, 1=disabled)'
+        NAME: gpio16_power_up_drv_disable_l
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Enables termination on IO
+        NAME: gpio16_term_enable
+        WIDTH: 1
+    NAME: gpio_pad_cfg_5
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: GPIO Pad Configuration
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Reserved bits - unimplemented.'
+        NAME: gpio_pad_cfg_6_reserved
+        WIDTH: 58
+      - DEFAULT: 0
+        DESCRIPTION: Configures drive impedance
+        NAME: gpio16_drv_imp_config
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Determines direction of pull up or down
+        NAME: gpio16_pull_up_dn_dir
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'Disables termination on power up - active low (0=enabled, 1=disabled)'
+        NAME: gpio16_power_up_term_disable_l
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'Disables driver on power up - active low (0=enabled, 1=disabled)'
+        NAME: gpio16_power_up_drv_disable_l
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Enables termination on IO
+        NAME: gpio16_term_enable
+        WIDTH: 1
+    NAME: gpio_pad_cfg_6
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: GPIO Pad Configuration
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Reserved bits - unimplemented.'
+        NAME: gpio_pad_cfg_7_reserved
+        WIDTH: 58
+      - DEFAULT: 0
+        DESCRIPTION: Configures drive impedance
+        NAME: gpio16_drv_imp_config
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Determines direction of pull up or down
+        NAME: gpio16_pull_up_dn_dir
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'Disables termination on power up - active low (0=enabled, 1=disabled)'
+        NAME: gpio16_power_up_term_disable_l
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'Disables driver on power up - active low (0=enabled, 1=disabled)'
+        NAME: gpio16_power_up_drv_disable_l
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Enables termination on IO
+        NAME: gpio16_term_enable
+        WIDTH: 1
+    NAME: gpio_pad_cfg_7
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: GPIO Pad Configuration
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Reserved bits - unimplemented.'
+        NAME: gpio_pad_cfg_8_reserved
+        WIDTH: 61
+      - DEFAULT: 0
+        DESCRIPTION: Disables IO on power up
+        NAME: gpio16_power_up_disable_l
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Configures drive impedance
+        NAME: gpio16_drv_imp_config
+        WIDTH: 2
+    NAME: gpio_pad_cfg_8
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: GPIO Pad Configuration
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Reserved bits - unimplemented.'
+        NAME: gpio_pad_cfg_9_reserved
+        WIDTH: 61
+      - DEFAULT: 0
+        DESCRIPTION: Disables IO on power up
+        NAME: gpio16_power_up_disable_l
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Configures drive impedance
+        NAME: gpio16_drv_imp_config
+        WIDTH: 2
+    NAME: gpio_pad_cfg_9
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: GPIO Pad Configuration
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Reserved bits - unimplemented.'
+        NAME: gpio_pad_cfg_10_reserved
+        WIDTH: 61
+      - DEFAULT: 0
+        DESCRIPTION: Disables IO on power up
+        NAME: gpio16_power_up_disable_l
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Configures drive impedance
+        NAME: gpio16_drv_imp_config
+        WIDTH: 2
+    NAME: gpio_pad_cfg_10
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: GPIO Pad Configuration
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Reserved bits - unimplemented.'
+        NAME: gpio_pad_cfg_11_reserved
+        WIDTH: 61
+      - DEFAULT: 0
+        DESCRIPTION: Disables IO on power up
+        NAME: gpio16_power_up_disable_l
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Configures drive impedance
+        NAME: gpio16_drv_imp_config
+        WIDTH: 2
+    NAME: gpio_pad_cfg_11
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: GPIO Pad Configuration
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Reserved bits - unimplemented.'
+        NAME: gpio_pad_cfg_12_reserved
+        WIDTH: 61
+      - DEFAULT: 0
+        DESCRIPTION: Disables IO on power up
+        NAME: gpio16_power_up_disable_l
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Configures drive impedance
+        NAME: gpio16_drv_imp_config
+        WIDTH: 2
+    NAME: gpio_pad_cfg_12
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: GPIO Pad Configuration
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Reserved bits - unimplemented.'
+        NAME: gpio_pad_cfg_13_reserved
+        WIDTH: 61
+      - DEFAULT: 0
+        DESCRIPTION: Disables IO on power up
+        NAME: gpio16_power_up_disable_l
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Configures drive impedance
+        NAME: gpio16_drv_imp_config
+        WIDTH: 2
+    NAME: gpio_pad_cfg_13
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: GPIO Pad Configuration
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Reserved bits - unimplemented.'
+        NAME: gpio_pad_cfg_14_reserved
+        WIDTH: 61
+      - DEFAULT: 0
+        DESCRIPTION: Disables IO on power up
+        NAME: gpio16_power_up_disable_l
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Configures drive impedance
+        NAME: gpio16_drv_imp_config
+        WIDTH: 2
+    NAME: gpio_pad_cfg_14
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: GPIO Pad Configuration
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Reserved bits - unimplemented.'
+        NAME: gpio_pad_cfg_15_reserved
+        WIDTH: 61
+      - DEFAULT: 0
+        DESCRIPTION: Disables IO on power up
+        NAME: gpio16_power_up_disable_l
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Configures drive impedance
+        NAME: gpio16_drv_imp_config
+        WIDTH: 2
+    NAME: gpio_pad_cfg_15
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: 'Pre-scalar for feedback divider. Set LOW for DIV2, set HIGH for DIV3'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Pre-scalar for feedback divider. Set LOW for DIV2, set HIGH for DIV3'
+        NAME: soc_pll_cfg_pll_receiver_if_prog_fbdiv_23
+        WIDTH: 1
+    NAME: soc_pll_cfg_pll_receiver_if_prog_fbdiv_23
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: 'Main divider 1-256 for feedback divisor, values from 2 to 255 inclusive'
+    FLDLST:
+      - DEFAULT: 20
+        DESCRIPTION: PLL Feedback divider main divisor. Values from 2 to 255 inclusive.
+        NAME: soc_pll_cfg_pll_receiver_if_prog_fbdiv255
+        WIDTH: 8
+    NAME: soc_pll_cfg_pll_receiver_if_prog_fbdiv255
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: PLL reference clock input divisor. Values from 1 to 63 inclusive.
+    FLDLST:
+      - DEFAULT: 1
+        DESCRIPTION: PLL reference clock input divisor. Values from 1 to 63 inclusive.
+        NAME: soc_pll_cfg_pll_receiver_if_pll_refcnt
+        WIDTH: 6
+    NAME: soc_pll_cfg_pll_receiver_if_pll_refcnt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: PLL output divider divisor. Any value from 2 to 63 inclusive. Dynamic changes allowed.
+    FLDLST:
+      - DEFAULT: 4
+        DESCRIPTION: PLL output divider divisor. Any value from 2 to 63 inclusive. Dynamic changes allowed.
+        NAME: soc_pll_cfg_pll_receiver_if_pll_out_divcnt
+        WIDTH: 6
+    NAME: soc_pll_cfg_pll_receiver_if_pll_out_divcnt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: PLL output divider load count control.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: PLL output divider load count control
+        NAME: soc_pll_cfg_pll_receiver_if_pll_out_divcnt_load
+        WIDTH: 1
+    NAME: soc_pll_cfg_pll_receiver_if_pll_out_divcnt_load
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: 'Mask to disable each of the four clocks generated by PLL. '
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Mask to disable each of the four clocks generated by PLL.
+        NAME: soc_pll_cfg_pll_receiver_if_pll_disable_output_clk
+        WIDTH: 4
+    NAME: soc_pll_cfg_pll_receiver_if_pll_disable_output_clk
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: PLL loop control block enable
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Enables PLL for normal operation.
+        NAME: soc_pll_cfg_pll_receiver_if_pll_enable
+        WIDTH: 1
+    NAME: soc_pll_cfg_pll_receiver_if_pll_enable
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: Low speed clock divider enable signal
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Low speed clock divider enable signal.
+        NAME: soc_pll_cfg_pll_receiver_if_divn_en
+        WIDTH: 1
+    NAME: soc_pll_cfg_pll_receiver_if_divn_en
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: Low speed clock divider divisor value. Values allowed 1 to 63 inclusive.
+    FLDLST:
+      - DEFAULT: 1
+        DESCRIPTION: Low speed clock divider divisor value. Values allowed 1 to 63 inclusive.
+        NAME: soc_pll_cfg_pll_receiver_if_divn_prog
+        WIDTH: 6
+    NAME: soc_pll_cfg_pll_receiver_if_divn_prog
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: REFCLK bypass for DivN
+    FLDLST:
+      - DEFAULT: 1
+        DESCRIPTION: REFCLK bypass for DivN.
+        NAME: soc_pll_cfg_pll_receiver_if_divn_ref_byp
+        WIDTH: 1
+    NAME: soc_pll_cfg_pll_receiver_if_divn_ref_byp
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: Selects between slow and fast calibration algorithms for PLL.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Selects between slow (1) and fast calibration (0) algorithms for PLL.
+        NAME: soc_pll_cfg_pll_receiver_if_slow_cal_en
+        WIDTH: 1
+    NAME: soc_pll_cfg_pll_receiver_if_slow_cal_en
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: Enable automatic REFCLK bypass on startup  when set to 0. Must be set to 0 for normal operation.
+    FLDLST:
+      - DEFAULT: 1
+        DESCRIPTION: Enable Automatic REFCLK bypass on startup when set to 0. Must be set to 0 for normal operation.
+        NAME: soc_pll_cfg_pll_receiver_if_disable_abs
+        WIDTH: 1
+    NAME: soc_pll_cfg_pll_receiver_if_disable_abs
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: Enable REFCLK bypass to drive the PLL clock output when 1. Glitchless switching protected
+    FLDLST:
+      - DEFAULT: 1
+        DESCRIPTION: Enable REFCLK bypass to drive the PLL clock output when 1. Glitchless switching protected
+        NAME: soc_pll_cfg_pll_receiver_if_refclk_bypass
+        WIDTH: 1
+    NAME: soc_pll_cfg_pll_receiver_if_refclk_bypass
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: CCB0 clock halting and stepping control.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: CCB0 clock halting and stepping control.
+        NAME: soc_pll_cfg_pll_receiver_if_ccb0_halt
+        WIDTH: 1
+    NAME: soc_pll_cfg_pll_receiver_if_ccb0_halt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: CCB1 clock halting and stepping control.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: CCB1 clock halting and stepping control.
+        NAME: soc_pll_cfg_pll_receiver_if_ccb1_halt
+        WIDTH: 1
+    NAME: soc_pll_cfg_pll_receiver_if_ccb1_halt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: CCB2 clock halting and stepping control.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: CCB2 clock halting and stepping control.
+        NAME: soc_pll_cfg_pll_receiver_if_ccb2_halt
+        WIDTH: 1
+    NAME: soc_pll_cfg_pll_receiver_if_ccb2_halt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: CCB3 clock halting and stepping control.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: CCB3 clock halting and stepping control.
+        NAME: soc_pll_cfg_pll_receiver_if_ccb3_halt
+        WIDTH: 1
+    NAME: soc_pll_cfg_pll_receiver_if_ccb3_halt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: CCB4 clock halting and stepping control
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: CCB4 clock halting and stepping control.
+        NAME: soc_pll_cfg_pll_receiver_if_ccb4_halt
+        WIDTH: 1
+    NAME: soc_pll_cfg_pll_receiver_if_ccb4_halt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: 'Observation Clock Output Divisor - divide by 1, 2, 4 or 8'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Observation Clock Output Divisor - divide by 1, 2, 4 or 8'
+        NAME: soc_pll_cfg_pll_receiver_if_ck_obs_div
+        WIDTH: 2
+    NAME: soc_pll_cfg_pll_receiver_if_ck_obs_div
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: Select among 16 sources to send to observation pad for test purposes
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Select among 16 sources to send to observation pad for test purposes
+        NAME: soc_pll_cfg_pll_receiver_if_ck_obs_sel
+        WIDTH: 4
+    NAME: soc_pll_cfg_pll_receiver_if_ck_obs_sel
+  - ATTR: 10
+    COUNT: 1
+    DESCRIPTION: 'Lock status from PLL - bit 0'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Lock status from PLL - bit 0'
+        NAME: soc_pll_cfg_pll_lock_status
+        WIDTH: 1
+    NAME: soc_pll_cfg_pll_lock_status
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: 'Enable the DLL, 1=enable, 0=disable'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Enable the DLL, 1=disabled,0=enabled'
+        NAME: soc_pll_cfg_dll_enable
+        WIDTH: 1
+    NAME: soc_pll_cfg_pll_receiver_if_dll_enable
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: DLL reference clock input divisor. Values from 1 to 63 inclusive.
+    FLDLST:
+      - DEFAULT: 1
+        DESCRIPTION: DLL reference clock input divisor. Values from 1 to 63 inclusive.
+        NAME: soc_pll_cfg_pll_receiver_if_dll_refcnt
+        WIDTH: 6
+    NAME: soc_pll_cfg_pll_receiver_if_dll_refcnt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: PLL output divider divisor. Any value from 2 to 63 inclusive. Dynamic changes allowed.
+    FLDLST:
+      - DEFAULT: 8
+        DESCRIPTION: DLL feedback input clock divider. Any value from 1 to 63 inclusive.
+        NAME: soc_pll_cfg_pll_receiver_if_dll_fbcnt
+        WIDTH: 6
+    NAME: soc_pll_cfg_pll_receiver_if_dll_fbcnt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: DLL output divider divisor. Any value from 2 to 63 inclusive. Dynamic changes allowed.
+    FLDLST:
+      - DEFAULT: 5
+        DESCRIPTION: DLL output divider divisor. Any value from 2 to 63 inclusive. Dynamic changes allowed.
+        NAME: soc_pll_cfg_pll_receiver_if_dll_out_divcnt
+        WIDTH: 6
+    NAME: soc_pll_cfg_pll_receiver_if_dll_out_divcnt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: DLL output divider load count control.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: DLL output divider load count control
+        NAME: soc_pll_cfg_pll_receiver_if_dll_out_divcnt_load
+        WIDTH: 1
+    NAME: soc_pll_cfg_pll_receiver_if_dll_out_divcnt_load
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: 'Disable the four DLL generated clocks, on bit per clock'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Disables the four DLL output clocks, one bit per DLL clock, 1=disabled,0=enabled'
+        NAME: soc_pll_cfg_pll_receiver_if_dll_disable_output_clk
+        WIDTH: 4
+    NAME: soc_pll_cfg_pll_receiver_if_dll_disable_output_clk
+  - ATTR: 10
+    COUNT: 1
+    DESCRIPTION: 'DLL Lock status from PLL - bit 0'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Lock status from DLL - bit 0'
+        NAME: soc_pll_cfg_dll_lock_status
+        WIDTH: 1
+    NAME: soc_pll_cfg_dll_lock_status
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: DLL CCB0 clock halting and stepping control
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: DLL CCB0 clock halting and stepping control.
+        NAME: soc_pll_cfg_pll_receiver_if_dll_ccb0_halt
+        WIDTH: 1
+    NAME: soc_pll_cfg_pll_receiver_if_dll_ccb0_halt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: DLL CCB4 clock halting and stepping control
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: DLL CCB4 clock halting and stepping control.
+        NAME: soc_pll_cfg_pll_receiver_if_dll_ccb4_halt
+        WIDTH: 1
+    NAME: soc_pll_cfg_pll_receiver_if_dll_ccb4_halt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: 'Pre-scalar for feedback divider. Set LOW for DIV2, set HIGH for DIV3'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Pre-scalar for feedback divider. Set LOW for DIV2, set HIGH for DIV3'
+        NAME: pc_pll_cfg_pll_receiver_if_prog_fbdiv_23
+        WIDTH: 1
+    NAME: pc_pll_cfg_pll_receiver_if_prog_fbdiv_23
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: 'Main divider 1-256 for feedback divisor, values from 2 to 255 inclusive'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: PLL Feedback divider main divisor. Values from 2 to 255 inclusive.
+        NAME: pc_pll_cfg_pll_receiver_if_prog_fbdiv255
+        WIDTH: 8
+    NAME: pc_pll_cfg_pll_receiver_if_prog_fbdiv255
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: PLL reference clock input divisor. Values from 1 to 63 inclusive.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: PLL reference clock input divisor. Values from 1 to 63 inclusive.
+        NAME: pc_pll_cfg_pll_receiver_if_pll_refcnt
+        WIDTH: 6
+    NAME: pc_pll_cfg_pll_receiver_if_pll_refcnt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: PLL output divider divisor. Any value from 2 to 63 inclusive. Dynamic changes allowed.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: PLL output divider divisor. Any value from 2 to 63 inclusive. Dynamic changes allowed.
+        NAME: pc_pll_cfg_pll_receiver_if_pll_out_divcnt
+        WIDTH: 6
+    NAME: pc_pll_cfg_pll_receiver_if_pll_out_divcnt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: PLL output divider load count control.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: PLL output divider load count control
+        NAME: pc_pll_cfg_pll_receiver_if_pll_out_divcnt_load
+        WIDTH: 1
+    NAME: pc_pll_cfg_pll_receiver_if_pll_out_divcnt_load
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: 'Mask to disable each of the four clocks generated by PLL. '
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Mask to disable each of the four clocks generated by PLL.
+        NAME: pc_pll_cfg_pll_receiver_if_pll_disable_output_clk
+        WIDTH: 4
+    NAME: pc_pll_cfg_pll_receiver_if_pll_disable_output_clk
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: PLL loop control block enable
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Enables PLL for normal operation.
+        NAME: pc_pll_cfg_pll_receiver_if_pll_enable
+        WIDTH: 1
+    NAME: pc_pll_cfg_pll_receiver_if_pll_enable
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: Low speed clock divider enable signal
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Low speed clock divider enable signal.
+        NAME: pc_pll_cfg_pll_receiver_if_divn_en
+        WIDTH: 1
+    NAME: pc_pll_cfg_pll_receiver_if_divn_en
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: Low speed clock divider divisor value. Values allowed 1 to 63 inclusive.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Low speed clock divider divisor value. Values allowed 1 to 63 inclusive.
+        NAME: pc_pll_cfg_pll_receiver_if_divn_prog
+        WIDTH: 6
+    NAME: pc_pll_cfg_pll_receiver_if_divn_prog
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: REFCLK bypass for DivN
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: REFCLK bypass for DivN.
+        NAME: pc_pll_cfg_pll_receiver_if_divn_ref_byp
+        WIDTH: 1
+    NAME: pc_pll_cfg_pll_receiver_if_divn_ref_byp
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: Selects between slow and fast calibration algorithms for PLL.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Selects between slow (1) and fast calibration (0) algorithms for PLL.
+        NAME: pc_pll_cfg_pll_receiver_if_slow_cal_en
+        WIDTH: 1
+    NAME: pc_pll_cfg_pll_receiver_if_slow_cal_en
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: Enable automatic REFCLK bypass on startup  when set to 0. Must be set to 0 for normal operation.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Enable Automatic REFCLK bypass on startup when set to 0. Must be set to 0 for normal operation.
+        NAME: pc_pll_cfg_pll_receiver_if_disable_abs
+        WIDTH: 1
+    NAME: pc_pll_cfg_pll_receiver_if_disable_abs
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: Enable REFCLK bypass to drive the PLL clock output when 1. Glitchless switching protected
+    FLDLST:
+      - DEFAULT: 1
+        DESCRIPTION: Enable REFCLK bypass to drive the PLL clock output when 1. Glitchless switching protected
+        NAME: pc_pll_cfg_pll_receiver_if_refclk_bypass
+        WIDTH: 1
+    NAME: pc_pll_cfg_pll_receiver_if_refclk_bypass
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: CCB0 clock halting and stepping control.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: CCB0 clock halting and stepping control.
+        NAME: pc_pll_cfg_pll_receiver_if_ccb0_halt
+        WIDTH: 1
+    NAME: pc_pll_cfg_pll_receiver_if_ccb0_halt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: CCB1 clock halting and stepping control.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: CCB1 clock halting and stepping control.
+        NAME: pc_pll_cfg_pll_receiver_if_ccb1_halt
+        WIDTH: 1
+    NAME: pc_pll_cfg_pll_receiver_if_ccb1_halt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: CCB2 clock halting and stepping control.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: CCB2 clock halting and stepping control.
+        NAME: pc_pll_cfg_pll_receiver_if_ccb2_halt
+        WIDTH: 1
+    NAME: pc_pll_cfg_pll_receiver_if_ccb2_halt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: CCB3 clock halting and stepping control.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: CCB3 clock halting and stepping control.
+        NAME: pc_pll_cfg_pll_receiver_if_ccb3_halt
+        WIDTH: 1
+    NAME: pc_pll_cfg_pll_receiver_if_ccb3_halt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: CCB4 clock halting and stepping control
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: CCB4 clock halting and stepping control.
+        NAME: pc_pll_cfg_pll_receiver_if_ccb4_halt
+        WIDTH: 1
+    NAME: pc_pll_cfg_pll_receiver_if_ccb4_halt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: 'Observation Clock Output Divisor - divide by 1, 2, 4 or 8'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Observation Clock Output Divisor - divide by 1, 2, 4 or 8'
+        NAME: pc_pll_cfg_pll_receiver_if_ck_obs_div
+        WIDTH: 2
+    NAME: pc_pll_cfg_pll_receiver_if_ck_obs_div
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: Select among 16 sources to send to observation pad for test purposes
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Select among 16 sources to send to observation pad for test purposes
+        NAME: pc_pll_cfg_pll_receiver_if_ck_obs_sel
+        WIDTH: 4
+    NAME: pc_pll_cfg_pll_receiver_if_ck_obs_sel
+  - ATTR: 10
+    COUNT: 1
+    DESCRIPTION: 'Lock status from PLL - bit 0'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'PLL Lock status from PLL - bit 0'
+        NAME: pc_pll_cfg_pll_lock_status
+        WIDTH: 1
+    NAME: pc_pll_cfg_pll_lock_status
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: 'Enable the DLL, 1=enable, 0=disable'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Enable the DLL, 1=disabled,0=enabled'
+        NAME: pc_pll_cfg_pll_receiver_if_dll_enable
+        WIDTH: 1
+    NAME: pc_pll_cfg_pll_receiver_if_dll_enable
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: DLL reference clock input divisor. Values from 1 to 63 inclusive.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: DLL reference clock input divisor. Values from 1 to 63 inclusive.
+        NAME: pc_pll_cfg_pll_receiver_if_dll_refcnt
+        WIDTH: 6
+    NAME: pc_pll_cfg_pll_receiver_if_dll_refcnt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: PLL output divider divisor. Any value from 2 to 63 inclusive. Dynamic changes allowed.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: DLL feedback input clock divider. Any value from 1 to 63 inclusive.
+        NAME: pc_pll_cfg_pll_receiver_if_dll_fbcnt
+        WIDTH: 6
+    NAME: pc_pll_cfg_pll_receiver_if_dll_fbcnt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: DLL output divider divisor. Any value from 2 to 63 inclusive. Dynamic changes allowed.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: DLL output divider divisor. Any value from 2 to 63 inclusive. Dynamic changes allowed.
+        NAME: pc_pll_cfg_pll_receiver_if_dll_out_divcnt
+        WIDTH: 6
+    NAME: pc_pll_cfg_pll_receiver_if_dll_out_divcnt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: DLL output divider load count control.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: DLL output divider load count control
+        NAME: pc_pll_cfg_pll_receiver_if_dll_out_divcnt_load
+        WIDTH: 1
+    NAME: pc_pll_cfg_pll_receiver_if_dll_out_divcnt_load
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: 'Disable the four DLL generated clocks, on bit per clock'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Disables the four DLL output clocks, one bit per DLL clock, 1=disabled,0=enabled'
+        NAME: pc_pll_cfg_pll_receiver_if_dll_disable_output_clk
+        WIDTH: 4
+    NAME: pc_pll_cfg_pll_receiver_if_dll_disable_output_clk
+  - ATTR: 10
+    COUNT: 1
+    DESCRIPTION: 'DLL Lock status from PLL - bit 0'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Lock status from DLL - bit 0'
+        NAME: pc_pll_cfg_dll_lock_status
+        WIDTH: 1
+    NAME: pc_pll_cfg_dll_lock_status
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: DLL CCB0 clock halting and stepping control
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: DLL CCB0 clock halting and stepping control.
+        NAME: pc_pll_cfg_pll_receiver_if_dll_ccb0_halt
+        WIDTH: 1
+    NAME: pc_pll_cfg_pll_receiver_if_dll_ccb0_halt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: DLL CCB4 clock halting and stepping control
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: DLL CCB4 clock halting and stepping control.
+        NAME: pc_pll_cfg_pll_receiver_if_dll_ccb4_halt
+        WIDTH: 1
+    NAME: pc_pll_cfg_pll_receiver_if_dll_ccb4_halt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: 'Pre-scalar for feedback divider. Set LOW for DIV2, set HIGH for DIV3'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Pre-scalar for feedback divider. Set LOW for DIV2, set HIGH for DIV3'
+        NAME: ddr0_pll_cfg_pll_receiver_if_prog_fbdiv_23
+        WIDTH: 1
+    NAME: ddr0_pll_cfg_pll_receiver_if_prog_fbdiv_23
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: 'Main divider 1-256 for feedback divisor, values from 2 to 255 inclusive'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: PLL Feedback divider main divisor. Values from 2 to 255 inclusive.
+        NAME: ddr0_pll_cfg_pll_receiver_if_prog_fbdiv255
+        WIDTH: 8
+    NAME: ddr0_pll_cfg_pll_receiver_if_prog_fbdiv255
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: PLL reference clock input divisor. Values from 1 to 63 inclusive.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: PLL reference clock input divisor. Values from 1 to 63 inclusive.
+        NAME: ddr0_pll_cfg_pll_receiver_if_pll_refcnt
+        WIDTH: 6
+    NAME: ddr0_pll_cfg_pll_receiver_if_pll_refcnt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: PLL output divider divisor. Any value from 2 to 63 inclusive. Dynamic changes allowed.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: PLL output divider divisor. Any value from 2 to 63 inclusive. Dynamic changes allowed.
+        NAME: ddr0_pll_cfg_pll_receiver_if_pll_out_divcnt
+        WIDTH: 6
+    NAME: ddr0_pll_cfg_pll_receiver_if_pll_out_divcnt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: PLL output divider load count control.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: PLL output divider load count control
+        NAME: ddr0_pll_cfg_pll_receiver_if_pll_out_divcnt_load
+        WIDTH: 1
+    NAME: ddr0_pll_cfg_pll_receiver_if_pll_out_divcnt_load
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: 'Mask to disable each of the four clocks generated by PLL. '
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Mask to disable each of the four clocks generated by PLL.
+        NAME: ddr0_pll_cfg_pll_receiver_if_pll_disable_output_clk
+        WIDTH: 4
+    NAME: ddr0_pll_cfg_pll_receiver_if_pll_disable_output_clk
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: PLL loop control block enable
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Enables PLL for normal operation.
+        NAME: ddr0_pll_cfg_pll_receiver_if_pll_enable
+        WIDTH: 1
+    NAME: ddr0_pll_cfg_pll_receiver_if_pll_enable
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: Low speed clock divider enable signal
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Low speed clock divider enable signal.
+        NAME: ddr0_pll_cfg_pll_receiver_if_divn_en
+        WIDTH: 1
+    NAME: ddr0_pll_cfg_pll_receiver_if_divn_en
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: Low speed clock divider divisor value. Values allowed 1 to 63 inclusive.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Low speed clock divider divisor value. Values allowed 1 to 63 inclusive.
+        NAME: ddr0_pll_cfg_pll_receiver_if_divn_prog
+        WIDTH: 6
+    NAME: ddr0_pll_cfg_pll_receiver_if_divn_prog
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: REFCLK bypass for DivN
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: REFCLK bypass for DivN.
+        NAME: ddr0_pll_cfg_pll_receiver_if_divn_ref_byp
+        WIDTH: 1
+    NAME: ddr0_pll_cfg_pll_receiver_if_divn_ref_byp
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: Selects between slow and fast calibration algorithms for PLL.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Selects between slow (1) and fast calibration (0) algorithms for PLL.
+        NAME: ddr0_pll_cfg_pll_receiver_if_slow_cal_en
+        WIDTH: 1
+    NAME: ddr0_pll_cfg_pll_receiver_if_slow_cal_en
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: Enable automatic REFCLK bypass on startup  when set to 0. Must be set to 0 for normal operation.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Enable Automatic REFCLK bypass on startup when set to 0. Must be set to 0 for normal operation.
+        NAME: ddr0_pll_cfg_pll_receiver_if_disable_abs
+        WIDTH: 1
+    NAME: ddr0_pll_cfg_pll_receiver_if_disable_abs
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: Enable REFCLK bypass to drive the PLL clock output when 1. Glitchless switching protected
+    FLDLST:
+      - DEFAULT: 1
+        DESCRIPTION: Enable REFCLK bypass to drive the PLL clock output when 1. Glitchless switching protected
+        NAME: ddr0_pll_cfg_pll_receiver_if_refclk_bypass
+        WIDTH: 1
+    NAME: ddr0_pll_cfg_pll_receiver_if_refclk_bypass
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: CCB0 clock halting and stepping control.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: CCB0 clock halting and stepping control.
+        NAME: ddr0_pll_cfg_pll_receiver_if_ccb0_halt
+        WIDTH: 1
+    NAME: ddr0_pll_cfg_pll_receiver_if_ccb0_halt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: CCB1 clock halting and stepping control.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: CCB1 clock halting and stepping control.
+        NAME: ddr0_pll_cfg_pll_receiver_if_ccb1_halt
+        WIDTH: 1
+    NAME: ddr0_pll_cfg_pll_receiver_if_ccb1_halt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: CCB2 clock halting and stepping control.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: CCB2 clock halting and stepping control.
+        NAME: ddr0_pll_cfg_pll_receiver_if_ccb2_halt
+        WIDTH: 1
+    NAME: ddr0_pll_cfg_pll_receiver_if_ccb2_halt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: CCB3 clock halting and stepping control.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: CCB3 clock halting and stepping control.
+        NAME: ddr0_pll_cfg_pll_receiver_if_ccb3_halt
+        WIDTH: 1
+    NAME: ddr0_pll_cfg_pll_receiver_if_ccb3_halt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: CCB4 clock halting and stepping control
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: CCB4 clock halting and stepping control.
+        NAME: ddr0_pll_cfg_pll_receiver_if_ccb4_halt
+        WIDTH: 1
+    NAME: ddr0_pll_cfg_pll_receiver_if_ccb4_halt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: 'Observation Clock Output Divisor - divide by 1, 2, 4 or 8'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Observation Clock Output Divisor - divide by 1, 2, 4 or 8'
+        NAME: ddr0_pll_cfg_pll_receiver_if_ck_obs_div
+        WIDTH: 2
+    NAME: ddr0_pll_cfg_pll_receiver_if_ck_obs_div
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: Select among 16 sources to send to observation pad for test purposes
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Select among 16 sources to send to observation pad for test purposes
+        NAME: ddr0_pll_cfg_pll_receiver_if_ck_obs_sel
+        WIDTH: 4
+    NAME: ddr0_pll_cfg_pll_receiver_if_ck_obs_sel
+  - ATTR: 10
+    COUNT: 1
+    DESCRIPTION: 'Lock status from PLL - bit 0'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'PLL Lock status from PLL - bit 0'
+        NAME: ddr0_pll_cfg_pll_lock_status
+        WIDTH: 1
+    NAME: ddr0_pll_cfg_pll_lock_status
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: 'Enable the DLL, 1=enable, 0=disable'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Enable the DLL, 1=disabled,0=enabled'
+        NAME: ddr0_pll_cfg_pll_receiver_if_dll_enable
+        WIDTH: 1
+    NAME: ddr0_pll_cfg_pll_receiver_if_dll_enable
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: DLL reference clock input divisor. Values from 1 to 63 inclusive.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: DLL reference clock input divisor. Values from 1 to 63 inclusive.
+        NAME: ddr0_pll_cfg_pll_receiver_if_dll_refcnt
+        WIDTH: 6
+    NAME: ddr0_pll_cfg_pll_receiver_if_dll_refcnt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: PLL output divider divisor. Any value from 2 to 63 inclusive. Dynamic changes allowed.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: DLL feedback input clock divider. Any value from 1 to 63 inclusive.
+        NAME: ddr0_pll_cfg_pll_receiver_if_dll_fbcnt
+        WIDTH: 6
+    NAME: ddr0_pll_cfg_pll_receiver_if_dll_fbcnt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: DLL output divider divisor. Any value from 2 to 63 inclusive. Dynamic changes allowed.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: DLL output divider divisor. Any value from 2 to 63 inclusive. Dynamic changes allowed.
+        NAME: ddr0_pll_cfg_pll_receiver_if_dll_out_divcnt
+        WIDTH: 6
+    NAME: ddr0_pll_cfg_pll_receiver_if_dll_out_divcnt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: DLL output divider load count control.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: DLL output divider load count control
+        NAME: ddr0_pll_cfg_pll_receiver_if_dll_out_divcnt_load
+        WIDTH: 1
+    NAME: ddr0_pll_cfg_pll_receiver_if_dll_out_divcnt_load
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: 'Disable the four DLL generated clocks, on bit per clock'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Disables the four DLL output clocks, one bit per DLL clock, 1=disabled,0=enabled'
+        NAME: ddr0_pll_cfg_pll_receiver_if_dll_disable_output_clk
+        WIDTH: 4
+    NAME: ddr0_pll_cfg_pll_receiver_if_dll_disable_output_clk
+  - ATTR: 10
+    COUNT: 1
+    DESCRIPTION: 'DLL Lock status from PLL - bit 0'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Lock status from DLL - bit 0'
+        NAME: ddr0_pll_cfg_dll_lock_status
+        WIDTH: 1
+    NAME: ddr0_pll_cfg_dll_lock_status
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: DLL CCB0 clock halting and stepping control
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: DLL CCB0 clock halting and stepping control.
+        NAME: ddr0_pll_cfg_pll_receiver_if_dll_ccb0_halt
+        WIDTH: 1
+    NAME: ddr0_pll_cfg_pll_receiver_if_dll_ccb0_halt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: DLL CCB4 clock halting and stepping control
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: DLL CCB4 clock halting and stepping control.
+        NAME: ddr0_pll_cfg_pll_receiver_if_dll_ccb4_halt
+        WIDTH: 1
+    NAME: ddr0_pll_cfg_pll_receiver_if_dll_ccb4_halt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: 'Pre-scalar for feedback divider. Set LOW for DIV2, set HIGH for DIV3'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Pre-scalar for feedback divider. Set LOW for DIV2, set HIGH for DIV3'
+        NAME: ddr1_pll_cfg_pll_receiver_if_prog_fbdiv_23
+        WIDTH: 1
+    NAME: ddr1_pll_cfg_pll_receiver_if_prog_fbdiv_23
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: 'Main divider 1-256 for feedback divisor, values from 2 to 255 inclusive'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: PLL Feedback divider main divisor. Values from 2 to 255 inclusive.
+        NAME: ddr1_pll_cfg_pll_receiver_if_prog_fbdiv255
+        WIDTH: 8
+    NAME: ddr1_pll_cfg_pll_receiver_if_prog_fbdiv255
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: PLL reference clock input divisor. Values from 1 to 63 inclusive.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: PLL reference clock input divisor. Values from 1 to 63 inclusive.
+        NAME: ddr1_pll_cfg_pll_receiver_if_pll_refcnt
+        WIDTH: 6
+    NAME: ddr1_pll_cfg_pll_receiver_if_pll_refcnt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: PLL output divider divisor. Any value from 2 to 63 inclusive. Dynamic changes allowed.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: PLL output divider divisor. Any value from 2 to 63 inclusive. Dynamic changes allowed.
+        NAME: ddr1_pll_cfg_pll_receiver_if_pll_out_divcnt
+        WIDTH: 6
+    NAME: ddr1_pll_cfg_pll_receiver_if_pll_out_divcnt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: PLL output divider load count control.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: PLL output divider load count control
+        NAME: ddr1_pll_cfg_pll_receiver_if_pll_out_divcnt_load
+        WIDTH: 1
+    NAME: ddr1_pll_cfg_pll_receiver_if_pll_out_divcnt_load
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: 'Mask to disable each of the four clocks generated by PLL. '
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Mask to disable each of the four clocks generated by PLL.
+        NAME: ddr1_pll_cfg_pll_receiver_if_pll_disable_output_clk
+        WIDTH: 4
+    NAME: ddr1_pll_cfg_pll_receiver_if_pll_disable_output_clk
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: PLL loop control block enable
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Enables PLL for normal operation.
+        NAME: ddr1_pll_cfg_pll_receiver_if_pll_enable
+        WIDTH: 1
+    NAME: ddr1_pll_cfg_pll_receiver_if_pll_enable
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: Low speed clock divider enable signal
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Low speed clock divider enable signal.
+        NAME: ddr1_pll_cfg_pll_receiver_if_divn_en
+        WIDTH: 1
+    NAME: ddr1_pll_cfg_pll_receiver_if_divn_en
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: Low speed clock divider divisor value. Values allowed 1 to 63 inclusive.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Low speed clock divider divisor value. Values allowed 1 to 63 inclusive.
+        NAME: ddr1_pll_cfg_pll_receiver_if_divn_prog
+        WIDTH: 6
+    NAME: ddr1_pll_cfg_pll_receiver_if_divn_prog
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: REFCLK bypass for DivN
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: REFCLK bypass for DivN.
+        NAME: ddr1_pll_cfg_pll_receiver_if_divn_ref_byp
+        WIDTH: 1
+    NAME: ddr1_pll_cfg_pll_receiver_if_divn_ref_byp
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: Selects between slow and fast calibration algorithms for PLL.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Selects between slow (1) and fast calibration (0) algorithms for PLL.
+        NAME: ddr1_pll_cfg_pll_receiver_if_slow_cal_en
+        WIDTH: 1
+    NAME: ddr1_pll_cfg_pll_receiver_if_slow_cal_en
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: Enable automatic REFCLK bypass on startup  when set to 0. Must be set to 0 for normal operation.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Enable Automatic REFCLK bypass on startup when set to 0. Must be set to 0 for normal operation.
+        NAME: ddr1_pll_cfg_pll_receiver_if_disable_abs
+        WIDTH: 1
+    NAME: ddr1_pll_cfg_pll_receiver_if_disable_abs
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: Enable REFCLK bypass to drive the PLL clock output when 1. Glitchless switching protected
+    FLDLST:
+      - DEFAULT: 1
+        DESCRIPTION: Enable REFCLK bypass to drive the PLL clock output when 1. Glitchless switching protected
+        NAME: ddr1_pll_cfg_pll_receiver_if_refclk_bypass
+        WIDTH: 1
+    NAME: ddr1_pll_cfg_pll_receiver_if_refclk_bypass
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: CCB0 clock halting and stepping control.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: CCB0 clock halting and stepping control.
+        NAME: ddr1_pll_cfg_pll_receiver_if_ccb0_halt
+        WIDTH: 1
+    NAME: ddr1_pll_cfg_pll_receiver_if_ccb0_halt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: CCB1 clock halting and stepping control.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: CCB1 clock halting and stepping control.
+        NAME: ddr1_pll_cfg_pll_receiver_if_ccb1_halt
+        WIDTH: 1
+    NAME: ddr1_pll_cfg_pll_receiver_if_ccb1_halt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: CCB2 clock halting and stepping control.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: CCB2 clock halting and stepping control.
+        NAME: ddr1_pll_cfg_pll_receiver_if_ccb2_halt
+        WIDTH: 1
+    NAME: ddr1_pll_cfg_pll_receiver_if_ccb2_halt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: CCB3 clock halting and stepping control.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: CCB3 clock halting and stepping control.
+        NAME: ddr1_pll_cfg_pll_receiver_if_ccb3_halt
+        WIDTH: 1
+    NAME: ddr1_pll_cfg_pll_receiver_if_ccb3_halt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: CCB4 clock halting and stepping control
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: CCB4 clock halting and stepping control.
+        NAME: ddr1_pll_cfg_pll_receiver_if_ccb4_halt
+        WIDTH: 1
+    NAME: ddr1_pll_cfg_pll_receiver_if_ccb4_halt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: 'Observation Clock Output Divisor - divide by 1, 2, 4 or 8'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Observation Clock Output Divisor - divide by 1, 2, 4 or 8'
+        NAME: ddr1_pll_cfg_pll_receiver_if_ck_obs_div
+        WIDTH: 2
+    NAME: ddr1_pll_cfg_pll_receiver_if_ck_obs_div
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: Select among 16 sources to send to observation pad for test purposes
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Select among 16 sources to send to observation pad for test purposes
+        NAME: ddr1_pll_cfg_pll_receiver_if_ck_obs_sel
+        WIDTH: 4
+    NAME: ddr1_pll_cfg_pll_receiver_if_ck_obs_sel
+  - ATTR: 10
+    COUNT: 1
+    DESCRIPTION: 'Lock status from PLL - bit 0'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'PLL Lock status from PLL - bit 0'
+        NAME: ddr1_pll_cfg_pll_lock_status
+        WIDTH: 1
+    NAME: ddr1_pll_cfg_pll_lock_status
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: 'Enable the DLL, 1=enable, 0=disable'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Enable the DLL, 1=disabled,0=enabled'
+        NAME: ddr1_pll_cfg_pll_receiver_if_dll_enable
+        WIDTH: 1
+    NAME: ddr1_pll_cfg_pll_receiver_if_dll_enable
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: DLL reference clock input divisor. Values from 1 to 63 inclusive.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: DLL reference clock input divisor. Values from 1 to 63 inclusive.
+        NAME: ddr1_pll_cfg_pll_receiver_if_dll_refcnt
+        WIDTH: 6
+    NAME: ddr1_pll_cfg_pll_receiver_if_dll_refcnt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: PLL output divider divisor. Any value from 2 to 63 inclusive. Dynamic changes allowed.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: DLL feedback input clock divider. Any value from 1 to 63 inclusive.
+        NAME: ddr1_pll_cfg_pll_receiver_if_dll_fbcnt
+        WIDTH: 6
+    NAME: ddr1_pll_cfg_pll_receiver_if_dll_fbcnt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: DLL output divider divisor. Any value from 2 to 63 inclusive. Dynamic changes allowed.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: DLL output divider divisor. Any value from 2 to 63 inclusive. Dynamic changes allowed.
+        NAME: ddr1_pll_cfg_pll_receiver_if_dll_out_divcnt
+        WIDTH: 6
+    NAME: ddr1_pll_cfg_pll_receiver_if_dll_out_divcnt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: DLL output divider load count control.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: DLL output divider load count control
+        NAME: ddr1_pll_cfg_pll_receiver_if_dll_out_divcnt_load
+        WIDTH: 1
+    NAME: ddr1_pll_cfg_pll_receiver_if_dll_out_divcnt_load
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: 'Disable the four DLL generated clocks, on bit per clock'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Disables the four DLL output clocks, one bit per DLL clock, 1=disabled,0=enabled'
+        NAME: ddr1_pll_cfg_pll_receiver_if_dll_disable_output_clk
+        WIDTH: 4
+    NAME: ddr1_pll_cfg_pll_receiver_if_dll_disable_output_clk
+  - ATTR: 10
+    COUNT: 1
+    DESCRIPTION: 'DLL Lock status from PLL - bit 0'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Lock status from DLL - bit 0'
+        NAME: ddr1_pll_cfg_dll_lock_status
+        WIDTH: 1
+    NAME: ddr1_pll_cfg_dll_lock_status
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: DLL CCB0 clock halting and stepping control
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: DLL CCB0 clock halting and stepping control.
+        NAME: ddr1_pll_cfg_pll_receiver_if_dll_ccb0_halt
+        WIDTH: 1
+    NAME: ddr1_pll_cfg_pll_receiver_if_dll_ccb0_halt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: DLL CCB4 clock halting and stepping control
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: DLL CCB4 clock halting and stepping control.
+        NAME: ddr1_pll_cfg_pll_receiver_if_dll_ccb4_halt
+        WIDTH: 1
+    NAME: ddr1_pll_cfg_pll_receiver_if_dll_ccb4_halt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: 'Pre-scalar for feedback divider. Set LOW for DIV2, set HIGH for DIV3'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Pre-scalar for feedback divider. Set LOW for DIV2, set HIGH for DIV3'
+        NAME: hbm0_pll_cfg_pll_receiver_if_prog_fbdiv_23
+        WIDTH: 1
+    NAME: hbm0_pll_cfg_pll_receiver_if_prog_fbdiv_23
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: 'Main divider 1-256 for feedback divisor, values from 2 to 255 inclusive'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: PLL Feedback divider main divisor. Values from 2 to 255 inclusive.
+        NAME: hbm0_pll_cfg_pll_receiver_if_prog_fbdiv255
+        WIDTH: 8
+    NAME: hbm0_pll_cfg_pll_receiver_if_prog_fbdiv255
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: PLL reference clock input divisor. Values from 1 to 63 inclusive.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: PLL reference clock input divisor. Values from 1 to 63 inclusive.
+        NAME: hbm0_pll_cfg_pll_receiver_if_pll_refcnt
+        WIDTH: 6
+    NAME: hbm0_pll_cfg_pll_receiver_if_pll_refcnt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: PLL output divider divisor. Any value from 2 to 63 inclusive. Dynamic changes allowed.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: PLL output divider divisor. Any value from 2 to 63 inclusive. Dynamic changes allowed.
+        NAME: hbm0_pll_cfg_pll_receiver_if_pll_out_divcnt
+        WIDTH: 6
+    NAME: hbm0_pll_cfg_pll_receiver_if_pll_out_divcnt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: PLL output divider load count control.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: PLL output divider load count control
+        NAME: hbm0_pll_cfg_pll_receiver_if_pll_out_divcnt_load
+        WIDTH: 1
+    NAME: hbm0_pll_cfg_pll_receiver_if_pll_out_divcnt_load
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: 'Mask to disable each of the four clocks generated by PLL. '
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Mask to disable each of the four clocks generated by PLL.
+        NAME: hbm0_pll_cfg_pll_receiver_if_pll_disable_output_clk
+        WIDTH: 4
+    NAME: hbm0_pll_cfg_pll_receiver_if_pll_disable_output_clk
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: PLL loop control block enable
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Enables PLL for normal operation.
+        NAME: hbm0_pll_cfg_pll_receiver_if_pll_enable
+        WIDTH: 1
+    NAME: hbm0_pll_cfg_pll_receiver_if_pll_enable
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: Low speed clock divider enable signal
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Low speed clock divider enable signal.
+        NAME: hbm0_pll_cfg_pll_receiver_if_divn_en
+        WIDTH: 1
+    NAME: hbm0_pll_cfg_pll_receiver_if_divn_en
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: Low speed clock divider divisor value. Values allowed 1 to 63 inclusive.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Low speed clock divider divisor value. Values allowed 1 to 63 inclusive.
+        NAME: hbm0_pll_cfg_pll_receiver_if_divn_prog
+        WIDTH: 6
+    NAME: hbm0_pll_cfg_pll_receiver_if_divn_prog
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: REFCLK bypass for DivN
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: REFCLK bypass for DivN.
+        NAME: hbm0_pll_cfg_pll_receiver_if_divn_ref_byp
+        WIDTH: 1
+    NAME: hbm0_pll_cfg_pll_receiver_if_divn_ref_byp
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: Selects between slow and fast calibration algorithms for PLL.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Selects between slow (1) and fast calibration (0) algorithms for PLL.
+        NAME: hbm0_pll_cfg_pll_receiver_if_slow_cal_en
+        WIDTH: 1
+    NAME: hbm0_pll_cfg_pll_receiver_if_slow_cal_en
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: Enable automatic REFCLK bypass on startup  when set to 0. Must be set to 0 for normal operation.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Enable Automatic REFCLK bypass on startup when set to 0. Must be set to 0 for normal operation.
+        NAME: hbm0_pll_cfg_pll_receiver_if_disable_abs
+        WIDTH: 1
+    NAME: hbm0_pll_cfg_pll_receiver_if_disable_abs
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: Enable REFCLK bypass to drive the PLL clock output when 1. Glitchless switching protected
+    FLDLST:
+      - DEFAULT: 1
+        DESCRIPTION: Enable REFCLK bypass to drive the PLL clock output when 1. Glitchless switching protected
+        NAME: hbm0_pll_cfg_pll_receiver_if_refclk_bypass
+        WIDTH: 1
+    NAME: hbm0_pll_cfg_pll_receiver_if_refclk_bypass
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: CCB0 clock halting and stepping control.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: CCB0 clock halting and stepping control.
+        NAME: hbm0_pll_cfg_pll_receiver_if_ccb0_halt
+        WIDTH: 1
+    NAME: hbm0_pll_cfg_pll_receiver_if_ccb0_halt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: CCB1 clock halting and stepping control.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: CCB1 clock halting and stepping control.
+        NAME: hbm0_pll_cfg_pll_receiver_if_ccb1_halt
+        WIDTH: 1
+    NAME: hbm0_pll_cfg_pll_receiver_if_ccb1_halt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: CCB2 clock halting and stepping control.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: CCB2 clock halting and stepping control.
+        NAME: hbm0_pll_cfg_pll_receiver_if_ccb2_halt
+        WIDTH: 1
+    NAME: hbm0_pll_cfg_pll_receiver_if_ccb2_halt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: CCB3 clock halting and stepping control.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: CCB3 clock halting and stepping control.
+        NAME: hbm0_pll_cfg_pll_receiver_if_ccb3_halt
+        WIDTH: 1
+    NAME: hbm0_pll_cfg_pll_receiver_if_ccb3_halt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: CCB4 clock halting and stepping control
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: CCB4 clock halting and stepping control.
+        NAME: hbm0_pll_cfg_pll_receiver_if_ccb4_halt
+        WIDTH: 1
+    NAME: hbm0_pll_cfg_pll_receiver_if_ccb4_halt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: 'Observation Clock Output Divisor - divide by 1, 2, 4 or 8'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Observation Clock Output Divisor - divide by 1, 2, 4 or 8'
+        NAME: hbm0_pll_cfg_pll_receiver_if_ck_obs_div
+        WIDTH: 2
+    NAME: hbm0_pll_cfg_pll_receiver_if_ck_obs_div
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: Select among 16 sources to send to observation pad for test purposes
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Select among 16 sources to send to observation pad for test purposes
+        NAME: hbm0_pll_cfg_pll_receiver_if_ck_obs_sel
+        WIDTH: 4
+    NAME: hbm0_pll_cfg_pll_receiver_if_ck_obs_sel
+  - ATTR: 10
+    COUNT: 1
+    DESCRIPTION: 'Lock status from PLL - bit 0'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'PLL Lock status from PLL - bit 0'
+        NAME: hbm0_pll_cfg_pll_lock_status
+        WIDTH: 1
+    NAME: hbm0_pll_cfg_pll_lock_status
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: 'Enable the DLL, 1=enable, 0=disable'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Enable the DLL, 1=disabled,0=enabled'
+        NAME: hbm0_pll_cfg_pll_receiver_if_dll_enable
+        WIDTH: 1
+    NAME: hbm0_pll_cfg_pll_receiver_if_dll_enable
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: DLL reference clock input divisor. Values from 1 to 63 inclusive.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: DLL reference clock input divisor. Values from 1 to 63 inclusive.
+        NAME: hbm0_pll_cfg_pll_receiver_if_dll_refcnt
+        WIDTH: 6
+    NAME: hbm0_pll_cfg_pll_receiver_if_dll_refcnt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: PLL output divider divisor. Any value from 2 to 63 inclusive. Dynamic changes allowed.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: DLL feedback input clock divider. Any value from 1 to 63 inclusive.
+        NAME: hbm0_pll_cfg_pll_receiver_if_dll_fbcnt
+        WIDTH: 6
+    NAME: hbm0_pll_cfg_pll_receiver_if_dll_fbcnt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: DLL output divider divisor. Any value from 2 to 63 inclusive. Dynamic changes allowed.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: DLL output divider divisor. Any value from 2 to 63 inclusive. Dynamic changes allowed.
+        NAME: hbm0_pll_cfg_pll_receiver_if_dll_out_divcnt
+        WIDTH: 6
+    NAME: hbm0_pll_cfg_pll_receiver_if_dll_out_divcnt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: DLL output divider load count control.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: DLL output divider load count control
+        NAME: hbm0_pll_cfg_pll_receiver_if_dll_out_divcnt_load
+        WIDTH: 1
+    NAME: hbm0_pll_cfg_pll_receiver_if_dll_out_divcnt_load
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: 'Disable the four DLL generated clocks, on bit per clock'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Disables the four DLL output clocks, one bit per DLL clock, 1=disabled,0=enabled'
+        NAME: hbm0_pll_cfg_pll_receiver_if_dll_disable_output_clk
+        WIDTH: 4
+    NAME: hbm0_pll_cfg_pll_receiver_if_dll_disable_output_clk
+  - ATTR: 10
+    COUNT: 1
+    DESCRIPTION: 'DLL Lock status from PLL - bit 0'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Lock status from DLL - bit 0'
+        NAME: hbm1_pll_cfg_dll_lock_status
+        WIDTH: 1
+    NAME: hbm0_pll_cfg_dll_lock_status
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: DLL CCB0 clock halting and stepping control
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: DLL CCB0 clock halting and stepping control.
+        NAME: hbm0_pll_cfg_pll_receiver_if_dll_ccb0_halt
+        WIDTH: 1
+    NAME: hbm0_pll_cfg_pll_receiver_if_dll_ccb0_halt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: DLL CCB4 clock halting and stepping control
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: DLL CCB4 clock halting and stepping control.
+        NAME: hbm0_pll_cfg_pll_receiver_if_dll_ccb4_halt
+        WIDTH: 1
+    NAME: hbm0_pll_cfg_pll_receiver_if_dll_ccb4_halt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: 'Pre-scalar for feedback divider. Set LOW for DIV2, set HIGH for DIV3'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Pre-scalar for feedback divider. Set LOW for DIV2, set HIGH for DIV3'
+        NAME: hbm1_pll_cfg_pll_receiver_if_prog_fbdiv_23
+        WIDTH: 1
+    NAME: hbm1_pll_cfg_pll_receiver_if_prog_fbdiv_23
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: 'Main divider 1-256 for feedback divisor, values from 2 to 255 inclusive'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: PLL Feedback divider main divisor. Values from 2 to 255 inclusive.
+        NAME: hbm1_pll_cfg_pll_receiver_if_prog_fbdiv255
+        WIDTH: 8
+    NAME: hbm1_pll_cfg_pll_receiver_if_prog_fbdiv255
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: PLL reference clock input divisor. Values from 1 to 63 inclusive.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: PLL reference clock input divisor. Values from 1 to 63 inclusive.
+        NAME: hbm1_pll_cfg_pll_receiver_if_pll_refcnt
+        WIDTH: 6
+    NAME: hbm1_pll_cfg_pll_receiver_if_pll_refcnt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: PLL output divider divisor. Any value from 2 to 63 inclusive. Dynamic changes allowed.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: PLL output divider divisor. Any value from 2 to 63 inclusive. Dynamic changes allowed.
+        NAME: hbm1_pll_cfg_pll_receiver_if_pll_out_divcnt
+        WIDTH: 6
+    NAME: hbm1_pll_cfg_pll_receiver_if_pll_out_divcnt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: PLL output divider load count control.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: PLL output divider load count control
+        NAME: hbm1_pll_cfg_pll_receiver_if_pll_out_divcnt_load
+        WIDTH: 1
+    NAME: hbm1_pll_cfg_pll_receiver_if_pll_out_divcnt_load
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: 'Mask to disable each of the four clocks generated by PLL. '
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Mask to disable each of the four clocks generated by PLL.
+        NAME: hbm1_pll_cfg_pll_receiver_if_pll_disable_output_clk
+        WIDTH: 4
+    NAME: hbm1_pll_cfg_pll_receiver_if_pll_disable_output_clk
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: PLL loop control block enable
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Enables PLL for normal operation.
+        NAME: hbm1_pll_cfg_pll_receiver_if_pll_enable
+        WIDTH: 1
+    NAME: hbm1_pll_cfg_pll_receiver_if_pll_enable
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: Low speed clock divider enable signal
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Low speed clock divider enable signal.
+        NAME: hbm1_pll_cfg_pll_receiver_if_divn_en
+        WIDTH: 1
+    NAME: hbm1_pll_cfg_pll_receiver_if_divn_en
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: Low speed clock divider divisor value. Values allowed 1 to 63 inclusive.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Low speed clock divider divisor value. Values allowed 1 to 63 inclusive.
+        NAME: hbm1_pll_cfg_pll_receiver_if_divn_prog
+        WIDTH: 6
+    NAME: hbm1_pll_cfg_pll_receiver_if_divn_prog
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: REFCLK bypass for DivN
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: REFCLK bypass for DivN.
+        NAME: hbm1_pll_cfg_pll_receiver_if_divn_ref_byp
+        WIDTH: 1
+    NAME: hbm1_pll_cfg_pll_receiver_if_divn_ref_byp
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: Selects between slow and fast calibration algorithms for PLL.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Selects between slow (1) and fast calibration (0) algorithms for PLL.
+        NAME: hbm1_pll_cfg_pll_receiver_if_slow_cal_en
+        WIDTH: 1
+    NAME: hbm1_pll_cfg_pll_receiver_if_slow_cal_en
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: Enable automatic REFCLK bypass on startup  when set to 0. Must be set to 0 for normal operation.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Enable Automatic REFCLK bypass on startup when set to 0. Must be set to 0 for normal operation.
+        NAME: hbm1_pll_cfg_pll_receiver_if_disable_abs
+        WIDTH: 1
+    NAME: hbm1_pll_cfg_pll_receiver_if_disable_abs
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: Enable REFCLK bypass to drive the PLL clock output when 1. Glitchless switching protected
+    FLDLST:
+      - DEFAULT: 1
+        DESCRIPTION: Enable REFCLK bypass to drive the PLL clock output when 1. Glitchless switching protected
+        NAME: hbm1_pll_cfg_pll_receiver_if_refclk_bypass
+        WIDTH: 1
+    NAME: hbm1_pll_cfg_pll_receiver_if_refclk_bypass
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: CCB0 clock halting and stepping control.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: CCB0 clock halting and stepping control.
+        NAME: hbm1_pll_cfg_pll_receiver_if_ccb0_halt
+        WIDTH: 1
+    NAME: hbm1_pll_cfg_pll_receiver_if_ccb0_halt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: CCB1 clock halting and stepping control.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: CCB1 clock halting and stepping control.
+        NAME: hbm1_pll_cfg_pll_receiver_if_ccb1_halt
+        WIDTH: 1
+    NAME: hbm1_pll_cfg_pll_receiver_if_ccb1_halt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: CCB2 clock halting and stepping control.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: CCB2 clock halting and stepping control.
+        NAME: hbm1_pll_cfg_pll_receiver_if_ccb2_halt
+        WIDTH: 1
+    NAME: hbm1_pll_cfg_pll_receiver_if_ccb2_halt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: CCB3 clock halting and stepping control.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: CCB3 clock halting and stepping control.
+        NAME: hbm1_pll_cfg_pll_receiver_if_ccb3_halt
+        WIDTH: 1
+    NAME: hbm1_pll_cfg_pll_receiver_if_ccb3_halt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: CCB4 clock halting and stepping control
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: CCB4 clock halting and stepping control.
+        NAME: hbm1_pll_cfg_pll_receiver_if_ccb4_halt
+        WIDTH: 1
+    NAME: hbm1_pll_cfg_pll_receiver_if_ccb4_halt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: 'Observation Clock Output Divisor - divide by 1, 2, 4 or 8'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Observation Clock Output Divisor - divide by 1, 2, 4 or 8'
+        NAME: hbm1_pll_cfg_pll_receiver_if_ck_obs_div
+        WIDTH: 2
+    NAME: hbm1_pll_cfg_pll_receiver_if_ck_obs_div
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: Select among 16 sources to send to observation pad for test purposes
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Select among 16 sources to send to observation pad for test purposes
+        NAME: hbm1_pll_cfg_pll_receiver_if_ck_obs_sel
+        WIDTH: 4
+    NAME: hbm1_pll_cfg_pll_receiver_if_ck_obs_sel
+  - ATTR: 10
+    COUNT: 1
+    DESCRIPTION: 'Lock status from PLL - bit 0'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'PLL Lock status from PLL - bit 0'
+        NAME: hbm1_pll_cfg_pll_lock_status
+        WIDTH: 1
+    NAME: hbm1_pll_cfg_pll_lock_status
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: 'Enable the DLL, 1=enable, 0=disable'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Enable the DLL, 1=disabled,0=enabled'
+        NAME: hbm1_pll_cfg_pll_receiver_if_dll_enable
+        WIDTH: 1
+    NAME: hbm1_pll_cfg_pll_receiver_if_dll_enable
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: DLL reference clock input divisor. Values from 1 to 63 inclusive.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: DLL reference clock input divisor. Values from 1 to 63 inclusive.
+        NAME: hbm1_pll_cfg_pll_receiver_if_dll_refcnt
+        WIDTH: 6
+    NAME: hbm1_pll_cfg_pll_receiver_if_dll_refcnt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: PLL output divider divisor. Any value from 2 to 63 inclusive. Dynamic changes allowed.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: DLL feedback input clock divider. Any value from 1 to 63 inclusive.
+        NAME: hbm1_pll_cfg_pll_receiver_if_dll_fbcnt
+        WIDTH: 6
+    NAME: hbm1_pll_cfg_pll_receiver_if_dll_fbcnt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: DLL output divider divisor. Any value from 2 to 63 inclusive. Dynamic changes allowed.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: DLL output divider divisor. Any value from 2 to 63 inclusive. Dynamic changes allowed.
+        NAME: hbm1_pll_cfg_pll_receiver_if_dll_out_divcnt
+        WIDTH: 6
+    NAME: hbm1_pll_cfg_pll_receiver_if_dll_out_divcnt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: DLL output divider load count control.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: DLL output divider load count control
+        NAME: hbm1_pll_cfg_pll_receiver_if_dll_out_divcnt_load
+        WIDTH: 1
+    NAME: hbm1_pll_cfg_pll_receiver_if_dll_out_divcnt_load
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: 'Disable the four DLL generated clocks, on bit per clock'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Disables the four DLL output clocks, one bit per DLL clock, 1=disabled,0=enabled'
+        NAME: hbm1_pll_cfg_pll_receiver_if_dll_disable_output_clk
+        WIDTH: 4
+    NAME: hbm1_pll_cfg_pll_receiver_if_dll_disable_output_clk
+  - ATTR: 10
+    COUNT: 1
+    DESCRIPTION: 'DLL Lock status from PLL - bit 0'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Lock status from DLL - bit 0'
+        NAME: hbm1_pll_cfg_dll_lock_status
+        WIDTH: 1
+    NAME: hbm1_pll_cfg_dll_lock_status
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: DLL CCB0 clock halting and stepping control
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: DLL CCB0 clock halting and stepping control.
+        NAME: hbm1_pll_cfg_pll_receiver_if_dll_ccb0_halt
+        WIDTH: 1
+    NAME: hbm1_pll_cfg_pll_receiver_if_dll_ccb0_halt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: DLL CCB4 clock halting and stepping control
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: DLL CCB4 clock halting and stepping control.
+        NAME: hbm1_pll_cfg_pll_receiver_if_dll_ccb4_halt
+        WIDTH: 1
+    NAME: hbm1_pll_cfg_pll_receiver_if_dll_ccb4_halt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: 'Pre-scalar for feedback divider. Set LOW for DIV2, set HIGH for DIV3'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Pre-scalar for feedback divider. Set LOW for DIV2, set HIGH for DIV3'
+        NAME: hut0_pll_cfg_pll_receiver_if_prog_fbdiv_23
+        WIDTH: 1
+    NAME: hut0_pll_cfg_pll_receiver_if_prog_fbdiv_23
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: 'Main divider 1-256 for feedback divisor, values from 2 to 255 inclusive'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: PLL Feedback divider main divisor. Values from 2 to 255 inclusive.
+        NAME: hut0_pll_cfg_pll_receiver_if_prog_fbdiv255
+        WIDTH: 8
+    NAME: hut0_pll_cfg_pll_receiver_if_prog_fbdiv255
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: PLL reference clock input divisor. Values from 1 to 63 inclusive.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: PLL reference clock input divisor. Values from 1 to 63 inclusive.
+        NAME: hut0_pll_cfg_pll_receiver_if_pll_refcnt
+        WIDTH: 6
+    NAME: hut0_pll_cfg_pll_receiver_if_pll_refcnt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: PLL output divider divisor. Any value from 2 to 63 inclusive. Dynamic changes allowed.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: PLL output divider divisor. Any value from 2 to 63 inclusive. Dynamic changes allowed.
+        NAME: hut0_pll_cfg_pll_receiver_if_pll_out_divcnt
+        WIDTH: 6
+    NAME: hut0_pll_cfg_pll_receiver_if_pll_out_divcnt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: PLL output divider load count control.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: PLL output divider load count control
+        NAME: hut0_pll_cfg_pll_receiver_if_pll_out_divcnt_load
+        WIDTH: 1
+    NAME: hut0_pll_cfg_pll_receiver_if_pll_out_divcnt_load
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: 'Mask to disable each of the four clocks generated by PLL. '
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Mask to disable each of the four clocks generated by PLL.
+        NAME: hut0_pll_cfg_pll_receiver_if_pll_disable_output_clk
+        WIDTH: 4
+    NAME: hut0_pll_cfg_pll_receiver_if_pll_disable_output_clk
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: PLL loop control block enable
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Enables PLL for normal operation.
+        NAME: hut0_pll_cfg_pll_receiver_if_pll_enable
+        WIDTH: 1
+    NAME: hut0_pll_cfg_pll_receiver_if_pll_enable
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: Low speed clock divider enable signal
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Low speed clock divider enable signal.
+        NAME: hut0_pll_cfg_pll_receiver_if_divn_en
+        WIDTH: 1
+    NAME: hut0_pll_cfg_pll_receiver_if_divn_en
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: Low speed clock divider divisor value. Values allowed 1 to 63 inclusive.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Low speed clock divider divisor value. Values allowed 1 to 63 inclusive.
+        NAME: hut0_pll_cfg_pll_receiver_if_divn_prog
+        WIDTH: 6
+    NAME: hut0_pll_cfg_pll_receiver_if_divn_prog
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: REFCLK bypass for DivN
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: REFCLK bypass for DivN.
+        NAME: hut0_pll_cfg_pll_receiver_if_divn_ref_byp
+        WIDTH: 1
+    NAME: hut0_pll_cfg_pll_receiver_if_divn_ref_byp
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: Selects between slow and fast calibration algorithms for PLL.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Selects between slow (1) and fast calibration (0) algorithms for PLL.
+        NAME: hut0_pll_cfg_pll_receiver_if_slow_cal_en
+        WIDTH: 1
+    NAME: hut0_pll_cfg_pll_receiver_if_slow_cal_en
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: Enable automatic REFCLK bypass on startup  when set to 0. Must be set to 0 for normal operation.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Enable Automatic REFCLK bypass on startup when set to 0. Must be set to 0 for normal operation.
+        NAME: hut0_pll_cfg_pll_receiver_if_disable_abs
+        WIDTH: 1
+    NAME: hut0_pll_cfg_pll_receiver_if_disable_abs
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: Enable REFCLK bypass to drive the PLL clock output when 1. Glitchless switching protected
+    FLDLST:
+      - DEFAULT: 1
+        DESCRIPTION: Enable REFCLK bypass to drive the PLL clock output when 1. Glitchless switching protected
+        NAME: hut0_pll_cfg_pll_receiver_if_refclk_bypass
+        WIDTH: 1
+    NAME: hut0_pll_cfg_pll_receiver_if_refclk_bypass
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: CCB0 clock halting and stepping control.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: CCB0 clock halting and stepping control.
+        NAME: hut0_pll_cfg_pll_receiver_if_ccb0_halt
+        WIDTH: 1
+    NAME: hut0_pll_cfg_pll_receiver_if_ccb0_halt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: CCB1 clock halting and stepping control.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: CCB1 clock halting and stepping control.
+        NAME: hut0_pll_cfg_pll_receiver_if_ccb1_halt
+        WIDTH: 1
+    NAME: hut0_pll_cfg_pll_receiver_if_ccb1_halt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: CCB2 clock halting and stepping control.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: CCB2 clock halting and stepping control.
+        NAME: hut0_pll_cfg_pll_receiver_if_ccb2_halt
+        WIDTH: 1
+    NAME: hut0_pll_cfg_pll_receiver_if_ccb2_halt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: CCB3 clock halting and stepping control.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: CCB3 clock halting and stepping control.
+        NAME: hut0_pll_cfg_pll_receiver_if_ccb3_halt
+        WIDTH: 1
+    NAME: hut0_pll_cfg_pll_receiver_if_ccb3_halt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: CCB4 clock halting and stepping control
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: CCB4 clock halting and stepping control.
+        NAME: hut0_pll_cfg_pll_receiver_if_ccb4_halt
+        WIDTH: 1
+    NAME: hut0_pll_cfg_pll_receiver_if_ccb4_halt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: 'Observation Clock Output Divisor - divide by 1, 2, 4 or 8'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Observation Clock Output Divisor - divide by 1, 2, 4 or 8'
+        NAME: hut0_pll_cfg_pll_receiver_if_ck_obs_div
+        WIDTH: 2
+    NAME: hut0_pll_cfg_pll_receiver_if_ck_obs_div
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: Select among 16 sources to send to observation pad for test purposes
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Select among 16 sources to send to observation pad for test purposes
+        NAME: hut0_pll_cfg_pll_receiver_if_ck_obs_sel
+        WIDTH: 4
+    NAME: hut0_pll_cfg_pll_receiver_if_ck_obs_sel
+  - ATTR: 10
+    COUNT: 1
+    DESCRIPTION: 'Lock status from PLL - bit 0'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'PLL Lock status from PLL - bit 0'
+        NAME: hut0_pll_cfg_pll_lock_status
+        WIDTH: 1
+    NAME: hut0_pll_cfg_pll_lock_status
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: 'Enable the DLL, 1=enable, 0=disable'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Enable the DLL, 1=disabled,0=enabled'
+        NAME: hut0_pll_cfg_pll_receiver_if_dll_enable
+        WIDTH: 1
+    NAME: hut0_pll_cfg_pll_receiver_if_dll_enable
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: DLL reference clock input divisor. Values from 1 to 63 inclusive.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: DLL reference clock input divisor. Values from 1 to 63 inclusive.
+        NAME: hut0_pll_cfg_pll_receiver_if_dll_refcnt
+        WIDTH: 6
+    NAME: hut0_pll_cfg_pll_receiver_if_dll_refcnt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: PLL output divider divisor. Any value from 2 to 63 inclusive. Dynamic changes allowed.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: DLL feedback input clock divider. Any value from 1 to 63 inclusive.
+        NAME: hut0_pll_cfg_pll_receiver_if_dll_fbcnt
+        WIDTH: 6
+    NAME: hut0_pll_cfg_pll_receiver_if_dll_fbcnt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: DLL output divider divisor. Any value from 2 to 63 inclusive. Dynamic changes allowed.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: DLL output divider divisor. Any value from 2 to 63 inclusive. Dynamic changes allowed.
+        NAME: hut0_pll_cfg_pll_receiver_if_dll_out_divcnt
+        WIDTH: 6
+    NAME: hut0_pll_cfg_pll_receiver_if_dll_out_divcnt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: DLL output divider load count control.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: DLL output divider load count control
+        NAME: hut0_pll_cfg_pll_receiver_if_dll_out_divcnt_load
+        WIDTH: 1
+    NAME: hut0_pll_cfg_pll_receiver_if_dll_out_divcnt_load
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: 'Disable the four DLL generated clocks, on bit per clock'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Disables the four DLL output clocks, one bit per DLL clock, 1=disabled,0=enabled'
+        NAME: hut0_pll_cfg_pll_receiver_if_dll_disable_output_clk
+        WIDTH: 4
+    NAME: hut0_pll_cfg_pll_receiver_if_dll_disable_output_clk
+  - ATTR: 10
+    COUNT: 1
+    DESCRIPTION: 'DLL Lock status from PLL - bit 0'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Lock status from DLL - bit 0'
+        NAME: hut0_pll_cfg_dll_lock_status
+        WIDTH: 1
+    NAME: hut0_pll_cfg_dll_lock_status
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: DLL CCB0 clock halting and stepping control
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: DLL CCB0 clock halting and stepping control.
+        NAME: hut0_pll_cfg_pll_receiver_if_dll_ccb0_halt
+        WIDTH: 1
+    NAME: hut0_pll_cfg_pll_receiver_if_dll_ccb0_halt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: DLL CCB4 clock halting and stepping control
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: DLL CCB4 clock halting and stepping control.
+        NAME: hut0_pll_cfg_pll_receiver_if_dll_ccb4_halt
+        WIDTH: 1
+    NAME: hut0_pll_cfg_pll_receiver_if_dll_ccb4_halt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: 'Pre-scalar for feedback divider. Set LOW for DIV2, set HIGH for DIV3'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Pre-scalar for feedback divider. Set LOW for DIV2, set HIGH for DIV3'
+        NAME: hut1_pll_cfg_pll_receiver_if_prog_fbdiv_23
+        WIDTH: 1
+    NAME: hut1_pll_cfg_pll_receiver_if_prog_fbdiv_23
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: 'Main divider 1-256 for feedback divisor, values from 2 to 255 inclusive'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: PLL Feedback divider main divisor. Values from 2 to 255 inclusive.
+        NAME: hut1_pll_cfg_pll_receiver_if_prog_fbdiv255
+        WIDTH: 8
+    NAME: hut1_pll_cfg_pll_receiver_if_prog_fbdiv255
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: PLL reference clock input divisor. Values from 1 to 63 inclusive.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: PLL reference clock input divisor. Values from 1 to 63 inclusive.
+        NAME: hut1_pll_cfg_pll_receiver_if_pll_refcnt
+        WIDTH: 6
+    NAME: hut1_pll_cfg_pll_receiver_if_pll_refcnt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: PLL output divider divisor. Any value from 2 to 63 inclusive. Dynamic changes allowed.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: PLL output divider divisor. Any value from 2 to 63 inclusive. Dynamic changes allowed.
+        NAME: hut1_pll_cfg_pll_receiver_if_pll_out_divcnt
+        WIDTH: 6
+    NAME: hut1_pll_cfg_pll_receiver_if_pll_out_divcnt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: PLL output divider load count control.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: PLL output divider load count control
+        NAME: hut1_pll_cfg_pll_receiver_if_pll_out_divcnt_load
+        WIDTH: 1
+    NAME: hut1_pll_cfg_pll_receiver_if_pll_out_divcnt_load
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: 'Mask to disable each of the four clocks generated by PLL. '
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Mask to disable each of the four clocks generated by PLL.
+        NAME: hut1_pll_cfg_pll_receiver_if_pll_disable_output_clk
+        WIDTH: 4
+    NAME: hut1_pll_cfg_pll_receiver_if_pll_disable_output_clk
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: PLL loop control block enable
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Enables PLL for normal operation.
+        NAME: hut1_pll_cfg_pll_receiver_if_pll_enable
+        WIDTH: 1
+    NAME: hut1_pll_cfg_pll_receiver_if_pll_enable
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: Low speed clock divider enable signal
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Low speed clock divider enable signal.
+        NAME: hut1_pll_cfg_pll_receiver_if_divn_en
+        WIDTH: 1
+    NAME: hut1_pll_cfg_pll_receiver_if_divn_en
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: Low speed clock divider divisor value. Values allowed 1 to 63 inclusive.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Low speed clock divider divisor value. Values allowed 1 to 63 inclusive.
+        NAME: hut1_pll_cfg_pll_receiver_if_divn_prog
+        WIDTH: 6
+    NAME: hut1_pll_cfg_pll_receiver_if_divn_prog
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: REFCLK bypass for DivN
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: REFCLK bypass for DivN.
+        NAME: hut1_pll_cfg_pll_receiver_if_divn_ref_byp
+        WIDTH: 1
+    NAME: hut1_pll_cfg_pll_receiver_if_divn_ref_byp
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: Selects between slow and fast calibration algorithms for PLL.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Selects between slow (1) and fast calibration (0) algorithms for PLL.
+        NAME: hut1_pll_cfg_pll_receiver_if_slow_cal_en
+        WIDTH: 1
+    NAME: hut1_pll_cfg_pll_receiver_if_slow_cal_en
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: Enable automatic REFCLK bypass on startup  when set to 0. Must be set to 0 for normal operation.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Enable Automatic REFCLK bypass on startup when set to 0. Must be set to 0 for normal operation.
+        NAME: hut1_pll_cfg_pll_receiver_if_disable_abs
+        WIDTH: 1
+    NAME: hut1_pll_cfg_pll_receiver_if_disable_abs
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: Enable REFCLK bypass to drive the PLL clock output when 1. Glitchless switching protected
+    FLDLST:
+      - DEFAULT: 1
+        DESCRIPTION: Enable REFCLK bypass to drive the PLL clock output when 1. Glitchless switching protected
+        NAME: hut1_pll_cfg_pll_receiver_if_refclk_bypass
+        WIDTH: 1
+    NAME: hut1_pll_cfg_pll_receiver_if_refclk_bypass
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: CCB0 clock halting and stepping control.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: CCB0 clock halting and stepping control.
+        NAME: hut1_pll_cfg_pll_receiver_if_ccb0_halt
+        WIDTH: 1
+    NAME: hut1_pll_cfg_pll_receiver_if_ccb0_halt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: CCB1 clock halting and stepping control.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: CCB1 clock halting and stepping control.
+        NAME: hut1_pll_cfg_pll_receiver_if_ccb1_halt
+        WIDTH: 1
+    NAME: hut1_pll_cfg_pll_receiver_if_ccb1_halt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: CCB2 clock halting and stepping control.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: CCB2 clock halting and stepping control.
+        NAME: hut1_pll_cfg_pll_receiver_if_ccb2_halt
+        WIDTH: 1
+    NAME: hut1_pll_cfg_pll_receiver_if_ccb2_halt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: CCB3 clock halting and stepping control.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: CCB3 clock halting and stepping control.
+        NAME: hut1_pll_cfg_pll_receiver_if_ccb3_halt
+        WIDTH: 1
+    NAME: hut1_pll_cfg_pll_receiver_if_ccb3_halt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: CCB4 clock halting and stepping control
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: CCB4 clock halting and stepping control.
+        NAME: hut1_pll_cfg_pll_receiver_if_ccb4_halt
+        WIDTH: 1
+    NAME: hut1_pll_cfg_pll_receiver_if_ccb4_halt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: 'Observation Clock Output Divisor - divide by 1, 2, 4 or 8'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Observation Clock Output Divisor - divide by 1, 2, 4 or 8'
+        NAME: hut1_pll_cfg_pll_receiver_if_ck_obs_div
+        WIDTH: 2
+    NAME: hut1_pll_cfg_pll_receiver_if_ck_obs_div
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: Select among 16 sources to send to observation pad for test purposes
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Select among 16 sources to send to observation pad for test purposes
+        NAME: hut1_pll_cfg_pll_receiver_if_ck_obs_sel
+        WIDTH: 4
+    NAME: hut1_pll_cfg_pll_receiver_if_ck_obs_sel
+  - ATTR: 10
+    COUNT: 1
+    DESCRIPTION: 'Lock status from PLL - bit 0'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'PLL Lock status from PLL - bit 0'
+        NAME: hut1_pll_cfg_pll_lock_status
+        WIDTH: 1
+    NAME: hut1_pll_cfg_pll_lock_status
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: 'Enable the DLL, 1=enable, 0=disable'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Enable the DLL, 1=disabled,0=enabled'
+        NAME: hut1_pll_cfg_pll_receiver_if_dll_enable
+        WIDTH: 1
+    NAME: hut1_pll_cfg_pll_receiver_if_dll_enable
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: DLL reference clock input divisor. Values from 1 to 63 inclusive.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: DLL reference clock input divisor. Values from 1 to 63 inclusive.
+        NAME: hut1_pll_cfg_pll_receiver_if_dll_refcnt
+        WIDTH: 6
+    NAME: hut1_pll_cfg_pll_receiver_if_dll_refcnt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: PLL output divider divisor. Any value from 2 to 63 inclusive. Dynamic changes allowed.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: DLL feedback input clock divider. Any value from 1 to 63 inclusive.
+        NAME: hut1_pll_cfg_pll_receiver_if_dll_fbcnt
+        WIDTH: 6
+    NAME: hut1_pll_cfg_pll_receiver_if_dll_fbcnt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: DLL output divider divisor. Any value from 2 to 63 inclusive. Dynamic changes allowed.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: DLL output divider divisor. Any value from 2 to 63 inclusive. Dynamic changes allowed.
+        NAME: hut1_pll_cfg_pll_receiver_if_dll_out_divcnt
+        WIDTH: 6
+    NAME: hut1_pll_cfg_pll_receiver_if_dll_out_divcnt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: DLL output divider load count control.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: DLL output divider load count control
+        NAME: hut1_pll_cfg_pll_receiver_if_dll_out_divcnt_load
+        WIDTH: 1
+    NAME: hut1_pll_cfg_pll_receiver_if_dll_out_divcnt_load
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: 'Disable the four DLL generated clocks, on bit per clock'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Disables the four DLL output clocks, one bit per DLL clock, 1=disabled,0=enabled'
+        NAME: hut1_pll_cfg_pll_receiver_if_dll_disable_output_clk
+        WIDTH: 4
+    NAME: hut1_pll_cfg_pll_receiver_if_dll_disable_output_clk
+  - ATTR: 10
+    COUNT: 1
+    DESCRIPTION: 'DLL Lock status from PLL - bit 0'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Lock status from DLL - bit 0'
+        NAME: hut1_pll_cfg_dll_lock_status
+        WIDTH: 1
+    NAME: hut1_pll_cfg_dll_lock_status
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: DLL CCB0 clock halting and stepping control
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: DLL CCB0 clock halting and stepping control.
+        NAME: hut1_pll_cfg_pll_receiver_if_dll_ccb0_halt
+        WIDTH: 1
+    NAME: hut1_pll_cfg_pll_receiver_if_dll_ccb0_halt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: DLL CCB4 clock halting and stepping control
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: DLL CCB4 clock halting and stepping control.
+        NAME: hut1_pll_cfg_pll_receiver_if_dll_ccb4_halt
+        WIDTH: 1
+    NAME: hut1_pll_cfg_pll_receiver_if_dll_ccb4_halt
+  - ATTR: 6
+    COUNT: 1
+    DESCRIPTION: r/w eMMC register access
+    ENTRIES: 2048
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Reserved bits - unimplemented.'
+        NAME: emmc_bridge_reserved
+        WIDTH: 32
+      - DEFAULT: 0
+        DESCRIPTION: eMMC register
+        NAME: emmc_reg
+        WIDTH: 32
+    NAME: emmc_bridge
+  - ATTR: 6
+    COUNT: 1
+    DESCRIPTION: r/w data transfer buffer
+    ENTRIES: 1024
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: transfer buffer holds block to be written or that have been read from flash
+        NAME: data
+        WIDTH: 64
+    NAME: emmc_transfer_buffer
+XASIZE: 0

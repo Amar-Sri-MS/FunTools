@@ -1,0 +1,680 @@
+---
+BASEADDRPORT: 1
+COUNT: 1
+DESCRIPTION: PSW PRM CSR Spec
+INTR:
+  FATAL:
+    - DESCRIPTION: Uncorrectable ECC Error
+      NAME: mem_ucerr
+      WIDTH: 1
+  NON_FATAL:
+    - DESCRIPTION: IRM drop
+      NAME: irm_pkt_drop
+      WIDTH: 1
+    - DESCRIPTION: ORM drop
+      NAME: orm_pkt_drop
+      WIDTH: 1
+    - DESCRIPTION: GRM drop
+      NAME: grm_pkt_drop
+      WIDTH: 1
+    - DESCRIPTION: WRED drop
+      NAME: wred_pkt_drop
+      WIDTH: 1
+    - DESCRIPTION: PRM drop
+      NAME: prm_pkt_drop
+      WIDTH: 1
+INTR_PORT_EN: 1
+NAME: PSW_PRM_AN
+PARENTNAME: NU_0_AN
+REGLST:
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: |-
+          Timeout Configuration. Cycles are RSU clk based.
+                            - 00 : 1024 cycles
+                            - 01 : 256 cycles
+                            - 10 : 4096 cycles
+                            - 11 : infinite
+        NAME: val
+        WIDTH: 2
+    NAME: psw_prm_timeout_thresh_cfg
+  - ATTR: 9
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: "Timed out Status. Cycles are RSU clk based. Becomes 1 when timed out. Write any value to clear it.\n                  "
+        NAME: val
+        WIDTH: 1
+    NAME: psw_prm_timedout_sta
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: |-
+          Clear Timeout Status. Data is ignored. A write
+                     will clear the timeout status bit
+        NAME: val
+        WIDTH: 1
+    NAME: psw_prm_timeout_clr
+    TEST_ATTR: 1
+  - ATTR: 256
+    FLDLST:
+      - &1
+        DESCRIPTION: Uncorrectable ECC Error
+        NAME: mem_ucerr
+        WIDTH: 1
+    NAME: psw_prm_fatal_intr_cause
+  - ATTR: 512
+    FLDLST:
+      - *1
+    NAME: psw_prm_fatal_intr_stat
+  - ATTR: 1024
+    FLDLST:
+      - *1
+    NAME: psw_prm_fatal_intr_mask
+  - ATTR: 2048
+    FLDLST:
+      - *1
+    NAME: psw_prm_fatal_intr_bset
+  - ATTR: 4096
+    FLDLST:
+      - *1
+    NAME: psw_prm_fatal_intr_bclr
+  - ATTR: 256
+    FLDLST:
+      - &2
+        DESCRIPTION: IRM drop
+        NAME: irm_pkt_drop
+        WIDTH: 1
+      - &3
+        DESCRIPTION: ORM drop
+        NAME: orm_pkt_drop
+        WIDTH: 1
+      - &4
+        DESCRIPTION: GRM drop
+        NAME: grm_pkt_drop
+        WIDTH: 1
+      - &5
+        DESCRIPTION: WRED drop
+        NAME: wred_pkt_drop
+        WIDTH: 1
+      - &6
+        DESCRIPTION: PRM drop
+        NAME: prm_pkt_drop
+        WIDTH: 1
+    NAME: psw_prm_non_fatal_intr_cause
+  - ATTR: 512
+    FLDLST:
+      - *2
+      - *3
+      - *4
+      - *5
+      - *6
+    NAME: psw_prm_non_fatal_intr_stat
+  - ATTR: 1024
+    FLDLST:
+      - *2
+      - *3
+      - *4
+      - *5
+      - *6
+    NAME: psw_prm_non_fatal_intr_mask
+  - ATTR: 2048
+    FLDLST:
+      - *2
+      - *3
+      - *4
+      - *5
+      - *6
+    NAME: psw_prm_non_fatal_intr_bset
+  - ATTR: 4096
+    FLDLST:
+      - *2
+      - *3
+      - *4
+      - *5
+      - *6
+    NAME: psw_prm_non_fatal_intr_bclr
+  - ATTR: 9
+    DESCRIPTION: Place Holder for now for PSW packet Scheduler Feature Register
+    FLDLST:
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Module ID
+        NAME: module_id
+        WIDTH: 8
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Version number of the module
+        NAME: version
+        WIDTH: 8
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Features enabled in the module.
+        NAME: features
+        WIDTH: 16
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Reserved Field.
+        NAME: Reserved
+        WIDTH: 32
+    NAME: psw_prm_features
+    WIDTH: 64
+  - ATTR: 5
+    DESCRIPTION: ' Spare PIO register. These bits can be read and written by software. They can serve as control bits for late ECOs in the design.'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Spare PIO register.
+        NAME: val
+        WIDTH: 64
+    NAME: psw_prm_spare_pio
+    WIDTH: 64
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: Scratchpad register.
+        NAME: val
+        WIDTH: 64
+    NAME: psw_prm_scratchpad
+    WIDTH: 64
+  - ATTR: 5
+    DESCRIPTION: ' '
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: ' - '
+        NAME: irm
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ' - '
+        NAME: orm
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ' - '
+        NAME: wred
+        WIDTH: 1
+    NAME: psw_prm_mem_init_start_cfg
+  - ATTR: 9
+    DESCRIPTION: ' '
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: ' - '
+        NAME: irm
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ' - '
+        NAME: orm
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ' - '
+        NAME: wred
+        WIDTH: 1
+    NAME: psw_prm_mem_init_done_status
+  - ATTR: 5
+    DESCRIPTION: 'Indicates PRM enable for different blocks '
+    FLDLST:
+      - DEFAULT: 1
+        DESCRIPTION: ORM enable.
+        NAME: orm_en
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: IRM enable.
+        NAME: irm_en
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: GRM enable.
+        NAME: grm_en
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: CTM enable.
+        NAME: ctm_en
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: WRED enable for main pkt.
+        NAME: wred_en_main_pkt
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: ECN enable for main pkt.
+        NAME: ecn_en_main_pkt
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: WRED enable for Sampled pkt.
+        NAME: wred_en_sampled_pkt
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: ECN enable for sampled pkt.
+        NAME: ecn_en_sampled_pkt
+        WIDTH: 1
+    NAME: psw_prm_blk_en
+  - ATTR: 5
+    DESCRIPTION: Sample of PRM drop.
+    FLDLST:
+      - DEFAULT: 1
+        DESCRIPTION: 'Enable SPD for Main only pkt. '
+        NAME: en_main_only_pkt
+        WIDTH: 1
+      - DEFAULT: 2000
+        DESCRIPTION: Sample only if cfp current use is less than or equal to this threshold value
+        NAME: cfp_th
+        WIDTH: 14
+      - DEFAULT: 0
+        DESCRIPTION: Refresh credits after these clks.
+        NAME: refresh_en
+        WIDTH: 1
+      - DEFAULT: 1024
+        DESCRIPTION: Refresh credits after these clks.
+        NAME: credits_refresh_period
+        WIDTH: 14
+      - DEFAULT: 16
+        DESCRIPTION: Number of packet credits that are allowed to be spd in a single refresh period.
+        NAME: num_pkt_credits
+        WIDTH: 14
+    NAME: psw_prm_cfg_spd
+  - ATTR: 5
+    DESCRIPTION: sampled copy cell threshold.
+    FLDLST:
+      - DEFAULT: 2000
+        DESCRIPTION: Sampled copy cell threshold value
+        NAME: val
+        WIDTH: 14
+      - DEFAULT: 0
+        DESCRIPTION: 'set 1 to clear HWM count. Harwdware detects rising edge of this signal to clear HWM counter. '
+        NAME: clear_hwm
+        WIDTH: 1
+    NAME: psw_prm_grm_cfg_sampled_copy_thresh
+  - ATTR: 9
+    DESCRIPTION: sampled copy cell cnt.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Sampled copy cell count value
+        NAME: curr_val
+        WIDTH: 14
+      - DEFAULT: 0
+        DESCRIPTION: cell count HWM value
+        NAME: hwm_val
+        WIDTH: 14
+    NAME: psw_prm_grm_sta_sampled_copy_cnt
+  - ATTR: 5
+    DESCRIPTION: 'switch type - SF threshold.'
+    FLDLST:
+      - DEFAULT: 4000
+        DESCRIPTION: SF cell count threshold value
+        NAME: val
+        WIDTH: 14
+      - DEFAULT: 2000
+        DESCRIPTION: XOFF threshold.
+        NAME: xoff_thr
+        WIDTH: 14
+      - DEFAULT: 2000
+        DESCRIPTION: XON threshold.
+        NAME: xon_thr
+        WIDTH: 14
+      - DEFAULT: 0
+        DESCRIPTION: 'set 1 to clear HWM count. Harwdware detects rising edge of this signal to clear HWM counter. '
+        NAME: clear_hwm
+        WIDTH: 1
+    NAME: psw_prm_grm_cfg_sf_thresh
+  - ATTR: 9
+    DESCRIPTION: 'switch type - SF count .'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: SF cell count value
+        NAME: curr_val
+        WIDTH: 14
+      - DEFAULT: 0
+        DESCRIPTION: cell count HWM value
+        NAME: hwm_val
+        WIDTH: 14
+    NAME: psw_prm_grm_sta_sf_cnt
+  - ATTR: 5
+    DESCRIPTION: 'switch type - SX threshold.'
+    FLDLST:
+      - DEFAULT: 4000
+        DESCRIPTION: SX cell count threshold value
+        NAME: val
+        WIDTH: 14
+      - DEFAULT: 0
+        DESCRIPTION: 'set 1 to clear HWM count. Harwdware detects rising edge of this signal to clear HWM counter. '
+        NAME: clear_hwm
+        WIDTH: 1
+    NAME: psw_prm_grm_cfg_sx_thresh
+  - ATTR: 9
+    DESCRIPTION: 'switch type - SX count .'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: SX cell count value
+        NAME: curr_val
+        WIDTH: 14
+      - DEFAULT: 0
+        DESCRIPTION: cell count HWM value
+        NAME: hwm_val
+        WIDTH: 14
+    NAME: psw_prm_grm_sta_sx_cnt
+  - ATTR: 5
+    DESCRIPTION: 'switch type - DX threshold.'
+    FLDLST:
+      - DEFAULT: 8000
+        DESCRIPTION: DX cell count threshold value
+        NAME: val
+        WIDTH: 14
+      - DEFAULT: 0
+        DESCRIPTION: 'set 1 to clear HWM count. Harwdware detects rising edge of this signal to clear HWM counter. '
+        NAME: clear_hwm
+        WIDTH: 1
+    NAME: psw_prm_grm_cfg_dx_thresh
+  - ATTR: 9
+    DESCRIPTION: 'switch type - DX count .'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: DX cell count value
+        NAME: curr_val
+        WIDTH: 14
+      - DEFAULT: 0
+        DESCRIPTION: cell count HWM value
+        NAME: hwm_val
+        WIDTH: 14
+    NAME: psw_prm_grm_sta_dx_cnt
+  - ATTR: 5
+    DESCRIPTION: 'switch type - DF threshold.'
+    FLDLST:
+      - DEFAULT: 4000
+        DESCRIPTION: DF cell count threshold value
+        NAME: val
+        WIDTH: 14
+      - DEFAULT: 0
+        DESCRIPTION: 'set 1 to clear HWM count. Harwdware detects rising edge of this signal to clear HWM counter. '
+        NAME: clear_hwm
+        WIDTH: 1
+    NAME: psw_prm_grm_cfg_df_thresh
+  - ATTR: 9
+    DESCRIPTION: 'switch type - DF count .'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: DF cell count value
+        NAME: curr_val
+        WIDTH: 14
+      - DEFAULT: 0
+        DESCRIPTION: cell count HWM value
+        NAME: hwm_val
+        WIDTH: 14
+    NAME: psw_prm_grm_sta_df_cnt
+  - ATTR: 5
+    DESCRIPTION: FCP threshold.
+    FLDLST:
+      - DEFAULT: 4000
+        DESCRIPTION: FCP cell count threshold value
+        NAME: val
+        WIDTH: 14
+      - DEFAULT: 2000
+        DESCRIPTION: XOFF threshold.
+        NAME: xoff_thr
+        WIDTH: 14
+      - DEFAULT: 2000
+        DESCRIPTION: XON threshold.
+        NAME: xon_thr
+        WIDTH: 14
+      - DEFAULT: 0
+        DESCRIPTION: 'set 1 to clear HWM count. Harwdware detects rising edge of this signal to clear HWM counter. '
+        NAME: clear_hwm
+        WIDTH: 1
+    NAME: psw_prm_grm_cfg_fcp_thresh
+  - ATTR: 9
+    DESCRIPTION: FCP cell cnt.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: FCP cell count value
+        NAME: curr_val
+        WIDTH: 14
+      - DEFAULT: 0
+        DESCRIPTION: cell count HWM value
+        NAME: hwm_val
+        WIDTH: 14
+    NAME: psw_prm_grm_sta_fcp_cnt
+  - ATTR: 5
+    DESCRIPTION: NONFCP threshold.
+    FLDLST:
+      - DEFAULT: 12000
+        DESCRIPTION: nonFCP cell count threshold value
+        NAME: val
+        WIDTH: 14
+      - DEFAULT: 6000
+        DESCRIPTION: XOFF threshold.
+        NAME: xoff_thr
+        WIDTH: 14
+      - DEFAULT: 6000
+        DESCRIPTION: XON threshold.
+        NAME: xon_thr
+        WIDTH: 14
+      - DEFAULT: 0
+        DESCRIPTION: 'set 1 to clear HWM count. Harwdware detects rising edge of this signal to clear HWM counter. '
+        NAME: clear_hwm
+        WIDTH: 1
+    NAME: psw_prm_grm_cfg_nonfcp_thresh
+  - ATTR: 9
+    DESCRIPTION: NONFCP cell cnt.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: NONFCP cell count value
+        NAME: curr_val
+        WIDTH: 14
+      - DEFAULT: 0
+        DESCRIPTION: cell count HWM value
+        NAME: hwm_val
+        WIDTH: 14
+    NAME: psw_prm_grm_sta_nonfcp_cnt
+  - ATTR: 5
+    DESCRIPTION: CFP cell threshold. CFP cell usage must be below this threshold to enable CT
+    FLDLST:
+      - DEFAULT: 2000
+        DESCRIPTION: ' value'
+        NAME: val
+        WIDTH: 14
+    NAME: psw_prm_ctm_cfg_cfp_th
+  - ATTR: 5
+    DESCRIPTION: 'Stream speed.  '
+    FLDLST:
+      - DEFAULT: 2
+        DESCRIPTION: 'values based on nu_stream_speed_t enum defined in nu_enums '
+        NAME: val
+        WIDTH: 4
+    NAME: psw_prm_ctm_cfg_speed_fp_stream_0
+  - ATTR: 5
+    DESCRIPTION: 'Stream speed.  '
+    FLDLST:
+      - DEFAULT: 2
+        DESCRIPTION: 'values based on nu_stream_speed_t enum defined in nu_enums '
+        NAME: val
+        WIDTH: 4
+    NAME: psw_prm_ctm_cfg_speed_fp_stream_1
+  - ATTR: 5
+    DESCRIPTION: 'Stream speed.  '
+    FLDLST:
+      - DEFAULT: 2
+        DESCRIPTION: 'values based on nu_stream_speed_t enum defined in nu_enums '
+        NAME: val
+        WIDTH: 4
+    NAME: psw_prm_ctm_cfg_speed_fp_stream_2
+  - ATTR: 5
+    DESCRIPTION: 'Stream speed.  '
+    FLDLST:
+      - DEFAULT: 2
+        DESCRIPTION: 'values based on nu_stream_speed_t enum defined in nu_enums '
+        NAME: val
+        WIDTH: 4
+    NAME: psw_prm_ctm_cfg_speed_fp_stream_3
+  - ATTR: 5
+    DESCRIPTION: 'Stream speed.  '
+    FLDLST:
+      - DEFAULT: 2
+        DESCRIPTION: 'values based on nu_stream_speed_t enum defined in nu_enums '
+        NAME: val
+        WIDTH: 4
+    NAME: psw_prm_ctm_cfg_speed_fp_stream_4
+  - ATTR: 5
+    DESCRIPTION: 'Stream speed.  '
+    FLDLST:
+      - DEFAULT: 2
+        DESCRIPTION: 'values based on nu_stream_speed_t enum defined in nu_enums '
+        NAME: val
+        WIDTH: 4
+    NAME: psw_prm_ctm_cfg_speed_fp_stream_5
+  - ATTR: 5
+    DESCRIPTION: 'Stream speed.  '
+    FLDLST:
+      - DEFAULT: 2
+        DESCRIPTION: 'values based on nu_stream_speed_t enum defined in nu_enums '
+        NAME: val
+        WIDTH: 4
+    NAME: psw_prm_ctm_cfg_speed_fp_stream_6
+  - ATTR: 5
+    DESCRIPTION: 'Stream speed.  '
+    FLDLST:
+      - DEFAULT: 2
+        DESCRIPTION: 'values based on nu_stream_speed_t enum defined in nu_enums '
+        NAME: val
+        WIDTH: 4
+    NAME: psw_prm_ctm_cfg_speed_fp_stream_7
+  - ATTR: 5
+    DESCRIPTION: 'Stream speed.  '
+    FLDLST:
+      - DEFAULT: 2
+        DESCRIPTION: 'values based on nu_stream_speed_t enum defined in nu_enums '
+        NAME: val
+        WIDTH: 4
+    NAME: psw_prm_ctm_cfg_speed_fp_stream_8
+  - ATTR: 5
+    DESCRIPTION: 'Stream speed.  '
+    FLDLST:
+      - DEFAULT: 2
+        DESCRIPTION: 'values based on nu_stream_speed_t enum defined in nu_enums '
+        NAME: val
+        WIDTH: 4
+    NAME: psw_prm_ctm_cfg_speed_fp_stream_9
+  - ATTR: 5
+    DESCRIPTION: 'Stream speed.  '
+    FLDLST:
+      - DEFAULT: 2
+        DESCRIPTION: 'values based on nu_stream_speed_t enum defined in nu_enums '
+        NAME: val
+        WIDTH: 4
+    NAME: psw_prm_ctm_cfg_speed_fp_stream_10
+  - ATTR: 5
+    DESCRIPTION: 'Stream speed.  '
+    FLDLST:
+      - DEFAULT: 2
+        DESCRIPTION: 'values based on nu_stream_speed_t enum defined in nu_enums '
+        NAME: val
+        WIDTH: 4
+    NAME: psw_prm_ctm_cfg_speed_fp_stream_11
+  - ATTR: 5
+    DESCRIPTION: 'Stream speed.  '
+    FLDLST:
+      - DEFAULT: 2
+        DESCRIPTION: 'values based on nu_stream_speed_t enum defined in nu_enums '
+        NAME: val
+        WIDTH: 4
+    NAME: psw_prm_ctm_cfg_speed_fp_stream_12
+  - ATTR: 5
+    DESCRIPTION: 'Stream speed.  '
+    FLDLST:
+      - DEFAULT: 2
+        DESCRIPTION: 'values based on nu_stream_speed_t enum defined in nu_enums '
+        NAME: val
+        WIDTH: 4
+    NAME: psw_prm_ctm_cfg_speed_fp_stream_13
+  - ATTR: 5
+    DESCRIPTION: 'Stream speed.  '
+    FLDLST:
+      - DEFAULT: 2
+        DESCRIPTION: 'values based on nu_stream_speed_t enum defined in nu_enums '
+        NAME: val
+        WIDTH: 4
+    NAME: psw_prm_ctm_cfg_speed_fp_stream_14
+  - ATTR: 5
+    DESCRIPTION: 'Stream speed.  '
+    FLDLST:
+      - DEFAULT: 2
+        DESCRIPTION: 'values based on nu_stream_speed_t enum defined in nu_enums '
+        NAME: val
+        WIDTH: 4
+    NAME: psw_prm_ctm_cfg_speed_fp_stream_15
+  - ATTR: 5
+    DESCRIPTION: 'Stream speed.  '
+    FLDLST:
+      - DEFAULT: 2
+        DESCRIPTION: 'values based on nu_stream_speed_t enum defined in nu_enums '
+        NAME: val
+        WIDTH: 4
+    NAME: psw_prm_ctm_cfg_speed_fp_stream_16
+  - ATTR: 5
+    DESCRIPTION: 'Stream speed.  '
+    FLDLST:
+      - DEFAULT: 2
+        DESCRIPTION: 'values based on nu_stream_speed_t enum defined in nu_enums '
+        NAME: val
+        WIDTH: 4
+    NAME: psw_prm_ctm_cfg_speed_fp_stream_17
+  - ATTR: 5
+    DESCRIPTION: 'Stream speed.  '
+    FLDLST:
+      - DEFAULT: 2
+        DESCRIPTION: 'values based on nu_stream_speed_t enum defined in nu_enums '
+        NAME: val
+        WIDTH: 4
+    NAME: psw_prm_ctm_cfg_speed_fp_stream_18
+  - ATTR: 5
+    DESCRIPTION: 'Stream speed.  '
+    FLDLST:
+      - DEFAULT: 2
+        DESCRIPTION: 'values based on nu_stream_speed_t enum defined in nu_enums '
+        NAME: val
+        WIDTH: 4
+    NAME: psw_prm_ctm_cfg_speed_fp_stream_19
+  - ATTR: 5
+    DESCRIPTION: 'Stream speed.  '
+    FLDLST:
+      - DEFAULT: 2
+        DESCRIPTION: 'values based on nu_stream_speed_t enum defined in nu_enums '
+        NAME: val
+        WIDTH: 4
+    NAME: psw_prm_ctm_cfg_speed_fp_stream_20
+  - ATTR: 5
+    DESCRIPTION: 'Stream speed.  '
+    FLDLST:
+      - DEFAULT: 2
+        DESCRIPTION: 'values based on nu_stream_speed_t enum defined in nu_enums '
+        NAME: val
+        WIDTH: 4
+    NAME: psw_prm_ctm_cfg_speed_fp_stream_21
+  - ATTR: 5
+    DESCRIPTION: 'Stream speed.  '
+    FLDLST:
+      - DEFAULT: 2
+        DESCRIPTION: 'values based on nu_stream_speed_t enum defined in nu_enums '
+        NAME: val
+        WIDTH: 4
+    NAME: psw_prm_ctm_cfg_speed_fp_stream_22
+  - ATTR: 5
+    DESCRIPTION: 'Stream speed.  '
+    FLDLST:
+      - DEFAULT: 2
+        DESCRIPTION: 'values based on nu_stream_speed_t enum defined in nu_enums '
+        NAME: val
+        WIDTH: 4
+    NAME: psw_prm_ctm_cfg_speed_fp_stream_23
+  - ATTR: 5
+    DESCRIPTION: 'Fabric port CT disable.  '
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: CT disable for FP streams 23 to 0. Bit-0 is for FP stream0 and so on.
+        NAME: vec
+        WIDTH: 24
+    NAME: psw_prm_ctm_cfg_ct_disable_dest_fp_streams
+  - ATTR: 6
+    DESCRIPTION: Access to PSW PRM Stats Counters
+    ENTRIES: 13
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: PSW PRM Statistics Counters
+        NAME: cnt
+        WIDTH: 32
+    NAME: psw_prm_stats_cntrs
+XASIZE: 0

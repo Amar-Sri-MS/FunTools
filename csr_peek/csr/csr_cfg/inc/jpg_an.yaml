@@ -1,0 +1,238 @@
+---
+COUNT: 1
+DESCRIPTION: JPG CSR spec
+INTR:
+  FATAL:
+    - DESCRIPTION: ''
+      NAME: jpg_mem_placeholder_1_perr
+      WIDTH: 1
+    - DESCRIPTION: ''
+      NAME: jpg_mem_placeholder_0_perr
+      WIDTH: 1
+  NON_FATAL:
+    - DESCRIPTION: ''
+      NAME: jpg_err1
+      WIDTH: 1
+    - DESCRIPTION: ''
+      NAME: jpg_err0
+      WIDTH: 1
+INTR_PORT_EN: 1
+NAME: JPG_AN
+PARENTNAME: pc_soc_clk_an
+REGLST:
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: |-
+          Timeout Configuration. Cycles are RSU clk based.
+                            - 00 : 1024 cycles
+                            - 01 : 256 cycles
+                            - 10 : 4096 cycles
+                            - 11 : infinite
+        NAME: val
+        WIDTH: 2
+    NAME: jpg_timeout_thresh_cfg
+  - ATTR: 9
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: "Timed out Status. Cycles are RSU clk based. Becomes 1 when timed out. Write any value to clear it.\n                  "
+        NAME: val
+        WIDTH: 1
+    NAME: jpg_timedout_sta
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: |-
+          Clear Timeout Status. Data is ignored. A write
+                     will clear the timeout status bit
+        NAME: val
+        WIDTH: 1
+    NAME: jpg_timeout_clr
+    TEST_ATTR: 1
+  - ATTR: 256
+    FLDLST:
+      - &1
+        DESCRIPTION: ''
+        NAME: jpg_mem_placeholder_1_perr
+        WIDTH: 1
+      - &2
+        DESCRIPTION: ''
+        NAME: jpg_mem_placeholder_0_perr
+        WIDTH: 1
+    NAME: jpg_fatal_intr_cause
+  - ATTR: 512
+    FLDLST:
+      - *1
+      - *2
+    NAME: jpg_fatal_intr_stat
+  - ATTR: 1024
+    FLDLST:
+      - *1
+      - *2
+    NAME: jpg_fatal_intr_mask
+  - ATTR: 2048
+    FLDLST:
+      - *1
+      - *2
+    NAME: jpg_fatal_intr_bset
+  - ATTR: 4096
+    FLDLST:
+      - *1
+      - *2
+    NAME: jpg_fatal_intr_bclr
+  - ATTR: 256
+    FLDLST:
+      - &3
+        DESCRIPTION: ''
+        NAME: jpg_err1
+        WIDTH: 1
+      - &4
+        DESCRIPTION: ''
+        NAME: jpg_err0
+        WIDTH: 1
+    NAME: jpg_non_fatal_intr_cause
+  - ATTR: 512
+    FLDLST:
+      - *3
+      - *4
+    NAME: jpg_non_fatal_intr_stat
+  - ATTR: 1024
+    FLDLST:
+      - *3
+      - *4
+    NAME: jpg_non_fatal_intr_mask
+  - ATTR: 2048
+    FLDLST:
+      - *3
+      - *4
+    NAME: jpg_non_fatal_intr_bset
+  - ATTR: 4096
+    FLDLST:
+      - *3
+      - *4
+    NAME: jpg_non_fatal_intr_bclr
+  - ATTR: 9
+    DESCRIPTION: Identifier register.
+    FLDLST:
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Module ID
+        NAME: module_id
+        VALUE: 0
+        WIDTH: 8
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Version number of the module
+        NAME: version
+        VALUE: 0
+        WIDTH: 8
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Features enabled in the module.
+        NAME: features
+        VALUE: 0
+        WIDTH: 16
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Reserved Field.
+        NAME: Reserved
+        WIDTH: 32
+    NAME: jpg_features
+    WIDTH: 64
+  - ATTR: 5
+    DESCRIPTION: ' Spare PIO register. These bits can be read and written by software. They can serve as control bits for late ECOs in the design.'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Spare PIO register.
+        NAME: val
+        WIDTH: 64
+    NAME: jpg_spare_pio
+    WIDTH: 64
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: Scratchpad register.
+        NAME: val
+        WIDTH: 64
+    NAME: jpg_scratchpad
+    WIDTH: 64
+  - ATTR: 6
+    DESCRIPTION: Control Panel ECC Symptom Capture Register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'ECC Symptom Bits, When Non-Zero, Writing the read value back will clear the register'
+        NAME: val
+        WIDTH: 18
+    NAME: jpg_ecc_sym
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: ''
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: ' '
+        NAME: foo
+        WIDTH: 1
+    NAME: jpg_cfg
+  - ATTR: 9
+    DESCRIPTION: SRAM bit vector that failed ECC
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                  First SRAM ECC error detected (1-hot)
+                                  Set when first error is detected
+                                  Reset when corresponding interrupt status bit is cleared
+                                  
+        NAME: val
+        WIDTH: 64
+    NAME: jpg_sram_log_err
+  - ATTR: 9
+    DESCRIPTION: SRAM syndrome log register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                  Syndrome related to ECC error
+                                  detected while reading data from SRAM
+                                  
+        NAME: val
+        WIDTH: 9
+    NAME: jpg_sram_log_syndrome
+  - ATTR: 9
+    DESCRIPTION: SRAM address log register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                  Address related to ECC error
+                                  detected while reading data from SRAM
+                                  
+        NAME: val
+        WIDTH: 16
+    NAME: jpg_sram_log_addr
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: Config register for memory error injection
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into jpg_mem_0 memory
+        NAME: jpg_mem_0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: |-
+          Type of error to be injected
+                                            Applied to all memory error injection
+                                            0 - Uncorrectable error
+                                            1 - Correctable error 
+        NAME: err_type
+        WIDTH: 1
+    NAME: jpg_mem_err_inj_cfg
+  - ATTR: 5
+    DESCRIPTION: FLA Ring Module ID
+    FLDLST:
+      - DEFAULT: 85
+        DESCRIPTION: '8-Bit Module ID to be used for Decoding Commands on FLA Command Ring, 0x0, 0xff are Reserved Values'
+        NAME: fld_val
+        WIDTH: 8
+    NAME: jpg_fla_ring_module_id_cfg
+XASIZE: 0

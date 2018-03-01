@@ -1,0 +1,551 @@
+---
+ASIZE: 65536
+BASEADDRPORT: 1
+COUNT: 1
+DESCRIPTION: MUH Manager CSR Spec
+INTR:
+  FATAL:
+    - DESCRIPTION: SBUS master double bit error.
+      NAME: sbus_master
+      WIDTH: 1
+  NON_FATAL:
+    - DESCRIPTION: SBUS master single bit error.
+      NAME: sbus_master
+      WIDTH: 1
+INTR_PORT_EN: 1
+NAME: MUH_MNGR_AN
+PARENTNAME: MUH_1_AN_MUH_SOC_CLK_AN
+REGLST:
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: |-
+          Timeout Configuration. Cycles are RSU clk based.
+                            - 00 : 1024 cycles
+                            - 01 : 256 cycles
+                            - 10 : 4096 cycles
+                            - 11 : infinite
+        NAME: val
+        WIDTH: 2
+    NAME: muh_mngr_timeout_thresh_cfg
+  - ATTR: 9
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: "Timed out Status. Cycles are RSU clk based. Becomes 1 when timed out. Write any value to clear it.\n                  "
+        NAME: val
+        WIDTH: 1
+    NAME: muh_mngr_timedout_sta
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: |-
+          Clear Timeout Status. Data is ignored. A write
+                     will clear the timeout status bit
+        NAME: val
+        WIDTH: 1
+    NAME: muh_mngr_timeout_clr
+    TEST_ATTR: 1
+  - ATTR: 256
+    FLDLST:
+      - &1
+        DESCRIPTION: SBUS master double bit error.
+        NAME: sbus_master
+        WIDTH: 1
+    NAME: muh_mngr_fatal_intr_cause
+  - ATTR: 512
+    FLDLST:
+      - *1
+    NAME: muh_mngr_fatal_intr_stat
+  - ATTR: 1024
+    FLDLST:
+      - *1
+    NAME: muh_mngr_fatal_intr_mask
+  - ATTR: 2048
+    FLDLST:
+      - *1
+    NAME: muh_mngr_fatal_intr_bset
+  - ATTR: 4096
+    FLDLST:
+      - *1
+    NAME: muh_mngr_fatal_intr_bclr
+  - ATTR: 256
+    FLDLST:
+      - &2
+        DESCRIPTION: SBUS master single bit error.
+        NAME: sbus_master
+        WIDTH: 1
+    NAME: muh_mngr_non_fatal_intr_cause
+  - ATTR: 512
+    FLDLST:
+      - *2
+    NAME: muh_mngr_non_fatal_intr_stat
+  - ATTR: 1024
+    FLDLST:
+      - *2
+    NAME: muh_mngr_non_fatal_intr_mask
+  - ATTR: 2048
+    FLDLST:
+      - *2
+    NAME: muh_mngr_non_fatal_intr_bset
+  - ATTR: 4096
+    FLDLST:
+      - *2
+    NAME: muh_mngr_non_fatal_intr_bclr
+  - ATTR: 9
+    DESCRIPTION: Place Holder for now for MU_CFG Feature Register
+    FLDLST:
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Module ID
+        NAME: module_id
+        WIDTH: 8
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Version number of the module
+        NAME: version
+        WIDTH: 8
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Features enabled in the module.
+        NAME: features
+        WIDTH: 16
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Reserved Field.
+        NAME: Reserved
+        WIDTH: 32
+    NAME: muh_mngr_features
+    WIDTH: 64
+  - ATTR: 5
+    DESCRIPTION: ' Spare PIO register. These bits can be read and written by software. They can serve as control bits for late ECOs in the design.'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Spare PIO register.
+        NAME: val
+        WIDTH: 64
+    NAME: muh_mngr_spare_pio
+    WIDTH: 64
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: Scratchpad register.
+        NAME: val
+        WIDTH: 64
+    NAME: muh_mngr_scratchpad
+    WIDTH: 64
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: MUH manager non-fatal interrupt status. One per leaf level interrupt module.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: MU_MNGR.
+        NAME: mu_mngr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'DNR 20, only active in MUH_0.'
+        NAME: dnr_20
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: MU_SNA 0.
+        NAME: mu_sna_0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: MU_SNA 1.
+        NAME: mu_sna_1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: MU_DNA 0.
+        NAME: mu_dna_0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: MU_DNA 1.
+        NAME: mu_dna_1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: MU_CNA 0.
+        NAME: mu_cna_0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: MU_CNA 1.
+        NAME: mu_cna_1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: MU_QSYS 0.
+        NAME: mu_qsys_0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: MU_QSYS 1.
+        NAME: mu_qsys_1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: MU_QSYS 2.
+        NAME: mu_qsys_2
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: MU_QSYS 3.
+        NAME: mu_qsys_3
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: MU_QSYS 4.
+        NAME: mu_qsys_4
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: MU_QSYS 5.
+        NAME: mu_qsys_5
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: MU_QSYS 6.
+        NAME: mu_qsys_6
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: MU_QSYS 7.
+        NAME: mu_qsys_7
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: MU_MCI 0.
+        NAME: mu_mci_0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: MU_MCI 1.
+        NAME: mu_mci_1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: MU_MCI 2.
+        NAME: mu_mci_2
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: MU_MCI 3.
+        NAME: mu_mci_3
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: MU_MCI 4.
+        NAME: mu_mci_4
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: MU_MCI 5.
+        NAME: mu_mci_5
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: MU_MCI 6.
+        NAME: mu_mci_6
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: MU_MCI 7.
+        NAME: mu_mci_7
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: FEP 0.
+        NAME: fep_0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: FEP 1.
+        NAME: fep_1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: FLA.
+        NAME: fla
+        WIDTH: 1
+    NAME: muh_mngr_non_fatal_interrupt_status
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: MUH manager fatal interrupt status. One per leaf level interrupt module.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: MU_MNGR.
+        NAME: mu_mngr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'DNR 20, only active in MUH_0.'
+        NAME: dnr_20
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: MU_SNA 0.
+        NAME: mu_sna_0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: MU_SNA 1.
+        NAME: mu_sna_1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: MU_DNA 0.
+        NAME: mu_dna_0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: MU_DNA 1.
+        NAME: mu_dna_1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: MU_CNA 0.
+        NAME: mu_cna_0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: MU_CNA 1.
+        NAME: mu_cna_1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: MU_QSYS 0.
+        NAME: mu_qsys_0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: MU_QSYS 1.
+        NAME: mu_qsys_1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: MU_QSYS 2.
+        NAME: mu_qsys_2
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: MU_QSYS 3.
+        NAME: mu_qsys_3
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: MU_QSYS 4.
+        NAME: mu_qsys_4
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: MU_QSYS 5.
+        NAME: mu_qsys_5
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: MU_QSYS 6.
+        NAME: mu_qsys_6
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: MU_QSYS 7.
+        NAME: mu_qsys_7
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: MU_MCI 0.
+        NAME: mu_mci_0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: MU_MCI 1.
+        NAME: mu_mci_1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: MU_MCI 2.
+        NAME: mu_mci_2
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: MU_MCI 3.
+        NAME: mu_mci_3
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: MU_MCI 4.
+        NAME: mu_mci_4
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: MU_MCI 5.
+        NAME: mu_mci_5
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: MU_MCI 6.
+        NAME: mu_mci_6
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: MU_MCI 7.
+        NAME: mu_mci_7
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: FEP 0.
+        NAME: fep_0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: FEP 1.
+        NAME: fep_1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: FLA.
+        NAME: fla
+        WIDTH: 1
+    NAME: muh_mngr_fatal_interrupt_status
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: MU PHY slice CSR coarse clock gating
+    FLDLST:
+      - DEFAULT: 1
+        DESCRIPTION: CSR clock enable for MU PHY slice.
+        NAME: phy_slice
+        WIDTH: 1
+    NAME: muh_csr_clk_enable
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: MU PHY slice CSR reset.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: CSR HBM PHY power on reset.
+        NAME: hbm_por
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: CSR HBM power up drive disable.
+        NAME: hbm_drv
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: CSR rst_n for SBUS master.
+        NAME: sbus
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: CSR rst_n for MU PHY slice.
+        NAME: phy_slice
+        WIDTH: 1
+    NAME: muh_csr_rst_n
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: MU Initialization Start
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: SNA 1 init_start
+        NAME: sna_1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: SNA 0 init_start
+        NAME: sna_0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: DNA 1 init_start
+        NAME: dna_1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: DNA 0 init_start
+        NAME: dna_0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: CNA 1 init_start
+        NAME: cna_1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: CNA 0 init_start
+        NAME: cna_0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: QSYS 7 init_start
+        NAME: qsys_7
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: QSYS 6 init_start
+        NAME: qsys_6
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: QSYS 5 init_start
+        NAME: qsys_5
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: QSYS 4 init_start
+        NAME: qsys_4
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: QSYS 3 init_start
+        NAME: qsys_3
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: QSYS 2 init_start
+        NAME: qsys_2
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: QSYS 1 init_start
+        NAME: qsys_1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: QSYS 0 init_start
+        NAME: qsys_0
+        WIDTH: 1
+    NAME: muh_soc_clk_init_start
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: MU Initialization Done
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: SNA 1 init_done
+        NAME: sna_1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: SNA 0 init_done
+        NAME: sna_0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: DNA 1 init_done
+        NAME: dna_1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: DNA 0 init_done
+        NAME: dna_0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: CNA 1 init_done
+        NAME: cna_1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: CNA 0 init_done
+        NAME: cna_0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: QSYS 7 init_done
+        NAME: qsys_7
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: QSYS 6 init_done
+        NAME: qsys_6
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: QSYS 5 init_done
+        NAME: qsys_5
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: QSYS 4 init_done
+        NAME: qsys_4
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: QSYS 3 init_done
+        NAME: qsys_3
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: QSYS 2 init_done
+        NAME: qsys_2
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: QSYS 1 init_done
+        NAME: qsys_1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: QSYS 0 init_done
+        NAME: qsys_0
+        WIDTH: 1
+    NAME: muh_soc_clk_init_done
+  - ATTR: 2
+    COUNT: 1
+    DESCRIPTION: MU sbus bridge inteface.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Sbus transaction received.
+        NAME: v
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Sbus transaction done.
+        NAME: d
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Reserved.
+        NAME: rsvd
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: 'Result of sbus cycle, valid only for csr read.'
+        NAME: rslt
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Address of sbus receiver device.
+        NAME: receiver_addr
+        WIDTH: 8
+      - DEFAULT: 0
+        DESCRIPTION: Address of register in sbus receiver device.
+        NAME: data_addr
+        WIDTH: 8
+      - DEFAULT: 0
+        DESCRIPTION: Command to be executed by sbus master.
+        NAME: cmd
+        WIDTH: 8
+      - DEFAULT: 0
+        DESCRIPTION: 'For CSR write: sbus write cmd, data contain sbus data to be written; for CSR read: sbus read cmd, contains the sbus read data.'
+        NAME: data
+        WIDTH: 32
+    NAME: muh_sbus_bridge_if
+XASIZE: 65536
