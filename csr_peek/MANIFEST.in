@@ -1,0 +1,3 @@
+include csr/template/*.json
+include csr/template/*.j2
+
