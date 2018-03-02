@@ -35,8 +35,31 @@ This step may need to be preceded by distclean IF new CSR bits need to be pulled
 
     $ make libcsr 
 
+
 Creates the library (archive) under csr-rt. Other tools can be written both as frontend and backend
 to use this tool. Frontend could be tools like dpcsh, and backend could be socket/RPC/JTAG to write these values to the chip.
 
-An example of how to use this library is provided in csr-rt/test/prog.cpp
+## Cleanup
+
+### Basic cleanup
+
+    $ make clean
+
+Cleans up everything, except the C++ generated files & the CSR definitions that have been pulled in
+
+### Clean everything
+
+    $ make distclean
+
+Cleans up the whole distribution, including generated files. Usually, this is needed if CSR defintions have changed.
+
+## Example Program
+
+A simple example of how to use this library is provided in csr-rt/test/prog.cpp
+Note: This only writes to a dumb backend (screen). For this library to be useful, it has to be linked against 
+other backends.
+
+
+
+
 
