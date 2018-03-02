@@ -205,7 +205,7 @@ def generate_sku_config(build):
                     final_cfg["skus"][sku].update(hwcap_cfg["skus"][sku])
 
 #Generates struct members initialization code
-def generate_struct_init(struct, data, shift):
+def generate_struct_member_init(struct, data, shift):
         init_field = Template('.$key = $value,')
         s =''
         dictItemCount = len(data)
@@ -288,7 +288,7 @@ def generate_catalog_structure(s_name, value, indent, instance):
         return struct.substitute(name=s_name+"_cfg", fields=s)
 
 #Generates structure definition
-def generate_nested_structure(s_name, value):
+def generate_structure_definition(s_name, value):
 	struct = Template('struct __attribute__ ((packed)) $sname {\n$fields\n};\n\n')
         struct_field = Template('\tstruct ${field}_cfg $field;')
         struct_field_array = Template('\tstruct ${field}_cfg $field[$size];')
@@ -334,7 +334,7 @@ def generate_cfg_header_file(cfg_name, data_catalog, out_base, header_file, inpu
 	struct_defs += generate_catalog_structure(k, v["info"], 1, 0)
 	structs_catalog[k] = v["inst_cnt"]
 
-    struct_defs += generate_nested_structure(cfg_name, structs_catalog)
+    struct_defs += generate_structure_definition(cfg_name, structs_catalog)
     enums = generate_data_catalog_enum(data_catalog["enums"])
 
     f.write(file_templ.substitute(data=enums + struct_defs,
@@ -365,10 +365,10 @@ def generate_cfg_c_file(cfg_name, cfg_data, out_base, c_file, header_file, input
 		    for i in rangeexpand(item["id"]):
 			if i < cfg_data_catalog["modules"][k2]["inst_cnt"]:
                             cfg_str += '\t'*2+struct_init.substitute(struct=k2+"["+str(i)+"]",
-				 init=generate_struct_init(k2, item["info"], 3))
+				 init=generate_struct_member_init(k2, item["info"], 3))
             else :
                 cfg_str += '\t'*2+struct_init.substitute(struct=k2,
-					init=generate_struct_init(k2, v2["info"], 3))
+					init=generate_struct_member_init(k2, v2["info"], 3))
 	sku_cfg+='\t'+sku_init.substitute(sku=k1,struct=cfg_str)
 
     sku_cfg = c_file_templ.substitute(cfg=sku_cfg,
