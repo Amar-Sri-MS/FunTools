@@ -200,6 +200,7 @@ def generate_sku_config(build):
 		final_cfg = merge_dicts(build_override_cfg, cfg_j)
 
         for sku in final_cfg["skus"].iterkeys():
+            if hwcap_cfg.has_key("skus"):
                 if hwcap_cfg["skus"].has_key(sku):
                     print "Adding hwcap of sku %s" % sku
                     final_cfg["skus"][sku].update(hwcap_cfg["skus"][sku])
