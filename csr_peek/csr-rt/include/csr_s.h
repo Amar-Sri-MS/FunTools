@@ -8,7 +8,7 @@
 #pragma once
 
 /*
- * Defines a signature class that must be passed in as a 
+ * Defines a signature class that must be passed in as a
  * parameter to each container created.
  */
 #include <cassert>
@@ -30,7 +30,7 @@ struct fld_off_t {
     uint16_t width{0};
     fld_off_t(const fld_off_t& other) = default;
     fld_off_t& operator=(const fld_off_t& other) = default;
-    fld_off_t(const uint16_t& fld, const uint16_t& w);    
+    fld_off_t(const uint16_t& fld, const uint16_t& w);
     friend std::ostream& operator<<(std::ostream& os, const fld_off_t& obj);
 
 };
@@ -47,6 +47,7 @@ class csr_s {
         csr_s(const csr_s& other);
         csr_s& operator=(const csr_s&);
         uint16_t sz(void) const;
+        uint16_t get_addr_w(const uint16_t& width) const;
         typedef fld_map_t::iterator iterator;
         typedef fld_map_t::const_iterator const_iterator;
         inline iterator begin() noexcept { return fld_map.begin(); }

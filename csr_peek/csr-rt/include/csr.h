@@ -11,11 +11,13 @@
 #include <unordered_map>
 #include <vector>
 
+#include "csr_an.h"
+#include "csr_grp.h"
 #include "csr_s.h"
+
 #include "ring_coll.h"
 
 #define CREATE_ENTRY(k0, v0, v1) {k0, fld_off_t(v0, v1)}
-
 
 typedef std::unordered_map<std::string, ring_coll_t, string_hash> ring_t;
 class F1NS {
@@ -33,11 +35,18 @@ class F1NS {
         inline iterator end() noexcept { return sys_rings.end(); }
         inline const_iterator cbegin() const noexcept { return sys_rings.cbegin(); }
         inline const_iterator cend() const noexcept { return sys_rings.cend(); }
+
         ring_coll_t& operator[](const std::string& name);
+        csr_prop_t& get_csr(const std::string& csr_name, const uint8_t& inst=0);
+        void add_csr(addr_node_t* an, const std::string& name, csr_grp_t& csr);
+
     private:
         /*
          * For each ring, NU, HU, HNU etc
          */
-        ring_t sys_rings;    
+        ring_t sys_rings;
+
+        std::map<std::string, std::vector<addr_node_t*>> csr_addrs;
+
         F1NS();
 };

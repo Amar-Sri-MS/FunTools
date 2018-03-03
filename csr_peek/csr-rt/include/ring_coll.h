@@ -14,7 +14,7 @@ class ring_coll_t {
         ring_coll_t(){}
 
         ring_prop_t& operator[](const uint8_t& idx);
-        void add_ring(const uint8_t& r_idx, 
+        void add_ring(const uint8_t& r_idx,
                 const uint64_t& base_addr);
         const uint16_t num_rings() const;
 

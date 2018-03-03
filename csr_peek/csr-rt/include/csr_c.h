@@ -22,7 +22,7 @@ class csr_c {
 
       uint16_t sz(void) const { return _sz; }
       uint8_t* operator()(void);
-      
+
       /* Getter & Setter */
       template <typename T>
       void get(const char* name, T& val);
@@ -32,18 +32,18 @@ class csr_c {
       ~csr_c(void);
   private:
       template <typename T>
-          void _convert(const std::string& r, const T& val); 
+          void _convert(const std::string& r, const T& val);
 
       void _compute_shifts(const uint16_t& st_off, const uint16_t& width,
               uint8_t* mask_arr,uint8_t* r_shift, uint8_t& l_shift, uint16_t w);
 
       uint8_t _get_width(const uint8_t& st_off, const uint16_t& width);
       void _initialize(const std::string& f_name, const uint16_t& st_off, const uint16_t& width, uint8_t* raw_arr);
-      
-      
-      
+
+
+
       csr_s m_sign;
-      /* 
+      /*
        * Keep caches to avoid having to recompute every time. Optimize for get, not set
        */
       std::map<std::string, std::vector<uint8_t>> val_map;
@@ -54,18 +54,18 @@ class csr_c {
       uint8_t* raw_arr{nullptr};
 
       friend std::ostream& operator<<(std::ostream& os, csr_c& obj);
-     
+
 };
 /*
  * Create a byte array that exactly aligns with
  * raw array representation of the value
- * s_off represents the starting offset 
+ * s_off represents the starting offset
  */
 
 template <typename T>
 void csr_c::_convert(const std::string& fld_name, const T& val) {
 
-   auto l_shift = shift_map[fld_name].first; 
+   auto l_shift = shift_map[fld_name].first;
    auto r_shift = shift_map[fld_name].second;
    auto val_arr = val_map[fld_name];
    auto arr_w = val_arr.size();
@@ -76,11 +76,11 @@ void csr_c::_convert(const std::string& fld_name, const T& val) {
    if (r_shift[arr_w - 1]) {
        val_arr[arr_w-1] |= (val << l_shift) & 0xFF;
    } else {
-       val_arr[arr_w-1] = (val << l_shift) & 0xFF; 
+       val_arr[arr_w-1] = (val << l_shift) & 0xFF;
    }
    /*
    for (auto i = 0; i < arr_w; i ++) {
-       std::cout << "i:" << i << ":0x" 
+       std::cout << "i:" << i << ":0x"
            << std::hex << (uint16_t)val_arr[i] << std::endl;
    }
    */
@@ -94,10 +94,10 @@ void csr_c::set(const char* fld_name, const T& val) {
     auto f_name = std::string(fld_name);
 
     auto f_info = m_sign[f_name];
-    auto f_start = f_info.fld_off; 
+    auto f_start = f_info.fld_off;
     auto s_idx = f_start/8;
 
-    _convert(f_name, val); 
+    _convert(f_name, val);
     auto it = val_map.find(f_name);
     assert (it != val_map.end());
     auto val_arr = val_map[fld_name];
@@ -127,9 +127,9 @@ void csr_c::get(const char* fld_name, T& rval) {
     T curr_val = 0;
     uint16_t idx = 0;
     for (; idx < val_arr.size() - 1; idx ++) {
-        /*  
-        std::cout << "idx: " << std::dec << idx 
-            << std::hex << "val : " << (uint16_t)val_arr[idx] 
+        /*
+        std::cout << "idx: " << std::dec << idx
+            << std::hex << "val : " << (uint16_t)val_arr[idx]
             << " mask : " << (uint16_t)mask_arr[idx] << std::endl;
         std::cout << "l_shift: " << std::dec << (uint16_t) l_shift[idx] << std::endl;
         */

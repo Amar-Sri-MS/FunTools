@@ -4,7 +4,7 @@ CXXFLAGS=-Wall -O3 -g -std=c++11 -I include -I gen
 driver_src = $(wildcard test/*.cpp)
 
 lib_src = $(wildcard src/*.cpp) \
-		  $(wildcard gen/*.cpp) 
+		  $(wildcard gen/*.cpp)
 
 lib_obj = $(lib_src:.cpp=.o)
 driver_obj = $(driver_src:.cpp=.o)

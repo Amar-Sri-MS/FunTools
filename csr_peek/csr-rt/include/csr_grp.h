@@ -14,13 +14,19 @@
 
 class csr_grp_t {
     public:
-        explicit csr_grp_t(const std::shared_ptr<csr_s>& sign, 
+        explicit csr_grp_t(const std::shared_ptr<csr_s>& sign,
                 const uint64_t& addr,
                 const CSR_TYPE& type,
                 const uint16_t& n_entries=1,
                 const uint8_t& n_inst=1
                 );
-        uint16_t _get_addr_w(const uint16_t& w);
         csr_prop_t& operator[](const uint8_t& inst);
-        std::vector<csr_prop_t> csr_props; 
+        void set_base(const uint64_t& base_addr);
+        void set_gid(const uint8_t& gid);
+        csr_prop_t& get_csr(const uint8_t& gid);
+
+    private:
+        std::vector<csr_prop_t> csr_props;
+        uint64_t m_base{0};
+        uint8_t m_gid{0};
 };

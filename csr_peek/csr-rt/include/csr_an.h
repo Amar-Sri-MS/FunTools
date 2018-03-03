@@ -7,14 +7,22 @@
  */
 #pragma once
 
+#include <map>
 #include "csr_grp.h"
 
 class addr_node_t {
     public:
-        addr_node_t(const std::string& name = "");
+        addr_node_t(const std::string& name, const uint64_t& addr);
+
         addr_node_t(const addr_node_t& other);
         addr_node_t& operator=(const addr_node_t& other);
-        void append_csr(const csr_grp_t& csr);
+        void add_csr(const std::string& name, csr_grp_t& csr);
+
+
+        csr_prop_t& get_csr(
+                const std::string& csr_name,
+                const uint8_t& gid);
+
         bool operator==(const addr_node_t& other) const;
         bool operator!=(const addr_node_t& other) const;
         addr_node_t* get(const addr_node_t& elem);
@@ -22,8 +30,8 @@ class addr_node_t {
     private:
         std::string name;
         std::vector<addr_node_t*> children;
+        std::map<std::string, csr_grp_t> csr_props;
+        uint64_t base_addr{0};
+        /* For the final addr_node list of all the csrs */
 
-        /* For the final addr_node, a list of all the csrs */
-        std::vector<csr_grp_t> csrs;
-        
 };

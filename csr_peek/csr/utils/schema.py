@@ -26,13 +26,13 @@ class Entity():
         r_str += "    flds: {}\n".format(self.fld_lst)
         return r_str
     __repr__ = __str__
-        
+
 
 class Field():
     def __init__(self, fld_name, width):
         self.fld_name = fld_name
         self.width = width
-    
+
     def __str__(self):
         r_str = ""
         r_str += "{}:{}".format(self.fld_name, self.width)
@@ -41,7 +41,7 @@ class Field():
     __repr__ = __str__
 
 class Schema():
-    
+
     ALLOW_LST = ['REGLST', 'WIDTH', 'ATTR', 'FLDLST', 'NAME']
     ALLOW_ATTR = [0x4, 0x8]
     def __init__(self, yml_stream):
@@ -69,7 +69,7 @@ class Schema():
                     store = True
             if store:
                 m_hash[reg_rec['NAME']] = e
-        return m_hash  
+        return m_hash
 
     def __dump(self, yml_stream):
         for key, val in yml_stream.iteritems():
@@ -91,7 +91,7 @@ class Schema():
                 lst.append([key, m_val])
         for rec in lst:
             yml_stream[rec[0]] = rec[1]
-        
+
         return yml_stream
 
     def __expand_list(self, lst):

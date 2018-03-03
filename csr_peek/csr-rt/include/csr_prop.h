@@ -22,7 +22,7 @@ class csr_prop_t {
                 const uint16_t& addr_w,
                 const uint32_t& n_entries=1);
         /*
-         * Here you need to have set/get (Field) 
+         * Here you need to have set/get (Field)
          * read/write with flags
          */
         template <typename T>
@@ -31,6 +31,7 @@ class csr_prop_t {
             void get(const char* fld_name, T& val);
 
          void write(const uint32_t& e_idx = 0){};
+         void set_base(const uint64_t& base_addr);
 
     private:
         std::shared_ptr<csr_s> sign;
@@ -42,7 +43,7 @@ class csr_prop_t {
 
 template <typename T>
 void csr_prop_t::set(const char* fld_name, const T& val) {
-    std::cout << "FLD: " << fld_name << "VAL: " << val << std::endl;
+    std::cout << "ADDR:0x" << std::hex << m_addr << ":FLD: " << fld_name << ":VAL: " << val << std::endl;
 
 }
 
