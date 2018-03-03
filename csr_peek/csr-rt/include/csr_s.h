@@ -64,13 +64,87 @@ class csr_s {
         void __init(const std::string& name, const uint16_t& st_off, const uint16_t& w);
         uint8_t __get_w(const uint8_t& st_off, const uint16_t& w);
 
-        void _initialize(void);
         friend class csr_prop_t;
+        void _initialize(void);
+        template <typename T>
+            void _set(const std::string& fld_name, const T& val, uint8_t* buf);
 
-        uint16_t _get_addr_w(const uint16_t& width) const;
+        template <typename T>
+            void _get(const std::string& fld_name, T& val, uint8_t* buf);
+
+        template <typename T>
+            void __convert(const std::string& f_name, const T& val, uint8_t* val_arr);
+
         friend class csr_grp_t;
+        uint16_t _get_addr_w(const uint16_t& width) const;
 
 
         friend std::ostream& operator<<(std::ostream& os, const csr_s& obj);
 };
+
+template <typename T>
+void csr_s::__convert(const std::string& fld_name, const T& val, uint8_t* val_arr) {
+
+   auto l_shift = shift_map[fld_name].first;
+   auto r_shift = shift_map[fld_name].second;
+   auto arr_w = r_shift.size();
+
+   for (uint16_t i = 0; i < arr_w; i ++) {
+       val_arr[i] = (val >> r_shift[i]) & 0xFF;
+   }
+   if (r_shift[arr_w - 1]) {
+       val_arr[arr_w-1] |= (val << l_shift) & 0xFF;
+   } else {
+       val_arr[arr_w-1] = (val << l_shift) & 0xFF;
+   }
+}
+
+template <typename T>
+void csr_s::_set(const std::string& f_name, const T& val, uint8_t* raw_arr) {
+
+    auto f_info = fld_map[f_name];
+    auto s_idx = (f_info.fld_off)/8;
+    auto mask_arr = mask_map[f_name];
+    uint8_t* val_arr = new uint8_t[mask_arr.size()];
+
+    _convert(f_name, val, val_arr);
+    for (uint16_t i = 0; i < mask_arr.size(); i ++) {
+        raw_arr[i+s_idx] = ((raw_arr[i+s_idx] & ~mask_arr[i]) | (val_arr[i] & mask_arr[i]));
+    }
+    delete[] val_arr;
+    /*
+    for (auto i = 0; i < _sz; i ++) {
+        std::cout << std::dec << "raw_arr[" << i << "] = " << std::hex << (uint16_t) raw_arr[i] << std::endl;
+    }
+    */
+}
+
+template <typename T>
+void csr_s::_get(const std::string& f_name, T& rval, uint8_t* raw_arr) {
+
+    rval = 0;
+    auto f_info = fld_map[f_name];
+    auto s_idx = (f_info.fld_off)/8;
+    auto mask_arr = mask_map[f_name];
+    auto l_shift = shift_map[f_name].second;
+    auto r_shift = shift_map[f_name].first;
+    T curr_val = 0;
+    uint16_t idx = 0;
+
+    for (; idx < mask_arr.size() - 1; idx ++) {
+        /*
+        std::cout << "idx: " << std::dec << idx
+            << std::hex << "val : " << (uint16_t)val_arr[idx]
+            << " mask : " << (uint16_t)mask_arr[idx] << std::endl;
+        std::cout << "l_shift: " << std::dec << (uint16_t) l_shift[idx] << std::endl;
+        */
+        curr_val = (raw_arr[s_idx+idx] & mask_arr[idx]);
+        curr_val <<= l_shift[idx];
+        rval |= curr_val;
+        //std::cout << "rval = " << std::hex << rval << std::endl;
+    }
+    //std::cout << "r_shift: " << (uint16_t) r_shift << std::endl;
+    curr_val = (raw_arr[s_idx+idx] & mask_arr[idx]) >> r_shift;
+    rval |= curr_val;
+}
 
