@@ -30,13 +30,17 @@ INPUT_DIR = $(FUNOSDIR)/Configfiles
 #Local output dir
 OUTPUT_DIR = out/
 
+#Generated hwcap files output dir
+HWCAP_OUT_DIR = $(OUTPUT_DIR)
+
 #json util dir
-JSONUTIL_DIR = $(SDKDIR)/bin/$(OS)
+JSONUTIL_DIR = $(SDKDIR)/bin/$(OS)/x86_64
 
 SRC = cfg_gen.py
 
 test_cfggen:
 	./$(SRC) -i $(INPUT_DIR) -o $(OUTPUT_DIR) -j $(JSONUTIL_DIR)
+	./$(SRC) -i $(INPUT_DIR) -o $(OUTPUT_DIR) -s $(HWCAP_OUT_DIR) -j $(JSONUTIL_DIR)
 
 # install to SDK
 install:
