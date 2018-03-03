@@ -27,3 +27,7 @@ void csr_prop_t::set_base(const uint64_t& addr) {
     m_addr += addr;
 }
 
+void csr_prop_t::write(const uint32_t& e_idx) {
+
+
+}

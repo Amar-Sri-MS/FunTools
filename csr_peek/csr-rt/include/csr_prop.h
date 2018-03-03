@@ -14,6 +14,7 @@
 #include "csr_type.h"
 #include "csr_s.h"
 
+class csr_grp_t;
 class csr_prop_t {
     public:
         explicit csr_prop_t(const std::shared_ptr<csr_s>& sign,
@@ -29,9 +30,7 @@ class csr_prop_t {
             void set(const char* fld_name, const T& val);
         template <typename T>
             void get(const char* fld_name, T& val);
-
-         void write(const uint32_t& e_idx = 0){};
-         void set_base(const uint64_t& base_addr);
+         void write(const uint32_t& e_idx = 0);
 
     private:
         std::shared_ptr<csr_s> sign;
@@ -39,11 +38,21 @@ class csr_prop_t {
         CSR_TYPE type;
         uint32_t addr_w{0};
         uint32_t n_entries{1};
+        uint8_t* raw_buf{nullptr};
+
+        void set_base(const uint64_t& base_addr);
+        friend class csr_grp_t;
 };
 
 template <typename T>
 void csr_prop_t::set(const char* fld_name, const T& val) {
     std::cout << "ADDR:0x" << std::hex << m_addr << ":FLD: " << fld_name << ":VAL: " << val << std::endl;
+    if (not raw_buf) {
+        raw_buf = new uint8_t[sign->sz()];
+        sign->_initialize();
+    }
+
+
 
 }
 

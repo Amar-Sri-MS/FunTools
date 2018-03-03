@@ -15,7 +15,7 @@ csr_grp_t::csr_grp_t(const std::shared_ptr<csr_s>& sign,
         const CSR_TYPE& type,
         const uint16_t& n_entries,
         const uint8_t& n_inst) {
-    auto addr_w = sign->get_addr_w(sign->sz());
+    auto addr_w = sign->_get_addr_w(sign->sz());
     for (auto i = 0; i < n_inst; i ++) {
        auto m_addr = addr + (i*addr_w*n_entries);
        csr_props.emplace_back(sign, m_addr, type, addr_w, n_entries);
