@@ -22,7 +22,7 @@ class csr_prop_t {
                 const uint16_t& addr_w,
                 const uint32_t& n_entries=1);
         /*
-         * Here you need to have set/get (Field) 
+         * Here you need to have set/get (Field)
          * read/write with flags
          */
         template <typename T>

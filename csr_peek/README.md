@@ -5,7 +5,7 @@
 This is a tool that provides the following features:
 * Grab the most recent CSR definitions
 * Slurp them in and generate C++ files
-* Create a library out of these files that can then be integrated into other 
+* Create a library out of these files that can then be integrated into other
   upstream tools to Peek/Poke CSR registers
 
 ## How to use
@@ -28,12 +28,12 @@ This step may need to be preceded by distclean IF new CSR bits need to be pulled
 
 
 ### Generate all the files necessary for the library
-    
+
     $ make cfg
 
 ### Finally, create the library
 
-    $ make libcsr 
+    $ make libcsr
 
 
 Creates the library (archive) under csr-rt. Other tools can be written both as frontend and backend
@@ -57,7 +57,7 @@ Cleans up the whole distribution, including generated files. Usually, this is ne
 
 A simple example of how to use this library is provided in csr-rt/test/prog.cpp
 
-Note: This only writes to a dumb backend (screen). For this library to be useful, it has to be linked against 
+Note: This only writes to a dumb backend (screen). For this library to be useful, it has to be linked against
 other backends.
 
 

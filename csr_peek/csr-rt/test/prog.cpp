@@ -13,7 +13,7 @@
 
 int main(void) {
     auto& ns = F1NS::get();
-    
+
     uint64_t val = 15;
     auto csr = ns.get_csr("rand_csr_0");
     csr.set("__pad0", val);

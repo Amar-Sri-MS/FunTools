@@ -30,7 +30,7 @@ class CSRRoot(object):
             if self.done:
                 break
             self.__populate(line)
-        f.close()  
+        f.close()
 
     def __populate(self, line):
         if not self.in_ring:
@@ -51,14 +51,14 @@ class CSRRoot(object):
         val = int(entry, 16)
         # Only the top 5 bits should be valid
         val &= 0xF800000000
-        
+
 
 class Walker(object):
     def __init__(self, ring_tree):
-        self.m_lst = []  
+        self.m_lst = []
         for val in self.__flatten(ring_tree):
             self.m_lst.append(val)
-      
+
     def __flatten(self, yml_obj, pre=None):
         pre = pre[:] if pre else []
         if isinstance(yml_obj, dict):
@@ -80,5 +80,5 @@ class Walker(object):
         for elem in self.m_lst:
             r_str += "{}\n".format(elem)
         return r_str
-            
+
 

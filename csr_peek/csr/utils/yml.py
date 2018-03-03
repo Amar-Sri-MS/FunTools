@@ -62,14 +62,14 @@ class CSR_YML_Reader(object):
         for key, val in m_dict.iteritems():
             if key not in allow_lst:
                 m_lst.append(key)
-        
+
         for key in m_lst:
             m_dict.pop(key, None)
 
-        for key, val in m_dict.iteritems():    
+        for key, val in m_dict.iteritems():
             if isinstance(val, dict):
                 m_dict = self.__remove_symbols(val, allow_lst)
-        return m_dict       
+        return m_dict
 
     def __read_file(self, f_name):
         yml_stream = None
@@ -94,6 +94,6 @@ class YML_Reader(object):
         yml_stream = None
         with open(f_name, 'r') as r_stream:
             yml_stream = ordered_load(r_stream)
-        return yml_stream    
+        return yml_stream
 
 

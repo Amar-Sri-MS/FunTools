@@ -61,7 +61,7 @@ class CSRPull():
             n_src = os.path.join(src_dir, dirname)
             self.__copy_files(n_dst, n_src)
     def __copy_files(self, dst_dir, src_dir):
-        
+
         if not os.path.exists(dst_dir):
             os.mkdir(dst_dir)
 

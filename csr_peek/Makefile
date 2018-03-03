@@ -14,7 +14,7 @@ all: build
 build:
 	$(SUDO) python setup.py install --record files.txt
 
-libcsr: 
+libcsr:
 	cd csr-rt; make
 
 cfg:build

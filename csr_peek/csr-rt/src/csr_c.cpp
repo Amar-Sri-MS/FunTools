@@ -32,8 +32,8 @@ csr_c::csr_c(const csr_s& p, uint8_t* r_arr):
 }
 
 
-void csr_c::_initialize(const std::string& name, 
-        const uint16_t& st_off, 
+void csr_c::_initialize(const std::string& name,
+        const uint16_t& st_off,
         const uint16_t& width, uint8_t* raw_val) {
     uint8_t arr_w = _get_width(st_off, width);
 
@@ -64,7 +64,7 @@ void csr_c::_initialize(const std::string& name,
             if (cons == 8) {
                 mask_arr[idx] = 0xFF;
             } else {
-                mask_arr[idx] = 0xFF >> cons; 
+                mask_arr[idx] = 0xFF >> cons;
             }
             rem -= cons;
             if (raw_val) {
@@ -84,7 +84,7 @@ void csr_c::_initialize(const std::string& name,
     /*
     std::cout << "fld: " << name << ":st_off: " << st_off << ":width: " << width << std::endl;
     for (uint8_t i = 0; i < arr_w; i ++) {
-        std::cout << "r_shift[ " << (uint16_t)i << "] = "  
+        std::cout << "r_shift[ " << (uint16_t)i << "] = "
             << (uint16_t)r_shift[i] << " mask = " << std::hex << (uint16_t) mask_arr[i] << std::endl;
 
     }
@@ -102,7 +102,7 @@ uint8_t* csr_c::operator()(void) {
 }
 
 csr_c::~csr_c() {
-    
+
     val_map.clear();
     mask_map.clear();
     shift_map.clear();

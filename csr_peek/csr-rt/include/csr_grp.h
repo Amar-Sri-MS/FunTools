@@ -14,7 +14,7 @@
 
 class csr_grp_t {
     public:
-        explicit csr_grp_t(const std::shared_ptr<csr_s>& sign, 
+        explicit csr_grp_t(const std::shared_ptr<csr_s>& sign,
                 const uint64_t& addr,
                 const CSR_TYPE& type,
                 const uint16_t& n_entries=1,
@@ -26,7 +26,7 @@ class csr_grp_t {
         csr_prop_t& get_csr(const uint8_t& gid);
 
     private:
-        std::vector<csr_prop_t> csr_props; 
+        std::vector<csr_prop_t> csr_props;
         uint64_t m_base{0};
         uint8_t m_gid{0};
 };
