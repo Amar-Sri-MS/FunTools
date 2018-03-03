@@ -47,6 +47,7 @@ class csr_s {
         csr_s(const csr_s& other);
         csr_s& operator=(const csr_s&);
         uint16_t sz(void) const;
+        uint16_t get_addr_w(const uint16_t& width) const;
         typedef fld_map_t::iterator iterator;
         typedef fld_map_t::const_iterator const_iterator;
         inline iterator begin() noexcept { return fld_map.begin(); }

@@ -25,3 +25,8 @@ csr_prop_t::csr_prop_t(const std::shared_ptr<csr_s>& _sign,
     std::cout << "ADDR: " << std::hex << m_addr << std::endl;
 
 }
+void csr_prop_t::set_base(const uint64_t& addr) {
+   m_addr += addr;
+
+}
+

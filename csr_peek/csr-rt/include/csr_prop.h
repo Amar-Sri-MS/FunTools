@@ -31,6 +31,7 @@ class csr_prop_t {
             void get(const char* fld_name, T& val);
 
          void write(const uint32_t& e_idx = 0){};
+         void set_base(const uint64_t& base_addr);
 
     private:
         std::shared_ptr<csr_s> sign;

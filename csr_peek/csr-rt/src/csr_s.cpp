@@ -29,6 +29,12 @@ csr_s& csr_s::operator=(const csr_s& other) {
 }
 csr_s::csr_s(void){}
 
+uint16_t csr_s::get_addr_w(const uint16_t& w) const {
+    if (w <= 64) return 8;
+    return (get_addr_w(w >> 1) << 1);
+}
+
+
 
 const fld_off_t& csr_s::operator[](const std::string& key) const {
     auto it = fld_map.find(key);

@@ -33,9 +33,11 @@ F1NS::F1NS() {
     nu_rng.add_ring(0, 0x1200000000);
     nu_rng.add_ring(1, 0x3400000000);
     
-    auto p = nu_rng[0].add_an(2, "TEST_0", "rand");
+    auto p = nu_rng[0].add_an({"TEST_0", "rand"}, 0x33445566);
 
-    auto q = nu_rng[0].add_an(2, "TEST_0", "rand");
+    auto q = nu_rng[0].add_an({"TEST_0", "rand2"}, 0x223344);
+
+   /*
 
     nu_rng[0].add_csr(p,
             "rand_csr_0",
@@ -60,7 +62,7 @@ F1NS::F1NS() {
             std::make_shared<csr_s>(rand_csr_1),
             0x123456,
             CSR_TYPE::REG);
-
+    */
     /*
      * Finally, add them to the top level tree
      */

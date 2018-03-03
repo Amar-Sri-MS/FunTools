@@ -15,18 +15,30 @@ csr_grp_t::csr_grp_t(const std::shared_ptr<csr_s>& sign,
         const CSR_TYPE& type,
         const uint16_t& n_entries,
         const uint8_t& n_inst) {
-    auto addr_w = _get_addr_w(sign->sz());
+    auto addr_w = sign->get_addr_w(sign->sz());
     for (auto i = 0; i < n_inst; i ++) {
        auto m_addr = addr + (i*addr_w*n_entries);
        csr_props.emplace_back(sign, m_addr, type, addr_w, n_entries);
     }
 }
-uint16_t csr_grp_t::_get_addr_w(const uint16_t& w) {
-    if (w <= 64) return 8;
-    return (_get_addr_w(w >> 1) << 1);
-}
 
 csr_prop_t& csr_grp_t::operator[](const uint8_t& inst) {
     assert(inst < csr_props.size());
     return csr_props[inst];
+}
+void csr_grp_t::set_base(const uint64_t& base_addr) {
+    m_base = base_addr;
+    for (auto& m_elem: csr_props) {
+        m_elem.set_base(base_addr);
+    }
+}
+
+void csr_grp_t::set_gid(const uint8_t& gid) {
+    m_gid = gid;
+}
+
+csr_prop_t& csr_grp_t::get_csr(const uint8_t& gid) {
+    uint8_t i_id = gid - m_gid;
+    return csr_props[i_id];
+
 }
