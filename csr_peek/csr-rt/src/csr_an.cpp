@@ -30,7 +30,7 @@ addr_node_t& addr_node_t::operator=(const addr_node_t& other) {
 addr_node_t::addr_node_t(const std::string& _name,
                          const uint64_t& _addr):
     name(_name),
-    base_addr(_addr & 0xFFFFFFFF){}
+    base_addr(_addr){}
 
 
 void addr_node_t::add_csr(

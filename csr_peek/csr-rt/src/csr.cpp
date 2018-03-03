@@ -15,7 +15,7 @@ ring_coll_t& F1NS::operator[](const std::string& name) {
     return it->second;
 }
 
-csr_prop_t& F1NS::get_handle(const std::string& csr_name,
+csr_prop_t& F1NS::get_csr(const std::string& csr_name,
         const uint8_t& i_num) {
     auto it = csr_addrs.find(csr_name);
     assert(it != csr_addrs.end());

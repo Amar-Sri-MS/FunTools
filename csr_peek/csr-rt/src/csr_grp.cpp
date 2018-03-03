@@ -27,9 +27,9 @@ csr_prop_t& csr_grp_t::operator[](const uint8_t& inst) {
     return csr_props[inst];
 }
 void csr_grp_t::set_base(const uint64_t& base_addr) {
-    m_base = base_addr;
+    m_base += base_addr;
     for (auto& m_elem: csr_props) {
-        m_elem.set_base(base_addr);
+        m_elem.set_base(m_base);
     }
 }
 

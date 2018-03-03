@@ -43,7 +43,7 @@ class csr_prop_t {
 
 template <typename T>
 void csr_prop_t::set(const char* fld_name, const T& val) {
-    std::cout << "FLD: " << fld_name << "VAL: " << val << std::endl;
+    std::cout << "ADDR:0x" << std::hex << m_addr << ":FLD: " << fld_name << ":VAL: " << val << std::endl;
 
 }
 

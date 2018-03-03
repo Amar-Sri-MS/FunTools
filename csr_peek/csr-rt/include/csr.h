@@ -37,7 +37,7 @@ class F1NS {
         inline const_iterator cend() const noexcept { return sys_rings.cend(); }
 
         ring_coll_t& operator[](const std::string& name);
-        csr_prop_t& get_handle(const std::string& csr_name, const uint8_t& inst);
+        csr_prop_t& get_csr(const std::string& csr_name, const uint8_t& inst=0);
         void add_csr(addr_node_t* an, const std::string& name, csr_grp_t& csr);
 
     private:
