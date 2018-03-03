@@ -19,21 +19,11 @@
 # Copyright Fungible Inc. 2017
 
 import glob, os, sys, re, datetime
-import getopt, platform, tempfile
-
+import getopt
 from itertools import chain
 import json
+
 from string import Template
-
-##### jsonutil-related commands #####
-SDKDIR = os.environ.get("SDKDIR")
-if (SDKDIR is None):
-        SDKDIR = "../../FunSDK"
-
-def jsonutil_path():
-        p = "%s/bin/%s/%s" % (SDKDIR, platform.system(), platform.machine())
-        print "Using jsonutil path '%s'" % p
-        return p
 
 #Funos module specifig configs
 module_cfg = {}
@@ -83,19 +73,14 @@ def standardize_json(in_cfg, out_cfg):
 
 	jsonutil_tool = os.path.join(jsonutil_base, 'jsonutil')
 
-        cmd = '%s -i %s -o %s' % (jsonutil_tool, in_cfg, out_cfg)
-
-        # print "running command '%s'" % cmd
-        
-	r = os.system(cmd)
-
-        if (r != 0):
-	        # Failures of jsontool are often caused by jsontool being built
-	        # on a different system/OS than the one currently running.
+	# Failures of jsontool are often caused by jsontool being built
+	# on a different system/OS than the one currently running.
+	rc = os.system('%s -i %s -o %s' % (jsonutil_tool, in_cfg, out_cfg));
+	if rc != 0:
 		sys.stderr.write('Unable to run jsonutil tool. Exiting.\n')
-                sys.exit(1)
+		sys.exit(1)
 
-# if the key is in the cfg_replace file use it and replace that on the cfg 
+# if the key is in the cfg_replace file use it and replace that on the cfg
 def replace_dicts(cfg, cfg_replace):
 
 	new_cfg = cfg
@@ -148,11 +133,11 @@ def generate_default_moduleconfig():
 	print "==== Module config ===="
 	for cfg in glob.glob(input_base + "/configs/*.cfg"):
 		print "handling module config %s" % cfg
-                f = tempfile.NamedTemporaryFile(mode="r")
-                print "working with temp file %s" % f.name
-		standardize_json(cfg, f.name)
+		standardize_json(cfg, cfg+'.tmp')
+		f = open("%s.tmp" % cfg, 'r')
 		cfg_j = json.load(f)
-		f.close() # auto-deleted
+		f.close()
+		os.system('rm %s.tmp' % cfg)
 		module_cfg = merge_dicts(module_cfg, cfg_j)
 
 # generate build override config.
@@ -169,12 +154,12 @@ def generate_build_override_config(build):
 		print filename
 		for cfg in glob.glob(filename):
 			print "handling " + build + " cfg %s" % cfg
-                        f = tempfile.NamedTemporaryFile(mode="r")
-			standardize_json(cfg, f.name)
+			standardize_json(cfg, cfg+'.tmp')
+			f = open("%s.tmp" % cfg, 'r')
 			cfg_replace = json.load(f)
-			f.close() # auto-delete
-			build_override_cfg = merge_dicts(module_cfg,
-                                                         cfg_replace)
+			f.close()
+			os.system('rm %s.tmp' % cfg)
+			build_override_cfg = merge_dicts(module_cfg, cfg_replace)
 	else:
 		build_override_cfg = module_cfg.copy()
 
@@ -209,10 +194,11 @@ def generate_skuconfig(build):
 	print "handling sku configs"
 	for cfg in glob.glob(input_base +"/sku/*.cfg"):
 		print "handling sku configs %s" % cfg
-                f = tempfile.NamedTemporaryFile(mode="r")
-		standardize_json(cfg, f.name)
+		standardize_json(cfg, cfg+'.tmp')
+		f = open("%s.tmp" % cfg, 'r')
 		cfg_j = json.load(f)
-		f.close() # auto-delete
+		f.close()
+		os.system('rm %s.tmp' % cfg)
 		final_cfg = merge_dicts(build_override_cfg, cfg_j)
 
         for sku in final_cfg["skus"].iterkeys():
@@ -464,9 +450,11 @@ def main():
     		else:
       			assert False, 'Unhandled option %s' % o
 
-        if (jsonutil_base is None):
-                jsonutil_base = jsonutil_path()
-                
+	rc = check_jsonutil()
+	if rc == False:
+		print 'Failed to find jsonutil binary'
+		sys.exit(1)
+
 	#Generate the funos module specific config
 	generate_default_moduleconfig()
 
