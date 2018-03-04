@@ -14,6 +14,8 @@
 #include "csr_type.h"
 #include "csr_s.h"
 
+typedef void (*rd_fptr)(uint64_t addr, uint8_t* arr);
+typedef void (*wr_fptr)(uint64_t addr, uint8_t* arr);
 
 
 class csr_grp_t;
@@ -49,6 +51,7 @@ class csr_prop_t {
          void flush(const uint32_t& e_idx = 0);
          uint8_t* read_raw(const uint32_t& e_idx = 0);
 
+
          void release();
 
     private:
@@ -59,10 +62,15 @@ class csr_prop_t {
         uint32_t n_entries{1};
         bool is_init{false};
         uint8_t* raw_buf{nullptr};
+        rd_fptr r_fn{nullptr};
+        wr_fptr w_fn{nullptr};
 
         void __init(void);
-        void set_base(const uint64_t& base_addr);
+
         friend class csr_grp_t;
+        void _set_base(const uint64_t& base_addr);
+        void _set_rd_cb(rd_fptr r_fn = nullptr);
+        void _set_wr_cb(wr_fptr w_fn = nullptr);
 };
 
 template <typename T>

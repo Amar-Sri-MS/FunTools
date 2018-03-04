@@ -29,10 +29,20 @@ csr_prop_t& csr_grp_t::operator[](const uint8_t& inst) {
 void csr_grp_t::set_base(const uint64_t& base_addr) {
     m_base += base_addr;
     for (auto& m_elem: csr_props) {
-        m_elem.set_base(m_base);
+        m_elem._set_base(m_base);
     }
 }
 
+void csr_grp_t::set_rd_cb(rd_fptr r_fn) {
+    for (auto& m_elem: csr_props) {
+        m_elem._set_rd_cb(r_fn);
+    }
+}
+void csr_grp_t::set_wr_cb(wr_fptr w_fn) {
+    for (auto& m_elem: csr_props) {
+        m_elem._set_wr_cb(w_fn);
+    }
+}
 void csr_grp_t::set_gid(const uint8_t& gid) {
     m_gid = gid;
 }

@@ -10,13 +10,17 @@
 #include <map>
 #include "csr_grp.h"
 
+
 class addr_node_t {
     public:
         addr_node_t(const std::string& name, const uint64_t& addr);
 
         addr_node_t(const addr_node_t& other);
         addr_node_t& operator=(const addr_node_t& other);
-        void add_csr(const std::string& name, csr_grp_t& csr);
+        void add_csr(const std::string& name,
+                csr_grp_t& csr,
+                rd_fptr r_fn = nullptr,
+                wr_fptr w_fn = nullptr);
 
 
         csr_prop_t& get_csr(

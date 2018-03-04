@@ -23,8 +23,6 @@ csr_prop_t& F1NS::get_csr(const std::string& csr_name,
     return ans[i_num]->get_csr(csr_name, i_num);
 }
 
-
-
 void F1NS::add_csr(addr_node_t* an,
         const std::string& name,
         csr_grp_t& csr) {
@@ -43,7 +41,7 @@ void F1NS::add_csr(addr_node_t* an,
                     std::forward_as_tuple(p));
         }
         csr.set_gid(st_gid);
-        an->add_csr(name, csr);
+        an->add_csr(name, csr, m_rd_fn, m_wr_fn);
 
 }
 

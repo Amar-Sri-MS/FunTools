@@ -8,7 +8,7 @@
 
 #include "csr.h"
 
-F1NS::F1NS() {
+F1NS::F1NS(rd_fptr rd_fn, wr_fptr wr_fn):m_rd_fn(rd_fn), m_wr_fn(wr_fn) {
     /*
      * First create all the CSRs
      */
