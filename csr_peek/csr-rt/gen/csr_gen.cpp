@@ -29,6 +29,15 @@ F1NS::F1NS(rd_fptr rd_fn, wr_fptr wr_fn):m_rd_fn(rd_fn), m_wr_fn(wr_fn) {
         CREATE_ENTRY("__pad0", 4, 4),
         CREATE_ENTRY("__rsvd", 8, 56)
     };
+    auto csr_0 = csr_grp_t(
+            std::make_shared<csr_s>(rand_csr_0),
+            0x22,
+            CSR_TYPE::REG);
+
+    auto csr_1 = csr_grp_t(
+            std::make_shared<csr_s>(rand_csr_1),
+            0x44,
+            CSR_TYPE::REG);
     /*
      * Create all the ring collections
      */
@@ -45,18 +54,6 @@ F1NS::F1NS(rd_fptr rd_fn, wr_fptr wr_fn):m_rd_fn(rd_fn), m_wr_fn(wr_fn) {
 
     auto q = nu_rng[0].add_an({"TEST_0", "rand_1"}, 0x223344);
 
-    /*
-     * Create CSR signatures
-     */
-    auto csr_0 = csr_grp_t(
-            std::make_shared<csr_s>(rand_csr_0),
-            0x22,
-            CSR_TYPE::REG);
-
-    auto csr_1 = csr_grp_t(
-            std::make_shared<csr_s>(rand_csr_1),
-            0x44,
-            CSR_TYPE::REG);
     /*
      * Add the CSRs
      */
