@@ -101,13 +101,14 @@ void csr_s::__convert(const std::string& fld_name, const T& val, uint8_t* val_ar
 
 template <typename T>
 void csr_s::_set(const std::string& f_name, const T& val, uint8_t* raw_arr) {
+    auto it = fld_map.find(f_name);
+    assert(it != fld_map.end());
 
-    auto f_info = fld_map[f_name];
-    auto s_idx = (f_info.fld_off)/8;
+    auto s_idx = ((it->second).fld_off)/8;
     auto mask_arr = mask_map[f_name];
     uint8_t* val_arr = new uint8_t[mask_arr.size()];
 
-    _convert(f_name, val, val_arr);
+    __convert(f_name, val, val_arr);
     for (uint16_t i = 0; i < mask_arr.size(); i ++) {
         raw_arr[i+s_idx] = ((raw_arr[i+s_idx] & ~mask_arr[i]) | (val_arr[i] & mask_arr[i]));
     }

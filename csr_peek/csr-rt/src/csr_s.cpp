@@ -109,10 +109,9 @@ void csr_s::__init(const std::string& name,
     */
     /* Finally set the name -> maps mapping */
 
+
     mask_map.emplace(std::make_pair(name, mask_arr));
-    shift_map.emplace(std::piecewise_construct,
-            std::forward_as_tuple(name),
-            std::forward_as_tuple(l_shift, r_shift));
+    shift_map.emplace(std::make_pair(name, std::make_pair(l_shift, r_shift)));
 }
 
 

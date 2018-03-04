@@ -23,11 +23,46 @@ csr_prop_t::csr_prop_t(const std::shared_ptr<csr_s>& _sign,
     }
 
 }
+void csr_prop_t::__init(void) {
+
+    if (!is_init) {
+        sign->_initialize();
+        is_init = true;
+    }
+    if (not raw_buf) {
+        raw_buf = new uint8_t[sign->sz()/8];
+    }
+
+}
+
 void csr_prop_t::set_base(const uint64_t& addr) {
     m_addr += addr;
 }
 
-void csr_prop_t::write(const uint32_t& e_idx) {
+void csr_prop_t::release(void) {
+    if(raw_buf) {
+        delete[] raw_buf;
+        raw_buf = nullptr;
+    }
+}
+uint8_t* csr_prop_t::read_raw(const uint32_t& e_idx) {
+    __init();
+    /* Call the registered read handler */
+    for (auto i = 0; i < (sign->sz()/8); i ++) {
+        raw_buf[i] = rand()%255;
+    }
+    return raw_buf;
+}
 
+void csr_prop_t::flush(const uint32_t& e_idx) {
+    assert(raw_buf);
 
+}
+void csr_prop_t::reset(void) {
+    delete[] raw_buf;
+    raw_buf = nullptr;
+}
+uint8_t* csr_prop_t::get(void) {
+    assert(raw_buf);
+    return raw_buf;
 }
