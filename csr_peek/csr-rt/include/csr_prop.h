@@ -30,28 +30,19 @@ class csr_prop_t {
          *
          */
         template <typename T>
-            void set(const std::string& fld_name, const T& val);
+            void set(const std::string& fld_name, const T& val, uint8_t* raw_buf);
         template <typename T>
-            void get(const std::string& fld_name, T& val);
-         /*
-          * Returns the current raw buffer
-          */
-         uint8_t* get(void);
-
-         /*
-          * Clears up the buffer
-          */
-         void reset(void);
+            void get(const std::string& fld_name, T& val, uint8_t* raw_buf);
 
          /*
           * Flush/Read from a lower level agent.
           * Ideally, this should be a previously registered handler.
           */
 
-         void flush(const uint32_t& e_idx = 0);
-         uint8_t* read_raw(const uint32_t& e_idx = 0);
+         void raw_wr(uint8_t* raw_buf, const uint32_t& e_idx = 0);
+         void raw_rd(uint8_t* raw_buf, const uint32_t& e_idx = 0);
 
-
+         uint16_t sz() const;
          void release();
 
     private:
@@ -60,8 +51,8 @@ class csr_prop_t {
         CSR_TYPE type;
         uint32_t addr_w{0};
         uint32_t n_entries{1};
+        uint16_t buf_sz{0};
         bool is_init{false};
-        uint8_t* raw_buf{nullptr};
         rd_fptr r_fn{nullptr};
         wr_fptr w_fn{nullptr};
 
@@ -74,7 +65,7 @@ class csr_prop_t {
 };
 
 template <typename T>
-void csr_prop_t::set(const std::string& fld_name, const T& val) {
+void csr_prop_t::set(const std::string& fld_name, const T& val, uint8_t* raw_buf) {
     std::cout << "ADDR:0x" << std::hex << m_addr << ":FLD: " << fld_name << ":VAL: " << val << std::endl;
     __init();
     sign->_set(fld_name, val, raw_buf);
@@ -82,7 +73,7 @@ void csr_prop_t::set(const std::string& fld_name, const T& val) {
 }
 
 template <typename T>
-void csr_prop_t::get(const std::string& fld_name, T& val) {
+void csr_prop_t::get(const std::string& fld_name, T& val, uint8_t* raw_buf) {
     assert(raw_buf != nullptr);
     sign->_get(fld_name, val, raw_buf);
 }

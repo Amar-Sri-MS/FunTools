@@ -44,6 +44,11 @@ void csr_s::_initialize(void) {
         __init(it->first, st_off, w);
     }
 }
+void csr_s::_deinit(void) {
+    mask_map.clear();
+    shift_map.clear();
+}
+
 
 uint8_t csr_s::__get_w(const uint8_t& st_off, const uint16_t& width) {
    uint16_t w = 0;
