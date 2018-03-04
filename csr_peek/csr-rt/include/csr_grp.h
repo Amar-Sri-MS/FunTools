@@ -12,6 +12,7 @@
 #include "csr_type.h"
 #include "csr_prop.h"
 
+
 class csr_grp_t {
     public:
         explicit csr_grp_t(const std::shared_ptr<csr_s>& sign,
@@ -23,6 +24,8 @@ class csr_grp_t {
         csr_prop_t& operator[](const uint8_t& inst);
         void set_base(const uint64_t& base_addr);
         void set_gid(const uint8_t& gid);
+        void set_rd_cb(rd_fptr r_fn=nullptr);
+        void set_wr_cb(wr_fptr w_fn=nullptr);
         csr_prop_t& get_csr(const uint8_t& gid);
 
     private:

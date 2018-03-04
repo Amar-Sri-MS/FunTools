@@ -35,7 +35,16 @@ addr_node_t::addr_node_t(const std::string& _name,
 
 void addr_node_t::add_csr(
         const std::string& name,
-        csr_grp_t& csr) {
+        csr_grp_t& csr,
+        rd_fptr r_fn,
+        wr_fptr w_fn
+        ) {
+    if (r_fn) {
+        csr.set_rd_cb(r_fn);
+    }
+    if (w_fn) {
+        csr.set_wr_cb(w_fn);
+    }
     csr.set_base(base_addr);
     csr_props.insert(std::make_pair(name, csr));
 }
