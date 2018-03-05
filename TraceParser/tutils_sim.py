@@ -1,6 +1,21 @@
 # goal: Make this file aware of different file formats and have the tprs.py
 # code stay stable
 
+def ParseLine(trace_line):
+	"""Returns dictionary with values from Palladium trace line.
+
+	This routine splits the line once, removing much duplicate work.
+	"""
+	if trace_line[0] not in ['I', 'G']:
+		return None
+	args = trace_line.split()
+	return {'type': args[0],
+		'vpid': long(args[1]),
+		'address': long(args[2], 16),
+		'arg': long(args[3], 16),
+		'cycle': int(args[5][6:]),
+		'time': int(args[6][5:])}
+
 def is_return(trace_line):
 	return trace_line.split()[2] == "31"
 
