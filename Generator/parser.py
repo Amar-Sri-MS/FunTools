@@ -31,6 +31,17 @@ class BaseType:
     # Parsed struct or union, or None if built-in.
     self.node = node
 
+  def PrintFormat(self):
+    """Returns format string for printf appropriate for the value.
+
+    Undefined for non-POD types.
+    """
+    if self.node:
+      return 'PrintFormat undefined for non-integer values.'
+    if self.bit_width > 32:
+      return 'llx'
+    return 'x'
+
   def Name(self):
     """Returns the name of the type."""
     return self.name
@@ -288,6 +299,9 @@ class Type:
     """
     return self.base_type.node is not None
 
+  def IsUnion(self):
+    return self.base_type.node is not None and self.base_type.node.is_union
+
   def IsScalar(self):
     """Returns true if the type is a scalar, builtin type."""
     # TODO(bowdidge): Should uint128_t count as scalar or not?
@@ -310,7 +324,7 @@ class Type:
     type.
     """
     if self.base_type.node:
-      return "struct " + self.base_type.name
+      return self.base_type.node.Tag() + ' ' + self.base_type.name
 
     if linux_type:
       if big_endian is None:
@@ -503,6 +517,11 @@ class Field(Declaration):
     self.min_value = 0
     self.max_value = 0
     self.mask = '/* undefined */'
+
+    # Fixed value, if field is always set to the same value.
+    # Value is a string - either an integer value or an enum value.
+    # Set fixed value in key comment of form 'fixed_value: xxx'
+    self.fixed_value = None
 
     if self.bit_width >= 0:
       self.max_value = (1 << self.bit_width) - 1
@@ -1818,6 +1837,10 @@ class GenParser:
       self.flit_crossing_field = new_field
       self.bits_remaining = expected_width - actual_width
       self.bits_consumed = actual_width
+
+    if key_comment and key_comment.lstrip().startswith('fixed_value:'):
+      new_field.fixed_value = key_comment[12:]
+      key_comment = ''
 
     new_field.key_comment = key_comment
 
