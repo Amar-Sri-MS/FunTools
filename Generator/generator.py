@@ -639,12 +639,17 @@ def GenerateFile(output_style, output_base, input_stream, input_filename,
     extra_vars.append('linux')
     header = GenerateFromTemplate(doc, 'header-linux.tmpl', input_filename,
                                   output_base, extra_vars)
+    source = GenerateFromTemplate(doc, 'source-linux.tmpl', input_filename,
+                                  output_base, extra_vars)
     if not header:
       return (None, ["Problems generating output from template."])
     header = ReformatCode(header)
+    source = ReformatCode(source)
     if output_base:
       WriteFile(output_base + '.h', header)
+      WriteFile(output_base + '.c', source)
       return ("", [])
+    
     else:
       return (header, [])
       

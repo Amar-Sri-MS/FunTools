@@ -147,123 +147,17 @@ static inline void {{struct.name}}_init(struct {{struct.init_struct().name}} *s{
 }
 
 {% if generate_json %}
-{% for field in struct.fields %}
-  {% if field.type.IsRecord() %}
-    static void {{field.type.base_type.node.name}}_dump_internal(FILE *file_des, {{field.type.DeclarationName()}} *s, uint8_t include_type);
-  {% endif %}
-{% endfor %}
+#ifndef __KERNEL__
+
+extern void {{struct.name}}_dump_internal(FILE *file_des, {{struct.DeclarationString()}} *s, uint8_t include_type);
 
 /* Print out structure in JSON format.
  * file_des: file descriptor to write output to.
  * s: pointer to struct to dump.
- * include_type: true if type name should be included in dictionary.
  */
-static inline void {{struct.name}}_dump_internal(FILE *file_des, {{struct.DeclarationString()}} *s, uint8_t include_type) {
-  fprintf(file_des, "{ ");
-  {# If the struct is a union and the first thing in the union is a struct
-     and the first thing in that struct has a default value, then we're
-     probably looking at a union with a field for decoding as first byte
-     that we can dump.  Dump stuff. #}
+extern void {{struct.name}}_dump(FILE *file_des, {{struct.DeclarationString()}} *s);
 
-  {% if struct.is_union %}
-    {% if struct.fields and struct.fields[0].type.IsRecord() and struct.fields[0].type.base_type.node.fields[0].fixed_value %}
-      switch ((({{struct.fields[0].type.ParameterTypeName()}}*)s)->{{struct.fields[0].type.base_type.node.fields[0].name}}) {
-      {% for field in struct.fields %}
-        case {% if field.type.base_type.node.fields[0].fixed_value %} {{field.type.base_type.node.fields[0].fixed_value}} {% else %} /* PUT COMMENT IN {{struct.name}}.{{field.name}}.{{field.type.base_type.node.fields[0].name}} FOR VALUE */ {% endif %}:
-	  fprintf(file_des, "\"{{field.name}}\": ");
-          {{field.type.TypeName()}}_dump_internal(file_des, &(s->{{field.name}}), 0);
-          break;
-      {% endfor %}
-      default:
-         /* assert(1==0); */
-         break;
-      }
-    {% else %}
-    /* No support for unions that don't have a variable naming which
-       enum they are. */
-    assert(1==0);
-    {% endif %}
-  {% else %}
-    {% for field in struct.fields %}
-      {% if not field.is_reserved %}
-        {% if not loop.first %}
-        fprintf(file_des,", ");
-        {% endif %}
-        {% if field.packed_fields %}
-          {% for f in field.packed_fields %}
-            {% if not f.is_reserved %}
-              {% if not loop.first %}
-                fprintf(file_des, ", ");
-              {% endif %}	
-              fprintf(file_des, "\"{{f.name}}\": %{{f.type.base_type.PrintFormat()}}",
-	       {{struct.name|as_macro}}_{{f.name|as_macro}}_G(
-                    s->{{field.init_accessor()}}{{field.name}}));
-              {% endif %}
-            {% endfor %}
-        {% else %}
-	  {% if field.type.IsArray() %}
-	    {% if field.type.ArraySize() == 0 %}
-#if (0)
-              {# Potential solution for variable sized arrays: use
-	         field with same name as array and _count prefix to indicate
-		 number of elements. #}
-  	      fprintf(file_des, "\"{{field.name}}\": ");
-              for (int i = 0; i < s->{{field.name}}_count; i++) {
-	        if (i != 0) { 
-		    fprintf(file_des, ", ");
- 		}
-	        {% if field.type.IsRecord() %}
-	          {{field.type.base_type.Name()}}_dump_internal(
-                      &(file_des, s->{{field.name}}[i]), 0);
-	        {% else %}
-		  fprintf(file_des, "%{{field.type.base_type.PrintFormat()}}",
-		          s->{{field.name}}[i]);
-                {% endif %}
-  	      }
-	      fprintf(file_des, "]");
-#endif
- 	    {% else %}
-  	      fprintf(file_des, "\"{{field.name}}\": ");
-              for (int i = 0; i < {{field.type.ArraySize()}}; i++) {
-	        if (i != 0) {
-  		    fprintf(file_des, ", "); 
-		}
-	        {% if field.type.IsRecord() %}
-		  {{field.type.base_type.Name()}}_dump_internal(
-                      &(s->{{field.name}}[i]), file_des, 0);
-	        {% else %}
-	  	  fprintf(file_des, "%{{field.type.base_type.PrintFormat()}}",
-                       s->{{field.name}}[i]);
-                {% endif %}
-  	      }
-              fprintf(file_des, "]");
-            {% endif %}
-          {% elif field.type.IsRecord() %}
-            fprintf(file_des, "\"{{field.name}}\": ");
-            {{field.type.TypeName()}}_dump_internal(file_des, &(s->{{field.name}}), 0);
-          {% else %}
-	    fprintf(file_des, "\"{{field.name}}\": %{{field.type.base_type.PrintFormat()}}",
-	          dpu_to_cpu{{field.type.bit_width}}(s->{{field.name}}));
-          {% endif %}
-        {% endif %}
-      {% endif %}
-    {% endfor %}
-    {# Easier to print type name at end because we don't have to think
-       about whether we need a comma after or not. #}
-    if (include_type) {
-      fprintf(file_des, ", \"type_name\": \"{{struct.name}}\"");
-    }
-  {% endif %}
-  fprintf(file_des, "} ");
-}
-
-/* Dumps the structure in JSON format to stdout. The top level dictionary
- * will contain a "type_name" key naming the type described by the dictionary.
- */
-static inline void {{struct.name}}_dump(FILE *file_des, {{struct.DeclarationString()}} *s) {
-       {{struct.name}}_dump_internal(file_des, s, 1);
-       fprintf(file_des, "\n");
-}
+#endif  //__KERNEL__
 
 {% endif %}
 /* End of helper macros for structure {{struct.name}} */
