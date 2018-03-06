@@ -1,0 +1,59 @@
+<html>
+  <head>
+    <title>Function Summary for {{title}}</title>
+  </head>
+  <style>
+  table {
+    border-collapse: collapse;
+  }
+  th {
+    background-color: bisque;
+  } 
+  table, th, td {
+    padding: 4px;
+    border: 1px solid black; 
+    text-align: center;
+  }
+  </style>
+  <body>
+    <a href="/">Return to list of jobs</a>.
+    <br>
+    Return to <a href="/job/{{job_id}}">job {{job_id}}</a>.
+    <br>
+    Return to <a href="/job/{{job_id}}/function_trace">job {{job_id}} function trace</a>.
+    <br>
+    
+    <h2>
+    Summary of functions called in Job {{job_id}} by 
+    core {{cluster_id}}.{{core_id}}.
+    </h2>
+    <table>
+      <tr>
+	<th>Function</th>
+	<th>Calls</th>
+	<th>Total Cycles</th>
+	<th>Min/Average/Max Cycles</th>
+	<th>Idle cycles</th>
+	<th>Instruction misses</th>
+	<th>Load-Store Misses</th>
+      </tr>
+      {% for fn_stat in function_stats %}
+      <tr>
+	<td style="text-align: left;"><tt>{{fn_stat['name']}}</tt></td>
+	<td>{{fn_stat['calls']}}</td>
+	<td>{{fn_stat['cycles']}}</td>
+	<td>
+	  {% if fn_stat['calls'] > 1 %}
+	  {{fn_stat['cycles_min']}} /
+	  {{fn_stat['cycles_average']}} /
+	  {{fn_stat['cycles_max']}}
+	  {% endif %}
+	</td>
+	<td>{{fn_stat['tree_idle']}}</td>
+	<td>{{fn_stat['instr_miss']}}</td>
+	<td>{{fn_stat['loadstore_miss']}}</td>
+      </tr>
+      {% endfor %}
+    </table>
+  </body>
+</html>

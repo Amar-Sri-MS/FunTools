@@ -113,7 +113,7 @@ def asm_get_fstart(line):
 
 # Create an entry with [funcname, start addr, end addr]
 def create_range_list(dasm_fname):
-
+	print "creating range list"
 	f = open(dasm_fname)
 
 	linenum = 0
@@ -162,26 +162,23 @@ def create_range_list(dasm_fname):
 		coll[len(coll)-1].append(0xffffffffffffffff)
 
 	f.close()
-
+	print "done creating range list"
 	return sorted(coll, key=itemgetter(1))
 
-def find_function(addr, ranges):
+def find_function(addr, dasm_info):
+	""" Returns the name of the function at the address.
 
-	l = 0
-	r = len(ranges)
+	Returns None if no function is known at the given address.
+	"""
+	# Boot code runs in two separate address ranges that represent
+	# the same memory, one non-cached, one cached.  Convert non-cached
+	# addresses to the equivalent cached address so lookups work.
+	# TODO(bowdidge): Abstract away address space issues.
+        if addr & 0x20000000:
+		addr = addr & 0xffffffffdfffffff
 
-	# binary search it
-	while l < r:
-		m = (l + r) / 2
-		start = ranges[m][1]
-		end = ranges[m][2]
+	func_info = dasm_info.FindFunction(addr)
+	if not func_info:
+		return None
 
-		if addr < start:
-			r = m
-		elif addr > end:
-			l = m + 1
-		else:
-			# found it
-			return (ranges[m][0], addr == start)
-
-	return ("NOT FOUND", False)
+	return func_info.name
