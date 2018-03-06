@@ -13,13 +13,16 @@
 #include <signal.h>            //termios, TCSANOW, ECHO, ICANON
 #include <pthread.h>
 #include <netinet/in.h>		// TCP socket
+#include <arpa/inet.h>
 
 #define PLATFORM_POSIX	1
 
 #include <utils/threaded/fun_json.h>
 #include <utils/threaded/fun_commander.h>
+#include <utils/threaded/fun_malloc_threaded.h>
 
-#define SOCK_NAME	"/tmp/funos-dpc.sock"
+//#define SOCK_NAME	"/tmp/funos-dpc.sock"
+#define DPC_PORT 40220
 
 static inline void _setnosigpipe(int const fd) {
 #ifdef __APPLE__
@@ -31,18 +34,35 @@ static inline void _setnosigpipe(int const fd) {
 #endif
 }
 
-static int _open_sock(const char *name) {
-	int sock = socket(AF_UNIX, SOCK_STREAM, 0);
-	if (sock <= 0) return sock;
+static int _open_sock(uint16_t port) {
+	int sock = 0;
+	struct sockaddr_in serv_addr;
+
+	if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+    {
+        printf("\n Socket creation error \n");
+        return sock;
+    }
 	_setnosigpipe(sock);
-	struct sockaddr_un server = { .sun_family = AF_UNIX };
-	strcpy(server.sun_path, name);
-	int r = connect(sock, (struct sockaddr *)&server, sizeof(server));
-	if (r) {
-		printf("*** Can't connect: %d\n", r);
+    
+    memset(&serv_addr, '0', sizeof(serv_addr));
+    
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_port = htons(port);
+    
+    // Convert IPv4 and IPv6 addresses from text to binary form
+    if(inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr)<=0)
+    {
+        printf("\nInvalid address/ Address not supported \n");
+        return -1;
+    }
+    
+    if (connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
+    {
+        printf("*** Can't connect\n");
 		perror("connect");
 		exit(1);
-	}
+    }
 	return sock;
 }
 
@@ -178,7 +198,7 @@ static void _do_process_cmd(INOUT int *sock, char *line, ssize_t read, uint64_t 
 	if (!ok) {
 	    // try to reopen pipe
 	    printf("Write to socket failed - reopening socket\n");
-	    *sock = _open_sock(SOCK_NAME);
+	    *sock = _open_sock(DPC_PORT);
 	    if (*sock <= 0) {
 		printf("*** Can't reopen socket\n");
 	        fun_json_release(json);
@@ -349,7 +369,7 @@ static bool push_to_dpc_get_reply_to_client(const char *line, INOUT uint64_t *ti
 static void *handle_text_thread(void *arg) {
 	int client_sock = (uintptr_t) arg;
 	printf("New client on socket %d\n", client_sock);
-	int dpc_sock = _open_sock(SOCK_NAME);
+	int dpc_sock = _open_sock(DPC_PORT);
 	if (dpc_sock <= 0) {
 		printf("*** Can't open socket to dpc\n");
 		return NULL;
@@ -514,11 +534,12 @@ int main(int argc, char *argv[]) {
 		: Text JSON proxy mode" : tcp_proxy_mode ? ": TCP proxy mode" : "");
 
 	/* open a socket to FunOS */
-	int sock = _open_sock(SOCK_NAME);
+	int sock = _open_sock(DPC_PORT);
 	if (sock <= 0) {
 		printf("*** Can't open socket\n");
 		exit(1);
 	}
+	printf("connection succesful");
 	if (http_proxy_mode) {
 		run_webserver(sock, PORTNO);
 	} else if (text_proxy_mode) {
