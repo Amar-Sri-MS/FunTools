@@ -13,5 +13,5 @@ int main(int argc, char **argv) {
 				  0,
 				  0);
 
-  fun_admin_epsq_req_dump(&req);
+  fun_admin_epsq_req_dump(stdout, &req);
 }
