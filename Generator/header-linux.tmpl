@@ -190,7 +190,7 @@ static inline void {{struct.name}}_dump_internal({{struct.DeclarationString()}} 
               {% if not loop.first %}
                 printf(", ");
               {% endif %}	
-              printf("\"{{f.name}}\": 0x%{{f.type.base_type.PrintFormat()}}",
+              printf("\"{{f.name}}\": %{{f.type.base_type.PrintFormat()}}",
 	       {{struct.name|as_macro}}_{{f.name|as_macro}}_G(s->{{field.init_accessor()}}{{field.name}}));
               {% endif %}
             {% endfor %}
@@ -207,7 +207,7 @@ static inline void {{struct.name}}_dump_internal({{struct.DeclarationString()}} 
 	        {% if field.type.IsRecord() %}
 	          {{field.type.base_type.Name()}}_dump_internal(&(s->{{field.name}}[i]), 0);
 	        {% else %}
-		  printf("0x%{{field.type.base_type.PrintFormat()}}", s->{{field.name}}[i]);
+		  printf("%{{field.type.base_type.PrintFormat()}}", s->{{field.name}}[i]);
                 {% endif %}
   	      }
 	      printf("]");
@@ -219,7 +219,7 @@ static inline void {{struct.name}}_dump_internal({{struct.DeclarationString()}} 
 	        {% if field.type.IsRecord() %}
 		  {{field.type.base_type.Name()}}_dump_internal(&(s->{{field.name}}[i]), 0);
 	        {% else %}
-	  	  printf("0x%{{field.type.base_type.PrintFormat()}}", s->{{field.name}}[i]);
+	  	  printf("%{{field.type.base_type.PrintFormat()}}", s->{{field.name}}[i]);
                 {% endif %}
   	      }
               printf("]");
@@ -228,7 +228,7 @@ static inline void {{struct.name}}_dump_internal({{struct.DeclarationString()}} 
             printf("\"{{field.name}}\": ");
             {{field.type.TypeName()}}_dump_internal(&(s->{{field.name}}), 0);
           {% else %}
-            printf("\"{{field.name}}\": 0x%{{field.type.base_type.PrintFormat()}}", dpu_to_cpu{{field.type.bit_width}}(s->{{field.name}}));
+            printf("\"{{field.name}}\": %{{field.type.base_type.PrintFormat()}}", dpu_to_cpu{{field.type.bit_width}}(s->{{field.name}}));
           {% endif %}
         {% endif %}
       {% endif %}

@@ -39,8 +39,8 @@ class BaseType:
     if self.node:
       return 'PrintFormat undefined for non-integer values.'
     if self.bit_width > 32:
-      return 'llx'
-    return 'x'
+      return 'llu'
+    return 'u'
 
   def Name(self):
     """Returns the name of the type."""
