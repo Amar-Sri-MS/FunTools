@@ -153,6 +153,10 @@ static inline void {{struct.name}}_init(struct {{struct.init_struct().name}} *s{
   {% endif %}
 {% endfor %}
 
+/* Print out structure in JSON format.
+ * s: pointer to struct to dump.
+ * include_type: true if type name should be included in dictionary.
+ */
 static inline void {{struct.name}}_dump_internal({{struct.DeclarationString()}} *s, uint8_t include_type) {
   printf("{ ");
   {# If the struct is a union and the first thing in the union is a struct
@@ -191,7 +195,8 @@ static inline void {{struct.name}}_dump_internal({{struct.DeclarationString()}} 
                 printf(", ");
               {% endif %}	
               printf("\"{{f.name}}\": %{{f.type.base_type.PrintFormat()}}",
-	       {{struct.name|as_macro}}_{{f.name|as_macro}}_G(s->{{field.init_accessor()}}{{field.name}}));
+	       {{struct.name|as_macro}}_{{f.name|as_macro}}_G(
+                    s->{{field.init_accessor()}}{{field.name}}));
               {% endif %}
             {% endfor %}
         {% else %}
@@ -203,11 +208,15 @@ static inline void {{struct.name}}_dump_internal({{struct.DeclarationString()}} 
 		 number of elements. #}
   	      printf("\"{{field.name}}\": ");
               for (int i = 0; i < s->{{field.name}}_count; i++) {
-	        if (i != 0) printf(", ");
+	        if (i != 0) { 
+		    printf(", ");
+ 		}
 	        {% if field.type.IsRecord() %}
-	          {{field.type.base_type.Name()}}_dump_internal(&(s->{{field.name}}[i]), 0);
+	          {{field.type.base_type.Name()}}_dump_internal(
+                      &(s->{{field.name}}[i]), 0);
 	        {% else %}
-		  printf("%{{field.type.base_type.PrintFormat()}}", s->{{field.name}}[i]);
+		  printf("%{{field.type.base_type.PrintFormat()}}",
+		          s->{{field.name}}[i]);
                 {% endif %}
   	      }
 	      printf("]");
@@ -215,11 +224,15 @@ static inline void {{struct.name}}_dump_internal({{struct.DeclarationString()}} 
  	    {% else %}
   	      printf("\"{{field.name}}\": ");
               for (int i = 0; i < {{field.type.ArraySize()}}; i++) {
-	        if (i != 0) printf(", ");
+	        if (i != 0) {
+  		    printf(", "); 
+		}
 	        {% if field.type.IsRecord() %}
-		  {{field.type.base_type.Name()}}_dump_internal(&(s->{{field.name}}[i]), 0);
+		  {{field.type.base_type.Name()}}_dump_internal(
+                      &(s->{{field.name}}[i]), 0);
 	        {% else %}
-	  	  printf("%{{field.type.base_type.PrintFormat()}}", s->{{field.name}}[i]);
+	  	  printf("%{{field.type.base_type.PrintFormat()}}",
+                       s->{{field.name}}[i]);
                 {% endif %}
   	      }
               printf("]");
@@ -228,7 +241,8 @@ static inline void {{struct.name}}_dump_internal({{struct.DeclarationString()}} 
             printf("\"{{field.name}}\": ");
             {{field.type.TypeName()}}_dump_internal(&(s->{{field.name}}), 0);
           {% else %}
-            printf("\"{{field.name}}\": %{{field.type.base_type.PrintFormat()}}", dpu_to_cpu{{field.type.bit_width}}(s->{{field.name}}));
+            printf("\"{{field.name}}\": %{{field.type.base_type.PrintFormat()}}",
+	          dpu_to_cpu{{field.type.bit_width}}(s->{{field.name}}));
           {% endif %}
         {% endif %}
       {% endif %}
@@ -242,8 +256,7 @@ static inline void {{struct.name}}_dump_internal({{struct.DeclarationString()}} 
   printf("} ");
 }
 
-{# Create separate dump commands for inline structures, too. #}
-/* Dump the structure in JSON format to stdout. The top level dictionary
+/* Dumps the structure in JSON format to stdout. The top level dictionary
  * will contain a "type_name" key naming the type described by the dictionary.
  */
 static inline void {{struct.name}}_dump({{struct.DeclarationString()}} *s) {
