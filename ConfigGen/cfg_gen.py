@@ -55,12 +55,19 @@ def standardize_json(in_cfg, out_cfg):
                 fixed_json = ''.join(line for line in fh if not line.startswith('//'))
                 print "Removing Comments in %s"% (in_cfg)
                 fixed_json = remove_comments(fixed_json)
-                print "Adding quotes to keys in %s"% (in_cfg)
+
+                print "Add quotes to keys in %s"% (in_cfg)
                 fixed_json = re.sub( r'\n(\s*)(?!")(\S+)\s*:', r'\n\1"\2":', fixed_json)
-                print "Adding quotes to hex values in %s"% (in_cfg)
+
+                print "Convert non-quoted hex values to decimals in %s"% (in_cfg)
                 fixed_json = re.sub( r'[^"]0x([a-fA-F0-9]+)(,?|$)', lambda m: lambda_hextoint(m.groups()), fixed_json)
-                fixed_json = re.sub( r',\s*}', r'\n}', fixed_json)
+
+                print "Strip empty lines and trailing spaces in %s"% (in_cfg)
+                fixed_json = os.linesep.join([s.rstrip() for s in fixed_json.splitlines() if s.strip()])
+
+                print "Strip trailing commas in %s"% (in_cfg)
                 fixed_json = remove_trailing_commas(fixed_json)
+
 		f = open("%s" % out_cfg, 'w')
 		f.write(fixed_json)
 
