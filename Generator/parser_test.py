@@ -53,20 +53,20 @@ class TestTypes(unittest.TestCase):
 
 class PrintingTest(unittest.TestCase):
   def testSimpleType(self):
-    self.assertEqual('char', parser.TypeForName('char').DeclarationType())
+    self.assertEqual('char', parser.TypeForName('char').ParameterTypeName())
     self.assertEqual('char[6]',
-                     parser.ArrayTypeForName('char', 6).DeclarationType())
+                     parser.ArrayTypeForName('char', 6).ParameterTypeName())
 
 
   def testStructType(self):
     s = parser.Struct('Bar', False)
     struct_array_type = parser.RecordArrayTypeForStruct(s, 4)
-    self.assertEqual('Bar[4]', struct_array_type.DeclarationType())
+    self.assertEqual('struct Bar[4]', struct_array_type.ParameterTypeName())
 
   def testZeroLengthStructArrayType(self):
     s = parser.Struct('Bar', False)
     struct_array_type = parser.RecordArrayTypeForStruct(s, 0)
-    self.assertEqual('Bar[0]', struct_array_type.DeclarationType())
+    self.assertEqual('struct Bar[0]', struct_array_type.ParameterTypeName())
 
 
 
@@ -185,28 +185,28 @@ class DefaultTypeTest(unittest.TestCase):
 
   def testSimple(self):
     self.assertEqual('uint8_t',
-                     parser.DefaultTypeForWidth(8, 8).DeclarationType())
+                     parser.DefaultTypeForWidth(8, 8).ParameterTypeName())
 
     self.assertEqual('uint16_t',
-                     parser.DefaultTypeForWidth(8, 3).DeclarationType())
+                     parser.DefaultTypeForWidth(8, 3).ParameterTypeName())
 
     self.assertEqual('uint16_t',
-                     parser.DefaultTypeForWidth(8, 6).DeclarationType())
+                     parser.DefaultTypeForWidth(8, 6).ParameterTypeName())
 
     self.assertEqual('uint32_t',
-                     parser.DefaultTypeForWidth(8, 14).DeclarationType())
+                     parser.DefaultTypeForWidth(8, 14).ParameterTypeName())
 
     self.assertEqual('uint64_t',
-                     parser.DefaultTypeForWidth(8, 31).DeclarationType())
+                     parser.DefaultTypeForWidth(8, 31).ParameterTypeName())
 
     self.assertEqual('uint32_t',
-                     parser.DefaultTypeForWidth(12, 8).DeclarationType())
+                     parser.DefaultTypeForWidth(12, 8).ParameterTypeName())
 
     self.assertEqual('uint32_t',
-                     parser.DefaultTypeForWidth(16, 10).DeclarationType())
+                     parser.DefaultTypeForWidth(16, 10).ParameterTypeName())
 
     self.assertEqual('uint32_t',
-                     parser.DefaultTypeForWidth(16, 4).DeclarationType())
+                     parser.DefaultTypeForWidth(16, 4).ParameterTypeName())
 
 
 class YAMLParserTest(unittest.TestCase):

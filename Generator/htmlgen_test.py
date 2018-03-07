@@ -204,7 +204,7 @@ class FieldTableTest(unittest.TestCase):
         out =  gen.VisitField(f, 0, {})
         self.assertIn('<td class="structBits">63-56</td>', out)
         self.assertIn('<td>foo</td>', out)
-        self.assertIn('<td>Bar[4]</td>', out)
+        self.assertIn('<td>struct Bar[4]</td>', out)
         self.assertIn('Key comment<br>', out)
 
     def testZeroLengthArrayField(self):
@@ -218,7 +218,7 @@ class FieldTableTest(unittest.TestCase):
         # TODO(bowdidge): Why 63-0?
         self.assertIn('<td class="structBits">63-0</td>', out)
         self.assertIn('<td>foo</td>', out)
-        self.assertIn('<td>Bar[0]</td>', out)
+        self.assertIn('<td>struct Bar[0]</td>', out)
         self.assertIn('Key comment<br>', out)
         
 

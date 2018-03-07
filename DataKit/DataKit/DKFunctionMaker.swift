@@ -6,7 +6,7 @@
 //  Copyright © 2017 Fungible. All rights reserved.
 //
 
-// Built-in function that makes values, like "studentMaker" or "randomInt"
+// Built-in function that makes values, like "studentMaker" or "randomInt" or "sequentialInt"
 
 class DKFunctionMaker: DKFunction {
 	let name: String
@@ -35,7 +35,7 @@ class DKFunctionMaker: DKFunction {
 		let i = dict["item_type"]?.toDKType(uniquingTable)
 		if i == nil { return nil }
 		let params: JSON = dict["params"] ?? JSON.null
-		return DKFunctionGenerator(uniquingTable, name: g!.stringValue, params: params, itemType: i!)
+		return DKFunctionMaker(uniquingTable, name: g!.stringValue, itemType: i!, params: params)
 	}
 	override func evaluate(context: DKEvaluationContext, _ subs: [DKExpression]) -> DKValue {
 		assert(subs.count == 0)

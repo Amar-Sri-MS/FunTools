@@ -2,7 +2,11 @@
 # OS
 OS := $(shell uname)
 
+# arch
+ARCH := $(shell uname -m)
+
 SDKDIR ?= ../../FunSDK
+SDK_INSTALL_DIR ?= $(SDKDIR)
 
 all: jsonutil
 
@@ -17,9 +21,9 @@ CFLAGS ?= -I $(SDKDIR)/FunSDK  \
 LDFLAGS_ASAN ?= -fsanitize=address 
 ifeq ($(OS),Linux)
 #asan library linking does not work for Linux
-LDFLAGS += -L $(SDKDIR)/lib/${OS}/noasan/ -lfunclient -lm
+LDFLAGS += -L $(SDKDIR)/lib/$(OS)/noasan/$(ARCH) -lfunclient -lm
 else
-LDFLAGS += -L $(SDKDIR)/lib/${OS}/ -lfunclient -lm $(LDFLAGS_ASAN)
+LDFLAGS += -L $(SDKDIR)/lib/$(OS)/$(ARCH) -lfunclient -lm $(LDFLAGS_ASAN)
 endif
 
 SRC += jsonutil.c
@@ -28,7 +32,8 @@ jsonutil: jsonutil.c
 	$(CC) -o jsonutil $(SRC) $(CFLAGS) $(LDFLAGS)
 
 install: jsonutil
-	cp jsonutil $(SDKDIR)/bin
+	mkdir -p $(SDK_INSTALL_DIR)/bin/$(OS)/$(ARCH)
+	cp jsonutil $(SDK_INSTALL_DIR)/bin/$(OS)/$(ARCH)
 
 clean:
-	rm jsonutil
+	rm -f jsonutil

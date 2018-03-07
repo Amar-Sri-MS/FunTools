@@ -10,7 +10,7 @@ The Generator serves several purposes:
 * validates names and types.
 * creates valid C structures defining the shared data structures
 * packs variables that are bitfields and creates macros for efficiently accessing fields.
-* creates uniform initialization, serialization, and byte-swapping macros or functions.
+* creates uniform initialization and serialization macros or functions.
 * aware of conventions such as reserved fields (for unused variables).
 * generates documentation for messages and sub-structures.
 
@@ -35,8 +35,8 @@ Usage:
 generator.py [-g generator-style] [-c codgen-options] [-o output_prefix] description_file
 ```
 
-* -g specifies the kind of output to generate.  Choices are code (default) or html.  With ```-g code```, the generator creates header and source files based on the data structure description file.  With ```-g html```, the generator creates HTML documentation for the data structures.  With ```-g validate```, the generator creates test code to confirm that the size and layout of the data structures matches the specified bit ranges.
-* -c specifies the code generation options to use.  This is a comma-separated list of terms.  Valid code generation options are pack and json.  The pack option rewrites the data structures so adjacent bitfields are packed together into native-sized fields for the type, and creates macros to access the field (get, put, zero).  json generates a new initialization function to allow a data structure to be initialized from a JSON description.  
+* -g specifies the kind of output to generate.  Choices are code (default) or html.  With ```-g code```, the generator creates header and source files based on the data structure description file.  With ```-g linux```, the generator creates a header file suitable for Linux.  With ```-g html```, the generator creates HTML documentation for the data structures.  With ```-g validate```, the generator creates test code to confirm that the size and layout of the data structures matches the specified bit ranges.
+* -c specifies the code generation options to use.  This is a comma-separated list of terms.  Valid code generation options are pack, json, cpacked, swap, and dump.  The pack option rewrites the data structures so adjacent bitfields are packed together into native-sized fields for the type, and creates macros to access the field (get, put, zero).  json generates a new initialization function to allow a data structure to be initialized from a JSON description.  json generates routines to encode and decode structures in JSON format on FunOS.  cpacked causes all structures to have __attribute__(packed) appended.  swap generates functions for byte-swapping structures on Linux.
 * -o specifies the path prefix to be used for output.  The generator appends .c and .h to this prefix when generating source code, or .html when generating documentation.
 
 Example command line
@@ -295,8 +295,9 @@ field_name_Z(value): Returns a value that can be and'd with a packed field to ze
 The -c option allows you to specify names of additional codegen passes to perform.
 -c pack combines bitfields into a single container field where individual fields are accessed via macros.
 -c json generates initialization routines that initialize the structure from JSON.
--c swap generates endianness-swapping code.
-
+-c swap treats structures as having a specific endianness in memory, and
+swaps values when stored or retrieved.  (Supported only for Linux header
+generation.)
 -c cpacked adds the __attribute__((packed)) to all structures.
 
 Each option is described in more detail below.

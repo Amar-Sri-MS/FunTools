@@ -1,0 +1,8 @@
+#!/usr/bin/env python
+import csr.csr_main as csr
+import os
+
+if __name__ == "__main__":
+    csr_slrp = csr.Slurper(os.getcwd())
+    csr_slrp.run()
+    #print "{}".format(csr_slrp)

@@ -19,7 +19,6 @@ import os
 import subprocess
 import sys
 
-import codegen
 import htmlgen
 import parser
 import utils
@@ -400,7 +399,7 @@ def ReformatCodeWithIndent(source):
 
   args = [indent_path, '-sob', '-nfc1', '-nfcb', '-nbad', '-bap',
           '-nbc', '-br', '-brs', '-c33', '-cd33', '-ncdb', '-ce', '-ci4',
-          '-cli0', '-d0', '-i8', '-ip0', '-l80', '-lp', '-npcs', '-npsl',
+          '-cli0', '-d0', '-i8', '-ip0', '-l79', '-lp', '-npcs', '-npsl',
           # Don't format comments, get rid of extra blank lines.
           # Don't add whitespace in the middle of declarations.
           '-nsc', '-sob', '-di0']
@@ -487,6 +486,18 @@ def GenerateFromTemplate(doc, template_filename, generator_file, output_base,
   """
   this_dir = os.path.dirname(os.path.abspath(__file__))
 
+  # 'linux' in extra variables indicates that we're building a header
+  # for Linux.  Use Linux-style declarations.
+  linux = 'linux' in extra_vars
+
+  # Building header with byte-swapping when storing to structure.
+  swap = 'generate_swap' in extra_vars
+
+  # Don't use endian types by default.  None=plain type, True=big.
+  big_endian_types = None
+  if linux and swap:
+    big_endian_types = True
+
   env = Environment(loader=FileSystemLoader(this_dir))
   env.lstrip_blocks = True
   env.trim_blocks = True
@@ -503,9 +514,10 @@ def GenerateFromTemplate(doc, template_filename, generator_file, output_base,
   env.filters['as_hex'] = lambda num: "0x%x" % num
 
   # Filters for declarations.
-  env.filters['as_definition'] = lambda decl : decl.DefinitionString()
-  env.filters['as_declaration'] = lambda decl : decl.DeclarationString()
-  env.filters['as_cast'] = lambda type : type.CastString()
+  env.filters['as_definition'] = (
+    lambda decl : decl.DefinitionString(linux, big_endian_types))
+  env.filters['as_declaration'] = lambda decl :  decl.DeclarationString(linux)
+  env.filters['as_cast'] = lambda type : type.CastString(linux)
 
   if output_base:
     output_base = os.path.basename(output_base)
@@ -558,7 +570,8 @@ def GenerateFile(output_style, output_base, input_stream, input_filename,
   errors = None
 
   if input_filename.endswith('.gen') or input_filename.endswith('.pgen'):
-    gen_parser = parser.GenParser()
+    use_linux_types = (output_style == OutputStyleLinux)
+    gen_parser = parser.GenParser(use_linux_types)
     errors = gen_parser.Parse(input_filename, input_stream)
     doc = gen_parser.current_document
   elif input_filename.endswith('.yaml'):
@@ -603,7 +616,6 @@ def GenerateFile(output_style, output_base, input_stream, input_filename,
   extra_vars = ['generate_' + o for o in options]
   if output_style is OutputStyleHTML:
     html_generator = htmlgen.HTMLGenerator()
-    codegen.CodeGenerator(options)
     source = html_generator.VisitDocument(doc)
     if output_base:
       WriteFile(output_base + '.html', source)
@@ -620,15 +632,24 @@ def GenerateFile(output_style, output_base, input_stream, input_filename,
       return ('', [])
     return (source, [])
 
-  elif output_style is OutputStyleKernel:
-    header = GenerateFromTemplate(doc, 'kernel.tmpl', input_filename,
+  elif output_style is OutputStyleLinux:
+    # TODO(bowdidge): Find better way to pass fact that we need Linux types
+    # into GenerateFromTemplate - it needs to know that it should generate
+    # declarations differently.
+    extra_vars.append('linux')
+    header = GenerateFromTemplate(doc, 'header-linux.tmpl', input_filename,
+                                  output_base, extra_vars)
+    source = GenerateFromTemplate(doc, 'source-linux.tmpl', input_filename,
                                   output_base, extra_vars)
     if not header:
       return (None, ["Problems generating output from template."])
     header = ReformatCode(header)
+    source = ReformatCode(source)
     if output_base:
       WriteFile(output_base + '.h', header)
+      WriteFile(output_base + '.c', source)
       return ("", [])
+    
     else:
       return (header, [])
       
@@ -663,6 +684,8 @@ OutputStyleHTML = 2
 OutputStyleValidation = 3
 # Output kernel-style shift macros for hardware structures.
 OutputStyleKernel = 4
+# Output Linux headers.
+OutputStyleLinux = 5
 
 
 def SetFromArgs(key, codegen_args, default_value):
@@ -707,8 +730,8 @@ def main():
         output_style = OutputStyleHTML
       elif a == 'validate':
         output_style = OutputStyleValidation
-      elif a == 'kernel':
-        output_style = OutputStyleKernel
+      elif a == 'linux':
+        output_style = OutputStyleLinux
       else:
         sys.stderr.write('Unknown output style "%s"' % a)
         sys.exit(2)
@@ -718,8 +741,9 @@ def main():
   codegen_pack = SetFromArgs('pack', codegen_args, False)
   codegen_split = SetFromArgs('split', codegen_args, False)
   codegen_json = SetFromArgs('json', codegen_args, False)
-  codegen_swap = SetFromArgs('swap', codegen_args, False)
   codegen_cpacked = SetFromArgs('cpacked', codegen_args, False)
+  codegen_swap = SetFromArgs('swap', codegen_args, False)
+  codegen_linux = SetFromArgs('linux', codegen_args, False)
 
   codegen_options = []
 
@@ -729,14 +753,10 @@ def main():
     codegen_options.append('split')
   if codegen_json:
     codegen_options.append('json')
-  if codegen_swap:
-    codegen_options.append('swap')
   if codegen_cpacked:
     codegen_options.append('cpacked')
-
-  if (codegen_swap and not codegen_pack):
-    print('WARNING - swapping will not work correctly on '
-          'unpacked bitfields.')
+  if codegen_swap:
+    codegen_options.append('swap')
 
   if len(args) == 0:
       sys.stderr.write('No genfile named.\n')

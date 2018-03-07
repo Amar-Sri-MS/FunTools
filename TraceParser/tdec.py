@@ -77,7 +77,7 @@ def hdr_info(statsd):
 	return hdrs
 
 if __name__ == "__main__":
-
+	sys.setrecursionlimit(0x1000000)
 	parser = OptionParser()
 
 	parser.add_option("-t", "--funtrc", dest="funtrc_f", help="fungible trace object", metavar="FILE")

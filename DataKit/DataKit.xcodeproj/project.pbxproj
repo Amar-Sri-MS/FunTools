@@ -57,7 +57,6 @@
 		A72CC79F1F4D014B0058827F /* DKFunctionProjection.swift in Sources */ = {isa = PBXBuildFile; fileRef = A72CC79E1F4D014B0058827F /* DKFunctionProjection.swift */; };
 		A72CC7A11F4D1CC80058827F /* DKFunctionFilter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A72CC7A01F4D1CC80058827F /* DKFunctionFilter.swift */; };
 		A72CC7A31F4D1DE60058827F /* DKFunctionClosure.swift in Sources */ = {isa = PBXBuildFile; fileRef = A72CC7A21F4D1DE60058827F /* DKFunctionClosure.swift */; };
-		A72CC7A51F5366540058827F /* DKFunctionGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A72CC7A41F5366540058827F /* DKFunctionGenerator.swift */; };
 		A72CC7B71F620BA60058827F /* DKFunctionComposition.swift in Sources */ = {isa = PBXBuildFile; fileRef = A72CC7B61F620BA60058827F /* DKFunctionComposition.swift */; };
 		A72CC7BD1F6A2BD50058827F /* DKNodeFifo.swift in Sources */ = {isa = PBXBuildFile; fileRef = A72CC7BC1F6A2BD50058827F /* DKNodeFifo.swift */; };
 		A72CC7C11F6A2C2F0058827F /* DKFlowGraphGen.swift in Sources */ = {isa = PBXBuildFile; fileRef = A72CC7C01F6A2C2F0058827F /* DKFlowGraphGen.swift */; };
@@ -174,7 +173,6 @@
 		A72CC79E1F4D014B0058827F /* DKFunctionProjection.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKFunctionProjection.swift; sourceTree = "<group>"; };
 		A72CC7A01F4D1CC80058827F /* DKFunctionFilter.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKFunctionFilter.swift; sourceTree = "<group>"; };
 		A72CC7A21F4D1DE60058827F /* DKFunctionClosure.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKFunctionClosure.swift; sourceTree = "<group>"; };
-		A72CC7A41F5366540058827F /* DKFunctionGenerator.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKFunctionGenerator.swift; sourceTree = "<group>"; };
 		A72CC7B61F620BA60058827F /* DKFunctionComposition.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKFunctionComposition.swift; sourceTree = "<group>"; };
 		A72CC7BC1F6A2BD50058827F /* DKNodeFifo.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKNodeFifo.swift; sourceTree = "<group>"; };
 		A72CC7C01F6A2C2F0058827F /* DKFlowGraphGen.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKFlowGraphGen.swift; sourceTree = "<group>"; };
@@ -315,7 +313,6 @@
 				A72CC79C1F4CFC7D0058827F /* DKFunctionOperator.swift */,
 				A72CC79E1F4D014B0058827F /* DKFunctionProjection.swift */,
 				A72CC7A01F4D1CC80058827F /* DKFunctionFilter.swift */,
-				A72CC7A41F5366540058827F /* DKFunctionGenerator.swift */,
 				A738879C1F6F41E400A2F976 /* DKFunctionMap.swift */,
 				A79D44991FDC8A6E006BB313 /* DKFunctionReduce.swift */,
 				A738879E1F6F533B00A2F976 /* DKFunctionLogger.swift */,
@@ -544,7 +541,6 @@
 				A72CC7971F49F4C80058827F /* WorkQueue.swift in Sources */,
 				A72CC7A31F4D1DE60058827F /* DKFunctionClosure.swift in Sources */,
 				A72CC7931F49F4C80058827F /* StringParsing.swift in Sources */,
-				A72CC7A51F5366540058827F /* DKFunctionGenerator.swift in Sources */,
 				A727FAC51F27AE9A007BE1BD /* DKTypeSequence.swift in Sources */,
 				A72CC7911F49F4C80058827F /* Statistics.swift in Sources */,
 				A72CC7561F49F4BE0058827F /* DictionaryExtras.swift in Sources */,

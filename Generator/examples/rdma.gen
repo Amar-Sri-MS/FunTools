@@ -86,4 +86,3 @@ STRUCT MultiFlitField
 2 63:32 ...
 2 31:0 uint32_t end
 END
-

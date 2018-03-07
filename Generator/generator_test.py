@@ -1930,7 +1930,8 @@ class CodegenArgsTest(unittest.TestCase):
 class HashTest(unittest.TestCase):
   def testSimple(self):
     generator.GENERATOR_VERSION = 0
-    self.assertEqual(245188804, generator.FileHash('examples/rdma.gen'))
+    # If the example files change, these values will (correctly) change.
+    self.assertEqual(14530946, generator.FileHash('examples/rdma.gen'))
     self.assertEqual(148504078, generator.FileHash('examples/packed.gen'))
     self.assertEqual(0, generator.FileHash('no/such/file.gen'))
 
@@ -1940,7 +1941,7 @@ class HashTest(unittest.TestCase):
     """
     generator.GENERATOR_VERSION = 1
     # These values should be different from values in testSimple.
-    self.assertEqual(245188805, generator.FileHash('examples/rdma.gen'))
+    self.assertEqual(14530947, generator.FileHash('examples/rdma.gen'))
     self.assertEqual(148504079, generator.FileHash('examples/packed.gen'))
     self.assertEqual(1, generator.FileHash('no/such/file.gen'))
 

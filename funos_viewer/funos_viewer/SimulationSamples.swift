@@ -237,7 +237,11 @@ class SimulationSamples: SimulationScaledSamples, CustomStringConvertible {
             return
         }
         recent.check(past.scale)
-        past.compress(factor, numRecentValues: &recent.numRecentValues, rangeAndSum: &recent.rangeAndSum)
+	var newNumRecentValues = recent.numRecentValues
+	var newRangeAndSum = recent.rangeAndSum
+        past.compress(factor, numRecentValues: &newNumRecentValues, rangeAndSum: &newRangeAndSum)
+	recent.numRecentValues = newNumRecentValues
+	recent.rangeAndSum = newRangeAndSum
         recent.check(past.scale)
     }
     private var rangeNoLock: ClosedRange<Double>? {

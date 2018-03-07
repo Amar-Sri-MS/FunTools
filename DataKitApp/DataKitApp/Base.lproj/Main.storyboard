@@ -691,7 +691,7 @@
                         <autoresizingMask key="autoresizingMask"/>
                         <subviews>
                             <popUpButton verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="avL-rc-qez">
-                                <rect key="frame" x="10" y="573" width="160" height="26"/>
+                                <rect key="frame" x="10" y="573" width="176" height="26"/>
                                 <popUpButtonCell key="cell" type="push" title="Random Ints (100)" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" imageScaling="proportionallyDown" inset="2" selectedItem="EG7-UW-oap" id="5Ed-7a-iXc">
                                     <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
                                     <font key="font" size="14" name=".AppleSystemUIFont"/>
@@ -699,6 +699,7 @@
                                         <items>
                                             <menuItem title="Random Ints (100)" state="on" id="EG7-UW-oap"/>
                                             <menuItem title="Random Ints(1000)" id="P3G-DH-9MG"/>
+                                            <menuItem title="Sequential Ints(1000)" id="CSq-yc-HrF"/>
                                             <menuItem title="Students (100)" id="HnO-Wl-cjM"/>
                                             <menuItem title="Students (1000)" id="QcW-8O-Dpn"/>
                                             <menuItem title="Students (10K)" id="Ln9-Lg-WAY"/>
@@ -857,16 +858,16 @@
                                 </scroller>
                             </scrollView>
                             <scrollView wantsLayer="YES" horizontalLineScroll="10" horizontalPageScroll="10" verticalLineScroll="10" verticalPageScroll="10" hasHorizontalScroller="NO" usesPredominantAxisScrolling="NO" translatesAutoresizingMaskIntoConstraints="NO" id="FkL-Ac-m62">
-                                <rect key="frame" x="182" y="415" width="730" height="182"/>
+                                <rect key="frame" x="198" y="415" width="698" height="182"/>
                                 <clipView key="contentView" id="XbA-jv-ljk">
-                                    <rect key="frame" x="1" y="1" width="713" height="180"/>
+                                    <rect key="frame" x="1" y="1" width="681" height="180"/>
                                     <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                     <subviews>
                                         <textView importsGraphics="NO" richText="NO" verticallyResizable="YES" usesFontPanel="YES" findStyle="panel" allowsUndo="YES" usesRuler="YES" allowsNonContiguousLayout="YES" smartInsertDelete="YES" id="L20-SS-5Xf">
-                                            <rect key="frame" x="0.0" y="0.0" width="713" height="180"/>
+                                            <rect key="frame" x="0.0" y="0.0" width="681" height="180"/>
                                             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                             <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
-                                            <size key="minSize" width="713" height="180"/>
+                                            <size key="minSize" width="681" height="180"/>
                                             <size key="maxSize" width="730" height="10000000"/>
                                             <attributedString key="textStorage">
                                                 <fragment content="map(logger())">
@@ -886,7 +887,7 @@
                                     <autoresizingMask key="autoresizingMask"/>
                                 </scroller>
                                 <scroller key="verticalScroller" verticalHuggingPriority="750" doubleValue="1" horizontal="NO" id="0VB-kl-cHr">
-                                    <rect key="frame" x="714" y="1" width="15" height="180"/>
+                                    <rect key="frame" x="682" y="1" width="15" height="180"/>
                                     <autoresizingMask key="autoresizingMask"/>
                                 </scroller>
                             </scrollView>

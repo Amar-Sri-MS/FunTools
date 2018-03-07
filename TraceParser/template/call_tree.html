@@ -1,0 +1,94 @@
+<html>
+<head>
+<title>Call Tree</title>
+<style>
+/* Tone down the cycle number - it's less important than the function name */
+.cycleCol {
+  color: gray;
+}
+.collapseButton {
+  color: red;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.collapse {
+}
+/* Function column add space to the right so names are readable. */
+.functionCol {
+  padding-right: 50px;
+}
+/* Highlight surprising numbers . */
+.scary {
+  color: red;
+}
+
+.graph {
+  border: 1px solid black;
+  width: 400px;
+  height: 300px;
+}
+
+.timestamp {
+  float: left;
+  width: 150px;
+  padding-right: 10px;
+  text-align: right;
+}
+
+#butterBar {
+  position: absolute;
+  display: hidden;
+  width: 60%;
+  height: 5%;
+  left: 20%;
+  background-color: gold;
+  text-align: center;
+}
+
+</style>
+<script>
+function Collapse(sender) {
+  var collapseDivs = sender.parentNode.getElementsByClassName("collapse");
+  if (collapseDivs.length == 0) {
+    return;
+  }
+  for (var i = 0 ; i < collapseDivs.length; i++) {
+    var first = collapseDivs[i];
+    if (first.style.display == "none") {
+      first.style.display = "block";
+      sender.innerHTML = "-";
+    } else {
+      first.style.display = "none";
+      sender.innerHTML = "+";
+    }
+  }
+}
+</script>
+</head>
+<body>
+
+{% for call in root_nodes recursive %}
+
+<div class="collapse" {% if call['collapse'] == True %}style="display: none;"{% else %}style="display: block;"{% endif %}>
+
+{% for i in range(call['level']) %}&nbsp;&nbsp;&nbsp;&nbsp;{% endfor %}
+  <span class="timestamp">{{call.timestamp}}</span>
+{% if call['calls'] %}
+     <span class="collapseButton" onclick="Collapse(this);"><tt>{% if call['children_collapse'] == True %}+{% else %}-{%endif%}</tt></span>
+{% else %}
+<tt>-</tt>
+{% endif %}
+     <tt>{{call["name"]}}</tt> 
+     &nbsp;&nbsp;
+     <i>
+       (called {{call["num_calls"]}} times,
+       {{call["cycles"]}} cycles.)
+     </i>
+{% if call["calls"]  %}
+  {{ loop(call["calls"]) }}
+{% endif %}
+</div>
+{% endfor %}
+</body>
+</html>

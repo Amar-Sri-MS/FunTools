@@ -109,13 +109,6 @@ func sendToDPCServer(_ combined: JSON) {
 func registerGeneratorOfStudents(typeTable: DKTypeTable) {
 	let t = studentType()
 	var count = 0
-	DKFunctionGenerator.registerItemGenerator(name: "Students") {
-		if count >= $0.integerValue { return nil }
-		let studentArray = generateRandomStudent(id: count)
-		let student = t.valueFromRawJSON(typeTable, .array(studentArray))!
-		count += 1
-		return student
-	}
 	DKFunctionMaker.registerMaker(name: "studentMaker") { _ in
 		let studentArray = generateRandomStudent(id: count)
 		let student = t.valueFromRawJSON(typeTable, .array(studentArray))!
@@ -124,17 +117,17 @@ func registerGeneratorOfStudents(typeTable: DKTypeTable) {
 	}
 
 }
+
 func registerGeneratorOfRandomInts(typeTable: DKTypeTable) {
 	var count = 0
-	DKFunctionGenerator.registerItemGenerator(name: "RandomInts") {
-		if count >= $0.integerValue { return nil }
+	DKFunctionMaker.registerMaker(name: "randomInt") { _ in
 		let i = UInt64.random() % 1_000_000
 		let new = DKValue.int(type: DKTypeInt.uint64, intValue: i)
 		count += 1
 		return new
 	}
-	DKFunctionMaker.registerMaker(name: "randomInt") { _ in
-		let i = UInt64.random() % 1_000_000
+	DKFunctionMaker.registerMaker(name: "sequentialInt") { _ in
+		let i = count
 		let new = DKValue.int(type: DKTypeInt.uint64, intValue: i)
 		count += 1
 		return new
