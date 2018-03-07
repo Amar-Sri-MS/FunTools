@@ -58,11 +58,14 @@ def standardize_json(in_cfg, out_cfg):
                 print "Adding quotes to keys in %s"% (in_cfg)
                 fixed_json = re.sub( r'\n(\s*)(?!")(\S+)\s*:', r'\n\1"\2":', fixed_json)
                 print "Adding quotes to hex values in %s"% (in_cfg)
-                fixed_json = re.sub( r'[^"]0x([a-fA-F0-9]+)(,?|$)', r'"0x\1"\2', fixed_json)
+                fixed_json = re.sub( r'[^"]0x([a-fA-F0-9]+)(,?|$)', lambda m: lambda_hextoint(m.groups()), fixed_json)
                 fixed_json = re.sub( r',\s*}', r'\n}', fixed_json)
                 fixed_json = remove_trailing_commas(fixed_json)
 		f = open("%s" % out_cfg, 'w')
 		f.write(fixed_json)
+
+def lambda_hextoint(x):
+    return str(int(x[0], 16))+x[1]
 
 #Remove comments in json file
 def remove_comments(json_like):
