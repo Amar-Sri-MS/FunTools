@@ -26,10 +26,12 @@ csr_prop_t& csr_grp_t::operator[](const uint8_t& inst) {
     assert(inst < csr_props.size());
     return csr_props[inst];
 }
-void csr_grp_t::set_base(const uint64_t& base_addr) {
+void csr_grp_t::set_an_props(const uint64_t& base_addr,
+        const uint8_t& n_an_inst,
+        const uint64_t& skip_addr) {
     m_base += base_addr;
     for (auto& m_elem: csr_props) {
-        m_elem._set_base(m_base);
+        m_elem._set_an_props(m_base, n_an_inst, skip_addr);
     }
 }
 

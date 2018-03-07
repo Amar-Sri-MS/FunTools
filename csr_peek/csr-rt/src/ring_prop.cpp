@@ -6,70 +6,117 @@
  *  Copyright © 2018 Fungible Inc. All rights reserved.
  */
 #include <cassert>
-//#include <cstdarg>
 #include <memory>
 #include <vector>
 
 #include "csr_an.h"
 #include "ring_prop.h"
 
-ring_prop_t::ring_prop_t(const uint64_t& b_addr):base_addr(b_addr) {}
+ring_node_t::ring_node_t(const std::string& _name,
+        const uint8_t& _level):name(_name), level(_level){}
 
-/*
-csr_grp_t& ring_prop_t::operator[](const std::string& name) {
-    auto it = csr_prop.find(name);
-    assert (it != csr_prop.end());
-    return it->second;
+bool ring_node_t::operator==(const ring_node_t& other) const {
+    return ((other.name == name) && (other.level == level));
 }
-*/
 
+uint8_t ring_node_t::get_level(void) const { return level; }
+const char* ring_node_t::get_name(void) const { return name.c_str(); }
 
+std::unordered_map<std::string, uint8_t, string_hash> ring_prop_t::an_id_map;
 
-/*
-addr_node_t* ring_prop_t::add_an(const uint8_t& n_args, ...) {
-    va_list args;
-    va_start(args, n_args);
-    std::vector<addr_node_t> nodes;
-    for (auto i = 0; i < n_args; i ++) {
-        nodes.emplace_back(va_arg(args, const char*));
+ring_prop_t::ring_prop_t(
+        const uint64_t& b_addr):base_addr(b_addr) {}
+
+ring_prop_t& ring_prop_t::operator()(const std::string& str) {
+    ring_node_t ring_node{str, curr_lvl};
+    auto it = addr_tree.find(ring_node);
+    if (it != addr_tree.end()) {
+        curr_key = str;
+        curr_lvl ++;
+        return (*this);
+    } else {
+        std::cout <<"No node :" << str << "at level " << static_cast<uint16_t>(curr_lvl) << std::endl;
+        assert(false);
     }
-    va_end(args);
-    return _construct(nodes);
 }
-*/
 
-addr_node_t* ring_prop_t::add_an(const std::vector<std::string>& hier, const uint32_t& n_addr) {
-    std::vector<addr_node_t> nodes;
-    uint64_t rba = ((base_addr & 0xFF00000000) | (n_addr & 0xFFFFFFFF));
+addr_node_t* ring_prop_t::add_an(
+        const std::vector<std::string>& hier,
+        const uint32_t& an_addr,
+        const uint8_t& n_inst,
+        const uint32_t& skip_addr) {
+    /*
+     * First, create the address node
+     */
+    auto name = hier[hier.size() - 1];
+
+    uint64_t rba = ((base_addr & 0xFF00000000) | (an_addr & 0xFFFFFFFF));
+    auto start_id = an_id_map[name];
+    auto p = new addr_node_t(name,
+            rba,
+            start_id,
+            n_inst,
+            skip_addr);
+    an_id_map[name] += n_inst;
+
+    /*
+     * Next insert it into the tree
+     */
+    uint8_t level = 0;
     for (auto& elem: hier) {
-         nodes.emplace_back(elem, rba);
-    }
-    return _construct(nodes);
-}
-
-
-addr_node_t* ring_prop_t::_construct(const std::vector<addr_node_t>& tmp_vec) {
-    uint16_t idx = 0;
-    addr_node_t* m_elem{nullptr};
-    while(idx < tmp_vec.size()) {
-        auto curr_elem = tmp_vec[idx];
-        if (idx == 0) {
-            m_elem = _get(curr_elem);
+        auto ring_p = ring_node_t(elem, level);
+        auto it = addr_tree.equal_range(ring_p);
+        if (it.first == it.second) {
+            addr_tree.emplace(std::make_pair(ring_p, p));
         } else {
-            m_elem = m_elem->get(curr_elem);
+            auto found = false;
+            for (auto its = it.first; its != it.second; its ++) {
+                if (its->second == p) {
+                    found = true;
+                    break;
+                }
+            }
+            if (not found) {
+                addr_tree.emplace(std::make_pair(ring_p, p));
+            }
         }
-        idx ++;
+        level ++;
     }
-    return m_elem;
-}
-
-addr_node_t* ring_prop_t::_get(const addr_node_t& elem) {
-    for (auto& m_elem : children) {
-        if (*m_elem == elem) {
-            return m_elem;
-        }
-    }
-    auto p = new addr_node_t(elem);
-    children.emplace_back(p);
     return p;
 }
+
+/*
+iterator ring_prop_t::begin() noexcept {
+    if(curr_key.empty()) {
+        return nullptr;
+    } else {
+        auto lst = addr_tree.equal_range(std::forward_as_tuple(curr_key, curr_lvl));
+        return lst.first;
+    }
+}
+iterator ring_prop_t::end() noexcept {
+    if(curr_key.empty()) {
+        return nullptr;
+    } else {
+        auto lst = addr_tree.equal_range(std::forward_as_tuple(curr_key, curr_lvl));
+        return lst.second;
+    }
+}
+
+iterator ring_prop_t::cbegin() noexcept {
+    if(curr_key.empty()) {
+        return nullptr;
+    } else {
+        auto lst = addr_tree.equal_range(std::forward_as_tuple(curr_key, curr_lvl));
+        return lst.first;
+    }
+}
+iterator ring_prop_t::cend() noexcept {
+    if(curr_key.empty()) {
+        return nullptr;
+    } else {
+        auto lst = addr_tree.equal_range(std::forward_as_tuple(curr_key, curr_lvl));
+        return lst.second;
+    }
+}
+*/

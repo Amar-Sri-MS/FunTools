@@ -13,7 +13,11 @@
 
 class addr_node_t {
     public:
-        addr_node_t(const std::string& name, const uint64_t& addr);
+        addr_node_t(const std::string& name,
+               const uint64_t& addr,
+               const uint8_t& start_id,
+               const uint8_t& n_instance,
+               const uint64_t& skip_addr);
 
         addr_node_t(const addr_node_t& other);
         addr_node_t& operator=(const addr_node_t& other);
@@ -29,13 +33,16 @@ class addr_node_t {
 
         bool operator==(const addr_node_t& other) const;
         bool operator!=(const addr_node_t& other) const;
-        addr_node_t* get(const addr_node_t& elem);
 
     private:
         std::string name;
-        std::vector<addr_node_t*> children;
-        std::map<std::string, csr_grp_t> csr_props;
         uint64_t base_addr{0};
+        uint8_t start_id{0};
+        uint8_t n_instances{1};
+        uint64_t skip_addr{0};
+
+        std::map<std::string, csr_grp_t> csr_props;
+
         /* For the final addr_node list of all the csrs */
 
 };

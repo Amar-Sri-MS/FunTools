@@ -22,7 +22,9 @@ class csr_grp_t {
                 const uint8_t& n_inst=1
                 );
         csr_prop_t& operator[](const uint8_t& inst);
-        void set_base(const uint64_t& base_addr);
+        void set_an_props(const uint64_t& base_addr,
+                const uint8_t& n_an_inst,
+                const uint64_t& skip_addr);
         void set_gid(const uint8_t& gid);
         void set_rd_cb(rd_fptr r_fn=nullptr);
         void set_wr_cb(wr_fptr w_fn=nullptr);

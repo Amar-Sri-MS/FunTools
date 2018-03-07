@@ -6,7 +6,7 @@
  *  Copyright © 2018 Fungible Inc. All rights reserved.
  */
 #pragma once
-#include <map>
+#include <unordered_map>
 #include "ring_prop.h"
 
 class ring_coll_t {
@@ -20,6 +20,6 @@ class ring_coll_t {
 
     private:
         std::string ring_name;
-        std::map<uint8_t, ring_prop_t> r_props;
+        std::unordered_map<uint8_t, ring_prop_t> r_props;
 
 };

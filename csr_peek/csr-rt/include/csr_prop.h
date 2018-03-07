@@ -42,6 +42,12 @@ class csr_prop_t {
          void raw_wr(uint8_t* raw_buf, const uint32_t& e_idx = 0);
          void raw_rd(uint8_t* raw_buf, const uint32_t& e_idx = 0);
 
+
+         /*
+          * Get the address given an instance number
+          */
+         uint64_t addr(const uint32_t& i_num=0, const uint32_t& e_num=0) const;
+
          uint16_t sz() const;
          void release();
 
@@ -51,6 +57,8 @@ class csr_prop_t {
         CSR_TYPE type;
         uint32_t addr_w{0};
         uint32_t n_entries{1};
+        uint8_t num_an_nodes{1};
+        uint64_t skip_addr{0};
         uint16_t buf_sz{0};
         bool is_init{false};
         rd_fptr r_fn{nullptr};
@@ -59,7 +67,9 @@ class csr_prop_t {
         void __init(void);
 
         friend class csr_grp_t;
-        void _set_base(const uint64_t& base_addr);
+        void _set_an_props(const uint64_t& base_addr,
+                const uint8_t& num_an,
+                const uint64_t& skip_addr);
         void _set_rd_cb(rd_fptr r_fn = nullptr);
         void _set_wr_cb(wr_fptr w_fn = nullptr);
 };

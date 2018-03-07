@@ -11,7 +11,7 @@ import argparse
 import os
 from module_path import module_locator
 from csr.utils.yml import YML_Reader, CSR_YML_Reader
-from csr.utils.artifacts import CSRRoot, Walker
+from csr.utils.artifacts import CSRRoot, Walker, RingUtil
 #from csr.schema.csr_tree import CSRTree
 
 class Slurper(object):
@@ -56,17 +56,25 @@ class Slurper(object):
         yml_dir = os.path.join(args.csr_defs, "inc")
         amap_file = os.path.join(args.csr_defs, "AMAP")
         ring_file = os.path.join(args.csr_defs, "ringAN.yaml")
-        self.root = None
 
         # First populate the top level root
         # Only populates the address attribute
-        csr_rings = CSRRoot(amap_file)
+        csr_root = CSRRoot(amap_file)
+
 
         # Next, get the ring structure
         p = YML_Reader()
         yml_stream = p.read_file(ring_file)
         w = Walker(yml_stream)
         print "{}".format(w)
+
+        # Create the address node hierarchy
+        r_util = RingUtil()
+        for an_lst in w.get_ans():
+            r_class, r_inst = r_util.get_info(an_lst[0])
+            csr_root.add_an(r_class, r_inst, an_lst)
+
+
 
         # Next, setup the collection such that for every
 
