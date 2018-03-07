@@ -89,6 +89,13 @@ test_fun_hci_validation:
 test_fun_port_validation:
 	./validate_gen $(FUN_HCI_DIR)/fun_port.gen pack
 
+# Tests building the current fun_hci.gen file on Linux.
+test_fun_hci_linux_dump:
+	./generator.py -g linux -c pack,swap,json -o $(BUILD)/dump_linux $(FUN_HCI_DIR)/fun_hci.gen
+	gcc -o $(BUILD)/linux_dump -g -I$(BUILD) -Itest_helper test_helper/linux_dump.c $(BUILD)/dump_linux.c
+	$(BUILD)/linux_dump > /tmp/json_dump_out
+	python test_helper/parse_json.py /tmp/json_dump_out
+
 $(BUILD): $(BUILD)
 	mkdir $(BUILD)
 

@@ -146,6 +146,20 @@ static inline void {{struct.name}}_init(struct {{struct.init_struct().name}} *s{
   {% endfor %}
 }
 
+{% if generate_json %}
+#ifndef __KERNEL__
+
+extern void {{struct.name}}_dump_internal(FILE *file_des, {{struct.DeclarationString()}} *s, uint8_t include_type);
+
+/* Print out structure in JSON format.
+ * file_des: file descriptor to write output to.
+ * s: pointer to struct to dump.
+ */
+extern void {{struct.name}}_dump(FILE *file_des, {{struct.DeclarationString()}} *s);
+
+#endif  //__KERNEL__
+
+{% endif %}
 /* End of helper macros for structure {{struct.name}} */
 {%- endmacro %}
 {#
@@ -173,6 +187,9 @@ The body of the header.
 #define cpu_to_le32(x)		htole32(x)
 #define cpu_to_le16(x)		htole16(x)
 #endif
+{% if generate_json %}
+#include <stdio.h>
+{% endif %}
 
 // Header created by generator.py
 // Do not change this file;
