@@ -12,7 +12,7 @@
 #include <vector>
 
 #include "csr_an.h"
-#include "csr_grp.h"
+#include "csr_prop.h"
 #include "csr_s.h"
 
 #include "ring_coll.h"
@@ -38,8 +38,8 @@ class F1NS {
         inline const_iterator cend() const noexcept { return sys_rings.cend(); }
 
         ring_coll_t& operator[](const std::string& name);
-        csr_prop_t& get_csr(const std::string& csr_name, const uint8_t& inst=0);
-        void add_csr(addr_node_t* an, const std::string& name, csr_grp_t& csr);
+        csr_prop_t& get_csr(const std::string& csr_name, const uint8_t& inst_num=0);
+        void add_csr(addr_node_t* an, const std::string& name, csr_prop_t& csr);
 
     private:
         /*

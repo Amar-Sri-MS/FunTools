@@ -18,6 +18,15 @@ addr_node_t::addr_node_t(const addr_node_t& other):
     csr_props(other.csr_props) {
 
 }
+uint8_t addr_node_t::get_num_nodes(void) const {
+    return n_instances;
+}
+
+uint8_t addr_node_t::get_start_id(void) const {
+    return start_id;
+}
+
+
 
 addr_node_t& addr_node_t::operator=(const addr_node_t& other) {
     if (this != &other) {
@@ -45,25 +54,29 @@ addr_node_t::addr_node_t(const std::string& _name,
 
 void addr_node_t::add_csr(
         const std::string& name,
-        csr_grp_t& csr,
+        csr_prop_t& csr,
         rd_fptr r_fn,
         wr_fptr w_fn
         ) {
     if (r_fn) {
-        csr.set_rd_cb(r_fn);
+        csr._set_rd_cb(r_fn);
     }
     if (w_fn) {
-        csr.set_wr_cb(w_fn);
+        csr._set_wr_cb(w_fn);
     }
-    csr.set_an_props(base_addr, n_instances, skip_addr);
-    csr_props.insert(std::make_pair(name, csr));
+    csr._set_an_props(base_addr, n_instances, skip_addr);
+    csr_props.emplace(std::make_pair(name, csr));
 }
 
 csr_prop_t& addr_node_t::get_csr(const std::string& csr_name,
         const uint8_t& gid_num) {
     auto it = csr_props.find(csr_name);
     assert (it != csr_props.end());
-    return (it->second).get_csr(gid_num-start_id);
+    /*
+    std::cout << "AN:GID:" << static_cast<uint16_t>(gid_num)
+        << ":ST_ID: " << static_cast<uint16_t>(start_id) << std::endl;
+    */
+    return (it->second)._get_csr(gid_num-start_id);
 }
 
 bool addr_node_t::operator==(const addr_node_t& other) const {

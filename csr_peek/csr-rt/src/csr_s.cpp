@@ -30,9 +30,14 @@ csr_s& csr_s::operator=(const csr_s& other) {
 }
 csr_s::csr_s(void){}
 
-uint16_t csr_s::_get_addr_w(const uint16_t& w) const {
+uint16_t csr_s::_get_addr_w(void) const {
+    return __get_addr_w(sz());
+
+}
+
+uint16_t csr_s::__get_addr_w(const uint16_t& w) const {
     if (w <= 64) return 8;
-    return (_get_addr_w(w >> 1) << 1);
+    return (__get_addr_w(w >> 1) << 1);
 }
 
 void csr_s::_initialize(void) {

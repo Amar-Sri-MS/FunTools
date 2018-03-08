@@ -6,6 +6,8 @@
  *  Copyright © 2018 Fungible Inc. All rights reserved.
  */
 #include <cassert>
+#include <iomanip>
+#include <iostream>
 #include <memory>
 #include <vector>
 
@@ -27,17 +29,23 @@ std::unordered_map<std::string, uint8_t, string_hash> ring_prop_t::an_id_map;
 ring_prop_t::ring_prop_t(
         const uint64_t& b_addr):base_addr(b_addr) {}
 
-ring_prop_t& ring_prop_t::operator()(const std::string& str) {
-    ring_node_t ring_node{str, curr_lvl};
-    auto it = addr_tree.find(ring_node);
-    if (it != addr_tree.end()) {
-        curr_key = str;
-        curr_lvl ++;
-        return (*this);
-    } else {
-        std::cout <<"No node :" << str << "at level " << static_cast<uint16_t>(curr_lvl) << std::endl;
-        assert(false);
+std::vector<addr_node_t*>
+ring_prop_t::get_anodes(const std::vector<std::string>& hier) {
+    uint8_t lvl = 0;
+    std::vector<addr_node_t*> m;
+    for (auto& elem: hier) {
+        ring_node_t ring_node{elem, lvl};
+        auto it = addr_tree.equal_range(ring_node);
+        if (it.first != it.second) {
+            for (auto m_its = it.first; m_its != it.second; m_its ++) {
+                m.emplace_back(m_its->second);
+            }
+
+        } else break;
+        lvl ++;
     }
+    return m;
+
 }
 
 addr_node_t* ring_prop_t::add_an(
@@ -51,12 +59,24 @@ addr_node_t* ring_prop_t::add_an(
     auto name = hier[hier.size() - 1];
 
     uint64_t rba = ((base_addr & 0xFF00000000) | (an_addr & 0xFFFFFFFF));
+
     auto start_id = an_id_map[name];
+   /*
+    std::cout << "ADD:AN:"
+        << name << ":ADDR:0x"
+        << std::setw(8) << std::setfill('0') << std::hex << an_addr
+        << ":ST_INST:" << static_cast<uint16_t>(start_id)
+        << ":NINST:" << static_cast<uint16_t>(n_inst)
+        << ":SKIP_ADDR:0x" << skip_addr
+        << std::setw(10) << std::hex << ":E_ADDR:0x" << rba
+        << std::endl;
+    */
     auto p = new addr_node_t(name,
             rba,
             start_id,
             n_inst,
             skip_addr);
+    //std::cout << "ALLOC:AN:" << name << ":PTR:0x" << std::hex << p << std::endl;
     an_id_map[name] += n_inst;
 
     /*
@@ -67,6 +87,11 @@ addr_node_t* ring_prop_t::add_an(
         auto ring_p = ring_node_t(elem, level);
         auto it = addr_tree.equal_range(ring_p);
         if (it.first == it.second) {
+            /*
+            std::cout << "INSERT:AN:" << elem
+                << ":LVL: " << static_cast<uint16_t>(level)
+                << ":PTR:0x" << std::hex << p << std::endl;
+                */
             addr_tree.emplace(std::make_pair(ring_p, p));
         } else {
             auto found = false;
@@ -77,6 +102,11 @@ addr_node_t* ring_prop_t::add_an(
                 }
             }
             if (not found) {
+                /*
+                std::cout << "INSERT:AN: " << elem
+                    << ":LVL: " << static_cast<uint16_t>(level)
+                    << ":PTR: 0x" << std::hex << p << std::endl;
+                    */
                 addr_tree.emplace(std::make_pair(ring_p, p));
             }
         }
@@ -84,39 +114,3 @@ addr_node_t* ring_prop_t::add_an(
     }
     return p;
 }
-
-/*
-iterator ring_prop_t::begin() noexcept {
-    if(curr_key.empty()) {
-        return nullptr;
-    } else {
-        auto lst = addr_tree.equal_range(std::forward_as_tuple(curr_key, curr_lvl));
-        return lst.first;
-    }
-}
-iterator ring_prop_t::end() noexcept {
-    if(curr_key.empty()) {
-        return nullptr;
-    } else {
-        auto lst = addr_tree.equal_range(std::forward_as_tuple(curr_key, curr_lvl));
-        return lst.second;
-    }
-}
-
-iterator ring_prop_t::cbegin() noexcept {
-    if(curr_key.empty()) {
-        return nullptr;
-    } else {
-        auto lst = addr_tree.equal_range(std::forward_as_tuple(curr_key, curr_lvl));
-        return lst.first;
-    }
-}
-iterator ring_prop_t::cend() noexcept {
-    if(curr_key.empty()) {
-        return nullptr;
-    } else {
-        auto lst = addr_tree.equal_range(std::forward_as_tuple(curr_key, curr_lvl));
-        return lst.second;
-    }
-}
-*/

@@ -22,6 +22,7 @@ cfg:build
 
 
 cfg_pull:build
+	sudo apt-get install nfs-common
 	cd csr; csr-get
 
 clean:

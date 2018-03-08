@@ -25,22 +25,26 @@ csr_prop_t& F1NS::get_csr(const std::string& csr_name,
 
 void F1NS::add_csr(addr_node_t* an,
         const std::string& name,
-        csr_grp_t& csr) {
+        csr_prop_t& csr) {
 
         auto it = csr_addrs.find(name);
-        uint8_t st_gid = 0;
 
         if (it != csr_addrs.end()) {
-            st_gid = (it->second).size();
-            (it->second).emplace_back(an);
+            assert(an->get_start_id() == (it->second).size());
+            for(auto i = 0; i < an->get_num_nodes(); i ++) {
+                (it->second).emplace_back(an);
+            }
+
         } else {
             std::vector<addr_node_t*> p;
-            p.emplace_back(an);
+            assert(an->get_start_id() == 0);
+            for(auto i = 0; i < an->get_num_nodes(); i ++) {
+                p.emplace_back(an);
+            }
             csr_addrs.emplace(std::piecewise_construct,
                     std::forward_as_tuple(name),
                     std::forward_as_tuple(p));
         }
-        csr.set_gid(st_gid);
         an->add_csr(name, csr, m_rd_fn, m_wr_fn);
 
 }

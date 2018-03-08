@@ -12,7 +12,7 @@
 #include <vector>
 
 #include "csr_an.h"
-#include "csr_grp.h"
+#include "csr_prop.h"
 #include "csr_type.h"
 #include "csr_utils.h"
 
@@ -46,26 +46,17 @@ class ring_prop_t {
                const uint32_t& base_addr,
                const uint8_t& n_instances=1,
                const uint32_t& addr_skip=0x0);
+       std::vector<addr_node_t*> get_anodes(const std::vector<std::string>& hier);
 
-       ring_prop_t& operator()(const std::string& n_key);
-       /*
-       typedef addr_node_t* iterator;
-       typedef const addr_node_t* const_iterator;
-       iterator begin() noexcept;
-       iterator end() noexcept;
-       const_iterator cbegin() const noexcept;
-       const_iterator cend() const noexcept;
-        */
    private:
        /*
         * Keeps a map of number of instances of a particular
-        * address node that have been seen so far
+        * address node that have been seen so far. Keeps a global ordering
+        * of all instance ids across all rings
         */
 
        static std::unordered_map<std::string, uint8_t,
            string_hash> an_id_map;
        uint64_t base_addr;
        std::unordered_multimap<ring_node_t, addr_node_t*> addr_tree;
-       std::string curr_key;
-       uint8_t curr_lvl{0};
 };

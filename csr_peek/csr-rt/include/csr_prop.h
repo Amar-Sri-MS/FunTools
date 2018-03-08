@@ -18,13 +18,11 @@ typedef void (*rd_fptr)(uint64_t addr, uint8_t* arr);
 typedef void (*wr_fptr)(uint64_t addr, uint8_t* arr);
 
 
-class csr_grp_t;
 class csr_prop_t {
     public:
         explicit csr_prop_t(const std::shared_ptr<csr_s>& sign,
                 const uint64_t& addr,
                 const CSR_TYPE& type,
-                const uint16_t& addr_w,
                 const uint32_t& n_entries=1);
         /*
          *
@@ -46,7 +44,7 @@ class csr_prop_t {
          /*
           * Get the address given an instance number
           */
-         uint64_t addr(const uint32_t& i_num=0, const uint32_t& e_num=0) const;
+         uint64_t addr(const uint32_t& e_num=0) const;
 
          uint16_t sz() const;
          void release();
@@ -55,28 +53,32 @@ class csr_prop_t {
         std::shared_ptr<csr_s> sign;
         uint64_t m_addr;
         CSR_TYPE type;
-        uint32_t addr_w{0};
         uint32_t n_entries{1};
         uint8_t num_an_nodes{1};
         uint64_t skip_addr{0};
         uint16_t buf_sz{0};
+        uint32_t addr_w{0};
+        uint8_t start_id{0};
+        uint8_t curr_inst{0};
         bool is_init{false};
         rd_fptr r_fn{nullptr};
         wr_fptr w_fn{nullptr};
 
         void __init(void);
 
-        friend class csr_grp_t;
+        friend class addr_node_t;
         void _set_an_props(const uint64_t& base_addr,
                 const uint8_t& num_an,
                 const uint64_t& skip_addr);
+        csr_prop_t& _get_csr(const uint8_t& e_num);
+
         void _set_rd_cb(rd_fptr r_fn = nullptr);
         void _set_wr_cb(wr_fptr w_fn = nullptr);
 };
 
 template <typename T>
 void csr_prop_t::set(const std::string& fld_name, const T& val, uint8_t* raw_buf) {
-    std::cout << "ADDR:0x" << std::hex << m_addr << ":FLD: " << fld_name << ":VAL: " << val << std::endl;
+    std::cout << "FLD: " << fld_name << ":VAL: " << val << std::endl;
     __init();
     sign->_set(fld_name, val, raw_buf);
 

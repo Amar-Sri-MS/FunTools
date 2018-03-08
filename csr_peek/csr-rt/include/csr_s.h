@@ -76,8 +76,8 @@ class csr_s {
         template <typename T>
             void __convert(const std::string& f_name, const T& val, uint8_t* val_arr);
 
-        friend class csr_grp_t;
-        uint16_t _get_addr_w(const uint16_t& width) const;
+        uint16_t __get_addr_w(const uint16_t& width) const;
+        uint16_t _get_addr_w(void) const;
 
 
         friend std::ostream& operator<<(std::ostream& os, const csr_s& obj);

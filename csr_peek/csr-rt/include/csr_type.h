@@ -8,5 +8,6 @@
 #pragma once
 enum class CSR_TYPE {
     REG,
+    REG_LST,
     TBL
 };
