@@ -73,6 +73,8 @@ def standardize_json(in_cfg, out_cfg):
 
 		f = open("%s" % out_cfg, 'w')
 		f.write(fixed_json)
+		f.close()
+
 
 def lambda_hextoint(x):
     return str(int(x[0], 16))+x[1]
@@ -200,11 +202,11 @@ def generate_hwcap_config(build):
 
         for cfg in glob.glob(input_base +"/sku/hwcap/*.cfg"):
 		print "handling hwcap configs %s" % cfg
-		standardize_json(cfg, cfg+'.tmp')
-		f = open("%s.tmp" % cfg, 'r')
+		f = tempfile.NamedTemporaryFile(mode="r")
+		standardize_json(cfg, f.name)
+		#TODO(nponugoti): Pass the string json instead of file
 		cfg_j = json.load(f)
-		f.close()
-		os.system('rm %s.tmp' % cfg)
+		f.close() # auto-delete
 		hwcap_cfg = merge_dicts(hwcap_cfg, cfg_j)
 
 # generate all sku specific json
@@ -338,11 +340,11 @@ def generate_hwcap_data_catalog():
 
     for cfg in glob.glob(input_base +"/sku/hwcap/*catalog.cfg"):
 	    print "handling hwcap catalog %s" % cfg
-	    standardize_json(cfg, cfg+'.tmp')
-	    f = open("%s.tmp" % cfg, 'r')
+	    f = tempfile.NamedTemporaryFile(mode="r")
+	    print "working with temp file %s" % f.name
+	    standardize_json(cfg, f.name)
 	    cfg_j = json.load(f)
-	    f.close()
-	    os.system('rm %s.tmp' % cfg)
+	    f.close() # auto-deleted
 	    cfg_data_catalog = merge_dicts(cfg_data_catalog, cfg_j)
 
 #Generate c header file for the config data catalog
