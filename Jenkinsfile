@@ -265,8 +265,10 @@ def checkoutRepo() {
 def cleanWorkspace() {
 	// storage clean up
 	dir ('FunSDK/integration_test') {
+		// Run cleanup as root as a failed qemu based test could leave
+		// behind files owned by root - SWOS-761
 		sh '''
-		./test_runner.py --test common/test_cleanup
+		sudo -E ./test_runner.py --test common/test_cleanup
 		'''
 	}
 }
@@ -359,7 +361,7 @@ def testRun() {
 		timestamps {
 			echo 'Running: host integration test'
 			dir('FunSDK/integration_test') {
-				sh "sudo -E ./test_runner.py --test host"
+				sh "./test_runner.py --test host"
 			}
 		    echo 'Done: host integration test'
 		} // timestamps
@@ -441,6 +443,16 @@ def archive() {
 	// where we put interim build pieces
     	String SDK_BUILD_DIR = "${WORKSPACE}/build"
 
+	// where the projectdb.json is
+	String PROJECTDB = "${WORKSPACE}/FunSDK/scripts/projectdb.json"
+
+	if (fileExists(PROJECTDB)) {
+	    sh 'echo projectdb.json exists'
+	    sh "cat ${PROJECTDB}"
+	} else {
+	    sh 'echo projectdb.json is missing'
+	}
+
 	if (env.BRANCH_NAME == "master") {
 
 		echo "archiving files"
@@ -460,7 +472,12 @@ def archive() {
 
 		// scp build number to root
 		sh "scp $C ${SDK_BUILD_DIR}/build_info.txt ${ARCHIVE_SERVER}:${OUTPUT_ARCHIVE_DIR}/${BUILD_NUMBER}_prelim"
-			
+
+
+		if (fileExists(PROJECTDB)) {
+		    sh "scp $C ${PROJECTDB} ${ARCHIVE_SERVER}:${OUTPUT_ARCHIVE_DIR}/${BUILD_NUMBER}_prelim"
+		}
+
 		// scp files
 		sh "scp $C ${SDK_BUILD_DIR}/*.tgz ${ARCHIVE_SERVER}:${OUTPUT_ARCHIVE_DIR}/${BUILD_NUMBER}_prelim/${BUILD_OS}"
 
