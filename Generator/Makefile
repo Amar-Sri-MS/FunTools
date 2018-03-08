@@ -22,7 +22,8 @@ GENERATOR_SRC = generator.py \
 		header.tmpl \
 		source.tmpl \
                 kernel.tmpl \
-	        header-linux.tmpl
+	        header-linux.tmpl \
+		source-linux.tmpl
 
 test: generator-test test_rdma_packed test_rdma_packed_html
 test: test_simple_validation test_packed_validation test_swap
