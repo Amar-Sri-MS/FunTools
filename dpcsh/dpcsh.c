@@ -13,13 +13,18 @@
 #include <signal.h>            //termios, TCSANOW, ECHO, ICANON
 #include <pthread.h>
 #include <netinet/in.h>		// TCP socket
+#include <arpa/inet.h>
 
 #define PLATFORM_POSIX	1
 
 #include <utils/threaded/fun_json.h>
 #include <utils/threaded/fun_commander.h>
+#include <utils/threaded/fun_malloc_threaded.h>
 
 #define SOCK_NAME	"/tmp/funos-dpc.sock"
+#define DPC_PORT 40220
+
+#define MAX_ARGS 3
 
 static inline void _setnosigpipe(int const fd) {
 #ifdef __APPLE__
@@ -31,7 +36,41 @@ static inline void _setnosigpipe(int const fd) {
 #endif
 }
 
-static int _open_sock(const char *name) {
+bool unix_port = true;
+
+static int _open_sock_inet(uint16_t port) {
+	int sock = 0;
+	struct sockaddr_in serv_addr;
+
+	if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+    {
+        printf("\n Socket creation error \n");
+        return sock;
+    }
+	_setnosigpipe(sock);
+    
+    memset(&serv_addr, '0', sizeof(serv_addr));
+    
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_port = htons(port);
+    
+    // Convert IPv4 and IPv6 addresses from text to binary form
+    if(inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr)<=0)
+    {
+        printf("\nInvalid address/ Address not supported \n");
+        return -1;
+    }
+    
+    if (connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
+    {
+        printf("*** Can't connect\n");
+		perror("connect");
+		exit(1);
+    }
+	return sock;
+}
+
+static int _open_sock_unix(const char *name) {
 	int sock = socket(AF_UNIX, SOCK_STREAM, 0);
 	if (sock <= 0) return sock;
 	_setnosigpipe(sock);
@@ -178,7 +217,11 @@ static void _do_process_cmd(INOUT int *sock, char *line, ssize_t read, uint64_t 
 	if (!ok) {
 	    // try to reopen pipe
 	    printf("Write to socket failed - reopening socket\n");
-	    *sock = _open_sock(SOCK_NAME);
+		if (unix_port) {
+			*sock = _open_sock_unix(SOCK_NAME);
+		} else {
+			*sock = _open_sock_inet(DPC_PORT);
+		}
 	    if (*sock <= 0) {
 		printf("*** Can't reopen socket\n");
 	        fun_json_release(json);
@@ -349,7 +392,12 @@ static bool push_to_dpc_get_reply_to_client(const char *line, INOUT uint64_t *ti
 static void *handle_text_thread(void *arg) {
 	int client_sock = (uintptr_t) arg;
 	printf("New client on socket %d\n", client_sock);
-	int dpc_sock = _open_sock(SOCK_NAME);
+	int dpc_sock = 0;
+	if (unix_port) {
+		dpc_sock = _open_sock_unix(SOCK_NAME);
+	} else {
+		dpc_sock = _open_sock_inet(DPC_PORT);
+	}
 	if (dpc_sock <= 0) {
 		printf("*** Can't open socket to dpc\n");
 		return NULL;
@@ -459,16 +507,18 @@ static void run_proxy(const char *client_sock_name, uint16_t port_num) {
 
 #define HELP	\
 	"\t--help: 		you know\n"\
+	"\t--inet_sock: connection to dpc server through port 40220 OR\n"\
+	"\t--unix_sock: connection to dpc server through port '/tmp/funos-dpc.sock' (default)\n"\
 	"\t--http_proxy:		webproxy, browse 'http://localhost:9001'\n"\
 	"\t--nocli:		no cli mode, type cmd as arg\n"\
 	"\t--text_proxy:		text JSON proxy, use port '/tmp/funos-dpc-text.sock'\n"\
 	"\t--tcp_proxy <port num>:	listens on TCP socket, provide port number\n"
 
-static void _do_cli(int argc, char *argv[], int sock) {
+static void _do_cli(int argc, char *argv[], int sock, int startIndex) {
 	uint64_t tid = 1;
 	char buf[512];
 	int n = 0;
-	for (int i = 2; i < argc; i++) {
+	for (int i = startIndex; i < argc; i++) {
 		n += snprintf(buf + n, sizeof(buf) - n, "%s ", argv[i]);
 		printf("buf=%s n=%d\n", buf, n);
 	}
@@ -485,36 +535,67 @@ int main(int argc, char *argv[]) {
 	bool tcp_proxy_mode = false;
 	bool interractive_mode = false;
 	uint16_t port_num;
+	int i = 1;
+	int num_args;
 
-	if (argc < 2) {
-		interractive_mode = true;
-	} else if (strcmp(argv[1], "--http_proxy") == 0) {
-		http_proxy_mode = true;
-	} else if (strcmp(argv[1], "--text_proxy") == 0) {
-		text_proxy_mode = true;
-	} else if (strcmp(argv[1], "--tcp_proxy") == 0) {
-		tcp_proxy_mode = true;
-		if (argc < 3) { // port number missing
-			printf("*** Plese provide tcp port number\n\n");
-			printf("Usage: \n" HELP "\n");
-			exit(1);
+	num_args = argc < MAX_ARGS ? argc : MAX_ARGS;
+
+	interractive_mode = true;
+	for (i = 1; i < num_args; i++) {
+		printf("args %d: %s\n", i, argv[i]);
+		if (strcmp(argv[i], "--help") == 0) {
+			printf("Help: \n" HELP "\n");
+			return 0;
 		}
-		port_num = atoi(argv[2]);
-
-	} else if (strcmp(argv[1], "--help") == 0) {
-		printf("Help: \n" HELP "\n");
-		return 0;
-	} else if (argc > 2 && strcmp(argv[1], "--nocli") == 0) {
-		interractive_mode = false;
-	} else {
-		printf("*** Usage: \n" HELP "\n");
-		exit(2);
+		if (strcmp(argv[i], "--nocli") == 0) {
+			i++;
+			if (strcmp(argv[i], "--inet_sock") == 0) {
+				unix_port = false;
+				i++;
+			} else if (strcmp(argv[i], "--unix_sock") == 0) {
+				unix_port = true;
+				i++;
+			}
+			interractive_mode = false;
+			break;
+		}
+		//TODO: check if user has provided
+		//1. more than 1 proxy mode arg.
+		//2. more than 1 socket family to be used.
+		if (strcmp(argv[i], "--http_proxy") == 0) {
+			http_proxy_mode = true;
+		} else if (strcmp(argv[i], "--text_proxy") == 0) {
+			text_proxy_mode = true;
+		} else if (strcmp(argv[i], "--tcp_proxy") == 0) {
+			tcp_proxy_mode = true;
+			if (argc <= i+1) { // port number missing
+				printf("*** Plese provide tcp port number\n\n");
+				printf("Usage: \n" HELP "\n");
+				exit(1);
+			}
+			i++;
+			port_num = atoi(argv[i]);
+		} else if (strcmp(argv[i], "--inet_sock") == 0) {
+			unix_port = false;
+		} else if (strcmp(argv[i], "--unix_sock") == 0) {
+			unix_port = true;
+		} else {
+			printf("*** Unknown option\nUsage: \n" HELP "\n");
+			break;
+		}
 	}
+
 	printf("FunOS Dataplane Control Shell%s\n", http_proxy_mode ? ": HTTP proxy mode" : text_proxy_mode ? "\
 		: Text JSON proxy mode" : tcp_proxy_mode ? ": TCP proxy mode" : "");
 
 	/* open a socket to FunOS */
-	int sock = _open_sock(SOCK_NAME);
+	int sock = 0;
+	if (unix_port) {
+		sock = _open_sock_unix(SOCK_NAME);
+	} else {
+		sock = _open_sock_inet(DPC_PORT);
+	}
+
 	if (sock <= 0) {
 		printf("*** Can't open socket\n");
 		exit(1);
@@ -528,7 +609,7 @@ int main(int argc, char *argv[]) {
 	} else if (interractive_mode) {
 		_do_interactive(sock);
 	} else {
-		_do_cli(argc, argv, sock);
+		_do_cli(argc, argv, sock, i);
 	}
 	return 0;
 }

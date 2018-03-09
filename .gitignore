@@ -2,3 +2,4 @@ Generator/*.pyc
 ConfigGen/out/
 jsonutil/jsonutil
 *.o
+*.pyc
