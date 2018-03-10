@@ -7,7 +7,8 @@ BACKEND_INC=-I backends/dummy
 
 LIBINC=-I include -I gen
 
-CXXFLAGS=-Wall -O3 -g -std=c++11 $(LIBINC)
+#CXXFLAGS=-Wall -O3 -g -std=c++11 $(LIBINC)
+CXXFLAGS=-Wall -std=c++11 $(LIBINC)
 
 #driver_src = $(wildcard test/*.cpp)
 driver_src=test/prog.cpp

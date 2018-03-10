@@ -15,7 +15,7 @@ build:
 	$(SUDO) python setup.py install --record files.txt
 
 libcsr:
-	cd csr-rt; make
+	cd csr-rt && astyle -c gen/csr_gen.cpp &&  make
 
 cfg:build
 	csr-slurp -i csr/csr_cfg -o csr-rt/gen
