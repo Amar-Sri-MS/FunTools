@@ -232,6 +232,18 @@ def generate_sku_config(build):
                     print "Adding hwcap of sku %s" % sku
                     final_cfg["skus"][sku].update(hwcap_cfg["skus"][sku])
 
+#Get valid struct fields
+def struct_fields(struct):
+    valid_struct_fields = []
+    for k in struct:
+        if(type(k) != dict):
+            valid_struct_fields.append(k)
+        else:
+            for m in k.keys():
+                valid_struct_fields.append(m)
+    return valid_struct_fields
+
+
 #Generates struct members initialization code
 def generate_struct_member_init(struct, data, shift):
         init_field = Template('.$key = $value,')
@@ -239,7 +251,7 @@ def generate_struct_member_init(struct, data, shift):
         dictItemCount = len(data)
         dictPosition = 1
         for k,v in data.items():
-	    if k in cfg_data_catalog["modules"][struct]["info"]:
+	    if k in struct_fields(cfg_data_catalog["modules"][struct]["info"]):
 	        s += '\t'*shift+init_field.substitute(key=k, value=v)
                 if not (dictPosition == dictItemCount):
                     s+="\n"
