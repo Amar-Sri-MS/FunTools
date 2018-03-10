@@ -5,7 +5,7 @@
 //
 
 // archive server/location for qemu image
-ARCHIVE_SERVER = 'server20'
+ARCHIVE_SERVER = 'jenkins-archive'
 
 // server location for output archiving
 OUTPUT_ARCHIVE_DIR = '/project/users/doc/jenkins/funsdk'
