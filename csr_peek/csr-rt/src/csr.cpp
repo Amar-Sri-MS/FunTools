@@ -25,7 +25,6 @@ csr_prop_t& F1NS::get_csr(const std::string& csr_name,
 
 uint16_t F1NS::num_inst(const std::string& csr_name) const {
     auto it = csr_addrs.find(csr_name);
-    std::cout << "CSR_NAME: " << csr_name << std::endl;
     assert(it != csr_addrs.end());
     auto& ans = it->second;
     return ans.size(); 
