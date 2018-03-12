@@ -61,7 +61,7 @@ addr_node_t* ring_prop_t::add_an(
     uint64_t rba = ((base_addr & 0xFF00000000) | (an_addr & 0xFFFFFFFF));
 
     auto start_id = an_id_map[name];
-   
+    /*   
     std::cout << "ADD:AN:"
         << name << ":ADDR:0x"
         << std::setw(8) << std::setfill('0') << std::hex << an_addr
@@ -70,7 +70,7 @@ addr_node_t* ring_prop_t::add_an(
         << ":SKIP_ADDR:0x" << skip_addr
         << std::setw(10) << std::hex << ":E_ADDR:0x" << rba
         << std::endl;
-    
+    */
     auto p = new addr_node_t(name,
             rba,
             start_id,

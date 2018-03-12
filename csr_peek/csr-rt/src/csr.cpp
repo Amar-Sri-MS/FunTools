@@ -36,9 +36,7 @@ void F1NS::add_csr(addr_node_t* an,
 
         auto it = csr_addrs.find(name);
 
-        std::cout << "AN:" << an->get_name() << "CSR: " << name << std::endl;
         if (it != csr_addrs.end()) {
-            std::cout << "***AN:" << an->get_name() << "CSR: " << name << std::endl;
             //assert(an->get_start_id() == (it->second).size());
             for(auto i = 0; i < an->get_num_nodes(); i ++) {
                 (it->second).emplace_back(an);

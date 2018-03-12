@@ -49,8 +49,8 @@ class Slurper(object):
             assert False, "Yaml: {} not a directory".format(yml_dir)
         if not os.path.exists(os.path.join(y_dir, "AMAP")):
             assert False, "AMAP file does not exist"
-        if not os.path.exists(os.path.join(y_dir, "ringAN.yaml")):
-            assert False, "Ring file does not exist"
+        #if not os.path.exists(os.path.join(y_dir, "ringAN.yaml")):
+        #    assert False, "Ring file does not exist"
     
     def run(self):
         args = self.cmd_parser.parse_args()

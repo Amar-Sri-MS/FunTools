@@ -23,7 +23,7 @@ int main(void) {
      * Get a handle to a CSR by name
      */
 
-    std::string csr_name = "prw_rdm";
+    std::string csr_name = "prs_err_chk_en";
     auto n_instances = ns.num_inst(csr_name);
     std::cout << "CSR:"<< csr_name << std::endl;
 
@@ -54,6 +54,7 @@ int main(void) {
         uint8_t* raw_arr = new uint8_t[csr_h.sz()]();
         for (auto it = csr_h.begin(); it != csr_h.end(); it ++) {
             uint64_t val = 1;
+            if (it->first == "__rsvd") continue;
             csr_h.set(it->first, val, raw_arr); 
         }
         for (uint32_t j = 0; j < n_entries; j ++) {
@@ -62,6 +63,7 @@ int main(void) {
             csr_h.raw_rd(raw_arr, j);
             for (auto it = csr_h.begin(); it != csr_h.end(); it ++) {
                 uint64_t val;
+                if (it->first == "__rsvd") continue;
                 csr_h.get(it->first, val, raw_arr); 
                 assert(val == 1);
             }

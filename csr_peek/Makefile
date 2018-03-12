@@ -7,6 +7,7 @@
 # Do a make distclean to remove all the CSR configurations as well
 
 SUDO = sudo
+INDIR = jsb
 
 all: build
 
@@ -23,7 +24,7 @@ cfg:build
 
 cfg_pull:build
 	sudo apt-get install nfs-common
-	cd csr; csr-get
+	cd csr; csr-get -i $(INDIR)
 
 clean:
 	cat files.txt | sudo xargs rm -rf
@@ -35,4 +36,4 @@ clean:
 
 distclean: clean
 	cd csr/csr_cfg && rm -rf *
-	#cd csr-rt; make distclean
+	cd csr-rt; make distclean
