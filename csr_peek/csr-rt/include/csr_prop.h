@@ -8,6 +8,7 @@
 #pragma once
 
 #include <iostream>
+#include <iterator>
 #include <memory>
 #include <vector>
 
@@ -20,6 +21,9 @@ typedef void (*wr_fptr)(uint64_t addr, uint8_t* arr);
 
 class csr_prop_t {
     public:
+        typedef fld_map_t::iterator iterator;
+        typedef fld_map_t::const_iterator const_iterator;
+
         explicit csr_prop_t(const std::shared_ptr<csr_s>& sign,
                 const uint64_t& addr,
                 const CSR_TYPE& type,
@@ -45,9 +49,14 @@ class csr_prop_t {
           * Get the address given an instance number
           */
          uint64_t addr(const uint32_t& e_num=0) const;
+         uint32_t num_entries(void) const;
 
          uint16_t sz() const;
          void release();
+         inline iterator begin() noexcept { return sign->begin(); }
+         inline iterator end() noexcept { return sign->end(); }
+         inline const_iterator cend() noexcept { return sign->cend(); }
+         inline const_iterator cbegin() noexcept { return sign->cbegin(); }
 
     private:
         std::shared_ptr<csr_s> sign;

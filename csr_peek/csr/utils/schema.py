@@ -19,7 +19,6 @@ class Entity():
         self.attr = 0
         self.type = "CSR_TYPE::REG"
         self.n_entries = 0 
-        self.count = 1
         self.fld_lst = []
         self.width = 0
     def __str__(self):
@@ -44,7 +43,7 @@ class Field():
 
 class Schema():
 
-    ALLOW_LST = ['REGLST', 'WIDTH', 'ATTR', 'FLDLST', 'NAME', 'ENTRIES']
+    ALLOW_LST = ['REGLST', 'WIDTH', 'ATTR', 'COUNT', 'FLDLST', 'NAME', 'ENTRIES']
     #ALLOW_ATTR = [0x4, 0x8]
     ALLOW_ATTR = [0x4]
     MIN_WIDTH = 64
@@ -67,7 +66,14 @@ class Schema():
             return
         p_stream = yml_stream['REGLST']
         for reg_rec in p_stream:
-            assert reg_rec['NAME'] not in m_hash, "Duplicate CSR Names"
+            m_name = reg_rec['NAME'].split('_')
+            if m_name[-1].isdigit():
+                m_name = '_'.join(elem for elem in m_name[:-1])
+            else:
+                m_name = reg_rec['NAME']
+
+            if m_name in m_hash:
+                continue
             e = Entity()
             e.attr = reg_rec.get('ATTR', 0)
             e.width = reg_rec.get('WIDTH', 0)
@@ -84,7 +90,7 @@ class Schema():
                 e.fld_lst.append(Field(fld_elem['NAME'], fld_elem['WIDTH']))
             store = self.__should_store(e)
             if store:
-                m_hash[reg_rec['NAME']] = e
+                m_hash[m_name] = e
         return m_hash
 
     def __update_width(self, lst):

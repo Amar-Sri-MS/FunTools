@@ -16,47 +16,58 @@
 int main(void) {
     /*
      * Get the top level object.
-     * If part of layered stack, pass the raw_rd & raw_wr functions
      */
     auto& ns = F1NS::get(dummy_rd, dummy_wr);
 
     /*
      * Get a handle to a CSR by name
-     * The second parameter (optional) is the instance id
-     * if the CSR has multiple instances
      */
-    auto csr = ns.get_csr("rand_csr_0", 1);
-    auto addr = csr.addr(3);
 
-    std::cout << "LKUP_ADDR: 0x"
-        << std::hex << std::setfill('0')
-        << std::setw(10) << addr << std::endl;
+    std::string csr_name = "prw_rdm";
+    auto n_instances = ns.num_inst(csr_name);
+    std::cout << "CSR:"<< csr_name << std::endl;
 
+    for (auto i = 0; i < n_instances; i ++) {
+        auto csr_h = ns.get_csr(csr_name, i);
+        auto n_entries = csr_h.num_entries();
+        if (i == 0) {
+            std::cout << "*****BEGIN PROPS*****" << std::endl;
+            for (auto it = csr_h.begin(); it != csr_h.end(); it ++) {
+                std::cout << "FLD_NAME: " << it->first << std::endl;
+                std::cout << "FLD_PROP: " << it->second << std::endl;
+            }
+            std::cout << "NUM_INSTANCE:" << n_instances << std::endl;
+            std::cout << "*****END*****" << std::endl;
 
-    //Raw byte array to hold CSR contents
-    uint8_t* raw_arr = new uint8_t[csr.sz()]();
+        }
+        
+        std::cout <<"   I#: " << i << std::endl;
+        std::cout <<"   N_E:" << n_entries << std::endl;
 
-    //Set some fields in the CSR
-    uint64_t val = 15;
-    csr.set("__pad0", val, raw_arr);
-    csr.set("port_blocked", 1, raw_arr);
-
-    /*
-     * Call the raw write. Second parameter (optional) is the entry index, in case of a table
-     * Successful if part of layered stack
-     */
-    csr.raw_wr(raw_arr, 3);
-    std::memset(raw_arr, 0, csr.sz());
-    //Read back, Second parameter(optional) is the entry index, in case of table
-    csr.raw_rd(raw_arr, 3);
-
-    //Decode the individual field values
-    csr.get("__pad0", val, raw_arr);
-    assert(val == 0xF);
-    csr.get("port_blocked", val, raw_arr);
-    assert(val == 1);
-
-    //Release the CSR resources, if no longer in use
-    csr.release();
+        for (uint32_t j = 0; j < n_entries; j ++) {
+            auto addr = csr_h.addr(j);
+            std::cout << "      :E#: " << j << std::endl;
+            std::cout << "      :ADDR:0x" 
+                << std::hex << std::setfill('0')
+                << std::setw(10) << addr << std::endl;
+        }
+        uint8_t* raw_arr = new uint8_t[csr_h.sz()]();
+        for (auto it = csr_h.begin(); it != csr_h.end(); it ++) {
+            uint64_t val = 1;
+            csr_h.set(it->first, val, raw_arr); 
+        }
+        for (uint32_t j = 0; j < n_entries; j ++) {
+            csr_h.raw_wr(raw_arr, j);
+            std::memset(raw_arr, 0, csr_h.sz());
+            csr_h.raw_rd(raw_arr, j);
+            for (auto it = csr_h.begin(); it != csr_h.end(); it ++) {
+                uint64_t val;
+                csr_h.get(it->first, val, raw_arr); 
+                assert(val == 1);
+            }
+        }
+        delete[] raw_arr;
+        csr_h.release();
+    }
     return 0;
 }

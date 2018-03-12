@@ -28,6 +28,7 @@ class addr_node_t {
 
         uint8_t get_num_nodes(void) const;
         uint8_t get_start_id(void) const;
+        std::string get_name(void) const;
         csr_prop_t& get_csr(
                 const std::string& csr_name,
                 const uint8_t& gid);

@@ -40,7 +40,7 @@ class F1NS {
         ring_coll_t& operator[](const std::string& name);
         csr_prop_t& get_csr(const std::string& csr_name, const uint8_t& inst_num=0);
         void add_csr(addr_node_t* an, const std::string& name, csr_prop_t& csr);
-
+        uint16_t num_inst(const std::string& csr_name) const;
     private:
         /*
          * For each ring, NU, HU, HNU etc

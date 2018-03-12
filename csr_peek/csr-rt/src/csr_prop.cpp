@@ -40,6 +40,9 @@ void csr_prop_t::__init(void) {
 
 }
 
+uint32_t csr_prop_t::num_entries(void) const {
+    return n_entries;
+}
 void csr_prop_t::_set_an_props(const uint64_t& addr,
         const uint8_t& n_ans,
         const uint64_t& _skip_addr) {

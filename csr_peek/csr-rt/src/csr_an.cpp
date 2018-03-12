@@ -26,6 +26,9 @@ uint8_t addr_node_t::get_start_id(void) const {
     return start_id;
 }
 
+std::string addr_node_t::get_name(void) const {
+    return name;
+}
 
 
 addr_node_t& addr_node_t::operator=(const addr_node_t& other) {

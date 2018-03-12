@@ -49,16 +49,15 @@ class RingNode(object):
     def __str__(self):
         r_str = "ring_coll_t {}_rng;\n".format(self.name)
         for m_id, m_node in self.instances.iteritems():
-            r_str += "{}_rng.add_ring({}, 0x{:02X});\n".\
+            r_str += "{}_rng.add_ring({}, 0x{:01X});\n".\
                     format(self.name, m_id, m_node.get_addr())
             r_str += "{}".format(m_node)
         return r_str
     __repr__ = __str__
 
 class CSRNode(object):
-    def __init__(self, addr, m_type, addr_range=0):
+    def __init__(self, addr, addr_range=0):
         self.addr = addr
-        self.m_type = m_type
         self.addr_range = addr_range
     def __str__(self):
         r_str = ""
@@ -80,11 +79,8 @@ class ANode(object):
         if csr_arr[-1].isdigit():
             csr_name = '_'.join(elem for elem in csr_arr[:-1])
         csr_lst = self.csrs.get(csr_name, None)
-        csr_type = 'CSR_TYPE::REG'
-        if addr_range:
-            csr_type = 'CSR_TYPE::TBL'
         addr -= self.start_addr    
-        p = CSRNode(addr, csr_type, addr_range)
+        p = CSRNode(addr, addr_range)
         if not csr_lst:
             csr_lst = [p, 1]
         else:
@@ -199,7 +195,7 @@ class RingProps(object):
                 an_csrs = self.csr_map.get(an_name, None)
                 if an_csrs != None:
                     r_str += "{{\n // BEGIN {} \n".format(an_name)
-                    r_str += "auto {}_{} = {}_rng[{}].add_an({{{}}}, 0x{:02X}, {}, 0x{:02X});\n".\
+                    r_str += "auto {}_{} = {}_rng[{}].add_an({{{}}}, 0x{:01X}, {}, 0x{:01X});\n".\
                         format(an_name, idx, self.r_name, self.i_num, 
                                 elem.get_path_str(), elem.start_addr, elem.n_inst, elem.skip_addr);
                     for csr_name, csr_val in an_csrs.get().iteritems():
@@ -216,10 +212,10 @@ class RingProps(object):
                         r_str += "};"
                         r_str += "auto {}_prop = csr_prop_t(\n".format(csr_name)
                         r_str += "std::make_shared<csr_s>({}),\n".format(csr_name)
-                        r_str += "0x{:02X},\n".format(elem.get_csr_addr(csr_name))
+                        r_str += "0x{:01X},\n".format(elem.get_csr_addr(csr_name))
                         r_str += "{},\n".format(csr_val.type)
                         r_str += "{});\n".format(elem.get_num_csr(csr_name))
-                        r_str += "add_csr({}_{}, \"{}_prop\", {}_prop);\n".\
+                        r_str += "add_csr({}_{}, \"{}\", {}_prop);\n".\
                                  format(an_name, idx, csr_name, csr_name)
                                  
                     r_str += " // END {} \n}}\n".format(an_name)
