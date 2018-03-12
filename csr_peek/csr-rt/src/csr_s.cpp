@@ -30,9 +30,14 @@ csr_s& csr_s::operator=(const csr_s& other) {
 }
 csr_s::csr_s(void){}
 
-uint16_t csr_s::_get_addr_w(const uint16_t& w) const {
+uint16_t csr_s::_get_addr_w(void) const {
+    return __get_addr_w(sz());
+
+}
+
+uint16_t csr_s::__get_addr_w(const uint16_t& w) const {
     if (w <= 64) return 8;
-    return (_get_addr_w(w >> 1) << 1);
+    return (__get_addr_w(w >> 1) << 1);
 }
 
 void csr_s::_initialize(void) {
@@ -44,6 +49,11 @@ void csr_s::_initialize(void) {
         __init(it->first, st_off, w);
     }
 }
+void csr_s::_deinit(void) {
+    mask_map.clear();
+    shift_map.clear();
+}
+
 
 uint8_t csr_s::__get_w(const uint8_t& st_off, const uint16_t& width) {
    uint16_t w = 0;

@@ -12,8 +12,8 @@ import shutil
 import subprocess
 
 class CSRPull():
-    HOST='10.1.20.59'
-    PATH='/csr'
+    HOST='10.1.20.52'
+    PATH='/export/rtltop'
     DIRS=['inc']
     FILE_EXT=['*.yaml']
     FILES=['ringAN.yaml', 'AMAP']
@@ -22,19 +22,25 @@ class CSRPull():
 
         self.__check_dir(dst_dir)
 
-        #mnt_dir = "/tmp/csr.{}".format(os.getpid())
-        #self.__rm_dir(mnt_dir)
-        #os.mkdir(mnt_dir)
-        #self.__mount_dir(mnt_dir)
+        mnt_dir = "/tmp/csr.{}".format(os.getpid())
+        self.__rm_dir(mnt_dir)
+        os.mkdir(mnt_dir)
+        self.__mount_dir(mnt_dir)
 
         #TODO: Remove after mounts available
-        mnt_dir = "/tmp/csr.19"
+        #mnt_dir = "/tmp/csr.19"
 
-        src_dir = os.path.join(mnt_dir, "f1", "gen")
+        src_dir = os.path.join(mnt_dir, "jsb", "f1", "gen")
         self.__copy(dst_dir, src_dir)
+        self.__umount(mnt_dir)
+        self.__rm_dir(mnt_dir)
 
     def __mount_dir(self, mnt_dir):
-        mnt_str = "mount -t nfs {}:{} {}".format(CSRPull.HOST, CSRPull.PATH, mnt_dir)
+        mnt_str = "sudo mount -t nfs {}:{} {}".format(CSRPull.HOST, CSRPull.PATH, mnt_dir)
+        subprocess.check_call(mnt_str, shell=True)
+
+    def __umount(self, mnt_dir):
+        mnt_str = "sudo umount {}".format(mnt_dir)
         subprocess.check_call(mnt_str, shell=True)
 
     def __check_dir(self, dirname):

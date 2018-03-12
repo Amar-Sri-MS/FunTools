@@ -66,6 +66,7 @@ class csr_s {
 
         friend class csr_prop_t;
         void _initialize(void);
+        void _deinit(void);
         template <typename T>
             void _set(const std::string& fld_name, const T& val, uint8_t* buf);
 
@@ -75,8 +76,8 @@ class csr_s {
         template <typename T>
             void __convert(const std::string& f_name, const T& val, uint8_t* val_arr);
 
-        friend class csr_grp_t;
-        uint16_t _get_addr_w(const uint16_t& width) const;
+        uint16_t __get_addr_w(const uint16_t& width) const;
+        uint16_t _get_addr_w(void) const;
 
 
         friend std::ostream& operator<<(std::ostream& os, const csr_s& obj);
@@ -124,8 +125,9 @@ template <typename T>
 void csr_s::_get(const std::string& f_name, T& rval, uint8_t* raw_arr) {
 
     rval = 0;
-    auto f_info = fld_map[f_name];
-    auto s_idx = (f_info.fld_off)/8;
+    auto it = fld_map.find(f_name);
+    assert(it != fld_map.end());
+    auto s_idx = ((it->second).fld_off)/8;
     auto mask_arr = mask_map[f_name];
     auto l_shift = shift_map[f_name].second;
     auto r_shift = shift_map[f_name].first;

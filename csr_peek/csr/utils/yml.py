@@ -36,7 +36,8 @@ class CSR_YML_Reader(object):
         for yml_file in glob.glob(os.path.join(dirname, '*.yaml')):
             f_name = os.path.splitext(os.path.basename(yml_file))[0]
             yml_stream = self.__read_file(yml_file)
-            self.csr_schema[f_name] = Schema(yml_stream)
+            f_name = re.sub('(_an)|(_AN)', '', f_name)
+            self.csr_schema[f_name.lower()] = Schema(yml_stream)
 
     def __dump(self, yml_stream):
         lst = []
@@ -76,8 +77,11 @@ class CSR_YML_Reader(object):
         p = YML_Reader()
         yml_stream = p.read_file(f_name)
         assert yml_stream != None, "YAML Load issues for file: {}".format(f_name)
-        yml_stream = self.__remove_symbols(yml_stream, YML_Reader.ALLOW_LST)
+        yml_stream = self.__remove_symbols(yml_stream, CSR_YML_Reader.ALLOW_LST)
         return yml_stream
+
+    def get(self):
+        return self.csr_schema
 
     def __str__(self):
         r_str = ""
