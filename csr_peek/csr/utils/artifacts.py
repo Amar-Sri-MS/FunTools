@@ -228,7 +228,7 @@ class RingProps(object):
 class CSRRoot(object):
     START_RING = r'START_RING'
     END_RING = r'END_RING'
-    IGNORE = [r'ROR:']
+    IGNORE = [r'ROR:', r'ActSize:', r'LEAF:', r'-INFO-:', r'AN:', r'New EA:', r'INST\[']
     RING_DONE = 0
     RING_PROCESS = 1
     IN_RING = 2
@@ -252,7 +252,7 @@ class CSRRoot(object):
         f = open(m_file, "r")
         for line in f:
             if self.__ignore(line):
-                print "IGNORING: {}".format(line)
+                #print "IGNORING: {}".format(line)
                 continue
             if self.__process_ring(line, ring_match):
                 continue
@@ -294,7 +294,7 @@ class CSRRoot(object):
         return True
 
     def __process_root(self, line, ring_match):
-        if not re.search('^ROOT', line):
+        if not re.search('^COUNT', line):
             return False
         #print "{}".format(line)
         coll = line.split(':')
@@ -353,11 +353,16 @@ class CSRRoot(object):
         if len(coll) < 2:
             return
 
-        if len(coll) > 2:
+        ex_coll = coll[1].split()
+        if len(ex_coll) > 2:
+            return
+
+        #print "PROCESSING: {}".format(line)
+        if len(ex_coll) > 1:
             self.curr_rn.add_csr(self.curr_ri, 
                     coll[0].strip(), 
-                    self.__hexlify(coll[1].strip()), 
-                    self.__hexlify(coll[2].strip()))
+                    self.__hexlify(ex_coll[0].strip()), 
+                    self.__hexlify(ex_coll[1].strip()))
         else:
             self.curr_rn.add_csr(self.curr_ri, 
                     coll[0].strip(), 

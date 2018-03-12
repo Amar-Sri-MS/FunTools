@@ -23,7 +23,7 @@ int main(void) {
      * Get a handle to a CSR by name
      */
 
-    std::string csr_name = "prw_rdm";
+    std::string csr_name = "prs_err_chk_en";
     auto n_instances = ns.num_inst(csr_name);
     std::cout << "CSR:"<< csr_name << std::endl;
 

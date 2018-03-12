@@ -117,7 +117,7 @@ uint64_t csr_prop_t::addr(const uint32_t& e_idx) const {
 
 }
 csr_prop_t& csr_prop_t::_get_csr(const uint8_t& i_num) {
-    assert(i_num < num_an_nodes);
+    //assert(i_num < num_an_nodes);
     curr_inst = i_num;
     return *this;
 }
