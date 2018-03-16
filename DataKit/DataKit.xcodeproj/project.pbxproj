@@ -60,6 +60,7 @@
 		A72CC7B71F620BA60058827F /* DKFunctionComposition.swift in Sources */ = {isa = PBXBuildFile; fileRef = A72CC7B61F620BA60058827F /* DKFunctionComposition.swift */; };
 		A72CC7BD1F6A2BD50058827F /* DKNodeFifo.swift in Sources */ = {isa = PBXBuildFile; fileRef = A72CC7BC1F6A2BD50058827F /* DKNodeFifo.swift */; };
 		A72CC7C11F6A2C2F0058827F /* DKFlowGraphGen.swift in Sources */ = {isa = PBXBuildFile; fileRef = A72CC7C01F6A2C2F0058827F /* DKFlowGraphGen.swift */; };
+		A7377095204C9DEE00183612 /* libfunclient.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A7377093204C9D9B00183612 /* libfunclient.a */; };
 		A738879B1F6F175800A2F976 /* DKFunctionGatherFromNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = A738879A1F6F175800A2F976 /* DKFunctionGatherFromNode.swift */; };
 		A738879D1F6F41E400A2F976 /* DKFunctionMap.swift in Sources */ = {isa = PBXBuildFile; fileRef = A738879C1F6F41E400A2F976 /* DKFunctionMap.swift */; };
 		A738879F1F6F533B00A2F976 /* DKFunctionLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = A738879E1F6F533B00A2F976 /* DKFunctionLogger.swift */; };
@@ -106,7 +107,6 @@
 		A7EB137E1F2D73F500760396 /* DKComparisonOperator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7EB137D1F2D73F500760396 /* DKComparisonOperator.swift */; };
 		A7EB13801F2D749D00760396 /* DKAlgebraicOperator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7EB137F1F2D749D00760396 /* DKAlgebraicOperator.swift */; };
 		A7EB13821F2DB43500760396 /* DKEvaluationContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7EB13811F2DB43500760396 /* DKEvaluationContext.swift */; };
-		A7EBED061F9493BB00AFD2F0 /* libfunclient.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A7EBED041F9493B000AFD2F0 /* libfunclient.a */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -176,6 +176,7 @@
 		A72CC7B61F620BA60058827F /* DKFunctionComposition.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKFunctionComposition.swift; sourceTree = "<group>"; };
 		A72CC7BC1F6A2BD50058827F /* DKNodeFifo.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKNodeFifo.swift; sourceTree = "<group>"; };
 		A72CC7C01F6A2C2F0058827F /* DKFlowGraphGen.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKFlowGraphGen.swift; sourceTree = "<group>"; };
+		A7377093204C9D9B00183612 /* libfunclient.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libfunclient.a; path = ../../FunSDK/lib/Darwin/x86_64/libfunclient.a; sourceTree = "<group>"; };
 		A738879A1F6F175800A2F976 /* DKFunctionGatherFromNode.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKFunctionGatherFromNode.swift; sourceTree = "<group>"; };
 		A738879C1F6F41E400A2F976 /* DKFunctionMap.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKFunctionMap.swift; sourceTree = "<group>"; };
 		A738879E1F6F533B00A2F976 /* DKFunctionLogger.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKFunctionLogger.swift; sourceTree = "<group>"; };
@@ -224,7 +225,6 @@
 		A7EB137D1F2D73F500760396 /* DKComparisonOperator.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKComparisonOperator.swift; sourceTree = "<group>"; };
 		A7EB137F1F2D749D00760396 /* DKAlgebraicOperator.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKAlgebraicOperator.swift; sourceTree = "<group>"; };
 		A7EB13811F2DB43500760396 /* DKEvaluationContext.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKEvaluationContext.swift; sourceTree = "<group>"; };
-		A7EBED041F9493B000AFD2F0 /* libfunclient.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libfunclient.a; path = ../../FunSDK/lib/Darwin/noasan/libfunclient.a; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -232,7 +232,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A7EBED061F9493BB00AFD2F0 /* libfunclient.a in Frameworks */,
+				A7377095204C9DEE00183612 /* libfunclient.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -344,7 +344,7 @@
 				A7EB13761F2D16E200760396 /* Test */,
 				A78C2AA61F23D34F0086FAD6 /* DataKit */,
 				A78C2AA51F23D34F0086FAD6 /* Products */,
-				A7EBED041F9493B000AFD2F0 /* libfunclient.a */,
+				A7377093204C9D9B00183612 /* libfunclient.a */,
 				A7EBED051F9493BB00AFD2F0 /* Frameworks */,
 			);
 			sourceTree = "<group>";
@@ -740,7 +740,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/../Frameworks";
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
-					"$(PROJECT_DIR)/../../FunSDK/lib/Darwin/noasan",
+					"$(PROJECT_DIR)/../../FunSDK/lib/Darwin/noasan/x86_64",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "DataKit/DataKit-Bridging-Header.h";
@@ -761,7 +761,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/../Frameworks";
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
-					"$(PROJECT_DIR)/../../FunSDK/lib/Darwin/noasan",
+					"$(PROJECT_DIR)/../../FunSDK/lib/Darwin/noasan/x86_64",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "DataKit/DataKit-Bridging-Header.h";
