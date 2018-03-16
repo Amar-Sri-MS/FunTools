@@ -10,9 +10,9 @@ CFLAGS ?= -I $(SDKDIR) -I $(SDKDIR)/FunSDK  -g -Wall -Werror -Wno-multichar
 
 # XXX: compatibility with FunOS build parameters
 #LDFLAGS += -L $(SDKDIR)/lib/${OS}/x86_64 -lfunclient -fsanitize=address
-LDFLAGS += -lpthread -L $(SDKDIR)/lib/${OS}/noasan/x86_64 -lfunclient
+LDFLAGS += -lpthread -L $(SDKDIR)/lib/${OS}/x86_64 -lfunclient -fsanitize=address
 
-OBJS = dpcsh.o web.o
+OBJS = dpcsh.o dpcsh_macros.o web.o
 
 # Deal with gcc versioning for ASAN
 ifeq ($(OS),Linux)
