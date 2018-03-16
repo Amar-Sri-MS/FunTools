@@ -1,5 +1,6 @@
 /* test dpcsock functionality */
 
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -16,12 +17,14 @@
 #include <netinet/in.h>		// TCP socket
 #include <arpa/inet.h>
 #include <getopt.h>
+#include <sys/select.h>
 
 #define PLATFORM_POSIX	1
 
 #include <utils/threaded/fun_json.h>
 #include <utils/threaded/fun_commander.h>
 #include <utils/threaded/fun_malloc_threaded.h>
+#include <utils/common/base64.h>
 
 #define SOCK_NAME	"/tmp/funos-dpc.sock"      /* default FunOS socket */
 #define PROXY_NAME      "/tmp/funos-dpc-text.sock" /* default unix proxy name */
@@ -40,7 +43,6 @@ enum sockmode {
 struct dpcsock {
 
 	/* configuration */
-	
 	enum sockmode mode;      /* whether & how this is used */
 	bool server;             /* listen/accept instead of connect */
 	bool base64;             /* talk base64 over this socket */
@@ -48,7 +50,6 @@ struct dpcsock {
 	uint16_t port_num;       /* TCP port number */
 
 	/* runtime */
-
 	int fd;                  /* connected fd */
 	int listen_fd;           /* fd if this is a server */
 };
@@ -120,11 +121,16 @@ static void _listen_sock_init(struct dpcsock *sock)
 	struct sockaddr_un local_unix = { 0 }, remote_unix = { 0 };
 	struct sockaddr *local, *remote;
 	socklen_t s;
+	int optval = 1;
 
 	/* make sure it's sane */
 	assert((sock->mode == SOCKMODE_UNIX) || (sock->mode == SOCKMODE_IP));
 	assert(sock->server);
 
+	/* if we already have a listen sock, just return */
+	if (sock->listen_fd > 0)
+		return;
+	
 	if (sock->mode == SOCKMODE_UNIX) {
 		/* create a server socket */
 		sock->listen_fd = socket(AF_UNIX, SOCK_STREAM, 0);
@@ -147,7 +153,13 @@ static void _listen_sock_init(struct dpcsock *sock)
 		/* create a server socket */
 		sock->listen_fd = socket(AF_INET, SOCK_STREAM, 0);
 		assert(sock->listen_fd > 0);
-		
+
+		if (setsockopt(sock->listen_fd, SOL_SOCKET, SO_REUSEADDR,
+			       (const void *)&optval , sizeof(int)) < 0) {
+			perror("setsockopt(SO_REUSEADDR)");
+			exit(1);
+		}
+
 		/* set socket parameters */
 
 		printf("Publishing on port %d\n", sock->port_num);
@@ -184,24 +196,126 @@ void _listen_sock_accept(struct dpcsock *sock)
 	sock->fd = accept(sock->listen_fd, (void*) &clientaddr, &clientlen);
 }
 
-/* dpcsocket abstraction */
-
-ssize_t dpcsocket_read(struct dpcsock *sock, void *buf, size_t nbyte)
+/* low-level base64+socket routines */
+bool _base64_write(struct dpcsock *sock, const uint8_t *buf, size_t nbyte)
 {
-	if (sock->mode == SOCKMODE_UNUSED) {
-		/* FIXME: make more general */
-		assert(!sock->server);
+	/* keep it simple */
+	size_t b64size = nbyte * 2 + 1; /* big to avoid rounding issues */
+	char *b64buf = malloc(b64size);
+	int r;
+	int fd = sock->fd;
+		
+	if (b64buf == NULL) {
+		printf("**** out of memory allocating output b64 buffer\n");
+		exit(1);
+	}
 
-		/* FIXME: poll stdin for its base64 data */
-		return -1;
-	} 
+	r = base64_encode(b64buf, b64size, (void*) buf, nbyte);
+	if (r <= 0) {
+		printf("**** error encoding base64\n");
+		return false;
+	}
 
-	if (!sock->base64)
-		return read(sock->fd, buf, nbyte);
+	/* send it */
+	r = write(fd, b64buf, strlen(b64buf));
 
-	_base64_read(sock->fd, buf, nbyte);
+	if (r < 0)
+		return false;
+	
+	/* frame it with a newline */
+	if (write(fd, "\n", 1) < 0)
+		return false;
 
+	return true;
 }
+
+/* read a line of input from the fd and try to decode it */
+#define BUF_SIZE (1024)
+static uint8_t *_base64_get_buffer(struct dpcsock *sock, size_t *nbytes)
+{
+	char *buf = NULL;
+	uint8_t *binbuf = NULL;
+	size_t size = 0, pos = 0;
+	ssize_t r;
+	bool echo = false;
+	int fd = sock->fd;
+
+	if (fd == STDOUT_FILENO) {
+		fd = STDIN_FILENO; /* lldb fails if you use stderr
+				    * #emojieyeroll
+				    */
+
+		printf("funos response => ");
+		fflush(stdout);
+		echo = true;
+	}
+
+	do {
+		/* check buffer hasn't overflowed */
+		if (pos == size) {
+			size += BUF_SIZE;
+			buf = realloc(buf, size);
+
+			if (buf == NULL) {
+				printf("couldn't allocate input buffer\n");
+				exit(1);
+			}
+		}
+
+		/* read a byte */
+		r = read(fd, &buf[pos], 1);
+
+		if (r <= 0) {
+			printf("**** remote hung up / error\n");
+			free(buf);
+			*nbytes = 0;
+			sock->fd = -1;
+			return NULL;
+		}
+
+		/* ignore CR */
+		if (buf[pos] == '\r')
+			continue;
+
+		/* if this is a fake socket, echo it */
+		if (echo) {
+			char c = buf[pos];
+			if (!(isprint(c) || isspace(c)))
+				c = '?';
+			printf("%c", c);
+			fflush(stdout);
+		}
+		
+		/* newline == end */
+		if (buf[pos] == '\n')
+			buf[pos] = '\0';
+
+		/* next character */
+		pos++;
+		
+	} while(buf[pos-1] != '\0');
+
+	/* now we have a buffer, decode it. buffer is oversize. Meh. */
+	binbuf = malloc(size);
+	if (binbuf == NULL) {
+		printf("couldn't allocate input buffer\n");
+		exit(1);
+	}
+
+	r = base64_decode(binbuf, size, buf);
+	if (r < 0) {
+		printf("bad decode: %s\n", buf);
+		return NULL;
+	}
+
+	/* tell them how many bytes were actually decoded */
+	*nbytes = (size_t) r;
+	
+	free(buf);
+	return binbuf;
+}
+
+/* dpcsocket abstraction */
 
 int dpcsocket_connnect(struct dpcsock *sock)
 {
@@ -228,54 +342,50 @@ int dpcsocket_connnect(struct dpcsock *sock)
 	return (sock->fd < 0);
 }
 
-/* json meets dpsocket abstraction */
+/* disambiguate json */
 static bool _write_to_sock(struct fun_json *json, struct dpcsock *sock)
 {
+	size_t size;
+
+	if (!sock->base64) {
+		/* easy case */
+		return fun_json_write_to_fd(json, sock->fd);
+	}
+		     
+	/* base64 case */
+	uint8_t *ptr = fun_json_to_binary(json, &size);
+	bool ok = _base64_write(sock, ptr, size);
 	
+	fun_free_threaded(ptr, size);
+	
+	if (ok)
+		return true;
+	
+	perror("*** write error on socket");
+	return false;
 }
 
-static fun_json *_read_from_sock(struct dpcsock *sock)
+
+/* take input from a socket and make a json */
+static struct fun_json *_read_from_sock(struct dpcsock *sock)
 {
 	uint8_t *buffer = NULL;
-	ssize_t r;
-	size_t expected;
 	struct fun_json *json = NULL;
-	
-	buffer = malloc(BUF_SIZE);
-	if (!buffer) {
-		printf("*** Can't allocate buffer of size %ld\n",
-		       expected);
-		return NULL;
-	}
 
-	
-	r = dpcsocket_read(sock, buffer, BUF_SIZE);
-	if (r <= 0)
-		return NULL;
-	
-	expected = fun_json_binary_serialization_size(buffer, r);
-	if ((r > 0) && (expected > BUF_SIZE)) {
-		buffer = realloc(buffer, expected);
-		if (!buffer) {
-			printf("*** Can't allocate buffer of size %ld\n",
-			       expected);
+	if (!sock->base64) {
+		json = fun_json_read_from_fd(sock->fd);
+	} else {
+		size_t r, max;
+		buffer = _base64_get_buffer(sock, &max);
+		if (!buffer)
 			return NULL;
+		r = fun_json_binary_serialization_size(buffer, max);
+		if (r <= max) {
+			json = fun_json_create_from_parsing_binary(buffer, r);
 		}
-
-		// Unix sometimes limit the size you get on read(), so
-		// we loop...
-		ssize_t r2;
-		while (expected >= r) {
-			r2 = dpcsocket_read(socket,
-					    buffer + r, expected - r);
-			if (r2 <= 0)
-				break;
-			r += r2;
-		}
+		free(buffer);
 	}
-	json = fun_json_create_from_parsing_binary(buffer, r);
 	
-	free(buffer, expected);
 	
 	return json;
 }
@@ -399,8 +509,8 @@ static int getline_with_history(OUT char **line, OUT size_t *capa) {
 #define NORMAL_COLORIZE	PRELUDE BLACK POSTLUDE
 
 // We pass the sock INOUT in order to be able to reestablish a connection if the server went down and up
-static void _do_process_cmd(struct dpcsock *sock, char *line,
-			    ssize_t read, uint64_t *tid)
+static void _do_send_cmd(struct dpcsock *sock, char *line,
+			 ssize_t read, uint64_t *tid)
 {
 
 	if ((read == 1) && (line[0] == '\n'))
@@ -433,10 +543,14 @@ static void _do_process_cmd(struct dpcsock *sock, char *line,
 		printf("*** Write to socket failed\n");
 		return;
 	}
-        /* receive a reply */
+}
+
+static void _do_recv_cmd(struct dpcsock *sock)
+{
+	/* receive a reply */
         struct fun_json *output = _read_from_sock(sock);
         if (!output) {
-		printf("invalid json returned\n");
+		// printf("invalid json returned\n");
 		return;
         }
         fun_json_printf(OUTPUT_COLORIZE "output => %s" NORMAL_COLORIZE "\n",
@@ -450,14 +564,56 @@ static void _do_interactive(struct dpcsock *funos_sock)
     size_t capa = 0;
     ssize_t read;
     uint64_t tid = 1;
+    int r, nfds = 0;
     
     static struct termios tios;
     tcgetattr(STDIN_FILENO, &tios);
     tios.c_lflag &= ~(ICANON | ECHO);          
     tcsetattr(STDIN_FILENO, TCSANOW, &tios);
-    
-    while ((read = getline_with_history(&line, &capa)) > 0) {
-	    _do_process_cmd(funos_sock, line, read, &tid);
+
+    fd_set fds;
+    while (1) {
+	    /* if FunOS went away, try and reconnect */
+	    if (funos_sock->fd == -1) {
+		    dpcsocket_connnect(funos_sock);
+	    }
+	    
+	    /* configure the fd set */
+	    FD_ZERO(&fds);
+	    FD_SET(STDIN_FILENO, &fds);
+	    nfds = STDIN_FILENO;
+	    if (funos_sock->mode != SOCKMODE_UNUSED) {
+		    FD_SET(funos_sock->fd, &fds);
+		    
+		    if (funos_sock->fd > nfds)
+			    nfds = funos_sock->fd;
+	    }
+
+	    /* wait on our input(s) */
+	    // printf("waiting on input\n");
+	    r = select(nfds+1, &fds, NULL, NULL, NULL);
+
+	    if (r <= 0) {
+		    perror("select");
+		    exit(1);
+	    }
+
+	    if (FD_ISSET(STDIN_FILENO, &fds)) {
+		    printf("user input\n");
+		    read = getline_with_history(&line, &capa);
+		    _do_send_cmd(funos_sock, line, read, &tid);
+
+		    /* for loopback we have to do this inline */
+		    if (funos_sock->mode == SOCKMODE_UNUSED) {
+			    _do_recv_cmd(funos_sock);
+		    }
+
+	    }
+
+	    if (FD_ISSET(funos_sock->fd, &fds)) {
+		    // printf("funos input\n");
+		    _do_recv_cmd(funos_sock);
+	    }
     }
 
     free(line);
@@ -483,7 +639,9 @@ static void _do_run_webserver(struct dpcsock *funos_sock,
 
 #define MAXLINE (512)
 
-int json_handle_req(int jsock, const char *path, char *buf, int *size) {
+int json_handle_req(struct dpcsock *jsock, const char *path,
+		    char *buf, int *size)
+{
 	printf("got jsock request for '%s'\n", path);
 	char line[MAXLINE];
 	int r = -1;
@@ -564,16 +722,17 @@ static ssize_t read_at_least_one_line(int fd, INOUT char **buffer,
 	}
 }
 
-static inline void write_string(int client_sock, const char *str,
+static inline void write_string(struct dpcsock *sock, const char *str,
 				bool write_zero)
 {
-	write(client_sock, str, strlen(str));
+	write(sock->fd, str, strlen(str));
 	//	if (write_zero) write(client_sock, "", 1);
 }
 
 static bool push_to_dpc_get_reply_to_client(const char *line,
 					    INOUT uint64_t *tid,
-					    int dpc_sock,  int client_sock)
+					    struct dpcsock *funos_sock,
+					    struct dpcsock *cmd_sock)
 {
 	// return true if we should continue to process lines
 	const char *error;
@@ -583,27 +742,27 @@ static bool push_to_dpc_get_reply_to_client(const char *line,
 		char buf[1000];
 		snprintf(buf, sizeof(buf),
 			 "*** Could not parse: %s - line: %s\n", error, line);
-		write_string(client_sock, buf, true);
+		write_string(cmd_sock, buf, true);
 		return true;
 	}
-	bool ok = _write_to_sock(json, dpc_sock);
+	bool ok = _write_to_sock(json, funos_sock);
 	fun_json_release(json);
 	if (!ok) {
 		printf("*** Connection to dpc server failed\n");
 		return false;
 	}
 	/* receive a reply */
-	struct fun_json *output = _read_from_sock(dpc_sock);
+	struct fun_json *output = _read_from_sock(funos_sock);
 	if (!output) {
-		write_string(client_sock, "*** invalid json returned\n", true);
+		write_string(cmd_sock, "*** invalid json returned\n", true);
 		return true;
 	}
 	if (output->type == fun_json_error_type) {
 		printf("Got error reply '%s'\n", output->error_message);
 		printf("*** Received error from dpc server\n");
-		write_string(client_sock, "*** ", false);
-		write_string(client_sock, output->error_message, false);
-		write_string(client_sock, "\n", true);
+		write_string(cmd_sock, "*** ", false);
+		write_string(cmd_sock, output->error_message, false);
+		write_string(cmd_sock, "\n", true);
 		fun_json_release(output);
 		return true;
 	}
@@ -614,8 +773,8 @@ static bool push_to_dpc_get_reply_to_client(const char *line,
 		return true;
 	}
 	printf("Got reply '%s'\n", pp2);
-	write_string(client_sock, pp2, false);
-	write_string(client_sock, "\n", true);
+	write_string(cmd_sock, pp2, false);
+	write_string(cmd_sock, "\n", true);
 	free(pp2);
 	return true;
 }
@@ -648,8 +807,8 @@ static void *handle_text_thread(void *arg)
 				break;
 			printf("Received '%s' then EOF\n", buffer);
 			push_to_dpc_get_reply_to_client(buffer, &tid,
-							funos_sock->fd,
-							cmd_sock->fd);
+							funos_sock,
+							cmd_sock);
 			break;
 		}
 		char *line_break = strchr(buffer, '\n');
@@ -657,8 +816,8 @@ static void *handle_text_thread(void *arg)
 			*line_break = 0;
 			printf("Received line '%s'\n", buffer);
 			bool ok = push_to_dpc_get_reply_to_client(buffer, &tid,
-								  funos_sock->fd,
-								  cmd_sock->fd);
+								  funos_sock,
+								  cmd_sock);
 			if (!ok)
 				break;
 			size_t this_line_len = line_break - buffer + 1;
@@ -716,7 +875,8 @@ static void _do_cli(int argc, char *argv[],
 	size_t len = strlen(buf);
 	buf[--len] = 0;	// trim the last space
 	printf(">> single cmd [%s] len=%zd\n", buf, len);
-	_do_process_cmd(funos_sock, buf, len, &tid);
+	_do_send_cmd(funos_sock, buf, len, &tid);
+	_do_recv_cmd(funos_sock);
 }
 
 /** argument parsing **/
@@ -743,7 +903,7 @@ static char *opt_sockname(char *optarg, char *dflt)
 /* options descriptor */
 static struct option longopts[] = {
 	{ "help",          no_argument,       NULL, 'h' },
-	{ "inet_srv",      optional_argument, NULL, 's' },
+	{ "base64_srv",    optional_argument, NULL, 'B' },
 	{ "inet_sock",     optional_argument, NULL, 'i' },
 	{ "unix_sock",     optional_argument, NULL, 'u' },
 	{ "http_proxy",    optional_argument, NULL, 'H' },
@@ -811,11 +971,13 @@ int main(int argc, char *argv[])
 
 
 	/* default connection to FunOS posix simulator dpcsock */
+	memset(&funos_sock, 0, sizeof(funos_sock));
 	funos_sock.mode = SOCKMODE_UNIX;
 	funos_sock.server = false;
 	funos_sock.socket_name = SOCK_NAME;
 	
 	/* default command connection is console (so socket disabled) */
+	memset(&cmd_sock, 0, sizeof(cmd_sock));
 	cmd_sock.mode = SOCKMODE_UNUSED;
 	cmd_sock.socket_name = NULL; /* safety */
 
@@ -832,7 +994,7 @@ int main(int argc, char *argv[])
 
 			/** mode parsing **/
 			
-		case 's':  /* base64 server */
+		case 'B':  /* base64 server */
 
 			/* run as base64 mode for dpcuart */
 			funos_sock.base64 = true;
@@ -905,6 +1067,7 @@ int main(int argc, char *argv[])
 			funos_sock.base64 = true;
 			funos_sock.server = false;
 			funos_sock.mode = SOCKMODE_UNUSED;
+			funos_sock.fd = STDOUT_FILENO;
 			mode = MODE_NOCONNECT;
 			
 			break;
@@ -938,13 +1101,13 @@ int main(int argc, char *argv[])
 		/* do nothing */
 		break;
 	case MODE_PROXY:
-		printf("socket proxy mode");
+		printf(": socket proxy mode");
 		break;
 	case MODE_HTTP_PROXY:
-		printf("HTTP proxy mode");
+		printf(": HTTP proxy mode");
 		break;
 	case MODE_NOCONNECT:
-		printf("manual base64 mode");
+		printf(": manual base64 mode");
 		break;
 	}
 	
@@ -952,6 +1115,7 @@ int main(int argc, char *argv[])
 
 	/* start by opening the socket to FunOS */
 	int r = dpcsocket_connnect(&funos_sock);
+	printf("FunOS is connected!\n");
 	
 	if (r != 0) {
 		printf("*** Can't open socket\n");
