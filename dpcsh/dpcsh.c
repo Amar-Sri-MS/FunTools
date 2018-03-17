@@ -65,6 +65,128 @@ static inline void _setnosigpipe(int const fd)
 #endif
 }
 
+/* simple readline support */
+static char **history = NULL; // most recent first
+static int history_count = 0;
+
+static void append_to_history(char *line)
+{
+    size_t l = strlen(line);
+    if (l == 0)
+	    return;
+    if (line[l-1] == '\n')
+	    l--; // exclude '\n'
+    if (l == 0)
+	    return;
+    history = realloc(history, (history_count+1) * sizeof(char *));
+    if (history_count != 0) {
+        char *last = history[history_count-1];
+	if (!strncmp(last, line, l) && !last[l])
+		return; // same - don't add
+    }
+    history[history_count++] = strdup(line);
+    // printf("History : %d\n", history_count);
+}
+
+static char * use_history(char *line, size_t len, int history_index)
+{
+    if (!history)
+	    return line; // no effect
+    if (history_index >= history_count)
+	    return line;
+    char *str = history[history_index];
+    
+    // erase current characters
+    for (int i = 0; i < len; i++)
+	    printf("%c[D", 27);
+    
+    // kill rest of line
+    printf("%c[K", 27);
+    printf("%s", str);
+//		fflush(stdout);
+
+    free(line);
+    return strdup(str);
+}
+
+static char * history_previous(char *line, size_t len, OUT int *history_index)
+{
+    if ((* history_index) > 0)
+	    (*history_index)--;
+    return use_history(line, len, *history_index);
+
+}
+static char * history_next(char *line, size_t len, OUT int *history_index)
+{
+    if ((*history_index) + 1 < history_count)
+	    (*history_index )++;
+    return use_history(line, len, *history_index);
+}
+
+static char *getline_with_history(OUT size_t *nbytes)
+{
+	size_t len = 0, capa = 0;
+	char *line = NULL;
+	int current_history = history_count;
+
+	while (true) {
+
+		if ((len+1) > capa) {
+			capa += 16;
+			line = realloc(line, capa);
+			if (line == NULL) {
+				printf("error allocating input line buffer\n");
+				exit(1);
+			}
+		}
+	    
+		char ch = getchar();
+		if (ch == 14 /* ^N */) {
+			line = history_next(line, len, &current_history);
+			len = capa = strlen(line);
+		} else if (ch == 16 /* ^P */) {
+			line = history_previous(line, len, &current_history);
+			len = capa = strlen(line);
+		} else if ((ch == EOF) || (ch == 4 /* ^D*/) || (ch == '\n')) {
+			if (ch == '\n')
+				write(STDOUT_FILENO, &ch, 1);
+			line[len] = '\0';
+			append_to_history(line);
+			*nbytes = len;
+			return line;
+		} else if (ch == 27) {
+			if (getchar() != 91)
+				continue;
+			char ch2 = getchar();
+			if (ch2 == 'A') {
+				line = history_previous(line, len,
+							&current_history);
+				len = capa = strlen(line);
+			} else if (ch2 == 'B') {
+				line = history_next(line, len,
+						    &current_history);
+				len = capa = strlen(line);
+			} else {
+				// printf("Ignoring ch2=%d\n", ch2);
+			}
+		} else if (ch == 127 /*DEL*/) {
+			if (len > 0) {
+				printf("%c[D", 27);
+				printf("%c[K", 27);
+				len--;
+				line[len] = '\0';
+			}
+		} else {
+			// printf("GOT ch=%d\n", ch);
+			write(STDOUT_FILENO, &ch, 1);
+			line[len++] = ch;
+			line[len] = '\0';
+		}
+	}
+}
+
+
+/* socket routines */
 static int _open_sock_inet(uint16_t port)
 {
 	int sock = 0;
@@ -229,27 +351,30 @@ bool _base64_write(struct dpcsock *sock, const uint8_t *buf, size_t nbyte)
 	return true;
 }
 
-/* read a line of input from the fd and try to decode it */
+/* read a line of input from the fd */
 #define BUF_SIZE (1024)
-static uint8_t *_base64_get_buffer(struct dpcsock *sock, size_t *nbytes)
+static char *_read_a_line(struct dpcsock *sock, size_t *nbytes)
 {
 	char *buf = NULL;
-	uint8_t *binbuf = NULL;
 	size_t size = 0, pos = 0;
-	ssize_t r;
 	bool echo = false;
-	int fd = sock->fd;
+	int fd;
+	int r;
+	
+	if ((sock->mode == SOCKMODE_UNUSED) && !sock->base64) {
+		/* fancy pants line editor on stdin */
+		printf("readline\n");
+		buf = getline_with_history(nbytes);
+		return buf;
+	}
 
-	if (fd == STDOUT_FILENO) {
+	if ((sock->mode == SOCKMODE_UNUSED) && sock->base64) {
 		fd = STDIN_FILENO; /* lldb fails if you use stderr
 				    * #emojieyeroll
 				    */
-
-		printf("funos response => ");
-		fflush(stdout);
 		echo = true;
 	}
-
+	
 	do {
 		/* check buffer hasn't overflowed */
 		if (pos == size) {
@@ -283,7 +408,7 @@ static uint8_t *_base64_get_buffer(struct dpcsock *sock, size_t *nbytes)
 			if (!(isprint(c) || isspace(c)))
 				c = '?';
 			printf("%c", c);
-			fflush(stdout);
+			fflush(stdout); // xxx
 		}
 
 		/* newline == end */
@@ -295,16 +420,50 @@ static uint8_t *_base64_get_buffer(struct dpcsock *sock, size_t *nbytes)
 
 	} while(buf[pos-1] != '\0');
 
+	return buf;
+}
+
+/* read a line of input from the fd and try to decode it (FunOS
+ * resonse side only)
+ */
+static uint8_t *_base64_get_buffer(struct dpcsock *sock,
+				   size_t *nbytes, bool retry)
+{
+	char *buf = NULL;
+	uint8_t *binbuf = NULL;
+	ssize_t r;
+
+do_retry:
+	
+	if (sock->fd == STDOUT_FILENO) {
+		printf("funos response => ");
+		fflush(stdout);
+	}
+
+	/* read the input */
+	buf = _read_a_line(sock, nbytes);
+
+	if (!buf)
+		return NULL;
+	
 	/* now we have a buffer, decode it. buffer is oversize. Meh. */
-	binbuf = malloc(size);
+	binbuf = malloc(*nbytes);
 	if (binbuf == NULL) {
 		printf("couldn't allocate input buffer\n");
 		exit(1);
 	}
 
-	r = base64_decode(binbuf, size, buf);
+	r = base64_decode(binbuf, *nbytes, buf);
 	if (r < 0) {
 		printf("bad decode: %s\n", buf);
+		free(buf);
+		
+		if (retry) {
+			/* if we want a synchronous response */
+			free(binbuf);
+			goto do_retry;
+		}
+		
 		return NULL;
 	}
 
@@ -327,7 +486,8 @@ int dpcsocket_connnect(struct dpcsock *sock)
 
 	if (sock->server) {
 		/* setup the server socket*/
-		_listen_sock_init(sock);
+		if (sock->listen_fd <= 0)
+			_listen_sock_init(sock);
 
 		/* wait for someone to connect */
 		_listen_sock_accept(sock);
@@ -367,7 +527,7 @@ static bool _write_to_sock(struct fun_json *json, struct dpcsock *sock)
 
 
 /* take input from a socket and make a json */
-static struct fun_json *_read_from_sock(struct dpcsock *sock)
+static struct fun_json *_read_from_sock(struct dpcsock *sock, bool retry)
 {
 	uint8_t *buffer = NULL;
 	struct fun_json *json = NULL;
@@ -376,7 +536,7 @@ static struct fun_json *_read_from_sock(struct dpcsock *sock)
 		json = fun_json_read_from_fd(sock->fd);
 	} else {
 		size_t r, max;
-		buffer = _base64_get_buffer(sock, &max);
+		buffer = _base64_get_buffer(sock, &max, retry);
 		if (!buffer)
 			return NULL;
 		r = fun_json_binary_serialization_size(buffer, max);
@@ -388,107 +548,6 @@ static struct fun_json *_read_from_sock(struct dpcsock *sock)
 
 
 	return json;
-}
-
-/* buffers 'n stuff */
-static void ensure_buffer_big_enough(OUT char **line,
-				     OUT size_t *capa, size_t len)
-{
-    if (len + 1 >= *capa) {
-        *capa = (*capa * 2) + 1;
-	*line = realloc(*line, *capa);
-    }
-}
-static void push_char(char **line, OUT size_t *capa, OUT size_t *len, char ch) {
-    ensure_buffer_big_enough(line, capa, (*len)+1);
-    (*line)[(*len)++] = ch;
-}
-static void push_string(char **line, OUT size_t *capa, OUT size_t *len, char *str) {
-    size_t l = strlen(str);
-    ensure_buffer_big_enough(line, capa, (*len)+l);
-    strcpy((*line) + (*len), str);
-    *len += l;
-}
-
-static char **history = NULL; // most recent first
-static int history_count = 0;
-
-static void append_to_history(char *line) {
-    size_t l = strlen(line);
-    if (!l) return;
-    if (line[l-1] == '\n') l--; // exclude '\n'
-    if (!l) return;
-    history = realloc(history, (history_count+1) * sizeof(char *));
-    if (history_count != 0) {
-        char *last = history[history_count-1];
-	if (!strncmp(last, line, l) && !last[l]) return; // same - don't add
-    }
-    history[history_count++] = strndup(line, l);
-    // printf("History : %d\n", history_count);
-}
-static void use_history(char **line, OUT size_t *capa, OUT size_t *len, int history_index) {
-    if (!history) return; // no effect
-    if (history_index >= history_count) return;
-    char *str = history[history_index];
-    // erase current characters
-    for (int i = 0; i < (*len); i++) printf("%c[D", 27);
-    // kill rest of line
-    printf("%c[K", 27);
-    printf("%s", str);
-//		fflush(stdout);
-    *len = 0;
-    push_string(line, capa, len, str);
-}
-static void history_previous(char **line, OUT size_t *capa, OUT size_t *len, OUT int *history_index) {
-    if ((* history_index) > 0) (*history_index)--;
-    use_history(line, capa, len, *history_index);
-}
-static void history_next(char **line, OUT size_t *capa, OUT size_t *len, OUT int *history_index) {
-    if ((*history_index) + 1 < history_count) (*history_index )++;
-    use_history(line, capa, len, *history_index);
-}
-static int getline_with_history(OUT char **line, OUT size_t *capa) {
-    size_t len = 0;
-    int current_history = history_count;
-    ensure_buffer_big_enough(line, capa, 16);
-    while (true) {
-        char ch = getchar();
-	if (ch == 14 /* ^N */) {
-	    history_next(line, capa, &len, &current_history);
-	} else if (ch == 16 /* ^P */) {
-	    history_previous(line, capa, &len, &current_history);
-        } else if ((ch == EOF) || (ch == 4 /* ^D*/)) {
-	    (*line)[len] = 0;
-   	    append_to_history(*line);
-	    return len;
-	} else if (ch == 27) {
-	    if (getchar() != 91) continue;
-	    char ch2 = getchar();
-	    if (ch2 == 'A') {
-    		history_previous(line, capa, &len, &current_history);
-	    } else if (ch2 == 'B') {
-    		history_next(line, capa, &len, &current_history);
-	    } else {
-		// printf("Ignoring ch2=%d\n", ch2);
-	    }
-	} else if (ch == '\n') {
-	    write(STDOUT_FILENO, &ch, 1);
-	    push_char(line, capa, &len, ch);
-	    (*line)[len] = 0;
-   	    append_to_history(*line);
-	    return len;
-	} else if (ch == 127 /*DEL*/) {
-            if (len > 0) {
-	        printf("%c[D", 27);
-	        printf("%c[K", 27);
-		len--;
-	    }
-	} else {
-	// printf("GOT ch=%d\n", ch);
-	    write(STDOUT_FILENO, &ch, 1);
-	    push_char(line, capa, &len, ch);
-	}
-    }
 }
 
 #define BLACK	"0;30"
@@ -508,7 +567,8 @@ static int getline_with_history(OUT char **line, OUT size_t *capa) {
 #define OUTPUT_COLORIZE	PRELUDE BLUE POSTLUDE
 #define NORMAL_COLORIZE	PRELUDE BLACK POSTLUDE
 
-// We pass the sock INOUT in order to be able to reestablish a connection if the server went down and up
+// We pass the sock INOUT in order to be able to reestablish a
+// connection if the server went down and up
 static bool _do_send_cmd(struct dpcsock *sock, char *line,
 			 ssize_t read, uint64_t *tid)
 {
@@ -547,12 +607,13 @@ static bool _do_send_cmd(struct dpcsock *sock, char *line,
 	return true;
 }
 
-static void _do_recv_cmd(struct dpcsock *sock)
+static void _do_recv_cmd(struct dpcsock *sock, bool retry)
 {
 	/* receive a reply */
-        struct fun_json *output = _read_from_sock(sock);
+        struct fun_json *output = _read_from_sock(sock, retry);
         if (!output) {
-		// printf("invalid json returned\n");
+		if (retry)
+			printf("invalid json returned\n");
 		return;
         }
         fun_json_printf(OUTPUT_COLORIZE "output => %s" NORMAL_COLORIZE "\n",
@@ -560,31 +621,40 @@ static void _do_recv_cmd(struct dpcsock *sock)
         fun_json_release(output);
 }
 
-static void _do_interactive(struct dpcsock *funos_sock)
+static void _do_interactive(struct dpcsock *funos_sock,
+			    struct dpcsock *cmd_sock)
 {
     char *line = NULL;
-    size_t capa = 0;
-    ssize_t read;
+    size_t read;
     uint64_t tid = 1;
     int r, nfds = 0;
     bool ok;
 
-    static struct termios tios;
-    tcgetattr(STDIN_FILENO, &tios);
-    tios.c_lflag &= ~(ICANON | ECHO);
-    tcsetattr(STDIN_FILENO, TCSANOW, &tios);
+    if (cmd_sock->mode == SOCKMODE_UNUSED) {
+	    /* enable per-character input for interactive input */
+	    static struct termios tios;
+	    tcgetattr(STDIN_FILENO, &tios);
+	    tios.c_lflag &= ~(ICANON | ECHO);
+	    tcsetattr(STDIN_FILENO, TCSANOW, &tios);
+    }
+
 
     fd_set fds;
     while (1) {
-	    /* if FunOS went away, try and reconnect */
+	    
+	    /* if a socket went away, try and reconnect */
 	    if (funos_sock->fd == -1) {
 		    dpcsocket_connnect(funos_sock);
 	    }
 
+	    if (cmd_sock->fd == -1) {
+		    dpcsocket_connnect(cmd_sock);
+	    }
+ 
 	    /* configure the fd set */
 	    FD_ZERO(&fds);
-	    FD_SET(STDIN_FILENO, &fds);
-	    nfds = STDIN_FILENO;
+	    FD_SET(cmd_sock->fd, &fds);
+	    nfds = cmd_sock->fd;
 	    if (funos_sock->mode != SOCKMODE_UNUSED) {
 		    FD_SET(funos_sock->fd, &fds);
 
@@ -601,25 +671,27 @@ static void _do_interactive(struct dpcsock *funos_sock)
 		    exit(1);
 	    }
 
-	    if (FD_ISSET(STDIN_FILENO, &fds)) {
+	    if (FD_ISSET(cmd_sock->fd, &fds)) {
 		    // printf("user input\n");
-		    read = getline_with_history(&line, &capa);
+		    line = _read_a_line(cmd_sock, &read);
 
 		    if (read == 0) /* ^D */
 			    break;
 
+		    assert(line != NULL);
+
+		    /* no base64 on the cmd end of things */
+		    
 		    ok = _do_send_cmd(funos_sock, line, read, &tid);
 
 		    /* for loopback we have to do this inline */
-		    if (ok && (funos_sock->mode == SOCKMODE_UNUSED)) {
-			    _do_recv_cmd(funos_sock);
-		    }
-
+		    if (ok)
+			    _do_recv_cmd(funos_sock, true);
 	    }
 
 	    if (FD_ISSET(funos_sock->fd, &fds)) {
 		    // printf("funos input\n");
-		    _do_recv_cmd(funos_sock);
+		    _do_recv_cmd(funos_sock, false);
 	    }
     }
 
@@ -674,7 +746,7 @@ int json_handle_req(struct dpcsock *jsock, const char *path,
 		return -1;
 
         /* receive a reply */
-        struct fun_json *output = _read_from_sock(jsock);
+        struct fun_json *output = _read_from_sock(jsock, true);
         if (!output) {
             printf("invalid json returned\n");
             return -1;
@@ -698,174 +770,6 @@ int json_handle_req(struct dpcsock *jsock, const char *path,
 	return r;
 }
 
-static ssize_t read_more(int fd, INOUT char **buffer, INOUT size_t *len,
-			 INOUT size_t *capacity)
-{
-	size_t wanted = 1024;
-	while (*len + wanted + 1 > *capacity) {
-		*capacity += *capacity + 1;
-		*buffer = realloc(*buffer, *capacity);
-	}
-	ssize_t n = read(fd, *buffer + *len, wanted);
-	// printf("Read %ld chars\n", n);
-	if (n > 0) {
-		*len += n;
-		(*buffer)[*len] = 0;
-	}
-	return n;
-}
-
-static ssize_t read_at_least_one_line(int fd, INOUT char **buffer,
-				      INOUT size_t *len,
-				      INOUT size_t *capacity)
-{
-	ssize_t so_far = 0;
-	while (true) {
-		ssize_t n = read_more(fd, buffer, len, capacity);
-		if (n == -1) return n;
-		if (n == 0) return so_far;
-		so_far += n;
-		if (strchr(*buffer, '\n')) return so_far;
-	}
-}
-
-static inline void write_string(struct dpcsock *sock, const char *str,
-				bool write_zero)
-{
-	write(sock->fd, str, strlen(str));
-	//	if (write_zero) write(client_sock, "", 1);
-}
-
-static bool push_to_dpc_get_reply_to_client(const char *line,
-					    INOUT uint64_t *tid,
-					    struct dpcsock *funos_sock,
-					    struct dpcsock *cmd_sock)
-{
-	// return true if we should continue to process lines
-	const char *error;
-	struct fun_json *json = fun_commander_line_to_command(line, tid,
-							      &error);
-	if (!json) {
-		char buf[1000];
-		snprintf(buf, sizeof(buf),
-			 "*** Could not parse: %s - line: %s\n", error, line);
-		write_string(cmd_sock, buf, true);
-		return true;
-	}
-	bool ok = _write_to_sock(json, funos_sock);
-	fun_json_release(json);
-	if (!ok) {
-		printf("*** Connection to dpc server failed\n");
-		return false;
-	}
-	/* receive a reply */
-	struct fun_json *output = _read_from_sock(funos_sock);
-	if (!output) {
-		write_string(cmd_sock, "*** invalid json returned\n", true);
-		return true;
-	}
-	if (output->type == fun_json_error_type) {
-		printf("Got error reply '%s'\n", output->error_message);
-		printf("*** Received error from dpc server\n");
-		write_string(cmd_sock, "*** ", false);
-		write_string(cmd_sock, output->error_message, false);
-		write_string(cmd_sock, "\n", true);
-		fun_json_release(output);
-		return true;
-	}
-	char *pp2 = fun_json_to_text(output);
-	fun_json_release(output);
-	if (!pp2) {
-		printf("*** No output from dpc server\n");
-		return true;
-	}
-	printf("Got reply '%s'\n", pp2);
-	write_string(cmd_sock, pp2, false);
-	write_string(cmd_sock, "\n", true);
-	free(pp2);
-	return true;
-}
-
-static void *handle_text_thread(void *arg)
-{
-	/* argument is the pointer to our two socket structures */
-	struct dpcsock **socks = arg;
-	struct dpcsock *funos_sock = socks[0];
-	struct dpcsock *cmd_sock = socks[1];
-
-	printf("New client on socket %d\n", cmd_sock->fd);
-
-	/* tweak the funos socket */
-	_setnosigpipe(funos_sock->fd);
-
-	uint64_t tid = 1;
-	size_t capacity = 1000;
-	char *buffer = malloc(capacity);
-	size_t len = 0;
-	while (true) {
-		ssize_t n = read_at_least_one_line(cmd_sock->fd, &buffer,
-						   &len, &capacity);
-		if (n == -1) {
-			printf("*** Socket in error\n");
-			break;
-		}
-		if (!n) {
-			if (!len)
-				break;
-			printf("Received '%s' then EOF\n", buffer);
-			push_to_dpc_get_reply_to_client(buffer, &tid,
-							funos_sock,
-							cmd_sock);
-			break;
-		}
-		char *line_break = strchr(buffer, '\n');
-		while (line_break) {
-			*line_break = 0;
-			printf("Received line '%s'\n", buffer);
-			bool ok = push_to_dpc_get_reply_to_client(buffer, &tid,
-								  funos_sock,
-								  cmd_sock);
-			if (!ok)
-				break;
-			size_t this_line_len = line_break - buffer + 1;
-			memmove(buffer, line_break+1, len - this_line_len + 1);
-			len -= this_line_len;
-			line_break = strchr(buffer, '\n');
-		}
-	}
-	free(buffer);
-	close(cmd_sock->fd);
-	printf("Closed client %d\n", cmd_sock->fd);
-	return NULL;
-}
-
-static void run_proxy(struct dpcsock *funos_sock, struct dpcsock *cmd_sock)
-{
-	/* funos should already be connected, setup the server */
-	_listen_sock_init(cmd_sock);
-
-	/* main server loop */
-	while(1) {
-		// printf("[dpcsock] Listening for connection\n");
-		_listen_sock_accept(cmd_sock);
-
-		struct dpcsock *socks[] = {funos_sock, cmd_sock};
-
-		if (cmd_sock->fd == -1) {
-			perror("accept");
-		} else {
-			pthread_t _handle_thread;
-			_setnosigpipe(cmd_sock->fd);
-			int r = pthread_create(&_handle_thread, NULL,
-					       handle_text_thread,
-					       &socks[0]);
-			if (r) {
-				perror("pthread_create");
-				exit(1);
-			}
-		}
-	}
-}
 
 static void _do_cli(int argc, char *argv[],
 		    struct dpcsock *funos_sock, int startIndex)
@@ -885,7 +789,7 @@ static void _do_cli(int argc, char *argv[],
 	printf(">> single cmd [%s] len=%zd\n", buf, len);
 	ok = _do_send_cmd(funos_sock, buf, len, &tid);
 	if (ok)
-		_do_recv_cmd(funos_sock);
+		_do_recv_cmd(funos_sock, true);
 }
 
 /** argument parsing **/
@@ -937,7 +841,7 @@ static void usage(const char *argv0)
 	printf("       --http_proxy [port]     listen as an http proxy\n");
 	printf("       --tcp_proxy  [port]     listen as a tcp proxy\n");
 	printf("       --text_proxy [port]     listen as a tcp proxy\n");
-	printf("       --nocli                 exit after a single transaction\n");
+	printf("       --nocli                 issue request from command-line arguments and terminate\n");
 	printf("       --manual_base64         just translate base64 back and forward\n");
 }
 
@@ -1089,6 +993,12 @@ int main(int argc, char *argv[])
 			break;
 	}
 
+	/* this only makes sense for local input */
+	if (one_shot && (mode != MODE_INTERACTIVE)) {
+		usage(argv[0]);
+		exit(1);
+	}
+		
 	/* make an announcement as to what we are */
 	printf("FunOS Dataplane Control Shell");
 
@@ -1123,14 +1033,12 @@ int main(int argc, char *argv[])
 		_do_run_webserver(&funos_sock, &cmd_sock);
 		break;
 	case MODE_PROXY:
-		run_proxy(&funos_sock, &cmd_sock);
-		break;
 	case MODE_INTERACTIVE:
 	case MODE_NOCONNECT: {
 		if (one_shot)
 			_do_cli(argc, argv, &funos_sock, optind);
 		else
-			_do_interactive(&funos_sock);
+			_do_interactive(&funos_sock, &cmd_sock);
 	}
 
 	}
