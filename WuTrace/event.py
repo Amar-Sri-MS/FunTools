@@ -119,7 +119,9 @@ class TraceEvent:
     self.label = label
 
     # Virtual processor where this event ran.
-    # String of form VP.[0-9]+.[0-9]+.[0-9]+
+    # String of form FA[0-9]+.[0-9]+.[0-9]+.*
+    # Ex: FA0:8:0[VP0.0], FA1:13:0[VP1.1].
+    # 
     self.vp = vp
 
     # Transactions holding this event.
