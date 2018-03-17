@@ -98,8 +98,13 @@ class FileParser:
     # Annotation is special - we need to find the faddr at the
     # beginning, but the rest counts as the message.
     if values['verb'] == 'TRANSACTION' and values['noun'] == 'ANNOT':
+
       annot_match = re.match('faddr (VP[0-9]+.[0-9]+.[0-9]+) msg (.*)',
                              remaining_string)
+      if not annot_match:
+        # Try parsing new form.
+        annot_match = re.match('faddr (FA[0-9]+.[0-9]+.[0-9]+\[VP[0-9].[0-9]\]) msg (.*)',
+                               remaining_string)
       if not annot_match:
         error = '%s:%d: malformed transaction annotation: "%s"\n' % (
           self.filename, self.line_number, line)
@@ -202,7 +207,7 @@ class FileParser:
     for line in lines:
       self.line_number += 1
       if DEBUG:
-        sys.stderr.write('line %d\n' % line_number)
+        sys.stderr.write('line %d\n' % self.line_number)
       (log_keywords, error) = self.ParseLine(line)
       if error:
         sys.stderr.write(error)
@@ -284,7 +289,6 @@ class TraceParser:
     timestamp = log_keywords['timestamp']
 
     vp = log_keywords['faddr']
-
     if event_type == ('WU', 'START'):
       arg0 = log_keywords['arg0']
       arg1 = log_keywords['arg1']
