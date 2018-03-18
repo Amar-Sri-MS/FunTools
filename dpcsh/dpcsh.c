@@ -30,7 +30,8 @@
 #define PROXY_NAME      "/tmp/funos-dpc-text.sock" /* default unix proxy name */
 #define DPC_PORT        40220   /* default FunOS port */
 #define DPC_PROXY_PORT  40221   /* default TCP proxy port */
-#define DPC_SRV_PORT    40222   /* default dpcuart listen port */
+#define DPC_B64_PORT    40222   /* default dpcuart port in qemu */
+#define DPC_B64SRV_PORT 40223   /* default dpcuart listen port */
 #define HTTP_PORTNO     9001    /* default HTTP listen port */
 
 /* handy socket abstraction */
@@ -123,7 +124,7 @@ static char * history_next(char *line, size_t len, OUT int *history_index)
     return use_history(line, len, *history_index);
 }
 
-static char *getline_with_history(OUT size_t *nbytes)
+static char *getline_with_history(OUT ssize_t *nbytes)
 {
 	size_t len = 0, capa = 0;
 	char *line = NULL;
@@ -148,11 +149,14 @@ static char *getline_with_history(OUT size_t *nbytes)
 			line = history_previous(line, len, &current_history);
 			len = capa = strlen(line);
 		} else if ((ch == EOF) || (ch == 4 /* ^D*/) || (ch == '\n')) {
+			*nbytes = len;
 			if (ch == '\n')
 				write(STDOUT_FILENO, &ch, 1);
+			else if (len == 0)
+				/* if the only signal is EOF, we end */
+				*nbytes = -1;
 			line[len] = '\0';
 			append_to_history(line);
-			*nbytes = len;
 			return line;
 		} else if (ch == 27) {
 			if (getchar() != 91)
@@ -353,17 +357,16 @@ bool _base64_write(struct dpcsock *sock, const uint8_t *buf, size_t nbyte)
 
 /* read a line of input from the fd */
 #define BUF_SIZE (1024)
-static char *_read_a_line(struct dpcsock *sock, size_t *nbytes)
+static char *_read_a_line(struct dpcsock *sock, ssize_t *nbytes)
 {
 	char *buf = NULL;
 	size_t size = 0, pos = 0;
 	bool echo = false;
-	int fd;
+	int fd = sock->fd;
 	int r;
 	
 	if ((sock->mode == SOCKMODE_UNUSED) && !sock->base64) {
 		/* fancy pants line editor on stdin */
-		printf("readline\n");
 		buf = getline_with_history(nbytes);
 		return buf;
 	}
@@ -420,6 +423,8 @@ static char *_read_a_line(struct dpcsock *sock, size_t *nbytes)
 
 	} while(buf[pos-1] != '\0');
 
+	assert(pos >= 1);
+	*nbytes = (ssize_t) pos - 1;
 	return buf;
 }
 
@@ -427,7 +432,7 @@ static char *_read_a_line(struct dpcsock *sock, size_t *nbytes)
  * resonse side only)
  */
 static uint8_t *_base64_get_buffer(struct dpcsock *sock,
-				   size_t *nbytes, bool retry)
+				   ssize_t *nbytes, bool retry)
 {
 	char *buf = NULL;
 	uint8_t *binbuf = NULL;
@@ -468,7 +473,7 @@ do_retry:
 	}
 
 	/* tell them how many bytes were actually decoded */
-	*nbytes = (size_t) r;
+	*nbytes = r;
 
 	free(buf);
 	return binbuf;
@@ -535,7 +540,8 @@ static struct fun_json *_read_from_sock(struct dpcsock *sock, bool retry)
 	if (!sock->base64) {
 		json = fun_json_read_from_fd(sock->fd);
 	} else {
-		size_t r, max;
+		size_t r;
+		ssize_t max;
 		buffer = _base64_get_buffer(sock, &max, retry);
 		if (!buffer)
 			return NULL;
@@ -573,7 +579,9 @@ static bool _do_send_cmd(struct dpcsock *sock, char *line,
 			 ssize_t read, uint64_t *tid)
 {
 
-	if ((read == 1) && (line[0] == '\n'))
+	printf("read is %d\n", (int) read);
+	
+	if (read == 0)
 		return false; // skip blank lines
 
 	const char *error;
@@ -625,7 +633,7 @@ static void _do_interactive(struct dpcsock *funos_sock,
 			    struct dpcsock *cmd_sock)
 {
     char *line = NULL;
-    size_t read;
+    ssize_t read;
     uint64_t tid = 1;
     int r, nfds = 0;
     bool ok;
@@ -675,7 +683,7 @@ static void _do_interactive(struct dpcsock *funos_sock,
 		    // printf("user input\n");
 		    line = _read_a_line(cmd_sock, &read);
 
-		    if (read == 0) /* ^D */
+		    if (read == -1) /* user ^D */
 			    break;
 
 		    assert(line != NULL);
@@ -817,6 +825,7 @@ static char *opt_sockname(char *optarg, char *dflt)
 static struct option longopts[] = {
 	{ "help",          no_argument,       NULL, 'h' },
 	{ "base64_srv",    optional_argument, NULL, 'B' },
+	{ "base64_sock",   optional_argument, NULL, 'b' },
 	{ "inet_sock",     optional_argument, NULL, 'i' },
 	{ "unix_sock",     optional_argument, NULL, 'u' },
 	{ "http_proxy",    optional_argument, NULL, 'H' },
@@ -907,6 +916,18 @@ int main(int argc, char *argv[])
 
 			/** mode parsing **/
 
+		case 'b':  /* base64 client */
+
+			/* run as base64 mode for dpcuart */
+			funos_sock.base64 = true;
+			funos_sock.mode = SOCKMODE_IP;
+			funos_sock.server = false;
+			funos_sock.port_num = opt_portnum(optarg,
+							  DPC_B64_PORT);
+			mode = MODE_INTERACTIVE;
+
+			break;
+			
 		case 'B':  /* base64 server */
 
 			/* run as base64 mode for dpcuart */
@@ -914,7 +935,7 @@ int main(int argc, char *argv[])
 			funos_sock.mode = SOCKMODE_IP;
 			funos_sock.server = true;
 			funos_sock.port_num = opt_portnum(optarg,
-							  DPC_SRV_PORT);
+							  DPC_B64SRV_PORT);
 			mode = MODE_INTERACTIVE;
 
 			break;
