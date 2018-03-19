@@ -8,9 +8,9 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/un.h>
-#include <termios.h>            //termios, TCSANOW, ECHO, ICANON
+#include <termios.h>           	// termios, TCSANOW, ECHO, ICANON
 #include <sys/types.h>
-#include <signal.h>            //termios, TCSANOW, ECHO, ICANON
+#include <signal.h>           	// termios, TCSANOW, ECHO, ICANON
 #include <pthread.h>
 #include <netinet/in.h>		// TCP socket
 #include <arpa/inet.h>
