@@ -36,7 +36,7 @@
 
 /* handy socket abstraction */
 enum sockmode {
-	SOCKMODE_UNUSED,
+	SOCKMODE_TERMINAL,
 	SOCKMODE_IP,
 	SOCKMODE_UNIX,
 };
@@ -363,13 +363,15 @@ static char *_read_a_line(struct dpcsock *sock, ssize_t *nbytes)
 	int fd = sock->fd;
 	int r;
 
-	if ((sock->mode == SOCKMODE_UNUSED) && !sock->base64) {
+	*nbytes = -1; /* assume error */
+
+	if ((sock->mode == SOCKMODE_TERMINAL) && !sock->base64) {
 		/* fancy pants line editor on stdin */
 		buf = getline_with_history(nbytes);
 		return buf;
 	}
 
-	if ((sock->mode == SOCKMODE_UNUSED) && sock->base64) {
+	if ((sock->mode == SOCKMODE_TERMINAL) && sock->base64) {
 		fd = STDIN_FILENO; /* lldb fails if you use stderr
 				    * #emojieyeroll
 				    */
@@ -484,17 +486,21 @@ int dpcsocket_connnect(struct dpcsock *sock)
 	assert(sock != 0);
 
 	/* unused == no-op */
-	if (sock->mode == SOCKMODE_UNUSED)
+	if (sock->mode == SOCKMODE_TERMINAL) {
+		sock->fd = STDIN_FILENO; /* give it a real FD */
 		return 0;
+	}
 
 	if (sock->server) {
 		/* setup the server socket*/
+		printf("connecting unix server\n");
 		if (sock->listen_fd <= 0)
 			_listen_sock_init(sock);
 
 		/* wait for someone to connect */
 		_listen_sock_accept(sock);
 	} else {
+		printf("connecting unix socket\n");
 		if (sock->mode == SOCKMODE_UNIX)
 			sock->fd = _open_sock_unix(sock->socket_name);
 		else
@@ -576,9 +582,6 @@ static struct fun_json *_read_from_sock(struct dpcsock *sock, bool retry)
 static bool _do_send_cmd(struct dpcsock *sock, char *line,
 			 ssize_t read, uint64_t *tid)
 {
-
-	printf("read is %d\n", (int) read);
-
 	if (read == 0)
 		return false; // skip blank lines
 
@@ -613,17 +616,29 @@ static bool _do_send_cmd(struct dpcsock *sock, char *line,
 	return true;
 }
 
-static void _do_recv_cmd(struct dpcsock *sock, bool retry)
+static void _do_recv_cmd(struct dpcsock *funos_sock,
+			 struct dpcsock *cmd_sock, bool retry)
 {
 	/* receive a reply */
-        struct fun_json *output = _read_from_sock(sock, retry);
+        struct fun_json *output = _read_from_sock(funos_sock, retry);
         if (!output) {
 		if (retry)
 			printf("invalid json returned\n");
 		return;
         }
-        fun_json_printf(OUTPUT_COLORIZE "output => %s" NORMAL_COLORIZE "\n",
-			output);
+
+	if (cmd_sock->mode == SOCKMODE_TERMINAL) {
+		fun_json_printf(OUTPUT_COLORIZE "output => %s" NORMAL_COLORIZE "\n",
+				output);
+	} else {
+		char *pp = fun_json_to_text(output);
+		if (pp) {
+			write(cmd_sock->fd, pp, strlen(pp));
+			write(cmd_sock->fd, "\n", 1);
+			fun_free_string(pp);
+		}
+	}
+
         fun_json_release(output);
 }
 
@@ -636,7 +651,7 @@ static void _do_interactive(struct dpcsock *funos_sock,
     int r, nfds = 0;
     bool ok;
 
-    if (cmd_sock->mode == SOCKMODE_UNUSED) {
+    if (cmd_sock->mode == SOCKMODE_TERMINAL) {
 	    /* enable per-character input for interactive input */
 	    static struct termios tios;
 	    tcgetattr(STDIN_FILENO, &tios);
@@ -654,14 +669,16 @@ static void _do_interactive(struct dpcsock *funos_sock,
 	    }
 
 	    if (cmd_sock->fd == -1) {
+		    printf("(re)-connect\n");
 		    dpcsocket_connnect(cmd_sock);
+		    printf("connected\n");
 	    }
 
 	    /* configure the fd set */
 	    FD_ZERO(&fds);
 	    FD_SET(cmd_sock->fd, &fds);
 	    nfds = cmd_sock->fd;
-	    if (funos_sock->mode != SOCKMODE_UNUSED) {
+	    if (funos_sock->mode != SOCKMODE_TERMINAL) {
 		    FD_SET(funos_sock->fd, &fds);
 
 		    if (funos_sock->fd > nfds)
@@ -684,7 +701,10 @@ static void _do_interactive(struct dpcsock *funos_sock,
 		    if (read == -1) /* user ^D */
 			    break;
 
-		    assert(line != NULL);
+		    if (line == NULL) {
+			    printf("error reading line\n");
+			    continue;
+		    }
 
 		    /* no base64 on the cmd end of things */
 
@@ -692,7 +712,7 @@ static void _do_interactive(struct dpcsock *funos_sock,
 
 		    /* for loopback we have to do this inline */
 		    if (ok)
-			    _do_recv_cmd(funos_sock, true);
+			    _do_recv_cmd(funos_sock, cmd_sock, true);
 	    }
 
 	    /* if it changed while in flight */
@@ -701,7 +721,7 @@ static void _do_interactive(struct dpcsock *funos_sock,
 
 	    if (FD_ISSET(funos_sock->fd, &fds)) {
 		    // printf("funos input\n");
-		    _do_recv_cmd(funos_sock, false);
+		    _do_recv_cmd(funos_sock, cmd_sock, false);
 	    }
     }
 
@@ -782,7 +802,8 @@ int json_handle_req(struct dpcsock *jsock, const char *path,
 
 
 static void _do_cli(int argc, char *argv[],
-		    struct dpcsock *funos_sock, int startIndex)
+		    struct dpcsock *funos_sock,
+		    struct dpcsock *cmd_sock, int startIndex)
 {
 	uint64_t tid = 1;
 	char buf[512];
@@ -799,7 +820,7 @@ static void _do_cli(int argc, char *argv[],
 	printf(">> single cmd [%s] len=%zd\n", buf, len);
 	ok = _do_send_cmd(funos_sock, buf, len, &tid);
 	if (ok)
-		_do_recv_cmd(funos_sock, true);
+		_do_recv_cmd(funos_sock, cmd_sock, true);
 }
 
 /** argument parsing **/
@@ -899,11 +920,13 @@ int main(int argc, char *argv[])
 	funos_sock.mode = SOCKMODE_UNIX;
 	funos_sock.server = false;
 	funos_sock.socket_name = SOCK_NAME;
+	funos_sock.fd = -1;
 
 	/* default command connection is console (so socket disabled) */
 	memset(&cmd_sock, 0, sizeof(cmd_sock));
-	cmd_sock.mode = SOCKMODE_UNUSED;
+	cmd_sock.mode = SOCKMODE_TERMINAL;
 	cmd_sock.socket_name = NULL; /* safety */
+	cmd_sock.fd = -1;
 
 
 	while ((ch = getopt_long(argc, argv,
@@ -986,8 +1009,8 @@ int main(int argc, char *argv[])
 
 			cmd_sock.mode = SOCKMODE_UNIX;
 			cmd_sock.server = true;
-			funos_sock.socket_name = opt_sockname(optarg,
-							      PROXY_NAME);
+			cmd_sock.socket_name = opt_sockname(optarg,
+							    PROXY_NAME);
 
 			mode = MODE_PROXY;
 
@@ -1002,7 +1025,7 @@ int main(int argc, char *argv[])
 
 			funos_sock.base64 = true;
 			funos_sock.server = false;
-			funos_sock.mode = SOCKMODE_UNUSED;
+			funos_sock.mode = SOCKMODE_TERMINAL;
 			funos_sock.fd = STDOUT_FILENO;
 			mode = MODE_NOCONNECT;
 
@@ -1059,7 +1082,7 @@ int main(int argc, char *argv[])
 	case MODE_INTERACTIVE:
 	case MODE_NOCONNECT: {
 		if (one_shot)
-			_do_cli(argc, argv, &funos_sock, optind);
+			_do_cli(argc, argv, &funos_sock, &cmd_sock, optind);
 		else
 			_do_interactive(&funos_sock, &cmd_sock);
 	}
