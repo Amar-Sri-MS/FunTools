@@ -243,9 +243,9 @@ static int _open_sock_unix(const char *name) {
 
 static void _listen_sock_init(struct dpcsock *sock)
 {
-	struct sockaddr_in local_inet = { 0 }, remote_inet = { 0 };
-	struct sockaddr_un local_unix = { 0 }, remote_unix = { 0 };
-	struct sockaddr *local, *remote;
+	struct sockaddr_in local_inet = { 0 };
+	struct sockaddr_un local_unix = { 0 };
+	struct sockaddr *local;
 	socklen_t s;
 	int optval = 1;
 
@@ -272,7 +272,6 @@ static void _listen_sock_init(struct dpcsock *sock)
 		unlink(local_unix.sun_path);
 
 		local = (struct sockaddr *) &local_unix;
-		remote = (struct sockaddr *) &remote_unix;
 		s = sizeof(struct sockaddr_un);
 
 	} else {
@@ -295,7 +294,6 @@ static void _listen_sock_init(struct dpcsock *sock)
 		local_inet.sin_port = htons(sock->port_num);
 
 		local = (struct sockaddr *) &local_inet;
-		remote = (struct sockaddr *) &remote_inet;
 		s = sizeof(struct sockaddr_in);
 	}
 
