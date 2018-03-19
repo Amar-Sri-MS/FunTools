@@ -96,11 +96,11 @@ static char * use_history(char *line, size_t len, int history_index)
     if (history_index >= history_count)
 	    return line;
     char *str = history[history_index];
-    
+
     // erase current characters
     for (int i = 0; i < len; i++)
 	    printf("%c[D", 27);
-    
+
     // kill rest of line
     printf("%c[K", 27);
     printf("%s", str);
@@ -140,7 +140,7 @@ static char *getline_with_history(OUT ssize_t *nbytes)
 				exit(1);
 			}
 		}
-	    
+
 		char ch = getchar();
 		if (ch == 14 /* ^N */) {
 			line = history_next(line, len, &current_history);
@@ -364,7 +364,7 @@ static char *_read_a_line(struct dpcsock *sock, ssize_t *nbytes)
 	bool echo = false;
 	int fd = sock->fd;
 	int r;
-	
+
 	if ((sock->mode == SOCKMODE_UNUSED) && !sock->base64) {
 		/* fancy pants line editor on stdin */
 		buf = getline_with_history(nbytes);
@@ -377,7 +377,7 @@ static char *_read_a_line(struct dpcsock *sock, ssize_t *nbytes)
 				    */
 		echo = true;
 	}
-	
+
 	do {
 		/* check buffer hasn't overflowed */
 		if (pos == size) {
@@ -439,7 +439,7 @@ static uint8_t *_base64_get_buffer(struct dpcsock *sock,
 	ssize_t r;
 
 do_retry:
-	
+
 	if (sock->fd == STDOUT_FILENO) {
 		printf("funos response => ");
 		fflush(stdout);
@@ -450,7 +450,7 @@ do_retry:
 
 	if (!buf)
 		return NULL;
-	
+
 	/* now we have a buffer, decode it. buffer is oversize. Meh. */
 	binbuf = malloc(*nbytes);
 	if (binbuf == NULL) {
@@ -462,13 +462,13 @@ do_retry:
 	if (r < 0) {
 		printf("bad decode: %s\n", buf);
 		free(buf);
-		
+
 		if (retry) {
 			/* if we want a synchronous response */
 			free(binbuf);
 			goto do_retry;
 		}
-		
+
 		return NULL;
 	}
 
@@ -580,7 +580,7 @@ static bool _do_send_cmd(struct dpcsock *sock, char *line,
 {
 
 	printf("read is %d\n", (int) read);
-	
+
 	if (read == 0)
 		return false; // skip blank lines
 
@@ -649,7 +649,7 @@ static void _do_interactive(struct dpcsock *funos_sock,
 
     fd_set fds;
     while (1) {
-	    
+
 	    /* if a socket went away, try and reconnect */
 	    if (funos_sock->fd == -1) {
 		    dpcsocket_connnect(funos_sock);
@@ -658,7 +658,7 @@ static void _do_interactive(struct dpcsock *funos_sock,
 	    if (cmd_sock->fd == -1) {
 		    dpcsocket_connnect(cmd_sock);
 	    }
- 
+
 	    /* configure the fd set */
 	    FD_ZERO(&fds);
 	    FD_SET(cmd_sock->fd, &fds);
@@ -689,13 +689,17 @@ static void _do_interactive(struct dpcsock *funos_sock,
 		    assert(line != NULL);
 
 		    /* no base64 on the cmd end of things */
-		    
+
 		    ok = _do_send_cmd(funos_sock, line, read, &tid);
 
 		    /* for loopback we have to do this inline */
 		    if (ok)
 			    _do_recv_cmd(funos_sock, true);
 	    }
+
+	    /* if it changed while in flight */
+	    if (funos_sock->fd == -1)
+		    continue;
 
 	    if (FD_ISSET(funos_sock->fd, &fds)) {
 		    // printf("funos input\n");
@@ -927,7 +931,7 @@ int main(int argc, char *argv[])
 			mode = MODE_INTERACTIVE;
 
 			break;
-			
+
 		case 'B':  /* base64 server */
 
 			/* run as base64 mode for dpcuart */
@@ -1019,7 +1023,7 @@ int main(int argc, char *argv[])
 		usage(argv[0]);
 		exit(1);
 	}
-		
+
 	/* make an announcement as to what we are */
 	printf("FunOS Dataplane Control Shell");
 
