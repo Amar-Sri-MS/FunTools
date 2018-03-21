@@ -90,10 +90,9 @@
 		A766A4941F1C31590094C7B0 /* MiscWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A766A4931F1C31590094C7B0 /* MiscWindowController.swift */; };
 		A78F76A51F38B83B00E33523 /* datakit in Resources */ = {isa = PBXBuildFile; fileRef = A78F76A41F38B83B00E33523 /* datakit */; };
 		A791CEE61EC50356000125F0 /* bridgingCExtras.c in Sources */ = {isa = PBXBuildFile; fileRef = A791CEE51EC50356000125F0 /* bridgingCExtras.c */; };
-		A7A68D001EE9C608004B5DDF /* props_bridges in Resources */ = {isa = PBXBuildFile; fileRef = A7A68CFF1EE9C608004B5DDF /* props_bridges */; };
+		A7B8C50320335D250005F7DE /* libfunclient.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A7B8C50220335D250005F7DE /* libfunclient.a */; };
 		A7BDCE2B1FF36A5B0008440B /* runtime in Resources */ = {isa = PBXBuildFile; fileRef = A7BDCE2A1FF36A5B0008440B /* runtime */; };
 		A7C62C7C1FBA226100C2DC34 /* hci in Resources */ = {isa = PBXBuildFile; fileRef = A7C62C7B1FBA226100C2DC34 /* hci */; };
-		A7EBED031F94909C00AFD2F0 /* libfunclient.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A7EBED021F948FEB00AFD2F0 /* libfunclient.a */; };
 		A7FD26701EB54EF20049E0C0 /* F1InputWindow.xib in Resources */ = {isa = PBXBuildFile; fileRef = A7FD266F1EB54EF20049E0C0 /* F1InputWindow.xib */; };
 		A7FD26721EB54F9F0049E0C0 /* F1InputController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7FD26711EB54F9F0049E0C0 /* F1InputController.swift */; };
 		A7FD26741EB557CB0049E0C0 /* F1ChipWindow.xib in Resources */ = {isa = PBXBuildFile; fileRef = A7FD26731EB557CB0049E0C0 /* F1ChipWindow.xib */; };
@@ -188,10 +187,9 @@
 		A766A4931F1C31590094C7B0 /* MiscWindowController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MiscWindowController.swift; sourceTree = "<group>"; };
 		A78F76A41F38B83B00E33523 /* datakit */ = {isa = PBXFileReference; lastKnownFileType = folder; name = datakit; path = ../../FunOS/datakit; sourceTree = "<group>"; };
 		A791CEE51EC50356000125F0 /* bridgingCExtras.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = bridgingCExtras.c; sourceTree = "<group>"; };
-		A7A68CFF1EE9C608004B5DDF /* props_bridges */ = {isa = PBXFileReference; lastKnownFileType = folder; name = props_bridges; path = ../../FunOS/props_bridges; sourceTree = "<group>"; };
+		A7B8C50220335D250005F7DE /* libfunclient.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libfunclient.a; path = ../../FunSDK/lib/Darwin/noasan/x86_64/libfunclient.a; sourceTree = "<group>"; };
 		A7BDCE2A1FF36A5B0008440B /* runtime */ = {isa = PBXFileReference; lastKnownFileType = folder; name = runtime; path = ../../FunOS/runtime; sourceTree = "<group>"; };
 		A7C62C7B1FBA226100C2DC34 /* hci */ = {isa = PBXFileReference; lastKnownFileType = folder; name = hci; path = ../../FunOS/hci; sourceTree = "<group>"; };
-		A7EBED021F948FEB00AFD2F0 /* libfunclient.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libfunclient.a; path = ../../FunSDK/lib/Darwin/libfunclient.a; sourceTree = "<group>"; };
 		A7FD266F1EB54EF20049E0C0 /* F1InputWindow.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = F1InputWindow.xib; sourceTree = "<group>"; };
 		A7FD26711EB54F9F0049E0C0 /* F1InputController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = F1InputController.swift; sourceTree = "<group>"; };
 		A7FD26731EB557CB0049E0C0 /* F1ChipWindow.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = F1ChipWindow.xib; sourceTree = "<group>"; };
@@ -202,7 +200,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A7EBED031F94909C00AFD2F0 /* libfunclient.a in Frameworks */,
+				A7B8C50320335D250005F7DE /* libfunclient.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -221,7 +219,6 @@
 				A72CC7BA1F6A2B6B0058827F /* flows */,
 				A766A47B1F1915F50094C7B0 /* utils */,
 				A70662F61FB57245005C19E0 /* accelerators */,
-				A7A68CFF1EE9C608004B5DDF /* props_bridges */,
 				A71563981EB95EDE00F32BAE /* cfg */,
 				A72CC7AA1F587F3E0058827F /* devices */,
 				A7C62C7B1FBA226100C2DC34 /* hci */,
@@ -237,7 +234,6 @@
 				A72CC7B21F587FCC0058827F /* tests */,
 				A78F76A41F38B83B00E33523 /* datakit */,
 				A716FBCA1EA67C82008395EC /* Products */,
-				A7EBED021F948FEB00AFD2F0 /* libfunclient.a */,
 				A7FD266C1EB51FCD0049E0C0 /* Frameworks */,
 			);
 			sourceTree = "<group>";
@@ -357,6 +353,7 @@
 		A7FD266C1EB51FCD0049E0C0 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				A7B8C50220335D250005F7DE /* libfunclient.a */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -426,7 +423,6 @@
 				A766A4801F1BD2D40094C7B0 /* services in Resources */,
 				A716FBE81EAD33EA008395EC /* kv in Resources */,
 				A7614FB21F127E5E0065A5B7 /* MallocWindow.xib in Resources */,
-				A7A68D001EE9C608004B5DDF /* props_bridges in Resources */,
 				A72CC7AD1F587F650058827F /* networking in Resources */,
 				A71563991EB95EDE00F32BAE /* cfg in Resources */,
 				A72CC7BB1F6A2B6B0058827F /* flows in Resources */,
@@ -658,7 +654,7 @@
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)/funos_viewer",
-					"$(PROJECT_DIR)/../../FunSDK/lib/Darwin/noasan",
+					"$(PROJECT_DIR)/../../FunSDK/lib/Darwin/noasan/x86_64",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "fungible.com.funos-viewer";
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -686,7 +682,7 @@
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)/funos_viewer",
-					"$(PROJECT_DIR)/../../FunSDK/lib/Darwin/noasan",
+					"$(PROJECT_DIR)/../../FunSDK/lib/Darwin/noasan/x86_64",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "fungible.com.funos-viewer";
 				PRODUCT_NAME = "$(TARGET_NAME)";

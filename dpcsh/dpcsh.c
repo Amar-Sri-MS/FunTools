@@ -15,6 +15,8 @@
 #include <netinet/in.h>		// TCP socket
 #include <arpa/inet.h>
 
+extern void dpcsh_load_macros(void);
+
 #define PLATFORM_POSIX	1
 
 #include <utils/threaded/fun_json.h>
@@ -538,6 +540,7 @@ int main(int argc, char *argv[]) {
 	int i = 1;
 	int num_args;
 
+	dpcsh_load_macros();
 	num_args = argc < MAX_ARGS ? argc : MAX_ARGS;
 
 	interractive_mode = true;
