@@ -21,6 +21,8 @@
 #include <unistd.h>
 #include <inttypes.h>
 
+#include "dpcsh.h"
+
 #define LISTENQ  1024  /* second argument to listen() */
 #define MAXLINE 1024   /* max length of a line */
 #define RIO_BUFSIZE 1024

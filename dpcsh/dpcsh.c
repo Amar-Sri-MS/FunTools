@@ -1,3 +1,9 @@
+/*
+ *  dpcsh.c
+ *
+ *  Copyright © 2017-2018 Fungible. All rights reserved.
+ */
+
 /* test dpcsock functionality */
 
 #include <ctype.h>
@@ -10,14 +16,17 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/un.h>
-#include <termios.h>            //termios, TCSANOW, ECHO, ICANON
+#include <termios.h>           	// termios, TCSANOW, ECHO, ICANON
 #include <sys/types.h>
-#include <signal.h>            //termios, TCSANOW, ECHO, ICANON
+#include <signal.h>           	// termios, TCSANOW, ECHO, ICANON
 #include <pthread.h>
 #include <netinet/in.h>		// TCP socket
 #include <arpa/inet.h>
 #include <getopt.h>
 #include <sys/select.h>
+
+#include "dpcsh.h"
+
 
 #define PLATFORM_POSIX	1
 
@@ -728,9 +737,6 @@ static void _do_interactive(struct dpcsock *funos_sock,
     free(line);
 }
 
-/* XXX */
-extern int run_webserver(int funos_sock, int cmd_listen_sock);
-
 static void _do_run_webserver(struct dpcsock *funos_sock,
 			      struct dpcsock *cmd_sock)
 {
@@ -893,6 +899,8 @@ int main(int argc, char *argv[])
 	int ch, first_unknown = -1;
 	struct dpcsock funos_sock; /* connection to FunOS */
 	struct dpcsock cmd_sock;   /* connection to commanding agent */
+
+	dpcsh_load_macros();
 
 	/* general flow of dpcsh:
 	 *
