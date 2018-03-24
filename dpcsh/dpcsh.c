@@ -874,6 +874,7 @@ static void usage(const char *argv0)
 	printf("       by default connect as a --inet_sock\n");
 	printf("       --help                  this text\n");
 	printf("       --base64_srv [port]     listen as a server port on IP using base64 (dpcuart to qemu)\n");
+	printf("       --base64_sock [port]    connec as a client port on IP using base64 (dpcuart to qemu)\n");
 	printf("       --inet_sock  [port]     connect as a client port over IP\n");
 	printf("       --unix_sock  [sockname] connect as a client port over unix sockets\n");
 	printf("       --http_proxy [port]     listen as an http proxy\n");
