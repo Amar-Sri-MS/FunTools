@@ -9,10 +9,6 @@ setup(
     description = 'Slurper for csr',
     scripts = ['bin/csr-slurp', 'bin/csr-get'],
     packages = find_packages(),
-    package_data = {
-      'schema/': ['*.yaml'],
-      'template': ['*.j*']
-    },
     include_package_data=True,
     install_requires = [
         'setuptools-git',
