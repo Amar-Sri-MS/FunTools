@@ -88,7 +88,7 @@ class DpcClient(object):
         self.__print(result)
         return result
 
-    def execute_json(self, verb, arg_list):
+    def execute_json(self, verb, arg_list, tid = 0):
 
         # make sure verb is just a verb
         if (" " in verb):
@@ -99,7 +99,7 @@ class DpcClient(object):
             arg_list = [arg_list]
 
         # make a json request in dict from
-        jdict = { "verb": verb, "arguments": arg_list, "tid": 0 }
+        jdict = { "verb": verb, "arguments": arg_list, "tid": tid }
 
         # make it a string and send it & get results
         jstr = json.dumps(jdict)
