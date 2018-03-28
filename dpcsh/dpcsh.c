@@ -50,6 +50,18 @@ enum sockmode {
 	SOCKMODE_UNIX,
 };
 
+enum parsingmode {
+	PARSE_UNKNOWN, /* bug trap */
+	PARSE_TEXT,    /* friendly command-line parsing (and legacy proxy mode) */
+	PARSE_JSON,    /* just proxy json */
+};
+
+static enum parsingmode _parse_mode = PARSE_UNKNOWN;
+
+#define OVERRIDE_TEXT "#!sh "
+#define OVERRIDE_JSON "#!json "
+
+
 struct dpcsock {
 
 	/* configuration */
@@ -58,6 +70,7 @@ struct dpcsock {
 	bool base64;             /* talk base64 over this socket */
 	const char *socket_name; /* unix socket name */
 	uint16_t port_num;       /* TCP port number */
+	uint32_t retries;        /* whether to retry connect on failure */
 
 	/* runtime */
 	int fd;                  /* connected fd */
@@ -586,17 +599,60 @@ static struct fun_json *_read_from_sock(struct dpcsock *sock, bool retry)
 #define OUTPUT_COLORIZE	PRELUDE BLUE POSTLUDE
 #define NORMAL_COLORIZE	PRELUDE BLACK POSTLUDE
 
+/* given a line of input, try and return a JSON object.
+ *
+ * Pay attention to which parsing mode we're in (free text or strict json),
+ * and whether an override was specified.
+ *
+ * NOTE: mixing text & json modes with async transactions is in no way
+ * supported. Just use json mode for that (or cross your fingers...)
+ */
+static struct fun_json *line2json(char *line, const char **error)
+{
+	enum parsingmode pmode = _parse_mode;
+	struct fun_json *json = NULL;
+
+	/* clear this up in case we return early */
+	*error = NULL;
+
+	/* sanity check the global */
+	assert((pmode == PARSE_TEXT) || (pmode == PARSE_JSON));
+
+	/* check for override */
+	if (strncmp(line, OVERRIDE_TEXT, strlen(OVERRIDE_TEXT)) == 0) {
+		pmode = PARSE_TEXT;
+		line = &line[strlen(OVERRIDE_TEXT)];
+	} else if (strncmp(line, OVERRIDE_JSON, strlen(OVERRIDE_JSON)) == 0) {
+		pmode = PARSE_JSON;
+		line = &line[strlen(OVERRIDE_JSON)];
+	}
+
+	if (pmode == PARSE_TEXT) {
+		uint64_t tid = 0; /* dummy */
+
+		/* parse as a command-line */
+		json = fun_commander_line_to_command(line, &tid, error);
+	} else {
+		/* parse as a real JSON blob */
+		/* FIXME: needs macro expansion */
+		json = fun_json_create_from_text(line);
+	}
+
+	return json;
+}
+
 // We pass the sock INOUT in order to be able to reestablish a
 // connection if the server went down and up
 static bool _do_send_cmd(struct dpcsock *sock, char *line,
-			 ssize_t read, uint64_t *tid)
+			 ssize_t read)
 {
 	if (read == 0)
 		return false; // skip blank lines
 
 	const char *error;
-        struct fun_json *json = fun_commander_line_to_command(line, tid,
-							      &error);
+
+	struct fun_json *json = line2json(line, &error);
+
         if (!json) {
             printf("could not parse: %s\n", error);
             return false;
@@ -656,7 +712,6 @@ static void _do_interactive(struct dpcsock *funos_sock,
 {
     char *line = NULL;
     ssize_t read;
-    uint64_t tid = 1;
     int r, nfds = 0;
     bool ok;
 
@@ -673,11 +728,11 @@ static void _do_interactive(struct dpcsock *funos_sock,
     while (1) {
 
 	    /* if a socket went away, try and reconnect */
-	    if (funos_sock->fd == -1) {
+	    if ((funos_sock->fd == -1) && (funos_sock->retries-- > 0)) {
 		    dpcsocket_connnect(funos_sock);
 	    }
 
-	    if (cmd_sock->fd == -1) {
+	    if ((cmd_sock->fd == -1) && (cmd_sock->retries-- > 0)) {
 		    printf("(re)-connect\n");
 		    dpcsocket_connnect(cmd_sock);
 		    printf("connected\n");
@@ -711,13 +766,13 @@ static void _do_interactive(struct dpcsock *funos_sock,
 			    break;
 
 		    if (line == NULL) {
-			    printf("error reading line\n");
+			    // printf("error reading line\n");
 			    continue;
 		    }
 
 		    /* no base64 on the cmd end of things */
 
-		    ok = _do_send_cmd(funos_sock, line, read, &tid);
+		    ok = _do_send_cmd(funos_sock, line, read);
 
 		    /* for loopback we have to do this inline */
 		    if (ok)
@@ -760,7 +815,6 @@ int json_handle_req(struct dpcsock *jsock, const char *path,
 	printf("got jsock request for '%s'\n", path);
 	char line[MAXLINE];
 	int r = -1;
-	uint64_t tid = 1;
 
 	/* rewrite request for root */
 	if (strcmp(path, "/") == 0)
@@ -770,7 +824,7 @@ int json_handle_req(struct dpcsock *jsock, const char *path,
 
 	snprintf(line, MAXLINE, "peek %s", path);
 	const char *error;
-        struct fun_json *json = fun_commander_line_to_command(line, &tid, &error);
+        struct fun_json *json = line2json(line, &error);
         if (!json) {
 		printf("could not parse '%s': %s\n", line, error);
 		return -1;
@@ -811,7 +865,6 @@ static void _do_cli(int argc, char *argv[],
 		    struct dpcsock *funos_sock,
 		    struct dpcsock *cmd_sock, int startIndex)
 {
-	uint64_t tid = 1;
 	char buf[512];
 	int n = 0;
 	bool ok;
@@ -824,7 +877,7 @@ static void _do_cli(int argc, char *argv[],
 	size_t len = strlen(buf);
 	buf[--len] = 0;	// trim the last space
 	printf(">> single cmd [%s] len=%zd\n", buf, len);
-	ok = _do_send_cmd(funos_sock, buf, len, &tid);
+	ok = _do_send_cmd(funos_sock, buf, len);
 	if (ok)
 		_do_recv_cmd(funos_sock, cmd_sock, true);
 }
@@ -861,6 +914,7 @@ static struct option longopts[] = {
 	{ "tcp_proxy",     optional_argument, NULL, 'T' },
 	{ "text_proxy",    optional_argument, NULL, 't' },
 	{ "nocli",         no_argument,       NULL, 'n' },
+	{ "oneshot",       no_argument,       NULL, 'S' },
 	{ "manual_base64", no_argument,       NULL, 'N' },
 
 	/* end */
@@ -881,6 +935,7 @@ static void usage(const char *argv0)
 	printf("       --tcp_proxy  [port]     listen as a tcp proxy\n");
 	printf("       --text_proxy [port]     listen as a tcp proxy\n");
 	printf("       --nocli                 issue request from command-line arguments and terminate\n");
+	printf("       --oneshot               don't reconnect after command side disconnect\n");
 	printf("       --manual_base64         just translate base64 back and forward\n");
 }
 
@@ -890,7 +945,6 @@ enum mode {
 	MODE_HTTP_PROXY,   /* http proxy */
         MODE_NOCONNECT,    /* no connection to FunOS */
 };
-
 
 /** entrypoint **/
 int main(int argc, char *argv[])
@@ -930,13 +984,14 @@ int main(int argc, char *argv[])
 	funos_sock.server = false;
 	funos_sock.socket_name = SOCK_NAME;
 	funos_sock.fd = -1;
+	funos_sock.retries = UINT32_MAX;
 
 	/* default command connection is console (so socket disabled) */
 	memset(&cmd_sock, 0, sizeof(cmd_sock));
 	cmd_sock.mode = SOCKMODE_TERMINAL;
 	cmd_sock.socket_name = NULL; /* safety */
 	cmd_sock.fd = -1;
-
+	cmd_sock.retries = UINT32_MAX;
 
 	while ((ch = getopt_long(argc, argv,
 				 "hs::i::u::H::T::t::nN",
@@ -1028,6 +1083,7 @@ int main(int argc, char *argv[])
 			/** other options **/
 
 		case 'n':  /* "nocli" -- run one command and exit */
+		case 'S':  /* "oneshot" -- run one connection and exit */
 			one_shot = true;
 			break;
 		case 'N':  /* manual base64 mode -- drive a UART by hand */
@@ -1046,12 +1102,6 @@ int main(int argc, char *argv[])
 
 		if (first_unknown != -1)
 			break;
-	}
-
-	/* this only makes sense for local input */
-	if (one_shot && (mode != MODE_INTERACTIVE)) {
-		usage(argv[0]);
-		exit(1);
 	}
 
 	/* make an announcement as to what we are */
@@ -1085,11 +1135,18 @@ int main(int argc, char *argv[])
 
 	switch(mode) {
 	case MODE_HTTP_PROXY:
+		_parse_mode = PARSE_JSON;
 		_do_run_webserver(&funos_sock, &cmd_sock);
 		break;
 	case MODE_PROXY:
+		_parse_mode = PARSE_JSON;
+		if (one_shot)
+			cmd_sock.retries = 1;
+		_do_interactive(&funos_sock, &cmd_sock);
+		break;
 	case MODE_INTERACTIVE:
 	case MODE_NOCONNECT: {
+		_parse_mode = PARSE_TEXT;
 		if (one_shot)
 			_do_cli(argc, argv, &funos_sock, &cmd_sock, optind);
 		else

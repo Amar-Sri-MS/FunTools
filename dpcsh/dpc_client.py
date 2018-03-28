@@ -38,7 +38,8 @@ import socket
 # print result
 
 class DpcClient(object):
-    def __init__(self):
+    def __init__(self, legacy_ok = True):
+        self.__legacy_ok = legacy_ok
         self.__sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         self.__verbose = False
         self.__truncate_long_lines = False
@@ -87,9 +88,37 @@ class DpcClient(object):
         self.__print(result)
         return result
 
+    def execute_json(self, verb, arg_list):
+
+        # make sure verb is just a verb
+        if (" " in verb):
+            raise RuntimeError("no spaces allowed in verbs")
+
+        # make it a list if it's just a dict or int or something
+        if (type(arg_list) is not list):
+            arg_list = [arg_list]
+
+        # make a json request in dict from
+        jdict = { "verb": verb, "arguments": arg_list, "tid": 0 }
+
+        # make it a string and send it & get results
+        jstr = json.dumps(jdict)
+        results = self.execute_command_line(jstr)
+
+        # decode the raw json and return
+        decoded_results = json.loads(results)
+        return decoded_results
+
+    # XXX: legacy interface. Avoid using this
     def execute_command(self, command, args):
+
+        if (not self.__legacy_ok):
+            raise RuntimeError("Attempted legacy command on non-legacy client instance")
+
         encoded_args = json.dumps(args)
-        results = self.execute_command_line(command + ' ' + encoded_args)
+        # #!sh prefix to ensure it's parsed as legacy input
+        cmd_line = "#!sh " + command + ' ' + encoded_args
+        results = self.execute_command_line(cmd_line)
         if (command == 'execute'):
             return results
         decoded_results = json.loads(results)
