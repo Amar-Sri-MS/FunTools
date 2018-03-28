@@ -88,7 +88,8 @@ class DpcClient(object):
         self.__print(result)
         return result
 
-    def execute_json(self, verb, arg_list, tid = 0):
+    # preferred interface
+    def execute(self, verb, arg_list, tid = 0):
 
         # make sure verb is just a verb
         if (" " in verb):
