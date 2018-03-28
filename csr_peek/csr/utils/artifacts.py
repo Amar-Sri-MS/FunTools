@@ -79,13 +79,13 @@ class ANode(object):
         if csr_arr[-1].isdigit():
             csr_name = '_'.join(elem for elem in csr_arr[:-1])
         csr_lst = self.csrs.get(csr_name, None)
-        addr -= self.start_addr    
+        addr -= self.start_addr
         p = CSRNode(addr, addr_range)
         if not csr_lst:
             csr_lst = [p, 1]
         else:
             csr_lst[1] += 1;
-        #print "ADD_CSR:{}:{}".format(self.path, csr_name)    
+        #print "ADD_CSR:{}:{}".format(self.path, csr_name)
         self.csrs[csr_name] = csr_lst
     def get_num_csr(self, csr_name):
         csr_arr = re.split(r'_', csr_name)
@@ -107,7 +107,7 @@ class ANode(object):
             return 0
 
         return p[0].addr
-        
+
 
     def get_path_str(self):
         path_arr = self.path.split('.')
@@ -115,14 +115,14 @@ class ANode(object):
 
         for elem in path_arr[:-1]:
             r_str += "\"{}\",".format(elem)
-            
+
         r_str += "\"{}\"".format(path_arr[-1])
         return r_str
         return ','.join(str(elem) for elem in path_arr)
 
     def __str__(self):
         r_str = ""
-        r_str += "{}, 0x{:02X}, {}, 0x{:02X}".format(self.path, 
+        r_str += "{}, 0x{:02X}, {}, 0x{:02X}".format(self.path,
                 self.start_addr, self.n_inst, self.skip_addr)
         return r_str
     __repr__ = __str__
@@ -147,7 +147,7 @@ class RingProps(object):
     def add_an(self, an_node, addr, csr_map):
         # First determine if this is a root node AN
         r_attr = self.root_paths.get(an_node, None)
-        
+
         an_arr = an_node.split('.')
         prefix_path = None
         if len(an_arr) > 1:
@@ -196,7 +196,7 @@ class RingProps(object):
                 if an_csrs != None:
                     r_str += "{{\n // BEGIN {} \n".format(an_name)
                     r_str += "auto {}_{} = {}_rng[{}].add_an({{{}}}, 0x{:01X}, {}, 0x{:01X});\n".\
-                        format(an_name, idx, self.r_name, self.i_num, 
+                        format(an_name, idx, self.r_name, self.i_num,
                                 elem.get_path_str(), elem.start_addr, elem.n_inst, elem.skip_addr);
                     for csr_name, csr_val in an_csrs.get().iteritems():
                         r_str += "fld_map_t {} {{\n".format(csr_name)
@@ -205,10 +205,10 @@ class RingProps(object):
                             r_str += "CREATE_ENTRY(\"{}\", {}, {}),\n".\
                                     format(fldd.fld_name, off, fldd.width)
                             off += fldd.width
-                        fldd = csr_val.fld_lst[-1]    
+                        fldd = csr_val.fld_lst[-1]
                         r_str += "CREATE_ENTRY(\"{}\", {}, {})\n".\
                                 format(fldd.fld_name, off, fldd.width)
-                            
+
                         r_str += "};"
                         r_str += "auto {}_prop = csr_prop_t(\n".format(csr_name)
                         r_str += "std::make_shared<csr_s>({}),\n".format(csr_name)
@@ -217,7 +217,7 @@ class RingProps(object):
                         r_str += "{});\n".format(elem.get_num_csr(csr_name))
                         r_str += "add_csr({}_{}, \"{}\", {}_prop);\n".\
                                  format(an_name, idx, csr_name, csr_name)
-                                 
+
                     r_str += " // END {} \n}}\n".format(an_name)
         return r_str
 
@@ -228,7 +228,7 @@ class RingProps(object):
 class CSRRoot(object):
     START_RING = r'START_RING'
     END_RING = r'END_RING'
-    IGNORE = [r'ROR:', r'ActSize:', r'LEAF:', r'-INFO-:', r'AN:', r'New EA:', r'INST\[']
+    IGNORE = [r'^ROOT:', r'^ROR:', r'^ActSize:', r'^LEAF:', r'^##-INFO-:', r'^AN:', r'New EA:', r'INST\[']
     RING_DONE = 0
     RING_PROCESS = 1
     IN_RING = 2
@@ -251,8 +251,10 @@ class CSRRoot(object):
     def __read_update(self, m_file, ring_match):
         f = open(m_file, "r")
         for line in f:
+            line = line.lstrip()
+            #print "LINE:{}".format(line)
             if self.__ignore(line):
-                #print "IGNORING: {}".format(line)
+                #print "IGNORE: {}".format(line)
                 continue
             if self.__process_ring(line, ring_match):
                 continue
@@ -279,19 +281,22 @@ class CSRRoot(object):
             self.flags[CSRRoot.RING_DONE] = True
             return True
 
-        #print "RING:Processing: {}".format(line)
         l_arr = line.split(':')
         if len(l_arr) < 2:
             return True
-        
+
         ring_class, ring_inst = self.r_util.get_info(l_arr[0])
         if not re.search(ring_match.lower(), ring_class.lower()):
             return True
 
-        ring_node = self.ring_map.get(ring_class, RingNode(ring_class))
-        ring_node.add_instance(ring_inst, self.__hexlify(l_arr[1]))
-        self.ring_map[ring_class] = ring_node
+        self.__add_ring_instance(ring_class, ring_inst, self.__hexlify(l_arr[1]))
+        #print "RING_ACCEPT: {}".format(line)
         return True
+    def __add_ring_instance(self, ring_class, ring_inst, addr):
+        ring_node = self.ring_map.get(ring_class, RingNode(ring_class))
+        ring_node.add_instance(ring_inst, addr)
+        self.ring_map[ring_class] = ring_node
+        return ring_node
 
     def __process_root(self, line, ring_match):
         if not re.search('^COUNT', line):
@@ -307,11 +312,14 @@ class CSRRoot(object):
             return True
         else:
             self.flags[CSRRoot.RING_PROCESS] = True
-
+        #print "ROOT_ACCEPT:{}".format(line)
         rn = self.ring_map.get(ring_class, None)
-        assert rn != None, "Unknown ring class"
+        if rn == None:
+           print "Adding dummy ring class: {}".format(ring_class)
+           rn = self.__add_ring_instance(ring_class, ring_inst, 0)
+
         self.flags[CSRRoot.IN_ANODE] = False
-        rn.add_an_path(ring_inst, k, int(coll[2]), 
+        rn.add_an_path(ring_inst, k, int(coll[2]),
                 self.__hexlify(coll[3]), self.__hexlify(coll[4]))
         return True
 
@@ -319,8 +327,7 @@ class CSRRoot(object):
         if not re.search('^START_ANODE', line):
             return False
         line = line.lower()
-        #print "AN_LINE: {}".format(line)
-        
+
         coll = line.split(':')
         m_arr = coll[1].split('.')
         ring_class, ring_inst = self.r_util.get_info(m_arr[0])
@@ -329,9 +336,13 @@ class CSRRoot(object):
             return True
         else:
             self.flags[CSRRoot.RING_PROCESS] = True
-
+        #print "ANODE_ACCEPT:{}".format(line)
         k = self.__clean_name(m_arr[1:])
         rn = self.ring_map.get(ring_class, None)
+        if rn == None:
+           print "Adding dummy ring class: {}".format(ring_class)
+           rn = self.__add_ring_instance(ring_class, ring_inst, 0)
+
         assert rn != None, "Unknown ring class"
         self.flags[CSRRoot.IN_ANODE] = True
         self.curr_rn = rn
@@ -357,15 +368,15 @@ class CSRRoot(object):
         if len(ex_coll) > 2:
             return
 
-        #print "PROCESSING: {}".format(line)
+        #print "CSR_ACCEPT: {}".format(line)
         if len(ex_coll) > 1:
-            self.curr_rn.add_csr(self.curr_ri, 
-                    coll[0].strip(), 
-                    self.__hexlify(ex_coll[0].strip()), 
+            self.curr_rn.add_csr(self.curr_ri,
+                    coll[0].strip(),
+                    self.__hexlify(ex_coll[0].strip()),
                     self.__hexlify(ex_coll[1].strip()))
         else:
-            self.curr_rn.add_csr(self.curr_ri, 
-                    coll[0].strip(), 
+            self.curr_rn.add_csr(self.curr_ri,
+                    coll[0].strip(),
                     self.__hexlify(coll[1].strip()))
 
     def __clean_name(self, m_arr):
@@ -402,8 +413,12 @@ class RingUtil(object):
         r_grp = re.match(RingUtil.RING_ENC, nodename)
         if not r_grp:
             r_grp = re.match(RingUtil.ALT_RING_ENC, nodename)
-        ring_class = r_grp.group(1)
-        ring_inst = int(r_grp.group(2))
+        if r_grp:
+           ring_class = r_grp.group(1)
+           ring_inst = int(r_grp.group(2))
+        else:
+           ring_class = nodename
+           ring_inst = 0
         return ring_class, ring_inst
 
 
