@@ -299,10 +299,7 @@ void client_error(int fd, int status, char *msg, char *longmsg){
 char json_buf[64 * 1024];
 #define JBUF_SIZE (sizeof(json_buf) / sizeof(*json_buf))
 
-/* XXX */
-extern int json_handle_req(int jsock, const char *path, char *buf, int *size);
-
-void process(int jsock, int out_fd, struct sockaddr_in *clientaddr)
+void process(struct dpcsock *jsock, int out_fd, struct sockaddr_in *clientaddr)
 {
     printf("accept request, fd is %d, pid is %d\n", out_fd, getpid());
     http_request req;
@@ -325,7 +322,7 @@ void process(int jsock, int out_fd, struct sockaddr_in *clientaddr)
     log_access(status, clientaddr, &req);
 }
 
-int run_webserver(int jsock, int listenfd)
+int run_webserver(struct dpcsock *jsock, int listenfd)
 {
     struct sockaddr_in clientaddr;
     int connfd;

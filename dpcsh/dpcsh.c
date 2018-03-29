@@ -804,7 +804,7 @@ static void _do_run_webserver(struct dpcsock *funos_sock,
 	}
 
 	/* strip the FDs out */
-	run_webserver(funos_sock->fd, cmd_sock->listen_fd);
+	run_webserver(funos_sock, cmd_sock->listen_fd);
 }
 
 #define MAXLINE (512)
@@ -1031,7 +1031,7 @@ int main(int argc, char *argv[])
 		case 'i':  /* inet client */
 
 			/* in case this got stamped over... */
-			funos_sock.mode = SOCKMODE_IP;
+			cmd_sock.mode = SOCKMODE_IP;
 			cmd_sock.server = false;
 			funos_sock.port_num = opt_portnum(optarg,
 							  DPC_PORT);
@@ -1053,8 +1053,8 @@ int main(int argc, char *argv[])
 
 			cmd_sock.mode = SOCKMODE_IP;
 			cmd_sock.server = true;
-			funos_sock.port_num = opt_portnum(optarg,
-							  HTTP_PORTNO);
+			cmd_sock.port_num = opt_portnum(optarg,
+							 HTTP_PORTNO);
 
 			mode = MODE_HTTP_PROXY;
 
@@ -1063,7 +1063,7 @@ int main(int argc, char *argv[])
 
 			cmd_sock.mode = SOCKMODE_IP;
 			cmd_sock.server = true;
-			funos_sock.port_num = opt_portnum(optarg,
+			cmd_sock.port_num = opt_portnum(optarg,
 							  DPC_PROXY_PORT);
 
 			mode = MODE_PROXY;

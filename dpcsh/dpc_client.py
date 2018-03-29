@@ -38,13 +38,20 @@ import socket
 # print result
 
 class DpcClient(object):
-    def __init__(self, legacy_ok = True):
+    def __init__(self, legacy_ok = True, unix_sock = True, server_address = None):
         self.__legacy_ok = legacy_ok
-        self.__sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         self.__verbose = False
         self.__truncate_long_lines = False
 
-        server_address = '/tmp/funos-dpc-text.sock'
+        if (unix_sock):
+            if (server_address is None):
+                server_address = '/tmp/funos-dpc-text.sock'
+            self.__sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        else:
+            if (server_address is None):
+                server_address = ('127.0.0.1', 40221)
+            self.__sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
         self.__sock.connect(server_address)
 
     def __recv_lines(self):
@@ -107,7 +114,10 @@ class DpcClient(object):
         results = self.execute_command_line(jstr)
 
         # decode the raw json and return
-        decoded_results = json.loads(results)
+        try:
+            decoded_results = json.loads(results)
+        except:
+            decoded_results = None
         return decoded_results
 
     # XXX: legacy interface. Avoid using this
