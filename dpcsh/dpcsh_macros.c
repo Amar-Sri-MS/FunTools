@@ -10,6 +10,8 @@
 #include <utils/threaded/fun_commander.h>
 #include <utils/threaded/fun_malloc_threaded.h>
 
+#include "dpcsh.h"
+
 static struct fun_json *test_macro1(const struct fun_json *input) 
 {
 	struct fun_json *output = fun_json_create_empty_dict();
