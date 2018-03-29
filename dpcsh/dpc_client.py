@@ -15,27 +15,7 @@ import socket
 #
 # $WORKSPACE/FunTools/dpcsh/dpcsh --text_proxy
 #
-# Example usage:
-#
-# import os
-# import sys
-# sys.path.append(os.environ['WORKSPACE'] + '/FunTools/dpcsh')
-# import dpc_client
-#
-# client = dpc_client.DpcClient()
-#
-# result = client.execute_command('echo', 'Hello dpc')
-# print result
-#
-# result = client.execute_command('ikv lvs_create', {
-#     'volume_id': 1,
-#     'volume_lba_bytes': 4096,
-#     'volume_lbas': 1024,
-#     'allocator_volume_id': 2,
-#     'allocator_volume_lba_bytes': 4096,
-#     'allocator_volume_lbas': 256
-#     })
-# print result
+# Example usage dpctest.py
 
 class DpcClient(object):
     def __init__(self, legacy_ok = True, unix_sock = True, server_address = None):
