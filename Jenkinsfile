@@ -388,7 +388,6 @@ def codeCoverage() {
 	sh "./FunOS/build/funos-posix-cov app=hu_test"
 
 	// x86 only tests
-	sh "./FunOS/build/funos-posix-cov app=bstest"
 	// sh "./FunOS/build/funos-posix-cov app=hu_test_crypto"
 	sh "./FunOS/build/funos-posix-cov app=crypto_test"
 
