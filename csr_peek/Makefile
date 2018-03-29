@@ -16,6 +16,7 @@ build:
 	$(SUDO) python setup.py install --record files.txt
 
 libcsr:
+	$(SUDO) apt-get install astyle
 	cd csr-rt && astyle -c gen/csr_gen.cpp &&  make
 
 cfg:build
