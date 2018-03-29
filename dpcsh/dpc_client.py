@@ -97,7 +97,7 @@ class DpcClient(object):
         try:
             decoded_results = json.loads(results)
         except:
-            print "ERROR: Unable to parse to JSON. data: %s" % results
+            print("ERROR: Unable to parse to JSON. data: %s" % results)
             decoded_results = None
         return decoded_results
 
