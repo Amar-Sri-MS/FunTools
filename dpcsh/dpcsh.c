@@ -1031,6 +1031,8 @@ int main(int argc, char *argv[])
 		case 'i':  /* inet client */
 
 			/* in case this got stamped over... */
+			funos_sock.mode = SOCKMODE_IP;
+			funos_sock.server = false;
 			funos_sock.port_num = opt_portnum(optarg,
 							  DPC_PORT);
 
