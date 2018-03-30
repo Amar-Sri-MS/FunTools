@@ -1031,12 +1031,10 @@ int main(int argc, char *argv[])
 		case 'i':  /* inet client */
 
 			/* in case this got stamped over... */
-			cmd_sock.mode = SOCKMODE_IP;
-			cmd_sock.server = false;
+			funos_sock.mode = SOCKMODE_IP;
+			funos_sock.server = false;
 			funos_sock.port_num = opt_portnum(optarg,
 							  DPC_PORT);
-
-			mode = MODE_INTERACTIVE;
 
 			break;
 		case 'u':  /* unix domain client */
@@ -1045,8 +1043,6 @@ int main(int argc, char *argv[])
 			cmd_sock.server = false;
 			funos_sock.socket_name = opt_sockname(optarg,
 							      SOCK_NAME);
-
-			mode = MODE_INTERACTIVE;
 
 			break;
 		case 'H':  /* http proxy */
