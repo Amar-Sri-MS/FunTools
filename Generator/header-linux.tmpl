@@ -146,16 +146,16 @@ static inline void {{struct.name}}_init(struct {{struct.init_struct().name}} *s{
   {% endfor %}
 }
 
-{% if generate_json %}
+{% if generate_dump %}
 #ifndef __KERNEL__
 
-extern void {{struct.name}}_dump_internal(FILE *file_des, {{struct.DeclarationString()}} *s, uint8_t include_type);
-
-/* Print out structure in JSON format.
- * file_des: file descriptor to write output to.
- * s: pointer to struct to dump.
+/* Dump out the structure as a sequence of hex bytes, in big-endian order.
+ * For structures in union, the active structure is printed, padded to the
+ * length of the union.
+ * Printing structures with zero-length arrays calls assert().
  */
 extern void {{struct.name}}_dump(FILE *file_des, {{struct.DeclarationString()}} *s);
+
 
 #endif  //__KERNEL__
 

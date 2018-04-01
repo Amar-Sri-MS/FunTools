@@ -21,6 +21,8 @@
 #include <unistd.h>
 #include <inttypes.h>
 
+#include "dpcsh.h"
+
 #define LISTENQ  1024  /* second argument to listen() */
 #define MAXLINE 1024   /* max length of a line */
 #define RIO_BUFSIZE 1024
@@ -228,43 +230,6 @@ const char* get_mime_type(char *filename){
     return default_mime_type;
 }
 
-
-int open_listenfd(int port){
-    int listenfd, optval=1;
-    struct sockaddr_in serveraddr;
-
-    /* Create a socket descriptor */
-    if ((listenfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
-        return -1;
-
-    /* Eliminates "Address already in use" error from bind. */
-    if (setsockopt(listenfd, SOL_SOCKET, SO_REUSEADDR,
-                   (const void *)&optval , sizeof(int)) < 0)
-        return -1;
-
-    // 6 is TCP's protocol number
-    // enable this, much faster : 4000 req/s -> 17000 req/s
-#if 0
-    if (setsockopt(listenfd, 6, TCP_CORK,
-                   (const void *)&optval , sizeof(int)) < 0)
-        return -1;
-#endif
-    
-    /* Listenfd will be an endpoint for all requests to port
-       on any IP address for this host */
-    memset(&serveraddr, 0, sizeof(serveraddr));
-    serveraddr.sin_family = AF_INET;
-    serveraddr.sin_addr.s_addr = htonl(INADDR_ANY);
-    serveraddr.sin_port = htons((unsigned short)port);
-    if (bind(listenfd, (SA *)&serveraddr, sizeof(serveraddr)) < 0)
-        return -1;
-
-    /* Make it a listening socket ready to accept connection requests */
-    if (listen(listenfd, LISTENQ) < 0)
-        return -1;
-    return listenfd;
-}
-
 void url_decode(char* src, char* dest, int max) {
     char *p = src;
     char code[3] = { 0 };
@@ -334,10 +299,7 @@ void client_error(int fd, int status, char *msg, char *longmsg){
 char json_buf[64 * 1024];
 #define JBUF_SIZE (sizeof(json_buf) / sizeof(*json_buf))
 
-/* XXX */
-extern int json_handle_req(int jsock, const char *path, char *buf, int *size);
-
-void process(int jsock, int out_fd, struct sockaddr_in *clientaddr)
+void process(struct dpcsock *jsock, int out_fd, struct sockaddr_in *clientaddr)
 {
     printf("accept request, fd is %d, pid is %d\n", out_fd, getpid());
     http_request req;
@@ -360,26 +322,17 @@ void process(int jsock, int out_fd, struct sockaddr_in *clientaddr)
     log_access(status, clientaddr, &req);
 }
 
-int run_webserver(int jsock, int port)
+int run_webserver(struct dpcsock *jsock, int listenfd)
 {
     struct sockaddr_in clientaddr;
-    int default_port = port,
-        listenfd,
-        connfd;
-    socklen_t clientlen = sizeof clientaddr;
+    int connfd;
+    socklen_t clientlen = sizeof(clientaddr);
 
-    listenfd = open_listenfd(default_port);
-    if (listenfd > 0) {
-        printf("listen on port %d, fd is %d\n", default_port, listenfd);
-    } else {
-        perror("ERROR");
-        exit(listenfd);
-    }
     // Ignore SIGPIPE signal, so if browser cancels the request, it
     // won't kill the whole process.
     signal(SIGPIPE, SIG_IGN);
 
-    while(1){
+    while(1) {
         connfd = accept(listenfd, (SA *)&clientaddr, &clientlen);
         process(jsock, connfd, &clientaddr);
         close(connfd);

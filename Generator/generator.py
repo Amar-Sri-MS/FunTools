@@ -357,6 +357,8 @@ def Usage():
   sys.stderr.write('        field, and create accessor macros.\n')
   sys.stderr.write('  json: generate routines for initializing a structure\n')
   sys.stderr.write('        from a JSON representation.')
+  sys.stderr.write('  dump: generate routines to dump a hex representation\n')
+  sys.stderr.write('        of all structures.')
   sys.stderr.write('  cpacked: use __attribute__((packed)) on all structures\n')
   sys.stderr.write('        to allow fields to be at non-natural alignments.\n')
                    
@@ -741,6 +743,7 @@ def main():
   codegen_pack = SetFromArgs('pack', codegen_args, False)
   codegen_split = SetFromArgs('split', codegen_args, False)
   codegen_json = SetFromArgs('json', codegen_args, False)
+  codegen_dump = SetFromArgs('dump', codegen_args, False)
   codegen_cpacked = SetFromArgs('cpacked', codegen_args, False)
   codegen_swap = SetFromArgs('swap', codegen_args, False)
   codegen_linux = SetFromArgs('linux', codegen_args, False)
@@ -753,6 +756,8 @@ def main():
     codegen_options.append('split')
   if codegen_json:
     codegen_options.append('json')
+  if codegen_dump:
+    codegen_options.append('dump')
   if codegen_cpacked:
     codegen_options.append('cpacked')
   if codegen_swap:
