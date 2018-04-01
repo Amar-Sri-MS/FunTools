@@ -1010,6 +1010,7 @@ enum mode {
 /** entrypoint **/
 int main(int argc, char *argv[])
 {
+	(void)apply_pretty_printer; // to force linking in this symbol (TEMP)
 	enum mode mode = MODE_INTERACTIVE; /* default user control */
 	bool one_shot;  /* run a single command and terminate */
 	int ch, first_unknown = -1;
