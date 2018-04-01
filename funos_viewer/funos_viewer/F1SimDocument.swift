@@ -7,6 +7,13 @@
 
 import AppKit
 
+extension String {
+	func toCCV() -> [String]? {
+		let ccv = String(dropFirst(2).dropLast(4)).split(at: ":").map { $0 }
+		return ccv.count == 3 ? ccv : nil
+	}
+}
+
 @objc class F1SimDocument: NSDocument, NSTabViewDelegate, NSWindowDelegate {
 	@IBOutlet var chipView: NSChipView!
 	var inputController: F1InputController! // All the parameters and such
@@ -42,8 +49,8 @@ import AppKit
 		if allVPs != nil && !allVPs!.isEmpty {
 			var clustersSeen: Set<String> = []
 			var coresSeen: Set<String> = []
-			for vp in allVPs! {
-				let clusterCoreVP = String(vp.stringValue.dropFirst(2)).split(at: ".").map { $0 }
+			for faddr in allVPs! {
+				let clusterCoreVP = faddr.stringValue.toCCV()!
 				let cluster = "Cluster\(clusterCoreVP[0])"
 				clustersSeen.insert(cluster)
 				let core = "Core\(clusterCoreVP[0]).\(clusterCoreVP[1])"
@@ -76,15 +83,13 @@ import AppKit
 		}
 		let allVPs = doF1Command("peek", "stats/per_vp")?.dictionaryValue
 		if allVPs == nil || allVPs!.isEmpty { return }
-		// Swift.print("allVPs = \(allVPs!["VP2.0.1"]!)")
 		var perCluster: [String: Int] = [:]
 		var perCore: [String: Int] = [:]
 		var perVP: [String: Int] = [:]
 		var sum = 0
-		for vp in allVPs!.keys {
-			let ccv = String(vp.dropFirst(2)).split(at: ".").map { $0 }
-			assert(ccv.count == 3)
-			let times = allVPs![vp]!.dictionaryValue["wus_received"]!.integerValue
+		for faddr in allVPs!.keys {
+			let ccv = faddr.toCCV()!
+			let times = allVPs![faddr]!.dictionaryValue["wus_received"]!.integerValue
 			let cluster = "Cluster\(ccv[0])"
 			let core = "Core\(ccv[0]).\(ccv[1])"
 			let vp = "VP\(ccv[0]).\(ccv[1]).\(ccv[2])"
@@ -180,7 +185,7 @@ import AppKit
 			Swift.print("*** Error executing \(verb): nil ; socket=\(socket)")
 			return nil
 		}
-//		Swift.print("Executed command '\(verb)'")
+		//		Swift.print("Executed command '\(verb)'")
 		let str: String = String(cString: r!)
 		if debug {
 			Swift.print("command '\(verb)' returned '\(str)'")
@@ -401,3 +406,4 @@ import AppKit
 		noteSelectionChangedAndUpdate()
 	}
 }
+
