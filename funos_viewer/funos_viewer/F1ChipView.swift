@@ -807,7 +807,7 @@ class NSChipView: NSView {
             center.post(name: Notification.Name(rawValue: "SelectionChanged"), object: self)
         }
     }
-    func updateUnitSummaries( _ info: (UnitName) -> String!) {
+    func updateUnitSummaries( _ info: (UnitName) -> String?) {
         for (name, layer) in layers.units {
             let str = info(name)
             if str == nil { continue }
@@ -816,7 +816,7 @@ class NSChipView: NSView {
             text2!.string = str
         }
     }
-    func updateHotCores( _ info: (UnitName) -> Double!) {
+    func updateHotCores( _ info: (UnitName) -> Double?) {
         for (name, layer) in layers.units {
 //            let thisHotnessBand = name.hasPrefix("Core") ? hotnessBands : [1000]
 //            let nbands = thisHotnessBand.count
