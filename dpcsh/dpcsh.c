@@ -27,10 +27,7 @@
 
 #include "dpcsh.h"
 
-
-#define PLATFORM_POSIX	1
-
-#include <utils/threaded/fun_json.h>
+#include <utils/threaded/fun_map.h>
 #include <utils/threaded/fun_commander.h>
 #include <utils/threaded/fun_malloc_threaded.h>
 #include <utils/common/base64.h>
@@ -88,6 +85,8 @@ static inline void _setnosigpipe(int const fd)
 #endif
 }
 
+// ===============  HISTORY SUPPORT ===============
+
 /* simple readline support */
 static char **history = NULL; // most recent first
 static int history_count = 0;
@@ -111,7 +110,7 @@ static void append_to_history(char *line)
     // printf("History : %d\n", history_count);
 }
 
-static char * use_history(char *line, size_t len, int history_index)
+static char *use_history(char *line, size_t len, int history_index)
 {
     if (!history)
 	    return line; // no effect
@@ -132,14 +131,14 @@ static char * use_history(char *line, size_t len, int history_index)
     return strdup(str);
 }
 
-static char * history_previous(char *line, size_t len, OUT int *history_index)
+static char *history_previous(char *line, size_t len, OUT int *history_index)
 {
     if ((* history_index) > 0)
 	    (*history_index)--;
     return use_history(line, len, *history_index);
 
 }
-static char * history_next(char *line, size_t len, OUT int *history_index)
+static char *history_next(char *line, size_t len, OUT int *history_index)
 {
     if ((*history_index) + 1 < history_count)
 	    (*history_index )++;
@@ -211,6 +210,7 @@ static char *getline_with_history(OUT ssize_t *nbytes)
 	}
 }
 
+// ===============  SOCKET HANDLING ===============
 
 /* socket routines */
 static int _open_sock_inet(uint16_t port)
@@ -641,6 +641,67 @@ static struct fun_json *line2json(char *line, const char **error)
 	return json;
 }
 
+// ===============  PRETTY PRINTERS ===============
+
+static struct fun_map *tid_to_context;
+static struct fun_map *tid_to_pretty_printer;
+
+void dpcsh_register_pretty_printer(uint64_t tid, void *context, 
+	struct fun_json (*pretty_printer)(void *context, struct fun_json *result))
+{
+	if (!tid_to_context) {
+		tid_to_context = fun_map(NULL, NULL, NULL, (fun_map_key_t)(uint64_t)(-1));
+	}
+	fun_map_add(tid_to_context, (fun_map_key_t)tid, (fun_map_value_t)context, true);
+	if (!tid_to_pretty_printer) {
+		tid_to_pretty_printer = fun_map(NULL, NULL, NULL, (fun_map_key_t)(uint64_t)(-1));
+	}
+	fun_map_add(tid_to_pretty_printer, (fun_map_key_t)tid, (fun_map_value_t)pretty_printer, true);
+}
+
+void dpcsh_unregister_pretty_printer(uint64_t tid, void *context)
+{
+	if (tid_to_context) {
+		fun_map_remove(tid_to_context, (fun_map_key_t)tid, NULL);
+	}
+	if (tid_to_pretty_printer) {
+		fun_map_remove(tid_to_pretty_printer, (fun_map_key_t)tid, NULL);
+	}
+}
+
+static struct fun_json *__attribute__ ((unused)) apply_pretty_printer(struct fun_json *whole) 
+{
+	if (! whole || (whole->type != fun_json_dict_type)) {
+		printf("*** Malformed result: NULL or not a dictionary\n");
+		return whole;
+	}
+	uint64_t tid;
+	if (!fun_json_lookup_uint64(whole, "tid", &tid)) {
+		printf("*** Malformed result: no transaction id\n");
+		return whole;
+	}
+	struct fun_json *result = fun_json_lookup(whole, "result");
+	if (!result) {
+		printf("*** Malformed result: no key 'result'\n");
+		return whole;
+	}
+	struct fun_json *(*pretty_printer)(void *context, struct fun_json *result);
+	pretty_printer = (void *)fun_map_get(tid_to_pretty_printer, (fun_map_key_t)tid);
+	if (!pretty_printer) {
+		return whole;
+	}
+	void *context = (void *)fun_map_get(tid_to_context, (fun_map_key_t)tid);
+	struct fun_json *new_result = pretty_printer(context, result);
+	struct fun_json *new_whole = fun_json_create_empty_dict();
+	fun_json_dict_add_other_dict(new_whole, whole, true);
+	fun_json_dict_add(new_whole, "result", fun_json_no_copy_no_own, new_result, true);
+	fun_json_release(whole);
+	fun_json_release(new_result);
+	return new_whole;
+}
+
+// ===============  RUN LOOP ===============
+
 // We pass the sock INOUT in order to be able to reestablish a
 // connection if the server went down and up
 static bool _do_send_cmd(struct dpcsock *sock, char *line,
@@ -949,6 +1010,7 @@ enum mode {
 /** entrypoint **/
 int main(int argc, char *argv[])
 {
+	(void)apply_pretty_printer; // to force linking in this symbol (TEMP)
 	enum mode mode = MODE_INTERACTIVE; /* default user control */
 	bool one_shot;  /* run a single command and terminate */
 	int ch, first_unknown = -1;
