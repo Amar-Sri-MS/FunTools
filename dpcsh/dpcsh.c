@@ -12,6 +12,7 @@
 #include <string.h>
 #include <assert.h>
 #include <unistd.h>
+#include <fcntl.h>
 #include <getopt.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -22,8 +23,8 @@
 #include <pthread.h>
 #include <netinet/in.h>		// TCP socket
 #include <arpa/inet.h>
-#include <getopt.h>
 #include <sys/select.h>
+#include <sys/stat.h>
 
 #include "dpcsh.h"
 
@@ -45,6 +46,7 @@ enum sockmode {
 	SOCKMODE_TERMINAL,
 	SOCKMODE_IP,
 	SOCKMODE_UNIX,
+	SOCKMODE_DEV,
 };
 
 enum parsingmode {
@@ -513,16 +515,20 @@ int dpcsocket_connnect(struct dpcsock *sock)
 		return 0;
 	}
 
-	if (sock->server) {
+	if (sock->mode == SOCKMODE_DEV) {
+		sock->fd = open(sock->socket_name, O_RDWR | O_NOCTTY);
+		if (sock->fd < 0)
+			perror("open");
+	} else if (sock->server) {
 		/* setup the server socket*/
-		printf("connecting unix server\n");
+		printf("connecting server socket\n");
 		if (sock->listen_fd <= 0)
 			_listen_sock_init(sock);
 
 		/* wait for someone to connect */
 		_listen_sock_accept(sock);
 	} else {
-		printf("connecting unix socket\n");
+		printf("connecting client socket\n");
 		if (sock->mode == SOCKMODE_UNIX)
 			sock->fd = _open_sock_unix(sock->socket_name);
 		else
@@ -969,6 +975,7 @@ static struct option longopts[] = {
 	{ "help",          no_argument,       NULL, 'h' },
 	{ "base64_srv",    optional_argument, NULL, 'B' },
 	{ "base64_sock",   optional_argument, NULL, 'b' },
+	{ "dev",           required_argument, NULL, 'D' },
 	{ "inet_sock",     optional_argument, NULL, 'i' },
 	{ "unix_sock",     optional_argument, NULL, 'u' },
 	{ "http_proxy",    optional_argument, NULL, 'H' },
@@ -1056,7 +1063,7 @@ int main(int argc, char *argv[])
 	cmd_sock.retries = UINT32_MAX;
 
 	while ((ch = getopt_long(argc, argv,
-				 "hs::i::u::H::T::t::nN",
+				 "hs::i::u::H::T::t::D:nN",
 				 longopts, NULL)) != -1) {
 
 		switch(ch) {
@@ -1087,6 +1094,16 @@ int main(int argc, char *argv[])
 			funos_sock.server = true;
 			funos_sock.port_num = opt_portnum(optarg,
 							  DPC_B64SRV_PORT);
+			mode = MODE_INTERACTIVE;
+
+			break;
+		case 'D':  /* base64 device (pty/tty) */
+
+			/* run as base64 mode for dpcuart */
+			funos_sock.base64 = true;
+			funos_sock.mode = SOCKMODE_DEV;
+			funos_sock.socket_name = opt_sockname(optarg,
+							      "/unknown");
 			mode = MODE_INTERACTIVE;
 
 			break;
