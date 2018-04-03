@@ -38,7 +38,7 @@ typealias Bytes = [UInt8]   // For arbitrary arrays, not necessarily multiple of
 typealias BlockData = [UInt8]    // 64B
 let blockDataAllZeros: BlockData = BlockData(repeating: 0, count: blockNumBytes)
 
-extension Collection where Self.Index == Int, Self.IndexDistance == Int, Self.Iterator.Element == UInt64 {
+extension Collection where Self.Index == Int, Self.Iterator.Element == UInt64 {
     var asBytes: Bytes {
         var bytes: Bytes = []
         for word in self {

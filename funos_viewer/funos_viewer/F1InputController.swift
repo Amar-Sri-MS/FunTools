@@ -76,7 +76,7 @@ class F1InputController: NSObject, NSOutlineViewDataSource, NSTabViewDelegate {
 			topLevelWUs = ["bstest", "snake", "wuctest", "nvme"]
 		} else {
 			numWUs = wus!.count
-			topLevelWUs = wus!.flatMap {
+			topLevelWUs = wus!.compactMap {
 				if $1.dictionaryValue.isEmpty { return nil }
 				let attrs = $1.dictionaryValue["attrs"]?.integerValue ?? 0
 				// FIXME: 16 below...
