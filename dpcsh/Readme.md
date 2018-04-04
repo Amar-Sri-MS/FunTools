@@ -26,7 +26,7 @@ To use dpcsh in interactive mode with the posix simulator you first start FunOS.
 Second you can also start dpcsh from FunSDK. It's also available hand-built in FunTools/dpcsh:
 
 ```
-	$SDKDIR/bin/$OS/dpcsh
+	$SDKDIR/bin/`uname`/dpcsh
 ```
 
 Then you can type commands like 'help' or 'fibo 10' to talk to send transactions to FunOS.
@@ -104,19 +104,19 @@ The above options can be mixed on the command-line to control each end of the Fu
 To create a text proxy to a base64 pty:
 
 ```
-	$SDKDIR/bin/$OS/dpcsh --dev=/dev/pts/2 --text_proxy
+	$SDKDIR/bin/`uname`/dpcsh --dev=/dev/pts/2 --text_proxy
 ```
 
 To connect interactive to a TCP proxy:
 
 ```
-	$SDKDIR/bin/$OS/dpcsh --inet_sock
+	$SDKDIR/bin/`uname`/dpcsh --inet_sock
 ```
 
 To connect a text proxy to a TCP proxy:
 
 ```
-	$SDKDIR/bin/$OS/dpcsh --inet_sock --text_proxy
+	$SDKDIR/bin/`uname`/dpcsh --inet_sock --text_proxy
 ```
 
 ## Testing
@@ -140,6 +140,19 @@ Various tests are run. Look for the output `All tests OK!`. There is only limite
 If you want to write a client to dpc, your best bet is to base it on dpctest.py as such:
 
 ```py
+## my_dpc.py
+
+import os
+import sys
+
+sdkdir = "/bin/" + os.uname()[0]
+if ("SDKDIR" in os.environ):
+    sys.path.append(os.environ["SDKDIR"] + sdkdir)
+elif ("WORKSPACE" in os.environ):
+    sys.path.append(os.environ["WORKSPACE"] + "/FunSDK/" + sdkdir)
+else:
+	raise RuntimeError("Please specify WORKSPACE or SDKDIR environment variable")
+
 import dpc_client
 
 # connect to an already running dpc proxy using strict JSON mode
@@ -166,3 +179,13 @@ client = dpc_client.DpcClient(False)
 ```
 
 Specifying any argument other than "False" is only supported for existing legacy scripts and will go away as they migrate.
+
+Don't forget to run funos-posix and a dpcsh text proxy before you run your client:
+
+```
+~/fundev/FunSDK % bin/funos-posix --dpc-server
+...
+~/fundev/FunSDK % bin/`uname`/dpcsh --text_proxy
+...
+~/fundev/MyClient % ./my_dpc.py
+```
