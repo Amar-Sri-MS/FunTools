@@ -118,3 +118,51 @@ To connect a text proxy to a TCP proxy:
 ```
 	$SDKDIR/bin/$OS/dpcsh --inet_sock --text_proxy
 ```
+
+## Testing
+
+dpcsh is currently manual tested with `dpctest.py` in the FunTools/dpcsh directory. It expects to execute the dpcsh binary from the current directory, after you have built it.
+
+Standard invocation, in two separate terminal windows:
+
+```
+~/fundev/FunSDK % bin/funos-posix --dpc-server
+```
+
+```
+~/fundev/FunTools/dpcsh % ./dpctest.py
+```
+
+Various tests are run. Look for the output `All tests OK!`. There is only limited coverage so far (text proxy, unix socket, dpc_client.py), but it's better than nothing.
+
+## Building your own client
+
+If you want to write a client to dpc, your best bet is to base it on dpctest.py as such:
+
+```py
+import dpc_client
+
+# connect to an already running dpc proxy using strict JSON mode
+client = dpc_client.DpcClient(False)
+
+print "### Running a command 1"
+message = "Hello dpc"
+result = client.execute('echo', message)
+if (result.strip() != message):
+    raise RuntimeError("echo failed")
+print "Echo OK"
+
+print "### Running a command 2"
+result = client.execute('math', [ "+", 2, 3, 4, 5, 6])
+if (int(result) != 20):
+    raise RuntimeError("math failed")
+print "Math OK"
+```
+
+be sure to observe strict JSON mode:
+
+```py
+client = dpc_client.DpcClient(False)
+```
+
+Specifying any argument other than "False" is only supported for existing legacy scripts and will go away as they migrate.
