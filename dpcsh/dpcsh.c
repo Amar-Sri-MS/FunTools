@@ -993,15 +993,16 @@ static struct option longopts[] = {
 static void usage(const char *argv0)
 {
 	printf("usage: %s [<mode> [option]]", argv0);
-	printf("       by default connect as a --inet_sock\n");
+	printf("       by default connect as a --unix_sock\n");
 	printf("       --help                  this text\n");
-	printf("       --base64_srv [port]     listen as a server port on IP using base64 (dpcuart to qemu)\n");
-	printf("       --base64_sock [port]    connec as a client port on IP using base64 (dpcuart to qemu)\n");
-	printf("       --inet_sock  [port]     connect as a client port over IP\n");
-	printf("       --unix_sock  [sockname] connect as a client port over unix sockets\n");
-	printf("       --http_proxy [port]     listen as an http proxy\n");
-	printf("       --tcp_proxy  [port]     listen as a tcp proxy\n");
-	printf("       --text_proxy [port]     listen as a tcp proxy\n");
+	printf("       --dev[=device]          open device and read/write base64 to FunOS UART\n");
+	printf("       --base64_srv[=port]     listen as a server port on IP using base64 (dpcuart to qemu)\n");
+	printf("       --base64_sock[=port]    connec as a client port on IP using base64 (dpcuart to qemu)\n");
+	printf("       --inet_sock[=port]      connect as a client port over IP\n");
+	printf("       --unix_sock[=sockname]  connect as a client port over unix sockets\n");
+	printf("       --http_proxy[=port]     listen as an http proxy\n");
+	printf("       --tcp_proxy[=port]      listen as a tcp proxy\n");
+	printf("       --text_proxy[=port]     listen as a tcp proxy\n");
 	printf("       --nocli                 issue request from command-line arguments and terminate\n");
 	printf("       --oneshot               don't reconnect after command side disconnect\n");
 	printf("       --manual_base64         just translate base64 back and forward\n");
