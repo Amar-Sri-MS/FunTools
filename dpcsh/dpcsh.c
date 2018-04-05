@@ -653,8 +653,7 @@ static struct fun_json *line2json(char *line, const char **error)
 static struct fun_map *tid_to_context;
 static struct fun_map *tid_to_pretty_printer;
 
-void dpcsh_register_pretty_printer(uint64_t tid, void *context, 
-	struct fun_json (*pretty_printer)(void *context, struct fun_json *result))
+void dpcsh_register_pretty_printer(uint64_t tid, void *context, pretty_printer_f pretty_printer)
 {
 	if (!tid_to_context) {
 		tid_to_context = fun_map(NULL, NULL, NULL, (fun_map_key_t)(uint64_t)(-1));
@@ -676,35 +675,40 @@ void dpcsh_unregister_pretty_printer(uint64_t tid, void *context)
 	}
 }
 
-static struct fun_json *__attribute__ ((unused)) apply_pretty_printer(struct fun_json *whole) 
+static CALLER_TO_RELEASE struct fun_json *apply_pretty_printer(struct fun_json *whole) 
 {
+	if (!tid_to_pretty_printer) {
+		goto nope;
+	}
 	if (! whole || (whole->type != fun_json_dict_type)) {
 		printf("*** Malformed result: NULL or not a dictionary\n");
-		return whole;
+		goto nope;
 	}
 	uint64_t tid;
 	if (!fun_json_lookup_uint64(whole, "tid", &tid)) {
 		printf("*** Malformed result: no transaction id\n");
-		return whole;
+		goto nope;
 	}
 	struct fun_json *result = fun_json_lookup(whole, "result");
 	if (!result) {
 		printf("*** Malformed result: no key 'result'\n");
-		return whole;
+		goto nope;
 	}
-	struct fun_json *(*pretty_printer)(void *context, struct fun_json *result);
-	pretty_printer = (void *)fun_map_get(tid_to_pretty_printer, (fun_map_key_t)tid);
+	pretty_printer_f pretty_printer = (void *)fun_map_get(tid_to_pretty_printer, (fun_map_key_t)tid);
 	if (!pretty_printer) {
-		return whole;
+		goto nope;
 	}
 	void *context = (void *)fun_map_get(tid_to_context, (fun_map_key_t)tid);
-	struct fun_json *new_result = pretty_printer(context, result);
+	printf("Pretty-printing for tid=%d\n", (int)tid);
+	struct fun_json *new_result = pretty_printer(context, tid, result);
+	// fun_json_printf("Pretty printed result: %s\n", new_result);
 	struct fun_json *new_whole = fun_json_create_empty_dict();
 	fun_json_dict_add_other_dict(new_whole, whole, true);
 	fun_json_dict_add(new_whole, "result", fun_json_no_copy_no_own, new_result, true);
-	fun_json_release(whole);
-	fun_json_release(new_result);
+	// fun_json_printf("new_whole: %s\n", new_whole);
 	return new_whole;
+nope:
+	return fun_json_retain(whole);
 }
 
 // ===============  RUN LOOP ===============
@@ -749,6 +753,7 @@ static bool _do_send_cmd(struct dpcsock *sock, char *line,
 	return true;
 }
 
+
 static void _do_recv_cmd(struct dpcsock *funos_sock,
 			 struct dpcsock *cmd_sock, bool retry)
 {
@@ -760,11 +765,32 @@ static void _do_recv_cmd(struct dpcsock *funos_sock,
 		return;
         }
 
+	// Bertrand 2018-04-05: Gross hack to make sure we don't break dpcsh users who were not expected a tid
+	uint64_t tid = 0;
+	struct fun_json *raw_output = fun_json_lookup(output, "result");
+	if (!raw_output || !fun_json_lookup_uint64(output, "tid", &tid)) {
+		// printf("Old style output\n");
+		raw_output = output;
+	} else {
+		// printf("New style output, tid=%d\n", (int)tid);
+		fun_json_retain(raw_output);
+		raw_output = apply_pretty_printer(output); 
+		fun_json_release(output);
+
+		// Now we strip the tid to avoid confusing clients
+		struct fun_json *final_output = fun_json_lookup(raw_output, "result");
+		if (final_output) {
+			struct fun_json *old = raw_output;
+			raw_output = fun_json_retain(final_output);
+			fun_json_release(old);
+		}
+	}
+
 	if (cmd_sock->mode == SOCKMODE_TERMINAL) {
 		fun_json_printf(OUTPUT_COLORIZE "output => %s" NORMAL_COLORIZE "\n",
-				output);
+				raw_output);
 	} else {
-		char *pp = fun_json_to_text(output);
+		char *pp = fun_json_to_text(raw_output);
 		if (pp) {
 			write(cmd_sock->fd, pp, strlen(pp));
 			write(cmd_sock->fd, "\n", 1);
@@ -772,7 +798,7 @@ static void _do_recv_cmd(struct dpcsock *funos_sock,
 		}
 	}
 
-        fun_json_release(output);
+        fun_json_release(raw_output);
 }
 
 static void _do_interactive(struct dpcsock *funos_sock,
@@ -1018,7 +1044,6 @@ enum mode {
 /** entrypoint **/
 int main(int argc, char *argv[])
 {
-	(void)apply_pretty_printer; // to force linking in this symbol (TEMP)
 	enum mode mode = MODE_INTERACTIVE; /* default user control */
 	bool one_shot;  /* run a single command and terminate */
 	int ch, first_unknown = -1;
