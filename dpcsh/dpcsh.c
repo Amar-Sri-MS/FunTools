@@ -41,6 +41,9 @@
 #define DPC_B64SRV_PORT 40223   /* default dpcuart listen port */
 #define HTTP_PORTNO     9001    /* default HTTP listen port */
 
+// Global transaction counter for this shell
+static uint64_t tid = 1;
+
 /* handy socket abstraction */
 enum sockmode {
 	SOCKMODE_TERMINAL,
@@ -634,8 +637,6 @@ static struct fun_json *line2json(char *line, const char **error)
 	}
 
 	if (pmode == PARSE_TEXT) {
-		uint64_t tid = 0; /* dummy */
-
 		/* parse as a command-line */
 		json = fun_commander_line_to_command(line, &tid, error);
 	} else {
