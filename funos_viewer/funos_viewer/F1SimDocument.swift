@@ -88,11 +88,12 @@ extension String {
 		var perVP: [String: Int] = [:]
 		var sum = 0
 		for faddr in allVPs!.keys {
-			let ccv = faddr.toCCV()!
+			let ccv = faddr.toCCV()
+			if ccv == nil { continue }
 			let times = allVPs![faddr]!.dictionaryValue["wus_received"]!.integerValue
-			let cluster = "Cluster\(ccv[0])"
-			let core = "Core\(ccv[0]).\(ccv[1])"
-			let vp = "VP\(ccv[0]).\(ccv[1]).\(ccv[2])"
+			let cluster = "Cluster\(ccv![0])"
+			let core = "Core\(ccv![0]).\(ccv![1])"
+			let vp = "VP\(ccv![0]).\(ccv![1]).\(ccv![2])"
 			perCluster[cluster] = (perCluster[cluster] ?? 0) + times
 			perCore[core] = (perCore[core] ?? 0) + times
 			perVP[vp] = times
@@ -190,7 +191,14 @@ extension String {
 		if debug {
 			Swift.print("command '\(verb)' returned '\(str)'")
 		}
-		return try? JSON(str)
+		let j = try? JSON(str)
+		if j == nil {
+			return nil
+		}
+		if j!.dictionaryValue["tid"] != nil && j!.dictionaryValue["result"] != nil {
+			return j!.dictionaryValue["result"]
+		}
+		return j
 	}
 	func doF1Command(_ verb: String, _ args: String...) -> JSON! {
 		return doF1Command(socket: &socket, verb, args)
