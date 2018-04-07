@@ -1,0 +1,6250 @@
+---
+BASEADDRPORT: 1
+COUNT: 1
+DESCRIPTION: PSW SCH CSR Spec
+INTR:
+  FATAL:
+    - DESCRIPTION: orl_mem9 Memory Double Bit ECC Error
+      NAME: orl_mem9
+      WIDTH: 1
+    - DESCRIPTION: orl_mem8 Memory Double Bit ECC Error
+      NAME: orl_mem8
+      WIDTH: 1
+    - DESCRIPTION: orl_mem7 Memory Double Bit ECC Error
+      NAME: orl_mem7
+      WIDTH: 1
+    - DESCRIPTION: orl_mem6 Memory Double Bit ECC Error
+      NAME: orl_mem6
+      WIDTH: 1
+    - DESCRIPTION: orl_mem5 Memory Double Bit ECC Error
+      NAME: orl_mem5
+      WIDTH: 1
+    - DESCRIPTION: orl_mem4 Memory Double Bit ECC Error
+      NAME: orl_mem4
+      WIDTH: 1
+    - DESCRIPTION: orl_mem3 Memory Double Bit ECC Error
+      NAME: orl_mem3
+      WIDTH: 1
+    - DESCRIPTION: orl_mem2 Memory Double Bit ECC Error
+      NAME: orl_mem2
+      WIDTH: 1
+    - DESCRIPTION: orl_mem1 Memory Double Bit ECC Error
+      NAME: orl_mem1
+      WIDTH: 1
+    - DESCRIPTION: orl_mem0 Memory Double Bit ECC Error
+      NAME: orl_mem0
+      WIDTH: 1
+    - DESCRIPTION: qsch_chnl_dwrr_sc Memory Double Bit ECC Error
+      NAME: qsch_chnl_dwrr_sc
+      WIDTH: 1
+    - DESCRIPTION: qsch_q_dwrr_sc Memory Double Bit ECC Error
+      NAME: qsch_q_dwrr_sc
+      WIDTH: 1
+    - DESCRIPTION: qsch_q_dwrr_weight Memory Double Bit ECC Error
+      NAME: qsch_q_dwrr_weight
+      WIDTH: 1
+  NON_FATAL:
+    - DESCRIPTION: orl_mem9 Memory Single Bit ECC Error
+      NAME: orl_mem9
+      WIDTH: 1
+    - DESCRIPTION: orl_mem8 Memory Single Bit ECC Error
+      NAME: orl_mem8
+      WIDTH: 1
+    - DESCRIPTION: orl_mem7 Memory Single Bit ECC Error
+      NAME: orl_mem7
+      WIDTH: 1
+    - DESCRIPTION: orl_mem6 Memory Single Bit ECC Error
+      NAME: orl_mem6
+      WIDTH: 1
+    - DESCRIPTION: orl_mem5 Memory Single Bit ECC Error
+      NAME: orl_mem5
+      WIDTH: 1
+    - DESCRIPTION: orl_mem4 Memory Single Bit ECC Error
+      NAME: orl_mem4
+      WIDTH: 1
+    - DESCRIPTION: orl_mem3 Memory Single Bit ECC Error
+      NAME: orl_mem3
+      WIDTH: 1
+    - DESCRIPTION: orl_mem2 Memory Single Bit ECC Error
+      NAME: orl_mem2
+      WIDTH: 1
+    - DESCRIPTION: orl_mem1 Memory Single Bit ECC Error
+      NAME: orl_mem1
+      WIDTH: 1
+    - DESCRIPTION: orl_mem0 Memory Single Bit ECC Error
+      NAME: orl_mem0
+      WIDTH: 1
+    - DESCRIPTION: qsch_chnl_dwrr_sc Memory Single Bit ECC Error
+      NAME: qsch_chnl_dwrr_sc
+      WIDTH: 1
+    - DESCRIPTION: qsch_q_dwrr_sc Memory Single Bit ECC Error
+      NAME: qsch_q_dwrr_sc
+      WIDTH: 1
+    - DESCRIPTION: qsch_q_dwrr_weight Memory Single Bit ECC Error
+      NAME: qsch_q_dwrr_weight
+      WIDTH: 1
+INTR_PORT_EN: 1
+NAME: PSW_SCH_AN
+PARENTNAME: NU_0_AN
+REGLST:
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: |-
+          Timeout Configuration. Cycles are RSU clk based.
+                            - 00 : 1024 cycles
+                            - 01 : 256 cycles
+                            - 10 : 4096 cycles
+                            - 11 : infinite
+        NAME: val
+        WIDTH: 2
+    NAME: psw_sch_timeout_thresh_cfg
+  - ATTR: 9
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: "Timed out Status. Cycles are RSU clk based. Becomes 1 when timed out. Write any value to clear it.\n                  "
+        NAME: val
+        WIDTH: 1
+    NAME: psw_sch_timedout_sta
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: |-
+          Clear Timeout Status. Data is ignored. A write
+                     will clear the timeout status bit
+        NAME: val
+        WIDTH: 1
+    NAME: psw_sch_timeout_clr
+    TEST_ATTR: 1
+  - ATTR: 256
+    FLDLST:
+      - &1
+        DESCRIPTION: orl_mem9 Memory Double Bit ECC Error
+        NAME: orl_mem9
+        WIDTH: 1
+      - &2
+        DESCRIPTION: orl_mem8 Memory Double Bit ECC Error
+        NAME: orl_mem8
+        WIDTH: 1
+      - &3
+        DESCRIPTION: orl_mem7 Memory Double Bit ECC Error
+        NAME: orl_mem7
+        WIDTH: 1
+      - &4
+        DESCRIPTION: orl_mem6 Memory Double Bit ECC Error
+        NAME: orl_mem6
+        WIDTH: 1
+      - &5
+        DESCRIPTION: orl_mem5 Memory Double Bit ECC Error
+        NAME: orl_mem5
+        WIDTH: 1
+      - &6
+        DESCRIPTION: orl_mem4 Memory Double Bit ECC Error
+        NAME: orl_mem4
+        WIDTH: 1
+      - &7
+        DESCRIPTION: orl_mem3 Memory Double Bit ECC Error
+        NAME: orl_mem3
+        WIDTH: 1
+      - &8
+        DESCRIPTION: orl_mem2 Memory Double Bit ECC Error
+        NAME: orl_mem2
+        WIDTH: 1
+      - &9
+        DESCRIPTION: orl_mem1 Memory Double Bit ECC Error
+        NAME: orl_mem1
+        WIDTH: 1
+      - &10
+        DESCRIPTION: orl_mem0 Memory Double Bit ECC Error
+        NAME: orl_mem0
+        WIDTH: 1
+      - &11
+        DESCRIPTION: qsch_chnl_dwrr_sc Memory Double Bit ECC Error
+        NAME: qsch_chnl_dwrr_sc
+        WIDTH: 1
+      - &12
+        DESCRIPTION: qsch_q_dwrr_sc Memory Double Bit ECC Error
+        NAME: qsch_q_dwrr_sc
+        WIDTH: 1
+      - &13
+        DESCRIPTION: qsch_q_dwrr_weight Memory Double Bit ECC Error
+        NAME: qsch_q_dwrr_weight
+        WIDTH: 1
+    NAME: psw_sch_fatal_intr_cause
+  - ATTR: 512
+    FLDLST:
+      - *1
+      - *2
+      - *3
+      - *4
+      - *5
+      - *6
+      - *7
+      - *8
+      - *9
+      - *10
+      - *11
+      - *12
+      - *13
+    NAME: psw_sch_fatal_intr_stat
+  - ATTR: 1024
+    FLDLST:
+      - *1
+      - *2
+      - *3
+      - *4
+      - *5
+      - *6
+      - *7
+      - *8
+      - *9
+      - *10
+      - *11
+      - *12
+      - *13
+    NAME: psw_sch_fatal_intr_mask
+  - ATTR: 2048
+    FLDLST:
+      - *1
+      - *2
+      - *3
+      - *4
+      - *5
+      - *6
+      - *7
+      - *8
+      - *9
+      - *10
+      - *11
+      - *12
+      - *13
+    NAME: psw_sch_fatal_intr_bset
+  - ATTR: 4096
+    FLDLST:
+      - *1
+      - *2
+      - *3
+      - *4
+      - *5
+      - *6
+      - *7
+      - *8
+      - *9
+      - *10
+      - *11
+      - *12
+      - *13
+    NAME: psw_sch_fatal_intr_bclr
+  - ATTR: 256
+    FLDLST:
+      - &14
+        DESCRIPTION: orl_mem9 Memory Single Bit ECC Error
+        NAME: orl_mem9
+        WIDTH: 1
+      - &15
+        DESCRIPTION: orl_mem8 Memory Single Bit ECC Error
+        NAME: orl_mem8
+        WIDTH: 1
+      - &16
+        DESCRIPTION: orl_mem7 Memory Single Bit ECC Error
+        NAME: orl_mem7
+        WIDTH: 1
+      - &17
+        DESCRIPTION: orl_mem6 Memory Single Bit ECC Error
+        NAME: orl_mem6
+        WIDTH: 1
+      - &18
+        DESCRIPTION: orl_mem5 Memory Single Bit ECC Error
+        NAME: orl_mem5
+        WIDTH: 1
+      - &19
+        DESCRIPTION: orl_mem4 Memory Single Bit ECC Error
+        NAME: orl_mem4
+        WIDTH: 1
+      - &20
+        DESCRIPTION: orl_mem3 Memory Single Bit ECC Error
+        NAME: orl_mem3
+        WIDTH: 1
+      - &21
+        DESCRIPTION: orl_mem2 Memory Single Bit ECC Error
+        NAME: orl_mem2
+        WIDTH: 1
+      - &22
+        DESCRIPTION: orl_mem1 Memory Single Bit ECC Error
+        NAME: orl_mem1
+        WIDTH: 1
+      - &23
+        DESCRIPTION: orl_mem0 Memory Single Bit ECC Error
+        NAME: orl_mem0
+        WIDTH: 1
+      - &24
+        DESCRIPTION: qsch_chnl_dwrr_sc Memory Single Bit ECC Error
+        NAME: qsch_chnl_dwrr_sc
+        WIDTH: 1
+      - &25
+        DESCRIPTION: qsch_q_dwrr_sc Memory Single Bit ECC Error
+        NAME: qsch_q_dwrr_sc
+        WIDTH: 1
+      - &26
+        DESCRIPTION: qsch_q_dwrr_weight Memory Single Bit ECC Error
+        NAME: qsch_q_dwrr_weight
+        WIDTH: 1
+    NAME: psw_sch_non_fatal_intr_cause
+  - ATTR: 512
+    FLDLST:
+      - *14
+      - *15
+      - *16
+      - *17
+      - *18
+      - *19
+      - *20
+      - *21
+      - *22
+      - *23
+      - *24
+      - *25
+      - *26
+    NAME: psw_sch_non_fatal_intr_stat
+  - ATTR: 1024
+    FLDLST:
+      - *14
+      - *15
+      - *16
+      - *17
+      - *18
+      - *19
+      - *20
+      - *21
+      - *22
+      - *23
+      - *24
+      - *25
+      - *26
+    NAME: psw_sch_non_fatal_intr_mask
+  - ATTR: 2048
+    FLDLST:
+      - *14
+      - *15
+      - *16
+      - *17
+      - *18
+      - *19
+      - *20
+      - *21
+      - *22
+      - *23
+      - *24
+      - *25
+      - *26
+    NAME: psw_sch_non_fatal_intr_bset
+  - ATTR: 4096
+    FLDLST:
+      - *14
+      - *15
+      - *16
+      - *17
+      - *18
+      - *19
+      - *20
+      - *21
+      - *22
+      - *23
+      - *24
+      - *25
+      - *26
+    NAME: psw_sch_non_fatal_intr_bclr
+  - ATTR: 9
+    DESCRIPTION: Place Holder for now for PSW packet Scheduler Feature Register
+    FLDLST:
+      - ATTR: 1
+        DEFAULT: 24
+        DESCRIPTION: Module ID
+        NAME: module_id
+        VALUE: 24
+        WIDTH: 8
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Version number of the module
+        NAME: version
+        VALUE: 0
+        WIDTH: 8
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Features enabled in the module.
+        NAME: features
+        VALUE: 0
+        WIDTH: 16
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Reserved Field.
+        NAME: Reserved
+        WIDTH: 32
+    NAME: psw_sch_features
+    TEST_ATTR: 0
+  - ATTR: 5
+    DESCRIPTION: ' Spare PIO register. These bits can be read and written by software. They can serve as control bits for late ECOs in the design.'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Spare PIO register.
+        NAME: val
+        WIDTH: 64
+    NAME: psw_sch_spare_pio
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: Scratchpad register.
+        NAME: val
+        WIDTH: 64
+    NAME: psw_sch_scratchpad
+  - ATTR: 5
+    DESCRIPTION: This register contains init value of cell credits for a fabric port
+    FLDLST:
+      - DEFAULT: 2
+        DESCRIPTION: credits for stream0 of the FPG. The value of this field depends on the port speed and can be changed during port speed reconfig.
+        NAME: credit_val
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: HW detects rising edge of this field and loads the packet credits. SW can write to register during initialization or port speed reconfig.
+        NAME: credit_init
+        WIDTH: 1
+    NAME: psw_sch_psch_cfg_credits_fp_0
+  - ATTR: 5
+    DESCRIPTION: This register contains init value of cell credits for a fabric port
+    FLDLST:
+      - DEFAULT: 2
+        DESCRIPTION: credits for stream1 of the FPG. The value of this field depends on the port speed and can be changed during port speed reconfig.
+        NAME: credit_val
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: HW detects rising edge of this field and loads the packet credits. SW can write to register during initialization or port speed reconfig.
+        NAME: credit_init
+        WIDTH: 1
+    NAME: psw_sch_psch_cfg_credits_fp_1
+  - ATTR: 5
+    DESCRIPTION: This register contains init value of cell credits for a fabric port
+    FLDLST:
+      - DEFAULT: 2
+        DESCRIPTION: credits for stream2 of the FPG. The value of this field depends on the port speed and can be changed during port speed reconfig.
+        NAME: credit_val
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: HW detects rising edge of this field and loads the packet credits. SW can write to register during initialization or port speed reconfig.
+        NAME: credit_init
+        WIDTH: 1
+    NAME: psw_sch_psch_cfg_credits_fp_2
+  - ATTR: 5
+    DESCRIPTION: This register contains init value of cell credits for a fabric port
+    FLDLST:
+      - DEFAULT: 2
+        DESCRIPTION: credits for stream3 of the FPG. The value of this field depends on the port speed and can be changed during port speed reconfig.
+        NAME: credit_val
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: HW detects rising edge of this field and loads the packet credits. SW can write to register during initialization or port speed reconfig.
+        NAME: credit_init
+        WIDTH: 1
+    NAME: psw_sch_psch_cfg_credits_fp_3
+  - ATTR: 5
+    DESCRIPTION: This register contains init value of cell credits for a fabric port
+    FLDLST:
+      - DEFAULT: 2
+        DESCRIPTION: credits for stream4 of the FPG. The value of this field depends on the port speed and can be changed during port speed reconfig.
+        NAME: credit_val
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: HW detects rising edge of this field and loads the packet credits. SW can write to register during initialization or port speed reconfig.
+        NAME: credit_init
+        WIDTH: 1
+    NAME: psw_sch_psch_cfg_credits_fp_4
+  - ATTR: 5
+    DESCRIPTION: This register contains init value of cell credits for a fabric port
+    FLDLST:
+      - DEFAULT: 2
+        DESCRIPTION: credits for stream5 of the FPG. The value of this field depends on the port speed and can be changed during port speed reconfig.
+        NAME: credit_val
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: HW detects rising edge of this field and loads the packet credits. SW can write to register during initialization or port speed reconfig.
+        NAME: credit_init
+        WIDTH: 1
+    NAME: psw_sch_psch_cfg_credits_fp_5
+  - ATTR: 5
+    DESCRIPTION: This register contains init value of cell credits for a fabric port
+    FLDLST:
+      - DEFAULT: 2
+        DESCRIPTION: credits for stream6 of the FPG. The value of this field depends on the port speed and can be changed during port speed reconfig.
+        NAME: credit_val
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: HW detects rising edge of this field and loads the packet credits. SW can write to register during initialization or port speed reconfig.
+        NAME: credit_init
+        WIDTH: 1
+    NAME: psw_sch_psch_cfg_credits_fp_6
+  - ATTR: 5
+    DESCRIPTION: This register contains init value of cell credits for a fabric port
+    FLDLST:
+      - DEFAULT: 2
+        DESCRIPTION: credits for stream7 of the FPG. The value of this field depends on the port speed and can be changed during port speed reconfig.
+        NAME: credit_val
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: HW detects rising edge of this field and loads the packet credits. SW can write to register during initialization or port speed reconfig.
+        NAME: credit_init
+        WIDTH: 1
+    NAME: psw_sch_psch_cfg_credits_fp_7
+  - ATTR: 5
+    DESCRIPTION: This register contains init value of cell credits for a fabric port
+    FLDLST:
+      - DEFAULT: 2
+        DESCRIPTION: credits for stream8 of the FPG. The value of this field depends on the port speed and can be changed during port speed reconfig.
+        NAME: credit_val
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: HW detects rising edge of this field and loads the packet credits. SW can write to register during initialization or port speed reconfig.
+        NAME: credit_init
+        WIDTH: 1
+    NAME: psw_sch_psch_cfg_credits_fp_8
+  - ATTR: 5
+    DESCRIPTION: This register contains init value of cell credits for a fabric port
+    FLDLST:
+      - DEFAULT: 2
+        DESCRIPTION: credits for stream9 of the FPG. The value of this field depends on the port speed and can be changed during port speed reconfig.
+        NAME: credit_val
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: HW detects rising edge of this field and loads the packet credits. SW can write to register during initialization or port speed reconfig.
+        NAME: credit_init
+        WIDTH: 1
+    NAME: psw_sch_psch_cfg_credits_fp_9
+  - ATTR: 5
+    DESCRIPTION: This register contains init value of cell credits for a fabric port
+    FLDLST:
+      - DEFAULT: 2
+        DESCRIPTION: credits for stream10 of the FPG. The value of this field depends on the port speed and can be changed during port speed reconfig.
+        NAME: credit_val
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: HW detects rising edge of this field and loads the packet credits. SW can write to register during initialization or port speed reconfig.
+        NAME: credit_init
+        WIDTH: 1
+    NAME: psw_sch_psch_cfg_credits_fp_10
+  - ATTR: 5
+    DESCRIPTION: This register contains init value of cell credits for a fabric port
+    FLDLST:
+      - DEFAULT: 2
+        DESCRIPTION: credits for stream11 of the FPG. The value of this field depends on the port speed and can be changed during port speed reconfig.
+        NAME: credit_val
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: HW detects rising edge of this field and loads the packet credits. SW can write to register during initialization or port speed reconfig.
+        NAME: credit_init
+        WIDTH: 1
+    NAME: psw_sch_psch_cfg_credits_fp_11
+  - ATTR: 5
+    DESCRIPTION: This register contains init value of cell credits for a fabric port
+    FLDLST:
+      - DEFAULT: 2
+        DESCRIPTION: credits for stream12 of the FPG. The value of this field depends on the port speed and can be changed during port speed reconfig.
+        NAME: credit_val
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: HW detects rising edge of this field and loads the packet credits. SW can write to register during initialization or port speed reconfig.
+        NAME: credit_init
+        WIDTH: 1
+    NAME: psw_sch_psch_cfg_credits_fp_12
+  - ATTR: 5
+    DESCRIPTION: This register contains init value of cell credits for a fabric port
+    FLDLST:
+      - DEFAULT: 2
+        DESCRIPTION: credits for stream13 of the FPG. The value of this field depends on the port speed and can be changed during port speed reconfig.
+        NAME: credit_val
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: HW detects rising edge of this field and loads the packet credits. SW can write to register during initialization or port speed reconfig.
+        NAME: credit_init
+        WIDTH: 1
+    NAME: psw_sch_psch_cfg_credits_fp_13
+  - ATTR: 5
+    DESCRIPTION: This register contains init value of cell credits for a fabric port
+    FLDLST:
+      - DEFAULT: 2
+        DESCRIPTION: credits for stream14 of the FPG. The value of this field depends on the port speed and can be changed during port speed reconfig.
+        NAME: credit_val
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: HW detects rising edge of this field and loads the packet credits. SW can write to register during initialization or port speed reconfig.
+        NAME: credit_init
+        WIDTH: 1
+    NAME: psw_sch_psch_cfg_credits_fp_14
+  - ATTR: 5
+    DESCRIPTION: This register contains init value of cell credits for a fabric port
+    FLDLST:
+      - DEFAULT: 2
+        DESCRIPTION: credits for stream15 of the FPG. The value of this field depends on the port speed and can be changed during port speed reconfig.
+        NAME: credit_val
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: HW detects rising edge of this field and loads the packet credits. SW can write to register during initialization or port speed reconfig.
+        NAME: credit_init
+        WIDTH: 1
+    NAME: psw_sch_psch_cfg_credits_fp_15
+  - ATTR: 5
+    DESCRIPTION: This register contains init value of cell credits for a fabric port
+    FLDLST:
+      - DEFAULT: 2
+        DESCRIPTION: credits for stream16 of the FPG. The value of this field depends on the port speed and can be changed during port speed reconfig.
+        NAME: credit_val
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: HW detects rising edge of this field and loads the packet credits. SW can write to register during initialization or port speed reconfig.
+        NAME: credit_init
+        WIDTH: 1
+    NAME: psw_sch_psch_cfg_credits_fp_16
+  - ATTR: 5
+    DESCRIPTION: This register contains init value of cell credits for a fabric port
+    FLDLST:
+      - DEFAULT: 2
+        DESCRIPTION: credits for stream17 of the FPG. The value of this field depends on the port speed and can be changed during port speed reconfig.
+        NAME: credit_val
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: HW detects rising edge of this field and loads the packet credits. SW can write to register during initialization or port speed reconfig.
+        NAME: credit_init
+        WIDTH: 1
+    NAME: psw_sch_psch_cfg_credits_fp_17
+  - ATTR: 5
+    DESCRIPTION: This register contains init value of cell credits for a fabric port
+    FLDLST:
+      - DEFAULT: 2
+        DESCRIPTION: credits for stream18 of the FPG. The value of this field depends on the port speed and can be changed during port speed reconfig.
+        NAME: credit_val
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: HW detects rising edge of this field and loads the packet credits. SW can write to register during initialization or port speed reconfig.
+        NAME: credit_init
+        WIDTH: 1
+    NAME: psw_sch_psch_cfg_credits_fp_18
+  - ATTR: 5
+    DESCRIPTION: This register contains init value of cell credits for a fabric port
+    FLDLST:
+      - DEFAULT: 2
+        DESCRIPTION: credits for stream19 of the FPG. The value of this field depends on the port speed and can be changed during port speed reconfig.
+        NAME: credit_val
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: HW detects rising edge of this field and loads the packet credits. SW can write to register during initialization or port speed reconfig.
+        NAME: credit_init
+        WIDTH: 1
+    NAME: psw_sch_psch_cfg_credits_fp_19
+  - ATTR: 5
+    DESCRIPTION: This register contains init value of cell credits for a fabric port
+    FLDLST:
+      - DEFAULT: 2
+        DESCRIPTION: credits for stream20 of the FPG. The value of this field depends on the port speed and can be changed during port speed reconfig.
+        NAME: credit_val
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: HW detects rising edge of this field and loads the packet credits. SW can write to register during initialization or port speed reconfig.
+        NAME: credit_init
+        WIDTH: 1
+    NAME: psw_sch_psch_cfg_credits_fp_20
+  - ATTR: 5
+    DESCRIPTION: This register contains init value of cell credits for a fabric port
+    FLDLST:
+      - DEFAULT: 2
+        DESCRIPTION: credits for stream21 of the FPG. The value of this field depends on the port speed and can be changed during port speed reconfig.
+        NAME: credit_val
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: HW detects rising edge of this field and loads the packet credits. SW can write to register during initialization or port speed reconfig.
+        NAME: credit_init
+        WIDTH: 1
+    NAME: psw_sch_psch_cfg_credits_fp_21
+  - ATTR: 5
+    DESCRIPTION: This register contains init value of cell credits for a fabric port
+    FLDLST:
+      - DEFAULT: 2
+        DESCRIPTION: credits for stream22 of the FPG. The value of this field depends on the port speed and can be changed during port speed reconfig.
+        NAME: credit_val
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: HW detects rising edge of this field and loads the packet credits. SW can write to register during initialization or port speed reconfig.
+        NAME: credit_init
+        WIDTH: 1
+    NAME: psw_sch_psch_cfg_credits_fp_22
+  - ATTR: 5
+    DESCRIPTION: This register contains init value of cell credits for a fabric port
+    FLDLST:
+      - DEFAULT: 2
+        DESCRIPTION: credits for stream23 of the FPG. The value of this field depends on the port speed and can be changed during port speed reconfig.
+        NAME: credit_val
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: HW detects rising edge of this field and loads the packet credits. SW can write to register during initialization or port speed reconfig.
+        NAME: credit_init
+        WIDTH: 1
+    NAME: psw_sch_psch_cfg_credits_fp_23
+  - ATTR: 5
+    COUNT: 3
+    DESCRIPTION: This register contains init value of packet credits for an erp
+    FLDLST: &27
+      - DEFAULT: 2
+        DESCRIPTION: packet credits . The value of this field depends on the port speed and can be changed during port speed reconfig.
+        NAME: credit_val
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: HW detects rising edge of this field and loads the packet credits. SW can write to register during initialization or port speed reconfig.
+        NAME: credit_init
+        WIDTH: 1
+    NAME: psw_sch_psch_cfg_credits_erp_0
+  - ATTR: 5
+    COUNT: 3
+    DESCRIPTION: This register contains init value of packet credits for an erp
+    FLDLST: *27
+    NAME: psw_sch_psch_cfg_credits_erp_1
+  - ATTR: 5
+    COUNT: 3
+    DESCRIPTION: This register contains init value of packet credits for an erp
+    FLDLST: *27
+    NAME: psw_sch_psch_cfg_credits_erp_2
+  - ATTR: 5
+    DESCRIPTION: This register contains init value of packet credits for purge port
+    FLDLST:
+      - DEFAULT: 2
+        DESCRIPTION: packet credits .
+        NAME: credit_val
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: HW detects rising edge of this field and loads the packet credits. SW can write to register during initialization or port speed reconfig.
+        NAME: credit_init
+        WIDTH: 1
+    NAME: psw_sch_psch_cfg_credits_purge_port
+  - ATTR: 9
+    DESCRIPTION: This register contains current value of packet credits for purge port
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: packet credits .
+        NAME: credit_val
+        WIDTH: 4
+    NAME: psw_sch_psch_sta_credits_purge_port
+  - ATTR: 9
+    COUNT: 3
+    DESCRIPTION: This register contains value of cell credits for an erp. Note that this can be negative.
+    FLDLST: &28
+      - DEFAULT: 0
+        DESCRIPTION: cell credits . Note that this is a signed number.
+        NAME: credit_val
+        WIDTH: 12
+    NAME: psw_sch_psch_sta_credits_erp_0
+  - ATTR: 9
+    COUNT: 3
+    DESCRIPTION: This register contains value of cell credits for an erp. Note that this can be negative.
+    FLDLST: *28
+    NAME: psw_sch_psch_sta_credits_erp_1
+  - ATTR: 9
+    COUNT: 3
+    DESCRIPTION: This register contains value of cell credits for an erp. Note that this can be negative.
+    FLDLST: *28
+    NAME: psw_sch_psch_sta_credits_erp_2
+  - ATTR: 5
+    DESCRIPTION: This register contains value of fp stream whose credits are in status register sta_credits_fp_stream.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: FP stream number whose credits SW wants to read.
+        NAME: fp_num
+        WIDTH: 5
+    NAME: psw_sch_psch_cfg_select_credits_fp_stream
+  - ATTR: 9
+    DESCRIPTION: This register contains value of cell credits for an fp stream that is set in register cfg_select_credits_fp_stream.  Note that this can be negative.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: cell credits .Note that this is a signed number.
+        NAME: credit_val
+        WIDTH: 11
+    NAME: psw_sch_psch_sta_credits_fp_stream
+  - ATTR: 5
+    DESCRIPTION: Indicates number of clocks tdm sync pulse to be delayed for tdm calendar.
+    FLDLST:
+      - DEFAULT: 1
+        DESCRIPTION: TDM delay count.
+        NAME: cnt
+        WIDTH: 6
+    NAME: psw_sch_psch_cfg_arb_sync_tdm_delay
+  - ATTR: 5
+    DESCRIPTION: Enable for Port Scheduler.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'If set, Port Scheduler is enabled.'
+        NAME: en
+        WIDTH: 1
+    NAME: psw_sch_psch_cfg_arb
+  - ATTR: 5
+    DESCRIPTION: FPG streams enable
+    FLDLST:
+      - DEFAULT: 15
+        DESCRIPTION: 'bit[0] - stream0, bit[1]-stream1, bit[2] - stream2, bit[3]-stream3'
+        NAME: vec
+        WIDTH: 4
+    NAME: psw_sch_psch_cfg_arb_fpg0_streams_en
+  - ATTR: 5
+    DESCRIPTION: FPG streams enable
+    FLDLST:
+      - DEFAULT: 15
+        DESCRIPTION: 'bit[0] - stream0, bit[1]-stream1, bit[2] - stream2, bit[3]-stream3'
+        NAME: vec
+        WIDTH: 4
+    NAME: psw_sch_psch_cfg_arb_fpg1_streams_en
+  - ATTR: 5
+    DESCRIPTION: FPG streams enable
+    FLDLST:
+      - DEFAULT: 15
+        DESCRIPTION: 'bit[0] - stream0, bit[1]-stream1, bit[2] - stream2, bit[3]-stream3'
+        NAME: vec
+        WIDTH: 4
+    NAME: psw_sch_psch_cfg_arb_fpg2_streams_en
+  - ATTR: 5
+    DESCRIPTION: FPG streams enable
+    FLDLST:
+      - DEFAULT: 15
+        DESCRIPTION: 'bit[0] - stream0, bit[1]-stream1, bit[2] - stream2, bit[3]-stream3'
+        NAME: vec
+        WIDTH: 4
+    NAME: psw_sch_psch_cfg_arb_fpg3_streams_en
+  - ATTR: 5
+    DESCRIPTION: FPG streams enable
+    FLDLST:
+      - DEFAULT: 15
+        DESCRIPTION: 'bit[0] - stream0, bit[1]-stream1, bit[2] - stream2, bit[3]-stream3'
+        NAME: vec
+        WIDTH: 4
+    NAME: psw_sch_psch_cfg_arb_fpg4_streams_en
+  - ATTR: 5
+    DESCRIPTION: FPG streams enable
+    FLDLST:
+      - DEFAULT: 15
+        DESCRIPTION: 'bit[0] - stream0, bit[1]-stream1, bit[2] - stream2, bit[3]-stream3'
+        NAME: vec
+        WIDTH: 4
+    NAME: psw_sch_psch_cfg_arb_fpg5_streams_en
+  - ATTR: 5
+    DESCRIPTION: PBUF arbiter TDM calendar
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Stream number in FPG. Ranges from 0 to 3
+        NAME: entry0
+        WIDTH: 2
+      - DEFAULT: 1
+        DESCRIPTION: Stream number in FPG. Ranges from 0 to 3
+        NAME: entry1
+        WIDTH: 2
+      - DEFAULT: 2
+        DESCRIPTION: Stream number in FPG. Ranges from 0 to 3
+        NAME: entry2
+        WIDTH: 2
+      - DEFAULT: 3
+        DESCRIPTION: Stream number in FPG. Ranges from 0 to 3
+        NAME: entry3
+        WIDTH: 2
+    NAME: psw_sch_psch_cfg_arb_fpg0_cln
+  - ATTR: 5
+    DESCRIPTION: PBUF arbiter TDM calendar
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Stream number in FPG. Ranges from 0 to 3
+        NAME: entry0
+        WIDTH: 2
+      - DEFAULT: 1
+        DESCRIPTION: Stream number in FPG. Ranges from 0 to 3
+        NAME: entry1
+        WIDTH: 2
+      - DEFAULT: 2
+        DESCRIPTION: Stream number in FPG. Ranges from 0 to 3
+        NAME: entry2
+        WIDTH: 2
+      - DEFAULT: 3
+        DESCRIPTION: Stream number in FPG. Ranges from 0 to 3
+        NAME: entry3
+        WIDTH: 2
+    NAME: psw_sch_psch_cfg_arb_fpg1_cln
+  - ATTR: 5
+    DESCRIPTION: PBUF arbiter TDM calendar
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Stream number in FPG. Ranges from 0 to 3
+        NAME: entry0
+        WIDTH: 2
+      - DEFAULT: 1
+        DESCRIPTION: Stream number in FPG. Ranges from 0 to 3
+        NAME: entry1
+        WIDTH: 2
+      - DEFAULT: 2
+        DESCRIPTION: Stream number in FPG. Ranges from 0 to 3
+        NAME: entry2
+        WIDTH: 2
+      - DEFAULT: 3
+        DESCRIPTION: Stream number in FPG. Ranges from 0 to 3
+        NAME: entry3
+        WIDTH: 2
+    NAME: psw_sch_psch_cfg_arb_fpg2_cln
+  - ATTR: 5
+    DESCRIPTION: PBUF arbiter TDM calendar
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Stream number in FPG. Ranges from 0 to 3
+        NAME: entry0
+        WIDTH: 2
+      - DEFAULT: 1
+        DESCRIPTION: Stream number in FPG. Ranges from 0 to 3
+        NAME: entry1
+        WIDTH: 2
+      - DEFAULT: 2
+        DESCRIPTION: Stream number in FPG. Ranges from 0 to 3
+        NAME: entry2
+        WIDTH: 2
+      - DEFAULT: 3
+        DESCRIPTION: Stream number in FPG. Ranges from 0 to 3
+        NAME: entry3
+        WIDTH: 2
+    NAME: psw_sch_psch_cfg_arb_fpg3_cln
+  - ATTR: 5
+    DESCRIPTION: PBUF arbiter TDM calendar
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Stream number in FPG. Ranges from 0 to 3
+        NAME: entry0
+        WIDTH: 2
+      - DEFAULT: 1
+        DESCRIPTION: Stream number in FPG. Ranges from 0 to 3
+        NAME: entry1
+        WIDTH: 2
+      - DEFAULT: 2
+        DESCRIPTION: Stream number in FPG. Ranges from 0 to 3
+        NAME: entry2
+        WIDTH: 2
+      - DEFAULT: 3
+        DESCRIPTION: Stream number in FPG. Ranges from 0 to 3
+        NAME: entry3
+        WIDTH: 2
+    NAME: psw_sch_psch_cfg_arb_fpg4_cln
+  - ATTR: 5
+    DESCRIPTION: PBUF arbiter TDM calendar
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Stream number in FPG. Ranges from 0 to 3
+        NAME: entry0
+        WIDTH: 2
+      - DEFAULT: 1
+        DESCRIPTION: Stream number in FPG. Ranges from 0 to 3
+        NAME: entry1
+        WIDTH: 2
+      - DEFAULT: 2
+        DESCRIPTION: Stream number in FPG. Ranges from 0 to 3
+        NAME: entry2
+        WIDTH: 2
+      - DEFAULT: 3
+        DESCRIPTION: Stream number in FPG. Ranges from 0 to 3
+        NAME: entry3
+        WIDTH: 2
+    NAME: psw_sch_psch_cfg_arb_fpg5_cln
+  - ATTR: 5
+    DESCRIPTION: Min spacing config for EPG and Purge port
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'FPG TDM slot is 6 clk. 0 : elig in Next tdm slot. 1: Misses 1 TDM Slot. 2: missed 2 tdm slots. 3: Misses 3 tdm slots'
+        NAME: num_slots_fp0
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: 'FPG TDM slot is 6 clk. 0 : elig in Next tdm slot. 1: Misses 1 TDM Slot. 2: missed 2 tdm slots. 3: Misses 3 tdm slots'
+        NAME: num_slots_fp1
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: 'FPG TDM slot is 6 clk. 0 : elig in Next tdm slot. 1: Misses 1 TDM Slot. 2: missed 2 tdm slots. 3: Misses 3 tdm slots'
+        NAME: num_slots_fp2
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: 'FPG TDM slot is 6 clk. 0 : elig in Next tdm slot. 1: Misses 1 TDM Slot. 2: missed 2 tdm slots. 3: Misses 3 tdm slots'
+        NAME: num_slots_fp3
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: 'FPG TDM slot is 6 clk. 0 : elig in Next tdm slot. 1: Misses 1 TDM Slot. 2: missed 2 tdm slots. 3: Misses 3 tdm slots'
+        NAME: num_slots_fp4
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: 'FPG TDM slot is 6 clk. 0 : elig in Next tdm slot. 1: Misses 1 TDM Slot. 2: missed 2 tdm slots. 3: Misses 3 tdm slots'
+        NAME: num_slots_fp5
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: 'FPG TDM slot is 6 clk. 0 : elig in Next tdm slot. 1: Misses 1 TDM Slot. 2: missed 2 tdm slots. 3: Misses 3 tdm slots'
+        NAME: num_slots_fp6
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: 'FPG TDM slot is 6 clk. 0 : elig in Next tdm slot. 1: Misses 1 TDM Slot. 2: missed 2 tdm slots. 3: Misses 3 tdm slots'
+        NAME: num_slots_fp7
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: 'FPG TDM slot is 6 clk. 0 : elig in Next tdm slot. 1: Misses 1 TDM Slot. 2: missed 2 tdm slots. 3: Misses 3 tdm slots'
+        NAME: num_slots_fp8
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: 'FPG TDM slot is 6 clk. 0 : elig in Next tdm slot. 1: Misses 1 TDM Slot. 2: missed 2 tdm slots. 3: Misses 3 tdm slots'
+        NAME: num_slots_fp9
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: 'FPG TDM slot is 6 clk. 0 : elig in Next tdm slot. 1: Misses 1 TDM Slot. 2: missed 2 tdm slots. 3: Misses 3 tdm slots'
+        NAME: num_slots_fp10
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: 'FPG TDM slot is 6 clk. 0 : elig in Next tdm slot. 1: Misses 1 TDM Slot. 2: missed 2 tdm slots. 3: Misses 3 tdm slots'
+        NAME: num_slots_fp11
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: 'FPG TDM slot is 6 clk. 0 : elig in Next tdm slot. 1: Misses 1 TDM Slot. 2: missed 2 tdm slots. 3: Misses 3 tdm slots'
+        NAME: num_slots_fp12
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: 'FPG TDM slot is 6 clk. 0 : elig in Next tdm slot. 1: Misses 1 TDM Slot. 2: missed 2 tdm slots. 3: Misses 3 tdm slots'
+        NAME: num_slots_fp13
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: 'FPG TDM slot is 6 clk. 0 : elig in Next tdm slot. 1: Misses 1 TDM Slot. 2: missed 2 tdm slots. 3: Misses 3 tdm slots'
+        NAME: num_slots_fp14
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: 'FPG TDM slot is 6 clk. 0 : elig in Next tdm slot. 1: Misses 1 TDM Slot. 2: missed 2 tdm slots. 3: Misses 3 tdm slots'
+        NAME: num_slots_fp15
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: 'FPG TDM slot is 6 clk. 0 : elig in Next tdm slot. 1: Misses 1 TDM Slot. 2: missed 2 tdm slots. 3: Misses 3 tdm slots'
+        NAME: num_slots_fp16
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: 'FPG TDM slot is 6 clk. 0 : elig in Next tdm slot. 1: Misses 1 TDM Slot. 2: missed 2 tdm slots. 3: Misses 3 tdm slots'
+        NAME: num_slots_fp17
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: 'FPG TDM slot is 6 clk. 0 : elig in Next tdm slot. 1: Misses 1 TDM Slot. 2: missed 2 tdm slots. 3: Misses 3 tdm slots'
+        NAME: num_slots_fp18
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: 'FPG TDM slot is 6 clk. 0 : elig in Next tdm slot. 1: Misses 1 TDM Slot. 2: missed 2 tdm slots. 3: Misses 3 tdm slots'
+        NAME: num_slots_fp19
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: 'FPG TDM slot is 6 clk. 0 : elig in Next tdm slot. 1: Misses 1 TDM Slot. 2: missed 2 tdm slots. 3: Misses 3 tdm slots'
+        NAME: num_slots_fp20
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: 'FPG TDM slot is 6 clk. 0 : elig in Next tdm slot. 1: Misses 1 TDM Slot. 2: missed 2 tdm slots. 3: Misses 3 tdm slots'
+        NAME: num_slots_fp21
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: 'FPG TDM slot is 6 clk. 0 : elig in Next tdm slot. 1: Misses 1 TDM Slot. 2: missed 2 tdm slots. 3: Misses 3 tdm slots'
+        NAME: num_slots_fp22
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: 'FPG TDM slot is 6 clk. 0 : elig in Next tdm slot. 1: Misses 1 TDM Slot. 2: missed 2 tdm slots. 3: Misses 3 tdm slots'
+        NAME: num_slots_fp23
+        WIDTH: 2
+    NAME: psw_sch_psch_cfg_arb_fp_tdm_slots_mask
+  - ATTR: 5
+    DESCRIPTION: Min spacing config for EPG and Purge port
+    FLDLST:
+      - DEFAULT: 1
+        DESCRIPTION: Min spacing for EPG pipe.
+        NAME: epg
+        WIDTH: 5
+      - DEFAULT: 6
+        DESCRIPTION: Min spacing for EP streams.
+        NAME: ep_streams
+        WIDTH: 5
+      - DEFAULT: 6
+        DESCRIPTION: Min spacing for purge port.
+        NAME: purge_port
+        WIDTH: 5
+      - DEFAULT: 256
+        DESCRIPTION: Count after which NUll slot will be created if there is no FPG stream pick. This is to ensure CSR access can go through.
+        NAME: null_slot
+        WIDTH: 16
+    NAME: psw_sch_psch_cfg_arb_min_spacing
+  - ATTR: 5
+    DESCRIPTION: Guaranteed rate period value.
+    FLDLST:
+      - DEFAULT: 64
+        DESCRIPTION: GR value.
+        NAME: val
+        WIDTH: 8
+    NAME: psw_sch_psch_cfg_arb_gr_period
+  - ATTR: 5
+    DESCRIPTION: Guranteed rate weights of streams of endpoint streams.
+    FLDLST:
+      - DEFAULT: 2
+        DESCRIPTION: Guaranteed rate weight value.
+        NAME: val
+        WIDTH: 4
+    NAME: psw_sch_psch_cfg_arb_gr_wt_ep_stream_0
+  - ATTR: 5
+    DESCRIPTION: Guranteed rate weights of streams of endpoint streams.
+    FLDLST:
+      - DEFAULT: 2
+        DESCRIPTION: Guaranteed rate weight value.
+        NAME: val
+        WIDTH: 4
+    NAME: psw_sch_psch_cfg_arb_gr_wt_ep_stream_1
+  - ATTR: 5
+    DESCRIPTION: Guranteed rate weights of streams of endpoint streams.
+    FLDLST:
+      - DEFAULT: 2
+        DESCRIPTION: Guaranteed rate weight value.
+        NAME: val
+        WIDTH: 4
+    NAME: psw_sch_psch_cfg_arb_gr_wt_ep_stream_2
+  - ATTR: 5
+    DESCRIPTION: Guranteed rate weights of streams of endpoint streams.
+    FLDLST:
+      - DEFAULT: 2
+        DESCRIPTION: Guaranteed rate weight value.
+        NAME: val
+        WIDTH: 4
+    NAME: psw_sch_psch_cfg_arb_gr_wt_ep_stream_3
+  - ATTR: 5
+    DESCRIPTION: Guranteed rate weights of streams of endpoint streams.
+    FLDLST:
+      - DEFAULT: 2
+        DESCRIPTION: Guaranteed rate weight value.
+        NAME: val
+        WIDTH: 4
+    NAME: psw_sch_psch_cfg_arb_gr_wt_ep_stream_4
+  - ATTR: 5
+    DESCRIPTION: Guranteed rate weights of streams of endpoint streams.
+    FLDLST:
+      - DEFAULT: 2
+        DESCRIPTION: Guaranteed rate weight value.
+        NAME: val
+        WIDTH: 4
+    NAME: psw_sch_psch_cfg_arb_gr_wt_ep_stream_5
+  - ATTR: 5
+    DESCRIPTION: Guranteed rate weights of streams of endpoint streams.
+    FLDLST:
+      - DEFAULT: 2
+        DESCRIPTION: Guaranteed rate weight value.
+        NAME: val
+        WIDTH: 4
+    NAME: psw_sch_psch_cfg_arb_gr_wt_ep_stream_6
+  - ATTR: 5
+    DESCRIPTION: Guranteed rate weights of streams of endpoint streams.
+    FLDLST:
+      - DEFAULT: 2
+        DESCRIPTION: Guaranteed rate weight value.
+        NAME: val
+        WIDTH: 4
+    NAME: psw_sch_psch_cfg_arb_gr_wt_ep_stream_7
+  - ATTR: 5
+    DESCRIPTION: Guranteed rate weights of streams of endpoint streams.
+    FLDLST:
+      - DEFAULT: 2
+        DESCRIPTION: Guaranteed rate weight value.
+        NAME: val
+        WIDTH: 4
+    NAME: psw_sch_psch_cfg_arb_gr_wt_ep_stream_8
+  - ATTR: 5
+    DESCRIPTION: Guranteed rate weights of streams of endpoint streams.
+    FLDLST:
+      - DEFAULT: 2
+        DESCRIPTION: Guaranteed rate weight value.
+        NAME: val
+        WIDTH: 4
+    NAME: psw_sch_psch_cfg_arb_gr_wt_ep_stream_9
+  - ATTR: 5
+    DESCRIPTION: Guranteed rate weights of streams of endpoint streams.
+    FLDLST:
+      - DEFAULT: 2
+        DESCRIPTION: Guaranteed rate weight value.
+        NAME: val
+        WIDTH: 4
+    NAME: psw_sch_psch_cfg_arb_gr_wt_ep_stream_10
+  - ATTR: 5
+    DESCRIPTION: Guranteed rate weights of streams of endpoint streams.
+    FLDLST:
+      - DEFAULT: 2
+        DESCRIPTION: Guaranteed rate weight value.
+        NAME: val
+        WIDTH: 4
+    NAME: psw_sch_psch_cfg_arb_gr_wt_ep_stream_11
+  - ATTR: 5
+    DESCRIPTION: Guranteed rate weights of streams of endpoint streams.
+    FLDLST:
+      - DEFAULT: 2
+        DESCRIPTION: Guaranteed rate weight value.
+        NAME: val
+        WIDTH: 4
+    NAME: psw_sch_psch_cfg_arb_gr_wt_ep_stream_12
+  - ATTR: 5
+    DESCRIPTION: Guranteed rate weights of streams of endpoint streams.
+    FLDLST:
+      - DEFAULT: 2
+        DESCRIPTION: Guaranteed rate weight value.
+        NAME: val
+        WIDTH: 4
+    NAME: psw_sch_psch_cfg_arb_gr_wt_ep_stream_13
+  - ATTR: 5
+    DESCRIPTION: Guranteed rate weights of streams of endpoint streams.
+    FLDLST:
+      - DEFAULT: 2
+        DESCRIPTION: Guaranteed rate weight value.
+        NAME: val
+        WIDTH: 4
+    NAME: psw_sch_psch_cfg_arb_gr_wt_ep_stream_14
+  - ATTR: 5
+    DESCRIPTION: Guranteed rate weights of streams of endpoint streams.
+    FLDLST:
+      - DEFAULT: 2
+        DESCRIPTION: Guaranteed rate weight value.
+        NAME: val
+        WIDTH: 4
+    NAME: psw_sch_psch_cfg_arb_gr_wt_ep_stream_15
+  - ATTR: 5
+    DESCRIPTION: Guranteed rate weights of streams of endpoint streams.
+    FLDLST:
+      - DEFAULT: 2
+        DESCRIPTION: Guaranteed rate weight value.
+        NAME: val
+        WIDTH: 4
+    NAME: psw_sch_psch_cfg_arb_gr_wt_ep_stream_16
+  - ATTR: 5
+    DESCRIPTION: Guranteed rate weights of streams of endpoint streams.
+    FLDLST:
+      - DEFAULT: 2
+        DESCRIPTION: Guaranteed rate weight value.
+        NAME: val
+        WIDTH: 4
+    NAME: psw_sch_psch_cfg_arb_gr_wt_ep_stream_17
+  - ATTR: 5
+    DESCRIPTION: Guranteed rate weights of streams of endpoint streams.
+    FLDLST:
+      - DEFAULT: 2
+        DESCRIPTION: Guaranteed rate weight value.
+        NAME: val
+        WIDTH: 4
+    NAME: psw_sch_psch_cfg_arb_gr_wt_ep_stream_18
+  - ATTR: 5
+    DESCRIPTION: Guranteed rate weights of streams of endpoint streams.
+    FLDLST:
+      - DEFAULT: 2
+        DESCRIPTION: Guaranteed rate weight value.
+        NAME: val
+        WIDTH: 4
+    NAME: psw_sch_psch_cfg_arb_gr_wt_ep_stream_19
+  - ATTR: 5
+    DESCRIPTION: Guranteed rate weights of streams of endpoint streams.
+    FLDLST:
+      - DEFAULT: 2
+        DESCRIPTION: Guaranteed rate weight value.
+        NAME: val
+        WIDTH: 4
+    NAME: psw_sch_psch_cfg_arb_gr_wt_ep_stream_20
+  - ATTR: 5
+    DESCRIPTION: Guranteed rate weights of streams of endpoint streams.
+    FLDLST:
+      - DEFAULT: 2
+        DESCRIPTION: Guaranteed rate weight value.
+        NAME: val
+        WIDTH: 4
+    NAME: psw_sch_psch_cfg_arb_gr_wt_ep_stream_21
+  - ATTR: 5
+    DESCRIPTION: Guranteed rate weights of streams of endpoint streams.
+    FLDLST:
+      - DEFAULT: 2
+        DESCRIPTION: Guaranteed rate weight value.
+        NAME: val
+        WIDTH: 4
+    NAME: psw_sch_psch_cfg_arb_gr_wt_ep_stream_22
+  - ATTR: 5
+    DESCRIPTION: Guranteed rate weights of streams of endpoint streams.
+    FLDLST:
+      - DEFAULT: 2
+        DESCRIPTION: Guaranteed rate weight value.
+        NAME: val
+        WIDTH: 4
+    NAME: psw_sch_psch_cfg_arb_gr_wt_ep_stream_23
+  - ATTR: 9
+    DESCRIPTION: ''
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: ' - '
+        NAME: vec
+        WIDTH: 49
+    NAME: psw_sch_psch_sta_port_active
+  - ATTR: 5
+    DESCRIPTION: ' '
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: ' - '
+        NAME: chnl_dwrr_sc
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ' - '
+        NAME: q_dwrr_sc
+        WIDTH: 1
+    NAME: psw_sch_qsch_mem_init_start_cfg
+    TEST_ATTR: 2
+  - ATTR: 9
+    DESCRIPTION: ' '
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: ' - '
+        NAME: chnl_dwrr_sc
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ' - '
+        NAME: q_dwrr_sc
+        WIDTH: 1
+    NAME: psw_sch_qsch_mem_init_done_status
+  - ATTR: 5
+    DESCRIPTION: Channel to queue mapping for Fabric ports.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value of 1 implies, 4 queues per channel, i.e. Queues 0-to-3 belong to Channel0,  Queues 4-to-7 belong to Channel1, and so on.  Value of 0 implies Queues 0-to-7 are mapped to Channel0, queues 8-to-15 are mapped to channel-2.'
+        NAME: mode_fp0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'Value of 1 implies, 4 queues per channel, i.e. Queues 0-to-3 belong to Channel0,  Queues 4-to-7 belong to Channel1, and so on.  Value of 0 implies Queues 0-to-7 are mapped to Channel0, queues 8-to-15 are mapped to channel-2.'
+        NAME: mode_fp1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'Value of 1 implies, 4 queues per channel, i.e. Queues 0-to-3 belong to Channel0,  Queues 4-to-7 belong to Channel1, and so on.  Value of 0 implies Queues 0-to-7 are mapped to Channel0, queues 8-to-15 are mapped to channel-2.'
+        NAME: mode_fp2
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'Value of 1 implies, 4 queues per channel, i.e. Queues 0-to-3 belong to Channel0,  Queues 4-to-7 belong to Channel1, and so on.  Value of 0 implies Queues 0-to-7 are mapped to Channel0, queues 8-to-15 are mapped to channel-2.'
+        NAME: mode_fp3
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'Value of 1 implies, 4 queues per channel, i.e. Queues 0-to-3 belong to Channel0,  Queues 4-to-7 belong to Channel1, and so on.  Value of 0 implies Queues 0-to-7 are mapped to Channel0, queues 8-to-15 are mapped to channel-2.'
+        NAME: mode_fp4
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'Value of 1 implies, 4 queues per channel, i.e. Queues 0-to-3 belong to Channel0,  Queues 4-to-7 belong to Channel1, and so on.  Value of 0 implies Queues 0-to-7 are mapped to Channel0, queues 8-to-15 are mapped to channel-2.'
+        NAME: mode_fp5
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'Value of 1 implies, 4 queues per channel, i.e. Queues 0-to-3 belong to Channel0,  Queues 4-to-7 belong to Channel1, and so on.  Value of 0 implies Queues 0-to-7 are mapped to Channel0, queues 8-to-15 are mapped to channel-2.'
+        NAME: mode_fp6
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'Value of 1 implies, 4 queues per channel, i.e. Queues 0-to-3 belong to Channel0,  Queues 4-to-7 belong to Channel1, and so on.  Value of 0 implies Queues 0-to-7 are mapped to Channel0, queues 8-to-15 are mapped to channel-2.'
+        NAME: mode_fp7
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'Value of 1 implies, 4 queues per channel, i.e. Queues 0-to-3 belong to Channel0,  Queues 4-to-7 belong to Channel1, and so on.  Value of 0 implies Queues 0-to-7 are mapped to Channel0, queues 8-to-15 are mapped to channel-2.'
+        NAME: mode_fp8
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'Value of 1 implies, 4 queues per channel, i.e. Queues 0-to-3 belong to Channel0,  Queues 4-to-7 belong to Channel1, and so on.  Value of 0 implies Queues 0-to-7 are mapped to Channel0, queues 8-to-15 are mapped to channel-2.'
+        NAME: mode_fp9
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'Value of 1 implies, 4 queues per channel, i.e. Queues 0-to-3 belong to Channel0,  Queues 4-to-7 belong to Channel1, and so on.  Value of 0 implies Queues 0-to-7 are mapped to Channel0, queues 8-to-15 are mapped to channel-2.'
+        NAME: mode_fp10
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'Value of 1 implies, 4 queues per channel, i.e. Queues 0-to-3 belong to Channel0,  Queues 4-to-7 belong to Channel1, and so on.  Value of 0 implies Queues 0-to-7 are mapped to Channel0, queues 8-to-15 are mapped to channel-2.'
+        NAME: mode_fp11
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'Value of 1 implies, 4 queues per channel, i.e. Queues 0-to-3 belong to Channel0,  Queues 4-to-7 belong to Channel1, and so on.  Value of 0 implies Queues 0-to-7 are mapped to Channel0, queues 8-to-15 are mapped to channel-2.'
+        NAME: mode_fp12
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'Value of 1 implies, 4 queues per channel, i.e. Queues 0-to-3 belong to Channel0,  Queues 4-to-7 belong to Channel1, and so on.  Value of 0 implies Queues 0-to-7 are mapped to Channel0, queues 8-to-15 are mapped to channel-2.'
+        NAME: mode_fp13
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'Value of 1 implies, 4 queues per channel, i.e. Queues 0-to-3 belong to Channel0,  Queues 4-to-7 belong to Channel1, and so on.  Value of 0 implies Queues 0-to-7 are mapped to Channel0, queues 8-to-15 are mapped to channel-2.'
+        NAME: mode_fp14
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'Value of 1 implies, 4 queues per channel, i.e. Queues 0-to-3 belong to Channel0,  Queues 4-to-7 belong to Channel1, and so on.  Value of 0 implies Queues 0-to-7 are mapped to Channel0, queues 8-to-15 are mapped to channel-2.'
+        NAME: mode_fp15
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'Value of 1 implies, 4 queues per channel, i.e. Queues 0-to-3 belong to Channel0,  Queues 4-to-7 belong to Channel1, and so on.  Value of 0 implies Queues 0-to-7 are mapped to Channel0, queues 8-to-15 are mapped to channel-2.'
+        NAME: mode_fp16
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'Value of 1 implies, 4 queues per channel, i.e. Queues 0-to-3 belong to Channel0,  Queues 4-to-7 belong to Channel1, and so on.  Value of 0 implies Queues 0-to-7 are mapped to Channel0, queues 8-to-15 are mapped to channel-2.'
+        NAME: mode_fp17
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'Value of 1 implies, 4 queues per channel, i.e. Queues 0-to-3 belong to Channel0,  Queues 4-to-7 belong to Channel1, and so on.  Value of 0 implies Queues 0-to-7 are mapped to Channel0, queues 8-to-15 are mapped to channel-2.'
+        NAME: mode_fp18
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'Value of 1 implies, 4 queues per channel, i.e. Queues 0-to-3 belong to Channel0,  Queues 4-to-7 belong to Channel1, and so on.  Value of 0 implies Queues 0-to-7 are mapped to Channel0, queues 8-to-15 are mapped to channel-2.'
+        NAME: mode_fp19
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'Value of 1 implies, 4 queues per channel, i.e. Queues 0-to-3 belong to Channel0,  Queues 4-to-7 belong to Channel1, and so on.  Value of 0 implies Queues 0-to-7 are mapped to Channel0, queues 8-to-15 are mapped to channel-2.'
+        NAME: mode_fp20
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'Value of 1 implies, 4 queues per channel, i.e. Queues 0-to-3 belong to Channel0,  Queues 4-to-7 belong to Channel1, and so on.  Value of 0 implies Queues 0-to-7 are mapped to Channel0, queues 8-to-15 are mapped to channel-2.'
+        NAME: mode_fp21
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'Value of 1 implies, 4 queues per channel, i.e. Queues 0-to-3 belong to Channel0,  Queues 4-to-7 belong to Channel1, and so on.  Value of 0 implies Queues 0-to-7 are mapped to Channel0, queues 8-to-15 are mapped to channel-2.'
+        NAME: mode_fp22
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'Value of 1 implies, 4 queues per channel, i.e. Queues 0-to-3 belong to Channel0,  Queues 4-to-7 belong to Channel1, and so on.  Value of 0 implies Queues 0-to-7 are mapped to Channel0, queues 8-to-15 are mapped to channel-2.'
+        NAME: mode_fp23
+        WIDTH: 1
+    NAME: psw_sch_qsch_cfg_chnl_q_mapping_fp
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port are committed rate Strict priority
+    FLDLST: &29
+      - DEFAULT: 0
+        DESCRIPTION: Bit-15 is for queue-15. Bit-0 is for queue-0
+        NAME: vec
+        WIDTH: 16
+    NAME: psw_sch_qsch_cfg_cr_sp_queues_fp_0
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port are committed rate Strict priority
+    FLDLST: *29
+    NAME: psw_sch_qsch_cfg_cr_sp_queues_fp_1
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port are committed rate Strict priority
+    FLDLST: *29
+    NAME: psw_sch_qsch_cfg_cr_sp_queues_fp_2
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port are committed rate Strict priority
+    FLDLST: *29
+    NAME: psw_sch_qsch_cfg_cr_sp_queues_fp_3
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port are committed rate Strict priority
+    FLDLST: *29
+    NAME: psw_sch_qsch_cfg_cr_sp_queues_fp_4
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port are committed rate Strict priority
+    FLDLST: *29
+    NAME: psw_sch_qsch_cfg_cr_sp_queues_fp_5
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port are committed rate Strict priority
+    FLDLST: *29
+    NAME: psw_sch_qsch_cfg_cr_sp_queues_fp_6
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port are committed rate Strict priority
+    FLDLST: *29
+    NAME: psw_sch_qsch_cfg_cr_sp_queues_fp_7
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port are committed rate Strict priority
+    FLDLST: *29
+    NAME: psw_sch_qsch_cfg_cr_sp_queues_fp_8
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port are committed rate Strict priority
+    FLDLST: *29
+    NAME: psw_sch_qsch_cfg_cr_sp_queues_fp_9
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port are committed rate Strict priority
+    FLDLST: *29
+    NAME: psw_sch_qsch_cfg_cr_sp_queues_fp_10
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port are committed rate Strict priority
+    FLDLST: *29
+    NAME: psw_sch_qsch_cfg_cr_sp_queues_fp_11
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port are committed rate Strict priority
+    FLDLST: *29
+    NAME: psw_sch_qsch_cfg_cr_sp_queues_fp_12
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port are committed rate Strict priority
+    FLDLST: *29
+    NAME: psw_sch_qsch_cfg_cr_sp_queues_fp_13
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port are committed rate Strict priority
+    FLDLST: *29
+    NAME: psw_sch_qsch_cfg_cr_sp_queues_fp_14
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port are committed rate Strict priority
+    FLDLST: *29
+    NAME: psw_sch_qsch_cfg_cr_sp_queues_fp_15
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port are committed rate Strict priority
+    FLDLST: *29
+    NAME: psw_sch_qsch_cfg_cr_sp_queues_fp_16
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port are committed rate Strict priority
+    FLDLST: *29
+    NAME: psw_sch_qsch_cfg_cr_sp_queues_fp_17
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port are committed rate Strict priority
+    FLDLST: *29
+    NAME: psw_sch_qsch_cfg_cr_sp_queues_fp_18
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port are committed rate Strict priority
+    FLDLST: *29
+    NAME: psw_sch_qsch_cfg_cr_sp_queues_fp_19
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port are committed rate Strict priority
+    FLDLST: *29
+    NAME: psw_sch_qsch_cfg_cr_sp_queues_fp_20
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port are committed rate Strict priority
+    FLDLST: *29
+    NAME: psw_sch_qsch_cfg_cr_sp_queues_fp_21
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port are committed rate Strict priority
+    FLDLST: *29
+    NAME: psw_sch_qsch_cfg_cr_sp_queues_fp_22
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port are committed rate Strict priority
+    FLDLST: *29
+    NAME: psw_sch_qsch_cfg_cr_sp_queues_fp_23
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port are extrabw Strict priority
+    FLDLST: &30
+      - DEFAULT: 0
+        DESCRIPTION: Bit-15 is for queue-15. Bit-0 is for queue-0
+        NAME: vec
+        WIDTH: 16
+    NAME: psw_sch_qsch_cfg_extrabw_sp_queues_fp_0
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port are extrabw Strict priority
+    FLDLST: *30
+    NAME: psw_sch_qsch_cfg_extrabw_sp_queues_fp_1
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port are extrabw Strict priority
+    FLDLST: *30
+    NAME: psw_sch_qsch_cfg_extrabw_sp_queues_fp_2
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port are extrabw Strict priority
+    FLDLST: *30
+    NAME: psw_sch_qsch_cfg_extrabw_sp_queues_fp_3
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port are extrabw Strict priority
+    FLDLST: *30
+    NAME: psw_sch_qsch_cfg_extrabw_sp_queues_fp_4
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port are extrabw Strict priority
+    FLDLST: *30
+    NAME: psw_sch_qsch_cfg_extrabw_sp_queues_fp_5
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port are extrabw Strict priority
+    FLDLST: *30
+    NAME: psw_sch_qsch_cfg_extrabw_sp_queues_fp_6
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port are extrabw Strict priority
+    FLDLST: *30
+    NAME: psw_sch_qsch_cfg_extrabw_sp_queues_fp_7
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port are extrabw Strict priority
+    FLDLST: *30
+    NAME: psw_sch_qsch_cfg_extrabw_sp_queues_fp_8
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port are extrabw Strict priority
+    FLDLST: *30
+    NAME: psw_sch_qsch_cfg_extrabw_sp_queues_fp_9
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port are extrabw Strict priority
+    FLDLST: *30
+    NAME: psw_sch_qsch_cfg_extrabw_sp_queues_fp_10
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port are extrabw Strict priority
+    FLDLST: *30
+    NAME: psw_sch_qsch_cfg_extrabw_sp_queues_fp_11
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port are extrabw Strict priority
+    FLDLST: *30
+    NAME: psw_sch_qsch_cfg_extrabw_sp_queues_fp_12
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port are extrabw Strict priority
+    FLDLST: *30
+    NAME: psw_sch_qsch_cfg_extrabw_sp_queues_fp_13
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port are extrabw Strict priority
+    FLDLST: *30
+    NAME: psw_sch_qsch_cfg_extrabw_sp_queues_fp_14
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port are extrabw Strict priority
+    FLDLST: *30
+    NAME: psw_sch_qsch_cfg_extrabw_sp_queues_fp_15
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port are extrabw Strict priority
+    FLDLST: *30
+    NAME: psw_sch_qsch_cfg_extrabw_sp_queues_fp_16
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port are extrabw Strict priority
+    FLDLST: *30
+    NAME: psw_sch_qsch_cfg_extrabw_sp_queues_fp_17
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port are extrabw Strict priority
+    FLDLST: *30
+    NAME: psw_sch_qsch_cfg_extrabw_sp_queues_fp_18
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port are extrabw Strict priority
+    FLDLST: *30
+    NAME: psw_sch_qsch_cfg_extrabw_sp_queues_fp_19
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port are extrabw Strict priority
+    FLDLST: *30
+    NAME: psw_sch_qsch_cfg_extrabw_sp_queues_fp_20
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port are extrabw Strict priority
+    FLDLST: *30
+    NAME: psw_sch_qsch_cfg_extrabw_sp_queues_fp_21
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port are extrabw Strict priority
+    FLDLST: *30
+    NAME: psw_sch_qsch_cfg_extrabw_sp_queues_fp_22
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port are extrabw Strict priority
+    FLDLST: *30
+    NAME: psw_sch_qsch_cfg_extrabw_sp_queues_fp_23
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which channels of a Fabric port are committed rate Strict priority
+    FLDLST: &31
+      - DEFAULT: 0
+        DESCRIPTION: 'Bit-3 is for channel-3, Bit-2 is for channel-2 ,Bit-1 is for channel-1. Bit-0 is for channel-0'
+        NAME: vec
+        WIDTH: 4
+    NAME: psw_sch_qsch_cfg_cr_sp_channels_fp_0
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which channels of a Fabric port are committed rate Strict priority
+    FLDLST: *31
+    NAME: psw_sch_qsch_cfg_cr_sp_channels_fp_1
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which channels of a Fabric port are committed rate Strict priority
+    FLDLST: *31
+    NAME: psw_sch_qsch_cfg_cr_sp_channels_fp_2
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which channels of a Fabric port are committed rate Strict priority
+    FLDLST: *31
+    NAME: psw_sch_qsch_cfg_cr_sp_channels_fp_3
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which channels of a Fabric port are committed rate Strict priority
+    FLDLST: *31
+    NAME: psw_sch_qsch_cfg_cr_sp_channels_fp_4
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which channels of a Fabric port are committed rate Strict priority
+    FLDLST: *31
+    NAME: psw_sch_qsch_cfg_cr_sp_channels_fp_5
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which channels of a Fabric port are committed rate Strict priority
+    FLDLST: *31
+    NAME: psw_sch_qsch_cfg_cr_sp_channels_fp_6
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which channels of a Fabric port are committed rate Strict priority
+    FLDLST: *31
+    NAME: psw_sch_qsch_cfg_cr_sp_channels_fp_7
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which channels of a Fabric port are committed rate Strict priority
+    FLDLST: *31
+    NAME: psw_sch_qsch_cfg_cr_sp_channels_fp_8
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which channels of a Fabric port are committed rate Strict priority
+    FLDLST: *31
+    NAME: psw_sch_qsch_cfg_cr_sp_channels_fp_9
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which channels of a Fabric port are committed rate Strict priority
+    FLDLST: *31
+    NAME: psw_sch_qsch_cfg_cr_sp_channels_fp_10
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which channels of a Fabric port are committed rate Strict priority
+    FLDLST: *31
+    NAME: psw_sch_qsch_cfg_cr_sp_channels_fp_11
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which channels of a Fabric port are committed rate Strict priority
+    FLDLST: *31
+    NAME: psw_sch_qsch_cfg_cr_sp_channels_fp_12
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which channels of a Fabric port are committed rate Strict priority
+    FLDLST: *31
+    NAME: psw_sch_qsch_cfg_cr_sp_channels_fp_13
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which channels of a Fabric port are committed rate Strict priority
+    FLDLST: *31
+    NAME: psw_sch_qsch_cfg_cr_sp_channels_fp_14
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which channels of a Fabric port are committed rate Strict priority
+    FLDLST: *31
+    NAME: psw_sch_qsch_cfg_cr_sp_channels_fp_15
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which channels of a Fabric port are committed rate Strict priority
+    FLDLST: *31
+    NAME: psw_sch_qsch_cfg_cr_sp_channels_fp_16
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which channels of a Fabric port are committed rate Strict priority
+    FLDLST: *31
+    NAME: psw_sch_qsch_cfg_cr_sp_channels_fp_17
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which channels of a Fabric port are committed rate Strict priority
+    FLDLST: *31
+    NAME: psw_sch_qsch_cfg_cr_sp_channels_fp_18
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which channels of a Fabric port are committed rate Strict priority
+    FLDLST: *31
+    NAME: psw_sch_qsch_cfg_cr_sp_channels_fp_19
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which channels of a Fabric port are committed rate Strict priority
+    FLDLST: *31
+    NAME: psw_sch_qsch_cfg_cr_sp_channels_fp_20
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which channels of a Fabric port are committed rate Strict priority
+    FLDLST: *31
+    NAME: psw_sch_qsch_cfg_cr_sp_channels_fp_21
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which channels of a Fabric port are committed rate Strict priority
+    FLDLST: *31
+    NAME: psw_sch_qsch_cfg_cr_sp_channels_fp_22
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which channels of a Fabric port are committed rate Strict priority
+    FLDLST: *31
+    NAME: psw_sch_qsch_cfg_cr_sp_channels_fp_23
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port are extrabw Strict priority
+    FLDLST: &32
+      - DEFAULT: 0
+        DESCRIPTION: 'Bit-3 is for channel-3, Bit-2 is for channel-2 , Bit-1 is for channel-1. Bit-0 is for channel-0'
+        NAME: vec
+        WIDTH: 4
+    NAME: psw_sch_qsch_cfg_extrabw_sp_channels_fp_0
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port are extrabw Strict priority
+    FLDLST: *32
+    NAME: psw_sch_qsch_cfg_extrabw_sp_channels_fp_1
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port are extrabw Strict priority
+    FLDLST: *32
+    NAME: psw_sch_qsch_cfg_extrabw_sp_channels_fp_2
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port are extrabw Strict priority
+    FLDLST: *32
+    NAME: psw_sch_qsch_cfg_extrabw_sp_channels_fp_3
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port are extrabw Strict priority
+    FLDLST: *32
+    NAME: psw_sch_qsch_cfg_extrabw_sp_channels_fp_4
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port are extrabw Strict priority
+    FLDLST: *32
+    NAME: psw_sch_qsch_cfg_extrabw_sp_channels_fp_5
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port are extrabw Strict priority
+    FLDLST: *32
+    NAME: psw_sch_qsch_cfg_extrabw_sp_channels_fp_6
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port are extrabw Strict priority
+    FLDLST: *32
+    NAME: psw_sch_qsch_cfg_extrabw_sp_channels_fp_7
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port are extrabw Strict priority
+    FLDLST: *32
+    NAME: psw_sch_qsch_cfg_extrabw_sp_channels_fp_8
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port are extrabw Strict priority
+    FLDLST: *32
+    NAME: psw_sch_qsch_cfg_extrabw_sp_channels_fp_9
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port are extrabw Strict priority
+    FLDLST: *32
+    NAME: psw_sch_qsch_cfg_extrabw_sp_channels_fp_10
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port are extrabw Strict priority
+    FLDLST: *32
+    NAME: psw_sch_qsch_cfg_extrabw_sp_channels_fp_11
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port are extrabw Strict priority
+    FLDLST: *32
+    NAME: psw_sch_qsch_cfg_extrabw_sp_channels_fp_12
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port are extrabw Strict priority
+    FLDLST: *32
+    NAME: psw_sch_qsch_cfg_extrabw_sp_channels_fp_13
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port are extrabw Strict priority
+    FLDLST: *32
+    NAME: psw_sch_qsch_cfg_extrabw_sp_channels_fp_14
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port are extrabw Strict priority
+    FLDLST: *32
+    NAME: psw_sch_qsch_cfg_extrabw_sp_channels_fp_15
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port are extrabw Strict priority
+    FLDLST: *32
+    NAME: psw_sch_qsch_cfg_extrabw_sp_channels_fp_16
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port are extrabw Strict priority
+    FLDLST: *32
+    NAME: psw_sch_qsch_cfg_extrabw_sp_channels_fp_17
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port are extrabw Strict priority
+    FLDLST: *32
+    NAME: psw_sch_qsch_cfg_extrabw_sp_channels_fp_18
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port are extrabw Strict priority
+    FLDLST: *32
+    NAME: psw_sch_qsch_cfg_extrabw_sp_channels_fp_19
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port are extrabw Strict priority
+    FLDLST: *32
+    NAME: psw_sch_qsch_cfg_extrabw_sp_channels_fp_20
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port are extrabw Strict priority
+    FLDLST: *32
+    NAME: psw_sch_qsch_cfg_extrabw_sp_channels_fp_21
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port are extrabw Strict priority
+    FLDLST: *32
+    NAME: psw_sch_qsch_cfg_extrabw_sp_channels_fp_22
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port are extrabw Strict priority
+    FLDLST: *32
+    NAME: psw_sch_qsch_cfg_extrabw_sp_channels_fp_23
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of an endpoint port are committed rate Strict priority
+    FLDLST: &33
+      - DEFAULT: 0
+        DESCRIPTION: Bit-7 is for queue-7. Bit-0 is for queue-0
+        NAME: vec
+        WIDTH: 8
+    NAME: psw_sch_qsch_cfg_cr_sp_queues_ep_0
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of an endpoint port are committed rate Strict priority
+    FLDLST: *33
+    NAME: psw_sch_qsch_cfg_cr_sp_queues_ep_1
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of an endpoint port are committed rate Strict priority
+    FLDLST: *33
+    NAME: psw_sch_qsch_cfg_cr_sp_queues_ep_2
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of an endpoint port are committed rate Strict priority
+    FLDLST: *33
+    NAME: psw_sch_qsch_cfg_cr_sp_queues_ep_3
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of an endpoint port are committed rate Strict priority
+    FLDLST: *33
+    NAME: psw_sch_qsch_cfg_cr_sp_queues_ep_4
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of an endpoint port are committed rate Strict priority
+    FLDLST: *33
+    NAME: psw_sch_qsch_cfg_cr_sp_queues_ep_5
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of an endpoint port are committed rate Strict priority
+    FLDLST: *33
+    NAME: psw_sch_qsch_cfg_cr_sp_queues_ep_6
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of an endpoint port are committed rate Strict priority
+    FLDLST: *33
+    NAME: psw_sch_qsch_cfg_cr_sp_queues_ep_7
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of an endpoint port are committed rate Strict priority
+    FLDLST: *33
+    NAME: psw_sch_qsch_cfg_cr_sp_queues_ep_8
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of an endpoint port are committed rate Strict priority
+    FLDLST: *33
+    NAME: psw_sch_qsch_cfg_cr_sp_queues_ep_9
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of an endpoint port are committed rate Strict priority
+    FLDLST: *33
+    NAME: psw_sch_qsch_cfg_cr_sp_queues_ep_10
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of an endpoint port are committed rate Strict priority
+    FLDLST: *33
+    NAME: psw_sch_qsch_cfg_cr_sp_queues_ep_11
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of an endpoint port are committed rate Strict priority
+    FLDLST: *33
+    NAME: psw_sch_qsch_cfg_cr_sp_queues_ep_12
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of an endpoint port are committed rate Strict priority
+    FLDLST: *33
+    NAME: psw_sch_qsch_cfg_cr_sp_queues_ep_13
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of an endpoint port are committed rate Strict priority
+    FLDLST: *33
+    NAME: psw_sch_qsch_cfg_cr_sp_queues_ep_14
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of an endpoint port are committed rate Strict priority
+    FLDLST: *33
+    NAME: psw_sch_qsch_cfg_cr_sp_queues_ep_15
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of an endpoint port are committed rate Strict priority
+    FLDLST: *33
+    NAME: psw_sch_qsch_cfg_cr_sp_queues_ep_16
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of an endpoint port are committed rate Strict priority
+    FLDLST: *33
+    NAME: psw_sch_qsch_cfg_cr_sp_queues_ep_17
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of an endpoint port are committed rate Strict priority
+    FLDLST: *33
+    NAME: psw_sch_qsch_cfg_cr_sp_queues_ep_18
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of an endpoint port are committed rate Strict priority
+    FLDLST: *33
+    NAME: psw_sch_qsch_cfg_cr_sp_queues_ep_19
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of an endpoint port are committed rate Strict priority
+    FLDLST: *33
+    NAME: psw_sch_qsch_cfg_cr_sp_queues_ep_20
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of an endpoint port are committed rate Strict priority
+    FLDLST: *33
+    NAME: psw_sch_qsch_cfg_cr_sp_queues_ep_21
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of an endpoint port are committed rate Strict priority
+    FLDLST: *33
+    NAME: psw_sch_qsch_cfg_cr_sp_queues_ep_22
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of an endpoint port are committed rate Strict priority
+    FLDLST: *33
+    NAME: psw_sch_qsch_cfg_cr_sp_queues_ep_23
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of an endpoint port are extrabw Strict priority
+    FLDLST: &34
+      - DEFAULT: 0
+        DESCRIPTION: Bit-7 is for queue-7. Bit-0 is for queue-0
+        NAME: vec
+        WIDTH: 16
+    NAME: psw_sch_qsch_cfg_extrabw_sp_queues_ep_0
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of an endpoint port are extrabw Strict priority
+    FLDLST: *34
+    NAME: psw_sch_qsch_cfg_extrabw_sp_queues_ep_1
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of an endpoint port are extrabw Strict priority
+    FLDLST: *34
+    NAME: psw_sch_qsch_cfg_extrabw_sp_queues_ep_2
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of an endpoint port are extrabw Strict priority
+    FLDLST: *34
+    NAME: psw_sch_qsch_cfg_extrabw_sp_queues_ep_3
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of an endpoint port are extrabw Strict priority
+    FLDLST: *34
+    NAME: psw_sch_qsch_cfg_extrabw_sp_queues_ep_4
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of an endpoint port are extrabw Strict priority
+    FLDLST: *34
+    NAME: psw_sch_qsch_cfg_extrabw_sp_queues_ep_5
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of an endpoint port are extrabw Strict priority
+    FLDLST: *34
+    NAME: psw_sch_qsch_cfg_extrabw_sp_queues_ep_6
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of an endpoint port are extrabw Strict priority
+    FLDLST: *34
+    NAME: psw_sch_qsch_cfg_extrabw_sp_queues_ep_7
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of an endpoint port are extrabw Strict priority
+    FLDLST: *34
+    NAME: psw_sch_qsch_cfg_extrabw_sp_queues_ep_8
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of an endpoint port are extrabw Strict priority
+    FLDLST: *34
+    NAME: psw_sch_qsch_cfg_extrabw_sp_queues_ep_9
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of an endpoint port are extrabw Strict priority
+    FLDLST: *34
+    NAME: psw_sch_qsch_cfg_extrabw_sp_queues_ep_10
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of an endpoint port are extrabw Strict priority
+    FLDLST: *34
+    NAME: psw_sch_qsch_cfg_extrabw_sp_queues_ep_11
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of an endpoint port are extrabw Strict priority
+    FLDLST: *34
+    NAME: psw_sch_qsch_cfg_extrabw_sp_queues_ep_12
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of an endpoint port are extrabw Strict priority
+    FLDLST: *34
+    NAME: psw_sch_qsch_cfg_extrabw_sp_queues_ep_13
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of an endpoint port are extrabw Strict priority
+    FLDLST: *34
+    NAME: psw_sch_qsch_cfg_extrabw_sp_queues_ep_14
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of an endpoint port are extrabw Strict priority
+    FLDLST: *34
+    NAME: psw_sch_qsch_cfg_extrabw_sp_queues_ep_15
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of an endpoint port are extrabw Strict priority
+    FLDLST: *34
+    NAME: psw_sch_qsch_cfg_extrabw_sp_queues_ep_16
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of an endpoint port are extrabw Strict priority
+    FLDLST: *34
+    NAME: psw_sch_qsch_cfg_extrabw_sp_queues_ep_17
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of an endpoint port are extrabw Strict priority
+    FLDLST: *34
+    NAME: psw_sch_qsch_cfg_extrabw_sp_queues_ep_18
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of an endpoint port are extrabw Strict priority
+    FLDLST: *34
+    NAME: psw_sch_qsch_cfg_extrabw_sp_queues_ep_19
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of an endpoint port are extrabw Strict priority
+    FLDLST: *34
+    NAME: psw_sch_qsch_cfg_extrabw_sp_queues_ep_20
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of an endpoint port are extrabw Strict priority
+    FLDLST: *34
+    NAME: psw_sch_qsch_cfg_extrabw_sp_queues_ep_21
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of an endpoint port are extrabw Strict priority
+    FLDLST: *34
+    NAME: psw_sch_qsch_cfg_extrabw_sp_queues_ep_22
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of an endpoint port are extrabw Strict priority
+    FLDLST: *34
+    NAME: psw_sch_qsch_cfg_extrabw_sp_queues_ep_23
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port need to be flushed
+    FLDLST: &35
+      - DEFAULT: 0
+        DESCRIPTION: Bit-15 is for queue-15. Bit-0 is for queue-0
+        NAME: vec
+        WIDTH: 16
+    NAME: psw_sch_qsch_cfg_flush_queues_fp_0
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port need to be flushed
+    FLDLST: *35
+    NAME: psw_sch_qsch_cfg_flush_queues_fp_1
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port need to be flushed
+    FLDLST: *35
+    NAME: psw_sch_qsch_cfg_flush_queues_fp_2
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port need to be flushed
+    FLDLST: *35
+    NAME: psw_sch_qsch_cfg_flush_queues_fp_3
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port need to be flushed
+    FLDLST: *35
+    NAME: psw_sch_qsch_cfg_flush_queues_fp_4
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port need to be flushed
+    FLDLST: *35
+    NAME: psw_sch_qsch_cfg_flush_queues_fp_5
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port need to be flushed
+    FLDLST: *35
+    NAME: psw_sch_qsch_cfg_flush_queues_fp_6
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port need to be flushed
+    FLDLST: *35
+    NAME: psw_sch_qsch_cfg_flush_queues_fp_7
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port need to be flushed
+    FLDLST: *35
+    NAME: psw_sch_qsch_cfg_flush_queues_fp_8
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port need to be flushed
+    FLDLST: *35
+    NAME: psw_sch_qsch_cfg_flush_queues_fp_9
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port need to be flushed
+    FLDLST: *35
+    NAME: psw_sch_qsch_cfg_flush_queues_fp_10
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port need to be flushed
+    FLDLST: *35
+    NAME: psw_sch_qsch_cfg_flush_queues_fp_11
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port need to be flushed
+    FLDLST: *35
+    NAME: psw_sch_qsch_cfg_flush_queues_fp_12
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port need to be flushed
+    FLDLST: *35
+    NAME: psw_sch_qsch_cfg_flush_queues_fp_13
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port need to be flushed
+    FLDLST: *35
+    NAME: psw_sch_qsch_cfg_flush_queues_fp_14
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port need to be flushed
+    FLDLST: *35
+    NAME: psw_sch_qsch_cfg_flush_queues_fp_15
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port need to be flushed
+    FLDLST: *35
+    NAME: psw_sch_qsch_cfg_flush_queues_fp_16
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port need to be flushed
+    FLDLST: *35
+    NAME: psw_sch_qsch_cfg_flush_queues_fp_17
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port need to be flushed
+    FLDLST: *35
+    NAME: psw_sch_qsch_cfg_flush_queues_fp_18
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port need to be flushed
+    FLDLST: *35
+    NAME: psw_sch_qsch_cfg_flush_queues_fp_19
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port need to be flushed
+    FLDLST: *35
+    NAME: psw_sch_qsch_cfg_flush_queues_fp_20
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port need to be flushed
+    FLDLST: *35
+    NAME: psw_sch_qsch_cfg_flush_queues_fp_21
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port need to be flushed
+    FLDLST: *35
+    NAME: psw_sch_qsch_cfg_flush_queues_fp_22
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of a Fabric port need to be flushed
+    FLDLST: *35
+    NAME: psw_sch_qsch_cfg_flush_queues_fp_23
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of an endpoint port need to be flushed
+    FLDLST: &36
+      - DEFAULT: 0
+        DESCRIPTION: Bit-7 is for queue-7. Bit-0 is for queue-0
+        NAME: vec
+        WIDTH: 8
+    NAME: psw_sch_qsch_cfg_flush_queues_ep_0
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of an endpoint port need to be flushed
+    FLDLST: *36
+    NAME: psw_sch_qsch_cfg_flush_queues_ep_1
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of an endpoint port need to be flushed
+    FLDLST: *36
+    NAME: psw_sch_qsch_cfg_flush_queues_ep_2
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of an endpoint port need to be flushed
+    FLDLST: *36
+    NAME: psw_sch_qsch_cfg_flush_queues_ep_3
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of an endpoint port need to be flushed
+    FLDLST: *36
+    NAME: psw_sch_qsch_cfg_flush_queues_ep_4
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of an endpoint port need to be flushed
+    FLDLST: *36
+    NAME: psw_sch_qsch_cfg_flush_queues_ep_5
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of an endpoint port need to be flushed
+    FLDLST: *36
+    NAME: psw_sch_qsch_cfg_flush_queues_ep_6
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of an endpoint port need to be flushed
+    FLDLST: *36
+    NAME: psw_sch_qsch_cfg_flush_queues_ep_7
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of an endpoint port need to be flushed
+    FLDLST: *36
+    NAME: psw_sch_qsch_cfg_flush_queues_ep_8
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of an endpoint port need to be flushed
+    FLDLST: *36
+    NAME: psw_sch_qsch_cfg_flush_queues_ep_9
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of an endpoint port need to be flushed
+    FLDLST: *36
+    NAME: psw_sch_qsch_cfg_flush_queues_ep_10
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of an endpoint port need to be flushed
+    FLDLST: *36
+    NAME: psw_sch_qsch_cfg_flush_queues_ep_11
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of an endpoint port need to be flushed
+    FLDLST: *36
+    NAME: psw_sch_qsch_cfg_flush_queues_ep_12
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of an endpoint port need to be flushed
+    FLDLST: *36
+    NAME: psw_sch_qsch_cfg_flush_queues_ep_13
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of an endpoint port need to be flushed
+    FLDLST: *36
+    NAME: psw_sch_qsch_cfg_flush_queues_ep_14
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of an endpoint port need to be flushed
+    FLDLST: *36
+    NAME: psw_sch_qsch_cfg_flush_queues_ep_15
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of an endpoint port need to be flushed
+    FLDLST: *36
+    NAME: psw_sch_qsch_cfg_flush_queues_ep_16
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of an endpoint port need to be flushed
+    FLDLST: *36
+    NAME: psw_sch_qsch_cfg_flush_queues_ep_17
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of an endpoint port need to be flushed
+    FLDLST: *36
+    NAME: psw_sch_qsch_cfg_flush_queues_ep_18
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of an endpoint port need to be flushed
+    FLDLST: *36
+    NAME: psw_sch_qsch_cfg_flush_queues_ep_19
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of an endpoint port need to be flushed
+    FLDLST: *36
+    NAME: psw_sch_qsch_cfg_flush_queues_ep_20
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of an endpoint port need to be flushed
+    FLDLST: *36
+    NAME: psw_sch_qsch_cfg_flush_queues_ep_21
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of an endpoint port need to be flushed
+    FLDLST: *36
+    NAME: psw_sch_qsch_cfg_flush_queues_ep_22
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Indicates which queues of an endpoint port need to be flushed
+    FLDLST: *36
+    NAME: psw_sch_qsch_cfg_flush_queues_ep_23
+  - ATTR: 5
+    DESCRIPTION: Indicates refresh period
+    FLDLST:
+      - DEFAULT: 1000
+        DESCRIPTION: SW should not program it less than 1000.
+        NAME: val
+        WIDTH: 11
+      - DEFAULT: 0
+        DESCRIPTION: 'If set, enables  HW Refresh'
+        NAME: en
+        WIDTH: 1
+    NAME: psw_sch_orl_cfg_refresh_period
+    TEST_ATTR: 2
+  - ATTR: 5
+    DESCRIPTION: ''
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Disables HW update on cell dequeue from packet reader.
+        NAME: dis
+        WIDTH: 1
+    NAME: psw_sch_orl_cfg_deq_upd
+  - ATTR: 5
+    DESCRIPTION: Queue to Pri mapping for FP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Q-0 to Pri mapping
+        NAME: q0
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-1 to Pri mapping
+        NAME: q1
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-2 to Pri mapping
+        NAME: q2
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-3 to Pri mapping
+        NAME: q3
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-4 to Pri mapping
+        NAME: q4
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-5 to Pri mapping
+        NAME: q5
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-6 to Pri mapping
+        NAME: q6
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-7 to Pri mapping
+        NAME: q7
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-8 to Pri mapping
+        NAME: q8
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-9 to Pri mapping
+        NAME: q9
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-10 to Pri mapping
+        NAME: q10
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-11 to Pri mapping
+        NAME: q11
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-12 to Pri mapping
+        NAME: q12
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-13 to Pri mapping
+        NAME: q13
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-14 to Pri mapping
+        NAME: q14
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-15 to Pri mapping
+        NAME: q15
+        WIDTH: 4
+    NAME: psw_sch_pfcrx_q_to_pri_fp_0
+  - ATTR: 5
+    DESCRIPTION: Queue to Pri mapping for FP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Q-0 to Pri mapping
+        NAME: q0
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-1 to Pri mapping
+        NAME: q1
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-2 to Pri mapping
+        NAME: q2
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-3 to Pri mapping
+        NAME: q3
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-4 to Pri mapping
+        NAME: q4
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-5 to Pri mapping
+        NAME: q5
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-6 to Pri mapping
+        NAME: q6
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-7 to Pri mapping
+        NAME: q7
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-8 to Pri mapping
+        NAME: q8
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-9 to Pri mapping
+        NAME: q9
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-10 to Pri mapping
+        NAME: q10
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-11 to Pri mapping
+        NAME: q11
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-12 to Pri mapping
+        NAME: q12
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-13 to Pri mapping
+        NAME: q13
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-14 to Pri mapping
+        NAME: q14
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-15 to Pri mapping
+        NAME: q15
+        WIDTH: 4
+    NAME: psw_sch_pfcrx_q_to_pri_fp_1
+  - ATTR: 5
+    DESCRIPTION: Queue to Pri mapping for FP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Q-0 to Pri mapping
+        NAME: q0
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-1 to Pri mapping
+        NAME: q1
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-2 to Pri mapping
+        NAME: q2
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-3 to Pri mapping
+        NAME: q3
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-4 to Pri mapping
+        NAME: q4
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-5 to Pri mapping
+        NAME: q5
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-6 to Pri mapping
+        NAME: q6
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-7 to Pri mapping
+        NAME: q7
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-8 to Pri mapping
+        NAME: q8
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-9 to Pri mapping
+        NAME: q9
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-10 to Pri mapping
+        NAME: q10
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-11 to Pri mapping
+        NAME: q11
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-12 to Pri mapping
+        NAME: q12
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-13 to Pri mapping
+        NAME: q13
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-14 to Pri mapping
+        NAME: q14
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-15 to Pri mapping
+        NAME: q15
+        WIDTH: 4
+    NAME: psw_sch_pfcrx_q_to_pri_fp_2
+  - ATTR: 5
+    DESCRIPTION: Queue to Pri mapping for FP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Q-0 to Pri mapping
+        NAME: q0
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-1 to Pri mapping
+        NAME: q1
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-2 to Pri mapping
+        NAME: q2
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-3 to Pri mapping
+        NAME: q3
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-4 to Pri mapping
+        NAME: q4
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-5 to Pri mapping
+        NAME: q5
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-6 to Pri mapping
+        NAME: q6
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-7 to Pri mapping
+        NAME: q7
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-8 to Pri mapping
+        NAME: q8
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-9 to Pri mapping
+        NAME: q9
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-10 to Pri mapping
+        NAME: q10
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-11 to Pri mapping
+        NAME: q11
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-12 to Pri mapping
+        NAME: q12
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-13 to Pri mapping
+        NAME: q13
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-14 to Pri mapping
+        NAME: q14
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-15 to Pri mapping
+        NAME: q15
+        WIDTH: 4
+    NAME: psw_sch_pfcrx_q_to_pri_fp_3
+  - ATTR: 5
+    DESCRIPTION: Queue to Pri mapping for FP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Q-0 to Pri mapping
+        NAME: q0
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-1 to Pri mapping
+        NAME: q1
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-2 to Pri mapping
+        NAME: q2
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-3 to Pri mapping
+        NAME: q3
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-4 to Pri mapping
+        NAME: q4
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-5 to Pri mapping
+        NAME: q5
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-6 to Pri mapping
+        NAME: q6
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-7 to Pri mapping
+        NAME: q7
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-8 to Pri mapping
+        NAME: q8
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-9 to Pri mapping
+        NAME: q9
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-10 to Pri mapping
+        NAME: q10
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-11 to Pri mapping
+        NAME: q11
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-12 to Pri mapping
+        NAME: q12
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-13 to Pri mapping
+        NAME: q13
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-14 to Pri mapping
+        NAME: q14
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-15 to Pri mapping
+        NAME: q15
+        WIDTH: 4
+    NAME: psw_sch_pfcrx_q_to_pri_fp_4
+  - ATTR: 5
+    DESCRIPTION: Queue to Pri mapping for FP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Q-0 to Pri mapping
+        NAME: q0
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-1 to Pri mapping
+        NAME: q1
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-2 to Pri mapping
+        NAME: q2
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-3 to Pri mapping
+        NAME: q3
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-4 to Pri mapping
+        NAME: q4
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-5 to Pri mapping
+        NAME: q5
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-6 to Pri mapping
+        NAME: q6
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-7 to Pri mapping
+        NAME: q7
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-8 to Pri mapping
+        NAME: q8
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-9 to Pri mapping
+        NAME: q9
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-10 to Pri mapping
+        NAME: q10
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-11 to Pri mapping
+        NAME: q11
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-12 to Pri mapping
+        NAME: q12
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-13 to Pri mapping
+        NAME: q13
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-14 to Pri mapping
+        NAME: q14
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-15 to Pri mapping
+        NAME: q15
+        WIDTH: 4
+    NAME: psw_sch_pfcrx_q_to_pri_fp_5
+  - ATTR: 5
+    DESCRIPTION: Queue to Pri mapping for FP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Q-0 to Pri mapping
+        NAME: q0
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-1 to Pri mapping
+        NAME: q1
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-2 to Pri mapping
+        NAME: q2
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-3 to Pri mapping
+        NAME: q3
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-4 to Pri mapping
+        NAME: q4
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-5 to Pri mapping
+        NAME: q5
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-6 to Pri mapping
+        NAME: q6
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-7 to Pri mapping
+        NAME: q7
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-8 to Pri mapping
+        NAME: q8
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-9 to Pri mapping
+        NAME: q9
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-10 to Pri mapping
+        NAME: q10
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-11 to Pri mapping
+        NAME: q11
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-12 to Pri mapping
+        NAME: q12
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-13 to Pri mapping
+        NAME: q13
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-14 to Pri mapping
+        NAME: q14
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-15 to Pri mapping
+        NAME: q15
+        WIDTH: 4
+    NAME: psw_sch_pfcrx_q_to_pri_fp_6
+  - ATTR: 5
+    DESCRIPTION: Queue to Pri mapping for FP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Q-0 to Pri mapping
+        NAME: q0
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-1 to Pri mapping
+        NAME: q1
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-2 to Pri mapping
+        NAME: q2
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-3 to Pri mapping
+        NAME: q3
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-4 to Pri mapping
+        NAME: q4
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-5 to Pri mapping
+        NAME: q5
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-6 to Pri mapping
+        NAME: q6
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-7 to Pri mapping
+        NAME: q7
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-8 to Pri mapping
+        NAME: q8
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-9 to Pri mapping
+        NAME: q9
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-10 to Pri mapping
+        NAME: q10
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-11 to Pri mapping
+        NAME: q11
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-12 to Pri mapping
+        NAME: q12
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-13 to Pri mapping
+        NAME: q13
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-14 to Pri mapping
+        NAME: q14
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-15 to Pri mapping
+        NAME: q15
+        WIDTH: 4
+    NAME: psw_sch_pfcrx_q_to_pri_fp_7
+  - ATTR: 5
+    DESCRIPTION: Queue to Pri mapping for FP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Q-0 to Pri mapping
+        NAME: q0
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-1 to Pri mapping
+        NAME: q1
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-2 to Pri mapping
+        NAME: q2
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-3 to Pri mapping
+        NAME: q3
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-4 to Pri mapping
+        NAME: q4
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-5 to Pri mapping
+        NAME: q5
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-6 to Pri mapping
+        NAME: q6
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-7 to Pri mapping
+        NAME: q7
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-8 to Pri mapping
+        NAME: q8
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-9 to Pri mapping
+        NAME: q9
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-10 to Pri mapping
+        NAME: q10
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-11 to Pri mapping
+        NAME: q11
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-12 to Pri mapping
+        NAME: q12
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-13 to Pri mapping
+        NAME: q13
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-14 to Pri mapping
+        NAME: q14
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-15 to Pri mapping
+        NAME: q15
+        WIDTH: 4
+    NAME: psw_sch_pfcrx_q_to_pri_fp_8
+  - ATTR: 5
+    DESCRIPTION: Queue to Pri mapping for FP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Q-0 to Pri mapping
+        NAME: q0
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-1 to Pri mapping
+        NAME: q1
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-2 to Pri mapping
+        NAME: q2
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-3 to Pri mapping
+        NAME: q3
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-4 to Pri mapping
+        NAME: q4
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-5 to Pri mapping
+        NAME: q5
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-6 to Pri mapping
+        NAME: q6
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-7 to Pri mapping
+        NAME: q7
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-8 to Pri mapping
+        NAME: q8
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-9 to Pri mapping
+        NAME: q9
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-10 to Pri mapping
+        NAME: q10
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-11 to Pri mapping
+        NAME: q11
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-12 to Pri mapping
+        NAME: q12
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-13 to Pri mapping
+        NAME: q13
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-14 to Pri mapping
+        NAME: q14
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-15 to Pri mapping
+        NAME: q15
+        WIDTH: 4
+    NAME: psw_sch_pfcrx_q_to_pri_fp_9
+  - ATTR: 5
+    DESCRIPTION: Queue to Pri mapping for FP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Q-0 to Pri mapping
+        NAME: q0
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-1 to Pri mapping
+        NAME: q1
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-2 to Pri mapping
+        NAME: q2
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-3 to Pri mapping
+        NAME: q3
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-4 to Pri mapping
+        NAME: q4
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-5 to Pri mapping
+        NAME: q5
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-6 to Pri mapping
+        NAME: q6
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-7 to Pri mapping
+        NAME: q7
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-8 to Pri mapping
+        NAME: q8
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-9 to Pri mapping
+        NAME: q9
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-10 to Pri mapping
+        NAME: q10
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-11 to Pri mapping
+        NAME: q11
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-12 to Pri mapping
+        NAME: q12
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-13 to Pri mapping
+        NAME: q13
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-14 to Pri mapping
+        NAME: q14
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-15 to Pri mapping
+        NAME: q15
+        WIDTH: 4
+    NAME: psw_sch_pfcrx_q_to_pri_fp_10
+  - ATTR: 5
+    DESCRIPTION: Queue to Pri mapping for FP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Q-0 to Pri mapping
+        NAME: q0
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-1 to Pri mapping
+        NAME: q1
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-2 to Pri mapping
+        NAME: q2
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-3 to Pri mapping
+        NAME: q3
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-4 to Pri mapping
+        NAME: q4
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-5 to Pri mapping
+        NAME: q5
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-6 to Pri mapping
+        NAME: q6
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-7 to Pri mapping
+        NAME: q7
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-8 to Pri mapping
+        NAME: q8
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-9 to Pri mapping
+        NAME: q9
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-10 to Pri mapping
+        NAME: q10
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-11 to Pri mapping
+        NAME: q11
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-12 to Pri mapping
+        NAME: q12
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-13 to Pri mapping
+        NAME: q13
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-14 to Pri mapping
+        NAME: q14
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-15 to Pri mapping
+        NAME: q15
+        WIDTH: 4
+    NAME: psw_sch_pfcrx_q_to_pri_fp_11
+  - ATTR: 5
+    DESCRIPTION: Queue to Pri mapping for FP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Q-0 to Pri mapping
+        NAME: q0
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-1 to Pri mapping
+        NAME: q1
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-2 to Pri mapping
+        NAME: q2
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-3 to Pri mapping
+        NAME: q3
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-4 to Pri mapping
+        NAME: q4
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-5 to Pri mapping
+        NAME: q5
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-6 to Pri mapping
+        NAME: q6
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-7 to Pri mapping
+        NAME: q7
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-8 to Pri mapping
+        NAME: q8
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-9 to Pri mapping
+        NAME: q9
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-10 to Pri mapping
+        NAME: q10
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-11 to Pri mapping
+        NAME: q11
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-12 to Pri mapping
+        NAME: q12
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-13 to Pri mapping
+        NAME: q13
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-14 to Pri mapping
+        NAME: q14
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-15 to Pri mapping
+        NAME: q15
+        WIDTH: 4
+    NAME: psw_sch_pfcrx_q_to_pri_fp_12
+  - ATTR: 5
+    DESCRIPTION: Queue to Pri mapping for FP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Q-0 to Pri mapping
+        NAME: q0
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-1 to Pri mapping
+        NAME: q1
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-2 to Pri mapping
+        NAME: q2
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-3 to Pri mapping
+        NAME: q3
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-4 to Pri mapping
+        NAME: q4
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-5 to Pri mapping
+        NAME: q5
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-6 to Pri mapping
+        NAME: q6
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-7 to Pri mapping
+        NAME: q7
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-8 to Pri mapping
+        NAME: q8
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-9 to Pri mapping
+        NAME: q9
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-10 to Pri mapping
+        NAME: q10
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-11 to Pri mapping
+        NAME: q11
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-12 to Pri mapping
+        NAME: q12
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-13 to Pri mapping
+        NAME: q13
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-14 to Pri mapping
+        NAME: q14
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-15 to Pri mapping
+        NAME: q15
+        WIDTH: 4
+    NAME: psw_sch_pfcrx_q_to_pri_fp_13
+  - ATTR: 5
+    DESCRIPTION: Queue to Pri mapping for FP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Q-0 to Pri mapping
+        NAME: q0
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-1 to Pri mapping
+        NAME: q1
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-2 to Pri mapping
+        NAME: q2
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-3 to Pri mapping
+        NAME: q3
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-4 to Pri mapping
+        NAME: q4
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-5 to Pri mapping
+        NAME: q5
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-6 to Pri mapping
+        NAME: q6
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-7 to Pri mapping
+        NAME: q7
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-8 to Pri mapping
+        NAME: q8
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-9 to Pri mapping
+        NAME: q9
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-10 to Pri mapping
+        NAME: q10
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-11 to Pri mapping
+        NAME: q11
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-12 to Pri mapping
+        NAME: q12
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-13 to Pri mapping
+        NAME: q13
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-14 to Pri mapping
+        NAME: q14
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-15 to Pri mapping
+        NAME: q15
+        WIDTH: 4
+    NAME: psw_sch_pfcrx_q_to_pri_fp_14
+  - ATTR: 5
+    DESCRIPTION: Queue to Pri mapping for FP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Q-0 to Pri mapping
+        NAME: q0
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-1 to Pri mapping
+        NAME: q1
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-2 to Pri mapping
+        NAME: q2
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-3 to Pri mapping
+        NAME: q3
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-4 to Pri mapping
+        NAME: q4
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-5 to Pri mapping
+        NAME: q5
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-6 to Pri mapping
+        NAME: q6
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-7 to Pri mapping
+        NAME: q7
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-8 to Pri mapping
+        NAME: q8
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-9 to Pri mapping
+        NAME: q9
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-10 to Pri mapping
+        NAME: q10
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-11 to Pri mapping
+        NAME: q11
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-12 to Pri mapping
+        NAME: q12
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-13 to Pri mapping
+        NAME: q13
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-14 to Pri mapping
+        NAME: q14
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-15 to Pri mapping
+        NAME: q15
+        WIDTH: 4
+    NAME: psw_sch_pfcrx_q_to_pri_fp_15
+  - ATTR: 5
+    DESCRIPTION: Queue to Pri mapping for FP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Q-0 to Pri mapping
+        NAME: q0
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-1 to Pri mapping
+        NAME: q1
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-2 to Pri mapping
+        NAME: q2
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-3 to Pri mapping
+        NAME: q3
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-4 to Pri mapping
+        NAME: q4
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-5 to Pri mapping
+        NAME: q5
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-6 to Pri mapping
+        NAME: q6
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-7 to Pri mapping
+        NAME: q7
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-8 to Pri mapping
+        NAME: q8
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-9 to Pri mapping
+        NAME: q9
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-10 to Pri mapping
+        NAME: q10
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-11 to Pri mapping
+        NAME: q11
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-12 to Pri mapping
+        NAME: q12
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-13 to Pri mapping
+        NAME: q13
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-14 to Pri mapping
+        NAME: q14
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-15 to Pri mapping
+        NAME: q15
+        WIDTH: 4
+    NAME: psw_sch_pfcrx_q_to_pri_fp_16
+  - ATTR: 5
+    DESCRIPTION: Queue to Pri mapping for FP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Q-0 to Pri mapping
+        NAME: q0
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-1 to Pri mapping
+        NAME: q1
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-2 to Pri mapping
+        NAME: q2
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-3 to Pri mapping
+        NAME: q3
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-4 to Pri mapping
+        NAME: q4
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-5 to Pri mapping
+        NAME: q5
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-6 to Pri mapping
+        NAME: q6
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-7 to Pri mapping
+        NAME: q7
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-8 to Pri mapping
+        NAME: q8
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-9 to Pri mapping
+        NAME: q9
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-10 to Pri mapping
+        NAME: q10
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-11 to Pri mapping
+        NAME: q11
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-12 to Pri mapping
+        NAME: q12
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-13 to Pri mapping
+        NAME: q13
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-14 to Pri mapping
+        NAME: q14
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-15 to Pri mapping
+        NAME: q15
+        WIDTH: 4
+    NAME: psw_sch_pfcrx_q_to_pri_fp_17
+  - ATTR: 5
+    DESCRIPTION: Queue to Pri mapping for FP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Q-0 to Pri mapping
+        NAME: q0
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-1 to Pri mapping
+        NAME: q1
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-2 to Pri mapping
+        NAME: q2
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-3 to Pri mapping
+        NAME: q3
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-4 to Pri mapping
+        NAME: q4
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-5 to Pri mapping
+        NAME: q5
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-6 to Pri mapping
+        NAME: q6
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-7 to Pri mapping
+        NAME: q7
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-8 to Pri mapping
+        NAME: q8
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-9 to Pri mapping
+        NAME: q9
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-10 to Pri mapping
+        NAME: q10
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-11 to Pri mapping
+        NAME: q11
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-12 to Pri mapping
+        NAME: q12
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-13 to Pri mapping
+        NAME: q13
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-14 to Pri mapping
+        NAME: q14
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-15 to Pri mapping
+        NAME: q15
+        WIDTH: 4
+    NAME: psw_sch_pfcrx_q_to_pri_fp_18
+  - ATTR: 5
+    DESCRIPTION: Queue to Pri mapping for FP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Q-0 to Pri mapping
+        NAME: q0
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-1 to Pri mapping
+        NAME: q1
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-2 to Pri mapping
+        NAME: q2
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-3 to Pri mapping
+        NAME: q3
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-4 to Pri mapping
+        NAME: q4
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-5 to Pri mapping
+        NAME: q5
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-6 to Pri mapping
+        NAME: q6
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-7 to Pri mapping
+        NAME: q7
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-8 to Pri mapping
+        NAME: q8
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-9 to Pri mapping
+        NAME: q9
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-10 to Pri mapping
+        NAME: q10
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-11 to Pri mapping
+        NAME: q11
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-12 to Pri mapping
+        NAME: q12
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-13 to Pri mapping
+        NAME: q13
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-14 to Pri mapping
+        NAME: q14
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-15 to Pri mapping
+        NAME: q15
+        WIDTH: 4
+    NAME: psw_sch_pfcrx_q_to_pri_fp_19
+  - ATTR: 5
+    DESCRIPTION: Queue to Pri mapping for FP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Q-0 to Pri mapping
+        NAME: q0
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-1 to Pri mapping
+        NAME: q1
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-2 to Pri mapping
+        NAME: q2
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-3 to Pri mapping
+        NAME: q3
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-4 to Pri mapping
+        NAME: q4
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-5 to Pri mapping
+        NAME: q5
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-6 to Pri mapping
+        NAME: q6
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-7 to Pri mapping
+        NAME: q7
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-8 to Pri mapping
+        NAME: q8
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-9 to Pri mapping
+        NAME: q9
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-10 to Pri mapping
+        NAME: q10
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-11 to Pri mapping
+        NAME: q11
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-12 to Pri mapping
+        NAME: q12
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-13 to Pri mapping
+        NAME: q13
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-14 to Pri mapping
+        NAME: q14
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-15 to Pri mapping
+        NAME: q15
+        WIDTH: 4
+    NAME: psw_sch_pfcrx_q_to_pri_fp_20
+  - ATTR: 5
+    DESCRIPTION: Queue to Pri mapping for FP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Q-0 to Pri mapping
+        NAME: q0
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-1 to Pri mapping
+        NAME: q1
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-2 to Pri mapping
+        NAME: q2
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-3 to Pri mapping
+        NAME: q3
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-4 to Pri mapping
+        NAME: q4
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-5 to Pri mapping
+        NAME: q5
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-6 to Pri mapping
+        NAME: q6
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-7 to Pri mapping
+        NAME: q7
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-8 to Pri mapping
+        NAME: q8
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-9 to Pri mapping
+        NAME: q9
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-10 to Pri mapping
+        NAME: q10
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-11 to Pri mapping
+        NAME: q11
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-12 to Pri mapping
+        NAME: q12
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-13 to Pri mapping
+        NAME: q13
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-14 to Pri mapping
+        NAME: q14
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-15 to Pri mapping
+        NAME: q15
+        WIDTH: 4
+    NAME: psw_sch_pfcrx_q_to_pri_fp_21
+  - ATTR: 5
+    DESCRIPTION: Queue to Pri mapping for FP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Q-0 to Pri mapping
+        NAME: q0
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-1 to Pri mapping
+        NAME: q1
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-2 to Pri mapping
+        NAME: q2
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-3 to Pri mapping
+        NAME: q3
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-4 to Pri mapping
+        NAME: q4
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-5 to Pri mapping
+        NAME: q5
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-6 to Pri mapping
+        NAME: q6
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-7 to Pri mapping
+        NAME: q7
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-8 to Pri mapping
+        NAME: q8
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-9 to Pri mapping
+        NAME: q9
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-10 to Pri mapping
+        NAME: q10
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-11 to Pri mapping
+        NAME: q11
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-12 to Pri mapping
+        NAME: q12
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-13 to Pri mapping
+        NAME: q13
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-14 to Pri mapping
+        NAME: q14
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-15 to Pri mapping
+        NAME: q15
+        WIDTH: 4
+    NAME: psw_sch_pfcrx_q_to_pri_fp_22
+  - ATTR: 5
+    DESCRIPTION: Queue to Pri mapping for FP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Q-0 to Pri mapping
+        NAME: q0
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-1 to Pri mapping
+        NAME: q1
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-2 to Pri mapping
+        NAME: q2
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-3 to Pri mapping
+        NAME: q3
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-4 to Pri mapping
+        NAME: q4
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-5 to Pri mapping
+        NAME: q5
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-6 to Pri mapping
+        NAME: q6
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-7 to Pri mapping
+        NAME: q7
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-8 to Pri mapping
+        NAME: q8
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-9 to Pri mapping
+        NAME: q9
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-10 to Pri mapping
+        NAME: q10
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-11 to Pri mapping
+        NAME: q11
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-12 to Pri mapping
+        NAME: q12
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-13 to Pri mapping
+        NAME: q13
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-14 to Pri mapping
+        NAME: q14
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Q-15 to Pri mapping
+        NAME: q15
+        WIDTH: 4
+    NAME: psw_sch_pfcrx_q_to_pri_fp_23
+  - ATTR: 5
+    DESCRIPTION: Queue to Pri mapping for EP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Q-0 to Pri mapping
+        NAME: q0
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-1 to Pri mapping
+        NAME: q1
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-2 to Pri mapping
+        NAME: q2
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-3 to Pri mapping
+        NAME: q3
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-4 to Pri mapping
+        NAME: q4
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-5 to Pri mapping
+        NAME: q5
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-6 to Pri mapping
+        NAME: q6
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-7 to Pri mapping
+        NAME: q7
+        WIDTH: 3
+    NAME: psw_sch_pfcrx_q_to_pri_ep_0
+  - ATTR: 5
+    DESCRIPTION: Queue to Pri mapping for EP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Q-0 to Pri mapping
+        NAME: q0
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-1 to Pri mapping
+        NAME: q1
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-2 to Pri mapping
+        NAME: q2
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-3 to Pri mapping
+        NAME: q3
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-4 to Pri mapping
+        NAME: q4
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-5 to Pri mapping
+        NAME: q5
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-6 to Pri mapping
+        NAME: q6
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-7 to Pri mapping
+        NAME: q7
+        WIDTH: 3
+    NAME: psw_sch_pfcrx_q_to_pri_ep_1
+  - ATTR: 5
+    DESCRIPTION: Queue to Pri mapping for EP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Q-0 to Pri mapping
+        NAME: q0
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-1 to Pri mapping
+        NAME: q1
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-2 to Pri mapping
+        NAME: q2
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-3 to Pri mapping
+        NAME: q3
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-4 to Pri mapping
+        NAME: q4
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-5 to Pri mapping
+        NAME: q5
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-6 to Pri mapping
+        NAME: q6
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-7 to Pri mapping
+        NAME: q7
+        WIDTH: 3
+    NAME: psw_sch_pfcrx_q_to_pri_ep_2
+  - ATTR: 5
+    DESCRIPTION: Queue to Pri mapping for EP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Q-0 to Pri mapping
+        NAME: q0
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-1 to Pri mapping
+        NAME: q1
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-2 to Pri mapping
+        NAME: q2
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-3 to Pri mapping
+        NAME: q3
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-4 to Pri mapping
+        NAME: q4
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-5 to Pri mapping
+        NAME: q5
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-6 to Pri mapping
+        NAME: q6
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-7 to Pri mapping
+        NAME: q7
+        WIDTH: 3
+    NAME: psw_sch_pfcrx_q_to_pri_ep_3
+  - ATTR: 5
+    DESCRIPTION: Queue to Pri mapping for EP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Q-0 to Pri mapping
+        NAME: q0
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-1 to Pri mapping
+        NAME: q1
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-2 to Pri mapping
+        NAME: q2
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-3 to Pri mapping
+        NAME: q3
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-4 to Pri mapping
+        NAME: q4
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-5 to Pri mapping
+        NAME: q5
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-6 to Pri mapping
+        NAME: q6
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-7 to Pri mapping
+        NAME: q7
+        WIDTH: 3
+    NAME: psw_sch_pfcrx_q_to_pri_ep_4
+  - ATTR: 5
+    DESCRIPTION: Queue to Pri mapping for EP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Q-0 to Pri mapping
+        NAME: q0
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-1 to Pri mapping
+        NAME: q1
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-2 to Pri mapping
+        NAME: q2
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-3 to Pri mapping
+        NAME: q3
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-4 to Pri mapping
+        NAME: q4
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-5 to Pri mapping
+        NAME: q5
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-6 to Pri mapping
+        NAME: q6
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-7 to Pri mapping
+        NAME: q7
+        WIDTH: 3
+    NAME: psw_sch_pfcrx_q_to_pri_ep_5
+  - ATTR: 5
+    DESCRIPTION: Queue to Pri mapping for EP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Q-0 to Pri mapping
+        NAME: q0
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-1 to Pri mapping
+        NAME: q1
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-2 to Pri mapping
+        NAME: q2
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-3 to Pri mapping
+        NAME: q3
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-4 to Pri mapping
+        NAME: q4
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-5 to Pri mapping
+        NAME: q5
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-6 to Pri mapping
+        NAME: q6
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-7 to Pri mapping
+        NAME: q7
+        WIDTH: 3
+    NAME: psw_sch_pfcrx_q_to_pri_ep_6
+  - ATTR: 5
+    DESCRIPTION: Queue to Pri mapping for EP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Q-0 to Pri mapping
+        NAME: q0
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-1 to Pri mapping
+        NAME: q1
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-2 to Pri mapping
+        NAME: q2
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-3 to Pri mapping
+        NAME: q3
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-4 to Pri mapping
+        NAME: q4
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-5 to Pri mapping
+        NAME: q5
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-6 to Pri mapping
+        NAME: q6
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-7 to Pri mapping
+        NAME: q7
+        WIDTH: 3
+    NAME: psw_sch_pfcrx_q_to_pri_ep_7
+  - ATTR: 5
+    DESCRIPTION: Queue to Pri mapping for EP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Q-0 to Pri mapping
+        NAME: q0
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-1 to Pri mapping
+        NAME: q1
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-2 to Pri mapping
+        NAME: q2
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-3 to Pri mapping
+        NAME: q3
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-4 to Pri mapping
+        NAME: q4
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-5 to Pri mapping
+        NAME: q5
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-6 to Pri mapping
+        NAME: q6
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-7 to Pri mapping
+        NAME: q7
+        WIDTH: 3
+    NAME: psw_sch_pfcrx_q_to_pri_ep_8
+  - ATTR: 5
+    DESCRIPTION: Queue to Pri mapping for EP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Q-0 to Pri mapping
+        NAME: q0
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-1 to Pri mapping
+        NAME: q1
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-2 to Pri mapping
+        NAME: q2
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-3 to Pri mapping
+        NAME: q3
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-4 to Pri mapping
+        NAME: q4
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-5 to Pri mapping
+        NAME: q5
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-6 to Pri mapping
+        NAME: q6
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-7 to Pri mapping
+        NAME: q7
+        WIDTH: 3
+    NAME: psw_sch_pfcrx_q_to_pri_ep_9
+  - ATTR: 5
+    DESCRIPTION: Queue to Pri mapping for EP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Q-0 to Pri mapping
+        NAME: q0
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-1 to Pri mapping
+        NAME: q1
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-2 to Pri mapping
+        NAME: q2
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-3 to Pri mapping
+        NAME: q3
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-4 to Pri mapping
+        NAME: q4
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-5 to Pri mapping
+        NAME: q5
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-6 to Pri mapping
+        NAME: q6
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-7 to Pri mapping
+        NAME: q7
+        WIDTH: 3
+    NAME: psw_sch_pfcrx_q_to_pri_ep_10
+  - ATTR: 5
+    DESCRIPTION: Queue to Pri mapping for EP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Q-0 to Pri mapping
+        NAME: q0
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-1 to Pri mapping
+        NAME: q1
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-2 to Pri mapping
+        NAME: q2
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-3 to Pri mapping
+        NAME: q3
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-4 to Pri mapping
+        NAME: q4
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-5 to Pri mapping
+        NAME: q5
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-6 to Pri mapping
+        NAME: q6
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-7 to Pri mapping
+        NAME: q7
+        WIDTH: 3
+    NAME: psw_sch_pfcrx_q_to_pri_ep_11
+  - ATTR: 5
+    DESCRIPTION: Queue to Pri mapping for EP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Q-0 to Pri mapping
+        NAME: q0
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-1 to Pri mapping
+        NAME: q1
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-2 to Pri mapping
+        NAME: q2
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-3 to Pri mapping
+        NAME: q3
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-4 to Pri mapping
+        NAME: q4
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-5 to Pri mapping
+        NAME: q5
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-6 to Pri mapping
+        NAME: q6
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-7 to Pri mapping
+        NAME: q7
+        WIDTH: 3
+    NAME: psw_sch_pfcrx_q_to_pri_ep_12
+  - ATTR: 5
+    DESCRIPTION: Queue to Pri mapping for EP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Q-0 to Pri mapping
+        NAME: q0
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-1 to Pri mapping
+        NAME: q1
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-2 to Pri mapping
+        NAME: q2
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-3 to Pri mapping
+        NAME: q3
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-4 to Pri mapping
+        NAME: q4
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-5 to Pri mapping
+        NAME: q5
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-6 to Pri mapping
+        NAME: q6
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-7 to Pri mapping
+        NAME: q7
+        WIDTH: 3
+    NAME: psw_sch_pfcrx_q_to_pri_ep_13
+  - ATTR: 5
+    DESCRIPTION: Queue to Pri mapping for EP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Q-0 to Pri mapping
+        NAME: q0
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-1 to Pri mapping
+        NAME: q1
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-2 to Pri mapping
+        NAME: q2
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-3 to Pri mapping
+        NAME: q3
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-4 to Pri mapping
+        NAME: q4
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-5 to Pri mapping
+        NAME: q5
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-6 to Pri mapping
+        NAME: q6
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-7 to Pri mapping
+        NAME: q7
+        WIDTH: 3
+    NAME: psw_sch_pfcrx_q_to_pri_ep_14
+  - ATTR: 5
+    DESCRIPTION: Queue to Pri mapping for EP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Q-0 to Pri mapping
+        NAME: q0
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-1 to Pri mapping
+        NAME: q1
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-2 to Pri mapping
+        NAME: q2
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-3 to Pri mapping
+        NAME: q3
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-4 to Pri mapping
+        NAME: q4
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-5 to Pri mapping
+        NAME: q5
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-6 to Pri mapping
+        NAME: q6
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-7 to Pri mapping
+        NAME: q7
+        WIDTH: 3
+    NAME: psw_sch_pfcrx_q_to_pri_ep_15
+  - ATTR: 5
+    DESCRIPTION: Queue to Pri mapping for EP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Q-0 to Pri mapping
+        NAME: q0
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-1 to Pri mapping
+        NAME: q1
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-2 to Pri mapping
+        NAME: q2
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-3 to Pri mapping
+        NAME: q3
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-4 to Pri mapping
+        NAME: q4
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-5 to Pri mapping
+        NAME: q5
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-6 to Pri mapping
+        NAME: q6
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-7 to Pri mapping
+        NAME: q7
+        WIDTH: 3
+    NAME: psw_sch_pfcrx_q_to_pri_ep_16
+  - ATTR: 5
+    DESCRIPTION: Queue to Pri mapping for EP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Q-0 to Pri mapping
+        NAME: q0
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-1 to Pri mapping
+        NAME: q1
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-2 to Pri mapping
+        NAME: q2
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-3 to Pri mapping
+        NAME: q3
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-4 to Pri mapping
+        NAME: q4
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-5 to Pri mapping
+        NAME: q5
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-6 to Pri mapping
+        NAME: q6
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-7 to Pri mapping
+        NAME: q7
+        WIDTH: 3
+    NAME: psw_sch_pfcrx_q_to_pri_ep_17
+  - ATTR: 5
+    DESCRIPTION: Queue to Pri mapping for EP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Q-0 to Pri mapping
+        NAME: q0
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-1 to Pri mapping
+        NAME: q1
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-2 to Pri mapping
+        NAME: q2
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-3 to Pri mapping
+        NAME: q3
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-4 to Pri mapping
+        NAME: q4
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-5 to Pri mapping
+        NAME: q5
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-6 to Pri mapping
+        NAME: q6
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-7 to Pri mapping
+        NAME: q7
+        WIDTH: 3
+    NAME: psw_sch_pfcrx_q_to_pri_ep_18
+  - ATTR: 5
+    DESCRIPTION: Queue to Pri mapping for EP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Q-0 to Pri mapping
+        NAME: q0
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-1 to Pri mapping
+        NAME: q1
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-2 to Pri mapping
+        NAME: q2
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-3 to Pri mapping
+        NAME: q3
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-4 to Pri mapping
+        NAME: q4
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-5 to Pri mapping
+        NAME: q5
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-6 to Pri mapping
+        NAME: q6
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-7 to Pri mapping
+        NAME: q7
+        WIDTH: 3
+    NAME: psw_sch_pfcrx_q_to_pri_ep_19
+  - ATTR: 5
+    DESCRIPTION: Queue to Pri mapping for EP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Q-0 to Pri mapping
+        NAME: q0
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-1 to Pri mapping
+        NAME: q1
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-2 to Pri mapping
+        NAME: q2
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-3 to Pri mapping
+        NAME: q3
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-4 to Pri mapping
+        NAME: q4
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-5 to Pri mapping
+        NAME: q5
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-6 to Pri mapping
+        NAME: q6
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-7 to Pri mapping
+        NAME: q7
+        WIDTH: 3
+    NAME: psw_sch_pfcrx_q_to_pri_ep_20
+  - ATTR: 5
+    DESCRIPTION: Queue to Pri mapping for EP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Q-0 to Pri mapping
+        NAME: q0
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-1 to Pri mapping
+        NAME: q1
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-2 to Pri mapping
+        NAME: q2
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-3 to Pri mapping
+        NAME: q3
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-4 to Pri mapping
+        NAME: q4
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-5 to Pri mapping
+        NAME: q5
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-6 to Pri mapping
+        NAME: q6
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-7 to Pri mapping
+        NAME: q7
+        WIDTH: 3
+    NAME: psw_sch_pfcrx_q_to_pri_ep_21
+  - ATTR: 5
+    DESCRIPTION: Queue to Pri mapping for EP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Q-0 to Pri mapping
+        NAME: q0
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-1 to Pri mapping
+        NAME: q1
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-2 to Pri mapping
+        NAME: q2
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-3 to Pri mapping
+        NAME: q3
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-4 to Pri mapping
+        NAME: q4
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-5 to Pri mapping
+        NAME: q5
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-6 to Pri mapping
+        NAME: q6
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-7 to Pri mapping
+        NAME: q7
+        WIDTH: 3
+    NAME: psw_sch_pfcrx_q_to_pri_ep_22
+  - ATTR: 5
+    DESCRIPTION: Queue to Pri mapping for EP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Q-0 to Pri mapping
+        NAME: q0
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-1 to Pri mapping
+        NAME: q1
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-2 to Pri mapping
+        NAME: q2
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-3 to Pri mapping
+        NAME: q3
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-4 to Pri mapping
+        NAME: q4
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-5 to Pri mapping
+        NAME: q5
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-6 to Pri mapping
+        NAME: q6
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Q-7 to Pri mapping
+        NAME: q7
+        WIDTH: 3
+    NAME: psw_sch_pfcrx_q_to_pri_ep_23
+  - ATTR: 5
+    DESCRIPTION: XOFF set for FP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 16
+    NAME: psw_sch_pfcrx_xoff_set_fp_0
+  - ATTR: 5
+    DESCRIPTION: XOFF set for FP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 16
+    NAME: psw_sch_pfcrx_xoff_set_fp_1
+  - ATTR: 5
+    DESCRIPTION: XOFF set for FP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 16
+    NAME: psw_sch_pfcrx_xoff_set_fp_2
+  - ATTR: 5
+    DESCRIPTION: XOFF set for FP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 16
+    NAME: psw_sch_pfcrx_xoff_set_fp_3
+  - ATTR: 5
+    DESCRIPTION: XOFF set for FP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 16
+    NAME: psw_sch_pfcrx_xoff_set_fp_4
+  - ATTR: 5
+    DESCRIPTION: XOFF set for FP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 16
+    NAME: psw_sch_pfcrx_xoff_set_fp_5
+  - ATTR: 5
+    DESCRIPTION: XOFF set for FP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 16
+    NAME: psw_sch_pfcrx_xoff_set_fp_6
+  - ATTR: 5
+    DESCRIPTION: XOFF set for FP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 16
+    NAME: psw_sch_pfcrx_xoff_set_fp_7
+  - ATTR: 5
+    DESCRIPTION: XOFF set for FP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 16
+    NAME: psw_sch_pfcrx_xoff_set_fp_8
+  - ATTR: 5
+    DESCRIPTION: XOFF set for FP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 16
+    NAME: psw_sch_pfcrx_xoff_set_fp_9
+  - ATTR: 5
+    DESCRIPTION: XOFF set for FP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 16
+    NAME: psw_sch_pfcrx_xoff_set_fp_10
+  - ATTR: 5
+    DESCRIPTION: XOFF set for FP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 16
+    NAME: psw_sch_pfcrx_xoff_set_fp_11
+  - ATTR: 5
+    DESCRIPTION: XOFF set for FP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 16
+    NAME: psw_sch_pfcrx_xoff_set_fp_12
+  - ATTR: 5
+    DESCRIPTION: XOFF set for FP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 16
+    NAME: psw_sch_pfcrx_xoff_set_fp_13
+  - ATTR: 5
+    DESCRIPTION: XOFF set for FP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 16
+    NAME: psw_sch_pfcrx_xoff_set_fp_14
+  - ATTR: 5
+    DESCRIPTION: XOFF set for FP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 16
+    NAME: psw_sch_pfcrx_xoff_set_fp_15
+  - ATTR: 5
+    DESCRIPTION: XOFF set for FP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 16
+    NAME: psw_sch_pfcrx_xoff_set_fp_16
+  - ATTR: 5
+    DESCRIPTION: XOFF set for FP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 16
+    NAME: psw_sch_pfcrx_xoff_set_fp_17
+  - ATTR: 5
+    DESCRIPTION: XOFF set for FP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 16
+    NAME: psw_sch_pfcrx_xoff_set_fp_18
+  - ATTR: 5
+    DESCRIPTION: XOFF set for FP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 16
+    NAME: psw_sch_pfcrx_xoff_set_fp_19
+  - ATTR: 5
+    DESCRIPTION: XOFF set for FP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 16
+    NAME: psw_sch_pfcrx_xoff_set_fp_20
+  - ATTR: 5
+    DESCRIPTION: XOFF set for FP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 16
+    NAME: psw_sch_pfcrx_xoff_set_fp_21
+  - ATTR: 5
+    DESCRIPTION: XOFF set for FP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 16
+    NAME: psw_sch_pfcrx_xoff_set_fp_22
+  - ATTR: 5
+    DESCRIPTION: XOFF set for FP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 16
+    NAME: psw_sch_pfcrx_xoff_set_fp_23
+  - ATTR: 5
+    DESCRIPTION: XOFF reset for FP. Reset has higher priority over set.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 16
+    NAME: psw_sch_pfcrx_xoff_reset_fp_0
+  - ATTR: 5
+    DESCRIPTION: XOFF reset for FP. Reset has higher priority over set.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 16
+    NAME: psw_sch_pfcrx_xoff_reset_fp_1
+  - ATTR: 5
+    DESCRIPTION: XOFF reset for FP. Reset has higher priority over set.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 16
+    NAME: psw_sch_pfcrx_xoff_reset_fp_2
+  - ATTR: 5
+    DESCRIPTION: XOFF reset for FP. Reset has higher priority over set.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 16
+    NAME: psw_sch_pfcrx_xoff_reset_fp_3
+  - ATTR: 5
+    DESCRIPTION: XOFF reset for FP. Reset has higher priority over set.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 16
+    NAME: psw_sch_pfcrx_xoff_reset_fp_4
+  - ATTR: 5
+    DESCRIPTION: XOFF reset for FP. Reset has higher priority over set.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 16
+    NAME: psw_sch_pfcrx_xoff_reset_fp_5
+  - ATTR: 5
+    DESCRIPTION: XOFF reset for FP. Reset has higher priority over set.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 16
+    NAME: psw_sch_pfcrx_xoff_reset_fp_6
+  - ATTR: 5
+    DESCRIPTION: XOFF reset for FP. Reset has higher priority over set.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 16
+    NAME: psw_sch_pfcrx_xoff_reset_fp_7
+  - ATTR: 5
+    DESCRIPTION: XOFF reset for FP. Reset has higher priority over set.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 16
+    NAME: psw_sch_pfcrx_xoff_reset_fp_8
+  - ATTR: 5
+    DESCRIPTION: XOFF reset for FP. Reset has higher priority over set.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 16
+    NAME: psw_sch_pfcrx_xoff_reset_fp_9
+  - ATTR: 5
+    DESCRIPTION: XOFF reset for FP. Reset has higher priority over set.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 16
+    NAME: psw_sch_pfcrx_xoff_reset_fp_10
+  - ATTR: 5
+    DESCRIPTION: XOFF reset for FP. Reset has higher priority over set.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 16
+    NAME: psw_sch_pfcrx_xoff_reset_fp_11
+  - ATTR: 5
+    DESCRIPTION: XOFF reset for FP. Reset has higher priority over set.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 16
+    NAME: psw_sch_pfcrx_xoff_reset_fp_12
+  - ATTR: 5
+    DESCRIPTION: XOFF reset for FP. Reset has higher priority over set.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 16
+    NAME: psw_sch_pfcrx_xoff_reset_fp_13
+  - ATTR: 5
+    DESCRIPTION: XOFF reset for FP. Reset has higher priority over set.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 16
+    NAME: psw_sch_pfcrx_xoff_reset_fp_14
+  - ATTR: 5
+    DESCRIPTION: XOFF reset for FP. Reset has higher priority over set.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 16
+    NAME: psw_sch_pfcrx_xoff_reset_fp_15
+  - ATTR: 5
+    DESCRIPTION: XOFF reset for FP. Reset has higher priority over set.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 16
+    NAME: psw_sch_pfcrx_xoff_reset_fp_16
+  - ATTR: 5
+    DESCRIPTION: XOFF reset for FP. Reset has higher priority over set.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 16
+    NAME: psw_sch_pfcrx_xoff_reset_fp_17
+  - ATTR: 5
+    DESCRIPTION: XOFF reset for FP. Reset has higher priority over set.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 16
+    NAME: psw_sch_pfcrx_xoff_reset_fp_18
+  - ATTR: 5
+    DESCRIPTION: XOFF reset for FP. Reset has higher priority over set.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 16
+    NAME: psw_sch_pfcrx_xoff_reset_fp_19
+  - ATTR: 5
+    DESCRIPTION: XOFF reset for FP. Reset has higher priority over set.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 16
+    NAME: psw_sch_pfcrx_xoff_reset_fp_20
+  - ATTR: 5
+    DESCRIPTION: XOFF reset for FP. Reset has higher priority over set.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 16
+    NAME: psw_sch_pfcrx_xoff_reset_fp_21
+  - ATTR: 5
+    DESCRIPTION: XOFF reset for FP. Reset has higher priority over set.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 16
+    NAME: psw_sch_pfcrx_xoff_reset_fp_22
+  - ATTR: 5
+    DESCRIPTION: XOFF reset for FP. Reset has higher priority over set.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 16
+    NAME: psw_sch_pfcrx_xoff_reset_fp_23
+  - ATTR: 5
+    DESCRIPTION: XOFF set for EP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 8
+    NAME: psw_sch_pfcrx_xoff_set_ep_0
+  - ATTR: 5
+    DESCRIPTION: XOFF set for EP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 8
+    NAME: psw_sch_pfcrx_xoff_set_ep_1
+  - ATTR: 5
+    DESCRIPTION: XOFF set for EP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 8
+    NAME: psw_sch_pfcrx_xoff_set_ep_2
+  - ATTR: 5
+    DESCRIPTION: XOFF set for EP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 8
+    NAME: psw_sch_pfcrx_xoff_set_ep_3
+  - ATTR: 5
+    DESCRIPTION: XOFF set for EP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 8
+    NAME: psw_sch_pfcrx_xoff_set_ep_4
+  - ATTR: 5
+    DESCRIPTION: XOFF set for EP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 8
+    NAME: psw_sch_pfcrx_xoff_set_ep_5
+  - ATTR: 5
+    DESCRIPTION: XOFF set for EP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 8
+    NAME: psw_sch_pfcrx_xoff_set_ep_6
+  - ATTR: 5
+    DESCRIPTION: XOFF set for EP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 8
+    NAME: psw_sch_pfcrx_xoff_set_ep_7
+  - ATTR: 5
+    DESCRIPTION: XOFF set for EP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 8
+    NAME: psw_sch_pfcrx_xoff_set_ep_8
+  - ATTR: 5
+    DESCRIPTION: XOFF set for EP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 8
+    NAME: psw_sch_pfcrx_xoff_set_ep_9
+  - ATTR: 5
+    DESCRIPTION: XOFF set for EP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 8
+    NAME: psw_sch_pfcrx_xoff_set_ep_10
+  - ATTR: 5
+    DESCRIPTION: XOFF set for EP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 8
+    NAME: psw_sch_pfcrx_xoff_set_ep_11
+  - ATTR: 5
+    DESCRIPTION: XOFF set for EP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 8
+    NAME: psw_sch_pfcrx_xoff_set_ep_12
+  - ATTR: 5
+    DESCRIPTION: XOFF set for EP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 8
+    NAME: psw_sch_pfcrx_xoff_set_ep_13
+  - ATTR: 5
+    DESCRIPTION: XOFF set for EP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 8
+    NAME: psw_sch_pfcrx_xoff_set_ep_14
+  - ATTR: 5
+    DESCRIPTION: XOFF set for EP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 8
+    NAME: psw_sch_pfcrx_xoff_set_ep_15
+  - ATTR: 5
+    DESCRIPTION: XOFF set for EP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 8
+    NAME: psw_sch_pfcrx_xoff_set_ep_16
+  - ATTR: 5
+    DESCRIPTION: XOFF set for EP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 8
+    NAME: psw_sch_pfcrx_xoff_set_ep_17
+  - ATTR: 5
+    DESCRIPTION: XOFF set for EP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 8
+    NAME: psw_sch_pfcrx_xoff_set_ep_18
+  - ATTR: 5
+    DESCRIPTION: XOFF set for EP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 8
+    NAME: psw_sch_pfcrx_xoff_set_ep_19
+  - ATTR: 5
+    DESCRIPTION: XOFF set for EP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 8
+    NAME: psw_sch_pfcrx_xoff_set_ep_20
+  - ATTR: 5
+    DESCRIPTION: XOFF set for EP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 8
+    NAME: psw_sch_pfcrx_xoff_set_ep_21
+  - ATTR: 5
+    DESCRIPTION: XOFF set for EP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 8
+    NAME: psw_sch_pfcrx_xoff_set_ep_22
+  - ATTR: 5
+    DESCRIPTION: XOFF set for EP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 8
+    NAME: psw_sch_pfcrx_xoff_set_ep_23
+  - ATTR: 5
+    DESCRIPTION: XOFF reset for EP. Reset has higher priority over set.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 8
+    NAME: psw_sch_pfcrx_xoff_reset_ep_0
+  - ATTR: 5
+    DESCRIPTION: XOFF reset for EP. Reset has higher priority over set.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 8
+    NAME: psw_sch_pfcrx_xoff_reset_ep_1
+  - ATTR: 5
+    DESCRIPTION: XOFF reset for EP. Reset has higher priority over set.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 8
+    NAME: psw_sch_pfcrx_xoff_reset_ep_2
+  - ATTR: 5
+    DESCRIPTION: XOFF reset for EP. Reset has higher priority over set.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 8
+    NAME: psw_sch_pfcrx_xoff_reset_ep_3
+  - ATTR: 5
+    DESCRIPTION: XOFF reset for EP. Reset has higher priority over set.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 8
+    NAME: psw_sch_pfcrx_xoff_reset_ep_4
+  - ATTR: 5
+    DESCRIPTION: XOFF reset for EP. Reset has higher priority over set.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 8
+    NAME: psw_sch_pfcrx_xoff_reset_ep_5
+  - ATTR: 5
+    DESCRIPTION: XOFF reset for EP. Reset has higher priority over set.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 8
+    NAME: psw_sch_pfcrx_xoff_reset_ep_6
+  - ATTR: 5
+    DESCRIPTION: XOFF reset for EP. Reset has higher priority over set.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 8
+    NAME: psw_sch_pfcrx_xoff_reset_ep_7
+  - ATTR: 5
+    DESCRIPTION: XOFF reset for EP. Reset has higher priority over set.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 8
+    NAME: psw_sch_pfcrx_xoff_reset_ep_8
+  - ATTR: 5
+    DESCRIPTION: XOFF reset for EP. Reset has higher priority over set.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 8
+    NAME: psw_sch_pfcrx_xoff_reset_ep_9
+  - ATTR: 5
+    DESCRIPTION: XOFF reset for EP. Reset has higher priority over set.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 8
+    NAME: psw_sch_pfcrx_xoff_reset_ep_10
+  - ATTR: 5
+    DESCRIPTION: XOFF reset for EP. Reset has higher priority over set.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 8
+    NAME: psw_sch_pfcrx_xoff_reset_ep_11
+  - ATTR: 5
+    DESCRIPTION: XOFF reset for EP. Reset has higher priority over set.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 8
+    NAME: psw_sch_pfcrx_xoff_reset_ep_12
+  - ATTR: 5
+    DESCRIPTION: XOFF reset for EP. Reset has higher priority over set.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 8
+    NAME: psw_sch_pfcrx_xoff_reset_ep_13
+  - ATTR: 5
+    DESCRIPTION: XOFF reset for EP. Reset has higher priority over set.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 8
+    NAME: psw_sch_pfcrx_xoff_reset_ep_14
+  - ATTR: 5
+    DESCRIPTION: XOFF reset for EP. Reset has higher priority over set.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 8
+    NAME: psw_sch_pfcrx_xoff_reset_ep_15
+  - ATTR: 5
+    DESCRIPTION: XOFF reset for EP. Reset has higher priority over set.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 8
+    NAME: psw_sch_pfcrx_xoff_reset_ep_16
+  - ATTR: 5
+    DESCRIPTION: XOFF reset for EP. Reset has higher priority over set.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 8
+    NAME: psw_sch_pfcrx_xoff_reset_ep_17
+  - ATTR: 5
+    DESCRIPTION: XOFF reset for EP. Reset has higher priority over set.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 8
+    NAME: psw_sch_pfcrx_xoff_reset_ep_18
+  - ATTR: 5
+    DESCRIPTION: XOFF reset for EP. Reset has higher priority over set.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 8
+    NAME: psw_sch_pfcrx_xoff_reset_ep_19
+  - ATTR: 5
+    DESCRIPTION: XOFF reset for EP. Reset has higher priority over set.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 8
+    NAME: psw_sch_pfcrx_xoff_reset_ep_20
+  - ATTR: 5
+    DESCRIPTION: XOFF reset for EP. Reset has higher priority over set.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 8
+    NAME: psw_sch_pfcrx_xoff_reset_ep_21
+  - ATTR: 5
+    DESCRIPTION: XOFF reset for EP. Reset has higher priority over set.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 8
+    NAME: psw_sch_pfcrx_xoff_reset_ep_22
+  - ATTR: 5
+    DESCRIPTION: XOFF reset for EP. Reset has higher priority over set.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Value '
+        NAME: val
+        WIDTH: 8
+    NAME: psw_sch_pfcrx_xoff_reset_ep_23
+  - ATTR: 10
+    COUNT: 1
+    DESCRIPTION: XOFF status of each stream. SW reads to clear it. Its a sticky register.
+    ENTRIES: 1
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: .
+        NAME: Val
+        WIDTH: 48
+    NAME: psw_sch_pfcrx_xoff_fc_sta
+    TEST_ATTR: 0
+  - ATTR: 5
+    DESCRIPTION: Config register for memory error injection
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into orl_mem9 memory
+        NAME: orl_mem9
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into orl_mem8 memory
+        NAME: orl_mem8
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into orl_mem7 memory
+        NAME: orl_mem7
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into orl_mem6 memory
+        NAME: orl_mem6
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into orl_mem5 memory
+        NAME: orl_mem5
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into orl_mem4 memory
+        NAME: orl_mem4
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into orl_mem3 memory
+        NAME: orl_mem3
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into orl_mem2 memory
+        NAME: orl_mem2
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into orl_mem1 memory
+        NAME: orl_mem1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into orl_mem0 memory
+        NAME: orl_mem0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into qsch_chnl_dwrr_sc memory
+        NAME: qsch_chnl_dwrr_sc
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into qsch_q_dwrr_sc memory
+        NAME: qsch_q_dwrr_sc
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into qsch_q_dwrr_weight memory
+        NAME: qsch_q_dwrr_weight
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'Type of error to be injected applied to all memories.  0 - Uncorrectable error. 1 - Correctable error '
+        NAME: err_type
+        WIDTH: 1
+    NAME: psw_sch_sram_err_inj_cfg
+    TEST_ATTR: 2
+  - ATTR: 9
+    DESCRIPTION: 'SRAM bit vector that has correctable error. Set when first error is detected. Reset when corresponding interrupt status bit is cleared. '
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: orl_mem9 Memory Single Bit ECC Error
+        NAME: orl_mem9
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: orl_mem8 Memory Single Bit ECC Error
+        NAME: orl_mem8
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: orl_mem7 Memory Single Bit ECC Error
+        NAME: orl_mem7
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: orl_mem6 Memory Single Bit ECC Error
+        NAME: orl_mem6
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: orl_mem5 Memory Single Bit ECC Error
+        NAME: orl_mem5
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: orl_mem4 Memory Single Bit ECC Error
+        NAME: orl_mem4
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: orl_mem3 Memory Single Bit ECC Error
+        NAME: orl_mem3
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: orl_mem2 Memory Single Bit ECC Error
+        NAME: orl_mem2
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: orl_mem1 Memory Single Bit ECC Error
+        NAME: orl_mem1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: orl_mem0 Memory Single Bit ECC Error
+        NAME: orl_mem0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: qsch_chnl_dwrr_sc Memory Single Bit ECC Error
+        NAME: qsch_chnl_dwrr_sc
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: qsch_q_dwrr_sc Memory Single Bit ECC Error
+        NAME: qsch_q_dwrr_sc
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: qsch_q_dwrr_weight Memory Single Bit ECC Error
+        NAME: qsch_q_dwrr_weight
+        WIDTH: 1
+    NAME: psw_sch_sram_log_cerr_vec
+  - ATTR: 9
+    DESCRIPTION: SRAM syndrome log register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: ' Syndrome related to error detected while reading data from SRAM '
+        NAME: val
+        WIDTH: 16
+    NAME: psw_sch_sram_log_cerr_syndrome
+  - ATTR: 9
+    DESCRIPTION: SRAM address log register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: ' address related to error detected while reading data from SRAM '
+        NAME: val
+        WIDTH: 16
+    NAME: psw_sch_sram_log_cerr_addr
+  - ATTR: 9
+    DESCRIPTION: 'SRAM bit vector that has uncorrectable error. Set when first error is detected. Reset when corresponding interrupt status bit is cleared. '
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: orl_mem9 Memory Double Bit ECC Error
+        NAME: orl_mem9
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: orl_mem8 Memory Double Bit ECC Error
+        NAME: orl_mem8
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: orl_mem7 Memory Double Bit ECC Error
+        NAME: orl_mem7
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: orl_mem6 Memory Double Bit ECC Error
+        NAME: orl_mem6
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: orl_mem5 Memory Double Bit ECC Error
+        NAME: orl_mem5
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: orl_mem4 Memory Double Bit ECC Error
+        NAME: orl_mem4
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: orl_mem3 Memory Double Bit ECC Error
+        NAME: orl_mem3
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: orl_mem2 Memory Double Bit ECC Error
+        NAME: orl_mem2
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: orl_mem1 Memory Double Bit ECC Error
+        NAME: orl_mem1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: orl_mem0 Memory Double Bit ECC Error
+        NAME: orl_mem0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: qsch_chnl_dwrr_sc Memory Double Bit ECC Error
+        NAME: qsch_chnl_dwrr_sc
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: qsch_q_dwrr_sc Memory Double Bit ECC Error
+        NAME: qsch_q_dwrr_sc
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: qsch_q_dwrr_weight Memory Double Bit ECC Error
+        NAME: qsch_q_dwrr_weight
+        WIDTH: 1
+    NAME: psw_sch_sram_log_uerr_vec
+  - ATTR: 9
+    DESCRIPTION: SRAM syndrome log register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: ' Syndrome related to error detected while reading data from SRAM '
+        NAME: val
+        WIDTH: 16
+    NAME: psw_sch_sram_log_uerr_syndrome
+  - ATTR: 9
+    DESCRIPTION: SRAM address log register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: ' address related to error detected while reading data from SRAM '
+        NAME: val
+        WIDTH: 16
+    NAME: psw_sch_sram_log_uerr_addr
+  - ATTR: 6
+    COUNT: 1
+    DESCRIPTION: DWRR weight of queues belonging to a channel
+    ENTRIES: 72
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: DWRR weight Memory Data Structure
+        NAME: data
+        WIDTH: 56
+    NAME: psw_sch_qsch_mem_q_dwrr_weight
+  - ATTR: 10
+    COUNT: 1
+    DESCRIPTION: DWRR surplus credits and mnc of queues belonging to a channel
+    ENTRIES: 72
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: DWRR surplus credits Memory Data Structure
+        NAME: data
+        WIDTH: 218
+    NAME: psw_sch_qsch_mem_q_dwrr_sc
+    TEST_ATTR: 4
+  - ATTR: 6
+    COUNT: 1
+    DESCRIPTION: DWRR weight of channels belonging to a stream. This is only for FP streams.
+    ENTRIES: 24
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: DWRR weight Memory Data Structure
+        NAME: data
+        WIDTH: 28
+    NAME: psw_sch_qsch_mem_chnl_dwrr_weight
+  - ATTR: 10
+    COUNT: 1
+    DESCRIPTION: DWRR surplus credits and mnc of channels belonging to a FP stream.
+    ENTRIES: 24
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: DWRR surplus credits Memory Data Structure
+        NAME: data
+        WIDTH: 109
+    NAME: psw_sch_qsch_mem_chnl_dwrr_sc
+    TEST_ATTR: 4
+  - ATTR: 6
+    DESCRIPTION: ' eval {psw_orl_mem0_type="psw_orl_mem0_description"; psw_sch_orl_fpg_0_to_2_queues_cr }'
+    ENTRIES: 192
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'If set, HW rate limiter result is not used and sw_override_val field value is used.'
+        NAME: sw_override
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'If sw_override is set to 1, HW Rate limiter result is overrrided by the value stored in this field. 1 implies rate limiter hit is always set. 0 implies rate limiter hit is always 0.'
+        NAME: sw_override_val
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: This will get rate granularity from 1 Mbps to 128Gbps. Note that we do refresh every ~1000 clocks. That needs only 17 bits. Have 1 bit of extra margin if we do refresh ~2000 cycles..
+        NAME: refresh_credits
+        WIDTH: 18
+      - DEFAULT: 0
+        DESCRIPTION: Count credits in bits. Need 22 bits as CR_thresh is 20 bits. 2 extra bits are used for extra packet skid.
+        NAME: count
+        WIDTH: 22
+      - DEFAULT: 0
+        DESCRIPTION: Represents Rate limiter threshold value in bits. SW can set threshold up to 128 KB. 20 bits gives a limit of 128 KB.
+        NAME: thresh
+        WIDTH: 20
+      - DEFAULT: 0
+        DESCRIPTION: Rate limiter status. This is mainly for SW read for debug.
+        NAME: hit
+        WIDTH: 1
+    NAME: psw_sch_orl_fpg_0_to_2_queues_cr
+  - ATTR: 6
+    DESCRIPTION: ' eval {psw_orl_mem1_type="psw_orl_mem1_description"; psw_sch_orl_fpg_0_to_2_queues_pr }'
+    ENTRIES: 192
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'If set, HW rate limiter result is not used and sw_override_val field value is used.'
+        NAME: sw_override
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'If sw_override is set to 1, HW Rate limiter result is overrrided by the value stored in this field. 1 implies rate limiter hit is always set. 0 implies rate limiter hit is always 0.'
+        NAME: sw_override_val
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: This will get rate granularity from 1 Mbps to 128Gbps. Note that we do refresh every ~1000 clocks. That needs only 17 bits. Have 1 bit of extra margin if we do refresh ~2000 cycles..
+        NAME: refresh_credits
+        WIDTH: 18
+      - DEFAULT: 0
+        DESCRIPTION: Count credits in bits. Need 22 bits as CR_thresh is 20 bits. 2 extra bits are used for extra packet skid.
+        NAME: count
+        WIDTH: 22
+      - DEFAULT: 0
+        DESCRIPTION: Represents Rate limiter threshold value in bits. SW can set threshold up to 128 KB. 20 bits gives a limit of 128 KB.
+        NAME: thresh
+        WIDTH: 20
+      - DEFAULT: 0
+        DESCRIPTION: Rate limiter status. This is mainly for SW read for debug.
+        NAME: hit
+        WIDTH: 1
+    NAME: psw_sch_orl_fpg_0_to_2_queues_pr
+  - ATTR: 6
+    DESCRIPTION: ' eval {psw_orl_mem2_type="psw_orl_mem2_description"; psw_sch_orl_fpg_3_to_5_queues_cr }'
+    ENTRIES: 192
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'If set, HW rate limiter result is not used and sw_override_val field value is used.'
+        NAME: sw_override
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'If sw_override is set to 1, HW Rate limiter result is overrrided by the value stored in this field. 1 implies rate limiter hit is always set. 0 implies rate limiter hit is always 0.'
+        NAME: sw_override_val
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: This will get rate granularity from 1 Mbps to 128Gbps. Note that we do refresh every ~1000 clocks. That needs only 17 bits. Have 1 bit of extra margin if we do refresh ~2000 cycles..
+        NAME: refresh_credits
+        WIDTH: 18
+      - DEFAULT: 0
+        DESCRIPTION: Count credits in bits. Need 22 bits as CR_thresh is 20 bits. 2 extra bits are used for extra packet skid.
+        NAME: count
+        WIDTH: 22
+      - DEFAULT: 0
+        DESCRIPTION: Represents Rate limiter threshold value in bits. SW can set threshold up to 128 KB. 20 bits gives a limit of 128 KB.
+        NAME: thresh
+        WIDTH: 20
+      - DEFAULT: 0
+        DESCRIPTION: Rate limiter status. This is mainly for SW read for debug.
+        NAME: hit
+        WIDTH: 1
+    NAME: psw_sch_orl_fpg_3_to_5_queues_cr
+  - ATTR: 6
+    DESCRIPTION: ' eval {psw_orl_mem3_type="psw_orl_mem3_description"; psw_sch_orl_fpg_3_to_5_queues_pr }'
+    ENTRIES: 192
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'If set, HW rate limiter result is not used and sw_override_val field value is used.'
+        NAME: sw_override
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'If sw_override is set to 1, HW Rate limiter result is overrrided by the value stored in this field. 1 implies rate limiter hit is always set. 0 implies rate limiter hit is always 0.'
+        NAME: sw_override_val
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: This will get rate granularity from 1 Mbps to 128Gbps. Note that we do refresh every ~1000 clocks. That needs only 17 bits. Have 1 bit of extra margin if we do refresh ~2000 cycles..
+        NAME: refresh_credits
+        WIDTH: 18
+      - DEFAULT: 0
+        DESCRIPTION: Count credits in bits. Need 22 bits as CR_thresh is 20 bits. 2 extra bits are used for extra packet skid.
+        NAME: count
+        WIDTH: 22
+      - DEFAULT: 0
+        DESCRIPTION: Represents Rate limiter threshold value in bits. SW can set threshold up to 128 KB. 20 bits gives a limit of 128 KB.
+        NAME: thresh
+        WIDTH: 20
+      - DEFAULT: 0
+        DESCRIPTION: Rate limiter status. This is mainly for SW read for debug.
+        NAME: hit
+        WIDTH: 1
+    NAME: psw_sch_orl_fpg_3_to_5_queues_pr
+  - ATTR: 6
+    DESCRIPTION: ' eval {psw_orl_mem4_type="psw_orl_mem4_description"; psw_sch_orl_fpg_0_to_2_chnl_ep_0_to_95_queues_cr }'
+    ENTRIES: 144
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'If set, HW rate limiter result is not used and sw_override_val field value is used.'
+        NAME: sw_override
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'If sw_override is set to 1, HW Rate limiter result is overrrided by the value stored in this field. 1 implies rate limiter hit is always set. 0 implies rate limiter hit is always 0.'
+        NAME: sw_override_val
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: This will get rate granularity from 1 Mbps to 128Gbps. Note that we do refresh every ~1000 clocks. That needs only 17 bits. Have 1 bit of extra margin if we do refresh ~2000 cycles..
+        NAME: refresh_credits
+        WIDTH: 18
+      - DEFAULT: 0
+        DESCRIPTION: Count credits in bits. Need 22 bits as CR_thresh is 20 bits. 2 extra bits are used for extra packet skid.
+        NAME: count
+        WIDTH: 22
+      - DEFAULT: 0
+        DESCRIPTION: Represents Rate limiter threshold value in bits. SW can set threshold up to 128 KB. 20 bits gives a limit of 128 KB.
+        NAME: thresh
+        WIDTH: 20
+      - DEFAULT: 0
+        DESCRIPTION: Rate limiter status. This is mainly for SW read for debug.
+        NAME: hit
+        WIDTH: 1
+    NAME: psw_sch_orl_fpg_0_to_2_chnl_ep_0_to_95_queues_cr
+  - ATTR: 6
+    DESCRIPTION: ' eval {psw_orl_mem5_type="psw_orl_mem5_description"; psw_sch_orl_fpg_0_to_2_chnl_ep_0_to_95_queues_pr }'
+    ENTRIES: 144
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'If set, HW rate limiter result is not used and sw_override_val field value is used.'
+        NAME: sw_override
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'If sw_override is set to 1, HW Rate limiter result is overrrided by the value stored in this field. 1 implies rate limiter hit is always set. 0 implies rate limiter hit is always 0.'
+        NAME: sw_override_val
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: This will get rate granularity from 1 Mbps to 128Gbps. Note that we do refresh every ~1000 clocks. That needs only 17 bits. Have 1 bit of extra margin if we do refresh ~2000 cycles..
+        NAME: refresh_credits
+        WIDTH: 18
+      - DEFAULT: 0
+        DESCRIPTION: Count credits in bits. Need 22 bits as CR_thresh is 20 bits. 2 extra bits are used for extra packet skid.
+        NAME: count
+        WIDTH: 22
+      - DEFAULT: 0
+        DESCRIPTION: Represents Rate limiter threshold value in bits. SW can set threshold up to 128 KB. 20 bits gives a limit of 128 KB.
+        NAME: thresh
+        WIDTH: 20
+      - DEFAULT: 0
+        DESCRIPTION: Rate limiter status. This is mainly for SW read for debug.
+        NAME: hit
+        WIDTH: 1
+    NAME: psw_sch_orl_fpg_0_to_2_chnl_ep_0_to_95_queues_pr
+  - ATTR: 6
+    DESCRIPTION: ' eval {psw_orl_mem6_type="psw_orl_mem6_description"; psw_sch_orl_fpg_3_to_5_chnl_ep_96_to_191_queues_cr }'
+    ENTRIES: 144
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'If set, HW rate limiter result is not used and sw_override_val field value is used.'
+        NAME: sw_override
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'If sw_override is set to 1, HW Rate limiter result is overrrided by the value stored in this field. 1 implies rate limiter hit is always set. 0 implies rate limiter hit is always 0.'
+        NAME: sw_override_val
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: This will get rate granularity from 1 Mbps to 128Gbps. Note that we do refresh every ~1000 clocks. That needs only 17 bits. Have 1 bit of extra margin if we do refresh ~2000 cycles..
+        NAME: refresh_credits
+        WIDTH: 18
+      - DEFAULT: 0
+        DESCRIPTION: Count credits in bits. Need 22 bits as CR_thresh is 20 bits. 2 extra bits are used for extra packet skid.
+        NAME: count
+        WIDTH: 22
+      - DEFAULT: 0
+        DESCRIPTION: Represents Rate limiter threshold value in bits. SW can set threshold up to 128 KB. 20 bits gives a limit of 128 KB.
+        NAME: thresh
+        WIDTH: 20
+      - DEFAULT: 0
+        DESCRIPTION: Rate limiter status. This is mainly for SW read for debug.
+        NAME: hit
+        WIDTH: 1
+    NAME: psw_sch_orl_fpg_3_to_5_chnl_ep_96_to_191_queues_cr
+  - ATTR: 6
+    DESCRIPTION: ' eval {psw_orl_mem7_type="psw_orl_mem7_description"; psw_sch_orl_fpg_3_to_5_chnl_ep_96_to_191_queues_pr }'
+    ENTRIES: 144
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'If set, HW rate limiter result is not used and sw_override_val field value is used.'
+        NAME: sw_override
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'If sw_override is set to 1, HW Rate limiter result is overrrided by the value stored in this field. 1 implies rate limiter hit is always set. 0 implies rate limiter hit is always 0.'
+        NAME: sw_override_val
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: This will get rate granularity from 1 Mbps to 128Gbps. Note that we do refresh every ~1000 clocks. That needs only 17 bits. Have 1 bit of extra margin if we do refresh ~2000 cycles..
+        NAME: refresh_credits
+        WIDTH: 18
+      - DEFAULT: 0
+        DESCRIPTION: Count credits in bits. Need 22 bits as CR_thresh is 20 bits. 2 extra bits are used for extra packet skid.
+        NAME: count
+        WIDTH: 22
+      - DEFAULT: 0
+        DESCRIPTION: Represents Rate limiter threshold value in bits. SW can set threshold up to 128 KB. 20 bits gives a limit of 128 KB.
+        NAME: thresh
+        WIDTH: 20
+      - DEFAULT: 0
+        DESCRIPTION: Rate limiter status. This is mainly for SW read for debug.
+        NAME: hit
+        WIDTH: 1
+    NAME: psw_sch_orl_fpg_3_to_5_chnl_ep_96_to_191_queues_pr
+  - ATTR: 6
+    DESCRIPTION: ' eval {psw_orl_mem8_type="psw_orl_mem8_description"; psw_sch_orl_fpg_0_to_2_streams_ep_0_to_11_streams_pr }'
+    ENTRIES: 24
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'If set, HW rate limiter result is not used and sw_override_val field value is used.'
+        NAME: sw_override
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'If sw_override is set to 1, HW Rate limiter result is overrrided by the value stored in this field. 1 implies rate limiter hit is always set. 0 implies rate limiter hit is always 0.'
+        NAME: sw_override_val
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: This will get rate granularity from 1 Mbps to 128Gbps. Note that we do refresh every ~1000 clocks. That needs only 17 bits. Have 1 bit of extra margin if we do refresh ~2000 cycles..
+        NAME: refresh_credits
+        WIDTH: 18
+      - DEFAULT: 0
+        DESCRIPTION: Count credits in bits. Need 22 bits as CR_thresh is 20 bits. 2 extra bits are used for extra packet skid.
+        NAME: count
+        WIDTH: 22
+      - DEFAULT: 0
+        DESCRIPTION: Represents Rate limiter threshold value in bits. SW can set threshold up to 128 KB. 20 bits gives a limit of 128 KB.
+        NAME: thresh
+        WIDTH: 20
+      - DEFAULT: 0
+        DESCRIPTION: Rate limiter status. This is mainly for SW read for debug.
+        NAME: hit
+        WIDTH: 1
+    NAME: psw_sch_orl_fpg_0_to_2_streams_ep_0_to_11_streams_pr
+  - ATTR: 6
+    DESCRIPTION: ' eval {psw_orl_mem9_type="psw_orl_mem9_description"; psw_sch_orl_fpg_3_to_5_streams_ep_12_to_23_streams_pr }'
+    ENTRIES: 24
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'If set, HW rate limiter result is not used and sw_override_val field value is used.'
+        NAME: sw_override
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'If sw_override is set to 1, HW Rate limiter result is overrrided by the value stored in this field. 1 implies rate limiter hit is always set. 0 implies rate limiter hit is always 0.'
+        NAME: sw_override_val
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: This will get rate granularity from 1 Mbps to 128Gbps. Note that we do refresh every ~1000 clocks. That needs only 17 bits. Have 1 bit of extra margin if we do refresh ~2000 cycles..
+        NAME: refresh_credits
+        WIDTH: 18
+      - DEFAULT: 0
+        DESCRIPTION: Count credits in bits. Need 22 bits as CR_thresh is 20 bits. 2 extra bits are used for extra packet skid.
+        NAME: count
+        WIDTH: 22
+      - DEFAULT: 0
+        DESCRIPTION: Represents Rate limiter threshold value in bits. SW can set threshold up to 128 KB. 20 bits gives a limit of 128 KB.
+        NAME: thresh
+        WIDTH: 20
+      - DEFAULT: 0
+        DESCRIPTION: Rate limiter status. This is mainly for SW read for debug.
+        NAME: hit
+        WIDTH: 1
+    NAME: psw_sch_orl_fpg_3_to_5_streams_ep_12_to_23_streams_pr
+  - ATTR: 10
+    COUNT: 1
+    DESCRIPTION: XOFF status of each Fabric port. This is read only. Writes will return NACK.
+    ENTRIES: 24
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: .
+        NAME: Val
+        WIDTH: 16
+    NAME: psw_sch_pfcrx_xoff_status_fp
+    TEST_ATTR: 0
+  - ATTR: 10
+    COUNT: 1
+    DESCRIPTION: XOFF status of each endpoint port.This is read only. Writes will return NACK.
+    ENTRIES: 24
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: .
+        NAME: Val
+        WIDTH: 8
+    NAME: psw_sch_pfcrx_xoff_status_ep
+    TEST_ATTR: 0
+XASIZE: 0

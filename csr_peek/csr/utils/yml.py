@@ -35,9 +35,11 @@ class CSR_YML_Reader(object):
         self.csr_schema = collections.OrderedDict()
         for yml_file in glob.glob(os.path.join(dirname, '*.yaml')):
             f_name = os.path.splitext(os.path.basename(yml_file))[0]
+            print f_name
             yml_stream = self.__read_file(yml_file)
             f_name = re.sub('(_an)|(_AN)', '', f_name)
-            self.csr_schema[f_name.lower()] = Schema(yml_stream)
+            schema = Schema(yml_stream)
+            self.csr_schema[f_name.lower()] = schema
 
     def __dump(self, yml_stream):
         lst = []

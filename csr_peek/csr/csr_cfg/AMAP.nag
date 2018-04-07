@@ -1,0 +1,81 @@
+START_RING_ID
+nu_0_an  : 0x5000000000
+END_RING_ID
+
+ROOT:FPG_AN:6:0x0001000000 - 0x5000000000:0x5001000000:0x5002000000:0x5003000000:0x5004000000:0x5005000000
+COUNT:nu_0_an.FPG_AN:6:0x5000000000:0x0001000000
+  ActSize:fpg_prs_an     :0x0000541600. New SA:0x5000000000
+START_ANODE:nu_0_an.FPG_AN.fpg_prs_an:0x5000000000:0x0000541600
+    fpg_prs_timeout_thresh_cfg            :0x5000000000
+    fpg_prs_timedout_sta                  :0x5000000008
+    fpg_prs_timeout_clr                   :0x5000000010
+    fpg_prs_fatal_intr_cause              :0x5000000018
+    fpg_prs_fatal_intr_stat               :0x5000000020
+    fpg_prs_fatal_intr_mask               :0x5000000028
+    fpg_prs_fatal_intr_bset               :0x5000000030
+    fpg_prs_fatal_intr_bclr               :0x5000000038
+    fpg_prs_non_fatal_intr_cause          :0x5000000040
+    fpg_prs_non_fatal_intr_stat           :0x5000000048
+    fpg_prs_non_fatal_intr_mask           :0x5000000050
+    fpg_prs_non_fatal_intr_bset           :0x5000000058
+    fpg_prs_non_fatal_intr_bclr           :0x5000000060
+    fpg_prs_features                      :0x5000000068
+    fpg_prs_spare_pio                     :0x5000000070
+    fpg_prs_scratchpad                    :0x5000000078
+    fpg_prs_sram_log_err                  :0x5000000080
+    fpg_prs_sram_log_syndrome             :0x5000000088
+    fpg_prs_sram_log_addr                 :0x5000000090
+    fpg_prs_mem_err_inj_cfg               :0x5000000098
+    prs_dsp_dfifo_mem_af_thold            :0x50000000A0
+    prs_intf_cfg                          :0x50000000A8
+    prs_err_chk_en                        :0x50000000B0
+    prs_err_tcode0                        :0x50000000B8
+    prs_err_tcode1                        :0x50000000C0
+    prs_max_lu_cycle_cfg                  :0x50000000C8
+    prs_stream_cfg                        :0x50000000D0
+    prs_static_ctx_sel                    :0x50000000D8
+    prs_fla_ring_module_id_cfg            :0x50000000E0
+    prs_flow_ctrl_sta                     :0x50000000E8
+    prs_hdb_fifo_empty                    :0x50000000F0
+    prs_sta_cnt_sop_cnt                   :0x50000000F8
+    prs_sta_cnt_eop_cnt                   :0x5000000100
+    prs_sta_cnt_cam_lkp_cnt               :0x5000000108
+    prs_sta_cnt_cam_match_cnt             :0x5000000110
+    prs_sta_cnt_num_prv_sent_cnt          :0x5000000118
+    prs_sta_cnt_outer_ipv4_checksum_err_cnt:0x5000000120
+    prs_sta_cnt_inner_ipv4_checksum_err_cnt:0x5000000128
+    prs_sta_cnt_no_tcam_match_err_cnt     :0x5000000130
+    prs_sta_cnt_parser_timeout_err_cnt    :0x5000000138
+    prs_sta_cnt_prv_oor_err_cnt           :0x5000000140
+    prs_sta_cnt_pkt_ptr_oor_err_cnt       :0x5000000148
+    prs_sta_cnt_hdr_byte_oor_err_cnt      :0x5000000150
+    prs_sta_cnt_gp_byte_oor_err_cnt       :0x5000000158
+    prs_sta_cnt_dsp_dfifo_mem0_ecc_sb_err_cnt:0x5000000160
+    prs_sta_cnt_dsp_dfifo_mem1_ecc_sb_err_cnt:0x5000000168
+    prs_sta_cnt_dsp_dfifo_mem2_ecc_sb_err_cnt:0x5000000170
+    prs_sta_cnt_dsp_dfifo_mem3_ecc_sb_err_cnt:0x5000000178
+    prs_sta_cnt_dsp_dfifo_mem0_ecc_db_err_cnt:0x5000000180
+    prs_sta_cnt_dsp_dfifo_mem1_ecc_db_err_cnt:0x5000000188
+    prs_sta_cnt_dsp_dfifo_mem2_ecc_db_err_cnt:0x5000000190
+    prs_sta_cnt_dsp_dfifo_mem3_ecc_db_err_cnt:0x5000000198
+    prs_sta_cnt_rob_prv_ecc_sb_err_cnt    :0x50000001A0
+    prs_sta_cnt_rob_prv_ecc_db_err_cnt    :0x50000001A8
+    prs_sta_cnt_action_mem0_perr_cnt      :0x50000001B0
+    prs_sta_cnt_action_mem1_perr_cnt      :0x50000001B8
+    prs_sta_cnt_action_mem2_perr_cnt      :0x50000001C0
+    prs_sta_cnt_action_mem3_perr_cnt      :0x50000001C8
+    prs_sta_cnt_action_mem4_perr_cnt      :0x50000001D0
+    prs_sta_cnt_action_mem5_perr_cnt      :0x50000001D8
+    prs_tcam                              :0x5000001000 0x1000
+    prs_seq_mem                           :0x5000011000 0x800
+    prs_rob_prv_mem_dhs                   :0x5000015000 0x1000
+    prs_action_mem_dhs                    :0x5000040000 0x10000
+    prs_dsp_dfifo_mem_dhs_0               :0x5000140000 0x8000
+    prs_dsp_dfifo_mem_dhs_1               :0x5000340000 0x8000 ZE
+    prs_initial_state                     :0x5000540000 0x100
+    prs_sta_stream_sop_cnt                :0x5000540800 0x100
+    prs_dsp_dbg_probe                     :0x5000541000 0x40
+    prs_ctx_rob_dbg_probe                 :0x5000541200 0x40
+    prs_prv_dbg_probe                     :0x5000541400 0x40
+##-INFO-:parent+AN:aStart - EndRng actRng aRng
+  LEAF:FPG_AN_fpg_prs_an        :0x5000000000 - 0x5000800000:0x0000541600:0x0000800000

@@ -1,0 +1,1524 @@
+---
+BASEADDRPORT: 1
+COUNT: 1
+DESCRIPTION: FPG_MISC CSR spec
+INTR:
+  FATAL:
+    - DESCRIPTION: rx_bb0 Memory Double Bit ECC Error
+      NAME: fpg_misc_rx_bb0_mem_ucerr
+      WIDTH: 1
+    - DESCRIPTION: rx_bb1 Memory Double Bit ECC Error
+      NAME: fpg_misc_rx_bb1_mem_ucerr
+      WIDTH: 1
+    - DESCRIPTION: rx_bb2 Memory Double Bit ECC Error
+      NAME: fpg_misc_rx_bb2_mem_ucerr
+      WIDTH: 1
+    - DESCRIPTION: rx_bb3 Memory Double Bit ECC Error
+      NAME: fpg_misc_rx_bb3_mem_ucerr
+      WIDTH: 1
+  NON_FATAL:
+    - DESCRIPTION: rx_bb0 Memory Single Bit ECC Error
+      NAME: fpg_misc_rx_bb0_mem_cerr
+      WIDTH: 1
+    - DESCRIPTION: rx_bb1 Memory Single Bit ECC Error
+      NAME: fpg_misc_rx_bb1_mem_cerr
+      WIDTH: 1
+    - DESCRIPTION: rx_bb2 Memory Single Bit ECC Error
+      NAME: fpg_misc_rx_bb2_mem_cerr
+      WIDTH: 1
+    - DESCRIPTION: rx_bb3 Memory Single Bit ECC Error
+      NAME: fpg_misc_rx_bb3_mem_cerr
+      WIDTH: 1
+    - DESCRIPTION: Packet truncated on stream 0 because it exceeded the configured egress MTU
+      NAME: fpg_misc_tx_strm0_truncate_pkt
+      WIDTH: 1
+    - DESCRIPTION: Packet dropped on stream 0 because it of SOP-EOP framing error
+      NAME: fpg_misc_rx_framing_chk_drop_pkt_strm0
+      WIDTH: 1
+    - DESCRIPTION: Packet truncated on strm0 because of framing error or XOFF received from PSW/PRS
+      NAME: fpg_misc_rx_framing_chk_truncate_pkt_strm0
+      WIDTH: 1
+    - DESCRIPTION: Packet received on stream 0 with error from MAC
+      NAME: fpg_misc_rx_framing_chk_rcvd_eope_strm0
+      WIDTH: 1
+    - DESCRIPTION: Packet dropped on stream 0 because of runt packet padding
+      NAME: fpg_misc_rx_runt_filter_drop_pkt_strm0
+      WIDTH: 1
+    - DESCRIPTION: Packet truncated on strm0 because of EOP timeout
+      NAME: fpg_misc_rx_framing_chk_eop_timeout_strm0
+      WIDTH: 1
+    - DESCRIPTION: XOFF received on strm0 from PSW
+      NAME: fpg_misc_rx_psw_xoff_strm0
+      WIDTH: 1
+    - DESCRIPTION: XOFF received on strm0 from PSW
+      NAME: fpg_misc_rx_prs_xoff_strm0
+      WIDTH: 1
+    - DESCRIPTION: Packet truncated on stream 1 because it exceeded the configured egress MTU
+      NAME: fpg_misc_tx_strm1_truncate_pkt
+      WIDTH: 1
+    - DESCRIPTION: Packet dropped on stream 1 because it of SOP-EOP framing error
+      NAME: fpg_misc_rx_framing_chk_drop_pkt_strm1
+      WIDTH: 1
+    - DESCRIPTION: Packet truncated on strm1 because of framing error or XOFF received from PSW/PRS
+      NAME: fpg_misc_rx_framing_chk_truncate_pkt_strm1
+      WIDTH: 1
+    - DESCRIPTION: Packet received on stream 1 with error from MAC
+      NAME: fpg_misc_rx_framing_chk_rcvd_eope_strm1
+      WIDTH: 1
+    - DESCRIPTION: Packet dropped on stream 1 because of runt packet padding
+      NAME: fpg_misc_rx_runt_filter_drop_pkt_strm1
+      WIDTH: 1
+    - DESCRIPTION: Packet truncated on strm1 because of EOP timeout
+      NAME: fpg_misc_rx_framing_chk_eop_timeout_strm1
+      WIDTH: 1
+    - DESCRIPTION: XOFF received on strm1 from PSW
+      NAME: fpg_misc_rx_psw_xoff_strm1
+      WIDTH: 1
+    - DESCRIPTION: XOFF received on strm1 from PSW
+      NAME: fpg_misc_rx_prs_xoff_strm1
+      WIDTH: 1
+    - DESCRIPTION: Packet truncated on stream 2 because it exceeded the configured egress MTU
+      NAME: fpg_misc_tx_strm2_truncate_pkt
+      WIDTH: 1
+    - DESCRIPTION: Packet dropped on stream 2 because it of SOP-EOP framing error
+      NAME: fpg_misc_rx_framing_chk_drop_pkt_strm2
+      WIDTH: 1
+    - DESCRIPTION: Packet truncated on strm2 because of framing error or XOFF received from PSW/PRS
+      NAME: fpg_misc_rx_framing_chk_truncate_pkt_strm2
+      WIDTH: 1
+    - DESCRIPTION: Packet received on stream 2 with error from MAC
+      NAME: fpg_misc_rx_framing_chk_rcvd_eope_strm2
+      WIDTH: 1
+    - DESCRIPTION: Packet dropped on stream 2 because of runt packet padding
+      NAME: fpg_misc_rx_runt_filter_drop_pkt_strm2
+      WIDTH: 1
+    - DESCRIPTION: Packet truncated on strm2 because of EOP timeout
+      NAME: fpg_misc_rx_framing_chk_eop_timeout_strm2
+      WIDTH: 1
+    - DESCRIPTION: XOFF received on strm2 from PSW
+      NAME: fpg_misc_rx_psw_xoff_strm2
+      WIDTH: 1
+    - DESCRIPTION: XOFF received on strm2 from PSW
+      NAME: fpg_misc_rx_prs_xoff_strm2
+      WIDTH: 1
+    - DESCRIPTION: Packet truncated on stream 3 because it exceeded the configured egress MTU
+      NAME: fpg_misc_tx_strm3_truncate_pkt
+      WIDTH: 1
+    - DESCRIPTION: Packet dropped on stream 3 because it of SOP-EOP framing error
+      NAME: fpg_misc_rx_framing_chk_drop_pkt_strm3
+      WIDTH: 1
+    - DESCRIPTION: Packet truncated on strm3 because of framing error or XOFF received from PSW/PRS
+      NAME: fpg_misc_rx_framing_chk_truncate_pkt_strm3
+      WIDTH: 1
+    - DESCRIPTION: Packet received on stream 3 with error from MAC
+      NAME: fpg_misc_rx_framing_chk_rcvd_eope_strm3
+      WIDTH: 1
+    - DESCRIPTION: Packet dropped on stream 3 because of runt packet padding
+      NAME: fpg_misc_rx_runt_filter_drop_pkt_strm3
+      WIDTH: 1
+    - DESCRIPTION: Packet truncated on strm3 because of EOP timeout
+      NAME: fpg_misc_rx_framing_chk_eop_timeout_strm3
+      WIDTH: 1
+    - DESCRIPTION: XOFF received on strm3 from PSW
+      NAME: fpg_misc_rx_psw_xoff_strm3
+      WIDTH: 1
+    - DESCRIPTION: XOFF received on strm3 from PSW
+      NAME: fpg_misc_rx_prs_xoff_strm3
+      WIDTH: 1
+INTR_PORT_EN: 1
+NAME: FPG_MISC_AN
+PARENTNAME: NU_MPG_AN
+REGLST:
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: |-
+          Timeout Configuration. Cycles are RSU clk based.
+                            - 00 : 1024 cycles
+                            - 01 : 256 cycles
+                            - 10 : 4096 cycles
+                            - 11 : infinite
+        NAME: val
+        WIDTH: 2
+    NAME: fpg_misc_timeout_thresh_cfg
+  - ATTR: 9
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: "Timed out Status. Cycles are RSU clk based. Becomes 1 when timed out. Write any value to clear it.\n                  "
+        NAME: val
+        WIDTH: 1
+    NAME: fpg_misc_timedout_sta
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: |-
+          Clear Timeout Status. Data is ignored. A write
+                     will clear the timeout status bit
+        NAME: val
+        WIDTH: 1
+    NAME: fpg_misc_timeout_clr
+    TEST_ATTR: 1
+  - ATTR: 256
+    FLDLST:
+      - &1
+        DESCRIPTION: rx_bb0 Memory Double Bit ECC Error
+        NAME: fpg_misc_rx_bb0_mem_ucerr
+        WIDTH: 1
+      - &2
+        DESCRIPTION: rx_bb1 Memory Double Bit ECC Error
+        NAME: fpg_misc_rx_bb1_mem_ucerr
+        WIDTH: 1
+      - &3
+        DESCRIPTION: rx_bb2 Memory Double Bit ECC Error
+        NAME: fpg_misc_rx_bb2_mem_ucerr
+        WIDTH: 1
+      - &4
+        DESCRIPTION: rx_bb3 Memory Double Bit ECC Error
+        NAME: fpg_misc_rx_bb3_mem_ucerr
+        WIDTH: 1
+    NAME: fpg_misc_fatal_intr_cause
+  - ATTR: 512
+    FLDLST:
+      - *1
+      - *2
+      - *3
+      - *4
+    NAME: fpg_misc_fatal_intr_stat
+  - ATTR: 1024
+    FLDLST:
+      - *1
+      - *2
+      - *3
+      - *4
+    NAME: fpg_misc_fatal_intr_mask
+  - ATTR: 2048
+    FLDLST:
+      - *1
+      - *2
+      - *3
+      - *4
+    NAME: fpg_misc_fatal_intr_bset
+  - ATTR: 4096
+    FLDLST:
+      - *1
+      - *2
+      - *3
+      - *4
+    NAME: fpg_misc_fatal_intr_bclr
+  - ATTR: 256
+    FLDLST:
+      - &5
+        DESCRIPTION: rx_bb0 Memory Single Bit ECC Error
+        NAME: fpg_misc_rx_bb0_mem_cerr
+        WIDTH: 1
+      - &6
+        DESCRIPTION: rx_bb1 Memory Single Bit ECC Error
+        NAME: fpg_misc_rx_bb1_mem_cerr
+        WIDTH: 1
+      - &7
+        DESCRIPTION: rx_bb2 Memory Single Bit ECC Error
+        NAME: fpg_misc_rx_bb2_mem_cerr
+        WIDTH: 1
+      - &8
+        DESCRIPTION: rx_bb3 Memory Single Bit ECC Error
+        NAME: fpg_misc_rx_bb3_mem_cerr
+        WIDTH: 1
+      - &9
+        DESCRIPTION: Packet truncated on stream 0 because it exceeded the configured egress MTU
+        NAME: fpg_misc_tx_strm0_truncate_pkt
+        WIDTH: 1
+      - &10
+        DESCRIPTION: Packet dropped on stream 0 because it of SOP-EOP framing error
+        NAME: fpg_misc_rx_framing_chk_drop_pkt_strm0
+        WIDTH: 1
+      - &11
+        DESCRIPTION: Packet truncated on strm0 because of framing error or XOFF received from PSW/PRS
+        NAME: fpg_misc_rx_framing_chk_truncate_pkt_strm0
+        WIDTH: 1
+      - &12
+        DESCRIPTION: Packet received on stream 0 with error from MAC
+        NAME: fpg_misc_rx_framing_chk_rcvd_eope_strm0
+        WIDTH: 1
+      - &13
+        DESCRIPTION: Packet dropped on stream 0 because of runt packet padding
+        NAME: fpg_misc_rx_runt_filter_drop_pkt_strm0
+        WIDTH: 1
+      - &14
+        DESCRIPTION: Packet truncated on strm0 because of EOP timeout
+        NAME: fpg_misc_rx_framing_chk_eop_timeout_strm0
+        WIDTH: 1
+      - &15
+        DESCRIPTION: XOFF received on strm0 from PSW
+        NAME: fpg_misc_rx_psw_xoff_strm0
+        WIDTH: 1
+      - &16
+        DESCRIPTION: XOFF received on strm0 from PSW
+        NAME: fpg_misc_rx_prs_xoff_strm0
+        WIDTH: 1
+      - &17
+        DESCRIPTION: Packet truncated on stream 1 because it exceeded the configured egress MTU
+        NAME: fpg_misc_tx_strm1_truncate_pkt
+        WIDTH: 1
+      - &18
+        DESCRIPTION: Packet dropped on stream 1 because it of SOP-EOP framing error
+        NAME: fpg_misc_rx_framing_chk_drop_pkt_strm1
+        WIDTH: 1
+      - &19
+        DESCRIPTION: Packet truncated on strm1 because of framing error or XOFF received from PSW/PRS
+        NAME: fpg_misc_rx_framing_chk_truncate_pkt_strm1
+        WIDTH: 1
+      - &20
+        DESCRIPTION: Packet received on stream 1 with error from MAC
+        NAME: fpg_misc_rx_framing_chk_rcvd_eope_strm1
+        WIDTH: 1
+      - &21
+        DESCRIPTION: Packet dropped on stream 1 because of runt packet padding
+        NAME: fpg_misc_rx_runt_filter_drop_pkt_strm1
+        WIDTH: 1
+      - &22
+        DESCRIPTION: Packet truncated on strm1 because of EOP timeout
+        NAME: fpg_misc_rx_framing_chk_eop_timeout_strm1
+        WIDTH: 1
+      - &23
+        DESCRIPTION: XOFF received on strm1 from PSW
+        NAME: fpg_misc_rx_psw_xoff_strm1
+        WIDTH: 1
+      - &24
+        DESCRIPTION: XOFF received on strm1 from PSW
+        NAME: fpg_misc_rx_prs_xoff_strm1
+        WIDTH: 1
+      - &25
+        DESCRIPTION: Packet truncated on stream 2 because it exceeded the configured egress MTU
+        NAME: fpg_misc_tx_strm2_truncate_pkt
+        WIDTH: 1
+      - &26
+        DESCRIPTION: Packet dropped on stream 2 because it of SOP-EOP framing error
+        NAME: fpg_misc_rx_framing_chk_drop_pkt_strm2
+        WIDTH: 1
+      - &27
+        DESCRIPTION: Packet truncated on strm2 because of framing error or XOFF received from PSW/PRS
+        NAME: fpg_misc_rx_framing_chk_truncate_pkt_strm2
+        WIDTH: 1
+      - &28
+        DESCRIPTION: Packet received on stream 2 with error from MAC
+        NAME: fpg_misc_rx_framing_chk_rcvd_eope_strm2
+        WIDTH: 1
+      - &29
+        DESCRIPTION: Packet dropped on stream 2 because of runt packet padding
+        NAME: fpg_misc_rx_runt_filter_drop_pkt_strm2
+        WIDTH: 1
+      - &30
+        DESCRIPTION: Packet truncated on strm2 because of EOP timeout
+        NAME: fpg_misc_rx_framing_chk_eop_timeout_strm2
+        WIDTH: 1
+      - &31
+        DESCRIPTION: XOFF received on strm2 from PSW
+        NAME: fpg_misc_rx_psw_xoff_strm2
+        WIDTH: 1
+      - &32
+        DESCRIPTION: XOFF received on strm2 from PSW
+        NAME: fpg_misc_rx_prs_xoff_strm2
+        WIDTH: 1
+      - &33
+        DESCRIPTION: Packet truncated on stream 3 because it exceeded the configured egress MTU
+        NAME: fpg_misc_tx_strm3_truncate_pkt
+        WIDTH: 1
+      - &34
+        DESCRIPTION: Packet dropped on stream 3 because it of SOP-EOP framing error
+        NAME: fpg_misc_rx_framing_chk_drop_pkt_strm3
+        WIDTH: 1
+      - &35
+        DESCRIPTION: Packet truncated on strm3 because of framing error or XOFF received from PSW/PRS
+        NAME: fpg_misc_rx_framing_chk_truncate_pkt_strm3
+        WIDTH: 1
+      - &36
+        DESCRIPTION: Packet received on stream 3 with error from MAC
+        NAME: fpg_misc_rx_framing_chk_rcvd_eope_strm3
+        WIDTH: 1
+      - &37
+        DESCRIPTION: Packet dropped on stream 3 because of runt packet padding
+        NAME: fpg_misc_rx_runt_filter_drop_pkt_strm3
+        WIDTH: 1
+      - &38
+        DESCRIPTION: Packet truncated on strm3 because of EOP timeout
+        NAME: fpg_misc_rx_framing_chk_eop_timeout_strm3
+        WIDTH: 1
+      - &39
+        DESCRIPTION: XOFF received on strm3 from PSW
+        NAME: fpg_misc_rx_psw_xoff_strm3
+        WIDTH: 1
+      - &40
+        DESCRIPTION: XOFF received on strm3 from PSW
+        NAME: fpg_misc_rx_prs_xoff_strm3
+        WIDTH: 1
+    NAME: fpg_misc_non_fatal_intr_cause
+  - ATTR: 512
+    FLDLST:
+      - *5
+      - *6
+      - *7
+      - *8
+      - *9
+      - *10
+      - *11
+      - *12
+      - *13
+      - *14
+      - *15
+      - *16
+      - *17
+      - *18
+      - *19
+      - *20
+      - *21
+      - *22
+      - *23
+      - *24
+      - *25
+      - *26
+      - *27
+      - *28
+      - *29
+      - *30
+      - *31
+      - *32
+      - *33
+      - *34
+      - *35
+      - *36
+      - *37
+      - *38
+      - *39
+      - *40
+    NAME: fpg_misc_non_fatal_intr_stat
+  - ATTR: 1024
+    FLDLST:
+      - *5
+      - *6
+      - *7
+      - *8
+      - *9
+      - *10
+      - *11
+      - *12
+      - *13
+      - *14
+      - *15
+      - *16
+      - *17
+      - *18
+      - *19
+      - *20
+      - *21
+      - *22
+      - *23
+      - *24
+      - *25
+      - *26
+      - *27
+      - *28
+      - *29
+      - *30
+      - *31
+      - *32
+      - *33
+      - *34
+      - *35
+      - *36
+      - *37
+      - *38
+      - *39
+      - *40
+    NAME: fpg_misc_non_fatal_intr_mask
+  - ATTR: 2048
+    FLDLST:
+      - *5
+      - *6
+      - *7
+      - *8
+      - *9
+      - *10
+      - *11
+      - *12
+      - *13
+      - *14
+      - *15
+      - *16
+      - *17
+      - *18
+      - *19
+      - *20
+      - *21
+      - *22
+      - *23
+      - *24
+      - *25
+      - *26
+      - *27
+      - *28
+      - *29
+      - *30
+      - *31
+      - *32
+      - *33
+      - *34
+      - *35
+      - *36
+      - *37
+      - *38
+      - *39
+      - *40
+    NAME: fpg_misc_non_fatal_intr_bset
+  - ATTR: 4096
+    FLDLST:
+      - *5
+      - *6
+      - *7
+      - *8
+      - *9
+      - *10
+      - *11
+      - *12
+      - *13
+      - *14
+      - *15
+      - *16
+      - *17
+      - *18
+      - *19
+      - *20
+      - *21
+      - *22
+      - *23
+      - *24
+      - *25
+      - *26
+      - *27
+      - *28
+      - *29
+      - *30
+      - *31
+      - *32
+      - *33
+      - *34
+      - *35
+      - *36
+      - *37
+      - *38
+      - *39
+      - *40
+    NAME: fpg_misc_non_fatal_intr_bclr
+  - ATTR: 9
+    DESCRIPTION: FPG MISC Feature Register
+    FLDLST:
+      - ATTR: 1
+        DEFAULT: 29
+        DESCRIPTION: Module ID
+        NAME: module_id
+        VALUE: 29
+        WIDTH: 8
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Version number of the module
+        NAME: version
+        VALUE: 0
+        WIDTH: 8
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Features enabled in the module.
+        NAME: features
+        VALUE: 0
+        WIDTH: 16
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Reserved Field.
+        NAME: Reserved
+        WIDTH: 32
+    NAME: fpg_misc_features
+    TEST_ATTR: 0
+  - ATTR: 5
+    DESCRIPTION: ' Spare PIO register. These bits can be read and written by software. They can serve as control bits for late ECOs in the design.'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Spare PIO register.
+        NAME: val
+        WIDTH: 64
+    NAME: fpg_misc_spare_pio
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: Scratchpad register.
+        NAME: val
+        WIDTH: 64
+    NAME: fpg_misc_scratchpad
+  - ATTR: 5
+    COUNT: 4
+    DESCRIPTION: Stream speed configuration. Stream 0 can be configured to 100G/50G/40G/25G/10G. Stream 1 can be configured to 25G/10G. Stream 2 can be configured to 50G/25G/10G. Stream 3 can be configured to 25G/10G.
+    FLDLST: &41
+      - DEFAULT: 2
+        DESCRIPTION: FPG stream speed. Uses nu_stream_speed_t enum.
+        ENUM: nu_enums::nu_stream_speed_t
+        NAME: stream_speed
+        WIDTH: 4
+    NAME: fpg_misc_stream_speed_0
+    NO_STRUCT: 0
+  - ATTR: 5
+    COUNT: 4
+    DESCRIPTION: Stream speed configuration. Stream 0 can be configured to 100G/50G/40G/25G/10G. Stream 1 can be configured to 25G/10G. Stream 2 can be configured to 50G/25G/10G. Stream 3 can be configured to 25G/10G.
+    FLDLST: *41
+    NAME: fpg_misc_stream_speed_1
+    NO_STRUCT: 0
+  - ATTR: 5
+    COUNT: 4
+    DESCRIPTION: Stream speed configuration. Stream 0 can be configured to 100G/50G/40G/25G/10G. Stream 1 can be configured to 25G/10G. Stream 2 can be configured to 50G/25G/10G. Stream 3 can be configured to 25G/10G.
+    FLDLST: *41
+    NAME: fpg_misc_stream_speed_2
+    NO_STRUCT: 0
+  - ATTR: 5
+    COUNT: 4
+    DESCRIPTION: Stream speed configuration. Stream 0 can be configured to 100G/50G/40G/25G/10G. Stream 1 can be configured to 25G/10G. Stream 2 can be configured to 50G/25G/10G. Stream 3 can be configured to 25G/10G.
+    FLDLST: *41
+    NAME: fpg_misc_stream_speed_3
+    NO_STRUCT: 0
+  - ATTR: 5
+    DESCRIPTION: Enable bit for the get_flit TDM in the transmit pipe
+    FLDLST:
+      - DEFAULT: 1
+        DESCRIPTION: 'If set, get_flit pulses are generated to PRW based on the transmit TDM calendar.'
+        NAME: val
+        WIDTH: 1
+    NAME: fpg_misc_get_flit_tdm_en
+    NO_STRUCT: 0
+  - ATTR: 5
+    COUNT: 4
+    DESCRIPTION: TDM calendar entry for the get_flit pulses.
+    FLDLST: &42
+      - DEFAULT: 0
+        DESCRIPTION: FPG stream number. Ranges from 0 to 3
+        NAME: stream_num
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: 'If set, the calendar entry is valid.'
+        NAME: vld
+        WIDTH: 1
+    NAME: fpg_misc_get_flit_tdm_clnd_0
+    NO_STRUCT: 0
+  - ATTR: 5
+    COUNT: 4
+    DESCRIPTION: TDM calendar entry for the get_flit pulses.
+    FLDLST: *42
+    NAME: fpg_misc_get_flit_tdm_clnd_1
+    NO_STRUCT: 0
+  - ATTR: 5
+    COUNT: 4
+    DESCRIPTION: TDM calendar entry for the get_flit pulses.
+    FLDLST: *42
+    NAME: fpg_misc_get_flit_tdm_clnd_2
+    NO_STRUCT: 0
+  - ATTR: 5
+    COUNT: 4
+    DESCRIPTION: TDM calendar entry for the get_flit pulses.
+    FLDLST: *42
+    NAME: fpg_misc_get_flit_tdm_clnd_3
+    NO_STRUCT: 0
+  - ATTR: 5
+    COUNT: 4
+    DESCRIPTION: Maximum packet size in bytes (excluding CRC) beyond which the packet will be truncated and transmitted with an error.
+    FLDLST: &43
+      - DEFAULT: 16380
+        DESCRIPTION: 'If pkt_size > val, the packet is truncated to val bytes and error flag is set at EOP.'
+        NAME: val
+        WIDTH: 14
+    NAME: fpg_misc_tx_max_pkt_len_0
+    NO_STRUCT: 0
+  - ATTR: 5
+    COUNT: 4
+    DESCRIPTION: Maximum packet size in bytes (excluding CRC) beyond which the packet will be truncated and transmitted with an error.
+    FLDLST: *43
+    NAME: fpg_misc_tx_max_pkt_len_1
+    NO_STRUCT: 0
+  - ATTR: 5
+    COUNT: 4
+    DESCRIPTION: Maximum packet size in bytes (excluding CRC) beyond which the packet will be truncated and transmitted with an error.
+    FLDLST: *43
+    NAME: fpg_misc_tx_max_pkt_len_2
+    NO_STRUCT: 0
+  - ATTR: 5
+    COUNT: 4
+    DESCRIPTION: Maximum packet size in bytes (excluding CRC) beyond which the packet will be truncated and transmitted with an error.
+    FLDLST: *43
+    NAME: fpg_misc_tx_max_pkt_len_3
+    NO_STRUCT: 0
+  - ATTR: 5
+    DESCRIPTION: Minimum packet size in bytes excluding CRC. Smaller packets will be padded with 0s to the programmed value. CRC is added after the padding.
+    FLDLST:
+      - DEFAULT: 60
+        DESCRIPTION: 'If pkt_size < val, the packet is padded to val bytes. Maximum value that can be programmed is 255B.'
+        NAME: val
+        WIDTH: 8
+    NAME: fpg_misc_tx_min_pkt_len
+    NO_STRUCT: 0
+  - ATTR: 5
+    DESCRIPTION: PTP config for 1-step enable and enabling addition of peer delay to the correction field.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Peer-delay mode enable for 1588 timestamping. Default is end-to-end time synchronization.
+        NAME: peer_delay_en
+        WIDTH: 4
+      - DEFAULT: 15
+        DESCRIPTION: Enable one-step timestamping for 1588 PTP. Should be disabled for 2-step PTP.
+        NAME: one_step_en
+        WIDTH: 4
+      - DEFAULT: 15
+        DESCRIPTION: Enable timestamp overwrite feature where the MAC can overwrite a 8B field at a specified offset by the transmit timestamp.
+        NAME: timestamp_overwrite_en
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Enable timestamp capture for PTP packets. This is required only for 2-step PTP.
+        NAME: timestamp_capture_en
+        WIDTH: 4
+    NAME: fpg_misc_tx_ptp_cfg
+  - ATTR: 5
+    DESCRIPTION: Peer delay config for PTP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-
+          Peer Delay value that can be added to the correction field for all 1-step updates. PTP software computes the delays 
+                                            to all peers and configures this table when peer-delay mode of synchronization is used.
+        NAME: val
+        WIDTH: 30
+    NAME: fpg_misc_mac0_peer_delay_cfg
+  - ATTR: 5
+    DESCRIPTION: Peer delay config for PTP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-
+          Peer Delay value that can be added to the correction field for all 1-step updates. PTP software computes the delays 
+                                            to all peers and configures this table when peer-delay mode of synchronization is used.
+        NAME: val
+        WIDTH: 30
+    NAME: fpg_misc_mac1_peer_delay_cfg
+  - ATTR: 5
+    DESCRIPTION: Peer delay config for PTP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-
+          Peer Delay value that can be added to the correction field for all 1-step updates. PTP software computes the delays 
+                                            to all peers and configures this table when peer-delay mode of synchronization is used.
+        NAME: val
+        WIDTH: 30
+    NAME: fpg_misc_mac2_peer_delay_cfg
+  - ATTR: 5
+    DESCRIPTION: Peer delay config for PTP
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-
+          Peer Delay value that can be added to the correction field for all 1-step updates. PTP software computes the delays 
+                                            to all peers and configures this table when peer-delay mode of synchronization is used.
+        NAME: val
+        WIDTH: 30
+    NAME: fpg_misc_mac3_peer_delay_cfg
+  - ATTR: 5
+    COUNT: 4
+    DESCRIPTION: PFC control to override hardware generated XOFF
+    FLDLST: &44
+      - DEFAULT: 0
+        DESCRIPTION: Override XOFF signal generated by hardware
+        NAME: sw_override_en
+        WIDTH: 16
+      - DEFAULT: 0
+        DESCRIPTION: XOFF value to be set when software override is enabled.
+        NAME: sw_override_val
+        WIDTH: 16
+    NAME: fpg_misc_tx_pfc_ctrl_0
+    NO_STRUCT: 0
+  - ATTR: 5
+    COUNT: 4
+    DESCRIPTION: PFC control to override hardware generated XOFF
+    FLDLST: *44
+    NAME: fpg_misc_tx_pfc_ctrl_1
+    NO_STRUCT: 0
+  - ATTR: 5
+    COUNT: 4
+    DESCRIPTION: PFC control to override hardware generated XOFF
+    FLDLST: *44
+    NAME: fpg_misc_tx_pfc_ctrl_2
+    NO_STRUCT: 0
+  - ATTR: 5
+    COUNT: 4
+    DESCRIPTION: PFC control to override hardware generated XOFF
+    FLDLST: *44
+    NAME: fpg_misc_tx_pfc_ctrl_3
+    NO_STRUCT: 0
+  - ATTR: 5
+    COUNT: 4
+    DESCRIPTION: Failure Signaling Frame generation control.
+    FLDLST: &45
+      - DEFAULT: 0
+        DESCRIPTION: Enable broadcast of link failure status to other FPGs for generation of FSF frames.
+        NAME: failure_bcast_en
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Use the local fault link status from the MAC for the broadcasted status.
+        NAME: use_local_fault_status
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Use the remote fault link status from the MAC for the broadcasted status.
+        NAME: use_rem_fault_status
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Use the link interruption fault status from the MAC for the broadcasted status.
+        NAME: use_li_fault_status
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Use the link status from the PCS for the broadcasted status.
+        NAME: use_pcs_link_status
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Use the serdes signal OK signal to detect failure. This is bit 4 of o_core_status from the Avago serdes macro.
+        NAME: use_serdes_signal_ok
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'If set, a link failure is broadcasted on the ring. This is to enable software to inject FSF frames if loss of signal is detected by other means.'
+        NAME: sw_triggered_fault_bcast
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: |-
+          Min number of cycles for which the link must be down before sending the failure indication on the failure signaling ring. 
+                                           The timer is reset whenever the hardware link status is up.
+        NAME: failure_bcast_delay_timer
+        WIDTH: 16
+    NAME: fpg_misc_tx_failure_bcast_ctrl_0
+    NO_STRUCT: 0
+  - ATTR: 5
+    COUNT: 4
+    DESCRIPTION: Failure Signaling Frame generation control.
+    FLDLST: *45
+    NAME: fpg_misc_tx_failure_bcast_ctrl_1
+    NO_STRUCT: 0
+  - ATTR: 5
+    COUNT: 4
+    DESCRIPTION: Failure Signaling Frame generation control.
+    FLDLST: *45
+    NAME: fpg_misc_tx_failure_bcast_ctrl_2
+    NO_STRUCT: 0
+  - ATTR: 5
+    COUNT: 4
+    DESCRIPTION: Failure Signaling Frame generation control.
+    FLDLST: *45
+    NAME: fpg_misc_tx_failure_bcast_ctrl_3
+    NO_STRUCT: 0
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Data to be inserted in the Fault Signaling Frame. This is unique per NU stream.
+    FLDLST: &46
+      - DEFAULT: 0
+        DESCRIPTION: "GPH index to be transmitted with FSF frame. GPH index should be padded with zeroes in the MSB : {9'd0, gph_index[6:0]}"
+        NAME: gph_index
+        WIDTH: 16
+    NAME: fpg_misc_tx_fsf_frame_data_0
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Data to be inserted in the Fault Signaling Frame. This is unique per NU stream.
+    FLDLST: *46
+    NAME: fpg_misc_tx_fsf_frame_data_1
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Data to be inserted in the Fault Signaling Frame. This is unique per NU stream.
+    FLDLST: *46
+    NAME: fpg_misc_tx_fsf_frame_data_2
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Data to be inserted in the Fault Signaling Frame. This is unique per NU stream.
+    FLDLST: *46
+    NAME: fpg_misc_tx_fsf_frame_data_3
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Data to be inserted in the Fault Signaling Frame. This is unique per NU stream.
+    FLDLST: *46
+    NAME: fpg_misc_tx_fsf_frame_data_4
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Data to be inserted in the Fault Signaling Frame. This is unique per NU stream.
+    FLDLST: *46
+    NAME: fpg_misc_tx_fsf_frame_data_5
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Data to be inserted in the Fault Signaling Frame. This is unique per NU stream.
+    FLDLST: *46
+    NAME: fpg_misc_tx_fsf_frame_data_6
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Data to be inserted in the Fault Signaling Frame. This is unique per NU stream.
+    FLDLST: *46
+    NAME: fpg_misc_tx_fsf_frame_data_7
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Data to be inserted in the Fault Signaling Frame. This is unique per NU stream.
+    FLDLST: *46
+    NAME: fpg_misc_tx_fsf_frame_data_8
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Data to be inserted in the Fault Signaling Frame. This is unique per NU stream.
+    FLDLST: *46
+    NAME: fpg_misc_tx_fsf_frame_data_9
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Data to be inserted in the Fault Signaling Frame. This is unique per NU stream.
+    FLDLST: *46
+    NAME: fpg_misc_tx_fsf_frame_data_10
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Data to be inserted in the Fault Signaling Frame. This is unique per NU stream.
+    FLDLST: *46
+    NAME: fpg_misc_tx_fsf_frame_data_11
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Data to be inserted in the Fault Signaling Frame. This is unique per NU stream.
+    FLDLST: *46
+    NAME: fpg_misc_tx_fsf_frame_data_12
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Data to be inserted in the Fault Signaling Frame. This is unique per NU stream.
+    FLDLST: *46
+    NAME: fpg_misc_tx_fsf_frame_data_13
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Data to be inserted in the Fault Signaling Frame. This is unique per NU stream.
+    FLDLST: *46
+    NAME: fpg_misc_tx_fsf_frame_data_14
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Data to be inserted in the Fault Signaling Frame. This is unique per NU stream.
+    FLDLST: *46
+    NAME: fpg_misc_tx_fsf_frame_data_15
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Data to be inserted in the Fault Signaling Frame. This is unique per NU stream.
+    FLDLST: *46
+    NAME: fpg_misc_tx_fsf_frame_data_16
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Data to be inserted in the Fault Signaling Frame. This is unique per NU stream.
+    FLDLST: *46
+    NAME: fpg_misc_tx_fsf_frame_data_17
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Data to be inserted in the Fault Signaling Frame. This is unique per NU stream.
+    FLDLST: *46
+    NAME: fpg_misc_tx_fsf_frame_data_18
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Data to be inserted in the Fault Signaling Frame. This is unique per NU stream.
+    FLDLST: *46
+    NAME: fpg_misc_tx_fsf_frame_data_19
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Data to be inserted in the Fault Signaling Frame. This is unique per NU stream.
+    FLDLST: *46
+    NAME: fpg_misc_tx_fsf_frame_data_20
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Data to be inserted in the Fault Signaling Frame. This is unique per NU stream.
+    FLDLST: *46
+    NAME: fpg_misc_tx_fsf_frame_data_21
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Data to be inserted in the Fault Signaling Frame. This is unique per NU stream.
+    FLDLST: *46
+    NAME: fpg_misc_tx_fsf_frame_data_22
+  - ATTR: 5
+    COUNT: 24
+    DESCRIPTION: Data to be inserted in the Fault Signaling Frame. This is unique per NU stream.
+    FLDLST: *46
+    NAME: fpg_misc_tx_fsf_frame_data_23
+  - ATTR: 5
+    COUNT: 4
+    DESCRIPTION: Enable FSF frame transmission for a FPG stream.
+    FLDLST: &47
+      - DEFAULT: 0
+        DESCRIPTION: Enable FSF frame transmission for a FPG stream. FSF frames should not be sent to non-F1 peers.
+        NAME: val
+        WIDTH: 1
+    NAME: fpg_misc_tx_fsf_xmit_en_0
+  - ATTR: 5
+    COUNT: 4
+    DESCRIPTION: Enable FSF frame transmission for a FPG stream.
+    FLDLST: *47
+    NAME: fpg_misc_tx_fsf_xmit_en_1
+  - ATTR: 5
+    COUNT: 4
+    DESCRIPTION: Enable FSF frame transmission for a FPG stream.
+    FLDLST: *47
+    NAME: fpg_misc_tx_fsf_xmit_en_2
+  - ATTR: 5
+    COUNT: 4
+    DESCRIPTION: Enable FSF frame transmission for a FPG stream.
+    FLDLST: *47
+    NAME: fpg_misc_tx_fsf_xmit_en_3
+  - ATTR: 5
+    DESCRIPTION: |-
+      A 4*6 vector indicating if a stream is a global link connecting F1 to a spine switch. 
+                                This is needed to enable FSF frame transmission only for global link failures.
+    FLDLST:
+      - DEFAULT: 0
+        NAME: val
+        WIDTH: 24
+    NAME: fpg_misc_tx_fsf_strm_is_glb_link
+  - ATTR: 5
+    DESCRIPTION: Opcode to be inserted in the Fault Signaling Frame. Static config.
+    FLDLST:
+      - DEFAULT: 4353
+        DESCRIPTION: MAC control opcode to be used for the FSF frames. This is a global configuration for all FPG streams.
+        NAME: val
+        WIDTH: 16
+    NAME: fpg_misc_tx_fsf_frame_opcode
+  - ATTR: 5
+    DESCRIPTION: DMAC to be inserted in the Fault Signaling Frame. Static config.
+    FLDLST:
+      - DEFAULT: 1652522221569
+        DESCRIPTION: DMAC to be transmitted with FSF frame. This is a global configuration for all FPG streams.
+        NAME: val
+        WIDTH: 48
+    NAME: fpg_misc_tx_fsf_frame_dmac
+  - ATTR: 5
+    DESCRIPTION: Ethertype to be inserted in the Fault Signaling Frame. Static config.
+    FLDLST:
+      - DEFAULT: 34824
+        DESCRIPTION: Ethertype to be transmitted with FSF frame. This is a global configuration for all FPG streams.
+        NAME: val
+        WIDTH: 16
+    NAME: fpg_misc_tx_fsf_frame_ethertype
+  - ATTR: 6
+    COUNT: 24
+    DESCRIPTION: |-
+      FPG stream state for generating FSF frames. 0: Link is down, 1: Link is up. 
+                                Hardware can clear the value when a link is down. Only software can set the value to 1. Software writes are ignored when link is up.
+    FLDLST: &48
+      - DEFAULT: 0
+        DESCRIPTION: '0: Link is down, 1: Link is up.'
+        NAME: val
+        WIDTH: 1
+    NAME: fpg_misc_tx_fpg_stream_state_0
+  - ATTR: 6
+    COUNT: 24
+    DESCRIPTION: |-
+      FPG stream state for generating FSF frames. 0: Link is down, 1: Link is up. 
+                                Hardware can clear the value when a link is down. Only software can set the value to 1. Software writes are ignored when link is up.
+    FLDLST: *48
+    NAME: fpg_misc_tx_fpg_stream_state_1
+  - ATTR: 6
+    COUNT: 24
+    DESCRIPTION: |-
+      FPG stream state for generating FSF frames. 0: Link is down, 1: Link is up. 
+                                Hardware can clear the value when a link is down. Only software can set the value to 1. Software writes are ignored when link is up.
+    FLDLST: *48
+    NAME: fpg_misc_tx_fpg_stream_state_2
+  - ATTR: 6
+    COUNT: 24
+    DESCRIPTION: |-
+      FPG stream state for generating FSF frames. 0: Link is down, 1: Link is up. 
+                                Hardware can clear the value when a link is down. Only software can set the value to 1. Software writes are ignored when link is up.
+    FLDLST: *48
+    NAME: fpg_misc_tx_fpg_stream_state_3
+  - ATTR: 6
+    COUNT: 24
+    DESCRIPTION: |-
+      FPG stream state for generating FSF frames. 0: Link is down, 1: Link is up. 
+                                Hardware can clear the value when a link is down. Only software can set the value to 1. Software writes are ignored when link is up.
+    FLDLST: *48
+    NAME: fpg_misc_tx_fpg_stream_state_4
+  - ATTR: 6
+    COUNT: 24
+    DESCRIPTION: |-
+      FPG stream state for generating FSF frames. 0: Link is down, 1: Link is up. 
+                                Hardware can clear the value when a link is down. Only software can set the value to 1. Software writes are ignored when link is up.
+    FLDLST: *48
+    NAME: fpg_misc_tx_fpg_stream_state_5
+  - ATTR: 6
+    COUNT: 24
+    DESCRIPTION: |-
+      FPG stream state for generating FSF frames. 0: Link is down, 1: Link is up. 
+                                Hardware can clear the value when a link is down. Only software can set the value to 1. Software writes are ignored when link is up.
+    FLDLST: *48
+    NAME: fpg_misc_tx_fpg_stream_state_6
+  - ATTR: 6
+    COUNT: 24
+    DESCRIPTION: |-
+      FPG stream state for generating FSF frames. 0: Link is down, 1: Link is up. 
+                                Hardware can clear the value when a link is down. Only software can set the value to 1. Software writes are ignored when link is up.
+    FLDLST: *48
+    NAME: fpg_misc_tx_fpg_stream_state_7
+  - ATTR: 6
+    COUNT: 24
+    DESCRIPTION: |-
+      FPG stream state for generating FSF frames. 0: Link is down, 1: Link is up. 
+                                Hardware can clear the value when a link is down. Only software can set the value to 1. Software writes are ignored when link is up.
+    FLDLST: *48
+    NAME: fpg_misc_tx_fpg_stream_state_8
+  - ATTR: 6
+    COUNT: 24
+    DESCRIPTION: |-
+      FPG stream state for generating FSF frames. 0: Link is down, 1: Link is up. 
+                                Hardware can clear the value when a link is down. Only software can set the value to 1. Software writes are ignored when link is up.
+    FLDLST: *48
+    NAME: fpg_misc_tx_fpg_stream_state_9
+  - ATTR: 6
+    COUNT: 24
+    DESCRIPTION: |-
+      FPG stream state for generating FSF frames. 0: Link is down, 1: Link is up. 
+                                Hardware can clear the value when a link is down. Only software can set the value to 1. Software writes are ignored when link is up.
+    FLDLST: *48
+    NAME: fpg_misc_tx_fpg_stream_state_10
+  - ATTR: 6
+    COUNT: 24
+    DESCRIPTION: |-
+      FPG stream state for generating FSF frames. 0: Link is down, 1: Link is up. 
+                                Hardware can clear the value when a link is down. Only software can set the value to 1. Software writes are ignored when link is up.
+    FLDLST: *48
+    NAME: fpg_misc_tx_fpg_stream_state_11
+  - ATTR: 6
+    COUNT: 24
+    DESCRIPTION: |-
+      FPG stream state for generating FSF frames. 0: Link is down, 1: Link is up. 
+                                Hardware can clear the value when a link is down. Only software can set the value to 1. Software writes are ignored when link is up.
+    FLDLST: *48
+    NAME: fpg_misc_tx_fpg_stream_state_12
+  - ATTR: 6
+    COUNT: 24
+    DESCRIPTION: |-
+      FPG stream state for generating FSF frames. 0: Link is down, 1: Link is up. 
+                                Hardware can clear the value when a link is down. Only software can set the value to 1. Software writes are ignored when link is up.
+    FLDLST: *48
+    NAME: fpg_misc_tx_fpg_stream_state_13
+  - ATTR: 6
+    COUNT: 24
+    DESCRIPTION: |-
+      FPG stream state for generating FSF frames. 0: Link is down, 1: Link is up. 
+                                Hardware can clear the value when a link is down. Only software can set the value to 1. Software writes are ignored when link is up.
+    FLDLST: *48
+    NAME: fpg_misc_tx_fpg_stream_state_14
+  - ATTR: 6
+    COUNT: 24
+    DESCRIPTION: |-
+      FPG stream state for generating FSF frames. 0: Link is down, 1: Link is up. 
+                                Hardware can clear the value when a link is down. Only software can set the value to 1. Software writes are ignored when link is up.
+    FLDLST: *48
+    NAME: fpg_misc_tx_fpg_stream_state_15
+  - ATTR: 6
+    COUNT: 24
+    DESCRIPTION: |-
+      FPG stream state for generating FSF frames. 0: Link is down, 1: Link is up. 
+                                Hardware can clear the value when a link is down. Only software can set the value to 1. Software writes are ignored when link is up.
+    FLDLST: *48
+    NAME: fpg_misc_tx_fpg_stream_state_16
+  - ATTR: 6
+    COUNT: 24
+    DESCRIPTION: |-
+      FPG stream state for generating FSF frames. 0: Link is down, 1: Link is up. 
+                                Hardware can clear the value when a link is down. Only software can set the value to 1. Software writes are ignored when link is up.
+    FLDLST: *48
+    NAME: fpg_misc_tx_fpg_stream_state_17
+  - ATTR: 6
+    COUNT: 24
+    DESCRIPTION: |-
+      FPG stream state for generating FSF frames. 0: Link is down, 1: Link is up. 
+                                Hardware can clear the value when a link is down. Only software can set the value to 1. Software writes are ignored when link is up.
+    FLDLST: *48
+    NAME: fpg_misc_tx_fpg_stream_state_18
+  - ATTR: 6
+    COUNT: 24
+    DESCRIPTION: |-
+      FPG stream state for generating FSF frames. 0: Link is down, 1: Link is up. 
+                                Hardware can clear the value when a link is down. Only software can set the value to 1. Software writes are ignored when link is up.
+    FLDLST: *48
+    NAME: fpg_misc_tx_fpg_stream_state_19
+  - ATTR: 6
+    COUNT: 24
+    DESCRIPTION: |-
+      FPG stream state for generating FSF frames. 0: Link is down, 1: Link is up. 
+                                Hardware can clear the value when a link is down. Only software can set the value to 1. Software writes are ignored when link is up.
+    FLDLST: *48
+    NAME: fpg_misc_tx_fpg_stream_state_20
+  - ATTR: 6
+    COUNT: 24
+    DESCRIPTION: |-
+      FPG stream state for generating FSF frames. 0: Link is down, 1: Link is up. 
+                                Hardware can clear the value when a link is down. Only software can set the value to 1. Software writes are ignored when link is up.
+    FLDLST: *48
+    NAME: fpg_misc_tx_fpg_stream_state_21
+  - ATTR: 6
+    COUNT: 24
+    DESCRIPTION: |-
+      FPG stream state for generating FSF frames. 0: Link is down, 1: Link is up. 
+                                Hardware can clear the value when a link is down. Only software can set the value to 1. Software writes are ignored when link is up.
+    FLDLST: *48
+    NAME: fpg_misc_tx_fpg_stream_state_22
+  - ATTR: 6
+    COUNT: 24
+    DESCRIPTION: |-
+      FPG stream state for generating FSF frames. 0: Link is down, 1: Link is up. 
+                                Hardware can clear the value when a link is down. Only software can set the value to 1. Software writes are ignored when link is up.
+    FLDLST: *48
+    NAME: fpg_misc_tx_fpg_stream_state_23
+  - ATTR: 5
+    COUNT: 4
+    DESCRIPTION: Rx TDM calendar entry for pushing data to PSW.
+    FLDLST: &49
+      - DEFAULT: 0
+        DESCRIPTION: FPG stream number. Ranges from 0 to 3
+        NAME: stream_num
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: 'If set, the calendar entry is valid.'
+        NAME: vld
+        WIDTH: 1
+    NAME: fpg_misc_psw_tdm_clnd_0
+    NO_STRUCT: 0
+  - ATTR: 5
+    COUNT: 4
+    DESCRIPTION: Rx TDM calendar entry for pushing data to PSW.
+    FLDLST: *49
+    NAME: fpg_misc_psw_tdm_clnd_1
+    NO_STRUCT: 0
+  - ATTR: 5
+    COUNT: 4
+    DESCRIPTION: Rx TDM calendar entry for pushing data to PSW.
+    FLDLST: *49
+    NAME: fpg_misc_psw_tdm_clnd_2
+    NO_STRUCT: 0
+  - ATTR: 5
+    COUNT: 4
+    DESCRIPTION: Rx TDM calendar entry for pushing data to PSW.
+    FLDLST: *49
+    NAME: fpg_misc_psw_tdm_clnd_3
+    NO_STRUCT: 0
+  - ATTR: 5
+    COUNT: 4
+    DESCRIPTION: Per-stream rate limiter to rate limit data going to PSW and PRS.
+    FLDLST: &50
+      - DEFAULT: 400
+        DESCRIPTION: Number of credits added to the credit counter every interval. Last 4 bits are fractional. Rate*16 + delta
+        NAME: credits_per_interval
+        WIDTH: 13
+      - DEFAULT: 1
+        DESCRIPTION: Credits are added every interval cycles. Do not change.
+        NAME: interval
+        WIDTH: 3
+      - DEFAULT: 24
+        DESCRIPTION: Number of bytes (credits/8) decremented at EOP to account for IPG and CRC.
+        NAME: eop_charge
+        WIDTH: 6
+    NAME: fpg_misc_stream_rate_limit_0
+    NO_STRUCT: 0
+  - ATTR: 5
+    COUNT: 4
+    DESCRIPTION: Per-stream rate limiter to rate limit data going to PSW and PRS.
+    FLDLST: *50
+    NAME: fpg_misc_stream_rate_limit_1
+    NO_STRUCT: 0
+  - ATTR: 5
+    COUNT: 4
+    DESCRIPTION: Per-stream rate limiter to rate limit data going to PSW and PRS.
+    FLDLST: *50
+    NAME: fpg_misc_stream_rate_limit_2
+    NO_STRUCT: 0
+  - ATTR: 5
+    COUNT: 4
+    DESCRIPTION: Per-stream rate limiter to rate limit data going to PSW and PRS.
+    FLDLST: *50
+    NAME: fpg_misc_stream_rate_limit_3
+    NO_STRUCT: 0
+  - ATTR: 5
+    COUNT: 4
+    DESCRIPTION: Maximum packet size in bytes (excluding CRC) beyond which the packet will be truncated and received with an error.
+    FLDLST: &51
+      - DEFAULT: 1
+        DESCRIPTION: Enable max pkt length check.
+        NAME: en
+        WIDTH: 1
+      - DEFAULT: 16316
+        DESCRIPTION: 'If pkt_size > val, the packet is truncated to val bytes.'
+        NAME: val
+        WIDTH: 14
+    NAME: fpg_misc_rx_max_pkt_len_0
+    NO_STRUCT: 0
+  - ATTR: 5
+    COUNT: 4
+    DESCRIPTION: Maximum packet size in bytes (excluding CRC) beyond which the packet will be truncated and received with an error.
+    FLDLST: *51
+    NAME: fpg_misc_rx_max_pkt_len_1
+    NO_STRUCT: 0
+  - ATTR: 5
+    COUNT: 4
+    DESCRIPTION: Maximum packet size in bytes (excluding CRC) beyond which the packet will be truncated and received with an error.
+    FLDLST: *51
+    NAME: fpg_misc_rx_max_pkt_len_2
+    NO_STRUCT: 0
+  - ATTR: 5
+    COUNT: 4
+    DESCRIPTION: Maximum packet size in bytes (excluding CRC) beyond which the packet will be truncated and received with an error.
+    FLDLST: *51
+    NAME: fpg_misc_rx_max_pkt_len_3
+    NO_STRUCT: 0
+  - ATTR: 5
+    DESCRIPTION: Minimum packet size in bytes excluding CRC. Smaller packets will be padded with 0s to the programmed value.
+    FLDLST:
+      - DEFAULT: 60
+        DESCRIPTION: 'If pkt_size < val, the packet is padded to val bytes.'
+        NAME: val
+        WIDTH: 14
+    NAME: fpg_misc_rx_min_pkt_len
+    NO_STRUCT: 0
+  - ATTR: 5
+    DESCRIPTION: Enable error indication for runt packets
+    FLDLST:
+      - DEFAULT: 1
+        DESCRIPTION: 'If set, a packet less than fpg_misc_rx_min_pkt_len is marked with an error at EOP.'
+        NAME: val
+        WIDTH: 1
+    NAME: fpg_misc_rx_runt_err_en
+    NO_STRUCT: 0
+  - ATTR: 5
+    COUNT: 4
+    DESCRIPTION: PFC control to override hardware generated XOFF from the MAC
+    FLDLST: &52
+      - DEFAULT: 0
+        DESCRIPTION: Override XOFF signal generated by hardware
+        NAME: sw_override_en
+        WIDTH: 16
+      - DEFAULT: 0
+        DESCRIPTION: XOFF value to be set when software override is enabled.
+        NAME: sw_override_val
+        WIDTH: 16
+    NAME: fpg_misc_rx_pfc_ctrl_0
+    NO_STRUCT: 0
+  - ATTR: 5
+    COUNT: 4
+    DESCRIPTION: PFC control to override hardware generated XOFF from the MAC
+    FLDLST: *52
+    NAME: fpg_misc_rx_pfc_ctrl_1
+    NO_STRUCT: 0
+  - ATTR: 5
+    COUNT: 4
+    DESCRIPTION: PFC control to override hardware generated XOFF from the MAC
+    FLDLST: *52
+    NAME: fpg_misc_rx_pfc_ctrl_2
+    NO_STRUCT: 0
+  - ATTR: 5
+    COUNT: 4
+    DESCRIPTION: PFC control to override hardware generated XOFF from the MAC
+    FLDLST: *52
+    NAME: fpg_misc_rx_pfc_ctrl_3
+    NO_STRUCT: 0
+  - ATTR: 5
+    DESCRIPTION: Configuration for timing out the Frame checking state machine when data stops on the line
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Enable timeout
+        NAME: en
+        WIDTH: 4
+      - DEFAULT: 1024
+        DESCRIPTION: Timeout value
+        NAME: timeout_val
+        WIDTH: 16
+    NAME: fpg_misc_rx_eop_timeout_cfg
+  - ATTR: 5
+    COUNT: 4
+    DESCRIPTION: Only applicable for HNU. This register contains the scheduler settings to multiplex FLINK and Ethernet frames.
+    FLDLST: &53
+      - DEFAULT: 0
+        DESCRIPTION: Guranteed rate weight for Ethernet frames. Rate = wt/period. Weight is interpreted as 8 bits for bytes per period + 4 for fractional bytes per period.
+        NAME: gr_wt_eth
+        WIDTH: 12
+      - DEFAULT: 0
+        DESCRIPTION: Guranteed rate weight for FLINK frames. Rate = wt/period. Weight is interpreted as 8 bits for bytes per period + 4 for fractional bytes per period.
+        NAME: gr_wt_flink
+        WIDTH: 12
+      - DEFAULT: 0
+        DESCRIPTION: Guranteed rate weight for FLINK frames. Rate = wt/period
+        NAME: gr_per
+        WIDTH: 4
+      - DEFAULT: 3
+        DESCRIPTION: DWRR weight for Ethernet frames
+        NAME: dwrr_wt_eth
+        WIDTH: 4
+      - DEFAULT: 1
+        DESCRIPTION: DWRR weight for FLINK frames
+        NAME: dwrr_wt_flink
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Enable extra holdoff at the FNC FIFO to avoind underrun.
+        NAME: flink_extra_holdoff_en
+        WIDTH: 1
+    NAME: fpg_misc_tx_sch_cfg_0
+  - ATTR: 5
+    COUNT: 4
+    DESCRIPTION: Only applicable for HNU. This register contains the scheduler settings to multiplex FLINK and Ethernet frames.
+    FLDLST: *53
+    NAME: fpg_misc_tx_sch_cfg_1
+  - ATTR: 5
+    COUNT: 4
+    DESCRIPTION: Only applicable for HNU. This register contains the scheduler settings to multiplex FLINK and Ethernet frames.
+    FLDLST: *53
+    NAME: fpg_misc_tx_sch_cfg_2
+  - ATTR: 5
+    COUNT: 4
+    DESCRIPTION: Only applicable for HNU. This register contains the scheduler settings to multiplex FLINK and Ethernet frames.
+    FLDLST: *53
+    NAME: fpg_misc_tx_sch_cfg_3
+  - ATTR: 5
+    DESCRIPTION: Ethertype used to differentiate flink packets. Only used in HNU.
+    FLDLST:
+      - DEFAULT: 0
+        NAME: etype_bypass_en
+        WIDTH: 1
+      - DEFAULT: 0
+        NAME: flink_en
+        WIDTH: 1
+      - DEFAULT: 0
+        NAME: val
+        WIDTH: 16
+    NAME: fpg_misc_rx_flink_etype_cfg
+    NO_STRUCT: 0
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: Config register for memory error injection
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into rx_bb0 Memory
+        NAME: fpg_misc_rx_bb0_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into rx_bb1 Memory
+        NAME: fpg_misc_rx_bb1_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into rx_bb2 Memory
+        NAME: fpg_misc_rx_bb2_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into rx_bb3 Memory
+        NAME: fpg_misc_rx_bb3_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: |-
+          Type of error to be injected
+                                             Applied to all memory error injection
+                                             0 - Uncorrectable error
+                                             1 - Correctable error
+                                             
+        NAME: err_type
+        WIDTH: 1
+    NAME: fpg_misc_mem_err_inj_cfg
+  - ATTR: 5
+    DESCRIPTION: FPG MISC FLA Ring Module ID
+    FLDLST:
+      - DEFAULT: 136
+        DESCRIPTION: '8-Bit Module ID to be used for Decoding Commands on FLA Command Ring, 0x0, 0xff are Reserved Values'
+        NAME: fld_val
+        WIDTH: 8
+    NAME: fpg_misc_fla_ring_module_id_cfg
+  - ATTR: 9
+    DESCRIPTION: Burst buffer occupancy count
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Burst buffer 00 count
+        NAME: bb00_cnt
+        WIDTH: 10
+      - DEFAULT: 0
+        DESCRIPTION: Burst buffer 0 count
+        NAME: bb0_cnt
+        WIDTH: 10
+      - DEFAULT: 0
+        DESCRIPTION: Burst buffer 1 count
+        NAME: bb1_cnt
+        WIDTH: 10
+      - DEFAULT: 0
+        DESCRIPTION: Burst buffer 2 count
+        NAME: bb2_cnt
+        WIDTH: 10
+      - DEFAULT: 0
+        DESCRIPTION: Burst buffer 3 count
+        NAME: bb3_cnt
+        WIDTH: 10
+    NAME: fpg_misc_rx_bb_occ_cnt
+  - ATTR: 9
+    DESCRIPTION: Burst buffer sticky max occupancy count
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Burst buffer 00 sticky max count
+        NAME: bb00_cnt
+        WIDTH: 10
+      - DEFAULT: 0
+        DESCRIPTION: Burst buffer 0 sticky max count
+        NAME: bb0_cnt
+        WIDTH: 10
+      - DEFAULT: 0
+        DESCRIPTION: Burst buffer 1 sticky max count
+        NAME: bb1_cnt
+        WIDTH: 10
+      - DEFAULT: 0
+        DESCRIPTION: Burst buffer 2 sticky max count
+        NAME: bb2_cnt
+        WIDTH: 10
+      - DEFAULT: 0
+        DESCRIPTION: Burst buffer 3 sticky max count
+        NAME: bb3_cnt
+        WIDTH: 10
+    NAME: fpg_misc_rx_bb_sticky_max_occ_cnt
+  - ATTR: 9
+    DESCRIPTION: SRAM bit vector that failed ECC/Parity check
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                             First SRAM ECC/Parity error detected (1-hot)
+                                             Set when first error is detected
+                                             Reset when corresponding interrupt status bit is cleared
+                                             Bit order {rx_bb0 rx_bb1 rx_bb2 rx_bb3}
+                                            
+        NAME: val
+        WIDTH: 8
+    NAME: fpg_misc_sram_log_err
+  - ATTR: 9
+    DESCRIPTION: SRAM syndrome log register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                          Syndrome related to ECC error
+                                          detected while reading data from SRAM
+                                         
+        NAME: val
+        WIDTH: 16
+    NAME: fpg_misc_sram_log_syndrome
+  - ATTR: 9
+    DESCRIPTION: SRAM address log register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                           Address related to ECC error
+                                           detected while reading data from SRAM
+                                          
+        NAME: val
+        WIDTH: 8
+    NAME: fpg_misc_sram_log_addr
+  - ATTR: 10
+    DESCRIPTION: FPG MISC drop counters. Using stat cntr macro.
+    ENTRIES: 35
+    FLDLST:
+      - DESCRIPTION: Per-MAC interface drop counters. Refer fpg_misc_structs.pm file for description of counters.
+        NAME: val
+        WIDTH: 16
+    NAME: fpg_misc_err_stats
+  - ATTR: 10
+    DESCRIPTION: FPG MISC stat counters. Using stat cntr macro.
+    ENTRIES: 36
+    FLDLST:
+      - DESCRIPTION: Per-MAC interface/per-stream pkt counters. Refer fpg_misc_structs.pm file for description of counters.
+        NAME: val
+        WIDTH: 48
+    NAME: fpg_misc_stats
+XASIZE: 0

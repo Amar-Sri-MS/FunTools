@@ -16,9 +16,10 @@ from csr.utils.artifacts import CSRRoot, Walker, RingUtil, TmplMgr
 class Slurper(object):
     def __init__(self, cwd):
         self.cwd = cwd
-        self.cmd_parser = argparse.ArgumentParser(description="CSR Slurper utility for F1")
+        #self.cmd_parser = argparse.ArgumentParser(description="CSR Slurper utility for F1")
         self.other_args = {}
-        self.__arg_process(self.cmd_parser, self.other_args)
+        #self.__arg_process(self.cmd_parser, self.other_args)
+        print "Started Slurper"
 
     def __arg_process(self, cmd_parser, other_args):
         ml_dir = module_locator().module_path()
@@ -51,24 +52,37 @@ class Slurper(object):
             assert False, "AMAP file does not exist"
         #if not os.path.exists(os.path.join(y_dir, "ringAN.yaml")):
         #    assert False, "Ring file does not exist"
-    
-    def run(self):
-        args = self.cmd_parser.parse_args()
-        args.csr_defs = self.__update_loc(args.csr_defs)
-        args.gen_cc = self.__update_loc(args.gen_cc)
 
-        self.__check_yml_dir(args.csr_defs)
-        yml_dir = os.path.join(args.csr_defs, "inc")
-        amap_file = os.path.join(args.csr_defs, "AMAP")
-        ring_file = os.path.join(args.csr_defs, "ringAN.yaml")
+    def run(self):
+        #args = self.cmd_parser.parse_args()
+        #args.csr_defs = self.__update_loc(args.csr_defs)
+        #args.gen_cc = self.__update_loc(args.gen_cc)
+
+        #self.__check_yml_dir(args.csr_defs)
+        #yml_dir = os.path.join(args.csr_defs, "csr/csr-cfg/inc")
+        #amap_file = os.path.join(args.csr_defs, "csr/csr-cfg/MAP")
+        #ring_file = os.path.join(args.csr_defs, "csr/csr-cfg/ringAN.yaml")
+        yml_dir = "csr/csr_cfg/inc"
+        amap_file = "csr/csr_cfg/AMAP"
+        ring_file = "csr/csr_cfg/ringAN.yaml"
 
         schema = CSR_YML_Reader(yml_dir)
         #print "{}".format(self.schema)
         # First populate the top level root
         # Only populates the address attribute
-        csr_root = CSRRoot(amap_file, schema.get(), args.match_ring)
-        tmpl = TmplMgr(self.other_args['tmpl_file'])
-        o_file = os.path.join(args.gen_cc, 'csr_gen.cpp')
+        #print("%s %s") %(amap_file, args.match_ring)
+        #csr_root = CSRRoot(amap_file, schema.get(), args.match_ring)
+        csr_root = CSRRoot(amap_file, schema.get(), "")
+        print "NAG 1**********"
+        #tmpl = TmplMgr(self.other_args['tmpl_file'])
+        tmpl = TmplMgr("csr/template/csr_rt.j2")
+        print "NAG 2**********"
+        #o_file = os.path.join(args.gen_cc, 'csr_gen.cpp')
+        o_file = 'csr_gen.cpp'
+        print "NAG 3**********"
+        #if csr_root is not None:
+        #    print csr_root.get_map()
+        print "NAG 4**********"
         tmpl.write_cfg(o_file, csr_root)
 
         # Next, get the ring structure
@@ -76,6 +90,7 @@ class Slurper(object):
         #yml_stream = p.read_file(ring_file)
         #w = Walker(yml_stream)
         #print "{}".format(w)
+        return csr_root
 
 
 

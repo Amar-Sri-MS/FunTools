@@ -1,0 +1,1927 @@
+---
+COUNT: 1
+DESCRIPTION: NU Manager CSR Spec
+INTR:
+  FATAL:
+    - DESCRIPTION: SBUS Master Error.
+      NAME: fld_sbus_master
+      WIDTH: 1
+  NON_FATAL:
+    - DESCRIPTION: SBUS Master Error.
+      NAME: fld_sbus_master
+      WIDTH: 1
+INTR_PORT_EN: 1
+NAME: NU_NMG_AN
+PARENTNAME: NU_0_AN
+REGLST:
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: |-
+          Timeout Configuration. Cycles are RSU clk based.
+                            - 00 : 1024 cycles
+                            - 01 : 256 cycles
+                            - 10 : 4096 cycles
+                            - 11 : infinite
+        NAME: val
+        WIDTH: 2
+    NAME: nu_nmg_timeout_thresh_cfg
+  - ATTR: 9
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: "Timed out Status. Cycles are RSU clk based. Becomes 1 when timed out. Write any value to clear it.\n                  "
+        NAME: val
+        WIDTH: 1
+    NAME: nu_nmg_timedout_sta
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: |-
+          Clear Timeout Status. Data is ignored. A write
+                     will clear the timeout status bit
+        NAME: val
+        WIDTH: 1
+    NAME: nu_nmg_timeout_clr
+    TEST_ATTR: 1
+  - ATTR: 256
+    FLDLST:
+      - &1
+        DESCRIPTION: SBUS Master Error.
+        NAME: fld_sbus_master
+        WIDTH: 1
+    NAME: nu_nmg_fatal_intr_cause
+  - ATTR: 512
+    FLDLST:
+      - *1
+    NAME: nu_nmg_fatal_intr_stat
+  - ATTR: 1024
+    FLDLST:
+      - *1
+    NAME: nu_nmg_fatal_intr_mask
+  - ATTR: 2048
+    FLDLST:
+      - *1
+    NAME: nu_nmg_fatal_intr_bset
+  - ATTR: 4096
+    FLDLST:
+      - *1
+    NAME: nu_nmg_fatal_intr_bclr
+  - ATTR: 256
+    FLDLST:
+      - &2
+        DESCRIPTION: SBUS Master Error.
+        NAME: fld_sbus_master
+        WIDTH: 1
+    NAME: nu_nmg_non_fatal_intr_cause
+  - ATTR: 512
+    FLDLST:
+      - *2
+    NAME: nu_nmg_non_fatal_intr_stat
+  - ATTR: 1024
+    FLDLST:
+      - *2
+    NAME: nu_nmg_non_fatal_intr_mask
+  - ATTR: 2048
+    FLDLST:
+      - *2
+    NAME: nu_nmg_non_fatal_intr_bset
+  - ATTR: 4096
+    FLDLST:
+      - *2
+    NAME: nu_nmg_non_fatal_intr_bclr
+  - ATTR: 9
+    DESCRIPTION: Place Holder for now for NU_NMG Feature Register
+    FLDLST:
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Module ID
+        NAME: module_id
+        WIDTH: 8
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Version number of the module
+        NAME: version
+        WIDTH: 8
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Features enabled in the module.
+        NAME: features
+        WIDTH: 16
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Reserved Field.
+        NAME: Reserved
+        WIDTH: 32
+    NAME: nu_nmg_features
+  - ATTR: 5
+    DESCRIPTION: ' Spare PIO register. These bits can be read and written by software. They can serve as control bits for late ECOs in the design.'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Spare PIO register.
+        NAME: val
+        WIDTH: 64
+    NAME: nu_nmg_spare_pio
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: Scratchpad register.
+        NAME: val
+        WIDTH: 64
+    NAME: nu_nmg_scratchpad
+  - ATTR: 6
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Active Low Reset. Block Reset FWD
+        NAME: fld_fwd
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Active Low Reset. Block Reset FPG0
+        NAME: fld_fpg0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Active Low Reset. Reset FPG0 Phy
+        NAME: fld_fpg0_phy
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Active Low Reset. Block Reset FPG1
+        NAME: fld_fpg1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Active Low Reset. Reset FPG1 Phy
+        NAME: fld_fpg1_phy
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Active Low Reset. Block Reset FPG2
+        NAME: fld_fpg2
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Active Low Reset. Reset FPG2 Phy
+        NAME: fld_fpg2_phy
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Active Low Reset. Block Reset FPG3
+        NAME: fld_fpg3
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Active Low Reset. Reset FPG3 Phy
+        NAME: fld_fpg3_phy
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Active Low Reset. Block Reset FPG4
+        NAME: fld_fpg4
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Active Low Reset. Reset FPG4 Phy
+        NAME: fld_fpg4_phy
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Active Low Reset. Block Reset FPG5
+        NAME: fld_fpg5
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Active Low Reset. Reset FPG5 Phy
+        NAME: fld_fpg5_phy
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Active Low Reset. Block Reset MPG
+        NAME: fld_mpg
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Active Low Reset. Reset MPG Phy
+        NAME: fld_mpg_phy
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Active Low Reset. Block Reset EPG0
+        NAME: fld_epg0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Active Low Reset. Block Reset EPG1
+        NAME: fld_epg1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Active Low Reset. Block Reset EPG2
+        NAME: fld_epg2
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Active Low Reset. Block Reset EFP-TX
+        NAME: fld_efp_tx
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Active Low Reset. Block Reset EFP-RX
+        NAME: fld_efp_rx
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Active Low Reset. Block Reset PSW
+        NAME: fld_psw
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Active Low Reset. Block Reset WQM
+        NAME: fld_wqm
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Active Low Reset. Block Reset FCB
+        NAME: fld_fcb
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Active Low Reset. Block Reset WRO
+        NAME: fld_wro
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Active Low Reset. Block Reset FAE
+        NAME: fld_fae
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Active Low Reset. Block Reset HUE0
+        NAME: fld_hue0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Active Low Reset. Block Reset HUE1
+        NAME: fld_hue1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Active Low Reset. Block Reset sbus master
+        NAME: fld_sbus_master
+        WIDTH: 1
+    NAME: nmg_blk_reset_cfg
+  - ATTR: 6
+    FLDLST:
+      - DEFAULT: 1
+        DESCRIPTION: Block Clock Enable FFE0
+        NAME: fld_ffe0
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Block Clock Enable FFE1
+        NAME: fld_ffe1
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Block Clock Enable FFE2
+        NAME: fld_ffe2
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Block Clock Enable FFE3
+        NAME: fld_ffe3
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Block Clock Enable FFE4
+        NAME: fld_ffe4
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Block Clock Enable FFE5
+        NAME: fld_ffe5
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Block Clock Enable NHP
+        NAME: fld_nhp
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Block Clock Enable SFG
+        NAME: fld_sfg
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Block Clock Enable FMS
+        NAME: fld_fms
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Block Clock Enable SSE
+        NAME: fld_sse
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Block Clock Enable FAE
+        NAME: fld_fae_fae
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Block Clock Enable FAE
+        NAME: fld_fae_prs
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Block Clock Enable FPG0:FPG_MPW
+        NAME: fld_fpg0_fpg_mpw
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Block Clock Enable FPG0:FPG_SDIF
+        NAME: fld_fpg0_fpg_sdif
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Block Clock Enable FPG0:PRW
+        NAME: fld_fpg0_prw
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Block Clock Enable FPG0:PRS
+        NAME: fld_fpg0_prs
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Block Clock Enable FPG0:MISC
+        NAME: fld_fpg0_fpg_misc
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Block Clock Enable FPG1:FPG_MPW
+        NAME: fld_fpg1_fpg_mpw
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Block Clock Enable FPG1:FPG_SDIF
+        NAME: fld_fpg1_fpg_sdif
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Block Clock Enable FPG1:PRW
+        NAME: fld_fpg1_prw
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Block Clock Enable FPG1:PRS
+        NAME: fld_fpg1_prs
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Block Clock Enable FPG1:MISC
+        NAME: fld_fpg1_fpg_misc
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Block Clock Enable FPG2:FPG_MPW
+        NAME: fld_fpg2_fpg_mpw
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Block Clock Enable FPG2:FPG_SDIF
+        NAME: fld_fpg2_fpg_sdif
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Block Clock Enable FPG2:PRW
+        NAME: fld_fpg2_prw
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Block Clock Enable FPG2:PRS
+        NAME: fld_fpg2_prs
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Block Clock Enable FPG2:MISC
+        NAME: fld_fpg2_fpg_misc
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Block Clock Enable FPG3:FPG_MPW
+        NAME: fld_fpg3_fpg_mpw
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Block Clock Enable FPG3:FPG_SDIF
+        NAME: fld_fpg3_fpg_sdif
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Block Clock Enable FPG3:PRW
+        NAME: fld_fpg3_prw
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Block Clock Enable FPG3:PRS
+        NAME: fld_fpg3_prs
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Block Clock Enable FPG3:MISC
+        NAME: fld_fpg3_fpg_misc
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Block Clock Enable FPG4:FPG_MPW
+        NAME: fld_fpg4_fpg_mpw
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Block Clock Enable FPG4:FPG_SDIF
+        NAME: fld_fpg4_fpg_sdif
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Block Clock Enable FPG4:PRW
+        NAME: fld_fpg4_prw
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Block Clock Enable FPG4:PRS
+        NAME: fld_fpg4_prs
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Block Clock Enable FPG4:MISC
+        NAME: fld_fpg4_fpg_misc
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Block Clock Enable FPG5:FPG_MPW
+        NAME: fld_fpg5_fpg_mpw
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Block Clock Enable FPG5:FPG_SDIF
+        NAME: fld_fpg5_fpg_sdif
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Block Clock Enable FPG5:PRW
+        NAME: fld_fpg5_prw
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Block Clock Enable FPG5:PRS
+        NAME: fld_fpg5_prs
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Block Clock Enable FPG5:MISC
+        NAME: fld_fpg5_fpg_misc
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Block Clock Enable MPG:FPG_MPW
+        NAME: fld_mpg_fpg_mpw
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Block Clock Enable MPG:FPG_SDIF
+        NAME: fld_mpg_fpg_sdif
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Block Clock Enable MPG:MISC
+        NAME: fld_mpg_fpg_misc
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Block Clock Enable MPG:Core
+        NAME: fld_mpg_core
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Block Clock Enable EPG0:RDP_PRW
+        NAME: fld_epg0_rdp_prw
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Block Clock Enable EPG0:RDP
+        NAME: fld_epg0_rdp
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Block Clock Enable EPG0:TDP
+        NAME: fld_epg0_tdp
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Block Clock Enable EPG0:TDP_DMA
+        NAME: fld_epg0_tdp_dma
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Block Clock Enable EPG0:FEP
+        NAME: fld_epg0_fep
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Block Clock Enable EPG1:RDP_PRW
+        NAME: fld_epg1_rdp_prw
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Block Clock Enable EPG1:RDP
+        NAME: fld_epg1_rdp
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Block Clock Enable EPG1:TDP
+        NAME: fld_epg1_tdp
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Block Clock Enable EPG1:TDP_DMA
+        NAME: fld_epg1_tdp_dma
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Block Clock Enable EPG1:FEP
+        NAME: fld_epg1_fep
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Block Clock Enable EPG2:RDP_PRW
+        NAME: fld_epg2_rdp_prw
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Block Clock Enable EPG2:RDP
+        NAME: fld_epg2_rdp
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Block Clock Enable EPG2:TDP
+        NAME: fld_epg2_tdp
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Block Clock Enable EPG2:TDP_DMA
+        NAME: fld_epg2_tdp_dma
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Block Clock Enable EPG2:FEP
+        NAME: fld_epg2_fep
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Block Clock Enable EFP:RFP
+        NAME: fld_efp_tx_rfp
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Block Clock Enable EFP:RFP_FFE
+        NAME: fld_efp_tx_rfp_ffe
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Block Clock Enable EFP:TFP
+        NAME: fld_efp_tx_tfp
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Block Clock Enable EFP:TFP_PRS
+        NAME: fld_efp_tx_tfp_prs
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Block Clock Enable EFP:RFP
+        NAME: fld_efp_rx_rfp
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Block Clock Enable EFP:RFP_PRS
+        NAME: fld_efp_rx_rfp_prs
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Block Clock Enable EFP:RFP_SFG
+        NAME: fld_efp_rx_rfp_sfg
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Block Clock Enable EFP:RFP_FMS
+        NAME: fld_efp_rx_rfp_fms
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Block Clock Enable PSW
+        NAME: fld_psw
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Block Clock Enable WQM
+        NAME: fld_wqm
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Block Clock Enable FCB
+        NAME: fld_fcb
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Block Clock Enable WRO
+        NAME: fld_wro
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Block Clock Enable FLA
+        NAME: fld_fla
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: 'Block Clock Enable '
+        NAME: fld_hue0_fnc0
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: 'Block Clock Enable '
+        NAME: fld_hue0_fnc1
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: 'Block Clock Enable '
+        NAME: fld_hue0_htd_tgt
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: 'Block Clock Enable '
+        NAME: fld_hue0_htd_dma
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: 'Block Clock Enable '
+        NAME: fld_hue1_fnc0
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: 'Block Clock Enable '
+        NAME: fld_hue1_fnc1
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: 'Block Clock Enable '
+        NAME: fld_hue1_htd_tgt
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: 'Block Clock Enable '
+        NAME: fld_hue1_htd_dma
+        WIDTH: 1
+    NAME: nmg_clk_enable_cfg
+  - ATTR: 6
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start FFE0
+        NAME: fld_ffe0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start FFE1
+        NAME: fld_ffe1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start FFE2
+        NAME: fld_ffe2
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start FFE3
+        NAME: fld_ffe3
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start FFE4
+        NAME: fld_ffe4
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start FFE5
+        NAME: fld_ffe5
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start NHP
+        NAME: fld_nhp
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start SFG
+        NAME: fld_sfg
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start FMS
+        NAME: fld_fms
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start SSE
+        NAME: fld_sse
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start FAE
+        NAME: fld_fae_fae
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start FAE PRS
+        NAME: fld_fae_prs
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start FPG0:FPG_MPW
+        NAME: fld_fpg0_fpg_mpw
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start FPG0:FPG_SDIF
+        NAME: fld_fpg0_fpg_sdif
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start FPG0:PRW
+        NAME: fld_fpg0_prw
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start FPG0:PRS
+        NAME: fld_fpg0_prs
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start FPG0:MISC
+        NAME: fld_fpg0_fpg_misc
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start FPG1:FPG_MPW
+        NAME: fld_fpg1_fpg_mpw
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start FPG1:FPG_SDIF
+        NAME: fld_fpg1_fpg_sdif
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start FPG1:PRW
+        NAME: fld_fpg1_prw
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start FPG1:PRS
+        NAME: fld_fpg1_prs
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start FPG1:MISC
+        NAME: fld_fpg1_fpg_misc
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start FPG2:FPG_MPW
+        NAME: fld_fpg2_fpg_mpw
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start FPG2:FPG_SDIF
+        NAME: fld_fpg2_fpg_sdif
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start FPG2:PRW
+        NAME: fld_fpg2_prw
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start FPG2:PRS
+        NAME: fld_fpg2_prs
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start FPG2:MISC
+        NAME: fld_fpg2_fpg_misc
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start FPG3:FPG_MPW
+        NAME: fld_fpg3_fpg_mpw
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start FPG3:FPG_SDIF
+        NAME: fld_fpg3_fpg_sdif
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start FPG3:PRW
+        NAME: fld_fpg3_prw
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start FPG3:PRS
+        NAME: fld_fpg3_prs
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start FPG3:MISC
+        NAME: fld_fpg3_fpg_misc
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start FPG4:FPG_MPW
+        NAME: fld_fpg4_fpg_mpw
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start FPG4:FPG_SDIF
+        NAME: fld_fpg4_fpg_sdif
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start FPG4:PRW
+        NAME: fld_fpg4_prw
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start FPG4:PRS
+        NAME: fld_fpg4_prs
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start FPG4:MISC
+        NAME: fld_fpg4_fpg_misc
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start FPG5:FPG_MPW
+        NAME: fld_fpg5_fpg_mpw
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start FPG5:FPG_SDIF
+        NAME: fld_fpg5_fpg_sdif
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start FPG5:PRW
+        NAME: fld_fpg5_prw
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start FPG5:PRS
+        NAME: fld_fpg5_prs
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start FPG5:MISC
+        NAME: fld_fpg5_fpg_misc
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start MPG:FPG_MPW
+        NAME: fld_mpg_fpg_mpw
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start MPG:FPG_SDIF
+        NAME: fld_mpg_fpg_sdif
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start MPG:MISC
+        NAME: fld_mpg_fpg_misc
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Block Memory Init Start  MPG:Core
+        NAME: fld_mpg_core
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start EPG0:RDP_PRW
+        NAME: fld_epg0_rdp_prw
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start EPG0:RDP
+        NAME: fld_epg0_rdp
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start EPG0:TDP
+        NAME: fld_epg0_tdp
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start EPG0:TDP_DMA
+        NAME: fld_epg0_tdp_dma
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start EPG0:FEP
+        NAME: fld_epg0_fep
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start EPG1:RDP_PRW
+        NAME: fld_epg1_rdp_prw
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start EPG1:RDP
+        NAME: fld_epg1_rdp
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start EPG1:TDP
+        NAME: fld_epg1_tdp
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start EPG1:TDP_DMA
+        NAME: fld_epg1_tdp_dma
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start EPG1:FEP
+        NAME: fld_epg1_fep
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start EPG2:RDP_PRW
+        NAME: fld_epg2_rdp_prw
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start EPG2:RDP
+        NAME: fld_epg2_rdp
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start EPG2:TDP
+        NAME: fld_epg2_tdp
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start EPG2:TDP_DMA
+        NAME: fld_epg2_tdp_dma
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start EPG2:FEP
+        NAME: fld_epg2_fep
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start EFP:RFP
+        NAME: fld_efp_tx_rfp
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start EFP:RFP_FFE
+        NAME: fld_efp_tx_rfp_ffe
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start EFP:TFP
+        NAME: fld_efp_tx_tfp
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start EFP:TFP_PRS
+        NAME: fld_efp_tx_tfp_prs
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start EFP:RFP
+        NAME: fld_efp_rx_rfp
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start EFP:RFP_PRS
+        NAME: fld_efp_rx_rfp_prs
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start EFP:RFP_SFG
+        NAME: fld_efp_rx_rfp_sfg
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start EFP:RFP_FMS
+        NAME: fld_efp_rx_rfp_fms
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start PSW
+        NAME: fld_psw
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start WQM
+        NAME: fld_wqm
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start FCB
+        NAME: fld_fcb
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start WRO
+        NAME: fld_wro
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start FLA
+        NAME: fld_fla
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ' '
+        NAME: fld_hue0_fnc0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ' '
+        NAME: fld_hue0_fnc1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ' '
+        NAME: fld_hue0_htd_tgt
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ' '
+        NAME: fld_hue0_htd_dma
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ' '
+        NAME: fld_hue1_fnc0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ' '
+        NAME: fld_hue1_fnc1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ' '
+        NAME: fld_hue1_htd_tgt
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ' '
+        NAME: fld_hue1_htd_dma
+        WIDTH: 1
+    NAME: nmg_blk_init_start_cfg
+  - ATTR: 10
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start FFE0
+        NAME: fld_ffe0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start FFE1
+        NAME: fld_ffe1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start FFE2
+        NAME: fld_ffe2
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start FFE3
+        NAME: fld_ffe3
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start FFE4
+        NAME: fld_ffe4
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start FFE5
+        NAME: fld_ffe5
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start NHP
+        NAME: fld_nhp
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start SFG
+        NAME: fld_sfg
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start FMS
+        NAME: fld_fms
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start SSE
+        NAME: fld_sse
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start FAE:FAE
+        NAME: fld_fae_fae
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start FAE:PRS
+        NAME: fld_fae_prs
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Done FPG0:FPG_MPW
+        NAME: fld_fpg0_fpg_mpw
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Done FPG0:FPG_SDIF
+        NAME: fld_fpg0_fpg_sdif
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Done FPG0:PRW
+        NAME: fld_fpg0_prw
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Done FPG0:PRS
+        NAME: fld_fpg0_prs
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Done FPG0:MISC
+        NAME: fld_fpg0_fpg_misc
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Done FPG1:FPG_MPW
+        NAME: fld_fpg1_fpg_mpw
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Done FPG1:FPG_SDIF
+        NAME: fld_fpg1_fpg_sdif
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Done FPG1:PRW
+        NAME: fld_fpg1_prw
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Done FPG1:PRS
+        NAME: fld_fpg1_prs
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Done FPG1:MISC
+        NAME: fld_fpg1_fpg_misc
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Done FPG2:FPG_MPW
+        NAME: fld_fpg2_fpg_mpw
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Done FPG2:FPG_SDIF
+        NAME: fld_fpg2_fpg_sdif
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Done FPG2:PRW
+        NAME: fld_fpg2_prw
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Done FPG2:PRS
+        NAME: fld_fpg2_prs
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Done FPG2:MISC
+        NAME: fld_fpg2_fpg_misc
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Done FPG3:FPG_MPW
+        NAME: fld_fpg3_fpg_mpw
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Done FPG3:FPG_SDIF
+        NAME: fld_fpg3_fpg_sdif
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Done FPG3:PRW
+        NAME: fld_fpg3_prw
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Done FPG3:PRS
+        NAME: fld_fpg3_prs
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Done FPG3:MISC
+        NAME: fld_fpg3_fpg_misc
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Done FPG4:FPG_MPW
+        NAME: fld_fpg4_fpg_mpw
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Done FPG4:FPG_SDIF
+        NAME: fld_fpg4_fpg_sdif
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Done FPG4:PRW
+        NAME: fld_fpg4_prw
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Done FPG4:PRS
+        NAME: fld_fpg4_prs
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Done FPG4:MISC
+        NAME: fld_fpg4_fpg_misc
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Done FPG5:FPG_MPW
+        NAME: fld_fpg5_fpg_mpw
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Done FPG5:FPG_SDIF
+        NAME: fld_fpg5_fpg_sdif
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Done FPG5:PRW
+        NAME: fld_fpg5_prw
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Done FPG5:PRS
+        NAME: fld_fpg5_prs
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Done FPG5:MISC
+        NAME: fld_fpg5_fpg_misc
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Done  MPG:FPG_MPW
+        NAME: fld_mpg_fpg_mpw
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Done MPG:FPG_SDIF
+        NAME: fld_mpg_fpg_sdif
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Done MPG:MISC
+        NAME: fld_mpg_fpg_misc
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Block Memory Init Done  MPG:Core
+        NAME: fld_mpg_core
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start EPG0:RDP_PRW
+        NAME: fld_epg0_rdp_prw
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start EPG0:RDP
+        NAME: fld_epg0_rdp
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start EPG0:TDP
+        NAME: fld_epg0_tdp
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start EPG0:TDP_DMA
+        NAME: fld_epg0_tdp_dma
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start EPG0:FEP
+        NAME: fld_epg0_fep
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start EPG1:RDP_PRW
+        NAME: fld_epg1_rdp_prw
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start EPG1:RDP
+        NAME: fld_epg1_rdp
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start EPG1:TDP
+        NAME: fld_epg1_tdp
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start EPG1:TDP_DMA
+        NAME: fld_epg1_tdp_dma
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start EPG1:FEP
+        NAME: fld_epg1_fep
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start EPG2:RDP_PRW
+        NAME: fld_epg2_rdp_prw
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start EPG2:RDP
+        NAME: fld_epg2_rdp
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start EPG2:TDP
+        NAME: fld_epg2_tdp
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start EPG2:TDP_DMA
+        NAME: fld_epg2_tdp_dma
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start EPG2:FEP
+        NAME: fld_epg2_fep
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start EFP:RFP
+        NAME: fld_efp_tx_rfp
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start EFP:RFP_FFE
+        NAME: fld_efp_tx_rfp_ffe
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start EFP:TFP
+        NAME: fld_efp_tx_tfp
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start EFP:TFP_PRS
+        NAME: fld_efp_tx_tfp_prs
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start EFP:RFP
+        NAME: fld_efp_rx_rfp
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start EFP:RFP_PRS
+        NAME: fld_efp_rx_rfp_prs
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start EFP:RFP_SFG
+        NAME: fld_efp_rx_rfp_sfg
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start EFP:RFP_FMS
+        NAME: fld_efp_rx_rfp_fms
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start PSW
+        NAME: fld_psw
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start WQM
+        NAME: fld_wqm
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start FCB
+        NAME: fld_fcb
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start WRO
+        NAME: fld_wro
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Block Memory Init Start FLA
+        NAME: fld_fla
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ' '
+        NAME: fld_hue0_fnc0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ' '
+        NAME: fld_hue0_fnc1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ' '
+        NAME: fld_hue0_htd_tgt
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ' '
+        NAME: fld_hue0_htd_dma
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ' '
+        NAME: fld_hue1_fnc0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ' '
+        NAME: fld_hue1_fnc1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ' '
+        NAME: fld_hue1_htd_tgt
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ' '
+        NAME: fld_hue1_htd_dma
+        WIDTH: 1
+    NAME: nmg_blk_init_done_sta
+  - ATTR: 6
+    DESCRIPTION: SBUS config
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: ' - '
+        NAME: val
+        WIDTH: 64
+    NAME: nmg_sbus_cfg
+  - ATTR: 5
+    DESCRIPTION: NU TDM sync
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: ' Write 1 to it to sync NU TDMs. '
+        NAME: start
+        WIDTH: 1
+    NAME: nmg_tdm_sync_cfg
+  - ATTR: 10
+    DESCRIPTION: ' '
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Fatal Interrupt
+        NAME: fld_nmg
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Fatal Interrupt
+        NAME: fld_hue1_htd_dma
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Fatal Interrupt
+        NAME: fld_hue1_htd_tgt
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Fatal Interrupt
+        NAME: fld_hue1_fnc1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Fatal Interrupt
+        NAME: fld_hue1_fnc0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Fatal Interrupt
+        NAME: fld_hue0_htd_dma
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Fatal Interrupt
+        NAME: fld_hue0_htd_tgt
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Fatal Interrupt
+        NAME: fld_hue0_fnc1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Fatal Interrupt
+        NAME: fld_hue0_fnc0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Fatal Interrupt
+        NAME: fld_fla
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Fatal Interrupt
+        NAME: fld_wro
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Fatal Interrupt
+        NAME: fld_fcb
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Fatal Interrupt
+        NAME: fld_wqm
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Fatal Interrupt
+        NAME: fld_psw
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Fatal Interrupt
+        NAME: fld_efp_rx_rfp_fms
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Fatal Interrupt
+        NAME: fld_efp_rx_rfp_sfg
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Fatal Interrupt
+        NAME: fld_efp_rx_rfp_prs
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Fatal Interrupt
+        NAME: fld_efp_rx_rfp
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Fatal Interrupt
+        NAME: fld_efp_tx_tfp_prs
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Fatal Interrupt
+        NAME: fld_efp_tx_tfp
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Fatal Interrupt
+        NAME: fld_efp_tx_rfp_ffe
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Fatal Interrupt
+        NAME: fld_efp_tx_rfp
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Fatal Interrupt
+        NAME: fld_epg2_fep
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Fatal Interrupt
+        NAME: fld_epg2_tdp_dma
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Fatal Interrupt
+        NAME: fld_epg2_tdp
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Fatal Interrupt
+        NAME: fld_epg2_rdp
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Fatal Interrupt
+        NAME: fld_epg2_rdp_prw
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Fatal Interrupt
+        NAME: fld_epg1_fep
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Fatal Interrupt
+        NAME: fld_epg1_tdp_dma
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Fatal Interrupt
+        NAME: fld_epg1_tdp
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Fatal Interrupt
+        NAME: fld_epg1_rdp
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Fatal Interrupt
+        NAME: fld_epg1_rdp_prw
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Fatal Interrupt
+        NAME: fld_epg0_fep
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Fatal Interrupt
+        NAME: fld_epg0_tdp_dma
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Fatal Interrupt
+        NAME: fld_epg0_tdp
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Fatal Interrupt
+        NAME: fld_epg0_rdp
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Fatal Interrupt
+        NAME: fld_epg0_rdp_prw
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Fatal Interrupt
+        NAME: fld_mpg_core
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Fatal Interrupt
+        NAME: fld_mpg_fpg_misc
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Fatal Interrupt
+        NAME: fld_mpg_fpg_sdif
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Fatal Interrupt
+        NAME: fld_mpg_fpg_mpw
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Fatal Interrupt
+        NAME: fld_fpg5_fpg_misc
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Fatal Interrupt
+        NAME: fld_fpg5_prs
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Fatal Interrupt
+        NAME: fld_fpg5_prw
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Fatal Interrupt
+        NAME: fld_fpg5_fpg_sdif
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Fatal Interrupt
+        NAME: fld_fpg5_fpg_mpw
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Fatal Interrupt
+        NAME: fld_fpg4_fpg_misc
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Fatal Interrupt
+        NAME: fld_fpg4_prs
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Fatal Interrupt
+        NAME: fld_fpg4_prw
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Fatal Interrupt
+        NAME: fld_fpg4_fpg_sdif
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Fatal Interrupt
+        NAME: fld_fpg4_fpg_mpw
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Fatal Interrupt
+        NAME: fld_fpg3_fpg_misc
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Fatal Interrupt
+        NAME: fld_fpg3_prs
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Fatal Interrupt
+        NAME: fld_fpg3_prw
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Fatal Interrupt
+        NAME: fld_fpg3_fpg_sdif
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Fatal Interrupt
+        NAME: fld_fpg3_fpg_mpw
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Fatal Interrupt
+        NAME: fld_fpg2_fpg_misc
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Fatal Interrupt
+        NAME: fld_fpg2_prs
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Fatal Interrupt
+        NAME: fld_fpg2_prw
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Fatal Interrupt
+        NAME: fld_fpg2_fpg_sdif
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Fatal Interrupt
+        NAME: fld_fpg2_fpg_mpw
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Fatal Interrupt
+        NAME: fld_fpg1_fpg_misc
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Fatal Interrupt
+        NAME: fld_fpg1_prs
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Fatal Interrupt
+        NAME: fld_fpg1_prw
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Fatal Interrupt
+        NAME: fld_fpg1_fpg_sdif
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Fatal Interrupt
+        NAME: fld_fpg1_fpg_mpw
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Fatal Interrupt
+        NAME: fld_fpg0_fpg_misc
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Fatal Interrupt
+        NAME: fld_fpg0_prs
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Fatal Interrupt
+        NAME: fld_fpg0_prw
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Fatal Interrupt
+        NAME: fld_fpg0_fpg_sdif
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Fatal Interrupt
+        NAME: fld_fpg0_fpg_mpw
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Fatal Interrupt
+        NAME: fld_fae_prs
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Fatal Interrupt
+        NAME: fld_fae_fae
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Fatal Interrupt
+        NAME: fld_sse
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Fatal Interrupt
+        NAME: fld_fms
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Fatal Interrupt
+        NAME: fld_sfg
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Fatal Interrupt
+        NAME: fld_nhp
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Fatal Interrupt
+        NAME: fld_ffe5
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Fatal Interrupt
+        NAME: fld_ffe4
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Fatal Interrupt
+        NAME: fld_ffe3
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Fatal Interrupt
+        NAME: fld_ffe2
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Fatal Interrupt
+        NAME: fld_ffe1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Fatal Interrupt
+        NAME: fld_ffe0
+        WIDTH: 1
+    NAME: nmg_fatal_intr_status
+  - ATTR: 10
+    DESCRIPTION: ' '
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Non Fatal Interrupt
+        NAME: fld_nmg
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Non Fatal Interrupt
+        NAME: fld_hue1_htd_dma
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Non Fatal Interrupt
+        NAME: fld_hue1_htd_tgt
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Non Fatal Interrupt
+        NAME: fld_hue1_fnc1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Non Fatal Interrupt
+        NAME: fld_hue1_fnc0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Non Fatal Interrupt
+        NAME: fld_hue0_htd_dma
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Non Fatal Interrupt
+        NAME: fld_hue0_htd_tgt
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Non Fatal Interrupt
+        NAME: fld_hue0_fnc1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Non Fatal Interrupt
+        NAME: fld_hue0_fnc0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Non Fatal Interrupt
+        NAME: fld_fla
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Non Fatal Interrupt
+        NAME: fld_wro
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Non Fatal Interrupt
+        NAME: fld_fcb
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Non Fatal Interrupt
+        NAME: fld_wqm
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Non Fatal Interrupt
+        NAME: fld_psw
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Non Fatal Interrupt
+        NAME: fld_efp_rx_rfp_fms
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Non Fatal Interrupt
+        NAME: fld_efp_rx_rfp_sfg
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Non Fatal Interrupt
+        NAME: fld_efp_rx_rfp_prs
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Non Fatal Interrupt
+        NAME: fld_efp_rx_rfp
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Non Fatal Interrupt
+        NAME: fld_efp_tx_tfp_prs
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Non Fatal Interrupt
+        NAME: fld_efp_tx_tfp
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Non Fatal Interrupt
+        NAME: fld_efp_tx_rfp_ffe
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Non Fatal Interrupt
+        NAME: fld_efp_tx_rfp
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Non Fatal Interrupt
+        NAME: fld_epg2_fep
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Non Fatal Interrupt
+        NAME: fld_epg2_tdp_dma
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Non Fatal Interrupt
+        NAME: fld_epg2_tdp
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Non Fatal Interrupt
+        NAME: fld_epg2_rdp
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Non Fatal Interrupt
+        NAME: fld_epg2_rdp_prw
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Non Fatal Interrupt
+        NAME: fld_epg1_fep
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Non Fatal Interrupt
+        NAME: fld_epg1_tdp_dma
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Non Fatal Interrupt
+        NAME: fld_epg1_tdp
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Non Fatal Interrupt
+        NAME: fld_epg1_rdp
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Non Fatal Interrupt
+        NAME: fld_epg1_rdp_prw
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Non Fatal Interrupt
+        NAME: fld_epg0_fep
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Non Fatal Interrupt
+        NAME: fld_epg0_tdp_dma
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Non Fatal Interrupt
+        NAME: fld_epg0_tdp
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Non Fatal Interrupt
+        NAME: fld_epg0_rdp
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Non Fatal Interrupt
+        NAME: fld_epg0_rdp_prw
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Non Fatal Interrupt
+        NAME: fld_mpg_core
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Non Fatal Interrupt
+        NAME: fld_mpg_fpg_misc
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Non Fatal Interrupt
+        NAME: fld_mpg_fpg_sdif
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Non Fatal Interrupt
+        NAME: fld_mpg_fpg_mpw
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Non Fatal Interrupt
+        NAME: fld_fpg5_fpg_misc
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Non Fatal Interrupt
+        NAME: fld_fpg5_prs
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Non Fatal Interrupt
+        NAME: fld_fpg5_prw
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Non Fatal Interrupt
+        NAME: fld_fpg5_fpg_sdif
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Non Fatal Interrupt
+        NAME: fld_fpg5_fpg_mpw
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Non Fatal Interrupt
+        NAME: fld_fpg4_fpg_misc
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Non Fatal Interrupt
+        NAME: fld_fpg4_prs
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Non Fatal Interrupt
+        NAME: fld_fpg4_prw
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Non Fatal Interrupt
+        NAME: fld_fpg4_fpg_sdif
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Non Fatal Interrupt
+        NAME: fld_fpg4_fpg_mpw
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Non Fatal Interrupt
+        NAME: fld_fpg3_fpg_misc
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Non Fatal Interrupt
+        NAME: fld_fpg3_prs
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Non Fatal Interrupt
+        NAME: fld_fpg3_prw
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Non Fatal Interrupt
+        NAME: fld_fpg3_fpg_sdif
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Non Fatal Interrupt
+        NAME: fld_fpg3_fpg_mpw
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Non Fatal Interrupt
+        NAME: fld_fpg2_fpg_misc
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Non Fatal Interrupt
+        NAME: fld_fpg2_prs
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Non Fatal Interrupt
+        NAME: fld_fpg2_prw
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Non Fatal Interrupt
+        NAME: fld_fpg2_fpg_sdif
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Non Fatal Interrupt
+        NAME: fld_fpg2_fpg_mpw
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Non Fatal Interrupt
+        NAME: fld_fpg1_fpg_misc
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Non Fatal Interrupt
+        NAME: fld_fpg1_prs
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Non Fatal Interrupt
+        NAME: fld_fpg1_prw
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Non Fatal Interrupt
+        NAME: fld_fpg1_fpg_sdif
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Non Fatal Interrupt
+        NAME: fld_fpg1_fpg_mpw
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Non Fatal Interrupt
+        NAME: fld_fpg0_fpg_misc
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Non Fatal Interrupt
+        NAME: fld_fpg0_prs
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Non Fatal Interrupt
+        NAME: fld_fpg0_prw
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Non Fatal Interrupt
+        NAME: fld_fpg0_fpg_sdif
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Non Fatal Interrupt
+        NAME: fld_fpg0_fpg_mpw
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Non Fatal Interrupt
+        NAME: fld_fae_prs
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Non Fatal Interrupt
+        NAME: fld_fae_fae
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Non Fatal Interrupt
+        NAME: fld_sse
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Non Fatal Interrupt
+        NAME: fld_fms
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Non Fatal Interrupt
+        NAME: fld_sfg
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Non Fatal Interrupt
+        NAME: fld_nhp
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Non Fatal Interrupt
+        NAME: fld_ffe5
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Non Fatal Interrupt
+        NAME: fld_ffe4
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Non Fatal Interrupt
+        NAME: fld_ffe3
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Non Fatal Interrupt
+        NAME: fld_ffe2
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Non Fatal Interrupt
+        NAME: fld_ffe1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Non Fatal Interrupt
+        NAME: fld_ffe0
+        WIDTH: 1
+    NAME: nmg_non_fatal_intr_status
+XASIZE: 0

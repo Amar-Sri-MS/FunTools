@@ -18,12 +18,13 @@ class Entity():
         self.addr = 0
         self.attr = 0
         self.type = "CSR_TYPE::REG"
-        self.n_entries = 0 
+        self.n_entries = 0
         self.fld_lst = []
         self.width = 0
+
     def __str__(self):
         r_str = ""
-        r_str += "    w: {}\n".format(self.width)
+        r_str += "    type: {} w: {}\n".format(self.type, self.width)
         r_str += "    flds: {}\n".format(self.fld_lst)
         return r_str
     __repr__ = __str__
@@ -45,7 +46,7 @@ class Schema():
 
     ALLOW_LST = ['REGLST', 'WIDTH', 'ATTR', 'COUNT', 'FLDLST', 'NAME', 'ENTRIES']
     #ALLOW_ATTR = [0x4, 0x8]
-    ALLOW_ATTR = [0x4]
+    ALLOW_ATTR = [0x4, 0x8, 0x8000000]
     MIN_WIDTH = 64
     def __init__(self, yml_stream):
         yml_stream = self.__sanitize(yml_stream)
@@ -73,6 +74,7 @@ class Schema():
                 m_name = reg_rec['NAME']
 
             if m_name in m_hash:
+                #print "REG: {} already added".format(m_name)
                 continue
             e = Entity()
             e.attr = reg_rec.get('ATTR', 0)
@@ -85,12 +87,14 @@ class Schema():
                 e.type = "CSR_TYPE::REG_LST"
 
             lst = reg_rec.get('FLDLST', [])
-            lst, e.width = self.__update_width(lst)    
+            lst, e.width = self.__update_width(lst)
             for fld_elem in lst:
                 e.fld_lst.append(Field(fld_elem['NAME'], fld_elem['WIDTH']))
             store = self.__should_store(e)
             if store:
                 m_hash[m_name] = e
+            #else:
+            #    print "REG: {} not added".format(m_name)
         return m_hash
 
     def __update_width(self, lst):

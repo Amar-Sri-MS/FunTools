@@ -1,0 +1,973 @@
+---
+BASEADDRPORT: 1
+COUNT: 1
+DESCRIPTION: DN router CSR spec
+INTR:
+  FATAL:
+    - DESCRIPTION: Received flit with DGID out of legal range from FEP.
+      NAME: dnr_dgid_out_of_range
+      WIDTH: 1
+  NON_FATAL:
+    - DESCRIPTION: Bit 0 represents no forward progress in the programmed time interval on port int(0/4) and VC 0%4
+      NAME: dnr_deadlock_det0
+      WIDTH: 1
+    - DESCRIPTION: Bit 1 represents no forward progress in the programmed time interval on port int(1/4) and VC 1%4
+      NAME: dnr_deadlock_det1
+      WIDTH: 1
+    - DESCRIPTION: Bit 2 represents no forward progress in the programmed time interval on port int(2/4) and VC 2%4
+      NAME: dnr_deadlock_det2
+      WIDTH: 1
+    - DESCRIPTION: Bit 3 represents no forward progress in the programmed time interval on port int(3/4) and VC 3%4
+      NAME: dnr_deadlock_det3
+      WIDTH: 1
+    - DESCRIPTION: Bit 4 represents no forward progress in the programmed time interval on port int(4/4) and VC 4%4
+      NAME: dnr_deadlock_det4
+      WIDTH: 1
+    - DESCRIPTION: Bit 5 represents no forward progress in the programmed time interval on port int(5/4) and VC 5%4
+      NAME: dnr_deadlock_det5
+      WIDTH: 1
+    - DESCRIPTION: Bit 6 represents no forward progress in the programmed time interval on port int(6/4) and VC 6%4
+      NAME: dnr_deadlock_det6
+      WIDTH: 1
+    - DESCRIPTION: Bit 7 represents no forward progress in the programmed time interval on port int(7/4) and VC 7%4
+      NAME: dnr_deadlock_det7
+      WIDTH: 1
+    - DESCRIPTION: Bit 8 represents no forward progress in the programmed time interval on port int(8/4) and VC 8%4
+      NAME: dnr_deadlock_det8
+      WIDTH: 1
+    - DESCRIPTION: Bit 9 represents no forward progress in the programmed time interval on port int(9/4) and VC 9%4
+      NAME: dnr_deadlock_det9
+      WIDTH: 1
+    - DESCRIPTION: Bit 10 represents no forward progress in the programmed time interval on port int(10/4) and VC 10%4
+      NAME: dnr_deadlock_det10
+      WIDTH: 1
+    - DESCRIPTION: Bit 11 represents no forward progress in the programmed time interval on port int(11/4) and VC 11%4
+      NAME: dnr_deadlock_det11
+      WIDTH: 1
+    - DESCRIPTION: Bit 12 represents no forward progress in the programmed time interval on port int(12/4) and VC 12%4
+      NAME: dnr_deadlock_det12
+      WIDTH: 1
+    - DESCRIPTION: Bit 13 represents no forward progress in the programmed time interval on port int(13/4) and VC 13%4
+      NAME: dnr_deadlock_det13
+      WIDTH: 1
+    - DESCRIPTION: Bit 14 represents no forward progress in the programmed time interval on port int(14/4) and VC 14%4
+      NAME: dnr_deadlock_det14
+      WIDTH: 1
+    - DESCRIPTION: Bit 15 represents no forward progress in the programmed time interval on port int(15/4) and VC 15%4
+      NAME: dnr_deadlock_det15
+      WIDTH: 1
+    - DESCRIPTION: Bit 16 represents no forward progress in the programmed time interval on port int(16/4) and VC 16%4
+      NAME: dnr_deadlock_det16
+      WIDTH: 1
+    - DESCRIPTION: Bit 17 represents no forward progress in the programmed time interval on port int(17/4) and VC 17%4
+      NAME: dnr_deadlock_det17
+      WIDTH: 1
+    - DESCRIPTION: Bit 18 represents no forward progress in the programmed time interval on port int(18/4) and VC 18%4
+      NAME: dnr_deadlock_det18
+      WIDTH: 1
+    - DESCRIPTION: Bit 19 represents no forward progress in the programmed time interval on port int(19/4) and VC 19%4
+      NAME: dnr_deadlock_det19
+      WIDTH: 1
+INTR_PORT_EN: 1
+NAME: DNR_AN
+PARENTNAME: MUD_1_AN_MUD_SOC_CLK_AN_FEPW_MUD_AN
+REGLST:
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: |-
+          Timeout Configuration. Cycles are RSU clk based.
+                            - 00 : 1024 cycles
+                            - 01 : 256 cycles
+                            - 10 : 4096 cycles
+                            - 11 : infinite
+        NAME: val
+        WIDTH: 2
+    NAME: dnr_timeout_thresh_cfg
+  - ATTR: 9
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: "Timed out Status. Cycles are RSU clk based. Becomes 1 when timed out. Write any value to clear it.\n                  "
+        NAME: val
+        WIDTH: 1
+    NAME: dnr_timedout_sta
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: |-
+          Clear Timeout Status. Data is ignored. A write
+                     will clear the timeout status bit
+        NAME: val
+        WIDTH: 1
+    NAME: dnr_timeout_clr
+    TEST_ATTR: 1
+  - ATTR: 256
+    FLDLST:
+      - &1
+        DESCRIPTION: Received flit with DGID out of legal range from FEP.
+        NAME: dnr_dgid_out_of_range
+        WIDTH: 1
+    NAME: dnr_fatal_intr_cause
+  - ATTR: 512
+    FLDLST:
+      - *1
+    NAME: dnr_fatal_intr_stat
+  - ATTR: 1024
+    FLDLST:
+      - *1
+    NAME: dnr_fatal_intr_mask
+  - ATTR: 2048
+    FLDLST:
+      - *1
+    NAME: dnr_fatal_intr_bset
+  - ATTR: 4096
+    FLDLST:
+      - *1
+    NAME: dnr_fatal_intr_bclr
+  - ATTR: 256
+    FLDLST:
+      - &2
+        DESCRIPTION: Bit 0 represents no forward progress in the programmed time interval on port int(0/4) and VC 0%4
+        NAME: dnr_deadlock_det0
+        WIDTH: 1
+      - &3
+        DESCRIPTION: Bit 1 represents no forward progress in the programmed time interval on port int(1/4) and VC 1%4
+        NAME: dnr_deadlock_det1
+        WIDTH: 1
+      - &4
+        DESCRIPTION: Bit 2 represents no forward progress in the programmed time interval on port int(2/4) and VC 2%4
+        NAME: dnr_deadlock_det2
+        WIDTH: 1
+      - &5
+        DESCRIPTION: Bit 3 represents no forward progress in the programmed time interval on port int(3/4) and VC 3%4
+        NAME: dnr_deadlock_det3
+        WIDTH: 1
+      - &6
+        DESCRIPTION: Bit 4 represents no forward progress in the programmed time interval on port int(4/4) and VC 4%4
+        NAME: dnr_deadlock_det4
+        WIDTH: 1
+      - &7
+        DESCRIPTION: Bit 5 represents no forward progress in the programmed time interval on port int(5/4) and VC 5%4
+        NAME: dnr_deadlock_det5
+        WIDTH: 1
+      - &8
+        DESCRIPTION: Bit 6 represents no forward progress in the programmed time interval on port int(6/4) and VC 6%4
+        NAME: dnr_deadlock_det6
+        WIDTH: 1
+      - &9
+        DESCRIPTION: Bit 7 represents no forward progress in the programmed time interval on port int(7/4) and VC 7%4
+        NAME: dnr_deadlock_det7
+        WIDTH: 1
+      - &10
+        DESCRIPTION: Bit 8 represents no forward progress in the programmed time interval on port int(8/4) and VC 8%4
+        NAME: dnr_deadlock_det8
+        WIDTH: 1
+      - &11
+        DESCRIPTION: Bit 9 represents no forward progress in the programmed time interval on port int(9/4) and VC 9%4
+        NAME: dnr_deadlock_det9
+        WIDTH: 1
+      - &12
+        DESCRIPTION: Bit 10 represents no forward progress in the programmed time interval on port int(10/4) and VC 10%4
+        NAME: dnr_deadlock_det10
+        WIDTH: 1
+      - &13
+        DESCRIPTION: Bit 11 represents no forward progress in the programmed time interval on port int(11/4) and VC 11%4
+        NAME: dnr_deadlock_det11
+        WIDTH: 1
+      - &14
+        DESCRIPTION: Bit 12 represents no forward progress in the programmed time interval on port int(12/4) and VC 12%4
+        NAME: dnr_deadlock_det12
+        WIDTH: 1
+      - &15
+        DESCRIPTION: Bit 13 represents no forward progress in the programmed time interval on port int(13/4) and VC 13%4
+        NAME: dnr_deadlock_det13
+        WIDTH: 1
+      - &16
+        DESCRIPTION: Bit 14 represents no forward progress in the programmed time interval on port int(14/4) and VC 14%4
+        NAME: dnr_deadlock_det14
+        WIDTH: 1
+      - &17
+        DESCRIPTION: Bit 15 represents no forward progress in the programmed time interval on port int(15/4) and VC 15%4
+        NAME: dnr_deadlock_det15
+        WIDTH: 1
+      - &18
+        DESCRIPTION: Bit 16 represents no forward progress in the programmed time interval on port int(16/4) and VC 16%4
+        NAME: dnr_deadlock_det16
+        WIDTH: 1
+      - &19
+        DESCRIPTION: Bit 17 represents no forward progress in the programmed time interval on port int(17/4) and VC 17%4
+        NAME: dnr_deadlock_det17
+        WIDTH: 1
+      - &20
+        DESCRIPTION: Bit 18 represents no forward progress in the programmed time interval on port int(18/4) and VC 18%4
+        NAME: dnr_deadlock_det18
+        WIDTH: 1
+      - &21
+        DESCRIPTION: Bit 19 represents no forward progress in the programmed time interval on port int(19/4) and VC 19%4
+        NAME: dnr_deadlock_det19
+        WIDTH: 1
+    NAME: dnr_non_fatal_intr_cause
+  - ATTR: 512
+    FLDLST:
+      - *2
+      - *3
+      - *4
+      - *5
+      - *6
+      - *7
+      - *8
+      - *9
+      - *10
+      - *11
+      - *12
+      - *13
+      - *14
+      - *15
+      - *16
+      - *17
+      - *18
+      - *19
+      - *20
+      - *21
+    NAME: dnr_non_fatal_intr_stat
+  - ATTR: 1024
+    FLDLST:
+      - *2
+      - *3
+      - *4
+      - *5
+      - *6
+      - *7
+      - *8
+      - *9
+      - *10
+      - *11
+      - *12
+      - *13
+      - *14
+      - *15
+      - *16
+      - *17
+      - *18
+      - *19
+      - *20
+      - *21
+    NAME: dnr_non_fatal_intr_mask
+  - ATTR: 2048
+    FLDLST:
+      - *2
+      - *3
+      - *4
+      - *5
+      - *6
+      - *7
+      - *8
+      - *9
+      - *10
+      - *11
+      - *12
+      - *13
+      - *14
+      - *15
+      - *16
+      - *17
+      - *18
+      - *19
+      - *20
+      - *21
+    NAME: dnr_non_fatal_intr_bset
+  - ATTR: 4096
+    FLDLST:
+      - *2
+      - *3
+      - *4
+      - *5
+      - *6
+      - *7
+      - *8
+      - *9
+      - *10
+      - *11
+      - *12
+      - *13
+      - *14
+      - *15
+      - *16
+      - *17
+      - *18
+      - *19
+      - *20
+      - *21
+    NAME: dnr_non_fatal_intr_bclr
+  - ATTR: 9
+    DESCRIPTION: Bit 0 of the features indicates if dnr is interface only.
+    FLDLST:
+      - ATTR: 1
+        DEFAULT: 8'd5
+        DESCRIPTION: Module ID
+        NAME: module_id
+        VALUE: 8'd5
+        WIDTH: 8
+      - ATTR: 1
+        DEFAULT: 8'd0
+        DESCRIPTION: Version number of the module
+        NAME: version
+        VALUE: 8'd0
+        WIDTH: 8
+      - ATTR: 1
+        DEFAULT: 8'd0
+        DESCRIPTION: Features enabled in the module.
+        NAME: features
+        VALUE: 8'd0
+        WIDTH: 16
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Reserved Field.
+        NAME: Reserved
+        WIDTH: 32
+    NAME: dnr_features
+    TEST_ATTR: 0
+  - ATTR: 5
+    DESCRIPTION: ' Spare PIO register. These bits can be read and written by software. They can serve as control bits for late ECOs in the design.'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Spare PIO register.
+        NAME: val
+        WIDTH: 64
+    NAME: dnr_spare_pio
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: Scratchpad register.
+        NAME: val
+        WIDTH: 64
+    NAME: dnr_scratchpad
+  - ATTR: 5
+    COUNT: 5
+    DESCRIPTION: |-
+      Only applicable to DNRs attached to DNRs with multiple ejection ports and the 
+                                injection port of the DNR with multiple ejection ports.
+    FLDLST: &22
+      - DEFAULT: 2
+        DESCRIPTION: Alternate ejection port used by the lookahead routing engine.
+        ENUM: dnr_enums::dnr_port_t
+        NAME: val
+        WIDTH: 3
+    NAME: dnr_alt_ej_port_0
+  - ATTR: 5
+    COUNT: 5
+    DESCRIPTION: |-
+      Only applicable to DNRs attached to DNRs with multiple ejection ports and the 
+                                injection port of the DNR with multiple ejection ports.
+    FLDLST: *22
+    NAME: dnr_alt_ej_port_1
+  - ATTR: 5
+    COUNT: 5
+    DESCRIPTION: |-
+      Only applicable to DNRs attached to DNRs with multiple ejection ports and the 
+                                injection port of the DNR with multiple ejection ports.
+    FLDLST: *22
+    NAME: dnr_alt_ej_port_2
+  - ATTR: 5
+    COUNT: 5
+    DESCRIPTION: |-
+      Only applicable to DNRs attached to DNRs with multiple ejection ports and the 
+                                injection port of the DNR with multiple ejection ports.
+    FLDLST: *22
+    NAME: dnr_alt_ej_port_3
+  - ATTR: 5
+    COUNT: 5
+    DESCRIPTION: |-
+      Only applicable to DNRs attached to DNRs with multiple ejection ports and the 
+                                injection port of the DNR with multiple ejection ports.
+    FLDLST: *22
+    NAME: dnr_alt_ej_port_4
+  - ATTR: 5
+    DESCRIPTION: DNQ occupancy to color mapping thresholds
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Enable end to end congestion control.
+        NAME: en
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Include the IBUF occupancy of the last router to determine the EBUF occupancy.
+        NAME: incl_last_router_ibuf_occ
+        WIDTH: 1
+      - DEFAULT: 8
+        DESCRIPTION: 'Green threshold. IF vc set occupancy < green thr, sources are not rate limited.'
+        NAME: green_thr_vc_set0
+        WIDTH: 7
+      - DEFAULT: 12
+        DESCRIPTION: 'Yellow threshold. IF vc set occupancy >= green thr and <= yellow threshold, sources are rate limited to the drain rate.'
+        NAME: yellow_thr_vc_set0
+        WIDTH: 7
+      - DEFAULT: 16
+        DESCRIPTION: 'Orange threshold. IF vc set occupancy >= yellow thr and <= orange threshold, sources are rate limited to 1/2 the drain rate.'
+        NAME: orange_thr_vc_set0
+        WIDTH: 7
+      - DEFAULT: 24
+        DESCRIPTION: |-
+          Red threshold. IF vc set occupancy >= orange thr and <= red threshold, sources are rate limited to 1/4 the drain rate. If vc set occupancy is above 
+                                           the red threshold, the sources are stopped.
+        NAME: red_thr_vc_set0
+        WIDTH: 7
+      - DEFAULT: 8
+        DESCRIPTION: 'Green threshold. IF vc set occupancy < green thr, sources are not rate limited.'
+        NAME: green_thr_vc_set1
+        WIDTH: 7
+      - DEFAULT: 12
+        DESCRIPTION: 'Yellow threshold. IF vc set occupancy >= green thr and <= yellow threshold, sources are rate limited to the drain rate.'
+        NAME: yellow_thr_vc_set1
+        WIDTH: 7
+      - DEFAULT: 16
+        DESCRIPTION: 'Orange threshold. IF vc set occupancy >= yellow thr and <= orange threshold, sources are rate limited to 1/2 the drain rate.'
+        NAME: orange_thr_vc_set1
+        WIDTH: 7
+      - DEFAULT: 24
+        DESCRIPTION: |-
+          Red threshold. IF vc set occupancy >= orange thr and <= red threshold, sources are rate limited to 1/4 the drain rate. If vc set occupancy is above 
+                                           the red threshold, the sources are stopped.
+        NAME: red_thr_vc_set1
+        WIDTH: 7
+    NAME: dnr_cong_ctrl
+  - ATTR: 5
+    DESCRIPTION: Enable O1TURN/adaptive routing
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Enable O1TURN routing. If disabled, multipath routing is used. All routers in the fabric must enable O1TURN for it to work correctly.'
+        NAME: o1turn_en
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: 'Enable adaptive routing. If enabled, adaptive routing takes precedence over O1TURN and multipath.'
+        NAME: adaptive_en
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Enable X-Y routing
+        NAME: xy_en
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Enable adaptive VC selection when a choice of VCs is available (dy == sy).
+        NAME: adaptive_vc_sel_en
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Enable VC selection based on XY-YX routing while using O1TURN
+        NAME: o1turn_vc_sel_en
+        WIDTH: 1
+    NAME: dnr_route_cfg
+    NO_STRUCT: 0
+  - ATTR: 6
+    DESCRIPTION: Config for minimum reserved credits and maximum shared credits in IBUF and EBUF of DNR switch. Write only register. Does not exist in interface-only mode
+    FLDLST:
+      - DEFAULT: 5
+        DESCRIPTION: 'Minimum reserved credits per VC. Should not be programmed below 5. Cannot be changed at runtime. Programming this register determines the IBUF credits for all four (N, S, E, W) output ports.'
+        NAME: ibuf_min_rsvd_credits_vc0
+        WIDTH: 5
+      - DEFAULT: 5
+        DESCRIPTION: 'Minimum reserved credits per VC. Should not be programmed below 5. Cannot be changed at runtime. Programming this register determines the IBUF credits for all four (N, S, E, W) output ports.'
+        NAME: ibuf_min_rsvd_credits_vc1
+        WIDTH: 5
+      - DEFAULT: 5
+        DESCRIPTION: 'Minimum reserved credits per VC. Should not be programmed below 5. Cannot be changed at runtime. Programming this register determines the IBUF credits for all four (N, S, E, W) output ports.'
+        NAME: ibuf_min_rsvd_credits_vc2
+        WIDTH: 5
+      - DEFAULT: 5
+        DESCRIPTION: 'Minimum reserved credits per VC. Should not be programmed below 5. Cannot be changed at runtime. Programming this register determines the IBUF credits for all four (N, S, E, W) output ports.'
+        NAME: ibuf_min_rsvd_credits_vc3
+        WIDTH: 5
+      - DEFAULT: 12
+        DESCRIPTION: 'Maximum shared credits: Credits left after taking away the reserved credits. Max IBUF storage is 32.'
+        NAME: ibuf_max_shared_credits
+        WIDTH: 5
+      - DEFAULT: 16
+        DESCRIPTION: Minimum reserved credits per VC set.
+        NAME: ebuf_min_rsvd_credits_vc_set0
+        WIDTH: 7
+      - DEFAULT: 16
+        DESCRIPTION: Minimum reserved credits per VC set.
+        NAME: ebuf_min_rsvd_credits_vc_set1
+        WIDTH: 7
+      - DEFAULT: 96
+        DESCRIPTION: 'Maximum shared credits: Credits left after taking away the reserved credits. Max EBUF storage is 128.'
+        NAME: ebuf_max_shared_credits
+        WIDTH: 7
+      - DEFAULT: 3
+        DESCRIPTION: Number of shared credits beyond which credits are advertised as available during OFF to ON transition
+        NAME: ibuf_shared_credits_hysteresis
+        WIDTH: 5
+      - DEFAULT: 3
+        DESCRIPTION: Number of shared credits beyond which credits are advertised as available during OFF to ON transition
+        NAME: ebuf_shared_credits_hysteresis
+        WIDTH: 7
+    NAME: dnr_credit_cfg
+    TEST_ATTR: 0
+  - ATTR: 6
+    DESCRIPTION: Config for minimum reserved credits and maximum shared credits for the IBUF connected to the injection port of the router. Write only register
+    FLDLST:
+      - DEFAULT: 5
+        DESCRIPTION: Minimum reserved credits per VC. Cannot be changed at runtime.
+        NAME: ibuf_min_rsvd_credits_vc0
+        WIDTH: 5
+      - DEFAULT: 5
+        DESCRIPTION: Minimum reserved credits per VC. Cannot be changed at runtime.
+        NAME: ibuf_min_rsvd_credits_vc1
+        WIDTH: 5
+      - DEFAULT: 5
+        DESCRIPTION: Minimum reserved credits per VC. Cannot be changed at runtime.
+        NAME: ibuf_min_rsvd_credits_vc2
+        WIDTH: 5
+      - DEFAULT: 5
+        DESCRIPTION: Minimum reserved credits per VC. Cannot be changed at runtime.
+        NAME: ibuf_min_rsvd_credits_vc3
+        WIDTH: 5
+      - DEFAULT: 12
+        DESCRIPTION: 'Maximum shared credits: Credits left after taking away the reserved credits. Max IBUF storage is 32.'
+        NAME: ibuf_max_shared_credits
+        WIDTH: 5
+    NAME: dnr_injection_credit_cfg
+    TEST_ATTR: 0
+  - ATTR: 5
+    DESCRIPTION: Per-VC weight config for WRR arbitration across VCs when multiple VCs are granted by the islip arbiter.
+    FLDLST:
+      - DEFAULT: 1
+        DESCRIPTION: Per-VC weight config.
+        NAME: vc0_wt
+        WIDTH: 2
+      - DEFAULT: 1
+        DESCRIPTION: Per-VC weight config.
+        NAME: vc1_wt
+        WIDTH: 2
+      - DEFAULT: 1
+        DESCRIPTION: Per-VC weight config.
+        NAME: vc2_wt
+        WIDTH: 2
+      - DEFAULT: 1
+        DESCRIPTION: Per-VC weight config.
+        NAME: vc3_wt
+        WIDTH: 2
+    NAME: dnr_vc_sel_wt_cfg
+  - ATTR: 5
+    DESCRIPTION: Default value of DGID if the incoming DGID is invalid.
+    FLDLST:
+      - DEFAULT: 8
+        DESCRIPTION: Default DGID
+        NAME: val
+        WIDTH: 5
+    NAME: dnr_default_dgid_cfg
+  - ATTR: 5
+    DESCRIPTION: DNR FLA Ring Module ID
+    FLDLST:
+      - DEFAULT: 17
+        DESCRIPTION: '8-Bit Module ID to be used for Decoding Commands on FLA Command Ring, 0x0, 0xff are Reserved Values'
+        NAME: fld_val
+        WIDTH: 8
+    NAME: dnr_fla_ring_module_id_cfg
+  - ATTR: 5
+    DESCRIPTION: 'DNR credit watchdog timer config. If forward progress is not made on an output VC within this period, an interrupt is raised.'
+    FLDLST:
+      - DEFAULT: 4294967295
+        NAME: val
+        WIDTH: 32
+    NAME: dnr_credit_watchdog_timer_cfg
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: IBUF occupancy counts
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: IBUF0 occupancy
+        NAME: ibuf0_occ_cnt
+        WIDTH: 6
+      - DEFAULT: 0
+        DESCRIPTION: IBUF0 max occupancy
+        NAME: ibuf0_sticky_max_occ_cnt
+        WIDTH: 6
+      - DEFAULT: 0
+        DESCRIPTION: IBUF1 occupancy
+        NAME: ibuf1_occ_cnt
+        WIDTH: 6
+      - DEFAULT: 0
+        DESCRIPTION: IBUF1 max occupancy
+        NAME: ibuf1_sticky_max_occ_cnt
+        WIDTH: 6
+      - DEFAULT: 0
+        DESCRIPTION: IBUF2 occupancy
+        NAME: ibuf2_occ_cnt
+        WIDTH: 6
+      - DEFAULT: 0
+        DESCRIPTION: IBUF2 max occupancy
+        NAME: ibuf2_sticky_max_occ_cnt
+        WIDTH: 6
+      - DEFAULT: 0
+        DESCRIPTION: IBUF3 occupancy
+        NAME: ibuf3_occ_cnt
+        WIDTH: 6
+      - DEFAULT: 0
+        DESCRIPTION: IBUF3 max occupancy
+        NAME: ibuf3_sticky_max_occ_cnt
+        WIDTH: 6
+      - DEFAULT: 0
+        DESCRIPTION: IBUF4 occupancy
+        NAME: ibuf4_occ_cnt
+        WIDTH: 6
+      - DEFAULT: 0
+        DESCRIPTION: IBUF4 max occupancy
+        NAME: ibuf4_sticky_max_occ_cnt
+        WIDTH: 6
+    NAME: dnr_dbg_ibuf_occ_cnt
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: Injection and Ejection buffer occupancy counts. Ejection buffer occupancy count is valid only in interface-only mode
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: INJBUF occupancy
+        NAME: injbuf_occ_cnt
+        WIDTH: 5
+      - DEFAULT: 0
+        DESCRIPTION: INJBUF max occupancy
+        NAME: injbuf_sticky_max_occ_cnt
+        WIDTH: 5
+      - DEFAULT: 0
+        DESCRIPTION: EJBUF occupancy
+        NAME: ejbuf_occ_cnt
+        WIDTH: 6
+      - DEFAULT: 0
+        DESCRIPTION: EJBUF max occupancy
+        NAME: ejbuf_sticky_max_occ_cnt
+        WIDTH: 6
+    NAME: dnr_dbg_intf_buf_occ_cnt
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: Live status of DNR reserved and shared ibuf credits. Injection port
+    FLDLST:
+      - DEFAULT: 5
+        DESCRIPTION: Minimum reserved credits per VC.
+        NAME: ibuf_rsvd_credits_vc0
+        WIDTH: 5
+      - DEFAULT: 0
+        DESCRIPTION: Shared credits used per VC.
+        NAME: ibuf_shared_credits_usage_vc0
+        WIDTH: 5
+      - DEFAULT: 5
+        DESCRIPTION: Minimum reserved credits per VC.
+        NAME: ibuf_rsvd_credits_vc1
+        WIDTH: 5
+      - DEFAULT: 0
+        DESCRIPTION: Shared credits used per VC.
+        NAME: ibuf_shared_credits_usage_vc1
+        WIDTH: 5
+      - DEFAULT: 5
+        DESCRIPTION: Minimum reserved credits per VC.
+        NAME: ibuf_rsvd_credits_vc2
+        WIDTH: 5
+      - DEFAULT: 0
+        DESCRIPTION: Shared credits used per VC.
+        NAME: ibuf_shared_credits_usage_vc2
+        WIDTH: 5
+      - DEFAULT: 5
+        DESCRIPTION: Minimum reserved credits per VC.
+        NAME: ibuf_rsvd_credits_vc3
+        WIDTH: 5
+      - DEFAULT: 0
+        DESCRIPTION: Shared credits used per VC.
+        NAME: ibuf_shared_credits_usage_vc3
+        WIDTH: 5
+      - DEFAULT: 12
+        DESCRIPTION: 'Maximum shared credits: Credits left after taking away the reserved credits. Max IBUF storage is 32.'
+        NAME: ibuf_shared_credits
+        WIDTH: 5
+    NAME: dnr_dbg_inj_credit_cnt
+  - ATTR: 9
+    COUNT: 4
+    DESCRIPTION: 'Live status of DNR reserved and shared ibuf credits. E, W, N, S ports'
+    FLDLST: &23
+      - DEFAULT: 5
+        DESCRIPTION: Per-VC reserved credit count
+        NAME: ibuf_rsvd_credits_vc0
+        WIDTH: 5
+      - DEFAULT: 0
+        DESCRIPTION: Per-VC shared credit usage
+        NAME: ibuf_shared_credits_usage_vc0
+        WIDTH: 5
+      - DEFAULT: 5
+        DESCRIPTION: Per-VC reserved credit count
+        NAME: ibuf_rsvd_credits_vc1
+        WIDTH: 5
+      - DEFAULT: 0
+        DESCRIPTION: Per-VC shared credit usage
+        NAME: ibuf_shared_credits_usage_vc1
+        WIDTH: 5
+      - DEFAULT: 5
+        DESCRIPTION: Per-VC reserved credit count
+        NAME: ibuf_rsvd_credits_vc2
+        WIDTH: 5
+      - DEFAULT: 0
+        DESCRIPTION: Per-VC shared credit usage
+        NAME: ibuf_shared_credits_usage_vc2
+        WIDTH: 5
+      - DEFAULT: 5
+        DESCRIPTION: Per-VC reserved credit count
+        NAME: ibuf_rsvd_credits_vc3
+        WIDTH: 5
+      - DEFAULT: 0
+        DESCRIPTION: Per-VC shared credit usage
+        NAME: ibuf_shared_credits_usage_vc3
+        WIDTH: 5
+      - DEFAULT: 12
+        DESCRIPTION: Shared credit count
+        NAME: ibuf_shared_credits
+        WIDTH: 5
+    NAME: dnr_dbg_ibuf_credit_cnt_0
+  - ATTR: 9
+    COUNT: 4
+    DESCRIPTION: 'Live status of DNR reserved and shared ibuf credits. E, W, N, S ports'
+    FLDLST: *23
+    NAME: dnr_dbg_ibuf_credit_cnt_1
+  - ATTR: 9
+    COUNT: 4
+    DESCRIPTION: 'Live status of DNR reserved and shared ibuf credits. E, W, N, S ports'
+    FLDLST: *23
+    NAME: dnr_dbg_ibuf_credit_cnt_2
+  - ATTR: 9
+    COUNT: 4
+    DESCRIPTION: 'Live status of DNR reserved and shared ibuf credits. E, W, N, S ports'
+    FLDLST: *23
+    NAME: dnr_dbg_ibuf_credit_cnt_3
+  - ATTR: 9
+    DESCRIPTION: Live status of DNR reserved and shared ebuf credits.
+    FLDLST:
+      - DEFAULT: 16
+        DESCRIPTION: Per-VC set reserved credit count
+        NAME: ebuf_rsvd_credits_vc_set0
+        WIDTH: 7
+      - DEFAULT: 0
+        DESCRIPTION: Shared credits used per VC set.
+        NAME: ebuf_shared_credits_usage_vc_set0
+        WIDTH: 7
+      - DEFAULT: 16
+        DESCRIPTION: Per-VC set reserved credit count
+        NAME: ebuf_rsvd_credits_vc_set1
+        WIDTH: 7
+      - DEFAULT: 0
+        DESCRIPTION: Shared credits used per VC set.
+        NAME: ebuf_shared_credits_usage_vc_set1
+        WIDTH: 7
+      - DEFAULT: 96
+        DESCRIPTION: Shared credit count
+        NAME: ebuf_shared_credits
+        WIDTH: 7
+    NAME: dnr_dbg_ebuf_credit_cnt
+  - ATTR: 9
+    DESCRIPTION: Interrupt log for dgid out of range interrupt
+    FLDLST:
+      - DESCRIPTION: Source LID
+        NAME: slid
+        WIDTH: 5
+      - DESCRIPTION: Destination GID
+        NAME: dgid
+        WIDTH: 5
+      - DESCRIPTION: Destination LID
+        NAME: dlid
+        WIDTH: 5
+      - DESCRIPTION: Destination LID
+        NAME: vc_set
+        WIDTH: 1
+      - DESCRIPTION: Metadata flags in the header
+        NAME: mdata_flags
+        WIDTH: 4
+    NAME: dnr_intr_dgid_out_of_range_log
+  - ATTR: 6
+    DESCRIPTION: Global ID to DN coordinates map.
+    ENTRIES: 25
+    FLDLST:
+      - DESCRIPTION: X-coordinate
+        NAME: coord_x
+        WIDTH: 3
+      - DESCRIPTION: Y-coordinate
+        NAME: coord_y
+        WIDTH: 3
+      - DESCRIPTION: 'GID is connected to the alternate ejection port of the router at {coord_x, coord_y}'
+        NAME: use_alt_ej
+        WIDTH: 1
+    MAX_ENTRIES: 1024
+    NAME: dnr_gid_to_coords_map
+    WIDTH: 64
+  - ATTR: 6
+    COUNT: 5
+    DESCRIPTION: |-
+      Weight table for multipath routing. The table is indexed using dy*5+dx. 
+                                It is replicated 5 times because lookahead routing is used and configuration is
+                                done at the previous hop.
+    ENTRIES: 25
+    FLDLST: &24
+      - DESCRIPTION: Weight for the X dimension.
+        NAME: wx
+        WIDTH: 4
+    MAX_ENTRIES: 256
+    NAME: dnr_wt_table_0
+    WIDTH: 64
+  - ATTR: 6
+    COUNT: 5
+    DESCRIPTION: |-
+      Weight table for multipath routing. The table is indexed using dy*5+dx. 
+                                It is replicated 5 times because lookahead routing is used and configuration is
+                                done at the previous hop.
+    ENTRIES: 25
+    FLDLST: *24
+    MAX_ENTRIES: 256
+    NAME: dnr_wt_table_1
+    WIDTH: 64
+  - ATTR: 6
+    COUNT: 5
+    DESCRIPTION: |-
+      Weight table for multipath routing. The table is indexed using dy*5+dx. 
+                                It is replicated 5 times because lookahead routing is used and configuration is
+                                done at the previous hop.
+    ENTRIES: 25
+    FLDLST: *24
+    MAX_ENTRIES: 256
+    NAME: dnr_wt_table_2
+    WIDTH: 64
+  - ATTR: 6
+    COUNT: 5
+    DESCRIPTION: |-
+      Weight table for multipath routing. The table is indexed using dy*5+dx. 
+                                It is replicated 5 times because lookahead routing is used and configuration is
+                                done at the previous hop.
+    ENTRIES: 25
+    FLDLST: *24
+    MAX_ENTRIES: 256
+    NAME: dnr_wt_table_3
+    WIDTH: 64
+  - ATTR: 6
+    COUNT: 5
+    DESCRIPTION: |-
+      Weight table for multipath routing. The table is indexed using dy*5+dx. 
+                                It is replicated 5 times because lookahead routing is used and configuration is
+                                done at the previous hop.
+    ENTRIES: 25
+    FLDLST: *24
+    MAX_ENTRIES: 256
+    NAME: dnr_wt_table_4
+    WIDTH: 64
+  - ATTR: 6
+    COUNT: 1
+    DESCRIPTION: 'Access to DNR injection pipe debug probe registers. The injection pipe has two debug probes, one per VC set.'
+    ENTRIES: 8
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: DNR injpipe debug probe 0
+        NAME: fld_count
+        WIDTH: 64
+    NAME: dnr_injpipe_dbg_probe0
+    TEST_ATTR: 0
+  - ATTR: 6
+    COUNT: 1
+    DESCRIPTION: 'Access to DNR injection pipe debug probe registers. The injection pipe has two debug probes, one per VC set.'
+    ENTRIES: 8
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: DNR injpipe debug probe 1
+        NAME: fld_count
+        WIDTH: 64
+    NAME: dnr_injpipe_dbg_probe1
+    TEST_ATTR: 0
+  - ATTR: 6
+    COUNT: 1
+    DESCRIPTION: 'Access to DNR ejection pipe debug probe registers. The ejection pipe has two debug probes, one per VC set.'
+    ENTRIES: 8
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: DNR ejpipe debug probe 0
+        NAME: fld_count
+        WIDTH: 64
+    NAME: dnr_ejpipe_dbg_probe0
+    TEST_ATTR: 0
+  - ATTR: 6
+    COUNT: 1
+    DESCRIPTION: 'Access to DNR ejection pipe debug probe registers. The ejection pipe has two debug probes, one per VC set.'
+    ENTRIES: 8
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: DNR ejpipe debug probe 1
+        NAME: fld_count
+        WIDTH: 64
+    NAME: dnr_ejpipe_dbg_probe1
+    TEST_ATTR: 0
+  - ATTR: 6
+    COUNT: 5
+    DESCRIPTION: 'Access to DNR IBUF pipe debug probe registers. The ibuf pipe has two debug probes, one per VC set.'
+    ENTRIES: 8
+    FLDLST: &25
+      - DEFAULT: 0
+        DESCRIPTION: DNR ibuf debug probe 0
+        NAME: fld_count
+        WIDTH: 64
+    NAME: dnr_ibuf_dbg_probe0_0
+    TEST_ATTR: 0
+  - ATTR: 6
+    COUNT: 5
+    DESCRIPTION: 'Access to DNR IBUF pipe debug probe registers. The ibuf pipe has two debug probes, one per VC set.'
+    ENTRIES: 8
+    FLDLST: *25
+    NAME: dnr_ibuf_dbg_probe0_1
+    TEST_ATTR: 0
+  - ATTR: 6
+    COUNT: 5
+    DESCRIPTION: 'Access to DNR IBUF pipe debug probe registers. The ibuf pipe has two debug probes, one per VC set.'
+    ENTRIES: 8
+    FLDLST: *25
+    NAME: dnr_ibuf_dbg_probe0_2
+    TEST_ATTR: 0
+  - ATTR: 6
+    COUNT: 5
+    DESCRIPTION: 'Access to DNR IBUF pipe debug probe registers. The ibuf pipe has two debug probes, one per VC set.'
+    ENTRIES: 8
+    FLDLST: *25
+    NAME: dnr_ibuf_dbg_probe0_3
+    TEST_ATTR: 0
+  - ATTR: 6
+    COUNT: 5
+    DESCRIPTION: 'Access to DNR IBUF pipe debug probe registers. The ibuf pipe has two debug probes, one per VC set.'
+    ENTRIES: 8
+    FLDLST: *25
+    NAME: dnr_ibuf_dbg_probe0_4
+    TEST_ATTR: 0
+  - ATTR: 6
+    COUNT: 5
+    DESCRIPTION: 'Access to DNR IBUF pipe debug probe registers. The ibuf pipe has two debug probes, one per VC set.'
+    ENTRIES: 8
+    FLDLST: &26
+      - DEFAULT: 0
+        DESCRIPTION: DNR ibuf debug probe 1
+        NAME: fld_count
+        WIDTH: 64
+    NAME: dnr_ibuf_dbg_probe1_0
+    TEST_ATTR: 0
+  - ATTR: 6
+    COUNT: 5
+    DESCRIPTION: 'Access to DNR IBUF pipe debug probe registers. The ibuf pipe has two debug probes, one per VC set.'
+    ENTRIES: 8
+    FLDLST: *26
+    NAME: dnr_ibuf_dbg_probe1_1
+    TEST_ATTR: 0
+  - ATTR: 6
+    COUNT: 5
+    DESCRIPTION: 'Access to DNR IBUF pipe debug probe registers. The ibuf pipe has two debug probes, one per VC set.'
+    ENTRIES: 8
+    FLDLST: *26
+    NAME: dnr_ibuf_dbg_probe1_2
+    TEST_ATTR: 0
+  - ATTR: 6
+    COUNT: 5
+    DESCRIPTION: 'Access to DNR IBUF pipe debug probe registers. The ibuf pipe has two debug probes, one per VC set.'
+    ENTRIES: 8
+    FLDLST: *26
+    NAME: dnr_ibuf_dbg_probe1_3
+    TEST_ATTR: 0
+  - ATTR: 6
+    COUNT: 5
+    DESCRIPTION: 'Access to DNR IBUF pipe debug probe registers. The ibuf pipe has two debug probes, one per VC set.'
+    ENTRIES: 8
+    FLDLST: *26
+    NAME: dnr_ibuf_dbg_probe1_4
+    TEST_ATTR: 0
+XASIZE: 524288

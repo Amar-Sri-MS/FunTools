@@ -1,0 +1,4121 @@
+---
+BASEADDRPORT: 1
+COUNT: 1
+DESCRIPTION: NWQM CSR Spec
+INTR:
+  FATAL:
+    - DESCRIPTION: FIFO overflow.  See nwqm_fifo_oflow_errs register for detail.
+      NAME: fifo_oflow_err
+      WIDTH: 1
+    - DESCRIPTION: Count overflow.  See nwqm_cnt_oflow_errs register for detail.
+      NAME: cnt_oflow_err
+      WIDTH: 1
+    - DESCRIPTION: WU index allocate request count is greater than maximum value.
+      NAME: wu_index_alloc_req_deq_cnt_gt_max_err
+      WIDTH: 1
+    - DESCRIPTION: WU index deallocate request count is greater than maximum value.
+      NAME: wu_index_dealloc_req_cnt_gt_max_err
+      WIDTH: 1
+    - DESCRIPTION: WU credit dealloc request is more than 1 flit.
+      NAME: wu_crd_dealloc_req_sop_eop_drop_err
+      WIDTH: 1
+    - DESCRIPTION: WU index dealloc request is less than 2 flits.
+      NAME: wu_index_dealloc_req_sop_eop_drop_err
+      WIDTH: 1
+    - DESCRIPTION: WU index dealloc request is more than 2 flits.
+      NAME: wu_index_dealloc_req_mop_drop_err
+      WIDTH: 1
+    - DESCRIPTION: WU credit allocate response count is greater than request count.
+      NAME: wu_crd_alloc_resp_cnt_gt_req_cnt_err
+      WIDTH: 1
+    - DESCRIPTION: WU index has null pointer.  See nwqm_wu_index_ptr_errs register for detail
+      NAME: wu_index_ptr_err
+      WIDTH: 1
+    - DESCRIPTION: IPF index allocate response count is greater than request count.
+      NAME: ipf_alloc_resp_cnt_gt_req_cnt_err
+      WIDTH: 1
+    - DESCRIPTION: Dequeue when queue is empty.
+      NAME: dq_on_empty_err
+      WIDTH: 1
+    - DESCRIPTION: SNI received unexpected transaction on SN request VC.
+      NAME: sni_if0_unexpected_sn_req_err
+      WIDTH: 1
+    - DESCRIPTION: SNI received unexpected transaction on SN request VC.
+      NAME: sni_if1_unexpected_sn_req_err
+      WIDTH: 1
+    - DESCRIPTION: SNI received unexpected transaction on SN request VC.
+      NAME: sni_if2_unexpected_sn_req_err
+      WIDTH: 1
+    - DESCRIPTION: SNI received a transaction on the request VC with more than 2 flits.
+      NAME: sni_sn_req_more_than_2flits_err
+      WIDTH: 1
+    - DESCRIPTION: SNI received a transaction on the response VC with more than 2 flits.
+      NAME: sni_sn_resp_more_than_2flits_err
+      WIDTH: 1
+    - DESCRIPTION: SNI received a transaction on the WU VC with more than 2 flits.
+      NAME: sni_wu_more_than_2flits_err
+      WIDTH: 1
+    - DESCRIPTION: SNI received a transaction on the WU VC for FAE with more than 2 flits.
+      NAME: sni_fae_wu_more_than_2flits_err
+      WIDTH: 1
+    - DESCRIPTION: SNI received an invalid command on the request VC.
+      NAME: sni_sn_req_invalid_cmd_err
+      WIDTH: 1
+    - DESCRIPTION: SNI received an invalid command on the response VC.
+      NAME: sni_sn_resp_invalid_cmd_err
+      WIDTH: 1
+    - DESCRIPTION: SNI received an invalid command on the WU VC.
+      NAME: sni_wu_invalid_cmd_err
+      WIDTH: 1
+    - DESCRIPTION: SNI request processing encountered invalid command.
+      NAME: sni_req_invalid_cmd_err
+      WIDTH: 1
+    - DESCRIPTION: SNI response processing encountered invalid command.
+      NAME: sni_resp_invalid_cmd_err
+      WIDTH: 1
+    - DESCRIPTION: WBUF received nq which match an active entry.
+      NAME: wbuf_nq_match_active_entry_err
+      WIDTH: 1
+    - DESCRIPTION: WBUF received nq when there is no free/available entry.
+      NAME: wbuf_nq_with_no_free_entry_err
+      WIDTH: 1
+    - DESCRIPTION: WBUF received dq lookup when already dequeued but has not been sent or acked.
+      NAME: wbuf_dq_when_already_dq_err
+      WIDTH: 1
+    - DESCRIPTION: WBUF received write ack with stat bit set.
+      NAME: wbuf_wr_ack_stat_err
+      WIDTH: 1
+    - DESCRIPTION: WBUF received wr_ack for entry which has not been sent.
+      NAME: wbuf_wr_ack_not_sent_err
+      WIDTH: 1
+    - DESCRIPTION: WBUF received wr_ack for entry whose wr_ack state is already set.
+      NAME: wbuf_wr_ack_already_set_err
+      WIDTH: 1
+    - DESCRIPTION: wic_wm7_bitalloc_sram Memory Double Bit ECC Error
+      NAME: wic_wm7_bitalloc_sram_uerr
+      WIDTH: 1
+    - DESCRIPTION: wic_wm6_bitalloc_sram Memory Double Bit ECC Error
+      NAME: wic_wm6_bitalloc_sram_uerr
+      WIDTH: 1
+    - DESCRIPTION: wic_wm5_bitalloc_sram Memory Double Bit ECC Error
+      NAME: wic_wm5_bitalloc_sram_uerr
+      WIDTH: 1
+    - DESCRIPTION: wic_wm4_bitalloc_sram Memory Double Bit ECC Error
+      NAME: wic_wm4_bitalloc_sram_uerr
+      WIDTH: 1
+    - DESCRIPTION: wic_wm3_bitalloc_sram Memory Double Bit ECC Error
+      NAME: wic_wm3_bitalloc_sram_uerr
+      WIDTH: 1
+    - DESCRIPTION: wic_wm2_bitalloc_sram Memory Double Bit ECC Error
+      NAME: wic_wm2_bitalloc_sram_uerr
+      WIDTH: 1
+    - DESCRIPTION: wic_wm1_bitalloc_sram Memory Double Bit ECC Error
+      NAME: wic_wm1_bitalloc_sram_uerr
+      WIDTH: 1
+    - DESCRIPTION: wic_wm0_bitalloc_sram Memory Double Bit ECC Error
+      NAME: wic_wm0_bitalloc_sram_uerr
+      WIDTH: 1
+    - DESCRIPTION: wic_if2_dealloc_req_data_fifo_sram Memory Double Bit ECC Error
+      NAME: wic_if2_dealloc_req_data_fifo_sram_uerr
+      WIDTH: 1
+    - DESCRIPTION: wic_if1_dealloc_req_data_fifo_sram Memory Double Bit ECC Error
+      NAME: wic_if1_dealloc_req_data_fifo_sram_uerr
+      WIDTH: 1
+    - DESCRIPTION: wic_if0_dealloc_req_data_fifo_sram Memory Double Bit ECC Error
+      NAME: wic_if0_dealloc_req_data_fifo_sram_uerr
+      WIDTH: 1
+    - DESCRIPTION: wic_wu_index_alloc_req_fifo_sram Memory Double Bit ECC Error
+      NAME: wic_wu_index_alloc_req_fifo_sram_uerr
+      WIDTH: 1
+    - DESCRIPTION: wbuf_wbuf_data_sram_lsb Memory Double Bit ECC Error
+      NAME: wbuf_wbuf_data_sram_lsb_uerr
+      WIDTH: 1
+    - DESCRIPTION: wbuf_wbuf_data_sram_msb Memory Double Bit ECC Error
+      NAME: wbuf_wbuf_data_sram_msb_uerr
+      WIDTH: 1
+    - DESCRIPTION: sts_pbuf_wu_len_sram Memory Double Bit ECC Error
+      NAME: sts_pbuf_wu_len_sram_uerr
+      WIDTH: 1
+    - DESCRIPTION: sts_wm_wu_len_sram Memory Double Bit ECC Error
+      NAME: sts_wm_wu_len_sram_uerr
+      WIDTH: 1
+    - DESCRIPTION: sts_pbuf_link_sram Memory Double Bit ECC Error
+      NAME: sts_pbuf_link_sram_uerr
+      WIDTH: 1
+    - DESCRIPTION: sts_wm_link_sram Memory Double Bit ECC Error
+      NAME: sts_wm_link_sram_uerr
+      WIDTH: 1
+    - DESCRIPTION: sts_ptr_sram Memory Double Bit ECC Error
+      NAME: sts_ptr_sram_uerr
+      WIDTH: 1
+    - DESCRIPTION: sni_if2_wu_data_fifo_sram Memory Double Bit ECC Error
+      NAME: sni_if2_wu_data_fifo_sram_uerr
+      WIDTH: 1
+    - DESCRIPTION: sni_if1_wu_data_fifo_sram Memory Double Bit ECC Error
+      NAME: sni_if1_wu_data_fifo_sram_uerr
+      WIDTH: 1
+    - DESCRIPTION: sni_if0_wu_data_fifo_sram Memory Double Bit ECC Error
+      NAME: sni_if0_wu_data_fifo_sram_uerr
+      WIDTH: 1
+    - DESCRIPTION: pbuf_wu_sram Memory Double Bit ECC Error
+      NAME: pbuf_wu_sram_uerr
+      WIDTH: 1
+    - DESCRIPTION: ipf_wu_index_pf_sram1 Memory Double Bit ECC Error
+      NAME: ipf_wu_index_pf_sram1_uerr
+      WIDTH: 1
+    - DESCRIPTION: ipf_wu_index_pf_sram0 Memory Double Bit ECC Error
+      NAME: ipf_wu_index_pf_sram0_uerr
+      WIDTH: 1
+  NON_FATAL:
+    - DESCRIPTION: Non-fatal spare interrupt.
+      NAME: non_fatal_spare_intr
+      WIDTH: 1
+    - DESCRIPTION: wic_wm7_bitalloc_sram Memory Single Bit ECC Error
+      NAME: wic_wm7_bitalloc_sram_cerr
+      WIDTH: 1
+    - DESCRIPTION: wic_wm6_bitalloc_sram Memory Single Bit ECC Error
+      NAME: wic_wm6_bitalloc_sram_cerr
+      WIDTH: 1
+    - DESCRIPTION: wic_wm5_bitalloc_sram Memory Single Bit ECC Error
+      NAME: wic_wm5_bitalloc_sram_cerr
+      WIDTH: 1
+    - DESCRIPTION: wic_wm4_bitalloc_sram Memory Single Bit ECC Error
+      NAME: wic_wm4_bitalloc_sram_cerr
+      WIDTH: 1
+    - DESCRIPTION: wic_wm3_bitalloc_sram Memory Single Bit ECC Error
+      NAME: wic_wm3_bitalloc_sram_cerr
+      WIDTH: 1
+    - DESCRIPTION: wic_wm2_bitalloc_sram Memory Single Bit ECC Error
+      NAME: wic_wm2_bitalloc_sram_cerr
+      WIDTH: 1
+    - DESCRIPTION: wic_wm1_bitalloc_sram Memory Single Bit ECC Error
+      NAME: wic_wm1_bitalloc_sram_cerr
+      WIDTH: 1
+    - DESCRIPTION: wic_wm0_bitalloc_sram Memory Single Bit ECC Error
+      NAME: wic_wm0_bitalloc_sram_cerr
+      WIDTH: 1
+    - DESCRIPTION: wic_if2_dealloc_req_data_fifo_sram Memory Single Bit ECC Error
+      NAME: wic_if2_dealloc_req_data_fifo_sram_cerr
+      WIDTH: 1
+    - DESCRIPTION: wic_if1_dealloc_req_data_fifo_sram Memory Single Bit ECC Error
+      NAME: wic_if1_dealloc_req_data_fifo_sram_cerr
+      WIDTH: 1
+    - DESCRIPTION: wic_if0_dealloc_req_data_fifo_sram Memory Single Bit ECC Error
+      NAME: wic_if0_dealloc_req_data_fifo_sram_cerr
+      WIDTH: 1
+    - DESCRIPTION: wic_wu_index_alloc_req_fifo_sram Memory Single Bit ECC Error
+      NAME: wic_wu_index_alloc_req_fifo_sram_cerr
+      WIDTH: 1
+    - DESCRIPTION: wbuf_wbuf_data_sram_lsb Memory Single Bit ECC Error
+      NAME: wbuf_wbuf_data_sram_lsb_cerr
+      WIDTH: 1
+    - DESCRIPTION: wbuf_wbuf_data_sram_msb Memory Single Bit ECC Error
+      NAME: wbuf_wbuf_data_sram_msb_cerr
+      WIDTH: 1
+    - DESCRIPTION: sts_pbuf_wu_len_sram Memory Single Bit ECC Error
+      NAME: sts_pbuf_wu_len_sram_cerr
+      WIDTH: 1
+    - DESCRIPTION: sts_wm_wu_len_sram Memory Single Bit ECC Error
+      NAME: sts_wm_wu_len_sram_cerr
+      WIDTH: 1
+    - DESCRIPTION: sts_pbuf_link_sram Memory Single Bit ECC Error
+      NAME: sts_pbuf_link_sram_cerr
+      WIDTH: 1
+    - DESCRIPTION: sts_wm_link_sram Memory Single Bit ECC Error
+      NAME: sts_wm_link_sram_cerr
+      WIDTH: 1
+    - DESCRIPTION: sts_ptr_sram Memory Single Bit ECC Error
+      NAME: sts_ptr_sram_cerr
+      WIDTH: 1
+    - DESCRIPTION: sni_if2_wu_data_fifo_sram Memory Single Bit ECC Error
+      NAME: sni_if2_wu_data_fifo_sram_cerr
+      WIDTH: 1
+    - DESCRIPTION: sni_if1_wu_data_fifo_sram Memory Single Bit ECC Error
+      NAME: sni_if1_wu_data_fifo_sram_cerr
+      WIDTH: 1
+    - DESCRIPTION: sni_if0_wu_data_fifo_sram Memory Single Bit ECC Error
+      NAME: sni_if0_wu_data_fifo_sram_cerr
+      WIDTH: 1
+    - DESCRIPTION: pbuf_wu_sram Memory Single Bit ECC Error
+      NAME: pbuf_wu_sram_cerr
+      WIDTH: 1
+    - DESCRIPTION: ipf_wu_index_pf_sram1 Memory Single Bit ECC Error
+      NAME: ipf_wu_index_pf_sram1_cerr
+      WIDTH: 1
+    - DESCRIPTION: ipf_wu_index_pf_sram0 Memory Single Bit ECC Error
+      NAME: ipf_wu_index_pf_sram0_cerr
+      WIDTH: 1
+INTR_PORT_EN: 1
+NAME: NWQM_AN
+PARENTNAME: NU_0_AN
+REGLST:
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: |-
+          Timeout Configuration. Cycles are RSU clk based.
+                            - 00 : 1024 cycles
+                            - 01 : 256 cycles
+                            - 10 : 4096 cycles
+                            - 11 : infinite
+        NAME: val
+        WIDTH: 2
+    NAME: nwqm_timeout_thresh_cfg
+  - ATTR: 9
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: "Timed out Status. Cycles are RSU clk based. Becomes 1 when timed out. Write any value to clear it.\n                  "
+        NAME: val
+        WIDTH: 1
+    NAME: nwqm_timedout_sta
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: |-
+          Clear Timeout Status. Data is ignored. A write
+                     will clear the timeout status bit
+        NAME: val
+        WIDTH: 1
+    NAME: nwqm_timeout_clr
+    TEST_ATTR: 1
+  - ATTR: 256
+    FLDLST:
+      - &1
+        DESCRIPTION: FIFO overflow.  See nwqm_fifo_oflow_errs register for detail.
+        NAME: fifo_oflow_err
+        WIDTH: 1
+      - &2
+        DESCRIPTION: Count overflow.  See nwqm_cnt_oflow_errs register for detail.
+        NAME: cnt_oflow_err
+        WIDTH: 1
+      - &3
+        DESCRIPTION: WU index allocate request count is greater than maximum value.
+        NAME: wu_index_alloc_req_deq_cnt_gt_max_err
+        WIDTH: 1
+      - &4
+        DESCRIPTION: WU index deallocate request count is greater than maximum value.
+        NAME: wu_index_dealloc_req_cnt_gt_max_err
+        WIDTH: 1
+      - &5
+        DESCRIPTION: WU credit dealloc request is more than 1 flit.
+        NAME: wu_crd_dealloc_req_sop_eop_drop_err
+        WIDTH: 1
+      - &6
+        DESCRIPTION: WU index dealloc request is less than 2 flits.
+        NAME: wu_index_dealloc_req_sop_eop_drop_err
+        WIDTH: 1
+      - &7
+        DESCRIPTION: WU index dealloc request is more than 2 flits.
+        NAME: wu_index_dealloc_req_mop_drop_err
+        WIDTH: 1
+      - &8
+        DESCRIPTION: WU credit allocate response count is greater than request count.
+        NAME: wu_crd_alloc_resp_cnt_gt_req_cnt_err
+        WIDTH: 1
+      - &9
+        DESCRIPTION: WU index has null pointer.  See nwqm_wu_index_ptr_errs register for detail
+        NAME: wu_index_ptr_err
+        WIDTH: 1
+      - &10
+        DESCRIPTION: IPF index allocate response count is greater than request count.
+        NAME: ipf_alloc_resp_cnt_gt_req_cnt_err
+        WIDTH: 1
+      - &11
+        DESCRIPTION: Dequeue when queue is empty.
+        NAME: dq_on_empty_err
+        WIDTH: 1
+      - &12
+        DESCRIPTION: SNI received unexpected transaction on SN request VC.
+        NAME: sni_if0_unexpected_sn_req_err
+        WIDTH: 1
+      - &13
+        DESCRIPTION: SNI received unexpected transaction on SN request VC.
+        NAME: sni_if1_unexpected_sn_req_err
+        WIDTH: 1
+      - &14
+        DESCRIPTION: SNI received unexpected transaction on SN request VC.
+        NAME: sni_if2_unexpected_sn_req_err
+        WIDTH: 1
+      - &15
+        DESCRIPTION: SNI received a transaction on the request VC with more than 2 flits.
+        NAME: sni_sn_req_more_than_2flits_err
+        WIDTH: 1
+      - &16
+        DESCRIPTION: SNI received a transaction on the response VC with more than 2 flits.
+        NAME: sni_sn_resp_more_than_2flits_err
+        WIDTH: 1
+      - &17
+        DESCRIPTION: SNI received a transaction on the WU VC with more than 2 flits.
+        NAME: sni_wu_more_than_2flits_err
+        WIDTH: 1
+      - &18
+        DESCRIPTION: SNI received a transaction on the WU VC for FAE with more than 2 flits.
+        NAME: sni_fae_wu_more_than_2flits_err
+        WIDTH: 1
+      - &19
+        DESCRIPTION: SNI received an invalid command on the request VC.
+        NAME: sni_sn_req_invalid_cmd_err
+        WIDTH: 1
+      - &20
+        DESCRIPTION: SNI received an invalid command on the response VC.
+        NAME: sni_sn_resp_invalid_cmd_err
+        WIDTH: 1
+      - &21
+        DESCRIPTION: SNI received an invalid command on the WU VC.
+        NAME: sni_wu_invalid_cmd_err
+        WIDTH: 1
+      - &22
+        DESCRIPTION: SNI request processing encountered invalid command.
+        NAME: sni_req_invalid_cmd_err
+        WIDTH: 1
+      - &23
+        DESCRIPTION: SNI response processing encountered invalid command.
+        NAME: sni_resp_invalid_cmd_err
+        WIDTH: 1
+      - &24
+        DESCRIPTION: WBUF received nq which match an active entry.
+        NAME: wbuf_nq_match_active_entry_err
+        WIDTH: 1
+      - &25
+        DESCRIPTION: WBUF received nq when there is no free/available entry.
+        NAME: wbuf_nq_with_no_free_entry_err
+        WIDTH: 1
+      - &26
+        DESCRIPTION: WBUF received dq lookup when already dequeued but has not been sent or acked.
+        NAME: wbuf_dq_when_already_dq_err
+        WIDTH: 1
+      - &27
+        DESCRIPTION: WBUF received write ack with stat bit set.
+        NAME: wbuf_wr_ack_stat_err
+        WIDTH: 1
+      - &28
+        DESCRIPTION: WBUF received wr_ack for entry which has not been sent.
+        NAME: wbuf_wr_ack_not_sent_err
+        WIDTH: 1
+      - &29
+        DESCRIPTION: WBUF received wr_ack for entry whose wr_ack state is already set.
+        NAME: wbuf_wr_ack_already_set_err
+        WIDTH: 1
+      - &30
+        DESCRIPTION: wic_wm7_bitalloc_sram Memory Double Bit ECC Error
+        NAME: wic_wm7_bitalloc_sram_uerr
+        WIDTH: 1
+      - &31
+        DESCRIPTION: wic_wm6_bitalloc_sram Memory Double Bit ECC Error
+        NAME: wic_wm6_bitalloc_sram_uerr
+        WIDTH: 1
+      - &32
+        DESCRIPTION: wic_wm5_bitalloc_sram Memory Double Bit ECC Error
+        NAME: wic_wm5_bitalloc_sram_uerr
+        WIDTH: 1
+      - &33
+        DESCRIPTION: wic_wm4_bitalloc_sram Memory Double Bit ECC Error
+        NAME: wic_wm4_bitalloc_sram_uerr
+        WIDTH: 1
+      - &34
+        DESCRIPTION: wic_wm3_bitalloc_sram Memory Double Bit ECC Error
+        NAME: wic_wm3_bitalloc_sram_uerr
+        WIDTH: 1
+      - &35
+        DESCRIPTION: wic_wm2_bitalloc_sram Memory Double Bit ECC Error
+        NAME: wic_wm2_bitalloc_sram_uerr
+        WIDTH: 1
+      - &36
+        DESCRIPTION: wic_wm1_bitalloc_sram Memory Double Bit ECC Error
+        NAME: wic_wm1_bitalloc_sram_uerr
+        WIDTH: 1
+      - &37
+        DESCRIPTION: wic_wm0_bitalloc_sram Memory Double Bit ECC Error
+        NAME: wic_wm0_bitalloc_sram_uerr
+        WIDTH: 1
+      - &38
+        DESCRIPTION: wic_if2_dealloc_req_data_fifo_sram Memory Double Bit ECC Error
+        NAME: wic_if2_dealloc_req_data_fifo_sram_uerr
+        WIDTH: 1
+      - &39
+        DESCRIPTION: wic_if1_dealloc_req_data_fifo_sram Memory Double Bit ECC Error
+        NAME: wic_if1_dealloc_req_data_fifo_sram_uerr
+        WIDTH: 1
+      - &40
+        DESCRIPTION: wic_if0_dealloc_req_data_fifo_sram Memory Double Bit ECC Error
+        NAME: wic_if0_dealloc_req_data_fifo_sram_uerr
+        WIDTH: 1
+      - &41
+        DESCRIPTION: wic_wu_index_alloc_req_fifo_sram Memory Double Bit ECC Error
+        NAME: wic_wu_index_alloc_req_fifo_sram_uerr
+        WIDTH: 1
+      - &42
+        DESCRIPTION: wbuf_wbuf_data_sram_lsb Memory Double Bit ECC Error
+        NAME: wbuf_wbuf_data_sram_lsb_uerr
+        WIDTH: 1
+      - &43
+        DESCRIPTION: wbuf_wbuf_data_sram_msb Memory Double Bit ECC Error
+        NAME: wbuf_wbuf_data_sram_msb_uerr
+        WIDTH: 1
+      - &44
+        DESCRIPTION: sts_pbuf_wu_len_sram Memory Double Bit ECC Error
+        NAME: sts_pbuf_wu_len_sram_uerr
+        WIDTH: 1
+      - &45
+        DESCRIPTION: sts_wm_wu_len_sram Memory Double Bit ECC Error
+        NAME: sts_wm_wu_len_sram_uerr
+        WIDTH: 1
+      - &46
+        DESCRIPTION: sts_pbuf_link_sram Memory Double Bit ECC Error
+        NAME: sts_pbuf_link_sram_uerr
+        WIDTH: 1
+      - &47
+        DESCRIPTION: sts_wm_link_sram Memory Double Bit ECC Error
+        NAME: sts_wm_link_sram_uerr
+        WIDTH: 1
+      - &48
+        DESCRIPTION: sts_ptr_sram Memory Double Bit ECC Error
+        NAME: sts_ptr_sram_uerr
+        WIDTH: 1
+      - &49
+        DESCRIPTION: sni_if2_wu_data_fifo_sram Memory Double Bit ECC Error
+        NAME: sni_if2_wu_data_fifo_sram_uerr
+        WIDTH: 1
+      - &50
+        DESCRIPTION: sni_if1_wu_data_fifo_sram Memory Double Bit ECC Error
+        NAME: sni_if1_wu_data_fifo_sram_uerr
+        WIDTH: 1
+      - &51
+        DESCRIPTION: sni_if0_wu_data_fifo_sram Memory Double Bit ECC Error
+        NAME: sni_if0_wu_data_fifo_sram_uerr
+        WIDTH: 1
+      - &52
+        DESCRIPTION: pbuf_wu_sram Memory Double Bit ECC Error
+        NAME: pbuf_wu_sram_uerr
+        WIDTH: 1
+      - &53
+        DESCRIPTION: ipf_wu_index_pf_sram1 Memory Double Bit ECC Error
+        NAME: ipf_wu_index_pf_sram1_uerr
+        WIDTH: 1
+      - &54
+        DESCRIPTION: ipf_wu_index_pf_sram0 Memory Double Bit ECC Error
+        NAME: ipf_wu_index_pf_sram0_uerr
+        WIDTH: 1
+    NAME: nwqm_fatal_intr_cause
+  - ATTR: 512
+    FLDLST:
+      - *1
+      - *2
+      - *3
+      - *4
+      - *5
+      - *6
+      - *7
+      - *8
+      - *9
+      - *10
+      - *11
+      - *12
+      - *13
+      - *14
+      - *15
+      - *16
+      - *17
+      - *18
+      - *19
+      - *20
+      - *21
+      - *22
+      - *23
+      - *24
+      - *25
+      - *26
+      - *27
+      - *28
+      - *29
+      - *30
+      - *31
+      - *32
+      - *33
+      - *34
+      - *35
+      - *36
+      - *37
+      - *38
+      - *39
+      - *40
+      - *41
+      - *42
+      - *43
+      - *44
+      - *45
+      - *46
+      - *47
+      - *48
+      - *49
+      - *50
+      - *51
+      - *52
+      - *53
+      - *54
+    NAME: nwqm_fatal_intr_stat
+  - ATTR: 1024
+    FLDLST:
+      - *1
+      - *2
+      - *3
+      - *4
+      - *5
+      - *6
+      - *7
+      - *8
+      - *9
+      - *10
+      - *11
+      - *12
+      - *13
+      - *14
+      - *15
+      - *16
+      - *17
+      - *18
+      - *19
+      - *20
+      - *21
+      - *22
+      - *23
+      - *24
+      - *25
+      - *26
+      - *27
+      - *28
+      - *29
+      - *30
+      - *31
+      - *32
+      - *33
+      - *34
+      - *35
+      - *36
+      - *37
+      - *38
+      - *39
+      - *40
+      - *41
+      - *42
+      - *43
+      - *44
+      - *45
+      - *46
+      - *47
+      - *48
+      - *49
+      - *50
+      - *51
+      - *52
+      - *53
+      - *54
+    NAME: nwqm_fatal_intr_mask
+  - ATTR: 2048
+    FLDLST:
+      - *1
+      - *2
+      - *3
+      - *4
+      - *5
+      - *6
+      - *7
+      - *8
+      - *9
+      - *10
+      - *11
+      - *12
+      - *13
+      - *14
+      - *15
+      - *16
+      - *17
+      - *18
+      - *19
+      - *20
+      - *21
+      - *22
+      - *23
+      - *24
+      - *25
+      - *26
+      - *27
+      - *28
+      - *29
+      - *30
+      - *31
+      - *32
+      - *33
+      - *34
+      - *35
+      - *36
+      - *37
+      - *38
+      - *39
+      - *40
+      - *41
+      - *42
+      - *43
+      - *44
+      - *45
+      - *46
+      - *47
+      - *48
+      - *49
+      - *50
+      - *51
+      - *52
+      - *53
+      - *54
+    NAME: nwqm_fatal_intr_bset
+  - ATTR: 4096
+    FLDLST:
+      - *1
+      - *2
+      - *3
+      - *4
+      - *5
+      - *6
+      - *7
+      - *8
+      - *9
+      - *10
+      - *11
+      - *12
+      - *13
+      - *14
+      - *15
+      - *16
+      - *17
+      - *18
+      - *19
+      - *20
+      - *21
+      - *22
+      - *23
+      - *24
+      - *25
+      - *26
+      - *27
+      - *28
+      - *29
+      - *30
+      - *31
+      - *32
+      - *33
+      - *34
+      - *35
+      - *36
+      - *37
+      - *38
+      - *39
+      - *40
+      - *41
+      - *42
+      - *43
+      - *44
+      - *45
+      - *46
+      - *47
+      - *48
+      - *49
+      - *50
+      - *51
+      - *52
+      - *53
+      - *54
+    NAME: nwqm_fatal_intr_bclr
+  - ATTR: 256
+    FLDLST:
+      - &55
+        DESCRIPTION: Non-fatal spare interrupt.
+        NAME: non_fatal_spare_intr
+        WIDTH: 1
+      - &56
+        DESCRIPTION: wic_wm7_bitalloc_sram Memory Single Bit ECC Error
+        NAME: wic_wm7_bitalloc_sram_cerr
+        WIDTH: 1
+      - &57
+        DESCRIPTION: wic_wm6_bitalloc_sram Memory Single Bit ECC Error
+        NAME: wic_wm6_bitalloc_sram_cerr
+        WIDTH: 1
+      - &58
+        DESCRIPTION: wic_wm5_bitalloc_sram Memory Single Bit ECC Error
+        NAME: wic_wm5_bitalloc_sram_cerr
+        WIDTH: 1
+      - &59
+        DESCRIPTION: wic_wm4_bitalloc_sram Memory Single Bit ECC Error
+        NAME: wic_wm4_bitalloc_sram_cerr
+        WIDTH: 1
+      - &60
+        DESCRIPTION: wic_wm3_bitalloc_sram Memory Single Bit ECC Error
+        NAME: wic_wm3_bitalloc_sram_cerr
+        WIDTH: 1
+      - &61
+        DESCRIPTION: wic_wm2_bitalloc_sram Memory Single Bit ECC Error
+        NAME: wic_wm2_bitalloc_sram_cerr
+        WIDTH: 1
+      - &62
+        DESCRIPTION: wic_wm1_bitalloc_sram Memory Single Bit ECC Error
+        NAME: wic_wm1_bitalloc_sram_cerr
+        WIDTH: 1
+      - &63
+        DESCRIPTION: wic_wm0_bitalloc_sram Memory Single Bit ECC Error
+        NAME: wic_wm0_bitalloc_sram_cerr
+        WIDTH: 1
+      - &64
+        DESCRIPTION: wic_if2_dealloc_req_data_fifo_sram Memory Single Bit ECC Error
+        NAME: wic_if2_dealloc_req_data_fifo_sram_cerr
+        WIDTH: 1
+      - &65
+        DESCRIPTION: wic_if1_dealloc_req_data_fifo_sram Memory Single Bit ECC Error
+        NAME: wic_if1_dealloc_req_data_fifo_sram_cerr
+        WIDTH: 1
+      - &66
+        DESCRIPTION: wic_if0_dealloc_req_data_fifo_sram Memory Single Bit ECC Error
+        NAME: wic_if0_dealloc_req_data_fifo_sram_cerr
+        WIDTH: 1
+      - &67
+        DESCRIPTION: wic_wu_index_alloc_req_fifo_sram Memory Single Bit ECC Error
+        NAME: wic_wu_index_alloc_req_fifo_sram_cerr
+        WIDTH: 1
+      - &68
+        DESCRIPTION: wbuf_wbuf_data_sram_lsb Memory Single Bit ECC Error
+        NAME: wbuf_wbuf_data_sram_lsb_cerr
+        WIDTH: 1
+      - &69
+        DESCRIPTION: wbuf_wbuf_data_sram_msb Memory Single Bit ECC Error
+        NAME: wbuf_wbuf_data_sram_msb_cerr
+        WIDTH: 1
+      - &70
+        DESCRIPTION: sts_pbuf_wu_len_sram Memory Single Bit ECC Error
+        NAME: sts_pbuf_wu_len_sram_cerr
+        WIDTH: 1
+      - &71
+        DESCRIPTION: sts_wm_wu_len_sram Memory Single Bit ECC Error
+        NAME: sts_wm_wu_len_sram_cerr
+        WIDTH: 1
+      - &72
+        DESCRIPTION: sts_pbuf_link_sram Memory Single Bit ECC Error
+        NAME: sts_pbuf_link_sram_cerr
+        WIDTH: 1
+      - &73
+        DESCRIPTION: sts_wm_link_sram Memory Single Bit ECC Error
+        NAME: sts_wm_link_sram_cerr
+        WIDTH: 1
+      - &74
+        DESCRIPTION: sts_ptr_sram Memory Single Bit ECC Error
+        NAME: sts_ptr_sram_cerr
+        WIDTH: 1
+      - &75
+        DESCRIPTION: sni_if2_wu_data_fifo_sram Memory Single Bit ECC Error
+        NAME: sni_if2_wu_data_fifo_sram_cerr
+        WIDTH: 1
+      - &76
+        DESCRIPTION: sni_if1_wu_data_fifo_sram Memory Single Bit ECC Error
+        NAME: sni_if1_wu_data_fifo_sram_cerr
+        WIDTH: 1
+      - &77
+        DESCRIPTION: sni_if0_wu_data_fifo_sram Memory Single Bit ECC Error
+        NAME: sni_if0_wu_data_fifo_sram_cerr
+        WIDTH: 1
+      - &78
+        DESCRIPTION: pbuf_wu_sram Memory Single Bit ECC Error
+        NAME: pbuf_wu_sram_cerr
+        WIDTH: 1
+      - &79
+        DESCRIPTION: ipf_wu_index_pf_sram1 Memory Single Bit ECC Error
+        NAME: ipf_wu_index_pf_sram1_cerr
+        WIDTH: 1
+      - &80
+        DESCRIPTION: ipf_wu_index_pf_sram0 Memory Single Bit ECC Error
+        NAME: ipf_wu_index_pf_sram0_cerr
+        WIDTH: 1
+    NAME: nwqm_non_fatal_intr_cause
+  - ATTR: 512
+    FLDLST:
+      - *55
+      - *56
+      - *57
+      - *58
+      - *59
+      - *60
+      - *61
+      - *62
+      - *63
+      - *64
+      - *65
+      - *66
+      - *67
+      - *68
+      - *69
+      - *70
+      - *71
+      - *72
+      - *73
+      - *74
+      - *75
+      - *76
+      - *77
+      - *78
+      - *79
+      - *80
+    NAME: nwqm_non_fatal_intr_stat
+  - ATTR: 1024
+    FLDLST:
+      - *55
+      - *56
+      - *57
+      - *58
+      - *59
+      - *60
+      - *61
+      - *62
+      - *63
+      - *64
+      - *65
+      - *66
+      - *67
+      - *68
+      - *69
+      - *70
+      - *71
+      - *72
+      - *73
+      - *74
+      - *75
+      - *76
+      - *77
+      - *78
+      - *79
+      - *80
+    NAME: nwqm_non_fatal_intr_mask
+  - ATTR: 2048
+    FLDLST:
+      - *55
+      - *56
+      - *57
+      - *58
+      - *59
+      - *60
+      - *61
+      - *62
+      - *63
+      - *64
+      - *65
+      - *66
+      - *67
+      - *68
+      - *69
+      - *70
+      - *71
+      - *72
+      - *73
+      - *74
+      - *75
+      - *76
+      - *77
+      - *78
+      - *79
+      - *80
+    NAME: nwqm_non_fatal_intr_bset
+  - ATTR: 4096
+    FLDLST:
+      - *55
+      - *56
+      - *57
+      - *58
+      - *59
+      - *60
+      - *61
+      - *62
+      - *63
+      - *64
+      - *65
+      - *66
+      - *67
+      - *68
+      - *69
+      - *70
+      - *71
+      - *72
+      - *73
+      - *74
+      - *75
+      - *76
+      - *77
+      - *78
+      - *79
+      - *80
+    NAME: nwqm_non_fatal_intr_bclr
+  - ATTR: 9
+    DESCRIPTION: Place Holder for now for NWQM Feature Register
+    FLDLST:
+      - ATTR: 1
+        DEFAULT: 6
+        DESCRIPTION: Module ID
+        NAME: module_id
+        VALUE: 6
+        WIDTH: 8
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Version number of the module
+        NAME: version
+        VALUE: 0
+        WIDTH: 8
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Features enabled in the module.
+        NAME: features
+        VALUE: 0
+        WIDTH: 16
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Reserved Field.
+        NAME: Reserved
+        WIDTH: 32
+    NAME: nwqm_features
+    TEST_ATTR: 0
+  - ATTR: 5
+    DESCRIPTION: ' Spare PIO register. These bits can be read and written by software. They can serve as control bits for late ECOs in the design.'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Spare PIO register.
+        NAME: val
+        WIDTH: 64
+    NAME: nwqm_spare_pio
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: Scratchpad register.
+        NAME: val
+        WIDTH: 64
+    NAME: nwqm_scratchpad
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: Control Configuration
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            For NU only.
+                                            WU with this queue ID will be sent to FAE.
+                                           
+        NAME: fae_qid
+        WIDTH: 14
+      - DEFAULT: 1
+        DESCRIPTION: |-2
+          
+                                            Enable WU credit increment on WU dropped on enqueue.
+                                           
+        NAME: nq_drop_wu_crd_inc_ena
+        WIDTH: 1
+      - DEFAULT: 192
+        DESCRIPTION: |-2
+          
+                                            Queue with ID less than this value can use the private buffer.
+                                           
+        NAME: pbuf_max_qid
+        WIDTH: 15
+    NAME: nwqm_cfg
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: PC to DN Interface Configuration
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            PC7 to DN interface.
+                                           
+        NAME: pc7
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            PC6 to DN interface.
+                                           
+        NAME: pc6
+        WIDTH: 2
+      - DEFAULT: 1
+        DESCRIPTION: |-2
+          
+                                            PC5 to DN interface.
+                                           
+        NAME: pc5
+        WIDTH: 2
+      - DEFAULT: 2
+        DESCRIPTION: |-2
+          
+                                            PC4 to DN interface.
+                                           
+        NAME: pc4
+        WIDTH: 2
+      - DEFAULT: 2
+        DESCRIPTION: |-2
+          
+                                            PC3 to DN interface.
+                                           
+        NAME: pc3
+        WIDTH: 2
+      - DEFAULT: 2
+        DESCRIPTION: |-2
+          
+                                            PC2 to DN interface.
+                                           
+        NAME: pc2
+        WIDTH: 2
+      - DEFAULT: 1
+        DESCRIPTION: |-2
+          
+                                            PC1 to DN interface.
+                                           
+        NAME: pc1
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            PC0 to DN interface.
+                                           
+        NAME: pc0
+        WIDTH: 2
+    NAME: nwqm_pc_to_if_cfg
+  - ATTR: 6
+    COUNT: 1
+    DESCRIPTION: SRAM Init
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            Start the SRAM init process.
+                                            Writing a 1 to this register will trigger an init.
+                                            HW will clear this register.
+                                            NOTE: This can only issued when there is no traffic.
+                                           
+        NAME: start
+        WIDTH: 1
+    NAME: nwqm_sram_init
+    TEST_ATTR: 2
+  - ATTR: 9
+    COUNT: 1
+    DESCRIPTION: SRAM Init Done Status
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            WU index prefetch SRAM initialization is done.
+                                           
+        NAME: wu_index_pf
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            States SRAM initialization is done.
+                                           
+        NAME: states
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            All SRAM initialization are done.
+                                           
+        NAME: all
+        WIDTH: 1
+    NAME: nwqm_sram_init_done
+    TEST_ATTR: 2
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: WU Credit Configuration
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            When the WU credit counter run out of credit, subsequent requests will result in response of 0
+                                            until the WU credit count is greater than alloc_dry_th.
+                                           
+        NAME: alloc_dry_th
+        WIDTH: 16
+      - DEFAULT: 32768
+        DESCRIPTION: |-2
+          
+                                            When the WU credit counter is greater than efp_hi_th, the wu_crd_gt_hi signal to efp is asserted.
+                                           
+        NAME: efp_hi_th
+        WIDTH: 16
+      - DEFAULT: 2048
+        DESCRIPTION: |-2
+          
+                                            When the WU credit counter is greater than efp_lo_th, the wu_crd_gt_lo signal to efp is asserted.
+                                           
+        NAME: efp_lo_th
+        WIDTH: 16
+      - DEFAULT: 32
+        DESCRIPTION: |-2
+          
+                                            When the WU credit counter is greater than efp_send_th, the wu_crd_gt_n signal to efp is asserted.
+                                           
+        NAME: efp_send_th
+        WIDTH: 16
+    NAME: nwqm_wu_crd_cfg
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: WU Index Configuration
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            Enable draining of bitalloc even when wm_ena is 0.
+                                           
+        NAME: drain_bitalloc
+        WIDTH: 8
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            Enable allocate of WU index from a WM.
+                                           
+        NAME: wm_ena
+        WIDTH: 8
+    NAME: nwqm_wu_index_cfg
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: WU Credit Counter NCV Threshold 1
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            The current WU credit counter is compared to the thresholds in descending order, i.e. ncv_th_1 last.
+                                               If the current WU credit counter is less than a threshold, the threshold index is returned as the NCV.
+                                            If the current WU credit counter is greater than or equal to all thresholds, the NCV value of 0 is returned.
+                                            The threshold values should be in the following order:
+                                               ncv_th_1 >= ncv_th_2 >= ncv_th_3 >= ...
+                                           
+        NAME: val
+        WIDTH: 16
+    NAME: nwqm_wu_crd_cnt_ncv_th_1
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: WU Credit Counter NCV Threshold 2
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            The current WU credit counter is compared to the thresholds in descending order, i.e. ncv_th_1 last.
+                                               If the current WU credit counter is less than a threshold, the threshold index is returned as the NCV.
+                                            If the current WU credit counter is greater than or equal to all thresholds, the NCV value of 0 is returned.
+                                            The threshold values should be in the following order:
+                                               ncv_th_1 >= ncv_th_2 >= ncv_th_3 >= ...
+                                           
+        NAME: val
+        WIDTH: 16
+    NAME: nwqm_wu_crd_cnt_ncv_th_2
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: WU Credit Counter NCV Threshold 3
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            The current WU credit counter is compared to the thresholds in descending order, i.e. ncv_th_1 last.
+                                               If the current WU credit counter is less than a threshold, the threshold index is returned as the NCV.
+                                            If the current WU credit counter is greater than or equal to all thresholds, the NCV value of 0 is returned.
+                                            The threshold values should be in the following order:
+                                               ncv_th_1 >= ncv_th_2 >= ncv_th_3 >= ...
+                                           
+        NAME: val
+        WIDTH: 16
+    NAME: nwqm_wu_crd_cnt_ncv_th_3
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: WU Credit Counter NCV Threshold 4
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            The current WU credit counter is compared to the thresholds in descending order, i.e. ncv_th_1 last.
+                                               If the current WU credit counter is less than a threshold, the threshold index is returned as the NCV.
+                                            If the current WU credit counter is greater than or equal to all thresholds, the NCV value of 0 is returned.
+                                            The threshold values should be in the following order:
+                                               ncv_th_1 >= ncv_th_2 >= ncv_th_3 >= ...
+                                           
+        NAME: val
+        WIDTH: 16
+    NAME: nwqm_wu_crd_cnt_ncv_th_4
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: WU Credit Counter NCV Threshold 5
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            The current WU credit counter is compared to the thresholds in descending order, i.e. ncv_th_1 last.
+                                               If the current WU credit counter is less than a threshold, the threshold index is returned as the NCV.
+                                            If the current WU credit counter is greater than or equal to all thresholds, the NCV value of 0 is returned.
+                                            The threshold values should be in the following order:
+                                               ncv_th_1 >= ncv_th_2 >= ncv_th_3 >= ...
+                                           
+        NAME: val
+        WIDTH: 16
+    NAME: nwqm_wu_crd_cnt_ncv_th_5
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: WU Credit Counter NCV Threshold 6
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            The current WU credit counter is compared to the thresholds in descending order, i.e. ncv_th_1 last.
+                                               If the current WU credit counter is less than a threshold, the threshold index is returned as the NCV.
+                                            If the current WU credit counter is greater than or equal to all thresholds, the NCV value of 0 is returned.
+                                            The threshold values should be in the following order:
+                                               ncv_th_1 >= ncv_th_2 >= ncv_th_3 >= ...
+                                           
+        NAME: val
+        WIDTH: 16
+    NAME: nwqm_wu_crd_cnt_ncv_th_6
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: WU Credit Counter NCV Threshold 7
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            The current WU credit counter is compared to the thresholds in descending order, i.e. ncv_th_1 last.
+                                               If the current WU credit counter is less than a threshold, the threshold index is returned as the NCV.
+                                            If the current WU credit counter is greater than or equal to all thresholds, the NCV value of 0 is returned.
+                                            The threshold values should be in the following order:
+                                               ncv_th_1 >= ncv_th_2 >= ncv_th_3 >= ...
+                                           
+        NAME: val
+        WIDTH: 16
+    NAME: nwqm_wu_crd_cnt_ncv_th_7
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: WU Credit Counter NCV Threshold 8
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            The current WU credit counter is compared to the thresholds in descending order, i.e. ncv_th_1 last.
+                                               If the current WU credit counter is less than a threshold, the threshold index is returned as the NCV.
+                                            If the current WU credit counter is greater than or equal to all thresholds, the NCV value of 0 is returned.
+                                            The threshold values should be in the following order:
+                                               ncv_th_1 >= ncv_th_2 >= ncv_th_3 >= ...
+                                           
+        NAME: val
+        WIDTH: 16
+    NAME: nwqm_wu_crd_cnt_ncv_th_8
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: WU Credit Counter NCV Threshold 9
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            The current WU credit counter is compared to the thresholds in descending order, i.e. ncv_th_1 last.
+                                               If the current WU credit counter is less than a threshold, the threshold index is returned as the NCV.
+                                            If the current WU credit counter is greater than or equal to all thresholds, the NCV value of 0 is returned.
+                                            The threshold values should be in the following order:
+                                               ncv_th_1 >= ncv_th_2 >= ncv_th_3 >= ...
+                                           
+        NAME: val
+        WIDTH: 16
+    NAME: nwqm_wu_crd_cnt_ncv_th_9
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: WU Credit Counter NCV Threshold 10
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            The current WU credit counter is compared to the thresholds in descending order, i.e. ncv_th_1 last.
+                                               If the current WU credit counter is less than a threshold, the threshold index is returned as the NCV.
+                                            If the current WU credit counter is greater than or equal to all thresholds, the NCV value of 0 is returned.
+                                            The threshold values should be in the following order:
+                                               ncv_th_1 >= ncv_th_2 >= ncv_th_3 >= ...
+                                           
+        NAME: val
+        WIDTH: 16
+    NAME: nwqm_wu_crd_cnt_ncv_th_10
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: WU Credit Counter NCV Threshold 11
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            The current WU credit counter is compared to the thresholds in descending order, i.e. ncv_th_1 last.
+                                               If the current WU credit counter is less than a threshold, the threshold index is returned as the NCV.
+                                            If the current WU credit counter is greater than or equal to all thresholds, the NCV value of 0 is returned.
+                                            The threshold values should be in the following order:
+                                               ncv_th_1 >= ncv_th_2 >= ncv_th_3 >= ...
+                                           
+        NAME: val
+        WIDTH: 16
+    NAME: nwqm_wu_crd_cnt_ncv_th_11
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: WU Credit Counter NCV Threshold 12
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            The current WU credit counter is compared to the thresholds in descending order, i.e. ncv_th_1 last.
+                                               If the current WU credit counter is less than a threshold, the threshold index is returned as the NCV.
+                                            If the current WU credit counter is greater than or equal to all thresholds, the NCV value of 0 is returned.
+                                            The threshold values should be in the following order:
+                                               ncv_th_1 >= ncv_th_2 >= ncv_th_3 >= ...
+                                           
+        NAME: val
+        WIDTH: 16
+    NAME: nwqm_wu_crd_cnt_ncv_th_12
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: WU Credit Counter NCV Threshold 13
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            The current WU credit counter is compared to the thresholds in descending order, i.e. ncv_th_1 last.
+                                               If the current WU credit counter is less than a threshold, the threshold index is returned as the NCV.
+                                            If the current WU credit counter is greater than or equal to all thresholds, the NCV value of 0 is returned.
+                                            The threshold values should be in the following order:
+                                               ncv_th_1 >= ncv_th_2 >= ncv_th_3 >= ...
+                                           
+        NAME: val
+        WIDTH: 16
+    NAME: nwqm_wu_crd_cnt_ncv_th_13
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: WU Credit Counter NCV Threshold 14
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            The current WU credit counter is compared to the thresholds in descending order, i.e. ncv_th_1 last.
+                                               If the current WU credit counter is less than a threshold, the threshold index is returned as the NCV.
+                                            If the current WU credit counter is greater than or equal to all thresholds, the NCV value of 0 is returned.
+                                            The threshold values should be in the following order:
+                                               ncv_th_1 >= ncv_th_2 >= ncv_th_3 >= ...
+                                           
+        NAME: val
+        WIDTH: 16
+    NAME: nwqm_wu_crd_cnt_ncv_th_14
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: WU Credit Counter NCV Threshold 15
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            The current WU credit counter is compared to the thresholds in descending order, i.e. ncv_th_1 last.
+                                               If the current WU credit counter is less than a threshold, the threshold index is returned as the NCV.
+                                            If the current WU credit counter is greater than or equal to all thresholds, the NCV value of 0 is returned.
+                                            The threshold values should be in the following order:
+                                               ncv_th_1 >= ncv_th_2 >= ncv_th_3 >= ...
+                                           
+        NAME: val
+        WIDTH: 16
+    NAME: nwqm_wu_crd_cnt_ncv_th_15
+  - ATTR: 134217737
+    COUNT: 1
+    DESCRIPTION: WU Credit Status
+    FLDLST:
+      - DEFAULT: 65528
+        DESCRIPTION: |-2
+          
+                                            Current value of WU credit counter.
+                                           
+        NAME: val
+        WIDTH: 16
+    NAME: nwqm_wu_crd_cnt
+  - ATTR: 134217734
+    COUNT: 1
+    DESCRIPTION: WU Credit Count Minimum Value
+    FLDLST:
+      - DEFAULT: 65528
+        DESCRIPTION: |-2
+          
+                                            Minimum value of WU credit counter.
+                                           
+        NAME: val
+        WIDTH: 16
+    NAME: nwqm_wu_crd_cnt_min
+    TEST_ATTR: 2
+  - ATTR: 6
+    COUNT: 1
+    DESCRIPTION: WU Credit Adjustment
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            When this register is written, val (in 2-complements format) is added to the WU credit counter.
+                                           
+        NAME: val
+        WIDTH: 17
+    NAME: nwqm_wu_crd_cnt_adj
+    TEST_ATTR: 2
+  - ATTR: 134217737
+    COUNT: 1
+    DESCRIPTION: WU Index Prefetch FIFO Info
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: WU Index Prefetch FIFO Mem Entry 0
+        NAME: mem_entry_0
+        STRUCT_NAME: nwqm_wm_index_t
+        WIDTH: 16
+      - DEFAULT: 0
+        DESCRIPTION: WU Index Prefetch FIFO Top Entry
+        NAME: top_entry
+        STRUCT_NAME: nwqm_wm_index_t
+        WIDTH: 16
+      - DEFAULT: 0
+        DESCRIPTION: WU Index Prefetch FIFO Write Pointer
+        NAME: wr_ptr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: WU Index Prefetch FIFO Read Pointer
+        NAME: rd_ptr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: WU Index Prefetch FIFO Count
+        NAME: cnt
+        WIDTH: 2
+    NAME: nwqm_wu_index_pf_fifo_info
+    TEST_ATTR: 0
+  - ATTR: 134217737
+    COUNT: 8
+    DESCRIPTION: WM Index Count Status
+    FLDLST: &81
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            Current value of per-WM index prefetch counter.
+                                           
+        NAME: pf_cnt
+        WIDTH: 4
+      - DEFAULT: 8192
+        DESCRIPTION: |-2
+          
+                                            Current value of per-WM index free counter.
+                                           
+        NAME: free_cnt
+        WIDTH: 14
+    NAME: nwqm_wm_index_cnt_0
+    TEST_ATTR: 2
+  - ATTR: 134217737
+    COUNT: 8
+    DESCRIPTION: WM Index Count Status
+    FLDLST: *81
+    NAME: nwqm_wm_index_cnt_1
+    TEST_ATTR: 2
+  - ATTR: 134217737
+    COUNT: 8
+    DESCRIPTION: WM Index Count Status
+    FLDLST: *81
+    NAME: nwqm_wm_index_cnt_2
+    TEST_ATTR: 2
+  - ATTR: 134217737
+    COUNT: 8
+    DESCRIPTION: WM Index Count Status
+    FLDLST: *81
+    NAME: nwqm_wm_index_cnt_3
+    TEST_ATTR: 2
+  - ATTR: 134217737
+    COUNT: 8
+    DESCRIPTION: WM Index Count Status
+    FLDLST: *81
+    NAME: nwqm_wm_index_cnt_4
+    TEST_ATTR: 2
+  - ATTR: 134217737
+    COUNT: 8
+    DESCRIPTION: WM Index Count Status
+    FLDLST: *81
+    NAME: nwqm_wm_index_cnt_5
+    TEST_ATTR: 2
+  - ATTR: 134217737
+    COUNT: 8
+    DESCRIPTION: WM Index Count Status
+    FLDLST: *81
+    NAME: nwqm_wm_index_cnt_6
+    TEST_ATTR: 2
+  - ATTR: 134217737
+    COUNT: 8
+    DESCRIPTION: WM Index Count Status
+    FLDLST: *81
+    NAME: nwqm_wm_index_cnt_7
+    TEST_ATTR: 2
+  - ATTR: 134217737
+    COUNT: 1
+    DESCRIPTION: Non-Preferred WM Index Count Status
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            Current value of non-preferred WM index prefetch counter.
+                                           
+        NAME: val
+        WIDTH: 4
+    NAME: nwqm_non_pref_wm_index_cnt
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: HNU WU Credit/Index Prefetch Misc. Configuration
+    FLDLST:
+      - DEFAULT: 11
+        DESCRIPTION: |-2
+          
+                                            WU credit/index alloc/dealloc request DGID.
+                                           
+        NAME: dgid
+        WIDTH: 5
+      - DEFAULT: 7
+        DESCRIPTION: |-2
+          
+                                            WU credit/index alloc/dealloc request DLID.
+                                           
+        NAME: dlid
+        WIDTH: 5
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            WU credit alloc request SN interface.
+                                           
+        NAME: crd_alloc_if
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            WU credit dealloc request SN interface.
+                                            This should be the same as index_dealloc.
+                                           
+        NAME: crd_dealloc_if
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            WU index alloc request SN interface.
+                                           
+        NAME: index_alloc_if
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            WU index dealloc request SN interface.
+                                            This should be the same as crd_dealloc.
+                                           
+        NAME: index_dealloc_if
+        WIDTH: 2
+    NAME: nwqm_wu_crd_index_pf_misc_cfg
+  - ATTR: 134217737
+    COUNT: 1
+    DESCRIPTION: PBUF Free Count Status
+    FLDLST:
+      - DEFAULT: 1024
+        DESCRIPTION: |-2
+          
+                                            Current value of PBUF free counter.
+                                           
+        NAME: val
+        WIDTH: 11
+    NAME: nwqm_pbuf_free_cnt
+    TEST_ATTR: 2
+  - ATTR: 134217734
+    COUNT: 1
+    DESCRIPTION: PBUF Free Count Minimum Value
+    FLDLST:
+      - DEFAULT: 1024
+        DESCRIPTION: |-2
+          
+                                            Minimum value of PBUF free counter.
+                                           
+        NAME: val
+        WIDTH: 11
+    NAME: nwqm_pbuf_free_cnt_min
+    TEST_ATTR: 2
+  - ATTR: 134217734
+    COUNT: 1
+    DESCRIPTION: PBUF Free Count Adjustment
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            When this register is written, val (in 2-complements format) is added to the PBUF free counter.
+                                           
+        NAME: val
+        WIDTH: 12
+    NAME: nwqm_pbuf_free_cnt_adj
+    TEST_ATTR: 2
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: HNU WU Credit Prefetch Configuration
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            When the WU credit counter is greater than this threshold,
+                                            deallocate requests will be sent to NU NWQM to return WU credit until
+                                            the WU credit counter reaches avg_th.
+                                            dealloc_th must be equal to or greater than avg_th.
+                                           
+        NAME: dealloc_th
+        WIDTH: 10
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            This is the WU credit desired level.
+                                           
+        NAME: avg_th
+        WIDTH: 10
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            When the WU credit counter is less than this threshold,
+                                            allocate requests will be sent to NU NWQM to request WU credit until
+                                            the WU credit counter reaches avg_th.
+                                            alloc_th must be less than or equal to avg_th.
+                                            When alloc_th is 0, no allocate command will be issued.
+                                           
+        NAME: alloc_th
+        WIDTH: 10
+      - DEFAULT: 32
+        DESCRIPTION: |-2
+          
+                                            This is the maximum count on allocation request.
+                                           
+        NAME: max_alloc_cnt
+        WIDTH: 10
+      - DEFAULT: 200
+        DESCRIPTION: |-2
+          
+                                            This is the number of cycles to wait between allocate commands when central allocator ran out of credits.
+                                           
+        NAME: dry_wait_timer
+        WIDTH: 10
+    NAME: nwqm_wu_crd_pf_cfg
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: HNU WU Index Prefetch Configuration
+    FLDLST:
+      - DEFAULT: 1
+        DESCRIPTION: |-2
+          
+                                            This is the maximum number of outstanding allocate requests allowed.
+                                            0 means 4.
+                                           
+        NAME: max_num_alloc_req
+        WIDTH: 2
+      - DEFAULT: 200
+        DESCRIPTION: |-2
+          
+                                            This is the number of cycles to wait between allocate commands when central allocator ran out of indices.
+                                           
+        NAME: dry_wait_timer
+        WIDTH: 10
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            When the WU index count is greater than this threshold,
+                                            deallocate requests will be sent to NU NWQM to return WU indices until
+                                            the WU index counter reaches avg_th.
+                                            dealloc_th must be greater than or equal to avg_th.
+                                           
+        NAME: dealloc_th
+        WIDTH: 11
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            This is the WU index desired level.
+                                            This value must be at least 8 to avoid underrun during enqueue and deallocate.
+                                           
+        NAME: avg_th
+        WIDTH: 11
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            When the WU index counter is less than this threshold,
+                                            allocate requests will be sent to NU NWQM to request WU index until
+                                            the WU index counter reaches avg_th.
+                                            alloc_th must be less than or equal to avg_th.
+                                            When alloc_th is 0, no allocate command will be issued.
+                                           
+        NAME: alloc_th
+        WIDTH: 11
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            The maximum number of WU indices to prefetch.
+                                            max_th is in unit of 16 indices.
+                                            max_th * 16 must be greater than dealloc_th.
+                                            max_th * 16 must be less than or equal to 1024.
+                                           
+        NAME: max_th
+        WIDTH: 7
+    NAME: nwqm_wu_index_pf_cfg
+  - ATTR: 134217737
+    COUNT: 1
+    DESCRIPTION: IPF WU Index Prefetch Info
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Number of Outstanding Allocate Request
+        NAME: num_alloc_req
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: WU Index Allocate Sent Count
+        NAME: sn_alloc_req_sent_cnt
+        WIDTH: 11
+      - DEFAULT: 0
+        DESCRIPTION: WU Index Prefetch Count
+        NAME: wu_index_pf_cnt
+        WIDTH: 11
+      - DEFAULT: 0
+        DESCRIPTION: WU Index Prefetch Write Pointer
+        NAME: wu_index_wr_ptr
+        WIDTH: 10
+      - DEFAULT: 0
+        DESCRIPTION: WU Index Prefetch Read Pointer
+        NAME: wu_index_rd_ptr
+        WIDTH: 10
+    NAME: nwqm_ipf_wu_index_pf_info
+    TEST_ATTR: 0
+  - ATTR: 134217734
+    COUNT: 1
+    DESCRIPTION: IPF WU Index Prefetch Count Adjustment
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            When this register is written, val (in 2-complements format) is added to the IPF WU index prefetch counter.
+                                           
+        NAME: val
+        WIDTH: 12
+    NAME: nwqm_ipf_wu_index_pf_cnt_adj
+    TEST_ATTR: 2
+  - ATTR: 134217734
+    COUNT: 1
+    DESCRIPTION: IPF WU Index Prefetch Write Pointer Adjustment
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            When this register is written, val is added to the IPF WU index prefetch write pointer.
+                                           
+        NAME: val
+        WIDTH: 10
+    NAME: nwqm_ipf_wu_index_pf_wr_ptr_adj
+    TEST_ATTR: 2
+  - ATTR: 134217734
+    COUNT: 1
+    DESCRIPTION: IPF WU Index Prefetch Read Pointer Adjustment
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            When this register is written, val is added to the IPF WU index prefetch read pointer.
+                                           
+        NAME: val
+        WIDTH: 10
+    NAME: nwqm_ipf_wu_index_pf_rd_ptr_adj
+    TEST_ATTR: 2
+  - ATTR: 134217738
+    COUNT: 1
+    DESCRIPTION: WBUF States
+    FLDLST:
+      - DEFAULT: 1099511627775
+        DESCRIPTION: Sent vector
+        NAME: sent_vec
+        WIDTH: 40
+      - DEFAULT: 1099511627775
+        DESCRIPTION: Ack vector
+        NAME: ack_vec
+        WIDTH: 40
+      - DEFAULT: 0
+        DESCRIPTION: Ack Error vector
+        NAME: ack_err_vec
+        WIDTH: 40
+      - DEFAULT: 1099511627775
+        DESCRIPTION: Dequeued vector
+        NAME: dq_vec
+        WIDTH: 40
+    NAME: nwqm_wbuf_states
+    TEST_ATTR: 2
+  - ATTR: 134217737
+    COUNT: 1
+    DESCRIPTION: RORD Pointers
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: IF0 dequeue pointer
+        NAME: if0_dq
+        WIDTH: 5
+      - DEFAULT: 0
+        DESCRIPTION: IF0 ETP pointer
+        NAME: if0_etp
+        WIDTH: 5
+      - DEFAULT: 0
+        DESCRIPTION: IF0 deallocate pointer
+        NAME: if0_dealloc
+        WIDTH: 5
+      - DEFAULT: 0
+        DESCRIPTION: IF1 dequeue pointer
+        NAME: if1_dq
+        WIDTH: 5
+      - DEFAULT: 0
+        DESCRIPTION: IF1 ETP pointer
+        NAME: if1_etp
+        WIDTH: 5
+      - DEFAULT: 0
+        DESCRIPTION: IF1 deallocate pointer
+        NAME: if1_dealloc
+        WIDTH: 5
+      - DEFAULT: 0
+        DESCRIPTION: IF2 dequeue pointer
+        NAME: if2_dq
+        WIDTH: 5
+      - DEFAULT: 0
+        DESCRIPTION: IF2 ETP pointer
+        NAME: if2_etp
+        WIDTH: 5
+      - DEFAULT: 0
+        DESCRIPTION: IF2 deallocate pointer
+        NAME: if2_dealloc
+        WIDTH: 5
+    NAME: nwqm_rord_ptrs
+    TEST_ATTR: 2
+  - ATTR: 134217737
+    COUNT: 3
+    DESCRIPTION: RORD Ack Vectors
+    FLDLST: &82
+      - DEFAULT: 0
+        DESCRIPTION: Reorder ack vector
+        NAME: val
+        WIDTH: 24
+    NAME: nwqm_rord_ack_vecs_0
+    TEST_ATTR: 2
+  - ATTR: 134217737
+    COUNT: 3
+    DESCRIPTION: RORD Ack Vectors
+    FLDLST: *82
+    NAME: nwqm_rord_ack_vecs_1
+    TEST_ATTR: 2
+  - ATTR: 134217737
+    COUNT: 3
+    DESCRIPTION: RORD Ack Vectors
+    FLDLST: *82
+    NAME: nwqm_rord_ack_vecs_2
+    TEST_ATTR: 2
+  - ATTR: 134217734
+    COUNT: 1
+    DESCRIPTION: |-
+      SNI Stat Counter Configuration
+                                 Match condition : (val & mask) == match
+                                
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: "SOP flag\n                                 "
+        NAME: sop_mask
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: "SOP flag\n                                 "
+        NAME: sop_match
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: "EOP flag\n                                 "
+        NAME: eop_mask
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: "EOP flag\n                                 "
+        NAME: eop_match
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: "First 68-bit data of SN transfer\n                                 "
+        NAME: data_mask
+        WIDTH: 68
+      - DEFAULT: 0
+        DESCRIPTION: "First 68-bit data of SN transfer\n                                 "
+        NAME: data_match
+        WIDTH: 68
+    NAME: nwqm_sni_stat_cnt_cfg
+  - ATTR: 134217733
+    COUNT: 1
+    DESCRIPTION: SNI Stat Counter Enable
+    FLDLST:
+      - DEFAULT: 1
+        DESCRIPTION: IF2 Response VC
+        NAME: if2_sn_resp
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: IF1 Response VC
+        NAME: if1_sn_resp
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: IF0 Response VC
+        NAME: if0_sn_resp
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: IF2 Request VC
+        NAME: if2_sn_req
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: IF1 Request VC
+        NAME: if1_sn_req
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: IF0 Request VC
+        NAME: if0_sn_req
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: IF2 WU_LO VC
+        NAME: if2_wu_lo
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: IF1 WU_LO VC
+        NAME: if1_wu_lo
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: IF0 WU_LO VC
+        NAME: if0_wu_lo
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: IF2 WU_Hi VC
+        NAME: if2_wu_hi
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: IF1 WU_Hi VC
+        NAME: if1_wu_hi
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: IF0 WU_Hi VC
+        NAME: if0_wu_hi
+        WIDTH: 1
+    NAME: nwqm_sni_stat_cnt_ena
+  - ATTR: 134217766
+    COUNT: 1
+    DESCRIPTION: SNI Stat Counter
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-
+          Rollover stat counter
+                                            On write, val is subtracted from the counter.
+                                           
+        NAME: val
+        WIDTH: 48
+    NAME: nwqm_sni_stat_cnt
+    TEST_ATTR: 2
+  - ATTR: 134217734
+    COUNT: 1
+    DESCRIPTION: |-
+      SNE Stat Counter Configuration
+                                 Match condition : (val & mask) == match
+                                
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: "SOP flag\n                                 "
+        NAME: sop_mask
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: "SOP flag\n                                 "
+        NAME: sop_match
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: "EOP flag\n                                 "
+        NAME: eop_mask
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: "EOP flag\n                                 "
+        NAME: eop_match
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: "First 68-bit data of SN transfer\n                                 "
+        NAME: data_mask
+        WIDTH: 68
+      - DEFAULT: 0
+        DESCRIPTION: "First 68-bit data of SN transfer\n                                 "
+        NAME: data_match
+        WIDTH: 68
+    NAME: nwqm_sne_stat_cnt_cfg
+  - ATTR: 134217733
+    COUNT: 1
+    DESCRIPTION: SNE Stat Counter Enable
+    FLDLST:
+      - DEFAULT: 1
+        DESCRIPTION: IF2 Response VC
+        NAME: if2_sn_resp
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: IF1 Response VC
+        NAME: if1_sn_resp
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: IF0 Response VC
+        NAME: if0_sn_resp
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: IF2 Rquest VC
+        NAME: if2_sn_req
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: IF1 Rquest VC
+        NAME: if1_sn_req
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: IF0 Rquest VC
+        NAME: if0_sn_req
+        WIDTH: 1
+    NAME: nwqm_sne_stat_cnt_ena
+  - ATTR: 134217766
+    COUNT: 1
+    DESCRIPTION: SNE Stat Counter
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-
+          Rollover stat counter
+                                            On write, val is subtracted from the counter.
+                                           
+        NAME: val
+        WIDTH: 48
+    NAME: nwqm_sne_stat_cnt
+    TEST_ATTR: 2
+  - ATTR: 134217733
+    COUNT: 1
+    DESCRIPTION: |-
+      DNE Stat Counter Configuration
+                                 Match condition : (val & mask) == match
+                                
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: "SOP flag\n                                 "
+        NAME: sop_mask
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: "SOP flag\n                                 "
+        NAME: sop_match
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: "EOP flag\n                                 "
+        NAME: eop_mask
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: "EOP flag\n                                 "
+        NAME: eop_match
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: "LDN metadata flags\n                                 "
+        NAME: flags_mask
+        STRUCT_NAME: ldn_metadata_flags_t
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: "LDN metadata flags\n                                 "
+        NAME: flags_match
+        STRUCT_NAME: ldn_metadata_flags_t
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: "GID\n                                 "
+        NAME: gid_mask
+        WIDTH: 5
+      - DEFAULT: 0
+        DESCRIPTION: "GID\n                                 "
+        NAME: gid_match
+        WIDTH: 5
+      - DEFAULT: 0
+        DESCRIPTION: "LID\n                                 "
+        NAME: lid_mask
+        WIDTH: 5
+      - DEFAULT: 0
+        DESCRIPTION: "LID\n                                 "
+        NAME: lid_match
+        WIDTH: 5
+      - DEFAULT: 0
+        DESCRIPTION: "Tag\n                                 "
+        NAME: tag_mask
+        WIDTH: 8
+      - DEFAULT: 0
+        DESCRIPTION: "Tag\n                                 "
+        NAME: tag_match
+        WIDTH: 8
+      - DEFAULT: 0
+        DESCRIPTION: "Data error\n                                 "
+        NAME: derr_mask
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: "Data error\n                                 "
+        NAME: derr_match
+        WIDTH: 1
+    NAME: nwqm_dne_stat_cnt_cfg
+  - ATTR: 134217733
+    COUNT: 1
+    DESCRIPTION: DNE Stat Counter Enable
+    FLDLST:
+      - DEFAULT: 1
+        DESCRIPTION: IF2 WU Write
+        NAME: if2_wu
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: IF1 WU Write
+        NAME: if1_wu
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: IF0 WU Write
+        NAME: if0_wu
+        WIDTH: 1
+    NAME: nwqm_dne_stat_cnt_ena
+  - ATTR: 134217766
+    COUNT: 1
+    DESCRIPTION: DNE Stat Counter
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-
+          Rollover stat counter
+                                            On write, val is subtracted from the counter.
+                                           
+        NAME: val
+        WIDTH: 48
+    NAME: nwqm_dne_stat_cnt
+    TEST_ATTR: 2
+  - ATTR: 134217733
+    COUNT: 1
+    DESCRIPTION: |-
+      NQ/DQ Stat Counter Configuration
+                                 Match condition : (val & mask) == match
+                                
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: "Queue ID\n                                 "
+        NAME: qid_mask
+        WIDTH: 14
+      - DEFAULT: 0
+        DESCRIPTION: "Queue ID\n                                 "
+        NAME: qid_match
+        WIDTH: 14
+    NAME: nwqm_nq_dq_stat_cnt_cfg
+  - ATTR: 134217733
+    COUNT: 1
+    DESCRIPTION: Misc 0 Stat Counter Enable
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Tag pop received from to ETP
+        NAME: tag_from_etp_if2
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Tag pop received from to ETP
+        NAME: tag_from_etp_if1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Tag pop received from to ETP
+        NAME: tag_from_etp_if0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: WU sent to ETP
+        NAME: wu_to_etp_if2
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: WU sent to ETP
+        NAME: wu_to_etp_if1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: WU sent to ETP
+        NAME: wu_to_etp_if0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Dequeue WU read from wbuf
+        NAME: dq_rd_wbuf
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Dequeue WU read from pbuf
+        NAME: dq_rd_pbuf
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Dequeue WU read request to sne
+        NAME: dq_rd_to_sne_if2
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Dequeue WU read request to sne
+        NAME: dq_rd_to_sne_if1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Dequeue WU read request to sne
+        NAME: dq_rd_to_sne_if0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Dequeue response to FCB
+        NAME: dq_to_fcb
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Dequeue request from FCB
+        NAME: dq_from_fcb_if2
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Dequeue request from FCB
+        NAME: dq_from_fcb_if1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Dequeue request from FCB
+        NAME: dq_from_fcb_if0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Enqueue WU written to wbuf
+        NAME: nq_to_wbuf
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Enqueue WU written to pbuf
+        NAME: nq_to_pbuf
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Enqueue request to FCB
+        NAME: nq_to_fcb
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Enqueue received from sni
+        NAME: nq_from_sni
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: WU sent to FAE
+        NAME: wu_to_fae
+        WIDTH: 1
+    NAME: nwqm_misc_0_stat_cnt_ena
+  - ATTR: 134217766
+    COUNT: 1
+    DESCRIPTION: Misc 0 Stat Counter
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-
+          Rollover stat counter
+                                            On write, val is subtracted from the counter.
+                                           
+        NAME: val
+        WIDTH: 48
+    NAME: nwqm_misc_0_stat_cnt
+    TEST_ATTR: 2
+  - ATTR: 134217733
+    COUNT: 1
+    DESCRIPTION: Misc 1 Stat Counter Enable
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Tag pop received from to ETP
+        NAME: tag_from_etp_if2
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Tag pop received from to ETP
+        NAME: tag_from_etp_if1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Tag pop received from to ETP
+        NAME: tag_from_etp_if0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: WU sent to ETP
+        NAME: wu_to_etp_if2
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: WU sent to ETP
+        NAME: wu_to_etp_if1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: WU sent to ETP
+        NAME: wu_to_etp_if0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Dequeue WU read from wbuf
+        NAME: dq_rd_wbuf
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Dequeue WU read from pbuf
+        NAME: dq_rd_pbuf
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Dequeue WU read request to sne
+        NAME: dq_rd_to_sne_if2
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Dequeue WU read request to sne
+        NAME: dq_rd_to_sne_if1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Dequeue WU read request to sne
+        NAME: dq_rd_to_sne_if0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Dequeue response to FCB
+        NAME: dq_to_fcb
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Dequeue request from FCB
+        NAME: dq_from_fcb_if2
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Dequeue request from FCB
+        NAME: dq_from_fcb_if1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Dequeue request from FCB
+        NAME: dq_from_fcb_if0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Enqueue WU written to wbuf
+        NAME: nq_to_wbuf
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Enqueue WU written to pbuf
+        NAME: nq_to_pbuf
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Enqueue request to FCB
+        NAME: nq_to_fcb
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Enqueue received from sni
+        NAME: nq_from_sni
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: WU sent to FAE
+        NAME: wu_to_fae
+        WIDTH: 1
+    NAME: nwqm_misc_1_stat_cnt_ena
+  - ATTR: 134217766
+    COUNT: 1
+    DESCRIPTION: Misc 1 Stat Counter
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-
+          Rollover stat counter
+                                            On write, val is subtracted from the counter.
+                                           
+        NAME: val
+        WIDTH: 48
+    NAME: nwqm_misc_1_stat_cnt
+    TEST_ATTR: 2
+  - ATTR: 134217733
+    COUNT: 1
+    DESCRIPTION: Misc 2 Stat Counter Enable
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Tag pop received from to ETP
+        NAME: tag_from_etp_if2
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Tag pop received from to ETP
+        NAME: tag_from_etp_if1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Tag pop received from to ETP
+        NAME: tag_from_etp_if0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: WU sent to ETP
+        NAME: wu_to_etp_if2
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: WU sent to ETP
+        NAME: wu_to_etp_if1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: WU sent to ETP
+        NAME: wu_to_etp_if0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Dequeue WU read from wbuf
+        NAME: dq_rd_wbuf
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Dequeue WU read from pbuf
+        NAME: dq_rd_pbuf
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Dequeue WU read request to sne
+        NAME: dq_rd_to_sne_if2
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Dequeue WU read request to sne
+        NAME: dq_rd_to_sne_if1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Dequeue WU read request to sne
+        NAME: dq_rd_to_sne_if0
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Dequeue response to FCB
+        NAME: dq_to_fcb
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Dequeue request from FCB
+        NAME: dq_from_fcb_if2
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Dequeue request from FCB
+        NAME: dq_from_fcb_if1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Dequeue request from FCB
+        NAME: dq_from_fcb_if0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Enqueue WU written to wbuf
+        NAME: nq_to_wbuf
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Enqueue WU written to pbuf
+        NAME: nq_to_pbuf
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Enqueue request to FCB
+        NAME: nq_to_fcb
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Enqueue received from sni
+        NAME: nq_from_sni
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: WU sent to FAE
+        NAME: wu_to_fae
+        WIDTH: 1
+    NAME: nwqm_misc_2_stat_cnt_ena
+  - ATTR: 134217766
+    COUNT: 1
+    DESCRIPTION: Misc 2 Stat Counter
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-
+          Rollover stat counter
+                                            On write, val is subtracted from the counter.
+                                           
+        NAME: val
+        WIDTH: 48
+    NAME: nwqm_misc_2_stat_cnt
+    TEST_ATTR: 2
+  - ATTR: 134217733
+    COUNT: 1
+    DESCRIPTION: Misc 3 Stat Counter Enable
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Tag pop received from to ETP
+        NAME: tag_from_etp_if2
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Tag pop received from to ETP
+        NAME: tag_from_etp_if1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Tag pop received from to ETP
+        NAME: tag_from_etp_if0
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: WU sent to ETP
+        NAME: wu_to_etp_if2
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: WU sent to ETP
+        NAME: wu_to_etp_if1
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: WU sent to ETP
+        NAME: wu_to_etp_if0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Dequeue WU read from wbuf
+        NAME: dq_rd_wbuf
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Dequeue WU read from pbuf
+        NAME: dq_rd_pbuf
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Dequeue WU read request to sne
+        NAME: dq_rd_to_sne_if2
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Dequeue WU read request to sne
+        NAME: dq_rd_to_sne_if1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Dequeue WU read request to sne
+        NAME: dq_rd_to_sne_if0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Dequeue response to FCB
+        NAME: dq_to_fcb
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Dequeue request from FCB
+        NAME: dq_from_fcb_if2
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Dequeue request from FCB
+        NAME: dq_from_fcb_if1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Dequeue request from FCB
+        NAME: dq_from_fcb_if0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Enqueue WU written to wbuf
+        NAME: nq_to_wbuf
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Enqueue WU written to pbuf
+        NAME: nq_to_pbuf
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Enqueue request to FCB
+        NAME: nq_to_fcb
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Enqueue received from sni
+        NAME: nq_from_sni
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: WU sent to FAE
+        NAME: wu_to_fae
+        WIDTH: 1
+    NAME: nwqm_misc_3_stat_cnt_ena
+  - ATTR: 134217766
+    COUNT: 1
+    DESCRIPTION: Misc 3 Stat Counter
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-
+          Rollover stat counter
+                                            On write, val is subtracted from the counter.
+                                           
+        NAME: val
+        WIDTH: 48
+    NAME: nwqm_misc_3_stat_cnt
+    TEST_ATTR: 2
+  - ATTR: 134217733
+    COUNT: 1
+    DESCRIPTION: WU Index/Credit Stat Counter Configuration
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-
+          SGID mask filter for crd/index_stat_cnt
+                                            Match condition : (val & mask) == match
+                                           
+        NAME: sgid_mask
+        WIDTH: 5
+      - DEFAULT: 0
+        DESCRIPTION: |-
+          SGID match filter for crd/index_stat_cnt
+                                            Match condition : (val & mask) == match
+                                           
+        NAME: sgid_match
+        WIDTH: 5
+      - DEFAULT: 0
+        DESCRIPTION: |-
+          SLID mask filter for crd/index_stat_cnt
+                                            Match condition : (val & mask) == match
+                                           
+        NAME: slid_mask
+        WIDTH: 5
+      - DEFAULT: 0
+        DESCRIPTION: |-
+          SLID match filter for crd/index_stat_cnt
+                                            Match condition : (val & mask) == match
+                                           
+        NAME: slid_match
+        WIDTH: 5
+      - DEFAULT: 0
+        DESCRIPTION: 'When 1, count credit request/response transactions.  When 0, count credit request/response amount.'
+        NAME: crd_transaction
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'When 1, count index request/response transactions.  When 0, count index request/response amount.'
+        NAME: index_transaction
+        WIDTH: 1
+    NAME: nwqm_wic_stat_cnt_cfg
+  - ATTR: 134217733
+    COUNT: 1
+    DESCRIPTION: WU Credit Increment Stat Counter Enable
+    FLDLST:
+      - DEFAULT: 1
+        DESCRIPTION: Increment for enqueue drop
+        NAME: nq_drop
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Increment from WRO
+        NAME: wro
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Increment from ETP 2
+        NAME: if2_etp
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Increment from ETP 1
+        NAME: if1_etp
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Increment from ETP 0
+        NAME: if0_etp
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: 'For NU, deallocate requests from other clusters.  For HNU, allocate responses from NWQM.'
+        NAME: external
+        WIDTH: 1
+    NAME: nwqm_wu_crd_inc_stat_cnt_ena
+  - ATTR: 134217766
+    COUNT: 1
+    DESCRIPTION: WU Credit Increment Stat Counter
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-
+          Rollover stat counter
+                                            On write, val is subtracted from the counter.
+                                           
+        NAME: val
+        WIDTH: 48
+    NAME: nwqm_wu_crd_inc_stat_cnt
+    TEST_ATTR: 2
+  - ATTR: 134217733
+    COUNT: 1
+    DESCRIPTION: WU Credit Increment Stat Counter Enable
+    FLDLST:
+      - DEFAULT: 1
+        DESCRIPTION: Decrement from EFP
+        NAME: efp
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: 'For NU, allocate responses to other clusters.  For HNU, deallocate requests to NWQM.'
+        NAME: external
+        WIDTH: 1
+    NAME: nwqm_wu_crd_dec_stat_cnt_ena
+  - ATTR: 134217766
+    COUNT: 1
+    DESCRIPTION: WU Credit Decrement Stat Counter
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-
+          Rollover stat counter
+                                            On write, val is subtracted from the counter.
+                                           
+        NAME: val
+        WIDTH: 48
+    NAME: nwqm_wu_crd_dec_stat_cnt
+    TEST_ATTR: 2
+  - ATTR: 134217766
+    COUNT: 1
+    DESCRIPTION: WU Credit Allocate Request Stat Counter
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-
+          Rollover stat counter
+                                            On write, val is subtracted from the counter.
+                                           
+        NAME: val
+        WIDTH: 48
+    NAME: nwqm_wu_crd_alloc_req_stat_cnt
+    TEST_ATTR: 2
+  - ATTR: 134217733
+    COUNT: 1
+    DESCRIPTION: WU Index Increment Stat Counter Enable
+    FLDLST:
+      - DEFAULT: 1
+        DESCRIPTION: Increment from nwqm_rord
+        NAME: rord
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: 'For NU, deallocate requests from other clusters.  For HNU, allocate responses from NWQM.'
+        NAME: external
+        WIDTH: 1
+    NAME: nwqm_wu_index_inc_stat_cnt_ena
+  - ATTR: 134217734
+    COUNT: 1
+    DESCRIPTION: WU Index Increment Stat Counter
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-
+          Rollover stat counter
+                                            On write, val is subtracted from the counter.
+                                           
+        NAME: val
+        WIDTH: 48
+    NAME: nwqm_wu_index_inc_stat_cnt
+    TEST_ATTR: 2
+  - ATTR: 134217733
+    COUNT: 1
+    DESCRIPTION: WU Index Increment Stat Counter Enable
+    FLDLST:
+      - DEFAULT: 1
+        DESCRIPTION: Decrement from nwqm_nq
+        NAME: nq
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: 'For NU, allocate responses to other clusters.  For HNU, deallocate requests to NWQM.'
+        NAME: external
+        WIDTH: 1
+    NAME: nwqm_wu_index_dec_stat_cnt_ena
+  - ATTR: 134217766
+    COUNT: 1
+    DESCRIPTION: WU Index Decrement Stat Counter
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-
+          Rollover stat counter
+                                            On write, val is subtracted from the counter.
+                                           
+        NAME: val
+        WIDTH: 48
+    NAME: nwqm_wu_index_dec_stat_cnt
+    TEST_ATTR: 2
+  - ATTR: 134217766
+    COUNT: 1
+    DESCRIPTION: WU Index Allocate Request Stat Counter
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-
+          Rollover stat counter
+                                            On write, val is subtracted from the counter.
+                                           
+        NAME: val
+        WIDTH: 48
+    NAME: nwqm_wu_index_alloc_req_stat_cnt
+    TEST_ATTR: 2
+  - ATTR: 134217738
+    COUNT: 1
+    DESCRIPTION: Credit Counters
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: ipf_alloc_wu_index_pf_fifo_crd_cnt
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: wic_if2_sne_resp_crd_cnt
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: wic_if1_sne_resp_crd_cnt
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: wic_if0_sne_resp_crd_cnt
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: wbuf_dne_2_wr_req_crd_cnt
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: wbuf_dne_1_wr_req_crd_cnt
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: wbuf_dne_0_wr_req_crd_cnt
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: sni_wic_crd_cnt
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: sni_wic_if2_vp_req_dealloc_crd_cnt
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: sni_wic_if1_vp_req_dealloc_crd_cnt
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: sni_wic_if0_vp_req_dealloc_crd_cnt
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: sni_wic_vp_req_alloc_crd_cnt
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: sni_if2_wic_dealloc_crd_cnt
+        WIDTH: 6
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: sni_if1_wic_dealloc_crd_cnt
+        WIDTH: 6
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: sni_if0_wic_dealloc_crd_cnt
+        WIDTH: 6
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: sni_fae_crd_cnt
+        WIDTH: 9
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: sni_nq_crd_cnt
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: sne_if2_sn_req_crd_cnt
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: sne_if1_sn_req_crd_cnt
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: sne_if0_sn_req_crd_cnt
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: sne_if2_sn_resp_crd_cnt
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: sne_if1_sn_resp_crd_cnt
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: sne_if0_sn_resp_crd_cnt
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: rord_wic_dealloc_crd_cnt
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: nq_wbuf_crd_cnt
+        WIDTH: 6
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: nq_fcb_crd_cnt
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: dq_if2_sne_crd_cnt
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: dq_if1_sne_crd_cnt
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: dq_if0_sne_crd_cnt
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: dq_if2_rord_crd_cnt
+        WIDTH: 5
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: dq_if1_rord_crd_cnt
+        WIDTH: 5
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: dq_if0_rord_crd_cnt
+        WIDTH: 5
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: dq_fcb_deq_resp_crd_cnt
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: dne_if2_nwqm_fep_ldn_crd_cnt
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: dne_if1_nwqm_fep_ldn_crd_cnt
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: dne_if0_nwqm_fep_ldn_crd_cnt
+        WIDTH: 4
+    NAME: nwqm_crd_cnt
+    TEST_ATTR: 2
+  - ATTR: 134217737
+    COUNT: 1
+    DESCRIPTION: Dequeue on Empty Log
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-
+          Queue ID on 1st dequeue on empty error
+                                            The log is armed when the dq_on_empty interrupt bit is cleared.
+                                           
+        NAME: qid
+        WIDTH: 14
+    NAME: nwqm_dq_on_empty_log
+  - ATTR: 134217734
+    COUNT: 1
+    DESCRIPTION: |-
+      WU Index Pointer Error Log
+                                 Write-1 to clear.
+                                
+    FLDLST:
+      - &83
+        DEFAULT: 0
+        DESCRIPTION: Deallocate pointer from DQ has a null pointer
+        NAME: wu_index_dq_dealloc_null_ptr_err
+        WIDTH: 1
+      - &84
+        DEFAULT: 0
+        DESCRIPTION: Allocate pointer to NQ has a null pointer
+        NAME: wu_index_nq_alloc_null_ptr_err
+        WIDTH: 1
+      - &85
+        DEFAULT: 0
+        DESCRIPTION: Deallocate request from client to NWQM has a null pointer
+        NAME: wu_index_dealloc_req_null_ptr_err
+        WIDTH: 1
+      - &86
+        DEFAULT: 0
+        DESCRIPTION: Allocate response from NWQM to client has a null pointer
+        NAME: wu_index_alloc_resp_null_ptr_err
+        WIDTH: 1
+      - &87
+        DEFAULT: 0
+        DESCRIPTION: Bitalloc allocate has a null pointer
+        NAME: wm7_bitalloc_null_ptr_err
+        WIDTH: 1
+      - &88
+        DEFAULT: 0
+        DESCRIPTION: Bitalloc allocate has a null pointer
+        NAME: wm6_bitalloc_null_ptr_err
+        WIDTH: 1
+      - &89
+        DEFAULT: 0
+        DESCRIPTION: Bitalloc allocate has a null pointer
+        NAME: wm5_bitalloc_null_ptr_err
+        WIDTH: 1
+      - &90
+        DEFAULT: 0
+        DESCRIPTION: Bitalloc allocate has a null pointer
+        NAME: wm4_bitalloc_null_ptr_err
+        WIDTH: 1
+      - &91
+        DEFAULT: 0
+        DESCRIPTION: Bitalloc allocate has a null pointer
+        NAME: wm3_bitalloc_null_ptr_err
+        WIDTH: 1
+      - &92
+        DEFAULT: 0
+        DESCRIPTION: Bitalloc allocate has a null pointer
+        NAME: wm2_bitalloc_null_ptr_err
+        WIDTH: 1
+      - &93
+        DEFAULT: 0
+        DESCRIPTION: Bitalloc allocate has a null pointer
+        NAME: wm1_bitalloc_null_ptr_err
+        WIDTH: 1
+      - &94
+        DEFAULT: 0
+        DESCRIPTION: Bitalloc allocate has a null pointer
+        NAME: wm0_bitalloc_null_ptr_err
+        WIDTH: 1
+      - &95
+        DEFAULT: 0
+        DESCRIPTION: Bitalloc deallocate duplicate pointer
+        NAME: wm7_bitalloc_dealloc_err
+        WIDTH: 1
+      - &96
+        DEFAULT: 0
+        DESCRIPTION: Bitalloc deallocate duplicate pointer
+        NAME: wm6_bitalloc_dealloc_err
+        WIDTH: 1
+      - &97
+        DEFAULT: 0
+        DESCRIPTION: Bitalloc deallocate duplicate pointer
+        NAME: wm5_bitalloc_dealloc_err
+        WIDTH: 1
+      - &98
+        DEFAULT: 0
+        DESCRIPTION: Bitalloc deallocate duplicate pointer
+        NAME: wm4_bitalloc_dealloc_err
+        WIDTH: 1
+      - &99
+        DEFAULT: 0
+        DESCRIPTION: Bitalloc deallocate duplicate pointer
+        NAME: wm3_bitalloc_dealloc_err
+        WIDTH: 1
+      - &100
+        DEFAULT: 0
+        DESCRIPTION: Bitalloc deallocate duplicate pointer
+        NAME: wm2_bitalloc_dealloc_err
+        WIDTH: 1
+      - &101
+        DEFAULT: 0
+        DESCRIPTION: Bitalloc deallocate duplicate pointer
+        NAME: wm1_bitalloc_dealloc_err
+        WIDTH: 1
+      - &102
+        DEFAULT: 0
+        DESCRIPTION: Bitalloc deallocate duplicate pointer
+        NAME: wm0_bitalloc_dealloc_err
+        WIDTH: 1
+    NAME: nwqm_wu_index_ptr_err_log
+    TEST_ATTR: 2
+  - ATTR: 134217738
+    COUNT: 1
+    DESCRIPTION: |-
+      WU Index Pointer 1st Error Log
+                                 The log is armed when the wu_index_ptr interrupt bit is cleared.
+                                
+    FLDLST:
+      - *83
+      - *84
+      - *85
+      - *86
+      - *87
+      - *88
+      - *89
+      - *90
+      - *91
+      - *92
+      - *93
+      - *94
+      - *95
+      - *96
+      - *97
+      - *98
+      - *99
+      - *100
+      - *101
+      - *102
+    NAME: nwqm_wu_index_ptr_1st_err_log
+  - ATTR: 134217734
+    COUNT: 1
+    DESCRIPTION: |-
+      FIFO Overflow Error Log
+                                 Write-1 to clear.
+                                
+    FLDLST:
+      - &103
+        DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: wic_wu_index_alloc_req_fifo_oflow_err
+        WIDTH: 1
+      - &104
+        DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: wic_wu_crd_alloc_req_fifo_oflow_err
+        WIDTH: 1
+      - &105
+        DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: wbuf_wr_ack_fifo_oflow_err
+        WIDTH: 1
+      - &106
+        DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: sni_if2_sn_resp_fifo_oflow_err
+        WIDTH: 1
+      - &107
+        DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: sni_if1_sn_resp_fifo_oflow_err
+        WIDTH: 1
+      - &108
+        DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: sni_if0_sn_resp_fifo_oflow_err
+        WIDTH: 1
+      - &109
+        DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: sni_if2_sn_req_fifo_oflow_err
+        WIDTH: 1
+      - &110
+        DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: sni_if1_sn_req_fifo_oflow_err
+        WIDTH: 1
+      - &111
+        DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: sni_if0_sn_req_fifo_oflow_err
+        WIDTH: 1
+      - &112
+        DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: sni_if2_wu_fifo_oflow_err
+        WIDTH: 1
+      - &113
+        DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: sni_if1_wu_fifo_oflow_err
+        WIDTH: 1
+      - &114
+        DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: sni_if0_wu_fifo_oflow_err
+        WIDTH: 1
+      - &115
+        DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: dq_if2_fcb_req_fifo_oflow_err
+        WIDTH: 1
+      - &116
+        DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: dq_if1_fcb_req_fifo_oflow_err
+        WIDTH: 1
+      - &117
+        DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: dq_if0_fcb_req_fifo_oflow_err
+        WIDTH: 1
+    NAME: nwqm_fifo_oflow_err_log
+    TEST_ATTR: 2
+  - ATTR: 134217738
+    COUNT: 1
+    DESCRIPTION: |-
+      FIFO Overflow 1st Error Log
+                                 The log is armed when the fifo_oflow interrupt bit is cleared.
+                                
+    FLDLST:
+      - *103
+      - *104
+      - *105
+      - *106
+      - *107
+      - *108
+      - *109
+      - *110
+      - *111
+      - *112
+      - *113
+      - *114
+      - *115
+      - *116
+      - *117
+    NAME: nwqm_fifo_oflow_1st_err_log
+  - ATTR: 134217734
+    COUNT: 1
+    DESCRIPTION: |-
+      Count Overflow Error Log
+                                 Write-1 to clear.
+                                
+    FLDLST:
+      - &118
+        DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: non_pref_wm_pf_cnt_oflow_err
+        WIDTH: 1
+      - &119
+        DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: wm7_pf_cnt_oflow_err
+        WIDTH: 1
+      - &120
+        DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: wm6_pf_cnt_oflow_err
+        WIDTH: 1
+      - &121
+        DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: wm5_pf_cnt_oflow_err
+        WIDTH: 1
+      - &122
+        DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: wm4_pf_cnt_oflow_err
+        WIDTH: 1
+      - &123
+        DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: wm3_pf_cnt_oflow_err
+        WIDTH: 1
+      - &124
+        DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: wm2_pf_cnt_oflow_err
+        WIDTH: 1
+      - &125
+        DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: wm1_pf_cnt_oflow_err
+        WIDTH: 1
+      - &126
+        DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: wm0_pf_cnt_oflow_err
+        WIDTH: 1
+      - &127
+        DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: wm7_index_free_cnt_oflow_err
+        WIDTH: 1
+      - &128
+        DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: wm6_index_free_cnt_oflow_err
+        WIDTH: 1
+      - &129
+        DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: wm5_index_free_cnt_oflow_err
+        WIDTH: 1
+      - &130
+        DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: wm4_index_free_cnt_oflow_err
+        WIDTH: 1
+      - &131
+        DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: wm3_index_free_cnt_oflow_err
+        WIDTH: 1
+      - &132
+        DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: wm2_index_free_cnt_oflow_err
+        WIDTH: 1
+      - &133
+        DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: wm1_index_free_cnt_oflow_err
+        WIDTH: 1
+      - &134
+        DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: wm0_index_free_cnt_oflow_err
+        WIDTH: 1
+      - &135
+        DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: ipf_num_alloc_req_oflow_err
+        WIDTH: 1
+      - &136
+        DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: ipf_wu_index_pf_cnt_oflow_err
+        WIDTH: 1
+      - &137
+        DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: pbuf_free_cnt_oflow_err
+        WIDTH: 1
+      - &138
+        DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: wu_crd_cnt_oflow_err
+        WIDTH: 1
+      - &139
+        DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: wu_crd_cnt_uflow_err
+        WIDTH: 1
+      - &140
+        DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: ipf_alloc_wu_index_pf_fifo_crd_cnt_oflow_err
+        WIDTH: 1
+      - &141
+        DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: wic_if2_sne_resp_crd_cnt_oflow_err
+        WIDTH: 1
+      - &142
+        DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: wic_if1_sne_resp_crd_cnt_oflow_err
+        WIDTH: 1
+      - &143
+        DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: wic_if0_sne_resp_crd_cnt_oflow_err
+        WIDTH: 1
+      - &144
+        DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: wbuf_dne_2_wr_req_crd_cnt_oflow_err
+        WIDTH: 1
+      - &145
+        DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: wbuf_dne_1_wr_req_crd_cnt_oflow_err
+        WIDTH: 1
+      - &146
+        DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: wbuf_dne_0_wr_req_crd_cnt_oflow_err
+        WIDTH: 1
+      - &147
+        DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: sni_wic_crd_cnt_oflow_err
+        WIDTH: 1
+      - &148
+        DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: sni_wic_if2_vp_req_dealloc_crd_cnt_oflow_err
+        WIDTH: 1
+      - &149
+        DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: sni_wic_if1_vp_req_dealloc_crd_cnt_oflow_err
+        WIDTH: 1
+      - &150
+        DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: sni_wic_if0_vp_req_dealloc_crd_cnt_oflow_err
+        WIDTH: 1
+      - &151
+        DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: sni_wic_vp_req_alloc_crd_cnt_oflow_err
+        WIDTH: 1
+      - &152
+        DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: sni_if2_wic_dealloc_crd_cnt_oflow_err
+        WIDTH: 1
+      - &153
+        DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: sni_if1_wic_dealloc_crd_cnt_oflow_err
+        WIDTH: 1
+      - &154
+        DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: sni_if0_wic_dealloc_crd_cnt_oflow_err
+        WIDTH: 1
+      - &155
+        DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: sni_fae_crd_cnt_oflow_err
+        WIDTH: 1
+      - &156
+        DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: sni_nq_crd_cnt_oflow_err
+        WIDTH: 1
+      - &157
+        DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: sne_if2_sn_req_crd_cnt_oflow_err
+        WIDTH: 1
+      - &158
+        DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: sne_if1_sn_req_crd_cnt_oflow_err
+        WIDTH: 1
+      - &159
+        DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: sne_if0_sn_req_crd_cnt_oflow_err
+        WIDTH: 1
+      - &160
+        DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: sne_if2_sn_resp_crd_cnt_oflow_err
+        WIDTH: 1
+      - &161
+        DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: sne_if1_sn_resp_crd_cnt_oflow_err
+        WIDTH: 1
+      - &162
+        DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: sne_if0_sn_resp_crd_cnt_oflow_err
+        WIDTH: 1
+      - &163
+        DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: rord_wic_dealloc_crd_cnt_oflow_err
+        WIDTH: 1
+      - &164
+        DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: nq_wbuf_crd_cnt_oflow_err
+        WIDTH: 1
+      - &165
+        DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: nq_fcb_crd_cnt_oflow_err
+        WIDTH: 1
+      - &166
+        DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: dq_if2_sne_crd_cnt_oflow_err
+        WIDTH: 1
+      - &167
+        DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: dq_if1_sne_crd_cnt_oflow_err
+        WIDTH: 1
+      - &168
+        DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: dq_if0_sne_crd_cnt_oflow_err
+        WIDTH: 1
+      - &169
+        DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: dq_if2_rord_crd_cnt_oflow_err
+        WIDTH: 1
+      - &170
+        DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: dq_if1_rord_crd_cnt_oflow_err
+        WIDTH: 1
+      - &171
+        DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: dq_if0_rord_crd_cnt_oflow_err
+        WIDTH: 1
+      - &172
+        DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: dq_fcb_deq_resp_crd_cnt_oflow_err
+        WIDTH: 1
+      - &173
+        DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: dne_if2_nwqm_fep_ldn_crd_cnt_oflow_err
+        WIDTH: 1
+      - &174
+        DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: dne_if1_nwqm_fep_ldn_crd_cnt_oflow_err
+        WIDTH: 1
+      - &175
+        DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: dne_if0_nwqm_fep_ldn_crd_cnt_oflow_err
+        WIDTH: 1
+    NAME: nwqm_cnt_oflow_err_log
+    TEST_ATTR: 2
+  - ATTR: 134217738
+    COUNT: 1
+    DESCRIPTION: |-
+      Count Overflow 1st Error Log
+                                 The log is armed when the cnt_oflow interrupt bit is cleared.
+                                
+    FLDLST:
+      - *118
+      - *119
+      - *120
+      - *121
+      - *122
+      - *123
+      - *124
+      - *125
+      - *126
+      - *127
+      - *128
+      - *129
+      - *130
+      - *131
+      - *132
+      - *133
+      - *134
+      - *135
+      - *136
+      - *137
+      - *138
+      - *139
+      - *140
+      - *141
+      - *142
+      - *143
+      - *144
+      - *145
+      - *146
+      - *147
+      - *148
+      - *149
+      - *150
+      - *151
+      - *152
+      - *153
+      - *154
+      - *155
+      - *156
+      - *157
+      - *158
+      - *159
+      - *160
+      - *161
+      - *162
+      - *163
+      - *164
+      - *165
+      - *166
+      - *167
+      - *168
+      - *169
+      - *170
+      - *171
+      - *172
+      - *173
+      - *174
+      - *175
+    NAME: nwqm_cnt_oflow_1st_err_log
+  - ATTR: 134217733
+    COUNT: 1
+    DESCRIPTION: Config register for memory error injection
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into wic_wm7_bitalloc_sram memory
+        NAME: wic_wm7_bitalloc_sram
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into wic_wm6_bitalloc_sram memory
+        NAME: wic_wm6_bitalloc_sram
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into wic_wm5_bitalloc_sram memory
+        NAME: wic_wm5_bitalloc_sram
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into wic_wm4_bitalloc_sram memory
+        NAME: wic_wm4_bitalloc_sram
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into wic_wm3_bitalloc_sram memory
+        NAME: wic_wm3_bitalloc_sram
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into wic_wm2_bitalloc_sram memory
+        NAME: wic_wm2_bitalloc_sram
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into wic_wm1_bitalloc_sram memory
+        NAME: wic_wm1_bitalloc_sram
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into wic_wm0_bitalloc_sram memory
+        NAME: wic_wm0_bitalloc_sram
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into wic_if2_dealloc_req_data_fifo_sram memory
+        NAME: wic_if2_dealloc_req_data_fifo_sram
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into wic_if1_dealloc_req_data_fifo_sram memory
+        NAME: wic_if1_dealloc_req_data_fifo_sram
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into wic_if0_dealloc_req_data_fifo_sram memory
+        NAME: wic_if0_dealloc_req_data_fifo_sram
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into wic_wu_index_alloc_req_fifo_sram memory
+        NAME: wic_wu_index_alloc_req_fifo_sram
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into wbuf_wbuf_data_sram_lsb memory
+        NAME: wbuf_wbuf_data_sram_lsb
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into wbuf_wbuf_data_sram_msb memory
+        NAME: wbuf_wbuf_data_sram_msb
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into sts_pbuf_wu_len_sram memory
+        NAME: sts_pbuf_wu_len_sram
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into sts_wm_wu_len_sram memory
+        NAME: sts_wm_wu_len_sram
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into sts_pbuf_link_sram memory
+        NAME: sts_pbuf_link_sram
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into sts_wm_link_sram memory
+        NAME: sts_wm_link_sram
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into sts_ptr_sram memory
+        NAME: sts_ptr_sram
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into sni_if2_wu_data_fifo_sram memory
+        NAME: sni_if2_wu_data_fifo_sram
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into sni_if1_wu_data_fifo_sram memory
+        NAME: sni_if1_wu_data_fifo_sram
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into sni_if0_wu_data_fifo_sram memory
+        NAME: sni_if0_wu_data_fifo_sram
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into pbuf_wu_sram memory
+        NAME: pbuf_wu_sram
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into ipf_wu_index_pf_sram1 memory
+        NAME: ipf_wu_index_pf_sram1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into ipf_wu_index_pf_sram0 memory
+        NAME: ipf_wu_index_pf_sram0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: |-
+          Type of error to be injected
+                                            Applied to all memory error injection
+                                            0 - Uncorrectable error
+                                            1 - Correctable error
+                                            
+        NAME: err_type
+        WIDTH: 1
+    NAME: nwqm_sram_err_inj_cfg
+    TEST_ATTR: 2
+  - ATTR: 134217738
+    COUNT: 1
+    DESCRIPTION: |-
+      SRAM bit vector that has ECC/parity error
+                                 First SRAM ECC/parity error detected (1-hot)
+                                 Set when first error is detected
+                                 Reset when corresponding interrupt status bit is cleared
+                                
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: wic_wm7_bitalloc_sram Memory Single Bit ECC Error
+        NAME: wic_wm7_bitalloc_sram_cerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: wic_wm6_bitalloc_sram Memory Single Bit ECC Error
+        NAME: wic_wm6_bitalloc_sram_cerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: wic_wm5_bitalloc_sram Memory Single Bit ECC Error
+        NAME: wic_wm5_bitalloc_sram_cerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: wic_wm4_bitalloc_sram Memory Single Bit ECC Error
+        NAME: wic_wm4_bitalloc_sram_cerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: wic_wm3_bitalloc_sram Memory Single Bit ECC Error
+        NAME: wic_wm3_bitalloc_sram_cerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: wic_wm2_bitalloc_sram Memory Single Bit ECC Error
+        NAME: wic_wm2_bitalloc_sram_cerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: wic_wm1_bitalloc_sram Memory Single Bit ECC Error
+        NAME: wic_wm1_bitalloc_sram_cerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: wic_wm0_bitalloc_sram Memory Single Bit ECC Error
+        NAME: wic_wm0_bitalloc_sram_cerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: wic_if2_dealloc_req_data_fifo_sram Memory Single Bit ECC Error
+        NAME: wic_if2_dealloc_req_data_fifo_sram_cerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: wic_if1_dealloc_req_data_fifo_sram Memory Single Bit ECC Error
+        NAME: wic_if1_dealloc_req_data_fifo_sram_cerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: wic_if0_dealloc_req_data_fifo_sram Memory Single Bit ECC Error
+        NAME: wic_if0_dealloc_req_data_fifo_sram_cerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: wic_wu_index_alloc_req_fifo_sram Memory Single Bit ECC Error
+        NAME: wic_wu_index_alloc_req_fifo_sram_cerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: wbuf_wbuf_data_sram_lsb Memory Single Bit ECC Error
+        NAME: wbuf_wbuf_data_sram_lsb_cerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: wbuf_wbuf_data_sram_msb Memory Single Bit ECC Error
+        NAME: wbuf_wbuf_data_sram_msb_cerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: sts_pbuf_wu_len_sram Memory Single Bit ECC Error
+        NAME: sts_pbuf_wu_len_sram_cerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: sts_wm_wu_len_sram Memory Single Bit ECC Error
+        NAME: sts_wm_wu_len_sram_cerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: sts_pbuf_link_sram Memory Single Bit ECC Error
+        NAME: sts_pbuf_link_sram_cerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: sts_wm_link_sram Memory Single Bit ECC Error
+        NAME: sts_wm_link_sram_cerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: sts_ptr_sram Memory Single Bit ECC Error
+        NAME: sts_ptr_sram_cerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: sni_if2_wu_data_fifo_sram Memory Single Bit ECC Error
+        NAME: sni_if2_wu_data_fifo_sram_cerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: sni_if1_wu_data_fifo_sram Memory Single Bit ECC Error
+        NAME: sni_if1_wu_data_fifo_sram_cerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: sni_if0_wu_data_fifo_sram Memory Single Bit ECC Error
+        NAME: sni_if0_wu_data_fifo_sram_cerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: pbuf_wu_sram Memory Single Bit ECC Error
+        NAME: pbuf_wu_sram_cerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ipf_wu_index_pf_sram1 Memory Single Bit ECC Error
+        NAME: ipf_wu_index_pf_sram1_cerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ipf_wu_index_pf_sram0 Memory Single Bit ECC Error
+        NAME: ipf_wu_index_pf_sram0_cerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: wic_wm7_bitalloc_sram Memory Double Bit ECC Error
+        NAME: wic_wm7_bitalloc_sram_uerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: wic_wm6_bitalloc_sram Memory Double Bit ECC Error
+        NAME: wic_wm6_bitalloc_sram_uerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: wic_wm5_bitalloc_sram Memory Double Bit ECC Error
+        NAME: wic_wm5_bitalloc_sram_uerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: wic_wm4_bitalloc_sram Memory Double Bit ECC Error
+        NAME: wic_wm4_bitalloc_sram_uerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: wic_wm3_bitalloc_sram Memory Double Bit ECC Error
+        NAME: wic_wm3_bitalloc_sram_uerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: wic_wm2_bitalloc_sram Memory Double Bit ECC Error
+        NAME: wic_wm2_bitalloc_sram_uerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: wic_wm1_bitalloc_sram Memory Double Bit ECC Error
+        NAME: wic_wm1_bitalloc_sram_uerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: wic_wm0_bitalloc_sram Memory Double Bit ECC Error
+        NAME: wic_wm0_bitalloc_sram_uerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: wic_if2_dealloc_req_data_fifo_sram Memory Double Bit ECC Error
+        NAME: wic_if2_dealloc_req_data_fifo_sram_uerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: wic_if1_dealloc_req_data_fifo_sram Memory Double Bit ECC Error
+        NAME: wic_if1_dealloc_req_data_fifo_sram_uerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: wic_if0_dealloc_req_data_fifo_sram Memory Double Bit ECC Error
+        NAME: wic_if0_dealloc_req_data_fifo_sram_uerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: wic_wu_index_alloc_req_fifo_sram Memory Double Bit ECC Error
+        NAME: wic_wu_index_alloc_req_fifo_sram_uerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: wbuf_wbuf_data_sram_lsb Memory Double Bit ECC Error
+        NAME: wbuf_wbuf_data_sram_lsb_uerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: wbuf_wbuf_data_sram_msb Memory Double Bit ECC Error
+        NAME: wbuf_wbuf_data_sram_msb_uerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: sts_pbuf_wu_len_sram Memory Double Bit ECC Error
+        NAME: sts_pbuf_wu_len_sram_uerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: sts_wm_wu_len_sram Memory Double Bit ECC Error
+        NAME: sts_wm_wu_len_sram_uerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: sts_pbuf_link_sram Memory Double Bit ECC Error
+        NAME: sts_pbuf_link_sram_uerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: sts_wm_link_sram Memory Double Bit ECC Error
+        NAME: sts_wm_link_sram_uerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: sts_ptr_sram Memory Double Bit ECC Error
+        NAME: sts_ptr_sram_uerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: sni_if2_wu_data_fifo_sram Memory Double Bit ECC Error
+        NAME: sni_if2_wu_data_fifo_sram_uerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: sni_if1_wu_data_fifo_sram Memory Double Bit ECC Error
+        NAME: sni_if1_wu_data_fifo_sram_uerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: sni_if0_wu_data_fifo_sram Memory Double Bit ECC Error
+        NAME: sni_if0_wu_data_fifo_sram_uerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: pbuf_wu_sram Memory Double Bit ECC Error
+        NAME: pbuf_wu_sram_uerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ipf_wu_index_pf_sram1 Memory Double Bit ECC Error
+        NAME: ipf_wu_index_pf_sram1_uerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ipf_wu_index_pf_sram0 Memory Double Bit ECC Error
+        NAME: ipf_wu_index_pf_sram0_uerr
+        WIDTH: 1
+    NAME: nwqm_sram_log_err
+  - ATTR: 134217737
+    COUNT: 1
+    DESCRIPTION: SRAM syndrome log register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            Syndrome related to ECC error
+                                            detected while reading data from SRAM
+                                           
+        NAME: val
+        WIDTH: 14
+    NAME: nwqm_sram_log_syndrome
+  - ATTR: 134217737
+    COUNT: 1
+    DESCRIPTION: SRAM address log register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            Address related to ECC/parity error
+                                            detected while reading data from SRAM
+                                           
+        NAME: val
+        WIDTH: 14
+    NAME: nwqm_sram_log_addr
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: FLA Configuration
+    FLDLST:
+      - DEFAULT: 1
+        DESCRIPTION: |-2
+          
+                                            FLA module ID.
+                                           
+        NAME: fla_module_id
+        WIDTH: 8
+    NAME: nwqm_fla_cfg
+    TEST_ATTR: 2
+  - ATTR: 134217734
+    DESCRIPTION: WM Index Free Count Minimum Value
+    ENTRIES: 8
+    FLDLST:
+      - DEFAULT: 8192
+        DESCRIPTION: |-2
+          
+                                            Minimum value of per-WM index free counter.
+                                           
+        NAME: val
+        WIDTH: 14
+    NAME: nwqm_wm_index_free_cnt_min
+    TEST_ATTR: 0
+  - ATTR: 134217734
+    COUNT: 1
+    DESCRIPTION: WM Index Free Count Adjustment
+    ENTRIES: 8
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            When this register is written, val (in 2-complements format) is added to the per-WM index free counter.
+                                           
+        NAME: val
+        WIDTH: 15
+    NAME: nwqm_wm_index_free_cnt_adj
+    TEST_ATTR: 2
+  - ATTR: 6
+    COUNT: 8
+    DESCRIPTION: Access to WU Index Freelist Memory
+    ENTRIES: 4096
+    FLDLST: &176
+      - DEFAULT: 18446744073709551615
+        DESCRIPTION: |-2
+          
+                                            WU index freelist data.
+                                           
+        NAME: fld_data
+        WIDTH: 32
+    NAME: nwqm_wic_fl_bitalloc_cfg_0
+    TEST_ATTR: 0
+  - ATTR: 6
+    COUNT: 8
+    DESCRIPTION: Access to WU Index Freelist Memory
+    ENTRIES: 4096
+    FLDLST: *176
+    NAME: nwqm_wic_fl_bitalloc_cfg_1
+    TEST_ATTR: 0
+  - ATTR: 6
+    COUNT: 8
+    DESCRIPTION: Access to WU Index Freelist Memory
+    ENTRIES: 4096
+    FLDLST: *176
+    NAME: nwqm_wic_fl_bitalloc_cfg_2
+    TEST_ATTR: 0
+  - ATTR: 6
+    COUNT: 8
+    DESCRIPTION: Access to WU Index Freelist Memory
+    ENTRIES: 4096
+    FLDLST: *176
+    NAME: nwqm_wic_fl_bitalloc_cfg_3
+    TEST_ATTR: 0
+  - ATTR: 6
+    COUNT: 8
+    DESCRIPTION: Access to WU Index Freelist Memory
+    ENTRIES: 4096
+    FLDLST: *176
+    NAME: nwqm_wic_fl_bitalloc_cfg_4
+    TEST_ATTR: 0
+  - ATTR: 6
+    COUNT: 8
+    DESCRIPTION: Access to WU Index Freelist Memory
+    ENTRIES: 4096
+    FLDLST: *176
+    NAME: nwqm_wic_fl_bitalloc_cfg_5
+    TEST_ATTR: 0
+  - ATTR: 6
+    COUNT: 8
+    DESCRIPTION: Access to WU Index Freelist Memory
+    ENTRIES: 4096
+    FLDLST: *176
+    NAME: nwqm_wic_fl_bitalloc_cfg_6
+    TEST_ATTR: 0
+  - ATTR: 6
+    COUNT: 8
+    DESCRIPTION: Access to WU Index Freelist Memory
+    ENTRIES: 4096
+    FLDLST: *176
+    NAME: nwqm_wic_fl_bitalloc_cfg_7
+    TEST_ATTR: 0
+  - ATTR: 134217734
+    COUNT: 1
+    DESCRIPTION: PBUF Free Bit Set
+    ENTRIES: 16
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            Set a bit to 1 to set the corresponding PBUF free bit.
+                                            This register always return 0 on read.
+                                            entry 0 = pbuf_free_vec[64-1:0]
+                                            entry 1 = pbuf_free_vec[2*64-1:64]
+                                            ...
+                                           
+        NAME: val
+        WIDTH: 64
+    NAME: nwqm_pbuf_free_bit_set
+    TEST_ATTR: 2
+  - ATTR: 134217734
+    COUNT: 1
+    DESCRIPTION: PBUF Free Bit Clear
+    ENTRIES: 16
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            Set a bit to 1 to clear the corresponding PBUF free bit.
+                                            This register always return 0 on read.
+                                            entry 0 = pbuf_free_vec[64-1:0]
+                                            entry 1 = pbuf_free_vec[2*64-1:64]
+                                            ...
+                                           
+        NAME: val
+        WIDTH: 64
+    NAME: nwqm_pbuf_free_bit_clr
+    TEST_ATTR: 2
+  - ATTR: 134217738
+    COUNT: 1
+    DESCRIPTION: PBUF Free Vector
+    ENTRIES: 16
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-2
+          
+                                            PBUF free vector
+                                            entry 0 = pbuf_free_vec[64-1:0]
+                                            entry 1 = pbuf_free_vec[2*64-1:64]
+                                            ...
+                                           
+        NAME: val
+        WIDTH: 64
+    NAME: nwqm_pbuf_free_vec
+    TEST_ATTR: 2
+  - ATTR: 134217734
+    COUNT: 1
+    DESCRIPTION: IPF WU Index Prefetch SRAM
+    ENTRIES: 64
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: val
+        WIDTH: 256
+    NAME: nwqm_ipf_wu_index_pf_sram
+    TEST_ATTR: 0
+  - ATTR: 134217734
+    COUNT: 1
+    DESCRIPTION: Pointer SRAM
+    ENTRIES: 8192
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: val
+        WIDTH: 68
+    NAME: nwqm_sts_ptr_sram
+    TEST_ATTR: 0
+  - ATTR: 134217734
+    COUNT: 1
+    DESCRIPTION: WM Link SRAM
+    ENTRIES: 16384
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: val
+        WIDTH: 68
+    NAME: nwqm_sts_wm_link_sram
+    TEST_ATTR: 4
+  - ATTR: 134217734
+    COUNT: 1
+    DESCRIPTION: PBUF Link SRAM
+    ENTRIES: 256
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: val
+        WIDTH: 68
+    NAME: nwqm_sts_pbuf_link_sram
+    TEST_ATTR: 4
+  - ATTR: 134217734
+    COUNT: 1
+    DESCRIPTION: WM WU Length SRAM
+    ENTRIES: 16384
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: val
+        WIDTH: 32
+    NAME: nwqm_sts_wm_wu_len_sram
+    TEST_ATTR: 4
+  - ATTR: 134217734
+    COUNT: 1
+    DESCRIPTION: PBUF WU Length SRAM
+    ENTRIES: 256
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: val
+        WIDTH: 32
+    NAME: nwqm_sts_pbuf_wu_len_sram
+    TEST_ATTR: 4
+  - ATTR: 134217738
+    COUNT: 1
+    DESCRIPTION: FLA Data
+    ENTRIES: 4
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: ''
+        NAME: val
+        WIDTH: 128
+    NAME: nwqm_fla
+    TEST_ATTR: 0
+XASIZE: 0

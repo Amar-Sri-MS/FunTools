@@ -1,0 +1,2850 @@
+---
+BASEADDRPORT: 1
+COUNT: 1
+DESCRIPTION: PSW PWR CSR Spec
+INTR:
+  FATAL:
+    - DESCRIPTION: src_pri_enq_cntr Memory Double Bit ECC Error
+      NAME: src_pri_enq_cntr
+      WIDTH: 1
+    - DESCRIPTION: q_enq_cntr Memory Double Bit ECC Error
+      NAME: q_enq_cntr
+      WIDTH: 1
+    - DESCRIPTION: q_drop_cntr Memory Double Bit ECC Error
+      NAME: q_drop_cntr
+      WIDTH: 1
+    - DESCRIPTION: repl_fifo Memory Double Bit ECC Error
+      NAME: repl_fifo
+      WIDTH: 1
+    - DESCRIPTION: epg2_pkt_ctrl Memory Double Bit ECC Error
+      NAME: epg2_pkt_ctrl
+      WIDTH: 1
+    - DESCRIPTION: epg2_stream_ctrl Memory Double Bit ECC Error
+      NAME: epg2_stream_ctrl
+      WIDTH: 1
+    - DESCRIPTION: epg2_stream_bank1 Memory Double Bit ECC Error
+      NAME: epg2_stream_bank1
+      WIDTH: 1
+    - DESCRIPTION: epg2_stream_bank0 Memory Double Bit ECC Error
+      NAME: epg2_stream_bank0
+      WIDTH: 1
+    - DESCRIPTION: epg1_pkt_ctrl Memory Double Bit ECC Error
+      NAME: epg1_pkt_ctrl
+      WIDTH: 1
+    - DESCRIPTION: epg1_stream_ctrl Memory Double Bit ECC Error
+      NAME: epg1_stream_ctrl
+      WIDTH: 1
+    - DESCRIPTION: epg1_stream_bank1 Memory Double Bit ECC Error
+      NAME: epg1_stream_bank1
+      WIDTH: 1
+    - DESCRIPTION: epg1_stream_bank0 Memory Double Bit ECC Error
+      NAME: epg1_stream_bank0
+      WIDTH: 1
+    - DESCRIPTION: epg0_pkt_ctrl Memory Double Bit ECC Error
+      NAME: epg0_pkt_ctrl
+      WIDTH: 1
+    - DESCRIPTION: epg0_stream_ctrl Memory Double Bit ECC Error
+      NAME: epg0_stream_ctrl
+      WIDTH: 1
+    - DESCRIPTION: epg0_stream_bank1 Memory Double Bit ECC Error
+      NAME: epg0_stream_bank1
+      WIDTH: 1
+    - DESCRIPTION: epg0_stream_bank0 Memory Double Bit ECC Error
+      NAME: epg0_stream_bank0
+      WIDTH: 1
+    - DESCRIPTION: fpg5_pkt_ctrl Memory Double Bit ECC Error
+      NAME: fpg5_pkt_ctrl
+      WIDTH: 1
+    - DESCRIPTION: fpg5_stream_ctrl Memory Double Bit ECC Error
+      NAME: fpg5_stream_ctrl
+      WIDTH: 1
+    - DESCRIPTION: fpg5_stream_bank3 Memory Double Bit ECC Error
+      NAME: fpg5_stream_bank3
+      WIDTH: 1
+    - DESCRIPTION: fpg5_stream_bank2 Memory Double Bit ECC Error
+      NAME: fpg5_stream_bank2
+      WIDTH: 1
+    - DESCRIPTION: fpg5_stream_bank1 Memory Double Bit ECC Error
+      NAME: fpg5_stream_bank1
+      WIDTH: 1
+    - DESCRIPTION: fpg5_stream_bank0 Memory Double Bit ECC Error
+      NAME: fpg5_stream_bank0
+      WIDTH: 1
+    - DESCRIPTION: fpg4_pkt_ctrl Memory Double Bit ECC Error
+      NAME: fpg4_pkt_ctrl
+      WIDTH: 1
+    - DESCRIPTION: fpg4_stream_ctrl Memory Double Bit ECC Error
+      NAME: fpg4_stream_ctrl
+      WIDTH: 1
+    - DESCRIPTION: fpg4_stream_bank3 Memory Double Bit ECC Error
+      NAME: fpg4_stream_bank3
+      WIDTH: 1
+    - DESCRIPTION: fpg4_stream_bank2 Memory Double Bit ECC Error
+      NAME: fpg4_stream_bank2
+      WIDTH: 1
+    - DESCRIPTION: fpg4_stream_bank1 Memory Double Bit ECC Error
+      NAME: fpg4_stream_bank1
+      WIDTH: 1
+    - DESCRIPTION: fpg4_stream_bank0 Memory Double Bit ECC Error
+      NAME: fpg4_stream_bank0
+      WIDTH: 1
+    - DESCRIPTION: fpg3_pkt_ctrl Memory Double Bit ECC Error
+      NAME: fpg3_pkt_ctrl
+      WIDTH: 1
+    - DESCRIPTION: fpg3_stream_ctrl Memory Double Bit ECC Error
+      NAME: fpg3_stream_ctrl
+      WIDTH: 1
+    - DESCRIPTION: fpg3_stream_bank3 Memory Double Bit ECC Error
+      NAME: fpg3_stream_bank3
+      WIDTH: 1
+    - DESCRIPTION: fpg3_stream_bank2 Memory Double Bit ECC Error
+      NAME: fpg3_stream_bank2
+      WIDTH: 1
+    - DESCRIPTION: fpg3_stream_bank1 Memory Double Bit ECC Error
+      NAME: fpg3_stream_bank1
+      WIDTH: 1
+    - DESCRIPTION: fpg3_stream_bank0 Memory Double Bit ECC Error
+      NAME: fpg3_stream_bank0
+      WIDTH: 1
+    - DESCRIPTION: fpg2_pkt_ctrl Memory Double Bit ECC Error
+      NAME: fpg2_pkt_ctrl
+      WIDTH: 1
+    - DESCRIPTION: fpg2_stream_ctrl Memory Double Bit ECC Error
+      NAME: fpg2_stream_ctrl
+      WIDTH: 1
+    - DESCRIPTION: fpg2_stream_bank3 Memory Double Bit ECC Error
+      NAME: fpg2_stream_bank3
+      WIDTH: 1
+    - DESCRIPTION: fpg2_stream_bank2 Memory Double Bit ECC Error
+      NAME: fpg2_stream_bank2
+      WIDTH: 1
+    - DESCRIPTION: fpg2_stream_bank1 Memory Double Bit ECC Error
+      NAME: fpg2_stream_bank1
+      WIDTH: 1
+    - DESCRIPTION: fpg2_stream_bank0 Memory Double Bit ECC Error
+      NAME: fpg2_stream_bank0
+      WIDTH: 1
+    - DESCRIPTION: fpg1_pkt_ctrl Memory Double Bit ECC Error
+      NAME: fpg1_pkt_ctrl
+      WIDTH: 1
+    - DESCRIPTION: fpg1_stream_ctrl Memory Double Bit ECC Error
+      NAME: fpg1_stream_ctrl
+      WIDTH: 1
+    - DESCRIPTION: fpg1_stream_bank3 Memory Double Bit ECC Error
+      NAME: fpg1_stream_bank3
+      WIDTH: 1
+    - DESCRIPTION: fpg1_stream_bank2 Memory Double Bit ECC Error
+      NAME: fpg1_stream_bank2
+      WIDTH: 1
+    - DESCRIPTION: fpg1_stream_bank1 Memory Double Bit ECC Error
+      NAME: fpg1_stream_bank1
+      WIDTH: 1
+    - DESCRIPTION: fpg1_stream_bank0 Memory Double Bit ECC Error
+      NAME: fpg1_stream_bank0
+      WIDTH: 1
+    - DESCRIPTION: fpg0_pkt_ctrl Memory Double Bit ECC Error
+      NAME: fpg0_pkt_ctrl
+      WIDTH: 1
+    - DESCRIPTION: fpg0_stream_ctrl Memory Double Bit ECC Error
+      NAME: fpg0_stream_ctrl
+      WIDTH: 1
+    - DESCRIPTION: fpg0_stream_bank3 Memory Double Bit ECC Error
+      NAME: fpg0_stream_bank3
+      WIDTH: 1
+    - DESCRIPTION: fpg0_stream_bank2 Memory Double Bit ECC Error
+      NAME: fpg0_stream_bank2
+      WIDTH: 1
+    - DESCRIPTION: fpg0_stream_bank1 Memory Double Bit ECC Error
+      NAME: fpg0_stream_bank1
+      WIDTH: 1
+    - DESCRIPTION: fpg0_stream_bank0 Memory Double Bit ECC Error
+      NAME: fpg0_stream_bank0
+      WIDTH: 1
+  FATAL_MISC:
+    - DESCRIPTION: ' stream received an unexpected FRV. '
+      NAME: unexpected_frv_rcvd
+      WIDTH: 1
+  NON_FATAL:
+    - DESCRIPTION: src_pri_enq_cntr Memory Single Bit ECC Error
+      NAME: src_pri_enq_cntr
+      WIDTH: 1
+    - DESCRIPTION: q_enq_cntr Memory Single Bit ECC Error
+      NAME: q_enq_cntr
+      WIDTH: 1
+    - DESCRIPTION: q_drop_cntr Memory Single Bit ECC Error
+      NAME: q_drop_cntr
+      WIDTH: 1
+    - DESCRIPTION: repl_fifo Memory Single Bit ECC Error
+      NAME: repl_fifo
+      WIDTH: 1
+    - DESCRIPTION: epg2_pkt_ctrl Memory Single Bit ECC Error
+      NAME: epg2_pkt_ctrl
+      WIDTH: 1
+    - DESCRIPTION: epg2_stream_ctrl Memory Single Bit ECC Error
+      NAME: epg2_stream_ctrl
+      WIDTH: 1
+    - DESCRIPTION: epg2_stream_bank1 Memory Single Bit ECC Error
+      NAME: epg2_stream_bank1
+      WIDTH: 1
+    - DESCRIPTION: epg2_stream_bank0 Memory Single Bit ECC Error
+      NAME: epg2_stream_bank0
+      WIDTH: 1
+    - DESCRIPTION: epg1_pkt_ctrl Memory Single Bit ECC Error
+      NAME: epg1_pkt_ctrl
+      WIDTH: 1
+    - DESCRIPTION: epg1_stream_ctrl Memory Single Bit ECC Error
+      NAME: epg1_stream_ctrl
+      WIDTH: 1
+    - DESCRIPTION: epg1_stream_bank1 Memory Single Bit ECC Error
+      NAME: epg1_stream_bank1
+      WIDTH: 1
+    - DESCRIPTION: epg1_stream_bank0 Memory Single Bit ECC Error
+      NAME: epg1_stream_bank0
+      WIDTH: 1
+    - DESCRIPTION: epg0_pkt_ctrl Memory Single Bit ECC Error
+      NAME: epg0_pkt_ctrl
+      WIDTH: 1
+    - DESCRIPTION: epg0_stream_ctrl Memory Single Bit ECC Error
+      NAME: epg0_stream_ctrl
+      WIDTH: 1
+    - DESCRIPTION: epg0_stream_bank1 Memory Single Bit ECC Error
+      NAME: epg0_stream_bank1
+      WIDTH: 1
+    - DESCRIPTION: epg0_stream_bank0 Memory Single Bit ECC Error
+      NAME: epg0_stream_bank0
+      WIDTH: 1
+    - DESCRIPTION: fpg5_pkt_ctrl Memory Single Bit ECC Error
+      NAME: fpg5_pkt_ctrl
+      WIDTH: 1
+    - DESCRIPTION: fpg5_stream_ctrl Memory Single Bit ECC Error
+      NAME: fpg5_stream_ctrl
+      WIDTH: 1
+    - DESCRIPTION: fpg5_stream_bank3 Memory Single Bit ECC Error
+      NAME: fpg5_stream_bank3
+      WIDTH: 1
+    - DESCRIPTION: fpg5_stream_bank2 Memory Single Bit ECC Error
+      NAME: fpg5_stream_bank2
+      WIDTH: 1
+    - DESCRIPTION: fpg5_stream_bank1 Memory Single Bit ECC Error
+      NAME: fpg5_stream_bank1
+      WIDTH: 1
+    - DESCRIPTION: fpg5_stream_bank0 Memory Single Bit ECC Error
+      NAME: fpg5_stream_bank0
+      WIDTH: 1
+    - DESCRIPTION: fpg4_pkt_ctrl Memory Single Bit ECC Error
+      NAME: fpg4_pkt_ctrl
+      WIDTH: 1
+    - DESCRIPTION: fpg4_stream_ctrl Memory Single Bit ECC Error
+      NAME: fpg4_stream_ctrl
+      WIDTH: 1
+    - DESCRIPTION: fpg4_stream_bank3 Memory Single Bit ECC Error
+      NAME: fpg4_stream_bank3
+      WIDTH: 1
+    - DESCRIPTION: fpg4_stream_bank2 Memory Single Bit ECC Error
+      NAME: fpg4_stream_bank2
+      WIDTH: 1
+    - DESCRIPTION: fpg4_stream_bank1 Memory Single Bit ECC Error
+      NAME: fpg4_stream_bank1
+      WIDTH: 1
+    - DESCRIPTION: fpg4_stream_bank0 Memory Single Bit ECC Error
+      NAME: fpg4_stream_bank0
+      WIDTH: 1
+    - DESCRIPTION: fpg3_pkt_ctrl Memory Single Bit ECC Error
+      NAME: fpg3_pkt_ctrl
+      WIDTH: 1
+    - DESCRIPTION: fpg3_stream_ctrl Memory Single Bit ECC Error
+      NAME: fpg3_stream_ctrl
+      WIDTH: 1
+    - DESCRIPTION: fpg3_stream_bank3 Memory Single Bit ECC Error
+      NAME: fpg3_stream_bank3
+      WIDTH: 1
+    - DESCRIPTION: fpg3_stream_bank2 Memory Single Bit ECC Error
+      NAME: fpg3_stream_bank2
+      WIDTH: 1
+    - DESCRIPTION: fpg3_stream_bank1 Memory Single Bit ECC Error
+      NAME: fpg3_stream_bank1
+      WIDTH: 1
+    - DESCRIPTION: fpg3_stream_bank0 Memory Single Bit ECC Error
+      NAME: fpg3_stream_bank0
+      WIDTH: 1
+    - DESCRIPTION: fpg2_pkt_ctrl Memory Single Bit ECC Error
+      NAME: fpg2_pkt_ctrl
+      WIDTH: 1
+    - DESCRIPTION: fpg2_stream_ctrl Memory Single Bit ECC Error
+      NAME: fpg2_stream_ctrl
+      WIDTH: 1
+    - DESCRIPTION: fpg2_stream_bank3 Memory Single Bit ECC Error
+      NAME: fpg2_stream_bank3
+      WIDTH: 1
+    - DESCRIPTION: fpg2_stream_bank2 Memory Single Bit ECC Error
+      NAME: fpg2_stream_bank2
+      WIDTH: 1
+    - DESCRIPTION: fpg2_stream_bank1 Memory Single Bit ECC Error
+      NAME: fpg2_stream_bank1
+      WIDTH: 1
+    - DESCRIPTION: fpg2_stream_bank0 Memory Single Bit ECC Error
+      NAME: fpg2_stream_bank0
+      WIDTH: 1
+    - DESCRIPTION: fpg1_pkt_ctrl Memory Single Bit ECC Error
+      NAME: fpg1_pkt_ctrl
+      WIDTH: 1
+    - DESCRIPTION: fpg1_stream_ctrl Memory Single Bit ECC Error
+      NAME: fpg1_stream_ctrl
+      WIDTH: 1
+    - DESCRIPTION: fpg1_stream_bank3 Memory Single Bit ECC Error
+      NAME: fpg1_stream_bank3
+      WIDTH: 1
+    - DESCRIPTION: fpg1_stream_bank2 Memory Single Bit ECC Error
+      NAME: fpg1_stream_bank2
+      WIDTH: 1
+    - DESCRIPTION: fpg1_stream_bank1 Memory Single Bit ECC Error
+      NAME: fpg1_stream_bank1
+      WIDTH: 1
+    - DESCRIPTION: fpg1_stream_bank0 Memory Single Bit ECC Error
+      NAME: fpg1_stream_bank0
+      WIDTH: 1
+    - DESCRIPTION: fpg0_pkt_ctrl Memory Single Bit ECC Error
+      NAME: fpg0_pkt_ctrl
+      WIDTH: 1
+    - DESCRIPTION: fpg0_stream_ctrl Memory Single Bit ECC Error
+      NAME: fpg0_stream_ctrl
+      WIDTH: 1
+    - DESCRIPTION: fpg0_stream_bank3 Memory Single Bit ECC Error
+      NAME: fpg0_stream_bank3
+      WIDTH: 1
+    - DESCRIPTION: fpg0_stream_bank2 Memory Single Bit ECC Error
+      NAME: fpg0_stream_bank2
+      WIDTH: 1
+    - DESCRIPTION: fpg0_stream_bank1 Memory Single Bit ECC Error
+      NAME: fpg0_stream_bank1
+      WIDTH: 1
+    - DESCRIPTION: fpg0_stream_bank0 Memory Single Bit ECC Error
+      NAME: fpg0_stream_bank0
+      WIDTH: 1
+  NON_FATAL_MISC:
+    - DESCRIPTION: ' Cell ptr ring pkt drop. '
+      NAME: cfp_pkt_drop
+      WIDTH: 1
+    - DESCRIPTION: ' Main pkt drop. '
+      NAME: main_pkt_drop
+      WIDTH: 1
+    - DESCRIPTION: ' FRV error. '
+      NAME: frv_error
+      WIDTH: 1
+INTR_PORT_EN: 1
+NAME: PSW_PWR_AN
+PARENTNAME: NU_0_AN
+REGLST:
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: |-
+          Timeout Configuration. Cycles are RSU clk based.
+                            - 00 : 1024 cycles
+                            - 01 : 256 cycles
+                            - 10 : 4096 cycles
+                            - 11 : infinite
+        NAME: val
+        WIDTH: 2
+    NAME: psw_pwr_timeout_thresh_cfg
+  - ATTR: 9
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: "Timed out Status. Cycles are RSU clk based. Becomes 1 when timed out. Write any value to clear it.\n                  "
+        NAME: val
+        WIDTH: 1
+    NAME: psw_pwr_timedout_sta
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: |-
+          Clear Timeout Status. Data is ignored. A write
+                     will clear the timeout status bit
+        NAME: val
+        WIDTH: 1
+    NAME: psw_pwr_timeout_clr
+    TEST_ATTR: 1
+  - ATTR: 256
+    FLDLST:
+      - &1
+        DESCRIPTION: src_pri_enq_cntr Memory Double Bit ECC Error
+        NAME: src_pri_enq_cntr
+        WIDTH: 1
+      - &2
+        DESCRIPTION: q_enq_cntr Memory Double Bit ECC Error
+        NAME: q_enq_cntr
+        WIDTH: 1
+      - &3
+        DESCRIPTION: q_drop_cntr Memory Double Bit ECC Error
+        NAME: q_drop_cntr
+        WIDTH: 1
+      - &4
+        DESCRIPTION: repl_fifo Memory Double Bit ECC Error
+        NAME: repl_fifo
+        WIDTH: 1
+      - &5
+        DESCRIPTION: epg2_pkt_ctrl Memory Double Bit ECC Error
+        NAME: epg2_pkt_ctrl
+        WIDTH: 1
+      - &6
+        DESCRIPTION: epg2_stream_ctrl Memory Double Bit ECC Error
+        NAME: epg2_stream_ctrl
+        WIDTH: 1
+      - &7
+        DESCRIPTION: epg2_stream_bank1 Memory Double Bit ECC Error
+        NAME: epg2_stream_bank1
+        WIDTH: 1
+      - &8
+        DESCRIPTION: epg2_stream_bank0 Memory Double Bit ECC Error
+        NAME: epg2_stream_bank0
+        WIDTH: 1
+      - &9
+        DESCRIPTION: epg1_pkt_ctrl Memory Double Bit ECC Error
+        NAME: epg1_pkt_ctrl
+        WIDTH: 1
+      - &10
+        DESCRIPTION: epg1_stream_ctrl Memory Double Bit ECC Error
+        NAME: epg1_stream_ctrl
+        WIDTH: 1
+      - &11
+        DESCRIPTION: epg1_stream_bank1 Memory Double Bit ECC Error
+        NAME: epg1_stream_bank1
+        WIDTH: 1
+      - &12
+        DESCRIPTION: epg1_stream_bank0 Memory Double Bit ECC Error
+        NAME: epg1_stream_bank0
+        WIDTH: 1
+      - &13
+        DESCRIPTION: epg0_pkt_ctrl Memory Double Bit ECC Error
+        NAME: epg0_pkt_ctrl
+        WIDTH: 1
+      - &14
+        DESCRIPTION: epg0_stream_ctrl Memory Double Bit ECC Error
+        NAME: epg0_stream_ctrl
+        WIDTH: 1
+      - &15
+        DESCRIPTION: epg0_stream_bank1 Memory Double Bit ECC Error
+        NAME: epg0_stream_bank1
+        WIDTH: 1
+      - &16
+        DESCRIPTION: epg0_stream_bank0 Memory Double Bit ECC Error
+        NAME: epg0_stream_bank0
+        WIDTH: 1
+      - &17
+        DESCRIPTION: fpg5_pkt_ctrl Memory Double Bit ECC Error
+        NAME: fpg5_pkt_ctrl
+        WIDTH: 1
+      - &18
+        DESCRIPTION: fpg5_stream_ctrl Memory Double Bit ECC Error
+        NAME: fpg5_stream_ctrl
+        WIDTH: 1
+      - &19
+        DESCRIPTION: fpg5_stream_bank3 Memory Double Bit ECC Error
+        NAME: fpg5_stream_bank3
+        WIDTH: 1
+      - &20
+        DESCRIPTION: fpg5_stream_bank2 Memory Double Bit ECC Error
+        NAME: fpg5_stream_bank2
+        WIDTH: 1
+      - &21
+        DESCRIPTION: fpg5_stream_bank1 Memory Double Bit ECC Error
+        NAME: fpg5_stream_bank1
+        WIDTH: 1
+      - &22
+        DESCRIPTION: fpg5_stream_bank0 Memory Double Bit ECC Error
+        NAME: fpg5_stream_bank0
+        WIDTH: 1
+      - &23
+        DESCRIPTION: fpg4_pkt_ctrl Memory Double Bit ECC Error
+        NAME: fpg4_pkt_ctrl
+        WIDTH: 1
+      - &24
+        DESCRIPTION: fpg4_stream_ctrl Memory Double Bit ECC Error
+        NAME: fpg4_stream_ctrl
+        WIDTH: 1
+      - &25
+        DESCRIPTION: fpg4_stream_bank3 Memory Double Bit ECC Error
+        NAME: fpg4_stream_bank3
+        WIDTH: 1
+      - &26
+        DESCRIPTION: fpg4_stream_bank2 Memory Double Bit ECC Error
+        NAME: fpg4_stream_bank2
+        WIDTH: 1
+      - &27
+        DESCRIPTION: fpg4_stream_bank1 Memory Double Bit ECC Error
+        NAME: fpg4_stream_bank1
+        WIDTH: 1
+      - &28
+        DESCRIPTION: fpg4_stream_bank0 Memory Double Bit ECC Error
+        NAME: fpg4_stream_bank0
+        WIDTH: 1
+      - &29
+        DESCRIPTION: fpg3_pkt_ctrl Memory Double Bit ECC Error
+        NAME: fpg3_pkt_ctrl
+        WIDTH: 1
+      - &30
+        DESCRIPTION: fpg3_stream_ctrl Memory Double Bit ECC Error
+        NAME: fpg3_stream_ctrl
+        WIDTH: 1
+      - &31
+        DESCRIPTION: fpg3_stream_bank3 Memory Double Bit ECC Error
+        NAME: fpg3_stream_bank3
+        WIDTH: 1
+      - &32
+        DESCRIPTION: fpg3_stream_bank2 Memory Double Bit ECC Error
+        NAME: fpg3_stream_bank2
+        WIDTH: 1
+      - &33
+        DESCRIPTION: fpg3_stream_bank1 Memory Double Bit ECC Error
+        NAME: fpg3_stream_bank1
+        WIDTH: 1
+      - &34
+        DESCRIPTION: fpg3_stream_bank0 Memory Double Bit ECC Error
+        NAME: fpg3_stream_bank0
+        WIDTH: 1
+      - &35
+        DESCRIPTION: fpg2_pkt_ctrl Memory Double Bit ECC Error
+        NAME: fpg2_pkt_ctrl
+        WIDTH: 1
+      - &36
+        DESCRIPTION: fpg2_stream_ctrl Memory Double Bit ECC Error
+        NAME: fpg2_stream_ctrl
+        WIDTH: 1
+      - &37
+        DESCRIPTION: fpg2_stream_bank3 Memory Double Bit ECC Error
+        NAME: fpg2_stream_bank3
+        WIDTH: 1
+      - &38
+        DESCRIPTION: fpg2_stream_bank2 Memory Double Bit ECC Error
+        NAME: fpg2_stream_bank2
+        WIDTH: 1
+      - &39
+        DESCRIPTION: fpg2_stream_bank1 Memory Double Bit ECC Error
+        NAME: fpg2_stream_bank1
+        WIDTH: 1
+      - &40
+        DESCRIPTION: fpg2_stream_bank0 Memory Double Bit ECC Error
+        NAME: fpg2_stream_bank0
+        WIDTH: 1
+      - &41
+        DESCRIPTION: fpg1_pkt_ctrl Memory Double Bit ECC Error
+        NAME: fpg1_pkt_ctrl
+        WIDTH: 1
+      - &42
+        DESCRIPTION: fpg1_stream_ctrl Memory Double Bit ECC Error
+        NAME: fpg1_stream_ctrl
+        WIDTH: 1
+      - &43
+        DESCRIPTION: fpg1_stream_bank3 Memory Double Bit ECC Error
+        NAME: fpg1_stream_bank3
+        WIDTH: 1
+      - &44
+        DESCRIPTION: fpg1_stream_bank2 Memory Double Bit ECC Error
+        NAME: fpg1_stream_bank2
+        WIDTH: 1
+      - &45
+        DESCRIPTION: fpg1_stream_bank1 Memory Double Bit ECC Error
+        NAME: fpg1_stream_bank1
+        WIDTH: 1
+      - &46
+        DESCRIPTION: fpg1_stream_bank0 Memory Double Bit ECC Error
+        NAME: fpg1_stream_bank0
+        WIDTH: 1
+      - &47
+        DESCRIPTION: fpg0_pkt_ctrl Memory Double Bit ECC Error
+        NAME: fpg0_pkt_ctrl
+        WIDTH: 1
+      - &48
+        DESCRIPTION: fpg0_stream_ctrl Memory Double Bit ECC Error
+        NAME: fpg0_stream_ctrl
+        WIDTH: 1
+      - &49
+        DESCRIPTION: fpg0_stream_bank3 Memory Double Bit ECC Error
+        NAME: fpg0_stream_bank3
+        WIDTH: 1
+      - &50
+        DESCRIPTION: fpg0_stream_bank2 Memory Double Bit ECC Error
+        NAME: fpg0_stream_bank2
+        WIDTH: 1
+      - &51
+        DESCRIPTION: fpg0_stream_bank1 Memory Double Bit ECC Error
+        NAME: fpg0_stream_bank1
+        WIDTH: 1
+      - &52
+        DESCRIPTION: fpg0_stream_bank0 Memory Double Bit ECC Error
+        NAME: fpg0_stream_bank0
+        WIDTH: 1
+    NAME: psw_pwr_fatal_intr_cause
+  - ATTR: 512
+    FLDLST:
+      - *1
+      - *2
+      - *3
+      - *4
+      - *5
+      - *6
+      - *7
+      - *8
+      - *9
+      - *10
+      - *11
+      - *12
+      - *13
+      - *14
+      - *15
+      - *16
+      - *17
+      - *18
+      - *19
+      - *20
+      - *21
+      - *22
+      - *23
+      - *24
+      - *25
+      - *26
+      - *27
+      - *28
+      - *29
+      - *30
+      - *31
+      - *32
+      - *33
+      - *34
+      - *35
+      - *36
+      - *37
+      - *38
+      - *39
+      - *40
+      - *41
+      - *42
+      - *43
+      - *44
+      - *45
+      - *46
+      - *47
+      - *48
+      - *49
+      - *50
+      - *51
+      - *52
+    NAME: psw_pwr_fatal_intr_stat
+  - ATTR: 1024
+    FLDLST:
+      - *1
+      - *2
+      - *3
+      - *4
+      - *5
+      - *6
+      - *7
+      - *8
+      - *9
+      - *10
+      - *11
+      - *12
+      - *13
+      - *14
+      - *15
+      - *16
+      - *17
+      - *18
+      - *19
+      - *20
+      - *21
+      - *22
+      - *23
+      - *24
+      - *25
+      - *26
+      - *27
+      - *28
+      - *29
+      - *30
+      - *31
+      - *32
+      - *33
+      - *34
+      - *35
+      - *36
+      - *37
+      - *38
+      - *39
+      - *40
+      - *41
+      - *42
+      - *43
+      - *44
+      - *45
+      - *46
+      - *47
+      - *48
+      - *49
+      - *50
+      - *51
+      - *52
+    NAME: psw_pwr_fatal_intr_mask
+  - ATTR: 2048
+    FLDLST:
+      - *1
+      - *2
+      - *3
+      - *4
+      - *5
+      - *6
+      - *7
+      - *8
+      - *9
+      - *10
+      - *11
+      - *12
+      - *13
+      - *14
+      - *15
+      - *16
+      - *17
+      - *18
+      - *19
+      - *20
+      - *21
+      - *22
+      - *23
+      - *24
+      - *25
+      - *26
+      - *27
+      - *28
+      - *29
+      - *30
+      - *31
+      - *32
+      - *33
+      - *34
+      - *35
+      - *36
+      - *37
+      - *38
+      - *39
+      - *40
+      - *41
+      - *42
+      - *43
+      - *44
+      - *45
+      - *46
+      - *47
+      - *48
+      - *49
+      - *50
+      - *51
+      - *52
+    NAME: psw_pwr_fatal_intr_bset
+  - ATTR: 4096
+    FLDLST:
+      - *1
+      - *2
+      - *3
+      - *4
+      - *5
+      - *6
+      - *7
+      - *8
+      - *9
+      - *10
+      - *11
+      - *12
+      - *13
+      - *14
+      - *15
+      - *16
+      - *17
+      - *18
+      - *19
+      - *20
+      - *21
+      - *22
+      - *23
+      - *24
+      - *25
+      - *26
+      - *27
+      - *28
+      - *29
+      - *30
+      - *31
+      - *32
+      - *33
+      - *34
+      - *35
+      - *36
+      - *37
+      - *38
+      - *39
+      - *40
+      - *41
+      - *42
+      - *43
+      - *44
+      - *45
+      - *46
+      - *47
+      - *48
+      - *49
+      - *50
+      - *51
+      - *52
+    NAME: psw_pwr_fatal_intr_bclr
+  - ATTR: 256
+    FLDLST:
+      - &53
+        DESCRIPTION: ' stream received an unexpected FRV. '
+        NAME: unexpected_frv_rcvd
+        WIDTH: 1
+    NAME: psw_pwr_fatal_misc_intr_cause
+  - ATTR: 512
+    FLDLST:
+      - *53
+    NAME: psw_pwr_fatal_misc_intr_stat
+  - ATTR: 1024
+    FLDLST:
+      - *53
+    NAME: psw_pwr_fatal_misc_intr_mask
+  - ATTR: 2048
+    FLDLST:
+      - *53
+    NAME: psw_pwr_fatal_misc_intr_bset
+  - ATTR: 4096
+    FLDLST:
+      - *53
+    NAME: psw_pwr_fatal_misc_intr_bclr
+  - ATTR: 256
+    FLDLST:
+      - &54
+        DESCRIPTION: src_pri_enq_cntr Memory Single Bit ECC Error
+        NAME: src_pri_enq_cntr
+        WIDTH: 1
+      - &55
+        DESCRIPTION: q_enq_cntr Memory Single Bit ECC Error
+        NAME: q_enq_cntr
+        WIDTH: 1
+      - &56
+        DESCRIPTION: q_drop_cntr Memory Single Bit ECC Error
+        NAME: q_drop_cntr
+        WIDTH: 1
+      - &57
+        DESCRIPTION: repl_fifo Memory Single Bit ECC Error
+        NAME: repl_fifo
+        WIDTH: 1
+      - &58
+        DESCRIPTION: epg2_pkt_ctrl Memory Single Bit ECC Error
+        NAME: epg2_pkt_ctrl
+        WIDTH: 1
+      - &59
+        DESCRIPTION: epg2_stream_ctrl Memory Single Bit ECC Error
+        NAME: epg2_stream_ctrl
+        WIDTH: 1
+      - &60
+        DESCRIPTION: epg2_stream_bank1 Memory Single Bit ECC Error
+        NAME: epg2_stream_bank1
+        WIDTH: 1
+      - &61
+        DESCRIPTION: epg2_stream_bank0 Memory Single Bit ECC Error
+        NAME: epg2_stream_bank0
+        WIDTH: 1
+      - &62
+        DESCRIPTION: epg1_pkt_ctrl Memory Single Bit ECC Error
+        NAME: epg1_pkt_ctrl
+        WIDTH: 1
+      - &63
+        DESCRIPTION: epg1_stream_ctrl Memory Single Bit ECC Error
+        NAME: epg1_stream_ctrl
+        WIDTH: 1
+      - &64
+        DESCRIPTION: epg1_stream_bank1 Memory Single Bit ECC Error
+        NAME: epg1_stream_bank1
+        WIDTH: 1
+      - &65
+        DESCRIPTION: epg1_stream_bank0 Memory Single Bit ECC Error
+        NAME: epg1_stream_bank0
+        WIDTH: 1
+      - &66
+        DESCRIPTION: epg0_pkt_ctrl Memory Single Bit ECC Error
+        NAME: epg0_pkt_ctrl
+        WIDTH: 1
+      - &67
+        DESCRIPTION: epg0_stream_ctrl Memory Single Bit ECC Error
+        NAME: epg0_stream_ctrl
+        WIDTH: 1
+      - &68
+        DESCRIPTION: epg0_stream_bank1 Memory Single Bit ECC Error
+        NAME: epg0_stream_bank1
+        WIDTH: 1
+      - &69
+        DESCRIPTION: epg0_stream_bank0 Memory Single Bit ECC Error
+        NAME: epg0_stream_bank0
+        WIDTH: 1
+      - &70
+        DESCRIPTION: fpg5_pkt_ctrl Memory Single Bit ECC Error
+        NAME: fpg5_pkt_ctrl
+        WIDTH: 1
+      - &71
+        DESCRIPTION: fpg5_stream_ctrl Memory Single Bit ECC Error
+        NAME: fpg5_stream_ctrl
+        WIDTH: 1
+      - &72
+        DESCRIPTION: fpg5_stream_bank3 Memory Single Bit ECC Error
+        NAME: fpg5_stream_bank3
+        WIDTH: 1
+      - &73
+        DESCRIPTION: fpg5_stream_bank2 Memory Single Bit ECC Error
+        NAME: fpg5_stream_bank2
+        WIDTH: 1
+      - &74
+        DESCRIPTION: fpg5_stream_bank1 Memory Single Bit ECC Error
+        NAME: fpg5_stream_bank1
+        WIDTH: 1
+      - &75
+        DESCRIPTION: fpg5_stream_bank0 Memory Single Bit ECC Error
+        NAME: fpg5_stream_bank0
+        WIDTH: 1
+      - &76
+        DESCRIPTION: fpg4_pkt_ctrl Memory Single Bit ECC Error
+        NAME: fpg4_pkt_ctrl
+        WIDTH: 1
+      - &77
+        DESCRIPTION: fpg4_stream_ctrl Memory Single Bit ECC Error
+        NAME: fpg4_stream_ctrl
+        WIDTH: 1
+      - &78
+        DESCRIPTION: fpg4_stream_bank3 Memory Single Bit ECC Error
+        NAME: fpg4_stream_bank3
+        WIDTH: 1
+      - &79
+        DESCRIPTION: fpg4_stream_bank2 Memory Single Bit ECC Error
+        NAME: fpg4_stream_bank2
+        WIDTH: 1
+      - &80
+        DESCRIPTION: fpg4_stream_bank1 Memory Single Bit ECC Error
+        NAME: fpg4_stream_bank1
+        WIDTH: 1
+      - &81
+        DESCRIPTION: fpg4_stream_bank0 Memory Single Bit ECC Error
+        NAME: fpg4_stream_bank0
+        WIDTH: 1
+      - &82
+        DESCRIPTION: fpg3_pkt_ctrl Memory Single Bit ECC Error
+        NAME: fpg3_pkt_ctrl
+        WIDTH: 1
+      - &83
+        DESCRIPTION: fpg3_stream_ctrl Memory Single Bit ECC Error
+        NAME: fpg3_stream_ctrl
+        WIDTH: 1
+      - &84
+        DESCRIPTION: fpg3_stream_bank3 Memory Single Bit ECC Error
+        NAME: fpg3_stream_bank3
+        WIDTH: 1
+      - &85
+        DESCRIPTION: fpg3_stream_bank2 Memory Single Bit ECC Error
+        NAME: fpg3_stream_bank2
+        WIDTH: 1
+      - &86
+        DESCRIPTION: fpg3_stream_bank1 Memory Single Bit ECC Error
+        NAME: fpg3_stream_bank1
+        WIDTH: 1
+      - &87
+        DESCRIPTION: fpg3_stream_bank0 Memory Single Bit ECC Error
+        NAME: fpg3_stream_bank0
+        WIDTH: 1
+      - &88
+        DESCRIPTION: fpg2_pkt_ctrl Memory Single Bit ECC Error
+        NAME: fpg2_pkt_ctrl
+        WIDTH: 1
+      - &89
+        DESCRIPTION: fpg2_stream_ctrl Memory Single Bit ECC Error
+        NAME: fpg2_stream_ctrl
+        WIDTH: 1
+      - &90
+        DESCRIPTION: fpg2_stream_bank3 Memory Single Bit ECC Error
+        NAME: fpg2_stream_bank3
+        WIDTH: 1
+      - &91
+        DESCRIPTION: fpg2_stream_bank2 Memory Single Bit ECC Error
+        NAME: fpg2_stream_bank2
+        WIDTH: 1
+      - &92
+        DESCRIPTION: fpg2_stream_bank1 Memory Single Bit ECC Error
+        NAME: fpg2_stream_bank1
+        WIDTH: 1
+      - &93
+        DESCRIPTION: fpg2_stream_bank0 Memory Single Bit ECC Error
+        NAME: fpg2_stream_bank0
+        WIDTH: 1
+      - &94
+        DESCRIPTION: fpg1_pkt_ctrl Memory Single Bit ECC Error
+        NAME: fpg1_pkt_ctrl
+        WIDTH: 1
+      - &95
+        DESCRIPTION: fpg1_stream_ctrl Memory Single Bit ECC Error
+        NAME: fpg1_stream_ctrl
+        WIDTH: 1
+      - &96
+        DESCRIPTION: fpg1_stream_bank3 Memory Single Bit ECC Error
+        NAME: fpg1_stream_bank3
+        WIDTH: 1
+      - &97
+        DESCRIPTION: fpg1_stream_bank2 Memory Single Bit ECC Error
+        NAME: fpg1_stream_bank2
+        WIDTH: 1
+      - &98
+        DESCRIPTION: fpg1_stream_bank1 Memory Single Bit ECC Error
+        NAME: fpg1_stream_bank1
+        WIDTH: 1
+      - &99
+        DESCRIPTION: fpg1_stream_bank0 Memory Single Bit ECC Error
+        NAME: fpg1_stream_bank0
+        WIDTH: 1
+      - &100
+        DESCRIPTION: fpg0_pkt_ctrl Memory Single Bit ECC Error
+        NAME: fpg0_pkt_ctrl
+        WIDTH: 1
+      - &101
+        DESCRIPTION: fpg0_stream_ctrl Memory Single Bit ECC Error
+        NAME: fpg0_stream_ctrl
+        WIDTH: 1
+      - &102
+        DESCRIPTION: fpg0_stream_bank3 Memory Single Bit ECC Error
+        NAME: fpg0_stream_bank3
+        WIDTH: 1
+      - &103
+        DESCRIPTION: fpg0_stream_bank2 Memory Single Bit ECC Error
+        NAME: fpg0_stream_bank2
+        WIDTH: 1
+      - &104
+        DESCRIPTION: fpg0_stream_bank1 Memory Single Bit ECC Error
+        NAME: fpg0_stream_bank1
+        WIDTH: 1
+      - &105
+        DESCRIPTION: fpg0_stream_bank0 Memory Single Bit ECC Error
+        NAME: fpg0_stream_bank0
+        WIDTH: 1
+    NAME: psw_pwr_non_fatal_intr_cause
+  - ATTR: 512
+    FLDLST:
+      - *54
+      - *55
+      - *56
+      - *57
+      - *58
+      - *59
+      - *60
+      - *61
+      - *62
+      - *63
+      - *64
+      - *65
+      - *66
+      - *67
+      - *68
+      - *69
+      - *70
+      - *71
+      - *72
+      - *73
+      - *74
+      - *75
+      - *76
+      - *77
+      - *78
+      - *79
+      - *80
+      - *81
+      - *82
+      - *83
+      - *84
+      - *85
+      - *86
+      - *87
+      - *88
+      - *89
+      - *90
+      - *91
+      - *92
+      - *93
+      - *94
+      - *95
+      - *96
+      - *97
+      - *98
+      - *99
+      - *100
+      - *101
+      - *102
+      - *103
+      - *104
+      - *105
+    NAME: psw_pwr_non_fatal_intr_stat
+  - ATTR: 1024
+    FLDLST:
+      - *54
+      - *55
+      - *56
+      - *57
+      - *58
+      - *59
+      - *60
+      - *61
+      - *62
+      - *63
+      - *64
+      - *65
+      - *66
+      - *67
+      - *68
+      - *69
+      - *70
+      - *71
+      - *72
+      - *73
+      - *74
+      - *75
+      - *76
+      - *77
+      - *78
+      - *79
+      - *80
+      - *81
+      - *82
+      - *83
+      - *84
+      - *85
+      - *86
+      - *87
+      - *88
+      - *89
+      - *90
+      - *91
+      - *92
+      - *93
+      - *94
+      - *95
+      - *96
+      - *97
+      - *98
+      - *99
+      - *100
+      - *101
+      - *102
+      - *103
+      - *104
+      - *105
+    NAME: psw_pwr_non_fatal_intr_mask
+  - ATTR: 2048
+    FLDLST:
+      - *54
+      - *55
+      - *56
+      - *57
+      - *58
+      - *59
+      - *60
+      - *61
+      - *62
+      - *63
+      - *64
+      - *65
+      - *66
+      - *67
+      - *68
+      - *69
+      - *70
+      - *71
+      - *72
+      - *73
+      - *74
+      - *75
+      - *76
+      - *77
+      - *78
+      - *79
+      - *80
+      - *81
+      - *82
+      - *83
+      - *84
+      - *85
+      - *86
+      - *87
+      - *88
+      - *89
+      - *90
+      - *91
+      - *92
+      - *93
+      - *94
+      - *95
+      - *96
+      - *97
+      - *98
+      - *99
+      - *100
+      - *101
+      - *102
+      - *103
+      - *104
+      - *105
+    NAME: psw_pwr_non_fatal_intr_bset
+  - ATTR: 4096
+    FLDLST:
+      - *54
+      - *55
+      - *56
+      - *57
+      - *58
+      - *59
+      - *60
+      - *61
+      - *62
+      - *63
+      - *64
+      - *65
+      - *66
+      - *67
+      - *68
+      - *69
+      - *70
+      - *71
+      - *72
+      - *73
+      - *74
+      - *75
+      - *76
+      - *77
+      - *78
+      - *79
+      - *80
+      - *81
+      - *82
+      - *83
+      - *84
+      - *85
+      - *86
+      - *87
+      - *88
+      - *89
+      - *90
+      - *91
+      - *92
+      - *93
+      - *94
+      - *95
+      - *96
+      - *97
+      - *98
+      - *99
+      - *100
+      - *101
+      - *102
+      - *103
+      - *104
+      - *105
+    NAME: psw_pwr_non_fatal_intr_bclr
+  - ATTR: 256
+    FLDLST:
+      - &106
+        DESCRIPTION: ' Cell ptr ring pkt drop. '
+        NAME: cfp_pkt_drop
+        WIDTH: 1
+      - &107
+        DESCRIPTION: ' Main pkt drop. '
+        NAME: main_pkt_drop
+        WIDTH: 1
+      - &108
+        DESCRIPTION: ' FRV error. '
+        NAME: frv_error
+        WIDTH: 1
+    NAME: psw_pwr_non_fatal_misc_intr_cause
+  - ATTR: 512
+    FLDLST:
+      - *106
+      - *107
+      - *108
+    NAME: psw_pwr_non_fatal_misc_intr_stat
+  - ATTR: 1024
+    FLDLST:
+      - *106
+      - *107
+      - *108
+    NAME: psw_pwr_non_fatal_misc_intr_mask
+  - ATTR: 2048
+    FLDLST:
+      - *106
+      - *107
+      - *108
+    NAME: psw_pwr_non_fatal_misc_intr_bset
+  - ATTR: 4096
+    FLDLST:
+      - *106
+      - *107
+      - *108
+    NAME: psw_pwr_non_fatal_misc_intr_bclr
+  - ATTR: 9
+    DESCRIPTION: Place Holder for now for PSW packet writer Feature Register
+    FLDLST:
+      - ATTR: 1
+        DEFAULT: 19
+        DESCRIPTION: Module ID
+        NAME: module_id
+        VALUE: 19
+        WIDTH: 8
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Version number of the module
+        NAME: version
+        VALUE: 0
+        WIDTH: 8
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Features enabled in the module.
+        NAME: features
+        VALUE: 0
+        WIDTH: 16
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Reserved Field.
+        NAME: Reserved
+        WIDTH: 32
+    NAME: psw_pwr_features
+    TEST_ATTR: 0
+  - ATTR: 5
+    DESCRIPTION: ' Spare PIO register. These bits can be read and written by software. They can serve as control bits for late ECOs in the design.'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Spare PIO register.
+        NAME: val
+        WIDTH: 64
+    NAME: psw_pwr_spare_pio
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: Scratchpad register.
+        NAME: val
+        WIDTH: 64
+    NAME: psw_pwr_scratchpad
+  - ATTR: 9
+    DESCRIPTION: ' '
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: PWR Non Fatal Interrupt
+        NAME: pwr_intr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: PRD Non Fatal Interrupt
+        NAME: prd_intr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: SCH Non Fatal Interrupt
+        NAME: sch_intr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: PRM Non Fatal Interrupt
+        NAME: prm_intr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ORM Non Fatal Interrupt
+        NAME: orm_intr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: IRM Non Fatal Interrupt
+        NAME: irm_intr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: WRED Non Fatal Interrupt
+        NAME: wred_intr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: CLM Non Fatal Interrupt
+        NAME: clm_intr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: PQM Non Fatal Interrupt
+        NAME: pqm_intr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: CFP Non Fatal Interrupt
+        NAME: cfp_intr
+        WIDTH: 1
+    NAME: psw_non_fatal_interrupt_status
+  - ATTR: 9
+    DESCRIPTION: ' '
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: PWR Fatal Interrupt
+        NAME: pwr_intr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: PRD Fatal Interrupt
+        NAME: prd_intr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: SCH Fatal Interrupt
+        NAME: sch_intr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: PRM Fatal Interrupt
+        NAME: prm_intr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ORM Fatal Interrupt
+        NAME: orm_intr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: IRM Fatal Interrupt
+        NAME: irm_intr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: WRED Fatal Interrupt
+        NAME: wred_intr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: CLM Fatal Interrupt
+        NAME: clm_intr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: PQM Fatal Interrupt
+        NAME: pqm_intr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: CFP Fatal Interrupt
+        NAME: cfp_intr
+        WIDTH: 1
+    NAME: psw_fatal_interrupt_status
+  - ATTR: 5
+    DESCRIPTION: Min pkt size in bytes without CRC. Default value is 60 Bytes
+    FLDLST:
+      - DEFAULT: 60
+        DESCRIPTION: Value.
+        NAME: val
+        WIDTH: 8
+    NAME: psw_pwr_cfg_min_pkt_size
+  - ATTR: 5
+    DESCRIPTION: Min pkt size in bytes after rewrite. pkt is dropped if Pkt Len + rewrite bytes is less than this config value
+    FLDLST:
+      - DEFAULT: 14
+        DESCRIPTION: Value.
+        NAME: val
+        WIDTH: 8
+    NAME: psw_pwr_cfg_min_pkt_size_after_rewrite
+  - ATTR: 9
+    DESCRIPTION: ' HW detects if a stream receives FRV before receiving SOP of a packet. This is a fatal error.'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Streams of fpg0 '
+        NAME: streams_fpg0
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: 'Streams of fpg1 '
+        NAME: streams_fpg1
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: 'Streams of fpg2 '
+        NAME: streams_fpg2
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: 'Streams of fpg3 '
+        NAME: streams_fpg3
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: 'Streams of fpg4 '
+        NAME: streams_fpg4
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: 'Streams of fpg5 '
+        NAME: streams_fpg5
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: 'epg0 '
+        NAME: epg0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'epg1 '
+        NAME: epg1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'epg2 '
+        NAME: epg2
+        WIDTH: 1
+    NAME: psw_pwr_sta_unexpected_frv_rcvd_error
+  - ATTR: 5
+    DESCRIPTION: ' This can be to trigger a mem_init for a specific memory. HW initializes each memory with 0. '
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: .
+        NAME: q_drop_cntr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: .
+        NAME: q_enq_cntr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: .
+        NAME: src_pri_enq_cntr
+        WIDTH: 1
+    NAME: psw_pwr_mem_init_start_cfg
+    TEST_ATTR: 2
+  - ATTR: 9
+    DESCRIPTION: ' Memory init_done status of each memory '
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: .
+        NAME: q_drop_cntr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: .
+        NAME: q_enq_cntr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: .
+        NAME: src_pri_enq_cntr
+        WIDTH: 1
+    NAME: psw_pwr_mem_init_done_status
+  - ATTR: 5
+    DESCRIPTION: PSW FLA slave id
+    FLDLST:
+      - DEFAULT: 10
+        DESCRIPTION: .
+        NAME: val
+        WIDTH: 8
+    NAME: psw_pwr_fla_slave_id
+  - ATTR: 5
+    COUNT: 6
+    DESCRIPTION: Maps sections of stream memory to streams within a IFPG cell writer.
+    FLDLST: &109
+      - DEFAULT: 0
+        DESCRIPTION: stream number that can use section-0 of stream memory
+        NAME: section0
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: stream number that can use section-1 of stream memory
+        NAME: section1
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: stream number that can use section-2 of stream memory
+        NAME: section2
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: stream number that can use section-3 of stream memory
+        NAME: section3
+        WIDTH: 2
+    NAME: psw_pwr_cfg_stream_mem_sel_ifpg_0
+  - ATTR: 5
+    COUNT: 6
+    DESCRIPTION: Maps sections of stream memory to streams within a IFPG cell writer.
+    FLDLST: *109
+    NAME: psw_pwr_cfg_stream_mem_sel_ifpg_1
+  - ATTR: 5
+    COUNT: 6
+    DESCRIPTION: Maps sections of stream memory to streams within a IFPG cell writer.
+    FLDLST: *109
+    NAME: psw_pwr_cfg_stream_mem_sel_ifpg_2
+  - ATTR: 5
+    COUNT: 6
+    DESCRIPTION: Maps sections of stream memory to streams within a IFPG cell writer.
+    FLDLST: *109
+    NAME: psw_pwr_cfg_stream_mem_sel_ifpg_3
+  - ATTR: 5
+    COUNT: 6
+    DESCRIPTION: Maps sections of stream memory to streams within a IFPG cell writer.
+    FLDLST: *109
+    NAME: psw_pwr_cfg_stream_mem_sel_ifpg_4
+  - ATTR: 5
+    COUNT: 6
+    DESCRIPTION: Maps sections of stream memory to streams within a IFPG cell writer.
+    FLDLST: *109
+    NAME: psw_pwr_cfg_stream_mem_sel_ifpg_5
+  - ATTR: 5
+    COUNT: 6
+    DESCRIPTION: This is used to clear internal states of the stream during port reconfig. This register clears the physical mapping to logical mapping of stream memory.
+    FLDLST: &110
+      - DEFAULT: 0
+        DESCRIPTION: clear internal states of stream 0 of the FPG. SW must clear this register at the end of port reconfiguration.
+        NAME: stream0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: clear internal states of stream 1 of the FPG. SW must clear this register at the end of port reconfiguration.
+        NAME: stream1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: clear internal states of stream 2 of the FPG. SW must clear this register at the end of port reconfiguration.
+        NAME: stream2
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: clear internal states of stream 3 of the FPG. SW must clear this register at the end of port reconfiguration.
+        NAME: stream3
+        WIDTH: 1
+    NAME: psw_pwr_cfg_flex_clear_ifpg_0
+  - ATTR: 5
+    COUNT: 6
+    DESCRIPTION: This is used to clear internal states of the stream during port reconfig. This register clears the physical mapping to logical mapping of stream memory.
+    FLDLST: *110
+    NAME: psw_pwr_cfg_flex_clear_ifpg_1
+  - ATTR: 5
+    COUNT: 6
+    DESCRIPTION: This is used to clear internal states of the stream during port reconfig. This register clears the physical mapping to logical mapping of stream memory.
+    FLDLST: *110
+    NAME: psw_pwr_cfg_flex_clear_ifpg_2
+  - ATTR: 5
+    COUNT: 6
+    DESCRIPTION: This is used to clear internal states of the stream during port reconfig. This register clears the physical mapping to logical mapping of stream memory.
+    FLDLST: *110
+    NAME: psw_pwr_cfg_flex_clear_ifpg_3
+  - ATTR: 5
+    COUNT: 6
+    DESCRIPTION: This is used to clear internal states of the stream during port reconfig. This register clears the physical mapping to logical mapping of stream memory.
+    FLDLST: *110
+    NAME: psw_pwr_cfg_flex_clear_ifpg_4
+  - ATTR: 5
+    COUNT: 6
+    DESCRIPTION: This is used to clear internal states of the stream during port reconfig. This register clears the physical mapping to logical mapping of stream memory.
+    FLDLST: *110
+    NAME: psw_pwr_cfg_flex_clear_ifpg_5
+  - ATTR: 5
+    COUNT: 6
+    DESCRIPTION: Config to setup backpressure from packetWriter to IFPG.
+    FLDLST: &111
+      - DEFAULT: 56
+        DESCRIPTION: Number of entries allowed to be used by stream
+        NAME: depth_stream0
+        WIDTH: 8
+      - DEFAULT: 56
+        DESCRIPTION: Number of entries allowed to be used by stream
+        NAME: depth_stream1
+        WIDTH: 8
+      - DEFAULT: 56
+        DESCRIPTION: Number of entries allowed to be used by stream
+        NAME: depth_stream2
+        WIDTH: 8
+      - DEFAULT: 56
+        DESCRIPTION: Number of entries allowed to be used by stream
+        NAME: depth_stream3
+        WIDTH: 8
+      - DEFAULT: 0
+        DESCRIPTION: 'assert backpressure when number of entries goes above this variable. If set to 0, no backpressure is asserted.'
+        NAME: bkpr_thresh_stream0
+        WIDTH: 8
+      - DEFAULT: 0
+        DESCRIPTION: 'assert backpressure when number of entries goes above this variable. If set to 0, no backpressure is asserted.'
+        NAME: bkpr_thresh_stream1
+        WIDTH: 8
+      - DEFAULT: 0
+        DESCRIPTION: 'assert backpressure when number of entries goes above this variable. If set to 0, no backpressure is asserted.'
+        NAME: bkpr_thresh_stream2
+        WIDTH: 8
+      - DEFAULT: 0
+        DESCRIPTION: 'assert backpressure when number of entries goes above this variable. If set to 0, no backpressure is asserted.'
+        NAME: bkpr_thresh_stream3
+        WIDTH: 8
+    NAME: psw_pwr_cfg_back_pressure_ifpg_0
+  - ATTR: 5
+    COUNT: 6
+    DESCRIPTION: Config to setup backpressure from packetWriter to IFPG.
+    FLDLST: *111
+    NAME: psw_pwr_cfg_back_pressure_ifpg_1
+  - ATTR: 5
+    COUNT: 6
+    DESCRIPTION: Config to setup backpressure from packetWriter to IFPG.
+    FLDLST: *111
+    NAME: psw_pwr_cfg_back_pressure_ifpg_2
+  - ATTR: 5
+    COUNT: 6
+    DESCRIPTION: Config to setup backpressure from packetWriter to IFPG.
+    FLDLST: *111
+    NAME: psw_pwr_cfg_back_pressure_ifpg_3
+  - ATTR: 5
+    COUNT: 6
+    DESCRIPTION: Config to setup backpressure from packetWriter to IFPG.
+    FLDLST: *111
+    NAME: psw_pwr_cfg_back_pressure_ifpg_4
+  - ATTR: 5
+    COUNT: 6
+    DESCRIPTION: Config to setup backpressure from packetWriter to IFPG.
+    FLDLST: *111
+    NAME: psw_pwr_cfg_back_pressure_ifpg_5
+  - ATTR: 5
+    DESCRIPTION: Repl FIFO almost full threshold
+    FLDLST:
+      - DEFAULT: 44
+        DESCRIPTION: 'Repl FIFO almost full headroom. . Min value of this depends on number of src ports,i.e. 27 and enq_chk pipeline. '
+        NAME: headroom
+        WIDTH: 7
+    NAME: psw_pwr_cfg_repl_fifo_th
+  - ATTR: 5
+    DESCRIPTION: CFP hysteresis control register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Enable CFP hysteresis
+        NAME: en
+        WIDTH: 1
+      - DEFAULT: 16000
+        DESCRIPTION: 'cell pointers are allocated once the CFP cell cnt goes below clear_cnt '
+        NAME: thresh
+        WIDTH: 14
+    NAME: psw_pwr_cfg_cfp_hysteresis
+  - ATTR: 5
+    DESCRIPTION: Control ECN behavior for pkts that have a egress sample pkt.
+    FLDLST:
+      - DEFAULT: 1
+        DESCRIPTION: 'If set, enables ECN for main and sampled pkts for pkts that have egress sample.'
+        NAME: en
+        WIDTH: 1
+    NAME: psw_pwr_cfg_egress_mirror_ecn
+  - ATTR: 5
+    DESCRIPTION: Used to count queue drops that can happed by PSW or FWD/CRC.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'If set, count drops only if dropped by PSW.'
+        NAME: psw_drop
+        WIDTH: 1
+    NAME: psw_pwr_cfg_q_drop_stats
+  - ATTR: 5
+    DESCRIPTION: Sample on PRM drop.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'If set, enables SPD feature.'
+        NAME: en
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'If set, sends only first cell.'
+        NAME: sofs
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: sample copy packet size adjust.
+        NAME: scopy_pkt_sz_adj
+        WIDTH: 7
+      - DEFAULT: 32
+        DESCRIPTION: stream number. Destination stream must be set to ERP. Allowed values are 32 to 55.
+        NAME: dest_stream
+        WIDTH: 6
+      - DEFAULT: 0
+        DESCRIPTION: ERP queue number of the stream. Allowed values are 0 to 7.
+        NAME: dest_q
+        WIDTH: 4
+    NAME: psw_pwr_cfg_spd
+  - ATTR: 5
+    DESCRIPTION: Used to send egress sample information on FRV that is sent out to FPG.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'If set, psw_spd_f field of FRV is 1 for sampled pkt that is sent out to FPG if the sampled pkt is egress sample.  '
+        NAME: send_to_fpg_en
+        WIDTH: 1
+    NAME: psw_pwr_cfg_egress_sample_info
+  - ATTR: 5
+    DESCRIPTION: 'If set, the particular bit is considered to be in link_down mode and all traffic from or to that stream is dropped.'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'If set, fp stream is disabled.'
+        NAME: fp_stream_dis
+        WIDTH: 24
+      - DEFAULT: 0
+        DESCRIPTION: 'If set, epg is disabled.'
+        NAME: epg_dis
+        WIDTH: 3
+    NAME: psw_pwr_cfg_stream_dis
+  - ATTR: 5
+    DESCRIPTION: 'PWR clear HWM counters '
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: ' - '
+        NAME: repl_fifo
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ' - '
+        NAME: fpg0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ' - '
+        NAME: fpg1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ' - '
+        NAME: fpg2
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ' - '
+        NAME: fpg3
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ' - '
+        NAME: fpg4
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ' - '
+        NAME: fpg5
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ' - '
+        NAME: epg0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ' - '
+        NAME: epg1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ' - '
+        NAME: epg2
+        WIDTH: 1
+    NAME: psw_pwr_cfg_clear_hwm
+  - ATTR: 9
+    COUNT: 6
+    DESCRIPTION: 'PWR stream memory '
+    FLDLST: &112
+      - DEFAULT: 0
+        DESCRIPTION: 'stream number 0 '
+        NAME: curr_val_stream0
+        WIDTH: 8
+      - DEFAULT: 0
+        DESCRIPTION: 'stream number 0 '
+        NAME: hwm_val_stream0
+        WIDTH: 8
+      - DEFAULT: 0
+        DESCRIPTION: 'stream number 1 '
+        NAME: curr_val_stream1
+        WIDTH: 8
+      - DEFAULT: 0
+        DESCRIPTION: 'stream number 1 '
+        NAME: hwm_val_stream1
+        WIDTH: 8
+      - DEFAULT: 0
+        DESCRIPTION: 'stream number 2 '
+        NAME: curr_val_stream2
+        WIDTH: 8
+      - DEFAULT: 0
+        DESCRIPTION: 'stream number 2 '
+        NAME: hwm_val_stream2
+        WIDTH: 8
+      - DEFAULT: 0
+        DESCRIPTION: 'stream number 3 '
+        NAME: curr_val_stream3
+        WIDTH: 8
+      - DEFAULT: 0
+        DESCRIPTION: 'stream number 3 '
+        NAME: hwm_val_stream3
+        WIDTH: 8
+    NAME: psw_pwr_fpg_stream_mem_cnt_0
+  - ATTR: 9
+    COUNT: 6
+    DESCRIPTION: 'PWR stream memory '
+    FLDLST: *112
+    NAME: psw_pwr_fpg_stream_mem_cnt_1
+  - ATTR: 9
+    COUNT: 6
+    DESCRIPTION: 'PWR stream memory '
+    FLDLST: *112
+    NAME: psw_pwr_fpg_stream_mem_cnt_2
+  - ATTR: 9
+    COUNT: 6
+    DESCRIPTION: 'PWR stream memory '
+    FLDLST: *112
+    NAME: psw_pwr_fpg_stream_mem_cnt_3
+  - ATTR: 9
+    COUNT: 6
+    DESCRIPTION: 'PWR stream memory '
+    FLDLST: *112
+    NAME: psw_pwr_fpg_stream_mem_cnt_4
+  - ATTR: 9
+    COUNT: 6
+    DESCRIPTION: 'PWR stream memory '
+    FLDLST: *112
+    NAME: psw_pwr_fpg_stream_mem_cnt_5
+  - ATTR: 9
+    COUNT: 3
+    DESCRIPTION: 'PWR stream memory '
+    FLDLST: &113
+      - DEFAULT: 0
+        DESCRIPTION: ' '
+        NAME: curr_val
+        WIDTH: 8
+      - DEFAULT: 0
+        DESCRIPTION: ' '
+        NAME: hwm_val
+        WIDTH: 8
+    NAME: psw_pwr_epg_stream_mem_cnt_0
+  - ATTR: 9
+    COUNT: 3
+    DESCRIPTION: 'PWR stream memory '
+    FLDLST: *113
+    NAME: psw_pwr_epg_stream_mem_cnt_1
+  - ATTR: 9
+    COUNT: 3
+    DESCRIPTION: 'PWR stream memory '
+    FLDLST: *113
+    NAME: psw_pwr_epg_stream_mem_cnt_2
+  - ATTR: 9
+    DESCRIPTION: 'PWR replication fifo cnt value '
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: ' - '
+        NAME: curr_val
+        WIDTH: 8
+      - DEFAULT: 0
+        DESCRIPTION: ' - '
+        NAME: hwm_val
+        WIDTH: 8
+    NAME: psw_pwr_repl_fifo_cnt
+  - ATTR: 9
+    DESCRIPTION: Cell pointer ring fifo counter
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: ' - '
+        NAME: cfp_prefetch_fifo
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: ' - '
+        NAME: drop_cell_fifo
+        WIDTH: 5
+    NAME: psw_pwr_cpr_cnt
+  - ATTR: 5
+    DESCRIPTION: Config register for memory error injection
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into src_pri_enq_cntr memory
+        NAME: src_pri_enq_cntr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into q_enq_cntr memory
+        NAME: q_enq_cntr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into q_drop_cntr memory
+        NAME: q_drop_cntr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into repl_fifo memory
+        NAME: repl_fifo
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into epg2_pkt_ctrl memory
+        NAME: epg2_pkt_ctrl
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into epg2_stream_ctrl memory
+        NAME: epg2_stream_ctrl
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into epg2_stream_bank1 memory
+        NAME: epg2_stream_bank1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into epg2_stream_bank0 memory
+        NAME: epg2_stream_bank0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into epg1_pkt_ctrl memory
+        NAME: epg1_pkt_ctrl
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into epg1_stream_ctrl memory
+        NAME: epg1_stream_ctrl
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into epg1_stream_bank1 memory
+        NAME: epg1_stream_bank1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into epg1_stream_bank0 memory
+        NAME: epg1_stream_bank0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into epg0_pkt_ctrl memory
+        NAME: epg0_pkt_ctrl
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into epg0_stream_ctrl memory
+        NAME: epg0_stream_ctrl
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into epg0_stream_bank1 memory
+        NAME: epg0_stream_bank1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into epg0_stream_bank0 memory
+        NAME: epg0_stream_bank0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into fpg5_pkt_ctrl memory
+        NAME: fpg5_pkt_ctrl
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into fpg5_stream_ctrl memory
+        NAME: fpg5_stream_ctrl
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into fpg5_stream_bank3 memory
+        NAME: fpg5_stream_bank3
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into fpg5_stream_bank2 memory
+        NAME: fpg5_stream_bank2
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into fpg5_stream_bank1 memory
+        NAME: fpg5_stream_bank1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into fpg5_stream_bank0 memory
+        NAME: fpg5_stream_bank0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into fpg4_pkt_ctrl memory
+        NAME: fpg4_pkt_ctrl
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into fpg4_stream_ctrl memory
+        NAME: fpg4_stream_ctrl
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into fpg4_stream_bank3 memory
+        NAME: fpg4_stream_bank3
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into fpg4_stream_bank2 memory
+        NAME: fpg4_stream_bank2
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into fpg4_stream_bank1 memory
+        NAME: fpg4_stream_bank1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into fpg4_stream_bank0 memory
+        NAME: fpg4_stream_bank0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into fpg3_pkt_ctrl memory
+        NAME: fpg3_pkt_ctrl
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into fpg3_stream_ctrl memory
+        NAME: fpg3_stream_ctrl
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into fpg3_stream_bank3 memory
+        NAME: fpg3_stream_bank3
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into fpg3_stream_bank2 memory
+        NAME: fpg3_stream_bank2
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into fpg3_stream_bank1 memory
+        NAME: fpg3_stream_bank1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into fpg3_stream_bank0 memory
+        NAME: fpg3_stream_bank0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into fpg2_pkt_ctrl memory
+        NAME: fpg2_pkt_ctrl
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into fpg2_stream_ctrl memory
+        NAME: fpg2_stream_ctrl
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into fpg2_stream_bank3 memory
+        NAME: fpg2_stream_bank3
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into fpg2_stream_bank2 memory
+        NAME: fpg2_stream_bank2
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into fpg2_stream_bank1 memory
+        NAME: fpg2_stream_bank1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into fpg2_stream_bank0 memory
+        NAME: fpg2_stream_bank0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into fpg1_pkt_ctrl memory
+        NAME: fpg1_pkt_ctrl
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into fpg1_stream_ctrl memory
+        NAME: fpg1_stream_ctrl
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into fpg1_stream_bank3 memory
+        NAME: fpg1_stream_bank3
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into fpg1_stream_bank2 memory
+        NAME: fpg1_stream_bank2
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into fpg1_stream_bank1 memory
+        NAME: fpg1_stream_bank1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into fpg1_stream_bank0 memory
+        NAME: fpg1_stream_bank0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into fpg0_pkt_ctrl memory
+        NAME: fpg0_pkt_ctrl
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into fpg0_stream_ctrl memory
+        NAME: fpg0_stream_ctrl
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into fpg0_stream_bank3 memory
+        NAME: fpg0_stream_bank3
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into fpg0_stream_bank2 memory
+        NAME: fpg0_stream_bank2
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into fpg0_stream_bank1 memory
+        NAME: fpg0_stream_bank1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Inject error into fpg0_stream_bank0 memory
+        NAME: fpg0_stream_bank0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'Type of error to be injected applied to all memories.  0 - Uncorrectable error. 1 - Correctable error '
+        NAME: err_type
+        WIDTH: 1
+    NAME: psw_pwr_sram_err_inj_cfg
+    TEST_ATTR: 2
+  - ATTR: 9
+    DESCRIPTION: 'SRAM bit vector that has correctable error. Set when first error is detected. Reset when corresponding interrupt status bit is cleared. '
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: src_pri_enq_cntr Memory Single Bit ECC Error
+        NAME: src_pri_enq_cntr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: q_enq_cntr Memory Single Bit ECC Error
+        NAME: q_enq_cntr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: q_drop_cntr Memory Single Bit ECC Error
+        NAME: q_drop_cntr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: repl_fifo Memory Single Bit ECC Error
+        NAME: repl_fifo
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: epg2_pkt_ctrl Memory Single Bit ECC Error
+        NAME: epg2_pkt_ctrl
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: epg2_stream_ctrl Memory Single Bit ECC Error
+        NAME: epg2_stream_ctrl
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: epg2_stream_bank1 Memory Single Bit ECC Error
+        NAME: epg2_stream_bank1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: epg2_stream_bank0 Memory Single Bit ECC Error
+        NAME: epg2_stream_bank0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: epg1_pkt_ctrl Memory Single Bit ECC Error
+        NAME: epg1_pkt_ctrl
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: epg1_stream_ctrl Memory Single Bit ECC Error
+        NAME: epg1_stream_ctrl
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: epg1_stream_bank1 Memory Single Bit ECC Error
+        NAME: epg1_stream_bank1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: epg1_stream_bank0 Memory Single Bit ECC Error
+        NAME: epg1_stream_bank0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: epg0_pkt_ctrl Memory Single Bit ECC Error
+        NAME: epg0_pkt_ctrl
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: epg0_stream_ctrl Memory Single Bit ECC Error
+        NAME: epg0_stream_ctrl
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: epg0_stream_bank1 Memory Single Bit ECC Error
+        NAME: epg0_stream_bank1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: epg0_stream_bank0 Memory Single Bit ECC Error
+        NAME: epg0_stream_bank0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: fpg5_pkt_ctrl Memory Single Bit ECC Error
+        NAME: fpg5_pkt_ctrl
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: fpg5_stream_ctrl Memory Single Bit ECC Error
+        NAME: fpg5_stream_ctrl
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: fpg5_stream_bank3 Memory Single Bit ECC Error
+        NAME: fpg5_stream_bank3
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: fpg5_stream_bank2 Memory Single Bit ECC Error
+        NAME: fpg5_stream_bank2
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: fpg5_stream_bank1 Memory Single Bit ECC Error
+        NAME: fpg5_stream_bank1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: fpg5_stream_bank0 Memory Single Bit ECC Error
+        NAME: fpg5_stream_bank0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: fpg4_pkt_ctrl Memory Single Bit ECC Error
+        NAME: fpg4_pkt_ctrl
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: fpg4_stream_ctrl Memory Single Bit ECC Error
+        NAME: fpg4_stream_ctrl
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: fpg4_stream_bank3 Memory Single Bit ECC Error
+        NAME: fpg4_stream_bank3
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: fpg4_stream_bank2 Memory Single Bit ECC Error
+        NAME: fpg4_stream_bank2
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: fpg4_stream_bank1 Memory Single Bit ECC Error
+        NAME: fpg4_stream_bank1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: fpg4_stream_bank0 Memory Single Bit ECC Error
+        NAME: fpg4_stream_bank0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: fpg3_pkt_ctrl Memory Single Bit ECC Error
+        NAME: fpg3_pkt_ctrl
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: fpg3_stream_ctrl Memory Single Bit ECC Error
+        NAME: fpg3_stream_ctrl
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: fpg3_stream_bank3 Memory Single Bit ECC Error
+        NAME: fpg3_stream_bank3
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: fpg3_stream_bank2 Memory Single Bit ECC Error
+        NAME: fpg3_stream_bank2
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: fpg3_stream_bank1 Memory Single Bit ECC Error
+        NAME: fpg3_stream_bank1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: fpg3_stream_bank0 Memory Single Bit ECC Error
+        NAME: fpg3_stream_bank0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: fpg2_pkt_ctrl Memory Single Bit ECC Error
+        NAME: fpg2_pkt_ctrl
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: fpg2_stream_ctrl Memory Single Bit ECC Error
+        NAME: fpg2_stream_ctrl
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: fpg2_stream_bank3 Memory Single Bit ECC Error
+        NAME: fpg2_stream_bank3
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: fpg2_stream_bank2 Memory Single Bit ECC Error
+        NAME: fpg2_stream_bank2
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: fpg2_stream_bank1 Memory Single Bit ECC Error
+        NAME: fpg2_stream_bank1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: fpg2_stream_bank0 Memory Single Bit ECC Error
+        NAME: fpg2_stream_bank0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: fpg1_pkt_ctrl Memory Single Bit ECC Error
+        NAME: fpg1_pkt_ctrl
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: fpg1_stream_ctrl Memory Single Bit ECC Error
+        NAME: fpg1_stream_ctrl
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: fpg1_stream_bank3 Memory Single Bit ECC Error
+        NAME: fpg1_stream_bank3
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: fpg1_stream_bank2 Memory Single Bit ECC Error
+        NAME: fpg1_stream_bank2
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: fpg1_stream_bank1 Memory Single Bit ECC Error
+        NAME: fpg1_stream_bank1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: fpg1_stream_bank0 Memory Single Bit ECC Error
+        NAME: fpg1_stream_bank0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: fpg0_pkt_ctrl Memory Single Bit ECC Error
+        NAME: fpg0_pkt_ctrl
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: fpg0_stream_ctrl Memory Single Bit ECC Error
+        NAME: fpg0_stream_ctrl
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: fpg0_stream_bank3 Memory Single Bit ECC Error
+        NAME: fpg0_stream_bank3
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: fpg0_stream_bank2 Memory Single Bit ECC Error
+        NAME: fpg0_stream_bank2
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: fpg0_stream_bank1 Memory Single Bit ECC Error
+        NAME: fpg0_stream_bank1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: fpg0_stream_bank0 Memory Single Bit ECC Error
+        NAME: fpg0_stream_bank0
+        WIDTH: 1
+    NAME: psw_pwr_sram_log_cerr_vec
+  - ATTR: 9
+    DESCRIPTION: SRAM syndrome log register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: ' Syndrome related to error detected while reading data from SRAM '
+        NAME: val
+        WIDTH: 16
+    NAME: psw_pwr_sram_log_cerr_syndrome
+  - ATTR: 9
+    DESCRIPTION: SRAM address log register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: ' address related to error detected while reading data from SRAM '
+        NAME: val
+        WIDTH: 16
+    NAME: psw_pwr_sram_log_cerr_addr
+  - ATTR: 9
+    DESCRIPTION: 'SRAM bit vector that has uncorrectable error. Set when first error is detected. Reset when corresponding interrupt status bit is cleared. '
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: src_pri_enq_cntr Memory Double Bit ECC Error
+        NAME: src_pri_enq_cntr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: q_enq_cntr Memory Double Bit ECC Error
+        NAME: q_enq_cntr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: q_drop_cntr Memory Double Bit ECC Error
+        NAME: q_drop_cntr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: repl_fifo Memory Double Bit ECC Error
+        NAME: repl_fifo
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: epg2_pkt_ctrl Memory Double Bit ECC Error
+        NAME: epg2_pkt_ctrl
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: epg2_stream_ctrl Memory Double Bit ECC Error
+        NAME: epg2_stream_ctrl
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: epg2_stream_bank1 Memory Double Bit ECC Error
+        NAME: epg2_stream_bank1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: epg2_stream_bank0 Memory Double Bit ECC Error
+        NAME: epg2_stream_bank0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: epg1_pkt_ctrl Memory Double Bit ECC Error
+        NAME: epg1_pkt_ctrl
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: epg1_stream_ctrl Memory Double Bit ECC Error
+        NAME: epg1_stream_ctrl
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: epg1_stream_bank1 Memory Double Bit ECC Error
+        NAME: epg1_stream_bank1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: epg1_stream_bank0 Memory Double Bit ECC Error
+        NAME: epg1_stream_bank0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: epg0_pkt_ctrl Memory Double Bit ECC Error
+        NAME: epg0_pkt_ctrl
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: epg0_stream_ctrl Memory Double Bit ECC Error
+        NAME: epg0_stream_ctrl
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: epg0_stream_bank1 Memory Double Bit ECC Error
+        NAME: epg0_stream_bank1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: epg0_stream_bank0 Memory Double Bit ECC Error
+        NAME: epg0_stream_bank0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: fpg5_pkt_ctrl Memory Double Bit ECC Error
+        NAME: fpg5_pkt_ctrl
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: fpg5_stream_ctrl Memory Double Bit ECC Error
+        NAME: fpg5_stream_ctrl
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: fpg5_stream_bank3 Memory Double Bit ECC Error
+        NAME: fpg5_stream_bank3
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: fpg5_stream_bank2 Memory Double Bit ECC Error
+        NAME: fpg5_stream_bank2
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: fpg5_stream_bank1 Memory Double Bit ECC Error
+        NAME: fpg5_stream_bank1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: fpg5_stream_bank0 Memory Double Bit ECC Error
+        NAME: fpg5_stream_bank0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: fpg4_pkt_ctrl Memory Double Bit ECC Error
+        NAME: fpg4_pkt_ctrl
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: fpg4_stream_ctrl Memory Double Bit ECC Error
+        NAME: fpg4_stream_ctrl
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: fpg4_stream_bank3 Memory Double Bit ECC Error
+        NAME: fpg4_stream_bank3
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: fpg4_stream_bank2 Memory Double Bit ECC Error
+        NAME: fpg4_stream_bank2
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: fpg4_stream_bank1 Memory Double Bit ECC Error
+        NAME: fpg4_stream_bank1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: fpg4_stream_bank0 Memory Double Bit ECC Error
+        NAME: fpg4_stream_bank0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: fpg3_pkt_ctrl Memory Double Bit ECC Error
+        NAME: fpg3_pkt_ctrl
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: fpg3_stream_ctrl Memory Double Bit ECC Error
+        NAME: fpg3_stream_ctrl
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: fpg3_stream_bank3 Memory Double Bit ECC Error
+        NAME: fpg3_stream_bank3
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: fpg3_stream_bank2 Memory Double Bit ECC Error
+        NAME: fpg3_stream_bank2
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: fpg3_stream_bank1 Memory Double Bit ECC Error
+        NAME: fpg3_stream_bank1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: fpg3_stream_bank0 Memory Double Bit ECC Error
+        NAME: fpg3_stream_bank0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: fpg2_pkt_ctrl Memory Double Bit ECC Error
+        NAME: fpg2_pkt_ctrl
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: fpg2_stream_ctrl Memory Double Bit ECC Error
+        NAME: fpg2_stream_ctrl
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: fpg2_stream_bank3 Memory Double Bit ECC Error
+        NAME: fpg2_stream_bank3
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: fpg2_stream_bank2 Memory Double Bit ECC Error
+        NAME: fpg2_stream_bank2
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: fpg2_stream_bank1 Memory Double Bit ECC Error
+        NAME: fpg2_stream_bank1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: fpg2_stream_bank0 Memory Double Bit ECC Error
+        NAME: fpg2_stream_bank0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: fpg1_pkt_ctrl Memory Double Bit ECC Error
+        NAME: fpg1_pkt_ctrl
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: fpg1_stream_ctrl Memory Double Bit ECC Error
+        NAME: fpg1_stream_ctrl
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: fpg1_stream_bank3 Memory Double Bit ECC Error
+        NAME: fpg1_stream_bank3
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: fpg1_stream_bank2 Memory Double Bit ECC Error
+        NAME: fpg1_stream_bank2
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: fpg1_stream_bank1 Memory Double Bit ECC Error
+        NAME: fpg1_stream_bank1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: fpg1_stream_bank0 Memory Double Bit ECC Error
+        NAME: fpg1_stream_bank0
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: fpg0_pkt_ctrl Memory Double Bit ECC Error
+        NAME: fpg0_pkt_ctrl
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: fpg0_stream_ctrl Memory Double Bit ECC Error
+        NAME: fpg0_stream_ctrl
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: fpg0_stream_bank3 Memory Double Bit ECC Error
+        NAME: fpg0_stream_bank3
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: fpg0_stream_bank2 Memory Double Bit ECC Error
+        NAME: fpg0_stream_bank2
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: fpg0_stream_bank1 Memory Double Bit ECC Error
+        NAME: fpg0_stream_bank1
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: fpg0_stream_bank0 Memory Double Bit ECC Error
+        NAME: fpg0_stream_bank0
+        WIDTH: 1
+    NAME: psw_pwr_sram_log_uerr_vec
+  - ATTR: 9
+    DESCRIPTION: SRAM syndrome log register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: ' Syndrome related to error detected while reading data from SRAM '
+        NAME: val
+        WIDTH: 16
+    NAME: psw_pwr_sram_log_uerr_syndrome
+  - ATTR: 9
+    DESCRIPTION: SRAM address log register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: ' address related to error detected while reading data from SRAM '
+        NAME: val
+        WIDTH: 16
+    NAME: psw_pwr_sram_log_uerr_addr
+  - ATTR: 5
+    DESCRIPTION: Enable for PBUF arb.
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'If set, PBUF arb is enabled.'
+        NAME: vld
+        WIDTH: 1
+    NAME: psw_pwr_cfg_pbuf_arb_cln
+  - ATTR: 5
+    DESCRIPTION: FPG streams enable
+    FLDLST:
+      - DEFAULT: 15
+        DESCRIPTION: 'bit[0] - stream0, bit[1]-stream1, bit[2] - stream2, bit[3]-stream3'
+        NAME: vec
+        WIDTH: 4
+    NAME: psw_pwr_cfg_pbuf_arb_fpg0_streams_en
+  - ATTR: 5
+    DESCRIPTION: FPG streams enable
+    FLDLST:
+      - DEFAULT: 15
+        DESCRIPTION: 'bit[0] - stream0, bit[1]-stream1, bit[2] - stream2, bit[3]-stream3'
+        NAME: vec
+        WIDTH: 4
+    NAME: psw_pwr_cfg_pbuf_arb_fpg1_streams_en
+  - ATTR: 5
+    DESCRIPTION: FPG streams enable
+    FLDLST:
+      - DEFAULT: 15
+        DESCRIPTION: 'bit[0] - stream0, bit[1]-stream1, bit[2] - stream2, bit[3]-stream3'
+        NAME: vec
+        WIDTH: 4
+    NAME: psw_pwr_cfg_pbuf_arb_fpg2_streams_en
+  - ATTR: 5
+    DESCRIPTION: FPG streams enable
+    FLDLST:
+      - DEFAULT: 15
+        DESCRIPTION: 'bit[0] - stream0, bit[1]-stream1, bit[2] - stream2, bit[3]-stream3'
+        NAME: vec
+        WIDTH: 4
+    NAME: psw_pwr_cfg_pbuf_arb_fpg3_streams_en
+  - ATTR: 5
+    DESCRIPTION: FPG streams enable
+    FLDLST:
+      - DEFAULT: 15
+        DESCRIPTION: 'bit[0] - stream0, bit[1]-stream1, bit[2] - stream2, bit[3]-stream3'
+        NAME: vec
+        WIDTH: 4
+    NAME: psw_pwr_cfg_pbuf_arb_fpg4_streams_en
+  - ATTR: 5
+    DESCRIPTION: FPG streams enable
+    FLDLST:
+      - DEFAULT: 15
+        DESCRIPTION: 'bit[0] - stream0, bit[1]-stream1, bit[2] - stream2, bit[3]-stream3'
+        NAME: vec
+        WIDTH: 4
+    NAME: psw_pwr_cfg_pbuf_arb_fpg5_streams_en
+  - ATTR: 5
+    DESCRIPTION: PBUF arbiter TDM calendar
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Stream number in FPG. Ranges from 0 to 3
+        NAME: entry0
+        WIDTH: 2
+      - DEFAULT: 1
+        DESCRIPTION: Stream number in FPG. Ranges from 0 to 3
+        NAME: entry1
+        WIDTH: 2
+      - DEFAULT: 2
+        DESCRIPTION: Stream number in FPG. Ranges from 0 to 3
+        NAME: entry2
+        WIDTH: 2
+      - DEFAULT: 3
+        DESCRIPTION: Stream number in FPG. Ranges from 0 to 3
+        NAME: entry3
+        WIDTH: 2
+    NAME: psw_pwr_cfg_pbuf_arb_fpg0_cln
+  - ATTR: 5
+    DESCRIPTION: PBUF arbiter TDM calendar
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Stream number in FPG. Ranges from 0 to 3
+        NAME: entry0
+        WIDTH: 2
+      - DEFAULT: 1
+        DESCRIPTION: Stream number in FPG. Ranges from 0 to 3
+        NAME: entry1
+        WIDTH: 2
+      - DEFAULT: 2
+        DESCRIPTION: Stream number in FPG. Ranges from 0 to 3
+        NAME: entry2
+        WIDTH: 2
+      - DEFAULT: 3
+        DESCRIPTION: Stream number in FPG. Ranges from 0 to 3
+        NAME: entry3
+        WIDTH: 2
+    NAME: psw_pwr_cfg_pbuf_arb_fpg1_cln
+  - ATTR: 5
+    DESCRIPTION: PBUF arbiter TDM calendar
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Stream number in FPG. Ranges from 0 to 3
+        NAME: entry0
+        WIDTH: 2
+      - DEFAULT: 1
+        DESCRIPTION: Stream number in FPG. Ranges from 0 to 3
+        NAME: entry1
+        WIDTH: 2
+      - DEFAULT: 2
+        DESCRIPTION: Stream number in FPG. Ranges from 0 to 3
+        NAME: entry2
+        WIDTH: 2
+      - DEFAULT: 3
+        DESCRIPTION: Stream number in FPG. Ranges from 0 to 3
+        NAME: entry3
+        WIDTH: 2
+    NAME: psw_pwr_cfg_pbuf_arb_fpg2_cln
+  - ATTR: 5
+    DESCRIPTION: PBUF arbiter TDM calendar
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Stream number in FPG. Ranges from 0 to 3
+        NAME: entry0
+        WIDTH: 2
+      - DEFAULT: 1
+        DESCRIPTION: Stream number in FPG. Ranges from 0 to 3
+        NAME: entry1
+        WIDTH: 2
+      - DEFAULT: 2
+        DESCRIPTION: Stream number in FPG. Ranges from 0 to 3
+        NAME: entry2
+        WIDTH: 2
+      - DEFAULT: 3
+        DESCRIPTION: Stream number in FPG. Ranges from 0 to 3
+        NAME: entry3
+        WIDTH: 2
+    NAME: psw_pwr_cfg_pbuf_arb_fpg3_cln
+  - ATTR: 5
+    DESCRIPTION: PBUF arbiter TDM calendar
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Stream number in FPG. Ranges from 0 to 3
+        NAME: entry0
+        WIDTH: 2
+      - DEFAULT: 1
+        DESCRIPTION: Stream number in FPG. Ranges from 0 to 3
+        NAME: entry1
+        WIDTH: 2
+      - DEFAULT: 2
+        DESCRIPTION: Stream number in FPG. Ranges from 0 to 3
+        NAME: entry2
+        WIDTH: 2
+      - DEFAULT: 3
+        DESCRIPTION: Stream number in FPG. Ranges from 0 to 3
+        NAME: entry3
+        WIDTH: 2
+    NAME: psw_pwr_cfg_pbuf_arb_fpg4_cln
+  - ATTR: 5
+    DESCRIPTION: PBUF arbiter TDM calendar
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Stream number in FPG. Ranges from 0 to 3
+        NAME: entry0
+        WIDTH: 2
+      - DEFAULT: 1
+        DESCRIPTION: Stream number in FPG. Ranges from 0 to 3
+        NAME: entry1
+        WIDTH: 2
+      - DEFAULT: 2
+        DESCRIPTION: Stream number in FPG. Ranges from 0 to 3
+        NAME: entry2
+        WIDTH: 2
+      - DEFAULT: 3
+        DESCRIPTION: Stream number in FPG. Ranges from 0 to 3
+        NAME: entry3
+        WIDTH: 2
+    NAME: psw_pwr_cfg_pbuf_arb_fpg5_cln
+  - ATTR: 5
+    DESCRIPTION: 'PBUF arbiter - WRR weight of EPG, special port.For PWR, spl port is repl pkt. For PRD, spl port is purge queue. '
+    FLDLST:
+      - DEFAULT: 1
+        DESCRIPTION: 'Ranges from 0 to 15. Value of 0 implies not eligible to participate. '
+        NAME: epg0
+        WIDTH: 4
+      - DEFAULT: 1
+        DESCRIPTION: 'Ranges from 0 to 15. Value of 0 implies not eligible to participate. '
+        NAME: epg1
+        WIDTH: 4
+      - DEFAULT: 1
+        DESCRIPTION: 'Ranges from 0 to 15. Value of 0 implies not eligible to participate. '
+        NAME: epg2
+        WIDTH: 4
+      - DEFAULT: 1
+        DESCRIPTION: Ranges from 0 to 15. Value of 0 implies  not eligible to participate.
+        NAME: spl_port
+        WIDTH: 4
+    NAME: psw_pwr_cfg_pbuf_arb_wrr_weights
+  - ATTR: 5
+    DESCRIPTION: Min spacing config for EPG and spl port
+    FLDLST:
+      - DEFAULT: 6
+        DESCRIPTION: Min spacing for EPG.
+        NAME: epg
+        WIDTH: 5
+      - DEFAULT: 6
+        DESCRIPTION: Min spacing for special port.
+        NAME: spl_port
+        WIDTH: 5
+      - DEFAULT: 256
+        DESCRIPTION: Count after which NUll slot will be created if there is no FPG stream pick. This is to ensure CSR access can go through.
+        NAME: null_slot
+        WIDTH: 16
+    NAME: psw_pwr_cfg_pbuf_arb_min_spacing
+  - ATTR: 5
+    DESCRIPTION: Indicates number of clocks tdm sync pulse to be delayed for tdm calendar.
+    FLDLST:
+      - DEFAULT: 1
+        DESCRIPTION: TDM delay count.
+        NAME: cnt
+        WIDTH: 6
+    NAME: psw_pwr_cfg_pbuf_arb_sync_tdm_delay
+  - ATTR: 6
+    DESCRIPTION: Access to PSW PWR Stats Counters
+    ENTRIES: 18
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: PSW PWR Statistics Counters
+        NAME: cnt
+        WIDTH: 32
+    NAME: psw_pwr_stats_cntrs
+    TEST_ATTR: 2
+  - ATTR: 134217738
+    COUNT: 1
+    DESCRIPTION: Queue drop counter memory
+    ENTRIES: 576
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: .
+        NAME: val
+        WIDTH: 30
+    NAME: psw_pwr_q_drop_cntr
+    TEST_ATTR: 4
+  - ATTR: 134217738
+    COUNT: 1
+    DESCRIPTION: Queue enq counter memory
+    ENTRIES: 576
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: .
+        NAME: pkt_cnt
+        WIDTH: 30
+      - DEFAULT: 0
+        DESCRIPTION: .
+        NAME: bytes_cnt
+        WIDTH: 36
+    NAME: psw_pwr_q_enq_cntr
+    TEST_ATTR: 4
+  - ATTR: 134217738
+    COUNT: 1
+    DESCRIPTION: src pri enq counter memory
+    ENTRIES: 576
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: .
+        NAME: pkt_cnt
+        WIDTH: 30
+      - DEFAULT: 0
+        DESCRIPTION: .
+        NAME: bytes_cnt
+        WIDTH: 36
+    NAME: psw_pwr_src_pri_enq_cntr
+    TEST_ATTR: 4
+XASIZE: 0

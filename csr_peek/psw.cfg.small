@@ -1,0 +1,53 @@
+{
+	queue: {
+		input: ["port", "queue"],
+		q_in: [
+			{
+				port: {
+					range: "0-23",
+					index_incr: 16,
+				},
+				queue: {
+					range: "0-15",
+					index_incr: 1,
+				},
+				offset: 0,
+				reg: "psw_pwr_q_enq_cntr",
+				ring: {
+					class: "nu",
+					inst: 0
+				},
+				anode : {
+					an: "psw_pwr"
+				},
+				fields: {
+					pkts: "pkt_cnt",
+					bytes: "byte_cnt",
+				},
+			},
+			{
+				port: {
+					range: "24-47",
+					index_incr: 8,
+				},
+				queue: {
+					range: "0-7",
+					index_incr: 1,
+				},
+				offset: 384,
+				reg: "psw_pwr_q_enq_cntr",
+				ring: {
+					class: "nu",
+					inst: 0
+				},
+				anode : {
+					an: "psw_pwr"
+				},
+				fields: {
+					pkts: "pkt_cnt",
+					bytes: "byte_cnt",
+				},
+			},
+		],
+	},
+}

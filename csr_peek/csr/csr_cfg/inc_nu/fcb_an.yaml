@@ -1,0 +1,4966 @@
+---
+BASEADDRPORT: 1
+COUNT: 1
+DESCRIPTION: FCB CSR Spec
+INTR:
+  FATAL_MEM:
+    - DESCRIPTION: Source Configuration Role Memory Uncorrectable ECC Error
+      NAME: fld_src_cfg_role_tbl_mem
+      WIDTH: 1
+    - DESCRIPTION: Source FCP Queue Conetxt Memory Uncorrectable ECC Error
+      NAME: fld_src_queue_ctx_mem
+      WIDTH: 1
+    - DESCRIPTION: Source Timer Memory Uncorrectable ECC Error
+      NAME: fld_src_timer_mem
+      WIDTH: 1
+    - DESCRIPTION: Source Flow Weight Table Memory Uncorrectable ECC Error
+      NAME: fld_src_flow_wt_tbl_mem
+      WIDTH: 1
+    - DESCRIPTION: Source Impariment Table Memory Uncorrectable ECC Error
+      NAME: fld_src_impairment_tbl_mem
+      WIDTH: 1
+    - DESCRIPTION: Scale Down Factor Table Memory Uncorrectable ECC Error
+      NAME: fld_scale_dn_fact_tbl_mem
+      WIDTH: 1
+    - DESCRIPTION: Request Scheduler Linked List Memory  Uncorrectable ECC Error
+      NAME: fld_req_sch_llist_mem
+      WIDTH: 1
+    - DESCRIPTION: Packet Scheduler Linked List MemoryS Uncorrectable ECC Error
+      NAME: fld_pkt_sch_llist_mem
+      WIDTH: 1
+    - DESCRIPTION: NCV Sequencer Memory Uncorrectable ECC Error
+      NAME: fld_ncv_seqncer_mem
+      WIDTH: 1
+    - DESCRIPTION: NCV Staus Memory Uncorrectable ECC Error
+      NAME: fld_ncv_status_tbl_mem
+      WIDTH: 1
+    - DESCRIPTION: Destination FCP Queue Conetxt Memory Uncorrectable ECC Error
+      NAME: fld_dst_queue_ctx_mem
+      WIDTH: 1
+    - DESCRIPTION: Destination Configuration Role Memory Uncorrectable ECC Error
+      NAME: fld_dst_cfg_role_tbl_mem
+      WIDTH: 1
+    - DESCRIPTION: Destination Timer Memory Uncorrectable ECC Error
+      NAME: fld_dst_timer_mem
+      WIDTH: 1
+    - DESCRIPTION: Grant Scheduler Memory Uncorrectable ECC Error
+      NAME: fld_gnt_sch_ctx_mem
+      WIDTH: 1
+    - DESCRIPTION: Grant Scheduler Linked List Memory Uncorrectable ECC Error
+      NAME: fld_gnt_sch_llist_mem
+      WIDTH: 1
+    - DESCRIPTION: Destination Flow Weight Table Memory Uncorrectable ECC Error
+      NAME: fld_dst_flow_wt_tbl_mem
+      WIDTH: 1
+    - DESCRIPTION: Source Stats Counter Memory Uncorrectable ECC Error
+      NAME: fld_src_stats_cntr_mem
+      WIDTH: 1
+    - DESCRIPTION: Destination Stats Counter Memory Uncorrectable ECC Error
+      NAME: fld_dst_stats_cntr_mem
+      WIDTH: 1
+    - DESCRIPTION: Destination DWRR Corrections Accumulator Memory Uncorrectable ECC Error
+      NAME: fld_gnt_sch_deq_updt_corr_mem
+      WIDTH: 1
+    - DESCRIPTION: SRC Trace FIFO Memory Uncorrectable ECC Error
+      NAME: fld_src_trace_fifo_mem
+      WIDTH: 1
+    - DESCRIPTION: DST Trace FIFO Memory Uncorrectable ECC Error
+      NAME: fld_dst_trace_fifo_mem
+      WIDTH: 1
+  NON_FATAL_MEM:
+    - DESCRIPTION: Source Configuration Role Memory Correctable Bit ECC Error
+      NAME: fld_src_cfg_role_tbl_mem
+      WIDTH: 1
+    - DESCRIPTION: Source FCP Queue Conetxt Memory Correctable Bit ECC Error
+      NAME: fld_src_queue_ctx_mem
+      WIDTH: 1
+    - DESCRIPTION: Source Timer Memory Correctable Bit ECC Error
+      NAME: fld_src_timer_mem
+      WIDTH: 1
+    - DESCRIPTION: Source Flow Weight Table Memory Correctable Bit ECC Error
+      NAME: fld_src_flow_wt_tbl_mem
+      WIDTH: 1
+    - DESCRIPTION: Source Impariment Table Memory Correctable Bit ECC Error
+      NAME: fld_src_impairment_tbl_mem
+      WIDTH: 1
+    - DESCRIPTION: Scale Down Factor Table Memory Correctable Bit ECC Error
+      NAME: fld_scale_dn_fact_tbl_mem
+      WIDTH: 1
+    - DESCRIPTION: Request Scheduler Linked List Memory  Correctable Bit ECC Error
+      NAME: fld_req_sch_llist_mem
+      WIDTH: 1
+    - DESCRIPTION: Packet Scheduler Linked List MemoryS Correctable Bit ECC Error
+      NAME: fld_pkt_sch_llist_mem
+      WIDTH: 1
+    - DESCRIPTION: NCV Sequencer Memory Correctable Bit ECC Error
+      NAME: fld_ncv_seqncer_mem
+      WIDTH: 1
+    - DESCRIPTION: NCV Staus Memory Correctable Bit ECC Error
+      NAME: fld_ncv_status_tbl_mem
+      WIDTH: 1
+    - DESCRIPTION: Destination FCP Queue Conetxt Memory Correctable Bit ECC Error
+      NAME: fld_dst_queue_ctx_mem
+      WIDTH: 1
+    - DESCRIPTION: Destination Configuration Role Memory Correctable Bit ECC Error
+      NAME: fld_dst_cfg_role_tbl_mem
+      WIDTH: 1
+    - DESCRIPTION: Destination Timer Memory Correctable Bit ECC Error
+      NAME: fld_dst_timer_mem
+      WIDTH: 1
+    - DESCRIPTION: Grant Scheduler Memory Correctable Bit ECC Error
+      NAME: fld_gnt_sch_ctx_mem
+      WIDTH: 1
+    - DESCRIPTION: Grant Scheduler Linked List Memory Correctable Bit ECC Error
+      NAME: fld_gnt_sch_llist_mem
+      WIDTH: 1
+    - DESCRIPTION: Destination Flow Weight Table Memory Correctable Bit ECC Error
+      NAME: fld_dst_flow_wt_tbl_mem
+      WIDTH: 1
+    - DESCRIPTION: Source Stats Counter Memory Correctable Bit ECC Error
+      NAME: fld_src_stats_cntr_mem
+      WIDTH: 1
+    - DESCRIPTION: Destination Stats Counter Memory Correctable Bit ECC Error
+      NAME: fld_dst_stats_cntr_mem
+      WIDTH: 1
+    - DESCRIPTION: Destination DWRR Corrections Accumulator Memory Correctable Bit ECC Error
+      NAME: fld_gnt_sch_deq_updt_corr_mem
+      WIDTH: 1
+    - DESCRIPTION: SRC Trace FIFO Memory Correctable Bit ECC Error
+      NAME: fld_src_trace_fifo_mem
+      WIDTH: 1
+    - DESCRIPTION: DST Trace FIFO Memory Correctable Bit ECC Error
+      NAME: fld_dst_trace_fifo_mem
+      WIDTH: 1
+  NON_FATAL_MISC:
+    - DESCRIPTION: NWQM Enqueued a WU with Zero Length
+      NAME: fld_nwqm_enqd_wu_w_zero_len
+      WIDTH: 1
+    - DESCRIPTION: WU Queue Reset Command Processed Successfully
+      NAME: fld_src_queue_csr_rst_cmd_success
+      WIDTH: 1
+    - DESCRIPTION: WU Queue Reset Command Failed due to Non Empty WU Queue
+      NAME: fld_src_queue_csr_rst_cmd_failed_err
+      WIDTH: 1
+    - DESCRIPTION: PBOF Based Threshold Reached trigging XOFF to Grant Scheduler
+      NAME: fld_pbof_thresh_rchd
+      WIDTH: 1
+    - DESCRIPTION: Source Max. Request Retry Reached
+      NAME: fld_src_max_req_retry
+      WIDTH: 1
+    - DESCRIPTION: Dstination Max. Grant Retry Reached
+      NAME: fld_dst_max_gnt_retry
+      WIDTH: 1
+    - DESCRIPTION: Indicates that the Source Event has been captured in the trace FIFO
+      NAME: fld_src_trace_event_captured
+      WIDTH: 1
+    - DESCRIPTION: Indicates that the maximum (128) Source Event entries have been captured in the trace FIFO
+      NAME: fld_max_src_trace_event_cap_rchd
+      WIDTH: 1
+    - DESCRIPTION: Indicates that the Destination Event has been captured in the trace FIFO
+      NAME: fld_dst_trace_event_captured
+      WIDTH: 1
+    - DESCRIPTION: Indicates that the maximum (128) Destination Event entries have been captured in the trace FIFO
+      NAME: fld_max_dst_trace_event_cap_rchd
+      WIDTH: 1
+INTR_PORT_EN: 1
+NAME: FCB_AN
+PARENTNAME: NU_0_AN
+REGLST:
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: |-
+          Timeout Configuration. Cycles are RSU clk based.
+                            - 00 : 1024 cycles
+                            - 01 : 256 cycles
+                            - 10 : 4096 cycles
+                            - 11 : infinite
+        NAME: val
+        WIDTH: 2
+    NAME: fcb_timeout_thresh_cfg
+  - ATTR: 9
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: "Timed out Status. Cycles are RSU clk based. Becomes 1 when timed out. Write any value to clear it.\n                  "
+        NAME: val
+        WIDTH: 1
+    NAME: fcb_timedout_sta
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: |-
+          Clear Timeout Status. Data is ignored. A write
+                     will clear the timeout status bit
+        NAME: val
+        WIDTH: 1
+    NAME: fcb_timeout_clr
+    TEST_ATTR: 1
+  - ATTR: 256
+    FLDLST:
+      - &1
+        DESCRIPTION: Source Configuration Role Memory Uncorrectable ECC Error
+        NAME: fld_src_cfg_role_tbl_mem
+        WIDTH: 1
+      - &2
+        DESCRIPTION: Source FCP Queue Conetxt Memory Uncorrectable ECC Error
+        NAME: fld_src_queue_ctx_mem
+        WIDTH: 1
+      - &3
+        DESCRIPTION: Source Timer Memory Uncorrectable ECC Error
+        NAME: fld_src_timer_mem
+        WIDTH: 1
+      - &4
+        DESCRIPTION: Source Flow Weight Table Memory Uncorrectable ECC Error
+        NAME: fld_src_flow_wt_tbl_mem
+        WIDTH: 1
+      - &5
+        DESCRIPTION: Source Impariment Table Memory Uncorrectable ECC Error
+        NAME: fld_src_impairment_tbl_mem
+        WIDTH: 1
+      - &6
+        DESCRIPTION: Scale Down Factor Table Memory Uncorrectable ECC Error
+        NAME: fld_scale_dn_fact_tbl_mem
+        WIDTH: 1
+      - &7
+        DESCRIPTION: Request Scheduler Linked List Memory  Uncorrectable ECC Error
+        NAME: fld_req_sch_llist_mem
+        WIDTH: 1
+      - &8
+        DESCRIPTION: Packet Scheduler Linked List MemoryS Uncorrectable ECC Error
+        NAME: fld_pkt_sch_llist_mem
+        WIDTH: 1
+      - &9
+        DESCRIPTION: NCV Sequencer Memory Uncorrectable ECC Error
+        NAME: fld_ncv_seqncer_mem
+        WIDTH: 1
+      - &10
+        DESCRIPTION: NCV Staus Memory Uncorrectable ECC Error
+        NAME: fld_ncv_status_tbl_mem
+        WIDTH: 1
+      - &11
+        DESCRIPTION: Destination FCP Queue Conetxt Memory Uncorrectable ECC Error
+        NAME: fld_dst_queue_ctx_mem
+        WIDTH: 1
+      - &12
+        DESCRIPTION: Destination Configuration Role Memory Uncorrectable ECC Error
+        NAME: fld_dst_cfg_role_tbl_mem
+        WIDTH: 1
+      - &13
+        DESCRIPTION: Destination Timer Memory Uncorrectable ECC Error
+        NAME: fld_dst_timer_mem
+        WIDTH: 1
+      - &14
+        DESCRIPTION: Grant Scheduler Memory Uncorrectable ECC Error
+        NAME: fld_gnt_sch_ctx_mem
+        WIDTH: 1
+      - &15
+        DESCRIPTION: Grant Scheduler Linked List Memory Uncorrectable ECC Error
+        NAME: fld_gnt_sch_llist_mem
+        WIDTH: 1
+      - &16
+        DESCRIPTION: Destination Flow Weight Table Memory Uncorrectable ECC Error
+        NAME: fld_dst_flow_wt_tbl_mem
+        WIDTH: 1
+      - &17
+        DESCRIPTION: Source Stats Counter Memory Uncorrectable ECC Error
+        NAME: fld_src_stats_cntr_mem
+        WIDTH: 1
+      - &18
+        DESCRIPTION: Destination Stats Counter Memory Uncorrectable ECC Error
+        NAME: fld_dst_stats_cntr_mem
+        WIDTH: 1
+      - &19
+        DESCRIPTION: Destination DWRR Corrections Accumulator Memory Uncorrectable ECC Error
+        NAME: fld_gnt_sch_deq_updt_corr_mem
+        WIDTH: 1
+      - &20
+        DESCRIPTION: SRC Trace FIFO Memory Uncorrectable ECC Error
+        NAME: fld_src_trace_fifo_mem
+        WIDTH: 1
+      - &21
+        DESCRIPTION: DST Trace FIFO Memory Uncorrectable ECC Error
+        NAME: fld_dst_trace_fifo_mem
+        WIDTH: 1
+    NAME: fcb_fatal_mem_intr_cause
+  - ATTR: 512
+    FLDLST:
+      - *1
+      - *2
+      - *3
+      - *4
+      - *5
+      - *6
+      - *7
+      - *8
+      - *9
+      - *10
+      - *11
+      - *12
+      - *13
+      - *14
+      - *15
+      - *16
+      - *17
+      - *18
+      - *19
+      - *20
+      - *21
+    NAME: fcb_fatal_mem_intr_stat
+  - ATTR: 1024
+    FLDLST:
+      - *1
+      - *2
+      - *3
+      - *4
+      - *5
+      - *6
+      - *7
+      - *8
+      - *9
+      - *10
+      - *11
+      - *12
+      - *13
+      - *14
+      - *15
+      - *16
+      - *17
+      - *18
+      - *19
+      - *20
+      - *21
+    NAME: fcb_fatal_mem_intr_mask
+  - ATTR: 2048
+    FLDLST:
+      - *1
+      - *2
+      - *3
+      - *4
+      - *5
+      - *6
+      - *7
+      - *8
+      - *9
+      - *10
+      - *11
+      - *12
+      - *13
+      - *14
+      - *15
+      - *16
+      - *17
+      - *18
+      - *19
+      - *20
+      - *21
+    NAME: fcb_fatal_mem_intr_bset
+  - ATTR: 4096
+    FLDLST:
+      - *1
+      - *2
+      - *3
+      - *4
+      - *5
+      - *6
+      - *7
+      - *8
+      - *9
+      - *10
+      - *11
+      - *12
+      - *13
+      - *14
+      - *15
+      - *16
+      - *17
+      - *18
+      - *19
+      - *20
+      - *21
+    NAME: fcb_fatal_mem_intr_bclr
+  - ATTR: 256
+    FLDLST:
+      - &22
+        DESCRIPTION: Source Configuration Role Memory Correctable Bit ECC Error
+        NAME: fld_src_cfg_role_tbl_mem
+        WIDTH: 1
+      - &23
+        DESCRIPTION: Source FCP Queue Conetxt Memory Correctable Bit ECC Error
+        NAME: fld_src_queue_ctx_mem
+        WIDTH: 1
+      - &24
+        DESCRIPTION: Source Timer Memory Correctable Bit ECC Error
+        NAME: fld_src_timer_mem
+        WIDTH: 1
+      - &25
+        DESCRIPTION: Source Flow Weight Table Memory Correctable Bit ECC Error
+        NAME: fld_src_flow_wt_tbl_mem
+        WIDTH: 1
+      - &26
+        DESCRIPTION: Source Impariment Table Memory Correctable Bit ECC Error
+        NAME: fld_src_impairment_tbl_mem
+        WIDTH: 1
+      - &27
+        DESCRIPTION: Scale Down Factor Table Memory Correctable Bit ECC Error
+        NAME: fld_scale_dn_fact_tbl_mem
+        WIDTH: 1
+      - &28
+        DESCRIPTION: Request Scheduler Linked List Memory  Correctable Bit ECC Error
+        NAME: fld_req_sch_llist_mem
+        WIDTH: 1
+      - &29
+        DESCRIPTION: Packet Scheduler Linked List MemoryS Correctable Bit ECC Error
+        NAME: fld_pkt_sch_llist_mem
+        WIDTH: 1
+      - &30
+        DESCRIPTION: NCV Sequencer Memory Correctable Bit ECC Error
+        NAME: fld_ncv_seqncer_mem
+        WIDTH: 1
+      - &31
+        DESCRIPTION: NCV Staus Memory Correctable Bit ECC Error
+        NAME: fld_ncv_status_tbl_mem
+        WIDTH: 1
+      - &32
+        DESCRIPTION: Destination FCP Queue Conetxt Memory Correctable Bit ECC Error
+        NAME: fld_dst_queue_ctx_mem
+        WIDTH: 1
+      - &33
+        DESCRIPTION: Destination Configuration Role Memory Correctable Bit ECC Error
+        NAME: fld_dst_cfg_role_tbl_mem
+        WIDTH: 1
+      - &34
+        DESCRIPTION: Destination Timer Memory Correctable Bit ECC Error
+        NAME: fld_dst_timer_mem
+        WIDTH: 1
+      - &35
+        DESCRIPTION: Grant Scheduler Memory Correctable Bit ECC Error
+        NAME: fld_gnt_sch_ctx_mem
+        WIDTH: 1
+      - &36
+        DESCRIPTION: Grant Scheduler Linked List Memory Correctable Bit ECC Error
+        NAME: fld_gnt_sch_llist_mem
+        WIDTH: 1
+      - &37
+        DESCRIPTION: Destination Flow Weight Table Memory Correctable Bit ECC Error
+        NAME: fld_dst_flow_wt_tbl_mem
+        WIDTH: 1
+      - &38
+        DESCRIPTION: Source Stats Counter Memory Correctable Bit ECC Error
+        NAME: fld_src_stats_cntr_mem
+        WIDTH: 1
+      - &39
+        DESCRIPTION: Destination Stats Counter Memory Correctable Bit ECC Error
+        NAME: fld_dst_stats_cntr_mem
+        WIDTH: 1
+      - &40
+        DESCRIPTION: Destination DWRR Corrections Accumulator Memory Correctable Bit ECC Error
+        NAME: fld_gnt_sch_deq_updt_corr_mem
+        WIDTH: 1
+      - &41
+        DESCRIPTION: SRC Trace FIFO Memory Correctable Bit ECC Error
+        NAME: fld_src_trace_fifo_mem
+        WIDTH: 1
+      - &42
+        DESCRIPTION: DST Trace FIFO Memory Correctable Bit ECC Error
+        NAME: fld_dst_trace_fifo_mem
+        WIDTH: 1
+    NAME: fcb_non_fatal_mem_intr_cause
+  - ATTR: 512
+    FLDLST:
+      - *22
+      - *23
+      - *24
+      - *25
+      - *26
+      - *27
+      - *28
+      - *29
+      - *30
+      - *31
+      - *32
+      - *33
+      - *34
+      - *35
+      - *36
+      - *37
+      - *38
+      - *39
+      - *40
+      - *41
+      - *42
+    NAME: fcb_non_fatal_mem_intr_stat
+  - ATTR: 1024
+    FLDLST:
+      - *22
+      - *23
+      - *24
+      - *25
+      - *26
+      - *27
+      - *28
+      - *29
+      - *30
+      - *31
+      - *32
+      - *33
+      - *34
+      - *35
+      - *36
+      - *37
+      - *38
+      - *39
+      - *40
+      - *41
+      - *42
+    NAME: fcb_non_fatal_mem_intr_mask
+  - ATTR: 2048
+    FLDLST:
+      - *22
+      - *23
+      - *24
+      - *25
+      - *26
+      - *27
+      - *28
+      - *29
+      - *30
+      - *31
+      - *32
+      - *33
+      - *34
+      - *35
+      - *36
+      - *37
+      - *38
+      - *39
+      - *40
+      - *41
+      - *42
+    NAME: fcb_non_fatal_mem_intr_bset
+  - ATTR: 4096
+    FLDLST:
+      - *22
+      - *23
+      - *24
+      - *25
+      - *26
+      - *27
+      - *28
+      - *29
+      - *30
+      - *31
+      - *32
+      - *33
+      - *34
+      - *35
+      - *36
+      - *37
+      - *38
+      - *39
+      - *40
+      - *41
+      - *42
+    NAME: fcb_non_fatal_mem_intr_bclr
+  - ATTR: 256
+    FLDLST:
+      - &43
+        DESCRIPTION: NWQM Enqueued a WU with Zero Length
+        NAME: fld_nwqm_enqd_wu_w_zero_len
+        WIDTH: 1
+      - &44
+        DESCRIPTION: WU Queue Reset Command Processed Successfully
+        NAME: fld_src_queue_csr_rst_cmd_success
+        WIDTH: 1
+      - &45
+        DESCRIPTION: WU Queue Reset Command Failed due to Non Empty WU Queue
+        NAME: fld_src_queue_csr_rst_cmd_failed_err
+        WIDTH: 1
+      - &46
+        DESCRIPTION: PBOF Based Threshold Reached trigging XOFF to Grant Scheduler
+        NAME: fld_pbof_thresh_rchd
+        WIDTH: 1
+      - &47
+        DESCRIPTION: Source Max. Request Retry Reached
+        NAME: fld_src_max_req_retry
+        WIDTH: 1
+      - &48
+        DESCRIPTION: Dstination Max. Grant Retry Reached
+        NAME: fld_dst_max_gnt_retry
+        WIDTH: 1
+      - &49
+        DESCRIPTION: Indicates that the Source Event has been captured in the trace FIFO
+        NAME: fld_src_trace_event_captured
+        WIDTH: 1
+      - &50
+        DESCRIPTION: Indicates that the maximum (128) Source Event entries have been captured in the trace FIFO
+        NAME: fld_max_src_trace_event_cap_rchd
+        WIDTH: 1
+      - &51
+        DESCRIPTION: Indicates that the Destination Event has been captured in the trace FIFO
+        NAME: fld_dst_trace_event_captured
+        WIDTH: 1
+      - &52
+        DESCRIPTION: Indicates that the maximum (128) Destination Event entries have been captured in the trace FIFO
+        NAME: fld_max_dst_trace_event_cap_rchd
+        WIDTH: 1
+    NAME: fcb_non_fatal_misc_intr_cause
+  - ATTR: 512
+    FLDLST:
+      - *43
+      - *44
+      - *45
+      - *46
+      - *47
+      - *48
+      - *49
+      - *50
+      - *51
+      - *52
+    NAME: fcb_non_fatal_misc_intr_stat
+  - ATTR: 1024
+    FLDLST:
+      - *43
+      - *44
+      - *45
+      - *46
+      - *47
+      - *48
+      - *49
+      - *50
+      - *51
+      - *52
+    NAME: fcb_non_fatal_misc_intr_mask
+  - ATTR: 2048
+    FLDLST:
+      - *43
+      - *44
+      - *45
+      - *46
+      - *47
+      - *48
+      - *49
+      - *50
+      - *51
+      - *52
+    NAME: fcb_non_fatal_misc_intr_bset
+  - ATTR: 4096
+    FLDLST:
+      - *43
+      - *44
+      - *45
+      - *46
+      - *47
+      - *48
+      - *49
+      - *50
+      - *51
+      - *52
+    NAME: fcb_non_fatal_misc_intr_bclr
+  - ATTR: 9
+    DESCRIPTION: Place Holder for now for FCB Feature Register
+    FLDLST:
+      - ATTR: 1
+        DEFAULT: 8
+        DESCRIPTION: Module ID
+        NAME: module_id
+        VALUE: 8
+        WIDTH: 8
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Version number of the module
+        NAME: version
+        VALUE: 0
+        WIDTH: 8
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Features enabled in the module.
+        NAME: features
+        VALUE: 0
+        WIDTH: 16
+      - ATTR: 1
+        DEFAULT: 0
+        DESCRIPTION: Reserved Field.
+        NAME: Reserved
+        WIDTH: 32
+    NAME: fcb_features
+  - ATTR: 5
+    DESCRIPTION: ' Spare PIO register. These bits can be read and written by software. They can serve as control bits for late ECOs in the design.'
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Spare PIO register.
+        NAME: val
+        WIDTH: 64
+    NAME: fcb_spare_pio
+  - ATTR: 5
+    DESCRIPTION: Scratchpad register. These bits can be read and written by software and can be used as a scratchpad for the module.
+    FLDLST:
+      - DESCRIPTION: Scratchpad register.
+        NAME: val
+        WIDTH: 64
+    NAME: fcb_scratchpad
+  - ATTR: 6
+    DESCRIPTION: WCT macro configuration register
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: |-
+          Only applicable when nstime_ena == 1. 
+                                      0: Binary rollover mode, i.e., the 32b ns counter rolls over at 2^32. 
+                                      1: Decimal rollover mode, i.e., the 32b ns counter rolls over at 10^9. MSB 2 bits will never toggle in this mode
+        NAME: decimal_rollover_en
+        WIDTH: 1
+      - DEFAULT: 65536
+        DESCRIPTION: 'Base increment value in int[7:0].frac[15:0] format'
+        NAME: base_incr
+        WIDTH: 26
+      - DEFAULT: 65536
+        DESCRIPTION: 'Base correction increment value in int[7:0].frac[15:0] format'
+        NAME: base_corr_incr
+        WIDTH: 26
+      - DEFAULT: 65536
+        DESCRIPTION: 'Override increment value in int[7:0].frac[15:0] format'
+        NAME: override_incr
+        WIDTH: 26
+      - DEFAULT: 0
+        DESCRIPTION: Base period
+        NAME: base_period
+        WIDTH: 16
+      - DEFAULT: 0
+        DESCRIPTION: Override count
+        NAME: override_cnt
+        WIDTH: 16
+      - DEFAULT: 0
+        DESCRIPTION: |-
+          Override Mode
+                                      0 - the correction increment used is override_incr as long as current override cnt is non-zero.  At every override, current override cnt is decremented by 1
+                                      1 - the base increment used is override_incr as long as current override cnt is non-zero.  At every override, current override cnt is decremented by 1
+                                     
+        NAME: override_mode
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: |-
+          Sync pulse delay select
+                                      Select the delay stage for WCT sync pulse
+                                      This is used to compensate for different repeater delays to destination.
+                                     
+        NAME: sync_pulse_dly_sel
+        WIDTH: 4
+    NAME: fcb_wct_macro_cfg
+  - ATTR: 5
+    DESCRIPTION: FCB Memroy Init Start CFG
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Source Configuration Role Memory Init Start
+        NAME: fld_src_cfg_role_tbl_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Source FCP Queue Conetxt Memory Init Start
+        NAME: fld_src_queue_ctx_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Source Timer Memory Init Start
+        NAME: fld_src_timer_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Source Flow Weight Table Memory Init Start
+        NAME: fld_src_flow_wt_tbl_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Source Impariment Table Memory Init Start
+        NAME: fld_src_impairment_tbl_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Scale Down Factor Table Memory Init Start
+        NAME: fld_scale_dn_fact_tbl_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Request Scheduler Linked List Memory  Init Start
+        NAME: fld_req_sch_llist_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Packet Scheduler Linked List MemoryS Init Start
+        NAME: fld_pkt_sch_llist_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: NCV Sequencer Memory Init Start
+        NAME: fld_ncv_seqncer_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: NCV Staus Memory Init Start
+        NAME: fld_ncv_status_tbl_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Destination FCP Queue Conetxt Memory Init Start
+        NAME: fld_dst_queue_ctx_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Destination Configuration Role Memory Init Start
+        NAME: fld_dst_cfg_role_tbl_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Destination Timer Memory Init Start
+        NAME: fld_dst_timer_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Grant Scheduler Memory Init Start
+        NAME: fld_gnt_sch_ctx_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Grant Scheduler Linked List Memory Init Start
+        NAME: fld_gnt_sch_llist_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Destination Flow Weight Table Memory Init Start
+        NAME: fld_dst_flow_wt_tbl_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Source Stats Counter Memory Init Start
+        NAME: fld_src_stats_cntr_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Destination Stats Counter Memory Init Start
+        NAME: fld_dst_stats_cntr_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Destination DWRR Corrections Accumulator Memory Init Start
+        NAME: fld_gnt_sch_deq_updt_corr_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: SRC Trace FIFO Memory Init Start
+        NAME: fld_src_trace_fifo_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: DST Trace FIFO Memory Init Start
+        NAME: fld_dst_trace_fifo_mem
+        WIDTH: 1
+    NAME: fcb_mem_init_start_cfg
+    TEST_ATTR: 0
+  - ATTR: 9
+    DESCRIPTION: FCB Memroy Init Done STA
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Source Configuration Role Memory Init Done Status
+        NAME: fld_src_cfg_role_tbl_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Source FCP Queue Conetxt Memory Init Done Status
+        NAME: fld_src_queue_ctx_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Source Timer Memory Init Done Status
+        NAME: fld_src_timer_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Source Flow Weight Table Memory Init Done Status
+        NAME: fld_src_flow_wt_tbl_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Source Impariment Table Memory Init Done Status
+        NAME: fld_src_impairment_tbl_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Scale Down Factor Table Memory Init Done Status
+        NAME: fld_scale_dn_fact_tbl_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Request Scheduler Linked List Memory  Init Done Status
+        NAME: fld_req_sch_llist_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Packet Scheduler Linked List MemoryS Init Done Status
+        NAME: fld_pkt_sch_llist_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: NCV Sequencer Memory Init Done Status
+        NAME: fld_ncv_seqncer_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: NCV Staus Memory Init Done Status
+        NAME: fld_ncv_status_tbl_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Destination FCP Queue Conetxt Memory Init Done Status
+        NAME: fld_dst_queue_ctx_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Destination Configuration Role Memory Init Done Status
+        NAME: fld_dst_cfg_role_tbl_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Destination Timer Memory Init Done Status
+        NAME: fld_dst_timer_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Grant Scheduler Memory Init Done Status
+        NAME: fld_gnt_sch_ctx_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Grant Scheduler Linked List Memory Init Done Status
+        NAME: fld_gnt_sch_llist_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Destination Flow Weight Table Memory Init Done Status
+        NAME: fld_dst_flow_wt_tbl_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Source Stats Counter Memory Init Done Status
+        NAME: fld_src_stats_cntr_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Destination Stats Counter Memory Init Done Status
+        NAME: fld_dst_stats_cntr_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Destination DWRR Corrections Accumulator Memory Init Done Status
+        NAME: fld_gnt_sch_deq_updt_corr_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: SRC Trace FIFO Memory Init Done Status
+        NAME: fld_src_trace_fifo_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: DST Trace FIFO Memory Init Done Status
+        NAME: fld_dst_trace_fifo_mem
+        WIDTH: 1
+    NAME: fcb_mem_init_done_sta
+    TEST_ATTR: 0
+  - ATTR: 9
+    DESCRIPTION: FCB Memroy Init Done STA
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Source Configuration Role Memory Uncorrectable ECC Error
+        NAME: fld_src_cfg_role_tbl_mem_cerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Source FCP Queue Conetxt Memory Uncorrectable ECC Error
+        NAME: fld_src_queue_ctx_mem_cerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Source Timer Memory Uncorrectable ECC Error
+        NAME: fld_src_timer_mem_cerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Source Flow Weight Table Memory Uncorrectable ECC Error
+        NAME: fld_src_flow_wt_tbl_mem_cerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Source Impariment Table Memory Uncorrectable ECC Error
+        NAME: fld_src_impairment_tbl_mem_cerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Scale Down Factor Table Memory Uncorrectable ECC Error
+        NAME: fld_scale_dn_fact_tbl_mem_cerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Request Scheduler Linked List Memory  Uncorrectable ECC Error
+        NAME: fld_req_sch_llist_mem_cerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Packet Scheduler Linked List MemoryS Uncorrectable ECC Error
+        NAME: fld_pkt_sch_llist_mem_cerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: NCV Sequencer Memory Uncorrectable ECC Error
+        NAME: fld_ncv_seqncer_mem_cerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: NCV Staus Memory Uncorrectable ECC Error
+        NAME: fld_ncv_status_tbl_mem_cerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Destination FCP Queue Conetxt Memory Uncorrectable ECC Error
+        NAME: fld_dst_queue_ctx_mem_cerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Destination Configuration Role Memory Uncorrectable ECC Error
+        NAME: fld_dst_cfg_role_tbl_mem_cerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Destination Timer Memory Uncorrectable ECC Error
+        NAME: fld_dst_timer_mem_cerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Grant Scheduler Memory Uncorrectable ECC Error
+        NAME: fld_gnt_sch_ctx_mem_cerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Grant Scheduler Linked List Memory Uncorrectable ECC Error
+        NAME: fld_gnt_sch_llist_mem_cerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Destination Flow Weight Table Memory Uncorrectable ECC Error
+        NAME: fld_dst_flow_wt_tbl_mem_cerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Source Stats Counter Memory Uncorrectable ECC Error
+        NAME: fld_src_stats_cntr_mem_cerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Destination Stats Counter Memory Uncorrectable ECC Error
+        NAME: fld_dst_stats_cntr_mem_cerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Destination DWRR Corrections Accumulator Memory Uncorrectable ECC Error
+        NAME: fld_gnt_sch_deq_updt_corr_mem_cerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: SRC Trace FIFO Memory Uncorrectable ECC Error
+        NAME: fld_src_trace_fifo_mem_cerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: DST Trace FIFO Memory Uncorrectable ECC Error
+        NAME: fld_dst_trace_fifo_mem_cerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Source Configuration Role Memory Correctable ECC Error
+        NAME: fld_src_cfg_role_tbl_mem_ucerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Source FCP Queue Conetxt Memory Correctable ECC Error
+        NAME: fld_src_queue_ctx_mem_ucerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Source Timer Memory Correctable ECC Error
+        NAME: fld_src_timer_mem_ucerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Source Flow Weight Table Memory Correctable ECC Error
+        NAME: fld_src_flow_wt_tbl_mem_ucerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Source Impariment Table Memory Correctable ECC Error
+        NAME: fld_src_impairment_tbl_mem_ucerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Scale Down Factor Table Memory Correctable ECC Error
+        NAME: fld_scale_dn_fact_tbl_mem_ucerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Request Scheduler Linked List Memory  Correctable ECC Error
+        NAME: fld_req_sch_llist_mem_ucerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Packet Scheduler Linked List MemoryS Correctable ECC Error
+        NAME: fld_pkt_sch_llist_mem_ucerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: NCV Sequencer Memory Correctable ECC Error
+        NAME: fld_ncv_seqncer_mem_ucerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: NCV Staus Memory Correctable ECC Error
+        NAME: fld_ncv_status_tbl_mem_ucerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Destination FCP Queue Conetxt Memory Correctable ECC Error
+        NAME: fld_dst_queue_ctx_mem_ucerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Destination Configuration Role Memory Correctable ECC Error
+        NAME: fld_dst_cfg_role_tbl_mem_ucerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Destination Timer Memory Correctable ECC Error
+        NAME: fld_dst_timer_mem_ucerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Grant Scheduler Memory Correctable ECC Error
+        NAME: fld_gnt_sch_ctx_mem_ucerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Grant Scheduler Linked List Memory Correctable ECC Error
+        NAME: fld_gnt_sch_llist_mem_ucerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Destination Flow Weight Table Memory Correctable ECC Error
+        NAME: fld_dst_flow_wt_tbl_mem_ucerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Source Stats Counter Memory Correctable ECC Error
+        NAME: fld_src_stats_cntr_mem_ucerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Destination Stats Counter Memory Correctable ECC Error
+        NAME: fld_dst_stats_cntr_mem_ucerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Destination DWRR Corrections Accumulator Memory Correctable ECC Error
+        NAME: fld_gnt_sch_deq_updt_corr_mem_ucerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: SRC Trace FIFO Memory Correctable ECC Error
+        NAME: fld_src_trace_fifo_mem_ucerr
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: DST Trace FIFO Memory Correctable ECC Error
+        NAME: fld_dst_trace_fifo_mem_ucerr
+        WIDTH: 1
+    NAME: fcb_mem_log_err_sta
+    TEST_ATTR: 0
+  - ATTR: 9
+    DESCRIPTION: FCB Status Register for ECC Error Syndrome
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: ECC Error Syndrome Bits Related to Error Occuence
+        NAME: fld_val
+        WIDTH: 9
+    NAME: fcb_mem_log_syndrome_sta
+    TEST_ATTR: 2
+  - ATTR: 9
+    DESCRIPTION: FCB Status Register for ECC Error Syndrome
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: ECC Error Address Bits Related to Error Occuence
+        NAME: fld_val
+        WIDTH: 14
+    NAME: fcb_mem_log_addr_sta
+    TEST_ATTR: 2
+  - ATTR: 5
+    DESCRIPTION: FCB Configuration Register for Error Injection
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Source Configuration Role Memory Error Inject Control
+        NAME: fld_src_cfg_role_tbl_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Source FCP Queue Conetxt Memory Error Inject Control
+        NAME: fld_src_queue_ctx_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Source Timer Memory Error Inject Control
+        NAME: fld_src_timer_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Source Flow Weight Table Memory Error Inject Control
+        NAME: fld_src_flow_wt_tbl_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Source Impariment Table Memory Error Inject Control
+        NAME: fld_src_impairment_tbl_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Scale Down Factor Table Memory Error Inject Control
+        NAME: fld_scale_dn_fact_tbl_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Request Scheduler Linked List Memory  Error Inject Control
+        NAME: fld_req_sch_llist_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Packet Scheduler Linked List MemoryS Error Inject Control
+        NAME: fld_pkt_sch_llist_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: NCV Sequencer Memory Error Inject Control
+        NAME: fld_ncv_seqncer_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: NCV Staus Memory Error Inject Control
+        NAME: fld_ncv_status_tbl_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Destination FCP Queue Conetxt Memory Error Inject Control
+        NAME: fld_dst_queue_ctx_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Destination Configuration Role Memory Error Inject Control
+        NAME: fld_dst_cfg_role_tbl_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Destination Timer Memory Error Inject Control
+        NAME: fld_dst_timer_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Grant Scheduler Memory Error Inject Control
+        NAME: fld_gnt_sch_ctx_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Grant Scheduler Linked List Memory Error Inject Control
+        NAME: fld_gnt_sch_llist_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Destination Flow Weight Table Memory Error Inject Control
+        NAME: fld_dst_flow_wt_tbl_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Source Stats Counter Memory Error Inject Control
+        NAME: fld_src_stats_cntr_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Destination Stats Counter Memory Error Inject Control
+        NAME: fld_dst_stats_cntr_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Destination DWRR Corrections Accumulator Memory Error Inject Control
+        NAME: fld_gnt_sch_deq_updt_corr_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: SRC Trace FIFO Memory Error Inject Control
+        NAME: fld_src_trace_fifo_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: DST Trace FIFO Memory Error Inject Control
+        NAME: fld_dst_trace_fifo_mem
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'Type of Error Injected, 0: Uncorrectable, 1: Correctable'
+        NAME: fld_err_type
+        WIDTH: 1
+    NAME: fcb_mem_err_inj_cfg
+    TEST_ATTR: 0
+  - ATTR: 5
+    DESCRIPTION: FCB FLA Ring Module ID
+    FLDLST:
+      - DEFAULT: 119
+        DESCRIPTION: '8-Bit Module ID to be used for Decoding Commands on FLA Command Ring, 0x0, 0xff are Reserved Values'
+        NAME: fld_val
+        WIDTH: 8
+    NAME: fcb_fla_ring_module_id_cfg
+    TEST_ATTR: 0
+  - ATTR: 5
+    COUNT: 1
+    DESCRIPTION: Endpoint Global Configuration
+    FLDLST:
+      - DEFAULT: 7
+        DESCRIPTION: Block Size as a Power of 2
+        NAME: fld_blk_sz
+        WIDTH: 4
+      - DEFAULT: 3
+        DESCRIPTION: 'FCP Num Qos Mode: 3:8Q, 2: 4Q, 1: 2Q, 0:1Q'
+        NAME: fld_fcp_num_qos
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Enable Transmission of BN Messages to EQM
+        NAME: fld_bn_if_enable
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Enable Impairment Adjust based on Local Impairment
+        NAME: fld_local_impl_adj_enable
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Enable Impairment Adjust based on Local Impairment for GBL Datarate
+        NAME: fld_data_local_impl_adj_enable
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Enable Source Impariment based on GPH Value received in Gnt Message
+        NAME: fld_src_impl_updt_enable
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Enable Source Impariment based Rate Correction to Request Rate
+        NAME: fld_src_impl_req_adj_enable
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Enable Source Impariment based Rate Correction to Grant Rate
+        NAME: fld_src_impl_gnt_adj_enable
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Enables Data Rate Correction when a Cobtrol Message is transmitted
+        NAME: fld_ctrl_tx_datarate_adj_enable
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: EQM Src Flow Weight Override Enable
+        NAME: fld_src_flow_wt_override_enable
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: Override FCP Request Weight Mantissa Value
+        NAME: fld_src_flow_wt_mantissa
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Override FCP Request Weight Exponent Value
+        NAME: fld_src_flow_wt_exponent
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Enables Scale down Override to a value of 0xf instead of value received from Destination
+        NAME: fld_scale_dn_override_enable
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Ignore PSW XOFF when Flusing a WU Queue Default honor the PSW XOFF
+        NAME: fld_pkt_flush_ignore_psw_xoff
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Enable Flow Control Stats 1-bit Counter
+        NAME: fld_flow_ctrl_cnt_enable
+        WIDTH: 1
+      - DEFAULT: 4
+        DESCRIPTION: Congested Queue Scale Down Threshold
+        NAME: fld_scale_dn_cong_thresh
+        WIDTH: 8
+      - DEFAULT: 1
+        DESCRIPTION: Enable NonFCP Per Pipe Fairness Mode for 400/600G end pont
+        NAME: fld_pipe_fair_mode_enable
+        WIDTH: 1
+    NAME: fcb_gbl_cfg
+    TEST_ATTR: 0
+  - ATTR: 6
+    DESCRIPTION: GPH Vector AND Mask CFG
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: GPH Value AND Mask Configuration set 0 to Mark Link down
+        NAME: fld_val
+        WIDTH: 128
+    NAME: fcb_gph_and_mask_cfg
+  - ATTR: 6
+    DESCRIPTION: GPH Vector OR Mask CFG
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'GPH Value OR Mask Configuration, set 1 to mask the link health status'
+        NAME: fld_val
+        WIDTH: 128
+    NAME: fcb_gph_or_mask_cfg
+  - ATTR: 6
+    DESCRIPTION: Access to Request Scheduler Host Interface Group DWRR Weights Table
+    FLDLST:
+      - DEFAULT: 1
+        DESCRIPTION: Request Scheduler HostIntf0 DWRR Weight
+        NAME: fld_host_intf0
+        WIDTH: 7
+      - DEFAULT: 1
+        DESCRIPTION: Request Scheduler HostIntf1 DWRR Weight
+        NAME: fld_host_intf1
+        WIDTH: 7
+      - DEFAULT: 1
+        DESCRIPTION: Request Scheduler HostIntf2 DWRR Weight
+        NAME: fld_host_intf2
+        WIDTH: 7
+      - DEFAULT: 1
+        DESCRIPTION: Request Scheduler HostIntf3 DWRR Weight
+        NAME: fld_host_intf3
+        WIDTH: 7
+      - DEFAULT: 1
+        DESCRIPTION: Request Scheduler HostIntf4 DWRR Weight
+        NAME: fld_host_intf4
+        WIDTH: 7
+      - DEFAULT: 1
+        DESCRIPTION: Request Scheduler HostIntf5 DWRR Weight
+        NAME: fld_host_intf5
+        WIDTH: 7
+      - DEFAULT: 1
+        DESCRIPTION: Request Scheduler HostIntf6 DWRR Weight
+        NAME: fld_host_intf6
+        WIDTH: 7
+      - DEFAULT: 1
+        DESCRIPTION: Request Scheduler HostIntf7 DWRR Weight
+        NAME: fld_host_intf7
+        WIDTH: 7
+    NAME: fcb_req_sch_host_intf_dwrr_wt_cfg
+  - ATTR: 5
+    DESCRIPTION: Access to Request Scheduler Data Rate Pacer Configuration
+    FLDLST:
+      - DEFAULT: 1
+        DESCRIPTION: Data Rate Pacer Enable
+        NAME: fld_enable
+        WIDTH: 1
+      - DEFAULT: 15
+        DESCRIPTION: Update Rate Every n+1 Clock Ticks
+        NAME: fld_leak_tick_cnt
+        WIDTH: 8
+      - DEFAULT: 1600
+        DESCRIPTION: 'Pacer Base Leak Rate (Unit of 2-Bits) - Value to Leak from the Pacer Leaky Bucket Set tp 200Gbps.Rate = (BW*leak_tick_cnt/2) '
+        NAME: fld_base_leak_rate
+        WIDTH: 16
+      - DEFAULT: 128
+        DESCRIPTION: 'Admit Level Threshold in units of 128B Below which a New Request Can be generated, Default Set to 16KB'
+        NAME: fld_admit_lvl_thresh
+        WIDTH: 15
+      - DEFAULT: 32767
+        DESCRIPTION: 'Minimum Negative Threshold in units of 128B where the Pacer is Saturated, Default Set to -8KB'
+        NAME: fld_min_thresh
+        WIDTH: 15
+    NAME: fcb_req_datarate_pacer_cfg
+  - ATTR: 5
+    DESCRIPTION: Access to Request Scheduler Control Message Rate Pacer Configuration
+    FLDLST:
+      - DEFAULT: 1
+        DESCRIPTION: Control Message Rate Pacer Enable
+        NAME: fld_enable
+        WIDTH: 1
+      - DEFAULT: 15
+        DESCRIPTION: Update Rate Every 16(N+1) Clock Ticks
+        NAME: fld_leak_tick_cnt
+        WIDTH: 12
+      - DEFAULT: 80
+        DESCRIPTION: Pacer Base Leak Rate (Unit of 2-Bits)Default 10Gbps.Rate = (BW*leak_tick_cnt/2)
+        NAME: fld_base_leak_rate
+        WIDTH: 12
+      - DEFAULT: 10752
+        DESCRIPTION: Admit Level Threshold Below which a New Request Can be generated Set to Max Burst of 4 Messages
+        NAME: fld_admit_lvl_thresh
+        WIDTH: 24
+      - DEFAULT: 336
+        DESCRIPTION: 'Update Value for Control Message, Default 64B(+IPG)'
+        NAME: fld_update_val
+        WIDTH: 12
+    NAME: fcb_req_ctlmsg_pacer_cfg
+  - ATTR: 5
+    DESCRIPTION: Access to Unsolicited Data Rate Pacer Configuration
+    FLDLST:
+      - DEFAULT: 1
+        DESCRIPTION: Unsolicited Data Rate Pacer Enable
+        NAME: fld_enable
+        WIDTH: 1
+      - DEFAULT: 15
+        DESCRIPTION: Update Rate Every n+1 Clock Ticks
+        NAME: fld_leak_tick_cnt
+        WIDTH: 8
+      - DEFAULT: 128
+        DESCRIPTION: 'Pacer Base Leak Rate (Unit of 2-Bits)- Value to Leak from the Pacer Leaky Bucket Set tp 2Gbps.Rate = (BW*leak_tick_cnt/2)'
+        NAME: fld_base_leak_rate
+        WIDTH: 16
+      - DEFAULT: 8
+        DESCRIPTION: 'Admit Level Threshold in units of 128B Below which a New Unsol Packet Can be sent, Default Set to 1KB'
+        NAME: fld_admit_lvl_thresh
+        WIDTH: 15
+      - DEFAULT: 32760
+        DESCRIPTION: 'Minimum Negative Threshold in units of 128B where the Pacer is Saturated, Default Set to -1KB'
+        NAME: fld_min_thresh
+        WIDTH: 15
+    NAME: fcb_unsol_datarate_pacer_cfg
+  - ATTR: 5
+    DESCRIPTION: Access to Packet Scheduler Global Data Rate Pacer Configuration
+    FLDLST:
+      - DEFAULT: 1
+        DESCRIPTION: Source FCP/NFCP Traffic Data Rate Pacer Enable
+        NAME: fld_enable
+        WIDTH: 1
+      - DEFAULT: 15
+        DESCRIPTION: Update Rate Every n+1 Clock Ticks
+        NAME: fld_leak_tick_cnt
+        WIDTH: 8
+      - DEFAULT: 1600
+        DESCRIPTION: 'Pacer Base Leak Rate - Value to Leak from the Pacer Leaky Bucket Set tp 200Gbps.Rate = (BW*leak_tick_cnt/2)'
+        NAME: fld_base_leak_rate
+        WIDTH: 16
+      - DEFAULT: 256
+        DESCRIPTION: 'Admit Level Threshold in units of 128B Below which a New FCP packet Can be sent, Default Set to 32KB'
+        NAME: fld_admit_lvl_thresh
+        WIDTH: 15
+      - DEFAULT: 32767
+        DESCRIPTION: 'Minimum Negative Threshold in units of 128B where the Pacer is Saturated, Default Set to -8KB'
+        NAME: fld_min_thresh
+        WIDTH: 15
+    NAME: fcb_src_gbl_datarate_pacer_cfg
+  - ATTR: 5
+    DESCRIPTION: Access to Packet Scheduler FCP Data Rate Pacer Configuration
+    FLDLST:
+      - DEFAULT: 1
+        DESCRIPTION: Source FCP Traffic Data Rate Pacer Enable
+        NAME: fld_enable
+        WIDTH: 1
+      - DEFAULT: 15
+        DESCRIPTION: Update Rate Every n+1 Clock Ticks
+        NAME: fld_leak_tick_cnt
+        WIDTH: 8
+      - DEFAULT: 1600
+        DESCRIPTION: 'Pacer Base Leak Rate - Value to Leak from the Pacer Leaky Bucket Set tp 200Gbps.Rate = (BW*leak_tick_cnt/2)'
+        NAME: fld_base_leak_rate
+        WIDTH: 16
+      - DEFAULT: 128
+        DESCRIPTION: 'Admit Level Threshold in units of 128B Below which a New FCP packet Can be sent, Default Set to 16KB'
+        NAME: fld_admit_lvl_thresh
+        WIDTH: 15
+      - DEFAULT: 32767
+        DESCRIPTION: 'Minimum Negative Threshold in units of 128B where the Pacer is Saturated, Default Set to -8KB'
+        NAME: fld_min_thresh
+        WIDTH: 15
+    NAME: fcb_src_fcp_datarate_pacer_cfg
+  - ATTR: 5
+    DESCRIPTION: Access to Packet Scheduler NFCP Data Rate Pacer Configuration
+    FLDLST:
+      - DEFAULT: 1
+        DESCRIPTION: Source Non-FCP Traffic Data Rate Pacer Enable
+        NAME: fld_enable
+        WIDTH: 1
+      - DEFAULT: 15
+        DESCRIPTION: Update Rate Every n+1 Clock Ticks
+        NAME: fld_leak_tick_cnt
+        WIDTH: 8
+      - DEFAULT: 1600
+        DESCRIPTION: 'Pacer Base Leak Rate - Value to Leak from the Pacer Leaky Bucket Set tp 200Gbps.Rate = (BW*leak_tick_cnt/2)'
+        NAME: fld_base_leak_rate
+        WIDTH: 16
+      - DEFAULT: 128
+        DESCRIPTION: 'Admit Level Threshold in units of 128B Below which a New Non FCP Packet Can be sent, Default Set to 16KB'
+        NAME: fld_admit_lvl_thresh
+        WIDTH: 15
+      - DEFAULT: 32767
+        DESCRIPTION: 'Minimum Negative Threshold in units of 128B where the Pacer is Saturated, Default Set to -8KB'
+        NAME: fld_min_thresh
+        WIDTH: 15
+    NAME: fcb_src_nfcp_datarate_pacer_cfg
+  - ATTR: 5
+    DESCRIPTION: Access to Packet Scheduler NFCP Data Pipe Rate Pacer Configuration
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Source Non-FCP Traffic Data Pipe Rate Pacer Enable
+        NAME: fld_enable
+        WIDTH: 1
+      - DEFAULT: 15
+        DESCRIPTION: Update Rate Every n+1 Clock Ticks
+        NAME: fld_leak_tick_cnt
+        WIDTH: 8
+      - DEFAULT: 1600
+        DESCRIPTION: 'Pacer Base Leak Rate - Value to Leak from the Pacer Leaky Bucket Set tp 25Gbps.Rate = (BW*leak_tick_cnt/2)'
+        NAME: fld_base_leak_rate
+        WIDTH: 16
+      - DEFAULT: 128
+        DESCRIPTION: 'Admit Level Threshold in units of 128B Below which a New Non FCP Packet Can be sent, Default Set to 16KB'
+        NAME: fld_admit_lvl_thresh
+        WIDTH: 15
+      - DEFAULT: 32767
+        DESCRIPTION: 'Minimum Negative Threshold in units of 128B where the Pacer is Saturated, Default Set to -8KB'
+        NAME: fld_min_thresh
+        WIDTH: 15
+    NAME: fcb_src_nfcp_pipe_datarate_pacer_cfg
+  - ATTR: 5
+    DESCRIPTION: Access to Packet Scheduler Drop Data Rate Pacer Configuration
+    FLDLST:
+      - DEFAULT: 1
+        DESCRIPTION: Source Drop Traffic Data Rate Pacer Enable
+        NAME: fld_enable
+        WIDTH: 1
+      - DEFAULT: 15
+        DESCRIPTION: Update Rate Every n+1 Clock Ticks
+        NAME: fld_leak_tick_cnt
+        WIDTH: 8
+      - DEFAULT: 800
+        DESCRIPTION: 'Pacer Base Leak Rate - Value to Leak from the Pacer Leaky Bucket Set tp 100Gbps.Rate = (BW*leak_tick_cnt/2)'
+        NAME: fld_base_leak_rate
+        WIDTH: 16
+      - DEFAULT: 128
+        DESCRIPTION: 'Admit Level Threshold in units of 128B Below which a New Non FCP Packet Can be sent, Default Set to 16KB'
+        NAME: fld_admit_lvl_thresh
+        WIDTH: 15
+      - DEFAULT: 32767
+        DESCRIPTION: 'Minimum Negative Threshold in units of 128B where the Pacer is Saturated, Default Set to -8KB'
+        NAME: fld_min_thresh
+        WIDTH: 15
+    NAME: fcb_src_drop_datarate_pacer_cfg
+  - ATTR: 5
+    DESCRIPTION: Transmit Data Pipe Load Balancer Configuration
+    FLDLST:
+      - DEFAULT: 2048
+        DESCRIPTION: Transmit Data Pipe Pending Blocks Threshold
+        NAME: fld_pipe_pend_blks_thresh
+        WIDTH: 16
+      - DEFAULT: 2048
+        DESCRIPTION: FCP Flow Pending Blocks Threshold
+        NAME: fld_fcp_pend_blks_thresh
+        WIDTH: 16
+      - DEFAULT: 2048
+        DESCRIPTION: Non FCP Flow Pipe Pending Blocks Threshold
+        NAME: fld_nfcp_pend_blks_thresh
+        WIDTH: 16
+      - DEFAULT: 2048
+        DESCRIPTION: Global Pending Blocks Threshold
+        NAME: fld_gbl_pend_blks_thresh
+        WIDTH: 16
+    NAME: fcb_tdp_lb_cfg
+  - ATTR: 9
+    DESCRIPTION: Transmit Data Pipe Load Balancer Pending Global Blocks Status
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Global Pending Blocks
+        NAME: fld_val
+        WIDTH: 16
+    NAME: fcb_gbl_pend_blks_sta
+    TEST_ATTR: 2
+  - ATTR: 9
+    DESCRIPTION: Transmit Data Pipe Load Balancer Pending FCP Blocks Status
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: FCP Flow Pending Blocks
+        NAME: fld_val
+        WIDTH: 16
+    NAME: fcb_fcp_pend_blks_sta
+    TEST_ATTR: 2
+  - ATTR: 9
+    DESCRIPTION: Transmit Data Pipe Load Balancer Pending NFCP Blocks Status
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Pipe0_NFCP Pending Blocks
+        NAME: fld_pipe0_val
+        WIDTH: 16
+      - DEFAULT: 0
+        DESCRIPTION: Pipe1_NFCP Pending Blocks
+        NAME: fld_pipe1_val
+        WIDTH: 16
+      - DEFAULT: 0
+        DESCRIPTION: Pipe2_NFCP Pending Blocks
+        NAME: fld_pipe2_val
+        WIDTH: 16
+    NAME: fcb_nfcp_pend_blks_sta
+    TEST_ATTR: 2
+  - ATTR: 9
+    DESCRIPTION: Transmit Data Pipe Load Balancer Pending Blocks Status
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: FCP Flow Pipe 0 Pending Blocks
+        NAME: fld_pipe0_val
+        WIDTH: 16
+      - DEFAULT: 0
+        DESCRIPTION: FCP Flow Pipe 1 Pending Blocks
+        NAME: fld_pipe1_val
+        WIDTH: 16
+      - DEFAULT: 0
+        DESCRIPTION: FCP Flow Pipe 2 Pending Blocks
+        NAME: fld_pipe2_val
+        WIDTH: 16
+    NAME: fcb_tdp_pend_blks_sta
+    TEST_ATTR: 2
+  - ATTR: 6
+    DESCRIPTION: Access to Packet Scheduler Hist Interface QOS Group DWRR Weights Table
+    FLDLST:
+      - DEFAULT: 1
+        DESCRIPTION: NFCP Streams DWRR Weight
+        NAME: fld_stream0
+        WIDTH: 7
+      - DEFAULT: 1
+        DESCRIPTION: NFCP Streams DWRR Weight
+        NAME: fld_stream1
+        WIDTH: 7
+      - DEFAULT: 1
+        DESCRIPTION: NFCP Streams DWRR Weight
+        NAME: fld_stream2
+        WIDTH: 7
+      - DEFAULT: 1
+        DESCRIPTION: NFCP Streams DWRR Weight
+        NAME: fld_stream3
+        WIDTH: 7
+      - DEFAULT: 1
+        DESCRIPTION: NFCP Streams DWRR Weight
+        NAME: fld_stream4
+        WIDTH: 7
+      - DEFAULT: 1
+        DESCRIPTION: NFCP Streams DWRR Weight
+        NAME: fld_stream5
+        WIDTH: 7
+      - DEFAULT: 1
+        DESCRIPTION: NFCP Streams DWRR Weight
+        NAME: fld_stream6
+        WIDTH: 7
+      - DEFAULT: 1
+        DESCRIPTION: NFCP Streams DWRR Weight
+        NAME: fld_stream7
+        WIDTH: 7
+      - DEFAULT: 1
+        DESCRIPTION: NFCP Streams DWRR Weight
+        NAME: fld_stream8
+        WIDTH: 7
+      - DEFAULT: 1
+        DESCRIPTION: NFCP Streams DWRR Weight
+        NAME: fld_stream9
+        WIDTH: 7
+      - DEFAULT: 1
+        DESCRIPTION: NFCP Streams DWRR Weight
+        NAME: fld_stream10
+        WIDTH: 7
+      - DEFAULT: 1
+        DESCRIPTION: NFCP Streams DWRR Weight
+        NAME: fld_stream11
+        WIDTH: 7
+      - DEFAULT: 1
+        DESCRIPTION: NFCP Streams DWRR Weight
+        NAME: fld_stream12
+        WIDTH: 7
+      - DEFAULT: 1
+        DESCRIPTION: NFCP Streams DWRR Weight
+        NAME: fld_stream13
+        WIDTH: 7
+      - DEFAULT: 1
+        DESCRIPTION: NFCP Streams DWRR Weight
+        NAME: fld_stream14
+        WIDTH: 7
+      - DEFAULT: 1
+        DESCRIPTION: NFCP Streams DWRR Weight
+        NAME: fld_stream15
+        WIDTH: 7
+      - DEFAULT: 1
+        DESCRIPTION: NFCP Streams DWRR Weight
+        NAME: fld_stream16
+        WIDTH: 7
+      - DEFAULT: 1
+        DESCRIPTION: NFCP Streams DWRR Weight
+        NAME: fld_stream17
+        WIDTH: 7
+      - DEFAULT: 1
+        DESCRIPTION: NFCP Streams DWRR Weight
+        NAME: fld_stream18
+        WIDTH: 7
+      - DEFAULT: 1
+        DESCRIPTION: NFCP Streams DWRR Weight
+        NAME: fld_stream19
+        WIDTH: 7
+      - DEFAULT: 1
+        DESCRIPTION: NFCP Streams DWRR Weight
+        NAME: fld_stream20
+        WIDTH: 7
+      - DEFAULT: 1
+        DESCRIPTION: NFCP Streams DWRR Weight
+        NAME: fld_stream21
+        WIDTH: 7
+      - DEFAULT: 1
+        DESCRIPTION: NFCP Streams DWRR Weight
+        NAME: fld_stream22
+        WIDTH: 7
+      - DEFAULT: 1
+        DESCRIPTION: NFCP Streams DWRR Weight
+        NAME: fld_stream23
+        WIDTH: 7
+    NAME: fcb_pkt_sch_nfcp_streams_dwrr_wt_cfg
+  - ATTR: 5
+    DESCRIPTION: Access to Packet Scheduler Hist Interface QOS Group DWRR Weights Table
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: FCP Streams Strict Priority
+        NAME: fld_fcp_strict_pri
+        WIDTH: 1
+      - DEFAULT: 1
+        DESCRIPTION: FCP Streams DWRR Weight
+        NAME: fld_fcp_dwrr_wt
+        WIDTH: 7
+      - DEFAULT: 1
+        DESCRIPTION: NFCP Streams DWRR Weight
+        NAME: fld_nfcp_dwrr_wt
+        WIDTH: 7
+    NAME: fcb_pkt_sch_cfg
+  - ATTR: 6
+    DESCRIPTION: FCB to ETP Interface Credits Programming Table
+    FLDLST:
+      - DEFAULT: 24
+        DESCRIPTION: Transmit Data Pipe 0 Initial Credit Valie
+        NAME: fld_pipe0
+        WIDTH: 6
+      - DEFAULT: 24
+        DESCRIPTION: Transmit Data Pipe 1 Initial Credit Valie
+        NAME: fld_pipe1
+        WIDTH: 6
+      - DEFAULT: 24
+        DESCRIPTION: Transmit Data Pipe 2 Initial Credit Valie
+        NAME: fld_pipe2
+        WIDTH: 6
+    NAME: fcb_etp_deq_info_if_crdt_cfg
+    TEST_ATTR: 2
+  - ATTR: 6
+    DESCRIPTION: FCB to WQM Interface Credits Programming Table
+    FLDLST:
+      - DEFAULT: 2
+        DESCRIPTION: NWQM Pipe 0 Initial Credit Valie
+        NAME: fld_pipe0
+        WIDTH: 4
+      - DEFAULT: 2
+        DESCRIPTION: NWQM Pipe 1 Initial Credit Valie
+        NAME: fld_pipe1
+        WIDTH: 4
+      - DEFAULT: 2
+        DESCRIPTION: NWQM Pipe 2 Initial Credit Valie
+        NAME: fld_pipe2
+        WIDTH: 4
+    NAME: fcb_wqm_deq_req_if_crdt_cfg
+    TEST_ATTR: 2
+  - ATTR: 6
+    DESCRIPTION: Source Timer Configuration
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Source Timer Enable
+        NAME: fld_timer_enable
+        WIDTH: 1
+      - DEFAULT: 2
+        DESCRIPTION: 'Timer TDM/Scan Slot Cycle Count (2*N+1), Default (N=2)'
+        NAME: fld_timer_tdm_cnt
+        WIDTH: 4
+      - DEFAULT: 15
+        DESCRIPTION: Maximum Request Retry Count
+        NAME: fld_max_req_retry_cnt
+        WIDTH: 4
+      - DEFAULT: 8333
+        DESCRIPTION: Normal Request Retry Timer Tick Count 50uS/2*(N+1)*Val
+        NAME: fld_norm_req_timer_tick_cnt
+        WIDTH: 16
+      - DEFAULT: 2
+        DESCRIPTION: Normal Timeout Value ~100uS
+        NAME: fld_norm_req_tov_val
+        WIDTH: 4
+      - DEFAULT: 16666
+        DESCRIPTION: Congested Request Retry Timer Tick Count 100uS/2*(N+1)*Val
+        NAME: fld_cong_req_timer_tick_cnt
+        WIDTH: 16
+      - DEFAULT: 5
+        DESCRIPTION: Congested Timeout Value ~500uS
+        NAME: fld_cong_req_tov_val
+        WIDTH: 4
+      - DEFAULT: 1666
+        DESCRIPTION: Idle Timer Tick Count 10uS/2*(N+1)*VAL
+        NAME: fld_idle_timer_tick_cnt
+        WIDTH: 16
+      - DEFAULT: 4
+        DESCRIPTION: Timeout Value ~40uS
+        NAME: fld_idle_tov_val
+        WIDTH: 4
+    NAME: fcb_src_timer_ctrl_cfg
+    TEST_ATTR: 2
+  - ATTR: 6
+    DESCRIPTION: Source Timer Max Request Retry Reached WU Queue ID Symptom
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Symptom Valid
+        NAME: fld_vld
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: WU Queue Number
+        NAME: fld_wu_qid
+        WIDTH: 14
+    NAME: fcb_src_max_req_retry_symptom
+  - ATTR: 9
+    DESCRIPTION: FCB Total FCP Enqueued WU Counter at Source End Point
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Total Pending WUs Count
+        NAME: fld_val
+        WIDTH: 16
+    NAME: fcb_src_gbl_wu_cnt_sta
+    TEST_ATTR: 2
+  - ATTR: 9
+    DESCRIPTION: FCB Total FCP Enqueued Blocks at the Source End Point
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Total Pending Requested Blocks
+        NAME: fld_val
+        WIDTH: 32
+    NAME: fcb_src_gbl_fcp_enq_blks_sta
+    TEST_ATTR: 2
+  - ATTR: 9
+    DESCRIPTION: FCB Total Requestd Blocks at the Source End Point
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Total Requested Blocks
+        NAME: fld_val
+        WIDTH: 32
+    NAME: fcb_src_gbl_fcp_requested_blks_sta
+    TEST_ATTR: 2
+  - ATTR: 9
+    DESCRIPTION: FCB Total ending Granted Blocks Awaiting Transmission at the Source End Point
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Total Pending Granted Blocks Awaiting Transmission
+        NAME: fld_val
+        WIDTH: 32
+    NAME: fcb_src_gbl_fcp_pend_gntd_blks_sta
+    TEST_ATTR: 2
+  - ATTR: 9
+    DESCRIPTION: FCB Total FCP Unsolicited Blocks Sent at the Source End Point
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Total Unsolicited Blocks Currently in Flight
+        NAME: fld_val
+        WIDTH: 32
+    NAME: fcb_src_gbl_fcp_unsol_blks_sta
+    TEST_ATTR: 2
+  - ATTR: 5
+    DESCRIPTION: FCB FCP Global BN Pool Thresholds Role/Profile Configuration at the Source End Point
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Global Enqueue Blocks BN NCV Threshold Profile
+        NAME: fld_gbl_enq_blks
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: QOS0 Enqueue Blocks BN NCV Threshold Profile
+        NAME: fld_qos0_enq_blks
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: QOS1 Enqueue Blocks BN NCV Threshold Profile
+        NAME: fld_qos1_enq_blks
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: QOS2 Enqueue Blocks BN NCV Threshold Profile
+        NAME: fld_qos2_enq_blks
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: QOS3 Enqueue Blocks BN NCV Threshold Profile
+        NAME: fld_qos3_enq_blks
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: QOS4 Enqueue Blocks BN NCV Threshold Profile
+        NAME: fld_qos4_enq_blks
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: QOS5 Enqueue Blocks BN NCV Threshold Profile
+        NAME: fld_qos5_enq_blks
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: QOS6 Enqueue Blocks BN NCV Threshold Profile
+        NAME: fld_qos6_enq_blks
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: QOS7 Enqueue Blocks BN NCV Threshold Profile
+        NAME: fld_qos7_enq_blks
+        WIDTH: 4
+    NAME: fcb_fcp_ncv_thresh_role_cfg
+  - ATTR: 9
+    DESCRIPTION: FCB Total NFCP Enqueued Blocks at the Source End Point
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Total Pending Requested Blocks
+        NAME: fld_val
+        WIDTH: 32
+    NAME: fcb_src_gbl_nfcp_enq_blks_sta
+    TEST_ATTR: 2
+  - ATTR: 5
+    DESCRIPTION: FCB NFCP Global BN Pool Thresholds Role/Profile Configuration at the Source End Point
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Global Enqueue Blocks BN NCV Threshold Profile
+        NAME: fld_gbl_enq_blks
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: QOS0 Enqueue Blocks BN NCV Threshold Profile
+        NAME: fld_qos0_enq_blks
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: QOS1 Enqueue Blocks BN NCV Threshold Profile
+        NAME: fld_qos1_enq_blks
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: QOS2 Enqueue Blocks BN NCV Threshold Profile
+        NAME: fld_qos2_enq_blks
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: QOS3 Enqueue Blocks BN NCV Threshold Profile
+        NAME: fld_qos3_enq_blks
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: QOS4 Enqueue Blocks BN NCV Threshold Profile
+        NAME: fld_qos4_enq_blks
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: QOS5 Enqueue Blocks BN NCV Threshold Profile
+        NAME: fld_qos5_enq_blks
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: QOS6 Enqueue Blocks BN NCV Threshold Profile
+        NAME: fld_qos6_enq_blks
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: QOS7 Enqueue Blocks BN NCV Threshold Profile
+        NAME: fld_qos7_enq_blks
+        WIDTH: 4
+    NAME: fcb_nfcp_ncv_thresh_role_cfg
+  - ATTR: 6
+    DESCRIPTION: FCB to BN Interface Credits Programming Table
+    FLDLST:
+      - DEFAULT: 8
+        DESCRIPTION: BN Sender Interface Initial Credit Value
+        NAME: fld_val
+        WIDTH: 5
+    NAME: fcb_bn_sender_if_crdt_cfg
+    TEST_ATTR: 2
+  - ATTR: 5
+    DESCRIPTION: FCB to BN Interface Misc. Hysteresis Config
+    FLDLST:
+      - DEFAULT: 1
+        DESCRIPTION: 'Hysteresis delta Color Change Value when color change in Up. Default a change of 1 ore more '
+        NAME: fld_up_val
+        WIDTH: 4
+      - DEFAULT: 1
+        DESCRIPTION: 'Hysteresis delta Color Change Value when color change in Down. Default a change of 1 ore more '
+        NAME: fld_dn_val
+        WIDTH: 4
+    NAME: fcb_bn_msg_if_misc_cfg
+    TEST_ATTR: 2
+  - ATTR: 6
+    DESCRIPTION: Access to Request Scheduler Hist Interface DWRR Weights Table
+    FLDLST:
+      - DEFAULT: 1
+        DESCRIPTION: Request Scheduler Host Intf0 DWRR Weight
+        NAME: fld_host_intf0
+        WIDTH: 7
+      - DEFAULT: 1
+        DESCRIPTION: Request Scheduler Host Intf1 DWRR Weight
+        NAME: fld_host_intf1
+        WIDTH: 7
+      - DEFAULT: 1
+        DESCRIPTION: Request Scheduler Host Intf2 DWRR Weight
+        NAME: fld_host_intf2
+        WIDTH: 7
+      - DEFAULT: 1
+        DESCRIPTION: Request Scheduler Host Intf3 DWRR Weight
+        NAME: fld_host_intf3
+        WIDTH: 7
+      - DEFAULT: 1
+        DESCRIPTION: Request Scheduler Host Intf4 DWRR Weight
+        NAME: fld_host_intf4
+        WIDTH: 7
+      - DEFAULT: 1
+        DESCRIPTION: Request Scheduler Host Intf5 DWRR Weight
+        NAME: fld_host_intf5
+        WIDTH: 7
+      - DEFAULT: 1
+        DESCRIPTION: Request Scheduler Host Intf6 DWRR Weight
+        NAME: fld_host_intf6
+        WIDTH: 7
+      - DEFAULT: 1
+        DESCRIPTION: Request Scheduler Host Intf7 DWRR Weight
+        NAME: fld_host_intf7
+        WIDTH: 7
+    NAME: fcb_gnt_sch_host_intf_dwrr_wt_cfg
+  - ATTR: 5
+    DESCRIPTION: Access to Request Scheduler Data Rate Pacer Configuration
+    FLDLST:
+      - DEFAULT: 1
+        DESCRIPTION: Grant Data Rate Pacer Enable
+        NAME: fld_enable
+        WIDTH: 1
+      - DEFAULT: 15
+        DESCRIPTION: Update Rate Every n+1 Clock Ticks
+        NAME: fld_leak_tick_cnt
+        WIDTH: 8
+      - DEFAULT: 1600
+        DESCRIPTION: 'Pacer Base Leak Rate - Value to Leak from the Pacer Leaky Bucket Set tp 200Gbps.Rate = (BW*leak_tick_cnt/2)'
+        NAME: fld_base_leak_rate
+        WIDTH: 16
+      - DEFAULT: 128
+        DESCRIPTION: 'Admit Level Threshold in units of 128B Below which a New Grant Can be generated, Default Set to 16KB'
+        NAME: fld_admit_lvl_thresh
+        WIDTH: 15
+      - DEFAULT: 32767
+        DESCRIPTION: 'Minimum Negative Threshold in units of 128B where the Pacer is Saturated, Default Set to -8KB'
+        NAME: fld_min_thresh
+        WIDTH: 15
+    NAME: fcb_gnt_datarate_pacer_cfg
+  - ATTR: 5
+    DESCRIPTION: Access to Grant Scheduler Control Message Rate Pacer Configuration
+    FLDLST:
+      - DEFAULT: 1
+        DESCRIPTION: Grant Control Rate Pacer Enable
+        NAME: fld_enable
+        WIDTH: 1
+      - DEFAULT: 15
+        DESCRIPTION: Update Rate Every 16(N+1) Clock Ticks
+        NAME: fld_leak_tick_cnt
+        WIDTH: 12
+      - DEFAULT: 80
+        DESCRIPTION: Pacer Base Leak Rate Default 10Gbps.Rate = (BW*leak_tick_cnt/2)
+        NAME: fld_base_leak_rate
+        WIDTH: 12
+      - DEFAULT: 10752
+        DESCRIPTION: Admit Level Threshold Below which a New Request Can be generated Set to Max Burst of 4 Messages
+        NAME: fld_admit_lvl_thresh
+        WIDTH: 24
+      - DEFAULT: 336
+        DESCRIPTION: 'Update Value for Control Message, Default 64B(+IPG)'
+        NAME: fld_update_val
+        WIDTH: 12
+    NAME: fcb_gnt_ctlmsg_pacer_cfg
+  - ATTR: 5
+    DESCRIPTION: Access to Grant Scheduler Per Host Interface0 Data Rate Pacer Configuration
+    FLDLST:
+      - DEFAULT: 1
+        DESCRIPTION: Per Host Interface Grant Data Rate Pacer Enable
+        NAME: fld_enable
+        WIDTH: 1
+      - DEFAULT: 15
+        DESCRIPTION: Update Rate Every n+1 Clock Ticks
+        NAME: fld_leak_tick_cnt
+        WIDTH: 8
+      - DEFAULT: 1600
+        DESCRIPTION: 'Pacer Base Leak Rate - Value to Leak from the Pacer Leaky Bucket Set tp 200Gbps.Rate = (BW*leak_tick_cnt/2)'
+        NAME: fld_base_leak_rate
+        WIDTH: 16
+      - DEFAULT: 128
+        DESCRIPTION: 'Admit Level Threshold in units of 128B Below which a New Grant Can be generated, Default Set to 64KB'
+        NAME: fld_admit_lvl_thresh
+        WIDTH: 15
+      - DEFAULT: 32767
+        DESCRIPTION: 'Minimum Negative Threshold in units of 128B where the Pacer is Saturated, Default Set to -8KB'
+        NAME: fld_min_thresh
+        WIDTH: 15
+    NAME: fcb_host_intf0_gnt_datarate_pacer_cfg
+  - ATTR: 5
+    DESCRIPTION: Access to Grant Scheduler Per Host Interface1 Data Rate Pacer Configuration
+    FLDLST:
+      - DEFAULT: 1
+        DESCRIPTION: Per Host Interface Grant Data Rate Pacer Enable
+        NAME: fld_enable
+        WIDTH: 1
+      - DEFAULT: 15
+        DESCRIPTION: Update Rate Every n+1 Clock Ticks
+        NAME: fld_leak_tick_cnt
+        WIDTH: 8
+      - DEFAULT: 1600
+        DESCRIPTION: 'Pacer Base Leak Rate - Value to Leak from the Pacer Leaky Bucket Set tp 200Gbps.Rate = (BW*leak_tick_cnt/2)'
+        NAME: fld_base_leak_rate
+        WIDTH: 16
+      - DEFAULT: 128
+        DESCRIPTION: 'Admit Level Threshold in units of 128B Below which a New Grant Can be generated, Default Set to 64KB'
+        NAME: fld_admit_lvl_thresh
+        WIDTH: 15
+      - DEFAULT: 32767
+        DESCRIPTION: 'Minimum Negative Threshold in units of 128B where the Pacer is Saturated, Default Set to -8KB'
+        NAME: fld_min_thresh
+        WIDTH: 15
+    NAME: fcb_host_intf1_gnt_datarate_pacer_cfg
+  - ATTR: 5
+    DESCRIPTION: Access to Grant Scheduler Per Host Interface2 Data Rate Pacer Configuration
+    FLDLST:
+      - DEFAULT: 1
+        DESCRIPTION: Per Host Interface Grant Data Rate Pacer Enable
+        NAME: fld_enable
+        WIDTH: 1
+      - DEFAULT: 15
+        DESCRIPTION: Update Rate Every n+1 Clock Ticks
+        NAME: fld_leak_tick_cnt
+        WIDTH: 8
+      - DEFAULT: 1600
+        DESCRIPTION: 'Pacer Base Leak Rate - Value to Leak from the Pacer Leaky Bucket Set tp 200Gbps.Rate = (BW*leak_tick_cnt/2)'
+        NAME: fld_base_leak_rate
+        WIDTH: 16
+      - DEFAULT: 128
+        DESCRIPTION: 'Admit Level Threshold in units of 128B Below which a New Grant Can be generated, Default Set to 64KB'
+        NAME: fld_admit_lvl_thresh
+        WIDTH: 15
+      - DEFAULT: 32767
+        DESCRIPTION: 'Minimum Negative Threshold in units of 128B where the Pacer is Saturated, Default Set to -8KB'
+        NAME: fld_min_thresh
+        WIDTH: 15
+    NAME: fcb_host_intf2_gnt_datarate_pacer_cfg
+  - ATTR: 5
+    DESCRIPTION: Access to Grant Scheduler Per Host Interface3 Data Rate Pacer Configuration
+    FLDLST:
+      - DEFAULT: 1
+        DESCRIPTION: Per Host Interface Grant Data Rate Pacer Enable
+        NAME: fld_enable
+        WIDTH: 1
+      - DEFAULT: 15
+        DESCRIPTION: Update Rate Every n+1 Clock Ticks
+        NAME: fld_leak_tick_cnt
+        WIDTH: 8
+      - DEFAULT: 1600
+        DESCRIPTION: 'Pacer Base Leak Rate - Value to Leak from the Pacer Leaky Bucket Set tp 200Gbps.Rate = (BW*leak_tick_cnt/2)'
+        NAME: fld_base_leak_rate
+        WIDTH: 16
+      - DEFAULT: 128
+        DESCRIPTION: 'Admit Level Threshold in units of 128B Below which a New Grant Can be generated, Default Set to 64KB'
+        NAME: fld_admit_lvl_thresh
+        WIDTH: 15
+      - DEFAULT: 32767
+        DESCRIPTION: 'Minimum Negative Threshold in units of 128B where the Pacer is Saturated, Default Set to -8KB'
+        NAME: fld_min_thresh
+        WIDTH: 15
+    NAME: fcb_host_intf3_gnt_datarate_pacer_cfg
+  - ATTR: 5
+    DESCRIPTION: Access to Grant Scheduler Per Host Interface4 Data Rate Pacer Configuration
+    FLDLST:
+      - DEFAULT: 1
+        DESCRIPTION: Per Host Interface Grant Data Rate Pacer Enable
+        NAME: fld_enable
+        WIDTH: 1
+      - DEFAULT: 15
+        DESCRIPTION: Update Rate Every n+1 Clock Ticks
+        NAME: fld_leak_tick_cnt
+        WIDTH: 8
+      - DEFAULT: 1600
+        DESCRIPTION: 'Pacer Base Leak Rate - Value to Leak from the Pacer Leaky Bucket Set tp 200Gbps.Rate = (BW*leak_tick_cnt/2)'
+        NAME: fld_base_leak_rate
+        WIDTH: 16
+      - DEFAULT: 128
+        DESCRIPTION: 'Admit Level Threshold in units of 128B Below which a New Grant Can be generated, Default Set to 64KB'
+        NAME: fld_admit_lvl_thresh
+        WIDTH: 15
+      - DEFAULT: 32767
+        DESCRIPTION: 'Minimum Negative Threshold in units of 128B where the Pacer is Saturated, Default Set to -8KB'
+        NAME: fld_min_thresh
+        WIDTH: 15
+    NAME: fcb_host_intf4_gnt_datarate_pacer_cfg
+  - ATTR: 5
+    DESCRIPTION: Access to Grant Scheduler Per Host Interface5 Data Rate Pacer Configuration
+    FLDLST:
+      - DEFAULT: 1
+        DESCRIPTION: Per Host Interface Grant Data Rate Pacer Enable
+        NAME: fld_enable
+        WIDTH: 1
+      - DEFAULT: 15
+        DESCRIPTION: Update Rate Every n+1 Clock Ticks
+        NAME: fld_leak_tick_cnt
+        WIDTH: 8
+      - DEFAULT: 1600
+        DESCRIPTION: 'Pacer Base Leak Rate - Value to Leak from the Pacer Leaky Bucket Set tp 200Gbps.Rate = (BW*leak_tick_cnt/2)'
+        NAME: fld_base_leak_rate
+        WIDTH: 16
+      - DEFAULT: 128
+        DESCRIPTION: 'Admit Level Threshold in units of 128B Below which a New Grant Can be generated, Default Set to 64KB'
+        NAME: fld_admit_lvl_thresh
+        WIDTH: 15
+      - DEFAULT: 32767
+        DESCRIPTION: 'Minimum Negative Threshold in units of 128B where the Pacer is Saturated, Default Set to -8KB'
+        NAME: fld_min_thresh
+        WIDTH: 15
+    NAME: fcb_host_intf5_gnt_datarate_pacer_cfg
+  - ATTR: 5
+    DESCRIPTION: Access to Grant Scheduler Per Host Interface6 Data Rate Pacer Configuration
+    FLDLST:
+      - DEFAULT: 1
+        DESCRIPTION: Per Host Interface Grant Data Rate Pacer Enable
+        NAME: fld_enable
+        WIDTH: 1
+      - DEFAULT: 15
+        DESCRIPTION: Update Rate Every n+1 Clock Ticks
+        NAME: fld_leak_tick_cnt
+        WIDTH: 8
+      - DEFAULT: 1600
+        DESCRIPTION: 'Pacer Base Leak Rate - Value to Leak from the Pacer Leaky Bucket Set tp 200Gbps.Rate = (BW*leak_tick_cnt/2)'
+        NAME: fld_base_leak_rate
+        WIDTH: 16
+      - DEFAULT: 128
+        DESCRIPTION: 'Admit Level Threshold in units of 128B Below which a New Grant Can be generated, Default Set to 64KB'
+        NAME: fld_admit_lvl_thresh
+        WIDTH: 15
+      - DEFAULT: 32767
+        DESCRIPTION: 'Minimum Negative Threshold in units of 128B where the Pacer is Saturated, Default Set to -8KB'
+        NAME: fld_min_thresh
+        WIDTH: 15
+    NAME: fcb_host_intf6_gnt_datarate_pacer_cfg
+  - ATTR: 5
+    DESCRIPTION: Access to Grant Scheduler Per Host Interface7 Data Rate Pacer Configuration
+    FLDLST:
+      - DEFAULT: 1
+        DESCRIPTION: Per Host Interface Grant Data Rate Pacer Enable
+        NAME: fld_enable
+        WIDTH: 1
+      - DEFAULT: 15
+        DESCRIPTION: Update Rate Every n+1 Clock Ticks
+        NAME: fld_leak_tick_cnt
+        WIDTH: 8
+      - DEFAULT: 1600
+        DESCRIPTION: 'Pacer Base Leak Rate - Value to Leak from the Pacer Leaky Bucket Set tp 200Gbps.Rate = (BW*leak_tick_cnt/2)'
+        NAME: fld_base_leak_rate
+        WIDTH: 16
+      - DEFAULT: 128
+        DESCRIPTION: 'Admit Level Threshold in units of 128B Below which a New Grant Can be generated, Default Set to 64KB'
+        NAME: fld_admit_lvl_thresh
+        WIDTH: 15
+      - DEFAULT: 32767
+        DESCRIPTION: 'Minimum Negative Threshold in units of 128B where the Pacer is Saturated, Default Set to -8KB'
+        NAME: fld_min_thresh
+        WIDTH: 15
+    NAME: fcb_host_intf7_gnt_datarate_pacer_cfg
+  - ATTR: 6
+    DESCRIPTION: Destination Timer Configuration
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Destination Timer Enable
+        NAME: fld_timer_enable
+        WIDTH: 1
+      - DEFAULT: 2
+        DESCRIPTION: 'Timer TDM/Scan Slot Cycle Count (2*N+1), Default (N=2)'
+        NAME: fld_timer_tdm_cnt
+        WIDTH: 4
+      - DEFAULT: 15
+        DESCRIPTION: Maximum Grant Retry Count
+        NAME: fld_max_gnt_retry_cnt
+        WIDTH: 4
+      - DEFAULT: 16666
+        DESCRIPTION: Grant Retry Timer Tick Count 100uS/2*(N+1)*Val
+        NAME: fld_gnt_timer_tick_cnt
+        WIDTH: 16
+      - DEFAULT: 1
+        DESCRIPTION: Timeout Value ~100uS
+        NAME: fld_gnt_tov_val
+        WIDTH: 4
+      - DEFAULT: 1666
+        DESCRIPTION: Grant Retry Timer Tick Count 10uS/2*(N+1)*Val
+        NAME: fld_rtry_clr_timer_tick_cnt
+        WIDTH: 16
+      - DEFAULT: 2
+        DESCRIPTION: Timeout Value ~20uS
+        NAME: fld_rtry_clr_tov_val
+        WIDTH: 4
+      - DEFAULT: 1666
+        DESCRIPTION: Idle Timer Tick Count ~10uS/2*(N+1)*VAL
+        NAME: fld_idle_timer_tick_cnt
+        WIDTH: 16
+      - DEFAULT: 4
+        DESCRIPTION: Timeout Value ~40uS
+        NAME: fld_idle_tov_val
+        WIDTH: 4
+    NAME: fcb_dst_timer_ctrl_cfg
+    TEST_ATTR: 2
+  - ATTR: 6
+    DESCRIPTION: Destination Timer Max Grant Retry Reached WU Queue ID Symptom
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Symptom Capture Valid
+        NAME: fld_vld
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'WU Queue Number '
+        NAME: fld_wu_qid
+        WIDTH: 14
+    NAME: fcb_dst_max_gnt_retry_symptom
+  - ATTR: 5
+    DESCRIPTION: FCB Pending Granted Blocks over Fabric at the Destination End Point xoff/xon threshold
+    FLDLST:
+      - DEFAULT: 7936
+        DESCRIPTION: 'Pending Blocks Over Fabric - Granted XON Thrshold to Grant Scheduler'
+        NAME: fld_xon_thresh
+        WIDTH: 16
+      - DEFAULT: 8192
+        DESCRIPTION: 'Pending Blocks Over Fabric - Granted XOFF Thrshold to Grant Scheduler'
+        NAME: fld_xoff_thresh
+        WIDTH: 16
+    NAME: fcb_dst_gbl_pbof_blks_thresh_cfg
+  - ATTR: 9
+    DESCRIPTION: FCB Total Requestd Blocks at the Destination End Point
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Total Pending Requested Blocks
+        NAME: fld_val
+        WIDTH: 32
+    NAME: fcb_dst_gbl_req_blks_sta
+    TEST_ATTR: 2
+  - ATTR: 9
+    DESCRIPTION: FCB Pending Granted Blocks over Fabric at the Destination End Point
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Pending Blocks Over Fabric - Granted'
+        NAME: fld_val
+        WIDTH: 16
+    NAME: fcb_dst_gbl_pbof_blks_sta
+    TEST_ATTR: 2
+  - ATTR: 6
+    DESCRIPTION: FCB Source Queue Command FIFO
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'ENUM FCB_CSR_CMD_T - 0:Query,1:Reset,2:Set Inactive/Flush,3:Send Request,4:Send Dummy Packet,5:Reserved,6:Send Ctrl Pkt, 7:NOP'
+        NAME: fld_cmd
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: 'Carries the WU Queue Number '
+        NAME: fld_wu_qid
+        WIDTH: 14
+      - DEFAULT: 0
+        DESCRIPTION: Indicates if the GPH Vector is carrying Valid Data
+        NAME: fld_gph_vld
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: '128-bit Global Health Vector carried in the FCP Request/Grant and Data packet headers '
+        NAME: fld_gph_vec
+        WIDTH: 128
+    NAME: fcb_src_queue_cmd_fifo_dhs
+    TEST_ATTR: 0
+  - ATTR: 10
+    DESCRIPTION: Source FCP Queue Context Memory
+    ENTATTR:
+      - DEFAULT: 0
+        DESCRIPTION: 'Source Queue  CMD/Query Execution Status - Clears on Read.'
+        OFFSET: 0
+        SFX: val
+        SWA: 16777216
+        TYPE: RE_STA
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Command Execution Status 0: pending, 1: Done '
+        NAME: fld_done
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'Command Execution 0: pass, 1: Fail '
+        NAME: fld_fail
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: '0:Query,1:Reset,2:Set Inactive/Flush,3:Send Request,4:Send Dummy Packet,5:Reserved,6:Send Ctrl Pkt, 7:NOP'
+        NAME: fld_cmd
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: 'Carries the WU Queue Number '
+        NAME: fld_wu_qid
+        WIDTH: 14
+      - DEFAULT: 0
+        DESCRIPTION: Max Request Window Reached
+        NAME: fld_max_win
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Max Request Window Reached
+        NAME: fld_unsol
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Request has been sent to Request Scheduler
+        NAME: fld_req_schd
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Packet has been sent to Packet Schedule
+        NAME: fld_pkt_schd
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Indicates a Congested Destination
+        NAME: fld_congested
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: '0:ACTIVE, 1:INACTIVE'
+        NAME: fld_state
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'Remote GPH Valid - Atleast 1 active link failureINACTIVE'
+        NAME: fld_gph_vld
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: FCP Scale Down Factor
+        NAME: fld_scale_dn
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Request Flow Weight as updated by EQM
+        NAME: fld_flow_wt
+        WIDTH: 8
+      - DEFAULT: 0
+        DESCRIPTION: Internal Queue Block Sequence Number Or WU Count in case of Non-FCP Queues
+        NAME: fld_qbn
+        WIDTH: 24
+      - DEFAULT: 0
+        DESCRIPTION: Internal Request Block Sequence Number
+        NAME: fld_rbn
+        WIDTH: 24
+      - DEFAULT: 0
+        DESCRIPTION: Grant Block Sequence Number
+        NAME: fld_gbn
+        WIDTH: 16
+      - DEFAULT: 0
+        DESCRIPTION: Internal Data Block Sequence Number
+        NAME: fld_dbn
+        WIDTH: 24
+      - DEFAULT: 0
+        DESCRIPTION: Maintain DBN/GBN Overshoot Blocks for DWRR COmpensation
+        NAME: fld_ovf_blks
+        WIDTH: 9
+    NAME: fcb_query_src_queue_sta
+    TEST_ATTR: 2
+  - ATTR: 6
+    DESCRIPTION: A Single Command to disable all Source WU_QIDs
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Self Clearing bit, This Command sequentially triggers all 16K WU_Queues in Flush/Inactive Mode'
+        NAME: fld_cmd
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'Pending Status, is Set to 1 the Flush All process is triggered and clears when complet'
+        NAME: fld_pending_status
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'Done Status, is Set to 1 when the 16K WU Queues Flush/Inactive is complete'
+        NAME: fld_done_status
+        WIDTH: 1
+    NAME: fcb_src_flush_all_cmd_cfg
+    TEST_ATTR: 0
+  - ATTR: 6
+    DESCRIPTION: FCB Source Queue Command FIFO
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'ENUM FCB_CSR_CMD_T - 0:NOP,1:Reset,2:Set Inactive/Flush,3:Send Request,4:Send Dummy Packet,5:Reserved,6:Send Ctrl Pkt, 7:Reserved'
+        NAME: cmd
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: 'Carries the WU Queue Number '
+        NAME: wu_qid
+        WIDTH: 14
+      - DESCRIPTION: Indicates if the GPH Vector is carrying Valid Data
+        NAME: gph_vld
+        WIDTH: 1
+      - DESCRIPTION: '128-bit Global Health Vector carried in the FCP Request/Grant and Data packet headers '
+        NAME: gph_vec
+        WIDTH: 128
+    NAME: fcb_dst_queue_cmd_fifo_dhs
+    TEST_ATTR: 0
+  - ATTR: 10
+    DESCRIPTION: Source FCP Queue Context Memory
+    ENTATTR:
+      - DEFAULT: 0
+        DESCRIPTION: 'Source Queue  CMD/Query Execution Status - Clears on Read.'
+        OFFSET: 0
+        SFX: val
+        SWA: 16777216
+        TYPE: RE_STA
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Command Execution Status 0: pending, 1: Done '
+        NAME: fld_done
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'Command Execution 0: pass, 1: Fail '
+        NAME: fld_fail
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: '0:Query,1:Reset,2:Set Inactive/Flush,3:Send Request,4:Send Dummy Packet,5:Reserved,6:Send Ctrl Pkt, 7:NOP'
+        NAME: fld_cmd
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Carries the WU Queue Number
+        NAME: fld_wu_qid
+        WIDTH: 14
+      - DEFAULT: 0
+        DESCRIPTION: Max Grant Window Reached
+        NAME: fld_max_win
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Grant has been sent to Grant Scheduler
+        NAME: fld_gnt_schd
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Request Retry Response Sent
+        NAME: fld_rtry_sent
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: '0:ACTIVE, 1:INACTIVE'
+        NAME: fld_state
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'Local GPH Valid - Atleast 1 active link failureINACTIVE'
+        NAME: fld_gph_vld
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Internal Request Block Sequence Number
+        NAME: fld_rbn
+        WIDTH: 16
+      - DEFAULT: 0
+        DESCRIPTION: Grant Block Sequence Number
+        NAME: fld_gbn
+        WIDTH: 16
+      - DEFAULT: 0
+        DESCRIPTION: Internal Data Block Sequence Number
+        NAME: fld_dbn
+        WIDTH: 16
+    NAME: fcb_query_dst_queue_sta
+    TEST_ATTR: 2
+  - ATTR: 6
+    DESCRIPTION: A Single Command to disable all Destination WU_QIDs
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Self Clearing bit, This Command sequentially triggers all 16K WU_Queues in Flush/Inactive Mode'
+        NAME: fld_cmd
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'Pending Status, is Set to 1 the Flush All process is triggered and clears when complet'
+        NAME: fld_pending_status
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'Done Status, is Set to 1 when the 16K WU Queues Flush/Inactive is complete'
+        NAME: fld_done_status
+        WIDTH: 1
+    NAME: fcb_dst_flush_all_cmd_cfg
+    TEST_ATTR: 0
+  - ATTR: 9
+    DESCRIPTION: Access to FCB GPH Cache Status
+    FLDLST:
+      - DEFAULT: 128
+        DESCRIPTION: GPH Cache Free Count Status
+        NAME: fld_free_cnt
+        WIDTH: 8
+      - DEFAULT: 128
+        DESCRIPTION: GPH Cache Unlocked Count Status
+        NAME: fld_unlocked_cnt
+        WIDTH: 8
+    NAME: fcb_gph_cache_sta
+    TEST_ATTR: 2
+  - ATTR: 5
+    DESCRIPTION: Trace Buffer Event Capture Count
+    FLDLST:
+      - DEFAULT: 1
+        DESCRIPTION: Trace ENable
+        NAME: fld_trace_enable
+        WIDTH: 1
+      - DEFAULT: 62
+        DESCRIPTION: Trace Opcode MAP
+        NAME: fld_opcode_map
+        WIDTH: 32
+      - DEFAULT: 192
+        DESCRIPTION: Trace WU QID
+        NAME: fld_wu_qid
+        WIDTH: 14
+    NAME: fcb_src_trace_fifo_cfg
+  - ATTR: 9
+    DESCRIPTION: Trace Buffer Event Capture Count
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Timestamp
+        NAME: fld_cnt
+        WIDTH: 8
+    NAME: fcb_src_trace_fifo_cnt_sta
+    TEST_ATTR: 2
+  - ATTR: 10
+    DESCRIPTION: Source Trace Buffer FIFO Read Data
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Timestamp
+        NAME: fld_timestamp
+        WIDTH: 32
+      - DEFAULT: 0
+        DESCRIPTION: 'EVent Opcode, Refer to SRC PROC Pipe Opcode for details'
+        NAME: fld_event_opcode
+        WIDTH: 5
+      - DEFAULT: 0
+        DESCRIPTION: Max Request Window Reached
+        NAME: fld_max_win
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Max Request Window Reached
+        NAME: fld_unsol
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Request has been sent to Request Scheduler
+        NAME: fld_req_schd
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Packet has been sent to Packet Schedule
+        NAME: fld_pkt_schd
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Indicates that a Scale Down value below the congested threshold was received
+        NAME: fld_congestd
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: '0:InActve, 1:Active'
+        NAME: fld_state
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Internal Queue Block Sequence Number Or WU Count in case of Non-FCP Queues
+        NAME: fld_qbn
+        WIDTH: 24
+      - DEFAULT: 0
+        DESCRIPTION: Internal Request Block Sequence Number
+        NAME: fld_rbn
+        WIDTH: 24
+      - DEFAULT: 0
+        DESCRIPTION: Grant Block Sequence Number
+        NAME: fld_gbn
+        WIDTH: 16
+      - DEFAULT: 0
+        DESCRIPTION: Internal Data Block Sequence Number
+        NAME: fld_dbn
+        WIDTH: 24
+      - DEFAULT: 0
+        DESCRIPTION: Maintain DBN/GBN Overshoot Blocks for DWRR COmpensation
+        NAME: fld_ovf_blks
+        WIDTH: 9
+    NAME: fcb_src_trace_fifo_sta
+    TEST_ATTR: 2
+  - ATTR: 5
+    DESCRIPTION: Trace Buffer Event Capture Count
+    FLDLST:
+      - DEFAULT: 1
+        DESCRIPTION: Trace ENable
+        NAME: fld_trace_enable
+        WIDTH: 1
+      - DEFAULT: 14
+        DESCRIPTION: Trace Opcode MAP
+        NAME: fld_opcode_map
+        WIDTH: 16
+      - DEFAULT: 192
+        DESCRIPTION: Trace WU QID
+        NAME: fld_wu_qid
+        WIDTH: 14
+    NAME: fcb_dst_trace_fifo_cfg
+  - ATTR: 9
+    DESCRIPTION: Trace Buffer Event Capture Count
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Timestamp
+        NAME: fld_cnt
+        WIDTH: 8
+    NAME: fcb_dst_trace_fifo_cnt_sta
+    TEST_ATTR: 2
+  - ATTR: 10
+    DESCRIPTION: Source Trace Buffer FIFO Read Data
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Timestamp
+        NAME: fld_timestamp
+        WIDTH: 32
+      - DEFAULT: 0
+        DESCRIPTION: 'EVent Opcode, Refer to DST PROC Pipe Opcode for details'
+        NAME: fld_event_opcode
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Max Grant Window Reached
+        NAME: fld_max_win
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Grant has been sent to Request Scheduler
+        NAME: fld_gnt_schd
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Indicates that a Grant Retry has been Sent by the Destination in response to Request Timeout
+        NAME: fld_rtry_sent
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: '0:InActve, 1:Active'
+        NAME: fld_state
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Internal Request Block Sequence Number
+        NAME: fld_rbn
+        WIDTH: 16
+      - DEFAULT: 0
+        DESCRIPTION: Grant Block Sequence Number
+        NAME: fld_gbn
+        WIDTH: 16
+      - DEFAULT: 0
+        DESCRIPTION: Internal Data Block Sequence Number
+        NAME: fld_dbn
+        WIDTH: 16
+    NAME: fcb_dst_trace_fifo_sta
+  - ATTR: 10
+    DESCRIPTION: FCB Flow Control Sticky Status.. Clear on Read
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: FCB-Broadcast Interface Flow Control
+        NAME: fld_bn_if_flow_ctrl
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: PSW FCB Global SF XOFF Flow Control
+        NAME: fld_psw_gbl_sf_xoff_flow_ctrl
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: PSW FCB Global FCP XOFF Flow Control
+        NAME: fld_psw_gbl_fcp_xoff_flow_ctrl
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: PSW FCB Global NFCP XOFF Flow Control
+        NAME: fld_psw_gbl_nfcp_xoff_flow_ctrl
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: NWQM Non-FCP Dequeue Stall
+        NAME: fld_nwqm_fcp_pkt_deq_stall
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: NWQM Non-FCP Dequeue Stall
+        NAME: fld_nwqm_fcp_req_deq_stall
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: NWQM Non-FCP Dequeue Stall
+        NAME: fld_nwqm_fcp_gnt_deq_stall
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Max. Pending Blocks Limit Reached Stall
+        NAME: fld_etp_gbl_pend_blks_limit_rchd
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Max. FCP Pending Blocks Limit Reached Stall
+        NAME: fld_etp_fcp_pend_blks_limit_rchd
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: FCB WQM Dequeue Response Update FIFO Flow Control
+        NAME: fld_pkt_deq_updt_fifo_flow_ctrl
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: PIPE0 Pending Blocks Limit Reached
+        NAME: fld_etp_pipe0_pend_blks_limit_rchd
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Non-FCP PIPE0 Pending Blocks Limit Reached
+        NAME: fld_etp_nfcp_pipe0_pend_blks_limit_rchd
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: NWQM Non-FCP Dequeue PIPE0 Stall
+        NAME: fld_nwqm_nfcp_deq_pipe0_stall
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: FCB-ETP Dequeue Info Interface0 Interface Flow Control
+        NAME: fld_etp_deq_info_if0_flow_ctrl
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ETP-FCB Dequeue Update Interface0 FIFO Flow Control
+        NAME: fld_etp_deq_updt_if0_fifo_flow_ctrl
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: FCB-WQM Dequeue Request Interface0 Interface Flow Control
+        NAME: fld_wqm_deq_req_info_if0_flow_ctrl
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: PIPE1 Pending Blocks Limit Reached
+        NAME: fld_etp_pipe1_pend_blks_limit_rchd
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Non-FCP PIPE1 Pending Blocks Limit Reached
+        NAME: fld_etp_nfcp_pipe1_pend_blks_limit_rchd
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: NWQM Non-FCP Dequeue PIPE1 Stall
+        NAME: fld_nwqm_nfcp_deq_pipe1_stall
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: FCB-ETP Dequeue Info Interface1 Interface Flow Control
+        NAME: fld_etp_deq_info_if1_flow_ctrl
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ETP-FCB Dequeue Update Interface1 FIFO Flow Control
+        NAME: fld_etp_deq_updt_if1_fifo_flow_ctrl
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: FCB-WQM Dequeue Request Interface1 Interface Flow Control
+        NAME: fld_wqm_deq_req_info_if1_flow_ctrl
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: PIPE2 Pending Blocks Limit Reached
+        NAME: fld_etp_pipe2_pend_blks_limit_rchd
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Non-FCP PIPE2 Pending Blocks Limit Reached
+        NAME: fld_etp_nfcp_pipe2_pend_blks_limit_rchd
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: NWQM Non-FCP Dequeue PIPE2 Stall
+        NAME: fld_nwqm_nfcp_deq_pipe2_stall
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: FCB-ETP Dequeue Info Interface2 Interface Flow Control
+        NAME: fld_etp_deq_info_if2_flow_ctrl
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: ETP-FCB Dequeue Update Interface2 FIFO Flow Control
+        NAME: fld_etp_deq_updt_if2_fifo_flow_ctrl
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: FCB-WQM Dequeue Request Interface2 Interface Flow Control
+        NAME: fld_wqm_deq_req_info_if2_flow_ctrl
+        WIDTH: 1
+    NAME: fcb_flow_control_sta
+    TEST_ATTR: 2
+  - ATTR: 6
+    DESCRIPTION: Request Scheduler Queue(L3) to Group(L2) Global Map Configuration
+    ENTRIES: 8
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Queue 0 to Grpup Map Configuration
+        NAME: fld_qos0
+        WIDTH: 3
+      - DEFAULT: 1
+        DESCRIPTION: Queue 1 to Grpup Map Configuration
+        NAME: fld_qos1
+        WIDTH: 3
+      - DEFAULT: 2
+        DESCRIPTION: Queue 2 to Grpup Map Configuration
+        NAME: fld_qos2
+        WIDTH: 3
+      - DEFAULT: 3
+        DESCRIPTION: Queue 3 to Grpup Map Configuration
+        NAME: fld_qos3
+        WIDTH: 3
+      - DEFAULT: 4
+        DESCRIPTION: Queue 4 to Grpup Map Configuration
+        NAME: fld_qos4
+        WIDTH: 3
+      - DEFAULT: 5
+        DESCRIPTION: Queue 5 to Grpup Map Configuration
+        NAME: fld_qos5
+        WIDTH: 3
+      - DEFAULT: 6
+        DESCRIPTION: Queue 6 to Grpup Map Configuration
+        NAME: fld_qos6
+        WIDTH: 3
+      - DEFAULT: 7
+        DESCRIPTION: Queue 7 to Grpup Map Configuration
+        NAME: fld_qos7
+        WIDTH: 3
+    NAME: fcb_req_sch_qos2grp_map_cfg
+  - ATTR: 6
+    DESCRIPTION: Request Group(L2) to Strict Priority Global Map Configuration
+    ENTRIES: 8
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Request Scheduler Grpup to Strict Priority Map Configuration
+        NAME: fld_val
+        WIDTH: 8
+    NAME: fcb_req_sch_grp2str_pri_cfg
+  - ATTR: 6
+    DESCRIPTION: Access to Request Scheduler QOS Group DWRR Weights Table
+    ENTRIES: 8
+    FLDLST:
+      - DEFAULT: 1
+        DESCRIPTION: Request Scheduler Group0 DWRR Weight
+        NAME: fld_group0
+        WIDTH: 7
+      - DEFAULT: 1
+        DESCRIPTION: Request Scheduler Group1 DWRR Weight
+        NAME: fld_group1
+        WIDTH: 7
+      - DEFAULT: 1
+        DESCRIPTION: Request Scheduler Group2 DWRR Weight
+        NAME: fld_group2
+        WIDTH: 7
+      - DEFAULT: 1
+        DESCRIPTION: Request Scheduler Group3 DWRR Weight
+        NAME: fld_group3
+        WIDTH: 7
+      - DEFAULT: 1
+        DESCRIPTION: Request Scheduler Group4 DWRR Weight
+        NAME: fld_group4
+        WIDTH: 7
+      - DEFAULT: 1
+        DESCRIPTION: Request Scheduler Group5 DWRR Weight
+        NAME: fld_group5
+        WIDTH: 7
+      - DEFAULT: 1
+        DESCRIPTION: Request Scheduler Group6 DWRR Weight
+        NAME: fld_group6
+        WIDTH: 7
+      - DEFAULT: 1
+        DESCRIPTION: Request Scheduler Group7 DWRR Weight
+        NAME: fld_group7
+        WIDTH: 7
+    NAME: fcb_req_sch_qos_group_dwrr_wt_cfg
+  - ATTR: 6
+    DESCRIPTION: Access to Request Scheduler QOS/Priority DWRR Weights Table
+    ENTRIES: 8
+    FLDLST:
+      - DEFAULT: 1
+        DESCRIPTION: Request Scheduler Queue0 DWRR Weight
+        NAME: fld_qos0
+        WIDTH: 7
+      - DEFAULT: 1
+        DESCRIPTION: Request Scheduler Queue1 DWRR Weight
+        NAME: fld_qos1
+        WIDTH: 7
+      - DEFAULT: 1
+        DESCRIPTION: Request Scheduler Queue2 DWRR Weight
+        NAME: fld_qos2
+        WIDTH: 7
+      - DEFAULT: 1
+        DESCRIPTION: Request Scheduler Queue3 DWRR Weight
+        NAME: fld_qos3
+        WIDTH: 7
+      - DEFAULT: 1
+        DESCRIPTION: Request Scheduler Queue4 DWRR Weight
+        NAME: fld_qos4
+        WIDTH: 7
+      - DEFAULT: 1
+        DESCRIPTION: Request Scheduler Queue5 DWRR Weight
+        NAME: fld_qos5
+        WIDTH: 7
+      - DEFAULT: 1
+        DESCRIPTION: Request Scheduler Queue6 DWRR Weight
+        NAME: fld_qos6
+        WIDTH: 7
+      - DEFAULT: 1
+        DESCRIPTION: Request Scheduler Queue7 DWRR Weight
+        NAME: fld_qos7
+        WIDTH: 7
+    NAME: fcb_req_sch_qos_dwrr_wt_cfg
+  - ATTR: 6
+    DESCRIPTION: Access to Packet Scheduler NFCP Stream Data Rate Pacer Configuration
+    ENTRIES: 24
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Source Non-FCP Traffic Data Pipe Rate Pacer Enable
+        NAME: fld_enable
+        WIDTH: 1
+      - DEFAULT: 15
+        DESCRIPTION: Update Rate Every n+1 Clock Ticks
+        NAME: fld_leak_tick_cnt
+        WIDTH: 8
+      - DEFAULT: 200
+        DESCRIPTION: 'Pacer Base Leak Rate - Value to Leak from the Pacer Leaky Bucket Set tp 200Gbps.Rate = (BW*leak_tick_cnt/2)'
+        NAME: fld_base_leak_rate
+        WIDTH: 16
+      - DEFAULT: 128
+        DESCRIPTION: 'Admit Level Threshold in units of 128B Below which a New Non FCP Packet Can be sent, Default Set to 16KB'
+        NAME: fld_admit_lvl_thresh
+        WIDTH: 15
+      - DEFAULT: 32767
+        DESCRIPTION: 'Minimum Negative Threshold in units of 128B where the Pacer is Saturated, Default Set to -8KB'
+        NAME: fld_min_thresh
+        WIDTH: 15
+    NAME: fcb_src_nfcp_stream_datarate_pacer_cfg
+  - ATTR: 6
+    DESCRIPTION: Non-FCP Packet Scheduler NFCP Queue(QoS/L3) to Group(L2) Global Map Configuration
+    ENTRIES: 24
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Non-FCP Priority(QOS)/Queue 0 to Grpup Map Configuration
+        NAME: fld_qos0
+        WIDTH: 3
+      - DEFAULT: 1
+        DESCRIPTION: Non-FCP Priority(QOS)/Queue 1 to Grpup Map Configuration
+        NAME: fld_qos1
+        WIDTH: 3
+      - DEFAULT: 2
+        DESCRIPTION: Non-FCP Priority(QOS)/Queue 2 to Grpup Map Configuration
+        NAME: fld_qos2
+        WIDTH: 3
+      - DEFAULT: 3
+        DESCRIPTION: Non-FCP Priority(QOS)/Queue 3 to Grpup Map Configuration
+        NAME: fld_qos3
+        WIDTH: 3
+      - DEFAULT: 4
+        DESCRIPTION: Non-FCP Priority(QOS)/Queue 4 to Grpup Map Configuration
+        NAME: fld_qos4
+        WIDTH: 3
+      - DEFAULT: 5
+        DESCRIPTION: Non-FCP Priority(QOS)/Queue 5 to Grpup Map Configuration
+        NAME: fld_qos5
+        WIDTH: 3
+      - DEFAULT: 6
+        DESCRIPTION: Non-FCP Priority(QOS)/Queue 6 to Grpup Map Configuration
+        NAME: fld_qos6
+        WIDTH: 3
+      - DEFAULT: 7
+        DESCRIPTION: Non-FCP Priority(QOS)/Queue 7 to Grpup Map Configuration
+        NAME: fld_qos7
+        WIDTH: 3
+    NAME: fcb_nfcp_pkt_sch_qos2grp_map_cfg
+  - ATTR: 6
+    DESCRIPTION: Group to Strict Priority Global Map Configuration
+    ENTRIES: 24
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Non FCP Packet Scheduler Grpup to Strict Priority Map Configuration
+        NAME: fld_val
+        WIDTH: 8
+    NAME: fcb_nfcp_pkt_sch_grp2str_pri_cfg
+  - ATTR: 6
+    DESCRIPTION: Access to Packet Scheduler NFCP QOS Group DWRR Weights Table
+    ENTRIES: 24
+    FLDLST:
+      - DEFAULT: 1
+        DESCRIPTION: NonFCP  Scheduler Group0 DWRR Weight
+        NAME: fld_group0
+        WIDTH: 7
+      - DEFAULT: 1
+        DESCRIPTION: NonFCP  Scheduler Group1 DWRR Weight
+        NAME: fld_group1
+        WIDTH: 7
+      - DEFAULT: 1
+        DESCRIPTION: NonFCP  Scheduler Group2 DWRR Weight
+        NAME: fld_group2
+        WIDTH: 7
+      - DEFAULT: 1
+        DESCRIPTION: NonFCP  Scheduler Group3 DWRR Weight
+        NAME: fld_group3
+        WIDTH: 7
+      - DEFAULT: 1
+        DESCRIPTION: NonFCP  Scheduler Group4 DWRR Weight
+        NAME: fld_group4
+        WIDTH: 7
+      - DEFAULT: 1
+        DESCRIPTION: NonFCP  Scheduler Group5 DWRR Weight
+        NAME: fld_group5
+        WIDTH: 7
+      - DEFAULT: 1
+        DESCRIPTION: NonFCP  Scheduler Group6 DWRR Weight
+        NAME: fld_group6
+        WIDTH: 7
+      - DEFAULT: 1
+        DESCRIPTION: NonFCP  Scheduler Group7 DWRR Weight
+        NAME: fld_group7
+        WIDTH: 7
+    NAME: fcb_nfcp_pkt_sch_qos_group_dwrr_wt_cfg
+  - ATTR: 6
+    DESCRIPTION: Access to Packet Scheduler NFCP QOS/Priority DWRR Weights Table
+    ENTRIES: 24
+    FLDLST:
+      - DEFAULT: 1
+        DESCRIPTION: NonFCP  Scheduler Queue0 DWRR Weight
+        NAME: fld_qos0
+        WIDTH: 7
+      - DEFAULT: 1
+        DESCRIPTION: NonFCP  Scheduler Queue1 DWRR Weight
+        NAME: fld_qos1
+        WIDTH: 7
+      - DEFAULT: 1
+        DESCRIPTION: NonFCP  Scheduler Queue2 DWRR Weight
+        NAME: fld_qos2
+        WIDTH: 7
+      - DEFAULT: 1
+        DESCRIPTION: NonFCP  Scheduler Queue3 DWRR Weight
+        NAME: fld_qos3
+        WIDTH: 7
+      - DEFAULT: 1
+        DESCRIPTION: NonFCP  Scheduler Queue4 DWRR Weight
+        NAME: fld_qos4
+        WIDTH: 7
+      - DEFAULT: 1
+        DESCRIPTION: NonFCP  Scheduler Queue5 DWRR Weight
+        NAME: fld_qos5
+        WIDTH: 7
+      - DEFAULT: 1
+        DESCRIPTION: NonFCP  Scheduler Queue6 DWRR Weight
+        NAME: fld_qos6
+        WIDTH: 7
+      - DEFAULT: 1
+        DESCRIPTION: NonFCP  Scheduler Queue7 DWRR Weight
+        NAME: fld_qos7
+        WIDTH: 7
+    NAME: fcb_nfcp_pkt_sch_qos_dwrr_wt_cfg
+  - ATTR: 6
+    DESCRIPTION: FCB Source Queue Configration Programming Table
+    ENTATTR:
+      - DEFAULT: 16
+        DESCRIPTION: NWQM Pipe Interface0 Crdit Configuration
+        OFFSET: 0
+        SFX: profile0
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 16
+        DESCRIPTION: NWQM Pipe Interface1 Crdit Configuration
+        OFFSET: 1
+        SFX: profile1
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 16
+        DESCRIPTION: NWQM Pipe Interface2 Crdit Configuration
+        OFFSET: 2
+        SFX: profile2
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 16
+        DESCRIPTION: NWQM Pipe Interface3 Crdit Configuration
+        OFFSET: 3
+        SFX: profile3
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 16
+        DESCRIPTION: NWQM Pipe Interface4 Crdit Configuration
+        OFFSET: 4
+        SFX: profile4
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 16
+        DESCRIPTION: NWQM Pipe Interface5 Crdit Configuration
+        OFFSET: 5
+        SFX: profile5
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 16
+        DESCRIPTION: NWQM Pipe Interface6 Crdit Configuration
+        OFFSET: 6
+        SFX: profile6
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 16
+        DESCRIPTION: NWQM Pipe Interface7 Crdit Configuration
+        OFFSET: 7
+        SFX: profile7
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 16
+        DESCRIPTION: NWQM Pipe Interface8 Crdit Configuration
+        OFFSET: 8
+        SFX: profile8
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 16
+        DESCRIPTION: NWQM Pipe Interface9 Crdit Configuration
+        OFFSET: 9
+        SFX: profile9
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 16
+        DESCRIPTION: NWQM Pipe Interface10 Crdit Configuration
+        OFFSET: 10
+        SFX: profile10
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 16
+        DESCRIPTION: NWQM Pipe Interface11 Crdit Configuration
+        OFFSET: 11
+        SFX: profile11
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 16
+        DESCRIPTION: NWQM Pipe Interface12 Crdit Configuration
+        OFFSET: 12
+        SFX: profile12
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 16
+        DESCRIPTION: NWQM Pipe Interface13 Crdit Configuration
+        OFFSET: 13
+        SFX: profile13
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 16
+        DESCRIPTION: NWQM Pipe Interface14 Crdit Configuration
+        OFFSET: 14
+        SFX: profile14
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 16
+        DESCRIPTION: NWQM Pipe Interface15 Crdit Configuration
+        OFFSET: 15
+        SFX: profile15
+        SWA: 2097152
+        TYPE: RE_CFG
+    ENTRIES: 16
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Enable/Disable Unsolicited Transmission
+        NAME: fld_unsol_en
+        WIDTH: 1
+      - DEFAULT: 128
+        DESCRIPTION: Maximum Request Size in Blocks
+        NAME: fld_max_req_blk_sz
+        WIDTH: 8
+      - DEFAULT: 4096
+        DESCRIPTION: Maximum Pending Request Window Size in Blocks
+        NAME: fld_max_pending_req_win_sz
+        WIDTH: 16
+      - DEFAULT: 128
+        DESCRIPTION: Maximum Packet Dequeue Size at a time
+        NAME: fld_max_deq_sz
+        WIDTH: 8
+      - DEFAULT: 128
+        DESCRIPTION: Maximum Unsolicited Dequeue Size at a time
+        NAME: fld_max_unsol_deq_sz
+        WIDTH: 8
+      - DEFAULT: 2
+        DESCRIPTION: Unsolicited Packet Transmit Window or Maximum number of Unsol Blocks over Fabric in terms of 256 Blocks
+        NAME: fld_max_unsol_win_sz
+        WIDTH: 7
+      - DEFAULT: 5120
+        DESCRIPTION: 'Maximum Out of Order Accepted Grant Window, Also GBN <= RBN'
+        NAME: fld_max_gnt_win_sz
+        WIDTH: 16
+    NAME: fcb_src_queue_cfg_tbl
+  - ATTR: 10
+    DESCRIPTION: FCB Enqueued FCP Blocks per QOS at the Source End Point
+    ENTRIES: 8
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: per QOS FCP Enqueued Blocks
+        NAME: fld_val
+        WIDTH: 32
+    NAME: fcb_src_fcp_qos_enq_blks_sta
+    TEST_ATTR: 2
+  - ATTR: 10
+    DESCRIPTION: FCB Requested FCP Blocks per QOS at the Source End Point
+    ENTRIES: 8
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: per QOS FCP Enqueued Blocks
+        NAME: fld_val
+        WIDTH: 32
+    NAME: fcb_src_fcp_qos_req_blks_sta
+    TEST_ATTR: 2
+  - ATTR: 10
+    DESCRIPTION: FCB Enqueued NonFCP Blocks per QOS at the Source End Point
+    ENTRIES: 8
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: per QOS FCP Enqueued Blocks
+        NAME: fld_val
+        WIDTH: 32
+    NAME: fcb_src_nfcp_qos_enq_blks_sta
+    TEST_ATTR: 2
+  - ATTR: 10
+    DESCRIPTION: FCB Enqueued NonFCP Blocks per Stream at the Source End Point
+    ENTRIES: 24
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: per QOS FCP Enqueued Blocks
+        NAME: fld_val
+        WIDTH: 32
+    NAME: fcb_src_nfcp_stream_enq_blks_sta
+    TEST_ATTR: 2
+  - ATTR: 6
+    DESCRIPTION: FCB NCV Threshold Table
+    ENTRIES: 16
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: FCP Scale Down Threshol Table color threshold Entry 0 in steps of 16 Blocks
+        NAME: fld_entry0
+        WIDTH: 20
+      - DEFAULT: 0
+        DESCRIPTION: FCP Scale Down Threshol Table color threshold Entry 1 in steps of 16 Blocks
+        NAME: fld_entry1
+        WIDTH: 20
+      - DEFAULT: 0
+        DESCRIPTION: FCP Scale Down Threshol Table color threshold Entry 2 in steps of 16 Blocks
+        NAME: fld_entry2
+        WIDTH: 20
+      - DEFAULT: 0
+        DESCRIPTION: FCP Scale Down Threshol Table color threshold Entry 3 in steps of 16 Blocks
+        NAME: fld_entry3
+        WIDTH: 20
+      - DEFAULT: 0
+        DESCRIPTION: FCP Scale Down Threshol Table color threshold Entry 4 in steps of 16 Blocks
+        NAME: fld_entry4
+        WIDTH: 20
+      - DEFAULT: 0
+        DESCRIPTION: FCP Scale Down Threshol Table color threshold Entry 5 in steps of 16 Blocks
+        NAME: fld_entry5
+        WIDTH: 20
+      - DEFAULT: 0
+        DESCRIPTION: FCP Scale Down Threshol Table color threshold Entry 6 in steps of 16 Blocks
+        NAME: fld_entry6
+        WIDTH: 20
+      - DEFAULT: 0
+        DESCRIPTION: FCP Scale Down Threshol Table color threshold Entry 7 in steps of 16 Blocks
+        NAME: fld_entry7
+        WIDTH: 20
+      - DEFAULT: 0
+        DESCRIPTION: FCP Scale Down Threshol Table color threshold Entry 8 in steps of 16 Blocks
+        NAME: fld_entry8
+        WIDTH: 20
+      - DEFAULT: 0
+        DESCRIPTION: FCP Scale Down Threshol Table color threshold Entry 9 in steps of 16 Blocks
+        NAME: fld_entry9
+        WIDTH: 20
+      - DEFAULT: 0
+        DESCRIPTION: FCP Scale Down Threshol Table color threshold Entry 10 in steps of 16 Blocks
+        NAME: fld_entry10
+        WIDTH: 20
+      - DEFAULT: 0
+        DESCRIPTION: FCP Scale Down Threshol Table color threshold Entry 11 in steps of 16 Blocks
+        NAME: fld_entry11
+        WIDTH: 20
+      - DEFAULT: 0
+        DESCRIPTION: FCP Scale Down Threshol Table color threshold Entry 12 in steps of 16 Blocks
+        NAME: fld_entry12
+        WIDTH: 20
+      - DEFAULT: 0
+        DESCRIPTION: FCP Scale Down Threshol Table color threshold Entry 13 in steps of 16 Blocks
+        NAME: fld_entry13
+        WIDTH: 20
+      - DEFAULT: 0
+        DESCRIPTION: FCP Scale Down Threshol Table color threshold Entry 14 in steps of 16 Blocks
+        NAME: fld_entry14
+        WIDTH: 20
+    NAME: fcb_ncv_thresh_tbl
+  - ATTR: 6
+    DESCRIPTION: 'FCB Scale Down Factor Lookup Table Programming '
+    ENTRIES: 32
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: FCP Request Flow Weight Table  Entry 0
+        NAME: fld_entry0
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: FCP Request Flow Weight Table  Entry 1
+        NAME: fld_entry1
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: FCP Request Flow Weight Table  Entry 2
+        NAME: fld_entry2
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: FCP Request Flow Weight Table  Entry 3
+        NAME: fld_entry3
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: FCP Request Flow Weight Table  Entry 4
+        NAME: fld_entry4
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: FCP Request Flow Weight Table  Entry 5
+        NAME: fld_entry5
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: FCP Request Flow Weight Table  Entry 6
+        NAME: fld_entry6
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: FCP Request Flow Weight Table  Entry 7
+        NAME: fld_entry7
+        WIDTH: 4
+    NAME: fcb_scale_dn_fact_lkup_tbl
+  - ATTR: 6
+    DESCRIPTION: Request Scheduler Queue to Group Global Map Configuration
+    ENTRIES: 8
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Queue 0 to Grpup Map Configuration
+        NAME: fld_qos0
+        WIDTH: 3
+      - DEFAULT: 1
+        DESCRIPTION: Queue 1 to Grpup Map Configuration
+        NAME: fld_qos1
+        WIDTH: 3
+      - DEFAULT: 2
+        DESCRIPTION: Queue 2 to Grpup Map Configuration
+        NAME: fld_qos2
+        WIDTH: 3
+      - DEFAULT: 3
+        DESCRIPTION: Queue 3 to Grpup Map Configuration
+        NAME: fld_qos3
+        WIDTH: 3
+      - DEFAULT: 4
+        DESCRIPTION: Queue 4 to Grpup Map Configuration
+        NAME: fld_qos4
+        WIDTH: 3
+      - DEFAULT: 5
+        DESCRIPTION: Queue 5 to Grpup Map Configuration
+        NAME: fld_qos5
+        WIDTH: 3
+      - DEFAULT: 6
+        DESCRIPTION: Queue 6 to Grpup Map Configuration
+        NAME: fld_qos6
+        WIDTH: 3
+      - DEFAULT: 7
+        DESCRIPTION: Queue 7 to Grpup Map Configuration
+        NAME: fld_qos7
+        WIDTH: 3
+    NAME: fcb_gnt_sch_qos2grp_map_cfg
+  - ATTR: 6
+    DESCRIPTION: Group to Strict Priority Global Map Configuration
+    ENTRIES: 8
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Request Scheduler Grpup to Strict Priority Map Configuration
+        NAME: fld_val
+        WIDTH: 8
+    NAME: fcb_gnt_sch_grp2str_pri_cfg
+  - ATTR: 6
+    DESCRIPTION: Access to Request Scheduler QOS Group DWRR Weights Table
+    ENTRIES: 8
+    FLDLST:
+      - DEFAULT: 1
+        DESCRIPTION: Request Scheduler Group0 DWRR Weight
+        NAME: fld_group0
+        WIDTH: 7
+      - DEFAULT: 1
+        DESCRIPTION: Request Scheduler Group1 DWRR Weight
+        NAME: fld_group1
+        WIDTH: 7
+      - DEFAULT: 1
+        DESCRIPTION: Request Scheduler Group2 DWRR Weight
+        NAME: fld_group2
+        WIDTH: 7
+      - DEFAULT: 1
+        DESCRIPTION: Request Scheduler Group3 DWRR Weight
+        NAME: fld_group3
+        WIDTH: 7
+      - DEFAULT: 1
+        DESCRIPTION: Request Scheduler Group4 DWRR Weight
+        NAME: fld_group4
+        WIDTH: 7
+      - DEFAULT: 1
+        DESCRIPTION: Request Scheduler Group5 DWRR Weight
+        NAME: fld_group5
+        WIDTH: 7
+      - DEFAULT: 1
+        DESCRIPTION: Request Scheduler Group6 DWRR Weight
+        NAME: fld_group6
+        WIDTH: 7
+      - DEFAULT: 1
+        DESCRIPTION: Request Scheduler Group7 DWRR Weight
+        NAME: fld_group7
+        WIDTH: 7
+    NAME: fcb_gnt_sch_qos_group_dwrr_wt_cfg
+  - ATTR: 6
+    DESCRIPTION: Access to Request Scheduler QOS/Priority DWRR Weights Table
+    ENTRIES: 8
+    FLDLST:
+      - DEFAULT: 1
+        DESCRIPTION: Request Scheduler Queue0 DWRR Weight
+        NAME: fld_qos0
+        WIDTH: 7
+      - DEFAULT: 1
+        DESCRIPTION: Request Scheduler Queue1 DWRR Weight
+        NAME: fld_qos1
+        WIDTH: 7
+      - DEFAULT: 1
+        DESCRIPTION: Request Scheduler Queue2 DWRR Weight
+        NAME: fld_qos2
+        WIDTH: 7
+      - DEFAULT: 1
+        DESCRIPTION: Request Scheduler Queue3 DWRR Weight
+        NAME: fld_qos3
+        WIDTH: 7
+      - DEFAULT: 1
+        DESCRIPTION: Request Scheduler Queue4 DWRR Weight
+        NAME: fld_qos4
+        WIDTH: 7
+      - DEFAULT: 1
+        DESCRIPTION: Request Scheduler Queue5 DWRR Weight
+        NAME: fld_qos5
+        WIDTH: 7
+      - DEFAULT: 1
+        DESCRIPTION: Request Scheduler Queue6 DWRR Weight
+        NAME: fld_qos6
+        WIDTH: 7
+      - DEFAULT: 1
+        DESCRIPTION: Request Scheduler Queue7 DWRR Weight
+        NAME: fld_qos7
+        WIDTH: 7
+    NAME: fcb_gnt_sch_qos_dwrr_wt_cfg
+  - ATTR: 6
+    DESCRIPTION: FCB Source Queue Configration Programming Table
+    ENTATTR:
+      - DEFAULT: 16
+        DESCRIPTION: NWQM Pipe Interface0 Crdit Configuration
+        OFFSET: 0
+        SFX: profile0
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 16
+        DESCRIPTION: NWQM Pipe Interface1 Crdit Configuration
+        OFFSET: 1
+        SFX: profile1
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 16
+        DESCRIPTION: NWQM Pipe Interface2 Crdit Configuration
+        OFFSET: 2
+        SFX: profile2
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 16
+        DESCRIPTION: NWQM Pipe Interface3 Crdit Configuration
+        OFFSET: 3
+        SFX: profile3
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 16
+        DESCRIPTION: NWQM Pipe Interface4 Crdit Configuration
+        OFFSET: 4
+        SFX: profile4
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 16
+        DESCRIPTION: NWQM Pipe Interface5 Crdit Configuration
+        OFFSET: 5
+        SFX: profile5
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 16
+        DESCRIPTION: NWQM Pipe Interface6 Crdit Configuration
+        OFFSET: 6
+        SFX: profile6
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 16
+        DESCRIPTION: NWQM Pipe Interface7 Crdit Configuration
+        OFFSET: 7
+        SFX: profile7
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 16
+        DESCRIPTION: NWQM Pipe Interface8 Crdit Configuration
+        OFFSET: 8
+        SFX: profile8
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 16
+        DESCRIPTION: NWQM Pipe Interface9 Crdit Configuration
+        OFFSET: 9
+        SFX: profile9
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 16
+        DESCRIPTION: NWQM Pipe Interface10 Crdit Configuration
+        OFFSET: 10
+        SFX: profile10
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 16
+        DESCRIPTION: NWQM Pipe Interface11 Crdit Configuration
+        OFFSET: 11
+        SFX: profile11
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 16
+        DESCRIPTION: NWQM Pipe Interface12 Crdit Configuration
+        OFFSET: 12
+        SFX: profile12
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 16
+        DESCRIPTION: NWQM Pipe Interface13 Crdit Configuration
+        OFFSET: 13
+        SFX: profile13
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 16
+        DESCRIPTION: NWQM Pipe Interface14 Crdit Configuration
+        OFFSET: 14
+        SFX: profile14
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 16
+        DESCRIPTION: NWQM Pipe Interface15 Crdit Configuration
+        OFFSET: 15
+        SFX: profile15
+        SWA: 2097152
+        TYPE: RE_CFG
+    ENTRIES: 16
+    FLDLST:
+      - DEFAULT: 128
+        DESCRIPTION: Maximum Grant Size in Blocks
+        NAME: fld_max_gnt_blk_sz
+        WIDTH: 8
+      - DEFAULT: 4096
+        DESCRIPTION: Maximum Pending Grant Window Size in Blocks
+        NAME: fld_max_pending_gnt_win_sz
+        WIDTH: 16
+      - DEFAULT: 5120
+        DESCRIPTION: Maximum Acceptable Request Window
+        NAME: fld_max_req_win_sz
+        WIDTH: 16
+    NAME: fcb_dst_queue_cfg_tbl
+  - ATTR: 10
+    DESCRIPTION: FCB Pending Requests per QOS at the Destination End Point
+    ENTRIES: 8
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: QOS Request Blocks
+        NAME: fld_val
+        WIDTH: 32
+    NAME: fcb_dst_qos_req_blks_sta
+    TEST_ATTR: 2
+  - ATTR: 10
+    DESCRIPTION: FCB Pending Requests per Host interface at the Destination End Point
+    ENTRIES: 8
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Host Interface Request Blocks
+        NAME: fld_val
+        WIDTH: 32
+    NAME: fcb_dst_host_intf_req_blks_sta
+    TEST_ATTR: 2
+  - ATTR: 6
+    DESCRIPTION: Access to FCB SRC Pipe Scheduler Debug Probe  Counters
+    ENTATTR:
+      - DEFAULT: 0
+        DESCRIPTION: SRC Pipe SCH Debug Probe Status
+        OFFSET: 7
+        SFX: ev_status
+        SWA: 1048576
+        TYPE: RE_STA
+      - DEFAULT: 0
+        DESCRIPTION: SRC Pipe SCH Debug Probe Max Usage Value
+        OFFSET: 6
+        SFX: ev_max_usage
+        SWA: 1048576
+        TYPE: RE_STA
+      - DEFAULT: 0
+        DESCRIPTION: SRC Pipe SCH Debug Probe Usage Count
+        OFFSET: 5
+        SFX: ev_usage_count
+        SWA: 1048576
+        TYPE: RE_STA
+      - DEFAULT: 0
+        DESCRIPTION: SRC Pipe SCH Debug Probe Event Count
+        OFFSET: 4
+        SFX: ev_count
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: SRC Pipe SCH Debug Probe EV Match Value
+        OFFSET: 3
+        SFX: ev_match_val
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 0
+        DESCRIPTION: SRC Pipe SCH Debug Probe EV Mask Value
+        OFFSET: 2
+        SFX: ev_mask_val
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 0
+        DESCRIPTION: SRC Pipe SCH Debug Probe Clear state
+        OFFSET: 1
+        SFX: ev_clear
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 0
+        DESCRIPTION: SRC Pipe SCH Debug Probe Enable/ARB
+        OFFSET: 0
+        SFX: ev_enable
+        SWA: 2097152
+        TYPE: RE_CFG
+    ENTRIES: 8
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: FCB Debug/Probe Statistics Counters
+        NAME: fld_count
+        WIDTH: 64
+    NAME: fcb_src_pipe_sch_dbg_probe_dhs
+    TEST_ATTR: 0
+  - ATTR: 6
+    DESCRIPTION: Access to FCB SRC Processing Pipe Debug Probe  Counters
+    ENTATTR:
+      - DEFAULT: 0
+        DESCRIPTION: SRC Pipe Proc Debug Probe Status
+        OFFSET: 7
+        SFX: ev_status
+        SWA: 1048576
+        TYPE: RE_STA
+      - DEFAULT: 0
+        DESCRIPTION: SRC Pipe Proc Debug Probe Max Usage Value
+        OFFSET: 6
+        SFX: ev_max_usage
+        SWA: 1048576
+        TYPE: RE_STA
+      - DEFAULT: 0
+        DESCRIPTION: SRC Pipe Proc Debug Probe Usage Count
+        OFFSET: 5
+        SFX: ev_usage_count
+        SWA: 1048576
+        TYPE: RE_STA
+      - DEFAULT: 0
+        DESCRIPTION: SRC Pipe Proc Debug Probe Event Count
+        OFFSET: 4
+        SFX: ev_count
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: SRC Pipe Proc Debug Probe EV Match Value
+        OFFSET: 3
+        SFX: ev_match_val
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 0
+        DESCRIPTION: SRC Pipe Proc Debug Probe EV Mask Value
+        OFFSET: 2
+        SFX: ev_mask_val
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 0
+        DESCRIPTION: SRC Pipe Proc Debug Probe Clear state
+        OFFSET: 1
+        SFX: ev_clear
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 0
+        DESCRIPTION: SRC Pipe Proc Debug Probe Enable/ARB
+        OFFSET: 0
+        SFX: ev_enable
+        SWA: 2097152
+        TYPE: RE_CFG
+    ENTRIES: 8
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: FCB Debug/Probe Statistics Counters
+        NAME: fld_count
+        WIDTH: 64
+    NAME: fcb_src_proc_pipe_dbg_probe_dhs
+    TEST_ATTR: 0
+  - ATTR: 38
+    DESCRIPTION: Access to FCB Source Pipeline  Stats Counters
+    ENTATTR:
+      - DEFAULT: 0
+        DESCRIPTION: Number of Grant Received
+        OFFSET: 22
+        SFX: gnt_msg_rcvd
+        SWA: 8388608
+        TYPE: 8192
+      - DEFAULT: 0
+        DESCRIPTION: Number of Grant With GPH Received
+        OFFSET: 21
+        SFX: gnt_msg_w_gph_rcvd
+        SWA: 8388608
+        TYPE: 8192
+      - DEFAULT: 0
+        DESCRIPTION: Number of Out of Order Grant Received
+        OFFSET: 20
+        SFX: oo_gnt_msg_rcvd
+        SWA: 8388608
+        TYPE: 8192
+      - DEFAULT: 0
+        DESCRIPTION: Number of Duplicate Grant Received
+        OFFSET: 19
+        SFX: dup_gnt_msg_rcvd
+        SWA: 8388608
+        TYPE: 8192
+      - DEFAULT: 0
+        DESCRIPTION: Number of Out of Range Grant Received
+        OFFSET: 18
+        SFX: oo_range_gnt_rcvd
+        SWA: 8388608
+        TYPE: 8192
+      - DEFAULT: 0
+        DESCRIPTION: Number of FCP Block WU/Packet Transmitted
+        OFFSET: 17
+        SFX: fcp_pkt_xmtd
+        SWA: 8388608
+        TYPE: 8192
+      - DEFAULT: 0
+        DESCRIPTION: Number of NFCP Block WU/Packet Transmitted
+        OFFSET: 16
+        SFX: nfcp_pkt_xmtd
+        SWA: 8388608
+        TYPE: 8192
+      - DEFAULT: 0
+        DESCRIPTION: Number of Dummy Packet Transmitted
+        OFFSET: 15
+        SFX: dummy_pkt_xmtd
+        SWA: 8388608
+        TYPE: 8192
+      - DEFAULT: 0
+        DESCRIPTION: Number of Control Packet Transmitted
+        OFFSET: 14
+        SFX: ctrl_pkt_xmtd
+        SWA: 8388608
+        TYPE: 8192
+      - DEFAULT: 0
+        DESCRIPTION: Number of Unsolicited Block WU/Packet Transmitted
+        OFFSET: 13
+        SFX: unsol_pkt_xmtd
+        SWA: 8388608
+        TYPE: 8192
+      - DEFAULT: 0
+        DESCRIPTION: Number of Request Transmitted
+        OFFSET: 12
+        SFX: req_msg_xmtd
+        SWA: 8388608
+        TYPE: 8192
+      - DEFAULT: 0
+        DESCRIPTION: Number of Request Timeout Transmitted
+        OFFSET: 11
+        SFX: req_to_msg_xmtd
+        SWA: 8388608
+        TYPE: 8192
+      - DEFAULT: 0
+        DESCRIPTION: Number of Packet Transmitted with Overshoot
+        OFFSET: 10
+        SFX: pkt_xmtd_w_overshoot
+        SWA: 8388608
+        TYPE: 8192
+      - DEFAULT: 0
+        DESCRIPTION: Number of Packet Transmitted with GPH
+        OFFSET: 9
+        SFX: pkt_xmtd_w_gph
+        SWA: 8388608
+        TYPE: 8192
+      - DEFAULT: 0
+        DESCRIPTION: Number of Max Request Window Reached
+        OFFSET: 8
+        SFX: max_req_win_rchd
+        SWA: 8388608
+        TYPE: 8192
+      - DEFAULT: 0
+        DESCRIPTION: Number of NFCP WU Enqueue Received from NWQM
+        OFFSET: 7
+        SFX: nfcp_wu_enq_rcvd
+        SWA: 8388608
+        TYPE: 8192
+      - DEFAULT: 0
+        DESCRIPTION: Number of FCP WU Enqueue Received from NWQM
+        OFFSET: 6
+        SFX: fcp_wu_enq_rcvd
+        SWA: 8388608
+        TYPE: 8192
+      - DEFAULT: 0
+        DESCRIPTION: Number of FCP WU/Packets Flushed/Dropped
+        OFFSET: 5
+        SFX: fcp_pkt_flshd
+        SWA: 8388608
+        TYPE: 8192
+      - DEFAULT: 0
+        DESCRIPTION: Number of NFCP WU/Packets Flushed/Dropped
+        OFFSET: 4
+        SFX: nfcp_pkt_flshd
+        SWA: 8388608
+        TYPE: 8192
+      - DEFAULT: 0
+        DESCRIPTION: Number of Request Scheduler Req Detected on Inactive Queue
+        OFFSET: 3
+        SFX: inact_que_req_detd
+        SWA: 8388608
+        TYPE: 8192
+      - DEFAULT: 0
+        DESCRIPTION: Number of Grant Received on Inactive Queue
+        OFFSET: 2
+        SFX: inact_que_gnt_rcvd
+        SWA: 8388608
+        TYPE: 8192
+      - DEFAULT: 0
+        DESCRIPTION: Number of NFCP WU Enqueue Received from NWQM on Inactive Queue
+        OFFSET: 1
+        SFX: nfcp_inact_wu_enq_rcvd
+        SWA: 8388608
+        TYPE: 8192
+      - DEFAULT: 0
+        DESCRIPTION: Number of FCP WU Enqueue Received from NWQM on Inactive Queue
+        OFFSET: 0
+        SFX: fcp_inact_wu_enq_rcvd
+        SWA: 8388608
+        TYPE: 8192
+    ENTRIES: 23
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: FCB Debug Statistics Counters
+        NAME: fld_count
+        WIDTH: 48
+    NAME: fcb_src_proc_pipe_stats_cntr
+    TEST_ATTR: 2
+  - ATTR: 6
+    DESCRIPTION: Access to FCB DST Pipe Scheduler Debug Probe  Counters
+    ENTATTR:
+      - DEFAULT: 0
+        DESCRIPTION: Dst Pipe SCH Debug Probe Status
+        OFFSET: 7
+        SFX: ev_status
+        SWA: 1048576
+        TYPE: RE_STA
+      - DEFAULT: 0
+        DESCRIPTION: Dst Pipe SCH Debug Probe Max Usage Value
+        OFFSET: 6
+        SFX: ev_max_usage
+        SWA: 1048576
+        TYPE: RE_STA
+      - DEFAULT: 0
+        DESCRIPTION: Dst Pipe SCH Debug Probe Usage Count
+        OFFSET: 5
+        SFX: ev_usage_count
+        SWA: 1048576
+        TYPE: RE_STA
+      - DEFAULT: 0
+        DESCRIPTION: Dst Pipe SCH Debug Probe Event Count
+        OFFSET: 4
+        SFX: ev_count
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Dst Pipe SCH Debug Probe EV Match Value
+        OFFSET: 3
+        SFX: ev_match_val
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 0
+        DESCRIPTION: Dst Pipe SCH Debug Probe EV Mask Value
+        OFFSET: 2
+        SFX: ev_mask_val
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 0
+        DESCRIPTION: Dst Pipe SCH Debug Probe Clear state
+        OFFSET: 1
+        SFX: ev_clear
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 0
+        DESCRIPTION: Dst Pipe SCH Debug Probe Enable/ARB
+        OFFSET: 0
+        SFX: ev_enable
+        SWA: 2097152
+        TYPE: RE_CFG
+    ENTRIES: 8
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: FCB Debug/Probe Statistics Counters
+        NAME: fld_count
+        WIDTH: 64
+    NAME: fcb_dst_pipe_sch_dbg_probe_dhs
+    TEST_ATTR: 0
+  - ATTR: 6
+    DESCRIPTION: Access to FCB DST Processing Pipe Debug Probe  Counters
+    ENTATTR:
+      - DEFAULT: 0
+        DESCRIPTION: Dst Pipe Proc Debug Probe Status
+        OFFSET: 7
+        SFX: ev_status
+        SWA: 1048576
+        TYPE: RE_STA
+      - DEFAULT: 0
+        DESCRIPTION: Dst Pipe Proc Debug Probe Max Usage Value
+        OFFSET: 6
+        SFX: ev_max_usage
+        SWA: 1048576
+        TYPE: RE_STA
+      - DEFAULT: 0
+        DESCRIPTION: Dst Pipe Proc Debug Probe Usage Count
+        OFFSET: 5
+        SFX: ev_usage_count
+        SWA: 1048576
+        TYPE: RE_STA
+      - DEFAULT: 0
+        DESCRIPTION: Dst Pipe Proc Debug Probe Event Count
+        OFFSET: 4
+        SFX: ev_count
+        SWA: 8388608
+        TYPE: 4096
+      - DEFAULT: 0
+        DESCRIPTION: Dst Pipe Proc Debug Probe EV Match Value
+        OFFSET: 3
+        SFX: ev_match_val
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 0
+        DESCRIPTION: Dst Pipe Proc Debug Probe EV Mask Value
+        OFFSET: 2
+        SFX: ev_mask_val
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 0
+        DESCRIPTION: Dst Pipe Proc Debug Probe Clear state
+        OFFSET: 1
+        SFX: ev_clear
+        SWA: 2097152
+        TYPE: RE_CFG
+      - DEFAULT: 0
+        DESCRIPTION: Dst Pipe Proc Debug Probe Enable/ARB
+        OFFSET: 0
+        SFX: ev_enable
+        SWA: 2097152
+        TYPE: RE_CFG
+    ENTRIES: 8
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: FCB Debug/Probe Statistics Counters
+        NAME: fld_count
+        WIDTH: 64
+    NAME: fcb_dst_proc_pipe_dbg_probe_dhs
+    TEST_ATTR: 0
+  - ATTR: 38
+    DESCRIPTION: Access to FCB Source Pipeline  Stats Counters
+    ENTATTR:
+      - DEFAULT: 0
+        DESCRIPTION: Number of Request Received
+        OFFSET: 15
+        SFX: req_msg_rcvd
+        SWA: 8388608
+        TYPE: 8192
+      - DEFAULT: 0
+        DESCRIPTION: Number of Out of Order Request Received
+        OFFSET: 14
+        SFX: oo_req_msg_rcvd
+        SWA: 8388608
+        TYPE: 8192
+      - DEFAULT: 0
+        DESCRIPTION: Number of Duplicate Request Received
+        OFFSET: 13
+        SFX: dup_req_msg_rcvd
+        SWA: 8388608
+        TYPE: 8192
+      - DEFAULT: 0
+        DESCRIPTION: Number of Out of Range Request Received
+        OFFSET: 12
+        SFX: oo_range_req_rcvd
+        SWA: 8388608
+        TYPE: 8192
+      - DEFAULT: 0
+        DESCRIPTION: Number of FCP WU/Packet Received
+        OFFSET: 11
+        SFX: fcp_pkt_rcvd
+        SWA: 8388608
+        TYPE: 8192
+      - DEFAULT: 0
+        DESCRIPTION: Number of Out of Order Packet Received
+        OFFSET: 10
+        SFX: oo_fcp_pkt_rcvd
+        SWA: 8388608
+        TYPE: 8192
+      - DEFAULT: 0
+        DESCRIPTION: Number of Packet Received with Overshoot
+        OFFSET: 9
+        SFX: pkt_rcvd_w_overshoot
+        SWA: 8388608
+        TYPE: 8192
+      - DEFAULT: 0
+        DESCRIPTION: Number of Grant Transmitted
+        OFFSET: 8
+        SFX: gnt_msg_xmtd
+        SWA: 8388608
+        TYPE: 8192
+      - DEFAULT: 0
+        DESCRIPTION: Number of Control Packet Transmitted
+        OFFSET: 7
+        SFX: ctrl_pkt_xmtd
+        SWA: 8388608
+        TYPE: 8192
+      - DEFAULT: 0
+        DESCRIPTION: Number of Grant Retry in response to Request Timeout Transmitted
+        OFFSET: 6
+        SFX: gnt_rtry_msg_xmtd
+        SWA: 8388608
+        TYPE: 8192
+      - DEFAULT: 0
+        DESCRIPTION: Number of Grant Timeout Transmitted
+        OFFSET: 5
+        SFX: gnt_to_msg_xmtd
+        SWA: 8388608
+        TYPE: 8192
+      - DEFAULT: 0
+        DESCRIPTION: Number of Grant With GPH Transmitted
+        OFFSET: 4
+        SFX: gnt_msg_w_gph_xmtd
+        SWA: 8388608
+        TYPE: 8192
+      - DEFAULT: 0
+        DESCRIPTION: Number of Max Grant Window Reached
+        OFFSET: 3
+        SFX: max_gnt_win_rchd
+        SWA: 8388608
+        TYPE: 8192
+      - DEFAULT: 0
+        DESCRIPTION: Number of Grant Scheduler Gnt Detected on Inactive Queue
+        OFFSET: 2
+        SFX: inact_que_gnt_detd
+        SWA: 8388608
+        TYPE: 8192
+      - DEFAULT: 0
+        DESCRIPTION: Number of Request Received on Inactive Queue
+        OFFSET: 1
+        SFX: inact_que_req_rcvd
+        SWA: 8388608
+        TYPE: 8192
+      - DEFAULT: 0
+        DESCRIPTION: Number of Packet Received on Inactive Queue
+        OFFSET: 0
+        SFX: inact_que_pkt_rcvd
+        SWA: 8388608
+        TYPE: 8192
+    ENTRIES: 16
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: FCB Debug Statistics Counters
+        NAME: fld_count
+        WIDTH: 48
+    NAME: fcb_dst_proc_pipe_stats_cntr
+    TEST_ATTR: 2
+  - ATTR: 10
+    DESCRIPTION: Access to GPH Cache Information Status
+    ENTRIES: 128
+    FLDLST:
+      - DEFAULT: 1
+        DESCRIPTION: Key Valid
+        NAME: fld_vld
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Lock Status
+        NAME: fld_lock
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Tunnel ID
+        NAME: fld_tunnel_id
+        WIDTH: 14
+      - DEFAULT: 0
+        DESCRIPTION: QOS Active Vector
+        NAME: fld_qos_vec
+        WIDTH: 8
+      - DEFAULT: 0
+        DESCRIPTION: Data Block Sequence Number
+        NAME: fld_gph_vec
+        WIDTH: 128
+    NAME: fcb_gph_cache_info_sta
+    TEST_ATTR: 2
+  - ATTR: 6
+    DESCRIPTION: Access to Source FCP Queue Configuration Role Memory
+    ENTRIES: 2048
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'Spray Configuration 00: Pipe0, 01: Pipe1, 10: Pipe2 : 11: Dynamic'
+        NAME: fld_entry0_spray_config
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: FCB Configuration Role
+        NAME: fld_entry0_role
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: FCB Host Interface Group
+        NAME: fld_entry0_host_intf
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: 'Spray Configuration 00: Pipe0, 01: Pipe1, 10: Pipe2 : 11: Dynamic'
+        NAME: fld_entry1_spray_config
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: FCB Configuration Role
+        NAME: fld_entry1_role
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: FCB Host Interface Group
+        NAME: fld_entry1_host_intf
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: 'Spray Configuration 00: Pipe0, 01: Pipe1, 10: Pipe2 : 11: Dynamic'
+        NAME: fld_entry2_spray_config
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: FCB Configuration Role
+        NAME: fld_entry2_role
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: FCB Host Interface Group
+        NAME: fld_entry2_host_intf
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: 'Spray Configuration 00: Pipe0, 01: Pipe1, 10: Pipe2 : 11: Dynamic'
+        NAME: fld_entry3_spray_config
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: FCB Configuration Role
+        NAME: fld_entry3_role
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: FCB Host Interface Group
+        NAME: fld_entry3_host_intf
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: 'Spray Configuration 00: Pipe0, 01: Pipe1, 10: Pipe2 : 11: Dynamic'
+        NAME: fld_entry4_spray_config
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: FCB Configuration Role
+        NAME: fld_entry4_role
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: FCB Host Interface Group
+        NAME: fld_entry4_host_intf
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: 'Spray Configuration 00: Pipe0, 01: Pipe1, 10: Pipe2 : 11: Dynamic'
+        NAME: fld_entry5_spray_config
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: FCB Configuration Role
+        NAME: fld_entry5_role
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: FCB Host Interface Group
+        NAME: fld_entry5_host_intf
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: 'Spray Configuration 00: Pipe0, 01: Pipe1, 10: Pipe2 : 11: Dynamic'
+        NAME: fld_entry6_spray_config
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: FCB Configuration Role
+        NAME: fld_entry6_role
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: FCB Host Interface Group
+        NAME: fld_entry6_host_intf
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: 'Spray Configuration 00: Pipe0, 01: Pipe1, 10: Pipe2 : 11: Dynamic'
+        NAME: fld_entry7_spray_config
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: FCB Configuration Role
+        NAME: fld_entry7_role
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: FCB Host Interface Group
+        NAME: fld_entry7_host_intf
+        WIDTH: 3
+    NAME: fcb_src_cfg_role_tbl_mem_dhs
+  - ATTR: 6
+    DESCRIPTION: Access to Source FCP Queue Context Memory
+    ENTRIES: 16384
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Max Request Window Reached
+        NAME: fld_max_win
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Max Request Window Reached
+        NAME: fld_unsol
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Request has been sent to Request Scheduler
+        NAME: fld_req_schd
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Packet has been sent to Packet Schedule
+        NAME: fld_pkt_schd
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Indicates that a Scale Down value below the congested threshold was received
+        NAME: fld_congested
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'ENUM FCB_QUEUE_STATE_T : 0-Inactive, 1 Active'
+        NAME: fld_state
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Internal Queue Block Sequence Number Or WU Count in case of Non-FCP Queues
+        NAME: fld_qbn
+        WIDTH: 24
+      - DEFAULT: 0
+        DESCRIPTION: Internal Request Block Sequence Number
+        NAME: fld_rbn
+        WIDTH: 24
+      - DEFAULT: 0
+        DESCRIPTION: Grant Block Sequence Number
+        NAME: fld_gbn
+        WIDTH: 16
+      - DEFAULT: 0
+        DESCRIPTION: Internal Data Block Sequence Number
+        NAME: fld_dbn
+        WIDTH: 24
+      - DEFAULT: 0
+        DESCRIPTION: Maintain DBN/GBN Overshoot Blocks for DWRR COmpensation
+        NAME: fld_ovf_blks
+        WIDTH: 9
+    NAME: fcb_src_queue_ctx_mem_dhs
+  - ATTR: 6
+    DESCRIPTION: Access to FCB Source Flow Weight Memory
+    ENTRIES: 16384
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: FCP Request Weight Mantissa Value
+        NAME: fld_mantissa
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: FCP Request Weight Exponent Value
+        NAME: fld_exponent
+        WIDTH: 4
+    NAME: fcb_src_flow_wt_tbl_mem_dhs
+  - ATTR: 6
+    DESCRIPTION: Access to FCB Source Scale Down Factor Table Memory
+    ENTRIES: 2048
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: FCP Request Flow Weight Table  Entry 0
+        NAME: entry0
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: FCP Request Flow Weight Table  Entry 1
+        NAME: entry1
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: FCP Request Flow Weight Table  Entry 2
+        NAME: entry2
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: FCP Request Flow Weight Table  Entry 3
+        NAME: entry3
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: FCP Request Flow Weight Table  Entry 4
+        NAME: entry4
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: FCP Request Flow Weight Table  Entry 5
+        NAME: entry5
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: FCP Request Flow Weight Table  Entry 6
+        NAME: entry6
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: FCP Request Flow Weight Table  Entry 7
+        NAME: entry7
+        WIDTH: 4
+    NAME: fcb_scale_dn_fact_tbl_mem_dhs
+  - ATTR: 6
+    DESCRIPTION: Access to FCB Source Timer Memory
+    ENTRIES: 2048
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'FCP Timer Stats: Indicates the type of Timer- Inactive, Request/Grant Retry, Aging'
+        NAME: fld_entry0_state
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Time Stamp associated with the timer
+        NAME: fld_entry0_tstmp
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Timeout Retry Count
+        NAME: fld_entry0_rtry_cnt
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: 'FCP Timer Stats: Indicates the type of Timer- Inactive, Request/Grant Retry, Aging'
+        NAME: fld_entry1_state
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Time Stamp associated with the timer
+        NAME: fld_entry1_tstmp
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Timeout Retry Count
+        NAME: fld_entry1_rtry_cnt
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: 'FCP Timer Stats: Indicates the type of Timer- Inactive, Request/Grant Retry, Aging'
+        NAME: fld_entry2_state
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Time Stamp associated with the timer
+        NAME: fld_entry2_tstmp
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Timeout Retry Count
+        NAME: fld_entry2_rtry_cnt
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: 'FCP Timer Stats: Indicates the type of Timer- Inactive, Request/Grant Retry, Aging'
+        NAME: fld_entry3_state
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Time Stamp associated with the timer
+        NAME: fld_entry3_tstmp
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Timeout Retry Count
+        NAME: fld_entry3_rtry_cnt
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: 'FCP Timer Stats: Indicates the type of Timer- Inactive, Request/Grant Retry, Aging'
+        NAME: fld_entry4_state
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Time Stamp associated with the timer
+        NAME: fld_entry4_tstmp
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Timeout Retry Count
+        NAME: fld_entry4_rtry_cnt
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: 'FCP Timer Stats: Indicates the type of Timer- Inactive, Request/Grant Retry, Aging'
+        NAME: fld_entry5_state
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Time Stamp associated with the timer
+        NAME: fld_entry5_tstmp
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Timeout Retry Count
+        NAME: fld_entry5_rtry_cnt
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: 'FCP Timer Stats: Indicates the type of Timer- Inactive, Request/Grant Retry, Aging'
+        NAME: fld_entry6_state
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Time Stamp associated with the timer
+        NAME: fld_entry6_tstmp
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Timeout Retry Count
+        NAME: fld_entry6_rtry_cnt
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: 'FCP Timer Stats: Indicates the type of Timer- Inactive, Request/Grant Retry, Aging'
+        NAME: fld_entry7_state
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Time Stamp associated with the timer
+        NAME: fld_entry7_tstmp
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Timeout Retry Count
+        NAME: fld_entry7_rtry_cnt
+        WIDTH: 4
+    NAME: fcb_src_timer_mem_dhs
+  - ATTR: 6
+    DESCRIPTION: Access to FCB Source Impairment Table Memory
+    ENTRIES: 2048
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: FCP Source Tunnel Impairment Table  0
+        NAME: fld_entry0
+        WIDTH: 8
+      - DEFAULT: 0
+        DESCRIPTION: FCP Source Tunnel Impairment Table  1
+        NAME: fld_entry1
+        WIDTH: 8
+      - DEFAULT: 0
+        DESCRIPTION: FCP Source Tunnel Impairment Table  2
+        NAME: fld_entry2
+        WIDTH: 8
+      - DEFAULT: 0
+        DESCRIPTION: FCP Source Tunnel Impairment Table  3
+        NAME: fld_entry3
+        WIDTH: 8
+      - DEFAULT: 0
+        DESCRIPTION: FCP Source Tunnel Impairment Table  4
+        NAME: fld_entry4
+        WIDTH: 8
+      - DEFAULT: 0
+        DESCRIPTION: FCP Source Tunnel Impairment Table  5
+        NAME: fld_entry5
+        WIDTH: 8
+      - DEFAULT: 0
+        DESCRIPTION: FCP Source Tunnel Impairment Table  6
+        NAME: fld_entry6
+        WIDTH: 8
+      - DEFAULT: 0
+        DESCRIPTION: FCP Source Tunnel Impairment Table  7
+        NAME: fld_entry7
+        WIDTH: 8
+    NAME: fcb_src_impairment_tbl_mem_dhs
+  - ATTR: 6
+    DESCRIPTION: Access to FCB Source Request Scheduler Linked List Memory
+    ENTRIES: 16384
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Linked List Next Pointer
+        NAME: fld_llptr
+        WIDTH: 14
+    NAME: fcb_req_sch_llist_mem_dhs
+  - ATTR: 6
+    DESCRIPTION: Access to FCB Destination Flow Aware Grant Scheduler Linked List Memory
+    ENTRIES: 16384
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Linked List Next Pointer
+        NAME: fld_llptr
+        WIDTH: 14
+    NAME: fcb_pkt_sch_llist_mem_dhs
+  - ATTR: 6
+    DESCRIPTION: Access to FCB NCV Update RR Enginer Sequnce Memory
+    ENTRIES: 128
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Memory Data Structure
+        NAME: fld_data
+        WIDTH: 128
+    NAME: fcb_ncv_seqncer_mem_dhs
+  - ATTR: 6
+    DESCRIPTION: Access to FCB NCV Update RR Enginer Sequnce Memory
+    ENTRIES: 2048
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: FCP Scale Down Threshol Table color threshold Entry 0
+        NAME: fld_entry0
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: FCP Scale Down Threshol Table color threshold Entry 1
+        NAME: fld_entry1
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: FCP Scale Down Threshol Table color threshold Entry 2
+        NAME: fld_entry2
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: FCP Scale Down Threshol Table color threshold Entry 3
+        NAME: fld_entry3
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: FCP Scale Down Threshol Table color threshold Entry 4
+        NAME: fld_entry4
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: FCP Scale Down Threshol Table color threshold Entry 5
+        NAME: fld_entry5
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: FCP Scale Down Threshol Table color threshold Entry 6
+        NAME: fld_entry6
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: FCP Scale Down Threshol Table color threshold Entry 7
+        NAME: fld_entry7
+        WIDTH: 4
+    NAME: fcb_ncv_status_tbl_mem_dhs
+  - ATTR: 6
+    DESCRIPTION: Access to Destination FCP Queue Configuration Role Memory
+    ENTRIES: 2048
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Enable Traffic
+        NAME: fld_entry0_enable
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: FCB Configuration Role
+        NAME: fld_entry0_role
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: FCB Host Interface Group
+        NAME: fld_entry0_host_intf
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Enable Traffic
+        NAME: fld_entry1_enable
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: FCB Configuration Role
+        NAME: fld_entry1_role
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: FCB Host Interface Group
+        NAME: fld_entry1_host_intf
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Enable Traffic
+        NAME: fld_entry2_enable
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: FCB Configuration Role
+        NAME: fld_entry2_role
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: FCB Host Interface Group
+        NAME: fld_entry2_host_intf
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Enable Traffic
+        NAME: fld_entry3_enable
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: FCB Configuration Role
+        NAME: fld_entry3_role
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: FCB Host Interface Group
+        NAME: fld_entry3_host_intf
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Enable Traffic
+        NAME: fld_entry4_enable
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: FCB Configuration Role
+        NAME: fld_entry4_role
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: FCB Host Interface Group
+        NAME: fld_entry4_host_intf
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Enable Traffic
+        NAME: fld_entry5_enable
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: FCB Configuration Role
+        NAME: fld_entry5_role
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: FCB Host Interface Group
+        NAME: fld_entry5_host_intf
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Enable Traffic
+        NAME: fld_entry6_enable
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: FCB Configuration Role
+        NAME: fld_entry6_role
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: FCB Host Interface Group
+        NAME: fld_entry6_host_intf
+        WIDTH: 3
+      - DEFAULT: 0
+        DESCRIPTION: Enable Traffic
+        NAME: fld_entry7_enable
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: FCB Configuration Role
+        NAME: fld_entry7_role
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: FCB Host Interface Group
+        NAME: fld_entry7_host_intf
+        WIDTH: 3
+    NAME: fcb_dst_cfg_role_tbl_mem_dhs
+  - ATTR: 6
+    DESCRIPTION: Access to FCB Destination Timer Memory
+    ENTRIES: 2048
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'FCP Timer Stats: Indicates the type of Timer- Inactive, Request/Grant Retry, Aging'
+        NAME: fld_entry0_state
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Time Stamp associated with the timer
+        NAME: fld_entry0_tstmp
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Timeout Retry Count
+        NAME: fld_entry0_rtry_cnt
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: 'FCP Timer Stats: Indicates the type of Timer- Inactive, Request/Grant Retry, Aging'
+        NAME: fld_entry1_state
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Time Stamp associated with the timer
+        NAME: fld_entry1_tstmp
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Timeout Retry Count
+        NAME: fld_entry1_rtry_cnt
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: 'FCP Timer Stats: Indicates the type of Timer- Inactive, Request/Grant Retry, Aging'
+        NAME: fld_entry2_state
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Time Stamp associated with the timer
+        NAME: fld_entry2_tstmp
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Timeout Retry Count
+        NAME: fld_entry2_rtry_cnt
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: 'FCP Timer Stats: Indicates the type of Timer- Inactive, Request/Grant Retry, Aging'
+        NAME: fld_entry3_state
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Time Stamp associated with the timer
+        NAME: fld_entry3_tstmp
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Timeout Retry Count
+        NAME: fld_entry3_rtry_cnt
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: 'FCP Timer Stats: Indicates the type of Timer- Inactive, Request/Grant Retry, Aging'
+        NAME: fld_entry4_state
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Time Stamp associated with the timer
+        NAME: fld_entry4_tstmp
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Timeout Retry Count
+        NAME: fld_entry4_rtry_cnt
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: 'FCP Timer Stats: Indicates the type of Timer- Inactive, Request/Grant Retry, Aging'
+        NAME: fld_entry5_state
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Time Stamp associated with the timer
+        NAME: fld_entry5_tstmp
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Timeout Retry Count
+        NAME: fld_entry5_rtry_cnt
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: 'FCP Timer Stats: Indicates the type of Timer- Inactive, Request/Grant Retry, Aging'
+        NAME: fld_entry6_state
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Time Stamp associated with the timer
+        NAME: fld_entry6_tstmp
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Timeout Retry Count
+        NAME: fld_entry6_rtry_cnt
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: 'FCP Timer Stats: Indicates the type of Timer- Inactive, Request/Grant Retry, Aging'
+        NAME: fld_entry7_state
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Time Stamp associated with the timer
+        NAME: fld_entry7_tstmp
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: Timeout Retry Count
+        NAME: fld_entry7_rtry_cnt
+        WIDTH: 4
+    NAME: fcb_dst_timer_mem_dhs
+  - ATTR: 6
+    DESCRIPTION: Access to Destination FCP Queue Context Memory
+    ENTRIES: 16384
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Max Grant Window Reached
+        NAME: fld_max_win
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Grant has been sent to Grant Scheduler
+        NAME: fld_gnt_schd
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Indicates that a Grant Retry has been Sent by the Destination in response to Request Timeout
+        NAME: fld_rtry_sent
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'ENUM FCB_QUEUE_STATE_T : 0-Inactive, 1 Active'
+        NAME: fld_state
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Request Block Sequence Number
+        NAME: fld_rbn
+        WIDTH: 16
+      - DEFAULT: 0
+        DESCRIPTION: Grant Block Sequence Number
+        NAME: fld_gbn
+        WIDTH: 16
+      - DEFAULT: 0
+        DESCRIPTION: Data Block Sequence Number
+        NAME: fld_dbn
+        WIDTH: 16
+    NAME: fcb_dst_queue_ctx_mem_dhs
+  - ATTR: 6
+    DESCRIPTION: Access to FCB Destination Flow Aware Grant Scheduler Context Memory
+    ENTRIES: 16384
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: 'FCP Queue State '
+        NAME: fld_state
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: 'FCP Queue State '
+        NAME: fld_refresh_flag
+        WIDTH: 1
+      - DEFAULT: 0
+        DESCRIPTION: Reserved
+        NAME: fld_reserved
+        WIDTH: 2
+      - DEFAULT: 0
+        DESCRIPTION: Data Block Sequence Number
+        NAME: fld_dwrr_crdt
+        WIDTH: 18
+      - DEFAULT: 0
+        DESCRIPTION: Request Block Sequence Number
+        NAME: fld_refresh_wt
+        WIDTH: 8
+      - DEFAULT: 0
+        DESCRIPTION: Data Block Sequence Number
+        NAME: fld_lat_wt
+        WIDTH: 8
+    NAME: fcb_gnt_sch_ctx_mem_dhs
+  - ATTR: 6
+    DESCRIPTION: Access to FCB Destination Flow Aware Grant Scheduler Linked List Memory
+    ENTRIES: 16384
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: Linked List Next Pointer
+        NAME: fld_llptr
+        WIDTH: 14
+    NAME: fcb_gnt_sch_llist_mem_dhs
+  - ATTR: 6
+    DESCRIPTION: Access to FCB Source Flow Weight Memory
+    ENTRIES: 2048
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: FCP Request Weight Mantissa Value
+        NAME: fld_entry0mantissa
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: FCP Request Weight Exponent Value
+        NAME: fld_entry0exponent
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: FCP Request Weight Mantissa Value
+        NAME: fld_entry1mantissa
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: FCP Request Weight Exponent Value
+        NAME: fld_entry1exponent
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: FCP Request Weight Mantissa Value
+        NAME: fld_entry2mantissa
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: FCP Request Weight Exponent Value
+        NAME: fld_entry2exponent
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: FCP Request Weight Mantissa Value
+        NAME: fld_entry3mantissa
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: FCP Request Weight Exponent Value
+        NAME: fld_entry3exponent
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: FCP Request Weight Mantissa Value
+        NAME: fld_entry4mantissa
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: FCP Request Weight Exponent Value
+        NAME: fld_entry4exponent
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: FCP Request Weight Mantissa Value
+        NAME: fld_entry5mantissa
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: FCP Request Weight Exponent Value
+        NAME: fld_entry5exponent
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: FCP Request Weight Mantissa Value
+        NAME: fld_entry6mantissa
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: FCP Request Weight Exponent Value
+        NAME: fld_entry6exponent
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: FCP Request Weight Mantissa Value
+        NAME: fld_entry7mantissa
+        WIDTH: 4
+      - DEFAULT: 0
+        DESCRIPTION: FCP Request Weight Exponent Value
+        NAME: fld_entry7exponent
+        WIDTH: 4
+    NAME: fcb_dst_flow_wt_tbl_mem_dhs
+  - ATTR: 6
+    DESCRIPTION: Access to FCB Impairment Factor Condiguration Memory
+    ENTRIES: 16
+    FLDLST:
+      - DEFAULT: 128
+        DESCRIPTION: Impairment Value Entry 0
+        NAME: fld_entry0
+        WIDTH: 8
+      - DEFAULT: 128
+        DESCRIPTION: Impairment Value Entry 1
+        NAME: fld_entry1
+        WIDTH: 8
+      - DEFAULT: 128
+        DESCRIPTION: Impairment Value Entry 2
+        NAME: fld_entry2
+        WIDTH: 8
+      - DEFAULT: 128
+        DESCRIPTION: Impairment Value Entry 3
+        NAME: fld_entry3
+        WIDTH: 8
+      - DEFAULT: 128
+        DESCRIPTION: Impairment Value Entry 4
+        NAME: fld_entry4
+        WIDTH: 8
+      - DEFAULT: 128
+        DESCRIPTION: Impairment Value Entry 5
+        NAME: fld_entry5
+        WIDTH: 8
+      - DEFAULT: 128
+        DESCRIPTION: Impairment Value Entry 6
+        NAME: fld_entry6
+        WIDTH: 8
+      - DEFAULT: 128
+        DESCRIPTION: Impairment Value Entry 7
+        NAME: fld_entry7
+        WIDTH: 8
+    NAME: fcb_impairment_fact_tbl_dhs
+  - ATTR: 6
+    DESCRIPTION: Access to FCB Source Stats Counter Memory
+    ENTRIES: 16384
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: FCP Source Endpoint Transmit Byte Count
+        NAME: fld_byte_cnt
+        WIDTH: 35
+      - DEFAULT: 0
+        DESCRIPTION: FCP Source Endpoint Transmit Packet Count
+        NAME: fld_packet_cnt
+        WIDTH: 29
+    NAME: fcb_src_stats_cntr_mem_dhs
+    TEST_ATTR: 2
+  - ATTR: 6
+    DESCRIPTION: Access to FCB Destination Stats Counter Memory
+    ENTRIES: 16384
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: FCP Destination Endpoint Transmit Byte Count
+        NAME: fld_byte_cnt
+        WIDTH: 35
+      - DEFAULT: 0
+        DESCRIPTION: FCP Destination Endpoint Transmit Packet Count
+        NAME: fld_packet_cnt
+        WIDTH: 29
+    NAME: fcb_dst_stats_cntr_mem_dhs
+    TEST_ATTR: 2
+  - ATTR: 6
+    DESCRIPTION: Access to FCB Destination DWRR Corrections Memory
+    ENTRIES: 16384
+    FLDLST:
+      - DEFAULT: 0
+        DESCRIPTION: FCP Destination Endpoint DWRR Correction Accumulator
+        NAME: fld_updt_accum_val
+        WIDTH: 16
+    NAME: fcb_gnt_sch_deq_updt_corr_mem_dhs
+  - ATTR: 6
+    DESCRIPTION: Access to Broadcast Message Rate Pacer Configuration
+    ENTRIES: 4
+    FLDLST:
+      - DEFAULT: 1
+        DESCRIPTION: Grant Control Rate Pacer Enable
+        NAME: fld_enable
+        WIDTH: 1
+      - DEFAULT: 256
+        DESCRIPTION: Admit Level Threshold Below which a New BN Message Can be generated Set to Max Burst of 4 Messages
+        NAME: fld_admit_lvl_thresh
+        WIDTH: 12
+      - DEFAULT: 64
+        DESCRIPTION: 'Update Value for BN Message, Default a Message Every 64 Clocks'
+        NAME: fld_update_val
+        WIDTH: 8
+    NAME: fcb_bn_msg_pacer_cfg
+XASIZE: 0
