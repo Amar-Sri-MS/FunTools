@@ -81,7 +81,7 @@ class F1InputController: NSObject, NSOutlineViewDataSource, NSTabViewDelegate {
 				let attrs = $1.dictionaryValue["attrs"]?.integerValue ?? 0
 				// FIXME: 16 below...
 				let isTopLevel = (attrs & 16 /* WU_ATTR_TOP_LEVEL */) != 0
-				return isTopLevel ? $0.stringByDeletingSuffix("_wuh") : nil
+				return isTopLevel ? $0 : nil
 			}
 			//            print("TopLevel WUs: \(topLevelWUs!)")
 			topLevelWUs = topLevelWUs.sorted()
