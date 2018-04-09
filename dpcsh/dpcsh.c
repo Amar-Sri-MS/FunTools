@@ -181,6 +181,7 @@ static char *getline_with_history(OUT ssize_t *nbytes)
 			else if (len == 0)
 				/* if the only signal is EOF, we end */
 				*nbytes = -1;
+			line = realloc(line, len+1);
 			line[len] = '\0';
 			append_to_history(line);
 			return line;
@@ -209,6 +210,7 @@ static char *getline_with_history(OUT ssize_t *nbytes)
 		} else {
 			// printf("GOT ch=%d\n", ch);
 			write(STDOUT_FILENO, &ch, 1);
+			line = realloc(line, len+2);
 			line[len++] = ch;
 			line[len] = '\0';
 		}
