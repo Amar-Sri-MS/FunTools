@@ -20,7 +20,7 @@ void {{struct.name}}_dump(FILE *file_des, {{struct.DeclarationString()}} *s) {
 	  for (int i=0;
                i < (sizeof({{struct.DeclarationString()}}) - sizeof(s->{{field.name}}));
 	        i++) {
-              printf(", 0x0");
+              fprintf(file_des, ", 0x0");
           }
           break;
       {% endfor %}
@@ -36,7 +36,7 @@ void {{struct.name}}_dump(FILE *file_des, {{struct.DeclarationString()}} *s) {
   {% else %}
     {% for field in struct.fields %}
       {% if not loop.first %}
-        fprintf(file_des,", ");
+        fprintf(file_des, ", ");
       {% endif %}
       {% if field.is_reserved %}
         {% if field.type.IsArray() %}
