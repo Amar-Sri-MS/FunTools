@@ -41,7 +41,7 @@ void {{struct.name}}_dump(FILE *file_des, {{struct.DeclarationString()}} *s) {
       {% if field.is_reserved %}
         {% if field.type.IsArray() %}
 	  {% if field.type.ArraySize() == 0 %}
-	    assert(1==0); /* no support for array of size 0. */
+	    /* assert(1==0); no support for array of size 0. */
 	  {% else %}
   	    for (int i=0; i < {{field.type.ArraySize()}}; i++) {
               dump_hex_{{field.type.base_type.BitWidth()}}(file_des, 0); /* {{field.name}} */
@@ -53,7 +53,7 @@ void {{struct.name}}_dump(FILE *file_des, {{struct.DeclarationString()}} *s) {
       {% else %}
 	{% if field.type.IsArray() %}
 	  {% if field.type.ArraySize() == 0 %}
-	    assert(1==0); /* no support for array of size 0. */
+	    /* assert(1==0); no support for array of size 0. */
 	  {% else %}
 	    {% if field.type.ArraySize() == 0 %}
 	      {% if field.type.IsRecord() %}
@@ -127,8 +127,8 @@ static void dump_hex_64(FILE *file_des, uint64_t value) {
        uint8_t *buf = (uint8_t *) &be_value;
 
        for (int i=0; i < 8; i++) {
-       	       if (i != 0) fprintf(file_des, ", ");
-	       fprintf(file_des, "0x%0x", (uint8_t) buf[i]);
+               if (i != 0) fprintf(file_des, ", ");
+               fprintf(file_des, "0x%0x", (uint8_t) buf[i]);
        }
 }
 
