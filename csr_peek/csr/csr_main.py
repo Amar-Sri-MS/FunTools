@@ -28,10 +28,13 @@ class Slurper(object):
 
         cmd_parser.add_argument("-o", "--gen-cc", help="Dir for the C++ files.",
                 required=True, type=str)
-        self.other_args['tmpl_file'] = os.path.join(ml_dir, "template", "csr_rt.j2")
 
-        cmd_parser.add_argument("-r", "--match-ring", help="Generate for ring pattern",
-                default="nu", required=False, type=str)
+        self.other_args['tmpl_file'] = os.path.join(ml_dir, "template", "csr_rt.j2")
+        self.other_args['csr_defs']  = os.path.join(ml_dir, "template", "csr_defs.yaml")
+
+        def_filter = os.path.join(ml_dir, "template", "csr_filter.yaml")
+        cmd_parser.add_argument("-f", "--filter-file", help="Filter YAML file, usually required for compiles to pass",
+                default=def_filter, required=False, type=str)
 
 
     def __update_loc(self, loc):
@@ -49,9 +52,7 @@ class Slurper(object):
             assert False, "Yaml: {} not a directory".format(yml_dir)
         if not os.path.exists(os.path.join(y_dir, "AMAP")):
             assert False, "AMAP file does not exist"
-        #if not os.path.exists(os.path.join(y_dir, "ringAN.yaml")):
-        #    assert False, "Ring file does not exist"
-    
+
     def run(self):
         args = self.cmd_parser.parse_args()
         args.csr_defs = self.__update_loc(args.csr_defs)
@@ -66,7 +67,10 @@ class Slurper(object):
         #print "{}".format(self.schema)
         # First populate the top level root
         # Only populates the address attribute
-        csr_root = CSRRoot(amap_file, schema.get(), args.match_ring)
+        p = YML_Reader()
+        csr_def = p.read_file(self.other_args['csr_defs'])
+        filter_def = p.read_file(args.filter_file)
+        csr_root = CSRRoot(amap_file, schema.get(), filter_def, csr_def)
         tmpl = TmplMgr(self.other_args['tmpl_file'])
         o_file = os.path.join(args.gen_cc, 'csr_gen.cpp')
         tmpl.write_cfg(o_file, csr_root)
