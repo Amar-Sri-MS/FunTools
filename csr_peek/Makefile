@@ -9,6 +9,22 @@
 SUDO = sudo
 INDIR = jsb
 
+OS := $(shell uname)
+
+
+
+#
+# Different tools on MacOS vs linux
+ifeq ($(OS),Darwin)
+  INSTALL := brew
+else
+ifeq ($(OS),Linux)
+  INSTALL := apt
+endif
+endif
+
+
+
 all: build
 
 .PHONY: build clean libcsr cfg_pull cfg
@@ -16,7 +32,7 @@ build:
 	$(SUDO) python setup.py install --record files.txt
 
 libcsr:
-	$(SUDO) apt-get install astyle
+
 	cd csr-rt && astyle -c gen/csr_gen.cpp &&  make
 
 cfg:build
@@ -24,7 +40,7 @@ cfg:build
 
 
 cfg_pull:build
-	sudo apt-get install nfs-common
+	#$(SUDO) $(INSTALL) install nfs-common
 	cd csr; csr-get -i $(INDIR)
 
 clean:

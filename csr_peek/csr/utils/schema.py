@@ -18,7 +18,7 @@ class Entity():
         self.addr = 0
         self.attr = 0
         self.type = "CSR_TYPE::REG"
-        self.n_entries = 0 
+        self.n_entries = 0
         self.fld_lst = []
         self.width = 0
     def __str__(self):
@@ -55,6 +55,7 @@ class Schema():
         return self.entities
 
     def __should_store(self, m_elem):
+        return True
         for elem in Schema.ALLOW_ATTR:
             if int(m_elem.attr) & elem:
                 return True
@@ -85,7 +86,7 @@ class Schema():
                 e.type = "CSR_TYPE::REG_LST"
 
             lst = reg_rec.get('FLDLST', [])
-            lst, e.width = self.__update_width(lst)    
+            lst, e.width = self.__update_width(lst)
             for fld_elem in lst:
                 e.fld_lst.append(Field(fld_elem['NAME'], fld_elem['WIDTH']))
             store = self.__should_store(e)

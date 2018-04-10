@@ -10,14 +10,15 @@ lib_obj = $(lib_src:.cpp=.o)
 dummy_lib=libdummy.a
 
 AR = ar
-ARFLAGS = crf
-STRIP = strip --strip-unneeded
+#ARFLAGS = crf
+ARFLAGS = cr
+#STRIP = strip --strip-unneeded
 RANLIB = ranlib
 
 .PHONY: clean
 
 $(dummy_lib): $(lib_obj)
-	$(STRIP) $^
+	#$(STRIP) $^
 	$(AR) $(ARFLAGS) $@ $^
 	$(RANLIB) $@
 
