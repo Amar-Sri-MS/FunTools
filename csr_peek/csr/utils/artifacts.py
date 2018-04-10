@@ -13,7 +13,6 @@ import jinja2
 import pdb
 import re
 
-from csr.utils.lex import Lexer, LexTok
 
 class TmplMgr(object):
     def __init__(self, tpl_path):
@@ -63,8 +62,8 @@ class CSRNode(object):
         self.addr_range = addr_range
     def __str__(self):
         r_str = ""
-        r_str += "{} {} {}".\
-                format(self.addr, self.m_type, self.addr_range)
+        r_str += "{} {}".\
+                format(self.addr, self.addr_range)
         return r_str
     __repr__ = __str__
 
@@ -77,9 +76,6 @@ class ANode(object):
         self.csrs = collections.OrderedDict()
 
     def add_csr(self, csr_name, addr, addr_range=None):
-        csr_arr = re.split(r'_', csr_name)
-        if csr_arr[-1].isdigit():
-            csr_name = '_'.join(elem for elem in csr_arr[:-1])
         csr_lst = self.csrs.get(csr_name, None)
         addr -= self.start_addr
         p = CSRNode(addr, addr_range)
@@ -90,18 +86,20 @@ class ANode(object):
         #print "ADD_CSR:{}:{}".format(self.path, csr_name)
         self.csrs[csr_name] = csr_lst
     def get_num_csr(self, csr_name):
-        csr_arr = re.split(r'_', csr_name)
-        if csr_arr[-1].isdigit():
-            csr_name = '_'.join(elem for elem in csr_arr[:-1])
+        #csr_arr = csr_name.split('_')
+        #if csr_arr[-1].isdigit():
+        #    csr_name = '_'.join(elem for elem in csr_arr[:-1])
         p = self.csrs.get(csr_name, None)
         if p == None:
-            print "WARNING: ADDR_FOR:{} not found in {}".format(csr_name, self.path)
+            for k, v in self.csrs.iteritems():
+                print "{}:{}".format(k, v)
+            print "WARNING: NINSTANCE_NOT_FOUND_FOR:{} not found in {}".format(csr_name, self.path)
             return 1
         return p[1]
     def get_csr_addr(self, csr_name):
-        csr_arr = re.split(r'_', csr_name)
-        if csr_arr[-1].isdigit():
-            csr_name = '_'.join(elem for elem in csr_arr[:-1])
+        #csr_arr = csr_name.split('_')
+        #if csr_arr[-1].isdigit():
+        #    csr_name = '_'.join(elem for elem in csr_arr[:-1])
 
         p = self.csrs.get(csr_name, None)
         if p == None:
@@ -196,12 +194,17 @@ class RingProps(object):
 
                 an_csrs = self.csr_map.get(an_name, None)
                 if an_csrs != None:
+                    if len(an_csrs.get().keys()) == 0:
+                        continue
                     r_str += "{{\n // BEGIN {} \n".format(an_name)
                     r_str += "auto {}_{} = {}_rng[{}].add_an({{{}}}, 0x{:01X}, {}, 0x{:01X});\n".\
                         format(an_name, idx, self.r_name, self.i_num,
                                 elem.get_path_str(), elem.start_addr, elem.n_inst, elem.skip_addr);
+                    colls = {}
                     for csr_name, csr_val in an_csrs.get().iteritems():
-                        r_str += "fld_map_t {} {{\n".format(csr_name)
+                        if csr_val.name in colls:
+                            continue
+                        r_str += "fld_map_t {} {{\n".format(csr_val.name)
                         off = 0
                         for fldd in csr_val.fld_lst[:-1]:
                             r_str += "CREATE_ENTRY(\"{}\", {}, {}),\n".\
@@ -212,13 +215,14 @@ class RingProps(object):
                                 format(fldd.fld_name, off, fldd.width)
 
                         r_str += "};"
-                        r_str += "auto {}_prop = csr_prop_t(\n".format(csr_name)
-                        r_str += "std::make_shared<csr_s>({}),\n".format(csr_name)
+                        r_str += "auto {}_prop = csr_prop_t(\n".format(csr_val.name)
+                        r_str += "std::make_shared<csr_s>({}),\n".format(csr_val.name)
                         r_str += "0x{:01X},\n".format(elem.get_csr_addr(csr_name))
                         r_str += "{},\n".format(csr_val.type)
                         r_str += "{});\n".format(elem.get_num_csr(csr_name))
                         r_str += "add_csr({}_{}, \"{}\", {}_prop);\n".\
-                                 format(an_name, idx, csr_name, csr_name)
+                                 format(an_name, idx, csr_val.name, csr_val.name)
+                        colls[csr_val.name] = True
 
                     r_str += " // END {} \n}}\n".format(an_name)
         return r_str
@@ -238,7 +242,7 @@ class CSRRoot(object):
     CSR_FLAG =4
     MAX_FLAGS=5
 
-    def __init__(self, amap_file, csr_map, filter_yml, csr_def):
+    def __init__(self, amap_file, csr_map, filter_yml):
         self.flags = [False]*CSRRoot.MAX_FLAGS
         self.r_util = RingUtil()
         curr_ring = None
@@ -246,23 +250,15 @@ class CSRRoot(object):
         self.curr_an_name = None
         self.csr_map = csr_map
         self.ring_map = collections.OrderedDict()
-        def_map = self.__create_map(csr_def)
-        lexer = Lexer(def_map)
-        lexer.build()
-        self.__read_update(amap_file, filter_yml, lexer)
+        self.__read_update(amap_file, filter_yml)
         self.ring_exclude = collections.OrderedDict()
 
     def get_map(self):
         return self.ring_map
-    def __create_map(self, csr_def_yml):
-        m_coll = collections.OrderedDict()
-        for key, val in csr_def_yml['ATTR'].iteritems():
-            m_coll[key] = LexTok(val)
-        return m_coll
 
 
 
-    def __read_update(self, m_file, filter_yml, lexer):
+    def __read_update(self, m_file, filter_yml):
         f = open(m_file, "r")
         for line in f:
             line = line.lstrip()
@@ -276,8 +272,9 @@ class CSRRoot(object):
                 continue
             if self.__process_anode(line):
                 do_process = self.__filter(line, filter_yml)
+                self.an_added = False
                 continue
-            self.__process_csr(line, do_process, filter_yml, lexer)
+            self.__process_csr(line, do_process, filter_yml)
 
     def __ignore(self, line):
         for rep in CSRRoot.IGNORE:
@@ -296,16 +293,17 @@ class CSRRoot(object):
         tree = coll[1].split('.')
         anode = tree[-1]
         process = False
-        exclude_anodes = filter_yml.get('exclude_an', [])
-        print "{}:{}".format(anode,exclude_anodes)
 
-        if self.__match(exclude_anodes, anode):
-            print "ANODE_REJECT: {}".format(line)
-            return False
         include_anodes = filter_yml.get('include_an', [])
         if self.__match(include_anodes, anode):
-            print "ANODE_ACCEPT: {}".format(line)
+            #print "ANODE_ACCEPT: {}".format(line)
             return True
+
+        exclude_anodes = filter_yml.get('exclude_an', [])
+        if self.__match(exclude_anodes, anode):
+            #print "ANODE_REJECT: {}".format(line)
+            return False
+
         # The first element is always the ring
         interior = []
         if len(tree) > 2:
@@ -313,46 +311,25 @@ class CSRRoot(object):
         exclude_interior = filter_yml.get('exclude_interior', [])
         include_interior = filter_yml.get('include_interior', [])
         for s_elem in reversed(interior):
-            if self.__match(exclude_interior, s_elem):
-                print "INTERIOR_REJECT: {}".format(line)
-                return False
             if self.__match(include_interior, s_elem):
-                print "INTERIOR_ACCEPT: {}".format(line)
+                #print "INTERIOR_ACCEPT: {}".format(line)
                 return True
-
-        exclude_ring = filter_yml.get('exclude_ring', [])
-        if self.__match(exclude_ring, tree[0]):
-            print "RING_REJECT: {}".format(line)
-            return False
+            if self.__match(exclude_interior, s_elem):
+                #print "INTERIOR_REJECT: {}".format(line)
+                return False
 
         include_ring = filter_yml.get('include_ring', [])
         if self.__match(include_ring, tree[0]):
-            print "RING_ACCEPT: {}".format(line)
+            #print "RING_ACCEPT: {}".format(line)
             return True
 
-        print "DEFAULT_REJECT: {}".format(line)
-        return False
-
-    def __filter_csr(self, csr_name, process, filter_yml, csr_prop, lexer):
-        exclude_csr = filter_yml.get('exclude_csr', [])
-        if self.__match(exclude_csr, csr_name):
+        exclude_ring = filter_yml.get('exclude_ring', [])
+        if self.__match(exclude_ring, tree[0]):
+            #print "RING_REJECT: {}".format(line)
             return False
 
-        include_csr = filter_yml.get('include_csr', [])
-        if self.__match(include_csr, csr_name):
-            return True
-
-        # Next attribute
-        include_attr = filter_yml.get('include_attr', [])
-        rval = False
-        for elem in include_attr:
-            v = lexer.eval(elem)
-            if v ==  csr_prop.attr:
-                rval = True
-                break
-
-
-        return (process and rval)
+        #print "DEFAULT_REJECT: {}".format(line)
+        return False
 
     def __process_ring(self, line):
 
@@ -401,6 +378,16 @@ class CSRRoot(object):
         rn.add_an_path(ring_inst, k, int(coll[2]),
                 self.__hexlify(coll[3]), self.__hexlify(coll[4]))
         return True
+    def __filter_csr(self, csr_name, do_process, filter_yml):
+        include_csr = filter_yml.get('include_csr', [])
+        if self.__match(include_csr, csr_name):
+            #print "CSR_ACCEPT: {}".format(csr_name)
+            return True
+        exclude_csr = filter_yml.get('exclude_csr', [])
+        if self.__match(exclude_csr, csr_name):
+            #print "CSR_REJECT: {}".format(csr_name)
+            return False
+        return do_process
 
     def __process_anode(self, line):
         if not re.search('^START_ANODE', line):
@@ -419,7 +406,6 @@ class CSRRoot(object):
 
         assert rn != None, "Unknown ring class"
         self.flags[CSRRoot.IN_ANODE] = True
-        self.curr_an_name = an_name
         self.curr_rn = rn
         self.curr_ri = ring_inst
         self.curr_path = k
@@ -427,10 +413,9 @@ class CSRRoot(object):
         #print "ADD_AN: {}:{}:0x{:02X}".format(ring_inst, k, addr)
         #TODO:
         # Remove this to the filter area, post filtering
-        rn.add_an(ring_inst, k, self.curr_addr, self.csr_map)
         return True
 
-    def __process_csr(self, line, do_process, filter_yml, lexer):
+    def __process_csr(self, line, do_process, filter_yml):
         if not self.flags[CSRRoot.IN_ANODE]:
             return
         if not line:
@@ -442,33 +427,29 @@ class CSRRoot(object):
         ex_coll = coll[1].split()
         if len(ex_coll) > 2:
             return
-
-        an_yml = self.csr_map.get(self.curr_an_name, None)
-        assert an_yml != None, "Could not find yml file for {}".format(self.curr_an_name)
-        csr_name =  coll[0].strip()
-        csr_prop = an_yml.get().get(csr_name, None)
-        if csr_prop == None:
-            "WARNING: CSR Properties not found for {} in AMAP".format(csr_name)
-            return
-
+        csr_name = coll[0].strip()
         do_process = self.__filter_csr(csr_name,
                 do_process,
-                filter_yml,
-                csr_prop,
-                lexer)
-        if not do_process:
-            print "CSR_REJECT: {}".format(line)
-            return
+                filter_yml)
 
-        print "CSR_ACCEPT: {}".format(line)
+        if not do_process:
+            #print "CSR_REJECT: {}".format(line)
+            return
+        # Accept CSRs by name, except for the attribute
+        # specific stuff that will be removed elsewhere
+        if not self.an_added:
+            self.curr_rn.add_an(self.curr_ri, \
+                    self.curr_path, self.curr_addr, self.csr_map)
+            self.an_added = True
+        #print "CSR_ACCEPT: {}".format(line)
         if len(ex_coll) > 1:
             self.curr_rn.add_csr(self.curr_ri,
-                    coll[0].strip(),
+                    csr_name,
                     self.__hexlify(ex_coll[0].strip()),
                     self.__hexlify(ex_coll[1].strip()))
         else:
             self.curr_rn.add_csr(self.curr_ri,
-                    coll[0].strip(),
+                    csr_name,
                     self.__hexlify(coll[1].strip()))
 
     def __clean_name(self, m_arr):

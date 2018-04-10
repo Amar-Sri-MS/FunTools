@@ -63,14 +63,19 @@ class Slurper(object):
         amap_file = os.path.join(args.csr_defs, "AMAP")
         ring_file = os.path.join(args.csr_defs, "ringAN.yaml")
 
-        schema = CSR_YML_Reader(yml_dir)
         #print "{}".format(self.schema)
         # First populate the top level root
         # Only populates the address attribute
         p = YML_Reader()
         csr_def = p.read_file(self.other_args['csr_defs'])
         filter_def = p.read_file(args.filter_file)
-        csr_root = CSRRoot(amap_file, schema.get(), filter_def, csr_def)
+
+        # Pass to CSR Yaml reader, a list of included & excluded CSRs
+        # If a CSR is included by name, ignore the attribute
+
+        schema = CSR_YML_Reader(yml_dir, filter_def, csr_def)
+
+        csr_root = CSRRoot(amap_file, schema.get(), filter_def)
         tmpl = TmplMgr(self.other_args['tmpl_file'])
         o_file = os.path.join(args.gen_cc, 'csr_gen.cpp')
         tmpl.write_cfg(o_file, csr_root)
