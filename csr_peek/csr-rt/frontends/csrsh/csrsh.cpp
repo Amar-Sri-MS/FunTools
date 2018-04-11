@@ -10,9 +10,9 @@ void CsrSh::dump_csr(const std::string& csr_name) {
         if (i == 0) {
             for (auto it = csr_h.begin(); it != csr_h.end(); it ++) {
                 std::cout << "f_name: " << it->first << std::endl;
-                std::cout << "f_prop: " << it->second << std::endl;
+                std::cout << "f_prop: " << std::dec << it->second << std::endl;
             }
-            std::cout << "n_inst:" << n_inst << std::endl;
+            std::cout << "n_inst:" << std::dec << n_inst << std::endl;
         }
         
         std::cout <<"   I#: " << i << std::endl;
