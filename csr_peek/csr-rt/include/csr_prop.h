@@ -87,7 +87,7 @@ class csr_prop_t {
 
 template <typename T>
 void csr_prop_t::set(const std::string& fld_name, const T& val, uint8_t* raw_buf) {
-    std::cout << "FLD: " << fld_name << ":VAL: " << val << std::endl;
+    //std::cout << "FLD: " << fld_name << ":VAL: " << val << std::endl;
     __init();
     sign->_set(fld_name, val, raw_buf);
 

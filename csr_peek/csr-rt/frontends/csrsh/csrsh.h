@@ -10,5 +10,4 @@ class CsrSh {
      void set_csr(const std::string& csr_name);
   private:
       F1NS& ns_h;      
-      std::map<std::string, std::pair<uint8_t*, uint16_t>> mp_buf;
 };
