@@ -37,14 +37,11 @@ void help(void) {
     std::cout << "set <csr_name> : Set a particular CSR. Will present with list of fields" << std::endl;
     std::cout << "set_raw <csr_name> : Set a particular CSR with a hex value" << std::endl;
     std::cout << "show: Shows all current CSRs in buffer with hex values" << std::endl;
-    std::cout << "list [<ring_name.interior_node>] : Gets all the hierarchy under the node" << std::endl;
-    std::cout << "num_inst <csr_name> : Gets the number of instances for csr_name" << std::endl;
-    std::cout << "num_entries <csr_name> <instance_num> : Gets the number of entries" << std::endl;
 
     std::cout << "flush <csr_num> <instance_num> <entry number>: Write csr# csr_num to hw {instance_num, entry_num}" << std::endl;
 
     std::cout << "fetch <csr_name> <instance#> <entry#>: Read csr_entry from hw." << std::endl;
-    std::cout << "fetch <ring_name.interior_node(s).csr_nam> <instance#> <entry#>: Read csr_entry from hw" << std::endl;
+    std::cout << "rfetch <ring_name.interior_node(s).csr_nam> <instance#> <entry#>: Read csr_entry from hw" << std::endl;
 
     std::cout << "info <csr_name> : Gets all the field level info for csr_name" << std::endl;
     std::cout << "rinfo <ring_name.interior_node(s)>: Get info on all csrs below this node" << std::endl;
@@ -59,14 +56,27 @@ void dump_csr(const std::string& csr_name) {
 
 void process_cmd(const char* buf) {
     CsrSh s;
-
     auto vec = tokenize(buf);
     if (vec[0] == "help") {
         help();
     } else if(vec[0] == "info") {
 	s.dump_csr(vec[1]);
-    } else {
+    } else if(vec[0] == "set") {
+	s.set_csr(vec[1]);
+    } else if(vec[0] == "set_raw") {
+	s.dump_csr(vec[1]);
+    } else if(vec[0] == "show") {
+	s.dump_csr(vec[1]);
+    } else if(vec[0] == "flush") {
+	s.dump_csr(vec[1]);
+    } else if(vec[0] == "fetch") {
+	s.dump_csr(vec[1]);
+    } else if(vec[0] == "rfetch") {
         std::cout << "Not implemented" << std::endl;
+    } else if(vec[0] == "rinfo") {
+        std::cout << "Not implemented" << std::endl;
+    } else {
+        std::cout << "Not supported" << std::endl;
     }
 
 }
