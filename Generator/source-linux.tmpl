@@ -31,7 +31,7 @@ void {{struct.name}}_dump(FILE *file_des, {{struct.DeclarationString()}} *s) {
     {% else %}
     /* No support for unions that don't have a variable naming which
        enum they are. */
-    assert(1==0);
+    /* assert(1==0); */
     {% endif %}
   {% else %}
     {% for field in struct.fields %}
