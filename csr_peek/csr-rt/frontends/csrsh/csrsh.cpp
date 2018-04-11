@@ -43,8 +43,7 @@ void CsrSh::set_csr(const std::string& csr_name) {
         buf = (it->second).first;
 	is_set = true;
     } else {
-        buf = new uint8_t[sz];
-	std::memset(buf, 0, sz);
+        buf = new uint8_t[sz]();
     }
     std::cin.unsetf(std::ios::dec);
     std::cin.unsetf(std::ios::hex);
@@ -90,4 +89,84 @@ void CsrSh::set_csr(const std::string& csr_name) {
     mp_buf.emplace(std::piecewise_construct,
 		   std::forward_as_tuple(csr_name),
 		   std::forward_as_tuple(buf, sz));
+}
+
+void CsrSh::set_raw(const std::string& csr_name) {
+    auto it = mp_buf.find(csr_name);
+    auto csr_h = ns_h.get_csr(csr_name);
+    uint8_t* buf = nullptr;
+    uint16_t sz = 0;
+    bool is_set = false;
+    if (it != mp_buf.end()) {
+        buf = (it->second).first;
+        sz = (it->second).second;
+	is_set = true;
+    } else {
+        sz = csr_h.sz();
+	buf = new uint8_t[sz]();
+    }
+    std::cin.unsetf(std::ios::dec);
+    std::cin.unsetf(std::ios::hex);
+    std::cin.unsetf(std::ios::oct);
+
+    uint8_t curr_val;
+    std::string curr_str;
+    std::istringstream istream;
+
+    for (auto i = 0; i < sz; i ++) {
+        std::cout << "BYTE[" << i << "]:";
+        if(is_set) {
+            std::cout << "(" << static_cast<uint16_t>(buf[i]) << "):";
+	}
+       while(std::getline(std::cin, curr_str)) {
+           istream.clear();
+	   if (curr_str.empty()) {
+              if (!is_set) {
+                  curr_val = 0;
+	      } else {
+                  curr_val = buf[i];
+	      }
+	      break;
+	   }
+	   istream.str(curr_str);
+	   if (istream >> curr_val) break;
+	   std::cout << "Incorrect input: " << curr_str << std::endl;
+           std::cout << "BYTE[" << i << "]:";
+           if (is_set) {
+	      std::cout << "(" << static_cast<uint16_t>(buf[i])<< "):";
+           }
+       }
+       buf[i] = curr_val;
+    }
+    mp_buf.emplace(std::piecewise_construct,
+		   std::forward_as_tuple(csr_name),
+		   std::forward_as_tuple(buf, sz));
+}
+
+void CsrSh::show_buffer(void) {
+    uint8_t* buf = nullptr;
+    for (auto& elem : mp_buf) {
+	    std::cout << "CSR:" << elem.first << std::endl;
+	    auto sz = elem.second.second;
+	    std::cout << "VAL:" << std::endl;
+	    buf = (elem.second).first;
+	    for (auto i = 0; i < sz; i ++) {
+		    std::cout << "[" << i << "] = 0x";
+		    std::cout << std::hex << static_cast<uint16_t>(buf[i]) << std::endl;
+	    }
+    }
+}
+
+
+void CsrSh::fetch(const std::string& csr_name,
+		const uint16_t& inst_num,
+		const uint32_t& entry_num) {
+
+
+
+}
+void CsrSh::flush(const std::string& csr_name,
+		const uint16_t& inst_num,
+		const uint32_t& entry_num) {
+
 }

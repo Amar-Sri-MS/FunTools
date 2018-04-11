@@ -38,19 +38,13 @@ void help(void) {
     std::cout << "set_raw <csr_name> : Set a particular CSR with a hex value" << std::endl;
     std::cout << "show: Shows all current CSRs in buffer with hex values" << std::endl;
 
-    std::cout << "flush <csr_num> <instance_num> <entry number>: Write csr# csr_num to hw {instance_num, entry_num}" << std::endl;
+    std::cout << "flush <csr_name> <instance_num> <entry number>: Write csr# csr_num to hw {instance_num, entry_num}" << std::endl;
 
     std::cout << "fetch <csr_name> <instance#> <entry#>: Read csr_entry from hw." << std::endl;
     std::cout << "rfetch <ring_name.interior_node(s).csr_nam> <instance#> <entry#>: Read csr_entry from hw" << std::endl;
 
     std::cout << "info <csr_name> : Gets all the field level info for csr_name" << std::endl;
     std::cout << "rinfo <ring_name.interior_node(s)>: Get info on all csrs below this node" << std::endl;
-}
-
-void dump_csr(const std::string& csr_name) {
-
-
-
 }
 
 
@@ -64,13 +58,13 @@ void process_cmd(const char* buf) {
     } else if(vec[0] == "set") {
 	s.set_csr(vec[1]);
     } else if(vec[0] == "set_raw") {
-	s.dump_csr(vec[1]);
+	s.set_raw(vec[1]);
     } else if(vec[0] == "show") {
-	s.dump_csr(vec[1]);
+	s.show_buffer();
     } else if(vec[0] == "flush") {
-	s.dump_csr(vec[1]);
+	s.flush(vec[1], std::stoi(vec[2]), std::stoul(vec[3]));
     } else if(vec[0] == "fetch") {
-	s.dump_csr(vec[1]);
+	s.fetch(vec[1], std::stoi(vec[2]), std::stoul(vec[3]));
     } else if(vec[0] == "rfetch") {
         std::cout << "Not implemented" << std::endl;
     } else if(vec[0] == "rinfo") {
