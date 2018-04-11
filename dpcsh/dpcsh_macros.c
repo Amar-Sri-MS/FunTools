@@ -10,6 +10,8 @@
 #include <utils/threaded/fun_commander.h>
 #include <utils/threaded/fun_malloc_threaded.h>
 
+#include "dpcsh.h"
+
 static struct fun_json *test_macro1(const struct fun_json *input) 
 {
 	struct fun_json *output = fun_json_create_empty_dict();
@@ -28,6 +30,16 @@ static struct fun_json *test_macro2(const struct fun_json *input)
 	return output;
 }
 
+static CALLER_TO_RELEASE struct fun_json *csr_pretty_printer(void *context, uint64_t tid, struct fun_json *result)
+{
+	fun_json_printf("In csr_pretty_printer non-pretty=%s\n", result);
+	const char *keys[] = { "wrapped" };
+	const struct fun_json *values[] = { fun_json_retain(result) };
+	struct fun_json *wrapped = fun_json_create_dict(1, keys, fun_json_no_copy_no_own, values);
+	dpcsh_unregister_pretty_printer(tid, context);
+	return wrapped;
+}
+
 static struct fun_json *csr_macro(const struct fun_json *input) 
 {
 	struct fun_json *output = fun_json_create_empty_dict();
@@ -42,16 +54,28 @@ static struct fun_json *csr_macro(const struct fun_json *input)
 	} 
 	const char *sub = sub_verb->string_value;
 	struct fun_json *addr = fun_json_array_at(args, 1);
+	uint64_t tid = 0;
+	bool has_tid = fun_json_lookup_uint64(input, "tid", &tid);
 	if (!strcmp(sub, "peek")) {
 		struct fun_json *verb_internal = fun_json_create_string("csr_peek", fun_json_no_copy_no_own);
 		fun_json_dict_add(output, "verb", fun_json_no_copy_no_own, verb_internal, true);
 		struct fun_json *new_args = fun_json_create_empty_array();
 		fun_json_array_append(new_args, fun_json_retain(addr));
 		fun_json_dict_add(output, "arguments", fun_json_no_copy_no_own, new_args, true);
-		return output;
+	} else if (!strcmp(sub, "echo")) {
+		if (has_tid) {
+			dpcsh_register_pretty_printer(tid, NULL, csr_pretty_printer);
+		}
+		struct fun_json *verb_internal = fun_json_create_string("echo", fun_json_no_copy_no_own);
+		fun_json_dict_add(output, "verb", fun_json_no_copy_no_own, verb_internal, true);
+		struct fun_json *new_args = fun_json_create_empty_array();
+		fun_json_array_append(new_args, fun_json_retain(addr));
+		fun_json_dict_add(output, "arguments", fun_json_no_copy_no_own, new_args, true);
 	} else {
 		return fun_json_create_error("Expecting <csr> peek|poke ...", fun_json_copy);
 	}
+	fun_json_dict_add_int64(output, "tid", fun_json_no_copy_no_own, tid, true);
+	return output;
 }
 
 void dpcsh_load_macros(void) 

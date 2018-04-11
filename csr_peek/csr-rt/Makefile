@@ -1,4 +1,11 @@
-CXX=g++
+ifeq ($(OS),Darwin)
+  CXX=clang++
+else
+ifeq ($(OS),Linux)
+  CXX=g++
+endif
+endif
+
 
 BACKEND=backends/dummy
 BACKEND_LIB=dummy
@@ -26,8 +33,10 @@ csr_lib=libcsr.a
 LIBS= -L. -L $(BACKEND) -lcsr -l$(BACKEND_LIB)
 
 AR = ar
-ARFLAGS = crf
-STRIP = strip --strip-unneeded
+#ARFLAGS = crf
+ARFLAGS = cr
+#STRIP = strip --strip-unneeded
+STRIP = strip
 RANLIB = ranlib
 
 .PHONY: clean
@@ -39,7 +48,7 @@ $(driver_obj): $(driver_src)
 	$(CXX) $(CXXFLAGS) $(BACKEND_INC) -c $^ -o $@
 
 $(csr_lib): $(lib_obj)
-	$(STRIP) $^
+	#$(STRIP) $^
 	$(AR) $(ARFLAGS) $@ $^
 	$(RANLIB) $@
 $(BACKEND_LIBRARY):

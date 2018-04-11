@@ -15,35 +15,23 @@ import socket
 #
 # $WORKSPACE/FunTools/dpcsh/dpcsh --text_proxy
 #
-# Example usage:
-#
-# import os
-# import sys
-# sys.path.append(os.environ['WORKSPACE'] + '/FunTools/dpcsh')
-# import dpc_client
-#
-# client = dpc_client.DpcClient()
-#
-# result = client.execute_command('echo', 'Hello dpc')
-# print result
-#
-# result = client.execute_command('ikv lvs_create', {
-#     'volume_id': 1,
-#     'volume_lba_bytes': 4096,
-#     'volume_lbas': 1024,
-#     'allocator_volume_id': 2,
-#     'allocator_volume_lba_bytes': 4096,
-#     'allocator_volume_lbas': 256
-#     })
-# print result
+# Example usage dpctest.py
 
 class DpcClient(object):
-    def __init__(self):
-        self.__sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    def __init__(self, legacy_ok = True, unix_sock = True, server_address = None):
+        self.__legacy_ok = legacy_ok
         self.__verbose = False
         self.__truncate_long_lines = False
 
-        server_address = '/tmp/funos-dpc-text.sock'
+        if (unix_sock):
+            if (server_address is None):
+                server_address = '/tmp/funos-dpc-text.sock'
+            self.__sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        else:
+            if (server_address is None):
+                server_address = ('127.0.0.1', 40221)
+            self.__sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
         self.__sock.connect(server_address)
 
     def __recv_lines(self):
@@ -87,9 +75,42 @@ class DpcClient(object):
         self.__print(result)
         return result
 
+    # preferred interface
+    def execute(self, verb, arg_list, tid = 0):
+
+        # make sure verb is just a verb
+        if (" " in verb):
+            raise RuntimeError("no spaces allowed in verbs")
+
+        # make it a list if it's just a dict or int or something
+        if (type(arg_list) is not list):
+            arg_list = [arg_list]
+
+        # make a json request in dict from
+        jdict = { "verb": verb, "arguments": arg_list, "tid": tid }
+
+        # make it a string and send it & get results
+        jstr = json.dumps(jdict)
+        results = self.execute_command_line(jstr)
+
+        # decode the raw json and return
+        try:
+            decoded_results = json.loads(results)
+        except:
+            print("ERROR: Unable to parse to JSON. data: %s" % results)
+            decoded_results = None
+        return decoded_results
+
+    # XXX: legacy interface. Avoid using this
     def execute_command(self, command, args):
+
+        if (not self.__legacy_ok):
+            raise RuntimeError("Attempted legacy command on non-legacy client instance")
+
         encoded_args = json.dumps(args)
-        results = self.execute_command_line(command + ' ' + encoded_args)
+        # #!sh prefix to ensure it's parsed as legacy input
+        cmd_line = "#!sh " + command + ' ' + encoded_args
+        results = self.execute_command_line(cmd_line)
         if (command == 'execute'):
             return results
         decoded_results = json.loads(results)

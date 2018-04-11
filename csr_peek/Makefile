@@ -9,6 +9,22 @@
 SUDO = sudo
 INDIR = jsb
 
+OS := $(shell uname)
+
+
+
+#
+# Different tools on MacOS vs linux
+ifeq ($(OS),Darwin)
+  INSTALL := brew
+else
+ifeq ($(OS),Linux)
+  INSTALL := apt
+endif
+endif
+
+
+
 all: build
 
 .PHONY: build clean libcsr cfg_pull cfg
@@ -16,7 +32,7 @@ build:
 	$(SUDO) python setup.py install --record files.txt
 
 libcsr:
-	$(SUDO) apt-get install astyle
+
 	cd csr-rt && astyle -c gen/csr_gen.cpp &&  make
 
 cfg:build
@@ -24,7 +40,7 @@ cfg:build
 
 
 cfg_pull:build
-	sudo apt-get install nfs-common
+	#$(SUDO) $(INSTALL) install nfs-common
 	cd csr; csr-get -i $(INDIR)
 
 clean:
@@ -38,3 +54,38 @@ clean:
 distclean: clean
 	cd csr/csr_cfg && rm -rf *
 	cd csr-rt; make distclean
+
+
+
+###
+##  Build platform OS
+#
+
+OS := $(shell uname)
+
+###
+##   The build is where our SDK is rooted
+#
+SDKDIR ?= ../../FunSDK
+
+###
+##   Where install files go
+#
+SDK_INSTALL_DIR ?= $(SDKDIR)
+
+###
+##   The FunOS dir where config files reside
+#
+FUNOSDIR ?= ../../FunOS
+
+# Directory where we install the working version of the ConfigGen
+FUNSDK_INSTALL_DIR = $(SDK_INSTALL_DIR)/FunSDK/config/
+
+
+SRC = csr
+
+# install to SDK
+install:
+	mkdir -p $(FUNSDK_INSTALL_DIR)
+	rsync -rR $(SRC) $(FUNSDK_INSTALL_DIR)
+

@@ -39,7 +39,7 @@ class DKExpressionFuncCall: DKExpression {
 		if f == nil { return nil }
 		let aj = dict["args"]
 		if aj == nil { return nil }
-		let args = aj!.arrayValue.flatMap { $0.toDKExpression(uniquingTable) }
+		let args = aj!.arrayValue.compactMap { $0.toDKExpression(uniquingTable) }
 		return DKExpressionFuncCall(fun: f!, arguments: args)
 	}
 	override func sugaredDescription(_ uniquingTable: DKTypeTable) -> (desc: String, needsParen: Bool) {

@@ -56,6 +56,7 @@ class Schema():
         return self.entities
 
     def __should_store(self, m_elem):
+        return True
         for elem in Schema.ALLOW_ATTR:
             if int(m_elem.attr) & elem:
                 return True

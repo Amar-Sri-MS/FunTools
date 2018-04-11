@@ -13,6 +13,8 @@ import jinja2
 import pdb
 import re
 
+from csr.utils.lex import Lexer, LexTok
+
 class TmplMgr(object):
     def __init__(self, tpl_path):
         path, filename = os.path.split(tpl_path)
@@ -313,26 +315,34 @@ class CSRRoot(object):
     CSR_FLAG =4
     MAX_FLAGS=5
 
-    def __init__(self, amap_file, csr_map, ring_match=None):
+    def __init__(self, amap_file, csr_map, filter_yml, csr_def):
         self.flags = [False]*CSRRoot.MAX_FLAGS
         self.r_util = RingUtil()
-        #self.curr_an_path = None
-        #self.curr_an = None
-        #self.csr_metadata  = collections.OrderedDict()
+        curr_ring = None
+        curr_inst = None
+        self.curr_an_name = None
         self.csr_map = csr_map
         print "Print csr_map start"
         #print self.csr_map
         print "Print csr_map end"
         self.ring_map = collections.OrderedDict()
-        print "Print ring_map start"
-        #print self.ring_map
-        print "Print ring_map done"
-        self.__read_update(amap_file, ring_match)
+        def_map = self.__create_map(csr_def)
+        lexer = Lexer(def_map)
+        lexer.build()
+        self.__read_update(amap_file, filter_yml, lexer)
+        self.ring_exclude = collections.OrderedDict()
 
     def get_map(self):
         return self.ring_map
+    def __create_map(self, csr_def_yml):
+        m_coll = collections.OrderedDict()
+        for key, val in csr_def_yml['ATTR'].iteritems():
+            m_coll[key] = LexTok(val)
+        return m_coll
 
-    def __read_update(self, m_file, ring_match):
+
+
+    def __read_update(self, m_file, filter_yml, lexer):
         f = open(m_file, "r")
         for line in f:
             line = line.lstrip()
@@ -340,18 +350,14 @@ class CSRRoot(object):
             if self.__ignore(line):
                 #print "IGNORE: {}".format(line)
                 continue
-            if self.__process_ring(line, ring_match):
-                #print ("RING " + line)
+            if self.__process_ring(line):
                 continue
-            if self.__process_root(line, ring_match):
-                #print ("ROOT " + line)
+            if self.__process_root(line):
                 continue
-            if self.__process_anode(line, ring_match):
-                #print ("ANODE " + line)
+            if self.__process_anode(line):
+                do_process = self.__filter(line, filter_yml)
                 continue
-            self.__process_csr(line)
-        #print "Print ring_map after read"
-        #print self.ring_map
+            self.__process_csr(line, do_process, filter_yml, lexer)
 
     def __ignore(self, line):
         for rep in CSRRoot.IGNORE:
@@ -359,7 +365,77 @@ class CSRRoot(object):
                 return True
         return False
 
-    def __process_ring(self, line, ring_match):
+    def __match(self, regex_arr, m_elem):
+        for elem in regex_arr:
+            if re.match(elem, m_elem):
+                return True
+
+    def __filter(self, line, filter_yml):
+        line = line.lower()
+        coll = line.split(':')
+        tree = coll[1].split('.')
+        anode = tree[-1]
+        process = False
+        exclude_anodes = filter_yml.get('exclude_an', [])
+        print "{}:{}".format(anode,exclude_anodes)
+
+        if self.__match(exclude_anodes, anode):
+            print "ANODE_REJECT: {}".format(line)
+            return False
+        include_anodes = filter_yml.get('include_an', [])
+        if self.__match(include_anodes, anode):
+            print "ANODE_ACCEPT: {}".format(line)
+            return True
+        # The first element is always the ring
+        interior = []
+        if len(tree) > 2:
+            interior = tree[1:-1]
+        exclude_interior = filter_yml.get('exclude_interior', [])
+        include_interior = filter_yml.get('include_interior', [])
+        for s_elem in reversed(interior):
+            if self.__match(exclude_interior, s_elem):
+                print "INTERIOR_REJECT: {}".format(line)
+                return False
+            if self.__match(include_interior, s_elem):
+                print "INTERIOR_ACCEPT: {}".format(line)
+                return True
+
+        exclude_ring = filter_yml.get('exclude_ring', [])
+        if self.__match(exclude_ring, tree[0]):
+            print "RING_REJECT: {}".format(line)
+            return False
+
+        include_ring = filter_yml.get('include_ring', [])
+        if self.__match(include_ring, tree[0]):
+            print "RING_ACCEPT: {}".format(line)
+            return True
+
+        print "DEFAULT_REJECT: {}".format(line)
+        return False
+
+    def __filter_csr(self, csr_name, process, filter_yml, csr_prop, lexer):
+        exclude_csr = filter_yml.get('exclude_csr', [])
+        if self.__match(exclude_csr, csr_name):
+            return False
+
+        include_csr = filter_yml.get('include_csr', [])
+        if self.__match(include_csr, csr_name):
+            return True
+
+        # Next attribute
+        include_attr = filter_yml.get('include_attr', [])
+        rval = False
+        for elem in include_attr:
+            v = lexer.eval(elem)
+            if v ==  csr_prop.attr:
+                rval = True
+                break
+
+
+        return (process and rval)
+
+    def __process_ring(self, line):
+
         if self.flags[CSRRoot.RING_DONE]:
             return False
         if not self.flags[CSRRoot.IN_RING]:
@@ -376,11 +452,6 @@ class CSRRoot(object):
 
         #print l_arr
         ring_class, ring_inst = self.r_util.get_info(l_arr[0])
-        print ring_class
-        print ring_inst
-        if not re.search(ring_match.lower(), ring_class.lower()):
-            return True
-
         self.__add_ring_instance(ring_class, ring_inst, self.__hexlify(l_arr[1]))
         print "RING_ACCEPT: {}".format(line)
         return True
@@ -390,7 +461,7 @@ class CSRRoot(object):
         self.ring_map[ring_class] = ring_node
         return ring_node
 
-    def __process_root(self, line, ring_match):
+    def __process_root(self, line):
         if not re.search('^COUNT', line):
             return False
         print "Processing ROOT {}".format(line)
@@ -403,13 +474,6 @@ class CSRRoot(object):
         print ring_inst
 
         k = self.__clean_name(m_arr[1:])
-        print k
-        if not re.search(ring_match.lower(), ring_class.lower()):
-            self.flags[CSRRoot.RING_PROCESS] = False
-            return True
-        else:
-            self.flags[CSRRoot.RING_PROCESS] = True
-        print "NAG ROOT_ACCEPT:{}".format(line)
         rn = self.ring_map.get(ring_class, None)
         if rn == None:
            print "Adding dummy ring class: {}".format(ring_class)
@@ -425,21 +489,15 @@ class CSRRoot(object):
                 self.__hexlify(coll[3]), self.__hexlify(coll[4]))
         return True
 
-    def __process_anode(self, line, ring_match):
+    def __process_anode(self, line):
         if not re.search('^START_ANODE', line):
             return False
         line = line.lower()
-
         coll = line.split(':')
         m_arr = coll[1].split('.')
         ring_class, ring_inst = self.r_util.get_info(m_arr[0])
-        if not re.search(ring_match.lower(), ring_class.lower()):
-            self.flags[CSRRoot.RING_PROCESS] = False
-            return True
-        else:
-            self.flags[CSRRoot.RING_PROCESS] = True
-        print "ANODE_ACCEPT:{}".format(line)
         k = self.__clean_name(m_arr[1:])
+        an_name = k.split('.')[-1]
         rn = self.ring_map.get(ring_class, None)
         if rn == None:
            print "Adding dummy ring class: {}".format(ring_class)
@@ -447,21 +505,19 @@ class CSRRoot(object):
 
         assert rn != None, "Unknown ring class"
         self.flags[CSRRoot.IN_ANODE] = True
-        #self.curr_rn_class = ring_class
+        self.curr_an_name = an_name
         self.curr_rn = rn
         self.curr_ri = ring_inst
-        #self.curr_an = k
-
-        addr = self.__hexlify(coll[2])
-        print "ADD_AN: {}:***{}***:0x{:02X}".format(ring_inst, k, addr)
-
-        rn.add_an(ring_inst, k, addr, self.csr_map)
+        self.curr_path = k
+        self.curr_addr = self.__hexlify(coll[2])
+        #print "ADD_AN: {}:{}:0x{:02X}".format(ring_inst, k, addr)
+        #TODO:
+        # Remove this to the filter area, post filtering
+        rn.add_an(ring_inst, k, self.curr_addr, self.csr_map)
         return True
 
-    def __process_csr(self, line):
+    def __process_csr(self, line, do_process, filter_yml, lexer):
         if not self.flags[CSRRoot.IN_ANODE]:
-            return
-        if not self.flags[CSRRoot.RING_PROCESS]:
             return
         if not line:
             return
@@ -473,26 +529,32 @@ class CSRRoot(object):
         if len(ex_coll) > 2:
             return
 
-        #print "CSR_ACCEPT: {}".format(line)
-        cname =  coll[0].strip()
         addr = 0
         addr_range = 0
+        an_yml = self.csr_map.get(self.curr_an_name, None)
+        assert an_yml != None, "Could not find yml file for {}".format(self.curr_an_name)
+        csr_name =  coll[0].strip()
+        csr_prop = an_yml.get().get(csr_name, None)
+        if csr_prop == None:
+            "WARNING: CSR Properties not found for {} in AMAP".format(csr_name)
+            return
+
+        do_process = self.__filter_csr(csr_name,
+                do_process,
+                filter_yml,
+                csr_prop,
+                lexer)
+        if not do_process:
+            print "CSR_REJECT: {}".format(line)
+            return
+
+        print "CSR_ACCEPT: {}".format(line)
         if len(ex_coll) > 1:
             addr = self.__hexlify(ex_coll[0].strip())
             addr_range = self.__hexlify(ex_coll[1].strip())
         else:
             addr = self.__hexlify(coll[1].strip())
-        self.curr_rn.add_csr(self.curr_ri, cname, addr, addr_range)
-        #self.__add_csr_metadata(cname, addr, addr_range)
-
-    """
-    def __add_csr_metadata(self, name, addr, addr_range):
-        mdata = self.csr_metadata.get(name, [])
-        if not mdata:
-            self.csr_metadata[name] = mdata
-        mdata.append(CSRMetaData(self.curr_rn_class, self.curr_ri,
-                                         self.curr_an))
-    """
+        self.curr_rn.add_csr(self.curr_ri, csr_name, addr, addr_range)
 
     def __clean_name(self, m_arr):
         for idx, _ in enumerate(m_arr):

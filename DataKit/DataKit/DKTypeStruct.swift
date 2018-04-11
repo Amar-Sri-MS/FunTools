@@ -134,7 +134,7 @@ class DKTypeStruct: DKType, Cardinality {
 		let align = a == nil || a! < 0 ? nil : UInt64(a!)
 		let subs = dict["subs"]?.shortcutsToDKTypes(uniquingTable)
 		if subs == nil { return nil }
-		let names: [String]? = dict["names"]?.arrayValue.flatMap { $0.stringValue }
+		let names: [String]? = dict["names"]?.arrayValue.compactMap { $0.stringValue }
 		return DKTypeStruct(subTypes: subs!, subNames: names, packed: p, alignmentInBits: align)
 	}
 	override func valueFromRawJSON(_ uniquingTable: DKTypeTable, _ j: JSON) -> DKValue? {
