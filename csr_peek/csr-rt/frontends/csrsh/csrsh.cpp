@@ -13,7 +13,9 @@
  */
 
 void CsrSh::__init(void) {
-    assert(tcp_h.conn("localhost", DPC_PORT));
+    if (not tcp_h.conn("localhost", DPC_PORT)) {
+        std::cout << "!!!!WARNING: dpcsh not connected. Fetch/Flush commands WILL NOT work!!" << std::endl;
+    }
 }
 
 
@@ -181,7 +183,7 @@ void CsrSh::fetch(const std::string& csr_name,
     assert(entry_num < n_entries);
     auto addr = csr_h.addr(entry_num);
     auto n_bytes = csr_h.sz();
-    std::cout << "REQ: " << csr_name <<  ":ADDR: 0x" << std::hex << addr
+    std::cout << "FETCH: " << csr_name <<  ":ADDR: 0x" << std::hex << addr
 	    << std::dec << "BYTES: " << n_bytes << std::endl;
 
 
@@ -190,6 +192,19 @@ void CsrSh::fetch(const std::string& csr_name,
 void CsrSh::flush(const std::string& csr_name,
 		const uint16_t& inst_num,
 		const uint32_t& entry_num) {
-
-
+    auto it = mp_buf.find(csr_name);
+    assert (it != mp_buf.end());
+    auto n_inst = ns_h.num_inst(csr_name);
+    assert(inst_num < n_inst);
+    auto csr_h = ns_h.get_csr(csr_name, inst_num);
+    auto n_entries = csr_h.num_entries();
+    assert(entry_num < n_entries);
+    auto addr = csr_h.addr(entry_num);
+    auto n_bytes = csr_h.sz();
+    uint8_t* buf = (it->second).first;
+    std::cout << "FLUSH: " << csr_name << ": ADDR: 0x" << std::hex << addr << std::endl;
+    for (auto i = 0; i < n_bytes; i ++) {
+        std::cout << "[" << i << "] = 0x" << std::hex
+		<< static_cast<uint16_t>(buf[i]) << std::endl;
+    }
 }

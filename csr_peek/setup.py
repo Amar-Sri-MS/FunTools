@@ -13,6 +13,7 @@ setup(
     install_requires = [
         'setuptools-git',
         'pyyaml',
-        'jinja2'
+        'jinja2',
+        'ply'
     ],
 )
