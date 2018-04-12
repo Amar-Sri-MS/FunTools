@@ -44,30 +44,27 @@ const char *{{flagset.name | as_lower }}_names[] = {
 bool {{struct.name}}_json_init(struct fun_json *j,
 				struct {{struct.init_struct().name}} *s)
 {
+	memset(s, 0, sizeof(struct {{struct.init_struct().name}}));
 {% for field in struct.arg_fields() %}
 
-	struct fun_json *{{field.name}}_j = fun_json_lookup(j, "{{field.name}}");
 	{% if field.type.IsArray() %}
-	{{field | as_declaration}};
-	memset({{field.name}}, 0, sizeof({{field.name}}));
+	{% if field.type.ArraySize() > 0 %}
+	struct fun_json *{{field.name}}_j = fun_json_lookup(j, "{{field.name}}");
 	if ({{field.name}}_j) {
 		assert({{field.name}}_j->array->count <= {{field.type.ArraySize()}});
 		for (int i = 0; i < {{field.name}}_j->array->count; i++) {
-			{{field.name}}[i] = {{field.name}}_j->array->items[i]->int_value;
+			s->{{field.name}}[i] = {{field.name}}_j->array->items[i]->int_value;
 		}
 	}
+	{% endif %}
 	{% else %}
-	{{field | as_declaration}} = 0;
+	struct fun_json *{{field.name}}_j = fun_json_lookup(j, "{{field.name}}");
 	if ({{field.name}}_j) {
-		{{field.name}} = {{field.name}}_j->int_value;
+		s->{{field.name}} = {{field.name}}_j->int_value;
 	}
 	{% endif %}
 {% endfor %}
 
-	{{struct.name}}_init(s{% if struct.arg_fields() %},
-{% for field in struct.arg_fields() %}
-		{{field.name}}{{"," if not loop.last}}
-{% endfor %}{% endif %}		);
 	return true;
 }
 
