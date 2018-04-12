@@ -87,7 +87,7 @@ int main(int argc, char** argv) {
   strcpy((char*) hdr.u1.inline_cmd.bytes, expected_bytes);
 
   GatherListInlineFragment_init(&hdr, OPCODE_SCATTER, expected_source,
-				expected_byte_count, (uint8_t *)expected_bytes);
+				expected_byte_count);
 
   ASSERT_EQUAL(OPCODE_SCATTER,
 	       GATHER_LIST_INLINE_FRAGMENT_OPCODE_G(hdr.u1.inline_cmd.opcode_to_inlineByteCount),
