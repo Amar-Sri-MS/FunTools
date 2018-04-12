@@ -131,33 +131,20 @@ static inline void {{struct.name}}_init(struct {{struct.init_struct().name}} *s{
   {{field | as_declaration }} {{ ", " if not loop.last }} {% endfor %}{% endif %}) {
 
   {% for field in struct.init_fields() %}
+   {% if field.type.IsArray() == false %}
     {% if field.packed_fields %}
-	{% if field.type.IsArray() %}
-		for (int i = 0; i < {{field.type.ArraySize()}}; i++) {
-			s->{{field.init_accessor()}}{{field.name}}[i] = cpu_to_dpu{{field.type.bit_width}}(
-			{% for f in field.fields_to_set() %}
-				{{f.parent_struct.name|as_macro}}_{{f.name|as_macro}}_P_NOSWAP({{f.name}}) {{" | " if not loop.last }}
-			{% endfor %});
-		}
-	{% else %}
-		s->{{field.init_accessor()}}{{field.name}} = cpu_to_dpu{{field.type.bit_width}}(
-		{% for f in field.fields_to_set() %}
-			{{f.parent_struct.name|as_macro}}_{{f.name|as_macro}}_P_NOSWAP({{f.name}}) {{" | " if not loop.last }}
-		{% endfor %});
-	{% endif %}
+	s->{{field.init_accessor()}}{{field.name}} = cpu_to_dpu{{field.type.bit_width}}(
+	{% for f in field.fields_to_set() %}
+		{{f.parent_struct.name|as_macro}}_{{f.name|as_macro}}_P_NOSWAP({{f.name}}) {{" | " if not loop.last }}
+	{% endfor %});
     {% else %}
       {% if field.is_natural_width %}
-		{% if field.type.IsArray() %}
-			for (int i = 0; i < {{field.type.ArraySize()}}; i++) {
-				s->{{field.init_accessor()}}{{field.name}}[i] = {{toDpuWrapper(field)}}({{field.name}}[i]);
-			}
-		{% else %}
-			s->{{field.init_accessor()}}{{field.name}} = {{toDpuWrapper(field)}}({{field.name}});
-		{% endif %}
+	s->{{field.init_accessor()}}{{field.name}} = {{toDpuWrapper(field)}}({{field.name}});
       {% else %}
         s->{{field.init_accessor()}}{{field.name}} = {{field.name}};
       {% endif %}
     {% endif %}
+   {% endif %}
   {% endfor %}
 }
 
