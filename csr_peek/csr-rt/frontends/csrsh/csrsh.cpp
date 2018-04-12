@@ -3,11 +3,20 @@
 #include <iomanip>
 #include <sstream>
 
+// Get this from the DPC include files
+#define DPC_PORT 40221
 /*
- * This wants to be a global variable
+ * Connect to the DPCSH that must already be
+ * running in proxy mode
+ * Add command line arg later to ignore this
+ * if the server is a raw server
  */
 
-std::map<std::string, std::pair<uint8_t*, uint16_t>> mp_buf;
+void CsrSh::__init(void) {
+    assert(tcp_h.conn("localhost", DPC_PORT));
+}
+
+
 void CsrSh::dump_csr(const std::string& csr_name) {
     auto n_inst = ns_h.num_inst(csr_name);
     std::cout << "CSR:"<< csr_name << std::endl;
@@ -157,10 +166,23 @@ void CsrSh::show_buffer(void) {
     }
 }
 
+/*
+ * The ones below interact with real hardware
+ * either through dpcsh or otherwise
+ */
 
 void CsrSh::fetch(const std::string& csr_name,
 		const uint16_t& inst_num,
 		const uint32_t& entry_num) {
+    auto n_inst = ns_h.num_inst(csr_name);
+    assert(inst_num < n_inst);
+    auto csr_h = ns_h.get_csr(csr_name, inst_num);
+    auto n_entries = csr_h.num_entries();
+    assert(entry_num < n_entries);
+    auto addr = csr_h.addr(entry_num);
+    auto n_bytes = csr_h.sz();
+    std::cout << "REQ: " << csr_name <<  ":ADDR: 0x" << std::hex << addr
+	    << std::dec << "BYTES: " << n_bytes << std::endl;
 
 
 
@@ -168,5 +190,6 @@ void CsrSh::fetch(const std::string& csr_name,
 void CsrSh::flush(const std::string& csr_name,
 		const uint16_t& inst_num,
 		const uint32_t& entry_num) {
+
 
 }

@@ -10,7 +10,7 @@ all: csrsh
 %.o: %.cpp
 	$(CC) -c $(CFLAGS) $<
 
-csrsh: frontend.o csrsh.o
+csrsh: frontend.o csrsh.o tcp_cli.o
 	$(CC) -o $@ $^ $(LDFLAGS)
 clean:
 	rm -f *.o
