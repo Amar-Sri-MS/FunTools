@@ -9,6 +9,9 @@ Standard Fungible template for source code for generated structures.
 
 /* For FunOS and CC-Linux. */
 #include <stdint.h>
+#include <stdio.h>
+#include <string.h>
+#include <assert.h>
 
 #include "{{output_base}}.h"
 
@@ -38,22 +41,32 @@ const char *{{flagset.name | as_lower }}_names[] = {
  * Returns false if initialization failed.
  * Caller responsible for determining correct init function(s).
  */
-extern bool {{struct.name}}_json_init(struct fun_json *j,
-    struct {{struct.init_struct().name}} *s) {
+bool {{struct.name}}_json_init(struct fun_json *j, struct {{struct.init_struct().name}} *s) {
 {% for field in struct.arg_fields() %}
-  struct fun_json *{{field.name}}_j = fun_json_lookup(j, "{{field.name}}");
-  if ({{field.name}}_j == NULL) {
-     return false;
-  }
-  {{field | as_declaration}} = {{field.name}}_j->int_value;
+
+	struct fun_json *{{field.name}}_j = fun_json_lookup(j, "{{field.name}}");
+	{% if field.type.IsArray() %}
+	{{field | as_declaration}};
+	memset({{field.name}}, 0, sizeof({{field.name}}));
+	if ({{field.name}}_j != NULL) {
+		assert({{field.name}}_j->array->count <= {{field.type.ArraySize()}});
+		for (int i = 0; i < {{field.name}}_j->array->count; i++) {
+			{{field.name}}[i] = {{field.name}}_j->array->items[i]->int_value;
+		}
+	}
+	{% else %}
+	{{field | as_declaration}} = 0;
+	if ({{field.name}}_j != NULL) {
+		{{field.name}} = {{field.name}}_j->int_value;
+	}
+	{% endif %}
 {% endfor %}
 
-  {{struct.name}}_init(s  {% if struct.arg_fields() %},
-    {% for field in struct.arg_fields() %}{{field.name}}
-      {{", " if not loop.last}}
-         {% endfor %}
-  {% endif %});
-  return true;
+	{{struct.name}}_init(s{% if struct.arg_fields() %},
+	{% for field in struct.arg_fields() %}{{field.name}}{{"," if not loop.last}}
+	{% endfor %}
+{% endif %});
+	return true;
 }
 
 {% endfor %}
