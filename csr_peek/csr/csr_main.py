@@ -33,6 +33,8 @@ class Slurper(object):
 
 		cmd_parser.add_argument("-s", "--sdk-dir", help="SDK root directory",
 				required=False, type=str)
+		cmd_parser.add_argument("-c", "--cfg-dir", help="Dir for config files",
+				required=False, type=str)
 
 		self.other_args['tmpl_file'] = os.path.join(ml_dir, "template", "csr_rt.j2")
 		self.other_args['csr_defs']  = os.path.join(ml_dir, "template", "csr_defs.yaml")
