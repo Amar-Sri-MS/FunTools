@@ -42,13 +42,15 @@ const char *{{flagset.name | as_lower }}_names[] = {
  * Caller responsible for determining correct init function(s).
  */
 bool {{struct.name}}_json_init(struct fun_json *j,
-				struct {{struct.init_struct().name}} *s)
+				{{struct.DeclarationString()}} *s)
 {
-	memset(s, 0, sizeof(struct {{struct.init_struct().name}}));
-{% for field in struct.arg_fields() %}
+	memset(s, 0, sizeof({{struct.DeclarationString()}}));
+{% for field in struct.fields %}
 
-	{% if field.type.IsArray() %}
-	{% if field.type.ArraySize() > 0 %}
+  {% if field.type.IsRecord() %}
+	/* Struct or Union - {{field.name}} */
+  {% elif field.type.IsArray() %}
+    {% if field.type.ArraySize() > 0 %}
 	struct fun_json *{{field.name}}_j = fun_json_lookup(j, "{{field.name}}");
 	if ({{field.name}}_j) {
 		assert({{field.name}}_j->array->count <= {{field.type.ArraySize()}});
@@ -56,13 +58,17 @@ bool {{struct.name}}_json_init(struct fun_json *j,
 			s->{{field.name}}[i] = {{field.name}}_j->array->items[i]->int_value;
 		}
 	}
-	{% endif %}
-	{% else %}
+    {% endif %}
+  {% else %}
+    {% if field.packed_fields %}
+	/* sub-field {{field.name}} */
+    {% else %}
 	struct fun_json *{{field.name}}_j = fun_json_lookup(j, "{{field.name}}");
 	if ({{field.name}}_j) {
 		s->{{field.name}} = {{field.name}}_j->int_value;
 	}
-	{% endif %}
+    {% endif %}
+  {% endif %}
 {% endfor %}
 
 	return true;
