@@ -133,7 +133,7 @@ static inline void {{struct.name}}_init(struct {{struct.init_struct().name}} *s{
   {% for field in struct.init_fields() %}
    {% if field.type.IsArray() == false %}
     {% if field.packed_fields %}
-	s->{{field.init_accessor()}}{{field.name}} = cpu_to_dpu{{field.type.bit_width}}( 
+      s->{{field.init_accessor()}}{{field.name}} = cpu_to_dpu{{field.type.bit_width}}( 
       {% for f in field.fields_to_set() %}
 	{{f.parent_struct.name|as_macro}}_{{f.name|as_macro}}_P_NOSWAP({{f.name}}) {{" | " if not loop.last }}
       {% endfor %});
