@@ -46,7 +46,7 @@ bool {{struct.name}}_json_init(struct fun_json *j,
 {
 	memset(s, 0, sizeof({{struct.DeclarationString()}}));
 {% for field in struct.fields %}
-
+ {% if field.is_reserved == false %}
   {% if field.type.IsRecord() %}
 	/* Struct or Union - {{field.name}} */
   {% elif field.type.IsArray() %}
@@ -69,6 +69,7 @@ bool {{struct.name}}_json_init(struct fun_json *j,
 	}
     {% endif %}
   {% endif %}
+ {% endif %}
 {% endfor %}
 
 	return true;
