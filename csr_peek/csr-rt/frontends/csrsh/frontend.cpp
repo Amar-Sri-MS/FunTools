@@ -48,8 +48,7 @@ void help(void) {
 }
 
 
-void process_cmd(const char* buf) {
-    CsrSh s;
+void process_cmd(CsrSh& s, const char* buf) {
     auto vec = tokenize(buf);
     if (vec[0] == "help") {
         help();
@@ -62,8 +61,11 @@ void process_cmd(const char* buf) {
     } else if(vec[0] == "show") {
 	s.show_buffer();
     } else if(vec[0] == "flush") {
+	std::cout << "Vector: " << vec.size() << std::endl;
+	assert(vec.size() >= 4);
 	s.flush(vec[1], std::stoi(vec[2]), std::stoul(vec[3]));
     } else if(vec[0] == "fetch") {
+	assert(vec.size() >= 4);
 	s.fetch(vec[1], std::stoi(vec[2]), std::stoul(vec[3]));
     } else if(vec[0] == "rfetch") {
         std::cout << "Not implemented" << std::endl;
@@ -80,12 +82,13 @@ int main()
 {
     char* buf;
     rl_bind_key('\t', rl_insert);
+    CsrSh s;
 
     while((buf = readline("csrsh>> ")) != nullptr) {
         if (strlen(buf) > 0) add_history(buf);
         if(!strcmp(buf, "quit")) break;
         if(!strcmp(buf, "exit")) break;
-        process_cmd(buf);
+        process_cmd(s, buf);
         free(buf);
     }
     return 0;
