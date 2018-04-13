@@ -25,5 +25,7 @@ class json_util {
     uint8_t* peek_rsp(const std::string& json_str);
     bool poke_rsp(const std::string& json_str);
     std::string stringify(struct fun_json* json);
+  private:
+    fun_json* __tmpl(void);
 
 };

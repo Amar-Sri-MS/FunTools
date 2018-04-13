@@ -1,20 +1,33 @@
 #include "json_util.h"
 
-fun_json* json_util::peek(const uint64_t& addr,
-		const uint16_t& size) {
+fun_json* json_util::__tmpl(void) {
     struct fun_json* json_root = fun_json_create_empty_dict();
     assert(fun_json_dict_add(json_root,
 			    "verb",
 			    fun_json_no_copy_no_own,
 			    fun_json_create_string("csr_raw", fun_json_no_copy_no_own),
 			    true));
+
+    assert(fun_json_dict_add(json_root,
+			    "tid",
+			    fun_json_no_copy_no_own,
+			    fun_json_create_int64(0),
+			    true));
+    return json_root;
+
+}
+
+fun_json* json_util::peek(const uint64_t& addr,
+		const uint16_t& size) {
+
+    struct fun_json* json_root = __tmpl();
     const char* arr[] = {
 	    "peek"
     };
 
-    struct fun_json* json_arr = fun_json_create_array_from_strings(arr, 
+    struct fun_json* json_arr = fun_json_create_array_from_strings(arr,
 		    fun_json_no_copy_no_own, 1);
-    
+
     fun_json_array_append(json_arr,
 		    fun_json_create_int64(addr));
     fun_json_array_append(json_arr,
@@ -32,25 +45,20 @@ fun_json* json_util::peek(const uint64_t& addr,
 fun_json* json_util::poke(const uint64_t& addr,
 		const uint8_t* b_arr,
 		const uint16_t& size) {
-    struct fun_json* json_root = fun_json_create_empty_dict();
-    assert(fun_json_dict_add(json_root,
-			    "verb",
-			    fun_json_no_copy_no_own,
-			    fun_json_create_string("csr_raw", fun_json_no_copy_no_own),
-			    true));
+    struct fun_json* json_root = __tmpl();
 
     const char* arr[] = {
 	    "poke"
     };
-    struct fun_json* json_arr = fun_json_create_array_from_strings(arr, 
+    struct fun_json* json_arr = fun_json_create_array_from_strings(arr,
 		    fun_json_no_copy_no_own, 1);
-    
+
 
     fun_json_array_append(json_arr,
 		    fun_json_create_int64(addr));
 
     struct fun_json* bin_json = fun_json_create_array_from_uint8s(b_arr, size);
-     
+
     fun_json_array_append(json_arr, bin_json);
 
     assert(fun_json_dict_add(json_root,
