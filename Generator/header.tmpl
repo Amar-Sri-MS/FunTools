@@ -112,16 +112,10 @@ How to render each struct
      {% endif %}{% endfor %}
 {% endif %}
  */
-static inline void {{struct.name}}_init(struct {{struct.init_struct().name}} *s
-{%if struct.arg_fields() %}
-  {% for field in struct.arg_fields() %}
-    {% if field.type.IsArray() == 0 %}
-	,
-	{{field | as_declaration }}
-    {% endif %}
-  {% endfor %}
-{% endif %})
-{
+static inline void {{struct.name}}_init(struct {{struct.init_struct().name}} *s{%if struct.arg_fields() %},
+{% for field in struct.arg_fields() %}
+  {{field | as_declaration }} {{ ", " if not loop.last }} {% endfor %}{% endif %}) {
+
   {% for field in struct.init_fields() %}
     {% if field.packed_fields %}
       s->{{field.init_accessor()}}{{field.name}} =
@@ -131,14 +125,10 @@ static inline void {{struct.name}}_init(struct {{struct.init_struct().name}} *s
 	;
     {% else %}
       {% if field.is_natural_width %}
-	{% if field.type.IsArray() == 0 %}
-	        s->{{field.init_accessor()}}{{field.name}} = {{field.name}};
-	{% endif %}
+        s->{{field.init_accessor()}}{{field.name}} = {{field.name}};
       {% else %}
-	{% if field.type.IsArray() == 0 %}
-		/* Potential bug? Field isn't as wide as type. */
-		s->{{field.init_accessor()}}{{field.name}} = {{field.name}};
-	{% endif %}
+        /* Potential bug? Field isn't as wide as type. */
+        s->{{field.init_accessor()}}{{field.name}} = {{field.name}};
       {% endif %}
     {% endif %}
   {% endfor %}
