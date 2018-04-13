@@ -188,9 +188,8 @@ void CsrSh::fetch(const std::string& csr_name,
 
     auto json = json_acc.peek(addr, n_bytes);
     auto json_str = json_acc.stringify(json);
-    std::cout << "CREATED JSON" << json_str << std::endl;
     assert(tcp_h.send_data(json_str));
-    std::cout << "SENT DATA" << std::endl;
+    std::cout << "SENT DATA: " << json_str << std::endl;
     auto r_json = tcp_h.receive();
     std::cout << "RCV DATA" << std::endl;
     uint8_t* bin_arr = json_acc.peek_rsp(r_json);
@@ -222,9 +221,8 @@ void CsrSh::flush(const std::string& csr_name,
 
     auto json = json_acc.poke(addr, buf, n_bytes);
     auto json_str = json_acc.stringify(json);
-    std::cout << "CREATED JSON" << json_str << std::endl;
     assert(tcp_h.send_data(json_str));
-    std::cout << "SENT DATA" << std::endl;
+    std::cout << "SENT DATA: " << json_str << std::endl;
     auto r_json = tcp_h.receive();
     std::cout << "RCV DATA" << std::endl;
     assert(json_acc.poke_rsp(r_json));
