@@ -46,7 +46,7 @@ bool tcp_cli::send_data(const std::string& data) {
     }
     return true;
 }
-std::string tcp_cli::receive(const int& sz = 1024) {
+std::string tcp_cli::receive(const int& sz) {
     char buffer[sz];
     if(recv(sock, buffer, sizeof(buffer), 0) < 0) {
         perror("Recv failed");

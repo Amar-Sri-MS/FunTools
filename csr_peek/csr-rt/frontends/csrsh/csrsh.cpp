@@ -184,8 +184,19 @@ void CsrSh::fetch(const std::string& csr_name,
     auto addr = csr_h.addr(entry_num);
     auto n_bytes = csr_h.sz();
     std::cout << "FETCH: " << csr_name <<  ":ADDR: 0x" << std::hex << addr
-	    << std::dec << "BYTES: " << n_bytes << std::endl;
+	    << std::dec << ":BYTES: " << n_bytes << std::endl;
 
+    auto json = json_acc.peek(addr, n_bytes);
+    auto json_str = json_acc.stringify(json);
+    std::cout << "CREATED JSON" << json_str << std::endl;
+    assert(tcp_h.send_data(json_str));
+    std::cout << "SENT DATA" << std::endl;
+    auto r_json = tcp_h.receive();
+    std::cout << "RCV DATA" << std::endl;
+    uint8_t* bin_arr = json_acc.peek_rsp(r_json);
+    mp_buf.emplace(std::piecewise_construct,
+		    std::forward_as_tuple(csr_name),
+                    std::forward_as_tuple(bin_arr, n_bytes));
 
 
 }
@@ -207,4 +218,15 @@ void CsrSh::flush(const std::string& csr_name,
         std::cout << "[" << i << "] = 0x" << std::hex
 		<< static_cast<uint16_t>(buf[i]) << std::endl;
     }
+
+
+    auto json = json_acc.poke(addr, buf, n_bytes);
+    auto json_str = json_acc.stringify(json);
+    std::cout << "CREATED JSON" << json_str << std::endl;
+    assert(tcp_h.send_data(json_str));
+    std::cout << "SENT DATA" << std::endl;
+    auto r_json = tcp_h.receive();
+    std::cout << "RCV DATA" << std::endl;
+    assert(json_acc.poke_rsp(r_json));
+
 }
