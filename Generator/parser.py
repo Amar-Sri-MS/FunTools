@@ -675,7 +675,8 @@ class Field(Declaration):
     """Returns true if the field should be an argument to an init function,
     or should be initialized in an init function.
     """
-    return (not self.is_reserved and not self.type.IsRecord())
+    return (not self.is_reserved and not self.type.IsRecord() 
+            and not self.type.IsArray())
 
   def DeclarationString(self, linux_type=False, big_endian=None):
     """Returns a string representing the declaration for variable to set field."""

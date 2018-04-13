@@ -131,7 +131,6 @@ static inline void {{struct.name}}_init(struct {{struct.init_struct().name}} *s{
   {{field | as_declaration }} {{ ", " if not loop.last }} {% endfor %}{% endif %}) {
 
   {% for field in struct.init_fields() %}
-   {% if field.type.IsArray() == false %}
     {% if field.packed_fields %}
       s->{{field.init_accessor()}}{{field.name}} = cpu_to_dpu{{field.type.bit_width}}(	
       {% for f in field.fields_to_set() %}
@@ -144,7 +143,6 @@ static inline void {{struct.name}}_init(struct {{struct.init_struct().name}} *s{
         s->{{field.init_accessor()}}{{field.name}} = {{field.name}};
       {% endif %}
     {% endif %}
-   {% endif %}
   {% endfor %}
 }
 
