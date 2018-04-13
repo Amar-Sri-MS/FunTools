@@ -6,7 +6,8 @@
 # Do a make clean to remove the derived files (except the pulled in CSR)
 # Do a make distclean to remove all the CSR configurations as well
 
-SUDO = sudo
+SUDO_I = sudo
+SUDO_E = sudo
 INDIR = jsb
 
 OS := $(shell uname)
@@ -16,6 +17,7 @@ OS := $(shell uname)
 #
 # Different tools on MacOS vs linux
 ifeq ($(OS),Darwin)
+  SUDO_I =
   INSTALL := brew
 else
 ifeq ($(OS),Linux)
@@ -29,10 +31,10 @@ all: build
 
 .PHONY: build clean libcsr cfg_pull cfg
 build:
-	$(SUDO) python setup.py install --record files.txt
+	$(SUDO_E) python setup.py install --record files.txt
 
 libcsr:
-
+	$(SUDO_I) $(INSTALL) install astyle
 	cd csr-rt && astyle -c gen/csr_gen.cpp &&  make
 
 cfg:build
@@ -40,15 +42,15 @@ cfg:build
 
 
 cfg_pull:build
-	#$(SUDO) $(INSTALL) install nfs-common
+	$(SUDO_I) $(INSTALL) install nfs-common
 	cd csr; csr-get -i $(INDIR)
 
 clean:
 	cat files.txt | sudo xargs rm -rf
-	$(SUDO) rm -rf dist
-	$(SUDO) rm -rf build
-	$(SUDO) rm -rf *.egg-info
-	$(SUDO) rm -f files.txt
+	$(SUDO_E) rm -rf dist
+	$(SUDO_E) rm -rf build
+	$(SUDO_E) rm -rf *.egg-info
+	$(SUDO_E) rm -f files.txt
 	cd csr-rt; make clean
 
 distclean: clean

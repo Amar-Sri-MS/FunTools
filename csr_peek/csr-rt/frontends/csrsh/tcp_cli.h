@@ -13,5 +13,5 @@ class tcp_cli {
         tcp_cli();
         bool conn(const std::string& host, const int& port);
         bool send_data(const std::string& data);
-        std::string receive(const int& sz);	
+        std::string receive(const int& sz=1024);
 };

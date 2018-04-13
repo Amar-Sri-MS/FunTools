@@ -3,6 +3,7 @@
 //#include "dpc_port.h"
 #include <map>
 #include <utility>
+#include "json_util.h"
 #include "tcp_cli.h"
 
 class CsrSh {
@@ -17,6 +18,7 @@ class CsrSh {
   private:
       F1NS& ns_h;
       tcp_cli tcp_h;
+      json_util json_acc;
       std::map<std::string, std::pair<uint8_t*, uint16_t>> mp_buf;
       void __init(void);
 };
