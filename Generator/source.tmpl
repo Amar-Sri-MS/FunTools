@@ -41,17 +41,39 @@ const char *{{flagset.name | as_lower }}_names[] = {
  * Returns false if initialization failed.
  * Caller responsible for determining correct init function(s).
  */
-bool {{struct.name}}_json_init(struct fun_json *j,
+bool {{struct.name}}_json_init(struct fun_json *arg,
 				{{struct.DeclarationString()}} *s)
 {
+	bool __attribute__ ((unused)) dict = false;
+	int ai = 0;
+	struct fun_json __attribute__ ((unused)) *j = arg;
+
+	switch (arg->type) {
+	case fun_json_array_type:
+		{
+			/* top level ? check if 1st item is dict */
+			struct fun_json *first_item =
+					fun_json_array_at(arg, ai);
+			if (first_item->type == fun_json_dict_type) {
+				dict = true;
+				j = first_item;
+			}
+		}
+		break;
+	case fun_json_dict_type:
+		dict = true;
+		break;
+	}
+
 	memset(s, 0, sizeof({{struct.DeclarationString()}}));
 {% for field in struct.fields %}
  {% if field.is_reserved == false %}
-  {% if field.type.IsRecord() %}
-	/* Struct or Union - {{field.name}} */
-  {% elif field.type.IsArray() %}
+  {% if field.type.IsArray() %}
     {% if field.type.ArraySize() > 0 %}
-	struct fun_json *{{field.name}}_j = fun_json_lookup(j, "{{field.name}}");
+
+	struct fun_json *{{field.name}}_j = (dict)
+				? fun_json_lookup(j, "{{field.name}}")
+				: fun_json_array_at(j, ai++);
 	if ({{field.name}}_j) {
 		assert({{field.name}}_j->array->count <= {{field.type.ArraySize()}});
 		for (int i = 0; i < {{field.name}}_j->array->count; i++) {
@@ -59,11 +81,33 @@ bool {{struct.name}}_json_init(struct fun_json *j,
 		}
 	}
     {% endif %}
+  {% elif field.type.IsRecord() %}
+    {% if field.type.base_type.node.is_union %}
+
+	/* TBD - Union - {{field.name}} */
+    {% else %}
+
+	struct fun_json *{{field.name}}_j = (dict)
+				? fun_json_lookup(j, "{{field.name}}")
+				: fun_json_array_at(j, ai++);
+	/* TBD - Struct - {{field.name}} */
+	{{field.type.base_type.node.name}}_json_init({{field.name}}_j, &(s->{{field.name}}));
+    {% endif %}
   {% else %}
     {% if field.packed_fields %}
-	/* sub-field {{field.name}} */
+
+	struct fun_json *{{field.name}}_j = (dict)
+				? fun_json_lookup(j, "{{field.name}}")
+				: fun_json_array_at(j, ai++);
+	/* TBD - sub-field {{field.name}} */
+	if ({{field.name}}_j) {
+		s->{{field.name}} = {{field.name}}_j->int_value;
+	}
     {% else %}
-	struct fun_json *{{field.name}}_j = fun_json_lookup(j, "{{field.name}}");
+
+	struct fun_json *{{field.name}}_j = (dict)
+				? fun_json_lookup(j, "{{field.name}}")
+				: fun_json_array_at(j, ai++);
 	if ({{field.name}}_j) {
 		s->{{field.name}} = {{field.name}}_j->int_value;
 	}
