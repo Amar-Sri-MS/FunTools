@@ -12,7 +12,15 @@
  * Add command line arg later to ignore this
  * if the server is a raw server
  */
+CsrSh::~CsrSh(void) {
+    for (auto& elem: mp_buf) {
+        delete elem.second.first;
+	elem.second.first=nullptr;
+    }
+    mp_buf.clear();
 
+
+}
 void CsrSh::__init(void) {
     if (not tcp_h.conn("localhost", DPC_PORT)) {
         std::cout << "!!!!WARNING: dpcsh not connected. Fetch/Flush commands WILL NOT work!!" << std::endl;
@@ -211,7 +219,7 @@ void CsrSh::fetch(const std::string& csr_name,
     auto r_json = tcp_h.receive();
     r_json.erase(std::remove(r_json.begin(), r_json.end(), '\n'), r_json.end());
     r_json.erase(std::remove(r_json.begin(), r_json.end(), '\r'), r_json.end());
-    std::cout << "RCV_JSON" << r_json << std::endl;
+    std::cout << "RCV_JSON: " << r_json << std::endl;
     uint8_t* bin_arr = json_acc.peek_rsp(r_json);
     for (auto i = 0; i < n_bytes; i ++) {
         std::cout << "raw[" << i << "] = 0x" << std::hex << static_cast<uint16_t>(bin_arr[i]) << std::endl;
@@ -249,7 +257,7 @@ void CsrSh::flush(const std::string& csr_name,
     std::cout << "SEND_JSON: " << json_str << std::endl;
     auto r_json = tcp_h.receive();
     r_json.erase(std::remove(r_json.begin(), r_json.end(), '\n'), r_json.end());
-    std::cout << "RCV_JSON" << r_json << std::endl;
+    std::cout << "RCV_JSON: " << r_json << std::endl;
     assert(json_acc.poke_rsp(r_json));
     csr_h.release();
 }

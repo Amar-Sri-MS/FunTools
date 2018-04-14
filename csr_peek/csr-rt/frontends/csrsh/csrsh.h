@@ -15,6 +15,7 @@ class CsrSh {
      void show_buffer(void);
      void fetch(const std::string& csr_name, const uint16_t& inst_num, const uint32_t& entry_num);
      void flush(const std::string& csr_name, const uint16_t& inst_num, const uint32_t& entry_num);
+     ~CsrSh();
   private:
       F1NS& ns_h;
       tcp_cli tcp_h;
