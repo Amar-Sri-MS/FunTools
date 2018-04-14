@@ -77,7 +77,6 @@ void csr_prop_t::release(void) {
 void csr_prop_t::raw_rd(uint8_t* raw_buf,
         const uint32_t& e_idx) {
     if (r_fn == nullptr) return;
-    __init();
     assert (e_idx < n_entries);
     std::memset(raw_buf, 0, buf_sz);
     uint64_t f_addr = m_addr + (curr_inst * skip_addr) + (e_idx*addr_w);
@@ -118,6 +117,7 @@ uint64_t csr_prop_t::addr(const uint32_t& e_idx) const {
 }
 csr_prop_t& csr_prop_t::_get_csr(const uint8_t& i_num) {
     //assert(i_num < num_an_nodes);
+    __init();
     curr_inst = i_num;
     return *this;
 }

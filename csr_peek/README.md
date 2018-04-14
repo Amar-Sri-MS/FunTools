@@ -31,13 +31,18 @@ This step may need to be preceded by distclean IF new CSR bits need to be pulled
 
     $ make cfg
 
-### Finally, create the library
+### Create the library
 
     $ make libcsr
 
 
 Creates the library (archive) under csr-rt. Other tools can be written both as frontend and backend
 to use this tool. Frontend could be tools like dpcsh, and backend could be socket/RPC/JTAG to write these values to the chip.
+
+### Create the csrsh
+
+    $ make csrsh
+Creates the csrshell executable under csr-rt/frontends/csrsh.
 
 ## Cleanup
 

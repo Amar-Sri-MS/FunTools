@@ -15,10 +15,12 @@ class CsrSh {
      void show_buffer(void);
      void fetch(const std::string& csr_name, const uint16_t& inst_num, const uint32_t& entry_num);
      void flush(const std::string& csr_name, const uint16_t& inst_num, const uint32_t& entry_num);
+     ~CsrSh();
   private:
       F1NS& ns_h;
       tcp_cli tcp_h;
       json_util json_acc;
       std::map<std::string, std::pair<uint8_t*, uint16_t>> mp_buf;
       void __init(void);
+      void __interpret(const std::string& csr_name, uint8_t* buf);
 };

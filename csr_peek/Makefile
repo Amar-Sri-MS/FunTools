@@ -37,6 +37,9 @@ libcsr:
 	$(SUDO_I) $(INSTALL) install astyle
 	cd csr-rt && astyle -c gen/csr_gen.cpp &&  make
 
+csrsh: libcsr
+	cd csr-rt && make csrsh
+
 cfg:build
 	csr-slurp -i csr/csr_cfg -o csr-rt/gen
 

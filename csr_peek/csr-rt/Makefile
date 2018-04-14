@@ -44,6 +44,9 @@ RANLIB = ranlib
 test_driver: $(csr_lib) $(driver_obj) $(BACKEND_LIBRARY)
 	$(CXX) $(CXXFLAGS) -o $@ $(driver_obj) $(LIBS)
 
+csrsh: $(csr_lib)
+	cd frontends/csrsh && make
+
 $(driver_obj): $(driver_src)
 	$(CXX) $(CXXFLAGS) $(BACKEND_INC) -c $^ -o $@
 
@@ -60,5 +63,6 @@ clean:
 	rm -f libcsr.a
 	rm -f test_driver
 	cd $(BACKEND) && make clean
+	cd frontends/csrsh && make clean
 distclean:
 	rm -f gen/*

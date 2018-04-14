@@ -61,7 +61,6 @@ void process_cmd(CsrSh& s, const char* buf) {
     } else if(vec[0] == "show") {
 	s.show_buffer();
     } else if(vec[0] == "flush") {
-	std::cout << "Vector: " << vec.size() << std::endl;
 	assert(vec.size() >= 4);
 	s.flush(vec[1], std::stoi(vec[2]), std::stoul(vec[3]));
     } else if(vec[0] == "fetch") {
