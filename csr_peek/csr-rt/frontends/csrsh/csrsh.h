@@ -21,4 +21,5 @@ class CsrSh {
       json_util json_acc;
       std::map<std::string, std::pair<uint8_t*, uint16_t>> mp_buf;
       void __init(void);
+      void __interpret(const std::string& csr_name, uint8_t* buf);
 };

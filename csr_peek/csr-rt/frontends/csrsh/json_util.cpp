@@ -1,5 +1,6 @@
+#include <iostream>
+#include <sstream>
 #include "json_util.h"
-
 fun_json* json_util::__tmpl(void) {
     struct fun_json* json_root = fun_json_create_empty_dict();
     assert(fun_json_dict_add(json_root,
@@ -77,13 +78,15 @@ std::string json_util::stringify(struct fun_json* json) {
 
 uint8_t* json_util::peek_rsp(const std::string& json_str) {
     struct fun_json* b_arr = fun_json_create_from_text(json_str.c_str());
+    assert(b_arr->type == fun_json_array_type);
     auto n_elems = fun_json_array_count(b_arr);
     uint8_t* byte_arr = new uint8_t[n_elems]();
     struct fun_json* elem = nullptr;
     for (auto i = 0; i < n_elems; i ++) {
         elem = fun_json_array_at(b_arr, i);
         assert (elem != nullptr);
-        byte_arr[i] = (uint8_t)(elem->int_value);
+	assert(elem->type == fun_json_int_type);
+	byte_arr[i] = (uint8_t)(elem->int_value);
     }
     return byte_arr;
 }

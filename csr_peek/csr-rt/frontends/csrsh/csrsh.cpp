@@ -2,6 +2,7 @@
 #include <cstring>
 #include <iomanip>
 #include <sstream>
+#include <utility>
 
 // Get this from the DPC include files
 #define DPC_PORT 40221
@@ -17,7 +18,6 @@ void CsrSh::__init(void) {
         std::cout << "!!!!WARNING: dpcsh not connected. Fetch/Flush commands WILL NOT work!!" << std::endl;
     }
 }
-
 
 void CsrSh::dump_csr(const std::string& csr_name) {
     auto n_inst = ns_h.num_inst(csr_name);
@@ -42,6 +42,7 @@ void CsrSh::dump_csr(const std::string& csr_name) {
                 << std::hex << std::setfill('0')
                 << std::setw(10) << addr << std::endl;
         }
+	csr_h.release();
     }
 }
 void CsrSh::set_csr(const std::string& csr_name) {
@@ -100,6 +101,7 @@ void CsrSh::set_csr(const std::string& csr_name) {
     mp_buf.emplace(std::piecewise_construct,
 		   std::forward_as_tuple(csr_name),
 		   std::forward_as_tuple(buf, sz));
+    csr_h.release();
 }
 
 void CsrSh::set_raw(const std::string& csr_name) {
@@ -116,6 +118,7 @@ void CsrSh::set_raw(const std::string& csr_name) {
         sz = csr_h.sz();
 	buf = new uint8_t[sz]();
     }
+    csr_h.release();
     std::cin.unsetf(std::ios::dec);
     std::cin.unsetf(std::ios::hex);
     std::cin.unsetf(std::ios::oct);
@@ -149,6 +152,7 @@ void CsrSh::set_raw(const std::string& csr_name) {
        }
        buf[i] = curr_val;
     }
+
     mp_buf.emplace(std::piecewise_construct,
 		   std::forward_as_tuple(csr_name),
 		   std::forward_as_tuple(buf, sz));
@@ -167,6 +171,19 @@ void CsrSh::show_buffer(void) {
 	    }
     }
 }
+
+void CsrSh::__interpret(const std::string& csr_name, uint8_t* buf) {
+    auto csr_h = ns_h.get_csr(csr_name);
+    uint64_t val = 0;
+    assert(buf != nullptr);
+    for (auto& elem: csr_h) {
+        csr_h.get(elem.first, val, buf);
+	std::cout << "FLD: " << elem.first
+		<< ":0x" << std::hex
+		<< static_cast<uint16_t>(val) << std::endl;
+    }
+}
+
 
 /*
  * The ones below interact with real hardware
@@ -188,15 +205,21 @@ void CsrSh::fetch(const std::string& csr_name,
 
     auto json = json_acc.peek(addr, n_bytes);
     auto json_str = json_acc.stringify(json);
+    json_str.append("\n");
     assert(tcp_h.send_data(json_str));
-    std::cout << "SENT DATA: " << json_str << std::endl;
+    std::cout << "SEND_JSON: " << json_str << std::endl;
     auto r_json = tcp_h.receive();
-    std::cout << "RCV DATA" << std::endl;
+    r_json.erase(std::remove(r_json.begin(), r_json.end(), '\n'), r_json.end());
+    r_json.erase(std::remove(r_json.begin(), r_json.end(), '\r'), r_json.end());
+    std::cout << "RCV_JSON" << r_json << std::endl;
     uint8_t* bin_arr = json_acc.peek_rsp(r_json);
-    mp_buf.emplace(std::piecewise_construct,
-		    std::forward_as_tuple(csr_name),
-                    std::forward_as_tuple(bin_arr, n_bytes));
-
+    for (auto i = 0; i < n_bytes; i ++) {
+        std::cout << "raw[" << i << "] = 0x" << std::hex << static_cast<uint16_t>(bin_arr[i]) << std::endl;
+    }
+    mp_buf.insert(std::make_pair(csr_name,
+                   std::make_pair(bin_arr, n_bytes)));
+    __interpret(csr_name, bin_arr);
+    csr_h.release();
 
 }
 void CsrSh::flush(const std::string& csr_name,
@@ -221,10 +244,12 @@ void CsrSh::flush(const std::string& csr_name,
 
     auto json = json_acc.poke(addr, buf, n_bytes);
     auto json_str = json_acc.stringify(json);
+    json_str.append("\n");
     assert(tcp_h.send_data(json_str));
-    std::cout << "SENT DATA: " << json_str << std::endl;
+    std::cout << "SEND_JSON: " << json_str << std::endl;
     auto r_json = tcp_h.receive();
-    std::cout << "RCV DATA" << std::endl;
+    r_json.erase(std::remove(r_json.begin(), r_json.end(), '\n'), r_json.end());
+    std::cout << "RCV_JSON" << r_json << std::endl;
     assert(json_acc.poke_rsp(r_json));
-
+    csr_h.release();
 }
