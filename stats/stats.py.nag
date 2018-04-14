@@ -8,17 +8,18 @@ import glob, os, sys, re, datetime
 import getopt, platform, tempfile
 import string
 import json
-from jinja2 import Environment, FileSystemLoader
+#import jinja2
 import pdb
 import argparse
 
 from itertools import chain
 print os.getcwd()
-#sys.path.append('../FunSDK/bin/csr_peek/')
+sys.path.append('../FunSDK/bin/csr_peek/')
 
 import csr.csr_main as csr
-from csr.utils.artifacts import CSRRoot
+from csr.utils.artifacts import CSRRoot, Walker, RingUtil, TmplMgr
 from csr.utils.schema import Entity
+
 from json_reader import CFG_Reader
 
 class SafeDict(dict):
@@ -42,7 +43,7 @@ def range_min_max(group):
   r = sorted(int(__) for __ in r)
   return r[0], 1 + r[-1]
 
-#It comes here for port and queue inputs
+#It comes here for poer and queue inputs
 class InputNode(object):
 	def __init__(self, name, info):
 		self.name = name
@@ -51,8 +52,7 @@ class InputNode(object):
 		self.incr = 0
 		print "INPUT NODE:{}".format(name)
 		self.__process_input(info)
-		print ("ADDED INPUT NODE:{} min:{} max:{} incr:{}".format(name,
-							self.range_min, self.range_max, self.incr))
+		print "ADDED INPUT NODE:{} min:{} max:{} incr:{}".format(name, self.range_min, self.range_max, self.incr)
 
 	def __process_input(self, info):
 		if info["range"] != None:
@@ -122,7 +122,7 @@ class EntrySubNode(object):
 	def get_num_fields(self):
 		return len(self.fields)
 
-	def get_num_cntrs(self):
+	def get_num_counters(self):
 		num_cnt = 1
 		num_fields = self.get_num_fields()
 		for k,v in self.input_map.iteritems():
@@ -132,38 +132,37 @@ class EntrySubNode(object):
 			num_cnt *= (rmax - rmin)
 		return num_cnt * num_fields
 
-	def gen_objs(self, cnt_offset, callers):
+	def read_api(self, csr_root, boffset):
 		items = self.input_map.keys()
 		max_depth = len(items)
-		csr_metadata = csr_defs.get_csr_metadata(self.reg, self.rn_class,
-						self.rn_inst, self.an_path, self.an, self.an_inst)
+		csr_metadata = csr_root.get_csr_metadata(self.reg, self.rn_class, self.rn_inst,
+									  self.an_path, self.an, self.an_inst)
 		#print csr_metadata
 		an_base_addr = csr_metadata.get_an_base_addr()
 		csr_entity = csr_metadata.get_csr_data()
 		self.csr_width = (csr_entity.width+63)/64;
 		print "CSR ENTITY: {}", format(csr_entity)
-		csr_read_objs = ""
+		reg = ""
 		if csr_entity.type == "CSR_TYPE::TBL":
-			csr_read_objs += indent(max_depth + 1) + (self.reg +"_iread").upper()
-			csr_read_objs += string.Formatter().vformat(("({baddr}, rbuf, {ridxob}ridx{ridxcb});"), (), SafeDict(baddr=hex(an_base_addr))) + "\n"
+			reg += indent(max_depth + 1) + (self.reg +"_iread").upper()
+			reg += string.Formatter().vformat("({baddr}, rbuf, {ridxob}ridx{ridxcb});", (), SafeDict(baddr=hex(an_base_addr))) + "\n"
 		else:
-			csr_read_objs += indent(max_depth + 1) + (self.reg +"_read").upper()
-			csr_read_objs += string.Formatter().vformat("({baddr}, rbuf);", (),
-					SafeDict(baddr=hex(an_base_addr))) + "\n"
+			reg += indent(max_depth + 1) + (self.reg +"_read").upper()
+			reg += string.Formatter().vformat("({baddr}, rbuf);", (), SafeDict(baddr=hex(an_base_addr))) + "\n"
 
-		cntr_name = callers["element"] + "_" + callers["entry"] + "_stats"
+
 		for i, (k,v) in enumerate(self.fields.items()):
-			csr_read_objs += (indent(max_depth + 1) +
-							(self.reg + "_" + v + "_read").upper())
-			csr_read_objs += ("(rbuf, &" + cntr_name + "[{offsetob}offset{offsetcb} +"+str(i)+"]);") + "\n"
-		csr_read_objs = csr_read_objs[:-1]
+			reg += indent(max_depth + 1) + (self.reg + "_" + v + "_read").upper()
+			reg += "(rbuf, &{ptrob}bptr{ptrcb}[{offsetob}offset{offsetcb}+"+str(i)+"]);" + "\n"
+		reg = reg[:-1]
+		r_str = reg
 		num_fields = len(self.fields)
 
 		jstr = ""
 		for i, (k,v) in enumerate(self.fields.items()):
 			if jstr:
 				jstr += ', '
-			jstr += cntr_name + "[{offsetob}offset{offsetcb}+" +str(i)+"]"
+			jstr += "{ptrob}bptr{ptrcb}[{offsetob}offset{offsetcb}+"+str(i)+"]"
 
 		jstr = (indent(max_depth + 1) + "const int64_t values[] = {ob}" +
 				jstr + "{cb};\n")
@@ -171,17 +170,19 @@ class EntrySubNode(object):
 		jstr  += (indent(max_depth + 1) + "struct fun_json *dict{j}= " +
 				 "fun_json_create_dict_from_int64s(" + str(num_fields) +
 				 ", keys, fun_json_no_copy_no_own, values);\n")
+		#jstr += "fun_json_dict_add(dict, {key}, fun_json_copy, this, false);\n"
+		#print "jstr: {} field_dict:{}".format(jstr, field_dict)
+
 
 		num_counters = num_fields
 		if self.offset:
 			idx_str = "{}".format(self.offset)
 		else:
 			idx_str = ""
-		if cnt_offset > 0:
-			cnt_offset_str = "{}".format(cnt_offset)
+		if boffset > 0:
+			boffset_str = "{}".format(boffset)
 		else:
-			cnt_offset_str = ""
-
+			boffset_str = ""
 		for i in range(max_depth):
 			idx = max_depth - i - 1
 			k = items[idx]
@@ -196,62 +197,46 @@ class EntrySubNode(object):
 			idx_str += ("((i_{i}" + ("-{rmin}" if rmin > 0 else "") + ")"
 					   + ("*{incr}" if incr > 1 else "")
 					   + ")").format(i=idx+1,rmin=rmin,incr=incr)
-			if cnt_offset_str:
-				cnt_offset_str += "+"
-			cnt_offset_str += ("((i_{i}" + ("-{rmin}" if rmin > 0 else "") + ")"
+			if boffset_str:
+				boffset_str += "+"
+			boffset_str += ("((i_{i}" + ("-{rmin}" if rmin > 0 else "") + ")"
 					   + ("*{incr}" if incr > 1 else "")
 					   + ")").format(i=idx+1,rmin=rmin,incr=incr)
 
-			r_str = string.Formatter().vformat(indent(idx+1) +
-					'for (unsigned int i_{i} = {rmin};'
-					+ ' i_{i} < {rmax}; i_{i}++) {ob}' + '\n'
-					+ '{r}' + '\n' + indent(idx+1) + '{cb}' , (),
-					SafeDict(i=idx+1, rmin=rmin, rmax=rmax, r=csr_read_objs))
+			l_str = string.Formatter().vformat(indent(idx+1) + 'for (unsigned int i_{i} = {rmin};'
+					+ ' i_{i} < {rmax}; i_{i}++) {ob}' + '\n' + '{r}' + '\n' + indent(idx+1) + '{cb}' , (),
+					SafeDict(i=idx+1, rmin=rmin, rmax=rmax, r=r_str))
 
-			jstr = string.Formatter().vformat(jstr, (),  SafeDict(j=idx+1))
-			json_create_objs = string.Formatter().vformat((indent(idx+1)
-					+ "struct fun_json *dict{j} = fun_json_create_empty_dict();\n"
+                        jstr = string.Formatter().vformat(jstr, (),  SafeDict(j=idx+1))
+			j_str = string.Formatter().vformat((indent(idx+1) + "struct fun_json *dict{j} = fun_json_create_empty_dict();\n"
 					+ indent(idx+1) + 'for (unsigned int i_{i} = {rmin};'
 					+ ' i_{i} < {rmax}; i_{i}++) {ob}' + '\n' + '{r}' + '\n'
-					+ indent(idx+2) + "char key[32] = {ob}0{cb};\n"
-					+ indent(idx+2) + "snprintf(key, 32, \""
-					+ items[idx] + "%d\", i_{i});\n" + indent(idx+2) + "fun_json_dict_add(dict{j}, key, fun_json_no_copy_no_own, dict{i}, false);\n"
-					+ indent(idx+1) + '{cb}'), (), SafeDict(i=idx+1,
-									rmin=rmin, rmax=rmax, r=jstr, j=idx))
-			csr_read_objs = r_str
-			jstr = json_create_objs
-		csr_read_objs = string.Formatter().vformat(csr_read_objs,
-				(), SafeDict(ridxob='{', ridxcb='}',
+					+ indent(idx+2) + "char key[32] = {ob}0{cb};" + '\n'
+					+ indent(idx+2) + "snprintf(key, 32, \"" + items[idx] + "%d\", i_{i});\n"
+					+ indent(idx+2) + "fun_json_dict_add(dict{j}, key, fun_json_no_copy_no_own, dict{i}, false);\n"
+					+ indent(idx+1) + '{cb}'), (), SafeDict(i=idx+1, rmin=rmin, rmax=rmax, r=jstr, j=idx))
+
+#Take care of dict add loops
+			jstr = j_str
+			r_str = l_str
+		r_str = string.Formatter().vformat(r_str, (), SafeDict(ridxob='{', ridxcb='}',
 				offsetob='{', offsetcb='}'))
 
-		json_create_objs = string.Formatter().vformat(json_create_objs,
-				(), SafeDict(ridxob='{', ridxcb='}',
+		j_str = string.Formatter().vformat(j_str, (), SafeDict(ridxob='{', ridxcb='}',
 				offsetob='{', offsetcb='}'))
 
-		cnt_offset_str += "* {}".format(len(self.fields))
-		csr_read_objs = string.Formatter().vformat(csr_read_objs,
-				(), SafeDict(ridx=idx_str, offset=cnt_offset_str, ob='{', cb='}'))
-		json_create_objs = string.Formatter().vformat(json_create_objs,
-				(), SafeDict(ridx=idx_str, offset=cnt_offset_str, ob='{', cb='}'))
-		return csr_read_objs,json_create_objs
-
-	def get_subnode(self):
-		csr_metadata = csr_defs.get_csr_metadata(self.reg, self.rn_class,
-				self.rn_inst, self.an_path, self.an, self.an_inst)
-		#print csr_metadata
-		an_base_addr = csr_metadata.get_an_base_addr()
-		csr_entity = csr_metadata.get_csr_data()
-
-		subnode = dict()
-		subnode["csr"] = self.reg
-		subnode["base_addr"] = an_base_addr
-		subnode["csr_width"] = (csr_entity.width+63)/64;
-		subnode["fields"] = self.fields
-		subnode["csr_idx"] = self.offset
-		subnode["input"] = self.input_map
-		return subnode
-
-
+		boffset_str += "* {}".format(len(self.fields))
+		r_str = string.Formatter().vformat(r_str, (), SafeDict(ridx=idx_str, offset=boffset_str))
+		j_str = string.Formatter().vformat(j_str, (), SafeDict(ridx=idx_str, offset=boffset_str))
+		#print j_str
+		#r_str = string.Formatter().vformat(" "* tw + "uint64_t rbuf[{bsize}] = {ob}0{cb};\n", (),
+		#		SafeDict(bsize=csr_width)) + r_str
+		#r_str = string.Formatter().vformat(r_str, (), SafeDict(ob='{', cb='}'))
+		#print idx_str
+		#r_str = r_str % ("rbuf", idx_str)
+		#r_str =  string.Formatter().vformat(str(r_str), (), SafeDict(index=idx_str, bptr='sds'))
+		#print "{} NUM COUNTERS: {}".format(self.reg, num_counters)
+		return r_str,j_str
 
 #for q_in it comes here
 class EntryNode(object):
@@ -266,35 +251,76 @@ class EntryNode(object):
 		for e in info:
 			self.subnodes.append(EntrySubNode(e, input))
 
-	def read_api(self, caller):
-		num_cntrs = 0
+	def read_api(self, csr_root):
+		r_str = ""
+		j_str = ""
+		boffset = 0
 		rbuf_size = 0;
-		subnodes = list()
 		for i in self.subnodes:
-			subnode = i.get_subnode()
-			subnode["cntr_offset"] = num_cntrs
-			subnodes.append(subnode)
-			num_cntrs += i.get_num_cntrs()
-			if subnode["csr_width"] > rbuf_size:
-				rbuf_size = subnode["csr_width"]
+			r, j = i.read_api(csr_root, boffset)
+			r_str += '\n' + r
+                        if i == self.subnodes[-1]:
+                            j_str += '\n' + '\n'.join(j.split('\n')[1:])
+                        else:
+                            j_str += '\n' + j
+			#r_str, j_str += '\n' + i.read_api(csr_root, boffset)
+			print "NUM COUNTERS: {}".format(i.get_num_counters())
+			boffset += i.get_num_counters()
+			if i.get_csr_width() > rbuf_size:
+				rbuf_size = i.get_csr_width()
+
+		ctr_name = string.Formatter().vformat("{e_name}_{node}_stats", (),
+						SafeDict(node=self.name, s=r_str))
+		ctr_name = string.Formatter().vformat(ctr_name, (), SafeDict(node=self.name))
+		print "COUNTER: {}".format(ctr_name)
+		r_str = string.Formatter().vformat(r_str, (), SafeDict(ptrob='{', ptrcb='}'))
+		j_str = string.Formatter().vformat(j_str, (), SafeDict(ptrob='{', ptrcb='}'))
+
+		r_str = string.Formatter().vformat(r_str, (),
+				SafeDict(s=r_str, bptr=ctr_name))
+
+		j_str = string.Formatter().vformat(j_str, (),
+				SafeDict(s=j_str, bptr=ctr_name))
+		#print "R_STR1: {}".format(r_str)
+
+		r_str = "static uint64_t " + ctr_name + "[{boffset}];\n" + "void {e_name}_{node}_read() {ob}\n"+ indent(1) + "uint64_t rbuf[{bsize}] = {ob}0{cb};\n" + r_str + "\n{cb}\n"
+
+		r_str = string.Formatter().vformat(r_str, (),
+				SafeDict(boffset=boffset, node=self.name, bsize=rbuf_size))
 
 
-		#print "\nr_str: {}\n\n".format(r_str)
-		#print "\nj_str: {}\n\n".format(j_str)
+		fields = i.get_fields()
+		num_fields = len(fields)
+		field_dict = ""
+		for f in fields:
+			if field_dict:
+				field_dict += ', '
+			field_dict += '"{}"'.format(f)
 
-		gen_objs = dict()
-		gen_objs["rbuf_size"] = rbuf_size
-		gen_objs["num_cntrs"] = num_cntrs
-		gen_objs["subnodes"] = subnodes
+		#field_dict = ("struct fun_json *dict = fun_json_create_empty_dict();\n")
+		field_dict = ("const char *keys[] = {ob}" + field_dict + "{cb};")
 
-		print gen_objs
-		return gen_objs
+		j_str = ("\n" + "static struct fun_json *{e_name}_{node}_create_json() {ob}\n"+
+				indent(1) + field_dict + "\n" +
+				indent(1) + "printf(\"****NAG calling %s%d\\n\", __func__, __LINE__);" + "\n" +
+				indent(1) + j_str + "\n" +
+                                indent(1) + "return dict0;\n" + "{cb}\n")
+		j_str = string.Formatter().vformat(j_str, (),
+				SafeDict(boffset=boffset, node=self.name, bsize=rbuf_size))
+
+		#print j_str
+
+
+		#r_str = string.Formatter().vformat(r_str, (), SafeDict(ob='{', cb='}'))
+		#print r_str
+		return r_str, j_str
 
 	def get_an_list(self):
 		an_set = set()
 		for i in self.subnodes:
 			an_set |= i.get_an_list()
 		return an_set
+
 
 #For "queue" it comes here
 class ElementNode(object):
@@ -323,16 +349,22 @@ class ElementNode(object):
 		node = self.entry_map.get(entry, EntryNode(entry, self.input, data))
 		self.entry_map[entry] = node
 
-	def get_elements(self, callers):
-		elements = collections.OrderedDict()
-                elements["input"] = self.input
-                nodes = collections.OrderedDict()
+	def read_api(self, csr_root):
+		str = ""
 		for k,v in self.entry_map.iteritems():
-			callers["element"] = self.name
-			print "ElementNode: {}".format(k)
-			nodes[k] = v.read_api(callers)
-                elements["nodes"] = nodes
-		return elements
+			#print k
+			e_str, j_str = self.entry_map[k].read_api(csr_root)
+			#print e_str
+			e_str = string.Formatter().vformat(e_str, (), SafeDict(e_name = self.name))
+			j_str = string.Formatter().vformat(j_str, (), SafeDict(e_name = self.name))
+			#print e_str
+			e_str = string.Formatter().vformat(e_str, (), SafeDict(ob='{', cb='}'))
+			j_str = string.Formatter().vformat(j_str, (), SafeDict(ob='{', cb='}'))
+			#print e_str
+			#print j_str
+			str += "\n" + e_str + "\n" + j_str
+
+		return str
 
 	def get_props_bridge_api(self):
 		str = ""
@@ -350,9 +382,10 @@ class ElementNode(object):
 
 
 class ModuleRoot(object):
-	def __init__(self, mod, data):
+	def __init__(self, mod, data, csr_root):
 		self.element_map = collections.OrderedDict()
 		self.name = mod
+		self.csr_root = csr_root
 		print "\nMOD:{}".format(mod)
 		self.__mod_process(mod, data)
 
@@ -367,20 +400,11 @@ class ModuleRoot(object):
 		element = self.element_map.get(e_name, ElementNode(e_name, data))
 		self.element_map[e_name] = element
 
-	def get_elements(self):
-		elements = dict()
-		for k,v in self.element_map.iteritems():
-			callers = {}
-			print "ModuleRoot {}".format(k)
-			callers["module"] = self.name
-			elements[k] = v.get_elements(callers)
-		return elements
-
 	def gen_code(self):
 		str = ""
 		for k,v in self.element_map.iteritems():
 			#print k
-			str += self.element_map.get(k).read_api()
+			str += self.element_map.get(k).read_api(self.csr_root)
 		str += self.props_bridge_paths()
 		return str
 
@@ -389,6 +413,51 @@ class ModuleRoot(object):
 		for k,v in self.element_map.iteritems():
 			an_set |= v.get_an_list()
 		return an_set
+
+        def get_static_include_paths(self, sdk_inc_dir):
+             str = ""
+             str += '#include <utils/threaded/fun_json.h>\n'
+             str += '#include <props_bridges/props_bridges.h>\n'
+             str += '#include <utils/threaded/fun_props.h>\n'
+             str += '#include <utils/threaded/fun_malloc_threaded.h>\n'
+             str += '#include <' + sdk_inc_dir + '/' + 'csr_acc.h>\n'
+             return str
+
+	def get_an_include_paths(self, sdk_inc_dir):
+		str = ""
+		for an in self.get_an_list():
+			print an
+			str += '#include <' + sdk_inc_dir + '/' + an + '_an.h>\n'
+		return str
+
+	#props bridge install
+	def props_bridge_paths(self):
+		props_path = "stat_{}_prop_path".format(self.name).upper()
+		props_tmpl = ("\tstruct fun_props_bridge_point *"+ self.name +"_{elem}_bridge MAYBE_UNUSED = " +
+					"fun_props_install_bridge_point(" +
+					"{mpath} {epath}, NULL, {gen});")
+
+		props_str = ""
+		elem_path = ""
+		path_defs = "#define " + props_path + " " + "\"stat/" + self.name + "/\"\n"
+
+		prop_elem_api = ""
+		for k,v in self.element_map.iteritems():
+			elem_path_macro = ("stat_" + self.name + "_{}_path".format(k)).upper()
+			path_defs += "#define " + elem_path_macro + " " + "\"" + k + "\"\n"
+			gen_api = self.name + "_{elem}_generate_json".format(elem=k)
+			prop_elem_api += ("static struct fun_json *" + gen_api +
+                                "(fun_props_bridge_context_t context)" + "{\n"+
+				indent(1) + "struct fun_json *dict = fun_json_create_empty_dict();\n" +
+                                v.get_props_bridge_api() +
+                                indent(1) + "return dict;\n" + "}\n")
+			props_str += props_tmpl.format(mpath=props_path, elem=k, epath=elem_path_macro, gen=gen_api) + "\n"
+
+		str = path_defs + "\n" + prop_elem_api + "\n"
+		str += ("void "+ self.name + "_props_bridge_install(void) {\n" +
+				props_str + "}")
+		#print str
+		return str
 
 class StatsGen(object):
 	def __init__(self, cwd):
@@ -421,7 +490,6 @@ class StatsGen(object):
 		return loc
 
 	def run(self):
-		global csr_defs
 		args = self.cmd_parser.parse_args()
 		args.cfg_dir = self.__update_loc(args.cfg_dir)
 		args.out_dir = self.__update_loc(args.out_dir)
@@ -430,33 +498,29 @@ class StatsGen(object):
 		cfg = CFG_Reader(args.cfg_dir)
 		sdk_csr_cfg_dir = args.sdk_dir + "/FunSDK/config/"
 		csr_slrp = csr.Slurper(os.getcwd(), sdk_csr_cfg_dir)
-		csr_defs = csr_slrp.get_csr_defs()
-
-		path = os.path.dirname(os.path.abspath(__file__))
-		print os.path.join(path, 'templates')
-		ENVIRONMENT = Environment( autoescape=False,
-			loader=FileSystemLoader(os.path.join(path, 'templates')),
-		trim_blocks=False)
-		template = ENVIRONMENT.get_template("source.j2")
+		csr_root = csr_slrp.get_csr_defs()
 
 		#Generate the funos source code
 		inc_path = ""
 		code_str = ""
 		for i, (k,v) in enumerate(cfg.get().iteritems()):
-			mod = ModuleRoot(k, v)
-			headers= mod.get_an_list()
-			gen_objs = dict()
-			gen_objs["elements"] = mod.get_elements()
-			gen_objs["dyn_headers"] = headers
-			gen_objs["block"] = k
-                        fname = "fun_{}_stats.c".format(k)
-			gen_objs["fname"] = fname
-                        print fname
-                        with open(os.path.join(args.out_dir, fname), 'w') as f:
-                            f.write(template.render(gen_objs))
-                        f.close()
+			mod = ModuleRoot(k, v, csr_root)
+			sdk_inc_dir = "FunSDK/chip/f1/hw/include/core"
+			inc_path += mod.get_static_include_paths(sdk_inc_dir)
+			sdk_inc_dir = "FunSDK/chip/f1/hw/include/csr"
+			inc_path += mod.get_an_include_paths(sdk_inc_dir) + "\n"
+			code_str += mod.gen_code() + "\n"
 
-csr_def = None
+		print "Generating config data c file"
+		src_file_templ = ('//This file is generated by ' + __file__ +
+				' on {date}.\n' + '//Do not change this file.\n' +
+				'//Change the files in {src_dir} \n\n\n{code}\n')
+
+		f = open("%s" % args.out_dir + "/fun_stats.c", 'w')
+		f.write(src_file_templ.format(code=inc_path+code_str, src_dir=args.cfg_dir,
+					  date=datetime.datetime.now().strftime("%Y-%m-%d %H:%M")))
+		f.close()
+
 if __name__ == "__main__":
 	stats_gen = StatsGen(os.getcwd())
 	stats_gen.run()

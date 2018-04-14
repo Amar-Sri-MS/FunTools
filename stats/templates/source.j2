@@ -1,0 +1,95 @@
+{#
+
+Template for stats source code generation
+
+#}
+// Source file created by generator.py
+// Do not change this file;
+// change the gen file {{cfg_file}} instead.
+
+
+/*
+ *  {{fname}}.c
+ *
+ *  !!!!!AUTO-GENERATED FILE. DO NOT EDIT!!!!
+ *
+ *  Copyright 2018 Fungible Inc. All rights reserved.
+ */
+
+#include <utils/threaded/fun_json.h>
+#include <props_bridges/props_bridges.h>
+#include <utils/threaded/fun_props.h>
+#include <utils/threaded/fun_malloc_threaded.h>
+
+#include <FunSDK/chip/f1/hw/include/core/csr_acc.h>
+{% for header in dyn_headers -%}
+#include <FunSDK/chip/f1/hw/include/csr/{{header}}_an.h>
+{% endfor %}
+
+{%- macro block_prop_macro(block) -%}
+STATS_{{block|upper}}_PROP_PATH
+{%- endmacro -%}
+
+{%- macro element_prop_macro(block,element) -%}
+STATS_{{block|upper}}_{{element|upper}}_PATH
+{%- endmacro -%}
+
+{%- for element in elements.keys() %}
+{% for k,v in elements[element].nodes.iteritems() %}
+static uint64_t {{element}}_{{k}}_stats[{{v.num_cntrs}}];
+static void {{element}}_{{k}}_stats_read(void)
+{
+    uint64_t rbuf[{{v.rbuf_size}}] = {0};
+    {{v.read_obj}}
+}
+{% endfor %}
+{% endfor -%}
+
+{%- for element in elements.keys() -%}
+{% for k,v in elements[element].nodes.iteritems() %}
+static struct fun_json *{{element}}_{{k}}_create_json(void)
+{% raw -%}
+{
+{%- endraw %}
+    const char *keys[] = {{'{'}}
+		{%- for key in elements[element].input -%}
+		"{{key}}" {%- if not loop.last -%} , {%- endif -%}
+		{%- endfor -%}
+		{{'}'}};
+    {{element}}_{{k}}_stats_read();
+    {{v.props_obj}}
+
+    return dict0;
+{% raw -%}
+}
+{%- endraw %}
+{% endfor %}
+{% endfor -%}
+
+#define {{ block_prop_macro(block) }} "stats/{{block}}/"
+
+{% for element in elements.keys() -%}
+#define {{ element_prop_macro(block, element) }} "{{element}}"
+{% endfor -%}
+
+{%- for element in elements.keys() %}
+static struct fun_json *{{block}}_{{element}}_generate_json(fun_props_bridge_context_t context)
+{
+    struct fun_json *dict = fun_json_create_empty_dict();
+{% for k,v in elements[element].nodes.iteritems() %}
+    fun_json_dict_add(dict, "{{k}}",fun_json_no_copy_no_own,
+                      {{element}}_{{k}}_create_json(), false);
+{% endfor %}
+    return dict;
+}
+{% endfor %}
+
+void {{block}}_props_bridge_install(void)
+{
+{%- for element in elements.keys() %}
+    struct fun_props_bridge_point *{{block}}_{{element}}_bridge MAYBE_UNUSED =
+                fun_props_install_bridge_point(
+                {{block_prop_macro(block)}} {{element_prop_macro(block, element)}},
+                NULL, {{block}}_{{element}}_generate_json);
+{% endfor -%}
+}

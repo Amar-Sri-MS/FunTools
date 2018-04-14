@@ -122,7 +122,7 @@ class EntrySubNode(object):
 	def get_num_fields(self):
 		return len(self.fields)
 
-	def get_num_cntrs(self):
+	def get_num_counters(self):
 		num_cnt = 1
 		num_fields = self.get_num_fields()
 		for k,v in self.input_map.iteritems():
@@ -151,11 +151,11 @@ class EntrySubNode(object):
 			csr_read_objs += string.Formatter().vformat("({baddr}, rbuf);", (),
 					SafeDict(baddr=hex(an_base_addr))) + "\n"
 
-		cntr_name = callers["element"] + "_" + callers["entry"] + "_stats"
+		cntr_name = callers["element"] + "_" + callers["entry"] + "_stat"
 		for i, (k,v) in enumerate(self.fields.items()):
 			csr_read_objs += (indent(max_depth + 1) +
 							(self.reg + "_" + v + "_read").upper())
-			csr_read_objs += ("(rbuf, &" + cntr_name + "[{offsetob}offset{offsetcb} +"+str(i)+"]);") + "\n"
+			csr_read_objs += ("(rbuf," + cntr_name + "[{offsetob}offset{offsetcb} +"+str(i)+"]);") + "\n"
 		csr_read_objs = csr_read_objs[:-1]
 		num_fields = len(self.fields)
 
@@ -213,7 +213,6 @@ class EntrySubNode(object):
 					+ "struct fun_json *dict{j} = fun_json_create_empty_dict();\n"
 					+ indent(idx+1) + 'for (unsigned int i_{i} = {rmin};'
 					+ ' i_{i} < {rmax}; i_{i}++) {ob}' + '\n' + '{r}' + '\n'
-					+ indent(idx+2) + "char key[32] = {ob}0{cb};\n"
 					+ indent(idx+2) + "snprintf(key, 32, \""
 					+ items[idx] + "%d\", i_{i});\n" + indent(idx+2) + "fun_json_dict_add(dict{j}, key, fun_json_no_copy_no_own, dict{i}, false);\n"
 					+ indent(idx+1) + '{cb}'), (), SafeDict(i=idx+1,
@@ -235,23 +234,6 @@ class EntrySubNode(object):
 				(), SafeDict(ridx=idx_str, offset=cnt_offset_str, ob='{', cb='}'))
 		return csr_read_objs,json_create_objs
 
-	def get_subnode(self):
-		csr_metadata = csr_defs.get_csr_metadata(self.reg, self.rn_class,
-				self.rn_inst, self.an_path, self.an, self.an_inst)
-		#print csr_metadata
-		an_base_addr = csr_metadata.get_an_base_addr()
-		csr_entity = csr_metadata.get_csr_data()
-
-		subnode = dict()
-		subnode["csr"] = self.reg
-		subnode["base_addr"] = an_base_addr
-		subnode["csr_width"] = (csr_entity.width+63)/64;
-		subnode["fields"] = self.fields
-		subnode["csr_idx"] = self.offset
-		subnode["input"] = self.input_map
-		return subnode
-
-
 
 #for q_in it comes here
 class EntryNode(object):
@@ -267,27 +249,40 @@ class EntryNode(object):
 			self.subnodes.append(EntrySubNode(e, input))
 
 	def read_api(self, caller):
-		num_cntrs = 0
+		r_str = ""
+		j_str = ""
+		cnt_offset = 0
 		rbuf_size = 0;
-		subnodes = list()
 		for i in self.subnodes:
-			subnode = i.get_subnode()
-			subnode["cntr_offset"] = num_cntrs
-			subnodes.append(subnode)
-			num_cntrs += i.get_num_cntrs()
-			if subnode["csr_width"] > rbuf_size:
-				rbuf_size = subnode["csr_width"]
-
+			caller["entry"] = self.name
+			r, j = i.gen_objs(cnt_offset, caller)
+			r_str += '\n' + r
+			if i == self.subnodes[-1]:
+				j_str += '\n' + '\n'.join(j.split('\n')[1:])
+			else:
+				j_str += '\n' + j
+			print "NUM COUNTERS: {}".format(i.get_num_counters())
+			cnt_offset += i.get_num_counters()
+			if i.get_csr_width() > rbuf_size:
+				rbuf_size = i.get_csr_width()
 
 		#print "\nr_str: {}\n\n".format(r_str)
 		#print "\nj_str: {}\n\n".format(j_str)
 
-		gen_objs = dict()
-		gen_objs["rbuf_size"] = rbuf_size
-		gen_objs["num_cntrs"] = num_cntrs
-		gen_objs["subnodes"] = subnodes
+		fields = i.get_fields()
+		num_fields = len(fields)
+		field_dict = ""
+		for f in fields:
+			if field_dict:
+				field_dict += ', '
+			field_dict += '"{}"'.format(f)
 
-		print gen_objs
+		gen_objs = dict()
+		gen_objs["read_obj"] = r_str
+		gen_objs["props_obj"] = j_str
+		gen_objs["field_dict"] = field_dict
+		gen_objs["rbuf_size"] = rbuf_size
+		gen_objs["cnt_size"] = cnt_offset
 		return gen_objs
 
 	def get_an_list(self):
@@ -325,13 +320,10 @@ class ElementNode(object):
 
 	def get_elements(self, callers):
 		elements = collections.OrderedDict()
-                elements["input"] = self.input
-                nodes = collections.OrderedDict()
 		for k,v in self.entry_map.iteritems():
 			callers["element"] = self.name
 			print "ElementNode: {}".format(k)
-			nodes[k] = v.read_api(callers)
-                elements["nodes"] = nodes
+			elements[k] = v.read_api(callers)
 		return elements
 
 	def get_props_bridge_api(self):
@@ -448,13 +440,16 @@ class StatsGen(object):
 			gen_objs = dict()
 			gen_objs["elements"] = mod.get_elements()
 			gen_objs["dyn_headers"] = headers
+			gen_objs["fname"] = k
 			gen_objs["block"] = k
-                        fname = "fun_{}_stats.c".format(k)
-			gen_objs["fname"] = fname
-                        print fname
-                        with open(os.path.join(args.out_dir, fname), 'w') as f:
-                            f.write(template.render(gen_objs))
-                        f.close()
+			print template.render(gen_objs)
+			#print "{} ELEMENTS: {}".format(k.upper(), elements)
+
+			#f = open("%s" % args.out_dir + "/fun_stats.c", 'w')
+			#f.write(src_file_templ.format(code=inc_path+code_str, src_dir=args.cfg_dir,
+			#			  date=datetime.datetime.now().strftime("%Y-%m-%d %H:%M")))
+			#f.close()
+
 
 csr_def = None
 if __name__ == "__main__":
