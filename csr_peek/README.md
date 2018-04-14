@@ -19,7 +19,7 @@ The make commands **must** be executed in the following order
 
 Installs the python objects necessary to perform the next steps
 
-### Get configurations (these are the stuff to munch on)
+### Get raw files (these are the stuff to munch on)
 
     $ make cfg_pull
 
@@ -39,10 +39,10 @@ This step may need to be preceded by distclean IF new CSR bits need to be pulled
 Creates the library (archive) under csr-rt. Other tools can be written both as frontend and backend
 to use this tool. Frontend could be tools like dpcsh, and backend could be socket/RPC/JTAG to write these values to the chip.
 
-### Create the csrsh
+### Create the csrsh (frontend)
 
     $ make csrsh
-Creates the csrshell executable under csr-rt/frontends/csrsh.
+Creates the csrshell executable under csr-rt/frontends/csrsh. csrsh is a debug shell that utilizes the library to provide a command line interface to set/get/examine values on the F1 chip for CSR registers.
 
 ## Cleanup
 
@@ -62,10 +62,13 @@ Cleans up the whole distribution, including generated files. Usually, this is ne
 
 A simple example of how to use this library is provided in csr-rt/test/prog.cpp
 
+
 Note: This only writes to a dumb backend (screen). For this library to be useful, it has to be linked against
 other backends.
 
+## Example frontend
 
+See description of csrsh before
 
 
 

@@ -1,5 +1,12 @@
-#pragma once
+/*
+ *  json_util.h
+ *
+ *  Created by Hariharan Thantry on 2018-02-28
+ *
+ *  Copyright © 2018 Fungible Inc. All rights reserved.
+ */
 
+#pragma once
 #include <string>
 #ifdef __cplusplus
 extern "C" {

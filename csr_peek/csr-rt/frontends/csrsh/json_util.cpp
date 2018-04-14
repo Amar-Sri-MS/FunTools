@@ -1,3 +1,12 @@
+
+/*
+ *  json_util.cpp
+ *
+ *  Created by Hariharan Thantry on 2018-02-28
+ *
+ *  Copyright © 2018 Fungible Inc. All rights reserved.
+ */
+
 #include <iostream>
 #include <sstream>
 #include "json_util.h"
@@ -82,7 +91,7 @@ uint8_t* json_util::peek_rsp(const std::string& json_str) {
     auto n_elems = fun_json_array_count(b_arr);
     uint8_t* byte_arr = new uint8_t[n_elems]();
     struct fun_json* elem = nullptr;
-    for (auto i = 0; i < n_elems; i ++) {
+    for (uint16_t i = 0; i < n_elems; i ++) {
         elem = fun_json_array_at(b_arr, i);
         assert (elem != nullptr);
 	assert(elem->type == fun_json_int_type);

@@ -281,6 +281,16 @@ F1NS::F1NS(rd_fptr rd_fn, wr_fptr wr_fn):
                                            CSR_TYPE::REG,
                                            1);
         add_csr(fpg_prs_0, "prs_hdb_fifo_empty", prs_hdb_fifo_empty_prop);
+        fld_map_t prs_sop_cnt_stream_cfg {
+            CREATE_ENTRY("stream", 0, 2),
+            CREATE_ENTRY("__rsvd", 2, 62)
+        };
+        auto prs_sop_cnt_stream_cfg_prop = csr_prop_t(
+                                               std::make_shared<csr_s>(prs_sop_cnt_stream_cfg),
+                                               0xF8,
+                                               CSR_TYPE::REG,
+                                               1);
+        add_csr(fpg_prs_0, "prs_sop_cnt_stream_cfg", prs_sop_cnt_stream_cfg_prop);
 // END fpg_prs
     }
     {
@@ -1025,7 +1035,8 @@ F1NS::F1NS(rd_fptr rd_fn, wr_fptr wr_fn):
         fld_map_t fpg_misc_rx_runt_filter_cfg {
             CREATE_ENTRY("buffer_64byte", 0, 1),
             CREATE_ENTRY("runt_err_en", 1, 1),
-            CREATE_ENTRY("__rsvd", 2, 62)
+            CREATE_ENTRY("en_delete_bytes", 2, 1),
+            CREATE_ENTRY("__rsvd", 3, 61)
         };
         auto fpg_misc_rx_runt_filter_cfg_prop = csr_prop_t(
                 std::make_shared<csr_s>(fpg_misc_rx_runt_filter_cfg),
@@ -1478,7 +1489,8 @@ F1NS::F1NS(rd_fptr rd_fn, wr_fptr wr_fn):
         fld_map_t fpg_misc_rx_runt_filter_cfg {
             CREATE_ENTRY("buffer_64byte", 0, 1),
             CREATE_ENTRY("runt_err_en", 1, 1),
-            CREATE_ENTRY("__rsvd", 2, 62)
+            CREATE_ENTRY("en_delete_bytes", 2, 1),
+            CREATE_ENTRY("__rsvd", 3, 61)
         };
         auto fpg_misc_rx_runt_filter_cfg_prop = csr_prop_t(
                 std::make_shared<csr_s>(fpg_misc_rx_runt_filter_cfg),
@@ -2221,13 +2233,25 @@ F1NS::F1NS(rd_fptr rd_fn, wr_fptr wr_fn):
                                            CSR_TYPE::REG,
                                            1);
         add_csr(fpg_mpw_0, "fpg_mpw_mac_status", fpg_mpw_mac_status_prop);
+        fld_map_t fpg_mpw_mac_pause_on_status {
+            CREATE_ENTRY("mac0", 0, 16),
+            CREATE_ENTRY("mac1", 16, 16),
+            CREATE_ENTRY("mac2", 32, 16),
+            CREATE_ENTRY("mac3", 48, 16)
+        };
+        auto fpg_mpw_mac_pause_on_status_prop = csr_prop_t(
+                std::make_shared<csr_s>(fpg_mpw_mac_pause_on_status),
+                0xB0,
+                CSR_TYPE::REG,
+                1);
+        add_csr(fpg_mpw_0, "fpg_mpw_mac_pause_on_status", fpg_mpw_mac_pause_on_status_prop);
         fld_map_t fpg_mpw_mac_tx_ts_avl {
             CREATE_ENTRY("val", 0, 4),
             CREATE_ENTRY("__rsvd", 4, 60)
         };
         auto fpg_mpw_mac_tx_ts_avl_prop = csr_prop_t(
                                               std::make_shared<csr_s>(fpg_mpw_mac_tx_ts_avl),
-                                              0xB0,
+                                              0xB8,
                                               CSR_TYPE::REG,
                                               1);
         add_csr(fpg_mpw_0, "fpg_mpw_mac_tx_ts_avl", fpg_mpw_mac_tx_ts_avl_prop);
@@ -2248,7 +2272,7 @@ F1NS::F1NS(rd_fptr rd_fn, wr_fptr wr_fn):
         };
         auto fpg_mpw_mac_tx_fault_cfg_prop = csr_prop_t(
                 std::make_shared<csr_s>(fpg_mpw_mac_tx_fault_cfg),
-                0xD8,
+                0xE0,
                 CSR_TYPE::REG,
                 1);
         add_csr(fpg_mpw_0, "fpg_mpw_mac_tx_fault_cfg", fpg_mpw_mac_tx_fault_cfg_prop);
@@ -2265,7 +2289,7 @@ F1NS::F1NS(rd_fptr rd_fn, wr_fptr wr_fn):
         };
         auto fpg_mpw_mac_lpi_cfg_prop = csr_prop_t(
                                             std::make_shared<csr_s>(fpg_mpw_mac_lpi_cfg),
-                                            0xE0,
+                                            0xE8,
                                             CSR_TYPE::REG,
                                             1);
         add_csr(fpg_mpw_0, "fpg_mpw_mac_lpi_cfg", fpg_mpw_mac_lpi_cfg_prop);
@@ -2275,7 +2299,7 @@ F1NS::F1NS(rd_fptr rd_fn, wr_fptr wr_fn):
         };
         auto fpg_mpw_lpi_tick_cnt_incr_val_prop = csr_prop_t(
                     std::make_shared<csr_s>(fpg_mpw_lpi_tick_cnt_incr_val),
-                    0xE8,
+                    0xF0,
                     CSR_TYPE::REG,
                     1);
         add_csr(fpg_mpw_0, "fpg_mpw_lpi_tick_cnt_incr_val", fpg_mpw_lpi_tick_cnt_incr_val_prop);
@@ -2313,7 +2337,7 @@ F1NS::F1NS(rd_fptr rd_fn, wr_fptr wr_fn):
         };
         auto fpg_mpw_lpi_status_prop = csr_prop_t(
                                            std::make_shared<csr_s>(fpg_mpw_lpi_status),
-                                           0xF0,
+                                           0xF8,
                                            CSR_TYPE::REG,
                                            1);
         add_csr(fpg_mpw_0, "fpg_mpw_lpi_status", fpg_mpw_lpi_status_prop);
@@ -2329,7 +2353,7 @@ F1NS::F1NS(rd_fptr rd_fn, wr_fptr wr_fn):
         };
         auto fpg_mpw_sw_reset_prop = csr_prop_t(
                                          std::make_shared<csr_s>(fpg_mpw_sw_reset),
-                                         0xF8,
+                                         0x100,
                                          CSR_TYPE::REG,
                                          1);
         add_csr(fpg_mpw_0, "fpg_mpw_sw_reset", fpg_mpw_sw_reset_prop);
@@ -2351,7 +2375,7 @@ F1NS::F1NS(rd_fptr rd_fn, wr_fptr wr_fn):
         };
         auto fpg_mpw_pcs_cfg_prop = csr_prop_t(
                                         std::make_shared<csr_s>(fpg_mpw_pcs_cfg),
-                                        0x100,
+                                        0x108,
                                         CSR_TYPE::REG,
                                         1);
         add_csr(fpg_mpw_0, "fpg_mpw_pcs_cfg", fpg_mpw_pcs_cfg_prop);
@@ -2370,7 +2394,7 @@ F1NS::F1NS(rd_fptr rd_fn, wr_fptr wr_fn):
         };
         auto fpg_mpw_pcs_status_prop = csr_prop_t(
                                            std::make_shared<csr_s>(fpg_mpw_pcs_status),
-                                           0x108,
+                                           0x110,
                                            CSR_TYPE::REG,
                                            1);
         add_csr(fpg_mpw_0, "fpg_mpw_pcs_status", fpg_mpw_pcs_status_prop);
@@ -2380,7 +2404,7 @@ F1NS::F1NS(rd_fptr rd_fn, wr_fptr wr_fn):
         };
         auto fpg_mpw_tx_rx_loopback_cfg_prop = csr_prop_t(
                 std::make_shared<csr_s>(fpg_mpw_tx_rx_loopback_cfg),
-                0x110,
+                0x118,
                 CSR_TYPE::REG,
                 1);
         add_csr(fpg_mpw_0, "fpg_mpw_tx_rx_loopback_cfg", fpg_mpw_tx_rx_loopback_cfg_prop);
@@ -2396,7 +2420,7 @@ F1NS::F1NS(rd_fptr rd_fn, wr_fptr wr_fn):
         };
         auto fpg_mpw_rx_err_mask_prop = csr_prop_t(
                                             std::make_shared<csr_s>(fpg_mpw_rx_err_mask),
-                                            0x118,
+                                            0x120,
                                             CSR_TYPE::REG,
                                             1);
         add_csr(fpg_mpw_0, "fpg_mpw_rx_err_mask", fpg_mpw_rx_err_mask_prop);
@@ -2421,7 +2445,7 @@ F1NS::F1NS(rd_fptr rd_fn, wr_fptr wr_fn):
         };
         auto fpg_mpw_mem_err_inj_cfg_prop = csr_prop_t(
                                                 std::make_shared<csr_s>(fpg_mpw_mem_err_inj_cfg),
-                                                0x130,
+                                                0x138,
                                                 CSR_TYPE::REG,
                                                 1);
         add_csr(fpg_mpw_0, "fpg_mpw_mem_err_inj_cfg", fpg_mpw_mem_err_inj_cfg_prop);
@@ -2431,7 +2455,7 @@ F1NS::F1NS(rd_fptr rd_fn, wr_fptr wr_fn):
         };
         auto fpg_mpw_sram_log_err_prop = csr_prop_t(
                                              std::make_shared<csr_s>(fpg_mpw_sram_log_err),
-                                             0x138,
+                                             0x140,
                                              CSR_TYPE::REG,
                                              1);
         add_csr(fpg_mpw_0, "fpg_mpw_sram_log_err", fpg_mpw_sram_log_err_prop);
@@ -2441,7 +2465,7 @@ F1NS::F1NS(rd_fptr rd_fn, wr_fptr wr_fn):
         };
         auto fpg_mpw_sram_log_addr_prop = csr_prop_t(
                                               std::make_shared<csr_s>(fpg_mpw_sram_log_addr),
-                                              0x140,
+                                              0x148,
                                               CSR_TYPE::REG,
                                               1);
         add_csr(fpg_mpw_0, "fpg_mpw_sram_log_addr", fpg_mpw_sram_log_addr_prop);
@@ -2451,7 +2475,7 @@ F1NS::F1NS(rd_fptr rd_fn, wr_fptr wr_fn):
         };
         auto fpg_mpw_fla_ring_module_id_cfg_prop = csr_prop_t(
                     std::make_shared<csr_s>(fpg_mpw_fla_ring_module_id_cfg),
-                    0x148,
+                    0x150,
                     CSR_TYPE::REG,
                     1);
         add_csr(fpg_mpw_0, "fpg_mpw_fla_ring_module_id_cfg", fpg_mpw_fla_ring_module_id_cfg_prop);
@@ -2557,13 +2581,25 @@ F1NS::F1NS(rd_fptr rd_fn, wr_fptr wr_fn):
                                            CSR_TYPE::REG,
                                            1);
         add_csr(fpg_mpw_1, "fpg_mpw_mac_status", fpg_mpw_mac_status_prop);
+        fld_map_t fpg_mpw_mac_pause_on_status {
+            CREATE_ENTRY("mac0", 0, 16),
+            CREATE_ENTRY("mac1", 16, 16),
+            CREATE_ENTRY("mac2", 32, 16),
+            CREATE_ENTRY("mac3", 48, 16)
+        };
+        auto fpg_mpw_mac_pause_on_status_prop = csr_prop_t(
+                std::make_shared<csr_s>(fpg_mpw_mac_pause_on_status),
+                0xB0,
+                CSR_TYPE::REG,
+                1);
+        add_csr(fpg_mpw_1, "fpg_mpw_mac_pause_on_status", fpg_mpw_mac_pause_on_status_prop);
         fld_map_t fpg_mpw_mac_tx_ts_avl {
             CREATE_ENTRY("val", 0, 4),
             CREATE_ENTRY("__rsvd", 4, 60)
         };
         auto fpg_mpw_mac_tx_ts_avl_prop = csr_prop_t(
                                               std::make_shared<csr_s>(fpg_mpw_mac_tx_ts_avl),
-                                              0xB0,
+                                              0xB8,
                                               CSR_TYPE::REG,
                                               1);
         add_csr(fpg_mpw_1, "fpg_mpw_mac_tx_ts_avl", fpg_mpw_mac_tx_ts_avl_prop);
@@ -2584,7 +2620,7 @@ F1NS::F1NS(rd_fptr rd_fn, wr_fptr wr_fn):
         };
         auto fpg_mpw_mac_tx_fault_cfg_prop = csr_prop_t(
                 std::make_shared<csr_s>(fpg_mpw_mac_tx_fault_cfg),
-                0xD8,
+                0xE0,
                 CSR_TYPE::REG,
                 1);
         add_csr(fpg_mpw_1, "fpg_mpw_mac_tx_fault_cfg", fpg_mpw_mac_tx_fault_cfg_prop);
@@ -2601,7 +2637,7 @@ F1NS::F1NS(rd_fptr rd_fn, wr_fptr wr_fn):
         };
         auto fpg_mpw_mac_lpi_cfg_prop = csr_prop_t(
                                             std::make_shared<csr_s>(fpg_mpw_mac_lpi_cfg),
-                                            0xE0,
+                                            0xE8,
                                             CSR_TYPE::REG,
                                             1);
         add_csr(fpg_mpw_1, "fpg_mpw_mac_lpi_cfg", fpg_mpw_mac_lpi_cfg_prop);
@@ -2611,7 +2647,7 @@ F1NS::F1NS(rd_fptr rd_fn, wr_fptr wr_fn):
         };
         auto fpg_mpw_lpi_tick_cnt_incr_val_prop = csr_prop_t(
                     std::make_shared<csr_s>(fpg_mpw_lpi_tick_cnt_incr_val),
-                    0xE8,
+                    0xF0,
                     CSR_TYPE::REG,
                     1);
         add_csr(fpg_mpw_1, "fpg_mpw_lpi_tick_cnt_incr_val", fpg_mpw_lpi_tick_cnt_incr_val_prop);
@@ -2649,7 +2685,7 @@ F1NS::F1NS(rd_fptr rd_fn, wr_fptr wr_fn):
         };
         auto fpg_mpw_lpi_status_prop = csr_prop_t(
                                            std::make_shared<csr_s>(fpg_mpw_lpi_status),
-                                           0xF0,
+                                           0xF8,
                                            CSR_TYPE::REG,
                                            1);
         add_csr(fpg_mpw_1, "fpg_mpw_lpi_status", fpg_mpw_lpi_status_prop);
@@ -2665,7 +2701,7 @@ F1NS::F1NS(rd_fptr rd_fn, wr_fptr wr_fn):
         };
         auto fpg_mpw_sw_reset_prop = csr_prop_t(
                                          std::make_shared<csr_s>(fpg_mpw_sw_reset),
-                                         0xF8,
+                                         0x100,
                                          CSR_TYPE::REG,
                                          1);
         add_csr(fpg_mpw_1, "fpg_mpw_sw_reset", fpg_mpw_sw_reset_prop);
@@ -2687,7 +2723,7 @@ F1NS::F1NS(rd_fptr rd_fn, wr_fptr wr_fn):
         };
         auto fpg_mpw_pcs_cfg_prop = csr_prop_t(
                                         std::make_shared<csr_s>(fpg_mpw_pcs_cfg),
-                                        0x100,
+                                        0x108,
                                         CSR_TYPE::REG,
                                         1);
         add_csr(fpg_mpw_1, "fpg_mpw_pcs_cfg", fpg_mpw_pcs_cfg_prop);
@@ -2706,7 +2742,7 @@ F1NS::F1NS(rd_fptr rd_fn, wr_fptr wr_fn):
         };
         auto fpg_mpw_pcs_status_prop = csr_prop_t(
                                            std::make_shared<csr_s>(fpg_mpw_pcs_status),
-                                           0x108,
+                                           0x110,
                                            CSR_TYPE::REG,
                                            1);
         add_csr(fpg_mpw_1, "fpg_mpw_pcs_status", fpg_mpw_pcs_status_prop);
@@ -2716,7 +2752,7 @@ F1NS::F1NS(rd_fptr rd_fn, wr_fptr wr_fn):
         };
         auto fpg_mpw_tx_rx_loopback_cfg_prop = csr_prop_t(
                 std::make_shared<csr_s>(fpg_mpw_tx_rx_loopback_cfg),
-                0x110,
+                0x118,
                 CSR_TYPE::REG,
                 1);
         add_csr(fpg_mpw_1, "fpg_mpw_tx_rx_loopback_cfg", fpg_mpw_tx_rx_loopback_cfg_prop);
@@ -2732,7 +2768,7 @@ F1NS::F1NS(rd_fptr rd_fn, wr_fptr wr_fn):
         };
         auto fpg_mpw_rx_err_mask_prop = csr_prop_t(
                                             std::make_shared<csr_s>(fpg_mpw_rx_err_mask),
-                                            0x118,
+                                            0x120,
                                             CSR_TYPE::REG,
                                             1);
         add_csr(fpg_mpw_1, "fpg_mpw_rx_err_mask", fpg_mpw_rx_err_mask_prop);
@@ -2757,7 +2793,7 @@ F1NS::F1NS(rd_fptr rd_fn, wr_fptr wr_fn):
         };
         auto fpg_mpw_mem_err_inj_cfg_prop = csr_prop_t(
                                                 std::make_shared<csr_s>(fpg_mpw_mem_err_inj_cfg),
-                                                0x130,
+                                                0x138,
                                                 CSR_TYPE::REG,
                                                 1);
         add_csr(fpg_mpw_1, "fpg_mpw_mem_err_inj_cfg", fpg_mpw_mem_err_inj_cfg_prop);
@@ -2767,7 +2803,7 @@ F1NS::F1NS(rd_fptr rd_fn, wr_fptr wr_fn):
         };
         auto fpg_mpw_sram_log_err_prop = csr_prop_t(
                                              std::make_shared<csr_s>(fpg_mpw_sram_log_err),
-                                             0x138,
+                                             0x140,
                                              CSR_TYPE::REG,
                                              1);
         add_csr(fpg_mpw_1, "fpg_mpw_sram_log_err", fpg_mpw_sram_log_err_prop);
@@ -2777,7 +2813,7 @@ F1NS::F1NS(rd_fptr rd_fn, wr_fptr wr_fn):
         };
         auto fpg_mpw_sram_log_addr_prop = csr_prop_t(
                                               std::make_shared<csr_s>(fpg_mpw_sram_log_addr),
-                                              0x140,
+                                              0x148,
                                               CSR_TYPE::REG,
                                               1);
         add_csr(fpg_mpw_1, "fpg_mpw_sram_log_addr", fpg_mpw_sram_log_addr_prop);
@@ -2787,7 +2823,7 @@ F1NS::F1NS(rd_fptr rd_fn, wr_fptr wr_fn):
         };
         auto fpg_mpw_fla_ring_module_id_cfg_prop = csr_prop_t(
                     std::make_shared<csr_s>(fpg_mpw_fla_ring_module_id_cfg),
-                    0x148,
+                    0x150,
                     CSR_TYPE::REG,
                     1);
         add_csr(fpg_mpw_1, "fpg_mpw_fla_ring_module_id_cfg", fpg_mpw_fla_ring_module_id_cfg_prop);
@@ -11882,15 +11918,17 @@ F1NS::F1NS(rd_fptr rd_fn, wr_fptr wr_fn):
                                             1);
         add_csr(etdp_0, "etdp_fcp_stream_map", etdp_fcp_stream_map_prop);
         fld_map_t etdp_sram_err_inj_cfg {
-            CREATE_ENTRY("pswif_mem", 0, 1),
-            CREATE_ENTRY("tmem", 1, 1),
-            CREATE_ENTRY("lso_hmem_i1_b1", 2, 1),
-            CREATE_ENTRY("lso_hmem_i1_b0", 3, 1),
-            CREATE_ENTRY("lso_hmem_i0_b1", 4, 1),
-            CREATE_ENTRY("lso_hmem_i0_b0", 5, 1),
-            CREATE_ENTRY("lso_pmem", 6, 1),
-            CREATE_ENTRY("err_type", 7, 1),
-            CREATE_ENTRY("__rsvd", 8, 56)
+            CREATE_ENTRY("tx_cmd_fifo_mem", 0, 1),
+            CREATE_ENTRY("cmd_fifo_mem", 1, 1),
+            CREATE_ENTRY("pswif_mem", 2, 1),
+            CREATE_ENTRY("tmem", 3, 1),
+            CREATE_ENTRY("lso_hmem_i1_b1", 4, 1),
+            CREATE_ENTRY("lso_hmem_i1_b0", 5, 1),
+            CREATE_ENTRY("lso_hmem_i0_b1", 6, 1),
+            CREATE_ENTRY("lso_hmem_i0_b0", 7, 1),
+            CREATE_ENTRY("lso_pmem", 8, 1),
+            CREATE_ENTRY("err_type", 9, 1),
+            CREATE_ENTRY("__rsvd", 10, 54)
         };
         auto etdp_sram_err_inj_cfg_prop = csr_prop_t(
                                               std::make_shared<csr_s>(etdp_sram_err_inj_cfg),
@@ -11899,14 +11937,16 @@ F1NS::F1NS(rd_fptr rd_fn, wr_fptr wr_fn):
                                               1);
         add_csr(etdp_0, "etdp_sram_err_inj_cfg", etdp_sram_err_inj_cfg_prop);
         fld_map_t etdp_sram_cerr_log_vec {
-            CREATE_ENTRY("pswif_mem", 0, 1),
-            CREATE_ENTRY("tmem", 1, 1),
-            CREATE_ENTRY("lso_hmem_i1_b1", 2, 1),
-            CREATE_ENTRY("lso_hmem_i1_b0", 3, 1),
-            CREATE_ENTRY("lso_hmem_i0_b1", 4, 1),
-            CREATE_ENTRY("lso_hmem_i0_b0", 5, 1),
-            CREATE_ENTRY("lso_pmem", 6, 1),
-            CREATE_ENTRY("__rsvd", 7, 57)
+            CREATE_ENTRY("tx_cmd_fifo_mem", 0, 1),
+            CREATE_ENTRY("cmd_fifo_mem", 1, 1),
+            CREATE_ENTRY("pswif_mem", 2, 1),
+            CREATE_ENTRY("tmem", 3, 1),
+            CREATE_ENTRY("lso_hmem_i1_b1", 4, 1),
+            CREATE_ENTRY("lso_hmem_i1_b0", 5, 1),
+            CREATE_ENTRY("lso_hmem_i0_b1", 6, 1),
+            CREATE_ENTRY("lso_hmem_i0_b0", 7, 1),
+            CREATE_ENTRY("lso_pmem", 8, 1),
+            CREATE_ENTRY("__rsvd", 9, 55)
         };
         auto etdp_sram_cerr_log_vec_prop = csr_prop_t(
                                                std::make_shared<csr_s>(etdp_sram_cerr_log_vec),
@@ -11915,14 +11955,16 @@ F1NS::F1NS(rd_fptr rd_fn, wr_fptr wr_fn):
                                                1);
         add_csr(etdp_0, "etdp_sram_cerr_log_vec", etdp_sram_cerr_log_vec_prop);
         fld_map_t etdp_sram_ucerr_log_vec {
-            CREATE_ENTRY("pswif_mem", 0, 1),
-            CREATE_ENTRY("tmem", 1, 1),
-            CREATE_ENTRY("lso_hmem_i1_b1", 2, 1),
-            CREATE_ENTRY("lso_hmem_i1_b0", 3, 1),
-            CREATE_ENTRY("lso_hmem_i0_b1", 4, 1),
-            CREATE_ENTRY("lso_hmem_i0_b0", 5, 1),
-            CREATE_ENTRY("lso_pmem", 6, 1),
-            CREATE_ENTRY("__rsvd", 7, 57)
+            CREATE_ENTRY("tx_cmd_fifo_mem", 0, 1),
+            CREATE_ENTRY("cmd_fifo_mem", 1, 1),
+            CREATE_ENTRY("pswif_mem", 2, 1),
+            CREATE_ENTRY("tmem", 3, 1),
+            CREATE_ENTRY("lso_hmem_i1_b1", 4, 1),
+            CREATE_ENTRY("lso_hmem_i1_b0", 5, 1),
+            CREATE_ENTRY("lso_hmem_i0_b1", 6, 1),
+            CREATE_ENTRY("lso_hmem_i0_b0", 7, 1),
+            CREATE_ENTRY("lso_pmem", 8, 1),
+            CREATE_ENTRY("__rsvd", 9, 55)
         };
         auto etdp_sram_ucerr_log_vec_prop = csr_prop_t(
                                                 std::make_shared<csr_s>(etdp_sram_ucerr_log_vec),
@@ -12291,8 +12333,8 @@ F1NS::F1NS(rd_fptr rd_fn, wr_fptr wr_fn):
                                                 1);
         add_csr(fae_prs_0, "fae_prs_mem_err_inj_cfg", fae_prs_mem_err_inj_cfg_prop);
         fld_map_t prs_dsp_dfifo_mem_af_thold {
-            CREATE_ENTRY("data", 0, 7),
-            CREATE_ENTRY("__rsvd", 7, 57)
+            CREATE_ENTRY("data", 0, 6),
+            CREATE_ENTRY("__rsvd", 6, 58)
         };
         auto prs_dsp_dfifo_mem_af_thold_prop = csr_prop_t(
                 std::make_shared<csr_s>(prs_dsp_dfifo_mem_af_thold),
@@ -12414,6 +12456,16 @@ F1NS::F1NS(rd_fptr rd_fn, wr_fptr wr_fn):
                                            CSR_TYPE::REG,
                                            1);
         add_csr(fae_prs_0, "prs_hdb_fifo_empty", prs_hdb_fifo_empty_prop);
+        fld_map_t prs_sop_cnt_stream_cfg {
+            CREATE_ENTRY("stream", 0, 1),
+            CREATE_ENTRY("__rsvd", 1, 63)
+        };
+        auto prs_sop_cnt_stream_cfg_prop = csr_prop_t(
+                                               std::make_shared<csr_s>(prs_sop_cnt_stream_cfg),
+                                               0xF8,
+                                               CSR_TYPE::REG,
+                                               1);
+        add_csr(fae_prs_0, "prs_sop_cnt_stream_cfg", prs_sop_cnt_stream_cfg_prop);
 // END fae_prs
     }
     {
@@ -12526,8 +12578,8 @@ F1NS::F1NS(rd_fptr rd_fn, wr_fptr wr_fn):
                                                 1);
         add_csr(etp_prs_0, "etp_prs_mem_err_inj_cfg", etp_prs_mem_err_inj_cfg_prop);
         fld_map_t prs_dsp_dfifo_mem_af_thold {
-            CREATE_ENTRY("data", 0, 7),
-            CREATE_ENTRY("__rsvd", 7, 57)
+            CREATE_ENTRY("data", 0, 6),
+            CREATE_ENTRY("__rsvd", 6, 58)
         };
         auto prs_dsp_dfifo_mem_af_thold_prop = csr_prop_t(
                 std::make_shared<csr_s>(prs_dsp_dfifo_mem_af_thold),
@@ -12649,6 +12701,16 @@ F1NS::F1NS(rd_fptr rd_fn, wr_fptr wr_fn):
                                            CSR_TYPE::REG,
                                            1);
         add_csr(etp_prs_0, "prs_hdb_fifo_empty", prs_hdb_fifo_empty_prop);
+        fld_map_t prs_sop_cnt_stream_cfg {
+            CREATE_ENTRY("stream", 0, 5),
+            CREATE_ENTRY("__rsvd", 5, 59)
+        };
+        auto prs_sop_cnt_stream_cfg_prop = csr_prop_t(
+                                               std::make_shared<csr_s>(prs_sop_cnt_stream_cfg),
+                                               0xF8,
+                                               CSR_TYPE::REG,
+                                               1);
+        add_csr(etp_prs_0, "prs_sop_cnt_stream_cfg", prs_sop_cnt_stream_cfg_prop);
 // END etp_prs
     }
     {
@@ -12764,8 +12826,8 @@ F1NS::F1NS(rd_fptr rd_fn, wr_fptr wr_fn):
                                                 1);
         add_csr(erp_prs_0, "erp_prs_mem_err_inj_cfg", erp_prs_mem_err_inj_cfg_prop);
         fld_map_t prs_dsp_dfifo_mem_af_thold {
-            CREATE_ENTRY("data", 0, 7),
-            CREATE_ENTRY("__rsvd", 7, 57)
+            CREATE_ENTRY("data", 0, 6),
+            CREATE_ENTRY("__rsvd", 6, 58)
         };
         auto prs_dsp_dfifo_mem_af_thold_prop = csr_prop_t(
                 std::make_shared<csr_s>(prs_dsp_dfifo_mem_af_thold),
@@ -12889,6 +12951,16 @@ F1NS::F1NS(rd_fptr rd_fn, wr_fptr wr_fn):
                                            CSR_TYPE::REG,
                                            1);
         add_csr(erp_prs_0, "prs_hdb_fifo_empty", prs_hdb_fifo_empty_prop);
+        fld_map_t prs_sop_cnt_stream_cfg {
+            CREATE_ENTRY("stream", 0, 5),
+            CREATE_ENTRY("__rsvd", 5, 59)
+        };
+        auto prs_sop_cnt_stream_cfg_prop = csr_prop_t(
+                                               std::make_shared<csr_s>(prs_sop_cnt_stream_cfg),
+                                               0xF8,
+                                               CSR_TYPE::REG,
+                                               1);
+        add_csr(erp_prs_0, "prs_sop_cnt_stream_cfg", prs_sop_cnt_stream_cfg_prop);
 // END erp_prs
     }
     {
@@ -13434,23 +13506,19 @@ F1NS::F1NS(rd_fptr rd_fn, wr_fptr wr_fn):
                 1);
         add_csr(efp_rfp_lcl_0, "efp_rfp_sram_cerr_log_vec", efp_rfp_sram_cerr_log_vec_prop);
         fld_map_t efp_rfp_sram_ucerr_log_vec {
-            CREATE_ENTRY("efp_rfp_clbp_mem", 0, 1),
-            CREATE_ENTRY("efp_rfp_lb_grp_mem", 1, 1),
-            CREATE_ENTRY("efp_rfp_rad_mem", 2, 1),
-            CREATE_ENTRY("efp_rfp_bmpool_nd_map_mem", 3, 1),
-            CREATE_ENTRY("efp_rfp_hdr_bf_inst0", 4, 1),
-            CREATE_ENTRY("efp_rfp_hdr_bf_inst1", 5, 1),
-            CREATE_ENTRY("efp_rfp_hdr_bf_inst2", 6, 1),
-            CREATE_ENTRY("efp_rfp_mhg_buf0", 7, 1),
-            CREATE_ENTRY("efp_rfp_mhg_buf1", 8, 1),
-            CREATE_ENTRY("efp_rfp_rewr_inst_mem", 9, 1),
-            CREATE_ENTRY("efp_rfp_l4cs_hdr_buf", 10, 1),
-            CREATE_ENTRY("efp_rfp_rsrc_buf", 11, 1),
-            CREATE_ENTRY("efp_rfp_misc_buf", 12, 1),
-            CREATE_ENTRY("efp_rfp_pre_mhg_buf", 13, 1),
-            CREATE_ENTRY("efp_rfp_tag_data", 14, 1),
-            CREATE_ENTRY("efp_rfp_fcpea_seq", 15, 1),
-            CREATE_ENTRY("__rsvd", 16, 48)
+            CREATE_ENTRY("efp_rfp_rad_mem", 0, 1),
+            CREATE_ENTRY("efp_rfp_hdr_bf_inst0", 1, 1),
+            CREATE_ENTRY("efp_rfp_hdr_bf_inst1", 2, 1),
+            CREATE_ENTRY("efp_rfp_hdr_bf_inst2", 3, 1),
+            CREATE_ENTRY("efp_rfp_mhg_buf0", 4, 1),
+            CREATE_ENTRY("efp_rfp_mhg_buf1", 5, 1),
+            CREATE_ENTRY("efp_rfp_l4cs_hdr_buf", 6, 1),
+            CREATE_ENTRY("efp_rfp_rsrc_buf", 7, 1),
+            CREATE_ENTRY("efp_rfp_misc_buf", 8, 1),
+            CREATE_ENTRY("efp_rfp_pre_mhg_buf", 9, 1),
+            CREATE_ENTRY("efp_rfp_tag_data", 10, 1),
+            CREATE_ENTRY("efp_rfp_fcpea_seq", 11, 1),
+            CREATE_ENTRY("__rsvd", 12, 52)
         };
         auto efp_rfp_sram_ucerr_log_vec_prop = csr_prop_t(
                 std::make_shared<csr_s>(efp_rfp_sram_ucerr_log_vec),
@@ -16431,8 +16499,8 @@ F1NS::F1NS(rd_fptr rd_fn, wr_fptr wr_fn):
                     1);
         add_csr(nu_mpg_core_0, "nu_mpg_hbm_tx_buf_curr_addr_sta", nu_mpg_hbm_tx_buf_curr_addr_sta_prop);
         fld_map_t nu_mpg_tx_prd_sta {
-            CREATE_ENTRY("fpg_credits", 0, 3),
-            CREATE_ENTRY("__rsvd", 3, 61)
+            CREATE_ENTRY("fpg_credits", 0, 4),
+            CREATE_ENTRY("__rsvd", 4, 60)
         };
         auto nu_mpg_tx_prd_sta_prop = csr_prop_t(
                                           std::make_shared<csr_s>(nu_mpg_tx_prd_sta),
@@ -16685,6 +16753,30 @@ F1NS::F1NS(rd_fptr rd_fn, wr_fptr wr_fn):
                                             CSR_TYPE::REG,
                                             1);
         add_csr(fla_0, "fla_mem_err_inj_cfg", fla_mem_err_inj_cfg_prop);
+        fld_map_t fla_cmd_ring_in_if_sta {
+            CREATE_ENTRY("fld_busSelMap", 0, 4),
+            CREATE_ENTRY("fld_module_id", 4, 8),
+            CREATE_ENTRY("fld_mux_sel", 12, 8),
+            CREATE_ENTRY("__rsvd", 20, 44)
+        };
+        auto fla_cmd_ring_in_if_sta_prop = csr_prop_t(
+                                               std::make_shared<csr_s>(fla_cmd_ring_in_if_sta),
+                                               0xE0,
+                                               CSR_TYPE::REG,
+                                               1);
+        add_csr(fla_0, "fla_cmd_ring_in_if_sta", fla_cmd_ring_in_if_sta_prop);
+        fld_map_t fla_dbus_ring_in_if_sta {
+            CREATE_ENTRY("fld_dbus_if0_val", 0, 16),
+            CREATE_ENTRY("fld_dbus_if1_val", 16, 16),
+            CREATE_ENTRY("fld_dbus_if2_val", 32, 16),
+            CREATE_ENTRY("fld_dbus_if3_val", 48, 16)
+        };
+        auto fla_dbus_ring_in_if_sta_prop = csr_prop_t(
+                                                std::make_shared<csr_s>(fla_dbus_ring_in_if_sta),
+                                                0xE8,
+                                                CSR_TYPE::REG,
+                                                1);
+        add_csr(fla_0, "fla_dbus_ring_in_if_sta", fla_dbus_ring_in_if_sta_prop);
         fld_map_t fla_trig_sta {
             CREATE_ENTRY("fld_engine0", 0, 1),
             CREATE_ENTRY("fld_engine1", 1, 1),
@@ -16694,7 +16786,7 @@ F1NS::F1NS(rd_fptr rd_fn, wr_fptr wr_fn):
         };
         auto fla_trig_sta_prop = csr_prop_t(
                                      std::make_shared<csr_s>(fla_trig_sta),
-                                     0xE8,
+                                     0xF8,
                                      CSR_TYPE::REG,
                                      1);
         add_csr(fla_0, "fla_trig_sta", fla_trig_sta_prop);
@@ -16707,7 +16799,7 @@ F1NS::F1NS(rd_fptr rd_fn, wr_fptr wr_fn):
         };
         auto fla_cap_done_sta_prop = csr_prop_t(
                                          std::make_shared<csr_s>(fla_cap_done_sta),
-                                         0xF8,
+                                         0x108,
                                          CSR_TYPE::REG,
                                          1);
         add_csr(fla_0, "fla_cap_done_sta", fla_cap_done_sta_prop);
@@ -16720,7 +16812,7 @@ F1NS::F1NS(rd_fptr rd_fn, wr_fptr wr_fn):
         };
         auto fla_trig_map_cfg_prop = csr_prop_t(
                                          std::make_shared<csr_s>(fla_trig_map_cfg),
-                                         0x100,
+                                         0x110,
                                          CSR_TYPE::REG,
                                          1);
         add_csr(fla_0, "fla_trig_map_cfg", fla_trig_map_cfg_prop);
@@ -16733,7 +16825,7 @@ F1NS::F1NS(rd_fptr rd_fn, wr_fptr wr_fn):
         };
         auto fla_trig_type_cfg_prop = csr_prop_t(
                                           std::make_shared<csr_s>(fla_trig_type_cfg),
-                                          0x108,
+                                          0x118,
                                           CSR_TYPE::REG,
                                           1);
         add_csr(fla_0, "fla_trig_type_cfg", fla_trig_type_cfg_prop);
@@ -16746,7 +16838,7 @@ F1NS::F1NS(rd_fptr rd_fn, wr_fptr wr_fn):
         };
         auto fla_engine_sample_mode_cfg_prop = csr_prop_t(
                 std::make_shared<csr_s>(fla_engine_sample_mode_cfg),
-                0x110,
+                0x120,
                 CSR_TYPE::REG,
                 1);
         add_csr(fla_0, "fla_engine_sample_mode_cfg", fla_engine_sample_mode_cfg_prop);
@@ -16759,7 +16851,7 @@ F1NS::F1NS(rd_fptr rd_fn, wr_fptr wr_fn):
         };
         auto fla_engine_lane_deskew_cfg_prop = csr_prop_t(
                 std::make_shared<csr_s>(fla_engine_lane_deskew_cfg),
-                0x118,
+                0x128,
                 CSR_TYPE::REG,
                 1);
         add_csr(fla_0, "fla_engine_lane_deskew_cfg", fla_engine_lane_deskew_cfg_prop);
@@ -16772,7 +16864,7 @@ F1NS::F1NS(rd_fptr rd_fn, wr_fptr wr_fn):
         };
         auto fla_engine_trig_pos_cfg_prop = csr_prop_t(
                                                 std::make_shared<csr_s>(fla_engine_trig_pos_cfg),
-                                                0x120,
+                                                0x130,
                                                 CSR_TYPE::REG,
                                                 1);
         add_csr(fla_0, "fla_engine_trig_pos_cfg", fla_engine_trig_pos_cfg_prop);
@@ -16784,7 +16876,7 @@ F1NS::F1NS(rd_fptr rd_fn, wr_fptr wr_fn):
         };
         auto fla_lut_a_sel_cfg_prop = csr_prop_t(
                                           std::make_shared<csr_s>(fla_lut_a_sel_cfg),
-                                          0x128,
+                                          0x138,
                                           CSR_TYPE::REG,
                                           1);
         add_csr(fla_0, "fla_lut_a_sel_cfg", fla_lut_a_sel_cfg_prop);
@@ -16796,7 +16888,7 @@ F1NS::F1NS(rd_fptr rd_fn, wr_fptr wr_fn):
         };
         auto fla_lut_a_hit_map_cfg_prop = csr_prop_t(
                                               std::make_shared<csr_s>(fla_lut_a_hit_map_cfg),
-                                              0x130,
+                                              0x140,
                                               CSR_TYPE::REG,
                                               1);
         add_csr(fla_0, "fla_lut_a_hit_map_cfg", fla_lut_a_hit_map_cfg_prop);
@@ -16808,7 +16900,7 @@ F1NS::F1NS(rd_fptr rd_fn, wr_fptr wr_fn):
         };
         auto fla_lut_b_sel_cfg_prop = csr_prop_t(
                                           std::make_shared<csr_s>(fla_lut_b_sel_cfg),
-                                          0x138,
+                                          0x148,
                                           CSR_TYPE::REG,
                                           1);
         add_csr(fla_0, "fla_lut_b_sel_cfg", fla_lut_b_sel_cfg_prop);
@@ -16820,7 +16912,7 @@ F1NS::F1NS(rd_fptr rd_fn, wr_fptr wr_fn):
         };
         auto fla_lut_b_hit_map_cfg_prop = csr_prop_t(
                                               std::make_shared<csr_s>(fla_lut_b_hit_map_cfg),
-                                              0x140,
+                                              0x150,
                                               CSR_TYPE::REG,
                                               1);
         add_csr(fla_0, "fla_lut_b_hit_map_cfg", fla_lut_b_hit_map_cfg_prop);
@@ -16830,7 +16922,7 @@ F1NS::F1NS(rd_fptr rd_fn, wr_fptr wr_fn):
         };
         auto fla_engine0_pattern_a_cfg_prop = csr_prop_t(
                 std::make_shared<csr_s>(fla_engine0_pattern_a_cfg),
-                0x148,
+                0x158,
                 CSR_TYPE::REG,
                 1);
         add_csr(fla_0, "fla_engine0_pattern_a_cfg", fla_engine0_pattern_a_cfg_prop);
@@ -16840,7 +16932,7 @@ F1NS::F1NS(rd_fptr rd_fn, wr_fptr wr_fn):
         };
         auto fla_engine0_mask_a_cfg_prop = csr_prop_t(
                                                std::make_shared<csr_s>(fla_engine0_mask_a_cfg),
-                                               0x150,
+                                               0x160,
                                                CSR_TYPE::REG,
                                                1);
         add_csr(fla_0, "fla_engine0_mask_a_cfg", fla_engine0_mask_a_cfg_prop);
@@ -16850,7 +16942,7 @@ F1NS::F1NS(rd_fptr rd_fn, wr_fptr wr_fn):
         };
         auto fla_engine0_pattern_b_cfg_prop = csr_prop_t(
                 std::make_shared<csr_s>(fla_engine0_pattern_b_cfg),
-                0x158,
+                0x168,
                 CSR_TYPE::REG,
                 1);
         add_csr(fla_0, "fla_engine0_pattern_b_cfg", fla_engine0_pattern_b_cfg_prop);
@@ -16860,7 +16952,7 @@ F1NS::F1NS(rd_fptr rd_fn, wr_fptr wr_fn):
         };
         auto fla_engine0_mask_b_cfg_prop = csr_prop_t(
                                                std::make_shared<csr_s>(fla_engine0_mask_b_cfg),
-                                               0x160,
+                                               0x170,
                                                CSR_TYPE::REG,
                                                1);
         add_csr(fla_0, "fla_engine0_mask_b_cfg", fla_engine0_mask_b_cfg_prop);
@@ -16870,7 +16962,7 @@ F1NS::F1NS(rd_fptr rd_fn, wr_fptr wr_fn):
         };
         auto fla_engine0_trig_pos_buf_ptr_sta_prop = csr_prop_t(
                     std::make_shared<csr_s>(fla_engine0_trig_pos_buf_ptr_sta),
-                    0x168,
+                    0x178,
                     CSR_TYPE::REG,
                     1);
         add_csr(fla_0, "fla_engine0_trig_pos_buf_ptr_sta", fla_engine0_trig_pos_buf_ptr_sta_prop);
@@ -16881,7 +16973,7 @@ F1NS::F1NS(rd_fptr rd_fn, wr_fptr wr_fn):
         };
         auto fla_engine0_cap_cnt_sta_prop = csr_prop_t(
                                                 std::make_shared<csr_s>(fla_engine0_cap_cnt_sta),
-                                                0x170,
+                                                0x180,
                                                 CSR_TYPE::REG,
                                                 1);
         add_csr(fla_0, "fla_engine0_cap_cnt_sta", fla_engine0_cap_cnt_sta_prop);
@@ -16891,7 +16983,7 @@ F1NS::F1NS(rd_fptr rd_fn, wr_fptr wr_fn):
         };
         auto fla_engine1_pattern_a_cfg_prop = csr_prop_t(
                 std::make_shared<csr_s>(fla_engine1_pattern_a_cfg),
-                0x178,
+                0x188,
                 CSR_TYPE::REG,
                 1);
         add_csr(fla_0, "fla_engine1_pattern_a_cfg", fla_engine1_pattern_a_cfg_prop);
@@ -16901,7 +16993,7 @@ F1NS::F1NS(rd_fptr rd_fn, wr_fptr wr_fn):
         };
         auto fla_engine1_mask_a_cfg_prop = csr_prop_t(
                                                std::make_shared<csr_s>(fla_engine1_mask_a_cfg),
-                                               0x180,
+                                               0x190,
                                                CSR_TYPE::REG,
                                                1);
         add_csr(fla_0, "fla_engine1_mask_a_cfg", fla_engine1_mask_a_cfg_prop);
@@ -16911,7 +17003,7 @@ F1NS::F1NS(rd_fptr rd_fn, wr_fptr wr_fn):
         };
         auto fla_engine1_pattern_b_cfg_prop = csr_prop_t(
                 std::make_shared<csr_s>(fla_engine1_pattern_b_cfg),
-                0x188,
+                0x198,
                 CSR_TYPE::REG,
                 1);
         add_csr(fla_0, "fla_engine1_pattern_b_cfg", fla_engine1_pattern_b_cfg_prop);
@@ -16921,7 +17013,7 @@ F1NS::F1NS(rd_fptr rd_fn, wr_fptr wr_fn):
         };
         auto fla_engine1_mask_b_cfg_prop = csr_prop_t(
                                                std::make_shared<csr_s>(fla_engine1_mask_b_cfg),
-                                               0x190,
+                                               0x1A0,
                                                CSR_TYPE::REG,
                                                1);
         add_csr(fla_0, "fla_engine1_mask_b_cfg", fla_engine1_mask_b_cfg_prop);
@@ -16931,7 +17023,7 @@ F1NS::F1NS(rd_fptr rd_fn, wr_fptr wr_fn):
         };
         auto fla_engine1_trig_pos_buf_ptr_sta_prop = csr_prop_t(
                     std::make_shared<csr_s>(fla_engine1_trig_pos_buf_ptr_sta),
-                    0x198,
+                    0x1A8,
                     CSR_TYPE::REG,
                     1);
         add_csr(fla_0, "fla_engine1_trig_pos_buf_ptr_sta", fla_engine1_trig_pos_buf_ptr_sta_prop);
@@ -16942,7 +17034,7 @@ F1NS::F1NS(rd_fptr rd_fn, wr_fptr wr_fn):
         };
         auto fla_engine1_cap_cnt_sta_prop = csr_prop_t(
                                                 std::make_shared<csr_s>(fla_engine1_cap_cnt_sta),
-                                                0x1A0,
+                                                0x1B0,
                                                 CSR_TYPE::REG,
                                                 1);
         add_csr(fla_0, "fla_engine1_cap_cnt_sta", fla_engine1_cap_cnt_sta_prop);
@@ -16952,7 +17044,7 @@ F1NS::F1NS(rd_fptr rd_fn, wr_fptr wr_fn):
         };
         auto fla_engine2_pattern_a_cfg_prop = csr_prop_t(
                 std::make_shared<csr_s>(fla_engine2_pattern_a_cfg),
-                0x1A8,
+                0x1B8,
                 CSR_TYPE::REG,
                 1);
         add_csr(fla_0, "fla_engine2_pattern_a_cfg", fla_engine2_pattern_a_cfg_prop);
@@ -16962,7 +17054,7 @@ F1NS::F1NS(rd_fptr rd_fn, wr_fptr wr_fn):
         };
         auto fla_engine2_mask_a_cfg_prop = csr_prop_t(
                                                std::make_shared<csr_s>(fla_engine2_mask_a_cfg),
-                                               0x1B0,
+                                               0x1C0,
                                                CSR_TYPE::REG,
                                                1);
         add_csr(fla_0, "fla_engine2_mask_a_cfg", fla_engine2_mask_a_cfg_prop);
@@ -16972,7 +17064,7 @@ F1NS::F1NS(rd_fptr rd_fn, wr_fptr wr_fn):
         };
         auto fla_engine2_pattern_b_cfg_prop = csr_prop_t(
                 std::make_shared<csr_s>(fla_engine2_pattern_b_cfg),
-                0x1B8,
+                0x1C8,
                 CSR_TYPE::REG,
                 1);
         add_csr(fla_0, "fla_engine2_pattern_b_cfg", fla_engine2_pattern_b_cfg_prop);
@@ -16982,7 +17074,7 @@ F1NS::F1NS(rd_fptr rd_fn, wr_fptr wr_fn):
         };
         auto fla_engine2_mask_b_cfg_prop = csr_prop_t(
                                                std::make_shared<csr_s>(fla_engine2_mask_b_cfg),
-                                               0x1C0,
+                                               0x1D0,
                                                CSR_TYPE::REG,
                                                1);
         add_csr(fla_0, "fla_engine2_mask_b_cfg", fla_engine2_mask_b_cfg_prop);
@@ -16992,7 +17084,7 @@ F1NS::F1NS(rd_fptr rd_fn, wr_fptr wr_fn):
         };
         auto fla_engine2_trig_pos_buf_ptr_sta_prop = csr_prop_t(
                     std::make_shared<csr_s>(fla_engine2_trig_pos_buf_ptr_sta),
-                    0x1C8,
+                    0x1D8,
                     CSR_TYPE::REG,
                     1);
         add_csr(fla_0, "fla_engine2_trig_pos_buf_ptr_sta", fla_engine2_trig_pos_buf_ptr_sta_prop);
@@ -17003,7 +17095,7 @@ F1NS::F1NS(rd_fptr rd_fn, wr_fptr wr_fn):
         };
         auto fla_engine2_cap_cnt_sta_prop = csr_prop_t(
                                                 std::make_shared<csr_s>(fla_engine2_cap_cnt_sta),
-                                                0x1D0,
+                                                0x1E0,
                                                 CSR_TYPE::REG,
                                                 1);
         add_csr(fla_0, "fla_engine2_cap_cnt_sta", fla_engine2_cap_cnt_sta_prop);
@@ -17013,7 +17105,7 @@ F1NS::F1NS(rd_fptr rd_fn, wr_fptr wr_fn):
         };
         auto fla_engine3_pattern_a_cfg_prop = csr_prop_t(
                 std::make_shared<csr_s>(fla_engine3_pattern_a_cfg),
-                0x1D8,
+                0x1E8,
                 CSR_TYPE::REG,
                 1);
         add_csr(fla_0, "fla_engine3_pattern_a_cfg", fla_engine3_pattern_a_cfg_prop);
@@ -17023,7 +17115,7 @@ F1NS::F1NS(rd_fptr rd_fn, wr_fptr wr_fn):
         };
         auto fla_engine3_mask_a_cfg_prop = csr_prop_t(
                                                std::make_shared<csr_s>(fla_engine3_mask_a_cfg),
-                                               0x1E0,
+                                               0x1F0,
                                                CSR_TYPE::REG,
                                                1);
         add_csr(fla_0, "fla_engine3_mask_a_cfg", fla_engine3_mask_a_cfg_prop);
@@ -17033,7 +17125,7 @@ F1NS::F1NS(rd_fptr rd_fn, wr_fptr wr_fn):
         };
         auto fla_engine3_pattern_b_cfg_prop = csr_prop_t(
                 std::make_shared<csr_s>(fla_engine3_pattern_b_cfg),
-                0x1E8,
+                0x1F8,
                 CSR_TYPE::REG,
                 1);
         add_csr(fla_0, "fla_engine3_pattern_b_cfg", fla_engine3_pattern_b_cfg_prop);
@@ -17043,7 +17135,7 @@ F1NS::F1NS(rd_fptr rd_fn, wr_fptr wr_fn):
         };
         auto fla_engine3_mask_b_cfg_prop = csr_prop_t(
                                                std::make_shared<csr_s>(fla_engine3_mask_b_cfg),
-                                               0x1F0,
+                                               0x200,
                                                CSR_TYPE::REG,
                                                1);
         add_csr(fla_0, "fla_engine3_mask_b_cfg", fla_engine3_mask_b_cfg_prop);
@@ -17053,7 +17145,7 @@ F1NS::F1NS(rd_fptr rd_fn, wr_fptr wr_fn):
         };
         auto fla_engine3_trig_pos_buf_ptr_sta_prop = csr_prop_t(
                     std::make_shared<csr_s>(fla_engine3_trig_pos_buf_ptr_sta),
-                    0x1F8,
+                    0x208,
                     CSR_TYPE::REG,
                     1);
         add_csr(fla_0, "fla_engine3_trig_pos_buf_ptr_sta", fla_engine3_trig_pos_buf_ptr_sta_prop);
@@ -17064,7 +17156,7 @@ F1NS::F1NS(rd_fptr rd_fn, wr_fptr wr_fn):
         };
         auto fla_engine3_cap_cnt_sta_prop = csr_prop_t(
                                                 std::make_shared<csr_s>(fla_engine3_cap_cnt_sta),
-                                                0x200,
+                                                0x210,
                                                 CSR_TYPE::REG,
                                                 1);
         add_csr(fla_0, "fla_engine3_cap_cnt_sta", fla_engine3_cap_cnt_sta_prop);
@@ -17514,7 +17606,8 @@ F1NS::F1NS(rd_fptr rd_fn, wr_fptr wr_fn):
             CREATE_ENTRY("tgt_tag_partition_mode", 0, 2),
             CREATE_ENTRY("bnh_match_val", 2, 15),
             CREATE_ENTRY("bnh_mask_val", 17, 15),
-            CREATE_ENTRY("__rsvd", 32, 32)
+            CREATE_ENTRY("is_fatal_illegal_cid", 32, 1),
+            CREATE_ENTRY("__rsvd", 33, 31)
         };
         auto hsu_flink_shim_csr_gen4_prop = csr_prop_t(
                                                 std::make_shared<csr_s>(hsu_flink_shim_csr_gen4),
@@ -17658,8 +17751,8 @@ F1NS::F1NS(rd_fptr rd_fn, wr_fptr wr_fn):
                     1);
         add_csr(hsu_hdma_pcie_framer_0, "hsu_hdma_pcie_framer_mem_err_inj_cfg", hsu_hdma_pcie_framer_mem_err_inj_cfg_prop);
         fld_map_t hsu_hdma_pcie_framer_sram_log_syndrome {
-            CREATE_ENTRY("val", 0, 11),
-            CREATE_ENTRY("__rsvd", 11, 53)
+            CREATE_ENTRY("val", 0, 10),
+            CREATE_ENTRY("__rsvd", 10, 54)
         };
         auto hsu_hdma_pcie_framer_sram_log_syndrome_prop = csr_prop_t(
                     std::make_shared<csr_s>(hsu_hdma_pcie_framer_sram_log_syndrome),
