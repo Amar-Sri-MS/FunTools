@@ -1,6 +1,14 @@
-#include "tcp_cli.h"
+/*
+ *  tcp_cli.cpp
+ *
+ *  Created by Hariharan Thantry on 2018-02-28
+ *
+ *  Copyright © 2018 Fungible Inc. All rights reserved.
+ */
+#include <cstring>
 #include <iostream>
 
+#include "tcp_cli.h"
 tcp_cli::tcp_cli(void):sock(-1) {}
 
 bool tcp_cli::conn(const std::string& host, const int& port) {
@@ -13,7 +21,7 @@ bool tcp_cli::conn(const std::string& host, const int& port) {
 	 }
     }
     std::cout << "Socket created" << std::endl;
-    if (inet_addr(host.c_str()) == -1) {
+    if (inet_addr(host.c_str()) == (in_addr_t)(-1)) {
         struct hostent* he;
 	struct in_addr** addr_list;
 	if ((he = gethostbyname(host.c_str())) == nullptr) {
