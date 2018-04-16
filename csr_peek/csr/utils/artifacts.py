@@ -26,8 +26,9 @@ class TmplMgr(object):
 
 # For every top level ring, one RingNode object
 class RingNode(object):
-    def __init__(self, name):
+    def __init__(self, name, is_dummy=False):
         self.name = name
+        self.is_dummy = is_dummy
         self.instances = collections.OrderedDict()
 
     def add_instance(self, inst_num, addr):
@@ -108,7 +109,6 @@ class ANode(object):
 
         return p[0].addr
 
-
     def get_path_str(self):
         path_arr = self.path.split('.')
         r_str = ""
@@ -137,6 +137,8 @@ class RingProps(object):
         self.anodes = collections.OrderedDict()
         # From an aname to csr signature
         self.csr_map = collections.OrderedDict()
+        # Keep track of totals
+
     def get_addr(self):
         return self.addr
 
@@ -250,6 +252,8 @@ class CSRRoot(object):
         self.curr_an_name = None
         self.csr_map = csr_map
         self.ring_map = collections.OrderedDict()
+        self.start_addr = 0xFFFFFFFFFF
+        self.end_addr = 0
         self.__read_update(amap_file, filter_yml)
         self.ring_exclude = collections.OrderedDict()
 
@@ -275,6 +279,8 @@ class CSRRoot(object):
                 self.an_added = False
                 continue
             self.__process_csr(line, do_process, filter_yml)
+
+        print "ADDR_RANGE: 0x{:02X}->0x{:02X}".format(self.start_addr, self.end_addr)
 
     def __ignore(self, line):
         for rep in CSRRoot.IGNORE:
@@ -351,8 +357,8 @@ class CSRRoot(object):
         self.__add_ring_instance(ring_class, ring_inst, self.__hexlify(l_arr[1]))
         #print "RING_ACCEPT: {}".format(line)
         return True
-    def __add_ring_instance(self, ring_class, ring_inst, addr):
-        ring_node = self.ring_map.get(ring_class, RingNode(ring_class))
+    def __add_ring_instance(self, ring_class, ring_inst, addr, is_dummy=False):
+        ring_node = self.ring_map.get(ring_class, RingNode(ring_class, is_dummy))
         ring_node.add_instance(ring_inst, addr)
         self.ring_map[ring_class] = ring_node
         return ring_node
@@ -372,11 +378,22 @@ class CSRRoot(object):
         rn = self.ring_map.get(ring_class, None)
         if rn == None:
            print "Adding dummy ring class: {}".format(ring_class)
-           rn = self.__add_ring_instance(ring_class, ring_inst, 0)
+           rn = self.__add_ring_instance(ring_class, ring_inst, 0, True)
 
+        st_addr = self.__hexlify(coll[3])
+        skip_val = self.__hexlify(coll[4])
+        num_inst = int(coll[2])
+        end_addr = st_addr + (num_inst - 1)*skip_val
+        if st_addr < self.start_addr and not rn.is_dummy:
+            print "NEW START: 0x{:02X}->0x{:02X}".format(self.start_addr, st_addr)
+            self.start_addr = st_addr
+
+        if end_addr > self.end_addr and not rn.is_dummy:
+            print "NEW END: 0x{:02X}->0x{:02X}".format(self.end_addr, end_addr)
+            self.end_addr = end_addr
         self.flags[CSRRoot.IN_ANODE] = False
-        rn.add_an_path(ring_inst, k, int(coll[2]),
-                self.__hexlify(coll[3]), self.__hexlify(coll[4]))
+        rn.add_an_path(ring_inst, k, num_inst,
+                st_addr, skip_val)
         return True
     def __filter_csr(self, csr_name, do_process, filter_yml):
         include_csr = filter_yml.get('include_csr', [])
@@ -402,14 +419,25 @@ class CSRRoot(object):
         rn = self.ring_map.get(ring_class, None)
         if rn == None:
            print "Adding dummy ring class: {}".format(ring_class)
-           rn = self.__add_ring_instance(ring_class, ring_inst, 0)
+           rn = self.__add_ring_instance(ring_class, ring_inst, 0, True)
 
         assert rn != None, "Unknown ring class"
         self.flags[CSRRoot.IN_ANODE] = True
         self.curr_rn = rn
         self.curr_ri = ring_inst
         self.curr_path = k
-        self.curr_addr = self.__hexlify(coll[2])
+        st_addr = self.__hexlify(coll[2])
+        end_addr = st_addr + self.__hexlify(coll[3])
+
+        self.curr_addr = st_addr
+
+        if st_addr < self.start_addr and not rn.is_dummy:
+            print "NEW START: 0x{:02X}->0x{:02X}".format(self.start_addr, st_addr)
+            self.start_addr = st_addr
+        if end_addr > self.end_addr and not rn.is_dummy:
+            print "NEW END: 0x{:02X}->0x{:02X}".format(self.end_addr, end_addr)
+            self.end_addr = end_addr
+
         #print "ADD_AN: {}:{}:0x{:02X}".format(ring_inst, k, addr)
         #TODO:
         # Remove this to the filter area, post filtering
