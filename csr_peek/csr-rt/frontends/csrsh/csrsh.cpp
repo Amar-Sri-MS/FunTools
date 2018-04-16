@@ -73,14 +73,14 @@ void CsrSh::set_csr(const std::string& csr_name) {
     } else {
         buf = new uint8_t[sz]();
     }
-    std::cin.unsetf(std::ios::dec);
-    std::cin.unsetf(std::ios::hex);
-    std::cin.unsetf(std::ios::oct);
 
     uint64_t curr_val;
     uint64_t prev_val;
     std::string curr_str;
     std::istringstream istream;
+    istream.unsetf(std::ios::dec);
+    istream.unsetf(std::ios::hex);
+    istream.unsetf(std::ios::oct);
 
     for (auto it = csr_h.begin(); it != csr_h.end(); it ++) {
        if (it->first == "__rsvd") continue;
@@ -133,13 +133,13 @@ void CsrSh::set_raw(const std::string& csr_name) {
         sz = csr_h.sz();
 	buf = new uint8_t[sz]();
     }
-    std::cin.unsetf(std::ios::dec);
-    std::cin.unsetf(std::ios::hex);
-    std::cin.unsetf(std::ios::oct);
 
-    uint8_t curr_val;
+    uint16_t curr_val;
     std::string curr_str;
     std::istringstream istream;
+    istream.unsetf(std::ios::dec);
+    istream.unsetf(std::ios::hex);
+    istream.unsetf(std::ios::oct);
 
     for (auto i = 0; i < sz; i ++) {
         std::cout << "BYTE[" << i << "]:";
@@ -163,6 +163,7 @@ void CsrSh::set_raw(const std::string& csr_name) {
            if (is_set) {
 	      std::cout << "(" << static_cast<uint16_t>(buf[i])<< "):";
            }
+
        }
        buf[i] = curr_val;
     }
