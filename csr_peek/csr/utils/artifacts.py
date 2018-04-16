@@ -412,11 +412,11 @@ class CSRRoot(object):
         num_inst = int(coll[2])
         end_addr = st_addr + (num_inst - 1)*skip_val
         if st_addr < self.start_addr and not rn.is_dummy:
-            print "NEW START: 0x{:02X}->0x{:02X}".format(self.start_addr, st_addr)
+            #print "NEW START: 0x{:02X}->0x{:02X}".format(self.start_addr, st_addr)
             self.start_addr = st_addr
 
         if end_addr > self.end_addr and not rn.is_dummy:
-            print "NEW END: 0x{:02X}->0x{:02X}".format(self.end_addr, end_addr)
+            #print "NEW END: 0x{:02X}->0x{:02X}".format(self.end_addr, end_addr)
             self.end_addr = end_addr
         self.flags[CSRRoot.IN_ANODE] = False
         rn.add_an_path(ring_inst, k, num_inst,
@@ -461,10 +461,10 @@ class CSRRoot(object):
 
 
         if st_addr < self.start_addr and not rn.is_dummy:
-            print "NEW START: 0x{:02X}->0x{:02X}".format(self.start_addr, st_addr)
+            #print "NEW START: 0x{:02X}->0x{:02X}".format(self.start_addr, st_addr)
             self.start_addr = st_addr
         if end_addr > self.end_addr and not rn.is_dummy:
-            print "NEW END: 0x{:02X}->0x{:02X}".format(self.end_addr, end_addr)
+            #print "NEW END: 0x{:02X}->0x{:02X}".format(self.end_addr, end_addr)
             self.end_addr = end_addr
 
         #print "ADD_AN: {}:{}:0x{:02X}".format(ring_inst, k, addr)

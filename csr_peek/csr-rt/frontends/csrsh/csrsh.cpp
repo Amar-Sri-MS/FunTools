@@ -59,7 +59,6 @@ void CsrSh::dump_csr(const std::string& csr_name) {
                 << std::hex << std::setfill('0')
                 << std::setw(10) << addr << std::endl;
         }
-	csr_h.release();
     }
 }
 void CsrSh::set_csr(const std::string& csr_name) {
@@ -118,7 +117,6 @@ void CsrSh::set_csr(const std::string& csr_name) {
     mp_buf.emplace(std::piecewise_construct,
 		   std::forward_as_tuple(csr_name),
 		   std::forward_as_tuple(buf, sz));
-    csr_h.release();
 }
 
 void CsrSh::set_raw(const std::string& csr_name) {
@@ -135,7 +133,6 @@ void CsrSh::set_raw(const std::string& csr_name) {
         sz = csr_h.sz();
 	buf = new uint8_t[sz]();
     }
-    csr_h.release();
     std::cin.unsetf(std::ios::dec);
     std::cin.unsetf(std::ios::hex);
     std::cin.unsetf(std::ios::oct);
@@ -236,7 +233,6 @@ void CsrSh::fetch(const std::string& csr_name,
     mp_buf.insert(std::make_pair(csr_name,
                    std::make_pair(bin_arr, n_bytes)));
     __interpret(csr_name, bin_arr);
-    csr_h.release();
 
 }
 void CsrSh::flush(const std::string& csr_name,
@@ -268,5 +264,4 @@ void CsrSh::flush(const std::string& csr_name,
     r_json.erase(std::remove(r_json.begin(), r_json.end(), '\n'), r_json.end());
     std::cout << "RCV_JSON: " << r_json << std::endl;
     assert(json_acc.poke_rsp(r_json));
-    csr_h.release();
 }
