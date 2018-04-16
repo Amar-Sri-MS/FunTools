@@ -143,7 +143,7 @@ extern "C" {
  * Returns false if initialization failed.
  * Caller responsible for determining correct init function(s).
  */
-extern bool {{struct.name}}_json_init(struct fun_json *j, struct {{struct.init_struct().name}} *s);
+extern bool {{struct.name}}_json_init(struct fun_json *j, {{struct.DeclarationString()}} *s);
 
 #ifdef __cplusplus
 }
