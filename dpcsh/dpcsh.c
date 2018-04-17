@@ -14,6 +14,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <getopt.h>
+#include <errno.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/un.h>
@@ -276,7 +277,7 @@ static void _listen_sock_init(struct dpcsock *sock)
 	struct sockaddr_un local_unix = { 0 };
 	struct sockaddr *local;
 	socklen_t s;
-	int optval = 1;
+	int optval = 1, r;
 
 	/* make sure it's sane */
 	assert((sock->mode == SOCKMODE_UNIX) || (sock->mode == SOCKMODE_IP));
@@ -298,11 +299,15 @@ static void _listen_sock_init(struct dpcsock *sock)
 
 		snprintf(local_unix.sun_path,
 			 sizeof(local_unix.sun_path), "%s", sock->socket_name);
-		unlink(local_unix.sun_path);
+		if ((r = unlink(local_unix.sun_path))
+		    && (errno != ENOENT)) {
+			printf("failed to remove existing socket file: %s\n",
+			       strerror(errno));
+			exit(1);
+		}
 
 		local = (struct sockaddr *) &local_unix;
 		s = sizeof(struct sockaddr_un);
-
 	} else {
 		/* create a server socket */
 		sock->listen_fd = socket(AF_INET, SOCK_STREAM, 0);
@@ -677,7 +682,7 @@ void dpcsh_unregister_pretty_printer(uint64_t tid, void *context)
 	}
 }
 
-static CALLER_TO_RELEASE struct fun_json *apply_pretty_printer(struct fun_json *whole) 
+static CALLER_TO_RELEASE struct fun_json *apply_pretty_printer(struct fun_json *whole)
 {
 	if (!tid_to_pretty_printer) {
 		goto nope;
@@ -776,7 +781,7 @@ static void _do_recv_cmd(struct dpcsock *funos_sock,
 	} else {
 		// printf("New style output, tid=%d\n", (int)tid);
 		fun_json_retain(raw_output);
-		raw_output = apply_pretty_printer(output); 
+		raw_output = apply_pretty_printer(output);
 		fun_json_release(output);
 
 		// Now we strip the tid to avoid confusing clients
@@ -1031,7 +1036,7 @@ static void usage(const char *argv0)
 	printf("       --unix_sock[=sockname]  connect as a client port over unix sockets\n");
 	printf("       --http_proxy[=port]     listen as an http proxy\n");
 	printf("       --tcp_proxy[=port]      listen as a tcp proxy\n");
-	printf("       --text_proxy[=port]     listen as a tcp proxy\n");
+	printf("       --text_proxy[=port]     listen as a unix proxy\n");
 	printf("       --nocli                 issue request from command-line arguments and terminate\n");
 	printf("       --oneshot               don't reconnect after command side disconnect\n");
 	printf("       --manual_base64         just translate base64 back and forward\n");
@@ -1078,9 +1083,9 @@ int main(int argc, char *argv[])
 
 	/* default connection to FunOS posix simulator dpcsock */
 	memset(&funos_sock, 0, sizeof(funos_sock));
-	funos_sock.mode = SOCKMODE_UNIX;
+	funos_sock.mode = SOCKMODE_IP;
 	funos_sock.server = false;
-	funos_sock.socket_name = SOCK_NAME;
+	funos_sock.port_num = DPC_PORT;
 	funos_sock.fd = -1;
 	funos_sock.retries = UINT32_MAX;
 
