@@ -22,7 +22,7 @@
  */
 CsrSh::~CsrSh(void) {
     for (auto& elem: mp_buf) {
-        delete elem.second.first;
+        delete[] elem.second.first;
 	elem.second.first=nullptr;
     }
     mp_buf.clear();
@@ -30,7 +30,7 @@ CsrSh::~CsrSh(void) {
 
 }
 void CsrSh::__init(const std::string& host, const uint16_t& port) {
-    std::cout << "Host: " << host << "port: " << port << std::endl;	
+    std::cout << "Connect:Host: " << host << ":port: " << port << std::endl;
     if (not tcp_h.conn(host, port)) {
         std::cout << "!!!!WARNING: dpcsh not connected. Fetch/Flush commands WILL NOT work!!" << std::endl;
     }
@@ -83,11 +83,10 @@ void CsrSh::set_csr(const std::string& csr_name) {
     istream.unsetf(std::ios::oct);
 
     for (auto it = csr_h.begin(); it != csr_h.end(); it ++) {
-       if (it->first == "__rsvd") continue;
        std::cout << "FLD: " << it->first << ":";
        if (is_set) {
           csr_h.get(it->first, prev_val, buf);
-	  std::cout << "(" << prev_val << "):";
+	  std::cout << std::hex << "(0x" << prev_val << "):";
        }
 
        while(std::getline(std::cin, curr_str)) {
@@ -105,7 +104,7 @@ void CsrSh::set_csr(const std::string& csr_name) {
 	   std::cout << "Incorrect input: " << curr_str << std::endl;
            std::cout << "FLD: " << it->first << ": ";
            if (is_set) {
-	      std::cout << "(" << prev_val << "):";
+	      std::cout << std::hex << "(0x" << prev_val << "):";
            }
        }
        csr_h.set(it->first, curr_val, buf);
@@ -224,9 +223,9 @@ void CsrSh::fetch(const std::string& csr_name,
     assert(tcp_h.send_data(json_str));
     std::cout << "SEND_JSON: " << json_str << std::endl;
     auto r_json = tcp_h.receive();
+    std::cout << "RCV_JSON: " << r_json << std::endl;
     r_json.erase(std::remove(r_json.begin(), r_json.end(), '\n'), r_json.end());
     r_json.erase(std::remove(r_json.begin(), r_json.end(), '\r'), r_json.end());
-    std::cout << "RCV_JSON: " << r_json << std::endl;
     uint8_t* bin_arr = json_acc.peek_rsp(r_json);
     for (auto i = 0; i < n_bytes; i ++) {
         std::cout << "raw[" << i << "] = 0x" << std::hex << static_cast<uint16_t>(bin_arr[i]) << std::endl;
@@ -262,7 +261,11 @@ void CsrSh::flush(const std::string& csr_name,
     assert(tcp_h.send_data(json_str));
     std::cout << "SEND_JSON: " << json_str << std::endl;
     auto r_json = tcp_h.receive();
+    std::cout << "RCV_JSON: " << r_json ;
     r_json.erase(std::remove(r_json.begin(), r_json.end(), '\n'), r_json.end());
-    std::cout << "RCV_JSON: " << r_json << std::endl;
     assert(json_acc.poke_rsp(r_json));
+    delete[] buf;
+    buf = nullptr;
+    mp_buf.erase(it);
+
 }
