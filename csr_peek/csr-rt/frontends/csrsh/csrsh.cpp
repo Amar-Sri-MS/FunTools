@@ -14,7 +14,6 @@
 #include <utility>
 
 // Get this from the DPC include files
-#define DPC_PORT 40221
 /*
  * Connect to the DPCSH that must already be
  * running in proxy mode
@@ -30,8 +29,9 @@ CsrSh::~CsrSh(void) {
 
 
 }
-void CsrSh::__init(void) {
-    if (not tcp_h.conn("localhost", DPC_PORT)) {
+void CsrSh::__init(const std::string& host, const uint16_t& port) {
+    std::cout << "Host: " << host << "port: " << port << std::endl;	
+    if (not tcp_h.conn(host, port)) {
         std::cout << "!!!!WARNING: dpcsh not connected. Fetch/Flush commands WILL NOT work!!" << std::endl;
     }
 }
