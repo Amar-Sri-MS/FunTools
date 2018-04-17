@@ -9,7 +9,12 @@
 #include <iostream>
 
 #include "tcp_cli.h"
-tcp_cli::tcp_cli(void):sock(-1) {}
+tcp_cli::tcp_cli(void):sock(-1), net_buf{new char[NBUF_SZ]()}{}
+
+tcp_cli::~tcp_cli(void) {
+    delete[] net_buf;
+    net_buf = nullptr;
+}
 
 bool tcp_cli::conn(const std::string& host, const int& port) {
     struct sockaddr_in server;
@@ -54,11 +59,26 @@ bool tcp_cli::send_data(const std::string& data) {
     }
     return true;
 }
-std::string tcp_cli::receive(const int& sz) {
-    char buffer[sz];
-    std::memset(buffer, 0, sizeof(buffer));
-    if(recv(sock, buffer, sizeof(buffer), 0) < 0) {
-        perror("Recv failed");
-    } 
-    return std::string{buffer};
+std::string tcp_cli::receive() {
+    std::string rsp;
+    int rcv_sz;
+    while(1) {
+        std::memset(net_buf, 0, NBUF_SZ);
+        if((rcv_sz = recv(sock, net_buf, NBUF_SZ, 0)) < 0) {
+	    if(rsp.empty()) {
+                std::cout << "***Rxed Empty***" << std::endl;
+		assert(false);
+	    }
+	    break;
+	}
+	else {
+            rsp += net_buf;
+	}
+
+	if (rcv_sz < NBUF_SZ) {
+            if(net_buf[rcv_sz - 1] != '\n') continue;
+	    break;
+	}
+    }
+    return rsp;
 }

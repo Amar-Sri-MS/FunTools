@@ -792,6 +792,8 @@ static void _do_recv_cmd(struct dpcsock *funos_sock,
 		fun_json_printf(OUTPUT_COLORIZE "output => %s" NORMAL_COLORIZE "\n",
 				raw_output);
 	} else {
+		fun_json_printf(OUTPUT_COLORIZE "output => %s" NORMAL_COLORIZE "\n",
+				raw_output);
 		char *pp = fun_json_to_text(raw_output);
 		if (pp) {
 			write(cmd_sock->fd, pp, strlen(pp));

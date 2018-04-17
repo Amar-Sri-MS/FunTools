@@ -42,7 +42,7 @@ to use this tool. Frontend could be tools like dpcsh, and backend could be socke
 ### Create the csrsh (frontend)
 
     $ make csrsh
-Creates the csrshell executable under csr-rt/frontends/csrsh. csrsh is a debug shell that utilizes the library to provide a command line interface to set/get/examine values on the F1 chip for CSR registers.
+Creates the csrshell executable under csr-rt/frontends/csrsh. csrsh is a debug shell that utilizes the library to provide a command line interface to set/get/examine values on the F1 chip for CSR registers. See the README under csr-rt/frontends
 
 ## Cleanup
 
