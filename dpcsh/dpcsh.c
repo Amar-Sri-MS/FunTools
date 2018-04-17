@@ -1014,7 +1014,8 @@ static struct option longopts[] = {
 	{ "unix_sock",     optional_argument, NULL, 'u' },
 	{ "http_proxy",    optional_argument, NULL, 'H' },
 	{ "tcp_proxy",     optional_argument, NULL, 'T' },
-	{ "text_proxy",    optional_argument, NULL, 't' },
+	{ "text_proxy",    optional_argument, NULL, 'T' },
+	{ "unix_proxy",    optional_argument, NULL, 't' },
 	{ "nocli",         no_argument,       NULL, 'n' },
 	{ "oneshot",       no_argument,       NULL, 'S' },
 	{ "manual_base64", no_argument,       NULL, 'N' },
@@ -1036,7 +1037,8 @@ static void usage(const char *argv0)
 	printf("       --unix_sock[=sockname]  connect as a client port over unix sockets\n");
 	printf("       --http_proxy[=port]     listen as an http proxy\n");
 	printf("       --tcp_proxy[=port]      listen as a tcp proxy\n");
-	printf("       --text_proxy[=port]     listen as a unix proxy\n");
+	printf("       --text_proxy[=port]     same as \"--tcp_proxy\"\n");
+	printf("       --unix_proxy[=port]     listen as a unix proxy\n");
 	printf("       --nocli                 issue request from command-line arguments and terminate\n");
 	printf("       --oneshot               don't reconnect after command side disconnect\n");
 	printf("       --manual_base64         just translate base64 back and forward\n");
