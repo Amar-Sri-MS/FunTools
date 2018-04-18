@@ -457,8 +457,14 @@ static char *_read_a_line(struct dpcsock *sock, ssize_t *nbytes)
 
 	} while(buf[pos-1] != '\0');
 
-	assert(pos >= 1);
-	*nbytes = (ssize_t) pos - 1;
+	if (pos >= 1) {
+		*nbytes = (ssize_t) pos - 1;
+	} else {
+		/* sometimes we get truncated lines? */
+		*nbytes = 0;
+		buf[0] = '\0;';
+	}
+
 	return buf;
 }
 
@@ -494,7 +500,7 @@ do_retry:
 
 	r = base64_decode(binbuf, *nbytes, buf);
 	if (r < 0) {
-		printf("bad decode: %s\n", buf);
+		printf("$ %s\n", buf);
 		free(buf);
 
 		if (retry) {
