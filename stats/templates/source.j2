@@ -2,14 +2,9 @@
 
 Template for stats source code generation
 
-#}
-// Source file created by generator.py
-// Do not change this file;
-// change the gen file {{cfg_file}} instead.
-
-
+-#}
 /*
- *  {{fname}}.c
+ *  {{file}}.c
  *
  *  !!!!!AUTO-GENERATED FILE. DO NOT EDIT!!!!
  *
@@ -17,6 +12,7 @@ Template for stats source code generation
  */
 
 #include <utils/threaded/fun_json.h>
+#include <hw/common/stats.h>
 #include <props_bridges/props_bridges.h>
 #include <utils/threaded/fun_props.h>
 #include <utils/threaded/fun_malloc_threaded.h>
@@ -26,70 +22,247 @@ Template for stats source code generation
 #include <FunSDK/chip/f1/hw/include/csr/{{header}}_an.h>
 {% endfor %}
 
+#define ACCUMULATE_STAT(acntr, scntr, cntr, width) \
+    if(cntr > scntr) {		    \
+        (acntr) += (cntr) - (scntr); \
+    } else {			    \
+         (acntr) += (cntr) + (((0x1UL << (width))-1)-(scntr)); \
+    } \
+    scntr = cntr;
+
+
 {%- macro block_prop_macro(block) -%}
-STATS_{{block|upper}}_PROP_PATH
+	STATS_{{block|upper}}_PROP_PATH
 {%- endmacro -%}
 
-{%- macro element_prop_macro(block,element) -%}
-STATS_{{block|upper}}_{{element|upper}}_PATH
+{%- macro module_endpoint_prop_macro(block,module,endpoint) -%}
+	STATS_{{block|upper}}_{{module|upper}}_{{endpoint|upper}}_PATH
 {%- endmacro -%}
 
-{%- for element in elements.keys() %}
-{% for k,v in elements[element].nodes.iteritems() %}
-static uint64_t {{element}}_{{k}}_stats[{{v.num_cntrs}}];
-static void {{element}}_{{k}}_stats_read(void)
-{
-    uint64_t rbuf[{{v.rbuf_size}}] = {0};
-    {{v.read_obj}}
-}
-{% endfor %}
+{%- macro cntr_name(module, endpoint, node) -%}
+	{{module}}_{{endpoint}}_{{node}}_stats
+{%- endmacro -%}
+
+{%- macro csr_read(csr, type, baddr, idx) -%}
+	{{csr|upper}}_
+	{%- if type == "CSR_TYPE::TBL" -%}
+		IREAD({{baddr}}, rbuf, {{idx}});
+	{% else %}
+		READ({{baddr}}, rbuf);
+	{%- endif -%}
+{%- endmacro -%}
+
+{%- macro csr_field_read(csr, field, cntr, offset, interval) -%}
+	{%- if interval > 1 -%}
+		{{csr|upper}}_{{field[0]|upper}}_READ(rbuf, &fbuf);
+		ACCUMULATE_STAT({{cntr}}[{{offset}}], {{cntr}}_shadow[{{offset}}], fbuf, {{field[1]}});
+	{% else %}
+		{{csr|upper}}_{{field[0]|upper}}_READ(rbuf, &{{cntr}}[{{offset}}]);
+	{%- endif -%}
+{%- endmacro -%}
+
+{%- macro index(input) -%}
+	{%- for k,v in input.iteritems() -%}
+		{%- if not loop.first -%}
+			+
+		{%- endif -%}
+		{%- if v.incr > 1 -%}
+			{%- if v.range_min > 0 -%}
+				((i_{{loop.index}}-{{v.range_min}})*{{v.incr}})
+			{%- else -%}
+				(i_{{loop.index}}*{{v.incr}})
+			{%- endif -%}
+		{%- else -%}
+			{%- if v.range_min > 0 -%}
+				(i_{{loop.index}} - {{v.range_min}})
+			{%- else -%}
+				i_{{loop.index}}
+			{%- endif -%}
+		{%- endif -%}
+	{%- endfor -%}
+{%- endmacro -%}
+
+{%- macro csr_table_idx(offset, input) -%}
+	{%- if offset > 0 -%}
+		{{offset}} + ({{index(input)}})
+	{%- else -%}
+		{{index(input)}}
+	{%- endif -%}
+{%- endmacro -%}
+
+{%- macro stat_arr_idx(offset, input, num_fields, cntr_num) -%}
+	{%- if cntr_num > 0 -%} ( {%- endif -%}
+	{%- if offset > 0 -%}
+		{%- if num_fields > 1 -%}
+			({{offset}}+({{index(input)}})*{{num_fields|string}})
+		{%- else -%}
+			{{offset}}+{{index(input)}}
+		{%- endif -%}
+	{%- else -%}
+		{%- if num_fields > 1 -%}
+			({{index(input)}})*{{num_fields|string}}
+		{%- else -%}
+			{{index(input)}}
+		{%- endif -%}
+	{%- endif -%}
+	{%- if cntr_num > 0 -%}
+		)+{{cntr_num}}
+	{%- endif -%}
+{%- endmacro -%}
+
+{%- macro read(s, cntr, interval) -%}
+	{%- set csr_idx = csr_table_idx(s.csr_offset, s.input) %}
+	{{csr_read(s.csr, s.csr_type, s.base_addr, csr_idx)}}
+	{%- for k,v in s.fields.iteritems() -%}
+		{%- set cntr_idx = stat_arr_idx(s.cntr_offset, s.input, s.fields|length, loop.index0) -%}
+		{{csr_field_read(s.csr, v, cntr, cntr_idx, interval)}}
+	{% endfor %}
+{%- endmacro -%}
+
+{%- macro for_loop(depth, min, max) %}
+	for (unsigned int i_{{depth}} = {{min}}; i_{{depth}} < {{max}}; i_{{depth}}++)
+{%- endmacro -%}
+
+{%- macro subnode_read(s, cntr, interval) -%}
+	{%- for k,v in s.input.iteritems() -%}
+	{{for_loop(loop.index, v.range_min, v.range_max)}} {{'{'}}
+			{%- if loop.last -%}
+				{{read(s, cntr, interval)}}
+			{%- endif -%}
+	{%- endfor -%}
+	{% for input in s.input -%}
+		}
+	{% endfor -%}
+{%- endmacro -%}
+
+{%- for module,endpoints in modules.iteritems() %}
+	{%- for endpoint,entries in endpoints.iteritems() %}
+		{% for k,v in entries.nodes.iteritems() %}
+			static uint64_t {{cntr_name(module, endpoint, k)}}[{{v.num_cntrs}}];
+			{%- if v.poll_interval > 0 -%}
+				static uint64_t {{cntr_name(module, endpoint, k)}}_shadow[{{v.num_cntrs}}];
+			{% endif %}
+			static void MAYBE_UNUSED {{module}}_{{endpoint}}_{{k}}_stats_read(void *arg)
+			{
+				uint64_t rbuf[{{v.rbuf_size}}] = {0};
+				{%- if v.poll_interval > 0 -%}
+					uint64_t fbuf = 0;
+				{% endif %}
+
+				printf("%s: %d\n", __func__, __LINE__);
+				{% for s in v.subnodes -%}
+					{{subnode_read(s, cntr_name(module, endpoint, k), v.poll_interval)}}
+				{%- endfor -%}
+			}
+		{%- endfor -%}
+	{% endfor -%}
 {% endfor -%}
 
-{%- for element in elements.keys() -%}
-{% for k,v in elements[element].nodes.iteritems() %}
-static struct fun_json *{{element}}_{{k}}_create_json(void)
-{% raw -%}
-{
-{%- endraw %}
-    const char *keys[] = {{'{'}}
-		{%- for key in elements[element].input -%}
-		"{{key}}" {%- if not loop.last -%} , {%- endif -%}
-		{%- endfor -%}
-		{{'}'}};
-    {{element}}_{{k}}_stats_read();
-    {{v.props_obj}}
+{%- macro json_create(s, cntr) -%}
+	const int64_t values[] = {{'{'}}
+	{%- for k,v in s.fields.iteritems() -%}
+		{%- set cntr_idx = stat_arr_idx(s.cntr_offset, s.input, s.fields|length, loop.index0) -%}
+		{{cntr}}[{{cntr_idx}}] {%- if not loop.last -%} , {%- endif -%}
+	{%- endfor -%}
+	{{'}'}};
+	const char *keys[] = {{'{'}}
+	{%- for k,v in s.fields.iteritems() -%}
+		"{{k}}" {%- if not loop.last -%} , {%- endif -%}
+	{%- endfor -%}
+	{{'}'}};
 
-    return dict0;
-{% raw -%}
-}
-{%- endraw %}
-{% endfor %}
+	struct fun_json *dict{{s.input|length}}= fun_json_create_dict_from_int64s({{s.fields|length}}, keys, fun_json_no_copy_no_own, values);
+{%- endmacro -%}
+
+{%- macro subnode_json_create(s, cntr) -%}
+	{%- for k,v in s.input.iteritems() -%}
+		{{for_loop(loop.index, v.range_min, v.range_max)}} {{'{'}}
+		{%- if not loop.last -%}
+			struct fun_json *dict{{loop.index}} = fun_json_create_empty_dict();
+		{% else %}
+			{{json_create(s, cntr)}}
+		{%- endif -%}
+	{%- endfor -%}
+	{% for k,v in s.input.iteritems()|reverse -%}
+		char key[32];
+		snprintf(key, 32, "{{k}}%d", i_{{loop.revindex}});
+		fun_json_dict_add(dict{{loop.revindex-1}}, key, fun_json_no_copy_no_own, dict{{loop.revindex}}, false);
+		{{'}'}}
+	{% endfor -%}
+{%- endmacro -%}
+
+{%- for module,endpoints in modules.iteritems() %}
+	{%- for endpoint,entries in endpoints.iteritems() %}
+		{% for k,v in entries.nodes.iteritems() %}
+			static struct fun_json *{{module}}_{{endpoint}}_{{k}}_create_json(void)
+			{% raw -%}
+				{
+			{%- endraw %}
+			struct fun_json *dict0 = fun_json_create_empty_dict();
+
+			printf("%s: %d\n", __func__, __LINE__);
+			{{module}}_{{endpoint}}_{{k}}_stats_read(NULL);
+
+			{% for s in v.subnodes -%}
+				{{subnode_json_create(s, cntr_name(module, endpoint, k))}}
+			{%- endfor -%}
+
+			return dict0;
+			{% raw -%}
+				}
+			{%- endraw %}
+		{% endfor %}
+	{% endfor -%}
 {% endfor -%}
 
 #define {{ block_prop_macro(block) }} "stats/{{block}}/"
 
-{% for element in elements.keys() -%}
-#define {{ element_prop_macro(block, element) }} "{{element}}"
+{%- for module,endpoints in modules.iteritems() %}
+	{% for endpoint,entries in endpoints.iteritems() -%}
+		#define {{ module_endpoint_prop_macro(block, module, endpoint) }} "{{module}}/{{endpoint}}"
+	{% endfor -%}
 {% endfor -%}
 
-{%- for element in elements.keys() %}
-static struct fun_json *{{block}}_{{element}}_generate_json(fun_props_bridge_context_t context)
-{
-    struct fun_json *dict = fun_json_create_empty_dict();
-{% for k,v in elements[element].nodes.iteritems() %}
-    fun_json_dict_add(dict, "{{k}}",fun_json_no_copy_no_own,
-                      {{element}}_{{k}}_create_json(), false);
-{% endfor %}
-    return dict;
-}
+{%- for module,endpoints in modules.iteritems() %}
+	{% for endpoint,entries in endpoints.iteritems() -%}
+		static struct fun_json *{{block}}_{{module}}_{{endpoint}}_generate_json(fun_props_bridge_context_t context)
+		{
+			printf("%s: %d\n", __func__, __LINE__);
+			struct fun_json *dict = fun_json_create_empty_dict();
+			{% for k,v in entries.nodes.iteritems() %}
+				fun_json_dict_add(dict, "{{k}}",fun_json_no_copy_no_own,
+				{{module}}_{{endpoint}}_{{k}}_create_json(), false);
+			{% endfor %}
+			return dict;
+		}
+	{% endfor %}
 {% endfor %}
 
-void {{block}}_props_bridge_install(void)
+void {{block}}_stats_props_bridge_install(void)
 {
-{%- for element in elements.keys() %}
-    struct fun_props_bridge_point *{{block}}_{{element}}_bridge MAYBE_UNUSED =
-                fun_props_install_bridge_point(
-                {{block_prop_macro(block)}} {{element_prop_macro(block, element)}},
-                NULL, {{block}}_{{element}}_generate_json);
+{%- for module,endpoints in modules.iteritems() %}
+	{% for endpoint,entries in endpoints.iteritems() -%}
+		struct fun_props_bridge_point *{{block}}_{{module}}_{{endpoint}}_bridge MAYBE_UNUSED =
+					fun_props_install_bridge_point(
+					{{block_prop_macro(block)}} {{module_endpoint_prop_macro(block, module, endpoint)}},
+					NULL, {{block}}_{{module}}_{{endpoint}}_generate_json);
+	{% endfor -%}
 {% endfor -%}
 }
+
+
+
+struct stat_poll stat_poll_cfg[] = {{'{'}}
+{%- for module,endpoints in modules.iteritems() %}
+	{%- for endpoint,entries in endpoints.iteritems() %}
+		{% for k,v in entries.nodes.iteritems() %}
+			{{'{'}}
+			.read_cb = {{module}}_{{endpoint}}_{{k}}_stats_read,
+			.poll_period = {{v.poll_interval}}
+			{{' }'}},
+		{%- endfor -%}
+	{% endfor %}
+{% endfor %}
+{{'}'}};
+
+unsigned int stat_poll_size = sizeof(stat_poll_cfg)/sizeof(struct stat_poll);
