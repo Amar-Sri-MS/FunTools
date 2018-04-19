@@ -1,0 +1,297 @@
+0.000434496 TRACE WU START faddr VP0.8.0 wuid 0x285 name mp_notify_wuh arg0 0 arg1 0
+0.000516608 TRACE WU END faddr VP0.8.0
+0.000557888 TRACE WU START faddr VP0.8.0 wuid 0x285 name mp_notify_wuh arg0 0 arg1 0
+0.000606464 TRACE WU END faddr VP0.8.0
+0.001223872 TRACE WU START faddr VP0.8.0 wuid 0x285 name mp_notify_wuh arg0 0 arg1 0
+0.001256896 TRACE WU END faddr VP0.8.0
+0.001278272 TRACE WU START faddr VP0.8.0 wuid 0x285 name mp_notify_wuh arg0 0 arg1 0
+0.001311232 TRACE WU END faddr VP0.8.0
+0.001332608 TRACE WU START faddr VP0.8.0 wuid 0x285 name mp_notify_wuh arg0 0 arg1 0
+0.001365568 TRACE WU END faddr VP0.8.0
+0.001386944 TRACE WU START faddr VP0.8.0 wuid 0x285 name mp_notify_wuh arg0 0 arg1 0
+0.001419840 TRACE WU END faddr VP0.8.0
+0.001441216 TRACE WU START faddr VP0.8.0 wuid 0x285 name mp_notify_wuh arg0 0 arg1 0
+0.001474176 TRACE WU END faddr VP0.8.0
+0.001495552 TRACE WU START faddr VP0.8.0 wuid 0x285 name mp_notify_wuh arg0 0 arg1 0
+0.001528448 TRACE WU END faddr VP0.8.0
+0.001549888 TRACE WU START faddr VP0.8.0 wuid 0x285 name mp_notify_wuh arg0 0 arg1 0
+0.001582784 TRACE WU END faddr VP0.8.0
+0.001604160 TRACE WU START faddr VP0.8.0 wuid 0x285 name mp_notify_wuh arg0 0 arg1 0
+0.001637120 TRACE WU END faddr VP0.8.0
+0.001658496 TRACE WU START faddr VP0.8.0 wuid 0x285 name mp_notify_wuh arg0 0 arg1 0
+0.001691456 TRACE WU END faddr VP0.8.0
+0.001712832 TRACE WU START faddr VP0.8.0 wuid 0x285 name mp_notify_wuh arg0 0 arg1 0
+0.001745728 TRACE WU END faddr VP0.8.0
+0.001767104 TRACE WU START faddr VP0.8.0 wuid 0x285 name mp_notify_wuh arg0 0 arg1 0
+0.001800064 TRACE WU END faddr VP0.8.0
+0.001821440 TRACE WU START faddr VP0.8.0 wuid 0x285 name mp_notify_wuh arg0 0 arg1 0
+0.001854336 TRACE WU END faddr VP0.8.0
+0.001875712 TRACE WU START faddr VP0.8.0 wuid 0x285 name mp_notify_wuh arg0 0 arg1 0
+0.001908672 TRACE WU END faddr VP0.8.0
+0.001930048 TRACE WU START faddr VP0.8.0 wuid 0x285 name mp_notify_wuh arg0 0 arg1 0
+0.001962944 TRACE WU END faddr VP0.8.0
+0.001984384 TRACE WU START faddr VP0.8.0 wuid 0x285 name mp_notify_wuh arg0 0 arg1 0
+0.002017344 TRACE WU END faddr VP0.8.0
+0.002038656 TRACE WU START faddr VP0.8.0 wuid 0x285 name mp_notify_wuh arg0 0 arg1 0
+0.002071616 TRACE WU END faddr VP0.8.0
+0.002092992 TRACE WU START faddr VP0.8.0 wuid 0x285 name mp_notify_wuh arg0 0 arg1 0
+0.002125952 TRACE WU END faddr VP0.8.0
+0.002147328 TRACE WU START faddr VP0.8.0 wuid 0x285 name mp_notify_wuh arg0 0 arg1 0
+0.002180224 TRACE WU END faddr VP0.8.0
+0.002201600 TRACE WU START faddr VP0.8.0 wuid 0x285 name mp_notify_wuh arg0 0 arg1 0
+0.002234560 TRACE WU END faddr VP0.8.0
+0.002255936 TRACE WU START faddr VP0.8.0 wuid 0x285 name mp_notify_wuh arg0 0 arg1 0
+0.002288896 TRACE WU END faddr VP0.8.0
+0.002310272 TRACE WU START faddr VP0.8.0 wuid 0x285 name mp_notify_wuh arg0 0 arg1 0
+0.002343168 TRACE WU END faddr VP0.8.0
+0.002364544 TRACE WU START faddr VP0.8.0 wuid 0x285 name mp_notify_wuh arg0 0 arg1 0
+0.002442048 TRACE WU SEND faddr VP0.8.0 wuid 0x286 name bootstrap_wuh arg0 0 arg1 0 dest VP0.8.0
+0.002480768 TRACE WU END faddr VP0.8.0
+0.002502080 TRACE WU START faddr VP0.8.0 wuid 0x286 name bootstrap_wuh arg0 0 arg1 0
+0.002535360 TRACE TRANSACTION START faddr VP0.8.0
+0.021890304 TRACE WU SEND faddr VP0.8.0 wuid 0x1f name module_start_modules_wuh arg0 0x9800000002ecd180 arg1 0x9800000000382480 dest VP0.8.0
+0.021937088 TRACE WU END faddr VP0.8.0
+0.021963072 TRACE WU START faddr VP0.8.0 wuid 0x1f name module_start_modules_wuh arg0 0x9800000002ecd180 arg1 0x9800000000382480
+0.022119168 TRACE WU SEND faddr VP0.8.0 wuid 0x1b name module_notification_post_wuh arg0 0x9800000002ecd1c0 arg1 0x9800000000382480 dest VP0.17.0
+0.022166400 TRACE WU END faddr VP0.8.0
+0.022187904 TRACE WU START faddr VP0.8.0 wuid 0x1 name idle_watch_wuh arg0 0 arg1 0
+0.022189056 TRACE WU START faddr VP0.17.0 wuid 0x1b name module_notification_post_wuh arg0 0x9800000002ecd1c0 arg1 0x9800000000382480
+0.022220928 TRACE WU END faddr VP0.8.0
+0.022294592 TRACE WU SEND faddr VP0.17.0 wuid 0x67 name notification_post_relay_wuh arg0 0x9800000002ecd1c0 arg1 0x980000000037eb40 dest VP0.13.0
+0.022342016 TRACE WU END faddr VP0.17.0
+0.022364928 TRACE WU START faddr VP0.13.0 wuid 0x67 name notification_post_relay_wuh arg0 0x9800000002ecd1c0 arg1 0x980000000037eb40
+0.022407744 TRACE WU SEND faddr VP0.13.0 wuid 0x21 name nop_wuh arg0 0x9800000002ecd180 arg1 0 dest VP0.15.0
+0.022449344 TRACE WU END faddr VP0.13.0
+0.022471744 TRACE WU START faddr VP0.15.0 wuid 0x21 name nop_wuh arg0 0x9800000002ecd180 arg1 0
+0.022507200 TRACE WU SEND faddr VP0.15.0 wuid 0x21 name nop_wuh arg0 0x9800000002ecd140 arg1 0 dest VP0.8.0
+0.022548032 TRACE WU END faddr VP0.15.0
+0.022570176 TRACE WU START faddr VP0.8.0 wuid 0x21 name nop_wuh arg0 0x9800000002ecd140 arg1 0
+0.022605376 TRACE WU SEND faddr VP0.8.0 wuid 0x288 name test_wuh arg0 0x9800000002ecd100 arg1 0 dest VP0.8.0
+0.022646400 TRACE WU END faddr VP0.8.0
+0.022670080 TRACE WU START faddr VP0.8.0 wuid 0x288 name test_wuh arg0 0x9800000002ecd100 arg1 0
+0.022747904 TRACE WU SEND faddr VP0.8.0 wuid 0x55 name test_next_wuh arg0 0 arg1 0 dest VP0.9.0
+0.022786496 TRACE WU END faddr VP0.8.0
+0.022808000 TRACE WU START faddr VP0.8.0 wuid 0x1 name idle_watch_wuh arg0 0 arg1 0x1800000000
+0.022808512 TRACE WU START faddr VP0.9.0 wuid 0x55 name test_next_wuh arg0 0 arg1 0
+0.022846208 TRACE WU END faddr VP0.8.0
+0.022894208 TRACE TRANSACTION ANNOT faddr VP0.9.0 msg Start unit test unittest_has_suffix
+0.022971520 TRACE WU SEND faddr VP0.9.0 wuid 0x55 name test_next_wuh arg0 0 arg1 0 dest VP0.26.0
+0.023010368 TRACE WU END faddr VP0.9.0
+0.023032960 TRACE WU START faddr VP0.26.0 wuid 0x55 name test_next_wuh arg0 0 arg1 0
+0.023071040 TRACE TRANSACTION ANNOT faddr VP0.26.0 msg Start unit test unittest_test_empty
+0.023164416 TRACE WU SEND faddr VP0.26.0 wuid 0x55 name test_next_wuh arg0 0 arg1 0 dest VP0.8.0
+0.023203392 TRACE WU END faddr VP0.26.0
+0.023225472 TRACE WU START faddr VP0.8.0 wuid 0x55 name test_next_wuh arg0 0 arg1 0
+0.023261888 TRACE TRANSACTION ANNOT faddr VP0.8.0 msg Start unit test unittest_test_check_true
+0.023329280 TRACE WU SEND faddr VP0.8.0 wuid 0x55 name test_next_wuh arg0 0 arg1 0 dest VP0.27.0
+0.023367936 TRACE WU END faddr VP0.8.0
+0.023389824 TRACE WU START faddr VP0.27.0 wuid 0x55 name test_next_wuh arg0 0 arg1 0
+0.023426368 TRACE TRANSACTION ANNOT faddr VP0.27.0 msg Start unit test unittest_test_check_false
+0.023494208 TRACE WU SEND faddr VP0.27.0 wuid 0x55 name test_next_wuh arg0 0 arg1 0 dest VP0.9.0
+0.023532992 TRACE WU END faddr VP0.27.0
+0.023554816 TRACE WU START faddr VP0.9.0 wuid 0x55 name test_next_wuh arg0 0 arg1 0
+0.023591488 TRACE TRANSACTION ANNOT faddr VP0.9.0 msg Start unit test unittest_test_check_true_expect_fail
+0.023674624 TRACE WU SEND faddr VP0.9.0 wuid 0x55 name test_next_wuh arg0 0 arg1 0 dest VP0.26.0
+0.023713344 TRACE WU END faddr VP0.9.0
+0.023735040 TRACE WU START faddr VP0.26.0 wuid 0x55 name test_next_wuh arg0 0 arg1 0
+0.023772032 TRACE TRANSACTION ANNOT faddr VP0.26.0 msg Start unit test unittest_test_check_false_expect_fail
+0.023855680 TRACE WU SEND faddr VP0.26.0 wuid 0x55 name test_next_wuh arg0 0 arg1 0 dest VP0.26.0
+0.023894592 TRACE WU END faddr VP0.26.0
+0.023919936 TRACE WU START faddr VP0.26.0 wuid 0x55 name test_next_wuh arg0 0 arg1 0
+0.023956160 TRACE TRANSACTION ANNOT faddr VP0.26.0 msg Start unit test unittest_test_check_equal
+0.024024000 TRACE WU SEND faddr VP0.26.0 wuid 0x55 name test_next_wuh arg0 0 arg1 0 dest VP0.27.0
+0.024062912 TRACE WU END faddr VP0.26.0
+0.024084544 TRACE WU START faddr VP0.26.0 wuid 0x1 name idle_watch_wuh arg0 0 arg1 0x1000000000
+0.024084864 TRACE WU START faddr VP0.27.0 wuid 0x55 name test_next_wuh arg0 0 arg1 0
+0.024123200 TRACE WU END faddr VP0.26.0
+0.024163264 TRACE TRANSACTION ANNOT faddr VP0.27.0 msg Start unit test unittest_test_check_equal_expect_fail
+0.024265792 TRACE WU SEND faddr VP0.27.0 wuid 0x55 name test_next_wuh arg0 0 arg1 0 dest VP0.9.0
+0.024304512 TRACE WU END faddr VP0.27.0
+0.024326464 TRACE WU START faddr VP0.9.0 wuid 0x55 name test_next_wuh arg0 0 arg1 0
+0.024362560 TRACE TRANSACTION ANNOT faddr VP0.9.0 msg Start unit test unittest_test_check_ne
+0.024428800 TRACE WU SEND faddr VP0.9.0 wuid 0x55 name test_next_wuh arg0 0 arg1 0 dest VP0.27.0
+0.024467520 TRACE WU END faddr VP0.9.0
+0.024489088 TRACE WU START faddr VP0.27.0 wuid 0x55 name test_next_wuh arg0 0 arg1 0
+0.024525824 TRACE TRANSACTION ANNOT faddr VP0.27.0 msg Start unit test unittest_test_check_ne_expect_fail
+0.024608320 TRACE WU SEND faddr VP0.27.0 wuid 0x55 name test_next_wuh arg0 0 arg1 0 dest VP0.9.0
+0.024646976 TRACE WU END faddr VP0.27.0
+0.024668736 TRACE WU START faddr VP0.9.0 wuid 0x55 name test_next_wuh arg0 0 arg1 0
+0.024704896 TRACE TRANSACTION ANNOT faddr VP0.9.0 msg Start unit test unittest_test_check_near
+0.024772032 TRACE WU SEND faddr VP0.9.0 wuid 0x55 name test_next_wuh arg0 0 arg1 0 dest VP0.27.0
+0.024810752 TRACE WU END faddr VP0.9.0
+0.024832320 TRACE WU START faddr VP0.27.0 wuid 0x55 name test_next_wuh arg0 0 arg1 0
+0.024869056 TRACE TRANSACTION ANNOT faddr VP0.27.0 msg Start unit test unittest_test_check_near_expect_fail
+0.024955584 TRACE WU SEND faddr VP0.27.0 wuid 0x55 name test_next_wuh arg0 0 arg1 0 dest VP0.8.0
+0.024994368 TRACE WU END faddr VP0.27.0
+0.025016192 TRACE WU START faddr VP0.8.0 wuid 0x55 name test_next_wuh arg0 0 arg1 0
+0.025053056 TRACE TRANSACTION ANNOT faddr VP0.8.0 msg Start unit test unittest_test_check_near_64_bit_expect_fail
+0.025144832 TRACE WU SEND faddr VP0.8.0 wuid 0x55 name test_next_wuh arg0 0 arg1 0 dest VP0.8.0
+0.025183360 TRACE WU END faddr VP0.8.0
+0.025206912 TRACE WU START faddr VP0.8.0 wuid 0x55 name test_next_wuh arg0 0 arg1 0
+0.025243072 TRACE TRANSACTION ANNOT faddr VP0.8.0 msg Start unit test unittest_test_compare_string
+0.025312128 TRACE WU SEND faddr VP0.8.0 wuid 0x55 name test_next_wuh arg0 0 arg1 0 dest VP0.8.0
+0.025350592 TRACE WU END faddr VP0.8.0
+0.025372032 TRACE WU START faddr VP0.8.0 wuid 0x1 name idle_watch_wuh arg0 0 arg1 0x3000000000
+0.025406720 TRACE WU END faddr VP0.8.0
+0.025428096 TRACE WU START faddr VP0.8.0 wuid 0x55 name test_next_wuh arg0 0 arg1 0
+0.025464576 TRACE TRANSACTION ANNOT faddr VP0.8.0 msg Start unit test unittest_test_compare_string_expect_fail
+0.025548480 TRACE WU SEND faddr VP0.8.0 wuid 0x55 name test_next_wuh arg0 0 arg1 0 dest VP0.9.0
+0.025587008 TRACE WU END faddr VP0.8.0
+0.025608704 TRACE WU START faddr VP0.9.0 wuid 0x55 name test_next_wuh arg0 0 arg1 0
+0.025645888 TRACE TRANSACTION ANNOT faddr VP0.9.0 msg Start unit test unittest_test_not_equal_string_expect_fail_expect_fail
+0.025736192 TRACE WU SEND faddr VP0.9.0 wuid 0x55 name test_next_wuh arg0 0 arg1 0 dest VP0.9.0
+0.025774720 TRACE WU END faddr VP0.9.0
+0.025798080 TRACE WU START faddr VP0.9.0 wuid 0x55 name test_next_wuh arg0 0 arg1 0
+0.025833920 TRACE TRANSACTION ANNOT faddr VP0.9.0 msg Start unit test unittest_test_check_lt
+0.025900160 TRACE WU SEND faddr VP0.9.0 wuid 0x55 name test_next_wuh arg0 0 arg1 0 dest VP0.9.0
+0.025938624 TRACE WU END faddr VP0.9.0
+0.025960064 TRACE WU START faddr VP0.9.0 wuid 0x1 name idle_watch_wuh arg0 0 arg1 0x1e00000000
+0.025994752 TRACE WU END faddr VP0.9.0
+0.026016128 TRACE WU START faddr VP0.9.0 wuid 0x55 name test_next_wuh arg0 0 arg1 0
+0.026052864 TRACE TRANSACTION ANNOT faddr VP0.9.0 msg Start unit test unittest_test_check_lt_compare_equal_expect_fail
+0.026141632 TRACE WU SEND faddr VP0.9.0 wuid 0x55 name test_next_wuh arg0 0 arg1 0 dest VP0.8.0
+0.026180160 TRACE WU END faddr VP0.9.0
+0.026201856 TRACE WU START faddr VP0.8.0 wuid 0x55 name test_next_wuh arg0 0 arg1 0
+0.026237952 TRACE TRANSACTION ANNOT faddr VP0.8.0 msg Start unit test unittest_test_check_le
+0.026304192 TRACE WU SEND faddr VP0.8.0 wuid 0x55 name test_next_wuh arg0 0 arg1 0 dest VP0.9.0
+0.026342720 TRACE WU END faddr VP0.8.0
+0.026364416 TRACE WU START faddr VP0.9.0 wuid 0x55 name test_next_wuh arg0 0 arg1 0
+0.026401280 TRACE TRANSACTION ANNOT faddr VP0.9.0 msg Start unit test unittest_test_check_le_compare_expect_fail
+0.026487360 TRACE WU SEND faddr VP0.9.0 wuid 0x55 name test_next_wuh arg0 0 arg1 0 dest VP0.27.0
+0.026526080 TRACE WU END faddr VP0.9.0
+0.026547712 TRACE WU START faddr VP0.27.0 wuid 0x55 name test_next_wuh arg0 0 arg1 0
+0.026583936 TRACE TRANSACTION ANNOT faddr VP0.27.0 msg Start unit test unittest_test_gt
+0.026647616 TRACE WU SEND faddr VP0.27.0 wuid 0x55 name test_next_wuh arg0 0 arg1 0 dest VP0.8.0
+0.026686336 TRACE WU END faddr VP0.27.0
+0.026708096 TRACE WU START faddr VP0.8.0 wuid 0x55 name test_next_wuh arg0 0 arg1 0
+0.026744704 TRACE TRANSACTION ANNOT faddr VP0.8.0 msg Start unit test unittest_test_check_gt_expect_fail
+0.026827328 TRACE WU SEND faddr VP0.8.0 wuid 0x55 name test_next_wuh arg0 0 arg1 0 dest VP0.26.0
+0.026866112 TRACE WU END faddr VP0.8.0
+0.026887808 TRACE WU START faddr VP0.26.0 wuid 0x55 name test_next_wuh arg0 0 arg1 0
+0.026924800 TRACE TRANSACTION ANNOT faddr VP0.26.0 msg Start unit test unittest_test_check_gt_equal_expect_fail
+0.027010240 TRACE WU SEND faddr VP0.26.0 wuid 0x55 name test_next_wuh arg0 0 arg1 0 dest VP0.26.0
+0.027049216 TRACE WU END faddr VP0.26.0
+0.027073024 TRACE WU START faddr VP0.26.0 wuid 0x55 name test_next_wuh arg0 0 arg1 0
+0.027110912 TRACE TRANSACTION ANNOT faddr VP0.26.0 msg Start unit test unittest_test_demand_fail_expect_fail
+0.027188032 TRACE WU SEND faddr VP0.26.0 wuid 0x55 name test_next_wuh arg0 0 arg1 0 dest VP0.27.0
+0.027226944 TRACE WU END faddr VP0.26.0
+0.027248576 TRACE WU START faddr VP0.26.0 wuid 0x1 name idle_watch_wuh arg0 0 arg1 0x2800000000
+0.027248832 TRACE WU START faddr VP0.27.0 wuid 0x55 name test_next_wuh arg0 0 arg1 0
+0.027287168 TRACE WU END faddr VP0.26.0
+0.027327104 TRACE TRANSACTION ANNOT faddr VP0.27.0 msg Start unit test unittest_test_check_fail_expect_fail
+0.027420800 TRACE WU SEND faddr VP0.27.0 wuid 0x55 name test_next_wuh arg0 0 arg1 0 dest VP0.8.0
+0.027459520 TRACE WU END faddr VP0.27.0
+0.027481408 TRACE WU START faddr VP0.8.0 wuid 0x55 name test_next_wuh arg0 0 arg1 0
+0.027517760 TRACE TRANSACTION ANNOT faddr VP0.8.0 msg Start unit test unittest_test_le_expect_fail
+0.027599104 TRACE WU SEND faddr VP0.8.0 wuid 0x55 name test_next_wuh arg0 0 arg1 0 dest VP0.8.0
+0.027637632 TRACE WU END faddr VP0.8.0
+0.027661120 TRACE WU START faddr VP0.8.0 wuid 0x55 name test_next_wuh arg0 0 arg1 0
+0.027697408 TRACE TRANSACTION ANNOT faddr VP0.8.0 msg Start unit test unittest_test_thread_run_in_order
+0.027753664 TRACE WU SEND faddr VP0.8.0 wuid 0x385 name __bootstrap_unittest_test_thread_run_in_order_wuthread arg0 0x9800000002f55100 arg1 0 dest VP0.27.0
+0.027801408 TRACE WU END faddr VP0.8.0
+0.027822784 TRACE WU START faddr VP0.8.0 wuid 0x1 name idle_watch_wuh arg0 0 arg1 0x1300000000
+0.027823104 TRACE WU START faddr VP0.27.0 wuid 0x385 name __bootstrap_unittest_test_thread_run_in_order_wuthread arg0 0x9800000002f55100 arg1 0
+0.027857472 TRACE WU END faddr VP0.8.0
+0.027900288 TRACE WU SEND faddr VP0.27.0 wuid 0x19 name wuthread_malloc_wuh arg0 0x9800000002f55180 arg1 0x2000 dest VP0.24.0
+0.027963840 TRACE WU END faddr VP0.27.0
+0.027986112 TRACE WU START faddr VP0.24.0 wuid 0x19 name wuthread_malloc_wuh arg0 0x9800000002f55180 arg1 0x2000
+0.028026816 TRACE WU SEND faddr VP0.24.0 wuid 0x17 name wuthread_execute_wuh arg0 0x9800000002f55140 arg1 0 dest VP0.27.0
+0.028069888 TRACE WU END faddr VP0.24.0
+0.028091840 TRACE WU START faddr VP0.27.0 wuid 0x17 name wuthread_execute_wuh arg0 0x9800000002f55140 arg1 0
+0.028130624 TRACE WU SEND faddr VP0.27.0 wuid 0x21 name nop_wuh arg0 0x9800000002f551c0 arg1 0 dest VP0.16.0
+0.028172096 TRACE WU END faddr VP0.27.0
+0.028194304 TRACE WU START faddr VP0.16.0 wuid 0x21 name nop_wuh arg0 0x9800000002f551c0 arg1 0
+0.028230016 TRACE WU SEND faddr VP0.16.0 wuid 0x18 name wuthread_reactivate_indirect_wuh arg0 0x9800000002f55141 arg1 0 dest VP0.27.0
+0.028274624 TRACE WU END faddr VP0.16.0
+0.028296448 TRACE WU START faddr VP0.27.0 wuid 0x18 name wuthread_reactivate_indirect_wuh arg0 0x9800000002f55141 arg1 0
+0.028335936 TRACE WU SEND faddr VP0.27.0 wuid 0x21 name nop_wuh arg0 0x9800000002f551c0 arg1 0 dest VP0.16.0
+0.028377088 TRACE WU END faddr VP0.27.0
+0.028398848 TRACE WU START faddr VP0.16.0 wuid 0x21 name nop_wuh arg0 0x9800000002f551c0 arg1 0
+0.028434240 TRACE WU SEND faddr VP0.16.0 wuid 0x18 name wuthread_reactivate_indirect_wuh arg0 0x9800000002f55141 arg1 0 dest VP0.27.0
+0.028478656 TRACE WU END faddr VP0.16.0
+0.028500416 TRACE WU START faddr VP0.27.0 wuid 0x18 name wuthread_reactivate_indirect_wuh arg0 0x9800000002f55141 arg1 0
+0.028539712 TRACE WU SEND faddr VP0.27.0 wuid 0x21 name nop_wuh arg0 0x9800000002f551c0 arg1 0 dest VP0.13.0
+0.028580864 TRACE WU END faddr VP0.27.0
+0.028602880 TRACE WU START faddr VP0.13.0 wuid 0x21 name nop_wuh arg0 0x9800000002f551c0 arg1 0
+0.028638464 TRACE WU SEND faddr VP0.13.0 wuid 0x18 name wuthread_reactivate_indirect_wuh arg0 0x9800000002f55141 arg1 0 dest VP0.27.0
+0.028682944 TRACE WU END faddr VP0.13.0
+0.028704768 TRACE WU START faddr VP0.27.0 wuid 0x18 name wuthread_reactivate_indirect_wuh arg0 0x9800000002f55141 arg1 0
+0.028743808 TRACE WU SEND faddr VP0.27.0 wuid 0x1a name wuthread_free_wuh arg0 0x9800000002f55100 arg1 0x9800000002f57000 dest VP0.27.0
+0.028789248 TRACE WU END faddr VP0.27.0
+0.028812928 TRACE WU START faddr VP0.27.0 wuid 0x1a name wuthread_free_wuh arg0 0x9800000002f55100 arg1 0x9800000002f57000
+0.028853632 TRACE WU SEND faddr VP0.27.0 wuid 0x56 name complete_test_wuh arg0 0x9800000002f550c0 arg1 0 dest VP0.22.0
+0.028896000 TRACE WU END faddr VP0.27.0
+0.028917568 TRACE WU START faddr VP0.27.0 wuid 0x1 name idle_watch_wuh arg0 0 arg1 0x2800000000
+0.028918656 TRACE WU START faddr VP0.22.0 wuid 0x56 name complete_test_wuh arg0 0x9800000002f550c0 arg1 0
+0.028952448 TRACE WU END faddr VP0.27.0
+0.029030272 TRACE WU SEND faddr VP0.22.0 wuid 0x55 name test_next_wuh arg0 0 arg1 0 dest VP0.9.0
+0.029069504 TRACE WU SEND faddr VP0.22.0 wuid 0x13 name ws_free_frame_wuh arg0 0x9800000002f55040 arg1 0x980000000024d5c8 dest VP0.15.0
+0.029115136 TRACE WU END faddr VP0.22.0
+0.029137408 TRACE WU START faddr VP0.9.0 wuid 0x55 name test_next_wuh arg0 0 arg1 0
+0.029137600 TRACE WU START faddr VP0.15.0 wuid 0x13 name ws_free_frame_wuh arg0 0x9800000002f55040 arg1 0x980000000024d5c8
+0.029174080 TRACE TRANSACTION ANNOT faddr VP0.9.0 msg Start unit test unittest_test_thread_no_continuation
+0.029211520 TRACE WU END faddr VP0.15.0
+0.029284736 TRACE WU SEND faddr VP0.9.0 wuid 0x386 name __bootstrap_unittest_test_thread_no_continuation_wuthread arg0 0x9800000002f55100 arg1 0 dest VP0.9.0
+0.029332736 TRACE WU END faddr VP0.9.0
+0.029356416 TRACE WU START faddr VP0.9.0 wuid 0x386 name __bootstrap_unittest_test_thread_no_continuation_wuthread arg0 0x9800000002f55100 arg1 0
+0.029399168 TRACE WU SEND faddr VP0.9.0 wuid 0x19 name wuthread_malloc_wuh arg0 0x9800000002f55180 arg1 0x2000 dest VP0.22.0
+0.029442432 TRACE WU END faddr VP0.9.0
+0.029463808 TRACE WU START faddr VP0.9.0 wuid 0x1 name idle_watch_wuh arg0 0 arg1 0x1800000000
+0.029464192 TRACE WU START faddr VP0.22.0 wuid 0x19 name wuthread_malloc_wuh arg0 0x9800000002f55180 arg1 0x2000
+0.029498496 TRACE WU END faddr VP0.9.0
+0.029538816 TRACE WU SEND faddr VP0.22.0 wuid 0x17 name wuthread_execute_wuh arg0 0x9800000002f55140 arg1 0 dest VP0.9.0
+0.029599744 TRACE WU END faddr VP0.22.0
+0.029621696 TRACE WU START faddr VP0.9.0 wuid 0x17 name wuthread_execute_wuh arg0 0x9800000002f55140 arg1 0
+0.029659456 TRACE WU SEND faddr VP0.9.0 wuid 0x1a name wuthread_free_wuh arg0 0x9800000002f55100 arg1 0x9800000002f57000 dest VP0.9.0
+0.029704640 TRACE WU END faddr VP0.9.0
+0.029728000 TRACE WU START faddr VP0.9.0 wuid 0x1a name wuthread_free_wuh arg0 0x9800000002f55100 arg1 0x9800000002f57000
+0.029768448 TRACE WU SEND faddr VP0.9.0 wuid 0x56 name complete_test_wuh arg0 0x9800000002f550c0 arg1 0 dest VP0.13.0
+0.029810688 TRACE WU END faddr VP0.9.0
+0.029832064 TRACE WU START faddr VP0.9.0 wuid 0x1 name idle_watch_wuh arg0 0 arg1 0x4800000000
+0.029832576 TRACE WU START faddr VP0.13.0 wuid 0x56 name complete_test_wuh arg0 0x9800000002f550c0 arg1 0
+0.029866816 TRACE WU END faddr VP0.9.0
+0.029943936 TRACE WU SEND faddr VP0.13.0 wuid 0x55 name test_next_wuh arg0 0 arg1 0 dest VP0.27.0
+0.029983104 TRACE WU SEND faddr VP0.13.0 wuid 0x13 name ws_free_frame_wuh arg0 0x9800000002f55040 arg1 0x980000000024d678 dest VP0.14.0
+0.030028416 TRACE WU END faddr VP0.13.0
+0.030050304 TRACE WU START faddr VP0.27.0 wuid 0x55 name test_next_wuh arg0 0 arg1 0
+0.030050624 TRACE WU START faddr VP0.14.0 wuid 0x13 name ws_free_frame_wuh arg0 0x9800000002f55040 arg1 0x980000000024d678
+0.030086976 TRACE TRANSACTION ANNOT faddr VP0.27.0 msg Start unit test unittest_test_thread_bail_early
+0.030123776 TRACE WU END faddr VP0.14.0
+0.030196864 TRACE WU SEND faddr VP0.27.0 wuid 0x387 name __bootstrap_unittest_test_thread_bail_early_wuthread arg0 0x9800000002f55100 arg1 0 dest VP0.8.0
+0.030244416 TRACE WU END faddr VP0.27.0
+0.030266368 TRACE WU START faddr VP0.8.0 wuid 0x387 name __bootstrap_unittest_test_thread_bail_early_wuthread arg0 0x9800000002f55100 arg1 0
+0.030308480 TRACE WU SEND faddr VP0.8.0 wuid 0x19 name wuthread_malloc_wuh arg0 0x9800000002f55180 arg1 0x2000 dest VP0.10.0
+0.030351744 TRACE WU END faddr VP0.8.0
+0.030373632 TRACE WU START faddr VP0.10.0 wuid 0x19 name wuthread_malloc_wuh arg0 0x9800000002f55180 arg1 0x2000
+0.030413248 TRACE WU SEND faddr VP0.10.0 wuid 0x17 name wuthread_execute_wuh arg0 0x9800000002f55140 arg1 0 dest VP0.8.0
+0.030456000 TRACE WU END faddr VP0.10.0
+0.030477888 TRACE WU START faddr VP0.8.0 wuid 0x17 name wuthread_execute_wuh arg0 0x9800000002f55140 arg1 0
+0.030515328 TRACE WU SEND faddr VP0.8.0 wuid 0x1a name wuthread_free_wuh arg0 0x9800000002f55100 arg1 0x9800000002f57000 dest VP0.8.0
+0.030560448 TRACE WU END faddr VP0.8.0
+0.030583808 TRACE WU START faddr VP0.8.0 wuid 0x1a name wuthread_free_wuh arg0 0x9800000002f55100 arg1 0x9800000002f57000
+0.030623744 TRACE WU SEND faddr VP0.8.0 wuid 0x56 name complete_test_wuh arg0 0x9800000002f550c0 arg1 0 dest VP0.11.0
+0.030665984 TRACE WU END faddr VP0.8.0
+0.030687360 TRACE WU START faddr VP0.8.0 wuid 0x1 name idle_watch_wuh arg0 0 arg1 0x1600000000
+0.030687872 TRACE WU START faddr VP0.11.0 wuid 0x56 name complete_test_wuh arg0 0x9800000002f550c0 arg1 0
+0.030725632 TRACE WU END faddr VP0.8.0
+0.030807104 TRACE WU SEND faddr VP0.11.0 wuid 0x55 name test_next_wuh arg0 0 arg1 0 dest VP0.9.0
+0.030846016 TRACE WU SEND faddr VP0.11.0 wuid 0x13 name ws_free_frame_wuh arg0 0x9800000002f55040 arg1 0x980000000024d728 dest VP0.12.0
+0.030891456 TRACE WU END faddr VP0.11.0
+0.030913344 TRACE WU START faddr VP0.9.0 wuid 0x55 name test_next_wuh arg0 0 arg1 0
+0.030913664 TRACE WU START faddr VP0.12.0 wuid 0x13 name ws_free_frame_wuh arg0 0x9800000002f55040 arg1 0x980000000024d728
+0.030986688 TRACE WU END faddr VP0.12.0
+0.031048704 TRACE WU SEND faddr VP0.9.0 wuid 0x67 name notification_post_relay_wuh arg0 0x9800000002ecd0c0 arg1 0x980000000037eb30 dest VP0.8.0
+0.031095232 TRACE WU END faddr VP0.9.0
+0.031116992 TRACE WU START faddr VP0.8.0 wuid 0x67 name notification_post_relay_wuh arg0 0x9800000002ecd0c0 arg1 0x980000000037eb30
+0.031158080 TRACE WU SEND faddr VP0.8.0 wuid 0x13 name ws_free_frame_wuh arg0 0x9800000002ecd040 arg1 0x980000000020f408 dest VP0.8.0
+0.031203008 TRACE WU END faddr VP0.8.0
+0.031226368 TRACE WU START faddr VP0.8.0 wuid 0x13 name ws_free_frame_wuh arg0 0x9800000002ecd040 arg1 0x980000000020f408
+0.031266752 TRACE WU END faddr VP0.8.0
+0.031288256 TRACE WU START faddr VP0.8.0 wuid 0x1 name idle_watch_wuh arg0 0 arg1 0x3000000000
+0.031322944 TRACE WU END faddr VP0.8.0
+0.331470272 TRACE WU START faddr VP0.8.0 wuid 0x2a name start_finalize_wuh arg0 0 arg1 0
+0.331515904 TRACE WU SEND faddr VP0.8.0 wuid 0x287 name finalize_wuh arg0 0 arg1 0 dest VP0.8.0
+0.331554432 TRACE WU END faddr VP0.8.0
+0.331575872 TRACE WU START faddr VP0.8.0 wuid 0x1 name idle_watch_wuh arg0 0 arg1 0x2e00000000
+0.331610624 TRACE WU END faddr VP0.8.0
+0.331632064 TRACE WU START faddr VP0.8.0 wuid 0x287 name finalize_wuh arg0 0 arg1 0

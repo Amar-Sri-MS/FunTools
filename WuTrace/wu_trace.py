@@ -99,11 +99,11 @@ class FileParser:
     # beginning, but the rest counts as the message.
     if values['verb'] == 'TRANSACTION' and values['noun'] == 'ANNOT':
 
-      annot_match = re.match('faddr (VP[0-9]+.[0-9]+.[0-9]+) msg (.*)',
+      annot_match = re.match('faddr (VP[0-9]+\.[0-9]+\.[0-9]+) msg (.*)',
                              remaining_string)
       if not annot_match:
         # Try parsing new form.
-        annot_match = re.match('faddr (FA[0-9]+.[0-9]+.[0-9]+\[VP[0-9].[0-9]\]) msg (.*)',
+        annot_match = re.match('faddr (FA[0-9]+:[0-9]+:[0-9]+\[VP\]) msg (.*)',
                                remaining_string)
       if not annot_match:
         error = '%s:%d: malformed transaction annotation: "%s"\n' % (
