@@ -1126,8 +1126,6 @@ int main(int argc, char *argv[])
 			funos_sock.server = false;
 			funos_sock.port_num = opt_portnum(optarg,
 							  DPC_B64_PORT);
-			mode = MODE_INTERACTIVE;
-
 			break;
 
 		case 'B':  /* base64 server */
@@ -1138,8 +1136,6 @@ int main(int argc, char *argv[])
 			funos_sock.server = true;
 			funos_sock.port_num = opt_portnum(optarg,
 							  DPC_B64SRV_PORT);
-			mode = MODE_INTERACTIVE;
-
 			break;
 		case 'D':  /* base64 device (pty/tty) */
 
@@ -1148,8 +1144,6 @@ int main(int argc, char *argv[])
 			funos_sock.mode = SOCKMODE_DEV;
 			funos_sock.socket_name = opt_sockname(optarg,
 							      "/unknown");
-			mode = MODE_INTERACTIVE;
-
 			break;
 		case 'i':  /* inet client */
 
