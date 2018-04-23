@@ -14,7 +14,6 @@
 #include <utility>
 
 // Get this from the DPC include files
-#define DPC_PORT 40221
 /*
  * Connect to the DPCSH that must already be
  * running in proxy mode
@@ -23,15 +22,16 @@
  */
 CsrSh::~CsrSh(void) {
     for (auto& elem: mp_buf) {
-        delete elem.second.first;
+        delete[] elem.second.first;
 	elem.second.first=nullptr;
     }
     mp_buf.clear();
 
 
 }
-void CsrSh::__init(void) {
-    if (not tcp_h.conn("localhost", DPC_PORT)) {
+void CsrSh::__init(const std::string& host, const uint16_t& port) {
+    std::cout << "Connect:Host: " << host << ":port: " << port << std::endl;
+    if (not tcp_h.conn(host, port)) {
         std::cout << "!!!!WARNING: dpcsh not connected. Fetch/Flush commands WILL NOT work!!" << std::endl;
     }
 }
@@ -59,7 +59,6 @@ void CsrSh::dump_csr(const std::string& csr_name) {
                 << std::hex << std::setfill('0')
                 << std::setw(10) << addr << std::endl;
         }
-	csr_h.release();
     }
 }
 void CsrSh::set_csr(const std::string& csr_name) {
@@ -74,21 +73,20 @@ void CsrSh::set_csr(const std::string& csr_name) {
     } else {
         buf = new uint8_t[sz]();
     }
-    std::cin.unsetf(std::ios::dec);
-    std::cin.unsetf(std::ios::hex);
-    std::cin.unsetf(std::ios::oct);
 
     uint64_t curr_val;
     uint64_t prev_val;
     std::string curr_str;
     std::istringstream istream;
+    istream.unsetf(std::ios::dec);
+    istream.unsetf(std::ios::hex);
+    istream.unsetf(std::ios::oct);
 
     for (auto it = csr_h.begin(); it != csr_h.end(); it ++) {
-       if (it->first == "__rsvd") continue;
        std::cout << "FLD: " << it->first << ":";
        if (is_set) {
           csr_h.get(it->first, prev_val, buf);
-	  std::cout << "(" << prev_val << "):";
+	  std::cout << std::hex << "(0x" << prev_val << "):";
        }
 
        while(std::getline(std::cin, curr_str)) {
@@ -106,7 +104,7 @@ void CsrSh::set_csr(const std::string& csr_name) {
 	   std::cout << "Incorrect input: " << curr_str << std::endl;
            std::cout << "FLD: " << it->first << ": ";
            if (is_set) {
-	      std::cout << "(" << prev_val << "):";
+	      std::cout << std::hex << "(0x" << prev_val << "):";
            }
        }
        csr_h.set(it->first, curr_val, buf);
@@ -118,7 +116,6 @@ void CsrSh::set_csr(const std::string& csr_name) {
     mp_buf.emplace(std::piecewise_construct,
 		   std::forward_as_tuple(csr_name),
 		   std::forward_as_tuple(buf, sz));
-    csr_h.release();
 }
 
 void CsrSh::set_raw(const std::string& csr_name) {
@@ -135,14 +132,13 @@ void CsrSh::set_raw(const std::string& csr_name) {
         sz = csr_h.sz();
 	buf = new uint8_t[sz]();
     }
-    csr_h.release();
-    std::cin.unsetf(std::ios::dec);
-    std::cin.unsetf(std::ios::hex);
-    std::cin.unsetf(std::ios::oct);
 
-    uint8_t curr_val;
+    uint16_t curr_val;
     std::string curr_str;
     std::istringstream istream;
+    istream.unsetf(std::ios::dec);
+    istream.unsetf(std::ios::hex);
+    istream.unsetf(std::ios::oct);
 
     for (auto i = 0; i < sz; i ++) {
         std::cout << "BYTE[" << i << "]:";
@@ -166,6 +162,7 @@ void CsrSh::set_raw(const std::string& csr_name) {
            if (is_set) {
 	      std::cout << "(" << static_cast<uint16_t>(buf[i])<< "):";
            }
+
        }
        buf[i] = curr_val;
     }
@@ -226,9 +223,9 @@ void CsrSh::fetch(const std::string& csr_name,
     assert(tcp_h.send_data(json_str));
     std::cout << "SEND_JSON: " << json_str << std::endl;
     auto r_json = tcp_h.receive();
+    std::cout << "RCV_JSON: " << r_json << std::endl;
     r_json.erase(std::remove(r_json.begin(), r_json.end(), '\n'), r_json.end());
     r_json.erase(std::remove(r_json.begin(), r_json.end(), '\r'), r_json.end());
-    std::cout << "RCV_JSON: " << r_json << std::endl;
     uint8_t* bin_arr = json_acc.peek_rsp(r_json);
     for (auto i = 0; i < n_bytes; i ++) {
         std::cout << "raw[" << i << "] = 0x" << std::hex << static_cast<uint16_t>(bin_arr[i]) << std::endl;
@@ -236,7 +233,6 @@ void CsrSh::fetch(const std::string& csr_name,
     mp_buf.insert(std::make_pair(csr_name,
                    std::make_pair(bin_arr, n_bytes)));
     __interpret(csr_name, bin_arr);
-    csr_h.release();
 
 }
 void CsrSh::flush(const std::string& csr_name,
@@ -265,8 +261,11 @@ void CsrSh::flush(const std::string& csr_name,
     assert(tcp_h.send_data(json_str));
     std::cout << "SEND_JSON: " << json_str << std::endl;
     auto r_json = tcp_h.receive();
+    std::cout << "RCV_JSON: " << r_json ;
     r_json.erase(std::remove(r_json.begin(), r_json.end(), '\n'), r_json.end());
-    std::cout << "RCV_JSON: " << r_json << std::endl;
     assert(json_acc.poke_rsp(r_json));
-    csr_h.release();
+    delete[] buf;
+    buf = nullptr;
+    mp_buf.erase(it);
+
 }

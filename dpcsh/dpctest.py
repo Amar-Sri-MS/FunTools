@@ -40,7 +40,7 @@ def test_commands():
 
     print "All tests OK!"
 
-# load up a dpcsh unix socket
+# load up a dpcsh tcp socket
 print "### Running dpcsh as text proxy"
 pid = subprocess.Popen(["./dpcsh", "--text_proxy", "--oneshot"])
 
@@ -55,15 +55,15 @@ test_commands()
 client = None
 
 
-# now do a tcp socket
-print "### Running dpcsh as text proxy"
-pid = subprocess.Popen(["./dpcsh", "--tcp_proxy", "--oneshot"])
+# now do a unix socket
+print "### Running dpcsh as unix proxy"
+pid = subprocess.Popen(["./dpcsh", "--unix_proxy", "--oneshot"])
 
 print "### pid is %s" % pid
 time.sleep(1)
 
 # connect to it
-client = dpc_client.DpcClient(False, False)
+client = dpc_client.DpcClient(False, True)
 
 test_commands()
 

@@ -47,6 +47,10 @@ class RingNode(object):
     def add_csr(self, inst_num, csr_name, csr_addr, csr_range=None):
         assert inst_num in self.instances
         self.instances[inst_num].add_csr(csr_name, csr_addr, csr_range)
+    def add_64_w(self, inst_num, an_name, num_64_w):
+        assert inst_num in self.instances
+        if not self.is_dummy:
+            self.instances[inst_num].add_64_w(an_name, num_64_w)
 
     def __str__(self):
         r_str = "ring_coll_t {}_rng;\n".format(self.name)
@@ -128,6 +132,7 @@ class ANode(object):
     __repr__ = __str__
 
 class RingProps(object):
+    Total64w = 0
     def __init__(self, r_name, i_num, addr):
         self.r_name = r_name
         self.i_num = i_num
@@ -137,7 +142,6 @@ class RingProps(object):
         self.anodes = collections.OrderedDict()
         # From an aname to csr signature
         self.csr_map = collections.OrderedDict()
-        # Keep track of totals
 
     def get_addr(self):
         return self.addr
@@ -179,10 +183,34 @@ class RingProps(object):
         #print "AN_CREATE:{}:{}".format(an_name, anode)
         self.anodes[an_name] = an_lst
         self.last_anode = anode
+    def add_64_w(self, an_node, num_64_w):
+        r_attr = self.root_paths.get(an_node, None)
+        an_arr = an_node.split('.')
+        prefix_path = None
+        if len(an_arr) > 1:
+            prefix_path = '.'.join(elem for elem in an_arr[:-1])
+            an_name = an_arr[-1]
+        else:
+            an_name = an_node
+        if r_attr != None:
+            RingProps.Total64w = RingProps.Total64w + (r_attr[0] * num_64_w)
+        elif prefix_path:
+            r_attr = self.root_paths.get(prefix_path, None)
+            if r_attr != None:
+                RingProps.Total64w = RingProps.Total64w + (r_attr[0] * num_64_w)
+            else:
+                RingProps.Total64w = RingProps.Total64w + num_64_w
+        else:
+            RingProps.Total64w = RingProps.Total64w + num_64_w
+
+        #print "0x{:02X}".format(RingProps.Total64w)
+
 
     def add_csr(self, csr_name, csr_addr, addr_range=None):
         assert self.last_anode != None, "No address node to add CSR to"
         csr_addr -= self.addr
+        # Get width of this csr
+
         self.last_anode.add_csr(csr_name, csr_addr, addr_range)
 
     def __str__(self):
@@ -260,8 +288,6 @@ class CSRRoot(object):
     def get_map(self):
         return self.ring_map
 
-
-
     def __read_update(self, m_file, filter_yml):
         f = open(m_file, "r")
         for line in f:
@@ -281,6 +307,7 @@ class CSRRoot(object):
             self.__process_csr(line, do_process, filter_yml)
 
         print "ADDR_RANGE: 0x{:02X}->0x{:02X}".format(self.start_addr, self.end_addr)
+        print "Total64w: 0x{:02X}".format(RingProps.Total64w)
 
     def __ignore(self, line):
         for rep in CSRRoot.IGNORE:
@@ -385,11 +412,11 @@ class CSRRoot(object):
         num_inst = int(coll[2])
         end_addr = st_addr + (num_inst - 1)*skip_val
         if st_addr < self.start_addr and not rn.is_dummy:
-            print "NEW START: 0x{:02X}->0x{:02X}".format(self.start_addr, st_addr)
+            #print "NEW START: 0x{:02X}->0x{:02X}".format(self.start_addr, st_addr)
             self.start_addr = st_addr
 
         if end_addr > self.end_addr and not rn.is_dummy:
-            print "NEW END: 0x{:02X}->0x{:02X}".format(self.end_addr, end_addr)
+            #print "NEW END: 0x{:02X}->0x{:02X}".format(self.end_addr, end_addr)
             self.end_addr = end_addr
         self.flags[CSRRoot.IN_ANODE] = False
         rn.add_an_path(ring_inst, k, num_inst,
@@ -427,20 +454,22 @@ class CSRRoot(object):
         self.curr_ri = ring_inst
         self.curr_path = k
         st_addr = self.__hexlify(coll[2])
-        end_addr = st_addr + self.__hexlify(coll[3])
+        num_64_w = self.__hexlify(coll[3])
+        end_addr = st_addr + num_64_w
 
         self.curr_addr = st_addr
 
+
         if st_addr < self.start_addr and not rn.is_dummy:
-            print "NEW START: 0x{:02X}->0x{:02X}".format(self.start_addr, st_addr)
+            #print "NEW START: 0x{:02X}->0x{:02X}".format(self.start_addr, st_addr)
             self.start_addr = st_addr
         if end_addr > self.end_addr and not rn.is_dummy:
-            print "NEW END: 0x{:02X}->0x{:02X}".format(self.end_addr, end_addr)
+            #print "NEW END: 0x{:02X}->0x{:02X}".format(self.end_addr, end_addr)
             self.end_addr = end_addr
 
         #print "ADD_AN: {}:{}:0x{:02X}".format(ring_inst, k, addr)
-        #TODO:
-        # Remove this to the filter area, post filtering
+        # Add number of 64w being added
+        rn.add_64_w(ring_inst, k, num_64_w)
         return True
 
     def __process_csr(self, line, do_process, filter_yml):
@@ -485,7 +514,7 @@ class CSRRoot(object):
             m_arr[idx] = re.sub('(_an)|(_AN)', '', m_arr[idx])
 
         k = ".".join(elem for elem in m_arr)
-        return k
+        return k.lower()
 
     def __hexlify(self, entry):
         entry = re.sub(r'0x', '', entry)

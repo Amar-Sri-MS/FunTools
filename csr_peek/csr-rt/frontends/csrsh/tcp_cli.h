@@ -13,12 +13,16 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 
+#define NBUF_SZ 512
+
 class tcp_cli {
     private:
         int sock;
+	char* net_buf;
     public:
         tcp_cli();
+	~tcp_cli();
         bool conn(const std::string& host, const int& port);
         bool send_data(const std::string& data);
-        std::string receive(const int& sz=1024);
+        std::string receive();
 };

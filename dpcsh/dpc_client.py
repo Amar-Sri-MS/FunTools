@@ -18,7 +18,7 @@ import socket
 # Example usage dpctest.py
 
 class DpcClient(object):
-    def __init__(self, legacy_ok = True, unix_sock = True, server_address = None):
+    def __init__(self, legacy_ok = True, unix_sock = False, server_address = None):
         self.__legacy_ok = legacy_ok
         self.__verbose = False
         self.__truncate_long_lines = False
