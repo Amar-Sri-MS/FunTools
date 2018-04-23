@@ -65,8 +65,10 @@ bool {{struct.name}}_json_init(struct fun_json *j,
     {% else %}
 
 	struct fun_json *{{field.name}}_j = fun_json_lookup(j, "{{field.name}}");
-	/* TBD - Struct - {{field.name}} */
-	{{field.type.base_type.node.name}}_json_init({{field.name}}_j, &(s->{{field.name}}));
+	if ({{field.name}}_j) {
+		/* TBD - Struct - {{field.name}} */
+		{{field.type.base_type.node.name}}_json_init({{field.name}}_j, &(s->{{field.name}}));
+	}
     {% endif %}
   {% else %}
     {% if field.packed_fields %}
