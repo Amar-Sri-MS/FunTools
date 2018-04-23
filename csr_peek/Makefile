@@ -19,9 +19,11 @@ OS := $(shell uname)
 ifeq ($(OS),Darwin)
   SUDO_I =
   INSTALL := brew
+  NFS :=
 else
 ifeq ($(OS),Linux)
   INSTALL := apt
+  NFS := nfs-common
 endif
 endif
 
@@ -44,9 +46,11 @@ cfg:build
 	csr-slurp -i csr/csr_cfg -o csr-rt/gen
 
 
-cfg_pull:build
-	$(SUDO_I) $(INSTALL) install nfs-common
+cfg_pull:build $(NFS)
 	cd csr; csr-get -i $(INDIR)
+
+$(NFS):
+	$(SUDO_I) $(INSTALL) install $(NFS)
 
 clean:
 	cat files.txt | sudo xargs rm -rf
