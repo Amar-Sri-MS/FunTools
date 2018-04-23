@@ -5,6 +5,7 @@
  *
  *  Copyright © 2018 Fungible Inc. All rights reserved.
  */
+#include <cassert>
 #include <cstring>
 #include <iostream>
 
