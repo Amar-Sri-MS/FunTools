@@ -510,7 +510,7 @@ class CSRRoot(object):
         self.curr_ri = ring_inst
         self.curr_path = k
         self.curr_addr = self.__hexlify(coll[2])
-        #print "ADD_AN: {}:{}:0x{:02X}".format(ring_inst, k, addr)
+        print "****ADD_AN: {}:{}".format(ring_inst, k)
         #TODO:
         # Remove this to the filter area, post filtering
         rn.add_an(ring_inst, k, self.curr_addr, self.csr_map)

@@ -22,7 +22,7 @@ Template for stats source code generation
 #include <FunSDK/chip/f1/hw/include/csr/{{header}}_an.h>
 {% endfor %}
 
-#define ACCUMULATE_STAT(acntr, scntr, cntr, width) \
+#define ACCUMULATE(acntr, scntr, cntr, width) \
     if(cntr > scntr) {		    \
         (acntr) += (cntr) - (scntr); \
     } else {			    \
@@ -45,19 +45,21 @@ Template for stats source code generation
 
 {%- macro csr_read(csr, type, baddr, idx) -%}
 	{{csr|upper}}_
-	{%- if type == "CSR_TYPE::TBL" -%}
+	{%- if type == "CSR_TYPE::TBL" or type == "CSR_TYPE::TBL_HETERO" -%}
 		IREAD({{baddr}}, rbuf, {{idx}});
-	{% else %}
+	{%- elif type == "CSR_TYPE::REG_LST" -%}
+		0_READ({{baddr}}, rbuf);
+	{%- else -%}
 		READ({{baddr}}, rbuf);
 	{%- endif -%}
 {%- endmacro -%}
 
-{%- macro csr_field_read(csr, field, cntr, offset, interval) -%}
-	{%- if interval > 1 -%}
-		{{csr|upper}}_{{field[0]|upper}}_READ(rbuf, &fbuf);
-		ACCUMULATE_STAT({{cntr}}[{{offset}}], {{cntr}}_shadow[{{offset}}], fbuf, {{field[1]}});
+{%- macro csr_field_read(csr, type, field, cntr, offset, accumuate) -%}
+	{%- if accumuate -%}
+		{{csr|upper}}_{{'0_' if type == "CSR_TYPE::REG_LST" else ""}}{{field.csr_fld_name|upper}}_READ(rbuf, &fbuf);
+		ACCUMULATE({{cntr}}[{{offset}}], {{cntr}}_shadow[{{offset}}], fbuf, {{field.csr_fld_width}});
 	{% else %}
-		{{csr|upper}}_{{field[0]|upper}}_READ(rbuf, &{{cntr}}[{{offset}}]);
+		{{csr|upper}}_{{'0_' if type == "CSR_TYPE::REG_LST" else ""}}{{field.csr_fld_name|upper}}_READ(rbuf, &{{cntr}}[{{offset}}]);
 	{%- endif -%}
 {%- endmacro -%}
 
@@ -110,13 +112,38 @@ Template for stats source code generation
 	{%- endif -%}
 {%- endmacro -%}
 
-{%- macro read(s, cntr, interval) -%}
-	{%- set csr_idx = csr_table_idx(s.csr_offset, s.input) %}
-	{{csr_read(s.csr, s.csr_type, s.base_addr, csr_idx)}}
-	{%- for k,v in s.fields.iteritems() -%}
-		{%- set cntr_idx = stat_arr_idx(s.cntr_offset, s.input, s.fields|length, loop.index0) -%}
-		{{csr_field_read(s.csr, v, cntr, cntr_idx, interval)}}
-	{% endfor %}
+{%- macro read_reg(s, cntr, accumuate) -%}
+	{%- if s.csr_type == "CSR_TYPE::TBL_HETERO" -%}
+		{% for idx,fields in s.fields.iteritems() %}
+			{{csr_read(s.csr, s.csr_type, s.base_addr, idx)}}
+			{%- for k,v in fields.iteritems() -%}
+				{%- set cntr_idx = s.cntr_base + v.cntr_idx_offset -%}
+				{{csr_field_read(s.csr, s.csr_type, v, cntr, cntr_idx, accumuate)}}
+			{% endfor %}
+		{% endfor %}
+	{%- elif s.csr_type == "CSR_TYPE::TBL" -%}
+		{%- set csr_idx = csr_table_idx(s.csr_offset, s.input) %}
+		{{csr_read(s.csr, s.csr_type, s.base_addr, csr_idx)}}
+		{%- for k,v in s.fields.iteritems() -%}
+				{%- set cntr_idx = stat_arr_idx(s.cntr_base, s.input, s.fields|length, loop.index0) -%}
+				{{csr_field_read(s.csr, s.csr_type, v, cntr, cntr_idx, accumuate)}}
+		{% endfor %}
+	{%- elif s.csr_type == "CSR_TYPE::REG_LST" -%}
+		{% for i in range(s.reg_inst.range_min, s.reg_inst.range_max) %}
+			{{csr_read(s.csr, s.csr_type, s.base_addr+(s.csr_width*8*(i-s.reg_inst.range_min))|string, None)}}
+			{%- set cntr_base = s.num_fields * (i-s.reg_inst.range_min) -%}
+			{%- for k,v in s.fields.iteritems() -%}
+				{%- set cntr_idx = cntr_base + v.cntr_idx_offset -%}
+				{{csr_field_read(s.csr, s.csr_type, v, cntr, cntr_idx, accumuate)}}
+			{% endfor %}
+		{% endfor %}
+	{%- elif s.csr_type == "CSR_TYPE::REG" -%}
+		{{csr_read(s.csr, s.csr_type, s.base_addr, None)}}
+		{%- for k,v in s.fields.iteritems() -%}
+			{%- set cntr_idx = loop.index0 -%}
+			{{csr_field_read(s.csr, s.csr_type, v, cntr, cntr_idx, accumuate)}}
+		{% endfor %}
+	{% endif %}
 {%- endmacro -%}
 
 {%- macro for_loop(depth, min, max) %}
@@ -124,15 +151,20 @@ Template for stats source code generation
 {%- endmacro -%}
 
 {%- macro subnode_read(s, cntr, interval) -%}
+	{%- if  s.input|length > 0 -%}
 	{%- for k,v in s.input.iteritems() -%}
 	{{for_loop(loop.index, v.range_min, v.range_max)}} {{'{'}}
 			{%- if loop.last -%}
-				{{read(s, cntr, interval)}}
+				{%- set accumuate = True if interval > 1 else False -%}
+				{{read_reg(s, cntr, accumuate)}}
 			{%- endif -%}
 	{%- endfor -%}
 	{% for input in s.input -%}
 		}
 	{% endfor -%}
+	{% else %}
+		{{read_reg(s, cntr, interval)}}
+	{% endif %}
 {%- endmacro -%}
 
 {%- for module,endpoints in modules.iteritems() %}
@@ -160,35 +192,91 @@ Template for stats source code generation
 
 {%- macro json_create(s, cntr) -%}
 	const int64_t values[] = {{'{'}}
-	{%- for k,v in s.fields.iteritems() -%}
-		{%- set cntr_idx = stat_arr_idx(s.cntr_offset, s.input, s.fields|length, loop.index0) -%}
-		{{cntr}}[{{cntr_idx}}] {%- if not loop.last -%} , {%- endif -%}
-	{%- endfor -%}
-	{{'}'}};
-	const char *keys[] = {{'{'}}
-	{%- for k,v in s.fields.iteritems() -%}
-		"{{k}}" {%- if not loop.last -%} , {%- endif -%}
-	{%- endfor -%}
-	{{'}'}};
-
-	struct fun_json *dict{{s.input|length}}= fun_json_create_dict_from_int64s({{s.fields|length}}, keys, fun_json_no_copy_no_own, values);
+	{%- if s.csr_type == "CSR_TYPE::TBL_HETERO" -%}
+		{% for idx,fields in s.fields.iteritems() %}
+			{%- for k,v in fields.iteritems() -%}
+				{%- set cntr_idx = s.cntr_base + v.cntr_idx_offset -%}
+				{{cntr}}[{{cntr_idx}}] {%- if not loop.last -%} , {%- endif -%}
+			{% endfor %}
+			{%- if not loop.last -%} , {%- endif -%}
+		{% endfor %}
+		{{'}'}};
+		const char *keys[] = {{'{'}}
+		{% for idx,fields in s.fields.iteritems() %}
+			{%- for k,v in fields.iteritems() -%}
+				"{{k}}" {%- if not loop.last -%} , {%- endif -%}
+			{%- endfor -%}
+			{%- if not loop.last -%} , {%- endif -%}
+		{%- endfor -%}
+		{{'}'}};
+		dict{{s.input|length}}= fun_json_create_dict_from_int64s({{s.num_fields}}, keys, fun_json_no_copy_no_own, values);
+	{%- elif s.csr_type == "CSR_TYPE::TBL" -%}
+		{%- for k,v in s.fields.iteritems() -%}
+			{%- set cntr_idx = stat_arr_idx(s.cntr_base,s.input, s.num_fields, loop.index0) -%}
+			{{cntr}}[{{cntr_idx}}] {%- if not loop.last -%} , {%- endif -%}
+		{%- endfor -%}
+		{{'}'}};
+		const char *keys[] = {{'{'}}
+		{%- for k,v in s.fields.iteritems() -%}
+			"{{k}}" {%- if not loop.last -%} , {%- endif -%}
+		{%- endfor -%}
+		{{'}'}};
+		struct fun_json *dict{{s.input|length}}= fun_json_create_dict_from_int64s({{s.num_fields}}, keys, fun_json_no_copy_no_own, values);
+	{%- elif s.csr_type == "CSR_TYPE::REG_LST" -%}
+		{%- for k,v in s.fields.iteritems() -%}
+			{%- set cntr_idx = s.cntr_base + v.cntr_idx_offset -%}
+			{{cntr}}[i_1] {%- if not loop.last -%} , {%- endif -%}
+		{%- endfor -%}
+		{{'}'}};
+		const char *keys[] = {{'{'}}
+		{%- for k,v in s.fields.iteritems() -%}
+			"{{k}}" {%- if not loop.last -%} , {%- endif -%}
+		{%- endfor -%}
+		{{'}'}};
+		struct fun_json *dict1= fun_json_create_dict_from_int64s({{s.num_fields}}, keys, fun_json_no_copy_no_own, values);
+	{%- elif  s.csr_type == "CSR_TYPE::REG" -%}
+		{%- for k,v in s.fields.iteritems() -%}
+			{%- set cntr_idx = s.cntr_base + v.cntr_idx_offset -%}
+			{{cntr}}[{{cntr_idx}}] {%- if not loop.last -%} , {%- endif -%}
+		{%- endfor -%}
+		{{'}'}};
+		const char *keys[] = {{'{'}}
+		{%- for k,v in s.fields.iteritems() -%}
+			"{{k}}" {%- if not loop.last -%} , {%- endif -%}
+		{%- endfor -%}
+		{{'}'}};
+		dict{{s.input|length}}= fun_json_create_dict_from_int64s({{s.num_fields}}, keys, fun_json_no_copy_no_own, values);
+	{% endif %}
 {%- endmacro -%}
 
 {%- macro subnode_json_create(s, cntr) -%}
-	{%- for k,v in s.input.iteritems() -%}
-		{{for_loop(loop.index, v.range_min, v.range_max)}} {{'{'}}
-		{%- if not loop.last -%}
-			struct fun_json *dict{{loop.index}} = fun_json_create_empty_dict();
-		{% else %}
+	{%- if s.csr_type == "CSR_TYPE::TBL_HETERO" -%}
+		{{json_create(s, cntr)}}
+	{%- elif s.csr_type == "CSR_TYPE::TBL" -%}
+		{%- for k,v in s.input.iteritems() -%}
+			{{for_loop(loop.index, v.range_min, v.range_max)}} {{'{'}}
+			{%- if not loop.last -%}
+				struct fun_json *dict{{loop.index}} = fun_json_create_empty_dict();
+			{% else %}
+				{{json_create(s, cntr)}}
+			{%- endif -%}
+		{%- endfor -%}
+		{% for k,v in s.input.iteritems()|reverse -%}
+			char key[32];
+			snprintf(key, 32, "{{k}}%d", i_{{loop.revindex}});
+			fun_json_dict_add(dict{{loop.revindex-1}}, key, fun_json_no_copy_no_own, dict{{loop.revindex}}, false);
+			{{'}'}}
+		{% endfor -%}
+	{%- elif s.csr_type == "CSR_TYPE::REG_LST" -%}
+		{{for_loop(1, s.reg_inst.range_min, s.reg_inst.range_max)}} {{'{'}}
 			{{json_create(s, cntr)}}
-		{%- endif -%}
-	{%- endfor -%}
-	{% for k,v in s.input.iteritems()|reverse -%}
-		char key[32];
-		snprintf(key, 32, "{{k}}%d", i_{{loop.revindex}});
-		fun_json_dict_add(dict{{loop.revindex-1}}, key, fun_json_no_copy_no_own, dict{{loop.revindex}}, false);
+			char key[32];
+			snprintf(key, 32, "{{s.reg_inst.name}}%d", i_1);
+			fun_json_dict_add(dict0, key, fun_json_no_copy_no_own, dict1, false);
 		{{'}'}}
-	{% endfor -%}
+	{%- elif s.csr_type == "CSR_TYPE::REG" -%}
+		{{json_create(s, cntr)}}
+	{% endif %}
 {%- endmacro -%}
 
 {%- for module,endpoints in modules.iteritems() %}
@@ -205,8 +293,7 @@ Template for stats source code generation
 
 			{% for s in v.subnodes -%}
 				{{subnode_json_create(s, cntr_name(module, endpoint, k))}}
-			{%- endfor -%}
-
+			{%- endfor %}
 			return dict0;
 			{% raw -%}
 				}

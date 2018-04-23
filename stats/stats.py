@@ -38,7 +38,7 @@ def range_min_max(group):
   return r[0], 1 + r[-1]
 
 #It comes here for port and queue inputs
-class InputNode(object):
+class RangeNode(object):
 		def __init__(self, name, info):
 				self.name = name
 				self.range_min = 0
@@ -53,7 +53,7 @@ class InputNode(object):
 				if info["range"] != None:
 						min, max = range_min_max(info["range"])
 						self.__set_range(min, max)
-						self.__set_incr(info["index_incr"])
+						self.__set_incr(info.get("index_incr", 1))
 
 		def __set_range(self, min, max):
 				self.range_min = min
@@ -61,9 +61,6 @@ class InputNode(object):
 
 		def __set_incr(self, incr=0):
 				self.incr = incr
-
-def indent(tabs):
-		return " " * (tabs * 4)
 
 #Comes here for deffirent sub nodes inside q_in but not for q_in
 class EntrySubNode(object):
@@ -78,6 +75,7 @@ class EntrySubNode(object):
 				self.rn_class = None
 				self.rn_inst = None
 				self.width = None
+				self.reg_inst = None
 				self.poll_interval = 0
 				self.clear_on_read = False
 				self.__process_entry_subnode(e, input)
@@ -85,15 +83,17 @@ class EntrySubNode(object):
 
 		def __process_entry_subnode(self, e, input):
 				if input:
-						for i in input:
-								if e[i] == None or self.input_map.get(i, None) != None:
-										sys.exit(1)
-								self.input_map[i] = InputNode(i, e[i])
+					for i in input:
+						if e[i] == None or self.input_map.get(i, None) != None:
+							sys.exit(1)
+						self.input_map[i] = RangeNode(i, e[i])
+
 				if e["reg"] is None or not bool(e["fields"]):
 						sys.exit(1)
 				self.reg = e["reg"]
 				self.fields = e["fields"]
-				self.offset = e["offset"]
+				self.reg_inst = e.get("reg_inst", None)
+				self.offset = e.get("offset", None)
 				self.poll_interval = e.get("poll_interval", 0)
 				self.clear_on_read = e.get("clear_on_read", False)
 				ring = e.get("ring", None)
@@ -105,6 +105,7 @@ class EntrySubNode(object):
 						self.an_path = anode.get("root", None)
 						self.an = anode.get("an", None)
 						self.an_inst = anode.get("inst", None)
+				self.__process_fields()
 
 		def get_fields(self):
 				return self.fields
@@ -125,14 +126,78 @@ class EntrySubNode(object):
 			return len(self.fields)
 
 		def get_num_cntrs(self):
-				num_cnt = 1
-				num_fields = self.get_num_fields()
+				return self.num_cntrs
+
+		def __process_fields(self):
+				csr_metadata = csr_defs.get_csr_metadata(self.reg, self.rn_class,
+								self.rn_inst, self.an_path, self.an, self.an_inst)
+				#print csr_metadata
+				an_base_addr = csr_metadata.get_an_base_addr()
+				csr_entity = csr_metadata.get_csr_data()
+				print "csr_entity: {}".format(csr_entity)
+				csr_flds = csr_entity.fld_lst
+				fld_objs = None
+				idx_offset =0
+				self.csr_type = csr_entity.type
+				self.csr_width = csr_entity.width
+				if type(self.fields) == list:
+					if csr_entity.type != "CSR_TYPE::TBL":
+						print ("If input is list of heterogenious field groups," +
+								"CSR type should be table!")
+						sys.exit(1)
+					self.csr_type = "CSR_TYPE::TBL_HETERO"
+					fld_objs = collections.OrderedDict()
+					for field in self.fields:
+						#print "field: {}".format(field)
+						fobj = collections.OrderedDict()
+						for csr_fld in csr_flds:
+							for k,v in field["field_map"].iteritems():
+								#print "index: {} fields: {}".format(k, v)
+								if csr_fld.fld_name == v:
+									fld = dict()
+									fld["csr_fld_name"] = csr_fld.fld_name
+									fld["csr_fld_width"] = csr_fld.width
+									fld["cntr_idx_offset"] = idx_offset
+									fobj[k] = fld
+									idx_offset +=1
+						fld_objs[field["index"]] = fobj
+					print "fld_objs: {}".format(fld_objs)
+
+				else:
+					fld_objs = collections.OrderedDict()
+					print "csr_flds: {}".format(csr_flds)
+					print "self.fields: {}".format(self.fields)
+					for csr_fld in csr_flds:
+						for k,v in self.fields.iteritems():
+							if csr_fld.fld_name == v:
+								fld = dict()
+								fld["csr_fld_name"] = csr_fld.fld_name
+								fld["csr_fld_width"] = csr_fld.width
+								fld["cntr_idx_offset"] = idx_offset
+								fld_objs[k] = fld
+								idx_offset +=1
+
+				if csr_entity.type == "CSR_TYPE::REG_LST":
+					min, max = range_min_max(self.reg_inst["range"])
+					reg_inst = dict()
+					reg_inst["range_min"] = min
+					reg_inst["range_max"] = max
+					reg_inst["name"] = self.reg_inst["name"]
+					self.reg_inst = reg_inst
+					self.num_cntrs = idx_offset*(max-min)
+				else:
+					self.num_cntrs = idx_offset
+
+				self.fld_objs = fld_objs
+				self.num_fields = idx_offset
+				print "num_fields: {}, num_cntrs: {}, fld_objs: {}".format(self.num_fields, self.num_cntrs, self.fld_objs)
+				print "input_map: {}".format(self.input_map)
 				for k,v in self.input_map.iteritems():
-						rmin = v.range_min
-						rmax = v.range_max
-						print k, rmin, rmax, num_fields
-						num_cnt *= (rmax - rmin)
-				return num_cnt * num_fields
+					rmin = v.range_min
+					rmax = v.range_max
+					print k, rmin, rmax, self.num_cntrs
+					self.num_cntrs *= (rmax - rmin)
+				print "input_map: {} self.num_cntrs: {}".format(self.input_map, self.num_cntrs)
 
 		def get_gen_objs(self):
 				csr_metadata = csr_defs.get_csr_metadata(self.reg, self.rn_class,
@@ -145,17 +210,31 @@ class EntrySubNode(object):
 				subnode["csr"] = self.reg
 				subnode["base_addr"] = hex(an_base_addr)
 				subnode["csr_width"] = (csr_entity.width+63)/64
-				subnode["csr_type"] = csr_entity.type
-				fields = collections.OrderedDict()
+				"""
 				csr_flds = csr_entity.fld_lst
-				for csr_fld in csr_flds:
-					for k,v in self.fields.iteritems():
-						if csr_fld.fld_name == v:
-							fields[k] = (csr_fld.fld_name, csr_fld.width)
-				subnode["fields"] = fields
+				fields = None
+				if type(self.fields) == list:
+					fields = list()
+					for field in self.fields:
+						fobj = collections.OrderedDict()
+						for csr_fld in csr_flds:
+							for k,v in field.iteritems():
+								if csr_fld.fld_name == v:
+									fobj[k] = (csr_fld.fld_name, csr_fld.width)
+						fields.append((field["index"], fobj))
+				else:
+					fields = collections.OrderedDict()
+					for csr_fld in csr_flds:
+						for k,v in self.fields.iteritems():
+							if csr_fld.fld_name == v:
+								fields[k] = (csr_fld.fld_name, csr_fld.width)
+				"""
+				subnode["fields"] = self.fld_objs
+				subnode["num_fields"] = self.num_fields
 				subnode["csr_offset"] = self.offset
 				subnode["input"] = self.input_map
-
+				subnode["csr_type"] = self.csr_type
+				subnode["reg_inst"] = self.reg_inst
 				print "CSR: {}".format(csr_entity)
 				return subnode
 
@@ -180,7 +259,7 @@ class EntryNode(object):
 
 				for i in self.subnodes:
 						subnode = i.get_gen_objs()
-						subnode["cntr_offset"] = num_cntrs
+						subnode["cntr_base"] = num_cntrs
 						subnodes.append(subnode)
 						num_cntrs += i.get_num_cntrs()
 						if subnode["csr_width"] > rbuf_size:
