@@ -122,14 +122,6 @@ void process_cmd(CsrSh& s, const char* buf) {
 
 }
 
-static struct option long_opts[] = {
-    { "help", no_argument, NULL, 'h'},
-    { "dpc_host", optional_argument, NULL, 'S'},
-    { "dpc_port", optional_argument, NULL, 'p'},
-    {NULL, 0, NULL, 0},
-
-
-};
 
 int main(int argc, char** argv)
 {
@@ -139,7 +131,14 @@ int main(int argc, char** argv)
     std::string hostname{"localhost"};
     uint16_t port_num{DPC_PORT};
 
-    while ((opt_char = getopt_long(argc, argv, "hS::p::", long_opts, NULL)) != -1) {
+    struct option long_opts[] = {
+        { "help", no_argument, nullptr, 'h'},
+        { "dpc_host", optional_argument, nullptr, 'S'},
+        { "dpc_port", optional_argument, nullptr, 'p'},
+        {nullptr, 0, nullptr, 0},
+    };
+
+    while ((opt_char = getopt_long(argc, argv, "hS:p:", long_opts, NULL)) != -1) {
         switch(opt_char) {
             case 'h':
                 help();
