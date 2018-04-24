@@ -35,11 +35,11 @@ libcsr:
 
 	cd csr-rt && astyle -c gen/csr_gen.cpp &&  make
 
-cfg:build
+cfg: cfg_pull
 	csr-slurp -i csr/csr_cfg -o csr-rt/gen
 
 
-cfg_pull:build
+cfg_pull: build
 	#$(SUDO) $(INSTALL) install nfs-common
 	cd csr; csr-get -i $(INDIR)
 
@@ -79,13 +79,14 @@ SDK_INSTALL_DIR ?= $(SDKDIR)
 FUNOSDIR ?= ../../FunOS
 
 # Directory where we install the working version of the ConfigGen
-FUNSDK_INSTALL_DIR = $(SDK_INSTALL_DIR)/FunSDK/config/
+FUNSDK_INSTALL_DIR = $(SDK_INSTALL_DIR)/FunSDK/config/csr
 
 
-SRC = csr
+SRC = csr-rt/gen/csr_metadata.json
 
 # install to SDK
 install:
+	csr-slurp -i $(FUNSDK_INSTALL_DIR)/csr_cfg -o csr-rt/gen
 	mkdir -p $(FUNSDK_INSTALL_DIR)
-	rsync -rR $(SRC) $(FUNSDK_INSTALL_DIR)
+	rsync -av $(SRC) $(FUNSDK_INSTALL_DIR)
 

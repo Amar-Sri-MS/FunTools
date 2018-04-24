@@ -10,6 +10,7 @@ import pdb, argparse
 from jinja2 import Environment, FileSystemLoader
 from subprocess import call
 from itertools import chain
+import pprint
 
 import csr.csr_main as csr
 from csr.utils.artifacts import CSRRoot
@@ -65,6 +66,8 @@ class RangeNode(object):
 #Comes here for deffirent sub nodes inside q_in but not for q_in
 class EntrySubNode(object):
 		def __init__(self, e, input):
+				self.csr_defs = csr_metadata()
+				print "*****csr_defs: {}******".format(self.csr_defs)
 				self.input_map = collections.OrderedDict()
 				self.reg = None
 				self.fields = collections.OrderedDict()
@@ -129,19 +132,19 @@ class EntrySubNode(object):
 				return self.num_cntrs
 
 		def __process_fields(self):
-				csr_metadata = csr_defs.get_csr_metadata(self.reg, self.rn_class,
+				csr_def = self.csr_defs.get_csr_def(self.reg, self.rn_class,
 								self.rn_inst, self.an_path, self.an, self.an_inst)
-				#print csr_metadata
-				an_base_addr = csr_metadata.get_an_base_addr()
-				csr_entity = csr_metadata.get_csr_data()
-				print "csr_entity: {}".format(csr_entity)
-				csr_flds = csr_entity.fld_lst
+				an_base_addr = csr_def["an_addr"]
+				#csr_entity = csr_def.get_csr_data()
+				#print "csr_entity: {}".format(csr_entity)
+				csr_flds = csr_def["fld_lst"]
 				fld_objs = None
 				idx_offset =0
-				self.csr_type = csr_entity.type
-				self.csr_width = csr_entity.width
+				#self.csr_type = csr_entity.type
+				self.csr_type = csr_def["csr_type"]
+				self.csr_width = csr_def["csr_width"]
 				if type(self.fields) == list:
-					if csr_entity.type != "CSR_TYPE::TBL":
+					if self.csr_type != "CSR_TYPE::TBL":
 						print ("If input is list of heterogenious field groups," +
 								"CSR type should be table!")
 						sys.exit(1)
@@ -155,8 +158,8 @@ class EntrySubNode(object):
 								#print "index: {} fields: {}".format(k, v)
 								if csr_fld.fld_name == v:
 									fld = dict()
-									fld["csr_fld_name"] = csr_fld.fld_name
-									fld["csr_fld_width"] = csr_fld.width
+									fld["csr_fld_name"] = csr_fld["fld_name"]
+									fld["csr_fld_width"] = csr_fld["fld_width"]
 									fld["cntr_idx_offset"] = idx_offset
 									fobj[k] = fld
 									idx_offset +=1
@@ -171,13 +174,13 @@ class EntrySubNode(object):
 						for k,v in self.fields.iteritems():
 							if csr_fld.fld_name == v:
 								fld = dict()
-								fld["csr_fld_name"] = csr_fld.fld_name
-								fld["csr_fld_width"] = csr_fld.width
+								fld["csr_fld_name"] = csr_fld["fld_name"]
+								fld["csr_fld_width"] = csr_fld["fld_width"]
 								fld["cntr_idx_offset"] = idx_offset
 								fld_objs[k] = fld
 								idx_offset +=1
 
-				if csr_entity.type == "CSR_TYPE::REG_LST":
+				if self.csr_type == "CSR_TYPE::REG_LST":
 					min, max = range_min_max(self.reg_inst["range"])
 					reg_inst = dict()
 					reg_inst["range_min"] = min
@@ -200,42 +203,24 @@ class EntrySubNode(object):
 				print "input_map: {} self.num_cntrs: {}".format(self.input_map, self.num_cntrs)
 
 		def get_gen_objs(self):
-				csr_metadata = csr_defs.get_csr_metadata(self.reg, self.rn_class,
+				csr_def = self.csr_defs.get_csr_def(self.reg, self.rn_class,
 								self.rn_inst, self.an_path, self.an, self.an_inst)
-				#print csr_metadata
-				an_base_addr = csr_metadata.get_an_base_addr()
-				csr_entity = csr_metadata.get_csr_data()
+				print csr_def
+				#an_base_addr = csr_def.get_an_base_addr()
+				an_base_addr = csr_def["an_addr"]
+				#csr_entity = csr_def.get_csr_data()
 
 				subnode = dict()
 				subnode["csr"] = self.reg
 				subnode["base_addr"] = hex(an_base_addr)
-				subnode["csr_width"] = (csr_entity.width+63)/64
-				"""
-				csr_flds = csr_entity.fld_lst
-				fields = None
-				if type(self.fields) == list:
-					fields = list()
-					for field in self.fields:
-						fobj = collections.OrderedDict()
-						for csr_fld in csr_flds:
-							for k,v in field.iteritems():
-								if csr_fld.fld_name == v:
-									fobj[k] = (csr_fld.fld_name, csr_fld.width)
-						fields.append((field["index"], fobj))
-				else:
-					fields = collections.OrderedDict()
-					for csr_fld in csr_flds:
-						for k,v in self.fields.iteritems():
-							if csr_fld.fld_name == v:
-								fields[k] = (csr_fld.fld_name, csr_fld.width)
-				"""
+				subnode["csr_width"] = (csr_def["csr_width"]+63)/64
 				subnode["fields"] = self.fld_objs
 				subnode["num_fields"] = self.num_fields
 				subnode["csr_offset"] = self.offset
 				subnode["input"] = self.input_map
 				subnode["csr_type"] = self.csr_type
 				subnode["reg_inst"] = self.reg_inst
-				print "CSR: {}".format(csr_entity)
+				#print "CSR: {}".format(csr_entity)
 				return subnode
 
 #for q_in it comes here
@@ -403,10 +388,11 @@ class StatsGen(object):
 								required=True, type=str)
 
 				sdk_dir = os.path.join(self.cwd, "../FunSDK")
-				cmd_parser.add_argument("-s", "--sdk-dir", help="SDK root directory",
-								default=sdk_dir, required=False, type=str)
-
-				self.other_args['tmpl_dir'] = os.path.join(self.cwd, "template")
+				csr_metadata_dir =  os.path.join(sdk_dir, "FunSDK/config/csr")
+				cmd_parser.add_argument("-m", "--csr-metadata-dir", help="CSR metadata directory",
+								default=csr_metadata_dir, required=False, type=str)
+				my_path = os.path.dirname(os.path.abspath(__file__))
+				self.other_args['tmpl_dir'] = os.path.join(my_path, "templates")
 
 		def __update_loc(self, loc):
 				if not os.path.isabs(loc):
@@ -416,22 +402,21 @@ class StatsGen(object):
 				return loc
 
 		def run(self):
-				global csr_defs
 				args = self.cmd_parser.parse_args()
 				args.cfg_dir = self.__update_loc(args.cfg_dir)
 				args.out_dir = self.__update_loc(args.out_dir)
-				args.sdk_dir = self.__update_loc(args.sdk_dir)
+				args.csr_metadata_dir = self.__update_loc(args.csr_metadata_dir)
+				tmpl_dir = self.__update_loc(self.other_args['tmpl_dir'])
 
+				print "template: {} csr_metadata_file: {} cfg_dir: {} out_dir: {}".format(tmpl_dir, args.csr_metadata_dir, args.cfg_dir, args.out_dir)
 				cfg = CFG_Reader(args.cfg_dir)
-				sdk_csr_cfg_dir = args.sdk_dir + "/FunSDK/config/"
-				csr_slrp = csr.Slurper(os.getcwd(), sdk_csr_cfg_dir)
-				csr_defs = csr_slrp.get_csr_defs()
+				csr_metadata_file = os.path.join(args.csr_metadata_dir, "csr_metadata.json")
+				csr_metadata().set_metadata(json.load(open(csr_metadata_file)))
 
-				path = os.path.dirname(os.path.abspath(__file__))
-				print os.path.join(path, 'templates')
+				#path = os.path.dirname(os.path.abspath(__file__))
+				#print os.path.join(path, 'templates')
 				ENVIRONMENT = Environment( autoescape=False,
-						loader=FileSystemLoader(os.path.join(path, 'templates')),
-				trim_blocks=False)
+						loader=FileSystemLoader(tmpl_dir), trim_blocks=False)
 				template = ENVIRONMENT.get_template("source.j2")
 
 				#Generate the funos source code
@@ -453,7 +438,49 @@ class StatsGen(object):
 						cmd = "indent -br -npsl -l120 -i4 -nut " + os.path.join(args.out_dir, file)
 						os.system(cmd)
 
-csr_def = None
+def singleton(cls):
+    instances = {}
+    def getinstance():
+        if cls not in instances:
+            instances[cls] = cls()
+        return instances[cls]
+    return getinstance
+
+@singleton
+class csr_metadata:
+	def set_metadata(self, metadata):
+		self.metadata = metadata
+
+	def csr_equal(self, x, rn_class, rn_inst, an_path, an, an_inst):
+		if rn_class:
+			if x["ring_name"] != rn_class:
+				return false
+		if rn_inst:
+			if x["ring_inst"] != rn_inst:
+				return false
+		if an:
+			if x["an"] != an:
+				return false
+		if an_inst:
+			if x["an_inst"] != an_inst:
+				return false
+
+		return true
+
+	def get_csr_def(self, csr_name, rn_class, rn_inst, an_path, an, an_inst):
+		csr_defs_lst = self.metadata.get(csr_name, [])
+		print "csr: {} csr_defs_lst: {}".format(csr_name, csr_defs_lst)
+		if not csr_defs_lst:
+			return None
+		else:
+			csr_defs_lst[:] = [x for x in csr_defs_lst if not csr_equal(x, rn_class, rn_inst, an_path, an, an_inst)]
+
+		if length(csr_defs_lst) > 1:
+			print("There are more than one instance register defintion. Be more specific!!!")
+			pprint.pprint(csr_defs_lst)
+			sys.exit(1)
+		return csr_defs_lst[0]
+
 if __name__ == "__main__":
 		stats_gen = StatsGen(os.getcwd())
 		stats_gen.run()

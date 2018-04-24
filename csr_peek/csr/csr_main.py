@@ -8,6 +8,7 @@
 # Top level main python package
 
 import argparse
+import json
 import os
 from module_path import module_locator
 from csr.utils.yml import YML_Reader, CSR_YML_Reader
@@ -85,12 +86,17 @@ class Slurper(object):
 		o_file = os.path.join(args.gen_cc, 'csr_gen.cpp')
 		tmpl.write_cfg(o_file, csr_root)
 
+
+		o_file = os.path.join(args.gen_cc, 'csr_metadata.json')
+		with open(o_file, "w") as fp:
+			fp.write(json.dumps(csr_root.get_csr_metadata(), indent=4))
+
 		# Next, get the ring structure
 		#p = YML_Reader()
 		#yml_stream = p.read_file(ring_file)
 		#w = Walker(yml_stream)
 		#print "{}".format(w)
-
+	"""
 	def get_csr_defs(self):
 		args = self.cmd_parser.parse_args()
 		self.csr_dir = self.__update_loc(self.csr_dir)
@@ -111,7 +117,7 @@ class Slurper(object):
 		csr_root = CSRRoot(amap_file, schema.get(), filter_def, csr_def)
 
 		return csr_root
-
+	"""
 
 	def __str__(self):
 		r_str = "{}".format(self.schema)
