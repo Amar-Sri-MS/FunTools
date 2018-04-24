@@ -1,3 +1,4 @@
-These are the frontends that utilize this library to do something.
+These are the frontends that utilize the csr library to do something.
 
---csrsh utilizes the csr librarires & dpc shell libraries to pass information back and forth with the dpcserver running on FunOS
+--csrsh is a debug shell that utilizes the csr libraries for meta information, and communicates with the proxy (tcp_proxy) to set/get CSR register values in FunOS.
+

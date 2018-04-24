@@ -14,6 +14,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <getopt.h>
+#include <errno.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/un.h>
@@ -276,7 +277,7 @@ static void _listen_sock_init(struct dpcsock *sock)
 	struct sockaddr_un local_unix = { 0 };
 	struct sockaddr *local;
 	socklen_t s;
-	int optval = 1;
+	int optval = 1, r;
 
 	/* make sure it's sane */
 	assert((sock->mode == SOCKMODE_UNIX) || (sock->mode == SOCKMODE_IP));
@@ -298,11 +299,15 @@ static void _listen_sock_init(struct dpcsock *sock)
 
 		snprintf(local_unix.sun_path,
 			 sizeof(local_unix.sun_path), "%s", sock->socket_name);
-		unlink(local_unix.sun_path);
+		if ((r = unlink(local_unix.sun_path))
+		    && (errno != ENOENT)) {
+			printf("failed to remove existing socket file: %s\n",
+			       strerror(errno));
+			exit(1);
+		}
 
 		local = (struct sockaddr *) &local_unix;
 		s = sizeof(struct sockaddr_un);
-
 	} else {
 		/* create a server socket */
 		sock->listen_fd = socket(AF_INET, SOCK_STREAM, 0);
@@ -452,8 +457,14 @@ static char *_read_a_line(struct dpcsock *sock, ssize_t *nbytes)
 
 	} while(buf[pos-1] != '\0');
 
-	assert(pos >= 1);
-	*nbytes = (ssize_t) pos - 1;
+	if (pos >= 1) {
+		*nbytes = (ssize_t) pos - 1;
+	} else {
+		/* sometimes we get truncated lines? */
+		*nbytes = 0;
+		buf[0] = '\0;';
+	}
+
 	return buf;
 }
 
@@ -489,7 +500,7 @@ do_retry:
 
 	r = base64_decode(binbuf, *nbytes, buf);
 	if (r < 0) {
-		printf("bad decode: %s\n", buf);
+		printf("$ %s\n", buf);
 		free(buf);
 
 		if (retry) {
@@ -677,7 +688,7 @@ void dpcsh_unregister_pretty_printer(uint64_t tid, void *context)
 	}
 }
 
-static CALLER_TO_RELEASE struct fun_json *apply_pretty_printer(struct fun_json *whole) 
+static CALLER_TO_RELEASE struct fun_json *apply_pretty_printer(struct fun_json *whole)
 {
 	if (!tid_to_pretty_printer) {
 		goto nope;
@@ -776,7 +787,7 @@ static void _do_recv_cmd(struct dpcsock *funos_sock,
 	} else {
 		// printf("New style output, tid=%d\n", (int)tid);
 		fun_json_retain(raw_output);
-		raw_output = apply_pretty_printer(output); 
+		raw_output = apply_pretty_printer(output);
 		fun_json_release(output);
 
 		// Now we strip the tid to avoid confusing clients
@@ -792,6 +803,8 @@ static void _do_recv_cmd(struct dpcsock *funos_sock,
 		fun_json_printf(OUTPUT_COLORIZE "output => %s" NORMAL_COLORIZE "\n",
 				raw_output);
 	} else {
+		fun_json_printf(OUTPUT_COLORIZE "output => %s" NORMAL_COLORIZE "\n",
+				raw_output);
 		char *pp = fun_json_to_text(raw_output);
 		if (pp) {
 			write(cmd_sock->fd, pp, strlen(pp));
@@ -1009,7 +1022,8 @@ static struct option longopts[] = {
 	{ "unix_sock",     optional_argument, NULL, 'u' },
 	{ "http_proxy",    optional_argument, NULL, 'H' },
 	{ "tcp_proxy",     optional_argument, NULL, 'T' },
-	{ "text_proxy",    optional_argument, NULL, 't' },
+	{ "text_proxy",    optional_argument, NULL, 'T' },
+	{ "unix_proxy",    optional_argument, NULL, 't' },
 	{ "nocli",         no_argument,       NULL, 'n' },
 	{ "oneshot",       no_argument,       NULL, 'S' },
 	{ "manual_base64", no_argument,       NULL, 'N' },
@@ -1031,7 +1045,8 @@ static void usage(const char *argv0)
 	printf("       --unix_sock[=sockname]  connect as a client port over unix sockets\n");
 	printf("       --http_proxy[=port]     listen as an http proxy\n");
 	printf("       --tcp_proxy[=port]      listen as a tcp proxy\n");
-	printf("       --text_proxy[=port]     listen as a tcp proxy\n");
+	printf("       --text_proxy[=port]     same as \"--tcp_proxy\"\n");
+	printf("       --unix_proxy[=port]     listen as a unix proxy\n");
 	printf("       --nocli                 issue request from command-line arguments and terminate\n");
 	printf("       --oneshot               don't reconnect after command side disconnect\n");
 	printf("       --manual_base64         just translate base64 back and forward\n");
@@ -1078,9 +1093,9 @@ int main(int argc, char *argv[])
 
 	/* default connection to FunOS posix simulator dpcsock */
 	memset(&funos_sock, 0, sizeof(funos_sock));
-	funos_sock.mode = SOCKMODE_UNIX;
+	funos_sock.mode = SOCKMODE_IP;
 	funos_sock.server = false;
-	funos_sock.socket_name = SOCK_NAME;
+	funos_sock.port_num = DPC_PORT;
 	funos_sock.fd = -1;
 	funos_sock.retries = UINT32_MAX;
 
@@ -1111,8 +1126,6 @@ int main(int argc, char *argv[])
 			funos_sock.server = false;
 			funos_sock.port_num = opt_portnum(optarg,
 							  DPC_B64_PORT);
-			mode = MODE_INTERACTIVE;
-
 			break;
 
 		case 'B':  /* base64 server */
@@ -1123,8 +1136,6 @@ int main(int argc, char *argv[])
 			funos_sock.server = true;
 			funos_sock.port_num = opt_portnum(optarg,
 							  DPC_B64SRV_PORT);
-			mode = MODE_INTERACTIVE;
-
 			break;
 		case 'D':  /* base64 device (pty/tty) */
 
@@ -1133,8 +1144,6 @@ int main(int argc, char *argv[])
 			funos_sock.mode = SOCKMODE_DEV;
 			funos_sock.socket_name = opt_sockname(optarg,
 							      "/unknown");
-			mode = MODE_INTERACTIVE;
-
 			break;
 		case 'i':  /* inet client */
 

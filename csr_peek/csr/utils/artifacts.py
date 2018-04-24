@@ -13,7 +13,6 @@ import jinja2
 import pdb
 import re
 
-from csr.utils.lex import Lexer, LexTok
 
 class TmplMgr(object):
     def __init__(self, tpl_path):
@@ -33,8 +32,9 @@ class TmplMgr(object):
 
 # For every top level ring, one RingNode object
 class RingNode(object):
-    def __init__(self, name):
+    def __init__(self, name, is_dummy=False):
         self.name = name
+        self.is_dummy = is_dummy
         self.instances = collections.OrderedDict()
 
     def add_instance(self, inst_num, addr):
@@ -53,6 +53,10 @@ class RingNode(object):
     def add_csr(self, inst_num, csr_name, csr_addr, csr_range=None):
         assert inst_num in self.instances
         self.instances[inst_num].add_csr(csr_name, csr_addr, csr_range)
+    def add_64_w(self, inst_num, an_name, num_64_w):
+        assert inst_num in self.instances
+        if not self.is_dummy:
+            self.instances[inst_num].add_64_w(an_name, num_64_w)
 
     def get_instances(self):
         return self.instances
@@ -80,7 +84,7 @@ class CSRNode(object):
     def __str__(self):
         r_str = ""
         r_str += "{} {}".\
-                format(hex(self.addr), hex(self.addr_range))
+            format(hex(self.addr), hex(self.addr_range))
         return r_str
     __repr__ = __str__
 
@@ -93,9 +97,6 @@ class ANode(object):
         self.csrs = collections.OrderedDict()
 
     def add_csr(self, csr_name, addr, addr_range=None):
-        csr_arr = re.split(r'_', csr_name)
-        if csr_arr[-1].isdigit():
-            csr_name = '_'.join(elem for elem in csr_arr[:-1])
         csr_lst = self.csrs.get(csr_name, None)
         addr -= self.start_addr
         p = CSRNode(addr, addr_range)
@@ -119,18 +120,20 @@ class ANode(object):
         return self.skip_addr
 
     def get_num_csr(self, csr_name):
-        csr_arr = re.split(r'_', csr_name)
-        if csr_arr[-1].isdigit():
-            csr_name = '_'.join(elem for elem in csr_arr[:-1])
+        #csr_arr = csr_name.split('_')
+        #if csr_arr[-1].isdigit():
+        #    csr_name = '_'.join(elem for elem in csr_arr[:-1])
         p = self.csrs.get(csr_name, None)
         if p == None:
-            print "WARNING: ADDR_FOR:{} not found in {}".format(csr_name, self.path)
+            for k, v in self.csrs.iteritems():
+                print "{}:{}".format(k, v)
+            print "WARNING: NINSTANCE_NOT_FOUND_FOR:{} not found in {}".format(csr_name, self.path)
             return 1
         return p[1]
     def get_csr_addr(self, csr_name):
-        csr_arr = re.split(r'_', csr_name)
-        if csr_arr[-1].isdigit():
-            csr_name = '_'.join(elem for elem in csr_arr[:-1])
+        #csr_arr = csr_name.split('_')
+        #if csr_arr[-1].isdigit():
+        #    csr_name = '_'.join(elem for elem in csr_arr[:-1])
 
         p = self.csrs.get(csr_name, None)
         if p == None:
@@ -138,7 +141,6 @@ class ANode(object):
             return 0
 
         return p[0].addr
-
 
     def get_path_str(self):
         path_arr = self.path.split('.')
@@ -159,6 +161,7 @@ class ANode(object):
     __repr__ = __str__
 
 class RingProps(object):
+    Total64w = 0
     def __init__(self, r_name, i_num, addr):
         self.r_name = r_name
         self.i_num = i_num
@@ -168,6 +171,7 @@ class RingProps(object):
         self.anodes = collections.OrderedDict()
         # From an aname to csr signature
         self.csr_map = collections.OrderedDict()
+
     def get_addr(self):
         return self.addr
 
@@ -229,10 +233,34 @@ class RingProps(object):
         print "AN_CREATE:{}:{}".format(an_name, anode)
         self.anodes[an_name] = an_lst
         self.last_anode = anode
+    def add_64_w(self, an_node, num_64_w):
+        r_attr = self.root_paths.get(an_node, None)
+        an_arr = an_node.split('.')
+        prefix_path = None
+        if len(an_arr) > 1:
+            prefix_path = '.'.join(elem for elem in an_arr[:-1])
+            an_name = an_arr[-1]
+        else:
+            an_name = an_node
+        if r_attr != None:
+            RingProps.Total64w = RingProps.Total64w + (r_attr[0] * num_64_w)
+        elif prefix_path:
+            r_attr = self.root_paths.get(prefix_path, None)
+            if r_attr != None:
+                RingProps.Total64w = RingProps.Total64w + (r_attr[0] * num_64_w)
+            else:
+                RingProps.Total64w = RingProps.Total64w + num_64_w
+        else:
+            RingProps.Total64w = RingProps.Total64w + num_64_w
+
+        #print "0x{:02X}".format(RingProps.Total64w)
+
 
     def add_csr(self, csr_name, csr_addr, addr_range=None):
         assert self.last_anode != None, "No address node to add CSR to"
         csr_addr -= self.addr
+        # Get width of this csr
+
         self.last_anode.add_csr(csr_name, csr_addr, addr_range)
 
     def __str__(self):
@@ -247,12 +275,17 @@ class RingProps(object):
                 print "AN: {}".format(an_name)
                 an_csrs = self.csr_map.get(an_name, None)
                 if an_csrs != None:
+                    if len(an_csrs.get().keys()) == 0:
+                        continue
                     r_str += "{{\n // BEGIN {} \n".format(an_name)
                     r_str += "auto {}_{} = {}_rng[{}].add_an({{{}}}, 0x{:01X}, {}, 0x{:01X});\n".\
                         format(an_name, idx, self.r_name, self.i_num,
                                 elem.get_path_str(), elem.start_addr, elem.n_inst, elem.skip_addr);
+                    colls = {}
                     for csr_name, csr_val in an_csrs.get().iteritems():
-                        r_str += "fld_map_t {} {{\n".format(csr_name)
+                        if csr_val.name in colls:
+                            continue
+                        r_str += "fld_map_t {} {{\n".format(csr_val.name)
                         off = 0
                         for fldd in csr_val.fld_lst[:-1]:
                             r_str += "CREATE_ENTRY(\"{}\", {}, {}),\n".\
@@ -263,13 +296,14 @@ class RingProps(object):
                                 format(fldd.fld_name, off, fldd.width)
 
                         r_str += "};"
-                        r_str += "auto {}_prop = csr_prop_t(\n".format(csr_name)
-                        r_str += "std::make_shared<csr_s>({}),\n".format(csr_name)
+                        r_str += "auto {}_prop = csr_prop_t(\n".format(csr_val.name)
+                        r_str += "std::make_shared<csr_s>({}),\n".format(csr_val.name)
                         r_str += "0x{:01X},\n".format(elem.get_csr_addr(csr_name))
                         r_str += "{},\n".format(csr_val.type)
                         r_str += "{});\n".format(elem.get_num_csr(csr_name))
                         r_str += "add_csr({}_{}, \"{}\", {}_prop);\n".\
-                                 format(an_name, idx, csr_name, csr_name)
+                                 format(an_name, idx, csr_val.name, csr_val.name)
+                        colls[csr_val.name] = True
 
                     r_str += " // END {} \n}}\n".format(an_name)
         return r_str
@@ -353,7 +387,7 @@ class CSRRoot(object):
     CSR_FLAG =4
     MAX_FLAGS=5
 
-    def __init__(self, amap_file, csr_map, filter_yml, csr_def):
+    def __init__(self, amap_file, csr_map, filter_yml):
         self.flags = [False]*CSRRoot.MAX_FLAGS
         self.r_util = RingUtil()
         curr_ring = None
@@ -365,23 +399,15 @@ class CSRRoot(object):
         #print self.csr_map
         print "Print csr_map end"
         self.ring_map = collections.OrderedDict()
-        def_map = self.__create_map(csr_def)
-        lexer = Lexer(def_map)
-        lexer.build()
-        self.__read_update(amap_file, filter_yml, lexer)
+        self.start_addr = 0xFFFFFFFFFF
+        self.end_addr = 0
+        self.__read_update(amap_file, filter_yml)
         self.ring_exclude = collections.OrderedDict()
 
     def get_map(self):
         return self.ring_map
-    def __create_map(self, csr_def_yml):
-        m_coll = collections.OrderedDict()
-        for key, val in csr_def_yml['ATTR'].iteritems():
-            m_coll[key] = LexTok(val)
-        return m_coll
 
-
-
-    def __read_update(self, m_file, filter_yml, lexer):
+    def __read_update(self, m_file, filter_yml):
         f = open(m_file, "r")
         for line in f:
             line = line.lstrip()
@@ -395,8 +421,12 @@ class CSRRoot(object):
                 continue
             if self.__process_anode(line):
                 do_process = self.__filter(line, filter_yml)
+                self.an_added = False
                 continue
-            self.__process_csr(line, do_process, filter_yml, lexer)
+            self.__process_csr(line, do_process, filter_yml)
+
+        print "ADDR_RANGE: 0x{:02X}->0x{:02X}".format(self.start_addr, self.end_addr)
+        print "Total64w: 0x{:02X}".format(RingProps.Total64w)
 
     def __ignore(self, line):
         for rep in CSRRoot.IGNORE:
@@ -415,16 +445,17 @@ class CSRRoot(object):
         tree = coll[1].split('.')
         anode = tree[-1]
         process = False
-        exclude_anodes = filter_yml.get('exclude_an', [])
-        print "{}:{}".format(anode,exclude_anodes)
 
-        if self.__match(exclude_anodes, anode):
-            print "ANODE_REJECT: {}".format(line)
-            return False
         include_anodes = filter_yml.get('include_an', [])
         if self.__match(include_anodes, anode):
-            print "ANODE_ACCEPT: {}".format(line)
+            #print "ANODE_ACCEPT: {}".format(line)
             return True
+
+        exclude_anodes = filter_yml.get('exclude_an', [])
+        if self.__match(exclude_anodes, anode):
+            #print "ANODE_REJECT: {}".format(line)
+            return False
+
         # The first element is always the ring
         interior = []
         if len(tree) > 2:
@@ -432,47 +463,25 @@ class CSRRoot(object):
         exclude_interior = filter_yml.get('exclude_interior', [])
         include_interior = filter_yml.get('include_interior', [])
         for s_elem in reversed(interior):
-            if self.__match(exclude_interior, s_elem):
-                print "INTERIOR_REJECT: {}".format(line)
-                return False
             if self.__match(include_interior, s_elem):
-                print "INTERIOR_ACCEPT: {}".format(line)
+                #print "INTERIOR_ACCEPT: {}".format(line)
                 return True
-
-        exclude_ring = filter_yml.get('exclude_ring', [])
-        if self.__match(exclude_ring, tree[0]):
-            print "RING_REJECT: {}".format(line)
-            return False
+            if self.__match(exclude_interior, s_elem):
+                #print "INTERIOR_REJECT: {}".format(line)
+                return False
 
         include_ring = filter_yml.get('include_ring', [])
         if self.__match(include_ring, tree[0]):
-            print "RING_ACCEPT: {}".format(line)
+            #print "RING_ACCEPT: {}".format(line)
             return True
 
-        print "DEFAULT_REJECT: {}".format(line)
-        return False
-
-    def __filter_csr(self, csr_name, process, filter_yml, csr_prop, lexer):
-        exclude_csr = filter_yml.get('exclude_csr', [])
-        if self.__match(exclude_csr, csr_name):
+        exclude_ring = filter_yml.get('exclude_ring', [])
+        if self.__match(exclude_ring, tree[0]):
+            #print "RING_REJECT: {}".format(line)
             return False
 
-        include_csr = filter_yml.get('include_csr', [])
-        if self.__match(include_csr, csr_name):
-            return True
-
-        # Next attribute
-        include_attr = filter_yml.get('include_attr', [])
-        rval = False
-        for elem in include_attr:
-            v = lexer.eval(elem)
-            print "elem: {} v:{} attr:{}".format(elem, v, csr_prop.attr)
-            if v ==  csr_prop.attr:
-                rval = True
-                break
-
-
-        return (process and rval)
+        #print "DEFAULT_REJECT: {}".format(line)
+        return False
 
     def __process_ring(self, line):
 
@@ -495,8 +504,8 @@ class CSRRoot(object):
         self.__add_ring_instance(ring_class, ring_inst, self.__hexlify(l_arr[1]))
         print "RING_ACCEPT: {}".format(line)
         return True
-    def __add_ring_instance(self, ring_class, ring_inst, addr):
-        ring_node = self.ring_map.get(ring_class, RingNode(ring_class))
+    def __add_ring_instance(self, ring_class, ring_inst, addr, is_dummy=False):
+        ring_node = self.ring_map.get(ring_class, RingNode(ring_class, is_dummy))
         ring_node.add_instance(ring_inst, addr)
         self.ring_map[ring_class] = ring_node
         return ring_node
@@ -517,17 +526,33 @@ class CSRRoot(object):
         rn = self.ring_map.get(ring_class, None)
         if rn == None:
            print "Adding dummy ring class: {}".format(ring_class)
-           rn = self.__add_ring_instance(ring_class, ring_inst, 0)
+           rn = self.__add_ring_instance(ring_class, ring_inst, 0, True)
 
+        st_addr = self.__hexlify(coll[3])
+        skip_val = self.__hexlify(coll[4])
+        num_inst = int(coll[2])
+        end_addr = st_addr + (num_inst - 1)*skip_val
+        if st_addr < self.start_addr and not rn.is_dummy:
+            #print "NEW START: 0x{:02X}->0x{:02X}".format(self.start_addr, st_addr)
+            self.start_addr = st_addr
+
+        if end_addr > self.end_addr and not rn.is_dummy:
+            #print "NEW END: 0x{:02X}->0x{:02X}".format(self.end_addr, end_addr)
+            self.end_addr = end_addr
         self.flags[CSRRoot.IN_ANODE] = False
-        print ring_inst
-        print "K.{}".format(k)
-        print coll[2]
-        print coll[3]
-        print coll[4]
-        rn.add_an_path(ring_inst, k, int(coll[2]),
-                self.__hexlify(coll[3]), self.__hexlify(coll[4]))
+        rn.add_an_path(ring_inst, k, num_inst,
+                st_addr, skip_val)
         return True
+    def __filter_csr(self, csr_name, do_process, filter_yml):
+        include_csr = filter_yml.get('include_csr', [])
+        if self.__match(include_csr, csr_name):
+            #print "CSR_ACCEPT: {}".format(csr_name)
+            return True
+        exclude_csr = filter_yml.get('exclude_csr', [])
+        if self.__match(exclude_csr, csr_name):
+            #print "CSR_REJECT: {}".format(csr_name)
+            return False
+        return do_process
 
     def __process_anode(self, line):
         if not re.search('^START_ANODE', line):
@@ -541,23 +566,34 @@ class CSRRoot(object):
         rn = self.ring_map.get(ring_class, None)
         if rn == None:
            print "Adding dummy ring class: {}".format(ring_class)
-           rn = self.__add_ring_instance(ring_class, ring_inst, 0)
+           rn = self.__add_ring_instance(ring_class, ring_inst, 0, True)
 
         assert rn != None, "Unknown ring class"
         self.flags[CSRRoot.IN_ANODE] = True
-        self.curr_an_name = an_name
         self.curr_rn = rn
         self.curr_rc = ring_class
         self.curr_ri = ring_inst
         self.curr_path = k
-        self.curr_addr = self.__hexlify(coll[2])
-        print "****ADD_AN: {}:{}".format(ring_inst, k)
-        #TODO:
-        # Remove this to the filter area, post filtering
-        rn.add_an(ring_inst, k, self.curr_addr, self.csr_map)
+        st_addr = self.__hexlify(coll[2])
+        num_64_w = self.__hexlify(coll[3])
+        end_addr = st_addr + num_64_w
+
+        self.curr_addr = st_addr
+
+
+        if st_addr < self.start_addr and not rn.is_dummy:
+            #print "NEW START: 0x{:02X}->0x{:02X}".format(self.start_addr, st_addr)
+            self.start_addr = st_addr
+        if end_addr > self.end_addr and not rn.is_dummy:
+            #print "NEW END: 0x{:02X}->0x{:02X}".format(self.end_addr, end_addr)
+            self.end_addr = end_addr
+
+        #print "ADD_AN: {}:{}:0x{:02X}".format(ring_inst, k, addr)
+        # Add number of 64w being added
+        rn.add_64_w(ring_inst, k, num_64_w)
         return True
 
-    def __process_csr(self, line, do_process, filter_yml, lexer):
+    def __process_csr(self, line, do_process, filter_yml):
         if not self.flags[CSRRoot.IN_ANODE]:
             return
         if not line:
@@ -569,41 +605,38 @@ class CSRRoot(object):
         ex_coll = coll[1].split()
         if len(ex_coll) > 2:
             return
-
-        addr = 0
-        addr_range = 0
-        an_yml = self.csr_map.get(self.curr_an_name, None)
-        assert an_yml != None, "Could not find yml file for {}".format(self.curr_an_name)
-        csr_name =  coll[0].strip()
-        csr_prop = an_yml.get().get(csr_name, None)
-        if csr_prop == None:
-            "WARNING: CSR Properties not found for {} in AMAP".format(csr_name)
-            return
-
+        csr_name = coll[0].strip()
         do_process = self.__filter_csr(csr_name,
                 do_process,
-                filter_yml,
-                csr_prop,
-                lexer)
+                filter_yml)
+
         if not do_process:
             print "CSR_REJECT: {} CSR PROP:{}".format(line, csr_prop)
+            #print "CSR_REJECT: {}".format(line)
             return
-
-        print "CSR_ACCEPT: {}".format(line)
+        # Accept CSRs by name, except for the attribute
+        # specific stuff that will be removed elsewhere
+        if not self.an_added:
+            self.curr_rn.add_an(self.curr_ri, \
+                    self.curr_path, self.curr_addr, self.csr_map)
+            self.an_added = True
+        #print "CSR_ACCEPT: {}".format(line)
         if len(ex_coll) > 1:
-            addr = self.__hexlify(ex_coll[0].strip())
-            addr_range = self.__hexlify(ex_coll[1].strip())
+            self.curr_rn.add_csr(self.curr_ri,
+                    csr_name,
+                    self.__hexlify(ex_coll[0].strip()),
+                    self.__hexlify(ex_coll[1].strip()))
         else:
-            addr = self.__hexlify(coll[1].strip())
-        self.curr_rn.add_csr(self.curr_ri, csr_name, addr, addr_range)
-        self.__add_csr_metadata_inst(csr_name, addr, addr_range, csr_prop)
+            self.curr_rn.add_csr(self.curr_ri,
+                    csr_name,
+                    self.__hexlify(coll[1].strip()))
 
     def __clean_name(self, m_arr):
         for idx, _ in enumerate(m_arr):
             m_arr[idx] = re.sub('(_an)|(_AN)', '', m_arr[idx])
 
         k = ".".join(elem for elem in m_arr)
-        return k
+        return k.lower()
 
     def __hexlify(self, entry):
         entry = re.sub(r'0x', '', entry)

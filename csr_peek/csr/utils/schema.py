@@ -4,17 +4,21 @@
 #  Created by Hariharan Thantry on 2018-02-22
 #
 #  Copyright 2018 Fungible Inc. All rights reserved.
-#
+
 
 # Creates the entity schema
 
 import collections
+import re
+
+from csr.utils.lex import Lexer, LexTok
 
 # Top level record for YAML entity
 # In this case, the Entity is a CSR Register
 
 class Entity():
     def __init__(self):
+        self.name = None
         self.addr = 0
         self.attr = 0
         self.type = "CSR_TYPE::REG"
@@ -24,8 +28,9 @@ class Entity():
 
     def __str__(self):
         r_str = ""
-        r_str += "    type: {} w: {}\n".format(self.type, self.width)
-        r_str += "    flds: {}\n".format(self.fld_lst)
+        r_str += "n:{}\n".format(self.name)
+        r_str += " w: {}\n".format(self.width)
+        r_str += " flds: {}\n".format(self.fld_lst)
         return r_str
     __repr__ = __str__
 
@@ -48,36 +53,62 @@ class Schema():
     #ALLOW_ATTR = [0x4, 0x8]
     ALLOW_ATTR = [0x4, 0x8, 0x8000000]
     MIN_WIDTH = 64
-    def __init__(self, yml_stream):
+    def __init__(self, yml_stream, csr_filter, csr_def):
         yml_stream = self.__sanitize(yml_stream)
-        self.entities = self.__create_schema(yml_stream)
+
+        def_map = self.__create_map(csr_def)
+        lexer = Lexer(def_map)
+        lexer.build()
+
+        self.entities = self.__create_schema(yml_stream, csr_filter, lexer)
         #self.__dump(yml_stream)
     def get(self):
         return self.entities
 
-    def __should_store(self, m_elem):
-        return True
-        for elem in Schema.ALLOW_ATTR:
-            if int(m_elem.attr) & elem:
+    def __create_map(self, csr_def_yml):
+        m_coll = collections.OrderedDict()
+        for key, val in csr_def_yml['ATTR'].iteritems():
+            m_coll[key] = LexTok(val)
+        return m_coll
+
+    def __match(self, regex_arr, m_elem):
+        for elem in regex_arr:
+            if re.match(elem, m_elem):
+                return True
+    def __should_store(self, m_elem, csr_filter, lexer):
+        include_attr = csr_filter.get('include_attr', [])
+        for elem in include_attr:
+            v = lexer.eval(elem)
+            if v ==  m_elem.attr:
                 return True
         return False
 
-    def __create_schema(self, yml_stream):
+    def __get_name(self, reg_rec):
+        m_name = reg_rec['NAME'].split('_')
+        if m_name[-1].isdigit():
+            e_count = reg_rec.get('COUNT', 1)
+            if e_count > 1:
+                lst = m_name[:-1]
+            else:
+                lst = m_name
+            m_name = '_'.join(elem for elem in lst)
+        else:
+            m_name = reg_rec['NAME']
+        return m_name
+
+
+    def __create_schema(self, yml_stream, csr_filter, lexer):
         m_hash = collections.OrderedDict()
         if not 'REGLST' in yml_stream:
             return
         p_stream = yml_stream['REGLST']
         for reg_rec in p_stream:
-            m_name = reg_rec['NAME'].split('_')
-            if m_name[-1].isdigit():
-                m_name = '_'.join(elem for elem in m_name[:-1])
-            else:
-                m_name = reg_rec['NAME']
-
-            if m_name in m_hash:
-                #print "REG: {} already added".format(m_name)
+            base_name = reg_rec['NAME']
+            if base_name in m_hash:
+                assert False, "Same CSR Name, {} appears multiple times".format(base_name)
                 continue
             e = Entity()
+            e.name = self.__get_name(reg_rec)
             e.attr = reg_rec.get('ATTR', 0)
             e.width = reg_rec.get('WIDTH', 0)
             e.entries = reg_rec.get('ENTRIES', 1)
@@ -91,11 +122,9 @@ class Schema():
             lst, e.width = self.__update_width(lst)
             for fld_elem in lst:
                 e.fld_lst.append(Field(fld_elem['NAME'], fld_elem['WIDTH']))
-            store = self.__should_store(e)
+            store = self.__should_store(e, csr_filter, lexer)
             if store:
-                m_hash[m_name] = e
-            #else:
-            #    print "REG: {} not added".format(m_name)
+                m_hash[base_name] = e
         return m_hash
 
     def __update_width(self, lst):
@@ -151,8 +180,8 @@ class Schema():
 
     def __str__(self):
         r_str = ""
-        for key, val in self.entities.iteritems():
-            r_str += "  {}:\n{}".format(key, val)
+        for val in self.entities.itervaluess():
+            r_str += "{}".format(val)
         return r_str
     __repr__ = __str__
 

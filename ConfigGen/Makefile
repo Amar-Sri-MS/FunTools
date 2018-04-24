@@ -36,7 +36,7 @@ HWCAP_OUT_DIR = $(OUTPUT_DIR)
 #json util dir
 JSONUTIL_DIR = $(SDKDIR)/bin/$(OS)/x86_64
 
-SRC = cfg_gen.py
+SRC = cfg_gen.py csr_db_gen.py
 
 test_cfggen:
 	./$(SRC) -i $(INPUT_DIR) -o $(OUTPUT_DIR) -j $(JSONUTIL_DIR)

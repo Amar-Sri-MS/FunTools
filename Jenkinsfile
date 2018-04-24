@@ -21,36 +21,34 @@ timestamps {
 	try {
 
 		parallel (
-			 build_local: {
-			 	      buildStages('funos')
+			build_local: {
+				buildStages('funos')
 
-				      // early archive so to diagnose
-				      // dead builds
-				      stage('Archive') {
-				          archive()
-				      } // archive
+				// early archive so to diagnose
+				// dead builds
+				stage('Archive') {
+					archive()
+				} // archive
 
-				      	dir ('FunOS') {
+				dir ('FunOS') {
+					sh "time build/funos-posix"
+				}
+			}, // build_local
+			build_mac: {
+				node ('funos_mac') {
+					buildStages('funos_mac')
+
+					// early archive so to diagnose
+					// dead builds
+					stage('Archive') {
+						archive()
+					} // archive
+
+					dir ('FunOS') {
 						sh "time build/funos-posix"
 					}
-			 }, // build_local
-			 build_mac: {
-			     if (env.BRANCH_NAME == "master") {
-			 	    node ('funos_mac') {
-				     	 buildStages('funos_mac')
-
-				      	 // early archive so to diagnose
-				      	 // dead builds
-				      	 stage('Archive') {
-				             archive()
-				      	 } // archive
-
-				      	dir ('FunOS') {
-						sh "time build/funos-posix"
-					}
-				    }
-			      }  // branch == master
-			 } // build_mac
+				}
+			} // build_mac
 		) // parallel
 
 		// run all the tests locally after both builds
@@ -82,6 +80,12 @@ timestamps {
 
 		   } // latestify
 		} // master branch
+
+		stage('Cleanup') {
+			dir ('FunSDK') {
+				sh "scripts/bob --clean -a"
+			}
+		}
 
 	} catch (err) {
 
@@ -357,7 +361,7 @@ def testRun() {
 	) // parallel
 
 	} // timeout
-	timeout(time: 15, unit: 'MINUTES') {
+	timeout(time: 25, unit: 'MINUTES') {
 		timestamps {
 			echo 'Running: host integration test'
 			dir('FunSDK/integration_test') {
@@ -387,7 +391,6 @@ def codeCoverage() {
 	sh "./FunOS/build/funos-posix-cov app=test"
 	sh "./FunOS/build/funos-posix-cov app=hu_test"
 
-	// x86 only tests
 	// sh "./FunOS/build/funos-posix-cov app=hu_test_crypto"
 	sh "./FunOS/build/funos-posix-cov app=crypto_test"
 

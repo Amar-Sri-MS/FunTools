@@ -28,18 +28,17 @@ def ordered_load(stream, Loader=yaml.Loader, object_pairs_hook=collections.Order
 
 class CSR_YML_Reader(object):
     ALLOW_LST = ['REGLST', 'WIDTH', 'ATTR', 'FLDLST']
-    def __init__(self, dirname):
-        self.__read_dir(dirname)
+    def __init__(self, dirname, filter_yml, csr_def):
+        self.__read_dir(dirname, filter_yml, csr_def)
 
-    def __read_dir(self, dirname):
+    def __read_dir(self, dirname, filter_yml, csr_def):
         self.csr_schema = collections.OrderedDict()
         for yml_file in glob.glob(os.path.join(dirname, '*.yaml')):
             f_name = os.path.splitext(os.path.basename(yml_file))[0]
             print f_name
             yml_stream = self.__read_file(yml_file)
             f_name = re.sub('(_an)|(_AN)', '', f_name)
-            schema = Schema(yml_stream)
-            self.csr_schema[f_name.lower()] = schema
+            self.csr_schema[f_name.lower()] = Schema(yml_stream, filter_yml, csr_def)
 
     def __dump(self, yml_stream):
         lst = []
