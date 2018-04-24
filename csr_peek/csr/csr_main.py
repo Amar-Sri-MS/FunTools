@@ -15,113 +15,113 @@ from csr.utils.yml import YML_Reader, CSR_YML_Reader
 from csr.utils.artifacts import CSRRoot, Walker, RingUtil, TmplMgr
 
 class Slurper(object):
-	def __init__(self, cwd, csr_dir=None):
-		print "Started Slurper"
-		self.cwd = cwd
-		self.cmd_parser = argparse.ArgumentParser(description="CSR Slurper utility for F1")
-		self.other_args = {}
-		self.csr_dir = csr_dir
-		self.__arg_process(self.cmd_parser, self.other_args)
+    def __init__(self, cwd, csr_dir=None):
+        print "Started Slurper"
+        self.cwd = cwd
+        self.cmd_parser = argparse.ArgumentParser(description="CSR Slurper utility for F1")
+        self.other_args = {}
+        self.csr_dir = csr_dir
+        self.__arg_process(self.cmd_parser, self.other_args)
 
-	def __arg_process(self, cmd_parser, other_args):
-		ml_dir = module_locator().module_path()
-		def_dir = os.path.join(ml_dir, "csr_cfg")
-		cmd_parser.add_argument("-i", "--csr-defs", help="CSR definitions",
-				default=def_dir, required=False, type=str)
+    def __arg_process(self, cmd_parser, other_args):
+        ml_dir = module_locator().module_path()
+        def_dir = os.path.join(ml_dir, "csr_cfg")
+        cmd_parser.add_argument("-i", "--csr-defs", help="CSR definitions",
+                default=def_dir, required=False, type=str)
 
-		cmd_parser.add_argument("-o", "--gen-cc", help="Dir for the C++ files.",
-				required=True, type=str)
+        cmd_parser.add_argument("-o", "--gen-cc", help="Dir for the C++ files.",
+                required=True, type=str)
 
-		cmd_parser.add_argument("-s", "--sdk-dir", help="SDK root directory",
-				required=False, type=str)
-		cmd_parser.add_argument("-c", "--cfg-dir", help="Dir for config files",
-				required=False, type=str)
+        cmd_parser.add_argument("-s", "--sdk-dir", help="SDK root directory",
+                required=False, type=str)
+        cmd_parser.add_argument("-c", "--cfg-dir", help="Dir for config files",
+                required=False, type=str)
 
-		self.other_args['tmpl_file'] = os.path.join(ml_dir, "template", "csr_rt.j2")
-		self.other_args['csr_defs']  = os.path.join(ml_dir, "template", "csr_defs.yaml")
+        self.other_args['tmpl_file'] = os.path.join(ml_dir, "template", "csr_rt.j2")
+        self.other_args['csr_defs']  = os.path.join(ml_dir, "template", "csr_defs.yaml")
 
-		def_filter = os.path.join(ml_dir, "template", "csr_filter.yaml")
-		cmd_parser.add_argument("-f", "--filter-file", help="Filter YAML file, usually required for compiles to pass",
-				default=def_filter, required=False, type=str)
-
-
-	def __update_loc(self, loc):
-		if not os.path.isabs(loc):
-			loc = os.path.join(self.cwd, loc)
-		assert os.path.exists(loc), "{}: directory does not exist".format(loc)
-		return loc
-
-	def __check_yml_dir(self, y_dir):
-		yml_dir = os.path.join(y_dir, "inc")
-		if not os.path.exists(yml_dir):
-			assert False, "Yaml directory: {} does not exist".format(yml_dir)
-
-		if not os.path.isdir(yml_dir):
-			assert False, "Yaml: {} not a directory".format(yml_dir)
-		if not os.path.exists(os.path.join(y_dir, "AMAP")):
-			assert False, "AMAP file does not exist"
-		#if not os.path.exists(os.path.join(y_dir, "ringAN.yaml")):
-		#	 assert False, "Ring file does not exist"
+        def_filter = os.path.join(ml_dir, "template", "csr_filter.yaml")
+        cmd_parser.add_argument("-f", "--filter-file", help="Filter YAML file, usually required for compiles to pass",
+                default=def_filter, required=False, type=str)
 
 
-	def run(self):
-		args = self.cmd_parser.parse_args()
-		args.csr_defs = self.__update_loc(args.csr_defs)
-		args.gen_cc = self.__update_loc(args.gen_cc)
+    def __update_loc(self, loc):
+        if not os.path.isabs(loc):
+            loc = os.path.join(self.cwd, loc)
+        assert os.path.exists(loc), "{}: directory does not exist".format(loc)
+        return loc
 
-		self.__check_yml_dir(args.csr_defs)
-		yml_dir = os.path.join(args.csr_defs, "inc")
-		amap_file = os.path.join(args.csr_defs, "AMAP")
-		ring_file = os.path.join(args.csr_defs, "ringAN.yaml")
+    def __check_yml_dir(self, y_dir):
+        yml_dir = os.path.join(y_dir, "inc")
+        if not os.path.exists(yml_dir):
+            assert False, "Yaml directory: {} does not exist".format(yml_dir)
 
-		schema = CSR_YML_Reader(yml_dir)
-		#print "{}".format(self.schema)
-		# First populate the top level root
-		# Only populates the address attribute
-		p = YML_Reader()
-		csr_def = p.read_file(self.other_args['csr_defs'])
-		filter_def = p.read_file(args.filter_file)
-		csr_root = CSRRoot(amap_file, schema.get(), filter_def, csr_def)
-		tmpl = TmplMgr(self.other_args['tmpl_file'])
-		o_file = os.path.join(args.gen_cc, 'csr_gen.cpp')
-		tmpl.write_cfg(o_file, csr_root)
+        if not os.path.isdir(yml_dir):
+            assert False, "Yaml: {} not a directory".format(yml_dir)
+        if not os.path.exists(os.path.join(y_dir, "AMAP")):
+            assert False, "AMAP file does not exist"
+        #if not os.path.exists(os.path.join(y_dir, "ringAN.yaml")):
+        #    assert False, "Ring file does not exist"
 
 
-		o_file = os.path.join(args.gen_cc, 'csr_metadata.json')
-		with open(o_file, "w") as fp:
-			fp.write(json.dumps(csr_root.get_csr_metadata(), indent=4))
+    def run(self):
+        args = self.cmd_parser.parse_args()
+        args.csr_defs = self.__update_loc(args.csr_defs)
+        args.gen_cc = self.__update_loc(args.gen_cc)
 
-		# Next, get the ring structure
-		#p = YML_Reader()
-		#yml_stream = p.read_file(ring_file)
-		#w = Walker(yml_stream)
-		#print "{}".format(w)
-	"""
-	def get_csr_defs(self):
-		args = self.cmd_parser.parse_args()
-		self.csr_dir = self.__update_loc(self.csr_dir)
-		yml_dir = os.path.join(self.csr_dir, "csr/csr_cfg/inc")
-		amap_file = os.path.join(self.csr_dir, "csr/csr_cfg/AMAP")
-		ring_file = os.path.join(self.csr_dir, "csr/csr_cfg/ringAN.yaml")
-		print "Input files: {} {} {}".format(yml_dir, amap_file, ring_file)
+        self.__check_yml_dir(args.csr_defs)
+        yml_dir = os.path.join(args.csr_defs, "inc")
+        amap_file = os.path.join(args.csr_defs, "AMAP")
+        ring_file = os.path.join(args.csr_defs, "ringAN.yaml")
 
-		print "Process CSR files"
-		schema = CSR_YML_Reader(yml_dir)
+        schema = CSR_YML_Reader(yml_dir)
+        #print "{}".format(self.schema)
+        # First populate the top level root
+        # Only populates the address attribute
+        p = YML_Reader()
+        csr_def = p.read_file(self.other_args['csr_defs'])
+        filter_def = p.read_file(args.filter_file)
+        csr_root = CSRRoot(amap_file, schema.get(), filter_def, csr_def)
+        tmpl = TmplMgr(self.other_args['tmpl_file'])
+        o_file = os.path.join(args.gen_cc, 'csr_gen.cpp')
+        tmpl.write_cfg(o_file, csr_root)
+
+
+        o_file = os.path.join(args.gen_cc, 'csr_metadata.json')
+        with open(o_file, "w") as fp:
+            fp.write(json.dumps(csr_root.get_csr_metadata(), indent=4))
+
+        # Next, get the ring structure
+        #p = YML_Reader()
+        #yml_stream = p.read_file(ring_file)
+        #w = Walker(yml_stream)
+        #print "{}".format(w)
+    """
+    def get_csr_defs(self):
+        args = self.cmd_parser.parse_args()
+        self.csr_dir = self.__update_loc(self.csr_dir)
+        yml_dir = os.path.join(self.csr_dir, "csr/csr_cfg/inc")
+        amap_file = os.path.join(self.csr_dir, "csr/csr_cfg/AMAP")
+        ring_file = os.path.join(self.csr_dir, "csr/csr_cfg/ringAN.yaml")
+        print "Input files: {} {} {}".format(yml_dir, amap_file, ring_file)
+
+        print "Process CSR files"
+        schema = CSR_YML_Reader(yml_dir)
 
                 #print "{}".format(self.schema)
-		# First populate the top level root
-		# Only populates the address attribute
-		p = YML_Reader()
-		csr_def = p.read_file(self.other_args['csr_defs'])
-		filter_def = p.read_file(args.filter_file)
-		csr_root = CSRRoot(amap_file, schema.get(), filter_def, csr_def)
+        # First populate the top level root
+        # Only populates the address attribute
+        p = YML_Reader()
+        csr_def = p.read_file(self.other_args['csr_defs'])
+        filter_def = p.read_file(args.filter_file)
+        csr_root = CSRRoot(amap_file, schema.get(), filter_def, csr_def)
 
-		return csr_root
-	"""
+        return csr_root
+    """
 
-	def __str__(self):
-		r_str = "{}".format(self.schema)
-		return r_str
+    def __str__(self):
+        r_str = "{}".format(self.schema)
+        return r_str
 
-	__repr__ = __str__
+    __repr__ = __str__
 

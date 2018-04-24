@@ -265,9 +265,9 @@ class RingProps(object):
                         r_str += "};"
                         r_str += "auto {}_prop = csr_prop_t(\n".format(csr_name)
                         r_str += "std::make_shared<csr_s>({}),\n".format(csr_name)
-                        #r_str += "0x{:01X},\n".format(elem.get_csr_addr(csr_name))
+                        r_str += "0x{:01X},\n".format(elem.get_csr_addr(csr_name))
                         r_str += "{},\n".format(csr_val.type)
-                        #r_str += "{});\n".format(elem.get_num_csr(csr_name))
+                        r_str += "{});\n".format(elem.get_num_csr(csr_name))
                         r_str += "add_csr({}_{}, \"{}\", {}_prop);\n".\
                                  format(an_name, idx, csr_name, csr_name)
 
