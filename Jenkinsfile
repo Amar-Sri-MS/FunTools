@@ -202,6 +202,7 @@ def checkoutRepo() {
 				'FunOS',
 				"*/${BRANCH_FUNOS}")
 		}, // checkout_funos
+		checkout_sbpfw: {
 		doCheckout('SBPFirmware',
 				'SBPFirmware',
 				"*/${BRANCH_SBPFW}")
