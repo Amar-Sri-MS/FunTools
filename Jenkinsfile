@@ -184,6 +184,7 @@ def checkoutRepo() {
 	
 	String BRANCH_FUNSDK = "master"
 	String BRANCH_FUNOS = "master"
+	String BRANCH_SBPFW = "fungible/master"
 	String BRANCH_QEMU = "f1"
 	String BRANCH_ACCEL = "rajeshmohan/cryptoaccel"
 	String BRANCH_FUNTOOLS = "master"
@@ -201,6 +202,10 @@ def checkoutRepo() {
 				'FunOS',
 				"*/${BRANCH_FUNOS}")
 		}, // checkout_funos
+		doCheckout('SBPFirmware',
+				'SBPFirmware',
+				"*/${BRANCH_SBPFW}")
+		}, // checkout_sbpfw
 
 		checkout_funsdk: {
 		doCheckout('FunSDK',
@@ -418,7 +423,7 @@ def addTag() {
 		// NOTE: tag name should be revisited, such as rel_bld_1234..
 		// tag format 'bld_1234'
 
-		def _dirs = [ 'FunOS', 'FunSDK', 'qemu', 'FunTools', 'FunHW', 'pdclibc' ]
+		def _dirs = [ 'FunOS', 'FunSDK', 'qemu', 'FunTools', 'FunHW', 'pdclibc', 'SBPFirmware' ]
 
 		_dirs.each() {
 			dir ("${it}") {
