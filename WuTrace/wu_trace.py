@@ -299,7 +299,7 @@ class TraceParser:
 
       (predecessor, send_time, is_timer) = self.FindPreviousSend(wu_id, arg0,
                                                                  arg1, vp)
-
+      
       if predecessor:
         current_event.transaction = predecessor.transaction
         if is_timer:
@@ -314,7 +314,7 @@ class TraceParser:
 
         predecessor.successors.append(current_event)
 
-      elif log_keywords['name'] == 'wuh_mp_notify':
+      elif log_keywords['name'] == 'mp_notify':
         # Bootstrap process. Connect to fake event.
         current_event.transaction = self.boot_transaction
         self.boot_transaction.root_event.successors.append(current_event)
@@ -390,11 +390,14 @@ class TraceParser:
          return
        current_event = self.vp_to_event[vp]
 
-       if current_event.transaction:
+       # If we've got an active transaction and see START TRANSACTION,
+       # stop the old transaction and start a new transaction.
+       if (current_event.transaction and 
+           not current_event == current_event.transaction.root_event):
          current_event.transaction.Remove(current_event)
-       new_transaction = event.Transaction(current_event)
-       current_event.transaction = new_transaction
-       self.transactions.append(new_transaction)
+         new_transaction = event.Transaction(current_event)
+         current_event.transaction = new_transaction
+         self.transactions.append(new_transaction)
 
     elif event_type == ('TRANSACTION', 'ANNOT'):
        if vp not in self.vp_to_event:

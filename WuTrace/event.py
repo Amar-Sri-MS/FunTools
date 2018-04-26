@@ -9,10 +9,19 @@ class Transaction():
   def __init__(self, root_event, label=None):
     # List of work units and other events done as part of the transaction.
     self.root_event = root_event
+
     if label is not None:
       self.label = label
     else:
       self.label = root_event.label
+
+  def __str__(self):
+    return '<Transaction: %s, root event %s>' % (
+      self.label, self.root_event)
+
+  def __repr__(self):
+    return '<Transaction: %s, root event %s>' % (
+      self.label, self.root_event)
 
   def AsDict(self):
     """Returns transaction as a dictionary of explicit values.
