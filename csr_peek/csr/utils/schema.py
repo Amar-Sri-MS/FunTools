@@ -99,9 +99,11 @@ class Schema():
 
     def __create_schema(self, yml_stream, csr_filter, lexer):
         m_hash = collections.OrderedDict()
-        if not 'REGLST' in yml_stream:
-            return
-        p_stream = yml_stream['REGLST']
+        p_stream = yml_stream.get('REGLST', None)
+        if not p_stream:
+            p_stream = yml_stream.get('FLDLST', None)
+        if not p_stream:
+            return m_hash
         for reg_rec in p_stream:
             base_name = reg_rec['NAME']
             if base_name in m_hash:

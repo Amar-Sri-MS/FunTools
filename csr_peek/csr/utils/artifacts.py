@@ -104,7 +104,7 @@ class ANode(object):
             csr_lst = [p, 1]
         else:
             csr_lst[1] += 1;
-        #print "NAG ANode ADD_CSR:{}:NAG{}".format(self.path, csr_name)
+        print "NAG ANode AN_PATH:{}: CSR_NAME{}".format(self.path, csr_name)
         self.csrs[csr_name] = csr_lst
 
     def get_csr(self, csr_name):
@@ -318,6 +318,20 @@ class CSRMetaData(object):
     def add_csr_metadata(self, ring_name, ring_inst, ring_addr,
                         an, an_addr, csr_name, csr_addr,
                         csr_addr_range, csr_prop):
+
+        if csr_prop.type == "CSR_TYPE::REG_LST":
+            m_name = csr_name.split('_')
+            if m_name[-1].isdigit():
+                print "Digit: {}".format(m_name[-1])
+                if int(m_name[-1]) > 0:
+                    print "Skipping {} {}".format(csr_name, m_name)
+                    return
+                lst = m_name[:-1]
+            else:
+                print "Something Wrong!!!Reg list should end with a digit!"
+                sys.exit(1)
+            csr_name = '_'.join(elem for elem in lst)
+        print "Adding csr {}".format(csr_name)
         csr_metadata_lst = self.metadata.get(csr_name, [])
         if not csr_metadata_lst:
             self.metadata[csr_name] = csr_metadata_lst
@@ -329,7 +343,8 @@ class CSRMetaData(object):
         csr_metadata["an"] = an
         csr_metadata["an_addr"] = hex(an_addr)
         csr_metadata["csr_addr"] = hex(csr_addr)
-        csr_metadata["csr_addr_range"] = hex(csr_addr_range)
+        csr_metadata["csr_count"] = csr_prop.count
+        csr_metadata["csr_addr_range"] = csr_addr_range
         csr_metadata["csr_type"] = csr_prop.type
         csr_metadata["csr_n_entries"] = csr_prop.n_entries
         csr_metadata["csr_width"] = csr_prop.width
@@ -574,6 +589,7 @@ class CSRRoot(object):
         self.curr_rc = ring_class
         self.curr_ri = ring_inst
         self.curr_path = k
+        self.curr_an_name = an_name
         st_addr = self.__hexlify(coll[2])
         num_64_w = self.__hexlify(coll[3])
         end_addr = st_addr + num_64_w
@@ -621,15 +637,31 @@ class CSRRoot(object):
                     self.curr_path, self.curr_addr, self.csr_map)
             self.an_added = True
         #print "CSR_ACCEPT: {}".format(line)
+        csr_addr = None
+        csr_addr_range = None
+        print "AN_NAME: {} PATH: {}".format(self.curr_an_name, self.curr_path)
+
+        an_csrs = self.csr_map.get(self.curr_an_name, None)
+        if not an_csrs:
+            sys.exit(1)
+        csr_prop = an_csrs.get().get(csr_name, None)
+        if csr_prop == None:
+            print "CSR: {}".format(csr_name)
+            sys.exit(1)
+
         if len(ex_coll) > 1:
+            csr_addr = self.__hexlify(ex_coll[0].strip())
+            csr_addr_range = self.__hexlify(ex_coll[1].strip())
             self.curr_rn.add_csr(self.curr_ri,
                     csr_name,
-                    self.__hexlify(ex_coll[0].strip()),
-                    self.__hexlify(ex_coll[1].strip()))
+                    csr_addr,
+                    csr_addr_range)
         else:
+            csr_addr = self.__hexlify(coll[1].strip())
             self.curr_rn.add_csr(self.curr_ri,
                     csr_name,
-                    self.__hexlify(coll[1].strip()))
+                    csr_addr)
+        self.__add_csr_metadata_inst(csr_name, csr_addr, csr_addr_range, csr_prop)
 
     def __clean_name(self, m_arr):
         for idx, _ in enumerate(m_arr):
@@ -655,68 +687,6 @@ class CSRRoot(object):
 
     def get_csr_metadata(self):
         return self.csr_metadata.get_csr_metadata()
-
-    """
-    def get_csr_metadata(self, csr_name, rn_class, rn_inst, an_path, an, an_inst):
-        #v = self.csr_metadata[csr_name]
-        #str = ""
-        #for c in v:
-        #    str += "\t" + c.print_metadata() + "\n"
-
-        rn = self.ring_map.get(rn_class, None)
-        rn_props = rn.get_instances()
-        if len(rn_props) > 1:
-            if rn_inst == None:
-                print "There are {} instances of {}! Add inst info!".format(len(rn_props), rn_class)
-                #print rn_props.keys()
-                sys.exit(1)
-            else:
-                rn_prop = rn_props[rn_inst]
-                #print rn_prop
-        else:
-            rn_prop = rn_props[0]
-            #print rn_prop
-
-        print "CSR: {} RN:{} INST:{} AN_PATH: {} AN: {} AN_INST:{}".format(csr_name, rn_class, rn_inst, an_path, an, an_inst)
-        an_lst = rn_prop.get_an(an)
-        if len(an_lst) > 1:
-            if an_inst != None:
-                anode = an_lst[an_inst]
-            else:
-                print "There are {} instances of {}! Add an inst info!".format(len(an_lst), anode)
-                print an_lst
-                sys.exit(1)
-        else:
-            anode = an_lst[0]
-
-        ring_addr = rn_prop.get_addr()
-        start_addr = anode.get_start_addr()
-        inst_cnt = anode.get_n_inst()
-        skip_addr = anode.get_skip_addr()
-
-        print "AN: {} RING ADDR: {} AN_ADDR: 0x{} INST_CNT: {} SKIP_ADDR: 0x{}".format(an, hex(ring_addr), hex(start_addr), inst_cnt, hex(skip_addr))
-
-        n_inst = anode.get_n_inst()
-        if n_inst > 1:
-            if an_inst == None:
-                print "There are {} instances of {}! Add AN inst info!".format(n_inst, an)
-            else:
-                rn_prop = rn_props[rn_inst]
-        else:
-            rn_prop = rn_props[0]
-
-        csr_addr = anode.get_csr_addr(csr_name)
-        num_csr = anode.get_num_csr(csr_name)
-
-        csr_data = rn_prop.get_csr_prop(an, csr_name)
-        off = 0
-        for fldd in csr_data.fld_lst[:-1]:
-            print "Field: {} Width: {} offset: {}".format(fldd.fld_name, off, fldd.width)
-            off += fldd.width
-
-        return CSRMetaData(rn_class, rn_inst, ring_addr,
-                           an, start_addr, csr_addr, num_csr, csr_data)
-        """
 
     def __str__(self):
         r_str = ""

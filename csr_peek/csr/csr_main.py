@@ -101,28 +101,6 @@ class Slurper(object):
         #yml_stream = p.read_file(ring_file)
         #w = Walker(yml_stream)
         #print "{}".format(w)
-    """
-    def get_csr_defs(self):
-        args = self.cmd_parser.parse_args()
-        self.csr_dir = self.__update_loc(self.csr_dir)
-        yml_dir = os.path.join(self.csr_dir, "csr/csr_cfg/inc")
-        amap_file = os.path.join(self.csr_dir, "csr/csr_cfg/AMAP")
-        ring_file = os.path.join(self.csr_dir, "csr/csr_cfg/ringAN.yaml")
-        print "Input files: {} {} {}".format(yml_dir, amap_file, ring_file)
-
-        print "Process CSR files"
-        schema = CSR_YML_Reader(yml_dir)
-
-                #print "{}".format(self.schema)
-        # First populate the top level root
-        # Only populates the address attribute
-        p = YML_Reader()
-        csr_def = p.read_file(self.other_args['csr_defs'])
-        filter_def = p.read_file(args.filter_file)
-        csr_root = CSRRoot(amap_file, schema.get(), filter_def, csr_def)
-
-        return csr_root
-    """
 
     def __str__(self):
         r_str = "{}".format(self.schema)
