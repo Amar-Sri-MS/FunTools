@@ -12,6 +12,7 @@ import os
 import jinja2
 import pdb
 import re
+import sys
 
 
 class TmplMgr(object):
@@ -627,7 +628,7 @@ class CSRRoot(object):
                 filter_yml)
 
         if not do_process:
-            print "CSR_REJECT: {} CSR PROP:{}".format(line, csr_prop)
+            print "CSR_REJECT: {} CSR:{}".format(line, csr_name)
             #print "CSR_REJECT: {}".format(line)
             return
         # Accept CSRs by name, except for the attribute
@@ -643,6 +644,7 @@ class CSRRoot(object):
 
         an_csrs = self.csr_map.get(self.curr_an_name, None)
         if not an_csrs:
+            print "Could not get CSRs for AN:{}".format(self.curr_an_name)
             sys.exit(1)
         csr_prop = an_csrs.get().get(csr_name, None)
         if csr_prop == None:

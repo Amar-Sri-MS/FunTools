@@ -95,7 +95,8 @@ SRC = csr-rt/gen/csr_metadata.json
 
 # install to SDK
 install: build
-	csr-slurp -i $(FUNSDK_INSTALL_DIR)/csr_cfg -o csr-rt/gen
+	#csr-slurp -i $(FUNSDK_INSTALL_DIR)/csr_cfg -o csr-rt/gen
+	csr-slurp -i csr/csr_cfg -o csr-rt/gen
 	mkdir -p $(FUNSDK_INSTALL_DIR)
 	rsync -av $(SRC) $(FUNSDK_INSTALL_DIR)
 
