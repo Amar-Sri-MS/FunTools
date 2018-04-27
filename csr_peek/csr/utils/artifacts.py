@@ -26,8 +26,7 @@ class TmplMgr(object):
         print out_file
         #print obj
         with open (out_file, 'w') as fh:
-            #fh.write(self.tmpl.render(gen_obj=obj))
-            fh.write(obj.__str__())
+            fh.write(self.tmpl.render(gen_obj=obj))
         fh.close()
 
 
