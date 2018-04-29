@@ -23,10 +23,10 @@ Template for stats source code generation
 {% endfor %}
 
 #define ACCUMULATE(acntr, scntr, cntr, width) \
-    if(cntr > scntr) {		    \
-        (acntr) += (cntr) - (scntr); \
+    if(cntr < scntr) {		    \
+        (acntr) += (cntr) + (((0x1UL << (width))-1)-(scntr)); \
     } else {			    \
-         (acntr) += (cntr) + (((0x1UL << (width))-1)-(scntr)); \
+        (acntr) += (cntr) - (scntr); \
     } \
     scntr = cntr;
 
@@ -392,6 +392,7 @@ void {{block}}_stats_props_bridge_install(void)
 					fun_props_install_bridge_point(
 					{{block_prop_macro(block)}} {{module_endpoint_prop_macro(block, module, endpoint)}},
 					NULL, {{block}}_{{module}}_{{endpoint}}_generate_json);
+					fun_props_bridge_point_set_rate_limit({{block}}_{{module}}_{{endpoint}}_bridge, FUN_TIME_FROM_MSECS(100));
 	{% endfor -%}
 {% endfor -%}
 }

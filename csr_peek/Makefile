@@ -94,7 +94,7 @@ FUNSDK_INSTALL_DIR = $(SDK_INSTALL_DIR)/FunSDK/config/csr
 SRC = csr-rt/gen/csr_metadata.json
 
 # install to SDK
-install: build
+install: cfg
 	#csr-slurp -i $(FUNSDK_INSTALL_DIR)/csr_cfg -o csr-rt/gen
 	csr-slurp -i csr/csr_cfg -o csr-rt/gen
 	mkdir -p $(FUNSDK_INSTALL_DIR)

@@ -14,6 +14,18 @@ import pdb
 import re
 import sys
 
+class ANUtils(object):
+    def __init__(self):
+        pass
+    def get_an(self, an_path):
+        an_arr = an_path.split('.')
+        prefix_path = None
+        if len(an_arr) > 1:
+            prefix_path = '.'.join(elem for elem in an_arr[:-1])
+            an_name = an_arr[-1]
+        else:
+            an_name = an_path
+        return prefix_path, an_name
 
 class TmplMgr(object):
     def __init__(self, tpl_path):
@@ -89,23 +101,28 @@ class CSRNode(object):
     __repr__ = __str__
 
 class ANode(object):
-    def __init__(self, path, start_addr, n_inst=1, skip_addr=0):
+    def __init__(self, path, start_addr, csr_map, n_inst=1, skip_addr=0):
         self.path = path
         self.start_addr = start_addr
         self.n_inst = n_inst
         self.skip_addr = skip_addr
+        self.csr_map = csr_map
         self.csrs = collections.OrderedDict()
 
     def add_csr(self, csr_name, addr, addr_range=None):
         csr_lst = self.csrs.get(csr_name, None)
+        if csr_lst:
+            return
         addr -= self.start_addr
+        csr_attr = self.csr_map.get().get(csr_name, None)
+        if not csr_attr:
+            # This could be because of the exclusion filters
+            return
+        n_entries  = (csr_attr.entries * csr_attr.count)
         p = CSRNode(addr, addr_range)
-        if not csr_lst:
-            csr_lst = [p, 1]
-        else:
-            csr_lst[1] += 1;
-        print "NAG ANode AN_PATH:{}: CSR_NAME{}".format(self.path, csr_name)
+        csr_lst = [p, n_entries]
         self.csrs[csr_name] = csr_lst
+        print "NAG ANode AN_PATH:{}: CSR_NAME{}".format(self.path, csr_name)
 
     def get_csr(self, csr_name):
         return self.csrs[csr_name]
@@ -120,9 +137,6 @@ class ANode(object):
         return self.skip_addr
 
     def get_num_csr(self, csr_name):
-        #csr_arr = csr_name.split('_')
-        #if csr_arr[-1].isdigit():
-        #    csr_name = '_'.join(elem for elem in csr_arr[:-1])
         p = self.csrs.get(csr_name, None)
         if p == None:
             for k, v in self.csrs.iteritems():
@@ -131,9 +145,6 @@ class ANode(object):
             return 1
         return p[1]
     def get_csr_addr(self, csr_name):
-        #csr_arr = csr_name.split('_')
-        #if csr_arr[-1].isdigit():
-        #    csr_name = '_'.join(elem for elem in csr_arr[:-1])
 
         p = self.csrs.get(csr_name, None)
         if p == None:
@@ -169,8 +180,6 @@ class RingProps(object):
         self.last_aname = None
         self.root_paths = collections.OrderedDict()
         self.anodes = collections.OrderedDict()
-        # From an aname to csr signature
-        self.csr_map = collections.OrderedDict()
 
     def get_addr(self):
         return self.addr
@@ -199,33 +208,24 @@ class RingProps(object):
             sys.exit(1)
         return csr_prop
 
+    # The CSR attribute map is for csrs local to this anode
     def add_an(self, an_node, addr, csr_map):
         # First determine if this is a root node AN
         r_attr = self.root_paths.get(an_node, None)
-
-        an_arr = an_node.split('.')
-        prefix_path = None
-        if len(an_arr) > 1:
-            prefix_path = '.'.join(elem for elem in an_arr[:-1])
-            an_name = an_arr[-1]
-        else:
-            an_name = an_node
-
-        print an_name
-        self.csr_map[an_name] = csr_map.get(an_name, collections.OrderedDict())
+        prefix_path, an_name = ANUtils().get_an(an_node)
 
         anode = None
         addr -= self.addr
         if r_attr != None:
-            anode = ANode(an_node, addr, r_attr[0], r_attr[2])
+            anode = ANode(an_node, addr, csr_map, r_attr[0], r_attr[2])
         elif prefix_path:
             r_attr = self.root_paths.get(prefix_path, None)
             if (r_attr != None):
-                anode = ANode(an_node, addr, r_attr[0], r_attr[2])
+                anode = ANode(an_node, addr, csr_map, r_attr[0], r_attr[2])
             else:
-                anode = ANode(an_node, addr)
+                anode = ANode(an_node, addr, csr_map)
         else:
-            anode = ANode(an_node, addr)
+            anode = ANode(an_node, addr, csr_map)
 
         an_lst = self.anodes.get(an_name, [])
         an_lst.append(anode)
@@ -259,7 +259,6 @@ class RingProps(object):
     def add_csr(self, csr_name, csr_addr, addr_range=None):
         assert self.last_anode != None, "No address node to add CSR to"
         csr_addr -= self.addr
-        # Get width of this csr
 
         self.last_anode.add_csr(csr_name, csr_addr, addr_range)
 
@@ -272,8 +271,7 @@ class RingProps(object):
                 #print "NINST={}".format(elem.n_inst)
                 #print "SKIP_ADDR={}".format(elem.skip_addr)
 
-                print "AN: {}".format(an_name)
-                an_csrs = self.csr_map.get(an_name, None)
+                an_csrs = elem.csr_map
                 if an_csrs != None:
                     if len(an_csrs.get().keys()) == 0:
                         continue
@@ -633,8 +631,10 @@ class CSRRoot(object):
         # Accept CSRs by name, except for the attribute
         # specific stuff that will be removed elsewhere
         if not self.an_added:
-            self.curr_rn.add_an(self.curr_ri, \
-                    self.curr_path, self.curr_addr, self.csr_map)
+            prefix_path, an_name = ANUtils().get_an(self.curr_path)
+            assert an_name in self.csr_map
+            self.curr_rn.add_an(self.curr_ri,\
+                    self.curr_path, self.curr_addr, self.csr_map[an_name])
             self.an_added = True
         #print "CSR_ACCEPT: {}".format(line)
         csr_addr = None
