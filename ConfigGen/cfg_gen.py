@@ -83,7 +83,7 @@ def lambda_hextoint(x):
 #Remove comments in json file
 def remove_comments(json_like):
     comments_re = re.compile(
-        r'//.*?$|/\*.*\*/|\'(?:\\.|[^\\\'])*\'|"(?:\\.|[^\\"])*"',
+        r'//.*?$|/\*.*?\*/|\'(?:\\.|[^\\\'])*\'|"(?:\\.|[^\\"])*"',
         re.DOTALL | re.MULTILINE
     )
     def replacer(match):
