@@ -96,6 +96,7 @@ class EntrySubNode(object):
         self.offset = e.get("offset", None)
         self.poll_interval = e.get("poll_interval", 0)
         self.clear_on_read = e.get("clear_on_read", False)
+        self.on_demand = e.get("on_demand", False)
         ring = e.get("ring", None)
         if ring != None:
             self.rn_class = ring.get("class", None)
@@ -132,7 +133,6 @@ class EntrySubNode(object):
         print "CSR:".format(self.reg)
         csr_def = self.csr_defs.get_csr_def(self.reg, self.rn_class,
                 self.rn_inst, self.an_path, self.an, self.an_inst)
-        an_base_addr = csr_def["an_addr"]
         #csr_entity = csr_def.get_csr_data()
         #print "csr_entity: {}".format(csr_entity)
         csr_flds = csr_def["fld_lst"]
@@ -205,13 +205,11 @@ class EntrySubNode(object):
         csr_def = self.csr_defs.get_csr_def(self.reg, self.rn_class,
                 self.rn_inst, self.an_path, self.an, self.an_inst)
         #print csr_def
-        #an_base_addr = csr_def.get_an_base_addr()
-        an_base_addr = csr_def["an_addr"]
-        #csr_entity = csr_def.get_csr_data()
 
         subnode = dict()
         subnode["csr"] = self.reg
-        subnode["base_addr"] = an_base_addr
+        an_base_addr = csr_def["an_addr"]
+        subnode["base_addr"] = int(an_base_addr, 16)
         subnode["csr_width"] = (csr_def["csr_width"]+63)/64
         subnode["fields"] = self.fld_objs
         subnode["num_fields"] = self.num_fields
@@ -220,6 +218,7 @@ class EntrySubNode(object):
         subnode["csr_type"] = self.csr_type
         subnode["reg_inst"] = self.reg_inst
         subnode["clear_on_read"] = self.clear_on_read
+        subnode["on_demand"] = self.on_demand
         #print "CSR: {}".format(csr_entity)
         return subnode
 
