@@ -28,9 +28,15 @@
 # This is just an example config. Please choose yours
 
 include_ring: [nu, hnu]
+
 exclude_interior: [pc_soc_clk]
-exclude_an: [fpg_prs, fae_prs, etp_prs, erp_prs, stg0_ffe, stg1_ffe, stg2_ffe, stg3_ffe, stg4_ffe, stg5_ffe, stg6_ffe]
+
+exclude_an: [stg0_ffe, stg1_ffe, stg2_ffe, stg3_ffe,
+             stg4_ffe, stg5_ffe, stg6_ffe,
+             fpg_prs, fae_prs, etp_prs, erp_prs]
+
 exclude_csr: [fms, sfg, dma]
+
 include_attr:  [ INTR,
                  FATAL_INTR,
                  INTR_STAT,

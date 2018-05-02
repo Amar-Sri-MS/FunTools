@@ -51,7 +51,7 @@ class Schema():
 
     ALLOW_LST = ['REGLST', 'WIDTH', 'ATTR', 'COUNT', 'FLDLST', 'NAME', 'ENTRIES']
     #ALLOW_ATTR = [0x4, 0x8]
-    ALLOW_ATTR = [0x4, 0x8, 0x8000000]
+    ALLOW_ATTR = [0x4]
     MIN_WIDTH = 64
     def __init__(self, yml_stream, csr_filter, csr_def):
         yml_stream = self.__sanitize(yml_stream)

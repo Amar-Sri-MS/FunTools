@@ -16,7 +16,6 @@ from csr.utils.artifacts import CSRRoot, Walker, RingUtil, TmplMgr
 
 class Slurper(object):
     def __init__(self, cwd):
-        print "Started Slurper"
         self.cwd = cwd
         self.cmd_parser = argparse.ArgumentParser(description="CSR Slurper utility for F1")
         self.other_args = {}

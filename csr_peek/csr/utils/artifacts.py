@@ -32,15 +32,11 @@ class TmplMgr(object):
         path, filename = os.path.split(tpl_path)
         env = jinja2.Environment(loader=jinja2.FileSystemLoader(path or './'))
         self.tmpl = env.get_template(filename)
-        print filename
 
     def write_cfg(self, out_file, obj):
-        print out_file
-        #print obj
         with open (out_file, 'w') as fh:
             fh.write(self.tmpl.render(gen_obj=obj))
         fh.close()
-
 
 # For every top level ring, one RingNode object
 class RingNode(object):
@@ -96,7 +92,7 @@ class CSRNode(object):
     def __str__(self):
         r_str = ""
         r_str += "{} {}".\
-            format(hex(self.addr), hex(self.addr_range))
+                format(self.addr, self.addr_range)
         return r_str
     __repr__ = __str__
 
@@ -122,7 +118,7 @@ class ANode(object):
         p = CSRNode(addr, addr_range)
         csr_lst = [p, n_entries]
         self.csrs[csr_name] = csr_lst
-        print "NAG ANode AN_PATH:{}: CSR_NAME{}".format(self.path, csr_name)
+        #print "ANode AN_PATH:{}: CSR_NAME{}".format(self.path, csr_name)
 
     def get_csr(self, csr_name):
         return self.csrs[csr_name]
@@ -186,7 +182,8 @@ class RingProps(object):
 
     def add_an_path(self, path, n_inst, start_addr, skip_addr):
         assert path not in self.root_paths
-        print "RingProps.add_an_path {} n_inst:{} start_addr:{}".format(path, n_inst, start_addr)
+        #print("RingProps ADD an_path {} n_inst:{}"
+        #      "start_addr:{}".format(path, n_inst, start_addr))
         self.root_paths[path] = [n_inst, start_addr, skip_addr]
 
     def get_an_paths(self, path):
@@ -199,12 +196,10 @@ class RingProps(object):
 
     def get_csr_prop(self, an_name, csr_name):
         an_csrs = self.csr_map.get(an_name, None)
-        print "AN: {} csr_name: {} CSRs".format(an_name, csr_name)
-        #print type(an_csrs)
-        #for key, val in an_csrs.get().iteritems():
-        #    print key
+        #print "AN: {} csr_name: {} CSRs".format(an_name, csr_name)
         csr_prop = an_csrs.get()[csr_name]
         if csr_prop == None:
+            print "ERROR! Could not find CSR in csr_map."
             sys.exit(1)
         return csr_prop
 
@@ -230,7 +225,7 @@ class RingProps(object):
         an_lst = self.anodes.get(an_name, [])
         an_lst.append(anode)
 
-        print "AN_CREATE:{}:{}".format(an_name, anode)
+        #print "AN_CREATE:{}:{}".format(an_name, anode)
         self.anodes[an_name] = an_lst
         self.last_anode = anode
     def add_64_w(self, an_node, num_64_w):
@@ -351,22 +346,6 @@ class CSRMetaData(object):
             fld_lst.append(fld_prop)
         csr_metadata["fld_lst"] = fld_lst
         csr_metadata_lst.append(csr_metadata)
-
-    def csr_equal(self, x, rn_class, rn_inst, an_path, an, an_inst):
-        if rn_class:
-            if x["ring_name"] != rn_class:
-                return false
-        if rn_inst:
-            if x["ring_inst"] != rn_inst:
-                return false
-        if an:
-            if x["an"] != an:
-                return false
-        if an_inst:
-            if x["an_inst"] != an_inst:
-                return false
-
-        return true
 
     def get_csr_metadata(self):
         return self.metadata
@@ -491,10 +470,9 @@ class CSRRoot(object):
         if len(l_arr) < 2:
             return True
 
-        #print l_arr
         ring_class, ring_inst = self.r_util.get_info(l_arr[0])
         self.__add_ring_instance(ring_class, ring_inst, self.__hexlify(l_arr[1]))
-        print "RING_ACCEPT: {}".format(line)
+        #print "RING_ACCEPT: {}".format(line)
         return True
     def __add_ring_instance(self, ring_class, ring_inst, addr, is_dummy=False):
         ring_node = self.ring_map.get(ring_class, RingNode(ring_class, is_dummy))
@@ -505,16 +483,14 @@ class CSRRoot(object):
     def __process_root(self, line):
         if not re.search('^COUNT', line):
             return False
-        print "Processing ROOT {}".format(line)
+        #print "{}".format(line)
         coll = line.split(':')
-        print coll
         m_arr = coll[1].split('.')
-        print m_arr
         ring_class, ring_inst = self.r_util.get_info(m_arr[0])
-        print ring_class
-        print ring_inst
 
         k = self.__clean_name(m_arr[1:])
+        #print "ROOT_ACCEPT:{}".format(line)
+
         rn = self.ring_map.get(ring_class, None)
         if rn == None:
            print "Adding dummy ring class: {}".format(ring_class)
@@ -553,6 +529,7 @@ class CSRRoot(object):
         coll = line.split(':')
         m_arr = coll[1].split('.')
         ring_class, ring_inst = self.r_util.get_info(m_arr[0])
+        #print "ANODE_ACCEPT:{}".format(line)
         k = self.__clean_name(m_arr[1:])
         an_name = k.split('.')[-1]
         rn = self.ring_map.get(ring_class, None)
@@ -604,7 +581,6 @@ class CSRRoot(object):
                 filter_yml)
 
         if not do_process:
-            print "CSR_REJECT: {} CSR:{}".format(line, csr_name)
             #print "CSR_REJECT: {}".format(line)
             return
         # Accept CSRs by name, except for the attribute
@@ -618,7 +594,8 @@ class CSRRoot(object):
         #print "CSR_ACCEPT: {}".format(line)
         csr_addr = None
         csr_addr_range = None
-        print "AN_NAME: {} PATH: {}".format(self.curr_an_name, self.curr_path)
+        #print "AN_NAME: {} PATH: {}".format(
+        #            self.curr_an_name, self.curr_path)
 
         an_csrs = self.csr_map.get(self.curr_an_name, None)
         if not an_csrs:
@@ -626,7 +603,7 @@ class CSRRoot(object):
             sys.exit(1)
         csr_prop = an_csrs.get().get(csr_name, None)
         if csr_prop == None:
-            print "CSR: {}".format(csr_name)
+            print "Count not get info for CSR: {}".format(csr_name)
             sys.exit(1)
 
         if len(ex_coll) > 1:
@@ -657,7 +634,6 @@ class CSRRoot(object):
         return val
 
     def __add_csr_metadata_inst(self, csr_name, csr_addr, csr_addr_range, csr_prop):
-        print "CURR_RN: {}".format(self.curr_rc)
         rn = self.ring_map.get(self.curr_rc, None)
         rn_props = rn.get_instances()
         rn_prop = rn_props[self.curr_ri]
