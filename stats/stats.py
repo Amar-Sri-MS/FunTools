@@ -1,21 +1,20 @@
 #!/usr/bin/python
 #
+# stats.py
+#
 # Created by Nag Ponugoti March 28 2018
 # Copyright Fungible Inc. 2018
 
-import glob, os, sys, re, datetime
-import getopt, platform, tempfile
+import os, sys
 import string, json, collections
 import pdb, argparse
+import logging
 from jinja2 import Environment, FileSystemLoader
-from subprocess import call
-from itertools import chain
-import pprint
-
-import csr.csr_main as csr
-from csr.utils.artifacts import CSRRoot
-from csr.utils.schema import Entity
 from json_reader import CFG_Reader
+
+log = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
+#log.setLevel(logging.INFO)
 
 #Groups the range strings
 def group_to_range(group):
@@ -34,16 +33,16 @@ def range_min_max(group):
   r = sorted(int(__) for __ in r)
   return r[0], 1 + r[-1]
 
-#Input endpoint range node
+# Endpoint input range node
 class RangeNode(object):
     def __init__(self, name, info):
         self.name = name
         self.range_min = 0
         self.range_max = 0
         self.incr = 0
-        print "INPUT NODE:{}".format(name)
+        log.debug("INPUT NODE:{}".format(name))
         self.__process_input(info)
-        print ("ADDED INPUT NODE:{} min:{} max:{} incr:{}".format(name,
+        log.debug("Range Node:{} min:{} max:{} incr:{}".format(name,
                             self.range_min, self.range_max, self.incr))
 
     def __process_input(self, info):
@@ -59,7 +58,7 @@ class RangeNode(object):
     def __set_incr(self, incr=0):
         self.incr = incr
 
-#Comes here for deffirent sub nodes inside q_in but not for q_in
+# Process list element of leaf stats node
 class EntrySubNode(object):
     def __init__(self, e, input):
         self.csr_defs = csr_metadata()
@@ -77,18 +76,27 @@ class EntrySubNode(object):
         self.poll_interval = 0
         self.clear_on_read = False
         self.__process_entry_subnode(e, input)
-        print "ENTRY SUBNODE ADDED"
+        log.debug("Entry sub-node for reg: {} is added!".format(self.reg))
 
     def __process_entry_subnode(self, e, input):
         if input:
             for i in input:
-                if e[i] == None or self.input_map.get(i, None) != None:
-                    print "EXIT!!!!!! {}".format(i)
+                if e[i] == None:
+                    log.error("Valid input range is not provided for \'{}:"
+                              "{}\'".format(self.reg, i))
+                    sys.exit(1)
+                if self.input_map.get(i, None) != None:
+                    log.error("Duplicate input range for \'{}:"
+                              "{}\'".format(self.reg, i))
                     sys.exit(1)
                 self.input_map[i] = RangeNode(i, e[i])
 
-        if e["reg"] is None or not bool(e["fields"]):
-            print "EXIT!!!!!! reg: {} fields: {}".format(e["reg"], e["fields"])
+        if e["reg"] is None:
+            log.error("Valid csr name should be passed!")
+            sys.exit(1)
+        if not bool(e["fields"]):
+            log.error("Valid fields should be passed for"
+                      "reg: {} fields: {}".format(e["reg"], e["fields"]))
             sys.exit(1)
         self.reg = e["reg"]
         self.fields = e["fields"]
@@ -96,7 +104,7 @@ class EntrySubNode(object):
         self.offset = e.get("offset", None)
         self.poll_interval = e.get("poll_interval", 0)
         self.clear_on_read = e.get("clear_on_read", False)
-        self.on_demand = e.get("on_demand", False)
+        self.on_demand = e.get("on_demand", "false")
         ring = e.get("ring", None)
         if ring != None:
             self.rn_class = ring.get("class", None)
@@ -111,13 +119,22 @@ class EntrySubNode(object):
     def get_fields(self):
         return self.fields
 
+    def get_on_demand(self):
+        if self.on_demand == "true":
+            return True
+        else:
+            return False
+
     def get_poll_interval(self):
-        return self.poll_interval
+        if self.poll_interval == "auto":
+            return 5000 #TODO(@nponugoti)
+        else:
+            return self.poll_interval
 
     def get_an_list(self):
         an_set = set()
         an_set.add(self.an)
-        print "AN_SET.{}".format(an_set)
+        log.debug("AN_SET.{}".format(an_set))
         return an_set
 
     def get_csr_width(self):
@@ -130,30 +147,26 @@ class EntrySubNode(object):
         return self.num_cntrs
 
     def __process_fields(self):
-        print "CSR:".format(self.reg)
+        log.debug("Processing fields of CSR:".format(self.reg))
         csr_def = self.csr_defs.get_csr_def(self.reg, self.rn_class,
                 self.rn_inst, self.an_path, self.an, self.an_inst)
-        #csr_entity = csr_def.get_csr_data()
-        #print "csr_entity: {}".format(csr_entity)
+        log.debug("csr_def: {}".format(csr_def))
         csr_flds = csr_def["fld_lst"]
         fld_objs = None
         idx_offset =0
-        #self.csr_type = csr_entity.type
         self.csr_type = csr_def["csr_type"]
         self.csr_width = csr_def["csr_width"]
         if type(self.fields) == list:
             if self.csr_type != "CSR_TYPE::TBL":
-                print ("If input is list of heterogenious field groups," +
-                "CSR type should be table!")
+                log.error("If input is list of heterogenious field groups,"
+                          "CSR type should be table!")
                 sys.exit(1)
             self.csr_type = "CSR_TYPE::TBL_HETERO"
             fld_objs = collections.OrderedDict()
             for field in self.fields:
-                #print "field: {}".format(field)
                 fobj = collections.OrderedDict()
                 for csr_fld in csr_flds:
                     for k,v in field["field_map"].iteritems():
-                        #print "index: {} fields: {}".format(k, v)
                         if csr_fld["fld_name"] == v:
                             fld = dict()
                             fld["csr_fld_name"] = csr_fld["fld_name"]
@@ -162,12 +175,12 @@ class EntrySubNode(object):
                             fobj[k] = fld
                             idx_offset +=1
                 fld_objs[field["index"]] = fobj
-            print "fld_objs: {}".format(fld_objs)
+            log.debug("fld_objs: {}".format(fld_objs))
 
         else:
             fld_objs = collections.OrderedDict()
-            print "csr_flds: {}".format(csr_flds)
-            print "self.fields: {}".format(self.fields)
+            log.debug("csr_flds: {}".format(csr_flds))
+            log.debug("self.fields: {}".format(self.fields))
             for csr_fld in csr_flds:
                 for k,v in self.fields.iteritems():
                     if csr_fld["fld_name"] == v:
@@ -191,20 +204,19 @@ class EntrySubNode(object):
 
         self.fld_objs = fld_objs
         self.num_fields = idx_offset
-        print "num_fields: {}, num_cntrs: {}, fld_objs: {}".format(self.num_fields, self.num_cntrs, self.fld_objs)
-        print "input_map: {}".format(self.input_map)
+        log.debug(("num_fields: {}, num_cntrs: {}, fld_objs:"
+                  "{}").format(self.num_fields, self.num_cntrs, self.fld_objs))
+        log.debug("input_map: {}".format(self.input_map))
         for k,v in self.input_map.iteritems():
             rmin = v.range_min
             rmax = v.range_max
-            print k, rmin, rmax, self.num_cntrs
             self.num_cntrs *= (rmax - rmin)
-        print "input_map: {} self.num_cntrs: {}".format(self.input_map, self.num_cntrs)
+        log.debug("input_map: {} self.num_cntrs: {}".format(self.input_map,
+                                                            self.num_cntrs))
 
     def get_gen_objs(self):
-        print "CSR:".format(self.reg)
         csr_def = self.csr_defs.get_csr_def(self.reg, self.rn_class,
                 self.rn_inst, self.an_path, self.an, self.an_inst)
-        #print csr_def
 
         subnode = dict()
         subnode["csr"] = self.reg
@@ -218,18 +230,16 @@ class EntrySubNode(object):
         subnode["csr_type"] = self.csr_type
         subnode["reg_inst"] = self.reg_inst
         subnode["clear_on_read"] = self.clear_on_read
-        subnode["on_demand"] = self.on_demand
-        #print "CSR: {}".format(csr_entity)
         return subnode
 
-#for q_in it comes here
+# Process leaf stats entry node
 class EntryNode(object):
     def __init__(self, name, input, info):
         self.name = name
         self.subnodes = list()
-        print "PROCESSING ENTRY NODE:{}".format(name)
+        log.debug("Processing entry:{}".format(name))
         self.__process_entry(input, info)
-        print "ENTRY NODE ADDED:{}\n".format(name)
+        log.debug("Entry node added!:{}\n".format(name))
 
     def __process_entry(self, input, info):
         for e in info:
@@ -238,6 +248,7 @@ class EntryNode(object):
     def get_gen_objs(self):
         num_cntrs = 0
         rbuf_size = 0;
+        on_demand = False
         poll_interval = sys.maxsize;
         subnodes = list()
 
@@ -250,17 +261,21 @@ class EntryNode(object):
                 rbuf_size = subnode["csr_width"]
             if i.get_poll_interval() < poll_interval:
                 poll_interval = i.get_poll_interval()
+            if i.get_on_demand() == True:
+                on_demand = True
 
         gen_objs = dict()
         gen_objs["rbuf_size"] = rbuf_size
         gen_objs["num_cntrs"] = num_cntrs
         gen_objs["subnodes"] = subnodes
+        gen_objs["on_demand"] = on_demand
         if poll_interval == sys.maxsize:
-            gen_objs["poll_interval"] = 0
-        else:
-            gen_objs["poll_interval"] = poll_interval
-        print "{} POLL INTERVAL: {}".format(self.name, poll_interval)
-
+            poll_interval = 0
+        gen_objs["poll_interval"] = poll_interval
+        if on_demand == False and poll_interval == 0:
+            log.error("Either poll_interval attribute or on_demand attribute"
+                      "are needed for entry {}".format(self.name))
+            sys.exit(1)
         return gen_objs
 
     def get_an_list(self):
@@ -269,14 +284,14 @@ class EntryNode(object):
             an_set |= i.get_an_list()
         return an_set
 
-#For "queue" it comes here
+# Process endpoint stats node
 class EndPoint(object):
     EXCLUDE = ["input"]
     def __init__(self, name, info):
         self.name = name
         self.input = list()
         self.entry_map = collections.OrderedDict()
-        print "ELEMENT:{}".format(name)
+        log.debug("Endpoint:{}".format(name))
         self.__process_endpoint(info)
 
     def __process_endpoint(self, info):
@@ -301,7 +316,6 @@ class EndPoint(object):
         modules["input"] = self.input
         nodes = collections.OrderedDict()
         for k,v in self.entry_map.iteritems():
-            print "EntryNode: {}".format(k)
             nodes[k] = v.get_gen_objs()
         modules["nodes"] = nodes
         return modules
@@ -312,10 +326,10 @@ class EndPoint(object):
             an_set |= v.get_an_list()
         return an_set
 
-#For "qos" it comes here
+# Process module stats node
 class ModuleNode(object):
     def __init__(self, name, info):
-        print "MODULE:{}".format(name)
+        log.debug("Module: {}".format(name))
         self.name = name
         self.endpoint_map = collections.OrderedDict()
         self.__process_module(info)
@@ -331,7 +345,6 @@ class ModuleNode(object):
     def get_gen_objs(self):
         endpoints = collections.OrderedDict()
         for k,v in self.endpoint_map.iteritems():
-            print "Endpoint: {}".format(k)
             endpoints[k] = v.get_gen_objs()
         return endpoints
 
@@ -341,11 +354,11 @@ class ModuleNode(object):
             an_set |= v.get_an_list()
         return an_set
 
+# Process block stats node
 class BlockRoot(object):
     def __init__(self, block, data):
         self.module_map = collections.OrderedDict()
         self.name = block
-        print "\nMOD:{}".format(block)
         self.__block_process(data)
 
     def __block_process(self, data):
@@ -359,7 +372,7 @@ class BlockRoot(object):
     def get_gen_objs(self):
         modules = dict()
         for k,v in self.module_map.iteritems():
-            print "BlockRoot {}".format(k)
+            log.debug("BlockRoot {}".format(k))
             modules[k] = v.get_gen_objs()
         return modules
 
@@ -371,9 +384,8 @@ class BlockRoot(object):
 
 class StatsGen(object):
     def __init__(self, cwd):
-        print "Stats Code Generate"
+        log.info("Stats Code Generate")
         self.cwd = cwd
-        print "CWD: {}".format(cwd)
         self.cmd_parser = argparse.ArgumentParser(description="Stats Code Generatation")
         self.other_args = {}
         self.__arg_process(self.cmd_parser, self.other_args)
@@ -421,9 +433,9 @@ class StatsGen(object):
         inc_path = None
         code_str = None
         block_lst = list()
-        print "Generate the funos source code!"
+        log.info("Generate the funos source code!")
         for i, (k,v) in enumerate(cfg.get().iteritems()):
-            print "Generating source code for {}!".format(k)
+            log.debug("Generating source code for {}!".format(k))
             block = BlockRoot(k, v)
             headers= block.get_an_list()
             gen_objs = dict()
@@ -434,7 +446,7 @@ class StatsGen(object):
 
             file = "fun_{}_stats.c".format(k)
             gen_objs["file"] = file
-            print "Creating file {}".format(file)
+            log.info("Creating file {}".format(file))
             with open(os.path.join(args.out_dir, file), 'w') as f:
                 f.write(source_tmpl.render(gen_objs))
             f.close()
@@ -499,11 +511,14 @@ class csr_metadata:
         if not csr_defs_lst:
             return None
         else:
-            csr_defs_lst = [x for x in csr_defs_lst if self.csr_equal(x, rn_class, rn_inst, an_path, an, an_inst)]
+            csr_defs_lst = [x for x in csr_defs_lst        \
+                            if self.csr_equal(x, rn_class, \
+                            rn_inst, an_path, an, an_inst)]
 
         if len(csr_defs_lst) > 1:
-            print("There are more than one instance register defintion. Be more specific!!!")
-            print json.dumps(csr_defs_lst, indent=1)
+            log.error("There are more than one instance"
+                      "register defintion. Be more specific!!!")
+            log.info(json.dumps(csr_defs_lst, indent=1))
             sys.exit(1)
         if not csr_defs_lst:
             sys.exit(1)
@@ -512,4 +527,6 @@ class csr_metadata:
 if __name__ == "__main__":
     stats_gen = StatsGen(os.getcwd())
     stats_gen.run()
+
+
 
