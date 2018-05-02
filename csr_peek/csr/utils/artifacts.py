@@ -316,7 +316,7 @@ class CSRMetaData(object):
             m_name = csr_name.split('_')
             if m_name[-1].isdigit():
                 if int(m_name[-1]) > 0:
-                    print "Skipping {} {}".format(csr_name, m_name)
+                    #print "Skipping {}".format(csr_name)
                     return
                 lst = m_name[:-1]
             else:
