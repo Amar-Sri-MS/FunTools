@@ -320,16 +320,15 @@ class CSRMetaData(object):
         if csr_prop.type == "CSR_TYPE::REG_LST":
             m_name = csr_name.split('_')
             if m_name[-1].isdigit():
-                print "Digit: {}".format(m_name[-1])
                 if int(m_name[-1]) > 0:
                     print "Skipping {} {}".format(csr_name, m_name)
                     return
                 lst = m_name[:-1]
             else:
-                print "Something Wrong!!!Reg list should end with a digit!"
+                print "ERROR!!! REG_LST should end with a digit!"
                 sys.exit(1)
             csr_name = '_'.join(elem for elem in lst)
-        print "Adding csr {}".format(csr_name)
+        #print "ADD csr {}".format(csr_name)
         csr_metadata_lst = self.metadata.get(csr_name, [])
         if not csr_metadata_lst:
             self.metadata[csr_name] = csr_metadata_lst
@@ -372,23 +371,6 @@ class CSRMetaData(object):
     def get_csr_metadata(self):
         return self.metadata
 
-    """
-    def get_csr_metadata(self, csr_name, rn_class, rn_inst, an_path, an, an_inst):
-        csr_metadata_lst = self.metadata.get(csr_name, [])
-        if not csr_metadata_lst:
-            return None
-        else:
-            csr_metadata_lst[:] = [x for x in csr_metadata_lst if not csr_equal(x, rn_class, rn_inst, an_path, an, an_inst)]
-
-        return csr_metadata_lst
-    """
-    def csr_metadata_print(self):
-        for k,v in self.metadata.iteritems():
-            str = ""
-            for c in v:
-                str += "\t" + "{}".format(c) + "\n"
-            print "KEY: {}\n{}\n\n".format(k, str)
-
 class CSRRoot(object):
     START_RING = r'START_RING'
     END_RING = r'END_RING'
@@ -408,9 +390,6 @@ class CSRRoot(object):
         self.curr_an_name = None
         self.csr_map = csr_map
         self.csr_metadata = CSRMetaData()
-        print "Print csr_map start"
-        #print self.csr_map
-        print "Print csr_map end"
         self.ring_map = collections.OrderedDict()
         self.start_addr = 0xFFFFFFFFFF
         self.end_addr = 0
