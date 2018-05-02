@@ -594,7 +594,9 @@ class CSRRoot(object):
         # specific stuff that will be removed elsewhere
         if not self.an_added:
             prefix_path, an_name = ANUtils().get_an(self.curr_path)
-            assert an_name in self.csr_map
+            if not an_name in self.csr_map:
+                print "ANode: {} not found in csr_map!".format(an_name)
+                sys.exit(1)
             self.curr_rn.add_an(self.curr_ri,\
                     self.curr_path, self.curr_addr, self.csr_map[an_name])
             self.an_added = True

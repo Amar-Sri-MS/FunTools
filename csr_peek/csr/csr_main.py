@@ -45,7 +45,7 @@ class Slurper(object):
         return loc
 
     def __check_yml_dir(self, y_dir):
-        yml_dir = os.path.join(y_dir, "inc")
+        yml_dir = os.path.join(y_dir, "csr")
         if not os.path.exists(yml_dir):
             assert False, "Yaml directory: {} does not exist".format(yml_dir)
 
@@ -60,7 +60,7 @@ class Slurper(object):
         args.gen_cc = self.__update_loc(args.gen_cc)
 
         self.__check_yml_dir(args.csr_defs)
-        yml_dir = os.path.join(args.csr_defs, "inc")
+        yml_dir = os.path.join(args.csr_defs, "csr")
         amap_file = os.path.join(args.csr_defs, "AMAP")
         ring_file = os.path.join(args.csr_defs, "ringAN.yaml")
 
