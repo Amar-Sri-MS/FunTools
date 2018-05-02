@@ -87,10 +87,8 @@ CSR_RT_DIR = csr-rt/gen
 CSR_CFG_DIR = csr/csr_cfg
 
 # Install to SDK
-#install: cfg_pull
-install:
+install: cfg_pull
 	csr-slurp -i $(CSR_CFG_DIR) -o $(CSR_RT_DIR) -f $(CSR_TMPL_DIR)/csr_filter_tm.yaml
-	#csr-slurp -i $(FUNSDK_INSTALL_DIR) -o $(CSR_RT_DIR) -f $(CSR_TMPL_DIR)/csr_filter_tm.yaml
 	mkdir -p $(FUNSDK_INSTALL_DIR)
 	rsync -av $(CSR_METADATA) $(FUNSDK_INSTALL_DIR)
 
