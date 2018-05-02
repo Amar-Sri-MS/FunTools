@@ -66,28 +66,19 @@ distclean: clean
 
 
 
-###
-##  Build platform OS
-#
-
+# Build platform OS
 OS := $(shell uname)
 
-###
-##   The build is where our SDK is rooted
-#
+# The build is where our SDK is rooted
 SDKDIR ?= ../../FunSDK
 
-###
-##   Where install files go
-#
+# Where install files go
 SDK_INSTALL_DIR ?= $(SDKDIR)
 
-###
-##   The FunOS dir where config files reside
-#
+# The FunOS dir where config files reside
 FUNOSDIR ?= ../../FunOS
 
-# Directory where we install the working version of the ConfigGen
+# Directory where csr metadata file is copied
 FUNSDK_INSTALL_DIR = $(SDK_INSTALL_DIR)/FunSDK/config/csr
 
 CSR_METADATA = csr-rt/gen/csr_metadata.json
@@ -95,9 +86,11 @@ CSR_TMPL_DIR = csr/template
 CSR_RT_DIR = csr-rt/gen
 CSR_CFG_DIR = csr/csr_cfg
 
-# install to SDK
-install: cfg_pull
+# Install to SDK
+#install: cfg_pull
+install:
 	csr-slurp -i $(CSR_CFG_DIR) -o $(CSR_RT_DIR) -f $(CSR_TMPL_DIR)/csr_filter_tm.yaml
+	#csr-slurp -i $(FUNSDK_INSTALL_DIR) -o $(CSR_RT_DIR) -f $(CSR_TMPL_DIR)/csr_filter_tm.yaml
 	mkdir -p $(FUNSDK_INSTALL_DIR)
 	rsync -av $(CSR_METADATA) $(FUNSDK_INSTALL_DIR)
 
