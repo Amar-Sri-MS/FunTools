@@ -1,11 +1,8 @@
 #!/usr/bin/env python
 import csr.csr_main as csr
 import os
-from csr.utils.artifacts import CSRRoot, Walker, RingUtil, TmplMgr
 
 if __name__ == "__main__":
-    print os.getcwd()
     csr_slrp = csr.Slurper(os.getcwd())
-    csr_root = csr_slrp.run()
-    #csr_root.csr_metadata_print()
+    csr_slrp.run()
     #print "{}".format(csr_slrp)

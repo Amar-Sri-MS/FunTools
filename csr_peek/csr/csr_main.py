@@ -15,12 +15,11 @@ from csr.utils.yml import YML_Reader, CSR_YML_Reader
 from csr.utils.artifacts import CSRRoot, Walker, RingUtil, TmplMgr
 
 class Slurper(object):
-    def __init__(self, cwd, csr_dir=None):
+    def __init__(self, cwd):
         print "Started Slurper"
         self.cwd = cwd
         self.cmd_parser = argparse.ArgumentParser(description="CSR Slurper utility for F1")
         self.other_args = {}
-        self.csr_dir = csr_dir
         self.__arg_process(self.cmd_parser, self.other_args)
 
     def __arg_process(self, cmd_parser, other_args):
@@ -31,11 +30,6 @@ class Slurper(object):
 
         cmd_parser.add_argument("-o", "--gen-cc", help="Dir for the C++ files.",
                 required=True, type=str)
-
-        cmd_parser.add_argument("-s", "--sdk-dir", help="SDK root directory",
-                required=False, type=str)
-        cmd_parser.add_argument("-c", "--cfg-dir", help="Dir for config files",
-                required=False, type=str)
 
         self.other_args['tmpl_file'] = os.path.join(ml_dir, "template", "csr_rt.j2")
         self.other_args['csr_defs']  = os.path.join(ml_dir, "template", "csr_defs.yaml")
@@ -60,9 +54,6 @@ class Slurper(object):
             assert False, "Yaml: {} not a directory".format(yml_dir)
         if not os.path.exists(os.path.join(y_dir, "AMAP")):
             assert False, "AMAP file does not exist"
-        #if not os.path.exists(os.path.join(y_dir, "ringAN.yaml")):
-        #    assert False, "Ring file does not exist"
-
 
     def run(self):
         args = self.cmd_parser.parse_args()

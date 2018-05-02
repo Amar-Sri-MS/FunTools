@@ -11,7 +11,7 @@
 #
 # exclude will remove *everything* from top level down, unless an include definition is encountered
 # include must be a strict subset of exclude
-# include includes everything under that tree.
+# include includes everything under that tree. 
 # Default is to exclude everything. So, please choose wisely
 # All of these specifications are regular expression that match from the beginning.
 #
@@ -27,13 +27,11 @@
 
 # This is just an example config. Please choose yours
 
-#include_ring: [nu, hnu]
 include_ring: [nu]
 exclude_interior: [pc_soc_clk]
-exclude_an: [fpg_prs, fae_prs, etp_prs, erp_prs, stg0_ffe, stg1_ffe, stg2_ffe, stg3_ffe, stg4_ffe, stg5_ffe, stg6_ffe]
+exclude_an: [stg0_ffe, stg1_ffe, stg2_ffe, stg3_ffe, stg4_ffe, stg5_ffe, stg6_ffe]
 exclude_csr: [fms, sfg, dma]
-#include_attr: [local | config, local | status]
-include_attr: [local | config, local | status, remote | config | counter, remote | config, remote | status, INTR, FINTR, ISTAT, IBSET, IBCLR, remote | status | debug, remote | config | debug, local | status | debug, local | config | debug, debug | counter | config | remote]
+include_attr: [local | config, local | status]
 
 
 
