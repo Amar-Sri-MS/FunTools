@@ -91,12 +91,11 @@ FUNOSDIR ?= ../../FunOS
 FUNSDK_INSTALL_DIR = $(SDK_INSTALL_DIR)/FunSDK/config/csr
 
 
-SRC = csr-rt/gen/csr_metadata.json
+CSR_METADATA = csr-rt/gen/csr_metadata.json
 
 # install to SDK
-install: cfg
-	#csr-slurp -i $(FUNSDK_INSTALL_DIR)/csr_cfg -o csr-rt/gen
-	csr-slurp -i csr/csr_cfg -o csr-rt/gen
+install: cfg_pull
+	csr-slurp -i csr/csr_cfg -o csr-rt/gen -f csr_filter_tm.yaml
 	mkdir -p $(FUNSDK_INSTALL_DIR)
-	rsync -av $(SRC) $(FUNSDK_INSTALL_DIR)
+	rsync -av $(CSR_METADATA) $(FUNSDK_INSTALL_DIR)
 

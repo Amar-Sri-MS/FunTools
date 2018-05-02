@@ -91,7 +91,6 @@ class Slurper(object):
         o_file = os.path.join(args.gen_cc, 'csr_gen.cpp')
         tmpl.write_cfg(o_file, csr_root)
 
-
         o_file = os.path.join(args.gen_cc, 'csr_metadata.json')
         with open(o_file, "w") as fp:
             fp.write(json.dumps(csr_root.get_csr_metadata(), indent=4))
