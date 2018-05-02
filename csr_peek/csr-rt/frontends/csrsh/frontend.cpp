@@ -162,6 +162,7 @@ int main(int argc, char** argv)
     rl_bind_key('\t', rl_insert);
 
     while((buf = readline("csrsh>> ")) != nullptr) {
+	if (buf[0] == '\0') continue;
         if (strlen(buf) > 0) add_history(buf);
         if(!strcmp(buf, "quit")) break;
         if(!strcmp(buf, "exit")) break;

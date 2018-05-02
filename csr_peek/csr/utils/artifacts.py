@@ -380,11 +380,14 @@ class CSRRoot(object):
 
     def __read_update(self, m_file, filter_yml):
         f = open(m_file, "r")
+        skip = False
         for line in f:
             line = line.lstrip()
             #print "LINE:{}".format(line)
             if self.__ignore(line):
                 #print "IGNORE: {}".format(line)
+                if re.search(r'^##-INFO-:', line):
+                    skip = True
                 continue
             if self.__process_ring(line):
                 continue
@@ -393,6 +396,10 @@ class CSRRoot(object):
             if self.__process_anode(line):
                 do_process = self.__filter(line, filter_yml)
                 self.an_added = False
+                skip = False
+                continue
+            if skip:
+                #print "IGNORE: {}".format(line)
                 continue
             self.__process_csr(line, do_process, filter_yml)
 
