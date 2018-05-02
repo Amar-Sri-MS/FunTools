@@ -51,8 +51,9 @@ header = """
 """
 # Add quotes to keys, hex values, remove comments and remove trailing commas
 def standardize_json(in_cfg, out_cfg):
-	with open(in_cfg, 'r') as fh:
-                fixed_json = ''.join(line for line in fh if not line.startswith('//'))
+        with open(in_cfg, 'r') as fh:
+                fixed_json = fh.read()
+
                 print "Removing Comments in %s"% (in_cfg)
                 fixed_json = remove_comments(fixed_json)
 
@@ -71,9 +72,9 @@ def standardize_json(in_cfg, out_cfg):
                 print "Strip trailing commas in %s"% (in_cfg)
                 fixed_json = remove_trailing_commas(fixed_json)
 
-		f = open("%s" % out_cfg, 'w')
-		f.write(fixed_json)
-		f.close()
+                f = open("%s" % out_cfg, 'w')
+                f.write(fixed_json)
+                f.close()
 
 
 def lambda_hextoint(x):
@@ -98,15 +99,37 @@ def remove_trailing_commas(json_like):
         >>> remove_trailing_commas('{"foo":"bar","baz":["blah",],}')
         '{"foo":"bar","baz":["blah"]}'
     """
-    trailing_object_commas_re = re.compile(
-        r'(,)\s*}(?=([^"\\]*(\\.|"([^"\\]*\\.)*[^"\\]*"))*[^"]*$)')
-    trailing_array_commas_re = re.compile(
-        r'(,)\s*\](?=([^"\\]*(\\.|"([^"\\]*\\.)*[^"\\]*"))*[^"]*$)')
-    # Fix objects {} first
-    objects_fixed = trailing_object_commas_re.sub("}", json_like)
-    # Now fix arrays/lists [] and return the result
-    return trailing_array_commas_re.sub("]", objects_fixed)
+    pos = 0
+    while pos < len(json_like):
+        if json_like[pos] == '"':
+                pos = consume_string(json_like, pos)
+                assert json_like[pos-1] == '"'
+        elif json_like[pos] in "]}":
+                prev = pos-1
+                assert prev >= 0
+                while json_like[prev].isspace():
+                        prev -= 1
+                        assert prev >= 0
+                if json_like[prev] == ",":
+                        json_like = json_like[:prev] + json_like[pos:]
+                        assert json_like[prev] in "]}"
+                        pos = prev + 1
+                else:
+                        pos += 1
+        else:
+                pos += 1
+    return json_like
 
+def consume_string(json_like, pos):
+        assert json_like[pos] == '"'
+        pos += 1
+        while json_like[pos] != '"':
+                c = json_like[pos]
+                if c == "\\":
+                        pos += 2
+                else:
+                        pos += 1
+        return pos + 1
 
 # if the key is in the cfg_replace file use it and replace that on the cfg
 def replace_dicts(cfg, cfg_replace):

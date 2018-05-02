@@ -500,6 +500,7 @@ do_retry:
 
 	r = base64_decode(binbuf, *nbytes, buf);
 	if (r < 0) {
+		buf[*nbytes] = '\0';
 		printf("$ %s\n", buf);
 		free(buf);
 
