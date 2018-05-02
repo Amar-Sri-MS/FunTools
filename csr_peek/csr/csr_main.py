@@ -79,6 +79,7 @@ class Slurper(object):
         # Only populates the address attribute
         p = YML_Reader()
         csr_def = p.read_file(self.other_args['csr_defs'])
+        print "Filter file: {}".format(args.filter_file)
         filter_def = p.read_file(args.filter_file)
 
         # Pass to CSR Yaml reader, a list of included & excluded CSRs
