@@ -190,14 +190,14 @@ class RingProps(object):
         return self.root_paths[path]
 
     def get_an(self, an_name):
-        print an_name
         #print self.anodes.keys()
         return self.anodes[an_name]
 
+    # Get the properties of CSR from csr_map
     def get_csr_prop(self, an_name, csr_name):
         an_csrs = self.csr_map.get(an_name, None)
         #print "AN: {} csr_name: {} CSRs".format(an_name, csr_name)
-        csr_prop = an_csrs.get()[csr_name]
+        csr_prop = an_csrs.get().get(csr_name, None)
         if csr_prop == None:
             print "ERROR! Could not find CSR in csr_map."
             sys.exit(1)
@@ -314,13 +314,15 @@ class CSRMetaData(object):
 
         if csr_prop.type == "CSR_TYPE::REG_LST":
             m_name = csr_name.split('_')
-            if m_name[-1].isdigit():
-                if int(m_name[-1]) > 0:
+            inst_str = m_name[-1]
+            if inst_str.isdigit():
+                if int(inst_str) > 0:
                     #print "Skipping {}".format(csr_name)
                     return
                 lst = m_name[:-1]
             else:
-                print "ERROR!!! REG_LST should end with a digit!"
+                print(("ERROR!!! CSR:{} REG_LST should end with a"
+                      "digit!").format(csr_name))
                 sys.exit(1)
             csr_name = '_'.join(elem for elem in lst)
         #print "ADD csr {}".format(csr_name)
@@ -597,8 +599,8 @@ class CSRRoot(object):
             if not an_name in self.csr_map:
                 print "ANode: {} not found in csr_map!".format(an_name)
                 sys.exit(1)
-            self.curr_rn.add_an(self.curr_ri,\
-                    self.curr_path, self.curr_addr, self.csr_map[an_name])
+            self.curr_rn.add_an(self.curr_ri, self.curr_path,\
+                        self.curr_addr, self.csr_map.get(an_name, None))
             self.an_added = True
         #print "CSR_ACCEPT: {}".format(line)
         csr_addr = None

@@ -113,17 +113,40 @@ class JSON_Reader(object):
     def remove_trailing_commas(self, json_like):
         """
         Removes trailing commas from *json_like* and returns the result.  Example::
-                >>> remove_trailing_commas('{"foo":"bar","baz":["blah",],}')
-                '{"foo":"bar","baz":["blah"]}'
+            >>> remove_trailing_commas('{"foo":"bar","baz":["blah",],}')
+            '{"foo":"bar","baz":["blah"]}'
         """
-        trailing_object_commas_re = re.compile(
-                r'(,)\s*}(?=([^"\\]*(\\.|"([^"\\]*\\.)*[^"\\]*"))*[^"]*$)')
-        trailing_array_commas_re = re.compile(
-                r'(,)\s*\](?=([^"\\]*(\\.|"([^"\\]*\\.)*[^"\\]*"))*[^"]*$)')
-        # Fix objects {} first
-        objects_fixed = trailing_object_commas_re.sub("}", json_like)
-        # Now fix arrays/lists [] and return the result
-        return trailing_array_commas_re.sub("]", objects_fixed)
+        pos = 0
+        while pos < len(json_like):
+            if json_like[pos] == '"':
+                pos = self.consume_string(json_like, pos)
+                assert json_like[pos-1] == '"'
+            elif json_like[pos] in "]}":
+                prev = pos-1
+                assert prev >= 0
+                while json_like[prev].isspace():
+                    prev -= 1
+                    assert prev >= 0
+                if json_like[prev] == ",":
+                    json_like = json_like[:prev] + json_like[pos:]
+                    assert json_like[prev] in "]}"
+                    pos = prev + 1
+                else:
+                    pos += 1
+            else:
+                pos += 1
+        return json_like
+
+    def consume_string(self, json_like, pos):
+        assert json_like[pos] == '"'
+        pos += 1
+        while json_like[pos] != '"':
+            c = json_like[pos]
+            if c == "\\":
+                pos += 2
+            else:
+                pos += 1
+        return pos + 1
 
     def read_file(self, f_name):
         log.debug("handling config for %s" % f_name)
