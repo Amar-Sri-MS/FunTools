@@ -1,0 +1,475 @@
+{#
+
+Template for stats source code generation
+
+-#}
+/*
+ *  {{file}}.c
+ *
+ *  !!!!!AUTO-GENERATED FILE. DO NOT EDIT!!!!
+ *
+ *  Copyright 2018 Fungible Inc. All rights reserved.
+ */
+
+#include <utils/threaded/fun_json.h>
+#include <hw/common/stats.h>
+#include <props_bridges/props_bridges.h>
+#include <utils/threaded/fun_props.h>
+#include <utils/threaded/fun_malloc_threaded.h>
+
+#include <FunSDK/chip/f1/hw/include/core/csr_acc.h>
+{% for header in dyn_headers -%}
+#include <FunSDK/chip/f1/hw/include/csr/{{header}}_an.h>
+{% endfor %}
+
+#define ACCUMULATE(acntr, scntr, cntr, width) \
+    if(cntr < scntr) {          \
+        (acntr) += (cntr) + (((0x1UL << (width))-1)-(scntr)); \
+    } else {                \
+        (acntr) += (cntr) - (scntr); \
+    } \
+    scntr = cntr;
+
+
+{%- macro block_prop_macro(block) -%}
+    STATS_{{block|upper}}_PROP_PATH
+{%- endmacro -%}
+
+{%- macro module_endpoint_prop_macro(block,module,endpoint) -%}
+    STATS_{{block|upper}}_{{module|upper}}_{{endpoint|upper}}_PATH
+{%- endmacro -%}
+
+{%- macro cntr_name(module, endpoint, node) -%}
+    {{module}}_{{endpoint}}_{{node}}_stats
+{%- endmacro -%}
+
+{%- macro csr_read(csr, type, baddr, idx) -%}
+    {{csr|upper}}_
+    {%- if type == "CSR_TYPE::TBL" or type == "CSR_TYPE::TBL_HETERO" -%}
+        IREAD({{'0x%x' % baddr}}, rbuf, {{idx}});
+    {%- elif type == "CSR_TYPE::REG_LST" -%}
+        0_READ({{'0x%x' % baddr}}, rbuf);
+    {%- else -%}
+        READ({{'0x%x' % baddr}}, rbuf);
+    {%- endif -%}
+{%- endmacro -%}
+
+{%- macro csr_write(csr, type, baddr, idx) -%}
+    {{csr|upper}}_
+    {%- if type == "CSR_TYPE::TBL" or type == "CSR_TYPE::TBL_HETERO" -%}
+        IWRITE({{'0x%x' % baddr}}, rbuf, {{idx}});
+    {%- elif type == "CSR_TYPE::REG_LST" -%}
+        0_WRITE({{'0x%x' % baddr}}, rbuf);
+    {%- else -%}
+        WRITE({{'0x%x' % baddr}}, rbuf);
+    {%- endif -%}
+{%- endmacro -%}
+
+{%- macro csr_field_read(csr, type, field, cntr, offset, accumuate) -%}
+    {%- if accumuate -%}
+        {{csr|upper}}_{{'0_' if type == "CSR_TYPE::REG_LST" else ""}}{{field.csr_fld_name|upper}}_READ(rbuf, &fbuf);
+        ACCUMULATE({{cntr}}[{{offset}}], {{cntr}}_shadow[{{offset}}], fbuf, {{field.csr_fld_width}});
+    {% else %}
+        {{csr|upper}}_{{'0_' if type == "CSR_TYPE::REG_LST" else ""}}{{field.csr_fld_name|upper}}_READ(rbuf, &{{cntr}}[{{offset}}]);
+    {%- endif -%}
+{%- endmacro -%}
+
+{%- macro csr_field_clear(csr, type, field, cntr, offset, accumuate) -%}
+    {%- if accumuate -%}
+        {{csr|upper}}_{{'0_' if type == "CSR_TYPE::REG_LST" else ""}}{{field.csr_fld_name|upper}}_WRITE(rbuf, &fbuf);
+        {{cntr}}_shadow[{{offset}}] = 0;
+    {% else %}
+        {{csr|upper}}_{{'0_' if type == "CSR_TYPE::REG_LST" else ""}}{{field.csr_fld_name|upper}}_WRITE(rbuf, &fbuf);
+    {%- endif -%}
+{%- endmacro -%}
+
+
+{%- macro index(input) -%}
+    {%- for k,v in input.iteritems() -%}
+        {%- if not loop.first -%}
+            +
+        {%- endif -%}
+        {%- if v.incr > 1 -%}
+            {%- if v.range_min > 0 -%}
+                ((i_{{loop.index}}-{{v.range_min}})*{{v.incr}})
+            {%- else -%}
+                (i_{{loop.index}}*{{v.incr}})
+            {%- endif -%}
+        {%- else -%}
+            {%- if v.range_min > 0 -%}
+                (i_{{loop.index}} - {{v.range_min}})
+            {%- else -%}
+                i_{{loop.index}}
+            {%- endif -%}
+        {%- endif -%}
+    {%- endfor -%}
+{%- endmacro -%}
+
+{%- macro csr_table_idx(offset, input) -%}
+    {%- if offset > 0 -%}
+        {{offset}} + ({{index(input)}})
+    {%- else -%}
+        {{index(input)}}
+    {%- endif -%}
+{%- endmacro -%}
+
+{%- macro stat_arr_idx(offset, input, num_fields, cntr_num) -%}
+    {%- if cntr_num > 0 -%} ( {%- endif -%}
+    {%- if offset > 0 -%}
+        {%- if num_fields > 1 -%}
+            ({{offset}}+({{index(input)}})*{{num_fields|string}})
+        {%- else -%}
+            {{offset}}+{{index(input)}}
+        {%- endif -%}
+    {%- else -%}
+        {%- if num_fields > 1 -%}
+            ({{index(input)}})*{{num_fields|string}}
+        {%- else -%}
+            {{index(input)}}
+        {%- endif -%}
+    {%- endif -%}
+    {%- if cntr_num > 0 -%}
+        )+{{cntr_num}}
+    {%- endif -%}
+{%- endmacro -%}
+
+{%- macro read_reg(s, cntr, accumuate) -%}
+    {%- if s.csr_type == "CSR_TYPE::TBL_HETERO" -%}
+        {% for idx,fields in s.fields.iteritems() %}
+            {{csr_read(s.csr, s.csr_type, s.base_addr, idx)}}
+            {%- for k,v in fields.iteritems() -%}
+                {%- set cntr_idx = s.cntr_base + v.cntr_idx_offset -%}
+                {{csr_field_read(s.csr, s.csr_type, v, cntr, cntr_idx, accumuate)}}
+            {% endfor %}
+        {% endfor %}
+    {%- elif s.csr_type == "CSR_TYPE::TBL" -%}
+        {%- set csr_idx = csr_table_idx(s.csr_offset, s.input) %}
+        {{csr_read(s.csr, s.csr_type, s.base_addr, csr_idx)}}
+        {%- for k,v in s.fields.iteritems() -%}
+                {%- set cntr_idx = stat_arr_idx(s.cntr_base, s.input, s.fields|length, loop.index0) -%}
+                {{csr_field_read(s.csr, s.csr_type, v, cntr, cntr_idx, accumuate)}}
+        {% endfor %}
+    {%- elif s.csr_type == "CSR_TYPE::REG_LST" -%}
+        {% for i in range(s.reg_inst.range_min, s.reg_inst.range_max) %}
+            {%- set baddr = s.base_addr + (s.csr_width*8*(i-s.reg_inst.range_min)) -%}
+            {{csr_read(s.csr, s.csr_type, baddr, None)}}
+            {%- set cntr_base = s.num_fields * (i-s.reg_inst.range_min) -%}
+            {%- for k,v in s.fields.iteritems() -%}
+                {%- set cntr_idx = cntr_base + v.cntr_idx_offset -%}
+                {{csr_field_read(s.csr, s.csr_type, v, cntr, cntr_idx, accumuate)}}
+            {% endfor %}
+        {% endfor %}
+    {%- elif s.csr_type == "CSR_TYPE::REG" -%}
+        {{csr_read(s.csr, s.csr_type, s.base_addr, None)}}
+        {%- for k,v in s.fields.iteritems() -%}
+            {%- set cntr_idx = loop.index0 -%}
+            {{csr_field_read(s.csr, s.csr_type, v, cntr, cntr_idx, accumuate)}}
+        {% endfor %}
+    {% endif %}
+{%- endmacro -%}
+
+
+{%- macro reg_clear(s, cntr) -%}
+    fbuf = 0;
+    {%- if s.csr_type == "CSR_TYPE::TBL_HETERO" -%}
+        {% for idx,fields in s.fields.iteritems() %}
+            {%- for k,v in fields.iteritems() -%}
+                {%- set cntr_idx = s.cntr_base + v.cntr_idx_offset -%}
+                {{csr_field_clear(s.csr, s.csr_type, v, cntr, cntr_idx)}}
+            {% endfor %}
+            {{csr_write(s.csr, s.csr_type, s.base_addr, idx)}}
+        {% endfor %}
+    {%- elif s.csr_type == "CSR_TYPE::TBL" -%}
+        {%- set csr_idx = csr_table_idx(s.csr_offset, s.input) %}
+        {%- for k,v in s.fields.iteritems() -%}
+                {%- set cntr_idx = stat_arr_idx(s.cntr_base, s.input, s.fields|length, loop.index0) -%}
+                {{csr_field_clear(s.csr, s.csr_type, v, cntr, cntr_idx)}}
+        {% endfor %}
+        {{csr_write(s.csr, s.csr_type, s.base_addr, csr_idx)}}
+    {%- elif s.csr_type == "CSR_TYPE::REG_LST" -%}
+        {% for i in range(s.reg_inst.range_min, s.reg_inst.range_max) %}
+            {%- set cntr_base = s.num_fields * (i-s.reg_inst.range_min) -%}
+            {%- for k,v in s.fields.iteritems() -%}
+                {%- set cntr_idx = cntr_base + v.cntr_idx_offset -%}
+                {{csr_field_clear(s.csr, s.csr_type, v, cntr, cntr_idx)}}
+            {% endfor %}
+            {%- set baddr = s.base_addr + (s.csr_width*8*(i-s.reg_inst.range_min)) -%}
+            {{csr_write(s.csr, s.csr_type, baddr, None)}}
+        {% endfor %}
+    {%- elif s.csr_type == "CSR_TYPE::REG" -%}
+        {%- for k,v in s.fields.iteritems() -%}
+            {%- set cntr_idx = loop.index0 -%}
+            {{csr_field_write(s.csr, s.csr_type, v, cntr, cntr_idx)}}
+        {% endfor %}
+        {{csr_write(s.csr, s.csr_type, s.base_addr, None)}}
+    {% endif %}
+{%- endmacro -%}
+
+{%- macro for_loop(depth, min, max) %}
+    for (unsigned int i_{{depth}} = {{min}}; i_{{depth}} < {{max}}; i_{{depth}}++)
+{%- endmacro -%}
+
+{%- macro subnode_read(s, cntr, interval) -%}
+    {%- if  s.input|length > 0 -%}
+    {%- for k,v in s.input.iteritems() -%}
+    {{for_loop(loop.index, v.range_min, v.range_max)}} {{'{'}}
+            {%- if loop.last -%}
+                {%- set accumuate = True if interval > 1 else False -%}
+                {{read_reg(s, cntr, accumuate)}}
+                {%- if s.clear_on_read == "true" -%}
+                    {{reg_clear(s, cntr)}}
+                {%- endif -%}
+            {%- endif -%}
+    {%- endfor -%}
+    {% for input in s.input -%}
+        }
+    {% endfor -%}
+    {% else %}
+        {{read_reg(s, cntr, interval)}}
+        {%- if s.clear_on_read == "true" -%}
+            uint64_t fbuf;
+            {{reg_clear(s, cntr)}}
+        {%- endif -%}
+    {% endif %}
+{%- endmacro -%}
+
+{%- macro print_funcion_line() -%}
+	printf("%s: %d\n", __func__, __LINE__);
+{%- endmacro -%}
+
+{%- for module,endpoints in modules.iteritems() %}
+    {%- for endpoint,entries in endpoints.iteritems() %}
+        {% for k,v in entries.nodes.iteritems() %}
+            static uint64_t {{cntr_name(module, endpoint, k)}}[{{v.num_cntrs}}];
+            {%- if v.poll_interval > 0 -%}
+                static uint64_t {{cntr_name(module, endpoint, k)}}_shadow[{{v.num_cntrs}}];
+            {% endif %}
+            static void MAYBE_UNUSED {{module}}_{{endpoint}}_{{k}}_stats_read(void *arg)
+            {
+                uint64_t rbuf[{{v.rbuf_size}}] = {0};
+                {%- if v.poll_interval > 0 -%}
+                    uint64_t fbuf = 0;
+                {% endif %}
+                {#
+                {{print_funcion_line()}}
+                #}
+                {% for s in v.subnodes -%}
+                    {{subnode_read(s, cntr_name(module, endpoint, k), v.poll_interval)}}
+                {%- endfor -%}
+            }
+        {%- endfor -%}
+    {% endfor -%}
+{% endfor -%}
+
+{%- macro json_create(s, cntr) -%}
+    const int64_t values[] = {{'{'}}
+    {%- if s.csr_type == "CSR_TYPE::TBL_HETERO" -%}
+        {% for idx,fields in s.fields.iteritems() %}
+            {%- for k,v in fields.iteritems() -%}
+                {%- set cntr_idx = s.cntr_base + v.cntr_idx_offset -%}
+                {{cntr}}[{{cntr_idx}}] {%- if not loop.last -%} , {%- endif -%}
+            {% endfor %}
+            {%- if not loop.last -%} , {%- endif -%}
+        {% endfor %}
+        {{'}'}};
+        const char *keys[] = {{'{'}}
+        {% for idx,fields in s.fields.iteritems() %}
+            {%- for k,v in fields.iteritems() -%}
+                "{{k}}" {%- if not loop.last -%} , {%- endif -%}
+            {%- endfor -%}
+            {%- if not loop.last -%} , {%- endif -%}
+        {%- endfor -%}
+        {{'}'}};
+        dict{{s.input|length}}= fun_json_create_dict_from_int64s({{s.num_fields}}, keys, fun_json_no_copy_no_own, values);
+        {%- if s.clear_on_read == "true" -%}
+        {% for idx,fields in s.fields.iteritems() %}
+            {%- for k,v in fields.iteritems() -%}
+                {%- set cntr_idx = s.cntr_base + v.cntr_idx_offset -%}
+                {{cntr}}[{{cntr_idx}}] = 0;
+                {%- if s.on_demand == "false" -%}
+                    {{cntr}}_shadow[{{cntr_idx}}] = 0;
+                {%- endif -%}
+            {% endfor %}
+        {% endfor %}
+        {%- endif -%}
+    {%- elif s.csr_type == "CSR_TYPE::TBL" -%}
+        {%- for k,v in s.fields.iteritems() -%}
+            {%- set cntr_idx = stat_arr_idx(s.cntr_base,s.input, s.num_fields, loop.index0) -%}
+            {{cntr}}[{{cntr_idx}}] {%- if not loop.last -%} , {%- endif -%}
+        {%- endfor -%}
+        {{'}'}};
+        const char *keys[] = {{'{'}}
+        {%- for k,v in s.fields.iteritems() -%}
+            "{{k}}" {%- if not loop.last -%} , {%- endif -%}
+        {%- endfor -%}
+        {{'}'}};
+        struct fun_json *dict{{s.input|length}}= fun_json_create_dict_from_int64s({{s.num_fields}}, keys, fun_json_no_copy_no_own, values);
+        {%- if s.clear_on_read == "true" -%}
+        {%- for k,v in s.fields.iteritems() -%}
+            {%- set cntr_idx = stat_arr_idx(s.cntr_base,s.input, s.num_fields, loop.index0) -%}
+            {{cntr}}[{{cntr_idx}}] = 0;
+            {%- if s.on_demand == "false" -%}
+                {{cntr}}_shadow[{{cntr_idx}}] = 0;
+            {%- endif -%}
+        {%- endfor -%}
+        {%- endif -%}
+    {%- elif s.csr_type == "CSR_TYPE::REG_LST" -%}
+        {%- for k,v in s.fields.iteritems() -%}
+            {%- set cntr_idx = s.cntr_base + v.cntr_idx_offset -%}
+            {{cntr}}[i_1] {%- if not loop.last -%} , {%- endif -%}
+        {%- endfor -%}
+        {{'}'}};
+        const char *keys[] = {{'{'}}
+        {%- for k,v in s.fields.iteritems() -%}
+            "{{k}}" {%- if not loop.last -%} , {%- endif -%}
+        {%- endfor -%}
+        {{'}'}};
+        struct fun_json *dict1= fun_json_create_dict_from_int64s({{s.num_fields}}, keys, fun_json_no_copy_no_own, values);
+        {%- if s.clear_on_read == "true" -%}
+        {%- for k,v in s.fields.iteritems() -%}
+            {%- set cntr_idx = s.cntr_base + v.cntr_idx_offset -%}
+            {{cntr}}[i_1] = 0;
+            {%- if s.on_demand == "false" -%}
+                {{cntr}}_shadow[i_1] = 0;
+            {%- endif -%}
+        {%- endfor -%}
+        {%- endif -%}
+    {%- elif  s.csr_type == "CSR_TYPE::REG" -%}
+        {%- for k,v in s.fields.iteritems() -%}
+            {%- set cntr_idx = s.cntr_base + v.cntr_idx_offset -%}
+            {{cntr}}[{{cntr_idx}}] {%- if not loop.last -%} , {%- endif -%}
+        {%- endfor -%}
+        {{'}'}};
+        const char *keys[] = {{'{'}}
+        {%- for k,v in s.fields.iteritems() -%}
+            "{{k}}" {%- if not loop.last -%} , {%- endif -%}
+        {%- endfor -%}
+        {{'}'}};
+        dict{{s.input|length}}= fun_json_create_dict_from_int64s({{s.num_fields}}, keys, fun_json_no_copy_no_own, values);
+        {%- if s.clear_on_read == "true" -%}
+        {%- for k,v in s.fields.iteritems() -%}
+            {%- set cntr_idx = s.cntr_base + v.cntr_idx_offset -%}
+            {{cntr}}[{{cntr_idx}}] = 0;
+            {%- if s.on_demand == "false" -%}
+                {{cntr}}_shadow[{{cntr_idx}}] = 0;
+            {%- endif -%}
+        {%- endfor -%}
+        {%- endif -%}
+    {% endif %}
+{%- endmacro -%}
+
+{%- macro subnode_json_create(s, cntr) -%}
+    {%- if s.csr_type == "CSR_TYPE::TBL_HETERO" -%}
+        {{json_create(s, cntr)}}
+    {%- elif s.csr_type == "CSR_TYPE::TBL" -%}
+        {%- for k,v in s.input.iteritems() -%}
+            {{for_loop(loop.index, v.range_min, v.range_max)}} {{'{'}}
+            {%- if not loop.last -%}
+                struct fun_json *dict{{loop.index}} = fun_json_create_empty_dict();
+            {% else %}
+                {{json_create(s, cntr)}}
+            {%- endif -%}
+        {%- endfor -%}
+        {% for k,v in s.input.iteritems()|reverse -%}
+            char key[32];
+            snprintf(key, 32, "{{k}}%d", i_{{loop.revindex}});
+            fun_json_dict_add(dict{{loop.revindex-1}}, key, fun_json_no_copy_no_own, dict{{loop.revindex}}, false);
+            {{'}'}}
+        {% endfor -%}
+    {%- elif s.csr_type == "CSR_TYPE::REG_LST" -%}
+        {{for_loop(1, s.reg_inst.range_min, s.reg_inst.range_max)}} {{'{'}}
+            {{json_create(s, cntr)}}
+            char key[32];
+            snprintf(key, 32, "{{s.reg_inst.name}}%d", i_1);
+            fun_json_dict_add(dict0, key, fun_json_no_copy_no_own, dict1, false);
+        {{'}'}}
+    {%- elif s.csr_type == "CSR_TYPE::REG" -%}
+        {{json_create(s, cntr)}}
+    {% endif %}
+{%- endmacro -%}
+
+{%- for module,endpoints in modules.iteritems() %}
+    {%- for endpoint,entries in endpoints.iteritems() %}
+        {% for k,v in entries.nodes.iteritems() %}
+            static struct fun_json *{{module}}_{{endpoint}}_{{k}}_create_json(void)
+            {% raw -%}
+                {
+            {%- endraw %}
+            struct fun_json *dict0 = fun_json_create_empty_dict();
+            {#
+            {{print_funcion_line()}}
+	    #}
+            {%- if v.on_demand == True -%}
+                {{module}}_{{endpoint}}_{{k}}_stats_read(NULL);
+            {%- endif -%}
+
+            {%- for s in v.subnodes -%}
+                {{subnode_json_create(s, cntr_name(module, endpoint, k))}}
+            {%- endfor %}
+            return dict0;
+            {% raw -%}
+                }
+            {%- endraw %}
+        {% endfor %}
+    {% endfor -%}
+{% endfor -%}
+
+#define {{ block_prop_macro(block) }} "stats/{{block}}/"
+
+{%- for module,endpoints in modules.iteritems() %}
+    {% for endpoint,entries in endpoints.iteritems() -%}
+        #define {{ module_endpoint_prop_macro(block, module, endpoint) }} "{{module}}/{{endpoint}}"
+    {% endfor -%}
+{% endfor -%}
+
+{%- for module,endpoints in modules.iteritems() %}
+    {% for endpoint,entries in endpoints.iteritems() -%}
+        static struct fun_json *{{block}}_{{module}}_{{endpoint}}_generate_json(fun_props_bridge_context_t context)
+        {
+            {#
+            {{print_funcion_line()}}
+	    #}
+            struct fun_json *dict = fun_json_create_empty_dict();
+            {% for k,v in entries.nodes.iteritems() %}
+                fun_json_dict_add(dict, "{{k}}",fun_json_no_copy_no_own,
+                {{module}}_{{endpoint}}_{{k}}_create_json(), false);
+            {% endfor %}
+            return dict;
+        }
+    {% endfor %}
+{% endfor %}
+
+void {{block}}_stats_props_bridge_install(void)
+{
+{%- for module,endpoints in modules.iteritems() %}
+    {% for endpoint,entries in endpoints.iteritems() -%}
+        struct fun_props_bridge_point *{{block}}_{{module}}_{{endpoint}}_bridge MAYBE_UNUSED =
+                    fun_props_install_bridge_point(
+                    {{block_prop_macro(block)}} {{module_endpoint_prop_macro(block, module, endpoint)}},
+                    NULL, {{block}}_{{module}}_{{endpoint}}_generate_json);
+                    fun_props_bridge_point_set_rate_limit({{block}}_{{module}}_{{endpoint}}_bridge, FUN_TIME_FROM_MSECS(100));
+    {% endfor -%}
+{% endfor -%}
+}
+
+{% set stat_poll_count = [0] %}
+struct stat_poll_config {{block}}_stat_poll_cfg[] = {{'{'}}
+{% for module,endpoints in modules.iteritems() -%}
+    {%- for endpoint,entries in endpoints.iteritems() -%}
+        {%- for k,v in entries.nodes.iteritems() -%}
+            {% if v.poll_interval > 0 -%}
+                {% if stat_poll_count.append(stat_poll_count.pop() + 1) %}{% endif %}
+                {{'{'}}
+                .read_cb = {{module}}_{{endpoint}}_{{k}}_stats_read,
+                .period_msec = {{v.poll_interval}}
+                {{' }'}},
+            {% endif -%}
+        {%- endfor -%}
+    {%- endfor -%}
+{%- endfor %}
+{{'}'}};
+
+unsigned int {{block}}_stat_poll_num_entries(void) {{'{'}}
+    return sizeof({{block}}_stat_poll_cfg)/sizeof(struct stat_poll_config);
+{{'}'}}
+

@@ -12,6 +12,7 @@ import os
 import jinja2
 import pdb
 import re
+import sys
 
 class ANUtils(object):
     def __init__(self):
@@ -31,6 +32,7 @@ class TmplMgr(object):
         path, filename = os.path.split(tpl_path)
         env = jinja2.Environment(loader=jinja2.FileSystemLoader(path or './'))
         self.tmpl = env.get_template(filename)
+
     def write_cfg(self, out_file, obj):
         with open (out_file, 'w') as fh:
             fh.write(self.tmpl.render(gen_obj=obj))
@@ -64,6 +66,9 @@ class RingNode(object):
         if not self.is_dummy:
             self.instances[inst_num].add_64_w(an_name, num_64_w)
 
+    def get_instances(self):
+        return self.instances
+
     def __str__(self):
         r_str = "ring_coll_t {}_rng;\n".format(self.name)
         for m_id, m_node in self.instances.iteritems():
@@ -77,6 +82,13 @@ class CSRNode(object):
     def __init__(self, addr, addr_range=0):
         self.addr = addr
         self.addr_range = addr_range
+
+    def get_addr(self):
+        return self.addr
+
+    def get_addr_range(self):
+        return self.addr_range
+
     def __str__(self):
         r_str = ""
         r_str += "{} {}".\
@@ -106,6 +118,19 @@ class ANode(object):
         p = CSRNode(addr, addr_range)
         csr_lst = [p, n_entries]
         self.csrs[csr_name] = csr_lst
+        #print "ANode AN_PATH:{}: CSR_NAME{}".format(self.path, csr_name)
+
+    def get_csr(self, csr_name):
+        return self.csrs[csr_name]
+
+    def get_start_addr(self):
+        return self.start_addr
+
+    def get_n_inst(self):
+        return self.n_inst
+
+    def get_skip_addr(self):
+        return self.skip_addr
 
     def get_num_csr(self, csr_name):
         p = self.csrs.get(csr_name, None)
@@ -157,7 +182,26 @@ class RingProps(object):
 
     def add_an_path(self, path, n_inst, start_addr, skip_addr):
         assert path not in self.root_paths
+        #print("RingProps ADD an_path {} n_inst:{}"
+        #      "start_addr:{}".format(path, n_inst, start_addr))
         self.root_paths[path] = [n_inst, start_addr, skip_addr]
+
+    def get_an_paths(self, path):
+        return self.root_paths[path]
+
+    def get_an(self, an_name):
+        #print self.anodes.keys()
+        return self.anodes[an_name]
+
+    # Get the properties of CSR from csr_map
+    def get_csr_prop(self, an_name, csr_name):
+        an_csrs = self.csr_map.get(an_name, None)
+        #print "AN: {} csr_name: {} CSRs".format(an_name, csr_name)
+        csr_prop = an_csrs.get().get(csr_name, None)
+        if csr_prop == None:
+            print "ERROR! Could not find CSR in csr_map."
+            sys.exit(1)
+        return csr_prop
 
     # The CSR attribute map is for csrs local to this anode
     def add_an(self, an_node, addr, csr_map):
@@ -260,6 +304,53 @@ class RingProps(object):
     __repr__ = __str__
 
 
+class CSRMetaData(object):
+    def __init__(self):
+        self.metadata = collections.OrderedDict()
+
+    def add_csr_metadata(self, ring_name, ring_inst, ring_addr,
+                        an, an_addr, csr_name, csr_addr,
+                        csr_addr_range, csr_prop):
+
+        if csr_prop.type == "CSR_TYPE::REG_LST":
+            m_name = csr_name.split('_')
+            inst_str = m_name[-1]
+            if inst_str.isdigit():
+                if int(inst_str) > 0:
+                    #print "Skipping {}".format(csr_name)
+                    return
+                lst = m_name[:-1]
+            else:
+                print(("ERROR!!! CSR:{} REG_LST should end with a"
+                      "digit!").format(csr_name))
+                sys.exit(1)
+            csr_name = '_'.join(elem for elem in lst)
+        #print "ADD csr {}".format(csr_name)
+        csr_metadata_lst = self.metadata.get(csr_name, [])
+        if not csr_metadata_lst:
+            self.metadata[csr_name] = csr_metadata_lst
+
+        csr_metadata = dict()
+        csr_metadata["ring_name"] = ring_name
+        csr_metadata["ring_inst"] = ring_inst
+        csr_metadata["ring_addr"] = hex(ring_addr)
+        csr_metadata["an"] = an
+        csr_metadata["an_addr"] = hex(an_addr)
+        csr_metadata["csr_addr"] = hex(csr_addr)
+        csr_metadata["csr_count"] = csr_prop.count
+        csr_metadata["csr_addr_range"] = csr_addr_range
+        csr_metadata["csr_type"] = csr_prop.type
+        csr_metadata["csr_n_entries"] = csr_prop.n_entries
+        csr_metadata["csr_width"] = csr_prop.width
+        fld_lst = list()
+        for fld in csr_prop.fld_lst:
+            fld_prop = {"fld_name": fld.fld_name, "fld_width": fld.width}
+            fld_lst.append(fld_prop)
+        csr_metadata["fld_lst"] = fld_lst
+        csr_metadata_lst.append(csr_metadata)
+
+    def get_csr_metadata(self):
+        return self.metadata
 
 class CSRRoot(object):
     START_RING = r'START_RING'
@@ -279,6 +370,7 @@ class CSRRoot(object):
         curr_inst = None
         self.curr_an_name = None
         self.csr_map = csr_map
+        self.csr_metadata = CSRMetaData()
         self.ring_map = collections.OrderedDict()
         self.start_addr = 0xFFFFFFFFFF
         self.end_addr = 0
@@ -406,9 +498,8 @@ class CSRRoot(object):
         ring_class, ring_inst = self.r_util.get_info(m_arr[0])
 
         k = self.__clean_name(m_arr[1:])
-
-
         #print "ROOT_ACCEPT:{}".format(line)
+
         rn = self.ring_map.get(ring_class, None)
         if rn == None:
            print "Adding dummy ring class: {}".format(ring_class)
@@ -458,8 +549,10 @@ class CSRRoot(object):
         assert rn != None, "Unknown ring class"
         self.flags[CSRRoot.IN_ANODE] = True
         self.curr_rn = rn
+        self.curr_rc = ring_class
         self.curr_ri = ring_inst
         self.curr_path = k
+        self.curr_an_name = an_name
         st_addr = self.__hexlify(coll[2])
         num_64_w = self.__hexlify(coll[3])
         end_addr = st_addr + num_64_w
@@ -503,20 +596,40 @@ class CSRRoot(object):
         # specific stuff that will be removed elsewhere
         if not self.an_added:
             prefix_path, an_name = ANUtils().get_an(self.curr_path)
-            assert an_name in self.csr_map
-            self.curr_rn.add_an(self.curr_ri,\
-                    self.curr_path, self.curr_addr, self.csr_map[an_name])
+            if not an_name in self.csr_map:
+                print "ANode: {} not found in csr_map!".format(an_name)
+                sys.exit(1)
+            self.curr_rn.add_an(self.curr_ri, self.curr_path,\
+                        self.curr_addr, self.csr_map.get(an_name, None))
             self.an_added = True
         #print "CSR_ACCEPT: {}".format(line)
+        csr_addr = None
+        csr_addr_range = None
+        #print "AN_NAME: {} PATH: {}".format(
+        #            self.curr_an_name, self.curr_path)
+
+        an_csrs = self.csr_map.get(self.curr_an_name, None)
+        if not an_csrs:
+            print "Could not get CSRs for AN:{}".format(self.curr_an_name)
+            sys.exit(1)
+        csr_prop = an_csrs.get().get(csr_name, None)
+        if csr_prop == None:
+            print "Count not get info for CSR: {}".format(csr_name)
+            sys.exit(1)
+
         if len(ex_coll) > 1:
+            csr_addr = self.__hexlify(ex_coll[0].strip())
+            csr_addr_range = self.__hexlify(ex_coll[1].strip())
             self.curr_rn.add_csr(self.curr_ri,
                     csr_name,
-                    self.__hexlify(ex_coll[0].strip()),
-                    self.__hexlify(ex_coll[1].strip()))
+                    csr_addr,
+                    csr_addr_range)
         else:
+            csr_addr = self.__hexlify(coll[1].strip())
             self.curr_rn.add_csr(self.curr_ri,
                     csr_name,
-                    self.__hexlify(coll[1].strip()))
+                    csr_addr)
+        self.__add_csr_metadata_inst(csr_name, csr_addr, csr_addr_range, csr_prop)
 
     def __clean_name(self, m_arr):
         for idx, _ in enumerate(m_arr):
@@ -530,6 +643,17 @@ class CSRRoot(object):
         entry = re.sub(r'_', '', entry)
         val = int(entry, 16)
         return val
+
+    def __add_csr_metadata_inst(self, csr_name, csr_addr, csr_addr_range, csr_prop):
+        rn = self.ring_map.get(self.curr_rc, None)
+        rn_props = rn.get_instances()
+        rn_prop = rn_props[self.curr_ri]
+        ring_addr = rn_prop.get_addr()
+        self.csr_metadata.add_csr_metadata(self.curr_rc, self.curr_ri, ring_addr,
+            self.curr_an_name, self.curr_addr, csr_name, csr_addr, csr_addr_range, csr_prop)
+
+    def get_csr_metadata(self):
+        return self.csr_metadata.get_csr_metadata()
 
     def __str__(self):
         r_str = ""

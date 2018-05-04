@@ -1,0 +1,33 @@
+{#
+
+Template for stats source code generation
+
+-#}
+/*
+ *  {{file}}.c
+ *
+ *  !!!!!AUTO-GENERATED FILE. DO NOT EDIT!!!!
+ *
+ *  Copyright 2018 Fungible Inc. All rights reserved.
+ */
+
+#include <{{header_path}}/{{header_file}}>
+
+void stats_props_bridge_install(void) {{'{'}}
+{%- for block in blocks %}
+    {{block}}_stats_props_bridge_install();
+{% endfor -%}
+{{'}'}}
+
+struct stat_poll_block stat_poll_blks [] = {
+{%- for block in blocks %}
+    {
+        .poll_cfg = {{block}}_stat_poll_cfg,
+        .stat_poll_num_entries = {{block}}_stat_poll_num_entries,
+    }
+{%- if not loop.last -%} , {%- endif %}
+{% endfor -%}
+};
+
+unsigned int num_stat_poll_blocks = sizeof(stat_poll_blks)/sizeof(struct stat_poll_block);
+
