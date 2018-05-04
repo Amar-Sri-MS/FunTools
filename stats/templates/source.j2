@@ -461,7 +461,7 @@ struct stat_poll_config {{block}}_stat_poll_cfg[] = {{'{'}}
                 {% if stat_poll_count.append(stat_poll_count.pop() + 1) %}{% endif %}
                 {{'{'}}
                 .read_cb = {{module}}_{{endpoint}}_{{k}}_stats_read,
-                .poll_period = {{v.poll_interval}}
+                .period_msec = {{v.poll_interval}}
                 {{' }'}},
             {% endif -%}
         {%- endfor -%}
