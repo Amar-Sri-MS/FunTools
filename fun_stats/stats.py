@@ -235,6 +235,8 @@ class EntrySubNode(object):
         subnode["fields"] = self.fld_objs
         subnode["num_fields"] = self.num_fields
         subnode["csr_offset"] = self.offset
+        subnode["an_inst_cnt"] = an_inst_cnt
+        subnode["an_inst"] = self.an_inst
         subnode["input"] = self.input_map
         subnode["csr_type"] = self.csr_type
         subnode["reg_inst"] = self.reg_inst
@@ -406,6 +408,10 @@ class StatsGen(object):
 
         cmd_parser.add_argument("-o", "--out-dir", help="Dir for generated files",
                 required=True, type=str)
+	cmd_parser.add_argument('--log-level',
+                        default='INFO',
+                        dest='log_level',
+                        help='Set the logging output level.')
 
         sdk_dir = os.path.join(self.cwd, "../FunSDK")
         csr_metadata_dir =  os.path.join(sdk_dir, "FunSDK/config/csr")
@@ -423,6 +429,11 @@ class StatsGen(object):
 
     def run(self):
         args = self.cmd_parser.parse_args()
+	log_level = args.log_level
+        if log_level == "DEBUG":
+	    logger_init(logging.DEBUG)
+        else:
+            logger_init(logging.INFO)
         args.cfg_dir = self.__update_loc(args.cfg_dir)
         out_dir = args.out_dir
         args.out_dir = self.__update_loc(args.out_dir)
@@ -544,7 +555,6 @@ def logger_init(level):
     logger.setLevel(level)
 
 if __name__ == "__main__":
-    logger_init(logging.DEBUG)
     stats_gen = StatsGen(os.getcwd())
     stats_gen.run()
 
