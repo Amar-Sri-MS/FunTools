@@ -31,8 +31,8 @@ from util import *
 #
 def send_rcv_pkt(self, jdata):
         in_intf = jdata["in_intf"]
-        out_intf = jdata["out_intf"][0]
-        pkt = Ether(pkt_decode(jdata["data"]))
+        out_intf = jdata["out_intfs"][0]
+        pkt = Ether(pkt_decode(jdata["pkt"]))
         print ("\nReceiving Pkt from Client :\n " + str(inspect_packet(pkt)))
 
         rcv_pkt=""
@@ -40,11 +40,11 @@ def send_rcv_pkt(self, jdata):
         message="Unchanged"
         try:            
             logging.debug(inspect_packet(pkt))
-            send_packet(self, in_intf+1, str(pkt))
+            send_packet(self, in_intf, str(pkt))
             logging.debug("\n=====================\n")
             device_number = 0
             result = dp_poll(self, device_number=device_number,
-                             port_number=out_intf+1,
+                             port_number=out_intf,
                              timeout=2)
             if isinstance(result, self.dataplane.PollFailure):
                 message = "Failed to get receiving packet at port "+str(out_intf) + str(result.format())

@@ -73,7 +73,7 @@ def create_send_data():
     #
     # Format instruction JSON Message
     #
-    ret = '{ "in_intf" : '+ str(in_intf) +', "out_intf": ['+str(out_intf) + '], "data" : "' +str(pkt_data)+'"}'
+    ret = '{ "in_intf" : '+ str(in_intf) +', "out_intfs": ['+str(out_intf) + '], "pkt" : "' +str(pkt_data)+'"}'
     return ret, True
 
 #
