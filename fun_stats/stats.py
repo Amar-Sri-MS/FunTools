@@ -7,14 +7,12 @@
 
 import os, sys
 import string, json, collections
-import pdb, argparse
 import logging
+import pdb, argparse
 from jinja2 import Environment, FileSystemLoader
 from json_reader import CFG_Reader
 
-log = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
-#log.setLevel(logging.INFO)
+logger = logging.getLogger("stats")
 
 #Groups the range strings
 def group_to_range(group):
@@ -40,9 +38,9 @@ class RangeNode(object):
         self.range_min = 0
         self.range_max = 0
         self.incr = 0
-        log.debug("INPUT NODE:{}".format(name))
+        logging.debug("INPUT NODE:{}".format(name))
         self.__process_input(info)
-        log.debug("Range Node:{} min:{} max:{} incr:{}".format(name,
+        logging.debug("Range Node:{} min:{} max:{} incr:{}".format(name,
                             self.range_min, self.range_max, self.incr))
 
     def __process_input(self, info):
@@ -76,26 +74,26 @@ class EntrySubNode(object):
         self.poll_interval = 0
         self.clear_on_read = False
         self.__process_entry_subnode(e, input)
-        log.debug("Entry sub-node for reg: {} is added!".format(self.reg))
+        logging.debug("Entry sub-node for reg: {} is added!".format(self.reg))
 
     def __process_entry_subnode(self, e, input):
         if input:
             for i in input:
                 if e[i] == None:
-                    log.error("Valid input range is not provided for \'{}:"
+                    logging.error("Valid input range is not provided for \'{}:"
                               "{}\'".format(self.reg, i))
                     sys.exit(1)
                 if self.input_map.get(i, None) != None:
-                    log.error("Duplicate input range for \'{}:"
+                    logging.error("Duplicate input range for \'{}:"
                               "{}\'".format(self.reg, i))
                     sys.exit(1)
                 self.input_map[i] = RangeNode(i, e[i])
 
         if e["reg"] is None:
-            log.error("Valid csr name should be passed!")
+            logging.error("Valid csr name should be passed!")
             sys.exit(1)
         if not bool(e["fields"]):
-            log.error("Valid fields should be passed for"
+            logging.error("Valid fields should be passed for"
                       "reg: {} fields: {}".format(e["reg"], e["fields"]))
             sys.exit(1)
         self.reg = e["reg"]
@@ -113,7 +111,7 @@ class EntrySubNode(object):
         if anode != None:
             self.an_path = anode.get("root", None)
             self.an = anode.get("an", None)
-            self.an_inst = anode.get("inst", None)
+            self.an_inst = anode.get("inst", 0)
         self.__process_fields()
 
     def get_fields(self):
@@ -134,7 +132,7 @@ class EntrySubNode(object):
     def get_an_list(self):
         an_set = set()
         an_set.add(self.an)
-        log.debug("AN_SET.{}".format(an_set))
+        logging.debug("AN_SET.{}".format(an_set))
         return an_set
 
     def get_csr_width(self):
@@ -147,10 +145,10 @@ class EntrySubNode(object):
         return self.num_cntrs
 
     def __process_fields(self):
-        log.debug("Processing fields of CSR:".format(self.reg))
+        logging.debug("Processing fields of CSR:".format(self.reg))
         csr_def = self.csr_defs.get_csr_def(self.reg, self.rn_class,
                 self.rn_inst, self.an_path, self.an, self.an_inst)
-        log.debug("csr_def: {}".format(csr_def))
+        logging.debug("csr_def: {}".format(csr_def))
         csr_flds = csr_def["fld_lst"]
         fld_objs = None
         idx_offset =0
@@ -158,7 +156,7 @@ class EntrySubNode(object):
         self.csr_width = csr_def["csr_width"]
         if type(self.fields) == list:
             if self.csr_type != "CSR_TYPE::TBL":
-                log.error("If input is list of heterogenious field groups,"
+                logging.error("If input is list of heterogenious field groups,"
                           "CSR type should be table!")
                 sys.exit(1)
             self.csr_type = "CSR_TYPE::TBL_HETERO"
@@ -175,12 +173,12 @@ class EntrySubNode(object):
                             fobj[k] = fld
                             idx_offset +=1
                 fld_objs[field["index"]] = fobj
-            log.debug("fld_objs: {}".format(fld_objs))
+            logging.debug("fld_objs: {}".format(fld_objs))
 
         else:
             fld_objs = collections.OrderedDict()
-            log.debug("csr_flds: {}".format(csr_flds))
-            log.debug("self.fields: {}".format(self.fields))
+            logging.debug("csr_flds: {}".format(csr_flds))
+            logging.debug("self.fields: {}".format(self.fields))
             for csr_fld in csr_flds:
                 for k,v in self.fields.iteritems():
                     if csr_fld["fld_name"] == v:
@@ -204,14 +202,14 @@ class EntrySubNode(object):
 
         self.fld_objs = fld_objs
         self.num_fields = idx_offset
-        log.debug(("num_fields: {}, num_cntrs: {}, fld_objs:"
+        logging.debug(("num_fields: {}, num_cntrs: {}, fld_objs:"
                   "{}").format(self.num_fields, self.num_cntrs, self.fld_objs))
-        log.debug("input_map: {}".format(self.input_map))
+        logging.debug("input_map: {}".format(self.input_map))
         for k,v in self.input_map.iteritems():
             rmin = v.range_min
             rmax = v.range_max
             self.num_cntrs *= (rmax - rmin)
-        log.debug("input_map: {} self.num_cntrs: {}".format(self.input_map,
+        logging.debug("input_map: {} self.num_cntrs: {}".format(self.input_map,
                                                             self.num_cntrs))
 
     def get_gen_objs(self):
@@ -221,11 +219,24 @@ class EntrySubNode(object):
         subnode = dict()
         subnode["csr"] = self.reg
         an_base_addr = csr_def["an_addr"]
-        subnode["base_addr"] = int(an_base_addr, 16)
+        an_skip_addr = 0
+        an_inst_cnt = csr_def.get("an_inst_cnt", 1)
+        if an_inst_cnt > 1 and self.an_inst > 0:
+            an_skip_addr = csr_def.get("an_skip_addr", None)
+            if not an_skip_addr:
+                logging.error(("Invalid ANODE skip addr! CSR: {}, RN:{}, AN:{},"
+                              "AN_INST:{}").format(self.reg, self.rn_class,
+                                                  self.an_path, self.an_inst))
+                sys.exit(1)
+            an_skip_addr = int(an_skip_addr, 16) * self.an_inst
+
+        subnode["base_addr"] = int(an_base_addr, 16) + an_skip_addr
         subnode["csr_width"] = (csr_def["csr_width"]+63)/64
         subnode["fields"] = self.fld_objs
         subnode["num_fields"] = self.num_fields
         subnode["csr_offset"] = self.offset
+        subnode["an_inst_cnt"] = an_inst_cnt
+        subnode["an_inst"] = self.an_inst
         subnode["input"] = self.input_map
         subnode["csr_type"] = self.csr_type
         subnode["reg_inst"] = self.reg_inst
@@ -237,9 +248,9 @@ class EntryNode(object):
     def __init__(self, name, input, info):
         self.name = name
         self.subnodes = list()
-        log.debug("Processing entry:{}".format(name))
+        logging.debug("Processing entry:{}".format(name))
         self.__process_entry(input, info)
-        log.debug("Entry node added!:{}\n".format(name))
+        logging.debug("Entry node added!:{}\n".format(name))
 
     def __process_entry(self, input, info):
         for e in info:
@@ -273,7 +284,7 @@ class EntryNode(object):
             poll_interval = 0
         gen_objs["poll_interval"] = poll_interval
         if on_demand == False and poll_interval == 0:
-            log.error("Either poll_interval attribute or on_demand attribute"
+            logging.error("Either poll_interval attribute or on_demand attribute"
                       "are needed for entry {}".format(self.name))
             sys.exit(1)
         return gen_objs
@@ -291,7 +302,7 @@ class EndPoint(object):
         self.name = name
         self.input = list()
         self.entry_map = collections.OrderedDict()
-        log.debug("Endpoint:{}".format(name))
+        logging.debug("Endpoint:{}".format(name))
         self.__process_endpoint(info)
 
     def __process_endpoint(self, info):
@@ -329,7 +340,7 @@ class EndPoint(object):
 # Process module stats node
 class ModuleNode(object):
     def __init__(self, name, info):
-        log.debug("Module: {}".format(name))
+        logging.debug("Module: {}".format(name))
         self.name = name
         self.endpoint_map = collections.OrderedDict()
         self.__process_module(info)
@@ -372,7 +383,7 @@ class BlockRoot(object):
     def get_gen_objs(self):
         modules = dict()
         for k,v in self.module_map.iteritems():
-            log.debug("BlockRoot {}".format(k))
+            logging.debug("BlockRoot {}".format(k))
             modules[k] = v.get_gen_objs()
         return modules
 
@@ -384,7 +395,7 @@ class BlockRoot(object):
 
 class StatsGen(object):
     def __init__(self, cwd):
-        log.info("Stats Code Generate")
+        logging.info("Stats Code Generate")
         self.cwd = cwd
         self.cmd_parser = argparse.ArgumentParser(description="Stats Code Generatation")
         self.other_args = {}
@@ -397,6 +408,10 @@ class StatsGen(object):
 
         cmd_parser.add_argument("-o", "--out-dir", help="Dir for generated files",
                 required=True, type=str)
+	cmd_parser.add_argument('--log-level',
+                        default='INFO',
+                        dest='log_level',
+                        help='Set the logging output level.')
 
         sdk_dir = os.path.join(self.cwd, "../FunSDK")
         csr_metadata_dir =  os.path.join(sdk_dir, "FunSDK/config/csr")
@@ -414,6 +429,11 @@ class StatsGen(object):
 
     def run(self):
         args = self.cmd_parser.parse_args()
+	log_level = args.log_level
+        if log_level == "DEBUG":
+	    logger_init(logging.DEBUG)
+        else:
+            logger_init(logging.INFO)
         args.cfg_dir = self.__update_loc(args.cfg_dir)
         out_dir = args.out_dir
         args.out_dir = self.__update_loc(args.out_dir)
@@ -433,9 +453,9 @@ class StatsGen(object):
         inc_path = None
         code_str = None
         block_lst = list()
-        log.info("Generate the funos source code!")
+        logging.info("Generate the funos source code!")
         for i, (k,v) in enumerate(cfg.get().iteritems()):
-            log.debug("Generating source code for {}!".format(k))
+            logging.debug("Generating source code for {}!".format(k))
             block = BlockRoot(k, v)
             headers= block.get_an_list()
             gen_objs = dict()
@@ -446,7 +466,7 @@ class StatsGen(object):
 
             file = "fun_{}_stats.c".format(k)
             gen_objs["file"] = file
-            log.info("Creating file {}".format(file))
+            logging.info("Creating file {}".format(file))
             with open(os.path.join(args.out_dir, file), 'w') as f:
                 f.write(source_tmpl.render(gen_objs))
             f.close()
@@ -500,8 +520,9 @@ class csr_metadata:
         if an:
             if x["an"] != an:
                 return False
+
         if an_inst:
-            if x["an_inst"] != an_inst:
+            if x["an_inst_cnt"] < an_inst:
                 return False
 
         return True
@@ -516,13 +537,22 @@ class csr_metadata:
                             rn_inst, an_path, an, an_inst)]
 
         if len(csr_defs_lst) > 1:
-            log.error("There are more than one instance"
+            logging.error("There are more than one instance"
                       "register defintion. Be more specific!!!")
-            log.info(json.dumps(csr_defs_lst, indent=1))
+            logging.info(json.dumps(csr_defs_lst, indent=1))
             sys.exit(1)
         if not csr_defs_lst:
             sys.exit(1)
-        return csr_defs_lst[0]
+        csr_def = csr_defs_lst[0]
+        if csr_def["an_inst_cnt"] <= an_inst:
+            logging.error(("ANODE instane number({}) for CSR:{} RN:{} AN:{} is "
+                          "out of range!").format(an_inst, csr_name, rn_class, an))
+            sys.exit(1)
+        return csr_def
+
+logger = logging.getLogger()
+def logger_init(level):
+    logger.setLevel(level)
 
 if __name__ == "__main__":
     stats_gen = StatsGen(os.getcwd())
