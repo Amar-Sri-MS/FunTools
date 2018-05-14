@@ -1,0 +1,19 @@
+[[source]]
+url = "https://pypi.python.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[requires]
+python_version = "2.7"
+
+[dev-packages]
+jsonmerge = "*"
+
+[packages]
+PyYAML = "*"
+"281ab43" = {file = "https://github.com/p4lang/ptf/archive/master.tar.gz"}
+deepdiff = "*"
+#"70d8387" = {file = "https://github.com/secdev/scapy/archive/master.tar.gz"}
+netaddr = "*"
+scapy = "*"
+ipaddress = "*"
