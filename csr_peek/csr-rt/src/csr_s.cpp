@@ -94,12 +94,12 @@ void csr_s::__init(const std::string& name,
         while ((rem > 8) || (m_off)) {
             r_shift[idx] = (rem - (8 - m_off));
             cons = 8 - m_off;
-            m_off = 0;
             if (cons == 8) {
                 mask_arr[idx] = 0xFF;
             } else {
-                mask_arr[idx] = 0xFF >> cons;
+                mask_arr[idx] = 0xFF >> m_off;
             }
+            m_off = 0;
             rem -= cons;
             idx ++;
         }

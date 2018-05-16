@@ -120,7 +120,7 @@ class ANode(object):
         if not csr_attr:
             # This could be because of the exclusion filters
             return
-        n_entries  = (csr_attr.entries * csr_attr.count)
+        n_entries  = (csr_attr.n_entries * csr_attr.count)
         p = CSRNode(addr, addr_range)
         csr_lst = [p, n_entries]
         self.csrs[csr_name] = csr_lst
