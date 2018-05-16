@@ -110,8 +110,8 @@ class Schema():
             e.name = self.__get_name(reg_rec)
             e.attr = reg_rec.get('ATTR', 0)
             e.width = reg_rec.get('WIDTH', 0)
-            e.entries = reg_rec.get('ENTRIES', 1)
-            if (e.entries > 1):
+            e.n_entries = reg_rec.get('ENTRIES', 1)
+            if (e.n_entries > 1):
                 e.type = "CSR_TYPE::TBL"
             e.count = reg_rec.get('COUNT', 1)
             if (e.count > 1):
