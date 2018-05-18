@@ -253,8 +253,11 @@ class EntryNode(object):
         logging.debug("Entry node added!:{}\n".format(name))
 
     def __process_entry(self, input, info):
-        for e in info:
-            self.subnodes.append(EntrySubNode(e, input))
+        if type(info) == list:
+            for e in info:
+                self.subnodes.append(EntrySubNode(e, input))
+        else:
+            self.subnodes.append(EntrySubNode(info, input))
 
     def get_gen_objs(self):
         num_cntrs = 0
@@ -409,6 +412,7 @@ class StatsGen(object):
         cmd_parser.add_argument("-o", "--out-dir", help="Dir for generated files",
                 required=True, type=str)
 	cmd_parser.add_argument('--log-level',
+                        required=False,
                         default='INFO',
                         dest='log_level',
                         help='Set the logging output level.')

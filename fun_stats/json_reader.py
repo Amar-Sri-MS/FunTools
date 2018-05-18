@@ -54,7 +54,7 @@ class CFG_Reader(object):
     __repr__ = __str__
 
     # Merge two dictionaries
-    def merge_dicts(cfg, cfg_new):
+    def merge_dicts(self, cfg, cfg_new):
         merged_cfg = cfg
         for key in cfg_new.keys():
             if key in merged_cfg.keys():

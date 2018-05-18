@@ -318,7 +318,6 @@ class CSRMetaData(object):
                         an, an_path, an_inst_cnt, an_skip_addr,
                         an_addr, csr_name, csr_addr,
                         csr_addr_range, csr_prop):
-
         if csr_prop.type == "CSR_TYPE::REG_LST":
             m_name = csr_name.split('_')
             inst_str = m_name[-1]
@@ -350,7 +349,7 @@ class CSRMetaData(object):
         csr_metadata["csr_count"] = csr_prop.count
         csr_metadata["csr_addr_range"] = csr_addr_range
         csr_metadata["csr_type"] = csr_prop.type
-        csr_metadata["csr_n_entries"] = csr_prop.n_entries
+        csr_metadata["csr_n_entries"] = csr_prop.entries
         csr_metadata["csr_width"] = csr_prop.width
         fld_lst = list()
         for fld in csr_prop.fld_lst:
