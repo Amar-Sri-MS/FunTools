@@ -584,7 +584,7 @@ static struct fun_json *_read_from_sock(struct dpcsock *sock, bool retry)
 			return NULL;
 		r = fun_json_binary_serialization_size(buffer, max);
 		if (r <= max) {
-			json = fun_json_create_from_parsing_binary(buffer, r);
+			json = fun_json_create_from_parsing_binary_with_options(buffer, r, true);
 		}
 		free(buffer);
 	}
@@ -766,12 +766,15 @@ static void _do_recv_cmd(struct dpcsock *funos_sock,
 			printf("invalid json returned\n");
 		return;
         }
-
+	// printf("output is of type %d\n", output->type);
 	// Bertrand 2018-04-05: Gross hack to make sure we don't break dpcsh users who were not expected a tid
 	uint64_t tid = 0;
 	struct fun_json *raw_output = fun_json_lookup(output, "result");
-	if (!raw_output || !fun_json_lookup_uint64(output, "tid", &tid)) {
-		// printf("Old style output\n");
+	if (!raw_output) {
+		fun_json_printf("Old style output (NULL) - got %s\n", output);
+		raw_output = output;
+	} else if (!fun_json_lookup_uint64(output, "tid", &tid)) {
+		printf("Old style output\n");
 		raw_output = output;
 	} else {
 		// printf("New style output, tid=%d\n", (int)tid);
@@ -789,8 +792,13 @@ static void _do_recv_cmd(struct dpcsock *funos_sock,
 	}
 
 	if (cmd_sock->mode == SOCKMODE_TERMINAL) {
-		fun_json_printf(OUTPUT_COLORIZE "output => %s" NORMAL_COLORIZE "\n",
+		if (raw_output && (raw_output->type == fun_json_error_type)) {
+			printf(PRELUDE BLUE POSTLUDE "output => *** error: '%s'" NORMAL_COLORIZE "\n",
+				raw_output->error_message);
+		} else {
+			fun_json_printf(OUTPUT_COLORIZE "output => %s" NORMAL_COLORIZE "\n",
 				raw_output);
+		}
 	} else {
 		char *pp = fun_json_to_text(raw_output);
 		if (pp) {
