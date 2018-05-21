@@ -768,6 +768,13 @@ static bool _do_send_cmd(struct dpcsock *sock, char *line,
 }
 
 
+/* TID + error string */
+#ifdef NOT_YET
+#define PROXY_ERROR_TEMPLATE "{\"tid\": %" PRIu64 ", \"error\": \"error\"}\n"
+/* add room for a large TID and NUL */
+#define PROXY_ERROR_BUFLEN (strlen(PROXY_ERROR_TEMPLATE) + 16)
+#endif
+
 static void _do_recv_cmd(struct dpcsock *funos_sock,
 			 struct dpcsock *cmd_sock, bool retry)
 {
@@ -819,6 +826,30 @@ static void _do_recv_cmd(struct dpcsock *funos_sock,
 			write(cmd_sock->fd, pp, strlen(pp));
 			write(cmd_sock->fd, "\n", 1);
 			fun_free_string(pp);
+		} else {
+			/* if we get here, we know that we got a
+			 * valid(-ish) JSON from the other side, but
+			 * the library refused to pretty-print it for
+			 * it. This is common if there's an error node
+			 * in the JSON because a verb returned
+			 * something bogus.  Make sure we send back
+			 * something for clients to kick them
+			 * along. Embed the TID in there for kicks.
+			 */
+			printf("JSON failed to pretty print, returning error template\n");
+#ifdef NOT_YET
+			char buf[PROXY_ERROR_BUFLEN];
+			snprintf(buf, PROXY_ERROR_BUFLEN,
+				 PROXY_ERROR_TEMPLATE, tid);
+			printf("%s", buf);
+#else
+			/* since we don't return the tid yet, just
+			 * return a "null" string that Python will
+			 * decode as "None"
+			 */
+			char *buf = "null\n";
+#endif
+			write(cmd_sock->fd, buf, strlen(buf));
 		}
 	}
 
