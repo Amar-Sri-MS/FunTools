@@ -47,7 +47,7 @@ def send_rcv_pkt(self, jdata):
                              port_number=out_intf,
                              timeout=2)
             if isinstance(result, self.dataplane.PollFailure):
-                message = "Failed to get receiving packet at port "+str(out_intf) + str(result.format())
+                message = "Failed to get receiving packet at port "+str(out_intf)
                 logging.debug(message)
             else:
                 message = "Successfuled get packet at port "+str(out_intf)
