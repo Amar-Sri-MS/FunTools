@@ -32,3 +32,24 @@ def pkt_decode(src):
         ret.append(i)
     final="".join(map(chr, ret))
     return final
+
+#
+# get_ptf_port_from_intf_name
+#
+def get_ptf_port_from_intf_name(jdata, intf_name):
+    if intf_name in jdata:
+        ifjdata = jdata[intf_name]
+        print(ifjdata)
+        return ifjdata["id"], False
+    return 0, True
+
+#
+# get_intf_name_from_ptf_port
+#
+def get_intf_name_from_ptf_port(jdata, port):
+    for it in jdata:
+        message = "Get it "+str(it) + " data: " +str(jdata[it]) + " port " + str(port)
+        print(message)
+        if jdata[it]["id"] == port:
+            return it, False
+    return "", True
