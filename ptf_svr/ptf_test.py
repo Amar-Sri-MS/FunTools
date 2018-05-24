@@ -22,85 +22,115 @@ import sys
 import socket
 import json
 from util import *
+import time
+import threading
+from threading import Thread
 
+intf_json_file = "intf_map.json"
 #
 # Receive a message in json format from client, send raw packet based on
-# the instructions in json to PTF connected port.
-# Wait for 2 min for capturing packets from the given port, then
-# send received packets back to client in response json format
+# the instructions to PTF connected ports.
 #
-def send_rcv_pkt(self, jdata):
-        in_intf = jdata["in_intf"]
-        out_intf = jdata["out_intfs"][0]
+def send_rcvd_pkt_to_ptf(self, jdata):
+        intf = jdata["intf"]
+        in_intf, err = get_ptf_port_from_intf_name(self.intf_jt_data, intf)
+        if err:
+                message = "\nFailed to get ptf port for " + intf
+                print(message)
+                logging.debug(message)
+                return
+        
         pkt = Ether(pkt_decode(jdata["pkt"]))
-        print ("\nReceiving Pkt from Client :\n " + str(inspect_packet(pkt)))
+        print ("\nReceiving Pkt from Client and send to port " + str(in_intf)+ " :\n " + str(inspect_packet(pkt)))
 
-        rcv_pkt=""
-        err = True
-        message="Unchanged"
         try:            
             logging.debug(inspect_packet(pkt))
             send_packet(self, in_intf, str(pkt))
-            logging.debug("\n=====================\n")
-            device_number = 0
-            result = dp_poll(self, device_number=device_number,
-                             port_number=out_intf,
-                             timeout=2)
-            if isinstance(result, self.dataplane.PollFailure):
-                message = "Failed to get receiving packet at port "+str(out_intf) + str(result.format())
+        finally:
+            logging.debug("Send cleint packet done to port " + str(in_intf))
+
+#
+# Receive packets from ptf and send back to client via socket connection
+#
+def send_received_pkt_to_client(self, sock, pkt, intf):
+        #
+        # Form response message
+        #
+        intf_str, err = get_intf_name_from_ptf_port(self.intf_jt_data, intf)
+        if (err):
+                message = "\nFailed to get intf name for ptf port"+str(intf)
+                print(message)
                 logging.debug(message)
-            else:
-                message = "Successfuled get packet at port "+str(out_intf)
+                return
+        ret = '{ "intf" : "'+intf_str +'"'
+        ret = ret + ', "pkt":"' + pkt_encode(str(pkt)) + '"}'
+        #print(ret)
+        sock.sendall(ret)
+        logging.debug("Sent response %r to client", ret)        
+#
+# Poll data from all port and send received packets via socket
+#
+def poll_data_from_all_ports(self, socket):
+    device_number = 0
+    try:
+        logging.debug("\n=====================\n")
+        result = dp_poll(self, device_number=device_number, timeout=2)
+        if isinstance(result, self.dataplane.PollSuccess):
+                message = "Successfuled get packet at port "+str(result.port)
                 rcv_pkt = Ether(result.packet)
                 logging.debug("\n\nReceived Packet::\n")
-                logging.debug(inspect_packet(pkt))
-                print("\nReceive packets from PTF : \n"+inspect_packet(pkt))
-                err = False
+                logging.debug(inspect_packet(rcv_pkt))
+                print("\nReceive packets from PTF : \n"+ str(inspect_packet(rcv_pkt)))
+                send_received_pkt_to_client(self, socket, rcv_pkt, result.port)
+    finally:
+        logging.debug("End of one poll")
 
-        finally:
-            logging.debug("Test done")
-
-        return message, rcv_pkt, err
-
+#
+# Launching polling thread
+#
+class PollingThread(threading.Thread):
+        def __init__(self, ptf_self, socket):
+                self._stopevent = threading.Event()
+                self._socket = socket
+                self._ptf_self = ptf_self
+                threading.Thread.__init__(self)
+        def run(self):
+                while not self._stopevent.isSet():
+                      poll_data_from_all_ports(self._ptf_self, self._socket)
+        def join(self, timeout=None):
+                self._stopevent.set()
+                threading.Thread.join(self, timeout)
+                
 #
 # Handle socket connection
 #
 def handle(self, connection, address):
     logger = logging.getLogger("process-%r" % (address,))
+    pollthread = PollingThread(self, connection)
+    pollthread.start()
     try:
         logger.debug("Connected %r at %r", connection, address)
         while True:
+            logger.debug("Wait for data")
             data = connection.recv(1024)
             if data == "":
-                logger.debug("Socket closed remotely")
+                message = "\nSocket is closed remotely"
+                print(message)
+                logger.debug(message)
                 break
         
             #print("Get data : " + data)
+            logger.debug("Get data from client socket: " + data)
             jdata = json.loads(data)
-            err = True
-            pkt = ""
-
             try:
-                ret_message, pkt, err = send_rcv_pkt(self, jdata)
+                send_rcvd_pkt_to_ptf(self, jdata)
             except:
-                logger.debug("Send rcv pkt failed")
-                ret_message = "Rcv pkt failed"
-                err = True
-
-            #
-            # Form response message
-            #
-            ret = '{ "message" : "'+ret_message+'", "error" :"'+str(err) +'"'
-            if err:
-                ret = ret +'}'
-            else:
-                ret = ret + ', "pkt":"' + pkt_encode(str(pkt)) + '"}'
-            #print(ret)
-            connection.sendall(ret)
-            logger.debug("Sent response %r", ret)
+                logger.debug("Send rcvd pkt failed")
     except:
-        logger.exception("Problem handling request")
+        logger.exception("Hit some problem in handling requests")
     finally:
+        pollthread.join()
+        print("Stopped polling thread")
         logger.debug("Closing socket")
         connection.close()
 
@@ -136,7 +166,10 @@ class PTFSVRBase(BaseTest):
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.bind((self.hostname, self.port))
         self.socket.listen(1)
-
+        _path = os.path.dirname(os.path.realpath(__file__))
+        full_path = _path + "/" + intf_json_file
+        self.intf_jt_data = json.load(open(full_path))
+        print("Reading intf map :  "+full_path)
         while True:
             conn, address = self.socket.accept()
             self.logger.debug("Got connection")
@@ -147,16 +180,12 @@ class PTFSVRBase(BaseTest):
         print("\nStart test : " + self.host_name + " port " + str(self.port))
         try:
             logging.info("Listening on " + str(self.port))
-            print ("\nStart Loop : ")
+            print ("\nStart main execution Loop : ")
             self._start_loop()
         except:
             logging.exception("Unexpected exception")
         finally:
             logging.info("Shutting down")
-            for process in multiprocessing.active_children():
-                logging.info("Shutting down process %r", process)
-                process.terminate()
-                process.join()
         logging.info("All done")
 
 #
