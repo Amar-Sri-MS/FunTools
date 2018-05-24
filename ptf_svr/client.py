@@ -64,7 +64,7 @@ class RcvThread(threading.Thread):
                       rcv_packets_from_server(self, self._socket)
         def join(self, timeout=None):
                 self._stopevent.set()
-                threading.Thread.join(self, timeout)
+                #threading.Thread.join(self, timeout)
 
 #
 # Create Testing packets and send out them one by one
