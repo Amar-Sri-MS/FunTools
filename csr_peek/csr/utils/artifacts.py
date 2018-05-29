@@ -350,7 +350,7 @@ class CSRMetaData(object):
         csr_metadata["csr_count"] = csr_prop.count
         csr_metadata["csr_addr_range"] = csr_addr_range
         csr_metadata["csr_type"] = csr_prop.type
-        csr_metadata["csr_n_entries"] = csr_prop.entries
+        csr_metadata["csr_n_entries"] = csr_prop.n_entries
         csr_metadata["csr_width"] = csr_prop.width
         fld_lst = list()
         for fld in csr_prop.fld_lst:
