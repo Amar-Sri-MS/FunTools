@@ -391,9 +391,9 @@ class StatsGen(object):
             cfg_obj = CSRNode(k,v)
             dict_merge(self.gen_objs, cfg_obj.get_gen_objs())
 
-        props_alias_list = stats_cfg.get("props_groups", None)
-        for k,v in props_alias_list.iteritems():
-            self.__process_props_group(k, v)
+        #props_alias_list = stats_cfg.get("props_groups", None)
+        #for k,v in props_alias_list.iteritems():
+        #    self.__process_props_group(k, v)
 
         self.print_gen_objs()
         file = "fun_hw_stats_gen.c"
@@ -425,14 +425,10 @@ class StatsGen(object):
             hier_nodes = path.split("/")
             print hier_nodes
 
-   def __add_props_group_gen_obj(self, group_name, group_member):
-
-
     def __get_positive_int(str):
         try:
             number = int(str)
             assert(number > 0), 'Number must be bigger than 0'
-            break
         except:
             logging.error("Must be positive Integer!")
 
