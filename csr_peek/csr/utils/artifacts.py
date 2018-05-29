@@ -120,7 +120,7 @@ class ANode(object):
         if not csr_attr:
             # This could be because of the exclusion filters
             return
-        n_entries  = (csr_attr.entries * csr_attr.count)
+        n_entries  = (csr_attr.n_entries * csr_attr.count)
         p = CSRNode(addr, addr_range)
         csr_lst = [p, n_entries]
         self.csrs[csr_name] = csr_lst
@@ -363,9 +363,10 @@ class CSRMetaData(object):
         return self.metadata
 
 class CSRRoot(object):
-    START_RING = r'START_RING'
-    END_RING = r'END_RING'
-    IGNORE = [r'^ROOT:', r'^ROR:', r'^ActSize:', r'^LEAF:', r'^##-INFO-:', r'^AN:', r'New EA:', r'INST\[']
+    START_RING = 'START_RING'
+    END_RING = 'END_RING'
+    IGNORE = ['ROOT:', 'ROR:', 'ActSize:', 'LEAF:', '##-INFO-:', 'AN:']
+    IGNORE_REGEX = ['New EA:', 'INST\[']
     RING_DONE = 0
     RING_PROCESS = 1
     IN_RING = 2
@@ -398,7 +399,7 @@ class CSRRoot(object):
             #print "LINE:{}".format(line)
             if self.__ignore(line):
                 #print "IGNORE: {}".format(line)
-                if re.search(r'^##-INFO-:', line):
+                if line.startswith('##-INFO-:'):
                     skip = True
                 continue
             if self.__process_ring(line):
@@ -420,6 +421,9 @@ class CSRRoot(object):
 
     def __ignore(self, line):
         for rep in CSRRoot.IGNORE:
+            if line.startswith(rep):
+                return True
+        for rep in CSRRoot.IGNORE_REGEX:
             if re.search(rep, line):
                 return True
         return False
@@ -478,10 +482,10 @@ class CSRRoot(object):
         if self.flags[CSRRoot.RING_DONE]:
             return False
         if not self.flags[CSRRoot.IN_RING]:
-            if re.search(CSRRoot.START_RING, line):
+            if line.startswith(CSRRoot.START_RING):
                 self.flags[CSRRoot.IN_RING] = True
                 return True
-        if re.search(CSRRoot.END_RING, line):
+        if line.startswith(CSRRoot.END_RING):
             self.flags[CSRRoot.RING_DONE] = True
             return True
 
@@ -500,7 +504,7 @@ class CSRRoot(object):
         return ring_node
 
     def __process_root(self, line):
-        if not re.search('^COUNT', line):
+        if not line.startswith('COUNT'):
             return False
         #print "{}".format(line)
         coll = line.split(':')
@@ -542,7 +546,7 @@ class CSRRoot(object):
         return do_process
 
     def __process_anode(self, line):
-        if not re.search('^START_ANODE', line):
+        if not line.startswith('START_ANODE'):
             return False
         line = line.lower()
         coll = line.split(':')

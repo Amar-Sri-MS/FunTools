@@ -596,7 +596,7 @@ static struct fun_json *_read_from_sock(struct dpcsock *sock, bool retry)
 			return NULL;
 		r = fun_json_binary_serialization_size(buffer, max);
 		if (r <= max) {
-			json = fun_json_create_from_parsing_binary(buffer, r);
+			json = fun_json_create_from_parsing_binary_with_options(buffer, r, true);
 		}
 		free(buffer);
 	}
@@ -768,6 +768,13 @@ static bool _do_send_cmd(struct dpcsock *sock, char *line,
 }
 
 
+/* TID + error string */
+#ifdef NOT_YET
+#define PROXY_ERROR_TEMPLATE "{\"tid\": %" PRIu64 ", \"error\": \"error\"}\n"
+/* add room for a large TID and NUL */
+#define PROXY_ERROR_BUFLEN (strlen(PROXY_ERROR_TEMPLATE) + 16)
+#endif
+
 static void _do_recv_cmd(struct dpcsock *funos_sock,
 			 struct dpcsock *cmd_sock, bool retry)
 {
@@ -778,12 +785,15 @@ static void _do_recv_cmd(struct dpcsock *funos_sock,
 			printf("invalid json returned\n");
 		return;
         }
-
+	// printf("output is of type %d\n", output->type);
 	// Bertrand 2018-04-05: Gross hack to make sure we don't break dpcsh users who were not expected a tid
 	uint64_t tid = 0;
 	struct fun_json *raw_output = fun_json_lookup(output, "result");
-	if (!raw_output || !fun_json_lookup_uint64(output, "tid", &tid)) {
-		// printf("Old style output\n");
+	if (!raw_output) {
+		fun_json_printf("Old style output (NULL) - got %s\n", output);
+		raw_output = output;
+	} else if (!fun_json_lookup_uint64(output, "tid", &tid)) {
+		printf("Old style output\n");
 		raw_output = output;
 	} else {
 		// printf("New style output, tid=%d\n", (int)tid);
@@ -801,8 +811,13 @@ static void _do_recv_cmd(struct dpcsock *funos_sock,
 	}
 
 	if (cmd_sock->mode == SOCKMODE_TERMINAL) {
-		fun_json_printf(OUTPUT_COLORIZE "output => %s" NORMAL_COLORIZE "\n",
+		if (raw_output && (raw_output->type == fun_json_error_type)) {
+			printf(PRELUDE BLUE POSTLUDE "output => *** error: '%s'" NORMAL_COLORIZE "\n",
+				raw_output->error_message);
+		} else {
+			fun_json_printf(OUTPUT_COLORIZE "output => %s" NORMAL_COLORIZE "\n",
 				raw_output);
+		}
 	} else {
 		fun_json_printf(OUTPUT_COLORIZE "output => %s" NORMAL_COLORIZE "\n",
 				raw_output);
@@ -811,6 +826,30 @@ static void _do_recv_cmd(struct dpcsock *funos_sock,
 			write(cmd_sock->fd, pp, strlen(pp));
 			write(cmd_sock->fd, "\n", 1);
 			fun_free_string(pp);
+		} else {
+			/* if we get here, we know that we got a
+			 * valid(-ish) JSON from the other side, but
+			 * the library refused to pretty-print it for
+			 * it. This is common if there's an error node
+			 * in the JSON because a verb returned
+			 * something bogus.  Make sure we send back
+			 * something for clients to kick them
+			 * along. Embed the TID in there for kicks.
+			 */
+			printf("JSON failed to pretty print, returning error template\n");
+#ifdef NOT_YET
+			char buf[PROXY_ERROR_BUFLEN];
+			snprintf(buf, PROXY_ERROR_BUFLEN,
+				 PROXY_ERROR_TEMPLATE, tid);
+			printf("%s", buf);
+#else
+			/* since we don't return the tid yet, just
+			 * return a "null" string that Python will
+			 * decode as "None"
+			 */
+			char *buf = "null\n";
+#endif
+			write(cmd_sock->fd, buf, strlen(buf));
 		}
 	}
 

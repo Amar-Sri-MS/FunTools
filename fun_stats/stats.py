@@ -474,7 +474,7 @@ class StatsGen(object):
             with open(os.path.join(args.out_dir, file), 'w') as f:
                 f.write(source_tmpl.render(gen_objs))
             f.close()
-            stats_gen_indent(os.path.join(args.out_dir, file))
+            #stats_gen_indent(os.path.join(args.out_dir, file))
 
         props_gen_objs = dict()
         props_gen_objs["blocks"] = block_lst
@@ -487,7 +487,7 @@ class StatsGen(object):
         with open(os.path.join(args.out_dir, h_file), 'w') as f:
             f.write(props_h_tmpl.render(props_gen_objs))
         f.close()
-        stats_gen_indent(h_file)
+        #stats_gen_indent(h_file)
 
         c_file = "fun_stats_bridge.c"
         props_gen_objs["file"] = c_file

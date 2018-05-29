@@ -193,6 +193,7 @@ def checkoutRepo() {
 	String BRANCH_ACC_COMPRESSION = "master"
 	String BRANCH_ACC_REGEX = "master"
 	String BRANCH_AAPL = "master"
+    String BRANCH_FUNCONTROLPLANE = "master"
 
 	sh 'env'
 
@@ -267,6 +268,13 @@ def checkoutRepo() {
 				'aapl',
 				"*/${BRANCH_AAPL}")
 		}, // checkout_aapl
+
+        checkout_funcp: {
+        doCheckout('FunControlPlane',
+                'FunControlPlane',
+                "*/${BRANCH_FUNCONTROLPLANE}")
+        }, // checkout_funcp
+
 	)
 
 	} // timeout

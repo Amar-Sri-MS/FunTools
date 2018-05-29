@@ -1,0 +1,28 @@
+{
+    "ptf_svr_test" : [
+	{
+	    "dst" : "21.0.0.1",
+	    "src" : "1.1.1.1",
+	    "in_intf" : "fpg0",
+	    "pktlen" : 200,
+	    "local_mac" : "fe:dc:ba:44:55:77",
+            "router_mac" : "00:de:ad:be:ef:00"
+	},
+	{
+	    "dst" : "22.0.0.1",
+	    "src" : "1.1.1.1",
+	    "in_intf" : "fpg0",
+	    "pktlen" : 200,
+	    "local_mac" : "fe:dc:ba:44:55:77",
+            "router_mac" : "00:de:ad:be:ef:00"
+	},
+	{
+	    "dst" : "23.0.0.1",
+	    "src" : "1.1.1.1",
+	    "in_intf" : "fpg0",
+	    "pktlen" : 200,
+	    "local_mac" : "fe:dc:ba:44:55:77",
+            "router_mac" : "00:de:ad:be:ef:00"
+	}	
+    ]
+}
