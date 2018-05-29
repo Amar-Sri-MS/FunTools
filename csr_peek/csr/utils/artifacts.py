@@ -339,6 +339,7 @@ class CSRMetaData(object):
         csr_metadata = dict()
         csr_metadata["ring_name"] = ring_name
         csr_metadata["ring_inst"] = ring_inst
+        csr_metadata["ring_inst_addr"] = hex(ring_addr)
         csr_metadata["ring_addr"] = hex(ring_addr)
         csr_metadata["an"] = an
         csr_metadata["an_path"] = an_path
