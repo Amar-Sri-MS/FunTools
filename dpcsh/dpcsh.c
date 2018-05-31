@@ -559,18 +559,17 @@ int dpcsocket_connnect(struct dpcsock *sock)
 /* disambiguate json */
 static bool _write_to_sock(struct fun_json *json, struct dpcsock *sock)
 {
-	size_t size;
-
 	if (!sock->base64) {
 		/* easy case */
 		return fun_json_write_to_fd(json, sock->fd);
 	}
 
 	/* base64 case */
-	uint8_t *ptr = fun_json_to_binary(json, &size);
-	bool ok = _base64_write(sock, ptr, size);
+	size_t allocated_size;
+	struct fun_ptr_and_size pas = fun_json_serialize(json, &allocated_size);
+	bool ok = _base64_write(sock, pas.ptr, pas.size);
 
-	fun_free_threaded(ptr, size);
+	fun_free_threaded(pas.ptr, allocated_size);
 
 	if (ok)
 		return true;
