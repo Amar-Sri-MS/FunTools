@@ -166,9 +166,10 @@ class TestProcessFile(unittest.TestCase):
            "1.00300000 TRACE WU END faddr VP0.0.0 wuid 1 name fun_a arg0 1 arg1 2"
            ]
     transactions = self.file_parser.ProcessFile(log)
-    self.assertEqual(3, len(transactions))
+    # One transaction for boot, one for the created transaction.
+    self.assertEqual(2, len(transactions))
 
-    tr = transactions[2]
+    tr = transactions[1]
     self.assertIsNotNone(tr.root_event)
     self.assertEqual(0, len(tr.root_event.successors))
 
