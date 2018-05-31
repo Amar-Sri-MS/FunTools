@@ -3,14 +3,14 @@
 #define _XOPEN_SOURCE
 #define _GNU_SOURCE
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <assert.h>
-#include <unistd.h>
-#include <getopt.h>
-#include <fcntl.h>
-#include <string.h>
+#include <stdio.h>	// for fprintf()
+#include <stdlib.h>	// for free()
+#include <getopt.h>	// for getopt_long()
+#include <fcntl.h>	// for open()
+#include <string.h>	// for strcmp()
 
+// We must define PLATFORM_POSIX to get fun_json_write_to_fd()
+#define PLATFORM_POSIX 1
 #include <FunSDK/utils/threaded/fun_json.h>
 
 #define MAX_JSON (1024*1024)
