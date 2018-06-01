@@ -61,6 +61,12 @@ class TestParseLine(unittest.TestCase):
     self.assertIsNotNone(line_args)
     self.assertIsNone(error)
 
+  def testParseAnnotation(self):
+    line = '0.024206656 TRACE TRANSACTION ANNOT faddr FA0:19:0[VP] msg Start unit test timer_test_microseconds'
+    (line_args, error) = self.file_parser.ParseLine(line)
+    self.assertIsNotNone(line_args)
+    self.assertIsNone(error)
+
   def testBadVerb(self):
     # Colon after send is invalid.
     line = '485375410.764454000 TRACE WU SEND: faddr VP0.2.0 wuid 0x60 name wuh_mp_notify arg0 0x0 arg1 0x0 dest VP0.2.0'
