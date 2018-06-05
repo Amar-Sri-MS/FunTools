@@ -171,7 +171,7 @@ class Slurper(object):
         cc_file = os.path.join(self.args.temp_dir, 'csr_gen.cpp')
         tmpl = TmplMgr(self.other_args['tmpl_file'])
         tmpl.write_cfg(cc_file, self.csr_root)
-        #self.__compile([cc_file])
+        self.__compile([cc_file])
         if self.args.keep_temps:
             return
         self.__clean([cc_file])

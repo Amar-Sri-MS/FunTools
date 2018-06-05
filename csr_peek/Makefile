@@ -6,9 +6,11 @@ OS := $(shell uname)
 SDKDIR ?= ${WORKSPACE}/FunSDK
 CFG_DIR ?= $(SDKDIR)/FunSDK/chip/f1/hw/yaml/
 TMPL_FILE ?= csr/template/csr_filter.yaml
-TMP_DIR ?= csr/libcsr/gen
+INC_DIR ?= `pwd`/csr/export/include
+LIB_DIR ?= `pwd`/csr/export/lib
 
-all: cfg
+
+all: csrsh
 
 # Install Pipenv for user if necessary
 ifeq ($(PYTHONUSERBASE),)
@@ -35,23 +37,22 @@ $(VENV): Pipfile Pipfile.lock
 	$(MAKE) venv
 endif
 
-.PHONY: clean libcsr cfg
+.PHONY: clean
 
-libcsr: cfg
-	cd csr-rt &&  make
-csrsh: libcsr
-	cd csr-rt && make csrsh
-cfg: $(VENV)
+csrsh: $(LIB_DIR)/csrlib.a
+	CSR_LIB=$(LIB_DIR) CSR_INC=$(INC_DIR) make -C csr-shell csrsh
+$(LIB_DIR)/csrlib.a: $(VENV)
 	pipenv run csr-slurp \
 		-d ${CFG_DIR} \
 		-f $(TMPL_FILE) \
 		-c $(SDKDIR)/FunSDK/config/csr \
 		-g                             \
-		-k
+		-i $(INC_DIR)                  \
+		-l $(LIB_DIR)
 
 clean: | clean_venv
-	cd csr-rt; make distclean
-
+	make -C csr-shell distclean
+	rm -f *.o
 clean_venv:
 	@if [ -f $(PIPENV) ] && $(PIPENV) --venv > /dev/null 2>&1; then $(PIPENV) --rm; fi
 	@rm -rf csr_slurp.egg-info

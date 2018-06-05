@@ -278,7 +278,7 @@ class RingProps(object):
                     if len(an_csrs.get().keys()) == 0:
                         continue
                     r_str += "{{\n // BEGIN {} \n".format(an_name)
-                    r_str += "auto {}_{} = {}_rng[{}].add_an({{{}}}, 0x{:01X}, {}, 0x{:01X});\n".\
+                    r_str += "addr_node_t* {}_{} = {}_rng[{}].add_an({{{}}}, 0x{:01X}, {}, 0x{:01X});\n".\
                         format(an_name, idx, self.r_name, self.i_num,
                                 elem.get_path_str(), elem.start_addr, elem.n_inst, elem.skip_addr);
                     colls = {}
@@ -295,12 +295,14 @@ class RingProps(object):
                         r_str += "CREATE_ENTRY(\"{}\", {}, {})\n".\
                                 format(fldd.fld_name, off, fldd.width)
 
-                        r_str += "};"
-                        r_str += "auto {}_prop = csr_prop_t(\n".format(csr_val.name)
-                        r_str += "std::make_shared<csr_s>({}),\n".format(csr_val.name)
+                        r_str += "};\n"
+                        r_str += "auto {}_sp = std::make_shared<csr_s>({});\n".\
+                                format(csr_val.name, csr_val.name)
+                        r_str += "csr_prop_t {}_prop {{\n".format(csr_val.name)
+                        r_str += "{}_sp,\n".format(csr_val.name)
                         r_str += "0x{:01X},\n".format(elem.get_csr_addr(csr_name))
                         r_str += "{},\n".format(csr_val.type)
-                        r_str += "{});\n".format(elem.get_num_csr(csr_name))
+                        r_str += "{}}};\n".format(elem.get_num_csr(csr_name))
                         r_str += "add_csr({}_{}, \"{}\", {}_prop);\n".\
                                  format(an_name, idx, csr_val.name, csr_val.name)
                         colls[csr_val.name] = True

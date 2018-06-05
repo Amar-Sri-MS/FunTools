@@ -9,13 +9,13 @@
 #include <iostream>
 #include "csr.h"
 
-ring_coll_t& F1NS::operator[](const std::string& name) {
+ring_coll_t& F1NS::operator[](const char* name) {
     auto it = sys_rings.find(name);
     assert(it != sys_rings.end());
     return it->second;
 }
 
-csr_prop_t& F1NS::get_csr(const std::string& csr_name,
+csr_prop_t& F1NS::get_csr(const char* csr_name,
         const uint8_t& i_num) {
     auto it = csr_addrs.find(csr_name);
     assert(it != csr_addrs.end());
@@ -23,7 +23,7 @@ csr_prop_t& F1NS::get_csr(const std::string& csr_name,
     return ans[i_num]->get_csr(csr_name, i_num);
 }
 
-uint16_t F1NS::num_inst(const std::string& csr_name) const {
+uint16_t F1NS::num_inst(const char* csr_name) const {
     auto it = csr_addrs.find(csr_name);
     assert(it != csr_addrs.end());
     auto& ans = it->second;
@@ -31,7 +31,7 @@ uint16_t F1NS::num_inst(const std::string& csr_name) const {
 }
 
 void F1NS::add_csr(addr_node_t* an,
-        const std::string& name,
+        const char* name,
         csr_prop_t& csr) {
 
         auto it = csr_addrs.find(name);

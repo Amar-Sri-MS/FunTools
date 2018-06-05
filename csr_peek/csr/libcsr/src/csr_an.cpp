@@ -26,7 +26,7 @@ uint8_t addr_node_t::get_start_id(void) const {
     return start_id;
 }
 
-std::string addr_node_t::get_name(void) const {
+const char* addr_node_t::get_name(void) const {
     return name;
 }
 
@@ -43,7 +43,7 @@ addr_node_t& addr_node_t::operator=(const addr_node_t& other) {
     return *this;
 }
 
-addr_node_t::addr_node_t(const std::string& _name,
+addr_node_t::addr_node_t(const char* _name,
                          const uint64_t& _addr,
                          const uint8_t& _start_id,
                          const uint8_t& _n_instances,
@@ -56,7 +56,7 @@ addr_node_t::addr_node_t(const std::string& _name,
 
 
 void addr_node_t::add_csr(
-        const std::string& name,
+        const char* name,
         csr_prop_t& csr,
         rd_fptr r_fn,
         wr_fptr w_fn
@@ -71,7 +71,7 @@ void addr_node_t::add_csr(
     csr_props.emplace(std::make_pair(name, csr));
 }
 
-csr_prop_t& addr_node_t::get_csr(const std::string& csr_name,
+csr_prop_t& addr_node_t::get_csr(const char* csr_name,
         const uint8_t& gid_num) {
     auto it = csr_props.find(csr_name);
     assert (it != csr_props.end());

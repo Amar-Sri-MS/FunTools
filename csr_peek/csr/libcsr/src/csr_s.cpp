@@ -71,7 +71,7 @@ uint8_t csr_s::__get_w(const uint8_t& st_off, const uint16_t& width) {
    return w;
 }
 
-void csr_s::__init(const std::string& name,
+void csr_s::__init(const char*  name,
         const uint16_t& st_off,
         const uint16_t& width) {
     uint16_t arr_w = __get_w(st_off, width);
@@ -125,7 +125,7 @@ void csr_s::__init(const std::string& name,
 }
 
 
-const fld_off_t& csr_s::operator[](const std::string& key) const {
+const fld_off_t& csr_s::operator[](const char*  key) const {
     auto it = fld_map.find(key);
     assert (it != fld_map.end());
     return it->second;

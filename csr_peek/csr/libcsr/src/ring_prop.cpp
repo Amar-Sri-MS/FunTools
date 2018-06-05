@@ -14,7 +14,7 @@
 #include "csr_an.h"
 #include "ring_prop.h"
 
-ring_node_t::ring_node_t(const std::string& _name,
+ring_node_t::ring_node_t(const char* _name,
         const uint8_t& _level):name(_name), level(_level){}
 
 bool ring_node_t::operator==(const ring_node_t& other) const {
@@ -22,15 +22,15 @@ bool ring_node_t::operator==(const ring_node_t& other) const {
 }
 
 uint8_t ring_node_t::get_level(void) const { return level; }
-const char* ring_node_t::get_name(void) const { return name.c_str(); }
+const char* ring_node_t::get_name(void) const { return name; }
 
-std::unordered_map<std::string, uint8_t, string_hash> ring_prop_t::an_id_map;
+std::unordered_map<const char*, uint8_t, string_hash> ring_prop_t::an_id_map;
 
 ring_prop_t::ring_prop_t(
         const uint64_t& b_addr):base_addr(b_addr) {}
 
 std::vector<addr_node_t*>
-ring_prop_t::get_anodes(const std::vector<std::string>& hier) {
+ring_prop_t::get_anodes(const std::vector<const char*>& hier) {
     uint8_t lvl = 0;
     std::vector<addr_node_t*> m;
     for (auto& elem: hier) {
@@ -49,7 +49,7 @@ ring_prop_t::get_anodes(const std::vector<std::string>& hier) {
 }
 
 addr_node_t* ring_prop_t::add_an(
-        const std::vector<std::string>& hier,
+        const std::vector<const char*>& hier,
         const uint32_t& an_addr,
         const uint8_t& n_inst,
         const uint32_t& skip_addr) {
@@ -87,11 +87,9 @@ addr_node_t* ring_prop_t::add_an(
         auto ring_p = ring_node_t(elem, level);
         auto it = addr_tree.equal_range(ring_p);
         if (it.first == it.second) {
-            /*
-            std::cout << "INSERT:AN:" << elem
-                << ":LVL: " << static_cast<uint16_t>(level)
-                << ":PTR:0x" << std::hex << p << std::endl;
-                */
+            //std::cout << "INSERT:AN:" << elem
+            //    << ":LVL: " << static_cast<uint16_t>(level)
+            //    << ":PTR:0x" << std::hex << p << std::endl;
             addr_tree.emplace(std::make_pair(ring_p, p));
         } else {
             auto found = false;
@@ -102,11 +100,9 @@ addr_node_t* ring_prop_t::add_an(
                 }
             }
             if (not found) {
-                /*
-                std::cout << "INSERT:AN: " << elem
-                    << ":LVL: " << static_cast<uint16_t>(level)
-                    << ":PTR: 0x" << std::hex << p << std::endl;
-                    */
+              //  std::cout << "INSERT:AN: " << elem
+              //      << ":LVL: " << static_cast<uint16_t>(level)
+              //      << ":PTR: 0x" << std::hex << p << std::endl;
                 addr_tree.emplace(std::make_pair(ring_p, p));
             }
         }

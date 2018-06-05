@@ -20,7 +20,7 @@
 
 #define CREATE_ENTRY(k0, v0, v1) {k0, fld_off_t(v0, v1)}
 
-typedef std::unordered_map<std::string, ring_coll_t, string_hash> ring_t;
+typedef std::unordered_map<const char*, ring_coll_t, string_hash> ring_t;
 class F1NS {
     public:
         static F1NS& get(rd_fptr rd_fn=nullptr, wr_fptr wr_fn=nullptr) {
@@ -37,10 +37,10 @@ class F1NS {
         inline const_iterator cbegin() const noexcept { return sys_rings.cbegin(); }
         inline const_iterator cend() const noexcept { return sys_rings.cend(); }
 
-        ring_coll_t& operator[](const std::string& name);
-        csr_prop_t& get_csr(const std::string& csr_name, const uint8_t& inst_num=0);
-        void add_csr(addr_node_t* an, const std::string& name, csr_prop_t& csr);
-        uint16_t num_inst(const std::string& csr_name) const;
+        ring_coll_t& operator[](const char* name);
+        csr_prop_t& get_csr(const char* csr_name, const uint8_t& inst_num=0);
+        void add_csr(addr_node_t* an, const char* name, csr_prop_t& csr);
+        uint16_t num_inst(const char* csr_name) const;
     private:
         /*
          * For each ring, NU, HU, HNU etc
@@ -48,7 +48,7 @@ class F1NS {
         rd_fptr m_rd_fn{nullptr};
         wr_fptr m_wr_fn{nullptr};
         ring_t sys_rings;
-        std::map<std::string, std::vector<addr_node_t*>> csr_addrs;
+        std::map<const char*, std::vector<addr_node_t*>> csr_addrs;
 
         F1NS(rd_fptr rd, wr_fptr wr);
 };

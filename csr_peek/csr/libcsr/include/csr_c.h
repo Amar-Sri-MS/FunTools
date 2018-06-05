@@ -32,13 +32,13 @@ class csr_c {
       ~csr_c(void);
   private:
       template <typename T>
-          void _convert(const std::string& r, const T& val);
+          void _convert(const char*  r, const T& val);
 
       void _compute_shifts(const uint16_t& st_off, const uint16_t& width,
               uint8_t* mask_arr,uint8_t* r_shift, uint8_t& l_shift, uint16_t w);
 
       uint8_t _get_width(const uint8_t& st_off, const uint16_t& width);
-      void _initialize(const std::string& f_name, const uint16_t& st_off, const uint16_t& width, uint8_t* raw_arr);
+      void _initialize(const char*  f_name, const uint16_t& st_off, const uint16_t& width, uint8_t* raw_arr);
 
 
 
@@ -46,9 +46,9 @@ class csr_c {
       /*
        * Keep caches to avoid having to recompute every time. Optimize for get, not set
        */
-      std::map<std::string, std::vector<uint8_t>> val_map;
-      std::map<std::string, std::vector<uint8_t>> mask_map;
-      std::map<std::string, std::pair<uint8_t, std::vector<uint8_t>>> shift_map;
+      std::map<const char*, std::vector<uint8_t>> val_map;
+      std::map<const char*, std::vector<uint8_t>> mask_map;
+      std::map<const char*, std::pair<uint8_t, std::vector<uint8_t>>> shift_map;
 
       uint16_t _sz{0};
       uint8_t* raw_arr{nullptr};
@@ -63,7 +63,7 @@ class csr_c {
  */
 
 template <typename T>
-void csr_c::_convert(const std::string& fld_name, const T& val) {
+void csr_c::_convert(const char*  fld_name, const T& val) {
 
    auto l_shift = shift_map[fld_name].first;
    auto r_shift = shift_map[fld_name].second;
@@ -89,9 +89,8 @@ void csr_c::_convert(const std::string& fld_name, const T& val) {
 }
 
 template <typename T>
-void csr_c::set(const char* fld_name, const T& val) {
+void csr_c::set(const char* f_name, const T& val) {
 
-    auto f_name = std::string(fld_name);
 
     auto f_info = m_sign[f_name];
     auto f_start = f_info.fld_off;
@@ -100,8 +99,8 @@ void csr_c::set(const char* fld_name, const T& val) {
     _convert(f_name, val);
     auto it = val_map.find(f_name);
     assert (it != val_map.end());
-    auto val_arr = val_map[fld_name];
-    auto mask_arr = mask_map[fld_name];
+    auto val_arr = val_map[f_name];
+    auto mask_arr = mask_map[f_name];
     for (uint16_t i = 0; i < val_arr.size(); i ++) {
         raw_arr[i+s_idx] = ((raw_arr[i+s_idx] & ~mask_arr[i]) | (val_arr[i] & mask_arr[i]));
     }
@@ -115,9 +114,8 @@ void csr_c::set(const char* fld_name, const T& val) {
 
 
 template <typename T>
-void csr_c::get(const char* fld_name, T& rval) {
+void csr_c::get(const char* f_name, T& rval) {
     rval = 0;
-    auto f_name = std::string(fld_name);
     auto it = val_map.find(f_name);
     assert (it != val_map.end());
     auto mask_arr = mask_map[f_name];

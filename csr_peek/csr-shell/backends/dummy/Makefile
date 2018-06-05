@@ -1,5 +1,5 @@
 CXX=g++
-CXXFLAGS=-Wall -O3 -g -std=c++11 
+CXXFLAGS=-Wall -O3 -g -std=c++11 -I$(CSR_INC)
 
 driver_src = $(wildcard test/*.cpp)
 

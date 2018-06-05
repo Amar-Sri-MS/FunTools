@@ -32,7 +32,7 @@ csr_c::csr_c(const csr_s& p, uint8_t* r_arr):
 }
 
 
-void csr_c::_initialize(const std::string& name,
+void csr_c::_initialize(const char* name,
         const uint16_t& st_off,
         const uint16_t& width, uint8_t* raw_val) {
     uint8_t arr_w = _get_width(st_off, width);
@@ -134,7 +134,7 @@ std::ostream& operator<<(std::ostream& os, csr_c& obj) {
     uint64_t val;
     for (auto it = obj.m_sign.cbegin(); it != obj.m_sign.cend(); it ++) {
         os << std::setw(2) << it->first << ":" << std::endl;
-        obj.get((it->first).c_str(), val);
+        obj.get((it->first), val);
         os << std::setw(4) << it->second << std::endl;
         os << std::setw(4) << "v:" << std::hex << std::showbase << val << std::dec << std::endl;
         os << std::endl;

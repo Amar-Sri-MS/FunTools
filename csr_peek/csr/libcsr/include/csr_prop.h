@@ -32,9 +32,9 @@ class csr_prop_t {
          *
          */
         template <typename T>
-            void set(const std::string& fld_name, const T& val, uint8_t* raw_buf);
+            void set(const char *fld_name, const T& val, uint8_t* raw_buf);
         template <typename T>
-            void get(const std::string& fld_name, T& val, uint8_t* raw_buf);
+            void get(const char *fld_name, T& val, uint8_t* raw_buf);
 
          /*
           * Flush/Read from a lower level agent.
@@ -86,7 +86,7 @@ class csr_prop_t {
 };
 
 template <typename T>
-void csr_prop_t::set(const std::string& fld_name, const T& val, uint8_t* raw_buf) {
+void csr_prop_t::set(const char *fld_name, const T& val, uint8_t* raw_buf) {
     //std::cout << "FLD: " << fld_name << ":VAL: " << val << std::endl;
     __init();
     sign->_set(fld_name, val, raw_buf);
@@ -94,7 +94,7 @@ void csr_prop_t::set(const std::string& fld_name, const T& val, uint8_t* raw_buf
 }
 
 template <typename T>
-void csr_prop_t::get(const std::string& fld_name, T& val, uint8_t* raw_buf) {
+void csr_prop_t::get(const char *fld_name, T& val, uint8_t* raw_buf) {
     assert(raw_buf != nullptr);
     sign->_get(fld_name, val, raw_buf);
 }

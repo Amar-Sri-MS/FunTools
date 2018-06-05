@@ -19,7 +19,7 @@ class ring_coll_t {
         const uint16_t num_rings() const;
 
     private:
-        std::string ring_name;
+        const char* ring_name;
         std::unordered_map<uint8_t, ring_prop_t> r_props;
 
 };

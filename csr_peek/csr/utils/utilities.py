@@ -22,7 +22,7 @@ class Filer():
             self.__rmdir(dirname)
         self.__rmfile(dirname)
         if not os.path.exists(dirname):
-            os.mkdir(dirname)
+            os.makedirs(dirname)
 
 
 class Compiler():
