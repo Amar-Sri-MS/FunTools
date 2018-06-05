@@ -44,10 +44,10 @@ csrsh: libcsr
 cfg: $(VENV)
 	pipenv run csr-slurp \
 		-d ${CFG_DIR} \
-		-t $(TMP_DIR) \
 		-f $(TMPL_FILE) \
-		-c $(SDKDIR)/FunSDK/config/csr
-	        
+		-c $(SDKDIR)/FunSDK/config/csr \
+		-g                             \
+		-k
 
 clean: | clean_venv
 	cd csr-rt; make distclean

@@ -29,19 +29,19 @@ class Slurper(object):
 
         cmd_parser.add_argument("-l", "--lib-dir", help="Output directory for generated lib & include",
                 required=False, default=self.cwd, type=str)
-        
+
         cmd_parser.add_argument("-i", "--inc-dir", help="Output directory for generated lib & include",
                 required=False, default=self.cwd, type=str)
 
-        cmd_parser.add_argument("-c", "--cfg-dir", help="Output directory for JSONs", required=False, 
+        cmd_parser.add_argument("-c", "--cfg-dir", help="Output directory for JSONs", required=False,
                 default=self.cwd, type=str)
 
         cmd_parser.add_argument("-t", "--temp-dir", required=False,
                 help="Output directory for generated temporaries",type=str)
-        
+
         cmd_parser.add_argument("-k", "--keep-temps", required=False,
-                help="Keep generated artifacts")
-        
+                help="Keep generated artifacts", action='store_true')
+
         def_filter = os.path.join(ml_dir, "template", "csr_filter.yaml")
         cmd_parser.add_argument("-f", "--filter-file", help="Filter YAML file, usually required for compiles to pass",
                 default=def_filter, required=False, type=str)
@@ -88,51 +88,41 @@ class Slurper(object):
 
         schema = CSR_YML_Reader(yml_dir, filter_def, csr_def)
 
-        csr_root = CSRRoot(amap_file, schema.get(), filter_def)
+        self.csr_root = CSRRoot(amap_file, schema.get(), filter_def)
         o_file = os.path.join(args.cfg_dir, 'csr_metadata.json')
         with open(o_file, "w") as fp:
-            fp.write(json.dumps(csr_root.get_csr_metadata(), indent=4))
+            fp.write(json.dumps(self.csr_root.get_csr_metadata(), indent=4))
 
         self.args = args
-        print "[Written Config]: {}".format(o_file) 
+        print "[Written Config]: {}".format(o_file)
 
         # Next, get the ring structure
         #p = YML_Reader()
         #yml_stream = p.read_file(ring_file)
         #w = Walker(yml_stream)
         #print "{}".format(w)
-    
+
     def __get_files(self, dirname, ext):
         f_lst = []
         for m_file in os.listdir(dirname):
             if m_file.endswith(ext):
                 f_lst.append(os.path.join(dirname, m_file))
         return f_lst
-
-    def compile(self):
-        
-        if not self.args.gen_lib:
-            print "Not generating CSR lib"
-            return
-
-        self.args.lib_dir = self.__update_loc(self.args.lib_dir)
-        self.args.inc_dir = self.__update_loc(self.args.inc_dir)
-        if not self.args.temp_dir:
-            self.args.temp_dir = "/tmp/csr.{}".format(os.getpid())
+    def __create_dirs(self, args):
+        args.lib_dir = self.__update_loc(args.lib_dir)
+        args.inc_dir = self.__update_loc(args.inc_dir)
+        if not args.temp_dir:
+            args.temp_dir = "/tmp/csr.{}".format(os.getpid())
         else:
-            self.args.temp_dir=self.__update_loc(self.args.temp_dir)
+            args.temp_dir=self.__update_loc(args.temp_dir)
         file_mkr = Filer()
 
-        file_mkr.mkdir(self.args.lib_dir)
-        file_mkr.mkdir(self.args.inc_dir)
-        file_mkr.mkdir(self.args.temp_dir)
-        cc_file = os.path.join(self.args.temp_dir, 'csr_gen.cpp')
-        tmpl = TmplMgr(self.other_args['tmpl_file'])
-        tmpl.write_cfg(cc_file, csr_root)
-
+        file_mkr.mkdir(args.lib_dir)
+        file_mkr.mkdir(args.inc_dir)
+        file_mkr.mkdir(args.temp_dir)
+    def __compile(self, tmp_files):
 
         base_dir = os.path.join(self.ml_dir, "libcsr")
-        
         src_dir = os.path.join(base_dir, "src")
         src_files = self.__get_files(src_dir, ".cpp")
         lst = [m_file for m_file in tmp_files if m_file.endswith(".cpp")]
@@ -150,8 +140,41 @@ class Slurper(object):
 
         m_cpp = Compiler()
         m_cpp.clean_files(tmp_files)
-        m_cpp.build_lib("libcsr", "static", 
+        m_cpp.build_lib("libcsr", "static",
                 src_files, inc_dir, self.args.lib_dir, self.args.inc_dir)
+
+    def __clean(self, tmp_files):
+        dirs = []
+        for m_file in tmp_files:
+            basedir = os.path.dirname(m_file)
+            if basedir == self.args.lib_dir or \
+                    basedir == self.args.inc_dir:
+                        continue
+            if os.path.exists(m_file):
+                print "Removing tmp: {}".format(m_file)
+                os.remove(m_file)
+            if not basedir in dirs:
+                dirs.append(basedir)
+        for dirname in dirs:
+            if os.listdir(dirname):
+                continue
+            print "Removing directory: {}".format(dirname)
+            os.rmdir(dirname)
+
+    def compile(self):
+
+        if not self.args.gen_lib:
+            print "Not generating CSR lib"
+            return
+        self.__create_dirs(self.args)
+
+        cc_file = os.path.join(self.args.temp_dir, 'csr_gen.cpp')
+        tmpl = TmplMgr(self.other_args['tmpl_file'])
+        tmpl.write_cfg(cc_file, self.csr_root)
+        #self.__compile([cc_file])
+        if self.args.keep_temps:
+            return
+        self.__clean([cc_file])
 
     def __str__(self):
         r_str = "{}".format(self.schema)
