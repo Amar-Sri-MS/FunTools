@@ -12,6 +12,7 @@ import pdb, argparse
 from jinja2 import Environment, FileSystemLoader
 from json_reader import CFG_Reader
 import pprint
+import re
 
 #logger = logging.getLogger("stats")
 
@@ -41,10 +42,7 @@ class CSRNode(object):
         logging.debug("CSR Entry node {} added!".format(name))
 
     def __process_entry(self, cfg):
-        valid_bool_inputs = ["TRUE", "FALSE"]
-        self.props_name = cfg.get("name", self.name)
-
-        self.gen_objs = collections.OrderedDict()
+        self.cfg_objs = collections.OrderedDict()
         self.ring_class = None
         self.ring_inst = None
         rnode = cfg.get("ring", None)
@@ -73,47 +71,10 @@ class CSRNode(object):
             self.an = anode.get("an", None)
             self.an_path = anode.get("an_path", None)
 
-            """
-            self.an_inst_list = list()
-            an_inst_range = anode.get("inst", None)
-            if an_inst_range is not None:
-                if type(an_inst_range) is str:
-                    min, max = range_min_max(an_inst_range)
-                    self.an_inst_list = range(min, max)
-                elif type(an_inst_range) is int:
-                    self.an_inst_list.append(an_inst_range)
-                else:
-                    logging.error(("CSR:{} ANODE:{}"
-                            "\'inst\' must be a range string or a unsigned"
-                            " integer").format(self.name, self.an)
-                    sys.exit(1)
-            """
-        self.clear_on_read = cfg.get("clear_on_read", None)
-        if self.clear_on_read is not None:
-            if self.clear_on_read.upper() not in valid_bool_inputs:
-                logging.error(("CSR:{} clear_on_read property value is invalid!"
-                               " Expected values are \"true/false\"").format(self.name))
-                sys.exit(1)
-        else:
-            self.clear_on_read = "false"
-
-        self.on_demand = cfg.get("on_demand", None);
-        if self.on_demand is not None:
-            if not self.on_demand.upper() in valid_bool_inputs:
-                logging.error(("CSR:{} on_demand property value is invalid!"
-                               " Expected values are \"true/false\"").format(self.name))
-                sys.exit(1)
-        else:
-            self.on_demand = "false"
-
         self.poll_interval = cfg.get("poll_interval", None);
-        if self.poll_interval is not None:
-            if type(self.poll_interval) is not int:
-                logging.error(("CSR:{} poll_interval property should be"
-                               " integer").format(self.poll_interval))
-                sys.exit(1)
-        else:
-            self.poll_interval = 0
+        if self.poll_interval is None:
+            logging.error(("CSR:{} Missing poll_interval property").format(self.name))
+            sys.exit(1)
 
         self.csr_defs = csr_metadata().get_csr_def(self.name,
                                                    self.ring_class,
@@ -161,11 +122,11 @@ class CSRNode(object):
             an_name = csr.get("an", None)
             an_inst_cnt = csr.get("an_inst_cnt", None)
 
-            ring = self.gen_objs.get(ring_name, None)
+            ring = self.cfg_objs.get(ring_name, None)
             if ring is None:
                 ring = collections.OrderedDict()
                 ring["ring_addr"] = csr.get("ring_addr", None)
-                self.gen_objs[ring_name] = ring
+                self.cfg_objs[ring_name] = ring
 
             rinst_lst = ring.get("ring_inst", None)
             if rinst_lst is None:
@@ -200,11 +161,9 @@ class CSRNode(object):
             if csr_node is None:
                 csr_node = collections.OrderedDict()
                 if self.poll_interval is None:
-                    csr_node["period_usec"] = 0
+                    csr_node["period_msec"] = 0
                 else:
-                    csr_node["period_usec"] = self.poll_interval
-                csr_node["on_demand"] = self.on_demand
-                csr_node["clear_on_read"] = self.clear_on_read
+                    csr_node["period_msec"] = self.poll_interval
                 csr_node["type"] = csr.get("csr_type", None)
                 csr_node["n_instances"] = csr.get("csr_count", None)
                 csr_node["addr"] = csr.get("csr_addr", None)
@@ -214,13 +173,13 @@ class CSRNode(object):
                 csr_node["width"] = csr_width
                 csr_node["n_entries"] = csr.get("csr_n_entries", None)
                 fld_list = self.__get_field_objs(cfg_fields,
-							csr.get("fld_lst", None), csr_width_64bit)
+				csr.get("fld_lst", None), csr_width_64bit)
                 csr_node["num_fields"] = len(fld_list)
                 csr_node["fld_list"] = fld_list
                 csr_lst[self.name] = csr_node
 
-    def get_gen_objs(self):
-        return self.gen_objs;
+    def get_cfg_objs(self):
+        return self.cfg_objs;
 
     def __get_csr_width(self, csr_def_flds):
 		csr_fld_width = 0
@@ -236,85 +195,38 @@ class CSRNode(object):
             logging.error(("CSR: {} metadata field list empty!").format(self.name))
             sys.exit(1)
         fld_objs = collections.OrderedDict()
+        field_list = list()
         if fields is not None:
-            for k,v in fields.iteritems():
-                csr_index = None
-                if self.csr_type == "TBL_REG_LIST":
-                    if type(v) is not collections.OrderedDict:
-                        logging.error(("CSR: {} TBL_REG_LIST expetcts "
-				                       "index-field map dictionary!").format(
-                                       self.name))
-                        sys.exit(1)
-                    csr_field_name = v.get("field", None)
-                    if csr_field_name is None:
-                        logging.error(("CSR: {} TBL_REG_LIST expetcts "
-                                       "field property inside value "
-                                       "dictionary!").format(self.name))
-                        sys.exit(1)
-                    csr_index = v.get("index", None)
-                    if csr_index is None or type(csr_index) is not int:
-                        logging.error(("CSR: {} TBL_REG_LIST expetcts "
-                                       "index in the field map"
-                                       " dictionary!").format(self.name))
-                        sys.exit(1)
-                else:
-                    csr_field_name = v
-                if type(csr_field_name) is not unicode:
-            	    logging.error("CSR:{} field:{} value data type "
-                                  "should be string!".format(
-                                  self.name, k))
-                    sys.exit(1)
-                fld = None
-                offset = 0;
-                for csr_fld in csr_def_flds:
-                    csr_fld_width = csr_fld["fld_width"]
-                    offset += csr_fld_width
-                    if csr_fld.get("fld_name", None) == csr_field_name:
-                        fld = dict()
-                        fld["csr_fld_name"] = csr_fld["fld_name"]
-                        fld["csr_fld_width"] = csr_fld_width
-                        if csr_index is not None:
-                            fld["csr_tbl_index"] = csr_index
-                        fld["csr_fld_offset"] = csr_width_64bit - offset
-                if fld is None:
-                    logging.error("CSR:{} field:{} not found "
-                                  "in csr definition!".format(
-                                  self.name, csr_field_name))
-                    sys.exit(1)
-                else:
-                    fld_objs[k] = fld
-        else:
-            logging.debug("{} ".format(self.name))
-            offset = 0;
-            for csr_fld in csr_def_flds:
-                fld = dict()
-                offset += csr_fld["fld_width"]
-                csr_field_name = csr_fld["fld_name"]
-                if csr_field_name == "__rsvd":
+            if type(fields) is unicode:
+                field_list.append(fields);
+            elif  type(fields) is list:
+                field_list = fields
+            else:
+                logging.error(("CSR: {} fields property must be a string or"
+                               " list").format(self.name))
+                sys.exit(1)
+
+        offset = 0;
+        for csr_fld in csr_def_flds:
+            fld = dict()
+            offset += csr_fld["fld_width"]
+            csr_field_name = csr_fld["fld_name"]
+            if csr_field_name == "__rsvd":
+                continue
+            if field_list:
+                if csr_field_name not in field_list:
                     continue
-                fld["csr_fld_name"] = csr_field_name
-                fld["csr_fld_width"] = csr_fld["fld_width"]
-                fld["csr_fld_offset"] = csr_width_64bit - offset
-                fld_objs[csr_field_name] = fld
+                else:
+                    field_list.remove(csr_field_name)
+            fld["csr_fld_name"] = csr_field_name
+            fld["csr_fld_width"] = csr_fld["fld_width"]
+            fld["csr_fld_offset"] = csr_width_64bit - offset
+            fld_objs[csr_field_name] = fld
+        if field_list:
+            logging.error(("CSR: {} Invalid fields: {}").format(self.name,
+                                                                field_list))
+            sys.exit(1)
         return fld_objs
-        #self.fld_objs = fld_objs
-
-    def print_csr_node(self):
-        logging.debug(("CSR:{} RING:{}.{} AN:{}.{}").format(
-                    self.name, self.ring_class, self.ring_inst,
-                    self.an, self.an_path))
-        logging.debug(("csr type: {} n_entries: {}").format(
-                    self.csr_type,
-                    self.csr_n_entries));
-        logging.debug(("csr def: {}").format(self.gen_objs))
-
-
-    def get_an_list(self):
-        an_set = set()
-        for i in self.subnodes:
-            an_set |= i.get_an_list()
-        return an_set
-
 
 class StatsGen(object):
     def __init__(self, cwd):
@@ -324,9 +236,9 @@ class StatsGen(object):
         self.other_args = {}
         self.__arg_process(self.cmd_parser, self.other_args)
         self.csr_cfg_obj = list()
-        self.gen_objs = collections.OrderedDict()
+        #self.cfg_objs = collections.OrderedDict()
         self.props_groups = collections.OrderedDict()
-        #self.gen_objs = dict()
+        #self.cfg_objs = dict()
 
     def __arg_process(self, cmd_parser, other_args):
         def_dir = os.path.join(self.cwd, "Configfiles/stats")
@@ -383,91 +295,153 @@ class StatsGen(object):
 
         logging.info("Generate the funos source code!")
         stats_cfg = collections.OrderedDict()
-        for k,v in cfg.get().iteritems():
-            stats_cfg = cfg.merge_dicts(stats_cfg, v)
-
-        csr_list = stats_cfg.get("csr", None)
-        for k,v in csr_list.iteritems():
-            cfg_obj = CSRNode(k,v)
-            dict_merge(self.gen_objs, cfg_obj.get_gen_objs())
-
-        #props_alias_list = stats_cfg.get("props_groups", None)
-        #for k,v in props_alias_list.iteritems():
-        #    self.__process_props_group(k, v)
-
-        self.print_gen_objs()
-        file = "fun_hw_stats_gen.c"
-        logging.info("Creating file {}".format(file))
-        with open(os.path.join(args.out_dir, file), 'w') as f:
-            f.write(source_tmpl.render({"gen_objs":self.gen_objs,
-                                        "file": file}))
+        cfg_objs = collections.OrderedDict()
+        file_name = "stats_cache.cfg"
+        logging.info("Creating file {}".format(file_name))
+        f = open(os.path.join(args.out_dir, file_name), "w")
+        for name,cfg in cfg.get().iteritems():
+            for k,v in cfg.iteritems():
+                csr_obj = CSRNode(k,v)
+                dict_merge(cfg_objs, csr_obj.get_cfg_objs())
+            stats_cfg[name] = self.get_cfg_gen_objs(cfg_objs)
+            self.print_cfg_objs(cfg_objs)
+        f.write(json.dumps(stats_cfg, indent=4))
         f.close()
 
-    def __process_props_group(self, group_name, group_info):
-        p_group = self.props_groups.get(group_name, None)
-        if p_group is not None:
-            logging.error("Props group: {} defined twice!".format(group_name))
-            sys.exit(1)
-        p_group =  collections.OrderedDict()
-        self.props_groups[group_name] = p_group
-        if type(group_info) == list:
-            for gnode in group_info:
-                self.__add_props_group_gen_obj(group_name, gnode)
-                path = gnode.get("path", None)
-                hier_nodes = path.split("/")
-                if len(hier_nodes) is not 5:
-                    logging.error("Invalid props path: {}".format(path))
-                    sys.exit(1)
-
-        else:
-            self.__add_props_group_gen_obj(group_name, group_info)
-            path = group_info.get("path", None)
-            hier_nodes = path.split("/")
-            print hier_nodes
-
-    def __get_positive_int(str):
-        try:
-            number = int(str)
-            assert(number > 0), 'Number must be bigger than 0'
-        except:
-            logging.error("Must be positive Integer!")
-
-
-
-    def __print_gen_fld_objs(self, fld_list):
+    def __print_fld_objs(self, fld_list):
         for k,v in fld_list.iteritems():
             logging.debug(("\t\t\t\tFIELD:{} NAME:{}, WIDTH:{}, OFFSET:{}").format(
                 k, v.get("csr_fld_name", None), v.get("csr_fld_width", None),
                 v.get("csr_fld_offset", None)))
 
-    def __print_gen_csr_objs(self, csr_list):
+    def __print_csr_objs(self, csr_list):
         for k,v in csr_list.iteritems():
             logging.debug(("\t\t\tCSR:{}, ADDR:{}, WIDTH:{}, N_INST:{}, N_ENTRIES:{}").format(
                 k, v.get("addr", None), v.get("width", None), v.get("n_instances", None),
                 v.get("n_entries", None), v.get("type", None)))
-            self.__print_gen_fld_objs(v.get("fld_list", None))
+            self.__print_fld_objs(v.get("fld_list", None))
 
-    def __print_gen_anode_objs(self, an_list):
+    def __print_anode_objs(self, an_list):
         for k,v in an_list.iteritems():
             logging.debug(("\t\tANODE:{} N_INST:{} ADDR: {} SKIP_ADDR:{}").format(
                 k, v.get("an_inst_cnt", None), v.get("an_addr", None),
                  v.get("skip_addr", None)))
-            self.__print_gen_csr_objs(v.get("csr", None))
+            self.__print_csr_objs(v.get("csr", None))
 
-    def __print_gen_ring_inst_objs(self, rinst_list):
+    def __print_ring_inst_objs(self, rinst_list):
         for k,v in rinst_list.iteritems():
             logging.debug("\tRING_INST: {} ADDR: {}".format(
                     k, v.get("ring_inst_addr", None)))
-            self.__print_gen_anode_objs(v.get("anode", None))
+            self.__print_anode_objs(v.get("anode", None))
 
-    def print_gen_objs(self):
-        for k,v in self.gen_objs.iteritems():
+    def print_cfg_objs(self, cfg_objs):
+        for k,v in cfg_objs.iteritems():
             logging.debug("RING: {} ADDR:{}".format(k, v.get("ring_addr", None)))
-            self.__print_gen_ring_inst_objs(v.get("ring_inst", None))
+            self.__print_ring_inst_objs(v.get("ring_inst", None))
 
-def stats_gen_indent(gen_file):
-    cmd = "indent -br -npsl -l120 -i4 -nut " + gen_file
-    os.system(cmd)
+    def __get_csr_objs(self, base_addr, csr_list):
+        gen_obj_list = list()
+        for k,v in csr_list.iteritems():
+            csr_addr = v.get("addr", None)
+            if csr_addr is None:
+                logging.error("CSR:{} Invalid address!".format(k))
+                sys.exit(1)
+            csr_addr = self.__hexlify(csr_addr)
+
+            csr_width = v.get("width", None)
+            if csr_width == 0 or csr_width is None:
+                logging.error("CSR:{} Invalid width!".format(k))
+                sys.exit(1)
+
+            fld_list = v.get("fld_list", None)
+            if fld_list is None:
+                logging.error("CSR:{} Empty field list!".format(k))
+                sys.exit(1)
+
+            n_instances = v.get("n_instances", None)
+            if n_instances is None:
+                logging.error("CSR:{} Invalid number of instances!".format(k))
+                sys.exit(1)
+
+            n_entries = v.get("n_entries", None)
+            if n_entries is None:
+                logging.error("CSR:{} Invalid number of entries!".format(k))
+                sys.exit(1)
+            csr_width_64bit = v.get("width_64bit", None)
+            if csr_width_64bit is None:
+                logging.error("CSR:{} Invalid width_64bit !".format(k))
+                sys.exit(1)
+            csr_width_bytes = csr_width_64bit/8
+
+            for i in range(n_instances):
+                for e in range(n_entries):
+                    addr = base_addr + csr_addr \
+                            + ((i * n_entries) * csr_width_bytes) \
+                            + (e * csr_width_bytes)
+                    for f,d in fld_list.iteritems():
+                        fld_obj = collections.OrderedDict()
+                        fld_obj["csr_addr"] = hex(addr)
+                        fld_obj["csr_width"] = csr_width
+                        fld_obj["period_msec"] = v.get("period_msec", 0)
+                        field_offset = d.get("csr_fld_offset", None)
+                        if field_offset is None:
+                            logging.error(("CSR:{} field:{} Invalid field"
+                                    " offset!").format(k, d.get("csr_fld_name",
+                                        None)))
+                            sys.exit(1)
+                        fld_obj["field_offset"] = field_offset
+                        field_width = d.get("csr_fld_width", None)
+                        if field_width is None:
+                            logging.error(("CSR:{} field:{} Invalid field"
+                                    " width!").format(k, d.get("csr_fld_name",
+                                                             None)))
+                            sys.exit(1)
+                        fld_obj["field_width"] = field_width
+                        gen_obj_list.append(fld_obj)
+
+        return gen_obj_list
+
+    def __get_anode_objs(self, an_list):
+        gen_obj_list = list()
+        for k,v in an_list.iteritems():
+            inst_cnt = v.get("an_inst_cnt", 1)
+            an_addr = v.get("an_addr", None)
+            if an_addr is None:
+                logging.error("Invalid anode:{} address!".format(k))
+                sys.exit(1)
+	    an_addr = self.__hexlify(an_addr)
+	    skip_addr = v.get("skip_addr", None)
+	    if skip_addr is None:
+		logging.error("Invalid skip_addr for anode:{}!".format(k))
+		sys.exit(1)
+	    skip_addr = self.__hexlify(skip_addr)
+            for i in range(inst_cnt):
+                base_addr = i * skip_addr
+                objs = self.__get_csr_objs(base_addr, v.get("csr", None))
+                gen_obj_list += objs
+        return gen_obj_list
+
+    def __get_ring_inst_objs(self, rinst_list):
+        gen_obj_list = list()
+        for k,v in rinst_list.iteritems():
+            objs = self.__get_anode_objs(v.get("anode", None))
+            gen_obj_list += objs
+        return gen_obj_list
+
+    def get_cfg_gen_objs(self, cfg_objs):
+        gen_obj_list = list()
+        for k,v in cfg_objs.iteritems():
+            objs = self.__get_ring_inst_objs(v.get("ring_inst", None))
+            gen_obj_list += objs
+        return gen_obj_list
+
+    def __hexlify(self, entry):
+        entry = re.sub(r'0x', '', entry)
+        entry = re.sub(r'_', '', entry)
+        val = int(entry, 16)
+        return val
+
+
 
 def singleton(cls):
     instances = {}
