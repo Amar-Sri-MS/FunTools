@@ -205,8 +205,9 @@ class RingProps(object):
         #print "AN: {} csr_name: {} CSRs".format(an_name, csr_name)
         csr_prop = an_csrs.get().get(csr_name, None)
         if csr_prop == None:
-            print "ERROR! Could not find CSR in csr_map."
-            sys.exit(1)
+            print "!WARNING! Could not find CSR in csr_map."
+
+            
         return csr_prop
 
     # The CSR attribute map is for csrs local to this anode
@@ -625,11 +626,11 @@ class CSRRoot(object):
         an_csrs = self.csr_map.get(self.curr_an_name, None)
         if not an_csrs:
             print "Could not get CSRs for AN:{}".format(self.curr_an_name)
-            sys.exit(1)
+            return
         csr_prop = an_csrs.get().get(csr_name, None)
         if csr_prop == None:
             print "Count not get info for CSR: {}".format(csr_name)
-            sys.exit(1)
+            return
 
         if len(ex_coll) > 1:
             csr_addr = self.__hexlify(ex_coll[0].strip())
