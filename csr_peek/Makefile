@@ -3,7 +3,7 @@
 OS := $(shell uname)
 # The build is where our SDK is rooted
 
-SDKDIR ?= ${WORKSPACE}/FunSDK
+SDKDIR ?= ../../FunSDK
 CFG_DIR ?= $(SDKDIR)/FunSDK/chip/f1/hw/yaml/
 TMPL_FILE ?= csr/template/csr_filter.yaml
 INC_DIR ?= `pwd`/csr/export/include
