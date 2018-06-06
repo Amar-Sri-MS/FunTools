@@ -3,7 +3,7 @@
 OS := $(shell uname)
 # The build is where our SDK is rooted
 
-SDKDIR ?= ../../FunSDK
+SDKDIR ?= `pwd`/../../FunSDK
 CFG_DIR ?= $(SDKDIR)/FunSDK/chip/f1/hw/yaml/
 TMPL_FILE ?= csr/template/csr_filter.yaml
 INC_DIR ?= `pwd`/csr/export/include
@@ -25,7 +25,7 @@ endif
 endif
 
 build_mac: $(LIB_DIR)/csrlib.a
-	CSR_LIB=$(LIB_DIR) CSR_INC=$(INC_DIR) INSTALL_DIR=`pwd` make -C csr-shell csrsh-install
+	CSR_LIB=$(LIB_DIR) CSR_INC=$(INC_DIR) INSTALL_DIR=`pwd` SDKDIR=$(SDKDIR) make -C csr-shell csrsh-install
 	chmod +x csrsh
 
 build_linux:
@@ -52,3 +52,5 @@ clean:
 	rm -f $(LIB_DIR)/libcsr.a
 	rm -f $(INC_DIR)/*
 	make -C csr-shell clean
+	rm -f csrsh
+	rm -f *.json
