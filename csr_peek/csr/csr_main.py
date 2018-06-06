@@ -89,6 +89,8 @@ class Slurper(object):
         schema = CSR_YML_Reader(yml_dir, filter_def, csr_def)
 
         self.csr_root = CSRRoot(amap_file, schema.get(), filter_def)
+        file_mkr = Filer()
+        file_mkr.mkdir(args.cfg_dir)
         o_file = os.path.join(args.cfg_dir, 'csr_metadata.json')
         with open(o_file, "w") as fp:
             fp.write(json.dumps(self.csr_root.get_csr_metadata(), indent=4))

@@ -37,4 +37,4 @@ clean:
 	rm -f test/*.o
 	rm -f test_driver
 	make -C $(BACKEND) clean
-	make -C frontnends/csrsh clean
+	make -C frontends/csrsh clean
