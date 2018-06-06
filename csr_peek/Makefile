@@ -9,11 +9,24 @@ TMPL_FILE ?= csr/template/csr_filter.yaml
 INC_DIR ?= `pwd`/csr/export/include
 LIB_DIR ?= `pwd`/csr/export/lib
 
-all: csrsh
+ifeq ($(OS), Darwin)
+install: install_mac
+else
+ifeq ($(OS), Linux)
+install: install_linux
+endif
+endif
 
-csrsh: $(LIB_DIR)/csrlib.a
+
+install_mac: $(LIB_DIR)/csrlib.a
 	CSR_LIB=$(LIB_DIR) CSR_INC=$(INC_DIR) INSTALL_DIR=`pwd` make -C csr-shell csrsh-install
 	chmod +x csrsh
+
+install_linux:
+	PYTHONPATH=$(PYTHONPATH):$(shell pwd) bin/csr-slurp \
+		-d ${CFG_DIR} \
+		-f $(TMPL_FILE) \
+		-c $(SDKDIR)/FunSDK/config/csr
 
 $(LIB_DIR)/csrlib.a:
 	PYTHONPATH=$(PYTHONPATH):$(shell pwd) bin/csr-slurp \
