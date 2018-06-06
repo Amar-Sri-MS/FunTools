@@ -8,34 +8,44 @@ CFG_DIR ?= $(SDKDIR)/FunSDK/chip/f1/hw/yaml/
 TMPL_FILE ?= csr/template/csr_filter.yaml
 INC_DIR ?= `pwd`/csr/export/include
 LIB_DIR ?= `pwd`/csr/export/lib
+CSR_JSON ?= csr_metadata.json
 
+# This stuff is needed for FunSDK scripts
+# to pull artifacts from here
+
+SDK_INSTALL_DIR ?= $(SDKDIR)
+
+# This should be the first target
 ifeq ($(OS), Darwin)
-install: install_mac
+build: build_mac
 else
 ifeq ($(OS), Linux)
-install: install_linux
+build: build_linux
 endif
 endif
 
-
-install_mac: $(LIB_DIR)/csrlib.a
+build_mac: $(LIB_DIR)/csrlib.a
 	CSR_LIB=$(LIB_DIR) CSR_INC=$(INC_DIR) INSTALL_DIR=`pwd` make -C csr-shell csrsh-install
 	chmod +x csrsh
 
-install_linux:
+build_linux:
 	PYTHONPATH=$(PYTHONPATH):$(shell pwd) bin/csr-slurp \
 		-d ${CFG_DIR} \
 		-f $(TMPL_FILE) \
-		-c $(SDKDIR)/FunSDK/config/csr
+		-c .
 
 $(LIB_DIR)/csrlib.a:
 	PYTHONPATH=$(PYTHONPATH):$(shell pwd) bin/csr-slurp \
-		-d ${CFG_DIR} \
-		-f $(TMPL_FILE) \
-		-c $(SDKDIR)/FunSDK/config/csr \
-		-g                             \
-		-i $(INC_DIR)                  \
+		-d ${CFG_DIR}                               \
+		-f $(TMPL_FILE)                             \
+		-c .                                        \
+		-g                                          \
+		-i $(INC_DIR)                               \
 		-l $(LIB_DIR)
+
+install: build
+	mkdir -p $(SDK_INSTALL_DIR)/FunSDK/config/csr
+	rsync -av $(CSR_JSON) $(SDK_INSTALL_DIR)/FunSDK/config/csr
 
 .PHONY: clean
 clean:
