@@ -1,12 +1,3 @@
-ifeq ($(OS),Darwin)
-  CXX=clang++
-else
-ifeq ($(OS),Linux)
-  CXX=g++
-endif
-endif
-
-
 BACKEND=backends/dummy
 BACKEND_LIB=dummy
 BACKEND_LIBRARY=$(BACKEND)/libdummy.a
@@ -27,12 +18,12 @@ LIBS= -L$(CSR_LIB) -L $(BACKEND) -lcsr -l$(BACKEND_LIB)
 test_driver: $(driver_obj) $(BACKEND_LIBRARY)
 	$(CXX) $(CXXFLAGS) -o $@ $(driver_obj) $(LIBS)
 csrsh: 
-	CSR_INC=$(CSR_INC) CSR_LIB=$(CSR_LIB) make -C frontends/csrsh csrsh
+	CSR_INC=$(CSR_INC) CSR_LIB=$(CSR_LIB) CXX=$(CXX) make -C frontends/csrsh csrsh
 csrsh-install:
-	CSR_INC=$(CSR_INC) CSR_LIB=$(CSR_LIB) INSTALL_DIR=$(INSTALL_DIR) make -C frontends/csrsh csrsh-install
+	CSR_INC=$(CSR_INC) CSR_LIB=$(CSR_LIB) INSTALL_DIR=$(INSTALL_DIR) CXX=$(CXX) make -C frontends/csrsh csrsh-install
 
 $(BACKEND_LIBRARY):
-	CSR_INC=$(CSR_INC) make -C $(BACKEND)
+	CSR_INC=$(CSR_INC) CXX=$(CXX) make -C $(BACKEND)
 clean:
 	rm -f test/*.o
 	rm -f test_driver

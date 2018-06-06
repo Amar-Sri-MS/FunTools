@@ -45,12 +45,14 @@ class Compiler():
         inc_path = []
         for path in inc_dir:
             inc_path.extend(["-I", path])
-        compile_call = ["g++", "-g", "-std=c++11", "-Wall"] + inc_path
+        compiler = os.getenv("CXX", None)
+        assert compiler != None, "No compiler specified for compilation"
+        compile_call = [compiler, "-g", "-std=c++11", "-Wall"] + inc_path
 
         if libtype.lower() == "shared":
             l_obj = "{}.so".format(libname)
             compile_call.append("-fPIC")
-            lib_call = ["g++", "-o", l_obj, "-fPIC", "-shared"]
+            lib_call = [compiler, "-o", l_obj, "-fPIC", "-shared"]
         else:
             l_obj = "{}.a".format(libname)
             lib_call = ["ar", "cr", l_obj]

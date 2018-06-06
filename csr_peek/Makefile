@@ -15,27 +15,24 @@ CSR_JSON ?= csr_metadata.json
 
 SDK_INSTALL_DIR ?= $(SDKDIR)
 
-# This should be the first target
+# Get past issues with g++ based compilation on Linux VMs
+# by using clang. On MacOS, g++ is clang
+
 ifeq ($(OS), Darwin)
-build: build_mac
+	CXX=g++
 else
 ifeq ($(OS), Linux)
-build: build_linux
+	CXX=clang++-4.0
 endif
 endif
 
-build_mac: $(LIB_DIR)/csrlib.a
-	CSR_LIB=$(LIB_DIR) CSR_INC=$(INC_DIR) INSTALL_DIR=`pwd` make -C csr-shell csrsh-install
+# This should be the first target
+build: $(LIB_DIR)/csrlib.a
+	CSR_LIB=$(LIB_DIR) CSR_INC=$(INC_DIR) INSTALL_DIR=`pwd` CXX=$(CXX) make -C csr-shell csrsh-install
 	chmod +x csrsh
 
-build_linux:
-	PYTHONPATH=$(PYTHONPATH):$(shell pwd) bin/csr-slurp \
-		-d ${CFG_DIR} \
-		-f $(TMPL_FILE) \
-		-c .
-
 $(LIB_DIR)/csrlib.a:
-	PYTHONPATH=$(PYTHONPATH):$(shell pwd) bin/csr-slurp \
+	PYTHONPATH=$(PYTHONPATH):$(shell pwd) CXX=$(CXX) bin/csr-slurp \
 		-d ${CFG_DIR}                               \
 		-f $(TMPL_FILE)                             \
 		-c .                                        \
