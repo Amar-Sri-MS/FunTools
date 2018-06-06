@@ -49,3 +49,5 @@ clean:
 	rm -f $(LIB_DIR)/libcsr.a
 	rm -f $(INC_DIR)/*
 	make -C csr-shell clean
+	rm -f csrsh
+	rm -f *.json

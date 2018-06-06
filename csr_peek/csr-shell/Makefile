@@ -1,7 +1,9 @@
+SDKDIR ?= ../../../FunSDK
 BACKEND=backends/dummy
 BACKEND_LIB=dummy
 BACKEND_LIBRARY=$(BACKEND)/libdummy.a
 BACKEND_INC=-I backends/dummy
+
 
 #CXXFLAGS=-Wall -O3 -g -std=c++11 $(LIBINC)
 CXXFLAGS=-Wall -std=c++11 -I$(CSR_INC)
