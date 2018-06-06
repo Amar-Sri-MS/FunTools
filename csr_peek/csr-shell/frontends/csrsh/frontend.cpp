@@ -89,11 +89,11 @@ void process_cmd(CsrSh& s, const char* buf) {
     if (vec[0] == "help") {
         help();
     } else if(vec[0] == "info") {
-	s.dump_csr(vec[1]);
+	s.dump_csr(vec[1].c_str());
     } else if(vec[0] == "set") {
-	s.set_csr(vec[1]);
+	s.set_csr(vec[1].c_str());
     } else if(vec[0] == "set_raw") {
-	s.set_raw(vec[1]);
+	s.set_raw(vec[1].c_str());
     } else if(vec[0] == "show") {
 	s.show_buffer();
     } else if(vec[0] == "flush") {
@@ -103,7 +103,7 @@ void process_cmd(CsrSh& s, const char* buf) {
 	} else if (sz == 3) {
             inst_num = std::stoi(vec[2]);
 	}
-	s.flush(vec[1], inst_num, entry_num);
+	s.flush(vec[1].c_str(), inst_num, entry_num);
     } else if(vec[0] == "fetch") {
 	if (sz == 4) {
             inst_num = std::stoi(vec[2]);
@@ -111,7 +111,7 @@ void process_cmd(CsrSh& s, const char* buf) {
 	} else if (sz == 3) {
             inst_num = std::stoi(vec[2]);
 	}
-	s.fetch(vec[1], inst_num, entry_num);
+	s.fetch(vec[1].c_str(), inst_num, entry_num);
     } else if(vec[0] == "rfetch") {
         std::cout << "Not implemented" << std::endl;
     } else if(vec[0] == "rinfo") {
@@ -128,7 +128,7 @@ int main(int argc, char** argv)
 
     int opt_char;
 
-    std::string hostname{"localhost"};
+    const char* hostname{"localhost"};
     uint16_t port_num{DPC_PORT};
 
     struct option long_opts[] = {

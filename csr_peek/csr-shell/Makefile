@@ -27,12 +27,14 @@ LIBS= -L$(CSR_LIB) -L $(BACKEND) -lcsr -l$(BACKEND_LIB)
 test_driver: $(driver_obj) $(BACKEND_LIBRARY)
 	$(CXX) $(CXXFLAGS) -o $@ $(driver_obj) $(LIBS)
 csrsh: 
-	cd frontends/csrsh && CSR_INC=$(CSR_INC) CSR_LIB=$(CSR_LIB) make
+	CSR_INC=$(CSR_INC) CSR_LIB=$(CSR_LIB) make -C frontends/csrsh csrsh
+csrsh-install:
+	CSR_INC=$(CSR_INC) CSR_LIB=$(CSR_LIB) INSTALL_DIR=$(INSTALL_DIR) make -C frontends/csrsh csrsh-install
 
 $(BACKEND_LIBRARY):
-	cd $(BACKEND) && CSR_INC=$(CSR_INC) make
+	CSR_INC=$(CSR_INC) make -C $(BACKEND)
 clean:
 	rm -f test/*.o
 	rm -f test_driver
-	cd $(BACKEND) && make clean
-	cd frontends/csrsh && make clean
+	make -C $(BACKEND) clean
+	make -C frontnends/csrsh clean

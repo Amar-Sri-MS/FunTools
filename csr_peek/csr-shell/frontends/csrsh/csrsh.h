@@ -16,19 +16,19 @@
 
 class CsrSh {
   public:
-     CsrSh(const std::string& host, const uint16_t& port):ns_h(F1NS::get()) { __init(host, port);}
-     void dump_csr(const std::string& csr_name);
-     void set_csr(const std::string& csr_name);
-     void set_raw(const std::string& csr_name);
+     CsrSh(const char* host, const uint16_t& port):ns_h(F1NS::get()) { __init(host, port);}
+     void dump_csr(const char* csr_name);
+     void set_csr(const char* csr_name);
+     void set_raw(const char* csr_name);
      void show_buffer(void);
-     void fetch(const std::string& csr_name, const uint16_t& inst_num, const uint32_t& entry_num);
-     void flush(const std::string& csr_name, const uint16_t& inst_num, const uint32_t& entry_num);
+     void fetch(const char* csr_name, const uint16_t& inst_num, const uint32_t& entry_num);
+     void flush(const char* csr_name, const uint16_t& inst_num, const uint32_t& entry_num);
      ~CsrSh();
   private:
       F1NS& ns_h;
       tcp_cli tcp_h;
       json_util json_acc;
-      std::map<std::string, std::pair<uint8_t*, uint16_t>> mp_buf;
-      void __init(const std::string& host, const uint16_t& port);
-      void __interpret(const std::string& csr_name, uint8_t* buf);
+      std::map<const char*, std::pair<uint8_t*, uint16_t>> mp_buf;
+      void __init(const char* host, const uint16_t& port);
+      void __interpret(const char* csr_name, uint8_t* buf);
 };

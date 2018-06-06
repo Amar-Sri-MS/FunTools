@@ -27,7 +27,7 @@ class Filer():
 
 class Compiler():
     def __init__(self):
-        pass 
+        pass
     def clean_files(self, f_lst):
 
         for m_file in f_lst:
@@ -38,7 +38,7 @@ class Compiler():
             p.communicate()
             '''
 
-    def build_lib(self, libname, libtype, 
+    def build_lib(self, libname, libtype,
             src_f_lst, inc_dir, out_lib_dir, out_inc_dir):
 
         # Prepare list of include directories
@@ -46,17 +46,17 @@ class Compiler():
         for path in inc_dir:
             inc_path.extend(["-I", path])
         compile_call = ["g++", "-g", "-std=c++11", "-Wall"] + inc_path
-        
+
         if libtype.lower() == "shared":
             l_obj = "{}.so".format(libname)
-            compile_call.append("-fPIC") 
+            compile_call.append("-fPIC")
             lib_call = ["g++", "-o", l_obj, "-fPIC", "-shared"]
         else:
             l_obj = "{}.a".format(libname)
-            lib_call = ["ar", "crf", l_obj]
+            lib_call = ["ar", "cr", l_obj]
 
         obj_files = []
-        
+
         for src_f in src_f_lst:
             obj_file_arr = os.path.basename(src_f).split('.')[:-1]
             obj_file = ".".join(n for n in obj_file_arr)
@@ -67,12 +67,12 @@ class Compiler():
             out = p.communicate()
             assert p.returncode == 0, "Compile failed: {}".format(src_f)
 
-            strip_call = ["strip", "--strip-unneeded", obj_file]
-            print "Strip: {}".format(' '.join(elem for elem in strip_call))
-            p = subprocess.Popen(strip_call, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            out = p.communicate()
+            #strip_call = ["strip", "--strip-unneeded", obj_file]
+            #print "Strip: {}".format(' '.join(elem for elem in strip_call))
+            #p = subprocess.Popen(strip_call, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            #out = p.communicate()
 
-            assert p.returncode == 0, "Strip failed"
+            #assert p.returncode == 0, "Strip failed"
 
             obj_files.append(obj_file)
 

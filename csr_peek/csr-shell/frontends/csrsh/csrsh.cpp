@@ -29,14 +29,14 @@ CsrSh::~CsrSh(void) {
 
 
 }
-void CsrSh::__init(const std::string& host, const uint16_t& port) {
+void CsrSh::__init(const char* host, const uint16_t& port) {
     std::cout << "Connect:Host: " << host << ":port: " << port << std::endl;
     if (not tcp_h.conn(host, port)) {
         std::cout << "!!!!WARNING: dpcsh not connected. Fetch/Flush commands WILL NOT work!!" << std::endl;
     }
 }
 
-void CsrSh::dump_csr(const std::string& csr_name) {
+void CsrSh::dump_csr(const char* csr_name) {
     auto n_inst = ns_h.num_inst(csr_name);
     std::cout << "CSR:"<< csr_name << std::endl;
     for (auto i = 0; i < n_inst; i ++) {
@@ -61,7 +61,7 @@ void CsrSh::dump_csr(const std::string& csr_name) {
         }
     }
 }
-void CsrSh::set_csr(const std::string& csr_name) {
+void CsrSh::set_csr(const char* csr_name) {
     auto csr_h = ns_h.get_csr(csr_name);
     auto it = mp_buf.find(csr_name);
     uint8_t* buf = nullptr;
@@ -118,7 +118,7 @@ void CsrSh::set_csr(const std::string& csr_name) {
 		   std::forward_as_tuple(buf, sz));
 }
 
-void CsrSh::set_raw(const std::string& csr_name) {
+void CsrSh::set_raw(const char* csr_name) {
     auto it = mp_buf.find(csr_name);
     auto csr_h = ns_h.get_csr(csr_name);
     uint8_t* buf = nullptr;
@@ -186,7 +186,7 @@ void CsrSh::show_buffer(void) {
     }
 }
 
-void CsrSh::__interpret(const std::string& csr_name, uint8_t* buf) {
+void CsrSh::__interpret(const char* csr_name, uint8_t* buf) {
     auto csr_h = ns_h.get_csr(csr_name);
     uint64_t val = 0;
     assert(buf != nullptr);
@@ -204,7 +204,7 @@ void CsrSh::__interpret(const std::string& csr_name, uint8_t* buf) {
  * either through dpcsh or otherwise
  */
 
-void CsrSh::fetch(const std::string& csr_name,
+void CsrSh::fetch(const char* csr_name,
 		const uint16_t& inst_num,
 		const uint32_t& entry_num) {
     auto n_inst = ns_h.num_inst(csr_name);
@@ -235,7 +235,7 @@ void CsrSh::fetch(const std::string& csr_name,
     __interpret(csr_name, bin_arr);
 
 }
-void CsrSh::flush(const std::string& csr_name,
+void CsrSh::flush(const char* csr_name,
 		const uint16_t& inst_num,
 		const uint32_t& entry_num) {
     auto it = mp_buf.find(csr_name);
