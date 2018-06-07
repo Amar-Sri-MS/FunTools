@@ -49,7 +49,7 @@ class Compiler():
             inc_path.extend(["-I", path])
         compiler = os.getenv("CXX", None)
         assert compiler != None, "No compiler specified for compilation"
-        compile_call = [compiler, "-g", "-std=c++11", "-Wall"] + inc_path
+        compile_call = [compiler,"-std=c++11", "-Wall"] + inc_path
 
         if libtype.lower() == "shared":
             l_obj = "{}.so".format(libname)

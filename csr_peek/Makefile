@@ -39,7 +39,7 @@ $(LIB_DIR)/csrlib.a:
 		-g                                          \
 		-i $(INC_DIR)                               \
 		-l $(LIB_DIR)                               \
-		-f $(TMPL_FILE)
+		#-f $(TMPL_FILE)                             \
 
 install: build
 	mkdir -p $(SDK_INSTALL_DIR)/FunSDK/config/csr
