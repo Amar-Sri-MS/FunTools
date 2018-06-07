@@ -3,7 +3,8 @@ import os
 import resource
 import shutil
 import subprocess
-
+import sys
+import time
 
 class Filer():
     def __init__(self):
@@ -32,14 +33,19 @@ class Compiler():
         pass
     def clean_files(self, f_lst):
         pass
-        for m_file in f_lst:
-            call = ["astyle", "-n", m_file]
-            print "Formatting: {}".format(call)
-            '''
+    def __compile(self, call):
+            print "Compiling: {}".format(' '.join(elem for elem in call))
             p = subprocess.Popen(call, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            p.communicate()
-            '''
-
+            while True:
+                output = p.stdout.readline()
+                if output == '' and p.poll() is not None:
+                    break
+                sys.stdout.write(output)
+                sys.stdout.flush()
+            if p.returncode != 0:
+                output = p.communicate()[0]
+                raise ProcessException(call_str, p.returncode, output)
+            return
     def build_lib(self, libname, libtype,
             src_f_lst, inc_dir, out_lib_dir, out_inc_dir):
 
@@ -49,7 +55,7 @@ class Compiler():
             inc_path.extend(["-I", path])
         compiler = os.getenv("CXX", None)
         assert compiler != None, "No compiler specified for compilation"
-        compile_call = [compiler,"-std=c++11", "-Wall"] + inc_path
+        compile_call = [compiler,"-std=c++11", "-Wall", "-v"] + inc_path
 
         if libtype.lower() == "shared":
             l_obj = "{}.so".format(libname)
@@ -66,29 +72,11 @@ class Compiler():
             obj_file = ".".join(n for n in obj_file_arr)
             obj_file = "{}.o".format(obj_file)
             n_call = compile_call + ["-c", src_f]
-            print "Compiling: {}".format(' '.join(elem for elem in n_call))
-            p = subprocess.Popen(n_call, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            out = p.communicate()
-            usage = resource.getrusage(resource.RUSAGE_CHILDREN)
-            print "Time taken: {}: RSS: {}"\
-                    .format(usage.ru_utime, usage.ru_maxrss)
-            assert p.returncode == 0, "Compile failed: {}".format(src_f)
-
-            #strip_call = ["strip", "--strip-unneeded", obj_file]
-            #print "Strip: {}".format(' '.join(elem for elem in strip_call))
-            #p = subprocess.Popen(strip_call, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            #out = p.communicate()
-
-            #assert p.returncode == 0, "Strip failed"
-
+            self.__compile(n_call)
             obj_files.append(obj_file)
 
         lib_call.extend(obj_files)
-        print "Creating Library: {}".format(' '.join(elem for elem in lib_call))
-        p = subprocess.Popen(lib_call, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        out = p.communicate()
-        assert p.returncode == 0, "Library creation failed"
-
+        self.__compile(lib_call)
 
         # Now remove all the object files
         for obj_f in obj_files:
