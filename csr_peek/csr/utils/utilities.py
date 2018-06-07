@@ -42,6 +42,8 @@ class Compiler():
                     break
                 sys.stdout.write(output)
                 sys.stdout.flush()
+            usage = resource.getrusage(resource.RUSAGE_CHILDREN)
+            print "Time: {}: RSS: {}".format(usage.ru_utime + usage.ru_stime, usage.ru_maxrss)
             if p.returncode != 0:
                 output = p.communicate()[0]
                 raise ProcessException(call_str, p.returncode, output)
