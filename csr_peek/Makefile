@@ -10,6 +10,7 @@ INC_DIR ?= `pwd`/csr/export/include
 LIB_DIR ?= `pwd`/csr/export/lib
 CSR_JSON ?= csr_metadata.json
 
+
 # This stuff is needed for FunSDK scripts
 # to pull artifacts from here
 
@@ -42,7 +43,9 @@ $(LIB_DIR)/csrlib.a:
 
 install: build
 	mkdir -p $(SDK_INSTALL_DIR)/FunSDK/config/csr
-	rsync -av $(CSR_JSON) $(SDK_INSTALL_DIR)/FunSDK/config/csr
+	mkdir -p $(SDK_INSTALL_DIR)/bin
+	cp -f $(CSR_JSON) $(SDK_INSTALL_DIR)/FunSDK/config/csr
+	cp -f csrsh $(SDK_INSTALL_DIR)/bin
 
 .PHONY: clean
 clean:
