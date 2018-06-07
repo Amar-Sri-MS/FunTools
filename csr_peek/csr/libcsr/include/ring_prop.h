@@ -55,8 +55,7 @@ class ring_prop_t {
         * of all instance ids across all rings
         */
 
-       static std::unordered_map<const char*, uint8_t,
-           string_hash> an_id_map;
+       static std::unordered_map<const char*, uint8_t> an_id_map;
        uint64_t base_addr;
        std::unordered_multimap<ring_node_t, addr_node_t*> addr_tree;
 };

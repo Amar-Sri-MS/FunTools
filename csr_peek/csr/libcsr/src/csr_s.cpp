@@ -20,17 +20,18 @@ std::ostream& operator<<(std::ostream& os, const fld_off_t& obj) {
 }
 
 csr_s::csr_s(const csr_s& other):
-    fld_map(other.fld_map) {}
+    fld_map(other.fld_map), is_init(other.is_init) {}
 
 csr_s& csr_s::operator=(const csr_s& other) {
     if (this != &other) {
         fld_map.insert(other.fld_map.begin(), other.fld_map.end());
+	is_init = other.is_init;
     }
     return (*this);
 }
 csr_s::csr_s(void){}
 
-uint16_t csr_s::_get_addr_w(void) const {
+uint16_t csr_s::get_addr_w(void) const {
     return __get_addr_w(sz());
 
 }
@@ -40,18 +41,23 @@ uint16_t csr_s::__get_addr_w(const uint16_t& w) const {
     return (__get_addr_w(w >> 1) << 1);
 }
 
-void csr_s::_initialize(void) {
+void csr_s::initialize(void) {
     uint16_t st_off = 0;
     uint16_t w = 0;
+    if (is_init) return;	
     for (auto it = fld_map.begin(); it != fld_map.end(); it ++) {
         st_off = ((it->second).fld_off)%8;
         w = (it->second).width;
         __init(it->first, st_off, w);
     }
+    is_init = true;
+    
 }
-void csr_s::_deinit(void) {
+void csr_s::deinit(void) {
+    if (!is_init) return;	
     mask_map.clear();
     shift_map.clear();
+    is_init = false;
 }
 
 

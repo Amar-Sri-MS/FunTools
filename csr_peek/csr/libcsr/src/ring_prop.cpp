@@ -24,7 +24,7 @@ bool ring_node_t::operator==(const ring_node_t& other) const {
 uint8_t ring_node_t::get_level(void) const { return level; }
 const char* ring_node_t::get_name(void) const { return name; }
 
-std::unordered_map<const char*, uint8_t, string_hash> ring_prop_t::an_id_map;
+std::unordered_map<const char*, uint8_t> ring_prop_t::an_id_map;
 
 ring_prop_t::ring_prop_t(
         const uint64_t& b_addr):base_addr(b_addr) {}

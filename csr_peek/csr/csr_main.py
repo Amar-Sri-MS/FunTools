@@ -43,8 +43,8 @@ class Slurper(object):
                 help="Keep generated artifacts", action='store_true')
 
         def_filter = os.path.join(ml_dir, "template", "csr_filter.yaml")
-        cmd_parser.add_argument("-f", "--filter-file", help="Filter YAML file, usually required for compiles to pass",
-                default=def_filter, required=False, type=str)
+        cmd_parser.add_argument("-f", "--filter-file", help="Filter YAML file to reduce the size of the executable",
+                default=None, required=False, type=str)
 
         self.other_args['tmpl_file'] = os.path.join(ml_dir, "template", "csr_rt.j2")
         self.other_args['csr_defs']  = os.path.join(ml_dir, "template", "csr_defs.yaml")
@@ -80,13 +80,17 @@ class Slurper(object):
         # Only populates the address attribute
         p = YML_Reader()
         csr_def = p.read_file(self.other_args['csr_defs'])
-        print "Filter file: {}".format(args.filter_file)
-        filter_def = p.read_file(args.filter_file)
+
+        filter_def = None
+        if args.filter_file:
+            print "Filter file: {}".format(args.filter_file)
+            filter_def = p.read_file(args.filter_file)
+
 
         # Pass to CSR Yaml reader, a list of included & excluded CSRs
         # If a CSR is included by name, ignore the attribute
 
-        schema = CSR_YML_Reader(yml_dir, filter_def, csr_def)
+        schema = CSR_YML_Reader(yml_dir, csr_def, filter_def)
 
         self.csr_root = CSRRoot(amap_file, schema.get(), filter_def)
         file_mkr = Filer()

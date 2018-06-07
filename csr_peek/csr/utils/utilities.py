@@ -1,7 +1,9 @@
 import glob
 import os
+import resource
 import shutil
 import subprocess
+
 
 class Filer():
     def __init__(self):
@@ -29,7 +31,7 @@ class Compiler():
     def __init__(self):
         pass
     def clean_files(self, f_lst):
-
+        pass
         for m_file in f_lst:
             call = ["astyle", "-n", m_file]
             print "Formatting: {}".format(call)
@@ -67,6 +69,9 @@ class Compiler():
             print "Compiling: {}".format(' '.join(elem for elem in n_call))
             p = subprocess.Popen(n_call, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             out = p.communicate()
+            usage = resource.getrusage(resource.RUSAGE_CHILDREN)
+            print "Time taken: {}: RSS: {}"\
+                    .format(usage.ru_utime, usage.ru_maxrss)
             assert p.returncode == 0, "Compile failed: {}".format(src_f)
 
             #strip_call = ["strip", "--strip-unneeded", obj_file]

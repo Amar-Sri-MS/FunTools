@@ -296,12 +296,14 @@ class RingProps(object):
                                 format(fldd.fld_name, off, fldd.width)
 
                         r_str += "};\n"
-                        r_str += "auto {}_sp = std::make_shared<csr_s>({});\n".\
+                        #r_str += "auto {}_sp = std::make_shared<csr_s>({});\n".\
+                        #        format(csr_val.name, csr_val.name)
+                        r_str += "auto {}_sp = new csr_s({});\n".\
                                 format(csr_val.name, csr_val.name)
                         r_str += "csr_prop_t {}_prop {{\n".format(csr_val.name)
                         r_str += "{}_sp,\n".format(csr_val.name)
                         r_str += "0x{:01X},\n".format(elem.get_csr_addr(csr_name))
-                        r_str += "{},\n".format(csr_val.type)
+                        #r_str += "{},\n".format(csr_val.type)
                         r_str += "{}}};\n".format(elem.get_num_csr(csr_name))
                         r_str += "add_csr({}_{}, \"{}\", {}_prop);\n".\
                                  format(an_name, idx, csr_val.name, csr_val.name)
@@ -437,6 +439,9 @@ class CSRRoot(object):
                 return True
 
     def __filter(self, line, filter_yml):
+        
+        if not filter_yml:
+            return True
         line = line.lower()
         coll = line.split(':')
         tree = coll[1].split('.')
@@ -538,6 +543,8 @@ class CSRRoot(object):
                 st_addr, skip_val)
         return True
     def __filter_csr(self, csr_name, do_process, filter_yml):
+        if not filter_yml:
+            return True
         include_csr = filter_yml.get('include_csr', [])
         if self.__match(include_csr, csr_name):
             #print "CSR_ACCEPT: {}".format(csr_name)

@@ -57,17 +57,9 @@ addr_node_t::addr_node_t(const char* _name,
 
 void addr_node_t::add_csr(
         const char* name,
-        csr_prop_t& csr,
-        rd_fptr r_fn,
-        wr_fptr w_fn
+        csr_prop_t& csr
         ) {
-    if (r_fn) {
-        csr._set_rd_cb(r_fn);
-    }
-    if (w_fn) {
-        csr._set_wr_cb(w_fn);
-    }
-    csr._set_an_props(base_addr, n_instances, skip_addr);
+    csr.set_an_props(base_addr, n_instances, skip_addr);
     csr_props.emplace(std::make_pair(name, csr));
 }
 
@@ -79,7 +71,7 @@ csr_prop_t& addr_node_t::get_csr(const char* csr_name,
     std::cout << "AN:GID:" << static_cast<uint16_t>(gid_num)
         << ":ST_ID: " << static_cast<uint16_t>(start_id) << std::endl;
     */
-    return (it->second)._get_csr(gid_num-start_id);
+    return (it->second).get_csr(gid_num-start_id);
 }
 
 bool addr_node_t::operator==(const addr_node_t& other) const {

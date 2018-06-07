@@ -52,7 +52,7 @@ void F1NS::add_csr(addr_node_t* an,
                     std::forward_as_tuple(name),
                     std::forward_as_tuple(p));
         }
-        an->add_csr(name, csr, m_rd_fn, m_wr_fn);
+        an->add_csr(name, csr);
 
 }
 

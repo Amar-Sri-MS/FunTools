@@ -53,7 +53,7 @@ class Schema():
     #ALLOW_ATTR = [0x4, 0x8]
     ALLOW_ATTR = [0x4]
     MIN_WIDTH = 64
-    def __init__(self, yml_stream, csr_filter, csr_def):
+    def __init__(self, yml_stream, csr_def, csr_filter):
         yml_stream = self.__sanitize(yml_stream)
 
         def_map = self.__create_map(csr_def)
@@ -76,6 +76,8 @@ class Schema():
             if re.match(elem, m_elem):
                 return True
     def __should_store(self, m_elem, csr_filter, lexer):
+        if not csr_filter:
+            return True
         include_attr = csr_filter.get('include_attr', [])
         for elem in include_attr:
             v = lexer.eval(elem)

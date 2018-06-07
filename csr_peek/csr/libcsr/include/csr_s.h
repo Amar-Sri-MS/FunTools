@@ -13,6 +13,7 @@
  */
 #include <cassert>
 #include <functional>
+#include <iostream>
 #include <map>
 #include <memory>
 #include <string>
@@ -37,7 +38,7 @@ struct fld_off_t {
 
 };
 
-typedef std::unordered_map<const char*, fld_off_t, string_hash> fld_map_t;
+typedef std::unordered_map<const char*, fld_off_t> fld_map_t;
 
 class csr_prop_t;
 class csr_grp_t;
@@ -50,6 +51,13 @@ class csr_s {
         csr_s(const csr_s& other);
         csr_s& operator=(const csr_s&);
         uint16_t sz(void) const;
+        void initialize(void);
+        void deinit(void);
+        uint16_t get_addr_w(void) const;
+        template <typename T>
+            void set(const char* fld_name, const T& val, uint8_t* buf);
+        template <typename T>
+            void get(const char* fld_name, T& val, uint8_t* buf);
         typedef fld_map_t::iterator iterator;
         typedef fld_map_t::const_iterator const_iterator;
         inline iterator begin() noexcept { return fld_map.begin(); }
@@ -58,27 +66,18 @@ class csr_s {
         inline const_iterator cend() const noexcept { return fld_map.cend(); }
     private:
         fld_map_t fld_map;
+	bool is_init{false};
         std::map<const char*, std::vector<uint8_t>> mask_map;
         std::map<const char*, std::pair<uint8_t, std::vector<uint8_t>>> shift_map;
 
         void __init(const char* name, const uint16_t& st_off, const uint16_t& w);
         uint8_t __get_w(const uint8_t& st_off, const uint16_t& w);
 
-        friend class csr_prop_t;
-        void _initialize(void);
-        void _deinit(void);
-        template <typename T>
-            void _set(const char* fld_name, const T& val, uint8_t* buf);
-
-        template <typename T>
-            void _get(const char* fld_name, T& val, uint8_t* buf);
 
         template <typename T>
             void __convert(const char* f_name, const T& val, uint8_t* val_arr);
 
         uint16_t __get_addr_w(const uint16_t& width) const;
-        uint16_t _get_addr_w(void) const;
-
 
         friend std::ostream& operator<<(std::ostream& os, const csr_s& obj);
 };
@@ -101,9 +100,14 @@ void csr_s::__convert(const char* fld_name, const T& val, uint8_t* val_arr) {
 }
 
 template <typename T>
-void csr_s::_set(const char* f_name, const T& val, uint8_t* raw_arr) {
+void csr_s::set(const char* f_name, const T& val, uint8_t* raw_arr) {
+    
+    initialize();
     auto it = fld_map.find(f_name);
-    assert(it != fld_map.end());
+    if (it == fld_map.end()) {
+        std::cerr << "Field " << f_name << "not present" << std::endl;
+        return;
+    }
 
     auto s_idx = ((it->second).fld_off)/8;
     auto mask_arr = mask_map[f_name];
@@ -122,9 +126,10 @@ void csr_s::_set(const char* f_name, const T& val, uint8_t* raw_arr) {
 }
 
 template <typename T>
-void csr_s::_get(const char* f_name, T& rval, uint8_t* raw_arr) {
+void csr_s::get(const char* f_name, T& rval, uint8_t* raw_arr) {
 
     rval = 0;
+    initialize();
     auto it = fld_map.find(f_name);
     assert(it != fld_map.end());
     auto s_idx = ((it->second).fld_off)/8;

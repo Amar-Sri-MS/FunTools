@@ -22,9 +22,7 @@ class addr_node_t {
         addr_node_t(const addr_node_t& other);
         addr_node_t& operator=(const addr_node_t& other);
         void add_csr(const char* name,
-                csr_prop_t& csr,
-                rd_fptr r_fn = nullptr,
-                wr_fptr w_fn = nullptr);
+                csr_prop_t& csr);
 
         uint8_t get_num_nodes(void) const;
         uint8_t get_start_id(void) const;
