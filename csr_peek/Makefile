@@ -35,11 +35,11 @@ build: $(LIB_DIR)/csrlib.a
 $(LIB_DIR)/csrlib.a:
 	PYTHONPATH=$(PYTHONPATH):$(shell pwd) CXX=$(CXX) bin/csr-slurp \
 		-d ${CFG_DIR}                               \
-		-f $(TMPL_FILE)                             \
 		-c .                                        \
 		-g                                          \
 		-i $(INC_DIR)                               \
-		-l $(LIB_DIR)
+		-l $(LIB_DIR)                               \
+		-f $(TMPL_FILE)
 
 install: build
 	mkdir -p $(SDK_INSTALL_DIR)/FunSDK/config/csr

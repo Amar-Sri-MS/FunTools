@@ -31,9 +31,10 @@ csr_prop_t::csr_prop_t(csr_s* _sign,
 
 }
 csr_prop_t::~csr_prop_t() {
-    sign->deinit();
-    delete sign;
-    sign = nullptr;
+    if (sign) {
+        delete sign;
+        sign = nullptr;
+    }
 
 }
 

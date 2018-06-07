@@ -285,19 +285,12 @@ class RingProps(object):
                     for csr_name, csr_val in an_csrs.get().iteritems():
                         if csr_val.name in colls:
                             continue
-                        r_str += "fld_map_t {} {{\n".format(csr_val.name)
+                        r_str += "fld_map_t {};\n".format(csr_val.name)
                         off = 0
-                        for fldd in csr_val.fld_lst[:-1]:
-                            r_str += "CREATE_ENTRY(\"{}\", {}, {}),\n".\
-                                    format(fldd.fld_name, off, fldd.width)
+                        for fldd in csr_val.fld_lst:
+                            r_str += "ADD_ENTRY({}, \"{}\", {}, {});\n".\
+                                    format(csr_val.name, fldd.fld_name, off, fldd.width)
                             off += fldd.width
-                        fldd = csr_val.fld_lst[-1]
-                        r_str += "CREATE_ENTRY(\"{}\", {}, {})\n".\
-                                format(fldd.fld_name, off, fldd.width)
-
-                        r_str += "};\n"
-                        #r_str += "auto {}_sp = std::make_shared<csr_s>({});\n".\
-                        #        format(csr_val.name, csr_val.name)
                         r_str += "auto {}_sp = new csr_s({});\n".\
                                 format(csr_val.name, csr_val.name)
                         r_str += "csr_prop_t {}_prop {{\n".format(csr_val.name)

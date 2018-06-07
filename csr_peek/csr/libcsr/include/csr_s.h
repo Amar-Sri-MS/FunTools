@@ -29,12 +29,12 @@
 
 struct fld_off_t {
 
-    uint16_t fld_off{0};
-    uint16_t width{0};
+    uint16_t fld_off;
+    uint16_t width;
     fld_off_t(const fld_off_t& other) = default;
     fld_off_t& operator=(const fld_off_t& other) = default;
     fld_off_t(const uint16_t& fld, const uint16_t& w);
-    friend std::ostream& operator<<(std::ostream& os, const fld_off_t& obj);
+    //friend std::ostream& operator<<(std::ostream& os, const fld_off_t& obj);
 
 };
 
@@ -47,12 +47,12 @@ class csr_s {
     public:
         csr_s(void);
         csr_s(const fld_map_t& fld_map);
-        const fld_off_t& operator[](const char* fld_name) const;
         csr_s(const csr_s& other);
         csr_s& operator=(const csr_s&);
+	~csr_s(void);
+
+        const fld_off_t& operator[](const char* fld_name) const;
         uint16_t sz(void) const;
-        void initialize(void);
-        void deinit(void);
         uint16_t get_addr_w(void) const;
         template <typename T>
             void set(const char* fld_name, const T& val, uint8_t* buf);
@@ -70,6 +70,8 @@ class csr_s {
         std::map<const char*, std::vector<uint8_t>> mask_map;
         std::map<const char*, std::pair<uint8_t, std::vector<uint8_t>>> shift_map;
 
+        void _initialize(void);
+        void _deinit(void);
         void __init(const char* name, const uint16_t& st_off, const uint16_t& w);
         uint8_t __get_w(const uint8_t& st_off, const uint16_t& w);
 
@@ -102,7 +104,7 @@ void csr_s::__convert(const char* fld_name, const T& val, uint8_t* val_arr) {
 template <typename T>
 void csr_s::set(const char* f_name, const T& val, uint8_t* raw_arr) {
     
-    initialize();
+    _initialize();
     auto it = fld_map.find(f_name);
     if (it == fld_map.end()) {
         std::cerr << "Field " << f_name << "not present" << std::endl;
@@ -129,7 +131,7 @@ template <typename T>
 void csr_s::get(const char* f_name, T& rval, uint8_t* raw_arr) {
 
     rval = 0;
-    initialize();
+    _initialize();
     auto it = fld_map.find(f_name);
     assert(it != fld_map.end());
     auto s_idx = ((it->second).fld_off)/8;

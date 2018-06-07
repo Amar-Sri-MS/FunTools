@@ -61,7 +61,7 @@ addr_node_t* ring_prop_t::add_an(
     uint64_t rba = ((base_addr & 0xFF00000000) | (an_addr & 0xFFFFFFFF));
 
     auto start_id = an_id_map[name];
-    /*   
+    /*
     std::cout << "ADD:AN:"
         << name << ":ADDR:0x"
         << std::setw(8) << std::setfill('0') << std::hex << an_addr
@@ -82,6 +82,7 @@ addr_node_t* ring_prop_t::add_an(
     /*
      * Next insert it into the tree
      */
+#if 0
     uint8_t level = 0;
     for (auto& elem: hier) {
         auto ring_p = ring_node_t(elem, level);
@@ -108,5 +109,6 @@ addr_node_t* ring_prop_t::add_an(
         }
         level ++;
     }
+#endif
     return p;
 }

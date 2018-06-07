@@ -135,7 +135,7 @@ std::ostream& operator<<(std::ostream& os, csr_c& obj) {
     for (auto it = obj.m_sign.cbegin(); it != obj.m_sign.cend(); it ++) {
         os << std::setw(2) << it->first << ":" << std::endl;
         obj.get((it->first), val);
-        os << std::setw(4) << it->second << std::endl;
+        //os << std::setw(4) << it->second << std::endl;
         os << std::setw(4) << "v:" << std::hex << std::showbase << val << std::dec << std::endl;
         os << std::endl;
     }

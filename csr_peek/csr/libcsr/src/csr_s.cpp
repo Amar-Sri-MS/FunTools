@@ -13,11 +13,13 @@
 
 fld_off_t::fld_off_t(const uint16_t& off, const uint16_t& w):fld_off(off), width(w) {}
 
+#if 0
 std::ostream& operator<<(std::ostream& os, const fld_off_t& obj) {
     os << "o: " << obj.fld_off << std::endl;
     os << "w: " << obj.width << std::endl;
     return os;
 }
+#endif
 
 csr_s::csr_s(const csr_s& other):
     fld_map(other.fld_map), is_init(other.is_init) {}
@@ -41,7 +43,7 @@ uint16_t csr_s::__get_addr_w(const uint16_t& w) const {
     return (__get_addr_w(w >> 1) << 1);
 }
 
-void csr_s::initialize(void) {
+void csr_s::_initialize(void) {
     uint16_t st_off = 0;
     uint16_t w = 0;
     if (is_init) return;	
@@ -53,7 +55,7 @@ void csr_s::initialize(void) {
     is_init = true;
     
 }
-void csr_s::deinit(void) {
+void csr_s::_deinit(void) {
     if (!is_init) return;	
     mask_map.clear();
     shift_map.clear();
@@ -143,16 +145,22 @@ csr_s::csr_s(const fld_map_t& i_fld_map) {
 
 uint16_t csr_s::sz(void) const {
     uint16_t sz = 0;
-    for(auto elem: fld_map) {
+    for(auto& elem: fld_map) {
         sz += elem.second.width;
     }
     return sz;
 }
 
+csr_s::~csr_s(void) {
+    _deinit();
+
+
+}
 std::ostream& operator<<(std::ostream& os, const csr_s& obj) {
     for (auto& elem: obj.fld_map) {
         os <<  elem.first << ":" << std::endl;
-        os << std::setw(2) << elem.second << std::endl;
+        os << std::setw(2) << "o: " << elem.second.fld_off << std::endl;
+        os << std::setw(2) << "w: " << elem.second.width << std::endl;
     }
     return os;
 }

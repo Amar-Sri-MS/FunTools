@@ -18,7 +18,7 @@
 #include "ring_coll.h"
 
 
-#define CREATE_ENTRY(k0, v0, v1) {k0, fld_off_t(v0, v1)}
+#define ADD_ENTRY(m, k0, v0, v1) m.emplace(std::piecewise_construct, std::forward_as_tuple(k0), std::forward_as_tuple(v0, v1))
 
 typedef std::unordered_map<const char*, ring_coll_t> ring_t;
 class F1NS {

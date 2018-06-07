@@ -55,8 +55,3 @@ void F1NS::add_csr(addr_node_t* an,
         an->add_csr(name, csr);
 
 }
-
-
-
-
-
