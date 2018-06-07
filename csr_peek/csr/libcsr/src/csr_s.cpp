@@ -13,13 +13,11 @@
 
 fld_off_t::fld_off_t(const uint16_t& off, const uint16_t& w):fld_off(off), width(w) {}
 
-#if 0
 std::ostream& operator<<(std::ostream& os, const fld_off_t& obj) {
     os << "o: " << obj.fld_off << std::endl;
     os << "w: " << obj.width << std::endl;
     return os;
 }
-#endif
 
 csr_s::csr_s(const csr_s& other):
     fld_map(other.fld_map), is_init(other.is_init) {}
@@ -159,8 +157,7 @@ csr_s::~csr_s(void) {
 std::ostream& operator<<(std::ostream& os, const csr_s& obj) {
     for (auto& elem: obj.fld_map) {
         os <<  elem.first << ":" << std::endl;
-        os << std::setw(2) << "o: " << elem.second.fld_off << std::endl;
-        os << std::setw(2) << "w: " << elem.second.width << std::endl;
+        os << std::setw(2) << elem.second << std::endl;
     }
     return os;
 }

@@ -34,7 +34,7 @@ struct fld_off_t {
     fld_off_t(const fld_off_t& other) = default;
     fld_off_t& operator=(const fld_off_t& other) = default;
     fld_off_t(const uint16_t& fld, const uint16_t& w);
-    //friend std::ostream& operator<<(std::ostream& os, const fld_off_t& obj);
+    friend std::ostream& operator<<(std::ostream& os, const fld_off_t& obj);
 
 };
 

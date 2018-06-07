@@ -5,7 +5,13 @@ OS := $(shell uname)
 
 SDKDIR ?= ../../FunSDK
 CFG_DIR ?= $(SDKDIR)/FunSDK/chip/f1/hw/yaml/
+
+# Supply a template file to reduce compile times
+# if only a subset of the CSRs need to be in the DB
+# See default example template
+
 TMPL_FILE ?= csr/template/csr_filter.yaml
+
 INC_DIR ?= `pwd`/csr/export/include
 LIB_DIR ?= `pwd`/csr/export/lib
 CSR_JSON ?= csr_metadata.json
@@ -19,15 +25,9 @@ SDK_INSTALL_DIR ?= $(SDKDIR)
 # Get past issues with g++ based compilation on Linux VMs
 # by using clang. On MacOS, g++ is clang
 
-ifeq ($(OS), Darwin)
-	CXX=g++
-else
-ifeq ($(OS), Linux)
-	CXX=clang++-4.0
-endif
-endif
+CXX := $(notdir $(or $(wildcard /usr/bin/clang++*), $(wildcard /usr/bin/g++)))
 
-# This should be the first target
+# This should be the first target to just generate csrsh
 build: $(LIB_DIR)/csrlib.a
 	CSR_LIB=$(LIB_DIR) CSR_INC=$(INC_DIR) INSTALL_DIR=`pwd` CXX=$(CXX) make -C csr-shell csrsh-install
 	chmod +x csrsh
@@ -38,8 +38,7 @@ $(LIB_DIR)/csrlib.a:
 		-c .                                        \
 		-g                                          \
 		-i $(INC_DIR)                               \
-		-l $(LIB_DIR)                               \
-		#-f $(TMPL_FILE)                             \
+		-l $(LIB_DIR)                               
 
 install: build
 	mkdir -p $(SDK_INSTALL_DIR)/FunSDK/config/csr
