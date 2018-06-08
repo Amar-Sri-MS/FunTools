@@ -28,9 +28,17 @@ SDK_INSTALL_DIR ?= $(SDKDIR)
 CXX := $(notdir $(or $(wildcard /usr/bin/clang++*), $(wildcard /usr/bin/g++)))
 
 # This should be the first target to just generate csrsh
-build: $(LIB_DIR)/csrlib.a
+.PHONY: build_shell
+build_shell: $(LIB_DIR)/csrlib.a
 	CSR_LIB=$(LIB_DIR) CSR_INC=$(INC_DIR) INSTALL_DIR=`pwd` CXX=$(CXX) make -C csr-shell csrsh-install
 	chmod +x csrsh
+
+.PHONY: build_cfg
+build_cfg:
+	PYTHONPATH=$(PPYTHONPATH):$(shell pwd) bin/csr-slurp \
+		-d ${CFG_DIR}                                \
+		-c .                                         \
+		-f $(TMPL_FILE)
 
 $(LIB_DIR)/csrlib.a:
 	PYTHONPATH=$(PYTHONPATH):$(shell pwd) CXX=$(CXX) bin/csr-slurp \
@@ -38,18 +46,29 @@ $(LIB_DIR)/csrlib.a:
 		-c .                                        \
 		-g                                          \
 		-i $(INC_DIR)                               \
-		-l $(LIB_DIR)                               
+		-l $(LIB_DIR)
 
-install: build
+
+.PHONY: install_cfg
+install_cfg: build_cfg
 	mkdir -p $(SDK_INSTALL_DIR)/FunSDK/config/csr
-	mkdir -p $(SDK_INSTALL_DIR)/bin
 	cp -f $(CSR_JSON) $(SDK_INSTALL_DIR)/FunSDK/config/csr
+
+.PHONY: install_csrsh
+install_csrsh: build_shell
+	mkdir -p $(SDK_INSTALL_DIR)/bin
 	cp -f csrsh $(SDK_INSTALL_DIR)/bin
+
+.PHONY: cfg_clean
+cfg_clean:
+	rm -f *.json
+
+.PHONY: csrsh_clean
+csrsh_clean: clean
+	make -C csr-shell clean
+	rm -f csrsh
 
 .PHONY: clean
 clean:
 	rm -f $(LIB_DIR)/libcsr.a
 	rm -f $(INC_DIR)/*
-	make -C csr-shell clean
-	rm -f csrsh
-	rm -f *.json
