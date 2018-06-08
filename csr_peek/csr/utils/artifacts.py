@@ -207,7 +207,7 @@ class RingProps(object):
         if csr_prop == None:
             print "!WARNING! Could not find CSR in csr_map."
 
-            
+
         return csr_prop
 
     # The CSR attribute map is for csrs local to this anode
@@ -277,6 +277,7 @@ class RingProps(object):
                 if an_csrs != None:
                     if len(an_csrs.get().keys()) == 0:
                         continue
+                    r_str += "#pragma message \"Compiling: AN: {}\"\n".format(an_name)
                     r_str += "{{\n // BEGIN {} \n".format(an_name)
                     r_str += "addr_node_t* {}_{} = {}_rng[{}].add_an({{{}}}, 0x{:01X}, {}, 0x{:01X});\n".\
                         format(an_name, idx, self.r_name, self.i_num,
@@ -432,7 +433,7 @@ class CSRRoot(object):
                 return True
 
     def __filter(self, line, filter_yml):
-        
+
         if not filter_yml:
             return True
         line = line.lower()
