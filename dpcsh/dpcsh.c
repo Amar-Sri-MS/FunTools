@@ -425,11 +425,14 @@ static char *_read_a_line(struct dpcsock *sock, ssize_t *nbytes)
 		}
 
 		/* read a byte */
+		errno = 0;
 		r = read(fd, &buf[pos], 1);
 
 		if (r <= 0) {
-			printf("**** remote hung up / error\n");
+			printf("**** remote hung up / error: %d %d %s\n",
+			       r, errno, strerror(errno));
 			free(buf);
+			close(sock->fd);
 			*nbytes = 0;
 			sock->fd = -1;
 			return NULL;
