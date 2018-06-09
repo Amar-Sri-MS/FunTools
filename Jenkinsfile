@@ -317,6 +317,7 @@ def build(label) {
 
 	sh "FunSDK/scripts/bob --build qemu -P $SDK_BUILD_DIR"
 	sh "FunSDK/scripts/bob --build dpcsh -P $SDK_BUILD_DIR"
+	sh "FunSDK/scripts/bob --build csrsh -P $SDK_BUILD_DIR"
 
 	sh "ls -ltr ${SDK_BUILD_DIR}/*.tgz"
 
