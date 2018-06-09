@@ -1,95 +1,84 @@
 # Basic Makefile
-# First, install this module
-# Then do a make cfg_upd to pull in the CSR configs from NFS Mount
-# Then, do a make csr to create the csr-library
-#
-# Do a make clean to remove the derived files (except the pulled in CSR)
-# Do a make distclean to remove all the CSR configurations as well
-
-SUDO_I = sudo
-SUDO_E = sudo
-INDIR = jsb
 
 OS := $(shell uname)
-
-
-
-#
-# Different tools on MacOS vs linux
-ifeq ($(OS),Darwin)
-  SUDO_I =
-  INSTALL := brew
-  NFS :=
-else
-ifeq ($(OS),Linux)
-  INSTALL := apt
-  NFS := nfs-common
-endif
-endif
-
-
-
-all: build
-
-.PHONY: build clean libcsr cfg_pull cfg
-build:
-	$(SUDO_E) python setup.py install --record files.txt
-
-libcsr:
-	$(SUDO_I) $(INSTALL) install astyle
-	cd csr-rt && astyle -c gen/csr_gen.cpp &&  make
-
-csrsh: libcsr
-	cd csr-rt && make csrsh
-
-cfg:build
-	csr-slurp -i csr/csr_cfg -o csr-rt/gen
-
-
-cfg_pull:build $(NFS)
-	cd csr; csr-get -i $(INDIR)
-
-$(NFS):
-	$(SUDO_I) $(INSTALL) install $(NFS)
-
-clean:
-	cat files.txt | sudo xargs rm -rf
-	$(SUDO_E) rm -rf dist
-	$(SUDO_E) rm -rf build
-	$(SUDO_E) rm -rf *.egg-info
-	$(SUDO_E) rm -f files.txt
-	cd csr-rt; make clean
-
-distclean: clean
-	cd csr/csr_cfg && rm -rf *
-	cd csr-rt; make distclean
-
-
-
-# Build platform OS
-OS := $(shell uname)
-
 # The build is where our SDK is rooted
+
 SDKDIR ?= ../../FunSDK
 
-# Where install files go
+# Supply a template file to reduce compile times
+# if only a subset of the CSRs need to be in the DB
+# See default example template
+
+TMPL_FILE ?= csr/template/csr_filter.yaml
+
+INC_DIR ?= `pwd`/csr/export/include
+LIB_DIR ?= `pwd`/csr/export/lib
+CSR_JSON ?= csr_metadata.json
+
+
+# This stuff is needed for FunSDK scripts
+# to pull artifacts from here
+
 SDK_INSTALL_DIR ?= $(SDKDIR)
 
-# The FunOS dir where config files reside
-FUNOSDIR ?= ../../FunOS
+# Distinguish between an SDK Build and Jenkins build
+ifeq ($(SDK_INSTALL_DIR),$(SDKDIR))
+	BASE_CFG_DIR ?= $(SDKDIR)
+else
+	BASE_CFG_DIR := $(dir $(SDK_INSTALL_DIR))/hw.posix
+endif
+CFG_DIR := $(BASE_CFG_DIR)/FunSDK/chip/f1/hw/yaml
 
-# Directory where csr metadata file is copied
-FUNSDK_INSTALL_DIR = $(SDK_INSTALL_DIR)/FunSDK/config/csr
 
-CSR_METADATA = csr-rt/gen/csr_metadata.json
-CSR_TMPL_DIR = csr/template
-CSR_RT_DIR = csr-rt/gen
-CSR_CFG_DIR = $(SDKDIR)/FunSDK/chip/f1/hw/yaml/
+# Get past issues with g++ based compilation on Linux VMs
+# by using clang. On MacOS, g++ is clang
 
-# Install to SDK
-install:
-	PYTHONPATH=$(PYTHONPATH):$(shell pwd) bin/csr-slurp \
-		   -i $(CSR_CFG_DIR) -o $(CSR_RT_DIR) -f $(CSR_TMPL_DIR)/csr_filter_tm.yaml
-	mkdir -p $(FUNSDK_INSTALL_DIR)
-	rsync -av $(CSR_METADATA) $(FUNSDK_INSTALL_DIR)
+CXX := $(notdir $(or $(wildcard /usr/bin/clang++*), $(wildcard /usr/bin/g++)))
 
+
+# This should be the first target to just generate csrsh
+.PHONY: build_shell
+build_shell: $(LIB_DIR)/csrlib.a
+	CSR_LIB=$(LIB_DIR) CSR_INC=$(INC_DIR) INSTALL_DIR=`pwd` CXX=$(CXX) make -C csr-shell csrsh-install
+	chmod +x csrsh
+
+.PHONY: build_cfg
+build_cfg:
+	echo $(CFG_DIR)
+	PYTHONPATH=$(PPYTHONPATH):$(shell pwd) bin/csr-slurp \
+		-d ${CFG_DIR}                                \
+		-c .                                         \
+		-f $(TMPL_FILE)
+
+$(LIB_DIR)/csrlib.a:
+	PYTHONPATH=$(PYTHONPATH):$(shell pwd) CXX=$(CXX) bin/csr-slurp \
+		-d ${CFG_DIR}                               \
+		-c .                                        \
+		-g                                          \
+		-i $(INC_DIR)                               \
+		-l $(LIB_DIR)
+
+
+.PHONY: install_cfg
+install_cfg: build_cfg
+	mkdir -p $(SDK_INSTALL_DIR)/FunSDK/config/csr
+	cp -f $(CSR_JSON) $(SDK_INSTALL_DIR)/FunSDK/config/csr
+
+.PHONY: install_csrsh
+install_csrsh: build_shell
+	mkdir -p $(SDK_INSTALL_DIR)/bin
+	cp -f csrsh $(SDK_INSTALL_DIR)/bin
+
+.PHONY: cfg_clean
+cfg_clean:
+	rm -f *.json
+
+.PHONY: csrsh_clean
+csrsh_clean: clean
+	make -C csr-shell clean
+	rm -f csrsh
+
+.PHONY: clean
+clean:
+	rm -f $(LIB_DIR)/libcsr.a
+	rm -f $(INC_DIR)/*

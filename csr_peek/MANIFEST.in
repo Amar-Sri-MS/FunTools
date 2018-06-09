@@ -1,2 +1,4 @@
 include csr/template/*.j2
 include csr/template/*.yaml
+include csr/libcsr/src/*.cpp
+include csr/libcsr/include/*.h
