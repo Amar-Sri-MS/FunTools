@@ -2,6 +2,7 @@ import glob
 import os
 import resource
 import shutil
+import shlex
 import subprocess
 import sys
 import time
@@ -33,9 +34,14 @@ class Compiler():
         pass
     def clean_files(self, f_lst):
         pass
-    def __compile(self, call):
-            print "Compiling: {}".format(' '.join(elem for elem in call))
-            p = subprocess.Popen(call, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+    def __compile_stdout(self, call):
+            print "Compiling: {}".format(call)
+            os.system(call)
+            return
+    def __compile_pipe(self, call):
+            print "Compiling: {}".format(call)
+            p = subprocess.Popen(shlex.split(call), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             while True:
                 output = p.stdout.readline()
                 if output == '' and p.poll() is not None:
@@ -46,42 +52,44 @@ class Compiler():
             print "Time: {}: RSS: {}".format(usage.ru_utime + usage.ru_stime, usage.ru_maxrss)
             if p.returncode != 0:
                 output = p.communicate()[0]
-                raise ProcessException(call_str, p.returncode, output)
+                raise subprocess.ProcessException(call, p.returncode, output)
             return
     def build_lib(self, libname, libtype,
             src_f_lst, inc_dir, out_lib_dir, out_inc_dir):
 
         # Prepare list of include directories
-        inc_path = []
+        inc_path = ""
         for path in inc_dir:
-            inc_path.extend(["-I", path])
+            inc_path += "-I {}".format(path)
         compiler = os.getenv("CXX", None)
         assert compiler != None, "No compiler specified for compilation"
-        compile_call = [compiler,"-std=c++11", "-Wall", "-fms-extensions"] + inc_path
+        compile_call = "{} -std=c++11 -Wall -fms-extensions {}".format(compiler, inc_path)
 
         if libtype.lower() == "shared":
             l_obj = "{}.so".format(libname)
-            compile_call.append("-fPIC")
-            lib_call = [compiler, "-o", l_obj, "-fPIC", "-shared"]
+            compile_call += "-fPIC"
+            lib_call = "{} -o {} -fPIC -shared".format(compiler, l_obj)
         else:
             l_obj = "{}.a".format(libname)
-            lib_call = ["ar", "cr", l_obj]
+            lib_call = "ar cr {}".format(l_obj)
 
-        obj_files = []
+        obj_files = ""
 
         for src_f in src_f_lst:
             obj_file_arr = os.path.basename(src_f).split('.')[:-1]
             obj_file = ".".join(n for n in obj_file_arr)
             obj_file = "{}.o".format(obj_file)
-            n_call = compile_call + ["-c", src_f]
-            self.__compile(n_call)
-            obj_files.append(obj_file)
+            n_call = "{} -c {}".format(compile_call, src_f)
+            #self.__compile_pipe(n_call)
+            self.__compile_stdout(n_call)
+            obj_files += " {}".format(obj_file)
 
-        lib_call.extend(obj_files)
-        self.__compile(lib_call)
+        lib_call += obj_files
+        #self.__compile_pipe(lib_call)
+        self.__compile_stdout(lib_call)
 
         # Now remove all the object files
-        for obj_f in obj_files:
+        for obj_f in obj_files.split():
             print "Removing: {}".format(obj_f)
             os.remove(obj_f)
 
