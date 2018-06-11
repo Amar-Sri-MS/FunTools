@@ -70,7 +70,6 @@ class JSON_Reader(object):
     # Add quotes to keys, hex values, remove comments and remove trailing commas
     def standardize_json(self, in_cfg, out_cfg):
         with open(in_cfg, 'r') as fh:
-            #fixed_json = ''.join(line for line in fh if not line.startswith('//'))
             fixed_json = ''.join(line for line in fh)
             log.debug("Removing Comments in %s"% (in_cfg))
             fixed_json = self.remove_comments(fixed_json)
@@ -151,7 +150,6 @@ class JSON_Reader(object):
         log.debug("handling config for %s" % f_name)
         json_stream = None
         t_file = tempfile.NamedTemporaryFile(mode="r")
-        log.info("working with temp file %s" % t_file.name)
         self.standardize_json(f_name, t_file.name)
         json_stream = ordered_load(t_file)
         return json_stream
