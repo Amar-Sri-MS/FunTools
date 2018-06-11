@@ -104,10 +104,10 @@ class JSON_Reader(object):
                 re.DOTALL | re.MULTILINE
         )
         def replacer(match):
-                s = match.group(0)
-                if s[0] == '/':
-                    return "\r"
-                return s
+            s = match.group(0)
+            if s[0] == '/':
+                return "\r"
+            return s
         return comments_re.sub(replacer, json_like)
 
 
@@ -121,19 +121,19 @@ class JSON_Reader(object):
         pos = 0
         while pos < len(json_like):
             if json_like[pos] == '"':
-                    pos = self.consume_string(json_like, pos)
-                    assert json_like[pos-1] == '"'
+                pos = self.consume_string(json_like, pos)
+                assert json_like[pos-1] == '"'
             elif json_like[pos] in "]}":
-                    prev = pos-1
+                prev = pos-1
+                assert prev >= 0
+                while json_like[prev].isspace():
+                    prev -= 1
                     assert prev >= 0
-                    while json_like[prev].isspace():
-                            prev -= 1
-                            assert prev >= 0
-                    if json_like[prev] == ",":
-                            json_like = json_like[:prev]+ " "+ json_like[prev+1:]
-                    pos += 1
+                if json_like[prev] == ",":
+                    json_like = json_like[:prev]+ " "+ json_like[prev+1:]
+                pos += 1
             else:
-                    pos += 1
+                pos += 1
         return json_like
     def consume_string(self, json_like, pos):
         assert json_like[pos] == '"'
