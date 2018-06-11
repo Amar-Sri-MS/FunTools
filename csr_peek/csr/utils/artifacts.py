@@ -205,8 +205,9 @@ class RingProps(object):
         #print "AN: {} csr_name: {} CSRs".format(an_name, csr_name)
         csr_prop = an_csrs.get().get(csr_name, None)
         if csr_prop == None:
-            print "ERROR! Could not find CSR in csr_map."
-            sys.exit(1)
+            print "!WARNING! Could not find CSR in csr_map."
+
+
         return csr_prop
 
     # The CSR attribute map is for csrs local to this anode
@@ -276,30 +277,28 @@ class RingProps(object):
                 if an_csrs != None:
                     if len(an_csrs.get().keys()) == 0:
                         continue
+                    r_str += "#pragma message \"Compiling: AN: {}\"\n".format(an_name)
                     r_str += "{{\n // BEGIN {} \n".format(an_name)
-                    r_str += "auto {}_{} = {}_rng[{}].add_an({{{}}}, 0x{:01X}, {}, 0x{:01X});\n".\
+                    r_str += "addr_node_t* {}_{} = {}_rng[{}].add_an({{{}}}, 0x{:01X}, {}, 0x{:01X});\n".\
                         format(an_name, idx, self.r_name, self.i_num,
                                 elem.get_path_str(), elem.start_addr, elem.n_inst, elem.skip_addr);
                     colls = {}
                     for csr_name, csr_val in an_csrs.get().iteritems():
                         if csr_val.name in colls:
                             continue
-                        r_str += "fld_map_t {} {{\n".format(csr_val.name)
+                        r_str += "fld_map_t {};\n".format(csr_val.name)
                         off = 0
-                        for fldd in csr_val.fld_lst[:-1]:
-                            r_str += "CREATE_ENTRY(\"{}\", {}, {}),\n".\
-                                    format(fldd.fld_name, off, fldd.width)
+                        for fldd in csr_val.fld_lst:
+                            r_str += "ADD_ENTRY({}, \"{}\", {}, {});\n".\
+                                    format(csr_val.name, fldd.fld_name, off, fldd.width)
                             off += fldd.width
-                        fldd = csr_val.fld_lst[-1]
-                        r_str += "CREATE_ENTRY(\"{}\", {}, {})\n".\
-                                format(fldd.fld_name, off, fldd.width)
-
-                        r_str += "};"
-                        r_str += "auto {}_prop = csr_prop_t(\n".format(csr_val.name)
-                        r_str += "std::make_shared<csr_s>({}),\n".format(csr_val.name)
+                        r_str += "auto {}_sp = new csr_s({});\n".\
+                                format(csr_val.name, csr_val.name)
+                        r_str += "csr_prop_t {}_prop {{\n".format(csr_val.name)
+                        r_str += "{}_sp,\n".format(csr_val.name)
                         r_str += "0x{:01X},\n".format(elem.get_csr_addr(csr_name))
-                        r_str += "{},\n".format(csr_val.type)
-                        r_str += "{});\n".format(elem.get_num_csr(csr_name))
+                        #r_str += "{},\n".format(csr_val.type)
+                        r_str += "{}}};\n".format(elem.get_num_csr(csr_name))
                         r_str += "add_csr({}_{}, \"{}\", {}_prop);\n".\
                                  format(an_name, idx, csr_val.name, csr_val.name)
                         colls[csr_val.name] = True
@@ -434,6 +433,9 @@ class CSRRoot(object):
                 return True
 
     def __filter(self, line, filter_yml):
+
+        if not filter_yml:
+            return True
         line = line.lower()
         coll = line.split(':')
         tree = coll[1].split('.')
@@ -535,6 +537,8 @@ class CSRRoot(object):
                 st_addr, skip_val)
         return True
     def __filter_csr(self, csr_name, do_process, filter_yml):
+        if not filter_yml:
+            return True
         include_csr = filter_yml.get('include_csr', [])
         if self.__match(include_csr, csr_name):
             #print "CSR_ACCEPT: {}".format(csr_name)
@@ -625,11 +629,11 @@ class CSRRoot(object):
         an_csrs = self.csr_map.get(self.curr_an_name, None)
         if not an_csrs:
             print "Could not get CSRs for AN:{}".format(self.curr_an_name)
-            sys.exit(1)
+            return
         csr_prop = an_csrs.get().get(csr_name, None)
         if csr_prop == None:
             print "Count not get info for CSR: {}".format(csr_name)
-            sys.exit(1)
+            return
 
         if len(ex_coll) > 1:
             csr_addr = self.__hexlify(ex_coll[0].strip())

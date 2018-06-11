@@ -7,7 +7,7 @@ setup(
     version = '0.1.0',
     author = 'Hariharan Thantry',
     description = 'Slurper for csr',
-    scripts = ['bin/csr-slurp', 'bin/csr-get'],
+    scripts = ['bin/csr-slurp'],
     packages = find_packages(),
     include_package_data=True,
     install_requires = [

@@ -61,6 +61,12 @@ class TestParseLine(unittest.TestCase):
     self.assertIsNotNone(line_args)
     self.assertIsNone(error)
 
+  def testParseAnnotation(self):
+    line = '0.024206656 TRACE TRANSACTION ANNOT faddr FA0:19:0[VP] msg Start unit test timer_test_microseconds'
+    (line_args, error) = self.file_parser.ParseLine(line)
+    self.assertIsNotNone(line_args)
+    self.assertIsNone(error)
+
   def testBadVerb(self):
     # Colon after send is invalid.
     line = '485375410.764454000 TRACE WU SEND: faddr VP0.2.0 wuid 0x60 name wuh_mp_notify arg0 0x0 arg1 0x0 dest VP0.2.0'
@@ -166,9 +172,10 @@ class TestProcessFile(unittest.TestCase):
            "1.00300000 TRACE WU END faddr VP0.0.0 wuid 1 name fun_a arg0 1 arg1 2"
            ]
     transactions = self.file_parser.ProcessFile(log)
-    self.assertEqual(3, len(transactions))
+    # One transaction for boot, one for the created transaction.
+    self.assertEqual(2, len(transactions))
 
-    tr = transactions[2]
+    tr = transactions[1]
     self.assertIsNotNone(tr.root_event)
     self.assertEqual(0, len(tr.root_event.successors))
 

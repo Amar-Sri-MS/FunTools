@@ -292,7 +292,7 @@ class TraceParser:
     if event_type == ('WU', 'START'):
       arg0 = log_keywords['arg0']
       arg1 = log_keywords['arg1']
-      wu_id = log_keywords['wuid']
+      wu_id = log_keywords['wuid'] & 0xffff
       current_event = event.TraceEvent(timestamp, timestamp,
                                        log_keywords['name'], vp, log_keywords)
       self.vp_to_event[vp] = current_event
@@ -318,7 +318,7 @@ class TraceParser:
         # Bootstrap process. Connect to fake event.
         current_event.transaction = self.boot_transaction
         self.boot_transaction.root_event.successors.append(current_event)
-        if self.boot_transaction.root_event.start_time is None:
+        if not self.boot_transaction.root_event.start_time:
           self.boot_transaction.root_event.start_time = timestamp
           self.boot_transaction.root_event.end_time = timestamp
 
@@ -344,7 +344,7 @@ class TraceParser:
       current_event.end_time = timestamp
     elif event_type == ('WU', 'SEND'):
       # Use arg0, the flow pointer, to match up the send with the WU when it starts.
-      wu_id = log_keywords['wuid']
+      wu_id = log_keywords['wuid'] & 0xffff
       arg0 = log_keywords['arg0']
       arg1 = log_keywords['arg1']
       send_time = log_keywords['timestamp']
@@ -367,7 +367,7 @@ class TraceParser:
       current_event.transaction = transaction
 
     elif event_type == ('TIMER', 'START'):
-      wuid = log_keywords['wuid']
+      wuid = log_keywords['wuid'] & 0xffff
       timer = log_keywords['timer']
       arg0 = log_keywords['arg0']
       start_time = log_keywords['timestamp']
