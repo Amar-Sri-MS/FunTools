@@ -677,7 +677,7 @@ class CSRRoot(object):
             an_skip_addr = an_attr[2]
         self.csr_metadata.add_csr_metadata(self.curr_rc, self.curr_ri, ring_addr,
             self.curr_an_name, self.curr_path, an_inst_cnt, an_skip_addr,
-            self.curr_addr, csr_name, csr_addr-self.curr_addr, csr_addr_range, csr_prop)
+            self.curr_addr, csr_name, csr_addr - self.curr_addr, csr_addr_range, csr_prop)
 
     def get_csr_metadata(self):
         return self.csr_metadata.get_csr_metadata()
