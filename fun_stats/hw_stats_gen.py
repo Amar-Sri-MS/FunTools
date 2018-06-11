@@ -1,6 +1,6 @@
 #!/usr/bin/python
 #
-# stats.py
+# hw_stats_gen.py
 #
 # Created by Nag Ponugoti March 28 2018
 # Copyright Fungible Inc. 2018
@@ -9,9 +9,7 @@ import os, sys
 import string, json, collections
 import logging
 import pdb, argparse
-from jinja2 import Environment, FileSystemLoader
 from json_reader import CFG_Reader
-import pprint
 import re
 
 #logger = logging.getLogger("stats")
@@ -283,11 +281,6 @@ class StatsGen(object):
         cfg = CFG_Reader(args.cfg_dir)
         csr_metadata_file = os.path.join(args.csr_metadata_dir, "csr_metadata.json")
         csr_metadata().set_metadata(json.load(open(csr_metadata_file)))
-
-        ENVIRONMENT = Environment( autoescape=False,
-            loader=FileSystemLoader(tmpl_dir), trim_blocks=False)
-        source_tmpl = ENVIRONMENT.get_template("source.j2")
-        #header_tmpl = ENVIRONMENT.get_template("header.j2")
 
         inc_path = None
         code_str = None
