@@ -15,7 +15,7 @@ FUNOSDIR ?= ../../FunOS
 # Directory to install working version of the StatsGen
 FUNSDK_INSTALL_DIR = $(SDK_INSTALL_DIR)/bin/StatsGen
 
-SRC = *.py templates
+SRC = *.py
 INPUT_DIR = $(FUNOSDIR)/Configfiles/stats
 OUTPUT_DIR = /tmp/generated
 CSR_METADATA_DIR = $(SDKDIR)/FunSDK/config/csr/
@@ -27,7 +27,6 @@ test_stats_gen:
 # install to SDK
 install:
 	mkdir -p $(FUNSDK_INSTALL_DIR)
-	mkdir -p $(FUNSDK_INSTALL_DIR)/templates
 	rsync -rR $(SRC) $(FUNSDK_INSTALL_DIR)
 clean:
 	@rm -rf $(OUTPUT_DIR)
