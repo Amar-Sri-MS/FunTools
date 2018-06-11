@@ -22,7 +22,7 @@ CSR_METADATA_DIR = $(SDKDIR)/FunSDK/config/csr/
 
 test_stats_gen:
 	mkdir -p $(OUTPUT_DIR)
-	./hw_stats.py -c $(INPUT_DIR) -o $(OUTPUT_DIR) -m $(CSR_METADATA_DIR)
+	./hw_stats_gen.py -c $(INPUT_DIR) -o $(OUTPUT_DIR) -m $(CSR_METADATA_DIR)
 
 # install to SDK
 install:
