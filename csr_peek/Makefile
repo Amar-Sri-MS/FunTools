@@ -38,7 +38,7 @@ CXX := $(notdir $(or $(wildcard /usr/bin/clang++*), $(wildcard /usr/bin/g++)))
 
 # This should be the first target to just generate csrsh
 .PHONY: build_shell
-build_shell: $(LIB_DIR)/csrlib.a
+build_shell: $(LIB_DIR)/libcsr.a
 	CSR_LIB=$(LIB_DIR) CSR_INC=$(INC_DIR) INSTALL_DIR=`pwd` CXX=$(CXX) make -C csr-shell csrsh-install
 	chmod +x csrsh
 
@@ -50,14 +50,14 @@ build_cfg:
 		-c .                                         \
 		-f $(TMPL_FILE)
 
-$(LIB_DIR)/csrlib.a:
-	PYTHONPATH=$(PYTHONPATH):$(shell pwd) CXX=$(CXX) bin/csr-slurp \
+$(LIB_DIR)/libcsr.a:
+	PYTHONPATH=$(PYTHONPATH):$(shell pwd) bin/csr-slurp \
 		-d ${CFG_DIR}                               \
 		-c .                                        \
-		-g                                          \
-		-i $(INC_DIR)                               \
-		-l $(LIB_DIR)
-
+		-g
+	mkdir -p $(LIB_DIR)
+	mkdir -p $(INC_DIR)
+	LIB_DIR=$(LIB_DIR) INC_DIR=$(INC_DIR) CXX=$(CXX) make -C csr/libcsr install
 
 .PHONY: install_cfg
 install_cfg: build_cfg
@@ -74,11 +74,14 @@ cfg_clean:
 	rm -f *.json
 
 .PHONY: csrsh_clean
-csrsh_clean: clean
+csrsh_clean: libcsr_clean
 	make -C csr-shell clean
 	rm -f csrsh
 
+libcsr_clean:
+	make -C csr/libcsr clean
+
 .PHONY: clean
-clean:
+clean: cfg_clean csrsh_clean libcsr_clean
 	rm -f $(LIB_DIR)/libcsr.a
 	rm -f $(INC_DIR)/*
