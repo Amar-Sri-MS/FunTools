@@ -317,7 +317,6 @@ class CSRMetaData(object):
                         an, an_path, an_inst_cnt, an_skip_addr,
                         an_addr, csr_name, csr_addr,
                         csr_addr_range, csr_prop):
-
         if csr_prop.type == "CSR_TYPE::REG_LST":
             m_name = csr_name.split('_')
             inst_str = m_name[-1]
@@ -339,6 +338,7 @@ class CSRMetaData(object):
         csr_metadata = dict()
         csr_metadata["ring_name"] = ring_name
         csr_metadata["ring_inst"] = ring_inst
+        csr_metadata["ring_inst_addr"] = hex(ring_addr)
         csr_metadata["ring_addr"] = hex(ring_addr)
         csr_metadata["an"] = an
         csr_metadata["an_path"] = an_path
@@ -677,7 +677,7 @@ class CSRRoot(object):
             an_skip_addr = an_attr[2]
         self.csr_metadata.add_csr_metadata(self.curr_rc, self.curr_ri, ring_addr,
             self.curr_an_name, self.curr_path, an_inst_cnt, an_skip_addr,
-            self.curr_addr, csr_name, csr_addr, csr_addr_range, csr_prop)
+            self.curr_addr, csr_name, csr_addr - self.curr_addr, csr_addr_range, csr_prop)
 
     def get_csr_metadata(self):
         return self.csr_metadata.get_csr_metadata()
