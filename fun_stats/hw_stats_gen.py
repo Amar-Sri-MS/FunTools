@@ -255,8 +255,6 @@ class StatsGen(object):
         csr_metadata_dir =  os.path.join(sdk_dir, "FunSDK/config/csr")
         cmd_parser.add_argument("-m", "--csr-metadata-dir", help="CSR metadata directory",
                 default=csr_metadata_dir, required=False, type=str)
-        my_path = os.path.dirname(os.path.abspath(__file__))
-        self.other_args['tmpl_dir'] = os.path.join(my_path, "templates")
 
     def __update_loc(self, loc):
         if not os.path.isabs(loc):
@@ -276,7 +274,6 @@ class StatsGen(object):
         out_dir = args.out_dir
         args.out_dir = self.__update_loc(args.out_dir)
         args.csr_metadata_dir = self.__update_loc(args.csr_metadata_dir)
-        tmpl_dir = self.__update_loc(self.other_args['tmpl_dir'])
 
         cfg = CFG_Reader(args.cfg_dir)
         csr_metadata_file = os.path.join(args.csr_metadata_dir, "csr_metadata.json")
