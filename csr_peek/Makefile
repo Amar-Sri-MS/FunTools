@@ -35,13 +35,6 @@ CFG_DIR := $(BASE_CFG_DIR)/FunSDK/chip/f1/hw/yaml
 
 CXX := $(notdir $(or $(wildcard /usr/bin/clang++*), $(wildcard /usr/bin/g++)))
 
-
-# This should be the first target to just generate csrsh
-.PHONY: build_shell
-build_shell: $(LIB_DIR)/libcsr.a
-	CSR_LIB=$(LIB_DIR) CSR_INC=$(INC_DIR) INSTALL_DIR=`pwd` CXX=$(CXX) make -C csr-shell csrsh-install
-	chmod +x csrsh
-
 .PHONY: build_cfg
 build_cfg:
 	echo $(CFG_DIR)
@@ -49,6 +42,11 @@ build_cfg:
 		-d ${CFG_DIR}                                \
 		-c .                                         \
 		-f $(TMPL_FILE)
+
+.PHONY: build_shell
+build_shell: $(LIB_DIR)/libcsr.a
+	CSR_LIB=$(LIB_DIR) CSR_INC=$(INC_DIR) INSTALL_DIR=`pwd` CXX=$(CXX) make -C csr-shell csrsh-install
+	chmod +x csrsh
 
 $(LIB_DIR)/libcsr.a:
 	PYTHONPATH=$(PYTHONPATH):$(shell pwd) bin/csr-slurp \

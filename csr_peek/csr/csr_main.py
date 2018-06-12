@@ -13,7 +13,7 @@ import os
 from module_path import module_locator
 from csr.utils.yml import YML_Reader, CSR_YML_Reader
 from csr.utils.artifacts import CSRRoot, Walker, RingUtil, TmplMgr
-from csr.utils.utilities import Filer, Compiler
+from csr.utils.utilities import Filer
 
 class Slurper(object):
     def __init__(self, cwd):
