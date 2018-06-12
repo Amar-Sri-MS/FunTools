@@ -54,7 +54,7 @@ class CFG_Reader(object):
     __repr__ = __str__
 
     # Merge two dictionaries
-    def merge_dicts(cfg, cfg_new):
+    def merge_dicts(self, cfg, cfg_new):
         merged_cfg = cfg
         for key in cfg_new.keys():
             if key in merged_cfg.keys():
@@ -70,7 +70,7 @@ class JSON_Reader(object):
     # Add quotes to keys, hex values, remove comments and remove trailing commas
     def standardize_json(self, in_cfg, out_cfg):
         with open(in_cfg, 'r') as fh:
-            fixed_json = ''.join(line for line in fh if not line.startswith('//'))
+            fixed_json = ''.join(line for line in fh)
             log.debug("Removing Comments in %s"% (in_cfg))
             fixed_json = self.remove_comments(fixed_json)
 
@@ -104,10 +104,12 @@ class JSON_Reader(object):
                 re.DOTALL | re.MULTILINE
         )
         def replacer(match):
-                s = match.group(0)
-                if s[0] == '/': return ""
-                return s
+            s = match.group(0)
+            if s[0] == '/':
+                return "\r"
+            return s
         return comments_re.sub(replacer, json_like)
+
 
     #Remove trailing commas in json file
     def remove_trailing_commas(self, json_like):
@@ -128,15 +130,11 @@ class JSON_Reader(object):
                     prev -= 1
                     assert prev >= 0
                 if json_like[prev] == ",":
-                    json_like = json_like[:prev] + json_like[pos:]
-                    assert json_like[prev] in "]}"
-                    pos = prev + 1
-                else:
-                    pos += 1
+                    json_like = json_like[:prev]+ " "+ json_like[prev+1:]
+                pos += 1
             else:
                 pos += 1
         return json_like
-
     def consume_string(self, json_like, pos):
         assert json_like[pos] == '"'
         pos += 1
@@ -152,7 +150,6 @@ class JSON_Reader(object):
         log.debug("handling config for %s" % f_name)
         json_stream = None
         t_file = tempfile.NamedTemporaryFile(mode="r")
-        log.debug("working with temp file %s" % t_file.name)
         self.standardize_json(f_name, t_file.name)
         json_stream = ordered_load(t_file)
         return json_stream

@@ -27,7 +27,7 @@
 
 # This is just an example config. Please choose yours
 
-include_ring: [nu, hnu]
+include_ring: [nu, hnu, pc, cc]
 
 exclude_interior: [pc_soc_clk]
 
@@ -46,6 +46,7 @@ include_attr:  [ INTR,
                  REMOTE | CONFIG,
                  REMOTE | STATUS,
                  REMOTE | CONFIG | COUNTER,
+                 REMOTE | STATUS | COUNTER,
                  REMOTE | STATUS | DEBUG,
                  REMOTE | CONFIG | DEBUG,
                  LOCAL | STATUS | DEBUG,
