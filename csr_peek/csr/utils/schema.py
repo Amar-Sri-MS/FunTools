@@ -107,6 +107,7 @@ class Schema():
         if not p_stream:
             return m_hash
         for reg_rec in p_stream:
+            store = True
             base_name = reg_rec['NAME']
             if base_name in m_hash:
                 assert False, "Same CSR Name, {} appears multiple times".format(base_name)
@@ -119,6 +120,9 @@ class Schema():
             if (e.n_entries > 1):
                 e.type = "CSR_TYPE::TBL"
             e.count = reg_rec.get('COUNT', 1)
+            if not isinstance(e.count, int):
+                print "WARNING: CSR count is not integral. Ignoring {} CSR".format(e.name)
+                store = False
             if (e.count > 1):
                 e.type = "CSR_TYPE::REG_LST"
 
@@ -126,7 +130,7 @@ class Schema():
             lst, e.width = self.__update_width(lst)
             for fld_elem in lst:
                 e.fld_lst.append(Field(fld_elem['NAME'], fld_elem['WIDTH']))
-            store = self.__should_store(e, csr_filter, lexer)
+            store = store & self.__should_store(e, csr_filter, lexer)
             if store:
                 m_hash[base_name] = e
         return m_hash

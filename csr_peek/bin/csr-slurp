@@ -5,4 +5,4 @@ import os
 if __name__ == "__main__":
     csr_slrp = csr.Slurper(os.getcwd())
     csr_slrp.run()
-    csr_slrp.compile()
+    csr_slrp.gen_cc()

@@ -602,6 +602,7 @@ class CSRRoot(object):
         ex_coll = coll[1].split()
         if len(ex_coll) > 2:
             return
+
         csr_name = coll[0].strip()
         do_process = self.__filter_csr(csr_name,
                 do_process,
@@ -632,7 +633,7 @@ class CSRRoot(object):
             return
         csr_prop = an_csrs.get().get(csr_name, None)
         if csr_prop == None:
-            print "Count not get info for CSR: {}".format(csr_name)
+            print "Could not get info for CSR: {}".format(csr_name)
             return
 
         if len(ex_coll) > 1:
