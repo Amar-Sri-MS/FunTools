@@ -194,5 +194,5 @@ class PTFSVRBase(BaseTest):
 @group('ptf')
 class PTFTest(PTFSVRBase):
     def runTest(self):
-        PTFSVRBase._set_up_bind_info(self, "0.0.0.0", 9000)
+        PTFSVRBase._set_up_bind_info(self, "0.0.0.0", 9001)
         PTFSVRBase._runTest(self, pktlen=200)

@@ -113,7 +113,7 @@ def create_send_data(sock):
 #
 def main():
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.connect(("localhost", 9000))
+    sock.connect(("localhost", 9001))
     sock.settimeout(0.5)
     #
     # Start receving thread
