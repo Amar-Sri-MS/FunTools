@@ -399,12 +399,19 @@ def ReformatCodeWithIndent(source):
   if not indent_path:
     return None
 
-  args = [indent_path, '-sob', '-nfc1', '-nfcb', '-nbad', '-bap',
+  args_wanted = ['-sob', '-nfc1', '-nfcb', '-nbad', '-bap',
           '-nbc', '-br', '-brs', '-c33', '-cd33', '-ncdb', '-ce', '-ci4',
           '-cli0', '-d0', '-i8', '-ip0', '-l79', '-lp', '-npcs', '-npsl',
           # Don't format comments, get rid of extra blank lines.
           # Don't add whitespace in the middle of declarations.
           '-nsc', '-sob', '-di0']
+
+  args = [indent_path]
+
+  with open(os.devnull, 'r+') as dummy:
+    for arg in args_wanted:
+      if not subprocess.call([indent_path, arg], stdin=dummy, stdout=dummy, stderr=dummy):
+        args.append(arg)
 
   p = subprocess.Popen(args,
                        stdout=subprocess.PIPE,
