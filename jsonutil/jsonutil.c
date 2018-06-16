@@ -13,19 +13,18 @@
 #define PLATFORM_POSIX 1
 #include <FunSDK/utils/threaded/fun_json.h>
 
-#define MAX_JSON (1024*1024)
-
-static char _buf[MAX_JSON];
+// We have some json files that are multi-megabytes
+#define MAX_JSON (100*1024*1024)
 
 static char *_read_input_file(int fd, size_t *outsize)
 {
-	char *pp;
+	char *buffer = malloc(MAX_JSON);
+	char *pp = buffer;
 	int r;
 	ssize_t n;
 	size_t size = 0;
 	
-	pp = _buf;
-	while ((n = read(fd, pp, MAX_JSON - (pp-_buf))) > 0) {
+	while ((n = read(fd, pp, MAX_JSON - (pp-buffer))) > 0) {
 		pp += n;
 		size += n;
 	}
@@ -37,7 +36,7 @@ static char *_read_input_file(int fd, size_t *outsize)
 
 	if (outsize)
 		*outsize = size;
-	return _buf;
+	return buffer;
 }
 
 static int _write_output_file(int fd, char *buf, ssize_t len)
