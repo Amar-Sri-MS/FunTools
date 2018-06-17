@@ -1,0 +1,46 @@
+// Examples of csr commands
+
+// *** PEEK ***
+
+// This one is very simple, just 1 CSR, no ambiguity
+csr peek fep_pc_dn_ecc_err_addr_log
+
+// This one has ambiguity so will produce an error
+csr peek psw_cfp_cfg_clear_hwm
+
+// Ambiguity can be lifted
+csr peek { name: psw_cfp_cfg_clear_hwm, ring: nu }
+
+// Or 
+csr peek {name:  sse_timeout_clr, ring: nu }
+
+// This one has ambiguity so will produce an error
+csr peek { name: dnr_timeout_thresh_cfg, ring: nu }
+
+// Ambiguity can be lifted
+csr peek { name: dnr_timeout_thresh_cfg, ring: nu, an_path: fepw_hnu.dnr }
+
+// Field is NYI
+csr peek {name: fpg_prs_features, ring: nu, field: features}
+csr peek {name: nhp_lvl0_mem, ring: nu, field: __rsvd}
+
+
+// *** FIND ***
+
+csr find fep_pc_dn_ecc_err_addr_log
+csr find fep_pc_dn_ecc_err_ad
+csr find {name: fpg_prs_features, ring: nu}
+csr find {name: fpg_prs_features, ring: xxxx}
+
+
+// *** POKE ***
+
+// Simple
+csr poke { name: psw_cfp_cfg_clear_hwm, ring: nu } [0, 1, 2, 3, 4, 5, 6, 7]
+
+// Numbers are transformed into array of bytes
+csr poke { name: psw_cfp_cfg_clear_hwm, ring: nu } 42
+csr poke {name: fpg_prs_features, ring: nu} 1025
+
+// Field is not yet implemented
+

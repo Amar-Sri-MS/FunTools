@@ -21,6 +21,7 @@
 #define CSR_RAW		fun_json_create_string("csr_raw", fun_json_no_copy_no_own)
 #define ECHO		fun_json_create_string("echo", fun_json_no_copy_no_own)
 #define PEEK		fun_json_create_string("peek", fun_json_no_copy_no_own)
+#define POKE		fun_json_create_string("poke", fun_json_no_copy_no_own)
 
 // Relative path for the metadata
 #define SDK_PATH	"FunSDK/config/csr/csr_metadata.json"
@@ -30,14 +31,34 @@
 #define AN_PATH		"an_path"
 #define RING_NAME	"ring_name"
 #define CSR_ADDR	"csr_addr"
+#define FIELD_LIST	"fld_lst"
+#define FIELD_NAME	"fld_name"
+#define FIELD_WIDTH	"fld_width"
 
 // FIELDS IN THE DPCSH QUERY
 #define Q_NAME		"name"
 #define Q_RING		"ring"
 #define Q_PATH		"an_path"
+#define Q_FIELD		"field"
 
 // Access to argv[0]
 extern const char *dpcsh_path;
+
+// Parsed CSR spec (i.e. the address)
+struct csr_spec_parts {
+	const char *name;
+	NULLABLE const char *ring_name; // NULL => not specified
+	const char *an_path;
+	const char *field;
+};
+
+// The relevant information necessary for csr_raw
+struct csr_raw_spec {
+	uint64_t addr;
+	size_t width; // in bytes
+	uint16_t field_num_bits; // 0 => no field
+	uint16_t field_start;
+};
 
 // ===============  UTILITIES ===============
 
@@ -123,6 +144,14 @@ static struct fun_json *fun_json_dict_keys_matching(const struct fun_json *dict,
 	return state.matching_keys;
 }
 
+static void fun_json_array_add_bytes_from_uint64(struct fun_json *array, uint8_t width_in_bytes, uint64_t x)
+{
+	for (uint8_t i = 0; i < width_in_bytes; i++) {
+		fun_json_array_append(array, fun_json_create_int64(x & 255));
+		x >>= 8;
+	}
+}
+
 // ===============  METADATA DB ===============
 
 static struct fun_json *csr_metadata_db(void)
@@ -153,17 +182,6 @@ static struct fun_json *csr_metadata_db(void)
 
 // ===============  ADDR LOOKUP ===============
 
-struct csr_spec_parts {
-	const char *name;
-	NULLABLE const char *ring_name; // NULL => not specified
-	const char *an_path;
-};
-
-struct csr_raw_spec {
-	uint64_t addr;
-	size_t width; // in bytes
-};
-
 // Parses a spec.  The strings may be patterns
 static bool csr_spec_to_parts(const struct fun_json *spec, OUT struct csr_spec_parts *parts)
 {
@@ -180,6 +198,7 @@ static bool csr_spec_to_parts(const struct fun_json *spec, OUT struct csr_spec_p
 		}
 		fun_json_lookup_string(spec, Q_RING, &parts->ring_name);
 		fun_json_lookup_string(spec, Q_PATH, &parts->an_path);
+		fun_json_lookup_string(spec, Q_FIELD, &parts->field);
 		return true;
 	}
 	fun_json_printf("*** Can't parse CSR spec '%s'\n", spec);
@@ -216,8 +235,40 @@ static void append_matching_entries(const struct fun_json *entries, const struct
 	}
 }
 
-static bool entry_to_csr_raw_spec(const struct fun_json *entry, OUT struct csr_raw_spec *csr_raw_spec)
+static bool get_field_info(const char *field_wanted, const struct fun_json *entry, OUT struct csr_raw_spec *csr_raw_spec)
 {
+	struct fun_json *fields = fun_json_lookup(entry, FIELD_LIST);
+	if (!fields || (fields->type != fun_json_array_type)) {
+		fun_json_printf("*** Can't find field list in '%s'\n", entry);
+		return false;
+	}
+	size_t c = fields->array->count;
+	uint64_t offset = 0;
+	for (size_t i = 0; i < c; i++) {
+		struct fun_json *field = fun_json_array_at(fields, i);
+		const char *field_name;
+		uint64_t field_width;
+		if (!fun_json_lookup_string(field, FIELD_NAME, &field_name) || !fun_json_lookup_uint64(field, FIELD_WIDTH, &field_width)) {
+			fun_json_printf("*** Fields malformed in '%s'\n", entry);
+			return false;
+		}
+		assert(field_width < (1 << 16));
+		if (!strcmp(field_wanted, field_name)) {
+			// found the right field
+			assert(offset < (1 << 16));
+			csr_raw_spec->field_start = offset;
+			csr_raw_spec->field_num_bits = field_width;
+			return true;
+		}
+		offset += field_width;
+	}
+	printf("*** Can't find field '%s'\n", field_wanted);
+	return false;
+}
+
+static bool entry_to_csr_raw_spec(const struct csr_spec_parts *parts, const struct fun_json *entry, OUT struct csr_raw_spec *csr_raw_spec)
+{
+	memset(csr_raw_spec, 0, sizeof(*csr_raw_spec));
 	uint64_t base_addr = 0;
 	if (!fun_json_lookup_hex_string(entry, AN_ADDR, &base_addr)) {
 		fun_json_printf("*** Can't parse an_addr for '%s'\n", entry);
@@ -235,6 +286,11 @@ static bool entry_to_csr_raw_spec(const struct fun_json *entry, OUT struct csr_r
 		return false;
 	}
 	csr_raw_spec->width = (width_in_bits + 7) / 8; // to bytes
+	if (parts->field) {
+		if (!get_field_info(parts->field, entry, csr_raw_spec)) {
+			return false;
+		}
+	}
 	return true;
 }
 
@@ -264,7 +320,7 @@ static bool metadata_lookup(const struct fun_json *db, const struct fun_json *sp
 	}
 	struct fun_json *first = fun_json_array_at(matches, 0);
 	memset(result, 0, sizeof(*result));
-	return entry_to_csr_raw_spec(first, result);
+	return entry_to_csr_raw_spec(&parts, first, result);
 }
 
 // ===============  PEEK ===============
@@ -284,6 +340,9 @@ static bool csr_peek(const struct fun_json *db, const struct fun_json *spec, str
 	fun_json_array_append(new_args, fun_json_create_int64(csr_raw_spec.addr));
 	fun_json_array_append(new_args, fun_json_create_int64(csr_raw_spec.width));
 	fun_json_dict_add(output, "arguments", fun_json_no_copy_no_own, new_args, true);
+	if (csr_raw_spec.field_num_bits) {
+		printf("Current NYI: field width=%db offset=%db\n", csr_raw_spec.field_num_bits, csr_raw_spec.field_start);
+	}
 	return true;
 }
 
@@ -309,6 +368,68 @@ static bool csr_find(const struct fun_json *db, const struct fun_json *spec, str
 	fun_json_dict_add(output, "verb", fun_json_no_copy_no_own, ECHO, true);
 	fun_json_dict_add(output, "arguments", fun_json_no_copy_no_own, matches, true);
 	return true;
+}
+
+// ===============  POKE ===============
+
+static bool verify_value_has_proper_width(const struct fun_json *value, size_t width, CALLER_TO_RELEASE OUT struct fun_json **value_to_use)
+{
+	assert(value);
+	*value_to_use = NULL; // means: use value
+	if ((width <= 8) && (value->type == fun_json_int_type)) {
+		// We accept numbers for values, but we convert them to array of bytes
+		uint64_t v = (uint64_t)value->int_value;
+
+		if ((width != 8) && (v >= (1ull << (width * 8)))) {
+			printf("*** Value %" PRIu64 " exceeds a value of %zd bytes\n", v, width);
+			return false;
+		}
+		*value_to_use = fun_json_create_empty_array();
+		fun_json_array_add_bytes_from_uint64(*value_to_use, width, v);
+		return true;
+	}
+	if (value->type != fun_json_array_type) {
+		fun_json_printf("*** Expecting an array of bytes, not %s\n", value);
+		return false;
+	}
+	if (width != value->array->count) {
+		printf("*** Expecting an array of %zd bytes, array has %zd bytes\n", width, value->array->count);
+		return false;
+	}
+	return true;
+}
+
+static bool csr_poke(const struct fun_json *db, const struct fun_json *spec, const struct fun_json *value, struct fun_json *output) 
+{
+	struct csr_raw_spec csr_raw_spec;
+	bool ok = metadata_lookup(db, spec, &csr_raw_spec);
+
+	if (!ok) {
+		return false;
+	}
+
+	const char *field = NULL;
+	
+	fun_json_lookup_string(spec, Q_FIELD, &field);
+
+	if (!field) {
+		struct fun_json *value_to_use = NULL;
+		if (!verify_value_has_proper_width(value, csr_raw_spec.width, &value_to_use)) {
+			return false;
+		}
+		if (!value_to_use) value_to_use = fun_json_retain(value);
+		struct fun_json *new_args = fun_json_create_empty_array();
+
+		fun_json_dict_add(output, "verb", fun_json_no_copy_no_own, CSR_RAW, true);
+		fun_json_array_append(new_args, POKE);
+		fun_json_array_append(new_args, fun_json_create_int64(csr_raw_spec.addr));
+		fun_json_array_append(new_args, value_to_use);
+		fun_json_dict_add(output, "arguments", fun_json_no_copy_no_own, new_args, true);
+		return true;
+	} else {
+		printf("*** Field poke not yet implemented\n");
+		return false;
+	}
 }
 
 // ===============  MACRO EXPANSION ===============
@@ -343,12 +464,27 @@ static CALLER_TO_RELEASE struct fun_json *csr_macro(const struct fun_json *input
 	uint64_t tid = 0;
 	bool has_tid = fun_json_lookup_uint64(input, "tid", &tid);
 	if (!strcmp(sub, "peek")) {
+		if (fun_json_array_count(args) != 2) {
+			return fun_json_create_error("*** too many arguments for 'csr peek'", fun_json_copy);
+		}
 		bool ok = csr_peek(db, spec, output);
 		if (!ok) {
 			return fun_json_create_error("*** error mapping csr spec to an address", fun_json_copy);
 		}
 	} else if (!strcmp(sub, "find")) {
+		if (fun_json_array_count(args) != 2) {
+			return fun_json_create_error("*** too many arguments for 'csr find'", fun_json_copy);
+		}
 		bool ok = csr_find(db, spec, output);
+		if (!ok) {
+			return fun_json_create_error("*** error mapping csr spec to an address", fun_json_copy);
+		}
+	} else if (!strcmp(sub, "poke")) {
+		if (fun_json_array_count(args) != 3) {
+			return fun_json_create_error("*** wrong number of arguments for 'csr poke'", fun_json_copy);
+		}
+		struct fun_json *value = fun_json_array_at(args, 2);
+		bool ok = csr_poke(db, spec, value, output);
 		if (!ok) {
 			return fun_json_create_error("*** error mapping csr spec to an address", fun_json_copy);
 		}
@@ -361,7 +497,7 @@ static CALLER_TO_RELEASE struct fun_json *csr_macro(const struct fun_json *input
 		fun_json_array_append(new_args, fun_json_retain(spec));
 		fun_json_dict_add(output, "arguments", fun_json_no_copy_no_own, new_args, true);
 	} else {
-		return fun_json_create_error("Expecting <csr> peek|poke ...", fun_json_copy);
+		return fun_json_create_error("Expecting <csr> peek|find|poke ...", fun_json_copy);
 	}
 	fun_json_dict_add_int64(output, "tid", fun_json_no_copy_no_own, tid, true);
 	return output;
