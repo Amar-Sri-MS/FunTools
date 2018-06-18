@@ -28,6 +28,7 @@
 #include <sys/stat.h>
 
 #include "dpcsh.h"
+#include "csr_command.h"
 
 #include <utils/threaded/fun_map.h>
 #include <utils/threaded/fun_commander.h>
@@ -64,6 +65,8 @@ static enum parsingmode _parse_mode = PARSE_UNKNOWN;
 #define OVERRIDE_TEXT "#!sh "
 #define OVERRIDE_JSON "#!json "
 
+// We stash argv[0]
+const char *dpcsh_path;
 
 struct dpcsock {
 
@@ -1110,7 +1113,9 @@ int main(int argc, char *argv[])
 	struct dpcsock funos_sock; /* connection to FunOS */
 	struct dpcsock cmd_sock;   /* connection to commanding agent */
 
+	dpcsh_path = argv[0];
 	dpcsh_load_macros();
+	register_csr_macro();
 
 	/* general flow of dpcsh:
 	 *
