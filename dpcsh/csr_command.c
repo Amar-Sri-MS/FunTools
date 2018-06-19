@@ -82,7 +82,7 @@ static bool csr_find(const struct fun_json *db, const struct fun_json *spec, str
 		return false;
 	}
 	struct fun_json *matches = fun_json_create_empty_array();
-	struct fun_json *keys = fun_json_dict_keys_matching(db, parts.name);
+	struct fun_json *keys = fun_json_dict_keys_matching_as_array(db, parts.name);
 	for (size_t k = 0; k < fun_json_array_count(keys); k++) {
 		struct fun_json *key = fun_json_array_at(keys, k);
 		assert(key->type == fun_json_string_type);
