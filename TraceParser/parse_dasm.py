@@ -67,7 +67,7 @@ jump_instructions = ['j', 'lapc']
 # Explicit call instructions where last instruction seen is PC of the
 # instruction itself.
 # Note lapc is replacement for bltzal branch and link condition.' 
-call_instructions = ['jal']
+call_instructions = ['jal', 'bal']
 call_instructions_compact = ['balc']
 
 # Instructions performing a call to a register value,
