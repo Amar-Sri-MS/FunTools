@@ -2,10 +2,10 @@
 
 // *** PEEK ***
 
-// This one is very simple, just 1 CSR, no ambiguity
+// This one is very simple, just 1 CSR, no ambiguity (it returns an error, but that's a model thing)
 csr peek fep_pc_dn_ecc_err_addr_log
 
-// This one has ambiguity so will produce an error
+// This one has ambiguity
 csr peek psw_cfp_cfg_clear_hwm
 
 // Ambiguity can be lifted
@@ -14,13 +14,14 @@ csr peek { name: psw_cfp_cfg_clear_hwm, ring: nu }
 // Or 
 csr peek {name:  sse_timeout_clr, ring: nu }
 
-// This one has ambiguity so will produce an error
+// This one has ambiguity
 csr peek { name: dnr_timeout_thresh_cfg, ring: nu }
 
 // Ambiguity can be lifted
 csr peek { name: dnr_timeout_thresh_cfg, ring: nu, an_path: fepw_hnu.dnr }
+csr peek {name: fpg_prs_features, ring: nu}
 
-// Field is NYI
+// With field
 csr peek {name: fpg_prs_features, ring: nu, field: features}
 csr peek {name: nhp_lvl0_mem, ring: nu, field: __rsvd}
 
@@ -36,11 +37,13 @@ csr find {name: fpg_prs_features, ring: xxxx}
 // *** POKE ***
 
 // Simple
-csr poke { name: psw_cfp_cfg_clear_hwm, ring: nu } [0, 1, 2, 3, 4, 5, 6, 7]
+csr poke { name: psw_cfp_cfg_clear_hwm, ring: nu } [0x001020304050607]
 
-// Numbers are transformed into array of bytes
+// Numbers are transformed into array of 64b-words
 csr poke { name: psw_cfp_cfg_clear_hwm, ring: nu } 42
 csr poke {name: fpg_prs_features, ring: nu} 1025
 
 // Field is not yet implemented
+csr poke {name: fpg_prs_features, ring: nu, field: features} 99
+csr peek {name: fpg_prs_features, ring: nu, field: features}
 
