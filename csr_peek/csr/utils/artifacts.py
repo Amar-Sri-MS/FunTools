@@ -676,9 +676,19 @@ class CSRRoot(object):
         if an_attr != None:
             an_inst_cnt = an_attr[0]
             an_skip_addr = an_attr[2]
+       
         self.csr_metadata.add_csr_metadata(self.curr_rc, self.curr_ri, ring_addr,
             self.curr_an_name, self.curr_path, an_inst_cnt, an_skip_addr,
             self.curr_addr, csr_name, csr_addr - self.curr_addr, csr_addr_range, csr_prop)
+        # AMAP file does not capture PC1-PC7 instance details
+        # So, workaround by adding them
+        # http://jira.fungible.local/browse/F1-4083
+        if self.curr_rc == "pc" and self.curr_ri == 0:
+            for i in range(1, 8):
+                self.csr_metadata.add_csr_metadata(self.curr_rc, self.curr_ri + i,
+                    (i + 1) * ring_addr, self.curr_an_name, self.curr_path,
+                    an_inst_cnt, an_skip_addr, self.curr_addr, csr_name,
+                    csr_addr - self.curr_addr, csr_addr_range, csr_prop)
 
     def get_csr_metadata(self):
         return self.csr_metadata.get_csr_metadata()
