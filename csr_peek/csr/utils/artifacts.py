@@ -351,9 +351,15 @@ class CSRMetaData(object):
         csr_metadata["csr_type"] = csr_prop.type
         csr_metadata["csr_n_entries"] = csr_prop.n_entries
         csr_metadata["csr_width"] = csr_prop.width
+
         fld_lst = list()
+        offset = 0;
+        csr_width_64bit = (csr_prop.width + 63) & ~0x3f 
         for fld in csr_prop.fld_lst:
-            fld_prop = {"fld_name": fld.fld_name, "fld_width": fld.width}
+            offset += fld.width
+            fld_prop = {"fld_name": fld.fld_name,
+                        "fld_width": fld.width,
+                        "fld_offset": csr_width_64bit - offset}
             fld_lst.append(fld_prop)
         csr_metadata["fld_lst"] = fld_lst
         csr_metadata_lst.append(csr_metadata)
