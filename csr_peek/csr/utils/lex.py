@@ -8,6 +8,7 @@
 #  Simple lexer for breaking down any expression consisting
 #  and returning individual symbols with types
 
+import logging
 import ply.lex as lex
 
 class Lexer(object):
@@ -22,8 +23,9 @@ class Lexer(object):
     def build(self, **kwargs):
         self.lexer = lex.lex(module=self, **kwargs)
 
-    def __init__(self, const_map):
+    def __init__(self, const_map, logger=None):
         self.const_map = const_map
+        self.logger = logger or logging.getLogger(__name__)
 
     def t_NUMBER(self, t):
         r'\b(\d+|0[Xx][0-9a-fA-F]+|0[Bb][0-1]+)\b'
@@ -36,7 +38,7 @@ class Lexer(object):
         return t
 
     def t_error(self, t):
-        print("Illegal character: {}".format(t.value[0]))
+        self.logger.warning(("Illegal character: {}".format(t.value[0])))
         t.lexer.skip(1)
 
     def eval(self, data):
