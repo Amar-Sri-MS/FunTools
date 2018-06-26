@@ -134,7 +134,6 @@ class CSRNode(object):
             rinst = rinst_lst.get(ring_inst, None)
             if rinst is None:
                 rinst = collections.OrderedDict()
-                rinst["ring_inst_addr"] = csr.get("ring_inst_addr", None)
                 rinst_lst[ring_inst] = rinst
 
             anode_lst = rinst.get("anode", None)
@@ -320,8 +319,6 @@ class StatsGen(object):
 
     def __print_ring_inst_objs(self, rinst_list):
         for k,v in rinst_list.iteritems():
-            logging.debug("\tRING_INST: {} ADDR: {}".format(
-                    k, v.get("ring_inst_addr", None)))
             self.__print_anode_objs(v.get("anode", None))
 
     def print_cfg_objs(self, cfg_objs):

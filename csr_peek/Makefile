@@ -41,7 +41,6 @@ build_cfg:
 	PYTHONPATH=$(PPYTHONPATH):$(shell pwd) bin/csr-slurp \
 		-d ${CFG_DIR}                                \
 		-c .                                         \
-		-f $(TMPL_FILE)
 
 .PHONY: build_shell
 build_shell: $(LIB_DIR)/libcsr.a

@@ -338,7 +338,6 @@ class CSRMetaData(object):
         csr_metadata = dict()
         csr_metadata["ring_name"] = ring_name
         csr_metadata["ring_inst"] = ring_inst
-        csr_metadata["ring_inst_addr"] = hex(ring_addr)
         csr_metadata["ring_addr"] = hex(ring_addr)
         csr_metadata["an"] = an
         csr_metadata["an_path"] = an_path
@@ -351,9 +350,15 @@ class CSRMetaData(object):
         csr_metadata["csr_type"] = csr_prop.type
         csr_metadata["csr_n_entries"] = csr_prop.n_entries
         csr_metadata["csr_width"] = csr_prop.width
+
         fld_lst = list()
+        offset = 0;
+        csr_width_64bit = (csr_prop.width + 63) & ~0x3f 
         for fld in csr_prop.fld_lst:
-            fld_prop = {"fld_name": fld.fld_name, "fld_width": fld.width}
+            offset += fld.width
+            fld_prop = {"fld_name": fld.fld_name,
+                        "fld_width": fld.width,
+                        "fld_offset": csr_width_64bit - offset}
             fld_lst.append(fld_prop)
         csr_metadata["fld_lst"] = fld_lst
         csr_metadata_lst.append(csr_metadata)
@@ -676,9 +681,19 @@ class CSRRoot(object):
         if an_attr != None:
             an_inst_cnt = an_attr[0]
             an_skip_addr = an_attr[2]
+       
         self.csr_metadata.add_csr_metadata(self.curr_rc, self.curr_ri, ring_addr,
             self.curr_an_name, self.curr_path, an_inst_cnt, an_skip_addr,
             self.curr_addr, csr_name, csr_addr - self.curr_addr, csr_addr_range, csr_prop)
+        # AMAP file does not capture PC1-PC7 instance details
+        # So, workaround by adding them
+        # http://jira.fungible.local/browse/F1-4083
+        if self.curr_rc == "pc" and self.curr_ri == 0:
+            for i in range(1, 8):
+                self.csr_metadata.add_csr_metadata(self.curr_rc, self.curr_ri + i,
+                    (i + 1) * ring_addr, self.curr_an_name, self.curr_path,
+                    an_inst_cnt, an_skip_addr, self.curr_addr + (i * ring_addr),
+                    csr_name, csr_addr - self.curr_addr, csr_addr_range, csr_prop)
 
     def get_csr_metadata(self):
         return self.csr_metadata.get_csr_metadata()
