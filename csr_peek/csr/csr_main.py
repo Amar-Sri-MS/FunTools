@@ -9,14 +9,19 @@
 
 import argparse
 import json
+import logging
 import os
+
 from module_path import module_locator
 from csr.utils.yml import YML_Reader, CSR_YML_Reader
 from csr.utils.artifacts import CSRRoot, Walker, RingUtil, TmplMgr
 from csr.utils.utilities import Filer
 
 class Slurper(object):
-    def __init__(self, cwd):
+    def __init__(self, cwd, logger=None):
+        logging.basicConfig(level=logging.INFO)
+        self.logger = logger or logging.getLogger(__name__)
+
         self.cwd = cwd
         self.cmd_parser = argparse.ArgumentParser(description="CSR Slurper utility for F1")
         self.other_args = {}
@@ -31,7 +36,7 @@ class Slurper(object):
         def_filter = os.path.join(ml_dir, "template", "csr_filter.yaml")
         cmd_parser.add_argument("-f", "--filter-file", help="Filter YAML file to reduce the size of the executable",
                 default=None, required=False, type=str)
-
+        cmd_parser.add_argument("-l", "--log-level", required=False, default='INFO', help="Set the logging output level")
 
         self.other_args['gen_cc_dir'] = os.path.join(self.cwd, "csr", "libcsr", "src")
 
@@ -64,32 +69,40 @@ class Slurper(object):
         yml_dir = os.path.join(args.csr_defs, "csr")
         amap_file = os.path.join(args.csr_defs, "AMAP")
 
-        #print "{}".format(self.schema)
+        if args.log_level == "DEBUG":
+            self.logger.setLevel(logging.DEBUG)
+        else:
+            self.logger.setLevel(logging.INFO)
+
+
         # First populate the top level root
         # Only populates the address attribute
-        p = YML_Reader()
+        p = YML_Reader(self.logger)
         csr_def = p.read_file(self.other_args['csr_defs'])
 
         filter_def = None
         if args.filter_file:
-            print "Filter file: {}".format(args.filter_file)
+            self.logger.info("Filter file: {}".format(args.filter_file))
             filter_def = p.read_file(args.filter_file)
 
 
         # Pass to CSR Yaml reader, a list of included & excluded CSRs
         # If a CSR is included by name, ignore the attribute
 
-        schema = CSR_YML_Reader(yml_dir, csr_def, filter_def)
+        schema = CSR_YML_Reader(yml_dir, csr_def, filter_def, self.logger)
+        self.logger.debug("{}".format(schema))
 
-        self.csr_root = CSRRoot(amap_file, schema.get(), filter_def)
+        self.csr_root = CSRRoot(amap_file, schema.get(), filter_def, self.logger)
         file_mkr = Filer()
         file_mkr.mkdir(args.cfg_dir)
         o_file = os.path.join(args.cfg_dir, 'csr_metadata.json')
+        csr_meta = self.csr_root.csr_metadata
+        self.logger.debug("{}".format(csr_meta))
         with open(o_file, "w") as fp:
             fp.write(json.dumps(self.csr_root.get_csr_metadata(), indent=4))
 
         self.args = args
-        print "[Written Config]: {}".format(o_file)
+        self.logger.info("[Written Config]: {}".format(o_file))
 
         # Next, get the ring structure
         #p = YML_Reader()
@@ -99,10 +112,10 @@ class Slurper(object):
 
     def gen_cc(self):
         if not self.args.gen_cc:
-            print "Not generating CC file"
+            self.logger.info("Not generating CC file")
             return
         if not self.args.filter_file:
-            print "\n\n\n!!!!  WARNING   !!! Entire CSR database being generated in-memory. May NOT COMPILE\n\n\n"
+            self.logger.info("\n\n\n!!!!  WARNING   !!! Entire CSR database being generated in-memory. May NOT COMPILE\n\n\n")
 
         cc_file = os.path.join(self.other_args['gen_cc_dir'], 'csr_gen.cpp')
         tmpl = TmplMgr(self.other_args['tmpl_file'])

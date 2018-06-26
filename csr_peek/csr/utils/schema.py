@@ -9,6 +9,7 @@
 # Creates the entity schema
 
 import collections
+import logging
 import re
 
 from csr.utils.lex import Lexer, LexTok
@@ -53,9 +54,9 @@ class Schema():
     #ALLOW_ATTR = [0x4, 0x8]
     ALLOW_ATTR = [0x4]
     MIN_WIDTH = 64
-    def __init__(self, yml_stream, csr_def, csr_filter):
+    def __init__(self, yml_stream, csr_def, csr_filter, logger=None):
         yml_stream = self.__sanitize(yml_stream)
-
+        self.logger = logger or logging.getLogger(__name__)
         def_map = self.__create_map(csr_def)
         lexer = Lexer(def_map)
         lexer.build()
@@ -110,7 +111,7 @@ class Schema():
             store = True
             base_name = reg_rec['NAME']
             if base_name in m_hash:
-                assert False, "Same CSR Name, {} appears multiple times".format(base_name)
+                self.logger.warning("Same CSR Name, {} appears multiple times".format(base_name))
                 continue
             e = Entity()
             e.name = self.__get_name(reg_rec)
@@ -121,7 +122,7 @@ class Schema():
                 e.type = "CSR_TYPE::TBL"
             e.count = reg_rec.get('COUNT', 1)
             if not isinstance(e.count, int):
-                print "WARNING: CSR count is not integral. Ignoring {} CSR".format(e.name)
+                self.logger.warning("CSR count is not integral. Ignoring {} CSR".format(e.name))
                 store = False
             if (e.count > 1):
                 e.type = "CSR_TYPE::REG_LST"
@@ -151,7 +152,7 @@ class Schema():
 
     def __dump(self, yml_stream):
         for key, val in yml_stream.iteritems():
-            print "{}".format(key)
+            self.logger.debug("{}".format(key))
 
     def __sanitize(self, yml_stream):
         lst = []
@@ -188,7 +189,7 @@ class Schema():
 
     def __str__(self):
         r_str = ""
-        for val in self.entities.itervaluess():
+        for val in self.entities.itervalues():
             r_str += "{}".format(val)
         return r_str
     __repr__ = __str__

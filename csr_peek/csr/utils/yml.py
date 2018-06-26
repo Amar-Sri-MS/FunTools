@@ -8,6 +8,7 @@
 import collections
 import copy
 import glob
+import logging
 import os
 import pdb
 import re
@@ -28,14 +29,15 @@ def ordered_load(stream, Loader=yaml.Loader, object_pairs_hook=collections.Order
 
 class CSR_YML_Reader(object):
     ALLOW_LST = ['REGLST', 'WIDTH', 'ATTR', 'FLDLST']
-    def __init__(self, dirname, filter_yml, csr_def):
+    def __init__(self, dirname, filter_yml, csr_def, logger=None):
+        self.logger = logger or logging.getlogger(__name__)
         self.__read_dir(dirname, filter_yml, csr_def)
 
     def __read_dir(self, dirname, filter_yml, csr_def):
         self.csr_schema = collections.OrderedDict()
         for yml_file in glob.glob(os.path.join(dirname, '*.yaml')):
             f_name = os.path.splitext(os.path.basename(yml_file))[0]
-            print "Processing \'{}\'".format(f_name)
+            self.logger.info("Processing \'{}\'".format(f_name))
             yml_stream = self.__read_file(yml_file)
             f_name = re.sub('(_an)|(_AN)', '', f_name)
             self.csr_schema[f_name.lower()] = Schema(yml_stream, filter_yml, csr_def)
@@ -43,13 +45,13 @@ class CSR_YML_Reader(object):
     def __dump(self, yml_stream):
         lst = []
         for key, val in yml_stream.iteritems():
-            print "{}:".format(key)
+            self.logger.debug("{}:".format(key))
             if isinstance(val, dict):
                 self.__dump(val)
             elif isinstance(val, list):
                 self.__dump_lst(val)
             else:
-                print "{}:{}\n".format(key, val)
+                self.logger.debug("{}:{}\n".format(key, val))
     def __dump_lst(self, lst):
         for elem in lst:
             if isinstance(elem, list):
@@ -57,7 +59,7 @@ class CSR_YML_Reader(object):
             if isinstance(elem, dict):
                 self.__dump(elem)
             else:
-                print "{}\n".format(elem)
+                self.logger.debug("{}\n".format(elem))
 
     def __remove_symbols(self, m_dict, allow_lst):
         m_lst = []
@@ -93,7 +95,7 @@ class CSR_YML_Reader(object):
 
 
 class YML_Reader(object):
-    def __init__(self):
+    def __init__(self, logger=None):
         pass
     def read_file(self, f_name):
         yml_stream = None
