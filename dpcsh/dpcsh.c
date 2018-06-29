@@ -788,6 +788,7 @@ static void _do_recv_cmd(struct dpcsock *funos_sock,
         if (!output) {
 		if (retry)
 			printf("invalid json returned\n");
+		usleep(10*1000); // to avoid consuming all the CPU after funos quit
 		return;
         }
 	// printf("output is of type %d\n", output->type);
@@ -820,13 +821,19 @@ static void _do_recv_cmd(struct dpcsock *funos_sock,
 			printf(PRELUDE BLUE POSTLUDE "output => *** error: '%s'" NORMAL_COLORIZE "\n",
 				raw_output->error_message);
 		} else {
-			fun_json_printf(OUTPUT_COLORIZE "output => %s" NORMAL_COLORIZE "\n",
-				raw_output);
+			size_t allocated_size = 0;
+			uint32_t flags = use_hex ? FUN_JSON_PRETTY_PRINT_USE_HEX_FOR_NUMBERS : 0;
+			char *pp = fun_json_pretty_print(raw_output, 0, "    ", 100, flags, &allocated_size);
+			printf(OUTPUT_COLORIZE "output => %s" NORMAL_COLORIZE "\n",
+				pp);
+			free(pp);
 		}
 	} else {
 		fun_json_printf(OUTPUT_COLORIZE "output => %s" NORMAL_COLORIZE "\n",
 				raw_output);
-		char *pp = fun_json_to_text(raw_output);
+		size_t allocated_size = 0;
+		uint32_t flags = use_hex ? FUN_JSON_PRETTY_PRINT_USE_HEX_FOR_NUMBERS : 0;
+		char *pp = fun_json_pretty_print(raw_output, 0, "    ", 100, flags, &allocated_size);
 		if (pp) {
 			write(cmd_sock->fd, pp, strlen(pp));
 			write(cmd_sock->fd, "\n", 1);
@@ -995,7 +1002,9 @@ int json_handle_req(struct dpcsock *jsock, const char *path,
             printf("invalid json returned\n");
             return -1;
         }
-        char *pp2 = fun_json_to_text(output);
+	size_t allocated_size = 0;
+	uint32_t flags = use_hex ? FUN_JSON_PRETTY_PRINT_USE_HEX_FOR_NUMBERS : 0;
+	char *pp2 = fun_json_pretty_print(output, 0, "    ", 100, flags, &allocated_size);
         printf("output => %s\n", pp2);
 
 	if (!pp2)
