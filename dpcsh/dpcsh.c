@@ -732,6 +732,32 @@ nope:
 
 // ===============  RUN LOOP ===============
 
+// Somewhat of a hack: help needs to apply to both local (dpcsh-side) and remote (funos-side)
+// So we apply it once locally first
+static void apply_command_locally(const struct fun_json *json)
+{
+	const char *verb = NULL;
+
+	if (!fun_json_lookup_string(json, "verb", &verb)) {
+		return;
+	}
+	if (!verb || strcmp(verb, "help")) {
+		return;
+	}
+	struct fun_json *env = fun_json_create_empty_dict();
+	struct fun_json *j = fun_commander_execute(env, json);
+
+	fun_json_release(env);
+	if (!j) {
+		return;
+	}
+	struct fun_json *result = fun_json_lookup(j, "result");
+	if (result) {
+		fun_json_printf(PRELUDE BLUE POSTLUDE "Locally applied command: %s" NORMAL_COLORIZE "\n", result);
+	}
+	fun_json_release(j);
+}
+
 // We pass the sock INOUT in order to be able to reestablish a
 // connection if the server went down and up
 static bool _do_send_cmd(struct dpcsock *sock, char *line,
@@ -750,6 +776,8 @@ static bool _do_send_cmd(struct dpcsock *sock, char *line,
         }
         fun_json_printf(INPUT_COLORIZE "input => %s" NORMAL_COLORIZE "\n",
 			json);
+	// Hack to list local commands if the command is 'help'
+	apply_command_locally(json);
         bool ok = _write_to_sock(json, sock);
 	if (!ok) {
 		// try to reopen pipe
