@@ -896,6 +896,19 @@ static void _do_recv_cmd(struct dpcsock *funos_sock,
         fun_json_release(raw_output);
 }
 
+static void terminal_set_per_character(bool enable)
+{
+	/* enable per-character input for interactive input */
+	static struct termios tios;
+	tcgetattr(STDIN_FILENO, &tios);
+	if (enable) {
+		tios.c_lflag &= ~(ICANON | ECHO);
+	} else {
+		tios.c_lflag |= ICANON | ECHO;
+	}
+	tcsetattr(STDIN_FILENO, TCSANOW, &tios);
+}
+
 static void _do_interactive(struct dpcsock *funos_sock,
 			    struct dpcsock *cmd_sock)
 {
@@ -906,10 +919,7 @@ static void _do_interactive(struct dpcsock *funos_sock,
 
     if (cmd_sock->mode == SOCKMODE_TERMINAL) {
 	    /* enable per-character input for interactive input */
-	    static struct termios tios;
-	    tcgetattr(STDIN_FILENO, &tios);
-	    tios.c_lflag &= ~(ICANON | ECHO);
-	    tcsetattr(STDIN_FILENO, TCSANOW, &tios);
+	    terminal_set_per_character(true);
     }
 
 
@@ -977,7 +987,10 @@ static void _do_interactive(struct dpcsock *funos_sock,
 		    _do_recv_cmd(funos_sock, cmd_sock, false);
 	    }
     }
-
+    if (cmd_sock->mode == SOCKMODE_TERMINAL) {
+	    /* reset terminal */
+	    terminal_set_per_character(false);
+    }
     free(line);
 }
 
