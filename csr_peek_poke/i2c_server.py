@@ -32,6 +32,7 @@ class MyFactoryThread(jsocket.ServerFactoryThread):
 
 	def _process_message(self, obj):
 		""" virtual method - Implementer must define protocol """
+                msg = dict()
 		if obj != '':
 			if obj['message'] == "new connection":
 				logger.info("new connection.")
@@ -46,18 +47,5 @@ if __name__ == "__main__":
 	server.timeout = 2.0
 	server.start()
 
-	time.sleep(1)
-	cPids = []
-	for i in range(10):
-		client = jsocket.JsonClient(address='127.0.0.1', port=5490)
-		cPids.append(client)
-		client.connect()
-		client.send_obj({"message": "new connection"})
-		client.send_obj({"message": i })
-
-	time.sleep(2)
-
-	for c in cPids:
-		c.close()
-	server.stop()
-	server.join()
+	#server.stop()
+	#server.join()
