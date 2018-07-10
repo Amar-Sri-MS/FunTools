@@ -560,7 +560,22 @@ def csr_poke(args):
             return None
         print hex_word_dump(word_array)
     elif field_list is not None:
-        word_array = i2c_csr_peek(csr_addr, csr_width_words)
+        word_array = None
+        if i2c_server_socket is not None:
+            msg = dict()
+            csr_peek_args = dict()
+            csr_peek_args["csr_addr"] = csr_addr
+            csr_peek_args["csr_width"] = csr_width_words
+            msg["CSR_PEEK"] = csr_peek_args
+            i2c_server_socket.send_obj(msg)
+            msg = i2c_server_socket.read_obj()
+            print msg
+            status = msg.get("STATUS", None)
+            if status[0] == True:
+                word_array = msg.get("DATA", None)
+            else:
+                print "I2C peek over socket failed!"
+                return
         if word_array is None or not word_array:
             print "Error in csr i2c peek!!!"
             return None
