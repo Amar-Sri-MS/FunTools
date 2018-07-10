@@ -732,6 +732,32 @@ nope:
 
 // ===============  RUN LOOP ===============
 
+// Somewhat of a hack: help needs to apply to both local (dpcsh-side) and remote (funos-side)
+// So we apply it once locally first
+static void apply_command_locally(const struct fun_json *json)
+{
+	const char *verb = NULL;
+
+	if (!fun_json_lookup_string(json, "verb", &verb)) {
+		return;
+	}
+	if (!verb || strcmp(verb, "help")) {
+		return;
+	}
+	struct fun_json *env = fun_json_create_empty_dict();
+	struct fun_json *j = fun_commander_execute(env, json);
+
+	fun_json_release(env);
+	if (!j) {
+		return;
+	}
+	struct fun_json *result = fun_json_lookup(j, "result");
+	if (result) {
+		fun_json_printf(PRELUDE BLUE POSTLUDE "Locally applied command: %s" NORMAL_COLORIZE "\n", result);
+	}
+	fun_json_release(j);
+}
+
 // We pass the sock INOUT in order to be able to reestablish a
 // connection if the server went down and up
 static bool _do_send_cmd(struct dpcsock *sock, char *line,
@@ -750,6 +776,8 @@ static bool _do_send_cmd(struct dpcsock *sock, char *line,
         }
         fun_json_printf(INPUT_COLORIZE "input => %s" NORMAL_COLORIZE "\n",
 			json);
+	// Hack to list local commands if the command is 'help'
+	apply_command_locally(json);
         bool ok = _write_to_sock(json, sock);
 	if (!ok) {
 		// try to reopen pipe
@@ -788,6 +816,7 @@ static void _do_recv_cmd(struct dpcsock *funos_sock,
         if (!output) {
 		if (retry)
 			printf("invalid json returned\n");
+		usleep(10*1000); // to avoid consuming all the CPU after funos quit
 		return;
         }
 	// printf("output is of type %d\n", output->type);
@@ -820,13 +849,19 @@ static void _do_recv_cmd(struct dpcsock *funos_sock,
 			printf(PRELUDE BLUE POSTLUDE "output => *** error: '%s'" NORMAL_COLORIZE "\n",
 				raw_output->error_message);
 		} else {
-			fun_json_printf(OUTPUT_COLORIZE "output => %s" NORMAL_COLORIZE "\n",
-				raw_output);
+			size_t allocated_size = 0;
+			uint32_t flags = use_hex ? FUN_JSON_PRETTY_PRINT_USE_HEX_FOR_NUMBERS : 0;
+			char *pp = fun_json_pretty_print(raw_output, 0, "    ", 100, flags, &allocated_size);
+			printf(OUTPUT_COLORIZE "output => %s" NORMAL_COLORIZE "\n",
+				pp);
+			free(pp);
 		}
 	} else {
 		fun_json_printf(OUTPUT_COLORIZE "output => %s" NORMAL_COLORIZE "\n",
 				raw_output);
-		char *pp = fun_json_to_text(raw_output);
+		size_t allocated_size = 0;
+		uint32_t flags = use_hex ? FUN_JSON_PRETTY_PRINT_USE_HEX_FOR_NUMBERS : 0;
+		char *pp = fun_json_pretty_print(raw_output, 0, "    ", 100, flags, &allocated_size);
 		if (pp) {
 			write(cmd_sock->fd, pp, strlen(pp));
 			write(cmd_sock->fd, "\n", 1);
@@ -861,6 +896,19 @@ static void _do_recv_cmd(struct dpcsock *funos_sock,
         fun_json_release(raw_output);
 }
 
+static void terminal_set_per_character(bool enable)
+{
+	/* enable per-character input for interactive input */
+	static struct termios tios;
+	tcgetattr(STDIN_FILENO, &tios);
+	if (enable) {
+		tios.c_lflag &= ~(ICANON | ECHO);
+	} else {
+		tios.c_lflag |= ICANON | ECHO;
+	}
+	tcsetattr(STDIN_FILENO, TCSANOW, &tios);
+}
+
 static void _do_interactive(struct dpcsock *funos_sock,
 			    struct dpcsock *cmd_sock)
 {
@@ -871,10 +919,7 @@ static void _do_interactive(struct dpcsock *funos_sock,
 
     if (cmd_sock->mode == SOCKMODE_TERMINAL) {
 	    /* enable per-character input for interactive input */
-	    static struct termios tios;
-	    tcgetattr(STDIN_FILENO, &tios);
-	    tios.c_lflag &= ~(ICANON | ECHO);
-	    tcsetattr(STDIN_FILENO, TCSANOW, &tios);
+	    terminal_set_per_character(true);
     }
 
 
@@ -942,7 +987,10 @@ static void _do_interactive(struct dpcsock *funos_sock,
 		    _do_recv_cmd(funos_sock, cmd_sock, false);
 	    }
     }
-
+    if (cmd_sock->mode == SOCKMODE_TERMINAL) {
+	    /* reset terminal */
+	    terminal_set_per_character(false);
+    }
     free(line);
 }
 
@@ -995,7 +1043,9 @@ int json_handle_req(struct dpcsock *jsock, const char *path,
             printf("invalid json returned\n");
             return -1;
         }
-        char *pp2 = fun_json_to_text(output);
+	size_t allocated_size = 0;
+	uint32_t flags = use_hex ? FUN_JSON_PRETTY_PRINT_USE_HEX_FOR_NUMBERS : 0;
+	char *pp2 = fun_json_pretty_print(output, 0, "    ", 100, flags, &allocated_size);
         printf("output => %s\n", pp2);
 
 	if (!pp2)

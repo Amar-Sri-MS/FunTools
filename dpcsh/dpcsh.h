@@ -14,6 +14,9 @@
 /* pre-decl */
 struct dpcsock;
 
+// Flag that controls how JSON is printed
+extern bool use_hex;
+
 /* init the macros */
 extern void dpcsh_load_macros(void);
 
