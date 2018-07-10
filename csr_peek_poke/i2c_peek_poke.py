@@ -39,7 +39,7 @@ def byte_array_to_8byte_words_be(byte_array):
 
 data = None
 
-def i2c_csr_peek(csr_addr, csr_width_words):
+def i2c_csr_peek(h, csr_addr, csr_width_words):
     print("Starting I2C peek ....!")
     """
     n_devs, devs = aa_find_devices(1)
@@ -63,38 +63,43 @@ def i2c_csr_peek(csr_addr, csr_width_words):
     #print "Configure i2c mode! status:{0}".format(status)
     status = aa_i2c_bitrate(h, 1)
     #print "Configure bitrate! status:{0}".format(status)
-
+    """
     csr_addr = struct.pack('>Q', csr_addr)
     csr_addr = list(struct.unpack('BBBBBBBB', csr_addr))
     csr_addr = csr_addr[3:]
     cmd = array('B', [0x00])
     cmd.extend(csr_addr)
+    print cmd
     sent_bytes = aa_i2c_write(h, constants.F1_I2C_SLAVE_ADDR, 0, cmd)
     print "sent_bytes: {0}".format(sent_bytes)
-
     if sent_bytes != len(cmd):
         print "Write Error! sent_bytes:{0} Expected: {1}".format(sent_bytes, len(data))
+        """
         status = aa_i2c_free_bus(h)
         print("Free Bus: {0}".format(aa_status_string(status)))
         status = aa_close(h)
         print("Close: {0}".format(aa_status_string(status)))
+        """
         return None
-
-    #print csr_width_words
+    print csr_width_words
     csr_width = csr_width_words * 8
     read_data = array('B', [00]*(csr_width+1))
     read_bytes = aa_i2c_read(h, constants.F1_I2C_SLAVE_ADDR, 0, read_data)
-    if read_bytes != (csr_width + 1):
+    print read_bytes
+    print read_data
+    if read_bytes[0] != (csr_width + 1):
         print "Read Error!  read_bytes:{0} Expected: {1}".format(read_bytes, (csr_width + 1))
         return None
     if read_data[0] != 0x80:
         print "Read status returned Error! {}".format(aa_status_string(read_data[0]))
         return None
 
+    """
     status = aa_i2c_free_bus(h)
     print("Free Bus: {0}".format(aa_status_string(status)))
     status = aa_close(h)
     print("Close: {0}".format(aa_status_string(status)))
+    """
 
     read_data = read_data[1:]
     word_array = byte_array_to_8byte_words_be(read_data)
@@ -123,8 +128,9 @@ def i2c_csr_peek(csr_addr, csr_width_words):
     print word_array
     print "peek*****6"
     return word_array
+    """
 
-def i2c_csr_poke(csr_addr, csr_width_words, word_array):
+def i2c_csr_poke(h, csr_addr, csr_width_words, word_array):
     print("Starting I2C poke ....!")
     print csr_width_words
     print word_array
@@ -151,53 +157,44 @@ def i2c_csr_poke(csr_addr, csr_width_words, word_array):
     print "Configure bitrate! status:{0}".format(status)
     """
 
-    print "poke0"
     print word_array
-    print "poke1"
     csr_addr = struct.pack('>Q', csr_addr)
-    print "poke2"
     csr_addr = list(struct.unpack('BBBBBBBB', csr_addr))
-    print "poke3"
     csr_addr = csr_addr[3:]
-    print "poke4"
     cmd_data = array('B', [0x01])
-    print "poke5"
     cmd_data.extend(csr_addr)
-    print "poke6"
-
     for word in word_array:
-        print "poke7 word: {0}".format(word)
         word = struct.pack('>Q', word)
-        print "poke8 word: {0}".format(word)
         word = list(struct.unpack('BBBBBBBB', word))
-        print "poke9 word: {0}".format(word)
         cmd_data.extend(word)
-        print "poke10 word: {0}".format(word)
 
-    print "poking bytes: {}".format([hex(x) for x in cmd_data])
-    global data
-    data = cmd_data[6:] #remove this
-    """
+    print "poking bytes: {0}".format([hex(x) for x in cmd_data])
     sent_bytes = aa_i2c_write(h, constants.F1_I2C_SLAVE_ADDR, 0, cmd_data)
     print "sent_bytes: {0}".format(sent_bytes)
 
-    if sent_bytes != len(cmd):
-        print "Write Error! sent_bytes:{0} Expected: {1}".format(sent_bytes, len(data))
-        status = aa_i2c_free_bus(h)
-        print("Free Bus: {0}".format(aa_status_string(status)))
-        status = aa_close(h)
-        print("Close: {0}".format(aa_status_string(status)))
-        return False
+    import traceback
+    try:
+        if sent_bytes != len(cmd_data):
+            print "Write Error! sent_bytes:{0} Expected: {1}".format(sent_bytes, len(data))
+            """
+            status = aa_i2c_free_bus(h)
+            print("Free Bus: {0}".format(aa_status_string(status)))
+            status = aa_close(h)
+            print("Close: {0}".format(aa_status_string(status)))
+            """
+            return False
 
-    status = array('B', [00])
-    status_bytes = aa_i2c_read(h, constants.F1_I2C_SLAVE_ADDR, 0, status)
-    if status_bytes != (csr_width + 1):
-        print "Read Error!  status_bytes:{0} Expected: {1}".format(status_bytes, 1)
-        return False
-    if status[0] != 0x80:
-        print "Write status returned Error! {}".format(aa_status_string(status[0]))
-        return False
-    """
+        status = array('B', [00])
+        status_bytes = aa_i2c_read(h, constants.F1_I2C_SLAVE_ADDR, 0, status)
+        if status_bytes[0] != 1:
+            print "Read Error!  status_bytes:{0} Expected: {1}".format(status_bytes, 1)
+            return False
+        if status[0] != 0x80:
+            print "Write status returned Error! {0}".format(aa_status_string(status[0]))
+            return False
+    except Exception as e:
+        logging.error(traceback.format_exc())
+    #"""
     return True
 
 
@@ -232,7 +229,6 @@ class I2CFactoryThread(jsocket.ServerFactoryThread):
         if obj != '':
             logger.info(obj)
             if obj.get("CONNECT", None):
-                """
                 if self.i2c_handle:
                     self.i2c_handle.close()
                     aa_i2c_free_bus(self.i2c_handle)
@@ -268,7 +264,6 @@ class I2CFactoryThread(jsocket.ServerFactoryThread):
                     self.send_obj({"STATUS":[False, status_msg]})
                     print status_msg
                     return
-                """
                 self.send_obj({"STATUS":[True, "i2c device is ready!"]})
             elif obj.get("CSR_PEEK", None):
                 print "Peeking ..."
@@ -282,7 +277,7 @@ class I2CFactoryThread(jsocket.ServerFactoryThread):
                     self.send_obj({"STATUS":[False, "Invalid peek args!"]})
                     return
                 print "csr_addr: {0} csr_width_words:{1}".format(csr_addr, csr_width_words)
-                word_array = i2c_csr_peek(csr_addr, csr_width_words)
+                word_array = i2c_csr_peek(self.i2c_handle, csr_addr, csr_width_words)
                 #word_array = [00]
                 print word_array
                 print "Peeking ..."
@@ -303,10 +298,9 @@ class I2CFactoryThread(jsocket.ServerFactoryThread):
                     self.send_obj({"STATUS":[False, "Invalid peek args!"]})
                     return
                 print "csr_addr: {0} csr_width_words:{1} word_array:{2}".format(csr_addr, csr_width_words, word_array)
-                status = i2c_csr_poke(csr_addr, csr_width_words, word_array)
+                status = i2c_csr_poke(self.i2c_handle, csr_addr, csr_width_words, word_array)
                 self.send_obj({"STATUS":[status, ""]})
             elif obj.get("DISCONNECT", None):
-                """
                 #self.send_obj({"STATUS": [True, "Disconnected"]})
                 print "Disconnect request"
                 status = aa_i2c_free_bus(self.i2c_handle)
@@ -317,8 +311,6 @@ class I2CFactoryThread(jsocket.ServerFactoryThread):
                 status_msg = "Close: {0}".format(aa_status_string(status))
                 #print status_msg
                 print "Disconneced ***********"
-                """
-
                 self.send_obj({"STATUS":[True, "I2c is disconnected"]})
             else:
                 print "Invalid msg!"

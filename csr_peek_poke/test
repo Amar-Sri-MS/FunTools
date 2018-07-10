@@ -506,8 +506,6 @@ def csr_peek(args):
     #word_array = i2c_csr_peek(csr_addr, csr_width_words) #Remove this
     """
     print word_array
-
-    print len(word_array)
     if word_array is None:
         print "Error in csr i2c peek!!!"
         return None
