@@ -527,6 +527,9 @@ def csr_poke(args):
     csr_width_bytes = csr_get_width_bytes(csr_data)
     csr_width_words = csr_width_bytes >> 3
 
+    if i2c_server_socket is None:
+        print "Error! Not connected to i2c server!"
+        return
     if raw_value is not None:
         word_array = list()
         for word in raw_value:
@@ -543,14 +546,12 @@ def csr_poke(args):
             return None
         print hex_word_dump(word_array)
     elif field_list is not None:
-        word_array = None
-        if i2c_server_socket is not None:
-            word_array = i2c_remote_peek(i2c_server_socket, csr_addr, csr_width_words)
-            if word_array is None or not word_array:
-                print "Error in csr i2c peek!!!"
-                return None
-        print "Peeked value: {0}".format(hex_word_dump(word_array))
+        word_array = i2c_remote_peek(i2c_server_socket, csr_addr, csr_width_words)
+        if word_array is None or not word_array:
+            print "Error in csr i2c peek!!!"
+            return None
 
+        print "Peeked value: {0}".format(hex_word_dump(word_array))
         valid_field_list = csr_get_valid_field_list(csr_data)
         for field in field_list:
             field_name = field[0]
@@ -585,16 +586,11 @@ def csr_poke(args):
     else:
         print "Invalid input values! poke should have either field list with values or raw values"
         return None
-    if i2c_server_socket:
-        status = i2c_remote_poke(i2c_server_socket, csr_addr, csr_width_words, word_array)
-        if status == True:
-            print "Poke Success!"
-            return
-        else:
-            print "Error! poke failed!"
-            return
+    status = i2c_remote_poke(i2c_server_socket, csr_addr, csr_width_words, word_array)
+    if status == True:
+        print "Poke Success!"
     else:
-        print "Error! Not connected to i2c server!"
+        print "Error! poke failed!"
         return
 
 def csr_list(args):
@@ -663,6 +659,7 @@ def i2c_remote_peek(s, csr_addr, csr_width_words):
     status = msg.get("STATUS", None)
     if status[0] == True:
         word_array = msg.get("DATA", None)
+        return word_array
     else:
         print "I2C peek over socket failed!"
         return None

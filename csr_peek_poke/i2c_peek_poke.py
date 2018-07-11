@@ -117,18 +117,18 @@ def i2c_csr_peek(h, csr_addr, csr_width_words):
         print "Read Error!  read_bytes:{0} Expected: {1}".format(read_bytes, (csr_width + 1))
         return None
     if read_data[0] != 0x80:
-        print "Read status returned Error! {}".format(aa_status_string(read_data[0]))
+        print "Read status returned Error! {0}".format(aa_status_string(read_data[0]))
         return None
 
     read_data = read_data[1:]
     word_array = byte_array_to_8byte_words_be(read_data)
-    print "Peeked word_array: {}".format(word_array)
+    print "Peeked word_array: {0}".format(word_array)
     return word_array
 
 def i2c_csr_poke(h, csr_addr, csr_width_words, word_array):
     print("Starting I2C poke. csr_addr: {0} csr_width_words: {1} word_array:{2}").format(hex(csr_addr), csr_width_words, word_array)
     if csr_width_words != len(word_array):
-        print "Insufficient data! Expected: {} data length: {}".format(csr_width_words, len(word_array))
+        print "Insufficient data! Expected: {0} data length: {0}".format(csr_width_words, len(word_array))
         return False
 
     csr_addr = struct.pack('>Q', csr_addr)
