@@ -1,113 +1,295 @@
 #!/usr/bin/env python
-# coding=utf-8
-"""A simple example demonstrating how to use Argparse to support subcommands.
-
-
-This example shows an easy way for a single command to have many subcommands, each of which takes different arguments
-and provides separate contextual help.
-"""
+import argparse, json
+import string, os
+import collections
 import cmd2
-from cmd2 import with_argparser
-import argparse
-import string, json, collections
-import os
-import argparse as ap
-import argcomplete
-from i2c_peek_poke import i2c_csr_peek, i2c_csr_poke
-from array import array
 import binascii
 import socket
 import jsocket
 import time
 import traceback
+import argcomplete
+from array import array
+from cmd2 import with_argparser
 
-def singleton(cls):
-    instances = {}
-    def getinstance():
-        if cls not in instances:
-            instances[cls] = cls()
-        return instances[cls]
-    return getinstance
+def i2c_remote_connect(ip_address):
+    s = jsocket.JsonClient(address=ip_address, port=55667)
+    if s is None:
+        print "Failed to connect to i2c server {0}".format(ip_address)
+        return None
+    args = 1 #Dummy
+    s.connect()
+    time.sleep(0.5)
+    s.send_obj({"CONNECT": args})
+    read_obj = s.read_obj()
+    status = read_obj.get("STATUS", None)
+    if status[0] == True:
+        print status[1]
+    else:
+        #print "Error! I2C connection failure!"
+        print status[1]
+    return s
 
-@singleton
-class csr_metadata:
-    def __init__(self):
-        print "Loading csr metadata!"
-        loc = get_file_abs_path("csr_metadata.json")
-        print "Metadata file: {}".format(loc)
-        self.metadata = json.load(open(loc))
+def i2c_remote_peek(s, csr_addr, csr_width_words):
+    if s is None or csr_addr is None or csr_width_words is None \
+            or csr_addr == 0 or csr_width_words < 1:
+        print "Invalid peek arguments!"
+        return None
+    msg = dict()
+    csr_peek_args = dict()
+    csr_peek_args["csr_addr"] = csr_addr
+    csr_peek_args["csr_width"] = csr_width_words
+    msg["CSR_PEEK"] = csr_peek_args
+    s.send_obj(msg)
+    msg = s.read_obj()
+    print msg
+    status = msg.get("STATUS", None)
+    if status[0] == True:
+        word_array = msg.get("DATA", None)
+        return word_array
+    else:
+        print "I2C peek over socket failed!"
+        return None
 
-    def set_metadata(self, metadata):
-        self.metadata = metadata
+def i2c_remote_poke(s, csr_addr, csr_width_words, word_array):
+    if s is None or csr_addr is None \
+            or csr_width_words is None or word_array is None \
+            or csr_addr == 0 or csr_width_words < 1:
+        print "Invalid poke arguments!"
+        return False
 
-    def csr_equal(self, x, rn_class, rn_inst, an_path, an):
-        if rn_class:
-            if x["ring_name"] != rn_class:
-                return False
-        if rn_inst:
-            if x["ring_inst"] != rn_inst:
-                return False
-        if an:
-            if x["an"] != an:
-                return False
-        if an_path:
-            if x["an_path"] != an_path:
-                return False
-
+    msg = dict()
+    csr_poke_args = dict()
+    csr_poke_args["csr_addr"] = csr_addr
+    csr_poke_args["csr_width"] = csr_width_words
+    csr_poke_args["csr_val"] = word_array
+    msg["CSR_POKE"] = csr_poke_args
+    s.send_obj(msg)
+    msg = s.read_obj()
+    status = msg.get("STATUS", None)
+    if status[0] == True:
+        print "poke success!"
         return True
+    else:
+        print "Error! poke failed!: {0}".format(status[1])
+        return False
 
-    def get_csr_def(self, csr_name, rn_class=None, rn_inst=None, an_path=None, an=None):
-        csr_defs_lst = self.metadata.get(csr_name, [])
-        if not csr_defs_lst:
+def i2c_remote_disconnect(s):
+    if s is None:
+        print "Not connected to server"
+        return
+    args = 1 #Dummy
+    s.send_obj({"DISCONNECT": args})
+    read_obj = s.read_obj()
+    status = read_obj.get("STATUS", None)
+    if status[0] == True:
+        print "Success! {0}".format(status[1])
+        s.close()
+        return True
+    else:
+        print "Error! {0}".format(status[1])
+        s.close()
+        return False
+
+def csr_peek(args):
+    global i2c_server_socket
+    input_args = csr_get_peek_args(args)
+    csr_name = input_args.get("csr_name", None)
+    csr_inst = input_args.get("csr_inst", None)
+    csr_entry = input_args.get("csr_entry", None)
+    ring_name = input_args.get("ring_name", None)
+    ring_inst = input_args.get("ring_inst", None)
+    anode_name = input_args.get("anode_name", None)
+    anode_inst = input_args.get("anode_inst", None)
+    anode_path = input_args.get("anode_path", None)
+    field_list = input_args.get("field_list", None)
+
+    csr_data = csr_get_metadata(csr_name, csr_inst=csr_inst, csr_entry=csr_entry,
+            ring_name=ring_name, ring_inst=ring_inst, anode_name=anode_name,
+            anode_inst=anode_inst, anode_path=anode_path)
+
+    if csr_data is None:
+        print "Error! Failed to get metadata for csr:{} !!!".format(csr_name)
+        return
+
+    csr_addr = csr_get_addr(csr_data, anode_inst=anode_inst,
+                            csr_inst=csr_inst, csr_entry=csr_entry)
+    if csr_addr is None:
+        print "Error get csr address!!!"
+        return
+    #print "csr address: {0}".format(hex(csr_addr))
+
+    csr_width_bytes = csr_get_width_bytes(csr_data)
+    csr_width_words = csr_width_bytes >> 3
+    word_array = None
+    if i2c_server_socket is not None:
+        word_array = i2c_remote_peek(i2c_server_socket, csr_addr, csr_width_words)
+        if word_array is None or not word_array:
+            print "Error in csr i2c peek!!!"
             return None
-        else:
-            csr_defs_lst = [x for x in csr_defs_lst        \
-                            if self.csr_equal(x, rn_class, \
-                            rn_inst, an_path, an)]
+        print "Peeked value: {0}".format(hex_word_dump(word_array))
+        print "I2C peek is success!"
+        csr_show(csr_data, word_array, field_list)
+    else:
+        print "Error! Not connected to i2c server!"
 
-        return csr_defs_lst
+def csr_poke(args):
+    input_args = csr_get_poke_args(args)
+    csr_name = input_args.get("csr_name", None)
+    csr_inst = input_args.get("csr_inst", None)
+    csr_entry = input_args.get("csr_entry", None)
+    ring_name = input_args.get("ring_name", None)
+    ring_inst = input_args.get("ring_inst", None)
+    anode_name = input_args.get("anode_name", None)
+    anode_inst = input_args.get("anode_inst", None)
+    anode_path = input_args.get("anode_path", None)
+    field_list = input_args.get("field_list", None)
+    raw_value = input_args.get("raw_value", None)
 
-    def get_csr_list(self):
-        return list(self.metadata.keys())
+    csr_data = csr_get_metadata(csr_name, csr_inst=csr_inst, csr_entry=csr_entry,
+            ring_name=ring_name, ring_inst=ring_inst, anode_name=anode_name,
+            anode_inst=anode_inst, anode_path=anode_path)
 
-    def csr_inst_verify(self, csr_name):
-        csr_list = self.get_csr_def(csr_name=csr_name)
+    if csr_data is None:
+        print "Error! Failed to get metadata for csr:{} !!!".format(csr_name)
+        return
 
+    csr_addr = csr_get_addr(csr_data, anode_inst=anode_inst,
+                            csr_inst=csr_inst, csr_entry=csr_entry)
+    if csr_addr is None:
+        print "Error get csr address!!!"
+        return
 
-def get_csr_list():
-    return csr_metadata().get_csr_list()
+    csr_width_bytes = csr_get_width_bytes(csr_data)
+    csr_width_words = csr_width_bytes >> 3
 
-def get_file_abs_path(loc):
-    if not os.path.isabs(loc):
-        loc = os.path.join(os.getcwd(), loc)
-    assert os.path.exists(loc), "{}: directory does not exist!".format(loc)
-    return loc
+    if i2c_server_socket is None:
+        print "Error! Not connected to i2c server!"
+        return
+    if raw_value is not None:
+        word_array = list()
+        for word in raw_value:
+            value = str_to_int(word)
+            if value is None:
+                print "Invalid field input value: \"{0}\". Must be positive integer or hexadecimal".format(word)
+                return None
+            word_array.append(value)
 
+        if len(word_array) != csr_width_words:
+            print ("Number of raw value words should match csr width.\n"
+                  " csr: {0}.\nExpected {1} word(s) but given {2}.").format(
+                  json_obj_pretty(csr_data), csr_width_words, len(word_array))
+            return None
+        print hex_word_dump(word_array)
+    elif field_list is not None:
+        word_array = i2c_remote_peek(i2c_server_socket, csr_addr, csr_width_words)
+        if word_array is None or not word_array:
+            print "Error in csr i2c peek!!!"
+            return None
 
-class MyFormatter(argparse.HelpFormatter):
-    # use defined argument order to display usage
-    def _format_usage(self, usage, actions, groups, prefix):
-        if prefix is None:
-            prefix = 'usage: '
+        print "Peeked value: {0}".format(hex_word_dump(word_array))
+        valid_field_list = csr_get_valid_field_list(csr_data)
+        for field in field_list:
+            field_name = field[0]
+            if field_name not in valid_field_list:
+                print "Invalid field name: {0}. Valid fields are: {1}".format(field_name, valid_field_list.keys())
+                return None
+            str_word_array = field[1:]
+            field_word_array = list()
+            for word in str_word_array:
+                value = str_to_int(word)
+                if value is None:
+                    print "Invalid field input value: \"{0}\". Must be positive integer or hexadecimal".format(word)
+                    return None
+                field_word_array.append(value)
 
-        # if usage is specified, use that
-        if usage is not None:
-            usage = usage % dict(prog=self._prog)
+            field_obj = valid_field_list.get(field_name, None)
+            field_width = field_obj.get("fld_width", None)
+            field_width_words = (field_width + 63) / 64
+            field_offset = field_obj.get("fld_offset", None)
+            if not field_width_words:
+                sys.exit(1)
+            if len(field_word_array) > field_width_words:
+                print ("Number of field value words should match the length"
+                       " for the field. csr:\n{0}.\nExpected {1} words"
+                       " but given {2}.").format(json_obj_pretty(csr_data),
+                       field_width_words, len(field_word_array))
+                return None
+            csr_set_field(field_offset, field_width, word_array, field_word_array)
+            print field_name
+            print field_word_array
+            print hex_word_dump(word_array)
+    else:
+        print "Invalid input values! poke should have either field list with values or raw values"
+        return None
+    status = i2c_remote_poke(i2c_server_socket, csr_addr, csr_width_words, word_array)
+    if status == True:
+        print "Poke Success!"
+    else:
+        print "Error! poke failed!"
+        return
 
-        # if no optionals or positionals are available, usage is just prog
-        elif usage is None and not actions:
-            usage = '%(prog)s' % dict(prog=self._prog)
-        elif usage is None:
-            prog = '%(prog)s' % dict(prog=self._prog)
-            # build full usage string
-            action_usage = self._format_actions_usage(actions, groups) # NEW
-            usage = ' '.join([s for s in [prog, action_usage] if s])
-            # omit the long line wrapping code
-        # prefix with 'usage:'
-        return '%s%s\n\n' % (prefix, usage)
+def csr_list(args):
+    csr_name = args.csr[0]
+    if not csr_name:
+        print "csr name is empty! Provide valid csr name!"
+        return
+    ring_name = args.ring[0] if args.ring else None
+    anode_name = args.anode[0] if args.anode else None
 
+    csr_list = csr_metadata().get_csr_def(csr_name, rn_class=ring_name, an=anode_name)
+    if csr_list is None:
+        print "csr: {} doesnot exist in database!.".format(csr_name)
+        return
+    print "Matching csr entries for csr:{0}".format(csr_name)
+    print json_obj_pretty(csr_list)
 
-def csr_get_args(args):
+def csr_find(args):
+    csr_name = args.csr[0]
+    if not csr_name:
+        print "csr name sub-string is empty!"
+        return
+
+    csr_list = csr_metadata().get_csr_list()
+    matched_csr_list = list()
+    for x in csr_list:
+        if csr_name in x:
+            matched_csr_list.append(x)
+    if not matched_csr_list:
+        print 'There are no csrs in database matching "{0}"!'.format(csr_name)
+        return
+    print 'Matching csr entries for "{0}"'.format(csr_name)
+    print json_obj_pretty(matched_csr_list)
+
+i2c_server_socket = None
+def server_connect(args):
+    global i2c_server_socket
+    ip_address = args.ip_addr[0]
+    try:
+        socket.inet_aton(ip_address)
+        # legal
+    except socket.error:
+        print "Invalid ip address!"
+        return
+    if i2c_server_socket is not None:
+        i2c_remote_disconnect(i2c_server_socket)
+        i2c_server_socket = None
+
+    s = i2c_remote_connect(ip_address)
+    if s is not None:
+        i2c_server_socket = s
+
+def server_disconnect(args):
+    global i2c_server_socket
+    if i2c_server_socket is None:
+        print "Not connected to server"
+        return
+
+    i2c_remote_disconnect(i2c_server_socket)
+    i2c_server_socket = None
+    return
+
+def csr_get_peek_args(args):
     input_args = dict()
     input_args["csr_name"] = args.csr[0]
     input_args["csr_inst"] = int(args.csr_inst[0], 10) if args.csr_inst else None
@@ -216,7 +398,6 @@ def csr_get_addr(csr_data, anode_inst=None, csr_inst=None, csr_entry=None):
 
     return (anode_addr + csr_addr)
 
-
 def csr_get_width_bytes(csr_data):
     csr_width = csr_data.get("csr_width", None)
     if csr_width is None:
@@ -226,27 +407,6 @@ def csr_get_width_bytes(csr_data):
     csr_width_bytes = csr_width >> 0x3
 
     return csr_width_bytes
-
-
-def byte_array_to_8byte_words_be(byte_array):
-    words = list()
-    byte_attay_size = len(byte_array)
-    word_array_size = byte_attay_size / 8
-    for i in range(word_array_size):
-        val = int(binascii.hexlify(byte_array[i:i+8]), 16)
-        words.extend([val])
-        i += 8
-
-    remaining_bytes = len(byte_array)%8
-    if remaining_bytes != 0:
-        last_word = byte_array[-remaining_bytes:]
-        last_word.extend(array('B', [0x00]*(8 - remaining_bytes)))
-        val = int(binascii.hexlify(byte_array[i, i+8]), 16)
-        words.extend(val)
-
-    #print [hex(x) for x in words]
-    return words
-
 
 def csr_get_field(fld_pos, fld_size, in_reg):
     BPW = 64
@@ -454,283 +614,6 @@ def hex_word_dump(word_array):
     hex_word_array += ']'
     return hex_word_array
 
-
-def csr_peek(args):
-    global i2c_server_socket
-    input_args = csr_get_args(args)
-    csr_name = input_args.get("csr_name", None)
-    csr_inst = input_args.get("csr_inst", None)
-    csr_entry = input_args.get("csr_entry", None)
-    ring_name = input_args.get("ring_name", None)
-    ring_inst = input_args.get("ring_inst", None)
-    anode_name = input_args.get("anode_name", None)
-    anode_inst = input_args.get("anode_inst", None)
-    anode_path = input_args.get("anode_path", None)
-    field_list = input_args.get("field_list", None)
-
-    csr_data = csr_get_metadata(csr_name, csr_inst=csr_inst, csr_entry=csr_entry,
-            ring_name=ring_name, ring_inst=ring_inst, anode_name=anode_name,
-            anode_inst=anode_inst, anode_path=anode_path)
-
-    if csr_data is None:
-        print "Error! Failed to get metadata for csr:{} !!!".format(csr_name)
-        return
-
-    csr_addr = csr_get_addr(csr_data, anode_inst=anode_inst,
-                            csr_inst=csr_inst, csr_entry=csr_entry)
-    if csr_addr is None:
-        print "Error get csr address!!!"
-        return
-    #print "csr address: {0}".format(hex(csr_addr))
-
-    csr_width_bytes = csr_get_width_bytes(csr_data)
-    csr_width_words = csr_width_bytes >> 3
-    word_array = None
-    if i2c_server_socket is not None:
-        word_array = i2c_remote_peek(i2c_server_socket, csr_addr, csr_width_words)
-        if word_array is None or not word_array:
-            print "Error in csr i2c peek!!!"
-            return None
-        print "Peeked value: {0}".format(hex_word_dump(word_array))
-        print "I2C peek is success!"
-        csr_show(csr_data, word_array, field_list)
-    else:
-        print "Error! Not connected to i2c server!"
-
-def csr_poke(args):
-    input_args = csr_get_poke_args(args)
-    csr_name = input_args.get("csr_name", None)
-    csr_inst = input_args.get("csr_inst", None)
-    csr_entry = input_args.get("csr_entry", None)
-    ring_name = input_args.get("ring_name", None)
-    ring_inst = input_args.get("ring_inst", None)
-    anode_name = input_args.get("anode_name", None)
-    anode_inst = input_args.get("anode_inst", None)
-    anode_path = input_args.get("anode_path", None)
-    field_list = input_args.get("field_list", None)
-    raw_value = input_args.get("raw_value", None)
-
-    csr_data = csr_get_metadata(csr_name, csr_inst=csr_inst, csr_entry=csr_entry,
-            ring_name=ring_name, ring_inst=ring_inst, anode_name=anode_name,
-            anode_inst=anode_inst, anode_path=anode_path)
-
-    if csr_data is None:
-        print "Error! Failed to get metadata for csr:{} !!!".format(csr_name)
-        return
-
-    csr_addr = csr_get_addr(csr_data, anode_inst=anode_inst,
-                            csr_inst=csr_inst, csr_entry=csr_entry)
-    if csr_addr is None:
-        print "Error get csr address!!!"
-        return
-
-    csr_width_bytes = csr_get_width_bytes(csr_data)
-    csr_width_words = csr_width_bytes >> 3
-
-    if i2c_server_socket is None:
-        print "Error! Not connected to i2c server!"
-        return
-    if raw_value is not None:
-        word_array = list()
-        for word in raw_value:
-            value = str_to_int(word)
-            if value is None:
-                print "Invalid field input value: \"{0}\". Must be positive integer or hexadecimal".format(word)
-                return None
-            word_array.append(value)
-
-        if len(word_array) != csr_width_words:
-            print ("Number of raw value words should match csr width.\n"
-                  " csr: {0}.\nExpected {1} word(s) but given {2}.").format(
-                  json_obj_pretty(csr_data), csr_width_words, len(word_array))
-            return None
-        print hex_word_dump(word_array)
-    elif field_list is not None:
-        word_array = i2c_remote_peek(i2c_server_socket, csr_addr, csr_width_words)
-        if word_array is None or not word_array:
-            print "Error in csr i2c peek!!!"
-            return None
-
-        print "Peeked value: {0}".format(hex_word_dump(word_array))
-        valid_field_list = csr_get_valid_field_list(csr_data)
-        for field in field_list:
-            field_name = field[0]
-            if field_name not in valid_field_list:
-                print "Invalid field name: {0}. Valid fields are: {1}".format(field_name, valid_field_list.keys())
-                return None
-            str_word_array = field[1:]
-            field_word_array = list()
-            for word in str_word_array:
-                value = str_to_int(word)
-                if value is None:
-                    print "Invalid field input value: \"{0}\". Must be positive integer or hexadecimal".format(word)
-                    return None
-                field_word_array.append(value)
-
-            field_obj = valid_field_list.get(field_name, None)
-            field_width = field_obj.get("fld_width", None)
-            field_width_words = (field_width + 63) / 64
-            field_offset = field_obj.get("fld_offset", None)
-            if not field_width_words:
-                sys.exit(1)
-            if len(field_word_array) > field_width_words:
-                print ("Number of field value words should match the length"
-                       " for the field. csr:\n{0}.\nExpected {1} words"
-                       " but given {2}.").format(json_obj_pretty(csr_data),
-                       field_width_words, len(field_word_array))
-                return None
-            csr_set_field(field_offset, field_width, word_array, field_word_array)
-            print field_name
-            print field_word_array
-            print hex_word_dump(word_array)
-    else:
-        print "Invalid input values! poke should have either field list with values or raw values"
-        return None
-    status = i2c_remote_poke(i2c_server_socket, csr_addr, csr_width_words, word_array)
-    if status == True:
-        print "Poke Success!"
-    else:
-        print "Error! poke failed!"
-        return
-
-def csr_list(args):
-    csr_name = args.csr[0]
-    if not csr_name:
-        print "csr name is empty! Provide valid csr name!"
-        return
-    ring_name = args.ring[0] if args.ring else None
-    anode_name = args.anode[0] if args.anode else None
-
-    csr_list = csr_metadata().get_csr_def(csr_name, rn_class=ring_name, an=anode_name)
-    if csr_list is None:
-        print "csr: {} doesnot exist in database!.".format(csr_name)
-        return
-    print "Matching csr entries for csr:{0}".format(csr_name)
-    print json_obj_pretty(csr_list)
-
-def csr_find(args):
-    csr_name = args.csr[0]
-    if not csr_name:
-        print "csr name sub-string is empty!"
-        return
-
-    csr_list = csr_metadata().get_csr_list()
-    matched_csr_list = list()
-    for x in csr_list:
-        if csr_name in x:
-            matched_csr_list.append(x)
-    if not matched_csr_list:
-        print 'There are no csrs in database matching "{0}"!'.format(csr_name)
-        return
-    print 'Matching csr entries for "{0}"'.format(csr_name)
-    print json_obj_pretty(matched_csr_list)
-
-def i2c_remote_connect(ip_address):
-    s = jsocket.JsonClient(address=ip_address, port=55667)
-    if s is None:
-        print "Failed to connect to i2c server {0}".format(ip_address)
-        return None
-    s.connect()
-    time.sleep(0.5)
-    s.send_obj({"CONNECT":"i2c"})
-    read_obj = s.read_obj()
-    status = read_obj.get("STATUS", None)
-    if status[0] == True:
-        print status[1]
-    else:
-        #print "Error! I2C connection failure!"
-        print status[1]
-    return s
-
-
-def i2c_remote_peek(s, csr_addr, csr_width_words):
-    if s is None or csr_addr is None or csr_width_words is None \
-            or csr_addr == 0 or csr_width_words < 1:
-        print "Invalid peek arguments!"
-        return None
-    msg = dict()
-    csr_peek_args = dict()
-    csr_peek_args["csr_addr"] = csr_addr
-    csr_peek_args["csr_width"] = csr_width_words
-    msg["CSR_PEEK"] = csr_peek_args
-    s.send_obj(msg)
-    msg = s.read_obj()
-    print msg
-    status = msg.get("STATUS", None)
-    if status[0] == True:
-        word_array = msg.get("DATA", None)
-        return word_array
-    else:
-        print "I2C peek over socket failed!"
-        return None
-
-def i2c_remote_poke(s, csr_addr, csr_width_words, word_array):
-    if s is None or csr_addr is None \
-            or csr_width_words is None or word_array is None \
-            or csr_addr == 0 or csr_width_words < 1:
-        print "Invalid poke arguments!"
-        return False
-
-    msg = dict()
-    csr_poke_args = dict()
-    csr_poke_args["csr_addr"] = csr_addr
-    csr_poke_args["csr_width"] = csr_width_words
-    csr_poke_args["csr_val"] = word_array
-    msg["CSR_POKE"] = csr_poke_args
-    s.send_obj(msg)
-    msg = s.read_obj()
-    status = msg.get("STATUS", None)
-    if status[0] == True:
-        print "poke success!"
-        return True
-    else:
-        print "Error! poke failed!: {0}".format(status[1])
-        return False
-
-def i2c_remote_disconnect(s):
-    if s is None:
-        print "Not connected to server"
-        return
-    s.send_obj({"DISCONNECT":"i2c"})
-    read_obj = s.read_obj()
-    status = read_obj.get("STATUS", None)
-    if status[0] == True:
-        print "Success! {0}".format(status[1])
-        s.close()
-        return True
-    else:
-        print "Error! {0}".format(status[1])
-        s.close()
-        return False
-
-i2c_server_socket = None
-def server_connect(args):
-    global i2c_server_socket
-    ip_address = args.ip_addr[0]
-    try:
-        socket.inet_aton(ip_address)
-        # legal
-    except socket.error:
-        print "Invalid ip address!"
-        return
-    if i2c_server_socket is not None:
-        i2c_remote_disconnect(i2c_server_socket)
-        i2c_server_socket = None
-
-    s = i2c_remote_connect(ip_address)
-    if s is not None:
-        i2c_server_socket = s
-
-def server_disconnect(args):
-    global i2c_server_socket
-    if i2c_server_socket is None:
-        print "Not connected to server"
-        return
-
-    i2c_remote_disconnect(i2c_server_socket)
-    i2c_server_socket = None
-    return
-
 def str_to_int(s):
     if s.isdigit():
         try:
@@ -744,110 +627,17 @@ def str_to_int(s):
 
     return None
 
+def json_obj_pretty(json_obj):
+    return json.dumps(json_obj, indent=4)
 
+def get_csr_list():
+    return csr_metadata().get_csr_list()
 
-def required_length_append(nmin):
-    class CustomAction(argparse.Action):
-        def __init__(self,
-                     option_strings,
-                     dest,
-                     nargs=None,
-                     const=None,
-                     default=None,
-                     type=None,
-                     choices=None,
-                     required=False,
-                     help=None,
-                     metavar=None):
-            argparse.Action.__init__(self,
-                                     option_strings=option_strings,
-                                     dest=dest,
-                                     nargs=nargs,
-                                     const=const,
-                                     default=default,
-                                     type=type,
-                                     choices=choices,
-                                     required=required,
-                                     help=help,
-                                     metavar=metavar,
-                                     )
-            print 'Initializing CustomAction'
-            for name,value in sorted(locals().items()):
-                if name == 'self' or value is None:
-                    continue
-                print '  %s = %r' % (name, value)
-            print
-            return
-
-        def __call__(self, parser, namespace, values,
-                     option_string=None):
-            print 'Processing CustomAction for "%s"' % self.dest
-            print '  parser = %s' % id(parser)
-            print '  values = %r' % values
-            print '  option_string = %r' % option_string
-
-            if not nmin<=len(values):
-                msg='"{f}" option requires atleast {nmin} arguments'.format(
-                        f=option_string,nmin=nmin)
-                raise argparse.ArgumentTypeError(msg)
-            # Do some arbitrary processing of the input values
-            x = getattr(namespace, self.dest)
-            if x is None:
-                x = list()
-            print x
-            if isinstance(values, list):
-                x.append([ v for v in values ])
-            else:
-                x.append(values)
-            # Save the results in the namespace using the destination
-            # variable given to our constructor.
-            setattr(namespace, self.dest, x)
-    return CustomAction
-
-sparser = argparse.ArgumentParser(prog='csr', formatter_class=MyFormatter)
-subparsers = sparser.add_subparsers(help='sub-command help')
-
-parser_peek = subparsers.add_parser('peek', help="help peek", formatter_class=MyFormatter)
-#parser_peek.add_argument('csr', choices=get_csr_list(), help="csr name")
-parser_peek.add_argument('csr', nargs=1, help="csr name")
-parser_peek.set_defaults(func=csr_peek)
-parser_peek.add_argument('-i', nargs=1, metavar=('csr_inst'), dest='csr_inst', type=str, help="csr instance")
-parser_peek.add_argument('-e', nargs=1, metavar=('csr_entry'), dest='csr_entry', type=str, help="csr entry")
-parser_peek.add_argument('-f', nargs='+',  metavar=('csr_field'), dest='fields', type=str, help="field_name")
-parser_peek.add_argument('-a', nargs=2, metavar=('anode_name', 'anode_inst'), dest='anode', help="anode details")
-parser_peek.add_argument('-r', nargs=2, metavar=('ring_name', 'ring_inst'), dest='ring', type=str, help="ring details")
-parser_peek.add_argument('-p', nargs=1, metavar=('anode_path'), dest='an_path', type=str, help="anode path")
-
-parser_poke = subparsers.add_parser('poke', help="help poke", formatter_class=MyFormatter)
-parser_poke.set_defaults(func=csr_poke)
-parser_poke.add_argument('csr', nargs=1, type=str, help="csr name")
-parser_poke.add_argument('-i', nargs=1, metavar=('csr_inst'), dest='csr_inst', type=str, help="csr instance")
-parser_poke.add_argument('-e', nargs=1, metavar=('csr_entry'), dest='csr_entry', type=str, help="csr entry")
-parser_poke.add_argument('-a', nargs=2, metavar=('anode_name', 'anode_inst'), dest='anode', help="anode details")
-parser_poke.add_argument('-r', nargs=2, metavar=('ring_name', 'ring_inst'), dest='ring', type=str, help="ring details")
-parser_poke.add_argument('-p', nargs=1, metavar=('anode_path'), dest='an_path', type=str, help="anode path")
-group = parser_poke.add_mutually_exclusive_group(required=True)
-group.add_argument('-f', nargs='+',  metavar=('csr_field'), dest='fields', type=str, action=required_length_append(2), help="field_name")
-group.add_argument('-v', nargs='+',  metavar=('raw_value'), dest='raw_value', type=str, help="csr value in big-endian 64-bit words")
-
-parser_list = subparsers.add_parser('list', help="list maching csr instances", formatter_class=MyFormatter)
-parser_list.set_defaults(func=csr_list)
-parser_list.add_argument('csr', nargs=1, type=str, help="csr name")
-parser_list.add_argument('-a', nargs=1, metavar=('anode_name'), dest='anode', help="anode name")
-parser_list.add_argument('-r', nargs=1, metavar=('ring_name'), dest='ring', type=str, help="ring name")
-
-parser_find = subparsers.add_parser('find', help="find csrs maching sub-string", formatter_class=MyFormatter)
-parser_find.set_defaults(func=csr_find)
-parser_find.add_argument('csr', nargs=1, type=str, help="substring of csr name")
-
-parser_find = subparsers.add_parser('connect', help="connect to i2c server", formatter_class=MyFormatter)
-parser_find.set_defaults(func=server_connect)
-parser_find.add_argument('ip_addr', nargs=1, type=str, help="ip address of i2c server")
-
-parser_find = subparsers.add_parser('disconnect', help="disconnect from i2c server", formatter_class=MyFormatter)
-parser_find.set_defaults(func=server_disconnect)
-
-argcomplete.autocomplete(sparser)
+def get_file_abs_path(loc):
+    if not os.path.isabs(loc):
+        loc = os.path.join(os.getcwd(), loc)
+    assert os.path.exists(loc), "{}: directory does not exist!".format(loc)
+    return loc
 
 def csr_get_metadata(csr_name, csr_inst=None, csr_entry=None, ring_name=None,
                 ring_inst=None, anode_name=None, anode_inst=None, anode_path=None):
@@ -979,21 +769,189 @@ def csr_get_metadata(csr_name, csr_inst=None, csr_entry=None, ring_name=None,
     #print "Found CSR: \n{}\n".format(json.dumps(csr, indent=4))
     return csr
 
-def json_obj_pretty(json_obj):
-    return json.dumps(json_obj, indent=4)
+def singleton(cls):
+    instances = {}
+    def getinstance():
+        if cls not in instances:
+            instances[cls] = cls()
+        return instances[cls]
+    return getinstance
 
-class DEBUG(cmd2.Cmd):
+@singleton
+class csr_metadata:
+    def __init__(self):
+        print "Loading csr metadata!"
+        loc = get_file_abs_path("csr_metadata.json")
+        print "Metadata file: {}".format(loc)
+        self.metadata = json.load(open(loc))
+
+    def set_metadata(self, metadata):
+        self.metadata = metadata
+
+    def csr_equal(self, x, rn_class, rn_inst, an_path, an):
+        if rn_class:
+            if x["ring_name"] != rn_class:
+                return False
+        if rn_inst:
+            if x["ring_inst"] != rn_inst:
+                return False
+        if an:
+            if x["an"] != an:
+                return False
+        if an_path:
+            if x["an_path"] != an_path:
+                return False
+
+        return True
+
+    def get_csr_def(self, csr_name, rn_class=None, rn_inst=None, an_path=None, an=None):
+        csr_defs_lst = self.metadata.get(csr_name, [])
+        if not csr_defs_lst:
+            return None
+        else:
+            csr_defs_lst = [x for x in csr_defs_lst        \
+                            if self.csr_equal(x, rn_class, \
+                            rn_inst, an_path, an)]
+
+        return csr_defs_lst
+
+    def get_csr_list(self):
+        return list(self.metadata.keys())
+
+    def csr_inst_verify(self, csr_name):
+        csr_list = self.get_csr_def(csr_name=csr_name)
+
+def required_length_append(nmin):
+    class CustomAction(argparse.Action):
+        def __init__(self,
+                     option_strings,
+                     dest,
+                     nargs=None,
+                     const=None,
+                     default=None,
+                     type=None,
+                     choices=None,
+                     required=False,
+                     help=None,
+                     metavar=None):
+            argparse.Action.__init__(self,
+                                     option_strings=option_strings,
+                                     dest=dest,
+                                     nargs=nargs,
+                                     const=const,
+                                     default=default,
+                                     type=type,
+                                     choices=choices,
+                                     required=required,
+                                     help=help,
+                                     metavar=metavar,
+                                     )
+            print 'Initializing CustomAction'
+            for name,value in sorted(locals().items()):
+                if name == 'self' or value is None:
+                    continue
+                print '  %s = %r' % (name, value)
+            print
+            return
+
+        def __call__(self, parser, namespace, values,
+                     option_string=None):
+            print 'Processing CustomAction for "%s"' % self.dest
+            print '  parser = %s' % id(parser)
+            print '  values = %r' % values
+            print '  option_string = %r' % option_string
+
+            if not nmin<=len(values):
+                msg='"{f}" option requires atleast {nmin} arguments'.format(
+                        f=option_string,nmin=nmin)
+                raise argparse.ArgumentTypeError(msg)
+            # Do some arbitrary processing of the input values
+            x = getattr(namespace, self.dest)
+            if x is None:
+                x = list()
+            print x
+            if isinstance(values, list):
+                x.append([ v for v in values ])
+            else:
+                x.append(values)
+            # Save the results in the namespace using the destination
+            # variable given to our constructor.
+            setattr(namespace, self.dest, x)
+    return CustomAction
+
+# Display positional arguments first and then optional arguments
+class ArgFormatter(argparse.HelpFormatter):
+    # use defined argument order to display usage
+    def _format_usage(self, usage, actions, groups, prefix):
+        if prefix is None:
+            prefix = 'usage: '
+        # if usage is specified, use that
+        if usage is not None:
+            usage = usage % dict(prog=self._prog)
+        # if no optionals or positionals are available, usage is just prog
+        elif usage is None and not actions:
+            usage = '%(prog)s' % dict(prog=self._prog)
+        elif usage is None:
+            prog = '%(prog)s' % dict(prog=self._prog)
+            # build full usage string
+            action_usage = self._format_actions_usage(actions, groups) # NEW
+            usage = ' '.join([s for s in [prog, action_usage] if s])
+            # omit the long line wrapping code
+        # prefix with 'usage:'
+        return '%s%s\n\n' % (prefix, usage)
+
+
+class dbgsh(cmd2.Cmd):
     intro = 'Welcome to the fun shell.   Type help or ? to list commands.\n'
-    #prompt = '(csr)'
-    @with_argparser(sparser)
+
+    parser = argparse.ArgumentParser(prog='csr', formatter_class=ArgFormatter)
+    subparsers = parser.add_subparsers(help='csr sub-command help')
+
+    parser_peek = subparsers.add_parser('peek', help="help peek", formatter_class=ArgFormatter)
+    parser_peek.add_argument('csr', nargs=1, help="csr name")
+    parser_peek.set_defaults(func=csr_peek)
+    parser_peek.add_argument('-i', nargs=1, metavar=('csr_inst'), dest='csr_inst', type=str, help="csr instance")
+    parser_peek.add_argument('-e', nargs=1, metavar=('csr_entry'), dest='csr_entry', type=str, help="csr entry")
+    parser_peek.add_argument('-f', nargs='+',  metavar=('csr_field'), dest='fields', type=str, help="field_name")
+    parser_peek.add_argument('-a', nargs=2, metavar=('anode_name', 'anode_inst'), dest='anode', help="anode details")
+    parser_peek.add_argument('-r', nargs=2, metavar=('ring_name', 'ring_inst'), dest='ring', type=str, help="ring details")
+    parser_peek.add_argument('-p', nargs=1, metavar=('anode_path'), dest='an_path', type=str, help="anode path")
+
+    parser_poke = subparsers.add_parser('poke', help="help poke", formatter_class=ArgFormatter)
+    parser_poke.set_defaults(func=csr_poke)
+    parser_poke.add_argument('csr', nargs=1, type=str, help="csr name")
+    parser_poke.add_argument('-i', nargs=1, metavar=('csr_inst'), dest='csr_inst', type=str, help="csr instance")
+    parser_poke.add_argument('-e', nargs=1, metavar=('csr_entry'), dest='csr_entry', type=str, help="csr entry")
+    parser_poke.add_argument('-a', nargs=2, metavar=('anode_name', 'anode_inst'), dest='anode', help="anode details")
+    parser_poke.add_argument('-r', nargs=2, metavar=('ring_name', 'ring_inst'), dest='ring', type=str, help="ring details")
+    parser_poke.add_argument('-p', nargs=1, metavar=('anode_path'), dest='an_path', type=str, help="anode path")
+    group = parser_poke.add_mutually_exclusive_group(required=True)
+    group.add_argument('-f', nargs='+',  metavar=('csr_field'), dest='fields', type=str, action=required_length_append(2), help="field_name")
+    group.add_argument('-v', nargs='+',  metavar=('raw_value'), dest='raw_value', type=str, help="csr value in big-endian 64-bit words")
+
+    parser_list = subparsers.add_parser('list', help="list maching csr instances", formatter_class=ArgFormatter)
+    parser_list.set_defaults(func=csr_list)
+    parser_list.add_argument('csr', nargs=1, type=str, help="csr name")
+    parser_list.add_argument('-a', nargs=1, metavar=('anode_name'), dest='anode', help="anode name")
+    parser_list.add_argument('-r', nargs=1, metavar=('ring_name'), dest='ring', type=str, help="ring name")
+
+    parser_find = subparsers.add_parser('find', help="find csrs maching sub-string", formatter_class=ArgFormatter)
+    parser_find.set_defaults(func=csr_find)
+    parser_find.add_argument('csr', nargs=1, type=str, help="substring of csr name")
+
+    parser_find = subparsers.add_parser('connect', help="connect to i2c server", formatter_class=ArgFormatter)
+    parser_find.set_defaults(func=server_connect)
+    parser_find.add_argument('ip_addr', nargs=1, type=str, help="ip address of i2c server")
+
+    parser_find = subparsers.add_parser('disconnect', help="disconnect from i2c server", formatter_class=ArgFormatter)
+    parser_find.set_defaults(func=server_disconnect)
+    argcomplete.autocomplete(parser)
+
+    prompt = 'dbgsh > '
+    @with_argparser(parser)
     def do_csr(self, args):
         'CSR peek/poke utility tool'
         print args
-        """
-        csr_get_metadata(csr_name=csr_name, csr_inst=csr_inst, csr_entry=csr_entry,
-                         ring_name=ring_name, ring_inst=ring_inst,
-                         anode_name=anode_name, anode_inst=anode_inst, anode_path=anode_path)
-        """
         args.func(args)
 
     def complete_csr(self, text, line, start_index, end_index):
@@ -1010,10 +968,8 @@ class DEBUG(cmd2.Cmd):
         print "Quitting."
         raise SystemExit
 
-
 if __name__ == '__main__':
-    c = DEBUG()
+    c = dbgsh()
     c.prompt = '> '
     c.cmdloop()
-
 

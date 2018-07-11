@@ -54,7 +54,7 @@ def i2c_connect():
     logger.debug("n_devs:{0} devs:{1}".format(n_devs, devs))
     if not devs or devs[0] is None:
         status_msg = "Failed to detect i2c device!"
-        self.send_obj({"STATUS":[False, status_msg]})
+        #self.send_obj({"STATUS":[False, status_msg]})
         logger.error(status_msg)
         return None
 
@@ -68,7 +68,7 @@ def i2c_connect():
     features = aa_features(h)
     if features != constants.IC_DEVICE_FEATURE_MASK:
         status_msg = "Invalid device features!: {0}".format(features)
-        self.send_obj({"STATUS":[False, status_msg]})
+        #self.send_obj({"STATUS":[False, status_msg]})
         logger.error(status_msg)
         return None
 
@@ -77,14 +77,14 @@ def i2c_connect():
     status = aa_configure(h, 2)
     if status != 2:
         status_msg = "Configure i2c mode! status:{0}".format(status)
-        self.send_obj({"STATUS":[False, status_msg]})
+        #self.send_obj({"STATUS":[False, status_msg]})
         logger.error(status_msg)
         return None
 
     status = aa_i2c_bitrate(h, 1)
     if status != 1:
         status_msg = "Configure bitrate! status:{0}".format(status)
-        self.send_obj({"STATUS":[False, status_msg]})
+        #self.send_obj({"STATUS":[False, status_msg]})
         logger.error(status_msg)
         return None
 
