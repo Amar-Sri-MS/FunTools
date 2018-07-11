@@ -203,9 +203,9 @@ class I2CFactoryThread(jsocket.ServerFactoryThread):
                " thread: {1}").format(os.getpid(), threading.current_thread()))
         if obj != '':
             logger.info(obj)
-            if obj.get("CONNECT", None):
-                logger.info("info Connection Request.")
-                logger.debug("debug Connection Request.")
+            cmd = obj.get("cmd", None)
+            if cmd == "CONNECT":
+                logger.info("Connection Request.")
                 if self.i2c_handle is not None:
                     logger.info("Already connected! closing it!")
                     i2c_disconnect(self.i2c_handle)
@@ -220,12 +220,12 @@ class I2CFactoryThread(jsocket.ServerFactoryThread):
                     self.send_obj({"STATUS":[False, "i2c device open failed!"]})
                 else:
                     self.send_obj({"STATUS":[True, "i2c device is ready!"]})
-            elif obj.get("CSR_PEEK", None):
+            elif cmd == "CSR_PEEK":
                 if self.i2c_handle is None:
                     self.send_obj({"STATUS":[False, "I2c dev is not connected!"]})
                     return
                 try:
-                    csr_peek_args = obj.get("CSR_PEEK", None)
+                    csr_peek_args = obj.get("args", None)
                     if not csr_peek_args:
                         self.send_obj({"STATUS":[False, "Invalid peek args!"]})
                         return
@@ -243,14 +243,18 @@ class I2CFactoryThread(jsocket.ServerFactoryThread):
                         self.send_obj({"STATUS":[False, "Exception!"]})
                         return
                     logger.debug("Peeked words: {0}".format(word_array))
-                    self.send_obj({"STATUS":[True, "peek success!"],
-                            "DATA":word_array})
+                    if word_array is not None:
+                        self.send_obj({"STATUS":[True, "peek success!"],
+                                "DATA":word_array})
+                    else:
+                        self.send_obj({"STATUS":[False, "peek fail!"],
+                                "DATA":word_array})
                 except Exception as e:
                     logging.error(traceback.format_exc())
                     self.send_obj({"STATUS":[False, "Exception!"]})
                     return
-            elif obj.get("CSR_POKE", None):
-                csr_poke_args = obj.get("CSR_POKE", None)
+            elif cmd == "CSR_POKE":
+                csr_poke_args = obj.get("args", None)
                 if not csr_poke_args:
                     self.send_obj({"STATUS":[False, "Invalid poke args!"]})
                     return
@@ -268,7 +272,7 @@ class I2CFactoryThread(jsocket.ServerFactoryThread):
                                                  word_array))
                 status = i2c_csr_poke(self.i2c_handle, csr_addr, csr_width_words, word_array)
                 self.send_obj({"STATUS":[status, "OK!" if status else "i2c csr error!"]})
-            elif obj.get("DISCONNECT", None):
+            elif cmd == "DISCONNECT":
                 if self.i2c_handle is not None:
                     i2c_disconnect(self.i2c_handle)
                     self.send_obj({"STATUS":[True, "I2c is disconnected"]})
@@ -287,9 +291,9 @@ if __name__ == "__main__":
             logger.info(("Stopping the server!!!! pid: {0}"
                    " thread: {1}").format(os.getpid(),
                    threading.current_thread()))
-    	    server.stop()
+            server.stop()
             server.close()
-    	    server.join()
+            server.join()
         sys.exit(0)
     signal.signal(signal.SIGINT, signal_handler) #Terminate cleanly on ctrl+c
 
