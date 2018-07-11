@@ -18,9 +18,6 @@ from socket import error as socket_error
 class constants(object):
     F1_I2C_SLAVE_ADDR = 0x70
 
-
-i2c_handle = None
-
 def byte_array_to_8byte_words_be(byte_array):
     print byte_array
     words = list()
@@ -181,32 +178,32 @@ class I2CFactoryThread(jsocket.ServerFactoryThread):
     def __init__(self):
         super(I2CFactoryThread, self).__init__()
         self.timeout = 2.0
+        self.i2c_handle = None
 
     def _process_message(self, obj):
-        global i2c_handle
         """ virtual method - Implementer must define protocol """
         print "process message!!!! pid: {0} {1}".format(os.getpid(), threading.current_thread())
         if obj != '':
             logger.info(obj)
             if obj.get("CONNECT", None):
                 logger.info("Connection Request.")
-                if i2c_handle is not None:
+                if self.i2c_handle is not None:
                     logger.info("Already connected! closing it!")
-                    i2c_disconnect(i2c_handle)
-                    i2c_handle = None
+                    i2c_disconnect(self.i2c_handle)
+                    self.i2c_handle = None
                 try:
-                    i2c_handle = i2c_connect()
+                    self.i2c_handle = i2c_connect()
                 except Exception as e:
                     logging.error(traceback.format_exc())
                     self.send_obj({"STATUS":[False, "Exception!"]})
                     return
-                if i2c_handle is None:
+                if self.i2c_handle is None:
                     self.send_obj({"STATUS":[False, "i2c device open failed!"]})
                 else:
                     self.send_obj({"STATUS":[True, "i2c device is ready!"]})
             elif obj.get("CSR_PEEK", None):
                 print "Peeking ..."
-                if i2c_handle is None:
+                if self.i2c_handle is None:
                     self.send_obj({"STATUS":[False, "I2c dev is not connected!"]})
                     return
                 try:
@@ -221,7 +218,7 @@ class I2CFactoryThread(jsocket.ServerFactoryThread):
                         return
                     print "csr_addr: {0} csr_width_words:{1}".format(csr_addr, csr_width_words)
                     try:
-                        word_array = i2c_csr_peek(i2c_handle, csr_addr, csr_width_words)
+                        word_array = i2c_csr_peek(self.i2c_handle, csr_addr, csr_width_words)
                     except Exception as e:
                         logging.error(traceback.format_exc())
                         self.send_obj({"STATUS":[False, "Exception!"]})
@@ -238,7 +235,7 @@ class I2CFactoryThread(jsocket.ServerFactoryThread):
                 if not csr_poke_args:
                     self.send_obj({"STATUS":[False, "Invalid poke args!"]})
                     return
-                if i2c_handle is None:
+                if self.i2c_handle is None:
                     self.send_obj({"STATUS":[False, "I2c dev is not connected!"]})
                     return
                 csr_addr = csr_poke_args.get("csr_addr", None)
@@ -248,15 +245,15 @@ class I2CFactoryThread(jsocket.ServerFactoryThread):
                     self.send_obj({"STATUS":[False, "Invalid peek args!"]})
                     return
                 print "csr_addr: {0} csr_width_words:{1} word_array:{2}".format(csr_addr, csr_width_words, word_array)
-                status = i2c_csr_poke(i2c_handle, csr_addr, csr_width_words, word_array)
+                status = i2c_csr_poke(self.i2c_handle, csr_addr, csr_width_words, word_array)
                 self.send_obj({"STATUS":[status, ""]})
             elif obj.get("DISCONNECT", None):
-                if i2c_handle is not None:
-                    i2c_disconnect(i2c_handle)
+                if self.i2c_handle is not None:
+                    i2c_disconnect(self.i2c_handle)
                     self.send_obj({"STATUS":[True, "I2c is disconnected"]})
                 else:
                     self.send_obj({"STATUS":[True, "I2c is already disconnected"]})
-                i2c_handle = None
+                self.i2c_handle = None
             else:
                 print "Invalid msg!"
                 self.send_obj({"STATUS":[False, "Invalid message!"]})
@@ -298,4 +295,5 @@ if __name__ == "__main__":
         server.join(600)
         if not server.isAlive():
             break
+
 
