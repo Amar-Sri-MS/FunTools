@@ -1037,7 +1037,16 @@ class dbgsh(cmd2.Cmd):
                 help="find csrs maching sub-string", formatter_class=ArgFormatter)
     parser_find.set_defaults(func=csr_find)
     parser_find.add_argument('csr', nargs=1, type=str, help="substring of csr name")
+    argcomplete.autocomplete(parser)
 
+    @with_argparser(parser)
+    def do_csr(self, args):
+        'CSR peek/poke utility tool'
+        logger.debug(args)
+        args.func(args)
+
+    parser = argparse.ArgumentParser(prog='i2c', formatter_class=ArgFormatter)
+    subparsers = parser.add_subparsers(help='i2c sub-command help')
     parser_find = subparsers.add_parser('connect',
                 help="connect to i2c server", formatter_class=ArgFormatter)
     parser_find.set_defaults(func=server_connect)
@@ -1048,10 +1057,9 @@ class dbgsh(cmd2.Cmd):
                 help="disconnect from i2c server", formatter_class=ArgFormatter)
     parser_find.set_defaults(func=server_disconnect)
     argcomplete.autocomplete(parser)
-
     @with_argparser(parser)
-    def do_csr(self, args):
-        'CSR peek/poke utility tool'
+    def do_i2c(self, args):
+        'i2c server connect/disconnect'
         logger.debug(args)
         args.func(args)
 
