@@ -19,6 +19,7 @@ import binascii
 import socket
 import jsocket
 import time
+import traceback
 
 def singleton(cls):
     instances = {}
@@ -486,32 +487,15 @@ def csr_peek(args):
     csr_width_words = csr_width_bytes >> 3
     word_array = None
     if i2c_server_socket is not None:
-        msg = dict()
-        csr_peek_args = dict()
-        csr_peek_args["csr_addr"] = csr_addr
-        csr_peek_args["csr_width"] = csr_width_words
-        msg["CSR_PEEK"] = csr_peek_args
-        i2c_server_socket.send_obj(msg)
-        msg = i2c_server_socket.read_obj()
-        print msg
-        status = msg.get("STATUS", None)
-        if status[0] == True:
-            word_array = msg.get("DATA", None)
-        else:
-            print "I2C peek over socket failed!"
-            return
-    """
+        word_array = i2c_remote_peek(i2c_server_socket, csr_addr, csr_width_words)
+        if word_array is None or not word_array:
+            print "Error in csr i2c peek!!!"
+            return None
+        print "Peeked value: {0}".format(hex_word_dump(word_array))
+        print "I2C peek is success!"
+        csr_show(csr_data, word_array, field_list)
     else:
-        word_array = i2c_csr_peek(csr_addr, csr_width_words)
-    #word_array = i2c_csr_peek(csr_addr, csr_width_words) #Remove this
-    """
-    print word_array
-    if word_array is None:
-        print "Error in csr i2c peek!!!"
-        return None
-    print "I2C peek is success!"
-
-    csr_show(csr_data, word_array, field_list)
+        print "Error! Not connected to i2c server!"
 
 def csr_poke(args):
     input_args = csr_get_poke_args(args)
@@ -539,7 +523,6 @@ def csr_poke(args):
     if csr_addr is None:
         print "Error get csr address!!!"
         return
-    #print "csr address: {0}".format(hex(csr_addr))
 
     csr_width_bytes = csr_get_width_bytes(csr_data)
     csr_width_words = csr_width_bytes >> 3
@@ -562,23 +545,10 @@ def csr_poke(args):
     elif field_list is not None:
         word_array = None
         if i2c_server_socket is not None:
-            msg = dict()
-            csr_peek_args = dict()
-            csr_peek_args["csr_addr"] = csr_addr
-            csr_peek_args["csr_width"] = csr_width_words
-            msg["CSR_PEEK"] = csr_peek_args
-            i2c_server_socket.send_obj(msg)
-            msg = i2c_server_socket.read_obj()
-            print msg
-            status = msg.get("STATUS", None)
-            if status[0] == True:
-                word_array = msg.get("DATA", None)
-            else:
-                print "I2C peek over socket failed!"
-                return
-        if word_array is None or not word_array:
-            print "Error in csr i2c peek!!!"
-            return None
+            word_array = i2c_remote_peek(i2c_server_socket, csr_addr, csr_width_words)
+            if word_array is None or not word_array:
+                print "Error in csr i2c peek!!!"
+                return None
         print "Peeked value: {0}".format(hex_word_dump(word_array))
 
         valid_field_list = csr_get_valid_field_list(csr_data)
@@ -616,29 +586,16 @@ def csr_poke(args):
         print "Invalid input values! poke should have either field list with values or raw values"
         return None
     if i2c_server_socket:
-        msg = dict()
-        csr_poke_args = dict()
-        csr_poke_args["csr_addr"] = csr_addr
-        csr_poke_args["csr_width"] = csr_width_words
-        csr_poke_args["csr_val"] = word_array
-        msg["CSR_POKE"] = csr_poke_args
-        i2c_server_socket.send_obj(msg)
-        msg = i2c_server_socket.read_obj()
-        status = msg.get("STATUS", None)
-        if status[0] == True:
-            print "I2C poke over socket is success!"
+        status = i2c_remote_poke(i2c_server_socket, csr_addr, csr_width_words, word_array)
+        if status == True:
+            print "Poke Success!"
             return
         else:
-            print "I2C poke over socket failed!: {0}".format(status[1])
+            print "Error! poke failed!"
             return
-    """
     else:
-        status = i2c_csr_poke(csr_addr, csr_width_words, word_array)
-        if not status:
-            print "Error! i2c csr poke failed!"
-        else:
-            print "csr poke success!"
-    """
+        print "Error! Not connected to i2c server!"
+        return
 
 def csr_list(args):
     csr_name = args.csr[0]
@@ -672,8 +629,85 @@ def csr_find(args):
     print 'Matching csr entries for "{0}"'.format(csr_name)
     print json_obj_pretty(matched_csr_list)
 
+def i2c_remote_connect(ip_address):
+    s = jsocket.JsonClient(address=ip_address, port=55667)
+    if s is None:
+        print "Failed to connect to i2c server {0}".format(ip_address)
+        return None
+    s.connect()
+    time.sleep(0.5)
+    s.send_obj({"CONNECT":"i2c"})
+    read_obj = s.read_obj()
+    status = read_obj.get("STATUS", None)
+    if status[0] == True:
+        print status[1]
+    else:
+        #print "Error! I2C connection failure!"
+        print status[1]
+    return s
+
+
+def i2c_remote_peek(s, csr_addr, csr_width_words):
+    if s is None or csr_addr is None or csr_width_words is None \
+            or csr_addr == 0 or csr_width_words < 1:
+        print "Invalid peek arguments!"
+        return None
+    msg = dict()
+    csr_peek_args = dict()
+    csr_peek_args["csr_addr"] = csr_addr
+    csr_peek_args["csr_width"] = csr_width_words
+    msg["CSR_PEEK"] = csr_peek_args
+    s.send_obj(msg)
+    msg = s.read_obj()
+    print msg
+    status = msg.get("STATUS", None)
+    if status[0] == True:
+        word_array = msg.get("DATA", None)
+    else:
+        print "I2C peek over socket failed!"
+        return None
+
+def i2c_remote_poke(s, csr_addr, csr_width_words, word_array):
+    if s is None or csr_addr is None \
+            or csr_width_words is None or word_array is None \
+            or csr_addr == 0 or csr_width_words < 1:
+        print "Invalid poke arguments!"
+        return False
+
+    msg = dict()
+    csr_poke_args = dict()
+    csr_poke_args["csr_addr"] = csr_addr
+    csr_poke_args["csr_width"] = csr_width_words
+    csr_poke_args["csr_val"] = word_array
+    msg["CSR_POKE"] = csr_poke_args
+    s.send_obj(msg)
+    msg = s.read_obj()
+    status = msg.get("STATUS", None)
+    if status[0] == True:
+        print "poke success!"
+        return True
+    else:
+        print "Error! poke failed!: {0}".format(status[1])
+        return False
+
+def i2c_remote_disconnect(s):
+    if s is None:
+        print "Not connected to server"
+        return
+    s.send_obj({"DISCONNECT":"i2c"})
+    read_obj = s.read_obj()
+    status = read_obj.get("STATUS", None)
+    if status[0] == True:
+        print "Success! {0}".format(status[1])
+        s.close()
+        return True
+    else:
+        print "Error! {0}".format(status[1])
+        s.close()
+        return False
+
 i2c_server_socket = None
-def i2c_connect(args):
+def server_connect(args):
     global i2c_server_socket
     ip_address = args.ip_addr[0]
     try:
@@ -683,50 +717,22 @@ def i2c_connect(args):
         print "Invalid ip address!"
         return
     if i2c_server_socket is not None:
-        i2c_server_socket.close()
+        i2c_remote_disconnect(i2c_server_socket)
         i2c_server_socket = None
 
-    i2c_server_socket = jsocket.JsonClient(address=ip_address, port=55667)
-    if i2c_server_socket is None:
-        print "Failed to connect to i2c server {0}".format(ip_address)
-        return
-    i2c_server_socket.connect()
+    s = i2c_remote_connect(ip_address)
+    if s is not None:
+        i2c_server_socket = s
 
-    time.sleep(1)
-    i2c_server_socket.send_obj({"CONNECT":"i2c"})
-    read_obj = i2c_server_socket.read_obj()
-    status = read_obj.get("STATUS", None)
-    if status[0] == True:
-        print status[1]
-    else:
-        #print "I2C connection status Failure!"
-        print status[1]
-
-def i2c_disconnect(args):
+def server_disconnect(args):
     global i2c_server_socket
-    print i2c_server_socket
     if i2c_server_socket is None:
         print "Not connected to server"
         return
-    i2c_server_socket.send_obj({"DISCONNECT":"i2c"})
-    print i2c_server_socket
 
-    read_obj = i2c_server_socket.read_obj()
-    status = read_obj.get("STATUS", None)
-    if status[0] == True:
-        print "I2C connection status success!"
-        print status[1]
-        pass
-    else:
-        print "I2C connection status Failure!"
-        print status[1]
-        pass
-
-    if i2c_server_socket is not None:
-        i2c_server_socket.close()
-        i2c_server_socket = None
-        return
-
+    i2c_remote_disconnect(i2c_server_socket)
+    i2c_server_socket = None
+    return
 
 def str_to_int(s):
     if s.isdigit():
@@ -838,11 +844,11 @@ parser_find.set_defaults(func=csr_find)
 parser_find.add_argument('csr', nargs=1, type=str, help="substring of csr name")
 
 parser_find = subparsers.add_parser('connect', help="connect to i2c server", formatter_class=MyFormatter)
-parser_find.set_defaults(func=i2c_connect)
+parser_find.set_defaults(func=server_connect)
 parser_find.add_argument('ip_addr', nargs=1, type=str, help="ip address of i2c server")
 
 parser_find = subparsers.add_parser('disconnect', help="disconnect from i2c server", formatter_class=MyFormatter)
-parser_find.set_defaults(func=i2c_disconnect)
+parser_find.set_defaults(func=server_disconnect)
 
 argcomplete.autocomplete(sparser)
 

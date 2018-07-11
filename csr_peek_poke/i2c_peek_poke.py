@@ -7,6 +7,10 @@ from array import array
 import binascii
 import argparse
 import threading
+import logging
+
+for handler in logging.root.handlers:
+    handler.addFilter(logging.Filter('threadedServer'))
 
 class constants(object):
     F1_I2C_SLAVE_ADDR = 0x70
@@ -186,6 +190,7 @@ def i2c_csr_poke(h, csr_addr, csr_width_words, word_array):
 
         status = array('B', [00])
         status_bytes = aa_i2c_read(h, constants.F1_I2C_SLAVE_ADDR, 0, status)
+        print status_bytes
         if status_bytes[0] != 1:
             print "Read Error!  status_bytes:{0} Expected: {1}".format(status_bytes, 1)
             return False
@@ -196,7 +201,6 @@ def i2c_csr_poke(h, csr_addr, csr_width_words, word_array):
         logging.error(traceback.format_exc())
     #"""
     return True
-
 
 
 import jsocket
@@ -229,11 +233,12 @@ class I2CFactoryThread(jsocket.ServerFactoryThread):
         if obj != '':
             logger.info(obj)
             if obj.get("CONNECT", None):
+                logger.info("Connection Request.")
                 if self.i2c_handle:
+                    logger.info("Already connected! closing it!")
                     self.i2c_handle.close()
                     aa_i2c_free_bus(self.i2c_handle)
 
-                logger.info("Connection Request.")
                 n_devs, devs = aa_find_devices(1)
                 print "n_devs:{0} devs:{1}".format(n_devs, devs)
                 if not devs or devs[0] is None:
