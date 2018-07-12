@@ -6,7 +6,7 @@ This module provides following features:
   and returns the response in json.
 * i2c json client.
 * csr peek/poke/list/find utility api
-* simple cli for hw folks to build debug
+* simple cli for hw folks to build debug utilities
 
 # Install the dependancies
 sudo python setup.py install
