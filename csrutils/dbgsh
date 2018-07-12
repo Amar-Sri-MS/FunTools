@@ -1,0 +1,196 @@
+#!/usr/bin/env python
+import argparse, json
+import string, os
+import cmd2
+import logging
+import argcomplete
+from cmd2 import with_argparser
+from csrutils import *
+
+logger = logging.getLogger("dbgutils")
+logger.setLevel(logging.INFO)
+
+# Returns action class for field argument min length check
+def required_length_append(nmin):
+    class CustomAction(argparse.Action):
+        def __init__(self,
+                     option_strings,
+                     dest,
+                     nargs=None,
+                     const=None,
+                     default=None,
+                     type=None,
+                     choices=None,
+                     required=False,
+                     help=None,
+                     metavar=None):
+            argparse.Action.__init__(self,
+                                     option_strings=option_strings,
+                                     dest=dest,
+                                     nargs=nargs,
+                                     const=const,
+                                     default=default,
+                                     type=type,
+                                     choices=choices,
+                                     required=required,
+                                     help=help,
+                                     metavar=metavar,
+                                     )
+            logger.debug('Initializing CustomAction')
+            for name,value in sorted(locals().items()):
+                if name == 'self' or value is None:
+                    continue
+                logger.debug('  %s = %r' % (name, value))
+            return
+
+        def __call__(self, parser, namespace, values,
+                     option_string=None):
+            logger.debug('Processing CustomAction for "%s"' % self.dest)
+            logger.debug('  parser = %s' % id(parser))
+            logger.debug('  values = %r' % values)
+            logger.debug('  option_string = %r' % option_string)
+
+            if not nmin<=len(values):
+                msg='"{f}" option requires atleast {nmin} arguments'.format(
+                        f=option_string,nmin=nmin)
+                raise argparse.ArgumentTypeError(msg)
+            # Do some arbitrary processing of the input values
+            x = getattr(namespace, self.dest)
+            if x is None:
+                x = list()
+            logger.debug(x)
+            if isinstance(values, list):
+                x.append([ v for v in values ])
+            else:
+                x.append(values)
+            # Save the results in the namespace using the destination
+            # variable given to our constructor.
+            setattr(namespace, self.dest, x)
+    return CustomAction
+
+# Display positional arguments first and then optional arguments
+class ArgFormatter(argparse.HelpFormatter):
+    # use defined argument order to display usage
+    def _format_usage(self, usage, actions, groups, prefix):
+        if prefix is None:
+            prefix = 'usage: '
+        # if usage is specified, use that
+        if usage is not None:
+            usage = usage % dict(prog=self._prog)
+        # if no optionals or positionals are available, usage is just prog
+        elif usage is None and not actions:
+            usage = '%(prog)s' % dict(prog=self._prog)
+        elif usage is None:
+            prog = '%(prog)s' % dict(prog=self._prog)
+            # build full usage string
+            action_usage = self._format_actions_usage(actions, groups) # NEW
+            usage = ' '.join([s for s in [prog, action_usage] if s])
+            # omit the long line wrapping code
+        # prefix with 'usage:'
+        return '%s%s\n\n' % (prefix, usage)
+
+
+class dbgsh(cmd2.Cmd):
+    intro = 'Welcome to the debug shell.   Type help or ? to list commands.\n'
+
+    parser = argparse.ArgumentParser(prog='csr', formatter_class=ArgFormatter)
+    subparsers = parser.add_subparsers(help='csr sub-command help')
+
+    parser_peek = subparsers.add_parser('peek', help="help peek",
+                                        formatter_class=ArgFormatter)
+    parser_peek.add_argument('csr', nargs=1,help="csr name")
+    parser_peek.set_defaults(func=csr_peek)
+    parser_peek.add_argument('-i', nargs=1,
+        metavar=('csr_inst'), dest='csr_inst', type=str, help="csr instance")
+    parser_peek.add_argument('-e', nargs=1,
+        metavar=('csr_entry'), dest='csr_entry', type=str, help="csr entry")
+    parser_peek.add_argument('-f', nargs='+',
+        metavar=('csr_field'), dest='fields', type=str, help="field_name")
+    parser_peek.add_argument('-a', nargs=2,
+        metavar=('anode_name', 'anode_inst'), dest='anode', help="anode details")
+    parser_peek.add_argument('-r', nargs=2,
+        metavar=('ring_name', 'ring_inst'), dest='ring', type=str, help="ring details")
+    parser_peek.add_argument('-p', nargs=1,
+        metavar=('anode_path'), dest='an_path', type=str, help="anode path")
+
+    parser_poke = subparsers.add_parser('poke', help="help poke",
+                                        formatter_class=ArgFormatter)
+    parser_poke.set_defaults(func=csr_poke)
+    parser_poke.add_argument('csr', nargs=1, type=str, help="csr name")
+    parser_poke.add_argument('-i', nargs=1,
+        metavar=('csr_inst'), dest='csr_inst', type=str, help="csr instance")
+    parser_poke.add_argument('-e', nargs=1,
+        metavar=('csr_entry'), dest='csr_entry', type=str, help="csr entry")
+    parser_poke.add_argument('-a', nargs=2,
+        metavar=('anode_name', 'anode_inst'), dest='anode', help="anode details")
+    parser_poke.add_argument('-r', nargs=2,
+        metavar=('ring_name', 'ring_inst'), dest='ring', type=str, help="ring details")
+    parser_poke.add_argument('-p', nargs=1,
+        metavar=('anode_path'), dest='an_path', type=str, help="anode path")
+    group = parser_poke.add_mutually_exclusive_group(required=True)
+    group.add_argument('-f', nargs='+',
+        metavar=('csr_field'), dest='fields', type=str,
+        action=required_length_append(2), help="field_name")
+    group.add_argument('-v', nargs='+',
+        metavar=('raw_value'), dest='raw_value', type=str,
+        help="csr value in big-endian 64-bit words")
+
+    parser_list = subparsers.add_parser('list',
+                help="list maching csr instances", formatter_class=ArgFormatter)
+    parser_list.set_defaults(func=csr_list)
+    parser_list.add_argument('csr', nargs=1, type=str, help="csr name")
+    parser_list.add_argument('-a', nargs=1,
+                metavar=('anode_name'), dest='anode', help="anode name")
+    parser_list.add_argument('-r', nargs=1,
+                metavar=('ring_name'), dest='ring', type=str, help="ring name")
+
+    parser_find = subparsers.add_parser('find',
+                help="find csrs maching sub-string", formatter_class=ArgFormatter)
+    parser_find.set_defaults(func=csr_find)
+    parser_find.add_argument('csr', nargs=1, type=str, help="substring of csr name")
+    argcomplete.autocomplete(parser)
+
+    @with_argparser(parser)
+    def do_csr(self, args):
+        'CSR peek/poke utility tool'
+        logger.debug(args)
+        args.func(args)
+
+    parser = argparse.ArgumentParser(prog='i2c', formatter_class=ArgFormatter)
+    subparsers = parser.add_subparsers(help='i2c sub-command help')
+    parser_find = subparsers.add_parser('connect',
+                help="connect to i2c server", formatter_class=ArgFormatter)
+    parser_find.set_defaults(func=server_connect)
+    parser_find.add_argument('ip_addr', nargs=1, type=str,
+                help="ip address of i2c server")
+
+    parser_find = subparsers.add_parser('disconnect',
+                help="disconnect from i2c server", formatter_class=ArgFormatter)
+    parser_find.set_defaults(func=server_disconnect)
+    argcomplete.autocomplete(parser)
+
+    @with_argparser(parser)
+    def do_i2c(self, args):
+        'i2c server connect/disconnect'
+        logger.debug(args)
+        args.func(args)
+
+    def complete_csr(self, key, line, start_index, end_index):
+        if key:
+            metadata = csr_metadata().get_csr_list()
+            return [x for x in metadata if x.startswith(key)]
+        else:
+            tags = line.split()
+            if tags[-1] == 'peek' or tags[-1] == 'poke' or tags[-1] == 'list':
+                return csr_metadata().get_csr_list()
+
+    def do_quit(self, args):
+        """Quits the program."""
+        print("Quitting.")
+        raise SystemExit
+
+if __name__ == '__main__':
+    c = dbgsh()
+    c.prompt = 'dbgsh > '
+    c.cmdloop()
+

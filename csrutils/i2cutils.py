@@ -50,7 +50,8 @@ def byte_array_to_words_be(byte_array):
 # Returns the device handle
 def i2c_connect():
     n_devs, devs = aa_find_devices(1)
-    logger.debug("n_devs:{0} devs:{1}".format(n_devs, devs))
+    logger.debug("n_devs:{0} devs:".format(n_devs))
+    logger.debug(devs)
     if not devs or devs[0] is None:
         status_msg = "Failed to detect i2c device!"
         #self.send_obj({"STATUS":[False, status_msg]})
