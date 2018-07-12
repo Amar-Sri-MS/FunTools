@@ -3,7 +3,7 @@
 from setuptools import setup, find_packages
 
 setup(
-    name = 'csrutils',
+    name = 'dbgutils',
     version = '0.1.0',
     author = 'Nag Ponugoti(nag.ponugoti@fungible.com)',
     description = 'csr debug utilities',
@@ -12,7 +12,6 @@ setup(
     include_package_data=True,
     install_requires = [
         'aardvark_py',
-#        'binascii',
         'argparse',
         'jsocket',
         'logging',
