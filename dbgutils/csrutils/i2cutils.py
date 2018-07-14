@@ -17,7 +17,7 @@ from socket import error as socket_error
 logger = logging.getLogger("jsocket.tserver")
 logger.setLevel(logging.INFO)
 
-logger = logging.getLogger("i2c_peek_poke")
+logger = logging.getLogger("i2cutils")
 logger.setLevel(logging.INFO)
 
 class constants(object):
