@@ -10,7 +10,7 @@ import logging
 import traceback
 from array import array
 
-logger = logging.getLogger("dbgsh")
+logger = logging.getLogger("csrutils")
 logger.setLevel(logging.INFO)
 
 class constants(object):
@@ -267,24 +267,138 @@ def csr_list(args):
     print("Matching csr entries for csr:{0}".format(csr_name))
     print(json_obj_pretty(csr_list))
 
+#import pdb
+# Find csr medata matching an address
+def csr_find_addr_metadata(caddr):
+    print hex(caddr)
+    csr_dict =  csr_metadata().get_metadata()
+    if not csr_dict:
+        print "Can't get csr metadata!"
+        return None
+    print "Done Loading"
+    for k, v in csr_dict.iteritems():
+        if k == 'psw_sch_qsch_cfg_extrabw_sp_queues_fp':
+            pass
+            #pdb.set_trace()
+        for csr_data in v:
+            address = caddr
+            anode_addr = csr_data.get("an_addr", None)
+            if anode_addr is None:
+                print("Invalid csr metadata! anode_addr is missing in metadata!")
+                sys.exit(1)
+            anode_addr = int(anode_addr, 16)
+            start_anode_addr = anode_addr
+            anode_inst_cnt = csr_data.get("an_inst_cnt", None)
+            if anode_inst_cnt is None:
+                print("Invalid csr metadata! an_inst_cnt is missing in metadata!")
+                sys.exit(1)
+
+            anode_skip_addr = 0
+            anode_inst = 0
+            if anode_inst_cnt > 1:
+                anode_skip_addr = csr_data.get("an_skip_addr", None)
+                if anode_skip_addr is None:
+                    print("Invalid csr metadata! an_skip_addr is missing in metadata!")
+                    sys.exit(1)
+                anode_skip_addr = int(anode_skip_addr, 16)
+                end_anode_addr = start_anode_addr + (anode_skip_addr *
+                                                     anode_inst_cnt);
+
+                if address < start_anode_addr or address >= end_anode_addr:
+                    continue
+
+                x = address - start_anode_addr
+                anode_inst = x / anode_skip_addr
+                address = address - (anode_inst * anode_skip_addr)
+
+            csr_addr = csr_data.get("csr_addr", None)
+            if csr_addr is None:
+                print("Invalid csr metadata! csr_addr is missing in metadata!")
+                sys.exit(1)
+            csr_addr = int(csr_addr, 16)
+
+            csr_inst_start_addr = csr_addr
+            csr_width = csr_data.get("csr_width", None)
+            if csr_width is None:
+                print("Invalid csr metadata! csr_width is missing in metadata!")
+                sys.exit(1)
+            csr_width_bytes = csr_width >> 0x3
+
+            csr_n_entries = csr_data.get("csr_n_entries", None)
+            if csr_n_entries is None:
+                print("Invalid csr metadata! csr_n_entries is missing in metadata!")
+                sys.exit(1)
+            csr_inst_skip_addr = csr_width_bytes * csr_n_entries
+
+            csr_inst_count = csr_data.get("csr_count", None)
+            if csr_inst_count is None:
+                print("Invalid csr metadata! csr_inst_count is missing in metadata!")
+                sys.exit(1)
+
+            address -= start_anode_addr
+            csr_inst_end_addr = csr_inst_start_addr
+            if csr_inst_count > 0:
+                csr_inst_end_addr += csr_inst_skip_addr * csr_inst_count
+
+            if address < csr_inst_start_addr or address >= csr_inst_end_addr:
+                continue
+
+            address -= csr_inst_start_addr
+            csr_inst = address / csr_inst_skip_addr
+            address -= csr_inst * csr_inst_skip_addr
+
+            csr_start_addr = address
+            csr_end_addr = csr_start_addr
+            if csr_n_entries > 0:
+                csr_end_addr = csr_start_addr + (csr_width_bytes * csr_n_entries)
+
+            if address < csr_start_addr or address >= csr_end_addr:
+                continue
+            csr_index = address / csr_width_bytes
+
+            print json_obj_pretty({k:csr_data})
+            print ("csr: {0} anode_inst: {1} csr_inst: {2} csr_index:"
+                " {3}").format(k, anode_inst, csr_inst, csr_index)
+            return ({k:csr_data, "anode_inst": anode_inst,
+                    "csr_inst": csr_inst, "csr_index": csr_index})
+    print "Invalid address: {0}. No valid csr found!".format(hex(caddr))
+    return None
+
 # csr find handler for commandline interface.
 # Returnds names of all the csrs which contain input substring
 def csr_find(args):
-    csr_name = args.csr[0]
-    if not csr_name:
-        print("csr name sub-string is empty!")
+    print args
+
+    csr_name = args.substring[0] if args.substring else None
+    csr_address = args.csr_address[0] if args.csr_address else None
+
+    if csr_name:
+        csr_list = csr_metadata().get_csr_list()
+        matched_csr_list = list()
+        for x in csr_list:
+            if csr_name in x:
+                matched_csr_list.append(x)
+        if not matched_csr_list:
+            print('There are no csrs in database matching "{0}"!'.format(csr_name))
+            return
+        print('Matching csr entries for "{0}"'.format(csr_name))
+        print(json_obj_pretty(matched_csr_list))
+    elif csr_address:
+        address = str_to_int(csr_address)
+        if address and address > 0:
+            csr_find_addr_metadata(address)
+        else:
+            print "Invalid address!"
+            return
+    else:
+        print('Invalid argument! args:{0}'.format(args))
         return
 
-    csr_list = csr_metadata().get_csr_list()
-    matched_csr_list = list()
-    for x in csr_list:
-        if csr_name in x:
-            matched_csr_list.append(x)
-    if not matched_csr_list:
-        print('There are no csrs in database matching "{0}"!'.format(csr_name))
-        return
-    print('Matching csr entries for "{0}"'.format(csr_name))
-    print(json_obj_pretty(matched_csr_list))
+def csr_metadata(args):
+    print args
+
+def csr_replay(args):
+    print args
 
 # csr connect handler for commandline interface.
 # Connects remote server
@@ -389,7 +503,7 @@ def csr_get_addr(csr_data, anode_inst=None, csr_inst=None, csr_entry=None):
             print("Invalid csr metadata! an_skip_addr is missing in metadata!")
             sys.exit(1)
 
-        anode_addr = anode_skip_addr * anode_inst;
+        anode_addr = int(anode_skip_addr, 16) * anode_inst;
 
     csr_addr = csr_data.get("csr_addr", None)
     if csr_addr is None:
@@ -865,6 +979,9 @@ class csr_metadata:
     def set_metadata(self, metadata):
         self.metadata = metadata
 
+    def get_metadata(self):
+        return self.metadata
+
     def csr_equal(self, x, rn_class, rn_inst, an_path, an):
         if rn_class:
             if x["ring_name"] != rn_class:
@@ -881,7 +998,8 @@ class csr_metadata:
 
         return True
 
-    def get_csr_def(self, csr_name, rn_class=None, rn_inst=None, an_path=None, an=None):
+    def get_csr_def(self, csr_name, rn_class=None, rn_inst=None,
+                    an_path=None, an=None):
         csr_defs_lst = self.metadata.get(csr_name, [])
         if not csr_defs_lst:
             return None

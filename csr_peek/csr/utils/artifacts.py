@@ -350,7 +350,7 @@ class CSRMetaData(object):
 
         fld_lst = list()
         offset = 0;
-        csr_width_64bit = (csr_prop.width + 63) & ~0x3f 
+        csr_width_64bit = (csr_prop.width + 63) & ~0x3f
         for fld in csr_prop.fld_lst:
             offset += fld.width
             fld_prop = {"fld_name": fld.fld_name,
@@ -679,6 +679,7 @@ class CSRRoot(object):
                     csr_addr_range)
         else:
             csr_addr = self.__hexlify(coll[1].strip())
+            csr_addr_range = ((csr_prop.width + 63) & ~(0x3f)) >> 3
             self.curr_rn.add_csr(self.curr_ri,
                     csr_name,
                     csr_addr)
@@ -710,7 +711,7 @@ class CSRRoot(object):
         if an_attr != None:
             an_inst_cnt = an_attr[0]
             an_skip_addr = an_attr[2]
-       
+
         self.csr_metadata.add_csr_metadata(self.curr_rc, self.curr_ri, ring_addr,
             self.curr_an_name, self.curr_path, an_inst_cnt, an_skip_addr,
             self.curr_addr, csr_name, csr_addr - self.curr_addr, csr_addr_range, csr_prop)
