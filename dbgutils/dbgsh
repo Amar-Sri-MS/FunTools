@@ -8,7 +8,7 @@ from cmd2 import with_argparser
 from csrutils import *
 
 logger = logging.getLogger("dbgutils")
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 # Returns action class for field argument min length check
 def required_length_append(nmin):
@@ -156,17 +156,17 @@ class dbgsh(cmd2.Cmd):
 
     parser_metadata = subparsers.add_parser('metadata',
                 help="Load metadata", formatter_class=ArgFormatter)
-    parser_metadata.set_defaults(func=csr_metadata)
-    group = parser_metadata.add_mutually_exclusive_group(required=True)
-    group.add_argument('-f', nargs=1, metavar=('metadata_file'), dest='metadata_file',
-			type=argparse.FileType('r'),
-                        help="Relative or absolute path to metadata file")
-    group.add_argument('-d', dest='default', action='store_true', help="Get metadata from dochub")
+    parser_metadata.set_defaults(func=csr_load_metadata)
+    metadata_group = parser_metadata.add_mutually_exclusive_group(required=True)
+    metadata_group.add_argument('-f', nargs=1, metavar=('sdk_root_dir'), dest='sdk_root_dir',
+			type= str,
+                        help="Relative or absolute path to sdk_root_dir")
+    metadata_group.add_argument('-d', dest='default', action='store_true', help="Get metadata from dochub")
 
     parser_replay = subparsers.add_parser('replay',
                 help="Replay csr config", formatter_class=ArgFormatter)
     parser_replay.set_defaults(func=csr_replay)
-    parser_replay.add_argument('replay_file', nargs=1, type=argparse.FileType('r'),
+    parser_replay.add_argument('replay_file', nargs=1, type=str,
                 help="Relative or absolute path to csr replay file")
     argcomplete.autocomplete(parser)
 
@@ -196,9 +196,12 @@ class dbgsh(cmd2.Cmd):
         args.func(args)
 
     def complete_csr(self, key, line, start_index, end_index):
+        logger.debug('key: {0} line:{1}'.format(key, line))
         if key:
-            metadata = csr_metadata().get_csr_list()
-            return [x for x in metadata if x.startswith(key)]
+            tags = line.split()
+            if tags[-2] == 'peek' or tags[-2] == 'poke' or tags[-2] == 'list':
+                metadata = csr_metadata().get_csr_list()
+                return [x for x in metadata if x.startswith(key)]
         else:
             tags = line.split()
             if tags[-1] == 'peek' or tags[-1] == 'poke' or tags[-1] == 'list':
