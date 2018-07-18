@@ -580,8 +580,8 @@ void _configure_device(struct dpcsock *sock)
 	 * tryin to isolate palladium clocking issues. We can probably get
 	 * by with a much simpler string. (sane -echo?)
 	 */
-	char *cmdfmt  = "stty -F %s %s sane -echo -onlcr -icrnl crtscts"
-		"-brkint -echoctl -echoe -echok -echoke -icanon -iexten"
+	char *cmdfmt  = "stty -F %s %s sane -echo -onlcr -icrnl crtscts "
+		"-brkint -echoctl -echoe -echok -echoke -icanon -iexten "
 		"-imaxbel -isig -opost ignbrk time 5 cs8 hupcl -clocal";
 	char cmd[strlen(cmdfmt) + FMT_PAD];
 	int r;
