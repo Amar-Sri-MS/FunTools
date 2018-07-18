@@ -65,6 +65,12 @@ static enum parsingmode _parse_mode = PARSE_UNKNOWN;
 #define OVERRIDE_TEXT "#!sh "
 #define OVERRIDE_JSON "#!json "
 
+/* tty (uart) device controls */
+#define DEFAULT_BAUD "19200"
+static bool _do_device_init = true; /* if we have a device, init by default */
+static char *_baudrate = DEFAULT_BAUD; /* default BAUD rate */
+
+
 // We stash argv[0]
 const char *dpcsh_path;
 
@@ -377,6 +383,8 @@ bool _base64_write(struct dpcsock *sock, const uint8_t *buf, size_t nbyte)
 		return false;
 	}
 
+	// printf("[dpcsh] sending b64 %s\n", b64buf);
+
 	/* send it */
 	r = write(fd, b64buf, strlen(b64buf));
 
@@ -560,6 +568,50 @@ int dpcsocket_connnect(struct dpcsock *sock)
 
 	/* return non-zero on failure */
 	return (sock->fd < 0);
+}
+
+#define FMT_PAD (256)
+
+/* configure the device baud rate, 8N1 */
+void _configure_device(struct dpcsock *sock)
+{
+	/* setup the argument list. FIXME: this was painfully
+	 * constructed to match exactly what minicom does on centos while
+	 * tryin to isolate palladium clocking issues. We can probably get
+	 * by with a much simpler string. (sane -echo?)
+	 */
+	char *cmdfmt  = "stty -F %s %s sane -echo -onlcr -icrnl crtscts"
+		"-brkint -echoctl -echoe -echok -echoke -icanon -iexten"
+		"-imaxbel -isig -opost ignbrk time 5 cs8 hupcl -clocal";
+	char cmd[strlen(cmdfmt) + FMT_PAD];
+	int r;
+
+	assert(sock->mode == SOCKMODE_DEV);
+
+	/* if the user wants to rock the existing setup */
+	if (!_do_device_init) {
+		printf("skipping UART device configuration\n");
+		return;
+	}
+
+	/* make sure we can actually fit the string */
+	if (strlen(sock->socket_name) + strlen(_baudrate) + 1 >= FMT_PAD) {
+		printf("stty arguments too long\n");
+		exit(1);
+	}
+
+	/* make the string */
+	snprintf(cmd, strlen(cmdfmt) + FMT_PAD, cmdfmt,
+		 sock->socket_name, _baudrate);
+
+	printf("Executing command to configure device: %s\n", cmd);
+
+	r = system(cmd);
+
+	if (r) {
+		printf("error configuring UART with stty\n");
+		exit(1);
+	}
 }
 
 /* disambiguate json */
@@ -1122,6 +1174,8 @@ static struct option longopts[] = {
 	{ "nocli",         no_argument,       NULL, 'n' },
 	{ "oneshot",       no_argument,       NULL, 'S' },
 	{ "manual_base64", no_argument,       NULL, 'N' },
+	{ "no_dev_init",   no_argument,       NULL, 'X' },
+	{ "baud",          no_argument,       NULL, 'R' },
 
 	/* end */
 	{ NULL, 0, NULL, 0 },
@@ -1145,6 +1199,8 @@ static void usage(const char *argv0)
 	printf("       --nocli                 issue request from command-line arguments and terminate\n");
 	printf("       --oneshot               don't reconnect after command side disconnect\n");
 	printf("       --manual_base64         just translate base64 back and forward\n");
+	printf("       --no_dev_init           don't init the UART device, use as-is\n");
+	printf("       --baud=rate             specify non-standard baud rate (default=" DEFAULT_BAUD ")\n");
 }
 
 enum mode {
@@ -1204,7 +1260,7 @@ int main(int argc, char *argv[])
 	cmd_sock.retries = UINT32_MAX;
 
 	while ((ch = getopt_long(argc, argv,
-				 "hs::i::u::H::T::t::D:nN",
+				 "hs::i::u::H::T::t::D:nNXR:",
 				 longopts, NULL)) != -1) {
 
 		switch(ch) {
@@ -1305,6 +1361,18 @@ int main(int argc, char *argv[])
 			mode = MODE_NOCONNECT;
 
 			break;
+		case 'X':  /* "no_dev_init" -- don't init the uartr */
+			_do_device_init = false;
+			break;
+		case 'R':  /* "baud" -- set baud rate for stty */
+			_baudrate = optarg;
+			if (atoi(_baudrate) <= 0) {
+				printf("baud rate must be a positive decimal integer\n");
+				usage(argv[0]);
+				exit(1);
+			}
+			break;
+
 		default:
 			usage(argv[0]);
 			exit(1);
@@ -1333,6 +1401,12 @@ int main(int argc, char *argv[])
 	}
 
 	printf("\n");
+
+
+	/* if we're running a device, make sure we configure it */
+	if (funos_sock.mode == SOCKMODE_DEV)
+		_configure_device(&funos_sock);
+
 
 	/* start by opening the socket to FunOS */
 	int r = dpcsocket_connnect(&funos_sock);
