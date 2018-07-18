@@ -403,7 +403,7 @@ class StatsGen(object):
 		sys.exit(1)
 	    skip_addr = self.__hexlify(skip_addr)
             for i in range(inst_cnt):
-                base_addr = i * skip_addr
+                base_addr = an_addr + (i * skip_addr)
                 objs = self.__get_csr_objs(base_addr, v.get("csr", None))
                 gen_obj_list += objs
         return gen_obj_list
