@@ -15,7 +15,7 @@ setup(
         'argparse',
         'jsocket',
         'logging',
-        'cmd2',
+        'cmd2==0.8.8',
         'argcomplete'
     ],
 )

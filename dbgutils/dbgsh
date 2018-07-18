@@ -96,7 +96,7 @@ class dbgsh(cmd2.Cmd):
     parser = argparse.ArgumentParser(prog='csr', formatter_class=ArgFormatter)
     subparsers = parser.add_subparsers(help='csr sub-command help')
 
-    parser_peek = subparsers.add_parser('peek', help="help peek",
+    parser_peek = subparsers.add_parser('peek', help="CSR peek",
                                         formatter_class=ArgFormatter)
     parser_peek.add_argument('csr', nargs=1,help="csr name")
     parser_peek.set_defaults(func=csr_peek)
@@ -113,7 +113,7 @@ class dbgsh(cmd2.Cmd):
     parser_peek.add_argument('-p', nargs=1,
         metavar=('anode_path'), dest='an_path', type=str, help="anode path")
 
-    parser_poke = subparsers.add_parser('poke', help="help poke",
+    parser_poke = subparsers.add_parser('poke', help="CSR poke",
                                         formatter_class=ArgFormatter)
     parser_poke.set_defaults(func=csr_poke)
     parser_poke.add_argument('csr', nargs=1, type=str, help="csr name")
@@ -136,7 +136,7 @@ class dbgsh(cmd2.Cmd):
         help="csr value in big-endian 64-bit words")
 
     parser_list = subparsers.add_parser('list',
-                help="list maching csr instances", formatter_class=ArgFormatter)
+                help="List maching csr instances", formatter_class=ArgFormatter)
     parser_list.set_defaults(func=csr_list)
     parser_list.add_argument('csr', nargs=1, type=str, help="csr name")
     parser_list.add_argument('-a', nargs=1,
@@ -145,9 +145,29 @@ class dbgsh(cmd2.Cmd):
                 metavar=('ring_name'), dest='ring', type=str, help="ring name")
 
     parser_find = subparsers.add_parser('find',
-                help="find csrs maching sub-string", formatter_class=ArgFormatter)
+                help="Find csrs maching sub-string", formatter_class=ArgFormatter)
     parser_find.set_defaults(func=csr_find)
-    parser_find.add_argument('csr', nargs=1, type=str, help="substring of csr name")
+    group = parser_find.add_mutually_exclusive_group(required=True)
+    group.add_argument('-s', nargs=1,  metavar=('substring'), dest='substring',
+                        type=str, help="substring of csr name")
+    group.add_argument('-a ', nargs=1, metavar=('csr_address'),
+                        dest='csr_address', type=str,
+                        help="CSR address either in decimal or hex")
+
+    parser_metadata = subparsers.add_parser('metadata',
+                help="Load metadata", formatter_class=ArgFormatter)
+    parser_metadata.set_defaults(func=csr_load_metadata)
+    metadata_group = parser_metadata.add_mutually_exclusive_group(required=True)
+    metadata_group.add_argument('-f', nargs=1, metavar=('sdk_root_dir'), dest='sdk_root_dir',
+			type= str,
+                        help="Relative or absolute path to sdk_root_dir")
+    metadata_group.add_argument('-d', dest='default', action='store_true', help="Get metadata from dochub")
+
+    parser_replay = subparsers.add_parser('replay',
+                help="Replay csr config", formatter_class=ArgFormatter)
+    parser_replay.set_defaults(func=csr_replay)
+    parser_replay.add_argument('replay_file', nargs=1, type=str,
+                help="Relative or absolute path to csr replay file")
     argcomplete.autocomplete(parser)
 
     @with_argparser(parser)
@@ -176,9 +196,12 @@ class dbgsh(cmd2.Cmd):
         args.func(args)
 
     def complete_csr(self, key, line, start_index, end_index):
+        logger.debug('key: {0} line:{1}'.format(key, line))
         if key:
-            metadata = csr_metadata().get_csr_list()
-            return [x for x in metadata if x.startswith(key)]
+            tags = line.split()
+            if tags[-2] == 'peek' or tags[-2] == 'poke' or tags[-2] == 'list':
+                metadata = csr_metadata().get_csr_list()
+                return [x for x in metadata if x.startswith(key)]
         else:
             tags = line.split()
             if tags[-1] == 'peek' or tags[-1] == 'poke' or tags[-1] == 'list':

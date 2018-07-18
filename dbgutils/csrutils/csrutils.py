@@ -8,15 +8,21 @@ import jsocket
 import time
 import logging
 import traceback
+import urllib
+import requests
+import tarfile
 from array import array
 
-logger = logging.getLogger("dbgsh")
+logger = logging.getLogger("csrutils")
 logger.setLevel(logging.INFO)
 
 class constants(object):
     SERVER_TCP_PORT = 55667
     WORD_SIZE_BITS = 64
     MAX_WORD_VALUE = 0xFFFFFFFFFFFFFFFF
+    CSR_CFG_DIR = "FunSDK/config/csr/"
+    TMP_DIR = '/tmp'
+    CSR_METADATA_FILE = 'csr_metadata.json'
 
 # Opens tcp connection with remote server
 def i2c_remote_connect(ip_address):
@@ -63,11 +69,18 @@ def i2c_remote_peek(s, csr_addr, csr_width_words):
 
 # Sends poke request to server, get the response
 def i2c_remote_poke(s, csr_addr, csr_width_words, word_array):
-    logger.debug(("s: {0} csr_addr:{1} csr_width_words:{2}"
-           " word_array{3}").format(s, csr_addr, csr_width_words, word_array))
-    if s is None or csr_addr is None \
-            or csr_width_words is None or word_array is None \
-            or csr_addr == 0 or csr_width_words < 1:
+    logger.debug(("csr_addr:{0} csr_width_words:{1}"
+        " word_array{2}").format(csr_addr,
+            csr_width_words, word_array))
+    if s is None:
+        print 'i2c server is not connected!'
+        return
+    if csr_addr is None or csr_width_words is None \
+            or word_array is None or csr_addr == 0 \
+            or csr_width_words < 1:
+        logger.info(("csr_addr:{0} csr_width_words:{1}"
+           " word_array{2}").format(csr_addr,
+               csr_width_words, word_array))
         print("Invalid poke arguments!")
         return False
 
@@ -267,24 +280,215 @@ def csr_list(args):
     print("Matching csr entries for csr:{0}".format(csr_name))
     print(json_obj_pretty(csr_list))
 
+#import pdb
+# Find csr medata matching an address
+def csr_find_addr_metadata(caddr):
+    print hex(caddr)
+    csr_dict =  csr_metadata().get_metadata()
+    if not csr_dict:
+        print "Can't get csr metadata!"
+        return None
+    print "Done Loading"
+    for k, v in csr_dict.iteritems():
+        if k == 'psw_sch_qsch_cfg_extrabw_sp_queues_fp':
+            pass
+            #pdb.set_trace()
+        for csr_data in v:
+            address = caddr
+            anode_addr = csr_data.get("an_addr", None)
+            if anode_addr is None:
+                print("Invalid csr metadata! anode_addr is missing in metadata!")
+                sys.exit(1)
+            anode_addr = int(anode_addr, 16)
+            start_anode_addr = anode_addr
+            anode_inst_cnt = csr_data.get("an_inst_cnt", None)
+            if anode_inst_cnt is None:
+                print("Invalid csr metadata! an_inst_cnt is missing in metadata!")
+                sys.exit(1)
+
+            anode_skip_addr = 0
+            anode_inst = 0
+            if anode_inst_cnt > 1:
+                anode_skip_addr = csr_data.get("an_skip_addr", None)
+                if anode_skip_addr is None:
+                    print("Invalid csr metadata! an_skip_addr is missing in metadata!")
+                    sys.exit(1)
+                anode_skip_addr = int(anode_skip_addr, 16)
+                end_anode_addr = start_anode_addr + (anode_skip_addr *
+                                                     anode_inst_cnt);
+
+                if address < start_anode_addr or address >= end_anode_addr:
+                    continue
+
+                x = address - start_anode_addr
+                anode_inst = x / anode_skip_addr
+                address = address - (anode_inst * anode_skip_addr)
+
+            csr_addr = csr_data.get("csr_addr", None)
+            if csr_addr is None:
+                print("Invalid csr metadata! csr_addr is missing in metadata!")
+                sys.exit(1)
+            csr_addr = int(csr_addr, 16)
+
+            csr_inst_start_addr = csr_addr
+            csr_width = csr_data.get("csr_width", None)
+            if csr_width is None:
+                print("Invalid csr metadata! csr_width is missing in metadata!")
+                sys.exit(1)
+            csr_width_bytes = csr_width >> 0x3
+
+            csr_n_entries = csr_data.get("csr_n_entries", None)
+            if csr_n_entries is None:
+                print("Invalid csr metadata! csr_n_entries is missing in metadata!")
+                sys.exit(1)
+            csr_inst_skip_addr = csr_width_bytes * csr_n_entries
+
+            csr_inst_count = csr_data.get("csr_count", None)
+            if csr_inst_count is None:
+                print("Invalid csr metadata! csr_inst_count is missing in metadata!")
+                sys.exit(1)
+
+            address -= start_anode_addr
+            csr_inst_end_addr = csr_inst_start_addr
+            if csr_inst_count > 0:
+                csr_inst_end_addr += csr_inst_skip_addr * csr_inst_count
+
+            if address < csr_inst_start_addr or address >= csr_inst_end_addr:
+                continue
+
+            address -= csr_inst_start_addr
+            csr_inst = address / csr_inst_skip_addr
+            address -= csr_inst * csr_inst_skip_addr
+
+            csr_start_addr = address
+            csr_end_addr = csr_start_addr
+            if csr_n_entries > 0:
+                csr_end_addr = csr_start_addr + (csr_width_bytes * csr_n_entries)
+
+            if address < csr_start_addr or address >= csr_end_addr:
+                continue
+            csr_index = address / csr_width_bytes
+
+            print json_obj_pretty({k:csr_data})
+            print ("csr: {0} anode_inst: {1} csr_inst: {2} csr_index:"
+                " {3}").format(k, anode_inst, csr_inst, csr_index)
+            return ({k:csr_data, "anode_inst": anode_inst,
+                    "csr_inst": csr_inst, "csr_index": csr_index})
+    print "Invalid address: {0}. No valid csr found!".format(hex(caddr))
+    return None
+
 # csr find handler for commandline interface.
 # Returnds names of all the csrs which contain input substring
 def csr_find(args):
-    csr_name = args.csr[0]
-    if not csr_name:
-        print("csr name sub-string is empty!")
+    print args
+
+    csr_name = args.substring[0] if args.substring else None
+    csr_address = args.csr_address[0] if args.csr_address else None
+
+    if csr_name:
+        csr_list = csr_metadata().get_csr_list()
+        matched_csr_list = list()
+        for x in csr_list:
+            if csr_name in x:
+                matched_csr_list.append(x)
+        if not matched_csr_list:
+            print('There are no csrs in database matching "{0}"!'.format(csr_name))
+            return
+        print('Matching csr entries for "{0}"'.format(csr_name))
+        print(json_obj_pretty(matched_csr_list))
+    elif csr_address:
+        address = str_to_int(csr_address)
+        if address and address > 0:
+            csr_find_addr_metadata(address)
+        else:
+            print "Invalid address!"
+            return
+    else:
+        print('Invalid argument! args:{0}'.format(args))
         return
 
-    csr_list = csr_metadata().get_csr_list()
-    matched_csr_list = list()
-    for x in csr_list:
-        if csr_name in x:
-            matched_csr_list.append(x)
-    if not matched_csr_list:
-        print('There are no csrs in database matching "{0}"!'.format(csr_name))
+def csr_metadata_dochub():
+    url = 'http://dochub.fungible.local/doc/jenkins/funsdk/latest/Linux/csr-cfg.tgz'
+    file_tmp = urllib.urlretrieve(url, filename=None)[0]
+    base_name = os.path.basename(url)
+    file_name, file_extension = os.path.splitext(base_name)
+    tar = tarfile.open(file_tmp)
+    tar.extract('./'+ constants.CSR_CFG_DIR + constants.CSR_METADATA_FILE, '/tmp')
+    return True
+
+def csr_load_metadata(args):
+    if args.default:
+        status = csr_metadata().load_metadata_from_dochub()
+        if not status:
+            print 'Failed to load metadata from dochub!'
+            return
+    elif args.sdk_root_dir:
+        sdk_root_dir = args.sdk_root_dir[0]
+        sdk_root_dir = os.path.abspath(sdk_root_dir)
+        if not os.path.exists(sdk_root_dir):
+            print  'SDK root dir: "{}": does not exist!'.format(sdk_root_dir)
+            return
+        status = csr_metadata().load_metadata_from_sdk(sdk_root_dir)
+        if not status:
+            print 'Failed to load metadata from sdk dir: {}!'.format(sdk_root_dir)
+            return
+    else:
+        print "Invalid metadta arguments!"
         return
-    print('Matching csr entries for "{0}"'.format(csr_name))
-    print(json_obj_pretty(matched_csr_list))
+    return
+def csr_replay(args):
+    replay_file = args.replay_file[0]
+    if not os.path.isabs(replay_file):
+        replay_file = os.path.join(os.getcwd(), replay_file)
+    if not os.path.isfile(replay_file):
+        print 'Path: "{0}" is not a regular file!'.format(replay_file)
+        return
+    with open(replay_file) as fp:
+        line = fp.readline()
+        cnt = 1
+        while line:
+            line = line.rstrip()
+            csr_tokens = line.split(':')
+            if len(csr_tokens) < 4:
+                print 'Skipping line: "{0}"'.format(line)
+                line = fp.readline()
+                continue
+            print("Line {}: {}".format(cnt, line.strip()))
+            if csr_tokens[0] != 'CSRWR':
+                line = fp.readline()
+                continue
+            for count, token in enumerate(csr_tokens[1:], start=1):
+                csr_tokens[count] =  str_to_int(csr_tokens[count])
+                if csr_tokens[count] is None:
+                    print 'Invalid csr replay data!: "{0}"'.format(line)
+                    return
+
+            csr_address = csr_tokens[1]
+            csr_width_words = csr_tokens[2]
+            if not csr_width_words:
+                print 'Invalid csr width in input data: "{0}"'.format(line)
+                return
+            csr_width_words = (csr_width_words + 63) / 64
+            csr_val_words = csr_tokens[3:]
+            if csr_width_words != len(csr_val_words):
+                print 'Mismatch in csr width and value. "{0}"'.format(line)
+                return
+            if i2c_server_socket is None:
+                print 'i2c server is not connected!'
+                return
+            logger.debug('csr_address: {0} csr_width_words: {1}'
+                    'word_array:{2}'.format(csr_address,
+                        csr_width_words, csr_val_words))
+            status = i2c_remote_poke(i2c_server_socket, csr_address,
+                   csr_width_words, csr_val_words)
+            if status == True:
+                print('Succesfully replayed "{0}"!'.format(line))
+                cnt += 1
+            else:
+                print('Replay failed! "{0}"! Replay stopped!'.format(line))
+                return
+            line = fp.readline()
+    print('Succesfully replayed {0} CSRs!'.format(cnt))
 
 # csr connect handler for commandline interface.
 # Connects remote server
@@ -299,7 +503,11 @@ def server_connect(args):
         print("Invalid ip address!")
         return
     if i2c_server_socket is not None:
-        i2c_remote_disconnect(i2c_server_socket)
+        try:
+            i2c_remote_disconnect(i2c_server_socket)
+        except Exception as e:
+            logging.error(traceback.format_exc())
+            logger.info('Still proceeding with connect..!')
         i2c_server_socket = None
 
     s = i2c_remote_connect(ip_address)
@@ -389,7 +597,7 @@ def csr_get_addr(csr_data, anode_inst=None, csr_inst=None, csr_entry=None):
             print("Invalid csr metadata! an_skip_addr is missing in metadata!")
             sys.exit(1)
 
-        anode_addr = anode_skip_addr * anode_inst;
+        anode_addr = int(anode_skip_addr, 16) * anode_inst;
 
     csr_addr = csr_data.get("csr_addr", None)
     if csr_addr is None:
@@ -855,15 +1063,64 @@ def singleton(cls):
 @singleton
 class csr_metadata:
     def __init__(self):
-        SDK_DIR = "../../FunSDK"
-        CSR_CFG_DIR = "FunSDK/config/csr"
-        loc = os.path.join(SDK_DIR, CSR_CFG_DIR, "csr_metadata.json")
-        assert os.path.exists(loc), "{}: file path does not exist!".format(loc)
-        print("Loading csr metadata: {0}".format(loc))
-        self.metadata = json.load(open(loc))
+        status = self.load_metadata_from_dochub()
+        if not status:
+             print('Failed to load csr metadata!')
+             sys.exit(1)
 
-    def set_metadata(self, metadata):
-        self.metadata = metadata
+    def _load_metadata_file(self, metadata_file):
+        if not os.path.exists(metadata_file):
+            print "Failed to find matadata file: {}".format(metadata_file)
+            return False
+        print("Loading csr metadata: {0}".format(metadata_file))
+        self.metadata = json.load(open(metadata_file))
+        return True
+
+    def download_metadata_from_dochub(self):
+        metadata_file = os.path.join(constants.TMP_DIR,
+                    constants.CSR_CFG_DIR, constants.CSR_METADATA_FILE)
+        if os.path.exists(metadata_file): os.remove(metadata_file)
+        try:
+            csr_metadata_dochub()
+        except Exception as e:
+            logging.error(traceback.format_exc())
+            print('Failed to get csr metadata from dochub!'
+                  'Make sure that "dochub.fungible.local" accessable.')
+            return None
+        if not os.path.exists(metadata_file):
+            print "Failed to find matadata file: {} after download!".format(metadata_file)
+            return None
+        return metadata_file
+
+    def load_metadata_from_dochub(self):
+        status = self.download_metadata_from_dochub()
+        if not status:
+             print('Failed to download csr metadata!')
+             return False
+        metadata_file = os.path.join(constants.TMP_DIR,
+                    constants.CSR_CFG_DIR, constants.CSR_METADATA_FILE)
+        if not os.path.exists(metadata_file):
+            print "Failed to find matadata file: {} after download!".format(metadata_file)
+            return None
+        status = self._load_metadata_file(metadata_file)
+        if not status:
+            return False
+        return True
+
+    def load_metadata_from_sdk(self, sdk_root):
+        metadata_file = os.path.join(sdk_root, constants.CSR_CFG_DIR,
+                constants.CSR_METADATA_FILE)
+        if not os.path.exists(metadata_file):
+            print "Failed to find matadata file: {}".format(metadata_file)
+            return None
+        status = self._load_metadata_file(metadata_file)
+        if not status:
+            print "Failed to load matadata file: {}".format(metadata_file)
+            return False
+        return True
+
+    def get_metadata(self):
+        return self.metadata
 
     def csr_equal(self, x, rn_class, rn_inst, an_path, an):
         if rn_class:
@@ -881,7 +1138,8 @@ class csr_metadata:
 
         return True
 
-    def get_csr_def(self, csr_name, rn_class=None, rn_inst=None, an_path=None, an=None):
+    def get_csr_def(self, csr_name, rn_class=None, rn_inst=None,
+                    an_path=None, an=None):
         csr_defs_lst = self.metadata.get(csr_name, [])
         if not csr_defs_lst:
             return None

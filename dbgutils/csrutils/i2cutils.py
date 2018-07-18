@@ -17,7 +17,7 @@ from socket import error as socket_error
 logger = logging.getLogger("jsocket.tserver")
 logger.setLevel(logging.INFO)
 
-logger = logging.getLogger("i2c_peek_poke")
+logger = logging.getLogger("i2cutils")
 logger.setLevel(logging.INFO)
 
 class constants(object):
@@ -298,10 +298,14 @@ if __name__ == "__main__":
     signal.signal(signal.SIGINT, signal_handler) #Terminate cleanly on ctrl+c
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('ip_addr', nargs=1, type=str,
+    parser.add_argument('ip_addr', nargs='?', type=str,
                         help="ip address of server")
     args = parser.parse_args()
-    ip_addr = args.ip_addr[0]
+    if args.ip_addr is None:
+        ip_addr = socket.gethostbyname(socket.gethostname())
+    else:
+        ip_addr = args.ip_addr[0]
+
     try:
         socket.inet_aton(ip_addr) #Validates the ip address
     except socket_error:
@@ -311,7 +315,8 @@ if __name__ == "__main__":
     server = jsocket.ServerFactory(I2CFactoryThread, address=ip_addr,
                                    port = constants.SERVER_TCP_PORT)
     server.timeout = 2.0
-    logger.info("Starting the server!")
+    logger.info("Starting the server IP:{0} PORT:{1}".format(ip_addr,
+                                            constants.SERVER_TCP_PORT))
     server.start()
 
     # Let the main thread stay alive and recieve contl+c
