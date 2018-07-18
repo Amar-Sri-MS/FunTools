@@ -436,24 +436,31 @@ def csr_load_metadata(args):
         print "Invalid metadta arguments!"
         return
     return
-def csr_replay(args):
-    replay_file = args.replay_file[0]
-    if not os.path.isabs(replay_file):
-        replay_file = os.path.join(os.getcwd(), replay_file)
-    if not os.path.isfile(replay_file):
-        print 'Path: "{0}" is not a regular file!'.format(replay_file)
+
+# Process each line in the <input_file> statrting with string "CSRWR" and creates list all the CSRs
+# Expected valid line format:  CSRWR:<csr_address>:<csr_width>:[<list of csr values in 64 bit big endian words>]
+# Returns the dict of all the csrs
+def csr_replay_config(input_file):
+    if not os.path.isabs(input_file):
+        input_file = os.path.join(os.getcwd(), input_file)
+    if not os.path.isfile(input_file):
+        print 'Path: "{0}" is not a regular file!'.format(input_file)
         return
-    with open(replay_file) as fp:
+
+    csr_replay_data = list()
+    with open(input_file) as fp:
         line = fp.readline()
-        cnt = 1
+        cnt = 0
+        line_num = 0
         while line:
             line = line.rstrip()
+            line_num += 1
+            logger.debug("Line {}: {}".format(line_num, line.strip()))
             csr_tokens = line.split(':')
             if len(csr_tokens) < 4:
-                print 'Skipping line: "{0}"'.format(line)
+                logger.debug('Skipping line: "{0}"'.format(line))
                 line = fp.readline()
                 continue
-            print("Line {}: {}".format(cnt, line.strip()))
             if csr_tokens[0] != 'CSRWR':
                 line = fp.readline()
                 continue
@@ -464,30 +471,134 @@ def csr_replay(args):
                     return
 
             csr_address = csr_tokens[1]
-            csr_width_words = csr_tokens[2]
-            if not csr_width_words:
+            csr_width = csr_tokens[2]
+            if not csr_width:
                 print 'Invalid csr width in input data: "{0}"'.format(line)
                 return
-            csr_width_words = (csr_width_words + 63) / 64
+            csr_width_words = (csr_width + 63) / 64
             csr_val_words = csr_tokens[3:]
             if csr_width_words != len(csr_val_words):
                 print 'Mismatch in csr width and value. "{0}"'.format(line)
                 return
-            if i2c_server_socket is None:
-                print 'i2c server is not connected!'
-                return
-            logger.debug('csr_address: {0} csr_width_words: {1}'
+            logger.debug('csr_address: {0} csr_width: {1}'
                     'word_array:{2}'.format(csr_address,
-                        csr_width_words, csr_val_words))
-            status = i2c_remote_poke(i2c_server_socket, csr_address,
-                   csr_width_words, csr_val_words)
-            if status == True:
-                print('Succesfully replayed "{0}"!'.format(line))
-                cnt += 1
-            else:
-                print('Replay failed! "{0}"! Replay stopped!'.format(line))
-                return
+                        csr_width, csr_val_words))
+
+            csr_info = dict()
+            csr_info["csr_address"] = csr_address
+            csr_info["csr_width"] = csr_width
+            csr_info["csr_val_words"] = csr_val_words
+            csr_replay_data.append(csr_info)
+            logger.debug('Succesfully added "{0}" to replay data!'.format(line))
+            cnt += 1
             line = fp.readline()
+    if cnt > 0:
+        print('Succesfully added {0} CSRs! to replay data.'.format(cnt))
+        return csr_replay_data
+    else:
+        print('No valid csrreplay data is found in {}').format(input_file)
+        return None
+
+# Dumps the json dict of all the csrs returned by csr_replay_config() into a file in the directory <dest_dir>
+def csr_replay_config_to_file(input_file, dest_dir):
+    if not os.path.isabs(input_file):
+        input_file = os.path.join(os.getcwd(), input_file)
+    if not os.path.isfile(input_file):
+        print 'Path: "{0}" is not a regular file!'.format(input_file)
+        return
+
+    if not os.path.isabs(dest_dir):
+        dest_dir = os.path.join(os.getcwd(), dest_dir)
+    if not os.path.exists(dest_dir):
+        print 'Path: "{0}" does not exist!'.format(dest_dir)
+        return
+
+    replay_config = csr_replay_config(input_file)
+    if replay_config is None:
+        print('No valid csrreplay data is found in {}.').format(input_file)
+        return False
+
+    csr_replay_data = list()
+    for x in replay_config:
+        csr_info = dict()
+        csr_address = x.get("csr_address", None)
+        if not csr_address:
+            print("Invalid csr_address in input data! csr_address: {0}".format(csr_address))
+            return False
+        csr_width = x.get("csr_width", None)
+        if not csr_width:
+            print("Invalid in csr_width in input data! csr_width: {0}".format(csr_width))
+            return False
+        csr_val_words = x.get("csr_val_words", None)
+        if not csr_val_words:
+            print("Invalid in csr_val_words in input data! csr_val_words: {0}".format(csr_val_words))
+            return False
+        csr_info["csr_address"] = hex(csr_address)
+        csr_info["csr_width_words"] = (csr_width + 63 ) >> 6
+        csr_val_words_hex = list()
+        remaining_width = csr_width
+        for x in csr_val_words:
+            if remaining_width >= 64:
+                csr_val_words_hex.append('0x{0:0{1}X}'.format(x,16))
+                remaining_width -= 64
+            else:
+                mask = (0xFFFFFFFFFFFFFFFF >> (64 - remaining_width)) \
+                        << (64 - remaining_width)
+                csr_val_words_hex.append('0x{0:0{1}X}'.format(x & mask,16))
+                remaining_width = 0
+        csr_info["csr_val_words"] = csr_val_words_hex
+        csr_replay_data.append(csr_info)
+
+    dest_file = os.path.join(dest_dir, "csr_replay_data.cfg")
+    f = open(dest_file, "w")
+    f.write(json.dumps(csr_replay_data, indent=4))
+    f.close()
+    print('Succesfully created csr replay data file: {0}'.format(dest_file))
+
+def csr_replay(args):
+    input_file = args.replay_file[0]
+    if not os.path.isabs(input_file):
+        input_file = os.path.join(os.getcwd(), input_file)
+    if not os.path.isfile(input_file):
+        print 'Path: "{0}" is not a regular file!'.format(input_file)
+        return
+
+    if i2c_server_socket is None:
+        print 'i2c server is not connected!'
+        return
+
+    replay_config = csr_replay_config(input_file)
+    if replay_config is None:
+        print('No valid csrreplay data is found in {}').format(input_file)
+        return False
+
+    cnt = 0
+    for x in replay_config:
+        csr_info = dict()
+        csr_address = x.get("csr_address", None)
+        if not csr_address:
+            print("Invalid csr_address in input data! csr_address: {0}".format(csr_address))
+            return False
+        csr_width = x.get("csr_width", None)
+        if not csr_width:
+            print("Invalid in csr_width in input data! csr_width: {0}".format(csr_width))
+            return False
+        csr_val_words = x.get("csr_val_words", None)
+        if not csr_val_words or len(csr_val_words) < 1:
+            print("Invalid in csr_val_words in input data! csr_val_words: {0}".format(csr_val_words))
+            return False
+        csr_width_words = (csr_width + 63 ) >> 6
+        logger.debug('csr_address: {0} csr_width_words: {1}'
+                'word_array:{2}'.format(csr_address,
+                    csr_width_words, csr_val_words))
+        status = i2c_remote_poke(i2c_server_socket, csr_address,
+                       csr_width_words, csr_val_words)
+        if status == True:
+            print('Succesfully replayed "{0}"!'.format(x))
+            cnt += 1
+        else:
+            print('Replay failed! "{0}"! Replay stopped!'.format(x))
+            return
     print('Succesfully replayed {0} CSRs!'.format(cnt))
 
 # csr connect handler for commandline interface.
