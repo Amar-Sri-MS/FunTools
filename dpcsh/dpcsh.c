@@ -1366,7 +1366,7 @@ int main(int argc, char *argv[])
 			break;
 		case 'R':  /* "baud" -- set baud rate for stty */
 			_baudrate = optarg;
-			if ((_baudrate == NULL) || (atoi(_baudrate) <= 0)) {
+			if (atoi(_baudrate) <= 0) {
 				printf("baud rate must be a positive decimal integer\n");
 				usage(argv[0]);
 				exit(1);
