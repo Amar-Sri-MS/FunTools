@@ -1175,7 +1175,7 @@ static struct option longopts[] = {
 	{ "oneshot",       no_argument,       NULL, 'S' },
 	{ "manual_base64", no_argument,       NULL, 'N' },
 	{ "no_dev_init",   no_argument,       NULL, 'X' },
-	{ "baud",          no_argument,       NULL, 'R' },
+	{ "baud",          required_argument, NULL, 'R' },
 
 	/* end */
 	{ NULL, 0, NULL, 0 },
@@ -1185,7 +1185,7 @@ static struct option longopts[] = {
 static void usage(const char *argv0)
 {
 	printf("usage: %s [<mode> [option]]", argv0);
-	printf("       by default connect as a --unix_sock\n");
+	printf("       by default connect as a --tcp_sock\n");
 	printf("       --help                  this text\n");
 	printf("       --dev[=device]          open device and read/write base64 to FunOS UART\n");
 	printf("       --base64_srv[=port]     listen as a server port on IP using base64 (dpcuart to qemu)\n");
@@ -1366,7 +1366,7 @@ int main(int argc, char *argv[])
 			break;
 		case 'R':  /* "baud" -- set baud rate for stty */
 			_baudrate = optarg;
-			if (atoi(_baudrate) <= 0) {
+			if ((_baudrate == NULL) || (atoi(_baudrate) <= 0)) {
 				printf("baud rate must be a positive decimal integer\n");
 				usage(argv[0]);
 				exit(1);
