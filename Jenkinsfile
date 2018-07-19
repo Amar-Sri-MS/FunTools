@@ -180,7 +180,7 @@ def getCurrentRepo() {
 }
 
 def checkoutRepo() {
-	timeout(time: 30, unit: 'MINUTES') {
+	timeout(time: 45, unit: 'MINUTES') {
 	
 	String BRANCH_FUNSDK = "master"
 	String BRANCH_FUNOS = "master"
@@ -297,7 +297,7 @@ def build(label) {
     String SDK_BUILD_DIR = "${WORKSPACE}/build"
 
     // Run the FunOS build
-    timeout(time: 30, unit: 'MINUTES') {
+    timeout(time: 45, unit: 'MINUTES') {
 
 	echo 'building FunOS core MACHINE'
 
@@ -399,7 +399,7 @@ def testRun() {
 }
 
 def codeCoverage() {
-	timeout(time: 30, unit: 'MINUTES') {
+	timeout(time: 45, unit: 'MINUTES') {
 
 	// all platform tests
 	sh "./FunOS/build/funos-posix-cov app=test"
