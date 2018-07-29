@@ -939,11 +939,9 @@ def csr_get_metadata(csr_name, csr_inst=None, csr_entry=None, ring_name=None,
             return
 
         csr_list = csr_metadata().get_csr_def(csr_name = csr_name, rn_class=ring_name)
-        if ring_name:
-            ring_inst_list = rings.get(ring_name)
-        else:
+        if ring_name is None:
             ring_name = rings.keys()[0]
-            ring_inst_list = rings.get(ring_name, None)
+        ring_inst_list = rings.get(ring_name, None)
 
         if ring_inst_list is None:
             print(("Inconsistant csr metadata parsing. ring_name: {}"
