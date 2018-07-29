@@ -931,7 +931,7 @@ def csr_get_metadata(csr_name, csr_inst=None, csr_entry=None, ring_name=None,
             print(("csr: {} exists in multiple rings."
                    " Give appropriate ring option! valid rings: {}").format(csr_name, rings))
             return
-        if ring_name not in rings:
+        if ring_name and ring_name not in rings:
             print("csr objs:\n{}\n".format(json_obj_pretty(csr_list)))
             print(("Invalid ring:{} for csr: {}."
                    " Give appropriate ring option! valid rings: {}").format(ring_name,
@@ -939,7 +939,17 @@ def csr_get_metadata(csr_name, csr_inst=None, csr_entry=None, ring_name=None,
             return
 
         csr_list = csr_metadata().get_csr_def(csr_name = csr_name, rn_class=ring_name)
-        ring_inst_list = rings.get(ring_name)
+        if ring_name:
+            ring_inst_list = rings.get(ring_name)
+        else:
+            ring_name = rings.keys()[0]
+            ring_inst_list = rings.get(ring_name, None)
+
+        if ring_inst_list is None:
+            print(("Inconsistant csr metadata parsing. ring_name: {}"
+                    " There should be atleast one ring inst!").format(ring_name))
+            return
+
         print("ring: {} instace list: {}".format(ring_name, ring_inst_list))
         if len(ring_inst_list) > 0:
             if len(ring_inst_list) > 1 and ring_inst is None:
@@ -958,15 +968,32 @@ def csr_get_metadata(csr_name, csr_inst=None, csr_entry=None, ring_name=None,
 
     anodes = dict()
     csr_list = csr_metadata().get_csr_def(csr_name = csr_name,
-                                          rn_class=ring_name, rn_inst=ring_inst)
+                                rn_class=ring_name, rn_inst=ring_inst)
     logger.debug("Preparing anode list")
     for csr in csr_list:
         if ring_name == csr.get("ring_name", None):
             an_name = csr.get("an", None)
             logger.debug(an_name)
-            anodes[an_name] = csr.get("an_inst_cnt", None)
-    print("anodes: {}".format(anodes))
-    if anodes and len(anodes) > 1:
+            an_path = csr.get("an_path", None)
+            an_inst_cnt = csr.get("an_inst_cnt", None)
+            if an_path is None or an_inst_cnt is None:
+                print(("Invalid csr metadata! csr: {}"
+                        " an_path:{} an_inst_cnt:{}").format(csr_name,
+                            an_path, an_inst_cnt))
+                return
+            anode_path_inst = anodes.get(an_name, None)
+            if anode_path_inst is None:
+                anode_path_inst = dict()
+                anodes[an_name] = anode_path_inst
+            anode_path_inst[an_path] = an_inst_cnt
+    logger.debug("anodes: {}".format(anodes))
+    if len(anodes) == 0:
+        print("Inconsistant csr metadata parsing."
+                " There should be atleast one an_node inst!")
+        return
+
+    anodes_list = None
+    if len(anodes) > 1:
         if anode_name is None:
             print("csr objs:\n{}\n".format(json_obj_pretty(csr_list)))
             print(("csr: {} exists in multiple anodes."
@@ -978,33 +1005,74 @@ def csr_get_metadata(csr_name, csr_inst=None, csr_entry=None, ring_name=None,
                    "\nGive appropriate anode option! valid anodes: {}").format(anode_name,
                                                                 csr_name, anodes))
             return
+        anodes_list = anodes.get(anode_name, None)
+    else:
+        anode_names = anodes.keys()
+        if len(anode_names) != 1:
+            print(("Inconsistant csr metadata parsing. anode_names: {}"
+                    " There should be one anode name!").format(anode_names))
+            return
+        anode_name = anode_names[0]
+        anodes_list = anodes.get(anode_name, None)
+    if len(anodes_list) == 0:
+        print("Inconsistant csr metadata parsing."
+              " There should be atleast one an_inst!")
+        return
 
     csr_list = csr_metadata().get_csr_def(csr_name = csr_name,
-                                rn_class=ring_name, rn_inst=ring_inst, an=anode_name)
+            rn_class=ring_name, rn_inst=ring_inst,
+            an=anode_name)
 
-    anode_inst_count = 0;
-    if anode_name is not None:
-        anode_inst_count = anodes.get(anode_name, 0)
-        print("anode: {} inst count: {}".format(anode_name, anode_inst_count))
-        if not anode_inst_count > 0:
-            print("Inconsistant csr metadata parsing!")
-            return
-    if anode_inst_count > 0:
-        if anode_inst_count > 1 and anode_inst is None:
+    if len(anodes_list) > 1:
+        if anode_path is None:
             print("csr objs:\n{}\n".format(json_obj_pretty(csr_list)))
-            print(("csr: {} exists in multiple instances of anode: {}."
-                   " Give appropriate anode option!"
-                   " valid anode instances: {}").format(csr_name,
-                            anode_name, range(0,anode_inst_count)))
+            print(("csr: {} exists in multiple an_paths."
+                   " Give appropriate an_path option!"
+                   " valid an_paths: {}").format(csr_name, anodes_list))
             return
 
-        if (anode_inst is not None) and (anode_inst < 0 or anode_inst >= anode_inst_count):
-            print("csr objs:\n{}\n".format(json_obj_pretty(csr_list)))
-            print(("Invalid anode instance for csr: {} anode: {}."
-                "\nGive appropriate anode details!"
-                " Valid anode instances: {}").format(csr_name,
-                anode_name, range(0,anode_inst_count)))
+    anode_paths = anodes_list.keys()
+    if not len(anode_paths) > 0:
+        print("Inconsistant csr metadata parsing."
+                " There should be atleast one an_path!")
+        return
+
+    if anode_path is not None:
+        if anode_path not in anode_paths:
+            print(("Invalid anode_path:{} for csr: {}."
+                "\nGive appropriate anod path option!"
+                " valid anode paths: {}").format(anode_path,
+                    csr_name, anode_paths))
             return
+
+    csr_list = csr_metadata().get_csr_def(csr_name = csr_name,
+            rn_class=ring_name, rn_inst=ring_inst,
+            an=anode_name, an_path=anode_path)
+
+    if len(anode_paths) > 1:
+        anode_inst_count = anodes_list.get(anode_path, None)
+    else:
+        anode_inst_count = anodes_list.get(anode_paths[0], None)
+
+    if not anode_inst_count > 0:
+        print("Inconsistant csr metadata parsing!"
+                " anode inst count should be non-zero positive integer!")
+        return
+    if anode_inst_count > 1 and anode_inst is None:
+        print("csr objs:\n{}\n".format(json_obj_pretty(csr_list)))
+        print(("csr: {} exists in multiple instances of anode: {}."
+               " Give appropriate anode option!"
+               " valid anode instances: {}").format(csr_name,
+                        anode_name, range(0,anode_inst_count)))
+        return
+
+    if (anode_inst is not None) and (anode_inst < 0 or anode_inst >= anode_inst_count):
+        print("csr objs:\n{}\n".format(json_obj_pretty(csr_list)))
+        print(("Invalid anode instance for csr: {} anode: {}."
+            "\nGive appropriate anode details!"
+            " Valid anode instances: {}").format(csr_name,
+            anode_name, range(0,anode_inst_count)))
+        return
 
     if len(csr_list) != 1:
         print("csr objs:\n{}\n".format(json.dumps(csr_list, indent=4)))
@@ -1126,7 +1194,7 @@ class csr_metadata:
         if rn_class:
             if x["ring_name"] != rn_class:
                 return False
-        if rn_inst:
+        if rn_inst is not None:
             if x["ring_inst"] != rn_inst:
                 return False
         if an:
@@ -1147,7 +1215,9 @@ class csr_metadata:
             csr_defs_lst = [x for x in csr_defs_lst        \
                             if self.csr_equal(x, rn_class, \
                             rn_inst, an_path, an)]
-
+        logger.debug(("csr_name: {}, rn_class: {}, rn_inst: {}"
+                " an_path: {}, an: {}").format(csr_name, rn_class,
+                rn_inst, an_path, an))
         return csr_defs_lst
 
     def get_csr_list(self):
