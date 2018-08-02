@@ -597,7 +597,7 @@ def csr_get_addr(csr_data, anode_inst=None, csr_inst=None, csr_entry=None):
             print("Invalid csr metadata! an_skip_addr is missing in metadata!")
             sys.exit(1)
 
-        anode_addr = int(anode_skip_addr, 16) * anode_inst;
+        anode_addr += int(anode_skip_addr, 16) * anode_inst;
 
     csr_addr = csr_data.get("csr_addr", None)
     if csr_addr is None:
