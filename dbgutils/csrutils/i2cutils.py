@@ -51,47 +51,47 @@ def byte_array_to_words_be(byte_array):
 # Returns the device handle
 def i2c_connect(dev_id):
     dev_idx = aardvark_i2c_spi_dev_index_from_serial(dev_id)
+    if dev_idx is None:
+        dev_list = aardvark_i2c_spi_dev_list()
     n_devs, devs = aa_find_devices(dev_idx+1)
     logger.debug("n_devs:{0} devs:".format(n_devs))
     logger.debug(devs)
     if not devs or devs[dev_idx] is None:
-        status_msg = "Failed to detect i2c device!"
+        status_msg = "Failed to detect i2c device! dev_list: {0}".format(dev_list)
         #self.send_obj({"STATUS":[False, status_msg]})
         logger.error(status_msg)
-        return None
+        return (False, status_msg)
 
     dev_handle =  devs[dev_idx]
     logger.debug("Dev handle: {0}".format(dev_handle))
     h = aa_open(dev_handle)
     if h == 0x8000:
-        logger.debug("Invalid i2c Handle! {0}".format(h))
-        return None
+        status_msg = "Invalid i2c Handle! {0}".format(h)
+        logger.error(status_msg)
+        return (False, status_msg)
 
     features = aa_features(h)
     if features != constants.IC_DEVICE_FEATURE_MASK:
         status_msg = "Invalid device features!: {0}".format(features)
-        #self.send_obj({"STATUS":[False, status_msg]})
         logger.error(status_msg)
-        return None
+        return (False, status_msg)
 
     status = aa_i2c_free_bus(h)
     logger.debug("Free Bus: {0}".format(aa_status_string(status)))
     status = aa_configure(h, 2)
     if status != 2:
         status_msg = "Configure i2c mode! status:{0}".format(status)
-        #self.send_obj({"STATUS":[False, status_msg]})
         logger.error(status_msg)
-        return None
+        return (False, status_msg)
 
     status = aa_i2c_bitrate(h, 1)
     if status != 1:
         status_msg = "Configure bitrate! status:{0}".format(status)
-        #self.send_obj({"STATUS":[False, status_msg]})
         logger.error(status_msg)
-        return None
+        return (False, status_msg)
 
-    logger.debug("i2c handle: {0}".format(h))
-    return h
+    logger.info("i2c dev is connected. handle: {0}".format(h))
+    return (True, h)
 
 # Free the i2c bus and close the device handle
 def i2c_disconnect(h):
@@ -228,17 +228,21 @@ class I2CFactoryThread(jsocket.ServerFactoryThread):
                     i2c_disconnect(self.i2c_handle)
                     self.i2c_handle = None
                 try:
-                    self.i2c_handle = i2c_connect(dev_id)
+                    (status, value) = i2c_connect(dev_id)
+                    if status is True:
+                        self.i2c_handle = value
+                        self.send_obj({"STATUS":[True, "i2c device is ready!"]})
+                        logger.info(('i2c device connection is ready!'
+                                    ' i2c_handle:{0}').format(self.i2c_handle))
+                    else:
+                        self.i2c_handle = None
+                        error_str = value
+                        self.send_obj({"STATUS":[False, error_str]})
+                        return
                 except Exception as e:
                     logging.error(traceback.format_exc())
                     self.send_obj({"STATUS":[False, "Exception!"]})
                     return
-                if self.i2c_handle is None:
-                    self.send_obj({"STATUS":[False, "i2c device open failed!"]})
-                else:
-                    self.send_obj({"STATUS":[True, "i2c device is ready!"]})
-                    logger.info(('i2c device connection is ready!'
-				' i2c_handle:{0}').format(self.i2c_handle))
             elif cmd == "CSR_PEEK":
                 if self.i2c_handle is None:
                     self.send_obj({"STATUS":[False, "I2c dev is not connected!"]})
