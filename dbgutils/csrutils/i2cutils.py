@@ -13,6 +13,7 @@ import traceback
 import signal
 import socket
 from socket import error as socket_error
+from aa_i2c_spi_dev_scan import *
 
 logger = logging.getLogger("jsocket.tserver")
 logger.setLevel(logging.INFO)
@@ -22,7 +23,7 @@ logger.setLevel(logging.INFO)
 
 class constants(object):
     F1_I2C_SLAVE_ADDR = 0x70
-    SERVER_TCP_PORT = 55667
+    SERVER_TCP_PORT = 55668
     IC_DEVICE_FEATURE_MASK = 0x1B
 
 # Converts byte array to big-endian 64-bit words
@@ -48,17 +49,18 @@ def byte_array_to_words_be(byte_array):
 
 # Check i2c device presence and open the device.
 # Returns the device handle
-def i2c_connect():
-    n_devs, devs = aa_find_devices(1)
+def i2c_connect(dev_id):
+    dev_idx = aardvark_i2c_spi_dev_index_from_serial(dev_id)
+    n_devs, devs = aa_find_devices(dev_idx+1)
     logger.debug("n_devs:{0} devs:".format(n_devs))
     logger.debug(devs)
-    if not devs or devs[0] is None:
+    if not devs or devs[dev_idx] is None:
         status_msg = "Failed to detect i2c device!"
         #self.send_obj({"STATUS":[False, status_msg]})
         logger.error(status_msg)
         return None
 
-    dev_handle =  devs[0]
+    dev_handle =  devs[dev_idx]
     logger.debug("Dev handle: {0}".format(dev_handle))
     h = aa_open(dev_handle)
     if h == 0x8000:
@@ -196,6 +198,12 @@ class I2CFactoryThread(jsocket.ServerFactoryThread):
         super(I2CFactoryThread, self).__init__()
         self.timeout = 2.0
         self.i2c_handle = None
+    def __del__(self):
+        if self.i2c_handle is not None:
+            logger.info("Closing i2c Connection!")
+            i2c_disconnect(self.i2c_handle)
+            self.i2c_handle = None
+        logger.info("Destroyed i2c factory thread!");
 
     def _process_message(self, obj):
         """ virtual method - Implementer must define protocol """
@@ -205,13 +213,22 @@ class I2CFactoryThread(jsocket.ServerFactoryThread):
             logger.info(obj)
             cmd = obj.get("cmd", None)
             if cmd == "CONNECT":
-                logger.info("Connection Request.")
+		connect_args = obj.get("args", None)
+		if not connect_args:
+		    self.send_obj({"STATUS":[False, "Invalid connect args!"]})
+		    return
+		dev_id = connect_args.get("dev_id", None)
+		if not dev_id:
+		    self.send_obj({"STATUS":[False, ("Invalid connect args."
+			" dev_id is missing!")]})
+		    return
+                logger.info("Connection Request to dev_id: {0}".format(dev_id))
                 if self.i2c_handle is not None:
                     logger.info("Already connected! closing it!")
                     i2c_disconnect(self.i2c_handle)
                     self.i2c_handle = None
                 try:
-                    self.i2c_handle = i2c_connect()
+                    self.i2c_handle = i2c_connect(dev_id)
                 except Exception as e:
                     logging.error(traceback.format_exc())
                     self.send_obj({"STATUS":[False, "Exception!"]})
@@ -220,6 +237,8 @@ class I2CFactoryThread(jsocket.ServerFactoryThread):
                     self.send_obj({"STATUS":[False, "i2c device open failed!"]})
                 else:
                     self.send_obj({"STATUS":[True, "i2c device is ready!"]})
+                    logger.info(('i2c device connection is ready!'
+				' i2c_handle:{0}').format(self.i2c_handle))
             elif cmd == "CSR_PEEK":
                 if self.i2c_handle is None:
                     self.send_obj({"STATUS":[False, "I2c dev is not connected!"]})
