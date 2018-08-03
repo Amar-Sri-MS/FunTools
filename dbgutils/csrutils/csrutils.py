@@ -614,6 +614,10 @@ def server_connect(args):
     except socket.error:
         print("Invalid ip address!")
         return
+    dev_id= args.dev_id[0]
+    if dev_id is None:
+        print("Invalid device id!")
+        return
     if i2c_server_socket is not None:
         try:
             i2c_remote_disconnect(i2c_server_socket)
@@ -622,7 +626,7 @@ def server_connect(args):
             logger.info('Still proceeding with connect..!')
         i2c_server_socket = None
 
-    s = i2c_remote_connect(ip_address)
+    s = i2c_remote_connect(ip_address, dev_id)
     if s is not None:
         print("Server connection Success!")
         i2c_server_socket = s

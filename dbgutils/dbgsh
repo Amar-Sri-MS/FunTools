@@ -182,7 +182,9 @@ class dbgsh(cmd2.Cmd):
                 help="connect to i2c server", formatter_class=ArgFormatter)
     parser_find.set_defaults(func=server_connect)
     parser_find.add_argument('ip_addr', nargs=1, type=str,
-                help="ip address of i2c server")
+                help="ip address of i2c server and device_id(i.e. serial number)")
+    parser_find.add_argument('dev_id', nargs=1, type=str,
+            help="device id(hint:serial number is device id)")
 
     parser_find = subparsers.add_parser('disconnect',
                 help="disconnect from i2c server", formatter_class=ArgFormatter)
@@ -215,5 +217,6 @@ class dbgsh(cmd2.Cmd):
 if __name__ == '__main__':
     c = dbgsh()
     c.prompt = 'dbgsh > '
+    c.allow_redirection = True
     c.cmdloop()
 
