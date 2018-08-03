@@ -9,7 +9,6 @@ import time
 import logging
 import traceback
 import urllib
-import requests
 import tarfile
 from array import array
 
@@ -17,7 +16,7 @@ logger = logging.getLogger("csrutils")
 logger.setLevel(logging.INFO)
 
 class constants(object):
-    SERVER_TCP_PORT = 55667
+    SERVER_TCP_PORT = 55668
     WORD_SIZE_BITS = 64
     MAX_WORD_VALUE = 0xFFFFFFFFFFFFFFFF
     CSR_CFG_DIR = "FunSDK/config/csr/"
@@ -25,16 +24,18 @@ class constants(object):
     CSR_METADATA_FILE = 'csr_metadata.json'
 
 # Opens tcp connection with remote server
-def i2c_remote_connect(ip_address):
+def i2c_remote_connect(ip_address, dev_id):
     s = jsocket.JsonClient(address = ip_address,
 			   port = constants.SERVER_TCP_PORT)
     if s is None:
         print("Failed to connect to i2c server {0}".format(ip_address))
         return None
     s.connect()
+    connect_args = dict()
+    connect_args["dev_id"] = dev_id
     time.sleep(0.5)
     s.send_obj({"cmd": "CONNECT",
-                "args": None})
+                "args": connect_args})
     read_obj = s.read_obj()
     status = read_obj.get("STATUS", None)
     logger.info("Remote connect status: {0}".format(status))
