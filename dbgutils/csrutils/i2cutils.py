@@ -53,12 +53,15 @@ def i2c_connect(dev_id):
     dev_idx = aardvark_i2c_spi_dev_index_from_serial(dev_id)
     if dev_idx is None:
         dev_list = aardvark_i2c_spi_dev_list()
+        status_msg = (("Failed to detect i2c device: {0}!"
+                       " dev_list: {1}").format(dev_id, dev_list))
+        logger.error(status_msg)
+        return (False, status_msg)
     n_devs, devs = aa_find_devices(dev_idx+1)
     logger.debug("n_devs:{0} devs:".format(n_devs))
     logger.debug(devs)
     if not devs or devs[dev_idx] is None:
         status_msg = "Failed to detect i2c device! dev_list: {0}".format(dev_list)
-        #self.send_obj({"STATUS":[False, status_msg]})
         logger.error(status_msg)
         return (False, status_msg)
 
