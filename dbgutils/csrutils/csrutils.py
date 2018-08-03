@@ -23,6 +23,49 @@ class constants(object):
     TMP_DIR = '/tmp'
     CSR_METADATA_FILE = 'csr_metadata.json'
 
+# csr peek handler for command line interface
+def csr_peek(args):
+    global i2c_server_socket
+    input_args = csr_get_peek_args(args)
+    csr_name = input_args.get("csr_name", None)
+    csr_inst = input_args.get("csr_inst", None)
+    csr_entry = input_args.get("csr_entry", None)
+    ring_name = input_args.get("ring_name", None)
+    ring_inst = input_args.get("ring_inst", None)
+    anode_name = input_args.get("anode_name", None)
+    anode_inst = input_args.get("anode_inst", None)
+    anode_path = input_args.get("anode_path", None)
+    field_list = input_args.get("field_list", None)
+
+    csr_data = csr_get_metadata(csr_name, csr_inst=csr_inst, csr_entry=csr_entry,
+            ring_name=ring_name, ring_inst=ring_inst, anode_name=anode_name,
+            anode_inst=anode_inst, anode_path=anode_path)
+
+    if csr_data is None:
+        print("Error! Failed to get metadata for csr:{} !!!".format(csr_name))
+        return
+
+    csr_addr = csr_get_addr(csr_data, anode_inst=anode_inst,
+                            csr_inst=csr_inst, csr_entry=csr_entry)
+    if csr_addr is None:
+        print("Error get csr address!!!")
+        return
+    logger.debug("csr address: {0}".format(hex(csr_addr)))
+
+    csr_width_bytes = csr_get_width_bytes(csr_data)
+    csr_width_words = csr_width_bytes >> 3
+    word_array = None
+    if i2c_server_socket is not None:
+        word_array = i2c_remote_peek(i2c_server_socket, csr_addr, csr_width_words)
+        if word_array is None or not word_array:
+            print("Error in csr i2c peek!!!")
+            return None
+        logger.debug("Peeked value: {0}".format(hex_word_dump(word_array)))
+        print("I2C peek is success!")
+        csr_show(csr_data, word_array, field_list)
+    else:
+        print("Error! Not connected to i2c server!")
+
 # csr poke handler for commandline interface
 def csr_poke(args):
     input_args = csr_get_poke_args(args)
