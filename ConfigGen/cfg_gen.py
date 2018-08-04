@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 # cfg_gen.py
 # The config generator is intended to simplify configuration file maintenance,
@@ -181,7 +181,7 @@ def generate_default_moduleconfig():
   	global input_base
 
 	print "==== Module config ===="
-	for cfg in glob.glob(input_base + "/configs/*.cfg"):
+	for cfg in glob.glob(os.path.join(input_base, "configs/*.cfg")):
 		print "handling module config %s" % cfg
                 f = tempfile.NamedTemporaryFile(mode="r")
                 print "working with temp file %s" % f.name
@@ -198,9 +198,9 @@ def generate_build_override_config(build):
 	build_override_cfg.clear()
 
 	#update build specific config
-	filedir = input_base + "/" + build
+	filedir = os.path.join(input_base, build)
 	if os.path.exists(filedir):
-		filename = input_base + "/" + build+ "/*.cfg"
+		filename = os.path.join(input_base, build, "*.cfg")
 		print filename
 		for cfg in glob.glob(filename):
 			print "handling " + build + " cfg %s" % cfg
@@ -223,7 +223,7 @@ def generate_hwcap_config(build):
 	global input_base
 	hwcap_cfg.clear()
 
-        for cfg in glob.glob(input_base +"/sku/hwcap/*.cfg"):
+        for cfg in glob.glob(os.path.join(input_base, "sku/hwcap/*.cfg")):
 		print "handling hwcap configs %s" % cfg
 		f = tempfile.NamedTemporaryFile(mode="r")
 		standardize_json(cfg, f.name)
@@ -241,7 +241,7 @@ def generate_sku_config(build):
 	final_cfg.clear()
 
 	print "handling sku configs"
-	for cfg in glob.glob(input_base +"/sku/*.cfg"):
+	for cfg in glob.glob(os.path.join(input_base, "sku/*.cfg")):
 		print "handling sku configs %s" % cfg
                 f = tempfile.NamedTemporaryFile(mode="r")
 		standardize_json(cfg, f.name)
@@ -373,7 +373,7 @@ def generate_structure_definition(s_name, value):
 def generate_hwcap_data_catalog():
     global cfg_data_catalog
 
-    for cfg in glob.glob(input_base +"/sku/hwcap/*catalog.cfg"):
+    for cfg in glob.glob(os.path.join(input_base, "sku/hwcap/*catalog.cfg")):
 	    print "handling hwcap catalog %s" % cfg
 	    f = tempfile.NamedTemporaryFile(mode="r")
 	    print "working with temp file %s" % f.name
@@ -394,7 +394,7 @@ def generate_cfg_header_file(cfg_name, data_catalog, out_base, header_file, inpu
                           '#pragma once\n' + '\n\n$data\n')
     extern_struct_array_templ = Template('\nextern struct ${s_name}_cfg ${s_name}[];\n');
 
-    f = open("%s" % out_base + header_file, 'w')
+    f = open(os.path.join(out_base, header_file), 'w')
     for k, v in data_catalog["modules"].items():
 	struct_defs += generate_catalog_structure(k, v["info"], 1, 0)
 	structs_catalog[k] = v["inst_cnt"]
@@ -420,7 +420,7 @@ def generate_cfg_c_file(cfg_name, cfg_data, out_base, c_file, header_file, input
     c_file_templ = Template('#include <$include_file>\n\n\n'\
 			    'struct ' + cfg_name + '_cfg ' +  cfg_name + '[] = {\n$cfg\n};')
 
-    f = open("%s" % cfg_code_gen_out_base + c_file, 'w')
+    f = open(os.path.join(cfg_code_gen_out_base, c_file), 'w')
     sku_init = Template('[$sku] = {\n$struct\n\t},\n')
     struct_init = Template('.$struct = {\n$init\n\t\t},\n')
     for k1,v1 in cfg_data.items():
@@ -438,7 +438,7 @@ def generate_cfg_c_file(cfg_name, cfg_data, out_base, c_file, header_file, input
 	sku_cfg+='\t'+sku_init.substitute(sku=k1,struct=cfg_str)
 
     sku_cfg = c_file_templ.substitute(cfg=sku_cfg,
-                include_file = out_base + header_file)
+                include_file = os.path.join(out_base, header_file))
     f.write(src_file_templ.substitute(data=sku_cfg, input_base=input_base,
 				  date=datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
 				  include_file=header_file))
@@ -477,7 +477,7 @@ def output_default_config(build):
 	if not os.path.exists(filepath):
 		os.makedirs(filepath)
 
-	filename = output_base + "default_" + build + ".cfg"
+	filename = os.path.join(output_base, "default_" + build + ".cfg")
 	print filename
 	fout = open(filename, 'w')
 
@@ -488,7 +488,7 @@ def output_default_config(build):
 	#TODO fred fix with build based runtime override
 	# for now use posix as default.cfg
 	if build == "posix":
-		filename = output_base + "default.cfg"
+		filename = os.path.join(output_base, "default.cfg")
 		print filename
 		fout = open(filename, 'w')
 		output_header(fout)

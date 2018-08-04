@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 # generator.py
 # Generator takes descriptions of structures describing device commands
