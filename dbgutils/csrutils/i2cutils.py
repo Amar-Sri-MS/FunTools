@@ -13,7 +13,7 @@ import traceback
 import signal
 import socket
 from socket import error as socket_error
-from i2c_usb_dev_scan import *
+from i2c_usb_dev import *
 
 logger = logging.getLogger("jsocket.tserver")
 logger.setLevel(logging.INFO)
@@ -240,8 +240,7 @@ class I2CFactoryThread(jsocket.ServerFactoryThread):
                     if status is True:
                         self.i2c_handle = value
                         self.send_obj({"STATUS":[True, "i2c device is ready!"]})
-                        logger.info(('i2c device connection is ready!'
-                                    ' i2c_handle:{0}').format(self.i2c_handle))
+                        logger.info('i2c device connection is ready!')
                     else:
                         self.i2c_handle = None
                         error_str = value
