@@ -13,7 +13,7 @@ import traceback
 import signal
 import socket
 from socket import error as socket_error
-from aa_i2c_spi_dev_scan import *
+from i2c_usb_dev_scan import *
 
 logger = logging.getLogger("jsocket.tserver")
 logger.setLevel(logging.INFO)

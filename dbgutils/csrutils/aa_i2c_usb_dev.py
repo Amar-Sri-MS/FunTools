@@ -44,5 +44,3 @@ if __name__== "__main__":
         print('Found {0} Aardvark i2c spi device(s)!'.format(len(dev_list)))
         for idx, serial in enumerate(dev_list):
             print 'Dev:{0} Serial Number: {1}'.format(idx, serial)
-        #index = aardvark_i2c_spi_dev_index_from_serial("TPCFbwo")
-        #print index
