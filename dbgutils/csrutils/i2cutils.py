@@ -69,27 +69,32 @@ def i2c_connect(dev_id):
     logger.debug("Dev handle: {0}".format(dev_handle))
     h = aa_open(dev_handle)
     if h == 0x8000:
-        status_msg = "Invalid i2c Handle! {0}".format(h)
+        status_msg = "Error opening i2c device. Invalid dev Handle! {0}".format(h)
         logger.error(status_msg)
         return (False, status_msg)
 
     features = aa_features(h)
     if features != constants.IC_DEVICE_FEATURE_MASK:
-        status_msg = "Invalid device features!: {0}".format(features)
+        status_msg = ('Error validating dev features!'
+        ' {0}({1})').format(aa_status_string(features), features)
         logger.error(status_msg)
         return (False, status_msg)
 
     status = aa_i2c_free_bus(h)
-    logger.debug("Free Bus: {0}".format(aa_status_string(status)))
+    status_msg = ('Free Bus! {0}({1})').format(
+                  aa_status_string(features), features)
+    logger.debug(status_msg)
     status = aa_configure(h, 2)
     if status != 2:
-        status_msg = "Configure i2c mode! status:{0}".format(status)
+        status_msg = ('Error configuring i2c mode:'
+            ' {0}({1})').format(aa_status_string(status), status)
         logger.error(status_msg)
         return (False, status_msg)
 
     status = aa_i2c_bitrate(h, 1)
     if status != 1:
-        status_msg = "Configure bitrate! status:{0}".format(status)
+        status_msg = ('Error Configuring the bitrate!'
+                ' {0}({1})').format(aa_status_string(status), status)
         logger.error(status_msg)
         return (False, status_msg)
 
