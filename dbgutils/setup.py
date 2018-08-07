@@ -4,9 +4,9 @@ from setuptools import setup, find_packages
 
 setup(
     name = 'dbgutils',
-    version = '0.1.0',
+    version = '0.2.0',
     author = 'Nag Ponugoti(nag.ponugoti@fungible.com)',
-    description = 'csr debug utilities',
+    description = 'python debug utilities for F1',
     scripts = ['dbgsh'],
     packages = find_packages(),
     include_package_data=True,

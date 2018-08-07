@@ -7,10 +7,7 @@ import binascii
 import time
 import logging
 import traceback
-from i2c_usb_dev import *
-
-logger = logging.getLogger("jsocket.tserver")
-logger.setLevel(logging.INFO)
+from i2cdev import *
 
 logger = logging.getLogger("i2cutils")
 logger.setLevel(logging.INFO)
