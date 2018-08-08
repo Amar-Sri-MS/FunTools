@@ -521,7 +521,13 @@ def server_connect(args):
     if dev_id is None:
         print("Invalid device id!")
         return
-    status = dbgprobe().connect(ip_address, dev_id)
+    if args.mode is None or args.mode[0] is None:
+        print('No mode option! Default to "i2c"')
+        # set default mode to i2c
+        mode = 'i2c'
+
+    print args
+    status = dbgprobe().connect(mode, ip_address, dev_id)
     if status is True:
         print("Server Connection Successful!")
     else:
@@ -1132,9 +1138,9 @@ def singleton(cls):
     return getinstance
 
 @singleton
-class dbgprobe:
+class dbgprobe(DBG_Client):
     def __init__(self):
-        return DBG_Client()
+        DBG_Client.__init__(self)
 
 # Create single instance of csr metadata
 @singleton

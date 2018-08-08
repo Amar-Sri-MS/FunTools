@@ -176,24 +176,29 @@ class dbgsh(cmd2.Cmd):
         logger.debug(args)
         args.func(args)
 
-    parser = argparse.ArgumentParser(prog='i2c', formatter_class=ArgFormatter)
-    subparsers = parser.add_subparsers(help='i2c sub-command help')
-    parser_find = subparsers.add_parser('connect',
-                help="connect to i2c server", formatter_class=ArgFormatter)
-    parser_find.set_defaults(func=server_connect)
-    parser_find.add_argument('ip_addr', nargs=1, type=str,
-                help="ip address of i2c server and device_id(i.e. serial number)")
-    parser_find.add_argument('dev_id', nargs=1, type=str,
+    parser_connect = argparse.ArgumentParser(prog='connect', formatter_class=ArgFormatter)
+    parser_connect.set_defaults(func=server_connect)
+    parser_connect.add_argument('-m', nargs=1, metavar=('mode'), dest='mode',
+			choices=['i2c', 'jtag'], help="connection mode")
+    parser_connect.add_argument('ip_addr', nargs=1, type=str,
+                help="ip address of server and device_id(i.e. serial number)")
+    parser_connect.add_argument('dev_id', nargs=1, type=str,
             help="device id(hint:serial number is device id)")
 
-    parser_find = subparsers.add_parser('disconnect',
-                help="disconnect from i2c server", formatter_class=ArgFormatter)
-    parser_find.set_defaults(func=server_disconnect)
-    argcomplete.autocomplete(parser)
+    @with_argparser(parser_connect)
+    def do_connect(self, args):
+        'proxy server connect'
+        logger.debug(args)
+        args.func(args)
 
-    @with_argparser(parser)
-    def do_i2c(self, args):
-        'i2c server connect/disconnect'
+
+    parser_disconnect = argparse.ArgumentParser(prog='disconnect', formatter_class=ArgFormatter)
+    parser_disconnect.set_defaults(func=server_disconnect)
+    argcomplete.autocomplete(parser_disconnect)
+
+    @with_argparser(parser_disconnect)
+    def do_disconnect(self, args):
+        'proxy server disconnect'
         logger.debug(args)
         args.func(args)
 

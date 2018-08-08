@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import os
 import logging
+import traceback
 from array import array
 from i2cclient import *
 
@@ -9,13 +10,13 @@ logger.setLevel(logging.INFO)
 
 class DBG_Client(object):
     def __init__(self):
-        slef.connection_handle = None
+        self.connection_handle = None
         self.connection_mode = None
         self.ip_address = None
         self.dev_id = None
         self.connected = False
 
-    def connect(mode, ip_addr, dev_id=None):
+    def connect(self, mode, ip_addr, dev_id=None):
         if self.connected is True:
             try:
                 self.disconnect()
@@ -50,13 +51,14 @@ class DBG_Client(object):
             self.__init__()
             return False
 
-    def disconnect():
+    # Disconnects dbgprobe connection to remote server
+    def disconnect(self):
         if self.connected is False:
-	        print("Server is already disconnected!");
+            print("Server is already disconnected!");
             return True
         if self.connected is True:
             try:
-                status = self.connection_handle.disconnect()
+                (status, msg_str) = self.connection_handle.disconnect()
             except Exception as e:
                 logging.error(traceback.format_exc())
                 logger.info('Still proceeding with connect..!')
@@ -77,12 +79,8 @@ class DBG_Client(object):
     def csr_poke(self, csr_addr, csr_width_words, word_array):
         if self.connected is False:
             error_msg = "Server is not connected!"
-	        print(error_msg);
+            print(error_msg);
             return (False, error_msg)
         return self.connection_handle.csr_poke(csr_addr,
                                         csr_width_words, word_array)
-
-    # Disconnects remote connection and socket connection to remote server
-    def disconnect(self):
-        return self.connection_handle.disconnect()
 

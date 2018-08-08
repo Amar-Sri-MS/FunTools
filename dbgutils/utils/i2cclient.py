@@ -48,6 +48,7 @@ class I2C_Client(object):
             logger.info("Remote connect status: {0}".format(status))
             logger.error("Server connection failed!")
             self.con_handle.close()
+            self.con_handle = None
             return False
 
     # Sends peek request to i2c proxy server, get the response and returns the read data
@@ -57,7 +58,7 @@ class I2C_Client(object):
                       csr_addr, csr_width_words))
         if self.con_handle is None or csr_addr is None or csr_width_words is None \
                 or csr_addr == 0 or csr_width_words < 1:
-            error_msg = "Invalid peek arguments!")
+            error_msg = "Invalid peek arguments!"
             print(error_msg)
             return (False, error_msg)
         csr_peek_args = dict()
@@ -72,7 +73,7 @@ class I2C_Client(object):
             word_array = msg.get("DATA", None)
             return (True, word_array)
         else:
-            error_msg = "i2c csr peek failed!")
+            error_msg = "i2c csr peek failed!"
             print(error_msg)
             return (False, error_msg)
 
@@ -116,6 +117,7 @@ class I2C_Client(object):
             error_msg = "Not connected to server"
             print(error_msg)
             return (False, error_msg)
+        logger.info('Sending i2c disconnect!')
         self.con_handle.send_obj({"cmd": "DISCONNECT",
                     "args": None })
         read_obj = self.con_handle.read_obj()
@@ -123,10 +125,12 @@ class I2C_Client(object):
         if status[0] == True:
             logger.info("Success! {0}".format(status[1]))
             self.con_handle.close()
+            self.con_handle = None
             return (True, "i2c disconnect successful")
         else:
             error_msg = "{0}".format(status[1])
             logger.error(error_msg)
             self.con_handle.close()
+            self.con_handle = None
             return (False, error_msg)
 
