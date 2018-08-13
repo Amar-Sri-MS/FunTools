@@ -231,37 +231,6 @@ def i2c_dbg_chal_cmd(h, cmd, data):
     if num_bytes > 0:
         print "Successfully transmitted {0} bytes!".format(i)
 
-    """
-    data = array('B', [0x41])
-    sent_bytes = aa_i2c_write(h, 0x73, 0, data)
-    print "sent_bytes: {0}".format(sent_bytes)
-    if sent_bytes != len(data):
-        print "write dbg read cmd error! sent_bytes:{0}".format(sent_bytes)
-    print "Debug serial number command success"
-
-    time.sleep(1.0)
-    rdata = array('B', [00])
-    aa_i2c_read(h, 0x73, 0, rdata)
-    print "Read data: {0}".format(rdata)
-    length = rdata[0]
-    cmd_byte = 0x40 | (length+1)
-    print "command_byte: {0}".format(hex(cmd_byte))
-
-    data = array('B', [cmd_byte])
-    sent_bytes = aa_i2c_write(h, 0x73, 0, data)
-    print "sent_bytes: {0}".format(sent_bytes)
-    if sent_bytes != len(data):
-        print "write dbg read cmd error! sent_bytes:{0}".format(sent_bytes)
-
-    time.sleep(0.5)
-    rdata = array('B', [00] * (length+1))
-    aa_i2c_read(h, 0x73, 0, rdata)
-    print "serial length: {0}".format(length)
-    print "Read data: {0}".format(rdata)
-
-    return (True, rdata)
-    """
-
     print("Getting the status...!")
     data = array('B', [0x41])
     sent_bytes = aa_i2c_write(h, constants.F1_I2C_SLAVE_ADDR, 0, data)
@@ -334,7 +303,7 @@ def __i2c_dbg_chal_cmd_header_read(dev):
     print("Flushing the FIFO...!")
     print("Write read status command!")
     data = array('B', [0x41])
-    sent_bytes = aa_i2c_write(h, constants.F1_I2C_SLAVE_ADDR, 0, data)
+    sent_bytes = aa_i2c_write(dev, constants.F1_I2C_SLAVE_ADDR, 0, data)
     print "Write read status command sent_bytes: {0}".format(sent_bytes)
     if sent_bytes != len(data):
         print "Get sbp cmd exec status write error! sent_bytes:{0}".format(sent_bytes)
@@ -343,7 +312,7 @@ def __i2c_dbg_chal_cmd_header_read(dev):
     time.sleep(1.0)
     rdata = array('B', [00])
     print('Reading the sbp cmd exec status byte!')
-    aa_i2c_read(h, constants.F1_I2C_SLAVE_ADDR, 0, rdata)
+    aa_i2c_read(dev, constants.F1_I2C_SLAVE_ADDR, 0, rdata)
     print "Read data: {0}".format(rdata)
     status_byte = rdata[0]
     status = status_byte >> 0x6
@@ -356,7 +325,7 @@ def __i2c_dbg_chal_cmd_header_read(dev):
         return (False, ["CMD execution error! Insufficient num bytes header!"])
 
     if (length  >= 4):
-        (status, header) = i2c_dbg_chal_nread(h, 4)
+        (status, header) = i2c_dbg_chal_nread(dev, 4)
         if status is True:
             return (True, header)
         else:
@@ -364,24 +333,39 @@ def __i2c_dbg_chal_cmd_header_read(dev):
   
 def __i2c_dbg_chal_fifo_flush(dev):
     print("Flushing the FIFO...!")
-    print("Read the status ....!")
-    (status, data)= __i2c_dbg_chal_cmd_header_read(dev)
-    if status == False:
-        print "fifo_flush failed! Error: {0}".format(data)
-        return False
+    flushed = False
+    while flushed == False: 
+        data = array('B', [0x41])
+        sent_bytes = aa_i2c_write(dev, constants.F1_I2C_SLAVE_ADDR, 0, data)
+        print 'Write read status command. sent_bytes: {0}'.format(sent_bytes)
+        if sent_bytes != len(data):
+            print 'Get sbp cmd exec status write error! sent_bytes:{0}'.format(sent_bytes)
+            return (False, 'aa_i2c_write failed for get cmd status write!')
 
-    header = array('B', list(reversed(data[0:4])))
-    size = int(binascii.hexlify(header), 16)
-    print 'Flushing {0} bytes!'.format(size)
-    size -= 4
-    (status, data) = _i2c_dbg_chal_read_fifo(dev, size)
-    if status == False:
-        print "fifo_flush failed! Error: {0}".format(data)
-        return False
-    else:
-        print "Flushed bytes: {0}".format(data)
-        return True
+        time.sleep(1.0)
+        rdata = array('B', [00])
+        print('Reading the sbp cmd exec status byte!')
+        aa_i2c_read(dev, constants.F1_I2C_SLAVE_ADDR, 0, rdata)
+        print "Read data: {0}".format(rdata)
+        status_byte = rdata[0]
+        status = status_byte >> 0x6
+        length = status_byte & 0x3f
+        if status != 0:
+            print "cmd error status:{0} is set! still proceeding with flush!".format(status)
 
+        if (length  > 0):
+            (status, data) = i2c_dbg_chal_nread(dev, length)
+            if status is True:
+                print 'Flushed {0} bytes. data: {1}'.format(len(data), data)
+                flushed = False
+            else:
+                print 'Failed to flush the data! Error: {0}'.format(data)
+                return False 
+        else:
+            print 'Finished flushing all data'
+            flushed = True
+    return True
+      
 def _i2c_dbg_chal_read(dev, length):
     print "read length: {0}".format(length)
     if length > 64:
