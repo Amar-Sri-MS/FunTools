@@ -169,15 +169,16 @@ class I2CFactoryThread(jsocket.ServerFactoryThread):
                     return
                 logger.info("cmd: {0}".format(cmd))
                 cmd_data = dbg_chal_args.get("data", None)
+                logger.debug('cmd: {0} cmd_data: {1}'.format(hex(cmd), cmd_data))
                 status = False
                 data = None
-                if cmd_data is not None:
-                    logger.info("cmd data: {0}".format([hex(x) for x in cmd_data]))
+                #if cmd_data is not None:
+                    #logger.info("cmd data: {0}".format([hex(x) for x in cmd_data]))
                 try:
                     (status, data) = i2c_dbg_chal_cmd(self.i2c_handle, cmd, cmd_data)
                     print 'status: {0} data: {1}'.format(status, data)
                 except Exception as e:
-                    print "NAG Exception"
+                    print "Exception"
                     logging.error(traceback.format_exc())
                 resp = dict()
                 if status is True:

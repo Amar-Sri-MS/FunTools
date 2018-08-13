@@ -88,4 +88,4 @@ class DBG_Client(object):
             error_msg = "Server is not connected!"
             print(error_msg);
             return (False, error_msg)
-        return self.connection_handle.dbg_chal_cmd(cmd, data=None)
+        return self.connection_handle.dbg_chal_cmd(cmd, data)

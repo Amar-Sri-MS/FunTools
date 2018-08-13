@@ -182,7 +182,7 @@ def i2c_csr_poke(h, csr_addr, csr_width_words, word_array):
 
 def i2c_dbg_chal_cmd(h, cmd, data):
     __i2c_dbg_chal_fifo_flush(h)
-    print "cmd: {0} data:{1}".format(cmd, data)
+    print "cmd: {0}".format(hex(cmd))
     byte_array = array('B', [0xC4])
     size = (0 if data is None else len(data)) + 4 + 4
     print 'size: {0}'.format(size)
@@ -243,6 +243,7 @@ def i2c_dbg_chal_cmd(h, cmd, data):
         return (False, err_msg)
     header = array('B', list(reversed(header[0:4])))
     length = int(binascii.hexlify(header), 16)
+    length = length & 0xFFFF
     length -= 4
     if (length  > 0):
         (status, data) = i2c_dbg_chal_nread(h, length)
@@ -287,8 +288,7 @@ def i2c_dbg_chal_nread(dev, num_bytes):
     return (True, data)
 
 def __i2c_dbg_chal_cmd_header_read(dev):
-    print("Flushing the FIFO...!")
-    print("Write read status command!")
+    print("Reading the header cmd status header...!")
     data = array('B', [0x41])
     sent_bytes = aa_i2c_write(dev, constants.F1_I2C_SLAVE_ADDR, 0, data)
     print "Write read status command sent_bytes: {0}".format(sent_bytes)
