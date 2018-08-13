@@ -83,4 +83,9 @@ class DBG_Client(object):
             return (False, error_msg)
         return self.connection_handle.csr_poke(csr_addr,
                                         csr_width_words, word_array)
-
+    def dbg_chal_cmd(self, cmd, data=None):
+        if self.connected is False:
+            error_msg = "Server is not connected!"
+            print(error_msg);
+            return (False, error_msg)
+        return self.connection_handle.dbg_chal_cmd(cmd, data=None)

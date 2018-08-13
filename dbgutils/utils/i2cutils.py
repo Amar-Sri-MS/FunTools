@@ -13,9 +13,10 @@ logger = logging.getLogger("i2cutils")
 logger.setLevel(logging.INFO)
 
 class constants(object):
-    F1_I2C_SLAVE_ADDR = 0x70
+    F1_I2C_SLAVE_ADDR = 0x73
     SERVER_TCP_PORT = 55668
     IC_DEVICE_FEATURE_MASK = 0x1B
+    F1_DBG_CHALLANGE_FIFO_SIZE = 64
 
 # Converts byte array to big-endian 64-bit words
 def byte_array_to_words_be(byte_array):
@@ -178,4 +179,242 @@ def i2c_csr_poke(h, csr_addr, csr_width_words, word_array):
         logging.error(traceback.format_exc())
         return False
     return True
+
+def i2c_dbg_chal_cmd(h, cmd, data):
+    __i2c_dbg_chal_fifo_flush(h)
+    print "cmd: {0} data:{1}".format(cmd, data)
+    byte_array = array('B', [0xC4])
+    size = (0 if data is None else len(data)) + 4 + 4
+    print 'size: {0}'.format(size)
+    s = struct.pack('<I', size)
+    b = struct.unpack('BBBB',s)
+    byte_array.extend(b)
+    print "\nSending command0: {0}".format([hex(x) for x in byte_array])
+    sent_bytes = aa_i2c_write(h, constants.F1_I2C_SLAVE_ADDR, 0, byte_array)
+    print "sent_bytes: {0}".format(sent_bytes)
+    if sent_bytes != len(byte_array):
+        print "Write dbg cmd/data Error! sent_bytes:{0}".format(sent_bytes)
+        return (False, "aa_i2c_write failed!")
+
+    byte_array = array('B', [0x84])
+    s = struct.pack('<I', cmd)
+    b = struct.unpack('BBBB',s)
+    byte_array.extend(b)
+    print "\nSending command1: {0}".format([hex(x) for x in byte_array])
+    sent_bytes = aa_i2c_write(h, constants.F1_I2C_SLAVE_ADDR, 0, byte_array)
+    print "sent_bytes: {0}".format(sent_bytes)
+    if sent_bytes != len(byte_array):
+        print "Write dbg cmd/data Error! sent_bytes:{0}".format(sent_bytes)
+        return (False, "aa_i2c_write failed!")
+
+    num_bytes = 0 if data is None else len(data)
+    i = 0
+    flit_size = 32
+    while i < num_bytes:
+        if (num_bytes - i) >= flit_size:
+            n = flit_size
+        else:
+            n = num_bytes - i
+        tdata = array('B', [0x80 + (flit_size & 0x3f)])
+        tdata.extend((data[i:i+n]))
+        print(('i:{0} rem_bytes:{1} n:{2} tdata:{3}').format(i, num_bytes - i,
+                                        n , list((tdata[1:1+flit_size]))))
+        sent_bytes = aa_i2c_write(h, constants.F1_I2C_SLAVE_ADDR,
+                                  0, tdata)
+        if (sent_bytes != len(tdata)):
+            print "Error: {0} sent_total:{1}".format(aa_status_string(status), i)
+            sys.exit(1)
+        else:
+            print "successfully sent: {0} sent_total:{1}".format(sent_bytes, i)
+            i = i + n
+        time.sleep(0.5)
+    if num_bytes > 0:
+        print "Successfully transmitted {0} bytes!".format(i)
+
+    """
+    data = array('B', [0x41])
+    sent_bytes = aa_i2c_write(h, 0x73, 0, data)
+    print "sent_bytes: {0}".format(sent_bytes)
+    if sent_bytes != len(data):
+        print "write dbg read cmd error! sent_bytes:{0}".format(sent_bytes)
+    print "Debug serial number command success"
+
+    time.sleep(1.0)
+    rdata = array('B', [00])
+    aa_i2c_read(h, 0x73, 0, rdata)
+    print "Read data: {0}".format(rdata)
+    length = rdata[0]
+    cmd_byte = 0x40 | (length+1)
+    print "command_byte: {0}".format(hex(cmd_byte))
+
+    data = array('B', [cmd_byte])
+    sent_bytes = aa_i2c_write(h, 0x73, 0, data)
+    print "sent_bytes: {0}".format(sent_bytes)
+    if sent_bytes != len(data):
+        print "write dbg read cmd error! sent_bytes:{0}".format(sent_bytes)
+
+    time.sleep(0.5)
+    rdata = array('B', [00] * (length+1))
+    aa_i2c_read(h, 0x73, 0, rdata)
+    print "serial length: {0}".format(length)
+    print "Read data: {0}".format(rdata)
+
+    return (True, rdata)
+    """
+
+    print("Getting the status...!")
+    data = array('B', [0x41])
+    sent_bytes = aa_i2c_write(h, constants.F1_I2C_SLAVE_ADDR, 0, data)
+    print "sent_bytes: {0}".format(sent_bytes)
+    if sent_bytes != len(data):
+        print "Get sbp cmd exec status write error! sent_bytes:{0}".format(sent_bytes)
+        return (False, "aa_i2c_write failed for get cmd status write!")
+
+    time.sleep(1.0)
+    rdata = array('B', [00])
+    print('Reading the sbp cmd exec status byte!')
+    aa_i2c_read(h, constants.F1_I2C_SLAVE_ADDR, 0, rdata)
+    print "Read data: {0}".format(rdata)
+    status_byte = rdata[0]
+    status = status_byte >> 0x6
+    length = status_byte & 0x3f
+    if status != 0:
+        print "CMD execution error!"
+        return (False, [])
+
+    if (length  > 0):
+        (status, data) = i2c_dbg_chal_nread(h, length)
+        if status is True:
+            return (True, data)
+        else:
+            return (False, None)
+    else:
+        return (True, [])
+  
+
+def i2c_dbg_chal_nread(dev, num_bytes):
+    data = array('B', [])
+    cur_cnt = 0
+    iter_cnt = 0
+    i = 0
+    flit_size = 4 
+    while i< num_bytes:
+        if (num_bytes - i) >= flit_size:
+            n = flit_size
+        else:
+            n = num_bytes - i
+        (status, rx_data) = _i2c_dbg_chal_read(dev, n)
+        if status == False:
+            sys.exit(1)
+            #return (False, None)
+        rx_cnt = len(rx_data) if rx_data else 0
+        i += rx_cnt
+        if rx_cnt > 0:
+                iter_cnt = 0
+                data.extend(rx_data[0:num_bytes])
+        else:
+            iter_cnt += 1
+            if iter_cnt > 10:
+                if len(data) > 0:
+                    print "Recived data: {0}".format([hex(x) for x in data])
+                print "Timeout! insufficient number of bytes:{0} expected:{1}".format(i, num_bytes)
+                return (False, None)
+        time.sleep(0.1)
+    print "Recived data: {0}".format([hex(x) for x in data])
+    print "Successfully Recived {0} bytes!".format(i)
+    header = array('B', list(reversed(data[0:4])))
+    #size = struct.unpack("I", bytearray(header))
+    size = int(binascii.hexlify(header), 16)
+    if size != (num_bytes):
+        print "Something wrong! inconsistancy in length. Expected:{0} Recieved:{1}".format(num_bytes, size)
+        return (False, None)
+    return (True, data)
+
+def __i2c_dbg_chal_cmd_header_read(dev):
+    print("Flushing the FIFO...!")
+    print("Write read status command!")
+    data = array('B', [0x41])
+    sent_bytes = aa_i2c_write(h, constants.F1_I2C_SLAVE_ADDR, 0, data)
+    print "Write read status command sent_bytes: {0}".format(sent_bytes)
+    if sent_bytes != len(data):
+        print "Get sbp cmd exec status write error! sent_bytes:{0}".format(sent_bytes)
+        return (False, "aa_i2c_write failed for get cmd status write!")
+
+    time.sleep(1.0)
+    rdata = array('B', [00])
+    print('Reading the sbp cmd exec status byte!')
+    aa_i2c_read(h, constants.F1_I2C_SLAVE_ADDR, 0, rdata)
+    print "Read data: {0}".format(rdata)
+    status_byte = rdata[0]
+    status = status_byte >> 0x6
+    length = status_byte & 0x3f
+    if status != 0:
+        print "CMD execution error!"
+        return (False, ["CMD execution error!"])
+
+    if length < 4:
+        return (False, ["CMD execution error! Insufficient num bytes header!"])
+
+    if (length  >= 4):
+        (status, header) = i2c_dbg_chal_nread(h, 4)
+        if status is True:
+            return (True, header)
+        else:
+            return (False, "Falied to read the status bytes")
+  
+def __i2c_dbg_chal_fifo_flush(dev):
+    print("Flushing the FIFO...!")
+    print("Read the status ....!")
+    (status, data)= __i2c_dbg_chal_cmd_header_read(dev)
+    if status == False:
+        print "fifo_flush failed! Error: {0}".format(data)
+        return False
+
+    header = array('B', list(reversed(data[0:4])))
+    size = int(binascii.hexlify(header), 16)
+    print 'Flushing {0} bytes!'.format(size)
+    size -= 4
+    (status, data) = _i2c_dbg_chal_read_fifo(dev, size)
+    if status == False:
+        print "fifo_flush failed! Error: {0}".format(data)
+        return False
+    else:
+        print "Flushed bytes: {0}".format(data)
+        return True
+
+def _i2c_dbg_chal_read(dev, length):
+    print "read length: {0}".format(length)
+    if length > 64:
+        print 'unsupported length: {0}'.format(length)
+        return (False, None)
+    cmd_byte = 0x40 | (length+1)
+    print "command_byte: {0}".format(hex(cmd_byte))
+    data = array('B', [cmd_byte])
+    sent_bytes = aa_i2c_write(dev, 0x73, 0, data)
+    print "sent_bytes: {0}".format(sent_bytes)
+    if sent_bytes != len(data):
+        print "write dbg read cmd error! sent_bytes:{0}".format(sent_bytes)
+        return (False, None)
+
+    time.sleep(0.5)
+    rdata = array('B', [00] * (length+1))
+    read_status_data = aa_i2c_read(dev, 0x73, 0, rdata)
+    print "Read data: {0}".format(rdata)
+    print "rd read_status_data: {0}".format(read_status_data)
+    if read_status_data < 1:
+        print "i2c dbg read failed"
+        return (False, None) 
+    else:
+        status = rdata[0] >> 6
+        num_bytes = rdata[0] & 0x3f
+        if status != 0:
+            print "Read dbg error: {0}!".format(status)
+            return (False, None) 
+        elif num_bytes > 1:
+            #if num_bytes != read_status_data[0] -1:
+            #    print "Unexpected num bytes read! {}".format(read_status_data)
+            #    return (False, None)
+            return (True, rdata[1:read_status_data[0]])
+        else:
+            return (True, None) 
 

@@ -12,6 +12,7 @@ import signal
 import socket
 from socket import error as socket_error
 from i2cutils import *
+import functools
 
 logger = logging.getLogger("jsocket.tserver")
 logger.setLevel(logging.INFO)
@@ -21,6 +22,16 @@ logger.setLevel(logging.INFO)
 
 class constants(object):
     SERVER_TCP_PORT = 55668
+
+def catch_exception(f):
+    @functools.wraps(f)
+    def func(*args, **kwargs):
+        try:
+            return f(*args, **kwargs)
+        except Exception as e:
+            print 'Caught an exception in', f.__name__
+            logger.error(traceback.format_exc())
+    return func
 
 class I2CServer(jsocket.ThreadedServer):
     def __init__(self):
@@ -47,6 +58,7 @@ class I2CFactoryThread(jsocket.ServerFactoryThread):
             self.i2c_handle = None
         logger.info("Destroyed i2c factory thread!");
 
+    @catch_exception
     def _process_message(self, obj):
         """ virtual method - Implementer must define protocol """
         logger.debug(("New thread process message!!!! pid: {0}"
@@ -143,6 +155,39 @@ class I2CFactoryThread(jsocket.ServerFactoryThread):
                 else:
                     self.send_obj({"STATUS":[True, "I2c is already disconnected"]})
                 self.i2c_handle = None
+            elif cmd == "DBG_CHAL_CMD":
+                dbg_chal_args = obj.get("args", None)
+                if not dbg_chal_args:
+                    self.send_obj({"STATUS":[False, "Invalid poke args!"]})
+                    return
+                if self.i2c_handle is None:
+                    self.send_obj({"STATUS":[False, "I2c dev is not connected!"]})
+                    return
+                cmd = dbg_chal_args.get("dbg_chal_cmd", None)
+                if not cmd or not type(int):
+                    self.send_obj({"STATUS":[False, "Invalid dbg chal cmd args!"]})
+                    return
+                logger.info("cmd: {0}".format(cmd))
+                cmd_data = dbg_chal_args.get("data", None)
+                status = False
+                data = None
+                if cmd_data is not None:
+                    logger.info("cmd data: {0}".format([hex(x) for x in cmd_data]))
+                try:
+                    (status, data) = i2c_dbg_chal_cmd(self.i2c_handle, cmd, cmd_data)
+                    print 'status: {0} data: {1}'.format(status, data)
+                except Exception as e:
+                    print "NAG Exception"
+                    logging.error(traceback.format_exc())
+                resp = dict()
+                if status is True:
+                    resp["STATUS"] = [True, "dbg cmd success!"]
+                    if data is not None:
+                        resp["DATA"] = list(data)
+                    print resp
+                else:
+                    resp["STATUS"] = [False, "dbg cmd failed!"]
+                self.send_obj(resp)
             else:
                 logger.debug("Invalid msg!")
                 self.send_obj({"STATUS":[False, "Invalid message!"]})

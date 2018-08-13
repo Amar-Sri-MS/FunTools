@@ -77,6 +77,32 @@ class I2C_Client(object):
             print(error_msg)
             return (False, error_msg)
 
+    # Sends dbg challange cmd request to i2c proxy server, get the response
+    def dbg_chal_cmd(self, cmd, data=None):
+        logger.debug(("dbg chal cmd:{0}").format(hex(cmd)))
+        if data is not None:
+            logger.debug(("dbg chal data:{0}").format(
+                    [hex(x) for x in data]))
+        if self.con_handle is None:
+            error_msg = "i2c server is not connected!"
+            print(error_msg)
+            return (False, error_msg)
+        dbg_chal_args = dict()
+        dbg_chal_args["dbg_chal_cmd"] = cmd 
+        if data is not None and len(data) > 0:
+            dbg_chal_args["data"] = data 
+        self.con_handle.send_obj({"cmd": "DBG_CHAL_CMD",
+                    "args": dbg_chal_args})
+        msg = self.con_handle.read_obj()
+        (status, status_str) = msg.get("STATUS", None)
+        data = msg.get("DATA", None)
+        if status == True:
+            return (True, data)
+        else:
+            error_msg = "Error! dbg challange command failed!: {0}".format(status_str)
+            print(error_msg)
+            return (False, error_msg)
+
     # Sends poke request to i2c proxy server, get the response
     def csr_poke(self, csr_addr, csr_width_words, word_array):
         logger.debug(("csr_addr:{0} csr_width_words:{1}"

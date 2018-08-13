@@ -4,6 +4,7 @@ import sys
 import usb.core
 import logging
 
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("i2cdev")
 logger.setLevel(logging.INFO)
 
