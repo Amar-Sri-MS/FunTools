@@ -231,26 +231,19 @@ def i2c_dbg_chal_cmd(h, cmd, data):
     if num_bytes > 0:
         print "Successfully transmitted {0} bytes!".format(i)
 
-    print("Getting the status...!")
-    data = array('B', [0x41])
-    sent_bytes = aa_i2c_write(h, constants.F1_I2C_SLAVE_ADDR, 0, data)
-    print "sent_bytes: {0}".format(sent_bytes)
-    if sent_bytes != len(data):
-        print "Get sbp cmd exec status write error! sent_bytes:{0}".format(sent_bytes)
-        return (False, "aa_i2c_write failed for get cmd status write!")
+    (status, header) = __i2c_dbg_chal_cmd_header_read(h)
+    if status is False:
+        err_msg = 'Failed to read the status'
+        print err_msg 
+        return (False, err_msg)
 
-    time.sleep(1.0)
-    rdata = array('B', [00])
-    print('Reading the sbp cmd exec status byte!')
-    aa_i2c_read(h, constants.F1_I2C_SLAVE_ADDR, 0, rdata)
-    print "Read data: {0}".format(rdata)
-    status_byte = rdata[0]
-    status = status_byte >> 0x6
-    length = status_byte & 0x3f
-    if status != 0:
-        print "CMD execution error!"
-        return (False, [])
-
+    if len(header) != 4:
+        err_msg = 'Invalid header length: {0} header:{1}'.format(len(header), header)
+        print err_msg 
+        return (False, err_msg)
+    header = array('B', list(reversed(header[0:4])))
+    length = int(binascii.hexlify(header), 16)
+    length -= 4
     if (length  > 0):
         (status, data) = i2c_dbg_chal_nread(h, length)
         if status is True:
@@ -258,7 +251,7 @@ def i2c_dbg_chal_cmd(h, cmd, data):
         else:
             return (False, None)
     else:
-        return (True, [])
+        return (True, None)
   
 
 def i2c_dbg_chal_nread(dev, num_bytes):
@@ -291,12 +284,6 @@ def i2c_dbg_chal_nread(dev, num_bytes):
         time.sleep(0.1)
     print "Recived data: {0}".format([hex(x) for x in data])
     print "Successfully Recived {0} bytes!".format(i)
-    header = array('B', list(reversed(data[0:4])))
-    #size = struct.unpack("I", bytearray(header))
-    size = int(binascii.hexlify(header), 16)
-    if size != (num_bytes):
-        print "Something wrong! inconsistancy in length. Expected:{0} Recieved:{1}".format(num_bytes, size)
-        return (False, None)
     return (True, data)
 
 def __i2c_dbg_chal_cmd_header_read(dev):
@@ -395,9 +382,6 @@ def _i2c_dbg_chal_read(dev, length):
             print "Read dbg error: {0}!".format(status)
             return (False, None) 
         elif num_bytes > 1:
-            #if num_bytes != read_status_data[0] -1:
-            #    print "Unexpected num bytes read! {}".format(read_status_data)
-            #    return (False, None)
             return (True, rdata[1:read_status_data[0]])
         else:
             return (True, None) 
