@@ -245,15 +245,15 @@ def i2c_dbg_chal_cmd(h, cmd, data):
     length = int(binascii.hexlify(header), 16)
     length = length & 0xFFFF
     length -= 4
+    rdata = None
     if (length  > 0):
-        (status, data) = i2c_dbg_chal_nread(h, length)
-        if status is True:
-            return (True, data)
-        else:
-            return (False, None)
+        (status, rdata) = i2c_dbg_chal_nread(h, length)
+    if status is True:
+        if rdata is not None and len(rdata) != 0:
+            header.extend(rdata)
+        return (True, header)
     else:
-        return (True, None)
-  
+        return (False, None)
 
 def i2c_dbg_chal_nread(dev, num_bytes):
     data = array('B', [])
