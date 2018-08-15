@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 
 setup(
     name = 'dbgutils',
-    version = '0.2.0',
+    version = '0.3.0',
     author = 'Nag Ponugoti(nag.ponugoti@fungible.com)',
     description = 'python debug utilities for F1',
     scripts = ['dbgsh'],

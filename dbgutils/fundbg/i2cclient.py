@@ -79,7 +79,7 @@ class I2C_Client(object):
 
     # Sends dbg challange cmd request to i2c proxy server, get the response
     def dbg_chal_cmd(self, cmd, data=None):
-        logger.debug(("dbg chal cmd:{0} data:{1}").format(hex(cmd), data))
+        logger.debug(("dbg chal cmd:{0} data:{1}").format(cmd, data))
         if data is not None:
             logger.debug(("dbg chal data:{0}").format(
                     [hex(x) for x in data]))

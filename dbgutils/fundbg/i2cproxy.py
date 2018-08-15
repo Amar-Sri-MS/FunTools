@@ -169,7 +169,7 @@ class I2CFactoryThread(jsocket.ServerFactoryThread):
                     return
                 logger.info("cmd: {0}".format(cmd))
                 cmd_data = dbg_chal_args.get("data", None)
-                logger.debug('cmd: {0} cmd_data: {1}'.format(hex(cmd), cmd_data))
+                logger.debug('cmd: {0} cmd_data: {1}'.format(cmd, cmd_data))
                 status = False
                 data = None
                 #if cmd_data is not None:

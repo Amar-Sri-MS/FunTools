@@ -164,7 +164,7 @@ def i2c_csr_poke(h, csr_addr, csr_width_words, word_array):
                    " Expected: {1}").format(sent_bytes, len(cmd_data)))
             return False
 
-        status = array('B', [00])
+        status = array('B', [01])
         status_bytes = aa_i2c_read(h, constants.F1_I2C_SLAVE_ADDR, 0, status)
         logger.debug("poke status_bytes:{0}".format(status_bytes))
         if status_bytes[0] != 1:
@@ -182,7 +182,7 @@ def i2c_csr_poke(h, csr_addr, csr_width_words, word_array):
 
 def i2c_dbg_chal_cmd(h, cmd, data):
     __i2c_dbg_chal_fifo_flush(h)
-    print "cmd: {0}".format(hex(cmd))
+    print "cmd: {0}".format(cmd)
     byte_array = array('B', [0xC4])
     size = (0 if data is None else len(data)) + 4 + 4
     print 'size: {0}'.format(size)
