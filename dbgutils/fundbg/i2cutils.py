@@ -180,6 +180,29 @@ def i2c_csr_poke(h, csr_addr, csr_width_words, word_array):
         return False
     return True
 
+def gpio_sck_trigger(h):
+    print("Starting GPIO test ....!")
+
+    status = aa_configure(h, 0)
+    print status
+    print "Configure GPIO mode! status:" + aa_status_string(status)
+
+    status = aa_gpio_direction(h, 0x8)
+    print "3.Configuring direction. status: " + aa_status_string(status)
+
+    status = aa_gpio_set(h, 0x8)
+    print "gpio set. status: " + aa_status_string(status)
+
+    sleep(0.00001)
+    status = aa_gpio_set(h, 0x00)
+    print "gpio set. status: " + aa_status_string(status)
+
+    sleep(0.00001)
+    status = aa_gpio_set(h, 0x8)
+    print "gpio set. status: " + aa_status_string(status)
+
+    print "Done!"
+
 def i2c_dbg_chal_cmd(h, cmd, data):
     __i2c_dbg_chal_fifo_flush(h)
     print "cmd: {0}".format(cmd)
@@ -219,15 +242,33 @@ def i2c_dbg_chal_cmd(h, cmd, data):
         tdata.extend((data[i:i+n]))
         print(('i:{0} rem_bytes:{1} n:{2} tdata:{3}').format(i, num_bytes - i,
                                         n , list((tdata[1:1+flit_size]))))
-        sent_bytes = aa_i2c_write(h, constants.F1_I2C_SLAVE_ADDR,
+        status = aa_i2c_write(h, constants.F1_I2C_SLAVE_ADDR,
                                   0, tdata)
-        if (sent_bytes != len(tdata)):
-            print "Error: {0} sent_total:{1}".format(aa_status_string(status), i)
+        if status < 1:
+            err_msg = ('i2c write Error!!! Expected sent_bytes: {0} return_status: {1}'
+                    ' error_code: {2} sent_total:{3}').format(len(tdata),
+                        status, aa_status_string(status), i)
+            print err_msg
+            gpio_sck_trigger(h)
             sys.exit(1)
+            #return (False, err_msg)
+        if (status < len(tdata)):
+            if status == 1:
+                retry += 1
+                if retry == 10:
+                    err_msg = ('Error!!! i2c write stalled!!!! status: {0}'
+                            ' error_code: {1} sent_total:{2}').format(status, aa_status_string(status), i)
+                    print err_msg
+                    return (False, err_msg)
+            else:
+                print('i2c write expected to send {0} bytes but sent: {1}').format(len(tdata), status) 
+                i = i + (status - 1)
+                retry = 0
         else:
-            print "successfully sent: {0} sent_total:{1}".format(sent_bytes, i)
+            retry = 0
             i = i + n
-        time.sleep(0.5)
+            print "successfully sent: {0} sent_total:{1}".format(status, i)
+        time.sleep(0.1)
     if num_bytes > 0:
         print "Successfully transmitted {0} bytes!".format(i)
 
@@ -296,7 +337,7 @@ def __i2c_dbg_chal_cmd_header_read(dev):
         print "Get sbp cmd exec status write error! sent_bytes:{0}".format(sent_bytes)
         return (False, "aa_i2c_write failed for get cmd status write!")
 
-    time.sleep(1.0)
+    time.sleep(0.1)
     rdata = array('B', [00])
     print('Reading the sbp cmd exec status byte!')
     aa_i2c_read(dev, constants.F1_I2C_SLAVE_ADDR, 0, rdata)
@@ -329,7 +370,7 @@ def __i2c_dbg_chal_fifo_flush(dev):
             print 'Get sbp cmd exec status write error! sent_bytes:{0}'.format(sent_bytes)
             return (False, 'aa_i2c_write failed for get cmd status write!')
 
-        time.sleep(1.0)
+        time.sleep(0.1)
         rdata = array('B', [00])
         print('Reading the sbp cmd exec status byte!')
         aa_i2c_read(dev, constants.F1_I2C_SLAVE_ADDR, 0, rdata)
@@ -367,7 +408,7 @@ def _i2c_dbg_chal_read(dev, length):
         print "write dbg read cmd error! sent_bytes:{0}".format(sent_bytes)
         return (False, None)
 
-    time.sleep(0.5)
+    time.sleep(0.1)
     rdata = array('B', [00] * (length+1))
     read_status_data = aa_i2c_read(dev, 0x73, 0, rdata)
     print "Read data: {0}".format(rdata)

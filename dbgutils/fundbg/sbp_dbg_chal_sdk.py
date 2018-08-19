@@ -245,8 +245,8 @@ class DBG_CHAL_SDK(object):
 if __name__== "__main__":
     dbgprobe = DBG_CHAL_SDK(CONST.CONN_MODE, CONST.IP_ADDR, CONST.I2C_DEV_ID)
     dbgprobe.connect()
-    #dbgprobe.get_serial_number()
-    #dbgprobe.inject_cert('start_certificate.bin')
+    dbgprobe.get_serial_number()
+    dbgprobe.inject_cert('start_certificate.bin')
     dbgprobe.get_dbg_access('developer_cert.cert', 'developer_private_key.pem')
     dbgprobe.read_otp()
     dbgprobe.get_status()
