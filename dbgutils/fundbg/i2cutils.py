@@ -17,6 +17,7 @@ class constants(object):
     SERVER_TCP_PORT = 55668
     IC_DEVICE_FEATURE_MASK = 0x1B
     F1_DBG_CHALLANGE_FIFO_SIZE = 64
+    I2C_XFER_BIT_RATE = 2
 
 # Converts byte array to big-endian 64-bit words
 def byte_array_to_words_be(byte_array):
@@ -83,8 +84,8 @@ def i2c_connect(dev_id):
         logger.error(status_msg)
         return (False, status_msg)
 
-    status = aa_i2c_bitrate(h, 1)
-    if status != 1:
+    status = aa_i2c_bitrate(h, constants.I2C_XFER_BIT_RATE)
+    if status != constants.I2C_XFER_BIT_RATE:
         status_msg = ('Error Configuring the bitrate!'
                 ' {0}({1})').format(aa_status_string(status), status)
         logger.error(status_msg)
@@ -193,11 +194,11 @@ def gpio_sck_trigger(h):
     status = aa_gpio_set(h, 0x8)
     print "gpio set. status: " + aa_status_string(status)
 
-    sleep(0.00001)
+    time.sleep(0.00001)
     status = aa_gpio_set(h, 0x00)
     print "gpio set. status: " + aa_status_string(status)
 
-    sleep(0.00001)
+    time.sleep(0.00001)
     status = aa_gpio_set(h, 0x8)
     print "gpio set. status: " + aa_status_string(status)
 
