@@ -10,26 +10,24 @@ import string, json, collections
 import logging
 import pdb, argparse
 from json_reader import CFG_Reader
+from itertools import chain
 import re
 
 #logger = logging.getLogger("stats")
 
 #Groups the range strings
 def group_to_range(group):
-  group = ''.join(group.split())
-  sign, g = ('-', group[1:]) if group.startswith('-') else ('', group)
-  r = g.split('-', 1)
-  r[0] = sign + r[0]
-  r = sorted(int(__) for __ in r)
+    group = ''.join(group.split())
+    sign, g = ('-', group[1:]) if group.startswith('-') else ('', group)
+    r = g.split('-', 1)
+    r[0] = sign + r[0]
+    r = sorted(int(__) for __ in r)
+    return range(r[0], 1 + r[-1])
 
-#Groups the range strings
-def range_min_max(group):
-  group = ''.join(group.split())
-  sign, g = ('-', group[1:]) if group.startswith('-') else ('', group)
-  r = g.split('-', 1)
-  r[0] = sign + r[0]
-  r = sorted(int(__) for __ in r)
-  return r[0], 1 + r[-1]
+#Groups and expands range strings
+def rangeexpand(txt):
+    ranges = chain.from_iterable(group_to_range(__) for __ in txt.split(','))
+    return sorted(set(ranges))
 
 # Process each CSR entry node
 class CSRNode(object):
@@ -55,12 +53,16 @@ class CSRNode(object):
 
             rinst = rnode.get("inst", None)
             if rinst is not None:
-                if type(rinst) is not int:
-                    logging.error(("CSR:{} RING:{} must"
-                                   " be a string").format(self.name,
-                                                          self.ring_class))
+                if type(rinst) is unicode:
+                    self.ring_inst = rangeexpand(rinst)
+                elif type(rinst) is int:
+                    self.ring_inst = [rinst]
+                else:
+                    logging.error(("CSR:{} RING:{} inst must"
+                                   " be a integer or comma"
+                                   " separated range string").format(self.name,
+                                   self.ring_class))
                     sys.exit(1)
-            self.ring_inst = rinst
 
         self.an = None
         self.an_path = None
@@ -74,106 +76,112 @@ class CSRNode(object):
             logging.error(("CSR:{} Missing poll_interval property").format(self.name))
             sys.exit(1)
 
-        self.csr_defs = csr_metadata().get_csr_def(self.name,
-                                                   self.ring_class,
-                                                   self.ring_inst,
-                                                   self.an_path,
-                                                   self.an)
+        if self.ring_inst is None:
+            self.ring_inst = list()
+            self.ring_inst.append(None)
 
-        if not self.csr_defs:
-            logging.error(("**No csr metadata matching CSR:{}"
-                           " RING:{} {} AN:{} {}").format(
-                            self.name, self.ring_class,
-			    self.ring_inst,
-                            self.an, self.an_path))
-            sys.exit(1)
-        self.csr_type = cfg.get("csr_type", None)
-        self.ring_dict = collections.OrderedDict()
-        self.csr_def_flds = None
-        self.csr_n_entries = None
-        cfg_fields = cfg.get("fields", None)
-        for csr in self.csr_defs:
-            if self.csr_type is None:
-                self.csr_type = csr.get("csr_type", None)
+        for i in self.ring_inst :
+            logging.debug(('csr: {} ring_class: {} ring_inst: {}').format(
+                self.name, self.ring_class, i))
+            self.csr_defs = csr_metadata().get_csr_def(self.name,
+                                                       self.ring_class,
+                                                       i,
+                                                       self.an_path,
+                                                       self.an)
 
-            if self.csr_n_entries is not None:
-                if csr.get("csr_n_entries", None) != self.csr_n_entries:
-                    logging.error(("CSR:{} has different different number "
-                                   "entries in different instances!").format(
-                                   self.name))
-                    sys.exit(1)
-            else:
-                self.csr_n_entries = csr.get("csr_n_entries", None)
-
-            if self.csr_def_flds is not None:
-                if self.csr_def_flds != csr.get("fld_lst", None):
-                    logging.error(("CSR:{} has different fields in different"
-                                " instances!").format(self.name))
-                    sys.exit(1)
-            else:
-                self.csr_def_flds = csr.get("fld_lst", None)
-            if self.csr_def_flds is None:
-                logging.error(("CSR:{} has no fields").format(self.name))
+            if not self.csr_defs:
+                logging.error(("**No csr metadata matching CSR:{}"
+                               " RING:{} {} AN:{} {}").format(
+                                self.name, self.ring_class,
+                                i,
+                                self.an, self.an_path))
                 sys.exit(1)
-            ring_name = csr.get("ring_name", None)
-            ring_inst = csr.get("ring_inst", None)
-            an_name = csr.get("an", None)
-            an_inst_cnt = csr.get("an_inst_cnt", None)
+            self.csr_type = cfg.get("csr_type", None)
+            self.ring_dict = collections.OrderedDict()
+            self.csr_def_flds = None
+            self.csr_n_entries = None
+            cfg_fields = cfg.get("fields", None)
+            for csr in self.csr_defs:
+                if self.csr_type is None:
+                    self.csr_type = csr.get("csr_type", None)
 
-            ring = self.cfg_objs.get(ring_name, None)
-            if ring is None:
-                ring = collections.OrderedDict()
-                ring["ring_addr"] = csr.get("ring_addr", None)
-                self.cfg_objs[ring_name] = ring
-
-            rinst_lst = ring.get("ring_inst", None)
-            if rinst_lst is None:
-                rinst_lst = collections.OrderedDict()
-                ring["ring_inst"] = rinst_lst
-
-            rinst = rinst_lst.get(ring_inst, None)
-            if rinst is None:
-                rinst = collections.OrderedDict()
-                rinst_lst[ring_inst] = rinst
-
-            anode_lst = rinst.get("anode", None)
-            if anode_lst is None:
-                anode_lst = collections.OrderedDict()
-                rinst["anode"] = anode_lst
-
-            anode = anode_lst.get(an_name, None)
-            if anode is None:
-                anode = collections.OrderedDict()
-                anode["an_inst_cnt"] = an_inst_cnt
-                anode["an_addr"] = csr.get("an_addr", None)
-                anode["skip_addr"] = csr.get("an_skip_addr", None)
-                anode_lst[an_name] = anode
-
-            csr_lst = anode.get("csr", None)
-            if csr_lst is None:
-                csr_lst = collections.OrderedDict()
-                anode["csr"] = csr_lst
-
-            csr_node = csr_lst.get(self.name, None)
-            if csr_node is None:
-                csr_node = collections.OrderedDict()
-                if self.poll_interval is None:
-                    csr_node["period_msec"] = 0
+                if self.csr_n_entries is not None:
+                    if csr.get("csr_n_entries", None) != self.csr_n_entries:
+                        logging.error(("CSR:{} has different different number "
+                                       "entries in different instances!").format(
+                                       self.name))
+                        sys.exit(1)
                 else:
-                    csr_node["period_msec"] = self.poll_interval
-                csr_node["type"] = csr.get("csr_type", None)
-                csr_node["n_instances"] = csr.get("csr_count", None)
-                csr_node["addr"] = csr.get("csr_addr", None)
-                csr_width_64bit = csr.get("csr_width", None)
-                csr_node["width_64bit"] = csr_width_64bit
-                csr_width = self.__get_csr_width(csr.get("fld_lst", None))
-                csr_node["width"] = csr_width
-                csr_node["n_entries"] = csr.get("csr_n_entries", None)
-                fld_list = self.__get_field_objs(cfg_fields,
-				csr.get("fld_lst", None), csr_width_64bit)
-                csr_node["num_fields"] = len(fld_list)
-                csr_node["fld_list"] = fld_list
-                csr_lst[self.name] = csr_node
+                    self.csr_n_entries = csr.get("csr_n_entries", None)
+
+                if self.csr_def_flds is not None:
+                    if self.csr_def_flds != csr.get("fld_lst", None):
+                        logging.error(("CSR:{} has different fields in different"
+                                    " instances!").format(self.name))
+                        sys.exit(1)
+                else:
+                    self.csr_def_flds = csr.get("fld_lst", None)
+                if self.csr_def_flds is None:
+                    logging.error(("CSR:{} has no fields").format(self.name))
+                    sys.exit(1)
+                ring_name = csr.get("ring_name", None)
+                ring_inst = csr.get("ring_inst", None)
+                an_name = csr.get("an", None)
+                an_inst_cnt = csr.get("an_inst_cnt", None)
+
+                ring = self.cfg_objs.get(ring_name, None)
+                if ring is None:
+                    ring = collections.OrderedDict()
+                    ring["ring_addr"] = csr.get("ring_addr", None)
+                    self.cfg_objs[ring_name] = ring
+
+                rinst_lst = ring.get("ring_inst", None)
+                if rinst_lst is None:
+                    rinst_lst = collections.OrderedDict()
+                    ring["ring_inst"] = rinst_lst
+
+                rinst = rinst_lst.get(ring_inst, None)
+                if rinst is None:
+                    rinst = collections.OrderedDict()
+                    rinst_lst[ring_inst] = rinst
+                anode_lst = rinst.get("anode", None)
+                if anode_lst is None:
+                    anode_lst = collections.OrderedDict()
+                    rinst["anode"] = anode_lst
+
+                anode = anode_lst.get(an_name, None)
+                if anode is None:
+                    anode = collections.OrderedDict()
+                    anode["an_inst_cnt"] = an_inst_cnt
+                    anode["an_addr"] = csr.get("an_addr", None)
+                    anode["skip_addr"] = csr.get("an_skip_addr", None)
+                    anode_lst[an_name] = anode
+
+                csr_lst = anode.get("csr", None)
+                if csr_lst is None:
+                    csr_lst = collections.OrderedDict()
+                    anode["csr"] = csr_lst
+
+                csr_node = csr_lst.get(self.name, None)
+                if csr_node is None:
+                    csr_node = collections.OrderedDict()
+                    if self.poll_interval is None:
+                        csr_node["period_msec"] = 0
+                    else:
+                        csr_node["period_msec"] = self.poll_interval
+                    csr_node["type"] = csr.get("csr_type", None)
+                    csr_node["n_instances"] = csr.get("csr_count", None)
+                    csr_node["addr"] = csr.get("csr_addr", None)
+                    csr_width_64bit = csr.get("csr_width", None)
+                    csr_node["width_64bit"] = csr_width_64bit
+                    csr_width = self.__get_csr_width(csr.get("fld_lst", None))
+                    csr_node["width"] = csr_width
+                    csr_node["n_entries"] = csr.get("csr_n_entries", None)
+                    fld_list = self.__get_field_objs(cfg_fields,
+                                    csr.get("fld_lst", None), csr_width_64bit)
+                    csr_node["num_fields"] = len(fld_list)
+                    csr_node["fld_list"] = fld_list
+                    csr_lst[self.name] = csr_node
 
     def get_cfg_objs(self):
         return self.cfg_objs;
@@ -284,11 +292,11 @@ class StatsGen(object):
 
         logging.info("Generate the funos source code!")
         stats_cfg = collections.OrderedDict()
-        cfg_objs = collections.OrderedDict()
         file_name = "stats_cache.cfg"
         logging.info("Creating file {}".format(file_name))
         f = open(os.path.join(args.out_dir, file_name), "w")
         for name,cfg in cfg.get().iteritems():
+            cfg_objs = collections.OrderedDict()
             for k,v in cfg.iteritems():
                 csr_obj = CSRNode(k,v)
                 dict_merge(cfg_objs, csr_obj.get_cfg_objs())
@@ -447,7 +455,7 @@ class csr_metadata:
         if rn_class:
             if x["ring_name"] != rn_class:
                 return False
-        if rn_inst:
+        if rn_inst is not None:
             if x["ring_inst"] != rn_inst:
                 return False
         if an:
