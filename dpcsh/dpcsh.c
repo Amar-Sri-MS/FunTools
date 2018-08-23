@@ -31,7 +31,7 @@
 #include "csr_command.h"
 
 #include <utils/threaded/fun_map.h>
-#include <utils/threaded/fun_commander.h>
+#include <services/commander/fun_commander.h>
 #include <utils/threaded/fun_malloc_threaded.h>
 #include <utils/common/base64.h>
 
