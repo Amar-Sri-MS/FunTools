@@ -31,7 +31,7 @@ class I2C_Client(object):
         self.con_handle = jsocket.JsonClient(address = ip_address,
                                port = constants.SERVER_TCP_PORT)
         if self.con_handle is None:
-            print("Failed to connect to i2c server {0}".format(ip_address))
+            logger.error('Failed to connect to i2c server {0}'.format(ip_address))
             return None
         self.con_handle.connect()
         connect_args = dict()
@@ -59,7 +59,7 @@ class I2C_Client(object):
         if self.con_handle is None or csr_addr is None or csr_width_words is None \
                 or csr_addr == 0 or csr_width_words < 1:
             error_msg = "Invalid peek arguments!"
-            print(error_msg)
+            logger.error(error_msg)
             return (False, error_msg)
         csr_peek_args = dict()
         csr_peek_args["csr_addr"] = csr_addr
@@ -74,7 +74,7 @@ class I2C_Client(object):
             return (True, word_array)
         else:
             error_msg = "i2c csr peek failed!"
-            print(error_msg)
+            logger.error(error_msg)
             return (False, error_msg)
 
     # Sends dbg challange cmd request to i2c proxy server, get the response
@@ -85,7 +85,7 @@ class I2C_Client(object):
                     [hex(x) for x in data]))
         if self.con_handle is None:
             error_msg = "i2c server is not connected!"
-            print(error_msg)
+            logger.error(error_msg)
             return (False, error_msg)
         dbg_chal_args = dict()
         dbg_chal_args["dbg_chal_cmd"] = cmd 
@@ -100,7 +100,7 @@ class I2C_Client(object):
             return (True, data)
         else:
             error_msg = "Error! dbg challange command failed!: {0}".format(status_str)
-            print(error_msg)
+            logger.error(error_msg)
             return (False, error_msg)
 
     # Sends poke request to i2c proxy server, get the response
@@ -110,7 +110,7 @@ class I2C_Client(object):
                 csr_width_words, word_array))
         if self.con_handle is None:
             error_msg = "i2c server is not connected!"
-            print(error_msg)
+            logger.error(error_msg)
             return (False, error_msg)
         if csr_addr is None or csr_width_words is None \
                 or word_array is None or csr_addr == 0 \
@@ -119,7 +119,7 @@ class I2C_Client(object):
                " word_array{2}").format(csr_addr,
                    csr_width_words, word_array))
             error_msg = "Invalid poke arguments!"
-            print(error_msg)
+            logger.error(error_msg)
             return (False, error_msg)
 
         csr_poke_args = dict()
@@ -134,14 +134,14 @@ class I2C_Client(object):
             return (True, "poke success!")
         else:
             error_msg = "Error! poke failed!: {0}".format(status[1])
-            print(error_msg)
+            logger.error(error_msg)
             return (False, error_msg)
 
     # Closes remote i2c devce connection and socket connection to i2c proxy server
     def disconnect(self):
         if self.con_handle is None:
             error_msg = "Not connected to server"
-            print(error_msg)
+            logger.error(error_msg)
             return (False, error_msg)
         logger.info('Sending i2c disconnect!')
         self.con_handle.send_obj({"cmd": "DISCONNECT",

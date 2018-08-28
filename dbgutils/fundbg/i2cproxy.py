@@ -29,7 +29,7 @@ def catch_exception(f):
         try:
             return f(*args, **kwargs)
         except Exception as e:
-            print 'Caught an exception in', f.__name__
+            logger.error('Caught an exception in {0}'.format(f.__name__))
             logger.error(traceback.format_exc())
     return func
 
@@ -64,18 +64,17 @@ class I2CFactoryThread(jsocket.ServerFactoryThread):
         logger.debug(("New thread process message!!!! pid: {0}"
                " thread: {1}").format(os.getpid(), threading.current_thread()))
         if obj != '':
-            logger.info(obj)
+            logger.debug(obj)
             cmd = obj.get("cmd", None)
             if cmd == "CONNECT":
-		connect_args = obj.get("args", None)
-		if not connect_args:
-		    self.send_obj({"STATUS":[False, "Invalid connect args!"]})
-		    return
-		dev_id = connect_args.get("dev_id", None)
-		if not dev_id:
-		    self.send_obj({"STATUS":[False, ("Invalid connect args."
-			" dev_id is missing!")]})
-		    return
+                connect_args = obj.get("args", None)
+                if not connect_args:
+                    self.send_obj({"STATUS":[False, "Invalid connect args!"]})
+                    return
+                dev_id = connect_args.get("dev_id", None)
+                if not dev_id:
+                    self.send_obj({"STATUS":[False, ("Invalid connect args. dev_id is missing!")]})
+                    return
                 logger.info("Connection Request to dev_id: {0}".format(dev_id))
                 if self.i2c_handle is not None:
                     logger.info("Already connected! closing it!")
@@ -167,7 +166,7 @@ class I2CFactoryThread(jsocket.ServerFactoryThread):
                 if not cmd or not type(int):
                     self.send_obj({"STATUS":[False, "Invalid dbg chal cmd args!"]})
                     return
-                logger.info("cmd: {0}".format(cmd))
+                logger.info("cmd: {0}".format(hex(cmd)))
                 cmd_data = dbg_chal_args.get("data", None)
                 logger.debug('cmd: {0} cmd_data: {1}'.format(cmd, cmd_data))
                 status = False
@@ -175,20 +174,52 @@ class I2CFactoryThread(jsocket.ServerFactoryThread):
                 #if cmd_data is not None:
                     #logger.info("cmd data: {0}".format([hex(x) for x in cmd_data]))
                 try:
-                    (status, data) = i2c_dbg_chal_cmd(self.i2c_handle, cmd, cmd_data)
-                    print 'status: {0} data: {1}'.format(status, data)
+                    retry_cnt = 0
+                    status = False
+                    while status == False:
+                        logger.info('Issueing chal cmd: {0}'.format(hex(cmd)))
+                        (status, data) = i2c_dbg_chal_cmd(self.i2c_handle, cmd, cmd_data)
+                        if status == False:
+                            i2c_wedged = i2c_wedge_detect(self.i2c_handle)
+                            if i2c_wedged == True:
+                                err_msg = 'i2c device wedged!'
+                                logger.error(err_msg)
+                                retry_cnt += 1
+                                if retry_cnt > 10:
+                                    err_msg = 'Unwedge retry limit exceeded!'
+                                    logger.error(err_msg)
+                                    self.send_obj({"STATUS":[False, err_msg]})
+                                    return
+                                unwedge_status = i2c_unwedge(self.i2c_handle)
+                                if unwedge_status == False:
+                                    err_msg = 'i2c device unwedge failed!'
+                                    logger.error(err_msg)
+                                    self.send_obj({"STATUS":[False, err_msg]})
+                                    return
+                                else:
+                                    logger.info('I2C UNWEDGED!')
+                            else:
+                                logger.info(('i2c not wedged! but i2c_dbg_chal_cmd failed.'
+                                        ' data: {0}').format(data))
+                                err_msg = data if data else "Unknown error!"
+                                logger.error(err_msg)
+                                self.send_obj({"STATUS":[False, err_msg]})
+                                return
+                        else:
+                            logger.debug('status: {0} data: {1}'.format(status, data))
+                            resp = dict()
+                            resp["STATUS"] = [True, "dbg cmd success!"]
+                            if data is not None:
+                                resp["DATA"] = list(data)
+                            logger.debug(resp)
+                            self.send_obj(resp)
+                            return
                 except Exception as e:
-                    print "Exception"
+                    logging.error("Exception")
                     logging.error(traceback.format_exc())
-                resp = dict()
-                if status is True:
-                    resp["STATUS"] = [True, "dbg cmd success!"]
-                    if data is not None:
-                        resp["DATA"] = list(data)
-                    print resp
-                else:
-                    resp["STATUS"] = [False, "dbg cmd failed!"]
-                self.send_obj(resp)
+                    resp["STATUS"] = [False, "dbg chal cmd exception!"]
+                    self.send_obj(resp)
+                    return
             else:
                 logger.debug("Invalid msg!")
                 self.send_obj({"STATUS":[False, "Invalid message!"]})
@@ -236,5 +267,3 @@ if __name__ == "__main__":
         server.join(600)
         if not server.isAlive():
             break
-
-

@@ -117,7 +117,7 @@ def csr_poke(args):
                   " csr: {0}.\nExpected {1} word(s) but given {2}.").format(
                   json_obj_pretty(csr_data), csr_width_words, len(word_array)))
             return None
-        print(hex_word_dump(word_array))
+        logger.info(hex_word_dump(word_array))
     elif field_list is not None:
         (status, data) = dbgprobe().csr_peek(csr_addr, csr_width_words)
         if status is not True:
