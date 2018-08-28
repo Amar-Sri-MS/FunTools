@@ -1,4 +1,9 @@
 #!/usr/bin/env python
+'''
+csr find/list/peek/poke utilities
+To issue csr peek/poke, connection to one of the debug interfaces(i2c/jtag/dpc)
+is needed before issuing the commands
+'''
 import argparse, json
 import string, os
 import collections
@@ -9,117 +14,22 @@ import time
 import logging
 import traceback
 import urllib
-import requests
 import tarfile
 from array import array
+from dbgclient import *
 
 logger = logging.getLogger("csrutils")
 logger.setLevel(logging.INFO)
 
 class constants(object):
-    SERVER_TCP_PORT = 55667
     WORD_SIZE_BITS = 64
     MAX_WORD_VALUE = 0xFFFFFFFFFFFFFFFF
     CSR_CFG_DIR = "FunSDK/config/csr/"
     TMP_DIR = '/tmp'
     CSR_METADATA_FILE = 'csr_metadata.json'
 
-# Opens tcp connection with remote server
-def i2c_remote_connect(ip_address):
-    s = jsocket.JsonClient(address = ip_address,
-			   port = constants.SERVER_TCP_PORT)
-    if s is None:
-        print("Failed to connect to i2c server {0}".format(ip_address))
-        return None
-    s.connect()
-    time.sleep(0.5)
-    s.send_obj({"cmd": "CONNECT",
-                "args": None})
-    read_obj = s.read_obj()
-    status = read_obj.get("STATUS", None)
-    logger.info("Remote connect status: {0}".format(status))
-    if status is not None and status[0] == True:
-        return s
-    else:
-        s.close()
-        return None
-
-# Sends peek request to server, get the response and returns the read data
-def i2c_remote_peek(s, csr_addr, csr_width_words):
-    logger.debug(("s: {0} csr_addr:{1} csr_width_words:{2}").format(s, csr_addr,
-                                                             csr_width_words))
-    if s is None or csr_addr is None or csr_width_words is None \
-            or csr_addr == 0 or csr_width_words < 1:
-        print("Invalid peek arguments!")
-        return None
-    csr_peek_args = dict()
-    csr_peek_args["csr_addr"] = csr_addr
-    csr_peek_args["csr_width"] = csr_width_words
-    s.send_obj({"cmd": "CSR_PEEK",
-                "args": csr_peek_args})
-    msg = s.read_obj()
-    logger.debug(msg)
-    status = msg.get("STATUS", None)
-    if status[0] == True:
-        word_array = msg.get("DATA", None)
-        return word_array
-    else:
-        print("I2C peek over socket failed!")
-        return None
-
-# Sends poke request to server, get the response
-def i2c_remote_poke(s, csr_addr, csr_width_words, word_array):
-    logger.debug(("csr_addr:{0} csr_width_words:{1}"
-        " word_array{2}").format(csr_addr,
-            csr_width_words, word_array))
-    if s is None:
-        print 'i2c server is not connected!'
-        return
-    if csr_addr is None or csr_width_words is None \
-            or word_array is None or csr_addr == 0 \
-            or csr_width_words < 1:
-        logger.info(("csr_addr:{0} csr_width_words:{1}"
-           " word_array{2}").format(csr_addr,
-               csr_width_words, word_array))
-        print("Invalid poke arguments!")
-        return False
-
-    csr_poke_args = dict()
-    csr_poke_args["csr_addr"] = csr_addr
-    csr_poke_args["csr_width"] = csr_width_words
-    csr_poke_args["csr_val"] = word_array
-    s.send_obj({"cmd": "CSR_POKE",
-                "args": csr_poke_args})
-    msg = s.read_obj()
-    status = msg.get("STATUS", None)
-    if status[0] == True:
-        logger.debug("poke success!")
-        return True
-    else:
-        print("Error! poke failed!: {0}".format(status[1]))
-        return False
-
-# Disconnects remote i2c connection and socket connection to remote server
-def i2c_remote_disconnect(s):
-    if s is None:
-        print("Not connected to server")
-        return
-    s.send_obj({"cmd": "DISCONNECT",
-                "args": None })
-    read_obj = s.read_obj()
-    status = read_obj.get("STATUS", None)
-    if status[0] == True:
-        logger.info("Success! {0}".format(status[1]))
-        s.close()
-        return True
-    else:
-        logger.error("Error! {0}".format(status[1]))
-        s.close()
-        return False
-
 # csr peek handler for command line interface
 def csr_peek(args):
-    global i2c_server_socket
     input_args = csr_get_peek_args(args)
     csr_name = input_args.get("csr_name", None)
     csr_inst = input_args.get("csr_inst", None)
@@ -148,17 +58,18 @@ def csr_peek(args):
 
     csr_width_bytes = csr_get_width_bytes(csr_data)
     csr_width_words = csr_width_bytes >> 3
-    word_array = None
-    if i2c_server_socket is not None:
-        word_array = i2c_remote_peek(i2c_server_socket, csr_addr, csr_width_words)
+    (status, data) = dbgprobe().csr_peek(csr_addr, csr_width_words)
+    if status is True:
+        word_array = data
         if word_array is None or not word_array:
-            print("Error in csr i2c peek!!!")
+            print("Error in csr peek!!!")
             return None
         logger.debug("Peeked value: {0}".format(hex_word_dump(word_array)))
-        print("I2C peek is success!")
+        print("CSR Peek is success!")
         csr_show(csr_data, word_array, field_list)
     else:
-        print("Error! Not connected to i2c server!")
+        error_msg = data
+        print("Error! {0}!".format(error_msg))
 
 # csr poke handler for commandline interface
 def csr_poke(args):
@@ -191,9 +102,6 @@ def csr_poke(args):
     csr_width_bytes = csr_get_width_bytes(csr_data)
     csr_width_words = csr_width_bytes >> 3
 
-    if i2c_server_socket is None:
-        print("Error! Not connected to i2c server!")
-        return
     if raw_value is not None:
         word_array = list()
         for word in raw_value:
@@ -209,13 +117,15 @@ def csr_poke(args):
                   " csr: {0}.\nExpected {1} word(s) but given {2}.").format(
                   json_obj_pretty(csr_data), csr_width_words, len(word_array)))
             return None
-        print(hex_word_dump(word_array))
+        logger.info(hex_word_dump(word_array))
     elif field_list is not None:
-        word_array = i2c_remote_peek(i2c_server_socket, csr_addr, csr_width_words)
-        if word_array is None or not word_array:
-            print("csr poke failed!. i2c remote peek error while doing read/modify/write!!!")
+        (status, data) = dbgprobe().csr_peek(csr_addr, csr_width_words)
+        if status is not True:
+            print("csr poke failed!. remote peek error while doing read/modify/write!!!")
+            error_msg = data
+            print("Error! {0}".format(error_msg))
             return None
-
+        word_array = data
         logger.debug("Peeked value: {0}".format(hex_word_dump(word_array)))
         valid_field_list = csr_get_valid_field_list(csr_data)
         for field in field_list:
@@ -255,12 +165,12 @@ def csr_poke(args):
         print("Invalid input values! poke should"
               " have either field list with values or raw values")
         return None
-    status = i2c_remote_poke(i2c_server_socket, csr_addr,
-                             csr_width_words, word_array)
-    if status == True:
+    (status, data) = dbgprobe().csr_poke(csr_addr, csr_width_words, word_array)
+    if status is True:
         print("Poke Success!")
     else:
-        print("Error! poke failed!")
+        error_msg = data
+        print("CSR Poke failed! Error: {0}".format(error_msg))
         return
 
 
@@ -436,24 +346,31 @@ def csr_load_metadata(args):
         print "Invalid metadta arguments!"
         return
     return
-def csr_replay(args):
-    replay_file = args.replay_file[0]
-    if not os.path.isabs(replay_file):
-        replay_file = os.path.join(os.getcwd(), replay_file)
-    if not os.path.isfile(replay_file):
-        print 'Path: "{0}" is not a regular file!'.format(replay_file)
+
+# Process each line in the <input_file> statrting with string "CSRWR" and creates list all the CSRs
+# Expected valid line format:  CSRWR:<csr_address>:<csr_width>:[<list of csr values in 64 bit big endian words>]
+# Returns the dict of all the csrs
+def csr_replay_config(input_file):
+    if not os.path.isabs(input_file):
+        input_file = os.path.join(os.getcwd(), input_file)
+    if not os.path.isfile(input_file):
+        print 'Path: "{0}" is not a regular file!'.format(input_file)
         return
-    with open(replay_file) as fp:
+
+    csr_replay_data = list()
+    with open(input_file) as fp:
         line = fp.readline()
-        cnt = 1
+        cnt = 0
+        line_num = 0
         while line:
             line = line.rstrip()
+            line_num += 1
+            logger.debug("Line {}: {}".format(line_num, line.strip()))
             csr_tokens = line.split(':')
             if len(csr_tokens) < 4:
-                print 'Skipping line: "{0}"'.format(line)
+                logger.debug('Skipping line: "{0}"'.format(line))
                 line = fp.readline()
                 continue
-            print("Line {}: {}".format(cnt, line.strip()))
             if csr_tokens[0] != 'CSRWR':
                 line = fp.readline()
                 continue
@@ -464,37 +381,135 @@ def csr_replay(args):
                     return
 
             csr_address = csr_tokens[1]
-            csr_width_words = csr_tokens[2]
-            if not csr_width_words:
+            csr_width = csr_tokens[2]
+            if not csr_width:
                 print 'Invalid csr width in input data: "{0}"'.format(line)
                 return
-            csr_width_words = (csr_width_words + 63) / 64
+            csr_width_words = (csr_width + 63) / 64
             csr_val_words = csr_tokens[3:]
             if csr_width_words != len(csr_val_words):
                 print 'Mismatch in csr width and value. "{0}"'.format(line)
                 return
-            if i2c_server_socket is None:
-                print 'i2c server is not connected!'
-                return
-            logger.debug('csr_address: {0} csr_width_words: {1}'
+            logger.debug('csr_address: {0} csr_width: {1}'
                     'word_array:{2}'.format(csr_address,
-                        csr_width_words, csr_val_words))
-            status = i2c_remote_poke(i2c_server_socket, csr_address,
-                   csr_width_words, csr_val_words)
-            if status == True:
-                print('Succesfully replayed "{0}"!'.format(line))
-                cnt += 1
-            else:
-                print('Replay failed! "{0}"! Replay stopped!'.format(line))
-                return
+                        csr_width, csr_val_words))
+
+            csr_info = dict()
+            csr_info["csr_address"] = csr_address
+            csr_info["csr_width"] = csr_width
+            csr_info["csr_val_words"] = csr_val_words
+            csr_replay_data.append(csr_info)
+            logger.debug('Succesfully added "{0}" to replay data!'.format(line))
+            cnt += 1
             line = fp.readline()
+    if cnt > 0:
+        print('Succesfully added {0} CSRs! to replay data.'.format(cnt))
+        return csr_replay_data
+    else:
+        print('No valid csrreplay data is found in {}').format(input_file)
+        return None
+
+# Dumps the json dict of all the csrs returned by csr_replay_config() into a file in the directory <dest_dir>
+def csr_replay_config_to_file(input_file, dest_dir):
+    if not os.path.isabs(input_file):
+        input_file = os.path.join(os.getcwd(), input_file)
+    if not os.path.isfile(input_file):
+        print 'Path: "{0}" is not a regular file!'.format(input_file)
+        return
+
+    if not os.path.isabs(dest_dir):
+        dest_dir = os.path.join(os.getcwd(), dest_dir)
+    if not os.path.exists(dest_dir):
+        print 'Path: "{0}" does not exist!'.format(dest_dir)
+        return
+
+    replay_config = csr_replay_config(input_file)
+    if replay_config is None:
+        print('No valid csrreplay data is found in {}.').format(input_file)
+        return False
+
+    csr_replay_data = list()
+    for x in replay_config:
+        csr_info = dict()
+        csr_address = x.get("csr_address", None)
+        if not csr_address:
+            print("Invalid csr_address in input data! csr_address: {0}".format(csr_address))
+            return False
+        csr_width = x.get("csr_width", None)
+        if not csr_width:
+            print("Invalid in csr_width in input data! csr_width: {0}".format(csr_width))
+            return False
+        csr_val_words = x.get("csr_val_words", None)
+        if not csr_val_words:
+            print("Invalid in csr_val_words in input data! csr_val_words: {0}".format(csr_val_words))
+            return False
+        csr_info["csr_address"] = hex(csr_address)
+        csr_info["csr_width_words"] = (csr_width + 63 ) >> 6
+        csr_val_words_hex = list()
+        remaining_width = csr_width
+        for x in csr_val_words:
+            if remaining_width >= 64:
+                csr_val_words_hex.append('0x{0:0{1}X}'.format(x,16))
+                remaining_width -= 64
+            else:
+                mask = (0xFFFFFFFFFFFFFFFF >> (64 - remaining_width)) \
+                        << (64 - remaining_width)
+                csr_val_words_hex.append('0x{0:0{1}X}'.format(x & mask,16))
+                remaining_width = 0
+        csr_info["csr_val_words"] = csr_val_words_hex
+        csr_replay_data.append(csr_info)
+
+    dest_file = os.path.join(dest_dir, "csr_replay_data.cfg")
+    f = open(dest_file, "w")
+    f.write(json.dumps(csr_replay_data, indent=4))
+    f.close()
+    print('Succesfully created csr replay data file: {0}'.format(dest_file))
+
+def csr_replay(args):
+    input_file = args.replay_file[0]
+    if not os.path.isabs(input_file):
+        input_file = os.path.join(os.getcwd(), input_file)
+    if not os.path.isfile(input_file):
+        print 'Path: "{0}" is not a regular file!'.format(input_file)
+        return
+
+    replay_config = csr_replay_config(input_file)
+    if replay_config is None:
+        print('No valid csrreplay data is found in {}').format(input_file)
+        return False
+
+    cnt = 0
+    for x in replay_config:
+        csr_info = dict()
+        csr_address = x.get("csr_address", None)
+        if not csr_address:
+            print("Invalid csr_address in input data! csr_address: {0}".format(csr_address))
+            return False
+        csr_width = x.get("csr_width", None)
+        if not csr_width:
+            print("Invalid in csr_width in input data! csr_width: {0}".format(csr_width))
+            return False
+        csr_val_words = x.get("csr_val_words", None)
+        if not csr_val_words or len(csr_val_words) < 1:
+            print("Invalid in csr_val_words in input data! csr_val_words: {0}".format(csr_val_words))
+            return False
+        csr_width_words = (csr_width + 63 ) >> 6
+        logger.debug('csr_address: {0} csr_width_words: {1}'
+                'word_array:{2}'.format(csr_address,
+                    csr_width_words, csr_val_words))
+        (status, status_msg) = dbgprobe().csr_poke(csr_address, csr_width_words,
+                                 csr_val_words)
+        if status == True:
+            print('Succesfully replayed "{0}"!'.format(x))
+            cnt += 1
+        else:
+            print('Replay failed! "{0}"! Replay stopped! Error:{1}'.format(x, status_msg))
+            return
     print('Succesfully replayed {0} CSRs!'.format(cnt))
 
-# csr connect handler for commandline interface.
-# Connects remote server
-i2c_server_socket = None
+# connect handler for commandline interface.
+# Connects to remote server
 def server_connect(args):
-    global i2c_server_socket
     ip_address = args.ip_addr[0]
     try:
         socket.inet_aton(ip_address)
@@ -502,33 +517,30 @@ def server_connect(args):
     except socket.error:
         print("Invalid ip address!")
         return
-    if i2c_server_socket is not None:
-        try:
-            i2c_remote_disconnect(i2c_server_socket)
-        except Exception as e:
-            logging.error(traceback.format_exc())
-            logger.info('Still proceeding with connect..!')
-        i2c_server_socket = None
+    dev_id= args.dev_id[0]
+    if dev_id is None:
+        print("Invalid device id!")
+        return
+    if args.mode is None or args.mode[0] is None:
+        print('No mode option! Default to "i2c"')
+        # set default mode to i2c
+        mode = 'i2c'
 
-    s = i2c_remote_connect(ip_address)
-    if s is not None:
-        print("Server connection Success!")
-        i2c_server_socket = s
+    print args
+    status = dbgprobe().connect(mode, ip_address, dev_id)
+    if status is True:
+        print("Server Connection Successful!")
     else:
-        print("Server connection failed!")
+        print("Server Connection Failed!")
 
-
-# csr disconnect handler for commandline interface.
+# disconnect handler for commandline interface.
 # Disconnects from remote server
 def server_disconnect(args):
-    global i2c_server_socket
-    if i2c_server_socket is None:
-        print("Not connected to server")
-        return
-
-    status = i2c_remote_disconnect(i2c_server_socket)
-    i2c_server_socket = None
-    print("Server disconnected!");
+    status = dbgprobe().disconnect()
+    if status is not True:
+        print("Server disconnect failed!")
+    else:
+        print("Server is disconnected!");
     return
 
 # Read peek input args
@@ -1124,6 +1136,11 @@ def singleton(cls):
             instances[cls] = cls()
         return instances[cls]
     return getinstance
+
+@singleton
+class dbgprobe(DBG_Client):
+    def __init__(self):
+        DBG_Client.__init__(self)
 
 # Create single instance of csr metadata
 @singleton

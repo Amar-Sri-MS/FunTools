@@ -1,9 +1,7 @@
 #!/usr/bin/env python
 
 import sys, os
-from aardvark_py import *
 from array import array
-import binascii
 import argparse
 import threading
 import time
@@ -13,170 +11,27 @@ import traceback
 import signal
 import socket
 from socket import error as socket_error
+from i2cutils import *
+import functools
 
 logger = logging.getLogger("jsocket.tserver")
 logger.setLevel(logging.INFO)
 
-logger = logging.getLogger("i2cutils")
+logger = logging.getLogger("i2cproxy")
 logger.setLevel(logging.INFO)
 
 class constants(object):
-    F1_I2C_SLAVE_ADDR = 0x70
-    SERVER_TCP_PORT = 55667
-    IC_DEVICE_FEATURE_MASK = 0x1B
+    SERVER_TCP_PORT = 55668
 
-# Converts byte array to big-endian 64-bit words
-def byte_array_to_words_be(byte_array):
-    logger.debug("byte_array: {0}".format(byte_array))
-    words = list()
-    byte_attay_size = len(byte_array)
-    word_array_size = byte_attay_size / 8
-    for i in range(word_array_size):
-        val = int(binascii.hexlify(byte_array[i:i+8]), 16)
-        words.extend([val])
-        i += 8
-
-    remaining_bytes = len(byte_array) % 8
-    if remaining_bytes != 0:
-        last_word = byte_array[-remaining_bytes:]
-        last_word.extend(array('B', [0x00] * (8 - remaining_bytes)))
-        val = int(binascii.hexlify(byte_array[i, i + 8]), 16)
-        words.extend(val)
-    logger.debug("word_array: {0}".format([hex(x) for x in words]))
-
-    return words
-
-# Check i2c device presence and open the device.
-# Returns the device handle
-def i2c_connect():
-    n_devs, devs = aa_find_devices(1)
-    logger.debug("n_devs:{0} devs:".format(n_devs))
-    logger.debug(devs)
-    if not devs or devs[0] is None:
-        status_msg = "Failed to detect i2c device!"
-        #self.send_obj({"STATUS":[False, status_msg]})
-        logger.error(status_msg)
-        return None
-
-    dev_handle =  devs[0]
-    logger.debug("Dev handle: {0}".format(dev_handle))
-    h = aa_open(dev_handle)
-    if h == 0x8000:
-        logger.debug("Invalid i2c Handle! {0}".format(h))
-        return None
-
-    features = aa_features(h)
-    if features != constants.IC_DEVICE_FEATURE_MASK:
-        status_msg = "Invalid device features!: {0}".format(features)
-        #self.send_obj({"STATUS":[False, status_msg]})
-        logger.error(status_msg)
-        return None
-
-    status = aa_i2c_free_bus(h)
-    logger.debug("Free Bus: {0}".format(aa_status_string(status)))
-    status = aa_configure(h, 2)
-    if status != 2:
-        status_msg = "Configure i2c mode! status:{0}".format(status)
-        #self.send_obj({"STATUS":[False, status_msg]})
-        logger.error(status_msg)
-        return None
-
-    status = aa_i2c_bitrate(h, 1)
-    if status != 1:
-        status_msg = "Configure bitrate! status:{0}".format(status)
-        #self.send_obj({"STATUS":[False, status_msg]})
-        logger.error(status_msg)
-        return None
-
-    logger.debug("i2c handle: {0}".format(h))
-    return h
-
-# Free the i2c bus and close the device handle
-def i2c_disconnect(h):
-    logger.debug("Disconnect request")
-    status = aa_i2c_free_bus(h)
-    logger.debug("Free Bus: {0}".format(aa_status_string(status)))
-    status = aa_close(h)
-    logger.debug("Closed i2c handle")
-
-# i2c csr read
-def i2c_csr_peek(h, csr_addr, csr_width_words):
-    logger.info(("I2C peek csr_addr:{0}"
-           " csr_width_words:{1}").format(hex(csr_addr), csr_width_words))
-    csr_addr = struct.pack('>Q', csr_addr)
-    csr_addr = list(struct.unpack('BBBBBBBB', csr_addr))
-    csr_addr = csr_addr[3:]
-    cmd = array('B', [0x00])
-    cmd.extend(csr_addr)
-    logger.debug(cmd)
-    sent_bytes = aa_i2c_write(h, constants.F1_I2C_SLAVE_ADDR, 0, cmd)
-    logger.debug("sent_bytes: {0}".format(sent_bytes))
-    if sent_bytes != len(cmd):
-        logger.error(("Write Error! sent_bytes:{0}"
-               " Expected: {1}").format(sent_bytes, len(cmd)))
-        return None
-    csr_width = csr_width_words * 8
-    read_data = array('B', [00]*(csr_width+1))
-    read_bytes = aa_i2c_read(h, constants.F1_I2C_SLAVE_ADDR, 0, read_data)
-    logger.info(("read_data: {0}").format([hex(x) for x in read_data]))
-    if read_bytes[0] != (csr_width + 1):
-        logger.error(("Read Error!  read_bytes:{0}"
-               " Expected: {1}").format(read_bytes, (csr_width + 1)))
-        return None
-    if read_data[0] != 0x80:
-        logger.error(("Read status returned Error! {0}").format(
-            aa_status_string(read_data[0])))
-        return None
-
-    read_data = read_data[1:]
-    word_array = byte_array_to_words_be(read_data)
-    logger.debug("Peeked word_array: {0}".format([hex(x) for x in word_array]))
-    return word_array
-
-# i2c csr write
-def i2c_csr_poke(h, csr_addr, csr_width_words, word_array):
-    logger.info(("Starting I2C poke. csr_addr: {0} csr_width_words: {1}"
-          " word_array:{2}").format(hex(csr_addr), csr_width_words,
-                                    [hex(x) for x in word_array]))
-    if csr_width_words != len(word_array):
-        logger.error(("Insufficient data! Expected: {0}"
-               " data length: {0}").format(csr_width_words, len(word_array)))
-        return False
-
-    csr_addr = struct.pack('>Q', csr_addr)
-    csr_addr = list(struct.unpack('BBBBBBBB', csr_addr))
-    csr_addr = csr_addr[3:] #Assuming csr address is always 6 bytes
-    cmd_data = array('B', [0x01])
-    cmd_data.extend(csr_addr)
-    for word in word_array:
-        word = struct.pack('>Q', word)
-        word = list(struct.unpack('BBBBBBBB', word))
-        cmd_data.extend(word)
-    logger.debug("poking bytes: {0}".format([hex(x) for x in cmd_data]))
-    sent_bytes = aa_i2c_write(h, constants.F1_I2C_SLAVE_ADDR, 0, cmd_data)
-    logger.debug("sent_bytes: {0}".format(sent_bytes))
-
-    try:
-        if sent_bytes != len(cmd_data):
-            logger.error(("Write Error! sent_bytes:{0}"
-                   " Expected: {1}").format(sent_bytes, len(cmd_data)))
-            return False
-
-        status = array('B', [00])
-        status_bytes = aa_i2c_read(h, constants.F1_I2C_SLAVE_ADDR, 0, status)
-        logger.debug("poke status_bytes:{0}".format(status_bytes))
-        if status_bytes[0] != 1:
-            logger.debug("Read Error!  status_bytes:{0} Expected:"
-                         "{1}".format(status_bytes, 1))
-            return False
-        if status[0] != 0x80:
-            logger.debug("Write status returned Error!"
-                         " {0}".format(aa_status_string(status[0])))
-            return False
-    except Exception as e:
-        logging.error(traceback.format_exc())
-        return False
-    return True
+def catch_exception(f):
+    @functools.wraps(f)
+    def func(*args, **kwargs):
+        try:
+            return f(*args, **kwargs)
+        except Exception as e:
+            logger.error('Caught an exception in {0}'.format(f.__name__))
+            logger.error(traceback.format_exc())
+    return func
 
 class I2CServer(jsocket.ThreadedServer):
     def __init__(self):
@@ -196,30 +51,50 @@ class I2CFactoryThread(jsocket.ServerFactoryThread):
         super(I2CFactoryThread, self).__init__()
         self.timeout = 2.0
         self.i2c_handle = None
+    def __del__(self):
+        if self.i2c_handle is not None:
+            logger.info("Closing i2c Connection!")
+            i2c_disconnect(self.i2c_handle)
+            self.i2c_handle = None
+        logger.info("Destroyed i2c factory thread!");
 
+    @catch_exception
     def _process_message(self, obj):
         """ virtual method - Implementer must define protocol """
         logger.debug(("New thread process message!!!! pid: {0}"
                " thread: {1}").format(os.getpid(), threading.current_thread()))
         if obj != '':
-            logger.info(obj)
+            logger.debug(obj)
             cmd = obj.get("cmd", None)
             if cmd == "CONNECT":
-                logger.info("Connection Request.")
+                connect_args = obj.get("args", None)
+                if not connect_args:
+                    self.send_obj({"STATUS":[False, "Invalid connect args!"]})
+                    return
+                dev_id = connect_args.get("dev_id", None)
+                if not dev_id:
+                    self.send_obj({"STATUS":[False, ("Invalid connect args. dev_id is missing!")]})
+                    return
+                logger.info("Connection Request to dev_id: {0}".format(dev_id))
                 if self.i2c_handle is not None:
                     logger.info("Already connected! closing it!")
                     i2c_disconnect(self.i2c_handle)
                     self.i2c_handle = None
                 try:
-                    self.i2c_handle = i2c_connect()
+                    (status, value) = i2c_connect(dev_id)
+                    if status is True:
+                        self.i2c_handle = value
+                        self.send_obj({"STATUS":[True, "i2c device is ready!"]})
+                        logger.info('i2c device connection is ready!')
+                    else:
+                        self.i2c_handle = None
+                        error_str = value
+                        self.send_obj({"STATUS":[False, error_str]})
+                        return
                 except Exception as e:
                     logging.error(traceback.format_exc())
                     self.send_obj({"STATUS":[False, "Exception!"]})
                     return
-                if self.i2c_handle is None:
-                    self.send_obj({"STATUS":[False, "i2c device open failed!"]})
-                else:
-                    self.send_obj({"STATUS":[True, "i2c device is ready!"]})
             elif cmd == "CSR_PEEK":
                 if self.i2c_handle is None:
                     self.send_obj({"STATUS":[False, "I2c dev is not connected!"]})
@@ -279,6 +154,72 @@ class I2CFactoryThread(jsocket.ServerFactoryThread):
                 else:
                     self.send_obj({"STATUS":[True, "I2c is already disconnected"]})
                 self.i2c_handle = None
+            elif cmd == "DBG_CHAL_CMD":
+                dbg_chal_args = obj.get("args", None)
+                if not dbg_chal_args:
+                    self.send_obj({"STATUS":[False, "Invalid poke args!"]})
+                    return
+                if self.i2c_handle is None:
+                    self.send_obj({"STATUS":[False, "I2c dev is not connected!"]})
+                    return
+                cmd = dbg_chal_args.get("dbg_chal_cmd", None)
+                if not cmd or not type(int):
+                    self.send_obj({"STATUS":[False, "Invalid dbg chal cmd args!"]})
+                    return
+                logger.info("cmd: {0}".format(hex(cmd)))
+                cmd_data = dbg_chal_args.get("data", None)
+                logger.debug('cmd: {0} cmd_data: {1}'.format(cmd, cmd_data))
+                status = False
+                data = None
+                #if cmd_data is not None:
+                    #logger.info("cmd data: {0}".format([hex(x) for x in cmd_data]))
+                try:
+                    retry_cnt = 0
+                    status = False
+                    while status == False:
+                        logger.info('Issueing chal cmd: {0}'.format(hex(cmd)))
+                        (status, data) = i2c_dbg_chal_cmd(self.i2c_handle, cmd, cmd_data)
+                        if status == False:
+                            i2c_wedged = i2c_wedge_detect(self.i2c_handle)
+                            if i2c_wedged == True:
+                                err_msg = 'i2c device wedged!'
+                                logger.error(err_msg)
+                                retry_cnt += 1
+                                if retry_cnt > 10:
+                                    err_msg = 'Unwedge retry limit exceeded!'
+                                    logger.error(err_msg)
+                                    self.send_obj({"STATUS":[False, err_msg]})
+                                    return
+                                unwedge_status = i2c_unwedge(self.i2c_handle)
+                                if unwedge_status == False:
+                                    err_msg = 'i2c device unwedge failed!'
+                                    logger.error(err_msg)
+                                    self.send_obj({"STATUS":[False, err_msg]})
+                                    return
+                                else:
+                                    logger.info('I2C UNWEDGED!')
+                            else:
+                                logger.info(('i2c not wedged! but i2c_dbg_chal_cmd failed.'
+                                        ' data: {0}').format(data))
+                                err_msg = data if data else "Unknown error!"
+                                logger.error(err_msg)
+                                self.send_obj({"STATUS":[False, err_msg]})
+                                return
+                        else:
+                            logger.debug('status: {0} data: {1}'.format(status, data))
+                            resp = dict()
+                            resp["STATUS"] = [True, "dbg cmd success!"]
+                            if data is not None:
+                                resp["DATA"] = list(data)
+                            logger.debug(resp)
+                            self.send_obj(resp)
+                            return
+                except Exception as e:
+                    logging.error("Exception")
+                    logging.error(traceback.format_exc())
+                    resp["STATUS"] = [False, "dbg chal cmd exception!"]
+                    self.send_obj(resp)
+                    return
             else:
                 logger.debug("Invalid msg!")
                 self.send_obj({"STATUS":[False, "Invalid message!"]})
@@ -326,5 +267,3 @@ if __name__ == "__main__":
         server.join(600)
         if not server.isAlive():
             break
-
-
