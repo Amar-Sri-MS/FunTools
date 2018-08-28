@@ -334,9 +334,9 @@ def __i2c_dbg_chal_cmd_header_read(dev):
 
     time.sleep(1)
     rdata = array('B', [00])
-    logger.error('Reading the sbp cmd exec status byte!')
+    logger.debug('Reading the sbp cmd exec status byte!')
     aa_i2c_read(dev, constants.F1_I2C_SLAVE_ADDR, 0, rdata)
-    logger.error('Read data: {0}'.format(rdata))
+    logger.debug('Read data: {0}'.format(rdata))
     status_byte = rdata[0]
     status = status_byte >> 0x6
     length = status_byte & 0x3f
