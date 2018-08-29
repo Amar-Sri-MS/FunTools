@@ -16,7 +16,7 @@ import traceback
 import urllib
 import tarfile
 from array import array
-from dbgclient import *
+from probeutils.dbgclient import *
 
 logger = logging.getLogger("csrutils")
 logger.setLevel(logging.INFO)
