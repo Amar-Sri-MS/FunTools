@@ -1,0 +1,6 @@
+#!/bin/bash
+set -e
+
+(sleep 1;open http://localhost:8585)&
+
+python2.7 ./controller.py
