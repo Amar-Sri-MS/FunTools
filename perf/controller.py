@@ -20,7 +20,7 @@ job_root = "data/jobs/"
 
 @route('/')
 def default():
-    return template("list.tpl", jobs=os.listdir("data/jobs/"))
+    return template("list.tpl", jobs=os.listdir(job_root))
 
 @route('/favicon.ico')
 def static():
@@ -154,6 +154,7 @@ def get_pd(job_id):
     pd = job_to_perf_data.get(job_id)
     if not pd:
         fname = os.path.join(job_root, job_id, "perf.data")
+        pd = read_pd_from_file(fname)
         job_to_perf_data[job_id] = pd
     return pd
 
@@ -220,6 +221,5 @@ if (__name__ == "__main__"):
     if (len(sys.argv) == 2):
         job_root = sys.argv[1]
         print "Using job root %s" % job_root
-
 
     run(host='0.0.0.0', port=8585, debug=True)
