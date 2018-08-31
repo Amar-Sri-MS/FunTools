@@ -130,7 +130,8 @@ def get_wu_list(job_dir):
     return wu_list
 
 LINES_PER_SAMPLE = 8
-
+PERF_SAMPLE_FMT = "%s  %16x  %8x  %8x  %8x  %8x  %8x %16x %s"
+PERF_HEADER_FMT = "%s  %16s  %8s  %8s  %8s  %8s  %8s %16s %s"
 class PerfSample(object):
     def __init__(self, ccv, wu_list, *args):
         assert len(args) == LINES_PER_SAMPLE
@@ -148,8 +149,12 @@ class PerfSample(object):
         self.arg0 |= (args[7] >> 8)
         assert LINES_PER_SAMPLE == 8
 
+    def header_str(self):
+        return PERF_HEADER_FMT % ("ccv", "timestamp", "cp0_count",
+                                  "perf0", "perf1", "perf2", "perf3",
+                                  "arg0", "wu")
     def __str__(self):
-        return "%s  %16x  %8x  %8x  %8x  %8x  %8x %16x %s" % (
+        return PERF_SAMPLE_FMT % (
             self.vp,
             self.timestamp,
             self.cp0_count,
@@ -160,6 +165,9 @@ class PerfSample(object):
             self.arg0,
             self.wu,
             )
+
+def vp2ccv(vp):
+    return "%s.%s.%s" % (vp/24, (vp%24)/4, (vp%24)%4)
 
 def parse_perfmon_data(job_dir, wu_list):
     path = job_dir + "/perfmon.txt"
@@ -181,7 +189,7 @@ def parse_perfmon_data(job_dir, wu_list):
     samples = []
     for vp, values in vp_to_values.iteritems():
         assert len(values) % LINES_PER_SAMPLE == 0, len(values)
-        ccv = "%s.%s.%s" % (vp/24, (vp%24)/4, (vp%24)%4)
+        ccv = vp2ccv(vp)
         for i in xrange(0, len(values), LINES_PER_SAMPLE):
             sample = PerfSample(ccv, wu_list, *values[i:i+LINES_PER_SAMPLE]);
             if sample.cp0_count == 0xacce00000000:
@@ -251,7 +259,12 @@ class PerfData(object):
     pass
 
 def main(url):
-    job_dir = download_files(url)
+    if (url.startswith("http")):
+        job_dir = download_files(url)
+    else:
+        # accept a local path as pre-downloaded data
+        job_dir = url
+        print "Using local job direcotry '%s'" % job_dir
     wu_list = get_wu_list(job_dir)
     uart_data = get_uart_data(job_dir)
     event_types = parse_event_types(uart_data)
@@ -273,6 +286,14 @@ def main(url):
         pd.rows = table_from_samples(samples, event_types)
         pickle.dump(pd, f)
     print "Data imported successfully"
+
+    # for manual validation purposes, make a simple text version
+    with open(os.path.join(job_dir, "samples.txt"), "w") as f:
+        f.write("%s\n" % samples[0].header_str())
+        for sample in samples:
+            f.write("%s\n" % sample)
+    print "Samples saved to samples.txt"
+
 
 if __name__ == '__main__':
     main(*sys.argv[1:])

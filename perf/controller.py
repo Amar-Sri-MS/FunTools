@@ -16,9 +16,11 @@ abs_models_path = os.path.join(abs_app_dir_path, 'models')
 sys.path.append(abs_models_path)
 import vp_util
 
+job_root = "data/jobs/"
+
 @route('/')
 def default():
-    return template("list.tpl", jobs=os.listdir("data/jobs/"))
+    return template("list.tpl", jobs=os.listdir(job_root))
 
 @route('/favicon.ico')
 def static():
@@ -124,28 +126,35 @@ job_to_perf_data = {}
 class PerfData(object):
     pass
 
+
+def read_pd_from_file(fname):
+    with open(fname, "r") as f:
+        pd = pickle.load(f)
+    assert pd.rows[0][0] == "timestamp"
+    vp_to_rows = collections.defaultdict(list)
+    assert pd.rows[0][1] == "vp"
+    for r in pd.rows[1:]:
+        vp_to_rows[r[1]].append(r)
+    assert pd.rows[0][3] == "cycles"
+    new_rows = []
+    for vp, rows in vp_to_rows.iteritems():
+        new_rows.append(rows[0] + ("unknown",))
+        for i in xrange(1, len(rows)):
+            dispatch_time = rows[i][0] - rows[i-1][0]
+            dispatch_cycles = dispatch_time*16/10
+            dispatch_cycles -= rows[i-1][3]
+            new_rows.append(rows[i] + (dispatch_cycles,))
+    new_rows.sort(cmp=lambda x,y: cmp(x[0], y[0]))
+    new_rows.insert(0, pd.rows[0] + ("dispatch_cycles",))
+    pd.rows = new_rows
+
+    return pd
+
 def get_pd(job_id):
     pd = job_to_perf_data.get(job_id)
     if not pd:
-        with open(os.path.join("data/jobs", job_id, "perf.data"), "r") as f:
-            pd = pickle.load(f)
-        assert pd.rows[0][0] == "timestamp"
-        vp_to_rows = collections.defaultdict(list)
-        assert pd.rows[0][1] == "vp"
-        for r in pd.rows[1:]:
-            vp_to_rows[r[1]].append(r)
-        assert pd.rows[0][3] == "cycles"
-        new_rows = []
-        for vp, rows in vp_to_rows.iteritems():
-            new_rows.append(rows[0] + ("unknown",))
-            for i in xrange(1, len(rows)):
-                dispatch_time = rows[i][0] - rows[i-1][0]
-                dispatch_cycles = dispatch_time*16/10
-                dispatch_cycles -= rows[i-1][3]
-                new_rows.append(rows[i] + (dispatch_cycles,))
-        new_rows.sort(cmp=lambda x,y: cmp(x[0], y[0]))
-        new_rows.insert(0, pd.rows[0] + ("dispatch_cycles",))
-        pd.rows = new_rows
+        fname = os.path.join(job_root, job_id, "perf.data")
+        pd = read_pd_from_file(fname)
         job_to_perf_data[job_id] = pd
     return pd
 
@@ -205,4 +214,12 @@ def group_by(opt, col, operate_fn):
     sort_rows(opt, result)
     return result
 
-run(host='0.0.0.0', port=8585, debug=True)
+###
+##  so we can act as a library
+#
+if (__name__ == "__main__"):
+    if (len(sys.argv) == 2):
+        job_root = sys.argv[1]
+        print "Using job root %s" % job_root
+
+    run(host='0.0.0.0', port=8585, debug=True)
