@@ -101,14 +101,18 @@ def download_files(url):
 
 def get_uart_data(job_dir):
     with open(os.path.join(job_dir, "uart.txt"), "r") as f:
-        return f.read()
+        return (f.read(), os.fstat(f.fileno()).st_mtime)
 
-def get_wu_list(job_dir):
+def get_wu_list(job_dir, uart_timestamp):
+
     wu_path = job_dir + "/wu.list"
-    if os.path.exists(wu_path):
+    if (os.path.exists(wu_path)
+        and (os.stat(wu_path).st_mtime > uart_timestamp)):
+        print "Using cached WU list"
         with open(wu_path, "r") as f:
             return f.read().split()
 
+    print "Generating WU list"
     data = subprocess.check_output("/Users/Shared/cross-el/bin/mips64-gdb "
         "-ex 'set print elements 100000' "
         "-ex 'set print repeats 0' "
@@ -265,8 +269,8 @@ def main(url):
         # accept a local path as pre-downloaded data
         job_dir = url
         print "Using local job direcotry '%s'" % job_dir
-    wu_list = get_wu_list(job_dir)
-    uart_data = get_uart_data(job_dir)
+    (uart_data, timestamp) = get_uart_data(job_dir)
+    wu_list = get_wu_list(job_dir, timestamp)
     event_types = parse_event_types(uart_data)
     samples = parse_perfmon_data(job_dir, wu_list)
     debug_build = "installing interposer 'validate'" in uart_data

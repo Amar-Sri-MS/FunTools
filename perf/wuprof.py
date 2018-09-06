@@ -401,6 +401,34 @@ def bench_data_make_aggregates(bench, pd, ilog):
 
 
 ###
+##  dasm parsing
+#
+
+DRE = "^([0-9a-f]+):\s+[0-9a-f]+\s+([^\s].*)$"
+dasm_insts = {}
+
+def parse_dasm_file(dfile):
+
+    count = 0
+    fl = open(dfile)
+
+    dre = re.compile(DRE)
+    for line in fl.readlines():
+        line = line.strip()
+        m = dre.match(line)
+        if (m is None):
+            continue
+
+        addr = m.group(1)
+        inst = m.group(2)
+
+        count += 1
+        dasm_insts[addr] = inst
+
+
+    print "Parsed %d instructions from dasm  file" % count
+
+###
 ##  instruction log parsing
 #
 
@@ -417,7 +445,7 @@ class InstIssue:
         self.global_icount = global_icount
 
     def __str__(self):
-        return "%s\t%s\t%s" % (self.local_icount, self.pc, self.func)
+        return "%s\t%s\t%s\t%s" % (self.local_icount, self.pc, self.func, dasm_insts.get(self.pc, "<unknown>"))
 
 global_inst_list = []
 
@@ -455,6 +483,11 @@ def do_all_bench_stats(jobsdir, style, opts):
     pfile = os.path.join(jobsdir, "perf.data")
     ufile = os.path.join(jobsdir, "uart.txt")
     ifile = os.path.join(jobsdir, "stderror.out")
+    dfile = os.path.join(jobsdir, "funos.dasm")
+    ffile = os.path.join(jobsdir, "funos-f1-palladium")
+
+    # make sure our perf data is up to date
+    maybe_regen_perf_data(jobsdir, ufile, pfile, dfile, ffile)
 
     # parse the different runs out of the uart
     benches = parse_uart_log_for_benches(ufile)
@@ -468,9 +501,15 @@ def do_all_bench_stats(jobsdir, style, opts):
     pd = controller.read_pd_from_file(pfile)
 
     # parse the instruction log, if it exists
+    print "parsing instruction log"
     ilog = parse_instruction_log(ifile)
 
+    # parse the dasm dump
+    print "parsing dasm file"
+    parse_dasm_file(dfile)
+
     # for each bench, do data aggregation into the bench
+    print "Crunching benchmark data"
     for bench in benches:
         bench_data_make_aggregates(bench, pd, ilog)
 
@@ -506,6 +545,29 @@ def do_bottle_config(opts):
         style = '<link rel="stylesheet" type="text/css" href="/static/style.css">'
 
     return style
+
+###
+##  generating perf data
+#
+OBJDUMP = " /Users/Shared/cross/mips64/bin/mips64-unknown-elf-objdump"
+def maybe_regen_perf_data(jobsdir, ufile, pfile, dfile, ffile):
+    abs_app_dir_path = os.path.dirname(os.path.realpath(__file__))
+
+    if (os.stat(ufile).st_mtime < os.stat(pfile).st_mtime):
+        print "Cached perf data OK"
+    else:
+        print "Rebuilding perf data"
+        abs_parse_path = os.path.join(abs_app_dir_path,
+                                      'tools', "perf-parse.py")
+        os.system("%s %s" % (abs_parse_path, jobsdir))
+
+    if (os.path.exists(dfile)
+        and (os.stat(ffile).st_mtime < os.stat(dfile).st_mtime)):
+        print "Cached DASM file OK"
+    else:
+        print "Rebuilding DASM dump"
+        os.system("%s -d -z %s > %s" % (OBJDUMP, ffile, dfile))
+
 
 ###
 ## argument parsing
