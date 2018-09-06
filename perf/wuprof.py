@@ -4,6 +4,7 @@ import re
 import sys
 import math
 import optparse
+import subprocess
 
 # we lean on the controller API to load the pickled data
 import controller
@@ -404,7 +405,7 @@ def bench_data_make_aggregates(bench, pd, ilog):
 ##  dasm parsing
 #
 
-DRE = "^([0-9a-f]+):\s+[0-9a-f]+\s+([^\s].*)$"
+DRE = r"^(?P<addr>[0-9a-f]+):\s+[0-9a-f]+\s+(?P<inst>[^\s].*)$"
 dasm_insts = {}
 
 def parse_dasm_file(dfile):
@@ -419,12 +420,12 @@ def parse_dasm_file(dfile):
         if (m is None):
             continue
 
-        addr = m.group(1)
-        inst = m.group(2)
+        addr = m.group("addr")
+        inst = m.group("inst")
 
         count += 1
         dasm_insts[addr] = inst
-
+    fl.close()
 
     print "Parsed %d instructions from dasm  file" % count
 
@@ -432,7 +433,7 @@ def parse_dasm_file(dfile):
 ##  instruction log parsing
 #
 
-IRE = "^Trace CPU ([0-9]+) 0x([0-9a-f]+) \[([0-9a-f]+)\] ([^ ]+) @ ([0-9]+)-([0-9]+)$"
+IRE = r"^Trace CPU (?P<vpnum>[0-9]+) 0x(?P<ts>[0-9a-f]+) \[(?P<pc>[0-9a-f]+)\] (?P<func>[^ ]+) @ (?P<licount>[0-9]+)-(?P<gicount>[0-9]+)$"
 
 # an issued instruction
 class InstIssue:
@@ -463,11 +464,12 @@ def parse_instruction_log(ifile):
             print "skipping line '%s'" % line
             continue
 
-        ccv = vp2ccv(int(m.group(1)))
+        ccv = vp2ccv(int(m.group("vpnum")))
 
         # make an instruction element out of it
-        inst = InstIssue(ccv, int(m.group(2), 16), m.group(3),
-                         m.group(4), int(m.group(5)), int(m.group(6)))
+        inst = InstIssue(ccv, int(m.group("ts"), 16), m.group("pc"),
+                         m.group("func"), int(m.group("licount")),
+                         int(m.group("gicount")))
 
         global_inst_list.append(inst)
         inst_by_ccv.setdefault(ccv, []).append(inst)
@@ -549,7 +551,7 @@ def do_bottle_config(opts):
 ###
 ##  generating perf data
 #
-OBJDUMP = " /Users/Shared/cross/mips64/bin/mips64-unknown-elf-objdump"
+OBJDUMP = "/Users/Shared/cross/mips64/bin/mips64-unknown-elf-objdump"
 def maybe_regen_perf_data(jobsdir, ufile, pfile, dfile, ffile):
     abs_app_dir_path = os.path.dirname(os.path.realpath(__file__))
 
@@ -559,14 +561,14 @@ def maybe_regen_perf_data(jobsdir, ufile, pfile, dfile, ffile):
         print "Rebuilding perf data"
         abs_parse_path = os.path.join(abs_app_dir_path,
                                       'tools', "perf-parse.py")
-        os.system("%s %s" % (abs_parse_path, jobsdir))
+        subprocess.check_call("%s %s" % (abs_parse_path, jobsdir), shell=True)
 
     if (os.path.exists(dfile)
         and (os.stat(ffile).st_mtime < os.stat(dfile).st_mtime)):
         print "Cached DASM file OK"
     else:
         print "Rebuilding DASM dump"
-        os.system("%s -d -z %s > %s" % (OBJDUMP, ffile, dfile))
+        subprocess.check_call("%s -d -z %s > %s" % (OBJDUMP, ffile, dfile), shell=True)
 
 
 ###
