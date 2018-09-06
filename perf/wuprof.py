@@ -4,6 +4,7 @@ import re
 import sys
 import math
 import optparse
+import subprocess
 
 # we lean on the controller API to load the pickled data
 import controller
@@ -401,10 +402,38 @@ def bench_data_make_aggregates(bench, pd, ilog):
 
 
 ###
+##  dasm parsing
+#
+
+DRE = r"^(?P<addr>[0-9a-f]+):\s+[0-9a-f]+\s+(?P<inst>[^\s].*)$"
+dasm_insts = {}
+
+def parse_dasm_file(dfile):
+
+    count = 0
+    fl = open(dfile)
+
+    dre = re.compile(DRE)
+    for line in fl.readlines():
+        line = line.strip()
+        m = dre.match(line)
+        if (m is None):
+            continue
+
+        addr = m.group("addr")
+        inst = m.group("inst")
+
+        count += 1
+        dasm_insts[addr] = inst
+    fl.close()
+
+    print "Parsed %d instructions from dasm  file" % count
+
+###
 ##  instruction log parsing
 #
 
-IRE = "^Trace CPU ([0-9]+) 0x([0-9a-f]+) \[([0-9a-f]+)\] ([^ ]+) @ ([0-9]+)-([0-9]+)$"
+IRE = r"^Trace CPU (?P<vpnum>[0-9]+) 0x(?P<ts>[0-9a-f]+) \[(?P<pc>[0-9a-f]+)\] (?P<func>[^ ]+) @ (?P<licount>[0-9]+)-(?P<gicount>[0-9]+)$"
 
 # an issued instruction
 class InstIssue:
@@ -417,7 +446,7 @@ class InstIssue:
         self.global_icount = global_icount
 
     def __str__(self):
-        return "%s\t%s\t%s" % (self.local_icount, self.pc, self.func)
+        return "%s\t%s\t%s\t%s" % (self.local_icount, self.pc, self.func, dasm_insts.get(self.pc, "<unknown>"))
 
 global_inst_list = []
 
@@ -435,11 +464,12 @@ def parse_instruction_log(ifile):
             print "skipping line '%s'" % line
             continue
 
-        ccv = vp2ccv(int(m.group(1)))
+        ccv = vp2ccv(int(m.group("vpnum")))
 
         # make an instruction element out of it
-        inst = InstIssue(ccv, int(m.group(2), 16), m.group(3),
-                         m.group(4), int(m.group(5)), int(m.group(6)))
+        inst = InstIssue(ccv, int(m.group("ts"), 16), m.group("pc"),
+                         m.group("func"), int(m.group("licount")),
+                         int(m.group("gicount")))
 
         global_inst_list.append(inst)
         inst_by_ccv.setdefault(ccv, []).append(inst)
@@ -455,6 +485,11 @@ def do_all_bench_stats(jobsdir, style, opts):
     pfile = os.path.join(jobsdir, "perf.data")
     ufile = os.path.join(jobsdir, "uart.txt")
     ifile = os.path.join(jobsdir, "stderror.out")
+    dfile = os.path.join(jobsdir, "funos.dasm")
+    ffile = os.path.join(jobsdir, "funos-f1-palladium")
+
+    # make sure our perf data is up to date
+    maybe_regen_perf_data(jobsdir, ufile, pfile, dfile, ffile)
 
     # parse the different runs out of the uart
     benches = parse_uart_log_for_benches(ufile)
@@ -468,9 +503,15 @@ def do_all_bench_stats(jobsdir, style, opts):
     pd = controller.read_pd_from_file(pfile)
 
     # parse the instruction log, if it exists
+    print "parsing instruction log"
     ilog = parse_instruction_log(ifile)
 
+    # parse the dasm dump
+    print "parsing dasm file"
+    parse_dasm_file(dfile)
+
     # for each bench, do data aggregation into the bench
+    print "Crunching benchmark data"
     for bench in benches:
         bench_data_make_aggregates(bench, pd, ilog)
 
@@ -506,6 +547,29 @@ def do_bottle_config(opts):
         style = '<link rel="stylesheet" type="text/css" href="/static/style.css">'
 
     return style
+
+###
+##  generating perf data
+#
+OBJDUMP = "/Users/Shared/cross/mips64/bin/mips64-unknown-elf-objdump"
+def maybe_regen_perf_data(jobsdir, ufile, pfile, dfile, ffile):
+    abs_app_dir_path = os.path.dirname(os.path.realpath(__file__))
+
+    if (os.stat(ufile).st_mtime < os.stat(pfile).st_mtime):
+        print "Cached perf data OK"
+    else:
+        print "Rebuilding perf data"
+        abs_parse_path = os.path.join(abs_app_dir_path,
+                                      'tools', "perf-parse.py")
+        subprocess.check_call("%s %s" % (abs_parse_path, jobsdir), shell=True)
+
+    if (os.path.exists(dfile)
+        and (os.stat(ffile).st_mtime < os.stat(dfile).st_mtime)):
+        print "Cached DASM file OK"
+    else:
+        print "Rebuilding DASM dump"
+        subprocess.check_call("%s -d -z %s > %s" % (OBJDUMP, ffile, dfile), shell=True)
+
 
 ###
 ## argument parsing
