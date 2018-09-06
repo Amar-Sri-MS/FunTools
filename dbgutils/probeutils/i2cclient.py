@@ -15,7 +15,7 @@ logger = logging.getLogger("i2cclient")
 logger.setLevel(logging.INFO)
 
 class constants(object):
-    SERVER_TCP_PORT = 55668
+    SERVER_TCP_PORT = 55555
 
 class I2C_Client(object):
     def __init__(self, mode):
@@ -59,6 +59,8 @@ class I2C_Client(object):
         if self.con_handle is None or csr_addr is None or csr_width_words is None \
                 or csr_addr == 0 or csr_width_words < 1:
             error_msg = "Invalid peek arguments!"
+            logger.info('con_handle: {0} csr_addr: {1} csr_width_words: {2}'
+                    ''.format(self.con_handle, csr_addr, csr_width_words))
             logger.error(error_msg)
             return (False, error_msg)
         csr_peek_args = dict()

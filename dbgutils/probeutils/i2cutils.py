@@ -14,7 +14,7 @@ logger.setLevel(logging.INFO)
 
 class constants(object):
     F1_I2C_SLAVE_ADDR = 0x73
-    SERVER_TCP_PORT = 55668
+    SERVER_TCP_PORT = 55665
     IC_DEVICE_FEATURE_MASK = 0x1B
     F1_DBG_CHALLANGE_FIFO_SIZE = 64
     IC_DEVICE_MODE_I2C = 0x2
@@ -171,11 +171,11 @@ def i2c_csr_poke(h, csr_addr, csr_width_words, word_array):
         status_bytes = aa_i2c_read(h, constants.F1_I2C_SLAVE_ADDR, 0, status)
         logger.debug('poke status_bytes:{0}'.format(status_bytes))
         if status_bytes[0] != 1:
-            logger.debug('Read Error!  status_bytes:{0} Expected:'
+            logger.error('Read Error!  status_bytes:{0} Expected:'
                          '{1}'.format(status_bytes, 1))
             return False
         if status[0] != 0x80:
-            logger.debug('Write status returned Error!'
+            logger.error('Write status returned Error!'
                          ' {0}'.format(aa_status_string(status[0])))
             return False
     except Exception as e:
