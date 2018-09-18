@@ -28,6 +28,12 @@ class constants(object):
     TMP_DIR = '/tmp'
     CSR_METADATA_FILE = 'csr_metadata.json'
 
+class actions(object):
+    CSR_WR = 1
+    CSR_POLL = 2
+    CUT_RESET = 3
+
+
 # csr peek handler for command line interface
 def csr_peek(args):
     input_args = csr_get_peek_args(args)
@@ -347,16 +353,7 @@ def csr_load_metadata(args):
         return
     return
 
-# Process each line in the <input_file> statrting with string "CSRWR" and creates list all the CSRs
-# Expected valid line format:  CSRWR:<csr_address>:<csr_width>:[<list of csr values in 64 bit big endian words>]
-# Returns the dict of all the csrs
-def csr_replay_config(input_file):
-    if not os.path.isabs(input_file):
-        input_file = os.path.join(os.getcwd(), input_file)
-    if not os.path.isfile(input_file):
-        print 'Path: "{0}" is not a regular file!'.format(input_file)
-        return
-
+def load_funos(input_file):
     csr_replay_data = list()
     with open(input_file) as fp:
         line = fp.readline()
@@ -366,44 +363,204 @@ def csr_replay_config(input_file):
             line = line.rstrip()
             line_num += 1
             logger.debug("Line {}: {}".format(line_num, line.strip()))
+            csr_tokens = line.split(' ')
+            if len(csr_tokens) != 2:
+                logger.error('Invalid line: "{0}"'.format(line))
+                sys.exit(1)
+            #logger.info("Address: {0} data: {1}".format(csr_tokens[0][1:], csr_tokens[1]))
+            skip_addr = 0
+            if(cnt & 0x2):
+                skip_addr = 0x800000000
+            if (cnt & 0x1):
+                skip_addr += 0x10000
+            for i in range(8):
+                csr_val = int(csr_tokens[1][i*16:(i+1)*16],16)
+                csr_addr = 0x9000190100 + skip_addr
+                csr_addr += i * 8
+                (status, data) = dbgprobe().csr_poke(csr_addr, 1, [csr_val])
+                if status is True:
+                    logger.info('Write value:{0}'.format(hex(csr_val)))
+                    logger.debug("poke success!!!")
+                else:
+                    error_msg = data
+                    logger.error("Error! {0}!".format(error_msg))
+                    sys.exit(1)
+
+            csr_addr = 0x90001900f0
+            csr_addr += skip_addr
+            muh_sna_cmd_addr = csr_tokens[0][1:]
+            muh_sna_cmd_addr = 0x1000 + (cnt/4)
+            csr_val = muh_sna_cmd_addr << 37;
+            csr_val |= 0x0 << 63;
+            logger.debug('csr_val: {0}'.format(csr_val))
+            (status, data) = dbgprobe().csr_poke(csr_addr, 1, [csr_val])
+            if status is True:
+                logger.info("Poke:{0} addr: {1} Success!".format(cnt, hex(muh_sna_cmd_addr)))
+            else:
+                error_msg = data
+                logger.error("CSR Poke failed! Addr: {0} Error: {1}".format(hex(csr_addr), error_msg))
+                sys.exit(1)
+            csr_addr = 0x90001900f8
+            csr_addr += skip_addr
+            (status, data) = dbgprobe().csr_peek(csr_addr, 1)
+            if status is True:
+                word_array = data
+                if word_array is None or not word_array:
+                    logger.error("Failed get cmd status! Error in csr peek!!!")
+                    sys.exit(1)
+                cmd_status_done = word_array[0]
+                cmd_status_done = cmd_status_done >> 63
+                if cmd_status_done != 1:
+                    logger.error("Failed cmd status != Done!")
+                    sys.exit(1)
+                else:
+                    logger.info('Data ready!')
+            else:
+                error_msg = data
+                logger.error('Error! {0}!'.format(error_msg))
+                sys.exit(1)
+
+            cnt += 1
+            if cnt == 16:
+                #sys.exit(1)
+                break
+            line = fp.readline()
+    if cnt > 0:
+        logger.info('Succesfully wrote {0} lines!'.format(cnt))
+    else:
+        logger.error('No valid lines found in {}').format(input_file)
+        sys.exit(1)
+	return
+
+# Process each line in the <csr_replay_input_file> statrting with string "CSRWR" and creates list all the CSRs
+# Expected valid line format:  CSRWR:<csr_address>:<csr_width>:[<list of csr values in 64 bit big endian words>]
+# Returns the dict of all the csrs
+def csr_replay_config(csr_replay_input_file, funos_image = None):
+    if not os.path.isabs(csr_replay_input_file):
+        csr_replay_input_file = os.path.join(os.getcwd(), csr_replay_input_file)
+    if not os.path.isfile(csr_replay_input_file):
+        print 'Path: "{0}" is not a regular file!'.format(csr_replay_input_file)
+        return
+
+    if funos_image:
+        if not os.path.isabs(funos_image):
+            funos_image = os.path.join(os.getcwd(), funos_image)
+        if not os.path.isfile(funos_image):
+            print 'Path: "{0}" is not a regular file!'.format(funos_image)
+            return
+
+    csr_replay_data = list()
+    with open(csr_replay_input_file) as fp:
+        line = fp.readline()
+        cnt = 0
+        line_num = 0
+        while line:
+            line = line.rstrip()
+            line_num += 1
             csr_tokens = line.split(':')
-            if len(csr_tokens) < 4:
-                logger.debug('Skipping line: "{0}"'.format(line))
+            logger.info("Line {}: {}".format(line_num, line.strip()))
+            #print csr_tokens
+            if not csr_tokens:
+                logger.debug('Skipping empty line {0}: "{1}"'.format(line_num, line))
                 line = fp.readline()
                 continue
-            if csr_tokens[0] != 'CSRWR':
+
+            valid_keywords = ['CSR_WR', 'CSR_POLL', 'Reset CUT!']
+            if csr_tokens[0] not in valid_keywords:
+                logger.debug('Skipping non-matching line {0}: "{1}"'.format(line_num, line))
                 line = fp.readline()
                 continue
-            for count, token in enumerate(csr_tokens[1:], start=1):
-                csr_tokens[count] =  str_to_int(csr_tokens[count])
-                if csr_tokens[count] is None:
-                    print 'Invalid csr replay data!: "{0}"'.format(line)
+
+            print('#####ACTION#####{0}'.format(csr_tokens[0]))
+            if csr_tokens[0] == 'CSR_WR':
+                if len(csr_tokens) < 5:
+                    logger.error('Invalid CSRWR tokens in line {0}: "{1}"'.format(line_num, line))
                     return
 
-            csr_address = csr_tokens[1]
-            csr_width = csr_tokens[2]
-            if not csr_width:
-                print 'Invalid csr width in input data: "{0}"'.format(line)
-                return
-            csr_width_words = (csr_width + 63) / 64
-            csr_val_words = csr_tokens[3:]
-            if csr_width_words != len(csr_val_words):
-                print 'Mismatch in csr width and value. "{0}"'.format(line)
-                return
-            logger.debug('csr_address: {0} csr_width: {1}'
-                    'word_array:{2}'.format(csr_address,
-                        csr_width, csr_val_words))
+                for count, token in enumerate(csr_tokens[1:], start=1):
+                    #print str_to_int(csr_tokens[count])
+                    csr_tokens[count] =  str_to_int(csr_tokens[count])
+                    if csr_tokens[count] is None:
+                        logger.error('Invalid csr replay data! line {0}: "{1}"'.format(line_num, line))
+                        return
 
-            csr_info = dict()
-            csr_info["csr_address"] = csr_address
-            csr_info["csr_width"] = csr_width
-            csr_info["csr_val_words"] = csr_val_words
-            csr_replay_data.append(csr_info)
-            logger.debug('Succesfully added "{0}" to replay data!'.format(line))
+                csr_address = csr_tokens[2]
+                csr_width = csr_tokens[3]
+                if not csr_width:
+                    print 'Invalid csr width in input data: "{0}"'.format(line)
+                    return
+                csr_width_words = (csr_width + 63) / 64
+                csr_val_words = csr_tokens[4:]
+                if csr_width_words != len(csr_val_words):
+                    print 'Mismatch in csr width and value. "{0}"'.format(line)
+                    return
+                logger.info('csr_address: {0} csr_width: {1}'
+                        ' word_array:{2}'.format(csr_address,
+                            csr_width, [hex(x) for x in csr_val_words]))
+
+                csr_info = dict()
+                csr_info['action'] = actions.CSR_WR
+                csr_info["csr_address"] = csr_address
+                csr_info["csr_width"] = csr_width
+                csr_info["csr_val_words"] = csr_val_words
+                csr_replay_data.append(csr_info)
+                logger.debug('Succesfully added "{0}" to replay data!'.format(line))
+            elif csr_tokens[0] == 'CSR_POLL':
+                if len(csr_tokens) < 5:
+                    logger.error('Invalid CSR_POLL tokens in line {0}: "{1}"'.format(line_num, line))
+                    return
+
+                for count, token in enumerate(csr_tokens[1:3], start=1):
+                    csr_tokens[count] =  str_to_int(csr_tokens[count])
+                    if csr_tokens[count] is None:
+                        logger.error('Invalid csr poll data! line {0}: "{1}"'.format(line_num, line))
+                        return
+
+                logger.info('CSR POLL tokens: {0}'.format(csr_tokens))
+                csr_address = csr_tokens[1]
+                csr_width = csr_tokens[2]
+                timeout = csr_tokens[3]
+                if not csr_width:
+                    logger.error('Invalid csr width in line{0}: "{1}"'.format(line_num, line))
+                    return
+                csr_width_words = (csr_width + 63) / 64
+                csr_poll_data = csr_tokens[4:]
+                if csr_width_words != len(csr_val_words):
+                    logger.error('CSR width and poll data mismatch in line{0}: "{1}"'.format(line_num, line))
+                    return
+                csr_val_mask_list = list()
+                for i in range(csr_width_words):
+                    csr_val_mask = csr_poll_data[i].split('-')
+                    if len(csr_val_mask) != 2:
+                        logger.error('Invalid csr poll val & mask in line {0}: "{1}"'.format(line_num, line))
+                        return
+                    csr_val_mask[0] = str_to_int(csr_val_mask[0])
+                    csr_val_mask[1] = str_to_int(csr_val_mask[1])
+                    csr_val_mask_list.append(tuple(csr_val_mask)); 
+
+                logger.debug('CSR POLL csr_address: {0} csr_width: {1} timeout: {2}'
+                        ' csr_val_mask_list:{3}'.format(csr_address,
+                            csr_width, timeout, csr_val_mask_list))
+
+                csr_info = dict()
+                csr_info['action'] = actions.CSR_POLL
+                csr_info["csr_address"] = csr_address
+                csr_info["timeout"] = timeout
+                csr_info["csr_width"] = csr_width
+                csr_info["csr_val_words"] = csr_val_mask_list 
+                csr_replay_data.append(csr_info)
+                logger.debug('Succesfully added "{0}" to replay data!'.format(line))
+            elif csr_tokens[0] == 'Reset CUT!':
+                csr_info = dict()
+                csr_info['action'] = actions.CUT_RESET
+                csr_replay_data.append(csr_info)
+                logger.debug('Succesfully added CUT RESET"{0}" to replay data!'.format(line))
+            else:
+                logger.error('Unsupported action!')
             cnt += 1
             line = fp.readline()
     if cnt > 0:
-        print('Succesfully added {0} CSRs! to replay data.'.format(cnt))
+        print('Succesfully added {0} lines! to replay data.'.format(cnt))
         return csr_replay_data
     else:
         print('No valid csrreplay data is found in {}').format(input_file)
@@ -473,6 +630,13 @@ def csr_replay(args):
         print 'Path: "{0}" is not a regular file!'.format(input_file)
         return
 
+    funos_file = args.funos[0]
+    if not os.path.isabs(funos_file):
+        funos_file = os.path.join(os.getcwd(), funos_file)
+    if not os.path.isfile(funos_file):
+        print 'Path: "{0}" is not a regular file!'.format(funos_file)
+        return
+
     replay_config = csr_replay_config(input_file)
     if replay_config is None:
         print('No valid csrreplay data is found in {}').format(input_file)
@@ -480,32 +644,104 @@ def csr_replay(args):
 
     cnt = 0
     for x in replay_config:
-        csr_info = dict()
-        csr_address = x.get("csr_address", None)
-        if not csr_address:
-            print("Invalid csr_address in input data! csr_address: {0}".format(csr_address))
-            return False
-        csr_width = x.get("csr_width", None)
-        if not csr_width:
-            print("Invalid in csr_width in input data! csr_width: {0}".format(csr_width))
-            return False
-        csr_val_words = x.get("csr_val_words", None)
-        if not csr_val_words or len(csr_val_words) < 1:
-            print("Invalid in csr_val_words in input data! csr_val_words: {0}".format(csr_val_words))
-            return False
-        csr_width_words = (csr_width + 63 ) >> 6
-        logger.debug('csr_address: {0} csr_width_words: {1}'
-                'word_array:{2}'.format(csr_address,
-                    csr_width_words, csr_val_words))
-        (status, status_msg) = dbgprobe().csr_poke(csr_address, csr_width_words,
-                                 csr_val_words)
-        if status == True:
-            print('Succesfully replayed "{0}"!'.format(x))
+        print x
+        if x.get('action') == actions.CSR_WR:
+            csr_info = dict()
+            csr_address = x.get("csr_address", None)
+            if not csr_address:
+                print("Invalid csr_address in input data! csr_address: {0}".format(csr_address))
+                return False
+            csr_width = x.get("csr_width", None)
+            if not csr_width:
+                print("Invalid in csr_width in input data! csr_width: {0}".format(csr_width))
+                return False
+            csr_val_words = x.get("csr_val_words", None)
+            if not csr_val_words or len(csr_val_words) < 1:
+                print("Invalid in csr_val_words in input data! csr_val_words: {0}".format(csr_val_words))
+                return False
+            csr_width_words = (csr_width + 63 ) >> 6
+            logger.debug('csr_address: {0} csr_width_words: {1}'
+                    'word_array:{2}'.format(csr_address,
+                        csr_width_words, csr_val_words))
+            (status, status_msg) = dbgprobe().csr_poke(csr_address, csr_width_words, csr_val_words)
+            if status == True:
+                print('Replay count:{0} data:"{1}"!'.format(cnt, x))
+                cnt += 1
+            else:
+                print('Replay failed! "{0}"! Replay stopped! Error:{1}'.format(x, status_msg))
+                return
+        elif x.get('action') == actions.CSR_POLL:
+            csr_info = dict()
+            csr_address = x.get("csr_address", None)
+            if not csr_address:
+                print("Invalid csr_address in input data! csr_address: {0}".format(csr_address))
+                #return False
+                sys.exit(1)
+
+            csr_width = x.get("csr_width", None)
+            if not csr_width:
+                print("Invalid in csr_width in input data! csr_width: {0}".format(csr_width))
+                #return False
+                sys.exit(1)
+
+            timeout = x.get("timeout", None)
+            if not timeout:
+                print("Invalid in timeout in input data! csr_width: {0}".format(timeout))
+                #return False
+                sys.exit(1)
+
+            csr_val_words = x.get("csr_val_words", None)
+            if not csr_val_words or len(csr_val_words) < 1:
+                print("Invalid in csr_val_words in input data! csr_val_words: {0}".format(csr_val_words))
+                sys.exit(1)
+            csr_width_words = (csr_width + 63 ) >> 6
+            logger.debug('csr_address: {0} csr_width_words: {1}'
+                    'word_array:{2} timeout:{3}'.format(csr_address,
+                        csr_width_words, csr_val_words, timeout))
+            retry = 0
+            poll_status = False
+            while ((retry < timeout) or (timeout == 0)):
+                status = csr_poll_status(csr_address, csr_width_words, csr_val_words)
+                if status == False:
+                    retry += 1
+                    print('Retry csr poll status "{0}"!'.format(retry))
+                else:
+                    print('csr poll status done! cnt: {0} data:"{1}"!'.format(cnt, retry))
+                    poll_status = True
+                    break
+            if poll_status == False:
+                logger.error("csr poll status timedout!")
+                sys.exit(1)
+            cnt += 1
+        elif x.get('action') == actions.CUT_RESET:
+            status = load_funos(funos_file)
+            if status == False:
+                logger.error('Failed to copy FunOS image!')
+                sys.exit(1)
+            logger.info('Successfully copied FunOS image! cnt:{0}'.format(cnt))
             cnt += 1
         else:
-            print('Replay failed! "{0}"! Replay stopped! Error:{1}'.format(x, status_msg))
-            return
+            logger.error('Invalid action!')
+            sys.exit(1)
     print('Succesfully replayed {0} CSRs!'.format(cnt))
+
+def csr_poll_status(csr_address, csr_width_words, value_mask):
+    (status, data) = dbgprobe().csr_peek(csr_address, csr_width_words)
+    if status == False:
+        logger.error('csr_peek failed!')
+        sys.exit(1)
+
+    if len(data) != csr_width_words:
+        logger.error('csr poll: csr peek returned insufficient data!'
+                ' expected: {0} received: {1}'.format(csr_width_words, len(data)))
+        sys.exit(1)
+
+    for i,x in enumerate(value_mask):
+        mask = x[0]
+        value = x[1]
+        if (data[i] & mask) != value: 
+            return False
+    return True    
 
 # connect handler for commandline interface.
 # Connects to remote server
@@ -875,9 +1111,9 @@ def csr_show(csr_data, word_array, field_list=None):
 def hex_word_dump(word_array):
     hex_word_array = '['
     for w in word_array:
-        hex_word_array += '0x{:016x}'.format(w)
+        hex_word_array += ' 0x{:016x}'.format(w)
     hex_word_array =  hex_word_array
-    hex_word_array += ']'
+    hex_word_array += ' ]'
     return hex_word_array
 
 # Treat string digit as decimal and string prefixed with "0x" as hex
