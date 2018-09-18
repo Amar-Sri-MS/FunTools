@@ -27,6 +27,13 @@ class constants(object):
     CSR_CFG_DIR = "FunSDK/config/csr/"
     TMP_DIR = '/tmp'
     CSR_METADATA_FILE = 'csr_metadata.json'
+    MEM_RW_CMD_CSR_ADDR = 0x90001900f0
+    MEM_RW_STATUS_CSR_ADDR = 0x90001900f8
+    MEM_RW_DATA_CSR_ADDR = 0x9000190100 
+    MUH_RING_SKIP_ADDR = 0x800000000 
+    MUH_SNA_ANODE_SKIP_ADDR = 0x10000 
+    MUH_SNA_CMD_ADDR_START = 0x1000
+    FUNOS_IMAGES_FULL = False 
 
 class actions(object):
     CSR_WR = 1
@@ -370,12 +377,12 @@ def load_funos(input_file):
             #logger.info("Address: {0} data: {1}".format(csr_tokens[0][1:], csr_tokens[1]))
             skip_addr = 0
             if(cnt & 0x2):
-                skip_addr = 0x800000000
+                skip_addr = constants.MUH_RING_SKIP_ADDR 
             if (cnt & 0x1):
-                skip_addr += 0x10000
+                skip_addr += constants.MUH_SNA_ANODE_SKIP_ADDR 
             for i in range(8):
                 csr_val = int(csr_tokens[1][i*16:(i+1)*16],16)
-                csr_addr = 0x9000190100 + skip_addr
+                csr_addr = constants.MEM_RW_DATA_CSR_ADDR + skip_addr
                 csr_addr += i * 8
                 (status, data) = dbgprobe().csr_poke(csr_addr, 1, [csr_val])
                 if status is True:
@@ -386,10 +393,10 @@ def load_funos(input_file):
                     logger.error("Error! {0}!".format(error_msg))
                     sys.exit(1)
 
-            csr_addr = 0x90001900f0
+            csr_addr = constants.MEM_RW_CMD_CSR_ADDR 
             csr_addr += skip_addr
             muh_sna_cmd_addr = csr_tokens[0][1:]
-            muh_sna_cmd_addr = 0x1000 + (cnt/4)
+            muh_sna_cmd_addr = constants.MUH_SNA_CMD_ADDR_START + (cnt/4)
             csr_val = muh_sna_cmd_addr << 37;
             csr_val |= 0x0 << 63;
             logger.debug('csr_val: {0}'.format(csr_val))
@@ -400,7 +407,7 @@ def load_funos(input_file):
                 error_msg = data
                 logger.error("CSR Poke failed! Addr: {0} Error: {1}".format(hex(csr_addr), error_msg))
                 sys.exit(1)
-            csr_addr = 0x90001900f8
+            csr_addr = constants.MEM_RW_STATUS_CSR_ADDR
             csr_addr += skip_addr
             (status, data) = dbgprobe().csr_peek(csr_addr, 1)
             if status is True:
@@ -421,8 +428,7 @@ def load_funos(input_file):
                 sys.exit(1)
 
             cnt += 1
-            if cnt == 16:
-                #sys.exit(1)
+            if constants.FUNOS_IMAGES_FULL == False and cnt == 16:
                 break
             line = fp.readline()
     if cnt > 0:

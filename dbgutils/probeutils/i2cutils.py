@@ -10,7 +10,7 @@ import traceback
 from i2cdev import *
 
 logger = logging.getLogger('i2cutils')
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 class constants(object):
     F1_I2C_SLAVE_ADDR = 0x73
@@ -20,6 +20,7 @@ class constants(object):
     IC_DEVICE_MODE_I2C = 0x2
     IC_DEVICE_MODE_GPIO = 0x0
     I2C_XFER_BIT_RATE = 1
+    SBP_CMD_EXE_TIME_WAIT = 0.5
 
 # Converts byte array to big-endian 64-bit words
 def byte_array_to_words_be(byte_array):
@@ -168,7 +169,7 @@ def i2c_csr_poke(h, csr_addr, csr_width_words, word_array):
                        ' Expected: {1}').format(sent_bytes, len(cmd_data)))
                 return False
             time.sleep(0.1)
-            status = array('B', [01])
+            status = array('B', [0x01])
             status_bytes = aa_i2c_read(h, constants.F1_I2C_SLAVE_ADDR, 0, status)
             logger.debug('poke status_bytes:{0}'.format(status_bytes))
             if status_bytes[0] != 1:
@@ -209,7 +210,7 @@ def i2c_csr_poke(h, csr_addr, csr_width_words, word_array):
                            ' Expected: {1}').format(sent_bytes, len(cmd_data)))
                     return False
                 time.sleep(0.1)
-                status = array('B', [01])
+                status = array('B', [0x01])
                 status_bytes = aa_i2c_read(h, constants.F1_I2C_SLAVE_ADDR, 0, status)
                 logger.debug('poke status_bytes:{0}'.format(status_bytes))
                 if status_bytes[0] != 1:
@@ -238,7 +239,7 @@ def i2c_csr_poke(h, csr_addr, csr_width_words, word_array):
                        ' Expected: {1}').format(sent_bytes, len(cmd_data)))
                 return False
             time.sleep(0.1)
-            status = array('B', [01])
+            status = array('B', [0x01])
             status_bytes = aa_i2c_read(h, constants.F1_I2C_SLAVE_ADDR, 0, status)
             logger.debug('poke status_bytes:{0}'.format(status_bytes))
             if status_bytes[0] != 1:
@@ -333,7 +334,7 @@ def i2c_dbg_chal_cmd(h, cmd, data):
         logger.info('Successfully transmitted {0} bytes!'.format(i))
 
     logger.debug('Sleeping to give time for hw(esp. emulation) to process the command!')
-    time.sleep(4)
+    time.sleep(constants.SBP_CMD_EXE_TIME_WAIT)
     (status, header) = __i2c_dbg_chal_cmd_header_read(h)
     if status is False:
         err_msg = 'Failed to read the header'
@@ -403,7 +404,7 @@ def __i2c_dbg_chal_cmd_header_read(dev):
         logger.error('Get sbp cmd exec status write error! sent_bytes:{0}'.format(sent_bytes))
         return (False, 'aa_i2c_write failed for get cmd status write!')
 
-    time.sleep(4)
+    time.sleep(constants.SBP_CMD_EXE_TIME_WAIT)
     rdata = array('B', [00])
     logger.debug('Reading the sbp cmd exec status byte!')
     aa_i2c_read(dev, constants.F1_I2C_SLAVE_ADDR, 0, rdata)
