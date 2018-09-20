@@ -157,10 +157,10 @@ struct compare_by_count_context {
     struct fun_json *previous;
 };
 
-static int compare_by_count(void *map_context, void *per_call_context, fun_map_key_t left, fun_map_key_t right) {
+static int compare_by_count(void *per_call_context, const char *left, const char *right) {
     struct compare_by_count_context *con = per_call_context;
-    struct fun_json *jleft = fun_json_dict_at(con->this, (char *)left);
-    struct fun_json *jright = fun_json_dict_at(con->this, (char *)right);
+    struct fun_json *jleft = fun_json_dict_at(con->this, left);
+    struct fun_json *jright = fun_json_dict_at(con->this, right);
     assert(jleft->type == fun_json_int_type);
     assert(jright->type == fun_json_int_type);
     int64_t l = fun_json_to_int64(jleft, 0);
@@ -168,22 +168,22 @@ static int compare_by_count(void *map_context, void *per_call_context, fun_map_k
     int64_t dyn_l = l;
     int64_t dyn_r = r;
     if (con->previous) {
-        struct fun_json *pleft = fun_json_dict_at(con->previous, (char *)left);
-        struct fun_json *pright = fun_json_dict_at(con->previous, (char *)right);
+        struct fun_json *pleft = fun_json_dict_at(con->previous, left);
+        struct fun_json *pright = fun_json_dict_at(con->previous, right);
         if (pleft) dyn_l -= fun_json_to_int64(pleft, 0);
         if (pright) dyn_r -= fun_json_to_int64(pright, 0);
     }
     if (dyn_l != dyn_r) return -(dyn_l - dyn_r); // first sort the most actives
     if (l != r) return -(l - r); // then by the largest count
-    return strcmp((char *)left, (char *)right); // then by name to provide stability
+    return strcmp(left, right); // then by name to provide stability
 }
 
 static CALLER_TO_RELEASE struct fun_json *sort_wu_stats_by_count(struct fun_json *wu_stats, struct fun_json *previous, struct fun_json *durations) {
     assert(wu_stats->type == fun_json_dict_type);
     struct compare_by_count_context con = { .this = wu_stats, .previous = previous };
     size_t c = fun_json_dict_count(wu_stats);
-    fun_map_key_t *keys = calloc(c, sizeof(fun_map_key_t));
-    fun_map_get_sorted_keys(wu_stats->dict, keys, &con, compare_by_count);
+    const char **keys = calloc(c, sizeof(const char *));
+    fun_json_dict_fill_and_sort_keys_with_comparator(wu_stats, keys, &con, compare_by_count);
     const struct fun_json **items = calloc(c, sizeof(void *));
     for (size_t i = 0; i < c; i++) {
         const char *key = (void *)keys[i];
