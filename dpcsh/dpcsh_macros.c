@@ -18,10 +18,10 @@ bool use_hex = false;
 struct fun_json *hex_macro(const struct fun_json *input)
 {
 	struct fun_json *arguments = fun_json_dict_at(input, "arguments");
-	if (! arguments->array->count) {
+	if (!fun_json_array_count(arguments)) {
 		use_hex = !use_hex;
 	} else {
-		use_hex = fun_json_array_at(arguments, 0)->bool_value != false;
+		use_hex = fun_json_to_bool(fun_json_array_at(arguments, 0), false) != false;
 	}
 	struct fun_json *output = fun_json_create_empty_dict();
 	fun_json_dict_add_other_dict(output, input, true);
