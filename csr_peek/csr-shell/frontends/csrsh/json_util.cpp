@@ -95,7 +95,7 @@ uint8_t* json_util::peek_rsp(const std::string& json_str) {
         elem = fun_json_array_at(b_arr, i);
         assert (elem != nullptr);
 	assert(elem->type == fun_json_int_type);
-	byte_arr[i] = (uint8_t)(elem->int_value);
+	byte_arr[i] = (uint8_t)fun_json_to_int64(elem, 0);
     }
     return byte_arr;
 }
@@ -103,5 +103,5 @@ uint8_t* json_util::peek_rsp(const std::string& json_str) {
 bool json_util::poke_rsp(const std::string& json_str) {
     struct fun_json* rsp = fun_json_create_from_text(json_str.c_str());
     assert (rsp != nullptr && rsp->type == fun_json_bool_type);
-    return rsp->bool_value;
+    return fun_json_to_bool(rsp, false);
 }
