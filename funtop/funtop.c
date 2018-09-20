@@ -149,7 +149,9 @@ static NULLABLE CALLER_TO_RELEASE struct fun_json *do_peek(int sock, const char 
     bool ok = fun_json_write_to_fd(input, sock);
     fun_json_release(input);
     if (!ok) return NULL;
-    return fun_json_read_from_fd(sock);
+    struct fun_json *decorated = fun_json_read_from_fd(sock);
+    if (!decorated) return NULL;
+    return fun_json_lookup(decorated, "result");
 }
 
 struct compare_by_count_context {
@@ -161,6 +163,7 @@ static int compare_by_count(void *per_call_context, const char *left, const char
     struct compare_by_count_context *con = per_call_context;
     struct fun_json *jleft = fun_json_dict_at(con->this, left);
     struct fun_json *jright = fun_json_dict_at(con->this, right);
+
     assert(jleft->type == fun_json_int_type);
     assert(jright->type == fun_json_int_type);
     int64_t l = fun_json_to_int64(jleft, 0);
