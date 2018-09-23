@@ -751,7 +751,7 @@ static CALLER_TO_RELEASE struct fun_json *apply_pretty_printer(struct fun_json *
 	if (!tid_to_pretty_printer) {
 		goto nope;
 	}
-	if (! whole || (whole->type != fun_json_dict_type)) {
+	if (!fun_json_is_dict(whole)) {
 		printf("*** Malformed result: NULL or not a dictionary\n");
 		goto nope;
 	}
@@ -871,7 +871,7 @@ static void _do_recv_cmd(struct dpcsock *funos_sock,
 		usleep(10*1000); // to avoid consuming all the CPU after funos quit
 		return;
         }
-	// printf("output is of type %d\n", output->type);
+	// printf("output is of type %d\n", fun_json_get_type(output));
 	// Bertrand 2018-04-05: Gross hack to make sure we don't break dpcsh users who were not expected a tid
 	uint64_t tid = 0;
 	struct fun_json *raw_output = fun_json_lookup(output, "result");
@@ -897,9 +897,10 @@ static void _do_recv_cmd(struct dpcsock *funos_sock,
 	}
 
 	if (cmd_sock->mode == SOCKMODE_TERMINAL) {
-		if (raw_output && (raw_output->type == fun_json_error_type)) {
-			printf(PRELUDE BLUE POSTLUDE "output => *** error: '%s'" NORMAL_COLORIZE "\n",
-				raw_output->error_message);
+		const char *str;
+
+		if (fun_json_fill_error_message(raw_output, &str)) {
+			printf(PRELUDE BLUE POSTLUDE "output => *** error: '%s'" NORMAL_COLORIZE "\n", str);
 		} else {
 			size_t allocated_size = 0;
 			uint32_t flags = use_hex ? FUN_JSON_PRETTY_PRINT_USE_HEX_FOR_NUMBERS : 0;
