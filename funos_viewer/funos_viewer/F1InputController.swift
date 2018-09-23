@@ -55,7 +55,7 @@ class F1InputController: NSObject, NSOutlineViewDataSource, NSTabViewDelegate {
 		let ok = Bundle.main.loadNibNamed(NSNib.Name(rawValue: "F1InputWindow"), owner: self, topLevelObjects: nil)
 		assert(ok)
 		assert(view != nil)
-		tabView = view.subviews.first as! NSTabView
+		tabView = view.subviews.first as? NSTabView
 	}
 	func firstF1Setup() {
 		let json = document.doF1Command("help")

@@ -27,20 +27,20 @@ extension DKParser {
 		case let .stringLiteral(s):
 			accept()
 			if type != nil && type! != .string {
-				throw DKParsingError("Parsed a string '\(s)' instead of a value of type \(type)", self)
+				throw DKParsingError("Parsed a string '\(s)' instead of a value of type \(type!)", self)
 			}
 			return DKValueSimple(s.unquotedString(LexingStyle.JSON))
 		case let .identifier(s):
 			accept()
 			if s == "nil" {
 				if type != DKType.void {
-					throw DKParsingError("Parsed nil instead of a value of type \(type)", self)
+					throw DKParsingError("Parsed nil instead of a value of type \(type!)", self)
 				}
 				return .null
 			}
 			if s == "true" || s == "false" {
 				if type != nil && type! != .bool {
-					throw DKParsingError("Parsed a bool '\(s)' instead of a value of type \(type)", self)
+					throw DKParsingError("Parsed a bool '\(s)' instead of a value of type \(type!)", self)
 				}
 				return .bool(s == "true")
 			}
@@ -48,13 +48,13 @@ extension DKParser {
 		case let .reservedWord(s):
 			if s == "(" {
 				if type != nil && !(type is DKTypeStruct) {
-					throw DKParsingError("Parsing a struct not \(type)", self)
+					throw DKParsingError("Parsing a struct not \(type!)", self)
 				}
 				return try parseValueStruct(type as? DKTypeStruct)
 			}
 			if s == "[" {
 				if type != nil && !(type is DKTypeSequence) {
-					throw DKParsingError("Parsing an array not \(type)", self)
+					throw DKParsingError("Parsing an array not \(type!)", self)
 				}
 				return try parseValueSequence(type as? DKTypeSequence)
 			}
@@ -81,7 +81,7 @@ extension DKParser {
 				try expectReservedWord(",")
 			}
 			if jsons.count != type.subs.count {
-				throw DKParsingError("Missing subvalues after \(jsons) for struct \(type)", self)
+				throw DKParsingError("Missing subvalues after \(jsons) for struct \(type!)", self)
 			}
 			try expectReservedWord(")")
 			return DKValueSimple(type: type, json: .array(jsons))
