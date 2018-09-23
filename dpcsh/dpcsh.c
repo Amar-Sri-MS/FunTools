@@ -897,9 +897,10 @@ static void _do_recv_cmd(struct dpcsock *funos_sock,
 	}
 
 	if (cmd_sock->mode == SOCKMODE_TERMINAL) {
-		if (raw_output && fun_json_fill_error_message(raw_output->type, NULL)) {
-			printf(PRELUDE BLUE POSTLUDE "output => *** error: '%s'" NORMAL_COLORIZE "\n",
-				raw_output->error_message);
+		const char *str;
+
+		if (fun_json_fill_error_message(raw_output, &str)) {
+			printf(PRELUDE BLUE POSTLUDE "output => *** error: '%s'" NORMAL_COLORIZE "\n", str);
 		} else {
 			size_t allocated_size = 0;
 			uint32_t flags = use_hex ? FUN_JSON_PRETTY_PRINT_USE_HEX_FOR_NUMBERS : 0;
