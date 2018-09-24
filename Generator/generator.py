@@ -346,7 +346,7 @@ class Packer(Pass):
 
 
 def Usage():
-  sys.stderr.write('generator.py: usage: [-p] [-g [code, html] [-o file]\n')
+  sys.stderr.write('generator.py: usage: [-g [code, html] [-o file]\n')
   sys.stderr.write('-c options: change codegen options.\n')
   sys.stderr.write('-g code: generate header file to stdout (default)\n')
   sys.stderr.write('-g html: generate HTML description of header\n')
@@ -713,7 +713,7 @@ def SetFromArgs(key, codegen_args, default_value):
 
 def main():
   try:
-    opts, args = getopt.getopt(sys.argv[1:], 'tc:g:o:',
+    opts, args = getopt.getopt(sys.argv[1:], 'hc:g:o:',
                                ['help', 'output=', 'codegen='])
   except getopt.GetoptError as err:
     print str(err)
