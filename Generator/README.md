@@ -32,12 +32,14 @@ different languages is not a design goal for Generator.
 
 Usage:
 ```
-generator.py [-g generator-style] [-c codgen-options] [-o output_prefix] description_file
+generator.py [-d] [-g generator-style] [-c codgen-options] [-o output_prefix] description_file
 ```
 
 * -g specifies the kind of output to generate.  Choices are code (default) or html.  With ```-g code```, the generator creates header and source files based on the data structure description file.  With ```-g linux```, the generator creates a header file suitable for Linux.  With ```-g html```, the generator creates HTML documentation for the data structures.  With ```-g validate```, the generator creates test code to confirm that the size and layout of the data structures matches the specified bit ranges.
 * -c specifies the code generation options to use.  This is a comma-separated list of terms.  Valid code generation options are pack, json, cpacked, swap, and dump.  The pack option rewrites the data structures so adjacent bitfields are packed together into native-sized fields for the type, and creates macros to access the field (get, put, zero).  json generates a new initialization function to allow a data structure to be initialized from a JSON description.  json generates routines to encode and decode structures in JSON format on FunOS.  cpacked causes all structures to have __attribute__(packed) appended.  swap generates functions for byte-swapping structures on Linux.
 * -o specifies the path prefix to be used for output.  The generator appends .c and .h to this prefix when generating source code, or .html when generating documentation.
+* -d specifies that script's dependencies should be printed to stdout.
+If set, options other than ```-g``` will be ignored and a space-separated list of internal dependencies will be printed. This can be used to specify generated files' dependencies in make build rules.
 
 Example command line
 
@@ -58,6 +60,14 @@ The following command creates the HTML documentation for foo.gen.  Note that the
 ```
 generator.py -g html -c pack,json -o foo_docs /path/to/foo.gen
 ```
+
+The following command can be used in Makefiles to ensure dependencies are handled as needed:
+
+    GEN_DEPS := $(shell ./generator.py -g code -d)
+
+    /tmp/foo_gen.c /tmp/foo_gen.h: foo.gen generator.py $(GEN_DEPS)
+        generator.py -g code -o /tmp/foo_gen foo.gen
+
 
 ## Input File Format
 
@@ -132,7 +142,7 @@ struct WorkUnit {  /* key comment */
   /* tail comment */
 ```
 
-In the generator file, only use C style comments for single lines ( /* ... */). 
+In the generator file, only use C style comments for single lines ( /* ... */).
 Generator only supports C++-style comments for multi-line comments ( // ... ).
 
 
@@ -316,7 +326,7 @@ bits of the type), and must be contiguous in the layout.
 
 Packed field naming is as follows:
 * Packed fields can include reserved fields (fields beginning with reserved
-or rsvd), but the names of reserved fields aren't used in the packed field 
+or rsvd), but the names of reserved fields aren't used in the packed field
 name.
 * Packed fields are generally named after the first and last field:
 "a_to_z".
