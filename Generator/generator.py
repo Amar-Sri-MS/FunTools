@@ -346,12 +346,13 @@ class Packer(Pass):
 
 
 def Usage():
-  sys.stderr.write('generator.py: usage: [-p] [-g [code, html] [-o file]\n')
+  sys.stderr.write('generator.py: usage: [-d] [-g [code, html] [-o file]\n')
   sys.stderr.write('-c options: change codegen options.\n')
   sys.stderr.write('-g code: generate header file to stdout (default)\n')
   sys.stderr.write('-g html: generate HTML description of header\n')
   sys.stderr.write('-o filename_base: send output to named file\n')
   sys.stderr.write('                  for code generation, appends correct extension.\n')
+  sys.stderr.write('-d dump generator\'s runtime dependencies')
   sys.stderr.write('Codegen options include:\n')
   sys.stderr.write('  pack: combine multiple bitfields into a single:\n')
   sys.stderr.write('        field, and create accessor macros.\n')
@@ -361,7 +362,7 @@ def Usage():
   sys.stderr.write('        of all structures.')
   sys.stderr.write('  cpacked: use __attribute__((packed)) on all structures\n')
   sys.stderr.write('        to allow fields to be at non-natural alignments.\n')
-                   
+
   sys.stderr.write('Example: -c json,nopack enables json, and disables packing.\n')
 
 def ReformatCode(source):
@@ -658,10 +659,10 @@ def GenerateFile(output_style, output_base, input_stream, input_filename,
       WriteFile(output_base + '.h', header)
       WriteFile(output_base + '.c', source)
       return ("", [])
-    
+
     else:
       return (header, [])
-      
+
 
   elif output_style is OutputStyleHeader:
     header = GenerateFromTemplate(doc, 'header.tmpl', input_filename,
@@ -711,10 +712,23 @@ def SetFromArgs(key, codegen_args, default_value):
     return False
   return default_value
 
+def ShowDeps(style):
+  deps = []
+  basepath = os.path.dirname(os.path.realpath(__file__))
+  if style == OutputStyleHeader:
+    deps.extend(['header.tmpl', 'source.tmpl'])
+  elif style == OutputStyleValidation:
+    deps.extend(['validate.tmpl'])
+  elif style == OutputStyleLinux:
+    deps.extend(['header-linux.tmpl', 'source-linux.tmpl'])
+
+  print ' '.join(os.path.join(basepath, f) for f in deps)
+
+
 def main():
   try:
-    opts, args = getopt.getopt(sys.argv[1:], 'tc:g:o:',
-                               ['help', 'output=', 'codegen='])
+    opts, args = getopt.getopt(sys.argv[1:], 'hc:g:o:d',
+                               ['help', 'output=', 'codegen=', 'deps'])
   except getopt.GetoptError as err:
     print str(err)
     Usage()
@@ -723,6 +737,7 @@ def main():
   output_style = OutputStyleHeader
   output_base = None
   codegen_args = []
+  show_deps = False
 
   for o, a in opts:
     if o in ('-h', '--help'):
@@ -744,8 +759,14 @@ def main():
       else:
         sys.stderr.write('Unknown output style "%s"' % a)
         sys.exit(2)
+    elif o in ('-d', '--deps'):
+      show_deps = True
     else:
       assert False, 'Unhandled option %s' % o
+
+  if show_deps:
+    ShowDeps(output_style)
+    sys.exit(0)
 
   codegen_pack = SetFromArgs('pack', codegen_args, False)
   codegen_split = SetFromArgs('split', codegen_args, False)
