@@ -182,10 +182,9 @@ class dbgsh(cmd2.Cmd):
     parser_connect.set_defaults(func=server_connect)
     parser_connect.add_argument('-m', nargs=1, metavar=('mode'), dest='mode',
 			choices=['i2c', 'jtag'], help="connection mode")
-    parser_connect.add_argument('ip_addr', nargs=1, type=str,
-                help="ip address of server and device_id(i.e. serial number)")
-    parser_connect.add_argument('dev_id', nargs=1, type=str,
+    parser_connect.add_argument('dut', nargs=1, type=str,
             help="device id(hint:serial number is device id)")
+    parser_connect.add_argument('-f', dest='force', action='store_true', help="force connection")
 
     @with_argparser(parser_connect)
     def do_connect(self, args):

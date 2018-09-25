@@ -16,7 +16,7 @@ class DBG_Client(object):
         self.dev_id = None
         self.connected = False
 
-    def connect(self, mode, ip_addr, dev_id=None):
+    def connect(self, mode, ip_addr, dev_id=None, slave_addr = None, force = False):
         if self.connected is True:
             try:
                 self.disconnect()
@@ -27,7 +27,7 @@ class DBG_Client(object):
         dbgclient = None
         if mode == 'i2c':
             dbgclient = I2C_Client(mode)
-            status = dbgclient.connect(ip_addr, dev_id)
+            status = dbgclient.connect(ip_addr, dev_id, slave_addr, force)
         elif mode == 'jtag':
             raise ValueError('Mode: "{0}" is not supported yet!'.format(mode))
             #dbgclient = JTAG_Client()

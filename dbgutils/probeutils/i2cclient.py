@@ -10,6 +10,7 @@ import jsocket
 import time
 import logging
 from array import array
+import getpass
 
 logger = logging.getLogger("i2cclient")
 logger.setLevel(logging.INFO)
@@ -27,7 +28,7 @@ class I2C_Client(object):
 
     # Opens tcp connection with i2c proxy server and
     # opens remote i2c device connection
-    def connect(self, ip_address, dev_id):
+    def connect(self, ip_address, dev_id, slave_addr=None, force_connect=False):
         self.con_handle = jsocket.JsonClient(address = ip_address,
                                port = constants.SERVER_TCP_PORT)
         if self.con_handle is None:
@@ -36,6 +37,9 @@ class I2C_Client(object):
         self.con_handle.connect()
         connect_args = dict()
         connect_args["dev_id"] = dev_id
+        connect_args["slave_addr"] = slave_addr 
+        connect_args["user"] = getpass.getuser() 
+        connect_args["force_connect"] = force_connect 
         time.sleep(0.5)
         self.con_handle.send_obj({"cmd": "CONNECT",
                     "args": connect_args})
@@ -146,8 +150,10 @@ class I2C_Client(object):
             logger.error(error_msg)
             return (False, error_msg)
         logger.info('Sending i2c disconnect!')
+        disconnect_args = dict()
+        disconnect_args['user'] = getpass.getuser()
         self.con_handle.send_obj({"cmd": "DISCONNECT",
-                    "args": None })
+                    "args": disconnect_args})
         read_obj = self.con_handle.read_obj()
         status = read_obj.get("STATUS", None)
         if status[0] == True:

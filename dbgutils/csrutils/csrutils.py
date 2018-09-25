@@ -17,6 +17,7 @@ import urllib
 import tarfile
 from array import array
 from probeutils.dbgclient import *
+from probeutils.dut import *
 
 logger = logging.getLogger("csrutils")
 logger.setLevel(logging.INFO)
@@ -752,24 +753,43 @@ def csr_poll_status(csr_address, csr_width_words, value_mask):
 # connect handler for commandline interface.
 # Connects to remote server
 def server_connect(args):
-    ip_address = args.ip_addr[0]
-    try:
-        socket.inet_aton(ip_address)
-        # legal
-    except socket.error:
-        print("Invalid ip address!")
+    logger.debug('args: {}'.format(args))
+    dut_name = args.dut[0]
+    force_connect = False 
+    if dut_name is None:
+        print("Invalid dut!")
         return
-    dev_id= args.dev_id[0]
-    if dev_id is None:
-        print("Invalid device id!")
-        return
+
     if args.mode is None or args.mode[0] is None:
         print('No mode option! Default to "i2c"')
         # set default mode to i2c
         mode = 'i2c'
 
-    print args
-    status = dbgprobe().connect(mode, ip_address, dev_id)
+    if args.force:
+        force_connect = True 
+        logger.info('Force connection: {0}'.format(force_connect))
+
+    if mode == 'i2c':
+        dut_i2c_info = dut().get_i2c_info(dut_name)
+        if dut_i2c_info is None:
+            print('Failed to get i2c connection details!')
+            return
+        i2c_probe_serial = dut_i2c_info[0]
+        i2c_probe_ip = dut_i2c_info[1]
+        i2c_slave_addr = dut_i2c_info[2]
+        status = dbgprobe().connect(mode, i2c_probe_ip, i2c_probe_serial,
+                i2c_slave_addr, force_connect)
+    elif mode == 'jtag':
+        dut_jtag_info = dut().get_jtag_info(dut_name)
+        if dut_jtag_info is None:
+            print('Failed to get jtag connection details!')
+            return
+        jtag_probe_id = dut_jtag_info[0]
+        jtag_probe_ip = dut_jtag_info[1]
+        status = dbgprobe().connect(mode, jtag_probe_ip, jtag_probe_id, force_connect)
+    else:
+        print('Mode: {} is not yet supported!'.format(mode))
+        return
     if status is True:
         print("Server Connection Successful!")
     else:
@@ -1083,6 +1103,34 @@ def csr_get_valid_field_list(csr_data):
             field_list[fld_name] = f
     return field_list
 
+def csr_get_field_val(csr_data, word_array, field_name):
+    if len(word_array) != (csr_get_width_bytes(csr_data) >> 3):
+        print("csr_width: {0} word_array length: {1}".format(
+            csr_get_width_bytes(csr_data), len(word_array)))
+        print("Invalid arguments! word array length should match csr width!")
+        return None
+
+    if field_name is None:
+        print("Invalid arguments! Empty field name")
+        return None
+
+    logger.debug("csr raw: {0}".format(hex_word_dump(word_array)))
+    fields_objs = csr_data.get("fld_lst", None)
+    for f in fields_objs:
+        name = f.get('fld_name', None)
+        if name  != field_name:
+            continue
+        fld_width = f.get('fld_width', None)
+        fld_offset = f.get('fld_offset', None)
+        field_word_array = csr_get_field(fld_offset, fld_width, word_array)
+        if not field_word_array:
+            print("Error! Failed to extract field:{0}".format(field_name))
+            return None
+        logger.debug("\t{0}: {1}".format(field_name, hex_word_dump(field_word_array)))
+        return field_word_array
+    print("Invalid arguments! field name:{} not valid".format(field_name))
+    return None
+
 def csr_show(csr_data, word_array, field_list=None):
     if len(word_array) != (csr_get_width_bytes(csr_data) >> 3):
         print("csr_width: {0} word_array length: {1}".format(
@@ -1177,9 +1225,9 @@ def csr_get_metadata(csr_name, csr_inst=None, csr_entry=None, ring_name=None,
         print("Inconsistant csr metadata parsing!")
         return
 
-    print("rings: {}".format(rings))
+    logger.debug("rings: {}".format(rings))
     if len(rings) > 0:
-        print("csr_name: {} ring_name: {}".format(csr_name, ring_name))
+        logger.debug("csr_name: {} ring_name: {}".format(csr_name, ring_name))
         if len(rings) > 1 and ring_name is None:
             print("csr objs:\n{}\n".format(json_obj_pretty(csr_list)))
             print(("csr: {} exists in multiple rings."
@@ -1202,7 +1250,7 @@ def csr_get_metadata(csr_name, csr_inst=None, csr_entry=None, ring_name=None,
                     " There should be atleast one ring inst!").format(ring_name))
             return
 
-        print("ring: {} instace list: {}".format(ring_name, ring_inst_list))
+        logger.debug("ring: {} instace list: {}".format(ring_name, ring_inst_list))
         if len(ring_inst_list) > 0:
             if len(ring_inst_list) > 1 and ring_inst is None:
                 print("csr objs:\n{}\n".format(json_obj_pretty(csr_list)))
@@ -1210,7 +1258,7 @@ def csr_get_metadata(csr_name, csr_inst=None, csr_entry=None, ring_name=None,
                        "\nGive appropriate ring option! valid rings instances:"
                        "{}").format(csr_name, ring_name, ring_inst_list))
                 return
-            print("ring name: {}  inst: {}".format(ring_name, ring_inst))
+            logger.debug("ring name: {}  inst: {}".format(ring_name, ring_inst))
             if ring_inst not in ring_inst_list:
                 print("csr objs:\n{}\n".format(json_obj_pretty(csr_list)))
                 print(("Invalid ring instance for csr: {} ring: {}."
@@ -1357,7 +1405,7 @@ def csr_get_metadata(csr_name, csr_inst=None, csr_entry=None, ring_name=None,
             print(("There are {} entries in table csr:{}."
                    "\nProvide csr entry index number!").format(csr_n_entries, csr_name))
             return
-        print("csr entry index: {} csr_n_entries: {}".format(csr_entry, csr_n_entries))
+        logger.debug("csr entry index: {} csr_n_entries: {}".format(csr_entry, csr_n_entries))
         if csr_entry < 0 or csr_entry >= csr_n_entries:
             print("csr objs:\n{}\n".format(json.dumps(csr, indent=4)))
             print(("Invalid entry index of csr:{}."
@@ -1483,4 +1531,73 @@ class csr_metadata:
     def csr_inst_verify(self, csr_name):
         csr_list = self.get_csr_def(csr_name=csr_name)
 
+
+def show_global_ncv_thrsholds():
+    print('NWQM NCV THRESHOLDS:')
+    handle = dbgprobe()
+    for i in range(15):
+        csr_meta = csr_get_metadata('nwqm_wu_crd_cnt_ncv_th_{}'.format(i+1), None, None, 'nu', 0, 
+                None, None, None)
+
+        csr_addr = csr_get_addr(csr_meta, None, None, None)
+        if csr_addr is None:
+            print("Error get csr address!!!")
+            return
+        logger.debug("csr address: {0}".format(hex(csr_addr)))
+        csr_width_words = csr_get_width_bytes(csr_meta) >> 3
+        (status, data) = handle.csr_peek(csr_addr, csr_width_words)
+        if status is True:
+            word_array = data
+            fields_objs = csr_meta.get("fld_lst", None)
+            #csr_show(csr_meta, word_array, None)
+            field_val = csr_get_field_val(csr_meta, word_array, 'val')
+            print('\tTHR-{}: {}'.format(i, [hex(x) for x in field_val]))
+        else:
+            error_msg = data
+            print("Error! {0}!".format(error_msg))
+
+
+def show_pc_cmh_ncv_thrsholds():
+    handle = dbgprobe()
+    for i in range(16):
+        print('CC CMH NCV PROFILE:{}'.format(i))
+        csr_meta = csr_get_metadata('pc_cmh_cwqm_q_depth_ncv_th_cfg', None, i, 'cc', 0, 
+                None, None, None)
+
+        csr_addr = csr_get_addr(csr_meta, None, None, i)
+        if csr_addr is None:
+            print("Error get csr address!!!")
+            return
+        logger.debug("csr address: {0}".format(hex(csr_addr)))
+        csr_width_words = csr_get_width_bytes(csr_meta) >> 3
+        (status, data) = handle.csr_peek(csr_addr, csr_width_words)
+        if status is True:
+            word_array = data
+            for t in range(15):
+                field_val = csr_get_field_val(csr_meta, word_array, 'th_{}'.format(t+1))
+                print('\tTHR-{}: {}'.format(t, [hex(x) for x in field_val]))
+        else:
+            error_msg = data
+            print("Error! {0}!".format(error_msg))
+
+
+    print('CC NCV ACTIVE PROFILES:'.format())
+    for i in range(24): 
+        csr_meta = csr_get_metadata('pc_cmh_cwqm_vp_q_depth_ncv_th_sel_cfg', None, i, 'cc', 0,
+                None, None, None)
+        csr_addr = csr_get_addr(csr_meta, None, None, i)
+        if csr_addr is None:
+            print("Error get csr address!!!")
+            return
+        logger.debug("csr address: {0}".format(hex(csr_addr)))
+        csr_width_words = csr_get_width_bytes(csr_meta) >> 3 
+        (status, data) = handle.csr_peek(csr_addr, csr_width_words)
+        if status is True:
+            word_array = data
+            hi_thr_prof = csr_get_field_val(csr_meta, word_array, 'hi_th_sel')
+            low_thr_prof = csr_get_field_val(csr_meta, word_array, 'lo_th_sel')
+            print('vp-{} hi_thr_prof: {} low_thr_prof: {}'.format(i, hi_thr_prof, low_thr_prof))
+        else:
+            error_msg = data
+            print("Error! {0}!".format(error_msg))
 
