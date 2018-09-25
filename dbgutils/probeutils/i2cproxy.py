@@ -83,9 +83,8 @@ class i2c_obj_db:
         i2c_obj = self.i2c_objs.get(dev_id, None) 
         if i2c_obj:
             return i2c_obj[0]
-        logger.error('There is no i2c connection'
-                  ' for dev_id: {0}'.format(dev_id))
         return None
+
     def dump(self):
         for k,v in self.i2c_objs.items():
             print('Dev: {0} User: {1} Conn_obj: {2}'.format(k, v[1], v[0]))
@@ -115,10 +114,11 @@ class I2CFactoryThread(jsocket.ServerFactoryThread):
 
     #def __del__(self):
     #    logger.info("Destroyed i2c factory thread!");
+    #    self.close()
 
     def exit(self):
-        self.__cleanup__()
-        sys.exit(0)
+        logger.info('Exit {0}!'.format(threading.current_thread()))
+        self.close()
 
     def __cleanup__(self):
         if self.i2c_dev_id is not None:
@@ -127,21 +127,21 @@ class I2CFactoryThread(jsocket.ServerFactoryThread):
             if i2c_conn:
                 logger.info("Closing i2c Connection!")
                 i2c_conn.i2c_disconnect()
+                i2c_obj_db().del_i2c_conn(self.i2c_dev_id)
                 self.i2c_dev_id = None
             else:
-                logger.error('**** Expected condition(i2c_dev_id != None && i2c_conn == None)!!! **** ')
-                sys.exit(1)
+                logger.error('Un-expected condition(i2c_dev_id != None && i2c_conn == None)!')
 
     @catch_exception
     def _close_connection(self):
-        logger.info(("thread process close connection!!!! pid: {0}"
+        logger.debug(("thread process close connection!!!! pid: {0}"
                " thread: {1}").format(os.getpid(), threading.current_thread()))
         self.__cleanup__()
 
     @catch_exception
     def _process_message(self, obj):
         """ virtual method - Implementer must define protocol """
-        logger.info(("New thread process message!!!! pid: {0}"
+        logger.debug(("Thread process message!!!! pid: {0}"
                " thread: {1}").format(os.getpid(), threading.current_thread()))
         if obj != '':
             logger.debug(obj)
@@ -351,8 +351,11 @@ if __name__ == "__main__":
             logger.info(("Stopping the server!!!! pid: {0}"
                    " thread: {1}").format(os.getpid(),
                    threading.current_thread()))
-            #server.stop_all()
+            for t in server._threads:
+                t.close()
+                t.exit()
             server.stop()
+            server.stop_all()
             server.close()
             server.join()
         sys.exit(0)
@@ -377,6 +380,7 @@ if __name__ == "__main__":
     server = jsocket.ServerFactory(I2CFactoryThread, address=ip_addr,
                                    port = constants.SERVER_TCP_PORT)
     server.timeout = 2.0
+    server.setDaemon(1)
     logger.info("Starting the server IP:{0} PORT:{1}".format(ip_addr,
                                             constants.SERVER_TCP_PORT))
     server.start()
