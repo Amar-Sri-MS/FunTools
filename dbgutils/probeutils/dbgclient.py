@@ -53,6 +53,7 @@ class DBG_Client(object):
 
     # Disconnects dbgprobe connection to remote server
     def disconnect(self):
+        status = False
         if self.connected is False:
             print("Server is already disconnected!");
             return True

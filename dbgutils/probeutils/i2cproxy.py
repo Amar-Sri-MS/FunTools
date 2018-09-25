@@ -351,12 +351,9 @@ if __name__ == "__main__":
             logger.info(("Stopping the server!!!! pid: {0}"
                    " thread: {1}").format(os.getpid(),
                    threading.current_thread()))
-            for t in server._threads:
-                t.close()
-                t.exit()
             server.stop()
-            server.stop_all()
             server.close()
+            server.stop_all()
             server.join()
         sys.exit(0)
     signal.signal(signal.SIGINT, signal_handler) #Terminate cleanly on ctrl+c
