@@ -755,25 +755,32 @@ def csr_poll_status(csr_address, csr_width_words, value_mask):
 def server_connect(args):
     logger.debug('args: {}'.format(args))
     dut_name = args.dut[0]
-    force_connect = False 
     if dut_name is None:
         print("Invalid dut!")
         return
 
+    mode = None
     if args.mode is None or args.mode[0] is None:
         print('No mode option! Default to "i2c"')
         # set default mode to i2c
         mode = 'i2c'
 
+    force_connect = False
     if args.force:
         force_connect = True 
         logger.info('Force connection: {0}'.format(force_connect))
 
+    probe = connect(dut_name, mode, force_connect)
+    if probe is None:
+        print('Failed to connect to dut: {0}'.format(dut_name, mode))
+        return
+
+def connect(dut_name, mode, force_connect=False):
     if mode == 'i2c':
         dut_i2c_info = dut().get_i2c_info(dut_name)
         if dut_i2c_info is None:
             print('Failed to get i2c connection details!')
-            return
+            return None
         i2c_probe_serial = dut_i2c_info[0]
         i2c_probe_ip = dut_i2c_info[1]
         i2c_slave_addr = dut_i2c_info[2]
@@ -783,7 +790,7 @@ def server_connect(args):
         dut_jtag_info = dut().get_jtag_info(dut_name)
         if dut_jtag_info is None:
             print('Failed to get jtag connection details!')
-            return
+            return None
         jtag_probe_id = dut_jtag_info[0]
         jtag_probe_ip = dut_jtag_info[1]
         status = dbgprobe().connect(mode, jtag_probe_ip, jtag_probe_id, force_connect)
@@ -792,8 +799,13 @@ def server_connect(args):
         return
     if status is True:
         print("Server Connection Successful!")
+        return dbgprobe()
     else:
         print("Server Connection Failed!")
+        return None
+
+
+
 
 # disconnect handler for commandline interface.
 # Disconnects from remote server
@@ -1534,7 +1546,7 @@ class csr_metadata:
 
 def show_global_ncv_thrsholds():
     print('NWQM NCV THRESHOLDS:')
-    handle = dbgprobe()
+    probe = dbgprobe()
     for i in range(15):
         csr_meta = csr_get_metadata('nwqm_wu_crd_cnt_ncv_th_{}'.format(i+1), None, None, 'nu', 0, 
                 None, None, None)
@@ -1545,7 +1557,7 @@ def show_global_ncv_thrsholds():
             return
         logger.debug("csr address: {0}".format(hex(csr_addr)))
         csr_width_words = csr_get_width_bytes(csr_meta) >> 3
-        (status, data) = handle.csr_peek(csr_addr, csr_width_words)
+        (status, data) = probe.csr_peek(csr_addr, csr_width_words)
         if status is True:
             word_array = data
             fields_objs = csr_meta.get("fld_lst", None)
@@ -1556,9 +1568,8 @@ def show_global_ncv_thrsholds():
             error_msg = data
             print("Error! {0}!".format(error_msg))
 
-
 def show_pc_cmh_ncv_thrsholds():
-    handle = dbgprobe()
+    probe = dbgprobe()
     for i in range(16):
         print('CC CMH NCV PROFILE:{}'.format(i))
         csr_meta = csr_get_metadata('pc_cmh_cwqm_q_depth_ncv_th_cfg', None, i, 'cc', 0, 
@@ -1570,7 +1581,7 @@ def show_pc_cmh_ncv_thrsholds():
             return
         logger.debug("csr address: {0}".format(hex(csr_addr)))
         csr_width_words = csr_get_width_bytes(csr_meta) >> 3
-        (status, data) = handle.csr_peek(csr_addr, csr_width_words)
+        (status, data) = probe.csr_peek(csr_addr, csr_width_words)
         if status is True:
             word_array = data
             for t in range(15):
@@ -1591,7 +1602,7 @@ def show_pc_cmh_ncv_thrsholds():
             return
         logger.debug("csr address: {0}".format(hex(csr_addr)))
         csr_width_words = csr_get_width_bytes(csr_meta) >> 3 
-        (status, data) = handle.csr_peek(csr_addr, csr_width_words)
+        (status, data) = probe.csr_peek(csr_addr, csr_width_words)
         if status is True:
             word_array = data
             hi_thr_prof = csr_get_field_val(csr_meta, word_array, 'hi_th_sel')
