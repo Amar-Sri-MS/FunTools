@@ -10,12 +10,13 @@ import jsocket
 import time
 import logging
 from array import array
+import getpass
 
 logger = logging.getLogger("i2cclient")
 logger.setLevel(logging.INFO)
 
 class constants(object):
-    SERVER_TCP_PORT = 55668
+    SERVER_TCP_PORT = 44444 
 
 class I2C_Client(object):
     def __init__(self, mode):
@@ -27,7 +28,7 @@ class I2C_Client(object):
 
     # Opens tcp connection with i2c proxy server and
     # opens remote i2c device connection
-    def connect(self, ip_address, dev_id):
+    def connect(self, ip_address, dev_id, slave_addr=None, force_connect=False):
         self.con_handle = jsocket.JsonClient(address = ip_address,
                                port = constants.SERVER_TCP_PORT)
         if self.con_handle is None:
@@ -36,6 +37,9 @@ class I2C_Client(object):
         self.con_handle.connect()
         connect_args = dict()
         connect_args["dev_id"] = dev_id
+        connect_args["slave_addr"] = slave_addr 
+        connect_args["user"] = getpass.getuser() 
+        connect_args["force_connect"] = force_connect 
         time.sleep(0.5)
         self.con_handle.send_obj({"cmd": "CONNECT",
                     "args": connect_args})
@@ -59,6 +63,8 @@ class I2C_Client(object):
         if self.con_handle is None or csr_addr is None or csr_width_words is None \
                 or csr_addr == 0 or csr_width_words < 1:
             error_msg = "Invalid peek arguments!"
+            logger.info('con_handle: {0} csr_addr: {1} csr_width_words: {2}'
+                    ''.format(self.con_handle, csr_addr, csr_width_words))
             logger.error(error_msg)
             return (False, error_msg)
         csr_peek_args = dict()
@@ -144,8 +150,10 @@ class I2C_Client(object):
             logger.error(error_msg)
             return (False, error_msg)
         logger.info('Sending i2c disconnect!')
+        disconnect_args = dict()
+        disconnect_args['user'] = getpass.getuser()
         self.con_handle.send_obj({"cmd": "DISCONNECT",
-                    "args": None })
+                    "args": disconnect_args})
         read_obj = self.con_handle.read_obj()
         status = read_obj.get("STATUS", None)
         if status[0] == True:

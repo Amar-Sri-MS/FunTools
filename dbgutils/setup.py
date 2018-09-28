@@ -9,6 +9,7 @@ setup(
     description = 'python debug utilities for F1',
     scripts = ['dbgsh'],
     packages = find_packages(),
+    package_data = {'probeutils': ["probeutils/dut.cfg"]},
     include_package_data=True,
     install_requires = [
         'aardvark_py',
