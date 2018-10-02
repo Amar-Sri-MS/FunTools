@@ -136,7 +136,7 @@ class I2C_Client(object):
             csr_poke_args["fast_poke"] = word_array
         self.con_handle.send_obj({"cmd": "CSR_POKE",
                     "args": csr_poke_args})
-        if fast_poke:
+        if not fast_poke:
             msg = self.con_handle.read_obj()
             status = msg.get("STATUS", None)
             if status[0] == True:

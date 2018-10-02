@@ -18,7 +18,7 @@ class constants(object):
     F1_DBG_CHALLANGE_FIFO_SIZE = 64
     IC_DEVICE_MODE_I2C = 0x2
     IC_DEVICE_MODE_GPIO = 0x0
-    I2C_XFER_BIT_RATE = 8
+    I2C_XFER_BIT_RATE = 1
     SBP_CMD_EXE_TIME_WAIT = 0.5
     I2C_CSR_SLEEP_SEC    = 0.001
 

@@ -181,6 +181,7 @@ def process_cmd (cmd, msg_len):
 
 ###################################################
 
+fast_poke=True
 ##########process_cmd_csr_write####################
 def process_cmd_csr_write (msg_len):
   global glb_wr_cnt
@@ -200,7 +201,10 @@ def process_cmd_csr_write (msg_len):
   print "csr_poke data:"
   print data_words_list
 
-  (status, result) = dbgprobe().csr_poke(addr, len(data_words_list), data_words_list)
+  if fast_poke:
+      (status, result) = dbgprobe().csr_fast_poke(addr, len(data_words_list), data_words_list)
+  else:
+      (status, result) = dbgprobe().csr_poke(addr, len(data_words_list), data_words_list)
   #print "csr_poke returned"
   if status is False:
       print "csr_poke returned false"
