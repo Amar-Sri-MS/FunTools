@@ -110,7 +110,7 @@ class I2C_Client(object):
             return (False, error_msg)
 
     # Sends poke request to i2c proxy server, get the response
-    def csr_poke(self, csr_addr, csr_width_words, word_array):
+    def csr_poke(self, csr_addr, csr_width_words, word_array, fast_poke=False):
         logger.debug(("csr_addr:{0} csr_width_words:{1}"
             " word_array{2}").format(csr_addr,
                 csr_width_words, word_array))
@@ -132,16 +132,21 @@ class I2C_Client(object):
         csr_poke_args["csr_addr"] = csr_addr
         csr_poke_args["csr_width"] = csr_width_words
         csr_poke_args["csr_val"] = word_array
+        if fast_poke:
+            csr_poke_args["fast_poke"] = word_array
         self.con_handle.send_obj({"cmd": "CSR_POKE",
                     "args": csr_poke_args})
-        msg = self.con_handle.read_obj()
-        status = msg.get("STATUS", None)
-        if status[0] == True:
-            return (True, "poke success!")
+        if not fast_poke:
+            msg = self.con_handle.read_obj()
+            status = msg.get("STATUS", None)
+            if status[0] == True:
+                return (True, "poke success!")
+            else:
+                error_msg = "Error! poke failed!: {0}".format(status[1])
+                logger.error(error_msg)
+                return (False, error_msg)
         else:
-            error_msg = "Error! poke failed!: {0}".format(status[1])
-            logger.error(error_msg)
-            return (False, error_msg)
+            return (True, "poke success!")
 
     # Closes remote i2c devce connection and socket connection to i2c proxy server
     def disconnect(self):
