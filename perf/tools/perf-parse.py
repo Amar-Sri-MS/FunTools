@@ -25,6 +25,8 @@ def download_files(url):
     if not os.path.exists(local_job_dir):
         os.makedirs(local_job_dir)
 
+    print "Downloading files"
+
     # html
     html_path = os.path.join(local_job_dir, "html")
     resp = urllib2.urlopen(url)
@@ -44,13 +46,16 @@ def download_files(url):
     config_type = m.group("config_type")
 
     # Copy funos image.
-    funos_path = local_job_dir + "/funos-f1-palladium"
+    funos_path = local_job_dir + "/funos-f1-emu"
     if not os.path.exists(funos_path):
-        if 0 == subprocess.call("scp server11:%s/funos-f1-palladium.gz %s/" %
-                                (remote_job_dir, local_job_dir), shell=True):
-            subprocess.check_output("gunzip %s/funos-f1-palladium.gz" % local_job_dir, shell=True)
-        else:
-            subprocess.check_output("scp -C server11:%s/funos-f1-palladium %s/" %
+        try:
+            subprocess.check_output("scp server11:%s/funos-f1-emu.gz %s/" %
+                                    (remote_job_dir, local_job_dir),
+                                    stderr=subprocess.STDOUT, shell=True)
+            subprocess.check_output("gunzip %s/funos-f1-emu.gz" % local_job_dir,
+                                    stderr=subprocess.STDOUT, shell=True)
+        except Exception as e:
+            subprocess.check_output("scp -C server11:%s/funos-f1-emu %s/" %
                                     (remote_job_dir, local_job_dir), shell=True)
 
     # Copy files.
@@ -62,22 +67,30 @@ def download_files(url):
             "put_mips_uartout.txt": ("odp", "rdp/Compute2"),
             "cdn_uartout0.txt":     ("odp", "rdp/Compute2"),
         },
+        "Storage1": {
+            "put_perfmon.txt":  ("odp", "rdp/Storage1"),
+            "cdn_uartout0.txt": ("odp", "rdp/Storage1"),
+        },
         "Storage2": {
             "cut_perfmon.txt":  ("odp", "rdp/Storage2"),
             "put_perfmon.txt":  ("odp", "rdp/Storage2"),
             "cdn_uartout0.txt": ("odp", "rdp/Storage2"),
-        }
+        },
     }
 
     for name, remote_paths in config_type_to_perfmon_list[config_type].iteritems():
         local_path = local_job_dir + "/" + name
+        errors = []
         for remote_path in remote_paths:
-            if 0 == subprocess.call("scp -C server11:%s/%s/%s %s" %
+            try:
+                out = subprocess.check_output("scp -C server11:%s/%s/%s %s" %
                                 (remote_job_dir, remote_path, name, local_path),
-                                shell=True):
+                                stderr=subprocess.STDOUT, shell=True)
                 break
+            except Exception as e:
+                errors.append(e)
         else:
-            raise Exception("Could not copy %s" % name)
+            raise Exception("Could not copy %s, errors=%s" % (name, errors))
 
     # Merge perfmon files.
     perfmon_path = local_job_dir + "/perfmon.txt"
@@ -113,12 +126,17 @@ def get_wu_list(job_dir, uart_timestamp):
             return f.read().split()
 
     print "Generating WU list"
-    data = subprocess.check_output("/Users/Shared/cross-el/bin/mips64-gdb "
+
+    if os.uname()[0] == "Darwin":
+        gdb_path = "/Users/Shared/cross/mips64/bin/mips64-unknown-elf-gdb"
+    else:
+        gdb_path = "/opt/cross/mips64/bin/mips64-unknown-elf-gdb"
+    data = subprocess.check_output("%s "
         "-ex 'set print elements 100000' "
         "-ex 'set print repeats 0' "
         "-ex 'set print array on' "
         "-ex 'p wu_handlers_default' -batch "
-        "%s/funos-f1-palladium" % job_dir, shell=True)
+        "%s/funos-f1-emu" % (gdb_path, job_dir), shell=True)
     wu_list = []
     for line in data.split("\n"):
         if not line:
