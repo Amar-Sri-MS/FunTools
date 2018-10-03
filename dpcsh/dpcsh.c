@@ -32,6 +32,7 @@
 
 #include <utils/threaded/fun_map.h>
 #include <services/commander/fun_commander.h>
+#include <services/commander/fun_commander_basic_commands.h>
 #include <utils/threaded/fun_malloc_threaded.h>
 #include <utils/common/base64.h>
 
