@@ -32,6 +32,7 @@
 
 #include <utils/threaded/fun_map.h>
 #include <services/commander/fun_commander.h>
+#include <services/commander/fun_commander_basic_commands.h>
 #include <utils/threaded/fun_malloc_threaded.h>
 #include <utils/common/base64.h>
 
@@ -800,11 +801,11 @@ static void apply_command_locally(const struct fun_json *json)
 	struct fun_json *j = fun_commander_execute(env, json);
 
 	fun_json_release(env);
-	if (!j) {
+	if (!j || fun_json_fill_error_message(j, NULL)) {
 		return;
 	}
 	struct fun_json *result = fun_json_lookup(j, "result");
-	if (result) {
+	if (result && !fun_json_fill_error_message(result, NULL)) {
 		fun_json_printf(PRELUDE BLUE POSTLUDE "Locally applied command: %s" NORMAL_COLORIZE "\n", result);
 	}
 	fun_json_release(j);
@@ -1223,6 +1224,9 @@ int main(int argc, char *argv[])
 	dpcsh_path = argv[0];
 	dpcsh_load_macros();
 	register_csr_macro();
+
+	// help should list both local and distant commands
+	fun_commander_register_help_command();
 
 	/* general flow of dpcsh:
 	 *
