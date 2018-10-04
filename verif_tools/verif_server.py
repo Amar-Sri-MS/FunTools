@@ -67,7 +67,7 @@ def rcv_packets_from_server(self, sock):
             return
         jdata = json.loads(result)
         intf = jdata["intf"]
-        print (("Received PTF Response on intf %d: " % (intf)) + str(jdata))
+        print (("Received PTF Response on intf %s: " % str(intf)) + str(jdata))
         #get rid of the fpg prefix
         intf = intf.replace("fpg", "")
         #pkt = pkt_decode(jdata["pkt"])
