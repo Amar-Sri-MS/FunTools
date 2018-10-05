@@ -36,7 +36,8 @@ rcv_pkt_list = list() #global variable to store the packets received from DUT
 
 #ignore packets from any ports in this test. Port 3 is seen sending pause frames
 #hence it is added to this list
-ignore_ports = [3]
+ignore_ports = [str(i) for i in range (2,12)]
+
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 print 'Client Socket created'
@@ -73,12 +74,13 @@ def rcv_packets_from_server(self, sock):
         #pkt = pkt_decode(jdata["pkt"])
         pkt = jdata["pkt"]
         pkt_byte_list = pkt.split()
+        pkt_byte_list=[int(i,16) for i in pkt_byte_list]
         print (tuple((intf, pkt_byte_list)))
         #store the return data into a list
         if not (intf in ignore_ports) :
             rcv_pkt_list.append(tuple((intf, pkt_byte_list)))
         else :
-            print ("Ignoring packet on intf %d from PTF" % intf)
+            print ("Ignoring packet on intf %s from PTF" % intf)
 
     except(socket.timeout):
         pass
@@ -266,13 +268,21 @@ def process_cmd_pkt_req ():
 
   print 'in process_cmd_pkt_req'
 
-  if (len(rcv_pkt_list)) :
-    (pkt_port, pkt_bytes) = rcv_pkt_list.pop(0)
-  else :
-    pkt_port = 0;
-    pkt_bytes = []
+  exit_loop=0;
+  while(exit_loop == 0):
+    if (len(rcv_pkt_list)) :
+      (pkt_port, pkt_bytes) = rcv_pkt_list.pop(0)
+      pkt_bytes=[int(i,16) for i in pkt_bytes]
+      if(pkt_bytes[0] == 0) :
+          exit_loop = 0
+      else: 
+          exit_loop = 1
+    else :
+      pkt_port = 0;
+      pkt_bytes = []
+      exit_loop = 1
 
-  if (len(pkt_bytes) == 0) :
+  if (len(pkt_bytes) == 0 ) :
     print "no pkt available"
   else :
     print "reply pkt_len is %d" % len(pkt_bytes)
@@ -284,8 +294,8 @@ def process_cmd_pkt_req ():
   reply.insert(0, msg_len >>8)
   reply.insert(1, msg_len& 0xff)
   reply.insert(2, CMD_PKT)
-  reply.insert(3, pkt_port >>8)
-  reply.insert(4, pkt_port & 0xff)
+  reply.insert(3, int(pkt_port) >>8)
+  reply.insert(4, int(pkt_port) & 0xff)
 
   reply += pkt_bytes
   reply = bytearray(reply)
