@@ -1,4 +1,5 @@
-#!/usr/bin/python
+#!/usr/bin/env python
+import argparse
 import socket
 import sys
 import time
@@ -13,6 +14,21 @@ sys.path.append(os.environ["WORKSPACE"]+"/FunTools/dbgutils")
 from csrutils.csrutils import *
 from probeutils.i2cutils import *
 
+#first create and bind the verif server socket
+HOST = ''                 # Symbolic name meaning the local host
+
+rcv_pkt_list = list() #global variable to store the packets received from DUT
+
+#ignore packets from any ports in this test. Port 3 is seen sending pause frames
+#hence it is added to this list
+ignore_ports = [str(i) for i in range (2,12)]
+
+fast_poke=True
+#print 'do server speed test'
+#do_server_speed_test()
+glb_rd_cnt=0
+glb_wr_cnt=0
+
 #
 # Convert hex encoding String back to raw packet
 #
@@ -26,33 +42,21 @@ def pkt_decode(src):
     final="".join(map(chr, ret))
     return final
 
-
-#first create and bind the verif server socket
-HOST = ''                 # Symbolic name meaning the local host
-PORT = 0x1234              # Arbitrary non-privileged port
-I2C_SERVER = '10.1.20.69' #IP address of I2C server
-
-rcv_pkt_list = list() #global variable to store the packets received from DUT
-
-#ignore packets from any ports in this test. Port 3 is seen sending pause frames
-#hence it is added to this list
-ignore_ports = [3]
-
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-print 'Client Socket created'
- 
-#Bind socket to local host and port
-try:
-    s.bind((HOST, PORT))
-except socket.error as msg:
-    print 'Bind failed. Error Code : ' + str(msg[0]) + ' Message ' + msg[1]
-    sys.exit()
-     
-print 'Client Socket bind complete'
- 
-#Start listening on socket
-s.listen(10)
-print 'Client Socket now listening on port %d' % (PORT)
+def connect_verif_client_socket():
+    global verif_sock
+    verif_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    print 'Client Socket created'
+    #Bind socket to local host and port
+    try:
+        verif_sock.bind((HOST, args.verif_port))
+    except socket.error as msg:
+        print 'Bind failed. Error Code : ' + str(msg[0]) + ' Message ' + msg[1]
+        sys.exit()
+        
+    print 'Client Socket bind complete'
+    #Start listening on socket
+    verif_sock.listen(10)
+    print 'Client Socket now listening on port %d' % (args.verif_port)
 
 #now setup the listening socket for the PTF
 #
@@ -60,25 +64,26 @@ print 'Client Socket now listening on port %d' % (PORT)
 #
 def rcv_packets_from_server(self, sock):
     try:
-        result = sock.recv(16*1024)
+        result = ptf_sock.recv(16*1024)
         if result == "":
             print("PTF socket closed remotely at server side")
             self.join()
             return
         jdata = json.loads(result)
         intf = jdata["intf"]
-        print (("Received PTF Response on intf %d: " % (intf)) + str(jdata))
+        print (("Received PTF Response on intf %s: " % str(intf)) + str(jdata))
         #get rid of the fpg prefix
         intf = intf.replace("fpg", "")
         #pkt = pkt_decode(jdata["pkt"])
         pkt = jdata["pkt"]
         pkt_byte_list = pkt.split()
+        pkt_byte_list=[int(i,16) for i in pkt_byte_list]
         print (tuple((intf, pkt_byte_list)))
         #store the return data into a list
         if not (intf in ignore_ports) :
             rcv_pkt_list.append(tuple((intf, pkt_byte_list)))
         else :
-            print ("Ignoring packet on intf %d from PTF" % intf)
+            print ("Ignoring packet on intf %s from PTF" % intf)
 
     except(socket.timeout):
         pass
@@ -96,14 +101,15 @@ class RcvThread(threading.Thread):
                 self._stopevent.set()
                 #threading.Thread.join(self, timeout)
 
-sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-sock.connect(("localhost", 9001))
-print 'Connected with PTF server. Start listening for packets from DUT'
-sock.settimeout(0.5)
-
+def connect_ptf():
+    global ptf_sock
+    ptf_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    ptf_sock.connect(("localhost", 9001))
+    print 'Connected with PTF server. Start listening for packets from DUT'
+    ptf_sock.settimeout(0.5)
 # Start receving thread
-rcvthread = RcvThread(sock)
-rcvthread.start()
+    rcvthread = RcvThread(ptf_sock)
+    rcvthread.start()
 
 #  Frame format: 2B msglen, 1B cmd, [2B port/8B addr, payload]
 #   cmd :  1byte()            Frame format
@@ -151,13 +157,14 @@ def print_command(data):
 ##########recv_str#################################
 #recv n bytes and returns a string of size n
 def recv_str(n):
-  buf = ''
-  while len (buf) < n:
-     data = conn.recv(n)
-     if not data:
-        return
-     buf += data
-  return buf
+    global conn
+    buf = ''
+    while len (buf) < n:
+        data = conn.recv(n)
+        if not data:
+            return
+        buf += data
+    return buf
 ###################################################
 ##########process_cmd##############################
 def process_cmd (cmd, msg_len):
@@ -181,7 +188,6 @@ def process_cmd (cmd, msg_len):
 
 ###################################################
 
-fast_poke=True
 ##########process_cmd_csr_write####################
 def process_cmd_csr_write (msg_len):
   global glb_wr_cnt
@@ -245,7 +251,7 @@ def process_cmd_pkt (msg_len):
   json_pkt = '{ "intf" :  '+ '"' + "fpg" + str(pkt_port) + '"' ', "pkt" : "' +pkt_data_with_space+'"}'
   print "Sending pkt to PTF server:"
   print json_pkt
-  sock.sendall(json_pkt)
+  ptf_sock.sendall(json_pkt)
   #Sleep to make sure message is out
   time.sleep(0.5)
 
@@ -266,13 +272,21 @@ def process_cmd_pkt_req ():
 
   print 'in process_cmd_pkt_req'
 
-  if (len(rcv_pkt_list)) :
-    (pkt_port, pkt_bytes) = rcv_pkt_list.pop(0)
-  else :
-    pkt_port = 0;
-    pkt_bytes = []
+  exit_loop=0;
+  while(exit_loop == 0):
+    if (len(rcv_pkt_list)) :
+      (pkt_port, pkt_bytes) = rcv_pkt_list.pop(0)
+      pkt_bytes=[int(i,16) for i in pkt_bytes]
+      if(pkt_bytes[0] == 0) :
+          exit_loop = 0
+      else: 
+          exit_loop = 1
+    else :
+      pkt_port = 0;
+      pkt_bytes = []
+      exit_loop = 1
 
-  if (len(pkt_bytes) == 0) :
+  if (len(pkt_bytes) == 0 ) :
     print "no pkt available"
   else :
     print "reply pkt_len is %d" % len(pkt_bytes)
@@ -284,8 +298,8 @@ def process_cmd_pkt_req ():
   reply.insert(0, msg_len >>8)
   reply.insert(1, msg_len& 0xff)
   reply.insert(2, CMD_PKT)
-  reply.insert(3, pkt_port >>8)
-  reply.insert(4, pkt_port & 0xff)
+  reply.insert(3, int(pkt_port) >>8)
+  reply.insert(4, int(pkt_port) & 0xff)
 
   reply += pkt_bytes
   reply = bytearray(reply)
@@ -361,50 +375,79 @@ def handle_connection(conn):
 
        process_cmd(cmd, msg_len)
 
-     
-sdkdir = "/bin/" + os.uname()[0]
-if ("SDKDIR" in os.environ):
-    sys.path.append(os.environ["SDKDIR"] + sdkdir)
-elif ("WORKSPACE" in os.environ):
-    sys.path.append(os.environ["WORKSPACE"] + "/FunSDK/" + sdkdir)
-else:
-	raise RuntimeError("Please specify WORKSPACE or SDKDIR environment variable")
 
-import dpc_client
+def connect_dbgprobe():
+    print "connect to I2C"
+#status = dbgprobe().connect('i2c', args.i2c_svr, 'TPCFbwoQ')
+    status = dbgprobe().connect('i2c', args.i2c_svr, 'TPCFb23b',0x70,False)
+    if status is True:
+        print("I2C Server Connection Successful!")
+    else:
+        print("I2C Server Connection Failed!")
+        sys.exit(1)
 
-# connect to an already running dpc proxy using strict JSON mode
-#client = dpc_client.DpcClient(False)
-#i2c_client_socket = i2c_remote_connect(I2C_SERVER)
-print "connect to I2C"
-#status = dbgprobe().connect('i2c', I2C_SERVER, 'TPCFbwoQ')
-status = dbgprobe().connect('i2c', I2C_SERVER, 'TPCFb23b',0x70,False)
-
-if status is True:
-  print("I2C Server Connection Successful!")
-else:
-  print("I2C Server Connection Failed!")
-  sys.exit(1)
-
-#print 'do server speed test'
-#do_server_speed_test()
-glb_rd_cnt=0
-glb_wr_cnt=0
-
-#now keep talking with the dpc_client
-while True:
+def start_verif_server():
+    while True:
     #wait to accept a connection - blocking call
-    print 'wait to accept a connection from client'
-    conn, addr = s.accept()
-    print 'Connected with client' + addr[0] + ':' + str(addr[1])
-    handle_connection(conn)
-    print 'Disconnected from client' + addr[0] + ':' + str(addr[1])
-    conn.close()
-status = dbgprobe().disconnect()
-if status is not True:
-  logger.error("I2C Server disconnect failed!")
-  sys.exit(1)
-else:
-  logger.info("I2C Server is disconnected!");
+        print 'wait to accept a connection from client'
+        conn, addr = verif_sock.accept()
+        print 'Connected with client' + addr[0] + ':' + str(addr[1])
+        handle_connection(conn)
+        print 'Disconnected from client' + addr[0] + ':' + str(addr[1])
+        conn.close()
+    status = dbgprobe().disconnect()
+    if status is not True:
+        logger.error("I2C Server disconnect failed!")
+        sys.exit(1)
+    else:
+        logger.info("I2C Server is disconnected!");
+    verif_sock.close()
 
-s.close()
+class CsrThread(threading.Thread):
+    def __init__(self):
+        self._stopevent = threading.Event()
+        threading.Thread.__init__(self)
+    def run(self):
+        global conn
+        while True:
+            print 'wait to accept a connection from client'
+            conn, addr = verif_sock.accept()
+            print 'Connected with client' + addr[0] + ':' + str(addr[1])
+            handle_connection(conn)
+            print 'Disconnected from client' + addr[0] + ':' + str(addr[1])
+            conn.close()
+    def join(self, timeout=None):
+        self._stopevent.set()
+        #threading.Thread.join(self, timeout)
 
+def bg_handle_csr():
+    csrthread = CsrThread()
+    csrthread.start()
+
+def auto_int(x):
+    return int(x, 0)
+
+def proc_arg():
+    global parser, args
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--ptf_dis', action='store_true', default=False, help='ptf connection disable. default %(default)d')
+    parser.add_argument('--i2c_dis', action='store_true', default=False, help='i2cproxy connection disable. default %(default)d')
+    parser.add_argument('--verif_port', nargs='?', type=auto_int, default=0x1234, help='verif client port. default %(default)d')
+    parser.add_argument('--i2c_svr', nargs='?', type=str, default='10.1.20.69', help='i2c server. default %(default)s')
+    args = parser.parse_args()
+
+    #args = parser.parse_args(['-ptf_dis'])
+
+################################################################################
+
+def main():
+    proc_arg()
+    connect_verif_client_socket()
+    if not args.ptf_dis:
+        connect_ptf()
+    if not args.i2c_dis:
+        connect_dbgprobe()
+    start_verif_server()
+
+if (__name__ == "__main__"):
+    main()
