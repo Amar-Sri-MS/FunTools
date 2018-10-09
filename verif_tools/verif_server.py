@@ -50,7 +50,7 @@ def connect_verif_client_socket():
     print 'Client Socket created'
     #Bind socket to local host and port
     try:
-        verif_sock.bind((HOST, PORT))
+        verif_sock.bind((HOST, args.verif_port))
     except socket.error as msg:
         print 'Bind failed. Error Code : ' + str(msg[0]) + ' Message ' + msg[1]
         sys.exit()
@@ -58,7 +58,7 @@ def connect_verif_client_socket():
     print 'Client Socket bind complete'
     #Start listening on socket
     verif_sock.listen(10)
-    print 'Client Socket now listening on port %d' % (PORT)
+    print 'Client Socket now listening on port %d' % (args.verif_port)
 
 #now setup the listening socket for the PTF
 #
@@ -426,12 +426,15 @@ def bg_handle_csr():
     csrthread = CsrThread()
     csrthread.start()
 
+def auto_int(x):
+    return int(x, 0)
+
 def proc_arg():
     global parser, args
     parser = argparse.ArgumentParser()
     parser.add_argument('--ptf_dis', action='store_true', default=False, help='ptf connection disable. default enable')
     parser.add_argument('--i2c_dis', action='store_true', default=False, help='i2cproxy connection disable. default enable')
-    parser.add_argument('--verif_port', nargs='?', type=int, default=0x1234, help='verif client port')
+    parser.add_argument('--verif_port', nargs='?', type=auto_int, default=0x1234, help='verif client port. default 0x1234')
     args = parser.parse_args()
     #args = parser.parse_args(['-ptf_dis'])
 
