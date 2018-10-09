@@ -16,8 +16,6 @@ from probeutils.i2cutils import *
 
 #first create and bind the verif server socket
 HOST = ''                 # Symbolic name meaning the local host
-PORT = 0x1234              # Arbitrary non-privileged port
-I2C_SERVER = '10.1.20.69' #IP address of I2C server
 
 rcv_pkt_list = list() #global variable to store the packets received from DUT
 
@@ -380,8 +378,8 @@ def handle_connection(conn):
 
 def connect_dbgprobe():
     print "connect to I2C"
-#status = dbgprobe().connect('i2c', I2C_SERVER, 'TPCFbwoQ')
-    status = dbgprobe().connect('i2c', I2C_SERVER, 'TPCFb23b',0x70,False)
+#status = dbgprobe().connect('i2c', args.i2c_svr, 'TPCFbwoQ')
+    status = dbgprobe().connect('i2c', args.i2c_svr, 'TPCFb23b',0x70,False)
     if status is True:
         print("I2C Server Connection Successful!")
     else:
@@ -432,10 +430,12 @@ def auto_int(x):
 def proc_arg():
     global parser, args
     parser = argparse.ArgumentParser()
-    parser.add_argument('--ptf_dis', action='store_true', default=False, help='ptf connection disable. default enable')
-    parser.add_argument('--i2c_dis', action='store_true', default=False, help='i2cproxy connection disable. default enable')
-    parser.add_argument('--verif_port', nargs='?', type=auto_int, default=0x1234, help='verif client port. default 0x1234')
+    parser.add_argument('--ptf_dis', action='store_true', default=False, help='ptf connection disable. default %(default)d')
+    parser.add_argument('--i2c_dis', action='store_true', default=False, help='i2cproxy connection disable. default %(default)d')
+    parser.add_argument('--verif_port', nargs='?', type=auto_int, default=0x1234, help='verif client port. default %(default)d')
+    parser.add_argument('--i2c_svr', nargs='?', type=str, default='10.1.20.69', help='i2c server. default %(default)s')
     args = parser.parse_args()
+
     #args = parser.parse_args(['-ptf_dis'])
 
 ################################################################################
