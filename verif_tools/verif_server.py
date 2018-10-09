@@ -31,9 +31,6 @@ fast_poke=True
 glb_rd_cnt=0
 glb_wr_cnt=0
 
-verif_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-ptf_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
 #
 # Convert hex encoding String back to raw packet
 #
@@ -48,7 +45,8 @@ def pkt_decode(src):
     return final
 
 def connect_verif_client_socket():
-    global s
+    global verif_sock
+    verif_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     print 'Client Socket created'
     #Bind socket to local host and port
     try:
@@ -106,7 +104,8 @@ class RcvThread(threading.Thread):
                 #threading.Thread.join(self, timeout)
 
 def connect_ptf():
-    global sock
+    global ptf_sock
+    ptf_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     ptf_sock.connect(("localhost", 9001))
     print 'Connected with PTF server. Start listening for packets from DUT'
     ptf_sock.settimeout(0.5)
@@ -430,9 +429,11 @@ def bg_handle_csr():
 def proc_arg():
     global parser, args
     parser = argparse.ArgumentParser()
-    parser.add_argument('-ptf_dis', action='store_const', const=1, default=0, help='ptf connection disable. default enable')
-    parser.add_argument('-i2c_dis', action='store_const', const=1, default=0, help='i2cproxy connection disable. default enable')
+    parser.add_argument('--ptf_dis', action='store_true', default=False, help='ptf connection disable. default enable')
+    parser.add_argument('--i2c_dis', action='store_true', default=False, help='i2cproxy connection disable. default enable')
+    parser.add_argument('--verif_port', nargs='?', type=int, default=0x1234, help='verif client port')
     args = parser.parse_args()
+    #args = parser.parse_args(['-ptf_dis'])
 
 ################################################################################
 
