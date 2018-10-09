@@ -1,4 +1,5 @@
-#!/usr/bin/python
+#!/usr/bin/env python
+import argparse
 import socket
 import sys
 import time
@@ -9,7 +10,7 @@ import string, os
 import json
 import threading
 from threading import Thread
-#sys.path.append(os.environ["WORKSPACE"]+"/FunTools/dbgutils")
+sys.path.append(os.environ["WORKSPACE"]+"/FunTools/dbgutils")
 from csrutils.csrutils import *
 from probeutils.i2cutils import *
 
@@ -426,12 +427,22 @@ def bg_handle_csr():
     csrthread = CsrThread()
     csrthread.start()
 
+def proc_arg():
+    global parser, args
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-ptf_dis', action='store_const', const=1, default=0, help='ptf connection disable. default enable')
+    parser.add_argument('-i2c_dis', action='store_const', const=1, default=0, help='i2cproxy connection disable. default enable')
+    args = parser.parse_args()
+
 ################################################################################
 
 def main():
+    proc_arg()
     connect_verif_client_socket()
-    connect_ptf()
-    connect_dbgprobe()
+    if not args.ptf_dis:
+        connect_ptf()
+    if not args.i2c_dis:
+        connect_dbgprobe()
     start_verif_server()
 
 if (__name__ == "__main__"):
