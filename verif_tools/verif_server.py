@@ -26,6 +26,7 @@ ignore_ports = [str(i) for i in range (2,12)]
 fast_poke=True
 #print 'do server speed test'
 #do_server_speed_test()
+req_cnt=0
 glb_rd_cnt=0
 glb_wr_cnt=0
 
@@ -168,7 +169,7 @@ def recv_str(n):
 ###################################################
 ##########process_cmd##############################
 def process_cmd (cmd, msg_len):
-  print_command(cmd)
+  #print_command(cmd)
   if (cmd == CMD_ACK_NOP):
      print 'not implemented yet'
   elif (cmd == CMD_RESETA):
@@ -184,7 +185,7 @@ def process_cmd (cmd, msg_len):
   elif (cmd == CMD_PKT):
      process_cmd_pkt(msg_len)
   elif (cmd == CMD_PKT_REQ):
-     process_cmd_pkt_req();
+     process_cmd_pkt_req(msg_len);
 
 ###################################################
 
@@ -192,11 +193,12 @@ def process_cmd (cmd, msg_len):
 def process_cmd_csr_write (msg_len):
   global glb_wr_cnt
   glb_wr_cnt+=1
-  print 'in process_cmd_csr_write cnt=%0d'%(glb_wr_cnt)
+  #print 'in process_cmd_csr_write cnt=%0d'%(glb_wr_cnt)
   #get 8B addr
   buf = recv_str(8)
   (addr,) = struct.unpack(">Q", buf[:8])
-  print 'address is 0x%x' % (addr)
+  print 'in process_cmd_csr_write cnt=%0d, address = 0x%x '%(glb_wr_cnt,addr)
+#  print 'address is 0x%x' % (addr)
 
   #now get the csr write data
   data_len = msg_len - 2 - 1 - 8 #msg_len - MSGLEN_SIZE - CMD_SIZE - ADDR_SIZE
@@ -204,8 +206,8 @@ def process_cmd_csr_write (msg_len):
   data_list_bytes = [ord(i) for i in list(data_str)]
   print data_list_bytes
   data_words_list = byte_array_to_words_be(array('B', data_list_bytes))
-  print "csr_poke data:"
-  print data_words_list
+  #print "csr_poke data:"
+  #print data_words_list
 
   if fast_poke:
       (status, result) = dbgprobe().csr_fast_poke(addr, len(data_words_list), data_words_list)
@@ -268,28 +270,30 @@ def process_cmd_pkt (msg_len):
   conn.sendall(reply)
 ###################################################
 ##########process_cmd_pkt_req######################
-def process_cmd_pkt_req ():
+def process_cmd_pkt_req (msg_len):
+  global req_cnt;   
+  req_cnt += 1
 
-  print 'in process_cmd_pkt_req'
+#  print 'in process_cmd_pkt_req'
 
   exit_loop=0;
   while(exit_loop == 0):
     if (len(rcv_pkt_list)) :
       (pkt_port, pkt_bytes) = rcv_pkt_list.pop(0)
-      pkt_bytes=[int(i,16) for i in pkt_bytes]
-      if(pkt_bytes[0] == 0) :
-          exit_loop = 0
-      else: 
+      if(len(pkt_bytes) > 100 ) :
           exit_loop = 1
+      else: 
+          print "dropping pkt < 100 bytes  mostly icmp discovery pkts"
+          exit_loop = 0
     else :
       pkt_port = 0;
       pkt_bytes = []
       exit_loop = 1
 
   if (len(pkt_bytes) == 0 ) :
-    print "no pkt available"
+      print "process_cmd_pkt_req:no pkt available req_cnt=%0d" %(req_cnt)
   else :
-    print "reply pkt_len is %d" % len(pkt_bytes)
+      print "process_cmd_pkt_req:reply pkt_len is %d,req_cnt=%0d" % (len(pkt_bytes),req_cnt)
 
   #print "reply pkt = " + ",".join(repr(hex(n)) for n in pkt_bytes)
   #print "recv pkt = " + pkt_bytes
@@ -300,26 +304,31 @@ def process_cmd_pkt_req ():
   reply.insert(2, CMD_PKT)
   reply.insert(3, int(pkt_port) >>8)
   reply.insert(4, int(pkt_port) & 0xff)
+  if(len(pkt_bytes) !=0 ):
+    print pkt_bytes
+   # pkt_bytes=[int(i,16) for i in pkt_bytes]
+    reply += pkt_bytes
+    print reply
 
-  reply += pkt_bytes
+
   reply = bytearray(reply)
-  print "server reply done for pkt_req "
+ # print "server reply done for pkt_req "
   conn.sendall(reply)
 ###################################################
 ##########process_cmd_csr_read#####################
 def process_cmd_csr_read (msg_len):
   global glb_rd_cnt
   glb_rd_cnt+=1
-  print 'in process_cmd_csr_read cnt=%0d'%(glb_rd_cnt)
+  #print 'in process_cmd_csr_read cnt=%0d'%(glb_rd_cnt)
   #get 8B addr
   buf = recv_str(8)
   (addr,) = struct.unpack(">Q", buf[:8])
-  print 'address is 0x%x' % (addr)
+  #print 'address is 0x%x' % (addr)
 
   #now get the dword_len (num dwords to read)
   data = recv_str(1)
   (dword_len,) = struct.unpack(">B", data)
-  print 'num_dwords to read is is %d' % (dword_len)
+  #print 'num_dwords to read is is %d' % (dword_len)
 
   (status, result) = dbgprobe().csr_peek(addr, dword_len)
   print "result=",result
@@ -328,13 +337,13 @@ def process_cmd_csr_read (msg_len):
       print ("csr_peek returned false")
       sys.exit(1)
 
-  print "csr_peek returned"
+  #print "csr_peek returned"
   if result is not None:
     read_data_hex_str = ''.join(hex(e)[2:] for e in result)
   else:
     read_data_hex_str = 'deadbeefdeadbeef' #make up a dummy result
 
-  print "read: addr=0x%0x data=%s"%(addr,read_data_hex_str)
+  print "read: addr=0x%0x data=%s,gbl_rd_cnt=%0d"%(addr,read_data_hex_str,glb_rd_cnt)
 
   #finally send reply
   reply_len = 2 + 1 + 8*dword_len #msg_size + command + Bytes of data
@@ -347,7 +356,7 @@ def process_cmd_csr_read (msg_len):
   #reply += result
   reply = bytearray(reply)
 
-  print "server reply done for csr_read: " +  reply
+  #print "server reply done for csr_read: " +  reply
   conn.sendall(reply)
 ###################################################
 
@@ -367,7 +376,7 @@ def handle_connection(conn):
        if not buf:
           return
        (msg_len,) = struct.unpack(">h", buf[:2])
-       print '\n\ngot message with length %d' % (msg_len)
+       #print '\n\ngot message with length %d' % (msg_len)
 
        #now get the 1B command
        data = recv_str(1)
@@ -387,6 +396,7 @@ def connect_dbgprobe():
         sys.exit(1)
 
 def start_verif_server():
+    global conn
     while True:
     #wait to accept a connection - blocking call
         print 'wait to accept a connection from client'
