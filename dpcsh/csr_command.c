@@ -46,7 +46,7 @@ static struct fun_json *csr_metadata_db(void)
 	snprintf(file, sizeof(file), "%s/../../FunSDK/" SDK_PATH, dir);
 	printf("Opening CSR metadata DB at: %s\n", file);
 	the_db = fun_json_read_text_file(file);
-	if (!the_db || (the_db->type != fun_json_dict_type)) {
+	if (!fun_json_is_dict(the_db)) {
 		printf("*** Can't parse file '%s'\n", file);
 		abort();
 	}
@@ -85,8 +85,8 @@ static bool csr_find(const struct fun_json *db, const struct fun_json *spec, str
 	struct fun_json *keys = fun_json_dict_keys_matching_as_array(db, parts.name);
 	for (size_t k = 0; k < fun_json_array_count(keys); k++) {
 		struct fun_json *key = fun_json_array_at(keys, k);
-		assert(key->type == fun_json_string_type);
-		struct fun_json *j = fun_json_lookup(db, key->string_value);
+		assert(fun_json_is_string(key));
+		struct fun_json *j = fun_json_lookup(db, fun_json_to_string(key, ""));
 		assert(j);
 		csr_append_matching_entries(j, &parts, matches);
 	}
@@ -102,18 +102,18 @@ static bool verify_value_has_proper_width(const struct fun_json *value, size_t n
 	assert(value);
 	*value_to_use = NULL; // means: use value
 	printf("In verify_value_has_proper_width, num_words=%zd\n", num_words);
-	if ((num_words == 1) && (value->type == fun_json_int_type)) {
+	if ((num_words == 1) && fun_json_is_int(value)) {
 		// We accept numbers for values, but we convert them to array of bytes
 		*value_to_use = fun_json_create_empty_array();
-		fun_json_array_append(*value_to_use, fun_json_create_int64(value->int_value));
+		fun_json_array_append(*value_to_use, fun_json_create_int64(fun_json_to_int64(value, 0)));
 		return true;
 	}
-	if (value->type != fun_json_array_type) {
+	if (!fun_json_is_array(value)) {
 		fun_json_printf("*** Expecting an array of bytes, not %s\n", value);
 		return false;
 	}
-	if (num_words != value->array->count) {
-		printf("*** Expecting an array of %zd 64b-words, array has %zd items\n", num_words, value->array->count);
+	if (num_words != fun_json_array_count(value)) {
+		printf("*** Expecting an array of %zd 64b-words, array has %zd items\n", num_words, fun_json_array_count(value));
 		return false;
 	}
 	return true;
@@ -165,15 +165,15 @@ static CALLER_TO_RELEASE struct fun_json *csr_macro(const struct fun_json *input
 	assert(db);
 	struct fun_json *output = fun_json_create_empty_dict();
 	struct fun_json *args = fun_json_lookup(input, "arguments");
-	assert(args->type == fun_json_array_type);
+	assert(fun_json_is_array(args));
 	if (fun_json_array_count(args) < 2) {
 		return fun_json_create_error("Expecting <csr> <sub_verb> <addr> ...", fun_json_copy);
 	} 
 	struct fun_json *sub_verb = fun_json_array_at(args, 0);
-	if (sub_verb->type != fun_json_string_type) {
+	if (!fun_json_is_string(sub_verb)) {
 		return fun_json_create_error("Expecting <csr> <sub_verb> <addr> ..., where sub_verb is a string", fun_json_copy);
 	} 
-	const char *sub = sub_verb->string_value;
+	const char *sub = fun_json_to_string(sub_verb, "");
 	struct fun_json *spec = fun_json_array_at(args, 1);
 	uint64_t tid = 0;
 	bool has_tid = fun_json_lookup_uint64(input, "tid", &tid);

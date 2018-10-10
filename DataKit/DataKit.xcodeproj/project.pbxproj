@@ -60,10 +60,10 @@
 		A72CC7B71F620BA60058827F /* DKFunctionComposition.swift in Sources */ = {isa = PBXBuildFile; fileRef = A72CC7B61F620BA60058827F /* DKFunctionComposition.swift */; };
 		A72CC7BD1F6A2BD50058827F /* DKNodeFifo.swift in Sources */ = {isa = PBXBuildFile; fileRef = A72CC7BC1F6A2BD50058827F /* DKNodeFifo.swift */; };
 		A72CC7C11F6A2C2F0058827F /* DKFlowGraphGen.swift in Sources */ = {isa = PBXBuildFile; fileRef = A72CC7C01F6A2C2F0058827F /* DKFlowGraphGen.swift */; };
-		A7377095204C9DEE00183612 /* libfunclient.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A7377093204C9D9B00183612 /* libfunclient.a */; };
 		A738879B1F6F175800A2F976 /* DKFunctionGatherFromNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = A738879A1F6F175800A2F976 /* DKFunctionGatherFromNode.swift */; };
 		A738879D1F6F41E400A2F976 /* DKFunctionMap.swift in Sources */ = {isa = PBXBuildFile; fileRef = A738879C1F6F41E400A2F976 /* DKFunctionMap.swift */; };
 		A738879F1F6F533B00A2F976 /* DKFunctionLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = A738879E1F6F533B00A2F976 /* DKFunctionLogger.swift */; };
+		A757762221581F3300676349 /* libfunclient.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A757762121581F3300676349 /* libfunclient.a */; };
 		A76A56231F258858000A881A /* DKTypeString.swift in Sources */ = {isa = PBXBuildFile; fileRef = A76A56221F258858000A881A /* DKTypeString.swift */; };
 		A77C5CD91FDCBFB8007264F5 /* DKNodeReduce.swift in Sources */ = {isa = PBXBuildFile; fileRef = A77C5CD81FDCBFB8007264F5 /* DKNodeReduce.swift */; };
 		A78C2B131F23D3E80086FAD6 /* DKType.swift in Sources */ = {isa = PBXBuildFile; fileRef = A78C2B0D1F23D3E80086FAD6 /* DKType.swift */; };
@@ -176,10 +176,10 @@
 		A72CC7B61F620BA60058827F /* DKFunctionComposition.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKFunctionComposition.swift; sourceTree = "<group>"; };
 		A72CC7BC1F6A2BD50058827F /* DKNodeFifo.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKNodeFifo.swift; sourceTree = "<group>"; };
 		A72CC7C01F6A2C2F0058827F /* DKFlowGraphGen.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKFlowGraphGen.swift; sourceTree = "<group>"; };
-		A7377093204C9D9B00183612 /* libfunclient.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libfunclient.a; path = ../../FunSDK/lib/Darwin/x86_64/libfunclient.a; sourceTree = "<group>"; };
 		A738879A1F6F175800A2F976 /* DKFunctionGatherFromNode.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKFunctionGatherFromNode.swift; sourceTree = "<group>"; };
 		A738879C1F6F41E400A2F976 /* DKFunctionMap.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKFunctionMap.swift; sourceTree = "<group>"; };
 		A738879E1F6F533B00A2F976 /* DKFunctionLogger.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKFunctionLogger.swift; sourceTree = "<group>"; };
+		A757762121581F3300676349 /* libfunclient.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libfunclient.a; path = ../../FunSDK/lib/Darwin/noasan/x86_64/libfunclient.a; sourceTree = "<group>"; };
 		A76A56221F258858000A881A /* DKTypeString.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKTypeString.swift; sourceTree = "<group>"; };
 		A77C5CD81FDCBFB8007264F5 /* DKNodeReduce.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DKNodeReduce.swift; sourceTree = "<group>"; };
 		A78C2AA41F23D34F0086FAD6 /* DataKit */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = DataKit; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -232,7 +232,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A7377095204C9DEE00183612 /* libfunclient.a in Frameworks */,
+				A757762221581F3300676349 /* libfunclient.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -344,7 +344,7 @@
 				A7EB13761F2D16E200760396 /* Test */,
 				A78C2AA61F23D34F0086FAD6 /* DataKit */,
 				A78C2AA51F23D34F0086FAD6 /* Products */,
-				A7377093204C9D9B00183612 /* libfunclient.a */,
+				A757762121581F3300676349 /* libfunclient.a */,
 				A7EBED051F9493BB00AFD2F0 /* Frameworks */,
 			);
 			sourceTree = "<group>";
@@ -489,7 +489,7 @@
 			isa = PBXProject;
 			attributes = {
 				LastSwiftUpdateCheck = 0830;
-				LastUpgradeCheck = 0900;
+				LastUpgradeCheck = 1000;
 				ORGANIZATIONNAME = Fungible;
 				TargetAttributes = {
 					A78C2AA31F23D34F0086FAD6 = {
@@ -640,6 +640,7 @@
 				CLANG_WARN_BOOL_CONVERSION = YES;
 				CLANG_WARN_COMMA = YES;
 				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
 				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
 				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
 				CLANG_WARN_EMPTY_BODY = YES;
@@ -647,6 +648,7 @@
 				CLANG_WARN_INFINITE_RECURSION = YES;
 				CLANG_WARN_INT_CONVERSION = YES;
 				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
 				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
 				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
@@ -673,7 +675,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 10.12;
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				MTL_ENABLE_DEBUG_INFO = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = macosx;
@@ -695,6 +697,7 @@
 				CLANG_WARN_BOOL_CONVERSION = YES;
 				CLANG_WARN_COMMA = YES;
 				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
 				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
 				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
 				CLANG_WARN_EMPTY_BODY = YES;
@@ -702,6 +705,7 @@
 				CLANG_WARN_INFINITE_RECURSION = YES;
 				CLANG_WARN_INT_CONVERSION = YES;
 				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
 				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
 				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
@@ -722,7 +726,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 10.12;
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				SDKROOT = macosx;
 				SWIFT_OPTIMIZATION_LEVEL = "-Owholemodule";
@@ -738,10 +742,7 @@
 					../../FunSDK,
 				);
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/../Frameworks";
-				LIBRARY_SEARCH_PATHS = (
-					"$(inherited)",
-					"$(PROJECT_DIR)/../../FunSDK/lib/Darwin/noasan/x86_64",
-				);
+				LIBRARY_SEARCH_PATHS = ../../FunSDK/lib/Darwin/x86_64;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "DataKit/DataKit-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
@@ -759,10 +760,7 @@
 					../../FunSDK,
 				);
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/../Frameworks";
-				LIBRARY_SEARCH_PATHS = (
-					"$(inherited)",
-					"$(PROJECT_DIR)/../../FunSDK/lib/Darwin/noasan/x86_64",
-				);
+				LIBRARY_SEARCH_PATHS = ../../FunSDK/lib/Darwin/x86_64;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "DataKit/DataKit-Bridging-Header.h";
 				SWIFT_SWIFT3_OBJC_INFERENCE = Default;

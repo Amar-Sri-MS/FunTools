@@ -32,6 +32,7 @@
 
 #include <utils/threaded/fun_map.h>
 #include <services/commander/fun_commander.h>
+#include <services/commander/fun_commander_basic_commands.h>
 #include <utils/threaded/fun_malloc_threaded.h>
 #include <utils/common/base64.h>
 
@@ -751,7 +752,7 @@ static CALLER_TO_RELEASE struct fun_json *apply_pretty_printer(struct fun_json *
 	if (!tid_to_pretty_printer) {
 		goto nope;
 	}
-	if (! whole || (whole->type != fun_json_dict_type)) {
+	if (!fun_json_is_dict(whole)) {
 		printf("*** Malformed result: NULL or not a dictionary\n");
 		goto nope;
 	}
@@ -800,11 +801,11 @@ static void apply_command_locally(const struct fun_json *json)
 	struct fun_json *j = fun_commander_execute(env, json);
 
 	fun_json_release(env);
-	if (!j) {
+	if (!j || fun_json_fill_error_message(j, NULL)) {
 		return;
 	}
 	struct fun_json *result = fun_json_lookup(j, "result");
-	if (result) {
+	if (result && !fun_json_fill_error_message(result, NULL)) {
 		fun_json_printf(PRELUDE BLUE POSTLUDE "Locally applied command: %s" NORMAL_COLORIZE "\n", result);
 	}
 	fun_json_release(j);
@@ -871,7 +872,7 @@ static void _do_recv_cmd(struct dpcsock *funos_sock,
 		usleep(10*1000); // to avoid consuming all the CPU after funos quit
 		return;
         }
-	// printf("output is of type %d\n", output->type);
+	// printf("output is of type %d\n", fun_json_get_type(output));
 	// Bertrand 2018-04-05: Gross hack to make sure we don't break dpcsh users who were not expected a tid
 	uint64_t tid = 0;
 	struct fun_json *raw_output = fun_json_lookup(output, "result");
@@ -897,9 +898,10 @@ static void _do_recv_cmd(struct dpcsock *funos_sock,
 	}
 
 	if (cmd_sock->mode == SOCKMODE_TERMINAL) {
-		if (raw_output && (raw_output->type == fun_json_error_type)) {
-			printf(PRELUDE BLUE POSTLUDE "output => *** error: '%s'" NORMAL_COLORIZE "\n",
-				raw_output->error_message);
+		const char *str;
+
+		if (fun_json_fill_error_message(raw_output, &str)) {
+			printf(PRELUDE BLUE POSTLUDE "output => *** error: '%s'" NORMAL_COLORIZE "\n", str);
 		} else {
 			size_t allocated_size = 0;
 			uint32_t flags = use_hex ? FUN_JSON_PRETTY_PRINT_USE_HEX_FOR_NUMBERS : 0;
@@ -1222,6 +1224,9 @@ int main(int argc, char *argv[])
 	dpcsh_path = argv[0];
 	dpcsh_load_macros();
 	register_csr_macro();
+
+	// help should list both local and distant commands
+	fun_commander_register_help_command();
 
 	/* general flow of dpcsh:
 	 *

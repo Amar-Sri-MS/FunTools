@@ -52,9 +52,10 @@ bool {{struct.name}}_json_init(struct fun_json *j,
 
 	struct fun_json *{{field.name}}_j = fun_json_lookup(j, "{{field.name}}");
 	if ({{field.name}}_j) {
-		assert({{field.name}}_j->array->count <= {{field.type.ArraySize()}});
-		for (int i = 0; i < {{field.name}}_j->array->count; i++) {
-			s->{{field.name}}[i] = {{field.name}}_j->array->items[i]->int_value;
+		size_t count = fun_json_array_count({{field.name}}_j);
+		assert(count <= {{field.type.ArraySize()}});
+		for (int i = 0; i < count; i++) {
+			s->{{field.name}}[i] = fun_json_to_int64(fun_json_array_at({{field.name}}_j, i), 0);
 		}
 	}
     {% endif %}
@@ -76,13 +77,13 @@ bool {{struct.name}}_json_init(struct fun_json *j,
 	struct fun_json *{{field.name}}_j = fun_json_lookup(j, "{{field.name}}");
 	/* TBD - sub-field {{field.name}} */
 	if ({{field.name}}_j) {
-		s->{{field.name}} = {{field.name}}_j->int_value;
+		s->{{field.name}} = fun_json_to_int64({{field.name}}_j, 0);
 	}
     {% else %}
 
 	struct fun_json *{{field.name}}_j = fun_json_lookup(j, "{{field.name}}");
 	if ({{field.name}}_j) {
-		s->{{field.name}} = {{field.name}}_j->int_value;
+		s->{{field.name}} = fun_json_to_int64({{field.name}}_j, 0);
 	}
     {% endif %}
   {% endif %}

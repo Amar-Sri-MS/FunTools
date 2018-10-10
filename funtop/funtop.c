@@ -57,21 +57,21 @@ static inline void print_in_buf(struct word_parameters *wparams, const char *str
 static void print_atomic_json(struct word_parameters *wparams, NULLABLE struct fun_json *item) {
     memset(wparams->buf, ' ', wparams->buf_max);
     if (!item) return;
-    switch (item->type) {
+    switch (fun_json_get_type(item)) {
         case fun_json_error_type:
             return print_in_buf(wparams, "***");
         case fun_json_null_type:
             return print_in_buf(wparams, "null");
         case fun_json_bool_type:
-            return print_in_buf(wparams, item->bool_value ? "true" : "false");
+            return print_in_buf(wparams, fun_json_to_bool(item, false) ? "true" : "false");
         case fun_json_int_type: {
             char temp[100];
-            sprintf(temp, "%" PRId64 "", item->int_value);
+            sprintf(temp, "%" PRId64 "", fun_json_to_int64(item, 0));
             return print_in_buf(wparams, temp);
         }
         case fun_json_double_type: {
             char temp[100];
-            sprintf(temp, "%.2f", item->double_value);
+            sprintf(temp, "%.2f", fun_json_to_double(item, 0.0));
             if (!index(temp, 'e') && !index(temp, 'E') && !index(temp, '.') && (isdigit(temp[0]) || (temp[0] == '-'))) {
                 // For round numbers, without exponent, and avoiding specials like 'NaN', we append .0 to make sure they are read back as double rather than int
                 strcat(temp, ".0");
@@ -79,7 +79,7 @@ static void print_atomic_json(struct word_parameters *wparams, NULLABLE struct f
             return print_in_buf(wparams, temp);
         }
         case fun_json_string_type:
-            return print_in_buf(wparams, item->string_value);
+            return print_in_buf(wparams, fun_json_to_string(item, ""));
         case fun_json_bjson_type:
             return print_atomic_json(wparams, fun_json_expand_if_needed(item));
         default:
@@ -102,7 +102,7 @@ struct parameters {
 // buf must be line_max in size
 static void print_row_json(struct parameters *params, NULLABLE struct fun_json *row_json, char *buf) {
     memset(buf, ' ', params->line_max);
-    if (row_json && (row_json->type == fun_json_dict_type)) {
+    if (fun_json_is_dict(row_json)) {
         char *current = buf;
         for (size_t cc = 0; cc < params->num_columns; cc++) {
             if (cc) {
@@ -149,7 +149,9 @@ static NULLABLE CALLER_TO_RELEASE struct fun_json *do_peek(int sock, const char 
     bool ok = fun_json_write_to_fd(input, sock);
     fun_json_release(input);
     if (!ok) return NULL;
-    return fun_json_read_from_fd(sock);
+    struct fun_json *decorated = fun_json_read_from_fd(sock);
+    if (!decorated) return NULL;
+    return fun_json_lookup(decorated, "result");
 }
 
 struct compare_by_count_context {
@@ -157,44 +159,45 @@ struct compare_by_count_context {
     struct fun_json *previous;
 };
 
-static int compare_by_count(void *map_context, void *per_call_context, fun_map_key_t left, fun_map_key_t right) {
+static int compare_by_count(void *per_call_context, const char *left, const char *right) {
     struct compare_by_count_context *con = per_call_context;
-    struct fun_json *jleft = fun_json_dict_at(con->this, (char *)left);
-    struct fun_json *jright = fun_json_dict_at(con->this, (char *)right);
-    assert(jleft->type == fun_json_int_type);
-    assert(jright->type == fun_json_int_type);
-    int64_t l = jleft->int_value;
-    int64_t r = jright->int_value;
+    struct fun_json *jleft = fun_json_dict_at(con->this, left);
+    struct fun_json *jright = fun_json_dict_at(con->this, right);
+
+    assert(fun_json_is_int(jleft));
+    assert(fun_json_is_int(jright));
+    int64_t l = fun_json_to_int64(jleft, 0);
+    int64_t r = fun_json_to_int64(jright, 0);
     int64_t dyn_l = l;
     int64_t dyn_r = r;
     if (con->previous) {
-        struct fun_json *pleft = fun_json_dict_at(con->previous, (char *)left);
-        struct fun_json *pright = fun_json_dict_at(con->previous, (char *)right);
-        if (pleft) dyn_l -= pleft->int_value;
-        if (pright) dyn_r -= pright->int_value;
+        struct fun_json *pleft = fun_json_dict_at(con->previous, left);
+        struct fun_json *pright = fun_json_dict_at(con->previous, right);
+        if (pleft) dyn_l -= fun_json_to_int64(pleft, 0);
+        if (pright) dyn_r -= fun_json_to_int64(pright, 0);
     }
     if (dyn_l != dyn_r) return -(dyn_l - dyn_r); // first sort the most actives
     if (l != r) return -(l - r); // then by the largest count
-    return strcmp((char *)left, (char *)right); // then by name to provide stability
+    return strcmp(left, right); // then by name to provide stability
 }
 
 static CALLER_TO_RELEASE struct fun_json *sort_wu_stats_by_count(struct fun_json *wu_stats, struct fun_json *previous, struct fun_json *durations) {
-    assert(wu_stats->type == fun_json_dict_type);
+    assert(fun_json_is_dict(wu_stats));
     struct compare_by_count_context con = { .this = wu_stats, .previous = previous };
-    size_t c = fun_map_count(wu_stats->dict);
-    fun_map_key_t *keys = calloc(c, sizeof(fun_map_key_t));
-    fun_map_get_sorted_keys(wu_stats->dict, keys, &con, compare_by_count);
+    size_t c = fun_json_dict_count(wu_stats);
+    const char **keys = calloc(c, sizeof(const char *));
+    fun_json_dict_fill_and_sort_keys_with_comparator(wu_stats, keys, &con, compare_by_count);
     const struct fun_json **items = calloc(c, sizeof(void *));
     for (size_t i = 0; i < c; i++) {
         const char *key = (void *)keys[i];
-        int64_t count = fun_json_dict_at(wu_stats, key)->int_value;
+        int64_t count = fun_json_to_int64(fun_json_dict_at(wu_stats, key), 0);
         struct fun_json *dict = fun_json_create_empty_dict();
         fun_json_dict_add(dict, "wu_name", fun_json_no_copy_no_own, fun_json_create_string(key, fun_json_copy), true);
         fun_json_dict_add(dict, "wu_count", fun_json_no_copy_no_own, fun_json_create_int64(count), true);
         int64_t duration = 0;
-        if (durations && (durations->type == fun_json_dict_type)) {
+        if (fun_json_is_dict(durations)) {
             struct fun_json *d = fun_json_dict_at(durations, key);
-            if (d && (d->type == fun_json_int_type)) duration = d->int_value / 1000;
+            if (fun_json_is_int(d)) duration = fun_json_to_int64(d, 0) / 1000;
         }
         fun_json_dict_add(dict, "wu_duration", fun_json_no_copy_no_own, fun_json_create_int64(duration), true);
         double avg = count ? (double)duration / (double)count : 0.0;
@@ -230,8 +233,8 @@ static struct parameters set_up_params(void) {
 static int get_num_VPs(int sock) {
     struct fun_json *all_vps = do_peek(sock, "config/all_vps");
     if (!all_vps) return 0;
-    if (all_vps->type != fun_json_array_type) return 0;
-    return all_vps->array->count;
+    if (!fun_json_is_array(all_vps)) return 0;
+    return fun_json_array_count(all_vps);
 }
 
 static int num_VPs = 0;
@@ -241,8 +244,8 @@ static void get_num_wus_received_sent(int sock, OUT uint64_t *received, OUT uint
     *sent = 0;
     struct fun_json *per_vp = do_peek(sock, "stats/per_vp");
     if (! per_vp) return;
-    if (per_vp->type != fun_json_dict_type) return;
-    size_t count = fun_map_count(per_vp->dict);
+    if (!fun_json_is_dict(per_vp)) return;
+    size_t count = fun_json_dict_count(per_vp);
     const char **keys = calloc(count, sizeof(char *));
     fun_json_dict_fill_and_sort_keys(per_vp, keys);
     for (size_t i = 0; i < count; i++) {

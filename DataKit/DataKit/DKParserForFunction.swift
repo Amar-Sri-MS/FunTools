@@ -52,7 +52,7 @@ extension DKParser {
 					throw DKParsingError("Function projection needs a signature", self)
 				}
 				if signature.numberOfArguments != 1 {
-					throw DKParsingError("Projection has wrong signature \(signature)", self)
+					throw DKParsingError("Projection has wrong signature \(signature!)", self)
 				}
 				if let structType = signature.input[0] as? DKTypeStruct {
 					let f = try parseFunctionProjection(structType)
@@ -61,7 +61,7 @@ extension DKParser {
 					}
 					return f
 				} else {
-					throw DKParsingError("Projection has non-struct argument \(signature)", self)
+					throw DKParsingError("Projection has non-struct argument \(signature!)", self)
 				}
 			}
 			let s = String(ch)
@@ -72,7 +72,7 @@ extension DKParser {
 				accept()
 				return try parseOperatorFunction(s, signature!)
 			}
-			throw DKParsingError("Function can't start with punctuation \(s) - signature \(signature)", self)
+			throw DKParsingError("Function can't start with punctuation \(s) - signature \(signature!)", self)
 		case let .reservedWord(s):
 			if s == "(" {
 				accept()
@@ -90,7 +90,7 @@ extension DKParser {
 				accept()
 				return try parseOperatorFunction(s, signature!)
 			}
-			throw DKParsingError("Function can't start with word '\(s)' - signature \(signature)", self)
+			throw DKParsingError("Function can't start with word '\(s)' - signature \(signature!)", self)
 		default: throw DKParsingError("Unknown function", self)
 		}
 	}
@@ -133,7 +133,7 @@ extension DKParser {
 			try expectReservedWord(")")
 			return f
 		}
-		throw DKParsingError("Unknown function constructor '\(s)' with signature \(signature)", self)
+		throw DKParsingError("Unknown function constructor '\(s)' with signature \(signature!)", self)
 	}
 	func parseNoargFunctionConstructor(_ s: String, _ signature: DKTypeSignature!) throws -> DKFunction {
 		if signature == nil || signature!.numberOfArguments != 1 {
@@ -162,7 +162,7 @@ extension DKParser {
 			if signature != nil {
 				eachSig = DKFunctionMap.canBeMapAndPredicateSignature(signature)
 				if eachSig == nil {
-					throw DKParsingError("Map has wrong signature \(signature)", self)
+					throw DKParsingError("Map has wrong signature \(signature!)", self)
 				}
 			}
 			let each = try parseFunction(eachSig)
@@ -193,12 +193,12 @@ extension DKParser {
 			if signature != nil {
 				eachSig = DKFunctionReduce.canBeReduceSignature(signature)
 				if eachSig == nil {
-					throw DKParsingError("Reduce has wrong signature \(signature)", self)
+					throw DKParsingError("Reduce has wrong signature \(signature!)", self)
 				}
 				if signature.output is DKTypeInt {
-					initialValueType = signature.output as! DKTypeInt
+					initialValueType = signature.output as? DKTypeInt
 				} else {
-					throw DKParsingError("Reduce has wrong signature \(signature) - output limited to number", self)
+					throw DKParsingError("Reduce has wrong signature \(signature!) - output limited to number", self)
 				}
 			}
 			let initJSON = try parseJSON()

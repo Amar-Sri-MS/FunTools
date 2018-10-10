@@ -237,11 +237,15 @@ class I2CFactoryThread(jsocket.ServerFactoryThread):
                 if not csr_poke_args:
                     self.send_obj({"STATUS":[False, "Invalid poke args!"]})
                     return
+                fast_poke = csr_poke_args.get("fast_poke", False)
                 csr_addr = csr_poke_args.get("csr_addr", None)
                 csr_width_words = csr_poke_args.get("csr_width", None)
                 word_array = csr_poke_args.get("csr_val", None)
                 if not csr_addr or not csr_width_words or not word_array:
-                    self.send_obj({"STATUS":[False, "Invalid peek args!"]})
+                    if not fast_poke:
+                        self.send_obj({"STATUS":[False, "Invalid poke args!"]})
+                    else:
+                        logger.error('Invalid poke args')
                     return
                 logger.debug(("csr_addr: {0} csr_width_words:{1}"
                        " word_array:{2}").format(csr_addr, csr_width_words,
@@ -249,10 +253,14 @@ class I2CFactoryThread(jsocket.ServerFactoryThread):
 
                 i2c_conn = i2c_obj_db().get_i2c_conn(self.i2c_dev_id)
                 if not i2c_conn:
-                    self.send_obj({"STATUS":[False, "I2c dev is not connected!"]})
+                    if not fast_poke:
+                        self.send_obj({"STATUS":[False, "I2c dev is not connected!"]})
+                    else:
+                        logger.error('I2c dev is not connected!')
                     return
                 status = i2c_conn.i2c_csr_poke(csr_addr, csr_width_words, word_array)
-                self.send_obj({"STATUS":[status, "OK!" if status else "i2c csr error!"]})
+                if not fast_poke:
+                    self.send_obj({"STATUS":[status, "OK!" if status else "i2c csr error!"]})
             elif cmd == "DISCONNECT":
                 disconnect_args = obj.get("args", None)
                 user = None

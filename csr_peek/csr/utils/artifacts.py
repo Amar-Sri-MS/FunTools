@@ -706,8 +706,10 @@ class CSRRoot(object):
 
         an_inst_cnt = 1
         an_skip_addr = 0
-        prefix_path, an_name = ANUtils(self.logger).get_an(self.curr_path)
-        an_attr = rn.get_an_path(self.curr_ri, prefix_path)
+        an_attr = rn.get_an_path(self.curr_ri, self.curr_path)
+        if an_attr == None:
+            prefix_path, an_name = ANUtils().get_an(self.curr_path)
+            an_attr = rn.get_an_path(self.curr_ri, prefix_path)
         if an_attr != None:
             an_inst_cnt = an_attr[0]
             an_skip_addr = an_attr[2]
