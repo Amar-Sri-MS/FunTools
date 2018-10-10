@@ -29,15 +29,14 @@ def byte_array_to_words_be(byte_array):
     byte_attay_size = len(byte_array)
     word_array_size = byte_attay_size / 8
     for i in range(word_array_size):
-        val = int(binascii.hexlify(byte_array[i:i+8]), 16)
+        val = int(binascii.hexlify(byte_array[(i*8):(i*8)+8]), 16)
         words.extend([val])
-        i += 8
 
     remaining_bytes = len(byte_array) % 8
     if remaining_bytes != 0:
         last_word = byte_array[-remaining_bytes:]
         last_word.extend(array('B', [0x00] * (8 - remaining_bytes)))
-        val = int(binascii.hexlify(byte_array[i, i + 8]), 16)
+        val = int(binascii.hexlify(last_word), 16)
         words.extend(val)
     logger.debug('word_array: {0}'.format([hex(x) for x in words]))
 
