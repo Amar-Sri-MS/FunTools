@@ -9,6 +9,7 @@ import binascii #for hexdump
 import string, os
 import json
 import threading
+import random
 from threading import Thread
 sys.path.append(os.environ["WORKSPACE"]+"/FunTools/dbgutils")
 from csrutils.csrutils import *
@@ -209,7 +210,9 @@ def process_cmd_csr_write (msg_len):
   #print "csr_poke data:"
   #print data_words_list
 
-  if fast_poke:
+  if args.i2c_dis:
+      (status, result) = (True,None)
+  elif fast_poke:
       (status, result) = dbgprobe().csr_fast_poke(addr, len(data_words_list), data_words_list)
   else:
       (status, result) = dbgprobe().csr_poke(addr, len(data_words_list), data_words_list)
@@ -234,28 +237,29 @@ def process_cmd_pkt (msg_len):
 
   print 'in process_cmd_pkt'
 
-  buf = recv_str(2) #get the 2B port number
-  (pkt_port,) = struct.unpack(">h", buf[:2])
+  if not args.ptf_dis:
+    buf = recv_str(2) #get the 2B port number
+    (pkt_port,) = struct.unpack(">h", buf[:2])
 
-  data_len = msg_len - 2 - 1 -2  #msg_len - MSGLEN_SIZE - CMD_SIZE - PORT_SIZE
-  data_byte_arr = recv_str(data_len)
-  print 'recvd pkt from client length=%d on port %d' % (len(data_byte_arr), pkt_port)
+    data_len = msg_len - 2 - 1 -2  #msg_len - MSGLEN_SIZE - CMD_SIZE - PORT_SIZE
+    data_byte_arr = recv_str(data_len)
+    print 'recvd pkt from client length=%d on port %d' % (len(data_byte_arr), pkt_port)
 
-  pkt_data = binascii.hexlify(data_byte_arr)
-  #ptf server wants a space after every byte
-  pkt_data_with_space = ""
-  for i in range (len(pkt_data)/2):
-    pkt_data_with_space += pkt_data[2*i] + pkt_data[(2*i) + 1] + " "
-  #get rid of the trailing space
-  pkt_data_with_space = pkt_data_with_space[0:-1]
+    pkt_data = binascii.hexlify(data_byte_arr)
+    #ptf server wants a space after every byte
+    pkt_data_with_space = ""
+    for i in range (len(pkt_data)/2):
+      pkt_data_with_space += pkt_data[2*i] + pkt_data[(2*i) + 1] + " "
+    #get rid of the trailing space
+    pkt_data_with_space = pkt_data_with_space[0:-1]
 
-  #do necessary FunOS API calls to make pkt_send happen
-  json_pkt = '{ "intf" :  '+ '"' + "fpg" + str(pkt_port) + '"' ', "pkt" : "' +pkt_data_with_space+'"}'
-  print "Sending pkt to PTF server:"
-  print json_pkt
-  ptf_sock.sendall(json_pkt)
-  #Sleep to make sure message is out
-  time.sleep(0.5)
+    #do necessary FunOS API calls to make pkt_send happen
+    json_pkt = '{ "intf" :  '+ '"' + "fpg" + str(pkt_port) + '"' ', "pkt" : "' +pkt_data_with_space+'"}'
+    print "Sending pkt to PTF server:"
+    print json_pkt
+    ptf_sock.sendall(json_pkt)
+    #Sleep to make sure message is out
+    time.sleep(0.5)
 
   #finally send reply
   reply = []
@@ -330,7 +334,10 @@ def process_cmd_csr_read (msg_len):
   (dword_len,) = struct.unpack(">B", data)
   #print 'num_dwords to read is is %d' % (dword_len)
 
-  (status, result) = dbgprobe().csr_peek(addr, dword_len)
+  if args.i2c_dis:
+      (status,result) = (True,[random.randint(0,0x10000000000000000)]*dword_len)
+  else:
+      (status, result) = dbgprobe().csr_peek(addr, dword_len)
   print "result=",result
 
   if status is False:
