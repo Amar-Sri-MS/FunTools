@@ -197,7 +197,7 @@ def parse_perfmon_data(job_dir, wu_list):
     count = 0
     path = job_dir + "/perfmon.txt"
     with open(path, "r") as f:
-        for line in f.readlines():
+        for line in f:
             count = count + 1
             value = int(line, 16)
             vp = value & 0xff
