@@ -39,27 +39,27 @@ def get_address(trace_line):
         saddr = saddr[1:-1]
         naddr = long(saddr, 16)
         DEBUG("address: 0x%x ('%s')" % (naddr, saddr))
-	return naddr
+        return naddr
     except:
-	# XXX
+    # XXX
         DEBUG("Exception getting address '%s'" % saddr)
-	return 0
+    return 0
 
 def get_asm(trace_line):
     return None # nothing?
 
 def get_ts(trace_line):
-	cycle = trace_line.split()[-1]
-	return long(cycle)	
+    cycle = trace_line.split()[-1]
+    return long(cycle)    
 
 def get_cycle(trace_line):
-	cycle = trace_line.split()[-1]
-	return long(cycle)	
+    cycle = trace_line.split()[-1]
+    return long(cycle)    
 
 
 # FIXME
 def get_ccount(trace_line):
-	return 1
+    return 1
 
 def get_num_pipelines():
-	return 1
+    return 1

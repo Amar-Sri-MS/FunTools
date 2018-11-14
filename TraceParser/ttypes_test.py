@@ -1,7 +1,10 @@
+#!/usr/bin/env python2.7
 #
 # trace_test.py: unit tests for tree manipulation code.
 #
 # Copyright Fungible Inc. 2018.  All Rights Reserved.
+
+import unittest
 
 import json
 import StringIO

@@ -30,36 +30,36 @@ def standard_deviation(values):
 # }
 # out:
 # { functions: [
-#	{name: func1, dist: {1: 2, 2:1, ...} // dist is cycle count and number of occurrences
-#	XXX TBD: average, max, min, isspecial
+#    {name: func1, dist: {1: 2, 2:1, ...} // dist is cycle count and number of occurrences
+#    XXX TBD: average, max, min, isspecial
 #
 def vpstats_output_html(data):
 
-	newdict = {}
+    newdict = {}
 
-	oh = ""
+    oh = ""
 
-	newdict["name"] = "Michael"
-	newdict["setup"] = {"runs": 5}
-	newdict["functions"] = []
+    newdict["name"] = "Michael"
+    newdict["setup"] = {"runs": 5}
+    newdict["functions"] = []
 
-	for funcname in data.keys():
-		cntdict = {"name":funcname}
-		cntdict["dist"] = {}
-		cntdict["avg"] = sum(data[funcname])/len(data[funcname])
-		cntdict["min"] = min(data[funcname])
-		cntdict["max"] = max(data[funcname])
-		cntdict["std"] = standard_deviation(data[funcname])
-		
-		for el in data[funcname]:
-			if el in cntdict["dist"].keys():
-				cntdict["dist"][el] = cntdict["dist"][el] + 1
-			else:
-				cntdict["dist"][el] = 1
+    for funcname in data.keys():
+        cntdict = {"name":funcname}
+        cntdict["dist"] = {}
+        cntdict["avg"] = sum(data[funcname])/len(data[funcname])
+        cntdict["min"] = min(data[funcname])
+        cntdict["max"] = max(data[funcname])
+        cntdict["std"] = standard_deviation(data[funcname])
+        
+        for el in data[funcname]:
+            if el in cntdict["dist"].keys():
+                cntdict["dist"][el] = cntdict["dist"][el] + 1
+            else:
+                cntdict["dist"][el] = 1
 
-		newdict["functions"].append(cntdict)
+        newdict["functions"].append(cntdict)
 
-	oh = oh +  """
+    oh = oh +  """
 <div class="json-div" id="functions">
   <div class="json-div-prototype">
     <h1><span class="json-span" id="name">function name here</span></h1>
@@ -73,14 +73,14 @@ def vpstats_output_html(data):
   </div>
 </div>
 <script> allData ="""
-	oh = oh + json.dumps(newdict)
-	oh = oh +  "</script>"
+    oh = oh + json.dumps(newdict)
+    oh = oh +  "</script>"
 
-	return oh
+    return oh
 
 
 def core_html_hdr():
-	return """
+    return """
 <html>
 <head>
 <title>Core view</title>
@@ -89,7 +89,7 @@ def core_html_hdr():
 """
 
 def vp_html_hdr():
-	return """
+    return """
 <html>
 <head>
 <!-- Plot.ly JavaScript library.  Served from Robert's personal
@@ -174,7 +174,7 @@ function Collapse(sender) {
 """ % str(date.today())
 
 def generic_html_end():
-	return """<br>
+    return """<br>
 </body>
 </html>
 """
