@@ -1,0 +1,51 @@
+These set of tools help reading and analyzing samurai instruction traces.
+
+The reason they are implemented in C++ is performance. There are are alternative
+tools written in python but they have trouble processing large trace files, that
+was the motivation writing this version in C++.
+
+The first step is to convert a samurai file into an encoded trace format (.te).
+
+mkdir build
+make build/encode
+./build/encode samura-file-path output-prefix
+
+This parses the samurai text file and splits it into per-vp encoded files.
+
+Once in encoded format, the rest of the tools can do various things with the
+trace files.
+
+List of tools:
+--------------
+
+build/annotate:
+	Shows instructions executed on a vp. It provides the disassembly as well
+	as register values.
+
+build/check:
+	(Experimental)
+	Performs consistency check to make sure samurai output is sane.
+
+build/encode:
+	Parses a samurai text file and splits it into per-vp encoded files.
+	Other tools only work with encoded trace files, so this should be run
+	first.
+
+build/graph:
+	Produces a high-level view of function call sequence.
+
+build/latency:
+	Reports cycle count latency between two given pc values. This is useful
+	for finding out how long it takes to execute a given function.
+
+build/printer:
+	A simpler version of annotate that doesn't show register values.
+
+build/raw-print:
+	An even simpler version of annotate that only shows register updates
+	but no disassembly information.
+
+build/find-mem-writer:
+	Finds instructions that wrote to a memory range. This is useful to find
+	out who corrupted a piece of memory.
+
