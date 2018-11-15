@@ -143,7 +143,7 @@ if __name__ == "__main__":
 
     print "Cycle range: %s to %s" % (min_cycles, max_cycles)
 
-        if options.format not in tutils.VALID_FORMATS:
+    if options.format not in tutils.VALID_FORMATS:
         print "Format must be one of %s" % tutils.VALID_FORMATS
         sys.exit(1)
 

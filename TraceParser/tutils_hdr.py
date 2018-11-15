@@ -132,11 +132,11 @@ def create_range_list(dasm_fname):
             if text_section_start(line):
                 before_text = False
 
-                if exception_vector_start(line):
-                    before_text = False
+            if exception_vector_start(line):
+                before_text = False
 
-                if (before_text):
-                                continue
+            if (before_text):
+                continue
                 
         if (not out_of_range):
             if data_section_start(line):
