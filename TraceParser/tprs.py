@@ -296,7 +296,7 @@ class TreeBuilder:
                 # If this was a fallthrough in the first function in the trace,
                 # treat as a call to the first function.
                 current.add_call(leaf)
-                self.current_ttree[entry.vpid] = leaf
+            self.current_ttree[entry.vpid] = leaf
 
         elif kind == 'CALL':
             # Add new child node to current parent.
@@ -352,16 +352,16 @@ class TreeBuilder:
                 current.set_end_instr_miss(stats.instr_misses)
                 current.set_end_loadstore_miss(stats.loadstore_misses)
                 current = current.parent
-                self.current_ttree[entry.vpid] = self.roots[entry.vpid]
-                current = self.current_ttree[entry.vpid]
-                leaf = TTree(entry.func, None, stats.cycles,
-                             stats.real_idles, stats.instr_misses,
-                             stats.loadstore_misses, stats.lines)
-                current.add_call(leaf)
-                self.current_ttree[entry.vpid] = leaf
+            self.current_ttree[entry.vpid] = self.roots[entry.vpid]
+            current = self.current_ttree[entry.vpid]
+            leaf = TTree(entry.func, None, stats.cycles,
+                         stats.real_idles, stats.instr_misses,
+                         stats.loadstore_misses, stats.lines)
+            current.add_call(leaf)
+            self.current_ttree[entry.vpid] = leaf
 
-                self.last_found_func[entry.vpid] = entry.func
-                self.last_address[entry.vpid] = entry.addr
+        self.last_found_func[entry.vpid] = entry.func
+        self.last_address[entry.vpid] = entry.addr
 
     def PrintTrees(self):
         """Dumps all call trees to stdout."""
@@ -538,8 +538,8 @@ if __name__ == "__main__":
         print "Format must be one of %s" % tutils.VALID_FORMATS
         sys.exit(1)
 
-        # set the format
-        tutils.set_format(options.format)
+    # set the format
+    tutils.set_format(options.format)
 
     filterlist = ["idle", "sync", "mode"] # XXX we shouldn't need this, it should be handled by is_instruction (to be renamed)
 

@@ -143,20 +143,20 @@ def MakeSummaryTree(the_ttree):
     worklist = [(child, root) for child in the_ttree.calls]
     while worklist:
         (next_node, parent) = worklist.pop(0)
-    summary_node = parent.ChildWithName(next_node.name)
-    if not summary_node:
-        summary_node = SummaryTree(next_node.name)
-        parent.calls.append(summary_node)
-    summary_node.num_calls += 1
-    summary_node.cycles += next_node.get_ccount()
-    summary_node.idle_cycles += next_node.get_idle_count()
-    summary_node.instr_misses += next_node.get_imcount()
-    summary_node.load_store_misses += next_node.get_lsmcount()
+        summary_node = parent.ChildWithName(next_node.name)
+        if not summary_node:
+            summary_node = SummaryTree(next_node.name)
+            parent.calls.append(summary_node)
+        summary_node.num_calls += 1
+        summary_node.cycles += next_node.get_ccount()
+        summary_node.idle_cycles += next_node.get_idle_count()
+        summary_node.instr_misses += next_node.get_imcount()
+        summary_node.load_store_misses += next_node.get_lsmcount()
 
-    children_work = [(child_node, summary_node)
-             for child_node in next_node.calls]
-    # Add children to front so they're processed before following roots.
-    worklist = children_work + worklist
+        children_work = [(child_node, summary_node)
+                         for child_node in next_node.calls]
+        # Add children to front so they're processed before following roots.
+        worklist = children_work + worklist
     return root
     
 

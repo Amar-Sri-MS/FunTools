@@ -1,16 +1,16 @@
-Sanity check for core 0 vp3: False
-Total cycles: 24685445
-Time elapsed @ 1GHz: 0.024685445 seconds (24.685445 ms)
-Max call depth: 21
+Sanity check for core 0 vp3: True
+Total cycles: 59456
+Time elapsed @ 1GHz: 5.9456e-05 seconds (0.059456 ms)
+Max call depth: 15
 Total idles: 0
 Total instr misses: 0
 Total load/store misses: 0
-Missed returns: 6
-Missed jumps: 5
-Missed calls: 29
-Missed1: 7
+Missed returns: 0
+Missed jumps: 0
+Missed calls: 0
+Missed1: 0
 Missed2: 0
-Tree height: 21
-Tree height: 17
-Tree height: 17
-Tree height: 17
+Tree height: 0
+Tree height: 0
+Tree height: 15
+Tree height: 0
