@@ -61,6 +61,7 @@ class addr_manager(object):
 
    def set_cfg(self,cfg_name):
       self.cfg=self.cfgs.get_cfg_info('f1')
+      self.ddr_qaddr_mask=(~((1<<self.cfg['ddr_ba_0'])|(1<<self.cfg['ddr_ba_1'])|(1<<self.cfg['ddr_ba_2'])|(1<<self.cfg['ddr_ba_3'])|(1<<self.cfg['ddr_rank_sel'])))
 
    #fep/icc ####################
    def pa_to_sa(self,pa):
@@ -124,21 +125,88 @@ class addr_manager(object):
       return (shard,sa)
 
    #hbm ####################
-   def get_hbm_addr(self,pa,shard):
-      return (0,0,0)
+   def get_hbm_addr(self,pa,shard,sa):
+      (bank,col,row,ch,pch,qsys)=(0,0,0,0,0,0)
+      qsn0=red_xor64(self.cfg['hbm_qsn_0']&sa)
+      qsn1=red_xor64(self.cfg['hbm_qsn_1']&sa)
+      qn1=red_xor64(self.cfg['hbm_qn_1']&sa)
+      qn2=red_xor64(self.cfg['hbm_qn_2']&sa)
+      qn3=red_xor64(self.cfg['hbm_qn_3']&sa)
+      qn4=red_xor64(self.cfg['hbm_qn_4']&sa)
+      qn5=red_xor64(self.cfg['hbm_qn_5']&sa)
+      qn6=red_xor64(self.cfg['hbm_qn_6']&sa)
+      qsys=(qsn1<<1)|qsn0
+      if qsys==0:
+         ch=2
+      elif qsys==1:
+         ch=3
+      elif qsys==2:
+         ch=6
+      elif qsys==3:
+         ch=7
+      elif qsys==4:
+         ch=0
+      elif qsys==5:
+         ch=1
+      elif qsys==6:
+         ch=4
+      elif qsys==7:
+         ch=5
+      elif qsys==8:
+         ch=10
+      elif qsys==9:
+         ch=11
+      elif qsys==10:
+         ch=14
+      elif qsys==11:
+         ch=15
+      elif qsys==12:
+         ch=8
+      elif qsys==13:
+         ch=9
+      elif qsys==14:
+         ch=12
+      elif qsys==15:
+         ch=13
+      pch=(qn6<<4)+ch
+      row=(sa>>11)&0x3fff
+      col=(sa&0xf0)>>1
+      bank=(qn4<<3)|(qn3<<2)|(qn2<<1)|qn1
+      return (row,bank,col,ch,pch,qsys)
 
    #ddr ####################
-   def get_ddr_addr(self,pa,shard):
-      return (0,0,0)
+   def get_ddr_addr(self,pa,shard,sa):
+      (bank,col,row)=(0,0,0)
+      rank_mask=(1<<self.cfg['ddr_rank_sel'])
+      addr_prehash=((sa&rank_mask)>>1)|((sa&1)<<self.cfg['ddr_rank_sel'])
+      addr_hashed=addr_prehash & self.ddr_qaddr_mask&0x3ffffffff;
+      addr_hashed|=((red_xor64(addr_prehash & self.cfg['ddr_qn_1'])&1)<<self.cfg['ddr_ba_0']);
+      addr_hashed|=((red_xor64(addr_prehash & self.cfg['ddr_qn_2'])&1)<<self.cfg['ddr_ba_1']);
+      addr_hashed|=((red_xor64(addr_prehash & self.cfg['ddr_qn_3'])&1)<<self.cfg['ddr_ba_2']);
+      addr_hashed|=((red_xor64(addr_prehash & self.cfg['ddr_qn_4'])&1)<<self.cfg['ddr_ba_3']);
+      addr_hashed|=((red_xor64(addr_prehash & self.cfg['ddr_qn_5'])&1)<<self.cfg['ddr_rank_sel']);
+      col=(addr_hashed&0x7f)<<3
+      ba0=(addr_hashed>>self.cfg['ddr_ba_0'])&1
+      ba1=(addr_hashed>>self.cfg['ddr_ba_1'])&1
+      ba2=(addr_hashed>>self.cfg['ddr_ba_2'])&1
+      ba3=(addr_hashed>>self.cfg['ddr_ba_3'])&1
+      rank=(addr_hashed>>self.cfg['ddr_rank_sel'])&1
+      bank=(ba1<<1)|ba0
+      bankGrp=(ba3<<1)|(ba2)
+      row=(addr_hashed>>11)&0xffff
+      inst=(addr_hashed>>27)&3
+      slot=0
+      ch=(shard<<3)|(inst<<1)|rank
+      return (row,bank,col,bankGrp,ch)
 
    def translate_paddr(self,pa):
       a={}
       a['pa']=pa
       (a['shard'],a['sa'])=self.pa_to_sa(pa)
       if pa & 0x20000000000:
-         (a['row'],a['bank'],a['col'])=self.get_ddr_addr(pa,a['shard'])
+         (a['row'],a['bank'],a['col'],a['bankGrp'],a['ch'])=self.get_ddr_addr(pa,a['shard'],a['sa'])
       else:
-         (a['row'],a['bank'],a['col'])=self.get_hbm_addr(pa,a['shard'])
+         (a['row'],a['bank'],a['col'],a['ch'],a['pch'],a['qsys'])=self.get_hbm_addr(pa,a['shard'],a['sa'])
       return a
 
 ################################################################################
