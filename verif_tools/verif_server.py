@@ -22,7 +22,8 @@ rcv_pkt_list = list() #global variable to store the packets received from DUT
 
 #ignore packets from any ports in this test. Port 3 is seen sending pause frames
 #hence it is added to this list
-ignore_ports = [str(i) for i in range (2,12)]
+#ignore_ports = []
+ignore_ports = [str(i) for i in range (3,12)]
 
 fast_poke=True
 #print 'do server speed test'
@@ -30,6 +31,7 @@ fast_poke=True
 req_cnt=0
 glb_rd_cnt=0
 glb_wr_cnt=0
+hnu_port_base=37
 
 #
 # Convert hex encoding String back to raw packet
@@ -75,7 +77,12 @@ def rcv_packets_from_server(self, sock):
         intf = jdata["intf"]
         print (("Received PTF Response on intf %s: " % str(intf)) + str(jdata))
         #get rid of the fpg prefix
-        intf = intf.replace("fpg", "")
+        if("hnu" in intf):
+            intf = intf.replace("hnu_fpg", "")
+            port = hnu_port_base + int(intf)
+            intf = str(port)
+        else:
+            intf = intf.replace("fpg", "")
         #pkt = pkt_decode(jdata["pkt"])
         pkt = jdata["pkt"]
         pkt_byte_list = pkt.split()
@@ -254,7 +261,10 @@ def process_cmd_pkt (msg_len):
     pkt_data_with_space = pkt_data_with_space[0:-1]
 
     #do necessary FunOS API calls to make pkt_send happen
-    json_pkt = '{ "intf" :  '+ '"' + "fpg" + str(pkt_port) + '"' ', "pkt" : "' +pkt_data_with_space+'"}'
+    if(pkt_port >= hnu_port_base):
+        json_pkt = '{ "intf" :  '+ '"' + "hnu_fpg" + str(pkt_port-hnu_port_base) + '"' ', "pkt" : "' +pkt_data_with_space+'"}'
+    else:
+        json_pkt = '{ "intf" :  '+ '"' + "fpg" + str(pkt_port) + '"' ', "pkt" : "' +pkt_data_with_space+'"}'
     print "Sending pkt to PTF server:"
     print json_pkt
     ptf_sock.sendall(json_pkt)
@@ -284,7 +294,7 @@ def process_cmd_pkt_req (msg_len):
   while(exit_loop == 0):
     if (len(rcv_pkt_list)) :
       (pkt_port, pkt_bytes) = rcv_pkt_list.pop(0)
-      if(len(pkt_bytes) > 100 ) :
+      if(len(pkt_bytes) > 127 ) :
           exit_loop = 1
       else: 
           print "dropping pkt < 100 bytes  mostly icmp discovery pkts"
