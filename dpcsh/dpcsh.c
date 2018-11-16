@@ -756,10 +756,10 @@ void dpcsh_register_pretty_printer(uint64_t tid, void *context, pretty_printer_f
 void dpcsh_unregister_pretty_printer(uint64_t tid, void *context)
 {
 	if (tid_to_context) {
-		fun_map_remove_NEW(tid_to_context, (fun_map_key_t)tid, NULL, NULL);
+		fun_map_remove(tid_to_context, (fun_map_key_t)tid, NULL, NULL);
 	}
 	if (tid_to_pretty_printer) {
-		fun_map_remove_NEW(tid_to_pretty_printer, (fun_map_key_t)tid, NULL, NULL);
+		fun_map_remove(tid_to_pretty_printer, (fun_map_key_t)tid, NULL, NULL);
 	}
 }
 
