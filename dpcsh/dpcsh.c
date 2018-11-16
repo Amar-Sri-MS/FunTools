@@ -27,6 +27,8 @@
 #include <sys/select.h>
 #include <sys/stat.h>
 
+#include <unistd.h>
+
 #include "dpcsh.h"
 #include "csr_command.h"
 
@@ -43,6 +45,7 @@
 #define DPC_B64_PORT    40222   /* default dpcuart port in qemu */
 #define DPC_B64SRV_PORT 40223   /* default dpcuart listen port */
 #define HTTP_PORTNO     9001    /* default HTTP listen port */
+#define NO_FLOW_CTRL_DELAY_USEC	10000	/* no flow control delay in usec */
 
 // Global transaction counter for this shell
 static uint64_t tid = 1;
@@ -70,6 +73,7 @@ static enum parsingmode _parse_mode = PARSE_UNKNOWN;
 #define DEFAULT_BAUD "19200"
 static bool _do_device_init = true; /* if we have a device, init by default */
 static char *_baudrate = DEFAULT_BAUD; /* default BAUD rate */
+static bool no_flow_control = false;  /* run without flow_control */
 
 
 // We stash argv[0]
@@ -387,10 +391,22 @@ bool _base64_write(struct dpcsock *sock, const uint8_t *buf, size_t nbyte)
 	// printf("[dpcsh] sending b64 %s\n", b64buf);
 
 	/* send it */
-	r = write(fd, b64buf, strlen(b64buf));
+	if (no_flow_control) {
+		int num_buf = strlen(b64buf);
+		for (int i = 0; i < num_buf; i++) {
+			r = write(fd, &b64buf[i], 1);
+			if (r < 0)
+				return false;
+			fsync(fd);
+			usleep(NO_FLOW_CTRL_DELAY_USEC);
+		}
+	} else {
 
-	if (r < 0)
-		return false;
+		r = write(fd, b64buf, strlen(b64buf));
+
+		if (r < 0)
+			return false;
+	}
 
 	/* frame it with a newline */
 	if (write(fd, "\n", 1) < 0)
@@ -740,10 +756,10 @@ void dpcsh_register_pretty_printer(uint64_t tid, void *context, pretty_printer_f
 void dpcsh_unregister_pretty_printer(uint64_t tid, void *context)
 {
 	if (tid_to_context) {
-		fun_map_remove(tid_to_context, (fun_map_key_t)tid, NULL);
+		fun_map_remove(tid_to_context, (fun_map_key_t)tid, NULL, NULL);
 	}
 	if (tid_to_pretty_printer) {
-		fun_map_remove(tid_to_pretty_printer, (fun_map_key_t)tid, NULL);
+		fun_map_remove(tid_to_pretty_printer, (fun_map_key_t)tid, NULL, NULL);
 	}
 }
 
@@ -1177,6 +1193,7 @@ static struct option longopts[] = {
 	{ "oneshot",       no_argument,       NULL, 'S' },
 	{ "manual_base64", no_argument,       NULL, 'N' },
 	{ "no_dev_init",   no_argument,       NULL, 'X' },
+	{ "no_flow_control",   no_argument,       NULL, 'F' },
 	{ "baud",          required_argument, NULL, 'R' },
 
 	/* end */
@@ -1190,6 +1207,7 @@ static void usage(const char *argv0)
 	printf("       by default connect as a --tcp_sock\n");
 	printf("       --help                  this text\n");
 	printf("       --dev[=device]          open device and read/write base64 to FunOS UART\n");
+	printf("       --no_flow_control       no flow control in uart. send char one by one with delay\n");
 	printf("       --base64_srv[=port]     listen as a server port on IP using base64 (dpcuart to qemu)\n");
 	printf("       --base64_sock[=port]    connec as a client port on IP using base64 (dpcuart to qemu)\n");
 	printf("       --inet_sock[=port]      connect as a client port over IP\n");
@@ -1265,7 +1283,7 @@ int main(int argc, char *argv[])
 	cmd_sock.retries = UINT32_MAX;
 
 	while ((ch = getopt_long(argc, argv,
-				 "hs::i::u::H::T::t::D:nNXR:",
+				 "hs::i::u::H::T::t::D:nNFXR:",
 				 longopts, NULL)) != -1) {
 
 		switch(ch) {
@@ -1356,6 +1374,9 @@ int main(int argc, char *argv[])
 		case 'n':  /* "nocli" -- run one command and exit */
 		case 'S':  /* "oneshot" -- run one connection and exit */
 			one_shot = true;
+			break;
+		case 'F':  /* "no_flow_control" -- run without flow control */
+			no_flow_control = true;
 			break;
 		case 'N':  /* manual base64 mode -- drive a UART by hand */
 

@@ -192,24 +192,23 @@ def vp2ccv(vp):
     return "%s.%s.%s" % (vp/24, (vp%24)/4, (vp%24)%4)
 
 def parse_perfmon_data(job_dir, wu_list):
-    path = job_dir + "/perfmon.txt"
-    with open(path, "r") as f:
-        data = f.read()
-    lines = data.split("\n")
-    assert lines[-1] == ""
-    del lines[-1]
-    assert len(lines) % LINES_PER_SAMPLE == 0
-
     # Group values by vp.
     vp_to_values = collections.defaultdict(list)
-    for line in lines:
-        value = int(line, 16)
-        vp = value & 0xff
-        assert vp < 9*24
-        vp_to_values[vp].append(value)
+    count = 0
+    path = job_dir + "/perfmon.txt"
+    with open(path, "r") as f:
+        for line in f:
+            count = count + 1
+            value = int(line, 16)
+            vp = value & 0xff
+            assert vp < 9*24
+            vp_to_values[vp].append(value)
+    assert count % LINES_PER_SAMPLE == 0
 
     samples = []
-    for vp, values in vp_to_values.iteritems():
+    for vp in vp_to_values.keys():
+        values = vp_to_values[vp]
+        del vp_to_values[vp]
         assert len(values) % LINES_PER_SAMPLE == 0, len(values)
         ccv = vp2ccv(vp)
         for i in xrange(0, len(values), LINES_PER_SAMPLE):

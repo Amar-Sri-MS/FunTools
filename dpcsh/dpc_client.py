@@ -48,6 +48,8 @@ class DpcClient(object):
         json = self.__recv_lines()
         while (not json) or (json.count('{') != json.count('}')) or (json.count('[') != json.count(']')):
             json += self.__recv_lines()
+            if (not json) :
+                break
         return json
 
     def __send_line(self, line):

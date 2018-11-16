@@ -628,7 +628,7 @@ class DasmInfo(object):
         """Returns the function likely to be at that address.
 
         Returns None if no function is known."""
-	if address & 0x20000000:
+        if address & 0x20000000:
             # Bootloader is accessed from cached and uncached memory.
             # TODO(bowdidge): Generalize how we rewrite addresses.
             address = address & 0xffffffffdfffffff

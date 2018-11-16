@@ -1,11 +1,12 @@
+#!/usr/bin/env python2.7
+#
+# Unit tests for the Samurai trace parser HTML generation.
+#
+# Robert Bowdidge, February 2018
+#
+# Copyright Fungible Inc. 2018
+
 import unittest
-
-"""Unit tests for the Samurai trace parser HTML generation.
-
-Robert Bowdidge, February 2018
-
-Copyright Fungible Inc. 2018
-"""
 
 import html_gen
 
