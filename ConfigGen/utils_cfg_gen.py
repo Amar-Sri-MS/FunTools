@@ -454,8 +454,10 @@ class HUCodeGen():
 
                         for vf in range(vf_start, vf_end):
                             struct_content_str = ""
+                            """
                             # TODO dafault value handle
                             hw_instance_set = False
+                            """
 
                             for k, v in l.items():
                                 # _args are already taken care of as array index
@@ -467,15 +469,20 @@ class HUCodeGen():
                                     continue
 
                                 # default value update
+                                """
                                 if k == "hw_instance":
                                     hw_instance_set = True
+                                    print("(%s:%d:%d:%d) hw_instance %s" % (huid, ctrl, pf, vf, v))
+                                """
 
                                 val = self._gets_entry_val(k, v, struct_def)
                                 struct_content_str += "\t\t.%s = %s,\n" % (k, val)
 
-                            # by default hw_instance
+                            """
+                            # by default hw_instance is true
                             if not hw_instance_set:
                                 struct_content_str += "\t\t.%s = %s,\n" % ("hw_instance", "true")
+                            """
 
                             index_str = self._gets_array_index(_args_dict, huid, ctrl, pf, vf)
                             struct_dict["%s" % index_str] = struct_content_str
