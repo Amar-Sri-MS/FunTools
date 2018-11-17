@@ -178,8 +178,9 @@ class addr_manager(object):
    def get_ddr_addr(self,pa,shard,sa):
       (bank,col,row)=(0,0,0)
       rank_mask=(1<<self.cfg['ddr_rank_sel'])
-      addr_prehash=((sa&rank_mask)>>1)|((sa&1)<<self.cfg['ddr_rank_sel'])
-      addr_hashed=addr_prehash & self.ddr_qaddr_mask&0x3ffffffff;
+      addr_prehash=((sa&(~rank_mask))>>1)|((sa&1)<<self.cfg['ddr_rank_sel'])
+      #print "rank_mask=0x%0x addr_prehash=0x%0x ddr_rank_sel=%0d"%(rank_mask,addr_prehash,self.cfg['ddr_rank_sel'])
+      addr_hashed=addr_prehash & self.ddr_qaddr_mask & 0x3ffffffff;
       addr_hashed|=((red_xor64(addr_prehash & self.cfg['ddr_qn_1'])&1)<<self.cfg['ddr_ba_0']);
       addr_hashed|=((red_xor64(addr_prehash & self.cfg['ddr_qn_2'])&1)<<self.cfg['ddr_ba_1']);
       addr_hashed|=((red_xor64(addr_prehash & self.cfg['ddr_qn_3'])&1)<<self.cfg['ddr_ba_2']);
@@ -222,8 +223,13 @@ def addr_mgr_test():
    global mgr
    mgr = addr_manager()
    mgr.set_cfg('f1')
-   a=mgr.translate_paddr(0x40);
-   print a
+#   for addr in range(0,0x1000,0x40):
+#      a=mgr.translate_paddr(addr);
+#      print a
+   for addr in range(0x20000000000,0x20000010000,0x40):
+      a=mgr.translate_paddr(addr);
+      print a
+
 
 if __name__== "__main__":
    #addr_cfg_test()
