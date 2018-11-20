@@ -17,9 +17,11 @@ class DasmFile {
 
 	vector<DasmFunction> _funcs;
 	unordered_map<u64, DasmLine> _addr_to_dasm;
+	DasmLine unknown;
 
 public:
 	DasmFile(const char *path)
+		: unknown(~0ul, ~0, "unknown")
 	{
 		TextReader reader(path);
 
@@ -118,7 +120,7 @@ public:
 			return it->second;
 		}
 
-		assert_msg(0, "addr=%lx", addr);
+		return unknown;
 	}
 
 	const DasmFunction& lookup_func(u64 addr) const
