@@ -25,7 +25,6 @@ from itertools import chain
 import json
 from string import Template
 import re
-from pprint import pprint
 
 from utils_cfg_gen import HUCodeGen
 
@@ -485,7 +484,6 @@ def generate_hu_cfg(module_cfg, cfg_code_gen_out_base):
 
     # get the schema dict
     schema_dict = module_cfg["Schema"]
-    pprint(schema_dict)
 
     # keys to generate HU CONFIG C code
     key_to_gen = [
