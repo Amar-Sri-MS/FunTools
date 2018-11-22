@@ -538,18 +538,20 @@ class HUCodeGen():
         return struct_head_str
 
 
-    def _generate_struct_entry(self, v, struct_def, struct_objs_str):
+    def _generate_struct_entry(self, v, struct_def):
         """ populate string for struct entries in C file
 
         :param v:
         :param struct_def:
-        :param struct_objs_str:
         :return:
         """
 
+        struct_objs_str = ""
         for k_e, v_e in v.items():
             if struct_def[k_e] == 'int':
                 struct_objs_str += "\t.%s = 0x%x,\n" % (k_e, v_e)
+
+        return struct_objs_str
 
 
     def _generate_c(self, cfg_name, key_to_gen, output_dir):
@@ -594,7 +596,7 @@ class HUCodeGen():
 
                 struct_objs_str += self._gets_struct_array(k, v) + "\n};\n"
             else:
-                self._generate_struct_entry(v, struct_def, struct_objs_str)
+                struct_objs_str += self._generate_struct_entry(v, struct_def)
                 struct_objs_str += "};\n\n"
 
         f.write(file_templ.substitute(data=struct_objs_str,
