@@ -4,11 +4,21 @@
 <link rel="stylesheet" type="text/css" href="/static/style.css">
 </head>
 <body>
+<ul id="menu" align="center">
+	<li><a href="/{{opt.job_id}}/wu_list">wu_list</a></li>
+	<li><a href="/{{opt.job_id}}/wu_list/cycles">cycles</a></li>
+	<li><a href="/{{opt.job_id}}/wu_list/num_grad">num_grad</a></li>
+	<li><a href="/{{opt.job_id}}/wu_list/load_dcache_misses">load_dcache_misses</a></li>
+	<li><a href="/{{opt.job_id}}/wu_list/store_dcache_misses">store_dcache_misses</a></li>
+	<li><a href="/{{opt.job_id}}/wu_list/ifu_overall_stall">ifu_overall_stall</a></li>
+	<li><a href="/{{opt.job_id}}/wu_list/dispatch_cycles">dispatch_cycles</a></li>
+</ul>
 <table>
 <thead>
-% assert len(rows[0]) == 2 and rows[0][0] == "count" and rows[0][1] == "wu"
-% for i,c in enumerate(rows[0]):
-<th>{{c}}
+<tr>
+% assert len(rows[0]) >= 2 and rows[0][0] == "count" and rows[0][1] == "wu"
+% for i,c in enumerate(rows[0][:2]):
+<th rowspan="2">{{c}}
 	% cls = "sort wu" if i == 1 else "sort"
 	% if opt.sort_by == i:
 		% if not opt.sort_invert:
@@ -21,12 +31,24 @@
 	% end
 </th>
 % end
+% if len(opt.path.split('/')) > 3:
+<th colspan="{{len(rows[0]) - 2}}">{{opt.path.split('/')[3]}}</th>
+% end
+</tr>
+<tr>
+% for i,c in enumerate(rows[0][2:]):
+<th>{{c}}
+%end
+</tr>
 </thead>
 <tbody>
 % for row in rows[1:]:
 <tr>
 <td>{{row[0]}}</td>
 <td class="wu"><a href="/{{opt.job_id}}/samples/{{row[1]}}">{{row[1]}}</a></td>
+% for v in row[2:]: 
+<td>{{v}}</td>
+% end
 </tr>
 % end
 </tbody>

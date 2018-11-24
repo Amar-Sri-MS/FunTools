@@ -61,15 +61,44 @@ def show_util(job_id, vp=None):
     rows = util.vp_util(opt, pd)
     sort_rows(opt, rows)
     return template("util.tpl", opt=opt, rows=rows)
+    
+def sort_fetch_n_points(rows, sort_by, num_data_points):
+    rows.sort(lambda x,y: cmp(x[sort_by], y[sort_by]))
+    num_rows = len(rows)
+    if num_data_points < 3:
+        return rows
+    if num_rows < num_data_points - 1:
+        return rows
+    res = []
+    res.append(rows[0])
+    for i in range(1, num_data_points - 1):
+        inx = i * num_rows / (num_data_points - 1)
+        res.append(rows[inx])
+    res.append(rows[-1])
+    return res
 
 @route('/<job_id>/wu_list')
-def show_wu_list(job_id):
+@route('/<job_id>/wu_list/<colname>')
+def show_wu_list(job_id, colname=None):
     opt = get_query_opt(job_id=job_id)
     if opt.sort_by is None:
         opt.sort_by = 0
         opt.sort_invert = True
-    rows = group_by(opt, "wu", lambda k,rows: [len(rows), k])
-    rows.insert(0, ["count", "wu"])
+
+    hdr = ["count", "wu"]
+    if colname:
+        num_data_points = 11 # at 10% each
+        hdr.append("low")
+        for i in range(1, num_data_points - 1):
+            pct = i * 100 / (num_data_points - 1)
+            hdr.append("%s%%" % pct)
+        hdr.append("high")
+        col = get_pd(opt.job_id).rows[0].index(colname)
+        func = lambda k,rows: [len(rows), k] + [r[col] for r in sort_fetch_n_points(rows, col, num_data_points)]
+    else:
+        func = lambda k,rows: [len(rows), k]
+    rows = group_by(opt, "wu", func)
+    rows.insert(0, hdr)
     return template("wu_list.tpl", opt=opt, rows=rows)
 
 
