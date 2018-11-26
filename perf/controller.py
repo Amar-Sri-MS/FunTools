@@ -62,26 +62,26 @@ def show_util(job_id, vp=None):
     sort_rows(opt, rows)
     return template("util.tpl", opt=opt, rows=rows)
     
-def sort_fetch_n_points(rows, sort_by, num_data_points):
+def get_k_percentile(rows, sort_by, k):
     rows.sort(lambda x,y: cmp(x[sort_by], y[sort_by]))
     num_rows = len(rows)
-    if num_data_points < 3:
+    if k < 2:
         return rows
     if num_rows == 0:
         return rows
-    if num_rows < num_data_points - 1:
+    if num_rows < k:
         dummy_row = [""] * len(rows[0])
-        res = [dummy_row] * num_data_points
+        res = [dummy_row] * (k + 1)
         res[0] = rows[0]
         res[-1] = rows[-1]
         for i in range(1, num_rows - 1):
-            j = int((i * 1.0 / (num_rows - 1)) * num_data_points)
+            j = int((i * 1.0 / (num_rows - 1)) * (k + 1))
             res[j] = rows[i]
         return res
     res = []
     res.append(rows[0])
-    for i in range(1, num_data_points - 1):
-        inx = i * num_rows / (num_data_points - 1)
+    for i in range(1, k):
+        inx = i * num_rows / k
         res.append(rows[inx])
     res.append(rows[-1])
     return res
@@ -98,16 +98,16 @@ def show_wu_list(job_id, colname=None):
     menu_cols = row_hdr[3:] if len(row_hdr) > 3 else []
     hdr = ["count", "wu"]
     if colname:
-        num_data_points = 11 # at 10% each
+        k = 10 # at 10% each
         hdr.append("low")
-        for i in range(1, num_data_points - 1):
-            pct = i * 100 / (num_data_points - 1)
+        for i in range(1, k):
+            pct = i * 100 / k
             hdr.append("%s%%" % pct)
         hdr.append("high")
         col = row_hdr.index(colname)
-        func = lambda k,rows: [len(rows), k] + [r[col] for r in sort_fetch_n_points(rows, col, num_data_points)]
+        func = lambda n,rows: [len(rows), n] + [r[col] for r in get_k_percentile(rows, col, k)]
     else:
-        func = lambda k,rows: [len(rows), k]
+        func = lambda n,rows: [len(rows), n]
     rows = group_by(opt, "wu", func)
     rows.insert(0, hdr)
     return template("wu_list.tpl", opt=opt, rows=rows, menu_cols=menu_cols)
