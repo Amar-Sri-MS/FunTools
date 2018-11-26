@@ -6,12 +6,9 @@
 <body>
 <ul id="menu" align="center">
 	<li><a href="/{{opt.job_id}}/wu_list">wu_list</a></li>
-	<li><a href="/{{opt.job_id}}/wu_list/cycles">cycles</a></li>
-	<li><a href="/{{opt.job_id}}/wu_list/num_grad">num_grad</a></li>
-	<li><a href="/{{opt.job_id}}/wu_list/load_dcache_misses">load_dcache_misses</a></li>
-	<li><a href="/{{opt.job_id}}/wu_list/store_dcache_misses">store_dcache_misses</a></li>
-	<li><a href="/{{opt.job_id}}/wu_list/ifu_overall_stall">ifu_overall_stall</a></li>
-	<li><a href="/{{opt.job_id}}/wu_list/dispatch_cycles">dispatch_cycles</a></li>
+% for col in menu_cols:
+	<li><a href="/{{opt.job_id}}/wu_list/{{col}}">{{col}}</a></li>
+% end
 </ul>
 <table>
 <thead>

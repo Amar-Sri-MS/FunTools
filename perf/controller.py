@@ -85,6 +85,8 @@ def show_wu_list(job_id, colname=None):
         opt.sort_by = 0
         opt.sort_invert = True
 
+    row_hdr = get_pd(opt.job_id).rows[0]
+    menu_cols = row_hdr[3:] if len(row_hdr) > 3 else []
     hdr = ["count", "wu"]
     if colname:
         num_data_points = 11 # at 10% each
@@ -93,13 +95,13 @@ def show_wu_list(job_id, colname=None):
             pct = i * 100 / (num_data_points - 1)
             hdr.append("%s%%" % pct)
         hdr.append("high")
-        col = get_pd(opt.job_id).rows[0].index(colname)
+        col = row_hdr.index(colname)
         func = lambda k,rows: [len(rows), k] + [r[col] for r in sort_fetch_n_points(rows, col, num_data_points)]
     else:
         func = lambda k,rows: [len(rows), k]
     rows = group_by(opt, "wu", func)
     rows.insert(0, hdr)
-    return template("wu_list.tpl", opt=opt, rows=rows)
+    return template("wu_list.tpl", opt=opt, rows=rows, menu_cols=menu_cols)
 
 
 def show_samples(opt, wu=None, frames_only=False, vp=None):
