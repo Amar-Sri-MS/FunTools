@@ -67,8 +67,17 @@ def sort_fetch_n_points(rows, sort_by, num_data_points):
     num_rows = len(rows)
     if num_data_points < 3:
         return rows
-    if num_rows < num_data_points - 1:
+    if num_rows == 0:
         return rows
+    if num_rows < num_data_points - 1:
+        dummy_row = [""] * len(rows[0])
+        res = [dummy_row] * num_data_points
+        res[0] = rows[0]
+        res[-1] = rows[-1]
+        for i in range(1, num_rows - 1):
+            j = int((i * 1.0 / (num_rows - 1)) * num_data_points)
+            res[j] = rows[i]
+        return res
     res = []
     res.append(rows[0])
     for i in range(1, num_data_points - 1):
