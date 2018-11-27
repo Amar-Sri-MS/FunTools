@@ -487,8 +487,6 @@ def generate_hu_cfg(module_cfg, cfg_code_gen_out_base):
 
     print "START: Generating HU C code: generate_hu_cfg"
 
-    # debugging jenkins build fail
-    pprint(module_cfg)
 
     # get the schema dict
     schema_dict = module_cfg["Schema"]
