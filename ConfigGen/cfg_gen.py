@@ -51,6 +51,7 @@ hwcap_gen = False
 
 # flag for generating hu_cfg
 hu_cfg_gen = False
+
 cfg_code_gen_out_base = ""
 
 header = """
@@ -572,7 +573,7 @@ def parse_output_config(build):
         generate_hu_cfg(module_cfg, cfg_code_gen_out_base)
 
 def Usage():
-    sys.stderr.write('cfg_gen.py: usage: [-i [cfg input dir] [-o cfg output dir] [-s hwcap src code out dir]\n')
+    sys.stderr.write('cfg_gen.py: usage: [-i [cfg input dir] [-o cfg output dir] [-s hwcap src code out dir] [-c: generate hu config]\n')
 
 def main():
     global output_base
@@ -584,7 +585,7 @@ def main():
 
     print "Configfile Generation"
     try:
-        opts, args = getopt.getopt(sys.argv[1:], 'hi:o:s:j:g:')
+        opts, args = getopt.getopt(sys.argv[1:], 'hci:o:s:j:g:')
 
     except getopt.GetoptError as err:
         print str(err)
@@ -604,8 +605,11 @@ def main():
         elif o in ('-s', '--src'):
             cfg_code_gen_out_base = a
             hwcap_gen = True
+            print "hwcap source code output dir: " + a
+        elif o in ('-c', '--cfghu'):
+            assert cfg_code_gen_out_base != ""
             hu_cfg_gen = True
-            print "hwcap/hu_cfg source code output dir: " + a
+            print "hu_cfg source code output dir: " + cfg_code_gen_out_base
         else:
             assert False, 'Unhandled option %s' % o
 
