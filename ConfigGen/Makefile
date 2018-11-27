@@ -40,6 +40,7 @@ SRC = cfg_gen.py csr_db_gen.py utils_cfg_gen.py
 CFGGEN_PY := ./cfg_gen.py
 TEST_CHECK_SH := ./test/test_check.sh
 
+QUIET=@
 CMD_LOG := cmd.log
 
 # Test Diretory for generated files
@@ -63,8 +64,8 @@ test_hucfggen:
 	$(QUIET)mkdir -p $(TEST_OUTPUT_DIR)
 	@echo  "$(CFGGEN_PY) -i $(TEST_INPUT_DIR) -o $(TEST_OUTPUT_DIR) -s $(TEST_CMN_GEN_OUT_DIR) -c" >>$(CMD_LOG)
 	$(QUIET)$(CFGGEN_PY) -i $(TEST_INPUT_DIR) -o $(TEST_OUTPUT_DIR) -s $(TEST_CMN_GEN_OUT_DIR) -c
-	@echo  "$(TEST_CHECK_SH) $(TEST_CMN_GEN_OUT_DIR) $(TEST_CMN_GEN_REF_DIR)"
-	$(TEST_CHECK_SH) $(TEST_CMN_GEN_OUT_DIR) $(TEST_CMN_GEN_REF_DIR)
+	@echo  "$(TEST_CHECK_SH) $(TEST_CMN_GEN_OUT_DIR) $(TEST_CMN_GEN_REF_DIR)" >> $(CMD_LOG)
+	$(QUIET)$(TEST_CHECK_SH) $(TEST_CMN_GEN_OUT_DIR) $(TEST_CMN_GEN_REF_DIR)
 
 # install to SDK
 install:

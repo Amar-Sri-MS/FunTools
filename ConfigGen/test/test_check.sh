@@ -9,9 +9,12 @@ if [ "$#" -ne 2 ]; then
 	exit -1
 fi
 
+echo ""
 echo "START: testing generated files with expected output.."
-echo "generated files at: $1"
-echo "reference files at: $2"
+echo "Checking generated files at: $1"
+echo "Checking reference files at: $2"
+echo ""
+
 INPUT_DIR=$1
 EXPECTED_DIR=$2
 
