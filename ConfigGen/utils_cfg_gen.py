@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 # -*- coding: utf-8 -*-
-"""Utilities for C code genration from JSON config
+"""Utilities for C code generation from JSON config
 
 This module generates C struct from JSON config.
 
@@ -27,12 +27,12 @@ class HUCodeGen():
 
     Args:
         config_dict (dict): configuration dict from JSON
-        schema_dic (dict): schema dictionary
+        schema_dict (dict): schema dictionary
 
     Attributes:
         config_dict (dict): configuration dict from JSON
-        schema_dic (dict): schema dictionary
-        struct_def (dict): struct definition, dimention and index sizes
+        schema_dict (dict): schema dictionary
+        struct_def (dict): struct definition, dimension and index sizes
         output_dir (str): output dir
     """
 
@@ -45,7 +45,7 @@ class HUCodeGen():
     def _get_array_dim_info(self, struct_obj, k, _args_v):
         """ parse array dim information and populate dict
 
-        parse array dimention information
+        parse array dimension information
 
         :param struct_obj:
         :param v: array values to parse

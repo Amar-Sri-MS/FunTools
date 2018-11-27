@@ -46,7 +46,10 @@ hwcap_cfg = {}
 
 input_base = ""
 output_base = ""
+# flag for generating hwcap
 hwcap_gen = False
+
+# flag for generating hu_cfg
 hu_cfg_gen = False
 cfg_code_gen_out_base = ""
 
