@@ -27,7 +27,7 @@ from string import Template
 import re
 
 from pprint import pprint
-from utils_cfg_gen import HUCodeGen
+from hu_cfg_gen import HUCodeGen
 
 #Funos module specifig configs
 module_cfg = {}
