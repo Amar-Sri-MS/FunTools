@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 import glob, os, sys, re, datetime
 import getopt, platform, tempfile, re
 from string import Template
