@@ -8,9 +8,10 @@ import glob, os, sys, re, datetime
 import getopt, platform, tempfile
 import logging, sys
 
-# top-level tables to populate from json
-CFGDB = {}
-
+""" Test file that parse combined json file and print out
+hu config, and used for for comparing the output from c file using
+generated c,h struct
+"""
 
 # Add quotes to keys, hex values, remove comments and remove trailing commas
 def standardize_json(in_cfg, out_cfg):
