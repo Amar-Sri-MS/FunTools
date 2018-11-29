@@ -472,9 +472,6 @@ def generate_hwcap_config_code():
     generate_hwcap_cfg_c_file("hwcap", hwcap_cfg["skus"], cfg_code_gen_out_base, c_file, header_file, input_base)
 
 
-# TODO: Add test code
-#       Generation test code
-
 def generate_hu_cfg(module_cfg, cfg_code_gen_out_base):
     """ Generate hu config.
 
