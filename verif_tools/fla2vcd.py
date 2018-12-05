@@ -35,7 +35,7 @@ def proc_file():
             w=1
             if args.debug:
                 print "path=%s sig=%s width=1"%(path,sig)
-        var=writer.register_var(path,sig,'integer',size=w)
+        var=writer.register_var(path,sig,'reg',size=w)
         sig_name.append(path+"."+sig)
         sig_list.append(var)
         cur_lsb=cur_lsb-w
