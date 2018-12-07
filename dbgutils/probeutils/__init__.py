@@ -3,3 +3,4 @@ import i2cdev
 import i2cclient
 import dbgclient
 import i2cproxy
+import jtagutils
