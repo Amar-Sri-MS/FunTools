@@ -25,9 +25,9 @@ def connect(dev_type, ip_addr):
         return (False, status)
     cmd = '%u 0x%04x'%(constants.CSR_RING_TAP_SELECT_WIDTH,
                      constants.CSR_RING_TAP_SELECT)
-    logger.info('tap select cmd: \"{}\"'.format(cmd))
+    logger.debug('tap select cmd: \"{}\"'.format(cmd))
     status = tapi(cmd)
-    logger.info('tap select status: {}'.format(status))
+    logger.debug('tap select status: {}'.format(status))
     status = status[0]
     if (status != 0x201):
         # Not sure what does each bit in status = 0x21 indicate.
@@ -56,7 +56,7 @@ def csr_peek(csr_addr, csr_width):
                      'Csr width(64-bit words) should be in the range 1-8!')
         return None
 
-    logger.info("\nWriting read cmd...........:")
+    logger.debug("\nWriting read cmd...........:")
     ring_sel = csr_addr >> 35
     cmd = ((csr_addr & 0xffffffffff) |
                 ((0x2 << 60) |
@@ -64,45 +64,45 @@ def csr_peek(csr_addr, csr_width):
                 (ring_sel << 49)))
 
     dr = '128 ' + '0x' + '%016x'%((0x3 << 60) | (1 << 54)) + '%016x'%(cmd)
-    logger.info('dr: {}'.format(dr))
+    logger.debug('dr: {}'.format(dr))
     status = tapd(dr)
-    logger.info('peek tapd status: {}'.format(status))
+    logger.debug('peek tapd status: {}'.format(status))
     read_resp = status[0] >> 124
     read_status = (status[0] >> 96) & 0xFF
     jtag_ack = (status[0] >> 64) & 0x1
     jtag_running = (status[0] >> 65) & 0x1
 
-    logger.info("read response: {}".format(read_resp))
-    logger.info("read status: {}".format(read_status))
-    logger.info("jtag ack: {}".format(jtag_ack))
-    logger.info("jtag running: {}".format(jtag_running))
+    logger.debug("read response: {}".format(read_resp))
+    logger.debug("read status: {}".format(read_status))
+    logger.debug("jtag ack: {}".format(jtag_ack))
+    logger.debug("jtag running: {}".format(jtag_running))
     if read_status != 0:
         logger.error("jtag csr peek cmd write status error!: {}".format(read_status))
         return None
 
-    logger.info('peek shifting cmd first time')
+    logger.debug('peek shifting cmd first time')
     dr = "128 0x0"
     status = tapd(dr)
-    logger.info('peek cmd shift tapd status: {}'.format(status))
+    logger.debug('peek cmd shift tapd status: {}'.format(status))
     read_resp = status[0] >> 124
     read_status = (status[0] >> 96) & 0xFF
     jtag_ack = (status[0] >> 64) & 0x1
     jtag_running = (status[0] >> 65) & 0x1
-    logger.info('peek tapd status: {}'.format(status))
+    logger.debug('peek tapd status: {}'.format(status))
     data = status[0] & 0xFFFFFFFFFFFFFFFF
 
-    logger.info("read response: {}".format(read_resp))
-    logger.info("read status: {}".format(read_status))
-    logger.info("jtag ack: {}".format(jtag_ack))
-    logger.info("jtag running: {}".format(jtag_running))
-    logger.info("Data: {}".format(hex(data)))
+    logger.debug("read response: {}".format(read_resp))
+    logger.debug("read status: {}".format(read_status))
+    logger.debug("jtag ack: {}".format(jtag_ack))
+    logger.debug("jtag running: {}".format(jtag_running))
+    logger.debug("Data: {}".format(hex(data)))
     if jtag_ack != 1:
         logger.error("jtag csr peek cmd write ack error!: {}".format(jtag_ack))
         return None
 
     word_array = list()
     for i in range(csr_width):
-        logger.info("\nReading Data[{}/{}]...........:".format(i+1,
+        logger.debug("\nReading Data[{}/{}]...........:".format(i+1,
                     csr_width))
         csr_data_addr = (i+1) * 8
         ring_sel = csr_data_addr >> 35
@@ -112,48 +112,48 @@ def csr_peek(csr_addr, csr_width):
 
         cmd_str = hex(cmd)[2:].zfill(16)
         dr = '128 ' + '0x' + cmd_str + '0'*16
-        logger.info('dr: {}'.format(dr))
+        logger.debug('dr: {}'.format(dr))
         status = tapd(dr)
-        logger.info('peek tapd status: {}'.format(status))
+        logger.debug('peek tapd status: {}'.format(status))
         read_resp = status[0] >> 124
         read_status = (status[0] >> 96) & 0xFF
         jtag_ack = (status[0] >> 64) & 0x1
         jtag_running = (status[0] >> 65) & 0x1
-        logger.info('peek tapd status: {}'.format(status))
+        logger.debug('peek tapd status: {}'.format(status))
         data = status[0] & 0xFFFFFFFFFFFFFFFF
 
-        logger.info("read response: {}".format(read_resp))
-        logger.info("read status: {}".format(read_status))
-        logger.info("jtag ack: {}".format(jtag_ack))
-        logger.info("jtag running: {}".format(jtag_running))
-        logger.info("Data: {}".format(hex(data)))
+        logger.debug("read response: {}".format(read_resp))
+        logger.debug("read status: {}".format(read_status))
+        logger.debug("jtag ack: {}".format(jtag_ack))
+        logger.debug("jtag running: {}".format(jtag_running))
+        logger.debug("Data: {}".format(hex(data)))
         if read_status != 0:
             logger.error("jtag csr peek data read status error!: {}".format(read_status))
             return None
 
-        logger.info('peek shifting data-first time')
+        logger.debug('peek shifting data-first time')
         dr = "128 0x0"
         status = tapd(dr)
-        logger.info('peek zero shift tapd status: {}'.format(status))
+        logger.debug('peek zero shift tapd status: {}'.format(status))
         read_resp = status[0] >> 124
         read_status = (status[0] >> 96) & 0xFF
         jtag_ack = (status[0] >> 64) & 0x1
         jtag_running = (status[0] >> 65) & 0x1
-        logger.info('peek tapd status: {}'.format(status))
+        logger.debug('peek tapd status: {}'.format(status))
         data = status[0] & 0xFFFFFFFFFFFFFFFF
 
-        logger.info("read response: {}".format(read_resp))
-        logger.info("read status: {}".format(read_status))
-        logger.info("jtag ack: {}".format(jtag_ack))
-        logger.info("jtag running: {}".format(jtag_running))
-        logger.info("Data: {}".format(hex(data)))
+        logger.debug("read response: {}".format(read_resp))
+        logger.debug("read status: {}".format(read_status))
+        logger.debug("jtag ack: {}".format(jtag_ack))
+        logger.debug("jtag running: {}".format(jtag_running))
+        logger.debug("Data: {}".format(hex(data)))
         if jtag_ack != 1:
             logger.error("jtag csr peek data read ack error!: {}".format(jtag_ack))
             return None
 
         word_array.append(data)
 
-    logger.info('Peeked word_array: {0}'.format([hex(x) for x in word_array]))
+    logger.debug('Peeked word_array: {0}'.format([hex(x) for x in word_array]))
     return word_array
 
 
@@ -183,7 +183,7 @@ def csr_poke( csr_addr, csr_width, word_array):
         return False
 
     for i in range(csr_width):
-        logger.info("\nWriting Data[{}/{} = {}]...........:".format(i+1,
+        logger.debug("\nWriting Data[{}/{} = {}]...........:".format(i+1,
                        csr_width, hex(word_array[i])))
         csr_data_addr = (i+1) * 8
         ring_sel = csr_data_addr >> 35
@@ -193,44 +193,44 @@ def csr_poke( csr_addr, csr_width, word_array):
 
         cmd_str = hex(cmd)[2:].zfill(16)
         dr = '128 ' + '0x' + cmd_str + "%016x"%word_array[i]
-        logger.info('dr: {}'.format(dr))
+        logger.debug('dr: {}'.format(dr))
         status = tapd(dr)
-        logger.info('poke data tapd status: {}'.format(status))
+        logger.debug('poke data tapd status: {}'.format(status))
         write_resp = status[0] >> 124
         write_status = (status[0] >> 96) & 0xFF
         jtag_ack = (status[0] >> 64) & 0x1
         jtag_running = (status[0] >> 65) & 0x1
         data = status[0] & 0xFFFFFFFFFFFFFFFF
 
-        logger.info("write response: {}".format(write_resp))
-        logger.info("write status: {}".format(write_status))
-        logger.info("jtag ack: {}".format(jtag_ack))
-        logger.info("jtag running: {}".format(jtag_running))
-        logger.info("Data: {}".format(hex(data)))
+        logger.debug("write response: {}".format(write_resp))
+        logger.debug("write status: {}".format(write_status))
+        logger.debug("jtag ack: {}".format(jtag_ack))
+        logger.debug("jtag running: {}".format(jtag_running))
+        logger.debug("Data: {}".format(hex(data)))
         if write_status != 0:
             logger.error("jtag csr poke cmd write status error!: {}".format(write_status))
             return None
 
-        logger.info('poke shifting data-first time')
+        logger.debug('poke shifting data-first time')
         dr = "128 0x0"
         status = tapd(dr)
-        logger.info('poke zero shift tapd status: {}'.format(status))
+        logger.debug('poke zero shift tapd status: {}'.format(status))
         write_resp = status[0] >> 124
         write_status = (status[0] >> 96) & 0xFF
         jtag_ack = (status[0] >> 64) & 0x1
         jtag_running = (status[0] >> 65) & 0x1
         data = status[0] & 0xFFFFFFFFFFFFFFFF
 
-        logger.info("write response: {}".format(write_resp))
-        logger.info("write status: {}".format(write_status))
-        logger.info("jtag ack: {}".format(jtag_ack))
-        logger.info("jtag running: {}".format(jtag_running))
-        logger.info("Data: {}".format(hex(data)))
+        logger.debug("write response: {}".format(write_resp))
+        logger.debug("write status: {}".format(write_status))
+        logger.debug("jtag ack: {}".format(jtag_ack))
+        logger.debug("jtag running: {}".format(jtag_running))
+        logger.debug("Data: {}".format(hex(data)))
         if jtag_ack != 1:
             logger.error("jtag csr poke data write ack error!: {}".format(jtag_ack))
             return None
 
-    logger.info("\nWriting write command....")
+    logger.debug("\nWriting write command....")
     ring_sel = csr_addr >> 35
     cmd = ((csr_addr & 0xffffffffff) |
                 ((0x3 << 60) |
@@ -238,37 +238,37 @@ def csr_poke( csr_addr, csr_width, word_array):
                 (ring_sel << 49)))
 
     dr = '128 ' + '0x' + '%016x'%((0x3 << 60) | (1 << 54)) + '%016x'%(cmd)
-    logger.info('dr: {}'.format(dr))
+    logger.debug('dr: {}'.format(dr))
     status = tapd(dr)
-    logger.info('peek tapd status: {}'.format(status))
+    logger.debug('peek tapd status: {}'.format(status))
     write_resp = status[0] >> 124
     write_status = (status[0] >> 96) & 0xFF
     jtag_ack = (status[0] >> 64) & 0x1
     jtag_running = (status[0] >> 65) & 0x1
 
-    logger.info("write response: {}".format(write_resp))
-    logger.info("write status: {}".format(write_status))
-    logger.info("jtag ack: {}".format(jtag_ack))
-    logger.info("jtag running: {}".format(jtag_running))
+    logger.debug("write response: {}".format(write_resp))
+    logger.debug("write status: {}".format(write_status))
+    logger.debug("jtag ack: {}".format(jtag_ack))
+    logger.debug("jtag running: {}".format(jtag_running))
     if write_status != 0:
         logger.error("jtag csr poke cmd write status error!: {}".format(write_status))
         return None
 
-    logger.info('poke shifting cmd first time')
+    logger.debug('poke shifting cmd first time')
     dr = "128 0x0"
     status = tapd(dr)
-    logger.info('poke tapd status: {}'.format(status))
+    logger.debug('poke tapd status: {}'.format(status))
     write_resp = status[0] >> 124
     write_status = (status[0] >> 96) & 0xFF
     jtag_ack = (status[0] >> 64) & 0x1
     jtag_running = (status[0] >> 65) & 0x1
     data = status[0] & 0xFFFFFFFFFFFFFFFF
 
-    logger.info("write response: {}".format(write_resp))
-    logger.info("write status: {}".format(write_status))
-    logger.info("jtag ack: {}".format(jtag_ack))
-    logger.info("jtag running: {}".format(jtag_running))
-    logger.info("Data: {}".format(hex(data)))
+    logger.debug("write response: {}".format(write_resp))
+    logger.debug("write status: {}".format(write_status))
+    logger.debug("jtag ack: {}".format(jtag_ack))
+    logger.debug("jtag running: {}".format(jtag_running))
+    logger.debug("Data: {}".format(hex(data)))
     if jtag_ack != 1:
         logger.error("jtag csr poke cmd write ack error!: {}".format(jtag_ack))
         return None
@@ -277,12 +277,12 @@ def csr_poke( csr_addr, csr_width, word_array):
 
 if __name__== "__main__":
     connect('sp55e', '10.1.23.132')
-    logger.info('\n\n\n************POKE***************')
-    csr_poke(0x4883160000, 6, [0x1111, 0x2222, 0x3333, 0x4444, 0x5555, 0x6666])
-    csr_poke(0xb000000078, 1, [0xabcdabcdabcdabcd])
-    csr_poke(0xb800000078, 1, [0xdeadbeefdeadbeef])
+    print('\n************POKE***************')
+    print csr_poke(0x4883160000, 6, [0x1111, 0x2222, 0x3333, 0x4444, 0x5555, 0x6666])
+    print csr_poke(0xb000000078, 1, [0xabcdabcdabcdabcd])
+    print csr_poke(0xb800000078, 1, [0xdeadbeefdeadbeef])
 
-    logger.info('\n\n\n************PEEK***************')
-    csr_peek(0xb000000078, 1)
-    csr_peek(0xb800000078, 1)
-    csr_peek(0x4883160000, 6)
+    print('\n************PEEK***************')
+    print [hex(x) for x in csr_peek(0xb000000078, 1)]
+    print [hex(x) for x in csr_peek(0xb800000078, 1)]
+    print [hex(x) for x in csr_peek(0x4883160000, 6)]
