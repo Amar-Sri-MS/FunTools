@@ -2,15 +2,8 @@
 
 import sys, os
 from imgtec.console.support import command
-from imgtec.lib.namedenum import namedenum
-from imgtec.lib.namedbitfield import namedbitfield
 from imgtec.console import *
-from imgtec.console import CoreFamily
-from array import array
-import binascii
-import time
 import logging
-import traceback
 
 logger = logging.getLogger('jtagutils')
 logger.setLevel(logging.INFO)
