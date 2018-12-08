@@ -275,7 +275,7 @@ def csr_poke( csr_addr, csr_width, word_array):
 
     return True
 
-if __name__== "__main__":
+def csr_peek_poke_test():
     connect('sp55e', '10.1.23.132')
     print('\n************POKE***************')
     print csr_poke(0x4883160000, 6, [0x1111, 0x2222, 0x3333, 0x4444, 0x5555, 0x6666])
@@ -286,3 +286,6 @@ if __name__== "__main__":
     print [hex(x) for x in csr_peek(0xb000000078, 1)]
     print [hex(x) for x in csr_peek(0xb800000078, 1)]
     print [hex(x) for x in csr_peek(0x4883160000, 6)]
+
+if __name__== "__main__":
+    csr_peek_poke_test()
