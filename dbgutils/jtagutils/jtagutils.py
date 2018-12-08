@@ -12,17 +12,16 @@ class constants(object):
     CSR_RING_TAP_SELECT = 0x01C1
     CSR_RING_TAP_SELECT_WIDTH = 10
 
-# Connects Codescape jtag debugger
-# Returns the device handle
+# Connects to Codescape jtag probe and enables csr tap select
 @command()
-def connect(dev_type, ip_addr):
-    '''Connect to Codescape jtag probe'''
+def csr_probe(dev_type, ip_addr):
+    '''Connects to Codescape jtag probe and enables csr tap select'''
     status = probe(dev_type, ip_addr)
     status = str(status)
-    logger.info('jtag is connected!\n{0}'.format(status))
     if (("SysProbe" not in status) or ("Firmware" not in status) or
         ("ECONNREFUSED" in status) or ("InvalidArgError" in status)):
         return (False, status)
+    logger.info('Connected to Codescape Jtag probe!\n{0}'.format(status))
     cmd = '%u 0x%04x'%(constants.CSR_RING_TAP_SELECT_WIDTH,
                      constants.CSR_RING_TAP_SELECT)
     logger.debug('tap select cmd: \"{}\"'.format(cmd))
@@ -35,7 +34,9 @@ def connect(dev_type, ip_addr):
                 ' {}').format(hex(status)))
         logger.error(status_msg)
         return (False, status_msg)
-    return (True, "Jtag is connected")
+    status_msg = 'jtag is connected and csr tap select is enabled!'
+    logger.info(status_msg)
+    return (True, status_msg)
 
 @command()
 def disconnect():
@@ -46,7 +47,6 @@ def disconnect():
 @command()
 def csr_peek(csr_addr, csr_width):
     '''Peek csr_width number of 64-bit words from csr_addr'''
-    '''Example: csr_peek(0x4883160000, 6)'''
     logger.info(('csr peek csr_addr:{0}'
            ' csr_width:{1}').format(hex(csr_addr), csr_width))
 
@@ -161,15 +161,9 @@ def csr_peek(csr_addr, csr_width):
 @command()
 def csr_poke( csr_addr, csr_width, word_array):
     '''Poke csr_width number of 64-bit words from word_array at csr_addr'''
-    """
-    Example: csr_poke(0x4883160000, 6, [0x1111111111111111,
-            0x2222222222222222, 0x333333333333333333, 0x4444444444444444,
-            0x55555555555555, 0x6666666666666666])'''
-    """
     logger.info(('csr poke addr:{0}'
                  ' csr_width:{1} words:{2}').format(hex(csr_addr),
-                        csr_width,
-                        [hex(x) for x in word_array]))
+                   csr_width, [hex(x) for x in word_array]))
 
     if csr_width == 0 or csr_width > 8:
         logger.error(('Invalid number csr width:'
@@ -276,16 +270,22 @@ def csr_poke( csr_addr, csr_width, word_array):
     return True
 
 def csr_peek_poke_test():
-    connect('sp55e', '10.1.23.132')
+    csr_probe('sp55e', '10.1.23.132')
     print('\n************POKE***************')
-    print csr_poke(0x4883160000, 6, [0x1111, 0x2222, 0x3333, 0x4444, 0x5555, 0x6666])
+    print csr_poke(0x4883160000, 6, [0x1111111111111111, 0x2222222222222222,
+                                     0x3333333333333333, 0x4444444444444444,
+                                     0x5555555555555555, 0x6666666666666666,
+                                    ])
     print csr_poke(0xb000000078, 1, [0xabcdabcdabcdabcd])
     print csr_poke(0xb800000078, 1, [0xdeadbeefdeadbeef])
 
     print('\n************PEEK***************')
-    print [hex(x) for x in csr_peek(0xb000000078, 1)]
-    print [hex(x) for x in csr_peek(0xb800000078, 1)]
-    print [hex(x) for x in csr_peek(0x4883160000, 6)]
+    word_array = csr_peek(0xb000000078, 1)
+    print("{}".format([hex(x) for x in word_array] if word_array else None))
+    word_array = csr_peek(0xb800000078, 1)
+    print("{}".format([hex(x) for x in word_array] if word_array else None))
+    word_array = csr_peek(0x4883160000, 6)
+    print("{}".format([hex(x) for x in word_array] if word_array else None))
 
 if __name__== "__main__":
     csr_peek_poke_test()
