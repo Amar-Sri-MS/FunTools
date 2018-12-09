@@ -30,11 +30,11 @@ class constants(object):
     CSR_METADATA_FILE = 'csr_metadata.json'
     MEM_RW_CMD_CSR_ADDR = 0x90001900f0
     MEM_RW_STATUS_CSR_ADDR = 0x90001900f8
-    MEM_RW_DATA_CSR_ADDR = 0x9000190100 
-    MUH_RING_SKIP_ADDR = 0x800000000 
-    MUH_SNA_ANODE_SKIP_ADDR = 0x10000 
+    MEM_RW_DATA_CSR_ADDR = 0x9000190100
+    MUH_RING_SKIP_ADDR = 0x800000000
+    MUH_SNA_ANODE_SKIP_ADDR = 0x10000
     MUH_SNA_CMD_ADDR_START = 0x1000
-    FUNOS_IMAGES_FULL = False 
+    FUNOS_IMAGES_FULL = False
 
 class actions(object):
     CSR_WR = 1
@@ -79,7 +79,7 @@ def csr_peek(args):
             print("Error in csr peek!!!")
             return None
         logger.debug("Peeked value: {0}".format(hex_word_dump(word_array)))
-        print("CSR Peek is success!")
+        logger.debug("CSR Peek is success!")
         csr_show(csr_data, word_array, field_list)
     else:
         error_msg = data
@@ -181,7 +181,7 @@ def csr_poke(args):
         return None
     (status, data) = dbgprobe().csr_poke(csr_addr, csr_width_words, word_array)
     if status is True:
-        print("Poke Success!")
+        logger.debug("Poke Success!")
     else:
         error_msg = data
         print("CSR Poke failed! Error: {0}".format(error_msg))
@@ -378,9 +378,9 @@ def load_funos(input_file):
             #logger.info("Address: {0} data: {1}".format(csr_tokens[0][1:], csr_tokens[1]))
             skip_addr = 0
             if(cnt & 0x2):
-                skip_addr = constants.MUH_RING_SKIP_ADDR 
+                skip_addr = constants.MUH_RING_SKIP_ADDR
             if (cnt & 0x1):
-                skip_addr += constants.MUH_SNA_ANODE_SKIP_ADDR 
+                skip_addr += constants.MUH_SNA_ANODE_SKIP_ADDR
             for i in range(8):
                 csr_val = int(csr_tokens[1][i*16:(i+1)*16],16)
                 csr_addr = constants.MEM_RW_DATA_CSR_ADDR + skip_addr
@@ -394,7 +394,7 @@ def load_funos(input_file):
                     logger.error("Error! {0}!".format(error_msg))
                     sys.exit(1)
 
-            csr_addr = constants.MEM_RW_CMD_CSR_ADDR 
+            csr_addr = constants.MEM_RW_CMD_CSR_ADDR
             csr_addr += skip_addr
             muh_sna_cmd_addr = csr_tokens[0][1:]
             muh_sna_cmd_addr = constants.MUH_SNA_CMD_ADDR_START + (cnt/4)
@@ -543,7 +543,7 @@ def csr_replay_config(csr_replay_input_file, funos_image = None):
                         return
                     csr_val_mask[0] = str_to_int(csr_val_mask[0])
                     csr_val_mask[1] = str_to_int(csr_val_mask[1])
-                    csr_val_mask_list.append(tuple(csr_val_mask)); 
+                    csr_val_mask_list.append(tuple(csr_val_mask));
 
                 logger.debug('CSR POLL csr_address: {0} csr_width: {1} timeout: {2}'
                         ' csr_val_mask_list:{3}'.format(csr_address,
@@ -554,7 +554,7 @@ def csr_replay_config(csr_replay_input_file, funos_image = None):
                 csr_info["csr_address"] = csr_address
                 csr_info["timeout"] = timeout
                 csr_info["csr_width"] = csr_width
-                csr_info["csr_val_words"] = csr_val_mask_list 
+                csr_info["csr_val_words"] = csr_val_mask_list
                 csr_replay_data.append(csr_info)
                 logger.debug('Succesfully added "{0}" to replay data!'.format(line))
             elif csr_tokens[0] == 'Reset CUT!':
@@ -746,9 +746,9 @@ def csr_poll_status(csr_address, csr_width_words, value_mask):
     for i,x in enumerate(value_mask):
         mask = x[0]
         value = x[1]
-        if (data[i] & mask) != value: 
+        if (data[i] & mask) != value:
             return False
-    return True    
+    return True
 
 # connect handler for commandline interface.
 # Connects to remote server
@@ -761,13 +761,14 @@ def server_connect(args):
 
     mode = None
     if args.mode is None or args.mode[0] is None:
-        print('No mode option! Default to "i2c"')
-        # set default mode to i2c
         mode = 'i2c'
+    else:
+        logger.debug('mode: {0}'.format(args.mode[0]))
+        mode = args.mode[0]
 
     force_connect = False
     if args.force:
-        force_connect = True 
+        force_connect = True
         logger.info('Force connection: {0}'.format(force_connect))
 
     probe = connect(dut_name, mode, force_connect)
@@ -776,6 +777,7 @@ def server_connect(args):
         return
 
 def connect(dut_name, mode, force_connect=False):
+    logger.debug('dut: {0} mode: {1}'.format(dut_name, mode))
     if mode == 'i2c':
         dut_i2c_info = dut().get_i2c_info(dut_name)
         if dut_i2c_info is None:
@@ -793,15 +795,15 @@ def connect(dut_name, mode, force_connect=False):
             return None
         jtag_probe_id = dut_jtag_info[0]
         jtag_probe_ip = dut_jtag_info[1]
-        status = dbgprobe().connect(mode, jtag_probe_ip, jtag_probe_id, force_connect)
+        status = dbgprobe().connect(mode, jtag_probe_ip, jtag_probe_id)
     else:
         print('Mode: {} is not yet supported!'.format(mode))
         return
     if status is True:
-        print("Server Connection Successful!")
+        print("Connection to probe successful!")
         return dbgprobe()
     else:
-        print("Server Connection Failed!")
+        logger.debug("Connection to probe is failed!")
         return None
 
 
@@ -812,9 +814,9 @@ def connect(dut_name, mode, force_connect=False):
 def server_disconnect(args):
     status = dbgprobe().disconnect()
     if status is not True:
-        print("Server disconnect failed!")
+        looger.error("Probe disconnect failed!")
     else:
-        print("Server is disconnected!");
+        logger.info("Probe is disconnected!");
     return
 
 # Read peek input args
@@ -1548,7 +1550,7 @@ def show_global_ncv_thrsholds():
     print('NWQM NCV THRESHOLDS:')
     probe = dbgprobe()
     for i in range(15):
-        csr_meta = csr_get_metadata('nwqm_wu_crd_cnt_ncv_th_{}'.format(i+1), None, None, 'nu', 0, 
+        csr_meta = csr_get_metadata('nwqm_wu_crd_cnt_ncv_th_{}'.format(i+1), None, None, 'nu', 0,
                 None, None, None)
 
         csr_addr = csr_get_addr(csr_meta, None, None, None)

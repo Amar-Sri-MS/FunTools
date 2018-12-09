@@ -4,6 +4,7 @@ import logging
 import traceback
 from array import array
 from i2cclient import *
+from jtagclient import *
 
 logger = logging.getLogger("dbgclient")
 logger.setLevel(logging.INFO)
@@ -29,9 +30,8 @@ class DBG_Client(object):
             dbgclient = I2C_Client(mode)
             status = dbgclient.connect(ip_addr, dev_id, slave_addr, force)
         elif mode == 'jtag':
-            raise ValueError('Mode: "{0}" is not supported yet!'.format(mode))
-            #dbgclient = JTAG_Client()
-            #status = dbgclient.connect(ip_addr, dev_id)
+            dbgclient = JTAG_Client()
+            status = dbgclient.connect(ip_addr, dev_id)
         elif mode == 'dpc':
             raise ValueError('Mode: "{0}" is not supported yet!'.format(mode))
             #self.client = DPC_Client()
@@ -39,7 +39,7 @@ class DBG_Client(object):
             raise ValueError('Invalid client connection mode: "{0}"'.format(mode))
 
         if status is True:
-            print("Server connection Successful!")
+            logger.debug("Probe connection Successful!")
             self.connection_mode = mode
             self.ip_address = ip_addr
             self.dev_id = dev_id
@@ -47,7 +47,7 @@ class DBG_Client(object):
             self.connected = True
             return True
         else:
-            print("Server connection failed!")
+            logger.debug("probe connection failed!")
             self.__init__()
             return False
 
@@ -55,7 +55,7 @@ class DBG_Client(object):
     def disconnect(self):
         status = False
         if self.connected is False:
-            print("Server is already disconnected!");
+            logger.info("Probe is already disconnected!");
             return True
         if self.connected is True:
             try:
@@ -65,36 +65,36 @@ class DBG_Client(object):
                 logger.info('Still proceeding with connect..!')
             self.__init__()
             if status is not True:
-                print("Server disconnect failed! error: {0}".format(status));
+                print("Probe disconnect failed! error: {0}".format(status));
                 return False
-            print("Server is disconnected! status: {0}".format(status));
+            logger.debug("Probe is disconnected! status: {0}".format(status));
             return True
 
     # Sends peek request to server, get the response and returns the read data
     def csr_peek(self, csr_addr, csr_width_words):
         if self.connected is False:
-            return (False, "Server is not connected!")
+            return (False, "dbg probe is not connected!")
         return self.connection_handle.csr_peek(csr_addr, csr_width_words)
 
     # Sends poke request to server, get the response
     def csr_poke(self, csr_addr, csr_width_words, word_array):
         if self.connected is False:
-            error_msg = "Server is not connected!"
+            error_msg = "dbg probe is not connected!"
             print(error_msg);
             return (False, error_msg)
         return self.connection_handle.csr_poke(csr_addr,
-                                csr_width_words, word_array, False)
+                      csr_width_words, word_array, False)
 
     def csr_fast_poke(self, csr_addr, csr_width_words, word_array):
         if self.connected is False:
-            error_msg = "Server is not connected!"
+            error_msg = "Probe is not connected!"
             print(error_msg);
             return (False, error_msg)
         return self.connection_handle.csr_poke(csr_addr,
                               csr_width_words, word_array, True)
     def dbg_chal_cmd(self, cmd, data=None):
         if self.connected is False:
-            error_msg = "Server is not connected!"
+            error_msg = "Probe is not connected!"
             print(error_msg);
             return (False, error_msg)
         return self.connection_handle.dbg_chal_cmd(cmd, data)
