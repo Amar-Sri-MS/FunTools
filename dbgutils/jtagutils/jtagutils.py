@@ -159,21 +159,21 @@ def csr_peek(csr_addr, csr_width):
 
 # csr write
 @command()
-def csr_poke( csr_addr, csr_width, word_array):
-    '''Poke csr_width number of 64-bit words from word_array at csr_addr'''
+def csr_poke( csr_addr, word_array):
+    '''Poke word_array(an array of 64-bit words) at csr_addr'''
     logger.info(('csr poke addr:{0}'
-                 ' csr_width:{1} words:{2}').format(hex(csr_addr),
-                   csr_width, [hex(x) for x in word_array]))
+                 ' words:{1}').format(hex(csr_addr),
+                   [hex(x) for x in word_array]))
 
-    if csr_width == 0 or csr_width > 8:
-        logger.error(('Invalid number csr width:'
-                     ' {}\n').format(csr_width) +
-                     'Csr width(64-bit words) should be in the range 1-8!')
+    if csr_addr is None or word_array is None:
+        logger.error(('Invalid csr poke arguments! csr_addr: {0} word_array:'
+                     '{1}').format(csr_addr, word_array))
         return False
-
-    if csr_width != len(word_array):
-        logger.error(('Insufficient data! Expected: {0}'
-               ' data length: {0}').format(csr_width, len(word_array)))
+    csr_width = len(word_array)
+    if csr_width == 0 or csr_width > 8:
+        logger.error(('Invalid data width:'
+                     ' {}\n').format(csr_width) +
+                     'Data size(in 64-bit words) should be in the range 1-8!')
         return False
 
     for i in range(csr_width):

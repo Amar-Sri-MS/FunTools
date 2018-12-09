@@ -22,7 +22,7 @@ logger = logging.getLogger("i2cproxy")
 logger.setLevel(logging.INFO)
 
 class constants(object):
-    SERVER_TCP_PORT = 44444 
+    SERVER_TCP_PORT = 44444
 
 def catch_exception(f):
     @functools.wraps(f)
@@ -35,7 +35,7 @@ def catch_exception(f):
     return func
 
 def singleton(cls):
-    instances = {} 
+    instances = {}
     def getinstance():
         if cls not in instances:
             instances[cls] = cls()
@@ -59,8 +59,8 @@ class i2c_obj_db:
     def find(self, dev_id):
         if not dev_id:
             logger.error('Invalid dev_id(Null)!')
-            return False 
-        i2c_obj = self.i2c_objs.get(dev_id, None) 
+            return False
+        i2c_obj = self.i2c_objs.get(dev_id, None)
         if i2c_obj is not None:
             return True
         return False
@@ -68,7 +68,7 @@ class i2c_obj_db:
     def del_i2c_conn(self, dev_id):
         if not dev_id:
             logger.error('Invalid dev_id(Null)!')
-            return None 
+            return None
         if not self.find(dev_id):
             logger.error('There is no i2c connecition'
                 ' for dev_id: {0}'.format(dev_id))
@@ -79,8 +79,8 @@ class i2c_obj_db:
     def get_i2c_conn(self, dev_id):
         if not dev_id:
             logger.error('Invalid dev_id(Null)!')
-            return None 
-        i2c_obj = self.i2c_objs.get(dev_id, None) 
+            return None
+        i2c_obj = self.i2c_objs.get(dev_id, None)
         if i2c_obj:
             return i2c_obj[0]
         return None
@@ -107,7 +107,7 @@ class I2CServer(jsocket.ThreadedServer):
 
 # class for i2c server thread
 class I2CFactoryThread(jsocket.ServerFactoryThread):
-    i2c_dev_id = None 
+    i2c_dev_id = None
     def __init__(self):
         super(I2CFactoryThread, self).__init__()
         self.timeout = 2.0
@@ -189,8 +189,8 @@ class I2CFactoryThread(jsocket.ServerFactoryThread):
                         logger.info('i2c device connection is ready!')
                         self.send_obj({"STATUS":[True, "i2c device is ready!"]})
                     else:
-                        self.i2c_dev_id = None 
-                        error_str = status_msg 
+                        self.i2c_dev_id = None
+                        error_str = status_msg
                         self.send_obj({"STATUS":[False, error_str]})
                     return
                 except Exception as e:
@@ -239,17 +239,15 @@ class I2CFactoryThread(jsocket.ServerFactoryThread):
                     return
                 fast_poke = csr_poke_args.get("fast_poke", False)
                 csr_addr = csr_poke_args.get("csr_addr", None)
-                csr_width_words = csr_poke_args.get("csr_width", None)
                 word_array = csr_poke_args.get("csr_val", None)
-                if not csr_addr or not csr_width_words or not word_array:
+                if not csr_addr or not word_array:
                     if not fast_poke:
                         self.send_obj({"STATUS":[False, "Invalid poke args!"]})
                     else:
                         logger.error('Invalid poke args')
                     return
-                logger.debug(("csr_addr: {0} csr_width_words:{1}"
-                       " word_array:{2}").format(csr_addr, csr_width_words,
-                                                 word_array))
+                logger.debug(("csr_addr: {0} word_array:{1}").format
+                             (csr_addr, [hex(x) for x in word_array]))
 
                 i2c_conn = i2c_obj_db().get_i2c_conn(self.i2c_dev_id)
                 if not i2c_conn:
@@ -258,7 +256,7 @@ class I2CFactoryThread(jsocket.ServerFactoryThread):
                     else:
                         logger.error('I2c dev is not connected!')
                     return
-                status = i2c_conn.i2c_csr_poke(csr_addr, csr_width_words, word_array)
+                status = i2c_conn.i2c_csr_poke(csr_addr, word_array)
                 if not fast_poke:
                     self.send_obj({"STATUS":[status, "OK!" if status else "i2c csr error!"]})
             elif cmd == "DISCONNECT":

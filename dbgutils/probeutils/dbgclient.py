@@ -77,21 +77,21 @@ class DBG_Client(object):
         return self.connection_handle.csr_peek(csr_addr, csr_width_words)
 
     # Sends poke request to server, get the response
-    def csr_poke(self, csr_addr, csr_width_words, word_array):
+    def csr_poke(self, csr_addr, word_array):
         if self.connected is False:
             error_msg = "dbg probe is not connected!"
             print(error_msg);
             return (False, error_msg)
         return self.connection_handle.csr_poke(csr_addr,
-                      csr_width_words, word_array, False)
+                      word_array, False)
 
-    def csr_fast_poke(self, csr_addr, csr_width_words, word_array):
+    def csr_fast_poke(self, csr_addr, word_array):
         if self.connected is False:
             error_msg = "Probe is not connected!"
             print(error_msg);
             return (False, error_msg)
         return self.connection_handle.csr_poke(csr_addr,
-                              csr_width_words, word_array, True)
+                              word_array, True)
     def dbg_chal_cmd(self, cmd, data=None):
         if self.connected is False:
             error_msg = "Probe is not connected!"

@@ -237,19 +237,14 @@ class i2c:
             return word_array
 
     # i2c csr write
-    def i2c_csr_poke(self, csr_addr, csr_width_words, word_array):
+    def i2c_csr_poke(self, csr_addr, word_array):
         h = self.handle
-        logger.info(('Starting I2C poke. csr_addr: {0} csr_width_words: {1}'
-              ' word_array:{2}').format(hex(csr_addr), csr_width_words,
-                                        [hex(x) for x in word_array]))
-        if csr_width_words != len(word_array):
-            logger.error(('Insufficient data! Expected: {0}'
-                   ' data length: {0}').format(csr_width_words, len(word_array)))
+        logger.info(('Starting I2C poke. csr_addr: {0} word_array:{1}').format(
+            hex(csr_addr), [hex(x) for x in word_array]))
+        csr_width_words = len(word_array)
+        if not (csr_width_words > 0):
+            logger.error(('Invalid data length: {0}').format(csr_width_words))
             return False
-
-        if csr_width_words == 0:
-            logger.error('csr width expected should be non-zero positive number')
-            return None
         elif csr_width_words == 1: #Fast mode for single wide csr access
             csr_addr = struct.pack('>Q', csr_addr)
             csr_addr = list(struct.unpack('BBBBBBBB', csr_addr))

@@ -179,7 +179,7 @@ def csr_poke(args):
         print("Invalid input values! poke should"
               " have either field list with values or raw values")
         return None
-    (status, data) = dbgprobe().csr_poke(csr_addr, csr_width_words, word_array)
+    (status, data) = dbgprobe().csr_poke(csr_addr, word_array)
     if status is True:
         logger.debug("Poke Success!")
     else:
