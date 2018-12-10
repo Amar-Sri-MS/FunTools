@@ -1337,7 +1337,7 @@ def csr_get_metadata(csr_name, ring_name=None, ring_inst=None, anode_name=None, 
                        "{}").format(csr_name, ring_name, ring_inst_list))
                 return
             logger.debug("ring name: {}  inst: {}".format(ring_name, ring_inst))
-            if ring_inst not in ring_inst_list:
+            if ring_inst is not None and ring_inst not in ring_inst_list:
                 print("csr objs:\n{}\n".format(json_obj_pretty(csr_list)))
                 print(("Invalid ring instance for csr: {} ring: {}."
                       "\nGive appropriate ring details! valid rings instances:"
