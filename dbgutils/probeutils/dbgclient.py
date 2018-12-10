@@ -39,7 +39,7 @@ class DBG_Client(object):
             raise ValueError('Invalid client connection mode: "{0}"'.format(mode))
 
         if status is True:
-            logger.debug("Probe connection Successful!")
+            logger.debug("Connection to probe successful!")
             self.connection_mode = mode
             self.ip_address = ip_addr
             self.dev_id = dev_id
@@ -47,7 +47,7 @@ class DBG_Client(object):
             self.connected = True
             return True
         else:
-            logger.debug("probe connection failed!")
+            logger.debug("Connection to probe failed!")
             self.__init__()
             return False
 
@@ -65,9 +65,9 @@ class DBG_Client(object):
                 logger.info('Still proceeding with connect..!')
             self.__init__()
             if status is not True:
-                print("Probe disconnect failed! error: {0}".format(status));
+                print("Disconnect to probe failed! error: {0}".format(status));
                 return False
-            logger.debug("Probe is disconnected! status: {0}".format(status));
+            logger.debug("Disconnect to probe failed! status: {0}".format(status));
             return True
 
     # Sends peek request to server, get the response and returns the read data
