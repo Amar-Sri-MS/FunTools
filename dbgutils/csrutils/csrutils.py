@@ -30,11 +30,11 @@ class constants(object):
     CSR_METADATA_FILE = 'csr_metadata.json'
     MEM_RW_CMD_CSR_ADDR = 0x90001900f0
     MEM_RW_STATUS_CSR_ADDR = 0x90001900f8
-    MEM_RW_DATA_CSR_ADDR = 0x9000190100 
-    MUH_RING_SKIP_ADDR = 0x800000000 
-    MUH_SNA_ANODE_SKIP_ADDR = 0x10000 
+    MEM_RW_DATA_CSR_ADDR = 0x9000190100
+    MUH_RING_SKIP_ADDR = 0x800000000
+    MUH_SNA_ANODE_SKIP_ADDR = 0x10000
     MUH_SNA_CMD_ADDR_START = 0x1000
-    FUNOS_IMAGES_FULL = False 
+    FUNOS_IMAGES_FULL = False
 
 class actions(object):
     CSR_WR = 1
@@ -55,9 +55,9 @@ def csr_peek(args):
     anode_path = input_args.get("anode_path", None)
     field_list = input_args.get("field_list", None)
 
-    csr_data = csr_get_metadata(csr_name, csr_inst=csr_inst, csr_entry=csr_entry,
-            ring_name=ring_name, ring_inst=ring_inst, anode_name=anode_name,
-            anode_inst=anode_inst, anode_path=anode_path)
+    csr_data = csr_get_metadata(csr_name, ring_name=ring_name,
+                                ring_inst=ring_inst, anode_name=anode_name,
+                                anode_path=anode_path)
 
     if csr_data is None:
         print("Error! Failed to get metadata for csr:{} !!!".format(csr_name))
@@ -66,7 +66,7 @@ def csr_peek(args):
     csr_addr = csr_get_addr(csr_data, anode_inst=anode_inst,
                             csr_inst=csr_inst, csr_entry=csr_entry)
     if csr_addr is None:
-        print("Error get csr address!!!")
+        print("Error getting csr address!!!")
         return
     logger.debug("csr address: {0}".format(hex(csr_addr)))
 
@@ -79,7 +79,7 @@ def csr_peek(args):
             print("Error in csr peek!!!")
             return None
         logger.debug("Peeked value: {0}".format(hex_word_dump(word_array)))
-        print("CSR Peek is success!")
+        logger.debug("CSR Peek is success!")
         csr_show(csr_data, word_array, field_list)
     else:
         error_msg = data
@@ -99,9 +99,9 @@ def csr_poke(args):
     field_list = input_args.get("field_list", None)
     raw_value = input_args.get("raw_value", None)
 
-    csr_data = csr_get_metadata(csr_name, csr_inst=csr_inst, csr_entry=csr_entry,
-            ring_name=ring_name, ring_inst=ring_inst, anode_name=anode_name,
-            anode_inst=anode_inst, anode_path=anode_path)
+    csr_data = csr_get_metadata(csr_name, ring_name=ring_name,
+                                ring_inst=ring_inst, anode_name=anode_name,
+                                anode_path=anode_path)
 
     if csr_data is None:
         print("Error! Failed to get metadata for csr:{} !!!".format(csr_name))
@@ -110,7 +110,7 @@ def csr_poke(args):
     csr_addr = csr_get_addr(csr_data, anode_inst=anode_inst,
                             csr_inst=csr_inst, csr_entry=csr_entry)
     if csr_addr is None:
-        print("Error get csr address!!!")
+        print("Error getting csr address!!!")
         return
 
     csr_width_bytes = csr_get_width_bytes(csr_data)
@@ -179,9 +179,9 @@ def csr_poke(args):
         print("Invalid input values! poke should"
               " have either field list with values or raw values")
         return None
-    (status, data) = dbgprobe().csr_poke(csr_addr, csr_width_words, word_array)
+    (status, data) = dbgprobe().csr_poke(csr_addr, word_array)
     if status is True:
-        print("Poke Success!")
+        logger.debug("Poke Success!")
     else:
         error_msg = data
         print("CSR Poke failed! Error: {0}".format(error_msg))
@@ -378,9 +378,9 @@ def load_funos(input_file):
             #logger.info("Address: {0} data: {1}".format(csr_tokens[0][1:], csr_tokens[1]))
             skip_addr = 0
             if(cnt & 0x2):
-                skip_addr = constants.MUH_RING_SKIP_ADDR 
+                skip_addr = constants.MUH_RING_SKIP_ADDR
             if (cnt & 0x1):
-                skip_addr += constants.MUH_SNA_ANODE_SKIP_ADDR 
+                skip_addr += constants.MUH_SNA_ANODE_SKIP_ADDR
             for i in range(8):
                 csr_val = int(csr_tokens[1][i*16:(i+1)*16],16)
                 csr_addr = constants.MEM_RW_DATA_CSR_ADDR + skip_addr
@@ -394,7 +394,7 @@ def load_funos(input_file):
                     logger.error("Error! {0}!".format(error_msg))
                     sys.exit(1)
 
-            csr_addr = constants.MEM_RW_CMD_CSR_ADDR 
+            csr_addr = constants.MEM_RW_CMD_CSR_ADDR
             csr_addr += skip_addr
             muh_sna_cmd_addr = csr_tokens[0][1:]
             muh_sna_cmd_addr = constants.MUH_SNA_CMD_ADDR_START + (cnt/4)
@@ -543,7 +543,7 @@ def csr_replay_config(csr_replay_input_file, funos_image = None):
                         return
                     csr_val_mask[0] = str_to_int(csr_val_mask[0])
                     csr_val_mask[1] = str_to_int(csr_val_mask[1])
-                    csr_val_mask_list.append(tuple(csr_val_mask)); 
+                    csr_val_mask_list.append(tuple(csr_val_mask));
 
                 logger.debug('CSR POLL csr_address: {0} csr_width: {1} timeout: {2}'
                         ' csr_val_mask_list:{3}'.format(csr_address,
@@ -554,7 +554,7 @@ def csr_replay_config(csr_replay_input_file, funos_image = None):
                 csr_info["csr_address"] = csr_address
                 csr_info["timeout"] = timeout
                 csr_info["csr_width"] = csr_width
-                csr_info["csr_val_words"] = csr_val_mask_list 
+                csr_info["csr_val_words"] = csr_val_mask_list
                 csr_replay_data.append(csr_info)
                 logger.debug('Succesfully added "{0}" to replay data!'.format(line))
             elif csr_tokens[0] == 'Reset CUT!':
@@ -746,9 +746,9 @@ def csr_poll_status(csr_address, csr_width_words, value_mask):
     for i,x in enumerate(value_mask):
         mask = x[0]
         value = x[1]
-        if (data[i] & mask) != value: 
+        if (data[i] & mask) != value:
             return False
-    return True    
+    return True
 
 # connect handler for commandline interface.
 # Connects to remote server
@@ -761,13 +761,14 @@ def server_connect(args):
 
     mode = None
     if args.mode is None or args.mode[0] is None:
-        print('No mode option! Default to "i2c"')
-        # set default mode to i2c
         mode = 'i2c'
+    else:
+        logger.debug('mode: {0}'.format(args.mode[0]))
+        mode = args.mode[0]
 
     force_connect = False
     if args.force:
-        force_connect = True 
+        force_connect = True
         logger.info('Force connection: {0}'.format(force_connect))
 
     probe = connect(dut_name, mode, force_connect)
@@ -776,6 +777,7 @@ def server_connect(args):
         return
 
 def connect(dut_name, mode, force_connect=False):
+    logger.debug('dut: {0} mode: {1}'.format(dut_name, mode))
     if mode == 'i2c':
         dut_i2c_info = dut().get_i2c_info(dut_name)
         if dut_i2c_info is None:
@@ -793,15 +795,15 @@ def connect(dut_name, mode, force_connect=False):
             return None
         jtag_probe_id = dut_jtag_info[0]
         jtag_probe_ip = dut_jtag_info[1]
-        status = dbgprobe().connect(mode, jtag_probe_ip, jtag_probe_id, force_connect)
+        status = dbgprobe().connect(mode, jtag_probe_ip, jtag_probe_id)
     else:
         print('Mode: {} is not yet supported!'.format(mode))
         return
     if status is True:
-        print("Server Connection Successful!")
+        print("Connection to probe successful!")
         return dbgprobe()
     else:
-        print("Server Connection Failed!")
+        logger.debug("Connection to probe is failed!")
         return None
 
 
@@ -812,9 +814,9 @@ def connect(dut_name, mode, force_connect=False):
 def server_disconnect(args):
     status = dbgprobe().disconnect()
     if status is not True:
-        print("Server disconnect failed!")
+        looger.error("Probe disconnect failed!")
     else:
-        print("Server is disconnected!");
+        logger.info("Probe is disconnected!");
     return
 
 # Read peek input args
@@ -859,15 +861,90 @@ def csr_get_poke_args(args):
 
 # Returns csr address
 def csr_get_addr(csr_data, anode_inst=None, csr_inst=None, csr_entry=None):
+    if type(csr_data) is not dict:
+        print(('csr_data is expected to be dictionary.\n'
+              'csr_data: {0}').format(json.dumps(csr_data, indent=4)))
+        return
+
+    an_name = csr_data.get("an", None)
+    if an_name is None:
+        print("Invalid csr metadata! an_name is missing in metadata!")
+        sys.exit(1)
+
+    anode_inst_cnt = csr_data.get("an_inst_cnt", None)
+    if anode_inst_cnt is None:
+        print("Invalid csr metadata! an_inst_cnt is missing in metadata!")
+        sys.exit(1)
+
+    if not anode_inst_cnt > 0:
+        print("Inconsistant csr metadata parsing!"
+                " anode inst count should be non-zero positive integer!")
+        return
+
+    if anode_inst_cnt > 1 and anode_inst is None:
+        print("csr objs:\n{}\n".format(json_obj_pretty(csr_data)))
+        print(("csr exists in multiple instances of anode: {}."
+               " Give appropriate anode option!"
+               " valid anode instances: {}").format(an_name,
+                                            range(0,anode_inst_cnt)))
+        return
+
+    if (anode_inst is not None) and (anode_inst < 0 or anode_inst >= anode_inst_cnt):
+        print("csr objs:\n{}\n".format(json_obj_pretty(csr_data)))
+        print(("Invalid anode instance for csr: anode: {}."
+            "\nGive appropriate anode details!"
+            " Valid anode instances: {}").format(an_name,
+                                    range(0,anode_inst_cnt)))
+        return
+
+    csr_inst_cnt = csr_data.get("csr_count", None)
+    if csr_inst_cnt is None:
+        print("Invalid csr metadata! csr_inst_cnt is missing in metadata!")
+        sys.exit(1)
+
+    if csr_inst_cnt > 1:
+        if csr_inst is None:
+            print("csr objs:\n{}\n".format(json.dumps(csr_data, indent=4)))
+            print(("There are {} instances of csr."
+                   "\nProvide csr instance number!".format(csr_inst_cnt)))
+            return
+        if csr_inst < 0 or csr_inst >= csr_inst_cnt:
+            print("csr objs:\n{}\n".format(json.dumps(csr_data, indent=4)))
+            print(("Invalid instance of csr!"
+                   "\nProvide csr instance number in the"
+                   " range [0 - {}]!").format(csr_inst_cnt - 1))
+            return
+
+    if csr_inst_cnt == 1 and csr_inst is not None:
+        print("**** Ignoring option csr instance number: {}!!! ****".format(csr_inst))
+
+    csr_n_entries = csr_data.get("csr_n_entries", None)
+    if csr_n_entries is None:
+        print("Invalid csr metadata! csr_n_entries is missing in metadata!")
+        sys.exit(1)
+
+    if csr_n_entries > 1:
+        if csr_entry is None:
+            print("csr objs:\n{}\n".format(json.dumps(csr_data, indent=4)))
+            print(("There are {} entries in table csr!"
+                   "\nProvide csr entry index number!").format(csr_n_entries))
+            return
+        logger.debug("csr entry index: {} csr_n_entries: {}".format(csr_entry, csr_n_entries))
+        if csr_entry < 0 or csr_entry >= csr_n_entries:
+            print("csr objs:\n{}\n".format(json.dumps(csr_data, indent=4)))
+            print(("Invalid entry index of csr!"
+                   "\nProvide csr entry index in the"
+                   " range of [0 - {}]!".format(csr_n_entries - 1)))
+            return
+
+    if csr_n_entries == 1 and csr_entry is not None:
+        print("**** Ignoring option csr entry index: {}!!! ****".format(csr_entry))
+
     anode_addr = csr_data.get("an_addr", None)
     if anode_addr is None:
         print("Invalid csr metadata! anode_addr is missing in metadata!")
         sys.exit(1)
     anode_addr = int(anode_addr, 16)
-    anode_inst_cnt = csr_data.get("an_inst_cnt", None)
-    if anode_inst_cnt is None:
-        print("Invalid csr metadata! an_inst_cnt is missing in metadata!")
-        sys.exit(1)
 
     if anode_inst_cnt > 1:
         if anode_inst is None:
@@ -898,11 +975,6 @@ def csr_get_addr(csr_data, anode_inst=None, csr_inst=None, csr_entry=None):
 
     csr_width_bytes = csr_width >> 0x3
 
-    csr_n_entries = csr_data.get("csr_n_entries", None)
-    if csr_n_entries is None:
-        print("Invalid csr metadata! csr_n_entries is missing in metadata!")
-        sys.exit(1)
-
     if csr_n_entries > 1:
         if csr_entry is None:
             print("Expetced csr_entry argument!")
@@ -913,17 +985,12 @@ def csr_get_addr(csr_data, anode_inst=None, csr_inst=None, csr_entry=None):
             return None
         csr_addr += csr_width_bytes * csr_entry;
 
-    csr_inst_count = csr_data.get("csr_count", None)
-    if csr_inst_count is None:
-        print("Invalid csr metadata! csr_inst_count is missing in metadata!")
-        sys.exit(1)
-
-    if csr_inst_count > 1:
+    if csr_inst_cnt > 1:
         if csr_inst is None:
             print("Expetced csr_inst argument!")
             return None
 
-        if csr_inst < 0 or csr_inst >= csr_inst_count:
+        if csr_inst < 0 or csr_inst >= csr_inst_cnt:
             print("Invalid csr_inst: {}!".format(csr_inst))
             return None
         csr_addr += csr_width_bytes * csr_n_entries * csr_inst
@@ -1212,8 +1279,7 @@ def get_file_abs_path(loc):
     assert os.path.exists(loc), "{}: directory does not exist!".format(loc)
     return loc
 
-def csr_get_metadata(csr_name, csr_inst=None, csr_entry=None, ring_name=None,
-                ring_inst=None, anode_name=None, anode_inst=None, anode_path=None):
+def csr_get_metadata(csr_name, ring_name=None, ring_inst=None, anode_name=None, anode_path=None):
     if not csr_name:
         print("csr name is empty! Provide valid csr name!")
         return
@@ -1271,7 +1337,7 @@ def csr_get_metadata(csr_name, csr_inst=None, csr_entry=None, ring_name=None,
                        "{}").format(csr_name, ring_name, ring_inst_list))
                 return
             logger.debug("ring name: {}  inst: {}".format(ring_name, ring_inst))
-            if ring_inst not in ring_inst_list:
+            if ring_inst is not None and ring_inst not in ring_inst_list:
                 print("csr objs:\n{}\n".format(json_obj_pretty(csr_list)))
                 print(("Invalid ring instance for csr: {} ring: {}."
                       "\nGive appropriate ring details! valid rings instances:"
@@ -1361,74 +1427,14 @@ def csr_get_metadata(csr_name, csr_inst=None, csr_entry=None, ring_name=None,
             rn_class=ring_name, rn_inst=ring_inst,
             an=anode_name, an_path=anode_path)
 
-    if len(anode_paths) > 1:
-        anode_inst_count = anodes_list.get(anode_path, None)
-    else:
-        anode_inst_count = anodes_list.get(anode_paths[0], None)
-
-    if not anode_inst_count > 0:
-        print("Inconsistant csr metadata parsing!"
-                " anode inst count should be non-zero positive integer!")
-        return
-    if anode_inst_count > 1 and anode_inst is None:
-        print("csr objs:\n{}\n".format(json_obj_pretty(csr_list)))
-        print(("csr: {} exists in multiple instances of anode: {}."
-               " Give appropriate anode option!"
-               " valid anode instances: {}").format(csr_name,
-                        anode_name, range(0,anode_inst_count)))
-        return
-
-    if (anode_inst is not None) and (anode_inst < 0 or anode_inst >= anode_inst_count):
-        print("csr objs:\n{}\n".format(json_obj_pretty(csr_list)))
-        print(("Invalid anode instance for csr: {} anode: {}."
-            "\nGive appropriate anode details!"
-            " Valid anode instances: {}").format(csr_name,
-            anode_name, range(0,anode_inst_count)))
-        return
-
     if len(csr_list) != 1:
         print("csr objs:\n{}\n".format(json.dumps(csr_list, indent=4)))
         print("more than one csr instance! Inconsistant csr metadata parsing!")
         return
 
     csr = csr_list[0]
-    csr_count = csr.get("csr_count", None)
-    if csr_count > 1:
-        if csr_inst is None:
-            print("csr objs:\n{}\n".format(json.dumps(csr, indent=4)))
-            print(("There are {} instances of csr:{}."
-                   "\nProvide csr instance number!".format(csr_count,
-                                                           csr_name)))
-            return
-        if csr_inst < 0 or csr_inst >= csr_count:
-            print("csr objs:\n{}\n".format(json.dumps(csr, indent=4)))
-            print(("Invalid instances of csr:{}."
-                   "\nProvide csr instance number in the"
-                   " range [0 - {}]!").format(csr_name, csr_count - 1))
-            return
-    if csr_count == 1 and csr_inst is not None:
-        print("**** Ignoring option csr instance number: {}!!! ****".format(csr_inst))
-
-
-    csr_n_entries = csr.get("csr_n_entries", None)
-    if csr_n_entries > 1:
-        if csr_entry is None:
-            print("csr objs:\n{}\n".format(json.dumps(csr_list, indent=4)))
-            print(("There are {} entries in table csr:{}."
-                   "\nProvide csr entry index number!").format(csr_n_entries, csr_name))
-            return
-        logger.debug("csr entry index: {} csr_n_entries: {}".format(csr_entry, csr_n_entries))
-        if csr_entry < 0 or csr_entry >= csr_n_entries:
-            print("csr objs:\n{}\n".format(json.dumps(csr, indent=4)))
-            print(("Invalid entry index of csr:{}."
-                   "\nProvide csr entry index in the"
-                   " range of [0 - {}]!".format(csr_name,
-                                                csr_n_entries - 1)))
-            return
-    if csr_n_entries == 1 and csr_entry is not None:
-        print("**** Ignoring option csr entry index: {}!!! ****".format(csr_entry))
-
     logger.debug("Found CSR: \n{}\n".format(json.dumps(csr, indent=4)))
+
     return csr
 
 def singleton(cls):
@@ -1544,26 +1550,3 @@ class csr_metadata:
         csr_list = self.get_csr_def(csr_name=csr_name)
 
 
-def show_global_ncv_thrsholds():
-    print('NWQM NCV THRESHOLDS:')
-    probe = dbgprobe()
-    for i in range(15):
-        csr_meta = csr_get_metadata('nwqm_wu_crd_cnt_ncv_th_{}'.format(i+1), None, None, 'nu', 0, 
-                None, None, None)
-
-        csr_addr = csr_get_addr(csr_meta, None, None, None)
-        if csr_addr is None:
-            print("Error get csr address!!!")
-            return
-        logger.debug("csr address: {0}".format(hex(csr_addr)))
-        csr_width_words = csr_get_width_bytes(csr_meta) >> 3
-        (status, data) = probe.csr_peek(csr_addr, csr_width_words)
-        if status is True:
-            word_array = data
-            fields_objs = csr_meta.get("fld_lst", None)
-            #csr_show(csr_meta, word_array, None)
-            field_val = csr_get_field_val(csr_meta, word_array, 'val')
-            print('\tTHR-{}: {}'.format(i, [hex(x) for x in field_val]))
-        else:
-            error_msg = data
-            print("Error! {0}!".format(error_msg))

@@ -691,10 +691,11 @@ static struct fun_json *_read_from_sock(struct dpcsock *sock, bool retry)
 
 #define PRELUDE		"\e["
 #define POSTLUDE	"m"
+#define CLEAR		"0"
 
 #define INPUT_COLORIZE	PRELUDE RED POSTLUDE
 #define OUTPUT_COLORIZE	PRELUDE BLUE POSTLUDE
-#define NORMAL_COLORIZE	PRELUDE BLACK POSTLUDE
+#define NORMAL_COLORIZE	PRELUDE CLEAR POSTLUDE
 
 /* given a line of input, try and return a JSON object.
  *
