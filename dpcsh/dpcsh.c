@@ -66,8 +66,12 @@ enum parsingmode {
 
 static enum parsingmode _parse_mode = PARSE_UNKNOWN;
 
-#define OVERRIDE_TEXT "#!sh "
-#define OVERRIDE_JSON "#!json "
+/* Force user input mode */
+#define OVERRIDE_TEXT  "#!sh "
+#define OVERRIDE_JSON  "#!json "
+
+/* header on bas64 json lines to avoid confusing other output for json */
+#define B64JSON_HDR "#!b64json "
 
 /* tty (uart) device controls */
 #define DEFAULT_BAUD "19200"
@@ -85,6 +89,7 @@ struct dpcsock {
 	enum sockmode mode;      /* whether & how this is used */
 	bool server;             /* listen/accept instead of connect */
 	bool base64;             /* talk base64 over this socket */
+	bool loopback;           /* if this socket is ignored */
 	const char *socket_name; /* unix socket name */
 	uint16_t port_num;       /* TCP port number */
 	uint32_t retries;        /* whether to retry connect on failure */
@@ -415,6 +420,59 @@ bool _base64_write(struct dpcsock *sock, const uint8_t *buf, size_t nbyte)
 	return true;
 }
 
+static char *_is_b64json_line(char *line)
+{
+	if (strncmp(line, B64JSON_HDR, strlen(B64JSON_HDR)) == 0)
+		return line + strlen(B64JSON_HDR);
+
+	return NULL;
+}
+
+/* returns a newly allocated buffer which is the base64 decoded
+ * version of line, if the decoder is happy. expects the header to be
+ * stripped already
+ */
+static uint8_t *_b64_to_bin(char *line, ssize_t /* out */ *size)
+{
+	uint8_t *binbuf = NULL;
+	size_t nbytes = strlen(line);
+	
+	/* this means the buffer is oversize. meh. */
+	binbuf = malloc(nbytes);
+	if (binbuf == NULL) {
+		printf("couldn't allocate input buffer\n");
+		exit(1);
+	}
+
+	*size = base64_decode(binbuf, nbytes, line);
+
+	if (*size <= 0) {
+		free(binbuf);
+		binbuf = NULL;
+	}
+
+	return binbuf;
+}
+
+struct fun_json *_buffer2json(uint8_t *buffer, size_t max)
+{
+	struct fun_json *json = NULL;
+	size_t r;
+		
+	if (!buffer)
+		return NULL;
+	
+	r = fun_json_binary_serialization_size(buffer, max);
+	if (r <= max) {
+		json = fun_json_create_from_parsing_binary_with_options(buffer,
+									r,
+									true);
+	}
+
+	return json;
+}
+
+
 /* read a line of input from the fd */
 #define BUF_SIZE (1024)
 static char *_read_a_line(struct dpcsock *sock, ssize_t *nbytes)
@@ -505,33 +563,44 @@ static char *_read_a_line(struct dpcsock *sock, ssize_t *nbytes)
 static uint8_t *_base64_get_buffer(struct dpcsock *sock,
 				   ssize_t *nbytes, bool retry)
 {
-	char *buf = NULL;
+	char *buf = NULL, *b64buf = NULL;
 	uint8_t *binbuf = NULL;
 	ssize_t r;
+	bool badline;
 
 do_retry:
 
-	if (sock->fd == STDOUT_FILENO) {
-		printf("funos response => ");
-		fflush(stdout);
-	}
-
+	/* so far so good */
+	badline = false;
+	
 	/* read the input */
 	buf = _read_a_line(sock, nbytes);
 
 	if (!buf)
 		return NULL;
 
-	/* now we have a buffer, decode it. buffer is oversize. Meh. */
-	binbuf = malloc(*nbytes);
-	if (binbuf == NULL) {
-		printf("couldn't allocate input buffer\n");
-		exit(1);
+	/* make sure it's NUL terminated for error conditinos in which
+	 * funos dropped out without sendng a full line
+	 */
+	buf[*nbytes] = '\0';
+
+	/* make sure there's a header on it */
+	b64buf = _is_b64json_line(buf);
+	if (b64buf == NULL) {
+		/* not b64json */
+		badline = true;
+	}
+	
+	if (!badline) {
+		/* now we have a buffer, decode it.*/
+		binbuf = _b64_to_bin(b64buf, &r);
+
+		if (binbuf == NULL)
+			badline = true;
 	}
 
-	r = base64_decode(binbuf, *nbytes, buf);
-	if (r < 0) {
-		buf[*nbytes] = '\0';
+	/* if it didn't have a header, or it failed to decode, print it out */
+	if (badline) {
 		printf("$ %s\n", buf);
 		free(buf);
 
@@ -663,18 +732,11 @@ static struct fun_json *_read_from_sock(struct dpcsock *sock, bool retry)
 	if (!sock->base64) {
 		json = fun_json_read_from_fd(sock->fd);
 	} else {
-		size_t r;
 		ssize_t max;
 		buffer = _base64_get_buffer(sock, &max, retry);
-		if (!buffer)
-			return NULL;
-		r = fun_json_binary_serialization_size(buffer, max);
-		if (r <= max) {
-			json = fun_json_create_from_parsing_binary_with_options(buffer, r, true);
-		}
+		json = _buffer2json(buffer, max); /* ignores NULL */
 		free(buffer);
 	}
-
 
 	return json;
 }
@@ -870,7 +932,57 @@ static bool _do_send_cmd(struct dpcsock *sock, char *line,
 	return true;
 }
 
+static bool _is_loopback_command(struct dpcsock *sock, char *line,
+				 ssize_t read)
+{
+	uint8_t *buf = NULL;
+	ssize_t r;
+	
+	/* can't have a loopback command if we don't have a loopback
+	 * socket
+	 */
+	if (!sock->loopback)
+		return false;
 
+	/* if there was an error reading, just bail */
+	if (read <= 0)
+		return false;
+
+	/* check for the header */
+	buf = (void*) _is_b64json_line(line);
+	if (buf == NULL)
+		return false;
+
+	/* now decode and print it */
+	buf = _b64_to_bin((void*) buf, &r);
+
+	if (buf) {
+		struct fun_json *json = NULL;
+		
+		json = _buffer2json(buf, (size_t) r);
+		free(buf);
+
+		if (json) {
+			size_t allocated_size = 0;
+			uint32_t flags = use_hex ? FUN_JSON_PRETTY_PRINT_USE_HEX_FOR_NUMBERS : 0;
+			char *pp2 = fun_json_pretty_print(json,
+							  0, "    ",
+							  100, flags,
+							  &allocated_size);
+			printf("output => %s\n", pp2);
+			free(pp2);
+		} else {
+			printf("base64 output didn't decode to binary json\n");
+		}
+	} else {
+		printf("couldn't base64 decode input\n");
+	}
+	
+	/* say we consumed it even it if was mangled so we don't send it on */
+	return true;
+}
+
+			    
 /* TID + error string */
 #ifdef NOT_YET
 #define PROXY_ERROR_TEMPLATE "{\"tid\": %" PRIu64 ", \"error\": \"error\"}\n"
@@ -1040,21 +1152,26 @@ static void _do_interactive(struct dpcsock *funos_sock,
 			    continue;
 		    }
 
-		    /* no base64 on the cmd end of things */
-
+		    /* in loopback mode, check if this is output from
+		     * the other end & decode that & don't send it.
+		     */
+		    if (_is_loopback_command(funos_sock, line, read))
+			    continue;
+		    
 		    ok = _do_send_cmd(funos_sock, line, read);
 
-		    /* for loopback we have to do this inline */
-		    if (ok)
-			    _do_recv_cmd(funos_sock, cmd_sock, true);
+		    if (!ok) {
+			    printf("error sending command\n");
+		    }
 	    }
 
 	    /* if it changed while in flight */
 	    if (funos_sock->fd == -1)
 		    continue;
 
-	    if (FD_ISSET(funos_sock->fd, &fds)) {
-		    // printf("funos input\n");
+	    if (FD_ISSET(funos_sock->fd, &fds)
+		&& (!funos_sock->loopback)) {
+		    printf("funos input\n");
 		    _do_recv_cmd(funos_sock, cmd_sock, false);
 	    }
     }
@@ -1383,6 +1500,7 @@ int main(int argc, char *argv[])
 
 			funos_sock.base64 = true;
 			funos_sock.server = false;
+			funos_sock.loopback = true;
 			funos_sock.mode = SOCKMODE_TERMINAL;
 			funos_sock.fd = STDOUT_FILENO;
 			mode = MODE_NOCONNECT;
