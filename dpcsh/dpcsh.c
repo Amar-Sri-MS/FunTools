@@ -436,7 +436,7 @@ static uint8_t *_b64_to_bin(char *line, ssize_t /* out */ *size)
 {
 	uint8_t *binbuf = NULL;
 	size_t nbytes = strlen(line);
-	
+
 	/* this means the buffer is oversize. meh. */
 	binbuf = malloc(nbytes);
 	if (binbuf == NULL) {
@@ -458,10 +458,10 @@ struct fun_json *_buffer2json(uint8_t *buffer, size_t max)
 {
 	struct fun_json *json = NULL;
 	size_t r;
-		
+
 	if (!buffer)
 		return NULL;
-	
+
 	r = fun_json_binary_serialization_size(buffer, max);
 	if (r <= max) {
 		json = fun_json_create_from_parsing_binary_with_options(buffer,
@@ -572,7 +572,7 @@ do_retry:
 
 	/* so far so good */
 	badline = false;
-	
+
 	/* read the input */
 	buf = _read_a_line(sock, nbytes);
 
@@ -590,7 +590,7 @@ do_retry:
 		/* not b64json */
 		badline = true;
 	}
-	
+
 	if (!badline) {
 		/* now we have a buffer, decode it.*/
 		binbuf = _b64_to_bin(b64buf, &r);
@@ -937,7 +937,7 @@ static bool _is_loopback_command(struct dpcsock *sock, char *line,
 {
 	uint8_t *buf = NULL;
 	ssize_t r;
-	
+
 	/* can't have a loopback command if we don't have a loopback
 	 * socket
 	 */
@@ -958,7 +958,7 @@ static bool _is_loopback_command(struct dpcsock *sock, char *line,
 
 	if (buf) {
 		struct fun_json *json = NULL;
-		
+
 		json = _buffer2json(buf, (size_t) r);
 		free(buf);
 
@@ -977,12 +977,12 @@ static bool _is_loopback_command(struct dpcsock *sock, char *line,
 	} else {
 		printf("couldn't base64 decode input\n");
 	}
-	
+
 	/* say we consumed it even it if was mangled so we don't send it on */
 	return true;
 }
 
-			    
+
 /* TID + error string */
 #ifdef NOT_YET
 #define PROXY_ERROR_TEMPLATE "{\"tid\": %" PRIu64 ", \"error\": \"error\"}\n"
@@ -1157,7 +1157,7 @@ static void _do_interactive(struct dpcsock *funos_sock,
 		     */
 		    if (_is_loopback_command(funos_sock, line, read))
 			    continue;
-		    
+
 		    ok = _do_send_cmd(funos_sock, line, read);
 
 		    if (!ok) {
