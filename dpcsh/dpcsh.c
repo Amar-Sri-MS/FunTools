@@ -1171,7 +1171,7 @@ static void _do_interactive(struct dpcsock *funos_sock,
 
 	    if (FD_ISSET(funos_sock->fd, &fds)
 		&& (!funos_sock->loopback)) {
-		    printf("funos input\n");
+		    // printf("funos input\n");
 		    _do_recv_cmd(funos_sock, cmd_sock, false);
 	    }
     }
