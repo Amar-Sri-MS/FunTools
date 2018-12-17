@@ -361,7 +361,7 @@ def csr_load_metadata(args):
         return
     return
 
-def load_funos(input_file):
+def load_srec_image(input_file):
     csr_replay_data = list()
     with open(input_file) as fp:
         line = fp.readline()
@@ -442,18 +442,18 @@ def load_funos(input_file):
 # Process each line in the <csr_replay_input_file> statrting with string "CSRWR" and creates list all the CSRs
 # Expected valid line format:  CSRWR:<csr_address>:<csr_width>:[<list of csr values in 64 bit big endian words>]
 # Returns the dict of all the csrs
-def csr_replay_config(csr_replay_input_file, funos_image = None):
+def csr_replay_config(csr_replay_input_file, srec_file = None):
     if not os.path.isabs(csr_replay_input_file):
         csr_replay_input_file = os.path.join(os.getcwd(), csr_replay_input_file)
     if not os.path.isfile(csr_replay_input_file):
         print 'Path: "{0}" is not a regular file!'.format(csr_replay_input_file)
         return
 
-    if funos_image:
-        if not os.path.isabs(funos_image):
-            funos_image = os.path.join(os.getcwd(), funos_image)
-        if not os.path.isfile(funos_image):
-            print 'Path: "{0}" is not a regular file!'.format(funos_image)
+    if srec_file:
+        if not os.path.isabs(srec_file):
+            srec_file = os.path.join(os.getcwd(), srec_file)
+        if not os.path.isfile(srec_file):
+            print 'Path: "{0}" is not a regular file!'.format(srec_file)
             return
 
     csr_replay_data = list()
@@ -637,11 +637,11 @@ def csr_replay(args):
         print 'Path: "{0}" is not a regular file!'.format(input_file)
         return
 
-    funos_file = args.funos[0]
-    if not os.path.isabs(funos_file):
-        funos_file = os.path.join(os.getcwd(), funos_file)
-    if not os.path.isfile(funos_file):
-        print 'Path: "{0}" is not a regular file!'.format(funos_file)
+    srec_file = args.image[0]
+    if not os.path.isabs(srec_file):
+        srec_file = os.path.join(os.getcwd(), srec_file)
+    if not os.path.isfile(srec_file):
+        print 'Path: "{0}" is not a regular file!'.format(srec_file)
         return
 
     replay_config = csr_replay_config(input_file)
@@ -711,21 +711,21 @@ def csr_replay(args):
                 status = csr_poll_status(csr_address, csr_width_words, csr_val_words)
                 if status == False:
                     retry += 1
-                    print('Retry csr poll status "{0}"!'.format(retry))
+                    print('Retrying csr status poll "{0}"!'.format(retry))
                 else:
-                    print('csr poll status done! cnt: {0} data:"{1}"!'.format(cnt, retry))
+                    print('csr status poll done! cnt: {0} data:"{1}"!'.format(cnt, retry))
                     poll_status = True
                     break
             if poll_status == False:
-                logger.error("csr poll status timedout!")
+                logger.error("csr status poll timedout!")
                 sys.exit(1)
             cnt += 1
         elif x.get('action') == actions.CUT_RESET:
-            status = load_funos(funos_file)
+            status = load_srec_image(srec_file)
             if status == False:
-                logger.error('Failed to copy FunOS image!')
+                logger.error('Failed to copy FunOS/u-boot image!')
                 sys.exit(1)
-            logger.info('Successfully copied FunOS image! cnt:{0}'.format(cnt))
+            logger.info('Successfully copied FunOS/u-boot image! cnt:{0}'.format(cnt))
             cnt += 1
         else:
             logger.error('Invalid action!')
