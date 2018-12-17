@@ -200,3 +200,5 @@ def csr_peek_poke_test():
 
 if __name__== "__main__":
     csr_peek_poke_test()
+
+    print os.geteuid()

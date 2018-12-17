@@ -34,7 +34,7 @@ class constants(object):
     MUH_RING_SKIP_ADDR = 0x800000000
     MUH_SNA_ANODE_SKIP_ADDR = 0x10000
     MUH_SNA_CMD_ADDR_START = 0x1000
-    FUNOS_IMAGES_FULL = False
+    FUNOS_IMAGES_FULL = True
 
 class actions(object):
     CSR_WR = 1
@@ -385,7 +385,7 @@ def load_funos(input_file):
                 csr_val = int(csr_tokens[1][i*16:(i+1)*16],16)
                 csr_addr = constants.MEM_RW_DATA_CSR_ADDR + skip_addr
                 csr_addr += i * 8
-                (status, data) = dbgprobe().csr_poke(csr_addr, 1, [csr_val])
+                (status, data) = dbgprobe().csr_fast_poke(csr_addr, [csr_val])
                 if status is True:
                     logger.info('Write value:{0}'.format(hex(csr_val)))
                     logger.debug("poke success!!!")
@@ -401,7 +401,7 @@ def load_funos(input_file):
             csr_val = muh_sna_cmd_addr << 37;
             csr_val |= 0x0 << 63;
             logger.debug('csr_val: {0}'.format(csr_val))
-            (status, data) = dbgprobe().csr_poke(csr_addr, 1, [csr_val])
+            (status, data) = dbgprobe().csr_fast_poke(csr_addr, [csr_val])
             if status is True:
                 logger.info("Poke:{0} addr: {1} Success!".format(cnt, hex(muh_sna_cmd_addr)))
             else:
@@ -670,7 +670,7 @@ def csr_replay(args):
             logger.debug('csr_address: {0} csr_width_words: {1}'
                     'word_array:{2}'.format(csr_address,
                         csr_width_words, csr_val_words))
-            (status, status_msg) = dbgprobe().csr_poke(csr_address, csr_width_words, csr_val_words)
+            (status, status_msg) = dbgprobe().csr_poke(csr_address, csr_val_words)
             if status == True:
                 print('Replay count:{0} data:"{1}"!'.format(cnt, x))
                 cnt += 1
@@ -703,7 +703,7 @@ def csr_replay(args):
                 sys.exit(1)
             csr_width_words = (csr_width + 63 ) >> 6
             logger.debug('csr_address: {0} csr_width_words: {1}'
-                    'word_array:{2} timeout:{3}'.format(csr_address,
+                    ' word_array:{2} timeout:{3}'.format(csr_address,
                         csr_width_words, csr_val_words, timeout))
             retry = 0
             poll_status = False
@@ -738,15 +738,19 @@ def csr_poll_status(csr_address, csr_width_words, value_mask):
         logger.error('csr_peek failed!')
         sys.exit(1)
 
+    logger.debug('status: {0} data: {1}'.format(status, data))
     if len(data) != csr_width_words:
         logger.error('csr poll: csr peek returned insufficient data!'
                 ' expected: {0} received: {1}'.format(csr_width_words, len(data)))
         sys.exit(1)
 
     for i,x in enumerate(value_mask):
-        mask = x[0]
-        value = x[1]
+        mask = x[1]
+        value = x[0]
         if (data[i] & mask) != value:
+            logger.error('Expected: {0}/{1} Actual: {2}'.format(hex(value),
+                                                                hex(mask),
+                                                                hex(data[i])))
             return False
     return True
 

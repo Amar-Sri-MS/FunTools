@@ -265,15 +265,15 @@ class i2c:
                            ' Expected: {1}').format(sent_bytes, len(cmd_data)))
                     return False
                 time.sleep(constants.I2C_CSR_SLEEP_SEC)
-                status = array('B', [0x01])
-                status_bytes = aa_i2c_read(h, self.slave_addr, 0, status)
-                logger.debug('poke status_bytes:{0}'.format(status_bytes))
-                if status_bytes[0] != 1:
-                    logger.debug('Read Error!  status_bytes:{0} Expected:'
-                                 '{1}'.format(status_bytes, 1))
+                status = array('B', [0x00])
+                num_status_bytes = aa_i2c_read(h, self.slave_addr, 0, status)
+                logger.debug('poke num_status_bytes:{0} status:{1}'.format(num_status_bytes, status))
+                if num_status_bytes[0] != 1:
+                    logger.error('Read Error!  status_bytes:{0} Expected:'
+                                 '{1}'.format(num_status_bytes, 1))
                     return False
                 if status[0] != 0x80:
-                    logger.debug('Write status returned Error!'
+                    logger.error('Write status returned Error!'
                                  ' {0}'.format(aa_status_string(status[0])))
                     return False
             except Exception as e:
