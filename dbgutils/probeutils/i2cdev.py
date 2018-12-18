@@ -58,7 +58,7 @@ def aardvark_i2c_spi_dev_index_from_serial(serial):
         return None
     if serial in serial_nums:
         index = serial_nums.index(serial)
-        return dev_ids[index] & 0xffff
+        return dev_ids[index] & 0x7fff
     logger.error('Device with serial num: {0} not found!'.format(serial))
     if len(serial_nums) != 0:
         logger.info('Found serial numbers:{0}'.format(serial_nums))
