@@ -63,7 +63,7 @@ class const(object):
     DBG_GRANTS = 0x00030200
     IP_ADDR = '10.1.20.69'
     CONN_MODE = 'i2c'
-    I2C_DEV_ID = 'TPCFb3N9'
+    I2C_DEV_ID = 2238701524
     PRIVATE_KEY_PASSWORD = 'fun123'
     I2C_SLAVE_ADDR = 0x73
     CERT_KEY_DIR = workspace
