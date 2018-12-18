@@ -6,7 +6,7 @@ from imgtec.console import *
 import logging
 
 logger = logging.getLogger('jtagutils')
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 class constants(object):
     CSR_RING_TAP_SELECT = 0x01C1

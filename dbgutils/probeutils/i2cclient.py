@@ -49,8 +49,7 @@ class I2C_Client(object):
             logger.info("Server connection Success!")
             return True
         else:
-            logger.info("Remote connect status: {0}".format(status))
-            logger.error("Server connection failed!")
+            logger.error("Connection Failed! Error:{0}".format(status[1]))
             self.con_handle.close()
             self.con_handle = None
             return False

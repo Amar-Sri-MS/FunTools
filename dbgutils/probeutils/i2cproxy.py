@@ -164,10 +164,12 @@ class I2CFactoryThread(jsocket.ServerFactoryThread):
                     self.send_obj({"STATUS":[False, ("Invalid connect args. slave_addr is missing!")]})
                     return
                 force_connect = connect_args.get("force_connect", None)
+                logger.info('**** Connection request to dev_id: {0}'
+                            ' slave_addr: {1} from user:"{2}"'.format(dev_id,
+                                                    hex(slave_addr), user))
                 if force_connect:
                     logger.info('Force connect request by {0} to dev_id: {1}'.format(user, dev_id))
                     i2c_obj_db().dump()
-                logger.info('**** Connection request to dev_id: {0} from "{1}"'.format(dev_id, user))
                 i2c_conn = i2c_obj_db().get_i2c_conn(dev_id)
                 if i2c_conn:
                     if force_connect:

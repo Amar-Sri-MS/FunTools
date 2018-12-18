@@ -168,8 +168,8 @@ class dbgsh(cmd2.Cmd):
     parser_replay.set_defaults(func=csr_replay)
     parser_replay.add_argument('replay_file', nargs=1, type=str,
                 help="Relative or absolute path to csr replay file")
-    parser_replay.add_argument('funos', nargs=1, type=str,
-                help="Relative or absolute path to funos image")
+    parser_replay.add_argument('image', nargs=1, type=str,
+                help="Relative or absolute path to funos/u-boot srec format image")
     argcomplete.autocomplete(parser)
 
     @with_argparser(parser)

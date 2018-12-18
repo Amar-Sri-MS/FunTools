@@ -34,7 +34,7 @@ class constants(object):
     MUH_RING_SKIP_ADDR = 0x800000000
     MUH_SNA_ANODE_SKIP_ADDR = 0x10000
     MUH_SNA_CMD_ADDR_START = 0x1000
-    FUNOS_IMAGES_FULL = False
+    UPLOAD_FULL_IMAGE = True
 
 class actions(object):
     CSR_WR = 1
@@ -361,7 +361,7 @@ def csr_load_metadata(args):
         return
     return
 
-def load_funos(input_file):
+def load_srec_image(input_file):
     csr_replay_data = list()
     with open(input_file) as fp:
         line = fp.readline()
@@ -385,7 +385,7 @@ def load_funos(input_file):
                 csr_val = int(csr_tokens[1][i*16:(i+1)*16],16)
                 csr_addr = constants.MEM_RW_DATA_CSR_ADDR + skip_addr
                 csr_addr += i * 8
-                (status, data) = dbgprobe().csr_poke(csr_addr, 1, [csr_val])
+                (status, data) = dbgprobe().csr_fast_poke(csr_addr, [csr_val])
                 if status is True:
                     logger.info('Write value:{0}'.format(hex(csr_val)))
                     logger.debug("poke success!!!")
@@ -401,7 +401,7 @@ def load_funos(input_file):
             csr_val = muh_sna_cmd_addr << 37;
             csr_val |= 0x0 << 63;
             logger.debug('csr_val: {0}'.format(csr_val))
-            (status, data) = dbgprobe().csr_poke(csr_addr, 1, [csr_val])
+            (status, data) = dbgprobe().csr_fast_poke(csr_addr, [csr_val])
             if status is True:
                 logger.info("Poke:{0} addr: {1} Success!".format(cnt, hex(muh_sna_cmd_addr)))
             else:
@@ -429,7 +429,7 @@ def load_funos(input_file):
                 sys.exit(1)
 
             cnt += 1
-            if constants.FUNOS_IMAGES_FULL == False and cnt == 16:
+            if constants.UPLOAD_FULL_IMAGE == False and cnt == 16:
                 break
             line = fp.readline()
     if cnt > 0:
@@ -442,18 +442,18 @@ def load_funos(input_file):
 # Process each line in the <csr_replay_input_file> statrting with string "CSRWR" and creates list all the CSRs
 # Expected valid line format:  CSRWR:<csr_address>:<csr_width>:[<list of csr values in 64 bit big endian words>]
 # Returns the dict of all the csrs
-def csr_replay_config(csr_replay_input_file, funos_image = None):
+def csr_replay_config(csr_replay_input_file, srec_file = None):
     if not os.path.isabs(csr_replay_input_file):
         csr_replay_input_file = os.path.join(os.getcwd(), csr_replay_input_file)
     if not os.path.isfile(csr_replay_input_file):
         print 'Path: "{0}" is not a regular file!'.format(csr_replay_input_file)
         return
 
-    if funos_image:
-        if not os.path.isabs(funos_image):
-            funos_image = os.path.join(os.getcwd(), funos_image)
-        if not os.path.isfile(funos_image):
-            print 'Path: "{0}" is not a regular file!'.format(funos_image)
+    if srec_file:
+        if not os.path.isabs(srec_file):
+            srec_file = os.path.join(os.getcwd(), srec_file)
+        if not os.path.isfile(srec_file):
+            print 'Path: "{0}" is not a regular file!'.format(srec_file)
             return
 
     csr_replay_data = list()
@@ -637,11 +637,11 @@ def csr_replay(args):
         print 'Path: "{0}" is not a regular file!'.format(input_file)
         return
 
-    funos_file = args.funos[0]
-    if not os.path.isabs(funos_file):
-        funos_file = os.path.join(os.getcwd(), funos_file)
-    if not os.path.isfile(funos_file):
-        print 'Path: "{0}" is not a regular file!'.format(funos_file)
+    srec_file = args.image[0]
+    if not os.path.isabs(srec_file):
+        srec_file = os.path.join(os.getcwd(), srec_file)
+    if not os.path.isfile(srec_file):
+        print 'Path: "{0}" is not a regular file!'.format(srec_file)
         return
 
     replay_config = csr_replay_config(input_file)
@@ -670,7 +670,7 @@ def csr_replay(args):
             logger.debug('csr_address: {0} csr_width_words: {1}'
                     'word_array:{2}'.format(csr_address,
                         csr_width_words, csr_val_words))
-            (status, status_msg) = dbgprobe().csr_poke(csr_address, csr_width_words, csr_val_words)
+            (status, status_msg) = dbgprobe().csr_poke(csr_address, csr_val_words)
             if status == True:
                 print('Replay count:{0} data:"{1}"!'.format(cnt, x))
                 cnt += 1
@@ -703,7 +703,7 @@ def csr_replay(args):
                 sys.exit(1)
             csr_width_words = (csr_width + 63 ) >> 6
             logger.debug('csr_address: {0} csr_width_words: {1}'
-                    'word_array:{2} timeout:{3}'.format(csr_address,
+                    ' word_array:{2} timeout:{3}'.format(csr_address,
                         csr_width_words, csr_val_words, timeout))
             retry = 0
             poll_status = False
@@ -711,21 +711,21 @@ def csr_replay(args):
                 status = csr_poll_status(csr_address, csr_width_words, csr_val_words)
                 if status == False:
                     retry += 1
-                    print('Retry csr poll status "{0}"!'.format(retry))
+                    print('Retrying csr status poll "{0}"!'.format(retry))
                 else:
-                    print('csr poll status done! cnt: {0} data:"{1}"!'.format(cnt, retry))
+                    print('csr status poll done! cnt: {0} data:"{1}"!'.format(cnt, retry))
                     poll_status = True
                     break
             if poll_status == False:
-                logger.error("csr poll status timedout!")
+                logger.error("csr status poll timedout!")
                 sys.exit(1)
             cnt += 1
         elif x.get('action') == actions.CUT_RESET:
-            status = load_funos(funos_file)
+            status = load_srec_image(srec_file)
             if status == False:
-                logger.error('Failed to copy FunOS image!')
+                logger.error('Failed to copy FunOS/u-boot image!')
                 sys.exit(1)
-            logger.info('Successfully copied FunOS image! cnt:{0}'.format(cnt))
+            logger.info('Successfully copied FunOS/u-boot image! cnt:{0}'.format(cnt))
             cnt += 1
         else:
             logger.error('Invalid action!')
@@ -738,15 +738,19 @@ def csr_poll_status(csr_address, csr_width_words, value_mask):
         logger.error('csr_peek failed!')
         sys.exit(1)
 
+    logger.debug('status: {0} data: {1}'.format(status, data))
     if len(data) != csr_width_words:
         logger.error('csr poll: csr peek returned insufficient data!'
                 ' expected: {0} received: {1}'.format(csr_width_words, len(data)))
         sys.exit(1)
 
     for i,x in enumerate(value_mask):
-        mask = x[0]
-        value = x[1]
+        mask = x[1]
+        value = x[0]
         if (data[i] & mask) != value:
+            logger.error('Expected: {0}/{1} Actual: {2}'.format(hex(value),
+                                                                hex(mask),
+                                                                hex(data[i])))
             return False
     return True
 
