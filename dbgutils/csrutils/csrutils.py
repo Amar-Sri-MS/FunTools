@@ -34,7 +34,7 @@ class constants(object):
     MUH_RING_SKIP_ADDR = 0x800000000
     MUH_SNA_ANODE_SKIP_ADDR = 0x10000
     MUH_SNA_CMD_ADDR_START = 0x1000
-    FUNOS_IMAGES_FULL = True
+    UPLOAD_FULL_IMAGE = True
 
 class actions(object):
     CSR_WR = 1
@@ -429,7 +429,7 @@ def load_srec_image(input_file):
                 sys.exit(1)
 
             cnt += 1
-            if constants.FUNOS_IMAGES_FULL == False and cnt == 16:
+            if constants.UPLOAD_FULL_IMAGE == False and cnt == 16:
                 break
             line = fp.readline()
     if cnt > 0:

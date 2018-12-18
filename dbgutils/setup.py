@@ -10,7 +10,6 @@ from setuptools.command.install import install
 
 class JtagExtCommands(install):
     def run(self):
-        os.system('python ~/nagbin/codescape/Codescape-Debugger-8.6.6.1516674922-CentOS-6.x86_64.py --accept-licence --shared')
         print('Copying jtag Codescape command scripts ....')
         destination_path = os.path.join(expanduser("~"), "imgtec/console_scripts")
         shutil.rmtree(destination_path, ignore_errors=True)
