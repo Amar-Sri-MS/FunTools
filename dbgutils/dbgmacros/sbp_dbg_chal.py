@@ -14,12 +14,12 @@ from probeutils.dbgclient import *
 import binascii
 from array import array
 import struct
-#from named_bitfield import named_bitfield
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives.asymmetric import padding
+#from named_bitfield import named_bitfield
 
 class CMD(object):
     GET_SERIAL_NUMBER = 0xFE000000
@@ -57,7 +57,7 @@ SBP_STATUS_STR = [
     "Host Firmware Version",
     "Debug Grants"]
 
-class CONST(object):
+class const(object):
     # DBG_GRANTS = 0x000C00F0
     # DBG_GRANTS = 0x00000200
     DBG_GRANTS = 0x00030200
@@ -65,12 +65,15 @@ class CONST(object):
     CONN_MODE = 'i2c'
     I2C_DEV_ID = 'TPCFb3N9'
     PRIVATE_KEY_PASSWORD = 'fun123'
+    I2C_SLAVE_ADDR = 0x73
+    CERT_KEY_DIR = workspace
 
 class DBG_Chal(object):
-    def __init__(self, mode=None, ip_addr=None, dev_id=None):
+    def __init__(self, mode, ip_addr, dev_id, i2c_slave_addr):
         self.mode = mode
         self.ip_addr = ip_addr
         self.dev_id = dev_id
+        self.i2c_slave_addr = i2c_slave_addr
         self.connected = False
         self.dbgprobe = None
 
@@ -94,7 +97,8 @@ class DBG_Chal(object):
             return True
 
         dbgprobe = DBG_Client()
-        status = dbgprobe.connect(self.mode, self.ip_addr, self.dev_id)
+        status = dbgprobe.connect(self.mode, self.ip_addr, self.dev_id,
+                                  self.i2c_slave_addr)
         if status is True:
             self.dbgprobe = dbgprobe
             self.connected = True
@@ -107,13 +111,14 @@ class DBG_Chal(object):
             return False
 
     def disconnect(self):
-        status = self.dbgprobe.disconnect()
-        if status is True:
-            print('Successfully disconnected!')
-            return True
-        else:
-            print('Disconnect failed!')
-            return False
+        if self.connected:
+            status = self.dbgprobe.disconnect()
+            if status is True:
+                print('Successfully disconnected!')
+                return True
+            else:
+                print('Disconnect failed!')
+                return False
 
     def decode_status_bytes(self, data):
         print 'Status:\n'
@@ -312,7 +317,7 @@ class DBG_Chal(object):
             print err_msg
             return (False, err_msg)
 
-    def get_dbg_access(self, dev_cert, priv_key, grants=CONST.DBG_GRANTS):
+    def get_dbg_access(self, dev_cert, priv_key, grants=const.DBG_GRANTS):
         print "Getting dbg access grant...!"
         dev_cert_path = os.path.abspath(dev_cert)
         if not os.path.exists(dev_cert_path):
@@ -359,7 +364,7 @@ class DBG_Chal(object):
             challenge_bs += struct.pack('<I',word)
         print "data to sign (command + param + challenge): " +  binascii.hexlify(challenge_bs)
 
-        s = struct.pack('<I', CONST.DBG_GRANTS)
+        s = struct.pack('<I', const.DBG_GRANTS)
         dbg_grant_bytes = struct.unpack('BBBB',s)
         cert = array('B', dbg_grant_bytes)
 
@@ -372,7 +377,7 @@ class DBG_Chal(object):
 
         with open(priv_key_path, 'rb') as key_file:
             signing_key = serialization.load_pem_private_key(key_file.read(),
-                    CONST.PRIVATE_KEY_PASSWORD, backend=default_backend())
+                    const.PRIVATE_KEY_PASSWORD, backend=default_backend())
         signed_challenge = signing_key.sign(challenge_bs, padding.PKCS1v15(),hashes.SHA512())
         signed_challenge_bs = array('B')
         signed_challenge_bs.fromstring(signed_challenge)
@@ -403,7 +408,8 @@ class DBG_Chal(object):
 
 
 def block_tests():
-    dbgprobe = DBG_Chal(CONST.CONN_MODE, CONST.IP_ADDR, CONST.I2C_DEV_ID)
+    dbgprobe = DBG_Chal(const.CONN_MODE, const.IP_ADDR, const.I2C_DEV_ID,
+                        const.I2C_SLAVE_ADDR)
     status = dbgprobe.connect()
     if status is False:
         print 'Connection failed!'
@@ -413,7 +419,8 @@ def block_tests():
     dbgprobe.block_main_loop()
 
 def just_unlock():
-    dbgprobe = DBG_Chal(CONST.CONN_MODE, CONST.IP_ADDR, CONST.I2C_DEV_ID)
+    dbgprobe = DBG_Chal(const.CONN_MODE, const.IP_ADDR, const.I2C_DEV_ID,
+                        const.I2C_SLAVE_ADDR)
     status = dbgprobe.connect()
     if status is False:
         print 'Connection failed!'
@@ -432,8 +439,8 @@ def just_unlock():
         return False
     print('Injected certificate!')
 
-    (status, data) = dbgprobe.get_dbg_access(WORKSPACE + '/developer_cert.cert',
-                                             WORKSPACE + '/developer_private_key.pem')
+    (status, data) = dbgprobe.get_dbg_access(os.path.join(const.CERT_KEY_DIR , 'developer_cert.cert'),
+                                             os.path.join(const.CERT_KEY_DIR + 'developer_private_key.pem'))
     if status is False:
         print 'Failed to grant debug access! Error: {0}'.format(data)
         return False
@@ -441,7 +448,8 @@ def just_unlock():
 
 
 def secure_debug_tests():
-    dbgprobe = DBG_Chal(CONST.CONN_MODE, CONST.IP_ADDR, CONST.I2C_DEV_ID)
+    dbgprobe = DBG_Chal(const.CONN_MODE, const.IP_ADDR, const.I2C_DEV_ID,
+                        const.I2C_SLAVE_ADDR)
     status = dbgprobe.connect()
     if status is False:
         print 'Connection failed!'
@@ -460,8 +468,8 @@ def secure_debug_tests():
         return False
     print('Injected certificate!')
 
-    (status, data) = dbgprobe.get_dbg_access(WORKSPACE + 'developer_cert.cert',
-                                             WORKSPACE + 'developer_private_key.pem')
+    (status, data) = dbgprobe.get_dbg_access(os.path.join(const.CERT_KEY_DIR , 'developer_cert.cert'),
+                                             os.path.join(const.CERT_KEY_DIR + 'developer_private_key.pem'))
     if status is False:
         print 'Failed to grant debug access! Error: {0}'.format(data)
         return False
@@ -484,7 +492,8 @@ def secure_debug_tests():
     return True
 
 def flash_tests():
-    dbgprobe = DBG_Chal(CONST.CONN_MODE, CONST.IP_ADDR, CONST.I2C_DEV_ID)
+    dbgprobe = DBG_Chal(const.CONN_MODE, const.IP_ADDR, const.I2C_DEV_ID,
+                        const.I2C_SLAVE_ADDR)
     status = dbgprobe.connect()
     if status is False:
         print 'Connection failed!'
@@ -496,8 +505,8 @@ def flash_tests():
         return False
     print('Injected certificate!')
 
-    (status, data) = dbgprobe.get_dbg_access(WORKSPACE + 'developer_cert.cert',
-                                             WORKSPACE + 'developer_private_key.pem')
+    (status, data) = dbgprobe.get_dbg_access(os.path.join(const.CERT_KEY_DIR, 'developer_cert.cert'),
+                                             os.path.join(const.CERT_KEY_DIR + 'developer_private_key.pem'))
     if status is False:
         print 'Failed to grant debug access! Error: {0}'.format(data)
         return False
@@ -511,7 +520,8 @@ def flash_tests():
     dbgprobe.read_flash()
 
 def status_test():
-    dbgprobe = DBG_Chal(CONST.CONN_MODE, CONST.IP_ADDR, CONST.I2C_DEV_ID)
+    dbgprobe = DBG_Chal(const.CONN_MODE, const.IP_ADDR, const.I2C_DEV_ID,
+                        const.I2C_SLAVE_ADDR)
     status = dbgprobe.connect()
     if status is False:
         print 'Connection failed!'
