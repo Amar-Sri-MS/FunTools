@@ -12,8 +12,10 @@ import threading
 import random
 from threading import Thread
 sys.path.append(os.environ["WORKSPACE"]+"/FunTools/dbgutils")
+sys.path.append(os.environ["WORKSPACE"]+"/FunTools/dbgutils/probeutils")
 from csrutils.csrutils import *
 from probeutils.i2cutils import *
+import dut
 
 #first create and bind the verif server socket
 HOST = ''                 # Symbolic name meaning the local host
@@ -405,7 +407,9 @@ def handle_connection(conn):
 def connect_dbgprobe():
     print "connect to I2C"
 #status = dbgprobe().connect('i2c', args.i2c_svr, 'TPCFbwoQ')
-    status = dbgprobe().connect('i2c', args.i2c_svr, 'TPCFb23b',0x70,False)
+#    status = dbgprobe().connect('i2c', args.i2c_svr, 'TPCFb23b',0x70,False)
+#always hard code slave addr to 0x70
+    status = dbgprobe().connect('i2c', i2c_proxy_ip , i2c_probe_serial , 0x70,False)
     if status is True:
         print("I2C Server Connection Successful!")
     else:
@@ -455,13 +459,16 @@ def auto_int(x):
     return int(x, 0)
 
 def proc_arg():
-    global parser, args
+    global parser, args, i2c_probe_serial, i2c_proxy_ip, i2c_slave_addr
     parser = argparse.ArgumentParser()
     parser.add_argument('--ptf_dis', action='store_true', default=False, help='ptf connection disable. default %(default)d')
     parser.add_argument('--i2c_dis', action='store_true', default=False, help='i2cproxy connection disable. default %(default)d')
     parser.add_argument('--verif_port', nargs='?', type=auto_int, default=0x1234, help='verif client port. default %(default)d')
-    parser.add_argument('--i2c_svr', nargs='?', type=str, default='10.1.20.69', help='i2c server. default %(default)s')
+    parser.add_argument('--tpod', nargs='?', type=str, default='TPOD4', help='TPOD name. default %(default)s')
+#    parser.add_argument('--i2c_svr', nargs='?', type=str, default='10.1.20.69', help='i2c server. default %(default)s')
     args = parser.parse_args()
+    duts = dut.dut()
+    (i2c_probe_serial, i2c_proxy_ip, i2c_slave_addr) = duts.get_i2c_info(args.tpod)
 
     #args = parser.parse_args(['-ptf_dis'])
 
