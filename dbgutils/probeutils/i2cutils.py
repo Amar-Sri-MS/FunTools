@@ -55,8 +55,8 @@ class i2c:
         dev_idx = aardvark_i2c_spi_dev_index_from_serial(self.dev_id)
         if dev_idx is None:
             dev_list = aardvark_i2c_spi_dev_list()
-            status_msg = (('Failed to detect i2c device: {0}!'
-                           ' dev_list: {1}').format(self.dev_id, dev_list))
+            status_msg = (('Failed to find i2c device: {0}!'
+                           ' Found devices: {1}').format(self.dev_id, dev_list))
             logger.error(status_msg)
             return (False, status_msg)
         n_devs, devs = aa_find_devices(dev_idx+1)
@@ -265,15 +265,15 @@ class i2c:
                            ' Expected: {1}').format(sent_bytes, len(cmd_data)))
                     return False
                 time.sleep(constants.I2C_CSR_SLEEP_SEC)
-                status = array('B', [0x01])
-                status_bytes = aa_i2c_read(h, self.slave_addr, 0, status)
-                logger.debug('poke status_bytes:{0}'.format(status_bytes))
-                if status_bytes[0] != 1:
-                    logger.debug('Read Error!  status_bytes:{0} Expected:'
-                                 '{1}'.format(status_bytes, 1))
+                status = array('B', [0x00])
+                num_status_bytes = aa_i2c_read(h, self.slave_addr, 0, status)
+                logger.debug('poke num_status_bytes:{0} status:{1}'.format(num_status_bytes, status))
+                if num_status_bytes[0] != 1:
+                    logger.error('Read Error!  status_bytes:{0} Expected:'
+                                 '{1}'.format(num_status_bytes, 1))
                     return False
                 if status[0] != 0x80:
-                    logger.debug('Write status returned Error!'
+                    logger.error('Write status returned Error!'
                                  ' {0}'.format(aa_status_string(status[0])))
                     return False
             except Exception as e:
@@ -366,7 +366,7 @@ class i2c:
 
     def i2c_dbg_chal_cmd(self, cmd, data):
         h = self.handle
-        __i2c_dbg_chal_fifo_flush(h)
+        self.__i2c_dbg_chal_fifo_flush()
         logger.debug('cmd: {0}'.format(hex(cmd)))
         byte_array = array('B', [0xC4])
         size = (0 if data is None else len(data)) + 4 + 4
@@ -433,7 +433,7 @@ class i2c:
 
         logger.debug('Sleeping to give time for hw(esp. emulation) to process the command!')
         time.sleep(constants.SBP_CMD_EXE_TIME_WAIT)
-        (status, header) = __i2c_dbg_chal_cmd_header_read(h)
+        (status, header) = self.__i2c_dbg_chal_cmd_header_read()
         if status is False:
             err_msg = 'Failed to read the header'
             logger.error(err_msg)
@@ -449,7 +449,7 @@ class i2c:
         length -= 4
         rdata = None
         if (length  > 0):
-            (status, rdata) = i2c_dbg_chal_nread(h, length)
+            (status, rdata) = self.i2c_dbg_chal_nread(length)
         if status is True:
             if rdata is not None and len(rdata) != 0:
                 header.extend(rdata)
