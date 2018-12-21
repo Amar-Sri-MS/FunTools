@@ -222,9 +222,9 @@ def process_cmd_csr_write (msg_len):
   if args.i2c_dis:
       (status, result) = (True,None)
   elif fast_poke:
-      (status, result) = dbgprobe().csr_fast_poke(addr, len(data_words_list), data_words_list)
+      (status, result) = dbgprobe().csr_fast_poke(addr, data_words_list)
   else:
-      (status, result) = dbgprobe().csr_poke(addr, len(data_words_list), data_words_list)
+      (status, result) = dbgprobe().csr_poke(addr, data_words_list)
   #print "csr_poke returned"
   if status is False:
       print "csr_poke returned false"
