@@ -17,6 +17,7 @@ def test_commands():
     print "### Running a command 1"
     message = "Hello dpc"
     result = client.execute('echo', message)
+    print("result: %s" % result)
     if (result.strip() != message):
         raise RuntimeError("echo failed")
     print "Echo OK"

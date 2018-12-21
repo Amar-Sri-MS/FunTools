@@ -20,9 +20,11 @@ import socket
 class DpcClient(object):
     def __init__(self, legacy_ok = True, unix_sock = False, server_address = None):
         self.__legacy_ok = legacy_ok
-        self.__verbose = False
+        self.__verbose = True
         self.__truncate_long_lines = False
-
+        self.__async_queue = []
+        self.__next_tid = 1
+        
         if (unix_sock):
             if (server_address is None):
                 server_address = '/tmp/funos-dpc-text.sock'
@@ -70,20 +72,66 @@ class DpcClient(object):
         else:
             print(text, end=end)
 
-    def execute_command_line(self, command_line):
-        self.__print(command_line, ' -> ')
-        self.__send_line(command_line)
+    def next_tid(self):
+        tid = self.__next_tid
+        self.__next_tid += 1
+        return tid
+            
+    def async_send(self, jdict):
+        jstr = json.dumps(jdict)
+        self.__print(jstr, ' -> ')
+        self.__send_line(jstr)
+
+
+    def async_wait(self):
+        # just pull the first thing off the wire and return it
         result = self.__recv_json()
         self.__print(result)
-        return result
+
+        # decode the raw json and return
+        try:
+            decoded_results = json.loads(result)
+        except:
+            print("ERROR: Unable to parse to JSON. data: %s" % result)
+            decoded_results = {"result" : None, "tid" : "-1"} # "an error happened"
+        return decoded_results
+    
+    def async_recv_any(self):
+        # try and dequeue the first queued
+        if (len(self.__async_queue) > 0):
+            r = self.__async_queue.pop(0)
+            return r
+        
+        # wait for something else        
+        return self.async_wait()
+
+    def async_recv_wait(self, tid):
+
+        # see if it's already pending
+        for r in self.__async_queue:
+            if (r['tid'] == tid):
+                self.__async_queue.remove(r)
+            return r
+        
+        # wait and dequeue until we find the one we want
+        while (True):
+            r = self.async_wait()
+            print("found: %s" % r)
+            if (r['tid'] == tid):
+                return r
+
+            self.__async_queue.append(r)
 
     # preferred interface
-    def execute(self, verb, arg_list, tid = 0):
+    def execute(self, verb, arg_list, tid = None):
 
         # make sure verb is just a verb
         if (" " in verb):
             raise RuntimeError("no spaces allowed in verbs")
 
+        if (tid is None):
+            tid = self.next_tid()
+            
         # make it a list if it's just a dict or int or something
         if (type(arg_list) is not list):
             arg_list = [arg_list]
@@ -92,16 +140,13 @@ class DpcClient(object):
         jdict = { "verb": verb, "arguments": arg_list, "tid": tid }
 
         # make it a string and send it & get results
-        jstr = json.dumps(jdict)
-        results = self.execute_command_line(jstr)
+        self.async_send(jdict)
+        results = self.async_recv_wait(tid)
 
-        # decode the raw json and return
-        try:
-            decoded_results = json.loads(results)
-        except:
-            print("ERROR: Unable to parse to JSON. data: %s" % results)
-            decoded_results = None
-        return decoded_results
+        # strip out the result
+        results = results['result']
+
+        return results
 
     # XXX: legacy interface. Avoid using this
     def execute_command(self, command, args):
@@ -112,8 +157,17 @@ class DpcClient(object):
         encoded_args = json.dumps(args)
         # #!sh prefix to ensure it's parsed as legacy input
         cmd_line = "#!sh " + command + ' ' + encoded_args
-        results = self.execute_command_line(cmd_line)
+
+        # send the request 
+        self.async_send(jdict)
+
+        # XXX: we know what dpcsh will stuff in the tid
+        results = self.async_recv_wait(tid)
+
+        # strip out the result
+        results = results['result']
+        
         if (command == 'execute'):
-            return results
-        decoded_results = json.loads(results)
-        return decoded_results
+            # XXX: flatten it back down for legacy clients
+            return json.dumps(results)
+        return results

@@ -1017,8 +1017,12 @@ static void _do_recv_cmd(struct dpcsock *funos_sock,
 		raw_output = apply_pretty_printer(output);
 		fun_json_release(output);
 
-		// Now we strip the tid to avoid confusing clients
-		struct fun_json *final_output = fun_json_lookup(raw_output, "result");
+		struct fun_json *final_output = NULL;
+
+		// strip the tid for non-proxy sessions
+		if (_parse_mode == PARSE_TEXT)
+			final_output = fun_json_lookup(raw_output, "result");
+		
 		if (final_output) {
 			struct fun_json *old = raw_output;
 			raw_output = fun_json_retain(final_output);
@@ -1114,10 +1118,15 @@ static void _do_interactive(struct dpcsock *funos_sock,
 		    dpcsocket_connnect(funos_sock);
 	    }
 
-	    if ((cmd_sock->fd == -1) && (cmd_sock->retries-- > 0)) {
-		    printf("(re)-connect\n");
-		    dpcsocket_connnect(cmd_sock);
-		    printf("connected\n");
+	    if (cmd_sock->fd == -1) {
+		    if (cmd_sock->retries-- > 0) {
+			    printf("(re)-connect\n");
+			    dpcsocket_connnect(cmd_sock);
+			    printf("connected\n");
+		    } else {
+			    printf("out of re-connect attempts\n");
+			    break;
+		    }
 	    }
 
 	    /* configure the fd set */
@@ -1132,7 +1141,7 @@ static void _do_interactive(struct dpcsock *funos_sock,
 	    }
 
 	    /* wait on our input(s) */
-	    // printf("waiting on input\n");
+	    printf("waiting on input\n");
 	    r = select(nfds+1, &fds, NULL, NULL, NULL);
 
 	    if (r <= 0) {
