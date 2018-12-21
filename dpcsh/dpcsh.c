@@ -788,8 +788,9 @@ static struct fun_json *line2json(char *line, const char **error)
 	}
 
 	if (pmode == PARSE_TEXT) {
-		/* parse as a command-line */
-		json = fun_commander_line_to_command(line, &tid, error);
+		/* parse as a command-line with a fixed tid */
+		uint64_t legacy_tid = 0;
+		json = fun_commander_line_to_command(line, &legacy_tid, error);
 	} else {
 		/* parse as a real JSON blob */
 		/* FIXME: needs macro expansion */

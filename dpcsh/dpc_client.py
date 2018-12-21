@@ -77,12 +77,28 @@ class DpcClient(object):
         self.__next_tid += 1
         return tid
             
-    def async_send(self, jdict):
-        jstr = json.dumps(jdict)
+    def send_raw(self, jstr):
         self.__print(jstr, ' -> ')
         self.__send_line(jstr)
+        
+    def async_send(self, verb, arg_list, tid = None):
 
+        if (tid is None):
+            tid = self.next_tid()
+            
+        # make the args a list if it's just a dict or int or something
+        if (type(arg_list) is not list):
+            arg_list = [arg_list]
 
+        # make a json request in dict from
+        jdict = { "verb": verb, "arguments": arg_list, "tid": tid }
+
+        # stringify and send it
+        jstr = json.dumps(jdict)
+        self.send_raw(jstr)
+
+        return tid
+        
     def async_wait(self):
         # just pull the first thing off the wire and return it
         result = self.__recv_json()
@@ -96,7 +112,7 @@ class DpcClient(object):
             decoded_results = {"result" : None, "tid" : "-1"} # "an error happened"
         return decoded_results
     
-    def async_recv_any(self):
+    def async_recv_any_raw(self):
         # try and dequeue the first queued
         if (len(self.__async_queue) > 0):
             r = self.__async_queue.pop(0)
@@ -105,7 +121,10 @@ class DpcClient(object):
         # wait for something else        
         return self.async_wait()
 
-    def async_recv_wait(self, tid):
+    def async_recv_any(self):
+        return self.async_recv_any_raw()['result']
+
+    def async_recv_wait_raw(self, tid):
 
         # see if it's already pending
         for r in self.__async_queue:
@@ -122,6 +141,10 @@ class DpcClient(object):
 
             self.__async_queue.append(r)
 
+    def async_recv_wait(self, tid):
+        return self.async_recv_wait_raw(tid)['result']
+
+
     # preferred interface
     def execute(self, verb, arg_list, tid = None):
 
@@ -129,22 +152,9 @@ class DpcClient(object):
         if (" " in verb):
             raise RuntimeError("no spaces allowed in verbs")
 
-        if (tid is None):
-            tid = self.next_tid()
-            
-        # make it a list if it's just a dict or int or something
-        if (type(arg_list) is not list):
-            arg_list = [arg_list]
-
-        # make a json request in dict from
-        jdict = { "verb": verb, "arguments": arg_list, "tid": tid }
-
         # make it a string and send it & get results
-        self.async_send(jdict)
+        tid = self.async_send(verb, arg_list, tid)
         results = self.async_recv_wait(tid)
-
-        # strip out the result
-        results = results['result']
 
         return results
 
@@ -155,18 +165,17 @@ class DpcClient(object):
             raise RuntimeError("Attempted legacy command on non-legacy client instance")
 
         encoded_args = json.dumps(args)
+        
         # #!sh prefix to ensure it's parsed as legacy input
         cmd_line = "#!sh " + command + ' ' + encoded_args
 
         # send the request 
-        self.async_send(jdict)
+        self.send_raw(cmd_line)
 
-        # XXX: we know what dpcsh will stuff in the tid
-        results = self.async_recv_wait(tid)
+        # XXX: we know what dpcsh will always stuff a zero tid for
+        # legacy commands
+        results = self.async_recv_wait(0)
 
-        # strip out the result
-        results = results['result']
-        
         if (command == 'execute'):
             # XXX: flatten it back down for legacy clients
             return json.dumps(results)
