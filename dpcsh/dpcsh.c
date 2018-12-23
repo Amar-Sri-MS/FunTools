@@ -47,9 +47,6 @@
 #define HTTP_PORTNO     9001    /* default HTTP listen port */
 #define NO_FLOW_CTRL_DELAY_USEC	10000	/* no flow control delay in usec */
 
-// Global transaction counter for this shell
-static uint64_t tid = 1;
-
 /* handy socket abstraction */
 enum sockmode {
 	SOCKMODE_TERMINAL,
