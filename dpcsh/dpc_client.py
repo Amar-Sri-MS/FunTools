@@ -20,7 +20,7 @@ import socket
 class DpcClient(object):
     def __init__(self, legacy_ok = True, unix_sock = False, server_address = None):
         self.__legacy_ok = legacy_ok
-        self.__verbose = True
+        self.__verbose = False
         self.__truncate_long_lines = False
         self.__async_queue = []
         self.__next_tid = 1
