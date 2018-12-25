@@ -1139,7 +1139,7 @@ static void _do_interactive(struct dpcsock *funos_sock,
 	    }
 
 	    /* wait on our input(s) */
-	    printf("waiting on input\n");
+	    // printf("waiting on input\n");
 	    r = select(nfds+1, &fds, NULL, NULL, NULL);
 
 	    if (r <= 0) {
