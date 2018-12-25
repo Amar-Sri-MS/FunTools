@@ -74,8 +74,8 @@ static enum parsingmode _parse_mode = PARSE_UNKNOWN;
 #define DEFAULT_BAUD "19200"
 static bool _do_device_init = true; /* if we have a device, init by default */
 static char *_baudrate = DEFAULT_BAUD; /* default BAUD rate */
-static bool no_flow_control = false;  /* run without flow_control */
-
+static bool _no_flow_control = false;  /* run without flow_control */
+static bool _legacy_b64 = false;
 
 // We stash argv[0]
 const char *dpcsh_path;
@@ -393,7 +393,7 @@ bool _base64_write(struct dpcsock *sock, const uint8_t *buf, size_t nbyte)
 	// printf("[dpcsh] sending b64 %s\n", b64buf);
 
 	/* send it */
-	if (no_flow_control) {
+	if (_no_flow_control) {
 		int num_buf = strlen(b64buf);
 		for (int i = 0; i < num_buf; i++) {
 			r = write(fd, &b64buf[i], 1);
@@ -421,6 +421,25 @@ static char *_is_b64json_line(char *line)
 {
 	if (strncmp(line, B64JSON_HDR, strlen(B64JSON_HDR)) == 0)
 		return line + strlen(B64JSON_HDR);
+
+	/* legacy base64 encoding support. TODO: remove */
+	if (_legacy_b64) {
+		size_t len = strlen(line) + 1;
+		int r;
+		uint8_t *decode_buf = malloc(len);
+
+		if (decode_buf == NULL) {
+			return NULL; /* silent fail on OOM */
+		}
+
+		r = base64_decode(decode_buf, len, line);
+
+		free(decode_buf);
+
+		/* if we decoded something */
+		if (r > 0)
+			return line;
+	}
 
 	return NULL;
 }
@@ -1020,7 +1039,7 @@ static void _do_recv_cmd(struct dpcsock *funos_sock,
 		// strip the tid for non-proxy sessions
 		if (_parse_mode == PARSE_TEXT)
 			final_output = fun_json_lookup(raw_output, "result");
-		
+
 		if (final_output) {
 			struct fun_json *old = raw_output;
 			raw_output = fun_json_retain(final_output);
@@ -1320,6 +1339,7 @@ static struct option longopts[] = {
 	{ "no_dev_init",   no_argument,       NULL, 'X' },
 	{ "no_flow_control",   no_argument,       NULL, 'F' },
 	{ "baud",          required_argument, NULL, 'R' },
+	{ "legacy_b64",    no_argument, NULL, 'L' },
 
 	/* end */
 	{ NULL, 0, NULL, 0 },
@@ -1346,6 +1366,7 @@ static void usage(const char *argv0)
 	printf("       --manual_base64         just translate base64 back and forward\n");
 	printf("       --no_dev_init           don't init the UART device, use as-is\n");
 	printf("       --baud=rate             specify non-standard baud rate (default=" DEFAULT_BAUD ")\n");
+	printf("       --legacy_b64            support old-style base64 encoding, despite issues\n");
 }
 
 enum mode {
@@ -1501,7 +1522,7 @@ int main(int argc, char *argv[])
 			one_shot = true;
 			break;
 		case 'F':  /* "no_flow_control" -- run without flow control */
-			no_flow_control = true;
+			_no_flow_control = true;
 			break;
 		case 'N':  /* manual base64 mode -- drive a UART by hand */
 
@@ -1525,6 +1546,9 @@ int main(int argc, char *argv[])
 			}
 			break;
 
+		case 'L':
+			_legacy_b64 = true;
+			break;
 		default:
 			usage(argv[0]);
 			exit(1);
