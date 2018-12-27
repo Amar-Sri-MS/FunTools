@@ -24,7 +24,7 @@ class DpcClient(object):
         self.__truncate_long_lines = False
         self.__async_queue = []
         self.__next_tid = 1
-        
+
         if (unix_sock):
             if (server_address is None):
                 server_address = '/tmp/funos-dpc-text.sock'
@@ -76,16 +76,16 @@ class DpcClient(object):
         tid = self.__next_tid
         self.__next_tid += 1
         return tid
-            
+
     def send_raw(self, jstr):
         self.__print(jstr, ' -> ')
         self.__send_line(jstr)
-        
+
     def async_send(self, verb, arg_list, tid = None):
 
         if (tid is None):
             tid = self.next_tid()
-            
+
         # make the args a list if it's just a dict or int or something
         if (type(arg_list) is not list):
             arg_list = [arg_list]
@@ -98,11 +98,14 @@ class DpcClient(object):
         self.send_raw(jstr)
 
         return tid
-        
+
     def async_wait(self):
         # just pull the first thing off the wire and return it
         result = self.__recv_json()
         self.__print(result)
+
+        if ((result is None) or (result == "")):
+            return None
 
         # decode the raw json and return
         try:
@@ -111,14 +114,14 @@ class DpcClient(object):
             print("ERROR: Unable to parse to JSON. data: %s" % result)
             decoded_results = {"result" : None, "tid" : "-1"} # "an error happened"
         return decoded_results
-    
+
     def async_recv_any_raw(self):
         # try and dequeue the first queued
         if (len(self.__async_queue) > 0):
             r = self.__async_queue.pop(0)
             return r
-        
-        # wait for something else        
+
+        # wait for something else
         return self.async_wait()
 
     def async_recv_any(self):
@@ -131,11 +134,13 @@ class DpcClient(object):
             if (r['tid'] == tid):
                 self.__async_queue.remove(r)
             return r
-        
+
         # wait and dequeue until we find the one we want
         while (True):
             r = self.async_wait()
             print("found: %s" % r)
+            if (r is None):
+                return None
             if (r['tid'] == tid):
                 return r
 
@@ -165,11 +170,11 @@ class DpcClient(object):
             raise RuntimeError("Attempted legacy command on non-legacy client instance")
 
         encoded_args = json.dumps(args)
-        
+
         # #!sh prefix to ensure it's parsed as legacy input
         cmd_line = "#!sh " + command + ' ' + encoded_args
 
-        # send the request 
+        # send the request
         self.send_raw(cmd_line)
 
         # XXX: we know what dpcsh will always stuff a zero tid for
