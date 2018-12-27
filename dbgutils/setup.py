@@ -13,6 +13,14 @@ class JtagExtCommands(install):
     def run(self):
         print _platform
         if _platform == "linux" or _platform == "linux2":
+            fp = tempfile.TemporaryFile()
+            url = 'https://www.mips.com/?do-download=codescape-debugger-8-5-6-4-linux-64'
+            filedata = urllib2.urlopen(url)
+            datatowrite = filedata.read()
+            fp.write(datatowrite)
+            tempfile_name = fp.name
+            os.system('sudo python ' + fp.name + ' --accept-licence --shared')
+            fp.close()
             print('Copying jtag Codescape command scripts(platform:{0}'.format(_platform))
             destination_path = os.path.join(expanduser("~"), "imgtec/console_scripts")
             shutil.rmtree(destination_path, ignore_errors=True)
@@ -34,8 +42,8 @@ setup(
     description = 'python debug utilities for F1',
     scripts = ['dbgsh'],
     packages = packages_list,
-    package_data = {'probeutils': ["probeutils/dut.cfg"]},
     include_package_data=True,
+    package_data = {'probeutils': ["probeutils/dut.cfg"]},
     cmdclass={'jtaginstall': JtagExtCommands},
     install_requires = [
         'aardvark_py',

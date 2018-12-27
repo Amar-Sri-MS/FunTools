@@ -36,7 +36,7 @@ class DBG_Client(object):
                 dbgclient = JTAG_Client()
                 status = dbgclient.connect(ip_addr, dev_id)
             else:
-                raise ValueError('Mode: "{0}" is supported on this platform!'.format(mode))
+                raise ValueError('Mode: "{0}" is not supported on this platform!'.format(mode))
         elif mode == 'dpc':
             raise ValueError('Mode: "{0}" is not supported yet!'.format(mode))
             #self.client = DPC_Client()
