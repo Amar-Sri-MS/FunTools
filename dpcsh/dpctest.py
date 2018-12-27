@@ -17,6 +17,7 @@ def test_commands():
     print "### Running a command 1"
     message = "Hello dpc"
     result = client.execute('echo', message)
+    print("result: %s" % result)
     if (result.strip() != message):
         raise RuntimeError("echo failed")
     print "Echo OK"
@@ -30,7 +31,7 @@ def test_commands():
         raise RuntimeError("math failed")
     print "Math OK"
 
-
+    print "### Running large sized commands"
     for i in (10, 100, 1000, 10000, 100000):
         message = "a" * i
         result = client.execute('echo', message)
@@ -38,6 +39,23 @@ def test_commands():
             raise RuntimeError("large message failed at size = %d" % result)
         print "Large message OK for size = %d" % i
 
+    print "### Testing async"
+
+    # send three different times
+    client.async_send("delay", [3, "echo", "third"])
+    client.async_send("delay", [2, "echo", "second"])
+    client.async_send("delay", [1, "echo", "first"])
+
+    # collect results and expect in order
+    r1 = client.async_recv_any()
+    r2 = client.async_recv_any()
+    r3 = client.async_recv_any()
+
+    print "r1 = %s, r2 = %s, r3 = %s" % (r1, r2, r3)
+
+    if ((r1 != "first") or (r2 != "second") or (r3 != "third")):
+        raise RuntimeError("async messages in wrong order")
+    
     print "All tests OK!"
 
 # load up a dpcsh tcp socket
