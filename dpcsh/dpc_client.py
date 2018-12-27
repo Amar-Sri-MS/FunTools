@@ -22,7 +22,9 @@ class DpcClient(object):
         self.__legacy_ok = legacy_ok
         self.__verbose = False
         self.__truncate_long_lines = False
-
+        self.__async_queue = []
+        self.__next_tid = 1
+        
         if (unix_sock):
             if (server_address is None):
                 server_address = '/tmp/funos-dpc-text.sock'
@@ -70,38 +72,91 @@ class DpcClient(object):
         else:
             print(text, end=end)
 
-    def execute_command_line(self, command_line):
-        self.__print(command_line, ' -> ')
-        self.__send_line(command_line)
-        result = self.__recv_json()
-        self.__print(result)
-        return result
+    def next_tid(self):
+        tid = self.__next_tid
+        self.__next_tid += 1
+        return tid
+            
+    def send_raw(self, jstr):
+        self.__print(jstr, ' -> ')
+        self.__send_line(jstr)
+        
+    def async_send(self, verb, arg_list, tid = None):
 
-    # preferred interface
-    def execute(self, verb, arg_list, tid = 0):
-
-        # make sure verb is just a verb
-        if (" " in verb):
-            raise RuntimeError("no spaces allowed in verbs")
-
-        # make it a list if it's just a dict or int or something
+        if (tid is None):
+            tid = self.next_tid()
+            
+        # make the args a list if it's just a dict or int or something
         if (type(arg_list) is not list):
             arg_list = [arg_list]
 
         # make a json request in dict from
         jdict = { "verb": verb, "arguments": arg_list, "tid": tid }
 
-        # make it a string and send it & get results
+        # stringify and send it
         jstr = json.dumps(jdict)
-        results = self.execute_command_line(jstr)
+        self.send_raw(jstr)
+
+        return tid
+        
+    def async_wait(self):
+        # just pull the first thing off the wire and return it
+        result = self.__recv_json()
+        self.__print(result)
 
         # decode the raw json and return
         try:
-            decoded_results = json.loads(results)
+            decoded_results = json.loads(result)
         except:
-            print("ERROR: Unable to parse to JSON. data: %s" % results)
-            decoded_results = None
+            print("ERROR: Unable to parse to JSON. data: %s" % result)
+            decoded_results = {"result" : None, "tid" : "-1"} # "an error happened"
         return decoded_results
+    
+    def async_recv_any_raw(self):
+        # try and dequeue the first queued
+        if (len(self.__async_queue) > 0):
+            r = self.__async_queue.pop(0)
+            return r
+        
+        # wait for something else        
+        return self.async_wait()
+
+    def async_recv_any(self):
+        return self.async_recv_any_raw()['result']
+
+    def async_recv_wait_raw(self, tid):
+
+        # see if it's already pending
+        for r in self.__async_queue:
+            if (r['tid'] == tid):
+                self.__async_queue.remove(r)
+            return r
+        
+        # wait and dequeue until we find the one we want
+        while (True):
+            r = self.async_wait()
+            print("found: %s" % r)
+            if (r['tid'] == tid):
+                return r
+
+            self.__async_queue.append(r)
+
+    def async_recv_wait(self, tid):
+        return self.async_recv_wait_raw(tid)['result']
+
+
+    # preferred interface
+    def execute(self, verb, arg_list, tid = None):
+
+        # make sure verb is just a verb
+        if (" " in verb):
+            raise RuntimeError("no spaces allowed in verbs")
+
+        # make it a string and send it & get results
+        tid = self.async_send(verb, arg_list, tid)
+        results = self.async_recv_wait(tid)
+
+        return results
 
     # XXX: legacy interface. Avoid using this
     def execute_command(self, command, args):
@@ -110,10 +165,18 @@ class DpcClient(object):
             raise RuntimeError("Attempted legacy command on non-legacy client instance")
 
         encoded_args = json.dumps(args)
+        
         # #!sh prefix to ensure it's parsed as legacy input
         cmd_line = "#!sh " + command + ' ' + encoded_args
-        results = self.execute_command_line(cmd_line)
+
+        # send the request 
+        self.send_raw(cmd_line)
+
+        # XXX: we know what dpcsh will always stuff a zero tid for
+        # legacy commands
+        results = self.async_recv_wait(0)
+
         if (command == 'execute'):
-            return results
-        decoded_results = json.loads(results)
-        return decoded_results
+            # XXX: flatten it back down for legacy clients
+            return json.dumps(results)
+        return results
