@@ -4,7 +4,9 @@ import logging
 import traceback
 from array import array
 from i2cclient import *
-from jtagclient import *
+from sys import platform as _platform
+if _platform == "linux" or _platform == "linux2":
+    from jtagclient import *
 
 logger = logging.getLogger("dbgclient")
 logger.setLevel(logging.INFO)
@@ -30,8 +32,11 @@ class DBG_Client(object):
             dbgclient = I2C_Client(mode)
             status = dbgclient.connect(ip_addr, dev_id, slave_addr, force)
         elif mode == 'jtag':
-            dbgclient = JTAG_Client()
-            status = dbgclient.connect(ip_addr, dev_id)
+            if (_platform == "linux" or _platform == "linux2"):
+                dbgclient = JTAG_Client()
+                status = dbgclient.connect(ip_addr, dev_id)
+            else:
+                raise ValueError('Mode: "{0}" is supported on this platform!'.format(mode))
         elif mode == 'dpc':
             raise ValueError('Mode: "{0}" is not supported yet!'.format(mode))
             #self.client = DPC_Client()
