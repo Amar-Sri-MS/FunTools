@@ -11,6 +11,11 @@ import json
 import threading
 import random
 from threading import Thread
+try:  
+   os.environ["WORKSPACE"]
+except KeyError: 
+   print "Please set the environment variable WORKSPACE"
+   sys.exit(1)
 sys.path.append(os.environ["WORKSPACE"]+"/FunTools/dbgutils")
 sys.path.append(os.environ["WORKSPACE"]+"/FunTools/dbgutils/probeutils")
 from csrutils.csrutils import *
