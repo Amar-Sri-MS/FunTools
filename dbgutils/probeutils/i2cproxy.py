@@ -22,7 +22,7 @@ logger = logging.getLogger("i2cproxy")
 logger.setLevel(logging.INFO)
 
 class constants(object):
-    SERVER_TCP_PORT = 44444
+    SERVER_TCP_PORT = 55668
 
 def catch_exception(f):
     @functools.wraps(f)
