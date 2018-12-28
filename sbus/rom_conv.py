@@ -1,5 +1,6 @@
 #!/usr/bin/python
 
+import argparse
 import sys
 
 from itertools import izip_longest
@@ -75,9 +76,15 @@ def rom_convert(infile, outfile, little_endian):
 	print "Rom conversion completed"
 
 if __name__ == "__main__":
+	parser = argparse.ArgumentParser()
 
-	input_fn = sys.argv[1]
-	output_fn = sys.argv[2]
-	little_endian = False
+	group = parser.add_mutually_exclusive_group(required=True)
+	group.add_argument('--BE', dest='little_endian', action='store_false', help='Generate big-endian output')
+	group.add_argument('--LE', dest='little_endian', action='store_true', help='Generate little-endian output')
 
-	rom_convert(input_fn, output_fn, little_endian)
+	parser.add_argument('input', help='Input file name')
+	parser.add_argument('output', help='Output file name')
+
+	args = parser.parse_args()
+
+	rom_convert(args.input, args.output, args.little_endian)
