@@ -38,11 +38,16 @@ def combine(w0, w1, w2, wcnt):
 	return fullword
 
 # Already prep as little endian
-def bin_array_le(val):
+def bin_array(val, little_endian):
 
-	return [val & 0xff, (val>>8) & 0xff, (val>>16) & 0xff, val>>24]
+	ba = [val>>24, (val>>16) & 0xff, (val>>8) & 0xff, val & 0xff]
 
-def rom_convert(infile, outfile):
+	if little_endian:
+		ba.reverse()
+
+	return ba
+
+def rom_convert(infile, outfile, little_endian):
 
 	print "Beginning rom_convert (%s)" % infile
 
@@ -57,8 +62,7 @@ def rom_convert(infile, outfile):
 
 			tot_w = combine(lines[0], lines[1], lines[2], wcnt)
 
-			# !!! Making LE !!!
-			tot_w_arr = bin_array_le(tot_w)
+			tot_w_arr = bin_array(tot_w, little_endian)
 
 			#print "sbus_fw[%s] = %s" % (iteration, hex(tot_w))
 			#print ([hex(x) for x in tot_w_arr])
@@ -74,5 +78,6 @@ if __name__ == "__main__":
 
 	input_fn = sys.argv[1]
 	output_fn = sys.argv[2]
+	little_endian = False
 
-	rom_convert(input_fn, output_fn)
+	rom_convert(input_fn, output_fn, little_endian)
