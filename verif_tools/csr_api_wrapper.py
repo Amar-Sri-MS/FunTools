@@ -637,6 +637,107 @@ class csr_api_wrapper(object):
    def f1_pll_lock_status(self,mask):
       return f1_csr_lib.f1_pll_lock_status(mask);
 
+#void f1_dnr_config(
+#                   uint8_t coor_x,
+#                   uint8_t coor_y,
+#                   uint64_t ibuf_min_rsvd_credits_vc0,
+#                   uint64_t ibuf_min_rsvd_credits_vc1,
+#                   uint64_t ibuf_min_rsvd_credits_vc2,
+#                   uint64_t ibuf_min_rsvd_credits_vc3,
+#                   uint64_t ibuf_max_shared_credits,
+#                   uint64_t ebuf_min_rsvd_credits_vc_set0,
+#                   uint64_t ebuf_min_rsvd_credits_vc_set1,
+#                   uint64_t ebuf_max_shared_credits,
+#                   uint64_t ibuf_shared_credits_hysteresis,
+#                   uint64_t ebuf_shared_credits_hysteresis,
+#                   uint64_t inj_ibuf_min_rsvd_credits_vc0,
+#                   uint64_t inj_ibuf_min_rsvd_credits_vc1,
+#                   uint64_t inj_ibuf_min_rsvd_credits_vc2,
+#                   uint64_t inj_ibuf_min_rsvd_credits_vc3
+#                   ) {
+   def f1_dnr_config(self,coor_x,coor_y,ibuf_min_rsvd_credits_vc0,ibuf_min_rsvd_credits_vc1,ibuf_min_rsvd_credits_vc2,ibuf_min_rsvd_credits_vc3,ibuf_max_shared_credits,ebuf_min_rsvd_credits_vc_set0,ebuf_min_rsvd_credits_vc_set1,ebuf_max_shared_credits,ibuf_shared_credits_hysteresis,ebuf_shared_credits_hysteresis,inj_ibuf_min_rsvd_credits_vc0,inj_ibuf_min_rsvd_credits_vc1,inj_ibuf_min_rsvd_credits_vc2,inj_ibuf_min_rsvd_credits_vc3):
+      return f1_csr_lib.f1_dnr_config(c_uint8(coor_x),c_uint8(coor_y),c_uint64(ibuf_min_rsvd_credits_vc0),c_uint64(ibuf_min_rsvd_credits_vc1),c_uint64(ibuf_min_rsvd_credits_vc2),c_uint64(ibuf_min_rsvd_credits_vc3),c_uint64(ibuf_max_shared_credits),c_uint64(ebuf_min_rsvd_credits_vc_set0),c_uint64(ebuf_min_rsvd_credits_vc_set1),c_uint64(ebuf_max_shared_credits),c_uint64(ibuf_shared_credits_hysteresis),c_uint64(ebuf_shared_credits_hysteresis),c_uint64(inj_ibuf_min_rsvd_credits_vc0),c_uint64(inj_ibuf_min_rsvd_credits_vc1),c_uint64(inj_ibuf_min_rsvd_credits_vc2),c_uint64(inj_ibuf_min_rsvd_credits_vc3))
+
+#void f1_dnr_route_config(
+#                         uint8_t coor_x,
+#                         uint8_t coor_y,
+#                         uint64_t val_o1turn_en,
+#                         uint64_t val_adaptive_en,
+#                         uint64_t val_xy_en,
+#                         uint64_t val_adaptive_vc_sel_en,
+#                         uint64_t val_o1turn_vc_sel_en) {
+   def f1_dnr_route_config(self,coor_x,coor_y,val_o1turn_en,val_adaptive_en,val_xy_en,val_adaptive_vc_sel_en,val_o1turn_vc_sel_en):
+      return f1_csr_lib.f1_dnr_route_config(c_uint8(coor_x),c_uint8(coor_y),c_uint64(val_o1turn_en),c_uint64(val_adaptive_en),c_uint64(val_xy_en),c_uint64(val_adaptive_vc_sel_en),c_uint64(val_o1turn_vc_sel_en))
+
+#void f1_dnr_stat_probe_config(
+#                         uint8_t coor_x,
+#                         uint8_t coor_y,
+#                         uint8_t on_port, // 0 = E, 1 = W, 2 = N, 3 = S, 4 = H
+#                         uint8_t on_vcset, // 0 - coh, 1 - non-coh
+#                         uint64_t val_vcid, uint64_t val_vcid_mask,
+#                         uint64_t val_so, uint64_t val_so_mask,
+#                         uint64_t val_dgid, uint64_t val_dgid_mask,
+#                         uint64_t val_out_port, uint64_t val_out_port_mask) {
+   def f1_dnr_stat_probe_config(self,coor_x,coor_y,on_port,on_vcset,val_vcid,val_vcid_mask,val_so,val_so_mask,val_dgid,val_dgid_mask,val_out_port,val_out_port_mask):
+      return f1_csr_lib.f1_dnr_stat_probe_config(c_uint8(coor_x),c_uint8(coor_y),c_uint8(on_port),c_uint8(on_vcset),c_uint64(val_vcid),c_uint64(val_vcid_mask),c_uint64(val_so),c_uint64(val_so_mask),c_uint64(val_dgid),c_uint64(val_dgid_mask),c_uint64(val_out_port),c_uint64(val_out_port_mask))
+
+#void f1_dnr_stat_probe_counter (
+#                         uint8_t coor_x,
+#                         uint8_t coor_y,
+#                         uint8_t on_port, // 0 = E, 1 = W, 2 = N, 3 = S, 4 = H
+#                         uint8_t on_vcset // 0 - coh, 1 - non-coh
+#                         ) {
+   def f1_dnr_stat_probe_counter(self,coor_x,coor_y,on_port,on_vcset):
+      return f1_csr_lib.f1_dnr_stat_probe_counter(c_uint8(coor_x),c_uint8(coor_y),c_uint8(on_port),c_uint8(on_vcset))
+
+#void f1_stat_en_fep(uint8_t coor_x, uint8_t coor_y, uint8_t vc_en) {
+   def f1_stat_en_fep(self,coor_x, coor_y, vc_en):
+      return f1_csr_lib.f1_stat_en_fep(c_uint8(coor_x),c_uint8( coor_y),c_uint8( vc_en))
+
+#void f1_stat_fep(uint8_t coor_x, uint8_t coor_y) {
+   def f1_stat_fep(self,coor_x, coor_y):
+      return f1_csr_lib.f1_stat_fep(c_uint8(coor_x),c_uint8( coor_y))
+
+#void f1_stat_clear_fep(uint8_t coor_x, uint8_t coor_y) {
+   def f1_stat_clear_fep(self,coor_x, coor_y):
+      return f1_csr_lib.f1_stat_clear_fep(c_uint8(coor_x),c_uint8( coor_y))
+
+#uint32_t f1_config_chk_fep(uint8_t coor_x, uint8_t coor_y) {
+   def f1_config_chk_fep(self,coor_x, coor_y):
+      return f1_csr_lib.f1_config_chk_fep(c_uint8(coor_x),c_uint8( coor_y))
+
+#uint32_t f1_debug_fep(uint8_t coor_x, uint8_t coor_y) {
+   def f1_debug_fep(self,coor_x, coor_y):
+      return f1_csr_lib.f1_debug_fep(c_uint8(coor_x),c_uint8( coor_y))
+
+#uint32_t f1_eot_chk_fep(uint8_t coor_x, uint8_t coor_y) {
+   def f1_eot_chk_fep(self,coor_x, coor_y):
+      return f1_csr_lib.f1_eot_chk_fep(c_uint8(coor_x),c_uint8( coor_y))
+
+#uint32_t f1_intr_chk_fep(uint8_t coor_x, uint8_t coor_y) {
+   def f1_intr_chk_fep(self,coor_x, coor_y):
+      return f1_csr_lib.f1_intr_chk_fep(c_uint8(coor_x),c_uint8( coor_y))
+
+#uint32_t f1_intr_clear_fep(uint8_t coor_x, uint8_t coor_y) {
+   def f1_intr_clear_fep(self,coor_x, coor_y):
+      return f1_csr_lib.f1_intr_clear_fep(c_uint8(coor_x),c_uint8( coor_y))
+
+#void f1_err_stat_clear_fep(uint8_t coor_x, uint8_t coor_y) {
+   def f1_err_stat_clear_fep(self,coor_x, coor_y):
+      return f1_csr_lib.f1_err_stat_clear_fep(c_uint8(coor_x),c_uint8( coor_y))
+
+#void f1_err_stat_fep(uint8_t coor_x, uint8_t coor_y) {
+   def f1_err_stat_fep(self,coor_x, coor_y):
+      return f1_csr_lib.f1_err_stat_fep(c_uint8(coor_x),c_uint8( coor_y))
+
+#void f1_config_snx(uint8_t coor_x, uint8_t coor_y, uint8_t is_cdu) {
+   def f1_config_snx(self,coor_x, coor_y, is_cdu):
+      return f1_csr_lib.f1_config_snx(c_uint8(coor_x),c_uint8( coor_y),c_uint8( is_cdu))
+
+#void f1_stat_snx(uint8_t coor_x, uint8_t coor_y, uint8_t is_cdu, uint8_t is_rx) {
+   def f1_stat_snx(self,coor_x, coor_y, is_cdu, is_rx):
+      return f1_csr_lib.f1_stat_snx(c_uint8(coor_x),c_uint8( coor_y),c_uint8( is_cdu),c_uint8( is_rx))
+
 ################################################################################
 def proc_arg():
     global args
