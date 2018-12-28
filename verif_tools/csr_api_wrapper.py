@@ -22,7 +22,7 @@ def setup_verif_socket_client():
    f1_csr_lib.csr_socket_set_dbg_level(0)
 
 def connect_verif_server():
-   f1_csr_lib.open_socket(args.verif_svr)
+   f1_csr_lib.open_socket_port(args.verif_svr_hostname,args.verif_svr_port)
 
 def csr_wr(addr,data):
     status=[0]
@@ -739,10 +739,14 @@ class csr_api_wrapper(object):
       return f1_csr_lib.f1_stat_snx(c_uint8(coor_x),c_uint8( coor_y),c_uint8( is_cdu),c_uint8( is_rx))
 
 ################################################################################
+def auto_int(x):
+    return int(x, 0)
+
 def proc_arg():
     global args
     parser = argparse.ArgumentParser()
-    parser.add_argument('--verif_svr', nargs='?', type=str, default='cadence-pc-3', help='verif server. default %(default)s')
+    parser.add_argument('--verif_svr_hostname', nargs='?', type=str, default='cadence-pc-3', help='verif server hostname. default %(default)s')
+    parser.add_argument('--verif_svr_port', nargs='?', type=auto_int, default=0x1234, help='verif server port. default %(default)s')
     args = parser.parse_args()
 
 def main():
