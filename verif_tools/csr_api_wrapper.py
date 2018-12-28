@@ -569,6 +569,74 @@ def all_csr_tests():
    run_csr_at('cdu')
    run_csr_at('pc_cmh')
 
+class csr_api_wrapper(object):
+   def __init__(self):
+      self.f1_csr_slib=f1_csr_lib
+
+  #uint32_t f1_config_chk_ca(uint32_t cluster);
+   def f1_config_chk_ca(self,cluster):
+      return f1_csr_lib.f1_config_chk_ca(cluster)
+
+  #uint32_t f1_config_chk_cdu();
+   def f1_config_chk_cdu(self):
+      return f1_csr_lib.f1_config_chk_cdu()
+
+  #uint32_t f1_idle_chk_ca(uint32_t cluster);
+   def f1_idle_chk_ca(self,cluster):
+      return f1_csr_lib.f1_idle_chk_ca(cluster)
+
+  #uint32_t f1_idle_chk_cdu();
+   def f1_idle_chk_cdu(self):
+      return f1_csr_lib.f1_idle_chk_cdu();
+
+  #void f1_stat_ca(uint32_t cluster);
+   def f1_stat_ca(self,cluster):
+      return f1_csr_lib.f1_stat_ca(cluster);
+
+  #void f1_stat_cdu();
+   def f1_stat_cdu(self):
+      return f1_csr_lib.f1_stat_cdu();
+
+  #void f1_stat_clear_ca(uint32_t cluster);
+   def f1_stat_clear_ca(self,cluster):
+      return f1_csr_lib.f1_stat_clear_ca(cluster);
+
+  #void f1_stat_clear_cdu();
+   def f1_stat_clear_cdu(self):
+      return f1_csr_lib.f1_stat_clear_cdu();
+
+  #void f1_debug_ca(uint32_t cluster);
+   def f1_debug_ca(self,cluster):
+      return f1_csr_lib.f1_debug_ca(cluster);
+
+  #void f1_debug_cdu();
+   def f1_debug_cdu(self):
+      return f1_csr_lib.f1_debug_cdu();
+
+  #uint32_t f1_intr_chk_ca(uint32_t cluster);
+   def f1_intr_chk_ca(self,cluster):
+      return f1_csr_lib.f1_intr_chk_ca(cluster);
+
+  #uint32_t f1_intr_chk_cdu();
+   def f1_intr_chk_cdu(self):
+      return f1_csr_lib.f1_intr_chk_cdu();
+
+  #uint32_t f1_idle_chk_bp_cnt(uint32_t cluster_mask, uint32_t pref_mask);
+   def f1_idle_chk_bp_cnt(self,cluster_mask, pref_mask):
+      return f1_csr_lib.f1_idle_chk_bp_cnt(cluster_mask, pref_mask);
+
+  #uint32_t f1_idle_chk_wu_cred(uint32_t cluster_mask, uint32_t unit_mask, uint32_t per_vp_cred, uint32_t per_core_cred, uint32_t per_unit_cred);
+   def f1_idle_chk_wu_cred(self,cluster_mask, unit_mask, per_vp_cred, per_core_cred, per_unit_cred):
+      return f1_csr_lib.f1_idle_chk_wu_cred(cluster_mask, unit_mask, per_vp_cred, per_core_cred, per_unit_cred);
+
+  #uint32_t f1_idle_chk_wu_index(uint32_t cluster_mask);
+   def f1_idle_chk_wu_index(self,cluster_mask):
+      return f1_csr_lib.f1_idle_chk_wu_index(cluster_mask);
+
+  #uint32_t f1_pll_lock_status(uint32_t mask);
+   def f1_pll_lock_status(self,mask):
+      return f1_csr_lib.f1_pll_lock_status(mask);
+
 ################################################################################
 def proc_arg():
     global args
@@ -577,12 +645,14 @@ def proc_arg():
     args = parser.parse_args()
 
 def main():
-    proc_arg()
-    load_lib()
-    setup_verif_socket_client()
-    connect_verif_server()
-    readline.parse_and_bind('tab: complete')
-    code.interact(local=globals())
+   global f1w
+   proc_arg()
+   load_lib()
+   f1w=csr_api_wrapper()
+   setup_verif_socket_client()
+   connect_verif_server()
+   readline.parse_and_bind('tab: complete')
+   code.interact(local=globals())
 
 if (__name__ == "__main__"):
     main()
