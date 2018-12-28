@@ -17,7 +17,7 @@ def aardvark_i2c_spi_dev_list_ext():
     logger.info('Found {0} devices with dev_ids: {1}'
                 ' Serial numbers: {2}'.format(n_devs,
                      [hex(x) for x in dev_ids[:n_devs]] if dev_ids else None,
-                     [hex(x) for x in serial_nums[:n_devs]] if serial_nums else None))
+                     [x for x in serial_nums[:n_devs]] if serial_nums else None))
     if not n_devs or not dev_ids or not serial_nums:
         logger.error('No aardvark i2c spi devices found!')
         return (None, None)
@@ -58,7 +58,7 @@ def aardvark_i2c_spi_dev_index_from_serial(serial):
         return None
     if serial in serial_nums:
         index = serial_nums.index(serial)
-        return dev_ids[index] & 0x7fff
+        return dev_ids[index]
     logger.error('Device with serial num: {0} not found!'.format(serial))
     if len(serial_nums) != 0:
         logger.info('Found serial numbers:{0}'.format(serial_nums))
