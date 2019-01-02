@@ -1,6 +1,6 @@
 Instruction Count
 
-To meaure the inefficiency in code generation, this tools measures how many asm instructions are generated for each source code line.
+To meaure the inefficiency in code generation, this tool measures how many asm instructions are generated for each source code line.
 The basic principle is
   1) extract asm statements from either funos-f1-emu or samurai annotate fiels.
   2) pass the addresses through gdb to get <func+offset> file:line.
