@@ -10,8 +10,19 @@ import glob
 
 import obj_tools
 
-gdb = '/opt/cross/mips64/bin/mips64-unknown-elf-gdb'
-objdump = '/opt/cross/mips64/bin/mips64-unknown-elf-objdump'
+import platform
+
+_hostOS = platform.system()
+if _hostOS == 'Linux':
+  gdb = '/opt/cross/mips64/bin/mips64-unknown-elf-gdb'
+  objdump = '/opt/cross/mips64/bin/mips64-unknown-elf-objdump'
+elif _hostOS == 'Darwin':
+  gdb = '/Users/Shared/cross/mips64/bin/mips64-unknown-elf-gdb'
+  objdump = '/Users/Shared/cross/mips64/bin/mips64-unknown-elf-objdump'
+else:
+  print("Unsupported OS:", _hostOS)
+  assert False
+
 
 addr_to_func_map = {}
 addr_to_loc_map = {}
