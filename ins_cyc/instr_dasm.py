@@ -5,6 +5,7 @@
 
 import os
 import sys
+import argparse
 import subprocess
 import glob
 
@@ -89,36 +90,42 @@ def sam_instr_dasm_annotate(bin_file, sam_dir):
         addr = '0x' + v[2]
         asm = v[3].strip()
         data.append([addr, asm])
- 
+
   out_file = os.path.join(sam_dir, 'samurai.instr_dasm')
   instr_annotate(bin_file, out_file, data)
 
-def usage():
-  print 'usage: %s <funos-f1-emu|funos_dir> [samurai_dir]' % sys.argv[0]
+def main():
+  def usage():
+    print 'usage: %s <funos-f1-emu|funos_dir> [samurai_dir]' % sys.argv[0]
 
-if __name__ == '__main__':
-  if len(sys.argv) not in [2, 3]:
-    usage()
-    sys.exit(-1)
+  parser = argparse.ArgumentParser(
+            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+  parser.add_argument('funos_binary', nargs='?', default='funos-f1-emu', help='<funos-f1-emu|funos_dir>')
+  parser.add_argument('samurai_dir',  nargs='?', default=None, help='directory with samurai .annotate files')
+  args = parser.parse_args()
 
   bin_file = 'funos-f1-emu'
-
-  if os.path.isdir(sys.argv[1]):
-    bin_file = os.path.join(sys.argv[1], bin_file)
+  if os.path.isdir(args.funos_binary):
+    bin_file = os.path.join(args.funos_binary, bin_file)
   else:
-    bin_file = sys.argv[1]
+    bin_file = args.funos_binary
 
   if not os.path.isfile(bin_file):
     print 'File does not exist: %s' % bin_file
     usage()
-    sys.exit(-1)
+    return -1
 
-  if len(sys.argv) == 2:
-    bin_instr_dasm_annotate(bin_file)
-  else:
+  if args.samurai_dir:
     sam_dir = sys.argv[2]
     if not os.path.isdir(sam_dir):
       print 'Directory does not exist: %s' % sam_dir
       usage()
       sys.exit(-1)
     sam_instr_dasm_annotate(bin_file, sam_dir)
+  else:
+    bin_instr_dasm_annotate(bin_file)
+
+  return 0
+
+if __name__ == '__main__':
+  sys.exit(main())
