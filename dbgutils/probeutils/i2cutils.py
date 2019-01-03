@@ -59,9 +59,16 @@ class i2c:
                            ' Found devices: {1}').format(self.dev_id, dev_list))
             logger.error(status_msg)
             return (False, status_msg)
+        dev_in_use = dev_idx & 0x8000
+        dev_idx = dev_idx & 0x7FFF
+        if dev_in_use != 0:
+            logger.info('Device({0}/{1}) already in use! Disconnecting....'.format(self.dev_id, dev_idx))
+            status = aa_close(dev_idx)
+            logger.info('Device({0}/{1}) is closed with status: {2}!'.format(
+                self.dev_id, dev_idx, status))
+
         n_devs, devs = aa_find_devices(dev_idx+1)
-        logger.debug('n_devs:{0} devs:'.format(n_devs))
-        logger.debug(devs)
+        logger.info('n_devs:{0} devs:{1}:'.format(n_devs, devs))
         if not devs or devs[dev_idx] is None:
             status_msg = 'Failed to detect i2c device! dev_list: {0}'.format(dev_list)
             logger.error(status_msg)

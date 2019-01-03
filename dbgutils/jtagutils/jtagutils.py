@@ -16,7 +16,7 @@ class constants(object):
 @command()
 def csr_probe(dev_type, ip_addr):
     '''Connects to Codescape jtag probe and enables csr tap select'''
-    status = probe(dev_type, ip_addr)
+    status = probe(dev_type, ip_addr, force_disconnect=True, verbose=True)
     status = str(status)
     if (("SysProbe" not in status) or ("Firmware" not in status) or
         ("ECONNREFUSED" in status) or ("InvalidArgError" in status)):
@@ -27,12 +27,14 @@ def csr_probe(dev_type, ip_addr):
     logger.debug('tap select cmd: \"{}\"'.format(cmd))
     status = tapi(cmd)
     logger.info('tap select status: {}'.format(status))
+
     status = status[0]
     if not status:
         status_msg = (('Failed select csr tap controller! Error:' +
                 ' {}').format(hex(status)))
         logger.error(status_msg)
         return (False, status_msg)
+
     status_msg = 'jtag is connected and csr tap select is enabled!'
     logger.info(status_msg)
     return (True, status_msg)
