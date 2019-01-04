@@ -1,13 +1,102 @@
 #!/usr/bin/env python
 
-'''
-Debug utilities for NCV thresholds
-'''
+"""
+Sample debug macros
+Individual module owners can write their utilities similar to this
+
+Usage:
+-----
+$python
+Python 2.7.12 (default, Nov 12 2018, 14:36:49)
+[GCC 5.4.0 20160609] on linux2
+Type "help", "copyright", "credits" or "license" for more information.
+>>> from dbgmacros.test_macros import *
+>>> connect('TPOD28', 'i2c')
+>>> dump_hbm(0x4000, 100)
+"""
 
 from csrutils.csrutils import *
 
 logger = logging.getLogger("dbgmacros")
 logger.setLevel(logging.INFO)
+
+def dump_hbm(start_addr, num_bytes):
+    if (start_addr & 0xFF != 0):
+       logger.error('start_addr should be 256 byte aligned')
+       return
+    csr_replay_data = list()
+    # Round of to 256 byte boundary
+    # Number of 64-byte words to read
+    num_reads_256bytes = (num_bytes + 255) >> 8
+    num_64byte_words = num_reads_256bytes * 32
+    num_reads = num_reads_256bytes * 4
+    logger.info('Reading num_reads_256bytes: {0}'
+            ' num_reads: {1} num_words:{2}'.format(
+            num_reads_256bytes, num_reads, num_64byte_words))
+
+    read_data_words = [None] * num_64byte_words
+    cnt = 0
+    while (cnt < num_reads):
+        skip_addr = 0
+        if(cnt & 0x2):
+            skip_addr = constants.MUH_RING_SKIP_ADDR
+        if (cnt & 0x1):
+            skip_addr += constants.MUH_SNA_ANODE_SKIP_ADDR
+        csr_addr = constants.MEM_RW_CMD_CSR_ADDR
+        csr_addr += skip_addr
+        muh_sna_cmd_addr = (start_addr/4) + (cnt/4)
+        csr_val = muh_sna_cmd_addr << 37;
+        csr_val |= 0x1 << 63; #READ
+        logger.debug('csr_val: {0}'.format(csr_val))
+        (status, data) = dbgprobe().csr_poke(csr_addr, [csr_val])
+        if status is True:
+            logger.debug("Poke:{0} addr: {1} Success!".format(cnt, hex(muh_sna_cmd_addr)))
+        else:
+            error_msg = data
+            logger.error("CSR Poke failed! Addr: {0} Error: {1}".format(hex(csr_addr), error_msg))
+            return
+
+        csr_addr = constants.MEM_RW_STATUS_CSR_ADDR
+        csr_addr += skip_addr
+        (status, data) = dbgprobe().csr_peek(csr_addr, 1)
+        if status is True:
+            word_array = data
+            if word_array is None or not word_array:
+                logger.error("Failed get cmd status! Error in csr peek!!!")
+                return
+            cmd_status_done = word_array[0]
+            cmd_status_done = cmd_status_done >> 63
+            if cmd_status_done != 1:
+                logger.error("Failed cmd status != Done!")
+                return
+            else:
+                logger.debug('Data ready!')
+        else:
+            error_msg = data
+            logger.error('Error! {0}!'.format(error_msg))
+            return
+
+        for i in range(8):
+            csr_addr = constants.MEM_RW_DATA_CSR_ADDR + skip_addr
+            csr_addr += i * 8
+            (status, data) = dbgprobe().csr_peek(csr_addr, 1)
+            if status is True:
+                logger.debug('peek word:{0} success!!!'.format(i))
+                logger.debug('Read value:{0}'.format(data))
+                read_data_words[(cnt * 8) + i] = data[0]
+            else:
+                error_msg = data
+                logger.error("Error! {0}!".format(error_msg))
+
+        cnt += 1
+
+    if (cnt == num_reads):
+        logger.info('Succesfully read {0} words!'.format(num_reads * 8))
+        for i in range(num_64byte_words):
+            logger.info('Address: {0}  Data: 0x{1}'.format(hex(start_addr+(i*8)), hex(read_data_words[i])[2:].zfill(16)));
+    else:
+        logger.error('Read un-successful')
+        return
 
 def show_global_ncv_thrsholds():
     print('NWQM NCV THRESHOLDS:')
@@ -64,4 +153,3 @@ def show_pc_cmh_ncv_thrsholds():
         else:
             error_msg = resp_data
             print("Error! {0}!".format(error_msg))
-
