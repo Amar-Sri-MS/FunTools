@@ -55,7 +55,7 @@ There are few scripts here
       instr_count_query.py group_by_func funos-f1-emu.instr_count
 
 Sample outputs
-
+```
     funos-f1-emu.instr_dasm
         ...
         0xa80000000035ef8c <fun_host_rx+272> platform/mips64/regfile.h:77 sd    a0,488(a2)
@@ -171,6 +171,7 @@ Sample outputs
                 1       nucleus/fabric_address.h:223    } else if ((gid >= GID_HNU_BASE) && (gid <= GID_HNU_MAX)) {
                 18      nucleus/fabric_address.h:226    return "other";
         ...
+```
 
 
 Future

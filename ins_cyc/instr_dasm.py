@@ -1,4 +1,4 @@
-#!/usr/bin/python2.7
+#!/usr/bin/env python2.7
 
 # input: funos_bin, optionally samurai_dir
 # output: .instr_dasm (use instr_count.py for further analysis)
