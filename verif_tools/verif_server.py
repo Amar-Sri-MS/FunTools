@@ -10,6 +10,8 @@ import string, os
 import json
 import threading
 import random
+import code, rlcompleter, readline
+
 from threading import Thread
 try:  
    os.environ["WORKSPACE"]
@@ -120,7 +122,7 @@ class RcvThread(threading.Thread):
 def connect_ptf():
     global ptf_sock
     ptf_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    ptf_sock.connect(("localhost", 9001))
+    ptf_sock.connect((args.ptf_host,args.ptf_port))
     print 'Connected with PTF server. Start listening for packets from DUT'
     ptf_sock.settimeout(0.5)
 # Start receving thread
@@ -138,6 +140,25 @@ def connect_ptf():
 #      06:    pkt             2B msglen, 1B cmd, 2B port, pkt data(upto 16k byte)
 #      07:    pkt req         2B msglen, 1B cmd
 
+def test_ptf():
+    print 'do test_ptf'
+    if 1:
+       pkt_data_with_space = ""
+       pkt_data="00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff"
+       for i in range (len(pkt_data)/2):
+          pkt_data_with_space += pkt_data[2*i] + pkt_data[(2*i) + 1] + " "
+       #get rid of the trailing space
+       pkt_data_with_space = pkt_data_with_space[0:-1]
+       json_pkt = '{ "intf" :  '+ '"' + "fpg" + str(0) + '"' ', "pkt" : "' +pkt_data_with_space+'"}'
+       print "Sending pkt to PTF server:"
+       print json_pkt
+       ptf_sock.sendall(json_pkt)
+       time.sleep(0.5)
+    else:
+       try:
+          result = ptf_sock.recv(16*1024)
+       except(socket.timeout):
+          pass
 
 #defines for the commands
 CMD_ACK_NOP       = 0
@@ -467,6 +488,9 @@ def proc_arg():
     global parser, args, i2c_probe_serial, i2c_proxy_ip, i2c_slave_addr
     parser = argparse.ArgumentParser()
     parser.add_argument('--ptf_dis', action='store_true', default=False, help='ptf connection disable. default %(default)d')
+    parser.add_argument('--ptf_host', nargs='?', type=str, default='localhost', help='ptf host to connect to. default %(default)s')
+    parser.add_argument('--ptf_port', nargs='?', type=auto_int, default=9001, help='ptf port to connect to. default %(default)d')
+    parser.add_argument('--test_ptf', action='store_true', default=False, help='test ptf connection. default %(default)d')
     parser.add_argument('--i2c_dis', action='store_true', default=False, help='i2cproxy connection disable. default %(default)d')
     parser.add_argument('--verif_port', nargs='?', type=auto_int, default=0x1234, help='verif client port. default %(default)d')
     parser.add_argument('--tpod', nargs='?', type=str, default='TPOD4', help='TPOD name. default %(default)s')
@@ -483,9 +507,11 @@ def main():
     proc_arg()
     connect_verif_client_socket()
     if not args.ptf_dis:
-        connect_ptf()
+       connect_ptf()
     if not args.i2c_dis:
-        connect_dbgprobe()
+       connect_dbgprobe()
+    if args.test_ptf:
+       test_ptf()
     start_verif_server()
 
 if (__name__ == "__main__"):

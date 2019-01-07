@@ -3,12 +3,6 @@ import os,sys,code
 import rlcompleter, readline
 import argparse
 
-try:  
-   os.environ["ROOT_DIR"]
-except KeyError: 
-   print "Please set the environment variable ROOT_DIR"
-   sys.exit(1)
-
 from ctypes import *
 
 ################################################################################
@@ -16,7 +10,7 @@ from ctypes import *
 
 def load_lib():
    global f1_csr_lib
-   f1_csr_lib=cdll.LoadLibrary(os.environ["ROOT_DIR"]+"/f1/ver/f1/f1_csr_slib/f1_csr_slib.so")
+   f1_csr_lib=cdll.LoadLibrary(args.csr_lib)
 
 def setup_verif_socket_client():
    f1_csr_lib.csr_socket_set_dbg_level(0)
@@ -747,6 +741,7 @@ def proc_arg():
     parser = argparse.ArgumentParser()
     parser.add_argument('--verif_svr_hostname', nargs='?', type=str, default='cadence-pc-3', help='verif server hostname. default %(default)s')
     parser.add_argument('--verif_svr_port', nargs='?', type=auto_int, default=0x1234, help='verif server port. default %(default)s')
+    parser.add_argument('--csr_lib', nargs='?', type=str, default="./f1_csr_slib.so", help='f1_csr_slib.so location. default %(default)s')
     args = parser.parse_args()
 
 def main():

@@ -69,18 +69,22 @@ class I2C_Client(object):
         csr_peek_args = dict()
         csr_peek_args["csr_addr"] = csr_addr
         csr_peek_args["csr_width"] = csr_width_words
-        self.con_handle.send_obj({"cmd": "CSR_PEEK",
+	retry_count = 0
+        while retry_count < 10:
+            self.con_handle.send_obj({"cmd": "CSR_PEEK",
                     "args": csr_peek_args})
-        msg = self.con_handle.read_obj()
-        logger.debug(msg)
-        status = msg.get("STATUS", None)
-        if status[0] == True:
-            word_array = msg.get("DATA", None)
-            return (True, word_array)
-        else:
-            error_msg = "i2c csr peek failed!"
-            logger.error(error_msg)
-            return (False, error_msg)
+            time.sleep(0.01)
+            msg = self.con_handle.read_obj()
+            logger.debug(msg)
+            status = msg.get("STATUS", None)
+            if status[0] == True:
+                word_array = msg.get("DATA", None)
+                return (True, word_array)
+            else:
+                error_msg = "i2c csr peek failed! retry_cnt: {0}".format(retry_count)
+                logger.error(error_msg)
+                retry_count += 1
+        return (False, error_msg)
 
     # Sends dbg challange cmd request to i2c proxy server, get the response
     def dbg_chal_cmd(self, cmd, data=None):
@@ -128,19 +132,25 @@ class I2C_Client(object):
         csr_poke_args["csr_val"] = word_array
         if fast_poke:
             csr_poke_args["fast_poke"] = word_array
-        self.con_handle.send_obj({"cmd": "CSR_POKE",
-                    "args": csr_poke_args})
-        if not fast_poke:
-            msg = self.con_handle.read_obj()
-            status = msg.get("STATUS", None)
-            if status[0] == True:
-                return (True, "poke success!")
+
+	retry_count = 0
+        while retry_count < 10:
+            self.con_handle.send_obj({"cmd": "CSR_POKE",
+                                      "args": csr_poke_args})
+            time.sleep(0.01)
+            if not fast_poke:
+                msg = self.con_handle.read_obj()
+                status = msg.get("STATUS", None)
+                if status[0] == True:
+                    return (True, "poke success!")
+                else:
+                    error_msg = "Error! poke failed!: {0} retry_cnt: {1}".format(status[1],retry_count)
+                    retry_count += 1
+                    if retry_count >= 10:
+                        logger.error(error_msg)
+                        return (False, error_msg)
             else:
-                error_msg = "Error! poke failed!: {0}".format(status[1])
-                logger.error(error_msg)
-                return (False, error_msg)
-        else:
-            return (True, "poke success!")
+                return (True, "poke success!")
 
     # Closes remote i2c devce connection and socket connection to i2c proxy server
     def disconnect(self):
