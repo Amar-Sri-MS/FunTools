@@ -7,6 +7,7 @@ import os
 import sys
 import argparse
 import subprocess
+import re
 import itertools
 
 is_debug = False
@@ -15,14 +16,18 @@ def dprint(s):
   if is_debug:
     print >> sys.stderr, s
 
-def parse_instr_count(in_file):
+def parse_instr_count(in_file, pattern):
   # format: <count>\t<file_loc>\t<func_range>\t<code>
   data = []
   with open(in_file, 'r') as f:
     for line in f:
       if line[0] == '\t':
         continue
-      v = line.strip().split('\t', 3)
+      v = line.strip()
+      if pattern:
+        if not re.search(pattern, v):
+          continue
+      v = v.split('\t', 3)
       data.append(v)
   return data
 
@@ -89,9 +94,9 @@ def group_by_fname(data, is_sort_values=True):
     g_data[fname] = [instr_count, vlist]
   return g_data
 
-def group_data_prepare(in_file):
+def group_data_prepare(in_file, pattern=None):
   dprint('parsing %s' % in_file)
-  data = parse_instr_count(in_file)
+  data = parse_instr_count(in_file, pattern=pattern)
 
   dprint('sorting by function name')
   data = sort_by_fname(data)
@@ -110,8 +115,8 @@ def group_data_sort_by_count(g_data):
   data = sorted(data, cmp=count_fname_cmp, reverse=True)
   return data
 
-def instr_count_by_func(in_file, out_f):
-  data = group_data_prepare(in_file)
+def instr_count_by_func(in_file, out_f, pattern=None):
+  data = group_data_prepare(in_file, pattern=pattern)
   data = group_data_sort_by_count(data)
 
   # write output
@@ -129,6 +134,7 @@ def main():
 
   parser = argparse.ArgumentParser(
             formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+  parser.add_argument('--pattern', action='store', default=None, help='input filter regex pattern')
   parser.add_argument('query_cmd', choices=['group_by_func'], default='query command')
   parser.add_argument('instr_count_file', nargs='?', default='funos-f1-emu.instr_count')
   args = parser.parse_args()
@@ -148,7 +154,7 @@ def main():
 
   out_f = sys.stdout
   if args.query_cmd == 'group_by_func':
-    instr_count_by_func(in_file, out_f)
+    instr_count_by_func(in_file, out_f, pattern=args.pattern)
     return 0
 
   usage()

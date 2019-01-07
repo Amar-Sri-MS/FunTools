@@ -52,9 +52,9 @@ def constprop_moves_remove(data):
 
   return data
 
-def instr_count_diff(in_file1, in_file2, out_f, is_track_add_del=True):
-  data1 = instr_count_query.group_data_prepare(in_file1)
-  data2 = instr_count_query.group_data_prepare(in_file2)
+def instr_count_diff(in_file1, in_file2, out_f, pattern=None, is_track_add_del=True):
+  data1 = instr_count_query.group_data_prepare(in_file1, pattern=pattern)
+  data2 = instr_count_query.group_data_prepare(in_file2, pattern=pattern)
 
   data = []
 
@@ -91,14 +91,20 @@ def instr_count_diff(in_file1, in_file2, out_f, is_track_add_del=True):
 
 def main():
   def usage():
-    print 'usage: %s [-a] <instr_count_file1> <instr_count_file2>' % sys.argv[0]
+    print 'usage: %s [-a] [--pattern <pattern>] <instr_count_file1> <instr_count_file2>' % sys.argv[0]
 
   parser = argparse.ArgumentParser(
             formatter_class=argparse.ArgumentDefaultsHelpFormatter)
   parser.add_argument('-a', action='store_true', default=False, help='include added and deleted functions')
+  parser.add_argument('--pattern', action='store', default=None, help='input filter regex pattern')
   parser.add_argument('instr_count_file1')
   parser.add_argument('instr_count_file2')
   args = parser.parse_args()
+
+  if os.path.isdir(args.instr_count_file1):
+    args.instr_count_file1 = os.path.join(args.instr_count_file1, 'funos-f1-emu.instr_count')
+  if os.path.isdir(args.instr_count_file2):
+    args.instr_count_file2 = os.path.join(args.instr_count_file2, 'funos-f1-emu.instr_count')
 
   for f in [args.instr_count_file1, args.instr_count_file2]:
     if not f.endswith('.instr_count'):
@@ -109,7 +115,8 @@ def main():
       return -1
 
   out_f = sys.stdout
-  data = instr_count_diff(args.instr_count_file1, args.instr_count_file2, out_f, args.a)
+  data = instr_count_diff(args.instr_count_file1, args.instr_count_file2, out_f,\
+                          pattern=args.pattern, is_track_add_del=args.a)
   return 0
 
 if __name__ == '__main__':
