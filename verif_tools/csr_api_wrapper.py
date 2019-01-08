@@ -732,6 +732,42 @@ class csr_api_wrapper(object):
    def f1_stat_snx(self,coor_x, coor_y, is_cdu, is_rx):
       return f1_csr_lib.f1_stat_snx(c_uint8(coor_x),c_uint8( coor_y),c_uint8( is_cdu),c_uint8( is_rx))
 
+   def f1_chk_intr(self):
+      f1_csr_lib.cmh_chk_interrupts(1,8)
+      for i in range(8):
+         f1_csr_lib.cmh_chk_interrupts(0,i) #is cc , clus
+         f1_csr_lib.f1_intr_chk_ca(i)
+         f1_csr_lib.f1_rgx_check_interrupts(i) #clus
+      f1_csr_lib.f1_eqm_check_interrupts()
+      f1_csr_lib.f1_sec_check_interrupts()
+      f1_csr_lib.f1_intr_chk_cdu()
+      for x in range(5):
+         for y in range(5):
+            f1_csr_lib.f1_intr_chk_fep(x,y) #x,y
+   def f1_chk_intr_hu(self):
+      f1_csr_lib.hsu_api_print_fmr_intr_status(0) #ring
+      f1_csr_lib.hsu_api_print_hudma_intr_status(0)
+      f1_csr_lib.hsu_api_print_msc_intr_status(0)
+      f1_csr_lib.hsu_api_print_pta_intr_status(0)
+      f1_csr_lib.hsu_api_print_pwp_intr_status(0)
+      f1_csr_lib.hsu_api_print_tgt_intr_status(0)
+      f1_csr_lib.hsu_api_print_wqse_intr_status(0)
+      f1_csr_lib.hsu_api_print_wqsi_intr_status(0)
+   def f1_chk_intr_nu(self):
+      f1_csr_lib.nu_efp_rfp_interrupt(0,0) #shape,filter
+      f1_csr_lib.nu_epg_rdp_interrupt(0,0)
+      f1_csr_lib.nu_erp_interrupt(0,0)
+      f1_csr_lib.nu_etdp_interrupt(0,0)
+      f1_csr_lib.nu_etfp_interrupt(0,0)
+      f1_csr_lib.nu_etp_interrupt(0,0)
+      f1_csr_lib.nu_fae_interrupt(0,0)
+      f1_csr_lib.nu_fcb_interrupt_print(0,0)
+      f1_csr_lib.nu_fpg_interrupt(0,0)
+      f1_csr_lib.nu_prw_interrupt(0,0)
+      f1_csr_lib.nu_psw_interrupt(0,0)
+      f1_csr_lib.nu_sfg_interrupt(0,0)
+      f1_csr_lib.nu_wro_interrupt(0,0)
+
 ################################################################################
 def auto_int(x):
     return int(x, 0)
