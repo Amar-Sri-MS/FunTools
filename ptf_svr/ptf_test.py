@@ -104,6 +104,25 @@ class PollingThread(threading.Thread):
 #
 # Handle socket connection
 #
+def recv_all(sock):
+    sock.setblocking(0)
+    total_data=''
+    data=''
+    while 1:
+        try:
+            data = sock.recv(16*1024)
+            total_data = total_data + data
+            print("DEBUGME: total " + total_data)
+            if data.find("}") != -1:
+                break
+            
+            time.sleep(0.1)
+        except:
+            pass
+
+    return total_data
+
+
 def handle(self, connection, address):
     logger = logging.getLogger("process-%r" % (address,))
     pollthread = PollingThread(self, connection)
@@ -112,14 +131,14 @@ def handle(self, connection, address):
         logger.debug("Connected %r at %r", connection, address)
         while True:
             logger.debug("Wait for data")
-            data = connection.recv(1024)
+            data = recv_all(connection)
             if data == "":
                 message = "\nSocket is closed remotely"
                 print(message)
                 logger.debug(message)
                 break
         
-            #print("Get data : " + data)
+            print("Get data : " + data)
             logger.debug("Get data from client socket: " + data)
             jdata = json.loads(data)
             try:
