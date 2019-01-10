@@ -21,6 +21,11 @@ class constants(object):
 class I2C_Client(object):
     def __init__(self, mode):
         self.con_handle = None
+        self.glb_rd_retry=0
+        self.glb_rd_cnt=0
+        self.glb_wr_retry=0
+        self.glb_wr_cnt=0
+        self.glb_rw_cnt=0
 
     def __del__(self):
         if self.con_handle is not None:
@@ -77,11 +82,16 @@ class I2C_Client(object):
             msg = self.con_handle.read_obj()
             logger.debug(msg)
             status = msg.get("STATUS", None)
+            self.glb_rd_cnt+=1
+            self.glb_rw_cnt+=1
             if status[0] == True:
                 word_array = msg.get("DATA", None)
                 return (True, word_array)
             else:
-                error_msg = "i2c csr peek failed! retry_cnt: {0}".format(retry_count)
+                self.glb_rd_retry+=1
+                rd_retry_perc=round(float(self.glb_rd_retry)/float(self.glb_rd_cnt),4)
+                rw_retry_perc=round(float(self.glb_rd_retry + self.glb_wr_retry)/float(self.glb_rw_cnt),4)
+                error_msg = "i2c csr peek failed! retry_cnt: {0} glb_rd_retry: {1} rd_fail_perc: {2} rw_fail_perc: {3}".format(retry_count,self.glb_rd_retry,rd_retry_perc,rw_retry_perc)
                 logger.error(error_msg)
                 retry_count += 1
         return (False, error_msg)
@@ -138,13 +148,18 @@ class I2C_Client(object):
             self.con_handle.send_obj({"cmd": "CSR_POKE",
                                       "args": csr_poke_args})
             time.sleep(0.01)
+            self.glb_wr_cnt+=1
+            self.glb_rw_cnt+=1
             if not fast_poke:
                 msg = self.con_handle.read_obj()
                 status = msg.get("STATUS", None)
                 if status[0] == True:
                     return (True, "poke success!")
                 else:
-                    error_msg = "Error! poke failed!: {0} retry_cnt: {1}".format(status[1],retry_count)
+                    self.glb_wr_retry+=1
+                    wr_retry_perc=round(float(self.glb_wr_retry)/float(self.glb_wr_cnt),4)
+                    rw_retry_perc=round(float(self.glb_rd_retry + self.glb_wr_retry)/float(self.glb_rw_cnt),4)
+                    error_msg = "Error! poke failed!: {0} retry_cnt: {1} glb_wr_retry: {2} wr_fail_perc: {3} rw_fail_perc: {4}".format(status[1],retry_count,self.glb_wr_retry,wr_retry_perc,rw_retry_perc)
                     retry_count += 1
                     if retry_count >= 10:
                         logger.error(error_msg)

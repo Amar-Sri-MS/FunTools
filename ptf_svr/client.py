@@ -44,7 +44,7 @@ test_json_file = "ptf_svr_test.json"
 #
 def rcv_packets_from_server(self, sock):
     try:
-        result = sock.recv(1024)
+        result = sock.recv(16*1024)
         if result == "":
             print("socket closed remotely at server side")
             self.join()
