@@ -20,7 +20,7 @@ class constants(object):
     IC_DEVICE_MODE_GPIO = 0x0
     I2C_XFER_BIT_RATE = 500
     F1_I2C_ADDR_MODE = 0
-    SBP_CMD_EXE_TIME_WAIT = 2 
+    SBP_CMD_EXE_TIME_WAIT = 0.5
     I2C_CSR_SLEEP_SEC    = 0.001
 
 # Converts byte array to big-endian 64-bit words

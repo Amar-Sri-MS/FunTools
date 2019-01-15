@@ -80,7 +80,6 @@ class i2c_obj_db:
         if not dev_id:
             logger.error('Invalid dev_id(Null)!')
             return None
-        print dev_id
         i2c_obj = self.i2c_objs.get(dev_id, None)
         if i2c_obj:
             return i2c_obj[0]
@@ -152,7 +151,7 @@ class I2CFactoryThread(jsocket.ServerFactoryThread):
                 if not connect_args:
                     self.send_obj({"STATUS":[False, "Invalid connect args!"]})
                     return
-                print connect_args
+                logger.debug('connect args: '.format(connect_args))
                 dev_id = connect_args.get("dev_id", None)
                 if not dev_id:
                     self.send_obj({"STATUS":[False, ("Invalid connect args. dev_id is missing!")]})
