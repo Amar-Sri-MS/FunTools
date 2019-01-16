@@ -55,10 +55,6 @@ def fname_cmp(a, b):
     return 0
   return -1 if f1 < f2 else 1
 
-def group_key(a):
-  fname = func_range_to_name(a[2])
-  return fname
-
 def sort_by_fname(data):
   return sorted(data, cmp=fname_cmp)
 
@@ -71,9 +67,39 @@ def count_fname_cmp(a, b):
     return -1 if a[1] < b[1] else 1
   return -1 if a0 < b0 else 1
 
+def loc_fname_cmp(a, b):
+  if a == b:
+    return 0
+  try:
+    loc1, fname1 = a.split('\t', 1)
+    loc2, fname2 = b.split('\t', 1)
+    (f1, l1) = loc1.split(':')
+    (f2, l2) = loc2.split(':')
+    l1 = int(l1)
+    l2 = int(l2)
+    if f1 == f2:
+      if l1 == l2:
+        if fname1 == fname2:
+          return 0
+        return -1 if fname1 < fname2 else 1
+      return -1 if l1 < l2 else 1
+    return -1 if f1 < f2 else 1
+  except:
+    pass
+  return -1 if a < b else 1
+
+def count_loc_fname_cmp(a, b):
+  a0 = abs(a[0])
+  b0 = abs(b[0])
+  if a0 == b0:
+    loc_fname_cmp(a[1], b[1])
+  return -1 if a0 < b0 else 1
+
+
 def group_by_fname(data, is_sort_values=True):
   g_data = {}
-  for fname, vlist in itertools.groupby(data, key=group_key):
+  group_fname_key_func = lambda a: func_range_to_name(a[2])
+  for fname, vlist in itertools.groupby(data, key=group_fname_key_func):
     if is_sort_values:
       fl_c_map = {}
       for v in vlist:
@@ -94,37 +120,73 @@ def group_by_fname(data, is_sort_values=True):
     g_data[fname] = [instr_count, vlist]
   return g_data
 
-def group_data_prepare(in_file, pattern=None):
+def group_by_loc_fname(data, is_sort_values=True):
+  g_data = {}
+  group_loc_key_func = lambda a: [a[1], func_range_to_name(a[2])]
+  for loc_fname, vlist in itertools.groupby(data, key=group_loc_key_func):
+    if is_sort_values:
+      fname_c_map = {}
+      for v in vlist:
+        fname_c_map[v[2]] = v
+
+      vlist = []
+      for fname in sorted(fname_c_map, cmp=fname_cmp):
+        v = fname_c_map[fname]
+        vlist.append(v)
+
+    instr_count = 0
+    for v in vlist:
+      try:
+        instr_count += int(v[0])
+      except:
+        pass
+
+    g_data['\t'.join(loc_fname)] = [instr_count, vlist]
+  return g_data
+
+def group_data_prepare(in_file, group_by=None, pattern=None):
   dprint('parsing %s' % in_file)
   data = parse_instr_count(in_file, pattern=pattern)
 
-  dprint('sorting by function name')
-  data = sort_by_fname(data)
+  if group_by == 'func':
+    dprint('sorting by function name')
+    data = sort_by_fname(data)
 
-  dprint('grouping by function name')
-  data = group_by_fname(data)
+    dprint('grouping by function name')
+    data = group_by_fname(data)
+  elif group_by == 'loc':
+    # already in sorted(location and function name)')
+    dprint('grouping by location and function name')
+    data = group_by_loc_fname(data)
+  else:
+    assert False, 'unknown group_by=%s' % group_by
 
   return data
 
-def group_data_sort_by_count(g_data):
+def group_data_sort_by_count(g_data, group_by):
   dprint('sorting group data by count')
   data = []
-  for fname, (count, vlist) in g_data.iteritems():
-    data.append([count, fname, vlist])
+  for kname, (count, vlist) in g_data.iteritems():
+    data.append([count, kname, vlist])
 
-  data = sorted(data, cmp=count_fname_cmp, reverse=True)
+  cmp_func = count_fname_cmp if group_by == 'func' else count_loc_fname_cmp
+  data = sorted(data, cmp=cmp_func, reverse=True)
   return data
 
-def instr_count_by_func(in_file, out_f, pattern=None):
-  data = group_data_prepare(in_file, pattern=pattern)
-  data = group_data_sort_by_count(data)
+def instr_count_by_group(in_file, out_f, group_by, pattern=None):
+  data = group_data_prepare(in_file, group_by=group_by, pattern=pattern)
+  data = group_data_sort_by_count(data, group_by=group_by)
 
   # write output
-  for count, fname, vlist in data:
-    out_f.write('%s\t%s\n' % (count, fname))
+  for count, kname, vlist in data:
+    out_f.write('%s\t%s\n' % (count, kname))
     for v in vlist:
-      v = v[0:2] + v[3:]
-      out_f.write('\t%s\n' % '\t'.join(v))
+      if group_by == 'func':
+        v = [v[0], v[1]] + v[3:]
+        out_f.write('\t%s\n' % '\t'.join(v))
+      else:
+        v = [v[0], v[2]] + v[3:]
+        out_f.write('\t%s\n' % '\t'.join(v))
 
   return data
 
@@ -135,7 +197,7 @@ def main():
   parser = argparse.ArgumentParser(
             formatter_class=argparse.ArgumentDefaultsHelpFormatter)
   parser.add_argument('--pattern', action='store', default=None, help='input filter regex pattern')
-  parser.add_argument('query_cmd', choices=['group_by_func'], default='query command')
+  parser.add_argument('query_cmd', choices=['group_by_func', 'group_by_loc'], help='query command')
   parser.add_argument('instr_count_file', nargs='?', default='funos-f1-emu.instr_count')
   args = parser.parse_args()
 
@@ -154,7 +216,11 @@ def main():
 
   out_f = sys.stdout
   if args.query_cmd == 'group_by_func':
-    instr_count_by_func(in_file, out_f, pattern=args.pattern)
+    instr_count_by_group(in_file, out_f, group_by='func', pattern=args.pattern)
+    return 0
+
+  if args.query_cmd == 'group_by_loc':
+    instr_count_by_group(in_file, out_f, group_by='loc', pattern=args.pattern)
     return 0
 
   usage()

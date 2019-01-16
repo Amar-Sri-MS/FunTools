@@ -16,15 +16,6 @@ def dprint(s):
   if is_debug:
     print >> sys.stderr, s
 
-def count_fname_cmp(a, b):
-  a0 = abs(a[0])
-  b0 = abs(b[0])
-  if a0 == b0:
-    if a[1] == b[1]:
-      return 0
-    return -1 if a[1] < b[1] else 1
-  return -1 if a0 < b0 else 1
-
 # sometimes i see constprop moving to different location getting flagged as ADD and DEL
 #        +3558   jrdump_sec_sha_cmn_dbg.constprop.1444   ADD
 #        -3558   jrdump_sec_sha_cmn_dbg.constprop.1357   DEL
@@ -52,9 +43,19 @@ def constprop_moves_remove(data):
 
   return data
 
-def instr_count_diff(in_file1, in_file2, out_f, pattern=None, is_track_add_del=True):
-  data1 = instr_count_query.group_data_prepare(in_file1, pattern=pattern)
-  data2 = instr_count_query.group_data_prepare(in_file2, pattern=pattern)
+def instr_count_diff(group_by, in_file1, in_file2, out_f, pattern=None, is_track_add_del=True):
+  cmp_func = None
+  if group_by == 'func':
+    cmp_func = instr_count_query.count_fname_cmp
+  elif group_by == 'loc':
+    cmp_func = instr_count_query.count_loc_fname_cmp
+  else:
+    assert False, 'unknonw group_by %s' % group_by
+
+  is_group_by_func = group_by == 'func'
+
+  data1 = instr_count_query.group_data_prepare(in_file1, group_by=group_by, pattern=pattern)
+  data2 = instr_count_query.group_data_prepare(in_file2, group_by=group_by, pattern=pattern)
 
   data = []
 
@@ -62,26 +63,39 @@ def instr_count_diff(in_file1, in_file2, out_f, pattern=None, is_track_add_del=T
   d2 = set(data2.keys())
 
   if is_track_add_del:
-    for fname in d2 - d1:
-      c2 = data2[fname][0]
-      data.append([c2, fname, 'ADD'])
+    for kname in d2 - d1:
+      c2 = data2[kname][0]
+      v = [c2, kname]
+      if group_by == 'loc':
+        v +=  data2[kname][1][0][3:]
+      v += ['ADD']
+      data.append(v)
 
-    for fname in d1 - d2:
-      c1 = data1[fname][0]
-      data.append([-c1, fname, 'DEL'])
+    for kname in d1 - d2:
+      c1 = data1[kname][0]
+      v = [-c1, kname]
+      if group_by == 'loc':
+        v +=  data1[kname][1][0][3:]
+      v += ['DEL']
+      data.append(v)
 
-    data = sorted(data, cmp=count_fname_cmp, reverse=True)
-    data = constprop_moves_remove(data)
+    if group_by == 'func':
+      data = sorted(data, cmp=cmp_func, reverse=True)
+      data = constprop_moves_remove(data)
 
-  for fname in sorted(d1 & d2):
-    c1 = data1[fname][0]
-    c2 = data2[fname][0]
+  for kname in sorted(d1 & d2):
+    c1 = data1[kname][0]
+    c2 = data2[kname][0]
     c_diff = c2 - c1
     if c_diff:
-      data.append([c_diff, fname])
+      v = [c_diff, kname]
+      if group_by == 'loc':
+        if data1[kname][1][0][3:] == data2[kname][1][0][3:]:
+          v +=  data1[kname][1][0][3:]
+      data.append(v)
 
   dprint('sort by instr_count diff')
-  data = sorted(data, cmp=count_fname_cmp, reverse=True)
+  data = sorted(data, cmp=cmp_func, reverse=True)
 
   # write output
   for v in data:
@@ -95,8 +109,9 @@ def main():
 
   parser = argparse.ArgumentParser(
             formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-  parser.add_argument('-a', action='store_true', default=False, help='include added and deleted functions')
+  parser.add_argument('-d', choices=['func', 'loc'], default='func', help='diff type')
   parser.add_argument('--pattern', action='store', default=None, help='input filter regex pattern')
+  parser.add_argument('-a', action='store_true', default=False, help='include added and deleted functions')
   parser.add_argument('instr_count_file1')
   parser.add_argument('instr_count_file2')
   args = parser.parse_args()
@@ -115,7 +130,7 @@ def main():
       return -1
 
   out_f = sys.stdout
-  data = instr_count_diff(args.instr_count_file1, args.instr_count_file2, out_f,\
+  data = instr_count_diff(args.d, args.instr_count_file1, args.instr_count_file2, out_f,\
                           pattern=args.pattern, is_track_add_del=args.a)
   return 0
 
