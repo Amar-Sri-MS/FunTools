@@ -906,9 +906,6 @@ class Struct(Declaration):
     self.parent_struct = None
     self.is_struct = True
 
-    # OPT info
-    self.opt_size = None
-
   def FieldWithBaseType(self, base_type):
     """Returns first field with the given type.
 
@@ -1735,22 +1732,6 @@ class GenParser:
     Defines continuation of multi-flit field.
     flit start_bit:end_bit ...
     """
-
-    (opt, opt_val) = line.strip().split(' ', 1)
-    if opt == 'OPT':
-      v = opt_val.split(' ')
-      if len(v) > 0:
-        if v[0] == 'SIZE':
-          try:
-            val = int(v[1].strip())
-            containing_struct.opt_size = val
-            return True
-          except:
-            print('SIZE option doesnot have a valid number')
-          return False
-
-      print('Invalid OPT line')
-      return False
 
     match = re.match('(\w+\s+(\w+:\w+|\w+))\s+(\w+)\s+(\w+)(\[[0-9]+\]|)\s*(.*)', line)
 
