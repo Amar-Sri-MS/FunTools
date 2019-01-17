@@ -3,12 +3,6 @@ import os,sys,code
 import rlcompleter, readline
 import argparse
 
-try:  
-   os.environ["ROOT_DIR"]
-except KeyError: 
-   print "Please set the environment variable ROOT_DIR"
-   sys.exit(1)
-
 from ctypes import *
 
 ################################################################################
@@ -16,13 +10,13 @@ from ctypes import *
 
 def load_lib():
    global f1_csr_lib
-   f1_csr_lib=cdll.LoadLibrary(os.environ["ROOT_DIR"]+"/f1/ver/f1/f1_csr_slib/f1_csr_slib.so")
+   f1_csr_lib=cdll.LoadLibrary(args.csr_lib)
 
 def setup_verif_socket_client():
    f1_csr_lib.csr_socket_set_dbg_level(0)
 
 def connect_verif_server():
-   f1_csr_lib.open_socket(args.verif_svr)
+   f1_csr_lib.open_socket_port(args.verif_svr_hostname,args.verif_svr_port)
 
 def csr_wr(addr,data):
     status=[0]
@@ -569,20 +563,232 @@ def all_csr_tests():
    run_csr_at('cdu')
    run_csr_at('pc_cmh')
 
+class csr_api_wrapper(object):
+   def __init__(self):
+      self.f1_csr_slib=f1_csr_lib
+
+  #uint32_t f1_config_chk_ca(uint32_t cluster);
+   def f1_config_chk_ca(self,cluster):
+      return f1_csr_lib.f1_config_chk_ca(cluster)
+
+  #uint32_t f1_config_chk_cdu();
+   def f1_config_chk_cdu(self):
+      return f1_csr_lib.f1_config_chk_cdu()
+
+  #uint32_t f1_idle_chk_ca(uint32_t cluster);
+   def f1_idle_chk_ca(self,cluster):
+      return f1_csr_lib.f1_idle_chk_ca(cluster)
+
+  #uint32_t f1_idle_chk_cdu();
+   def f1_idle_chk_cdu(self):
+      return f1_csr_lib.f1_idle_chk_cdu();
+
+  #void f1_stat_ca(uint32_t cluster);
+   def f1_stat_ca(self,cluster):
+      return f1_csr_lib.f1_stat_ca(cluster);
+
+  #void f1_stat_cdu();
+   def f1_stat_cdu(self):
+      return f1_csr_lib.f1_stat_cdu();
+
+  #void f1_stat_clear_ca(uint32_t cluster);
+   def f1_stat_clear_ca(self,cluster):
+      return f1_csr_lib.f1_stat_clear_ca(cluster);
+
+  #void f1_stat_clear_cdu();
+   def f1_stat_clear_cdu(self):
+      return f1_csr_lib.f1_stat_clear_cdu();
+
+  #void f1_debug_ca(uint32_t cluster);
+   def f1_debug_ca(self,cluster):
+      return f1_csr_lib.f1_debug_ca(cluster);
+
+  #void f1_debug_cdu();
+   def f1_debug_cdu(self):
+      return f1_csr_lib.f1_debug_cdu();
+
+  #uint32_t f1_intr_chk_ca(uint32_t cluster);
+   def f1_intr_chk_ca(self,cluster):
+      return f1_csr_lib.f1_intr_chk_ca(cluster);
+
+  #uint32_t f1_intr_chk_cdu();
+   def f1_intr_chk_cdu(self):
+      return f1_csr_lib.f1_intr_chk_cdu();
+
+  #uint32_t f1_idle_chk_bp_cnt(uint32_t cluster_mask, uint32_t pref_mask);
+   def f1_idle_chk_bp_cnt(self,cluster_mask, pref_mask):
+      return f1_csr_lib.f1_idle_chk_bp_cnt(cluster_mask, pref_mask);
+
+  #uint32_t f1_idle_chk_wu_cred(uint32_t cluster_mask, uint32_t unit_mask, uint32_t per_vp_cred, uint32_t per_core_cred, uint32_t per_unit_cred);
+   def f1_idle_chk_wu_cred(self,cluster_mask, unit_mask, per_vp_cred, per_core_cred, per_unit_cred):
+      return f1_csr_lib.f1_idle_chk_wu_cred(cluster_mask, unit_mask, per_vp_cred, per_core_cred, per_unit_cred);
+
+  #uint32_t f1_idle_chk_wu_index(uint32_t cluster_mask);
+   def f1_idle_chk_wu_index(self,cluster_mask):
+      return f1_csr_lib.f1_idle_chk_wu_index(cluster_mask);
+
+  #uint32_t f1_pll_lock_status(uint32_t mask);
+   def f1_pll_lock_status(self,mask):
+      return f1_csr_lib.f1_pll_lock_status(mask);
+
+#void f1_dnr_config(
+#                   uint8_t coor_x,
+#                   uint8_t coor_y,
+#                   uint64_t ibuf_min_rsvd_credits_vc0,
+#                   uint64_t ibuf_min_rsvd_credits_vc1,
+#                   uint64_t ibuf_min_rsvd_credits_vc2,
+#                   uint64_t ibuf_min_rsvd_credits_vc3,
+#                   uint64_t ibuf_max_shared_credits,
+#                   uint64_t ebuf_min_rsvd_credits_vc_set0,
+#                   uint64_t ebuf_min_rsvd_credits_vc_set1,
+#                   uint64_t ebuf_max_shared_credits,
+#                   uint64_t ibuf_shared_credits_hysteresis,
+#                   uint64_t ebuf_shared_credits_hysteresis,
+#                   uint64_t inj_ibuf_min_rsvd_credits_vc0,
+#                   uint64_t inj_ibuf_min_rsvd_credits_vc1,
+#                   uint64_t inj_ibuf_min_rsvd_credits_vc2,
+#                   uint64_t inj_ibuf_min_rsvd_credits_vc3
+#                   ) {
+   def f1_dnr_config(self,coor_x,coor_y,ibuf_min_rsvd_credits_vc0,ibuf_min_rsvd_credits_vc1,ibuf_min_rsvd_credits_vc2,ibuf_min_rsvd_credits_vc3,ibuf_max_shared_credits,ebuf_min_rsvd_credits_vc_set0,ebuf_min_rsvd_credits_vc_set1,ebuf_max_shared_credits,ibuf_shared_credits_hysteresis,ebuf_shared_credits_hysteresis,inj_ibuf_min_rsvd_credits_vc0,inj_ibuf_min_rsvd_credits_vc1,inj_ibuf_min_rsvd_credits_vc2,inj_ibuf_min_rsvd_credits_vc3):
+      return f1_csr_lib.f1_dnr_config(c_uint8(coor_x),c_uint8(coor_y),c_uint64(ibuf_min_rsvd_credits_vc0),c_uint64(ibuf_min_rsvd_credits_vc1),c_uint64(ibuf_min_rsvd_credits_vc2),c_uint64(ibuf_min_rsvd_credits_vc3),c_uint64(ibuf_max_shared_credits),c_uint64(ebuf_min_rsvd_credits_vc_set0),c_uint64(ebuf_min_rsvd_credits_vc_set1),c_uint64(ebuf_max_shared_credits),c_uint64(ibuf_shared_credits_hysteresis),c_uint64(ebuf_shared_credits_hysteresis),c_uint64(inj_ibuf_min_rsvd_credits_vc0),c_uint64(inj_ibuf_min_rsvd_credits_vc1),c_uint64(inj_ibuf_min_rsvd_credits_vc2),c_uint64(inj_ibuf_min_rsvd_credits_vc3))
+
+#void f1_dnr_route_config(
+#                         uint8_t coor_x,
+#                         uint8_t coor_y,
+#                         uint64_t val_o1turn_en,
+#                         uint64_t val_adaptive_en,
+#                         uint64_t val_xy_en,
+#                         uint64_t val_adaptive_vc_sel_en,
+#                         uint64_t val_o1turn_vc_sel_en) {
+   def f1_dnr_route_config(self,coor_x,coor_y,val_o1turn_en,val_adaptive_en,val_xy_en,val_adaptive_vc_sel_en,val_o1turn_vc_sel_en):
+      return f1_csr_lib.f1_dnr_route_config(c_uint8(coor_x),c_uint8(coor_y),c_uint64(val_o1turn_en),c_uint64(val_adaptive_en),c_uint64(val_xy_en),c_uint64(val_adaptive_vc_sel_en),c_uint64(val_o1turn_vc_sel_en))
+
+#void f1_dnr_stat_probe_config(
+#                         uint8_t coor_x,
+#                         uint8_t coor_y,
+#                         uint8_t on_port, // 0 = E, 1 = W, 2 = N, 3 = S, 4 = H
+#                         uint8_t on_vcset, // 0 - coh, 1 - non-coh
+#                         uint64_t val_vcid, uint64_t val_vcid_mask,
+#                         uint64_t val_so, uint64_t val_so_mask,
+#                         uint64_t val_dgid, uint64_t val_dgid_mask,
+#                         uint64_t val_out_port, uint64_t val_out_port_mask) {
+   def f1_dnr_stat_probe_config(self,coor_x,coor_y,on_port,on_vcset,val_vcid,val_vcid_mask,val_so,val_so_mask,val_dgid,val_dgid_mask,val_out_port,val_out_port_mask):
+      return f1_csr_lib.f1_dnr_stat_probe_config(c_uint8(coor_x),c_uint8(coor_y),c_uint8(on_port),c_uint8(on_vcset),c_uint64(val_vcid),c_uint64(val_vcid_mask),c_uint64(val_so),c_uint64(val_so_mask),c_uint64(val_dgid),c_uint64(val_dgid_mask),c_uint64(val_out_port),c_uint64(val_out_port_mask))
+
+#void f1_dnr_stat_probe_counter (
+#                         uint8_t coor_x,
+#                         uint8_t coor_y,
+#                         uint8_t on_port, // 0 = E, 1 = W, 2 = N, 3 = S, 4 = H
+#                         uint8_t on_vcset // 0 - coh, 1 - non-coh
+#                         ) {
+   def f1_dnr_stat_probe_counter(self,coor_x,coor_y,on_port,on_vcset):
+      return f1_csr_lib.f1_dnr_stat_probe_counter(c_uint8(coor_x),c_uint8(coor_y),c_uint8(on_port),c_uint8(on_vcset))
+
+#void f1_stat_en_fep(uint8_t coor_x, uint8_t coor_y, uint8_t vc_en) {
+   def f1_stat_en_fep(self,coor_x, coor_y, vc_en):
+      return f1_csr_lib.f1_stat_en_fep(c_uint8(coor_x),c_uint8( coor_y),c_uint8( vc_en))
+
+#void f1_stat_fep(uint8_t coor_x, uint8_t coor_y) {
+   def f1_stat_fep(self,coor_x, coor_y):
+      return f1_csr_lib.f1_stat_fep(c_uint8(coor_x),c_uint8( coor_y))
+
+#void f1_stat_clear_fep(uint8_t coor_x, uint8_t coor_y) {
+   def f1_stat_clear_fep(self,coor_x, coor_y):
+      return f1_csr_lib.f1_stat_clear_fep(c_uint8(coor_x),c_uint8( coor_y))
+
+#uint32_t f1_config_chk_fep(uint8_t coor_x, uint8_t coor_y) {
+   def f1_config_chk_fep(self,coor_x, coor_y):
+      return f1_csr_lib.f1_config_chk_fep(c_uint8(coor_x),c_uint8( coor_y))
+
+#uint32_t f1_debug_fep(uint8_t coor_x, uint8_t coor_y) {
+   def f1_debug_fep(self,coor_x, coor_y):
+      return f1_csr_lib.f1_debug_fep(c_uint8(coor_x),c_uint8( coor_y))
+
+#uint32_t f1_eot_chk_fep(uint8_t coor_x, uint8_t coor_y) {
+   def f1_eot_chk_fep(self,coor_x, coor_y):
+      return f1_csr_lib.f1_eot_chk_fep(c_uint8(coor_x),c_uint8( coor_y))
+
+#uint32_t f1_intr_chk_fep(uint8_t coor_x, uint8_t coor_y) {
+   def f1_intr_chk_fep(self,coor_x, coor_y):
+      return f1_csr_lib.f1_intr_chk_fep(c_uint8(coor_x),c_uint8( coor_y))
+
+#uint32_t f1_intr_clear_fep(uint8_t coor_x, uint8_t coor_y) {
+   def f1_intr_clear_fep(self,coor_x, coor_y):
+      return f1_csr_lib.f1_intr_clear_fep(c_uint8(coor_x),c_uint8( coor_y))
+
+#void f1_err_stat_clear_fep(uint8_t coor_x, uint8_t coor_y) {
+   def f1_err_stat_clear_fep(self,coor_x, coor_y):
+      return f1_csr_lib.f1_err_stat_clear_fep(c_uint8(coor_x),c_uint8( coor_y))
+
+#void f1_err_stat_fep(uint8_t coor_x, uint8_t coor_y) {
+   def f1_err_stat_fep(self,coor_x, coor_y):
+      return f1_csr_lib.f1_err_stat_fep(c_uint8(coor_x),c_uint8( coor_y))
+
+#void f1_config_snx(uint8_t coor_x, uint8_t coor_y, uint8_t is_cdu) {
+   def f1_config_snx(self,coor_x, coor_y, is_cdu):
+      return f1_csr_lib.f1_config_snx(c_uint8(coor_x),c_uint8( coor_y),c_uint8( is_cdu))
+
+#void f1_stat_snx(uint8_t coor_x, uint8_t coor_y, uint8_t is_cdu, uint8_t is_rx) {
+   def f1_stat_snx(self,coor_x, coor_y, is_cdu, is_rx):
+      return f1_csr_lib.f1_stat_snx(c_uint8(coor_x),c_uint8( coor_y),c_uint8( is_cdu),c_uint8( is_rx))
+
+   def f1_chk_intr(self):
+      f1_csr_lib.cmh_chk_interrupts(1,8)
+      for i in range(8):
+         f1_csr_lib.cmh_chk_interrupts(0,i) #is cc , clus
+         f1_csr_lib.f1_intr_chk_ca(i)
+         f1_csr_lib.f1_rgx_check_interrupts(i) #clus
+      f1_csr_lib.f1_eqm_check_interrupts()
+      f1_csr_lib.f1_sec_check_interrupts()
+      f1_csr_lib.f1_intr_chk_cdu()
+      for x in range(5):
+         for y in range(5):
+            f1_csr_lib.f1_intr_chk_fep(x,y) #x,y
+   def f1_chk_intr_hu(self):
+      f1_csr_lib.hsu_api_print_fmr_intr_status(0) #ring
+      f1_csr_lib.hsu_api_print_hudma_intr_status(0)
+      f1_csr_lib.hsu_api_print_msc_intr_status(0)
+      f1_csr_lib.hsu_api_print_pta_intr_status(0)
+      f1_csr_lib.hsu_api_print_pwp_intr_status(0)
+      f1_csr_lib.hsu_api_print_tgt_intr_status(0)
+      f1_csr_lib.hsu_api_print_wqse_intr_status(0)
+      f1_csr_lib.hsu_api_print_wqsi_intr_status(0)
+   def f1_chk_intr_nu(self):
+      f1_csr_lib.nu_efp_rfp_interrupt(0,0) #shape,filter
+      f1_csr_lib.nu_epg_rdp_interrupt(0,0)
+      f1_csr_lib.nu_erp_interrupt(0,0)
+      f1_csr_lib.nu_etdp_interrupt(0,0)
+      f1_csr_lib.nu_etfp_interrupt(0,0)
+      f1_csr_lib.nu_etp_interrupt(0,0)
+      f1_csr_lib.nu_fae_interrupt(0,0)
+      f1_csr_lib.nu_fcb_interrupt_print(0,0)
+      f1_csr_lib.nu_fpg_interrupt(0,0)
+      f1_csr_lib.nu_prw_interrupt(0,0)
+      f1_csr_lib.nu_psw_interrupt(0,0)
+      f1_csr_lib.nu_sfg_interrupt(0,0)
+      f1_csr_lib.nu_wro_interrupt(0,0)
+
 ################################################################################
+def auto_int(x):
+    return int(x, 0)
+
 def proc_arg():
     global args
     parser = argparse.ArgumentParser()
-    parser.add_argument('--verif_svr', nargs='?', type=str, default='cadence-pc-3', help='verif server. default %(default)s')
+    parser.add_argument('--verif_svr_hostname', nargs='?', type=str, default='cadence-pc-3', help='verif server hostname. default %(default)s')
+    parser.add_argument('--verif_svr_port', nargs='?', type=auto_int, default=0x1234, help='verif server port. default %(default)s')
+    parser.add_argument('--csr_lib', nargs='?', type=str, default="./f1_csr_slib.so", help='f1_csr_slib.so location. default %(default)s')
     args = parser.parse_args()
 
 def main():
-    proc_arg()
-    load_lib()
-    setup_verif_socket_client()
-    connect_verif_server()
-    readline.parse_and_bind('tab: complete')
-    code.interact(local=globals())
+   global f1w
+   proc_arg()
+   load_lib()
+   f1w=csr_api_wrapper()
+   setup_verif_socket_client()
+   connect_verif_server()
+   readline.parse_and_bind('tab: complete')
+   code.interact(local=globals())
 
 if (__name__ == "__main__"):
     main()
