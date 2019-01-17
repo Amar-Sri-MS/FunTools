@@ -908,7 +908,6 @@ class Struct(Declaration):
 
     # OPT info
     self.opt_size = None
-    self.opt_no_attr_packed = False
 
   def FieldWithBaseType(self, base_type):
     """Returns first field with the given type.
@@ -1743,16 +1742,12 @@ class GenParser:
       if len(v) > 0:
         if v[0] == 'SIZE':
           try:
-            val = int(v[1])
+            val = int(v[1].strip())
             containing_struct.opt_size = val
             return True
           except:
             print('SIZE option doesnot have a valid number')
           return False
-
-        if v[0] == 'NO_ATTR_PACKED':
-          containing_struct.opt_no_attr_packed = True
-          return True
 
       print('Invalid OPT line')
       return False
