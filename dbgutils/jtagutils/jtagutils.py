@@ -16,6 +16,18 @@ class constants(object):
     CSR_RING_TAP_SELECT = 0x01C1
     CSR_RING_TAP_SELECT_WIDTH = 10
 
+
+def _ir_shiftin(width, data):
+    cmd = '%u 0x%04x'%(width, data)
+    logger.debug('shift-in cmd: \"{}\"'.format(cmd))
+    status = tapi(cmd)
+    logger.debug('shift-in cmd status: {}'.format(status))
+    status = status[0]
+    if not status:
+        logger.error('Failed to shiftin ir!')
+        return False
+    return True
+
 # Connects to Codescape jtag probe and enables csr tap select
 @command()
 def csr_probe(dev_type, ip_addr):
@@ -25,14 +37,12 @@ def csr_probe(dev_type, ip_addr):
     if (("SysProbe" not in status) or ("Firmware" not in status) or
         ("ECONNREFUSED" in status) or ("InvalidArgError" in status)):
         return (False, status)
-    logger.info('Connected to Codescape Jtag probe!\n{0}'.format(status))
-    cmd = '%u 0x%04x'%(constants.CSR_RING_TAP_SELECT_WIDTH,
-                     constants.CSR_RING_TAP_SELECT)
-    logger.debug('tap select cmd: \"{}\"'.format(cmd))
-    status = tapi(cmd)
-    logger.info('tap select status: {}'.format(status))
+    status = tckrate(30000000)
+    logger.info('Set tackrate to 25 MHz! status: {0}'.format(status))
 
-    status = status[0]
+    logger.info('Connected to Codescape Jtag probe!\n{0}'.format(status))
+    status = _ir_shiftin(constants.CSR_RING_TAP_SELECT_WIDTH,
+                constants.CSR_RING_TAP_SELECT)
     if not status:
         status_msg = (('Failed select csr tap controller! Error:' +
                 ' {}').format(hex(status)))
@@ -82,6 +92,11 @@ def _jtag_shift_in_csr_acc_bytes(bytes_hex_str):
     if jtag_status != 0:
         logger.error("jtag shift-in data error!: {}".format(jtag_status))
         return (False, None)
+    status = _ir_shiftin(constants.CSR_RING_TAP_SELECT_WIDTH,
+                constants.CSR_RING_TAP_SELECT)
+    if not status:
+        logger.error("Failed in shiftin IR\n")
+        return (False, None)
 
     logger.debug('shift-in zeros for respose data')
     dr = "128 0x0"
@@ -101,6 +116,12 @@ def _jtag_shift_in_csr_acc_bytes(bytes_hex_str):
     if jtag_ack != 1:
         logger.error("jtag cmd shift-in ack error!: {} bytes: {}".format(
             jtag_ack, bytes_hex_str))
+        return (False, None)
+
+    status = _ir_shiftin(constants.CSR_RING_TAP_SELECT_WIDTH,
+                constants.CSR_RING_TAP_SELECT)
+    if not status:
+        logger.error("Failed in shiftin IR\n")
         return (False, None)
 
     return (True, data)
@@ -187,7 +208,8 @@ def csr_poke( csr_addr, word_array):
     return True
 
 def csr_peek_poke_test():
-    csr_probe('sp55e', '10.1.23.132')
+    print("Connecting to Probe")
+    csr_probe('sp55e', '10.1.40.84')
     print('\n************POKE***************')
     print csr_poke(0x4883160000, [0x1111111111111111, 0x2222222222222222,
                                      0x3333333333333333, 0x4444444444444444,
