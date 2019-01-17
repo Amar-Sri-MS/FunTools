@@ -59,7 +59,10 @@ How to render each struct
    to generate in templates, so do that work in code instead.
 #}
 {% if not struct.inline %}
-{{ struct | as_definition }}{% if generate_cpacked %} __attribute__((packed)){% endif %};
+{{ struct | as_definition }}{% if generate_cpacked and not struct.opt_no_attr_packed %} __attribute__((packed)){% endif %};
+{% endif %}
+{% if struct.opt_size %}
+static_assert(sizeof(struct {{struct.name}}) == {{struct.opt_size}}, "{{struct.name}} is not {{struct.opt_size}} bytes");
 {% endif %}
 
 {# Generate macros for packed fields. #}
