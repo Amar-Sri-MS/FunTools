@@ -170,25 +170,6 @@ CMD_CSR_READ_RSP  = 5
 CMD_PKT           = 6
 CMD_PKT_REQ       = 7
 
-def test_ptf():
-    print 'do test_ptf'
-    while 1:
-       pkt_data_with_space = ""
-       pkt_data="0000f6f67d2600006df0dafb0800454001f200000000141c44af751331995cf85c5d1df650c383a9a020db81ca872c3b60c8abece382d9b08fd71de7a8589e3d5791cd037b8aeb89c18cdfd9174281e0f80c5fbd05b8338619e9d81a24f10dc1620700ed465205f6a9bf29a2159af47c7937cbbdddb459542879a02957dc162c323fd2a0765c3c6680191d3db5b604fec3270e54125c553b619c99ace1a1f9869a010a50bd0a87d5107392759fc0f2ffa1579c3cd55cc69e73d4477b1894817a9b9eb8da16dc8756043fd33d3fba57e04ad99ba01430d8011da2052e898661945b0255eedc295aabf1c6e6fd9c7dc32f89304e2b79af38ffe6af45b335435019cdbcaebf83aae73e76eec6e242c2bd2200b677bf30a90807a5b313eca43ea717d7ecb87f4bf308aefae3b332365fb9ec45e5e6fbf7603fb57880dd64609548d2a6ee97e962e2bf8548d3d64f6149cc662c462c46c4fb59c5b1b174c13ce96676bdf1b09f5882f93fec0012f65b826f372709ca4a5ff33560a79f9a1897572bb7133ebef1a3d771648cc39f3313fd88a0bc5ef0b75a5c12ea4cbe5c8eedbbb97cfe474d3fbfda5d2e67baeea8c2c5cb8ee2325b92dfbc6e3b12a72429c97f0112c6ebe083e4511f2962ab19fb7317b03dcbc4db45be2ad88c5252681178e4b9413abba6742affc848c91aa56fba74f9d000000000000000040000000000000000"
-       for i in range (len(pkt_data)/2):
-          pkt_data_with_space += pkt_data[2*i] + pkt_data[(2*i) + 1] + " "
-       #get rid of the trailing space
-       pkt_data_with_space = pkt_data_with_space[0:-1]
-       json_pkt = '{ "intf" :  '+ '"' + "fpg" + str(1) + '"' ', "pkt" : "' +pkt_data_with_space+'"}'
-       print "Sending pkt to PTF server:"
-       print json_pkt
-       ptf_sock.sendall(json_pkt)
-       time.sleep(0.5)
-    else:
-       try:
-          result = ptf_sock.recv(16*1024)
-       except(socket.timeout):
-          pass
 
 def print_command(data):
   if (data == CMD_ACK_NOP) :
@@ -450,16 +431,25 @@ def handle_connection(conn):
 
 
 def connect_dbgprobe():
-    print "connect to I2C"
 #status = dbgprobe().connect('i2c', args.i2c_svr, 'TPCFbwoQ')
 #    status = dbgprobe().connect('i2c', args.i2c_svr, 'TPCFb23b',0x70,False)
 #always hard code slave addr to 0x70
-    status = dbgprobe().connect('i2c', i2c_proxy_ip , i2c_probe_serial , 0x70,False)
-    if status is True:
-        print("I2C Server Connection Successful!")
+    if args.tpod_jtag:
+       print "connecting to JTAG Proxy "+jtag_probe_ip
+       status = dbgprobe().connect('jtag',jtag_probe_ip,jtag_probe_id)
+       if status is True:
+          print("JTAG Server Connection Successful!")
+       else:
+          print("JTAG Server Connection Failed!")
+          sys.exit(1)
     else:
-        print("I2C Server Connection Failed!")
-        sys.exit(1)
+       print "connecting to I2C Proxy "+i2c_proxy_ip
+       status = dbgprobe().connect('i2c', i2c_proxy_ip , i2c_probe_serial , 0x70,args.tpod_force)
+       if status is True:
+          print("I2C Server Connection Successful!")
+       else:
+          print("I2C Server Connection Failed!")
+          sys.exit(1)
 
 def start_verif_server():
     global conn
@@ -504,7 +494,7 @@ def auto_int(x):
     return int(x, 0)
 
 def proc_arg():
-    global parser, args, i2c_probe_serial, i2c_proxy_ip, i2c_slave_addr
+    global parser, args, i2c_probe_serial, i2c_proxy_ip, i2c_slave_addr, jtag_probe_ip, jtag_probe_id
     parser = argparse.ArgumentParser()
     parser.add_argument('--ptf_dis', action='store_true', default=False, help='ptf connection disable. default %(default)d')
     parser.add_argument('--ptf_host', nargs='?', type=str, default='localhost', help='ptf host to connect to. default %(default)s')
@@ -513,10 +503,13 @@ def proc_arg():
     parser.add_argument('--i2c_dis', action='store_true', default=False, help='i2cproxy connection disable. default %(default)d')
     parser.add_argument('--verif_port', nargs='?', type=auto_int, default=0x1234, help='verif client port. default %(default)d')
     parser.add_argument('--tpod', nargs='?', type=str, default='TPOD4', help='TPOD name. default %(default)s')
+    parser.add_argument('--tpod_force', action='store_true', default=False, help='TPOD force mode. default %(default)s')
+    parser.add_argument('--tpod_jtag', action='store_true', default=False, help='TPOD JTAG mode. default %(default)s')
 #    parser.add_argument('--i2c_svr', nargs='?', type=str, default='10.1.20.69', help='i2c server. default %(default)s')
     args = parser.parse_args()
     duts = dut.dut()
     (i2c_probe_serial, i2c_proxy_ip, i2c_slave_addr) = duts.get_i2c_info(args.tpod)
+    (jtag_probe_id, jtag_probe_ip) = duts.get_jtag_info(args.tpod)
 
     #args = parser.parse_args(['-ptf_dis'])
 
