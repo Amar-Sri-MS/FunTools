@@ -1020,13 +1020,13 @@ static void _do_recv_cmd(struct dpcsock *funos_sock,
         }
 	// printf("output is of type %d\n", fun_json_get_type(output));
 	// Bertrand 2018-04-05: Gross hack to make sure we don't break dpcsh users who were not expected a tid
-	uint64_t tid = 0;
+	int64_t tid = 0;
 	struct fun_json *raw_output = fun_json_lookup(output, "result");
 	if (!raw_output) {
 		fun_json_printf("Old style output (NULL) - got %s\n", output);
 		raw_output = output;
-	} else if (!fun_json_lookup_uint64(output, "tid", &tid)) {
-		printf("Old style output\n");
+	} else if (!fun_json_lookup_int64(output, "tid", &tid)) {
+		printf("No tid\n");
 		raw_output = output;
 	} else {
 		// printf("New style output, tid=%d\n", (int)tid);
