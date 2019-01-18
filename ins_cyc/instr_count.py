@@ -206,6 +206,10 @@ def main():
 
   # write output
   out_file = in_file.replace('.instr_dasm', '.instr_count')
+  if args.i:
+    out_file += '_i'
+  if args.u:
+    out_file += '_u'
   print 'saving output to %s' % out_file
   with open(out_file, 'w') as out_f:
     instr_count_write(data, out_f, show_instr=args.i, show_unknown=args.u)

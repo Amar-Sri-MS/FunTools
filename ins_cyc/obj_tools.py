@@ -38,7 +38,7 @@ def gdb_prepare_addr_line(gdb, bin_file, addr_list, is_full_path=False):
       gdb_cmds.append('printf "%s "' % addr)
       gdb_cmds.append('info line *%s' % addr)
     f.write('\n'.join(gdb_cmds))
-  
+
   cmd = [gdb, '--batch', '-x', tmp_path, bin_file]
   #print '\t%s' % cmd
   output = subprocess.check_output(cmd)
