@@ -60,6 +60,9 @@ How to render each struct
 #}
 {% if not struct.inline %}
 {{ struct | as_definition }}{% if generate_cpacked %} __attribute__((packed)){% endif %};
+{% if struct.is_struct %}
+static_assert(sizeof(struct {{struct.name}}) == {{ (struct.BitWidth() / 8) | int }}, "{{struct.name}} not well aligned");
+{% endif %}
 {% endif %}
 
 {# Generate macros for packed fields. #}

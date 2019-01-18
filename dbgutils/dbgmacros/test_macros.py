@@ -98,6 +98,70 @@ def dump_hbm(start_addr, num_bytes):
         logger.error('Read un-successful')
         return
 
+def write_hbm(start_addr, data_words):
+    if (start_addr & 0x3F != 0):
+       logger.error('start_addr should be 64 byte aligned for cache line alignment')
+       return
+    if len(data_words) != 8:
+        logger.error('Number of words should be 8 to match one cache line length')
+        return
+
+    skip_addr = 0
+    if(start_addr & 0x2):
+        skip_addr = constants.MUH_RING_SKIP_ADDR
+    if (start_addr & 0x1):
+        skip_addr += constants.MUH_SNA_ANODE_SKIP_ADDR
+    csr_addr = constants.MEM_RW_CMD_CSR_ADDR
+    csr_addr += skip_addr
+    for i in range(8):
+        csr_val = data_words[i]
+        csr_addr = constants.MEM_RW_DATA_CSR_ADDR + skip_addr
+        csr_addr += i * 8
+        (status, data) = dbgprobe().csr_fast_poke(csr_addr, [csr_val])
+        if status is True:
+            logger.info('Write value:{0}'.format(hex(csr_val)))
+            logger.debug("poke success!!!")
+        else:
+            error_msg = data
+            logger.error("Error! {0}!".format(error_msg))
+            sys.exit(1)
+
+    csr_addr = constants.MEM_RW_CMD_CSR_ADDR
+    csr_addr += skip_addr
+    muh_sna_cmd_addr = start_addr/4
+    csr_val = muh_sna_cmd_addr << 37;
+    csr_val |= 0x0 << 63;
+    logger.debug('csr_val: {0}'.format(csr_val))
+    (status, data) = dbgprobe().csr_fast_poke(csr_addr, [csr_val])
+    if status is True:
+        logger.info("Poke:addr: {0} Success!".format(hex(muh_sna_cmd_addr)))
+    else:
+        error_msg = data
+        logger.error("CSR Poke failed! Addr: {0} Error: {1}".format(hex(csr_addr), error_msg))
+        sys.exit(1)
+    csr_addr = constants.MEM_RW_STATUS_CSR_ADDR
+    csr_addr += skip_addr
+    (status, data) = dbgprobe().csr_peek(csr_addr, 1)
+    if status is True:
+        word_array = data
+        if word_array is None or not word_array:
+            logger.error("Failed get cmd status! Error in csr peek!!!")
+            sys.exit(1)
+        cmd_status_done = word_array[0]
+        cmd_status_done = cmd_status_done >> 63
+        if cmd_status_done != 1:
+            logger.error("Failed cmd status != Done!")
+            sys.exit(1)
+        else:
+            logger.info('Data ready!')
+    else:
+        error_msg = data
+        logger.error('Error! {0}!'.format(error_msg))
+        sys.exit(1)
+
+    logger.info('Succesfully wrote cache line!')
+    return
+
 def show_global_ncv_thrsholds():
     print('NWQM NCV THRESHOLDS:')
     probe = dbgprobe()

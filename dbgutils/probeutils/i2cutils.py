@@ -20,12 +20,12 @@ class constants(object):
     IC_DEVICE_MODE_GPIO = 0x0
     I2C_XFER_BIT_RATE = 500
     F1_I2C_ADDR_MODE = 0
-    SBP_CMD_EXE_TIME_WAIT = 2 
+    SBP_CMD_EXE_TIME_WAIT = 0.5
     I2C_CSR_SLEEP_SEC    = 0.001
 
 # Converts byte array to big-endian 64-bit words
 def byte_array_to_words_be(byte_array):
-#    logger.debug('byte_array: {0}'.format(byte_array))
+    logger.debug('byte_array: {0}'.format(byte_array))
     words = list()
     byte_attay_size = len(byte_array)
     word_array_size = byte_attay_size / 8
