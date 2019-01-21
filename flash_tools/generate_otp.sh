@@ -1,8 +1,6 @@
 #!/bin/bash
 
-FUNTOOLS_DIR=$(readlink -f `dirname $0`)
-PRODUCTION_DIR=$(readlink -f $FUNTOOLS_DIR/../software/production)
-DEVTOOLS_DIR=$(readlink -f $FUNTOOLS_DIR/../software/devtools/firmware)
+DEVTOOLS_DIR=$(readlink -f $WORKSPACE/SBPFirmware/software/devtools/firmware)
 
 if [[ $# -ge 3 ]]; then
     echo "Invalid number of keys hashes provided."

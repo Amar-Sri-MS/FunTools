@@ -1,8 +1,6 @@
 #!/bin/bash
 
-FUNTOOLS_DIR=$(readlink -f `dirname $0`)
-PRODUCTION_DIR=$(readlink -f $FUNTOOLS_DIR/../software/production)
-DEVTOOLS_DIR=$(readlink -f $FUNTOOLS_DIR/../software/development/firmware)
+PRODUCTION_DIR=$WORKSPACE/SBPFirmware/software/production
 
 # This function imports the development key into the (Soft)HSM so that it can be
 # used to sign other binaries. It first verifies that the key matches the one in
@@ -17,7 +15,7 @@ function import_development_key() {
 
     if diff -q  <(openssl rsa -in $OSSL_KEY -modulus 2>/dev/null | cut -f 2 -d '=' -s | xxd -p -r  -) \
         <(dd if=$CERTIFICATE skip=$PUB_KEY_OFFSET count=$PUB_KEY_LEN bs=1 2>/dev/null) ; then
-    python3 $FUNTOOLS_DIR/generate_firmware_image.py import -k fpk2 -r $OSSL_KEY
+    python3 $WORKSPACE/FunSDK/bin/flash_tools/generate_firmware_image.py import -k fpk2 -r $OSSL_KEY
     else
     echo "certificate and key have different modulus"
     return 1

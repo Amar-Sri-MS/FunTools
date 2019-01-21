@@ -32,7 +32,7 @@ validate_process_input()
 	case "$BOOT_SIG_TYPE" in
 		customer)
 			SECURE_BOOT=yes
-			CUSTOMER_CONFIG_JSON=$SBP_ROOT_DIR/fungible/qspi_config_customer.json
+			CUSTOMER_CONFIG_JSON=$WORKSPACE/FunSDK/bin/flash_tools/qspi_config_customer.json
 			ARTIFACT_STYLE=customer_$VARIANT
 			;;
 		fungible|yes)
@@ -81,12 +81,14 @@ popd
 
 validate_process_input
 
+export WORKSPACE # scripts invoked from here expect it to be set
+
 # ---- ROM ----
 cp $SBP_INSTALL_DIR/bootloader_m5150.mif ${WORKSPACE}/sbpimage/SysROM
 
 mkdir -p artifacts_$ARTIFACT_STYLE && cd artifacts_$ARTIFACT_STYLE
 
-$SBP_ROOT_DIR/fungible/get_start_cert.sh
+$WORKSPACE/FunSDK/bin/flash_tools/get_start_cert.sh
 
 HOST_FIRMWARE_DEF=$(cat <<-JSON
 { "signed_images": {
@@ -126,20 +128,20 @@ JSON
 )
 
 # generate flash image for real chip
-python3 $SBP_ROOT_DIR/fungible/generate_flash.py --config-type json \
+python3 $WORKSPACE/FunSDK/bin/flash_tools/generate_flash.py --config-type json \
 	--source-dir $SBP_INSTALL_DIR \
 	--source-dir $SBP_ROOT_DIR/software/eeprom \
-	$SBP_ROOT_DIR/fungible/qspi_config_fungible.json \
+	$WORKSPACE/FunSDK/bin/flash_tools/qspi_config_fungible.json \
 	$CUSTOMER_CONFIG_JSON \
 	<(echo $HOST_FIRMWARE_DEF) \
 	<(echo $EEPROM_DEF)
 
 # generate flash image for emulation
-python3 $SBP_ROOT_DIR/fungible/generate_flash.py --config-type json \
+python3 $WORKSPACE/FunSDK/bin/flash_tools/generate_flash.py --config-type json \
 	--source-dir $SBP_INSTALL_DIR \
 	--source-dir $SBP_ROOT_DIR/software/eeprom \
 	--enroll-tbs ${WORKSPACE}/enroll_tbs.bin \
-	$SBP_ROOT_DIR/fungible/qspi_config_fungible.json \
+	$WORKSPACE/FunSDK/bin/flash_tools/qspi_config_fungible.json \
 	$CUSTOMER_CONFIG_JSON \
 	<(echo $HOST_FIRMWARE_DEF) \
 	<(echo $EEPROM_DEF) \
@@ -150,7 +152,7 @@ if [ $BOOT_SIG_TYPE == customer ]; then
 	CUSTOMER_OTP_ARGS="`pwd`/key_hash1.bin `pwd`/key_hash2.bin"
 fi
 
-$SBP_ROOT_DIR/fungible/generate_otp.sh $CUSTOMER_OTP_ARGS
+$WORKSPACE/FunSDK/bin/flash_tools/generate_otp.sh $CUSTOMER_OTP_ARGS
 
 # Remove the MIF extension - these actually aren't in MIF format, and
 # Rajesh's scripts for running jobs in emulation will do the needed
