@@ -1,0 +1,29 @@
+{
+    "signed_images": {
+        "esecure_puf_rom_packed_v1.bin": {
+            "source": "puf_rom_m5150.bin",
+            "version": 1,
+            "fourcc": "pufr",
+            "cert": "start_certificate.bin",
+            "customer_cert": ""
+        },
+        "esecure_firmware_packed_v1.bin": {
+            "source": "firmware_m5150.bin",
+            "version": 1,
+            "fourcc": "frmw",
+            "key": "fpk3",
+            "cert": "",
+            "customer_cert": ""
+        }
+    },
+    "certificates": {
+        "start_certificate.bin": {
+            "public": "fpk2",
+            "key": "fpk1",
+            "tamper_flags": "00000000",
+            "debugger_flags": "00000000",
+            "serial_number": "000000000000000000000000000000000000000000000000",
+            "serial_number_mask": "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF0000"
+        }
+    }
+}
