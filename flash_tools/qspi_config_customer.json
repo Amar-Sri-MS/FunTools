@@ -1,0 +1,50 @@
+{
+    "signed_images": {
+        "hu_sds_v1.bin": {
+            "key": "",
+            "customer_cert": "customer_certificate.bin"
+        },
+        "hu_sbm_v1.bin": {
+            "key": "",
+            "customer_cert": "customer_certificate.bin"
+        },
+        "hbm_sbus_v1.bin": {
+            "key": "",
+            "customer_cert": "customer_certificate.bin"
+        },
+        "esecure_puf_rom_packed_v1.bin": {
+            "key": "",
+            "customer_cert": "customer_certificate.bin"
+        },
+        "esecure_firmware_packed_v1.bin": {
+            "key": "",
+            "customer_cert": "customer_certificate.bin"
+        },
+        "eeprom_packed_v1.bin": {
+            "key": "",
+            "customer_cert": "customer_certificate.bin"
+        },
+        "host_firmware_packed_v1.bin": {
+            "key": "",
+            "customer_cert": "customer_certificate.bin"
+        }
+    },
+    "key_hashes": {
+        "key_hash1.bin": {
+            "name":"cpk1"
+        },
+        "key_hash2.bin": {
+            "name":"cpk2"
+        }
+    },
+    "certificates": {
+        "customer_certificate.bin": {
+            "public": "cpk1",
+            "key": "cpk1",
+            "tamper_flags": "00000000",
+            "debugger_flags": "00000000",
+            "serial_number": "000000000000000000000000000000000000000000000000",
+            "serial_number_mask": "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF0000"
+        }
+    }
+}
