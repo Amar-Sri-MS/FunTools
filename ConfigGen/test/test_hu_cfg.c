@@ -19,6 +19,8 @@ static void print_HostUnits(void)
 
 static void print_HostUnit(void)
 {
+	// If you are changing the loop here, make sure same change
+	// is also done in hu_test_cfg.py.
 	//for (int i = 0; i < ARRAY_SIZE(HostUnit); i++) {
 	for (int i = 0; i < 4; i++) {
 		printf("HostUnit[%d].ctl_en: 0x%x\n", i, HostUnit[i].ctl_en);
