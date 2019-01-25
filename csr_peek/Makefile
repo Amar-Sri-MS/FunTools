@@ -21,12 +21,7 @@ CSR_JSON ?= csr_metadata.json
 
 SDK_INSTALL_DIR ?= $(SDKDIR)
 
-# Distinguish between an SDK Build and Jenkins build
-ifeq ($(SDK_INSTALL_DIR),$(SDKDIR))
-	BASE_CFG_DIR ?= $(SDKDIR)
-else
-	BASE_CFG_DIR := $(dir $(SDK_INSTALL_DIR))/hw.posix
-endif
+BASE_CFG_DIR ?= $(SDKDIR)
 CFG_DIR := $(BASE_CFG_DIR)/FunSDK/chip/f1/hw/yaml
 
 
