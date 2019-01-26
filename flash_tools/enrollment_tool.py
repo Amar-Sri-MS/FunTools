@@ -646,8 +646,8 @@ def sign(tbs_cert):
 
     # The HSM is controlled via a Python3 script so we need to start a new process
     cmd = "python3 generate_firmware_image.py sign -f - -o - -k fpk4"
-    # FIXME: devtools/firmware
-    script_dir = "/home/fferino/Projects/SBPFirmware/software/devtools/firmware"
+    # generate_firmware_image.py should be in the same directory as this script
+    script_dir = os.path.dirname(os.path.abspath(__file__))
     sign_p = subprocess.Popen(cmd, shell=True,
                               stdin=subprocess.PIPE,
                               stdout=subprocess.PIPE,
@@ -691,7 +691,7 @@ def save_enroll_cert(cert):
     return success
 
 
-BOOT_STEP_PUF_INIT=(0x13<<2)
+BOOT_STEP_PUF_INIT=(0x16<<2)
 
 def enroll(conn):
 
