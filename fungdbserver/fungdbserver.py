@@ -36,7 +36,7 @@ class FileCorpse:
     def __init__(self, fname):
         self.fname = fname
         self.fl = open(fname)
-        self.memoffset = 1024*1024 # xxx
+        self.memoffset = 0 # FIXME: remove
         self.threadid = 0
         self.threadcount = 0
         self.thread_list = []
@@ -88,7 +88,7 @@ class FileCorpse:
             return self.badread(n)
 
         regaddr = addr - self.memoffset
-        print "read at addr: 0x%x" % regaddr
+        # print "read at addr: 0x%x" % regaddr
         self.fl.seek(regaddr)
         bytes = self.fl.read(n)
         if (len(bytes) < n):
@@ -116,7 +116,7 @@ class FileCorpse:
             ptr = p + vpnum * n + o
             base = self.ReadMemory64(ptr, host=True)
 
-            print "exception base = 0x%x + %d * %d + 0x%x = 0x%x -> 0x%x" % (p, vpnum, n, o, ptr, base)
+            # print "exception base = 0x%x + %d * %d + 0x%x = 0x%x -> 0x%x" % (p, vpnum, n, o, ptr, base)
 
         return base
 
@@ -185,7 +185,7 @@ class FileCorpse:
         regaddr = base + offset
 
         value = self.ReadMemory64(regaddr)
-        print "thread %d reg %s: at 0x%x value 0x%x\n" % (self.threadid, name, regaddr, value)
+        # print "thread %d reg %s: at 0x%x value 0x%x\n" % (self.threadid, name, regaddr, value)
 
         return value
 
@@ -453,7 +453,7 @@ class GDBClientHandler(object):
                     # FIXME: make a thread list
                     tid = jtag_GetFirstThreadId()
                     s = "m%x" % tid
-                    print "sending first thread"
+                    print "sending first thread (%s)" % s
                     print s
                     self.send(s)
                 elif (subcmd == "sThreadInfo"):
@@ -461,7 +461,7 @@ class GDBClientHandler(object):
                     tid = jtag_GetNextThreadId()
                     if (tid is not None):
                         s = "m%x" % tid
-                        print "sending thread %s" % s
+                        print "sending next thread (%s)" % s
                         self.send(s)
                     else:
                         print "done sending threads"
@@ -501,7 +501,10 @@ class GDBClientHandler(object):
 
             def handle_g(subcmd):
                 if subcmd == '':
-                    print "register read request on %d" % jtag_GetCpuThreadId()
+                    tid = jtag_GetCpuThreadId()
+                    if (tid == 0):
+                        self.send('E 37')
+                    print "register read request on %d" % tid
                     # make all the registers
                     registers = jtag_GetRegList()
                     s = ''
