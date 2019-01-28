@@ -452,7 +452,7 @@ def image_gen(outfile, infile, ftype, version, sign_key,
     elif not customer_certfile:
         print("A certificate ( customer or fungible) or a label is needed "+
               "to identify the key used to sign a firmware image")
-        return
+        print("Image will not be signed!")
 
     customer_to_be_signed = add_cert_and_signature_to_image(b'', cert, signature)
     customer_to_be_signed += to_be_signed
