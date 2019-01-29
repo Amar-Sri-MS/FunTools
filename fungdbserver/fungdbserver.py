@@ -72,7 +72,7 @@ class FileCorpse:
                 addr >>= 1
                 addr |= offset
         elif (kseg == 0xff):
-            addr = addr & 0xffffffff
+            addr = addr & 0x1fffffff
 
         # truncate remaining bits to 8gb
         addr &= (8<<30)-1
