@@ -113,7 +113,7 @@ JSON
 QSPI_EMULATION=$(cat <<-JSON
 {
 	"output_format": {
-        "size": "0x400000",
+        "size": "0x200000",
         "page": "0x10000",
         "output": "qspi_image_emu"
     },
