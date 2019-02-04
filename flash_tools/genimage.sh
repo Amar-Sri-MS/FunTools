@@ -13,13 +13,14 @@ CUSTOM_HOST_FIRMWARE=
 CUSTOMER_CONFIG_JSON=
 CUSTOMER_OTP_ARGS=
 VARIANT=
+EMULATION=0
 WORKSPACE=${WORKSPACE:-/build}
 
 print_usage_and_exit()
 {
-	echo "Usage: genimage.sh -v <variant> -s {unsecure|no,fungible|yes,customer} -f <firmware_for_host>"
+	echo "Usage: genimage.sh -v <variant> -s {unsecure|no,fungible|yes,customer} -f <firmware_for_host> -e <0/1>"
 	echo -n " <firmware_for_host> is path to the host software to be embedded in flash"
-	echo -e "\nExample: build.sh -v fungible_eeprom_zynq6 -s fungible -f u_boot.bin\n"
+	echo -e "\nExample: build.sh -v fungible_eeprom_zynq6 -s fungible -f u_boot.bin -e\n"
 	exit $1
 }
 
@@ -55,12 +56,13 @@ validate_process_input()
 	fi
 }
 
-while getopts v:s:hf: arg;
+while getopts e:v:s:hf: arg;
 do
 	case $arg in
 	v)	VARIANT="$OPTARG";;
 	s)	BOOT_SIG_TYPE=`echo "$OPTARG" | tr '[:upper:]' '[:lower:]'`;;
 	f)	CUSTOM_HOST_FIRMWARE="$OPTARG";;
+	e)	EMULATION=$OPTARG;;
 	h)	print_usage_and_exit 0;;
 	*)	print_usage_and_exit 1;;
 	esac
@@ -127,25 +129,36 @@ QSPI_EMULATION=$(cat <<-JSON
 JSON
 )
 
-# generate flash image for real chip
-python3 $WORKSPACE/FunSDK/bin/flash_tools/generate_flash.py --config-type json \
-	--source-dir $SBP_INSTALL_DIR \
-	--source-dir $SBP_ROOT_DIR/software/eeprom \
-	$WORKSPACE/FunSDK/bin/flash_tools/qspi_config_fungible.json \
-	$CUSTOMER_CONFIG_JSON \
-	<(echo $HOST_FIRMWARE_DEF) \
-	<(echo $EEPROM_DEF)
-
-# generate flash image for emulation
-python3 $WORKSPACE/FunSDK/bin/flash_tools/generate_flash.py --config-type json \
-	--source-dir $SBP_INSTALL_DIR \
-	--source-dir $SBP_ROOT_DIR/software/eeprom \
-	--enroll-tbs ${WORKSPACE}/enroll_tbs.bin \
-	$WORKSPACE/FunSDK/bin/flash_tools/qspi_config_fungible.json \
-	$CUSTOMER_CONFIG_JSON \
-	<(echo $HOST_FIRMWARE_DEF) \
-	<(echo $EEPROM_DEF) \
-	<(echo $QSPI_EMULATION)
+if [ $EMULATION == 0 ]; then
+	# generate flash image for real chip
+	python3 $WORKSPACE/FunSDK/bin/flash_tools/generate_flash.py --config-type json \
+		--source-dir $SBP_INSTALL_DIR \
+		--source-dir $SBP_ROOT_DIR/software/eeprom \
+		$WORKSPACE/FunSDK/bin/flash_tools/qspi_config_fungible.json \
+		$CUSTOMER_CONFIG_JSON \
+		<(echo $HOST_FIRMWARE_DEF) \
+		<(echo $EEPROM_DEF)
+	# Flash images for real hardware
+	cp qspi_image_hw.byte ${WORKSPACE}/sbpimage/flash_image_hw.byte
+	cp qspi_image_hw.bin ${WORKSPACE}/sbpimage/flash_image_hw.bin
+	# FIXME: other scripts still expect flash_image files, so create copies here
+	cp qspi_image_hw.byte ${WORKSPACE}/sbpimage/flash_image.byte
+	cp qspi_image_hw.bin ${WORKSPACE}/sbpimage/flash_image.bin
+else
+	# generate flash image for emulation
+	python3 $WORKSPACE/FunSDK/bin/flash_tools/generate_flash.py --config-type json \
+		--source-dir $SBP_INSTALL_DIR \
+		--source-dir $SBP_ROOT_DIR/software/eeprom \
+		--enroll-tbs ${WORKSPACE}/enroll_tbs.bin \
+		$WORKSPACE/FunSDK/bin/flash_tools/qspi_config_fungible.json \
+		$CUSTOMER_CONFIG_JSON \
+		<(echo $HOST_FIRMWARE_DEF) \
+		<(echo $EEPROM_DEF) \
+		<(echo $QSPI_EMULATION)
+	# Flash images for Palladium emulation (limited to 2MB)
+	cp qspi_image_emu.byte ${WORKSPACE}/sbpimage/flash_image.byte
+	cp qspi_image_emu.bin ${WORKSPACE}/sbpimage/flash_image.bin
+fi
 
 # ---- OTP ----
 if [ $BOOT_SIG_TYPE == customer ]; then
@@ -162,14 +175,6 @@ if [ $SECURE_BOOT == 'yes' ]; then
 else
 	cp OTP/OTP_memory_unsecure.mif ${WORKSPACE}/sbpimage/OTP_memory
 fi
-
-# ---- flash_image.byte ----
-# Flash images for Palladium emulation (limited to 2MB)
-cp qspi_image_emu.byte ${WORKSPACE}/sbpimage/flash_image.byte
-cp qspi_image_emu.bin ${WORKSPACE}/sbpimage/flash_image.bin
-# Flash images for real hardware
-cp qspi_image_hw.byte ${WORKSPACE}/sbpimage/flash_image_hw.byte
-cp qspi_image_hw.bin ${WORKSPACE}/sbpimage/flash_image_hw.bin
 
 cp -r ${WORKSPACE}/artifacts_$ARTIFACT_STYLE/ ${WORKSPACE}/sbpimage/archive
 
