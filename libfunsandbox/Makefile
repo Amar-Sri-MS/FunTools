@@ -34,13 +34,24 @@ CC_ENDIANNESS := -EB
 LD_ENDIANNESS := -m elf64btsmip
 
 CFLAGS := -mips64r6 $(CC_ENDIANNESS) -mabi=64 -nostdlib -nostdinc
-CFLAGS += -mno-abicalls -fno-pic -G8 -membedded-data
-CFLAGS += -O2
+TOOL_CFLAGS += -G 8
+TOOL_CFLAGS += -mno-abicalls -fno-pic
+
+
+#CFLAGS := -mabicalls -G0 # -mno-shared 
+#CFLAGS += -mno-abicalls -G128 -mno-shared -mno-gpopt -mexplicit-relocs -mno-extern-sdata -mno-local-sdata
+# CFLAGS += -mabicalls -mshared -mgpopt
+#-mno-gpopt -mshared
+#CFLAGS += -fspic
+# -membedded-data  -mshared
+# CFLAGS += -mlocal-sdata -mgpopt
+#CFLAGS += -O2
 # Do not allow builtins which may try to recursively call into pdclib itself.
 CFLAGS += -fno-builtin 
 
 # LDFLAGS += -ggdb2
-LDFLAGS += $(LD_ENDIANNESS) -Ttext=0x100000
+# LDFLAGS += $(LD_ENDIANNESS) -Ttext=0x100000 -N
+LDFLAGS += $(LD_ENDIANNESS) -Ttext=0x8300008 -N -n -static -G8
 
 STRIP_FLAGS += -s
 
@@ -61,7 +72,7 @@ all: funsandbox
 funsandbox: funsandbox.o
 	$(LD) -o $@ $(LDFLAGS) $^
 	$(STRIP) $@ -o $@.stripped
-	$(OBJCOPY) -O binary --only-section=.text $@.stripped $@.bin
+	$(OBJCOPY) -O binary --only-section=.text --only-section=.rodata $@.stripped $@.bin
 	$(NM) $@ > $@.syms
 
 dpc: funsandbox

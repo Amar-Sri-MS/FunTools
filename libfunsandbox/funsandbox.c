@@ -51,34 +51,20 @@ uint64_t filter_even(uint64_t a0, uint64_t a1, uint64_t *pkt)
 	return pkt[0] & 1;
 }
 
-static void _setstr(char *s)
+void sleeper(void)
 {
-	s[0] = 's';
-	s[1] = 'l';
-	s[2] = 'e';
-	s[3] = 'e';
-	s[4] = 'p';
-	s[5] = 'i';
-	s[6] = 'n';
-	s[7] = 'g';
-	s[8] = s[9] = s[10] = '.';
-	s[11] = '\n';
-	s[12] = '\0';
+	int i = 5;
+
+	while (i-- > 0) {
+		puts("sleeping...");
+		sleep(1000000000);
+	}
+	
+	puts("done");
 }
 
 int main(int argc, char *argv[])
 {
-	int i = 5;
-	char str[15];
-
-	_setstr(str);
-	while (i-- > 0) {
-		puts(str);
-		sleep(1000000000);
-	}
-	
-	puts("done!\n");
-		
 	return 0;
 }
 
