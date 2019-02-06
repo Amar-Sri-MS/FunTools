@@ -26,27 +26,27 @@ TOOL_PREFIX  := $(TOOL_ROOT)/bin/mips64-unknown-elf-
 CC := $(TOOL_PREFIX)gcc
 AR := $(TOOL_PREFIX)gcc-ar
 LD := $(TOOL_PREFIX)ld
+NM := $(TOOL_PREFIX)nm
+STRIP := $(TOOL_PREFIX)strip
+OBJCOPY := $(TOOL_PREFIX)objcopy
 
-ifneq ($(ENDIAN),little)
-# strongly support big endian, unless otherwise specified
 CC_ENDIANNESS := -EB
-else
-CC_ENDIANNESS := -EL
-endif
+LD_ENDIANNESS := -m elf64btsmip
 
 CFLAGS := -mips64r6 $(CC_ENDIANNESS) -mabi=64 -nostdlib -nostdinc
-CFLAGS += -G 8 -mno-abicalls -fno-pic
-CFLAGS += -O3
+CFLAGS += -mno-abicalls -fno-pic -G8 -membedded-data
+CFLAGS += -O2
 # Do not allow builtins which may try to recursively call into pdclib itself.
-CFLAGS += -fno-builtin
+CFLAGS += -fno-builtin 
 
 # LDFLAGS += -ggdb2
+LDFLAGS += $(LD_ENDIANNESS) -Ttext=0x100000
+
 STRIP_FLAGS += -s
 
 SDKDIR ?= ../../FunSDK
 
 # CFLAGS += -I $(SDKDIR)/platform/mips64/include
-CFLAGS += -D__STDC_HOSTED__=0
 CFLAGS += -I $(TOOL_ROOT)/lib/gcc/mips64-unknown-elf/8/include
 
 ### End FunOS toolchain defines
@@ -60,3 +60,14 @@ all: funsandbox
 
 funsandbox: funsandbox.o
 	$(LD) -o $@ $(LDFLAGS) $^
+	$(STRIP) $@ -o $@.stripped
+	$(OBJCOPY) -O binary --only-section=.text $@.stripped $@.bin
+	$(NM) $@ > $@.syms
+
+dpc: funsandbox
+	@echo Making DPC transactions
+	./mkdpc.py libfunsandbox funsandbox.bin funsandbox.syms
+
+clean:
+	rm -f funsandbox
+	rm -f *.o
