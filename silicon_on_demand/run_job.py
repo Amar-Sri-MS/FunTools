@@ -8,6 +8,22 @@ import tempfile
 import optparse
 import signal
 
+SB_01 = { "uart": "/dev/ttyUSB1",
+          "baud": "115200",
+          "chain_uboot": "/home/cgray/uboot-tftp.mpg.gz",
+          "serverip": "172.17.1.1",
+          "boardip": "172.17.1.2",
+          "iface": "enp1s0f1"}
+
+SB_02 = { "uart": "/dev/ttyUSB0",
+          "baud": "115200",
+          "serverip": "172.16.1.1",
+          "boardip": "172.16.1.2",
+          "iface": "enp1s0f0"}
+
+boards = {"sb-01": SB_01,
+          "sb-02": SB_02 }
+
 SCRIPT_HDR = """
 # blah
   print Prodding u-boot
@@ -97,6 +113,23 @@ out:
   ! cat %s | xargs kill -HUP 
 """
 
+SCRIPT_CHAIN = """
+  expect {
+  	 "f1 #" break
+  	 timeout 20  goto no_uboot
+  }
+
+  send "loadx"
+  ! sx -k {chain_uboot}
+
+  print "Download complete, unzip time"
+  sleep 2
+  send ""
+  send ""
+  send "unzip 0xFFFFFFFF91000000 0xFFFFFFFF99000000 ; bootelf -p 0xFFFFFFFF99000000"
+"""
+
+
 SCRIPT_TFTP = """
 
 # TFTP BOOT FTW
@@ -108,6 +141,8 @@ SCRIPT_TFTP = """
   	 "Type 'noautoboot' to disable autoboot"
   	 timeout 20 goto no_uboot
   }}
+
+chain_bypass:
 
   timeout {global_timeout}
   send "noautoboot"
@@ -148,7 +183,7 @@ SCRIPT_TFTP = """
   }}
   
   print "boot.script: configuring IP"
-  send "setenv serverip 172.16.1.1"
+  send "setenv serverip {serverip}"
   send "echo serverip_done"
   print ""
   expect {{
@@ -156,7 +191,7 @@ SCRIPT_TFTP = """
   	 timeout 30 goto eep3
   }}
 
-  send "setenv ipaddr 172.16.1.2"
+  send "setenv ipaddr {boardip}"
   send "echo ipaddr_done"
   print ""
   expect {{
@@ -176,7 +211,7 @@ SCRIPT_TFTP = """
   print "\\n"
   print "boot.script: tftpftw"
   print "\\n"
-  send "tftpboot 0xffffffff91000000 172.16.1.1:{funos} ; unzip 0xFFFFFFFF91000000 0xa800000020000000 ; bootelf -p 0xa800000020000000"
+  send "tftpboot 0xffffffff91000000 {serverip}:{funos} ; unzip 0xFFFFFFFF91000000 0xa800000020000000 ; bootelf -p 0xa800000020000000"
   print "\\n"
 
   print "boot.script: waiting for FunOS to platform_halt now"
@@ -260,15 +295,9 @@ def sighup_handler(signal, frame):
     print "%s:SIGHUP received" % sys.argv[0]
 
 def maybe_reset_target(options):
-    tfile = options.reset_file
-    if (tfile is not None):
-        # XXX: assume file == reset probe
-        print "Resetting sb-02"
-        r = os.system("~cgray/bin/sb-jtag-reset.py sb-02")
-        #if (r != 0):
-        #    print "Probe reset returned an error. FAILING"
-        #    sys.exit(1)
-
+    if (options.reset):
+        print "Resetting %s" % options.board
+        r = os.system("~cgray/bin/sb-jtag-reset.py %s" % options.board)
 
 def maybe_install_funos(funos):
 
@@ -288,7 +317,7 @@ def maybe_install_funos(funos):
     return funos
 
 parser = optparse.OptionParser(usage="usage: %prog [options] funos-stripped.gz [-- bootargs]")
-parser.add_option("-r", "--reset-file", action="store", default=None)
+parser.add_option("-r", "--reset", action="store_true", default=False)
 parser.add_option("-m", "--make-dir", action="store_true", default=False)
 parser.add_option("-T", "--no-terminal-reset", action="store_true", default=False)
 parser.add_option("-G", "--do-pgid", action="store_true", default=False)
@@ -298,8 +327,13 @@ parser.add_option("-u", "--uboot", action="store", default=None)
 parser.add_option("-N", "--no-boot", action="store_true", default=False)
 parser.add_option("-P", "--postscript", action="store", default=None)
 parser.add_option("-F", "--tftp", action="store_true", default=False)
+parser.add_option("-b", "--board", action="store", default=None)
 
 (options, args) = parser.parse_args()
+
+if (options.board not in boards):
+    print "must specify a board"
+    sys.exit(1)
 
 if (options.make_dir):
     path = tempfile.mkdtemp(dir=os.getcwd())
@@ -371,8 +405,16 @@ else:
         d['bootargs'] = arg
         d['funos'] = krn
         d['minicom_pid'] = pid_name
-        
-        script = SCRIPT_TFTP.format(**d)
+
+        board = boards[options.board]
+        d['serverip'] = board['serverip']
+        d['boardip'] = board['boardip']
+        if (board.get("chain_uboot") is not None):
+            d['chain_uboot'] = board["chain_uboot"]
+            script = SCRIPT_CHAIN.format(**d)
+            script += SCRIPT_TFTP.format(**d)
+        else:
+            script = SCRIPT_TFTP.format(**d)
     
     if (not options.no_bootscript):
         fl = open(script_name, "w")
@@ -386,7 +428,9 @@ else:
     gpid = os.getpgrp()
     print "pgid now %s" % gpid
 
-    cmd = "minicom -D /dev/ttyUSB0 -S %s -w -C %s" % (script_name, log_name)
+    device = boards[options.board]["uart"]
+    baud = boards[options.board]["baud"]
+    cmd = "minicom -D %s -b %s -S %s -w -C %s" % (device, baud, script_name, log_name)
 
     # fork minicom to get its pid for later
     print "Forking minicom..."
