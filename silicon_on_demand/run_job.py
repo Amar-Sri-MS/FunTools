@@ -114,10 +114,10 @@ out:
 """
 
 SCRIPT_CHAIN = """
-  expect {
+  expect {{
   	 "f1 #" break
   	 timeout 20  goto no_uboot
-  }
+  }}
 
   send "loadx"
   ! sx -k {chain_uboot}
@@ -127,6 +127,8 @@ SCRIPT_CHAIN = """
   send ""
   send ""
   send "unzip 0xFFFFFFFF91000000 0xFFFFFFFF99000000 ; bootelf -p 0xFFFFFFFF99000000"
+
+  goto chain_bypass
 """
 
 
@@ -200,7 +202,7 @@ chain_bypass:
   }}
   
   print "\\nChecking link status..."
-  ! cat {minicom_pid} | xargs /home/cgray/bin/check-i40e-link.py enp1s0f0 restart.fail 
+  ! cat {minicom_pid} | xargs /home/cgray/bin/check-i40e-link.py {iface} restart.fail 
   print "\\nLink status checked"
 
   print "\\n"
@@ -409,6 +411,7 @@ else:
         board = boards[options.board]
         d['serverip'] = board['serverip']
         d['boardip'] = board['boardip']
+        d['iface'] = board['iface']
         if (board.get("chain_uboot") is not None):
             d['chain_uboot'] = board["chain_uboot"]
             script = SCRIPT_CHAIN.format(**d)

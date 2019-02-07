@@ -305,6 +305,8 @@ def mkjob(opts, email, funos,  args):
         d['timeout'] = int(opts.timeout)
     if (opts.board is not  None):
         d['board'] = opts.board
+    if (opts.delay is not None):
+        d['delay'] = opts.delay
 
     print "job is %s/job.js" % path
     fl = open("%s/job.js" % path, 'w')
@@ -444,6 +446,7 @@ def sod_client():
     parser.add_option("-s", "--suffix", action="store", default=None)
     parser.add_option("-e", "--email", action="append", default=[])
     parser.add_option("-b", "--board", action="store", default=None)
+    parser.add_option("-D", "--delay", action="store", type="int", default=None)
 
     (opts, args) = parser.parse_args()
 
@@ -548,6 +551,14 @@ def main(opts, joblist):
     print "Running the following job..."
     print_status(opts, job)
 
+    delay = job.get("delay", 0)
+    if (delay > 0):
+        print "%s: Delaying for %d seconds...\n" % (datetime.datetime.now().replace(microsecond=0).isoformat(), delay)
+        open(fraw(job), 'w').write("delaying for %s seconds\n" % delay)
+        time.sleep(delay)
+        print "%s: Continuing job\n" % datetime.datetime.now().replace(microsecond=0).isoformat()
+
+    
     # default 5 minute timeout
     timeout = job.get("timeout", "")
     if (timeout != ""):
