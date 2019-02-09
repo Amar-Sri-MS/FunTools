@@ -33,6 +33,8 @@ public:
 
 		u64 last_addr = 0;
 
+		bool func_unparseable = false;
+
 		string line_str;
 
 		while (reader.get_line(line_str)) {
@@ -58,9 +60,11 @@ public:
 
 			//printf("addr=%lx %s\n", addr, line);
 
-			if (line[16] == ':') {
+			if (line[16] == ':' && line[27] == '\t') {
 				assert(func_name.length());
 				assert_msg(addr == last_addr+4, "addr=%lx last_addr=%lx", addr, last_addr);
+
+				assert(!func_unparseable);
 
 				assert(len >= 28);
 				assert(line[17] == '\t');
@@ -73,6 +77,14 @@ public:
 
 				_addr_to_dasm.insert(std::make_pair(addr, DasmLine(addr, opcode, asm_text)));
 				last_addr = addr;
+			} else if (line[16] == ':') {
+				assert(func_name.length());
+				assert_msg(addr == last_addr+4, "addr=%lx last_addr=%lx", addr, last_addr);
+
+				assert(func_unparseable || func_start == addr);
+
+				func_unparseable = true;
+				last_addr = addr + 12;
 			} else {
 				assert(line[16] == ' ');
 				assert(line[17] == '<');
@@ -83,7 +95,7 @@ public:
 				if (name[0] == '.' || name[0] == '$')
 					continue;
 
-				if (func_name.length()) {
+				if (func_name.length() && !func_unparseable) {
 					vector<DasmFunction> *funcs_ptr;
 
 					if (func_start >= 0xFFFFFFFF80000000)
@@ -98,6 +110,7 @@ public:
 
 				func_name = string(line).substr(18, len-18-2);
 				assert(func_name.length());
+				func_unparseable = false;
 				func_start = addr;
 				last_addr = addr - 4;
 			}
