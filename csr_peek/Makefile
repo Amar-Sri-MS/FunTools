@@ -22,7 +22,7 @@ CSR_JSON ?= csr_metadata.json
 SDK_INSTALL_DIR ?= $(SDKDIR)
 
 BASE_CFG_DIR ?= $(SDKDIR)
-CFG_DIR := $(BASE_CFG_DIR)/FunSDK/chip/f1/hw/yaml
+CFG_DIR := $(BASE_CFG_DIR)/FunSDK/chip/f1/yaml
 
 
 # Get past issues with g++ based compilation on Linux VMs
