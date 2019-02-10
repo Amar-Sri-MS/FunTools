@@ -764,7 +764,7 @@ class i2c:
             else:
                 return (True, None)
 
-    def i2c_wedge_detect(self, chip_inst):
+    def i2c_wedge_detect(self):
         if bmc_board is False:
             return self.master.i2c_wedge_detect()
         return False
