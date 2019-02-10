@@ -184,7 +184,7 @@ class I2CFactoryThread(jsocket.ServerFactoryThread):
                         logger.error(err_msg)
                         self.send_obj({"STATUS":[False, err_msg]})
                 try:
-                    i2c_conn = i2c(dev_id, slave_addr)
+                    i2c_conn = i2c(dev_id=dev_id, slave_addr=slave_addr)
                     (status, status_msg) = i2c_conn.i2c_connect()
                     if status is True:
                         self.i2c_dev_id = dev_id
@@ -219,7 +219,8 @@ class I2CFactoryThread(jsocket.ServerFactoryThread):
                     logger.debug("csr_addr: {0} csr_width_words:{1}".format(csr_addr,
                                  csr_width_words))
                     try:
-                        word_array = i2c_conn.i2c_csr_peek(csr_addr, csr_width_words)
+                        word_array = i2c_conn.i2c_csr_peek(csr_addr = csr_addr,
+                                                           csr_width_words = csr_width_words)
                     except Exception as e:
                         logging.error(traceback.format_exc())
                         self.send_obj({"STATUS":[False, "Exception!"]})
@@ -259,7 +260,8 @@ class I2CFactoryThread(jsocket.ServerFactoryThread):
                     else:
                         logger.error('I2c dev is not connected!')
                     return
-                status = i2c_conn.i2c_csr_poke(csr_addr, word_array)
+                status = i2c_conn.i2c_csr_poke(csr_addr = csr_addr,
+                                               word_array = word_array)
                 if not fast_poke:
                     self.send_obj({"STATUS":[status, "OK!" if status else "i2c csr error!"]})
             elif cmd == "DISCONNECT":

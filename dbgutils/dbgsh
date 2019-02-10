@@ -112,6 +112,8 @@ class dbgsh(cmd2.Cmd):
         metavar=('ring_name', 'ring_inst'), dest='ring', type=str, help="ring details")
     parser_peek.add_argument('-p', nargs=1,
         metavar=('anode_path'), dest='an_path', type=str, help="anode path")
+    parser_peek.add_argument('-c', nargs=1,
+        metavar=('chip_inst'), dest='chip_inst', type=str, help="chip(or asic) instance")
 
     parser_poke = subparsers.add_parser('poke', help="CSR poke",
                                         formatter_class=ArgFormatter)
@@ -123,6 +125,8 @@ class dbgsh(cmd2.Cmd):
         metavar=('csr_entry'), dest='csr_entry', type=str, help="csr entry")
     parser_poke.add_argument('-a', nargs=2,
         metavar=('anode_name', 'anode_inst'), dest='anode', help="anode details")
+    parser_poke.add_argument('-c', nargs=1,
+        metavar=('chip_inst'), dest='chip_inst', type=str, help="chip(or asic) instance")
     parser_poke.add_argument('-r', nargs=2,
         metavar=('ring_name', 'ring_inst'), dest='ring', type=str, help="ring details")
     parser_poke.add_argument('-p', nargs=1,
@@ -170,6 +174,9 @@ class dbgsh(cmd2.Cmd):
                 help="Relative or absolute path to csr replay file")
     parser_replay.add_argument('image', nargs=1, type=str,
                 help="Relative or absolute path to funos/u-boot srec format image")
+    parser_replay.add_argument('-c', nargs=1,
+        metavar=('chip_inst'), dest='chip_inst', type=str, help="chip(or asic) instance")
+
     argcomplete.autocomplete(parser)
 
     @with_argparser(parser)
