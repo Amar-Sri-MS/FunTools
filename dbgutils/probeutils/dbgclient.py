@@ -124,4 +124,6 @@ class DBG_Client(object):
             error_msg = "Probe is not connected!"
             print(error_msg);
             return (False, error_msg)
-        return self.connection_handle.dbg_chal_cmd(chip_inst, cmd, data)
+        return self.connection_handle.dbg_chal_cmd(chip_inst = chip_inst,
+                                                   cmd = cmd,
+                                                   data = data)

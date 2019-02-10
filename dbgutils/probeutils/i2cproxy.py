@@ -308,7 +308,8 @@ class I2CFactoryThread(jsocket.ServerFactoryThread):
                     status = False
                     while status == False:
                         logger.info('Issueing chal cmd: {0}'.format(hex(cmd)))
-                        (status, data) = i2c_conn.i2c_dbg_chal_cmd(cmd, cmd_data)
+                        (status, data) = i2c_conn.i2c_dbg_chal_cmd(cmd = cmd,
+                                                                   cmd_data = data)
                         if status == False:
                             i2c_wedged = i2c_conn.i2c_wedge_detect()
                             if i2c_wedged == True:

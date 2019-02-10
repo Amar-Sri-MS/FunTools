@@ -528,7 +528,7 @@ class i2c:
                 return False
             return True
 
-    def i2c_dbg_chal_cmd(self, chip_inst, cmd, data):
+    def i2c_dbg_chal_cmd(self, cmd, data, chip_inst=None):
         self.__i2c_dbg_chal_fifo_flush()
         logger.debug('cmd: {0}'.format(hex(cmd)))
         byte_array = array('B', [0xC4])
