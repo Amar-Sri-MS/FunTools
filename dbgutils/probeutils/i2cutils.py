@@ -291,9 +291,9 @@ class bmc:
 
 class i2c:
     def __init__(self, dev_id=None, slave_addr=None, bmc_ip_address=None):
-        bmc_board = False
+        self.bmc_board = False
         if bmc_ip_address:
-            bmc_board = True
+            self.bmc_board = True
             self.master = bmc(bmc_ip_address)
             logger.info(self.master)
         else:
@@ -765,16 +765,16 @@ class i2c:
                 return (True, None)
 
     def i2c_wedge_detect(self):
-        if bmc_board is False:
+        if self.bmc_board is False:
             return self.master.i2c_wedge_detect()
         return False
 
     def i2c_unwedge(self):
-        if bmc_board is False:
+        if self.bmc_board is False:
             return self.master.i2c_unwedge()
         return True
 
     def gpio_sck_trigger(self):
-        if bmc_board is False:
+        if self.bmc_board is False:
             self.master.gpio_sck_trigger()
         return True
