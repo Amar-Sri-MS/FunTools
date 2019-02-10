@@ -416,7 +416,7 @@ class i2c:
             return word_array
 
     # i2c csr write
-    def i2c_csr_poke(self, csr_addr, word_array, chip_inst):
+    def i2c_csr_poke(self, csr_addr, word_array, chip_inst=None):
         logger.info(('Starting I2C poke. chip_inst: {0} csr_addr: {1} word_array:{2}').format(
             chip_inst, hex(csr_addr), [hex(x) for x in word_array]))
         csr_width_words = len(word_array)
