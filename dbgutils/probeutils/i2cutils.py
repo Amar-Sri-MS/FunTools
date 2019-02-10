@@ -137,8 +137,6 @@ class aardvark:
     # i2c csr read
     def i2c_read(self, read_data, chip_inst):
         h = self.handle
-        logger.info(('I2C peek csr_addr:{0}'
-               ' csr_width_words:{1}').format(hex(csr_addr), csr_width_words))
         if read_data is None or len(read_data) == 0:
             logger.error('Read array length expected should be non-zero positive number')
             return None
@@ -315,7 +313,8 @@ class i2c:
     # i2c csr read
     def i2c_csr_peek(self, csr_addr, csr_width_words, chip_inst=None):
         logger.info(('I2C peek csr_addr:{0}'
-               ' csr_width_words:{1}').format(hex(csr_addr), csr_width_words))
+               ' csr_width_words:{1} chip_inst: {2}').format(
+               hex(csr_addr), csr_width_words, chip_inst))
         if csr_width_words == 0:
             logger.error('csr width expected should be non-zero positive number')
             return None
