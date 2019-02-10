@@ -366,11 +366,11 @@ class i2c:
             logger.debug('poking bytes: {0}'.format([hex(x) for x in cmd_data]))
             sent_bytes = self.master.i2c_write(write_data = cmd_data, chip_inst=chip_inst)
             logger.debug('sent_bytes: {0}'.format(sent_bytes))
+            if sent_bytes != len(cmd_data):
+                logger.error(('Write Error! sent_bytes:{0}'
+                       ' Expected: {1}').format(sent_bytes, len(cmd_data)))
+                return False
             try:
-                if sent_bytes != len(cmd_data):
-                    logger.error(('Write Error! sent_bytes:{0}'
-                           ' Expected: {1}').format(sent_bytes, len(cmd_data)))
-                    return False
                 time.sleep(constants.I2C_CSR_SLEEP_SEC)
                 status = array('B', [0x01])
                 status_bytes = self.master.i2c_read(read_data = status, chip_inst=chip_inst)
@@ -440,7 +440,6 @@ class i2c:
                 logger.error(('Write Error! sent_bytes:{0}'
                        ' Expected: {1}').format(sent_bytes, len(cmd_data)))
                 return False
-
             try:
                 time.sleep(constants.I2C_CSR_SLEEP_SEC)
                 status = array('B', [0x00])
@@ -478,11 +477,11 @@ class i2c:
                 logger.debug('poking bytes: {0}'.format([hex(x) for x in cmd_data]))
                 sent_bytes = self.master.i2c_write(write_data = cmd_data, chip_inst=chip_inst)
                 logger.debug('sent_bytes: {0}'.format(sent_bytes))
+                if sent_bytes != len(cmd_data):
+                    logger.error(('Write Error! sent_bytes:{0}'
+                           ' Expected: {1}').format(sent_bytes, len(cmd_data)))
+                    return False
                 try:
-                    if sent_bytes != len(cmd_data):
-                        logger.error(('Write Error! sent_bytes:{0}'
-                               ' Expected: {1}').format(sent_bytes, len(cmd_data)))
-                        return False
                     time.sleep(constants.I2C_CSR_SLEEP_SEC)
                     status = array('B', [0x01])
                     status_bytes = self.master.i2c_read(read_data = status, chip_inst=chip_inst)
@@ -507,11 +506,11 @@ class i2c:
             logger.debug('poking bytes: {0}'.format([hex(x) for x in cmd_data]))
             sent_bytes = self.master.i2c_write(write_data = cmd_data, chip_inst=chip_inst)
             logger.debug('sent_bytes: {0}'.format(sent_bytes))
+            if sent_bytes != len(cmd_data):
+                logger.error(('Write Error! sent_bytes:{0}'
+                       ' Expected: {1}').format(sent_bytes, len(cmd_data)))
+                return False
             try:
-                if sent_bytes != len(cmd_data):
-                    logger.error(('Write Error! sent_bytes:{0}'
-                           ' Expected: {1}').format(sent_bytes, len(cmd_data)))
-                    return False
                 time.sleep(constants.I2C_CSR_SLEEP_SEC)
                 status = array('B', [0x01])
                 status_bytes = self.master.i2c_read(read_data = status, chip_inst=chip_inst)
