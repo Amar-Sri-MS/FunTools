@@ -707,7 +707,7 @@ class i2c:
             time.sleep(0.1)
             rdata = array('B', [00])
             logger.debug('Reading the sbp cmd exec status byte!')
-            self.master.i2c_read(rdata)
+            self.master.i2c_read(read_data = rdata)
             logger.debug('Read data: {0}'.format(rdata))
             status_byte = rdata[0]
             status = status_byte >> 0x6
