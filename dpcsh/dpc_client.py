@@ -130,7 +130,7 @@ class DpcClient(object):
     def async_recv_wait_raw(self, tid = None):
         # see if it's already pending
         for r in self.__async_queue:
-            if (tid is None or r['tid']) == tid:
+            if (tid is None or r['tid'] == tid):
                 self.__async_queue.remove(r)
             return r
 
