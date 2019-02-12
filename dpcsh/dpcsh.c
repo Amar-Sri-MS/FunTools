@@ -804,7 +804,7 @@ static struct fun_json *line2json(char *line, const char **error)
 	}
 
 	if (pmode == PARSE_TEXT) {
-		/* parse as a command-line with a fixed tid */
+		/* parse as a command-line with an always increasing tid */
 		static uint64_t tid = 0;
 		json = fun_commander_line_to_command(line, &tid, error);
 	} else {
