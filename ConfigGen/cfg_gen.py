@@ -496,7 +496,8 @@ def generate_hu_cfg(module_cfg, cfg_code_gen_out_base):
         'HostUnitFunction',
     ]
 
-    hucgen = HUCodeGen(module_cfg, schema_dict)
+    hu_cfg_dict = module_cfg['HuInterface']
+    hucgen = HUCodeGen(hu_cfg_dict, schema_dict)
 
     # generate C code
     hucgen.generate("hu_cfg", key_to_gen, cfg_code_gen_out_base)
