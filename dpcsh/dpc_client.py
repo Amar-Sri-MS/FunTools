@@ -127,26 +127,22 @@ class DpcClient(object):
     def async_recv_any(self):
         return self.async_recv_any_raw()['result']
 
-    def async_recv_wait_raw(self, tid):
-
+    def async_recv_wait_raw(self, tid = None):
         # see if it's already pending
         for r in self.__async_queue:
-            if (r['tid'] == tid):
+            if (tid is None or r['tid']) == tid:
                 self.__async_queue.remove(r)
             return r
 
         # wait and dequeue until we find the one we want
         while (True):
             r = self.async_wait()
-            print("found: %s" % r)
-            if (r is None):
-                return None
-            if (r['tid'] == tid):
+            if (tid is None or r['tid'] == tid):
                 return r
 
             self.__async_queue.append(r)
 
-    def async_recv_wait(self, tid):
+    def async_recv_wait(self, tid = None):
         return self.async_recv_wait_raw(tid)['result']
 
 
@@ -156,7 +152,6 @@ class DpcClient(object):
         # make sure verb is just a verb
         if (" " in verb):
             raise RuntimeError("no spaces allowed in verbs")
-
         # make it a string and send it & get results
         tid = self.async_send(verb, arg_list, tid)
         results = self.async_recv_wait(tid)
@@ -179,7 +174,7 @@ class DpcClient(object):
 
         # XXX: we know what dpcsh will always stuff a zero tid for
         # legacy commands
-        results = self.async_recv_wait(0)
+        results = self.async_recv_wait()
 
         if (command == 'execute'):
             # XXX: flatten it back down for legacy clients
