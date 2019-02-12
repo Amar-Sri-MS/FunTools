@@ -444,7 +444,7 @@ class i2c:
                 logger.info(('read_data: {0}').format([hex(x) for x in read_data]))
                 print len(read_bytes)
                 print (csr_width + 1)
-                if len(read_bytes) != (csr_width + 1):
+                if read_bytes[0] != (csr_width + 1):
                     logger.error(('Read Error!  read_bytes:{0}'
                            ' Expected: {1}').format(read_bytes, (csr_width + 1)))
                     return None
