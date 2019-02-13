@@ -1,4 +1,4 @@
-#!/usr/bin/python2.7
+#!/usr/bin/env python2.7
 
 # input:  dir containining .annotate (use sam_enc_ann.py to generate .annotate from samurai data)
 # output: .annotate_detail .cost_tree .cost_tree_detail

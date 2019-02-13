@@ -1,4 +1,4 @@
-#!/usr/bin/python2.7
+#!/usr/bin/env python2.7
 
 # input: directory containing samurai .trace files
 # output: .annotate (use sam_cycles.py for further analysis)
