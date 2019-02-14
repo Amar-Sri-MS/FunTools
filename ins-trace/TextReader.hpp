@@ -26,13 +26,13 @@ public:
 		assert(len != sizeof(_buffer));
 		assert(len != 0);
 
-		if (_buffer[len - 1] == '\n') {
-			_buffer[--len] = 0;
-		} else {
-			assert(feof(_file) != 0);
+		if (_buffer[len - 1] != '\n') {
+			assert(feof(_file));
+			return false;
 		}
+
+		_buffer[--len] = 0;
 		line = _buffer;
 		return true;
 	}
-
 };
