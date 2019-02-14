@@ -38,19 +38,7 @@ TOOL_CFLAGS += -G 8
 TOOL_CFLAGS += -mno-abicalls -fno-pic
 
 
-#CFLAGS := -mabicalls -G0 # -mno-shared 
-#CFLAGS += -mno-abicalls -G128 -mno-shared -mno-gpopt -mexplicit-relocs -mno-extern-sdata -mno-local-sdata
-# CFLAGS += -mabicalls -mshared -mgpopt
-#-mno-gpopt -mshared
-#CFLAGS += -fspic
-# -membedded-data  -mshared
-# CFLAGS += -mlocal-sdata -mgpopt
-#CFLAGS += -O2
-# Do not allow builtins which may try to recursively call into pdclib itself.
-CFLAGS += -fno-builtin 
-
-# LDFLAGS += -ggdb2
-# LDFLAGS += $(LD_ENDIANNESS) -Ttext=0x100000 -N
+# FIXME: we need a proper dynamic / late link for this step
 LDFLAGS += $(LD_ENDIANNESS) -Ttext=0x8300008 -N -n -static -G8
 
 STRIP_FLAGS += -s
