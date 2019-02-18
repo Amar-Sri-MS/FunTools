@@ -93,8 +93,12 @@ def gen_boot_script(filename, funos_start_blk):
                 load_addr=LOAD_ADDR,
                 load_size=os.path.getsize(g.work_file),
                 crc=crc32(g.work_file)))
-        outfile.write('bootelf -p 0x{load_addr:x};'.format(
-            load_addr=LOAD_ADDR))
+        if g.signed:
+            outfile.write('authfw;')
+            outfile.write('bootelf -p ${loadaddr};')
+        else:
+            outfile.write('bootelf -p 0x{load_addr:x};'.format(
+                load_addr=LOAD_ADDR))
 
     cmd = [os.path.join(g.workspace, 'u-boot', 'tools', 'mkimage'),
            '-A', 'mips64',
@@ -156,6 +160,8 @@ def run():
         '--filesystem', help='Generate filesystem for eMMC', action='store_true')
     parser.add_argument(
         '--hex', help='Generate output in hex format (for Palladium)', action='store_true')
+    parser.add_argument(
+        '--signed', help='Input images are signed', action='store_true')
 
     parser.parse_args(namespace=g)
 
