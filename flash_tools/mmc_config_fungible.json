@@ -1,0 +1,12 @@
+{
+    "signed_images": {
+        "funos.signed.bin": {
+            "source": "funos-f1.stripped",
+            "version": 1,
+            "fourcc": "fun1",
+            "cert": "",
+            "customer_cert": "",
+            "key": "fpk5"
+        }
+    }
+}
