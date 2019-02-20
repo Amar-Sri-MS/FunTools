@@ -1,12 +1,21 @@
 # Ebpf kernels (for testing)
 
+## Pre-requisites
+
+Requires llvm and its frontend clang. At least version 6.0.0
+Has been tested on Ubuntu 18.04
+```
+$sudo apt-get update; 
+$sudo apt-get install clang-6.0
+```
 
 ## Conventions
 
 Please follow convention to name the kernels as
-
+```
 k_01.c
 k_02.c
+```
 
 Please have only one function per file. If using functions to construct the injected bytecode, 
 please use [inlining attribute](https://gcc.gnu.org/onlinedocs/gcc/Inline.html) for all called functions.
