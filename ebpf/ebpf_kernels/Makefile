@@ -1,0 +1,76 @@
+CC := clang
+TARGET ?= bpfeb
+CFLAGS := -O2
+OBJFILES := $(patsubst %.c,%.$(TARGET).o,$(wildcard *.c))
+BCFILES := $(patsubst %.c,%.$(TARGET).bc,$(wildcard *.c))
+ASMFILES := $(patsubst %.c,%.$(TARGET).S,$(wildcard *.c))
+WORKSPACE ?= ../../../
+
+GEN_BC ?= ebpf_bc_$(TARGET)
+EXPORT_HDR ?= ebpf_kern_args.h
+GEN_HDR ?= ebpf_gen.h
+
+ifeq ($(TARGET),$(filter $(TARGET),x86_64 bpfeb bpf))
+	CC := clang
+    CFLAGS += -funroll-loops -target $(TARGET)
+endif
+
+ifeq ($(TARGET),mips64)
+	CC := /opt/cross/mips64/bin/mips64-unknown-elf-gcc
+endif
+
+define generate_bc
+    m_file=$(basename $(1) .o)
+    objdump -h $(1) | \
+		grep .text | \
+		awk -v m_file=$(1) '{print "dd if='$$m_file'.o of='$$m_file'.bc bs=1 count=$$[0x" $$3 "] skip=$$[0x" $$6 "]"}' | \
+		bash
+endef
+
+define generate_bcc
+    @touch $(GEN_BC).bcc
+	@echo "#if 0" >> $(GEN_BC).bcc
+	@cat $(1).c >> $(GEN_BC).bcc
+	@echo "#endif" >> $(GEN_BC).bcc
+	xxd -c 8 -i $(1).$(TARGET).bc >> $(GEN_BC).bcc
+endef 
+
+define generate_bcc_hdr
+    @touch $(GEN_HDR)
+	@echo 'extern unsigned char $(1)_$(TARGET)_bc[];' >> $(GEN_HDR)
+	@echo 'extern unsigned int $(1)_$(TARGET)_bc_len;' >> $(GEN_HDR)
+endef
+
+.ONESHELL:
+
+all: $(BCFILES) $(ASMFILES)
+
+%.$(TARGET).S: %.$(TARGET).o
+	llvm-objdump -S $< > $@
+
+%.$(TARGET).bc: %.$(TARGET).o
+	$(call generate_bc,$<)
+	$(call generate_bcc,$(basename $(basename $<)))
+	$(call generate_bcc_hdr,$(basename $(basename $<)))
+
+
+#.SECONDARY: $(OBJFILES)
+
+%.$(TARGET).o: %.c
+	$(CC) $(CFLAGS)  -c $< -o $@
+
+
+.PHONY: install
+install: all
+	cp $(GEN_BC).bcc $(WORKSPACE)/FunOS/tests/$(GEN_BC).c
+	cp $(EXPORT_HDR) $(WORKSPACE)/FunOS/tests
+	cp $(GEN_HDR) $(WORKSPACE)/FunOS/tests
+
+
+.PHONY: clean 
+clean:
+	rm -f *.o
+	rm -f *.bc
+	rm -f *.S
+	rm -f *.bcc
+	rm -f ebpf_gen.h
