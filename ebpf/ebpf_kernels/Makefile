@@ -1,9 +1,12 @@
 CC := clang
 TARGET ?= bpfeb
 CFLAGS := -O2
-OBJFILES := $(patsubst %.c,%.$(TARGET).o,$(wildcard *.c))
-BCFILES := $(patsubst %.c,%.$(TARGET).bc,$(wildcard *.c))
-ASMFILES := $(patsubst %.c,%.$(TARGET).S,$(wildcard *.c))
+SRCS := $(wildcard *.c)
+
+OBJFILES := $(patsubst %.c,%.$(TARGET).o,$(SRCS))
+BCFILES := $(patsubst %.c,%.$(TARGET).bc,$(SRCS))
+ASMFILES := $(patsubst %.c,%.$(TARGET).S,$(SRCS))
+
 WORKSPACE ?= ../../../
 
 GEN_BC ?= ebpf_bc_$(TARGET)
