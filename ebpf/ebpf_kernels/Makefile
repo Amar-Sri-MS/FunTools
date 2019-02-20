@@ -20,8 +20,8 @@ ifeq ($(TARGET),mips64)
 endif
 
 define generate_bc
-    m_file=$(basename $(1) .o)
-    objdump -h $(1) | \
+    @m_file=$(basename $(1) .o)
+    @objdump -h $(1) | \
 		grep .text | \
 		awk -v m_file=$(1) '{print "dd if='$$m_file'.o of='$$m_file'.bc bs=1 count=$$[0x" $$3 "] skip=$$[0x" $$6 "]"}' | \
 		bash
