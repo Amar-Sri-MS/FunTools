@@ -13,13 +13,16 @@ import obj_tools
 
 import platform
 
+tool_map = {}
 _hostOS = platform.system()
 if _hostOS == 'Linux':
-  gdb = '/opt/cross/mips64/bin/mips64-unknown-elf-gdb'
-  objdump = '/opt/cross/mips64/bin/mips64-unknown-elf-objdump'
+  tool_map['gdb']     = '/opt/cross/mips64/bin/mips64-unknown-elf-gdb'
+  tool_map['objdump'] = '/opt/cross/mips64/bin/mips64-unknown-elf-objdump'
+  tool_map['nm']      = '/opt/cross/mips64/bin/mips64-unknown-elf-nm'
 elif _hostOS == 'Darwin':
-  gdb = '/Users/Shared/cross/mips64/bin/mips64-unknown-elf-gdb'
-  objdump = '/Users/Shared/cross/mips64/bin/mips64-unknown-elf-objdump'
+  tool_map['gdb']     = '/Users/Shared/cross/mips64/bin/mips64-unknown-elf-gdb'
+  tool_map['objdump'] = '/Users/Shared/cross/mips64/bin/mips64-unknown-elf-objdump'
+  tool_map['nm']      = '/Users/Shared/cross/mips64/bin/mips64-unknown-elf-nm'
 else:
   print("Unsupported OS:", _hostOS)
   assert False
@@ -28,7 +31,7 @@ else:
 addr_to_func_map = {}
 addr_to_loc_map = {}
 
-def gdb_get_addr_func_loc(addr):
+def addr_func_loc_get(addr):
   func = addr_to_func_map.get(addr, '<unknown>')
   loc = addr_to_loc_map.get(addr, '??:?')
   return (func, loc)
@@ -36,25 +39,25 @@ def gdb_get_addr_func_loc(addr):
 def instr_annotate(bin_file, out_file, data):
   addr_list = set([v[0] for v in data])
 
-  print 'running gdb: for addr to func'
-  d = obj_tools.gdb_prepare_addr_func(gdb, bin_file, addr_list)
+  print 'running: addr to func'
+  d = obj_tools.prepare_addr_func(tool_map, bin_file, addr_list)
   addr_to_func_map.update(d)
 
-  print 'running gdb: for addr to line'
-  d = obj_tools.gdb_prepare_addr_line(gdb, bin_file, addr_list, is_full_path=True)
+  print 'running: addr to line'
+  d = obj_tools.prepare_addr_line(tool_map, bin_file, addr_list, is_full_path=True)
   addr_to_loc_map.update(d)
 
   print 'writing output to file %s' % out_file
   with open(out_file, 'w') as f:
     for v in data:
       (addr, asm) = v
-      (func, loc) = gdb_get_addr_func_loc(addr)
+      (func, loc) = addr_func_loc_get(addr)
       # format: addr func_loc file_loc asm_stmt
       f.write('%s %s %s %s\n' % (addr, func, loc, asm))
 
 def bin_instr_dasm_annotate(bin_file):
   print 'running objdump'
-  output = obj_tools.objdump_disassemble(objdump, bin_file)
+  output = obj_tools.objdump_disassemble(tool_map, bin_file)
 
   print 'parse objdump output'
   data = []
