@@ -54,6 +54,10 @@ There are few scripts here
     example:
       instr_count_query.py group_by_func funos-f1-emu.instr_count
 
+  sam_enc_ann.py
+  sam_cycles.py
+    post processing of samurai trace with func:offset + file:line and call/cost tree
+
 Sample outputs
 ```
     funos-f1-emu.instr_dasm
