@@ -29,3 +29,9 @@ it can be used directly in tests.
 `make` generates (by default) ebpf bytecode for the BPF VM.
 `make install` installs this to the checked out FunOS repo tests. Modify ebpf_test under tests appropriately.
 `make clean` removes everything (except already installed stuff in FunOS)
+
+NOTE: The kernels need to be compiled for both big-endian(mips64) and little-endian(x86-64) host architectures.
+For this, the minimal compile steps are the following
+
+$ make clean; make install (Install bpfeb, target=silicon, or Qemu)
+$ make clean; TARGET=bpfel make install (Installs bpfel, target=posix)

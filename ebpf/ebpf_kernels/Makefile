@@ -3,8 +3,8 @@ TARGET ?= bpfeb
 CFLAGS := -O2
 SRCS := $(wildcard *.c)
 
-OBJFILES := $(patsubst %.c,%.$(TARGET).o,$(SRCS))
-BCFILES := $(patsubst %.c,%.$(TARGET).bc,$(SRCS))
+OBJFILES := $(patsubst %.c,%.o,$(SRCS))
+BCFILES := $(patsubst %.c,%.bc,$(SRCS))
 ASMFILES := $(patsubst %.c,%.$(TARGET).S,$(SRCS))
 
 WORKSPACE ?= ../../../
@@ -13,9 +13,11 @@ GEN_BC ?= ebpf_bc_$(TARGET)
 EXPORT_HDR ?= ebpf_kern_args.h
 GEN_HDR ?= ebpf_gen.h
 
-ifeq ($(TARGET),$(filter $(TARGET),x86_64 bpfeb bpf))
+ifeq ($(TARGET),$(filter $(TARGET),bpfeb bpfel))
 	CC := clang
     CFLAGS += -funroll-loops -target $(TARGET)
+else
+    $(error Unknown TARGET. Please specify either bpfeb or bpfel)
 endif
 
 ifeq ($(TARGET),mips64)
@@ -35,23 +37,23 @@ define generate_bcc
 	@echo "#if 0" >> $(GEN_BC).bcc
 	@cat $(1).c >> $(GEN_BC).bcc
 	@echo "#endif" >> $(GEN_BC).bcc
-	xxd -c 8 -i $(1).$(TARGET).bc >> $(GEN_BC).bcc
+	xxd -c 8 -i $(1).bc >> $(GEN_BC).bcc
 endef 
 
 define generate_bcc_hdr
     @touch $(GEN_HDR)
-	@echo 'extern unsigned char $(1)_$(TARGET)_bc[];' >> $(GEN_HDR)
-	@echo 'extern unsigned int $(1)_$(TARGET)_bc_len;' >> $(GEN_HDR)
+	@echo 'extern unsigned char $(1)_bc[];' >> $(GEN_HDR)
+	@echo 'extern unsigned int $(1)_bc_len;' >> $(GEN_HDR)
 endef
 
 .ONESHELL:
 
 all: $(BCFILES) $(ASMFILES)
 
-%.$(TARGET).S: %.$(TARGET).o
+%.$(TARGET).S: %.o
 	llvm-objdump -S $< > $@
 
-%.$(TARGET).bc: %.$(TARGET).o
+%.bc: %.o
 	$(call generate_bc,$<)
 	$(call generate_bcc,$(basename $(basename $<)))
 	$(call generate_bcc_hdr,$(basename $(basename $<)))
