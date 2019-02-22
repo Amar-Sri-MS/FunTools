@@ -55,13 +55,13 @@ def pkt_decode(src):
     final="".join(map(chr, ret))
     return final
 
-def connect_verif_client_socket():
+def connect_verif_client_socket(port):
     global verif_sock
     verif_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     print 'Client Socket created'
     #Bind socket to local host and port
     try:
-        verif_sock.bind((HOST, args.verif_port))
+        verif_sock.bind((HOST, port))
     except socket.error as msg:
         print 'Bind failed. Error Code : ' + str(msg[0]) + ' Message ' + msg[1]
         sys.exit()
@@ -69,7 +69,7 @@ def connect_verif_client_socket():
     print 'Client Socket bind complete'
     #Start listening on socket
     verif_sock.listen(10)
-    print 'Client Socket now listening on port %d' % (args.verif_port)
+    print 'Client Socket now listening on port %d' % (port)
 
 #now setup the listening socket for the PTF
 #
@@ -245,7 +245,7 @@ def process_cmd_csr_write (msg_len):
   #print "csr_poke data:"
   #print data_words_list
 
-  if args.i2c_dis:
+  if i2c_dis:
       (status, result) = (True,None)
   elif fast_poke:
       (status, result) = dbgprobe().csr_fast_poke(addr, data_words_list)
@@ -372,7 +372,7 @@ def process_cmd_csr_read (msg_len):
   (dword_len,) = struct.unpack(">B", data)
   #print 'num_dwords to read is is %d' % (dword_len)
 
-  if args.i2c_dis:
+  if i2c_dis:
       (status,result) = (True,[random.randint(0,0x10000000000000000)]*dword_len)
   else:
       (status, result) = dbgprobe().csr_peek(addr, dword_len)
@@ -430,11 +430,11 @@ def handle_connection(conn):
        process_cmd(cmd, msg_len)
 
 
-def connect_dbgprobe():
-#status = dbgprobe().connect('i2c', args.i2c_svr, 'TPCFbwoQ')
-#    status = dbgprobe().connect('i2c', args.i2c_svr, 'TPCFb23b',0x70,False)
-#always hard code slave addr to 0x70
-    if args.tpod_jtag:
+def connect_dbgprobe(tpod,tpod_jtag,tpod_force):
+    duts = dut.dut()
+
+    if tpod_jtag:
+       (jtag_probe_id, jtag_probe_ip) = duts.get_jtag_info(tpod)
        print "connecting to JTAG Proxy "+jtag_probe_ip
        status = dbgprobe().connect('jtag',jtag_probe_ip,jtag_probe_id)
        if status is True:
@@ -443,8 +443,9 @@ def connect_dbgprobe():
           print("JTAG Server Connection Failed!")
           sys.exit(1)
     else:
+       (i2c_probe_serial, i2c_proxy_ip, i2c_slave_addr) = duts.get_i2c_info(tpod)
        print "connecting to I2C Proxy "+i2c_proxy_ip
-       status = dbgprobe().connect('i2c', i2c_proxy_ip , i2c_probe_serial , 0x70,args.tpod_force)
+       status = dbgprobe().connect('i2c', i2c_proxy_ip , i2c_probe_serial , i2c_slave_addr,tpod_force)
        if status is True:
           print("I2C Server Connection Successful!")
        else:
@@ -493,8 +494,12 @@ def bg_handle_csr():
 def auto_int(x):
     return int(x, 0)
 
+def set_i2c_dis(x):
+   global i2c_dis
+   i2c_dis=x
+
 def proc_arg():
-    global parser, args, i2c_probe_serial, i2c_proxy_ip, i2c_slave_addr, jtag_probe_ip, jtag_probe_id
+    global parser, args, i2c_dis
     parser = argparse.ArgumentParser()
     parser.add_argument('--ptf_dis', action='store_true', default=False, help='ptf connection disable. default %(default)d')
     parser.add_argument('--ptf_host', nargs='?', type=str, default='localhost', help='ptf host to connect to. default %(default)s')
@@ -507,21 +512,20 @@ def proc_arg():
     parser.add_argument('--tpod_jtag', action='store_true', default=False, help='TPOD JTAG mode. default %(default)s')
 #    parser.add_argument('--i2c_svr', nargs='?', type=str, default='10.1.20.69', help='i2c server. default %(default)s')
     args = parser.parse_args()
-    duts = dut.dut()
-    (i2c_probe_serial, i2c_proxy_ip, i2c_slave_addr) = duts.get_i2c_info(args.tpod)
-    (jtag_probe_id, jtag_probe_ip) = duts.get_jtag_info(args.tpod)
-
+    set_i2c_dis(args.i2c_dis)
     #args = parser.parse_args(['-ptf_dis'])
 
 ################################################################################
 
 def main():
     proc_arg()
-    connect_verif_client_socket()
+    connect_verif_client_socket(port=args.verif_port)
     if not args.ptf_dis:
        connect_ptf()
-    if not args.i2c_dis:
-       connect_dbgprobe()
+    if not i2c_dis:
+       connect_dbgprobe(tpod=args.tpod,
+                        tpod_jtag=args.tpod_jtag,
+                        tpod_force=args.tpod_force)
     if args.test_ptf:
        test_ptf()
     start_verif_server()
