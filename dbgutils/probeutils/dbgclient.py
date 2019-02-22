@@ -52,7 +52,6 @@ class DBG_Client(object):
         else:
             dbgclient = BMC_Client(bmc_ip_address=bmc_ip_address,
                                    mode=mode)
-            print dbgclient
             status = dbgclient.connect()
 
         if status is True:
@@ -91,7 +90,6 @@ class DBG_Client(object):
 
     # Sends peek request to server, get the response and returns the read data
     def csr_peek(self, csr_addr, csr_width_words, chip_inst=None):
-        print chip_inst
         if self.connected is False:
             return (False, "dbg probe is not connected!")
         return self.connection_handle.csr_peek(chip_inst = chip_inst,
@@ -100,7 +98,6 @@ class DBG_Client(object):
 
     # Sends poke request to server, get the response
     def csr_poke(self, csr_addr, word_array, chip_inst=None):
-        print chip_inst
         if self.connected is False:
             error_msg = "dbg probe is not connected!"
             print(error_msg);
