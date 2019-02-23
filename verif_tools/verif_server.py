@@ -434,18 +434,18 @@ def connect_dbgprobe(tpod,tpod_jtag,tpod_force):
     duts = dut.dut()
 
     if tpod_jtag:
-       (jtag_probe_id, jtag_probe_ip) = duts.get_jtag_info(tpod)
+       (bmc,jtag_probe_id, jtag_probe_ip) = duts.get_jtag_info(tpod)
        print "connecting to JTAG Proxy "+jtag_probe_ip
-       status = dbgprobe().connect('jtag',jtag_probe_ip,jtag_probe_id)
+       status = dbgprobe().connect(bmc_board=bmc,mode='jtag',probe_ip_addr=jtag_probe_ip,probe_id=jtag_probe_id)
        if status is True:
           print("JTAG Server Connection Successful!")
        else:
           print("JTAG Server Connection Failed!")
           sys.exit(1)
     else:
-       (i2c_probe_serial, i2c_proxy_ip, i2c_slave_addr) = duts.get_i2c_info(tpod)
+       (bmc,i2c_probe_serial, i2c_proxy_ip, i2c_slave_addr) = duts.get_i2c_info(tpod)
        print "connecting to I2C Proxy "+i2c_proxy_ip
-       status = dbgprobe().connect('i2c', i2c_proxy_ip , i2c_probe_serial , i2c_slave_addr,tpod_force)
+       status = dbgprobe().connect(bmc_board=bmc,mode='i2c', probe_ip_addr=i2c_proxy_ip , probe_id=i2c_probe_serial , slave_addr=i2c_slave_addr,force=tpod_force)
        if status is True:
           print("I2C Server Connection Successful!")
        else:
