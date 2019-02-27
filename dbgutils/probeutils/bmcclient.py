@@ -89,16 +89,16 @@ class BMC_Client(object):
             logger.error(error_msg)
             return (False, error_msg)
 
-    def dbg_chal_cmd(self, cmd, cmd_data=None, chip_inst=None):
-        logger.debug(("dbg chal cmd:{0} data:{1}").format(cmd, cmd_data))
-        if cmd_data is not None:
+    def dbg_chal_cmd(self, cmd, data=None, chip_inst=None):
+        logger.debug(("dbg chal cmd:{0} data:{1}").format(cmd, data))
+        if data is not None:
             logger.debug(("dbg chal data:{0}").format(
-                    [hex(x) for x in cmd_data]))
-	(status, data)  = self.probe.i2c_dbg_chal_cmd(cmd = cmd,
-						data = cmd_data,
+                    [hex(x) for x in data]))
+	(status, return_data)  = self.probe.i2c_dbg_chal_cmd(cmd = cmd,
+						data = data,
 						chip_inst = chip_inst)
         if status is not True:
-            error_msg = data
+            error_msg = return_data
             logger.error(error_msg)
             return (False, error_msg)
-        return (True, data)
+        return (True, return_data)
