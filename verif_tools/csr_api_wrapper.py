@@ -2,6 +2,7 @@
 import os,sys,code
 import rlcompleter, readline
 import argparse
+from verif_server import *
 
 from ctypes import *
 
@@ -17,6 +18,14 @@ def setup_verif_socket_client():
 
 def connect_verif_server():
    f1_csr_lib.open_socket_port(args.verif_svr_hostname,args.verif_svr_port)
+
+def run_verif_server():
+   connect_verif_client_socket(args.verif_svr_port)
+   set_i2c_dis(args.i2c_dis)
+   if not args.i2c_dis:
+      connect_dbgprobe(args.tpod,args.tpod_jtag,args.tpod_force)
+   csrthread = CsrThread()
+   csrthread.start()
 
 def csr_wr(addr,data):
     status=[0]
@@ -773,12 +782,18 @@ def auto_int(x):
     return int(x, 0)
 
 def proc_arg():
-    global args
+    global args, i2c_dis
     parser = argparse.ArgumentParser()
-    parser.add_argument('--verif_svr_hostname', nargs='?', type=str, default='cadence-pc-3', help='verif server hostname. default %(default)s')
+    parser.add_argument('--run_verif_svr', action='store_true', default=False, help='run own verif server. default %(default)s')
+    parser.add_argument('--verif_svr_hostname', nargs='?', type=str, default='localhost', help='verif server hostname. default %(default)s')
     parser.add_argument('--verif_svr_port', nargs='?', type=auto_int, default=0x1234, help='verif server port. default %(default)s')
     parser.add_argument('--csr_lib', nargs='?', type=str, default="./f1_csr_slib.so", help='f1_csr_slib.so location. default %(default)s')
+    parser.add_argument('--i2c_dis', action='store_true', default=False, help='i2cproxy connection disable. default %(default)d')
+    parser.add_argument('--tpod', nargs='?', type=str, default='TPOD4', help='TPOD name. default %(default)s')
+    parser.add_argument('--tpod_force', action='store_true', default=False, help='TPOD force mode. default %(default)s')
+    parser.add_argument('--tpod_jtag', action='store_true', default=False, help='TPOD JTAG mode. default %(default)s')
     args = parser.parse_args()
+    i2c_dis=args.i2c_dis
 
 def main():
    global f1w
@@ -786,6 +801,8 @@ def main():
    load_lib()
    f1w=csr_api_wrapper()
    setup_verif_socket_client()
+   if (args.run_verif_svr):
+      run_verif_server()
    connect_verif_server()
    readline.parse_and_bind('tab: complete')
    code.interact(local=globals())
