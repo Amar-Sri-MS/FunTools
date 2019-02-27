@@ -257,7 +257,7 @@ class bmc:
                 assert(self.client)
 		cmd = self._prepare_i2c_cmd(chip_inst, True, len(read_data))
 		try:
-			logger.info('i2c_read: {0}'.format(cmd))
+			logger.debug('i2c_read: {0}'.format(cmd))
                         _, stdout, stderr = self.client.exec_command(cmd)
                         err = stderr.read().decode('utf-8')
                         if (len(err) != 0):
@@ -275,16 +275,16 @@ class bmc:
 			logging.error(status_msg)
 			return None
 
-                print cmd_output
+                #logger.debug(cmd_output)
 		output_lines = cmd_output.splitlines()
-                print output_lines
+                logger.debug(output_lines)
 		num_bytes_read = int(output_lines[0].split(':')[1].strip())
                 bytes_stream =  output_lines[1].strip().split(' ')
                 for i in range(num_bytes_read):
                     read_data[i] = int(bytes_stream[i], 16)
 		if num_bytes_read != len(read_data):
 			err_msg = 'Incorrect read! num_bytes_read:{0} expected: {1}'.format(num_bytes_read, len(read_data))
-			logger.info(err_msg)
+			logger.error(err_msg)
 			return None
 		return (num_bytes_read, read_data)
 
@@ -296,7 +296,7 @@ class bmc:
 		for i in write_data:
 			cmd = cmd + " 0x%02x"%(i)
 		try:
-			logger.info('i2c_write: {0}'.format(cmd))
+			logger.debug('i2c_write: {0}'.format(cmd))
                         _, stdout, stderr = self.client.exec_command(cmd)
                         err = stderr.read().decode('utf-8')
                         if (len(err) != 0):
@@ -316,8 +316,7 @@ class bmc:
 			return (False, status_msg)
 
 		output_lines = cmd_output.splitlines()
-                print output_lines
-                print output_lines[1]
+                logger.debug(output_lines)
 		num_bytes_wrote = int(output_lines[1].split(':')[1].strip())
                 bytes_stream =  output_lines[2].strip().split(' ')
 		bytes_wrote = [int(x.encode("utf-8"), 16) for x in bytes_stream]
@@ -384,7 +383,7 @@ class i2c:
                 return None
 
             read_data = read_data[1:]
-            print read_data
+            logger.debug(read_data)
             word_array = byte_array_to_words_be(read_data)
             logger.debug('Peeked word_array: {0}'.format([hex(x) for x in word_array]))
             return word_array
@@ -720,8 +719,8 @@ class i2c:
             return (False, err_msg)
 
         if length < 4:
-            err_msg = 'CMD execution error! Insufficient num header bytes!'
-            logger.error(err_msg)
+            logger.error('CMD execution error! Insufficient num header bytes!')
+            err_msg = 'CMD execution error! Failed to run chal cmd'
             return (False, err_msg)
 
         if (length  >= 4):
@@ -765,7 +764,7 @@ class i2c:
                     logger.error('Failed to flush the data! Error: {0}'.format(data))
                     return False
             else:
-                logger.info('Flushed the FIFO!')
+                logger.debug('Flushed the FIFO!')
                 flushed = True
         return True
 

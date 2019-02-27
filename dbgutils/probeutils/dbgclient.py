@@ -123,4 +123,4 @@ class DBG_Client(object):
             return (False, error_msg)
         return self.connection_handle.dbg_chal_cmd(chip_inst = chip_inst,
                                                    cmd = cmd,
-                                                   data = data)
+                                                   cmd_data = data)
