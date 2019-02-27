@@ -122,8 +122,9 @@ def load_cfg(cfgfile):
         RuntimeError("Error loading and parsing projectdb %s" % cfgfile)
         raise e
 
-    HostUnits = cfg.get("HostUnits")
-    HostUnit = cfg.get("HostUnit")
+    HuInterface = cfg["HuInterface"]
+    HostUnits = HuInterface.get("HostUnits")
+    HostUnit = HuInterface.get("HostUnit")
 
     print_HostUnits(HostUnits)
     print_HostUnit(HostUnit)

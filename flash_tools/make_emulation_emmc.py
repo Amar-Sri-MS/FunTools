@@ -26,6 +26,9 @@ LOAD_ADDR = 0xffffffff91000000
 # so it is important to ensure data is correctly aligned
 BLOCK_SIZE = 512
 
+# When FunOS is stored as raw data, byte offset from the beginning of memory
+FUNOS_OFFSET = 32 * 1024 * 1024
+
 
 def pad_file(infile_name, outfile_name, size):
     cmd = ['dd',
@@ -35,6 +38,13 @@ def pad_file(infile_name, outfile_name, size):
            'conv=sync']
     subprocess.call(cmd)
 
+def merge_file(infile_name, outfile_name):
+    cmd = ['dd',
+           'if={}'.format(infile_name),
+           'of={}'.format(outfile_name),
+           'oflag=append',
+           'conv=notrunc']
+    subprocess.call(cmd)
 
 def gen_hex_file(infile_name, outfile_name, append):
     mode = 'ab' if append else 'wb'
@@ -59,7 +69,7 @@ def crc32(filename):
     return res & 0xffffffff
 
 
-def gen_boot_script(filename):
+def gen_boot_script(filename, funos_start_blk):
     """Generate a u-boot boot script
 
     This is the default boot script to be loaded by u-boot.
@@ -74,13 +84,10 @@ def gen_boot_script(filename):
     boot_pad_img = os.path.join(g.outdir, 'boot.pad.img')
 
     with open(filename, 'w') as outfile:
-        if g.filesystem:
-            outfile.write('ext4load mmc 0:1 0x{load_addr:x} funos;'.format(
-                load_addr=LOAD_ADDR))
-        else:
-            outfile.write('mmc read 0x{load_addr:x} 1 {load_size_blk:x};'.format(
-                load_addr=LOAD_ADDR,
-                load_size_blk=os.path.getsize(g.work_file) / BLOCK_SIZE))
+        outfile.write('mmc read 0x{load_addr:x} 0x{mmc_start_blk:x} 0x{load_size_blk:x};'.format(
+            load_addr=LOAD_ADDR,
+            mmc_start_blk=funos_start_blk,
+            load_size_blk=os.path.getsize(g.work_file) / BLOCK_SIZE))
         if g.crc:
             outfile.write('crc32 -v 0x{load_addr:x} {load_size:x} {crc:x};'.format(
                 load_addr=LOAD_ADDR,
@@ -116,14 +123,13 @@ def gen_fs():
     # prepare fs contents
     tempdir = tempfile.mkdtemp()
     shutil.copy(os.path.join(g.outdir, 'boot.img'), tempdir)
-    shutil.copy(g.appfile, os.path.join(tempdir, 'funos'))
     cmd = ['mkfs.ext4',
            '-E', 'offset=4096',  # partition offset
            '-d', tempdir,  # filesystem contents
            '-F',  # force output
            '-b', '4k',  # 4k blocks
            output_fs,  # destination filename
-           '64M'  # filesystem size
+           '30M'  # filesystem size
            ]
     subprocess.call(cmd)
     shutil.rmtree(tempdir)
@@ -157,20 +163,24 @@ def run():
 
     pad_file(g.appfile, g.work_file, BLOCK_SIZE)
 
-    gen_boot_script(os.path.join(g.outdir, 'bootloader.scr'))
+    gen_boot_script(os.path.join(g.outdir, 'bootloader.scr'), FUNOS_OFFSET / BLOCK_SIZE)
 
-    outfile = os.path.join(g.outdir, 'emmc_image.hex')
+    outfile_hex = os.path.join(g.outdir, 'emmc_image.hex')
+    outfile_bin = os.path.join(g.outdir, 'emmc_image.bin')
 
     files = []
     if g.filesystem:
-        files.append(gen_fs())
+        fs = gen_fs()
+        pad_file(fs, outfile_bin, FUNOS_OFFSET)
+        merge_file(g.work_file, outfile_bin)
+        files.append(outfile_bin)
     else:
         files.append(os.path.join(g.outdir, 'boot.pad.img'))
         files.append(g.work_file)
 
     if g.hex:
         for f in enumerate(files):
-            gen_hex_file(f[1], outfile, bool(f[0]))
+            gen_hex_file(f[1], outfile_hex, bool(f[0]))
 
 
 if __name__ == '__main__':
