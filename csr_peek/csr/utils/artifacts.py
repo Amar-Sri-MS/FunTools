@@ -68,6 +68,7 @@ class RingNode(object):
     def add_csr(self, inst_num, csr_name, csr_addr, csr_range=None):
         assert inst_num in self.instances
         self.instances[inst_num].add_csr(csr_name, csr_addr, csr_range)
+
     def add_64_w(self, inst_num, an_name, num_64_w):
         assert inst_num in self.instances
         if not self.is_dummy:
@@ -347,6 +348,8 @@ class CSRMetaData(object):
         csr_metadata["csr_type"] = csr_prop.type
         csr_metadata["csr_n_entries"] = csr_prop.n_entries
         csr_metadata["csr_width"] = csr_prop.width
+        csr_metadata["csr_stride_width"] = csr_prop.stride_width
+        csr_metadata["csr_inst_size"] = csr_prop.inst_size
 
         fld_lst = list()
         offset = 0;
@@ -370,7 +373,7 @@ class CSRMetaData(object):
         for csr_name, csr_lst in self.metadata.iteritems():
             r_str += "NAME:{}\n".format(csr_name)
             for idx, csr_prop in enumerate(csr_lst):
-                r_str += "[{}]: {}:{}:{}:{}:{}:{}:{}:{}:{}:{}:{}:{}:{}\n".\
+                r_str += "[{}]: {}:{}:{}:{}:{}:{}:{}:{}:{}:{}:{}:{}:{}:{}:{}\n".\
                         format(idx,
                                 csr_prop["ring_name"],
                                 csr_prop["ring_inst"],
@@ -384,7 +387,10 @@ class CSRMetaData(object):
                                 csr_prop["csr_addr_range"],
                                 csr_prop["csr_type"],
                                 csr_prop["csr_n_entries"],
-                                csr_prop["csr_width"])
+                                csr_prop["csr_width"],
+                                csr_prop["csr_stride_width"],
+                                csr_prop["csr_inst_size"]
+                              )
                 for r_idx, fldd in enumerate(csr_prop["fld_lst"]):
                     r_str += "    [{}]:{}:{}\n".format(r_idx, fldd["fld_name"], fldd["fld_width"])
             r_str += "\n"

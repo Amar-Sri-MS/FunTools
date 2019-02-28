@@ -24,13 +24,20 @@ class Entity():
         self.attr = 0
         self.type = "CSR_TYPE::REG"
         self.n_entries = 0
+        self.stride_width = 0
+        self.inst_size = 0
         self.fld_lst = []
         self.width = 0
 
     def __str__(self):
         r_str = ""
-        r_str += "n:{}\n".format(self.name)
-        r_str += " w: {}\n".format(self.width)
+        r_str += "name:{}\n".format(self.name)
+        r_str += "width: {}\n".format(self.width)
+        r_str += "stride_width: {}\n".format(self.stride_width)
+        r_str += "inst_size: {}\n".format(self.inst_size)
+        r_str += "count: {}\n".format(self.count)
+        r_str += "entries: {}\n".format(self.n_entries)
+        r_str += "type: {}\n".format(self.type)
         r_str += " flds: {}\n".format(self.fld_lst)
         return r_str
     __repr__ = __str__
@@ -50,7 +57,7 @@ class Field():
 
 class Schema():
 
-    ALLOW_LST = ['REGLST', 'WIDTH', 'ATTR', 'COUNT', 'FLDLST', 'NAME', 'ENTRIES']
+    ALLOW_LST = ['REGLST', 'WIDTH', 'ATTR', 'COUNT', 'FLDLST', 'NAME', 'ENTRIES', 'array_byte_stride', 'repeat_byte_stride']
     #ALLOW_ATTR = [0x4, 0x8]
     ALLOW_ATTR = [0x4]
     MIN_WIDTH = 64
@@ -128,12 +135,22 @@ class Schema():
                 e.type = "CSR_TYPE::REG_LST"
 
             lst = reg_rec.get('FLDLST', [])
+            #if base_name.startswith('hsu_pwp_core0_csr_apb'):
+            #    print("lst: {}".format(lst))
             lst, e.width = self.__update_width(lst)
             for fld_elem in lst:
                 e.fld_lst.append(Field(fld_elem['NAME'], fld_elem['WIDTH']))
+            e.stride_width = reg_rec.get('array_byte_stride', e.width/8)
+            e.inst_size = reg_rec.get('repeat_byte_stride', (e.stride_width * e.n_entries))
+            if base_name.startswith('hsu_pwp_core0_csr_apb'):
+                print reg_rec.get('repeat_byte_stride')
+                print('base_name:{} stride_width:{} inst_size:{}'.format(base_name, e.stride_width, e.inst_size))
             store = store & self.__should_store(e, csr_filter, lexer)
             if store:
                 m_hash[base_name] = e
+            if base_name.startswith('hsu_pwp_core0_csr_apb'):
+                print('base_name:{} metadata:{}'.format(base_name, e))
+
         return m_hash
 
     def __update_width(self, lst):
