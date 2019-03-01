@@ -57,7 +57,8 @@ class Field():
 
 class Schema():
 
-    ALLOW_LST = ['REGLST', 'WIDTH', 'ATTR', 'COUNT', 'FLDLST', 'NAME', 'ENTRIES', 'array_byte_stride', 'repeat_byte_stride']
+    ALLOW_LST = ['REGLST', 'WIDTH', 'ATTR', 'COUNT', 'FLDLST', 'NAME',
+                 'ENTRIES', 'ARRAY_BYTE_STRIDE', 'REPEAT_BYTE_STRIDE']
     #ALLOW_ATTR = [0x4, 0x8]
     ALLOW_ATTR = [0x4]
     MIN_WIDTH = 64
@@ -135,21 +136,14 @@ class Schema():
                 e.type = "CSR_TYPE::REG_LST"
 
             lst = reg_rec.get('FLDLST', [])
-            #if base_name.startswith('hsu_pwp_core0_csr_apb'):
-            #    print("lst: {}".format(lst))
             lst, e.width = self.__update_width(lst)
             for fld_elem in lst:
                 e.fld_lst.append(Field(fld_elem['NAME'], fld_elem['WIDTH']))
-            e.stride_width = reg_rec.get('array_byte_stride', e.width/8)
-            e.inst_size = reg_rec.get('repeat_byte_stride', (e.stride_width * e.n_entries))
-            if base_name.startswith('hsu_pwp_core0_csr_apb'):
-                print reg_rec.get('repeat_byte_stride')
-                print('base_name:{} stride_width:{} inst_size:{}'.format(base_name, e.stride_width, e.inst_size))
+            e.stride_width = reg_rec.get('ARRAY_BYTE_STRIDE', e.width/8)
+            e.inst_size = reg_rec.get('REPEAT_BYTE_STRIDE', (e.stride_width * e.n_entries))
             store = store & self.__should_store(e, csr_filter, lexer)
             if store:
                 m_hash[base_name] = e
-            if base_name.startswith('hsu_pwp_core0_csr_apb'):
-                print('base_name:{} metadata:{}'.format(base_name, e))
 
         return m_hash
 
