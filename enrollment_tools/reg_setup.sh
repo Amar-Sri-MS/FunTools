@@ -6,18 +6,18 @@ sudo pip3 install cryptography psycopg2-binary python-pkcs11
 wget https://www.openssl.org/source/openssl-1.1.1b.tar.gz
 tar xzvf openssl-1.1.1b.tar.gz
 pushd openssl-1.1.1b
-./configure
+./config
 make
 sudo make install
 popd
-# might have to reboot to update the path
+sudo ldconfig
 # try '$ openssl version'
 
 # softhsm setup
 sudo usermod -a -G softhsm www-data
 sudo mkdir /var/lib/softhsm/tokens
-chmod g+w /var/lib/softhsm/tokens
-sudo -u www-data softhsm2-util --init-token --free --label fungible_token --so-pin <> --pin <>
+sudo chmod g+w /var/lib/softhsm/tokens
+sudo -u www-data softhsm2-util --init-token --free --label fungible_token
 
 #store hsm pins in a file for use by script
 sudo -- sh -c "echo 'fungible_token' > /etc/hsm_password"
