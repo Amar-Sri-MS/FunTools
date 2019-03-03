@@ -1017,8 +1017,18 @@ def csr_get_addr(csr_data, anode_inst=None, csr_inst=None, csr_entry=None):
         print("Invalid csr metadata! csr_width is missing in metadata!")
         sys.exit(1)
 
-    csr_width_bytes = csr_width >> 0x3
+    csr_stride_width = csr_data.get("csr_stride_width", None)
+    if csr_stride_width is None:
+        print("Invalid csr metadata! csr_stride_width is missing in metadata!")
+        sys.exit(1)
 
+    csr_width_bytes = csr_width >> 0x3
+    if (csr_stride_width < csr_width_bytes):
+        print('Invalid csr metadata! csr_stride_width({})'
+              ' < csr_width({})!'.format(csr_stride_width, csr_width))
+        sys.exit(1)
+
+    assert(csr_n_entries >= 0)
     if csr_n_entries > 1:
         if csr_entry is None:
             print("Expetced csr_entry argument!")
@@ -1027,7 +1037,16 @@ def csr_get_addr(csr_data, anode_inst=None, csr_inst=None, csr_entry=None):
         if csr_entry < 0 or csr_entry >= csr_n_entries:
             print("Invalid csr_entry: {}!".format(csr_entry))
             return None
-        csr_addr += csr_width_bytes * csr_entry;
+        csr_addr += csr_stride_width * csr_entry;
+
+    csr_inst_size = csr_data.get("csr_inst_size", None)
+    if csr_inst_size is None:
+        print("Invalid csr metadata! csr_inst_size is missing in metadata!")
+        sys.exit(1)
+
+    if (csr_inst_size <  (csr_stride_width * csr_n_entries)):
+        print('Invalid csr metadata! "csr_inst_size < csr_stride_width * csr_n_entries"')
+        sys.exit(1)
 
     if csr_inst_cnt > 1:
         if csr_inst is None:
@@ -1037,7 +1056,7 @@ def csr_get_addr(csr_data, anode_inst=None, csr_inst=None, csr_entry=None):
         if csr_inst < 0 or csr_inst >= csr_inst_cnt:
             print("Invalid csr_inst: {}!".format(csr_inst))
             return None
-        csr_addr += csr_width_bytes * csr_n_entries * csr_inst
+        csr_addr += csr_inst_size * csr_inst
 
     return (anode_addr + csr_addr)
 
