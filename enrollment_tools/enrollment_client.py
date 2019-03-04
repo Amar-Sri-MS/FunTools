@@ -78,11 +78,11 @@ class DBG_Chal(object):
             if chip_inst is None:
                 print('Error: Chip instance number should be provided for board with BMC')
                 sys.exit(1)
-            self.chip_inst = int(chip_inst)
+                self.chip_inst = int(chip_inst)
             if (self.chip_inst >= 2):
                 print('Error: Chip instance number should be in range 0-1')
                 sys.exit(1)
-            print('chip_inst: {0}'.format(self.chip_inst))
+                print('chip_inst: {0}'.format(self.chip_inst))
 
     def __del__(self):
         print('Destroying the connection!')
@@ -106,12 +106,12 @@ class DBG_Chal(object):
                 print('Invalid slave_addr: {0}'.format(self.i2c_slave_addr))
                 return False
 	    status = dbgprobe.connect(mode='i2c', bmc_board=False,
-		    probe_ip_addr=self.probe_ip_addr,
-		    probe_id=self.probe_id,
-		    slave_addr=self.i2c_slave_addr)
+		                      probe_ip_addr=self.probe_ip_addr,
+		                      probe_id=self.probe_id,
+		                      slave_addr=self.i2c_slave_addr)
 	else:
             status = dbgprobe.connect(mode='i2c', bmc_board=True,
-                    bmc_ip_address=self.bmc_ip_addr)
+                                      bmc_ip_address=self.bmc_ip_addr)
         if status is True:
             self.dbgprobe = dbgprobe
             self.connected = True
@@ -151,7 +151,7 @@ class DBG_Chal(object):
                 print("Chip in correct boot step")
                 return True
             else:
-                print "Device is not in the proper state: {:02x}".format(boot_step)
+                print "Device is not in the proper state: {:02x}".format(rdata[20])
 
 
         return False
@@ -180,13 +180,16 @@ class DBG_Chal(object):
         return status is True and cmd_status_ok(rdata)
 
 
-##############################################################################################
+#########################################################################
 #
 # Get Enrollment Certificate from f1registration.fungible.com
 #
-##############################################################################################
+#########################################################################
 
-def get_enrollment_cert(tbs_cert):
+def get_enrollment_cert(tbs_cert, verbose=False):
+
+    # always print the TBS since it is precious
+    print "Enrollment Information: " + binascii.b2a_hex(tbs_cert)
 
     tbs_cert_64 = binascii.b2a_base64(tbs_cert)
 
@@ -194,10 +197,10 @@ def get_enrollment_cert(tbs_cert):
         print "TBS: ", tbs_cert_64
 
     # no security for testing
-    response = requests.put("https://f1registration.fungible.com/cgi-bin/enrollment_server.cgi",
+    response = requests.put("https://f1reg.fungible.com/cgi-bin/enrollment_server.cgi",
                             data=tbs_cert_64, verify='./f1registration.ca.pem')
 
-    if response.status_code != requests.code.ok:
+    if response.status_code != requests.codes.ok:
         print "Server response: %d %s" % (response.status_code, response.reason)
         return None
 
@@ -212,56 +215,54 @@ def get_enrollment_cert(tbs_cert):
 
 def main():
 
-    global verbose
-
     parser = argparse.ArgumentParser(
         description="Perform enrollment via I2C",
         epilog="Challenge Interface must be accessible via debug probe prior to running this script,\
         check the device documentation on how to do this")
-    parser.add_argument("--dut", required=True, help="Dut name")
+    parser.add_argument("--dut", help="Dut name")
     parser.add_argument("--tbs", type=argparse.FileType('r'),
                         help="Read the enrollment tbs from the file")
 
     args = parser.parse_args()
 
-    dbgprobe = DBG_Chal(args.dut)
-
     if args.tbs:
         # read the tbs from file
         tbs_cert = args.tbs.read()
+        # get enrollment certificate from enrollment server
+        cert = get_enrollment_cert(tbs_cert, True)
+        return True
 
-    else:
-        # get enrollment info
-        # check for connection
-        status = dbgprobe.connect()
-        if status is False:
-            print 'Connection failed!'
-            return False
+    # get enrollment info
+    # check for connection
+    dbgprobe = DBG_Chal(args.dut)
+    status = dbgprobe.connect()
+    if status is False:
+        print 'Connection failed!'
+        return False
 
-        print("Connected to probe")
-        tbs_cert = dbgprobe.get_enroll_tbs()
+    print("Connected to probe")
+    tbs_cert = dbgprobe.get_enroll_tbs()
 
-        # disconnect
-        dbgprobe.disconnect()
+    dbgprobe.disconnect()
 
-        # power cycle
+    # TO DO: power cycle
 
     # get enrollment certificate from enrollment server
     cert = get_enrollment_cert(tbs_cert)
 
-    # if cert is not None:
-    #     # (re)connect
-    #     status = dbgprobe.connect()
-    #     if status is False:
-    #         print 'Reconnection failed!'
-    #         return False
+    if cert is not None:
+        # (re)connect
+        status = dbgprobe.connect()
+        if status is False:
+            print 'Reconnection failed!'
+            return False
 
-    #     if dbgprobe.save_enroll_cert(cert):
-    #         print "Chip enrolled!"
-    #     else:
-    #         print "Error enrolling chip"
+        if dbgprobe.save_enroll_cert(cert):
+            print "Chip enrolled!"
+        else:
+            print "Error enrolling chip"
 
-    #     dbgprobe.disconnect()
+        dbgprobe.disconnect()
 
 
 main()
