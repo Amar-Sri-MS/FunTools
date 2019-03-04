@@ -63,17 +63,22 @@ def log(msg):
 #
 #################################################################################
 
+SN_DESC = (
+    ('serial_info', 8),
+    ('serial_nr', 16))
+
 TBS_CERT_DESC = (
     ('magic', 4),
     ('flags', 4),
-    ('serial_info', 8),
-    ('serial_nr', 16),
+) + SN_DESC + (
     ('puf_key', 64),
     ('nonce', 48),
-    ('activation_code', 888))
+    ('activation_code', 888),
+)
 
 CERT_DESC = TBS_CERT_DESC + (('rsa_signature', 516),)
 
+SN_LEN = sum([desc[1] for desc in SN_DESC])
 TBS_CERT_LEN = sum([desc[1] for desc in TBS_CERT_DESC])
 CERT_LEN = sum([desc[1] for desc in CERT_DESC])
 
@@ -120,6 +125,37 @@ def db_retrieve_cert_for_serial_nr( conn, serial_nr, serial_info):
         if cur.rowcount > 0:
             return cur.fetchone()[0]
     return None
+
+
+def fetch_cert( values_dict):
+
+    # connect to the database
+    with closing(psycopg2.connect("dbname=enrollment_db")) as db_conn:
+        # see if there is such a serial number already
+        cert = db_retrieve_cert_for_serial_nr(db_conn,
+                                              values_dict['serial_nr'],
+                                              values_dict['serial_info'])
+        if cert:
+            log("Certificate retrieved for  %s - %s" % (
+                binascii.b2a_hex(values_dict['serial_nr']),
+                binascii.b2a_hex(values_dict['serial_info'])))
+        else:
+            log("Generating certificate for %s - %s" % (
+                binascii.b2a_hex(values_dict['serial_nr']),
+                binascii.b2a_hex(values_dict['serial_info'])))
+
+            # sign the tbs_cert
+            cert = hsm_sign(tbs_cert)
+            # store it
+            db_store_cert(db_conn, cert)
+
+    # encode the certificate
+    cert_b64 = binascii.b2a_base64(cert).decode('ascii')
+
+    print("Status: 200 OK")
+    print("Content-length: %d\n" % len(cert_b64))
+    print("%s\n" % cert_b64)
+
 
 
 ##################################################################################################
@@ -249,37 +285,12 @@ def do_enroll():
 
     validate_tbs_cert(values_dict)
 
-    # connect to the database
-    with closing(psycopg2.connect("dbname=enrollment_db")) as db_conn:
-        # see if there is such a serial number already
-        cert = db_retrieve_cert_for_serial_nr(db_conn,
-                                              values_dict['serial_nr'],
-                                              values_dict['serial_info'])
-        if cert:
-            log("Certificate retrieved for  %s - %s" % (
-                binascii.b2a_hex(values_dict['serial_nr']),
-                binascii.b2a_hex(values_dict['serial_info'])))
-        else:
-            log("Generating certificate for %s - %s" % (
-                binascii.b2a_hex(values_dict['serial_nr']),
-                binascii.b2a_hex(values_dict['serial_info'])))
-
-            # sign the tbs_cert
-            cert = hsm_sign(tbs_cert)
-            # store it
-            db_store_cert(db_conn, cert)
-
-    # encode the certificate
-    cert_b64 = binascii.b2a_base64(cert).decode('ascii')
-
-    print("Status: 200 OK")
-    print("Content-length: %d\n" % len(cert_b64))
-    print("%s\n" % cert_b64)
+    fetch_cert(values_dict)
 
 
 ########################################################################
 #
-# Return some information: fpk4 modulus
+# Return some information: fpk4 modulus, certificate
 #
 ########################################################################
 
@@ -289,14 +300,30 @@ def safe_form_get(form, key, default):
     else:
         return default
 
+def send_certificate(form_values):
 
-def send_modulus(cgi_values):
+    sn_64 = safe_form_get(form_values, "sn", None)
+    if not sn_64:
+        raise ValueError("Missing parameter")
+
+    sn = binascii.a2b_base64(sn_64)
+    if len(sn) != SN_LEN:
+        raise ValueError("SN length = %d" % len(sn))
+
+    # slice the sn into constituent buffers
+    slicer = make_slicer_of(sn)
+    values_dict = {desc[0]: slicer(desc[1]) for desc in SN_DESC }
+
+    fetch_cert(values_dict)
+
+
+def send_modulus(form_values):
 
     # get fpk4 modulus from HSM
     with get_ro_session() as session:
         modulus = get_modulus(get_public_rsa_with_label(session, 'fpk4'))
 
-    format = safe_form_get(cgi_values, "format", "hex")
+    format = safe_form_get(form_values, "format", "hex")
     if format == "hex":
         modulus_str = binascii.b2a_hex(modulus).decode('ascii')
     elif format == "base64":
@@ -326,9 +353,11 @@ def process_query():
     cmd = safe_form_get(form, "cmd", "modulus")
     if cmd == "modulus":
         send_modulus(form)
+    elif cmd == "cert":
+        send_certificate(form)
     else:
-        #add other commands here?
-        pass
+        raise ValueError("Invalid command")
+
 
 
 def main_program():
