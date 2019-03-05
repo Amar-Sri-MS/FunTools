@@ -27,7 +27,7 @@ class JTAG_Client(object):
             logger.error("Connection failed! {0}".format(status_msg))
             return False
 
-    def csr_peek(self, csr_addr, csr_width_words):
+    def csr_peek(self, csr_addr, csr_width_words, chip_inst):
         logger.debug(("csr_addr:{0} csr_width_words:{1}").format(
                 csr_addr, csr_width_words))
         if self.connected is False:
@@ -50,7 +50,7 @@ class JTAG_Client(object):
             return (False, error_msg)
 
     # Sends poke request to Codescape probe
-    def csr_poke(self, csr_addr, word_array, fast_poke=False):
+    def csr_poke(self, csr_addr, word_array, fast_poke=False, chip_inst=None):
         logger.debug(("csr_addr:{0} word_array:{1}").format(
             csr_addr, [hex(x) for x in word_array]))
         if self.connected is False:
