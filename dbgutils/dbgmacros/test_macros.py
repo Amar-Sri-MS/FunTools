@@ -24,13 +24,17 @@ def dump_hbm(start_addr, num_bytes):
     if (start_addr & 0xFF != 0):
        logger.error('start_addr should be 256 byte aligned')
        return
+    cache_line_addr = start_addr >> 6;
     csr_replay_data = list()
     # Round of to 256 byte boundary
     # Number of 64-byte words to read
+    if (num_bytes & 0xff):
+        logger.info('Rounded-off num_bytes:{0} to {1}'.format(
+            num_bytes, (num_bytes+255) & ~0xff))
     num_reads_256bytes = (num_bytes + 255) >> 8
     num_64byte_words = num_reads_256bytes * 32
     num_reads = num_reads_256bytes * 4
-    logger.info('Reading num_reads_256bytes: {0}'
+    logger.info('Reading 256byte_reads: {0}'
             ' num_reads: {1} num_words:{2}'.format(
             num_reads_256bytes, num_reads, num_64byte_words))
 
@@ -44,7 +48,7 @@ def dump_hbm(start_addr, num_bytes):
             skip_addr += constants.MUH_SNA_ANODE_SKIP_ADDR
         csr_addr = constants.MEM_RW_CMD_CSR_ADDR
         csr_addr += skip_addr
-        muh_sna_cmd_addr = (start_addr/4) + (cnt/4)
+        muh_sna_cmd_addr = (cache_line_addr/4) + (cnt/4)
         csr_val = muh_sna_cmd_addr << 37;
         csr_val |= 0x1 << 63; #READ
         logger.debug('csr_val: {0}'.format(csr_val))
@@ -91,9 +95,11 @@ def dump_hbm(start_addr, num_bytes):
         cnt += 1
 
     if (cnt == num_reads):
-        logger.info('Succesfully read {0} words!'.format(num_reads * 8))
+        logger.info('Succesfully read {0} words! starting from {1}'.format(
+                                                num_reads * 8, hex(start_addr)))
         for i in range(num_64byte_words):
-            logger.info('Address: {0}  Data: 0x{1}'.format(hex(start_addr+(i*8)), hex(read_data_words[i])[2:].zfill(16)));
+            logger.info('Address: {0}  Data: 0x{1}'.format(
+                hex(start_addr+(i*8)), hex(read_data_words[i])[2:].zfill(16)));
     else:
         logger.error('Read un-successful')
         return

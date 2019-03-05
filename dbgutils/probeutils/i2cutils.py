@@ -7,15 +7,15 @@ import binascii
 import time
 import logging
 import traceback
+import subprocess
+import paramiko
 from i2cdev import *
 
 logger = logging.getLogger('i2cutils')
 logger.setLevel(logging.INFO)
 
 class constants(object):
-    F1_I2C_SLAVE_ADDR = 0x73
     IC_DEVICE_FEATURE_MASK = 0x1B
-    F1_DBG_CHALLANGE_FIFO_SIZE = 64
     IC_DEVICE_MODE_I2C = 0x2
     IC_DEVICE_MODE_GPIO = 0x0
     I2C_XFER_BIT_RATE = 500
@@ -25,7 +25,7 @@ class constants(object):
 
 # Converts byte array to big-endian 64-bit words
 def byte_array_to_words_be(byte_array):
-    logger.debug('byte_array: {0}'.format(byte_array))
+    #logger.debug('byte_array: {0}'.format(byte_array))
     words = list()
     byte_attay_size = len(byte_array)
     word_array_size = byte_attay_size / 8
@@ -43,7 +43,7 @@ def byte_array_to_words_be(byte_array):
 
     return words
 
-class i2c:
+class aardvark:
     def __init__(self, dev_id, slave_addr):
         self.dev_id = dev_id
         self.slave_addr = slave_addr
@@ -51,7 +51,7 @@ class i2c:
 
     # Check i2c device presence and open the device.
     # Returns the device handle
-    def i2c_connect(self):
+    def connect(self):
         dev_idx = aardvark_i2c_spi_dev_index_from_serial(self.dev_id)
         if dev_idx is None:
             dev_list = aardvark_i2c_spi_dev_list()
@@ -126,7 +126,7 @@ class i2c:
         return (True, h)
 
     # Free the i2c bus and close the device handle
-    def i2c_disconnect(self):
+    def disconnect(self):
         logger.debug('Disconnect request')
         h = self.handle
         status = aa_i2c_free_bus(h)
@@ -136,10 +136,222 @@ class i2c:
         logger.debug('Closed i2c handle')
 
     # i2c csr read
-    def i2c_csr_peek(self, csr_addr, csr_width_words):
+    def i2c_read(self, read_data, chip_inst):
         h = self.handle
+        if read_data is None or len(read_data) == 0:
+            logger.error('Read array length expected should be non-zero positive number')
+            return None
+        return aa_i2c_read(h, self.slave_addr, 0, read_data)
+
+    # i2c csr write
+    def i2c_write(self, write_data, chip_inst):
+        h = self.handle
+        logger.info('Starting I2C write. {0}'.format([hex(x) for x in write_data]))
+        if write_data is None or len(write_data) == 0:
+            logger.error('Write data array length should be non-zero positive number')
+            return None
+        return aa_i2c_write(h, self.slave_addr, 0, write_data)
+
+    def i2c_wedge_detect(self):
+        h = self.handle
+        logger.info('Checking i2c wedge condition ...!')
+        data = array('B', [])
+        (status, sent_bytes) = aa_i2c_write_ext(h, self.slave_addr, 0, data)
+        if status == AA_I2C_STATUS_OK:
+            logger.info('i2c is not wedged!')
+            return False
+        return True
+
+    def i2c_unwedge(self):
+        h = self.handle
+        logger.debug('I2C unwedge start ...')
+        status = aa_configure(h, constants.IC_DEVICE_MODE_GPIO)
+        status = aa_gpio_direction(h, 0x1)
+        for i in range(100):
+            status = aa_gpio_set(h, 0x1)
+            time.sleep(0.0001)
+            status = aa_gpio_set(h, 0x00)
+            time.sleep(0.0001)
+            status = aa_gpio_set(h, 0x1)
+            time.sleep(0.0001)
+        status = aa_configure(h, constants.IC_DEVICE_MODE_I2C)
+        logger.info('I2C unwedge done!')
+        return True
+
+    # Debug function for emulation trigger to collect waveforms
+    def gpio_sck_trigger(self):
+        h = self.handle
+        logger.info('Trigger GPIO....!')
+        status = aa_configure(h, 0)
+        status = aa_gpio_direction(h, 0x0)
+        status = aa_gpio_set(h, 0x8)
+        time.sleep(0.00001)
+        status = aa_gpio_set(h, 0x00)
+        time.sleep(0.00001)
+        status = aa_gpio_set(h, 0x8)
+        logger.info('GPIO trigger done!')
+
+
+class bmc:
+    def __init__(self, bmc_ip_address):
+        self.bmc_ip_address = bmc_ip_address
+        self.client = None
+
+    # Check i2c device presence and open the device.
+    # Returns the device handle
+    def connect(self):
+		logger.info('bmc connect')
+                client = paramiko.SSHClient()
+                client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+                try:
+                        client.connect(self.bmc_ip_address, username = 'sysadmin', timeout = 3)
+		except Exception as e:
+                    status_msg = ('Failed to reach BMC:'
+                        ' {0}!\n').format(self.bmc_ip_address)
+                    status_msg = status_msg + traceback.format_exc()
+                    logging.error(status_msg)
+                    return (False, status_msg)
+                self.client = client
+
+                """
+		try:
+			cmd = ['ssh', 'sysadmin@'+ self.bmc_ip_address, '-o', 'ConnectTimeout=4', 'ifconfig']
+			status = subprocess.check_output(cmd)
+		except Exception as e:
+			status_msg = traceback.format_exc()
+			logging.error(status_msg)
+			return (False, status_msg)
+                """
+		return (True, "Connected to BMC!")
+
+    # Free the i2c bus and close the device handle
+    def disconnect(self):
+        if self.client:
+            self.client.close()
+        logger.info('Disconnected!')
+
+	# prepares csr access command bytes
+    def _prepare_i2c_cmd(self, chip_inst, read, num_bytes):
+        assert(read != None)
+        assert(num_bytes != None and num_bytes != 0)
+        assert(chip_inst != None)
+        assert(chip_inst >= 0 and chip_inst <=1)
+        slave_addr = 0x70
+        if chip_inst == 0:
+            bus_num = 3
+        else:
+            bus_num = 5
+        mode = 0
+        if read is True:
+            mode = 0
+        cmd = 'i2c-test -b %02d -s 0x%02x '%(bus_num, slave_addr)
+        if read is True:
+            cmd = cmd + ' -rc %d'%(num_bytes) + ' -r'
+        else:
+            cmd = cmd + ' -w -d'
+
+        return cmd
+
+    # i2c csr read
+    def i2c_read(self, read_data, chip_inst):
+                assert(self.client)
+		cmd = self._prepare_i2c_cmd(chip_inst, True, len(read_data))
+		try:
+			logger.debug('i2c_read: {0}'.format(cmd))
+                        _, stdout, stderr = self.client.exec_command(cmd)
+                        err = stderr.read().decode('utf-8')
+                        if (len(err) != 0):
+			    logging.error(err)
+			    return (False, err)
+                        cmd_output = stdout.read().decode('utf-8')
+                        if (len(cmd_output) == 0):
+                            err = 'No putput for the cmd: {0}'.format(cmd)
+			    logging.error(err)
+			    return (False, err)
+			#cmd = ['ssh', 'sysadmin@'+ self.bmc_ip_address, '-o', 'ConnectTimeout=4', cmd]
+			#status = subprocess.check_output(cmd)
+		except Exception as e:
+			status_msg = traceback.format_exc()
+			logging.error(status_msg)
+			return None
+
+                #logger.debug(cmd_output)
+		output_lines = cmd_output.splitlines()
+                logger.debug(output_lines)
+		num_bytes_read = int(output_lines[0].split(':')[1].strip())
+                bytes_stream =  output_lines[1].strip().split(' ')
+                for i in range(num_bytes_read):
+                    read_data[i] = int(bytes_stream[i], 16)
+		if num_bytes_read != len(read_data):
+			err_msg = 'Incorrect read! num_bytes_read:{0} expected: {1}'.format(num_bytes_read, len(read_data))
+			logger.error(err_msg)
+			return None
+		return (num_bytes_read, read_data)
+
+    # i2c csr write
+    def i2c_write(self, write_data, chip_inst):
+                assert(self.client)
+                cmd_output = None
+		cmd = self._prepare_i2c_cmd(chip_inst, False, len(write_data))
+		for i in write_data:
+			cmd = cmd + " 0x%02x"%(i)
+		try:
+			logger.debug('i2c_write: {0}'.format(cmd))
+                        _, stdout, stderr = self.client.exec_command(cmd)
+                        err = stderr.read().decode('utf-8')
+                        if (len(err) != 0):
+			    logging.error(err)
+			    return (False, err)
+                        cmd_output = stdout.read().decode('utf-8')
+                        if (len(cmd_output) == 0):
+                            err = 'No putput for the cmd: {0}'.format(cmd)
+			    logging.error(err)
+			    return (False, err)
+
+			#cmd = ['ssh', 'sysadmin@'+ self.bmc_ip_address, '-o', 'ConnectTimeout=4', cmd]
+			#status = subprocess.check_output(cmd)
+		except Exception as e:
+			status_msg = traceback.format_exc()
+			logging.error(status_msg)
+			return (False, status_msg)
+
+		output_lines = cmd_output.splitlines()
+                logger.debug(output_lines)
+		num_bytes_wrote = int(output_lines[1].split(':')[1].strip())
+                bytes_stream =  output_lines[2].strip().split(' ')
+		bytes_wrote = [int(x.encode("utf-8"), 16) for x in bytes_stream]
+		if num_bytes_wrote != len(write_data):
+			err_msg = 'Incorrect read! num_bytes_write:{0} expected: {1}'.format(num_bytes_write, len(write_data))
+			logger.info(err_msg)
+			return (False, err_msg)
+		return num_bytes_wrote
+
+class i2c:
+    def __init__(self, dev_id=None, slave_addr=None, bmc_ip_address=None):
+        self.bmc_board = False
+        if bmc_ip_address:
+            self.bmc_board = True
+            self.master = bmc(bmc_ip_address)
+            logger.info(self.master)
+        else:
+            self.master = aardvark(dev_id, slave_addr)
+
+    # Check i2c device presence and open the device.
+    # Returns the device handle
+    def i2c_connect(self):
+        logger.info('i2c_connect*** {0}'.format(self.master))
+        return self.master.connect()
+
+    # Free the i2c bus and close the device handle
+    def i2c_disconnect(self):
+        logger.debug('Disconnect request')
+        return self.master.disconnect()
+
+    # i2c csr read
+    def i2c_csr_peek(self, csr_addr, csr_width_words, chip_inst=None):
         logger.info(('I2C peek csr_addr:{0}'
-               ' csr_width_words:{1}').format(hex(csr_addr), csr_width_words))
+               ' csr_width_words:{1} chip_inst: {2}').format(
+               hex(csr_addr), csr_width_words, chip_inst))
         if csr_width_words == 0:
             logger.error('csr width expected should be non-zero positive number')
             return None
@@ -150,8 +362,8 @@ class i2c:
             cmd = array('B', [0x00])
             cmd.extend(csr_addr)
             logger.debug(cmd)
-            logger.info('i2c slave addr: {0}'.format(self.slave_addr))
-            sent_bytes = aa_i2c_write(h, self.slave_addr, 0, cmd)
+            #logger.info('i2c slave addr: {0}'.format(self.slave_addr))
+            sent_bytes = self.master.i2c_write(write_data = cmd,  chip_inst=chip_inst)
             logger.debug('sent_bytes: {0}'.format(sent_bytes))
             if sent_bytes != len(cmd):
                 logger.error(('Write Error! sent_bytes:{0}'
@@ -160,18 +372,18 @@ class i2c:
             time.sleep(constants.I2C_CSR_SLEEP_SEC)
             csr_width = csr_width_words * 8
             read_data = array('B', [00]*(csr_width+1))
-            read_bytes = aa_i2c_read(h, self.slave_addr, 0, read_data)
-            logger.info(('read_data: {0}').format([hex(x) for x in read_data]))
+            read_bytes = self.master.i2c_read(read_data = read_data, chip_inst=chip_inst)
+            logger.info(('read_bytes: {0} read_data: {1}').format(read_bytes, [hex(x) for x in read_data]))
             if read_bytes[0] != (csr_width + 1):
                 logger.error(('Read Error!  read_bytes:{0}'
                        ' Expected: {1}').format(read_bytes, (csr_width + 1)))
                 return None
             if read_data[0] != 0x80:
-                logger.error(('Read status returned Error! {0}').format(
-                    aa_status_string(read_data[0])))
+                logger.error(('Read status returned Error! {0}').format(read_data[0]))
                 return None
 
             read_data = read_data[1:]
+            logger.debug(read_data)
             word_array = byte_array_to_words_be(read_data)
             logger.debug('Peeked word_array: {0}'.format([hex(x) for x in word_array]))
             return word_array
@@ -190,24 +402,23 @@ class i2c:
             cmd_data.extend(csr_data_addr)
             cmd_data.extend(csr_addr)
             logger.debug('poking bytes: {0}'.format([hex(x) for x in cmd_data]))
-            sent_bytes = aa_i2c_write(h, self.slave_addr, 0, cmd_data)
+            sent_bytes = self.master.i2c_write(write_data = cmd_data, chip_inst=chip_inst)
             logger.debug('sent_bytes: {0}'.format(sent_bytes))
+            if sent_bytes != len(cmd_data):
+                logger.error(('Write Error! sent_bytes:{0}'
+                       ' Expected: {1}').format(sent_bytes, len(cmd_data)))
+                return False
             try:
-                if sent_bytes != len(cmd_data):
-                    logger.error(('Write Error! sent_bytes:{0}'
-                           ' Expected: {1}').format(sent_bytes, len(cmd_data)))
-                    return False
                 time.sleep(constants.I2C_CSR_SLEEP_SEC)
                 status = array('B', [0x01])
-                status_bytes = aa_i2c_read(h, self.slave_addr, 0, status)
+                status_bytes = self.master.i2c_read(read_data = status, chip_inst=chip_inst)
                 logger.debug('poke status_bytes:{0}'.format(status_bytes))
                 if status_bytes[0] != 1:
                     logger.debug('Read Error!  status_bytes:{0} Expected:'
                                  '{1}'.format(status_bytes, 1))
                     return False
                 if status[0] != 0x80:
-                    logger.debug('Write status returned Error!'
-                                 ' {0}'.format(aa_status_string(status[0])))
+                    logger.debug('Write status returned Error!' ' {0}'.format(status[0]))
                     return False
             except Exception as e:
                 logging.error(traceback.format_exc())
@@ -219,7 +430,7 @@ class i2c:
                 csr_data_addr = csr_data_addr[3:]
                 cmd_data = array('B', [0x00])
                 cmd_data.extend(csr_data_addr)
-                sent_bytes = aa_i2c_write(h, self.slave_addr, 0, cmd_data)
+                sent_bytes = self.master.i2c_write(write_data = cmd_data, chip_inst=chip_inst)
                 logger.debug('sent_bytes: {0}'.format(sent_bytes))
                 if sent_bytes != len(cmd_data):
                     logger.error(('Write Error! sent_bytes:{0}'
@@ -228,15 +439,16 @@ class i2c:
                 time.sleep(constants.I2C_CSR_SLEEP_SEC)
                 csr_width = 8
                 read_data = array('B', [00]*(csr_width+1))
-                read_bytes = aa_i2c_read(h, self.slave_addr, 0, read_data)
+                read_bytes = self.master.i2c_read(read_data = read_data, chip_inst=chip_inst)
                 logger.info(('read_data: {0}').format([hex(x) for x in read_data]))
+                print len(read_bytes)
+                print (csr_width + 1)
                 if read_bytes[0] != (csr_width + 1):
                     logger.error(('Read Error!  read_bytes:{0}'
                            ' Expected: {1}').format(read_bytes, (csr_width + 1)))
                     return None
                 if read_data[0] != 0x80:
-                    logger.error(('Read status returned Error! {0}').format(
-                        aa_status_string(read_data[0])))
+                    logger.error(('Read status returned Error! {0}').format(read_data[0]))
                     return None
                 read_data = read_data[1:]
                 word_array.extend(byte_array_to_words_be(read_data))
@@ -244,10 +456,9 @@ class i2c:
             return word_array
 
     # i2c csr write
-    def i2c_csr_poke(self, csr_addr, word_array):
-        h = self.handle
-        logger.info(('Starting I2C poke. csr_addr: {0} word_array:{1}').format(
-            hex(csr_addr), [hex(x) for x in word_array]))
+    def i2c_csr_poke(self, csr_addr, word_array, chip_inst=None):
+        logger.info(('Starting I2C poke. chip_inst: {0} csr_addr: {1} word_array:{2}').format(
+            chip_inst, hex(csr_addr), [hex(x) for x in word_array]))
         csr_width_words = len(word_array)
         if not (csr_width_words > 0):
             logger.error(('Invalid data length: {0}').format(csr_width_words))
@@ -264,25 +475,24 @@ class i2c:
                 word = list(struct.unpack('BBBBBBBB', word))
                 cmd_data.extend(word)
             logger.debug('poking bytes: {0}'.format([hex(x) for x in cmd_data]))
-            sent_bytes = aa_i2c_write(h, self.slave_addr, 0, cmd_data)
-            logger.debug('sent_bytes: {0}'.format(sent_bytes))
-
+            sent_bytes = self.master.i2c_write(write_data = cmd_data, chip_inst=chip_inst)
+            logger.info('sent_bytes: {0}'.format(sent_bytes))
+            if sent_bytes != len(cmd_data):
+                logger.error(('Write Error! sent_bytes:{0}'
+                       ' Expected: {1}').format(sent_bytes, len(cmd_data)))
+                return False
             try:
-                if sent_bytes != len(cmd_data):
-                    logger.error(('Write Error! sent_bytes:{0}'
-                           ' Expected: {1}').format(sent_bytes, len(cmd_data)))
-                    return False
                 time.sleep(constants.I2C_CSR_SLEEP_SEC)
                 status = array('B', [0x00])
-                num_status_bytes = aa_i2c_read(h, self.slave_addr, 0, status)
-                logger.debug('poke num_status_bytes:{0} status:{1}'.format(num_status_bytes, status))
+                num_status_bytes = self.master.i2c_read(read_data = status, chip_inst=chip_inst)
+                logger.info('poke num_status_bytes:{0} status:{1}'.format(num_status_bytes, status))
                 if num_status_bytes[0] != 1:
                     logger.error('Read Error!  status_bytes:{0} Expected:'
                                  '{1}'.format(num_status_bytes, 1))
                     return False
                 if status[0] != 0x80:
                     logger.error('Write status returned Error!'
-                                 ' {0}'.format(aa_status_string(status[0])))
+                                 ' {0}'.format(status[0]))
                     return False
             except Exception as e:
                 logging.error(traceback.format_exc())
@@ -306,16 +516,16 @@ class i2c:
                 word = list(struct.unpack('BBBBBBBB', word))
                 cmd_data.extend(word)
                 logger.debug('poking bytes: {0}'.format([hex(x) for x in cmd_data]))
-                sent_bytes = aa_i2c_write(h, self.slave_addr, 0, cmd_data)
+                sent_bytes = self.master.i2c_write(write_data = cmd_data, chip_inst=chip_inst)
                 logger.debug('sent_bytes: {0}'.format(sent_bytes))
+                if sent_bytes != len(cmd_data):
+                    logger.error(('Write Error! sent_bytes:{0}'
+                           ' Expected: {1}').format(sent_bytes, len(cmd_data)))
+                    return False
                 try:
-                    if sent_bytes != len(cmd_data):
-                        logger.error(('Write Error! sent_bytes:{0}'
-                               ' Expected: {1}').format(sent_bytes, len(cmd_data)))
-                        return False
                     time.sleep(constants.I2C_CSR_SLEEP_SEC)
                     status = array('B', [0x01])
-                    status_bytes = aa_i2c_read(h, self.slave_addr, 0, status)
+                    status_bytes = self.master.i2c_read(read_data = status, chip_inst=chip_inst)
                     logger.debug('poke status_bytes:{0}'.format(status_bytes))
                     if status_bytes[0] != 1:
                         logger.debug('Read Error!  status_bytes:{0} Expected:'
@@ -323,7 +533,7 @@ class i2c:
                         return False
                     if status[0] != 0x80:
                         logger.debug('Write status returned Error!'
-                                     ' {0}'.format(aa_status_string(status[0])))
+                                     ' {0}'.format(status[0]))
                         return False
                 except Exception as e:
                     logging.error(traceback.format_exc())
@@ -335,16 +545,16 @@ class i2c:
             cmd_data.extend(csr_data_addr)
             cmd_data.extend(csr_addr)
             logger.debug('poking bytes: {0}'.format([hex(x) for x in cmd_data]))
-            sent_bytes = aa_i2c_write(h, self.slave_addr, 0, cmd_data)
+            sent_bytes = self.master.i2c_write(write_data = cmd_data, chip_inst=chip_inst)
             logger.debug('sent_bytes: {0}'.format(sent_bytes))
+            if sent_bytes != len(cmd_data):
+                logger.error(('Write Error! sent_bytes:{0}'
+                       ' Expected: {1}').format(sent_bytes, len(cmd_data)))
+                return False
             try:
-                if sent_bytes != len(cmd_data):
-                    logger.error(('Write Error! sent_bytes:{0}'
-                           ' Expected: {1}').format(sent_bytes, len(cmd_data)))
-                    return False
                 time.sleep(constants.I2C_CSR_SLEEP_SEC)
                 status = array('B', [0x01])
-                status_bytes = aa_i2c_read(h, self.slave_addr, 0, status)
+                status_bytes = self.master.i2c_read(read_data = status, chip_inst=chip_inst)
                 logger.debug('poke status_bytes:{0}'.format(status_bytes))
                 if status_bytes[0] != 1:
                     logger.debug('Read Error!  status_bytes:{0} Expected:'
@@ -352,29 +562,15 @@ class i2c:
                     return False
                 if status[0] != 0x80:
                     logger.debug('Write status returned Error!'
-                                 ' {0}'.format(aa_status_string(status[0])))
+                                 ' {0}'.format(status))
                     return False
             except Exception as e:
                 logging.error(traceback.format_exc())
                 return False
             return True
 
-    # Debug function for emulation trigger to collect waveforms
-    def gpio_sck_trigger(self):
-        h = self.handle
-        logger.info('Trigger GPIO....!')
-        status = aa_configure(h, 0)
-        status = aa_gpio_direction(h, 0x0)
-        status = aa_gpio_set(h, 0x8)
-        time.sleep(0.00001)
-        status = aa_gpio_set(h, 0x00)
-        time.sleep(0.00001)
-        status = aa_gpio_set(h, 0x8)
-        logger.info('GPIO trigger done!')
-
-    def i2c_dbg_chal_cmd(self, cmd, data):
-        h = self.handle
-        self.__i2c_dbg_chal_fifo_flush()
+    def i2c_dbg_chal_cmd(self, cmd, data, chip_inst=None):
+        self.__i2c_dbg_chal_fifo_flush(chip_inst)
         logger.debug('cmd: {0}'.format(hex(cmd)))
         byte_array = array('B', [0xC4])
         size = (0 if data is None else len(data)) + 4 + 4
@@ -383,20 +579,20 @@ class i2c:
         b = struct.unpack('BBBB',s)
         byte_array.extend(b)
         logger.debug('\nSend dbg chal cmd header: {0}'.format([hex(x) for x in byte_array]))
-        sent_bytes = aa_i2c_write(h, self.slave_addr, 0, byte_array)
+        sent_bytes = self.master.i2c_write(write_data = byte_array, chip_inst=chip_inst)
         if sent_bytes != len(byte_array):
             logger.error('Write dbg cmd/data Error! sent_bytes:{0}'.format(sent_bytes))
-            return (False, 'aa_i2c_write failed!')
+            return (False, 'i2c_write failed!')
 
         byte_array = array('B', [0x84])
         s = struct.pack('<I', cmd)
         b = struct.unpack('BBBB',s)
         byte_array.extend(b)
         logger.debug('\nSend dbg chal cmd {0}'.format([hex(x) for x in byte_array]))
-        sent_bytes = aa_i2c_write(h, self.slave_addr, 0, byte_array)
+        sent_bytes = self.master.i2c_write(write_data = byte_array, chip_inst=chip_inst)
         if sent_bytes != len(byte_array):
             logger.error('Write dbg cmd/data Error! sent_bytes:{0}'.format(sent_bytes))
-            return (False, 'aa_i2c_write failed!')
+            return (False, 'i2c_write failed!')
 
         num_bytes = 0 if data is None else len(data)
         i = 0
@@ -410,12 +606,11 @@ class i2c:
             tdata.extend((data[i:i+n]))
             logger.debug(('i:{0} rem_bytes:{1} n:{2} tdata:{3}').format(i, num_bytes - i,
                                             n , list((tdata[1:1+flit_size]))))
-            status = aa_i2c_write(h, self.slave_addr,
-                                      0, tdata)
+            status = self.master.i2c_write(write_data = tdata, chip_inst=chip_inst)
             if status < 1:
                 err_msg = ('i2c write Error!!! Expected sent_bytes: {0} return_status: {1}'
-                        ' error_code: {2} sent_total:{3}').format(len(tdata),
-                            status, aa_status_string(status), i)
+                        ' sent_total:{2}').format(len(tdata),
+                            status, i)
                 logger.error(err_msg)
                 return (False, err_msg)
             if (status < len(tdata)):
@@ -423,7 +618,7 @@ class i2c:
                     retry += 1
                     if retry == 10:
                         err_msg = ('Error!!! i2c write stalled!!!! status: {0}'
-                                ' error_code: {1} sent_total:{2}').format(status, aa_status_string(status), i)
+                                ' sent_total:{1}').format(status, i)
                         logger.error(err_msg)
                         return (False, err_msg)
                 else:
@@ -441,7 +636,7 @@ class i2c:
 
         logger.debug('Sleeping to give time for hw(esp. emulation) to process the command!')
         time.sleep(constants.SBP_CMD_EXE_TIME_WAIT)
-        (status, header) = self.__i2c_dbg_chal_cmd_header_read()
+        (status, header) = self.__i2c_dbg_chal_cmd_header_read(chip_inst)
         if status is False:
             err_msg = 'Failed to read the header'
             logger.error(err_msg)
@@ -467,8 +662,7 @@ class i2c:
             logger.error(err_msg)
             return (False, err_msg)
 
-    def i2c_dbg_chal_nread(self, num_bytes):
-        h = self.handle
+    def i2c_dbg_chal_nread(self, chip_inst, num_bytes):
         data = array('B', [])
         cur_cnt = 0
         iter_cnt = 0
@@ -479,7 +673,8 @@ class i2c:
                 n = flit_size
             else:
                 n = num_bytes - i
-            (status, rx_data) = self._i2c_dbg_chal_read(n)
+            (status, rx_data) = self._i2c_dbg_chal_read(
+                            chip_inst = chip_inst, length = n)
             if status == False:
                 err_msg = rx_data
                 logger.error(err_msg)
@@ -503,19 +698,18 @@ class i2c:
         logger.info('Successfully Recived {0} bytes!'.format(i))
         return (True, data)
 
-    def __i2c_dbg_chal_cmd_header_read(self):
+    def __i2c_dbg_chal_cmd_header_read(self, chip_inst):
         logger.debug('Reading the header cmd status header...!')
-        h = self.handle
         data = array('B', [0x41])
-        sent_bytes = aa_i2c_write(h, self.slave_addr, 0, data)
+        sent_bytes = self.master.i2c_write(write_data = data, chip_inst=chip_inst)
         if sent_bytes != len(data):
             logger.error('Get sbp cmd exec status write error! sent_bytes:{0}'.format(sent_bytes))
-            return (False, 'aa_i2c_write failed for get cmd status write!')
+            return (False, 'i2c_write failed for get cmd status write!')
 
         time.sleep(constants.SBP_CMD_EXE_TIME_WAIT)
         rdata = array('B', [00])
         logger.debug('Reading the sbp cmd exec status byte!')
-        aa_i2c_read(h, self.slave_addr, 0, rdata)
+        self.master.i2c_read(read_data = rdata, chip_inst=chip_inst)
         logger.debug('Read data: {0}'.format(rdata))
         status_byte = rdata[0]
         status = status_byte >> 0x7
@@ -542,22 +736,21 @@ class i2c:
             logger.error(err_msg)
             return (False, err_msg)
 
-    def __i2c_dbg_chal_fifo_flush(self):
+    def __i2c_dbg_chal_fifo_flush(self, chip_inst):
         logger.debug('Flushing the FIFO...!')
-        h = self.handle
         flushed = False
         while flushed == False:
             data = array('B', [0x41])
-            sent_bytes = aa_i2c_write(h, self.slave_addr, 0, data)
+            sent_bytes = self.master.i2c_write(write_data = data, chip_inst=chip_inst)
             logger.debug('Write read status command. sent_bytes: {0}'.format(sent_bytes))
             if sent_bytes != len(data):
                 logger.error('Get sbp cmd exec status write error! sent_bytes:{0}'.format(sent_bytes))
-                return (False, 'aa_i2c_write failed for get cmd status write!')
+                return (False, 'i2c_write failed for get cmd status write!')
 
             time.sleep(0.1)
             rdata = array('B', [00])
             logger.debug('Reading the sbp cmd exec status byte!')
-            aa_i2c_read(h, self.slave_addr, 0, rdata)
+            self.master.i2c_read(read_data = rdata, chip_inst = chip_inst)
             logger.debug('Read data: {0}'.format(rdata))
             status_byte = rdata[0]
             status = status_byte >> 0x7
@@ -574,13 +767,12 @@ class i2c:
                     logger.error('Failed to flush the data! Error: {0}'.format(data))
                     return False
             else:
-                logger.info('Flushed the FIFO!')
+                logger.debug('Flushed the FIFO!')
                 flushed = True
         return True
 
-    def _i2c_dbg_chal_read(self, length):
+    def _i2c_dbg_chal_read(self, chip_inst, length):
         logger.debug('read length: {0}'.format(length))
-        h = self.handle
         if length > 64:
             err_msg = 'unsupported length: {0}'.format(length)
             logger.error(err_msg)
@@ -588,7 +780,7 @@ class i2c:
         cmd_byte = 0x40 | (length+1)
         logger.debug('command_byte: {0}'.format(hex(cmd_byte)))
         data = array('B', [cmd_byte])
-        sent_bytes = aa_i2c_write(h, self.slave_addr, 0, data)
+        sent_bytes = self.master.i2c_write(write_data = data, chip_inst=chip_inst)
         if sent_bytes != len(data):
             err_msg = 'write dbg read cmd error! sent_bytes:{0}'.format(sent_bytes)
             logger.error(err_msg)
@@ -596,7 +788,7 @@ class i2c:
 
         time.sleep(0.1)
         rdata = array('B', [00] * (length+1))
-        read_status_data = aa_i2c_read(h, self.slave_addr, 0, rdata)
+        read_status_data = self.master.i2c_read(read_data = rdata, chip_inst=chip_inst)
         logger.debug('Read data: {0}'.format(rdata))
         logger.debug('rd read_status_data: {0}'.format(read_status_data))
         if read_status_data < 1:
@@ -624,27 +816,16 @@ class i2c:
                 return (True, None)
 
     def i2c_wedge_detect(self):
-        h = self.handle
-        logger.info('Checking i2c wedge condition ...!')
-        data = array('B', [])
-        (status, sent_bytes) = aa_i2c_write_ext(h, self.slave_addr, 0, data)
-        if status == AA_I2C_STATUS_OK:
-            logger.info('i2c is not wedged!')
-            return False
-        return True
+        if self.bmc_board is False:
+            return self.master.i2c_wedge_detect()
+        return False
 
     def i2c_unwedge(self):
-        h = self.handle
-        logger.debug('I2C unwedge start ...')
-        status = aa_configure(h, constants.IC_DEVICE_MODE_GPIO)
-        status = aa_gpio_direction(h, 0x1)
-        for i in range(100):
-            status = aa_gpio_set(h, 0x1)
-            time.sleep(0.0001)
-            status = aa_gpio_set(h, 0x00)
-            time.sleep(0.0001)
-            status = aa_gpio_set(h, 0x1)
-            time.sleep(0.0001)
-        status = aa_configure(h, constants.IC_DEVICE_MODE_I2C)
-        logger.info('I2C unwedge done!')
+        if self.bmc_board is False:
+            return self.master.i2c_unwedge()
+        return True
+
+    def gpio_sck_trigger(self):
+        if self.bmc_board is False:
+            self.master.gpio_sck_trigger()
         return True
