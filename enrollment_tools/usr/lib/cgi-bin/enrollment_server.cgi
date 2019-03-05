@@ -118,44 +118,15 @@ def db_store_cert(conn, cert):
     conn.commit()
 
 
-def db_retrieve_cert_for_serial_nr( conn, serial_nr, serial_info):
+def db_retrieve_cert(conn, values_dict):
 
     with conn.cursor() as cur:
-        cur.execute(RETRIEVE_STMT, (serial_nr, serial_info))
+        cur.execute(RETRIEVE_STMT,
+                    (values_dict['serial_nr'],
+                     values_dict['serial_info']))
         if cur.rowcount > 0:
             return cur.fetchone()[0]
     return None
-
-
-def fetch_cert( values_dict):
-
-    # connect to the database
-    with closing(psycopg2.connect("dbname=enrollment_db")) as db_conn:
-        # see if there is such a serial number already
-        cert = db_retrieve_cert_for_serial_nr(db_conn,
-                                              values_dict['serial_nr'],
-                                              values_dict['serial_info'])
-        if cert:
-            log("Certificate retrieved for  %s - %s" % (
-                binascii.b2a_hex(values_dict['serial_nr']),
-                binascii.b2a_hex(values_dict['serial_info'])))
-        else:
-            log("Generating certificate for %s - %s" % (
-                binascii.b2a_hex(values_dict['serial_nr']),
-                binascii.b2a_hex(values_dict['serial_info'])))
-
-            # sign the tbs_cert
-            cert = hsm_sign(tbs_cert)
-            # store it
-            db_store_cert(db_conn, cert)
-
-    # encode the certificate
-    cert_b64 = binascii.b2a_base64(cert).decode('ascii')
-
-    print("Status: 200 OK")
-    print("Content-length: %d\n" % len(cert_b64))
-    print("%s\n" % cert_b64)
-
 
 
 ##################################################################################################
@@ -265,6 +236,33 @@ def validate_tbs_cert(values_dict):
 
     # TODO: validate serial info -> install a format filter
 
+
+###########################################################################
+#
+# HTTP common routines
+#
+###########################################################################
+
+def safe_form_get(form, key, default):
+    ''' safely get parameter for form '''
+    if key in form:
+        return form[key].value
+    else:
+        return default
+
+
+def send_response_body(body):
+    print("Status: 200 OK")
+    print("Content-length: %d\n" % len(body))
+    print("%s\n" % body)
+
+
+def send_certificate_response(cert):
+    ''' send back a certificate response '''
+    cert_b64 = binascii.b2a_base64(cert).decode('ascii')
+    send_response_body(cert_b64)
+
+
 ##########################################################################
 #
 # Enrollment
@@ -285,7 +283,15 @@ def do_enroll():
 
     validate_tbs_cert(values_dict)
 
-    fetch_cert(values_dict)
+    with closing(psycopg2.connect("dbname=enrollment_db")) as db_conn:
+        cert = db_retrieve_cert(db_conn, values_dict)
+        if cert is None:
+              # sign the tbs_cert
+              cert = hsm_sign(tbs_cert)
+              # store it
+              db_store_cert(db_conn, cert)
+
+    send_certificate_response(cert)
 
 
 ########################################################################
@@ -293,13 +299,6 @@ def do_enroll():
 # Return some information: fpk4 modulus, certificate
 #
 ########################################################################
-
-def safe_form_get(form, key, default):
-    if key in form:
-        return form[key].value
-    else:
-        return default
-
 def send_certificate(form_values):
 
     sn_64 = safe_form_get(form_values, "sn", None)
@@ -314,7 +313,13 @@ def send_certificate(form_values):
     slicer = make_slicer_of(sn)
     values_dict = {desc[0]: slicer(desc[1]) for desc in SN_DESC }
 
-    fetch_cert(values_dict)
+    with closing(psycopg2.connect("dbname=enrollment_db")) as db_conn:
+        cert = db_retrieve_cert(db_conn, values_dict)
+
+    if cert is None:
+        print("Status: 404 Not Found\n")
+    else:
+        send_certificate_response(cert)
 
 
 def send_modulus(form_values):
@@ -342,9 +347,7 @@ def send_modulus(form_values):
         c_modulus += "}"
         modulus_str = c_modulus
 
-    print("Status: 200 OK")
-    print("Content-length: %d\n" % len(modulus_str))
-    print("%s\n" % modulus_str)
+    send_response_body(modulus_str)
 
 
 def process_query():
