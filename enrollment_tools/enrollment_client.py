@@ -9,13 +9,14 @@
 #
 ##############################################################################
 
+import array
 import binascii
 import argparse
-
 import requests
 
 from probeutils.dut import *
 from probeutils.dbgclient import *
+
 
 ###############################################################
 #
@@ -23,6 +24,7 @@ from probeutils.dbgclient import *
 #
 ###############################################################
 class CMD(object):
+    ''' namespace for constants '''
     GET_SERIAL_NUMBER = 0xFE000000
     GET_STATUS = 0xFE010000
     GET_ENROLL_INFO = 0xFF050000
@@ -51,6 +53,22 @@ def report_error(cmd, rdata):
     print("command %s failure = %d; command length = %d -- actual %d" %
           (cmd, cmd_status(rdata), cmd_reply_length(rdata), len(rdata)))
 
+##########################################################################
+#
+# I2C routines as written return a list of integers: convert to byte string
+#
+# ref: https://www.python.org/doc/essays/list2str/
+#
+#########################################################################
+
+def int_list_to_byte_str(l):
+    return array('B', l).tostring()
+
+def byte_str_to_int_list(s):
+    a = array('B')
+    a.fromstring(s)
+    return list(a)
+
 
 ###########################################################################
 #
@@ -59,6 +77,7 @@ def report_error(cmd, rdata):
 ###########################################################################
 
 class DBG_Chal(object):
+    ''' i2c connection object '''
     def __init__(self, dut_name, chip_inst=None):
         logger.debug('dut: {0}'.format(dut_name))
         self.probe_ip_addr = None
@@ -159,7 +178,7 @@ class DBG_Chal(object):
         (status, rdata) = self.dbgprobe.dbg_chal_cmd(CMD.GET_SERIAL_NUMBER,
                                                      chip_inst=self.chip_inst)
         if status is True and cmd_status_ok(rdata):
-            return rdata[4:]
+            return int_list_to_byte_str(rdata[4:])
 
         report_error("GetSerialNumber", rdata)
         return None
@@ -168,14 +187,15 @@ class DBG_Chal(object):
         (status, rdata) = self.dbgprobe.dbg_chal_cmd(CMD.GET_ENROLL_INFO,
                                                      chip_inst=self.chip_inst)
         if status is True and cmd_status_ok(rdata):
-            return rdata[4:]
+            return int_list_to_byte_str(rdata[4:])
 
         report_error("Enrollment", rdata)
         return None
 
     def save_enroll_cert(self, cert):
+
         (status, rdata) = self.dbgprobe.dbg_chal_cmd(CMD.SET_ENROLL_INFO,
-                                                     data=list(cert),
+                                                     data=byte_str_to_int_list(cert),
                                                      chip_inst=self.chip_inst)
         if status is True and cmd_status_ok(rdata):
             return True
@@ -281,6 +301,7 @@ def main():
         print("Chip is not at the correct boot step for enrollment")
         return False
 
+    print("Chip at the correct boot step; retrieving serial number")
     # Get serial number
     sn = dbgprobe.get_serial_number()
     if sn is None:
@@ -291,6 +312,7 @@ def main():
 
     #if the cert is there, write it
     if cert:
+        print("Found certificate for this serial number")
         if dbgprobe.save_enroll_cert(cert):
             print("Enrollment certificate installed on chip")
             return True
