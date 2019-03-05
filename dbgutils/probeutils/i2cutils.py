@@ -20,7 +20,7 @@ class constants(object):
     IC_DEVICE_MODE_GPIO = 0x0
     I2C_XFER_BIT_RATE = 500
     F1_I2C_ADDR_MODE = 0
-    SBP_CMD_EXE_TIME_WAIT = 0.5
+    SBP_CMD_EXE_TIME_WAIT = 1
     I2C_CSR_SLEEP_SEC    = 0.001
 
 # Converts byte array to big-endian 64-bit words
@@ -259,6 +259,7 @@ class i2c:
             cmd_data = array('B', [0x01])
             cmd_data.extend(csr_addr)
             for word in word_array:
+                logger.debug('word: {0}'.format(hex(word)))
                 word = struct.pack('>Q', word)
                 word = list(struct.unpack('BBBBBBBB', word))
                 cmd_data.extend(word)
@@ -517,26 +518,29 @@ class i2c:
         aa_i2c_read(h, self.slave_addr, 0, rdata)
         logger.debug('Read data: {0}'.format(rdata))
         status_byte = rdata[0]
-        status = status_byte >> 0x6
-        length = status_byte & 0x3f
-        if status != 0:
-            err_msg = 'CMD execution error!'
+        status = status_byte >> 0x7
+        if status:
+            err_msg = 'CMD execution error({0})!'.format(status_byte)
+            shim_action_state = status_byte >> 0x6
+            if shim_action_state == 0x3:
+                err_msg += ' *** Invalid shim action state ***'
             logger.error(err_msg)
             return (False, err_msg)
 
-        if length < 4:
-            err_msg = 'CMD execution error! Insufficient num header bytes!'
+        length = status_byte & 0x7f
+        if length < 4 or length > 64:
+            err_msg = ('CMD execution error! Invalid number of bytes({0})!'
+                    'Valid num bytes is 4-64').format(length)
             logger.error(err_msg)
             return (False, err_msg)
 
-        if (length  >= 4):
-            (status, header) = self.i2c_dbg_chal_nread(4)
-            if status is True:
-                return (True, header)
-            else:
-                err_msg = 'Falied to read the status bytes'
-                logger.error(err_msg)
-                return (False, err_msg)
+        (status, header) = self.i2c_dbg_chal_nread(4)
+        if status is True:
+            return (True, header)
+        else:
+            err_msg = 'Falied to read the status bytes'
+            logger.error(err_msg)
+            return (False, err_msg)
 
     def __i2c_dbg_chal_fifo_flush(self):
         logger.debug('Flushing the FIFO...!')
@@ -556,10 +560,10 @@ class i2c:
             aa_i2c_read(h, self.slave_addr, 0, rdata)
             logger.debug('Read data: {0}'.format(rdata))
             status_byte = rdata[0]
-            status = status_byte >> 0x6
-            length = status_byte & 0x3f
+            status = status_byte >> 0x7
+            length = status_byte & 0x7f
             if status != 0:
-                logger.error('cmd error status:{0} is set! still proceeding with flush!'.format(status))
+                logger.error('cmd error status:{0} is set! still proceeding with flush!'.format(status_byte))
 
             if (length  > 0):
                 (status, data) = self.i2c_dbg_chal_nread(length)
@@ -600,8 +604,16 @@ class i2c:
             logger.error(err_msg)
             return (False, err_msg)
         else:
-            status = rdata[0] >> 6
-            num_bytes = rdata[0] & 0x3f
+            status = rdata[0] >> 7
+            if status:
+                err_msg = 'CMD execution error({0})!'.format(rdata[0])
+                shim_action_state = status_byte >> 0x6
+                if shim_action_state == 0x3:
+                    err_msg += ' *** Invalid shim action state ***'
+                logger.error(err_msg)
+                return (False, err_msg)
+
+            num_bytes = rdata[0] & 0x7f
             if status != 0:
                 err_msg = 'Read dbg error: {0}!'.format(status)
                 logger.error(err_msg)
