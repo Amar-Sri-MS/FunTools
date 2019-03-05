@@ -799,7 +799,7 @@ class i2c:
             status = rdata[0] >> 7
             if status:
                 err_msg = 'CMD execution error({0})!'.format(rdata[0])
-                shim_action_state = status_byte >> 0x6
+                shim_action_state = rdata[0] >> 0x6
                 if shim_action_state == 0x3:
                     err_msg += ' *** Invalid shim action state ***'
                 logger.error(err_msg)
