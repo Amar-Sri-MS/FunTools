@@ -60,6 +60,7 @@ setup(
         'cmd2==0.8.8',
         'argcomplete',
         'pyusb',
+        'paramiko',
         'urllib3'
     ],
 )
