@@ -40,6 +40,8 @@
 
 #define SOCK_NAME	"/tmp/funos-dpc.sock"      /* default FunOS socket */
 #define PROXY_NAME      "/tmp/funos-dpc-text.sock" /* default unix proxy name */
+#define NVME_DEV_NAME   "/dev/nvme0"  /* default nvme device used for sending dpc commands as 
+										 NVME vendor specific admin commands */
 #define DPC_PORT        40220   /* default FunOS port */
 #define DPC_PROXY_PORT  40221   /* default TCP proxy port */
 #define DPC_B64_PORT    40222   /* default dpcuart port in qemu */
@@ -47,12 +49,18 @@
 #define HTTP_PORTNO     9001    /* default HTTP listen port */
 #define NO_FLOW_CTRL_DELAY_USEC	10000	/* no flow control delay in usec */
 
+#define NVME_VS_ADMIN_CMD_DATA_LEN 4096   /* data length for the NVMe vendor specific admin command
+											 used for executing DPC command over NVMe admin queue */
+#define NVME_VS_API_BIDIR	0xc3	/* Vendor specific admin command opcode for bi-directional data transfer */
+#define NVME_DPC_CMD_HNDLR_SELECTION	0x20000	/* 2 in MSB selects dpc_cmd_handler in FunOS */
+
 /* handy socket abstraction */
 enum sockmode {
 	SOCKMODE_TERMINAL,
 	SOCKMODE_IP,
 	SOCKMODE_UNIX,
 	SOCKMODE_DEV,
+	SOCKMODE_NVME
 };
 
 enum parsingmode {
@@ -94,6 +102,9 @@ struct dpcsock {
 	/* runtime */
 	int fd;                  /* connected fd */
 	int listen_fd;           /* fd if this is a server */
+	uint8_t *data;				 /* buffer for storing response data incase of NVME */
+	int data_len;			 /* Response data size in case of NVME */
+	
 };
 
 static inline void _setnosigpipe(int const fd)
@@ -660,7 +671,10 @@ int dpcsocket_connnect(struct dpcsock *sock)
 
 		/* wait for someone to connect */
 		_listen_sock_accept(sock);
-	} else {
+	} else if(SOCKMODE_NVME) {
+		sock->fd = open(sock->socket_name, O_RDWR);
+	} 
+	else {
 		printf("connecting client socket\n");
 		if (sock->mode == SOCKMODE_UNIX)
 			sock->fd = _open_sock_unix(sock->socket_name);
@@ -713,6 +727,29 @@ void _configure_device(struct dpcsock *sock)
 	if (r) {
 		printf("error configuring UART with stty\n");
 		exit(1);
+	}
+}
+
+/* Execute vendor specific admin command on an NVMe device */
+static bool _execute_nvme_vs_admin_cmd(struct fun_json *json, struct dpcsock *sock)
+{
+	sock->data = malloc(NVME_VS_ADMIN_CMD_DATA_LEN);
+	sock->data_len = NVME_VS_ADMIN_CMD_DATA_LEN;
+	if(sock->data) {
+		memset(sock->data, 0, NVME_VS_ADMIN_CMD_DATA_LEN);
+		size_t allocated_size;
+		struct fun_ptr_and_size pas = fun_json_serialize(json, &allocated_size);
+		memcpy (sock->data, pas.ptr, pas.size);
+
+		struct nvme_admin_cmd cmd = {
+			.opcode = NVME_VS_API_BIDIR,
+			.nsid = 0,
+			.addr = (__u64)(uintptr_t)sock->data,
+			.data_len = sock->data_len,
+			.cdw2 = NVME_DPC_CMD_HNDLR_SELECTION,
+			.cdw3 = pas.size,
+		};
+		fun_free_threaded(pas.ptr, allocated_size);
 	}
 }
 
@@ -927,7 +964,13 @@ static bool _do_send_cmd(struct dpcsock *sock, char *line,
 			json);
 	// Hack to list local commands if the command is 'help'
 	apply_command_locally(json);
-        bool ok = _write_to_sock(json, sock);
+        bool ok = false;
+		if(sock->mode == SOCKMODE_NVME) {
+			ok = _execute_nvme_vs_admin_cmd(json, sock);
+		}
+		else {
+			ok = _write_to_sock(json, sock);
+		}
 	if (!ok) {
 		// try to reopen pipe
 		printf("Write to socket failed - reopening socket\n");
@@ -938,7 +981,12 @@ static bool _do_send_cmd(struct dpcsock *sock, char *line,
 			fun_json_release(json);
 			return false;
 		}
-		ok = _write_to_sock(json, sock);
+		if(sock->mode == SOCKMODE_NVME) {
+			ok = _execute_nvme_vs_admin_cmd(json, sock);
+		}
+		else {
+			ok = _write_to_sock(json, sock);
+		}
 	}
         fun_json_release(json);
         if (!ok) {
@@ -1011,7 +1059,13 @@ static void _do_recv_cmd(struct dpcsock *funos_sock,
 			 struct dpcsock *cmd_sock, bool retry)
 {
 	/* receive a reply */
-        struct fun_json *output = _read_from_sock(funos_sock, retry);
+        struct fun_json *output;
+		if(funos_sock->mode == SOCKMODE_NVME) {
+			output = _buffer2json(funos_sock->data, funos_sock->data_len);
+		}
+		else {
+			output = _read_from_sock(funos_sock, retry);
+		}
         if (!output) {
 		if (retry)
 			printf("invalid json returned\n");
@@ -1192,14 +1246,23 @@ static void _do_interactive(struct dpcsock *funos_sock,
 	    }
 
 	    /* if it changed while in flight */
-	    if (funos_sock->fd == -1)
+	    if (funos_sock->fd == -1) {
+			if(funos_sock->data) {
+				free(funos_sock->data);
+				funos_sock->data = NULL;
+			}
 		    continue;
+		}
 
 	    if (FD_ISSET(funos_sock->fd, &fds)
 		&& (!funos_sock->loopback)) {
 		    // printf("funos input\n");
 		    _do_recv_cmd(funos_sock, cmd_sock, false);
 	    }
+		if(funos_sock->data) {
+			free(funos_sock->data);
+			funos_sock->data = NULL;
+		}
     }
     if (cmd_sock->mode == SOCKMODE_TERMINAL) {
 	    /* reset terminal */
@@ -1298,6 +1361,11 @@ static void _do_cli(int argc, char *argv[],
 	ok = _do_send_cmd(funos_sock, buf, len);
 	if (ok)
 		_do_recv_cmd(funos_sock, cmd_sock, true);
+
+	if(funos_sock->data) {
+		free(funos_sock->data);
+		funos_sock->data = NULL;
+	}
 }
 
 /** argument parsing **/
@@ -1323,23 +1391,24 @@ static char *opt_sockname(char *optarg, char *dflt)
 
 /* options descriptor */
 static struct option longopts[] = {
-	{ "help",          no_argument,       NULL, 'h' },
-	{ "base64_srv",    optional_argument, NULL, 'B' },
-	{ "base64_sock",   optional_argument, NULL, 'b' },
-	{ "dev",           required_argument, NULL, 'D' },
-	{ "inet_sock",     optional_argument, NULL, 'i' },
-	{ "unix_sock",     optional_argument, NULL, 'u' },
-	{ "http_proxy",    optional_argument, NULL, 'H' },
-	{ "tcp_proxy",     optional_argument, NULL, 'T' },
-	{ "text_proxy",    optional_argument, NULL, 'T' },
-	{ "unix_proxy",    optional_argument, NULL, 't' },
-	{ "nocli",         no_argument,       NULL, 'n' },
-	{ "oneshot",       no_argument,       NULL, 'S' },
-	{ "manual_base64", no_argument,       NULL, 'N' },
-	{ "no_dev_init",   no_argument,       NULL, 'X' },
-	{ "no_flow_control",   no_argument,       NULL, 'F' },
-	{ "baud",          required_argument, NULL, 'R' },
-	{ "legacy_b64",    no_argument, NULL, 'L' },
+	{ "help",            no_argument,       NULL, 'h' },
+	{ "base64_srv",      optional_argument, NULL, 'B' },
+	{ "base64_sock",     optional_argument, NULL, 'b' },
+	{ "dev",             required_argument, NULL, 'D' },
+	{ "inet_sock",       optional_argument, NULL, 'i' },
+	{ "unix_sock",       optional_argument, NULL, 'u' },
+	{ "pcie_nvme_sock",  optional_argument, NULL, 'p' },
+	{ "http_proxy",      optional_argument, NULL, 'H' },
+	{ "tcp_proxy",       optional_argument, NULL, 'T' },
+	{ "text_proxy",      optional_argument, NULL, 'T' },
+	{ "unix_proxy",      optional_argument, NULL, 't' },
+	{ "nocli",           no_argument,       NULL, 'n' },
+	{ "oneshot",         no_argument,       NULL, 'S' },
+	{ "manual_base64",   no_argument,       NULL, 'N' },
+	{ "no_dev_init",     no_argument,       NULL, 'X' },
+	{ "no_flow_control", no_argument,       NULL, 'F' },
+	{ "baud",            required_argument, NULL, 'R' },
+	{ "legacy_b64",      no_argument,       NULL, 'L' },
 
 	/* end */
 	{ NULL, 0, NULL, 0 },
@@ -1357,6 +1426,7 @@ static void usage(const char *argv0)
 	printf("       --base64_sock[=port]    connec as a client port on IP using base64 (dpcuart to qemu)\n");
 	printf("       --inet_sock[=port]      connect as a client port over IP\n");
 	printf("       --unix_sock[=sockname]  connect as a client port over unix sockets\n");
+	printf("       --pcie_nvme_sock[=sockname]  connect as a client port over nvme pcie device\n");
 	printf("       --http_proxy[=port]     listen as an http proxy\n");
 	printf("       --tcp_proxy[=port]      listen as a tcp proxy\n");
 	printf("       --text_proxy[=port]     same as \"--tcp_proxy\"\n");
@@ -1483,6 +1553,12 @@ int main(int argc, char *argv[])
 			funos_sock.socket_name = opt_sockname(optarg,
 							      SOCK_NAME);
 
+			break;
+		case 'p':
+			funos_sock.mode = SOCKMODE_NVME;
+			cmd_sock.server = false;
+			funos_sock.socket_name = opt_sockname(optarg,
+							      NVME_DEV_NAME);
 			break;
 		case 'H':  /* http proxy */
 
