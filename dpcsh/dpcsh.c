@@ -29,6 +29,9 @@
 
 #include <unistd.h>
 
+#include<sys/ioctl.h>
+#include<linux/nvme_ioctl.h>
+
 #include "dpcsh.h"
 #include "csr_command.h"
 
@@ -671,7 +674,7 @@ int dpcsocket_connnect(struct dpcsock *sock)
 
 		/* wait for someone to connect */
 		_listen_sock_accept(sock);
-	} else if(SOCKMODE_NVME) {
+	} else if(sock->mode == SOCKMODE_NVME) {
 		sock->fd = open(sock->socket_name, O_RDWR);
 	} 
 	else {
@@ -733,6 +736,7 @@ void _configure_device(struct dpcsock *sock)
 /* Execute vendor specific admin command on an NVMe device */
 static bool _execute_nvme_vs_admin_cmd(struct fun_json *json, struct dpcsock *sock)
 {
+	bool ok = false;
 	sock->data = malloc(NVME_VS_ADMIN_CMD_DATA_LEN);
 	sock->data_len = NVME_VS_ADMIN_CMD_DATA_LEN;
 	if(sock->data) {
@@ -749,8 +753,19 @@ static bool _execute_nvme_vs_admin_cmd(struct fun_json *json, struct dpcsock *so
 			.cdw2 = NVME_DPC_CMD_HNDLR_SELECTION,
 			.cdw3 = pas.size,
 		};
+		int ret = ioctl(sock->fd,NVME_IOCTL_ADMIN_CMD,&cmd);
+
+		if(ret == 0) {
+			ok = true;
+			sock->data_len = cmd.data_len;
+		}
+		else {
+			printf("NVME_IOCTL_ADMIN_CMD failed %d\n",ret);
+		}
+
 		fun_free_threaded(pas.ptr, allocated_size);
 	}
+	return ok;
 }
 
 /* disambiguate json */
