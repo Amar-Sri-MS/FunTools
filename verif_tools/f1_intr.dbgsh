@@ -1,0 +1,175 @@
+muh_intr=[
+['muh_cna_fatal_intr_stat','muh_cna',2],
+['muh_dna_fatal_intr_stat','muh_dna',2],
+['muh_mci_fatal_intr_stat','muh_mci',8],
+['muh_mngr_fatal_intr_stat','muh_mngr',1],
+['muh_qsys_fatal_intr_stat','muh_qsys',8],
+['muh_sna_fatal_intr_stat','muh_sna',2],
+['fep_mu_fatal_intr_stat','fep_mu',2]
+]
+
+mud_intr=[
+['mud_cna_fatal_intr_stat','mud_cna',2],
+['mud_dna_fatal_intr_stat','mud_dna',1],
+['mud_mci_fatal_intr_stat','mud_mci',1],
+['mud_qsys_fatal_intr_stat','mud_qsys',1],
+['mud_sna_fatal_intr_stat','mud_sna',1],
+['fep_mud_fatal_intr_stat','fep_mud',1],
+]
+
+cut_intr=[
+'bn_fatal_intr_stat',
+'ca_fatal_intr_stat',
+'cc_dam_fatal_intr_stat',
+'cc_eqm_fatal_intr_stat',
+'cdu_fatal_intr_stat',
+'fep_cc_fatal_intr_stat',
+'fep_lsnmux_fatal_intr_stat'
+]
+
+put_intr=[
+'ca_fatal_intr_stat',
+'dma_pc_fatal_intr_stat',
+'ec_fatal_intr_stat',
+'fep_pc_fatal_intr_stat',
+'jpg_fatal_intr_stat',
+'le_fatal_intr_stat',
+'pc_bp_func_fatal_intr_stat',
+'pc_bp_memory_fatal_intr_stat',
+'pc_cfg_fatal_intr_stat',
+'pc_cmh_cic_block_fatal_intr_status',
+'pc_cmh_cic_unit_fatal_intr_status',
+'pc_cmh_fatal_intr_stat',
+'pc_cmh_pc_fatal_intr_stat',
+'pc_cmh_pc_sram_fatal_intr_stat',
+'pc_cmh_sram_0_fatal_intr_stat',
+'pc_cmh_sram_1_fatal_intr_stat',
+'rgx_fatal_intr_stat',
+'zip_fatal_intr_stat',
+'zip_red_fatal_intr_stat'
+]
+
+misc_intr=[
+'dnr_fatal_intr_stat',
+'mio2_fatal_intr_stat',
+'mio_fatal_intr_stat'
+]
+
+hu_intr0=[
+'hsu_msc_fatal_intr_stat',
+'hsu_wqse_fatal_intr_stat',
+'hsu_wqsi_fatal_intr_stat'
+]
+hu_intr1=[
+'dma_hsu_fatal_intr_stat',
+'fep_hu_fatal_intr_stat',
+'hsu_hdma_pcie_framer_fatal_intr_stat',
+'hsu_pwp_core0_fatal_intr_stat',
+'hsu_pwp_core1_fatal_intr_stat',
+'hsu_pwp_core2_fatal_intr_stat',
+'hsu_pwp_core3_fatal_intr_stat',
+'hsu_pwp_fip_fatal_intr_stat',
+'hsu_tgt_fatal_intr_stat'
+]
+
+nu_intr0=[
+['dma_nu_fatal_intr_stat','dma_nu',3],
+['efp_rfp_lcl_fatal_intr_stat','efp_rfp_lcl',1],
+['efp_rfp_part1_fatal_intr_stat','efp_rfp_part1',1],
+['epg_rdp_lcl_fatal_intr_stat','epg_rdp_lcl',1],
+['erp_prs_fatal_intr_stat','erp_prs',1],
+['etdp_fatal_intr_stat','etdp',3],
+['etfp_fatal_intr_stat','etfp',1],
+['etp_prs_fatal_intr_stat','etp_prs',1],
+['fae_prs_fatal_intr_stat','fae_prs',1],
+['fep_nu_fatal_intr_stat','fep_nu',3],
+['nmg_fatal_intr_status','nmg',1],
+['nu_fae_fatal_intr_stat','nu_fae',1],
+['nu_mpg_core_fatal_intr_stat','nu_mpg_core',1],
+['nu_nmg_fatal_intr_stat','nu_nmg',1],
+['nwqm_fatal_intr_stat','nwqm',1],
+['psw_cfp_fatal_intr_stat','psw_cfp',1],
+['psw_clm_fatal_intr_stat','psw_clm',1],
+['psw_irm_fatal_intr_stat','psw_irm',1],
+['psw_orm_fatal_intr_stat','psw_orm',1],
+['psw_pqm_fatal_intr_stat','psw_pqm',1],
+['psw_prd_fatal_intr_stat','psw_prd',1],
+['psw_prm_fatal_intr_stat','psw_prm',1],
+['psw_pwr_fatal_intr_stat','psw_pwr',1],
+['psw_sch_fatal_intr_stat','psw_sch',1],
+['psw_wred_fatal_intr_stat','psw_wred',1]
+]
+
+nu_intr0_p=[
+['prw_fatal_intr_stat','fpg.prw','pws',6],
+['prw_fatal_intr_stat','epg_rdp.prw','pws',3],
+['fpg_misc_fatal_intr_stat','fpg.fpg_misc','fpg_misc',6],
+['fpg_mpw_fatal_intr_stat','fpg.fpg_mpw','fpg_mpwc',6],
+['fpg_prs_fatal_intr_stat','fpg.fpg_prs','fpg_prs',6],
+['fpg_sdif_fatal_intr_stat','fpg.fpg_sdif','fpg_sdif',6],
+['fpg_misc_fatal_intr_stat','nu_mpg.fpg_misc','fpg_misc',1],
+['fpg_mpw_fatal_intr_stat','nu_mpg.fpg_mpw','fpg_mpwc',1]
+]
+
+nu_intr1=[
+'sse_fatal_intr_stat'
+]
+
+hnu_intr=[
+'fep_hnu_fatal_intr_stat'
+]
+
+for i in put_intr:
+    for r in range(8):
+        x="csr peek %s -r pc %d"%(i,r)
+        print x
+        cmd(x)
+
+for i in cut_intr:
+    x="csr peek %s -r cc 0"%(i)
+    print x
+    cmd(x)
+
+for i in muh_intr:
+    for r in range(2):
+        for a in range(i[2]):
+            x="csr peek %s -r muh %d -a %s %0d"%(i[0],r,i[1],a)
+            print x
+            cmd(x)
+
+for i in mud_intr:
+    for r in range(2):
+        for a in range(i[2]):
+            x="csr peek %s -r mud %d -a %s %0d"%(i[0],r,i[1],a)
+            print x
+            cmd(x)
+
+for i in hu_intr0:
+    for r in [0,3]:
+        x="csr peek %s -r hsu %d"%(i,r)
+        print x
+        cmd(x)
+for i in hu_intr1:
+    for r in range(4):
+        x="csr peek %s -r hsu %d"%(i,r)
+        print x
+        cmd(x)
+
+for i in nu_intr0:
+    for a in range(i[2]):
+        x="csr peek %s -r nu 0 -a %s %0d"%(i[0],i[1],a)
+        print x
+        cmd(x)
+
+for i in nu_intr0_p:
+    for a in range(i[3]):
+        x="csr peek %s -r nu 0 -p %s -a %s %d"%(i[0],i[1],i[2],a)
+        print x
+        cmd(x)
+
+for i in nu_intr1:
+    x="csr peek %s -r nu 1"%(i)
+    print x
+    cmd(x)
+
+exit()
