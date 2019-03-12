@@ -1,0 +1,1 @@
+sudo tar --owner=root --group=root -cvzf install.tgz usr etc

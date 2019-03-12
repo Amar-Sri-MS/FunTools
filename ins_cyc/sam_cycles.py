@@ -215,6 +215,8 @@ class SummaryOutputState(object):
       for fst in self.fst_list:
         fst.incr_depth_recursive()
       self.func_call(row)
+    else:
+      self.fst.row_add(row)
 
   def func_same(self, row):
     self.fst.func_same(row)
