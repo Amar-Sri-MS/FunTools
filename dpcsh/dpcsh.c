@@ -567,7 +567,7 @@ static char *_read_a_line(struct dpcsock *sock, ssize_t *nbytes)
 	} else {
 		/* sometimes we get truncated lines? */
 		*nbytes = 0;
-		buf[0] = '\0;';
+		buf[0] = '\0';
 	}
 
 	return buf;
