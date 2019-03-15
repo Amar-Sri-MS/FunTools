@@ -50,6 +50,11 @@
             "B": "hu_sds_v1.bin",
             "optional": true,
             "index": "102"
+        },
+        "HOST_DATA": {
+            "A": "reserve(10000, 'hdat')",
+            "B": "",
+            "index": "3000"
         }
     },
     "signed_images": {
