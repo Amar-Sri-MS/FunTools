@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python2.7
 
 #
 # Scrapes the total counts of WUs that were sent and received per VP from a
@@ -44,8 +44,8 @@ class StatEntry:
     def to_dict(self):
         return {
             'faddr' : self.f_addr.to_dict(),
-            'sent' : self.sent,
-            'recvd' : self.recvd,
+            'wus_sent' : self.sent,
+            'wus_recvd' : self.recvd,
             'util_pct' : self.util_pct,
         }
 
@@ -54,7 +54,6 @@ class LogParser:
     """
     Parses a FunOS run log looking for WU statistics
     """
-
     def __init__(self):
         self.stats = []
         self.pattern = re.compile(r'.*nucleus.*FA(\d+):(\d+):(\d+).*sent\s+(\d+).*recv\s+(\d+)\s+WUs\s+(\d+\.\d+).*')
@@ -70,9 +69,13 @@ class LogParser:
         """
         match = self.pattern.match(line)
         if match:
-            f_addr = FAddr(match.group(1), match.group(2), match.group(3))
-            stat = StatEntry(f_addr, match.group(4), match.group(5),
-                             match.group(6))
+            f_addr = FAddr(int(match.group(1)),
+                           int(match.group(2)),
+                           int(match.group(3)))
+            stat = StatEntry(f_addr,
+                             int(match.group(4)),
+                             int(match.group(5)),
+                             float(match.group(6)))
             self.stats.append(stat)
 
     def json_str(self):
