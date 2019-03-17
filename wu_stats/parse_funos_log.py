@@ -1,10 +1,19 @@
 #!/usr/bin/env python2.7
 
 #
-# Scrapes the total counts of WUs that were sent and received per VP from a
-# FunOS log and outputs a JSON file with the information.
+# Scrapes various bits of performance-related information from a
+# FunOS log and writes a JSON file.
+#
+# The JSON type is an array of objects ordered by increasing fabric
+# address and looks like this:
+#
+# [ { metricA: valueA0, metricB: valueB0, faddr: {faddr0} },
+#   { metricA: valueA0, metricB: valueB1, faddr: {faddr1} },
+#   ... ]
 #
 # Usage: parse_funos_log.py <input_file> [-o <output_file>]
+#
+# The default output file is named stats_summary.json.
 #
 
 import re
@@ -35,7 +44,7 @@ class FAddr:
 
 class StatEntry:
     """
-    WU statistics for a particular fabric address
+    Statistics for a particular fabric address
     """
     def __init__(self, f_addr, sent, recvd, util_pct):
         self.f_addr = f_addr
@@ -52,7 +61,7 @@ class StatEntry:
 
 class LogParser:
     """
-    Parses a FunOS run log looking for WU statistics
+    Parses a FunOS run log looking for performance-related statistics
     """
     def __init__(self):
         self.stats = []
@@ -61,11 +70,11 @@ class LogParser:
     def parse_line(self, line):
         """
         Parses a line from a FunOS log, extracting the GID, LID, Q and
-        WU sent and received counts if present. We assume that the information
-        is logged in ascending fabric address order, so the GIDs and LIDs are
-        also in ascending order.
+        % utilization and WU counts. We assume that the information is
+        logged in ascending fabric address order, so the GIDs and LIDs
+        are also in ascending order.
         :param line:
-        :return: Nothing
+        :return: None
         """
         match = self.pattern.match(line)
         if match:
@@ -80,25 +89,26 @@ class LogParser:
 
     def json_str(self):
         """
-        :return: JSON format string containing WU stats. If no WU stats were
-        found, then a "no_stats" string
+        :return: JSON containing stats or None if no stats were found
         """
         if self.stats:
             list_of_dicts = [s.to_dict() for s in self.stats]
             return json.dumps(list_of_dicts)
         else:
-            return "no_stats"
+            return None
 
 
 def main():
     """
     Entry point for the script.
-    Side effects: reads a file, writes a file
-    :return: nothing
+    Side effects: Reads a file. Writes a file if data has been collected.
+    :return: None
     """
     argparser = argparse.ArgumentParser()
     argparser.add_argument('input_file', type=str, help='path to input file')
-    argparser.add_argument('-o', '--output_file', type=str, help='path to output file', default='stats.json')
+    argparser.add_argument('-o', '--output_file', type=str,
+                           help='path to output file',
+                           default='stats_summary.json')
     args = argparser.parse_args()
 
     with open(args.input_file, 'r') as fh:
@@ -108,7 +118,8 @@ def main():
 
     result = parser.json_str()
     with open(args.output_file, 'w') as fh:
-        fh.write(result)
+        if result is not None:
+            fh.write(result)
 
 
 if __name__ == '__main__':
