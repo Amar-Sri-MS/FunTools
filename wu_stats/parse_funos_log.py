@@ -27,16 +27,19 @@
 #
 # Usage: parse_funos_log.py <input_file> [-o <output_file>]
 #
+# Copyright (c) 2019 Fungible Inc.  All rights reserved.
+#
 
-import re
-import json
 import argparse
+import json
+import re
 
 
 class FAddr(object):
     """
     Represents a fabric address (GID:LID:Q).
-    GID is the cluster, LID is the local ID and Q is the queue
+
+    GID is the cluster, LID is the local ID and Q is the queue.
     """
     def __init__(self, gid, lid, q):
         self.gid, self.lid, self.q = gid, lid, q
@@ -55,9 +58,8 @@ class FAddr(object):
 
 
 class StatEntry(object):
-    """
-    Statistics for a particular fabric address
-    """
+    """ Statistics for a particular fabric address. """
+
     def __init__(self, f_addr, sent, recvd, util_pct):
         self.f_addr = f_addr
         self.sent, self.recvd, self.util_pct = sent, recvd, util_pct
@@ -72,19 +74,23 @@ class StatEntry(object):
 
 
 class LogParser(object):
-    """
-    Parses a FunOS run log looking for performance-related statistics
-    """
+    """ Parses a FunOS run log looking for performance-related statistics. """
     def __init__(self):
         self.stats = []
-        self.pattern = re.compile(r'.*nucleus.*FA(\d+):(\d+):(\d+).*sent\s+(\d+).*recv\s+(\d+)\s+WUs\s+(\d+\.\d+).*')
+
+        # Sample line (with timestamp prefix removed to reduce length):
+        #
+        # FA8:8:0[VP] INFO nucleus "data  FA2:12:0[VP] sent 1669122, recv 2074006 WUs 2.0400000%    [wu 3/irq 0/unk 0]"
+        self.pattern = re.compile(r'.*nucleus.*FA(\d+):(\d+):(\d+).*sent\s+(\d+).*recv\s+(\d+)\s+WUs\s+(\d+\.\d+)%.*')
 
     def parse_line(self, line):
         """
-        Parses a line from a FunOS log, extracting the GID, LID, Q and
-        % utilization and WU counts. We assume that the information is
-        logged in ascending fabric address order, so the GIDs and LIDs
-        are also in ascending order.
+        Parses a line from a FunOS log.
+
+        Extracts the GID, LID, Q and % utilization and WU counts.
+        Assumes that the information is logged in ascending fabric
+        address order, so the GIDs and LIDs are also in ascending order.
+
         :param line:
         :return: None
         """
@@ -101,7 +107,9 @@ class LogParser(object):
 
     def json_str(self):
         """
-        :return: JSON string containing stats or None if no stats were found
+        Converts parsed information to a JSON string.
+
+        :return: None if the parser did not find any information.
         """
         if self.stats:
             list_of_dicts = [s.to_dict() for s in self.stats]
@@ -123,8 +131,9 @@ def parse_log_file(in_file, out_file):
 def main():
     """
     Entry point for the script.
+
     Side effects: Reads a file. Writes a file if data has been collected.
-    :param args
+
     :return: None
     """
     argparser = argparse.ArgumentParser()

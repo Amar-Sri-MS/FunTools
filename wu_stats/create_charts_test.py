@@ -1,11 +1,14 @@
 #
 # Tests for create_charts.py
 #
+# Copyright (c) 2019 Fungible Inc.  All rights reserved.
+#
 
-import unittest
-import create_charts
-import StringIO
 import json
+import StringIO
+import unittest
+
+import create_charts
 
 
 class TestCreateCharts(unittest.TestCase):
@@ -76,3 +79,18 @@ class TestCreateCharts(unittest.TestCase):
         data_series = result['gravy']['data'][0]
         self.assertListEqual([3, 9], data_series['y'], 'y data')
         self.assertListEqual(['0.0.0', '0.0.1'], data_series['x'], 'x data')
+
+    def test_throws_exception_for_malformed_json_input(self):
+        """
+        If the JSON input is malformed (parser bugs) it should be okay
+        to throw an exception.
+
+        Script failure does not result in job failure, it only means
+        a chart does not get displayed in the job page.
+        """
+        in_file = StringIO.StringIO(
+            '[{"beans": 6 '
+        )
+        self.assertRaises(ValueError,
+                          TestCreateCharts.do_chart_creation,
+                          in_file)

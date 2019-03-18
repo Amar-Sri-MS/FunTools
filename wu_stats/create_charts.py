@@ -22,21 +22,24 @@
 #
 # Usage: create_charts.py <input_file> [-o <output_file>]
 #
+# Copyright (c) 2019 Fungible Inc.  All rights reserved.
+#
 
-import re
-import json
 import argparse
+import json
 
 
-# These constants were cribbed from nucleus/topology.h in FunOS code
-VPS_PER_CORE = 4
-VP_BASE = 8
+# These constants were cribbed from nucleus/topology.h and
+# nucleus/fabric_address.h in FunOS code.
+MAX_VPS_PER_CORE = 4
+LID_VP_BASE = 8
 
 
 def faddr_to_ccv_id(f_addr):
     """
     Converts a fabric address to a CCV (cluster.core.vp) id.
-    This is a direct translation of topo_cc_from_faddr()
+
+    This is a direct translation of topo_ccv_from_faddr()
     in nucleus/topology.h.
 
     :param f_addr:
@@ -44,15 +47,13 @@ def faddr_to_ccv_id(f_addr):
     """
     lid = f_addr['lid']
     cluster = f_addr['gid']
-    core = (lid - VP_BASE) / VPS_PER_CORE
-    vp = (lid - VP_BASE) % VPS_PER_CORE
+    core = (lid - LID_VP_BASE) / MAX_VPS_PER_CORE
+    vp = (lid - LID_VP_BASE) % MAX_VPS_PER_CORE
     return '%s.%s.%s' % (cluster, core, vp)
 
 
 def _build_bar_chart(metric_name, json_data):
-    """
-    Builds a bar chart for metric_name.
-    """
+    """ Builds a bar chart for metric_name. """
     chart = dict()
     chart['data'] = _extract_bar_chart_data(metric_name, json_data)
     chart['layout'] = _get_precanned_layout(metric_name)
@@ -116,8 +117,9 @@ def _write_to_file(charts, out_file):
 
 def _get_metric_names(json_data):
     """
-    Extracts metric names from the first entry in the input data,
-    assuming metrics are uniform across all entries.
+    Extracts metric names from the first entry in the input data.
+
+    Assumes metrics are uniform across all entries.
     """
     if json_data:
         names = json_data[0].keys()

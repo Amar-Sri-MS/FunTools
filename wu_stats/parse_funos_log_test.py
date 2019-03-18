@@ -1,11 +1,13 @@
 #
 # Tests for parse_funos_log.py
 #
+# Copyright (c) 2019 Fungible Inc.  All rights reserved.
+#
 
-import unittest
 import json
-import os
 import StringIO
+import unittest
+
 import parse_funos_log
 from parse_funos_log import LogParser
 
@@ -62,6 +64,15 @@ class TestLogParser(unittest.TestCase):
                                '"  ctrl    FA7:17:0  [VP]   sent   39  ,   '
                                '  recv   41   WUs    0.32000000%	   '
                                '  [wu   0/  irq    0/    unk   0]   "')
+
+    def test_parse_excludes_unfinished_line(self):
+        """
+        One possible mode of failure is that the log terminates
+        unexpectedly.
+        """
+        self.parser.parse_line('[2.458104   8.0.0]   INFO    nucleus   '
+                               '"  ctrl    FA7:17:0  [VP]   sent   39  ,   '
+                               '  recv   	   "')
 
     def check_faddr(self, entry_index, gid, lid, obj):
         entry = obj[entry_index]
