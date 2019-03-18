@@ -11,6 +11,8 @@
 #   { metricA: valueA0, metricB: valueB1, faddr: {faddr1} },
 #   ... ]
 #
+# The equivalent python type is a list of dicts.
+#
 # Usage: parse_funos_log.py <input_file> [-o <output_file>]
 #
 # The default output file is named stats_summary.json.
@@ -19,6 +21,7 @@
 import re
 import json
 import argparse
+import sys
 
 
 class FAddr:
@@ -98,10 +101,21 @@ class LogParser:
             return None
 
 
+def parse_log_file(in_file, out_file):
+    parser = LogParser()
+    for line in in_file.readlines():
+        parser.parse_line(line)
+
+    result = parser.json_str()
+    if result is not None:
+        out_file.write(result)
+
+
 def main():
     """
     Entry point for the script.
     Side effects: Reads a file. Writes a file if data has been collected.
+    :param args
     :return: None
     """
     argparser = argparse.ArgumentParser()
@@ -111,15 +125,9 @@ def main():
                            default='stats_summary.json')
     args = argparser.parse_args()
 
-    with open(args.input_file, 'r') as fh:
-        parser = LogParser()
-        for line in fh.readlines():
-            parser.parse_line(line)
-
-    result = parser.json_str()
-    with open(args.output_file, 'w') as fh:
-        if result is not None:
-            fh.write(result)
+    with open(args.input_file, 'r') as in_file, \
+            open(args.output_file, 'w') as out_file:
+        parse_log_file(in_file, out_file)
 
 
 if __name__ == '__main__':

@@ -34,7 +34,7 @@ def faddr_to_ccv_id(f_addr):
     return '%s.%s.%s' % (cluster, core, vp)
 
 
-def extract_bar_chart_data(metric_name, json_data):
+def _extract_bar_chart_data(metric_name, json_data):
     """
     Extracts the data for metric_name and converts it into
     a data structure that the plot.ly library expects for
@@ -53,13 +53,12 @@ def extract_bar_chart_data(metric_name, json_data):
     return data
 
 
-def write_to_file(charts, output_file):
-    with open(output_file, 'w') as fh:
-        res = json.dumps(charts)
-        fh.write(res)
+def _write_to_file(charts, out_file):
+    res = json.dumps(charts)
+    out_file.write(res)
 
 
-def build_chart(metric_name, json_data):
+def _build_chart(metric_name, json_data):
     """
     Builds a chart for metric_name from the data and returns it.
     :param metric_name:
@@ -67,34 +66,34 @@ def build_chart(metric_name, json_data):
     :return: chart
     """
     chart = dict()
-    chart['data'] = extract_bar_chart_data(metric_name, json_data)
-    chart['layout'] = get_precanned_layout(metric_name)
+    chart['data'] = _extract_bar_chart_data(metric_name, json_data)
+    chart['layout'] = _get_precanned_layout(metric_name)
     return chart
 
 
 # Kind of lame: this are the title lookups for stat_name
-precanned_titles = {
+_PRECANNED_TITLES = {
     'util_pct': '% util by VP',
     'wus_sent': 'Count of sent WUs',
     'wus_recvd': 'Count of received WUs',
 }
 
 
-precanned_y_titles = {
+_PRECANNED_Y_TITLES = {
     'util_pct': '% util',
     'wus_sent': 'WU count',
     'wus_recvd': 'WU count',
 }
 
 
-def get_precanned_layout(stat_name):
+def _get_precanned_layout(stat_name):
     title = stat_name
-    if stat_name in precanned_titles:
-        title = precanned_titles[stat_name]
+    if stat_name in _PRECANNED_TITLES:
+        title = _PRECANNED_TITLES[stat_name]
 
     yaxis_title = ''
-    if stat_name in precanned_y_titles:
-        yaxis_title = precanned_y_titles[stat_name]
+    if stat_name in _PRECANNED_Y_TITLES:
+        yaxis_title = _PRECANNED_Y_TITLES[stat_name]
 
     return {
         'title': title,
@@ -107,7 +106,7 @@ def get_precanned_layout(stat_name):
     }
 
 
-def get_metric_names(json_data):
+def _get_metric_names(json_data):
     """
     Extracts metric names from the first entry in the input list,
     assuming metrics are uniform across all entries.
@@ -122,6 +121,17 @@ def get_metric_names(json_data):
         return []
 
 
+def produce_summary_charts(in_file, out_file):
+    charts = {}
+    contents = in_file.read()
+    json_data = json.loads(contents)
+    for metric_name in _get_metric_names(json_data):
+        chart = _build_chart(metric_name, json_data)
+        charts[metric_name] = chart
+
+    _write_to_file(charts, out_file)
+
+
 def main():
     parse = argparse.ArgumentParser()
     parse.add_argument('input_file', type=str,
@@ -131,15 +141,9 @@ def main():
                        default='summary_charts.json')
     args = parse.parse_args()
 
-    charts = {}
-    with open(args.input_file, 'r') as fh:
-        contents = fh.read()
-        json_data = json.loads(contents)
-        for metric_name in get_metric_names(json_data):
-            chart = build_chart(metric_name, json_data)
-            charts[metric_name] = chart
-
-    write_to_file(charts, args.output_file)
+    with open(args.input_file, 'r') as in_file, \
+            open(args.output_file, 'w') as out_file:
+        produce_summary_charts(in_file, out_file)
 
 
 if __name__ == '__main__':
