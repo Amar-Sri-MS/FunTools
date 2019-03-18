@@ -4,30 +4,39 @@
 # Scrapes various bits of performance-related information from a
 # FunOS log and writes a JSON file.
 #
-# The JSON type is an array of objects ordered by increasing fabric
+# The output JSON is an array of objects ordered by increasing fabric
 # address and looks like this:
 #
-# [ { metricA: valueA0, metricB: valueB0, faddr: {faddr0} },
-#   { metricA: valueA0, metricB: valueB1, faddr: {faddr1} },
-#   ... ]
+# [
+#     {
+#         metricA: valueA0,
+#         metricB: valueB0,
+#         faddr: {faddr0}
+#     },
+#     {
+#         metricA: valueA1,
+#         metricB: valueB1,
+#         faddr: {faddr1}
+#     },
+#     ...
+# ]
 #
-# The equivalent python type is a list of dicts.
+# The equivalent python type is a list of dicts. Dicts are
+# metric-value pairs, except for the faddr key which maps to
+# the fabric address where the metrics were sampled.
 #
 # Usage: parse_funos_log.py <input_file> [-o <output_file>]
-#
-# The default output file is named stats_summary.json.
 #
 
 import re
 import json
 import argparse
-import sys
 
 
 class FAddr(object):
     """
     Represents a fabric address (GID:LID:Q).
-    GID is the cluster, LID is the VP and Q is the queue
+    GID is the cluster, LID is the local ID and Q is the queue
     """
     def __init__(self, gid, lid, q):
         self.gid, self.lid, self.q = gid, lid, q
@@ -39,9 +48,9 @@ class FAddr(object):
 
     def to_dict(self):
         return {
-            'gid' : self.gid,
-            'lid' : self.lid,
-            'queue' : self.q,
+            'gid': self.gid,
+            'lid': self.lid,
+            'queue': self.q,
         }
 
 
@@ -55,10 +64,10 @@ class StatEntry(object):
 
     def to_dict(self):
         return {
-            'faddr' : self.f_addr.to_dict(),
-            'wus_sent' : self.sent,
-            'wus_recvd' : self.recvd,
-            'util_pct' : self.util_pct,
+            'faddr': self.f_addr.to_dict(),
+            'wus_sent': self.sent,
+            'wus_recvd': self.recvd,
+            'util_pct': self.util_pct,
         }
 
 
@@ -92,7 +101,7 @@ class LogParser(object):
 
     def json_str(self):
         """
-        :return: JSON containing stats or None if no stats were found
+        :return: JSON string containing stats or None if no stats were found
         """
         if self.stats:
             list_of_dicts = [s.to_dict() for s in self.stats]
