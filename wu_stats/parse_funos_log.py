@@ -24,7 +24,7 @@ import argparse
 import sys
 
 
-class FAddr:
+class FAddr(object):
     """
     Represents a fabric address (GID:LID:Q).
     GID is the cluster, LID is the VP and Q is the queue
@@ -45,7 +45,7 @@ class FAddr:
         }
 
 
-class StatEntry:
+class StatEntry(object):
     """
     Statistics for a particular fabric address
     """
@@ -62,7 +62,7 @@ class StatEntry:
         }
 
 
-class LogParser:
+class LogParser(object):
     """
     Parses a FunOS run log looking for performance-related statistics
     """
