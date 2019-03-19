@@ -81,7 +81,7 @@ class LogParser(object):
         # Sample line (with timestamp prefix removed to reduce length):
         #
         # FA8:8:0[VP] INFO nucleus "data  FA2:12:0[VP] sent 1669122, recv 2074006 WUs 2.0400000%    [wu 3/irq 0/unk 0]"
-        self.pattern = re.compile(r'.*nucleus.*FA(\d+):(\d+):(\d+).*sent\s+(\d+).*recv\s+(\d+)\s+WUs\s+(\d+\.\d+)%.*')
+        self.pattern = re.compile(r'.*nucleus.*FA(\d+):(\d+):(\d+).*sent\s+(\d+).*recv\s+(\d+)\s+WUs\s+(\d+\.*\d*)%.*')
 
     def parse_line(self, line):
         """

@@ -36,11 +36,14 @@ class TestLogParser(unittest.TestCase):
                                '"data  FA6:26:0[VP] sent 21012, '
                                'recv 20883 WUs 3.1800000%	'
                                '[wu 169/irq 0/unk 0]"')
-        res_str = self.parser.json_str()
-        result = decode_json(res_str)
+        result = self._get_parser_result()
         self.assertEqual(1, len(result), 'list length')
         self.check_faddr(0, 6, 26, result)
         self.check_metrics(0, 21012, 20883, 3.18, result)
+
+    def _get_parser_result(self):
+        res_str = self.parser.json_str()
+        return decode_json(res_str)
 
     def test_parse_multiple_matching_lines(self):
         self.parser.parse_line('[2.458104 8.0.0] INFO nucleus '
@@ -51,8 +54,7 @@ class TestLogParser(unittest.TestCase):
                                '"ctrl  FA8:20:0[VP] sent 45, '
                                'recv 0 WUs 0.31000000%	'
                                '[wu 0/irq 0/unk 0]"')
-        res_str = self.parser.json_str()
-        result = decode_json(res_str)
+        result = self._get_parser_result()
         self.assertEqual(2, len(result), 'list length')
         self.check_faddr(0, 7, 17, result)
         self.check_faddr(1, 8, 20, result)
@@ -64,6 +66,17 @@ class TestLogParser(unittest.TestCase):
                                '"  ctrl    FA7:17:0  [VP]   sent   39  ,   '
                                '  recv   41   WUs    0.32000000%	   '
                                '  [wu   0/  irq    0/    unk   0]   "')
+        result = self._get_parser_result()
+        self.check_metrics(0, 39, 41, 0.32, result)
+
+    def test_parse_handles_percentage_without_decimal_place(self):
+        """ FunOS may print 21% and not 21.000% """
+        self.parser.parse_line('[2.458104 8.0.0] INFO nucleus '
+                               '"ctrl  FA7:17:0[VP] sent 39, '
+                               'recv 41 WUs 5%	'
+                               '[wu 0/irq 0/unk 0]"')
+        result = self._get_parser_result()
+        self.check_metrics(0, 39, 41, 5, result)
 
     def test_parse_excludes_unfinished_line(self):
         """
@@ -73,6 +86,7 @@ class TestLogParser(unittest.TestCase):
         self.parser.parse_line('[2.458104   8.0.0]   INFO    nucleus   '
                                '"  ctrl    FA7:17:0  [VP]   sent   39  ,   '
                                '  recv   	   "')
+        self.assertIsNone(self.parser.json_str())
 
     def check_faddr(self, entry_index, gid, lid, obj):
         entry = obj[entry_index]
