@@ -27,6 +27,7 @@
 
 import argparse
 import json
+import sys
 
 
 # These constants were cribbed from nucleus/topology.h and
@@ -134,11 +135,19 @@ def produce_summary_charts(in_fh, out_fh):
     Reads in_fh (handle) and writes the resulting charts
     to out_fh (handle).
 
+    If the input file contents are empty this prints a message
+    to stderr and exits with error code 1.
+
     :param in_fh: a handle to the input file
     :param out_fh: a handle to the output file
     """
     charts = {}
     contents = in_fh.read()
+    if not contents:
+        sys.stderr.write('Empty input to create_charts: '
+                         'probably a failed FunOS run.\n')
+        sys.exit(1)
+
     json_data = json.loads(contents)
     for metric_name in _get_metric_names(json_data):
         chart = _build_bar_chart(metric_name, json_data)

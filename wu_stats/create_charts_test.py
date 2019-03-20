@@ -80,6 +80,19 @@ class TestCreateCharts(unittest.TestCase):
         self.assertListEqual([3, 9], data_series['y'], 'y data')
         self.assertListEqual(['0.0.0', '0.0.1'], data_series['x'], 'x data')
 
+    def test_exit_with_nonzero_code_for_empty_input(self):
+        """
+        The JSON input file is often empty if the run terminated unexpectedly.
+
+        Check that we handle that case gracefully by printing to stderr
+        and exiting with a non-zero return code.
+        """
+        in_file = StringIO.StringIO()
+        with self.assertRaises(SystemExit) as cm:
+            TestCreateCharts.do_chart_creation(in_file)
+
+        self.assertEqual(1, cm.exception.code)
+
     def test_throws_exception_for_malformed_json_input(self):
         """
         If the JSON input is malformed (parser bugs) it should be okay
