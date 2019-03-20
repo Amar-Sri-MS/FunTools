@@ -77,6 +77,17 @@ def main():
 
         gf.run('sources')
 
+        utils = [ "bin/flash_tools/generate_firmware_image.py",
+                  "bin/flash_tools/generate_flash.py",
+                  "bin/flash_tools/make_emulation_emmc.py",
+                  "bin/flash_tools/key_replace.py",
+                  "bin/flash_tools/" + os.path.basename(__file__) ]
+        for app in utils:
+            shutil.copy2(os.path.join(args.sdkdir, app), os.path.basename(app))
+
+        with open("image.json", "w") as f:
+            json.dump(config, f, indent=4)
+
     if wanted('sign'):
         sdkpaths = []
         sdkpaths.append(os.path.abspath(args.destdir))
