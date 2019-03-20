@@ -446,11 +446,26 @@ def run(arg_action, arg_enroll_cert = None, arg_enroll_tbs = None):
     global search_paths
 
     wanted = lambda action : arg_action in ['all', action]
+    flash_content = None
 
     if config.get('output_format'):
         total_size = int(config['output_format']['size'], 0)
         output = config['output_format']['output']
         padding = int(config['output_format']['page'], 0)
+
+    # do not use wanted() here, as this is an action only
+    # executed when requested explicitly
+    if arg_action == 'sources':
+        for outfile, v in config['signed_images'].items():
+            infile = find_file_in_srcdirs(v['source'])
+            if infile:
+                shutil.copy2(infile, v['source'])
+            else:
+                src = config['key_injection'].get(v['source'])
+                if src and src['source']:
+                    infile = find_file_in_srcdirs(src['source'])
+                    if infile:
+                        shutil.copy2(infile, src['source'])
 
     # Generate keys (if required)
     if wanted('key_hashes') and 'key_hashes' in config:
