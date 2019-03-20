@@ -401,11 +401,6 @@ def main():
     group.add_argument('--enroll-tbs', metavar = 'FILE', help='Enrollment tbs')
     args = parser.parse_args()
 
-    global config
-    global search_paths
-
-    wanted = lambda action : args.action in ['all', action]
-
     search_paths = args.source_dir
 
     # read the configuration
@@ -435,6 +430,12 @@ def main():
             else:
                 with open(config_file, 'r') as f:
                     merge_configs(config, json.load(f,encoding='ascii'))
+
+def run(arg_action, arg_enroll_cert, arg_enroll_tbs):
+    global config
+    global search_paths
+
+    wanted = lambda action : arg_action in ['all', action]
 
     if config.get('output_format'):
         total_size = int(config['output_format']['size'], 0)
@@ -481,7 +482,7 @@ def main():
                                 format(len(config.sections()), 1 + MAX_VARIABLE_SECTIONS))
         else:
             for k,v in config['output_sections'].items():
-                bin_info = get_a_and_b(v, padding, args.action == 'all')
+                bin_info = get_a_and_b(v, padding, arg_action == 'all')
                 # bin_info can be None if optional section and files
                 # are not there -> no entry
                 if bin_info is not None:
@@ -495,12 +496,12 @@ def main():
         # enrollment certificate argument?
         enroll_cert = None
 
-        if args.enroll_tbs:
-            enroll_cert = gfi.raw_sign(None, args.enroll_tbs, "fpk4")
+        if arg_enroll_tbs:
+            enroll_cert = gfi.raw_sign(None, arg_enroll_tbs, "fpk4")
 
-        if args.enroll_cert:
+        if arg_enroll_cert:
             try:
-                with open(args.enroll_cert, "rb") as f:
+                with open(arg_enroll_cert, "rb") as f:
                     enroll_cert = f.read()
             except:
                 enroll_cert = None
