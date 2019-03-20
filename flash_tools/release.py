@@ -45,6 +45,8 @@ def main():
 
     args = parser.parse_args()
 
+    wanted = lambda action : args.action in ['all', action]
+
     for config_file in args.config:
         if config_file == '-':
             gf.merge_configs(config, json.load(sys.stdin,encoding='ascii'))
@@ -54,26 +56,39 @@ def main():
 
     gf.merge_configs(config, json.loads(EEPROM_CONFIG_OVERRIDE))
     gf.merge_configs(config, json.loads(HOST_FIRMWARE_CONFIG_OVERRIDE))
-
-    # paths to application binaries in SDK tree
-    paths = [ "bin",
-              "FunSDK/u-boot",
-              "FunSDK/sbpfw/roms",
-              "FunSDK/sbpfw/eeproms",
-              "FunSDK/sbpfw/firmware/chip_f1_emu_0",
-              "FunSDK/sbpfw/pufrom/chip_f1_emu_0",
-            ]
-    sdkpaths = [os.path.join(args.sdkdir, path) for path in paths]
-
-    # temporary as gf.run() doesn't support configurable target location
-    if not os.path.exists(args.destdir):
-        os.mkdir(args.destdir)
-    os.chdir(args.destdir)
-    sdkpaths.append(os.path.abspath(args.destdir))
-
-    gf.set_search_paths(sdkpaths)
     gf.set_config(config)
-    gf.run(args.action)
+
+    if wanted('prepare'):
+        # paths to application binaries in SDK tree
+        paths = [ "bin",
+                "FunSDK/u-boot",
+                "FunSDK/sbpfw/roms",
+                "FunSDK/sbpfw/eeproms",
+                "FunSDK/sbpfw/firmware/chip_f1_emu_0",
+                "FunSDK/sbpfw/pufrom/chip_f1_emu_0",
+                ]
+        sdkpaths = [os.path.join(args.sdkdir, path) for path in paths]
+
+        # temporary as gf.run() doesn't support configurable target location
+        if not os.path.exists(args.destdir):
+            os.mkdir(args.destdir)
+        os.chdir(args.destdir)
+        gf.set_search_paths(sdkpaths)
+
+        gf.run('sources')
+
+    if wanted('sign'):
+        sdkpaths = []
+        sdkpaths.append(os.path.abspath(args.destdir))
+        gf.set_search_paths(sdkpaths)
+        gf.run('key_injection')
+        gf.run('sign')
+
+    if wanted('image'):
+        sdkpaths = []
+        sdkpaths.append(os.path.abspath(args.destdir))
+        gf.set_search_paths(sdkpaths)
+        gf.run('flash')
 
 
 if __name__=="__main__":

@@ -41,7 +41,6 @@ def find_file_in_srcdirs(filename):
         for dir in search_paths:
             file = os.path.join(dir, filename)
             if os.path.isfile(file):
-                print("Found {}".format(file))
                 return file
     return None
 
