@@ -431,7 +431,17 @@ def main():
                 with open(config_file, 'r') as f:
                     merge_configs(config, json.load(f,encoding='ascii'))
 
-def run(arg_action, arg_enroll_cert, arg_enroll_tbs):
+#TODO(mnowakowski) get rid of globals
+def set_config(cfg):
+    global config
+    config = cfg
+
+#TODO(mnowakowski) get rid of globals
+def set_search_paths(paths):
+    global search_paths
+    search_paths = paths
+
+def run(arg_action, arg_enroll_cert = None, arg_enroll_tbs = None):
     global config
     global search_paths
 
