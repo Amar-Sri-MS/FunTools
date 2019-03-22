@@ -54,7 +54,8 @@
 
 #define NVME_VS_ADMIN_CMD_DATA_LEN 4096   /* data length for the NVMe vendor specific admin command
 											 used for executing DPC command over NVMe admin queue */
-#define NVME_VS_API_BIDIR	0xc3	/* Vendor specific admin command opcode for bi-directional data transfer */
+#define NVME_VS_API_SEND	0xc1	/* Vendor specific admin command opcode for host to dpu data transfer */
+#define NVME_VS_API_RECV	0xc2	/* Vendor specific admin command opcode for dpu to host data transfer */
 #define NVME_DPC_CMD_HNDLR_SELECTION	0x20000	/* 2 in MSB selects dpc_cmd_handler in FunOS */
 
 /* handy socket abstraction */
@@ -105,9 +106,14 @@ struct dpcsock {
 	/* runtime */
 	int fd;                  /* connected fd */
 	int listen_fd;           /* fd if this is a server */
-	uint8_t *data;				 /* buffer for storing response data incase of NVME */
-	int data_len;			 /* Response data size in case of NVME */
 	
+};
+
+struct nvme_vs_api_hdr {
+	uint8_t version;
+	uint8_t rsvd1[7];
+	uint32_t data_len;
+	uint32_t rsvd2;
 };
 
 static inline void _setnosigpipe(int const fd)
@@ -733,31 +739,37 @@ void _configure_device(struct dpcsock *sock)
 	}
 }
 
-/* Execute vendor specific admin command on an NVMe device */
-static bool _execute_nvme_vs_admin_cmd(struct fun_json *json, struct dpcsock *sock)
+/* Execute vendor specific admin command for writing data to NVMe device */
+static bool _write_to_nvme(struct fun_json *json, struct dpcsock *sock)
 {
 	bool ok = false;
-	sock->data = malloc(NVME_VS_ADMIN_CMD_DATA_LEN);
-	sock->data_len = NVME_VS_ADMIN_CMD_DATA_LEN;
-	if(sock->data) {
-		memset(sock->data, 0, NVME_VS_ADMIN_CMD_DATA_LEN);
+	uint8_t *addr = malloc(NVME_VS_ADMIN_CMD_DATA_LEN);
+	if(addr) {
+		memset(addr, 0, NVME_VS_ADMIN_CMD_DATA_LEN);
+
+		// Convert to binary JSON
 		size_t allocated_size;
 		struct fun_ptr_and_size pas = fun_json_serialize(json, &allocated_size);
-		memcpy (sock->data, pas.ptr, pas.size);
+
+		// Build header
+		struct nvme_vs_api_hdr *hdr = (struct nvme_vs_api_hdr *)addr;
+		hdr->data_len = pas.size; // Setting data_len to length of binary JSON
+
+		// Copy binary JSON
+		memcpy((hdr + 1), pas.ptr, pas.size);
 
 		struct nvme_admin_cmd cmd = {
-			.opcode = NVME_VS_API_BIDIR,
+			.opcode = NVME_VS_API_SEND,
 			.nsid = 0,
-			.addr = (__u64)(uintptr_t)sock->data,
-			.data_len = sock->data_len,
+			.addr = (__u64)(uintptr_t)addr,
+			.data_len = NVME_VS_ADMIN_CMD_DATA_LEN,
 			.cdw2 = NVME_DPC_CMD_HNDLR_SELECTION,
 			.cdw3 = pas.size,
 		};
-		int ret = ioctl(sock->fd,NVME_IOCTL_ADMIN_CMD,&cmd);
+		int ret = ioctl(sock->fd, NVME_IOCTL_ADMIN_CMD, &cmd);
 
 		if(ret == 0) {
 			ok = true;
-			sock->data_len = cmd.data_len;
 		}
 		else {
 			printf("NVME_IOCTL_ADMIN_CMD failed %d\n",ret);
@@ -766,6 +778,35 @@ static bool _execute_nvme_vs_admin_cmd(struct fun_json *json, struct dpcsock *so
 		fun_free_threaded(pas.ptr, allocated_size);
 	}
 	return ok;
+}
+
+/* Execute vendor specific admin command for reading data from NVMe device */
+static struct fun_json* _read_from_nvme(struct dpcsock *sock)
+{
+	struct fun_json *json = NULL;
+	uint8_t *addr = malloc(NVME_VS_ADMIN_CMD_DATA_LEN);
+	if(addr) {
+		memset(addr, 0, NVME_VS_ADMIN_CMD_DATA_LEN);
+
+		struct nvme_admin_cmd cmd = {
+			.opcode = NVME_VS_API_RECV,
+			.nsid = 0,
+			.addr = (__u64)(uintptr_t)addr,
+			.data_len = NVME_VS_ADMIN_CMD_DATA_LEN,
+			.cdw2 = NVME_DPC_CMD_HNDLR_SELECTION,
+			.cdw3 = pas.size,
+		};
+		int ret = ioctl(sock->fd, NVME_IOCTL_ADMIN_CMD, &cmd);
+
+		if(ret == 0) {
+			struct nvme_vs_api_hdr *hdr = (struct nvme_vs_api_hdr *)addr;
+			json = fun_json_create_from_parsing_binary((uint8_t *)(hdr + 1), hdr->data_len);
+		}
+		else {
+			printf("NVME_IOCTL_ADMIN_CMD failed %d\n",ret);
+		}
+	}
+	return json;
 }
 
 /* disambiguate json */
@@ -981,7 +1022,7 @@ static bool _do_send_cmd(struct dpcsock *sock, char *line,
 	apply_command_locally(json);
         bool ok = false;
 		if(sock->mode == SOCKMODE_NVME) {
-			ok = _execute_nvme_vs_admin_cmd(json, sock);
+			ok = _write_to_nvme(json, sock);
 		}
 		else {
 			ok = _write_to_sock(json, sock);
@@ -997,7 +1038,7 @@ static bool _do_send_cmd(struct dpcsock *sock, char *line,
 			return false;
 		}
 		if(sock->mode == SOCKMODE_NVME) {
-			ok = _execute_nvme_vs_admin_cmd(json, sock);
+			ok = _write_to_nvme(json, sock);
 		}
 		else {
 			ok = _write_to_sock(json, sock);
@@ -1076,7 +1117,7 @@ static void _do_recv_cmd(struct dpcsock *funos_sock,
 	/* receive a reply */
         struct fun_json *output;
 		if(funos_sock->mode == SOCKMODE_NVME) {
-			output = _buffer2json(funos_sock->data, funos_sock->data_len);
+			output = _read_from_nvme(funos_sock);
 		}
 		else {
 			output = _read_from_sock(funos_sock, retry);
