@@ -793,8 +793,7 @@ static struct fun_json* _read_from_nvme(struct dpcsock *sock)
 			.nsid = 0,
 			.addr = (__u64)(uintptr_t)addr,
 			.data_len = NVME_VS_ADMIN_CMD_DATA_LEN,
-			.cdw2 = NVME_DPC_CMD_HNDLR_SELECTION,
-			.cdw3 = pas.size,
+			.cdw2 = NVME_DPC_CMD_HNDLR_SELECTION
 		};
 		int ret = ioctl(sock->fd, NVME_IOCTL_ADMIN_CMD, &cmd);
 
@@ -1310,10 +1309,6 @@ static void _do_interactive(struct dpcsock *funos_sock,
 
 	    /* if it changed while in flight */
 	    if (funos_sock->fd == -1) {
-			if(funos_sock->data) {
-				free(funos_sock->data);
-				funos_sock->data = NULL;
-			}
 		    continue;
 		}
 
@@ -1322,10 +1317,6 @@ static void _do_interactive(struct dpcsock *funos_sock,
 		    // printf("funos input\n");
 		    _do_recv_cmd(funos_sock, cmd_sock, false);
 	    }
-		if(funos_sock->data) {
-			free(funos_sock->data);
-			funos_sock->data = NULL;
-		}
     }
     if (cmd_sock->mode == SOCKMODE_TERMINAL) {
 	    /* reset terminal */
@@ -1425,10 +1416,6 @@ static void _do_cli(int argc, char *argv[],
 	if (ok)
 		_do_recv_cmd(funos_sock, cmd_sock, true);
 
-	if(funos_sock->data) {
-		free(funos_sock->data);
-		funos_sock->data = NULL;
-	}
 }
 
 /** argument parsing **/
