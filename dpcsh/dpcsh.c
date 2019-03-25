@@ -29,8 +29,10 @@
 
 #include <unistd.h>
 
+#ifndef __APPLE__
 #include<sys/ioctl.h>
 #include<linux/nvme_ioctl.h>
+#endif
 
 #include "dpcsh.h"
 #include "csr_command.h"
@@ -43,8 +45,6 @@
 
 #define SOCK_NAME	"/tmp/funos-dpc.sock"      /* default FunOS socket */
 #define PROXY_NAME      "/tmp/funos-dpc-text.sock" /* default unix proxy name */
-#define NVME_DEV_NAME   "/dev/nvme0"  /* default nvme device used for sending dpc commands as 
-										 NVME vendor specific admin commands */
 #define DPC_PORT        40220   /* default FunOS port */
 #define DPC_PROXY_PORT  40221   /* default TCP proxy port */
 #define DPC_B64_PORT    40222   /* default dpcuart port in qemu */
@@ -52,11 +52,16 @@
 #define HTTP_PORTNO     9001    /* default HTTP listen port */
 #define NO_FLOW_CTRL_DELAY_USEC	10000	/* no flow control delay in usec */
 
+// DPC over NVMe is needed only in Linux
+#ifndef __APPLE__
+#define NVME_DEV_NAME   "/dev/nvme0"  /* default nvme device used for sending dpc commands as 
+										 NVME vendor specific admin commands */
 #define NVME_VS_ADMIN_CMD_DATA_LEN 4096   /* data length for the NVMe vendor specific admin command
 											 used for executing DPC command over NVMe admin queue */
 #define NVME_VS_API_SEND	0xc1	/* Vendor specific admin command opcode for host to dpu data transfer */
 #define NVME_VS_API_RECV	0xc2	/* Vendor specific admin command opcode for dpu to host data transfer */
 #define NVME_DPC_CMD_HNDLR_SELECTION	0x20000	/* 2 in MSB selects dpc_cmd_handler in FunOS */
+#endif
 
 /* handy socket abstraction */
 enum sockmode {
@@ -744,6 +749,10 @@ void _configure_device(struct dpcsock *sock)
 /* Execute vendor specific admin command for writing data to NVMe device */
 static bool _write_to_nvme(struct fun_json *json, struct dpcsock *sock)
 {
+#ifdef __APPLE__
+	// DPC over NVMe is needed only in Linux
+	return false;
+#else
 	bool ok = false;
 	uint8_t *addr = malloc(NVME_VS_ADMIN_CMD_DATA_LEN);
 	if(addr) {
@@ -782,12 +791,17 @@ static bool _write_to_nvme(struct fun_json *json, struct dpcsock *sock)
 		free(addr);
 	}
 	return ok;
+#endif //__APPLE__
 }
 
 /* Execute vendor specific admin command for reading data from NVMe device */
 static struct fun_json* _read_from_nvme(struct dpcsock *sock)
 {
 	struct fun_json *json = NULL;
+#ifdef __APPLE__
+	// DPC over NVMe is needed only in Linux
+	return json;
+#else
 	if(sock->nvme_write_done) {
 		sock->nvme_write_done = false;
 		uint8_t *addr = malloc(NVME_VS_ADMIN_CMD_DATA_LEN);
@@ -814,6 +828,7 @@ static struct fun_json* _read_from_nvme(struct dpcsock *sock)
 		}
 	}
 	return json;
+#endif //__APPLE__
 }
 
 /* disambiguate json */
@@ -1455,7 +1470,10 @@ static struct option longopts[] = {
 	{ "dev",             required_argument, NULL, 'D' },
 	{ "inet_sock",       optional_argument, NULL, 'i' },
 	{ "unix_sock",       optional_argument, NULL, 'u' },
+// DPC over NVMe is needed only in Linux
+#ifndef __APPLE__
 	{ "pcie_nvme_sock",  optional_argument, NULL, 'p' },
+#endif //__APPLE__
 	{ "http_proxy",      optional_argument, NULL, 'H' },
 	{ "tcp_proxy",       optional_argument, NULL, 'T' },
 	{ "text_proxy",      optional_argument, NULL, 'T' },
@@ -1484,7 +1502,10 @@ static void usage(const char *argv0)
 	printf("       --base64_sock[=port]    connec as a client port on IP using base64 (dpcuart to qemu)\n");
 	printf("       --inet_sock[=port]      connect as a client port over IP\n");
 	printf("       --unix_sock[=sockname]  connect as a client port over unix sockets\n");
+// DPC over NVMe is needed only in Linux
+#ifndef __APPLE__
 	printf("       --pcie_nvme_sock[=sockname]  connect as a client port over nvme pcie device\n");
+#endif
 	printf("       --http_proxy[=port]     listen as an http proxy\n");
 	printf("       --tcp_proxy[=port]      listen as a tcp proxy\n");
 	printf("       --text_proxy[=port]     same as \"--tcp_proxy\"\n");
@@ -1612,12 +1633,15 @@ int main(int argc, char *argv[])
 							      SOCK_NAME);
 
 			break;
+// DPC over NVMe is needed only in Linux
+#ifndef __APPLE__
 		case 'p':
 			funos_sock.mode = SOCKMODE_NVME;
 			cmd_sock.server = false;
 			funos_sock.socket_name = opt_sockname(optarg,
 							      NVME_DEV_NAME);
 			break;
+#endif
 		case 'H':  /* http proxy */
 
 			cmd_sock.mode = SOCKMODE_IP;
