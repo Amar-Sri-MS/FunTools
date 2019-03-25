@@ -106,7 +106,8 @@ struct dpcsock {
 	/* runtime */
 	int fd;                  /* connected fd */
 	int listen_fd;           /* fd if this is a server */
-	
+	bool nvme_write_done;    /* flag indicating whether write to nvme device
+				    is successful so that we can read from it */
 };
 
 struct nvme_vs_api_hdr {
@@ -682,6 +683,7 @@ int dpcsocket_connnect(struct dpcsock *sock)
 		_listen_sock_accept(sock);
 	} else if(sock->mode == SOCKMODE_NVME) {
 		sock->fd = open(sock->socket_name, O_RDWR);
+		sock->nvme_write_done = false;
 	} 
 	else {
 		printf("connecting client socket\n");
@@ -770,12 +772,14 @@ static bool _write_to_nvme(struct fun_json *json, struct dpcsock *sock)
 
 		if(ret == 0) {
 			ok = true;
+			sock->nvme_write_done = true;
 		}
 		else {
 			printf("NVME_IOCTL_ADMIN_CMD failed %d\n",ret);
 		}
 
 		fun_free_threaded(pas.ptr, allocated_size);
+		free(addr);
 	}
 	return ok;
 }
@@ -784,25 +788,29 @@ static bool _write_to_nvme(struct fun_json *json, struct dpcsock *sock)
 static struct fun_json* _read_from_nvme(struct dpcsock *sock)
 {
 	struct fun_json *json = NULL;
-	uint8_t *addr = malloc(NVME_VS_ADMIN_CMD_DATA_LEN);
-	if(addr) {
-		memset(addr, 0, NVME_VS_ADMIN_CMD_DATA_LEN);
+	if(sock->nvme_write_done) {
+		sock->nvme_write_done = false;
+		uint8_t *addr = malloc(NVME_VS_ADMIN_CMD_DATA_LEN);
+		if(addr) {
+			memset(addr, 0, NVME_VS_ADMIN_CMD_DATA_LEN);
 
-		struct nvme_admin_cmd cmd = {
-			.opcode = NVME_VS_API_RECV,
-			.nsid = 0,
-			.addr = (__u64)(uintptr_t)addr,
-			.data_len = NVME_VS_ADMIN_CMD_DATA_LEN,
-			.cdw2 = NVME_DPC_CMD_HNDLR_SELECTION
-		};
-		int ret = ioctl(sock->fd, NVME_IOCTL_ADMIN_CMD, &cmd);
+			struct nvme_admin_cmd cmd = {
+				.opcode = NVME_VS_API_RECV,
+				.nsid = 0,
+				.addr = (__u64)(uintptr_t)addr,
+				.data_len = NVME_VS_ADMIN_CMD_DATA_LEN,
+				.cdw2 = NVME_DPC_CMD_HNDLR_SELECTION
+			};
+			int ret = ioctl(sock->fd, NVME_IOCTL_ADMIN_CMD, &cmd);
 
-		if(ret == 0) {
-			struct nvme_vs_api_hdr *hdr = (struct nvme_vs_api_hdr *)addr;
-			json = fun_json_create_from_parsing_binary((uint8_t *)(hdr + 1), hdr->data_len);
-		}
-		else {
-			printf("NVME_IOCTL_ADMIN_CMD failed %d\n",ret);
+			if(ret == 0) {
+				struct nvme_vs_api_hdr *hdr = (struct nvme_vs_api_hdr *)addr;
+				json = _buffer2json((uint8_t *)(hdr + 1), hdr->data_len);
+			}
+			else {
+				printf("NVME_IOCTL_ADMIN_CMD failed %d\n",ret);
+			}
+			free(addr);
 		}
 	}
 	return json;
