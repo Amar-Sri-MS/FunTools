@@ -83,7 +83,7 @@ def encode_and_annotate(in_file_list, funos_dasm):
 
   # Try to select those files relevant to the specified in file, or
   # we'll be doing n^2 work if we run this on a per-file basis.
-  match = re.match(r'.*samurai_core(\d+_\d+).trace', in_file_list[0])
+  match = re.match(r'.*samurai_core(\d+_\d+)\.trace', in_file_list[0])
   core_id = ''
   if match:
     core_id = match.group(1)
