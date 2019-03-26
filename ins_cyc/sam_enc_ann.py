@@ -116,6 +116,7 @@ if __name__ == '__main__':
                        args.trace_file_or_dir)
       sys.exit(0)
   else:
+    # TODO: handle gzipped .trace files, also zero-length trace files
     if not args.trace_file_or_dir.endswith('.trace'):
       usage()
       sys.exit(-1)
