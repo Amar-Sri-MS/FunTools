@@ -132,6 +132,17 @@ def objdump_debug_line_parse(objdump, bin_file, is_full_path=False):
     try:
       loc_l = int(line[1])
       loc_f = cur_fname if cur_fname else cur_fname_cu
+
+      # objdump may produce the following sequence when it cannot find the
+      # file and line number for the address:
+      #
+      # ['<unknown>', '1', '0xa80000000058a368']
+      #
+      # Print a message and skip the line.
+      if not loc_f.endswith(line[0]) and line[0] == '<unknown>':
+        print 'Unknown file and line from objdump: %s' % line
+        continue
+
       assert loc_f.endswith(line[0])
       if not is_full_path:
         loc_f = loc_f.split('/')[-1]
