@@ -58,6 +58,8 @@
 										 NVME vendor specific admin commands */
 #define NVME_VS_ADMIN_CMD_DATA_LEN 4096   /* data length for the NVMe vendor specific admin command
 											 used for executing DPC command over NVMe admin queue */
+#define NVME_DPC_MAX_RESPONSE_LEN 1024 * 1024   /* Maximum response size for dpc command when using DPC over NVMe */
+
 #define NVME_VS_API_SEND	0xc1	/* Vendor specific admin command opcode for host to dpu data transfer */
 #define NVME_VS_API_RECV	0xc2	/* Vendor specific admin command opcode for dpu to host data transfer */
 #define NVME_DPC_CMD_HNDLR_SELECTION	0x20000	/* 2 in MSB selects dpc_cmd_handler in FunOS */
@@ -784,7 +786,7 @@ static bool _write_to_nvme(struct fun_json *json, struct dpcsock *sock)
 			sock->nvme_write_done = true;
 		}
 		else {
-			printf("NVME_IOCTL_ADMIN_CMD failed %d\n",ret);
+			printf("NVME_IOCTL_ADMIN_CMD %x failed %d\n",NVME_VS_API_SEND,ret);
 		}
 
 		fun_free_threaded(pas.ptr, allocated_size);
@@ -793,6 +795,35 @@ static bool _write_to_nvme(struct fun_json *json, struct dpcsock *sock)
 	return ok;
 #endif //__APPLE__
 }
+
+#ifndef __APPLE__
+static bool _read_from_nvme_helper(struct dpcsock *sock, uint8_t *buffer, uint32_t *data_len, uint32_t *remaining)
+{
+	bool retVal = false;
+	memset(buffer, 0, NVME_VS_ADMIN_CMD_DATA_LEN);
+	struct nvme_admin_cmd cmd = {
+		.opcode = NVME_VS_API_RECV,
+		.nsid = 0,
+		.addr = (__u64)(uintptr_t)(buffer),
+		.data_len = NVME_VS_ADMIN_CMD_DATA_LEN,
+		.cdw2 = NVME_DPC_CMD_HNDLR_SELECTION
+	};
+	int ret = ioctl(sock->fd, NVME_IOCTL_ADMIN_CMD, &cmd);
+	if(ret == 0) {
+		if((*data_len) == 0) {
+			struct nvme_vs_api_hdr *hdr = (struct nvme_vs_api_hdr *)buffer;
+			(*data_len) = hdr->data_len;
+			(*remaining) = sizeof(struct nvme_vs_api_hdr) + hdr->data_len;
+		}
+		(*remaining) -= MIN(*remaining, NVME_VS_ADMIN_CMD_DATA_LEN);
+		retVal = true;
+	}
+	else {
+		printf("NVME_IOCTL_ADMIN_CMD %x failed %d\n",NVME_VS_API_RECV,ret);
+	}
+	return retVal;
+}
+#endif
 
 /* Execute vendor specific admin command for reading data from NVMe device */
 static struct fun_json* _read_from_nvme(struct dpcsock *sock)
@@ -803,29 +834,24 @@ static struct fun_json* _read_from_nvme(struct dpcsock *sock)
 	return json;
 #else
 	if(sock->nvme_write_done) {
-		sock->nvme_write_done = false;
-		uint8_t *addr = malloc(NVME_VS_ADMIN_CMD_DATA_LEN);
+		uint8_t *addr = malloc(NVME_DPC_MAX_RESPONSE_LEN);
 		if(addr) {
-			memset(addr, 0, NVME_VS_ADMIN_CMD_DATA_LEN);
+			uint32_t remaining = 0;
+			uint32_t offset = 0;
+			uint32_t data_len = 0;
+			bool readSuccess = false;
 
-			struct nvme_admin_cmd cmd = {
-				.opcode = NVME_VS_API_RECV,
-				.nsid = 0,
-				.addr = (__u64)(uintptr_t)addr,
-				.data_len = NVME_VS_ADMIN_CMD_DATA_LEN,
-				.cdw2 = NVME_DPC_CMD_HNDLR_SELECTION
-			};
-			int ret = ioctl(sock->fd, NVME_IOCTL_ADMIN_CMD, &cmd);
+			do {
+				readSuccess = _read_from_nvme_helper(sock, addr + offset, &data_len, &remaining);
+				offset += NVME_VS_ADMIN_CMD_DATA_LEN;
+			} while(readSuccess && (remaining > 0));
 
-			if(ret == 0) {
-				struct nvme_vs_api_hdr *hdr = (struct nvme_vs_api_hdr *)addr;
-				json = _buffer2json((uint8_t *)(hdr + 1), hdr->data_len);
-			}
-			else {
-				printf("NVME_IOCTL_ADMIN_CMD failed %d\n",ret);
+			if(readSuccess) {
+				json = _buffer2json((uint8_t *)(addr + sizeof(struct nvme_vs_api_hdr)), data_len);
 			}
 			free(addr);
 		}
+		sock->nvme_write_done = false;
 	}
 	return json;
 #endif //__APPLE__
