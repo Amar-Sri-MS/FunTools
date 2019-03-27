@@ -109,7 +109,16 @@ def gen_boot_script(filename, funos_start_blk):
             outfile.write('bootelf -p 0x{load_addr:x};'.format(
                 load_addr=LOAD_ADDR))
 
-    cmd = [os.path.join(g.workspace, 'u-boot', 'tools', 'mkimage'),
+    # default location in full Fungible workspace
+    mkimage_path = os.path.join(g.workspace, 'u-boot', 'tools', 'mkimage')
+    if not os.path.isfile(mkimage_path):
+        # fallback for the current working directory root
+        mkimage_path = os.path.join(g.workspace, 'mkimage')
+    if not os.path.isfile(mkimage_path):
+        # last resort - assume there's on in the $PATH
+        mkimage_path = 'mkimage'
+
+    cmd = [ mkimage_path,
            '-A', 'mips64',
            '-T', 'script',
            '-C', 'none',
