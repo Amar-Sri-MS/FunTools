@@ -3,6 +3,7 @@
 # input:  dir containining .annotate (use sam_enc_ann.py to generate .annotate from samurai data)
 # output: .annotate_detail .cost_tree .cost_tree_detail
 
+import argparse
 import os
 import sys
 import subprocess
@@ -291,31 +292,41 @@ def annotate_single(funos, in_file, is_detail=False):
   suffixes = ['.annotate_detail', '.cost_tree', '.cost_tree_detail']
   output_cost_tree(in_file, [ out_file + s for s in suffixes])
 
-def annotate_many(in_file_list):
-  if len(in_file_list) == 0:
-    return
-
-  funos = funos_path(os.path.dirname(in_file_list[0]))
-
+def annotate_many(funos, in_file_list):
   for in_file in in_file_list:
     annotate_single(funos, in_file, is_detail=True)
 
-def usage():
-  print 'usage: %s <file.annotate|dir>' % sys.argv[0]
 
 if __name__ == '__main__':
-  if len(sys.argv) != 2:
-    usage()
-    sys.exit(-1)
+  parser = argparse.ArgumentParser()
+  parser.add_argument('input_file_or_dir', type=str,
+                      help='Path to <file>.annotate or directory containing '
+                           '.annotate files')
+  parser.add_argument('--funos-binary', type=str, default=None,
+                      help='Path to FunOS binary. If not specified, assumes '
+                           'the binary is in the same directory as the first '
+                           '.annotate file and is named funos-f1-emu.')
+  args = parser.parse_args()
 
   in_file_list = []
+  in_file_arg = args.input_file_or_dir
 
-  if os.path.isdir(sys.argv[1]):
-    in_file_list = glob.glob('%s/*.annotate' % sys.argv[1])
+  if os.path.isdir(in_file_arg):
+    in_file_list = glob.glob('%s/*.annotate' % in_file_arg)
+    if len(in_file_list) == 0:
+      sys.stderr.write('No .annotate files in %s\n' % in_file_arg)
+      sys.exit(0)
   else:
-    if not sys.argv[1].endswith('.annotate'):
-      usage()
+    if not in_file_arg.endswith('.annotate'):
+      sys.stderr.write('Input file should have .annotate extension\n')
       sys.exit(-1)
-    in_file_list = [sys.argv[1]]
+    in_file_list = [in_file_arg]
 
-  annotate_many(in_file_list)
+  funos = None
+  if args.funos_binary:
+    funos = args.funos_binary
+  else:
+    funos = funos_path(os.path.dirname(in_file_list[0]))
+
+  annotate_many(funos, in_file_list)
+
