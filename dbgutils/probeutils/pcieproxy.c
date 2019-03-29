@@ -30,9 +30,9 @@
  *     -- Returns "OKAY READ" and a sequence of 64-bit hexadecimal values
  *     -- representing the register value, or an error message.
  *
- *   WRITE <Register Address> <64-bit Values> ...
- *     -- Writes a register with the provided values.  The register
- *     -- length is determined from the number of 64-bit values.
+ *   WRITE <Register Address> <Register Size (in bits)> <64-bit Values> ...
+ *     -- Writes a register with the provided values.  There must be
+ *     -- (<Register Size> + 63)/64 <Values>.
  *     -- Response is "OKAY WRITE" or an Error Message.
  *
  *   The <Register Address>, <Register Size>, and WRITE <Values> may be in
@@ -572,6 +572,10 @@ server(int client_fd)
 		 * See what the remote user wants ...
 		 */
 		if (strcmp(argv[0], "CONNECT") == 0) {
+			/*
+			 * CONNECT <PCIe BAR in SysFS>
+			 */
+
 			if (ccu_mmap) {
 				response(client_fd, LOG_DEBUG,
 					 "Already connected!\n");
@@ -611,15 +615,23 @@ server(int client_fd)
 		}
 
 		if (strcmp(argv[0], "DISCONNECT") == 0) {
+			/*
+			 * DISCONNECT (ignore any extra arguments)
+			 */
+
 			response(client_fd, LOG_DEBUG, "OKAY DISCONNECT\n");
 			break;
 		}
 
 		if (strcmp(argv[0], "READ") == 0) {
+			/*
+			 * READ <Register Address> <Register Size (in bits)>
+			 */
+
 			uint64_t csr_addr;
-			uint32_t csr_size;
+			uint32_t csr_size, size64;
 			uint64_t csr_buf[CCU_DATA_REG_CNT];
-			int nvalues, vidx;
+			int vidx;
 			char response_msg[MAX_RESPONSE_LINE];
 			FILE *response_fp;
 
@@ -637,8 +649,8 @@ server(int client_fd)
 
 			csr_addr = strtoull(argv[1], NULL, 0);
 			csr_size = strtoul(argv[2], NULL, 0);
-			nvalues = SIZE64(csr_size);
-			if (nvalues == 0 || nvalues > CCU_DATA_REG_CNT) {
+			size64 = SIZE64(csr_size);
+			if (size64 == 0 || size64 > CCU_DATA_REG_CNT) {
 				response(client_fd, LOG_DEBUG,
 					 "Bad CSR Size %u\n", csr_size);
 				continue;
@@ -656,7 +668,7 @@ server(int client_fd)
 			}
 
 			fputs("OKAY READ", response_fp);
-			for (vidx = 0; vidx < nvalues; vidx++)
+			for (vidx = 0; vidx < size64; vidx++)
 				fprintf(response_fp, " %#lx", csr_buf[vidx]);
 			fputc('\n', response_fp);
 			fclose(response_fp);
@@ -666,8 +678,13 @@ server(int client_fd)
 		}
 
 		if (strcmp(argv[0], "WRITE") == 0) {
+			/*
+			 * WRITE <Register Address> <Register Size (in bits)>
+			 *     <64-bit Values> ...
+			 */
+
 			uint64_t csr_addr;
-			uint32_t csr_size;
+			uint32_t csr_size, size64;
 			uint64_t csr_buf[CCU_DATA_REG_CNT];
 			int nvalues, vidx;
 
@@ -677,22 +694,29 @@ server(int client_fd)
 				continue;
 			}
 
-			if (argc < 3) {
+			nvalues = argc - 3;
+			if (nvalues <= 0) {
 				response(client_fd, LOG_DEBUG,
 					 "Write command needs values\n");
 				continue;
 			}
 
 			csr_addr = strtoull(argv[1], NULL, 0);
-			nvalues = argc - 2;
-			csr_size = nvalues * 64;
-			if (nvalues > CCU_DATA_REG_CNT) {
+			csr_size = strtoul(argv[2], NULL, 0);
+			size64 = SIZE64(csr_size);
+			if (nvalues != size64) {
+				response(client_fd, LOG_DEBUG,
+					 "Need %u value%s\n", size64,
+					 size64 == 1 ? "" : "s");
+				continue;
+			}
+			if (size64 == 0 || size64 > CCU_DATA_REG_CNT) {
 				response(client_fd, LOG_DEBUG,
 					 "Bad CSR Size %u\n", csr_size);
 				continue;
 			}
-			for (vidx = 0; vidx < nvalues; vidx++)
-				csr_buf[vidx] = strtoull(argv[vidx+2],
+			for (vidx = 0; vidx < size64; vidx++)
+				csr_buf[vidx] = strtoull(argv[vidx+3],
 							 NULL, 0);
 
 			csr_write(ccu_mmap, 0, csr_addr, csr_buf, csr_size);
