@@ -1,0 +1,9 @@
+// Load library from default or specified branch
+env.BRANCH_funJenkins = 'swtools-729'
+if (env.BRANCH_FunJenkins) {
+	library "FunJenkins@${env.BRANCH_FunJenkins}"
+} else {
+	library "FunJenkins"
+}
+
+funsdkBuildPipeline()
