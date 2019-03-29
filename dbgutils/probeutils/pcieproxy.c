@@ -1,0 +1,864 @@
+/*
+ * Small Socket Server to allow a remote Client to read and write Fungible
+ * Chip Control/Status Registers (CSRs).  We use an mmap() of a PCIe End Point
+ * BAR into which the FunOS has mapped a CSR Control Unit (CCU) via its End
+ * Point Memory Management Unit (EMMU).  THis allows us to perform "Remote
+ * Indirect CSR Accesses".
+ *
+ * Currently, the CCU is mapped into BAR2/3 of a selected Physical Function
+ * when certain Boot Arguments are present for FunOS:
+ *
+ *     "--csr_remote_access"
+ *         Use a default: Socketed Board, HU Slice 0, HU Controller 0, PF 1.
+ *
+ *    "csr_remote_access_controller={controller}"
+ *        Where "{controller}" is a 3-byte encoded value 0x{RI}{CI}{PF}:
+ *        HSU RING (0..3), CID, PF.
+ *
+ * The server provides a single-threaded service with four ASCII Commands:
+ *
+ *   CONNECT <PCIe BAR in SysFS>
+ *     -- mmap() the specified PCIe Base Address Register.  Typical names
+ *     -- look like /sys/bus/pci/devices/0000:03:00.1/resource2 ...
+ *     -- Response is "OKAY CONNECT <PCIe BAR in SysFS" or an Error Message.
+ *
+ *   DISCONNECT
+ *     -- munmap() the PCIe BAR.
+ *     -- Response is "OKAY DISCONNECT" or an Error Message.
+ *
+ *   READ <Register Address> <Register Size (in bits)>
+ *     -- Returns "OKAY READ" and a sequence of 64-bit hexadecimal values
+ *     -- representing the register value, or an error message.
+ *
+ *   WRITE <Register Address> <64-bit Values> ...
+ *     -- Writes a register with the provided values.  The register
+ *     -- length is determined from the number of 64-bit values.
+ *     -- Response is "OKAY WRITE" or an Error Message.
+ *
+ *   The <Register Address>, <Register Size>, and WRITE <Values> may be in
+ *   any numeric format.
+ *
+ * ... and yes, I know you wished this were written in Python but getting it
+ * to do bit-specific things like Endianess, uint64_t addressing, etc. is
+ * annoying.  Deal with the pain ...
+ */
+#include <stdio.h>
+#include <ctype.h>
+#include <string.h>
+#include <stdint.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <errno.h>
+#include <unistd.h>
+#include <stdarg.h>
+#include <stdlib.h>
+#include <sys/mman.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netinet/ip.h>
+#include <syslog.h>
+
+/*
+ * Global variables.
+ */
+const char *myname;
+int debug = 0;
+
+/*
+ * CCU Server TCP Port.
+ */
+#define CCU_SERVER_TCP_PORT	44445
+
+/*
+ * The PCIe Remote Access mapping in the End Point MMU is 4KB.
+ */
+#define CCU_SIZE		4096
+
+#define CCU_HUT0_SPINLOCK	4072
+#define CCU_HUT1_SPINLOCK	4080
+#define CCU_ID			4092
+
+
+/*
+ * =================
+ * Endian utilities.
+ * =================
+ */
+
+/*
+ * Swap the endianess of a 64-bit (8-byte) argument and return the result.
+ */
+uint64_t
+swab64(uint64_t u64)
+{
+	return ((((u64 >> 56) & 0xff) <<  0) |
+		(((u64 >> 48) & 0xff) <<  8) |
+		(((u64 >> 40) & 0xff) << 16) |
+		(((u64 >> 32) & 0xff) << 24) |
+		(((u64 >> 24) & 0xff) << 32) |
+		(((u64 >> 16) & 0xff) << 40) |
+		(((u64 >>  8) & 0xff) << 48) |
+		(((u64 >>  0) & 0xff) << 56));
+}
+
+/*
+ * Swap the endianess of a 32-bit (4-byte) argument and return the result.
+ */
+uint32_t
+swab32(uint32_t u32)
+{
+	return ((((u32 >> 24) & 0xff) <<  0) |
+		(((u32 >> 16) & 0xff) <<  8) |
+		(((u32 >>  8) & 0xff) << 16) |
+		(((u32 >>  0) & 0xff) << 24));
+}
+
+/*
+ * Swap the endianess of a 16-bit (2-byte) argument and return the result.
+ */
+uint16_t
+swab16(uint16_t u16)
+{
+	return ((((u16 >> 8) & 0xff) << 0) |
+		(((u16 >> 0) & 0xff) << 8));
+}
+
+#if __BYTE_ORDER == __BIG_ENDIAN
+
+#define cpu_to_be64(x) ((uint64_t)(x))
+#define cpu_to_be32(x) ((uint32_t)(x))
+#define cpu_to_be16(x) ((uint16_t)(x))
+
+#define be64_to_cpu(x) ((uint64_t)(x))
+#define be32_to_cpu(x) ((uint32_t)(x))
+#define be16_to_cpu(x) ((uint16_t)(x))
+
+#define cpu_to_le64(x) swab64(x)
+#define cpu_to_le32(x) swab32(x)
+#define cpu_to_le16(x) swab16(x)
+
+#define le64_to_cpu(x) swab64(x)
+#define le32_to_cpu(x) swab32(x)
+#define le16_to_cpu(x) swab16(x)
+
+#elif __BYTE_ORDER == __LITTLE_ENDIAN
+
+#define cpu_to_be64(x) swab64(x)
+#define cpu_to_be32(x) swab32(x)
+#define cpu_to_be16(x) swab16(x)
+
+#define be64_to_cpu(x) swab64(x)
+#define be32_to_cpu(x) swab32(x)
+#define be16_to_cpu(x) swab16(x)
+
+#define cpu_to_le64(x) ((uint64_t)(x))
+#define cpu_to_le32(x) ((uint32_t)(x))
+#define cpu_to_le16(x) ((uint16_t)(x))
+
+#define le64_to_cpu(x) ((uint64_t)(x))
+#define le32_to_cpu(x) ((uint32_t)(x))
+#define le16_to_cpu(x) ((uint16_t)(x))
+
+#else
+
+#error Unknown Endianess!
+
+#endif
+
+
+/*
+ * =======================================================
+ * START: Code extracted from FunOS: platform/mips64/ccu.h
+ * =======================================================
+ */
+
+#define CCU_RING_SHF	(35)
+#define CCU_RING_MSK	(0x1f)
+
+// Slave Ring Number (5-bits)
+
+#define CCU_RING_SHF	(35)
+#define CCU_RING_MSK	(0x1f)
+
+#define CCU_RING_WIDE	(0)
+#define CCU_RING_PUT(n) (1 + (n))	// n = 0..7
+#define CCU_RING_CUT	(9)
+#define CCU_RING_NUT(n) (10 + (n))	// n = 0..1
+#define CCU_RING_HSU(n) (12 + (n))	// n = 0..5
+#define CCU_RING_MUH(n) (18 + (n))	// n = 0..1
+#define CCU_RING_MUD(n) (20 + (n))	// n = 0..1
+#define CCU_RING_MIO(n) (22 + (n))	// n = 0..1
+
+// registers index
+
+#define CCU_CMD_REG		(0)
+#define CCU_DATA_REG_CNT	(11)
+#define CCU_DATA(n)		(1 + (n))	// n = 0..(CCU_DATA_REG_CNT - 1)
+#define CCU_DATA_ADDR(n)	(CCU_DATA(n) * sizeof(uint64_t))
+#define CCU_REG_SPACE		(16)
+#define CCU_REG_EMUID		(0x78)
+#define CCU_REG_ECC_STATUS	(0x78)
+#define CCU_WID_MAX		(CCU_DATA_REG_CNT * CCU_REG_WID)
+
+// transaction type
+
+#define CCU_CMD_TYPE_REQ	0
+#define CCU_CMD_TYPE_GRANT	1
+#define CCU_CMD_TYPE_RD_T       2
+#define CCU_CMD_TYPE_WR_T       3
+#define CCU_CMD_TYPE_RD_RSP	4
+#define CCU_CMD_TYPE_WR_RSP     5
+
+// command init field
+
+#define CCU_CMD_INIT_DIS	0
+#define CCU_CMD_INIT_ENB        1       // send init pattern
+
+// command register bit masks - command 24-bits (write)
+
+#define CCU_CMD_TYPE_MSK	(0x0fULL)
+#define CCU_CMD_TYPE_SHF	(60)
+#define CCU_CMD_SIZE_MSK	(0x3fULL)
+#define CCU_CMD_SIZE_SHF	(54)
+#define CCU_CMD_RING_MSK	(0x1fULL)
+#define CCU_CMD_RING_SHF	(49)
+#define CCU_CMD_INIT_MSK	(0x01ULL)
+#define CCU_CMD_INIT_SHF        (48)
+#define CCU_CMD_CRSV_MSK	(0x03ULL)
+#define CCU_CMD_CRSV_SHF	(45)
+#define CCU_CMD_TAG_MSK		(0x1fULL)
+#define CCU_CMD_TAG_SHF		(40)
+
+// command register bit masks - status 8-bits (read)
+
+#define CCU_CMD_BUSY_MSK        (0x01ULL)		// read only
+#define CCU_CMD_BUSY_SHF	(47)			// read only
+#define CCU_CMD_SRSV_MSK        (0x03ULL)		// read only
+#define CCU_CMD_SRSV_SHF        (44)                    // read only
+#define CCU_CMD_CLM_MSK         (0x01ULL)               // read only
+#define CCU_CMD_CLM_SHF         (43)			// read only
+#define CCU_CMD_RSP_MSK		(0x07ULL)		// read only
+#define CCU_CMD_RSP_SHF         (40)			// read only
+
+// command register bit masks - address 40-bits
+
+#define CCU_CMD_ADDR_MSK        (0x0ffffffffffULL)      // 40-bit
+#define CCU_CMD_ADDR_SHF        (0)
+
+/*
+ * constructing the command register value
+ *
+ * ty - type - transaction type
+ * sz - size - see above
+ * rn - ring - wide register access always use ring 0
+ * init - initialize the ring - should be 0 for wide reg access
+ * tag - destination buffer address (for tracking purpose)
+ * adr - address - wide register address (40-bit)
+ */
+#define CCU_CMD(ty, sz, rn, init, tag, adr)	\
+	((((uint64_t)(ty)   & CCU_CMD_TYPE_MSK) << CCU_CMD_TYPE_SHF) | \
+	  (((uint64_t)(sz)   & CCU_CMD_SIZE_MSK) << CCU_CMD_SIZE_SHF) | \
+	  (((uint64_t)(rn)   & CCU_CMD_RING_MSK) << CCU_CMD_RING_SHF) | \
+	  (((uint64_t)(init) & CCU_CMD_INIT_MSK) << CCU_CMD_INIT_SHF) | \
+	  (((uint64_t)(tag)  & CCU_CMD_TAG_MSK)	<< CCU_CMD_TAG_SHF) | \
+	  (((uint64_t)(adr)  & CCU_CMD_ADDR_MSK) << CCU_CMD_ADDR_SHF))
+
+/*
+ * =====================================================
+ * END: Code extracted from FunOS: platform/mips64/ccu.h
+ * =====================================================
+ */
+
+
+/*
+ * ==============================================
+ * Fundamentals of accesses the CSR Control Unit.
+ * ==============================================
+
+/*
+ * Registers are read and written via the CCU's Indirect Access commands.
+ * Registers have an Address within the Fungible Chip's Address Space, and
+ * a Size (in bits).  The Caller provides a Data Buffer of 64-bit words to
+ * read register values into or write new register values.
+ */
+
+/*
+ * Convert bit-length into number of 64-bit units.
+ */
+#define SIZE64(x)	(((x) + 63) / 64)
+
+/*
+ * Decode a CCU Indirect CSR Access Command.
+ */
+void
+decode_ccucmd(uint64_t cmd, const char *description)
+{
+	printf("%s: type=%lld, size64=%lld, ring=%lld, init=%lld, crsv=%lld, tag=%lld, addr=%#llx\n",
+	       description,
+	       (cmd >> CCU_CMD_TYPE_SHF) & CCU_CMD_TYPE_MSK,
+	       (cmd >> CCU_CMD_SIZE_SHF) & CCU_CMD_SIZE_MSK,
+	       (cmd >> CCU_CMD_RING_SHF) & CCU_CMD_RING_MSK,
+	       (cmd >> CCU_CMD_INIT_SHF) & CCU_CMD_INIT_MSK,
+	       (cmd >> CCU_CMD_CRSV_SHF) & CCU_CMD_CRSV_MSK,
+	       (cmd >> CCU_CMD_TAG_SHF) & CCU_CMD_TAG_MSK,
+	       (cmd >> 0) & ((1ULL << 40) - 1));
+}
+
+/*
+ * Dump relevant portions of the CCU.
+ */
+void
+ccu_dump(void *ccu_mmap)
+{
+	uint64_t *ccu64 = (uint64_t *)ccu_mmap;
+	uint32_t *ccu32 = (uint32_t *)ccu_mmap;
+	unsigned int addr;
+
+	/*
+	 * The first portion of the mmap contains the CCU Command Register
+	 * and CCU_DATA_REG_CNT Scratch Buffer Registers; all uint64_t.
+	 */
+	decode_ccucmd(be64_to_cpu(ccu64[CCU_CMD_REG]), "Cmd Decode");
+	for (addr = CCU_CMD_REG; addr < CCU_DATA(CCU_DATA_REG_CNT); addr++)
+		printf("%4d %#018lx\n",
+		       addr * (unsigned int)sizeof(*ccu64),
+		       be64_to_cpu(ccu64[addr]));
+
+	/*
+	 * At the very end of the 4KB mmap() we find a couple of Spinlocks and
+	 * an ID register.
+	 */
+	printf("%4d %#018lx\n",
+	       CCU_HUT0_SPINLOCK,
+	       be64_to_cpu(ccu64[CCU_HUT0_SPINLOCK/sizeof(*ccu64)]));
+	printf("%4d %#018lx\n",
+	       CCU_HUT1_SPINLOCK,
+	       be64_to_cpu(ccu64[CCU_HUT1_SPINLOCK/sizeof(*ccu64)]));
+	printf("%4d         %#010x\n",
+	       CCU_ID,
+	       be32_to_cpu(ccu32[CCU_ID/sizeof(*ccu32)]));
+}
+
+/*
+ * Dump out the result of a register read via the CCU.
+ */
+void
+ccu_read_dump(void *ccu_mmap,
+	      uint32_t size,
+	      const char *name)
+{
+	uint64_t *ccu64 = (uint64_t *)ccu_mmap;
+	uint32_t size64 = SIZE64(size);
+	int reg_idx;
+	
+	printf("dumping CCU Read of %s\n", name);
+	decode_ccucmd(be64_to_cpu(ccu64[CCU_CMD_REG]), "rsp");
+	for (reg_idx = 0; reg_idx < size64; reg_idx++)
+		   printf("%4d %#018lx\n",
+			  reg_idx * (unsigned int)sizeof(*ccu64),
+			  be64_to_cpu(ccu64[CCU_DATA(reg_idx)]));
+}
+
+/*
+ * Read a specified register into a provided buffer using the CCU to issue an
+ * Indirect Register Read.
+ */
+void
+csr_wide_read(void *ccu_mmap,
+	      uint64_t addr,
+	      uint64_t *data,
+	      uint32_t size)
+{
+	uint64_t *ccu64 = (uint64_t *)ccu_mmap;
+	uint64_t cmd, size64;
+	uint32_t ring_sel;
+	int reg_idx;
+
+	size64 = SIZE64(size);
+	ring_sel = ((addr >> CCU_RING_SHF) & CCU_RING_MSK);
+	cmd = CCU_CMD(CCU_CMD_TYPE_RD_T, size64, ring_sel,
+			CCU_CMD_INIT_DIS, data, addr);
+
+	if (debug) {
+		fprintf(stderr, "Initiating CSR Read of addr=%#lx, size=%d\n",
+			addr, size);
+		decode_ccucmd(cmd, "cmd");
+	}
+
+	/*
+	 * Issue the CCU Read Command and then copy the CCU Data Buffer into
+	 * the caller's buffer.
+	 */
+	ccu64[CCU_CMD_REG] = cpu_to_be64(cmd);
+	for (reg_idx = 0; reg_idx < size64; reg_idx++)
+		data[reg_idx] = be64_to_cpu(ccu64[CCU_DATA(reg_idx)]);
+}
+
+/*
+ * Read a specified register into a provided buffer.
+ */
+int
+csr_read(void *ccu_mmap,
+	 uint64_t base_addr,
+	 uint64_t csr_addr,
+	 uint64_t *data,
+	 uint32_t size)
+{
+	uint64_t addr = base_addr + csr_addr;
+
+	csr_wide_read(ccu_mmap, addr, data, size);
+	return 0;
+}
+
+/*
+ * Write a specified register from a provided buffer using the CCU to issue an
+ * Indirect Register Write.
+ */
+void
+csr_wide_write(void *ccu_mmap,
+	       uint64_t addr,
+	       uint64_t *data,
+	       uint32_t size)
+{
+	uint64_t *ccu64 = (uint64_t *)ccu_mmap;
+	uint64_t cmd, size64;
+	uint32_t ring_sel;
+	int reg_idx;
+
+	size64 = SIZE64(size);
+	ring_sel = ((addr >> CCU_RING_SHF) & CCU_RING_MSK);
+	cmd = CCU_CMD(CCU_CMD_TYPE_WR_T, size64, ring_sel,
+			CCU_CMD_INIT_DIS, data, addr);
+
+	if (debug) {
+		fprintf(stderr, "Initiating CSR Write of addr=%#lx, size=%d\n",
+			addr, size);
+			decode_ccucmd(cmd, "cmd");
+	}
+
+	/*
+	 * Copy the caller's buffer into the CCU Data Buffer and then issue
+	 * the CCU Write Command.
+	 */
+	for (reg_idx = 0; reg_idx < size64; reg_idx++)
+		ccu64[CCU_DATA(reg_idx)] = cpu_to_be64(data[reg_idx]);
+	ccu64[CCU_CMD_REG] = cpu_to_be64(cmd);
+}
+
+/*
+ * Write a specified register from a provided buffer.
+ */
+int
+csr_write(void *ccu_mmap,
+	  uint64_t base_addr,
+	  uint64_t csr_addr,
+	  uint64_t *data,
+	  uint32_t size)
+{
+	uint64_t addr = base_addr + csr_addr;
+
+	csr_wide_write(ccu_mmap, addr, data, size);
+	return 0;
+}
+
+
+/*
+ * ============
+ * Main Server.
+ * ============
+ */
+
+/*
+ * This is the part that would be easier in Python ...
+ */
+
+#define MAX_COMMAND_WORDS	(CCU_DATA_REG_CNT + 2)	/* WRITE addr ... */
+#define MAX_COMMAND_WORD_LENGTH	(2 + 64/4 + 1)		/* 0x...\0 */
+#define MAX_COMMAND_LINE	(MAX_COMMAND_WORDS * MAX_COMMAND_WORD_LENGTH)
+
+#define MAX_RESPONSE_WORDS	(CCU_DATA_REG_CNT + 1)	/* OKAY value ... */
+#define MAX_RESPONSE_WORD_LENGTH MAX_COMMAND_WORD_LENGTH
+#define MAX_RESPONSE_LINE	(MAX_RESPONSE_WORDS * MAX_RESPONSE_WORD_LENGTH)
+
+void
+response(int fd, int priority, const char *format, ...)
+{
+	va_list args;
+
+	if (priority > 0) {
+		va_start(args, format);
+		vsyslog(priority, format, args);
+		va_end(args);
+	}
+
+	if (fd > 0) {
+		va_start(args, format);
+		vdprintf(fd, format, args);
+		va_end(args);
+	}
+		
+	if (debug) {
+		va_start(args, format);
+		vfprintf(stderr, format, args);
+		va_end(args);
+	}
+}
+
+int
+server(int client_fd)
+{
+	int ccu_fd = -1;
+	void *ccu_mmap = NULL;
+	int err = 0;
+
+	while (1) {
+		char command[MAX_COMMAND_LINE];
+		char *argv[MAX_COMMAND_WORDS];
+		char *cp;
+		int cc, argc;
+		int inword;
+
+		/*
+		 * Grab a command from the socket and parse it into
+		 * non-whitespace words.
+		 */
+		cc = read(client_fd, command, sizeof command);
+		if (cc < 0) {
+			err = errno;
+			response(-1, LOG_ERR,
+				 "Unable to read from socket: %s\n",
+				 strerror(errno));
+			break;
+		}
+		if (cc >= MAX_COMMAND_LINE-1) {
+			response(client_fd, LOG_DEBUG,
+				 "Command line too long\n");
+			continue;
+		}
+		command[cc] = '\0';
+		
+		cp = command;
+		argc = 0;
+		inword = 0;
+		while (*cp) {
+			if (isspace(*cp)) {
+				if (inword) {
+					*cp = '\0';
+					argc++;
+					inword = 0;
+				}
+			} else if (!inword) {
+				argv[argc] = cp;
+				inword = 1;
+			}
+			cp++;
+		}
+		if (inword) {
+			argc++;
+			inword = 0;
+		}
+		
+		/*
+		 * Blank commands aren't accepted.
+		 */
+		if (argc <= 0) {
+			response(client_fd, LOG_DEBUG,
+				 "Bad [blank] command line\n");
+			continue;
+		}
+
+		/*
+		 * See what the remote user wants ...
+		 */
+		if (strcmp(argv[0], "CONNECT") == 0) {
+			if (ccu_mmap) {
+				response(client_fd, LOG_DEBUG,
+					 "Already connected!\n");
+				continue;
+			}
+
+			if (argc != 2) {
+				response(client_fd, LOG_DEBUG,
+					 "Usage: CONNECT <BAR>\n");
+				continue;
+			}
+
+			ccu_fd = open(argv[1], O_RDWR);
+			if (ccu_fd < 0) {
+				response(client_fd, LOG_DEBUG,
+					 "Can't open %s: %s\n",
+					 argv[1], strerror(errno));
+				continue;
+			}
+			ccu_mmap = mmap(NULL, CCU_SIZE,
+					PROT_READ|PROT_WRITE,
+					MAP_SHARED|MAP_LOCKED,
+					ccu_fd, 0);
+			if (ccu_mmap == MAP_FAILED) {
+				response(client_fd, LOG_DEBUG,
+					 "Can't mmap %s: %s\n",
+					 argv[1], strerror(errno));
+				close(ccu_fd);
+				ccu_fd = -1;
+				ccu_mmap = NULL;
+				continue;
+			}
+
+			response(client_fd, LOG_DEBUG, "OKAY CONNECT %s\n",
+				 argv[1]);
+			continue;
+		}
+
+		if (strcmp(argv[0], "DISCONNECT") == 0) {
+			response(client_fd, LOG_DEBUG, "OKAY DISCONNECT\n");
+			break;
+		}
+
+		if (strcmp(argv[0], "READ") == 0) {
+			uint64_t csr_addr;
+			uint32_t csr_size;
+			uint64_t csr_buf[CCU_DATA_REG_CNT];
+			int nvalues, vidx;
+			char response_msg[MAX_RESPONSE_LINE];
+			FILE *response_fp;
+
+			if (!ccu_mmap) {
+				response(client_fd, LOG_DEBUG,
+					 "Not Connected!\n");
+				continue;
+			}
+
+			if (argc != 3) {
+				response(client_fd, LOG_DEBUG,
+					 "Read command takes 2 arguments\n");
+				continue;
+			}
+
+			csr_addr = strtoull(argv[1], NULL, 0);
+			csr_size = strtoul(argv[2], NULL, 0);
+			nvalues = SIZE64(csr_size);
+			if (nvalues == 0 || nvalues > CCU_DATA_REG_CNT) {
+				response(client_fd, LOG_DEBUG,
+					 "Bad CSR Size %u\n", csr_size);
+				continue;
+			}
+
+			csr_read(ccu_mmap, 0, csr_addr, csr_buf, csr_size);
+
+			response_fp = fmemopen(response_msg,
+					       sizeof response_msg,
+					       "w");
+			if (response_fp == NULL) {
+				response(client_fd, LOG_DEBUG,
+					 "Unable to create response buffer\n");
+				continue;
+			}
+
+			fputs("OKAY READ", response_fp);
+			for (vidx = 0; vidx < nvalues; vidx++)
+				fprintf(response_fp, " %#lx", csr_buf[vidx]);
+			fputc('\n', response_fp);
+			fclose(response_fp);
+
+			response(client_fd, LOG_DEBUG, response_msg);
+			continue;
+		}
+
+		if (strcmp(argv[0], "WRITE") == 0) {
+			uint64_t csr_addr;
+			uint32_t csr_size;
+			uint64_t csr_buf[CCU_DATA_REG_CNT];
+			int nvalues, vidx;
+
+			if (!ccu_mmap) {
+				response(client_fd, LOG_DEBUG,
+					 "Not Connected!\n");
+				continue;
+			}
+
+			if (argc < 3) {
+				response(client_fd, LOG_DEBUG,
+					 "Write command needs values\n");
+				continue;
+			}
+
+			csr_addr = strtoull(argv[1], NULL, 0);
+			nvalues = argc - 2;
+			csr_size = nvalues * 64;
+			if (nvalues > CCU_DATA_REG_CNT) {
+				response(client_fd, LOG_DEBUG,
+					 "Bad CSR Size %u\n", csr_size);
+				continue;
+			}
+			for (vidx = 0; vidx < nvalues; vidx++)
+				csr_buf[vidx] = strtoull(argv[vidx+2],
+							 NULL, 0);
+
+			csr_write(ccu_mmap, 0, csr_addr, csr_buf, csr_size);
+			response(client_fd, LOG_DEBUG, "OKAY WRITE\n");
+			continue;
+		}
+
+		response(client_fd, LOG_DEBUG, "Bad command: %s\n", argv[0]);
+		continue;
+	}
+
+	if (ccu_mmap) {
+		munmap(ccu_mmap, CCU_SIZE);
+		close(ccu_fd);
+	}
+
+	return err;
+}
+
+
+/*
+ * =============
+ * Main Program.
+ * =============
+ */
+
+void
+usage(void)
+{
+	fprintf(stderr,
+		"usage: %s [-d] [-h]\n"
+		"    -d    debug/don't daemonize\n"
+		"    -h    help/this message\n",
+		myname);
+}
+
+/*
+ * Main program which forms Server for truly remote access to Control/Status
+ * registers.
+ */
+int
+main(int argc, char *const argv[])
+{
+	int server_fd, client_fd;
+	struct sockaddr_in server_inaddr;
+	int opt, sock_opt;
+
+	/*
+	 * Parse any command line arguments ...
+	 */
+	myname = strrchr(argv[0], '/');
+	if (myname)
+		myname++;
+	else
+		myname = argv[0];
+	while ((opt = getopt(argc, argv, "dh")) != -1) {
+		switch (opt) {
+		case 'd':
+			debug = 1;
+			break;
+
+		case 'h':
+			usage();
+			exit(EXIT_SUCCESS);
+			/*NOTREACHED*/
+
+		default:
+			usage();
+			exit(EXIT_FAILURE);
+			/*NOTREACHED*/
+		}
+	}
+
+	/*
+	 * Create Server Socket, bind our special TCP Port number to it,
+	 * and become a Daemon (if desired).
+	 */
+	server_fd = socket(AF_INET, SOCK_STREAM, 0);
+	if (server_fd < 0) {
+		fprintf(stderr, "%s: unable to open Server Socket: %s\n",
+			myname, strerror(errno));
+		exit(EXIT_FAILURE);
+		/*NOTREACHED*/
+	}
+
+	sock_opt = 1;
+	if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &sock_opt,
+		       sizeof(sock_opt)) < 0) {
+		fprintf(stderr, "%s: Can't reuse socket address: %s\n",
+			myname, strerror(errno));
+		exit(EXIT_FAILURE);
+		/*NOTREACHED*/
+	}
+
+	memset(&server_inaddr, 0, sizeof server_inaddr);
+	server_inaddr.sin_family = AF_INET;
+	server_inaddr.sin_port = cpu_to_be16(CCU_SERVER_TCP_PORT);
+	server_inaddr.sin_addr.s_addr = cpu_to_be32(INADDR_ANY);
+	if (bind(server_fd, (struct sockaddr *)&server_inaddr,
+		 sizeof server_inaddr) != 0) {
+		fprintf(stderr, "%s: unable to bind address to Server Socket: %s\n",
+			myname, strerror(errno));
+		exit(EXIT_FAILURE);
+		/*NOTREACHED*/
+	}
+
+	if (listen(server_fd, 5) < 0) {
+		fprintf(stderr, "%s: unable to listen on Server Socket: %s\n",
+			myname, strerror(errno));
+	}
+
+	/*
+	 * If we're going to become a Daemon, this will be our last
+	 * contact with the TTY ...
+	 */
+	if (!debug) {
+		pid_t pid = fork();
+
+		if (pid < 0) {
+			fprintf(stderr, "%s: unable to daemonize: %s\n",
+				myname, strerror(errno));
+			exit(EXIT_FAILURE);
+			/*NOT_REACHED*/
+		}
+		if (pid) {
+			exit(EXIT_SUCCESS);
+			/*NOTREACHED*/
+		}
+
+		fclose(stdin);
+		fclose(stdout);
+		fclose(stderr);
+	}
+
+	/*
+	 * Main server accept loop.
+	 */
+	openlog(myname, 0, LOG_USER);
+
+	while (1) {
+		int client_fd, err;
+		struct sockaddr_in client_inaddr;
+		socklen_t client_addrlen;
+
+		client_addrlen = sizeof client_inaddr;
+		client_fd = accept(server_fd,
+				   (struct sockaddr *)&client_inaddr,
+				   &client_addrlen);
+		if (client_fd < 0) {
+			syslog(LOG_ERR, "Can't accept incoming connection: %m");
+			exit(EXIT_FAILURE);
+			/*NOTREACHED*/
+		}
+		err = server(client_fd);
+		if (err)
+			syslog(LOG_ERR, "Server returned error: %s",
+			       strerror(err));
+		else
+			syslog(LOG_DEBUG, "Server completed successfully");
+
+		shutdown(client_fd, SHUT_RDWR);
+		close(client_fd);
+	}
+
+	close(server_fd);
+	closelog();
+	exit(EXIT_SUCCESS);
+	/*NOTREACHED*/
+}

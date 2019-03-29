@@ -4,6 +4,7 @@ import logging
 import traceback
 from array import array
 from i2cclient import *
+from pcieclient import *
 from bmcclient import *
 from sys import platform as _platform
 if _platform == "linux" or _platform == "linux2":
@@ -44,6 +45,9 @@ class DBG_Client(object):
                     status = dbgclient.connect(probe_ip_addr, probe_id)
                 else:
                     raise ValueError('Mode: "{0}" is not supported on this platform!'.format(mode))
+            elif mode == 'pcie':
+                dbgclient = PCIE_Client(mode)
+                status = dbgclient.connect(probe_ip_addr, probe_id)
             elif mode == 'dpc':
                 raise ValueError('Mode: "{0}" is not supported yet!'.format(mode))
                 #self.client = DPC_Client()

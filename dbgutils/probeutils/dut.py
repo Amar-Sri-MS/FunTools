@@ -68,6 +68,29 @@ class dut(object):
         else:
             return (bmc, jtag_probe_id, jtag_probe_ip)
 
+    def get_pcie_info(self, dut):
+        if dut == None:
+            logger.error('Invalid dut: None')
+            return None
+        dut_cfg = self.data.get(dut, None)
+        if dut_cfg == None:
+            logger.error('dut:{} does not exist in dut db!'.format(dut))
+            logger.info('Valid duts: {}'.format(self.data))
+            return None
+        bmc = True
+        bmc_ip = dut_cfg.get('bmc_ip', None)
+        if not bmc_ip:
+            bmc = False
+        pcie_ccu_bar = dut_cfg.get('pcie_ccu_bar', None)
+        pcie_probe_ip = dut_cfg.get('pcie_probe_ip', None)
+        if not pcie_ccu_bar or not pcie_probe_ip:
+            logger.error('Invalid dut db for dut: {}'.format(dut))
+            return None
+        if bmc is True:
+            return (bmc, bmc_ip, pcie_ccu_bar, pcie_probe_ip)
+        else:
+            return (bmc, pcie_probe_id, pcie_probe_ip)
+
 def dut_cfg_test():
     duts = dut()
     dut_cfg = duts.get_i2c_info('TPOD0')
