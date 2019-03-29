@@ -7,6 +7,7 @@ import configparser
 import json
 import argparse
 import shutil
+import subprocess
 import generate_flash as gf
 
 
@@ -57,6 +58,7 @@ def main():
     gf.merge_configs(config, json.loads(EEPROM_CONFIG_OVERRIDE))
     gf.merge_configs(config, json.loads(HOST_FIRMWARE_CONFIG_OVERRIDE))
     gf.set_config(config)
+    curdir = os.getcwd()
 
     if wanted('prepare'):
         # paths to application binaries in SDK tree
@@ -81,26 +83,57 @@ def main():
                   "bin/flash_tools/generate_flash.py",
                   "bin/flash_tools/make_emulation_emmc.py",
                   "bin/flash_tools/key_replace.py",
-                  "bin/flash_tools/" + os.path.basename(__file__) ]
+                  "bin/flash_tools/" + os.path.basename(__file__),
+                  "bin/Linux/x86_64/mkimage" ]
         for app in utils:
             shutil.copy2(os.path.join(args.sdkdir, app), os.path.basename(app))
 
+        #TODO(mnowakowski)
+        #     skip direct invocation and import make_emulation_emmc
+        cmd = [ 'python', 'make_emulation_emmc.py',
+                '-w', '.',
+                '-o', '.',
+                '--appfile', 'funos-f1.stripped',
+                '--filesystem',
+                '--signed',
+                '--bootscript-only']
+        subprocess.call(cmd)
+
         with open("image.json", "w") as f:
             json.dump(config, f, indent=4)
+
+        os.chdir(curdir)
 
     if wanted('sign'):
         sdkpaths = []
         sdkpaths.append(os.path.abspath(args.destdir))
         gf.set_search_paths(sdkpaths)
+        os.chdir(args.destdir)
         gf.run('key_injection')
+        gf.run('certificates')
         gf.run('sign')
+        os.chdir(curdir)
+
 
     if wanted('image'):
         sdkpaths = []
         sdkpaths.append(os.path.abspath(args.destdir))
         gf.set_search_paths(sdkpaths)
+        os.chdir(args.destdir)
         gf.run('flash')
 
+        #TODO(mnowakowski)
+        #     skip direct invocation and import make_emulation_emmc
+        cmd = [ 'python', 'make_emulation_emmc.py',
+                '-w', '.',
+                '-o', '.',
+                '--appfile', 'funos.signed.bin',
+                '--fsfile', 'boot.img.signed',
+                '--filesystem',
+                '--signed' ]
+        subprocess.call(cmd)
+
+        os.chdir(curdir)
 
 if __name__=="__main__":
     main()
