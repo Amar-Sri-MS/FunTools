@@ -430,7 +430,7 @@ def handle_connection(conn):
        process_cmd(cmd, msg_len)
 
 
-def connect_dbgprobe(tpod,tpod_jtag,tpod_force):
+def connect_dbgprobe(tpod,tpod_jtag,tpod_pcie,tpod_force):
     duts = dut.dut()
 
     if tpod_jtag:
@@ -441,6 +441,27 @@ def connect_dbgprobe(tpod,tpod_jtag,tpod_force):
           print("JTAG Server Connection Successful!")
        else:
           print("JTAG Server Connection Failed!")
+          sys.exit(1)
+    elif tpod_pcie:
+       pcie_ccu_bar=0
+       pcie_probe_ip=0
+       dut_pcie_info = duts.get_pcie_info(tpod)
+       if dut_pcie_info[0] is False:
+          pcie_ccu_bar = dut_pcie_info[1]
+          pcie_probe_ip = dut_pcie_info[2]
+          status = dbgprobe().connect(mode='pcie', bmc_board=False,
+                                      probe_ip_addr = pcie_probe_ip,
+                                      probe_id = pcie_ccu_bar)
+       else:
+          bmc_ip = dut_i2c_info[1]
+          pcie_ccu_bar = dut_pcie_info[2]
+          pcie_probe_ip = dut_pcie_info[3]
+          status = dbgprobe().connect(mode='pcie', bmc_board=True,
+                                      bmc_ip_address=bmc_ip,
+                                      probe_ip_addr=pcie_probe_ip,
+                                      probe_id = pcie_ccu_bar)
+       print("connecting to PCIE bar={0} ip={1} status={2}".format(pcie_ccu_bar,pcie_probe_ip,status))
+       if status is False:
           sys.exit(1)
     else:
        (bmc,i2c_probe_serial, i2c_proxy_ip, i2c_slave_addr) = duts.get_i2c_info(tpod)
