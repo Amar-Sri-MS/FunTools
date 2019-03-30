@@ -123,6 +123,9 @@ QSPI_EMULATION=$(cat <<-JSON
 		"HOST": {
 			"B": "",
 			"minsize": "0"
+		},
+		"FIRMWARE": {
+			"minsize" : "0"
 		}
 	}
 }

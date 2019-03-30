@@ -16,7 +16,7 @@ logger = logging.getLogger("i2cclient")
 logger.setLevel(logging.INFO)
 
 class constants(object):
-    SERVER_TCP_PORT = 44445
+    SERVER_TCP_PORT = 44444
 
 class I2C_Client(object):
     def __init__(self, mode):
@@ -60,7 +60,7 @@ class I2C_Client(object):
             return False
 
     # Sends peek request to i2c proxy server, get the response and returns the read data
-    def csr_peek(self, csr_addr, csr_width_words):
+    def csr_peek(self, csr_addr, csr_width_words, chip_inst=None):
         logger.debug(('con_handle: {0} csr_addr:{1}'
                       ' csr_width_words:{2}').format(self.con_handle,
                       csr_addr, csr_width_words))
@@ -97,7 +97,7 @@ class I2C_Client(object):
         return (False, error_msg)
 
     # Sends dbg challange cmd request to i2c proxy server, get the response
-    def dbg_chal_cmd(self, cmd, data=None):
+    def dbg_chal_cmd(self, cmd, data=None, chip_inst=None):
         logger.debug(("dbg chal cmd:{0} data:{1}").format(cmd, data))
         if data is not None:
             logger.debug(("dbg chal data:{0}").format(
@@ -123,7 +123,7 @@ class I2C_Client(object):
             return (False, error_msg)
 
     # Sends poke request to i2c proxy server, get the response
-    def csr_poke(self, csr_addr, word_array, fast_poke=False):
+    def csr_poke(self, csr_addr, word_array, fast_poke=False, chip_inst=None):
         logger.debug(("csr_addr:{0} word_array{1}").format(
             csr_addr, word_array))
         if self.con_handle is None:

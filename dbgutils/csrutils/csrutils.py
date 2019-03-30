@@ -1,7 +1,8 @@
+
 #!/usr/bin/env python
 '''
 csr find/list/peek/poke utilities
-To issue csr peek/poke, connection to one of the debug interfaces(i2c/jtag/dpc)
+To issue csr peek/poke, connection to one of the debug interfaces(i2c/jtag/pcie/dpc)
 is needed before issuing the commands
 '''
 import argparse, json
@@ -47,6 +48,7 @@ def csr_peek(args):
     input_args = csr_get_peek_args(args)
     csr_name = input_args.get("csr_name", None)
     csr_inst = input_args.get("csr_inst", None)
+    chip_inst = input_args.get("chip_inst", None)
     csr_entry = input_args.get("csr_entry", None)
     ring_name = input_args.get("ring_name", None)
     ring_inst = input_args.get("ring_inst", None)
@@ -72,7 +74,8 @@ def csr_peek(args):
 
     csr_width_bytes = csr_get_width_bytes(csr_data)
     csr_width_words = csr_width_bytes >> 3
-    (status, data) = dbgprobe().csr_peek(csr_addr, csr_width_words)
+    (status, data) = dbgprobe().csr_peek(chip_inst=chip_inst, csr_addr=csr_addr,
+                                         csr_width_words=csr_width_words)
     if status is True:
         word_array = data
         if word_array is None or not word_array:
@@ -88,6 +91,7 @@ def csr_peek(args):
 # csr poke handler for commandline interface
 def csr_poke(args):
     input_args = csr_get_poke_args(args)
+    chip_inst = input_args.get("chip_inst", None)
     csr_name = input_args.get("csr_name", None)
     csr_inst = input_args.get("csr_inst", None)
     csr_entry = input_args.get("csr_entry", None)
@@ -133,7 +137,9 @@ def csr_poke(args):
             return None
         logger.info(hex_word_dump(word_array))
     elif field_list is not None:
-        (status, data) = dbgprobe().csr_peek(csr_addr, csr_width_words)
+        (status, data) = dbgprobe().csr_peek(chip_inst=chip_inst,
+                                             csr_addr=csr_addr,
+                                             csr_width_words=csr_width_words)
         if status is not True:
             print("csr poke failed!. remote peek error while doing read/modify/write!!!")
             error_msg = data
@@ -179,7 +185,9 @@ def csr_poke(args):
         print("Invalid input values! poke should"
               " have either field list with values or raw values")
         return None
-    (status, data) = dbgprobe().csr_poke(csr_addr, word_array)
+    (status, data) = dbgprobe().csr_poke(chip_inst=chip_inst,
+                                         csr_addr=csr_addr,
+                                         word_array=word_array)
     if status is True:
         logger.debug("Poke Success!")
     else:
@@ -361,7 +369,7 @@ def csr_load_metadata(args):
         return
     return
 
-def load_srec_image(input_file):
+def load_srec_image(chip_inst, input_file):
     csr_replay_data = list()
     with open(input_file) as fp:
         line = fp.readline()
@@ -385,7 +393,7 @@ def load_srec_image(input_file):
                 csr_val = int(csr_tokens[1][i*16:(i+1)*16],16)
                 csr_addr = constants.MEM_RW_DATA_CSR_ADDR + skip_addr
                 csr_addr += i * 8
-                (status, data) = dbgprobe().csr_fast_poke(csr_addr, [csr_val])
+                (status, data) = dbgprobe().csr_fast_poke(chip_inst, csr_addr, [csr_val])
                 if status is True:
                     logger.info('Write value:{0}'.format(hex(csr_val)))
                     logger.debug("poke success!!!")
@@ -401,7 +409,7 @@ def load_srec_image(input_file):
             csr_val = muh_sna_cmd_addr << 37;
             csr_val |= 0x0 << 63;
             logger.debug('csr_val: {0}'.format(csr_val))
-            (status, data) = dbgprobe().csr_fast_poke(csr_addr, [csr_val])
+            (status, data) = dbgprobe().csr_fast_poke(chip_inst, csr_addr, [csr_val])
             if status is True:
                 logger.info("Poke:{0} addr: {1} Success!".format(cnt, hex(muh_sna_cmd_addr)))
             else:
@@ -410,7 +418,9 @@ def load_srec_image(input_file):
                 sys.exit(1)
             csr_addr = constants.MEM_RW_STATUS_CSR_ADDR
             csr_addr += skip_addr
-            (status, data) = dbgprobe().csr_peek(csr_addr, 1)
+            (status, data) = dbgprobe().csr_peek(chip_inst=chip_inst,
+                                                 csr_addr=csr_addr,
+                                                 csr_width_words=1)
             if status is True:
                 word_array = data
                 if word_array is None or not word_array:
@@ -644,6 +654,8 @@ def csr_replay(args):
         print 'Path: "{0}" is not a regular file!'.format(srec_file)
         return
 
+    chip_inst = int(args.chip_inst[0], 10) if args.chip_inst else None
+
     replay_config = csr_replay_config(input_file)
     if replay_config is None:
         print('No valid csrreplay data is found in {}').format(input_file)
@@ -670,7 +682,9 @@ def csr_replay(args):
             logger.debug('csr_address: {0} csr_width_words: {1}'
                     'word_array:{2}'.format(csr_address,
                         csr_width_words, csr_val_words))
-            (status, status_msg) = dbgprobe().csr_poke(csr_address, csr_val_words)
+            (status, status_msg) = dbgprobe().csr_poke(chip_inst=chip_inst,
+                                                       csr_address=csr_address,
+                                                       csr_val_words=csr_val_words)
             if status == True:
                 print('Replay count:{0} data:"{1}"!'.format(cnt, x))
                 cnt += 1
@@ -708,7 +722,8 @@ def csr_replay(args):
             retry = 0
             poll_status = False
             while ((retry < timeout) or (timeout == 0)):
-                status = csr_poll_status(csr_address, csr_width_words, csr_val_words)
+                status = csr_poll_status(chip_inst, csr_address,
+                                         csr_width_words, csr_val_words)
                 if status == False:
                     retry += 1
                     print('Retrying csr status poll "{0}"!'.format(retry))
@@ -721,7 +736,7 @@ def csr_replay(args):
                 sys.exit(1)
             cnt += 1
         elif x.get('action') == actions.CUT_RESET:
-            status = load_srec_image(srec_file)
+            status = load_srec_image(chip_inst, srec_file)
             if status == False:
                 logger.error('Failed to copy FunOS/u-boot image!')
                 sys.exit(1)
@@ -732,8 +747,10 @@ def csr_replay(args):
             sys.exit(1)
     print('Succesfully replayed {0} CSRs!'.format(cnt))
 
-def csr_poll_status(csr_address, csr_width_words, value_mask):
-    (status, data) = dbgprobe().csr_peek(csr_address, csr_width_words)
+def csr_poll_status(chip_inst, csr_address, csr_width_words, value_mask):
+    (status, data) = dbgprobe().csr_peek(chip_inst=chip_inst,
+                                         csr_address=csr_address,
+                                         csr_width_words=csr_width_words)
     if status == False:
         logger.error('csr_peek failed!')
         sys.exit(1)
@@ -787,19 +804,59 @@ def connect(dut_name, mode, force_connect=False):
         if dut_i2c_info is None:
             print('Failed to get i2c connection details!')
             return None
-        i2c_probe_serial = dut_i2c_info[0]
-        i2c_probe_ip = dut_i2c_info[1]
-        i2c_slave_addr = dut_i2c_info[2]
-        status = dbgprobe().connect(mode, i2c_probe_ip, i2c_probe_serial,
-                i2c_slave_addr, force_connect)
+        # if not board with bmc (emulation and socketed test boards do not have
+        # bmc)
+        if dut_i2c_info[0] is False:
+            i2c_probe_serial = dut_i2c_info[1]
+            i2c_probe_ip = dut_i2c_info[2]
+            i2c_slave_addr = dut_i2c_info[3]
+            status = dbgprobe().connect(mode='i2c', bmc_board=False,
+                    probe_ip_addr=i2c_probe_ip,
+                    probe_id=i2c_probe_serial,
+                    slave_addr=i2c_slave_addr,
+                    force=force_connect)
+        else:
+            bmc_ip = dut_i2c_info[1]
+            status = dbgprobe().connect(mode='i2c', bmc_board=True,
+                    bmc_ip_address=bmc_ip)
     elif mode == 'jtag':
         dut_jtag_info = dut().get_jtag_info(dut_name)
         if dut_jtag_info is None:
             print('Failed to get jtag connection details!')
             return None
-        jtag_probe_id = dut_jtag_info[0]
-        jtag_probe_ip = dut_jtag_info[1]
-        status = dbgprobe().connect(mode, jtag_probe_ip, jtag_probe_id)
+        if dut_jtag_info[0] is False:
+            jtag_probe_id = dut_jtag_info[1]
+            jtag_probe_ip = dut_jtag_info[2]
+            status = dbgprobe().connect(mode='jtag', bmc_board=False,
+                                        probe_ip_addr = jtag_probe_ip,
+                                        probe_id = jtag_probe_id)
+        else:
+            bmc_ip = dut_i2c_info[1]
+            jtag_probe_id = dut_jtag_info[2]
+            jtag_probe_ip = dut_jtag_info[3]
+            status = dbgprobe().connect(mode='jtag', bmc_board=True,
+                                        bmc_ip_address=bmc_ip,
+                                        probe_ip_addr=jtag_probe_ip,
+                                        probe_id = jtag_probe_id)
+    elif mode == 'pcie':
+        dut_pcie_info = dut().get_pcie_info(dut_name)
+        if dut_pcie_info is None:
+            print('Failed to get pcie connection details!')
+            return None
+        if dut_pcie_info[0] is False:
+            pcie_ccu_bar = dut_pcie_info[1]
+            pcie_probe_ip = dut_pcie_info[2]
+            status = dbgprobe().connect(mode='pcie', bmc_board=False,
+                                        probe_ip_addr = pcie_probe_ip,
+                                        probe_id = pcie_ccu_bar)
+        else:
+            bmc_ip = dut_pcie_info[1]
+            pcie_ccu_bar = dut_pcie_info[2]
+            pcie_probe_ip = dut_pcie_info[3]
+            status = dbgprobe().connect(mode='pcie', bmc_board=True,
+                                        bmc_ip_address=bmc_ip,
+                                        probe_ip_addr=pcie_probe_ip,
+                                        probe_id = pcie_ccu_bar)
     else:
         print('Mode: {} is not yet supported!'.format(mode))
         return
@@ -828,6 +885,7 @@ def csr_get_peek_args(args):
     input_args = dict()
     input_args["csr_name"] = args.csr[0]
     input_args["csr_inst"] = int(args.csr_inst[0], 10) if args.csr_inst else None
+    input_args["chip_inst"] = int(args.chip_inst[0], 10) if args.chip_inst else None
     input_args["csr_entry"] = int(args.csr_entry[0], 10) if args.csr_entry else None
     input_args["ring_name"] = args.ring[0] if args.ring else None
     input_args["ring_inst"] = None
@@ -846,6 +904,7 @@ def csr_get_peek_args(args):
 def csr_get_poke_args(args):
     input_args = dict()
     input_args["csr_name"] = args.csr[0]
+    input_args["chip_inst"] = int(args.chip_inst[0], 10) if args.chip_inst else None
     input_args["csr_inst"] = int(args.csr_inst[0], 10) if args.csr_inst else None
     input_args["csr_entry"] = int(args.csr_entry[0], 10) if args.csr_entry else None
     input_args["ring_name"] = args.ring[0] if args.ring else None
@@ -977,8 +1036,18 @@ def csr_get_addr(csr_data, anode_inst=None, csr_inst=None, csr_entry=None):
         print("Invalid csr metadata! csr_width is missing in metadata!")
         sys.exit(1)
 
-    csr_width_bytes = csr_width >> 0x3
+    csr_stride_width = csr_data.get("csr_stride_width", None)
+    if csr_stride_width is None:
+        print("Invalid csr metadata! csr_stride_width is missing in metadata!")
+        sys.exit(1)
 
+    csr_width_bytes = csr_width >> 0x3
+    if (csr_stride_width < csr_width_bytes):
+        print('Invalid csr metadata! csr_stride_width({})'
+              ' < csr_width({})!'.format(csr_stride_width, csr_width))
+        sys.exit(1)
+
+    assert(csr_n_entries >= 0)
     if csr_n_entries > 1:
         if csr_entry is None:
             print("Expetced csr_entry argument!")
@@ -987,7 +1056,16 @@ def csr_get_addr(csr_data, anode_inst=None, csr_inst=None, csr_entry=None):
         if csr_entry < 0 or csr_entry >= csr_n_entries:
             print("Invalid csr_entry: {}!".format(csr_entry))
             return None
-        csr_addr += csr_width_bytes * csr_entry;
+        csr_addr += csr_stride_width * csr_entry;
+
+    csr_inst_size = csr_data.get("csr_inst_size", None)
+    if csr_inst_size is None:
+        print("Invalid csr metadata! csr_inst_size is missing in metadata!")
+        sys.exit(1)
+
+    if (csr_inst_size <  (csr_stride_width * csr_n_entries)):
+        print('Invalid csr metadata! "csr_inst_size < csr_stride_width * csr_n_entries"')
+        sys.exit(1)
 
     if csr_inst_cnt > 1:
         if csr_inst is None:
@@ -997,7 +1075,7 @@ def csr_get_addr(csr_data, anode_inst=None, csr_inst=None, csr_entry=None):
         if csr_inst < 0 or csr_inst >= csr_inst_cnt:
             print("Invalid csr_inst: {}!".format(csr_inst))
             return None
-        csr_addr += csr_width_bytes * csr_n_entries * csr_inst
+        csr_addr += csr_inst_size * csr_inst
 
     return (anode_addr + csr_addr)
 

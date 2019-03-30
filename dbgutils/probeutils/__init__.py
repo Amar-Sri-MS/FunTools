@@ -1,6 +1,7 @@
 import i2cutils
 import i2cdev
 import i2cclient
+import bmcclient
 import i2cproxy
 import dbgclient
 from sys import platform as _platform

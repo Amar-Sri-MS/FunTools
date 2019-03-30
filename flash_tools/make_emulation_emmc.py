@@ -83,20 +83,42 @@ def gen_boot_script(filename, funos_start_blk):
     boot_img = os.path.join(g.outdir, 'boot.img')
     boot_pad_img = os.path.join(g.outdir, 'boot.pad.img')
 
+    def filesize(f):
+        # see eSecure_rsa_structs.h::fw_fun_header_t for a description of
+        # the signature structure format. Signing info is always prepended to
+        # the signed content
+        hdr = 4156 if g.signed else 0
+        return BLOCK_SIZE * (int((os.path.getsize(f) + hdr + BLOCK_SIZE - 1)) / BLOCK_SIZE)
+
     with open(filename, 'w') as outfile:
         outfile.write('mmc read 0x{load_addr:x} 0x{mmc_start_blk:x} 0x{load_size_blk:x};'.format(
             load_addr=LOAD_ADDR,
             mmc_start_blk=funos_start_blk,
-            load_size_blk=os.path.getsize(g.work_file) / BLOCK_SIZE))
+            load_size_blk=filesize(g.appfile) / BLOCK_SIZE))
         if g.crc:
             outfile.write('crc32 -v 0x{load_addr:x} {load_size:x} {crc:x};'.format(
                 load_addr=LOAD_ADDR,
-                load_size=os.path.getsize(g.work_file),
-                crc=crc32(g.work_file)))
-        outfile.write('bootelf -p 0x{load_addr:x};'.format(
-            load_addr=LOAD_ADDR))
+                load_size=os.path.getsize(g.appfile),
+                crc=filesize(g.appfile)))
+        if g.signed:
+            outfile.write('authfw 0x{load_addr:x} {load_size:x};'.format(
+                load_addr=LOAD_ADDR,
+                load_size=os.path.getsize(g.appfile)))
+            outfile.write('bootelf -p ${loadaddr};')
+        else:
+            outfile.write('bootelf -p 0x{load_addr:x};'.format(
+                load_addr=LOAD_ADDR))
 
-    cmd = [os.path.join(g.workspace, 'u-boot', 'tools', 'mkimage'),
+    # default location in full Fungible workspace
+    mkimage_path = os.path.join(g.workspace, 'u-boot', 'tools', 'mkimage')
+    if not os.path.isfile(mkimage_path):
+        # fallback for the current working directory root
+        mkimage_path = os.path.join(g.workspace, 'mkimage')
+    if not os.path.isfile(mkimage_path):
+        # last resort - assume there's on in the $PATH
+        mkimage_path = 'mkimage'
+
+    cmd = [ mkimage_path,
            '-A', 'mips64',
            '-T', 'script',
            '-C', 'none',
@@ -107,7 +129,7 @@ def gen_boot_script(filename, funos_start_blk):
     pad_file(boot_img, boot_pad_img, BLOCK_SIZE)
 
 
-def gen_fs():
+def gen_fs(files):
     """Generate a filesystem image
 
     Generate a filesystem image to be programmed to the eMMC.
@@ -122,7 +144,11 @@ def gen_fs():
     output_fs = os.path.join(g.outdir, 'emmc.ext4')
     # prepare fs contents
     tempdir = tempfile.mkdtemp()
-    shutil.copy(os.path.join(g.outdir, 'boot.img'), tempdir)
+    if files:
+        for f in files:
+            shutil.copy(f, tempdir)
+    else:
+        shutil.copy(os.path.join(g.outdir, 'boot.img'), tempdir)
     cmd = ['mkfs.ext4',
            '-E', 'offset=4096',  # partition offset
            '-d', tempdir,  # filesystem contents
@@ -156,21 +182,30 @@ def run():
         '--filesystem', help='Generate filesystem for eMMC', action='store_true')
     parser.add_argument(
         '--hex', help='Generate output in hex format (for Palladium)', action='store_true')
+    parser.add_argument(
+        '--signed', help='Input images are signed', action='store_true')
+    parser.add_argument(
+        '--fsfile', help='File(s) to put in the filesystem', action='append')
+    parser.add_argument(
+        '--bootscript-only', help='Only generate system boot script', action='store_true')
 
     parser.parse_args(namespace=g)
+
+    gen_boot_script(os.path.join(g.outdir, 'bootloader.scr'), FUNOS_OFFSET / BLOCK_SIZE)
+
+    if g.bootscript_only:
+        return
 
     g.work_file = os.path.join(g.outdir, os.path.basename(g.appfile) + '.pad')
 
     pad_file(g.appfile, g.work_file, BLOCK_SIZE)
-
-    gen_boot_script(os.path.join(g.outdir, 'bootloader.scr'), FUNOS_OFFSET / BLOCK_SIZE)
 
     outfile_hex = os.path.join(g.outdir, 'emmc_image.hex')
     outfile_bin = os.path.join(g.outdir, 'emmc_image.bin')
 
     files = []
     if g.filesystem:
-        fs = gen_fs()
+        fs = gen_fs(g.fsfile)
         pad_file(fs, outfile_bin, FUNOS_OFFSET)
         merge_file(g.work_file, outfile_bin)
         files.append(outfile_bin)

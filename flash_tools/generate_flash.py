@@ -41,7 +41,6 @@ def find_file_in_srcdirs(filename):
         for dir in search_paths:
             file = os.path.join(dir, filename)
             if os.path.isfile(file):
-                print("Found {}".format(file))
                 return file
     return None
 
@@ -391,6 +390,8 @@ def merge_configs(old, new):
 def main():
     parser = argparse.ArgumentParser()
     flash_content = None
+    global config
+    global search_paths
 
     parser.add_argument('config', nargs='+', help='Configuration file(s)')
     parser.add_argument('--config-type', choices={'json','ini'}, default='ini', help="Configuration file format")
@@ -400,11 +401,6 @@ def main():
     group.add_argument('--enroll-cert', metavar = 'FILE', help='Enrollment certificate')
     group.add_argument('--enroll-tbs', metavar = 'FILE', help='Enrollment tbs')
     args = parser.parse_args()
-
-    global config
-    global search_paths
-
-    wanted = lambda action : args.action in ['all', action]
 
     search_paths = args.source_dir
 
@@ -435,11 +431,43 @@ def main():
             else:
                 with open(config_file, 'r') as f:
                     merge_configs(config, json.load(f,encoding='ascii'))
+    run(args.action, args.enroll_cert, args.enroll_tbs)
+
+#TODO(mnowakowski) get rid of globals
+def set_config(cfg):
+    global config
+    config = cfg
+
+#TODO(mnowakowski) get rid of globals
+def set_search_paths(paths):
+    global search_paths
+    search_paths = paths
+
+def run(arg_action, arg_enroll_cert = None, arg_enroll_tbs = None):
+    global config
+    global search_paths
+
+    wanted = lambda action : arg_action in ['all', action]
+    flash_content = None
 
     if config.get('output_format'):
         total_size = int(config['output_format']['size'], 0)
         output = config['output_format']['output']
         padding = int(config['output_format']['page'], 0)
+
+    # do not use wanted() here, as this is an action only
+    # executed when requested explicitly
+    if arg_action == 'sources':
+        for outfile, v in config['signed_images'].items():
+            infile = find_file_in_srcdirs(v['source'])
+            if infile:
+                shutil.copy2(infile, v['source'])
+            else:
+                src = config['key_injection'].get(v['source'])
+                if src and src['source']:
+                    infile = find_file_in_srcdirs(src['source'])
+                    if infile:
+                        shutil.copy2(infile, src['source'])
 
     # Generate keys (if required)
     if wanted('key_hashes') and 'key_hashes' in config:
@@ -481,7 +509,7 @@ def main():
                                 format(len(config.sections()), 1 + MAX_VARIABLE_SECTIONS))
         else:
             for k,v in config['output_sections'].items():
-                bin_info = get_a_and_b(v, padding, args.action == 'all')
+                bin_info = get_a_and_b(v, padding, arg_action == 'all')
                 # bin_info can be None if optional section and files
                 # are not there -> no entry
                 if bin_info is not None:
@@ -495,12 +523,12 @@ def main():
         # enrollment certificate argument?
         enroll_cert = None
 
-        if args.enroll_tbs:
-            enroll_cert = gfi.raw_sign(None, args.enroll_tbs, "fpk4")
+        if arg_enroll_tbs:
+            enroll_cert = gfi.raw_sign(None, arg_enroll_tbs, "fpk4")
 
-        if args.enroll_cert:
+        if arg_enroll_cert:
             try:
-                with open(args.enroll_cert, "rb") as f:
+                with open(arg_enroll_cert, "rb") as f:
                     enroll_cert = f.read()
             except:
                 enroll_cert = None

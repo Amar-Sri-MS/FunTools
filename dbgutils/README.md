@@ -8,6 +8,19 @@ This module provides following features:
 * csr peek/poke/list/find utility api
 * simple cli for hw folks to build debug utilities
 
+## Other standalone utilities
+
+These are pure debug utilties that can be useful to integrate later.
+These are run as standlone python scripts and are not installed.
+
+### bbv/getbbv.py
+
+Python script that prints out histogram of basic block vector sizes
+for any MIPS64 binary
+
+
+
+
 # Install the dependancies
 sudo python setup.py install
 

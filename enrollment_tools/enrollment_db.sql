@@ -2,8 +2,8 @@
 -- PostgreSQL setup: notes
 --
 -- For the moment, a simple setup is used for the PostgreSQL database: current user is super user
--- and authenticated by its OS login. The enrollment script should run under a more restricted user
--- that can only QUERY and INSERT (TBD)
+-- and authenticated by its OS login.
+--
 --
 -- steps:
 -- $ sudo apt-get install postgresql
@@ -31,3 +31,12 @@ CREATE TABLE IF NOT EXISTS enrollment (
  rsa_signature	    BYTEA NOT NULL CHECK (OCTET_LENGTH(rsa_signature)=516),
  timestamp          TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
  PRIMARY KEY (serial_info, serial_nr) );
+
+--
+-- create role with proper restrictions for the Apache account www-data
+--
+
+CREATE ROLE "www-data" LOGIN;
+GRANT CONNECT ON DATABASE enrollment_db to "www-data";
+GRANT SELECT,INSERT ON TABLE enrollment to "www-data";
+GRANT SELECT,UPDATE ON SEQUENCE enrollment_enroll_id_seq TO "www-data";
