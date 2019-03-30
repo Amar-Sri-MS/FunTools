@@ -2,7 +2,7 @@
 
 #include <string>
 #include <unordered_map>
-
+#include <utility>
 #include "cli_module.h"
 #include "json_factory.h"
 
@@ -10,8 +10,12 @@ class bpf_module: public cli_module {
 
     public:
        bpf_module(void);
-       virtual void* create_request(
+
+       virtual std::pair<uint8_t*, size_t> create_bin_request(
 		       std::unordered_map<std::string,std::string>& params);
+       virtual void* create_js_req(std::unordered_map<std::string,
+		                   std::string>& params);
+
        ~bpf_module(void);
     private:
        /*
@@ -25,12 +29,8 @@ class bpf_module: public cli_module {
 	* order: Order for invocation.
 	*/
 
-       static const unsigned int _ATTACH_NKEYS{6};
-       static const unsigned int _DETACH_NKEYS{3};
-       static const char _KV_TOKEN{':'}; 
-       json_factory __f;
        bool __validate(std::unordered_map<std::string, std::string>& params);
-
+       void* __create_request(std::unordered_map<std::string, std::string>& params);
 
 
 };
