@@ -797,7 +797,7 @@ static bool _write_to_nvme(struct fun_json *json, struct dpcsock *sock)
 }
 
 #ifndef __APPLE__
-static bool _read_from_nvme_helper(struct dpcsock *sock, uint8_t *buffer, uint32_t *data_len, uint32_t *remaining)
+static bool _read_from_nvme_helper(struct dpcsock *sock, uint8_t *buffer, uint32_t *data_len, uint32_t *remaining, uint32_t offset)
 {
 	bool retVal = false;
 	memset(buffer, 0, NVME_VS_ADMIN_CMD_DATA_LEN);
@@ -806,14 +806,15 @@ static bool _read_from_nvme_helper(struct dpcsock *sock, uint8_t *buffer, uint32
 		.nsid = 0,
 		.addr = (__u64)(uintptr_t)(buffer),
 		.data_len = NVME_VS_ADMIN_CMD_DATA_LEN,
-		.cdw2 = NVME_DPC_CMD_HNDLR_SELECTION
+		.cdw2 = NVME_DPC_CMD_HNDLR_SELECTION,
+		.cdw3 = offset
 	};
 	int ret = ioctl(sock->fd, NVME_IOCTL_ADMIN_CMD, &cmd);
 	if(ret == 0) {
 		if((*data_len) == 0) {
 			struct nvme_vs_api_hdr *hdr = (struct nvme_vs_api_hdr *)buffer;
-			(*data_len) = hdr->data_len;
-			(*remaining) = sizeof(struct nvme_vs_api_hdr) + hdr->data_len;
+			(*data_len) = le32toh(hdr->data_len);
+			(*remaining) = sizeof(struct nvme_vs_api_hdr) + (*data_len);
 		}
 		(*remaining) -= MIN(*remaining, NVME_VS_ADMIN_CMD_DATA_LEN);
 		retVal = true;
@@ -842,7 +843,7 @@ static struct fun_json* _read_from_nvme(struct dpcsock *sock)
 			bool readSuccess = false;
 
 			do {
-				readSuccess = _read_from_nvme_helper(sock, addr + offset, &data_len, &remaining);
+				readSuccess = _read_from_nvme_helper(sock, addr + offset, &data_len, &remaining, offset);
 				offset += NVME_VS_ADMIN_CMD_DATA_LEN;
 			} while(readSuccess && (remaining > 0));
 
