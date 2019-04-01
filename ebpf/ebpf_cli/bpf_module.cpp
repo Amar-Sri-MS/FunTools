@@ -108,7 +108,7 @@ void* bpf_module::__create_request(std::unordered_map<std::string,
 		int_vals.emplace("xdp_qid", val);
 
 		auto sub_root = __f.create_dict(int_vals);
-		assert(__f.add_string_to_dict(sub_root, "sec", params["sec"]));
+		assert(__f.add_string_to_dict(sub_root, "section", params["sec"]));
 		assert(__f.add_bin_to_dict
 		       (sub_root, "bpf_code", (uint8_t *) (buf), len));
 		delete[]buf;
@@ -128,7 +128,7 @@ void* bpf_module::__create_request(std::unordered_map<std::string,
 		int_vals.emplace("tx_id", val);
 
 		auto sub_root = __f.create_dict(int_vals);
-		assert(__f.add_string_to_dict(sub_root, "sec", params["sec"]));
+		assert(__f.add_string_to_dict(sub_root, "section", params["sec"]));
 		auto sub_arr = __f.create_arr({ "detach" });
 		__f.add_json_to_arr(sub_arr, sub_root);
 		root = __f.start("ebpf");
