@@ -2,7 +2,7 @@
 #!/usr/bin/env python
 '''
 csr find/list/peek/poke utilities
-To issue csr peek/poke, connection to one of the debug interfaces(i2c/jtag/dpc)
+To issue csr peek/poke, connection to one of the debug interfaces(i2c/jtag/pcie/dpc)
 is needed before issuing the commands
 '''
 import argparse, json
@@ -838,6 +838,25 @@ def connect(dut_name, mode, force_connect=False):
                                         bmc_ip_address=bmc_ip,
                                         probe_ip_addr=jtag_probe_ip,
                                         probe_id = jtag_probe_id)
+    elif mode == 'pcie':
+        dut_pcie_info = dut().get_pcie_info(dut_name)
+        if dut_pcie_info is None:
+            print('Failed to get pcie connection details!')
+            return None
+        if dut_pcie_info[0] is False:
+            pcie_ccu_bar = dut_pcie_info[1]
+            pcie_probe_ip = dut_pcie_info[2]
+            status = dbgprobe().connect(mode='pcie', bmc_board=False,
+                                        probe_ip_addr = pcie_probe_ip,
+                                        probe_id = pcie_ccu_bar)
+        else:
+            bmc_ip = dut_pcie_info[1]
+            pcie_ccu_bar = dut_pcie_info[2]
+            pcie_probe_ip = dut_pcie_info[3]
+            status = dbgprobe().connect(mode='pcie', bmc_board=True,
+                                        bmc_ip_address=bmc_ip,
+                                        probe_ip_addr=pcie_probe_ip,
+                                        probe_id = pcie_ccu_bar)
     else:
         print('Mode: {} is not yet supported!'.format(mode))
         return
