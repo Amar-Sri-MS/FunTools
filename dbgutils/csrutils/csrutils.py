@@ -850,7 +850,7 @@ def connect(dut_name, mode, force_connect=False):
                                         probe_ip_addr = pcie_probe_ip,
                                         probe_id = pcie_ccu_bar)
         else:
-            bmc_ip = dut_i2c_info[1]
+            bmc_ip = dut_pcie_info[1]
             pcie_ccu_bar = dut_pcie_info[2]
             pcie_probe_ip = dut_pcie_info[3]
             status = dbgprobe().connect(mode='pcie', bmc_board=True,
