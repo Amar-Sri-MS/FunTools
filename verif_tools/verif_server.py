@@ -449,17 +449,23 @@ def connect_dbgprobe(tpod,tpod_jtag,tpod_pcie,tpod_force):
        if dut_pcie_info[0] is False:
           pcie_ccu_bar = dut_pcie_info[1]
           pcie_probe_ip = dut_pcie_info[2]
+          print("connecting to PCIE bar={0} ip={1}".format(pcie_ccu_bar,pcie_probe_ip))
           status = dbgprobe().connect(mode='pcie', bmc_board=False,
                                       probe_ip_addr = pcie_probe_ip,
                                       probe_id = pcie_ccu_bar)
        else:
-          bmc_ip = dut_i2c_info[1]
+          bmc_ip = dut_pcie_info[1]
           pcie_ccu_bar = dut_pcie_info[2]
           pcie_probe_ip = dut_pcie_info[3]
-          status = dbgprobe().connect(mode='pcie', bmc_board=True,
-                                      bmc_ip_address=bmc_ip,
+          print("connecting to PCIE bar={0} ip={1}".format(pcie_ccu_bar,pcie_probe_ip))
+#          print("connecting to PCIE bar={0} ip={1} bmc_ip={2}".format(pcie_ccu_bar,pcie_probe_ip,bmc_ip))
+          status = dbgprobe().connect(mode='pcie', bmc_board=False,
                                       probe_ip_addr=pcie_probe_ip,
                                       probe_id = pcie_ccu_bar)
+#          status = dbgprobe().connect(mode='pcie', bmc_board=True,
+#                                      bmc_ip_address=bmc_ip,
+#                                      probe_ip_addr=pcie_probe_ip,
+#                                      probe_id = pcie_ccu_bar)
        print("connecting to PCIE bar={0} ip={1} status={2}".format(pcie_ccu_bar,pcie_probe_ip,status))
        if status is False:
           sys.exit(1)
