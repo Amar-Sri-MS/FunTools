@@ -136,6 +136,8 @@ class PCIE_Client(object):
 	self.con_handle.sendall('WRITE '
                                 + str(csr_addr)
                                 + ' '
+                                + str(len(word_array) * 64)
+                                + ' '
                                 + ' '.join(word_array)
                                 + '\n')
         csr_poke_rsp = str(self.con_handle.recv(1024))
