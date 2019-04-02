@@ -1035,17 +1035,18 @@ static void apply_command_locally(const struct fun_json *json)
 	if (!verb || strcmp(verb, "help")) {
 		return;
 	}
-#ifdef FUN_COMMANDER_NEW_ENVIRONMENT
 	struct fun_json_command_environment *env = fun_json_command_environment_create();
+#ifdef FUN_COMMANDER_NEW_TRANSACTION
+	struct fun_json_command_transaction trans = { 0 };
+#endif
+
+#ifdef FUN_COMMANDER_NEW_TRANSACTION
+	struct fun_json *j = fun_commander_execute(env, &trans, json);
+#else
 	struct fun_json *j = fun_commander_execute(env, json);
+#endif
 
 	fun_json_command_environment_release(env);
-#else
-	struct fun_json *env = fun_json_create_empty_dict();
-        struct fun_json *j = fun_commander_execute(env, json);
- 
-	fun_json_release(env);
-#endif
 	if (!j || fun_json_fill_error_message(j, NULL)) {
 		return;
 	}
