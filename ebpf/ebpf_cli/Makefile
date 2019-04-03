@@ -11,8 +11,7 @@ INSTALL_DIR ?= .
 COMMON := cli_mgr.o bpf_module.o tcp_cli.o json_factory.o
 
 define cpp_tidy
-	sed 's/^[ \t]*//' --in-place $(1)
-	astyle -n $(1)
+	clang-format -style=file -i $(1) -fallback-style=none
 endef
 
 all: ebpf_shell ebpf_cli
@@ -24,7 +23,7 @@ ebpf_cli: $(COMMON) ebpf_cli.o
 	$(CXX) -o $@ $^ $(LDFLAGS)
 
 %.o: %.cpp
-	$(call c_tidy,$<)
+	$(call cpp_tidy,$<)
 	$(CXX) -c $(CXXFLAGS) $<
 run:
 	./ebpf_cli -p 40221 cmd=attach sec=xdp cl_id=22 tx_id=22 qid=8 order=10 bpf_file=../ebpf_kernels/k_01.bc
