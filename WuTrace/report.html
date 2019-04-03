@@ -155,7 +155,7 @@ List of sample transactions here:
 <div class="row">
   {% if event['is_timer'] %}
   <div class="label">&nbsp;&nbsp;timer </div>
-  <div class="time">{{ event['start_time'] | as_time }}-{{ event['end_time'] | as_time }}</div>
+  <div class="time" title="{{event['start_time']|as_ns}}-{{event['end_time']|as_ns}}>{{ event['start_time'] | as_time }}-{{ event['end_time'] | as_time }}</div>
   <div class="duration">{{event['duration'] | as_duration}}</div>
   <div class="vp">{{event['vp']}}</div>
   <div class="timeline">
@@ -172,7 +172,7 @@ List of sample transactions here:
     </div>
   {% else %}
   <div class="label">{{ event['label'] }} </div>
-  <div class="time">{{ event['start_time'] | as_time }}-{{ event['end_time'] | as_time }}</div>
+  <div class="time" title="{{event['start_time']|as_ns}}-{{event['end_time']|as_ns}}">{{ event['start_time'] | as_time }}-{{ event['end_time'] | as_time }}</div>
   <div class="duration">{{event['duration'] | as_duration}}</div>
   <div class="vp">{{event['vp']}}</div>
   <div class="timeline">
