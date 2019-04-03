@@ -111,9 +111,9 @@ class PCIE_Client(object):
 
         # Successful response: OKAY READ <64-bit word> ...
         csr_peek_rsp_words = csr_peek_rsp.split()
+        word_array = [int(w,0) for w in csr_peek_rsp_words[2:]]
         if csr_peek_rsp_words[0] == 'OKAY':
-            csr_peek_rsp_words2 = [int(w,0) for w in csr_peek_rsp_words[2:]]
-            return (True, csr_peek_rsp_words2)
+            return (True, word_array)
 
         return (False, 'PCIe peek failed: ' + csr_peek_rsp)
 
