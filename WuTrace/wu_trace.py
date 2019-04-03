@@ -61,7 +61,7 @@ class FileParser:
 
     line = line.lstrip().rstrip()
     values = {}
-    match = re.match('([0-9]+).([0-9]+) TRACE ([A-Z_]+) ([A-Z_]+)', line)
+    match = re.match('\s*([0-9]+).([0-9]+) TRACE ([A-Z_]+) ([A-Z_]+)', line)
     if not match:
       # Not a log line, but not an error either.
       return (None, None)
@@ -293,6 +293,14 @@ class TraceParser:
       arg0 = log_keywords['arg0']
       arg1 = log_keywords['arg1']
       wu_id = log_keywords['wuid'] & 0xffff
+
+      if vp in self.vp_to_event:
+          # Function never saw end.
+          prev_event = self.vp_to_event[vp]
+          prev_event.end_time = timestamp - 0.000000001
+          del self.vp_to_event[vp]
+          sys.stderr.write('%s:%d: START before END.\n' % (self.input_filename,
+                                                           line_number))
       current_event = event.TraceEvent(timestamp, timestamp,
                                        log_keywords['name'], vp, log_keywords)
       self.vp_to_event[vp] = current_event
