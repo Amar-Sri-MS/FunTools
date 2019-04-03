@@ -57,6 +57,8 @@ def RangeString(start_time, end_time):
 
 def DurationString(duration_nsecs):
     """Returns a human-readable string showingduration as microseconds."""
+    if duration_nsecs < 1000:
+        return '%d nsec' % duration_nsecs
     if duration_nsecs < 1000000:
         return '%d usec' % (duration_nsecs / 1000.0)
     elif duration_nsecs < NSECS_PER_SEC:
@@ -140,7 +142,7 @@ def GetGroups(transactions):
         durations = [x.Duration() for x in root_to_group[label]]
         group = {'count': len(root_to_group[label]),
                  'label': label,
-                 'stats': TransactionGroupStats(transactions),
+                 'stats': TransactionGroupStats(root_to_group[label]),
                  'transactions': GetTransactionDicts(root_to_group[label]),
                  'id': GetUniqueId()
                  }
@@ -164,6 +166,7 @@ def RenderHTML(transactions):
     env = jinja2.Environment(loader=jinja2.FileSystemLoader(this_dir))
     env.filters['as_duration'] = lambda nsecs: DurationString(nsecs)
     env.filters['as_time'] = lambda nsecs: TimeString(nsecs)
+    env.filters['as_ns'] = lambda nsecs: NanosecondTimeString(nsecs)
 
     page_dict = {
         'groups': GetGroups(transactions)
