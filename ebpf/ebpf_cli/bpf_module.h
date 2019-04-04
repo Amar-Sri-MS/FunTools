@@ -1,3 +1,16 @@
+/*
+*  bpf_module.h
+*
+*  Created by Hariharan Thantry on 2019-04-01
+*
+*  Class for  of the dpc communicating module for bpf
+*  Subclasses cli_module
+*
+*  Copyright © 2019 Fungible Inc. All rights reserved.
+*
+*/
+
+
 #pragma once
 
 #include <string>
@@ -16,7 +29,7 @@ class bpf_module: public cli_module {
        virtual void* create_js_req(std::unordered_map<std::string,
 		                   std::string>& params);
 
-       ~bpf_module(void);
+       virtual ~bpf_module(void);
     private:
        /*
 	* Attach keys are
