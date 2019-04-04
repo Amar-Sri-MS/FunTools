@@ -26,7 +26,6 @@ class tcp_cli {
 
         bool send_data(const std::string& data);
         bool send_data(uint8_t* arr, size_t len);
-        bool send_js_data(void *json_tree);
 
         std::string receive();
 };

@@ -5,8 +5,8 @@
  *
  *  Copyright © 2019 Fungible Inc. All rights reserved.
  *  
- *  Provides a small wrapper for all modules that want to interact
- *  with the 
+ *  Manager module for all modules that want to interact
+ *  with the dpc proxy
  *
  */
 

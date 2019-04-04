@@ -1,11 +1,13 @@
 /*
- *  json_factory.h
- *
- *  Created by Hariharan Thantry on 2018-02-28
- *
- *  Copyright © 2018 Fungible Inc. All rights reserved.
- */
-
+*  json_factory.h
+*
+*  Created by Hariharan Thantry on 2019-04-01
+*
+*  Helper JSON factory routines for use by modules to communicate with DPC
+*
+*  Copyright © 2019 Fungible Inc. All rights reserved.
+*
+*/
 #pragma once
 #include <string>
 #include <unordered_map>
