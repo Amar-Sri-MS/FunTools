@@ -59,6 +59,8 @@ def DurationString(duration_nsecs):
     """Returns a human-readable string showingduration as microseconds."""
     if duration_nsecs < 1000:
         return '%d nsec' % duration_nsecs
+    if duration_nsecs < 100000:
+        return '%0.1f usec' % (duration_nsecs / 1000.0)
     if duration_nsecs < 1000000:
         return '%d usec' % (duration_nsecs / 1000.0)
     elif duration_nsecs < NSECS_PER_SEC:
@@ -87,7 +89,7 @@ def TransactionGroupStats(transactions):
               'average_nsec': 0,
               '50ile_nsec': 0,
               '90ile_nsec': 0,
-              '95ile_nsec': 0
+              '95ile_nsec': 0,
               }
 
     count = len(transactions)
@@ -100,6 +102,7 @@ def TransactionGroupStats(transactions):
     result['min_nsec'] = sorted_durations[0]
     result['max_nsec'] = sorted_durations[-1]
     result['average_nsec'] = sum(durations) / len(transactions)
+    result['count'] = count
 
     percentile50Index = PercentileIndex(50, count)
     percentile90Index = PercentileIndex(90, count)
@@ -135,7 +138,8 @@ def GetGroups(transactions):
 
     for label in root_to_group:
         root_to_group[label] = sorted(root_to_group[label],
-                                      key=lambda x: x.Duration())
+                                      key=lambda x: x.Duration(),
+                                      reverse=True)
 
     groups = []
     for label in root_to_group:
