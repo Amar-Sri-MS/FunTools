@@ -1,3 +1,24 @@
+#
+#
+#  Makefile
+#
+#  Created by Hariharan Thantry on 2019-04-01
+#
+#
+#  Copyright © 2019 Fungible Inc. All rights reserved.
+#
+#  Specialized makefile.
+#
+#  Generates BPF text bytecode (bpfel and bpfeb)
+#  Creates C source/header files for direct use of these kernels inside FunOS
+#  through static compilation
+#
+#  Artifact output from here is used in ebpf_cli to transport this bytecode
+#  into running FunOS instance
+#
+
+
+
 CC := clang
 TARGET ?= bpfeb
 CFLAGS := -O2
@@ -20,10 +41,6 @@ ifeq ($(TARGET),$(filter $(TARGET),bpfeb bpfel))
     CFLAGS += -funroll-loops -target $(TARGET)
 else
     $(error Unknown TARGET. Please specify either bpfeb or bpfel)
-endif
-
-ifeq ($(TARGET),mips64)
-	CC := /opt/cross/mips64/bin/mips64-unknown-elf-gcc
 endif
 
 define generate_bc
@@ -52,8 +69,6 @@ define c_tidy
 	sed 's/^[ \t]*//' --in-place $(1)
 	indent $(INDENT_ARGS) $(1)
 endef
-
-
 
 .ONESHELL:
 
