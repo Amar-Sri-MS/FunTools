@@ -2,6 +2,9 @@
  *  tcp_cli.h
  *
  *  Created by Hariharan Thantry on 2018-02-28
+ *  
+ *  A simple TCP n/w client. Communicates with a host/port
+ *  Sends either text data or binary data.
  *
  *  Copyright © 2018 Fungible Inc. All rights reserved.
  */

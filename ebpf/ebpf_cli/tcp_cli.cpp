@@ -3,6 +3,9 @@
  *
  *  Created by Hariharan Thantry on 2018-02-28
  *
+ *  Network library for interfacing with a remote n/w TCP server
+ *
+ *
  *  Copyright © 2018 Fungible Inc. All rights reserved.
  */
 #include <cassert>

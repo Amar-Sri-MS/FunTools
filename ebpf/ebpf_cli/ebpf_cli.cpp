@@ -3,6 +3,9 @@
  *
  *  Created by Hariharan Thantry on 2019-03-20
  *
+ *  A CLI frontend to interface with dpc-proxy.
+ *
+ *
  *  Copyright © 2019 Fungible Inc. All rights reserved.
  */
 #include <cassert>

@@ -3,6 +3,8 @@
  *
  *  Created by Hariharan Thantry on 2019-02-01
  *
+ *  A shell frontend to interface with dpc-proxy through cli-mgr
+ *
  *  Copyright © 2019 Fungible Inc. All rights reserved.
  */
 
