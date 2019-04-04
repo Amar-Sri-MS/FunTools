@@ -387,6 +387,17 @@ def merge_configs(old, new):
         else:
             old[k] = new[k]
 
+def override_field(config, field, value):
+    for k,v in config.items():
+        if isinstance(v, dict):
+            override_field(config[k], field, value)
+        elif k==field:
+            config[k] = value
+
+def set_versions(value):
+    global config
+    override_field(config, 'version', value)
+
 def main():
     parser = argparse.ArgumentParser()
     flash_content = None
@@ -397,6 +408,7 @@ def main():
     parser.add_argument('--config-type', choices={'json','ini'}, default='ini', help="Configuration file format")
     parser.add_argument('--source-dir', action='append', help='Location of source files to be used (can be specified multiple times)', default=[os.path.curdir])
     parser.add_argument('--action', choices={'all', 'sign', 'flash', 'key_hashes', 'certificates', 'key_injection'}, default='all', help='Action to be performed on the input files')
+    parser.add_argument('--force-version', type=int, help='Override firmware versions')
     group = parser.add_mutually_exclusive_group()
     group.add_argument('--enroll-cert', metavar = 'FILE', help='Enrollment certificate')
     group.add_argument('--enroll-tbs', metavar = 'FILE', help='Enrollment tbs')
@@ -431,6 +443,10 @@ def main():
             else:
                 with open(config_file, 'r') as f:
                     merge_configs(config, json.load(f,encoding='ascii'))
+
+    if args.force_version:
+        set_versions(args.force_version)
+
     run(args.action, args.enroll_cert, args.enroll_tbs)
 
 #TODO(mnowakowski) get rid of globals
