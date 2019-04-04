@@ -23,7 +23,7 @@ def run_verif_server():
    connect_verif_client_socket(args.verif_svr_port)
    set_i2c_dis(args.i2c_dis)
    if not args.i2c_dis:
-      connect_dbgprobe(args.tpod,args.tpod_jtag,args.tpod_force)
+      connect_dbgprobe(args.tpod,args.tpod_jtag,args.tpod_pcie,args.tpod_force)
    csrthread = CsrThread()
    csrthread.start()
 
@@ -792,7 +792,11 @@ def proc_arg():
     parser.add_argument('--tpod', nargs='?', type=str, default='TPOD4', help='TPOD name. default %(default)s')
     parser.add_argument('--tpod_force', action='store_true', default=False, help='TPOD force mode. default %(default)s')
     parser.add_argument('--tpod_jtag', action='store_true', default=False, help='TPOD JTAG mode. default %(default)s')
+    parser.add_argument('--tpod_pcie', action='store_true', default=False, help='TPOD PCIE mode. default %(default)s')
     args = parser.parse_args()
+    if args.tpod_jtag and args.tpod_pcie:
+       print("tpod both jtag and pcie mode specified")
+       sys.exit(1)
     i2c_dis=args.i2c_dis
 
 def main():
