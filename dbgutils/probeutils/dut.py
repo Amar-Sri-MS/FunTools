@@ -89,7 +89,7 @@ class dut(object):
         if bmc is True:
             return (bmc, bmc_ip, pcie_ccu_bar, pcie_probe_ip)
         else:
-            return (bmc, pcie_probe_id, pcie_probe_ip)
+            return (bmc, pcie_ccu_bar, pcie_probe_ip)
 
 def dut_cfg_test():
     duts = dut()

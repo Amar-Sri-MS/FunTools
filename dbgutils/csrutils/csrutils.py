@@ -853,10 +853,10 @@ def connect(dut_name, mode, force_connect=False):
             bmc_ip = dut_pcie_info[1]
             pcie_ccu_bar = dut_pcie_info[2]
             pcie_probe_ip = dut_pcie_info[3]
-            status = dbgprobe().connect(mode='pcie', bmc_board=True,
-                                        bmc_ip_address=bmc_ip,
+            status = dbgprobe().connect(mode='pcie', bmc_board=False,
                                         probe_ip_addr=pcie_probe_ip,
                                         probe_id = pcie_ccu_bar)
+
     else:
         print('Mode: {} is not yet supported!'.format(mode))
         return

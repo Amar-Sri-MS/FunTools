@@ -61,7 +61,7 @@ class FileParser:
 
     line = line.lstrip().rstrip()
     values = {}
-    match = re.match('([0-9]+).([0-9]+) TRACE ([A-Z_]+) ([A-Z_]+)', line)
+    match = re.match('\s*([0-9]+).([0-9]+) TRACE ([A-Z_]+) ([A-Z_]+)', line)
     if not match:
       # Not a log line, but not an error either.
       return (None, None)
@@ -139,7 +139,8 @@ class FileParser:
 
     elif event_type == ('WU', 'SEND'):
       # Should define src, dest, id, name, arg0, arg1.
-      expect_keywords = ['faddr', 'wuid', 'name', 'arg0', 'arg1', 'dest']
+      expect_keywords = ['faddr', 'wuid', 'name', 'arg0', 'arg1', 'dest',
+                         'flags']
 
     elif event_type == ('TIMER', 'TRIGGER'):
       # Should define timer and arg0.
@@ -244,7 +245,8 @@ class TraceParser:
     self.boot_transaction = event.Transaction(boot_event)
     self.transactions = [self.boot_transaction]
 
-  def RememberSend(self, event, wu_id, arg0, arg1, dest, send_time, is_timer):
+  def RememberSend(self, event, wu_id, arg0, arg1, dest, send_time, is_timer,
+                   flags):
     """Records the WU send event for later matching with a start.
 
     event is the sending WU.
@@ -255,11 +257,12 @@ class TraceParser:
     send_time is when the wu send was sent.  This is less interesting for
     WU sends (though it describes order), but important for timers.
     is_timer is true if the send is a timer send.
+    flags is raw flag bits from FunOS, indicating gated WUs or sends to HW.
     """
     if dest not in self.caller_queues:
       self.caller_queues[dest] = []
     self.caller_queues[dest].append((event, wu_id, arg0, arg1, send_time,
-                                     is_timer))
+                                     is_timer, flags))
 
   def FindPreviousSend(self, wu_id, arg0, arg1, dest):
     """Returns the WU send that would have started a WU with the arguments,
@@ -268,16 +271,17 @@ class TraceParser:
     the send was a timer start and trigger.
     """
     if dest not in self.caller_queues:
-      return (None, 0, False)
+      return (None, 0, False, 0)
     if len(self.caller_queues[dest]) == 0:
-      return (None, 0, False)
+      return (None, 0, False, 0)
     for entry in self.caller_queues[dest]:
-      (sender, sent_wu_id, sent_arg0, sent_arg1, send_time, is_timer) = entry
+      (sender, sent_wu_id, sent_arg0, sent_arg1, send_time, is_timer,
+       flags) = entry
       if (sent_wu_id == wu_id and sent_arg0 == arg0 and
           (is_timer or sent_arg1 == arg1)):
         self.caller_queues[dest].remove(entry)
-        return (sender, send_time, is_timer)
-    return (None, 0, False)
+        return (sender, send_time, is_timer, flags)
+    return (None, 0, False, 0)
 
   def HandleLogLine(self, log_keywords, line_number):
     """Reads in each logging event, and creates or updates any log events."""
@@ -293,12 +297,32 @@ class TraceParser:
       arg0 = log_keywords['arg0']
       arg1 = log_keywords['arg1']
       wu_id = log_keywords['wuid'] & 0xffff
+
+      if vp in self.vp_to_event:
+          # Function never saw end.
+          prev_event = self.vp_to_event[vp]
+          prev_event.end_time = timestamp - 0.000000001
+          del self.vp_to_event[vp]
+          sys.stderr.write('%s:%d: START before END.\n' % (self.input_filename,
+                                                           line_number))
       current_event = event.TraceEvent(timestamp, timestamp,
                                        log_keywords['name'], vp, log_keywords)
       self.vp_to_event[vp] = current_event
 
-      (predecessor, send_time, is_timer) = self.FindPreviousSend(wu_id, arg0,
-                                                                 arg1, vp)
+      (predecessor, send_time,
+       is_timer, flags) = self.FindPreviousSend(wu_id, arg0,
+                                                arg1, vp)
+
+      if predecessor and int(flags) & 2:
+          # Hardware WU.
+          hw_event = event.TraceEvent(send_time,
+                                      current_event.start_time,
+                                      'DMA',
+                                      predecessor.vp,
+                                      [])
+          hw_event.is_timer = True
+          predecessor.successors.append(hw_event)
+          predecessor = hw_event
       
       if predecessor:
         current_event.transaction = predecessor.transaction
@@ -347,13 +371,14 @@ class TraceParser:
       wu_id = log_keywords['wuid'] & 0xffff
       arg0 = log_keywords['arg0']
       arg1 = log_keywords['arg1']
+      flags = log_keywords['flags']
       send_time = log_keywords['timestamp']
 
       curr = None
       if vp in self.vp_to_event:
         curr = self.vp_to_event[vp]
         self.RememberSend(curr, wu_id, arg0, arg1, log_keywords['dest'],
-                          send_time, False)
+                          send_time, False, flags)
 
     elif event_type == ('HU', 'SQ_DBL'):
       label = 'HU doorbell: sqid=%d' % log_keywords['sqid']
@@ -380,7 +405,7 @@ class TraceParser:
         sys.stderr.write('%s:%d: unsure what WU started timer.\n' % (self.input_filename, line_number))
 
       self.RememberSend(current_event, wuid, arg0, 0, log_keywords['dest'],
-                        start_time, True)
+                        start_time, True, 0)
 
     elif event_type == ('TRANSACTION', 'START'):
        if vp not in self.vp_to_event:
