@@ -1,3 +1,17 @@
+/*
+*  cli_module.h
+*
+*  Created by Hariharan Thantry on 2019-04-01
+*
+*  Interface definition for any module that wants to communicate
+*  with dpc proxy
+*
+*  Copyright © 2019 Fungible Inc. All rights reserved.
+*
+*/
+
+
+
 #pragma once
 
 /*

@@ -4,7 +4,7 @@ CFLAGS := -O2
 SRCS := $(wildcard *.c)
 
 OBJFILES := $(patsubst %.c,%.o,$(SRCS))
-BCFILES := $(patsubst %.c,%.bc,$(SRCS))
+BCFILES := $(patsubst %.c,%.$(TARGET).bc,$(SRCS))
 ASMFILES := $(patsubst %.c,%.$(TARGET).S,$(SRCS))
 
 WORKSPACE ?= ../../../
@@ -27,10 +27,10 @@ ifeq ($(TARGET),mips64)
 endif
 
 define generate_bc
-    @m_file=$(basename $(1) .o)
+    m_file=$(basename $(1) .o)
     @objdump -h $(1) | \
 		grep .text | \
-		awk -v m_file=$(1) '{print "dd if='$$m_file'.o of='$$m_file'.bc bs=1 count=$$[0x" $$3 "] skip=$$[0x" $$6 "]"}' | \
+		awk -v m_file=$(1) '{print "dd if='$$m_file'.o of='$$m_file'.$(TARGET).bc bs=1 count=$$[0x" $$3 "] skip=$$[0x" $$6 "]"}' | \
 		bash
 endef
 
@@ -39,7 +39,7 @@ define generate_bcc
 	@echo "#if 0" >> $(GEN_BC).bcc
 	@cat $(1).c >> $(GEN_BC).bcc
 	@echo "#endif" >> $(GEN_BC).bcc
-	xxd -c 8 -i $(1).bc >> $(GEN_BC).bcc
+	xxd -c 8 -i $(1).$(TARGET).bc >> $(GEN_BC).bcc
 endef
 
 define generate_bcc_hdr
@@ -66,7 +66,7 @@ all: $(BCFILES) $(ASMFILES) tidy
 tidy:
 	$(call c_tidy,$(GEN_BC).bcc)
 
-%.bc: %.o
+%.$(TARGET).bc: %.o
 	$(call generate_bc,$<)
 	$(call generate_bcc,$(basename $(basename $<)))
 	$(call generate_bcc_hdr,$(basename $(basename $<)))
