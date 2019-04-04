@@ -9,10 +9,12 @@
 #
 TARGET ?= bpfel
 KERNEL ?= 01
+WORKSPACE ?= ../../../
+
 
 OS := $(shell uname)
 
-SDKDIR ?= ../../../FunSDK
+SDKDIR = $(WORKSPACE)/FunSDK
 
 CXXFLAGS ?= -g -std=c++17 -I $(SDKDIR) -I $(SDKDIR)/FunSDK -g -Wall -Werror -Wno-multichar
 LDFLAGS += -L $(SDKDIR)/lib/$(OS)/noasan/x86_64 -lfunclient -lreadline -lpthread
