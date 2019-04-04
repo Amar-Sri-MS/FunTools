@@ -40,6 +40,7 @@ class Transaction():
     for event in all_events:
       offset_time = event['start_time'] - min_time
       # Offset from start of tration to current event.
+      event['overall_duration'] = overall_duration
       if max_time - min_time == 0:
         event['offset_pct'] = 0
         event['duration_pct'] = MAX_PCT

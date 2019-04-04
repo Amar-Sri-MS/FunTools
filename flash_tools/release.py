@@ -43,6 +43,7 @@ def main():
         help='Action to be performed on the input files')
     parser.add_argument('--sdkdir', required=True, help='SDK root directory')
     parser.add_argument('--destdir', required=True, help='Destination directory for output')
+    parser.add_argument('--force-version', type=int, help='Override firmware versions')
 
     args = parser.parse_args()
 
@@ -58,6 +59,10 @@ def main():
     gf.merge_configs(config, json.loads(EEPROM_CONFIG_OVERRIDE))
     gf.merge_configs(config, json.loads(HOST_FIRMWARE_CONFIG_OVERRIDE))
     gf.set_config(config)
+
+    if args.force_version:
+        gf.set_versions(args.force_version)
+
     curdir = os.getcwd()
 
     if wanted('prepare'):

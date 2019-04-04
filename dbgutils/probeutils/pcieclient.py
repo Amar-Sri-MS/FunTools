@@ -111,8 +111,9 @@ class PCIE_Client(object):
 
         # Successful response: OKAY READ <64-bit word> ...
         csr_peek_rsp_words = csr_peek_rsp.split()
+        word_array = [int(w,0) for w in csr_peek_rsp_words[2:]]
         if csr_peek_rsp_words[0] == 'OKAY':
-            return (True, csr_peek_rsp_words[2:])
+            return (True, word_array)
 
         return (False, 'PCIe peek failed: ' + csr_peek_rsp)
 
@@ -120,7 +121,7 @@ class PCIE_Client(object):
     def csr_poke(self, csr_addr, word_array, fast_poke=False, chip_inst=None):
         logger.debug(('csr_addr: {0} word_array: {1}').format(
             csr_addr, word_array))
-
+        str_array = [str(w) for w in word_array]
         if self.con_handle is None:
             error_msg = 'PCIe Server is not connected!'
             logger.error(error_msg)
@@ -138,7 +139,7 @@ class PCIE_Client(object):
                                 + ' '
                                 + str(len(word_array) * 64)
                                 + ' '
-                                + ' '.join(word_array)
+                                + ' '.join(str_array)
                                 + '\n')
         csr_poke_rsp = str(self.con_handle.recv(1024))
 
