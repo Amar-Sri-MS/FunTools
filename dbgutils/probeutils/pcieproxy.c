@@ -297,12 +297,18 @@ swab16(uint16_t u16)
 #define CCU_HUT1_SPINLOCK	4080
 #define CCU_ID			4092
 
-#define CCU_SPINLOCK_SHF	(32)
-#define CCU_SPINLOCK_MSK	(0xffffffffUL)
-#define CCU_SPINLOCK_PUT(x)	((uint64_t)(x) << CCU_SPINLOCK_SHF)
-#define CCU_SPINLOCK_GET(x)	((uint32_t)(((x) >> CCU_SPINLOCK_SHF) & \
-					    CCU_SPINLOCK_MSK))
-#define CCU_SPINLOCK_UNLOCKED	0x7fffffffUL
+#define CCU_SPINLOCK_ID_SHF	(32)
+#define CCU_SPINLOCK_ID_MSK	(0x7fffffffUL)
+#define CCU_SPINLOCK_ID_PUT(x)	((uint64_t)(x) << CCU_SPINLOCK_ID_SHF)
+#define CCU_SPINLOCK_ID_GET(x)	((uint32_t)(((x) >> CCU_SPINLOCK_ID_SHF) & \
+					    CCU_SPINLOCK_ID_MSK))
+#define CCU_SPINLOCK_NULL_ID	0x7fffffffUL
+
+#define CCU_SPINLOCK_LOCK_SHF	(63)
+#define CCU_SPINLOCK_LOCK_MSK	(0x1UL)
+#define CCU_SPINLOCK_LOCK_PUT(x) ((uint64_t)(x) << CCU_SPINLOCK_LOCK_SHF)
+#define CCU_SPINLOCK_LOCK_GET(x) ((uint32_t)(((x) >> CCU_SPINLOCK_LOCK_SHF) & \
+					     CCU_SPINLOCK_LOCK_MSK))
 
 #define CCU_ID_HUT_SHF		(4)
 #define CCU_ID_HUT_MSK		(0x1)
@@ -423,21 +429,20 @@ ccu_spinlock(ccu_info_t *ccu_info)
 void
 ccu_lock(ccu_info_t *ccu_info)
 {
-#ifdef notyet
 	do {
 		*ccu_info->spinlock =
-			cpu_to_be64(CCU_SPINLOCK_PUT(ccu_info->spinlock_token));
-	} while (CCU_SPINLOCK_GET(be64_to_cpu(ccu_info->spinlock)) != ccu_info->spinlock_token);
-#endif
+			cpu_to_be64(CCU_SPINLOCK_ID_PUT(ccu_info->spinlock_token) |
+				    CCU_SPINLOCK_LOCK_PUT(1));
+	} while (CCU_SPINLOCK_ID_GET(be64_to_cpu(*ccu_info->spinlock)) !=
+		 ccu_info->spinlock_token);
 }
 
 void
 ccu_unlock(ccu_info_t *ccu_info)
 {
-#ifdef notyet
 	*ccu_info->spinlock =
-		cpu_to_be64(CCU_SPINLOCK_PUT(CCU_SPINLOCK_UNLOCKED));
-#endif
+		cpu_to_be64(CCU_SPINLOCK_ID_PUT(CCU_SPINLOCK_NULL_ID) |
+			    CCU_SPINLOCK_LOCK_PUT(0));
 }
 
 /*
