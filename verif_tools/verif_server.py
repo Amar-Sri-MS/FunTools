@@ -11,6 +11,7 @@ import json
 import threading
 import random
 import code, rlcompleter, readline
+import logging
 
 from threading import Thread
 try:  
@@ -41,6 +42,8 @@ req_cnt=0
 glb_rd_cnt=0
 glb_wr_cnt=0
 hnu_port_base=37
+logger = logging.getLogger("verif_server")
+logger.setLevel(logging.INFO)
 
 #
 # Convert hex encoding String back to raw packet
@@ -233,14 +236,14 @@ def process_cmd_csr_write (msg_len):
   #get 8B addr
   buf = recv_str(8)
   (addr,) = struct.unpack(">Q", buf[:8])
-  print 'in process_cmd_csr_write cnt=%0d, address = 0x%x '%(glb_wr_cnt,addr)
+  logger.debug('in process_cmd_csr_write cnt=%0d, address = 0x%x '%(glb_wr_cnt,addr))
 #  print 'address is 0x%x' % (addr)
 
   #now get the csr write data
   data_len = msg_len - 2 - 1 - 8 #msg_len - MSGLEN_SIZE - CMD_SIZE - ADDR_SIZE
   data_str = recv_str(data_len)
   data_list_bytes = [ord(i) for i in list(data_str)]
-  print data_list_bytes
+  logger.debug("{0}".format(data_list_bytes))
   data_words_list = byte_array_to_words_be(array('B', data_list_bytes))
   #print "csr_poke data:"
   #print data_words_list
@@ -253,7 +256,7 @@ def process_cmd_csr_write (msg_len):
       (status, result) = dbgprobe().csr_poke(addr, data_words_list)
   #print "csr_poke returned"
   if status is False:
-      print "csr_poke returned false"
+      logger.error("csr_poke returned false")
       sys.exit(1)
 
   #finally send reply
@@ -376,10 +379,10 @@ def process_cmd_csr_read (msg_len):
       (status,result) = (True,[random.randint(0,0x10000000000000000)]*dword_len)
   else:
       (status, result) = dbgprobe().csr_peek(addr, dword_len)
-  print "result=",result
+  logger.debug("result={0}".format(result))
 
   if status is False:
-      print ("csr_peek returned false")
+      logger.error("csr_peek returned false")
       sys.exit(1)
 
   #print "csr_peek returned"
@@ -388,7 +391,7 @@ def process_cmd_csr_read (msg_len):
   else:
     read_data_hex_str = 'deadbeefdeadbeef' #make up a dummy result
 
-  print "read: addr=0x%0x data=%s,gbl_rd_cnt=%0d"%(addr,read_data_hex_str,glb_rd_cnt)
+  logger.debug("read: addr=0x%0x data=%s,gbl_rd_cnt=%0d"%(addr,read_data_hex_str,glb_rd_cnt))
 
   #finally send reply
   reply_len = 2 + 1 + 8*dword_len #msg_size + command + Bytes of data

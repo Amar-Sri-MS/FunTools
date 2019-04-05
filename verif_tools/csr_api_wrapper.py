@@ -2,6 +2,7 @@
 import os,sys,code
 import rlcompleter, readline
 import argparse
+import logging
 from verif_server import *
 
 from ctypes import *
@@ -26,6 +27,9 @@ def run_verif_server():
       connect_dbgprobe(args.tpod,args.tpod_jtag,args.tpod_pcie,args.tpod_force)
    csrthread = CsrThread()
    csrthread.start()
+   if args.verif_svr_verbose:
+      logger = logging.getLogger("verif_server")
+      logger.setLevel(logging.DEBUG)
 
 def csr_wr(addr,data):
     status=[0]
@@ -576,6 +580,9 @@ class csr_api_wrapper(object):
    def __init__(self):
       self.f1_csr_slib=f1_csr_lib
 
+   def aacs(self,port):
+      f1_csr_lib.serdes_aacs(port)
+      
   #uint32_t f1_config_chk_ca(uint32_t cluster);
    def f1_config_chk_ca(self,cluster):
       return f1_csr_lib.f1_config_chk_ca(cluster)
@@ -785,8 +792,10 @@ def proc_arg():
     global args, i2c_dis
     parser = argparse.ArgumentParser()
     parser.add_argument('--run_verif_svr', action='store_true', default=False, help='run own verif server. default %(default)s')
+    parser.add_argument('--run_aacs_port', nargs='?', type=auto_int, default=0, help='run aacs server port. default %(default)s not run')
     parser.add_argument('--verif_svr_hostname', nargs='?', type=str, default='localhost', help='verif server hostname. default %(default)s')
     parser.add_argument('--verif_svr_port', nargs='?', type=auto_int, default=0x1234, help='verif server port. default %(default)s')
+    parser.add_argument('--verif_svr_verbose', action='store_true', default=False, help='verif server verbose. default %(default)s')
     parser.add_argument('--csr_lib', nargs='?', type=str, default="./f1_csr_slib.so", help='f1_csr_slib.so location. default %(default)s')
     parser.add_argument('--i2c_dis', action='store_true', default=False, help='i2cproxy connection disable. default %(default)d')
     parser.add_argument('--tpod', nargs='?', type=str, default='TPOD4', help='TPOD name. default %(default)s')
@@ -808,6 +817,8 @@ def main():
    if (args.run_verif_svr):
       run_verif_server()
    connect_verif_server()
+   if (args.run_aacs_port):
+      f1w.aacs(args.run_aacs_port)
    readline.parse_and_bind('tab: complete')
    code.interact(local=globals())
 
