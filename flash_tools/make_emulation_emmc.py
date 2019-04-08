@@ -27,7 +27,7 @@ LOAD_ADDR = 0xffffffff91000000
 BLOCK_SIZE = 512
 
 # When FunOS is stored as raw data, byte offset from the beginning of memory
-FUNOS_OFFSET = 32 * 1024 * 1024
+FUNOS_OFFSET = 33 * 1024 * 1024
 
 
 def pad_file(infile_name, outfile_name, size):
@@ -173,10 +173,10 @@ def gen_fs(files):
             '-X', 'dos',  # partition label
             f.name]
         p = subprocess.Popen(cmd, stdin=subprocess.PIPE)
-        sfdiskcmds = ['start=4KiB, size=64MiB, type=83, bootable', #64MB@4KB
-                    'start=1048577KiB, size=64MiB, type=83'] #64MB@(1GB+4KB)
+        sfdiskcmds = ['start=4KiB, size=32MiB, type=83, bootable', #32MB@4KB
+                    'start=1048580KiB, size=32MiB, type=83'] #32MB@(1GB+4KB)
         p.communicate(input="\n".join(sfdiskcmds))
-        trunc_file(f.name, output_fs, 50 * 1024 * 1024)
+        trunc_file(f.name, output_fs, FUNOS_OFFSET)
     return output_fs
 
 
