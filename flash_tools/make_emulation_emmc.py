@@ -167,15 +167,16 @@ def gen_fs(files):
            ]
     subprocess.call(cmd)
     shutil.rmtree(tempdir)
-    pad_file(output_fs, output_fs + '.tmp', 1124 * 1024 * 1024)
-    cmd = ['sfdisk',
-           '-X', 'dos',  # partition label
-           output_fs + '.tmp']
-    p = subprocess.Popen(cmd, stdin=subprocess.PIPE)
-    sfdiskcmds = ['start=4KiB, size=64MiB, type=83, bootable', #64MB@4KB
-                  'start=1048577KiB, size=64MiB, type=83'] #64MB@(1GB+4KB)
-    p.communicate(input="\n".join(sfdiskcmds))
-    trunc_file(output_fs + '.tmp', output_fs, 50 * 1024 * 1024)
+    with tempfile.NamedTemporaryFile() as f:
+        pad_file(output_fs, f.name, 1124 * 1024 * 1024)
+        cmd = ['sfdisk',
+            '-X', 'dos',  # partition label
+            f.name]
+        p = subprocess.Popen(cmd, stdin=subprocess.PIPE)
+        sfdiskcmds = ['start=4KiB, size=64MiB, type=83, bootable', #64MB@4KB
+                    'start=1048577KiB, size=64MiB, type=83'] #64MB@(1GB+4KB)
+        p.communicate(input="\n".join(sfdiskcmds))
+        trunc_file(f.name, output_fs, 50 * 1024 * 1024)
     return output_fs
 
 
