@@ -14,7 +14,6 @@
  */
 
 #pragma once
-
 typedef unsigned long long k_01_arg;
 
 struct k_02_arg {
@@ -30,4 +29,12 @@ struct k_04_arg {
 	int a;
 	int b;
 	int c;
+};
+
+struct k_05_arg {
+    unsigned long long data;
+    unsigned long long data_end;
+    unsigned long long data_meta;
+    unsigned int ingress_ifindex;
+    unsigned int rx_queue_index;
 };
