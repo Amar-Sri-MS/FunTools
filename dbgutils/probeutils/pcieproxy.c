@@ -57,13 +57,8 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netinet/ip.h>
+#include <arpa/inet.h>
 #include <syslog.h>
-
-/*
- * Global variables.
- */
-const char *myname;
-int debug = 0;
 
 /*
  * CCU Server TCP Port.
@@ -71,13 +66,21 @@ int debug = 0;
 #define CCU_SERVER_TCP_PORT	44445
 
 /*
- * The PCIe Remote Access mapping in the End Point MMU is 4KB.
+ * Server Global Variables.
  */
-#define CCU_SIZE		4096
+const char *myname;
+int debug = 0;
+int port = CCU_SERVER_TCP_PORT;
 
-#define CCU_HUT0_SPINLOCK	4072
-#define CCU_HUT1_SPINLOCK	4080
-#define CCU_ID			4092
+/*
+ * Client Global Variables and Types.
+ */
+typedef struct {
+	int		fd;
+	void		*mmap;
+	pid_t		spinlock_token;
+	uint64_t	*spinlock;
+} ccu_info_t;
 
 
 /*
@@ -275,6 +278,7 @@ swab16(uint16_t u16)
  * ==============================================
  * Fundamentals of accesses the CSR Control Unit.
  * ==============================================
+ */
 
 /*
  * Registers are read and written via the CCU's Indirect Access commands.
@@ -282,6 +286,44 @@ swab16(uint16_t u16)
  * a Size (in bits).  The Caller provides a Data Buffer of 64-bit words to
  * read register values into or write new register values.
  */
+
+/*
+ * The PCIe Remote Access mapping in the End Point MMU is 4KB.  All of this
+ * should really be in a FunHW or FunOS include file ...
+ */
+#define CCU_SIZE		4096
+
+#define CCU_HUT0_SPINLOCK	4072
+#define CCU_HUT1_SPINLOCK	4080
+#define CCU_ID			4092
+
+#define CCU_SPINLOCK_ID_SHF	(32)
+#define CCU_SPINLOCK_ID_MSK	(0x7fffffffUL)
+#define CCU_SPINLOCK_ID_PUT(x)	((uint64_t)(x) << CCU_SPINLOCK_ID_SHF)
+#define CCU_SPINLOCK_ID_GET(x)	((uint32_t)(((x) >> CCU_SPINLOCK_ID_SHF) & \
+					    CCU_SPINLOCK_ID_MSK))
+#define CCU_SPINLOCK_NULL_ID	0x7fffffffUL
+
+#define CCU_SPINLOCK_LOCK_SHF	(63)
+#define CCU_SPINLOCK_LOCK_MSK	(0x1UL)
+#define CCU_SPINLOCK_LOCK_PUT(x) ((uint64_t)(x) << CCU_SPINLOCK_LOCK_SHF)
+#define CCU_SPINLOCK_LOCK_GET(x) ((uint32_t)(((x) >> CCU_SPINLOCK_LOCK_SHF) & \
+					     CCU_SPINLOCK_LOCK_MSK))
+
+#define CCU_ID_HUT_SHF		(4)
+#define CCU_ID_HUT_MSK		(0x1)
+#define CCU_ID_HUT_PUT(x)	((x) << CCU_ID_HUT_SHF)
+#define CCU_ID_HUT_GET(x)	(((x) >> CCU_ID_HUT_SHF) & CCU_ID_HUT_MSK)
+
+#define CCU_ID_SLICE_SHF	(2)
+#define CCU_ID_SLICE_MSK	(0x3)
+#define CCU_ID_SLICE_PUT(x)	((x) << CCU_ID_SLICE_SHF)
+#define CCU_ID_SLICE_GET(x)	(((x) >> CCU_ID_SLICE_SHF) & CCU_ID_SLICE_MSK)
+
+#define CCU_ID_CID_SHF		(0)
+#define CCU_ID_CID_MSK		(0x3)
+#define CCU_ID_CID_PUT(x)	((x) << CCU_ID_CID_SHF)
+#define CCU_ID_CID_GET(x)	(((x) >> CCU_ID_CID_SHF) & CCU_ID_CID_MSK)
 
 /*
  * Convert bit-length into number of 64-bit units.
@@ -309,10 +351,10 @@ decode_ccucmd(uint64_t cmd, const char *description)
  * Dump relevant portions of the CCU.
  */
 void
-ccu_dump(void *ccu_mmap)
+ccu_dump(ccu_info_t *ccu_info)
 {
-	uint64_t *ccu64 = (uint64_t *)ccu_mmap;
-	uint32_t *ccu32 = (uint32_t *)ccu_mmap;
+	uint64_t *ccu64 = (uint64_t *)ccu_info->mmap;
+	uint32_t *ccu32 = (uint32_t *)ccu_info->mmap;
 	unsigned int addr;
 
 	/*
@@ -344,11 +386,11 @@ ccu_dump(void *ccu_mmap)
  * Dump out the result of a register read via the CCU.
  */
 void
-ccu_read_dump(void *ccu_mmap,
+ccu_read_dump(ccu_info_t *ccu_info,
 	      uint32_t size,
 	      const char *name)
 {
-	uint64_t *ccu64 = (uint64_t *)ccu_mmap;
+	uint64_t *ccu64 = (uint64_t *)ccu_info->mmap;
 	uint32_t size64 = SIZE64(size);
 	int reg_idx;
 	
@@ -361,16 +403,59 @@ ccu_read_dump(void *ccu_mmap,
 }
 
 /*
+ * Return a pointer to the CCU Spinlock to use for this CCU mapping.
+ */
+uint64_t *
+ccu_spinlock(ccu_info_t *ccu_info)
+{
+	uint64_t *ccu64 = (uint64_t *)ccu_info->mmap;
+	uint32_t *ccu32 = (uint32_t *)ccu_info->mmap;
+	uint32_t ccu_id, ccu_hut;
+	uint64_t ccu_spinlock_idx;
+
+	ccu_id = be32_to_cpu(ccu32[CCU_ID/sizeof(*ccu32)]);
+	ccu_hut = CCU_ID_HUT_GET(ccu_id);
+	ccu_spinlock_idx = (ccu_hut == 0
+			    ? CCU_HUT0_SPINLOCK
+			    : CCU_HUT1_SPINLOCK);
+	return &ccu64[ccu_spinlock_idx / sizeof(*ccu64)];
+}
+
+/*
+ * Use CCU Spinlock to prevent multiple clients from interfering with echo
+ * others' register accesses.  Requires that global variables ccu_spinlock_token
+ * and ccu_spinlockp be initialized.
+ */
+void
+ccu_lock(ccu_info_t *ccu_info)
+{
+	do {
+		*ccu_info->spinlock =
+			cpu_to_be64(CCU_SPINLOCK_ID_PUT(ccu_info->spinlock_token) |
+				    CCU_SPINLOCK_LOCK_PUT(1));
+	} while (CCU_SPINLOCK_ID_GET(be64_to_cpu(*ccu_info->spinlock)) !=
+		 ccu_info->spinlock_token);
+}
+
+void
+ccu_unlock(ccu_info_t *ccu_info)
+{
+	*ccu_info->spinlock =
+		cpu_to_be64(CCU_SPINLOCK_ID_PUT(CCU_SPINLOCK_NULL_ID) |
+			    CCU_SPINLOCK_LOCK_PUT(0));
+}
+
+/*
  * Read a specified register into a provided buffer using the CCU to issue an
  * Indirect Register Read.
  */
 void
-csr_wide_read(void *ccu_mmap,
+csr_wide_read(ccu_info_t *ccu_info,
 	      uint64_t addr,
 	      uint64_t *data,
 	      uint32_t size)
 {
-	uint64_t *ccu64 = (uint64_t *)ccu_mmap;
+	uint64_t *ccu64 = (uint64_t *)ccu_info->mmap;
 	uint64_t cmd, size64;
 	uint32_t ring_sel;
 	int reg_idx;
@@ -390,16 +475,18 @@ csr_wide_read(void *ccu_mmap,
 	 * Issue the CCU Read Command and then copy the CCU Data Buffer into
 	 * the caller's buffer.
 	 */
+	ccu_lock(ccu_info);
 	ccu64[CCU_CMD_REG] = cpu_to_be64(cmd);
 	for (reg_idx = 0; reg_idx < size64; reg_idx++)
 		data[reg_idx] = be64_to_cpu(ccu64[CCU_DATA(reg_idx)]);
+	ccu_unlock(ccu_info);
 }
 
 /*
  * Read a specified register into a provided buffer.
  */
 int
-csr_read(void *ccu_mmap,
+csr_read(ccu_info_t *ccu_info,
 	 uint64_t base_addr,
 	 uint64_t csr_addr,
 	 uint64_t *data,
@@ -407,7 +494,7 @@ csr_read(void *ccu_mmap,
 {
 	uint64_t addr = base_addr + csr_addr;
 
-	csr_wide_read(ccu_mmap, addr, data, size);
+	csr_wide_read(ccu_info, addr, data, size);
 	return 0;
 }
 
@@ -416,12 +503,12 @@ csr_read(void *ccu_mmap,
  * Indirect Register Write.
  */
 void
-csr_wide_write(void *ccu_mmap,
+csr_wide_write(ccu_info_t *ccu_info,
 	       uint64_t addr,
 	       uint64_t *data,
 	       uint32_t size)
 {
-	uint64_t *ccu64 = (uint64_t *)ccu_mmap;
+	uint64_t *ccu64 = (uint64_t *)ccu_info->mmap;
 	uint64_t cmd, size64;
 	uint32_t ring_sel;
 	int reg_idx;
@@ -441,16 +528,18 @@ csr_wide_write(void *ccu_mmap,
 	 * Copy the caller's buffer into the CCU Data Buffer and then issue
 	 * the CCU Write Command.
 	 */
+	ccu_lock(ccu_info);
 	for (reg_idx = 0; reg_idx < size64; reg_idx++)
 		ccu64[CCU_DATA(reg_idx)] = cpu_to_be64(data[reg_idx]);
 	ccu64[CCU_CMD_REG] = cpu_to_be64(cmd);
+	ccu_unlock(ccu_info);
 }
 
 /*
  * Write a specified register from a provided buffer.
  */
 int
-csr_write(void *ccu_mmap,
+csr_write(ccu_info_t *ccu_info,
 	  uint64_t base_addr,
 	  uint64_t csr_addr,
 	  uint64_t *data,
@@ -458,7 +547,7 @@ csr_write(void *ccu_mmap,
 {
 	uint64_t addr = base_addr + csr_addr;
 
-	csr_wide_write(ccu_mmap, addr, data, size);
+	csr_wide_write(ccu_info, addr, data, size);
 	return 0;
 }
 
@@ -508,9 +597,11 @@ response(int fd, int priority, const char *format, ...)
 int
 server(int client_fd)
 {
-	int ccu_fd = -1;
-	void *ccu_mmap = NULL;
+	ccu_info_t ccu_info;
 	int err = 0;
+
+	ccu_info.fd = -1;
+	ccu_info.mmap = NULL;
 
 	while (1) {
 		char command[MAX_COMMAND_LINE];
@@ -524,7 +615,7 @@ server(int client_fd)
 		 * non-whitespace words.
 		 */
 		cc = read(client_fd, command, sizeof command);
-		if (cc < 0) {
+		if (cc <= 0) {
 			err = errno;
 			response(-1, LOG_ERR,
 				 "Unable to read from socket: %s\n",
@@ -576,7 +667,7 @@ server(int client_fd)
 			 * CONNECT <PCIe BAR in SysFS>
 			 */
 
-			if (ccu_mmap) {
+			if (ccu_info.mmap) {
 				response(client_fd, LOG_DEBUG,
 					 "Already connected!\n");
 				continue;
@@ -588,26 +679,29 @@ server(int client_fd)
 				continue;
 			}
 
-			ccu_fd = open(argv[1], O_RDWR);
-			if (ccu_fd < 0) {
+			ccu_info.fd = open(argv[1], O_RDWR);
+			if (ccu_info.fd < 0) {
 				response(client_fd, LOG_DEBUG,
 					 "Can't open %s: %s\n",
 					 argv[1], strerror(errno));
 				continue;
 			}
-			ccu_mmap = mmap(NULL, CCU_SIZE,
-					PROT_READ|PROT_WRITE,
-					MAP_SHARED|MAP_LOCKED,
-					ccu_fd, 0);
-			if (ccu_mmap == MAP_FAILED) {
+			ccu_info.mmap = mmap(NULL, CCU_SIZE,
+					     PROT_READ|PROT_WRITE,
+					     MAP_SHARED|MAP_LOCKED,
+					     ccu_info.fd, 0);
+			if (ccu_info.mmap == MAP_FAILED) {
 				response(client_fd, LOG_DEBUG,
 					 "Can't mmap %s: %s\n",
 					 argv[1], strerror(errno));
-				close(ccu_fd);
-				ccu_fd = -1;
-				ccu_mmap = NULL;
+				close(ccu_info.fd);
+				ccu_info.fd = -1;
+				ccu_info.mmap = NULL;
 				continue;
 			}
+
+			ccu_info.spinlock_token = getpid();
+			ccu_info.spinlock = ccu_spinlock(&ccu_info);
 
 			response(client_fd, LOG_DEBUG, "OKAY CONNECT %s\n",
 				 argv[1]);
@@ -635,7 +729,7 @@ server(int client_fd)
 			char response_msg[MAX_RESPONSE_LINE];
 			FILE *response_fp;
 
-			if (!ccu_mmap) {
+			if (!ccu_info.mmap) {
 				response(client_fd, LOG_DEBUG,
 					 "Not Connected!\n");
 				continue;
@@ -656,7 +750,7 @@ server(int client_fd)
 				continue;
 			}
 
-			csr_read(ccu_mmap, 0, csr_addr, csr_buf, csr_size);
+			csr_read(&ccu_info, 0, csr_addr, csr_buf, csr_size);
 
 			response_fp = fmemopen(response_msg,
 					       sizeof response_msg,
@@ -688,7 +782,7 @@ server(int client_fd)
 			uint64_t csr_buf[CCU_DATA_REG_CNT];
 			int nvalues, vidx;
 
-			if (!ccu_mmap) {
+			if (!ccu_info.mmap) {
 				response(client_fd, LOG_DEBUG,
 					 "Not Connected!\n");
 				continue;
@@ -719,7 +813,7 @@ server(int client_fd)
 				csr_buf[vidx] = strtoull(argv[vidx+3],
 							 NULL, 0);
 
-			csr_write(ccu_mmap, 0, csr_addr, csr_buf, csr_size);
+			csr_write(&ccu_info, 0, csr_addr, csr_buf, csr_size);
 			response(client_fd, LOG_DEBUG, "OKAY WRITE\n");
 			continue;
 		}
@@ -728,9 +822,9 @@ server(int client_fd)
 		continue;
 	}
 
-	if (ccu_mmap) {
-		munmap(ccu_mmap, CCU_SIZE);
-		close(ccu_fd);
+	if (ccu_info.mmap) {
+		munmap(ccu_info.mmap, CCU_SIZE);
+		close(ccu_info.fd);
 	}
 
 	return err;
@@ -744,12 +838,31 @@ server(int client_fd)
  */
 
 void
+debuglog(int priority, const char *format, ...)
+{
+	va_list args;
+
+	if (priority > 0) {
+		va_start(args, format);
+		vsyslog(priority, format, args);
+		va_end(args);
+	}
+
+	if (debug) {
+		va_start(args, format);
+		vfprintf(stderr, format, args);
+		va_end(args);
+	}
+}
+
+void
 usage(void)
 {
 	fprintf(stderr,
-		"usage: %s [-d] [-h]\n"
-		"    -d    debug/don't daemonize\n"
-		"    -h    help/this message\n",
+		"usage: %s [-d] [-h] [-p <TCP Server Port>\n"
+		"    -d         debug/don't daemonize\n"
+		"    -h         help/this message\n"
+		"    -p <port>  specify different TCP Server Port\n",
 		myname);
 }
 
@@ -772,7 +885,10 @@ main(int argc, char *const argv[])
 		myname++;
 	else
 		myname = argv[0];
-	while ((opt = getopt(argc, argv, "dh")) != -1) {
+	while ((opt = getopt(argc, argv, "dhp:")) != -1) {
+		extern char *optarg;
+		extern int optind;
+
 		switch (opt) {
 		case 'd':
 			debug = 1;
@@ -782,6 +898,10 @@ main(int argc, char *const argv[])
 			usage();
 			exit(EXIT_SUCCESS);
 			/*NOTREACHED*/
+
+		case 'p':
+			port = atoi(optarg);
+			break;
 
 		default:
 			usage();
@@ -833,15 +953,15 @@ main(int argc, char *const argv[])
 	 * contact with the TTY ...
 	 */
 	if (!debug) {
-		pid_t pid = fork();
+		pid_t daemon = fork();
 
-		if (pid < 0) {
+		if (daemon < 0) {
 			fprintf(stderr, "%s: unable to daemonize: %s\n",
 				myname, strerror(errno));
 			exit(EXIT_FAILURE);
 			/*NOT_REACHED*/
 		}
-		if (pid) {
+		if (daemon) {
 			exit(EXIT_SUCCESS);
 			/*NOTREACHED*/
 		}
@@ -860,22 +980,54 @@ main(int argc, char *const argv[])
 		int client_fd, err;
 		struct sockaddr_in client_inaddr;
 		socklen_t client_addrlen;
+		pid_t client_pid;
 
+		/*
+		 * Accept new incoming connection request.
+		 */
 		client_addrlen = sizeof client_inaddr;
 		client_fd = accept(server_fd,
 				   (struct sockaddr *)&client_inaddr,
 				   &client_addrlen);
 		if (client_fd < 0) {
-			syslog(LOG_ERR, "Can't accept incoming connection: %m");
+			debuglog(LOG_ERR, "Can't accept incoming connection: %s\n",
+				 strerror(errno));
+			close(server_fd);
 			exit(EXIT_FAILURE);
 			/*NOTREACHED*/
 		}
+
+		/*
+		 * Fork child process to handle the incoming request.
+		 */
+		client_pid = fork();
+		if (client_pid < 0) {
+			debuglog(LOG_ERR, "Can't fork client server process: %s\n",
+				 strerror(errno));
+			shutdown(client_fd, SHUT_RDWR);
+			close(client_fd);
+			continue;
+		}
+		if (client_pid) {
+			debuglog(LOG_DEBUG, "Forked client server for client %s:%d\n",
+				 inet_ntoa(client_inaddr.sin_addr),
+				 be16_to_cpu(client_inaddr.sin_port));
+			continue;
+		}
+
+		/*
+		 * And in the child process, we process the request.
+		 */
 		err = server(client_fd);
 		if (err)
-			syslog(LOG_ERR, "Server returned error: %s",
-			       strerror(err));
+			debuglog(LOG_ERR, "Server for client %s:%d returned error: %s\n",
+				 inet_ntoa(client_inaddr.sin_addr),
+				 be16_to_cpu(client_inaddr.sin_port),
+				 strerror(errno));
 		else
-			syslog(LOG_DEBUG, "Server completed successfully");
+			debuglog(LOG_DEBUG, "Server for client %s:%d completed successfully\n",
+				 inet_ntoa(client_inaddr.sin_addr),
+				 be16_to_cpu(client_inaddr.sin_port));
 
 		shutdown(client_fd, SHUT_RDWR);
 		close(client_fd);
