@@ -38,6 +38,14 @@ def pad_file(infile_name, outfile_name, size):
            'conv=sync']
     subprocess.call(cmd)
 
+def trunc_file(infile_name, outfile_name, size):
+    cmd = ['dd',
+           'if={}'.format(infile_name),
+           'of={}'.format(outfile_name),
+           'count={:d}'.format(size),
+           'iflag=count_bytes']
+    subprocess.call(cmd)
+
 def merge_file(infile_name, outfile_name):
     cmd = ['dd',
            'if={}'.format(infile_name),
@@ -159,11 +167,15 @@ def gen_fs(files):
            ]
     subprocess.call(cmd)
     shutil.rmtree(tempdir)
+    pad_file(output_fs, output_fs + '.tmp', 1124 * 1024 * 1024)
     cmd = ['sfdisk',
            '-X', 'dos',  # partition label
-           output_fs]
+           output_fs + '.tmp']
     p = subprocess.Popen(cmd, stdin=subprocess.PIPE)
-    p.communicate(input='start=4KiB, size=64MiB, type=83, bootable')
+    sfdiskcmds = ['start=4KiB, size=64MiB, type=83, bootable', #64MB@4KB
+                  'start=1048577KiB, size=64MiB, type=83'] #64MB@(1GB+4KB)
+    p.communicate(input="\n".join(sfdiskcmds))
+    trunc_file(output_fs + '.tmp', output_fs, 50 * 1024 * 1024)
     return output_fs
 
 
