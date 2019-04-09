@@ -7,11 +7,6 @@
 */
 #include "ebpf_kern_args.h"
 
-typedef unsigned char uint8_t;
-typedef unsigned short uint16_t;
-typedef unsigned int uint32_t;
-typedef unsigned long long uint64_t;
-
 struct ethhdr {
 	uint8_t dmac[6];
 	uint8_t smac[6];

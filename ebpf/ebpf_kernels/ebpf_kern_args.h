@@ -14,16 +14,21 @@
  */
 
 #pragma once
+typedef unsigned char uint8_t;
+typedef unsigned short uint16_t;
+typedef unsigned int uint32_t;
+typedef unsigned long long uint64_t;
+
 typedef unsigned long long k_01_arg;
 
 struct k_02_arg {
-	unsigned long long a;
-	unsigned long b;
-	unsigned int c;
+	uint64_t a;
+	uint32_t b;
+	uint32_t c;
 };
 struct k_03_arg {
-	unsigned int *arr;
-	unsigned int a_len;
+	uint32_t *arr;
+	uint32_t a_len;
 };
 struct k_04_arg {
 	int a;
@@ -32,9 +37,9 @@ struct k_04_arg {
 };
 
 struct k_05_arg {
-    unsigned long long data;
-    unsigned long long data_end;
-    unsigned long long data_meta;
-    unsigned int ingress_ifindex;
-    unsigned int rx_queue_index;
+    uint64_t data;
+    uint64_t data_end;
+    uint64_t data_meta;
+    uint32_t ingress_ifindex;
+    uint32_t rx_queue_index;
 };
