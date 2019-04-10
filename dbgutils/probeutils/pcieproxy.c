@@ -293,8 +293,8 @@ swab16(uint16_t u16)
  */
 #define CCU_SIZE		4096
 
-#define CCU_HUT0_SPINLOCK	4072
-#define CCU_HUT1_SPINLOCK	4080
+#define CCU_SPINLOCK0		4072
+#define CCU_SPINLOCK1		4080
 #define CCU_ID			4092
 
 #define CCU_SPINLOCK_ID_SHF	(32)
@@ -409,16 +409,9 @@ uint64_t *
 ccu_spinlock(ccu_info_t *ccu_info)
 {
 	uint64_t *ccu64 = (uint64_t *)ccu_info->mmap;
-	uint32_t *ccu32 = (uint32_t *)ccu_info->mmap;
-	uint32_t ccu_id, ccu_hut;
-	uint64_t ccu_spinlock_idx;
 
-	ccu_id = be32_to_cpu(ccu32[CCU_ID/sizeof(*ccu32)]);
-	ccu_hut = CCU_ID_HUT_GET(ccu_id);
-	ccu_spinlock_idx = (ccu_hut == 0
-			    ? CCU_HUT0_SPINLOCK
-			    : CCU_HUT1_SPINLOCK);
-	return &ccu64[ccu_spinlock_idx / sizeof(*ccu64)];
+	/* we currently only configure the first CCU Spinlock in FunOS */
+	return &ccu64[CCU_SPINLOCK0 / sizeof(*ccu64)];
 }
 
 /*
