@@ -411,6 +411,16 @@ def lessjob(opts, args):
     
     os.system("less %s" % job['log'])
 
+def _getlogin():
+
+    login = os.environ.get("USER")
+    if (login is None):
+        login = os.environ.get("LOGNAME")
+    if (login is None):
+        login = os.getlogin() # may be wrong?!
+    
+    return login
+    
 def online_server(opts):
 
     if (opts.board is None):
@@ -433,6 +443,8 @@ def offline_server(opts, reason):
         print "server %s already offline? trying anyway" % opts.board
     else:
         os.remove(fname)
+    if (os.path.exists(reasonfile(opts.board))):
+        os.remove(reasonfile(opts.board))
     open(reasonfile(opts.board), 'w').write("%s: %s" % (opts.uname, reason))
     
 def sod_client():
@@ -452,7 +464,8 @@ def sod_client():
 
     if (opts.uname is None):
         try:
-            opts.uname = os.getlogin()
+            opts.uname = _getlogin()
+            print "Running as user %s" % opts.uname
         except:
             opts.uname = "secret_squirrel"
 
@@ -639,7 +652,8 @@ if (__name__ == "__main__"):
 
     if (opts.uname is None):
         try:
-            opts.uname = os.getlogin()
+            opts.uname = _getlogin()
+            print "Running as user %s" % opts.uname
         except:
             opts.uname = "secret_squirrel"
 

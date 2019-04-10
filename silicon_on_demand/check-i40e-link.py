@@ -31,6 +31,8 @@ else:
 iface = sys.argv[1]
 log("Monitoring link status (%s, %s, %s):" % (iface, fname, pid))
 
+time.sleep(2)
+
 ycount = 0
 ncount = 0
 last5 = []
@@ -58,7 +60,7 @@ if (pid is not None):
     log("Killing pid %s" % pid)
     os.system("kill -HUP %s" % pid)
 else:
-        log("No pid and no file specified. Failing in silence")
+    log("No pid and no file specified. Failing in silence")
         
 if (fname is not None):
     log("Touching restart file")
