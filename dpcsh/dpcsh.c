@@ -32,6 +32,7 @@
 #ifndef __APPLE__
 #include<sys/ioctl.h>
 #include<linux/nvme_ioctl.h>
+#include <dirent.h>
 #endif
 
 #include "dpcsh.h"
@@ -63,6 +64,8 @@
 #define NVME_VS_API_SEND	0xc1	/* Vendor specific admin command opcode for host to dpu data transfer */
 #define NVME_VS_API_RECV	0xc2	/* Vendor specific admin command opcode for dpu to host data transfer */
 #define NVME_DPC_CMD_HNDLR_SELECTION	0x20000	/* 2 in MSB selects dpc_cmd_handler in FunOS */
+#define NVME_IDENTIFY_CONTROLLER_OPCODE 0x06 /* opcode for identify controller command */
+#define FUNGIBLE_DPU_VID	0x1dad
 #endif
 
 /* handy socket abstraction */
@@ -1553,6 +1556,62 @@ enum mode {
         MODE_NOCONNECT,    /* no connection to FunOS */
 };
 
+#ifndef __APPLE__
+// Returns true if the nvme device is a Fungible DPU
+static bool is_fungible_dpu(char *devname)
+{
+        bool retVal = false;
+        // Run identify controller and check if the device is a DPU
+        int fd;
+        fd = open(devname, O_RDWR);
+        if(fd) {
+                        char data[NVME_VS_ADMIN_CMD_DATA_LEN];
+                        memset(data, 0, NVME_VS_ADMIN_CMD_DATA_LEN);
+                        struct nvme_admin_cmd cmd = {
+                                .opcode = NVME_IDENTIFY_CONTROLLER_OPCODE, // Identify Controller
+                                .nsid = 0,
+                                .addr = (__u64)(uintptr_t)data,
+                                .data_len = NVME_VS_ADMIN_CMD_DATA_LEN,
+                                .cdw10 = 1
+                        };
+
+                        int ret;
+                        ret= ioctl(fd, NVME_IOCTL_ADMIN_CMD, &cmd);
+	                if(ret == 0) {
+				uint16_t *vid = le16toh((uint16_t*)(data));
+				if((*vid) == FUNGIBLE_DPU_VID) {
+					retVal = true;
+				}
+	                }
+        }
+        return retVal;
+}
+// Check if DPU is visible as an NVMe Controller
+// Retrieve device name if found
+static bool find_nvme_dpu_device(char *devname)
+{
+        bool retVal = false;
+        DIR *d;
+        struct dirent *dir;
+        d = opendir("/dev");
+        if (d)
+        {
+            while ((dir = readdir(d)) != NULL)
+            {
+                if(strstr(dir->d_name, "nvme") != NULL) {
+                    snprintf(devname, sizeof(dir->d_name), "/dev/%s", dir->d_name);
+                    if(is_fungible_dpu(devname)) {
+			retVal = true;
+			break;
+                    }
+                }
+            }
+            closedir(d);
+        }
+        return retVal;
+}
+#endif
+
 /** entrypoint **/
 int main(int argc, char *argv[])
 {
@@ -1589,14 +1648,33 @@ int main(int argc, char *argv[])
 	 * probably wins.
 	 */
 
-
-	/* default connection to FunOS posix simulator dpcsock */
-	memset(&funos_sock, 0, sizeof(funos_sock));
-	funos_sock.mode = SOCKMODE_IP;
-	funos_sock.server = false;
-	funos_sock.port_num = DPC_PORT;
-	funos_sock.fd = -1;
-	funos_sock.retries = UINT32_MAX;
+	/* Check whether DPU is visible as a NVMe device
+	   then use NVMe for communication with DPU
+	   else use libfunq */
+	char nvme_device_name[64];
+	bool nvme_dpu_present = false;
+#ifndef __APPLE__
+	/* Check whether NVMe connection to DPU is available */
+	nvme_dpu_present = find_nvme_dpu_device(nvme_device_name);
+#endif
+	/* Use NVMe as default if present */
+	if(nvme_dpu_present) {
+                funos_sock.mode = SOCKMODE_NVME;
+                funos_sock.socket_name = nvme_device_name;
+                funos_sock.server = false;
+                funos_sock.fd = -1;
+		funos_sock.retries = UINT32_MAX;
+	}
+	/* Use libfunq otherwsie */
+	else {
+		/* default connection to FunOS posix simulator dpcsock */
+		memset(&funos_sock, 0, sizeof(funos_sock));
+		funos_sock.mode = SOCKMODE_IP;
+		funos_sock.server = false;
+		funos_sock.port_num = DPC_PORT;
+		funos_sock.fd = -1;
+		funos_sock.retries = UINT32_MAX;
+	}
 
 	/* default command connection is console (so socket disabled) */
 	memset(&cmd_sock, 0, sizeof(cmd_sock));
