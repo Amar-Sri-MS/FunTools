@@ -1657,6 +1657,7 @@ int main(int argc, char *argv[])
 	/* Check whether NVMe connection to DPU is available */
 	nvme_dpu_present = find_nvme_dpu_device(nvme_device_name);
 #endif
+	memset(&funos_sock, 0, sizeof(funos_sock));
 	/* Use NVMe as default if present */
 	if(nvme_dpu_present) {
                 funos_sock.mode = SOCKMODE_NVME;
@@ -1668,7 +1669,6 @@ int main(int argc, char *argv[])
 	/* Use libfunq otherwsie */
 	else {
 		/* default connection to FunOS posix simulator dpcsock */
-		memset(&funos_sock, 0, sizeof(funos_sock));
 		funos_sock.mode = SOCKMODE_IP;
 		funos_sock.server = false;
 		funos_sock.port_num = DPC_PORT;
