@@ -8,7 +8,7 @@
 #
 #
 TARGET ?= bpfel
-KERNEL ?= 01
+KERNEL ?= 05
 WORKSPACE ?= ../../../
 
 

@@ -21,7 +21,7 @@
 
 CC := clang
 TARGET ?= bpfel
-CFLAGS := -O2
+CFLAGS := -O2 -Wno-implicit-function-declaration
 SRCS := $(wildcard *.c)
 
 OBJFILES := $(patsubst %.c,%.o,$(SRCS))
@@ -70,6 +70,10 @@ define c_tidy
 	indent $(INDENT_ARGS) $(1)
 endef
 
+define std_bc
+	sed 's/_bpfe[l|b]//' --in-place $(1)
+endef
+
 .ONESHELL:
 
 all: $(BCFILES) $(ASMFILES) tidy
@@ -95,6 +99,7 @@ tidy:
 
 .PHONY: install
 install: all
+	$(call std_bc,$(GEN_BC).bcc)
 	cp $(GEN_BC).bcc $(WORKSPACE)/FunOS/tests/$(GEN_BC).c
 	cp $(EXPORT_HDR) $(WORKSPACE)/FunOS/tests
 	cp $(GEN_HDR) $(WORKSPACE)/FunOS/tests
