@@ -10,26 +10,26 @@
 #include <stdio.h>
 #include <fcntl.h>
 
-#ifndef __APPLE__
+#ifdef __linux__
 #include<sys/ioctl.h>
 #include<linux/nvme_ioctl.h>
 #include <dirent.h>
-#endif //__APPLE__
+#endif //__linux__
 
 #include "dpcsh_nvme.h"
 #include <utils/threaded/fun_malloc_threaded.h>
 
 /* DPC over NVMe will work only in Linux */
-#ifndef __APPLE__
+#ifdef __linux__
 static bool _read_from_nvme_helper(struct dpcsock *sock, uint8_t *buffer, uint32_t *data_len, uint32_t *remaining, uint32_t offset)
 {
         bool retVal = false;
-        memset(buffer, 0, NVME_VS_ADMIN_CMD_DATA_LEN);
+        memset(buffer, 0, NVME_ADMIN_CMD_DATA_LEN);
         struct nvme_admin_cmd cmd = {
                 .opcode = NVME_VS_API_RECV,
                 .nsid = 0,
                 .addr = (__u64)(uintptr_t)(buffer),
-                .data_len = NVME_VS_ADMIN_CMD_DATA_LEN,
+                .data_len = NVME_ADMIN_CMD_DATA_LEN,
                 .cdw2 = NVME_DPC_CMD_HNDLR_SELECTION,
                 .cdw3 = offset
         };
@@ -40,7 +40,7 @@ static bool _read_from_nvme_helper(struct dpcsock *sock, uint8_t *buffer, uint32
                         (*data_len) = le32toh(hdr->data_len);
                         (*remaining) = sizeof(struct nvme_vs_api_hdr) + (*data_len);
                 }
-                (*remaining) -= MIN(*remaining, NVME_VS_ADMIN_CMD_DATA_LEN);
+                (*remaining) -= MIN(*remaining, NVME_ADMIN_CMD_DATA_LEN);
                 retVal = true;
         }
         else {
@@ -56,14 +56,15 @@ static bool is_fungible_dpu(char *devname)
         int fd;
         fd = open(devname, O_RDWR);
         if(fd) {
-                        char data[NVME_VS_ADMIN_CMD_DATA_LEN];
-                        memset(data, 0, NVME_VS_ADMIN_CMD_DATA_LEN);
+                        char data[NVME_ADMIN_CMD_DATA_LEN];
+                        memset(data, 0, NVME_ADMIN_CMD_DATA_LEN);
                         struct nvme_admin_cmd cmd = {
-                                .opcode = NVME_IDENTIFY_CONTROLLER_OPCODE, // Identify Controller
+                                .opcode = NVME_IDENTIFY_COMMAND_OPCODE, // Identify command
                                 .nsid = 0,
                                 .addr = (__u64)(uintptr_t)data,
-                                .data_len = NVME_VS_ADMIN_CMD_DATA_LEN,
-                                .cdw10 = 1
+                                .data_len = NVME_ADMIN_CMD_DATA_LEN,
+                                .cdw10 = 1  // 1 indicate that we need to get information about controller; not a namespace
+                                            // Refer NVME spec for more details
                         };
 
                         int ret;
@@ -78,7 +79,7 @@ static bool is_fungible_dpu(char *devname)
         }
         return retVal;
 }
-#endif //__APPLE__
+#endif //__linux__
 
 /* Execute vendor specific admin command for writing data to NVMe device */
 /* DPC over NVMe will work only in Linux */
@@ -86,44 +87,49 @@ static bool is_fungible_dpu(char *devname)
 bool _write_to_nvme(struct fun_json *json, struct dpcsock *sock)
 {
     bool ok = false;
-#ifndef __APPLE__
-	uint8_t *addr = malloc(NVME_VS_ADMIN_CMD_DATA_LEN);
+#ifdef __linux__
+	uint8_t *addr = malloc(NVME_ADMIN_CMD_DATA_LEN);
 	if(addr) {
-		memset(addr, 0, NVME_VS_ADMIN_CMD_DATA_LEN);
+		memset(addr, 0, NVME_ADMIN_CMD_DATA_LEN);
 
 		// Convert to binary JSON
 		size_t allocated_size;
 		struct fun_ptr_and_size pas = fun_json_serialize(json, &allocated_size);
 
-		// Build header
-		struct nvme_vs_api_hdr *hdr = (struct nvme_vs_api_hdr *)addr;
-		hdr->data_len = pas.size; // Setting data_len to length of binary JSON
+		if(pas.size <= NVME_ADMIN_CMD_DATA_LEN - sizeof(struct nvme_vs_api_hdr)) {
+			// Build header
+			struct nvme_vs_api_hdr *hdr = (struct nvme_vs_api_hdr *)addr;
+			hdr->data_len = pas.size; // Setting data_len to length of binary JSON
 
-		// Copy binary JSON
-		memcpy((hdr + 1), pas.ptr, pas.size);
+			// Copy binary JSON
+			memcpy((hdr + 1), pas.ptr, pas.size);
 
-		struct nvme_admin_cmd cmd = {
-			.opcode = NVME_VS_API_SEND,
-			.nsid = 0,
-			.addr = (__u64)(uintptr_t)addr,
-			.data_len = NVME_VS_ADMIN_CMD_DATA_LEN,
-			.cdw2 = NVME_DPC_CMD_HNDLR_SELECTION,
-			.cdw3 = pas.size,
-		};
-		int ret = ioctl(sock->fd, NVME_IOCTL_ADMIN_CMD, &cmd);
+			struct nvme_admin_cmd cmd = {
+				.opcode = NVME_VS_API_SEND,
+				.nsid = 0,
+				.addr = (__u64)(uintptr_t)addr,
+				.data_len = NVME_ADMIN_CMD_DATA_LEN,
+				.cdw2 = NVME_DPC_CMD_HNDLR_SELECTION,
+				.cdw3 = pas.size,
+			};
+			int ret = ioctl(sock->fd, NVME_IOCTL_ADMIN_CMD, &cmd);
 
-		if(ret == 0) {
-			ok = true;
-			sock->nvme_write_done = true;
+			if(ret == 0) {
+				ok = true;
+				sock->nvme_write_done = true;
+			}
+			else {
+				printf("NVME_IOCTL_ADMIN_CMD %x failed %d\n",NVME_VS_API_SEND,ret);
+			}
 		}
 		else {
-			printf("NVME_IOCTL_ADMIN_CMD %x failed %d\n",NVME_VS_API_SEND,ret);
+			printf("Input is bigger than maximum supported size (%zu)\n", NVME_ADMIN_CMD_DATA_LEN - sizeof(struct nvme_vs_api_hdr));
 		}
 
 		fun_free_threaded(pas.ptr, allocated_size);
 		free(addr);
 	}
-#endif //__APPLE__
+#endif //__linux__
     return ok;
 }
 
@@ -133,7 +139,7 @@ bool _write_to_nvme(struct fun_json *json, struct dpcsock *sock)
 struct fun_json* _read_from_nvme(struct dpcsock *sock)
 {
 	struct fun_json *json = NULL;
-#ifndef __APPLE__
+#ifdef __linux__
 	if(sock->nvme_write_done) {
 		uint8_t *addr = malloc(NVME_DPC_MAX_RESPONSE_LEN);
 		if(addr) {
@@ -144,7 +150,7 @@ struct fun_json* _read_from_nvme(struct dpcsock *sock)
 
 			do {
 				readSuccess = _read_from_nvme_helper(sock, addr + offset, &data_len, &remaining, offset);
-				offset += NVME_VS_ADMIN_CMD_DATA_LEN;
+				offset += NVME_ADMIN_CMD_DATA_LEN;
 			} while(readSuccess && (remaining > 0));
 
 			if(readSuccess) {
@@ -154,7 +160,7 @@ struct fun_json* _read_from_nvme(struct dpcsock *sock)
 		}
 		sock->nvme_write_done = false;
 	}
-#endif //__APPLE__
+#endif //__linux__
     return json;
 }
 
@@ -165,7 +171,7 @@ struct fun_json* _read_from_nvme(struct dpcsock *sock)
 bool find_nvme_dpu_device(char *devname)
 {
         bool retVal = false;
-#ifndef __APPLE__
+#ifdef __linux__
         DIR *d;
         struct dirent *dir;
         d = opendir("/dev");
@@ -183,7 +189,7 @@ bool find_nvme_dpu_device(char *devname)
             }
             closedir(d);
         }
-#endif // __APPLE__
+#endif // __linux__
         return retVal;
 }
 

@@ -10,17 +10,17 @@
 #include "dpcsh.h"
 
 // DPC over NVMe is needed only in Linux
-#ifndef __APPLE__
+#ifdef __linux__
 #define NVME_DEV_NAME   "/dev/nvme0"  /* default nvme device used for sending dpc commands as 
 										 NVME vendor specific admin commands */
-#define NVME_VS_ADMIN_CMD_DATA_LEN 4096   /* data length for the NVMe vendor specific admin command
+#define NVME_ADMIN_CMD_DATA_LEN 4096   /* data length for the NVMe admin command
 											 used for executing DPC command over NVMe admin queue */
 #define NVME_DPC_MAX_RESPONSE_LEN 1024 * 1024   /* Maximum response size for dpc command when using DPC over NVMe */
 
 #define NVME_VS_API_SEND	0xc1	/* Vendor specific admin command opcode for host to dpu data transfer */
 #define NVME_VS_API_RECV	0xc2	/* Vendor specific admin command opcode for dpu to host data transfer */
 #define NVME_DPC_CMD_HNDLR_SELECTION	0x20000	/* 2 in MSB selects dpc_cmd_handler in FunOS */
-#define NVME_IDENTIFY_CONTROLLER_OPCODE 0x06 /* opcode for identify controller command */
+#define NVME_IDENTIFY_COMMAND_OPCODE 0x06 /* opcode for identify controller command */
 #define FUNGIBLE_DPU_VID	0x1dad
 
 struct nvme_vs_api_hdr {

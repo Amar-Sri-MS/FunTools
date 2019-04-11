@@ -1336,9 +1336,9 @@ static struct option longopts[] = {
 	{ "inet_sock",       optional_argument, NULL, 'i' },
 	{ "unix_sock",       optional_argument, NULL, 'u' },
 // DPC over NVMe is needed only in Linux
-#ifndef __APPLE__
+#ifdef __linux__
 	{ "pcie_nvme_sock",  optional_argument, NULL, 'p' },
-#endif //__APPLE__
+#endif //__linux__
 	{ "http_proxy",      optional_argument, NULL, 'H' },
 	{ "tcp_proxy",       optional_argument, NULL, 'T' },
 	{ "text_proxy",      optional_argument, NULL, 'T' },
@@ -1368,9 +1368,9 @@ static void usage(const char *argv0)
 	printf("       --inet_sock[=port]      connect as a client port over IP\n");
 	printf("       --unix_sock[=sockname]  connect as a client port over unix sockets\n");
 // DPC over NVMe is needed only in Linux
-#ifndef __APPLE__
+#ifdef __linux__
 	printf("       --pcie_nvme_sock[=sockname]  connect as a client port over nvme pcie device\n");
-#endif
+#endif //__linux__
 	printf("       --http_proxy[=port]     listen as an http proxy\n");
 	printf("       --tcp_proxy[=port]      listen as a tcp proxy\n");
 	printf("       --text_proxy[=port]     same as \"--tcp_proxy\"\n");
@@ -1518,14 +1518,14 @@ int main(int argc, char *argv[])
 
 			break;
 // DPC over NVMe is needed only in Linux
-#ifndef __APPLE__
+#ifdef __linux__
 		case 'p':
 			funos_sock.mode = SOCKMODE_NVME;
 			cmd_sock.server = false;
 			funos_sock.socket_name = opt_sockname(optarg,
 							      NVME_DEV_NAME);
 			break;
-#endif
+#endif //__linux__
 		case 'H':  /* http proxy */
 
 			cmd_sock.mode = SOCKMODE_IP;
