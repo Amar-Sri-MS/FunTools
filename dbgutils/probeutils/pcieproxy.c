@@ -372,11 +372,11 @@ ccu_dump(ccu_info_t *ccu_info)
 	 * an ID register.
 	 */
 	printf("%4d %#018lx\n",
-	       CCU_HUT0_SPINLOCK,
-	       be64_to_cpu(ccu64[CCU_HUT0_SPINLOCK/sizeof(*ccu64)]));
+	       CCU_SPINLOCK0,
+	       be64_to_cpu(ccu64[CCU_SPINLOCK0/sizeof(*ccu64)]));
 	printf("%4d %#018lx\n",
-	       CCU_HUT1_SPINLOCK,
-	       be64_to_cpu(ccu64[CCU_HUT1_SPINLOCK/sizeof(*ccu64)]));
+	       CCU_SPINLOCK1,
+	       be64_to_cpu(ccu64[CCU_SPINLOCK1/sizeof(*ccu64)]));
 	printf("%4d         %#010x\n",
 	       CCU_ID,
 	       be32_to_cpu(ccu32[CCU_ID/sizeof(*ccu32)]));
@@ -409,19 +409,43 @@ uint64_t *
 ccu_spinlock(ccu_info_t *ccu_info)
 {
 	uint64_t *ccu64 = (uint64_t *)ccu_info->mmap;
+	uint64_t null_token = cpu_to_be64(CCU_SPINLOCK_ID_PUT(CCU_SPINLOCK_NULL_ID) |
+					  CCU_SPINLOCK_LOCK_PUT(0));
+	uint64_t *spinlock;
 
-	/* we currently only configure the first CCU Spinlock in FunOS */
-	return &ccu64[CCU_SPINLOCK0 / sizeof(*ccu64)];
+	/*
+	 * Find a valid configured CCU Spinlock.
+	 */
+	spinlock = &ccu64[CCU_SPINLOCK0 / sizeof(*ccu64)];
+	if (*spinlock == null_token) {
+		if (debug)
+			fprintf(stderr, "Using CCU Spinlock 0\n");
+		return spinlock;
+	}
+
+	spinlock = &ccu64[CCU_SPINLOCK1 / sizeof(*ccu64)];
+	if (*spinlock == null_token) {
+		if (debug)
+			fprintf(stderr, "Using CCU Spinlock 1\n");
+		return spinlock;
+	}
+
+	/* no valid CCU Spinlock found */
+	if (debug)
+		fprintf(stderr, "No valid configured CCU Spinlock found\n");
+	return NULL;
 }
 
 /*
  * Use CCU Spinlock to prevent multiple clients from interfering with echo
- * others' register accesses.  Requires that global variables ccu_spinlock_token
- * and ccu_spinlockp be initialized.
+ * others' register accesses.
  */
 void
 ccu_lock(ccu_info_t *ccu_info)
 {
+	if (ccu_info == NULL)
+		return;
+
 	do {
 		*ccu_info->spinlock =
 			cpu_to_be64(CCU_SPINLOCK_ID_PUT(ccu_info->spinlock_token) |
@@ -433,6 +457,9 @@ ccu_lock(ccu_info_t *ccu_info)
 void
 ccu_unlock(ccu_info_t *ccu_info)
 {
+	if (ccu_info == NULL)
+		return;
+
 	*ccu_info->spinlock =
 		cpu_to_be64(CCU_SPINLOCK_ID_PUT(CCU_SPINLOCK_NULL_ID) |
 			    CCU_SPINLOCK_LOCK_PUT(0));
@@ -695,6 +722,8 @@ server(int client_fd)
 
 			ccu_info.spinlock_token = getpid();
 			ccu_info.spinlock = ccu_spinlock(&ccu_info);
+			if (debug)
+				ccu_dump(&ccu_info);
 
 			response(client_fd, LOG_DEBUG, "OKAY CONNECT %s\n",
 				 argv[1]);
