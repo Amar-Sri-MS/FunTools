@@ -27,15 +27,8 @@
 #include <sys/select.h>
 #include <sys/stat.h>
 
-#include <unistd.h>
-
-#ifndef __APPLE__
-#include<sys/ioctl.h>
-#include<linux/nvme_ioctl.h>
-#include <dirent.h>
-#endif
-
 #include "dpcsh.h"
+#include "dpcsh_nvme.h"
 #include "csr_command.h"
 
 #include <utils/threaded/fun_map.h>
@@ -52,21 +45,6 @@
 #define DPC_B64SRV_PORT 40223   /* default dpcuart listen port */
 #define HTTP_PORTNO     9001    /* default HTTP listen port */
 #define NO_FLOW_CTRL_DELAY_USEC	10000	/* no flow control delay in usec */
-
-// DPC over NVMe is needed only in Linux
-#ifndef __APPLE__
-#define NVME_DEV_NAME   "/dev/nvme0"  /* default nvme device used for sending dpc commands as 
-										 NVME vendor specific admin commands */
-#define NVME_VS_ADMIN_CMD_DATA_LEN 4096   /* data length for the NVMe vendor specific admin command
-											 used for executing DPC command over NVMe admin queue */
-#define NVME_DPC_MAX_RESPONSE_LEN 1024 * 1024   /* Maximum response size for dpc command when using DPC over NVMe */
-
-#define NVME_VS_API_SEND	0xc1	/* Vendor specific admin command opcode for host to dpu data transfer */
-#define NVME_VS_API_RECV	0xc2	/* Vendor specific admin command opcode for dpu to host data transfer */
-#define NVME_DPC_CMD_HNDLR_SELECTION	0x20000	/* 2 in MSB selects dpc_cmd_handler in FunOS */
-#define NVME_IDENTIFY_CONTROLLER_OPCODE 0x06 /* opcode for identify controller command */
-#define FUNGIBLE_DPU_VID	0x1dad
-#endif
 
 /* handy socket abstraction */
 enum sockmode {
@@ -118,13 +96,6 @@ struct dpcsock {
 	int listen_fd;           /* fd if this is a server */
 	bool nvme_write_done;    /* flag indicating whether write to nvme device
 				    is successful so that we can read from it */
-};
-
-struct nvme_vs_api_hdr {
-	uint8_t version;
-	uint8_t rsvd1[7];
-	uint32_t data_len;
-	uint32_t rsvd2;
 };
 
 static inline void _setnosigpipe(int const fd)
@@ -749,116 +720,6 @@ void _configure_device(struct dpcsock *sock)
 		printf("error configuring UART with stty\n");
 		exit(1);
 	}
-}
-
-/* Execute vendor specific admin command for writing data to NVMe device */
-static bool _write_to_nvme(struct fun_json *json, struct dpcsock *sock)
-{
-#ifdef __APPLE__
-	// DPC over NVMe is needed only in Linux
-	return false;
-#else
-	bool ok = false;
-	uint8_t *addr = malloc(NVME_VS_ADMIN_CMD_DATA_LEN);
-	if(addr) {
-		memset(addr, 0, NVME_VS_ADMIN_CMD_DATA_LEN);
-
-		// Convert to binary JSON
-		size_t allocated_size;
-		struct fun_ptr_and_size pas = fun_json_serialize(json, &allocated_size);
-
-		// Build header
-		struct nvme_vs_api_hdr *hdr = (struct nvme_vs_api_hdr *)addr;
-		hdr->data_len = pas.size; // Setting data_len to length of binary JSON
-
-		// Copy binary JSON
-		memcpy((hdr + 1), pas.ptr, pas.size);
-
-		struct nvme_admin_cmd cmd = {
-			.opcode = NVME_VS_API_SEND,
-			.nsid = 0,
-			.addr = (__u64)(uintptr_t)addr,
-			.data_len = NVME_VS_ADMIN_CMD_DATA_LEN,
-			.cdw2 = NVME_DPC_CMD_HNDLR_SELECTION,
-			.cdw3 = pas.size,
-		};
-		int ret = ioctl(sock->fd, NVME_IOCTL_ADMIN_CMD, &cmd);
-
-		if(ret == 0) {
-			ok = true;
-			sock->nvme_write_done = true;
-		}
-		else {
-			printf("NVME_IOCTL_ADMIN_CMD %x failed %d\n",NVME_VS_API_SEND,ret);
-		}
-
-		fun_free_threaded(pas.ptr, allocated_size);
-		free(addr);
-	}
-	return ok;
-#endif //__APPLE__
-}
-
-#ifndef __APPLE__
-static bool _read_from_nvme_helper(struct dpcsock *sock, uint8_t *buffer, uint32_t *data_len, uint32_t *remaining, uint32_t offset)
-{
-	bool retVal = false;
-	memset(buffer, 0, NVME_VS_ADMIN_CMD_DATA_LEN);
-	struct nvme_admin_cmd cmd = {
-		.opcode = NVME_VS_API_RECV,
-		.nsid = 0,
-		.addr = (__u64)(uintptr_t)(buffer),
-		.data_len = NVME_VS_ADMIN_CMD_DATA_LEN,
-		.cdw2 = NVME_DPC_CMD_HNDLR_SELECTION,
-		.cdw3 = offset
-	};
-	int ret = ioctl(sock->fd, NVME_IOCTL_ADMIN_CMD, &cmd);
-	if(ret == 0) {
-		if((*data_len) == 0) {
-			struct nvme_vs_api_hdr *hdr = (struct nvme_vs_api_hdr *)buffer;
-			(*data_len) = le32toh(hdr->data_len);
-			(*remaining) = sizeof(struct nvme_vs_api_hdr) + (*data_len);
-		}
-		(*remaining) -= MIN(*remaining, NVME_VS_ADMIN_CMD_DATA_LEN);
-		retVal = true;
-	}
-	else {
-		printf("NVME_IOCTL_ADMIN_CMD %x failed %d\n",NVME_VS_API_RECV,ret);
-	}
-	return retVal;
-}
-#endif
-
-/* Execute vendor specific admin command for reading data from NVMe device */
-static struct fun_json* _read_from_nvme(struct dpcsock *sock)
-{
-	struct fun_json *json = NULL;
-#ifdef __APPLE__
-	// DPC over NVMe is needed only in Linux
-	return json;
-#else
-	if(sock->nvme_write_done) {
-		uint8_t *addr = malloc(NVME_DPC_MAX_RESPONSE_LEN);
-		if(addr) {
-			uint32_t remaining = 0;
-			uint32_t offset = 0;
-			uint32_t data_len = 0;
-			bool readSuccess = false;
-
-			do {
-				readSuccess = _read_from_nvme_helper(sock, addr + offset, &data_len, &remaining, offset);
-				offset += NVME_VS_ADMIN_CMD_DATA_LEN;
-			} while(readSuccess && (remaining > 0));
-
-			if(readSuccess) {
-				json = _buffer2json((uint8_t *)(addr + sizeof(struct nvme_vs_api_hdr)), data_len);
-			}
-			free(addr);
-		}
-		sock->nvme_write_done = false;
-	}
-	return json;
-#endif //__APPLE__
 }
 
 /* disambiguate json */
@@ -1556,62 +1417,6 @@ enum mode {
         MODE_NOCONNECT,    /* no connection to FunOS */
 };
 
-#ifndef __APPLE__
-// Returns true if the nvme device is a Fungible DPU
-static bool is_fungible_dpu(char *devname)
-{
-        bool retVal = false;
-        // Run identify controller and check if the device is a DPU
-        int fd;
-        fd = open(devname, O_RDWR);
-        if(fd) {
-                        char data[NVME_VS_ADMIN_CMD_DATA_LEN];
-                        memset(data, 0, NVME_VS_ADMIN_CMD_DATA_LEN);
-                        struct nvme_admin_cmd cmd = {
-                                .opcode = NVME_IDENTIFY_CONTROLLER_OPCODE, // Identify Controller
-                                .nsid = 0,
-                                .addr = (__u64)(uintptr_t)data,
-                                .data_len = NVME_VS_ADMIN_CMD_DATA_LEN,
-                                .cdw10 = 1
-                        };
-
-                        int ret;
-                        ret= ioctl(fd, NVME_IOCTL_ADMIN_CMD, &cmd);
-	                if(ret == 0) {
-				uint16_t *vid = le16toh((uint16_t*)(data));
-				if((*vid) == FUNGIBLE_DPU_VID) {
-					retVal = true;
-				}
-	                }
-        }
-        return retVal;
-}
-// Check if DPU is visible as an NVMe Controller
-// Retrieve device name if found
-static bool find_nvme_dpu_device(char *devname)
-{
-        bool retVal = false;
-        DIR *d;
-        struct dirent *dir;
-        d = opendir("/dev");
-        if (d)
-        {
-            while ((dir = readdir(d)) != NULL)
-            {
-                if(strstr(dir->d_name, "nvme") != NULL) {
-                    snprintf(devname, sizeof(dir->d_name), "/dev/%s", dir->d_name);
-                    if(is_fungible_dpu(devname)) {
-			retVal = true;
-			break;
-                    }
-                }
-            }
-            closedir(d);
-        }
-        return retVal;
-}
-#endif
-
 /** entrypoint **/
 int main(int argc, char *argv[])
 {
@@ -1648,26 +1453,26 @@ int main(int argc, char *argv[])
 	 * probably wins.
 	 */
 
-	/* Check whether DPU is visible as a NVMe device
-	   then use NVMe for communication with DPU
-	   else use libfunq */
+	/* check whether NVMe connection to DPU is available */
+	/* DPC over NVMe will work only in Linux */
+	/* In macOS, libfunq is used */
 	char nvme_device_name[64];
 	bool nvme_dpu_present = false;
-#ifndef __APPLE__
-	/* Check whether NVMe connection to DPU is available */
+	/* In macOS, always returns false */
 	nvme_dpu_present = find_nvme_dpu_device(nvme_device_name);
-#endif
 	memset(&funos_sock, 0, sizeof(funos_sock));
-	/* Use NVMe as default if present */
-	if(nvme_dpu_present) {
-                funos_sock.mode = SOCKMODE_NVME;
-                funos_sock.socket_name = nvme_device_name;
-                funos_sock.server = false;
-                funos_sock.fd = -1;
+	/* In Linux, use NVMe as default if present */
+	if (nvme_dpu_present)
+	{
+		funos_sock.mode = SOCKMODE_NVME;
+		funos_sock.socket_name = nvme_device_name;
+		funos_sock.server = false;
+		funos_sock.fd = -1;
 		funos_sock.retries = UINT32_MAX;
 	}
 	/* Use libfunq otherwsie */
-	else {
+	else
+	{
 		/* default connection to FunOS posix simulator dpcsock */
 		funos_sock.mode = SOCKMODE_IP;
 		funos_sock.server = false;
