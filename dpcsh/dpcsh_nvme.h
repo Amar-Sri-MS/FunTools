@@ -11,10 +11,6 @@
 
 // DPC over NVMe is needed only in Linux
 #ifndef __APPLE__
-#include<sys/ioctl.h>
-#include<linux/nvme_ioctl.h>
-#include <dirent.h>
-
 #define NVME_DEV_NAME   "/dev/nvme0"  /* default nvme device used for sending dpc commands as 
 										 NVME vendor specific admin commands */
 #define NVME_VS_ADMIN_CMD_DATA_LEN 4096   /* data length for the NVMe vendor specific admin command

@@ -5,7 +5,79 @@
  *  Copyright © 2019 Fungible. All rights reserved.
  */
 
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+#include <fcntl.h>
+
+#ifndef __APPLE__
+#include<sys/ioctl.h>
+#include<linux/nvme_ioctl.h>
+#include <dirent.h>
+#endif //__APPLE__
+
 #include "dpcsh_nvme.h"
+#include <utils/threaded/fun_malloc_threaded.h>
+
+/* DPC over NVMe will work only in Linux */
+#ifndef __APPLE__
+static bool _read_from_nvme_helper(struct dpcsock *sock, uint8_t *buffer, uint32_t *data_len, uint32_t *remaining, uint32_t offset)
+{
+        bool retVal = false;
+        memset(buffer, 0, NVME_VS_ADMIN_CMD_DATA_LEN);
+        struct nvme_admin_cmd cmd = {
+                .opcode = NVME_VS_API_RECV,
+                .nsid = 0,
+                .addr = (__u64)(uintptr_t)(buffer),
+                .data_len = NVME_VS_ADMIN_CMD_DATA_LEN,
+                .cdw2 = NVME_DPC_CMD_HNDLR_SELECTION,
+                .cdw3 = offset
+        };
+        int ret = ioctl(sock->fd, NVME_IOCTL_ADMIN_CMD, &cmd);
+        if(ret == 0) {
+                if((*data_len) == 0) {
+                        struct nvme_vs_api_hdr *hdr = (struct nvme_vs_api_hdr *)buffer;
+                        (*data_len) = le32toh(hdr->data_len);
+                        (*remaining) = sizeof(struct nvme_vs_api_hdr) + (*data_len);
+                }
+                (*remaining) -= MIN(*remaining, NVME_VS_ADMIN_CMD_DATA_LEN);
+                retVal = true;
+        }
+        else {
+                printf("NVME_IOCTL_ADMIN_CMD %x failed %d\n",NVME_VS_API_RECV,ret);
+        }
+        return retVal;
+}
+// Returns true if the nvme device is a Fungible DPU
+static bool is_fungible_dpu(char *devname)
+{
+        bool retVal = false;
+        // Run identify controller and check if the device is a DPU
+        int fd;
+        fd = open(devname, O_RDWR);
+        if(fd) {
+                        char data[NVME_VS_ADMIN_CMD_DATA_LEN];
+                        memset(data, 0, NVME_VS_ADMIN_CMD_DATA_LEN);
+                        struct nvme_admin_cmd cmd = {
+                                .opcode = NVME_IDENTIFY_CONTROLLER_OPCODE, // Identify Controller
+                                .nsid = 0,
+                                .addr = (__u64)(uintptr_t)data,
+                                .data_len = NVME_VS_ADMIN_CMD_DATA_LEN,
+                                .cdw10 = 1
+                        };
+
+                        int ret;
+                        ret= ioctl(fd, NVME_IOCTL_ADMIN_CMD, &cmd);
+                        if(ret == 0) {
+                                uint16_t *vid = le16toh((uint16_t*)(data));
+                                if((*vid) == FUNGIBLE_DPU_VID) {
+                                        retVal = true;
+                                }
+                        }
+        }
+        return retVal;
+}
+#endif //__APPLE__
 
 /* Execute vendor specific admin command for writing data to NVMe device */
 /* DPC over NVMe will work only in Linux */
@@ -114,62 +186,3 @@ bool find_nvme_dpu_device(char *devname)
         return retVal;
 }
 
-/* DPC over NVMe will work only in Linux */
-#ifndef __APPLE__
-static bool _read_from_nvme_helper(struct dpcsock *sock, uint8_t *buffer, uint32_t *data_len, uint32_t *remaining, uint32_t offset)
-{
-	bool retVal = false;
-	memset(buffer, 0, NVME_VS_ADMIN_CMD_DATA_LEN);
-	struct nvme_admin_cmd cmd = {
-		.opcode = NVME_VS_API_RECV,
-		.nsid = 0,
-		.addr = (__u64)(uintptr_t)(buffer),
-		.data_len = NVME_VS_ADMIN_CMD_DATA_LEN,
-		.cdw2 = NVME_DPC_CMD_HNDLR_SELECTION,
-		.cdw3 = offset
-	};
-	int ret = ioctl(sock->fd, NVME_IOCTL_ADMIN_CMD, &cmd);
-	if(ret == 0) {
-		if((*data_len) == 0) {
-			struct nvme_vs_api_hdr *hdr = (struct nvme_vs_api_hdr *)buffer;
-			(*data_len) = le32toh(hdr->data_len);
-			(*remaining) = sizeof(struct nvme_vs_api_hdr) + (*data_len);
-		}
-		(*remaining) -= MIN(*remaining, NVME_VS_ADMIN_CMD_DATA_LEN);
-		retVal = true;
-	}
-	else {
-		printf("NVME_IOCTL_ADMIN_CMD %x failed %d\n",NVME_VS_API_RECV,ret);
-	}
-	return retVal;
-}
-// Returns true if the nvme device is a Fungible DPU
-static bool is_fungible_dpu(char *devname)
-{
-        bool retVal = false;
-        // Run identify controller and check if the device is a DPU
-        int fd;
-        fd = open(devname, O_RDWR);
-        if(fd) {
-                        char data[NVME_VS_ADMIN_CMD_DATA_LEN];
-                        memset(data, 0, NVME_VS_ADMIN_CMD_DATA_LEN);
-                        struct nvme_admin_cmd cmd = {
-                                .opcode = NVME_IDENTIFY_CONTROLLER_OPCODE, // Identify Controller
-                                .nsid = 0,
-                                .addr = (__u64)(uintptr_t)data,
-                                .data_len = NVME_VS_ADMIN_CMD_DATA_LEN,
-                                .cdw10 = 1
-                        };
-
-                        int ret;
-                        ret= ioctl(fd, NVME_IOCTL_ADMIN_CMD, &cmd);
-	                if(ret == 0) {
-				uint16_t *vid = le16toh((uint16_t*)(data));
-				if((*vid) == FUNGIBLE_DPU_VID) {
-					retVal = true;
-				}
-	                }
-        }
-        return retVal;
-}
-#endif //__APPLE__

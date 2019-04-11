@@ -46,15 +46,6 @@
 #define HTTP_PORTNO     9001    /* default HTTP listen port */
 #define NO_FLOW_CTRL_DELAY_USEC	10000	/* no flow control delay in usec */
 
-/* handy socket abstraction */
-enum sockmode {
-	SOCKMODE_TERMINAL,
-	SOCKMODE_IP,
-	SOCKMODE_UNIX,
-	SOCKMODE_DEV,
-	SOCKMODE_NVME
-};
-
 enum parsingmode {
 	PARSE_UNKNOWN, /* bug trap */
 	PARSE_TEXT,    /* friendly command-line parsing (and legacy proxy mode) */
@@ -79,24 +70,6 @@ static bool _legacy_b64 = false;
 
 // We stash argv[0]
 const char *dpcsh_path;
-
-struct dpcsock {
-
-	/* configuration */
-	enum sockmode mode;      /* whether & how this is used */
-	bool server;             /* listen/accept instead of connect */
-	bool base64;             /* talk base64 over this socket */
-	bool loopback;           /* if this socket is ignored */
-	const char *socket_name; /* unix socket name */
-	uint16_t port_num;       /* TCP port number */
-	uint32_t retries;        /* whether to retry connect on failure */
-
-	/* runtime */
-	int fd;                  /* connected fd */
-	int listen_fd;           /* fd if this is a server */
-	bool nvme_write_done;    /* flag indicating whether write to nvme device
-				    is successful so that we can read from it */
-};
 
 static inline void _setnosigpipe(int const fd)
 {
