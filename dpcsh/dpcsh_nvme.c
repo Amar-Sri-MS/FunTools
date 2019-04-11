@@ -69,8 +69,9 @@ static bool is_fungible_dpu(char *devname)
                         int ret;
                         ret= ioctl(fd, NVME_IOCTL_ADMIN_CMD, &cmd);
                         if(ret == 0) {
-                                uint16_t *vid = le16toh((uint16_t*)(data));
-                                if((*vid) == FUNGIBLE_DPU_VID) {
+                                uint16_t *vidptr = (uint16_t*)(data);
+                                uint16_t vid = le16toh(*vidptr);
+                                if(vid == FUNGIBLE_DPU_VID) {
                                         retVal = true;
                                 }
                         }
