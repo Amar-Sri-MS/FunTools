@@ -44,6 +44,7 @@ def main():
     parser.add_argument('--sdkdir', required=True, help='SDK root directory')
     parser.add_argument('--destdir', required=True, help='Destination directory for output')
     parser.add_argument('--force-version', type=int, help='Override firmware versions')
+    parser.add_argument('--force-description', help='Override firmware description strings')
 
     args = parser.parse_args()
 
@@ -62,6 +63,9 @@ def main():
 
     if args.force_version:
         gf.set_versions(args.force_version)
+
+    if args.force_description:
+        gf.set_description(args.force_description)
 
     curdir = os.getcwd()
 

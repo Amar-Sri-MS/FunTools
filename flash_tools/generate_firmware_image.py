@@ -30,7 +30,8 @@ RSA_KEY_SIZE_IN_BITS = 2048
 SIGNING_INFO_SIZE = 2048
 MAX_SIGNATURE_SIZE = 512
 HEADER_RESERVED_SIZE = SIGNING_INFO_SIZE - (4 + MAX_SIGNATURE_SIZE)
-SIGNED_ATTRIBUTES_SIZE = 64
+SIGNED_ATTRIBUTES_SIZE = 32
+SIGNED_DESCRIPTION_SIZE = 32
 SERIAL_INFO_NUMBER_SIZE = 24
 CERT_PUB_KEY_POS = 64
 
@@ -519,13 +520,21 @@ def add_cert_and_signature_to_image(image, cert, signature):
     return append_signature_to_binary(image, signature)
 
 
-def image_gen(outfile, infile, ftype, version, sign_key, certfile,
-              customer_certfile):
+def image_gen(outfile, infile, ftype, version, description, sign_key,
+	      certfile, customer_certfile):
     ''' generate signed firmware image '''
     binary = read(infile)
     to_be_signed = struct.pack('<2I', len(binary), version)
     to_be_signed += struct.pack('4s', ftype.encode())
     to_be_signed += b'\x00' * SIGNED_ATTRIBUTES_SIZE
+    if description:
+        # Max allowed size is (block size - 1) to allow for terminating null
+        if len(description) > SIGNED_DESCRIPTION_SIZE - 1:
+            raise Exception("Image description too long, max is {}".format(SIGNED_DESCRIPTION_SIZE-1))
+        to_be_signed += description.encode() + b'\x00' * (SIGNED_DESCRIPTION_SIZE - len(description))
+    else:
+        to_be_signed += b'\x00' * SIGNED_DESCRIPTION_SIZE
+
     to_be_signed += binary
 
     signature = b''
@@ -683,6 +692,9 @@ def parse_and_execute():
     parser.add_argument("-t", "--fwtype", dest="fw_type",
                         help="fw type (4 chars) (image, certified_image)")
 
+    parser.add_argument("--fwdescr", dest="fw_description",
+                        help="fw description (image, certified_image)")
+
     parser.add_argument("-u", "--customer_certificate", dest="customer_cert_path",
                         help="customer certificate (image)", metavar="FILE")
 
@@ -742,7 +754,7 @@ def parse_and_execute():
             sys.exit(1)
 
         image_gen(options.out_path, options.fw_path, options.fw_type,
-                  int(options.fw_ver, 0),
+                  int(options.fw_ver, 0), options.fw_description,
                   options.sign_key, options.cert_path,
                   options.customer_cert_path)
 
