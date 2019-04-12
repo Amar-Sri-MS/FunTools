@@ -33,9 +33,9 @@ struct k_04_arg {
 };
 
 struct k_05_arg {
-    unsigned long long data;
-    unsigned long long data_end;
-    unsigned long long data_meta;
-    unsigned int ingress_ifindex;
-    unsigned int rx_queue_index;
-} __attribute__ ((packed)) ;
+	unsigned long long data;
+	unsigned long long data_end;
+	unsigned long long data_meta;
+	unsigned int ingress_ifindex;
+	unsigned int rx_queue_index;
+} __attribute__ ((packed));
