@@ -26,7 +26,9 @@ LOAD_ADDR = 0xffffffff91000000
 # so it is important to ensure data is correctly aligned
 BLOCK_SIZE = 512
 
-# When FunOS is stored as raw data, byte offset from the beginning of memory
+# When FunOS is stored as raw data, byte offset from the beginning of the eMMC memory
+# For dual partition image, this is the offset from the beginning of the second blob, ie.
+# the second partition table
 FUNOS_OFFSET = 33 * 1024 * 1024
 
 # Base offset of second software partition
@@ -34,6 +36,7 @@ PARTITION_OFFSET = 1024 * 1024 * 1024
 
 
 def pad_file(infile_name, outfile_name, size):
+    """Append zeros to the end of file to extend its size to @size"""
     cmd = ['dd',
            'if={}'.format(infile_name),
            'of={}'.format(outfile_name),
@@ -42,6 +45,7 @@ def pad_file(infile_name, outfile_name, size):
     subprocess.call(cmd)
 
 def trunc_file(infile_name, outfile_name, size):
+    """Remove bytes from end of file to truncate its size to @size"""
     cmd = ['dd',
            'if={}'.format(infile_name),
            'of={}'.format(outfile_name),
@@ -50,6 +54,7 @@ def trunc_file(infile_name, outfile_name, size):
     subprocess.call(cmd)
 
 def merge_file(infile_name, outfile_name):
+    """Append infile file to the end of outfile file"""
     cmd = ['dd',
            'if={}'.format(infile_name),
            'of={}'.format(outfile_name),
@@ -178,6 +183,10 @@ def gen_fs(files):
     subprocess.call(cmd)
     shutil.rmtree(tempdir)
     with tempfile.NamedTemporaryFile() as f:
+        # A temporary large file is required here so that it is big enough
+        # to contain both partitions requested from sfdisk - as sfdisk will
+        # reject creating partition pointers to offsets greater than the
+        # 'device' size (device in this context is the file that is being changed)
         pad_file(output_fs, f.name, 1124 * 1024 * 1024)
         cmd = ['sfdisk',
             '-X', 'dos',  # partition label
