@@ -8,11 +8,13 @@
 #
 #
 TARGET ?= bpfel
-KERNEL ?= 01
+KERNEL ?= 05
+WORKSPACE ?= ../../../
+
 
 OS := $(shell uname)
 
-SDKDIR ?= ../../../FunSDK
+SDKDIR = $(WORKSPACE)/FunSDK
 
 CXXFLAGS ?= -g -std=c++17 -I $(SDKDIR) -I $(SDKDIR)/FunSDK -g -Wall -Werror -Wno-multichar
 LDFLAGS += -L $(SDKDIR)/lib/$(OS)/noasan/x86_64 -lfunclient -lreadline -lpthread
@@ -42,7 +44,7 @@ ebpf_cli: $(COMMON) ebpf_cli.o
 	$(call cpp_tidy,$<)
 	$(CXX) -c $(CXXFLAGS) $<
 attach:
-	./ebpf_cli -p 40221 cmd=attach sec=xdp cl_id=22 tx_id=22 qid=8 order=10 bpf_file=$(BC_FILE)
+	./ebpf_cli -p 40221 cmd=attach sec=xdp cl_id=22 tx_id=22 qid=128 order=10 bpf_file=$(BC_FILE)
 detach:
 	./ebpf_cli -p 40221 cmd=detach sec=xdp cl_id=22 tx_id=22
 
