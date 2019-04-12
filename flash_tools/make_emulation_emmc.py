@@ -26,11 +26,17 @@ LOAD_ADDR = 0xffffffff91000000
 # so it is important to ensure data is correctly aligned
 BLOCK_SIZE = 512
 
-# When FunOS is stored as raw data, byte offset from the beginning of memory
-FUNOS_OFFSET = 32 * 1024 * 1024
+# When FunOS is stored as raw data, byte offset from the beginning of the eMMC memory
+# For dual partition image, this is the offset from the beginning of the second blob, ie.
+# the second partition table
+FUNOS_OFFSET = 33 * 1024 * 1024
+
+# Base offset of second software partition
+PARTITION_OFFSET = 1024 * 1024 * 1024
 
 
 def pad_file(infile_name, outfile_name, size):
+    """Append zeros to the end of file to extend its size to @size"""
     cmd = ['dd',
            'if={}'.format(infile_name),
            'of={}'.format(outfile_name),
@@ -38,7 +44,17 @@ def pad_file(infile_name, outfile_name, size):
            'conv=sync']
     subprocess.call(cmd)
 
+def trunc_file(infile_name, outfile_name, size):
+    """Remove bytes from end of file to truncate its size to @size"""
+    cmd = ['dd',
+           'if={}'.format(infile_name),
+           'of={}'.format(outfile_name),
+           'count={:d}'.format(size),
+           'iflag=count_bytes']
+    subprocess.call(cmd)
+
 def merge_file(infile_name, outfile_name):
+    """Append infile file to the end of outfile file"""
     cmd = ['dd',
            'if={}'.format(infile_name),
            'of={}'.format(outfile_name),
@@ -91,9 +107,16 @@ def gen_boot_script(filename, funos_start_blk):
         return BLOCK_SIZE * (int((os.path.getsize(f) + hdr + BLOCK_SIZE - 1)) / BLOCK_SIZE)
 
     with open(filename, 'w') as outfile:
-        outfile.write('mmc read 0x{load_addr:x} 0x{mmc_start_blk:x} 0x{load_size_blk:x};'.format(
+        outfile.write('if test -n "${mmcpart}"; then '\
+                            'setexpr mmcstart ${mmcpart} - 1; else ' \
+                            'setexpr mmcstart 0; ' \
+                      'fi\n')
+        outfile.write('setexpr mmcstart ${{mmcstart}} * 0x{offset:x}\n'.format(
+                offset=PARTITION_OFFSET/BLOCK_SIZE))
+        outfile.write('setexpr mmcstart ${{mmcstart}} + 0x{mmc_start_blk:x}\n'.format(
+                mmc_start_blk=funos_start_blk))
+        outfile.write('mmc read 0x{load_addr:x} ${{mmcstart}} 0x{load_size_blk:x};'.format(
             load_addr=LOAD_ADDR,
-            mmc_start_blk=funos_start_blk,
             load_size_blk=filesize(g.appfile) / BLOCK_SIZE))
         if g.crc:
             outfile.write('crc32 -v 0x{load_addr:x} {load_size:x} {crc:x};'.format(
@@ -159,11 +182,22 @@ def gen_fs(files):
            ]
     subprocess.call(cmd)
     shutil.rmtree(tempdir)
-    cmd = ['sfdisk',
-           '-X', 'dos',  # partition label
-           output_fs]
-    p = subprocess.Popen(cmd, stdin=subprocess.PIPE)
-    p.communicate(input='start=4KiB, size=64MiB, type=83, bootable')
+    with tempfile.NamedTemporaryFile() as f:
+        # A temporary large file is required here so that it is big enough
+        # to contain both partitions requested from sfdisk - as sfdisk will
+        # reject creating partition pointers to offsets greater than the
+        # 'device' size (device in this context is the file that is being changed)
+        pad_file(output_fs, f.name, 1124 * 1024 * 1024)
+        cmd = ['sfdisk',
+            '-X', 'dos',  # partition label
+            f.name]
+        p = subprocess.Popen(cmd, stdin=subprocess.PIPE)
+        sfdiskcmds = ['start=4KiB, size=32MiB, type=83, bootable', #32MB@4KB
+                      'start={part_offset}KiB, size=32MiB, type=83'.format(
+                          part_offset=(PARTITION_OFFSET/1024)+4)  #32MB@(base offset+4KB)
+                    ]
+        p.communicate(input="\n".join(sfdiskcmds))
+        trunc_file(f.name, output_fs, FUNOS_OFFSET)
     return output_fs
 
 

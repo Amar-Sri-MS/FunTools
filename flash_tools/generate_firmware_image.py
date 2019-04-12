@@ -611,7 +611,7 @@ def cert_gen(outfile, cert_key, cert_key_file, sign_key, serial_number,
 
     write(outfile, cert)
 
-def raw_sign(out_path, in_path, sign_key, der_encoded, do_not_append):
+def raw_sign(out_path, in_path, sign_key, der_encoded=False, do_not_append=False):
     ''' raw sign: just sign the content and append the signature '''
 
     to_be_signed = read(in_path)

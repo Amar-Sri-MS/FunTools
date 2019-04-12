@@ -11,8 +11,32 @@
 
 #include <utils/threaded/fun_json.h>
 
-/* pre-decl */
-struct dpcsock;
+/* handy socket abstraction */
+enum sockmode {
+        SOCKMODE_TERMINAL,
+        SOCKMODE_IP,
+        SOCKMODE_UNIX,
+        SOCKMODE_DEV,
+        SOCKMODE_NVME
+};
+
+struct dpcsock {
+
+        /* configuration */
+        enum sockmode mode;      /* whether & how this is used */
+        bool server;             /* listen/accept instead of connect */
+        bool base64;             /* talk base64 over this socket */
+        bool loopback;           /* if this socket is ignored */
+        const char *socket_name; /* unix socket name */
+        uint16_t port_num;       /* TCP port number */
+        uint32_t retries;        /* whether to retry connect on failure */
+
+        /* runtime */
+        int fd;                  /* connected fd */
+        int listen_fd;           /* fd if this is a server */
+        bool nvme_write_done;    /* flag indicating whether write to nvme device
+                                    is successful so that we can read from it */
+};
 
 // Flag that controls how JSON is printed
 extern bool use_hex;
@@ -35,3 +59,5 @@ extern int run_webserver(struct dpcsock *funos_sock, int cmd_listen_sock);
 
 /* callback from webserver to handle a request */
 extern int json_handle_req(struct dpcsock *funos_sock, const char *path, char *buf, int *size);
+
+extern struct fun_json *_buffer2json(uint8_t *buffer, size_t max);

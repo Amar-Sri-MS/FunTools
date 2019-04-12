@@ -11,6 +11,7 @@ import json
 import threading
 import random
 import code, rlcompleter, readline
+import logging
 
 from threading import Thread
 try:  
@@ -41,6 +42,9 @@ req_cnt=0
 glb_rd_cnt=0
 glb_wr_cnt=0
 hnu_port_base=37
+logger = logging.getLogger("verif_server")
+logger.setLevel(logging.INFO)
+verif_socket_port=0
 
 #
 # Convert hex encoding String back to raw packet
@@ -56,20 +60,22 @@ def pkt_decode(src):
     return final
 
 def connect_verif_client_socket(port):
-    global verif_sock
+    global verif_sock,verif_socket_port
     verif_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    print 'Client Socket created'
+    logger.debug('Client Socket created')
     #Bind socket to local host and port
     try:
         verif_sock.bind((HOST, port))
     except socket.error as msg:
-        print 'Bind failed. Error Code : ' + str(msg[0]) + ' Message ' + msg[1]
+        logger.error('Bind failed. Error Code : ' + str(msg[0]) + ' Message ' + msg[1])
         sys.exit()
         
-    print 'Client Socket bind complete'
+    logger.debug('Client Socket bind complete')
+    verif_socket_port=verif_sock.getsockname()[1]
     #Start listening on socket
     verif_sock.listen(10)
-    print 'Client Socket now listening on port %d' % (port)
+    logger.info('Client Socket now listening on port %d' % (verif_socket_port))
+    return verif_socket_port
 
 #now setup the listening socket for the PTF
 #
@@ -233,14 +239,14 @@ def process_cmd_csr_write (msg_len):
   #get 8B addr
   buf = recv_str(8)
   (addr,) = struct.unpack(">Q", buf[:8])
-  print 'in process_cmd_csr_write cnt=%0d, address = 0x%x '%(glb_wr_cnt,addr)
+  logger.debug('in process_cmd_csr_write cnt=%0d, address = 0x%x '%(glb_wr_cnt,addr))
 #  print 'address is 0x%x' % (addr)
 
   #now get the csr write data
   data_len = msg_len - 2 - 1 - 8 #msg_len - MSGLEN_SIZE - CMD_SIZE - ADDR_SIZE
   data_str = recv_str(data_len)
   data_list_bytes = [ord(i) for i in list(data_str)]
-  print data_list_bytes
+  logger.debug("{0}".format(data_list_bytes))
   data_words_list = byte_array_to_words_be(array('B', data_list_bytes))
   #print "csr_poke data:"
   #print data_words_list
@@ -253,7 +259,7 @@ def process_cmd_csr_write (msg_len):
       (status, result) = dbgprobe().csr_poke(addr, data_words_list)
   #print "csr_poke returned"
   if status is False:
-      print "csr_poke returned false"
+      logger.error("csr_poke returned false")
       sys.exit(1)
 
   #finally send reply
@@ -376,10 +382,10 @@ def process_cmd_csr_read (msg_len):
       (status,result) = (True,[random.randint(0,0x10000000000000000)]*dword_len)
   else:
       (status, result) = dbgprobe().csr_peek(addr, dword_len)
-  print "result=",result
+  logger.debug("result={0}".format(result))
 
   if status is False:
-      print ("csr_peek returned false")
+      logger.error("csr_peek returned false")
       sys.exit(1)
 
   #print "csr_peek returned"
@@ -388,7 +394,7 @@ def process_cmd_csr_read (msg_len):
   else:
     read_data_hex_str = 'deadbeefdeadbeef' #make up a dummy result
 
-  print "read: addr=0x%0x data=%s,gbl_rd_cnt=%0d"%(addr,read_data_hex_str,glb_rd_cnt)
+  logger.debug("read: addr=0x%0x data=%s,gbl_rd_cnt=%0d"%(addr,read_data_hex_str,glb_rd_cnt))
 
   #finally send reply
   reply_len = 2 + 1 + 8*dword_len #msg_size + command + Bytes of data
@@ -483,11 +489,11 @@ def start_verif_server():
     global conn
     while True:
     #wait to accept a connection - blocking call
-        print 'wait to accept a connection from client'
+        logger.info('wait to accept a connection from client')
         conn, addr = verif_sock.accept()
-        print 'Connected with client' + addr[0] + ':' + str(addr[1])
+        logger.info('Connected with client' + addr[0] + ':' + str(addr[1]))
         handle_connection(conn)
-        print 'Disconnected from client' + addr[0] + ':' + str(addr[1])
+        logger.info('Disconnected from client' + addr[0] + ':' + str(addr[1]))
         conn.close()
     status = dbgprobe().disconnect()
     if status is not True:
@@ -504,11 +510,11 @@ class CsrThread(threading.Thread):
     def run(self):
         global conn
         while True:
-            print 'wait to accept a connection from client'
+            logger.info('wait to accept a connection from client')
             conn, addr = verif_sock.accept()
-            print 'Connected with client' + addr[0] + ':' + str(addr[1])
+            logger.info('Connected with client' + addr[0] + ':' + str(addr[1]))
             handle_connection(conn)
-            print 'Disconnected from client' + addr[0] + ':' + str(addr[1])
+            logger.info('Disconnected from client' + addr[0] + ':' + str(addr[1]))
             conn.close()
     def join(self, timeout=None):
         self._stopevent.set()
@@ -533,7 +539,7 @@ def proc_arg():
     parser.add_argument('--ptf_port', nargs='?', type=auto_int, default=9001, help='ptf port to connect to. default %(default)d')
     parser.add_argument('--test_ptf', action='store_true', default=False, help='test ptf connection. default %(default)d')
     parser.add_argument('--i2c_dis', action='store_true', default=False, help='i2cproxy connection disable. default %(default)d')
-    parser.add_argument('--verif_port', nargs='?', type=auto_int, default=0x1234, help='verif client port. default %(default)d')
+    parser.add_argument('--verif_port', nargs='?', type=auto_int, default=0, help='verif client port. default %(default)d')
     parser.add_argument('--tpod', nargs='?', type=str, default='TPOD4', help='TPOD name. default %(default)s')
     parser.add_argument('--tpod_force', action='store_true', default=False, help='TPOD force mode. default %(default)s')
     parser.add_argument('--tpod_jtag', action='store_true', default=False, help='TPOD JTAG mode. default %(default)s')
