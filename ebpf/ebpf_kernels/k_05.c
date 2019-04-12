@@ -25,8 +25,8 @@ typedef uint32_t tcp_seq;
 #define _bpf_constant_ntohs(x)    __constant_swab16(x)
 #define _bpf_constant_htons(x)    __constant_swab16(x)
 #elif __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
-#define _bpf_ntohs(x)    	(x)
-#define _bpf_htons(x)    	(x)
+#define _bpf_ntohs(x)		(x)
+#define _bpf_htons(x)		(x)
 #define _bpf_constant_ntohs(x) (x)
 #define _bpf_constant_htons(x) (x)
 #else
@@ -82,7 +82,7 @@ struct tcphdr {
 	uint16_t th_dport;	/* destination port */
 
 	tcp_seq th_seq;		/* sequence number */
-	tcp_seq th_ack;		/* acknowledgement number */
+	tcp_seq th_ack;		/* acknowledgment number */
 
 #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
 	uint8_t th_x2:4,	/* (unused) */
@@ -107,6 +107,7 @@ int drop(struct k_05_arg *arg)
 {
 	uint8_t *pkt = (uint8_t *) arg->data;
 	struct ethhdr *ethhdr = (struct ethhdr *)(pkt);
+
 	if (bpf_ntohs(ethhdr->eth_p) != 0x800) {
 		return 0;
 	}
@@ -118,6 +119,7 @@ int drop(struct k_05_arg *arg)
 	}
 	struct tcphdr *t_hdr = (struct tcphdr *)((uint8_t *) iphdr +
 						 sizeof(*iphdr));
+
 	if (bpf_ntohs(t_hdr->th_sport) == 1234) {
 		return 1;
 	}
