@@ -4,7 +4,9 @@
 *  Created by Hariharan Thantry on 2019-04-08
 *
 *  Copyright © 2019 Fungible Inc. All rights reserved.
+*
 */
+
 #include "ebpf_kern_args.h"
 
 typedef unsigned char uint8_t;
@@ -12,6 +14,32 @@ typedef unsigned short uint16_t;
 typedef unsigned int uint32_t;
 typedef unsigned long long uint64_t;
 typedef uint32_t tcp_seq;
+/*
+* Portable code based on the target
+* being compiled for
+*/
+
+#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+#define _bpf_ntohs(x)    __builtin_bswap16(x)
+#define _bpf_htons(x)    __builtin_bswap16(x)
+#define _bpf_constant_ntohs(x)    __constant_swab16(x)
+#define _bpf_constant_htons(x)    __constant_swab16(x)
+#elif __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+#define _bpf_ntohs(x)    	(x)
+#define _bpf_htons(x)    	(x)
+#define _bpf_constant_ntohs(x) (x)
+#define _bpf_constant_htons(x) (x)
+#else
+#error "Compiler does not have __BYTE_ORDER__?!"
+#endif
+
+#define bpf_htons(x)                            \
+(__builtin_constant_p(x) ?              \
+_bpf_constant_htons(x) : _bpf_htons(x))
+
+#define bpf_ntohs(x)                            \
+(__builtin_constant_p(x) ?              \
+_bpf_constant_ntohs(x) : _bpf_ntohs(x))
 
 struct ethhdr {
 	uint8_t dmac[6];
@@ -75,22 +103,11 @@ struct tcphdr {
 * ethType = 0x800, IPv4 protocol + TCP + sport = 1234
 */
 
-static uint16_t ntohs(uint16_t netshort)
-{
-	return ((netshort & 0xff) << 8 | (netshort >> 8));
-}
-
-static uint32_t ntohl(uint32_t netlong)
-{
-	return __builtin_bswap32(netlong);
-
-}
-
 int drop(struct k_05_arg *arg)
 {
 	uint8_t *pkt = (uint8_t *) arg->data;
 	struct ethhdr *ethhdr = (struct ethhdr *)(pkt);
-	if (ntohs(ethhdr->eth_p) != 0x800) {
+	if (bpf_ntohs(ethhdr->eth_p) != 0x800) {
 		return 0;
 	}
 	struct iphdr *iphdr = (struct iphdr *)((uint8_t *) ethhdr +
@@ -101,7 +118,7 @@ int drop(struct k_05_arg *arg)
 	}
 	struct tcphdr *t_hdr = (struct tcphdr *)((uint8_t *) iphdr +
 						 sizeof(*iphdr));
-	if (ntohs(t_hdr->th_sport) == 1234) {
+	if (bpf_ntohs(t_hdr->th_sport) == 1234) {
 		return 1;
 	}
 	return 0;
