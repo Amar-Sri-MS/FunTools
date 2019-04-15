@@ -38,4 +38,4 @@ struct k_05_arg {
 	unsigned long long data_meta;
 	unsigned int ingress_ifindex;
 	unsigned int rx_queue_index;
-} __attribute__ ((packed));
+};
