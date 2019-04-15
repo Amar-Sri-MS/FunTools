@@ -94,6 +94,7 @@ def gen_fw_image(filename, attrs):
         'key':'sign_key',
         'source':'infile',
         'version':'version',
+        'description':'description'
     }
 
     args = map_method_args(argmap, attrs)
@@ -397,6 +398,10 @@ def override_field(config, field, value):
 def set_versions(value):
     global config
     override_field(config, 'version', value)
+
+def set_description(value):
+    global config
+    override_field(config, 'description', value)
 
 def main():
     parser = argparse.ArgumentParser()
