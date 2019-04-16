@@ -45,7 +45,7 @@ struct ethhdr {
 	uint8_t dmac[6];
 	uint8_t smac[6];
 	uint16_t eth_p;
-} __attribute__ ((packed));
+};
 
 struct iphdr {
 
@@ -72,7 +72,7 @@ struct iphdr {
 	uint16_t ip_csum;	/* checksum */
 	uint32_t ip_src;
 	uint32_t ip_dst;
-} __attribute__ ((packed));
+};
 
 /*
 * TCP header, as per RFC 793, September, 1981
@@ -96,7 +96,7 @@ struct tcphdr {
 	uint16_t th_win;	/* window */
 	uint16_t th_sum;	/* checksum */
 	uint16_t th_urp;	/* urgent pointer */
-} __attribute__ ((packed));
+};
 
 /*
 * This kernel should drop a packet that has

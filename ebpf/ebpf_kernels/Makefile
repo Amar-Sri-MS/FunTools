@@ -76,7 +76,7 @@ endef
 
 .ONESHELL:
 
-all: $(BCFILES) $(ASMFILES) tidy
+all: clean $(BCFILES) $(ASMFILES) tidy
 
 %.$(TARGET).S: %.o
 	llvm-objdump -S $< > $@
