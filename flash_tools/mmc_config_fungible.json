@@ -6,7 +6,8 @@
             "fourcc": "fun1",
             "cert": "",
             "customer_cert": "",
-            "key": "fpk5"
+            "key": "fpk5",
+            "description": ""
         },
         "boot.img.signed": {
             "source": "boot.img",
@@ -14,7 +15,8 @@
             "fourcc": "boot",
             "cert": "",
             "customer_cert": "",
-            "key": "fpk5"
+            "key": "fpk5",
+            "description": ""
         }
     }
 }

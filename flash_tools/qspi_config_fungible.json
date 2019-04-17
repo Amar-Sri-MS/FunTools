@@ -59,7 +59,8 @@
             "fourcc": "husd",
             "cert": "",
             "customer_cert": "",
-            "key": "fpk3"
+            "key": "fpk3",
+            "description": ""
         },
         "hu_sbm_v1.bin": {
             "source": "sbus_master.hu.conv.rom",
@@ -67,7 +68,8 @@
             "fourcc": "husm",
             "cert": "",
             "customer_cert": "",
-            "key": "fpk3"
+            "key": "fpk3",
+            "description": ""
         },
         "hbm_sbus_v1.bin": {
             "source": "sbus_master.hbm.conv.rom",
@@ -75,14 +77,16 @@
             "fourcc": "hbsb",
             "cert": "",
             "customer_cert": "",
-            "key": "fpk5"
+            "key": "fpk5",
+            "description": ""
         },
         "esecure_puf_rom_packed_v1.bin": {
             "source": "puf_rom_m5150.keys.bin",
             "version": 1,
             "fourcc": "pufr",
             "cert": "start_certificate.bin",
-            "customer_cert": ""
+            "customer_cert": "",
+            "description": ""
         },
         "esecure_firmware_packed_v1.bin": {
             "source": "firmware_m5150.keys.bin",
@@ -90,7 +94,8 @@
             "fourcc": "frmw",
             "key": "fpk3",
             "cert": "",
-            "customer_cert": ""
+            "customer_cert": "",
+            "description": ""
         },
         "eeprom_packed_v1.bin": {
             "source": "",
@@ -98,7 +103,8 @@
             "fourcc": "eepr",
             "key": "fpk3",
             "cert": "",
-            "customer_cert": ""
+            "customer_cert": "",
+            "description": ""
         },
         "host_firmware_packed_v1.bin": {
             "source": "",
@@ -106,7 +112,8 @@
             "fourcc": "host",
             "key": "fpk5",
             "cert": "",
-            "customer_cert": ""
+            "customer_cert": "",
+            "description": ""
         }
     },
     "certificates": {
