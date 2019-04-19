@@ -203,7 +203,6 @@ def show_pc_cmh_ncv_thrsholds():
             for t in range(15):
                 field_val = csr_get_field_val(csr_meta, word_array, 'th_{}'.format(t+1))
                 print('\tTHR-{}: {}'.format(t, [hex(x) for x in field_val]))
-            print("test code====>")
             csr_show(csr_meta, resp_data)
         else:
             error_msg = resp_data
