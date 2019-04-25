@@ -30,6 +30,7 @@ struct dpcsock {
         const char *socket_name; /* unix socket name */
         uint16_t port_num;       /* TCP port number */
         uint32_t retries;        /* whether to retry connect on failure */
+	uint32_t cmd_timeout;    /* cmd timeout in ms */
 
         /* runtime */
         int fd;                  /* connected fd */

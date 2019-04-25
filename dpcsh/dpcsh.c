@@ -68,6 +68,9 @@ static char *_baudrate = DEFAULT_BAUD; /* default BAUD rate */
 static bool _no_flow_control = false;  /* run without flow_control */
 static bool _legacy_b64 = false;
 
+/* cmd timeout */
+#define DEFAULT_NVME_CMD_TIMEOUT_MS "60000"
+
 // We stash argv[0]
 const char *dpcsh_path;
 
@@ -1350,6 +1353,9 @@ static struct option longopts[] = {
 	{ "no_flow_control", no_argument,       NULL, 'F' },
 	{ "baud",            required_argument, NULL, 'R' },
 	{ "legacy_b64",      no_argument,       NULL, 'L' },
+#ifdef __linux__
+	{ "nvme_cmd_timeout", required_argument, NULL, 'W' },
+#endif //__linux__
 
 	/* end */
 	{ NULL, 0, NULL, 0 },
@@ -1381,6 +1387,10 @@ static void usage(const char *argv0)
 	printf("       --no_dev_init           don't init the UART device, use as-is\n");
 	printf("       --baud=rate             specify non-standard baud rate (default=" DEFAULT_BAUD ")\n");
 	printf("       --legacy_b64            support old-style base64 encoding, despite issues\n");
+#ifdef __linux__
+	printf("       --nvme_cmd_timeout=timeout specify cmd timeout in ms (default=" DEFAULT_NVME_CMD_TIMEOUT_MS ")\n");
+#endif //__linux__
+
 }
 
 enum mode {
@@ -1442,6 +1452,7 @@ int main(int argc, char *argv[])
 		funos_sock.server = false;
 		funos_sock.fd = -1;
 		funos_sock.retries = UINT32_MAX;
+		funos_sock.cmd_timeout = atoi(DEFAULT_NVME_CMD_TIMEOUT_MS);
 	}
 	/* Use libfunq otherwsie */
 	else
@@ -1591,6 +1602,18 @@ int main(int argc, char *argv[])
 		case 'L':
 			_legacy_b64 = true;
 			break;
+
+#ifdef __linux__
+		case 'W':  /* "timeout" -- set timeout for cmd */
+			funos_sock.cmd_timeout = atoi(optarg);
+			if (funos_sock.cmd_timeout <= 0) {
+				printf("timeout must be a positive decimal integer\n");
+				usage(argv[0]);
+				exit(1);
+			}
+			break;
+#endif //__linux__
+
 		default:
 			usage(argv[0]);
 			exit(1);
