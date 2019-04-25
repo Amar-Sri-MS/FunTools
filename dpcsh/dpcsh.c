@@ -68,8 +68,8 @@ static char *_baudrate = DEFAULT_BAUD; /* default BAUD rate */
 static bool _no_flow_control = false;  /* run without flow_control */
 static bool _legacy_b64 = false;
 
-/* cmd timeout */
-#define DEFAULT_NVME_CMD_TIMEOUT_MS "60000"
+/* cmd timeout, use driver default timeout */
+#define DEFAULT_NVME_CMD_TIMEOUT_MS "0"
 
 // We stash argv[0]
 const char *dpcsh_path;
