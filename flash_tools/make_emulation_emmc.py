@@ -31,6 +31,23 @@ BLOCK_SIZE = 512
 # the second partition table
 FUNOS_OFFSET = 33 * 1024 * 1024
 
+# Similarily to how FunOS is stored, linux is stored as raw data blob at an offset
+# from the beginning of eMMC memory (or second partition table).
+LINUX_OFFSET = 128 * 1024 * 1024
+
+# LINUX_LOAD_ADDR specifies where the linux image should start in RAM. This memory
+# block will be mapped into the VZ Guest
+LINUX_LOAD_ADDR = 0x9000000010100000
+
+# see eSecure_rsa_structs.h::fw_fun_header_t for a description of
+# the signature structure format. Signing info is always prepended to
+# the signed content.
+# The complete signature consists of:
+#   .. signing_info_t (customer signature)
+#   .. signing_info_t (fungible signature)
+#   .. fw_fun_auth_header_t (firmware header)
+FUN_SIGNATURE_SIZE = 4172
+
 # Base offset of second software partition
 PARTITION_OFFSET = 1024 * 1024 * 1024
 
@@ -85,7 +102,7 @@ def crc32(filename):
     return res & 0xffffffff
 
 
-def gen_boot_script(filename, funos_start_blk):
+def gen_boot_script(filename, funos_start_blk, linux_start_blk=-1):
     """Generate a u-boot boot script
 
     This is the default boot script to be loaded by u-boot.
@@ -100,10 +117,7 @@ def gen_boot_script(filename, funos_start_blk):
     boot_pad_img = os.path.join(g.outdir, 'boot.pad.img')
 
     def filesize(f):
-        # see eSecure_rsa_structs.h::fw_fun_header_t for a description of
-        # the signature structure format. Signing info is always prepended to
-        # the signed content
-        hdr = 4156 if g.signed else 0
+        hdr = FUN_SIGNATURE_SIZE if g.signed else 0
         return BLOCK_SIZE * (int((os.path.getsize(f) + hdr + BLOCK_SIZE - 1)) / BLOCK_SIZE)
 
     with open(filename, 'w') as outfile:
@@ -111,11 +125,26 @@ def gen_boot_script(filename, funos_start_blk):
                             'setexpr mmcstart ${mmcpart} - 1; else ' \
                             'setexpr mmcstart 0; ' \
                       'fi\n')
-        outfile.write('setexpr mmcstart ${{mmcstart}} * 0x{offset:x}\n'.format(
+
+        if linux_start_blk >= 0:
+            load_offset = FUN_SIGNATURE_SIZE if g.signed else 0
+            outfile.write('setexpr linux_mmcstart ${{mmcstart}} * 0x{offset:x}\n'.format(
+                    offset=PARTITION_OFFSET/BLOCK_SIZE))
+            outfile.write('setexpr linux_mmcstart ${{linux_mmcstart}} + 0x{mmc_start_blk:x}\n'.format(
+                    mmc_start_blk=linux_start_blk))
+            outfile.write('mmc read 0x{load_addr:x} ${{linux_mmcstart}} 0x{load_size_blk:x};\n'.format(
+                    load_addr=LINUX_LOAD_ADDR - load_offset,
+                    load_size_blk=filesize(g.linux) / BLOCK_SIZE))
+            if g.signed:
+                outfile.write('authfw 0x{load_addr:x} {load_size:x};\n'.format(
+                    load_addr=LINUX_LOAD_ADDR - load_offset,
+                    load_size=os.path.getsize(g.linux)))
+
+        outfile.write('setexpr funos_mmcstart ${{mmcstart}} * 0x{offset:x}\n'.format(
                 offset=PARTITION_OFFSET/BLOCK_SIZE))
-        outfile.write('setexpr mmcstart ${{mmcstart}} + 0x{mmc_start_blk:x}\n'.format(
+        outfile.write('setexpr funos_mmcstart ${{funos_mmcstart}} + 0x{mmc_start_blk:x}\n'.format(
                 mmc_start_blk=funos_start_blk))
-        outfile.write('mmc read 0x{load_addr:x} ${{mmcstart}} 0x{load_size_blk:x};'.format(
+        outfile.write('mmc read 0x{load_addr:x} ${{funos_mmcstart}} 0x{load_size_blk:x};\n'.format(
             load_addr=LOAD_ADDR,
             load_size_blk=filesize(g.appfile) / BLOCK_SIZE))
         if g.crc:
@@ -124,12 +153,12 @@ def gen_boot_script(filename, funos_start_blk):
                 load_size=os.path.getsize(g.appfile),
                 crc=filesize(g.appfile)))
         if g.signed:
-            outfile.write('authfw 0x{load_addr:x} {load_size:x};'.format(
+            outfile.write('authfw 0x{load_addr:x} {load_size:x};\n'.format(
                 load_addr=LOAD_ADDR,
                 load_size=os.path.getsize(g.appfile)))
-            outfile.write('bootelf -p ${loadaddr};')
+            outfile.write('bootelf -p ${loadaddr};\n')
         else:
-            outfile.write('bootelf -p 0x{load_addr:x};'.format(
+            outfile.write('bootelf -p 0x{load_addr:x};\n'.format(
                 load_addr=LOAD_ADDR))
 
     # default location in full Fungible workspace
@@ -210,6 +239,7 @@ def run():
         '-o', '--outdir', help='Output directory', required=True)
     parser.add_argument('-f', '--appfile',
                         help='Application file', required=True)
+    parser.add_argument('--linux', help='Path to linux image', metavar='VMLINUX')
     parser.add_argument(
         '-c', '--crc', help='Add crc check step', action='store_true')
     parser.add_argument(
@@ -225,7 +255,9 @@ def run():
 
     parser.parse_args(namespace=g)
 
-    gen_boot_script(os.path.join(g.outdir, 'bootloader.scr'), FUNOS_OFFSET / BLOCK_SIZE)
+    linux_start_blk = (LINUX_OFFSET / BLOCK_SIZE) if g.linux else -1
+    gen_boot_script(os.path.join(g.outdir, 'bootloader.scr'), FUNOS_OFFSET / BLOCK_SIZE,
+                    linux_start_blk)
 
     if g.bootscript_only:
         return
@@ -242,6 +274,12 @@ def run():
         fs = gen_fs(g.fsfile)
         pad_file(fs, outfile_bin, FUNOS_OFFSET)
         merge_file(g.work_file, outfile_bin)
+        os.rename(outfile_bin, outfile_bin + ".tmp")
+        pad_file(outfile_bin + ".tmp", outfile_bin, LINUX_OFFSET)
+        os.remove(outfile_bin + ".tmp")
+        pad_file(g.linux, g.linux + ".tmp", BLOCK_SIZE)
+        merge_file(g.linux + ".tmp", outfile_bin)
+        os.remove(g.linux + ".tmp")
         files.append(outfile_bin)
     else:
         files.append(os.path.join(g.outdir, 'boot.pad.img'))
