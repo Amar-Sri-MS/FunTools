@@ -27,7 +27,7 @@ def connect_verif_server():
 
 def run_verif_server():
    global verif_svr_port
-   verif_svr_port=connect_verif_client_socket(args.verif_svr_port)
+   verif_svr_port=connect_verif_client_socket(port=args.verif_svr_port,chip_inst=args.tpod_bmc_chip_inst)
    logger.debug("port in={0} out={1}".format(args.verif_svr_port,verif_svr_port))
    set_i2c_dis(args.i2c_dis)
    if not args.i2c_dis:
@@ -809,6 +809,7 @@ def proc_arg():
     parser.add_argument('--tpod_force', action='store_true', default=False, help='TPOD force mode. default %(default)s')
     parser.add_argument('--tpod_jtag', action='store_true', default=False, help='TPOD JTAG mode. default %(default)s')
     parser.add_argument('--tpod_pcie', action='store_true', default=False, help='TPOD PCIE mode. default %(default)s')
+    parser.add_argument('--tpod_bmc_chip_inst', nargs='?', type=auto_int, default=0, help='TPOD chip_inst used in bmc mode. default %(default)s')
     args = parser.parse_args()
     if args.tpod_jtag and args.tpod_pcie:
        logger.error("tpod both jtag and pcie mode specified")
