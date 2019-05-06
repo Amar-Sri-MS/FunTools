@@ -20,7 +20,7 @@
 
 
 CC := clang
-TARGET ?= bpfel
+TARGET ?= bpfeb
 CFLAGS := -O2 -Wno-implicit-function-declaration
 SRCS := $(wildcard *.c)
 
