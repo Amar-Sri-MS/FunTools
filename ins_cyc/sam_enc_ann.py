@@ -88,11 +88,16 @@ def encode_and_annotate(in_file_list, funos_dasm):
     core_id = ''
     if match:
       core_id = match.group(1)
+    else:
+      sys.stderr.write('Skipping %s: did not match expected trace '
+                       'filename pattern\n' % in_file)
+      continue
+
     enc_file_list = glob.glob('%s/*%s*.te' % (wdir, core_id))
 
     # annotate
-    for in_file in enc_file_list:
-      annotate_single(funos_dasm, in_file)
+    for enc_file in enc_file_list:
+      annotate_single(funos_dasm, enc_file)
 
 def usage():
   print 'usage: %s <file.trace|dir>' % sys.argv[0]
