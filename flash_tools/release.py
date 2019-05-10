@@ -14,7 +14,7 @@ import generate_flash as gf
 #TODO (make configurable for S1 and other)
 HOST_FIRMWARE_CONFIG_OVERRIDE="""
 { "signed_images": {
-     "host_firmware_packed_v1.bin": {
+     "host_firmware_packed.bin": {
          "source":"u-boot.bin"
          }
      }
@@ -24,7 +24,7 @@ HOST_FIRMWARE_CONFIG_OVERRIDE="""
 #TODO (make configurable for S1 and other)
 EEPROM_CONFIG_OVERRIDE="""
 { "signed_images": {
-     "eeprom_packed_v1.bin": {
+     "eeprom_packed.bin": {
          "source":"eeprom_f1"
          }
      }
