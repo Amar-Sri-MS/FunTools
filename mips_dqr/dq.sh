@@ -23,17 +23,21 @@ tail -f $DUMMY_FILE | java -jar "csdqer.jar" $ARGS &
 
 # Record the PID of the java program
 DQR_PID=$!
+echo "Waiting for DQR $DQR_PID"
 
 # Loop until we see that the dequeuer is no longer running. At that point,
 # issue anything to the dummy file, which will cause tail to exit because
 # of a broken pipe (SIGPIPE).
-#
-# TODO: exit with the return code of the dequeuer
 while true; do
     if ps -p $DQR_PID > /dev/null; then
-        sleep 10
+        sleep 5
     else
         echo "EOF" > $DUMMY_FILE
-        exit 0
+
+        # The PID return code will be reserved within the shell until
+        # this is called, so there is no danger of PID reuse causing
+        # a wait on the wrong subprocess.
+        wait $DQR_PID
+        exit $?
     fi
 done
