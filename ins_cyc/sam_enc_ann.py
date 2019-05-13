@@ -64,13 +64,16 @@ def annotate_single(funos_dasm, in_file):
   #if os.stat(cmd[0]).st_size < 2:
   #  print '%s: too small, skipping' % cmd[0]
   #  sys.exit(-1)
-
-  output = subprocess.check_output(cmd)
-  if not output:
-    print 'empty, skip writing of %s' % out_file
-    return
-  with open(out_file, 'w') as f:
-    f.write(output)
+  try:
+    output = subprocess.check_output(cmd)
+    if not output:
+      print 'empty, skip writing of %s' % out_file
+      return
+    with open(out_file, 'w') as f:
+      f.write(output)
+  except subprocess.CalledProcessError as e:
+    print 'Exception while running %s, skipping annotate for %s' % (cmd,
+                                                                    in_file)
 
 def encode_and_annotate(in_file_list, funos_dasm):
   setup_funtools_path()
