@@ -3,11 +3,43 @@
 #
 
 import argparse
+import enrollment_service as es
 import mmap
 import generate_firmware_image as GFI
 import struct
 import sys
 
+
+class RsaModulus(object):
+    def __init__(self, name, modulus):
+        self.modulus = modulus
+        self.name = name
+
+    @staticmethod
+    def create(name):
+        config = {
+            "fpk3" :
+                { "type": HsmRsaModulus },
+            "fpk4" :
+                { "type": EnrollmentModulus },
+            "fpk5" :
+                { "type": HsmRsaModulus }
+        }
+        try:
+            c = config[name]
+            return c["type"](name)
+        except:
+            raise
+
+class EnrollmentModulus(RsaModulus):
+    def __init__(self, name):
+        m = es.GetModulus()
+        super().__init__(name, m)
+
+class HsmRsaModulus(RsaModulus):
+    def __init__(self, name):
+        m = GFI.get_create_public_rsa_modulus(name)
+        super().__init__(name, m)
 
 class AppFpk(mmap.mmap):
     def __find_key_loc(self, n):
@@ -49,7 +81,7 @@ class AppFpk(mmap.mmap):
         if not key:
             key = "fpk" + str(n)
 
-        modulus = GFI.get_create_public_rsa_modulus(key)
+        modulus = RsaModulus.create(key).modulus
         stored_mod_len = struct.unpack("<l", self.read(4))[0]
         stored_mod = self.read(stored_mod_len)
 
