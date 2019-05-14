@@ -12,6 +12,7 @@ import binascii
 import argparse
 import shutil
 import generate_firmware_image as gfi
+import enrollment_service as es
 import key_replace as kr
 
 # image type is at 2 SIGNER_INFO size +  FW_SIZE + FW_VERSION
@@ -545,7 +546,8 @@ def run(arg_action, arg_enroll_cert = None, arg_enroll_tbs = None):
         enroll_cert = None
 
         if arg_enroll_tbs:
-            enroll_cert = gfi.raw_sign(None, arg_enroll_tbs, "fpk4")
+            with open(arg_enroll_tbs, 'rb') as f:
+                enroll_cert = es.Sign(f.read())
 
         if arg_enroll_cert:
             try:
