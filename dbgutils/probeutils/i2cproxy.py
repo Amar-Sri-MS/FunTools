@@ -219,19 +219,20 @@ class I2CFactoryThread(jsocket.ServerFactoryThread):
                     logger.debug("csr_addr: {0} csr_width_words:{1}".format(csr_addr,
                                  csr_width_words))
                     try:
-                        word_array = i2c_conn.i2c_csr_peek(csr_addr = csr_addr,
+                        (data, status) = i2c_conn.i2c_csr_peek(csr_addr = csr_addr,
                                                            csr_width_words = csr_width_words)
                     except Exception as e:
                         logging.error(traceback.format_exc())
                         self.send_obj({"STATUS":[False, "Exception!"]})
                         return
-                    logger.debug("Peeked words: {0}".format(word_array))
-                    if word_array is not None:
+                    logger.debug("Peeked words: {0}".format(data))
+                    if data is not None:
                         self.send_obj({"STATUS":[True, "peek success!"],
-                                "DATA":word_array})
+                                "DATA":data})
                     else:
-                        self.send_obj({"STATUS":[False, "peek fail!"],
-                                "DATA":word_array})
+                        self.send_obj({"STATUS":[False, "peek fail!"
+                                                 "Error:{0}".format(status)],
+                                "DATA":data})
                 except Exception as e:
                     logging.error(traceback.format_exc())
                     self.send_obj({"STATUS":[False, "Exception!"]})

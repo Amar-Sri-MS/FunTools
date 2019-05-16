@@ -18,6 +18,7 @@ class DBG_Client(object):
         self.connection_handle = None
         self.connection_mode = None
         self.bmc_ip_address = None
+        self.bmc = False
         self.probe_ip_address = None
         self.probe_id = None
         self.connected = False
@@ -96,6 +97,9 @@ class DBG_Client(object):
     def csr_peek(self, csr_addr, csr_width_words, chip_inst=None):
         if self.connected is False:
             return (False, "dbg probe is not connected!")
+        if self.bmc and chip_inst is None:
+            return (False, "Invalid chip_inst for the board with bmc!")
+
         return self.connection_handle.csr_peek(chip_inst = chip_inst,
                                                csr_addr = csr_addr,
                                                csr_width_words = csr_width_words)
@@ -106,6 +110,10 @@ class DBG_Client(object):
             error_msg = "dbg probe is not connected!"
             print(error_msg);
             return (False, error_msg)
+
+        if self.bmc and chip_inst is None:
+            return (False, "Invalid chip_inst for the board with bmc!")
+
         return self.connection_handle.csr_poke(chip_inst = chip_inst,
                                                csr_addr = csr_addr,
                                                 word_array = word_array,
@@ -116,6 +124,10 @@ class DBG_Client(object):
             error_msg = "Probe is not connected!"
             print(error_msg);
             return (False, error_msg)
+
+        if self.bmc and chip_inst is None:
+            return (False, "Invalid chip_inst for the board with bmc!")
+
         return self.connection_handle.csr_poke(chip_inst = chip_inst,
                                                csr_addr = csr_addr,
                                                word_array = word_array,
@@ -125,6 +137,10 @@ class DBG_Client(object):
             error_msg = "Probe is not connected!"
             print(error_msg);
             return (False, error_msg)
+
+        if self.bmc and chip_inst is None:
+            return (False, "Invalid chip_inst for the board with bmc!")
+
         return self.connection_handle.dbg_chal_cmd(chip_inst = chip_inst,
                                                    cmd = cmd,
                                                    data = data)
