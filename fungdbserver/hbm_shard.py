@@ -3,6 +3,7 @@
 # shard and unshard HBM memory images
 
 import sys
+import struct
 
 ###
 ##  helpers
@@ -107,7 +108,7 @@ class InFile:
         self.fh = fh
         self.base_addr = base_addr
 
-    def read_address_lines(self, address):
+    def read_address_words(self, address):
 
         address -= self.base_addr
 
@@ -121,7 +122,16 @@ class InFile:
             line = self.fh.readline()
             if (line == ""):
                 return None
-            l.append(line)
+            
+            # take the junk off the front and newline off the end
+            line = line[2:-1]
+
+            # convert it straight to an int
+            val = int(line, 16)
+
+            # print shex
+            l.append(val)
+
         return l
             
         
@@ -131,47 +141,54 @@ def unshard(prefix):
     flist = open_shard_files(prefix, 'r')
     
     # turn them into a list of InFiles
-    infiles = [ InFile(x) for x in flist ]
+    infiles = []
+    for fl in flist:
+        print "parsing a file"
+        infiles.append(InFile(fl))
 
     # open the output file
     fname = "%s-hbmdump.bin" % prefix
     hfl = open(fname, "w")
 
     address = 0
+    bs = ""
     while (True):
 
         (baseAddr, fh) = addr2shard(address, infiles)
 
         # read a line
-        lines = fh.read_address_lines(baseAddr)
+        words = fh.read_address_words(baseAddr)
 
         # exit on EOF
-        if (lines is None):
+        if (words is None):
             print "EOF reached accessing addres 0x%x" % address
             break
 
         # split the line into nyble pairs (skipping the first dead one)
-        for line in lines:
-            line = line.strip()
-            shex = [ line[n:n+2] for n in range(2, len(line), 2) ]
-
-            # print shex
+        for word in words:
         
             # turn that into a string of raw bytes
-            sbytes  = ''.join([ chr(int(i, 16)) for i in shex ])
+            sbytes  = struct.pack('Q', word)
             assert(len(sbytes) == IN_BYTES_PER_LINE)
         
-            hfl.write(sbytes)
+            bs += sbytes
         
             # next address
             address += IN_BYTES_PER_LINE
 
         # progress marker
         if ((address % (1<<20)) == 0):
+            hfl.write(bs)
+            bs = ""
+
+        if ((address % (1<<30)) == 0):
+            sys.stdout.write("%s" % address >> 30)
+            sys.stdout.flush()
+        elif ((address % (1<<20)) == 0):
             sys.stdout.write(".")
             sys.stdout.flush()
 
-        if (address > (1<<22)):
+        if (address > (1<<24)):
             sys.exit(1)
             
 ###
