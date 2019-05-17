@@ -319,7 +319,7 @@ static void unshard(int fd)
 			fflush(stdout);
 		}
 		if (addr && !(addr % (1ULL << 30))) {
-			printf("%" PRId64 "\n", addr >> 30);
+			printf("%" PRId64 "gb\n", addr >> 30);
 		}
 	}
 
