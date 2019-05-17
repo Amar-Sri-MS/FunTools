@@ -92,8 +92,6 @@ def main():
                   "bin/flash_tools/generate_flash.py",
                   "bin/flash_tools/make_emulation_emmc.py",
                   "bin/flash_tools/key_replace.py",
-                  "bin/flash_tools/enrollment_service.py", # FIXME(Marcin) delete this
-                  "bin/flash_tools/f1registration.ca.pem", # FIXME(Marcin) delete this
                   "bin/flash_tools/" + os.path.basename(__file__),
                   "bin/Linux/x86_64/mkimage" ]
         for app in utils:

@@ -3,7 +3,6 @@
 #
 
 import argparse
-import enrollment_service as es
 import mmap
 import generate_firmware_image as GFI
 import struct
@@ -41,6 +40,7 @@ class RsaModulus(object):
 
 class EnrollmentModulus(RsaModulus):
     def __init__(self, name):
+        import enrollment_service as es
         m = es.GetModulus()
         super().__init__(name, m)
 
