@@ -2,7 +2,9 @@
 
 # shard and unshard HBM memory images
 
+import os
 import sys
+import mmap
 import struct
 
 ###
@@ -88,6 +90,49 @@ def open_shard_files(prefix, mode):
 
     return files
 
+CHUNK=128
+QCHUNK = 'Q' * CHUNK
+def parse_in_file(fh, n, dobin):
+
+    if (not dobin):
+        # assume pre-cached files
+        fl2 = open("tmp.%d" % n, "r")
+        nwords = os.fstat(fh.fileno()).st_size / IN_LINE_LEN
+        nbytes = nwords * 8
+        m = mmap.mmap(fl2.fileno(), nbytes, prot=mmap.PROT_READ)
+        return (m, nbytes)
+
+    
+    fl2 = open("tmp.%d" % n, "wb+")
+    nwords = os.fstat(fh.fileno()).st_size / IN_LINE_LEN
+    nbytes = nwords * 8
+    fl2.seek(nbytes-1)
+    fl2.write('\0')
+    fl2.seek(0)
+    m = mmap.mmap(fl2.fileno(), nbytes, prot=mmap.PROT_READ | mmap.PROT_WRITE, flags=mmap.MAP_SHARED)
+
+    # parse the file
+    c = 0
+    n = 0
+    vs = range(CHUNK)
+    lines = fh.readlines()
+    for line in lines:
+        # take the junk off the front and newline off the end
+        line = line[2:-1]
+
+        # convert it straight to an int
+        val = int(line, 16)
+
+        vs[n] = val
+        n += 1
+
+        if (not (n%CHUNK)):
+            m[c : c + IN_BYTES_PER_LINE * CHUNK] = struct.pack(QCHUNK, *vs)
+            c += IN_BYTES_PER_LINE * CHUNK
+            n = 0
+
+    return (m, nbytes)
+
 ###
 ##  unshard
 #
@@ -101,41 +146,25 @@ IN_LINE_BATCH = 8
 # so we can seek around the file
 IN_LINE_LEN = 2*9 + 1
 
+RLIST = range(IN_LINE_BATCH)
 # wrap the <address, file handle> in a class so we can make sure we're
 # writing consistently
 class InFile:
-    def __init__(self, fh, base_addr=0):
-        self.fh = fh
+    def __init__(self, fh, n, dobin, base_addr=0):
+        (self.map, self.max) = parse_in_file(fh, n, dobin)
         self.base_addr = base_addr
 
     def read_address_words(self, address):
 
         address -= self.base_addr
 
-        # compute a line number
-        lno = address / IN_BYTES_PER_LINE
-        faddr = lno * IN_LINE_LEN
-        self.fh.seek(faddr)
-
-        l = []
-        for i in range(IN_LINE_BATCH):
-            line = self.fh.readline()
-            if (line == ""):
-                return None
-            
-            # take the junk off the front and newline off the end
-            line = line[2:-1]
-
-            # convert it straight to an int
-            val = int(line, 16)
-
-            # print shex
-            l.append(val)
-
-        return l
+        if (address >= self.max):
+            return None
+        
+        return self.map[address:address+64]
             
         
-def unshard(prefix):
+def unshard(prefix, dobin):
 
     # open the input files
     flist = open_shard_files(prefix, 'r')
@@ -143,8 +172,12 @@ def unshard(prefix):
     # turn them into a list of InFiles
     infiles = []
     for fl in flist:
-        print "parsing a file"
-        infiles.append(InFile(fl))
+        n = len(infiles)
+        print "parsing file %d " % n
+        infiles.append(InFile(fl, n, dobin))
+        #if (len(infiles) == 2):
+        #    print "abort"
+        #    sys.exit(0)
 
     # open the output file
     fname = "%s-hbmdump.bin" % prefix
@@ -164,17 +197,8 @@ def unshard(prefix):
             print "EOF reached accessing addres 0x%x" % address
             break
 
-        # split the line into nyble pairs (skipping the first dead one)
-        for word in words:
-        
-            # turn that into a string of raw bytes
-            sbytes  = struct.pack('Q', word)
-            assert(len(sbytes) == IN_BYTES_PER_LINE)
-        
-            bs += sbytes
-        
-            # next address
-            address += IN_BYTES_PER_LINE
+        bs += words
+        address += IN_BYTES_PER_LINE * 8
 
         # progress marker
         if ((address % (1<<20)) == 0):
@@ -182,14 +206,14 @@ def unshard(prefix):
             bs = ""
 
         if ((address % (1<<30)) == 0):
-            sys.stdout.write("%s" % address >> 30)
+            sys.stdout.write("%s" % (address >> 30))
             sys.stdout.flush()
-        elif ((address % (1<<20)) == 0):
+        elif ((address % (1<<25)) == 0):
             sys.stdout.write(".")
             sys.stdout.flush()
 
-        if (address > (1<<24)):
-            sys.exit(1)
+        #if (address > (1<<26)):
+        #    sys.exit(1)
             
 ###
 ##  shard
@@ -234,6 +258,7 @@ def main():
     if (len(sys.argv) != 3):
         print "usage: %s -s hexfile" % sys.argv[0]
         print "       %s -u prefix" % sys.argv[0]
+        print "       %s -x prefix" % sys.argv[0]
         sys.exit(1)
 
     op = sys.argv[1]
@@ -242,7 +267,9 @@ def main():
     if (op == "-s"):
         shard(fname)
     elif (op == "-u"):
-        unshard(fname)
+        unshard(fname, True)
+    elif (op == "-x"):
+        unshard(fname, False)
     else:
         print "%s: unknown operation '%s'" % (sys.argv[0], op)
         sys.exit(1)
