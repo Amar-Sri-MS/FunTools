@@ -113,6 +113,7 @@ def main():
         with open("image.json", "w") as f:
             json.dump(config, f, indent=4)
 
+        gf.run('key_injection', net=True, hsm=False)
         os.chdir(curdir)
 
     if wanted('sign'):
@@ -120,7 +121,7 @@ def main():
         sdkpaths.append(os.path.abspath(args.destdir))
         gf.set_search_paths(sdkpaths)
         os.chdir(args.destdir)
-        gf.run('key_injection')
+        gf.run('key_injection', net=False, hsm=True, keep_output=True)
         gf.run('certificates')
         gf.run('sign')
         os.chdir(curdir)
