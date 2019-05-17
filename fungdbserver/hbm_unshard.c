@@ -16,7 +16,7 @@
 #define BLEN    16
 #define JUNKLEN 2
 #define LINELEN (BLEN+JUNKLEN+1)
-#define CHUNK   1024
+#define CHUNK   (16*1024)
 
 #define STRIDE 64
 
@@ -26,6 +26,7 @@ static const uint32_t CHNUMS[] = {2, 3, 6, 7, 0, 1, 4, 5, 10,
 
 struct infile {
 	char *name;
+	char *fname;
 	int srcfd;
 	int binfd;
 	uint64_t *map;
@@ -85,25 +86,42 @@ static int create_bin_file(const char *outfile)
 	return fd;
 }
 
+static const char HEXVALS[256] = {
+	['0'] = 0,
+	['1'] = 1,
+	['2'] = 2,
+	['3'] = 3,
+	['4'] = 4,
+	['5'] = 5,
+	['6'] = 6,
+	['7'] = 7,
+	['8'] = 8,
+	['9'] = 9,
+	['a'] = 0xa,
+	['b'] = 0xb,
+	['c'] = 0xc,
+	['d'] = 0xd,
+	['e'] = 0xe,
+	['f'] = 0xf,
+	['A'] = 0xa,
+	['B'] = 0xb,
+	['C'] = 0xc,
+	['D'] = 0xd,
+	['E'] = 0xe,
+	['F'] = 0xf,
+};
+
 static uint64_t hexval(char c)
 {
-	if ((c >= '0') && (c <= '9'))
-		return c - '0';
-
-	if ((c >= 'a') && (c <= 'f'))
-		return c - 'a' + 0xa;
-	
-	if ((c >= 'A') && (c <= 'F'))
-		return c - 'A' + 0xA;
-
-	abort();
+	return HEXVALS[c];
 }
 
 static uint64_t decode_line(const char *p)
 {
 	uint64_t n = 0;
 	int i;
-	
+
+	/* atoi() and byte-swap in one */
 	for (i = 0; i < BLEN; i++) {
 		n <<= 4;
 		n |= hexval(p[i]);
@@ -120,16 +138,17 @@ static void decode_input(int i)
 	char buf[CHUNK * LINELEN];
 	uint64_t obuf[CHUNK];
 	struct infile *f = &shards[i];
-	char *p, *fname = NULL;
+	char *p;
 	
 	/* create a temporary fd for the binary*/
-	fname = strdup("shard-XXXXXX.bin");
-	f->binfd = mkstemp(fname);
+	f->fname = strdup("shard-XXXXXX.bin");
+	f->binfd = mkstemp(f->fname);
 	if (f->binfd < 0) {
 		perror("mkstemp");
 		exit(1);
 	}
-	unlink(fname);
+	printf("opened shard %s\n", f->fname);
+	// unlink(fname);
 		
 	/* do the actual decode */
 	while (!done) {
@@ -178,7 +197,7 @@ static void decode_input(int i)
 	}
 
 	/* now mmap the file */
-	f->map = mmap(NULL, f->size, PROT_READ, MAP_FILE | MAP_SHARED,
+	f->map = mmap(NULL, f->size, PROT_READ, MAP_FILE | MAP_PRIVATE,
 		      f->binfd, 0);
 	if (f->map == MAP_FAILED) {
 		perror("mmap");
@@ -286,15 +305,16 @@ static void unshard(int fd)
 			c = 0;
 		}
 
-		if (addr & !(addr % (1ULL << 25))) {
+		if (addr && !(addr % (1ULL << 25))) {
 			printf(".");
 			fflush(stdout);
 		}
-		if (addr & !(addr % (1ULL << 30))) {
+		if (addr && !(addr % (1ULL << 30))) {
 			printf("%" PRId64 "\n", addr >> 30);
 		}
 	}
 
+	printf("\n");
 	if (c > 0) {
 		n = write(fd, buf, c * STRIDE);
 		if (n != (c * STRIDE)) {
