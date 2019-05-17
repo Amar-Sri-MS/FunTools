@@ -76,7 +76,7 @@ static int create_bin_file(const char *outfile)
 {
 	int fd = -1;
 
-	fd = open(outfile, O_CREAT | O_WRONLY | O_TRUNC);
+	fd = open(outfile, O_CREAT | O_WRONLY | O_TRUNC, 0644);
 	
 	if (fd < 0) {
 		printf("failed to open output file %s\n", outfile);
@@ -122,9 +122,11 @@ static uint64_t decode_line(const char *p)
 	int i;
 
 	/* atoi() and byte-swap in one */
-	for (i = 0; i < BLEN; i++) {
+	for (i = BLEN-2; i >= 0; i-=2) {
 		n <<= 4;
 		n |= hexval(p[i]);
+		n <<= 4;
+		n |= hexval(p[i+1]);
 	}
 
 	return n;
@@ -141,14 +143,14 @@ static void decode_input(int i)
 	char *p;
 	
 	/* create a temporary fd for the binary*/
-	f->fname = strdup("shard-XXXXXX.bin");
+	f->fname = strdup("shard-XXXXXX");
 	f->binfd = mkstemp(f->fname);
 	if (f->binfd < 0) {
 		perror("mkstemp");
 		exit(1);
 	}
-	printf("opened shard %s\n", f->fname);
-	// unlink(fname);
+	// printf("opened shard %s\n", f->fname);
+	unlink(f->fname);
 		
 	/* do the actual decode */
 	while (!done) {
@@ -203,6 +205,8 @@ static void decode_input(int i)
 		perror("mmap");
 		exit(1);
 	}
+	close(f->binfd);
+	f->binfd = -1;
 }
 
 static void decode_inputs(void)
@@ -210,9 +214,11 @@ static void decode_inputs(void)
 	int i;
 
 	for (i = 0; i < NSHARDS; i++) {
-		printf("decoding input %d\n", i);
+		printf("#");
+		fflush(stdout);
 		decode_input(i);
 	}
+	printf("\n");
 }
 
 static uint64_t red_xor(uint64_t x)
@@ -281,18 +287,21 @@ static void unshard(int fd)
 {
 	uint64_t addr = 0;
 	struct infile *f = NULL;
-	size_t offset, c = 0;
+	size_t offset, i, c = 0;
 	ssize_t n;
-	char buf[CHUNK][STRIDE];
+	uint64_t buf[CHUNK][STRIDE/sizeof(uint64_t)];
 
 	for (addr = 0; addr < minsize * NSHARDS; addr += STRIDE) {
 
 		/* compute where it's coming from */
 		f = addr2shard(addr, &offset);
 
-		/* copy to the output buffer */
+		/* copy to the output buffer in swapped pairs */
 		assert(f->map != NULL);
-		memcpy(&buf[c][0], &f->map[offset], STRIDE);
+		for (i = 0; i < (STRIDE/sizeof(uint64_t)); i+=2) {
+			buf[c][i+0] = f->map[offset+1];
+			buf[c][i+1] = f->map[offset+0];
+		}
 		c++;
 		
 		/* see if we should flush the output buffer */
