@@ -391,9 +391,9 @@ def merge_configs(old, new):
 def override_field(config, field, value, only_if_empty=True):
     for k,v in config.items():
         if isinstance(v, dict):
-            override_field(config[k], field, value)
+            override_field(config[k], field, value, only_if_empty)
         elif k==field:
-            if not (len(config[k]) and only_if_empty):
+            if not (config.get(k) and only_if_empty):
                 config[k] = value
 
 
