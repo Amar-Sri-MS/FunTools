@@ -12,7 +12,6 @@ import binascii
 import argparse
 import shutil
 import generate_firmware_image as gfi
-import enrollment_service as es
 import key_replace as kr
 
 # image type is at 2 SIGNER_INFO size +  FW_SIZE + FW_VERSION
@@ -467,7 +466,7 @@ def set_search_paths(paths):
     global search_paths
     search_paths = paths
 
-def run(arg_action, arg_enroll_cert = None, arg_enroll_tbs = None):
+def run(arg_action, arg_enroll_cert = None, arg_enroll_tbs = None, *args, **kwargs):
     global config
     global search_paths
 
@@ -525,11 +524,15 @@ def run(arg_action, arg_enroll_cert = None, arg_enroll_tbs = None):
                 gfi.cert_gen(outfile=k, **cert_args)
 
     if wanted('key_injection') and config.get('key_injection'):
+        have_net = kwargs.get("net", True)
+        have_hsm = kwargs.get("hsm", True)
+        keep_outfile = kwargs.get("keep_output", False)
         for outfile, v in config['key_injection'].items():
-            infile = find_file_in_srcdirs(v['source'])
-            shutil.copy2(infile, outfile)
+            if not (os.path.exists(outfile) and keep_outfile):
+                infile = find_file_in_srcdirs(v['source'])
+                shutil.copy2(infile, outfile)
             for key in v['keys']:
-                kr.update_file(outfile, key['id'], key=key['name'] )
+                kr.update_file(outfile, key['id'], key=key['name'], hsm=have_hsm, net=have_net)
 
     if wanted('flash') and config.get('output_format'):
         bin_infos = dict()
@@ -556,6 +559,7 @@ def run(arg_action, arg_enroll_cert = None, arg_enroll_tbs = None):
         enroll_cert = None
 
         if arg_enroll_tbs:
+            import enrollment_service as es
             with open(arg_enroll_tbs, 'rb') as f:
                 enroll_cert = es.Sign(f.read())
 
