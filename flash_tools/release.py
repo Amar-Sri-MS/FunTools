@@ -65,7 +65,7 @@ def main():
         gf.set_versions(args.force_version)
 
     if args.force_description:
-        gf.set_description(args.force_description)
+        gf.set_description(args.force_description, True)
 
     curdir = os.getcwd()
 

@@ -389,20 +389,22 @@ def merge_configs(old, new):
         else:
             old[k] = new[k]
 
-def override_field(config, field, value):
+def override_field(config, field, value, only_if_empty=True):
     for k,v in config.items():
         if isinstance(v, dict):
             override_field(config[k], field, value)
         elif k==field:
-            config[k] = value
+            if not (len(config[k]) and only_if_empty):
+                config[k] = value
 
-def set_versions(value):
-    global config
-    override_field(config, 'version', value)
 
-def set_description(value):
+def set_versions(value, only_if_empty=False):
     global config
-    override_field(config, 'description', value)
+    override_field(config, 'version', value, only_if_empty)
+
+def set_description(value, only_if_empty=False):
+    global config
+    override_field(config, 'description', value, only_if_empty)
 
 def main():
     parser = argparse.ArgumentParser()
