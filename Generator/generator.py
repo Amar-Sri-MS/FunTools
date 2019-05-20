@@ -370,9 +370,9 @@ def ReformatCode(source):
 
   Tries several tools to see what's available.
   """
-  # We prefer clang-format because it reformats source code much nicer,
+  # We prefer AStyle because it reformats source code much nicer,
   # and because it does a better job of removing blank lines.
-  out = ReformatCodeWithClangFormat(source)
+  out = ReformatCodeWithAStyle(source)
   if out:
     return out
 
@@ -429,13 +429,13 @@ def ReformatCodeWithIndent(source):
 
   return out[0]
 
-def ReformatCodeWithClangFormat(source):
-  """Reformats provided source with clang-format.
+def ReformatCodeWithAStyle(source):
+  """Reformats provided source with AStyle.
 
   Returns None if indent not found.
   """
-  possible_indent_binaries = ['/usr/bin/clang-format',
-                              '/usr/local/bin/clang-format']
+  possible_indent_binaries = ['/usr/bin/astyle',
+                              '/usr/local/bin/astyle']
 
   indent_path = None
   for bin in possible_indent_binaries:
@@ -447,9 +447,7 @@ def ReformatCodeWithClangFormat(source):
     return None
 
   args = [indent_path,
-          '-style={BasedOnStyle: LLVM, IndentWidth: 8, UseTab: Always, '
-          'BreakBeforeBraces: Linux, MaxEmptyLinesToKeep: 1, '
-          'ColumnLimit: 80}']
+          '--style=knf', '--delete-empty-lines']
 
   p = subprocess.Popen(args,
                        stdout=subprocess.PIPE,
