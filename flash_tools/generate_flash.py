@@ -472,6 +472,14 @@ def run(arg_action, arg_enroll_cert = None, arg_enroll_tbs = None):
     wanted = lambda action : arg_action in ['all', action]
     flash_content = None
 
+    for k,v in config['signed_images'].items():
+        if v.get('description','').startswith('@file:'):
+            try:
+                with open(find_file_in_srcdirs(v['description'][len('@file:'):]), 'r') as f:
+                    v['description'] = f.readline()
+            except:
+                raise
+
     if config.get('output_format'):
         total_size = int(config['output_format']['size'], 0)
         output = config['output_format']['output']

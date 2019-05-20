@@ -65,7 +65,7 @@
             "cert": "",
             "customer_cert": "",
             "key": "fpk3",
-            "description": ""
+            "description": "@file:serdes.hu.conv.rom.version"
         },
         "hu_sbm.bin": {
             "source": "sbus_master.hu.conv.rom",
@@ -74,7 +74,7 @@
             "cert": "",
             "customer_cert": "",
             "key": "fpk3",
-            "description": ""
+            "description": "@file:sbus_master.hu.conv.rom.version"
         },
         "hbm_sbus.bin": {
             "source": "sbus_master.hbm.conv.rom",
@@ -83,7 +83,7 @@
             "cert": "",
             "customer_cert": "",
             "key": "fpk5",
-            "description": ""
+            "description": "@file:sbus_master.hbm.conv.rom.version"
         },
         "esecure_puf_rom_packed.bin": {
             "source": "puf_rom_m5150.keys.bin",
