@@ -35,10 +35,13 @@ void *json_factory::create_arr(const std::vector<std::string> &vec) {
 
 void *json_factory::start(const std::string &verb, int64_t tid) {
     struct fun_json *json_root = fun_json_create_empty_dict();
-    fun_json_dict_add_string(json_root, "verb", fun_json_copy, verb.c_str(),
-                             fun_json_copy, false);
-    fun_json_dict_add_int64(json_root, "tid", fun_json_copy, tid, true);
-
+    auto rval = fun_json_dict_add_string(json_root, "verb", fun_json_copy,
+                                         verb.c_str(), fun_json_copy, false);
+    rval &= fun_json_dict_add_int64(json_root, "tid", fun_json_copy, tid, true);
+    if (!rval) {
+        std::cerr << "Failed to add to JSON" << std::endl;
+        return nullptr;
+    }
     return (void *)(json_root);
 }
 
@@ -130,13 +133,6 @@ std::string json_factory::stringify(void *json_root) {
     p.erase(std::remove_if(p.begin(), p.end(),
                            [](unsigned char ch) { return std::isspace(ch); }),
             p.end());
-    /*
-
-    snd_jstr.erase(std::remove(snd_jstr.begin(), snd_jstr.end(), '\r'),
-                   snd_jstr.end());
-    snd_jstr.erase(std::remove(snd_jstr.begin(), snd_jstr.end(), ' '),
-                   snd_jstr.end());
-    */
     p.append("\n");
     return p;
 }
