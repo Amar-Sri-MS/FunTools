@@ -447,7 +447,8 @@ def ReformatCodeWithAStyle(source):
     return None
 
   args = [indent_path,
-          '--style=knf', '--delete-empty-lines']
+          '--style=knf', '--delete-empty-lines', '--indent=force-tab=8',
+          '--max-code-length=80']
 
   p = subprocess.Popen(args,
                        stdout=subprocess.PIPE,
