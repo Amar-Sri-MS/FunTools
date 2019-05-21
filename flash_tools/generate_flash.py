@@ -388,20 +388,22 @@ def merge_configs(old, new):
         else:
             old[k] = new[k]
 
-def override_field(config, field, value):
+def override_field(config, field, value, only_if_empty=True):
     for k,v in config.items():
         if isinstance(v, dict):
-            override_field(config[k], field, value)
+            override_field(config[k], field, value, only_if_empty)
         elif k==field:
-            config[k] = value
+            if not (config.get(k) and only_if_empty):
+                config[k] = value
 
-def set_versions(value):
-    global config
-    override_field(config, 'version', value)
 
-def set_description(value):
+def set_versions(value, only_if_empty=False):
     global config
-    override_field(config, 'description', value)
+    override_field(config, 'version', value, only_if_empty)
+
+def set_description(value, only_if_empty=False):
+    global config
+    override_field(config, 'description', value, only_if_empty)
 
 def main():
     parser = argparse.ArgumentParser()
@@ -464,12 +466,20 @@ def set_search_paths(paths):
     global search_paths
     search_paths = paths
 
-def run(arg_action, arg_enroll_cert = None, arg_enroll_tbs = None):
+def run(arg_action, arg_enroll_cert = None, arg_enroll_tbs = None, *args, **kwargs):
     global config
     global search_paths
 
     wanted = lambda action : arg_action in ['all', action]
     flash_content = None
+
+    for k,v in config['signed_images'].items():
+        if v.get('description','').startswith('@file:'):
+            try:
+                with open(find_file_in_srcdirs(v['description'][len('@file:'):]), 'r') as f:
+                    v['description'] = f.readline()
+            except:
+                raise
 
     if config.get('output_format'):
         total_size = int(config['output_format']['size'], 0)
@@ -514,11 +524,15 @@ def run(arg_action, arg_enroll_cert = None, arg_enroll_tbs = None):
                 gfi.cert_gen(outfile=k, **cert_args)
 
     if wanted('key_injection') and config.get('key_injection'):
+        have_net = kwargs.get("net", True)
+        have_hsm = kwargs.get("hsm", True)
+        keep_outfile = kwargs.get("keep_output", False)
         for outfile, v in config['key_injection'].items():
-            infile = find_file_in_srcdirs(v['source'])
-            shutil.copy2(infile, outfile)
+            if not (os.path.exists(outfile) and keep_outfile):
+                infile = find_file_in_srcdirs(v['source'])
+                shutil.copy2(infile, outfile)
             for key in v['keys']:
-                kr.update_file(outfile, key['id'], key=key['name'] )
+                kr.update_file(outfile, key['id'], key=key['name'], hsm=have_hsm, net=have_net)
 
     if wanted('flash') and config.get('output_format'):
         bin_infos = dict()
@@ -545,7 +559,9 @@ def run(arg_action, arg_enroll_cert = None, arg_enroll_tbs = None):
         enroll_cert = None
 
         if arg_enroll_tbs:
-            enroll_cert = gfi.raw_sign(None, arg_enroll_tbs, "fpk4")
+            import enrollment_service as es
+            with open(arg_enroll_tbs, 'rb') as f:
+                enroll_cert = es.Sign(f.read())
 
         if arg_enroll_cert:
             try:

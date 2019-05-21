@@ -30,6 +30,7 @@ struct dpcsock {
         const char *socket_name; /* unix socket name */
         uint16_t port_num;       /* TCP port number */
         uint32_t retries;        /* whether to retry connect on failure */
+	uint32_t cmd_timeout;    /* cmd timeout in ms */
 
         /* runtime */
         int fd;                  /* connected fd */
@@ -60,4 +61,4 @@ extern int run_webserver(struct dpcsock *funos_sock, int cmd_listen_sock);
 /* callback from webserver to handle a request */
 extern int json_handle_req(struct dpcsock *funos_sock, const char *path, char *buf, int *size);
 
-extern struct fun_json *_buffer2json(uint8_t *buffer, size_t max);
+extern struct fun_json *_buffer2json(const uint8_t *, size_t max);

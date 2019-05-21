@@ -14,7 +14,7 @@ import generate_flash as gf
 #TODO (make configurable for S1 and other)
 HOST_FIRMWARE_CONFIG_OVERRIDE="""
 { "signed_images": {
-     "host_firmware_packed_v1.bin": {
+     "host_firmware_packed.bin": {
          "source":"u-boot.bin"
          }
      }
@@ -24,7 +24,7 @@ HOST_FIRMWARE_CONFIG_OVERRIDE="""
 #TODO (make configurable for S1 and other)
 EEPROM_CONFIG_OVERRIDE="""
 { "signed_images": {
-     "eeprom_packed_v1.bin": {
+     "eeprom_packed.bin": {
          "source":"eeprom_f1"
          }
      }
@@ -65,7 +65,7 @@ def main():
         gf.set_versions(args.force_version)
 
     if args.force_description:
-        gf.set_description(args.force_description)
+        gf.set_description(args.force_description, True)
 
     curdir = os.getcwd()
 
@@ -111,6 +111,7 @@ def main():
         with open("image.json", "w") as f:
             json.dump(config, f, indent=4)
 
+        gf.run('key_injection', net=True, hsm=False)
         os.chdir(curdir)
 
     if wanted('sign'):
@@ -118,7 +119,7 @@ def main():
         sdkpaths.append(os.path.abspath(args.destdir))
         gf.set_search_paths(sdkpaths)
         os.chdir(args.destdir)
-        gf.run('key_injection')
+        gf.run('key_injection', net=False, hsm=True, keep_output=True)
         gf.run('certificates')
         gf.run('sign')
         os.chdir(curdir)

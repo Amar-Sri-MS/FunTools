@@ -68,6 +68,9 @@ static char *_baudrate = DEFAULT_BAUD; /* default BAUD rate */
 static bool _no_flow_control = false;  /* run without flow_control */
 static bool _legacy_b64 = false;
 
+/* cmd timeout, use driver default timeout */
+#define DEFAULT_NVME_CMD_TIMEOUT_MS "0"
+
 // We stash argv[0]
 const char *dpcsh_path;
 
@@ -445,7 +448,7 @@ static uint8_t *_b64_to_bin(char *line, ssize_t /* out */ *size)
 	return binbuf;
 }
 
-struct fun_json *_buffer2json(uint8_t *buffer, size_t max)
+struct fun_json *_buffer2json(const uint8_t *buffer, size_t max)
 {
 	struct fun_json *json = NULL;
 	size_t r;
@@ -873,15 +876,7 @@ static void apply_command_locally(const struct fun_json *json)
 		return;
 	}
 	struct fun_json_command_environment *env = fun_json_command_environment_create();
-#ifdef FUN_COMMANDER_NEW_TRANSACTION
-	struct fun_json_command_transaction trans = { 0 };
-#endif
-
-#ifdef FUN_COMMANDER_NEW_TRANSACTION
-	struct fun_json *j = fun_commander_execute(env, &trans, json);
-#else
 	struct fun_json *j = fun_commander_execute(env, json);
-#endif
 
 	fun_json_command_environment_release(env);
 	if (!j || fun_json_fill_error_message(j, NULL)) {
@@ -1350,6 +1345,9 @@ static struct option longopts[] = {
 	{ "no_flow_control", no_argument,       NULL, 'F' },
 	{ "baud",            required_argument, NULL, 'R' },
 	{ "legacy_b64",      no_argument,       NULL, 'L' },
+#ifdef __linux__
+	{ "nvme_cmd_timeout", required_argument, NULL, 'W' },
+#endif //__linux__
 
 	/* end */
 	{ NULL, 0, NULL, 0 },
@@ -1381,6 +1379,10 @@ static void usage(const char *argv0)
 	printf("       --no_dev_init           don't init the UART device, use as-is\n");
 	printf("       --baud=rate             specify non-standard baud rate (default=" DEFAULT_BAUD ")\n");
 	printf("       --legacy_b64            support old-style base64 encoding, despite issues\n");
+#ifdef __linux__
+	printf("       --nvme_cmd_timeout=timeout specify cmd timeout in ms (default=" DEFAULT_NVME_CMD_TIMEOUT_MS ")\n");
+#endif //__linux__
+
 }
 
 enum mode {
@@ -1442,6 +1444,7 @@ int main(int argc, char *argv[])
 		funos_sock.server = false;
 		funos_sock.fd = -1;
 		funos_sock.retries = UINT32_MAX;
+		funos_sock.cmd_timeout = atoi(DEFAULT_NVME_CMD_TIMEOUT_MS);
 	}
 	/* Use libfunq otherwsie */
 	else
@@ -1591,6 +1594,18 @@ int main(int argc, char *argv[])
 		case 'L':
 			_legacy_b64 = true;
 			break;
+
+#ifdef __linux__
+		case 'W':  /* "timeout" -- set timeout for cmd */
+			funos_sock.cmd_timeout = atoi(optarg);
+			if (funos_sock.cmd_timeout <= 0) {
+				printf("timeout must be a positive decimal integer\n");
+				usage(argv[0]);
+				exit(1);
+			}
+			break;
+#endif //__linux__
+
 		default:
 			usage(argv[0]);
 			exit(1);
