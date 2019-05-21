@@ -13,6 +13,7 @@ import argparse
 import shutil
 import generate_firmware_image as gfi
 import key_replace as kr
+import tempfile
 
 # image type is at 2 SIGNER_INFO size +  FW_SIZE + FW_VERSION
 IMAGE_TYPE_OFFSET = 2048 + 2048 + 8
@@ -98,13 +99,23 @@ def gen_fw_image(filename, attrs):
     }
 
     args = map_method_args(argmap, attrs)
+    tmpfile = None
 
-    args['infile'] = find_file_in_srcdirs(args['infile'])
+    if isinstance(args['infile'], list):
+        tmpfile = tempfile.NamedTemporaryFile()
+        for srcfile in args['infile']:
+            with open(srcfile, 'rb') as f:
+                tmpfile.write(f.read())
+        args['infile'] = tmpfile.name
+    else:
+        args['infile'] = find_file_in_srcdirs(args['infile'])
     args['certfile'] = find_file_in_srcdirs(args['certfile'])
     args['customer_certfile'] = find_file_in_srcdirs(args['customer_certfile'])
 
     if args['infile']:
         gfi.image_gen(outfile=filename, **args)
+        if tmpfile:
+            tmpfile.close()
         return filename
     else:
         if attrs['source']:
@@ -114,11 +125,11 @@ def gen_fw_image(filename, attrs):
 
     return None
 
-def create_file(filename):
+def create_file(filename, section="signed_images"):
     global config
 
-    if config.get("signed_images"):
-        image = config["signed_images"].get(filename)
+    if config.get(section):
+        image = config[section].get(filename)
         if image:
             return gen_fw_image(filename, image)
     return None
@@ -575,6 +586,9 @@ def run(arg_action, arg_enroll_cert = None, arg_enroll_tbs = None, *args, **kwar
 
         print_flash_map(bin_infos)
 
+        for file in config.get("signed_meta_images", {}):
+            create_file(file, "signed_meta_images")
+
     # Write output
     if flash_content:
         write_file(output+'.bin', flash_content)
@@ -584,6 +598,8 @@ def run(arg_action, arg_enroll_cert = None, arg_enroll_tbs = None, *args, **kwar
         if wanted('sign'):
             for file in config.get("signed_images", {}):
                 create_file(file)
+            for file in config.get("signed_meta_images", {}):
+                create_file(file, "signed_meta_images")
 
     # For non-empty flash, generate map file
     if wanted('flash') and len(config.get('output_sections', {})) > 0:
