@@ -236,6 +236,8 @@ def generate_flash(bin_infos, total_size, padding):
     # three delete sized blocks
     all_headers_length = 3 * MAX_DELETE_SIZE
 
+    if padding > all_headers_length:
+        all_headers_length = padding
 
     vhdr_words =  MAX_VARIABLE_SECTIONS * NUM_WORDS_VARIABLE_HEADER_RECORD
     vhdr_length = vhdr_words * 4
@@ -329,6 +331,9 @@ def generate_flash(bin_infos, total_size, padding):
     flash = dirmap_block + directory_block + directory_block
     if ((len(flash) % MAX_DELETE_SIZE) != 0):
         raise Exception("padding error assembling directory headers")
+
+    if padding > MAX_DELETE_SIZE:
+        flash = pad_binary(flash, padding)
 
     # data now
     # Add ROM_SECTIONS first to match the addresses
