@@ -13,15 +13,11 @@ import binascii
 import struct
 import os
 import datetime
-import textwrap
+
 from contextlib import closing
 import cgi
 
 import traceback
-
-# HSM connection
-import pkcs11
-import pkcs11.util.rsa
 
 # db connection
 import psycopg2
@@ -30,31 +26,7 @@ import psycopg2
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import ec
 
-
-MAX_SIGNATURE_SIZE = 512
-
-
-#################################################################################
-#
-# BadParamError
-#
-#################################################################################
-
-class BadParamError:
-    def __init__(self,value):
-        self.value = value
-    def __str__(self):
-        return repr(self.value)
-
-
-#################################################################################
-#
-# Logging Apache style
-#
-#################################################################################
-def log(msg):
-    dt_stamp = datetime.datetime.now().strftime("%c")
-    print("[%s] [enrollment] %s" % (dt_stamp, msg), file=sys.stderr)
+from common import *
 
 
 #################################################################################
@@ -129,90 +101,6 @@ def db_retrieve_cert(conn, values_dict):
     return None
 
 
-##################################################################################################
-#
-# HSM commands
-#
-##################################################################################################
-
-# libraries in order of preference -- second argument: prompt for password
-LIBSOFTHSM2_PATHS = [
-    ("/usr/safenet/lunaclient/lib/libCryptoki2_64.so", True), # Safenet ubuntu 14
-    ("/usr/lib/softhsm/libsofthsm2.so", False), # Ubuntu-17, 18
-    ("/usr/lib/x86_64-linux-gnu/softhsm/libsofthsm2.so", False), # Ubuntu-16
-    ("/usr/local/lib/softhsm/libsofthsm2.so", False), # macOS brew
-    ("/project/tools/softhsm-2.3.0/lib/softhsm/libsofthsm2.so", False), # shared vnc machines for verification team
-]
-
-
-def get_pkcs11_lib():
-    ''' connect to a PKCS#11 library. Returns instance '''
-    lib = None
-
-    for entry in LIBSOFTHSM2_PATHS:
-        if os.path.exists(entry[0]):
-            try:
-                lib = pkcs11.lib(entry[0])
-            except:
-                pass
-
-    if lib is None:
-        raise RuntimeError("Could not find PKCS#11 library")
-
-    return lib
-
-
-def get_ro_session():
-    lib = get_pkcs11_lib()
-
-    with open('/etc/hsm_password') as f:
-        lines = f.readlines()
-
-    token_label = lines[0].strip()
-    password = lines[1].strip()
-
-    # look into the slots with token
-    # the old lib.get_token does not work well with Safenet PKCS#11
-    for slot in lib.get_slots(True):
-        token = slot.get_token()
-        if token.label == token_label:
-            return token.open(user_pin=password, rw=False)
-
-    raise RuntimeError("Could not find the token '%s'" % token_label)
-
-def get_modulus(pub):
-    return pub[pkcs11.Attribute.MODULUS]
-
-def append_signature_to_binary(binary, signature):
-    binary += struct.pack('<I', len(signature))
-    binary += signature
-    # pad to MAX_SIGNATURE_SIZE with 0
-    binary += b'\x00' * (MAX_SIGNATURE_SIZE - len(signature))
-    return binary
-
-def get_public_rsa_with_label(ro_session, label):
-    ''' Returns public key '''
-    return ro_session.get_key(object_class=pkcs11.constants.ObjectClass.PUBLIC_KEY,
-                              label=label)
-
-def get_private_rsa_with_label(ro_session, label):
-    return ro_session.get_key(object_class=pkcs11.constants.ObjectClass.PRIVATE_KEY,
-                              label=label)
-
-def sign_with_key(session, key_label, data):
-    private = get_private_rsa_with_label(session, key_label)
-    return private.sign(data, mechanism=pkcs11.Mechanism.SHA512_RSA_PKCS)
-
-def sign_binary(session, binary):
-    ''' sign a binary and appends the signature to it '''
-    signature = sign_with_key(session, 'fpk4', binary)
-    return append_signature_to_binary(binary, signature)
-
-def hsm_sign( tbs_cert):
-    with get_ro_session() as session:
-            return sign_binary(session, tbs_cert)
-
-
 ###########################################################################
 #
 # Input validation
@@ -236,26 +124,11 @@ def validate_tbs_cert(values_dict):
 
     # TODO: validate serial info -> install a format filter
 
-
 ###########################################################################
 #
-# HTTP common routines
+# Output common
 #
 ###########################################################################
-
-def safe_form_get(form, key, default):
-    ''' safely get parameter for form '''
-    if key in form:
-        return form[key].value
-    else:
-        return default
-
-
-def send_response_body(body):
-    print("Status: 200 OK")
-    print("Content-length: %d\n" % len(body))
-    print("%s\n" % body)
-
 
 def send_certificate_response(cert):
     ''' send back a certificate response '''
@@ -268,6 +141,11 @@ def send_certificate_response(cert):
 # Enrollment
 #
 ##########################################################################
+
+def hsm_sign( tbs_cert):
+    with get_ro_session() as session:
+            return sign_binary(session, 'fpk4', tbs_cert)
+
 def do_enroll():
 
     # read the TBS from request
@@ -322,40 +200,12 @@ def send_certificate(form_values):
         send_certificate_response(cert)
 
 
-def send_modulus(form_values):
-
-    # get fpk4 modulus from HSM
-    with get_ro_session() as session:
-        modulus = get_modulus(get_public_rsa_with_label(session, 'fpk4'))
-
-    format = safe_form_get(form_values, "format", "hex")
-    if format == "hex":
-        modulus_str = binascii.b2a_hex(modulus).decode('ascii')
-    elif format == "base64":
-        modulus_str = textwrap.fill(
-            binascii.b2a_base64(modulus).decode('ascii'),
-            width=57)
-    elif format == "c_struct":
-        c_modulus = "%d,\n{\n" % len(modulus)
-
-        for pos in range(0, len(modulus)):
-            c_modulus += "0x%02x, " % modulus[pos]
-            if pos % 8 == 7:
-                c_modulus += "\n"
-        if len(modulus) %8 != 0:
-            c_modulus += "\n"
-        c_modulus += "}"
-        modulus_str = c_modulus
-
-    send_response_body(modulus_str)
-
-
 def process_query():
 
     form = cgi.FieldStorage()
     cmd = safe_form_get(form, "cmd", "modulus")
     if cmd == "modulus":
-        send_modulus(form)
+        send_modulus(form, "fpk4")
     elif cmd == "cert":
         send_certificate(form)
     else:

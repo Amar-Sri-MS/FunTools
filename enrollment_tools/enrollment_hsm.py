@@ -21,6 +21,24 @@ from asn1crypto import pem
 RSA_KEY_SIZE_IN_BITS = 2048
 
 
+def read(filename, nbytes=None, verbose=False):
+    if filename is None:
+        return ""
+    if verbose:
+        print("Reading %s" % filename)
+    try:
+        if filename == '-':
+            txt = sys.stdin.buffer.read()
+        else:
+            txt = open(filename, "rb").read()
+    except:
+        raise Exception("Cannot open file '%s' for read" % filename)
+    if nbytes and len(txt) != nbytes:
+        raise Exception("File '%s' has invalid length. Expected %d, got %d"
+                        % (filename, nbytes, len(txt)))
+    return txt
+
+
 def write(filename, content, overwrite=True, tobyte=False, verbose=False):
     if not filename:
         return
@@ -107,6 +125,9 @@ def get_token(token_label):
 
 def get_modulus(pub):
     return pub[pkcs11.Attribute.MODULUS]
+
+def get_exponent(pub):
+    return pub[pkcs11.Attribute.PUBLIC_EXPONENT]
 
 def generate_rsa_key_pair(rw_session, label):
     ''' Create and returns a new RSA key pair in the store '''
@@ -210,6 +231,59 @@ def remove_key(token_name, label):
     with token.open(user_pin=password, rw=True) as session:
         remove_key_aux(session,label)
 
+def import_key(token_name, infile, label):
+    ''' import a key from a PEM file into the HSM '''
+
+    # try to read an RSA key from the infile
+    try:
+        data = read(infile)
+        if pem.detect(data):
+            _,_, data = pem.unarmor(data)
+        priv_key = pkcs11.util.rsa.decode_rsa_private_key(data)
+    except Exception as ex:
+        print("Unable to read key file " + infile + " Error = " + str(ex))
+        return
+
+    token, password = get_token(token_name)
+
+     # Open a session on our token
+    with token.open(user_pin=password, rw=True) as session:
+        try:
+            existing = get_public_rsa_with_label(session, label)
+            if existing is not None:
+                print("Found key with label '" + label + "'")
+
+            # compare
+            if get_modulus(existing) == get_modulus(priv_key) and get_exponent(existing) == get_exponent(priv_key):
+                print("Matching key '" + label + "' already imported")
+                return
+            else:
+                print("Replacing existing key '" + label + "'")
+                existing.destroy()
+                remove_key_aux(session, label)
+        except Exception as ex:
+            pass
+
+        # add the key pairs
+        priv_key[pkcs11.Attribute.LABEL] = label
+        priv_key[pkcs11.Attribute.ID] = binascii.hexlify(label.encode())
+        priv_key[pkcs11.Attribute.TOKEN] = True
+        session.create_object(priv_key)
+
+        #derive the public key
+        pub_key = {}
+        pub_key[pkcs11.Attribute.KEY_TYPE] = priv_key[pkcs11.Attribute.KEY_TYPE]
+        pub_key[pkcs11.Attribute.PUBLIC_EXPONENT] = priv_key[pkcs11.Attribute.PUBLIC_EXPONENT]
+        pub_key[pkcs11.Attribute.MODULUS] = priv_key[pkcs11.Attribute.MODULUS]
+        pub_key[pkcs11.Attribute.CLASS] = pkcs11.ObjectClass.PUBLIC_KEY
+        pub_key[pkcs11.Attribute.ENCRYPT] = True
+        pub_key[pkcs11.Attribute.VERIFY] = True
+        pub_key[pkcs11.Attribute.WRAP] = True
+        pub_key[pkcs11.Attribute.LABEL] = label
+        pub_key[pkcs11.Attribute.ID] = binascii.hexlify(label.encode())
+        pub_key[pkcs11.Attribute.TOKEN] = True
+        session.create_object(pub_key)
+
 
 def export_pub_key(token_name, outfile, label, c_source):
     ''' modulus of key '''
@@ -245,10 +319,14 @@ def export_pub_key(token_name, outfile, label, c_source):
 def parse_and_execute():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("command", help="command to execute: list, create, remove, modulus")
+    parser.add_argument("command",
+                        help="command to execute: list, create, import, remove, modulus")
 
     parser.add_argument("-k", "--key", dest="key_label",
                         help="key label (create, remove, modulus)")
+
+    parser.add_argument("-i", "--input",  dest="in_path",
+                        help="input file name", metavar="FILE")
 
     parser.add_argument("-o", "--output", dest="out_path",
                         help="location to output to", metavar="FILE")
@@ -259,6 +337,8 @@ def parse_and_execute():
 
     parser.add_argument("-t", "--token", dest="token",
                         help="HSM token name")
+
+
 
     options = parser.parse_args()
 
@@ -276,9 +356,12 @@ def parse_and_execute():
     if options.command == 'remove':
         remove_key(options.token, options.key_label)
     elif options.command == 'modulus':
-        export_pub_key(options.token, options.out_path, options.key_label, options.c_source)
+        export_pub_key(options.token, options.out_path,
+                       options.key_label, options.c_source)
     elif options.command == 'create':
         create_rsa(options.token, options.key_label)
+    elif options.command == 'import':
+        import_key(options.token, options.in_path, options.key_label)
 
 
 if __name__ == "__main__":
