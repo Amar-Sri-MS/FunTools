@@ -139,6 +139,19 @@
             "description": ""
         }
     },
+    "signed_meta_images": {
+        "esecure_firmware_all.bin" : {
+            "source": [
+                "esecure_puf_rom_packed.bin",
+                "esecure_firmware_packed.bin"
+            ],
+            "version": 1,
+            "fourcc": "sbpf",
+            "cert": "start_certificate.bin",
+            "customer_cert": "",
+            "description": ""
+        }
+    },
     "certificates": {
         "start_certificate.bin": {
             "public": "fpk2",
