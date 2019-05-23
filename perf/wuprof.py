@@ -5,6 +5,7 @@ import sys
 import math
 import optparse
 import subprocess
+import svghistogram
 
 # we lean on the controller API to load the pickled data
 import controller
@@ -554,6 +555,36 @@ def do_all_bench_stats(jobsdir, style, opts):
 
     print "Write output to %s" % fname
 
+###
+##   histogramming
+#
+HSTEPS = 100
+def do_histogram(rows, trim_timestamp = None):
+
+    t0 = rows[0][COL_TS]
+    tN = rows[-1][COL_TS]
+
+    # delta and step (-1 for rounding)
+    td = tN - t0
+    step = td / (HSTEPS-1)
+
+    h = HSTEPS * [0]
+
+    for row in rows:
+        i = int((row[COL_TS] - tN) / step)
+        h[i] = h[i] + 1
+
+    # make a (timesamp, value, colour) list
+    hist = []
+    for i in range(len(h)):
+        t = t0 + i * step
+        if ((trim_timestamp is None) or (t >= trim_timestamp)):
+            c = 0x00bfff
+        else:
+            c = 0xbebebe
+        hist.append((t/1e9, h[i], c))
+
+    return svghistogram.plot_svg(hist)
 
 ###
 ##  bench & vp objects and sort functions
@@ -573,7 +604,16 @@ class WUVPVP:
         self.sorted_wus = None
         self.ccv = ccv
         self.runtime = 0.0
+        self.idletime = 0.0
         self.wucount = 0
+        self.util = None
+
+    def compute_util(self, bench):
+        self.wuutil = self.runtime / (bench.tN - bench.t0)
+        self.idleutil = self.idletime / (bench.tN - bench.t0)
+
+        # utilisation = 1 - idletime
+        self.util = 1.0 - self.idleutil
 
     def get_count(self):
         return self.wucount
@@ -584,8 +624,8 @@ class WUVPVP:
     def get_field(self, field):
         if (field == "count"):
             return self.get_count()
-        elif (field == "runtime"):
-            return int(self.get_runtime())
+        elif (field == "util"):
+            return int(self.util * 100.0)
         else:
             raise RuntimeError("bad field %s" % field)
 ###
@@ -688,6 +728,8 @@ def process_bench(opts, rows, perf_headers):
 
     # construct the bench
     bench = WUVPBench()
+
+    bench.histogram = do_histogram(rows)
     
     for row in rows:
 
@@ -708,14 +750,21 @@ def process_bench(opts, rows, perf_headers):
         wus = vp.wus.setdefault(wuid, [])
         wus.append(row)
         
+        # runtime (cycles -> ns)
+        rt = row[COL_CYCLES] / FREQ_DIV
+
         # compute counts and runtime if it's not idle
         if (wuid != "wuh_idle"):
-            # runtime (cycles -> ns)
-            rt = row[COL_CYCLES] / FREQ_DIV
             vp.runtime += rt
 
             vp.wucount += 1
             bench.wucount += 1
+        else:
+            vp.idletime += rt
+
+    # compute the utilisation on the vps
+    for vp in bench.vps.values():
+        vp.compute_util(bench)
 
     # sort and trim the VPs
     bench.sorted_vps = bench.vps.values()
@@ -748,7 +797,7 @@ def wuvp_process_trace(pd, opts):
     return benches
 
 
-def load_sample_file(fname):
+def load_sample_file(opts, fname):
 
     fl = open(fname)
     rows = []
@@ -786,23 +835,45 @@ def load_sample_file(fname):
 
     # sort the rows because input is messed up
     rows.sort()
+
+    # unless specified, trim down to make sure we see every cluster
+    if (not opts.no_trim):
+        all_rows = header + rows
+        start = None
+        seen = set()
+        for i in range(len(rows)):
+            row = rows[i]
+            cluster = row[COL_CCV][0]
+            if (cluster not in seen):
+                start = i
+                seen.add(cluster)
+        rows = rows[start:]
+        print "trimmed to %d rows" % len(rows)
+
+    # re-prepend the header
     rows = header + rows
             
     pd = PerfData()
     pd.rows = rows
+    pd.all_rows = all_rows
+    pd.trim_start = rows[1][COL_TS]
     return pd
 
 def do_wu_vp_stats(sample_file, style, opts):
 
     # load the tabulated samples file
     print "loading samples file %s" % sample_file
-    pd = load_sample_file(sample_file)
+    pd = load_sample_file(opts, sample_file)
 
+    # generate the histogram
+    histograms = {}
+    histograms["trim"] = do_histogram(pd.all_rows[1:], pd.trim_start)    
+    
     # process the file
     benches = wuvp_process_trace(pd, opts)
 
     # run that dict through the template to make the html
-    s = bottle.template("wuprof-wuvp.tpl", style=style, opts=opts, benches=benches, pp=PP())
+    s = bottle.template("wuprof-wuvp.tpl", style=style, opts=opts, benches=benches, histograms=histograms, pp=PP())
 
     # save it to a file
     fname = 'index-wuvp.html'
@@ -924,14 +995,16 @@ def parse_args():
                       help="time to start a sample (wuvp)")
     parser.add_option("-e", "--end-time", default=None,
                       help="time to stop a sample (wuvp)")
-    parser.add_option("-v", "--sort-vp", default="runtime",
+    parser.add_option("-v", "--sort-vp", default="util",
                       help="parameter to sort VPs by")
     parser.add_option("-w", "--sort-wu", default="cycles",
                       help="which column to sort WUs by")
-    parser.add_option("-n", "--nwus", default=5,
+    parser.add_option("-n", "--nwus", type="int", default=5,
                       help="number of WUs per VP to display")
     parser.add_option("-m", "--nvps", default=10,
                       help="number of WUs per VP to display")
+    parser.add_option("-T", "--no-trim", default=False,
+                      help="don't trim the input")
     
     (opts, args) = parser.parse_args()
 

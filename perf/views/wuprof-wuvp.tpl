@@ -19,6 +19,10 @@ end-time: {{ pp.time(opts.end_time_orig) }} <br />
 vp sort: {{ opts.sort_vp }} <br />
 wu sort: {{ opts.sort_wu }} <br />
 
+Sample trim histogram:
+
+{{ !histograms["trim"] }}
+
 % for bench in benches:
 
    <h2>Benchmark {{ pp.time(bench.t0) }} -> {{ pp.time(bench.tN) }}</h2>
@@ -45,7 +49,7 @@ wu sort: {{ opts.sort_wu }} <br />
        	 <td>
 	 % vvp = bench.vps.get("%d.%d.%d" % (cluster, core, vp))
 	 % if vvp is not None:
-	 {{ int(10* vvp.runtime / (bench.tN - bench.t0)) }}
+	 {{ int(10 * vvp.util) }}
 	 % end
 	 </td>
        % end
@@ -56,14 +60,23 @@ wu sort: {{ opts.sort_wu }} <br />
      </tr>
    % end
    </table>
-   
+
+   <center>
+	{{ !bench.histogram }}
+   </center>
    <h3>Top {{ opts.nvps }} VP(s) sorted by {{opts.sort_vp}}</h3>
 
    % for i in range(len(bench.sorted_vps)):
       % vp = bench.sorted_vps[i]
-      <div bgcolor="#c0c0c0">
+      <div
+      % if i % 2:
+         style="background-color:#f8f8f8"
+      % end
+      >
       <h4>{{ i }}) VP {{ vp.ccv }}</h4>
-      <p>utilisation: {{ pp.pct(vp.runtime / (bench.tN - bench.t0)) }}%</p>
+      <p>WU utilisation: {{ pp.pct(vp.util) }}%</p>
+      <p>Idle time %: {{ pp.pct(vp.idleutil) }}<p>
+      <p>utilisation error: {{ pp.pct(1.0 - vp.util - vp.idleutil) }}</p>
       <p>non-idle WUs: {{ vp.wucount }}</p>
       <p>Showing top {{ opts.nwus }} WU(s)</p>
       <table>
@@ -83,8 +96,8 @@ wu sort: {{ opts.sort_wu }} <br />
     </tbody>
     </table>
     </div>
-   <p />
-  % end
+    <p />
+   % end
 
 % end
 
