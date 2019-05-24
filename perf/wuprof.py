@@ -45,6 +45,15 @@ def vp2ccv(vp):
     return "%s.%s.%s" % (vp/24, (vp%24)/4, (vp%24)%4)
 
 ###
+##  nominal frequency
+#
+
+def cycles_to_us(cycles):
+
+    return (cycles / 1.6) / 1000.0
+
+
+###
 ## Given an ag + list, find the sample instruction traces to show
 #
 def find_itraces(ag, keyname):
@@ -291,6 +300,12 @@ def checkt(x):
 
     return x
 
+def checkv(x):
+    if (isinstance(x, tuple)):
+        return x[0]
+
+    return x
+
 class Aggregate:
     def __init__(self, wuname, ilog=None):
         self.name = wuname
@@ -316,15 +331,22 @@ class Aggregate:
 
     def get_header_row(self):
         # make the perf header section, starting with standards
-        hdrs = ["wu name", "count", "cycles", "avg. cycles"] + self.perf_headers
+        hdrs = ["wu name", "count", "cycles", "time", "avg. cycles", "avg. time"] + self.perf_headers
         return hdrs
 
     def set_perf_headers(self, headers):
         self.perf_headers = [ "avg. %s" % i for i in headers]
 
+    def total_time(self):
+        return "%.3fus" % cycles_to_us(self.total_cycles)
+
+    def avg_time(self):
+        return "%.3fus" % cycles_to_us(checkv(self.avg_cycles))
+
     def get_data_row(self):
         # standard columns
-        row = [self.name, self.total_count, self.total_cycles, checkt(self.avg_cycles)]
+        row = [self.name, self.total_count, self.total_cycles,
+               self.total_time(), checkt(self.avg_cycles), self.avg_time()]
 
         # make the perf sections section
         for i in range(0, COL_PERF_COUNT):
@@ -591,8 +613,9 @@ def do_histogram(rows, trim_timestamp = None):
 #
 
 class WUVPBench:
-    def __init__(self):
+    def __init__(self, bid):
         self.vps = {}
+        self.bid = bid
         self.sorted_vps = None
         self.t0 = None
         self.tN = None
@@ -615,6 +638,15 @@ class WUVPVP:
         # utilisation = 1 - idletime
         self.util = 1.0 - self.idleutil
 
+    def util_char(self):
+        # compute the char like in FunOS
+        u = self.util * 100
+        if (u < 2.0):
+            return "."
+        if (u > 98.0):
+            return "%"
+        return "%d" % int(u / 10)
+        
     def get_count(self):
         return self.wucount
     
@@ -673,9 +705,15 @@ def wuvp_split_trace(pd, opts):
     assert(header[COL_CYCLES] == "cycles")
     assert(len(header) >= (COL_PERF0 + COL_PERF_COUNT))
 
+    # see if we're just doing everyting
+    if ((opts.start_time is None)
+        and (opts.first_wu is None)):
+        depth = 1
+    else:
+        depth = 0
+
     benches = []
     bench = []
-    depth = 0
     check_done = False
     lastts = 0
     for row in rows:
@@ -724,13 +762,13 @@ def wuvp_split_trace(pd, opts):
 
 
 FREQ_DIV = 1.6
-def process_bench(opts, rows, perf_headers):
+def process_bench(opts, rows, perf_headers, bid):
 
     # construct the bench
-    bench = WUVPBench()
+    bench = WUVPBench(bid)
 
     bench.histogram = do_histogram(rows)
-    
+    bench.wus = {}
     for row in rows:
 
         # capture timestamps
@@ -745,11 +783,11 @@ def process_bench(opts, rows, perf_headers):
             vp = WUVPVP(ccv)
             bench.vps[ccv] = vp
 
-        # add it to the list
+        # add it to the vp list
         wuid = row[COL_WUNAME]
         wus = vp.wus.setdefault(wuid, [])
         wus.append(row)
-        
+
         # runtime (cycles -> ns)
         rt = row[COL_CYCLES] / FREQ_DIV
 
@@ -759,11 +797,16 @@ def process_bench(opts, rows, perf_headers):
 
             vp.wucount += 1
             bench.wucount += 1
+
+            # and to the global list
+            wus = bench.wus.setdefault(wuid, [])
+            wus.append(row)
         else:
             vp.idletime += rt
 
-    # compute the utilisation on the vps
+    # compute the utilisation on the vps and setup their href name
     for vp in bench.vps.values():
+        vp.href = "%s-%s" % (bench.bid, vp.ccv)
         vp.compute_util(bench)
 
     # sort and trim the VPs
@@ -771,6 +814,12 @@ def process_bench(opts, rows, perf_headers):
     bench.sorted_vps.sort(key=lambda vp: vp.get_field(opts.sort_vp), reverse=True)
     bench.sorted_vps = bench.sorted_vps[:opts.nvps]
 
+    # aggregate the global WUs
+    bench.global_wus = aggregate_wus(bench.wus.values(), perf_headers)
+    bench.global_wus.sort(key=lambda ag:ag.get_by_key(opts.sort_wu),
+                          reverse=True)
+    bench.global_wus = bench.global_wus[:opts.nwus]
+    
     # for each of the VPs, sort and trim the WUs
     for vp in bench.sorted_vps:
         vp.sorted_wus = aggregate_wus(vp.wus.values(), perf_headers)
@@ -791,8 +840,10 @@ def wuvp_process_trace(pd, opts):
     
     # make actual bench objects from the row sets
     benches = []
+    bid = 0
     for rows in brows:
-        benches.append(process_bench(opts, rows, perf_headers))
+        benches.append(process_bench(opts, rows, perf_headers, bid))
+        bid = bid + 1
 
     return benches
 
@@ -837,8 +888,8 @@ def load_sample_file(opts, fname):
     rows.sort()
 
     # unless specified, trim down to make sure we see every cluster
+    all_rows = header + rows
     if (not opts.no_trim):
-        all_rows = header + rows
         start = None
         seen = set()
         for i in range(len(rows)):
@@ -893,6 +944,8 @@ class PP():
         pass
 
     def time(self, nsec):
+        if (nsec is None):
+            return "(none)"
         return "%.6f" % (nsec / 1e9)
 
     def pct(self, num):
@@ -1001,9 +1054,9 @@ def parse_args():
                       help="which column to sort WUs by")
     parser.add_option("-n", "--nwus", type="int", default=5,
                       help="number of WUs per VP to display")
-    parser.add_option("-m", "--nvps", default=10,
-                      help="number of WUs per VP to display")
-    parser.add_option("-T", "--no-trim", default=False,
+    parser.add_option("-m", "--nvps", type="int", default=10,
+                      help="number of VPs per benchmark to display")
+    parser.add_option("-T", "--no-trim", default=False, action="store_true",
                       help="don't trim the input")
     
     (opts, args) = parser.parse_args()
