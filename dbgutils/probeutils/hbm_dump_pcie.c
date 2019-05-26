@@ -24,6 +24,8 @@
 #define MUH_SNA_ANODE_SKIP_ADDR 0x10000ull
 #define MUH_SNA_CMD_ADDR_START 0x1000ull
 
+#define MIO_FATAL_INTR_BSET 0xb000000030ull
+
 /*
  * Server Global Variables.
  */
@@ -315,7 +317,7 @@ void LOG(unsigned int level, const char *format, ...)
 void
 decode_ccucmd(uint64_t cmd, const char *description)
 {
-	LOG(INFO, "%s: type=%lld, size64=%lld, ring=%lld, init=%lld, crsv=%lld, tag=%lld, addr=%#llx\n",
+	LOG(INFO, "%s: type=%lld, size64=%lld, ring=%lld, init=%lld, crsv=%lld, tag=%lld, addr=%#llx",
 	       description,
 	       (cmd >> CCU_CMD_TYPE_SHF) & CCU_CMD_TYPE_MSK,
 	       (cmd >> CCU_CMD_SIZE_SHF) & CCU_CMD_SIZE_MSK,
@@ -342,23 +344,19 @@ ccu_dump(ccu_info_t *ccu_info)
 	 */
 	decode_ccucmd(be64_to_cpu(ccu64[CCU_CMD_REG]), "Cmd Decode");
 	for (addr = CCU_CMD_REG; addr < CCU_DATA(CCU_DATA_REG_CNT); addr++)
-		printf("%4d %#018lx\n",
-		       addr * (unsigned int)sizeof(*ccu64),
+		LOG(INFO, "%4d %#018lx", addr * (unsigned int)sizeof(*ccu64),
 		       be64_to_cpu(ccu64[addr]));
 
 	/*
 	 * At the very end of the 4KB mmap() we find a couple of Spinlocks and
 	 * an ID register.
 	 */
-	printf("%4d %#018lx\n",
-	       CCU_SPINLOCK0,
+	LOG(INFO, "%4d %#018lx", CCU_SPINLOCK0,
 	       be64_to_cpu(ccu64[CCU_SPINLOCK0/sizeof(*ccu64)]));
-	printf("%4d %#018lx\n",
-	       CCU_SPINLOCK1,
+	LOG(INFO, "%4d %#018lx", CCU_SPINLOCK1,
 	       be64_to_cpu(ccu64[CCU_SPINLOCK1/sizeof(*ccu64)]));
-	printf("%4d         %#010x\n",
-	       CCU_ID,
-	       be32_to_cpu(ccu32[CCU_ID/sizeof(*ccu32)]));
+	LOG(INFO, "%4d         %#010x",
+	       CCU_ID, be32_to_cpu(ccu32[CCU_ID/sizeof(*ccu32)]));
 }
 
 /*
@@ -373,10 +371,10 @@ ccu_read_dump(ccu_info_t *ccu_info,
 	uint32_t size64 = SIZE64(size);
 	int reg_idx;
 
-	printf("dumping CCU Read of %s\n", name);
+	LOG(INFO, "dumping CCU Read of %s", name);
 	decode_ccucmd(be64_to_cpu(ccu64[CCU_CMD_REG]), "rsp");
 	for (reg_idx = 0; reg_idx < size64; reg_idx++)
-		   printf("%4d %#018lx\n",
+		   LOG(INFO, "%4d %#018lx",
 			  reg_idx * (unsigned int)sizeof(*ccu64),
 			  be64_to_cpu(ccu64[CCU_DATA(reg_idx)]));
 }
@@ -397,18 +395,18 @@ ccu_spinlock(ccu_info_t *ccu_info)
 	 */
 	spinlock = &ccu64[CCU_SPINLOCK0 / sizeof(*ccu64)];
 	if (*spinlock == null_token) {
-		LOG(ERROR, "Using CCU Spinlock 0\n");
+		LOG(NOTICE, "Using CCU Spinlock 0");
 		return spinlock;
 	}
 
 	spinlock = &ccu64[CCU_SPINLOCK1 / sizeof(*ccu64)];
 	if (*spinlock == null_token) {
-		LOG(ERROR, "Using CCU Spinlock 1\n");
+		LOG(NOTICE, "Using CCU Spinlock 1");
 		return spinlock;
 	}
 
 	/* no valid CCU Spinlock found */
-	LOG(ERROR, "No valid configured CCU Spinlock found\n");
+	LOG(ERROR, "No valid configured CCU Spinlock found");
 	return NULL;
 }
 
@@ -461,7 +459,7 @@ csr_wide_read(ccu_info_t *ccu_info,
 	cmd = CCU_CMD(CCU_CMD_TYPE_RD_T, size64, ring_sel,
 			CCU_CMD_INIT_DIS, data, addr);
 
-	LOG(INFO, "Initiating CSR Read of addr=%#lx, size=%d\n", addr, size);
+	LOG(INFO, "Initiating CSR Read of addr=%#lx, size=%d", addr, size);
 	decode_ccucmd(cmd, "cmd");
 
 	/*
@@ -511,7 +509,7 @@ csr_wide_write(ccu_info_t *ccu_info,
 	cmd = CCU_CMD(CCU_CMD_TYPE_WR_T, size64, ring_sel,
 			CCU_CMD_INIT_DIS, data, addr);
 
-	LOG(INFO, "Initiating CSR Write of addr=%#lx, size=%d\n", addr, size);
+	LOG(INFO, "Initiating CSR Write of addr=%#lx, size=%d", addr, size);
 	decode_ccucmd(cmd, "cmd");
 
 	/*
@@ -571,7 +569,7 @@ ccu_info_t *pcie_connect(const char *bar)
 	ccu_info->spinlock = ccu_spinlock(ccu_info);
 
 	ccu_dump(ccu_info);
-	LOG(NOTICE, "CONNECTION SUCCESSFUL!!");
+	LOG(NOTICE, "PCIE CONNECTION SUCCESSFUL!");
 	return ccu_info;
 
 error:
@@ -586,7 +584,7 @@ bool pcie_disconnect(ccu_info_t *ccu_info)
 		close(ccu_info->fd);
 	}
 	free(ccu_info);
-	LOG(NOTICE, "DISCONNECTED");
+	LOG(NOTICE, "PCIE DISCONNECTED!");
 }
 
 bool pcie_csr_read(ccu_info_t *ccu_info, uint64_t csr_addr,
@@ -641,6 +639,16 @@ bool pcie_csr_write(ccu_info_t *ccu_info, uint64_t csr_addr,
 	csr_write(ccu_info, 0, csr_addr, csr_buff, csr_size);
 
 	return true;
+}
+
+bool freeze_vps_cmd(ccu_info_t *ccu_info)
+{
+	uint64_t data = 0x1ull << 63;
+	bool status = false;
+
+	status = pcie_csr_write(ccu_info, MIO_FATAL_INTR_BSET, 1, &data);
+
+	return status;
 }
 
 bool hbm_read_aligned(ccu_info_t *ccu_info, uint64_t start_addr,
@@ -735,7 +743,7 @@ bool hbm_read_aligned(ccu_info_t *ccu_info, uint64_t start_addr,
 		LOG(INFO, "Succesfully read %u words!", num_reads * 8);
 		for(uint64_t i = 0; i < num_64bit_words; i++) {
 			*(uint64_t *)(read_buf + (i * 8)) = htobe64(read_data_words[i]);
-			LOG(INFO, "Address: 0x%lx  Data: 0x%lx\n", (start_addr+(i*8)),
+			LOG(INFO, "Address: 0x%lx  Data: 0x%lx", (start_addr+(i*8)),
 			    read_data_words[i]);
 		}
 
@@ -750,7 +758,6 @@ bool hbm_read_aligned(ccu_info_t *ccu_info, uint64_t start_addr,
 bool hbm_copy_to_file(ccu_info_t *ccu_info, uint64_t start_addr,
 		uint32_t size, const char *file_path)
 {
-        //start_offset and end_offset are within 256 byte arrays
         uint64_t start_offset = start_addr & 0xff;
         uint64_t end_offset = (start_offset + size) & 0xFFull;
         end_offset = end_offset ? end_offset : 256;
@@ -761,8 +768,11 @@ bool hbm_copy_to_file(ccu_info_t *ccu_info, uint64_t start_addr,
 	uint64_t wr_start = 0;
 	uint64_t wr_end = 0;
 
-        LOG(INFO, "start_addr: 0x%lx start_offset:0x%lx end_offset:0x%lx size:0x%lx",
-		start_addr, start_offset, end_offset, size, read_size);
+	LOG(NOTICE, "Copying HBM data to file: %s"
+	    " start_addr: 0x%lx size:0x%lx", file_path, start_addr, size);
+
+	LOG(INFO, "start_offset:0x%lx end_offset:0x%lx read_size:0x%lx",
+	    start_offset, end_offset, read_size);
 
         FILE *f = fopen(file_path, "wb");
 	if (f == NULL) {
@@ -852,6 +862,7 @@ main(int argc, char *const argv[])
 	uint64_t size = 0;
 	const char *bar = NULL;
 	const char *file = NULL;
+	bool freeze_vps = false;
 
 	/*
 	 * Parse any command line arguments ...
@@ -861,7 +872,7 @@ main(int argc, char *const argv[])
 		myname++;
 	else
 		myname = argv[0];
-	while ((opt = getopt(argc, argv, "hd:a:s:b:f:")) != -1) {
+	while ((opt = getopt(argc, argv, "hfd:a:s:b:o:")) != -1) {
 		extern char *optarg;
 		extern int optind;
 
@@ -871,13 +882,11 @@ main(int argc, char *const argv[])
 			LOG(NOTICE, "dbglvl: %u", dbglvl);
 			break;
 		case 'a':
-			printf("%s\n", optarg);
 			addr = strtoull(optarg, NULL, 0);
-			LOG(NOTICE, "addr: 0x%lx", addr);
+			LOG(NOTICE, "start addr: 0x%lx", addr);
 			break;
 
 		case 's':
-			printf("%s\n", optarg);
 			size = strtoull(optarg, NULL, 0);
 			LOG(NOTICE, "size: 0x%lx", size);
 			break;
@@ -886,12 +895,16 @@ main(int argc, char *const argv[])
 			usage();
 			exit(EXIT_SUCCESS);
 
+		case 'f':
+			freeze_vps = true;
+			break;
+
 		case 'b':
 			bar = optarg;
 			LOG(NOTICE, "bar: %s", bar);
 			break;
 
-		case 'f':
+		case 'o':
 			file = optarg;
 			LOG(NOTICE, "file: %s", file);
 			break;
@@ -928,11 +941,20 @@ main(int argc, char *const argv[])
 		exit(EXIT_FAILURE);
 	}
 
+	if (freeze_vps) {
+		LOG(NOTICE, "Freezing all VPs!");
+		if (!freeze_vps_cmd(ccu_info)) {
+			LOG(ERROR, "Failed to send interrupt to freeze VPs!");
+			goto end;
+		}
+	}
+
 	if (file) {
 		hbm_copy_to_file(ccu_info, addr, size, file);
 	} else {
 		hbm_dump(ccu_info, addr, size);
 	}
 
+end:
 	pcie_disconnect(ccu_info);
 }
