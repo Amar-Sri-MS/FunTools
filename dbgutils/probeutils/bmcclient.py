@@ -25,7 +25,6 @@ class BMC_Client(object):
             self.disconnect()
 
     def connect(self):
-        print self.probe
 	(status, status_msg) = self.probe.i2c_connect()
         if status is True:
             self.connected = True
@@ -55,13 +54,13 @@ class BMC_Client(object):
                     ''.format(self.connected, csr_addr, csr_width_words))
             logger.error(error_msg)
             return (False, error_msg)
-        word_array = self.probe.i2c_csr_peek(csr_addr = csr_addr,
+        (data,status) = self.probe.i2c_csr_peek(csr_addr = csr_addr,
                                              csr_width_words = csr_width_words,
                                              chip_inst = chip_inst)
-        if word_array:
-            return (True, word_array)
+        if data:
+            return (True, data)
         else:
-            error_msg = "jtag csr peek failed!"
+            error_msg = "csr peek failed! Error:{0}".format(status)
             logger.error(error_msg)
             return (False, error_msg)
 
