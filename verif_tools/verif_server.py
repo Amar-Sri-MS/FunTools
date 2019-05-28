@@ -45,6 +45,7 @@ hnu_port_base=37
 logger = logging.getLogger("verif_server")
 logger.setLevel(logging.INFO)
 verif_socket_port=0
+bmc_chip_inst=0
 
 #
 # Convert hex encoding String back to raw packet
@@ -59,9 +60,10 @@ def pkt_decode(src):
     final="".join(map(chr, ret))
     return final
 
-def connect_verif_client_socket(port):
-    global verif_sock,verif_socket_port
+def connect_verif_client_socket(port,chip_inst=0):
+    global verif_sock,verif_socket_port,bmc_chip_inst
     verif_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    bmc_chip_inst=chip_inst
     logger.debug('Client Socket created')
     #Bind socket to local host and port
     try:
@@ -254,9 +256,9 @@ def process_cmd_csr_write (msg_len):
   if i2c_dis:
       (status, result) = (True,None)
   elif fast_poke:
-      (status, result) = dbgprobe().csr_fast_poke(addr, data_words_list)
+      (status, result) = dbgprobe().csr_fast_poke(addr, data_words_list, chip_inst=bmc_chip_inst)
   else:
-      (status, result) = dbgprobe().csr_poke(addr, data_words_list)
+      (status, result) = dbgprobe().csr_poke(addr, data_words_list, chip_inst=bmc_chip_inst)
   #print "csr_poke returned"
   if status is False:
       logger.error("csr_poke returned false")
@@ -381,7 +383,7 @@ def process_cmd_csr_read (msg_len):
   if i2c_dis:
       (status,result) = (True,[random.randint(0,0x10000000000000000)]*dword_len)
   else:
-      (status, result) = dbgprobe().csr_peek(addr, dword_len)
+      (status, result) = dbgprobe().csr_peek(addr, dword_len, chip_inst=bmc_chip_inst)
   logger.debug("result={0}".format(result))
 
   if status is False:
@@ -416,7 +418,7 @@ def do_server_speed_test():
     data_words_list=[0x12341234]
     print "start:",datetime.datetime.now()
     for i in range(1000):
-         (status, result) = dbgprobe().csr_poke(addr, len(data_words_list), data_words_list)
+         (status, result) = dbgprobe().csr_poke(addr, len(data_words_list), data_words_list, chip_inst=bmc_chip_inst)
     print "end  :",datetime.datetime.now()
 
 def handle_connection(conn):
@@ -440,9 +442,13 @@ def connect_dbgprobe(tpod,tpod_jtag,tpod_pcie,tpod_force):
     duts = dut.dut()
 
     if tpod_jtag:
-       (bmc,jtag_probe_id, jtag_probe_ip) = duts.get_jtag_info(tpod)
+       jtag_info=duts.get_jtag_info(tpod)
+       if jtag_info[0]:
+          (bmc,bmc_ip,jtag_probe_id, jtag_probe_ip)=jtag_info
+       else:
+          (bmc,jtag_probe_id, jtag_probe_ip)=jtag_info
        print "connecting to JTAG Proxy "+jtag_probe_ip
-       status = dbgprobe().connect(bmc_board=bmc,mode='jtag',probe_ip_addr=jtag_probe_ip,probe_id=jtag_probe_id)
+       status = dbgprobe().connect(mode='jtag',probe_ip_addr=jtag_probe_ip,probe_id=jtag_probe_id)
        if status is True:
           print("JTAG Server Connection Successful!")
        else:
@@ -476,9 +482,14 @@ def connect_dbgprobe(tpod,tpod_jtag,tpod_pcie,tpod_force):
        if status is False:
           sys.exit(1)
     else:
-       (bmc,i2c_probe_serial, i2c_proxy_ip, i2c_slave_addr) = duts.get_i2c_info(tpod)
-       print "connecting to I2C Proxy "+i2c_proxy_ip
-       status = dbgprobe().connect(bmc_board=bmc,mode='i2c', probe_ip_addr=i2c_proxy_ip , probe_id=i2c_probe_serial , slave_addr=i2c_slave_addr,force=tpod_force)
+       i2c_info = duts.get_i2c_info(tpod)
+       if i2c_info[0] is True:
+          (bmc,bmc_ip)=i2c_info
+          status = dbgprobe().connect(bmc_board=bmc,mode='i2c', bmc_ip_address=bmc_ip)
+       else:
+          (bmc,i2c_probe_serial, i2c_proxy_ip, i2c_slave_addr)=i2c_info
+          print "connecting to I2C Proxy "+i2c_proxy_ip
+          status = dbgprobe().connect(bmc_board=bmc,mode='i2c', probe_ip_addr=i2c_proxy_ip , probe_id=i2c_probe_serial , slave_addr=i2c_slave_addr,force=tpod_force)
        if status is True:
           print("I2C Server Connection Successful!")
        else:
@@ -543,6 +554,7 @@ def proc_arg():
     parser.add_argument('--tpod', nargs='?', type=str, default='TPOD4', help='TPOD name. default %(default)s')
     parser.add_argument('--tpod_force', action='store_true', default=False, help='TPOD force mode. default %(default)s')
     parser.add_argument('--tpod_jtag', action='store_true', default=False, help='TPOD JTAG mode. default %(default)s')
+    parser.add_argument('--tpod_bmc_chip_inst', nargs='?', type=auto_int, default=0, help='TPOD chip_inst used in bmc mode. default %(default)s')
 #    parser.add_argument('--i2c_svr', nargs='?', type=str, default='10.1.20.69', help='i2c server. default %(default)s')
     args = parser.parse_args()
     set_i2c_dis(args.i2c_dis)
@@ -552,7 +564,7 @@ def proc_arg():
 
 def main():
     proc_arg()
-    connect_verif_client_socket(port=args.verif_port)
+    connect_verif_client_socket(port=args.verif_port,chip_inst=args.tpod_bmc_chip_inst)
     if not args.ptf_dis:
        connect_ptf()
     if not i2c_dis:

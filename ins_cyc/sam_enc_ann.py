@@ -64,13 +64,16 @@ def annotate_single(funos_dasm, in_file):
   #if os.stat(cmd[0]).st_size < 2:
   #  print '%s: too small, skipping' % cmd[0]
   #  sys.exit(-1)
-
-  output = subprocess.check_output(cmd)
-  if not output:
-    print 'empty, skip writing of %s' % out_file
-    return
-  with open(out_file, 'w') as f:
-    f.write(output)
+  try:
+    output = subprocess.check_output(cmd)
+    if not output:
+      print 'empty, skip writing of %s' % out_file
+      return
+    with open(out_file, 'w') as f:
+      f.write(output)
+  except subprocess.CalledProcessError as e:
+    print 'Exception while running %s, skipping annotate for %s' % (cmd,
+                                                                    in_file)
 
 def encode_and_annotate(in_file_list, funos_dasm):
   setup_funtools_path()
@@ -81,17 +84,23 @@ def encode_and_annotate(in_file_list, funos_dasm):
 
   wdir = os.path.dirname(in_file_list[0])
 
-  # Try to select those files relevant to the specified in file, or
-  # we'll be doing n^2 work if we run this on a per-file basis.
-  match = re.match(r'.*samurai_core(\d+_\d+)\.trace', in_file_list[0])
-  core_id = ''
-  if match:
-    core_id = match.group(1)
-  enc_file_list = glob.glob('%s/*%s*.te' % (wdir, core_id))
+  for in_file in in_file_list:
+    # Try to select those files relevant to the specified in file, or
+    # we'll be doing n^2 work if we run this on a per-file basis.
+    match = re.match(r'.*samurai_core(\d+_\d+)\.trace', in_file)
+    core_id = ''
+    if match:
+      core_id = match.group(1)
+    else:
+      sys.stderr.write('Skipping %s: did not match expected trace '
+                       'filename pattern\n' % in_file)
+      continue
 
-  # annotate
-  for in_file in enc_file_list:
-    annotate_single(funos_dasm, in_file)
+    enc_file_list = glob.glob('%s/*%s*.te' % (wdir, core_id))
+
+    # annotate
+    for enc_file in enc_file_list:
+      annotate_single(funos_dasm, enc_file)
 
 def usage():
   print 'usage: %s <file.trace|dir>' % sys.argv[0]
@@ -120,7 +129,7 @@ if __name__ == '__main__':
     if not args.trace_file_or_dir.endswith('.trace'):
       usage()
       sys.exit(-1)
-    in_file_list = [args.trace_file_or_dir]
+    in_file_list = [os.path.abspath(args.trace_file_or_dir)]
 
   # Allow override of the default location for the dasm file. This allows
   # reuse of this script when the dasm file has already been generated

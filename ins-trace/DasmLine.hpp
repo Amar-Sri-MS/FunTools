@@ -1,3 +1,6 @@
+/* Longest instructions are sync_acquire/sync_release */
+#define INS_MAX_STR_LEN 12
+
 class Op {
 public:
 	string text;

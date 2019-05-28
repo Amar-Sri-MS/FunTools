@@ -14,7 +14,7 @@ public:
 	void accept(const InsAsm &ins)
 	{
 		if (cycle_from <= ins.cycle && ins.cycle <= cycle_to)
-			info("%ld: %016lx  %s\t%s", ins.cycle, ins.pc, String::pad(ins.op.type(), 10).c_str(), ins.op.arg().c_str());
+			info("%ld: %016lx  %s\t%s", ins.cycle, ins.pc, String::pad(ins.op.type(), INS_MAX_STR_LEN).c_str(), ins.op.arg().c_str());
 
 		last_cycle = ins.cycle;
 	}

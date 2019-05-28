@@ -13,6 +13,7 @@ import argparse
 import shutil
 import generate_firmware_image as gfi
 import key_replace as kr
+import tempfile
 
 # image type is at 2 SIGNER_INFO size +  FW_SIZE + FW_VERSION
 IMAGE_TYPE_OFFSET = 2048 + 2048 + 8
@@ -98,13 +99,23 @@ def gen_fw_image(filename, attrs):
     }
 
     args = map_method_args(argmap, attrs)
+    tmpfile = None
 
-    args['infile'] = find_file_in_srcdirs(args['infile'])
+    if isinstance(args['infile'], list):
+        tmpfile = tempfile.NamedTemporaryFile()
+        for srcfile in args['infile']:
+            with open(srcfile, 'rb') as f:
+                tmpfile.write(f.read())
+        args['infile'] = tmpfile.name
+    else:
+        args['infile'] = find_file_in_srcdirs(args['infile'])
     args['certfile'] = find_file_in_srcdirs(args['certfile'])
     args['customer_certfile'] = find_file_in_srcdirs(args['customer_certfile'])
 
     if args['infile']:
         gfi.image_gen(outfile=filename, **args)
+        if tmpfile:
+            tmpfile.close()
         return filename
     else:
         if attrs['source']:
@@ -114,11 +125,11 @@ def gen_fw_image(filename, attrs):
 
     return None
 
-def create_file(filename):
+def create_file(filename, section="signed_images"):
     global config
 
-    if config.get("signed_images"):
-        image = config["signed_images"].get(filename)
+    if config.get(section):
+        image = config[section].get(filename)
         if image:
             return gen_fw_image(filename, image)
     return None
@@ -225,6 +236,8 @@ def generate_flash(bin_infos, total_size, padding):
     # three delete sized blocks
     all_headers_length = 3 * MAX_DELETE_SIZE
 
+    if padding > all_headers_length:
+        all_headers_length = padding
 
     vhdr_words =  MAX_VARIABLE_SECTIONS * NUM_WORDS_VARIABLE_HEADER_RECORD
     vhdr_length = vhdr_words * 4
@@ -319,6 +332,9 @@ def generate_flash(bin_infos, total_size, padding):
     if ((len(flash) % MAX_DELETE_SIZE) != 0):
         raise Exception("padding error assembling directory headers")
 
+    if padding > MAX_DELETE_SIZE:
+        flash = pad_binary(flash, padding)
+
     # data now
     # Add ROM_SECTIONS first to match the addresses
     for section in sorted(bin_infos, key=lambda x:bin_infos.get(x).get('index')):
@@ -388,20 +404,22 @@ def merge_configs(old, new):
         else:
             old[k] = new[k]
 
-def override_field(config, field, value):
+def override_field(config, field, value, only_if_empty=True):
     for k,v in config.items():
         if isinstance(v, dict):
-            override_field(config[k], field, value)
+            override_field(config[k], field, value, only_if_empty)
         elif k==field:
-            config[k] = value
+            if not (config.get(k) and only_if_empty):
+                config[k] = value
 
-def set_versions(value):
-    global config
-    override_field(config, 'version', value)
 
-def set_description(value):
+def set_versions(value, only_if_empty=False):
     global config
-    override_field(config, 'description', value)
+    override_field(config, 'version', value, only_if_empty)
+
+def set_description(value, only_if_empty=False):
+    global config
+    override_field(config, 'description', value, only_if_empty)
 
 def main():
     parser = argparse.ArgumentParser()
@@ -464,12 +482,20 @@ def set_search_paths(paths):
     global search_paths
     search_paths = paths
 
-def run(arg_action, arg_enroll_cert = None, arg_enroll_tbs = None):
+def run(arg_action, arg_enroll_cert = None, arg_enroll_tbs = None, *args, **kwargs):
     global config
     global search_paths
 
     wanted = lambda action : arg_action in ['all', action]
     flash_content = None
+
+    for k,v in config['signed_images'].items():
+        if v.get('description','').startswith('@file:'):
+            try:
+                with open(find_file_in_srcdirs(v['description'][len('@file:'):]), 'r') as f:
+                    v['description'] = f.readline()
+            except:
+                raise
 
     if config.get('output_format'):
         total_size = int(config['output_format']['size'], 0)
@@ -514,11 +540,15 @@ def run(arg_action, arg_enroll_cert = None, arg_enroll_tbs = None):
                 gfi.cert_gen(outfile=k, **cert_args)
 
     if wanted('key_injection') and config.get('key_injection'):
+        have_net = kwargs.get("net", True)
+        have_hsm = kwargs.get("hsm", True)
+        keep_outfile = kwargs.get("keep_output", False)
         for outfile, v in config['key_injection'].items():
-            infile = find_file_in_srcdirs(v['source'])
-            shutil.copy2(infile, outfile)
+            if not (os.path.exists(outfile) and keep_outfile):
+                infile = find_file_in_srcdirs(v['source'])
+                shutil.copy2(infile, outfile)
             for key in v['keys']:
-                kr.update_file(outfile, key['id'], key=key['name'] )
+                kr.update_file(outfile, key['id'], key=key['name'], hsm=have_hsm, net=have_net)
 
     if wanted('flash') and config.get('output_format'):
         bin_infos = dict()
@@ -545,7 +575,9 @@ def run(arg_action, arg_enroll_cert = None, arg_enroll_tbs = None):
         enroll_cert = None
 
         if arg_enroll_tbs:
-            enroll_cert = gfi.raw_sign(None, arg_enroll_tbs, "fpk4")
+            import enrollment_service as es
+            with open(arg_enroll_tbs, 'rb') as f:
+                enroll_cert = es.Sign(f.read())
 
         if arg_enroll_cert:
             try:
@@ -559,6 +591,9 @@ def run(arg_action, arg_enroll_cert = None, arg_enroll_tbs = None):
 
         print_flash_map(bin_infos)
 
+        for file in config.get("signed_meta_images", {}):
+            create_file(file, "signed_meta_images")
+
     # Write output
     if flash_content:
         write_file(output+'.bin', flash_content)
@@ -568,6 +603,8 @@ def run(arg_action, arg_enroll_cert = None, arg_enroll_tbs = None):
         if wanted('sign'):
             for file in config.get("signed_images", {}):
                 create_file(file)
+            for file in config.get("signed_meta_images", {}):
+                create_file(file, "signed_meta_images")
 
     # For non-empty flash, generate map file
     if wanted('flash') and len(config.get('output_sections', {})) > 0:

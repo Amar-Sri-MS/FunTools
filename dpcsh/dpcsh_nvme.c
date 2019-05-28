@@ -21,7 +21,7 @@
 
 /* DPC over NVMe will work only in Linux */
 #ifdef __linux__
-static bool _read_from_nvme_helper(struct dpcsock *sock, uint8_t *buffer, uint32_t *data_len, uint32_t *remaining, uint32_t offset)
+static bool _read_from_nvme_helper(struct dpcsock *sock, uint8_t *buffer, uint32_t *data_len, uint32_t *remaining, uint32_t offset, uint32_t timeout)
 {
         bool retVal = false;
         memset(buffer, 0, NVME_ADMIN_CMD_DATA_LEN);
@@ -31,7 +31,8 @@ static bool _read_from_nvme_helper(struct dpcsock *sock, uint8_t *buffer, uint32
                 .addr = (__u64)(uintptr_t)(buffer),
                 .data_len = NVME_ADMIN_CMD_DATA_LEN,
                 .cdw2 = NVME_DPC_CMD_HNDLR_SELECTION,
-                .cdw3 = offset
+                .cdw3 = offset,
+		.timeout_ms = timeout
         };
         int ret = ioctl(sock->fd, NVME_IOCTL_ADMIN_CMD, &cmd);
         if(ret == 0) {
@@ -111,6 +112,7 @@ bool _write_to_nvme(struct fun_json *json, struct dpcsock *sock)
 				.data_len = NVME_ADMIN_CMD_DATA_LEN,
 				.cdw2 = NVME_DPC_CMD_HNDLR_SELECTION,
 				.cdw3 = pas.size,
+				.timeout_ms = sock->cmd_timeout
 			};
 			int ret = ioctl(sock->fd, NVME_IOCTL_ADMIN_CMD, &cmd);
 
@@ -149,7 +151,7 @@ struct fun_json* _read_from_nvme(struct dpcsock *sock)
 			bool readSuccess = false;
 
 			do {
-				readSuccess = _read_from_nvme_helper(sock, addr + offset, &data_len, &remaining, offset);
+				readSuccess = _read_from_nvme_helper(sock, addr + offset, &data_len, &remaining, offset, sock->cmd_timeout);
 				offset += NVME_ADMIN_CMD_DATA_LEN;
 			} while(readSuccess && (remaining > 0));
 
