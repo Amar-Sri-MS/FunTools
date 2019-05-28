@@ -1278,17 +1278,18 @@ int json_handle_req(struct dpcsock *jsock, const char *path,
 	return r;
 }
 
+#define LINE_MAX	(100 * 1024)
 
 static void _do_cli(int argc, char *argv[],
 		    struct dpcsock *funos_sock,
 		    struct dpcsock *cmd_sock, int startIndex)
 {
-	char buf[512];
+	char *buf = malloc(LINE_MAX);
 	int n = 0;
 	bool ok;
 
 	for (int i = startIndex; i < argc; i++) {
-		n += snprintf(buf + n, sizeof(buf) - n, "%s ", argv[i]);
+		n += snprintf(buf + n, LINE_MAX - n, "%s ", argv[i]);
 		printf("buf=%s n=%d\n", buf, n);
 	}
 
@@ -1296,9 +1297,10 @@ static void _do_cli(int argc, char *argv[],
 	buf[--len] = 0;	// trim the last space
 	printf(">> single cmd [%s] len=%zd\n", buf, len);
 	ok = _do_send_cmd(funos_sock, buf, len);
-	if (ok)
+	if (ok) {
 		_do_recv_cmd(funos_sock, cmd_sock, true);
-
+	}
+	free(buf);
 }
 
 /** argument parsing **/
