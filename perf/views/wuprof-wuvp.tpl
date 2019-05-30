@@ -73,7 +73,7 @@ VP Utilisation:
      <font size="-1">
      <table>
       <thead>
-      % for hdr in bench.headers:
+      % for hdr in bench.global_headers:
       	 <th>{{ hdr }}</th>
       % end
       </thead>
@@ -127,5 +127,11 @@ VP Utilisation:
     <p />
    % end
 
+   <h3>UART log</h3>
+   <div style="width=80%;max-height:500px;overflow:auto;background-color:#f8f8f8">
+   <pre>
+{{ opts.uart_log }}
+   </pre>
+   </div>
 % end
 

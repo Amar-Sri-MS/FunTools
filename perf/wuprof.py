@@ -3,6 +3,7 @@ import os
 import re
 import sys
 import math
+import urllib2
 import optparse
 import subprocess
 import svghistogram
@@ -25,8 +26,68 @@ import bottle
 ##
 ## TODO: add instruction trace and call graph logic
 
+###
+##  Pulling data from a URL
+#
 
-### columns from the controller logic
+BLOCK_SIZE = 1024 * 1024 # decent size payload
+
+def read_web_file(url):
+    print "Reading text URL %s" % url
+
+    s = ""
+    u = urllib2.urlopen(url)
+    while True:
+        buf = u.read(BLOCK_SIZE)
+        if (not buf):
+            break
+
+        s += buf
+
+    print "Read %d bytes from remote" % len(s)
+    return s
+
+def download_file(url, dest):
+
+    print "Downloading file %s" % url
+
+    try:
+        u = urllib2.urlopen(url)
+    except Exception as e:
+        print "Failed to download file\n"
+        print "(Exception was %s)" % e
+        return False
+
+    f = open(dest, "wb")
+
+    total_bytes = 0
+    while True:
+        buf = u.read(BLOCK_SIZE)
+        if (not buf):
+            break
+
+        total_bytes += len(buf)
+        f.write(buf)
+        sys.stdout.write("#")
+        sys.stdout.flush()
+
+    print " Downloaded %dkB" % (total_bytes / 1024)
+
+    return True
+
+def download_rel_file(url, path, dest, dest_file = None):
+
+    if (dest_file is not None):
+        dest = "%s/%s" % (dest, dest_file)
+        
+    src = "%s/%s" % (url, path)
+    return download_file(src, dest)
+    
+###
+##  perf row details
+#
+
+### columns from the perf controller logic
 COL_TS = 0
 COL_CCV = 1
 COL_WUNAME = 2
@@ -307,7 +368,7 @@ def checkv(x):
     return x
 
 class Aggregate:
-    def __init__(self, wuname, ilog=None):
+    def __init__(self, wuname, ilog=None, bench=None, count_vps=False):
         self.name = wuname
         self.total_count = 0
         self.cycles = []
@@ -315,6 +376,8 @@ class Aggregate:
         self.perf = [ [] for i in range(COL_PERF_COUNT) ]
         self.ccvcounts = {}
         self.ilog = ilog
+        self.bench = bench
+        self.count_vps = count_vps
         # default perf headers
         self.set_perf_headers(["perf%d" % i for i in range(4)])
 
@@ -331,7 +394,11 @@ class Aggregate:
 
     def get_header_row(self):
         # make the perf header section, starting with standards
-        hdrs = ["wu name", "count", "cycles", "time", "avg. cycles", "avg. time"] + self.perf_headers
+        hdrs = ["wu name", "count", "rate", "cycles", "time", "avg. cycles", "avg. time"] + self.perf_headers
+
+        if (self.count_vps):
+            hdrs += ["num vps", "avg. count per vp"]
+        
         return hdrs
 
     def set_perf_headers(self, headers):
@@ -343,15 +410,31 @@ class Aggregate:
     def avg_time(self):
         return "%.3fus" % cycles_to_us(checkv(self.avg_cycles))
 
+    def rate(self):
+        if (self.bench is None):
+            return "?"
+        fdelta = (self.bench.tN - self.bench.t0) / 1e9
+        return "%d/s" % (self.total_count / fdelta)
+
+    def nvps(self):
+        return len(self.ccvcounts.keys())
+
+    def avg_per_vp(self):
+        return "?"
+    
     def get_data_row(self):
         # standard columns
-        row = [self.name, self.total_count, self.total_cycles,
+        row = [self.name, self.total_count, self.rate(), self.total_cycles,
                self.total_time(), checkt(self.avg_cycles), self.avg_time()]
 
         # make the perf sections section
         for i in range(0, COL_PERF_COUNT):
             row.append(checkt(self.total_perf[i]))
 
+        # maybe add the per-vp stats
+        if (self.count_vps):
+            row += [self.nvps(), checkt(self.avg_vp_count)]
+            
         return row
     
     # given a list (keyname) and value to find (val)
@@ -570,7 +653,7 @@ def do_all_bench_stats(jobsdir, style, opts):
     # run that dict through the template to make the html
     s = bottle.template("wuprof.tpl", style=style, benches=benches)
 
-    fname = os.path.join(jobsdir, 'index.html')
+    fname = os.path.join(jobsdir, check_default_output(opts.output))
     fl = open(fname, "w")
     fl.write(s)
     fl.close()
@@ -660,22 +743,129 @@ class WUVPVP:
             return int(self.util * 100.0)
         else:
             raise RuntimeError("bad field %s" % field)
+
+###
+##  acquiring samples
+#
+
+SAMPLE_FILE = "perf_table.txt"
+REMOTE_SAMPLES = "raw_file/perf_table.txt"
+
+REMOTE_UARTS = ["raw_file/odp/uartout0.0.txt",
+                "raw_file/odp/uartout0.txt",
+                "raw_file/rdp/Compute3/cdn_uartout0.txt",
+                "raw_file/rdp/Compute2/cdn_uartout0.txt",
+                "raw_file/rdp/StorageNetwork2/cdn_uartout0.txt",
+]
+
+def cached_samples(dname):
+    return "%s/%s" % (dname, SAMPLE_FILE)
+
+def cached_uart(dname):
+    return "%s/uartout0.txt" % dname
+
+def id_for_url(url, opts):
+    toks = url.split("/")
+
+    if (toks[-2] != "job"):
+        raise RuntimeError("expected URL of the form http://host/job/num")
+
+    return toks[-1]
+
+
+def cache_path_for_url(input_name, opts):
+    return "palladium-job-%s" % id_for_url(input_name, opts)
+
+def output_file_for_url(input_name, opts):
+    return "%s/index-%s.html" % (cache_path_for_url(input_name, opts),
+                                 id_for_url(input_name, opts))
+    
+
+def download_missing_sample_files(opts, url):
+
+    # get the cache directory name
+    dname = cache_path_for_url(url, opts)
+
+    # create the directory if it doesn't exist
+    if (not os.path.exists(dname)):
+        os.mkdir(dname)
+    elif (not os.path.isdir(dname)):
+        # barf if it exists but isn't a directory
+        raise RuntimeError("expected directory: '%s'" % dname)
+
+    # if the sample file doesn't exist, download it
+    if (not os.path.exists(cached_samples(dname))):
+        if (not download_rel_file(url, REMOTE_SAMPLES, cached_samples(dname))):
+            raise RutimeError("could not download samples file from job")
+
+    # if the uart file doesn't exist, download it
+    if (not os.path.exists(cached_uart(dname))):
+        for uart in REMOTE_UARTS:
+            r = download_rel_file(url, uart, cached_uart(dname))
+            if (r):
+                break
+        else:
+            # create a dummy so we don't need network on subsequent runs
+            fl = open(cached_uart(dname), "w")
+            fl.write("could not find uart log\n")
+            
+def load_sample_directory(opts, dname):
+
+    if (opts.uart is None):
+        opts.uart = cached_uart(dname)
+
+    # read the samples
+    pd = load_sample_file(opts, cached_samples(dname))
+
+    return pd
+
+# given a URL/path/file, load the samples, caching locally if necessary
+def samples_from_input(input_name, opts):
+
+    # see if it looks like a URL
+    if (input_name.startswith("http://")):
+
+        # construct the local path and download any missing files
+        dname = cache_path_for_url(input_name, opts)
+        download_missing_sample_files(opts, input_name)
+
+        if (opts.output is None):
+            opts.output = output_file_for_url(input_name, opts)
+        
+        # load from the cache
+        return load_sample_directory(opts, dname)
+
+    # see if it's a local directory
+    if (os.path.isdir(input_name)):
+        return load_sample_directory(opts, input_name)
+
+    # see if it's just a local file
+    if (os.path.isfile(input_name)):
+        # load the tabulated samples file
+        pd = load_sample_file(opts, sample_file)
+
+    # otherwise, don't know
+    raise RuntimeError("Could not find valid input from '%s'" % input_name)
+    
+
 ###
 ##  top-level job processing for WU VP analysis
 #
 
-def aggregate_wus(vp_wu_list, perf_headers):
+def aggregate_wus(vp_wu_list, perf_headers, bench, count_vps=False):
 
     ags = []
     for wu_list in vp_wu_list:
         # make an aggregate for this WU name & set its headers
-        ag = Aggregate(wu_list[0][COL_WUNAME])
+        ag = Aggregate(wu_list[0][COL_WUNAME], bench=bench, count_vps=count_vps)
         ag.set_perf_headers(perf_headers)
 
         for wu in wu_list:
             ag.total_count += 1
             ag.cycles.append(wu[COL_CYCLES])
-            ag.ccvs.append(wu[COL_CCV])
+            ccv = wu[COL_CCV]
+            ag.ccvs.append(ccv)
+            ag.ccvcounts[ccv] = ag.ccvcounts.get(ccv, 0) + 1
             for i in range(0, COL_PERF_COUNT):
                 ag.perf[i].append(wu[COL_PERF0+i])
 
@@ -685,6 +875,9 @@ def aggregate_wus(vp_wu_list, perf_headers):
         ag.total_perf = []
         for i in range(0, COL_PERF_COUNT):
             ag.total_perf.append(mk_avg_tuple(ag.perf[i]))
+        if (count_vps):
+            vs = ag.ccvcounts.values()
+            ag.avg_vp_count = mk_avg_tuple(vs)
 
         ags.append(ag)
         
@@ -815,18 +1008,20 @@ def process_bench(opts, rows, perf_headers, bid):
     bench.sorted_vps = bench.sorted_vps[:opts.nvps]
 
     # aggregate the global WUs
-    bench.global_wus = aggregate_wus(bench.wus.values(), perf_headers)
+    bench.global_wus = aggregate_wus(bench.wus.values(), perf_headers,
+                                     bench, count_vps=True)
     bench.global_wus.sort(key=lambda ag:ag.get_by_key(opts.sort_wu),
                           reverse=True)
     bench.global_wus = bench.global_wus[:opts.nwus]
     
     # for each of the VPs, sort and trim the WUs
     for vp in bench.sorted_vps:
-        vp.sorted_wus = aggregate_wus(vp.wus.values(), perf_headers)
+        vp.sorted_wus = aggregate_wus(vp.wus.values(), perf_headers, bench)
         vp.sorted_wus.sort(key=lambda ag:ag.get_by_key(opts.sort_wu), reverse=True)
         vp.sorted_wus = vp.sorted_wus[:opts.nwus]
 
     # add the header
+    bench.global_headers = bench.global_wus[0].get_header_row()
     bench.headers = vp.sorted_wus[0].get_header_row()
         
     return bench
@@ -849,6 +1044,14 @@ def wuvp_process_trace(pd, opts):
 
 
 def load_sample_file(opts, fname):
+
+    if (opts.uart is not None):
+        print "reading uart file %s" % opts.uart
+
+        fl = open(opts.uart)
+        opts.uart_log = "".join(fl.readlines())
+        
+    print "loading samples file %s" % fname
 
     fl = open(fname)
     rows = []
@@ -910,11 +1113,10 @@ def load_sample_file(opts, fname):
     pd.trim_start = rows[1][COL_TS]
     return pd
 
-def do_wu_vp_stats(sample_file, style, opts):
+def do_wu_vp_stats(input_name, style, opts):
 
-    # load the tabulated samples file
-    print "loading samples file %s" % sample_file
-    pd = load_sample_file(opts, sample_file)
+    # import the sample file/url
+    pd = samples_from_input(input_name, opts)
 
     # generate the histogram
     histograms = {}
@@ -927,13 +1129,15 @@ def do_wu_vp_stats(sample_file, style, opts):
     s = bottle.template("wuprof-wuvp.tpl", style=style, opts=opts, benches=benches, histograms=histograms, pp=PP())
 
     # save it to a file
-    fname = 'index-wuvp.html'
+    fname = check_default_output(opts.output)
     fl = open(fname, "w")
     fl.write(s)
     fl.close()
 
     print "Write output to %s" % fname
 
+    if (opts.open):
+        os.system("open '%s'" % fname)
 
 ###
 ##  pretty-printers for bottle
@@ -1021,6 +1225,11 @@ POWS = { 'u': 1000,
          'm': 1000 * 1000,
          's': 1000 * 1000 * 1000 }
 
+def check_default_output(d):
+    if (d is None):
+        return "index.html"
+    return d
+
 def fixtime(t):
     
     # nothing specified
@@ -1058,6 +1267,12 @@ def parse_args():
                       help="number of VPs per benchmark to display")
     parser.add_option("-T", "--no-trim", default=False, action="store_true",
                       help="don't trim the input")
+    parser.add_option("-o", "--output", default=None,
+                      help="output filename (default=index.html)")
+    parser.add_option("-u", "--uart", default=None,
+                      help="uart log to append to the run for information")
+    parser.add_option("-x", "--open", default=False, action="store_true",
+                      help="execute 'open' on the output file when successful")
     
     (opts, args) = parser.parse_args()
 
@@ -1065,6 +1280,9 @@ def parse_args():
         parser.print_help()
         sys.exit(1)
 
+    # default
+    opts.uart_log = "no log specified"
+        
     # process times
     opts.start_time = fixtime(opts.start_time)
     opts.end_time = fixtime(opts.end_time)
@@ -1072,7 +1290,7 @@ def parse_args():
     # take a copy for the output
     opts.start_time_orig = opts.start_time
     opts.end_time_orig = opts.end_time
-        
+
     return (opts, args[0], args[1])
 
 ###
