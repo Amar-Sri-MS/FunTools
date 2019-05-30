@@ -264,6 +264,7 @@ class bmc:
 			    logging.error(err)
 			    return (False, err)
                         cmd_output = stdout.read().decode('utf-8')
+                        logging.debug(cmd_output)
                         if (len(cmd_output) == 0):
                             err = 'No putput for the cmd: {0}'.format(cmd)
 			    logging.error(err)
@@ -275,13 +276,19 @@ class bmc:
 			logging.error(status_msg)
 			return None
 
-                #logger.debug(cmd_output)
+		logger.debug(cmd_output)
 		output_lines = cmd_output.splitlines()
-                logger.debug(output_lines)
+		logger.debug(output_lines)
+		logger.debug('num_output_lines: {}'.format(len(output_lines)))
 		num_bytes_read = int(output_lines[0].split(':')[1].strip())
-                bytes_stream =  output_lines[1].strip().split(' ')
-                for i in range(num_bytes_read):
-                    read_data[i] = int(bytes_stream[i], 16)
+		logger.debug('num_bytes_read:{}'.format(num_bytes_read))
+		bytes_stream = list()
+		for i in range(1, len(output_lines)):
+			byte_array =  output_lines[i].strip().split(' ')
+			bytes_stream.extend(byte_array)
+		for i in range(num_bytes_read):
+			read_data[i] = int(bytes_stream[i], 16)
+		logger.debug('bytes read: {}'.format([hex(x) for x in read_data]))
 		if num_bytes_read != len(read_data):
 			err_msg = 'Incorrect read! num_bytes_read:{0} expected: {1}'.format(num_bytes_read, len(read_data))
 			logger.error(err_msg)
@@ -439,8 +446,6 @@ class i2c:
                 read_data = array('B', [00]*(csr_width+1))
                 read_bytes = self.master.i2c_read(read_data = read_data, chip_inst=chip_inst)
                 logger.info(('read_data: {0}').format([hex(x) for x in read_data]))
-                print len(read_bytes)
-                print (csr_width + 1)
                 if read_bytes[0] != (csr_width + 1):
                     logger.error(('Read Error!  read_bytes:{0}'
                            ' Expected: {1}').format(read_bytes, (csr_width + 1)))
@@ -693,7 +698,7 @@ class i2c:
                     return (False, err_msg)
             time.sleep(0.1)
         logger.debug('Recived data: {0}'.format([hex(x) for x in data]))
-        logger.info('Successfully Recived {0} bytes!'.format(i))
+        logger.debug('Successfully Recived {0} bytes!'.format(i))
         return (True, data)
 
     def __i2c_dbg_chal_cmd_header_read(self, chip_inst):
