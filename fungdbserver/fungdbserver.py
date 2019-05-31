@@ -93,7 +93,7 @@ class FileCorpse:
         bytes = self.fl.read(n)
         if (len(bytes) < n):
             # can't seek
-            print "short read at 0x%x" % regaddr
+            print "short read"
             return self.badread(n)
         return bytes
 
