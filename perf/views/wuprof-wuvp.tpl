@@ -10,7 +10,13 @@
 
 <p>Processed {{ len(benches) }} benchmark(s) from input files</p>
 
-Parameters<br />
+<b>Details from UART</b><br />
+<b>FunOS version:</b> {{ opts.uart_scrape["version"] }} <br />
+<b>boot-args:</b> {{ opts.uart_scrape["boot-args"] }} <br />
+
+<p />
+
+<b>Parameters</b><br />
 first wu: {{ opts.first_wu }} <br />
 last wu: {{ opts.last_wu }} <br />
 start-time: {{ pp.time(opts.start_time_orig) }} <br />

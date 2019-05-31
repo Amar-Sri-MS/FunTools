@@ -105,6 +105,10 @@ SAMPNM = ["timestamp", "vp", "wu", "cycles", None,
 def vp2ccv(vp):
     return "%s.%s.%s" % (vp/24, (vp%24)/4, (vp%24)%4)
 
+def get_cluster(ccv):
+    toks = ccv.split(".")
+    return toks[0]
+
 ###
 ##  nominal frequency
 #
@@ -296,6 +300,27 @@ def parse_uart_log_for_benches(ufile):
     return benches
 
 
+def scrape_boot_args(log):
+
+    lines = log.split("\n")
+    sargs = ""
+    for line in lines:
+        if ("] [boot command] argv[" not in line):
+            continue
+
+        sargs += " %s" % line.split(": ")[1]
+
+    return sargs
+
+def scrape_version(log):
+    lines = log.split("\n")
+    for line in lines:
+        if ("] [kernel] Version=" in line):
+            return line.split("]")[-1]
+
+    return "not found"
+
+
 ###
 ##  instruction trace wrapper
 #
@@ -367,6 +392,8 @@ def checkv(x):
 
     return x
 
+CCCs = "8"
+
 class Aggregate:
     def __init__(self, wuname, ilog=None, bench=None, count_vps=False):
         self.name = wuname
@@ -417,7 +444,12 @@ class Aggregate:
         return "%d/s" % (self.total_count / fdelta)
 
     def nvps(self):
-        return len(self.ccvcounts.keys())
+        ccvps = filter(lambda vp: get_cluster(vp) in CCCs,
+                       self.ccvcounts.keys())
+        pcvps = filter(lambda vp: get_cluster(vp) not in CCCs,
+                       self.ccvcounts.keys())
+       
+        return "%spc/%scc" % (len(pcvps), len(ccvps))
 
     def avg_per_vp(self):
         return "?"
@@ -796,7 +828,7 @@ def download_missing_sample_files(opts, url):
     # if the sample file doesn't exist, download it
     if (not os.path.exists(cached_samples(dname))):
         if (not download_rel_file(url, REMOTE_SAMPLES, cached_samples(dname))):
-            raise RutimeError("could not download samples file from job")
+            raise RuntimeError("could not download samples file from job")
 
     # if the uart file doesn't exist, download it
     if (not os.path.exists(cached_uart(dname))):
@@ -1050,6 +1082,11 @@ def load_sample_file(opts, fname):
 
         fl = open(opts.uart)
         opts.uart_log = "".join(fl.readlines())
+
+        # scrape some interesting stuff out of the uart
+        opts.uart_scrape["boot-args"] = scrape_boot_args(opts.uart_log)
+        opts.uart_scrape["version"] = scrape_version(opts.uart_log)
+        
         
     print "loading samples file %s" % fname
 
@@ -1273,6 +1310,8 @@ def parse_args():
                       help="uart log to append to the run for information")
     parser.add_option("-x", "--open", default=False, action="store_true",
                       help="execute 'open' on the output file when successful")
+    parser.add_option("-C", "--cc-clusters", default="8",
+                      help="list of control plane cluster GIDs: a,b,c,d")
     
     (opts, args) = parser.parse_args()
 
@@ -1281,7 +1320,10 @@ def parse_args():
         sys.exit(1)
 
     # default
+    global CCCs
     opts.uart_log = "no log specified"
+    opts.uart_scrape = {}
+    CCCs = opts.cc_clusters
         
     # process times
     opts.start_time = fixtime(opts.start_time)
