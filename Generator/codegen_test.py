@@ -304,6 +304,7 @@ class CodegenEndToEnd(unittest.TestCase):
       'D = 8',
       'E = 16',
       'F = 0x20 /* Comment */',
+      'G = 0xFFFFFFFF',
       'END',
       ]
 
@@ -313,9 +314,10 @@ class CodegenEndToEnd(unittest.TestCase):
     self.assertEqual(0, len(errors))
     out = RemoveWhitespace(out)
 
-    self.assertIn('static const int A = 0x1;', out)
-    self.assertIn('static const int D = 0x8;', out)
-    self.assertIn('static const int F = 0x20; /* Comment */', out)
+    self.assertIn('static const unsigned int A = 0x1;', out)
+    self.assertIn('static const unsigned int D = 0x8;', out)
+    self.assertIn('static const unsigned int F = 0x20; /* Comment */', out)
+    self.assertIn('static const unsigned int G = 0xffffffff;', out)
     self.assertIn('extern const char *foo_names', out)
     self.assertIn('const char *foo_names[] = {', out)
 

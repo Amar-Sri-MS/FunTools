@@ -215,7 +215,6 @@ def csr_list(args):
 #import pdb
 # Find csr medata matching an address
 def csr_find_addr_metadata(caddr):
-    print hex(caddr)
     csr_dict =  csr_metadata().get_metadata()
     if not csr_dict:
         print "Can't get csr metadata!"
@@ -312,8 +311,6 @@ def csr_find_addr_metadata(caddr):
 # csr find handler for commandline interface.
 # Returnds names of all the csrs which contain input substring
 def csr_find(args):
-    print args
-
     csr_name = args.substring[0] if args.substring else None
     csr_address = args.csr_address[0] if args.csr_address else None
 
@@ -663,7 +660,6 @@ def csr_replay(args):
 
     cnt = 0
     for x in replay_config:
-        print x
         if x.get('action') == actions.CSR_WR:
             csr_info = dict()
             csr_address = x.get("csr_address", None)
@@ -861,10 +857,10 @@ def connect(dut_name, mode, force_connect=False):
         print('Mode: {} is not yet supported!'.format(mode))
         return
     if status is True:
-        print("Connection to probe successful!")
+        logger.debug("Connection to probe successful!")
         return dbgprobe()
     else:
-        logger.debug("Connection to probe is failed!")
+        logger.error("Connection to probe is failed!")
         return None
 
 
@@ -979,7 +975,7 @@ def csr_get_addr(csr_data, anode_inst=None, csr_inst=None, csr_entry=None):
             return
 
     if csr_inst_cnt == 1 and csr_inst is not None:
-        print("**** Ignoring option csr instance number: {}!!! ****".format(csr_inst))
+        logger.debug("**** Ignoring option csr instance number: {}!!! ****".format(csr_inst))
 
     csr_n_entries = csr_data.get("csr_n_entries", None)
     if csr_n_entries is None:
@@ -1001,7 +997,7 @@ def csr_get_addr(csr_data, anode_inst=None, csr_inst=None, csr_entry=None):
             return
 
     if csr_n_entries == 1 and csr_entry is not None:
-        print("**** Ignoring option csr entry index: {}!!! ****".format(csr_entry))
+        logger.debug("**** Ignoring option csr entry index: {}!!! ****".format(csr_entry))
 
     anode_addr = csr_data.get("an_addr", None)
     if anode_addr is None:
@@ -1360,6 +1356,13 @@ def get_file_abs_path(loc):
         loc = os.path.join(os.getcwd(), loc)
     assert os.path.exists(loc), "{}: directory does not exist!".format(loc)
     return loc
+
+def csr_metadata_objs(csr_name):
+    csr_list = csr_metadata().get_csr_def(csr_name)
+    if csr_list is None:
+        print("csr: {} doesnot exist in database!.".format(csr_name))
+        return
+    return csr_list
 
 def csr_get_metadata(csr_name, ring_name=None, ring_inst=None, anode_name=None, anode_path=None):
     if not csr_name:

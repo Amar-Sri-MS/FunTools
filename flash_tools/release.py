@@ -65,7 +65,7 @@ def main():
         gf.set_versions(args.force_version)
 
     if args.force_description:
-        gf.set_description(args.force_description)
+        gf.set_description(args.force_description, True)
 
     curdir = os.getcwd()
 
@@ -92,8 +92,6 @@ def main():
                   "bin/flash_tools/generate_flash.py",
                   "bin/flash_tools/make_emulation_emmc.py",
                   "bin/flash_tools/key_replace.py",
-                  "bin/flash_tools/enrollment_service.py", # FIXME(Marcin) delete this
-                  "bin/flash_tools/f1registration.ca.pem", # FIXME(Marcin) delete this
                   "bin/flash_tools/" + os.path.basename(__file__),
                   "bin/Linux/x86_64/mkimage" ]
         for app in utils:
@@ -113,6 +111,7 @@ def main():
         with open("image.json", "w") as f:
             json.dump(config, f, indent=4)
 
+        gf.run('key_injection', net=True, hsm=False)
         os.chdir(curdir)
 
     if wanted('sign'):
@@ -120,7 +119,7 @@ def main():
         sdkpaths.append(os.path.abspath(args.destdir))
         gf.set_search_paths(sdkpaths)
         os.chdir(args.destdir)
-        gf.run('key_injection')
+        gf.run('key_injection', net=False, hsm=True, keep_output=True)
         gf.run('certificates')
         gf.run('sign')
         os.chdir(curdir)
