@@ -113,9 +113,11 @@ def get_cluster(ccv):
 ##  nominal frequency
 #
 
-def cycles_to_us(cycles):
+def cycles_to_ns(cycles):
+    return (cycles / 1.6)
 
-    return (cycles / 1.6) / 1000.0
+def cycles_to_us(cycles):
+    return cycles_to_ns(cycles) / 1000.0
 
 
 ###
@@ -432,7 +434,12 @@ class Aggregate:
         self.perf_headers = [ "avg. %s" % i for i in headers]
 
     def total_time(self):
-        return "%.3fus" % cycles_to_us(self.total_cycles)
+        pct = ""
+        if ((self.bench is not None) and (not self.count_vps)):
+            # for a single VP, compute the % runtime of this vp
+            # FIXME: account for utilisation gap per WU
+            pct = " (~%.2g%%)" % (100 * cycles_to_ns(self.total_cycles) / (self.bench.tN - self.bench.t0))
+        return "%.3fus%s" % (cycles_to_us(self.total_cycles), pct)
 
     def avg_time(self):
         return "%.3fus" % cycles_to_us(checkv(self.avg_cycles))
@@ -986,6 +993,15 @@ def wuvp_split_trace(pd, opts):
     return benches
 
 
+def is_idle_wuid(wuid):
+    if (wuid == "wuh_idle"):
+        return True
+
+    if (wuid == "__wu_handler__wuh_idle"):
+        return True
+
+    return False
+
 FREQ_DIV = 1.6
 def process_bench(opts, rows, perf_headers, bid):
 
@@ -1017,7 +1033,7 @@ def process_bench(opts, rows, perf_headers, bid):
         rt = row[COL_CYCLES] / FREQ_DIV
 
         # compute counts and runtime if it's not idle
-        if (wuid != "wuh_idle"):
+        if (not is_idle_wuid(wuid)):
             vp.runtime += rt
 
             vp.wucount += 1
