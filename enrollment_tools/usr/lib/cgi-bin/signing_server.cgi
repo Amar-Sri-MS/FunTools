@@ -163,7 +163,8 @@ def image_gen(binary, ftype, version, description,
     image += customer_to_be_signed
     return image
 
-
+# retrieving binary form content can be problematic.
+# create a function for this as a bottleneck for debugging/logging
 def get_binary_from_form(form, name):
     ret = form.getfirst(name)
     return ret
@@ -240,7 +241,10 @@ def main_program():
         # Log
         log("Exception: %s" % err)
         # Response
-        print("Status: 400 Bad Request\n")
+        print("Status: 400 Bad Request")
+        err_msg = str(err)
+        print("Content-Length: %d\n" % len(err_msg))
+        print(err_msg)
 
         # all other errors are reported as 500 Internal Server Error
     except Exception as err:
@@ -248,7 +252,10 @@ def main_program():
         log("Exception: %s" % err)
         traceback.print_exc()
         # Response
-        print("Status: 500 Internal Server Error\n")
+        print("Status: 500 Internal Server Error")
+        err_msg = str(err) + "\n" + traceback.format_exc()
+        print("Content-Length: %d\n" % len(err_msg))
+        print(err_msg)
 
 
 main_program()
