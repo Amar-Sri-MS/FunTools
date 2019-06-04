@@ -133,9 +133,8 @@ class TestPerfParser(unittest.TestCase):
     def test_can_parse_interleaved_samples(self):
         """
         The sample write is not atomic: it comprises multiple 64-bit words.
-        Interleaving is theoretically possible, so we support it although
-        it has not been seen in a trace as yet.
-        TODO: try to cause/find interleaving on a real app
+        Interleaving is possible and has been seen on several traces when
+        memory latency is higher, so we support it.
         """
         msg = ('2.252: 82 00000000 48BBDFBA 7B00FF00  TF3 ic[0]=ni  tt=tu2 te=1 tm=1 va[64]=0x000048BBDFBA7B00\n'
                '3.090: 82 00000000 000D3B40 2000FE00  TF3 ic[0]=ni  tt=tu1 te=1 tm=1 va[64]=0x0000000D3B402000\n'
@@ -242,6 +241,21 @@ class TestPerfParser(unittest.TestCase):
         self._init_fh(msg)
         self.parser.parse_trace_messages(self.fh)
         self.assertEqual(1, len(self.parser.samples))
+
+    def test_custom_data_sample(self):
+        msg = (
+            ' 6.2: 82 00030000 48918577 6F03FF00  TF3 ic[3]=ni  tt=tu2 te=1 tm=1  va[64]=0x0000489185776F03\n'
+            ' 7.0: 82 00030000 000E77A0 2003FE00  TF3 ic[3]=ni  tt=tu1 te=1 tm=1  va[64]=0x0000000E77A02003\n'
+            ' 7.1: 82 00030000 1D300000 1E0BFE00  TF3 ic[3]=ni  tt=tu1 te=1 tm=1  va[64]=0x000000002B300003\n'
+            ' 7.2: 82 00030000 000C0000 0107FE00  TF3 ic[3]=ni  tt=tu1 te=1 tm=1  va[64]=0xDEADBEEF00000003\n'
+            ' 8.0: 82 00030000 0EC40000 33A3FE00  TF3 ic[3]=ni  tt=tu1 te=1 tm=1  va[64]=0xCAFEBABE00000003\n')
+        self._init_fh(msg)
+        self.parser.parse_trace_messages(self.fh)
+        self.assertEqual(1, len(self.parser.samples))
+
+        sample = self.parser.samples[0]
+        self.assertTrue(sample.is_custom_data)
+        self.assertEqual(0xcafebabedeadbeef, sample.custom_data)
 
 
 class TestPerfParserIntegration(unittest.TestCase):
