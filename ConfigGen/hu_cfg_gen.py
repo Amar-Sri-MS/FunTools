@@ -312,7 +312,7 @@ class HUCodeGen():
        for i, l in enumerate(_args):
             _arg = l
             logging.debug("_args %s type %s", _args, type(_args))
-            if isinstance(_arg, str):
+            if not isinstance(_arg, int):
                 if _arg != "all":
                     logging.error("only allowed _arg is [all], but found: %s", _arg)
                     assert False
