@@ -113,8 +113,10 @@ def get_cluster(ccv):
 ##  nominal frequency
 #
 
+FREQ_DIV = 1.6
+
 def cycles_to_ns(cycles):
-    return (cycles / 1.6)
+    return (cycles / FREQ_DIV)
 
 def cycles_to_us(cycles):
     return cycles_to_ns(cycles) / 1000.0
@@ -1002,7 +1004,6 @@ def is_idle_wuid(wuid):
 
     return False
 
-FREQ_DIV = 1.6
 def process_bench(opts, rows, perf_headers, bid):
 
     # construct the bench
@@ -1108,37 +1109,35 @@ def load_sample_file(opts, fname):
 
     fl = open(fname)
     rows = []
-    
-    first = True
+
+    line = fl.readline()
+    toks = line.split()
+    # validate the table headers
+    for i in range(len(SAMPNM)):
+        if ((SAMPNM[i] is not None) and (toks[i] != SAMPNM[i])):
+            print "Invalid sample header row: %s (%s)" % (toks, toks[i])
+            sys.exit(1)            
+
+    # FIXME: it would be good to understand the perf count headers
+    # propertly
+    header = [toks]
+
+    # process the rest of the lines
     for line in fl.readlines():
         toks = line.split()
 
-        if (first):
-            # validate the table headers
-            for i in range(len(SAMPNM)):
-                if ((SAMPNM[i] is not None) and (toks[i] != SAMPNM[i])):
-                    print "Invalid sample header row: %s (%s)" % (toks, toks[i])
-                    sys.exit(1)            
-
-            # FIXME: it would be good to understand the perf count headers
-            # propertly
-            header = [toks]
-                         
-            # don't come back here
-            first = False
-        else:
-            # build a row in original pd format
-            rows.append((
-                int(toks[0]),  # timestamp
-                toks[1],       # ccv
-                toks[2],       # wu
-                int(toks[3]),  # cycles
-                int(toks[4]),  # perf0
-                int(toks[5]),  # perf1
-                int(toks[6]),  # perf2
-                int(toks[7]),  # perf3
-                int(toks[8]),  # arg0
-            ))
+        # build a row in original pd format
+        rows.append((
+            int(toks[0]),  # timestamp
+            toks[1],       # ccv
+            toks[2],       # wu
+            int(toks[3]),  # cycles
+            int(toks[4]),  # perf0
+            int(toks[5]),  # perf1
+            int(toks[6]),  # perf2
+            int(toks[7]),  # perf3
+            int(toks[8]),  # arg0
+        ))
 
     # sort the rows because input is messed up
     rows.sort()
@@ -1305,7 +1304,7 @@ def parse_args():
     parser.add_option("-f", "--first-wu", default=None,
                       help="first WU of each sample (wuvp)")
     parser.add_option("-l", "--last-wu", default=None,
-                      help="first WU of each sample (wuvp)")
+                      help="last WU of each sample (wuvp)")
     parser.add_option("-s", "--start-time", default=None,
                       help="time to start a sample (wuvp)")
     parser.add_option("-e", "--end-time", default=None,
