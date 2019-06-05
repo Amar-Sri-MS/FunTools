@@ -186,6 +186,7 @@ class PerfSampleBuilder:
     how the bits are packed into user trace format data.
     """
 
+    # The following constants apply to WU sample data.
     WORD0_TIMESTAMP_SHIFT = 10
     WORD0_ARG0_SHIFT = 2
     WORD0_ARG0_LEN = 8
@@ -203,6 +204,12 @@ class PerfSampleBuilder:
     WORD4_PERF3_SHIFT = 34
     WORD4_CP0_SHIFT = 2
     WORD4_CP0_MASK = 0xffffffff
+
+    # The following constants apply to custom sample data.
+    WORD2_CUSTOM_ID_SHIFT = 18
+    WORD2_CUSTOM_ID_MASK = 0x3fff
+    WORD3_CUSTOM_DATA_SHIFT = 32
+    WORD4_CUSTOM_DATA_SHIFT = 32
 
     def __init__(self, vp):
         self.tfs = []
@@ -237,16 +244,33 @@ class PerfSampleBuilder:
         sample.arg0 |= (self.tfs[1].addr >> self.WORD1_ARG0_SHIFT)
 
     def _process_entry2(self, sample):
+        magic_num = ((self.tfs[2].addr >> self.WORD2_CUSTOM_ID_SHIFT)
+                     & self.WORD2_CUSTOM_ID_MASK)
+        if magic_num == 0xacc:
+            sample.is_custom_data = True
+            return
+
         sample.perf_counts[0] = self.tfs[2].addr >> self.WORD2_PERF0_SHIFT
         sample.wuid = ((self.tfs[2].addr >> self.WORD2_WUID_SHIFT) &
                        self.WORD2_WUID_MASK)
 
     def _process_entry3(self, sample):
+        if sample.is_custom_data:
+            sample.custom_data = (self.tfs[3].addr
+                                  >> self.WORD3_CUSTOM_DATA_SHIFT)
+            return
+
         sample.perf_counts[1] = self.tfs[3].addr >> self.WORD3_PERF1_SHIFT
         sample.perf_counts[2] = ((self.tfs[3].addr >> self.WORD3_PERF2_SHIFT) &
                                  self.WORD3_PERF2_MASK)
 
     def _process_entry4(self, sample):
+        if sample.is_custom_data:
+            sample.custom_data = (sample.custom_data
+                                  | (self.tfs[4].addr
+                                     >> self.WORD4_CUSTOM_DATA_SHIFT << 32))
+            return
+
         sample.perf_counts[3] = self.tfs[4].addr >> self.WORD4_PERF3_SHIFT
         sample.cp0_count = ((self.tfs[4].addr >> self.WORD4_CP0_SHIFT) &
                             self.WORD4_CP0_MASK)
@@ -263,6 +287,10 @@ class PerfSample:
         self.cp0_count = None
         self.perf_counts = [None, None, None, None]
         self.vp = None
+
+        # True if this is a custom data sample, else False
+        self.is_custom_data = False
+        self.custom_data = None
 
     def __str__(self):
         return ('%s = wu: %s  '
@@ -289,7 +317,7 @@ class PerfSample:
         provide a local VP number in the lowest 8 bits. Callers must
         read and modify the lower 8 bits to set the global VP.
 
-        C code from FunOS describing the format:
+        C code from FunOS describing the format for perf samples:
         vpnum_t vp = vplocal_vpnum();
         cp0_kscratch6_write((timestamp) << 8 | vp);
         cp0_kscratch6_write((cp0_count) << 8 | vp);
@@ -301,6 +329,9 @@ class PerfSample:
         cp0_kscratch6_write((arg0) << 8 | vp);
         """
 
+        if self.is_custom_data:
+            return self.to_custom_perfmon_data()
+
         # Note: in some cases we can avoid masking because the values are
         # 32-bits or less.
         vals = list()
@@ -311,6 +342,30 @@ class PerfSample:
         vals.append(self.perf_counts[2] << 8 | self.vp)
         vals.append(self.perf_counts[3] << 8 | self.vp)
         vals.append((self.arg0 >> 56 << 24) | (self.wuid << 8) | self.vp)
+        vals.append((self.arg0 << 8) & 0xffffffffffffffff | self.vp)
+        return vals
+
+    def to_custom_perfmon_data(self):
+        """
+        C code describing the format for custom data samples
+        vpnum_t vp = vplocal_vpnum();
+        cp0_kscratch6_write((timestamp) << 8 | vp);
+        cp0_kscratch6_write((0xaccell << 32) << 8 | vp);
+        cp0_kscratch6_write(((user_data) >> 56) << 8 | vp);
+        cp0_kscratch6_write((user_data) << 8 | vp);
+        cp0_kscratch6_write((0) << 8 | vp);
+        cp0_kscratch6_write((0) << 8 | vp);
+        cp0_kscratch6_write(((arg0) >> 56) << 24 | ((0) << 8) | vp);
+        cp0_kscratch6_write((arg0) << 8 | vp);
+        """
+        vals = list()
+        vals.append((self.timestamp << 8) & 0xffffffffffffffff | self.vp)
+        vals.append((0xacce << 32) << 8 | self.vp)
+        vals.append((self.custom_data >> 56) << 8 | self.vp)
+        vals.append((self.custom_data << 8) & 0xffffffffffffffff | self.vp)
+        vals.append(0 << 8 | self.vp)
+        vals.append(0 << 8 | self.vp)
+        vals.append((self.arg0 >> 56 << 24) | (0 << 8) | self.vp)
         vals.append((self.arg0 << 8) & 0xffffffffffffffff | self.vp)
         return vals
 
@@ -355,8 +410,6 @@ def main():
     with open(args.input_file, 'r') as fh:
         trace_parser.parse_trace_messages(fh)
         perfmon_samples = trace_parser.get_perfmon_samples()
-        for sample in trace_parser.samples:
-            print str(sample)
 
     if not perfmon_samples:
         print 'No samples'
