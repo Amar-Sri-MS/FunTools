@@ -60,7 +60,7 @@ class HUCodeGen():
         struct_obj["dim"] = len(items)
 
         for i, v_items in enumerate(items):
-            assert 'oneOf' in v_items.keys()
+            assert 'oneOf' in list(v_items.keys())
             oneof_list = v_items['oneOf']
 
             for l in oneof_list:
@@ -189,7 +189,7 @@ class HUCodeGen():
         struct_name = obj_key
         struct_def["dim"] = 0
 
-        for k, v in obj_properties.items():
+        for k, v in list(obj_properties.items()):
             if k == "_args":
                 # _args is used in FunOS internal indexing, so skip generating this field
                 self._get_array_dim_info(struct_def, k, v)
@@ -221,6 +221,7 @@ class HUCodeGen():
             output_dir (string): dir for output .h .c files
         """
         struct_defs_str = ""
+        obj_maxitems = 0
 
         schema_properties = self.schema_dict["properties"]['HuInterface']
 
@@ -233,7 +234,7 @@ class HUCodeGen():
         f = open(os.path.join(output_dir, header_file), 'w')
 
         # go through type entry to generate struct
-        for k, v in schema_properties.items():
+        for k, v in list(schema_properties.items()):
             if k not in key_to_gen:
                 logging.info("NOT found %s", k)
                 continue
@@ -261,7 +262,7 @@ class HUCodeGen():
             struct_def = self.struct_defs[k]
             struct_defs_str += self._parse_schema(k, obj_properties, int(obj_maxitems), struct_def)
 
-            if 'dim' in struct_def.keys():
+            if 'dim' in list(struct_def.keys()):
                 logging.debug(k, " obj dim len %d" % struct_def['dim'])
             else:
                 logging.error("NO dim len %k", k)
@@ -311,22 +312,22 @@ class HUCodeGen():
        for i, l in enumerate(_args):
             _arg = l
             logging.debug("_args %s type %s", _args, type(_args))
-            if isinstance(_arg, basestring):
+            if not isinstance(_arg, int):
                 if _arg != "all":
                     logging.error("only allowed _arg is [all], but found: %s", _arg)
                     assert False
 
                 if i == 0:
-                    assert "index_0" in struct_def.keys()
+                    assert "index_0" in list(struct_def.keys())
                     self._set_parse_dict(parse_dict, "huid", True, 0, struct_def["index_0"])
                 elif i == 1:
-                    assert "index_1" in struct_def.keys()
+                    assert "index_1" in list(struct_def.keys())
                     self._set_parse_dict(parse_dict, "ctrl", True, 0, struct_def["index_1"])
                 elif i == 2:
-                    assert "index_2" in struct_def.keys()
+                    assert "index_2" in list(struct_def.keys())
                     self._set_parse_dict(parse_dict, "pf", True, 0, struct_def["index_2"])
                 elif i == 3:
-                    assert "index_3" in struct_def.keys()
+                    assert "index_3" in list(struct_def.keys())
                     self._set_parse_dict(parse_dict, "vf", True, 0, struct_def["index_3"])
                 else:
                     logging.error("too many nested index, %d", i)
@@ -466,12 +467,12 @@ class HUCodeGen():
                             hw_instance_set = False
                             """
 
-                            for k, v in l.items():
+                            for k, v in list(l.items()):
                                 # _args are already taken care of as array index
                                 if k == "_args":
                                     continue
 
-                                if k not in struct_def.keys():
+                                if k not in list(struct_def.keys()):
                                     logging.debug(" no matching key %s", k)
                                     continue
 
@@ -496,7 +497,7 @@ class HUCodeGen():
 
         tmpstr = ""
 
-        for k, v in struct_dict.items():
+        for k, v in list(struct_dict.items()):
             tmpstr += struct_contents_tmpl.substitute(index=k, content=v)
 
         return tmpstr
@@ -547,7 +548,7 @@ class HUCodeGen():
         """
 
         struct_objs_str = ""
-        for k_e, v_e in v.items():
+        for k_e, v_e in list(v.items()):
             if struct_def[k_e] == 'int':
                 struct_objs_str += "\t.%s = 0x%x,\n" % (k_e, v_e)
 
@@ -583,7 +584,7 @@ class HUCodeGen():
         f = open(os.path.join(output_dir, header_file), 'w')
 
         # go through type entry to generate struct
-        for k, v in self.config_dict.items():
+        for k, v in list(self.config_dict.items()):
             if k not in key_to_gen:
                 continue
 
@@ -592,7 +593,7 @@ class HUCodeGen():
             struct_objs_str += self._gets_c_struct_head(k, v, struct_head_tmpl)
 
             if isinstance(v, list):
-                assert k in self.struct_defs.keys()
+                assert k in list(self.struct_defs.keys())
 
                 struct_objs_str += self._gets_struct_array(k, v) + "\n};\n"
             else:

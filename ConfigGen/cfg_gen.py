@@ -63,22 +63,22 @@ def standardize_json(in_cfg, out_cfg):
     with open(in_cfg, 'r') as fh:
         fixed_json = fh.read()
 
-        print "Removing Comments in %s"% (in_cfg)
+        print("Removing Comments in %s"% (in_cfg))
         fixed_json = remove_comments(fixed_json)
 
-        print "Add quotes to keys in %s"% (in_cfg)
+        print("Add quotes to keys in %s"% (in_cfg))
         #Match for the text before ":"(i.e. dict key) and add quotes if it does not have them already
         fixed_json = re.sub( r'\n(\s*)(?!")(\S+)\s*:', r'\n\1"\2":', fixed_json)
 
-        print "Convert non-quoted hex values to decimals in %s"% (in_cfg)
+        print("Convert non-quoted hex values to decimals in %s"% (in_cfg))
         #Match for the non-quoted hex values in dict(Hex prefix is "0x") and replace with equivalent decimal values
         fixed_json = re.sub( r'[^"]0x([a-fA-F0-9]+)(,?|$)', lambda m: lambda_hextoint(m.groups()), fixed_json)
 
-        print "Strip empty lines and trailing spaces in %s"% (in_cfg)
+        print("Strip empty lines and trailing spaces in %s"% (in_cfg))
         #Remove empty lines(even if they have any kind of white spaces) and trailing white spaces
         fixed_json = os.linesep.join([s.rstrip() for s in fixed_json.splitlines() if s.strip()])
 
-        print "Strip trailing commas in %s"% (in_cfg)
+        print("Strip trailing commas in %s"% (in_cfg))
         fixed_json = remove_trailing_commas(fixed_json)
 
         f = open("%s" % out_cfg, 'w')
@@ -145,15 +145,15 @@ def replace_dicts(cfg, cfg_replace):
 
     new_cfg = cfg
 
-    for key in cfg_replace.keys():
-        print "Replace key: %s" % key
+    for key in list(cfg_replace.keys()):
+        print("Replace key: %s" % key)
         new_cfg[key] = cfg_replace[key]
 
     return new_cfg
 
 def parser_handling_old(key, new_cfg, cfg_j):
     matchparser = "PARSER"
-    for key2 in cfg_j[key].keys():
+    for key2 in list(cfg_j[key].keys()):
         if key2 == matchparser:
             new_cfg[key][key2] = new_cfg[key][key2] + cfg_j[key][key2]
         else:
@@ -170,12 +170,12 @@ def spl_parser_handling(keyword1, keyword2, new_cfg, cfg_j):
 #       so we need to merge them properly
 def merge_dicts(cfg, cfg_j):
     new_cfg = cfg
-    for key in cfg_j.keys():
-        print "Adding key: %s" % key
-        if key in new_cfg.keys():
+    for key in list(cfg_j.keys()):
+        print("Adding key: %s" % key)
+        if key in list(new_cfg.keys()):
             keyword1 = "pipeline"
             keyword2 = 'PARSER'
-            if keyword1 == key and keyword2 in new_cfg[key].keys() and keyword2 in cfg_j[key].keys():
+            if keyword1 == key and keyword2 in list(new_cfg[key].keys()) and keyword2 in list(cfg_j[key].keys()):
                 spl_parser_handling(keyword1, keyword2, new_cfg, cfg_j)
             else:
                 new_cfg[key].update(cfg_j[key])
@@ -194,14 +194,14 @@ def generate_default_module(module_type):
     elif module_type == 'schema':
         file_pattern = "configs/*.schema"
     else:
-        print "Unknown module type ", module_type
+        print("Unknown module type ", module_type)
         return -1
 
-    print "==== Module %s ====" % module_type
+    print("==== Module %s ====" % module_type)
     for cfg in glob.glob(os.path.join(input_base, file_pattern)):
-        print "handling module %s %s" % (module_type, cfg)
+        print("handling module %s %s" % (module_type, cfg))
         f = tempfile.NamedTemporaryFile(mode="r")
-        print "working with temp file %s" % f.name
+        print("working with temp file %s" % f.name)
         standardize_json(cfg, f.name)
         cfg_j = json.load(f)
         f.close() # auto-deleted
@@ -218,9 +218,9 @@ def generate_build_override_config(build):
     filedir = os.path.join(input_base, build)
     if os.path.exists(filedir):
         filename = os.path.join(input_base, build, "*.cfg")
-        print filename
+        print(filename)
         for cfg in glob.glob(filename):
-            print "handling " + build + " cfg %s" % cfg
+            print("handling " + build + " cfg %s" % cfg)
             f = tempfile.NamedTemporaryFile(mode="r")
             standardize_json(cfg, f.name)
             cfg_replace = json.load(f)
@@ -241,7 +241,7 @@ def generate_hwcap_config(build):
     hwcap_cfg.clear()
 
     for cfg in glob.glob(os.path.join(input_base, "sku/hwcap/*.cfg")):
-        print "handling hwcap configs %s" % cfg
+        print("handling hwcap configs %s" % cfg)
         f = tempfile.NamedTemporaryFile(mode="r")
         standardize_json(cfg, f.name)
         #TODO(nponugoti): Pass the string json instead of file
@@ -257,19 +257,19 @@ def generate_sku_config(build):
     global input_base
     final_cfg.clear()
 
-    print "handling sku configs"
+    print("handling sku configs")
     for cfg in glob.glob(os.path.join(input_base, "sku/*.cfg")):
-        print "handling sku configs %s" % cfg
+        print("handling sku configs %s" % cfg)
         f = tempfile.NamedTemporaryFile(mode="r")
         standardize_json(cfg, f.name)
         cfg_j = json.load(f)
         f.close() # auto-delete
         final_cfg = merge_dicts(build_override_cfg, cfg_j)
 
-    for sku in final_cfg["skus"].iterkeys():
-        if hwcap_cfg.has_key("skus"):
-            if hwcap_cfg["skus"].has_key(sku):
-                print "Adding hwcap of sku %s" % sku
+    for sku in final_cfg["skus"].keys():
+        if "skus" in hwcap_cfg:
+            if sku in hwcap_cfg["skus"]:
+                print("Adding hwcap of sku %s" % sku)
                 final_cfg["skus"][sku].update(hwcap_cfg["skus"][sku])
 
 #Get valid struct fields
@@ -279,7 +279,7 @@ def struct_fields(struct):
         if(type(k) != dict):
             valid_struct_fields.append(k)
         else:
-            for m in k.keys():
+            for m in list(k.keys()):
                 valid_struct_fields.append(m)
     return valid_struct_fields
 
@@ -290,14 +290,14 @@ def generate_struct_member_init(struct, data, shift):
     s =''
     dictItemCount = len(data)
     dictPosition = 1
-    for k,v in data.items():
+    for k,v in list(data.items()):
         if k in struct_fields(cfg_data_catalog["modules"][struct]["info"]):
             s += '\t'*shift+init_field.substitute(key=k, value=v)
             if not (dictPosition == dictItemCount):
                 s+="\n"
             dictPosition += 1
         else:
-            print "hwcap: %s does not exist in hwcap catalog of %s" %(k, struct)
+            print("hwcap: %s does not exist in hwcap catalog of %s" %(k, struct))
     return s
 
 #Groups the range strings
@@ -307,7 +307,7 @@ def group_to_range(group):
     r = g.split('-', 1)
     r[0] = sign + r[0]
     r = sorted(int(__) for __ in r)
-    return range(r[0], 1 + r[-1])
+    return list(range(r[0], 1 + r[-1]))
 
 #Groups and expands range strings
 def rangeexpand(txt):
@@ -319,11 +319,11 @@ def generate_data_catalog_enum(enums):
     enum= Template('enum $name {\n$defs\n};\n\n')
     enum_field = Template('\t$f = $v,')
     enum_defs = ''
-    for ename,elist in enums.items():
+    for ename,elist in list(enums.items()):
         s =''
         dictItemCount = len(elist)
         dictPosition = 1
-        for k, v in elist.items():
+        for k, v in list(elist.items()):
             s += enum_field.substitute(f=k, v=v)
             if not (dictPosition == dictItemCount):
                 s+="\n"
@@ -358,7 +358,7 @@ def generate_catalog_structure(s_name, value, indent, instance):
                     s += struct_field.substitute(field=key, size=value)
             else:
                 indent1 = indent + 1
-                for k,v in i.items():
+                for k,v in list(i.items()):
                     s += generate_catalog_structure(k, v, indent1, 1)
         else:
             s += struct_field.substitute(field=i, size=size)
@@ -375,7 +375,7 @@ def generate_structure_definition(s_name, value):
     s =''
     dictItemCount = len(value)
     dictPosition = 1
-    for k,v in value.items():
+    for k,v in list(value.items()):
         if v > 1:
             s += struct_field_array.substitute(field=k, size=v)
         else:
@@ -391,9 +391,9 @@ def generate_hwcap_data_catalog():
     global cfg_data_catalog
 
     for cfg in glob.glob(os.path.join(input_base, "sku/hwcap/*catalog.cfg")):
-        print "handling hwcap catalog %s" % cfg
+        print("handling hwcap catalog %s" % cfg)
         f = tempfile.NamedTemporaryFile(mode="r")
-        print "working with temp file %s" % f.name
+        print("working with temp file %s" % f.name)
         standardize_json(cfg, f.name)
         cfg_j = json.load(f)
         f.close() # auto-deleted
@@ -404,7 +404,7 @@ def generate_hwcap_cfg_header_file(cfg_name, data_catalog, out_base, header_file
     struct_defs = ""
     structs_catalog = {}
 
-    print "Generating config data header file"
+    print("Generating config data header file")
     file_templ = Template('// Source file generated by ' + __file__ + ' at $date \n'\
                           '// Do not change this file\n'\
                           '// Change the ' + cfg_name + ' files in ' + input_base + '\n\n'\
@@ -412,7 +412,7 @@ def generate_hwcap_cfg_header_file(cfg_name, data_catalog, out_base, header_file
     extern_struct_array_templ = Template('\nextern struct ${s_name}_cfg ${s_name}[];\n');
 
     f = open(os.path.join(out_base, header_file), 'w')
-    for k, v in data_catalog["modules"].items():
+    for k, v in list(data_catalog["modules"].items()):
         struct_defs += generate_catalog_structure(k, v["info"], 1, 0)
         structs_catalog[k] = v["inst_cnt"]
 
@@ -429,7 +429,7 @@ def generate_hwcap_cfg_header_file(cfg_name, data_catalog, out_base, header_file
 def generate_hwcap_cfg_c_file(cfg_name, cfg_data, out_base, c_file, header_file, input_base):
     sku_cfg = ""
 
-    print "Generating config data c file"
+    print("Generating config data c file")
     src_file_templ = Template('// Source file generated by ' + __file__ + ' at $date \n'\
                           '// Do not change this file\n'\
                           '// Change the ' + cfg_name + ' files in ' + input_base + '\n\n\n$data\n')
@@ -440,10 +440,10 @@ def generate_hwcap_cfg_c_file(cfg_name, cfg_data, out_base, c_file, header_file,
     f = open(os.path.join(cfg_code_gen_out_base, c_file), 'w')
     sku_init = Template('[$sku] = {\n$struct\n\t},\n')
     struct_init = Template('.$struct = {\n$init\n\t\t},\n')
-    for k1,v1 in cfg_data.items():
+    for k1,v1 in list(cfg_data.items()):
         cfg_str = ""
-        for k2,v2 in v1[cfg_name].items():
-            if (isinstance(v2,(list,))):
+        for k2,v2 in list(v1[cfg_name].items()):
+            if (isinstance(v2,list)):
                 for item in v2:
                     for i in rangeexpand(item["id"]):
                         if i < cfg_data_catalog["modules"][k2]["inst_cnt"]:
@@ -467,7 +467,7 @@ def generate_hwcap_config_code():
     c_file = "hw_cap_config.c"
     header_file = "hw_cap_config.h"
 
-    print "Generating config source code"
+    print("Generating config source code")
     generate_hwcap_cfg_header_file("hwcap", cfg_data_catalog, cfg_code_gen_out_base, header_file, input_base)
     generate_hwcap_cfg_c_file("hwcap", hwcap_cfg["skus"], cfg_code_gen_out_base, c_file, header_file, input_base)
 
@@ -482,7 +482,7 @@ def generate_hu_cfg(module_cfg, cfg_code_gen_out_base):
 
     """
 
-    print "START: Generating HU C code: generate_hu_cfg"
+    print("START: Generating HU C code: generate_hu_cfg")
 
 
     # get the schema dict
@@ -502,7 +502,7 @@ def generate_hu_cfg(module_cfg, cfg_code_gen_out_base):
     # generate C code
     hucgen.generate("hu_cfg", key_to_gen, cfg_code_gen_out_base)
 
-    print "DONE: Generating HU C code: generate_hu_cfg"
+    print("DONE: Generating HU C code: generate_hu_cfg")
 
 
 #output the header to the file
@@ -529,7 +529,7 @@ def output_default_config(build):
         os.makedirs(filepath)
 
     filename = os.path.join(output_base, "default_" + build + ".cfg")
-    print filename
+    print(filename)
     fout = open(filename, 'w')
 
     output_header(fout)
@@ -540,7 +540,7 @@ def output_default_config(build):
     # for now use posix as default.cfg
     if build == "posix":
         filename = os.path.join(output_base, "default.cfg")
-        print filename
+        print(filename)
         fout = open(filename, 'w')
         output_header(fout)
         output_cfg(fout)
@@ -552,20 +552,20 @@ def output_default_config(build):
 # TBD: handle cases where different files refer to
 # the same keys
 def parse_output_config(build):
-    print "====" + build + "===="
-    print "+ Generate cfg"
+    print("====" + build + "====")
+    print("+ Generate cfg")
     generate_build_override_config(build)
     generate_hwcap_data_catalog()
     generate_hwcap_config(build)
     generate_sku_config(build)
-    print "+ Output cfg"
+    print("+ Output cfg")
     output_default_config(build)
     if hwcap_gen:
-        print "Generating hwcap config src code"
+        print("Generating hwcap config src code")
         generate_hwcap_config_code()
 
     if hu_cfg_gen:
-        print "Generating hu config src code"
+        print("Generating hu config src code")
         generate_hu_cfg(module_cfg, cfg_code_gen_out_base)
 
 def Usage():
@@ -579,12 +579,12 @@ def main():
     global hu_cfg_gen
     # global module_cfg
 
-    print "Configfile Generation"
+    print("Configfile Generation")
     try:
         opts, args = getopt.getopt(sys.argv[1:], 'hci:o:s:j:g:')
 
     except getopt.GetoptError as err:
-        print str(err)
+        print(str(err))
         Usage()
         sys.exit(2)
 
@@ -594,18 +594,18 @@ def main():
             sys.exit(1)
         elif o in ('-i', '--input'):
             input_base = a
-            print "input dir: " + a
+            print("input dir: " + a)
         elif o in ('-o', '--output'):
             output_base = a
-            print "output dir: " + a
+            print("output dir: " + a)
         elif o in ('-s', '--src'):
             cfg_code_gen_out_base = a
             hwcap_gen = True
-            print "hwcap source code output dir: " + a
+            print("hwcap source code output dir: " + a)
         elif o in ('-c', '--cfghu'):
             assert cfg_code_gen_out_base != ""
             hu_cfg_gen = True
-            print "hu_cfg source code output dir: " + cfg_code_gen_out_base
+            print("hu_cfg source code output dir: " + cfg_code_gen_out_base)
         else:
             assert False, 'Unhandled option %s' % o
 
@@ -618,12 +618,12 @@ def main():
     #ouput cfg for each build type
     rc = parse_output_config("posix")
     if rc == False:
-        print 'Failed to generate config'
+        print('Failed to generate config')
         sys.exit(1)
 
     rc = parse_output_config("malta")
     if rc == False:
-        print 'Failed to generate malta config'
+        print('Failed to generate malta config')
         sys.exit(1)
 
 
