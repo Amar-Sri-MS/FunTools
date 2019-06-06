@@ -26,7 +26,7 @@ plot "-" index 0 using 0:2:3:xtic( (int($0) == 0 || ((int($0) % 5) == 4)) ? stri
 def plot_svg(hist):
 
     # convert to text for gnuplot
-    data = "\n".join([ "%g\t%d\t0x%x" % (a, b, c) for (a, b, c) in hist])
+    data = "\n".join([ "%g\t%d\t0x%x" % (x, y, col) for (x, y, col) in hist])
 
     # run gnuplot
     p = subprocess.Popen(["gnuplot"],

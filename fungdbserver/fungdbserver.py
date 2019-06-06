@@ -65,12 +65,12 @@ class FileCorpse:
         if (kseg == 0xc0):
             # magic expander section
             if (addr & (1<<47)):
-                raise RuntimeError("double guard page!")
-            else:
-                offset = addr & 0xfff
-                addr &= 0xfffffffff000
-                addr >>= 1
-                addr |= offset
+                addr &= ~(1<<47);
+
+            offset = addr & 0xfff
+            addr &= 0xfffffffff000
+            addr >>= 1
+            addr |= offset
         elif (kseg == 0xff):
             addr = addr & 0x1fffffff
 
