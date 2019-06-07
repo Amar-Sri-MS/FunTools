@@ -166,7 +166,6 @@ job_to_perf_data = {}
 class PerfData(object):
     pass
 
-
 def read_pd_from_file(fname):
     with open(fname, "r") as f:
         pd = pickle.load(f)

@@ -94,7 +94,7 @@ private:
 
 		} while (arg.length());
 
-		info("%ld: %016lx  %s\t%s", ins.cycle, ins.pc, String::pad(dasm_line.op.type(), 10).c_str(), text.c_str());
+		info("%ld: %016lx  %s\t%s", ins.cycle, ins.pc, String::pad(dasm_line.op.type(), INS_MAX_STR_LEN).c_str(), text.c_str());
 	}
 };
 

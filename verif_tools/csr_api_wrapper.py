@@ -2,8 +2,15 @@
 import os,sys,code
 import rlcompleter, readline
 import argparse
+import logging
+from verif_server import *
 
 from ctypes import *
+
+logger = logging.getLogger("csr_api_wrapper")
+logger.setLevel(logging.INFO)
+
+verif_svr_port=0
 
 ################################################################################
 # some defines
@@ -16,7 +23,20 @@ def setup_verif_socket_client():
    f1_csr_lib.csr_socket_set_dbg_level(0)
 
 def connect_verif_server():
-   f1_csr_lib.open_socket_port(args.verif_svr_hostname,args.verif_svr_port)
+   f1_csr_lib.open_socket_port(args.verif_svr_hostname,verif_svr_port)
+
+def run_verif_server():
+   global verif_svr_port
+   verif_svr_port=connect_verif_client_socket(port=args.verif_svr_port,chip_inst=args.tpod_bmc_chip_inst)
+   logger.debug("port in={0} out={1}".format(args.verif_svr_port,verif_svr_port))
+   set_i2c_dis(args.i2c_dis)
+   if not args.i2c_dis:
+      connect_dbgprobe(args.tpod,args.tpod_jtag,args.tpod_pcie,args.tpod_force)
+   csrthread = CsrThread()
+   csrthread.start()
+   if args.verif_svr_verbose:
+      logger2 = logging.getLogger("verif_server")
+      logger2.setLevel(logging.DEBUG)
 
 def csr_wr(addr,data):
     status=[0]
@@ -131,17 +151,17 @@ def run_csr_at(an, inst=0, tmask=0xffff, maxerr=0xffffffff, verb=0xffffffff, see
       ret=f1_csr_lib.at_dnr_run(c_ulonglong(offset),tmask,0xffffffff,maxerr,verb,seed)
    elif an == 'hsu.hsu_wqsi':
       if inst != 0 and inst != 3:
-         print '%s illegal instance=%0d'%(an,inst)
+         logger.error('%s illegal instance=%0d'%(an,inst))
       offset=0x6002C00000 + (0x800000000*inst)
       ret=f1_csr_lib.at_hsu_wqsi_run(c_ulonglong(offset),tmask,0xffffffff,maxerr,verb,seed)
    elif an == 'hsu.hsu_wqse':
       if inst != 0 and inst != 3:
-         print '%s illegal instance=%0d'%(an,inst)
+         logger.error('%s illegal instance=%0d'%(an,inst))
       offset=0x6003000000 + (0x800000000*inst)
       ret=f1_csr_lib.at_hsu_wqse_run(c_ulonglong(offset),tmask,0xffffffff,maxerr,verb,seed)
    elif an == 'hsu.hsu_msc':
       if inst != 0 and inst != 3:
-         print '%s illegal instance=%0d'%(an,inst)
+         logger.error('%s illegal instance=%0d'%(an,inst))
       offset=0x6004000000 + (0x800000000*inst)
       ret=f1_csr_lib.at_hsu_msc_run(c_ulonglong(offset),tmask,0xffffffff,maxerr,verb,seed)
 ############ MUH
@@ -550,13 +570,13 @@ def run_csr_at(an, inst=0, tmask=0xffff, maxerr=0xffffffff, verb=0xffffffff, see
       offset=0x881C800000
       ret=f1_csr_lib.at_sfg_run(c_ulonglong(offset),tmask,0xffffffff,maxerr,verb,seed)
    else:
-      print 'unrecognized/unimplemented an %s'%(an)
+      logger.error('unrecognized/unimplemented an %s'%(an))
       ret=1
 
    if ret:
-      print 'run_csr_at %s inst=%0d failed'%(an,inst)
+      logger.error('run_csr_at %s inst=%0d failed'%(an,inst))
    else:
-      print 'run_csr_at %s inst=%0d passed'%(an,inst)
+      logger.info('run_csr_at %s inst=%0d passed'%(an,inst))
       
 ################################################################################
 def all_csr_tests():
@@ -567,6 +587,9 @@ class csr_api_wrapper(object):
    def __init__(self):
       self.f1_csr_slib=f1_csr_lib
 
+   def aacs(self,port):
+      f1_csr_lib.serdes_aacs(port)
+      
   #uint32_t f1_config_chk_ca(uint32_t cluster);
    def f1_config_chk_ca(self,cluster):
       return f1_csr_lib.f1_config_chk_ca(cluster)
@@ -773,12 +796,25 @@ def auto_int(x):
     return int(x, 0)
 
 def proc_arg():
-    global args
+    global args, i2c_dis
     parser = argparse.ArgumentParser()
-    parser.add_argument('--verif_svr_hostname', nargs='?', type=str, default='cadence-pc-3', help='verif server hostname. default %(default)s')
-    parser.add_argument('--verif_svr_port', nargs='?', type=auto_int, default=0x1234, help='verif server port. default %(default)s')
+    parser.add_argument('--run_verif_svr', action='store_true', default=False, help='run own verif server. default %(default)s')
+    parser.add_argument('--run_aacs_port', nargs='?', type=auto_int, default=0, help='run aacs server port. default %(default)s not run')
+    parser.add_argument('--verif_svr_hostname', nargs='?', type=str, default='localhost', help='verif server hostname. default %(default)s')
+    parser.add_argument('--verif_svr_port', nargs='?', type=auto_int, default=0, help='verif server port. default %(default)s auto select')
+    parser.add_argument('--verif_svr_verbose', action='store_true', default=False, help='verif server verbose. default %(default)s')
     parser.add_argument('--csr_lib', nargs='?', type=str, default="./f1_csr_slib.so", help='f1_csr_slib.so location. default %(default)s')
+    parser.add_argument('--i2c_dis', action='store_true', default=False, help='i2cproxy connection disable. default %(default)d')
+    parser.add_argument('--tpod', nargs='?', type=str, default='TPOD4', help='TPOD name. default %(default)s')
+    parser.add_argument('--tpod_force', action='store_true', default=False, help='TPOD force mode. default %(default)s')
+    parser.add_argument('--tpod_jtag', action='store_true', default=False, help='TPOD JTAG mode. default %(default)s')
+    parser.add_argument('--tpod_pcie', action='store_true', default=False, help='TPOD PCIE mode. default %(default)s')
+    parser.add_argument('--tpod_bmc_chip_inst', nargs='?', type=auto_int, default=0, help='TPOD chip_inst used in bmc mode. default %(default)s')
     args = parser.parse_args()
+    if args.tpod_jtag and args.tpod_pcie:
+       logger.error("tpod both jtag and pcie mode specified")
+       sys.exit(1)
+    i2c_dis=args.i2c_dis
 
 def main():
    global f1w
@@ -786,7 +822,15 @@ def main():
    load_lib()
    f1w=csr_api_wrapper()
    setup_verif_socket_client()
+   if (args.run_verif_svr):
+      run_verif_server()
    connect_verif_server()
+   if (args.run_aacs_port):
+      try:
+         f1w.aacs(args.run_aacs_port)
+      except:
+         logger.error("aacs error")
+         sys.exit(1)
    readline.parse_and_bind('tab: complete')
    code.interact(local=globals())
 

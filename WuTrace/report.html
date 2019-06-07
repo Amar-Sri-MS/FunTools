@@ -131,9 +131,19 @@
 </script>
 </head>
 <h1>Summary</h1>
+<ul>
 {% for group in groups %}
-<b>WU sequence starting with <tt>{{group['label']}}</tt>:</b>
-<br>
+<li>
+WU sequences starting with
+<A href="#{{group['label']}}">{{group['label']}}</a>.
+{{group['stats']['count']}} occurrences,
+{{group['stats']['average_nsec']|as_duration}} average duration.
+</li>
+{% endfor %}
+
+{% for group in groups %}
+<a name="{{group['label']}}">
+<h2>{{group['label']}} sequences</h2>
 {{group['count']}} occurrences,
 minimum duration {{group['stats']['min_nsec'] | as_duration }},
 average duration {{group['stats']['average_nsec']| as_duration }},
@@ -143,19 +153,19 @@ maximum duration {{group['stats']['max_nsec'] | as_duration }},
 90%ile: {{group['stats']['90ile_nsec'] | as_duration }},
 95%ile: {{group['stats']['95ile_nsec'] | as_duration }},
 <br>
-List of sample transactions here:
-<br>
-{% endfor %}
-<h1>Individual Traces</h1>
-{% for group in groups %}
+
+<h3>Individual sequences</h3>
+
 {% for tr in group['transactions'] %}
-{{tr.label }}: {{tr.events | length}} events.
+{{tr.label }}:
+{{tr.events | length}} WUs,
+{{tr['duration_nsecs'] | as_duration}} duration.
 
 {% for event in tr.events %}
 <div class="row">
   {% if event['is_timer'] %}
-  <div class="label">&nbsp;&nbsp;timer </div>
-  <div class="time">{{ event['start_time'] | as_time }}-{{ event['end_time'] | as_time }}</div>
+  <div class="label">&nbsp;&nbsp;{{event['label']}} </div>
+  <div class="time" title="{{event['start_time']|as_ns}}-{{event['end_time']|as_ns}}">{{ event['start_time'] | as_time }}-{{ event['end_time'] | as_time }}</div>
   <div class="duration">{{event['duration'] | as_duration}}</div>
   <div class="vp">{{event['vp']}}</div>
   <div class="timeline">
@@ -172,7 +182,7 @@ List of sample transactions here:
     </div>
   {% else %}
   <div class="label">{{ event['label'] }} </div>
-  <div class="time">{{ event['start_time'] | as_time }}-{{ event['end_time'] | as_time }}</div>
+  <div class="time" title="{{event['start_time']|as_ns}}-{{event['end_time']|as_ns}}">{{ event['start_time'] | as_time }}-{{ event['end_time'] | as_time }}</div>
   <div class="duration">{{event['duration'] | as_duration}}</div>
   <div class="vp">{{event['vp']}}</div>
   <div class="timeline">

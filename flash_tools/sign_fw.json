@@ -1,13 +1,13 @@
 {
     "signed_images": {
-        "esecure_puf_rom_packed_v1.bin": {
+        "esecure_puf_rom_packed.bin": {
             "source": "puf_rom_m5150.bin",
             "version": 1,
             "fourcc": "pufr",
             "cert": "start_certificate.bin",
             "customer_cert": ""
         },
-        "esecure_firmware_packed_v1.bin": {
+        "esecure_firmware_packed.bin": {
             "source": "firmware_m5150.bin",
             "version": 1,
             "fourcc": "frmw",

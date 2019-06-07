@@ -6,19 +6,19 @@
     },
     "output_sections": {
         "PUF-ROM": {
-            "A": "esecure_puf_rom_packed_v1.bin",
-            "B": "esecure_puf_rom_packed_v1.bin",
+            "A": "esecure_puf_rom_packed.bin",
+            "B": "esecure_puf_rom_packed.bin",
             "index": "10"
         },
         "FIRMWARE": {
-            "A": "esecure_firmware_packed_v1.bin",
-            "B": "esecure_firmware_packed_v1.bin",
+            "A": "esecure_firmware_packed.bin",
+            "B": "esecure_firmware_packed.bin",
             "minsize": "0x40000",
             "index": "1000"
         },
         "HOST": {
-            "A": "host_firmware_packed_v1.bin",
-            "B": "host_firmware_packed_v1.bin",
+            "A": "host_firmware_packed.bin",
+            "B": "host_firmware_packed.bin",
             "minsize": "0x100000",
             "index": "2000"
         },
@@ -28,85 +28,128 @@
             "index": "1"
         },
         "EEPROM": {
-            "A": "eeprom_packed_v1.bin",
-            "B": "eeprom_packed_v1.bin",
+            "A": "eeprom_packed.bin",
+            "B": "eeprom_packed.bin",
             "optional": true,
             "index": "0"
         },
         "HBM_SBUS": {
-            "A": "hbm_sbus_v1.bin",
-            "B": "hbm_sbus_v1.bin",
+            "A": "hbm_sbus.bin",
+            "B": "hbm_sbus.bin",
             "optional": true,
             "index": "100"
         },
         "HU_SBUS_MASTER": {
-            "A": "hu_sbm_v1.bin",
-            "B": "hu_sbm_v1.bin",
+            "A": "hu_sbm.bin",
+            "B": "hu_sbm.bin",
             "optional": true,
             "index": "101"
         },
         "HU_SERDES": {
-            "A": "hu_sds_v1.bin",
-            "B": "hu_sds_v1.bin",
+            "A": "hu_sds.bin",
+            "B": "hu_sds.bin",
             "optional": true,
             "index": "102"
+        },
+        "HOST_DATA": {
+            "A": "reserve(10000, 'hdat')",
+            "B": "",
+            "index": "3000"
         }
     },
     "signed_images": {
-        "hu_sds_v1.bin": {
+        "hu_sds.bin": {
             "source": "serdes.hu.conv.rom",
             "version": 1,
             "fourcc": "husd",
             "cert": "",
             "customer_cert": "",
-            "key": "fpk3"
+            "key": "fpk3",
+            "description": "@file:serdes.hu.conv.rom.version"
         },
-        "hu_sbm_v1.bin": {
+        "hu_sbm.bin": {
             "source": "sbus_master.hu.conv.rom",
             "version": 1,
             "fourcc": "husm",
             "cert": "",
             "customer_cert": "",
-            "key": "fpk3"
+            "key": "fpk3",
+            "description": "@file:sbus_master.hu.conv.rom.version"
         },
-        "hbm_sbus_v1.bin": {
+        "hbm_sbus.bin": {
             "source": "sbus_master.hbm.conv.rom",
             "version": 1,
             "fourcc": "hbsb",
             "cert": "",
             "customer_cert": "",
-            "key": "fpk5"
+            "key": "fpk5",
+            "description": "@file:sbus_master.hbm.conv.rom.version"
         },
-        "esecure_puf_rom_packed_v1.bin": {
+        "esecure_puf_rom_packed.bin": {
             "source": "puf_rom_m5150.keys.bin",
             "version": 1,
             "fourcc": "pufr",
             "cert": "start_certificate.bin",
-            "customer_cert": ""
+            "customer_cert": "",
+            "description": ""
         },
-        "esecure_firmware_packed_v1.bin": {
+        "esecure_firmware_packed.bin": {
             "source": "firmware_m5150.keys.bin",
             "version": 1,
             "fourcc": "frmw",
             "key": "fpk3",
             "cert": "",
-            "customer_cert": ""
+            "customer_cert": "",
+            "description": ""
         },
-        "eeprom_packed_v1.bin": {
+        "eeprom_packed.bin": {
             "source": "",
             "version": 1,
             "fourcc": "eepr",
             "key": "fpk3",
             "cert": "",
-            "customer_cert": ""
+            "customer_cert": "",
+            "description": ""
         },
-        "host_firmware_packed_v1.bin": {
+        "eeprom_fs1600_0_packed.bin": {
+            "source": "eeprom_fs1600_0",
+            "version": 1,
+            "fourcc": "eepr",
+            "key": "fpk3",
+            "cert": "",
+            "customer_cert": "",
+            "description": ""
+        },
+        "eeprom_fs1600_1_packed.bin": {
+            "source": "eeprom_fs1600_1",
+            "version": 1,
+            "fourcc": "eepr",
+            "key": "fpk3",
+            "cert": "",
+            "customer_cert": "",
+            "description": ""
+        },
+        "host_firmware_packed.bin": {
             "source": "",
             "version": 1,
             "fourcc": "host",
             "key": "fpk5",
             "cert": "",
-            "customer_cert": ""
+            "customer_cert": "",
+            "description": ""
+        }
+    },
+    "signed_meta_images": {
+        "esecure_firmware_all.bin" : {
+            "source": [
+                "esecure_puf_rom_packed.bin",
+                "esecure_firmware_packed.bin"
+            ],
+            "version": 1,
+            "fourcc": "sbpf",
+            "cert": "start_certificate.bin",
+            "customer_cert": "",
+            "description": ""
         }
     },
     "certificates": {

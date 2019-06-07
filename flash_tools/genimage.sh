@@ -94,7 +94,7 @@ $WORKSPACE/FunSDK/bin/flash_tools/get_start_cert.sh
 
 HOST_FIRMWARE_DEF=$(cat <<-JSON
 { "signed_images": {
-     "host_firmware_packed_v1.bin": {
+     "host_firmware_packed.bin": {
          "source":"${CUSTOM_HOST_FIRMWARE}"
          }
      }
@@ -104,7 +104,7 @@ JSON
 
 EEPROM_DEF=$(cat <<-JSON
 { "signed_images": {
-     "eeprom_packed_v1.bin": {
+     "eeprom_packed.bin": {
          "source":"${VARIANT:9}"
          }
      }
@@ -123,6 +123,9 @@ QSPI_EMULATION=$(cat <<-JSON
 		"HOST": {
 			"B": "",
 			"minsize": "0"
+		},
+		"FIRMWARE": {
+			"minsize" : "0"
 		}
 	}
 }

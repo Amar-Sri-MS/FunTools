@@ -13,6 +13,7 @@ import argparse
 import shutil
 import generate_firmware_image as gfi
 import key_replace as kr
+import tempfile
 
 # image type is at 2 SIGNER_INFO size +  FW_SIZE + FW_VERSION
 IMAGE_TYPE_OFFSET = 2048 + 2048 + 8
@@ -41,7 +42,6 @@ def find_file_in_srcdirs(filename):
         for dir in search_paths:
             file = os.path.join(dir, filename)
             if os.path.isfile(file):
-                print("Found {}".format(file))
                 return file
     return None
 
@@ -95,16 +95,27 @@ def gen_fw_image(filename, attrs):
         'key':'sign_key',
         'source':'infile',
         'version':'version',
+        'description':'description'
     }
 
     args = map_method_args(argmap, attrs)
+    tmpfile = None
 
-    args['infile'] = find_file_in_srcdirs(args['infile'])
+    if isinstance(args['infile'], list):
+        tmpfile = tempfile.NamedTemporaryFile()
+        for srcfile in args['infile']:
+            with open(srcfile, 'rb') as f:
+                tmpfile.write(f.read())
+        args['infile'] = tmpfile.name
+    else:
+        args['infile'] = find_file_in_srcdirs(args['infile'])
     args['certfile'] = find_file_in_srcdirs(args['certfile'])
     args['customer_certfile'] = find_file_in_srcdirs(args['customer_certfile'])
 
     if args['infile']:
         gfi.image_gen(outfile=filename, **args)
+        if tmpfile:
+            tmpfile.close()
         return filename
     else:
         if attrs['source']:
@@ -114,11 +125,11 @@ def gen_fw_image(filename, attrs):
 
     return None
 
-def create_file(filename):
+def create_file(filename, section="signed_images"):
     global config
 
-    if config.get("signed_images"):
-        image = config["signed_images"].get(filename)
+    if config.get(section):
+        image = config[section].get(filename)
         if image:
             return gen_fw_image(filename, image)
     return None
@@ -225,6 +236,8 @@ def generate_flash(bin_infos, total_size, padding):
     # three delete sized blocks
     all_headers_length = 3 * MAX_DELETE_SIZE
 
+    if padding > all_headers_length:
+        all_headers_length = padding
 
     vhdr_words =  MAX_VARIABLE_SECTIONS * NUM_WORDS_VARIABLE_HEADER_RECORD
     vhdr_length = vhdr_words * 4
@@ -319,6 +332,9 @@ def generate_flash(bin_infos, total_size, padding):
     if ((len(flash) % MAX_DELETE_SIZE) != 0):
         raise Exception("padding error assembling directory headers")
 
+    if padding > MAX_DELETE_SIZE:
+        flash = pad_binary(flash, padding)
+
     # data now
     # Add ROM_SECTIONS first to match the addresses
     for section in sorted(bin_infos, key=lambda x:bin_infos.get(x).get('index')):
@@ -388,23 +404,38 @@ def merge_configs(old, new):
         else:
             old[k] = new[k]
 
+def override_field(config, field, value, only_if_empty=True):
+    for k,v in config.items():
+        if isinstance(v, dict):
+            override_field(config[k], field, value, only_if_empty)
+        elif k==field:
+            if not (config.get(k) and only_if_empty):
+                config[k] = value
+
+
+def set_versions(value, only_if_empty=False):
+    global config
+    override_field(config, 'version', value, only_if_empty)
+
+def set_description(value, only_if_empty=False):
+    global config
+    override_field(config, 'description', value, only_if_empty)
+
 def main():
     parser = argparse.ArgumentParser()
     flash_content = None
+    global config
+    global search_paths
 
     parser.add_argument('config', nargs='+', help='Configuration file(s)')
     parser.add_argument('--config-type', choices={'json','ini'}, default='ini', help="Configuration file format")
     parser.add_argument('--source-dir', action='append', help='Location of source files to be used (can be specified multiple times)', default=[os.path.curdir])
     parser.add_argument('--action', choices={'all', 'sign', 'flash', 'key_hashes', 'certificates', 'key_injection'}, default='all', help='Action to be performed on the input files')
+    parser.add_argument('--force-version', type=int, help='Override firmware versions')
     group = parser.add_mutually_exclusive_group()
     group.add_argument('--enroll-cert', metavar = 'FILE', help='Enrollment certificate')
     group.add_argument('--enroll-tbs', metavar = 'FILE', help='Enrollment tbs')
     args = parser.parse_args()
-
-    global config
-    global search_paths
-
-    wanted = lambda action : args.action in ['all', action]
 
     search_paths = args.source_dir
 
@@ -436,10 +467,54 @@ def main():
                 with open(config_file, 'r') as f:
                     merge_configs(config, json.load(f,encoding='ascii'))
 
+    if args.force_version:
+        set_versions(args.force_version)
+
+    run(args.action, args.enroll_cert, args.enroll_tbs)
+
+#TODO(mnowakowski) get rid of globals
+def set_config(cfg):
+    global config
+    config = cfg
+
+#TODO(mnowakowski) get rid of globals
+def set_search_paths(paths):
+    global search_paths
+    search_paths = paths
+
+def run(arg_action, arg_enroll_cert = None, arg_enroll_tbs = None, *args, **kwargs):
+    global config
+    global search_paths
+
+    wanted = lambda action : arg_action in ['all', action]
+    flash_content = None
+
+    for k,v in config['signed_images'].items():
+        if v.get('description','').startswith('@file:'):
+            try:
+                with open(find_file_in_srcdirs(v['description'][len('@file:'):]), 'r') as f:
+                    v['description'] = f.readline()
+            except:
+                raise
+
     if config.get('output_format'):
         total_size = int(config['output_format']['size'], 0)
         output = config['output_format']['output']
         padding = int(config['output_format']['page'], 0)
+
+    # do not use wanted() here, as this is an action only
+    # executed when requested explicitly
+    if arg_action == 'sources':
+        for outfile, v in config['signed_images'].items():
+            infile = find_file_in_srcdirs(v['source'])
+            if infile:
+                shutil.copy2(infile, v['source'])
+            else:
+                src = config['key_injection'].get(v['source'])
+                if src and src['source']:
+                    infile = find_file_in_srcdirs(src['source'])
+                    if infile:
+                        shutil.copy2(infile, src['source'])
 
     # Generate keys (if required)
     if wanted('key_hashes') and 'key_hashes' in config:
@@ -465,11 +540,15 @@ def main():
                 gfi.cert_gen(outfile=k, **cert_args)
 
     if wanted('key_injection') and config.get('key_injection'):
+        have_net = kwargs.get("net", True)
+        have_hsm = kwargs.get("hsm", True)
+        keep_outfile = kwargs.get("keep_output", False)
         for outfile, v in config['key_injection'].items():
-            infile = find_file_in_srcdirs(v['source'])
-            shutil.copy2(infile, outfile)
+            if not (os.path.exists(outfile) and keep_outfile):
+                infile = find_file_in_srcdirs(v['source'])
+                shutil.copy2(infile, outfile)
             for key in v['keys']:
-                kr.update_file(outfile, key['id'], key=key['name'] )
+                kr.update_file(outfile, key['id'], key=key['name'], hsm=have_hsm, net=have_net)
 
     if wanted('flash') and config.get('output_format'):
         bin_infos = dict()
@@ -481,7 +560,7 @@ def main():
                                 format(len(config.sections()), 1 + MAX_VARIABLE_SECTIONS))
         else:
             for k,v in config['output_sections'].items():
-                bin_info = get_a_and_b(v, padding, args.action == 'all')
+                bin_info = get_a_and_b(v, padding, arg_action == 'all')
                 # bin_info can be None if optional section and files
                 # are not there -> no entry
                 if bin_info is not None:
@@ -495,12 +574,14 @@ def main():
         # enrollment certificate argument?
         enroll_cert = None
 
-        if args.enroll_tbs:
-            enroll_cert = gfi.raw_sign(None, args.enroll_tbs, "fpk4")
+        if arg_enroll_tbs:
+            import enrollment_service as es
+            with open(arg_enroll_tbs, 'rb') as f:
+                enroll_cert = es.Sign(f.read())
 
-        if args.enroll_cert:
+        if arg_enroll_cert:
             try:
-                with open(args.enroll_cert, "rb") as f:
+                with open(arg_enroll_cert, "rb") as f:
                     enroll_cert = f.read()
             except:
                 enroll_cert = None
@@ -509,6 +590,9 @@ def main():
             flash_content = add_enrollment_certificate(flash_content, bin_infos, enroll_cert)
 
         print_flash_map(bin_infos)
+
+        for file in config.get("signed_meta_images", {}):
+            create_file(file, "signed_meta_images")
 
     # Write output
     if flash_content:
@@ -519,6 +603,8 @@ def main():
         if wanted('sign'):
             for file in config.get("signed_images", {}):
                 create_file(file)
+            for file in config.get("signed_meta_images", {}):
+                create_file(file, "signed_meta_images")
 
     # For non-empty flash, generate map file
     if wanted('flash') and len(config.get('output_sections', {})) > 0:

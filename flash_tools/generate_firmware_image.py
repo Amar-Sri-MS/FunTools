@@ -11,22 +11,27 @@
 # sign: append a signature to the input
 # remove: remove the key from the HSM
 # hash: generate the SHA256 hash of a key
+# ecpubkey: export the public part of an EC key, in binary or DER encoded format
 
 
 import os, struct, binascii, argparse, sys
 import traceback, getpass, datetime, configparser
 import fcntl
 
+from asn1crypto import pem
+
 import pkcs11
 import pkcs11.util.rsa
-from asn1crypto import pem
+import pkcs11.util.ec
+
 
 # FIXME: this should be a shared constants file
 RSA_KEY_SIZE_IN_BITS = 2048
 SIGNING_INFO_SIZE = 2048
 MAX_SIGNATURE_SIZE = 512
 HEADER_RESERVED_SIZE = SIGNING_INFO_SIZE - (4 + MAX_SIGNATURE_SIZE)
-SIGNED_ATTRIBUTES_SIZE = 64
+SIGNED_ATTRIBUTES_SIZE = 32
+SIGNED_DESCRIPTION_SIZE = 32
 SERIAL_INFO_NUMBER_SIZE = 24
 CERT_PUB_KEY_POS = 64
 
@@ -66,7 +71,8 @@ def read(filename, nbytes=None, verbose=False):
                         % (filename, nbytes, len(txt)))
     return txt
 
-def write(filename, content, overwrite=True, tohex=False, tobyte=False, verbose=False):
+def write(filename, content, overwrite=True, tohex=False, tobyte=False,
+          verbose=False):
     if not filename:
         return
     if verbose:
@@ -94,7 +100,7 @@ def write(filename, content, overwrite=True, tohex=False, tobyte=False, verbose=
         f.write(content)
 
 
-class Lock:
+class Lock(object):
 
     def __init__(self, filename):
         self.filename = filename
@@ -161,6 +167,7 @@ def get_token():
         token = slot.get_token()
         if token.label == token_label:
             return token, password
+    return None, ''
 
 
 def log_op(operation):
@@ -168,43 +175,59 @@ def log_op(operation):
     log_name = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                             ".fungible_hsm.log")
     with open(log_name, "a") as log_file:
-        log_file.write("%s: date = %s user = %s\n" % (operation,
-                                                      str(datetime.datetime.now()),
-                                                      getpass.getuser()))
+        log_file.write("%s: date = %s user = %s\n" %
+                       (operation,
+                        str(datetime.datetime.now()),
+                        getpass.getuser()))
         traceback.print_stack(file=log_file)
+
+
+def get_private_key_with_label(ro_session, label):
+    return ro_session.get_key(
+        object_class=pkcs11.constants.ObjectClass.PRIVATE_KEY,
+        label=label)
+
+
+def get_public_key_with_label(ro_session, label):
+    ''' Returns public key '''
+    return ro_session.get_key(
+        object_class=pkcs11.constants.ObjectClass.PUBLIC_KEY,
+        label=label)
+
+## RSA
+
+def get_modulus(pub):
+    return pub[pkcs11.Attribute.MODULUS]
+
+def get_exponent(pub):
+    return pub[pkcs11.Attribute.PUBLIC_EXPONENT]
 
 
 def generate_rsa_key_pair(rw_session, label):
     ''' Create and returns a new RSA key pair in the store '''
     log_op("Create key " + label)
+
     return rw_session.generate_keypair(key_type=pkcs11.KeyType.RSA,
-                                       id=binascii.hexlify(label.encode()),
                                        key_length=RSA_KEY_SIZE_IN_BITS,
+                                       id=binascii.hexlify(label.encode()),
                                        label=label,
                                        store=True)
 
-def get_private_rsa_with_label(ro_session, label):
-    return ro_session.get_key(object_class=pkcs11.constants.ObjectClass.PRIVATE_KEY,
-                              label=label)
-
-
-def get_public_rsa_with_label(ro_session, label):
-    ''' Returns public key '''
-    return ro_session.get_key(object_class=pkcs11.constants.ObjectClass.PUBLIC_KEY,
-                              label=label)
 
 def get_private_rsa_with_modulus(ro_session, modulus):
     ''' retrieve the private key with the modulus specified '''
     private = None
     try:
-        privates = ro_session.get_objects({pkcs11.Attribute.CLASS:pkcs11.ObjectClass.PRIVATE_KEY,
-                                           pkcs11.Attribute.KEY_TYPE:pkcs11.KeyType.RSA,
-                                           pkcs11.Attribute.MODULUS:modulus})
+        privates = ro_session.get_objects(
+            {pkcs11.Attribute.CLASS:pkcs11.ObjectClass.PRIVATE_KEY,
+             pkcs11.Attribute.KEY_TYPE:pkcs11.KeyType.RSA,
+             pkcs11.Attribute.MODULUS:modulus})
         private = next(privates)
     except Exception as err:
         print(err)
 
     return private
+
 
 def get_create_public_rsa_modulus(label, hash=None):
 
@@ -214,7 +237,7 @@ def get_create_public_rsa_modulus(label, hash=None):
     # Open a session on our token
     with token.open(user_pin=password, rw=False) as session:
         try:
-            public = get_public_rsa_with_label(session, label)
+            public = get_public_key_with_label(session, label)
             public_modulus = get_modulus(public)
             if hash is not None:
                 return session.digest(public_modulus, mechanism=hash)
@@ -232,24 +255,79 @@ def get_create_public_rsa_modulus(label, hash=None):
 
     return public_modulus
 
+## EC P256
 
-def sign_with_rsa_key(label, data):
+def get_pubkey(public, der_encoded=False):
+
+    if der_encoded:
+        return pkcs11.util.ec.encode_ec_public_key(public)
+
+    return public[pkcs11.Attribute.EC_POINT]
+
+def generate_ec_key_pair(rw_session, label):
+    ''' Create and returns a new EC key pair in the store '''
+    log_op("Create EC key " + label)
+    parameters = rw_session.create_domain_parameters(
+        pkcs11.KeyType.EC,
+        {pkcs11.Attribute.EC_PARAMS:
+         pkcs11.util.ec.encode_named_curve_parameters('secp256r1')},
+        local=True)
+
+    return parameters.generate_keypair(id=binascii.hexlify(label.encode()),
+                                       label=label,
+                                       store=True)
+
+def get_create_public_ec(label, der_encoded):
+
+    token, password = get_token()
+
+    public_pt = None
+    # Open a session on our token
+    with token.open(user_pin=password, rw=False) as session:
+        try:
+            public = get_public_key_with_label(session, label)
+            public_pt = get_pubkey(public, der_encoded)
+
+        except Exception as err:
+            print(err)
+
+    if public_pt is None:
+        with token.open(user_pin=password, rw=True) as session:
+            print("Generating EC key " + label)
+            public, _ = generate_ec_key_pair(session, label)
+            public_pt = get_pubkey(public, der_encoded)
+
+    return public_pt
+
+
+def sign_with_key(label, data):
 
     token, password = get_token()
 
     # Open a session on our token
     with token.open(user_pin=password, rw=False) as session:
         try:
-            private = get_private_rsa_with_label(session, label)
+            private = get_private_key_with_label(session, label)
         except Exception as err:
             print(err)
-            print("Keys can be created  with the 'public' command")
+            print("Keys can be created  with the 'modulus' command")
             raise
 
-        return private.sign(data, mechanism=pkcs11.Mechanism.SHA512_RSA_PKCS)
+        key_type = private[pkcs11.Attribute.KEY_TYPE]
+        if key_type == pkcs11.KeyType.RSA:
+            mechanism = pkcs11.Mechanism.SHA512_RSA_PKCS
+        elif key_type == pkcs11.KeyType.EC:
+            #softhsm2 does not support ECDSA_SHAxyz
+            data = session.digest(data, mechanism=pkcs11.Mechanism.SHA256)
+            mechanism = pkcs11.Mechanism.ECDSA
+        else:
+            raise("Unsupported key type")
+
+        return private.sign(data, mechanism=mechanism), key_type
 
 def get_cert_modulus(cert):
-    cert_key_modulus_len = struct.unpack('<I', cert[CERT_PUB_KEY_POS:CERT_PUB_KEY_POS+4])
+    cert_key_modulus_len = struct.unpack('<I',
+                                         cert[CERT_PUB_KEY_POS:CERT_PUB_KEY_POS+4])
     start = CERT_PUB_KEY_POS+4
     end = start + cert_key_modulus_len[0]
     return cert[start:end]
@@ -268,11 +346,6 @@ def sign_with_cert(cert, data):
 
     return b''
 
-def get_modulus(pub):
-    return pub[pkcs11.Attribute.MODULUS]
-
-def get_exponent(pub):
-    return pub[pkcs11.Attribute.PUBLIC_EXPONENT]
 
 def append_signature_to_binary(binary, signature):
     binary += struct.pack('<I', len(signature))
@@ -291,28 +364,37 @@ def list_all_keys():
 
     # Open a session on our token
     with token.open(user_pin=password, rw=False) as session:
-        all_publics = list(session.get_objects(
+        all_rsa_pubs = list(session.get_objects(
             {pkcs11.Attribute.CLASS: pkcs11.ObjectClass.PUBLIC_KEY,
              pkcs11.Attribute.KEY_TYPE: pkcs11.KeyType.RSA}))
 
-        for obj in all_publics:
-            print(obj)
-            private = get_private_rsa_with_modulus(session, get_modulus(obj))
-            if private:
-                print("Corresponding private key:" + str(private))
+        for rsa_pub in all_rsa_pubs:
+            print(rsa_pub)
+            priv_key = get_private_rsa_with_modulus(session,
+                                                    get_modulus(rsa_pub))
+            if priv_key:
+                print("|--> " + str(priv_key))
+
+        # for EC keys, the private key doesn't contain the point attribute
+        # so it's computationally intensive to find the private key
+        # corresponding to the public key -- just list all EC keys
+        all_ec_keys = list(session.get_objects(
+            {pkcs11.Attribute.KEY_TYPE: pkcs11.KeyType.EC}))
+        for ec_key in all_ec_keys:
+            print(ec_key)
 
 
 def remove_key_aux(session, label):
     ''' delete key from the HSM using session'''
     try:
-        private = get_private_rsa_with_label(session, label)
+        private = get_private_key_with_label(session, label)
         if private:
             private.destroy()
     except:
         pass
 
     try:
-        public = get_public_rsa_with_label(session, label)
+        public = get_public_key_with_label(session, label)
         if public:
             public.destroy()
     except:
@@ -325,7 +407,7 @@ def remove_key(label):
 
     # Open a session on our token
     with token.open(user_pin=password, rw=True) as session:
-        remove_key_aux(session,label)
+        remove_key_aux(session, label)
 
 
 def import_key(label, key_file):
@@ -344,7 +426,7 @@ def import_key(label, key_file):
 
     with token.open(user_pin=password, rw=True) as session:
         try:
-            existing = get_public_rsa_with_label(session, label)
+            existing = get_public_key_with_label(session, label)
             # compare
             if get_modulus(existing) == get_modulus(priv_key) and get_exponent(existing) == get_exponent(priv_key):
                 print("Key already imported")
@@ -393,7 +475,7 @@ def export_pub_key(outfile, label, c_source):
         if len(modulus) %8 != 0:
             c_modulus += "\n"
         c_modulus += "}"
-        modulus  = c_modulus.encode()
+        modulus = c_modulus.encode()
 
     old_modulus = b''
     try:
@@ -405,6 +487,7 @@ def export_pub_key(outfile, label, c_source):
         write(outfile, modulus)
     else:
         print("No changes in modulus")
+
 
 def export_pub_key_hash(outfile, label):
     ''' hash of modulus of key; create the key if it does not exist '''
@@ -425,6 +508,11 @@ def export_pub_key_hash(outfile, label):
         print("No changes in hash")
 
 
+def export_ec_pub_key(outfile, label, der_encoded):
+    ''' public part of EC 256 key; create the key if it does not exist '''
+    ec_pub_key = get_create_public_ec(label, der_encoded)
+    write(outfile, ec_pub_key)
+
 
 def add_cert_and_signature_to_image(image, cert, signature):
     image += cert
@@ -432,20 +520,28 @@ def add_cert_and_signature_to_image(image, cert, signature):
     return append_signature_to_binary(image, signature)
 
 
-def image_gen(outfile, infile, ftype, version, sign_key,
+def image_gen(outfile, infile, ftype, version, description, sign_key,
 	      certfile, customer_certfile):
     ''' generate signed firmware image '''
     binary = read(infile)
     to_be_signed = struct.pack('<2I', len(binary), version)
     to_be_signed += struct.pack('4s', ftype.encode())
     to_be_signed += b'\x00' * SIGNED_ATTRIBUTES_SIZE
+    if description:
+        # Max allowed size is (block size - 1) to allow for terminating null
+        if len(description) > SIGNED_DESCRIPTION_SIZE - 1:
+            raise Exception("Image description too long, max is {}".format(SIGNED_DESCRIPTION_SIZE-1))
+        to_be_signed += description.encode() + b'\x00' * (SIGNED_DESCRIPTION_SIZE - len(description))
+    else:
+        to_be_signed += b'\x00' * SIGNED_DESCRIPTION_SIZE
+
     to_be_signed += binary
 
     signature = b''
     cert = b''
     # sign_key and cert_file are mutually exclusive
     if sign_key:
-        signature = sign_with_rsa_key(sign_key, to_be_signed)
+        signature, _ = sign_with_key(sign_key, to_be_signed)
     elif certfile:
         cert = read(certfile)
         signature = sign_with_cert(cert, to_be_signed)
@@ -472,9 +568,16 @@ def image_gen(outfile, infile, ftype, version, sign_key,
     write(outfile, image)
 
 
-def sign_binary(binary, sign_key):
+def sign_binary(binary, sign_key, der_encoded=False, do_not_append=False):
     ''' sign a binary and appends the signature to it '''
-    signature = sign_with_rsa_key(sign_key, binary)
+    signature, key_type = sign_with_key(sign_key, binary)
+
+    if key_type == pkcs11.KeyType.EC and der_encoded:
+        signature = pkcs11.util.ec.encode_ecdsa_signature(signature)
+
+    if do_not_append:
+        return signature
+
     return append_signature_to_binary(binary, signature)
 
 
@@ -485,7 +588,8 @@ def cert_gen(outfile, cert_key, cert_key_file, sign_key, serial_number,
     tflags = int(tamper_flags, 16)
 
     # MAGIC NUMBER, DEBUG FLAGS, 0, TAMPER FLAGS
-    to_be_signed = struct.pack('<4I', MAGIC_NUMBER_CERTIFICATE, dflags, 0, tflags)
+    to_be_signed = struct.pack('<4I', MAGIC_NUMBER_CERTIFICATE, dflags, 0,
+                               tflags)
 
     # SERIAL NUMBER
     s_num = binascii.unhexlify(serial_number)
@@ -516,21 +620,24 @@ def cert_gen(outfile, cert_key, cert_key_file, sign_key, serial_number,
 
     write(outfile, cert)
 
-def raw_sign(out_path, in_path, sign_key):
+def raw_sign(out_path, in_path, sign_key, der_encoded=False, do_not_append=False):
     ''' raw sign: just sign the content and append the signature '''
 
     to_be_signed = read(in_path)
-    signed = sign_binary(to_be_signed, sign_key)
+    signed = sign_binary(to_be_signed, sign_key, der_encoded, do_not_append)
+
     if out_path:
         write(out_path, signed)
-    else:
-        return signed
+
+    return signed
 
 
 def parse_and_execute():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("command", help="command to execute: list, remove, import, image, modulus, certificate, sign, hash")
+    parser.add_argument("command",
+                        help="command to execute: list, remove, import, image, "
+                        "modulus, certificate, sign, hash, ecpubkey")
 
     parser.add_argument("-c", "--certificate", dest="cert_path",
                         help="signing certificate (image)",
@@ -540,12 +647,16 @@ def parse_and_execute():
                         default="00" * 4,
                         help="debugger_flags (hexadecimal, 4 bytes) (certificate)")
 
+    parser.add_argument("-e", "--encode", dest="der_encoded",
+                        action='store_true',
+                        help="ouput in DER Encoded format (ecpubkey, sign (with EC key))")
+
     parser.add_argument("-f", "--fwpath", dest="fw_path",
-                        help="location of fw (image)",
+                        help="location of fw (image) or data to sign (sign)",
                         metavar="FILE")
 
     parser.add_argument("-k", "--key", dest="sign_key",
-                        help="signing key name (remove, import, image, certificate, modulus)")
+                        help="signing key name (remove, import, image, certificate, modulus, ecpubkey)")
 
     parser.add_argument("-m", "--serial_number_mask", dest="serial_number_mask",
                         default="FF" * SERIAL_INFO_NUMBER_SIZE,
@@ -556,6 +667,10 @@ def parse_and_execute():
 
     parser.add_argument("-o", "--output", dest="out_path",
                         help="location to output to", metavar="FILE")
+
+    parser.add_argument("--only_signature", dest="only_signature",
+                        default=False, action='store_true',
+                        help="output only the signature, do not append to input (sign)")
 
     parser.add_argument("-p", "--public", dest="public_key",
                         help="public key name (certificate)")
@@ -569,13 +684,16 @@ def parse_and_execute():
 
     parser.add_argument("-s", "--source", dest="c_source",
                         action='store_true',
-                        help="ouput key in C hexadecimal format")
+                        help="ouput key in C hexadecimal format (modulus)")
 
     parser.add_argument("--serial_info_file", dest="serial_info_file",
                         help="file with serial number and mask", metavar="FILE")
 
     parser.add_argument("-t", "--fwtype", dest="fw_type",
                         help="fw type (4 chars) (image, certified_image)")
+
+    parser.add_argument("--fwdescr", dest="fw_description",
+                        help="fw description (image, certified_image)")
 
     parser.add_argument("-u", "--customer_certificate", dest="customer_cert_path",
                         help="customer certificate (image)", metavar="FILE")
@@ -636,7 +754,7 @@ def parse_and_execute():
             sys.exit(1)
 
         image_gen(options.out_path, options.fw_path, options.fw_type,
-                  int(options.fw_ver, 0),
+                  int(options.fw_ver, 0), options.fw_description,
                   options.sign_key, options.cert_path,
                   options.customer_cert_path)
 
@@ -651,6 +769,10 @@ def parse_and_execute():
     if options.command == 'modulus':
 
         export_pub_key(options.out_path, options.sign_key, options.c_source)
+
+    elif options.command == 'ecpubkey':
+
+        export_ec_pub_key(options.out_path, options.sign_key, options.der_encoded)
 
     elif options.command == 'hash':
 
@@ -676,19 +798,19 @@ def parse_and_execute():
             config = configparser.ConfigParser()
             config.read_string(data)
 
-            options.serial_number=config.get('a_section','serial_number')
-            options.serial_number_mask=config.get('a_section','serial_number_mask')
+            options.serial_number = config.get('a_section', 'serial_number')
+            options.serial_number_mask = config.get('a_section', 'serial_number_mask')
             sn = binascii.unhexlify(options.serial_number)
             snm = binascii.unhexlify(options.serial_number_mask)
 
             if len(sn) != SERIAL_INFO_NUMBER_SIZE:
-               print( "Serial number is not completely specified in file  {0}".format(
-                   options.serial_info_file))
-               sys.exit(1)
+                print("Serial number is not completely specified in file  {0}".format(
+                    options.serial_info_file))
+                sys.exit(1)
             if len(snm) != SERIAL_INFO_NUMBER_SIZE:
-               print( "Serial number mask is not completely specified in file  {0}".format(
-                   options.serial_info_file))
-               sys.exit(1)
+                print("Serial number mask is not completely specified in file  {0}".format(
+                    options.serial_info_file))
+                sys.exit(1)
 
         cert_gen(options.out_path, options.public_key, options.public_key_file,
                  options.sign_key, options.serial_number, options.serial_number_mask,
@@ -697,10 +819,11 @@ def parse_and_execute():
     elif options.command == 'sign':
 
         if options.fw_path is None:
-            print('Incorrect arg list (use -h for full info).')
+            print('No data to sign specified (use -f option).')
             sys.exit(1)
 
-        raw_sign(options.out_path, options.fw_path, options.sign_key)
+        raw_sign(options.out_path, options.fw_path, options.sign_key,
+                 options.der_encoded, options.only_signature)
 
 
 if __name__ == "__main__":

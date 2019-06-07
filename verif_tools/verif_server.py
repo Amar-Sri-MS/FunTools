@@ -11,6 +11,7 @@ import json
 import threading
 import random
 import code, rlcompleter, readline
+import logging
 
 from threading import Thread
 try:  
@@ -41,6 +42,10 @@ req_cnt=0
 glb_rd_cnt=0
 glb_wr_cnt=0
 hnu_port_base=37
+logger = logging.getLogger("verif_server")
+logger.setLevel(logging.INFO)
+verif_socket_port=0
+bmc_chip_inst=0
 
 #
 # Convert hex encoding String back to raw packet
@@ -55,21 +60,24 @@ def pkt_decode(src):
     final="".join(map(chr, ret))
     return final
 
-def connect_verif_client_socket():
-    global verif_sock
+def connect_verif_client_socket(port,chip_inst=0):
+    global verif_sock,verif_socket_port,bmc_chip_inst
     verif_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    print 'Client Socket created'
+    bmc_chip_inst=chip_inst
+    logger.debug('Client Socket created')
     #Bind socket to local host and port
     try:
-        verif_sock.bind((HOST, args.verif_port))
+        verif_sock.bind((HOST, port))
     except socket.error as msg:
-        print 'Bind failed. Error Code : ' + str(msg[0]) + ' Message ' + msg[1]
+        logger.error('Bind failed. Error Code : ' + str(msg[0]) + ' Message ' + msg[1])
         sys.exit()
         
-    print 'Client Socket bind complete'
+    logger.debug('Client Socket bind complete')
+    verif_socket_port=verif_sock.getsockname()[1]
     #Start listening on socket
     verif_sock.listen(10)
-    print 'Client Socket now listening on port %d' % (args.verif_port)
+    logger.info('Client Socket now listening on port %d' % (verif_socket_port))
+    return verif_socket_port
 
 #now setup the listening socket for the PTF
 #
@@ -170,25 +178,6 @@ CMD_CSR_READ_RSP  = 5
 CMD_PKT           = 6
 CMD_PKT_REQ       = 7
 
-def test_ptf():
-    print 'do test_ptf'
-    while 1:
-       pkt_data_with_space = ""
-       pkt_data="0000f6f67d2600006df0dafb0800454001f200000000141c44af751331995cf85c5d1df650c383a9a020db81ca872c3b60c8abece382d9b08fd71de7a8589e3d5791cd037b8aeb89c18cdfd9174281e0f80c5fbd05b8338619e9d81a24f10dc1620700ed465205f6a9bf29a2159af47c7937cbbdddb459542879a02957dc162c323fd2a0765c3c6680191d3db5b604fec3270e54125c553b619c99ace1a1f9869a010a50bd0a87d5107392759fc0f2ffa1579c3cd55cc69e73d4477b1894817a9b9eb8da16dc8756043fd33d3fba57e04ad99ba01430d8011da2052e898661945b0255eedc295aabf1c6e6fd9c7dc32f89304e2b79af38ffe6af45b335435019cdbcaebf83aae73e76eec6e242c2bd2200b677bf30a90807a5b313eca43ea717d7ecb87f4bf308aefae3b332365fb9ec45e5e6fbf7603fb57880dd64609548d2a6ee97e962e2bf8548d3d64f6149cc662c462c46c4fb59c5b1b174c13ce96676bdf1b09f5882f93fec0012f65b826f372709ca4a5ff33560a79f9a1897572bb7133ebef1a3d771648cc39f3313fd88a0bc5ef0b75a5c12ea4cbe5c8eedbbb97cfe474d3fbfda5d2e67baeea8c2c5cb8ee2325b92dfbc6e3b12a72429c97f0112c6ebe083e4511f2962ab19fb7317b03dcbc4db45be2ad88c5252681178e4b9413abba6742affc848c91aa56fba74f9d000000000000000040000000000000000"
-       for i in range (len(pkt_data)/2):
-          pkt_data_with_space += pkt_data[2*i] + pkt_data[(2*i) + 1] + " "
-       #get rid of the trailing space
-       pkt_data_with_space = pkt_data_with_space[0:-1]
-       json_pkt = '{ "intf" :  '+ '"' + "fpg" + str(1) + '"' ', "pkt" : "' +pkt_data_with_space+'"}'
-       print "Sending pkt to PTF server:"
-       print json_pkt
-       ptf_sock.sendall(json_pkt)
-       time.sleep(0.5)
-    else:
-       try:
-          result = ptf_sock.recv(16*1024)
-       except(socket.timeout):
-          pass
 
 def print_command(data):
   if (data == CMD_ACK_NOP) :
@@ -252,27 +241,27 @@ def process_cmd_csr_write (msg_len):
   #get 8B addr
   buf = recv_str(8)
   (addr,) = struct.unpack(">Q", buf[:8])
-  print 'in process_cmd_csr_write cnt=%0d, address = 0x%x '%(glb_wr_cnt,addr)
+  logger.debug('in process_cmd_csr_write cnt=%0d, address = 0x%x '%(glb_wr_cnt,addr))
 #  print 'address is 0x%x' % (addr)
 
   #now get the csr write data
   data_len = msg_len - 2 - 1 - 8 #msg_len - MSGLEN_SIZE - CMD_SIZE - ADDR_SIZE
   data_str = recv_str(data_len)
   data_list_bytes = [ord(i) for i in list(data_str)]
-  print data_list_bytes
+  logger.debug("{0}".format(data_list_bytes))
   data_words_list = byte_array_to_words_be(array('B', data_list_bytes))
   #print "csr_poke data:"
   #print data_words_list
 
-  if args.i2c_dis:
+  if i2c_dis:
       (status, result) = (True,None)
   elif fast_poke:
-      (status, result) = dbgprobe().csr_fast_poke(addr, data_words_list)
+      (status, result) = dbgprobe().csr_fast_poke(addr, data_words_list, chip_inst=bmc_chip_inst)
   else:
-      (status, result) = dbgprobe().csr_poke(addr, data_words_list)
+      (status, result) = dbgprobe().csr_poke(addr, data_words_list, chip_inst=bmc_chip_inst)
   #print "csr_poke returned"
   if status is False:
-      print "csr_poke returned false"
+      logger.error("csr_poke returned false")
       sys.exit(1)
 
   #finally send reply
@@ -391,14 +380,14 @@ def process_cmd_csr_read (msg_len):
   (dword_len,) = struct.unpack(">B", data)
   #print 'num_dwords to read is is %d' % (dword_len)
 
-  if args.i2c_dis:
+  if i2c_dis:
       (status,result) = (True,[random.randint(0,0x10000000000000000)]*dword_len)
   else:
-      (status, result) = dbgprobe().csr_peek(addr, dword_len)
-  print "result=",result
+      (status, result) = dbgprobe().csr_peek(addr, dword_len, chip_inst=bmc_chip_inst)
+  logger.debug("result={0}".format(result))
 
   if status is False:
-      print ("csr_peek returned false")
+      logger.error("csr_peek returned false")
       sys.exit(1)
 
   #print "csr_peek returned"
@@ -407,7 +396,7 @@ def process_cmd_csr_read (msg_len):
   else:
     read_data_hex_str = 'deadbeefdeadbeef' #make up a dummy result
 
-  print "read: addr=0x%0x data=%s,gbl_rd_cnt=%0d"%(addr,read_data_hex_str,glb_rd_cnt)
+  logger.debug("read: addr=0x%0x data=%s,gbl_rd_cnt=%0d"%(addr,read_data_hex_str,glb_rd_cnt))
 
   #finally send reply
   reply_len = 2 + 1 + 8*dword_len #msg_size + command + Bytes of data
@@ -429,7 +418,7 @@ def do_server_speed_test():
     data_words_list=[0x12341234]
     print "start:",datetime.datetime.now()
     for i in range(1000):
-         (status, result) = dbgprobe().csr_poke(addr, len(data_words_list), data_words_list)
+         (status, result) = dbgprobe().csr_poke(addr, len(data_words_list), data_words_list, chip_inst=bmc_chip_inst)
     print "end  :",datetime.datetime.now()
 
 def handle_connection(conn):
@@ -449,27 +438,73 @@ def handle_connection(conn):
        process_cmd(cmd, msg_len)
 
 
-def connect_dbgprobe():
-    print "connect to I2C"
-#status = dbgprobe().connect('i2c', args.i2c_svr, 'TPCFbwoQ')
-#    status = dbgprobe().connect('i2c', args.i2c_svr, 'TPCFb23b',0x70,False)
-#always hard code slave addr to 0x70
-    status = dbgprobe().connect('i2c', i2c_proxy_ip , i2c_probe_serial , 0x70,False)
-    if status is True:
-        print("I2C Server Connection Successful!")
+def connect_dbgprobe(tpod,tpod_jtag,tpod_pcie,tpod_force):
+    duts = dut.dut()
+
+    if tpod_jtag:
+       jtag_info=duts.get_jtag_info(tpod)
+       if jtag_info[0]:
+          (bmc,bmc_ip,jtag_probe_id, jtag_probe_ip)=jtag_info
+       else:
+          (bmc,jtag_probe_id, jtag_probe_ip)=jtag_info
+       print "connecting to JTAG Proxy "+jtag_probe_ip
+       status = dbgprobe().connect(mode='jtag',probe_ip_addr=jtag_probe_ip,probe_id=jtag_probe_id)
+       if status is True:
+          print("JTAG Server Connection Successful!")
+       else:
+          print("JTAG Server Connection Failed!")
+          sys.exit(1)
+    elif tpod_pcie:
+       pcie_ccu_bar=0
+       pcie_probe_ip=0
+       dut_pcie_info = duts.get_pcie_info(tpod)
+       if dut_pcie_info[0] is False:
+          pcie_ccu_bar = dut_pcie_info[1]
+          pcie_probe_ip = dut_pcie_info[2]
+          print("connecting to PCIE bar={0} ip={1}".format(pcie_ccu_bar,pcie_probe_ip))
+          status = dbgprobe().connect(mode='pcie', bmc_board=False,
+                                      probe_ip_addr = pcie_probe_ip,
+                                      probe_id = pcie_ccu_bar)
+       else:
+          bmc_ip = dut_pcie_info[1]
+          pcie_ccu_bar = dut_pcie_info[2]
+          pcie_probe_ip = dut_pcie_info[3]
+          print("connecting to PCIE bar={0} ip={1}".format(pcie_ccu_bar,pcie_probe_ip))
+#          print("connecting to PCIE bar={0} ip={1} bmc_ip={2}".format(pcie_ccu_bar,pcie_probe_ip,bmc_ip))
+          status = dbgprobe().connect(mode='pcie', bmc_board=False,
+                                      probe_ip_addr=pcie_probe_ip,
+                                      probe_id = pcie_ccu_bar)
+#          status = dbgprobe().connect(mode='pcie', bmc_board=True,
+#                                      bmc_ip_address=bmc_ip,
+#                                      probe_ip_addr=pcie_probe_ip,
+#                                      probe_id = pcie_ccu_bar)
+       print("connecting to PCIE bar={0} ip={1} status={2}".format(pcie_ccu_bar,pcie_probe_ip,status))
+       if status is False:
+          sys.exit(1)
     else:
-        print("I2C Server Connection Failed!")
-        sys.exit(1)
+       i2c_info = duts.get_i2c_info(tpod)
+       if i2c_info[0] is True:
+          (bmc,bmc_ip)=i2c_info
+          status = dbgprobe().connect(bmc_board=bmc,mode='i2c', bmc_ip_address=bmc_ip)
+       else:
+          (bmc,i2c_probe_serial, i2c_proxy_ip, i2c_slave_addr)=i2c_info
+          print "connecting to I2C Proxy "+i2c_proxy_ip
+          status = dbgprobe().connect(bmc_board=bmc,mode='i2c', probe_ip_addr=i2c_proxy_ip , probe_id=i2c_probe_serial , slave_addr=i2c_slave_addr,force=tpod_force)
+       if status is True:
+          print("I2C Server Connection Successful!")
+       else:
+          print("I2C Server Connection Failed!")
+          sys.exit(1)
 
 def start_verif_server():
     global conn
     while True:
     #wait to accept a connection - blocking call
-        print 'wait to accept a connection from client'
+        logger.info('wait to accept a connection from client')
         conn, addr = verif_sock.accept()
-        print 'Connected with client' + addr[0] + ':' + str(addr[1])
+        logger.info('Connected with client' + addr[0] + ':' + str(addr[1]))
         handle_connection(conn)
-        print 'Disconnected from client' + addr[0] + ':' + str(addr[1])
+        logger.info('Disconnected from client' + addr[0] + ':' + str(addr[1]))
         conn.close()
     status = dbgprobe().disconnect()
     if status is not True:
@@ -486,11 +521,11 @@ class CsrThread(threading.Thread):
     def run(self):
         global conn
         while True:
-            print 'wait to accept a connection from client'
+            logger.info('wait to accept a connection from client')
             conn, addr = verif_sock.accept()
-            print 'Connected with client' + addr[0] + ':' + str(addr[1])
+            logger.info('Connected with client' + addr[0] + ':' + str(addr[1]))
             handle_connection(conn)
-            print 'Disconnected from client' + addr[0] + ':' + str(addr[1])
+            logger.info('Disconnected from client' + addr[0] + ':' + str(addr[1]))
             conn.close()
     def join(self, timeout=None):
         self._stopevent.set()
@@ -503,32 +538,39 @@ def bg_handle_csr():
 def auto_int(x):
     return int(x, 0)
 
+def set_i2c_dis(x):
+   global i2c_dis
+   i2c_dis=x
+
 def proc_arg():
-    global parser, args, i2c_probe_serial, i2c_proxy_ip, i2c_slave_addr
+    global parser, args, i2c_dis
     parser = argparse.ArgumentParser()
     parser.add_argument('--ptf_dis', action='store_true', default=False, help='ptf connection disable. default %(default)d')
     parser.add_argument('--ptf_host', nargs='?', type=str, default='localhost', help='ptf host to connect to. default %(default)s')
     parser.add_argument('--ptf_port', nargs='?', type=auto_int, default=9001, help='ptf port to connect to. default %(default)d')
     parser.add_argument('--test_ptf', action='store_true', default=False, help='test ptf connection. default %(default)d')
     parser.add_argument('--i2c_dis', action='store_true', default=False, help='i2cproxy connection disable. default %(default)d')
-    parser.add_argument('--verif_port', nargs='?', type=auto_int, default=0x1234, help='verif client port. default %(default)d')
+    parser.add_argument('--verif_port', nargs='?', type=auto_int, default=0, help='verif client port. default %(default)d')
     parser.add_argument('--tpod', nargs='?', type=str, default='TPOD4', help='TPOD name. default %(default)s')
+    parser.add_argument('--tpod_force', action='store_true', default=False, help='TPOD force mode. default %(default)s')
+    parser.add_argument('--tpod_jtag', action='store_true', default=False, help='TPOD JTAG mode. default %(default)s')
+    parser.add_argument('--tpod_bmc_chip_inst', nargs='?', type=auto_int, default=0, help='TPOD chip_inst used in bmc mode. default %(default)s')
 #    parser.add_argument('--i2c_svr', nargs='?', type=str, default='10.1.20.69', help='i2c server. default %(default)s')
     args = parser.parse_args()
-    duts = dut.dut()
-    (i2c_probe_serial, i2c_proxy_ip, i2c_slave_addr) = duts.get_i2c_info(args.tpod)
-
+    set_i2c_dis(args.i2c_dis)
     #args = parser.parse_args(['-ptf_dis'])
 
 ################################################################################
 
 def main():
     proc_arg()
-    connect_verif_client_socket()
+    connect_verif_client_socket(port=args.verif_port,chip_inst=args.tpod_bmc_chip_inst)
     if not args.ptf_dis:
        connect_ptf()
-    if not args.i2c_dis:
-       connect_dbgprobe()
+    if not i2c_dis:
+       connect_dbgprobe(tpod=args.tpod,
+                        tpod_jtag=args.tpod_jtag,
+                        tpod_force=args.tpod_force)
     if args.test_ptf:
        test_ptf()
     start_verif_server()

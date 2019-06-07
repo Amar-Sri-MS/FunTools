@@ -27,9 +27,8 @@
 #include <sys/select.h>
 #include <sys/stat.h>
 
-#include <unistd.h>
-
 #include "dpcsh.h"
+#include "dpcsh_nvme.h"
 #include "csr_command.h"
 
 #include <utils/threaded/fun_map.h>
@@ -46,14 +45,6 @@
 #define DPC_B64SRV_PORT 40223   /* default dpcuart listen port */
 #define HTTP_PORTNO     9001    /* default HTTP listen port */
 #define NO_FLOW_CTRL_DELAY_USEC	10000	/* no flow control delay in usec */
-
-/* handy socket abstraction */
-enum sockmode {
-	SOCKMODE_TERMINAL,
-	SOCKMODE_IP,
-	SOCKMODE_UNIX,
-	SOCKMODE_DEV,
-};
 
 enum parsingmode {
 	PARSE_UNKNOWN, /* bug trap */
@@ -77,24 +68,11 @@ static char *_baudrate = DEFAULT_BAUD; /* default BAUD rate */
 static bool _no_flow_control = false;  /* run without flow_control */
 static bool _legacy_b64 = false;
 
+/* cmd timeout, use driver default timeout */
+#define DEFAULT_NVME_CMD_TIMEOUT_MS "0"
+
 // We stash argv[0]
 const char *dpcsh_path;
-
-struct dpcsock {
-
-	/* configuration */
-	enum sockmode mode;      /* whether & how this is used */
-	bool server;             /* listen/accept instead of connect */
-	bool base64;             /* talk base64 over this socket */
-	bool loopback;           /* if this socket is ignored */
-	const char *socket_name; /* unix socket name */
-	uint16_t port_num;       /* TCP port number */
-	uint32_t retries;        /* whether to retry connect on failure */
-
-	/* runtime */
-	int fd;                  /* connected fd */
-	int listen_fd;           /* fd if this is a server */
-};
 
 static inline void _setnosigpipe(int const fd)
 {
@@ -470,7 +448,7 @@ static uint8_t *_b64_to_bin(char *line, ssize_t /* out */ *size)
 	return binbuf;
 }
 
-struct fun_json *_buffer2json(uint8_t *buffer, size_t max)
+struct fun_json *_buffer2json(const uint8_t *buffer, size_t max)
 {
 	struct fun_json *json = NULL;
 	size_t r;
@@ -567,7 +545,7 @@ static char *_read_a_line(struct dpcsock *sock, ssize_t *nbytes)
 	} else {
 		/* sometimes we get truncated lines? */
 		*nbytes = 0;
-		buf[0] = '\0;';
+		buf[0] = '\0';
 	}
 
 	return buf;
@@ -660,7 +638,11 @@ int dpcsocket_connnect(struct dpcsock *sock)
 
 		/* wait for someone to connect */
 		_listen_sock_accept(sock);
-	} else {
+	} else if(sock->mode == SOCKMODE_NVME) {
+		sock->fd = open(sock->socket_name, O_RDWR);
+		sock->nvme_write_done = false;
+	} 
+	else {
 		printf("connecting client socket\n");
 		if (sock->mode == SOCKMODE_UNIX)
 			sock->fd = _open_sock_unix(sock->socket_name);
@@ -893,10 +875,10 @@ static void apply_command_locally(const struct fun_json *json)
 	if (!verb || strcmp(verb, "help")) {
 		return;
 	}
-	struct fun_json *env = fun_json_create_empty_dict();
+	struct fun_json_command_environment *env = fun_json_command_environment_create();
 	struct fun_json *j = fun_commander_execute(env, json);
 
-	fun_json_release(env);
+	fun_json_command_environment_release(env);
 	if (!j || fun_json_fill_error_message(j, NULL)) {
 		return;
 	}
@@ -927,7 +909,13 @@ static bool _do_send_cmd(struct dpcsock *sock, char *line,
 			json);
 	// Hack to list local commands if the command is 'help'
 	apply_command_locally(json);
-        bool ok = _write_to_sock(json, sock);
+        bool ok = false;
+		if(sock->mode == SOCKMODE_NVME) {
+			ok = _write_to_nvme(json, sock);
+		}
+		else {
+			ok = _write_to_sock(json, sock);
+		}
 	if (!ok) {
 		// try to reopen pipe
 		printf("Write to socket failed - reopening socket\n");
@@ -938,7 +926,12 @@ static bool _do_send_cmd(struct dpcsock *sock, char *line,
 			fun_json_release(json);
 			return false;
 		}
-		ok = _write_to_sock(json, sock);
+		if(sock->mode == SOCKMODE_NVME) {
+			ok = _write_to_nvme(json, sock);
+		}
+		else {
+			ok = _write_to_sock(json, sock);
+		}
 	}
         fun_json_release(json);
         if (!ok) {
@@ -1011,7 +1004,13 @@ static void _do_recv_cmd(struct dpcsock *funos_sock,
 			 struct dpcsock *cmd_sock, bool retry)
 {
 	/* receive a reply */
-        struct fun_json *output = _read_from_sock(funos_sock, retry);
+        struct fun_json *output;
+		if(funos_sock->mode == SOCKMODE_NVME) {
+			output = _read_from_nvme(funos_sock);
+		}
+		else {
+			output = _read_from_sock(funos_sock, retry);
+		}
         if (!output) {
 		if (retry)
 			printf("invalid json returned\n");
@@ -1192,8 +1191,9 @@ static void _do_interactive(struct dpcsock *funos_sock,
 	    }
 
 	    /* if it changed while in flight */
-	    if (funos_sock->fd == -1)
+	    if (funos_sock->fd == -1) {
 		    continue;
+		}
 
 	    if (FD_ISSET(funos_sock->fd, &fds)
 		&& (!funos_sock->loopback)) {
@@ -1278,17 +1278,18 @@ int json_handle_req(struct dpcsock *jsock, const char *path,
 	return r;
 }
 
+#define LINE_MAX	(100 * 1024)
 
 static void _do_cli(int argc, char *argv[],
 		    struct dpcsock *funos_sock,
 		    struct dpcsock *cmd_sock, int startIndex)
 {
-	char buf[512];
+	char *buf = malloc(LINE_MAX);
 	int n = 0;
 	bool ok;
 
 	for (int i = startIndex; i < argc; i++) {
-		n += snprintf(buf + n, sizeof(buf) - n, "%s ", argv[i]);
+		n += snprintf(buf + n, LINE_MAX - n, "%s ", argv[i]);
 		printf("buf=%s n=%d\n", buf, n);
 	}
 
@@ -1296,8 +1297,10 @@ static void _do_cli(int argc, char *argv[],
 	buf[--len] = 0;	// trim the last space
 	printf(">> single cmd [%s] len=%zd\n", buf, len);
 	ok = _do_send_cmd(funos_sock, buf, len);
-	if (ok)
+	if (ok) {
 		_do_recv_cmd(funos_sock, cmd_sock, true);
+	}
+	free(buf);
 }
 
 /** argument parsing **/
@@ -1323,23 +1326,30 @@ static char *opt_sockname(char *optarg, char *dflt)
 
 /* options descriptor */
 static struct option longopts[] = {
-	{ "help",          no_argument,       NULL, 'h' },
-	{ "base64_srv",    optional_argument, NULL, 'B' },
-	{ "base64_sock",   optional_argument, NULL, 'b' },
-	{ "dev",           required_argument, NULL, 'D' },
-	{ "inet_sock",     optional_argument, NULL, 'i' },
-	{ "unix_sock",     optional_argument, NULL, 'u' },
-	{ "http_proxy",    optional_argument, NULL, 'H' },
-	{ "tcp_proxy",     optional_argument, NULL, 'T' },
-	{ "text_proxy",    optional_argument, NULL, 'T' },
-	{ "unix_proxy",    optional_argument, NULL, 't' },
-	{ "nocli",         no_argument,       NULL, 'n' },
-	{ "oneshot",       no_argument,       NULL, 'S' },
-	{ "manual_base64", no_argument,       NULL, 'N' },
-	{ "no_dev_init",   no_argument,       NULL, 'X' },
-	{ "no_flow_control",   no_argument,       NULL, 'F' },
-	{ "baud",          required_argument, NULL, 'R' },
-	{ "legacy_b64",    no_argument, NULL, 'L' },
+	{ "help",            no_argument,       NULL, 'h' },
+	{ "base64_srv",      optional_argument, NULL, 'B' },
+	{ "base64_sock",     optional_argument, NULL, 'b' },
+	{ "dev",             required_argument, NULL, 'D' },
+	{ "inet_sock",       optional_argument, NULL, 'i' },
+	{ "unix_sock",       optional_argument, NULL, 'u' },
+// DPC over NVMe is needed only in Linux
+#ifdef __linux__
+	{ "pcie_nvme_sock",  optional_argument, NULL, 'p' },
+#endif //__linux__
+	{ "http_proxy",      optional_argument, NULL, 'H' },
+	{ "tcp_proxy",       optional_argument, NULL, 'T' },
+	{ "text_proxy",      optional_argument, NULL, 'T' },
+	{ "unix_proxy",      optional_argument, NULL, 't' },
+	{ "nocli",           no_argument,       NULL, 'n' },
+	{ "oneshot",         no_argument,       NULL, 'S' },
+	{ "manual_base64",   no_argument,       NULL, 'N' },
+	{ "no_dev_init",     no_argument,       NULL, 'X' },
+	{ "no_flow_control", no_argument,       NULL, 'F' },
+	{ "baud",            required_argument, NULL, 'R' },
+	{ "legacy_b64",      no_argument,       NULL, 'L' },
+#ifdef __linux__
+	{ "nvme_cmd_timeout", required_argument, NULL, 'W' },
+#endif //__linux__
 
 	/* end */
 	{ NULL, 0, NULL, 0 },
@@ -1357,6 +1367,10 @@ static void usage(const char *argv0)
 	printf("       --base64_sock[=port]    connec as a client port on IP using base64 (dpcuart to qemu)\n");
 	printf("       --inet_sock[=port]      connect as a client port over IP\n");
 	printf("       --unix_sock[=sockname]  connect as a client port over unix sockets\n");
+// DPC over NVMe is needed only in Linux
+#ifdef __linux__
+	printf("       --pcie_nvme_sock[=sockname]  connect as a client port over nvme pcie device\n");
+#endif //__linux__
 	printf("       --http_proxy[=port]     listen as an http proxy\n");
 	printf("       --tcp_proxy[=port]      listen as a tcp proxy\n");
 	printf("       --text_proxy[=port]     same as \"--tcp_proxy\"\n");
@@ -1367,6 +1381,10 @@ static void usage(const char *argv0)
 	printf("       --no_dev_init           don't init the UART device, use as-is\n");
 	printf("       --baud=rate             specify non-standard baud rate (default=" DEFAULT_BAUD ")\n");
 	printf("       --legacy_b64            support old-style base64 encoding, despite issues\n");
+#ifdef __linux__
+	printf("       --nvme_cmd_timeout=timeout specify cmd timeout in ms (default=" DEFAULT_NVME_CMD_TIMEOUT_MS ")\n");
+#endif //__linux__
+
 }
 
 enum mode {
@@ -1412,14 +1430,34 @@ int main(int argc, char *argv[])
 	 * probably wins.
 	 */
 
-
-	/* default connection to FunOS posix simulator dpcsock */
+	/* check whether NVMe connection to DPU is available */
+	/* DPC over NVMe will work only in Linux */
+	/* In macOS, libfunq is used */
+	char nvme_device_name[64];
+	bool nvme_dpu_present = false;
+	/* In macOS, always returns false */
+	nvme_dpu_present = find_nvme_dpu_device(nvme_device_name);
 	memset(&funos_sock, 0, sizeof(funos_sock));
-	funos_sock.mode = SOCKMODE_IP;
-	funos_sock.server = false;
-	funos_sock.port_num = DPC_PORT;
-	funos_sock.fd = -1;
-	funos_sock.retries = UINT32_MAX;
+	/* In Linux, use NVMe as default if present */
+	if (nvme_dpu_present)
+	{
+		funos_sock.mode = SOCKMODE_NVME;
+		funos_sock.socket_name = nvme_device_name;
+		funos_sock.server = false;
+		funos_sock.fd = -1;
+		funos_sock.retries = UINT32_MAX;
+		funos_sock.cmd_timeout = atoi(DEFAULT_NVME_CMD_TIMEOUT_MS);
+	}
+	/* Use libfunq otherwsie */
+	else
+	{
+		/* default connection to FunOS posix simulator dpcsock */
+		funos_sock.mode = SOCKMODE_IP;
+		funos_sock.server = false;
+		funos_sock.port_num = DPC_PORT;
+		funos_sock.fd = -1;
+		funos_sock.retries = UINT32_MAX;
+	}
 
 	/* default command connection is console (so socket disabled) */
 	memset(&cmd_sock, 0, sizeof(cmd_sock));
@@ -1484,6 +1522,15 @@ int main(int argc, char *argv[])
 							      SOCK_NAME);
 
 			break;
+// DPC over NVMe is needed only in Linux
+#ifdef __linux__
+		case 'p':
+			funos_sock.mode = SOCKMODE_NVME;
+			cmd_sock.server = false;
+			funos_sock.socket_name = opt_sockname(optarg,
+							      NVME_DEV_NAME);
+			break;
+#endif //__linux__
 		case 'H':  /* http proxy */
 
 			cmd_sock.mode = SOCKMODE_IP;
@@ -1549,6 +1596,18 @@ int main(int argc, char *argv[])
 		case 'L':
 			_legacy_b64 = true;
 			break;
+
+#ifdef __linux__
+		case 'W':  /* "timeout" -- set timeout for cmd */
+			funos_sock.cmd_timeout = atoi(optarg);
+			if (funos_sock.cmd_timeout <= 0) {
+				printf("timeout must be a positive decimal integer\n");
+				usage(argv[0]);
+				exit(1);
+			}
+			break;
+#endif //__linux__
+
 		default:
 			usage(argv[0]);
 			exit(1);
