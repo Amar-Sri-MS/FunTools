@@ -613,14 +613,14 @@ def main(opts, joblist):
         
         subject = "[silicon on demand] job %s complete" % job['jobid']
 
-        body = "log path %s" % job["path"]
+        body = "log path<br />%s/minicom-log<br />" % job["path"]
         
         if (os.path.exists(job['log'])):
-            out = subprocess.Popen(['tail', '-250', job['log']], 
+            out = subprocess.Popen(['%s/uart2html.py' % SODDIR, job['log']], 
                                    stdout=subprocess.PIPE, 
                                    stderr=subprocess.STDOUT)
             stdout,stderr = out.communicate()
-            body += "\nlog tail: \n%s" % stdout
+            body += stdout
         else:
             body += "\ncouldn't dump logfile"
 
@@ -628,7 +628,7 @@ def main(opts, joblist):
         fl.write(body)
         fl.close()
 
-        cmd = "cat %s/email-body.txt | mail -r charles.gray+silicon@fungible.com -s '%s' %s" % (job['path'], subject, email)
+        cmd = "cat %s/email-body.txt | mail -r charles.gray+silicon@fungible.com -s '%s' -a 'Content-Type: text/html; charset=UTF-8' %s" % (job['path'], subject, email)
         print "Here goes nothing..."
         os.system(cmd)
         print "Sent?"

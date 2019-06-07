@@ -36,9 +36,10 @@ def make_header(index, opts):
         html += HTML_HEADER
 
     # process index in order
+    html += "Notable events<br />"
     html += "<ul>\n"
     for (aname, hread) in index["__ordered__"]:
-        line = '<li><a href="%s">%s</a></li>\n' % (aname, hread)
+        line = '<li><a href="#%s">%s</a></li>\n' % (aname, hread)
         html += line
     html += "</ul>\n"
     html += "<pre>\n"
@@ -71,7 +72,7 @@ def mkanchor(ak, line, index, opts):
 
     # make the line right
     line = line.strip()
-    line = '<a name="%s">%s</a>\n' % (aname, line)
+    line = '<a name="%s"><font color="red">%s</font></a>\n' % (aname, line)
 
     return line
     
