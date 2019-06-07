@@ -11,7 +11,7 @@ import json
 import binascii
 import argparse
 import shutil
-import generate_firmware_image as gfi
+import firmware_signing_service as fsi
 import key_replace as kr
 import tempfile
 
@@ -31,6 +31,7 @@ DEFAULT_PADDING_LENGTH = "128"
 
 config = {}
 search_paths = []
+firmware_sign = None
 
 
 # example: reserve( 0x1234, 'nrol') reserve(256 ,    ' rsr') etc...
@@ -113,7 +114,8 @@ def gen_fw_image(filename, attrs):
     args['customer_certfile'] = find_file_in_srcdirs(args['customer_certfile'])
 
     if args['infile']:
-        gfi.image_gen(outfile=filename, **args)
+        global firmware_sign
+        firmware_sign.image_gen(outfile=filename, **args)
         if tmpfile:
             tmpfile.close()
         return filename
@@ -485,6 +487,17 @@ def set_search_paths(paths):
 def run(arg_action, arg_enroll_cert = None, arg_enroll_tbs = None, *args, **kwargs):
     global config
     global search_paths
+    global firmware_sign
+
+    have_net = kwargs.get("net", True)
+    have_hsm = kwargs.get("hsm", True)
+
+    mode = 0
+    if have_hsm:
+        mode |= fsi.FirmwareSigningService.MOD_HSM
+    if have_net:
+        mode |= fsi.FirmwareSigningService.MOD_NET
+    firmware_sign = fsi.FirmwareSigningService.create(mode)
 
     wanted = lambda action : arg_action in ['all', action]
     flash_content = None
@@ -519,7 +532,7 @@ def run(arg_action, arg_enroll_cert = None, arg_enroll_tbs = None, *args, **kwar
     # Generate keys (if required)
     if wanted('key_hashes') and 'key_hashes' in config:
         for k,v in config['key_hashes'].items():
-            gfi.export_pub_key_hash(k, v['name'])
+            firmware_sign.export_pub_key_hash(k, v['name'])
 
     # Generate certificates (if required)
     if wanted('certificates') and 'certificates' in config:
@@ -537,11 +550,9 @@ def run(arg_action, arg_enroll_cert = None, arg_enroll_tbs = None, *args, **kwar
                 }
 
                 cert_args = map_method_args(argmap, v)
-                gfi.cert_gen(outfile=k, **cert_args)
+                firmware_sign.cert_gen(outfile=k, **cert_args)
 
     if wanted('key_injection') and config.get('key_injection'):
-        have_net = kwargs.get("net", True)
-        have_hsm = kwargs.get("hsm", True)
         keep_outfile = kwargs.get("keep_output", False)
         for outfile, v in config['key_injection'].items():
             if not (os.path.exists(outfile) and keep_outfile):

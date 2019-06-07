@@ -45,8 +45,12 @@ def main():
     parser.add_argument('--destdir', required=True, help='Destination directory for output')
     parser.add_argument('--force-version', type=int, help='Override firmware versions')
     parser.add_argument('--force-description', help='Override firmware description strings')
+    parser.add_argument('--with-hsm', action='store_true', help='Use HSM for signing')
 
     args = parser.parse_args()
+
+    use_hsm = args.with_hsm
+    use_net = not use_hsm
 
     wanted = lambda action : args.action in ['all', action]
 
@@ -91,7 +95,10 @@ def main():
         utils = [ "bin/flash_tools/generate_firmware_image.py",
                   "bin/flash_tools/generate_flash.py",
                   "bin/flash_tools/make_emulation_emmc.py",
+                  "bin/flash_tools/firmware_signing_service.py",
+                  "bin/flash_tools/enrollment_service.py",
                   "bin/flash_tools/key_replace.py",
+                  "bin/flash_tools/f1registration.ca.pem",
                   "bin/flash_tools/" + os.path.basename(__file__),
                   "bin/Linux/x86_64/mkimage" ]
         for app in utils:
@@ -111,7 +118,7 @@ def main():
         with open("image.json", "w") as f:
             json.dump(config, f, indent=4)
 
-        gf.run('key_injection', net=True, hsm=False)
+        gf.run('key_injection', net=use_net, hsm=use_hsm)
         os.chdir(curdir)
 
     if wanted('sign'):
@@ -119,7 +126,7 @@ def main():
         sdkpaths.append(os.path.abspath(args.destdir))
         gf.set_search_paths(sdkpaths)
         os.chdir(args.destdir)
-        gf.run('key_injection', net=False, hsm=True, keep_output=True)
+        gf.run('key_injection', net=use_net, hsm=use_hsm, keep_output=True)
         gf.run('certificates')
         gf.run('sign')
         os.chdir(curdir)
