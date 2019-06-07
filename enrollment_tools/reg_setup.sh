@@ -30,6 +30,12 @@ sudo chmod og-r /etc/hsm_password
 # create the key fpk4: use pin password
 sudo -u www-data python3 enrollment_hsm.py create -k fpk4 --token fungible_token
 
+
+# **optional for signing server**: import the development keys
+sudo -u www-data python3 enrollment_hsm.py import -k fpk2 -i development_fpk2.pem --token fungible_token
+sudo -u www-data python3 enrollment_hsm.py import -k fpk3 -i development_fpk3.pem --token fungible_token
+sudo -u www-data python3 enrollment_hsm.py import -k fpk5 -i development_fpk5.pem --token fungible_token
+
 #postgresql setup
 sudo apt-get install postgresql
 sudo -u postgres createuser -s $USER
@@ -45,4 +51,9 @@ sudo a2enmod ssl
 sudo a2enmod cgid
 sudo tar xzvf install.tgz -C /
 #verify permission of installed files
+
+#enable the registration (main) site
 sudo a2ensite registration.conf
+
+# **optional for signing server**: enable the signing site (port 4443)
+sudo a2ensite signing.conf
