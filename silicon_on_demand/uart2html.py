@@ -6,12 +6,12 @@ import optparse
 
 ANCHORS = {
     "welcome": ("Welcome to FunOS", "[kernel] Welcome to FunOS!"),
-    "ready": ("System Ready Noficication", "System event posted: system_event_ready_to_start"),
+    "ready": ("System Ready Notification", "System event posted: system_event_ready_to_start"),
     "freeze": ("crash started", ">>> FunOS entering bug_check handler <<<"),
     "bug_check": ("bug_check", ">>>>>> bug_check on vp 0x"),
     "assert": ("assertion failure", "Assertion failed: "),
-    "tlbl": ("Bad pointer exception (load)", "cause.ExcCode: 2 (0x2): TLB exception"),
-    "tlbs": ("Bad pointer exception (store)", "cause.ExcCode: 2 (0x2): TLB exception"),
+    "tlbl": ("Bad pointer exception (load)", "cause.ExcCode: 2 (0x2): TLB exception (load or instruction fetch)"),
+    "tlbs": ("Bad pointer exception (store)", "cause.ExcCode: 3 (0x3): TLB exception (store)"),
     "idle_final": ("Exit Cleanup", 'INFO nucleus "Idle state = IDLE_STATE_FINAL"'),
     "platform_halt": ("Platform Halt", 'platform_halt: exit status '),
     }
