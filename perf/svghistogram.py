@@ -29,14 +29,17 @@ def plot_svg(hist):
     data = "\n".join([ "%g\t%d\t0x%x" % (x, y, col) for (x, y, col) in hist])
 
     # run gnuplot
-    p = subprocess.Popen(["gnuplot"],
-                         stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+    try:
+        p = subprocess.Popen(["gnuplot"],
+                             stdin=subprocess.PIPE, stdout=subprocess.PIPE)
 
-    s = p.communicate(COMMANDS + data)[0]
+        s = p.communicate(COMMANDS + data)[0]
 
-    # strip the xml banner
-    n = s.index("<svg")
-    s = s[n:]
-    
+        # strip the xml banner
+        n = s.index("<svg")
+        s = s[n:]
+    except:
+        s = "<i>[data generated without gnuplot installed]</i>"
+        
     return s
     
