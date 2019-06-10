@@ -1,5 +1,8 @@
 #!/usr/bin/python
 
+## A set of functions to import into your codescape scripting to make
+## life easier.
+
 import os
 import sys
 import time

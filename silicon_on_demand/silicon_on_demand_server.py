@@ -63,6 +63,8 @@ def fpost(job):
 def fraw(job):
     return "%s/minicom-log" % job['path']
 
+# claim file specifies that one of the servers is running
+# this job so other servers shoudl not pick it up
 def fclaim(job):
     return "%s/job.claimed" % job['path']
 

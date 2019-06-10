@@ -1,5 +1,8 @@
 #!/usr/bin/python
 
+# automatically download and run a funos-f1 binary from a specified
+# FunSDK build
+
 import os
 import sys
 import stat

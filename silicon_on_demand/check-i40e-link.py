@@ -1,5 +1,12 @@
 #!/usr/bin/python -u
 
+## use ifconfig to monitor link status of an ethernet device.  F1 dev
+## boards were seeing issues where the link from the MPG port to the
+## linux i40e device was not coming up or was flapping. This allows the
+## host driving the boot to check whether U-boot has checked in or if the link
+## came up hosed. In the case it's hosed, we take down the boot and try again
+## for a good link, lest we get long timeouts in tftpboot.
+
 import time
 import optparse
 import subprocess

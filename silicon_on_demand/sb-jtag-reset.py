@@ -1,5 +1,7 @@
 #!/usr/bin/python
 
+# Use jtag via codescape to reset a target F1 device
+
 import sys
 from codescape_survival import *
 from imgtec.console import *
