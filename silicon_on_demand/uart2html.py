@@ -103,7 +103,7 @@ def mkanchor(ak, line, index, opts):
 
     return line
     
-def markup_line(line, index, opts):
+def markup_line(line, index, opts=get_default_opts()):
 
     # make an escaped copy
     htmlline = cgi.escape(line)
