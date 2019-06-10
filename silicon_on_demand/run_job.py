@@ -8,6 +8,22 @@ import tempfile
 import optparse
 import signal
 
+SB_01 = { "uart": "/dev/ttyUSB4",
+          "baud": "1000000",
+#          "chain_uboot": "/home/cgray/uboot-tftp.mpg.gz",
+          "serverip": "172.17.1.1",
+          "boardip": "172.17.1.2",
+          "iface": "enp1s0f1"}
+
+SB_02 = { "uart": "/dev/ttyUSB0",
+          "baud": "1000000",
+          "serverip": "172.16.1.1",
+          "boardip": "172.16.1.2",
+          "iface": "enp1s0f0"}
+
+boards = {"sb-01": SB_01,
+          "sb-02": SB_02 }
+
 SCRIPT_HDR = """
 # blah
   print Prodding u-boot
@@ -80,7 +96,7 @@ funos_crashing:
   print "FunOS crashed, but didn't see platform_halt"
 
 halt_timeout:
-  print "Timeout waiting for FunOS to platform_halt"
+  print "Timeout waiting for FunOS to platform halt"
   goto out
 
 no_unzip:
@@ -94,8 +110,29 @@ no_uboot:
 
 out:
   sleep 1
+  print "boot.script: killing minicom"
   ! cat %s | xargs kill -HUP 
 """
+
+SCRIPT_CHAIN = """
+  send ""
+  expect {{
+  	 "f1 #" break
+  	 timeout 40  goto no_uboot
+  }}
+
+  send "loadx"
+  ! sx -k {chain_uboot}
+
+  print "Download complete, unzip time"
+  sleep 2
+  send ""
+  send ""
+  send "unzip 0xFFFFFFFF91000000 0xFFFFFFFF99000000 ; bootelf -p 0xFFFFFFFF99000000"
+
+  goto chain_bypass
+"""
+
 
 SCRIPT_TFTP = """
 
@@ -104,15 +141,22 @@ SCRIPT_TFTP = """
   send ""
 
 # now wait for new u-boot
+#  expect {{
+#  	 "Type 'noautoboot' to disable autoboot"
+#  	 timeout 20 goto no_uboot
+#  }}
+
   expect {{
-  	 "Type 'noautoboot' to disable autoboot"
-  	 timeout 20 goto no_uboot
+  	 "f1 #"
+  	 timeout 20 exit
   }}
 
-  timeout {global_timeout}
-  send "noautoboot"
+chain_bypass:
 
-  print "\\nboot.script: autoboot cancelled"
+  timeout {global_timeout}
+#  send "noautoboot"
+
+#  print "\\nboot.script: autoboot cancelled"
 
   print "\\nboot.script: bringing up the network"
   send "lfw"
@@ -148,7 +192,7 @@ SCRIPT_TFTP = """
   }}
   
   print "boot.script: configuring IP"
-  send "setenv serverip 172.16.1.1"
+  send "setenv serverip {serverip}"
   send "echo serverip_done"
   print ""
   expect {{
@@ -156,7 +200,7 @@ SCRIPT_TFTP = """
   	 timeout 30 goto eep3
   }}
 
-  send "setenv ipaddr 172.16.1.2"
+  send "setenv ipaddr {boardip}"
   send "echo ipaddr_done"
   print ""
   expect {{
@@ -165,7 +209,7 @@ SCRIPT_TFTP = """
   }}
   
   print "\\nChecking link status..."
-  ! cat {minicom_pid} | xargs /home/cgray/bin/check-i40e-link.py enp1s0f0 restart.fail 
+  ! cat {minicom_pid} | xargs /home/cgray/bin/check-i40e-link.py {iface} restart.fail 
   print "\\nLink status checked"
 
   print "\\n"
@@ -176,16 +220,16 @@ SCRIPT_TFTP = """
   print "\\n"
   print "boot.script: tftpftw"
   print "\\n"
-  send "tftpboot 0xffffffff91000000 172.16.1.1:{funos} ; unzip 0xFFFFFFFF91000000 0xa800000020000000 ; bootelf -p 0xa800000020000000"
+  send "tftpboot 0xffffffff91000000 {serverip}:{funos} ; unzip 0xFFFFFFFF91000000 0xa800000020000000 ; bootelf -p 0xa800000020000000"
   print "\\n"
 
-  print "boot.script: waiting for FunOS to platform_halt now"
+  print "boot.script: waiting for FunOS to platform halt now"
 
   # if we see FunOS, expect bootstrap
-  expect {{
-      "Welcome to FunOS" break
-      timeout 10 goto halt_wait
-  }}
+  #expect {{
+  #    "Welcome to FunOS" break
+  #    timeout 10 goto halt_wait
+  #}}
 
   expect {{
       "sending bootstrap WU" break
@@ -209,7 +253,7 @@ halt_wait:
   goto out
 
 halt_timeout:
-  print "Timeout waiting for FunOS to platform_halt"
+  print "boot.script: Timeout waiting for FunOS to platform halt"
   goto out
 no_uboot:
   print "boot.script: no uboot"
@@ -225,6 +269,7 @@ eep2:
   goto out
 eep3:
   print "boot.script: eep3"
+  ! touch restart.fail
   print "\\n"
   goto out
 eep4:
@@ -260,15 +305,9 @@ def sighup_handler(signal, frame):
     print "%s:SIGHUP received" % sys.argv[0]
 
 def maybe_reset_target(options):
-    tfile = options.reset_file
-    if (tfile is not None):
-        # XXX: assume file == reset probe
-        print "Resetting sb-02"
-        r = os.system("~cgray/bin/sb-jtag-reset.py sb-02")
-        #if (r != 0):
-        #    print "Probe reset returned an error. FAILING"
-        #    sys.exit(1)
-
+    if (options.reset):
+        print "Resetting %s" % options.board
+        r = os.system("~cgray/bin/sb-jtag-reset.py %s" % options.board)
 
 def maybe_install_funos(funos):
 
@@ -288,7 +327,7 @@ def maybe_install_funos(funos):
     return funos
 
 parser = optparse.OptionParser(usage="usage: %prog [options] funos-stripped.gz [-- bootargs]")
-parser.add_option("-r", "--reset-file", action="store", default=None)
+parser.add_option("-r", "--reset", action="store_true", default=False)
 parser.add_option("-m", "--make-dir", action="store_true", default=False)
 parser.add_option("-T", "--no-terminal-reset", action="store_true", default=False)
 parser.add_option("-G", "--do-pgid", action="store_true", default=False)
@@ -298,8 +337,13 @@ parser.add_option("-u", "--uboot", action="store", default=None)
 parser.add_option("-N", "--no-boot", action="store_true", default=False)
 parser.add_option("-P", "--postscript", action="store", default=None)
 parser.add_option("-F", "--tftp", action="store_true", default=False)
+parser.add_option("-b", "--board", action="store", default=None)
 
 (options, args) = parser.parse_args()
+
+if (options.board not in boards):
+    print "must specify a board"
+    sys.exit(1)
 
 if (options.make_dir):
     path = tempfile.mkdtemp(dir=os.getcwd())
@@ -340,6 +384,7 @@ else:
 
     script_name = "%s/boot.script" % path
     log_name = "%s/minicom-log" % path
+    exit_name = "%s/exitlog" % path
     pid_name = "%s/minicom.pid" % path
     dun_name = "%s/job.done" % path
 
@@ -371,8 +416,23 @@ else:
         d['bootargs'] = arg
         d['funos'] = krn
         d['minicom_pid'] = pid_name
+
+        board = boards[options.board]
+        d['serverip'] = board['serverip']
+        d['boardip'] = board['boardip']
+        d['iface'] = board['iface']
         
-        script = SCRIPT_TFTP.format(**d)
+        if (board.get("chain_uboot") is not None):
+            d['chain_uboot'] = board["chain_uboot"]
+            
+        if (options.uboot is not None):
+            d['chain_uboot'] = options.uboot
+            
+        if (d.get("chain_uboot") is not None):
+            script = SCRIPT_CHAIN.format(**d)
+            script += SCRIPT_TFTP.format(**d)
+        else:
+            script = SCRIPT_TFTP.format(**d)
     
     if (not options.no_bootscript):
         fl = open(script_name, "w")
@@ -386,11 +446,14 @@ else:
     gpid = os.getpgrp()
     print "pgid now %s" % gpid
 
-    cmd = "minicom -D /dev/ttyUSB0 -S %s -w -C %s" % (script_name, log_name)
+    device = boards[options.board]["uart"]
+    baud = boards[options.board]["baud"]
+    os.system("echo '\nStarting job on board %s' >> %s" % (options.board, log_name))
+    cmd = "/usr/bin/minicom -D %s -b %s -S %s -w -C %s" % (device, baud, script_name, log_name)
 
     # fork minicom to get its pid for later
     print "Forking minicom..."
-    p = subprocess.Popen(cmd, shell=True)
+    p = subprocess.Popen(cmd.split())
 
     fl = open(pid_name, "w")
     fl.write("%s" % p.pid)
@@ -406,12 +469,24 @@ else:
         if (global_timeout is not None):
             if ((time.time() - t0) > global_timeout):
                 print "global timeout reached"
+                os.system("echo 'run_job: global timeout reached' >> %s" % (exit_name))
                 do_kill = True
 
         if (os.path.exists(dun_name)):
             print "someone requested a kill, killing minicom"
+            os.system("echo 'run_job: kill requested' >> %s" % (exit_name))
             do_kill = True
 
+        # double check for platform_halt because runscript is terrible
+        out = subprocess.Popen(['tail', '-3', log_name], 
+                               stdout=subprocess.PIPE, 
+                               stderr=subprocess.STDOUT)
+        stdout,stderr = out.communicate()
+        if "platform_halt" in stdout:
+            print "platform halt detected, killing minicom"
+            os.system("echo 'run_job: platform halt detected' >> %s" % (exit_name))
+            do_kill = True
+            
         if (do_kill):
             killcmd = "kill -HUP %s" % p.pid
             print "killing with '%s'" % killcmd
@@ -420,13 +495,29 @@ else:
             p.wait()
             break
             
+    if (p.returncode is not None):
+        print "run_job: minicom exited"
+        cmd = "echo 'run_job: minicom died of natural causes (%s)' >> %s" % (p.returncode, exit_name)
+        print cmd
+        os.system(cmd)
+    else:
+        print "run_job: we killed minicom"
+        cmd = "echo 'run_job: minicom died of unnatural causes (%s)' >> %s" % (p.returncode, exit_name)
+        print cmd
+        os.system(cmd)
 
+    #for i in range(30):
+    #    print "run_job: pause"
+    #    do_sleep(1)
+        
     print "Minicom is dead. long live minicom, but fixing its terminal settings..."
     do_sleep(2)
     if (not options.no_terminal_reset):
         os.system("reset")
     print "log file at %s.txt" % log_name
     os.system("cat %s | grep -v 'Xmodem sectors' > %s.txt" % (log_name, log_name))
+    os.system("cat %s >> %s.txt" % (exit_name, log_name))
+    os.system("echo 'Job completed on board %s' >> %s.txt" % (options.board, log_name))
     os.system("cat %s.txt | tail -20" % log_name)
 
     print "Cleaning my own process group"

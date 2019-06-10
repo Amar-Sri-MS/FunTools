@@ -17,6 +17,8 @@ JOBDIR="%s/jobs" % SODDIR
 
 USE_TFTP = True
 
+boards = ["sb-01", "sb-02"]
+
 def sighup_handler(signal, frame):
     # this method defines the handler i.e. what to do
     # when you receive a SIGHUP
@@ -28,7 +30,20 @@ def fix_args(args):
         return str(" ".join(args))
     else:
         return args
+
+def get_runfile(opts, board = None):
+    if (opts.board is not None):
+        board = opts.board
+
+    if (board is None):
+        return None
+
+    return "%s/run.%s" % (SODDIR, board)
         
+def reasonfile(board):
+
+    return "%s/%s.offline" % (SODDIR, board)
+    
 # filename routines
 def fdone(job):
     if (isinstance(job, dict)):
@@ -47,6 +62,11 @@ def fpost(job):
 
 def fraw(job):
     return "%s/minicom-log" % job['path']
+
+# claim file specifies that one of the servers is running
+# this job so other servers shoudl not pick it up
+def fclaim(job):
+    return "%s/job.claimed" % job['path']
 
 def time_key(job):
     return job['submit_time']
@@ -128,7 +148,13 @@ def job_matches_id(opts, job, jobid):
 
     return False
 
+def job_is_claimed(job):
 
+    fname = fclaim(job)
+    if (os.path.exists(fname)):
+        return True
+    return False
+    
 def is_owner(opts, job, all=None):
     if (opts.all or all):
         return True
@@ -156,9 +182,18 @@ def print_status(opts, job):
 
     funos = job.get('funos')
     args = job.get('args')
-    print "%s - %s -- %s" % (job['path'], funos, args)
+    board = job.get('board')
+    if (board is None):
+        board = ""
+    else:
+        board = "<%s> " % board
+    print "%s %s- %s -- %s" % (job['path'], board, funos, args)
     if (job['raw_log'] is not None):
-        print "   --> currently running to log %s" % job['raw_log']
+        if (os.path.exists(fclaim(job))):
+            claim = open(fclaim(job)).read()
+        else:
+            claim = "<unknown>"
+        print "   -->  %s logging to %s" % (claim, job['raw_log'])
     if (opts.verbose):
         is_done = os.path.exists(fdone(job))
         print "   --> job is %s" % "DONE!" if is_done else "not done"
@@ -197,6 +232,19 @@ def job_list_by_date(opts, all=None):
 
     return l
 
+def unclaimed_job_list_by_date(opts, all=None):
+    ls = job_list_by_date(opts, all)
+    rls = []
+
+    for l in ls:
+        if job_is_claimed(l):
+            continue
+        if (l.get("board", opts.board) != opts.board):
+            continue
+        rls.append(l)
+
+    return rls
+    
 def maybe_install_funos(opts, funos, suffix):
 
     # do whatever
@@ -257,6 +305,10 @@ def mkjob(opts, email, funos,  args):
         d['xargs'] = opts.xargs
     if (opts.timeout is not None):
         d['timeout'] = int(opts.timeout)
+    if (opts.board is not  None):
+        d['board'] = opts.board
+    if (opts.delay is not None):
+        d['delay'] = opts.delay
 
     print "job is %s/job.js" % path
     fl = open("%s/job.js" % path, 'w')
@@ -303,11 +355,19 @@ def restartjob(opts, jobid):
 def lsjobs(opts):
 
     # check server status
-    runfile = "%s/run" % SODDIR
-    if (os.path.exists(runfile)):
-        print "status: silicon on demand server should be online"
+    if (opts.board is None):
+        servers = boards
     else:
-        print "status: silicon on demand server is OFFLINE"       
+        servers = [opts.board]
+    for srv in servers:
+        runfile = get_runfile(opts, srv)
+        if (os.path.exists(runfile)):
+            print "status %s: silicon on demand server should be online" % srv
+        else:
+            reason = "<no reason given>"
+            if (os.path.exists(reasonfile(srv))):
+                reason = open(reasonfile(srv)).read()
+            print "status %s: OFFLINE: %s" % (srv, reason)
         
     l = job_list_by_date(opts, all=True)
 
@@ -353,6 +413,42 @@ def lessjob(opts, args):
     
     os.system("less %s" % job['log'])
 
+def _getlogin():
+
+    login = os.environ.get("USER")
+    if (login is None):
+        login = os.environ.get("LOGNAME")
+    if (login is None):
+        login = os.getlogin() # may be wrong?!
+    
+    return login
+    
+def online_server(opts):
+
+    if (opts.board is None):
+        print "must specify a board to online"
+        return
+
+    fname = get_runfile(opts)
+    open(fname, 'w').write("online")
+    if (os.path.exists(reasonfile(opts.board))):
+        os.remove(reasonfile(opts.board))
+    
+
+def offline_server(opts, reason):
+    if (opts.board is None):
+        print "must specify a board to offline"
+        return
+
+    fname = get_runfile(opts)
+    if (not os.path.exists(fname)):
+        print "server %s already offline? trying anyway" % opts.board
+    else:
+        os.remove(fname)
+    if (os.path.exists(reasonfile(opts.board))):
+        os.remove(reasonfile(opts.board))
+    open(reasonfile(opts.board), 'w').write("%s: %s" % (opts.uname, reason))
+    
 def sod_client():
     parser = optparse.OptionParser(usage="usage: %prog [options] action [arguments]")
     parser.add_option("-u", "--uname", action="store", default=None)
@@ -363,15 +459,23 @@ def sod_client():
     parser.add_option("-v", "--verbose", action="store_true", default=False)
     parser.add_option("-s", "--suffix", action="store", default=None)
     parser.add_option("-e", "--email", action="append", default=[])
+    parser.add_option("-b", "--board", action="store", default=None)
+    parser.add_option("-D", "--delay", action="store", type="int", default=None)
 
     (opts, args) = parser.parse_args()
 
     if (opts.uname is None):
         try:
-            opts.uname = os.getlogin()
+            opts.uname = _getlogin()
+            print "Running as user %s" % opts.uname
         except:
             opts.uname = "secret_squirrel"
 
+    if (opts.board is not None):
+        if (opts.board not in boards):
+            print "unknown board %s" % opts.board
+            sys.exit(1)
+            
     if len(args) < 1:
         parser.error("missing action, one of: submit, list, kill, restart, tail, less")
         sys.exit(1)
@@ -423,23 +527,53 @@ def sod_client():
             parser.error("kill expects an id")
 
         rmjob(opts, args[0])
+    elif (action == "online"):
+        online_server(opts)
+    elif (action == "offline"):
+        if (len(args) == 0):
+            parser.error("please specify a reason")
+        offline_server(opts, " ".join(args))
     else:
         parser.error("unknown action %s" % action)
 
 
-class FauxOpts:
-    pass
-
+def claim_job(job, board):
+    fname = fclaim(job)
+    try:
+        print "open %s" % fname
+        f = os.open(fname, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+        print "write %s" % board
+        os.write(f, "%s" % board)
+        print "done"
+        return job
+    except:
+        print "except fail"
+        return None
+    
+        
 def main(opts, joblist):
 
     if (len(joblist) == 0):
         print "No job to run"
         return
+
+    print "%s claiming job %s" % (opts.board, joblist[0]['path'])
+    job = claim_job(joblist[0], opts.board)
+    if (job is None):
+        print "Failed to claim job, trying again..."
+        return
     
-    job = joblist[0]
     print "Running the following job..."
     print_status(opts, job)
 
+    delay = job.get("delay", 0)
+    if (delay > 0):
+        print "%s: Delaying for %d seconds...\n" % (datetime.datetime.now().replace(microsecond=0).isoformat(), delay)
+        open(fraw(job), 'w').write("delaying for %s seconds\n" % delay)
+        time.sleep(delay)
+        print "%s: Continuing job\n" % datetime.datetime.now().replace(microsecond=0).isoformat()
+
+    
     # default 5 minute timeout
     timeout = job.get("timeout", "")
     if (timeout != ""):
@@ -460,14 +594,16 @@ def main(opts, joblist):
     if (USE_TFTP):
         tftp = "-F"
         
-    os.system("(cd %s && %s/run_job.py -r /tmp/reset-device.now %s %s %s %s -- %s)" % (job['path'], SODDIR, tftp, timeout, xargs, funos, args))
+    os.system("(cd %s && %s/run_job.py -r --board=%s %s %s %s %s -- %s)" % (job['path'], SODDIR, opts.board, tftp, timeout, xargs, funos, args))
 
     if (not os.path.exists(frestart(job))):
         os.system("(echo -n 'Finished at ' && date) > %s" % fdone(job['path']))
         print "job done in %s" % job['path']
+        os.system("rm -f %s" % fclaim(job))
     else:
         print "job in %s requires restart" % job['path']
         os.system("rm %s" % frestart(job))
+        os.system("rm -f %s" % fclaim(job))
         return
     
     email = job.get("emails", "")
@@ -479,14 +615,14 @@ def main(opts, joblist):
         
         subject = "[silicon on demand] job %s complete" % job['jobid']
 
-        body = "log path %s" % job["path"]
+        body = "log path<br />%s/minicom-log<br />" % job["path"]
         
         if (os.path.exists(job['log'])):
-            out = subprocess.Popen(['tail', '-250', job['log']], 
+            out = subprocess.Popen(['%s/uart2html.py' % SODDIR, job['log']], 
                                    stdout=subprocess.PIPE, 
                                    stderr=subprocess.STDOUT)
             stdout,stderr = out.communicate()
-            body += "\nlog tail: \n%s" % stdout
+            body += stdout
         else:
             body += "\ncouldn't dump logfile"
 
@@ -494,7 +630,7 @@ def main(opts, joblist):
         fl.write(body)
         fl.close()
 
-        cmd = "cat %s/email-body.txt | mail -r charles.gray+silicon@fungible.com -s '%s' %s" % (job['path'], subject, email)
+        cmd = "cat %s/email-body.txt | mail -r charles.gray+silicon@fungible.com -s '%s' -a 'Content-Type: text/html; charset=UTF-8' %s" % (job['path'], subject, email)
         print "Here goes nothing..."
         os.system(cmd)
         print "Sent?"
@@ -508,23 +644,40 @@ if (__name__ == "__main__"):
     # ignore hangups from child job management
     signal.signal(signal.SIGHUP, sighup_handler)
 
-    # faux options
-    opts = FauxOpts()
-    opts.uname = "cgray"
-    opts.all = True
-    opts.verbose = False
+    parser = optparse.OptionParser(usage="usage: %prog [options] action [arguments]")
+    parser.add_option("-u", "--uname", action="store", default=None)
+    parser.add_option("-a", "--all", action="store", default=True)
+    parser.add_option("-v", "--verbose", action="store", default=False)
+    parser.add_option("-b", "--board", action="store", default=None)
 
-    joblist = job_list_by_date(opts)
+    (opts, args) = parser.parse_args()
+
+    if (opts.uname is None):
+        try:
+            opts.uname = _getlogin()
+            print "Running as user %s" % opts.uname
+        except:
+            opts.uname = "secret_squirrel"
+
+    if (opts.board not in boards):
+        print "invalid board specified: %s. Pick one of: %s" % (opts.board, boards)
+        sys.exit(1)
+
+    run_next = False
+    if ((len(args) > 0) and (args[0] == "run_next")):
+        run_next = True
+    
+    joblist = unclaimed_job_list_by_date(opts)
 
     # see if we're a single instance
-    if ((len(sys.argv) > 1) and (sys.argv[1] == "run_next")):
+    if (run_next):
         print "silicon on demand running next job"
         main(opts, joblist)
         print "returning"
         sys.exit(0)
 
     # main server loop
-    runfile = "%s/run" % SODDIR
+    runfile = get_runfile(opts)
     print "Starting silicon on demand server..."
     while (True):
         # see if we should terminate
@@ -534,7 +687,7 @@ if (__name__ == "__main__"):
             continue
 
         # get the latest job list
-        joblist = job_list_by_date(opts)
+        joblist = unclaimed_job_list_by_date(opts)
         
         # see if there's even a job to run
         if (len(joblist) == 0):
@@ -542,7 +695,7 @@ if (__name__ == "__main__"):
             continue
 
         # call out to run the next job
-        os.system("%s run_next" % sys.argv[0])
+        os.system("%s --board=%s run_next" % (sys.argv[0], opts.board))
         print "Silicon on demand server pausing for next job..."
         time.sleep(5)
 
