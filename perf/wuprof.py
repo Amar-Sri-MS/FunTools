@@ -1120,8 +1120,7 @@ def html_uart_log(opts):
     s = opts.uart_log
     
     # XXX: finding this is a bit gross
-    #try:
-    if (1):
+    try:
         fpath = os.path.dirname(os.path.realpath(__file__))
         p = "%s/../silicon_on_demand" % (fpath)
         print "appending %s" % p
@@ -1131,8 +1130,6 @@ def html_uart_log(opts):
         s = uart2html.str2html(s)
 
         opts.uart_log = s
-    try:
-        pass
     except:
         print "Error processing UART to HTML"
         opts.uart_log = "<pre>\n" + cgi.escape(s) + "\n</pre>\n"
