@@ -255,7 +255,7 @@ class TestPerfParser(unittest.TestCase):
 
         sample = self.parser.samples[0]
         self.assertTrue(sample.is_custom_data)
-        self.assertEqual(0xcafebabedeadbeef, sample.custom_data)
+        self.assertEqual(0xdeadbeefcafebabe, sample.custom_data)
 
 
 class TestPerfParserIntegration(unittest.TestCase):
