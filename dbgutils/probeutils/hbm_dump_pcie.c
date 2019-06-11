@@ -1,4 +1,5 @@
 /*
+ * Tool to dump HBM contents over PCIe using csr peek
  */
 #include <stdio.h>
 #include <ctype.h>
@@ -16,6 +17,7 @@
 #include <syslog.h>
 #include <assert.h>
 #include <libgen.h>
+#include <inttypes.h>
 
 #define MEM_RW_CMD_CSR_ADDR 0x90001900f0ull
 #define MEM_RW_STATUS_CSR_ADDR 0x90001900f8ull
@@ -25,6 +27,7 @@
 #define MUH_SNA_CMD_ADDR_START 0x1000ull
 
 #define MIO_FATAL_INTR_BSET 0xb000000030ull
+#define HBM_SIZE_GB         ((uint64_t)8 << 30) // 8GB
 
 /*
  * Server Global Variables.
@@ -567,9 +570,14 @@ ccu_info_t *pcie_connect(const char *bar)
 
 	ccu_info->spinlock_token = getpid();
 	ccu_info->spinlock = ccu_spinlock(ccu_info);
+	if (!ccu_info->spinlock) {
+		LOG(ERROR, "Failed to get spinlock!");
+		goto error;
+	}
 
 	ccu_dump(ccu_info);
 	LOG(NOTICE, "PCIE CONNECTION SUCCESSFUL!");
+
 	return ccu_info;
 
 error:
@@ -659,7 +667,6 @@ bool hbm_read_aligned(ccu_info_t *ccu_info, uint64_t start_addr,
 
 	assert(read_buf);
 	assert(ccu_info);
-	assert(start_addr);
 	assert(num_bytes);
 
 	if (num_bytes & 0xFF != 0) {
@@ -696,12 +703,12 @@ bool hbm_read_aligned(ccu_info_t *ccu_info, uint64_t start_addr,
 		uint64_t csr_val = muh_sna_cmd_addr << 37;
 		csr_val |= 0x1ull << 63; //READ
 		data[0] = csr_val;
-		//LOG(DEBUG, "csr_val: 0x%lx", csr_val);
 		status = pcie_csr_write(ccu_info, csr_addr, 1, data);
 		if (status == true) {
-			LOG(INFO, "Poke:%lu addr: 0x%lx Success!", cnt, muh_sna_cmd_addr);
+			LOG(INFO, "Poke:%"PRIu64 " addr: 0x%"PRIx64 " Success!",
+			    cnt, muh_sna_cmd_addr);
 		} else {
-			LOG(ERROR, "CSR Poke failed! Addr: 0x%lx", csr_addr);
+			LOG(ERROR, "CSR Poke failed! Addr: 0x%"PRIx64, csr_addr);
 			return false;
 		}
 
@@ -718,7 +725,8 @@ bool hbm_read_aligned(ccu_info_t *ccu_info, uint64_t start_addr,
 				LOG(DEBUG, "Data ready!");
 			}
 		} else {
-			LOG(ERROR, "Error! pcie_csr_read csr_addr: 0x%lx", csr_addr);
+			LOG(ERROR, "Error! pcie_csr_read csr_addr: 0x%"PRIx64,
+			    csr_addr);
 			return false;
 		}
 
@@ -728,7 +736,7 @@ bool hbm_read_aligned(ccu_info_t *ccu_info, uint64_t start_addr,
 			status = pcie_csr_read(ccu_info, csr_addr, 1, &data[i]);
 			if (status == true) {
 				LOG(DEBUG, "peek word: success!!!");
-				LOG(DEBUG, "Read value:0x%lx", data[0]);
+				LOG(DEBUG, "Read value:0x%"PRIx64, data[0]);
 				read_data_words[(cnt * 8) + i] = data[i];
 			} else {
 				LOG(ERROR, "Error! reading word: %lu", i);
@@ -743,7 +751,7 @@ bool hbm_read_aligned(ccu_info_t *ccu_info, uint64_t start_addr,
 		LOG(INFO, "Succesfully read %u words!", num_reads * 8);
 		for(uint64_t i = 0; i < num_64bit_words; i++) {
 			*(uint64_t *)(read_buf + (i * 8)) = htobe64(read_data_words[i]);
-			LOG(INFO, "Address: 0x%lx  Data: 0x%lx", (start_addr+(i*8)),
+			LOG(INFO, "Address: 0x%"PRIx64 " Data: 0x%"PRIx64, (start_addr+(i*8)),
 			    read_data_words[i]);
 		}
 
@@ -756,7 +764,7 @@ bool hbm_read_aligned(ccu_info_t *ccu_info, uint64_t start_addr,
 }
 
 bool hbm_copy_to_file(ccu_info_t *ccu_info, uint64_t start_addr,
-		uint32_t size, const char *file_path)
+		uint64_t size, const char *file_path)
 {
         uint64_t start_offset = start_addr & 0xff;
         uint64_t end_offset = (start_offset + size) & 0xFFull;
@@ -769,10 +777,11 @@ bool hbm_copy_to_file(ccu_info_t *ccu_info, uint64_t start_addr,
 	uint64_t wr_end = 0;
 
 	LOG(NOTICE, "Copying HBM data to file: %s"
-	    " start_addr: 0x%lx size:0x%lx", file_path, start_addr, size);
+	    " start_addr: 0x%"PRIx64 " size:0x%"PRIx64,
+	    file_path, start_addr, size);
 
-	LOG(INFO, "start_offset:0x%lx end_offset:0x%lx read_size:0x%lx",
-	    start_offset, end_offset, read_size);
+	LOG(INFO, "start_offset:0x%"PRIx64" end_offset:0x%"PRIx64
+	    " read_size:0x%"PRIx64, start_offset, end_offset, read_size);
 
         FILE *f = fopen(file_path, "wb");
 	if (f == NULL) {
@@ -818,7 +827,8 @@ bool hbm_dump(ccu_info_t *ccu_info, uint64_t start_addr, uint32_t size)
         size = (size + 255) & ~0xffull;
 	uint64_t read_offset = 0;
 
-        LOG(NOTICE, "Aligned start_addr: 0x%lx size:0x%lx", start_addr, size);
+	LOG(NOTICE, "Aligned start_addr: 0x%"PRIx64
+	    " size:0x%"PRIx64, start_addr, size);
 
         while(read_offset < size) {
 		uint8_t data[256] = {0};
@@ -830,7 +840,7 @@ bool hbm_dump(ccu_info_t *ccu_info, uint64_t start_addr, uint32_t size)
 		}
 
 		for (uint32_t i = 0; i < (256/8); i++) {
-			printf("Address:0x%lx  data:0x%016lx\n",
+			printf("Address:0x%016"PRIx64" data:0x%016"PRIx64 "\n",
 			       (start_addr + read_offset + (i*8)),
 			       be64toh(*(uint64_t *)(data + (i * 8))));
 		}
@@ -883,12 +893,12 @@ main(int argc, char *const argv[])
 			break;
 		case 'a':
 			addr = strtoull(optarg, NULL, 0);
-			LOG(NOTICE, "start addr: 0x%lx", addr);
+			LOG(NOTICE, "start addr: 0x%"PRIx64, addr);
 			break;
 
 		case 's':
 			size = strtoull(optarg, NULL, 0);
-			LOG(NOTICE, "size: 0x%lx", size);
+			LOG(NOTICE, "size: 0x%"PRIx64, size);
 			break;
 
 		case 'h':
@@ -916,9 +926,23 @@ main(int argc, char *const argv[])
 		}
 	}
 
-	assert(addr);
-	assert(size);
-	assert(bar);
+	if (!bar) {
+		LOG(ERROR, "Invalid bar info(null)!");
+		exit(EXIT_FAILURE);
+	}
+
+	if (addr >= HBM_SIZE_GB) {
+		LOG(ERROR, "Invalid hbm start address:0x%"PRIx64
+		    ". It should be less than 0x%"PRIx64 "!", addr, HBM_SIZE_GB);
+		exit(EXIT_FAILURE);
+	}
+
+	if (addr + size > HBM_SIZE_GB) {
+		LOG(ERROR, "Invalid size:0x%"PRIx64
+		    ". Valid memory range: 0x0 - 0x%"PRIx64 "!",
+		    size, HBM_SIZE_GB-1);
+		exit(EXIT_FAILURE);
+	}
 
 	if (file) {
 		struct stat sb;
@@ -957,4 +981,5 @@ main(int argc, char *const argv[])
 
 end:
 	pcie_disconnect(ccu_info);
+	exit(EXIT_SUCCESS);
 }
