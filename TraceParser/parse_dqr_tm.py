@@ -208,7 +208,7 @@ class PerfSampleBuilder:
     # The following constants apply to custom sample data.
     WORD2_CUSTOM_ID_SHIFT = 18
     WORD2_CUSTOM_ID_MASK = 0x3fff
-    WORD3_CUSTOM_DATA_SHIFT = 32
+    WORD3_CUSTOM_DATA_MASK = 0xffffffff00000000
     WORD4_CUSTOM_DATA_SHIFT = 32
 
     def __init__(self, vp):
@@ -256,8 +256,8 @@ class PerfSampleBuilder:
 
     def _process_entry3(self, sample):
         if sample.is_custom_data:
-            sample.custom_data = (self.tfs[3].addr
-                                  >> self.WORD3_CUSTOM_DATA_SHIFT)
+            sample.custom_data = (self.tfs[3].addr &
+                                  self.WORD3_CUSTOM_DATA_MASK)
             return
 
         sample.perf_counts[1] = self.tfs[3].addr >> self.WORD3_PERF1_SHIFT
@@ -268,7 +268,7 @@ class PerfSampleBuilder:
         if sample.is_custom_data:
             sample.custom_data = (sample.custom_data
                                   | (self.tfs[4].addr
-                                     >> self.WORD4_CUSTOM_DATA_SHIFT << 32))
+                                     >> self.WORD4_CUSTOM_DATA_SHIFT))
             return
 
         sample.perf_counts[3] = self.tfs[4].addr >> self.WORD4_PERF3_SHIFT
