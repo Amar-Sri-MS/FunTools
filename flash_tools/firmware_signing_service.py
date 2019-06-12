@@ -6,8 +6,7 @@ import sys
 import enrollment_service as es
 import generate_firmware_image as gfi
 
-SIGNING_SERVICE_URL = "https://f1reg.fungible.local:4443/cgi-bin/signing_server.cgi"
-CERT = os.path.join(sys.path[0],'f1registration.ca.pem')
+SIGNING_SERVICE_URL = "https://f1reg.fungible.com:4443/cgi-bin/signing_server.cgi"
 
 def GetModulus(name):
     params = {
@@ -16,7 +15,7 @@ def GetModulus(name):
         'key' : name
     }
 
-    response = requests.get(SIGNING_SERVICE_URL, params=params, verify=CERT)
+    response = requests.get(SIGNING_SERVICE_URL, params=params)
     return response.content
 
 
@@ -108,8 +107,7 @@ class NetSigningService(FirmwareSigningService):
 
         response = requests.post(SIGNING_SERVICE_URL,
                                 files=multipart_form_data,
-                                params=params,
-                                verify=CERT)
+                                params=params)
 
         gfi.write(outfile, response.content)
 
