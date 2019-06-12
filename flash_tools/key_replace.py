@@ -19,29 +19,43 @@ class RsaModulus(object):
 
     @staticmethod
     def create(name, mode):
-        config = {
-            "fpk3" :
-                { "type": HsmRsaModulus,
-                  "mode": RsaModulus.MOD_HSM },
-            "fpk4" :
-                { "type": EnrollmentModulus,
+        config = [
+                { "name" : "fpk3",
+                  "type": SigningModulus,
                   "mode": RsaModulus.MOD_NET },
-            "fpk5" :
-                { "type": HsmRsaModulus,
+                { "name" : "fpk3",
+                  "type": HsmRsaModulus,
                   "mode": RsaModulus.MOD_HSM },
-        }
-        try:
-            c = config[name]
-            if (c["mode"] & mode) != c["mode"]:
-                raise TypeError("Operating mode {} not available".format(c["mode"]))
-            return c["type"](name)
-        except:
-            raise
+                { "name" : "fpk4",
+                  "type": EnrollmentModulus,
+                  "mode": RsaModulus.MOD_NET },
+                { "name" : "fpk4",
+                  "type": HsmRsaModulus,
+                  "mode": RsaModulus.MOD_HSM },
+                { "name" : "fpk5",
+                  "type": SigningModulus,
+                  "mode": RsaModulus.MOD_NET },
+                { "name" : "fpk5",
+                  "type": HsmRsaModulus,
+                  "mode": RsaModulus.MOD_HSM },
+        ]
+
+        for c in list(filter(lambda el: el['name'] == name, config)):
+            if (c["mode"] & mode) == c["mode"]:
+                return c["type"](name)
+
+        raise TypeError("Key {} mode {} not available".format(name, mode))
 
 class EnrollmentModulus(RsaModulus):
     def __init__(self, name):
         import enrollment_service as es
         m = es.GetModulus()
+        super().__init__(name, m)
+
+class SigningModulus(RsaModulus):
+    def __init__(self, name):
+        import firmware_signing_service as fss
+        m = fss.GetModulus(name)
         super().__init__(name, m)
 
 class HsmRsaModulus(RsaModulus):

@@ -12,7 +12,7 @@ all:
 # install to SDK
 install:
 	mkdir -p $(FLASHTOOLS_INSTALL_DIR)
-	rsync -Rr --exclude=Makefile . $(FLASHTOOLS_INSTALL_DIR)
+	rsync -aRr --exclude=Makefile --exclude=__pycache__ . $(FLASHTOOLS_INSTALL_DIR)
 
 clean:
 

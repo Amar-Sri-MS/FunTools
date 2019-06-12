@@ -17,6 +17,7 @@
 import os, struct, binascii, argparse, sys
 import traceback, getpass, datetime, configparser
 import fcntl
+import hashlib
 
 from asn1crypto import pem
 
@@ -489,10 +490,13 @@ def export_pub_key(outfile, label, c_source):
         print("No changes in modulus")
 
 
-def export_pub_key_hash(outfile, label):
+def export_pub_key_hash(outfile, label, modulus=None):
     ''' hash of modulus of key; create the key if it does not exist '''
 
-    hash = get_create_public_rsa_modulus(label, hash=pkcs11.Mechanism.SHA256)
+    if modulus:
+        hash = hashlib.sha256(modulus).digest()
+    else:
+        hash = get_create_public_rsa_modulus(label, hash=pkcs11.Mechanism.SHA256)
 
     # export the hash of the modulus of the public key
 
@@ -582,7 +586,7 @@ def sign_binary(binary, sign_key, der_encoded=False, do_not_append=False):
 
 
 def cert_gen(outfile, cert_key, cert_key_file, sign_key, serial_number,
-             serial_number_mask, debugger_flags, tamper_flags):
+             serial_number_mask, debugger_flags, tamper_flags, modulus=None):
 
     dflags = int(debugger_flags, 16)
     tflags = int(tamper_flags, 16)
@@ -605,7 +609,9 @@ def cert_gen(outfile, cert_key, cert_key_file, sign_key, serial_number,
                         str(SERIAL_INFO_NUMBER_SIZE) + " bytes long")
     to_be_signed += s_num_mask
 
-    if cert_key:
+    if modulus:
+        pass
+    elif cert_key:
         # PUBLIC KEY: will be created if no such key
         modulus = get_create_public_rsa_modulus(cert_key)
     elif cert_key_file:
@@ -616,9 +622,13 @@ def cert_gen(outfile, cert_key, cert_key_file, sign_key, serial_number,
     to_be_signed = append_modulus_to_binary(to_be_signed, modulus)
 
     # SIGNATURE
-    cert = sign_binary(to_be_signed, sign_key)
+    if sign_key:
+        cert = sign_binary(to_be_signed, sign_key)
+    else:
+        return to_be_signed
 
     write(outfile, cert)
+    return None
 
 def raw_sign(out_path, in_path, sign_key, der_encoded=False, do_not_append=False):
     ''' raw sign: just sign the content and append the signature '''
