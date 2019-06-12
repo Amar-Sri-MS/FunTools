@@ -5,11 +5,10 @@ import ssl
 import sys
 import urllib.request, urllib.error, urllib.parse
 
-ENROLL_SERVICE_URL = "https://f1reg.fungible.local:4443/cgi-bin/enrollment_server.cgi"
+ENROLL_SERVICE_URL = "https://f1reg.fungible.com/cgi-bin/enrollment_server.cgi"
 
 def _get_ssl_ctx():
     ctx = ssl.create_default_context()
-    ctx.load_verify_locations(os.path.join(sys.path[0],'f1registration.ca.pem'))
     return ctx
 
 def GetModulus():
@@ -28,4 +27,3 @@ def Sign(data):
     req = urllib.request.Request(url, d, method='PUT')
     resp = urllib.request.urlopen(req, context=_get_ssl_ctx())
     return base64.b64decode(resp.read())
-
