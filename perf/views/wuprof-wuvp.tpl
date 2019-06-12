@@ -110,6 +110,7 @@ VP Utilisation:
       <p>Idle time: {{ pp.pct(vp.idleutil) }}%<p>
       <p>utilisation gap: {{ pp.pct(1.0 - vp.wuutil - vp.idleutil) }}</p>
       <p>non-idle WUs: {{ vp.wucount }}</p>
+      <p>Idle fixup: {{ vp.idle_fixup }}<p>
       <p>Showing top {{ opts.nwus }} WU(s)</p>
       <font size="-1">
       <table>
@@ -135,9 +136,7 @@ VP Utilisation:
 
    <h3>UART log</h3>
    <div style="width=80%;max-height:500px;overflow:auto;background-color:#f8f8f8">
-   <pre>
-{{ opts.uart_log }}
-   </pre>
+{{ !opts.uart_log }}
    </div>
 % end
 

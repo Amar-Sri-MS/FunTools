@@ -1,6 +1,7 @@
 #!/usr/bin/python
 import os
 import re
+import cgi
 import sys
 import math
 import urllib2
@@ -752,15 +753,35 @@ class WUVPVP:
         self.ccv = ccv
         self.runtime = 0.0
         self.idletime = 0.0
+        self.idle_fixup = 0.0
         self.wucount = 0
         self.util = None
+        self.last_ts = 0
+        self.first_ts = None
 
+    # some VPs may be very inactive and the idle WU tracking may lose
+    # data and they end up looking busier than they are. Make sure we
+    # account for extra idle time
+    def check_edge_timestamp(self, timestamp, runtime):
+        ts = timestamp + runtime
+        if (ts > self.last_ts):
+            self.last_ts = ts
+
+        if ((self.first_ts is None)
+            or (timestamp < self.first_ts)):
+            self.first_ts = timestamp
+        
     def compute_util(self, bench):
         self.wuutil = self.runtime / (bench.tN - bench.t0)
-        self.idleutil = self.idletime / (bench.tN - bench.t0)
+        self.idle_fixup = (bench.tN - self.last_ts) + (self.first_ts - bench.t0)
+        self.idleutil = (self.idletime + self.idle_fixup) / (bench.tN - bench.t0)
 
-        # utilisation = 1 - idletime
-        self.util = 1.0 - self.idleutil
+        if (self.idleutil < 1.0):
+            # default: utilisation = 1 - adjusted idletime
+            self.util = 1.0 - self.idleutil
+        else:
+            # some VPs see idle time > runtime, so use the odl algorithm
+            self.util = self.wuutil
 
     def util_char(self):
         # compute the char like in FunOS
@@ -1033,6 +1054,9 @@ def process_bench(opts, rows, perf_headers, bid):
         # runtime (cycles -> ns)
         rt = row[COL_CYCLES] / FREQ_DIV
 
+        # track idle edge-case
+        vp.check_edge_timestamp(row[COL_TS], rt)
+        
         # compute counts and runtime if it's not idle
         if (not is_idle_wuid(wuid)):
             vp.runtime += rt
@@ -1091,6 +1115,25 @@ def wuvp_process_trace(pd, opts):
 
     return benches
 
+def html_uart_log(opts):
+
+    s = opts.uart_log
+    
+    # XXX: finding this is a bit gross
+    try:
+        fpath = os.path.dirname(os.path.realpath(__file__))
+        p = "%s/../silicon_on_demand" % (fpath)
+        print "appending %s" % p
+        sys.path.append(p)
+
+        import uart2html
+        s = uart2html.str2html(s)
+
+        opts.uart_log = s
+    except:
+        print "Error processing UART to HTML"
+        opts.uart_log = "<pre>\n" + cgi.escape(s) + "\n</pre>\n"
+
 
 def load_sample_file(opts, fname):
 
@@ -1103,7 +1146,9 @@ def load_sample_file(opts, fname):
         # scrape some interesting stuff out of the uart
         opts.uart_scrape["boot-args"] = scrape_boot_args(opts.uart_log)
         opts.uart_scrape["version"] = scrape_version(opts.uart_log)
-        
+
+        # turn the uart log into HTML
+        html_uart_log(opts)
         
     print "loading samples file %s" % fname
 
