@@ -34,15 +34,9 @@ def image_gen(server, infile,
 
     params = { 'key' : sign_key, 'type': ftype, 'version' : version, 'description': description }
 
-
-    # open(outfile, 'wb').write(requests.Request('POST', url_str,
-    #                     files=multipart_form_data,
-    #                     params=params).prepare().body) # or .headers
-
     response = requests.post(url_str,
                              files=multipart_form_data,
-                             params=params,
-                             verify=False) #'../f1registration.ca.pem')
+                             params=params)
 
     return response.content
 
@@ -53,7 +47,7 @@ def get_key(server, key_label):
 
     params = { 'cmd' : 'modulus', 'key' : key_label }
 
-    response = requests.get(url_str,params=params,verify=False)
+    response = requests.get(url_str,params=params)
 
     return response.content
 
@@ -107,7 +101,7 @@ def main_program():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("-s", "--server", dest="server",
-                        default="f1reg.fungible.local",
+                        default="f1reg.fungible.com",
                         help="Ip address or DNS name of server to test")
 
     options = parser.parse_args()
