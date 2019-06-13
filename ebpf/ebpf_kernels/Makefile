@@ -20,8 +20,11 @@
 
 
 CC := clang
-TARGET ?= bpfel
-CFLAGS := -O2 -Wno-implicit-function-declaration
+
+OS := $(shell uname)
+
+TARGET ?= bpfeb
+CFLAGS := -O2 -Wno-implicit-function-declaration -I ../include
 SRCS := $(wildcard *.c)
 
 OBJFILES := $(patsubst %.c,%.o,$(SRCS))
@@ -34,6 +37,12 @@ GEN_BC ?= ebpf_bc_$(TARGET)
 EXPORT_HDR ?= ebpf_kern_args.h
 GEN_HDR ?= ebpf_gen.h
 INDENT_ARGS=-npro -kr -i8 -ts8 -sob -l80 -ss -ncs -cp1 -il0
+
+
+ifneq ($(OS),Linux)
+    $(error Cannot compile for non-linux clients)
+endif
+
 
 
 ifeq ($(TARGET),$(filter $(TARGET),bpfeb bpfel))

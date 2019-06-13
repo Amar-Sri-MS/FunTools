@@ -7,10 +7,13 @@
 #  Copyright © 2019 Fungible Inc. All rights reserved.
 #
 #
-TARGET ?= bpfel
-KERNEL ?= 05
+TARGET ?= bpfeb
+KERNEL ?= 06
 WORKSPACE ?= ../../../
-
+#fs22
+HOST ?= "10.1.20.145"
+PORT ?= 40220
+XDP_PORT ?= 512
 
 OS := $(shell uname)
 
@@ -44,9 +47,9 @@ ebpf_cli: $(COMMON) ebpf_cli.o
 	$(call cpp_tidy,$<)
 	$(CXX) -c $(CXXFLAGS) $<
 attach:
-	./ebpf_cli -p 40221 cmd=attach sec=xdp cl_id=22 tx_id=22 qid=128 order=10 bpf_file=$(BC_FILE)
+	./ebpf_cli --dpc_host=$(HOST) --dpc_port=$(PORT) cmd=attach sec=xdp cl_id=22 tx_id=22 qid=$(XDP_PORT) order=10 bpf_file=$(BC_FILE)
 detach:
-	./ebpf_cli -p 40221 cmd=detach sec=xdp cl_id=22 tx_id=22
+	./ebpf_cli --dpc_host=$(HOST) --dpc_port=$(PORT) cmd=detach sec=xdp cl_id=22 tx_id=22
 
 clean:
 	rm -f *.o *~
