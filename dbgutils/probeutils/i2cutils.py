@@ -650,7 +650,7 @@ class i2c:
         length -= 4
         rdata = None
         if (length  > 0):
-            (status, rdata) = self.i2c_dbg_chal_nread(chip_inst, length)
+            (status, rdata) = self.i2c_dbg_chal_nread(length)
         if status is True:
             if rdata is not None and len(rdata) != 0:
                 header.extend(rdata)
@@ -726,7 +726,7 @@ class i2c:
             logger.error(err_msg)
             return (False, err_msg)
 
-        (status, header) = self.i2c_dbg_chal_nread(chip_inst, 4)
+        (status, header) = self.i2c_dbg_chal_nread(4)
         if status is True:
             return (True, header)
         else:
@@ -757,7 +757,7 @@ class i2c:
                 logger.error('cmd error status:{0} is set! still proceeding with flush!'.format(status_byte))
 
             if (length  > 0):
-                (status, data) = self.i2c_dbg_chal_nread(chip_inst, length)
+                (status, data) = self.i2c_dbg_chal_nread(length)
                 if status is True:
                     logger.debug('Flushed {0} bytes. data: {1}'.format(len(data), data))
                     flushed = False
