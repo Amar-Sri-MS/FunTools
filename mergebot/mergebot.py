@@ -61,7 +61,8 @@ def check_pr(repo, pr):
         print "\tChecks failed. Not merging"
         return
     
-    print "\tmergebot wants to merge"
+    print "\tmergebot is merging!"
+    pr.merge("PR merge attempt by mergebot")
 
 def scan_repo(repo):
 
