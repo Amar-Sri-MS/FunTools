@@ -95,6 +95,22 @@ def test_image_gen_with_cert(server):
 
     return 1
 
+
+def test_image_gen_with_customer_cert(server):
+
+    signed_image = image_gen(server, './puf_rom_m5150.bin',
+                             'pufr', 1, 'eSecure PUF-ROM',
+                             None, '../development_start_certificate.bin',
+                             '../customer_certificate.bin')
+
+    signed_image_exp = open('./customer_signed_puf_rom_m5150.bin', 'rb').read()
+
+    if signed_image == signed_image_exp:
+        return 0
+
+    return 1
+
+
 def main_program():
     errors = 0
 
@@ -110,6 +126,7 @@ def main_program():
         errors += test_get_binary_fpk4(options.server)
         errors += test_image_gen_with_key(options.server)
         errors += test_image_gen_with_cert(options.server)
+        errors += test_image_gen_with_customer_cert(options.server)
 
     except Exception as ex:
         print("Exception occurred %s" % str(ex))
