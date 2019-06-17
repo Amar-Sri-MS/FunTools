@@ -52,6 +52,10 @@ class HsmSigningService(FirmwareSigningService):
     def export_pub_key_hash(outfile, label):
         gfi.export_pub_key_hash(outfile, label)
 
+    @staticmethod
+    def raw_sign(file):
+        return gfi.raw_sign(None, file, "fpk4")
+
 class NetSigningService(FirmwareSigningService):
     @staticmethod
     def cert_gen(outfile, cert_key, cert_key_file, sign_key, serial_number,
@@ -114,3 +118,8 @@ class NetSigningService(FirmwareSigningService):
     @staticmethod
     def export_pub_key_hash(outfile, label):
         gfi.export_pub_key_hash(outfile, None, modulus=GetModulus(label))
+
+    @staticmethod
+    def raw_sign(file):
+        with open(file, 'rb') as f:
+            return es.Sign(f.read())

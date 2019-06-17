@@ -586,9 +586,7 @@ def run(arg_action, arg_enroll_cert = None, arg_enroll_tbs = None, *args, **kwar
         enroll_cert = None
 
         if arg_enroll_tbs:
-            import enrollment_service as es
-            with open(arg_enroll_tbs, 'rb') as f:
-                enroll_cert = es.Sign(f.read())
+            enroll_cert = firmware_sign.raw_sign(arg_enroll_tbs)
 
         if arg_enroll_cert:
             try:
