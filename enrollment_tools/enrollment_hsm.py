@@ -7,7 +7,8 @@
 # list: list all RSA keys in the HSM for the token
 # create: create a RSA key
 # remove: remove the key from the HSM
-# modulus: print the modulus of the key/
+# modulus: print the modulus of the key
+# import: import a key into the hsm
 
 
 import os, struct, binascii, argparse, sys
