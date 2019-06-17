@@ -434,6 +434,7 @@ def main():
     parser.add_argument('--source-dir', action='append', help='Location of source files to be used (can be specified multiple times)', default=[os.path.curdir])
     parser.add_argument('--action', choices={'all', 'sign', 'flash', 'key_hashes', 'certificates', 'key_injection'}, default='all', help='Action to be performed on the input files')
     parser.add_argument('--force-version', type=int, help='Override firmware versions')
+    parser.add_argument('--use-hsm', action='store_true', help='Use HSM for signing/keys')
     group = parser.add_mutually_exclusive_group()
     group.add_argument('--enroll-cert', metavar = 'FILE', help='Enrollment certificate')
     group.add_argument('--enroll-tbs', metavar = 'FILE', help='Enrollment tbs')
@@ -472,7 +473,8 @@ def main():
     if args.force_version:
         set_versions(args.force_version)
 
-    run(args.action, args.enroll_cert, args.enroll_tbs)
+    run(args.action, args.enroll_cert, args.enroll_tbs,
+                hsm=args.use_hsm, net=(not args.use_hsm))
 
 #TODO(mnowakowski) get rid of globals
 def set_config(cfg):
