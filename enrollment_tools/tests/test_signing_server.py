@@ -51,6 +51,13 @@ def get_key(server, key_label):
 
     return response.content
 
+def get_customer_cert(server, key_label):
+
+    url_str = "https://" + server + ":4443/" + key_label + "_certificate.bin"
+
+    response = requests.get(url_str)
+
+    return response.content
 
 
 ####### tests
@@ -111,6 +118,18 @@ def test_image_gen_with_customer_cert(server):
     return 1
 
 
+def test_get_customer_cert(server):
+
+    customer_cert = get_customer_cert(server, "cpk1")
+
+    customer_cert_exp = open('../customer_certificate.bin', 'rb').read()
+
+    if customer_cert == customer_cert_exp:
+        return 0
+
+    return 1
+
+
 def main_program():
     errors = 0
 
@@ -127,6 +146,7 @@ def main_program():
         errors += test_image_gen_with_key(options.server)
         errors += test_image_gen_with_cert(options.server)
         errors += test_image_gen_with_customer_cert(options.server)
+        errors += test_get_customer_cert(options.server)
 
     except Exception as ex:
         print("Exception occurred %s" % str(ex))
