@@ -15,16 +15,9 @@
 #include "ebpf_include.h"
 
 /*
-* Add maps support
-*/
-struct bpf_map_def SEC("maps") inports =
-{
-.type = BPF_MAP_TYPE_HASH,.key_size = 6,.value_size =
-	    sizeof(uint32_t),.max_entries = 256,};
-
-/*
 * This kernel should drop a packet that has
 * ethType = 0x800, IPv4 protocol + TCP + sport = 1234
+*
 */
 
 int drop(struct k_05_arg *arg)
