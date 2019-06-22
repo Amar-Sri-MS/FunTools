@@ -6,7 +6,8 @@
 *  Copyright © 2019 Fungible Inc. All rights reserved.
 *  This kernel implements an L2 learning switch.
 *  The return value provides an indication on whether
-*  the packet should be flooded, 
+*  the packet should be flooded, or switched directly to an output port
+*  learned earlier. Demonstrates the usage of a map
 */
 
 #include "ebpf_kern_args.h"
@@ -20,8 +21,11 @@
 
 struct bpf_map_def SEC("maps") inports =
 {
-.type = BPF_MAP_TYPE_HASH,.key_size = 6,.value_size =
-	    sizeof(uint32_t),.max_entries = 256,};
+    .type = BPF_MAP_TYPE_HASH,
+    .key_size = 6,
+    .value_size = sizeof(uint32_t),
+    .max_entries = 256,
+};
 
 int l2_learn(struct k_05_arg *arg)
 {
