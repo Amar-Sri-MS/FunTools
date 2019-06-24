@@ -12,7 +12,9 @@ KERNEL ?= 06
 WORKSPACE ?= ../../../
 #fs22
 HOST ?= "10.1.20.145"
-PORT ?= 40220
+#HOST ?= "10.1.50.63"
+#PORT ?= 40220
+PORT ?= 40221
 XDP_PORT ?= 512
 
 OS := $(shell uname)
