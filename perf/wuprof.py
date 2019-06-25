@@ -904,7 +904,7 @@ def samples_from_input(input_name, opts):
     # see if it's just a local file
     if (os.path.isfile(input_name)):
         # load the tabulated samples file
-        pd = load_sample_file(opts, sample_file)
+        return load_sample_file(opts, input_name)
 
     # otherwise, don't know
     raise RuntimeError("Could not find valid input from '%s'" % input_name)
@@ -1149,6 +1149,10 @@ def load_sample_file(opts, fname):
 
         # turn the uart log into HTML
         html_uart_log(opts)
+    else:
+        opts.uart_scrape["boot-args"] = "[no uart log]"
+        opts.uart_scrape["version"] = "[no uart log]"
+
         
     print "loading samples file %s" % fname
 
