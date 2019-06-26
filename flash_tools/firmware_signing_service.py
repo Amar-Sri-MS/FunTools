@@ -7,6 +7,7 @@ import enrollment_service as es
 import generate_firmware_image as gfi
 
 SIGNING_SERVICE_URL = "https://f1reg.fungible.com:4443/cgi-bin/signing_server.cgi"
+CERTIFICATE_SERVICE_URL = "https://f1reg.fungible.com:4443/"
 
 def GetModulus(name):
     params = {
@@ -52,35 +53,26 @@ class HsmSigningService(FirmwareSigningService):
     def export_pub_key_hash(outfile, label):
         gfi.export_pub_key_hash(outfile, label)
 
+    @staticmethod
+    def raw_sign(file):
+        return gfi.raw_sign(None, file, "fpk4")
+
 class NetSigningService(FirmwareSigningService):
     @staticmethod
     def cert_gen(outfile, cert_key, cert_key_file, sign_key, serial_number,
              serial_number_mask, debugger_flags, tamper_flags):
-        return gfi.cert_gen(outfile, cert_key, cert_key_file, sign_key, serial_number,
-            serial_number_mask, debugger_flags, tamper_flags)
+        print("WARNING: Using firmware signing service to provide a certificate.\n"
+              "Currently the server does not generate certificates on the fly "
+              "but only provides a pre-generated certificate associated with a given "
+              "key name <{}>. This may not be desired so if a different certificate "
+              "is required, a certificate must be generated using local hsm mode instead.".format(sign_key))
 
-        # CODE BELOW NEVER EXECUTED, BUT LEFT FOR REFERENCE
-        # when using the service to generate/sign the certificate, and the
-        # certificate file is not available, need to generate the public key
-        # modulus first
-        if cert_key:
-            modulus = GetModulus(cert_key)
+        response = requests.get(CERTIFICATE_SERVICE_URL + sign_key + "_certificate.bin")
+        if response.status_code == requests.codes.ok:
+            gfi.write(outfile, response.content)
         else:
-            modulus = None
-
-        tbs = gfi.cert_gen(outfile=None,
-                cert_key=None,
-                cert_key_file=cert_key_file,
-                sign_key=None,
-                serial_number=serial_number,
-                serial_number_mask=serial_number_mask,
-                debugger_flags=debugger_flags,
-                tamper_flags=tamper_flags,
-                modulus=modulus)
-
-        #TBS to be signed, but server doesn't implement this currently
-        gfi.write(outfile, tbs)
-        raise(Exception())
+            raise(Exception("Failed to obtain certificate for key {}, err {}".format(
+                                    sign_key, response.status_code)))
 
     @staticmethod
     def image_gen(outfile, infile, ftype, version, description, sign_key,
@@ -109,8 +101,17 @@ class NetSigningService(FirmwareSigningService):
                                 files=multipart_form_data,
                                 params=params)
 
-        gfi.write(outfile, response.content)
+        if response.status_code == requests.codes.ok:
+            gfi.write(outfile, response.content)
+        else:
+            raise(Exception("Failed to sign image {}, err {}: {}".format(
+                                    infile, response.status_code, response.content)))
 
     @staticmethod
     def export_pub_key_hash(outfile, label):
         gfi.export_pub_key_hash(outfile, None, modulus=GetModulus(label))
+
+    @staticmethod
+    def raw_sign(file):
+        with open(file, 'rb') as f:
+            return es.Sign(f.read())

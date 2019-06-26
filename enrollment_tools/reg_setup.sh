@@ -35,6 +35,10 @@ sudo -u www-data python3 enrollment_hsm.py create -k fpk4 --token fungible_token
 sudo -u www-data python3 enrollment_hsm.py import -k fpk2 -i development_fpk2.pem --token fungible_token
 sudo -u www-data python3 enrollment_hsm.py import -k fpk3 -i development_fpk3.pem --token fungible_token
 sudo -u www-data python3 enrollment_hsm.py import -k fpk5 -i development_fpk5.pem --token fungible_token
+# customer key
+sudo -u www-data python3 enrollment_hsm.py import -k cpk1 -i cpk1.pem --token fungible_token
+sudo -u www-data python3 enrollment_hsm.py import -k cpk2 -i cpk2.pem --token fungible_token
+
 
 #postgresql setup
 sudo apt-get install postgresql
