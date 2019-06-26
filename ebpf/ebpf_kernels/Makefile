@@ -99,7 +99,7 @@ tidy:
 	$(call generate_bcc,$(basename $(basename $<)))
 	$(call generate_bcc_hdr,$(basename $(basename $<)))
 
-#.SECONDARY: $(OBJFILES)
+.SECONDARY: $(OBJFILES)
 
 %.o: %.c
 	$(call c_tidy,$<)

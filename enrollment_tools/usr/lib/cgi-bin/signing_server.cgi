@@ -166,7 +166,7 @@ def image_gen(binary, ftype, version, description,
 # retrieving binary form content can be problematic.
 # create a function for this as a bottleneck for debugging/logging
 def get_binary_from_form(form, name):
-    ret = form.getfirst(name)
+    ret = form.getfirst(name, default=b'')
     return ret
 
 
