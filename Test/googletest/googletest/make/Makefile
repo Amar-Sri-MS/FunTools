@@ -14,7 +14,7 @@
 
 # Points to the root of the fungible sdk directory
 # Set this as necessary
-SDK_DIR ?= ../../../../../sdk
+SDKDIR ?= ../../../../../sdk
 
 # Points to the root of Google Test, relative to where this file is.
 # Remember to tweak this if you move this file.
@@ -41,17 +41,17 @@ clean :
 	rm -f gtest.a *.o
 
 install :
-	@if [ -d $(SDK_DIR) ]; then echo "installing gtest to '$(SDK_DIR)'"; fi
-	@if [ ! -d $(SDK_DIR) ]; then echo "'$(SDK_DIR)' is not a valid sdk directory"; fi
-	@if [ -d $(SDK_DIR) ]; then \
-	mkdir -p $(SDK_DIR)/include/gtest; \
-	mkdir -p $(SDK_DIR)/include/gtest/internal; \
-	mkdir -p $(SDK_DIR)/include/gtest/internal/custom; \
-	mkdir -p $(SDK_DIR)/lib; \
-	cp $(GTEST_DIR)/include/gtest/*.h $(SDK_DIR)/include/gtest/; \
-	cp $(GTEST_DIR)/include/gtest/internal/*.h $(SDK_DIR)/include/gtest/internal/; \
-	cp $(GTEST_DIR)/include/gtest/internal/custom/*.h $(SDK_DIR)/include/gtest/internal/custom; \
-	cp gtest.a $(SDK_DIR)/lib/; \
+	@if [ -d $(SDKDIR) ]; then echo "installing gtest to '$(SDKDIR)'"; fi
+	@if [ ! -d $(SDKDIR) ]; then echo "'$(SDKDIR)' is not a valid sdk directory"; fi
+	@if [ -d $(SDKDIR) ]; then \
+	mkdir -p $(SDKDIR)/include/gtest; \
+	mkdir -p $(SDKDIR)/include/gtest/internal; \
+	mkdir -p $(SDKDIR)/include/gtest/internal/custom; \
+	mkdir -p $(SDKDIR)/lib; \
+	cp $(GTEST_DIR)/include/gtest/*.h $(SDKDIR)/include/gtest/; \
+	cp $(GTEST_DIR)/include/gtest/internal/*.h $(SDKDIR)/include/gtest/internal/; \
+	cp $(GTEST_DIR)/include/gtest/internal/custom/*.h $(SDKDIR)/include/gtest/internal/custom; \
+	cp gtest.a $(SDKDIR)/lib/; \
 	fi
 # Builds gtest.a and gtest_main.a.
 
