@@ -24,7 +24,7 @@ ifeq ($(OS),Linux)
 LDFLAGS += -L $(SDKDIR)/lib/$(OS)/noasan/$(ARCH) -lfunclient -lm
 DARWIN_ASAN_FIXUP :=
 else
-LDFLAGS += -L $(SDKDIR)/lib/$(OS)/$(ARCH) -lfunclient -lm $(LDFLAGS_ASAN)
+LDFLAGS += -L $(SDKDIR)/lib/$(OS)/$(ARCH) -coverage -lfunclient -lm $(LDFLAGS_ASAN)
 endif
 
 SRC += jsonutil.c
