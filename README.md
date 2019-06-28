@@ -3,7 +3,7 @@ Tools and Toolchains for FunOS
 
 To build and install the googletest library and headers perform the following steps:
 
-1/ ensure that you have an $(SDK_DIR) directory.  This should generally be a peer of ../FunOS
+1/ ensure that you have an $(SDKDIR) directory.  This should generally be a peer of ../FunOS
 
 2/ cd FunTools/Test/googletest/googletest/make
 
@@ -11,9 +11,9 @@ To build and install the googletest library and headers perform the following st
 
 4/ make install
 
-5/ the default $(SDK_DIR) is relative to where you checked out ../FunTools. If you have to override, then make install SDK_DIR=path-to-sdk
+5/ the default $(SDKDIR) is relative to where you checked out ../FunTools. If you have to override, then make install SDKDIR=path-to-sdk
 
-6/ Check $(SDK_DIR)/include/gtest/*.h and $(SDK_DIR)/lib/gtest.a just to verify the install
+6/ Check $(SDKDIR)/include/gtest/*.h and $(SDKDIR)/lib/gtest.a just to verify the install
 
 7/ To build FunOS with gtest test cases, run "make GTEST=1"
 
