@@ -9,6 +9,7 @@ import argparse
 import shutil
 import subprocess
 import generate_flash as gf
+import flash_utils
 
 
 #TODO (make configurable for S1 and other)
@@ -46,6 +47,7 @@ def main():
     parser.add_argument('--force-version', type=int, help='Override firmware versions')
     parser.add_argument('--force-description', help='Override firmware description strings')
     parser.add_argument('--with-hsm', action='store_true', help='Use HSM for signing')
+    parser.add_argument('--generate-fs1600', action='store_true', help='Generate FS1600 flash images')
 
     args = parser.parse_args()
 
@@ -98,6 +100,7 @@ def main():
                   "bin/flash_tools/firmware_signing_service.py",
                   "bin/flash_tools/enrollment_service.py",
                   "bin/flash_tools/key_replace.py",
+                  "bin/flash_tools/flash_utils.py",
                   "bin/flash_tools/f1registration.ca.pem",
                   "bin/flash_tools/" + os.path.basename(__file__),
                   "bin/Linux/x86_64/mkimage" ]
@@ -138,6 +141,25 @@ def main():
         gf.set_search_paths(sdkpaths)
         os.chdir(args.destdir)
         gf.run('flash')
+
+        if args.generate_fs1600:
+            image_base = config['output_format']['output']
+            image = image_base + '.bin'
+            parts = list(filter(lambda f: f[0] == 'eepr', flash_utils.get_entries(image)))
+
+            for e in ('fs1600_0', 'fs1600_1'):
+                destfile = image_base + '_' + e + '.bin'
+                shutil.copy2(image, destfile)
+                for p in parts:
+                    cmd = ['dd',
+                           'if=eeprom_{}_packed.bin'.format(e),
+                           'of={}'.format(destfile),
+                           'conv=notrunc',
+                           'obs=1',
+                           'seek={}'.format(p[1])]
+                    subprocess.call(cmd)
+
+
 
         #TODO(mnowakowski)
         #     skip direct invocation and import make_emulation_emmc
