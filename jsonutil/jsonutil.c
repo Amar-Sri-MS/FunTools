@@ -240,12 +240,18 @@ main(int argc, char *argv[])
 	else
 		input = _read_bjson(infd);
 
-	/* FIXME: check for errors here */
 	if (!input) {
 		fprintf(stderr, "failed to read a JSON\n");
 		exit(1);
 	}
-	
+
+	if (fun_json_is_error_message(input)) {
+		const char *message;
+		fun_json_fill_error_message(input, &message);
+		fprintf(stderr, "%s\n", message);
+		exit(1);
+	}
+
 	/* write out some json */
 	if (outmode == TEXT)
 		r = _write_json(outfd, input);
