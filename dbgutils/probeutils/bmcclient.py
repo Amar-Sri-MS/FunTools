@@ -42,7 +42,7 @@ class BMC_Client(object):
 
     def csr_peek(self, chip_inst, csr_addr, csr_width_words):
         logger.info(("chip_inst: {0} csr_addr:{1} csr_width_words:{2}").format(
-                chip_inst, csr_addr, csr_width_words))
+                chip_inst, hex(csr_addr), csr_width_words))
         if self.connected is False:
             error_msg = "bmc not connected!"
             logger.info('error_msg')
@@ -67,7 +67,7 @@ class BMC_Client(object):
     # Sends poke request to Codescape probe
     def csr_poke(self, chip_inst, csr_addr, word_array, fast_poke=False):
         logger.info(("chip_inst: {0} csr_addr:{1} word_array:{2}").format(
-            chip_inst, csr_addr, [hex(x) for x in word_array]))
+            chip_inst, hex(csr_addr), [hex(x) for x in word_array]))
         if self.connected is False:
             error_msg = "Probe not connected!"
             logger.info('error_msg')

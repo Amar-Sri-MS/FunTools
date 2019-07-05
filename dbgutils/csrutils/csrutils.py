@@ -57,12 +57,12 @@ def csr_peek(args):
     anode_path = input_args.get("anode_path", None)
     field_list = input_args.get("field_list", None)
 
-    csr_data = csr_get_metadata(csr_name, ring_name=ring_name,
+    csr_data = csr_get_metadata(csr_name.lower(), ring_name=ring_name,
                                 ring_inst=ring_inst, anode_name=anode_name,
                                 anode_path=anode_path)
 
     if csr_data is None:
-        print("Error! Failed to get metadata for csr:{} !!!".format(csr_name))
+        print("Error! Failed to get metadata for csr:{} !!!".format(csr_name.lower()))
         return
 
     csr_addr = csr_get_addr(csr_data, anode_inst=anode_inst,
@@ -1357,8 +1357,8 @@ def get_file_abs_path(loc):
     assert os.path.exists(loc), "{}: directory does not exist!".format(loc)
     return loc
 
-def csr_metadata_objs(csr_name):
-    csr_list = csr_metadata().get_csr_def(csr_name)
+def csr_metadata_objs(csr_name, ring_name=None, ring_inst=None):
+    csr_list = csr_metadata().get_csr_def(csr_name, rn_class=ring_name, rn_inst=ring_inst)
     if csr_list is None:
         print("csr: {} doesnot exist in database!.".format(csr_name))
         return
