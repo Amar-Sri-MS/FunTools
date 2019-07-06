@@ -16,7 +16,7 @@ logger = logging.getLogger("i2cclient")
 logger.setLevel(logging.INFO)
 
 class constants(object):
-    SERVER_TCP_PORT = 44444
+    SERVER_TCP_PORT = 55555
 
 class I2C_Client(object):
     def __init__(self, mode):
