@@ -78,14 +78,14 @@ def byte_str_to_int_list(s):
 
 class DBG_Chal(object):
     ''' i2c connection object '''
-    def __init__(self, dut_name, chip_inst=None):
+    def __init__(self, dut_name, chip_inst=0):
         logger.debug('dut: {0}'.format(dut_name))
         self.probe_ip_addr = None
         self.probe_id = None
         self.i2c_slave_addr = None
         self.connected = False
         self.dbgprobe = None
-        self.chip_inst = None
+        self.chip_inst = chip_inst
         dut_i2c_info = dut().get_i2c_info(dut_name)
         if dut_i2c_info is None:
             print('Failed to get i2c connection details!')
@@ -97,18 +97,8 @@ class DBG_Chal(object):
             self.probe_id = dut_i2c_info[1]
             self.probe_ip_addr = dut_i2c_info[2]
             self.i2c_slave_addr = dut_i2c_info[3]
-            if chip_inst is not None:
-                print('****Ignoring the chip instance number****')
         else:
             self.bmc_ip_addr = dut_i2c_info[1]
-            if chip_inst is None:
-                print('Error: Chip instance number should be provided for board with BMC')
-                sys.exit(1)
-                self.chip_inst = int(chip_inst)
-            if  self.chip_inst >= 2:
-                print('Error: Chip instance number should be in range 0-1')
-                sys.exit(1)
-                print('chip_inst: {0}'.format(self.chip_inst))
 
     def __del__(self):
         print('Destroying the connection!')
@@ -221,7 +211,7 @@ def generate_enrollment_cert(tbs_cert, verbose=False):
         print "TBS: ", tbs_cert_64
 
     response = requests.put("https://f1reg.fungible.com/cgi-bin/enrollment_server.cgi",
-                            data=tbs_cert_64, verify='./f1registration.ca.pem')
+                            data=tbs_cert_64)
 
     if response.status_code != requests.codes.ok:
         print "Server response: %d %s" % (response.status_code, response.reason)
@@ -240,7 +230,7 @@ def get_cert_of_serial_number(sn, verbose=False):
     sn_64 = binascii.b2a_base64(sn)
 
     url = "https://f1reg.fungible.com/cgi-bin/enrollment_server.cgi?cmd=cert&sn=%s" % sn_64
-    response = requests.get(url, verify='./f1registration.ca.pem')
+    response = requests.get(url)
 
     if response.status_code != requests.codes.ok:
         print "Server response: %d %s" % (response.status_code, response.reason)
@@ -267,6 +257,8 @@ def main():
         epilog="Challenge Interface must be accessible via debug probe "\
         "prior to running this script, check the device documentation on how to do this")
     parser.add_argument("--dut", help="Dut name")
+    parser.add_argument("--chip", type=int, default=0, choices=xrange(0, 2),
+                        help="chip instance number")
     parser.add_argument("--tbs", type=argparse.FileType('r'),
                         help="Test: Read the enrollment tbs from the file")
     parser.add_argument("--sn", type=argparse.FileType('r'),
@@ -289,7 +281,7 @@ def main():
 
     # get enrollment info
     # check for connection
-    dbgprobe = DBG_Chal(args.dut)
+    dbgprobe = DBG_Chal(args.dut,args.chip)
     status = dbgprobe.connect()
     if status is False:
         print('Connection failed!')
