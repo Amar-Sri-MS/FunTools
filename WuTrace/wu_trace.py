@@ -37,6 +37,7 @@ import re
 import sys
 
 import event
+import read_trace
 import render
 
 DEBUG = False
@@ -449,6 +450,8 @@ def main(argv):
   arg_parser = argparse.ArgumentParser()
   arg_parser.add_argument('inputs', metavar='file', type=str, nargs='+',
                       help='log files to read')
+  arg_parser.add_argument('--input-format', choices=['uart', 'trace'],
+                          type=str, default='uart')
   arg_parser.add_argument(
     '--format', type=str,
     help='output style: html (default), text, or graphviz.', default=None)
@@ -467,8 +470,18 @@ def main(argv):
         'Unknown option %s to --format.  Must be text, html, graphviz, json.\n')
       exit(1)
 
-  file_parser = FileParser(input_filename)
-  transactions = file_parser.ProcessFile(open(input_filename))
+  if args.input_format == 'uart':
+    file_parser = FileParser(input_filename)
+    transactions = file_parser.ProcessFile(open(input_filename))
+  else:
+    with open(input_filename) as fh:
+      extractor = read_trace.WuListExtractor('/Users/jimmyyeap/Fun/FunOS/build/funos-f1')
+      file_parser = read_trace.BinaryFileParser(fh, extractor)
+      events = file_parser.parse()
+      trace_parser = TraceParser(input_filename)
+      for idx, e in enumerate(events):
+        trace_parser.HandleLogLine(e, idx)
+      transactions = trace_parser.transactions
 
   out_file = sys.stdout
   if args.output is not None:
