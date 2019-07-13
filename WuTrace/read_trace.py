@@ -1,46 +1,100 @@
+#!/usr/bin/env python2.7
+
+#
+# Parses raw trace data that has been offloaded from the chip and
+# converts it into a form that is suitable for the wu_trace.py
+# script.
+#
+# Usage: -h for help
+#
+# Copyright (c) 2019 Fungible Inc.  All rights reserved.
+#
+
 import os
 import re
 import struct
 import subprocess
 
-
-# The header is two 32-bit words, big endian
+# Every event is prefixed with a 64-bit header, which comprises
+# two 32-bit words in big-endian order.
 HDR_LEN = 8
 HDR_DEF = '>LL'
 
+LID_BASE = 8
+MAX_VPS = 4
+MAX_CORES = 6
+
 
 class Event(object):
+    """
+    An event from WU tracing.
+
+    This is the base class with common functionality across all
+    event types. Subclasses perform unpacking of the additional
+    words after the header.
+    """
+
+    # The number of least-significant bits that are lost from the
+    # partial timestamps
+    LOST_TIME_BITS = 6
+
     def __init__(self, hdr):
         hdr_words = struct.unpack(HDR_DEF, hdr)
+
+        # Sanity check that we've unpacked correctly
         rsvd = hdr_words[1] & 0xfff
         if rsvd != 0:
             raise ValueError('Unexpected reserved value')
 
-        self.timestamp = hdr_words[0]
-        # Unpack the bits
+        self.partial_timestamp = hdr_words[0]
         self.evt_id = (hdr_words[1] >> 26) & 0x3f
         self.src_id = (hdr_words[1] & 0x3ff0000) >> 16
-        self.add_word_count = (hdr_words[1] & 0xf000) >> 12
+        self.addl_word_count = (hdr_words[1] & 0xf000) >> 12
+        self.full_timestamp = None
+
+    def fixup_timestamp(self, sync_timestamp):
+        """
+        Converts a partial timestamp to a full timestamp, given the
+        sync timestamp.
+        """
+        time32 = self.partial_timestamp
+        base32 = (sync_timestamp >> self.LOST_TIME_BITS) & 0xffffffff
+
+        # If the time is less than the base, it means we've wrapped.
+        if time32 < base32:
+            sync_timestamp += (0x100000000 << self.LOST_TIME_BITS)
+
+        high_bitmask = ~0x3fffffffff
+        self.full_timestamp = ((sync_timestamp & high_bitmask)
+                                  | (time32 << self.LOST_TIME_BITS))
 
     def get_values(self, wu_list):
+        """
+        Returns a dictionary that matches the data model used by the
+        wu tracing script.
+        """
         d = dict()
-        d['timestamp'] = self.timestamp
+        d['timestamp'] = self.full_timestamp
         d['faddr'] = self.global_vp_to_faddr_str(self.src_id)
         return d
 
     @staticmethod
     def global_vp_to_faddr_str(src):
-        cluster = src / 24
-        lid = 8 + (src % 24)
+        """ Global VP number to faddr string """
+        cluster = src / (MAX_CORES * MAX_VPS)
+        lid = LID_BASE + (src % (MAX_CORES * MAX_VPS))
         return '%d:%d:0' % (cluster, lid)
 
 
 class WuStartEvent(Event):
+    """
+    A WU START event.
+    """
 
     def __init__(self, hdr, addl_words):
         super(WuStartEvent, self).__init__(hdr)
 
-        if self.add_word_count != 3:
+        if self.addl_word_count != 3:
             raise ValueError('Additional word count value')
         result = struct.unpack('>QQLL', addl_words)
         self.arg0 = result[0]
@@ -60,12 +114,17 @@ class WuStartEvent(Event):
 
 
 class WuSendEvent(Event):
+    """
+    A WU SEND event
+    """
 
     def __init__(self, hdr, addl_words):
         super(WuSendEvent, self).__init__(hdr)
 
-        if self.add_word_count != 4:
+        if self.addl_word_count != 4:
             raise ValueError('Additional word count value')
+
+        # The final three short H values are padding
         result = struct.unpack('>QQLLHHHH', addl_words)
         self.arg0 = result[0]
         self.arg1 = result[1]
@@ -87,17 +146,21 @@ class WuSendEvent(Event):
 
     @staticmethod
     def faddr_to_str(faddr):
+        """ faddr binary word to string """
         cluster = (faddr >> 15) & 0x1f
         lid = (faddr >> 10) & 0x1f
         return '%s:%s:0' % (cluster, lid)
 
 
 class WuEndEvent(Event):
+    """
+    A WU END event.
+    """
 
     def __init__(self, hdr, addl_words):
         super(WuEndEvent, self).__init__(hdr)
 
-        if self.add_word_count != 0:
+        if self.addl_word_count != 0:
             raise ValueError('Additional word count value')
 
     def get_values(self, wu_list):
@@ -108,14 +171,25 @@ class WuEndEvent(Event):
 
 
 class TimeSyncEvent(Event):
+    """
+    A TIME SYNC event.
+
+    This provides a full 64-bit timestamp so full timestamps
+    from the other event types can be reconstructed from partial
+    timestamps.
+    """
 
     def __init__(self, hdr, addl_words):
         super(TimeSyncEvent, self).__init__(hdr)
 
-        if self.add_word_count != 1:
+        if self.addl_word_count != 1:
             raise ValueError('Additional word count value')
         result = struct.unpack('>Q', addl_words)
-        self.full_time = result[0]
+        self.full_timestamp = result[0]
+
+    def fixup_timestamp(self, sync_timestamp):
+        """ This already has a full timestamp """
+        pass
 
     def get_values(self, wu_list):
         d = super(TimeSyncEvent, self).get_values(wu_list)
@@ -124,23 +198,37 @@ class TimeSyncEvent(Event):
         return d
 
 
-class BinaryFileParser(object):
-    """ Handles trace cluster input """
+class TraceFileParser(object):
+    """
+    Handles raw trace file input.
+    """
 
     def __init__(self, fh, wu_list_extractor):
+        """
+        fh is a file handle to the trace file.
+        """
         self.fh = fh
         self.wu_list_extractor = wu_list_extractor
 
     def parse(self):
+        """
+        Does the parsing of the raw file.
 
-        events = []
+        Returns a list of event dicts which are the data model for the
+        next step in trace processing.
+        """
+
         # Get rid of cluster byte
+        # TODO: customize format for wu tracing, remove this
         self.fh.read(1)
 
-        wu_list = self.wu_list_extractor.generate_wu_list()
+        events = []
+        sync_timestamp_by_vp = {}
 
         while True:
             hdr = self.fh.read(HDR_LEN)
+
+            # EOF
             if not hdr:
                 break
 
@@ -163,19 +251,31 @@ class BinaryFileParser(object):
             elif evt_id == 3:
                 event = WuEndEvent(hdr, content)
             elif evt_id == 7:
+                # This is guaranteed to be seen before any partial timestamps
+                # from the same source.
                 event = TimeSyncEvent(hdr, content)
+                sync_timestamp_by_vp[event.src_id] = event.full_timestamp
             else:
+                # TODO: handle other events
                 raise ValueError('Unhandled event id')
-                pass
 
-            events.append(event.get_values(wu_list))
+            event.fixup_timestamp(sync_timestamp_by_vp[event.src_id])
+            events.append(event)
 
-        # sort the events by timestamp
-        events.sort(key=lambda e: e['timestamp'])
-        return events
+        # Sort the events by timestamp
+        events.sort(key=lambda et: et.full_timestamp)
+
+        wu_list = self.wu_list_extractor.generate_wu_list()
+        return [evt.get_values(wu_list) for evt in events]
 
 
 class WuListExtractor(object):
+    """
+    Extracts WU lists from a FunOS binary.
+
+    TODO: figure out a common place to share this with perf
+    """
+
     def __init__(self, image_path):
         self.funos_image_path = image_path
 
@@ -235,14 +335,3 @@ class WuListExtractor(object):
 
         return wu_list
 
-
-def main():
-    extractor = WuListExtractor('/Users/jimmyyeap/Fun/FunOS/build/funos-f1')
-
-    with open('trace_cluster_00', 'r') as fh:
-        p = BinaryFileParser(fh, extractor)
-        p.parse()
-
-
-if __name__ == '__main__':
-    main()

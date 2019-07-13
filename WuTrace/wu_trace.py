@@ -451,7 +451,12 @@ def main(argv):
   arg_parser.add_argument('inputs', metavar='file', type=str, nargs='+',
                       help='log files to read')
   arg_parser.add_argument('--input-format', choices=['uart', 'trace'],
-                          type=str, default='uart')
+                          type=str, default='uart',
+                          help='Choice of input file format. If the trace'
+                               'format is used, a funos binary must be '
+                               'provided.')
+  arg_parser.add_argument('--funos-binary', type=str,
+                          help='path to unstripped funos binary')
   arg_parser.add_argument(
     '--format', type=str,
     help='output style: html (default), text, or graphviz.', default=None)
@@ -474,9 +479,12 @@ def main(argv):
     file_parser = FileParser(input_filename)
     transactions = file_parser.ProcessFile(open(input_filename))
   else:
+    if not args.funos_binary:
+      sys.stderr.write('Must specify funos binary when input is a trace file\n')
+      exit(1)
     with open(input_filename) as fh:
-      extractor = read_trace.WuListExtractor('/Users/jimmyyeap/Fun/FunOS/build/funos-f1')
-      file_parser = read_trace.BinaryFileParser(fh, extractor)
+      extractor = read_trace.WuListExtractor(args.funos_binary)
+      file_parser = read_trace.TraceFileParser(fh, extractor)
       events = file_parser.parse()
       trace_parser = TraceParser(input_filename)
       for idx, e in enumerate(events):
