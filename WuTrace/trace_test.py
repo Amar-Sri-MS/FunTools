@@ -97,7 +97,7 @@ class TestParseLine(unittest.TestCase):
 
   def testMalformedNumber(self):
     # 1A is not valid decimal value.
-    line = '485375410.764454000 TRACE WU SEND faddr VP0.2.0 wuid 1A name wuh_mp_notify arg0 0x0 arg1 0x0 dest VP0.2.0'
+    line = '485375410.764454000 TRACE WU SEND faddr VP0.2.0 wuid 1A name wuh_mp_notify arg0 0x0 arg1 0x0 flags 0 dest VP0.2.0'
     (line_args, error) = self.file_parser.ParseLine(line)
     self.assertIsNone(line_args)
     self.assertIn('malformed integer "1A"', error)
@@ -139,7 +139,7 @@ class TestProcessFile(unittest.TestCase):
 
   def testSendGroupsWithEvent(self):
     log = ["1.000100000 TRACE WU START faddr VP0.0.0 wuid 0x1 name my_wu arg0 1 arg1 2",
-           "1.000150000 TRACE WU SEND faddr VP0.0.0 wuid 0x2 name sent_wu arg0 1 arg1 1 dest VP0.2.0",
+           "1.000150000 TRACE WU SEND faddr VP0.0.0 wuid 0x2 name sent_wu arg0 1 arg1 1 flags 0 dest VP0.2.0",
            "1.000200000 TRACE WU END faddr VP0.0.0 wuid 0x1 name my_wu arg0 1 arg1 2",
            "1.000300000 TRACE WU START faddr VP0.2.0 wuid 0x2 name sent_wu arg0 1 arg1 1",
            "1.0004000000 TRACE WU END faddr VP0.2.0"]
@@ -202,19 +202,19 @@ class TestProcessFile(unittest.TestCase):
       render.DumpTransactions(output_file, transactions)
       for l in output_file.lines:
         print(l)
-      expected = ['00.000000 - 00.000000 (0 usec): transaction "boot"\n',
-                  '+ 00.000000 - 00.000000 (0 usec): boot\n',
-                  '00.000001 - 00.000003 (2 usec): transaction "foo"\n',
-                  '+ 00.000001 - 00.000003 (2 usec): foo\n',
-                  '+ 00.000002 - 00.000006 (4 usec): timer\n',
-                  '00.000006 - 00.000008 (2 usec): transaction "bar"\n',
-                  '+ 00.000006 - 00.000008 (2 usec): bar\n',
-                  '+ 00.000007 - 00.000011 (4 usec): timer\n',
-                  '00.000011 - 00.000013 (2 usec): transaction "baz"\n',
-                  '+ 00.000011 - 00.000013 (2 usec): baz\n',
-                  '+ 00.000012 - 00.000014 (2 usec): timer\n',
-                  '00.000014 - 00.000016 (2 usec): transaction "boof"\n',
-                  '+ 00.000014 - 00.000016 (2 usec): boof\n']
+      expected = ['00.000000 - 00.000000 (0 nsec): transaction "boot"\n',
+                  '+ 00.000000 - 00.000000 (0 nsec): boot\n',
+                  '00.000001 - 00.000003 (2.0 usec): transaction "foo"\n',
+                  '+ 00.000001 - 00.000003 (2.0 usec): foo\n',
+                  '+ 00.000002 - 00.000006 (4.0 usec): timer\n',
+                  '00.000006 - 00.000008 (2.0 usec): transaction "bar"\n',
+                  '+ 00.000006 - 00.000008 (2.0 usec): bar\n',
+                  '+ 00.000007 - 00.000011 (4.0 usec): timer\n',
+                  '00.000011 - 00.000013 (2.0 usec): transaction "baz"\n',
+                  '+ 00.000011 - 00.000013 (2.0 usec): baz\n',
+                  '+ 00.000012 - 00.000014 (2.0 usec): timer\n',
+                  '00.000014 - 00.000016 (2.0 usec): transaction "boof"\n',
+                  '+ 00.000014 - 00.000016 (2.0 usec): boof\n']
 
       self.assertEqual(expected, output_file.lines)
 
@@ -247,7 +247,7 @@ class EndToEndTest(unittest.TestCase):
   def testMinimalSend(self):
     log = ['1.00100 TRACE WU START faddr VP0.0.0 src VP0.0.0 dest VP0.0.0 wuid 1 name fun_a arg0 1 arg1 2',
            '1.00200 TRACE TRANSACTION START faddr VP0.0.0',
-           '1.00300 TRACE WU SEND faddr VP0.0.0 src VP0.0.0 dest VP0.0.0 wuid 2 name bar arg0 2 arg1 3 dest VP0.0.0',
+           '1.00300 TRACE WU SEND faddr VP0.0.0 src VP0.0.0 dest VP0.0.0 wuid 2 name bar arg0 2 arg1 3 flags 0 dest VP0.0.0',
            '1.00300 TRACE WU END faddr VP0.0.0 wuid 1 name fun_a arg0 1 arg1 2',
            '1.00400 TRACE WU START faddr VP0.0.0 src VP0.0.0 dest VP0.0.0 wuid 2 name bar arg0 2 arg1 3',
            '1.00500 TRACE WU END faddr VP0.0.0 wuid 2 name bar arg0 2 arg1 3'
@@ -281,7 +281,7 @@ class EndToEndTest(unittest.TestCase):
     render.Dump(out_file, transactions[1])
 
     contents = out_file.getvalue();
-    self.assertIn('00.000002 (0 usec): Request to /movies/Star Wars',
+    self.assertIn('00.000002 (0 nsec): Request to /movies/Star Wars',
                   out_file.getvalue())
 
   def testMinimalTimer(self):

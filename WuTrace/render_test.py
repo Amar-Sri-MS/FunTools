@@ -29,9 +29,9 @@ class TestDisplay(unittest.TestCase):
                          render.RangeString(1000100000, 1000256000))
 
     def testDurationString(self):
-        self.assertEqual('0 usec', render.DurationString(0))
-        self.assertEqual('0 usec', render.DurationString(500))
-        self.assertEqual('1 usec', render.DurationString(1000))
+        self.assertEqual('0 nsec', render.DurationString(0))
+        self.assertEqual('500 nsec', render.DurationString(500))
+        self.assertEqual('1.0 usec', render.DurationString(1000))
         self.assertEqual('100 usec', render.DurationString(100000))
         self.assertEqual('1.001 msec', render.DurationString(1001000))
         self.assertEqual('100.101 msec', render.DurationString(100101000))
