@@ -31,13 +31,13 @@ class TestParseLine(unittest.TestCase):
                      self.file_parser.ParseLine("1000.001000000"))
 
   def testSimpleParse(self):
-    line = "123123123.567890000 TRACE WU START faddr VP0.0.0 wuid 0x1 name foo arg0 1 arg1 2"
+    line = "123123123.567890000 TRACE WU START faddr FA0:8:0[VP] wuid 0x1 name foo arg0 1 arg1 2"
     (line_args, error) = self.file_parser.ParseLine(line)
 
     self.assertIsNone(error)
 
     self.assertEqual(123123123567890000, line_args["timestamp"])
-    self.assertEqual("VP0.0.0", line_args["faddr"])
+    self.assertEqual("FA0:8:0[VP]", line_args["faddr"])
     self.assertEqual("WU", line_args["verb"])
     self.assertEqual("START", line_args["noun"])
     self.assertEqual(1, line_args["arg0"])
@@ -45,12 +45,12 @@ class TestParseLine(unittest.TestCase):
 
 
   def testParseTransactionStart(self):
-    line = '1.000001000 TRACE TRANSACTION START faddr VP0.0.0'
+    line = '1.000001000 TRACE TRANSACTION START faddr FA0:8:0[VP]'
     (line_args, error) = self.file_parser.ParseLine(line)
     self.assertIsNotNone(line_args)
     self.assertIsNone(error)
 
-    line = '0.000006000 TRACE TRANSACTION START faddr VP0.0.0\n'
+    line = '0.000006000 TRACE TRANSACTION START faddr FA0:8:0[VP]\n'
     line_args = self.file_parser.ParseLine(line)
     self.assertIsNotNone(line_args)
     self.assertIsNone(error)
@@ -69,44 +69,44 @@ class TestParseLine(unittest.TestCase):
 
   def testBadVerb(self):
     # Colon after send is invalid.
-    line = '485375410.764454000 TRACE WU SEND: faddr VP0.2.0 wuid 0x60 name wuh_mp_notify arg0 0x0 arg1 0x0 dest VP0.2.0'
+    line = '485375410.764454000 TRACE WU SEND: faddr FA0:12:0[VP] wuid 0x60 name wuh_mp_notify arg0 0x0 arg1 0x0 dest FA0:12:0[VP]'
     (line_args, error) = self.file_parser.ParseLine(line)
     self.assertIsNone(line_args)
     self.assertIn('malformed log line', error)
 
   def testUnknownVerb(self):
     # Comma after VP is unexpected.
-    line = '485375410.764454000 TRACE FOO BAR faddr VP0.2.0 dest VP0.0.0, wuid 0x60 name wuh_mp_notify arg0 0x0 arg1 0x0'
+    line = '485375410.764454000 TRACE FOO BAR faddr FA0:12:0[VP] dest FA0:8:0[VP], wuid 0x60 name wuh_mp_notify arg0 0x0 arg1 0x0'
     (line_args, error) = self.file_parser.ParseLine(line)
     self.assertIsNone(line_args)
     self.assertIn('unknown verb or noun', error)
 
   def testMissingKey(self):
     # Remove src.
-    line = '485375410.764454000 TRACE WU START faddr VP0.2.0 wuid 0x60 name wuh_mp_notify arg1 0x0'
+    line = '485375410.764454000 TRACE WU START faddr FA0:12:0[VP] wuid 0x60 name wuh_mp_notify arg1 0x0'
     (line_args, error) = self.file_parser.ParseLine(line)
     self.assertIsNone(line_args)
     self.assertIn('missing key "arg0"', error)
 
   def testMalformedNumber(self):
     # gg is not valid hex.
-    line = '485375410.764454000 TRACE WU SEND faddr VP0.2.0 wuid 0xgg name wuh_mp_notify arg0 0x0 arg1 0x0 dest VP0.2.0'
+    line = '485375410.764454000 TRACE WU SEND faddr FA0:12:0[VP] wuid 0xgg name wuh_mp_notify arg0 0x0 arg1 0x0 dest FA0:12:0[VP]'
     (line_args, error) = self.file_parser.ParseLine(line)
     self.assertIsNone(line_args)
     self.assertIn('malformed hex value "0xgg"', error)
 
   def testMalformedNumber(self):
     # 1A is not valid decimal value.
-    line = '485375410.764454000 TRACE WU SEND faddr VP0.2.0 wuid 1A name wuh_mp_notify arg0 0x0 arg1 0x0 flags 0 dest VP0.2.0'
+    line = '485375410.764454000 TRACE WU SEND faddr FA0:12:0[VP] wuid 1A name wuh_mp_notify arg0 0x0 arg1 0x0 flags 0 dest FA0:12:0[VP]'
     (line_args, error) = self.file_parser.ParseLine(line)
     self.assertIsNone(line_args)
     self.assertIn('malformed integer "1A"', error)
 
   def testTimeGoesBackwards(self):
     """Test that we correctly remember the last timestamp seen."""
-    line1 = "123123123.567890000 TRACE WU START faddr VP0.0.0 wuid 0x1 name foo arg0 1 arg1 2"
+    line1 = "123123123.567890000 TRACE WU START faddr FA0:8:0[VP] wuid 0x1 name foo arg0 1 arg1 2"
 
-    line2 = "123123123.467890000 TRACE WU START faddr VP1.0.0 wuid 0x1 name foo arg0 1 arg1 2"
+    line2 = "123123123.467890000 TRACE WU START faddr FA1:8:0[VP] wuid 0x1 name foo arg0 1 arg1 2"
 
     (line_args, error) = self.file_parser.ParseLine(line1)
     self.assertIsNotNone(line_args)
@@ -123,8 +123,8 @@ class TestProcessFile(unittest.TestCase):
     self.file_parser = wu_trace.FileParser('filename')
 
   def testStartEnd(self):
-    log = ["1.000100000 TRACE WU START faddr VP0.0.0 wuid 0x1 name my_wu arg0 1 arg1 2",
-           "1.000200000 TRACE WU END faddr VP0.0.0"]
+    log = ["1.000100000 TRACE WU START faddr FA0:8:0[VP] wuid 0x1 name my_wu arg0 1 arg1 2",
+           "1.000200000 TRACE WU END faddr FA0:8:0[VP]"]
     transactions = self.file_parser.ProcessFile(log)
 
     self.assertIsNotNone(transactions)
@@ -138,11 +138,11 @@ class TestProcessFile(unittest.TestCase):
     self.assertEqual(0, len(tr.root_event.successors))
 
   def testSendGroupsWithEvent(self):
-    log = ["1.000100000 TRACE WU START faddr VP0.0.0 wuid 0x1 name my_wu arg0 1 arg1 2",
-           "1.000150000 TRACE WU SEND faddr VP0.0.0 wuid 0x2 name sent_wu arg0 1 arg1 1 flags 0 dest VP0.2.0",
-           "1.000200000 TRACE WU END faddr VP0.0.0 wuid 0x1 name my_wu arg0 1 arg1 2",
-           "1.000300000 TRACE WU START faddr VP0.2.0 wuid 0x2 name sent_wu arg0 1 arg1 1",
-           "1.0004000000 TRACE WU END faddr VP0.2.0"]
+    log = ["1.000100000 TRACE WU START faddr FA0:8:0[VP] wuid 0x1 name my_wu arg0 1 arg1 2",
+           "1.000150000 TRACE WU SEND faddr FA0:8:0[VP] wuid 0x2 name sent_wu arg0 1 arg1 1 flags 0 dest FA0:12:0[VP]",
+           "1.000200000 TRACE WU END faddr FA0:8:0[VP] wuid 0x1 name my_wu arg0 1 arg1 2",
+           "1.000300000 TRACE WU START faddr FA0:12:0[VP] wuid 0x2 name sent_wu arg0 1 arg1 1",
+           "1.0004000000 TRACE WU END faddr FA0:12:0[VP]"]
     transactions = self.file_parser.ProcessFile(log)
     tr = firstTransaction(transactions)
     render.DumpTransactions(sys.stdout, transactions)
@@ -152,11 +152,11 @@ class TestProcessFile(unittest.TestCase):
 
 
   def testTriggerTimer(self):
-    log = ["1.000100000 TRACE WU START faddr VP0.0.0 wuid 0x1 name my_wu arg0 1 arg1 2",
-           "1.000150000 TRACE TIMER START faddr VP0.0.0 timer 0x1 wuid 0x2 name sent_wu dest VP0.0.0 arg0 0x2",
-           "1.000200000 TRACE WU END faddr VP0.0.0",
-           "1.000300000 TRACE WU START faddr VP0.0.0 wuid 0x2 name sent_wu arg0 0x2 arg1 0",
-           "1.0004000 faddr000 TRACE WU END VP0.0.0"]
+    log = ["1.000100000 TRACE WU START faddr FA0:8:0[VP] wuid 0x1 name my_wu arg0 1 arg1 2",
+           "1.000150000 TRACE TIMER START faddr FA0:8:0[VP] timer 0x1 wuid 0x2 name sent_wu dest FA0:8:0[VP] arg0 0x2",
+           "1.000200000 TRACE WU END faddr FA0:8:0[VP]",
+           "1.000300000 TRACE WU START faddr FA0:8:0[VP] wuid 0x2 name sent_wu arg0 0x2 arg1 0",
+           "1.0004000 faddr000 TRACE WU END FA0:8:0[VP]"]
     transactions = self.file_parser.ProcessFile(log)
 
     self.assertIsNotNone(transactions)
@@ -167,9 +167,9 @@ class TestProcessFile(unittest.TestCase):
     self.assertEqual(1, len(tr.root_event.successors))
 
   def testTopLevelTransaction(self):
-    log = ["1.00100000 TRACE WU START faddr VP0.0.0 wuid 1 name fun_a arg0 1 arg1 2",
-           "1.00200000 TRACE TRANSACTION START faddr VP0.0.0",
-           "1.00300000 TRACE WU END faddr VP0.0.0 wuid 1 name fun_a arg0 1 arg1 2"
+    log = ["1.00100000 TRACE WU START faddr FA0:8:0[VP] wuid 1 name fun_a arg0 1 arg1 2",
+           "1.00200000 TRACE TRANSACTION START faddr FA0:8:0[VP]",
+           "1.00300000 TRACE WU END faddr FA0:8:0[VP] wuid 1 name fun_a arg0 1 arg1 2"
            ]
     transactions = self.file_parser.ProcessFile(log)
     # One transaction for boot, one for the created transaction.
@@ -181,20 +181,20 @@ class TestProcessFile(unittest.TestCase):
 
   def testChainOfTransactions(self):
       trace = """
-0.000001000 TRACE WU START faddr VP0.0.0 wuid 0 name foo arg0 0 arg1 0
-0.000002000 TRACE TIMER START faddr VP0.0.0 timer 0x1 wuid 0x9 name bar arg0 0x1 dest VP0.0.0
-0.000003000 TRACE WU END faddr VP0.0.0
-0.000006000 TRACE WU START faddr VP0.0.0 wuid 0x9 name bar arg0 0x1 arg1 0
-0.000006000 TRACE TRANSACTION START faddr VP0.0.0
-0.000007000 TRACE TIMER START faddr VP0.0.0 timer 0x1 wuid 17 name baz arg0 0x2 dest VP0.0.0
-0.000008000 TRACE WU END faddr VP0.0.0
-0.000011000 TRACE WU START faddr VP0.0.0 src VP0.0.0 wuid 17 name baz arg0 0x2 arg1 0
-0.000011000 TRACE TRANSACTION START faddr VP0.0.0
-0.000012000 TRACE TIMER START faddr VP0.0.0 timer 0x1 wuid 19 name boof arg0 0x3 dest VP0.0.0
-0.000013000 TRACE WU END faddr VP0.0.0
-0.000014000 TRACE WU START faddr VP0.0.0 src VP0.0.0 wuid 19 name boof arg0 0x3 arg1 0
-0.000015000 TRACE TRANSACTION START faddr VP0.0.0
-0.000016000 TRACE WU END faddr VP0.0.0
+0.000001000 TRACE WU START faddr FA0:8:0[VP] wuid 0 name foo arg0 0 arg1 0
+0.000002000 TRACE TIMER START faddr FA0:8:0[VP] timer 0x1 wuid 0x9 name bar arg0 0x1 dest FA0:8:0[VP]
+0.000003000 TRACE WU END faddr FA0:8:0[VP]
+0.000006000 TRACE WU START faddr FA0:8:0[VP] wuid 0x9 name bar arg0 0x1 arg1 0
+0.000006000 TRACE TRANSACTION START faddr FA0:8:0[VP]
+0.000007000 TRACE TIMER START faddr FA0:8:0[VP] timer 0x1 wuid 17 name baz arg0 0x2 dest FA0:8:0[VP]
+0.000008000 TRACE WU END faddr FA0:8:0[VP]
+0.000011000 TRACE WU START faddr FA0:8:0[VP] src FA0:8:0[VP] wuid 17 name baz arg0 0x2 arg1 0
+0.000011000 TRACE TRANSACTION START faddr FA0:8:0[VP]
+0.000012000 TRACE TIMER START faddr FA0:8:0[VP] timer 0x1 wuid 19 name boof arg0 0x3 dest FA0:8:0[VP]
+0.000013000 TRACE WU END faddr FA0:8:0[VP]
+0.000014000 TRACE WU START faddr FA0:8:0[VP] src FA0:8:0[VP] wuid 19 name boof arg0 0x3 arg1 0
+0.000015000 TRACE TRANSACTION START faddr FA0:8:0[VP]
+0.000016000 TRACE WU END faddr FA0:8:0[VP]
 """
       
       transactions = self.file_parser.ProcessFile(trace.split('\n'))
@@ -228,9 +228,9 @@ class FakeFile:
 class EndToEndTest(unittest.TestCase):
 
   def testMinimalGraphviz(self):
-    log = ['1.001000000 TRACE WU START faddr VP0.0.0 src VP0.0.0 dest VP0.0.0 wuid 1 name fun_a arg0 1 arg1 2',
-           '1.00200000  TRACE TRANSACTION START faddr VP0.0.0',
-           '1.00300000 TRACE WU END faddr VP0.0.0 wuid 1 name fun_a arg0 1 arg1 2'
+    log = ['1.001000000 TRACE WU START faddr FA0:8:0[VP] src FA0:8:0[VP] dest FA0:8:0[VP] wuid 1 name fun_a arg0 1 arg1 2',
+           '1.00200000  TRACE TRANSACTION START faddr FA0:8:0[VP]',
+           '1.00300000 TRACE WU END faddr FA0:8:0[VP] wuid 1 name fun_a arg0 1 arg1 2'
            ]
     file_parser = wu_trace.FileParser("foo.trace")
     transactions = file_parser.ProcessFile(log)
@@ -245,12 +245,12 @@ class EndToEndTest(unittest.TestCase):
     self.assertEqual(expected_output, outputFile.lines)
 
   def testMinimalSend(self):
-    log = ['1.00100 TRACE WU START faddr VP0.0.0 src VP0.0.0 dest VP0.0.0 wuid 1 name fun_a arg0 1 arg1 2',
-           '1.00200 TRACE TRANSACTION START faddr VP0.0.0',
-           '1.00300 TRACE WU SEND faddr VP0.0.0 src VP0.0.0 dest VP0.0.0 wuid 2 name bar arg0 2 arg1 3 flags 0 dest VP0.0.0',
-           '1.00300 TRACE WU END faddr VP0.0.0 wuid 1 name fun_a arg0 1 arg1 2',
-           '1.00400 TRACE WU START faddr VP0.0.0 src VP0.0.0 dest VP0.0.0 wuid 2 name bar arg0 2 arg1 3',
-           '1.00500 TRACE WU END faddr VP0.0.0 wuid 2 name bar arg0 2 arg1 3'
+    log = ['1.00100 TRACE WU START faddr FA0:8:0[VP] src FA0:8:0[VP] dest FA0:8:0[VP] wuid 1 name fun_a arg0 1 arg1 2',
+           '1.00200 TRACE TRANSACTION START faddr FA0:8:0[VP]',
+           '1.00300 TRACE WU SEND faddr FA0:8:0[VP] src FA0:8:0[VP] dest FA0:8:0[VP] wuid 2 name bar arg0 2 arg1 3 flags 0 dest FA0:8:0[VP]',
+           '1.00300 TRACE WU END faddr FA0:8:0[VP] wuid 1 name fun_a arg0 1 arg1 2',
+           '1.00400 TRACE WU START faddr FA0:8:0[VP] src FA0:8:0[VP] dest FA0:8:0[VP] wuid 2 name bar arg0 2 arg1 3',
+           '1.00500 TRACE WU END faddr FA0:8:0[VP] wuid 2 name bar arg0 2 arg1 3'
            ]
     file_parser = wu_trace.FileParser("foo.trace")
     transactions = file_parser.ProcessFile(log)
@@ -267,11 +267,10 @@ class EndToEndTest(unittest.TestCase):
 
   def testAnnotate(self):
     log = """
-0.000001000 TRACE WU START faddr VP0.0.0 src VP0.0.0 dest VP0.0.0 wuid 0 name wu_foo arg0 0 arg1 0
-0.000002000 TRACE TRANSACTION ANNOT faddr VP0.0.0 msg Request to /movies/Star Wars
-0.000003000 TRACE WU END faddr VP0.0.0
+0.000001000 TRACE WU START faddr FA0:8:0[VP] src FA0:8:0[VP] dest FA0:8:0[VP] wuid 0 name wu_foo arg0 0 arg1 0
+0.000002000 TRACE TRANSACTION ANNOT faddr FA0:8:0[VP] msg Request to /movies/Star Wars
+0.000003000 TRACE WU END faddr FA0:8:0[VP]
     """.split('\n')
-
     file_parser = wu_trace.FileParser('foo.trace')
     transactions = file_parser.ProcessFile(log)
     self.assertEqual(2, len(transactions))
@@ -287,17 +286,17 @@ class EndToEndTest(unittest.TestCase):
   def testMinimalTimer(self):
     # Run foo multiple times, triggered by a timer.
     log = """
-0.000001000 TRACE WU START faddr VP0.0.0 src VP0.0.0 dest VP0.0.0 wuid 0 name foo arg0 0 arg1 0
-0.000002000 TRACE TIMER START faddr VP0.0.0 timer 0x1 wuid 0x5 name timer_handler dest VP0.0.0 arg0 1 wuid 0 name foo
-0.000003000 TRACE WU END faddr VP0.0.0 wuid 0 name foo arg0 0 arg1 0
-0.000006000 TRACE WU START faddr VP0.0.0 src VP0.0.0 dest VP0.0.0 wuid 0 name foo arg0 0x1 arg1 0
-0.000007000 TRACE TIMER START faddr VP0.0.0 timer 0x1 value 0x1 arg0 0x2 wuid 0 dest VP0.0.0 arg0 0x2 name foo
-0.000008000 TRACE WU END faddr VP0.0.0 wuid 0 name foo arg0 0x1 arg1 0
-0.000011000 TRACE WU START faddr VP0.0.0 src VP0.0.0 wuid 0 name foo arg0 0x2 arg1 0
-0.000012000 TRACE TIMER START faddr VP0.0.0 timer 0x1 value 0x1 arg0 0x3 dest VP0.0.0 wuid 0 arg0 0x3 name foo
-0.000013000 TRACE WU END faddr VP0.0.0 wuid 0 name foo arg0 0x2 arg1 0
-0.000014000 TRACE WU START faddr VP0.0.0 src VP0.0.0 dest VP0.0.0 wuid 0 name foo arg0 0x3 arg1 0
-0.000015000 TRACE WU END faddr VP0.0.0 wuid 0 name foo arg0 0x3 arg1 0
+0.000001000 TRACE WU START faddr FA0:8:0[VP] src FA0:8:0[VP] dest FA0:8:0[VP] wuid 0 name foo arg0 0 arg1 0
+0.000002000 TRACE TIMER START faddr FA0:8:0[VP] timer 0x1 wuid 0x5 name timer_handler dest FA0:8:0[VP] arg0 1 wuid 0 name foo
+0.000003000 TRACE WU END faddr FA0:8:0[VP] wuid 0 name foo arg0 0 arg1 0
+0.000006000 TRACE WU START faddr FA0:8:0[VP] src FA0:8:0[VP] dest FA0:8:0[VP] wuid 0 name foo arg0 0x1 arg1 0
+0.000007000 TRACE TIMER START faddr FA0:8:0[VP] timer 0x1 value 0x1 arg0 0x2 wuid 0 dest FA0:8:0[VP] arg0 0x2 name foo
+0.000008000 TRACE WU END faddr FA0:8:0[VP] wuid 0 name foo arg0 0x1 arg1 0
+0.000011000 TRACE WU START faddr FA0:8:0[VP] src FA0:8:0[VP] wuid 0 name foo arg0 0x2 arg1 0
+0.000012000 TRACE TIMER START faddr FA0:8:0[VP] timer 0x1 value 0x1 arg0 0x3 dest FA0:8:0[VP] wuid 0 arg0 0x3 name foo
+0.000013000 TRACE WU END faddr FA0:8:0[VP] wuid 0 name foo arg0 0x2 arg1 0
+0.000014000 TRACE WU START faddr FA0:8:0[VP] src FA0:8:0[VP] dest FA0:8:0[VP] wuid 0 name foo arg0 0x3 arg1 0
+0.000015000 TRACE WU END faddr FA0:8:0[VP] wuid 0 name foo arg0 0x3 arg1 0
 
     """.split('\n')
 
