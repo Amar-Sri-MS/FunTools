@@ -217,11 +217,6 @@ class TraceFileParser(object):
         Returns a list of event dicts which are the data model for the
         next step in trace processing.
         """
-
-        # Get rid of cluster byte
-        # TODO: customize format for wu tracing, remove this
-        self.fh.read(1)
-
         events = []
         sync_timestamp_by_vp = {}
 
@@ -256,8 +251,8 @@ class TraceFileParser(object):
                 event = TimeSyncEvent(hdr, content)
                 sync_timestamp_by_vp[event.src_id] = event.full_timestamp
             else:
-                # TODO: handle other events
-                raise ValueError('Unhandled event id')
+                print 'Skip %d' % evt_id
+                # raise ValueError('Unhandled event id %d' % evt_id)
 
             event.fixup_timestamp(sync_timestamp_by_vp[event.src_id])
             events.append(event)
