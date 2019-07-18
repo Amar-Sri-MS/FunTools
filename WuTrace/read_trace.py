@@ -268,6 +268,8 @@ class WuListExtractor(object):
     """
     Extracts WU lists from a FunOS binary.
 
+    Index in the list corresponds to WU id, value corresponds to the WU name
+
     TODO: figure out a common place to share this with perf
     """
 
