@@ -37,6 +37,7 @@ import re
 import sys
 
 import event
+import read_trace
 import render
 
 DEBUG = False
@@ -445,6 +446,13 @@ def main(argv):
   arg_parser = argparse.ArgumentParser()
   arg_parser.add_argument('inputs', metavar='file', type=str, nargs='+',
                       help='log files to read')
+  arg_parser.add_argument('--input-format', choices=['uart', 'trace'],
+                          type=str, default='uart',
+                          help='Choice of input file format. If the trace'
+                               'format is used, a funos binary must be '
+                               'provided.')
+  arg_parser.add_argument('--funos-binary', type=str,
+                          help='path to unstripped funos binary')
   arg_parser.add_argument(
     '--format', type=str,
     help='output style: html (default), text, or graphviz.', default=None)
@@ -463,8 +471,21 @@ def main(argv):
         'Unknown option %s to --format.  Must be text, html, graphviz, json.\n')
       exit(1)
 
-  file_parser = FileParser(input_filename)
-  transactions = file_parser.ProcessFile(open(input_filename))
+  if args.input_format == 'uart':
+    file_parser = FileParser(input_filename)
+    transactions = file_parser.ProcessFile(open(input_filename))
+  else:
+    if not args.funos_binary:
+      sys.stderr.write('Must specify funos binary when input is a trace file\n')
+      exit(1)
+    with open(input_filename) as fh:
+      extractor = read_trace.WuListExtractor(args.funos_binary)
+      file_parser = read_trace.TraceFileParser(fh, extractor)
+      events = file_parser.parse()
+      trace_parser = TraceParser(input_filename)
+      for idx, e in enumerate(events):
+        trace_parser.HandleLogLine(e, idx)
+      transactions = trace_parser.transactions
 
   out_file = sys.stdout
   if args.output is not None:
