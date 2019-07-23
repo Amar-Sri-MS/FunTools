@@ -1,0 +1,797 @@
+1.447443568 TRACE FLUSH FLUSH
+2.447644217 TRACE FLUSH FLUSH
+3.447823586 TRACE FLUSH FLUSH
+4.447949773 TRACE FLUSH FLUSH
+5.448069759 TRACE FLUSH FLUSH
+6.448189238 TRACE FLUSH FLUSH
+7.448309225 TRACE FLUSH FLUSH
+8.448803095 TRACE FLUSH FLUSH
+9.448902267 TRACE FLUSH FLUSH
+ 10.449023981 TRACE FLUSH FLUSH
+ 11.449973110 TRACE FLUSH FLUSH
+ 12.396180671 TRACE FULLTIME faddr FA0:8:0[VP] 0xb8b7ad2 0x2e2deb4bf
+ 12.396181568 TRACE WU START faddr FA0:8:0[VP] wuid 0x1e6 name lsvtest_read origin FA0:8:0[VP] arg0 0xc000000011fd6080 arg1 0xa8000001bd4f3600
+ 12.396184064 TRACE WU SEND faddr FA0:8:0[VP] wuid 0xabc name vol_submit_read arg0 0xc000000011fd60c0 arg1 0xa80000004018ac00 flags 1 dest FA0:20:0[VP]
+ 12.396185216 TRACE WU END faddr FA0:8:0[VP]
+ 12.396186236 TRACE FULLTIME faddr FA0:20:0[VP] 0xb8b7b29 0x2e2deca7c
+ 12.396186688 TRACE WU START faddr FA0:20:0[VP] wuid 0xabc name vol_submit_read origin FA0:8:0[VP] arg0 0xc000000011fd60c0 arg1 0xa80000004018ac00
+ 12.396188352 TRACE WU SEND faddr FA0:20:0[VP] wuid 0xd9d name wuh_resource_lock arg0 0xc000000011fd6261 arg1 0xa80000004018ac00 flags 1 dest FA0:20:0[VP]
+ 12.396188672 TRACE WU END faddr FA0:20:0[VP]
+ 12.396189248 TRACE WU START faddr FA0:20:0[VP] wuid 0xd9d name wuh_resource_lock origin FA0:20:0[VP] arg0 0xc000000011fd6261 arg1 0xa80000004018ac00
+ 12.396189824 TRACE WU SEND faddr FA0:20:0[VP] wuid 0xa08 name lsv_chunk_read_wuh arg0 0xc000000011fd6240 arg1 0xa8000001bd4f2b00 flags 1 dest FA0:28:0[VP]
+ 12.396190080 TRACE WU END faddr FA0:20:0[VP]
+ 12.396190877 TRACE FULLTIME faddr FA0:28:0[VP] 0xb8b7b72 0x2e2dedc9d
+ 12.396191360 TRACE WU START faddr FA0:28:0[VP] wuid 0xa08 name lsv_chunk_read_wuh origin FA0:20:0[VP] arg0 0xc000000011fd6240 arg1 0xa8000001bd4f2b00
+ 12.396192192 TRACE WU SEND faddr FA0:28:0[VP] wuid 0xe60a2f name lsv_cmd_done arg0 0xc000000011fd6201 arg1 0xa80000004018ac00 flags 2 dest FA0:28:0[VP]
+ 12.396192896 TRACE WU SEND faddr FA0:28:0[VP] wuid 0xd80 name dma_error_gen arg0 0x108000008feb240 arg1 0x4c00100000000000 flags 1 dest FA0:3:0[DMA]
+ 12.396193280 TRACE WU END faddr FA0:28:0[VP]
+ 12.396194304 TRACE WU START faddr FA0:20:0[VP] wuid 0xa2f name lsv_cmd_done origin FA0:3:0[DMA] arg0 0xc000000011fd6201 arg1 0xa80000004018ac00
+ 12.396194688 TRACE WU SEND faddr FA0:20:0[VP] wuid 0xab8 name vol_submit_op_done arg0 0xc000000011fd60a0 arg1 0xa80000004018ac00 flags 1 dest FA0:20:1[VP]
+ 12.396194944 TRACE WU END faddr FA0:20:0[VP]
+ 12.396195392 TRACE WU START faddr FA0:20:0[VP] wuid 0xab8 name vol_submit_op_done origin FA0:20:0[VP] arg0 0xc000000011fd60a0 arg1 0xa80000004018ac00
+ 12.396195776 TRACE WU SEND faddr FA0:20:0[VP] wuid 0x1e5 name lsvtest_read_done arg0 0xc000000011fd6080 arg1 0xa8000001bd4f3600 flags 1 dest FA0:8:0[VP]
+ 12.396196224 TRACE WU END faddr FA0:20:0[VP]
+ 12.396196736 TRACE WU START faddr FA0:8:0[VP] wuid 0x1e5 name lsvtest_read_done origin FA0:20:0[VP] arg0 0xc000000011fd6080 arg1 0xa8000001bd4f3600
+ 12.396197440 TRACE WU END faddr FA0:8:0[VP]
+ 12.396665408 TRACE WU START faddr FA0:8:0[VP] wuid 0x1e8 name lsvtest_write origin FA0:8:0[VP] arg0 0xc000000011fd6080 arg1 0xa8000001bd4f3600
+ 12.396667776 TRACE WU SEND faddr FA0:8:0[VP] wuid 0xabd name vol_submit_write arg0 0xc000000011fd60c0 arg1 0xa80000004018ac00 flags 1 dest FA0:20:0[VP]
+ 12.396668096 TRACE WU END faddr FA0:8:0[VP]
+ 12.396669312 TRACE WU START faddr FA0:20:0[VP] wuid 0xabd name vol_submit_write origin FA0:8:0[VP] arg0 0xc000000011fd60c0 arg1 0xa80000004018ac00
+ 12.396670848 TRACE WU SEND faddr FA0:20:0[VP] wuid 0xd9d name wuh_resource_lock arg0 0xc000000011fd6261 arg1 0xa80000004018ac00 flags 1 dest FA0:20:0[VP]
+ 12.396671104 TRACE WU END faddr FA0:20:0[VP]
+ 12.396671552 TRACE WU START faddr FA0:20:0[VP] wuid 0xd9d name wuh_resource_lock origin FA0:20:0[VP] arg0 0xc000000011fd6261 arg1 0xa80000004018ac00
+ 12.396672128 TRACE WU SEND faddr FA0:20:0[VP] wuid 0xa18 name lsv_chunk_write_wuh arg0 0xc000000011fd6240 arg1 0xa8000001bd4f2b00 flags 1 dest FA0:28:0[VP]
+ 12.396672384 TRACE WU END faddr FA0:20:0[VP]
+ 12.396672960 TRACE WU START faddr FA0:28:0[VP] wuid 0xa18 name lsv_chunk_write_wuh origin FA0:20:0[VP] arg0 0xc000000011fd6240 arg1 0xa8000001bd4f2b00
+ 12.396674240 TRACE WU SEND faddr FA0:28:0[VP] wuid 0x9e1 name journal_rec_start arg0 0xc000000011fd6260 arg1 0xa8000001c03af700 flags 1 dest FA0:24:0[VP]
+ 12.396674496 TRACE WU END faddr FA0:28:0[VP]
+ 12.396675209 TRACE FULLTIME faddr FA0:24:0[VP] 0xb8b9902 0x2e2e64089
+ 12.396675520 TRACE WU START faddr FA0:24:0[VP] wuid 0x9e1 name journal_rec_start origin FA0:28:0[VP] arg0 0xc000000011fd6260 arg1 0xa8000001c03af700
+ 12.396677184 TRACE WU SEND faddr FA0:24:0[VP] wuid 0xabd name vol_submit_write arg0 0xc000000011fd6380 arg1 0xa80000003fc5a000 flags 1 dest FA3:20:0[VP]
+ 12.396677568 TRACE WU END faddr FA0:24:0[VP]
+ 12.396679726 TRACE FULLTIME faddr FA3:20:0[VP] 0xb8b9948 0x2e2e6522e
+ 12.396680320 TRACE WU START faddr FA3:20:0[VP] wuid 0xabd name vol_submit_write origin FA0:24:0[VP] arg0 0xc000000011fd6380 arg1 0xa80000003fc5a000
+ 12.396682112 TRACE WU SEND faddr FA3:20:0[VP] wuid 0xd9d name wuh_resource_lock arg0 0xc000000011fd63a1 arg1 0 flags 1 dest FA3:20:0[VP]
+ 12.396682880 TRACE WU END faddr FA3:20:0[VP]
+ 12.396683520 TRACE WU START faddr FA3:20:0[VP] wuid 0xd9d name wuh_resource_lock origin FA3:20:0[VP] arg0 0xc000000011fd63a1 arg1 0
+ 12.396684160 TRACE WU SEND faddr FA3:20:0[VP] wuid 0xa80 name repvol_pwrite arg0 0xc000000011fd6380 arg1 0xa80000003fc5a000 flags 1 dest FA3:20:0[VP]
+ 12.396684416 TRACE WU END faddr FA3:20:0[VP]
+ 12.396684928 TRACE WU START faddr FA3:20:0[VP] wuid 0xa80 name repvol_pwrite origin FA3:20:0[VP] arg0 0xc000000011fd6380 arg1 0xa80000003fc5a000
+ 12.396686144 TRACE WU SEND faddr FA3:20:0[VP] wuid 0xabd name vol_submit_write arg0 0xc000000013428080 arg1 0xa80000003ffeac00 flags 1 dest FA3:16:0[VP]
+ 12.396686924 TRACE FULLTIME faddr FA3:16:0[VP] 0xb8b99b9 0x2e2e66e4c
+ 12.396687296 TRACE WU SEND faddr FA3:20:0[VP] wuid 0xabd name vol_submit_write arg0 0xc000000011fd64a0 arg1 0xa80000003ffea800 flags 1 dest FA4:8:0[VP]
+ 12.396687360 TRACE WU START faddr FA3:16:0[VP] wuid 0xabd name vol_submit_write origin FA3:20:0[VP] arg0 0xc000000013428080 arg1 0xa80000003ffeac00
+ 12.396687552 TRACE WU END faddr FA3:20:0[VP]
+ 12.396688192 TRACE WU SEND faddr FA3:16:0[VP] wuid 0xe60ab8 name vol_submit_op_done arg0 0xc000000013428060 arg1 0xa80000003ffeac00 flags 2 dest FA3:16:0[VP]
+ 12.396689088 TRACE WU SEND faddr FA3:16:0[VP] wuid 0xd80 name dma_error_gen arg0 0x10c000009a14080 arg1 0x4c00082100000000 flags 1 dest FA3:3:0[DMA]
+ 12.396689408 TRACE WU END faddr FA3:16:0[VP]
+ 12.396689819 TRACE FULLTIME faddr FA4:8:0[VP] 0xb8b99e6 0x2e2e6799b
+ 12.396690368 TRACE WU START faddr FA4:8:0[VP] wuid 0xabd name vol_submit_write origin FA3:20:0[VP] arg0 0xc000000011fd64a0 arg1 0xa80000003ffea800
+ 12.396690880 TRACE WU START faddr FA3:16:0[VP] wuid 0xab8 name vol_submit_op_done origin FA3:3:0[DMA] arg0 0xc000000013428060 arg1 0xa80000003ffeac00
+ 12.396691200 TRACE WU SEND faddr FA3:16:0[VP] wuid 0x945 name lw_fork_join arg0 0xc000000013428040 arg1 0xa80000003fc5a000 flags 1 dest FA3:20:0[VP]
+ 12.396691456 TRACE WU END faddr FA3:16:0[VP]
+ 12.396691968 TRACE WU START faddr FA3:20:0[VP] wuid 0x945 name lw_fork_join origin FA3:16:0[VP] arg0 0xc000000013428040 arg1 0xa80000003fc5a000
+ 12.396692224 TRACE WU SEND faddr FA3:20:0[VP] wuid 0x82f name ws_free_frame arg0 0xc000000013428020 arg1 0 flags 1 dest FA3:20:1[VP]
+ 12.396692480 TRACE WU END faddr FA3:20:0[VP]
+ 12.396692544 TRACE WU SEND faddr FA4:8:0[VP] wuid 0xe60ab8 name vol_submit_op_done arg0 0xc000000011fd6480 arg1 0xa80000003ffea800 flags 2 dest FA4:8:0[VP]
+ 12.396692928 TRACE WU START faddr FA3:20:0[VP] wuid 0x82f name ws_free_frame origin FA3:20:0[VP] arg0 0xc000000013428020 arg1 0
+ 12.396693696 TRACE WU SEND faddr FA4:8:0[VP] wuid 0xd80 name dma_error_gen arg0 0x10c000008feb4c0 arg1 0x4c00082100000000 flags 1 dest FA4:3:0[DMA]
+ 12.396694528 TRACE WU END faddr FA4:8:0[VP]
+ 12.396696320 TRACE WU START faddr FA4:8:0[VP] wuid 0xab8 name vol_submit_op_done origin FA4:3:0[DMA] arg0 0xc000000011fd6480 arg1 0xa80000003ffea800
+ 12.396696640 TRACE WU SEND faddr FA4:8:0[VP] wuid 0x945 name lw_fork_join arg0 0xc000000011fd6441 arg1 0xa80000003fc5a000 flags 1 dest FA3:20:0[VP]
+ 12.396696704 TRACE WU END faddr FA3:20:0[VP]
+ 12.396696896 TRACE WU END faddr FA4:8:0[VP]
+ 12.396697280 TRACE WU START faddr FA3:20:0[VP] wuid 0x945 name lw_fork_join origin FA4:8:0[VP] arg0 0xc000000011fd6441 arg1 0xa80000003fc5a000
+ 12.396697728 TRACE WU SEND faddr FA3:20:0[VP] wuid 0xa7e name repvol_write_done arg0 0xc000000011fd6385 arg1 0xa80000003fc5a000 flags 1 dest FA3:20:0[VP]
+ 12.396697920 TRACE WU END faddr FA3:20:0[VP]
+ 12.396698368 TRACE WU START faddr FA3:20:0[VP] wuid 0xa7e name repvol_write_done origin FA3:20:0[VP] arg0 0xc000000011fd6385 arg1 0xa80000003fc5a000
+ 12.396698880 TRACE WU SEND faddr FA3:20:0[VP] wuid 0xab8 name vol_submit_op_done arg0 0xc000000011fd6360 arg1 0xa80000003fc5a000 flags 1 dest FA3:20:1[VP]
+ 12.396699136 TRACE WU END faddr FA3:20:0[VP]
+ 12.396699648 TRACE WU START faddr FA3:20:0[VP] wuid 0xab8 name vol_submit_op_done origin FA3:20:0[VP] arg0 0xc000000011fd6360 arg1 0xa80000003fc5a000
+ 12.396700096 TRACE WU SEND faddr FA3:20:0[VP] wuid 0x9e0 name journal_write_record_done arg0 0xc000000011fd6321 arg1 0xa8000001c03af700 flags 1 dest FA0:24:0[VP]
+ 12.396700544 TRACE WU END faddr FA3:20:0[VP]
+ 12.396701312 TRACE WU START faddr FA0:24:0[VP] wuid 0x9e0 name journal_write_record_done origin FA3:20:0[VP] arg0 0xc000000011fd6321 arg1 0xa8000001c03af700
+ 12.396702016 TRACE WU SEND faddr FA0:24:0[VP] wuid 0xa17 name lsv_chunk_write_xn_done arg0 0xc000000011fd6240 arg1 0xa8000001c03bfd10 flags 1 dest FA0:28:0[VP]
+ 12.396702272 TRACE WU END faddr FA0:24:0[VP]
+ 12.396702784 TRACE WU START faddr FA0:28:0[VP] wuid 0xa17 name lsv_chunk_write_xn_done origin FA0:24:0[VP] arg0 0xc000000011fd6240 arg1 0xa8000001c03bfd10
+ 12.396703232 TRACE WU SEND faddr FA0:28:0[VP] wuid 0xa2f name lsv_cmd_done arg0 0xc000000011fd6201 arg1 0xa80000004018ac00 flags 1 dest FA0:20:0[VP]
+ 12.396703488 TRACE WU END faddr FA0:28:0[VP]
+ 12.396704256 TRACE WU START faddr FA0:20:0[VP] wuid 0xa2f name lsv_cmd_done origin FA0:28:0[VP] arg0 0xc000000011fd6201 arg1 0xa80000004018ac00
+ 12.396704640 TRACE WU SEND faddr FA0:20:0[VP] wuid 0xab8 name vol_submit_op_done arg0 0xc000000011fd60a0 arg1 0xa80000004018ac00 flags 1 dest FA0:20:1[VP]
+ 12.396704896 TRACE WU END faddr FA0:20:0[VP]
+ 12.396705344 TRACE WU START faddr FA0:20:0[VP] wuid 0xab8 name vol_submit_op_done origin FA0:20:0[VP] arg0 0xc000000011fd60a0 arg1 0xa80000004018ac00
+ 12.396705600 TRACE WU SEND faddr FA0:20:0[VP] wuid 0x1e7 name lsvtest_write_done arg0 0xc000000011fd6080 arg1 0xa8000001bd4f3600 flags 1 dest FA0:8:0[VP]
+ 12.396706112 TRACE WU END faddr FA0:20:0[VP]
+ 12.396706624 TRACE WU START faddr FA0:8:0[VP] wuid 0x1e7 name lsvtest_write_done origin FA0:20:0[VP] arg0 0xc000000011fd6080 arg1 0xa8000001bd4f3600
+ 12.396707008 TRACE WU END faddr FA0:8:0[VP]
+ 12.398233920 TRACE WU START faddr FA0:8:0[VP] wuid 0x1e8 name lsvtest_write origin FA0:8:0[VP] arg0 0xc000000011fd6080 arg1 0xa8000001bd4f3600
+ 12.398236672 TRACE WU SEND faddr FA0:8:0[VP] wuid 0xabd name vol_submit_write arg0 0xc000000011fd60c0 arg1 0xa80000004018ac00 flags 1 dest FA0:20:0[VP]
+ 12.398237184 TRACE WU END faddr FA0:8:0[VP]
+ 12.398238400 TRACE WU START faddr FA0:20:0[VP] wuid 0xabd name vol_submit_write origin FA0:8:0[VP] arg0 0xc000000011fd60c0 arg1 0xa80000004018ac00
+ 12.398239936 TRACE WU SEND faddr FA0:20:0[VP] wuid 0xd9d name wuh_resource_lock arg0 0xc000000011fd6261 arg1 0xa80000004018ac00 flags 1 dest FA0:20:0[VP]
+ 12.398240128 TRACE WU END faddr FA0:20:0[VP]
+ 12.398240640 TRACE WU START faddr FA0:20:0[VP] wuid 0xd9d name wuh_resource_lock origin FA0:20:0[VP] arg0 0xc000000011fd6261 arg1 0xa80000004018ac00
+ 12.398241216 TRACE WU SEND faddr FA0:20:0[VP] wuid 0xa18 name lsv_chunk_write_wuh arg0 0xc000000011fd6240 arg1 0xa8000001bd4f2b00 flags 1 dest FA0:28:0[VP]
+ 12.398241472 TRACE WU END faddr FA0:20:0[VP]
+ 12.398241984 TRACE WU START faddr FA0:28:0[VP] wuid 0xa18 name lsv_chunk_write_wuh origin FA0:20:0[VP] arg0 0xc000000011fd6240 arg1 0xa8000001bd4f2b00
+ 12.398243264 TRACE WU SEND faddr FA0:28:0[VP] wuid 0x9e1 name journal_rec_start arg0 0xc000000011fd6260 arg1 0xa8000001c03af700 flags 1 dest FA0:24:0[VP]
+ 12.398243520 TRACE WU END faddr FA0:28:0[VP]
+ 12.398244032 TRACE WU START faddr FA0:24:0[VP] wuid 0x9e1 name journal_rec_start origin FA0:28:0[VP] arg0 0xc000000011fd6260 arg1 0xa8000001c03af700
+ 12.398245632 TRACE WU SEND faddr FA0:24:0[VP] wuid 0xabd name vol_submit_write arg0 0xc000000011fd6380 arg1 0xa80000003fc5a000 flags 1 dest FA3:20:0[VP]
+ 12.398245888 TRACE WU END faddr FA0:24:0[VP]
+ 12.398246656 TRACE WU START faddr FA3:20:0[VP] wuid 0xabd name vol_submit_write origin FA0:24:0[VP] arg0 0xc000000011fd6380 arg1 0xa80000003fc5a000
+ 12.398247744 TRACE WU SEND faddr FA3:20:0[VP] wuid 0xd9d name wuh_resource_lock arg0 0xc000000011fd63a1 arg1 0 flags 1 dest FA3:20:0[VP]
+ 12.398248000 TRACE WU END faddr FA3:20:0[VP]
+ 12.398248512 TRACE WU START faddr FA3:20:0[VP] wuid 0xd9d name wuh_resource_lock origin FA3:20:0[VP] arg0 0xc000000011fd63a1 arg1 0
+ 12.398249088 TRACE WU SEND faddr FA3:20:0[VP] wuid 0xa80 name repvol_pwrite arg0 0xc000000011fd6380 arg1 0xa80000003fc5a000 flags 1 dest FA3:20:0[VP]
+ 12.398249280 TRACE WU END faddr FA3:20:0[VP]
+ 12.398249792 TRACE WU START faddr FA3:20:0[VP] wuid 0xa80 name repvol_pwrite origin FA3:20:0[VP] arg0 0xc000000011fd6380 arg1 0xa80000003fc5a000
+ 12.398250944 TRACE WU SEND faddr FA3:20:0[VP] wuid 0xabd name vol_submit_write arg0 0xc000000013428080 arg1 0xa80000003ffeac00 flags 1 dest FA3:16:0[VP]
+ 12.398251584 TRACE WU START faddr FA3:16:0[VP] wuid 0xabd name vol_submit_write origin FA3:20:0[VP] arg0 0xc000000013428080 arg1 0xa80000003ffeac00
+ 12.398252096 TRACE WU SEND faddr FA3:20:0[VP] wuid 0xabd name vol_submit_write arg0 0xc000000011fd64a0 arg1 0xa80000003ffea800 flags 1 dest FA4:8:0[VP]
+ 12.398252288 TRACE WU SEND faddr FA3:16:0[VP] wuid 0xe60ab8 name vol_submit_op_done arg0 0xc000000013428060 arg1 0xa80000003ffeac00 flags 2 dest FA3:16:0[VP]
+ 12.398252416 TRACE WU END faddr FA3:20:0[VP]
+ 12.398253248 TRACE WU SEND faddr FA3:16:0[VP] wuid 0xd80 name dma_error_gen arg0 0x10c000009a14080 arg1 0x4c000aa700000000 flags 1 dest FA3:3:0[DMA]
+ 12.398253376 TRACE WU START faddr FA4:8:0[VP] wuid 0xabd name vol_submit_write origin FA3:20:0[VP] arg0 0xc000000011fd64a0 arg1 0xa80000003ffea800
+ 12.398253696 TRACE WU END faddr FA3:16:0[VP]
+ 12.398254400 TRACE WU SEND faddr FA4:8:0[VP] wuid 0xe60ab8 name vol_submit_op_done arg0 0xc000000011fd6480 arg1 0xa80000003ffea800 flags 2 dest FA4:8:0[VP]
+ 12.398255168 TRACE WU START faddr FA3:16:0[VP] wuid 0xab8 name vol_submit_op_done origin FA3:3:0[DMA] arg0 0xc000000013428060 arg1 0xa80000003ffeac00
+ 12.398255296 TRACE WU SEND faddr FA4:8:0[VP] wuid 0xd80 name dma_error_gen arg0 0x10c000008feb4c0 arg1 0x4c000aa700000000 flags 1 dest FA4:3:0[DMA]
+ 12.398255488 TRACE WU SEND faddr FA3:16:0[VP] wuid 0x945 name lw_fork_join arg0 0xc000000013428040 arg1 0xa80000003fc5a000 flags 1 dest FA3:20:0[VP]
+ 12.398255744 TRACE WU END faddr FA3:16:0[VP]
+ 12.398255744 TRACE WU END faddr FA4:8:0[VP]
+ 12.398256256 TRACE WU START faddr FA3:20:0[VP] wuid 0x945 name lw_fork_join origin FA3:16:0[VP] arg0 0xc000000013428040 arg1 0xa80000003fc5a000
+ 12.398256512 TRACE WU SEND faddr FA3:20:0[VP] wuid 0x82f name ws_free_frame arg0 0xc000000013428020 arg1 0 flags 1 dest FA3:20:1[VP]
+ 12.398256768 TRACE WU END faddr FA3:20:0[VP]
+ 12.398257280 TRACE WU START faddr FA3:20:0[VP] wuid 0x82f name ws_free_frame origin FA3:20:0[VP] arg0 0xc000000013428020 arg1 0
+ 12.398257280 TRACE WU START faddr FA4:8:0[VP] wuid 0xab8 name vol_submit_op_done origin FA4:3:0[DMA] arg0 0xc000000011fd6480 arg1 0xa80000003ffea800
+ 12.398257536 TRACE WU SEND faddr FA4:8:0[VP] wuid 0x945 name lw_fork_join arg0 0xc000000011fd6441 arg1 0xa80000003fc5a000 flags 1 dest FA3:20:0[VP]
+ 12.398257792 TRACE WU END faddr FA4:8:0[VP]
+ 12.398260992 TRACE WU END faddr FA3:20:0[VP]
+ 12.398261248 TRACE WU START faddr FA3:20:0[VP] wuid 0x945 name lw_fork_join origin FA4:8:0[VP] arg0 0xc000000011fd6441 arg1 0xa80000003fc5a000
+ 12.398261696 TRACE WU SEND faddr FA3:20:0[VP] wuid 0xa7e name repvol_write_done arg0 0xc000000011fd6385 arg1 0xa80000003fc5a000 flags 1 dest FA3:20:0[VP]
+ 12.398261952 TRACE WU END faddr FA3:20:0[VP]
+ 12.398262400 TRACE WU START faddr FA3:20:0[VP] wuid 0xa7e name repvol_write_done origin FA3:20:0[VP] arg0 0xc000000011fd6385 arg1 0xa80000003fc5a000
+ 12.398262848 TRACE WU SEND faddr FA3:20:0[VP] wuid 0xab8 name vol_submit_op_done arg0 0xc000000011fd6360 arg1 0xa80000003fc5a000 flags 1 dest FA3:20:1[VP]
+ 12.398263104 TRACE WU END faddr FA3:20:0[VP]
+ 12.398263552 TRACE WU START faddr FA3:20:0[VP] wuid 0xab8 name vol_submit_op_done origin FA3:20:0[VP] arg0 0xc000000011fd6360 arg1 0xa80000003fc5a000
+ 12.398264000 TRACE WU SEND faddr FA3:20:0[VP] wuid 0x9e0 name journal_write_record_done arg0 0xc000000011fd6321 arg1 0xa8000001c03af700 flags 1 dest FA0:24:0[VP]
+ 12.398264448 TRACE WU END faddr FA3:20:0[VP]
+ 12.398265280 TRACE WU START faddr FA0:24:0[VP] wuid 0x9e0 name journal_write_record_done origin FA3:20:0[VP] arg0 0xc000000011fd6321 arg1 0xa8000001c03af700
+ 12.398265728 TRACE WU SEND faddr FA0:24:0[VP] wuid 0xa17 name lsv_chunk_write_xn_done arg0 0xc000000011fd6240 arg1 0xa8000001c03bfd10 flags 1 dest FA0:28:0[VP]
+ 12.398266176 TRACE WU END faddr FA0:24:0[VP]
+ 12.398266688 TRACE WU START faddr FA0:28:0[VP] wuid 0xa17 name lsv_chunk_write_xn_done origin FA0:24:0[VP] arg0 0xc000000011fd6240 arg1 0xa8000001c03bfd10
+ 12.398267072 TRACE WU SEND faddr FA0:28:0[VP] wuid 0xa2f name lsv_cmd_done arg0 0xc000000011fd6201 arg1 0xa80000004018ac00 flags 1 dest FA0:20:0[VP]
+ 12.398267328 TRACE WU END faddr FA0:28:0[VP]
+ 12.398267904 TRACE WU START faddr FA0:20:0[VP] wuid 0xa2f name lsv_cmd_done origin FA0:28:0[VP] arg0 0xc000000011fd6201 arg1 0xa80000004018ac00
+ 12.398268288 TRACE WU SEND faddr FA0:20:0[VP] wuid 0xab8 name vol_submit_op_done arg0 0xc000000011fd60a0 arg1 0xa80000004018ac00 flags 1 dest FA0:20:1[VP]
+ 12.398268544 TRACE WU END faddr FA0:20:0[VP]
+ 12.398268992 TRACE WU START faddr FA0:20:0[VP] wuid 0xab8 name vol_submit_op_done origin FA0:20:0[VP] arg0 0xc000000011fd60a0 arg1 0xa80000004018ac00
+ 12.398269312 TRACE WU SEND faddr FA0:20:0[VP] wuid 0x1e7 name lsvtest_write_done arg0 0xc000000011fd6080 arg1 0xa8000001bd4f3600 flags 1 dest FA0:8:0[VP]
+ 12.398269760 TRACE WU END faddr FA0:20:0[VP]
+ 12.398270272 TRACE WU START faddr FA0:8:0[VP] wuid 0x1e7 name lsvtest_write_done origin FA0:20:0[VP] arg0 0xc000000011fd6080 arg1 0xa8000001bd4f3600
+ 12.398270656 TRACE WU END faddr FA0:8:0[VP]
+ 12.399985408 TRACE WU START faddr FA0:8:0[VP] wuid 0x1e6 name lsvtest_read origin FA0:8:0[VP] arg0 0xc000000011fd6080 arg1 0xa8000001bd4f3600
+ 12.399986432 TRACE WU SEND faddr FA0:8:0[VP] wuid 0xabc name vol_submit_read arg0 0xc000000011fd60c0 arg1 0xa80000004018ac00 flags 1 dest FA0:20:0[VP]
+ 12.399986752 TRACE WU END faddr FA0:8:0[VP]
+ 12.399987200 TRACE WU START faddr FA0:20:0[VP] wuid 0xabc name vol_submit_read origin FA0:8:0[VP] arg0 0xc000000011fd60c0 arg1 0xa80000004018ac00
+ 12.399988544 TRACE WU SEND faddr FA0:20:0[VP] wuid 0xd9d name wuh_resource_lock arg0 0xc000000011fd6261 arg1 0xa80000004018ac00 flags 1 dest FA0:20:0[VP]
+ 12.399988736 TRACE WU END faddr FA0:20:0[VP]
+ 12.399989248 TRACE WU START faddr FA0:20:0[VP] wuid 0xd9d name wuh_resource_lock origin FA0:20:0[VP] arg0 0xc000000011fd6261 arg1 0xa80000004018ac00
+ 12.399989824 TRACE WU SEND faddr FA0:20:0[VP] wuid 0xa08 name lsv_chunk_read_wuh arg0 0xc000000011fd6240 arg1 0xa8000001bd4f2b00 flags 1 dest FA0:28:0[VP]
+ 12.399990080 TRACE WU END faddr FA0:20:0[VP]
+ 12.399990592 TRACE WU START faddr FA0:28:0[VP] wuid 0xa08 name lsv_chunk_read_wuh origin FA0:20:0[VP] arg0 0xc000000011fd6240 arg1 0xa8000001bd4f2b00
+ 12.399991680 TRACE WU SEND faddr FA0:28:0[VP] wuid 0xe60a39 name lsv_io_read_cached_done arg0 0xc000000011fd6240 arg1 0xa8000001bd4f2d00 flags 2 dest FA0:28:0[VP]
+ 12.399992384 TRACE WU SEND faddr FA0:28:0[VP] wuid 0xd80 name dma_error_gen arg0 0x108000008feb280 arg1 0x4c000cd000000000 flags 1 dest FA0:3:0[DMA]
+ 12.399992640 TRACE WU END faddr FA0:28:0[VP]
+ 12.399994560 TRACE WU START faddr FA0:28:0[VP] wuid 0xa39 name lsv_io_read_cached_done origin FA0:3:0[DMA] arg0 0xc000000011fd6240 arg1 0xa8000001bd4f2d00
+ 12.399994880 TRACE WU SEND faddr FA0:28:0[VP] wuid 0xa2f name lsv_cmd_done arg0 0xc000000011fd6201 arg1 0xa80000004018ac00 flags 1 dest FA0:20:0[VP]
+ 12.399995392 TRACE WU END faddr FA0:28:0[VP]
+ 12.399995904 TRACE WU START faddr FA0:20:0[VP] wuid 0xa2f name lsv_cmd_done origin FA0:28:0[VP] arg0 0xc000000011fd6201 arg1 0xa80000004018ac00
+ 12.399996288 TRACE WU SEND faddr FA0:20:0[VP] wuid 0xab8 name vol_submit_op_done arg0 0xc000000011fd60a0 arg1 0xa80000004018ac00 flags 1 dest FA0:20:1[VP]
+ 12.399996544 TRACE WU END faddr FA0:20:0[VP]
+ 12.399997120 TRACE WU START faddr FA0:20:0[VP] wuid 0xab8 name vol_submit_op_done origin FA0:20:0[VP] arg0 0xc000000011fd60a0 arg1 0xa80000004018ac00
+ 12.399997440 TRACE WU SEND faddr FA0:20:0[VP] wuid 0x1e5 name lsvtest_read_done arg0 0xc000000011fd6080 arg1 0xa8000001bd4f3600 flags 1 dest FA0:8:0[VP]
+ 12.399997888 TRACE WU END faddr FA0:20:0[VP]
+ 12.399998400 TRACE WU START faddr FA0:8:0[VP] wuid 0x1e5 name lsvtest_read_done origin FA0:20:0[VP] arg0 0xc000000011fd6080 arg1 0xa8000001bd4f3600
+ 12.400002240 TRACE WU END faddr FA0:8:0[VP]
+ 12.400606528 TRACE WU START faddr FA0:8:0[VP] wuid 0x1e8 name lsvtest_write origin FA0:8:0[VP] arg0 0xc000000011fd6080 arg1 0xa8000001bd4f3600
+ 12.400608576 TRACE WU SEND faddr FA0:8:0[VP] wuid 0xabd name vol_submit_write arg0 0xc000000011fd60c0 arg1 0xa80000004018ac00 flags 1 dest FA0:20:0[VP]
+ 12.400608832 TRACE WU END faddr FA0:8:0[VP]
+ 12.400609664 TRACE WU START faddr FA0:20:0[VP] wuid 0xabd name vol_submit_write origin FA0:8:0[VP] arg0 0xc000000011fd60c0 arg1 0xa80000004018ac00
+ 12.400611008 TRACE WU SEND faddr FA0:20:0[VP] wuid 0xd9d name wuh_resource_lock arg0 0xc000000011fd6261 arg1 0xa80000004018ac00 flags 1 dest FA0:20:0[VP]
+ 12.400611200 TRACE WU END faddr FA0:20:0[VP]
+ 12.400611712 TRACE WU START faddr FA0:20:0[VP] wuid 0xd9d name wuh_resource_lock origin FA0:20:0[VP] arg0 0xc000000011fd6261 arg1 0xa80000004018ac00
+ 12.400612288 TRACE WU SEND faddr FA0:20:0[VP] wuid 0xa18 name lsv_chunk_write_wuh arg0 0xc000000011fd6240 arg1 0xa8000001bd4f2b00 flags 1 dest FA0:28:0[VP]
+ 12.400612544 TRACE WU END faddr FA0:20:0[VP]
+ 12.400613056 TRACE WU START faddr FA0:28:0[VP] wuid 0xa18 name lsv_chunk_write_wuh origin FA0:20:0[VP] arg0 0xc000000011fd6240 arg1 0xa8000001bd4f2b00
+ 12.400614336 TRACE WU SEND faddr FA0:28:0[VP] wuid 0x9e1 name journal_rec_start arg0 0xc000000011fd6260 arg1 0xa8000001c03af700 flags 1 dest FA0:24:0[VP]
+ 12.400614592 TRACE WU END faddr FA0:28:0[VP]
+ 12.400615168 TRACE WU START faddr FA0:24:0[VP] wuid 0x9e1 name journal_rec_start origin FA0:28:0[VP] arg0 0xc000000011fd6260 arg1 0xa8000001c03af700
+ 12.400616768 TRACE WU SEND faddr FA0:24:0[VP] wuid 0xabd name vol_submit_write arg0 0xc000000011fd6380 arg1 0xa80000003fc5a000 flags 1 dest FA3:20:0[VP]
+ 12.400616960 TRACE WU END faddr FA0:24:0[VP]
+ 12.400617728 TRACE WU START faddr FA3:20:0[VP] wuid 0xabd name vol_submit_write origin FA0:24:0[VP] arg0 0xc000000011fd6380 arg1 0xa80000003fc5a000
+ 12.400618880 TRACE WU SEND faddr FA3:20:0[VP] wuid 0xd9d name wuh_resource_lock arg0 0xc000000011fd63a1 arg1 0 flags 1 dest FA3:20:0[VP]
+ 12.400619072 TRACE WU END faddr FA3:20:0[VP]
+ 12.400619584 TRACE WU START faddr FA3:20:0[VP] wuid 0xd9d name wuh_resource_lock origin FA3:20:0[VP] arg0 0xc000000011fd63a1 arg1 0
+ 12.400620160 TRACE WU SEND faddr FA3:20:0[VP] wuid 0xa80 name repvol_pwrite arg0 0xc000000011fd6380 arg1 0xa80000003fc5a000 flags 1 dest FA3:20:0[VP]
+ 12.400620352 TRACE WU END faddr FA3:20:0[VP]
+ 12.400620928 TRACE WU START faddr FA3:20:0[VP] wuid 0xa80 name repvol_pwrite origin FA3:20:0[VP] arg0 0xc000000011fd6380 arg1 0xa80000003fc5a000
+ 12.400622080 TRACE WU SEND faddr FA3:20:0[VP] wuid 0xabd name vol_submit_write arg0 0xc000000013428080 arg1 0xa80000003ffeac00 flags 1 dest FA3:16:0[VP]
+ 12.400622720 TRACE WU START faddr FA3:16:0[VP] wuid 0xabd name vol_submit_write origin FA3:20:0[VP] arg0 0xc000000013428080 arg1 0xa80000003ffeac00
+ 12.400623296 TRACE WU SEND faddr FA3:20:0[VP] wuid 0xabd name vol_submit_write arg0 0xc000000011fd64a0 arg1 0xa80000003ffea800 flags 1 dest FA4:8:0[VP]
+ 12.400623552 TRACE WU END faddr FA3:20:0[VP]
+ 12.400623616 TRACE WU SEND faddr FA3:16:0[VP] wuid 0xe60ab8 name vol_submit_op_done arg0 0xc000000013428060 arg1 0xa80000003ffeac00 flags 2 dest FA3:16:0[VP]
+ 12.400624512 TRACE WU SEND faddr FA3:16:0[VP] wuid 0xd80 name dma_error_gen arg0 0x10c000009a14080 arg1 0x4c00060e00000000 flags 1 dest FA3:3:0[DMA]
+ 12.400624512 TRACE WU START faddr FA4:8:0[VP] wuid 0xabd name vol_submit_write origin FA3:20:0[VP] arg0 0xc000000011fd64a0 arg1 0xa80000003ffea800
+ 12.400624768 TRACE WU END faddr FA3:16:0[VP]
+ 12.400625728 TRACE WU SEND faddr FA4:8:0[VP] wuid 0xe60ab8 name vol_submit_op_done arg0 0xc000000011fd6480 arg1 0xa80000003ffea800 flags 2 dest FA4:8:0[VP]
+ 12.400626176 TRACE WU START faddr FA3:16:0[VP] wuid 0xab8 name vol_submit_op_done origin FA3:3:0[DMA] arg0 0xc000000013428060 arg1 0xa80000003ffeac00
+ 12.400626496 TRACE WU SEND faddr FA3:16:0[VP] wuid 0x945 name lw_fork_join arg0 0xc000000013428040 arg1 0xa80000003fc5a000 flags 1 dest FA3:20:0[VP]
+ 12.400626624 TRACE WU SEND faddr FA4:8:0[VP] wuid 0xd80 name dma_error_gen arg0 0x10c000008feb4c0 arg1 0x4c00060e00000000 flags 1 dest FA4:3:0[DMA]
+ 12.400626752 TRACE WU END faddr FA3:16:0[VP]
+ 12.400626816 TRACE WU END faddr FA4:8:0[VP]
+ 12.400627520 TRACE WU START faddr FA3:20:0[VP] wuid 0x945 name lw_fork_join origin FA3:16:0[VP] arg0 0xc000000013428040 arg1 0xa80000003fc5a000
+ 12.400627712 TRACE WU SEND faddr FA3:20:0[VP] wuid 0x82f name ws_free_frame arg0 0xc000000013428020 arg1 0 flags 1 dest FA3:20:1[VP]
+ 12.400628032 TRACE WU END faddr FA3:20:0[VP]
+ 12.400628160 TRACE WU START faddr FA4:8:0[VP] wuid 0xab8 name vol_submit_op_done origin FA4:3:0[DMA] arg0 0xc000000011fd6480 arg1 0xa80000003ffea800
+ 12.400628416 TRACE WU SEND faddr FA4:8:0[VP] wuid 0x945 name lw_fork_join arg0 0xc000000011fd6441 arg1 0xa80000003fc5a000 flags 1 dest FA3:20:0[VP]
+ 12.400628416 TRACE WU START faddr FA3:20:0[VP] wuid 0x82f name ws_free_frame origin FA3:20:0[VP] arg0 0xc000000013428020 arg1 0
+ 12.400628672 TRACE WU END faddr FA4:8:0[VP]
+ 12.400632192 TRACE WU END faddr FA3:20:0[VP]
+ 12.400632384 TRACE WU START faddr FA3:20:0[VP] wuid 0x945 name lw_fork_join origin FA4:8:0[VP] arg0 0xc000000011fd6441 arg1 0xa80000003fc5a000
+ 12.400632832 TRACE WU SEND faddr FA3:20:0[VP] wuid 0xa7e name repvol_write_done arg0 0xc000000011fd6385 arg1 0xa80000003fc5a000 flags 1 dest FA3:20:0[VP]
+ 12.400633088 TRACE WU END faddr FA3:20:0[VP]
+ 12.400633536 TRACE WU START faddr FA3:20:0[VP] wuid 0xa7e name repvol_write_done origin FA3:20:0[VP] arg0 0xc000000011fd6385 arg1 0xa80000003fc5a000
+ 12.400634048 TRACE WU SEND faddr FA3:20:0[VP] wuid 0xab8 name vol_submit_op_done arg0 0xc000000011fd6360 arg1 0xa80000003fc5a000 flags 1 dest FA3:20:1[VP]
+ 12.400634304 TRACE WU END faddr FA3:20:0[VP]
+ 12.400634752 TRACE WU START faddr FA3:20:0[VP] wuid 0xab8 name vol_submit_op_done origin FA3:20:0[VP] arg0 0xc000000011fd6360 arg1 0xa80000003fc5a000
+ 12.400635200 TRACE WU SEND faddr FA3:20:0[VP] wuid 0x9e0 name journal_write_record_done arg0 0xc000000011fd6321 arg1 0xa8000001c03af700 flags 1 dest FA0:24:0[VP]
+ 12.400635648 TRACE WU END faddr FA3:20:0[VP]
+ 12.400636352 TRACE WU START faddr FA0:24:0[VP] wuid 0x9e0 name journal_write_record_done origin FA3:20:0[VP] arg0 0xc000000011fd6321 arg1 0xa8000001c03af700
+ 12.400637056 TRACE WU SEND faddr FA0:24:0[VP] wuid 0xa17 name lsv_chunk_write_xn_done arg0 0xc000000011fd6240 arg1 0xa8000001c03bfd10 flags 1 dest FA0:28:0[VP]
+ 12.400637312 TRACE WU END faddr FA0:24:0[VP]
+ 12.400637952 TRACE WU START faddr FA0:28:0[VP] wuid 0xa17 name lsv_chunk_write_xn_done origin FA0:24:0[VP] arg0 0xc000000011fd6240 arg1 0xa8000001c03bfd10
+ 12.400638528 TRACE WU SEND faddr FA0:28:0[VP] wuid 0xa2f name lsv_cmd_done arg0 0xc000000011fd6201 arg1 0xa80000004018ac00 flags 1 dest FA0:20:0[VP]
+ 12.400638784 TRACE WU END faddr FA0:28:0[VP]
+ 12.400639296 TRACE WU START faddr FA0:20:0[VP] wuid 0xa2f name lsv_cmd_done origin FA0:28:0[VP] arg0 0xc000000011fd6201 arg1 0xa80000004018ac00
+ 12.400639680 TRACE WU SEND faddr FA0:20:0[VP] wuid 0xab8 name vol_submit_op_done arg0 0xc000000011fd60a0 arg1 0xa80000004018ac00 flags 1 dest FA0:20:1[VP]
+ 12.400639936 TRACE WU END faddr FA0:20:0[VP]
+ 12.400640384 TRACE WU START faddr FA0:20:0[VP] wuid 0xab8 name vol_submit_op_done origin FA0:20:0[VP] arg0 0xc000000011fd60a0 arg1 0xa80000004018ac00
+ 12.400640704 TRACE WU SEND faddr FA0:20:0[VP] wuid 0x1e7 name lsvtest_write_done arg0 0xc000000011fd6080 arg1 0xa8000001bd4f3600 flags 1 dest FA0:8:0[VP]
+ 12.400641152 TRACE WU END faddr FA0:20:0[VP]
+ 12.400641664 TRACE WU START faddr FA0:8:0[VP] wuid 0x1e7 name lsvtest_write_done origin FA0:20:0[VP] arg0 0xc000000011fd6080 arg1 0xa8000001bd4f3600
+ 12.400642048 TRACE WU END faddr FA0:8:0[VP]
+ 12.401701696 TRACE WU START faddr FA0:8:0[VP] wuid 0x1e8 name lsvtest_write origin FA0:8:0[VP] arg0 0xc000000011fd6080 arg1 0xa8000001bd4f3600
+ 12.401703552 TRACE WU SEND faddr FA0:8:0[VP] wuid 0xabd name vol_submit_write arg0 0xc000000011fd60c0 arg1 0xa80000004018ac00 flags 1 dest FA0:20:0[VP]
+ 12.401703872 TRACE WU END faddr FA0:8:0[VP]
+ 12.401704640 TRACE WU START faddr FA0:20:0[VP] wuid 0xabd name vol_submit_write origin FA0:8:0[VP] arg0 0xc000000011fd60c0 arg1 0xa80000004018ac00
+ 12.401705984 TRACE WU SEND faddr FA0:20:0[VP] wuid 0xd9d name wuh_resource_lock arg0 0xc000000011fd6261 arg1 0xa80000004018ac00 flags 1 dest FA0:20:0[VP]
+ 12.401706240 TRACE WU END faddr FA0:20:0[VP]
+ 12.401706752 TRACE WU START faddr FA0:20:0[VP] wuid 0xd9d name wuh_resource_lock origin FA0:20:0[VP] arg0 0xc000000011fd6261 arg1 0xa80000004018ac00
+ 12.401707264 TRACE WU SEND faddr FA0:20:0[VP] wuid 0xa18 name lsv_chunk_write_wuh arg0 0xc000000011fd6240 arg1 0xa8000001bd4f2b00 flags 1 dest FA0:28:0[VP]
+ 12.401707520 TRACE WU END faddr FA0:20:0[VP]
+ 12.401708096 TRACE WU START faddr FA0:28:0[VP] wuid 0xa18 name lsv_chunk_write_wuh origin FA0:20:0[VP] arg0 0xc000000011fd6240 arg1 0xa8000001bd4f2b00
+ 12.401709440 TRACE WU SEND faddr FA0:28:0[VP] wuid 0x9e1 name journal_rec_start arg0 0xc000000011fd6260 arg1 0xa8000001c03af700 flags 1 dest FA0:24:0[VP]
+ 12.401709696 TRACE WU END faddr FA0:28:0[VP]
+ 12.401710208 TRACE WU START faddr FA0:24:0[VP] wuid 0x9e1 name journal_rec_start origin FA0:28:0[VP] arg0 0xc000000011fd6260 arg1 0xa8000001c03af700
+ 12.401711808 TRACE WU SEND faddr FA0:24:0[VP] wuid 0xabd name vol_submit_write arg0 0xc000000011fd6380 arg1 0xa80000003fc5a000 flags 1 dest FA3:20:0[VP]
+ 12.401712064 TRACE WU END faddr FA0:24:0[VP]
+ 12.401712832 TRACE WU START faddr FA3:20:0[VP] wuid 0xabd name vol_submit_write origin FA0:24:0[VP] arg0 0xc000000011fd6380 arg1 0xa80000003fc5a000
+ 12.401713984 TRACE WU SEND faddr FA3:20:0[VP] wuid 0xd9d name wuh_resource_lock arg0 0xc000000011fd63a1 arg1 0 flags 1 dest FA3:20:0[VP]
+ 12.401714240 TRACE WU END faddr FA3:20:0[VP]
+ 12.401714688 TRACE WU START faddr FA3:20:0[VP] wuid 0xd9d name wuh_resource_lock origin FA3:20:0[VP] arg0 0xc000000011fd63a1 arg1 0
+ 12.401715264 TRACE WU SEND faddr FA3:20:0[VP] wuid 0xa80 name repvol_pwrite arg0 0xc000000011fd6380 arg1 0xa80000003fc5a000 flags 1 dest FA3:20:0[VP]
+ 12.401715520 TRACE WU END faddr FA3:20:0[VP]
+ 12.401715968 TRACE WU START faddr FA3:20:0[VP] wuid 0xa80 name repvol_pwrite origin FA3:20:0[VP] arg0 0xc000000011fd6380 arg1 0xa80000003fc5a000
+ 12.401717120 TRACE WU SEND faddr FA3:20:0[VP] wuid 0xabd name vol_submit_write arg0 0xc000000013428080 arg1 0xa80000003ffeac00 flags 1 dest FA3:16:0[VP]
+ 12.401717760 TRACE WU START faddr FA3:16:0[VP] wuid 0xabd name vol_submit_write origin FA3:20:0[VP] arg0 0xc000000013428080 arg1 0xa80000003ffeac00
+ 12.401718272 TRACE WU SEND faddr FA3:20:0[VP] wuid 0xabd name vol_submit_write arg0 0xc000000011fd64a0 arg1 0xa80000003ffea800 flags 1 dest FA4:8:0[VP]
+ 12.401718464 TRACE WU SEND faddr FA3:16:0[VP] wuid 0xe60ab8 name vol_submit_op_done arg0 0xc000000013428060 arg1 0xa80000003ffeac00 flags 2 dest FA3:16:0[VP]
+ 12.401718592 TRACE WU END faddr FA3:20:0[VP]
+ 12.401719360 TRACE WU SEND faddr FA3:16:0[VP] wuid 0xd80 name dma_error_gen arg0 0x10c000009a14080 arg1 0x4c00059100000000 flags 1 dest FA3:3:0[DMA]
+ 12.401719616 TRACE WU END faddr FA3:16:0[VP]
+ 12.401719616 TRACE WU START faddr FA4:8:0[VP] wuid 0xabd name vol_submit_write origin FA3:20:0[VP] arg0 0xc000000011fd64a0 arg1 0xa80000003ffea800
+ 12.401720640 TRACE WU SEND faddr FA4:8:0[VP] wuid 0xe60ab8 name vol_submit_op_done arg0 0xc000000011fd6480 arg1 0xa80000003ffea800 flags 2 dest FA4:8:0[VP]
+ 12.401720960 TRACE WU START faddr FA3:16:0[VP] wuid 0xab8 name vol_submit_op_done origin FA3:3:0[DMA] arg0 0xc000000013428060 arg1 0xa80000003ffeac00
+ 12.401721472 TRACE WU SEND faddr FA3:16:0[VP] wuid 0x945 name lw_fork_join arg0 0xc000000013428040 arg1 0xa80000003fc5a000 flags 1 dest FA3:20:0[VP]
+ 12.401721536 TRACE WU SEND faddr FA4:8:0[VP] wuid 0xd80 name dma_error_gen arg0 0x10c000008feb4c0 arg1 0x4c00059100000000 flags 1 dest FA4:3:0[DMA]
+ 12.401721728 TRACE WU END faddr FA3:16:0[VP]
+ 12.401721792 TRACE WU END faddr FA4:8:0[VP]
+ 12.401722240 TRACE WU START faddr FA3:20:0[VP] wuid 0x945 name lw_fork_join origin FA3:16:0[VP] arg0 0xc000000013428040 arg1 0xa80000003fc5a000
+ 12.401722496 TRACE WU SEND faddr FA3:20:0[VP] wuid 0x82f name ws_free_frame arg0 0xc000000013428020 arg1 0 flags 1 dest FA3:20:1[VP]
+ 12.401722752 TRACE WU END faddr FA3:20:0[VP]
+ 12.401723008 TRACE WU START faddr FA4:8:0[VP] wuid 0xab8 name vol_submit_op_done origin FA4:3:0[DMA] arg0 0xc000000011fd6480 arg1 0xa80000003ffea800
+ 12.401723200 TRACE WU START faddr FA3:20:0[VP] wuid 0x82f name ws_free_frame origin FA3:20:0[VP] arg0 0xc000000013428020 arg1 0
+ 12.401723520 TRACE WU SEND faddr FA4:8:0[VP] wuid 0x945 name lw_fork_join arg0 0xc000000011fd6441 arg1 0xa80000003fc5a000 flags 1 dest FA3:20:0[VP]
+ 12.401723776 TRACE WU END faddr FA4:8:0[VP]
+ 12.401726912 TRACE WU END faddr FA3:20:0[VP]
+ 12.401727168 TRACE WU START faddr FA3:20:0[VP] wuid 0x945 name lw_fork_join origin FA4:8:0[VP] arg0 0xc000000011fd6441 arg1 0xa80000003fc5a000
+ 12.401727616 TRACE WU SEND faddr FA3:20:0[VP] wuid 0xa7e name repvol_write_done arg0 0xc000000011fd6385 arg1 0xa80000003fc5a000 flags 1 dest FA3:20:0[VP]
+ 12.401727808 TRACE WU END faddr FA3:20:0[VP]
+ 12.401728256 TRACE WU START faddr FA3:20:0[VP] wuid 0xa7e name repvol_write_done origin FA3:20:0[VP] arg0 0xc000000011fd6385 arg1 0xa80000003fc5a000
+ 12.401728768 TRACE WU SEND faddr FA3:20:0[VP] wuid 0xab8 name vol_submit_op_done arg0 0xc000000011fd6360 arg1 0xa80000003fc5a000 flags 1 dest FA3:20:1[VP]
+ 12.401729024 TRACE WU END faddr FA3:20:0[VP]
+ 12.401729472 TRACE WU START faddr FA3:20:0[VP] wuid 0xab8 name vol_submit_op_done origin FA3:20:0[VP] arg0 0xc000000011fd6360 arg1 0xa80000003fc5a000
+ 12.401729920 TRACE WU SEND faddr FA3:20:0[VP] wuid 0x9e0 name journal_write_record_done arg0 0xc000000011fd6321 arg1 0xa8000001c03af700 flags 1 dest FA0:24:0[VP]
+ 12.401730368 TRACE WU END faddr FA3:20:0[VP]
+ 12.401731136 TRACE WU START faddr FA0:24:0[VP] wuid 0x9e0 name journal_write_record_done origin FA3:20:0[VP] arg0 0xc000000011fd6321 arg1 0xa8000001c03af700
+ 12.401731584 TRACE WU SEND faddr FA0:24:0[VP] wuid 0xa17 name lsv_chunk_write_xn_done arg0 0xc000000011fd6240 arg1 0xa8000001c03bfd10 flags 1 dest FA0:28:0[VP]
+ 12.401732096 TRACE WU END faddr FA0:24:0[VP]
+ 12.401732608 TRACE WU START faddr FA0:28:0[VP] wuid 0xa17 name lsv_chunk_write_xn_done origin FA0:24:0[VP] arg0 0xc000000011fd6240 arg1 0xa8000001c03bfd10
+ 12.401733056 TRACE WU SEND faddr FA0:28:0[VP] wuid 0xa2f name lsv_cmd_done arg0 0xc000000011fd6201 arg1 0xa80000004018ac00 flags 1 dest FA0:20:0[VP]
+ 12.401733504 TRACE WU END faddr FA0:28:0[VP]
+ 12.401734016 TRACE WU START faddr FA0:20:0[VP] wuid 0xa2f name lsv_cmd_done origin FA0:28:0[VP] arg0 0xc000000011fd6201 arg1 0xa80000004018ac00
+ 12.401734400 TRACE WU SEND faddr FA0:20:0[VP] wuid 0xab8 name vol_submit_op_done arg0 0xc000000011fd60a0 arg1 0xa80000004018ac00 flags 1 dest FA0:20:1[VP]
+ 12.401734656 TRACE WU END faddr FA0:20:0[VP]
+ 12.401735104 TRACE WU START faddr FA0:20:0[VP] wuid 0xab8 name vol_submit_op_done origin FA0:20:0[VP] arg0 0xc000000011fd60a0 arg1 0xa80000004018ac00
+ 12.401735424 TRACE WU SEND faddr FA0:20:0[VP] wuid 0x1e7 name lsvtest_write_done arg0 0xc000000011fd6080 arg1 0xa8000001bd4f3600 flags 1 dest FA0:8:0[VP]
+ 12.401735936 TRACE WU END faddr FA0:20:0[VP]
+ 12.401736384 TRACE WU START faddr FA0:8:0[VP] wuid 0x1e7 name lsvtest_write_done origin FA0:20:0[VP] arg0 0xc000000011fd6080 arg1 0xa8000001bd4f3600
+ 12.401736832 TRACE WU END faddr FA0:8:0[VP]
+ 12.401954624 TRACE WU START faddr FA0:8:0[VP] wuid 0x1e6 name lsvtest_read origin FA0:8:0[VP] arg0 0xc000000011fd6080 arg1 0xa8000001bd4f3600
+ 12.401955968 TRACE WU SEND faddr FA0:8:0[VP] wuid 0xabc name vol_submit_read arg0 0xc000000011fd60c0 arg1 0xa80000004018ac00 flags 1 dest FA0:20:0[VP]
+ 12.401956288 TRACE WU END faddr FA0:8:0[VP]
+ 12.401956736 TRACE WU START faddr FA0:20:0[VP] wuid 0xabc name vol_submit_read origin FA0:8:0[VP] arg0 0xc000000011fd60c0 arg1 0xa80000004018ac00
+ 12.401958016 TRACE WU SEND faddr FA0:20:0[VP] wuid 0xd9d name wuh_resource_lock arg0 0xc000000011fd6261 arg1 0xa80000004018ac00 flags 1 dest FA0:20:0[VP]
+ 12.401958272 TRACE WU END faddr FA0:20:0[VP]
+ 12.401958720 TRACE WU START faddr FA0:20:0[VP] wuid 0xd9d name wuh_resource_lock origin FA0:20:0[VP] arg0 0xc000000011fd6261 arg1 0xa80000004018ac00
+ 12.401959296 TRACE WU SEND faddr FA0:20:0[VP] wuid 0xa08 name lsv_chunk_read_wuh arg0 0xc000000011fd6240 arg1 0xa8000001bd4f2b00 flags 1 dest FA0:28:0[VP]
+ 12.401959552 TRACE WU END faddr FA0:20:0[VP]
+ 12.401960064 TRACE WU START faddr FA0:28:0[VP] wuid 0xa08 name lsv_chunk_read_wuh origin FA0:20:0[VP] arg0 0xc000000011fd6240 arg1 0xa8000001bd4f2b00
+ 12.401961216 TRACE WU SEND faddr FA0:28:0[VP] wuid 0xe60a39 name lsv_io_read_cached_done arg0 0xc000000011fd6240 arg1 0xa8000001bd4f2d00 flags 2 dest FA0:28:0[VP]
+ 12.401961920 TRACE WU SEND faddr FA0:28:0[VP] wuid 0xd80 name dma_error_gen arg0 0x108000008feb280 arg1 0x4c0007b300000000 flags 1 dest FA0:3:0[DMA]
+ 12.401962176 TRACE WU END faddr FA0:28:0[VP]
+ 12.401963776 TRACE WU START faddr FA0:28:0[VP] wuid 0xa39 name lsv_io_read_cached_done origin FA0:3:0[DMA] arg0 0xc000000011fd6240 arg1 0xa8000001bd4f2d00
+ 12.401964160 TRACE WU SEND faddr FA0:28:0[VP] wuid 0xa2f name lsv_cmd_done arg0 0xc000000011fd6201 arg1 0xa80000004018ac00 flags 1 dest FA0:20:0[VP]
+ 12.401964416 TRACE WU END faddr FA0:28:0[VP]
+ 12.401964928 TRACE WU START faddr FA0:20:0[VP] wuid 0xa2f name lsv_cmd_done origin FA0:28:0[VP] arg0 0xc000000011fd6201 arg1 0xa80000004018ac00
+ 12.401965312 TRACE WU SEND faddr FA0:20:0[VP] wuid 0xab8 name vol_submit_op_done arg0 0xc000000011fd60a0 arg1 0xa80000004018ac00 flags 1 dest FA0:20:1[VP]
+ 12.401965568 TRACE WU END faddr FA0:20:0[VP]
+ 12.401966016 TRACE WU START faddr FA0:20:0[VP] wuid 0xab8 name vol_submit_op_done origin FA0:20:0[VP] arg0 0xc000000011fd60a0 arg1 0xa80000004018ac00
+ 12.401966336 TRACE WU SEND faddr FA0:20:0[VP] wuid 0x1e5 name lsvtest_read_done arg0 0xc000000011fd6080 arg1 0xa8000001bd4f3600 flags 1 dest FA0:8:0[VP]
+ 12.401966784 TRACE WU END faddr FA0:20:0[VP]
+ 12.401967296 TRACE WU START faddr FA0:8:0[VP] wuid 0x1e5 name lsvtest_read_done origin FA0:20:0[VP] arg0 0xc000000011fd6080 arg1 0xa8000001bd4f3600
+ 12.401969792 TRACE WU END faddr FA0:8:0[VP]
+ 12.401972352 TRACE WU START faddr FA0:8:0[VP] wuid 0x1e8 name lsvtest_write origin FA0:8:0[VP] arg0 0xc000000011fd6080 arg1 0xa8000001bd4f3600
+ 12.401973952 TRACE WU SEND faddr FA0:8:0[VP] wuid 0xabd name vol_submit_write arg0 0xc000000011fd60c0 arg1 0xa80000004018ac00 flags 1 dest FA0:20:0[VP]
+ 12.401974272 TRACE WU END faddr FA0:8:0[VP]
+ 12.401975168 TRACE WU START faddr FA0:20:0[VP] wuid 0xabd name vol_submit_write origin FA0:8:0[VP] arg0 0xc000000011fd60c0 arg1 0xa80000004018ac00
+ 12.401976640 TRACE WU SEND faddr FA0:20:0[VP] wuid 0xd9d name wuh_resource_lock arg0 0xc000000011fd6261 arg1 0xa80000004018ac00 flags 1 dest FA0:20:0[VP]
+ 12.401976832 TRACE WU END faddr FA0:20:0[VP]
+ 12.401977344 TRACE WU START faddr FA0:20:0[VP] wuid 0xd9d name wuh_resource_lock origin FA0:20:0[VP] arg0 0xc000000011fd6261 arg1 0xa80000004018ac00
+ 12.401977920 TRACE WU SEND faddr FA0:20:0[VP] wuid 0xa18 name lsv_chunk_write_wuh arg0 0xc000000011fd6240 arg1 0xa8000001bd4f2b00 flags 1 dest FA0:28:0[VP]
+ 12.401978176 TRACE WU END faddr FA0:20:0[VP]
+ 12.401978688 TRACE WU START faddr FA0:28:0[VP] wuid 0xa18 name lsv_chunk_write_wuh origin FA0:20:0[VP] arg0 0xc000000011fd6240 arg1 0xa8000001bd4f2b00
+ 12.401980032 TRACE WU SEND faddr FA0:28:0[VP] wuid 0x9e1 name journal_rec_start arg0 0xc000000011fd6260 arg1 0xa8000001c03af700 flags 1 dest FA0:24:0[VP]
+ 12.401980288 TRACE WU END faddr FA0:28:0[VP]
+ 12.401981056 TRACE WU START faddr FA0:24:0[VP] wuid 0x9e1 name journal_rec_start origin FA0:28:0[VP] arg0 0xc000000011fd6260 arg1 0xa8000001c03af700
+ 12.401982656 TRACE WU SEND faddr FA0:24:0[VP] wuid 0xabd name vol_submit_write arg0 0xc000000011fd6380 arg1 0xa80000003fc5a000 flags 1 dest FA3:20:0[VP]
+ 12.401982912 TRACE WU END faddr FA0:24:0[VP]
+ 12.401983680 TRACE WU START faddr FA3:20:0[VP] wuid 0xabd name vol_submit_write origin FA0:24:0[VP] arg0 0xc000000011fd6380 arg1 0xa80000003fc5a000
+ 12.401984768 TRACE WU SEND faddr FA3:20:0[VP] wuid 0xd9d name wuh_resource_lock arg0 0xc000000011fd63a1 arg1 0 flags 1 dest FA3:20:0[VP]
+ 12.401985024 TRACE WU END faddr FA3:20:0[VP]
+ 12.401985536 TRACE WU START faddr FA3:20:0[VP] wuid 0xd9d name wuh_resource_lock origin FA3:20:0[VP] arg0 0xc000000011fd63a1 arg1 0
+ 12.401986048 TRACE WU SEND faddr FA3:20:0[VP] wuid 0xa80 name repvol_pwrite arg0 0xc000000011fd6380 arg1 0xa80000003fc5a000 flags 1 dest FA3:20:0[VP]
+ 12.401986304 TRACE WU END faddr FA3:20:0[VP]
+ 12.401986752 TRACE WU START faddr FA3:20:0[VP] wuid 0xa80 name repvol_pwrite origin FA3:20:0[VP] arg0 0xc000000011fd6380 arg1 0xa80000003fc5a000
+ 12.401987904 TRACE WU SEND faddr FA3:20:0[VP] wuid 0xabd name vol_submit_write arg0 0xc000000013428080 arg1 0xa80000003ffeac00 flags 1 dest FA3:16:0[VP]
+ 12.401988544 TRACE WU START faddr FA3:16:0[VP] wuid 0xabd name vol_submit_write origin FA3:20:0[VP] arg0 0xc000000013428080 arg1 0xa80000003ffeac00
+ 12.401989120 TRACE WU SEND faddr FA3:20:0[VP] wuid 0xabd name vol_submit_write arg0 0xc000000011fd64a0 arg1 0xa80000003ffea800 flags 1 dest FA4:8:0[VP]
+ 12.401989248 TRACE WU SEND faddr FA3:16:0[VP] wuid 0xe60ab8 name vol_submit_op_done arg0 0xc000000013428060 arg1 0xa80000003ffeac00 flags 2 dest FA3:16:0[VP]
+ 12.401989376 TRACE WU END faddr FA3:20:0[VP]
+ 12.401990144 TRACE WU SEND faddr FA3:16:0[VP] wuid 0xd80 name dma_error_gen arg0 0x10c000009a14080 arg1 0x4c00036e00000000 flags 1 dest FA3:3:0[DMA]
+ 12.401990336 TRACE WU START faddr FA4:8:0[VP] wuid 0xabd name vol_submit_write origin FA3:20:0[VP] arg0 0xc000000011fd64a0 arg1 0xa80000003ffea800
+ 12.401990400 TRACE WU END faddr FA3:16:0[VP]
+ 12.401991360 TRACE WU SEND faddr FA4:8:0[VP] wuid 0xe60ab8 name vol_submit_op_done arg0 0xc000000011fd6480 arg1 0xa80000003ffea800 flags 2 dest FA4:8:0[VP]
+ 12.401991936 TRACE WU START faddr FA3:16:0[VP] wuid 0xab8 name vol_submit_op_done origin FA3:3:0[DMA] arg0 0xc000000013428060 arg1 0xa80000003ffeac00
+ 12.401992256 TRACE WU SEND faddr FA3:16:0[VP] wuid 0x945 name lw_fork_join arg0 0xc000000013428040 arg1 0xa80000003fc5a000 flags 1 dest FA3:20:0[VP]
+ 12.401992256 TRACE WU SEND faddr FA4:8:0[VP] wuid 0xd80 name dma_error_gen arg0 0x10c000008feb4c0 arg1 0x4c00036e00000000 flags 1 dest FA4:3:0[DMA]
+ 12.401992512 TRACE WU END faddr FA3:16:0[VP]
+ 12.401992512 TRACE WU END faddr FA4:8:0[VP]
+ 12.401993152 TRACE WU START faddr FA3:20:0[VP] wuid 0x945 name lw_fork_join origin FA3:16:0[VP] arg0 0xc000000013428040 arg1 0xa80000003fc5a000
+ 12.401993408 TRACE WU SEND faddr FA3:20:0[VP] wuid 0x82f name ws_free_frame arg0 0xc000000013428020 arg1 0 flags 1 dest FA3:20:1[VP]
+ 12.401993664 TRACE WU END faddr FA3:20:0[VP]
+ 12.401993984 TRACE WU START faddr FA4:8:0[VP] wuid 0xab8 name vol_submit_op_done origin FA4:3:0[DMA] arg0 0xc000000011fd6480 arg1 0xa80000003ffea800
+ 12.401994112 TRACE WU START faddr FA3:20:0[VP] wuid 0x82f name ws_free_frame origin FA3:20:0[VP] arg0 0xc000000013428020 arg1 0
+ 12.401994240 TRACE WU SEND faddr FA4:8:0[VP] wuid 0x945 name lw_fork_join arg0 0xc000000011fd6441 arg1 0xa80000003fc5a000 flags 1 dest FA3:20:0[VP]
+ 12.401994496 TRACE WU END faddr FA4:8:0[VP]
+ 12.401997824 TRACE WU END faddr FA3:20:0[VP]
+ 12.401998080 TRACE WU START faddr FA3:20:0[VP] wuid 0x945 name lw_fork_join origin FA4:8:0[VP] arg0 0xc000000011fd6441 arg1 0xa80000003fc5a000
+ 12.401998528 TRACE WU SEND faddr FA3:20:0[VP] wuid 0xa7e name repvol_write_done arg0 0xc000000011fd6385 arg1 0xa80000003fc5a000 flags 1 dest FA3:20:0[VP]
+ 12.401998720 TRACE WU END faddr FA3:20:0[VP]
+ 12.401999168 TRACE WU START faddr FA3:20:0[VP] wuid 0xa7e name repvol_write_done origin FA3:20:0[VP] arg0 0xc000000011fd6385 arg1 0xa80000003fc5a000
+ 12.401999744 TRACE WU SEND faddr FA3:20:0[VP] wuid 0xab8 name vol_submit_op_done arg0 0xc000000011fd6360 arg1 0xa80000003fc5a000 flags 1 dest FA3:20:1[VP]
+ 12.401999936 TRACE WU END faddr FA3:20:0[VP]
+ 12.402000384 TRACE WU START faddr FA3:20:0[VP] wuid 0xab8 name vol_submit_op_done origin FA3:20:0[VP] arg0 0xc000000011fd6360 arg1 0xa80000003fc5a000
+ 12.402000832 TRACE WU SEND faddr FA3:20:0[VP] wuid 0x9e0 name journal_write_record_done arg0 0xc000000011fd6321 arg1 0xa8000001c03af700 flags 1 dest FA0:24:0[VP]
+ 12.402001280 TRACE WU END faddr FA3:20:0[VP]
+ 12.402002048 TRACE WU START faddr FA0:24:0[VP] wuid 0x9e0 name journal_write_record_done origin FA3:20:0[VP] arg0 0xc000000011fd6321 arg1 0xa8000001c03af700
+ 12.402002752 TRACE WU SEND faddr FA0:24:0[VP] wuid 0xa17 name lsv_chunk_write_xn_done arg0 0xc000000011fd6240 arg1 0xa8000001c03bfd10 flags 1 dest FA0:28:0[VP]
+ 12.402002944 TRACE WU END faddr FA0:24:0[VP]
+ 12.402003456 TRACE WU START faddr FA0:28:0[VP] wuid 0xa17 name lsv_chunk_write_xn_done origin FA0:24:0[VP] arg0 0xc000000011fd6240 arg1 0xa8000001c03bfd10
+ 12.402003904 TRACE WU SEND faddr FA0:28:0[VP] wuid 0xa2f name lsv_cmd_done arg0 0xc000000011fd6201 arg1 0xa80000004018ac00 flags 1 dest FA0:20:0[VP]
+ 12.402004160 TRACE WU END faddr FA0:28:0[VP]
+ 12.402004672 TRACE WU START faddr FA0:20:0[VP] wuid 0xa2f name lsv_cmd_done origin FA0:28:0[VP] arg0 0xc000000011fd6201 arg1 0xa80000004018ac00
+ 12.402004992 TRACE WU SEND faddr FA0:20:0[VP] wuid 0xab8 name vol_submit_op_done arg0 0xc000000011fd60a0 arg1 0xa80000004018ac00 flags 1 dest FA0:20:1[VP]
+ 12.402005248 TRACE WU END faddr FA0:20:0[VP]
+ 12.402005696 TRACE WU START faddr FA0:20:0[VP] wuid 0xab8 name vol_submit_op_done origin FA0:20:0[VP] arg0 0xc000000011fd60a0 arg1 0xa80000004018ac00
+ 12.402006016 TRACE WU SEND faddr FA0:20:0[VP] wuid 0x1e7 name lsvtest_write_done arg0 0xc000000011fd6080 arg1 0xa8000001bd4f3600 flags 1 dest FA0:8:0[VP]
+ 12.402006464 TRACE WU END faddr FA0:20:0[VP]
+ 12.402006976 TRACE WU START faddr FA0:8:0[VP] wuid 0x1e7 name lsvtest_write_done origin FA0:20:0[VP] arg0 0xc000000011fd6080 arg1 0xa8000001bd4f3600
+ 12.402007360 TRACE WU END faddr FA0:8:0[VP]
+ 12.403157440 TRACE WU START faddr FA0:8:0[VP] wuid 0x1e8 name lsvtest_write origin FA0:8:0[VP] arg0 0xc000000011fd6080 arg1 0xa8000001bd4f3600
+ 12.403159680 TRACE WU SEND faddr FA0:8:0[VP] wuid 0xabd name vol_submit_write arg0 0xc000000011fd60c0 arg1 0xa80000004018ac00 flags 1 dest FA0:20:0[VP]
+ 12.403159936 TRACE WU END faddr FA0:8:0[VP]
+ 12.403161152 TRACE WU START faddr FA0:20:0[VP] wuid 0xabd name vol_submit_write origin FA0:8:0[VP] arg0 0xc000000011fd60c0 arg1 0xa80000004018ac00
+ 12.403162496 TRACE WU SEND faddr FA0:20:0[VP] wuid 0xd9d name wuh_resource_lock arg0 0xc000000011fd6261 arg1 0xa80000004018ac00 flags 1 dest FA0:20:0[VP]
+ 12.403162752 TRACE WU END faddr FA0:20:0[VP]
+ 12.403163200 TRACE WU START faddr FA0:20:0[VP] wuid 0xd9d name wuh_resource_lock origin FA0:20:0[VP] arg0 0xc000000011fd6261 arg1 0xa80000004018ac00
+ 12.403163776 TRACE WU SEND faddr FA0:20:0[VP] wuid 0xa18 name lsv_chunk_write_wuh arg0 0xc000000011fd6240 arg1 0xa8000001bd4f2b00 flags 1 dest FA0:28:0[VP]
+ 12.403164032 TRACE WU END faddr FA0:20:0[VP]
+ 12.403164544 TRACE WU START faddr FA0:28:0[VP] wuid 0xa18 name lsv_chunk_write_wuh origin FA0:20:0[VP] arg0 0xc000000011fd6240 arg1 0xa8000001bd4f2b00
+ 12.403165952 TRACE WU SEND faddr FA0:28:0[VP] wuid 0x9e1 name journal_rec_start arg0 0xc000000011fd6260 arg1 0xa8000001c03af700 flags 1 dest FA0:24:0[VP]
+ 12.403166208 TRACE WU END faddr FA0:28:0[VP]
+ 12.403166784 TRACE WU START faddr FA0:24:0[VP] wuid 0x9e1 name journal_rec_start origin FA0:28:0[VP] arg0 0xc000000011fd6260 arg1 0xa8000001c03af700
+ 12.403168384 TRACE WU SEND faddr FA0:24:0[VP] wuid 0xabd name vol_submit_write arg0 0xc000000011fd6380 arg1 0xa80000003fc5a000 flags 1 dest FA3:20:0[VP]
+ 12.403168640 TRACE WU END faddr FA0:24:0[VP]
+ 12.403169408 TRACE WU START faddr FA3:20:0[VP] wuid 0xabd name vol_submit_write origin FA0:24:0[VP] arg0 0xc000000011fd6380 arg1 0xa80000003fc5a000
+ 12.403170496 TRACE WU SEND faddr FA3:20:0[VP] wuid 0xd9d name wuh_resource_lock arg0 0xc000000011fd63a1 arg1 0 flags 1 dest FA3:20:0[VP]
+ 12.403170752 TRACE WU END faddr FA3:20:0[VP]
+ 12.403171264 TRACE WU START faddr FA3:20:0[VP] wuid 0xd9d name wuh_resource_lock origin FA3:20:0[VP] arg0 0xc000000011fd63a1 arg1 0
+ 12.403171776 TRACE WU SEND faddr FA3:20:0[VP] wuid 0xa80 name repvol_pwrite arg0 0xc000000011fd6380 arg1 0xa80000003fc5a000 flags 1 dest FA3:20:0[VP]
+ 12.403172032 TRACE WU END faddr FA3:20:0[VP]
+ 12.403172480 TRACE WU START faddr FA3:20:0[VP] wuid 0xa80 name repvol_pwrite origin FA3:20:0[VP] arg0 0xc000000011fd6380 arg1 0xa80000003fc5a000
+ 12.403173632 TRACE WU SEND faddr FA3:20:0[VP] wuid 0xabd name vol_submit_write arg0 0xc000000013428080 arg1 0xa80000003ffeac00 flags 1 dest FA3:16:0[VP]
+ 12.403174272 TRACE WU START faddr FA3:16:0[VP] wuid 0xabd name vol_submit_write origin FA3:20:0[VP] arg0 0xc000000013428080 arg1 0xa80000003ffeac00
+ 12.403174848 TRACE WU SEND faddr FA3:20:0[VP] wuid 0xabd name vol_submit_write arg0 0xc000000011fd64a0 arg1 0xa80000003ffea800 flags 1 dest FA4:8:0[VP]
+ 12.403174976 TRACE WU SEND faddr FA3:16:0[VP] wuid 0xe60ab8 name vol_submit_op_done arg0 0xc000000013428060 arg1 0xa80000003ffeac00 flags 2 dest FA3:16:0[VP]
+ 12.403175104 TRACE WU END faddr FA3:20:0[VP]
+ 12.403175872 TRACE WU SEND faddr FA3:16:0[VP] wuid 0xd80 name dma_error_gen arg0 0x10c000009a14080 arg1 0x4c00079d00000000 flags 1 dest FA3:3:0[DMA]
+ 12.403176064 TRACE WU START faddr FA4:8:0[VP] wuid 0xabd name vol_submit_write origin FA3:20:0[VP] arg0 0xc000000011fd64a0 arg1 0xa80000003ffea800
+ 12.403176128 TRACE WU END faddr FA3:16:0[VP]
+ 12.403177088 TRACE WU SEND faddr FA4:8:0[VP] wuid 0xe60ab8 name vol_submit_op_done arg0 0xc000000011fd6480 arg1 0xa80000003ffea800 flags 2 dest FA4:8:0[VP]
+ 12.403177472 TRACE WU START faddr FA3:16:0[VP] wuid 0xab8 name vol_submit_op_done origin FA3:3:0[DMA] arg0 0xc000000013428060 arg1 0xa80000003ffeac00
+ 12.403177792 TRACE WU SEND faddr FA3:16:0[VP] wuid 0x945 name lw_fork_join arg0 0xc000000013428040 arg1 0xa80000003fc5a000 flags 1 dest FA3:20:0[VP]
+ 12.403177984 TRACE WU SEND faddr FA4:8:0[VP] wuid 0xd80 name dma_error_gen arg0 0x10c000008feb4c0 arg1 0x4c00079d00000000 flags 1 dest FA4:3:0[DMA]
+ 12.403178048 TRACE WU END faddr FA3:16:0[VP]
+ 12.403178240 TRACE WU END faddr FA4:8:0[VP]
+ 12.403178560 TRACE WU START faddr FA3:20:0[VP] wuid 0x945 name lw_fork_join origin FA3:16:0[VP] arg0 0xc000000013428040 arg1 0xa80000003fc5a000
+ 12.403178816 TRACE WU SEND faddr FA3:20:0[VP] wuid 0x82f name ws_free_frame arg0 0xc000000013428020 arg1 0 flags 1 dest FA3:20:1[VP]
+ 12.403179072 TRACE WU END faddr FA3:20:0[VP]
+ 12.403179520 TRACE WU START faddr FA3:20:0[VP] wuid 0x82f name ws_free_frame origin FA3:20:0[VP] arg0 0xc000000013428020 arg1 0
+ 12.403179584 TRACE WU START faddr FA4:8:0[VP] wuid 0xab8 name vol_submit_op_done origin FA4:3:0[DMA] arg0 0xc000000011fd6480 arg1 0xa80000003ffea800
+ 12.403179840 TRACE WU SEND faddr FA4:8:0[VP] wuid 0x945 name lw_fork_join arg0 0xc000000011fd6441 arg1 0xa80000003fc5a000 flags 1 dest FA3:20:0[VP]
+ 12.403180096 TRACE WU END faddr FA4:8:0[VP]
+ 12.403183232 TRACE WU END faddr FA3:20:0[VP]
+ 12.403183488 TRACE WU START faddr FA3:20:0[VP] wuid 0x945 name lw_fork_join origin FA4:8:0[VP] arg0 0xc000000011fd6441 arg1 0xa80000003fc5a000
+ 12.403183872 TRACE WU SEND faddr FA3:20:0[VP] wuid 0xa7e name repvol_write_done arg0 0xc000000011fd6385 arg1 0xa80000003fc5a000 flags 1 dest FA3:20:0[VP]
+ 12.403184128 TRACE WU END faddr FA3:20:0[VP]
+ 12.403184704 TRACE WU START faddr FA3:20:0[VP] wuid 0xa7e name repvol_write_done origin FA3:20:0[VP] arg0 0xc000000011fd6385 arg1 0xa80000003fc5a000
+ 12.403185216 TRACE WU SEND faddr FA3:20:0[VP] wuid 0xab8 name vol_submit_op_done arg0 0xc000000011fd6360 arg1 0xa80000003fc5a000 flags 1 dest FA3:20:1[VP]
+ 12.403185472 TRACE WU END faddr FA3:20:0[VP]
+ 12.403185920 TRACE WU START faddr FA3:20:0[VP] wuid 0xab8 name vol_submit_op_done origin FA3:20:0[VP] arg0 0xc000000011fd6360 arg1 0xa80000003fc5a000
+ 12.403186368 TRACE WU SEND faddr FA3:20:0[VP] wuid 0x9e0 name journal_write_record_done arg0 0xc000000011fd6321 arg1 0xa8000001c03af700 flags 1 dest FA0:24:0[VP]
+ 12.403186816 TRACE WU END faddr FA3:20:0[VP]
+ 12.403187584 TRACE WU START faddr FA0:24:0[VP] wuid 0x9e0 name journal_write_record_done origin FA3:20:0[VP] arg0 0xc000000011fd6321 arg1 0xa8000001c03af700
+ 12.403188032 TRACE WU SEND faddr FA0:24:0[VP] wuid 0xa17 name lsv_chunk_write_xn_done arg0 0xc000000011fd6240 arg1 0xa8000001c03bfd10 flags 1 dest FA0:28:0[VP]
+ 12.403188544 TRACE WU END faddr FA0:24:0[VP]
+ 12.403189056 TRACE WU START faddr FA0:28:0[VP] wuid 0xa17 name lsv_chunk_write_xn_done origin FA0:24:0[VP] arg0 0xc000000011fd6240 arg1 0xa8000001c03bfd10
+ 12.403189440 TRACE WU SEND faddr FA0:28:0[VP] wuid 0xa2f name lsv_cmd_done arg0 0xc000000011fd6201 arg1 0xa80000004018ac00 flags 1 dest FA0:20:0[VP]
+ 12.403189696 TRACE WU END faddr FA0:28:0[VP]
+ 12.403190208 TRACE WU START faddr FA0:20:0[VP] wuid 0xa2f name lsv_cmd_done origin FA0:28:0[VP] arg0 0xc000000011fd6201 arg1 0xa80000004018ac00
+ 12.403190592 TRACE WU SEND faddr FA0:20:0[VP] wuid 0xab8 name vol_submit_op_done arg0 0xc000000011fd60a0 arg1 0xa80000004018ac00 flags 1 dest FA0:20:1[VP]
+ 12.403190848 TRACE WU END faddr FA0:20:0[VP]
+ 12.403191296 TRACE WU START faddr FA0:20:0[VP] wuid 0xab8 name vol_submit_op_done origin FA0:20:0[VP] arg0 0xc000000011fd60a0 arg1 0xa80000004018ac00
+ 12.403191616 TRACE WU SEND faddr FA0:20:0[VP] wuid 0x1e7 name lsvtest_write_done arg0 0xc000000011fd6080 arg1 0xa8000001bd4f3600 flags 1 dest FA0:8:0[VP]
+ 12.403192064 TRACE WU END faddr FA0:20:0[VP]
+ 12.403192576 TRACE WU START faddr FA0:8:0[VP] wuid 0x1e7 name lsvtest_write_done origin FA0:20:0[VP] arg0 0xc000000011fd6080 arg1 0xa8000001bd4f3600
+ 12.403193152 TRACE WU END faddr FA0:8:0[VP]
+ 12.403415936 TRACE WU START faddr FA0:8:0[VP] wuid 0x1e6 name lsvtest_read origin FA0:8:0[VP] arg0 0xc000000011fd6080 arg1 0xa8000001bd4f3600
+ 12.403416896 TRACE WU SEND faddr FA0:8:0[VP] wuid 0xabc name vol_submit_read arg0 0xc000000011fd60c0 arg1 0xa80000004018ac00 flags 1 dest FA0:20:0[VP]
+ 12.403417152 TRACE WU END faddr FA0:8:0[VP]
+ 12.403417600 TRACE WU START faddr FA0:20:0[VP] wuid 0xabc name vol_submit_read origin FA0:8:0[VP] arg0 0xc000000011fd60c0 arg1 0xa80000004018ac00
+ 12.403418944 TRACE WU SEND faddr FA0:20:0[VP] wuid 0xd9d name wuh_resource_lock arg0 0xc000000011fd6261 arg1 0xa80000004018ac00 flags 1 dest FA0:20:0[VP]
+ 12.403419200 TRACE WU END faddr FA0:20:0[VP]
+ 12.403419648 TRACE WU START faddr FA0:20:0[VP] wuid 0xd9d name wuh_resource_lock origin FA0:20:0[VP] arg0 0xc000000011fd6261 arg1 0xa80000004018ac00
+ 12.403420224 TRACE WU SEND faddr FA0:20:0[VP] wuid 0xa08 name lsv_chunk_read_wuh arg0 0xc000000011fd6240 arg1 0xa8000001bd4f2b00 flags 1 dest FA0:28:0[VP]
+ 12.403420480 TRACE WU END faddr FA0:20:0[VP]
+ 12.403420992 TRACE WU START faddr FA0:28:0[VP] wuid 0xa08 name lsv_chunk_read_wuh origin FA0:20:0[VP] arg0 0xc000000011fd6240 arg1 0xa8000001bd4f2b00
+ 12.403422080 TRACE WU SEND faddr FA0:28:0[VP] wuid 0xe60a39 name lsv_io_read_cached_done arg0 0xc000000011fd6240 arg1 0xa8000001bd4f2d00 flags 2 dest FA0:28:0[VP]
+ 12.403422784 TRACE WU SEND faddr FA0:28:0[VP] wuid 0xd80 name dma_error_gen arg0 0x108000008feb280 arg1 0x4c0002da00000000 flags 1 dest FA0:3:0[DMA]
+ 12.403423232 TRACE WU END faddr FA0:28:0[VP]
+ 12.403425216 TRACE WU START faddr FA0:28:0[VP] wuid 0xa39 name lsv_io_read_cached_done origin FA0:3:0[DMA] arg0 0xc000000011fd6240 arg1 0xa8000001bd4f2d00
+ 12.403425600 TRACE WU SEND faddr FA0:28:0[VP] wuid 0xa2f name lsv_cmd_done arg0 0xc000000011fd6201 arg1 0xa80000004018ac00 flags 1 dest FA0:20:0[VP]
+ 12.403425792 TRACE WU END faddr FA0:28:0[VP]
+ 12.403426368 TRACE WU START faddr FA0:20:0[VP] wuid 0xa2f name lsv_cmd_done origin FA0:28:0[VP] arg0 0xc000000011fd6201 arg1 0xa80000004018ac00
+ 12.403426688 TRACE WU SEND faddr FA0:20:0[VP] wuid 0xab8 name vol_submit_op_done arg0 0xc000000011fd60a0 arg1 0xa80000004018ac00 flags 1 dest FA0:20:1[VP]
+ 12.403426944 TRACE WU END faddr FA0:20:0[VP]
+ 12.403427392 TRACE WU START faddr FA0:20:0[VP] wuid 0xab8 name vol_submit_op_done origin FA0:20:0[VP] arg0 0xc000000011fd60a0 arg1 0xa80000004018ac00
+ 12.403427712 TRACE WU SEND faddr FA0:20:0[VP] wuid 0x1e5 name lsvtest_read_done arg0 0xc000000011fd6080 arg1 0xa8000001bd4f3600 flags 1 dest FA0:8:0[VP]
+ 12.403428224 TRACE WU END faddr FA0:20:0[VP]
+ 12.403428672 TRACE WU START faddr FA0:8:0[VP] wuid 0x1e5 name lsvtest_read_done origin FA0:20:0[VP] arg0 0xc000000011fd6080 arg1 0xa8000001bd4f3600
+ 12.403429952 TRACE WU END faddr FA0:8:0[VP]
+ 12.403838144 TRACE WU START faddr FA0:8:0[VP] wuid 0x1e6 name lsvtest_read origin FA0:8:0[VP] arg0 0xc000000011fd6080 arg1 0xa8000001bd4f3600
+ 12.403839104 TRACE WU SEND faddr FA0:8:0[VP] wuid 0xabc name vol_submit_read arg0 0xc000000011fd60c0 arg1 0xa80000004018ac00 flags 1 dest FA0:20:0[VP]
+ 12.403839616 TRACE WU END faddr FA0:8:0[VP]
+ 12.403840064 TRACE WU START faddr FA0:20:0[VP] wuid 0xabc name vol_submit_read origin FA0:8:0[VP] arg0 0xc000000011fd60c0 arg1 0xa80000004018ac00
+ 12.403841408 TRACE WU SEND faddr FA0:20:0[VP] wuid 0xd9d name wuh_resource_lock arg0 0xc000000011fd6261 arg1 0xa80000004018ac00 flags 1 dest FA0:20:0[VP]
+ 12.403841664 TRACE WU END faddr FA0:20:0[VP]
+ 12.403842112 TRACE WU START faddr FA0:20:0[VP] wuid 0xd9d name wuh_resource_lock origin FA0:20:0[VP] arg0 0xc000000011fd6261 arg1 0xa80000004018ac00
+ 12.403842688 TRACE WU SEND faddr FA0:20:0[VP] wuid 0xa08 name lsv_chunk_read_wuh arg0 0xc000000011fd6240 arg1 0xa8000001bd4f2b00 flags 1 dest FA0:28:0[VP]
+ 12.403842944 TRACE WU END faddr FA0:20:0[VP]
+ 12.403843456 TRACE WU START faddr FA0:28:0[VP] wuid 0xa08 name lsv_chunk_read_wuh origin FA0:20:0[VP] arg0 0xc000000011fd6240 arg1 0xa8000001bd4f2b00
+ 12.403844800 TRACE WU SEND faddr FA0:28:0[VP] wuid 0xe60a39 name lsv_io_read_cached_done arg0 0xc000000011fd6240 arg1 0xa8000001bd4f2d00 flags 2 dest FA0:28:0[VP]
+ 12.403845504 TRACE WU SEND faddr FA0:28:0[VP] wuid 0xd80 name dma_error_gen arg0 0x108000008feb280 arg1 0x4c0004a700000000 flags 1 dest FA0:3:0[DMA]
+ 12.403845760 TRACE WU END faddr FA0:28:0[VP]
+ 12.403847680 TRACE WU START faddr FA0:28:0[VP] wuid 0xa39 name lsv_io_read_cached_done origin FA0:3:0[DMA] arg0 0xc000000011fd6240 arg1 0xa8000001bd4f2d00
+ 12.403848000 TRACE WU SEND faddr FA0:28:0[VP] wuid 0xa2f name lsv_cmd_done arg0 0xc000000011fd6201 arg1 0xa80000004018ac00 flags 1 dest FA0:20:0[VP]
+ 12.403848256 TRACE WU END faddr FA0:28:0[VP]
+ 12.403849024 TRACE WU START faddr FA0:20:0[VP] wuid 0xa2f name lsv_cmd_done origin FA0:28:0[VP] arg0 0xc000000011fd6201 arg1 0xa80000004018ac00
+ 12.403849408 TRACE WU SEND faddr FA0:20:0[VP] wuid 0xab8 name vol_submit_op_done arg0 0xc000000011fd60a0 arg1 0xa80000004018ac00 flags 1 dest FA0:20:1[VP]
+ 12.403849600 TRACE WU END faddr FA0:20:0[VP]
+ 12.403850048 TRACE WU START faddr FA0:20:0[VP] wuid 0xab8 name vol_submit_op_done origin FA0:20:0[VP] arg0 0xc000000011fd60a0 arg1 0xa80000004018ac00
+ 12.403850432 TRACE WU SEND faddr FA0:20:0[VP] wuid 0x1e5 name lsvtest_read_done arg0 0xc000000011fd6080 arg1 0xa8000001bd4f3600 flags 1 dest FA0:8:0[VP]
+ 12.403850880 TRACE WU END faddr FA0:20:0[VP]
+ 12.403851392 TRACE WU START faddr FA0:8:0[VP] wuid 0x1e5 name lsvtest_read_done origin FA0:20:0[VP] arg0 0xc000000011fd6080 arg1 0xa8000001bd4f3600
+ 12.403853056 TRACE WU END faddr FA0:8:0[VP]
+ 12.405415872 TRACE WU START faddr FA0:8:0[VP] wuid 0x1e8 name lsvtest_write origin FA0:8:0[VP] arg0 0xc000000011fd6080 arg1 0xa8000001bd4f3600
+ 12.405417280 TRACE WU SEND faddr FA0:8:0[VP] wuid 0xabd name vol_submit_write arg0 0xc000000011fd60c0 arg1 0xa80000004018ac00 flags 1 dest FA0:20:0[VP]
+ 12.405417600 TRACE WU END faddr FA0:8:0[VP]
+ 12.405418304 TRACE WU START faddr FA0:20:0[VP] wuid 0xabd name vol_submit_write origin FA0:8:0[VP] arg0 0xc000000011fd60c0 arg1 0xa80000004018ac00
+ 12.405419648 TRACE WU SEND faddr FA0:20:0[VP] wuid 0xd9d name wuh_resource_lock arg0 0xc000000011fd6261 arg1 0xa80000004018ac00 flags 1 dest FA0:20:0[VP]
+ 12.405419840 TRACE WU END faddr FA0:20:0[VP]
+ 12.405420352 TRACE WU START faddr FA0:20:0[VP] wuid 0xd9d name wuh_resource_lock origin FA0:20:0[VP] arg0 0xc000000011fd6261 arg1 0xa80000004018ac00
+ 12.405420928 TRACE WU SEND faddr FA0:20:0[VP] wuid 0xa18 name lsv_chunk_write_wuh arg0 0xc000000011fd6240 arg1 0xa8000001bd4f2b00 flags 1 dest FA0:28:0[VP]
+ 12.405421184 TRACE WU END faddr FA0:20:0[VP]
+ 12.405421696 TRACE WU START faddr FA0:28:0[VP] wuid 0xa18 name lsv_chunk_write_wuh origin FA0:20:0[VP] arg0 0xc000000011fd6240 arg1 0xa8000001bd4f2b00
+ 12.405422976 TRACE WU SEND faddr FA0:28:0[VP] wuid 0x9e1 name journal_rec_start arg0 0xc000000011fd6260 arg1 0xa8000001c03af700 flags 1 dest FA0:24:0[VP]
+ 12.405423232 TRACE WU END faddr FA0:28:0[VP]
+ 12.405423808 TRACE WU START faddr FA0:24:0[VP] wuid 0x9e1 name journal_rec_start origin FA0:28:0[VP] arg0 0xc000000011fd6260 arg1 0xa8000001c03af700
+ 12.405425408 TRACE WU SEND faddr FA0:24:0[VP] wuid 0xabd name vol_submit_write arg0 0xc000000011fd6380 arg1 0xa80000003fc5a000 flags 1 dest FA3:20:0[VP]
+ 12.405425664 TRACE WU END faddr FA0:24:0[VP]
+ 12.405426176 TRACE WU START faddr FA3:20:0[VP] wuid 0xabd name vol_submit_write origin FA0:24:0[VP] arg0 0xc000000011fd6380 arg1 0xa80000003fc5a000
+ 12.405427264 TRACE WU SEND faddr FA3:20:0[VP] wuid 0xd9d name wuh_resource_lock arg0 0xc000000011fd63a1 arg1 0 flags 1 dest FA3:20:0[VP]
+ 12.405427520 TRACE WU END faddr FA3:20:0[VP]
+ 12.405428032 TRACE WU START faddr FA3:20:0[VP] wuid 0xd9d name wuh_resource_lock origin FA3:20:0[VP] arg0 0xc000000011fd63a1 arg1 0
+ 12.405428544 TRACE WU SEND faddr FA3:20:0[VP] wuid 0xa80 name repvol_pwrite arg0 0xc000000011fd6380 arg1 0xa80000003fc5a000 flags 1 dest FA3:20:0[VP]
+ 12.405428736 TRACE WU END faddr FA3:20:0[VP]
+ 12.405429248 TRACE WU START faddr FA3:20:0[VP] wuid 0xa80 name repvol_pwrite origin FA3:20:0[VP] arg0 0xc000000011fd6380 arg1 0xa80000003fc5a000
+ 12.405430400 TRACE WU SEND faddr FA3:20:0[VP] wuid 0xabd name vol_submit_write arg0 0xc000000013428080 arg1 0xa80000003ffeac00 flags 1 dest FA3:16:0[VP]
+ 12.405431040 TRACE WU START faddr FA3:16:0[VP] wuid 0xabd name vol_submit_write origin FA3:20:0[VP] arg0 0xc000000013428080 arg1 0xa80000003ffeac00
+ 12.405431552 TRACE WU SEND faddr FA3:20:0[VP] wuid 0xabd name vol_submit_write arg0 0xc000000011fd64a0 arg1 0xa80000003ffea800 flags 1 dest FA4:8:0[VP]
+ 12.405431680 TRACE WU SEND faddr FA3:16:0[VP] wuid 0xe60ab8 name vol_submit_op_done arg0 0xc000000013428060 arg1 0xa80000003ffeac00 flags 2 dest FA3:16:0[VP]
+ 12.405431872 TRACE WU END faddr FA3:20:0[VP]
+ 12.405432832 TRACE WU SEND faddr FA3:16:0[VP] wuid 0xd80 name dma_error_gen arg0 0x10c000009a14080 arg1 0x4c00029700000000 flags 1 dest FA3:3:0[DMA]
+ 12.405432832 TRACE WU START faddr FA4:8:0[VP] wuid 0xabd name vol_submit_write origin FA3:20:0[VP] arg0 0xc000000011fd64a0 arg1 0xa80000003ffea800
+ 12.405433088 TRACE WU END faddr FA3:16:0[VP]
+ 12.405433856 TRACE WU SEND faddr FA4:8:0[VP] wuid 0xe60ab8 name vol_submit_op_done arg0 0xc000000011fd6480 arg1 0xa80000003ffea800 flags 2 dest FA4:8:0[VP]
+ 12.405434432 TRACE WU START faddr FA3:16:0[VP] wuid 0xab8 name vol_submit_op_done origin FA3:3:0[DMA] arg0 0xc000000013428060 arg1 0xa80000003ffeac00
+ 12.405434752 TRACE WU SEND faddr FA3:16:0[VP] wuid 0x945 name lw_fork_join arg0 0xc000000013428040 arg1 0xa80000003fc5a000 flags 1 dest FA3:20:0[VP]
+ 12.405434944 TRACE WU SEND faddr FA4:8:0[VP] wuid 0xd80 name dma_error_gen arg0 0x10c000008feb4c0 arg1 0x4c00029700000000 flags 1 dest FA4:3:0[DMA]
+ 12.405435008 TRACE WU END faddr FA3:16:0[VP]
+ 12.405435200 TRACE WU END faddr FA4:8:0[VP]
+ 12.405435520 TRACE WU START faddr FA3:20:0[VP] wuid 0x945 name lw_fork_join origin FA3:16:0[VP] arg0 0xc000000013428040 arg1 0xa80000003fc5a000
+ 12.405435776 TRACE WU SEND faddr FA3:20:0[VP] wuid 0x82f name ws_free_frame arg0 0xc000000013428020 arg1 0 flags 1 dest FA3:20:1[VP]
+ 12.405436032 TRACE WU END faddr FA3:20:0[VP]
+ 12.405436480 TRACE WU START faddr FA3:20:0[VP] wuid 0x82f name ws_free_frame origin FA3:20:0[VP] arg0 0xc000000013428020 arg1 0
+ 12.405436480 TRACE WU START faddr FA4:8:0[VP] wuid 0xab8 name vol_submit_op_done origin FA4:3:0[DMA] arg0 0xc000000011fd6480 arg1 0xa80000003ffea800
+ 12.405436736 TRACE WU SEND faddr FA4:8:0[VP] wuid 0x945 name lw_fork_join arg0 0xc000000011fd6441 arg1 0xa80000003fc5a000 flags 1 dest FA3:20:0[VP]
+ 12.405436992 TRACE WU END faddr FA4:8:0[VP]
+ 12.405440192 TRACE WU END faddr FA3:20:0[VP]
+ 12.405440384 TRACE WU START faddr FA3:20:0[VP] wuid 0x945 name lw_fork_join origin FA4:8:0[VP] arg0 0xc000000011fd6441 arg1 0xa80000003fc5a000
+ 12.405440832 TRACE WU SEND faddr FA3:20:0[VP] wuid 0xa7e name repvol_write_done arg0 0xc000000011fd6385 arg1 0xa80000003fc5a000 flags 1 dest FA3:20:0[VP]
+ 12.405441088 TRACE WU END faddr FA3:20:0[VP]
+ 12.405441536 TRACE WU START faddr FA3:20:0[VP] wuid 0xa7e name repvol_write_done origin FA3:20:0[VP] arg0 0xc000000011fd6385 arg1 0xa80000003fc5a000
+ 12.405442048 TRACE WU SEND faddr FA3:20:0[VP] wuid 0xab8 name vol_submit_op_done arg0 0xc000000011fd6360 arg1 0xa80000003fc5a000 flags 1 dest FA3:20:1[VP]
+ 12.405442304 TRACE WU END faddr FA3:20:0[VP]
+ 12.405442752 TRACE WU START faddr FA3:20:0[VP] wuid 0xab8 name vol_submit_op_done origin FA3:20:0[VP] arg0 0xc000000011fd6360 arg1 0xa80000003fc5a000
+ 12.405443200 TRACE WU SEND faddr FA3:20:0[VP] wuid 0x9e0 name journal_write_record_done arg0 0xc000000011fd6321 arg1 0xa8000001c03af700 flags 1 dest FA0:24:0[VP]
+ 12.405443648 TRACE WU END faddr FA3:20:0[VP]
+ 12.405444352 TRACE WU START faddr FA0:24:0[VP] wuid 0x9e0 name journal_write_record_done origin FA3:20:0[VP] arg0 0xc000000011fd6321 arg1 0xa8000001c03af700
+ 12.405445056 TRACE WU SEND faddr FA0:24:0[VP] wuid 0xa17 name lsv_chunk_write_xn_done arg0 0xc000000011fd6240 arg1 0xa8000001c03bfd10 flags 1 dest FA0:28:0[VP]
+ 12.405445248 TRACE WU END faddr FA0:24:0[VP]
+ 12.405445760 TRACE WU START faddr FA0:28:0[VP] wuid 0xa17 name lsv_chunk_write_xn_done origin FA0:24:0[VP] arg0 0xc000000011fd6240 arg1 0xa8000001c03bfd10
+ 12.405446272 TRACE WU SEND faddr FA0:28:0[VP] wuid 0xa2f name lsv_cmd_done arg0 0xc000000011fd6201 arg1 0xa80000004018ac00 flags 1 dest FA0:20:0[VP]
+ 12.405446528 TRACE WU END faddr FA0:28:0[VP]
+ 12.405447040 TRACE WU START faddr FA0:20:0[VP] wuid 0xa2f name lsv_cmd_done origin FA0:28:0[VP] arg0 0xc000000011fd6201 arg1 0xa80000004018ac00
+ 12.405447424 TRACE WU SEND faddr FA0:20:0[VP] wuid 0xab8 name vol_submit_op_done arg0 0xc000000011fd60a0 arg1 0xa80000004018ac00 flags 1 dest FA0:20:1[VP]
+ 12.405447680 TRACE WU END faddr FA0:20:0[VP]
+ 12.405448256 TRACE WU START faddr FA0:20:0[VP] wuid 0xab8 name vol_submit_op_done origin FA0:20:0[VP] arg0 0xc000000011fd60a0 arg1 0xa80000004018ac00
+ 12.405448512 TRACE WU SEND faddr FA0:20:0[VP] wuid 0x1e7 name lsvtest_write_done arg0 0xc000000011fd6080 arg1 0xa8000001bd4f3600 flags 1 dest FA0:8:0[VP]
+ 12.405449024 TRACE WU END faddr FA0:20:0[VP]
+ 12.405449472 TRACE WU START faddr FA0:8:0[VP] wuid 0x1e7 name lsvtest_write_done origin FA0:20:0[VP] arg0 0xc000000011fd6080 arg1 0xa8000001bd4f3600
+ 12.405449920 TRACE WU END faddr FA0:8:0[VP]
+ 12.406795264 TRACE WU START faddr FA0:8:0[VP] wuid 0x1e8 name lsvtest_write origin FA0:8:0[VP] arg0 0xc000000011fd6080 arg1 0xa8000001bd4f3600
+ 12.406798272 TRACE WU SEND faddr FA0:8:0[VP] wuid 0xabd name vol_submit_write arg0 0xc000000011fd60c0 arg1 0xa80000004018ac00 flags 1 dest FA0:20:0[VP]
+ 12.406798592 TRACE WU END faddr FA0:8:0[VP]
+ 12.406799808 TRACE WU START faddr FA0:20:0[VP] wuid 0xabd name vol_submit_write origin FA0:8:0[VP] arg0 0xc000000011fd60c0 arg1 0xa80000004018ac00
+ 12.406801152 TRACE WU SEND faddr FA0:20:0[VP] wuid 0xd9d name wuh_resource_lock arg0 0xc000000011fd6261 arg1 0xa80000004018ac00 flags 1 dest FA0:20:0[VP]
+ 12.406801408 TRACE WU END faddr FA0:20:0[VP]
+ 12.406801856 TRACE WU START faddr FA0:20:0[VP] wuid 0xd9d name wuh_resource_lock origin FA0:20:0[VP] arg0 0xc000000011fd6261 arg1 0xa80000004018ac00
+ 12.406802496 TRACE WU SEND faddr FA0:20:0[VP] wuid 0xa18 name lsv_chunk_write_wuh arg0 0xc000000011fd6240 arg1 0xa8000001bd4f2b00 flags 1 dest FA0:28:0[VP]
+ 12.406802752 TRACE WU END faddr FA0:20:0[VP]
+ 12.406803264 TRACE WU START faddr FA0:28:0[VP] wuid 0xa18 name lsv_chunk_write_wuh origin FA0:20:0[VP] arg0 0xc000000011fd6240 arg1 0xa8000001bd4f2b00
+ 12.406804672 TRACE WU SEND faddr FA0:28:0[VP] wuid 0x9e1 name journal_rec_start arg0 0xc000000011fd6260 arg1 0xa8000001c03af700 flags 1 dest FA0:24:0[VP]
+ 12.406804928 TRACE WU END faddr FA0:28:0[VP]
+ 12.406805440 TRACE WU START faddr FA0:24:0[VP] wuid 0x9e1 name journal_rec_start origin FA0:28:0[VP] arg0 0xc000000011fd6260 arg1 0xa8000001c03af700
+ 12.406807040 TRACE WU SEND faddr FA0:24:0[VP] wuid 0xabd name vol_submit_write arg0 0xc000000011fd6380 arg1 0xa80000003fc5a000 flags 1 dest FA3:20:0[VP]
+ 12.406807296 TRACE WU END faddr FA0:24:0[VP]
+ 12.406808064 TRACE WU START faddr FA3:20:0[VP] wuid 0xabd name vol_submit_write origin FA0:24:0[VP] arg0 0xc000000011fd6380 arg1 0xa80000003fc5a000
+ 12.406809152 TRACE WU SEND faddr FA3:20:0[VP] wuid 0xd9d name wuh_resource_lock arg0 0xc000000011fd63a1 arg1 0 flags 1 dest FA3:20:0[VP]
+ 12.406809408 TRACE WU END faddr FA3:20:0[VP]
+ 12.406809920 TRACE WU START faddr FA3:20:0[VP] wuid 0xd9d name wuh_resource_lock origin FA3:20:0[VP] arg0 0xc000000011fd63a1 arg1 0
+ 12.406810432 TRACE WU SEND faddr FA3:20:0[VP] wuid 0xa80 name repvol_pwrite arg0 0xc000000011fd6380 arg1 0xa80000003fc5a000 flags 1 dest FA3:20:0[VP]
+ 12.406810688 TRACE WU END faddr FA3:20:0[VP]
+ 12.406811136 TRACE WU START faddr FA3:20:0[VP] wuid 0xa80 name repvol_pwrite origin FA3:20:0[VP] arg0 0xc000000011fd6380 arg1 0xa80000003fc5a000
+ 12.406812352 TRACE WU SEND faddr FA3:20:0[VP] wuid 0xabd name vol_submit_write arg0 0xc000000013428080 arg1 0xa80000003ffeac00 flags 1 dest FA3:16:0[VP]
+ 12.406812992 TRACE WU START faddr FA3:16:0[VP] wuid 0xabd name vol_submit_write origin FA3:20:0[VP] arg0 0xc000000013428080 arg1 0xa80000003ffeac00
+ 12.406813504 TRACE WU SEND faddr FA3:20:0[VP] wuid 0xabd name vol_submit_write arg0 0xc000000011fd64a0 arg1 0xa80000003ffea800 flags 1 dest FA4:8:0[VP]
+ 12.406813632 TRACE WU SEND faddr FA3:16:0[VP] wuid 0xe60ab8 name vol_submit_op_done arg0 0xc000000013428060 arg1 0xa80000003ffeac00 flags 2 dest FA3:16:0[VP]
+ 12.406813760 TRACE WU END faddr FA3:20:0[VP]
+ 12.406814592 TRACE WU SEND faddr FA3:16:0[VP] wuid 0xd80 name dma_error_gen arg0 0x10c000009a14080 arg1 0x4c000c9500000000 flags 1 dest FA3:3:0[DMA]
+ 12.406814784 TRACE WU START faddr FA4:8:0[VP] wuid 0xabd name vol_submit_write origin FA3:20:0[VP] arg0 0xc000000011fd64a0 arg1 0xa80000003ffea800
+ 12.406814848 TRACE WU END faddr FA3:16:0[VP]
+ 12.406815744 TRACE WU SEND faddr FA4:8:0[VP] wuid 0xe60ab8 name vol_submit_op_done arg0 0xc000000011fd6480 arg1 0xa80000003ffea800 flags 2 dest FA4:8:0[VP]
+ 12.406816384 TRACE WU START faddr FA3:16:0[VP] wuid 0xab8 name vol_submit_op_done origin FA3:3:0[DMA] arg0 0xc000000013428060 arg1 0xa80000003ffeac00
+ 12.406816640 TRACE WU SEND faddr FA4:8:0[VP] wuid 0xd80 name dma_error_gen arg0 0x10c000008feb4c0 arg1 0x4c000c9500000000 flags 1 dest FA4:3:0[DMA]
+ 12.406816704 TRACE WU SEND faddr FA3:16:0[VP] wuid 0x945 name lw_fork_join arg0 0xc000000013428040 arg1 0xa80000003fc5a000 flags 1 dest FA3:20:0[VP]
+ 12.406816896 TRACE WU END faddr FA4:8:0[VP]
+ 12.406817152 TRACE WU END faddr FA3:16:0[VP]
+ 12.406817728 TRACE WU START faddr FA3:20:0[VP] wuid 0x945 name lw_fork_join origin FA3:16:0[VP] arg0 0xc000000013428040 arg1 0xa80000003fc5a000
+ 12.406817984 TRACE WU SEND faddr FA3:20:0[VP] wuid 0x82f name ws_free_frame arg0 0xc000000013428020 arg1 0 flags 1 dest FA3:20:1[VP]
+ 12.406818240 TRACE WU END faddr FA3:20:0[VP]
+ 12.406818432 TRACE WU START faddr FA4:8:0[VP] wuid 0xab8 name vol_submit_op_done origin FA4:3:0[DMA] arg0 0xc000000011fd6480 arg1 0xa80000003ffea800
+ 12.406818688 TRACE WU SEND faddr FA4:8:0[VP] wuid 0x945 name lw_fork_join arg0 0xc000000011fd6441 arg1 0xa80000003fc5a000 flags 1 dest FA3:20:0[VP]
+ 12.406818688 TRACE WU START faddr FA3:20:0[VP] wuid 0x82f name ws_free_frame origin FA3:20:0[VP] arg0 0xc000000013428020 arg1 0
+ 12.406819136 TRACE WU END faddr FA4:8:0[VP]
+ 12.406822400 TRACE WU END faddr FA3:20:0[VP]
+ 12.406822592 TRACE WU START faddr FA3:20:0[VP] wuid 0x945 name lw_fork_join origin FA4:8:0[VP] arg0 0xc000000011fd6441 arg1 0xa80000003fc5a000
+ 12.406823040 TRACE WU SEND faddr FA3:20:0[VP] wuid 0xa7e name repvol_write_done arg0 0xc000000011fd6385 arg1 0xa80000003fc5a000 flags 1 dest FA3:20:0[VP]
+ 12.406823296 TRACE WU END faddr FA3:20:0[VP]
+ 12.406823744 TRACE WU START faddr FA3:20:0[VP] wuid 0xa7e name repvol_write_done origin FA3:20:0[VP] arg0 0xc000000011fd6385 arg1 0xa80000003fc5a000
+ 12.406824256 TRACE WU SEND faddr FA3:20:0[VP] wuid 0xab8 name vol_submit_op_done arg0 0xc000000011fd6360 arg1 0xa80000003fc5a000 flags 1 dest FA3:20:1[VP]
+ 12.406824512 TRACE WU END faddr FA3:20:0[VP]
+ 12.406824960 TRACE WU START faddr FA3:20:0[VP] wuid 0xab8 name vol_submit_op_done origin FA3:20:0[VP] arg0 0xc000000011fd6360 arg1 0xa80000003fc5a000
+ 12.406825408 TRACE WU SEND faddr FA3:20:0[VP] wuid 0x9e0 name journal_write_record_done arg0 0xc000000011fd6321 arg1 0xa8000001c03af700 flags 1 dest FA0:24:0[VP]
+ 12.406825984 TRACE WU END faddr FA3:20:0[VP]
+ 12.406826752 TRACE WU START faddr FA0:24:0[VP] wuid 0x9e0 name journal_write_record_done origin FA3:20:0[VP] arg0 0xc000000011fd6321 arg1 0xa8000001c03af700
+ 12.406827200 TRACE WU SEND faddr FA0:24:0[VP] wuid 0xa17 name lsv_chunk_write_xn_done arg0 0xc000000011fd6240 arg1 0xa8000001c03bfd10 flags 1 dest FA0:28:0[VP]
+ 12.406827712 TRACE WU END faddr FA0:24:0[VP]
+ 12.406828224 TRACE WU START faddr FA0:28:0[VP] wuid 0xa17 name lsv_chunk_write_xn_done origin FA0:24:0[VP] arg0 0xc000000011fd6240 arg1 0xa8000001c03bfd10
+ 12.406828608 TRACE WU SEND faddr FA0:28:0[VP] wuid 0xa2f name lsv_cmd_done arg0 0xc000000011fd6201 arg1 0xa80000004018ac00 flags 1 dest FA0:20:0[VP]
+ 12.406828864 TRACE WU END faddr FA0:28:0[VP]
+ 12.406829568 TRACE WU START faddr FA0:20:0[VP] wuid 0xa2f name lsv_cmd_done origin FA0:28:0[VP] arg0 0xc000000011fd6201 arg1 0xa80000004018ac00
+ 12.406829952 TRACE WU SEND faddr FA0:20:0[VP] wuid 0xab8 name vol_submit_op_done arg0 0xc000000011fd60a0 arg1 0xa80000004018ac00 flags 1 dest FA0:20:1[VP]
+ 12.406830208 TRACE WU END faddr FA0:20:0[VP]
+ 12.406830656 TRACE WU START faddr FA0:20:0[VP] wuid 0xab8 name vol_submit_op_done origin FA0:20:0[VP] arg0 0xc000000011fd60a0 arg1 0xa80000004018ac00
+ 12.406830976 TRACE WU SEND faddr FA0:20:0[VP] wuid 0x1e7 name lsvtest_write_done arg0 0xc000000011fd6080 arg1 0xa8000001bd4f3600 flags 1 dest FA0:8:0[VP]
+ 12.406831424 TRACE WU END faddr FA0:20:0[VP]
+ 12.406831936 TRACE WU START faddr FA0:8:0[VP] wuid 0x1e7 name lsvtest_write_done origin FA0:20:0[VP] arg0 0xc000000011fd6080 arg1 0xa8000001bd4f3600
+ 12.406832320 TRACE WU END faddr FA0:8:0[VP]
+ 12.412173312 TRACE WU START faddr FA0:8:0[VP] wuid 0x1e8 name lsvtest_write origin FA0:8:0[VP] arg0 0xc000000011fd6080 arg1 0xa8000001bd4f3600
+ 12.412174464 TRACE WU SEND faddr FA0:8:0[VP] wuid 0xabd name vol_submit_write arg0 0xc000000011fd60c0 arg1 0xa80000004018ac00 flags 1 dest FA0:20:0[VP]
+ 12.412174784 TRACE WU END faddr FA0:8:0[VP]
+ 12.412175424 TRACE WU START faddr FA0:20:0[VP] wuid 0xabd name vol_submit_write origin FA0:8:0[VP] arg0 0xc000000011fd60c0 arg1 0xa80000004018ac00
+ 12.412176768 TRACE WU SEND faddr FA0:20:0[VP] wuid 0xd9d name wuh_resource_lock arg0 0xc000000011fd6261 arg1 0xa80000004018ac00 flags 1 dest FA0:20:0[VP]
+ 12.412177024 TRACE WU END faddr FA0:20:0[VP]
+ 12.412177536 TRACE WU START faddr FA0:20:0[VP] wuid 0xd9d name wuh_resource_lock origin FA0:20:0[VP] arg0 0xc000000011fd6261 arg1 0xa80000004018ac00
+ 12.412178048 TRACE WU SEND faddr FA0:20:0[VP] wuid 0xa18 name lsv_chunk_write_wuh arg0 0xc000000011fd6240 arg1 0xa8000001bd4f2b00 flags 1 dest FA0:28:0[VP]
+ 12.412178304 TRACE WU END faddr FA0:20:0[VP]
+ 12.412179008 TRACE WU START faddr FA0:28:0[VP] wuid 0xa18 name lsv_chunk_write_wuh origin FA0:20:0[VP] arg0 0xc000000011fd6240 arg1 0xa8000001bd4f2b00
+ 12.412180416 TRACE WU SEND faddr FA0:28:0[VP] wuid 0x9e1 name journal_rec_start arg0 0xc000000011fd6260 arg1 0xa8000001c03af700 flags 1 dest FA0:24:0[VP]
+ 12.412180736 TRACE WU END faddr FA0:28:0[VP]
+ 12.412181312 TRACE WU START faddr FA0:24:0[VP] wuid 0x9e1 name journal_rec_start origin FA0:28:0[VP] arg0 0xc000000011fd6260 arg1 0xa8000001c03af700
+ 12.412182912 TRACE WU SEND faddr FA0:24:0[VP] wuid 0xabd name vol_submit_write arg0 0xc000000011fd6380 arg1 0xa80000003fc5a000 flags 1 dest FA3:20:0[VP]
+ 12.412183168 TRACE WU END faddr FA0:24:0[VP]
+ 12.412183936 TRACE WU START faddr FA3:20:0[VP] wuid 0xabd name vol_submit_write origin FA0:24:0[VP] arg0 0xc000000011fd6380 arg1 0xa80000003fc5a000
+ 12.412185024 TRACE WU SEND faddr FA3:20:0[VP] wuid 0xd9d name wuh_resource_lock arg0 0xc000000011fd63a1 arg1 0 flags 1 dest FA3:20:0[VP]
+ 12.412185280 TRACE WU END faddr FA3:20:0[VP]
+ 12.412185792 TRACE WU START faddr FA3:20:0[VP] wuid 0xd9d name wuh_resource_lock origin FA3:20:0[VP] arg0 0xc000000011fd63a1 arg1 0
+ 12.412186304 TRACE WU SEND faddr FA3:20:0[VP] wuid 0xa80 name repvol_pwrite arg0 0xc000000011fd6380 arg1 0xa80000003fc5a000 flags 1 dest FA3:20:0[VP]
+ 12.412186560 TRACE WU END faddr FA3:20:0[VP]
+ 12.412187008 TRACE WU START faddr FA3:20:0[VP] wuid 0xa80 name repvol_pwrite origin FA3:20:0[VP] arg0 0xc000000011fd6380 arg1 0xa80000003fc5a000
+ 12.412188160 TRACE WU SEND faddr FA3:20:0[VP] wuid 0xabd name vol_submit_write arg0 0xc000000015d0e080 arg1 0xa80000003ffeac00 flags 1 dest FA3:16:0[VP]
+ 12.412188800 TRACE WU START faddr FA3:16:0[VP] wuid 0xabd name vol_submit_write origin FA3:20:0[VP] arg0 0xc000000015d0e080 arg1 0xa80000003ffeac00
+ 12.412189376 TRACE WU SEND faddr FA3:20:0[VP] wuid 0xabd name vol_submit_write arg0 0xc000000011fd64a0 arg1 0xa80000003ffea800 flags 1 dest FA4:8:0[VP]
+ 12.412189504 TRACE WU SEND faddr FA3:16:0[VP] wuid 0xe60ab8 name vol_submit_op_done arg0 0xc000000015d0e060 arg1 0xa80000003ffeac00 flags 2 dest FA3:16:0[VP]
+ 12.412189632 TRACE WU END faddr FA3:20:0[VP]
+ 12.412190400 TRACE WU SEND faddr FA3:16:0[VP] wuid 0xd80 name dma_error_gen arg0 0x10c00000ae87080 arg1 0x4c0000f000000000 flags 1 dest FA3:3:0[DMA]
+ 12.412190592 TRACE WU START faddr FA4:8:0[VP] wuid 0xabd name vol_submit_write origin FA3:20:0[VP] arg0 0xc000000011fd64a0 arg1 0xa80000003ffea800
+ 12.412190656 TRACE WU END faddr FA3:16:0[VP]
+ 12.412191616 TRACE WU SEND faddr FA4:8:0[VP] wuid 0xe60ab8 name vol_submit_op_done arg0 0xc000000011fd6480 arg1 0xa80000003ffea800 flags 2 dest FA4:8:0[VP]
+ 12.412192000 TRACE WU START faddr FA3:16:0[VP] wuid 0xab8 name vol_submit_op_done origin FA3:3:0[DMA] arg0 0xc000000015d0e060 arg1 0xa80000003ffeac00
+ 12.412192320 TRACE WU SEND faddr FA3:16:0[VP] wuid 0x945 name lw_fork_join arg0 0xc000000015d0e040 arg1 0xa80000003fc5a000 flags 1 dest FA3:20:0[VP]
+ 12.412192512 TRACE WU SEND faddr FA4:8:0[VP] wuid 0xd80 name dma_error_gen arg0 0x10c000008feb4c0 arg1 0x4c0000f000000000 flags 1 dest FA4:3:0[DMA]
+ 12.412192576 TRACE WU END faddr FA3:16:0[VP]
+ 12.412192768 TRACE WU END faddr FA4:8:0[VP]
+ 12.412193088 TRACE WU START faddr FA3:20:0[VP] wuid 0x945 name lw_fork_join origin FA3:16:0[VP] arg0 0xc000000015d0e040 arg1 0xa80000003fc5a000
+ 12.412193344 TRACE WU SEND faddr FA3:20:0[VP] wuid 0x82f name ws_free_frame arg0 0xc000000015d0e020 arg1 0 flags 1 dest FA3:20:1[VP]
+ 12.412193600 TRACE WU END faddr FA3:20:0[VP]
+ 12.412194048 TRACE WU START faddr FA3:20:0[VP] wuid 0x82f name ws_free_frame origin FA3:20:0[VP] arg0 0xc000000015d0e020 arg1 0
+ 12.412194048 TRACE WU START faddr FA4:8:0[VP] wuid 0xab8 name vol_submit_op_done origin FA4:3:0[DMA] arg0 0xc000000011fd6480 arg1 0xa80000003ffea800
+ 12.412194304 TRACE WU SEND faddr FA4:8:0[VP] wuid 0x945 name lw_fork_join arg0 0xc000000011fd6441 arg1 0xa80000003fc5a000 flags 1 dest FA3:20:0[VP]
+ 12.412194560 TRACE WU END faddr FA4:8:0[VP]
+ 12.412197760 TRACE WU END faddr FA3:20:0[VP]
+ 12.412197952 TRACE WU START faddr FA3:20:0[VP] wuid 0x945 name lw_fork_join origin FA4:8:0[VP] arg0 0xc000000011fd6441 arg1 0xa80000003fc5a000
+ 12.412198400 TRACE WU SEND faddr FA3:20:0[VP] wuid 0xa7e name repvol_write_done arg0 0xc000000011fd6385 arg1 0xa80000003fc5a000 flags 1 dest FA3:20:0[VP]
+ 12.412198656 TRACE WU END faddr FA3:20:0[VP]
+ 12.412199104 TRACE WU START faddr FA3:20:0[VP] wuid 0xa7e name repvol_write_done origin FA3:20:0[VP] arg0 0xc000000011fd6385 arg1 0xa80000003fc5a000
+ 12.412199616 TRACE WU SEND faddr FA3:20:0[VP] wuid 0xab8 name vol_submit_op_done arg0 0xc000000011fd6360 arg1 0xa80000003fc5a000 flags 1 dest FA3:20:1[VP]
+ 12.412199872 TRACE WU END faddr FA3:20:0[VP]
+ 12.412200256 TRACE WU START faddr FA3:20:0[VP] wuid 0xab8 name vol_submit_op_done origin FA3:20:0[VP] arg0 0xc000000011fd6360 arg1 0xa80000003fc5a000
+ 12.412200704 TRACE WU SEND faddr FA3:20:0[VP] wuid 0x9e0 name journal_write_record_done arg0 0xc000000011fd6321 arg1 0xa8000001c03af700 flags 1 dest FA0:24:0[VP]
+ 12.412201216 TRACE WU END faddr FA3:20:0[VP]
+ 12.412201920 TRACE WU START faddr FA0:24:0[VP] wuid 0x9e0 name journal_write_record_done origin FA3:20:0[VP] arg0 0xc000000011fd6321 arg1 0xa8000001c03af700
+ 12.412202624 TRACE WU SEND faddr FA0:24:0[VP] wuid 0xa17 name lsv_chunk_write_xn_done arg0 0xc000000011fd6240 arg1 0xa8000001c03c5440 flags 1 dest FA0:28:0[VP]
+ 12.412202880 TRACE WU END faddr FA0:24:0[VP]
+ 12.412203392 TRACE WU START faddr FA0:28:0[VP] wuid 0xa17 name lsv_chunk_write_xn_done origin FA0:24:0[VP] arg0 0xc000000011fd6240 arg1 0xa8000001c03c5440
+ 12.412203840 TRACE WU SEND faddr FA0:28:0[VP] wuid 0xa2f name lsv_cmd_done arg0 0xc000000011fd6201 arg1 0xa80000004018ac00 flags 1 dest FA0:20:0[VP]
+ 12.412204096 TRACE WU END faddr FA0:28:0[VP]
+ 12.412204608 TRACE WU START faddr FA0:20:0[VP] wuid 0xa2f name lsv_cmd_done origin FA0:28:0[VP] arg0 0xc000000011fd6201 arg1 0xa80000004018ac00
+ 12.412204992 TRACE WU SEND faddr FA0:20:0[VP] wuid 0xab8 name vol_submit_op_done arg0 0xc000000011fd60a0 arg1 0xa80000004018ac00 flags 1 dest FA0:20:1[VP]
+ 12.412205184 TRACE WU END faddr FA0:20:0[VP]
+ 12.412205632 TRACE WU START faddr FA0:20:0[VP] wuid 0xab8 name vol_submit_op_done origin FA0:20:0[VP] arg0 0xc000000011fd60a0 arg1 0xa80000004018ac00
+ 12.412205952 TRACE WU SEND faddr FA0:20:0[VP] wuid 0x1e7 name lsvtest_write_done arg0 0xc000000011fd6080 arg1 0xa8000001bd4f3600 flags 1 dest FA0:8:0[VP]
+ 12.412206464 TRACE WU END faddr FA0:20:0[VP]
+ 12.412206912 TRACE WU START faddr FA0:8:0[VP] wuid 0x1e7 name lsvtest_write_done origin FA0:20:0[VP] arg0 0xc000000011fd6080 arg1 0xa8000001bd4f3600
+ 12.412207360 TRACE WU END faddr FA0:8:0[VP]
+ 12.412389824 TRACE WU START faddr FA0:8:0[VP] wuid 0x1e6 name lsvtest_read origin FA0:8:0[VP] arg0 0xc000000011fd6080 arg1 0xa8000001bd4f3600
+ 12.412391040 TRACE WU SEND faddr FA0:8:0[VP] wuid 0xabc name vol_submit_read arg0 0xc000000011fd60c0 arg1 0xa80000004018ac00 flags 1 dest FA0:20:0[VP]
+ 12.412391296 TRACE WU END faddr FA0:8:0[VP]
+ 12.412391744 TRACE WU START faddr FA0:20:0[VP] wuid 0xabc name vol_submit_read origin FA0:8:0[VP] arg0 0xc000000011fd60c0 arg1 0xa80000004018ac00
+ 12.412393088 TRACE WU SEND faddr FA0:20:0[VP] wuid 0xd9d name wuh_resource_lock arg0 0xc000000011fd6261 arg1 0xa80000004018ac00 flags 1 dest FA0:20:0[VP]
+ 12.412393344 TRACE WU END faddr FA0:20:0[VP]
+ 12.412393792 TRACE WU START faddr FA0:20:0[VP] wuid 0xd9d name wuh_resource_lock origin FA0:20:0[VP] arg0 0xc000000011fd6261 arg1 0xa80000004018ac00
+ 12.412394432 TRACE WU SEND faddr FA0:20:0[VP] wuid 0xa08 name lsv_chunk_read_wuh arg0 0xc000000011fd6240 arg1 0xa8000001bd4f2b00 flags 1 dest FA0:28:0[VP]
+ 12.412394688 TRACE WU END faddr FA0:20:0[VP]
+ 12.412395200 TRACE WU START faddr FA0:28:0[VP] wuid 0xa08 name lsv_chunk_read_wuh origin FA0:20:0[VP] arg0 0xc000000011fd6240 arg1 0xa8000001bd4f2b00
+ 12.412396416 TRACE WU SEND faddr FA0:28:0[VP] wuid 0xe60a39 name lsv_io_read_cached_done arg0 0xc000000011fd6240 arg1 0xa8000001bd4f2d00 flags 2 dest FA0:28:0[VP]
+ 12.412397056 TRACE WU SEND faddr FA0:28:0[VP] wuid 0xd80 name dma_error_gen arg0 0x108000008feb280 arg1 0x4c000f3d00000000 flags 1 dest FA0:3:0[DMA]
+ 12.412397312 TRACE WU END faddr FA0:28:0[VP]
+ 12.412399040 TRACE WU START faddr FA0:28:0[VP] wuid 0xa39 name lsv_io_read_cached_done origin FA0:3:0[DMA] arg0 0xc000000011fd6240 arg1 0xa8000001bd4f2d00
+ 12.412399424 TRACE WU SEND faddr FA0:28:0[VP] wuid 0xa2f name lsv_cmd_done arg0 0xc000000011fd6201 arg1 0xa80000004018ac00 flags 1 dest FA0:20:0[VP]
+ 12.412399936 TRACE WU END faddr FA0:28:0[VP]
+ 12.412400384 TRACE WU START faddr FA0:20:0[VP] wuid 0xa2f name lsv_cmd_done origin FA0:28:0[VP] arg0 0xc000000011fd6201 arg1 0xa80000004018ac00
+ 12.412400768 TRACE WU SEND faddr FA0:20:0[VP] wuid 0xab8 name vol_submit_op_done arg0 0xc000000011fd60a0 arg1 0xa80000004018ac00 flags 1 dest FA0:20:1[VP]
+ 12.412401024 TRACE WU END faddr FA0:20:0[VP]
+ 12.412401472 TRACE WU START faddr FA0:20:0[VP] wuid 0xab8 name vol_submit_op_done origin FA0:20:0[VP] arg0 0xc000000011fd60a0 arg1 0xa80000004018ac00
+ 12.412401792 TRACE WU SEND faddr FA0:20:0[VP] wuid 0x1e5 name lsvtest_read_done arg0 0xc000000011fd6080 arg1 0xa8000001bd4f3600 flags 1 dest FA0:8:0[VP]
+ 12.412402304 TRACE WU END faddr FA0:20:0[VP]
+ 12.412402752 TRACE WU START faddr FA0:8:0[VP] wuid 0x1e5 name lsvtest_read_done origin FA0:20:0[VP] arg0 0xc000000011fd6080 arg1 0xa8000001bd4f3600
+ 12.412407168 TRACE WU END faddr FA0:8:0[VP]
+ 12.412408320 TRACE WU START faddr FA0:8:0[VP] wuid 0x1e6 name lsvtest_read origin FA0:8:0[VP] arg0 0xc000000011fd6080 arg1 0xa8000001bd4f3600
+ 12.412409280 TRACE WU SEND faddr FA0:8:0[VP] wuid 0xabc name vol_submit_read arg0 0xc000000011fd60c0 arg1 0xa80000004018ac00 flags 1 dest FA0:20:0[VP]
+ 12.412409600 TRACE WU END faddr FA0:8:0[VP]
+ 12.412410240 TRACE WU START faddr FA0:20:0[VP] wuid 0xabc name vol_submit_read origin FA0:8:0[VP] arg0 0xc000000011fd60c0 arg1 0xa80000004018ac00
+ 12.412411520 TRACE WU SEND faddr FA0:20:0[VP] wuid 0xd9d name wuh_resource_lock arg0 0xc000000011fd6261 arg1 0xa80000004018ac00 flags 1 dest FA0:20:0[VP]
+ 12.412411776 TRACE WU END faddr FA0:20:0[VP]
+ 12.412412224 TRACE WU START faddr FA0:20:0[VP] wuid 0xd9d name wuh_resource_lock origin FA0:20:0[VP] arg0 0xc000000011fd6261 arg1 0xa80000004018ac00
+ 12.412412800 TRACE WU SEND faddr FA0:20:0[VP] wuid 0xa08 name lsv_chunk_read_wuh arg0 0xc000000011fd6240 arg1 0xa8000001bd4f2b00 flags 1 dest FA0:28:0[VP]
+ 12.412413056 TRACE WU END faddr FA0:20:0[VP]
+ 12.412413568 TRACE WU START faddr FA0:28:0[VP] wuid 0xa08 name lsv_chunk_read_wuh origin FA0:20:0[VP] arg0 0xc000000011fd6240 arg1 0xa8000001bd4f2b00
+ 12.412414848 TRACE WU SEND faddr FA0:28:0[VP] wuid 0xabc name vol_submit_read arg0 0xc000000011fd6280 arg1 0xa80000003fc5a400 flags 1 dest FA0:16:0[VP]
+ 12.412415104 TRACE WU END faddr FA0:28:0[VP]
+ 12.412415812 TRACE FULLTIME faddr FA0:16:0[VP] 0xb8f59bd 0x2e3d66f44
+ 12.412416256 TRACE WU START faddr FA0:16:0[VP] wuid 0xabc name vol_submit_read origin FA0:28:0[VP] arg0 0xc000000011fd6280 arg1 0xa80000003fc5a400
+ 12.412417088 TRACE WU SEND faddr FA0:16:0[VP] wuid 0xa57 name memvol_cmd_read arg0 0xc000000011fd6280 arg1 0xa80000003fc5a400 flags 1 dest FA0:16:0[VP]
+ 12.412417472 TRACE WU END faddr FA0:16:0[VP]
+ 12.412417984 TRACE WU START faddr FA0:16:0[VP] wuid 0xa57 name memvol_cmd_read origin FA0:16:0[VP] arg0 0xc000000011fd6280 arg1 0xa80000003fc5a400
+ 12.412418688 TRACE WU SEND faddr FA0:16:0[VP] wuid 0xe60ab8 name vol_submit_op_done arg0 0xc000000011fd6260 arg1 0xa80000003fc5a400 flags 2 dest FA0:16:0[VP]
+ 12.412419392 TRACE WU SEND faddr FA0:16:0[VP] wuid 0xd80 name dma_error_gen arg0 0x108000008feb2c0 arg1 0x4c00100000000000 flags 1 dest FA0:3:0[DMA]
+ 12.412419648 TRACE WU END faddr FA0:16:0[VP]
+ 12.412421376 TRACE WU START faddr FA0:16:0[VP] wuid 0xab8 name vol_submit_op_done origin FA0:3:0[DMA] arg0 0xc000000011fd6260 arg1 0xa80000003fc5a400
+ 12.412421760 TRACE WU SEND faddr FA0:16:0[VP] wuid 0xa06 name lsv_chunk_read_from_svol_done arg0 0xc000000011fd6240 arg1 0xa8000001bd4f2b00 flags 1 dest FA0:28:0[VP]
+ 12.412422016 TRACE WU END faddr FA0:16:0[VP]
+ 12.412422720 TRACE WU START faddr FA0:28:0[VP] wuid 0xa06 name lsv_chunk_read_from_svol_done origin FA0:16:0[VP] arg0 0xc000000011fd6240 arg1 0xa8000001bd4f2b00
+ 12.412423616 TRACE WU SEND faddr FA0:28:0[VP] wuid 0xa2f name lsv_cmd_done arg0 0xc000000011fd6201 arg1 0xa80000004018ac00 flags 1 dest FA0:20:0[VP]
+ 12.412423872 TRACE WU END faddr FA0:28:0[VP]
+ 12.412424384 TRACE WU START faddr FA0:20:0[VP] wuid 0xa2f name lsv_cmd_done origin FA0:28:0[VP] arg0 0xc000000011fd6201 arg1 0xa80000004018ac00
+ 12.412424704 TRACE WU SEND faddr FA0:20:0[VP] wuid 0xab8 name vol_submit_op_done arg0 0xc000000011fd60a0 arg1 0xa80000004018ac00 flags 1 dest FA0:20:1[VP]
+ 12.412424960 TRACE WU END faddr FA0:20:0[VP]
+ 12.412425472 TRACE WU START faddr FA0:20:0[VP] wuid 0xab8 name vol_submit_op_done origin FA0:20:0[VP] arg0 0xc000000011fd60a0 arg1 0xa80000004018ac00
+ 12.412425792 TRACE WU SEND faddr FA0:20:0[VP] wuid 0x1e5 name lsvtest_read_done arg0 0xc000000011fd6080 arg1 0xa8000001bd4f3600 flags 1 dest FA0:8:0[VP]
+ 12.412426240 TRACE WU END faddr FA0:20:0[VP]
+ 12.412426688 TRACE WU START faddr FA0:8:0[VP] wuid 0x1e5 name lsvtest_read_done origin FA0:20:0[VP] arg0 0xc000000011fd6080 arg1 0xa8000001bd4f3600
+ 12.412427328 TRACE WU END faddr FA0:8:0[VP]
+ 12.450097917 TRACE FLUSH FLUSH

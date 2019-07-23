@@ -325,7 +325,7 @@ class EndToEndTest(unittest.TestCase):
 
 class TestRenderJSON(unittest.TestCase):
     def testIdsAreUnique(self):
-        filename = 'sampleTrace2'
+        filename = 'testdata/unique.trace'
         file_parser = wu_trace.FileParser(filename)
         transactions = file_parser.process_file(open(filename, 'r').read())
 
