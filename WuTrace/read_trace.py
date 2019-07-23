@@ -87,9 +87,7 @@ class Event(object):
 
 
 class WuStartEvent(Event):
-    """
-    A WU START event.
-    """
+    """A WU START event."""
 
     def __init__(self, hdr, addl_words):
         super(WuStartEvent, self).__init__(hdr)
@@ -114,9 +112,7 @@ class WuStartEvent(Event):
 
 
 class WuSendEvent(Event):
-    """
-    A WU SEND event
-    """
+    """A WU SEND event"""
 
     def __init__(self, hdr, addl_words):
         super(WuSendEvent, self).__init__(hdr)
@@ -153,9 +149,7 @@ class WuSendEvent(Event):
 
 
 class WuEndEvent(Event):
-    """
-    A WU END event.
-    """
+    """A WU END event."""
 
     def __init__(self, hdr, addl_words):
         super(WuEndEvent, self).__init__(hdr)
@@ -171,8 +165,7 @@ class WuEndEvent(Event):
 
 
 class TimeSyncEvent(Event):
-    """
-    A TIME SYNC event.
+    """ A TIME SYNC event.
 
     This provides a full 64-bit timestamp so full timestamps
     from the other event types can be reconstructed from partial
@@ -199,20 +192,15 @@ class TimeSyncEvent(Event):
 
 
 class TraceFileParser(object):
-    """
-    Handles raw trace file input.
-    """
+    """ Handles raw trace file input. """
 
     def __init__(self, fh, wu_list_extractor):
-        """
-        fh is a file handle to the trace file.
-        """
+        """ fh is a file handle to the trace file. """
         self.fh = fh
         self.wu_list_extractor = wu_list_extractor
 
     def parse(self):
-        """
-        Does the parsing of the raw file.
+        """ Does the parsing of the raw file.
 
         Returns a list of event dicts which are the data model for the
         next step in trace processing.
@@ -265,8 +253,7 @@ class TraceFileParser(object):
 
 
 class WuListExtractor(object):
-    """
-    Extracts WU lists from a FunOS binary.
+    """ Extracts WU lists from a FunOS binary.
 
     Index in the list corresponds to WU id, value corresponds to the WU name
 
@@ -277,9 +264,7 @@ class WuListExtractor(object):
         self.funos_image_path = image_path
 
     def generate_wu_list(self):
-        """
-        Generates WU list from FunOS image file.
-        """
+        """Generates WU list from FunOS image file."""
 
         print 'Generating WU List'
         print
@@ -331,4 +316,3 @@ class WuListExtractor(object):
                 wu_list.append(wu)
 
         return wu_list
-

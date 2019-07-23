@@ -14,48 +14,48 @@ import event
 
 NSECS_PER_SEC = 1000000000
 
-def TruncatedSecs(time_nsecs):
+def truncated_secs(time_nsecs):
     """Returns the number of seconds.
     Time is truncated to two digits for more compact displays.
     """
     return (time_nsecs / NSECS_PER_SEC) % 100
 
-def TruncatedUsecs(time_nsecs):
+def truncated_usecs(time_nsecs):
     """Returns number of microseconds in fractional seconds of given time."""
     return (time_nsecs % NSECS_PER_SEC) / 1000
 
-def TruncatedNsecs(time_nsecs):
+def truncated_nsecs(time_nsecs):
     """Returns number of nanoseconds in fractional seconds of given time."""
     return time_nsecs % NSECS_PER_SEC
 
-def TimeString(nanoseconds):
+def time_string(nanoseconds):
     """Returns a string showing a specific time in human-readable form.
 
     This function only displays time in microseconds so it's easier for a
     human to read, and should be used for general output.
     """
-    startSecs = TruncatedSecs(nanoseconds)
-    startUsecs = TruncatedUsecs(nanoseconds)
+    startSecs = truncated_secs(nanoseconds)
+    startUsecs = truncated_usecs(nanoseconds)
     return '%02d.%06d' % (startSecs, startUsecs)
 
-def NanosecondTimeString(nanoseconds):
+def nanosecond_time_string(nanoseconds):
     """Returns a string showing a specific time in human-readable form.
 
     This function displays time in nanoseconds to match file input.
     """
-    startSecs = TruncatedSecs(nanoseconds)
-    startNsecs = TruncatedNsecs(nanoseconds)
+    startSecs = truncated_secs(nanoseconds)
+    startNsecs = truncated_nsecs(nanoseconds)
     return '%02d.%09d' % (startSecs, startNsecs)
 
-def RangeString(start_time, end_time):
+def range_string(start_time, end_time):
     """Prints start and end formatted nicely."""
-    startSecs = TruncatedSecs(start_time)
-    startUsecs = TruncatedUsecs(start_time)
-    endSecs = TruncatedSecs(end_time)
-    endUsecs = TruncatedUsecs(end_time)
+    startSecs = truncated_secs(start_time)
+    startUsecs = truncated_usecs(start_time)
+    endSecs = truncated_secs(end_time)
+    endUsecs = truncated_usecs(end_time)
     return '%02d.%06d - %02d.%06d' % (startSecs, startUsecs, endSecs, endUsecs)
 
-def DurationString(duration_nsecs):
+def duration_string(duration_nsecs):
     """Returns a human-readable string showingduration as microseconds."""
     if duration_nsecs < 1000:
         return '%d nsec' % duration_nsecs
@@ -68,7 +68,7 @@ def DurationString(duration_nsecs):
     else:
         return '%0.6f sec' % (duration_nsecs / float(NSECS_PER_SEC))
 
-def PercentileIndex(percent, itemCount):
+def percentile_index(percent, itemCount):
     """Returns the index of element in an array representing the nth percentile."""
     if itemCount == 0:
         return None
@@ -77,7 +77,7 @@ def PercentileIndex(percent, itemCount):
     index = int(math.ceil(percent * itemCount / 100.0))
     return index - 1
 
-def TransactionGroupStats(transactions):
+def transaction_group_stats(transactions):
     """Returns dictionary describing stats on a set of transactions.
 
     This is used to describe min, max, average, etc. times for the same
@@ -96,7 +96,7 @@ def TransactionGroupStats(transactions):
     if count == 0:
         return result
 
-    durations = [x.Duration() for x in transactions]
+    durations = [x.duration() for x in transactions]
     sorted_durations = sorted(durations)
 
     result['min_nsec'] = sorted_durations[0]
@@ -104,9 +104,9 @@ def TransactionGroupStats(transactions):
     result['average_nsec'] = sum(durations) / len(transactions)
     result['count'] = count
 
-    percentile50Index = PercentileIndex(50, count)
-    percentile90Index = PercentileIndex(90, count)
-    percentile95Index = PercentileIndex(95, count)
+    percentile50Index = percentile_index(50, count)
+    percentile90Index = percentile_index(90, count)
+    percentile95Index = percentile_index(95, count)
 
     result['50ile_nsec'] = sorted_durations[percentile50Index]
     result['90ile_nsec'] = sorted_durations[percentile90Index]
@@ -115,40 +115,40 @@ def TransactionGroupStats(transactions):
 
 next_id = 0
 
-def GetUniqueId():
+def get_unique_id():
     """Returns a unique global id for numbering nodes.
-    
+
     TODO(bowdidge): Lock so supports multiple threads.
     """
     global next_id
     next_id += 1
     return next_id
 
-def GetGroups(transactions):
+def get_groups(transactions):
     """Generate summary data describing the kinds of WU sequences that
     we saw.  This data is grouped by the starting WU, and allows
     comparing runs of equivalent WUs.
     """
     root_to_group = {}
     for transaction in transactions:
-        label = transaction.Label()
+        label = transaction.label
         if label not in root_to_group:
             root_to_group[label] = []
         root_to_group[label].append(transaction)
 
     for label in root_to_group:
         root_to_group[label] = sorted(root_to_group[label],
-                                      key=lambda x: x.Duration(),
+                                      key=lambda x: x.duration(),
                                       reverse=True)
 
     groups = []
     for label in root_to_group:
-        durations = [x.Duration() for x in root_to_group[label]]
+        durations = [x.duration() for x in root_to_group[label]]
         group = {'count': len(root_to_group[label]),
                  'label': label,
-                 'stats': TransactionGroupStats(root_to_group[label]),
-                 'transactions': GetTransactionDicts(root_to_group[label]),
-                 'id': GetUniqueId()
+                 'stats': transaction_group_stats(root_to_group[label]),
+                 'transactions': get_transaction_dicts(root_to_group[label]),
+                 'id': get_unique_id()
                  }
         if label == 'boot':
             boot_group = group
@@ -156,44 +156,44 @@ def GetGroups(transactions):
 
     return groups
 
-def GetTransactionDicts(transactions):
+def get_transaction_dicts(transactions):
     result = []
     for tr in transactions:
-        transaction_dict = tr.AsDict()
-        transaction_dict['id'] = GetUniqueId()
+        transaction_dict = tr.as_dict()
+        transaction_dict['id'] = get_unique_id()
         result.append(transaction_dict)
     return result
 
-def RenderHTML(transactions):
+def render_html(transactions):
     """Generates HTML page showing the listed events."""
     this_dir = os.path.dirname(os.path.abspath(__file__))
     env = jinja2.Environment(loader=jinja2.FileSystemLoader(this_dir))
-    env.filters['as_duration'] = lambda nsecs: DurationString(nsecs)
-    env.filters['as_time'] = lambda nsecs: TimeString(nsecs)
-    env.filters['as_ns'] = lambda nsecs: NanosecondTimeString(nsecs)
+    env.filters['as_duration'] = lambda nsecs: duration_string(nsecs)
+    env.filters['as_time'] = lambda nsecs: time_string(nsecs)
+    env.filters['as_ns'] = lambda nsecs: nanosecond_time_string(nsecs)
 
     page_dict = {
-        'groups': GetGroups(transactions)
+        'groups': get_groups(transactions)
         }
 
     template = env.get_template('report.html')
     return template.render(page_dict)
 
-def RenderJSON(transactions):
+def render_json(transactions):
     page_dict = {
-        'groups': GetGroups(transactions),
+        'groups': get_groups(transactions),
         }
     return json.dumps(page_dict)
 
 
-def GraphvizSafeLabel(event):
+def graphviz_safe_label(event):
     """Generates a label that will be parsed as a single item by GraphViz."""
-    return event.Label().replace('$', 'dollar')
+    return event.label.replace('$', 'dollar')
 
-common_wus = ["timer", "wuh_join", "nop_wuh", "wuh_resource_lock"]
-common_prefixes = ["ikv_"]
+common_wus = ['timer', 'wuh_join', 'nop_wuh', 'wuh_resource_lock']
+common_prefixes = ['ikv_']
 
-def IsCommon(label):
+def is_common(label):
     """Returns true if the WU in the label is an extremely common WU.
     Common low level functions cause graphs for different transactions to get
     tied together in inappropriate ways, so we create
@@ -206,30 +206,30 @@ def IsCommon(label):
             return True
     return False
 
-def RenderGraphvizTransaction(out, transaction):
+def render_graphviz_transaction(out, transaction):
     """Output all edges from trace_event in dot style.
     The events in each transaction represent each time a function
     was run.  For graphviz, we output only the label so duplicate
     (predecessor, successor) pairs may be output multiple times.
     """
-    all_nodes = transaction.Flatten()
+    all_nodes = transaction.flatten()
 
     for e in all_nodes:
       for successor in e.successors:
         # Process explicit sends.
-        style = "bold"
+        style = 'bold'
         if successor.is_timer:
-            style = "dotted"
-        source_label = GraphvizSafeLabel(e)
-        dest_label = GraphvizSafeLabel(successor)
+            style = 'dotted'
+        source_label = graphviz_safe_label(e)
+        dest_label = graphviz_safe_label(successor)
 
         # Use separate node names for the common WUs so that the
         # trees for different transactions don't get too jumbled.
-        if IsCommon(source_label):
+        if is_common(source_label):
             source_label = '{%s [label="%s"]}' % (
                 source_label + '_' + transaction.label,
                 source_label)
-        if IsCommon(dest_label):
+        if is_common(dest_label):
             dest_label = '{%s [label="%s" style=%s]}' % (
                 dest_label + '_' + transaction.label,
                 dest_label, style)
@@ -240,30 +240,31 @@ def RenderGraphvizTransaction(out, transaction):
                 source_label, dest_label))
 
 
-def RenderGraphviz(out, transactions):
+def render_graphviz(out, transactions):
     """Generate the call graph for all events in trace_events in
     dot format used by GraphViz.
     """
     out.write('strict digraph foo {\n')
     for transaction in transactions:
-        RenderGraphvizTransaction(out, transaction)
+        render_graphviz_transaction(out, transaction)
     out.write('label="\\nbold: wu send\\ndot: timer"\n')
     out.write('}\n')
 
-def Dump(output_file, transaction):
-  """Writes a text dump to the output file describing a set of trace events."""
-  output_file.write('%s (%s): transaction "%s"\n' % (
-      RangeString(transaction.StartTime(), transaction.EndTime()),
-      DurationString(transaction.Duration()),
-      transaction.label))
-  worklist = transaction.Flatten()
-  for event in worklist:
-    output_file.write('+ %s (%s): %s\n' % (RangeString(event.start_time, event.end_time),
-                                           DurationString(event.Duration()),
-                                           event.label))
+def dump(output_file, transaction):
+    """Writes a text dump to the output file for list of trace events."""
+    output_file.write('%s (%s): transaction "%s"\n' % (
+            range_string(transaction.start_time(), transaction.end_time()),
+            duration_string(transaction.duration()),
+            transaction.label))
+    worklist = transaction.flatten()
+    for event in worklist:
+        duration  = duration_string(event.duration())
+        output_file.write('+ %s (%s): %s\n' % (range_string(event.start_time,
+                                                            event.end_time),
+                                               duration,
+                                               event.label))
 
-def DumpTransactions(output_file, transactions):
-  """Writes a text dump to the output file describing a set of traced transactions."""
+def dump_transactions(output_file, transactions):
+  """Writes text dump to the output file describing list of transactions."""
   for tr in transactions:
-    Dump(output_file, tr)
-
+    dump(output_file, tr)
