@@ -199,7 +199,12 @@ class TraceFileParser(object):
     """ Handles raw trace file input. """
 
     def __init__(self, fh, wu_list):
-        """ fh is a file handle to the trace file. """
+        """ Create a new TraceFileParser.
+
+        fh is a file handle to the trace file.
+        wu_list is a list of names of wu names in wu id order, used
+        for mapping wu_id to wu name.
+        """
         self.fh = fh
         self.wu_list = wu_list
 
