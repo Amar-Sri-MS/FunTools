@@ -40,7 +40,7 @@ import event
 import read_trace
 import render
 
-DEBUG = False
+verbose = False
 
 last_time = 0
 saw_time_backwards = False
@@ -158,7 +158,8 @@ class FileParser:
 
         elif event_type == ('HU', 'SQ_DBL'):
             expect_keywords = ['sqid']
-
+        elif event_type == ('TIME', 'SYNC'):
+            expect_keywords = []
         else:
             error = '%s:%d: unknown verb or noun: %s %s\n' % (self.filename,
                                                               self.line_number,
@@ -206,12 +207,14 @@ class FileParser:
         This function parses each line, and also interprets them using the
         trace parser.
         """
+        global verbose
+
         trace_parser = TraceParser(self.filename)
 
         self.line_number = 0
         for line in lines:
             self.line_number += 1
-            if DEBUG:
+            if verbose:
                 sys.stderr.write('line %d\n' % self.line_number)
             (log_keywords, error) = self.parse_line(line)
             if error:
@@ -290,11 +293,16 @@ class TraceParser:
 
     def handle_log_line(self, log_keywords, line_number):
         """Reads in each logging event, and creates or updates log events."""
+        global verbose
+        if verbose:
+            sys.stderr.write('%d: %s\n' % (line_number, log_keywords))
         event_type = (log_keywords['verb'], log_keywords['noun'])
 
         if event_type == ('FLUSH', 'FLUSH'):
             return
-
+        if event_type == ('TIME', 'SYNC'):
+            # Handled during parsing.
+            return
         timestamp = log_keywords['timestamp']
 
         vp = log_keywords['faddr']
@@ -462,7 +470,7 @@ class TraceParser:
 
 
 def main(argv):
-    global DEBUG
+    global verbose
     arg_parser = argparse.ArgumentParser()
     arg_parser.add_argument('inputs', metavar='file', type=str, nargs='+',
                                             help='log files to read')
@@ -473,17 +481,19 @@ def main(argv):
                             'provided.')
     arg_parser.add_argument('--funos-binary', type=str,
                             help='path to unstripped funos binary')
+    arg_parser.add_argument('--wu-list', type=str,
+                            help='path to unstripped funos binary')
     arg_parser.add_argument(
         '--format', type=str,
         help='output style: html (default), text, or graphviz.', default=None)
     arg_parser.add_argument('--output', nargs=1, help='file name to write to')
-    arg_parser.add_argument('--debug', action='store_const', const=True,
+    arg_parser.add_argument('--verbose', action='store_const', const=True,
                             help='add debugging output')
     args = arg_parser.parse_args()
 
     input_filename = args.inputs[0]
-    if args.debug:
-        DEBUG = True
+    if args.verbose:
+        verbose = True
 
     if args.format is not None:
         if args.format not in ['text', 'html', 'graphviz', 'json']:
@@ -496,13 +506,20 @@ def main(argv):
         file_parser = FileParser(input_filename)
         transactions = file_parser.process_file(open(input_filename))
     else:
-        if not args.funos_binary:
-            sys.stderr.write('Must specify funos binary '
+        if not args.funos_binary and not args.wu_list:
+            sys.stderr.write('Must specify --funos-binary or --wu-list '
                              'when input is a trace file\n')
             exit(1)
         with open(input_filename) as fh:
-            extractor = read_trace.WuListExtractor(args.funos_binary)
-            file_parser = read_trace.TraceFileParser(fh, extractor)
+            wu_list = []
+            if args.funos_binary:
+                extractor = read_trace.WuListExtractor(args.funos_binary)
+                wu_list = extractor.generate_wu_list()
+            if args.wu_list:
+                with open(args.wu_list) as f:
+                    wu_list = f.readlines()
+
+            file_parser = read_trace.TraceFileParser(fh, wu_list)
             events = file_parser.parse()
             trace_parser = TraceParser(input_filename)
             for idx, e in enumerate(events):

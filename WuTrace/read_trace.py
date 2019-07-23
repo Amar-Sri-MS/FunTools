@@ -107,7 +107,11 @@ class WuStartEvent(Event):
         d['arg0'] = self.arg0
         d['arg1'] = self.arg1
         d['wuid'] = self.wuid
-        d['name'] = wu_list[self.wuid]
+        if self.wuid < len(wu_list):
+            wu_name = wu_list[self.wuid]
+        else:
+            wu_name = 'out_of_range'
+        d['name'] = wu_name
         return d
 
 
@@ -194,10 +198,15 @@ class TimeSyncEvent(Event):
 class TraceFileParser(object):
     """ Handles raw trace file input. """
 
-    def __init__(self, fh, wu_list_extractor):
-        """ fh is a file handle to the trace file. """
+    def __init__(self, fh, wu_list):
+        """ Create a new TraceFileParser.
+
+        fh is a file handle to the trace file.
+        wu_list is a list of names of wu names in wu id order, used
+        for mapping wu_id to wu name.
+        """
         self.fh = fh
-        self.wu_list_extractor = wu_list_extractor
+        self.wu_list = wu_list
 
     def parse(self):
         """ Does the parsing of the raw file.
@@ -248,8 +257,7 @@ class TraceFileParser(object):
         # Sort the events by timestamp
         events.sort(key=lambda et: et.full_timestamp)
 
-        wu_list = self.wu_list_extractor.generate_wu_list()
-        return [evt.get_values(wu_list) for evt in events]
+        return [evt.get_values(self.wu_list) for evt in events]
 
 
 class WuListExtractor(object):
