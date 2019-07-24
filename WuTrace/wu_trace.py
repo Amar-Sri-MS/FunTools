@@ -45,189 +45,16 @@ verbose = False
 last_time = 0
 saw_time_backwards = False
 
-class FileParser:
-    """Handles parsing and interpretation of file input."""
-    def __init__(self, filename):
-        self.filename = filename
-        self.line_number = 0
-        self.last_time = 0
-        self.saw_time_backwards = False
+class TraceProcessor:
+    """Converts list of events into transactions.
 
-    def parse_line(self, line):
-        """Parses a single log line from --wulog.
-        Returns a tuple of (dictionary of key-value pairs, error) where
-        error is None if parsing was successful, and the dictionary is not None
-        if the line represented a WU log entry.
-        """
+    This class takes the sequence of WU start, stop, and sends, and
+    groups the events into a chain of events called a transaction.
 
-        line = line.lstrip().rstrip()
-        values = {}
-        match = re.match('\s*([0-9]+).([0-9]+) TRACE ([A-Z_]+) ([A-Z_]+)',
-                         line)
-        if not match:
-            # Not a log line, but not an error either.
-            return (None, None)
-
-        time_nsec = int(match.group(1)) * 1000000000 + int(match.group(2))
-
-        if time_nsec < self.last_time:
-            # Flag only the first occurrence.
-            if not self.saw_time_backwards:
-                error = ('%s:%d: timestamp going backwards.\n'
-                         'Previous time was %s, current time is %s.\n'
-                         'All remaining out-of-order lines '
-                         'will be dropped.\n' % (
-                        self.filename, self.line_number,
-                        render.nanosecond_time_string(self.last_time),
-                        render.nanosecond_time_string(time_nsec)))
-
-                self.saw_time_backwards = True
-                return (None, error)
-            else:
-                # Swallow remaining out-of-order events.
-                return (None, None)
-        self.last_time = time_nsec
-
-        values = {'timestamp': time_nsec,
-                  'verb': match.group(3),
-                  'noun': match.group(4)
-                  }
-        remaining_string = line[len(match.group(0)):].lstrip()
-
-        if len(remaining_string) == 0:
-            return (values, None)
-
-        # Annotation is special - we need to find the faddr at the
-        # beginning, but the rest counts as the message.
-        if values['verb'] == 'TRANSACTION' and values['noun'] == 'ANNOT':
-
-            annot_match = re.match('faddr (FA[0-9]+:[0-9]+:[0-9]+\[VP\]) '
-                                   'msg (.*)',
-                                   remaining_string)
-            if not annot_match:
-                error = '%s:%d: malformed transaction annotation: "%s"\n' % (
-                    self.filename, self.line_number, line)
-                return (None, error)
-
-            values['faddr'] = annot_match.group(1)
-            values['msg'] = annot_match.group(2)
-        else:
-            token_iter = iter(remaining_string.split(' '))
-
-            try:
-                pairs = [(a, next(token_iter)) for a in token_iter]
-            except StopIteration as e:
-                error = '%s:%d: malformed log line: "%s"\n' % (
-                    self.filename, self.line_number, line)
-                return (None, error)
-
-            for (key, value) in pairs:
-                values[key] = value
-
-        expect_keywords = []
-
-        event_type = (values['verb'], values['noun'])
-
-        if event_type == ('WU', 'START'):
-            # Should define src, dest, id, name, arg0, arg1.
-            expect_keywords = ['faddr', 'wuid', 'name', 'arg0', 'arg1']
-
-        elif event_type == ('WU', 'END'):
-            # should define id, name, arg0, arg1.
-            expect_keywords = ['faddr']
-
-        elif event_type == ('WU', 'SEND'):
-            # Should define src, dest, id, name, arg0, arg1.
-            expect_keywords = ['faddr', 'wuid', 'name', 'arg0', 'arg1', 'dest',
-                               'flags']
-
-        elif event_type == ('TIMER', 'TRIGGER'):
-            # Should define timer and arg0.
-            expect_keywords = ['faddr', 'timer', 'arg0']
-
-        elif event_type == ('TIMER', 'START'):
-            expect_keywords = ['faddr', 'timer', 'wuid', 'name', 'dest',
-                               'arg0']
-
-        elif event_type == ('TRANSACTION', 'START'):
-            expect_keywords = ['faddr']
-
-        elif event_type == ('TRANSACTION', 'ANNOT'):
-            # Annotate uses rest of line as message.
-            expect_keywords = ['faddr']
-
-        elif event_type == ('HU', 'SQ_DBL'):
-            expect_keywords = ['sqid']
-        elif event_type == ('TIME', 'SYNC'):
-            expect_keywords = []
-        else:
-            error = '%s:%d: unknown verb or noun: %s %s\n' % (self.filename,
-                                                              self.line_number,
-                                                              values['verb'],
-                                                              values['noun'])
-            return (None, error)
-
-        for expected_keyword in expect_keywords:
-            if expected_keyword not in values:
-                error = '%s:%d: missing key "%s" in command %s %s\n' % (
-                    self.filename, self.line_number, expected_keyword,
-                    values['verb'], values['noun'])
-                return (None, error)
-
-        int_keywords = ['wuid', 'arg0', 'arg1', 'sqid']
-        for keyword in int_keywords:
-            if keyword in values:
-                string_value = values[keyword]
-                if string_value.startswith('0x'):
-                    try:
-                        values[keyword] = int(string_value, 16)
-                    except ValueError as e:
-                        error = ('%s:%d: '
-                                 'malformed hex value "%s" for key %s\n' % (
-                                self.filename, self.line_number,
-                                string_value, keyword))
-                        return (None, error)
-
-                else:
-                    try:
-                        values[keyword] = int(string_value)
-                    except ValueError as e:
-                        error = ('%s:%d: '
-                                 'malformed integer "%s" for key %s\n' % (
-                                self.filename, self.line_number, string_value,
-                                keyword))
-                        return (None, error)
-
-
-        return (values, None)
-
-    def process_file(self, lines):
-        """Process the provided list of input lines.
-
-        This function parses each line, and also interprets them using the
-        trace parser.
-        """
-        global verbose
-
-        trace_parser = TraceParser(self.filename)
-
-        self.line_number = 0
-        for line in lines:
-            self.line_number += 1
-            if verbose:
-                sys.stderr.write('line %d\n' % self.line_number)
-            (log_keywords, error) = self.parse_line(line)
-            if error:
-                sys.stderr.write(error)
-            if not log_keywords:
-                continue
-            trace_parser.handle_log_line(log_keywords, self.line_number)
-
-        return trace_parser.transactions
-
-
-class TraceParser:
-    """Converts event start/stop messages into sequences of events grouped by transaction."""
+    Transactions represent single conceptual operations from a user's
+    point of view - a single packet being handled by the network, or a
+    single commit done to storage.
+    """
 
     def __init__(self, input_filename):
         # Map of VPs to sent WUs that have not yet started.
@@ -273,7 +100,7 @@ class TraceParser:
                                          is_timer, flags))
 
     def find_previous_send(self, wu_id, arg0, arg1, dest):
-        """Returns the WU send that would have started a WU with the arguments,
+        """Returns the WU send that would have started a WU with the arguments.
 
         Returns predecessor event, time that the message was sent, and true if
         the send was a timer start and trigger.
@@ -327,7 +154,6 @@ class TraceParser:
             (predecessor, send_time,
              is_timer, flags) = self.find_previous_send(wu_id, arg0,
                                                         arg1, vp)
-
             if predecessor and int(flags) & 2:
                     # Hardware WU.
                     hw_event = event.TraceEvent(send_time,
@@ -492,6 +318,11 @@ def main(argv):
     args = arg_parser.parse_args()
 
     input_filename = args.inputs[0]
+
+    if not os.path.exists(input_filename):
+        sys.stderr.write('No such file "%s"' % input_filename)
+        sys.exit(1)
+
     if args.verbose:
         verbose = True
 
@@ -503,8 +334,9 @@ def main(argv):
             exit(1)
 
     if args.input_format == 'uart':
-        file_parser = FileParser(input_filename)
-        transactions = file_parser.process_file(open(input_filename))
+        with open(input_filename) as fh:
+            trace_parser = read_trace.TraceLogParser()
+            events = trace_parser.parse(fh, filename=input_filename)
     else:
         if not args.funos_binary and not args.wu_list:
             sys.stderr.write('Must specify --funos-binary or --wu-list '
@@ -519,12 +351,13 @@ def main(argv):
                 with open(args.wu_list) as f:
                     wu_list = f.readlines()
 
-            file_parser = read_trace.TraceFileParser(fh, wu_list)
-            events = file_parser.parse()
-            trace_parser = TraceParser(input_filename)
-            for idx, e in enumerate(events):
-                trace_parser.handle_log_line(e, idx)
-            transactions = trace_parser.transactions
+            file_parser = read_trace.TraceFileParser(wu_list)
+            events = file_parser.parse(fh)
+
+    trace_parser = TraceProcessor(input_filename)
+    for idx, e in enumerate(events):
+        trace_parser.handle_log_line(e, idx)
+    transactions = trace_parser.transactions
 
     out_file = sys.stdout
     if args.output is not None:
