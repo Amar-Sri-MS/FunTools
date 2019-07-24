@@ -11,7 +11,7 @@ import read_trace
 class TraceFileParserTest(unittest.TestCase):
 
     def testPartialTime(self):
-        trace_parser = read_trace.TraceFileParser([], [])
+        trace_parser = read_trace.TraceFileParser([])
         reserved = 0
         timestamp = 0x12345678
         src_id = 15

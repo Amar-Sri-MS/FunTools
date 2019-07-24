@@ -1,11 +1,8 @@
 #!/usr/bin/env python2.7
-
 #
-# Parses raw trace data that has been offloaded from the chip and
-# converts it into a form that is suitable for the wu_trace.py
-# script.
-#
-# Usage: -h for help
+# Parse trace data, either from raw trace data offloaded from the chip,
+# or from console log messages.  Convert into a form that can be used for
+# better processing of the trace.
 #
 # Copyright (c) 2019 Fungible Inc.  All rights reserved.
 #
@@ -44,9 +41,13 @@ class Event(object):
         self.src_faddr = src_faddr
 
     def get_values(self, wu_list):
-        """
-        Returns a dictionary that matches the data model used by the
-        wu tracing script.
+        """Returns a dict with attributes of event.
+
+        Used to connect to older API for building relationships between
+        events.
+
+        wu_list is an array of wu names, where the nth element provides
+        the name of the wu with ordinal number n.
         """
         d = dict()
         d['timestamp'] = self.timestamp
@@ -67,8 +68,15 @@ class WuStartEvent(Event):
         # FabricAddress of unit scheduling WU.
         self.origin_faddr = origin_faddr
 
-
     def get_values(self, wu_list):
+        """Returns a dictionary with attributes of event.
+
+        Used to connect to older API for building relationships between
+        events.
+
+        wu_list is an array of wu names, where the nth element provides
+        the name of the wu with ordinal number n.
+        """
         d = super(WuStartEvent, self).get_values(wu_list)
         d['verb'] = 'WU'
         d['noun'] = 'START'
@@ -105,6 +113,14 @@ class WuSendEvent(Event):
         self.flags = flags
 
     def get_values(self, wu_list):
+        """Returns a dict with attributes of the event.
+
+        Used to connect to older API for building relationships between
+        events.
+
+        wu_list is an array of wu names, where the nth element provides
+        the name of the wu with ordinal number n.
+        """
         d = super(WuSendEvent, self).get_values(wu_list)
         d['verb'] = 'WU'
         d['noun'] = 'SEND'
@@ -124,9 +140,128 @@ class WuEndEvent(Event):
         super(WuEndEvent, self).__init__(timestamp, src_faddr)
 
     def get_values(self, wu_list):
+        """Returns a dict with attributes of the event.
+
+        Used to connect to older API for building relationships between
+        events.
+
+        wu_list is an array of wu names, where the nth element provides
+        the name of the wu with ordinal number n.
+        """
         d = super(WuEndEvent, self).get_values(wu_list)
         d['verb'] = 'WU'
         d['noun'] = 'END'
+        return d
+
+
+class TransactionAnnotateEvent(Event):
+    """Event indicating an arbitrary logging message for debugging."""
+    def __init__(self, timestamp, src_faddr, msg):
+        super(TransactionAnnotateEvent, self).__init__(timestamp, src_faddr)
+        # String provided by user as annotation.
+        self.msg = msg
+
+    def get_values(self, wu_list):
+        """Returns a dict with attributes of the event.
+
+        Used to connect to older API for building relationships between
+        events.
+
+        wu_list is an array of wu names, where the nth element provides
+        the name of the wu with ordinal number n.
+        """
+        d = super(TransactionAnnotateEvent, self).get_values(wu_list)
+        d['verb'] = 'TRANSACTION'
+        d['noun'] = 'ANNOT'
+        d['msg'] = self.msg
+        return d
+
+class TransactionStartEvent(Event):
+    """Event indicating the current WU is start of a separate transaction.
+
+    Used by trace processing to break traces up into chunks representing
+    individual actions by the F1.
+    """
+    def __init__(self, timestamp, src_faddr):
+        super(TransactionStartEvent, self).__init__(timestamp, src_faddr)
+
+    def get_values(self, wu_list):
+        """Returns a dict with attributes of the event.
+
+        Used to connect to older API for building relationships between
+        events.
+        """
+        d = super(TransactionStartEvent, self).get_values(wu_list)
+        d['verb'] = 'TRANSACTION'
+        d['noun'] = 'START'
+        return d
+
+class TimerStartEvent(Event):
+    """Event indicating the starting of a hardware timer to send a WU.
+
+    Hardware timers may be cancelled and may not always fire.
+    """
+    def __init__(self, timestamp, src_faddr, timer, wuid, dest, arg0):
+        super(TimerStartEvent, self).__init__(timestamp, src_faddr)
+        # Timer id for timer being started.
+        self.timer = timer
+        # WU id for handler that will run when timer expires.
+        self.wuid = wuid
+        # faddr of VP where handler WU should run.
+        self.dest_faddr = dest
+        # Single argument provided to timer WU.
+        # For timers, arg0 is provided by the caller; arg1 is
+        # the timer id shifted.
+        self.arg0 = arg0
+
+
+    def get_values(self, wu_list):
+        """Returns a dict with attributes of the event.
+
+        Used to connect to older API for building relationships between
+        events.
+
+        wu_list is an array of wu names, where the nth element provides
+        the name of the wu with ordinal number n.
+        """
+        d = super(TimerStartEvent, self).get_values(wu_list)
+        d['verb'] = 'TIMER'
+        d['noun'] = 'START'
+        d['timer'] = self.timer
+        d['wuid'] = self.wuid
+        d['dest'] = str(self.dest_faddr)
+        d['arg0'] = self.arg0
+        return d
+
+class TimerTriggerEvent(Event):
+    """Event indicating the triggering of a hardware timer.
+
+    DEPRECATED AND UNUSED.
+
+    Currently, triggered timers are represented by WU START for the
+    timer handler.
+    """
+    def __init__(self, timestamp, src_faddr, timer, arg0):
+        super(TimerTriggerEvent, self).__init__(timestamp, src_faddr)
+        # Timer that expired.
+        self.timer = timer
+        # Argument provided to WU.
+        self.arg0 = arg0
+
+    def get_values(self, wu_list):
+        """Returns a dict with attributes of the event.
+
+        Used to connect to older API for building relationships between
+        events.
+
+        wu_list is an array of wu names, where the nth element provides
+        the name of the wu with ordinal number n.
+        """
+        d = super(WuAnnotateEvent, self).get_values(wu_list)
+        d['verb'] = 'TIMER'
+        d['noun'] = 'TRIGGER'
+        d['timer'] = self.timer
+        d['arg0'] = self.arg0
         return d
 
 
@@ -134,15 +269,24 @@ class TimeSyncEvent(Event):
     """ A TIME SYNC event.
 
     This provides a full 64-bit timestamp so full timestamps
-    from the other event types can be reconstructed from partial
-    timestamps.
+    from the other event types can be reconstructed from partial timestamps
+    stored in the raw event on the F1.
     """
 
     def __init__(self, timestamp, src_faddr, full_timestamp):
         super(TimeSyncEvent, self).__init__(timestamp, src_faddr)
+        # 64 bit timestamp that matches up with 32 bit timestamp in event.
         self.fulltimestamp = full_timestamp
 
     def get_values(self, wu_list):
+        """Returns a dict with attributes of the event.
+
+        Used to connect to older API for building relationships between
+        events.
+
+        wu_list is an array of wu names, where the nth element provides
+        the name of the wu with ordinal number n.
+        """
         d = super(TimeSyncEvent, self).get_values(wu_list)
         d['verb'] = 'TIME'
         d['noun'] = 'SYNC'
@@ -155,14 +299,13 @@ class TraceFileParser(object):
     # partial timestamps
     LOST_TIME_BITS = 6
 
-    def __init__(self, fh, wu_list):
+    def __init__(self, wu_list):
         """ Create a new TraceFileParser.
 
         fh is a file handle to the trace file.
         wu_list is a list of names of wu names in wu id order, used
         for mapping wu_id to wu name.
         """
-        self.fh = fh
         self.wu_list = wu_list
         # Map from source id to last full timestamp.
         self.last_full_timestamp = {}
@@ -297,8 +440,10 @@ class TraceFileParser(object):
                      | (partial_timestamp << self.LOST_TIME_BITS))
         return timestamp
 
-    def parse(self):
+    def parse(self, fh):
         """ Does the parsing of the raw trace file in binary format.
+
+        fh is a file handle for reading the byte stream.
 
         Returns a list of event dicts which are the data model for the
         next step in trace processing.
@@ -306,7 +451,7 @@ class TraceFileParser(object):
         events = []
 
         while True:
-            hdr = self.fh.read(HDR_LEN)
+            hdr = fh.read(HDR_LEN)
 
             # EOF
             if not hdr:
@@ -319,7 +464,7 @@ class TraceFileParser(object):
             # Read the additional words
             content = None
             if addl_count > 0:
-                content = self.fh.read(addl_count * 8)
+                content = fh.read(addl_count * 8)
                 if not content:
                     # We have a problem: the file contents are too short
                     raise ValueError('Truncated file')
@@ -347,7 +492,6 @@ class TraceFileParser(object):
         # for e in all_events:
         #     print e['timestamp'], e['faddr'], e['verb'], e['noun']
         return all_events
-
 
 class WuListExtractor(object):
     """ Extracts WU lists from a FunOS binary.
@@ -413,3 +557,251 @@ class WuListExtractor(object):
                 wu_list.append(wu)
 
         return wu_list
+
+def parse_int(str):
+    """Returns int, or throws an exception."""
+    try:
+        value = int(str)
+        return value
+    except ValueError as e:
+        if not str.startswith('0x'):
+            raise e
+        value = int(str, 16)
+        return value
+
+class TraceLogParser(object):
+    """Turns TRACE log messages from console into sequence of Event objects."""
+    EXPECTED_KEYWORDS = {
+        ('WU', 'START'): {'faddr', 'wuid', 'name', 'arg0', 'arg1', 'origin'},
+        ('WU', 'END'): {'faddr'},
+        ('WU', 'SEND'): {'faddr', 'wuid', 'name', 'arg0', 'arg1', 'dest',
+                         'flags'},
+        ('TIMER', 'TRIGGER'): {'faddr', 'timer', 'arg0'},
+        ('TIMER', 'START'): {'faddr', 'timer', 'wuid', 'name', 'dest', 'arg0'},
+        ('TRANSACTION', 'START'): {'faddr'},
+        ('TRANSACTION', 'ANNOT'): {'faddr'},
+        ('HU', 'SQL_DBL'): {'sqid'},
+        }
+
+    def __init__(self):
+        self.wu_list = []
+
+    def parse_line(self, line, filename='unknown', line_number=0):
+        """Turns an log line for a trace event into a keyword dictionary.
+
+        Returns (dictionary of keywords, error_string)
+        """
+        line = line.strip()
+        values = {}
+        match = re.match('\s*([0-9]+).([0-9]+) TRACE ([A-Z_]+) ([A-Z_]+)',
+                         line)
+        if not match:
+            # Not a log line, but not an error either.
+            return (None, None)
+
+        time_nsec = int(match.group(1)) * 1000000000 + int(match.group(2))
+
+        values = {'filename': filename,
+                  'line_number': line_number,
+                  'timestamp': time_nsec,
+                  'verb': match.group(3),
+                  'noun': match.group(4)
+                  }
+        remaining_string = line[len(match.group(0)):].lstrip()
+
+        if len(remaining_string) == 0:
+            return (values, None)
+
+        # Annotation is special - we need to find the faddr at the
+        # beginning, but the rest counts as the message.
+        if values['verb'] == 'TRANSACTION' and values['noun'] == 'ANNOT':
+            annot_match = re.match(
+                'faddr (FA[0-9]+:[0-9]+:[0-9]+\[VP\]) msg (.*)',
+                remaining_string)
+            if not annot_match:
+                error = '%s:%d: malformed transaction annotation: "%s"\n' % (
+                    filename, line_number, line)
+                return (None, error)
+
+            try:
+                faddr_str = annot_match.group(1)
+                faddr = event.FabricAddress.from_string(faddr_str)
+            except ValueError as e:
+                error = '%s:%d: malformed fabric address in trace for key %s: %s' % (
+                    filename, line_number, 'faddr', e)
+                return (None, error)
+            values['faddr'] = faddr
+            values['msg'] = annot_match.group(2)
+            return (values, None)
+
+        # Anything other than TRANSACTION ANNOT.
+        token_iter = iter(remaining_string.split(' '))
+        try:
+            pairs = [(a, next(token_iter)) for a in token_iter]
+        except StopIteration as e:
+            error = '%s:%d: malformed log line: "%s"\n' % (
+                filename, line_number, line)
+            return (None, error)
+
+        for (key, value) in pairs:
+            values[key] = value
+
+        expect_keywords = self.EXPECTED_KEYWORDS.get((values['verb'],
+                                                      values['noun']))
+        if not expect_keywords:
+            error = '%s:%d: unknown verb or noun: %s %s\n' % (filename,
+                                                              line_number,
+                                                              values['verb'],
+                                                              values['noun'])
+            return (None, error)
+
+        for expected_keyword in expect_keywords:
+            if expected_keyword not in values:
+                error = '%s:%d: missing key "%s" in command %s %s\n' % (
+                    filename, line_number, expected_keyword,
+                    values['verb'], values['noun'])
+                return (None, error)
+
+        int_keywords = ['wuid', 'arg0', 'arg1', 'sqid', 'flags']
+        vp_keywords = ['dest', 'origin', 'faddr']
+
+        for keyword in int_keywords:
+            if keyword in values:
+                try:
+                    values[keyword] = parse_int(values[keyword])
+                except ValueError as e:
+                    error = '%s:%d: malformed hex value in trace for key %s: %s' % (
+                        filename, line_number, keyword, e)
+                    return (None, error)
+
+        for keyword in vp_keywords:
+            if keyword in values:
+                try:
+                    values[keyword] = event.FabricAddress.from_string(values[keyword])
+                except ValueError as e:
+                    error = '%s:%d: malformed fabric address in trace for key %s: %s' % (
+                        filename, line_number, keyword, e)
+                    return (None, error)
+
+        if 'wuid' in values:
+            if 'name' in values:
+                wuid = values['wuid']
+                wu_list_len = len(self.wu_list)
+
+                if wu_list_len <= wuid:
+                    self.wu_list += ['unknown'] * (wuid - wu_list_len + 1)
+                if self.wu_list[wuid] != 'unknown':
+                    if self.wu_list[wuid] != values['name']:
+                        raise ValueError('Bad WU name: %s vs %s' % (
+                                self.wu_list[wuid], values['name']))
+                self.wu_list[wuid] = values['name']
+
+
+
+        return (values, None)
+
+    def create_start_event(self, keywords):
+        return WuStartEvent(keywords['timestamp'],
+                            keywords['faddr'],
+                            keywords['arg0'],
+                            keywords['arg1'],
+                            keywords['wuid'],
+                            keywords['origin'])
+
+    def create_send_event(self, keywords):
+        return WuSendEvent(keywords['timestamp'],
+                           keywords['faddr'],
+                           keywords['arg0'],
+                           keywords['arg1'],
+                           keywords['wuid'],
+                           keywords['dest'],
+                           keywords['flags'])
+
+    def create_end_event(self, keywords):
+        return WuEndEvent(keywords['timestamp'], keywords['faddr'])
+
+
+    def create_annotate_event(self, keywords):
+        return TransactionAnnotateEvent(keywords['timestamp'],
+                                        keywords['faddr'],
+                                        keywords['msg'])
+
+    def create_transaction_start_event(self, keywords):
+        return TransactionStartEvent(keywords['timestamp'],
+                                     keywords['faddr'])
+
+    def create_timer_start_event(self, keywords):
+        return TimerStartEvent(keywords['timestamp'],
+                               keywords['faddr'],
+                               keywords['timer'],
+                               keywords['wuid'],
+                               keywords['dest'],
+                               keywords['arg0'])
+
+    def create_timer_send_event(self, keywords):
+        raise ValueError('not handled')
+
+    def create_time_sync_event(self, keywords):
+        raise ValueError('not handled')
+
+    def create_event(self, keywords, filename, line_number):
+        """Turns a log line into a Trace event.
+
+        keywords is a dictionary of keywords from the log line.
+        filename is name of file where logs were gathered.  For error report.
+        line_number is the line for the log line generating keywords.
+        """
+        if keywords['verb'] == 'WU' and keywords['noun'] == 'START':
+            return self.create_start_event(keywords)
+        elif keywords['verb'] == 'WU' and keywords['noun'] == 'SEND':
+            return self.create_send_event(keywords)
+        elif keywords['verb'] == 'WU' and keywords['noun'] == 'END':
+            return self.create_end_event(keywords)
+        elif keywords['verb'] == 'TRANSACTION' and keywords['noun'] == 'ANNOT':
+            return self.create_annotate_event(keywords)
+        elif keywords['verb'] == 'TRANSACTION' and keywords['noun'] == 'START':
+            return self.create_transaction_start_event(keywords)
+        elif keywords['verb'] == 'TIMER' and keywords['noun'] == 'START':
+            return self.create_timer_start_event(keywords)
+        elif keywords['verb'] == 'TIMER' and keywords['noun'] == 'TRIGGER':
+            return self.create_timer_trigger_event(keywords)
+        elif keywords['verb'] == 'TIME' and keywords['noun'] == 'SYNC':
+            return self.create_time_sync_event(keywords)
+        elif keywords['verb'] == 'FLUSH' and keywords['noun'] == 'FLUSH':
+            return None
+        else:
+            print 'Do not know how to handle %s/%s' % (keywords['verb'],
+                                                       keywords['noun'])
+        return None
+
+    def parse(self, fh, filename='unknown'):
+        """Parse all lines of an input trace log file.
+
+        fh is a file handle that will supply all lines of the file.
+
+        filename is the name of the file being read for error reporting.
+
+        Returns array of all events in sorted order.
+        """
+        events = []
+        line_number = 0
+        while True:
+            line = fh.readline()
+            if not line:
+                break
+
+            line_number += 1
+            (log_keywords, error) = self.parse_line(line, filename,
+                                                    line_number)
+            if error:
+                sys.stderr.write(error)
+            if not log_keywords:
+                continue
+            event = self.create_event(log_keywords, filename=filename,
+                                      line_number=line_number)
+            if event:
+                events.append(event)
+
+        events.sort(key=lambda et: et.timestamp)
+        all_events = [evt.get_values(self.wu_list) for evt in events]
+        return all_events
