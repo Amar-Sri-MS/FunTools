@@ -50,6 +50,28 @@ class FabricAddress(object):
         # For VPS, queue is 8 bits.
         self.queue = 0
 
+    def __eq__(self, other):
+        """Returns true if self and other are the same fabric address."""
+        return (self.gid == other.gid and self.lid == other.lid and
+                self.queue == other.queue)
+
+    def __hash__(self):
+        return hash((self.gid, self.lid, self.queue))
+
+    @classmethod
+    def from_ordinal(cls, src_id):
+        """Create fabric address from index of VP. """
+        if src_id > ((GID_PC_MAX + 1) * 6 * 4):
+            raise ValueError('Out of range src: 0%d' % src_id)
+
+        cluster = src_id / 24
+        core_vp = (src_id % 24)
+
+        faddr = FabricAddress()
+        faddr.gid = cluster
+        faddr.lid = core_vp + LID_VP_BASE
+        return faddr
+
     @classmethod
     def from_faddr(cls, faddr_int):
         """Create FabricAddress from integer value of faddr.
@@ -58,8 +80,7 @@ class FabricAddress(object):
         """
         if faddr_int & 0xfff00000 != 0:
             # fabric address only uses 20 bits.
-
-            return None
+            raise ValueError('FabricAddress out of range: 0x%06x' % faddr_int)
 
         faddr = FabricAddress()
         faddr.raw_value = faddr_int
@@ -154,10 +175,10 @@ class FabricAddress(object):
         """
         if not self.is_cluster():
             raise ValueError('as_vp_hash: not a VP: {}'.format(
-                    self.as_faddr()))
+                    self.as_faddr_str()))
         return self.gid << 5 | self.lid
 
-    def as_faddr(self):
+    def as_faddr_str(self):
         """Returns fabric address in same form as FADDR_ARGS on FunOS."""
         return 'FA{}:{}:{}[{}]'.format(self.gid, self.lid, self.queue,
                                        self.block_name())

@@ -19,6 +19,30 @@ class TestParseFabricAddress(unittest.TestCase):
 
         self.assertEqual('VP0.2.0', str(faddr))
 
+    def testEquality(self):
+        self.assertEqual(event.FabricAddress.from_string('FA3:16:0[VP]'),
+                         event.FabricAddress.from_string('FA3:16:0[VP]'))
+
+        self.assertNotEqual(event.FabricAddress.from_string('FA3:16:0[VP]'),
+                            event.FabricAddress.from_string('FA1:16:0[VP]'))
+
+        self.assertNotEqual(event.FabricAddress.from_string('FA3:16:0[VP]'),
+                            event.FabricAddress.from_string('FA3:17:0[VP]'))
+
+    def testHash(self):
+        self.assertEqual(
+            hash(event.FabricAddress.from_string('FA3:16:0[VP]')),
+            hash(event.FabricAddress.from_string('FA3:16:0[VP]')))
+
+        self.assertNotEqual(
+            hash(event.FabricAddress.from_string('FA3:16:0[VP]')),
+            hash(event.FabricAddress.from_string('FA1:16:0[VP]')))
+
+    def testOrdinal(self):
+        self.assertEqual('VP1.0.0', str(event.FabricAddress.from_ordinal(24)))
+        self.assertEqual('VP7.4.1', str(event.FabricAddress.from_ordinal(185)))
+        self.assertEqual('VP8.0.1', str(event.FabricAddress.from_ordinal(193)))
+
     def testAddressFromString(self):
 
         self.assertEqual('VP0.0.0',
@@ -39,7 +63,7 @@ class TestParseFabricAddress(unittest.TestCase):
     def testFaddrFromString(self):
         faddr = event.FabricAddress.from_string('FA5:29:1[VP]')
 
-        self.assertEqual('FA5:29:1[VP]', faddr.as_faddr())
+        self.assertEqual('FA5:29:1[VP]', faddr.as_faddr_str())
 
     def testFaddrFromInt(self):
         faddr = event.FabricAddress.from_faddr(0x1c800)
