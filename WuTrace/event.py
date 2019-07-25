@@ -1,5 +1,17 @@
 # event.py
 #
+# Objects representing events that happened as part of a WU trace.
+#
+# There are two levels of events in WU tracing:
+#
+# * the raw events collected by FunOS: start of a WU, end of a WU, send, etc.
+#   Code in read_trace.py reads various log files, and produces sequences
+#   of these events.
+#
+# * the activities performed.  The raw events are used to identify
+#   specific WUs (TraceEvent) and combination of TraceEvents for a single
+#   request or action (Transaction).
+#
 # Copyright (c) 2017 Fungible Inc.  All rights reserved.
 
 import re
@@ -214,7 +226,13 @@ class FabricAddress(object):
 
 
 class Transaction(object):
-    """Container for a sequence of related WU events."""
+    """Container for a sequence of related WU events.
+
+    Each transaction contains a tree of TraceEvents representing WUs
+    triggered by other WUs.  A transaction covers a fixed interval of
+    time, and should generally represent the work for a single activity,
+    request, or immutable chunk of work.
+    """
     def __init__(self, root_event, label=None):
         # List of work units and other events done as part of the transaction.
         self.root_event = root_event
@@ -322,11 +340,17 @@ class Transaction(object):
         return sorted(result, key=lambda x: x.start_time)
 
 
+# TODO(bowdidge): Consider merging with WuStartEvent, or
+# renaming to EventInterval.
 class TraceEvent(object):
-    """A work unit (WU) or other action that occurred during the trace,
-    Trace events can also represent timer set/trigger pairs.
+    """A work unit (WU) representing either an event at a given point in
+    time or an event occuring during a time interval.  Trace events usually
+    represent the time a WU ran on a VP (combining the raw start and end
+    events.)
+    WU events can also represent timer set/trigger pairs, or simulated
+    hardware events.
     """
-    def __init__(self, start_time, end_time, label, vp, keywords):
+    def __init__(self, start_time, end_time, label, vp):
         # When the event started.
         self.start_time = start_time
 
@@ -336,10 +360,7 @@ class TraceEvent(object):
         # Text label to display when showing this event.
         self.label = label
 
-        # Virtual processor where this event ran.
-        # String of form FA[0-9]+.[0-9]+.[0-9]+.*
-        # Ex: FA0:8:0[VP0.0], FA1:13:0[VP1.1].
-        #
+        # Fabric address for virtual processor where this event ran.
         self.vp = vp
 
         # Transactions holding this event.
@@ -355,9 +376,6 @@ class TraceEvent(object):
 
         # Work units or events that were instigated by this event.
         self.successors = []
-
-        # Raw key/value pairs from trace file.
-        self.keywords = keywords
 
     def as_dict(self):
         return {'start_time': self.start_time,
@@ -391,3 +409,139 @@ class TraceEvent(object):
     def __repr__(self):
         return '<TraceEvent: %s - %s %s>' % (self.start_time, self.end_time,
                                              self.label)
+
+# Ordinals for type of event.  Keep this equal to event types in FunOS
+# to avoid confusion.
+WU_START_EVENT = 1
+WU_SEND_EVENT = 2
+WU_END_EVENT = 3
+TIMER_START_EVENT = 4
+TRANSACTION_START_EVENT = 5
+TRANSACTION_ANNOT_EVENT = 6
+TIME_SYNC_EVENT = 7
+# Not in FunOS.
+HU_SQ_DBL = 8
+
+class Event(object):
+    """
+    A raw event from WU tracing.
+
+    This is the base class with common functionality across all
+    event types. Subclasses perform unpacking of the additional
+    words after the header.
+    """
+
+    def __init__(self, timestamp, faddr):
+        # Full timestamp when event was recorded.
+        self.timestamp = timestamp
+        # FabricAddress where event was logged.
+        self.faddr = faddr
+        self.event_type = None
+
+
+class WuStartEvent(Event):
+    """A WU START event."""
+
+    def __init__(self, timestamp, faddr, arg0, arg1, wuid, wu_name,
+                 origin_faddr):
+        super(WuStartEvent, self).__init__(timestamp, faddr)
+        self.event_type = WU_START_EVENT
+        # Argument 0 of arriving WU.  Often frame.
+        self.arg0 = arg0
+        # Argument 1 of arriving WU.
+        self.arg1 = arg1
+        # Ordinal value of WU being run.
+        self.wuid = wuid
+        # Name of WU being run.
+        self.name = wu_name
+        # FabricAddress of unit scheduling WU.
+        self.origin_faddr = origin_faddr
+
+
+class WuSendEvent(Event):
+    """A WU SEND event"""
+    def __init__(self, timestamp, faddr, arg0, arg1, wuid, wu_name,
+                 dest_faddr, flags):
+        """Creates a WU SEND event from all arguments logged."""
+        super(WuSendEvent, self).__init__(timestamp, faddr)
+        self.event_type = WU_SEND_EVENT
+        # Argument 0 for sent WU.
+        self.arg0 = arg0
+        # Argument 1 for sent WU.
+        self.arg1 = arg1
+        # Ordinal number for the WU being sent.  Does not include prefetch
+        # bits.
+        self.wuid = wuid
+        # Name of WU being sent.
+        self.name = wu_name
+        # Destination fabric address where WU should run.
+        self.dest_faddr = dest_faddr
+        # Additional flags describing WU.
+        # bit 0 = gated WU.
+        # bit 1 = Fake WU short-circuiting hardware request.
+        self.flags = flags
+
+
+class WuEndEvent(Event):
+    """A WU END event."""
+
+    def __init__(self, timestamp, faddr):
+        super(WuEndEvent, self).__init__(timestamp, faddr)
+        self.event_type = WU_END_EVENT
+
+
+class TransactionAnnotateEvent(Event):
+    """Event indicating an arbitrary logging message for debugging."""
+    def __init__(self, timestamp, faddr, msg):
+        super(TransactionAnnotateEvent, self).__init__(timestamp, faddr)
+        # String provided by user as annotation.
+        self.event_type = TRANSACTION_ANNOT_EVENT
+        self.msg = msg
+
+
+class TransactionStartEvent(Event):
+    """Event indicating the current WU is start of a separate transaction.
+
+    Used by trace processing to break traces up into chunks representing
+    individual actions by the F1.
+    """
+    def __init__(self, timestamp, faddr):
+        super(TransactionStartEvent, self).__init__(timestamp, faddr)
+        self.event_type = TRANSACTION_START_EVENT
+
+
+class TimerStartEvent(Event):
+    """Event indicating the starting of a hardware timer to send a WU.
+
+    Hardware timers may be cancelled and may not always fire.
+    """
+    def __init__(self, timestamp, faddr, timer, wuid, wu_name, dest, arg0):
+        super(TimerStartEvent, self).__init__(timestamp, faddr)
+        self.event_type = TIMER_START_EVENT
+       # Timer id for timer being started.
+        self.timer = timer
+        # WU id for handler that will run when timer expires.
+        self.wuid = wuid
+        # Name for WU.
+        self.name = wu_name
+        # faddr of VP where handler WU should run.
+        self.dest_faddr = dest
+        # Single argument provided to timer WU.
+        # For timers, arg0 is provided by the caller; arg1 is
+        # the timer id shifted.
+        self.arg0 = arg0
+
+
+class TimeSyncEvent(Event):
+    """ A TIME SYNC event.
+
+    This provides a full 64-bit timestamp so full timestamps
+    from the other event types can be reconstructed from partial timestamps
+    stored in the raw event on the F1.
+    """
+
+    def __init__(self, timestamp, faddr, full_timestamp):
+        super(TimeSyncEvent, self).__init__(timestamp, faddr)
+        self.event_type = TIME_SYNC_EVENT
+        # 64 bit timestamp that matches up with 32 bit timestamp in event.
+        self.fulltimestamp = full_timestamp

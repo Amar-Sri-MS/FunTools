@@ -25,273 +25,6 @@ MAX_VPS = 4
 MAX_CORES = 6
 
 
-class Event(object):
-    """
-    An event from WU tracing.
-
-    This is the base class with common functionality across all
-    event types. Subclasses perform unpacking of the additional
-    words after the header.
-    """
-
-    def __init__(self, timestamp, src_faddr):
-        # Full timestamp when event was recorded.
-        self.timestamp = timestamp
-        # FabricAddress where event was logged.
-        self.src_faddr = src_faddr
-
-    def get_values(self, wu_list):
-        """Returns a dict with attributes of event.
-
-        Used to connect to older API for building relationships between
-        events.
-
-        wu_list is an array of wu names, where the nth element provides
-        the name of the wu with ordinal number n.
-        """
-        d = dict()
-        d['timestamp'] = self.timestamp
-        d['faddr'] = str(self.src_faddr)
-        return d
-
-class WuStartEvent(Event):
-    """A WU START event."""
-
-    def __init__(self, timestamp, src_faddr, arg0, arg1, wuid, origin_faddr):
-        super(WuStartEvent, self).__init__(timestamp, src_faddr)
-        # Argument 0 of arriving WU.  Often frame.
-        self.arg0 = arg0
-        # Argument 1 of arriving WU.
-        self.arg1 = arg1
-        # Ordinal value of WU being run.
-        self.wuid = wuid
-        # FabricAddress of unit scheduling WU.
-        self.origin_faddr = origin_faddr
-
-    def get_values(self, wu_list):
-        """Returns a dictionary with attributes of event.
-
-        Used to connect to older API for building relationships between
-        events.
-
-        wu_list is an array of wu names, where the nth element provides
-        the name of the wu with ordinal number n.
-        """
-        d = super(WuStartEvent, self).get_values(wu_list)
-        d['verb'] = 'WU'
-        d['noun'] = 'START'
-        d['arg0'] = self.arg0
-        d['arg1'] = self.arg1
-        d['wuid'] = self.wuid
-        if self.wuid < len(wu_list):
-            wu_name = wu_list[self.wuid]
-        else:
-            wu_name = 'out_of_range'
-        d['name'] = wu_name
-        d['origin'] = str(self.origin_faddr)
-        return d
-
-
-class WuSendEvent(Event):
-    """A WU SEND event"""
-    def __init__(self, timestamp, src_faddr, arg0, arg1, wuid,
-                 dest_faddr, flags):
-        """Creates a WU SEND event from all arguments logged."""
-        super(WuSendEvent, self).__init__(timestamp, src_faddr)
-        # Argument 0 for sent WU.
-        self.arg0 = arg0
-        # Argument 1 for sent WU.
-        self.arg1 = arg1
-        # Ordinal number for the WU being sent.  Does not include prefetch
-        # bits.
-        self.wuid = wuid
-        # Destination fabric address where WU should run.
-        self.dest_faddr = dest_faddr
-        # Additional flags describing WU.
-        # bit 0 = gated WU.
-        # bit 1 = Fake WU short-circuiting hardware request.
-        self.flags = flags
-
-    def get_values(self, wu_list):
-        """Returns a dict with attributes of the event.
-
-        Used to connect to older API for building relationships between
-        events.
-
-        wu_list is an array of wu names, where the nth element provides
-        the name of the wu with ordinal number n.
-        """
-        d = super(WuSendEvent, self).get_values(wu_list)
-        d['verb'] = 'WU'
-        d['noun'] = 'SEND'
-        d['arg0'] = self.arg0
-        d['arg1'] = self.arg1
-        d['wuid'] = self.wuid
-        d['dest'] = str(self.dest_faddr)
-        d['name'] = wu_list[self.wuid]
-        d['flags'] = self.flags
-        return d
-
-
-class WuEndEvent(Event):
-    """A WU END event."""
-
-    def __init__(self, timestamp, src_faddr):
-        super(WuEndEvent, self).__init__(timestamp, src_faddr)
-
-    def get_values(self, wu_list):
-        """Returns a dict with attributes of the event.
-
-        Used to connect to older API for building relationships between
-        events.
-
-        wu_list is an array of wu names, where the nth element provides
-        the name of the wu with ordinal number n.
-        """
-        d = super(WuEndEvent, self).get_values(wu_list)
-        d['verb'] = 'WU'
-        d['noun'] = 'END'
-        return d
-
-
-class TransactionAnnotateEvent(Event):
-    """Event indicating an arbitrary logging message for debugging."""
-    def __init__(self, timestamp, src_faddr, msg):
-        super(TransactionAnnotateEvent, self).__init__(timestamp, src_faddr)
-        # String provided by user as annotation.
-        self.msg = msg
-
-    def get_values(self, wu_list):
-        """Returns a dict with attributes of the event.
-
-        Used to connect to older API for building relationships between
-        events.
-
-        wu_list is an array of wu names, where the nth element provides
-        the name of the wu with ordinal number n.
-        """
-        d = super(TransactionAnnotateEvent, self).get_values(wu_list)
-        d['verb'] = 'TRANSACTION'
-        d['noun'] = 'ANNOT'
-        d['msg'] = self.msg
-        return d
-
-class TransactionStartEvent(Event):
-    """Event indicating the current WU is start of a separate transaction.
-
-    Used by trace processing to break traces up into chunks representing
-    individual actions by the F1.
-    """
-    def __init__(self, timestamp, src_faddr):
-        super(TransactionStartEvent, self).__init__(timestamp, src_faddr)
-
-    def get_values(self, wu_list):
-        """Returns a dict with attributes of the event.
-
-        Used to connect to older API for building relationships between
-        events.
-        """
-        d = super(TransactionStartEvent, self).get_values(wu_list)
-        d['verb'] = 'TRANSACTION'
-        d['noun'] = 'START'
-        return d
-
-class TimerStartEvent(Event):
-    """Event indicating the starting of a hardware timer to send a WU.
-
-    Hardware timers may be cancelled and may not always fire.
-    """
-    def __init__(self, timestamp, src_faddr, timer, wuid, dest, arg0):
-        super(TimerStartEvent, self).__init__(timestamp, src_faddr)
-        # Timer id for timer being started.
-        self.timer = timer
-        # WU id for handler that will run when timer expires.
-        self.wuid = wuid
-        # faddr of VP where handler WU should run.
-        self.dest_faddr = dest
-        # Single argument provided to timer WU.
-        # For timers, arg0 is provided by the caller; arg1 is
-        # the timer id shifted.
-        self.arg0 = arg0
-
-
-    def get_values(self, wu_list):
-        """Returns a dict with attributes of the event.
-
-        Used to connect to older API for building relationships between
-        events.
-
-        wu_list is an array of wu names, where the nth element provides
-        the name of the wu with ordinal number n.
-        """
-        d = super(TimerStartEvent, self).get_values(wu_list)
-        d['verb'] = 'TIMER'
-        d['noun'] = 'START'
-        d['timer'] = self.timer
-        d['wuid'] = self.wuid
-        d['dest'] = str(self.dest_faddr)
-        d['arg0'] = self.arg0
-        return d
-
-class TimerTriggerEvent(Event):
-    """Event indicating the triggering of a hardware timer.
-
-    DEPRECATED AND UNUSED.
-
-    Currently, triggered timers are represented by WU START for the
-    timer handler.
-    """
-    def __init__(self, timestamp, src_faddr, timer, arg0):
-        super(TimerTriggerEvent, self).__init__(timestamp, src_faddr)
-        # Timer that expired.
-        self.timer = timer
-        # Argument provided to WU.
-        self.arg0 = arg0
-
-    def get_values(self, wu_list):
-        """Returns a dict with attributes of the event.
-
-        Used to connect to older API for building relationships between
-        events.
-
-        wu_list is an array of wu names, where the nth element provides
-        the name of the wu with ordinal number n.
-        """
-        d = super(WuAnnotateEvent, self).get_values(wu_list)
-        d['verb'] = 'TIMER'
-        d['noun'] = 'TRIGGER'
-        d['timer'] = self.timer
-        d['arg0'] = self.arg0
-        return d
-
-
-class TimeSyncEvent(Event):
-    """ A TIME SYNC event.
-
-    This provides a full 64-bit timestamp so full timestamps
-    from the other event types can be reconstructed from partial timestamps
-    stored in the raw event on the F1.
-    """
-
-    def __init__(self, timestamp, src_faddr, full_timestamp):
-        super(TimeSyncEvent, self).__init__(timestamp, src_faddr)
-        # 64 bit timestamp that matches up with 32 bit timestamp in event.
-        self.fulltimestamp = full_timestamp
-
-    def get_values(self, wu_list):
-        """Returns a dict with attributes of the event.
-
-        Used to connect to older API for building relationships between
-        events.
-
-        wu_list is an array of wu names, where the nth element provides
-        the name of the wu with ordinal number n.
-        """
-        d = super(TimeSyncEvent, self).get_values(wu_list)
-        d['verb'] = 'TIME'
-        d['noun'] = 'SYNC'
-        return d
-
 class TraceFileParser(object):
     """ Handles raw trace file input. """
 
@@ -309,6 +42,11 @@ class TraceFileParser(object):
         self.wu_list = wu_list
         # Map from source id to last full timestamp.
         self.last_full_timestamp = {}
+
+    def wu_name(self, wu_id):
+        """Returns the name of the wu associated with the WU id."""
+        # TODO(bowdidge): be more forgiving of unknown WUs.
+        return self.wu_list[wu_id]
 
     def parse_header(self, hdr):
         """Gathers information common to all trace events.
@@ -329,16 +67,16 @@ class TraceFileParser(object):
         src_id = (hdr_words[1] & 0x3ff0000) >> 16
         addl_count = (hdr_words[1] & 0xf000) >> 12
 
-        src_faddr = event.FabricAddress.from_ordinal(src_id)
+        faddr = event.FabricAddress.from_ordinal(src_id)
 
-        return (partial_timestamp, src_faddr, addl_count)
+        return (partial_timestamp, faddr, addl_count)
 
     def parse_start_event(self, hdr, addl_words):
         """Parses a WuStart event from the binary trace data.
 
         Returns a WuStartEvent for the described event.
         """
-        (partial_timestamp, src_faddr, addl_count) = self.parse_header(hdr)
+        (partial_timestamp, faddr, addl_count) = self.parse_header(hdr)
 
         if addl_count != 3:
             raise ValueError('Additional word count value')
@@ -353,16 +91,16 @@ class TraceFileParser(object):
 
         origin_faddr = event.FabricAddress.from_faddr(origin)
 
-        timestamp = self.full_timestamp(src_faddr, partial_timestamp)
-        return WuStartEvent(timestamp, src_faddr, arg0, arg1,
-                            wuid, origin_faddr)
+        timestamp = self.full_timestamp(faddr, partial_timestamp)
+        return event.WuStartEvent(timestamp, faddr, arg0, arg1,
+                                  wuid, self.wu_name(wuid), origin_faddr)
 
     def parse_send_event(self, hdr, addl_words):
         """Parses a WU SEND event from the binary trace data.
 
         Returns a WuSendEvent for the described event.
         """
-        (partial_timestamp, src_faddr, addl_count) = self.parse_header(hdr)
+        (partial_timestamp, faddr, addl_count) = self.parse_header(hdr)
 
         if addl_count != 4:
             raise ValueError('Additional word count value')
@@ -380,22 +118,23 @@ class TraceFileParser(object):
 
         dest_faddr = event.FabricAddress.from_faddr(dest)
 
-        timestamp = self.full_timestamp(src_faddr, partial_timestamp)
-        return WuSendEvent(timestamp, src_faddr, arg0, arg1, wuid,
-                           dest_faddr, flags)
+        timestamp = self.full_timestamp(faddr, partial_timestamp)
+        return event.WuSendEvent(timestamp, faddr, arg0, arg1, wuid,
+                                 self.wu_name(wuid),
+                                 dest_faddr, flags)
 
     def parse_end_event(self, hdr, addl_words):
         """Parses a WU END event from the binary trace data.
 
         Returns a WuEndEvent for the described event.
         """
-        (partial_timestamp, src_faddr, addl_count) = self.parse_header(hdr)
+        (partial_timestamp, faddr, addl_count) = self.parse_header(hdr)
 
         if addl_count != 0:
             raise ValueError('Additional word count value')
 
-        timestamp = self.full_timestamp(src_faddr, partial_timestamp)
-        return WuEndEvent(timestamp, src_faddr)
+        timestamp = self.full_timestamp(faddr, partial_timestamp)
+        return event.WuEndEvent(timestamp, faddr)
 
     def parse_time_sync_event(self, hdr, addl_words):
         """Parses a TIME SYNC event from the binary trace data.
@@ -404,31 +143,32 @@ class TraceFileParser(object):
 
         Returns a TimeSyncEvent for the described event.
         """
-        (partial_timestamp, src_faddr, addl_count) = self.parse_header(hdr)
+        (partial_timestamp, faddr, addl_count) = self.parse_header(hdr)
 
         if addl_count != 1:
             raise ValueError('Additional word count value')
 
         result = struct.unpack('>Q', addl_words)
         full_timestamp = result[0]
-        self.last_full_timestamp[src_faddr] = full_timestamp
+        self.last_full_timestamp[faddr] = full_timestamp
 
-        return TimeSyncEvent(partial_timestamp, src_faddr, self.full_timestamp)
+        return event.TimeSyncEvent(partial_timestamp, faddr,
+                                   self.full_timestamp)
 
-    def full_timestamp(self, src_faddr, partial_timestamp):
+    def full_timestamp(self, faddr, partial_timestamp):
         """ Converts a partial timestamp to a full timestamp.
 
-        src_faddr is the processor where the event with the partial time
+        faddr is the processor where the event with the partial time
         was generated.
         partial_timestamp is the timestamp recorded in the event.
 
         Returns an absolute timestamp based on the TIME SYNC events seen
         recently.
         """
-        if src_faddr not in self.last_full_timestamp:
+        if faddr not in self.last_full_timestamp:
             raise ValueError('No recent full timestamp to fix partial.')
 
-        full_timestamp = self.last_full_timestamp[src_faddr]
+        full_timestamp = self.last_full_timestamp[faddr]
         base32 = (full_timestamp >> self.LOST_TIME_BITS) & 0xffffffff
 
         # If the time is less than the base, it means we've wrapped.
@@ -487,11 +227,7 @@ class TraceFileParser(object):
 
         # Sort the events by timestamp
         events.sort(key=lambda et: et.timestamp)
-
-        all_events = [evt.get_values(self.wu_list) for evt in events]
-        # for e in all_events:
-        #     print e['timestamp'], e['faddr'], e['verb'], e['noun']
-        return all_events
+        return events
 
 class WuListExtractor(object):
     """ Extracts WU lists from a FunOS binary.
@@ -576,7 +312,6 @@ class TraceLogParser(object):
         ('WU', 'END'): {'faddr'},
         ('WU', 'SEND'): {'faddr', 'wuid', 'name', 'arg0', 'arg1', 'dest',
                          'flags'},
-        ('TIMER', 'TRIGGER'): {'faddr', 'timer', 'arg0'},
         ('TIMER', 'START'): {'faddr', 'timer', 'wuid', 'name', 'dest', 'arg0'},
         ('TRANSACTION', 'START'): {'faddr'},
         ('TRANSACTION', 'ANNOT'): {'faddr'},
@@ -585,6 +320,11 @@ class TraceLogParser(object):
 
     def __init__(self):
         self.wu_list = []
+
+    def wu_name(self, wu_id):
+        """Returns name of WU associated with the wuid."""
+        # TODO(bowdidge): be more forgiving of unknown WUs.
+        return self.wu_list[wu_id]
 
     def parse_line(self, line, filename='unknown', line_number=0):
         """Turns an log line for a trace event into a keyword dictionary.
@@ -701,45 +441,48 @@ class TraceLogParser(object):
         return (values, None)
 
     def create_start_event(self, keywords):
-        return WuStartEvent(keywords['timestamp'],
-                            keywords['faddr'],
-                            keywords['arg0'],
-                            keywords['arg1'],
-                            keywords['wuid'],
-                            keywords['origin'])
+        wuid = keywords['wuid'] & 0xffff
+        return event.WuStartEvent(keywords['timestamp'],
+                                  keywords['faddr'],
+                                  keywords['arg0'],
+                                  keywords['arg1'],
+                                  wuid,
+                                  self.wu_name(wuid),
+                                  keywords['origin'])
 
     def create_send_event(self, keywords):
-        return WuSendEvent(keywords['timestamp'],
-                           keywords['faddr'],
-                           keywords['arg0'],
-                           keywords['arg1'],
-                           keywords['wuid'],
-                           keywords['dest'],
-                           keywords['flags'])
+        wuid = keywords['wuid'] & 0xffff
+        return event.WuSendEvent(keywords['timestamp'],
+                                 keywords['faddr'],
+                                 keywords['arg0'],
+                                 keywords['arg1'],
+                                 wuid,
+                                 self.wu_name(wuid),
+                                 keywords['dest'],
+                                 keywords['flags'])
 
     def create_end_event(self, keywords):
-        return WuEndEvent(keywords['timestamp'], keywords['faddr'])
+        return event.WuEndEvent(keywords['timestamp'], keywords['faddr'])
 
 
     def create_annotate_event(self, keywords):
-        return TransactionAnnotateEvent(keywords['timestamp'],
-                                        keywords['faddr'],
-                                        keywords['msg'])
+        return event.TransactionAnnotateEvent(keywords['timestamp'],
+                                              keywords['faddr'],
+                                              keywords['msg'])
 
     def create_transaction_start_event(self, keywords):
-        return TransactionStartEvent(keywords['timestamp'],
-                                     keywords['faddr'])
+        return event.TransactionStartEvent(keywords['timestamp'],
+                                           keywords['faddr'])
 
     def create_timer_start_event(self, keywords):
-        return TimerStartEvent(keywords['timestamp'],
-                               keywords['faddr'],
-                               keywords['timer'],
-                               keywords['wuid'],
-                               keywords['dest'],
-                               keywords['arg0'])
-
-    def create_timer_send_event(self, keywords):
-        raise ValueError('not handled')
+        wuid = keywords['wuid'] & 0xffff
+        return event.TimerStartEvent(keywords['timestamp'],
+                                     keywords['faddr'],
+                                     keywords['timer'],
+                                     wuid,
+                                     self.wu_name(wuid),
+                                     keywords['dest'],
+                                     keywords['arg0'])
 
     def create_time_sync_event(self, keywords):
         raise ValueError('not handled')
@@ -763,8 +506,6 @@ class TraceLogParser(object):
             return self.create_transaction_start_event(keywords)
         elif keywords['verb'] == 'TIMER' and keywords['noun'] == 'START':
             return self.create_timer_start_event(keywords)
-        elif keywords['verb'] == 'TIMER' and keywords['noun'] == 'TRIGGER':
-            return self.create_timer_trigger_event(keywords)
         elif keywords['verb'] == 'TIME' and keywords['noun'] == 'SYNC':
             return self.create_time_sync_event(keywords)
         elif keywords['verb'] == 'FLUSH' and keywords['noun'] == 'FLUSH':
@@ -803,5 +544,4 @@ class TraceLogParser(object):
                 events.append(event)
 
         events.sort(key=lambda et: et.timestamp)
-        all_events = [evt.get_values(self.wu_list) for evt in events]
-        return all_events
+        return events
