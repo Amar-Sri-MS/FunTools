@@ -44,6 +44,8 @@ class TraceFileParser(object):
         self.last_full_timestamp = {}
 
     def wu_name(self, wu_id):
+        """Returns the name of the wu associated with the WU id."""
+        # TODO(bowdidge): be more forgiving of unknown WUs.
         return self.wu_list[wu_id]
 
     def parse_header(self, hdr):
@@ -320,6 +322,8 @@ class TraceLogParser(object):
         self.wu_list = []
 
     def wu_name(self, wu_id):
+        """Returns name of WU associated with the wuid."""
+        # TODO(bowdidge): be more forgiving of unknown WUs.
         return self.wu_list[wu_id]
 
     def parse_line(self, line, filename='unknown', line_number=0):
