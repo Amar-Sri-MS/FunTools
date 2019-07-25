@@ -219,23 +219,43 @@ class TestProcessFile(unittest.TestCase):
         output_file = FakeFile()
         render.dump_transactions(output_file, transactions)
 
-        for l in output_file.lines:
-            print(l)
-            expected = ['00.000000 - 00.000000 (0 nsec): transaction "boot"\n',
-                        '+ 00.000000 - 00.000000 (0 nsec): boot\n',
-                        '00.000001 - 00.000003 (2.0 usec): transaction "foo"\n',
-                        '+ 00.000001 - 00.000003 (2.0 usec): foo\n',
-                        '+ 00.000002 - 00.000006 (4.0 usec): timer\n',
-                        '00.000006 - 00.000008 (2.0 usec): transaction "bar"\n',
-                        '+ 00.000006 - 00.000008 (2.0 usec): bar\n',
-                        '+ 00.000007 - 00.000011 (4.0 usec): timer\n',
-                        '00.000011 - 00.000013 (2.0 usec): transaction "baz"\n',
-                        '+ 00.000011 - 00.000013 (2.0 usec): baz\n',
-                        '+ 00.000012 - 00.000014 (2.0 usec): timer\n',
-                        '00.000014 - 00.000016 (2.0 usec): transaction "boof"\n',
-                        '+ 00.000014 - 00.000016 (2.0 usec): boof\n']
+        expected = ['00.000000 - 00.000000 (0 nsec): transaction "boot"\n',
+                    '+ 00.000000 - 00.000000 (0 nsec): boot\n',
+                    '00.000001 - 00.000003 (2.0 usec): transaction "foo"\n',
+                    '+ 00.000001 - 00.000003 (2.0 usec): foo\n',
+                    '+ 00.000002 - 00.000006 (4.0 usec): timer\n',
+                    '00.000006 - 00.000008 (2.0 usec): transaction "bar"\n',
+                    '+ 00.000006 - 00.000008 (2.0 usec): bar\n',
+                    '+ 00.000007 - 00.000011 (4.0 usec): timer\n',
+                    '00.000011 - 00.000013 (2.0 usec): transaction "baz"\n',
+                    '+ 00.000011 - 00.000013 (2.0 usec): baz\n',
+                    '+ 00.000012 - 00.000014 (2.0 usec): timer\n',
+                    '00.000014 - 00.000016 (2.0 usec): transaction "boof"\n',
+                    '+ 00.000014 - 00.000016 (2.0 usec): boof\n']
 
-            self.assertEqual(expected, output_file.lines)
+        self.assertEqual(expected, output_file.lines)
+
+    def testHighPriorityQueue(self):
+        """Test that a high priority WU SEND is connected to the correct VP."""
+        log = """
+0.000001000 TRACE WU START faddr FA0:8:0[VP] wuid 0 name foo arg0 0 arg1 0 origin FA0:8:0[VP]
+0.000002000 TRACE WU SEND faddr FA0:8:0[VP] dest FA0:8:1[VP] wuid 2 name bar arg0 2 arg1 3 flags 0
+0.000003000 TRACE WU END faddr FA0:8:0[VP]
+0.000004000 TRACE WU START faddr FA0:8:0[VP] wuid 2 name bar arg0 2 arg1 3 origin FA0:8:0[VP]
+0.000005000 TRACE WU END faddr FA0:8:0[VP]
+""".split('\n')
+        transactions = self.process_transactions(log)
+        output_file = FakeFile()
+        render.dump_transactions(output_file, transactions)
+        expected = [
+            '00.000000 - 00.000000 (0 nsec): transaction "boot"\n',
+            '+ 00.000000 - 00.000000 (0 nsec): boot\n',
+            '00.000001 - 00.000005 (4.0 usec): transaction "foo"\n',
+            '+ 00.000001 - 00.000003 (2.0 usec): foo\n',
+            '+ 00.000004 - 00.000005 (1.0 usec): bar\n']
+
+        self.assertEqual(expected, output_file.lines)
+
 
 class FakeFile:
     def __init__(self):

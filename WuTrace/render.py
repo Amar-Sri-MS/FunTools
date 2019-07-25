@@ -179,18 +179,25 @@ def render_html(transactions):
     template = env.get_template('report.html')
     return template.render(page_dict)
 
+class TransactionEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, event.FabricAddress):
+            return obj.as_faddr_str()
+        return json.JSONEncoder.default(self, obj)
+
 def render_json(transactions):
     page_dict = {
         'groups': get_groups(transactions),
         }
-    return json.dumps(page_dict)
+    return json.dumps(page_dict, cls=TransactionEncoder)
 
 
 def graphviz_safe_label(event):
     """Generates a label that will be parsed as a single item by GraphViz."""
     return event.label.replace('$', 'dollar')
 
-common_wus = ['timer', 'wuh_join', 'nop_wuh', 'wuh_resource_lock']
+common_wus = ['timer', 'wuh_join', 'nop_wuh', 'wuh_resource_lock',
+              'DMA', 'vol_submit_op_done', 'lsvtest_write']
 common_prefixes = ['ikv_']
 
 def is_common(label):

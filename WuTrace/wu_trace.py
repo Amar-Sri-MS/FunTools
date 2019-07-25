@@ -65,7 +65,6 @@ class TraceProcessor:
         # Map from timer id to the event setting the timer.
         self.timer_to_caller = {}
 
-
         # Map from timer id to the time the timer was set.
         # For setting start_time for event.
         self.timer_to_start_time = {}
@@ -76,7 +75,7 @@ class TraceProcessor:
         # String name of the file which is being read.
         self.input_filename = input_filename
 
-        boot_event =    event.TraceEvent(0, 0, 'boot', None, [])
+        boot_event = event.TraceEvent(0, 0, 'boot', None)
         self.boot_transaction = event.Transaction(boot_event)
         self.transactions = [self.boot_transaction]
 
@@ -94,6 +93,9 @@ class TraceProcessor:
         is_timer is true if the send is a timer send.
         flags is raw flag bits from FunOS, indicating gated WUs or sends to HW.
         """
+        # TODO(bowdidge): Explicitly keep track of high and low prio WUs.
+        # Clear queue so high and low priority queues have same dest.
+        dest.queue = 0
         if dest not in self.caller_queues:
             self.caller_queues[dest] = []
         self.caller_queues[dest].append((event, wu_id, arg0, arg1, send_time,
@@ -101,7 +103,6 @@ class TraceProcessor:
 
     def find_previous_send(self, wu_id, arg0, arg1, dest):
         """Returns the WU send that would have started a WU with the arguments.
-
         Returns predecessor event, time that the message was sent, and true if
         the send was a timer start and trigger.
         """
@@ -118,25 +119,22 @@ class TraceProcessor:
                 return (sender, send_time, is_timer, flags)
         return (None, 0, False, 0)
 
-    def handle_log_line(self, log_keywords, line_number):
+    def handle_log_line(self, next_event, line_number):
         """Reads in each logging event, and creates or updates log events."""
         global verbose
         if verbose:
-            sys.stderr.write('%d: %s\n' % (line_number, log_keywords))
-        event_type = (log_keywords['verb'], log_keywords['noun'])
+            sys.stderr.write('%d: %s\n' % (line_number, next_event))
 
-        if event_type == ('FLUSH', 'FLUSH'):
-            return
-        if event_type == ('TIME', 'SYNC'):
+        if next_event.event_type == event.TIME_SYNC_EVENT:
             # Handled during parsing.
             return
-        timestamp = log_keywords['timestamp']
+        timestamp = next_event.timestamp
 
-        vp = log_keywords['faddr']
-        if event_type == ('WU', 'START'):
-            arg0 = log_keywords['arg0']
-            arg1 = log_keywords['arg1']
-            wu_id = log_keywords['wuid'] & 0xffff
+        vp = next_event.faddr
+        if next_event.event_type == event.WU_START_EVENT:
+            arg0 = next_event.arg0
+            arg1 = next_event.arg1
+            wu_id = next_event.wuid
 
             if vp in self.vp_to_event:
                     # Function never saw end.
@@ -147,10 +145,8 @@ class TraceProcessor:
                             self.input_filename,
                             line_number))
             current_event = event.TraceEvent(timestamp, timestamp,
-                                             log_keywords['name'], vp,
-                                             log_keywords)
+                                             next_event.name, vp)
             self.vp_to_event[vp] = current_event
-
             (predecessor, send_time,
              is_timer, flags) = self.find_previous_send(wu_id, arg0,
                                                         arg1, vp)
@@ -159,8 +155,7 @@ class TraceProcessor:
                     hw_event = event.TraceEvent(send_time,
                                                 current_event.start_time,
                                                 'DMA',
-                                                predecessor.vp,
-                                                [])
+                                                predecessor.vp)
                     hw_event.is_timer = True
                     predecessor.successors.append(hw_event)
                     predecessor = hw_event
@@ -171,15 +166,14 @@ class TraceProcessor:
                     timer_event = event.TraceEvent(send_time,
                                                    current_event.start_time,
                                                    'timer',
-                                                   predecessor.vp,
-                                                   [])
+                                                   predecessor.vp)
                     timer_event.is_timer = True
                     predecessor.successors.append(timer_event)
                     predecessor = timer_event
 
                 predecessor.successors.append(current_event)
 
-            elif log_keywords['name'] == 'mp_notify':
+            elif next_event.name == 'mp_notify':
                 # Bootstrap process. Connect to fake event.
                 current_event.transaction = self.boot_transaction
                 self.boot_transaction.root_event.successors.append(
@@ -194,7 +188,7 @@ class TraceProcessor:
                 self.transactions.append(transaction)
                 current_event.transaction = transaction
 
-        elif event_type == ('WU', 'END'):
+        elif next_event.event_type == event.WU_END_EVENT:
             # Identify the matching start event, and set the end time.
             if vp not in self.vp_to_event:
                 sys.stderr.write('%s:%d: unexpected WU END.\n' % (
@@ -209,39 +203,37 @@ class TraceProcessor:
                 sys.stderr.write('Line %d: unexpected WU END.\n' % line_number)
                 return
             current_event.end_time = timestamp
-        elif event_type == ('WU', 'SEND'):
+        elif next_event.event_type == event.WU_SEND_EVENT:
             # Use arg0, the flow pointer, to match up the send with the WU
             # when it starts.
-            wu_id = log_keywords['wuid'] & 0xffff
-            arg0 = log_keywords['arg0']
-            arg1 = log_keywords['arg1']
-            flags = log_keywords['flags']
-            send_time = log_keywords['timestamp']
+            wuid = next_event.wuid
+            arg0 = next_event.arg0
+            arg1 = next_event.arg1
+            flags = next_event.flags
+            send_time = next_event.timestamp
 
             curr = None
             if vp in self.vp_to_event:
                 curr = self.vp_to_event[vp]
-                self.remember_send(curr, wu_id, arg0, arg1,
-                                   log_keywords['dest'],
+                self.remember_send(curr, wuid, arg0, arg1,
+                                   next_event.dest_faddr,
                                    send_time, False, flags)
 
-        elif event_type == ('HU', 'SQ_DBL'):
-            label = 'HU doorbell: sqid=%d' % log_keywords['sqid']
+        elif next_event.event_type == event.HU_SQ_DBL:
+            label = 'HU doorbell: sqid=%d' % next_event.sqid
             current_event = event.TraceEvent(
                 timestamp, timestamp,
-                'HU doorbell: sqid=%d' % log_keywords['sqid'],
-                vp,
-                log_keywords)
+                'HU doorbell: sqid=%d' % next_event.sqid, vp)
 
             transaction = event.Transaction(current_event)
             self.transactions.append(transaction)
             current_event.transaction = transaction
 
-        elif event_type == ('TIMER', 'START'):
-            wuid = log_keywords['wuid'] & 0xffff
-            timer = log_keywords['timer']
-            arg0 = log_keywords['arg0']
-            start_time = log_keywords['timestamp']
+        elif next_event.event_type == event.TIMER_START_EVENT:
+            wuid = next_event.wuid
+            timer = next_event.timer
+            arg0 = next_event.arg0
+            start_time = next_event.timestamp
             if vp not in self.vp_to_event:
                 sys.stderr.write('%s:%d: unknown vp in TIMER START\n' % (
                         self.input_filename, line_number))
@@ -253,10 +245,10 @@ class TraceProcessor:
                         self.input_filename, line_number))
 
             self.remember_send(current_event, wuid, arg0, 0,
-                               log_keywords['dest'],
+                               next_event.dest_faddr,
                                start_time, True, 0)
 
-        elif event_type == ('TRANSACTION', 'START'):
+        elif next_event.event_type == event.TRANSACTION_START_EVENT:
              if vp not in self.vp_to_event:
                  sys.stderr.write('%s:%d: '
                                   'TRANSACTION START not occurring during '
@@ -274,7 +266,7 @@ class TraceProcessor:
                  current_event.transaction = new_transaction
                  self.transactions.append(new_transaction)
 
-        elif event_type == ('TRANSACTION', 'ANNOT'):
+        elif next_event.event_type == event.TRANSACTION_ANNOT_EVENT:
              if vp not in self.vp_to_event:
                  sys.stderr.write('%s:%d: '
                                   'TRANSACTION ANNOT not occurring in running '
@@ -283,15 +275,13 @@ class TraceProcessor:
                  return
              current_event = self.vp_to_event[vp]
              annot_event = event.TraceEvent(timestamp, timestamp,
-                                            log_keywords['msg'],
-                                            vp, log_keywords)
+                                            next_event.msg, vp)
              annot_event.is_annotation = True
              current_event.successors.append(annot_event)
 
         else:
-            sys.stderr.write('%s:%d: Invalid verb/noun %s %s\n' % (
-                    self.input_filename, line_number, log_keywords['verb'],
-                    log_keywords['noun']))
+            sys.stderr.write('%s:%d: Invalid event type %d\n' % (
+                    self.input_filename, line_number, next_event.event_type))
             return
 
 
