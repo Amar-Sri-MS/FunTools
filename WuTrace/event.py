@@ -507,11 +507,10 @@ class TransactionAnnotateEvent(Event):
         self.msg = msg
 
     def __str__(self):
-        msg = self.msg.replace('\0', '')
         return '<TransactionAnnotateEvent timestamp %d faddr %s msg %s>' % (
             self.timestamp,
             self.faddr.as_faddr_str(),
-            msg)
+            self.msg)
 
 class TransactionStartEvent(Event):
     """Event indicating the current WU is start of a separate transaction.
