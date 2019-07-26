@@ -182,7 +182,7 @@ bool find_nvme_dpu_device(char *devname)
             while ((dir = readdir(d)) != NULL)
             {
                 if(strstr(dir->d_name, "nvme") != NULL) {
-                    snprintf(devname, sizeof(dir->d_name), "/dev/%s", dir->d_name);
+                    snprintf(devname, sizeof(dir->d_name) + 6, "/dev/%s", dir->d_name);
                     if(is_fungible_dpu(devname)) {
 			retVal = true;
 			break;
