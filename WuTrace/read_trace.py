@@ -24,6 +24,26 @@ LID_BASE = 8
 MAX_VPS = 4
 MAX_CORES = 6
 
+def clean_string(label_str):
+    """Cleans annotation strings of non-ascii characters."""
+    clean_label = ''
+    for c in label_str:
+        if ord(c) == 0:
+            continue
+        if ord(c) < 32 or ord(c) > 127:
+            c = '0x%x' % ord(c)
+        clean_label += c
+    return clean_label
+
+
+def clean_wu_name(wu_name):
+    # Remove mangled names from WU names.
+    bad_prefixes = ['__channel__', '__wu_handler__']
+    for prefix in bad_prefixes:
+        if wu_name.startswith(prefix):
+            return wu_name.replace(prefix, '')
+    return wu_name
+
 
 class TraceFileParser(object):
     """ Handles raw trace file input. """
@@ -46,7 +66,7 @@ class TraceFileParser(object):
     def wu_name(self, wu_id):
         """Returns the name of the wu associated with the WU id."""
         # TODO(bowdidge): be more forgiving of unknown WUs.
-        return self.wu_list[wu_id]
+        return clean_wu_name(self.wu_list[wu_id])
 
     def parse_header(self, hdr):
         """Gathers information common to all trace events.
@@ -136,6 +156,13 @@ class TraceFileParser(object):
         timestamp = self.full_timestamp(faddr, partial_timestamp)
         return event.WuEndEvent(timestamp, faddr)
 
+    def parse_annotate_event(self, hdr, addl_words):
+        (partial_timestamp, faddr, addl_count) = self.parse_header(hdr)
+        clean_msg = clean_string(addl_words)
+
+        timestamp = self.full_timestamp(faddr, partial_timestamp)
+        return event.TransactionAnnotateEvent(timestamp, faddr, clean_msg)
+
     def parse_time_sync_event(self, hdr, addl_words):
         """Parses a TIME SYNC event from the binary trace data.
 
@@ -153,7 +180,7 @@ class TraceFileParser(object):
         self.last_full_timestamp[faddr] = full_timestamp
 
         return event.TimeSyncEvent(partial_timestamp, faddr,
-                                   self.full_timestamp)
+                                   full_timestamp)
 
     def full_timestamp(self, faddr, partial_timestamp):
         """ Converts a partial timestamp to a full timestamp.
@@ -180,7 +207,7 @@ class TraceFileParser(object):
                      | (partial_timestamp << self.LOST_TIME_BITS))
         return timestamp
 
-    def parse(self, fh):
+    def parse(self, fh, output_file=None):
         """ Does the parsing of the raw trace file in binary format.
 
         fh is a file handle for reading the byte stream.
@@ -189,9 +216,13 @@ class TraceFileParser(object):
         next step in trace processing.
         """
         events = []
-
+        count = 0
+        wfh = None
+        if output_file:
+            wfh = open(output_file, 'w')
         while True:
             hdr = fh.read(HDR_LEN)
+            count += 1
 
             # EOF
             if not hdr:
@@ -209,24 +240,31 @@ class TraceFileParser(object):
                     # We have a problem: the file contents are too short
                     raise ValueError('Truncated file')
 
-            if evt_id == 1:
-                event = self.parse_start_event(hdr, content)
-            elif evt_id == 2:
-                event = self.parse_send_event(hdr, content)
-            elif evt_id == 3:
-                event = self.parse_end_event(hdr, content)
+            if evt_id == event.WU_START_EVENT:
+                new_event = self.parse_start_event(hdr, content)
+            elif evt_id == event.WU_SEND_EVENT:
+                new_event = self.parse_send_event(hdr, content)
+            elif evt_id == event.WU_END_EVENT:
+                new_event = self.parse_end_event(hdr, content)
+            elif evt_id == event.TRANSACTION_ANNOT_EVENT:
+                new_event = self.parse_annotate_event(hdr, content)
             # TODO(bowdidge): Handle timer events.
-            elif evt_id == 7:
+            elif evt_id == event.TIME_SYNC_EVENT:
                 # This is guaranteed to be seen before any partial
                 # timestamps from the same source.
-                event = self.parse_time_sync_event(hdr, content)
+                new_event = self.parse_time_sync_event(hdr, content)
+            elif evt_id == 0:
+                continue
             else:
-                print 'Skip %d' % evt_id
+                print 'Skip event %d for %d bytes' % (evt_id, evt_id)
                 # raise ValueError('Unhandled event id %d' % evt_id)
-            events.append(event)
-
+            if wfh:
+                wfh.write('%d %s\n' % (new_event.timestamp, new_event))
+            events.append(new_event)
         # Sort the events by timestamp
         events.sort(key=lambda et: et.timestamp)
+        if wfh:
+            wfh.close()
         return events
 
 class WuListExtractor(object):
@@ -466,9 +504,10 @@ class TraceLogParser(object):
 
 
     def create_annotate_event(self, keywords):
+        clean_msg = clean_string(keywords['msg'])
         return event.TransactionAnnotateEvent(keywords['timestamp'],
                                               keywords['faddr'],
-                                              keywords['msg'])
+                                              clean_msg)
 
     def create_transaction_start_event(self, keywords):
         return event.TransactionStartEvent(keywords['timestamp'],
