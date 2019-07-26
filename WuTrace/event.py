@@ -100,7 +100,7 @@ class FabricAddress(object):
         faddr.gid = (faddr_int >> 15) & 0x1f
         if faddr.gid >= GID_HU_BASE and faddr.gid <= GID_HU_MAX:
             faddr.lid = 0
-            faddr.queue = (fadddr_int >> 2) & 0x7ff
+            faddr.queue = (faddr_int >> 2) & 0x7ff
 
         elif faddr.gid >= GID_NU_BASE and faddr.gid <= GID_NU_MAX:
             faddr.lid = 0
