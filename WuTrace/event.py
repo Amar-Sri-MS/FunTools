@@ -457,6 +457,8 @@ class WuStartEvent(Event):
         # FabricAddress of unit scheduling WU.
         self.origin_faddr = origin_faddr
 
+    def __str__(self):
+        return '<WuStartEvent timestamp %d faddr %s arg0 0x%x arg1 0x%x wuid 0x%x name %s origin_faddr %s>' % (self.timestamp, self.faddr.as_faddr_str(), self.arg0, self.arg1, self.wuid, self.name, self.origin_faddr.as_faddr_str())
 
 class WuSendEvent(Event):
     """A WU SEND event"""
@@ -481,6 +483,8 @@ class WuSendEvent(Event):
         # bit 1 = Fake WU short-circuiting hardware request.
         self.flags = flags
 
+    def __str__(self):
+        return '<WuSendEvent timestamp %d faddr %s arg0 0x%x arg1 0x%x wuid 0x%x name %s dest %s flags %d>' % (self.timestamp, self.faddr.as_faddr_str(), self.arg0, self.arg1, self.wuid, self.name, self.dest_faddr.as_faddr_str(), self.flags)
 
 class WuEndEvent(Event):
     """A WU END event."""
@@ -488,6 +492,10 @@ class WuEndEvent(Event):
     def __init__(self, timestamp, faddr):
         super(WuEndEvent, self).__init__(timestamp, faddr)
         self.event_type = WU_END_EVENT
+
+    def __str__(self):
+        return '<WuEndEvent timestamp %d faddr %s>' % (self.timestamp,
+                                                      self.faddr.as_faddr_str())
 
 
 class TransactionAnnotateEvent(Event):
@@ -498,6 +506,11 @@ class TransactionAnnotateEvent(Event):
         self.event_type = TRANSACTION_ANNOT_EVENT
         self.msg = msg
 
+    def __str__(self):
+        return '<TransactionAnnotateEvent timestamp %d faddr %s msg %s>' % (
+            self.timestamp,
+            self.faddr.as_faddr_str(),
+            self.msg)
 
 class TransactionStartEvent(Event):
     """Event indicating the current WU is start of a separate transaction.
@@ -509,6 +522,10 @@ class TransactionStartEvent(Event):
         super(TransactionStartEvent, self).__init__(timestamp, faddr)
         self.event_type = TRANSACTION_START_EVENT
 
+    def __str__(self):
+        return '<TransactionStartEvent timestamp %d faddr %s>' % (
+            self.timestamp,
+            self.faddr.as_faddr_str())
 
 class TimerStartEvent(Event):
     """Event indicating the starting of a hardware timer to send a WU.
@@ -531,6 +548,12 @@ class TimerStartEvent(Event):
         # the timer id shifted.
         self.arg0 = arg0
 
+    def __str__(self):
+        return '<TimerStartEvent timestamp %d faddr %s timer 0x%x wuid 0x%x name %s dest_faddr %s arg0 0x%x>' % (
+            self.timestamp,
+            self.faddr.as_faddr_str(),
+            self.timer, self.wuid, self.name,
+            self.dest_faddr.as_faddr_str(), self.arg0)
 
 class TimeSyncEvent(Event):
     """ A TIME SYNC event.
@@ -544,4 +567,10 @@ class TimeSyncEvent(Event):
         super(TimeSyncEvent, self).__init__(timestamp, faddr)
         self.event_type = TIME_SYNC_EVENT
         # 64 bit timestamp that matches up with 32 bit timestamp in event.
-        self.fulltimestamp = full_timestamp
+        self.full_timestamp = full_timestamp
+
+    def __str__(self):
+        return '<TimeSyncEvent timestamp %d faddr %s fulltimestamp %d>' % (
+            self.timestamp,
+            self.faddr.as_faddr_str(),
+            self.full_timestamp)

@@ -144,6 +144,7 @@ class TraceProcessor:
                     sys.stderr.write('%s:%d: START before END.\n' % (
                             self.input_filename,
                             line_number))
+                    sys.stderr.write('  timestamp was %d\n' % next_event.timestamp)
             current_event = event.TraceEvent(timestamp, timestamp,
                                              next_event.name, vp)
             self.vp_to_event[vp] = current_event
@@ -194,6 +195,7 @@ class TraceProcessor:
                 sys.stderr.write('%s:%d: unexpected WU END.\n' % (
                         self.input_filename,
                         line_number))
+                sys.stderr.write('  timestamp was %d\n' % next_event.timestamp)
                 return
 
             current_event = self.vp_to_event[vp]
@@ -201,6 +203,7 @@ class TraceProcessor:
 
             if current_event is None:
                 sys.stderr.write('Line %d: unexpected WU END.\n' % line_number)
+                sys.stderr.write('  timestamp was %d\n' % next_event.timestamp)
                 return
             current_event.end_time = timestamp
         elif next_event.event_type == event.WU_SEND_EVENT:
@@ -303,6 +306,7 @@ def main(argv):
         '--format', type=str,
         help='output style: html (default), text, or graphviz.', default=None)
     arg_parser.add_argument('--output', nargs=1, help='file name to write to')
+    arg_parser.add_argument('--event-output', type=str, help='file name to write raw events to')
     arg_parser.add_argument('--verbose', action='store_const', const=True,
                             help='add debugging output')
     args = arg_parser.parse_args()
@@ -315,6 +319,11 @@ def main(argv):
 
     if args.verbose:
         verbose = True
+
+    # Write out individual trace events for debugging if requested.
+    raw_event_file = None
+    if args.event_output:
+        raw_event_file = args.event_output
 
     if args.format is not None:
         if args.format not in ['text', 'html', 'graphviz', 'json']:
@@ -342,7 +351,7 @@ def main(argv):
                     wu_list = f.readlines()
 
             file_parser = read_trace.TraceFileParser(wu_list)
-            events = file_parser.parse(fh)
+            events = file_parser.parse(fh, raw_event_file)
 
     trace_parser = TraceProcessor(input_filename)
     for idx, e in enumerate(events):
