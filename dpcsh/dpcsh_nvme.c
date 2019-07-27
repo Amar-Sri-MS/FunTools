@@ -170,7 +170,7 @@ struct fun_json* _read_from_nvme(struct dpcsock *sock)
 /* In macOS, always returns false */
 /* Check if DPU is visible as an NVMe Controller */
 /* Retrieve device name if found */
-bool find_nvme_dpu_device(char *devname)
+bool find_nvme_dpu_device(char *devname, size_t size)
 {
         bool retVal = false;
 #ifdef __linux__
@@ -182,7 +182,7 @@ bool find_nvme_dpu_device(char *devname)
             while ((dir = readdir(d)) != NULL)
             {
                 if(strstr(dir->d_name, "nvme") != NULL) {
-                    snprintf(devname, sizeof(dir->d_name) + 6, "/dev/%s", dir->d_name);
+                    snprintf(devname, size, "/dev/%s", dir->d_name);
                     if(is_fungible_dpu(devname)) {
 			retVal = true;
 			break;
