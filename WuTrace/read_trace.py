@@ -38,7 +38,7 @@ def clean_string(label_str):
 
 def clean_wu_name(wu_name):
     # Remove mangled names from WU names.
-    bad_prefixes = ['__channel__', '__wu_handler__']
+    bad_prefixes = ['__thread__', '__channel__', '__wu_handler__', '__thread____channel__']
     for prefix in bad_prefixes:
         if wu_name.startswith(prefix):
             return wu_name.replace(prefix, '')
@@ -66,6 +66,8 @@ class TraceFileParser(object):
     def wu_name(self, wu_id):
         """Returns the name of the wu associated with the WU id."""
         # TODO(bowdidge): be more forgiving of unknown WUs.
+        if wu_id >= len(self.wu_list):
+            return 'unknown_wu_0x%x' % wu_id
         return clean_wu_name(self.wu_list[wu_id])
 
     def parse_header(self, hdr):
@@ -99,7 +101,7 @@ class TraceFileParser(object):
         (partial_timestamp, faddr, addl_count) = self.parse_header(hdr)
 
         if addl_count != 3:
-            raise ValueError('Additional word count value')
+            raise ValueError('parse_start_event: expected addl_count == 3, but got %d' % addl_count)
         result = struct.unpack('>QQLL', addl_words)
         arg0 = result[0]
         arg1 = result[1]
@@ -109,7 +111,11 @@ class TraceFileParser(object):
         # Chop off high bits.
         wuid = wuid & 0xfffff
 
-        origin_faddr = event.FabricAddress.from_faddr(origin)
+        try:
+            origin_faddr = event.FabricAddress.from_faddr(origin)
+        except ValueError as e:
+            sys.stderr.write('Problems parsing start event: bad faddr: %s' % e)
+            return None
 
         timestamp = self.full_timestamp(faddr, partial_timestamp)
         return event.WuStartEvent(timestamp, faddr, arg0, arg1,
@@ -123,7 +129,7 @@ class TraceFileParser(object):
         (partial_timestamp, faddr, addl_count) = self.parse_header(hdr)
 
         if addl_count != 4:
-            raise ValueError('Additional word count value')
+            raise ValueError('parse_send_event: expected addl_count == 4, but got %d' % addl_count)
 
         # The final three short H values are padding
         result = struct.unpack('>QQLLHHHH', addl_words)
@@ -133,10 +139,11 @@ class TraceFileParser(object):
         dest = result[3]
         flags = result[4] & 0xffff
 
-        # Chop off high bits.
-        wuid = wuid & 0xfffff
-
-        dest_faddr = event.FabricAddress.from_faddr(dest)
+        try:
+            dest_faddr = event.FabricAddress.from_faddr(dest)
+        except ValueError as e:
+            sys.stderr.write('Problems parsing send event: bad faddr: %s' % e)
+            return None
 
         timestamp = self.full_timestamp(faddr, partial_timestamp)
         return event.WuSendEvent(timestamp, faddr, arg0, arg1, wuid,
@@ -151,10 +158,38 @@ class TraceFileParser(object):
         (partial_timestamp, faddr, addl_count) = self.parse_header(hdr)
 
         if addl_count != 0:
-            raise ValueError('Additional word count value')
+            raise ValueError('parse_end_event: expected addl_count == 0, but got %d' % addl_count)
 
         timestamp = self.full_timestamp(faddr, partial_timestamp)
         return event.WuEndEvent(timestamp, faddr)
+
+    def parse_timer_start_event(self, hdr, addl_words):
+        """Parses a TIMER START event from the binary trace data.
+
+        Returns a TimerStartEventt for the described event, or None in case of error.
+        """
+        (partial_timestamp, faddr, addl_count) = self.parse_header(hdr)
+
+        if addl_count != 3:
+            raise ValueError('parse_timer_start_event: expected addl_count == 3, but got %d' % addl_count)
+
+        # Last uint32_t is padding.
+        result = struct.unpack('>LLQLL', addl_words)
+
+        timer_id = result[0]
+        wuid = result[1] & 0xffff
+        wu_name = self.wu_name(wuid)
+        arg0 = result[2]
+        dest = result[3]
+
+        try:
+            dest_faddr = event.FabricAddress.from_faddr(dest)
+        except ValueError as e:
+            sys.stderr.write('Problems parsing timer start event: bad faddr: %s' % e)
+            return None
+
+        timestamp = self.full_timestamp(faddr, partial_timestamp)
+        return event.TimerStartEvent(timestamp, faddr, timer_id, wuid, wu_name, dest_faddr, arg0)
 
     def parse_annotate_event(self, hdr, addl_words):
         (partial_timestamp, faddr, addl_count) = self.parse_header(hdr)
@@ -217,12 +252,14 @@ class TraceFileParser(object):
         """
         events = []
         count = 0
+        offset = 0
         wfh = None
         if output_file:
             wfh = open(output_file, 'w')
         while True:
             hdr = fh.read(HDR_LEN)
             count += 1
+            offset += HDR_LEN
 
             # EOF
             if not hdr:
@@ -231,11 +268,12 @@ class TraceFileParser(object):
             hdr_words = struct.unpack(HDR_DEF, hdr)
             evt_id = (hdr_words[1] >> 26) & 0x3f
             addl_count = (hdr_words[1] & 0xf000) >> 12
-
+            partial_timestamp = hdr_words[0]
             # Read the additional words
             content = None
             if addl_count > 0:
                 content = fh.read(addl_count * 8)
+                offset += addl_count * 8
                 if not content:
                     # We have a problem: the file contents are too short
                     raise ValueError('Truncated file')
@@ -246,6 +284,8 @@ class TraceFileParser(object):
                 new_event = self.parse_send_event(hdr, content)
             elif evt_id == event.WU_END_EVENT:
                 new_event = self.parse_end_event(hdr, content)
+            elif evt_id == event.TIMER_START_EVENT:
+                new_event = self.parse_timer_start_event(hdr, content)
             elif evt_id == event.TRANSACTION_ANNOT_EVENT:
                 new_event = self.parse_annotate_event(hdr, content)
             # TODO(bowdidge): Handle timer events.
@@ -258,8 +298,13 @@ class TraceFileParser(object):
             else:
                 print 'Skip event %d for %d bytes' % (evt_id, evt_id)
                 # raise ValueError('Unhandled event id %d' % evt_id)
+
+            if not new_event:
+                # Parse error.
+                continue
+
             if wfh:
-                wfh.write('%d %s\n' % (new_event.timestamp, new_event))
+                wfh.write('%d time 0x%08x offset 0x%08x %s\n' % (new_event.timestamp, partial_timestamp, offset, new_event))
             events.append(new_event)
         # Sort the events by timestamp
         events.sort(key=lambda et: et.timestamp)

@@ -30,6 +30,8 @@ GID_HU_MAX = 19
 GID_NU_BASE = 9
 GID_NU_MAX = 11
 
+GID_UNKNOWN = 31
+
 # First LID for VPs in the cluster.  Two LIDs exist
 LID_VP_BASE = 8
 
@@ -64,6 +66,9 @@ class FabricAddress(object):
 
     def __eq__(self, other):
         """Returns true if self and other are the same fabric address."""
+        if other is None:
+            return False
+
         return (self.gid == other.gid and self.lid == other.lid and
                 self.queue == other.queue)
 
@@ -92,7 +97,7 @@ class FabricAddress(object):
         """
         if faddr_int & 0xfff00000 != 0:
             # fabric address only uses 20 bits.
-            raise ValueError('FabricAddress out of range: 0x%06x' % faddr_int)
+            raise ValueError('FabricAddress out of range: 0x%06x, expected less than 0xfffff' % faddr_int)
 
         faddr = FabricAddress()
         faddr.raw_value = faddr_int
@@ -110,9 +115,13 @@ class FabricAddress(object):
             faddr.lid = (faddr_int >> 10) & 0x1f
             faddr.queue = (faddr_int >> 2) & 0xff
 
+        elif faddr.gid == GID_UNKNOWN:
+            # Might as well give some details.
+            faddr_lid = 0
+            faddr.queue = (faddr_int >> 1) & 0x3fff
         else:
             # Unknown block.
-            return None
+            raise ValueError('FabricAddress out of range: 0x%06x, no such gid %d\n' % (faddr_int, faddr.gid))
 
         return faddr
 
@@ -204,7 +213,9 @@ class FabricAddress(object):
             if self.lid < LID_VP_BASE:
                 return pc_lid_table[self.lid]
             return 'VP'
-        raise 'Unknown block for faddr %d' % self.raw_value
+        if self.gid == 31:
+            return 'UNKNOWN'
+        raise ValueError('Unknown block for faddr %d' % self.raw_value)
 
     def __str__(self):
         """Returns a human-readable string for fabric address.
