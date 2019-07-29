@@ -66,7 +66,7 @@ class FabricAddress(object):
 
     def __eq__(self, other):
         """Returns true if self and other are the same fabric address."""
-        if not other:
+        if other is None:
             return False
 
         return (self.gid == other.gid and self.lid == other.lid and
