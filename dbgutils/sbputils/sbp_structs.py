@@ -62,3 +62,67 @@ class otp(Packet):
 		XStrLenField("binningInfo", '\x00', 16),
 		XStrLenField("chipInfo", '\x00', 16),
     ]
+
+class inputU32(Packet):
+    fields_desc = [
+        CIntField("input", 0xdeadface),
+    ]
+    def extract_padding(self, p):
+        return "", p
+
+msgStatusCodeEnum = {
+    0 : 'Okay',
+    1 : 'Invalid command',
+    2 : 'Authorization error',
+    3 : 'Invalid signature (if command is signature verification)',
+    4 : 'Bus error (if DMA is used)',
+    5 : 'Reserved',
+    6 : 'Crypto error',
+    7 : 'Invalid parameter',
+}
+
+class HEADER(Packet):
+    fields_desc = [
+        CShortField("MsgSize", 0x0),
+        CBitEnumField("MsgStatus", 1, 4, msgStatusCodeEnum),
+        RsvBitField("reserved", 0x0, 1),
+        CBitEnumField("protected", 1, 1, {0: 'reserved', 1: 'ProtectionIgnored'} ),
+        RsvBitField("reserved", 0x0, 10),
+    ]
+    def extract_padding(self, p):
+        return "", p
+
+commandEnum = {
+    0x54000000 : 'Test commands',
+    0xFC000000 : 'Flash/FlashEraseSection',
+    0xFC010000 : 'Flash/FlashProgram',
+    0xFC020000 : 'Flash/FlashRead',
+
+    0xFD000000 : 'Maintenance/GetChallenge',
+    0xFD010000 : 'Maintenance/DebugAccess/CM',
+    0xFD010001 : 'Maintenance/DebugAccess/SM',
+
+    0xFD020001 : 'Maintenance/DisableTamper/SM',
+
+    0xFE000000 : 'Diagnostic/ReadSerialNumber',
+    0xFE010000 : 'Diagnostic/GetStatus',
+    0xFE020000 : 'Diagnostic/ReadPubKeyBoot/CM',
+    0xFE020001 : 'Diagnostic/ReadPubKeyBoot/SM',
+    0xFE030000 : 'Diagnostic/SetUpgradeFlag/CM',
+    0xFE030001 : 'Diagnostic/SetUpgradeFlag/SM',
+
+    0xFF000000 : 'Initialization/InitOTP/CM',
+    0xFF000001 : 'Initialization/InitOTP/SM',
+    0xFF010000 : 'Initialization/CreateEKPair/CM',
+    0xFF020001 : 'Initialization/CreateSRK/SM',
+    0xFF030000 : 'Initialization/EnrollPUF/CM',
+    0xFF040000 : 'Initialization/ReadPubEK',
+}
+
+class COMMAND(Packet):
+    fields_desc = [
+        CIntEnumField('command', 0x0, commandEnum),
+    ]
+    def extract_padding(self, p):
+        return "", p
+
