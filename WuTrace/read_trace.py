@@ -29,7 +29,7 @@ def clean_string(label_str):
     clean_label = ''
     for c in label_str:
         if ord(c) == 0:
-            continue
+            break
         if ord(c) < 32 or ord(c) > 127:
             c = '0x%x' % ord(c)
         clean_label += c
