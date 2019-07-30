@@ -38,7 +38,7 @@ def clean_string(label_str):
 
 def clean_wu_name(wu_name):
     # Remove mangled names from WU names.
-    bad_prefixes = ['__thread___channel__',
+    bad_prefixes = ['__thread____channel__',
                     '__thread__', '__channel__', '__wu_handler__']
     for prefix in bad_prefixes:
         if wu_name.startswith(prefix):
