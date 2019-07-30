@@ -39,10 +39,10 @@ def csr_probe(dev_type, ip_addr):
         return (False, status)
     #status = tckrate(10000000)
     #logger.info('Set tackrate to 10 MHz! status: {0}'.format(status))
-    #status = tckrate(250000)
-    #logger.info('pufr - Set tckrate to 250 KHz! status: {0}'.format(status))
-    status = tckrate(5000)
-    logger.info('rom - Set tckrate to 5 KHz! status: {0}'.format(status))
+    status = tckrate(250000)
+    logger.info('pufr - Set tckrate to 250 KHz! status: {0}'.format(status))
+    #status = tckrate(5000)
+    #logger.info('rom - Set tckrate to 5 KHz! status: {0}'.format(status))
 
     logger.info('Connected to Codescape Jtag probe!\n{0}'.format(status))
     status = _ir_shiftin(constants.CSR_RING_TAP_SELECT_WIDTH,
@@ -229,6 +229,57 @@ def csr_peek_poke_test():
     print("{}".format([hex(x) for x in word_array] if word_array else None))
     word_array = csr_peek(0x4883160000, 6)
     print("{}".format([hex(x) for x in word_array] if word_array else None))
+
+###########   JTAG    ##################################################################
+
+def jtag_probe(name, ip, in_rom=None):
+    try:
+        probe(name, ip)
+        JTAG_TCKRATE = 5000 if in_rom else 250000
+        logger.info("\nconnecting to JTAG probe with TCKRATE(%s)..." % JTAG_TCKRATE)
+        tckrate(JTAG_TCKRATE)
+        scanonly()
+    except Exception as e:
+        logger.error('Error connecting to probe: %s' % e)
+        raise StandardError("Error connecting to probe")
+
+def mdh_read_old(byte_address):
+    tapscan("5 %d" % IR_DEVICEADDR, "32 %d" % (byte_address & 0xf80) )
+    tapscan("5 %d" % IR_APBACCESS, "39 %d" % ((byte_address & 0x7c) | 0x3) )
+    result = tapd("39 %d" % ((byte_address & 0x7c) | 0x2) )
+    if (result[0] & 0x3) == 0x3:
+        return result[0] >> 7
+    raise RuntimeError("APB read failed try a lower TCK clock")
+
+def mdh_write_old(byte_address, word):
+    tapscan("5 %d" % IR_DEVICEADDR, "32 %d" % (byte_address & 0xf80) )
+    result = tapscan("5 %d" % IR_APBACCESS, "39 %d" % (word << 7|(byte_address & 0x7c)|0x1))
+
+    if (result[0] & 0x3) == 0x3:
+        return
+    raise RuntimeError("APB read failed try a lower TCK clock")
+
+mdh_read_ = mdh_read_old
+mdh_write_ = mdh_write_old
+
+def esecure_read():
+    """ internal only """
+    mdh_write_(CONTROL,RD_REQ)
+    timeout = 0
+    while (mdh_read_(CONTROL) & RD_REQ) == 0: #wait for RD_REQ=1
+        timeout+=1
+        if timeout == TIMEOUT:
+            raise RuntimeError("esecure_read: timeout waiting for RD_REQUEST to go high")
+    data = mdh_read_(RDATA)
+    mdh_write_(CONTROL,RD_ACK)
+    timeout = 0
+    while (mdh_read_(CONTROL) & RD_REQ) != 0: #wait for RD_REQ=0
+        timeout+=1
+        if timeout == TIMEOUT:
+            raise RuntimeError("esecure_read: timeout waiting for RD_REQUEST to go low")
+    mdh_write_(CONTROL,0)
+    return data
+
 
 if __name__== "__main__":
     csr_peek_poke_test()
