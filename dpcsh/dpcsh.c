@@ -1436,7 +1436,8 @@ int main(int argc, char *argv[])
 	char nvme_device_name[64];
 	bool nvme_dpu_present = false;
 	/* In macOS, always returns false */
-	nvme_dpu_present = find_nvme_dpu_device(nvme_device_name);
+	nvme_dpu_present = find_nvme_dpu_device(nvme_device_name,
+						sizeof(nvme_device_name));
 	memset(&funos_sock, 0, sizeof(funos_sock));
 	/* In Linux, use NVMe as default if present */
 	if (nvme_dpu_present)

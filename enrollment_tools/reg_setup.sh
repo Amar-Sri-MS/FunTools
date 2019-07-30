@@ -1,4 +1,4 @@
-sudo apt-get install emacs mate-terminal python3-pip apache2 postgresql softhsm2
+sudo apt-get install python3-pip apache2 postgresql softhsm2
 sudo pip3 install cryptography psycopg2-binary python-pkcs11
 
 #OpenSSL latest:
@@ -27,9 +27,9 @@ sudo -- sh -c "echo <so_pin> >> /etc/hsm_password"
 sudo chown www-data /etc/hsm_password
 sudo chmod og-r /etc/hsm_password
 
-# create the key fpk4: use pin password
-sudo -u www-data python3 enrollment_hsm.py create -k fpk4 --token fungible_token
-
+# import the key fpk4 by destroying the tokens directory and replace it with the one checked in
+sudo rm -rf /var/lib/softhsm/tokens
+sudo -u  www-data tar xzvf tokens_fpk4.tgz -C /var/lib/softhsm
 
 # **optional for signing server**: import the development keys
 sudo -u www-data python3 enrollment_hsm.py import -k fpk2 -i development_fpk2.pem --token fungible_token

@@ -32,6 +32,10 @@ SRC += jsonutil.c
 jsonutil: jsonutil.c
 	$(CC) -o jsonutil $(SRC) $(CFLAGS) $(LDFLAGS)
 
+json-fuzz: fuzz/funjson.c
+	$(CC) -o json-fuzz $(CFLAGS) $(LDFLAGS) -fsanitize=fuzzer $^
+	$(CC) -o json-fuzz-bin -DBINARY_FUZZ $(CFLAGS) $(LDFLAGS) -fsanitize=fuzzer $^
+
 ifeq ($(OS),Darwin)
 # FF: since the path and the compatibility of the ASAN library keeps changing,
 # find the copy used to build the jsonutil and copy it into the same directory
@@ -54,4 +58,4 @@ install: jsonutil
 	$(DARWIN_ASAN_FIXUP)
 
 clean:
-	rm -f jsonutil
+	-rm -f jsonutil json-fuzz json-fuzz-bin
