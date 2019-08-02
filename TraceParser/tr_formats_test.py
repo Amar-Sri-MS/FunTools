@@ -51,6 +51,21 @@ class TestTF3(unittest.TestCase):
              'va[26]=         0x0000093      mmid=0000 pom=k10 isam=1 sync=0 ibt=1 vid=0')
         self.tf.init_from_msg(m)
 
+    def test_can_parse_tla_type(self):
+        m = ('   426.246: 74 000000A8 000003B8 1180DA00  TF3 ic[0]=ni  tt=tla te=1 tm=1      '
+             'va[56]=0xA800000003B81180')
+        self.tf.init_from_msg(m)
+        self.assertEqual('ni', self.tf.inscomp, 'inscomp value')
+        self.assertEqual('tla', self.tf.ttype, 'ttype value')
+        self.assertEqual(0xA800000003B81180, self.tf.addr, 'addr value')
+
+    def test_can_parse_tpc_type(self):
+        m = ('    68.149: 74 000000A8 00000045 A390D900  TF3 ic[0]=ni  tt=tpc te=1 tm=1      '
+             'va[56]=0xA80000000045A390      abs=0xA80000000045A390')
+        self.tf.init_from_msg(m)
+        self.assertEqual('tpc', self.tf.ttype, 'ttype value')
+        self.assertEqual(0xA80000000045A390, self.tf.addr, 'addr value')
+
     def test_raises_exception_for_unparseable_message(self):
         """
         Ensure explosion if message is unexpected: this lets us improve the

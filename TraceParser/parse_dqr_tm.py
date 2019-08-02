@@ -13,7 +13,9 @@
 
 import argparse
 import os
+import platform
 import re
+import subprocess
 
 import tr_formats
 
@@ -370,6 +372,48 @@ class PerfSample:
         return vals
 
 
+class CacheMissParser(object):
+
+    def __init__(self):
+        self.pc_miss_list = []
+
+    def parse_trace_messages(self, fh):
+        frames = parse_and_group_trace_formats(fh)
+        for frame in frames:
+            for tf in frame.tfs:
+                if tf.tf_type == 3 and tf.ttype == 'tpc':
+                    self.pc_miss_list.append(tf.addr)
+
+    def get_source_lines_of_misses(self, funos_binary_path):
+        return self._run_addr2line(self.pc_miss_list, funos_binary_path)
+
+    @staticmethod
+    def _run_addr2line(addrs, funos_binary_path):
+        current_os = platform.system()
+        if current_os == 'Darwin':
+            addr2line_tool = ('/Users/Shared/cross/mips64/binutils-2.31/bin/'
+                              'mips64-unknown-linux-addr2line')
+        else:
+            addr2line_tool = ('/opt/cross/mips64/bin/'
+                              'mips64-unknown-elf-addr2line')
+
+        cmd_array = [addr2line_tool,
+                     '-e',
+                     funos_binary_path,
+                     '-a',
+                     '-p',
+                     '-f']
+
+        cmd_array.extend(['%016x' % a for a in addrs])
+        try:
+            output = subprocess.check_output(cmd_array)
+        except subprocess.CalledProcessError as e:
+            print 'Failed to run addr2line: code %d msg %s' % (e.returncode,
+                                                               e.message)
+            return None
+        return output
+
+
 class PDTParser:
     """
     TODO: implement PC tracing here
@@ -396,6 +440,9 @@ class Frame:
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('input_file', type=str, help='path to input file')
+    parser.add_argument('--parse-mode', type=str, help='type of parser to run',
+                        default='perf',
+                        choices=['perf', 'cache_miss'])
     parser.add_argument('--cluster', type=int, help='cluster id',
                         required=True)
     parser.add_argument('--core', type=int, help='core id',
@@ -403,18 +450,24 @@ def main():
     parser.add_argument('--output-dir', type=str,
                         help='path to output directory',
                         default='testoutput')
+    parser.add_argument('--binary', type=str, help='path to FunOS binary')
     args = parser.parse_args()
 
+    if args.parse_mode == 'perf':
+        run_perf_parser(args)
+    elif args.parse_mode == 'cache_miss':
+        run_cache_miss_parser(args)
+
+
+def run_perf_parser(args):
     trace_parser = PerfParser(args.cluster, args.core)
     perfmon_samples = None
     with open(args.input_file, 'r') as fh:
         trace_parser.parse_trace_messages(fh)
         perfmon_samples = trace_parser.get_perfmon_samples()
-
     if not perfmon_samples:
         print 'No samples'
         return
-
     out_file = 'put_%s_%s_perfmon.txt' % (str(args.cluster),
                                           str(args.core))
     out_path = os.path.join(args.output_dir, out_file)
@@ -422,6 +475,22 @@ def main():
         for sample in perfmon_samples:
             fh.write('\n'.join(sample))
             fh.write('\n')
+
+
+def run_cache_miss_parser(args):
+    if args.binary is None:
+        print 'Must specify --binary option when using the cache miss parser'
+        return
+
+    parser = CacheMissParser()
+    with open(args.input_file, 'r') as fh:
+        parser.parse_trace_messages(fh)
+
+    lines = parser.get_source_lines_of_misses(args.binary)
+    out_filename = 'cache_miss_%d_%d.txt' % (args.cluster, args.core)
+    out_file = os.path.join(args.output_dir, out_filename)
+    with open(out_file, 'w') as fh:
+        fh.write(lines)
 
 
 FRAME_AND_TF_PATTERN = re.compile(r'^\s*([\d]+)\.([\d]+):.*TF(\d)')
