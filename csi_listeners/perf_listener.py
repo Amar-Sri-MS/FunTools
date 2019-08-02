@@ -64,6 +64,12 @@ from listener_lib import RdsockServer
 # Time in seconds for select and polling intervals
 TIMEOUT_INTERVAL = 5.0
 
+# Time in seconds for a connected client to remain quiet before we assume it has
+# failed.
+# TODO (jimmy): consider passing as arbitrary key-value arguments to the server,
+#               which will then pass those arguments to the handler
+catastrophic_timeout = 100
+
 # Shutdown event, used to end threads gracefully
 shutdown_threads = threading.Event()
 
@@ -214,6 +220,7 @@ class RdsockHandler:
         """
         Reads from a socket, writes to a shared buffer.
         """
+        global catastrophic_timeout
         total_timeout = 0
         try:
             while not shutdown_threads.is_set():
@@ -235,7 +242,7 @@ class RdsockHandler:
                     # assumed if the client is silent for too long. We choose
                     # the latter here because it is easier.
                     total_timeout += TIMEOUT_INTERVAL
-                    if total_timeout > 20 * TIMEOUT_INTERVAL:
+                    if total_timeout > catastrophic_timeout:
                         log('Failed to recv for %f seconds. '
                             'Assuming catastrophic '
                             'failure of client' % total_timeout)
@@ -399,6 +406,11 @@ def main():
     parser.add_argument('--http-port', type=int,
                         help='Port to listen on for HTTP requests',
                         default=52333)
+    parser.add_argument('--idle-timeout', type=int,
+                        help='Time in seconds that an already-connected perf '
+                             'socket can be silent before we assume it has'
+                             'dropped the connection',
+                        default=100)
 
     # If we're running on a standard fun-on-demand setup then the FPG
     # setup process is handled by the startup scripts.
@@ -410,6 +422,9 @@ def main():
     logging.basicConfig(filename='perf_listener_tcp_%d.log' % args.http_port,
                         level=logging.INFO,
                         format='%(asctime)s %(message)s')
+
+    global catastrophic_timeout
+    catastrophic_timeout = args.idle_timeout
 
     # The source directory where all the trace logs are written to.
     trace_dir = '.'
