@@ -27,8 +27,14 @@ def funos_dasm_path(wdir):
     if not os.path.isfile(objdump):
       print 'objdump does not exist'
       sys.exit(-1)
-
-    cmd = '%s -z -d "%s" > "%s"' % (objdump, funos, funos_dasm)
+    #
+    # These options match the -d option that was provided, only that
+    # -D deals better with debug symbols in the dispatch loop
+    #
+    cmd = ('%s -z -D '
+           '-j .text_ram '
+           '-j .text_init '
+           '-j .sandbox "%s" > "%s"' % (objdump, funos, funos_dasm))
     subprocess.check_output(cmd, shell=True)
   return funos_dasm
 

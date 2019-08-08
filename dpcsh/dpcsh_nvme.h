@@ -33,4 +33,4 @@ struct nvme_vs_api_hdr {
 
 extern bool _write_to_nvme(struct fun_json *json, struct dpcsock *sock);
 extern struct fun_json* _read_from_nvme(struct dpcsock *sock);
-extern bool find_nvme_dpu_device(char *devname);
+extern bool find_nvme_dpu_device(char *devname, size_t namelen);

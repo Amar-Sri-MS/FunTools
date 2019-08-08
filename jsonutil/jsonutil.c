@@ -13,18 +13,21 @@
 #define PLATFORM_POSIX 1
 #include <FunSDK/utils/threaded/fun_json.h>
 
-// We have some json files that are multi-megabytes
-#define MAX_JSON (100*1024*1024)
-
 static char *_read_input_file(int fd, size_t *outsize)
 {
-	char *buffer = malloc(MAX_JSON);
-	char *pp = buffer;
+	char *buffer;
+	char *pp;
 	int r;
 	ssize_t n;
-	size_t size = 0;
+	size_t file_size, size = 0;
+
+	lseek(fd, 0L, SEEK_END);
+	file_size = lseek(fd, 0L, SEEK_CUR);
+	lseek(fd, 0L, SEEK_SET);
+	buffer = malloc(file_size);
+	pp = buffer;
 	
-	while ((n = read(fd, pp, MAX_JSON - (pp-buffer))) > 0) {
+	while ((n = read(fd, pp, file_size - (pp-buffer))) > 0) {
 		pp += n;
 		size += n;
 	}
@@ -62,11 +65,10 @@ static int _write_output_file(int fd, char *buf, ssize_t len)
 
 	return 0;
 }
-			    
 
 static struct fun_json *_read_json(int fd)
 {
-        struct fun_json *input = NULL;
+	struct fun_json *input = NULL;
 	char *buf;
 	size_t size = 0;
 	size_t line = 0;
@@ -77,12 +79,13 @@ static struct fun_json *_read_json(int fd)
 	
 	input = fun_json_create_from_text_with_length(buf, size, &line, &parsed);
 
+	free(buf);
 	return input;
 }
 
 static struct fun_json *_read_bjson(int fd)
 {
-        struct fun_json *input = NULL;
+	struct fun_json *input = NULL;
 	char *buf;
 	size_t size;
 
@@ -91,6 +94,7 @@ static struct fun_json *_read_bjson(int fd)
 	
 	input = fun_json_create_from_parsing_binary((uint8_t*)buf, size);
 
+	free(buf);
 	return input;
 }
 	
@@ -196,13 +200,6 @@ main(int argc, char *argv[])
 			printf("bad char?\n");
 			_usage(argv[0]);
 		}
-
-#if 0
-		if (optind < argc) {
-			printf("optind??\n");
-			_usage(argv[0]);
-		}
-#endif
 	}
 
 	if (infile == NULL)
@@ -234,7 +231,7 @@ main(int argc, char *argv[])
 
 
 	/* read in some json */
-        struct fun_json *input = NULL;
+	struct fun_json *input = NULL;
 	if (inmode == TEXT)
 		input = _read_json(infd);
 	else
