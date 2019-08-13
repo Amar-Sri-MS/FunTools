@@ -21,7 +21,10 @@
 
 /* DPC over NVMe will work only in Linux */
 #ifdef __linux__
-static bool _read_from_nvme_helper(struct dpcsock *sock, uint8_t *buffer, uint32_t *data_len, uint32_t *remaining, uint32_t offset, uint32_t timeout)
+static bool _read_from_nvme_helper(struct dpcsock *sock, uint8_t *buffer,
+				   uint32_t *data_len, uint32_t *remaining,
+				   uint32_t offset, uint32_t timeout,
+				   uint32_t sess_id, uint32_t seq_num)
 {
         bool retVal = false;
         memset(buffer, 0, NVME_ADMIN_CMD_DATA_LEN);
@@ -32,6 +35,8 @@ static bool _read_from_nvme_helper(struct dpcsock *sock, uint8_t *buffer, uint32
                 .data_len = NVME_ADMIN_CMD_DATA_LEN,
                 .cdw2 = NVME_DPC_CMD_HNDLR_SELECTION,
                 .cdw3 = offset,
+		.cdw10 = sess_id,
+		.cdw11 = seq_num,
 		.timeout_ms = timeout
         };
         int ret = ioctl(sock->fd, NVME_IOCTL_ADMIN_CMD, &cmd);
@@ -85,7 +90,8 @@ static bool is_fungible_dpu(char *devname)
 /* Execute vendor specific admin command for writing data to NVMe device */
 /* DPC over NVMe will work only in Linux */
 /* In macOS, always returns false */
-bool _write_to_nvme(struct fun_json *json, struct dpcsock *sock)
+bool _write_to_nvme(struct fun_json *json, struct dpcsock *sock,
+		    uint32_t sess_id, uint32_t seq_num)
 {
     bool ok = false;
 #ifdef __linux__
@@ -112,6 +118,8 @@ bool _write_to_nvme(struct fun_json *json, struct dpcsock *sock)
 				.data_len = NVME_ADMIN_CMD_DATA_LEN,
 				.cdw2 = NVME_DPC_CMD_HNDLR_SELECTION,
 				.cdw3 = pas.size,
+				.cdw10 = sess_id,
+				.cdw11 = seq_num,
 				.timeout_ms = sock->cmd_timeout
 			};
 			int ret = ioctl(sock->fd, NVME_IOCTL_ADMIN_CMD, &cmd);
@@ -138,7 +146,8 @@ bool _write_to_nvme(struct fun_json *json, struct dpcsock *sock)
 /* Execute vendor specific admin command for reading data from NVMe device */
 /* DPC over NVMe will work only in Linux */
 /* In macOS, always returns NULL */
-struct fun_json* _read_from_nvme(struct dpcsock *sock)
+struct fun_json* _read_from_nvme(struct dpcsock *sock, uint32_t sess_id,
+				 uint32_t seq_num)
 {
 	struct fun_json *json = NULL;
 #ifdef __linux__
@@ -151,7 +160,9 @@ struct fun_json* _read_from_nvme(struct dpcsock *sock)
 			bool readSuccess = false;
 
 			do {
-				readSuccess = _read_from_nvme_helper(sock, addr + offset, &data_len, &remaining, offset, sock->cmd_timeout);
+				readSuccess = _read_from_nvme_helper(sock,
+								     addr + offset,
+								     &data_len, &remaining, offset, sock->cmd_timeout, sess_id, seq_num);
 				offset += NVME_ADMIN_CMD_DATA_LEN;
 			} while(readSuccess && (remaining > 0));
 
