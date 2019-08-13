@@ -13,12 +13,13 @@ CUSTOM_HOST_FIRMWARE=
 CUSTOMER_CONFIG_JSON=
 CUSTOMER_OTP_ARGS=
 VARIANT=
+CHIP=
 EMULATION=0
 WORKSPACE=${WORKSPACE:-/build}
 
 print_usage_and_exit()
 {
-	echo "Usage: genimage.sh -v <variant> -s {unsecure|no,fungible|yes,customer} -f <firmware_for_host> -e <0/1>"
+	echo "Usage: genimage.sh -v <variant> -s {unsecure|no,fungible|yes,customer} -f <firmware_for_host> -e <0/1> -c <f1|s1>"
 	echo -n " <firmware_for_host> is path to the host software to be embedded in flash"
 	echo -e "\nExample: build.sh -v fungible_eeprom_zynq6 -s fungible -f u_boot.bin -e\n"
 	exit $1
@@ -56,13 +57,14 @@ validate_process_input()
 	fi
 }
 
-while getopts e:v:s:hf: arg;
+while getopts e:v:s:hf:c: arg;
 do
 	case $arg in
 	v)	VARIANT="$OPTARG";;
 	s)	BOOT_SIG_TYPE=`echo "$OPTARG" | tr '[:upper:]' '[:lower:]'`;;
 	f)	CUSTOM_HOST_FIRMWARE="$OPTARG";;
 	e)	EMULATION=$OPTARG;;
+	c)	CHIP=$OPTARG;;
 	h)	print_usage_and_exit 0;;
 	*)	print_usage_and_exit 1;;
 	esac
@@ -168,7 +170,7 @@ if [ $BOOT_SIG_TYPE == customer ]; then
 	CUSTOMER_OTP_ARGS="`pwd`/key_hash1.bin `pwd`/key_hash2.bin"
 fi
 
-$WORKSPACE/FunSDK/bin/flash_tools/generate_otp.sh $CUSTOMER_OTP_ARGS
+$WORKSPACE/FunSDK/bin/flash_tools/generate_otp.sh $CHIP $CUSTOMER_OTP_ARGS
 
 # Remove the MIF extension - these actually aren't in MIF format, and
 # Rajesh's scripts for running jobs in emulation will do the needed
