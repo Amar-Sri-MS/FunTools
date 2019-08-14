@@ -137,13 +137,18 @@ class DpcClient(object):
         # wait and dequeue until we find the one we want
         while (True):
             r = self.async_wait()
+            if (r is None):
+                return r
             if (tid is None or r['tid'] == tid):
                 return r
 
             self.__async_queue.append(r)
 
     def async_recv_wait(self, tid = None):
-        return self.async_recv_wait_raw(tid)['result']
+        r = self.async_recv_wait_raw(tid)
+        if (r is None):
+            return r
+        return r['result']
 
 
     # preferred interface

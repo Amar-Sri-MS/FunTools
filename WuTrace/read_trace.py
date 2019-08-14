@@ -29,7 +29,7 @@ def clean_string(label_str):
     clean_label = ''
     for c in label_str:
         if ord(c) == 0:
-            continue
+            break
         if ord(c) < 32 or ord(c) > 127:
             c = '0x%x' % ord(c)
         clean_label += c
@@ -38,7 +38,8 @@ def clean_string(label_str):
 
 def clean_wu_name(wu_name):
     # Remove mangled names from WU names.
-    bad_prefixes = ['__thread__', '__channel__', '__wu_handler__', '__thread____channel__']
+    bad_prefixes = ['__thread____channel__',
+                    '__thread__', '__channel__', '__wu_handler__']
     for prefix in bad_prefixes:
         if wu_name.startswith(prefix):
             return wu_name.replace(prefix, '')
@@ -217,6 +218,13 @@ class TraceFileParser(object):
         return event.TimeSyncEvent(partial_timestamp, faddr,
                                    full_timestamp)
 
+    def _partial_timestamp(self, full_timestamp):
+        """Returns a bit-reduced timestamp.
+
+        For testing only.  Behavior should match FunOS.
+        """
+        return (full_timestamp >> self.LOST_TIME_BITS) & 0xffffffff
+
     def full_timestamp(self, faddr, partial_timestamp):
         """ Converts a partial timestamp to a full timestamp.
 
@@ -239,7 +247,7 @@ class TraceFileParser(object):
 
         high_bitmask = ~0x3fffffffff
         timestamp = ((full_timestamp & high_bitmask)
-                     | (partial_timestamp << self.LOST_TIME_BITS))
+                     + (partial_timestamp << self.LOST_TIME_BITS))
         return timestamp
 
     def parse(self, fh, output_file=None):

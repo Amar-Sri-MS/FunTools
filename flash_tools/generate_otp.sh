@@ -2,19 +2,21 @@
 
 DEVTOOLS_DIR=$(readlink -f $WORKSPACE/SBPFirmware/software/devtools/firmware)
 
-if [[ $# -ge 3 ]]; then
+if [[ $# -ge 4 || $# -eq 0 ]]; then
     echo "Invalid number of keys hashes provided."
-    echo "Usage: $0 [key_hash1] [key_hash2]"
+    echo "Usage: $0 <chip_name> [key_hash1] [key_hash2]"
     exit 1
 fi
 
 otp_hash_arg=""
 
-if [[ $# -ge 1 ]]; then
-    otp_hash_arg="--key_hash1 $1"
-fi
+CHIP_NAME=`echo "$1" | tr '[:lower:]' '[:upper:]'`
+
 if [[ $# -ge 2 ]]; then
-    otp_hash_arg+=" --key_hash2 $2"
+    otp_hash_arg="--key_hash1 $2"
+fi
+if [[ $# -ge 3 ]]; then
+    otp_hash_arg+=" --key_hash2 $3"
 fi
 
 mkdir -p OTP
@@ -23,7 +25,7 @@ mkdir -p OTP
 python $DEVTOOLS_DIR/generate_otp.py \
         --cm_input $DEVTOOLS_DIR/otp_templates/OTP_content_CM.txt \
         --sm_input $DEVTOOLS_DIR/otp_templates/OTP_content_SM.txt \
-        --ci_input $DEVTOOLS_DIR/otp_templates/OTP_content_CI.txt \
+        --ci_input $DEVTOOLS_DIR/otp_templates/OTP_content_CI_${CHIP_NAME}.txt \
         --unlocked $otp_hash_arg \
         --output OTP/OTP_memory_unlocked.mif
 
@@ -32,7 +34,7 @@ for mode in secure unsecure; do
     python $DEVTOOLS_DIR/generate_otp.py \
         --cm_input $DEVTOOLS_DIR/otp_templates/OTP_content_CM.txt \
         --sm_input $DEVTOOLS_DIR/otp_templates/OTP_content_SM.txt \
-        --ci_input $DEVTOOLS_DIR/otp_templates/OTP_content_CI.txt \
+        --ci_input $DEVTOOLS_DIR/otp_templates/OTP_content_CI_${CHIP_NAME}.txt \
         --esecboot=$mode $otp_hash_arg \
         --output OTP/OTP_memory_$mode.mif
 done
