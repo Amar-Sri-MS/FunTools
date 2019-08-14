@@ -3,8 +3,8 @@
 #
 # Parses MIPS dequeuer trace message output.
 #
-# Produces output suitable for perf. Will be extended to produce
-# output suitable for call trees.
+# Produces output suitable for perf or cache miss tracing, depending
+# on provided arguments to the script.
 #
 # Usage: parse_dqr_tm.py -h for help
 #
@@ -373,11 +373,20 @@ class PerfSample:
 
 
 class CacheMissParser(object):
+    """
+    Parser that records the PC where cache misses occur.
+
+    TODO (jimmy): extend to record load/store address of cache misses.
+    """
 
     def __init__(self):
         self.pc_miss_list = []
 
     def parse_trace_messages(self, fh):
+        """
+        Extracts all TPC messages from the stream and records their
+        addresses.
+        """
         frames = parse_and_group_trace_formats(fh)
         for frame in frames:
             for tf in frame.tfs:
@@ -385,10 +394,15 @@ class CacheMissParser(object):
                     self.pc_miss_list.append(tf.addr)
 
     def get_source_lines_of_misses(self, funos_binary_path):
+        """ TODO (jimmy): return more suitable type for display """
         return self._run_addr2line(self.pc_miss_list, funos_binary_path)
 
     @staticmethod
     def _run_addr2line(addrs, funos_binary_path):
+        """
+        Runs MIPS addr2line on the list of provided addresses and
+        returns the text output containing address and function names.
+        """
         current_os = platform.system()
         if current_os == 'Darwin':
             addr2line_tool = ('/Users/Shared/cross/mips64/binutils-2.31/bin/'
