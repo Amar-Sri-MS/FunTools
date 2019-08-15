@@ -16,13 +16,13 @@ fi
 
 exit
 
-if [[ ! -f /usr/bin/sshpass ]]; then
-	echo "Please install sshpass"
+SSHPASS=`which sshpass`
+if [[ -z $SSHPASS ]]; then
 	apt-get install -y sshpass
 fi
 
-if [[ ! -f /usr/bin/ipmitool ]]; then
-	echo "Install ipmitool"
+IPMITOOL=`which ipmitool`
+if [[ -z $IPMITOOL ]]; then
 	apt-get install -y ipmitool
 fi
 
