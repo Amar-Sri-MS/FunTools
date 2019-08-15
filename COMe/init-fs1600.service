@@ -1,0 +1,12 @@
+[Unit]
+Description=FS1600-service
+
+[Service]
+ExecStartPre=/bin/rm -f /var/log/fs1600-come-boot-up.log
+ExecStart=/opt/fungible/etc/BootupCoStPlane.sh
+KillMode=process
+StandardOutput=file:/var/log/fs1600-come-boot-up.log
+StandardError=file:/var/log/fs1600-come-boot-up.log
+
+[Install]
+WantedBy=multi-user.target
