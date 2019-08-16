@@ -372,6 +372,27 @@ class PerfSample:
         return vals
 
 
+class CacheMissEntry(object):
+    """
+    Represents information about an instance of a cache miss.
+    """
+    def __init__(self, pc):
+        self.pc = pc
+        self.addr = None
+        self.type = None
+
+    def set_store_addr(self, addr):
+        self.addr = addr
+        self.type = 'store'
+
+    def set_load_addr(self, addr):
+        self.addr = addr
+        self.type = 'load'
+
+    def to_columns(self):
+        return '%016x    %016x    %s' % (self.pc, self.addr, self.type)
+
+
 class CacheMissParser(object):
     """
     Parser that records the PC where cache misses occur.
@@ -379,8 +400,29 @@ class CacheMissParser(object):
     TODO (jimmy): extend to record load/store address of cache misses.
     """
 
+    # Parser state identifiers. A state represents the "type" of format
+    # the parser is looking for at that time.
+    #
+    # TMOAS occurs at the start of tracing, and is always followed by TPC.
+    # They come together, double trouble, Bonnie and Clyde. Even if the
+    # trace buffer has overwritten early entries, the pair may show up at
+    # odd times (typically because of processor mode changes).
+    #
+    # CM_TPC and CM_TA are the TPC and TLA/TSA pairs. These always seem to
+    # come back-to-back. The VP appears to be irrelevant for TPC/TA pairs
+    # as they are part of a different "stream". If we need to identify the
+    # VP where the miss occurred we'll have to track the instruction stream.
+    #
+    # TODO (jimmy): handle the fact that we may lose TMOAS, but not its
+    #               partner TPC at the start
+    STATE_CM_TPC_OR_TMOAS = 1
+    STATE_TMOAS_TPC = 2
+    STATE_CM_TA = 3
+
     def __init__(self):
-        self.pc_miss_list = []
+        self.entries = []
+        self.state = self.STATE_CM_TPC_OR_TMOAS
+        self.current_entry = None
 
     def parse_trace_messages(self, fh):
         """
@@ -390,12 +432,36 @@ class CacheMissParser(object):
         frames = parse_and_group_trace_formats(fh)
         for frame in frames:
             for tf in frame.tfs:
-                if tf.tf_type == 3 and tf.ttype == 'tpc':
-                    self.pc_miss_list.append(tf.addr)
+                self.process_tf(tf)
 
-    def get_source_lines_of_misses(self, funos_binary_path):
-        """ TODO (jimmy): return more suitable type for display """
-        return self._run_addr2line(self.pc_miss_list, funos_binary_path)
+    def process_tf(self, tf):
+        next_state = self.state
+
+        if self.state == self.STATE_CM_TPC_OR_TMOAS:
+            if tr_formats.is_tmoas(tf):
+                next_state = self.STATE_TMOAS_TPC
+            elif tr_formats.is_tpc(tf):
+                self.current_entry = CacheMissEntry(tf.addr)
+                next_state = self.STATE_CM_TA
+
+        elif self.state == self.STATE_TMOAS_TPC:
+            next_state = self.STATE_CM_TPC_OR_TMOAS
+
+        elif self.state == self.STATE_CM_TA:
+            if tr_formats.is_tla(tf):
+                self.current_entry.set_load_addr(tf.addr)
+            elif tr_formats.is_tsa(tf):
+                self.current_entry.set_store_addr(tf.addr)
+            else:
+                raise RuntimeError('should have either TLA or TSA '
+                                   'after TPC: %s' % tf)
+            self.entries.append(self.current_entry)
+            next_state = self.STATE_CM_TPC_OR_TMOAS
+
+        self.state = next_state
+
+    def get_entries(self):
+        return self.entries
 
     @staticmethod
     def _run_addr2line(addrs, funos_binary_path):
@@ -464,7 +530,6 @@ def main():
     parser.add_argument('--output-dir', type=str,
                         help='path to output directory',
                         default='testoutput')
-    parser.add_argument('--binary', type=str, help='path to FunOS binary')
     args = parser.parse_args()
 
     if args.parse_mode == 'perf':
@@ -492,19 +557,22 @@ def run_perf_parser(args):
 
 
 def run_cache_miss_parser(args):
-    if args.binary is None:
-        print 'Must specify --binary option when using the cache miss parser'
-        return
+    """
+    Runs the cache miss parser on the trace files.
 
+    Produces a file with columns for PC, load/store address and whether
+    this was a load/store instruction.
+    """
     parser = CacheMissParser()
     with open(args.input_file, 'r') as fh:
         parser.parse_trace_messages(fh)
 
-    lines = parser.get_source_lines_of_misses(args.binary)
+    entries = parser.get_entries()
     out_filename = 'cache_miss_%d_%d.txt' % (args.cluster, args.core)
     out_file = os.path.join(args.output_dir, out_filename)
     with open(out_file, 'w') as fh:
-        fh.write(lines)
+        lines = [e.to_columns() for e in entries]
+        fh.write('\n'.join(lines))
 
 
 FRAME_AND_TF_PATTERN = re.compile(r'^\s*([\d]+)\.([\d]+):.*TF(\d)')

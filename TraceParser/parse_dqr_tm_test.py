@@ -274,4 +274,4 @@ class TestPerfParserIntegration(unittest.TestCase):
         with open('testdata/dqr_cache_miss.tm') as fh:
             parser.parse_trace_messages(fh)
 
-        self.assertEqual(698, len(parser.pc_miss_list))
+        self.assertEqual(697, len(parser.get_entries()))
