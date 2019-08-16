@@ -28,6 +28,8 @@ from cryptography.hazmat.primitives.asymmetric import ec
 
 from common import *
 
+# serial number validation
+import sn_validation
 
 #################################################################################
 #
@@ -120,9 +122,14 @@ def validate_tbs_cert(values_dict):
     y = int.from_bytes(ec_pt[32:], byteorder='big')
 
     # this will raise a ValueError if x and y do not represent a point on the curve
-    pub_key = ec.EllipticCurvePublicNumbers(x,y, ec.SECP256R1()).public_key(backend=default_backend())
+    pub_key = ec.EllipticCurvePublicNumbers(x,
+                                            y,
+                                            ec.SECP256R1()).public_key(backend=default_backend())
 
-    # TODO: validate serial info -> install a format filter
+    # validate serial info: this routines should raise a ValueError
+    # if the serial number is not correct
+    sn_validation.check(values_dict['serial_info'], values_dict['serial_nr'])
+
 
 ###########################################################################
 #
