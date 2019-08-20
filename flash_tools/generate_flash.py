@@ -521,7 +521,11 @@ def run(arg_action, arg_enroll_cert = None, arg_enroll_tbs = None, *args, **kwar
     # executed when requested explicitly
     if arg_action == 'sources':
         for outfile, v in config['signed_images'].items():
-            infile = find_file_in_srcdirs(v['source'])
+            if v.get('origin'):
+                infile = find_file_in_srcdirs(v['origin'])
+            else:
+                infile = find_file_in_srcdirs(v['source'])
+
             if infile:
                 shutil.copy2(infile, v['source'])
             else:
