@@ -54,7 +54,10 @@ fi
 F1COUNT=`lspci -d 1dad: | grep "Ethernet controller" | cut -d " " -f 1 | wc -l`
 echo "$F1COUNT F1 found"
 
-$FUNGIBLE_ROOT/cclinux/cclinux_service.sh --start --ep --storage
-$FUNGIBLE_ROOT/StorageController/etc/start_sc.sh start
+export USER="fun"
+export HOME="/home/fun"
+
+/opt/fungible/cclinux/cclinux_service.sh --start --ep --storage
+/opt/fungible/StorageController/etc/start_sc.sh start
 
 echo "$0 DONE!!!"
