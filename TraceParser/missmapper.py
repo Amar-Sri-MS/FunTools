@@ -12,6 +12,7 @@ from jinja2 import Environment, FileSystemLoader
 
 MISSFILE = "miss-counts.js"
 LINEFILE = "linedb.js"
+REGIONFILE = "regiondb.js"
 OUTFILE = "missmap.html"
 TOPN = 15
 
@@ -36,8 +37,8 @@ def _rekey_pa_line(d):
 
 REKEY_LIST = [
     ("By PC", "srclines", _rekey_pc),
-    ("By PA", "pa", _rekey_pa),
-    ("By PA Line", "pa_line", _rekey_pa_line)
+    ("By PA", "pa_region", _rekey_pa),
+    ("By PA Line", "pa_region", _rekey_pa_line)
 ]
 
 ###
@@ -107,7 +108,19 @@ def do_output(sections):
     fl = open(OUTFILE, 'w')
     fl.write(output)
 
+###
+##  read the region table
+#
 
+def find_region(pa, regioninfo):
+
+    for region in regioninfo:
+        if ((pa >= region[0], 0)
+            and (pa < region[1])):
+            return region[2]
+
+    return None
+    
 ###
 ##  convert raw misses to data+info
 #
@@ -136,7 +149,7 @@ def va2pa(x):
     # FIXME
     return x
 
-def mkmisses(raw_misses, lineinfo):
+def mkmisses(raw_misses, lineinfo, regioninfo):
 
     misses = []
     for raw_miss in raw_misses:
@@ -152,6 +165,7 @@ def mkmisses(raw_misses, lineinfo):
         miss["pa"] = va2pa(miss["va"])
         miss["pa_line"] = va2pa(miss["va"] - (miss["va"] % 64))
         srclines = None
+        pa_region = find_region(miss["pa"], regioninfo)
         k = "%d" % miss["pc"] # wtf json
         if (k):
             srclines = lineinfo.get(k)["srclines"]
@@ -159,8 +173,9 @@ def mkmisses(raw_misses, lineinfo):
                 srclines = "".join(srclines)
             else:
                 srclines = "foo: %s" % k
-
+        
         miss["srclines"] = srclines
+        miss["pa_region"] = pa_region
         misses.append(miss)
 
     return misses
@@ -184,8 +199,11 @@ def main():
     # open the source line of code db
     lineinfo = loadjs(LINEFILE)
 
+    # open the source region db
+    regioninfo = loadjs(REGIONFILE)
+
     # process misses accoriding to available info
-    misses = mkmisses(misses_raw, lineinfo)
+    misses = mkmisses(misses_raw, lineinfo, regioninfo)
 
     print "%d processed misses" % len(misses)
     
