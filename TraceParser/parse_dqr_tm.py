@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python2.7 -u
 
 #
 # Parses MIPS dequeuer trace message output.
@@ -16,12 +16,145 @@ import os
 import platform
 import re
 import subprocess
-
+import select
 import tr_formats
 
 MAX_VPS_PER_CORE = 4
 MAX_VPS_PER_CLUSTER = 24
 
+###
+##  Module exports
+#
+
+# cache of addr2line processes, indexed by path name
+A2LPROC = {}
+
+def _run_addr2line(funos_binary_path):
+    """
+    Make an addr2line process we can talk to via stdin/stdout
+    """
+
+    current_os = platform.system()
+    if current_os == 'Darwin':
+        addr2line_tool = ('/Users/Shared/cross/mips64/binutils-2.31/bin/'
+                          'mips64-unknown-linux-addr2line')
+    else:
+        addr2line_tool = ('/opt/cross/mips64/bin/'
+                          'mips64-unknown-elf-addr2line')
+
+    cmd_array = [addr2line_tool,
+                 '-e',
+                 funos_binary_path,
+                 '-a',
+                 '-p',
+                 '-i',
+                 '-f']
+  
+    try:
+        proc = subprocess.Popen(cmd_array,
+                                stdin=subprocess.PIPE,
+                                stdout=subprocess.PIPE)
+    except subprocess.CalledProcessError as e:
+        print 'Failed to run addr2line: code %d msg %s' % (e.returncode,
+                                                           e.message)
+        proc = None
+
+    return proc
+
+DONEADDR = "0xabcdef"
+DONELINE = "0x0000000000abcdef: ?? ??:0\n"
+
+def do_addr2line(proc, addrs):
+
+    lines = []
+
+    for addr in addrs:
+        # drain any existing output
+        # print "selecting"
+        while (select.select([proc.stdout],[],[],0)[0]!=[]):
+            # print "reading"
+            s = proc.stdout.readline()
+            # print "read: %s" % s.strip()
+            lines.append(s)
+
+        # send more input
+        s = "0x%16x\n" % addr
+        # print "write: %s" % s.strip()
+        proc.stdin.write(s)
+
+    # send a finish token
+    proc.stdin.write("%s\n" % DONEADDR)
+    proc.stdin.flush()
+    
+    # drain everyting left
+    while True:
+        line = proc.stdout.readline()
+        # print "read: %s" % line.strip()
+        if (line == DONELINE):
+            break
+        lines.append(line)
+
+    return lines
+            
+def raw_addr2line(addrs, funos_binary_path):
+    """
+    Runs MIPS addr2line on the list of provided addresses and returns
+    the text output containing address and function names, and keep
+    the process lying around for more
+    """
+
+    if (A2LPROC.get(funos_binary_path) is None):
+        proc = _run_addr2line(funos_binary_path)
+        assert (proc is not None)
+        A2LPROC[funos_binary_path] = proc
+    
+    output = do_addr2line(A2LPROC[funos_binary_path], addrs)
+        
+    return output
+
+START_RE = "(0x[0-9a-f]+):(.*:[0-9\?]+\n)"
+NOINFO = " ?? ??:0\n"
+
+
+def parse_next_addr(lines, addrs):
+
+    line = lines.pop(0)
+    m = re.match(START_RE, line)
+    if (m is None):
+        raise RuntimeError("failed to match address line on '%s'" % line)
+    addr = int(m.group(1),16)
+    info = [m.group(2)]
+    
+    while (len(lines) > 0):
+        if (re.match(START_RE, line[0]) is not None):
+            break
+        line = lines.pop(0)
+        info.append(line)
+
+    if ((len(info) == 1) and(info[0] == NOINFO)):
+        # not a valid code address
+        addrs[addr] = None
+    else:
+        addrs[addr] = info
+    
+    return lines
+
+def parsed_addr2line(addrs, funos_binary):
+
+    ret = {}
+    
+    # get all the input
+    lines = raw_addr2line(addrs, funos_binary)
+
+    # parse it
+    while (len(lines)):
+        lines = parse_next_addr(lines, ret)
+    
+    return ret
+    
+###
+##  Classes
+#
 
 class PerfParser:
     """
@@ -465,34 +598,7 @@ class CacheMissParser(object):
 
     @staticmethod
     def _run_addr2line(addrs, funos_binary_path):
-        """
-        Runs MIPS addr2line on the list of provided addresses and
-        returns the text output containing address and function names.
-        """
-        current_os = platform.system()
-        if current_os == 'Darwin':
-            addr2line_tool = ('/Users/Shared/cross/mips64/binutils-2.31/bin/'
-                              'mips64-unknown-linux-addr2line')
-        else:
-            addr2line_tool = ('/opt/cross/mips64/bin/'
-                              'mips64-unknown-elf-addr2line')
-
-        cmd_array = [addr2line_tool,
-                     '-e',
-                     funos_binary_path,
-                     '-a',
-                     '-p',
-                     '-f']
-
-        cmd_array.extend(['%016x' % a for a in addrs])
-        try:
-            output = subprocess.check_output(cmd_array)
-        except subprocess.CalledProcessError as e:
-            print 'Failed to run addr2line: code %d msg %s' % (e.returncode,
-                                                               e.message)
-            return None
-        return output
-
+        return raw_addr2line(addrs, funos_binary_path)
 
 class PDTParser:
     """
