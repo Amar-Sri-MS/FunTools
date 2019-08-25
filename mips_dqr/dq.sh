@@ -9,7 +9,10 @@
 # the dequeuer useless from daemons unless the following workaround is
 # done.
 #
-
+# Note that we use a FIFO instead of a regular file: this works better
+# across different Linux distros when we issue writes to cause a SIGPIPE
+# that terminates the tail process.
+#
 ARGS=$*
 DUMMY_DIR=$(mktemp -d)
 DUMMY_FILE=$DUMMY_DIR/dqr_fake_fifo
