@@ -11,7 +11,10 @@
 #
 
 ARGS=$*
-DUMMY_FILE=$(mktemp)
+DUMMY_DIR=$(mktemp -d)
+DUMMY_FILE=$DUMMY_DIR/dqr_fake_fifo
+mkfifo $DUMMY_FILE
+
 JAR_DIR=$(dirname $0)
 
 echo "Creating dummy file for stdin: $DUMMY_FILE"
@@ -33,7 +36,7 @@ while true; do
         sleep 5
     else
         echo "EOF" > $DUMMY_FILE
-        rm $DUMMY_FILE
+        rm -rf $DUMMY_DIR
 
         # The PID return code will be reserved within the shell until
         # this is called, so there is no danger of PID reuse causing
