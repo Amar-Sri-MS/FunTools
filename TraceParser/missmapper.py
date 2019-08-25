@@ -12,6 +12,7 @@ from jinja2 import Environment, FileSystemLoader
 
 MISSFILE = "miss-counts.js"
 LINEFILE = "linedb.js"
+GDBFILE = "gdbdb.js"
 REGIONFILE = "regiondb.js"
 OUTFILE = "missmap.html"
 TOPN = 15
@@ -37,8 +38,8 @@ def _rekey_pa_line(d):
 
 REKEY_LIST = [
     ("By PC", "srclines", _rekey_pc),
-    ("By PA", "pa_region", _rekey_pa),
-    ("By PA Line", "pa_region", _rekey_pa_line)
+    ("By PA", "data_info", _rekey_pa),
+    ("By PA Line", "data_info", _rekey_pa_line)
 ]
 
 ###
@@ -122,6 +123,20 @@ def find_region(pa, regioninfo):
     return None
     
 ###
+##  read the gdb table
+#
+
+def find_gdb(pa, gdbinfo):
+
+    key = "0x%016x" % pa
+    val = gdbinfo.get(key)
+    
+    if (val is None):
+        return None
+
+    return val["syminfo"]
+
+###
 ##  convert raw misses to data+info
 #
 
@@ -149,7 +164,17 @@ def va2pa(x):
     # FIXME
     return x
 
-def mkmisses(raw_misses, lineinfo, regioninfo):
+def mk_data_info(miss):
+
+    rgn = miss["pa_region"]
+    gdb = miss["syminfo"]
+
+    if (gdb is not None):
+        return "%s: %s" % (rgn, gdb)
+    else:
+        return "%s" % rgn
+    
+def mkmisses(raw_misses, lineinfo, regioninfo, gdbinfo):
 
     misses = []
     for raw_miss in raw_misses:
@@ -166,6 +191,7 @@ def mkmisses(raw_misses, lineinfo, regioninfo):
         miss["pa_line"] = va2pa(miss["va"] - (miss["va"] % 64))
         srclines = None
         pa_region = find_region(miss["pa"], regioninfo)
+        syminfo = find_gdb(miss["pa"], gdbinfo)
         k = "%d" % miss["pc"] # wtf json
         if (k):
             srclines = lineinfo.get(k)["srclines"]
@@ -176,6 +202,9 @@ def mkmisses(raw_misses, lineinfo, regioninfo):
         
         miss["srclines"] = srclines
         miss["pa_region"] = pa_region
+        miss["syminfo"] = syminfo
+        data_info = mk_data_info(miss)
+        miss["data_info"] = data_info
         misses.append(miss)
 
     return misses
@@ -199,11 +228,14 @@ def main():
     # open the source line of code db
     lineinfo = loadjs(LINEFILE)
 
+    # open the source line of code db
+    gdbinfo = loadjs(GDBFILE)
+    
     # open the source region db
     regioninfo = loadjs(REGIONFILE)
 
     # process misses accoriding to available info
-    misses = mkmisses(misses_raw, lineinfo, regioninfo)
+    misses = mkmisses(misses_raw, lineinfo, regioninfo, gdbinfo)
 
     print "%d processed misses" % len(misses)
     

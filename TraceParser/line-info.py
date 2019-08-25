@@ -1,14 +1,14 @@
 #!/usr/bin/python
 
+## read a deduped file and translate all the addresses into something
+## interesting via addr2line
+
 import sys
 import glob
 import json
 import time
 import argparse
 import parse_dqr_tm
-
-## read a deduped file and translate all the addresses into something
-## interesting
 
 IN_FILE = "miss-counts.js"
 OUT_FILE = "linedb.js"
