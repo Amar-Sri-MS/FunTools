@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7 -u
+#!/usr/bin/env python2.7
 
 #
 # Parses MIPS dequeuer trace message output.
