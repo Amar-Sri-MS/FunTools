@@ -3,8 +3,8 @@
 #
 # Parses MIPS dequeuer trace message output.
 #
-# Produces output suitable for perf. Will be extended to produce
-# output suitable for call trees.
+# Produces output suitable for perf or cache miss tracing, depending
+# on provided arguments to the script.
 #
 # Usage: parse_dqr_tm.py -h for help
 #
@@ -13,7 +13,9 @@
 
 import argparse
 import os
+import platform
 import re
+import subprocess
 
 import tr_formats
 
@@ -370,6 +372,128 @@ class PerfSample:
         return vals
 
 
+class CacheMissEntry(object):
+    """
+    Represents information about an instance of a cache miss.
+    """
+    def __init__(self, pc):
+        self.pc = pc
+        self.addr = None
+        self.type = None
+
+    def set_store_addr(self, addr):
+        self.addr = addr
+        self.type = 'store'
+
+    def set_load_addr(self, addr):
+        self.addr = addr
+        self.type = 'load'
+
+    def to_columns(self):
+        return '%016x    %016x    %s' % (self.pc, self.addr, self.type)
+
+
+class CacheMissParser(object):
+    """
+    Parser that records the PC where cache misses occur.
+
+    TODO (jimmy): extend to record load/store address of cache misses.
+    """
+
+    # Parser state identifiers. A state represents the "type" of format
+    # the parser is looking for at that time.
+    #
+    # TMOAS occurs at the start of tracing, and is always followed by TPC.
+    # They come together, double trouble, Bonnie and Clyde. Even if the
+    # trace buffer has overwritten early entries, the pair may show up at
+    # odd times (typically because of processor mode changes).
+    #
+    # CM_TPC and CM_TA are the TPC and TLA/TSA pairs. These always seem to
+    # come back-to-back. The VP appears to be irrelevant for TPC/TA pairs
+    # as they are part of a different "stream". If we need to identify the
+    # VP where the miss occurred we'll have to track the instruction stream.
+    #
+    # TODO (jimmy): handle the fact that we may lose TMOAS, but not its
+    #               partner TPC at the start
+    STATE_CM_TPC_OR_TMOAS = 1
+    STATE_TMOAS_TPC = 2
+    STATE_CM_TA = 3
+
+    def __init__(self):
+        self.entries = []
+        self.state = self.STATE_CM_TPC_OR_TMOAS
+        self.current_entry = None
+
+    def parse_trace_messages(self, fh):
+        """
+        Extracts all TPC messages from the stream and records their
+        addresses.
+        """
+        frames = parse_and_group_trace_formats(fh)
+        for frame in frames:
+            for tf in frame.tfs:
+                self.process_tf(tf)
+
+    def process_tf(self, tf):
+        next_state = self.state
+
+        if self.state == self.STATE_CM_TPC_OR_TMOAS:
+            if tr_formats.is_tmoas(tf):
+                next_state = self.STATE_TMOAS_TPC
+            elif tr_formats.is_tpc(tf):
+                self.current_entry = CacheMissEntry(tf.addr)
+                next_state = self.STATE_CM_TA
+
+        elif self.state == self.STATE_TMOAS_TPC:
+            next_state = self.STATE_CM_TPC_OR_TMOAS
+
+        elif self.state == self.STATE_CM_TA:
+            if tr_formats.is_tla(tf):
+                self.current_entry.set_load_addr(tf.addr)
+            elif tr_formats.is_tsa(tf):
+                self.current_entry.set_store_addr(tf.addr)
+            else:
+                raise RuntimeError('should have either TLA or TSA '
+                                   'after TPC: %s' % tf)
+            self.entries.append(self.current_entry)
+            next_state = self.STATE_CM_TPC_OR_TMOAS
+
+        self.state = next_state
+
+    def get_entries(self):
+        return self.entries
+
+    @staticmethod
+    def _run_addr2line(addrs, funos_binary_path):
+        """
+        Runs MIPS addr2line on the list of provided addresses and
+        returns the text output containing address and function names.
+        """
+        current_os = platform.system()
+        if current_os == 'Darwin':
+            addr2line_tool = ('/Users/Shared/cross/mips64/binutils-2.31/bin/'
+                              'mips64-unknown-linux-addr2line')
+        else:
+            addr2line_tool = ('/opt/cross/mips64/bin/'
+                              'mips64-unknown-elf-addr2line')
+
+        cmd_array = [addr2line_tool,
+                     '-e',
+                     funos_binary_path,
+                     '-a',
+                     '-p',
+                     '-f']
+
+        cmd_array.extend(['%016x' % a for a in addrs])
+        try:
+            output = subprocess.check_output(cmd_array)
+        except subprocess.CalledProcessError as e:
+            print 'Failed to run addr2line: code %d msg %s' % (e.returncode,
+                                                               e.message)
+            return None
+        return output
+
+
 class PDTParser:
     """
     TODO: implement PC tracing here
@@ -396,6 +520,9 @@ class Frame:
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('input_file', type=str, help='path to input file')
+    parser.add_argument('--parse-mode', type=str, help='type of parser to run',
+                        default='perf',
+                        choices=['perf', 'cache_miss'])
     parser.add_argument('--cluster', type=int, help='cluster id',
                         required=True)
     parser.add_argument('--core', type=int, help='core id',
@@ -405,16 +532,21 @@ def main():
                         default='testoutput')
     args = parser.parse_args()
 
+    if args.parse_mode == 'perf':
+        run_perf_parser(args)
+    elif args.parse_mode == 'cache_miss':
+        run_cache_miss_parser(args)
+
+
+def run_perf_parser(args):
     trace_parser = PerfParser(args.cluster, args.core)
     perfmon_samples = None
     with open(args.input_file, 'r') as fh:
         trace_parser.parse_trace_messages(fh)
         perfmon_samples = trace_parser.get_perfmon_samples()
-
     if not perfmon_samples:
         print 'No samples'
         return
-
     out_file = 'put_%s_%s_perfmon.txt' % (str(args.cluster),
                                           str(args.core))
     out_path = os.path.join(args.output_dir, out_file)
@@ -422,6 +554,25 @@ def main():
         for sample in perfmon_samples:
             fh.write('\n'.join(sample))
             fh.write('\n')
+
+
+def run_cache_miss_parser(args):
+    """
+    Runs the cache miss parser on the trace files.
+
+    Produces a file with columns for PC, load/store address and whether
+    this was a load/store instruction.
+    """
+    parser = CacheMissParser()
+    with open(args.input_file, 'r') as fh:
+        parser.parse_trace_messages(fh)
+
+    entries = parser.get_entries()
+    out_filename = 'cache_miss_%d_%d.txt' % (args.cluster, args.core)
+    out_file = os.path.join(args.output_dir, out_filename)
+    with open(out_file, 'w') as fh:
+        lines = [e.to_columns() for e in entries]
+        fh.write('\n'.join(lines))
 
 
 FRAME_AND_TF_PATTERN = re.compile(r'^\s*([\d]+)\.([\d]+):.*TF(\d)')
