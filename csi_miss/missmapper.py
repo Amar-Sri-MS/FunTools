@@ -4,16 +4,17 @@ import os
 import sys
 import json
 import argparse
+import datetime
 from jinja2 import Environment, FileSystemLoader
 
 
 # Given a miss-count list and a set of linedb/whateverdbs, spit out a
 # HTML break down of all the ways the cache misses line up
 
-MISSFILE = "miss-counts.js"
-LINEFILE = "linedb.js"
-GDBFILE = "gdbdb.js"
-REGIONFILE = "regiondb.js"
+MISSFILE = "miss-list.js"
+LINEFILE = "line-ident.js"
+GDBFILE = "gdb-ident.js"
+REGIONFILE = "region-ident.js"
 OUTFILE = "missmap.html"
 TOPN = 15
 
@@ -22,14 +23,18 @@ TOPN = 15
 #
 
 def _rekey_pc(d):
-    return d["pc"]
+    return "0x%016x" % d["pc"]
 
 def _rekey_pa(d):
-    return d["pa"]
+    return "0x%016x" % d["pa"]
 
 def _rekey_pa_line(d):
     pa = d["pa"]
     pa = pa - (pa % 64) # round to cache line
+    return "0x%016x" % pa
+
+def _rekey_vague(d):
+    pa = d["vague_info"]
     return pa
 
 ###
@@ -39,6 +44,7 @@ def _rekey_pa_line(d):
 REKEY_LIST = [
     ("By PC", "srclines", _rekey_pc),
     ("By PA", "data_info", _rekey_pa),
+    ("By Vague Symbol", "srclines", _rekey_vague),
     ("By PA Line", "data_info", _rekey_pa_line)
 ]
 
@@ -91,22 +97,23 @@ def read_stylesheet():
 
     return style
 
-def do_output(sections):
+def do_output(out_fname, sections):
 
     # read the css formatting
     style = read_stylesheet()
     
     # run the template
     args = {"style": style,
+            "date": str(datetime.datetime.now()),
             "sections": sections}
     
-    tpath = os.path.join(abs_app_dir_path(), "template")
+    tpath = os.path.join(abs_app_dir_path(), "templates")
     file_loader = FileSystemLoader(tpath)
     env = Environment(loader=file_loader)
     template = env.get_template('missmap.html')
     output = template.render(args)
 
-    fl = open(OUTFILE, 'w')
+    fl = open(out_fname, 'w')
     fl.write(output)
 
 ###
@@ -135,6 +142,16 @@ def find_gdb(pa, gdbinfo):
         return None
 
     return val["syminfo"]
+
+def find_vague(pa, gdbinfo):
+
+    key = "0x%016x" % pa
+    val = gdbinfo.get(key)
+    
+    if (val is None):
+        return None
+
+    return val["symvague"]
 
 ###
 ##  convert raw misses to data+info
@@ -173,7 +190,17 @@ def mk_data_info(miss):
         return "%s: %s" % (rgn, gdb)
     else:
         return "%s" % rgn
-    
+
+def mk_vague_info(miss):
+
+    rgn = miss["pa_region"]
+    gdb = miss["symvague"]
+
+    if (gdb is not None):
+        return "%s: %s" % (rgn, gdb)
+    else:
+        return "%s" % rgn
+
 def mkmisses(raw_misses, lineinfo, regioninfo, gdbinfo):
 
     misses = []
@@ -192,7 +219,8 @@ def mkmisses(raw_misses, lineinfo, regioninfo, gdbinfo):
         srclines = None
         pa_region = find_region(miss["pa"], regioninfo)
         syminfo = find_gdb(miss["pa"], gdbinfo)
-        k = "%d" % miss["pc"] # wtf json
+        symvague = find_vague(miss["pa"], gdbinfo)
+        k = raw_miss["pc"]
         if (k):
             srclines = lineinfo.get(k)["srclines"]
             if (srclines is not None):
@@ -203,11 +231,39 @@ def mkmisses(raw_misses, lineinfo, regioninfo, gdbinfo):
         miss["srclines"] = srclines
         miss["pa_region"] = pa_region
         miss["syminfo"] = syminfo
+        miss["symvague"] = symvague
         data_info = mk_data_info(miss)
+        vague_info = mk_vague_info(miss)
         miss["data_info"] = data_info
+        miss["vague_info"] = vague_info
+
         misses.append(miss)
 
     return misses
+
+###
+##  do the work
+#
+
+def do_missmap(misses_raw, lineinfo, regioninfo, gdbinfo, out_fname):
+    
+    # process misses accoriding to available info
+    print "%d misses in input" % len(misses_raw)
+    misses = mkmisses(misses_raw, lineinfo, regioninfo, gdbinfo)
+
+    print "%d processed misses" % len(misses)
+    
+    # template prints a list of sections
+    sections = []
+
+    for (name, info_field, func) in REKEY_LIST:
+
+        by_key = do_rekey(misses, func, info_field)
+        tup = (name, by_key)
+        sections.append(tup)
+    
+    # make the output
+    do_output(out_fname, sections)
 
 ###
 ##  read a json file
@@ -223,7 +279,6 @@ def main():
 
     # open the miss list
     misses_raw = loadjs(MISSFILE)
-    print "%d misses in input" % len(misses_raw)
 
     # open the source line of code db
     lineinfo = loadjs(LINEFILE)
@@ -234,22 +289,9 @@ def main():
     # open the source region db
     regioninfo = loadjs(REGIONFILE)
 
-    # process misses accoriding to available info
-    misses = mkmisses(misses_raw, lineinfo, regioninfo, gdbinfo)
-
-    print "%d processed misses" % len(misses)
+    # do all the work
+    do_missmap(misses_raw, lineinfo, regioninfo, gdbinfo, OUTFILE)
     
-    # template prints a list of sections
-    sections = []
-
-    for (name, info_field, func) in REKEY_LIST:
-
-        by_key = do_rekey(misses, func, info_field)
-        tup = (name, by_key)
-        sections.append(tup)
-    
-    # make the output
-    do_output(sections)
 
 ###
 ##  entrypoint

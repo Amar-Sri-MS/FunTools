@@ -6,7 +6,7 @@ import json
 import argparse
 
 IN_FILE = "uartout0.0.txt"
-OUT_FILE = "regiondb.js"
+OUT_FILE = "region-ident.js"
 
 ###
 ##  regex work
@@ -60,14 +60,13 @@ def parse_region_line(line):
 
     return None
     
-
 ###
-##  main
+##  real work
 #
 
-def main():
+def find_regions(fname):
 
-    fl = open(IN_FILE)
+    fl = open(fname)
 
     lines = fl.readlines()
     lines = find_first_region(lines)
@@ -84,6 +83,16 @@ def main():
 
     regions.sort()
     print "found %d regions" % len(regions)
+
+    return regions
+
+###
+##  main
+#
+
+def main():
+
+    regions = find_regions(IN_FILE)
 
     fl = open(OUT_FILE, "w")
     fl.write(json.dumps(regions, indent=4))

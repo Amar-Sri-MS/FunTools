@@ -16,15 +16,15 @@ try:
 except:
     in_gdb = False
 
-IN_FILE = "miss-counts.js"
-OUT_FILE = "gdbdb.js"
+IN_FILE = "addr-list.js"
+OUT_FILE = "gdb-ident.js"
 FUNOS_BINARY = "funos-f1.stripped"
 
 ###
 ##  We need gdb to import us...
 #
 
-def restart_in_gdb():
+def restart_in_gdb(binname, exit=True):
 
     current_os = platform.system()
     if current_os == 'Darwin':
@@ -33,21 +33,31 @@ def restart_in_gdb():
         gdb = ('/opt/cross/mips64/bin/'
                'mips64-unknown-elf-gdb')
 
-    cmd = "%s -ex 'source %s' %s -ex quit" % (gdb, os.path.realpath(__file__),
-                                               FUNOS_BINARY)
+    # XXX: if we're compiled, strip back to the real script name for gdb
+    scriptname = os.path.realpath(__file__)
+    print scriptname, scriptname[:-4]
+    if (scriptname[:-4] == ".pyc"):
+        print "fixup"
+        scriptname = scriptname[:-1]
+        
+    print scriptname
+    
+    cmd = "%s -ex 'source %s' %s -ex quit" % (gdb, scriptname,
+                                              binname)
     print cmd
     
     r = os.system(cmd)
     if (r != 0):
         print "gdb failed: %s" % cmd
         sys.exit(1)
-    sys.exit(0)
+    if (exit):
+        sys.exit(0)
     
 ###
 ##  use addr2line
 #
 
-def struct_type_walk(name, type, offset, is_union):
+def struct_type_walk(name, type, offset, is_union, vague):
 
     # compute the field:
     names = []
@@ -60,7 +70,7 @@ def struct_type_walk(name, type, offset, is_union):
                 fname = "[anon]"
             newname = "%s.%s" % (name, fname)
             offset = offset - base
-            newname = nested_type_walk(newname, field.type, offset)
+            newname = nested_type_walk(newname, field.type, offset, vague)
             if (not is_union):
                 return newname
             names.append(newname)
@@ -71,19 +81,24 @@ def struct_type_walk(name, type, offset, is_union):
     return  "%s.?? (%s + 0x%x)" % (name, name, offset)
 
 
-def nested_type_walk(name, type, offset):
+def nested_type_walk(name, type, offset, vague):
 
     if (type.code == gdb.TYPE_CODE_ARRAY):
         # FIXME
         per = type.target().sizeof
         idx = int(offset/per)
         offset = offset - idx * per
-        return nested_type_walk("%s[%d]" % (name, idx), type.target(), offset)
+        if (not vague):
+            vidx = str(idx)
+        else:
+            vidx = "i"
+        return nested_type_walk("%s[%s]" % (name, vidx),
+                                type.target(), offset, vague)
     elif (type.code == gdb.TYPE_CODE_STRUCT):
-        return struct_type_walk(name, type, offset, False)
+        return struct_type_walk(name, type, offset, False, vague)
     elif (type.code == gdb.TYPE_CODE_UNION):
         # FIXME: use union?
-        return struct_type_walk(name, type, offset, False)
+        return struct_type_walk(name, type, offset, False, vague)
     else:
         if (offset == 0):
             return name
@@ -91,7 +106,7 @@ def nested_type_walk(name, type, offset):
             return "%s + 0x%x" % (name, offset)
 
 
-def sym2str(va, sym):
+def sym2str(va, sym, vague):
 
     assert(va >= sym[0])
     assert(va < sym[1])
@@ -100,7 +115,7 @@ def sym2str(va, sym):
     type = sym[3]
     offset = va - sym[0]
 
-    return nested_type_walk(name, type, offset)
+    return nested_type_walk(name, type, offset, vague)
     
 def printsym(sym):
     print "(0x%x, 0x%x, %s, %s)" % sym
@@ -116,7 +131,7 @@ def debug_find_closest(va, syms):
             printsym(syms[i+1])
             return
 
-def get_syminfo(va, syms):
+def get_syminfo(va, syms, vague=False):
 
     n0 = 0
     n1 = len(syms)-1
@@ -136,7 +151,7 @@ def get_syminfo(va, syms):
         if ((va >= sym[0]) and (va < sym[1])):
             if (debug):
                 print "found: %s" % printsym(sym)
-            return sym2str(va, sym)
+            return sym2str(va, sym, vague)
         
         if (va >= sym[1]):
             n0 = i + 1
@@ -164,6 +179,7 @@ def mkaddrinfo(va, syms):
     
     # find the gdb symbol info
     info["syminfo"] = get_syminfo(va, syms)
+    info["symvague"] = get_syminfo(va, syms, True)
 
     return info
     
@@ -284,7 +300,7 @@ def find_all_symbols():
     syms.sort()
 
     return syms
-            
+
 ###
 ##  main in gdb
 #
@@ -293,29 +309,26 @@ def gdb_main():
     print "starting in gdb..."
     fl = open(IN_FILE)
 
-    misslist = json.loads(fl.read())
-    addrinfo = {}
+    addrlist = json.loads(fl.read())
+    addrident = {}
 
     syms = find_all_symbols()
     
-    n = len(misslist)
+    n = len(addrlist)
     t0 = time.time()
     for i in range(0, n):
-        miss = misslist[i]
-        pc = miss["pc"]
-        va = miss["vaddr"]
+        va = addrlist[i]
 
         t1 = time.time()
         if ((t1 - t0) > 10):
             print "complete: %f%%" % ((i * 100.0) / n)
             t0 = t1
-        check_add(addrinfo, int(pc, 16), syms)
-        check_add(addrinfo, int(va, 16), syms)
+        check_add(addrident, int(va, 16), syms)
                 
 
     # write it out
     fl = open(OUT_FILE, "w")
-    fl.write(json.dumps(addrinfo, indent=4))
+    fl.write(json.dumps(addrident, indent=4))
     print "done"
 
         
@@ -325,8 +338,7 @@ def gdb_main():
 #
 if (__name__ == "__main__"):
     if (not in_gdb):
-        restart_in_gdb()
+        restart_in_gdb(FUNOS_BINARY)
     else:
         gdb_main() # run out in-gdb code
-
 

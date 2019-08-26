@@ -8,7 +8,8 @@
   
   <body>
     <h1>Missmap</h1>
-
+    <i>{{ date }}</i>
+    
     <p>Contents:</p>
     {% for (name, _) in sections %}
     <a href="#{{name}}">{{name}}</a><br/>
@@ -28,7 +29,7 @@
       {% for item in items %}
       <tr>
 	<td>{{ item[0] }}</td>
-	<td>{{ "0x%0x" % item[1] }}</td>
+	<td>{{ item[1] }}</td>
 	<td><div align="left"><pre>{{ item[2] }}</pre></div></td>
       </tr>
       {% endfor %}
