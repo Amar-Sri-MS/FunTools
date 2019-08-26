@@ -18,7 +18,7 @@ def create_binary_form_data( infile):
         return (infile, bin_data, 'application/octet-stream',
                 {"Content-Length" : str(len(bin_data)) })
 
-def image_gen(server, infile,
+def image_gen(server, tls_verify, infile,
               ftype, version, description,
               sign_key, certfile, customer_certfile):
 
@@ -36,34 +36,35 @@ def image_gen(server, infile,
 
     response = requests.post(url_str,
                              files=multipart_form_data,
-                             params=params)
+                             params=params,
+                             verify=tls_verify)
 
     return response.content
 
 
-def get_key(server, key_label):
+def get_key(server, tls_verify, key_label):
 
     url_str = "https://" + server + ":4443/cgi-bin/signing_server.cgi"
 
     params = { 'cmd' : 'modulus', 'key' : key_label }
 
-    response = requests.get(url_str,params=params)
+    response = requests.get(url_str, params=params, verify=tls_verify)
 
     return response.content
 
-def get_customer_cert(server, key_label):
+def get_customer_cert(server, tls_verify, key_label):
 
     url_str = "https://" + server + ":4443/" + key_label + "_certificate.bin"
 
-    response = requests.get(url_str)
+    response = requests.get(url_str, verify=tls_verify)
 
     return response.content
 
 
 ####### tests
 
-def test_get_binary_fpk4(server):
-    fpk4 = get_key(server, 'fpk4')
+def test_get_binary_fpk4(server, tls_verify):
+    fpk4 = get_key(server, tls_verify, 'fpk4')
 
     fpk4_text = open('./fpk4_hex.txt', 'r').read().rstrip()
 
@@ -75,9 +76,10 @@ def test_get_binary_fpk4(server):
     return 1
 
 
-def test_image_gen_with_key(server):
+def test_image_gen_with_key(server, tls_verify):
 
-    signed_image = image_gen(server, './firmware_m5150.bin',
+    signed_image = image_gen(server, tls_verify,
+                             './firmware_m5150.bin',
                              'frmw', 1, 'eSecure Firmware',
                              'fpk3', None, None)
 
@@ -89,9 +91,10 @@ def test_image_gen_with_key(server):
     return 1
 
 
-def test_image_gen_with_cert(server):
+def test_image_gen_with_cert(server, tls_verify):
 
-    signed_image = image_gen(server, './puf_rom_m5150.bin',
+    signed_image = image_gen(server, tls_verify,
+                             './puf_rom_m5150.bin',
                              'pufr', 1, 'eSecure PUF-ROM',
                              None, '../development_start_certificate.bin', None)
 
@@ -103,9 +106,10 @@ def test_image_gen_with_cert(server):
     return 1
 
 
-def test_image_gen_with_customer_cert(server):
+def test_image_gen_with_customer_cert(server, tls_verify):
 
-    signed_image = image_gen(server, './puf_rom_m5150.bin',
+    signed_image = image_gen(server, tls_verify,
+                             './puf_rom_m5150.bin',
                              'pufr', 1, 'eSecure PUF-ROM',
                              None, '../development_start_certificate.bin',
                              '../customer_certificate.bin')
@@ -118,9 +122,9 @@ def test_image_gen_with_customer_cert(server):
     return 1
 
 
-def test_get_customer_cert(server):
+def test_get_customer_cert(server, tls_verify):
 
-    customer_cert = get_customer_cert(server, "cpk1")
+    customer_cert = get_customer_cert(server, tls_verify, "cpk1")
 
     customer_cert_exp = open('../customer_certificate.bin', 'rb').read()
 
@@ -141,12 +145,14 @@ def main_program():
 
     options = parser.parse_args()
 
+    tls_verify = True if options.server == "f1reg.fungible.com" else False
+
     try:
-        errors += test_get_binary_fpk4(options.server)
-        errors += test_image_gen_with_key(options.server)
-        errors += test_image_gen_with_cert(options.server)
-        errors += test_image_gen_with_customer_cert(options.server)
-        errors += test_get_customer_cert(options.server)
+        errors += test_get_binary_fpk4(options.server, tls_verify)
+        errors += test_image_gen_with_key(options.server, tls_verify)
+        errors += test_image_gen_with_cert(options.server, tls_verify)
+        errors += test_image_gen_with_customer_cert(options.server, tls_verify)
+        errors += test_get_customer_cert(options.server, tls_verify)
 
     except Exception as ex:
         print("Exception occurred %s" % str(ex))

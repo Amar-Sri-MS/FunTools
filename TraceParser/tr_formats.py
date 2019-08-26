@@ -117,3 +117,24 @@ def is_tmoas(tf):
     to switch these off.
     """
     return tf.tf_type == 3 and tf.ttype == 'tmo'
+
+
+def is_tpc(tf):
+    """
+    Whether this is a program counter trace, TPC.
+    """
+    return tf.tf_type == 3 and tf.ttype == 'tpc'
+
+
+def is_tla(tf):
+    """
+    Whether this is a load address trace, TLA.
+    """
+    return tf.tf_type == 3 and tf.ttype == 'tla'
+
+
+def is_tsa(tf):
+    """
+    Whether this is a store address trace, TSA.
+    """
+    return tf.tf_type == 3 and tf.ttype == 'tsa'
