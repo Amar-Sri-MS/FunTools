@@ -565,9 +565,9 @@ class CacheMissParser(object):
         frames = parse_and_group_trace_formats(fh)
         for frame in frames:
             for tf in frame.tfs:
-                self.process_tf(tf)
+                self.process_tf(tf, frame.frame_index)
 
-    def process_tf(self, tf):
+    def process_tf(self, tf, frame_index):
         next_state = self.state
 
         if self.state == self.STATE_CM_TPC_OR_TMOAS:
@@ -586,8 +586,8 @@ class CacheMissParser(object):
             elif tr_formats.is_tsa(tf):
                 self.current_entry.set_store_addr(tf.addr)
             else:
-                raise RuntimeError('should have either TLA or TSA '
-                                   'after TPC: %s' % tf)
+                raise RuntimeError('frame %d: should have either TLA or TSA '
+                                   'after TPC: %s' % (frame_index, tf))
             self.entries.append(self.current_entry)
             next_state = self.STATE_CM_TPC_OR_TMOAS
 
@@ -613,9 +613,10 @@ class Frame:
     A group of trace formats that belong to the same frame
     (i.e. the same 32-byte trace word).
     """
-    def __init__(self):
+    def __init__(self, frame_index):
         self.tfs = []
         self.overflow = False
+        self.frame_index = frame_index
 
     def add_tf(self, tf):
         self.tfs.append(tf)
@@ -670,6 +671,7 @@ def run_cache_miss_parser(args):
     this was a load/store instruction.
     """
     parser = CacheMissParser()
+    print 'Running cache miss parser on %s' % args.input_file
     with open(args.input_file, 'r') as fh:
         parser.parse_trace_messages(fh)
 
@@ -710,7 +712,8 @@ def parse_and_group_trace_formats(fh):
             frame_index = match.group(1)
             tf_type = int(match.group(3))
             if frame_index != last_frame_index:
-                frames.append(Frame())
+                frame_index_int = int(frame_index)
+                frames.append(Frame(frame_index_int))
                 last_frame_index = frame_index
 
             tf = _parse_message(line, tf_type)
