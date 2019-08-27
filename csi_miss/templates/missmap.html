@@ -1,0 +1,41 @@
+<html>
+  <head>
+    <title>Missmap</title>
+    <style>
+      {{ style }}
+    </style>
+  </head>
+  
+  <body>
+    <h1>Missmap</h1>
+    <i>{{ date }}</i>
+    
+    <p>Contents:</p>
+    {% for (name, _) in sections %}
+    <a href="#{{name}}">{{name}}</a><br/>
+    {% endfor %}
+    
+    {% for (name, items) in sections %}
+    <a name="{{name}}"><h2>{{name}}</h2></a>
+    <p>rows: {{ items|length }}</p>
+    
+    <table>
+      <tr>
+	<th>Count</th>
+	<th>Address</th>
+	<th>Info</th>
+      </tr>
+
+      {% for item in items %}
+      <tr>
+	<td>{{ item[0] }}</td>
+	<td>{{ item[1] }}</td>
+	<td><div align="left"><pre>{{ item[2] }}</pre></div></td>
+      </tr>
+      {% endfor %}
+      
+    </table>
+    {% endfor %}
+    
+  </body>
+</html>
