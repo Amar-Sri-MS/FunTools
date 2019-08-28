@@ -36,7 +36,7 @@ def restart_in_gdb(binname, exit=True):
     # XXX: if we're compiled, strip back to the real script name for gdb
     scriptname = os.path.realpath(__file__)
     print scriptname, scriptname[:-4]
-    if (scriptname[:-4] == ".pyc"):
+    if (scriptname[-4:] == ".pyc"):
         print "fixup"
         scriptname = scriptname[:-1]
         

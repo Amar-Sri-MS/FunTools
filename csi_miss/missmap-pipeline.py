@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
+import argparse
 import os
-import sys
 
 # pipeline pieces
 import csimiss_cook
@@ -18,6 +18,12 @@ FUNOS_BINARY = gdb_ident.FUNOS_BINARY
 #
 
 def do_missmap():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-b', '--funos-bin',
+                        type=str, help='path to funos binary',
+                        default=FUNOS_BINARY)
+
+    args = parser.parse_args()
 
     # cook the raw format
     (misslist, addrlist) = csimiss_cook.do_disect(csimiss_cook.RAW_GLOB)
@@ -31,7 +37,7 @@ def do_missmap():
     # gdb must go via a file becaue gdb
     # FIXME: expects well known names. Should extend this with a gdb.Command
     # for real arguments
-    gdb_ident.restart_in_gdb(FUNOS_BINARY, exit=False)
+    gdb_ident.restart_in_gdb(args.funos_bin, exit=False)
     
     # line table
     lfname = line_ident.OUT_FILE
@@ -39,7 +45,7 @@ def do_missmap():
         print "Line identification file exists (%s), using cached copy" % lfname
     else:
         print "Re-generating line identification file (%s)" % lfname
-        line_ident.do_line_ident(addrlist, lfname, FUNOS_BINARY)
+        line_ident.do_line_ident(addrlist, lfname, args.funos_bin)
         
     # Read the two by file
     lineinfo = missmapper.loadjs(lfname)
