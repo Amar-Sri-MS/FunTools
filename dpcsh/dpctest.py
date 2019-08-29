@@ -78,8 +78,8 @@ def run_dpc_test(args, legacy_ok, delay):
 #
 
 STYLES = {"tcp": (True, ["--tcp_proxy"], False, 0),
-          "unix": (True, ["--unix_proxy"], False, 0),
-          "qemu": (False, ["--tcp_proxy", "--base64_sock"], False, 30)}
+          "unix": (True, ["--unix_proxy"], True, 0),
+          "qemu": (False, ["--tcp_proxy", "--base64_sock"], False, 10)}
 
 def run_style(manual, style):
 
@@ -100,6 +100,7 @@ def main():
     if (len(sys.argv) > 2):
         usage()
 
+    style = None
     if (len(sys.argv) == 2):
         style = sys.argv[1]
 
