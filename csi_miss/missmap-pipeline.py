@@ -51,11 +51,15 @@ def do_missmap():
     lineinfo = missmapper.loadjs(lfname)
     gdbinfo = missmapper.loadjs(gdb_ident.OUT_FILE)
 
-    out_fname = missmapper.OUTFILE
-    print "Generating final output %s" % out_fname
+    out_fname = missmapper.OUTFILE_HTML
+    print "Generating HTML output %s" % out_fname
     missmapper.do_missmap(misslist, lineinfo,
-                          regions, gdbinfo, out_fname)
+                          regions, gdbinfo, "html", out_fname)
     
+    out_fname = missmapper.OUTFILE_CSV
+    print "Generating CVS output %s" % out_fname
+    missmapper.do_missmap(misslist, lineinfo,
+                          regions, gdbinfo, "csv", out_fname)
 
 ###
 ##  entrypoint
