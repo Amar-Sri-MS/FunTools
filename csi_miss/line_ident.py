@@ -90,9 +90,9 @@ def do_line_ident(addrlist, outfname, binname):
 
 def main():
 
-    fl = open(infname)
+    fl = open(IN_FILE)
     addrlist = json.loads(fl.read())
-    do_line_ident(INFILE, OUT_FILE, FUNOS_BINARY)
+    do_line_ident(addrlist, OUT_FILE, FUNOS_BINARY)
 
         
 ###

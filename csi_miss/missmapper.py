@@ -2,9 +2,11 @@
 
 import os
 import sys
+import csv
 import json
 import argparse
 import datetime
+import collections
 from jinja2 import Environment, FileSystemLoader
 
 
@@ -15,7 +17,8 @@ MISSFILE = "miss-list.js"
 LINEFILE = "line-ident.js"
 GDBFILE = "gdb-ident.js"
 REGIONFILE = "region-ident.js"
-OUTFILE = "missmap.html"
+OUTFILE_HTML = "missmap.html"
+OUTFILE_CSV = "misspivot.csv"
 TOPN = 15
 
 ###
@@ -82,7 +85,7 @@ def do_rekey(misslist, rkfunc, info_field):
     return l
 
 ###
-##  write data
+##  write data to HTML template
 #
 
 def abs_app_dir_path():
@@ -115,6 +118,38 @@ def do_output(out_fname, sections):
 
     fl = open(out_fname, 'w')
     fl.write(output)
+
+###
+##  pivot output
+#
+
+TABDEF = collections.OrderedDict([("pc_hex", "pc"),
+                                  ("pa_hex", "pa"),
+                                  ("pa_line_hex", "line address"),
+                                  ("type", "type"),
+                                  ("plane", "cluster type"),
+                                  ("count", "count"),
+                                  ("pa_region", "region"),
+                                  ("srclines", "line info"),
+                                  ("data_info", "data info"),
+                                  ("vague_info", "vague info"),
+])
+
+def do_pivot(out_fname, misses):
+
+    fl = open(out_fname, "wb")
+    
+    keys = TABDEF.keys()
+    writer = csv.DictWriter(fl, fieldnames=keys, extrasaction="ignore")
+    
+    # write the header with nice names
+    writer.writerow(TABDEF)
+
+    # now write all the rows
+    for miss in misses:
+        writer.writerow(miss)
+
+    
 
 ###
 ##  read the region table
@@ -181,13 +216,20 @@ def va2pa(x):
     # FIXME
     return x
 
+def core2plane(core):
+
+    if (core[:2] == "8."):
+        return "CC"
+    else:
+        return "PC"
+
 def mk_data_info(miss):
 
     rgn = miss["pa_region"]
     gdb = miss["syminfo"]
 
     if (gdb is not None):
-        return "%s: %s" % (rgn, gdb)
+        return "%s. %s" % (rgn, gdb)
     else:
         return "%s" % rgn
 
@@ -207,15 +249,22 @@ def mkmisses(raw_misses, lineinfo, regioninfo, gdbinfo):
     for raw_miss in raw_misses:
 
         miss = {}
+        miss["pc_hex"] = raw_miss["pc"]
+        miss["va_hex"] = raw_miss["vaddr"]
         miss["pc"] = int(raw_miss["pc"], 16)
         miss["va"] = int(raw_miss["vaddr"], 16)
         miss["count"] = raw_miss["count"]
+        miss["type"] = raw_miss["type"]
+        miss["core"] = raw_miss["core"]
 
         if (invalid_miss(miss)):
             continue
 
         miss["pa"] = va2pa(miss["va"])
+        miss["pa_hex"] = "0x%016x" % miss["pa"]
         miss["pa_line"] = va2pa(miss["va"] - (miss["va"] % 64))
+        miss["pa_line_hex"] = "0x%016x" % miss["pa_line"]
+        miss["plane"] = core2plane(miss["core"])
         srclines = None
         pa_region = find_region(miss["pa"], regioninfo)
         syminfo = find_gdb(miss["pa"], gdbinfo)
@@ -245,31 +294,61 @@ def mkmisses(raw_misses, lineinfo, regioninfo, gdbinfo):
 ##  do the work
 #
 
-def do_missmap(misses_raw, lineinfo, regioninfo, gdbinfo, out_fname):
+def do_missmap(misses_raw, lineinfo, regioninfo, gdbinfo, mode, out_fname):
     
     # process misses accoriding to available info
     print "%d misses in input" % len(misses_raw)
     misses = mkmisses(misses_raw, lineinfo, regioninfo, gdbinfo)
 
     print "%d processed misses" % len(misses)
+
+    if (mode == "html"):
+        # template prints a list of sections
+        sections = []
+
+        for (name, info_field, func) in REKEY_LIST:
+
+            by_key = do_rekey(misses, func, info_field)
+            tup = (name, by_key)
+            sections.append(tup)
     
-    # template prints a list of sections
-    sections = []
-
-    for (name, info_field, func) in REKEY_LIST:
-
-        by_key = do_rekey(misses, func, info_field)
-        tup = (name, by_key)
-        sections.append(tup)
-    
-    # make the output
-    do_output(out_fname, sections)
-
+        # make the output
+        do_output(out_fname, sections)
+    elif (mode == "csv"):
+        do_pivot(out_fname, misses)
+    else:
+        raise RuntimeError("bad mode %s" % mode)
+        
 ###
 ##  read a json file
 #
 def loadjs(fname):
     return json.loads(open(fname).read())
+
+
+###
+##  trivial arg parsing
+#
+
+MODES = {"html": OUTFILE_HTML,
+         "csv": OUTFILE_CSV}
+
+def usage():
+    print "usage: %s {html, csv}" % sys.argv[0]
+    sys.exit(1)
+
+def getmode():
+    
+    if (len(sys.argv) == 1):
+        mode = "html"
+
+    if (len(sys.argv) == 2):
+        mode = sys.argv[1]
+
+    if (mode not in MODES):
+        usage()
+
+    return (mode, MODES[mode])
 
 ###
 ##  main
@@ -277,6 +356,8 @@ def loadjs(fname):
 
 def main():
 
+    (mode, outfile) = getmode()
+    
     # open the miss list
     misses_raw = loadjs(MISSFILE)
 
@@ -290,7 +371,7 @@ def main():
     regioninfo = loadjs(REGIONFILE)
 
     # do all the work
-    do_missmap(misses_raw, lineinfo, regioninfo, gdbinfo, OUTFILE)
+    do_missmap(misses_raw, lineinfo, regioninfo, gdbinfo, mode, outfile)
     
 
 ###
