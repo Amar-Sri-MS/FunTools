@@ -12,7 +12,7 @@ import subprocess
 import dpc_client
 import time
 
-def test_commands():
+def test_commands(client):
 
     print "### Running a command 1"
     message = "Hello dpc"
@@ -58,30 +58,62 @@ def test_commands():
     
     print "All tests OK!"
 
-# load up a dpcsh tcp socket
-print "### Running dpcsh as text proxy"
-pid = subprocess.Popen(["./dpcsh", "--text_proxy", "--oneshot"])
+def run_dpc_test(args, legacy_ok, delay):
+    # load up a dpcsh tcp socket
+    print "### Running dpcsh as text proxy"
+    pid = subprocess.Popen(["./dpcsh", "--oneshot"] + args)
 
-print "### pid is %s" % pid
-time.sleep(1)
+    print "### pid is %s" % pid
+    time.sleep(1)
 
-# connect to it
-client = dpc_client.DpcClient(False)
+    # connect to it
+    client = dpc_client.DpcClient(False, legacy_ok)
 
-test_commands()
+    time.sleep(delay)
+    
+    test_commands(client)
+    
+###
+## main
+#
 
-client = None
+STYLES = {"tcp": (True, ["--tcp_proxy"], False, 0),
+          "unix": (True, ["--unix_proxy"], True, 0),
+          "qemu": (False, ["--tcp_proxy", "--base64_sock"], False, 10)}
+
+def run_style(manual, style):
+
+    (auto, args, legacy_ok, delay) = STYLES[style]
+
+    if (manual or auto):
+        print "Running tests for '%s'" % style
+        run_dpc_test(args, legacy_ok, delay)
+    else:
+        print "Skipping '%s'" % style
+
+def usage():
+    print "usage: %s [tcp, unix, qemu]" % sys.argv[0]
+    sys.exit(1)
+        
+def main():
+
+    if (len(sys.argv) > 2):
+        usage()
+
+    style = None
+    if (len(sys.argv) == 2):
+        style = sys.argv[1]
+
+    if (style is not None):
+        run_style(True, style)
+    else:
+        for style in STYLES:
+            run_style(False, style)
 
 
-# now do a unix socket
-print "### Running dpcsh as unix proxy"
-pid = subprocess.Popen(["./dpcsh", "--unix_proxy", "--oneshot"])
 
-print "### pid is %s" % pid
-time.sleep(1)
-
-# connect to it
-client = dpc_client.DpcClient(False, True)
-
-test_commands()
-
+###
+##  entrypoint
+#
+if (__name__ == "__main__"):
+    main()
