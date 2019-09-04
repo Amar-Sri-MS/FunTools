@@ -103,7 +103,7 @@ def csr_poke(args):
     field_list = input_args.get("field_list", None)
     raw_value = input_args.get("raw_value", None)
 
-    csr_data = csr_get_metadata(csr_name, ring_name=ring_name,
+    csr_data = csr_get_metadata(csr_name.lower(), ring_name=ring_name,
                                 ring_inst=ring_inst, anode_name=anode_name,
                                 anode_path=anode_path)
 
@@ -205,12 +205,47 @@ def csr_list(args):
     ring_name = args.ring[0] if args.ring else None
     anode_name = args.anode[0] if args.anode else None
 
-    csr_list = csr_metadata().get_csr_def(csr_name, rn_class=ring_name, an=anode_name)
+    csr_list = csr_metadata().get_csr_def(csr_name.lower(), rn_class=ring_name, an=anode_name)
     if csr_list is None:
         print("csr: {} doesnot exist in database!.".format(csr_name))
         return
     print("Matching csr entries for csr:{0}".format(csr_name))
     print(json_obj_pretty(csr_list))
+
+# csr decode handler for commandline interface
+def csr_decode(args):
+    input_args = csr_get_decode_args(args)
+    csr_name = input_args.get("csr_name", None)
+    raw_value = input_args.get("raw_value", None)
+
+    csr_metadata = csr_metadata_objs(csr_name.lower())
+    if type(csr_metadata) is not list:
+        print(("Error! Failed to get metadata list"
+              " for csr:{} !!!").format(csr_name.lower()))
+        return
+
+    csr_metadata = csr_metadata[0]
+    csr_width_bytes = csr_get_width_bytes(csr_metadata)
+    csr_width_words = csr_width_bytes >> 3
+
+    word_array = list()
+    if raw_value is not None:
+        for word in raw_value:
+            value = str_to_int(word)
+            if value is None:
+                print(('Invalid field input value: "{0}". Must be positive'
+                       'integer or hexadecimal').format(word))
+                return None
+            word_array.append(value)
+
+        if len(word_array) != csr_width_words:
+            print(("Number of raw value words should match csr width.\n"
+                  " csr: {0}.\nExpected {1} word(s) but given {2}.").format(
+                  json_obj_pretty(csr_metadata), csr_width_words, len(word_array)))
+            return None
+        logger.info(hex_word_dump(word_array))
+
+    csr_show(csr_metadata, word_array)
 
 #import pdb
 # Find csr medata matching an address
@@ -318,7 +353,7 @@ def csr_find(args):
         csr_list = csr_metadata().get_csr_list()
         matched_csr_list = list()
         for x in csr_list:
-            if csr_name in x:
+            if csr_name.lower() in x.lower():
                 matched_csr_list.append(x)
         if not matched_csr_list:
             print('There are no csrs in database matching "{0}"!'.format(csr_name))
@@ -916,6 +951,15 @@ def csr_get_poke_args(args):
     input_args["raw_value"] = args.raw_value
 
     return input_args
+
+# Read decode input args
+def csr_get_decode_args(args):
+    input_args = dict()
+    input_args["csr_name"] = args.csr[0]
+    input_args["raw_value"] = args.raw_value
+
+    return input_args
+
 
 
 # Returns csr address
