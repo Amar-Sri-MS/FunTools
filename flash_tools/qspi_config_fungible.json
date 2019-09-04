@@ -129,6 +129,24 @@
             "customer_cert": "",
             "description": ""
         },
+        "eeprom_fs1600r2_0_packed.bin": {
+            "source": "eeprom_fs1600r2_0",
+            "version": 1,
+            "fourcc": "eepr",
+            "key": "fpk3",
+            "cert": "",
+            "customer_cert": "",
+            "description": ""
+        },
+        "eeprom_fs1600r2_1_packed.bin": {
+            "source": "eeprom_fs1600r2_1",
+            "version": 1,
+            "fourcc": "eepr",
+            "key": "fpk3",
+            "cert": "",
+            "customer_cert": "",
+            "description": ""
+        },
         "host_firmware_packed.bin": {
             "source": "",
             "version": 1,
