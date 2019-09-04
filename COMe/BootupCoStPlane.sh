@@ -1,5 +1,7 @@
 #!/bin/bash
 
+FUN_ROOT="/opt/fungible"
+
 if [[ "$EUID" -ne 0 ]]; then
         printf "Please run as ROOT EUID=$EUID\n"
         exit
@@ -15,6 +17,10 @@ fi
 IPMITOOL=`which ipmitool`
 if [[ -z $IPMITOOL ]]; then
 	apt-get install -y ipmitool
+fi
+
+if [[ -f $FUN_ROOT/StorageController/etc/start_splash_screen.sh ]]; then
+	$FUN_ROOT/StorageController/etc/start_splash_screen.sh start &
 fi
 
 IPMI_LAN="ipmitool -U admin -P admin lan print 1"
@@ -57,7 +63,7 @@ echo "$F1COUNT F1 found"
 export USER="fun"
 export HOME="/home/fun"
 
-/opt/fungible/cclinux/cclinux_service.sh --start --ep --storage
-/opt/fungible/StorageController/etc/start_sc.sh start
+$FUN_ROOT/cclinux/cclinux_service.sh --start --ep --storage
+$FUN_ROOT/StorageController/etc/start_sc.sh start
 
 echo "$0 DONE!!!"
