@@ -103,7 +103,7 @@ def main():
                   "bin/flash_tools/enrollment_service.py",
                   "bin/flash_tools/key_replace.py",
                   "bin/flash_tools/flash_utils.py",
-                  "bin/flash_tools/f1registration.ca.pem",
+                  "bin/flash_tools/sign_release.sh",
                   "bin/flash_tools/" + os.path.basename(__file__),
                   "bin/Linux/x86_64/mkimage" ]
         for app in utils:
@@ -132,8 +132,8 @@ def main():
         gf.set_search_paths(sdkpaths)
         os.chdir(args.destdir)
         gf.run('key_injection', net=use_net, hsm=use_hsm, keep_output=True)
-        gf.run('certificates')
-        gf.run('sign')
+        gf.run('certificates', net=use_net, hsm=use_hsm)
+        gf.run('sign', net=use_net, hsm=use_hsm)
         os.chdir(curdir)
 
 
