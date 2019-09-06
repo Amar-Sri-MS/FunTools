@@ -707,9 +707,6 @@ def parse_and_execute():
                         action='store_true',
                         help="ouput key in C hexadecimal format (modulus)")
 
-    parser.add_argument("--serial_info_file", dest="serial_info_file",
-                        help="file with serial number and mask", metavar="FILE")
-
     parser.add_argument("-t", "--fwtype", dest="fw_type",
                         help="fw type (4 chars) (image, certified_image)")
 
@@ -801,37 +798,14 @@ def parse_and_execute():
 
     elif options.command == 'certificate':
 
-        # 2 possibilities to specify the serial number: cmd line or in file
-        if options.serial_number is None and options.serial_info_file is None:
-            print('Serial number required for certificate (Use -h for full info).')
+        if options.serial_number is None or options.serial_number_mask is None:
+            print('Serial number and mask required for certificate (Use -h for full info).')
             sys.exit(1)
 
         # 2 options to specify the public key: in HSM or in file
         if options.public_key is None and options.public_key_file is None:
             print('Public key required for certificate (use -h for full info).')
             sys.exit(1)
-
-        # parse options.serial_info_file and do some checks
-        # since this is what's used for real certificates
-        if options.serial_number is None:
-            with open(options.serial_info_file, 'r') as f:
-                data = '[a_section]\n' + f.read()
-            config = configparser.ConfigParser()
-            config.read_string(data)
-
-            options.serial_number = config.get('a_section', 'serial_number')
-            options.serial_number_mask = config.get('a_section', 'serial_number_mask')
-            sn = binascii.unhexlify(options.serial_number)
-            snm = binascii.unhexlify(options.serial_number_mask)
-
-            if len(sn) != SERIAL_INFO_NUMBER_SIZE:
-                print("Serial number is not completely specified in file  {0}".format(
-                    options.serial_info_file))
-                sys.exit(1)
-            if len(snm) != SERIAL_INFO_NUMBER_SIZE:
-                print("Serial number mask is not completely specified in file  {0}".format(
-                    options.serial_info_file))
-                sys.exit(1)
 
         cert_gen(options.out_path, options.public_key, options.public_key_file,
                  options.sign_key, options.serial_number, options.serial_number_mask,
