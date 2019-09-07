@@ -78,7 +78,7 @@ def do_addr2line(proc, addrs):
             lines.append(s)
 
         # send more input
-        s = "0x%16x\n" % addr
+        s = "0x%016x\n" % addr
         # print "write: %s" % s.strip()
         proc.stdin.write(s)
 
