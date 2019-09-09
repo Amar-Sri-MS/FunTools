@@ -112,7 +112,12 @@ def raw_addr2line(addrs, funos_binary_path):
         
     return output
 
-START_RE = "(0x[0-9a-f]+):(.*:[0-9\?]+\n)"
+
+# Attempts to match lines that look like:
+#
+# 0xa800000000427658: /funos/platform/include/platform/lock.h:62
+# 0xa800000000427558: /funos/platform/mips64/bzero.c:58 (discriminator 1)
+START_RE = "(0x[0-9a-f]+):(.*:[0-9\?]+( \(discriminator \d+\))?\n)"
 NOINFO = " ?? ??:0\n"
 
 

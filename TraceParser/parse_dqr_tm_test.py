@@ -275,3 +275,30 @@ class TestPerfParserIntegration(unittest.TestCase):
             parser.parse_trace_messages(fh)
 
         self.assertEqual(697, len(parser.get_entries()))
+
+
+class TestAddr2LineOutputParsing(unittest.TestCase):
+    """ Tests addr2line output parsing """
+
+    def test_parse_with_inlining(self):
+        lines = ['0xa800000000427658: /projects/funos/platform/include/platform/lock.h:62\n',
+                 '(inlined by) /projects/funos/platform/mips64/chario.c:136\n',
+                 '(inlined by) /projects/funos/platform/mips64/chario.c:231\n']
+
+        addrs = {}
+        parse_dqr_tm.parse_next_addr(lines, addrs)
+
+        info = addrs[0xa800000000427658]
+        self.assertEqual(3, len(info))
+        self.assertIn('lock.h:62', info[0])
+
+    def test_parse_with_discriminator(self):
+        lines = ['0xa800000000427558: /projects/funos/platform/mips64/bzero.c:58 (discriminator 1)\n']
+
+        addrs = {}
+        parse_dqr_tm.parse_next_addr(lines, addrs)
+
+        info = addrs[0xa800000000427558]
+        self.assertEqual(1, len(info))
+        self.assertIn('bzero.c:58', info[0])
+
