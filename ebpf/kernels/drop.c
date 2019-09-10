@@ -7,12 +7,7 @@
 *
 */
 
-#include "ebpf_kern_args.h"
-/*
-* This header brings in all the ebpf defintions
-* This includes all the linux kernel includes
-*/
-#include "ebpf_include.h"
+#include "../bpf_helpers.h"
 
 /*
 * This kernel should drop a packet that has
@@ -20,6 +15,7 @@
 *
 */
 
+SEC("xdp")
 int drop(struct k_05_arg *arg)
 {
 	uint8_t *pkt = (uint8_t *) arg->data;
