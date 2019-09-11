@@ -23,6 +23,14 @@ OUT_FILE = "line-ident.js"
 FUNOS_BINARY = "funos-f1.stripped"
 
 ###
+##  make sure we're 0xfoo
+#
+
+def canonical_va(x):
+    return "%016x" % int(x, 16)
+    
+
+###
 ##  use addr2line
 #
 
@@ -40,7 +48,7 @@ def mkaddrinfo(binname, va):
     # look up all the info for a line
     info = {}
 
-    info["line_va"] = "0x%016x" % (va - (va % 64)) # round to cache line
+    info["line_va"] = "%016x" % (va - (va % 64)) # round to cache line
     
     # addr2line
     info["srclines"] = get_addr2line(va, binname)
@@ -70,7 +78,7 @@ def do_line_ident(addrlist, outfname, binname):
     n = len(addrlist)
     t0 = time.time()
     for i in range(0, n):
-        addr = addrlist[i]
+        addr = canonical_va(addrlist[i])
 
         t1 = time.time()
         if ((t1 - t0) > 10):
