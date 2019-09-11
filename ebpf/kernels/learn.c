@@ -10,26 +10,22 @@
 *  learned earlier. Demonstrates the usage of a map
 */
 
-#include "ebpf_kern_args.h"
-/*
-* This header brings in all the ebpf defintions
-* This includes all the linux kernel includes
-*/
-#include "ebpf_include.h"
+#include "../bpf_helpers.h"
 
 #define FLOOD -1
 
-struct bpf_map_def SEC("maps") inports =
-{
-    .type = BPF_MAP_TYPE_HASH,
+BPF_MAP_DEF(inports) = {
+    .map_type = BPF_MAP_TYPE_HASH,
     .key_size = 6,
-    .value_size = sizeof(uint32_t),
+    .value_size = sizeof(__u32),
     .max_entries = 256,
 };
+BPF_MAP_ADD(inports);
 
+SEC("xdp")
 int l2_learn(struct k_05_arg *arg)
 {
-	uint8_t *pkt = (uint8_t *) arg->data;
+	__u8 *pkt = (__u8 *) arg->data;
 	struct ethhdr *eth = (struct ethhdr *)(pkt);
 	int out_port = FLOOD;
 
