@@ -160,7 +160,7 @@ def do_pivot(out_fname, misses):
 def find_region(pa, regioninfo):
 
     for region in regioninfo:
-        if ((pa >= region[0], 0)
+        if ((pa >= region[0])
             and (pa < region[1])):
             return region[2]
 
