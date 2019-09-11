@@ -218,18 +218,6 @@ class TestPerfParser(unittest.TestCase):
         self.parser.parse_trace_messages(self.fh)
         self.assertEqual(0, len(self.parser.samples))
 
-    def test_frame_tail_is_dropped_after_tmoas(self):
-        msg = ('6.0: 82 030000 0000 0000 TF3 ic[3]=ni tt=tu2 te=1 tm=1 va[64]=0x0000000000000001\n'
-               '6.1: 82 030000 0000 0000 TF3 ic[3]=ni tt=tu1 te=1 tm=1 va[64]=0x0000000000000001\n'
-               '6.2: 82 030000 0000 0000 TF3 ic[3]=ni tt=tu1 te=1 tm=1 va[64]=0x0000000000000001\n'
-               '6.4: 82 030000 0000 0000 TF3 ic[3]=ni tt=tu1 te=1 tm=1 va[64]=0x0000000000000001\n'
-               '6.5: 41          00000000 00126D01  TF3 ic[1]=ni  tt=tmo te=1 tm=0     '
-               'va[26]=         0x0000093      mmid=0000 pom=k10 isam=1 sync=0 ibt=1 vid=0\n'
-               '6.6: 82 030000 0000 0000 TF3 ic[3]=ni tt=tu1 te=1 tm=1 va[64]=0x0000000000000001\n')
-        self._init_fh(msg)
-        self.parser.parse_trace_messages(self.fh)
-        self.assertEqual(0, len(self.parser.samples))
-
     def test_frame_head_is_not_dropped_after_tmoas(self):
         msg = ('6.0: 82 030000 0000 0000 TF3 ic[3]=ni tt=tu2 te=1 tm=1 va[64]=0x0000000000000001\n'
                '6.1: 82 030000 0000 0000 TF3 ic[3]=ni tt=tu1 te=1 tm=1 va[64]=0x0000000000000001\n'
@@ -257,6 +245,22 @@ class TestPerfParser(unittest.TestCase):
         self.assertTrue(sample.is_custom_data)
         self.assertEqual(0xdeadbeefcafebabe, sample.custom_data)
 
+    def test_get_overflow_frames(self):
+        msg = ('1.130:  0x00000000_0x0000001C TF5 overflow\n'
+               '1.246: 74 00000000 00000000 0000C000  TF3 ic[0]=ni  tt=nt  te=0 tm=0  va[56]=  0x00000000000000\n'
+               '2.130:  0x00000000_0x0000001C TF5 overflow\n'
+               '3.130:  0x00000000_0x0000001C TF5 overflow\n'
+               '3.604: 74 00000000 00000000 0000C000  TF3 ic[0]=ni  tt=nt  te=0 tm=0  va[56]=  0x00000000000000\n'
+               '3.704: 74 00000000 00000000 0000C000  TF3 ic[0]=ni  tt=nt  te=0 tm=0  va[56]=  0x00000000000000\n'
+               '4.200: 82 00030000 48918577 6F03FF00  TF3 ic[3]=ni  tt=tu2 te=1 tm=1  va[64]=0x0000489185776F03\n'
+               '5.130:  0x00000000_0x0000001C TF5 overflow\n')
+        self._init_fh(msg)
+        self.parser.parse_trace_messages(self.fh)
+        self.assertEqual(0, len(self.parser.samples))
+
+        overflow_frames = self.parser.get_overflow_frames()
+        self.assertEqual(4, len(overflow_frames))
+
 
 class TestPerfParserIntegration(unittest.TestCase):
     """ Integration-style tests on real data files """
@@ -264,10 +268,10 @@ class TestPerfParserIntegration(unittest.TestCase):
     def test_on_dqr_trace_message(self):
         parser = parse_dqr_tm.PerfParser(cluster=7, core=5)
 
-        with open('testdata/dqr_07_5_trace.tm') as fh:
+        with open('testdata/dqr_perf_trace.tm') as fh:
             parser.parse_trace_messages(fh)
 
-        self.assertEqual(2747, len(parser.samples))
+        self.assertEqual(1948, len(parser.samples))
 
     def test_on_cache_miss_trace(self):
         parser = parse_dqr_tm.CacheMissParser()
