@@ -12,9 +12,8 @@ echo "Running $0"
 if [[ -f $NOBOOT ]]; then
 	printf "Aborting reboot request"
 	printf "Please remove file $NOBOOT"
+	exit
 fi
-
-exit
 
 SSHPASS=`which sshpass`
 if [[ -z $SSHPASS ]]; then
