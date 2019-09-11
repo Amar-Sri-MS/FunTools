@@ -128,6 +128,8 @@ TABDEF = collections.OrderedDict([("pc_hex", "pc"),
                                   ("pa_line_hex", "line address"),
                                   ("type", "type"),
                                   ("plane", "cluster type"),
+                                  ("cluster", "cluster"),
+                                  ("core", "core"),
                                   ("count", "count"),
                                   ("pa_region", "region"),
                                   ("srclines", "line info"),
@@ -216,9 +218,15 @@ def va2pa(x):
     # FIXME
     return x
 
+def excel_encode_core(core):
+    return "\t%s" % core
+
+def core2cluster(core):
+    return core.split(".")[0]
+
 def core2plane(core):
 
-    if (core[:2] == "8."):
+    if (core2cluster(core) == "8"):
         return "CC"
     else:
         return "PC"
@@ -255,7 +263,7 @@ def mkmisses(raw_misses, lineinfo, regioninfo, gdbinfo):
         miss["va"] = int(raw_miss["vaddr"], 16)
         miss["count"] = raw_miss["count"]
         miss["type"] = raw_miss["type"]
-        miss["core"] = raw_miss["core"]
+        miss["core"] = excel_encode_core(raw_miss["core"])
 
         if (invalid_miss(miss)):
             continue
@@ -264,7 +272,8 @@ def mkmisses(raw_misses, lineinfo, regioninfo, gdbinfo):
         miss["pa_hex"] = "0x%016x" % miss["pa"]
         miss["pa_line"] = va2pa(miss["va"] - (miss["va"] % 64))
         miss["pa_line_hex"] = "0x%016x" % miss["pa_line"]
-        miss["plane"] = core2plane(miss["core"])
+        miss["plane"] = core2plane(raw_miss["core"])
+        miss["cluster"] = core2cluster(raw_miss["core"])
         srclines = None
         pa_region = find_region(miss["pa"], regioninfo)
         syminfo = find_gdb(miss["pa"], gdbinfo)
