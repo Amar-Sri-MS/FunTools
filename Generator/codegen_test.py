@@ -524,7 +524,7 @@ class TestComments(unittest.TestCase):
 
     out = RemoveWhitespace(out)
 
-    self.assertIn('bool foo_json_init(struct fun_json *j,', out)
+    self.assertIn('bool foo_json_init(const struct fun_json *j,', out)
     self.assertIn('struct foo *s)', out)
 
     self.assertIn('struct fun_json *bar_j = fun_json_lookup(j, "bar");', out)
