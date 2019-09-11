@@ -218,6 +218,9 @@ def va2pa(x):
     # FIXME
     return x
 
+def excel_encode_core(core):
+    return "\t%s" % core
+
 def core2cluster(core):
     return core.split(".")[0]
 
@@ -260,7 +263,7 @@ def mkmisses(raw_misses, lineinfo, regioninfo, gdbinfo):
         miss["va"] = int(raw_miss["vaddr"], 16)
         miss["count"] = raw_miss["count"]
         miss["type"] = raw_miss["type"]
-        miss["core"] = raw_miss["core"]
+        miss["core"] = excel_encode_core(raw_miss["core"])
 
         if (invalid_miss(miss)):
             continue
