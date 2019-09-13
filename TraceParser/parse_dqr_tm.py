@@ -12,6 +12,7 @@
 #
 
 import argparse
+import json
 import os
 import platform
 import re
@@ -161,6 +162,7 @@ def parsed_addr2line(addrs, funos_binary):
 ##  Classes
 #
 
+
 class PerfParser:
     """
     Parses the dequeuer trace for trace messages which represent
@@ -170,6 +172,8 @@ class PerfParser:
     """
 
     # Parser state identifiers. Python 2.7 does not have enum types.
+    TMOAS = 'tmoas'
+    TPC = 'tpc'
     WORD0 = 'word0'
     WORD1 = 'word1'
     WORD2 = 'word2'
@@ -187,6 +191,7 @@ class PerfParser:
         self.fr_idx = 0
         self.tf_idx = 0
         self.fr_valid = True
+        self.overflow_frames = []
 
     def parse_trace_messages(self, fh):
         self.frames = parse_and_group_trace_formats(fh)
@@ -202,10 +207,6 @@ class PerfParser:
         # TU1. This allows recovery from overflow frames where traces
         # are lost.
         #
-        # The sequence may not be contiguous: interleaving from multiple
-        # VPs may occur, and TMOAS messages which record processor state
-        # changes cannot be disabled.
-        #
         # This part of the code is written like a finite state automaton
         # which processes each trace format in turn. State is maintained
         # per-VP.
@@ -219,18 +220,17 @@ class PerfParser:
             tf = frame.tfs[self.tf_idx]
 
             # If this frame has an overflow message we need to ignore all
-            # entries in it (this is documented in MIPS PDTrace).
+            # entries until we find a TMOAS-TPC pair, which indicates tracing
+            # has restarted (this is documented in MIPS PDTrace).
             #
-            # Also, TMOAS shows up every now and then to track processor state
-            # changes. The most common cause of TMOAS in FunOS appears
-            # to be exceptions. Once TMOAS appears, all subsequent traces in
-            # the frame seem to be bogus (this is undocumented).
-            #
-            # Because both drop an unknown number of traces we reset all
-            # states to start looking for the first word again.
-            if frame.overflow or tr_formats.is_tmoas(tf):
-                state = [PerfParser.WORD0] * MAX_VPS_PER_CORE
+            # Because overflow drops an unknown number of traces we reset all
+            # states: there is no way to recover partial perf samples.
+            if frame.overflow:
+                state = [PerfParser.TMOAS] * MAX_VPS_PER_CORE
                 self.fr_valid = False
+                if (not self.overflow_frames or
+                        self.overflow_frames[-1] != self.fr_idx):
+                    self.overflow_frames.append(self.fr_idx)
 
             # Skip trace formats if the frame is marked as invalid. At the
             # end of frame we reset the status to valid.
@@ -238,7 +238,27 @@ class PerfParser:
                 self._advance_tf()
                 continue
 
-            # If this is not a valid TU2 or TU1 format skip it
+            # This block handles the recovery states after overflow.
+            #
+            # All VP states must agree that they're looking for TMOAS-TPC, so
+            # we only need to check VP 0
+            if state[0] == PerfParser.TMOAS:
+                if tr_formats.is_tmoas(tf):
+                    state = [PerfParser.TPC] * MAX_VPS_PER_CORE
+                self._advance_tf()
+                continue
+            elif state[0] == PerfParser.TPC:
+                if tr_formats.is_tpc(tf):
+                    state = [PerfParser.WORD0] * MAX_VPS_PER_CORE
+                self._advance_tf()
+                continue
+
+            # The following code handles normal operation where we build up
+            # perf samples per-VP.
+            #
+            # If this is not a valid TU2 or TU1 format skip it. The most
+            # common reason for this is the TMOAS format, which also shows up
+            # on processor mode changes.
             if not tr_formats.is_tu1(tf) and not tr_formats.is_tu2(tf):
                 self._advance_tf()
                 continue
@@ -317,6 +337,13 @@ class PerfParser:
             result.append(perfmon_sample)
 
         return result
+
+    def get_overflow_frames(self):
+        """ Returns a list of overflow frame indices """
+        return self.overflow_frames
+
+    def get_total_frame_count(self):
+        return len(self.frames)
 
 
 class PerfSampleBuilder:
@@ -605,6 +632,7 @@ class CacheMissParser(object):
     def _run_addr2line(addrs, funos_binary_path):
         return raw_addr2line(addrs, funos_binary_path)
 
+
 class PDTParser:
     """
     TODO: implement PC tracing here
@@ -666,6 +694,22 @@ def run_perf_parser(args):
         for sample in perfmon_samples:
             fh.write('\n'.join(sample))
             fh.write('\n')
+
+    report_overflow_frames(args, trace_parser)
+
+
+def report_overflow_frames(args, trace_parser):
+    overflow_frames = trace_parser.get_overflow_frames()
+    total_frames = trace_parser.get_total_frame_count()
+
+    if overflow_frames:
+        overflow_file = 'overflow_%s_%s.txt' % (str(args.cluster),
+                                                str(args.core))
+        overflow_path = os.path.join(args.output_dir, overflow_file)
+        with open(overflow_path, 'w') as fh:
+            info = {'total_frames': total_frames,
+                    'dropped_frames': overflow_frames}
+            fh.write(json.dumps(info))
 
 
 def run_cache_miss_parser(args):
