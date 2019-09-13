@@ -342,6 +342,9 @@ class PerfParser:
         """ Returns a list of overflow frame indices """
         return self.overflow_frames
 
+    def get_total_frame_count(self):
+        return len(self.frames)
+
 
 class PerfSampleBuilder:
     """
@@ -697,12 +700,16 @@ def run_perf_parser(args):
 
 def report_overflow_frames(args, trace_parser):
     overflow_frames = trace_parser.get_overflow_frames()
+    total_frames = trace_parser.get_total_frame_count()
+
     if overflow_frames:
         overflow_file = 'overflow_%s_%s.txt' % (str(args.cluster),
                                                 str(args.core))
         overflow_path = os.path.join(args.output_dir, overflow_file)
         with open(overflow_path, 'w') as fh:
-            fh.write(json.dumps(overflow_frames))
+            info = {'total_frames': total_frames,
+                    'dropped_frames': overflow_frames}
+            fh.write(json.dumps(info))
 
 
 def run_cache_miss_parser(args):
