@@ -172,6 +172,8 @@ class PerfParser:
     """
 
     # Parser state identifiers. Python 2.7 does not have enum types.
+    TMOAS = 'tmoas'
+    TPC = 'tpc'
     WORD0 = 'word0'
     WORD1 = 'word1'
     WORD2 = 'word2'
@@ -218,12 +220,13 @@ class PerfParser:
             tf = frame.tfs[self.tf_idx]
 
             # If this frame has an overflow message we need to ignore all
-            # entries in it (this is documented in MIPS PDTrace).
+            # entries until we find a TMOAS-TPC pair, which indicates tracing
+            # has restarted (this is documented in MIPS PDTrace).
             #
             # Because overflow drops an unknown number of traces we reset all
-            # states to start looking for the first word again.
+            # states: there is no way to recover partial perf samples.
             if frame.overflow:
-                state = [PerfParser.WORD0] * MAX_VPS_PER_CORE
+                state = [PerfParser.TMOAS] * MAX_VPS_PER_CORE
                 self.fr_valid = False
                 if (not self.overflow_frames or
                         self.overflow_frames[-1] != self.fr_idx):
@@ -235,8 +238,26 @@ class PerfParser:
                 self._advance_tf()
                 continue
 
+            # This block handles the recovery states after overflow.
+            #
+            # All VP states must agree that they're looking for TMOAS-TPC, so
+            # we only need to check VP 0
+            if state[0] == PerfParser.TMOAS:
+                if tr_formats.is_tmoas(tf):
+                    state = [PerfParser.TPC] * MAX_VPS_PER_CORE
+                self._advance_tf()
+                continue
+            elif state[0] == PerfParser.TPC:
+                if tr_formats.is_tpc(tf):
+                    state = [PerfParser.WORD0] * MAX_VPS_PER_CORE
+                self._advance_tf()
+                continue
+
+            # The following code handles normal operation where we build up
+            # perf samples per-VP.
+            #
             # If this is not a valid TU2 or TU1 format skip it. The most
-            # common reason for this is the TMOAS format, which shows up
+            # common reason for this is the TMOAS format, which also shows up
             # on processor mode changes.
             if not tr_formats.is_tu1(tf) and not tr_formats.is_tu2(tf):
                 self._advance_tf()
