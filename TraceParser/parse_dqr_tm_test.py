@@ -296,6 +296,30 @@ class TestPerfParser(unittest.TestCase):
         self.parser.parse_trace_messages(self.fh)
         self.assertEqual(0, len(self.parser.samples))
 
+    def test_tmoas_in_middle_of_sample(self):
+        """
+        TMOAS may show up from time to time due to processor mode changes,
+        but should not affect samples.
+        """
+        msg = list()
+
+        # almost-complete sample
+        msg.append(self._mock_tu2('6.0', 0x2))
+        msg.append(self._mock_tu1('6.1', 0x2))
+        msg.append(self._mock_tu1('6.2', 0x2))
+        msg.append(self._mock_tu1('6.3', 0x2))
+
+        # some processor-mode change TMOAS trace formats
+        msg.append(self._mock_tmoas('7.4'))
+        msg.append(self._mock_tmoas('7.6'))
+
+        # complete sample after TMOAS
+        msg.append(self._mock_tu1('10.0', 0x2))
+
+        self._init_fh(msg)
+        self.parser.parse_trace_messages(self.fh)
+        self.assertEqual(1, len(self.parser.samples))
+
     def test_frame_head_is_not_dropped_after_tmoas(self):
         msg = ['6.0: 82 030000 0000 0000 TF3 ic[3]=ni tt=tu2 te=1 tm=1 va[64]=0x0000000000000001',
                '6.1: 82 030000 0000 0000 TF3 ic[3]=ni tt=tu1 te=1 tm=1 va[64]=0x0000000000000001',

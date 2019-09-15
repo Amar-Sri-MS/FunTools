@@ -188,10 +188,10 @@ class PerfParser:
         self.samples = []
         self.cluster = cluster
         self.core = core
-        self.fr_idx = 0
-        self.tf_idx = 0
-        self.fr_valid = True
         self.overflow_frames = []
+        self.state = [PerfParser.WORD0] * MAX_VPS_PER_CORE
+        self.next_state = [PerfParser.WORD0] * MAX_VPS_PER_CORE
+        self.sample_builder = [None] * MAX_VPS_PER_CORE
 
     def parse_trace_messages(self, fh):
         self.frames = parse_and_group_trace_formats(fh)
@@ -208,113 +208,121 @@ class PerfParser:
         # are lost.
         #
         # This part of the code is written like a finite state automaton
-        # which processes each trace format in turn. State is maintained
-        # per-VP.
+        # which processes each trace format (tf) in turn. State is
+        # maintained per-VP. Here is a drawing of the state machine:
+        #
+        #                ------------------------------------------------
+        #               |                                                |
+        #               v                                                |
+        #    ---> (WORD0 - tu2) ---------------> (TMOAS) --> (TPC) ------
+        #   |           |          overflow         ^
+        #   |           v                           |
+        #   |     (WORD1 - tu1) --------------------
+        #   |           |          overflow         |
+        #   |           v                           |
+        #   |     (WORD2 - tu1) --------------------
+        #   |           |          overflow         |
+        #   |           v                           |
+        #   |     (WORD3 - tu1) --------------------
+        #   |           |          overflow         |
+        #   |           v                           |
+        #    ---- (WORD4 - tu1) --------------------
+        #                          overflow
+        #
 
-        state = [PerfParser.WORD0] * MAX_VPS_PER_CORE
-        next_state = [PerfParser.WORD0] * MAX_VPS_PER_CORE
-        sample_builder = [None] * MAX_VPS_PER_CORE
+        for fr_idx, frame in enumerate(self.frames):
+            for tf in frame.tfs:
 
-        while self.fr_idx != len(self.frames):
-            frame = self.frames[self.fr_idx]
-            tf = frame.tfs[self.tf_idx]
+                # If this frame has an overflow message we need to ignore all
+                # entries until we find a TMOAS-TPC pair, which indicates
+                # tracing has restarted (this is documented in MIPS PDTrace).
+                #
+                # Because overflow drops an unknown number of traces we reset
+                # all states: there is no way to recover partial perf samples.
+                if frame.overflow:
+                    self.next_state = [PerfParser.TMOAS] * MAX_VPS_PER_CORE
+                    if (not self.overflow_frames or
+                            self.overflow_frames[-1] != fr_idx):
+                        self.overflow_frames.append(fr_idx)
 
-            # If this frame has an overflow message we need to ignore all
-            # entries until we find a TMOAS-TPC pair, which indicates tracing
-            # has restarted (this is documented in MIPS PDTrace).
+                # This block handles the recovery states after overflow.
+                #
+                # All VP states must agree that they're looking for TMOAS-TPC,
+                # so we only need to check VP 0
+                elif self.state[0] == PerfParser.TMOAS:
+                    if tr_formats.is_tmoas(tf):
+                        self.next_state = [PerfParser.TPC] * MAX_VPS_PER_CORE
+                elif self.state[0] == PerfParser.TPC:
+                    if tr_formats.is_tpc(tf):
+                        self.next_state = [PerfParser.WORD0] * MAX_VPS_PER_CORE
+
+                else:
+                    self.parse_regular_tf(tf)
+
+                self.state = self.next_state
+
+    def parse_regular_tf(self, tf):
+        """
+        Handles trace formats that are not overflow or overflow recovery
+        formats.
+
+        This is where we expect the parser to spend most of its time with TU2
+        and TU1 formats.
+        """
+
+        # If this is not a valid TU2 or TU1 format skip it. The most
+        # common reason for this is the TMOAS format, which shows
+        # up on processor mode changes.
+        if not tr_formats.is_tu1(tf) and not tr_formats.is_tu2(tf):
+            pass
+
+        else:
+            # The following code handles normal operation where we
+            # build up perf samples per-VP.
             #
-            # Because overflow drops an unknown number of traces we reset all
-            # states: there is no way to recover partial perf samples.
-            if frame.overflow:
-                state = [PerfParser.TMOAS] * MAX_VPS_PER_CORE
-                self.fr_valid = False
-                if (not self.overflow_frames or
-                        self.overflow_frames[-1] != self.fr_idx):
-                    self.overflow_frames.append(self.fr_idx)
-
-            # Skip trace formats if the frame is marked as invalid. At the
-            # end of frame we reset the status to valid.
-            if not self.fr_valid:
-                self._advance_tf()
-                continue
-
-            # This block handles the recovery states after overflow.
-            #
-            # All VP states must agree that they're looking for TMOAS-TPC, so
-            # we only need to check VP 0
-            if state[0] == PerfParser.TMOAS:
-                if tr_formats.is_tmoas(tf):
-                    state = [PerfParser.TPC] * MAX_VPS_PER_CORE
-                self._advance_tf()
-                continue
-            elif state[0] == PerfParser.TPC:
-                if tr_formats.is_tpc(tf):
-                    state = [PerfParser.WORD0] * MAX_VPS_PER_CORE
-                self._advance_tf()
-                continue
-
-            # The following code handles normal operation where we build up
-            # perf samples per-VP.
-            #
-            # If this is not a valid TU2 or TU1 format skip it. The most
-            # common reason for this is the TMOAS format, which also shows up
-            # on processor mode changes.
-            if not tr_formats.is_tu1(tf) and not tr_formats.is_tu2(tf):
-                self._advance_tf()
-                continue
-
-            # Extract the VP from the data because pdtrace hardware seems
-            # to give bogus vpid values. Sigh.
+            # Extract the VP from the data because pdtrace hardware
+            # gives bogus vpid values for TF3 formats. Sigh.
             vp = tf.addr & self.VP_MASK
 
-            if state[vp] == PerfParser.WORD0:
+            if self.state[vp] == PerfParser.WORD0:
                 if tr_formats.is_tu2(tf):
-                    sample_builder[vp] = PerfSampleBuilder(vp)
-                    sample_builder[vp].add_tf(tf)
-                    next_state[vp] = PerfParser.WORD1
+                    self.sample_builder[vp] = PerfSampleBuilder(vp)
+                    self.sample_builder[vp].add_tf(tf)
+                    self.next_state[vp] = PerfParser.WORD1
                 else:
-                    next_state[vp] = PerfParser.WORD0
+                    self.next_state[vp] = PerfParser.WORD0
 
-            elif state[vp] == PerfParser.WORD1:
+            elif self.state[vp] == PerfParser.WORD1:
                 if tr_formats.is_tu1(tf):
-                    sample_builder[vp].add_tf(tf)
-                    next_state[vp] = PerfParser.WORD2
+                    self.sample_builder[vp].add_tf(tf)
+                    self.next_state[vp] = PerfParser.WORD2
                 else:
-                    next_state[vp] = PerfParser.WORD0
+                    self.next_state[vp] = PerfParser.WORD0
 
-            elif state[vp] == PerfParser.WORD2:
+            elif self.state[vp] == PerfParser.WORD2:
                 if tr_formats.is_tu1(tf):
-                    sample_builder[vp].add_tf(tf)
-                    next_state[vp] = PerfParser.WORD3
+                    self.sample_builder[vp].add_tf(tf)
+                    self.next_state[vp] = PerfParser.WORD3
                 else:
-                    next_state[vp] = PerfParser.WORD0
+                    self.next_state[vp] = PerfParser.WORD0
 
-            elif state[vp] == PerfParser.WORD3:
+            elif self.state[vp] == PerfParser.WORD3:
                 if tr_formats.is_tu1(tf):
-                    sample_builder[vp].add_tf(tf)
-                    next_state[vp] = PerfParser.WORD4
+                    self.sample_builder[vp].add_tf(tf)
+                    self.next_state[vp] = PerfParser.WORD4
                 else:
-                    next_state[vp] = PerfParser.WORD0
+                    self.next_state[vp] = PerfParser.WORD0
 
-            elif state[vp] == PerfParser.WORD4:
+            elif self.state[vp] == PerfParser.WORD4:
                 if tr_formats.is_tu1(tf):
-                    sample_builder[vp].add_tf(tf)
-                    sample = sample_builder[vp].process_tfs()
+                    self.sample_builder[vp].add_tf(tf)
+                    sample = self.sample_builder[vp].process_tfs()
                     self.samples.append(sample)
-                next_state[vp] = PerfParser.WORD0
+                self.next_state[vp] = PerfParser.WORD0
 
             else:
-                raise RuntimeError('illegal parser state %s' % state[vp])
-
-            state[vp] = next_state[vp]
-            self._advance_tf()
-
-    def _advance_tf(self):
-        self.tf_idx += 1
-        if self.tf_idx == len(self.frames[self.fr_idx].tfs):
-            self.tf_idx = 0
-            self.fr_idx += 1
-            self.fr_valid = True
+                raise RuntimeError('illegal parser state %s' %
+                                   self.state[vp])
 
     def get_perfmon_samples(self):
         """
