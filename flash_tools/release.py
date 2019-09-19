@@ -39,7 +39,7 @@ def main():
 
     parser.add_argument('config', nargs='+', help='Configuration file(s)')
     parser.add_argument('--action',
-        choices={'all', 'prepare', 'sign', 'image'},
+        choices={'all', 'prepare', 'certificate', 'sign', 'image'},
         default='all',
         help='Action to be performed on the input files')
     parser.add_argument('--sdkdir', required=True, help='SDK root directory')
@@ -124,6 +124,14 @@ def main():
             json.dump(config, f, indent=4)
 
         gf.run('key_injection', net=use_net, hsm=use_hsm)
+        os.chdir(curdir)
+
+    if wanted('certificate'):
+        sdkpaths = []
+        sdkpaths.append(os.path.abspath(args.destdir))
+        gf.set_search_paths(sdkpaths)
+        os.chdir(args.destdir)
+        gf.run('certificates', net=use_net, hsm=use_hsm)
         os.chdir(curdir)
 
     if wanted('sign'):
