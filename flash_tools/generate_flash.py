@@ -552,8 +552,7 @@ def run(arg_action, arg_enroll_cert = None, arg_enroll_tbs = None, *args, **kwar
                     'serial_number':'serial_number',
                     'serial_number_mask':'serial_number_mask',
                     'debugger_flags':'debugger_flags',
-                    'tamper_flags':'tamper_flags'
-                }
+                 }
 
                 cert_args = map_method_args(argmap, v)
                 firmware_sign.cert_gen(outfile=k, **cert_args)

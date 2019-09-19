@@ -597,14 +597,12 @@ def sign_binary(binary, sign_key, der_encoded=False, do_not_append=False):
 
 
 def cert_gen(outfile, cert_key, cert_key_file, sign_key, serial_number,
-             serial_number_mask, debugger_flags, tamper_flags, modulus=None):
+             serial_number_mask, debugger_flags, modulus=None):
 
     dflags = int(debugger_flags, 16)
-    tflags = int(tamper_flags, 16)
 
-    # MAGIC NUMBER, DEBUG FLAGS, 0, TAMPER FLAGS
-    to_be_signed = struct.pack('<4I', MAGIC_NUMBER_CERTIFICATE, dflags, 0,
-                               tflags)
+    # MAGIC NUMBER, DEBUG FLAGS, 0, TAMPER FLAGS=0
+    to_be_signed = struct.pack('<4I', MAGIC_NUMBER_CERTIFICATE, dflags, 0, 0)
 
     # SERIAL NUMBER
     s_num = binascii.unhexlify(serial_number)
@@ -719,10 +717,6 @@ def parse_and_execute():
     parser.add_argument("-v", "--fwver", dest="fw_ver",
                         help="fw version (image)")
 
-    parser.add_argument("--tamper_flags", dest="tamper_flags",
-                        default="00" * 4,
-                        help="tamper_flags  (hexadecimal, 4 bytes) (certificate)")
-
     options = parser.parse_args()
 
     if options.command == 'list':
@@ -809,7 +803,7 @@ def parse_and_execute():
 
         cert_gen(options.out_path, options.public_key, options.public_key_file,
                  options.sign_key, options.serial_number, options.serial_number_mask,
-                 options.debugger_flags, options.tamper_flags)
+                 options.debugger_flags)
 
     elif options.command == 'sign':
 
