@@ -25,4 +25,6 @@ ${WORKSPACE}/FunTools/flash_tools/release.py --action prepare --force-version ${
 	    bin/flash_tools/qspi_config_fungible.json \
 	    bin/flash_tools/mmc_config_fungible.json
 echo
-echo "Done -- Copy the directory "${WORKSPACE}"/TO_BE_SIGNED to the HSM computer to sign and inject the real keys"
+echo "Done -- For signing a release, copy the start certificate (start_certificate.bin) to the directory "${WORKSPACE}"/TO_BE_SIGNED"
+echo
+echo "Done -- Finally copy the directory "${WORKSPACE}"/TO_BE_SIGNED to the HSM computer to sign and inject the real keys"

@@ -44,6 +44,7 @@ def main():
         help='Action to be performed on the input files')
     parser.add_argument('--sdkdir', required=True, help='SDK root directory')
     parser.add_argument('--destdir', required=True, help='Destination directory for output')
+    parser.add_argument('--key-name-suffix', help='Suffix for key name')
     parser.add_argument('--force-version', type=int, help='Override firmware versions')
     parser.add_argument('--force-description', help='Override firmware description strings')
     parser.add_argument('--with-hsm', action='store_true', help='Use HSM for signing')
@@ -98,6 +99,7 @@ def main():
 
         utils = [ "bin/flash_tools/generate_firmware_image.py",
                   "bin/flash_tools/generate_flash.py",
+                  "bin/flash_tools/gen_start_cert.sh",
                   "bin/flash_tools/make_emulation_emmc.py",
                   "bin/flash_tools/firmware_signing_service.py",
                   "bin/flash_tools/enrollment_service.py",
@@ -139,11 +141,10 @@ def main():
         sdkpaths.append(os.path.abspath(args.destdir))
         gf.set_search_paths(sdkpaths)
         os.chdir(args.destdir)
-        gf.run('key_injection', net=use_net, hsm=use_hsm, keep_output=True)
+        gf.run('key_injection', net=use_net, hsm=use_hsm, keep_output=True, key_name_suffix=args.key_name_suffix)
         gf.run('certificates', net=use_net, hsm=use_hsm)
-        gf.run('sign', net=use_net, hsm=use_hsm)
+        gf.run('sign', net=use_net, hsm=use_hsm, key_name_suffix=args.key_name_suffix)
         os.chdir(curdir)
-
 
     if wanted('image'):
         sdkpaths = []

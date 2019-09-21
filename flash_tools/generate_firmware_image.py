@@ -367,9 +367,11 @@ def sign_with_cert(cert, data):
         # when we sign with a cert, the certificate itself is included
         # in the signature, to prevent mix and match if several certificates
         # use the same key.
+        print("Signing with certificate key '{}'".format(private.label))
         return private.sign(cert+data, mechanism=pkcs11.Mechanism.SHA512_RSA_PKCS)
 
-    return b''
+    # raise Error
+    raise ValueError("No corresponding private key found for the certificate public key")
 
 
 def append_signature_to_binary(binary, signature):

@@ -118,6 +118,8 @@ def gen_fw_image(filename, attrs):
         firmware_sign.image_gen(outfile=filename, **args)
         if tmpfile:
             tmpfile.close()
+        print("Generated signed image with the following parameters: {}".
+              format(args))
         return filename
     else:
         if attrs['source']:
@@ -127,12 +129,14 @@ def gen_fw_image(filename, attrs):
 
     return None
 
-def create_file(filename, section="signed_images"):
+def create_file(filename, section="signed_images", key_name_suffix=None):
     global config
 
     if config.get(section):
         image = config[section].get(filename)
         if image:
+            if key_name_suffix and 'key' in image:
+                image['key'] += key_name_suffix
             return gen_fw_image(filename, image)
     return None
 
@@ -494,6 +498,8 @@ def run(arg_action, arg_enroll_cert = None, arg_enroll_tbs = None, *args, **kwar
     have_net = kwargs.get("net", True)
     have_hsm = kwargs.get("hsm", True)
 
+    key_name_suffix = kwargs.get("key_name_suffix", "")
+
     mode = 0
     if have_hsm:
         mode |= fsi.FirmwareSigningService.MOD_HSM
@@ -544,7 +550,10 @@ def run(arg_action, arg_enroll_cert = None, arg_enroll_tbs = None, *args, **kwar
     if wanted('certificates') and 'certificates' in config:
         for k,v in config['certificates'].items():
             file = find_file_in_srcdirs(k)
-            if not file:
+            if file:
+                print("File {} already exists and will not be generated".
+                      format(file))
+            else:
                 argmap = {
                     'public':'cert_key',
                     'public_file':'cert_key_file',
@@ -564,7 +573,8 @@ def run(arg_action, arg_enroll_cert = None, arg_enroll_tbs = None, *args, **kwar
                 infile = find_file_in_srcdirs(v['source'])
                 shutil.copy2(infile, outfile)
             for key in v['keys']:
-                kr.update_file(outfile, key['id'], key=key['name'], hsm=have_hsm, net=have_net)
+                kr.update_file(outfile, key['id'], key=key['name'] + key_name_suffix,
+                               hsm=have_hsm, net=have_net)
 
     if wanted('flash') and config.get('output_format'):
         bin_infos = dict()
@@ -616,9 +626,9 @@ def run(arg_action, arg_enroll_cert = None, arg_enroll_tbs = None, *args, **kwar
     else:
         if wanted('sign'):
             for file in config.get("signed_images", {}):
-                create_file(file)
+                create_file(file, key_name_suffix=key_name_suffix)
             for file in config.get("signed_meta_images", {}):
-                create_file(file, "signed_meta_images")
+                create_file(file, "signed_meta_images", key_name_suffix=key_name_suffix)
 
     # For non-empty flash, generate map file
     if wanted('flash') and len(config.get('output_sections', {})) > 0:
