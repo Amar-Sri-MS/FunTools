@@ -28,7 +28,7 @@ struct fun_json *hex_macro(const struct fun_json *input)
 	struct fun_json *echo = fun_json_create_string("echo", fun_json_no_copy_no_own);
 	fun_json_dict_add(output, "verb", fun_json_no_copy_no_own, echo, true);
 	const struct fun_json *b = fun_json_create_bool(use_hex);
-	struct fun_json *new_arguments = fun_json_create_array(&b, 1);
+	struct fun_json *new_arguments = fun_json_create_array((void *)&b, 1);
 	fun_json_dict_add(output, "arguments", fun_json_no_copy_no_own, new_arguments, true);
 	return output;
 }
