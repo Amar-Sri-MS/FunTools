@@ -77,7 +77,7 @@ static struct fun_json *_read_json(int fd)
 	buf = _read_input_file(fd, &size);
 	assert(buf);
 	
-	input = fun_json_create_from_text_with_length(buf, size, &line, &parsed);
+	input = fun_json_create_from_text_with_options(buf, size, 0, &line, &parsed);
 
 	free(buf);
 	return input;
