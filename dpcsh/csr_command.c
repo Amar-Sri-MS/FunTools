@@ -151,8 +151,8 @@ static CALLER_TO_RELEASE struct fun_json *csr_pretty_printer(void *context, uint
 {
 	fun_json_printf("In csr_pretty_printer non-pretty=%s\n", result);
 	const char *keys[] = { "wrapped" };
-	const struct fun_json *values[] = { fun_json_retain(result) };
-	struct fun_json *wrapped = fun_json_create_dict(1, keys, fun_json_no_copy_no_own, values);
+	struct fun_json *values[] = { fun_json_retain(result) };
+	struct fun_json *wrapped = fun_json_create_dict(1, keys, fun_json_no_copy_no_own, (void *)values);
 	dpcsh_unregister_pretty_printer(tid, context);
 	return wrapped;
 }
