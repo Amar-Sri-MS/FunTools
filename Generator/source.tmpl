@@ -41,7 +41,7 @@ const char *{{flagset.name | as_lower }}_names[] = {
  * Returns false if initialization failed.
  * Caller responsible for determining correct init function(s).
  */
-bool {{struct.name}}_json_init(const struct fun_json *j,
+bool {{struct.name}}_json_init(struct fun_json *j,
 				{{struct.DeclarationString()}} *s)
 {
 	memset(s, 0, sizeof({{struct.DeclarationString()}}));
