@@ -1,0 +1,31 @@
+{# 
+
+Standard Fungible template for source code for generated structures.
+
+#}
+// Source file created by generator.py
+// Do not change this file;
+// change the gen file {{gen_file}} instead.
+
+#include <stdint.h>
+#include <stdio.h>
+#include <string.h>
+#include <assert.h>
+#include <nucleus/types.h>
+#include <utils/threaded/fun_jsons.h>
+#include <platform/csr_reg.h>
+#include <hw/common/platform_config.h>
+#include <FunChip/csr/base_addr.h>
+#include <FunChip/csr2/{{output_base}}.h>
+#include "s1_wiq.h"
+#include "hw_nu_macros.h"
+#include "{{output_base}}.h"
+
+{% for bit in bit_list %}
+static struct {{output_base}}_intr_stats = {
+      {% for i in bit %}
+	uint64_t {{output_base}}_{{i}}";
+      {% endfor %}
+} intr_stats[NCSR2NINST_{{output_base}}];
+
+{% endfor %}
