@@ -2,7 +2,6 @@
 
 import argparse
 import os
-import re
 import sys
 import datetime
 
@@ -10,29 +9,37 @@ from jinja2 import Environment
 from jinja2 import FileSystemLoader
 from jinja2 import Template
 
-my_tmpl="s1_nu_intr.tmpl"
+h_tmpl="s1_nu_intr_h.tmpl"
+c_tmpl="s1_nu_intr.tmpl"
 reg_line_begin="struct csr2fields_"
-reg_line_end="_int_status {"
-bit_line_begin="bool "
-bit_line_end=";"
+reg_line_end="_status {"
+bit_line_end="};"
+check_fatal="fatal"
 
 def Usage():
   sys.stderr.write("s1_nu_intr_gen.py: usage: <filename>\n")
   sys.stderr.write("  <filename>: input source (*.h) for code generation.\n")
 
 def ParseReg(x):
-    match1 = re.search(reg_line_begin, x)
-    match2 = re.search(reg_line_end, x)
-    if match1 and match2:
-      return x[match1.end():match2.start()]
+    match1 = x.find(reg_line_begin)
+    match2 = x.find(reg_line_end)
+    if match1 != -1 and match2 != -1:
+      #print "ParseReg MATCH", match1, match2
+      ret = x[(match1 + len(reg_line_begin)):match2]
+      if ret.find(check_fatal) != -1:
+        return ret
     return None
 
 def ParseBit(y):
-    m1 = re.search(bit_line_begin, y)
-    m2 = re.search(bit_line_end, y)
-    if m1 and m2:
-      return y[m1.end():m2.start()]
-    return None
+    if y.find(bit_line_end) != -1:
+      #print "PraseBit end", y
+      return None
+    y = y.strip();
+    tok0 = y.split(" ")
+    #print tok0
+    tok1 = tok0[1].split(";");
+    #print tok1
+    return tok1[0]
 
 def Parse(filename):
   try:
@@ -68,26 +75,34 @@ def Parse(filename):
   #print "start done"
   return reg_list
 
-def Gen(base, reg_list):
+def Gen(base, filebase, reg_list):
   this_dir = os.path.dirname(os.path.abspath(__file__))
   env = Environment(loader=FileSystemLoader(this_dir))
-  tmpl = env.get_template(my_tmpl)
 
-  print "base =", base
-  outfn = 'hw_nu_' + base + '.c'
-  print "outfn =", outfn
+  #print "base =", base
   #print reg_list
   d = datetime.datetime.now()
 
-  f = open(outfn, "w")
   jinja_docs = {
     'output_base' : base,
+    'filebase' : filebase,
     'reg_list' : reg_list,
     'date' : d.strftime("%x"),
     'year' : d.year
   }
+
+  outfn = 'hw_nu_' + base + '.h'
+  f = open(outfn, "w")
+  tmpl = env.get_template(h_tmpl)
   f.write(tmpl.render(jinja_docs))
   f.close()
+
+  outfn = 'hw_nu_' + base + '.c'
+  f = open(outfn, "w")
+  tmpl = env.get_template(c_tmpl)
+  f.write(tmpl.render(jinja_docs))
+  f.close()
+
   #for i in reg_list:
   #  print i.name
   #  del i.bit_list
@@ -102,15 +117,19 @@ def main():
   for filename in args.inputs:
     print "Processing file", filename
     # extra filename -> output_base
-    toklist = re.split("/", filename)
+    toklist = filename.split("/")
     #print "tklist ", toklist[-1]
-    tmp0 = re.split("\.", toklist[-1])
-    tmp1 = re.split("nu_", tmp0[0])
+    tmp0 = toklist[-1].split(".")
+    filebase = tmp0[0]
+    base = tmp0
+    """
+    tmp1 = filebase.split("nu_")
     for x in tmp1:
-	base = re.split("_nu", x)
+	base = x.split("_nu")
     #print "base ", base
+    """
 
-    Gen(base[0], Parse(filename))
+    Gen(base[0], filebase, Parse(filename))
 
 if __name__ == '__main__':
   main()
