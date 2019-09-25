@@ -1,4 +1,25 @@
-#!/bin/bash -ex
+#!/bin/bash -e
+
+function show_help()
+{
+    echo "make_release.sh: Prepare files for creating a release or a start certificate"
+    echo ""
+    echo "Usage:"
+    echo "./make_release.sh version"
+    echo ""
+}
+
+if [[ ( $@ == "--help") ||  $@ == "-h" ]] ; then
+    show_help
+    exit 0
+fi
+
+# JSON specification argument required
+if [  $# != 1 ] ; then
+    show_help
+    echo "Missing argument: version"
+    exit 1
+fi
 
 echo "SKUP Release"
 mkdir -p ${WORKSPACE}/SDK_RELEASE
