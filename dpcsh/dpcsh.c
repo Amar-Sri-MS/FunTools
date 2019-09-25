@@ -1117,7 +1117,6 @@ static void terminal_set_per_character(bool enable)
 static void _do_interactive(struct dpcsock *funos_sock,
 			    struct dpcsock *cmd_sock)
 {
-    char *line = NULL;
     ssize_t read;
     int r, nfds = 0;
     bool ok;
@@ -1171,7 +1170,7 @@ static void _do_interactive(struct dpcsock *funos_sock,
 	    cmd_seq_num++;
 	    if (FD_ISSET(cmd_sock->fd, &fds)) {
 		    // printf("user input\n");
-		    line = _read_a_line(cmd_sock, &read);
+    		    char *line = _read_a_line(cmd_sock, &read);
 
 		    if (read == -1) /* user ^D */
 			    break;
@@ -1188,7 +1187,7 @@ static void _do_interactive(struct dpcsock *funos_sock,
 			    continue;
 
 		    ok = _do_send_cmd(funos_sock, line, read, seq_num);
-
+		    free(line);
 		    if (!ok) {
 			    printf("error sending command\n");
 		    }
@@ -1209,7 +1208,6 @@ static void _do_interactive(struct dpcsock *funos_sock,
 	    /* reset terminal */
 	    terminal_set_per_character(false);
     }
-    free(line);
 }
 
 static void _do_run_webserver(struct dpcsock *funos_sock,
