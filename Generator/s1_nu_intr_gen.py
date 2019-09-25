@@ -4,6 +4,7 @@ import argparse
 import os
 import re
 import sys
+import datetime
 
 from jinja2 import Environment
 from jinja2 import FileSystemLoader
@@ -76,11 +77,14 @@ def Gen(base, reg_list):
   outfn = 'hw_nu_' + base + '.c'
   print "outfn =", outfn
   #print reg_list
+  d = datetime.datetime.now()
 
   f = open(outfn, "w")
   jinja_docs = {
     'output_base' : base,
     'reg_list' : reg_list,
+    'date' : d.strftime("%x"),
+    'year' : d.year
   }
   f.write(tmpl.render(jinja_docs))
   f.close()

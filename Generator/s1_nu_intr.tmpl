@@ -1,11 +1,13 @@
-{# 
-
-Standard Fungible template for source code for generated structures.
-
-#}
-// Source file created by generator.py
-// Do not change this file;
-// change the gen file {{gen_file}} instead.
+{#
+	Standard Fungible template for source code for generated structures.
+#}/*
+ *  hw_nu_{{output_base}}.c
+ *
+ *  Created by s1_nu_intr_gen.py on {{date}}.
+ *  Copyright (c) {{year}} Fungible. All rights reserved.
+ *
+ *  GENERATED FILE -- DO NOT EDIT
+ */
 
 #include <stdint.h>
 #include <stdio.h>
@@ -31,6 +33,7 @@ static struct hw_nu_{{output_base}}_intr_stats = {
 
 //
 // print all interrupt status count in json (for nu_bridge)
+//
 void hw_nu_{{output_base}}_intr_stats_print(uint32_t i, struct fun_json *dict)
 {
 {% for reg in reg_list %} {% for bit in reg.bit_list %}
