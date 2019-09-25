@@ -12,20 +12,54 @@ Standard Fungible template for source code for generated structures.
 #include <string.h>
 #include <assert.h>
 #include <nucleus/types.h>
-#include <utils/threaded/fun_jsons.h>
+#include <utils/threaded/fun_json.h>
 #include <platform/csr_reg.h>
 #include <hw/common/platform_config.h>
-#include <FunChip/csr/base_addr.h>
+#include <FunChip/csr2/{{output_base}}_internal.h>
 #include <FunChip/csr2/{{output_base}}.h>
 #include "s1_wiq.h"
 #include "hw_nu_macros.h"
-#include "{{output_base}}.h"
+#include "hw_nu_{{output_base}}.h"
 
-{% for bit in bit_list %}
-static struct {{output_base}}_intr_stats = {
-      {% for i in bit %}
-	uint64_t {{output_base}}_{{i}}";
-      {% endfor %}
+//
+// keeping count for all interrupts
+//
+static struct hw_nu_{{output_base}}_intr_stats = {
+{% for reg in reg_list %} {% for bit in reg.bit_list %}
+	uint64_t {{reg.name}}_{{bit}}; {% endfor %} {% endfor %}
 } intr_stats[NCSR2NINST_{{output_base}}];
 
+//
+// print all interrupt status count in json (for nu_bridge)
+void hw_nu_{{output_base}}_intr_stats_print(uint32_t i, struct fun_json *dict)
+{
+{% for reg in reg_list %} {% for bit in reg.bit_list %}
+	INTR_STATS_IPRT(i, {{reg.name}}_{{bit}}); {% endfor %}{% endfor %}
+}
+
+//
+// per interrupt register handlers
+//
+{% for reg in reg_list %}
+void hw_nu_{{reg.name}}_intr_hdlr(struct wiq_register_csr *reg, uint64_t *tatus_reg)
+{
+	uint64_t rb = status_reg[0];
+	uint64_t base = WIQ_AN_BASE({{output_base}}, reg);
+	uint32_t i = get_index(base);
+{% for bit in reg.bit_list %}
+	INTR_IBIT(rb, i, {{reg.name}}_{{bit}}); {% endfor %}
+
+	WIQ_REG_ACK(base, {{reg.name}}, rb);
+}
 {% endfor %}
+void hw_nu_{{output_base}}_intr_hdlr_init(void)
+{
+	uint64_t msk = WIQ_INTR_MASK_DFLT;
+{% for reg in reg_list %}
+	wiq_set_leaf_handler_by_name("{{reg.name}}",
+				     hw_nu_{{reg.name}}_intr_hdlr);{% endfor %}
+{% for reg in reg_list %}
+	WIQ_INTR_MASK_SET({{reg.name}}_OFFSET,
+			  {{reg.name}},
+			  msk);{% endfor %}
+}
