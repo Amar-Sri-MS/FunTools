@@ -8,7 +8,6 @@ import generate_firmware_image as GFI
 import struct
 import sys
 
-
 class RsaModulus(object):
     MOD_HSM = 1 << 0
     MOD_NET = 1 << 1
@@ -29,9 +28,6 @@ class RsaModulus(object):
                 { "name" : "fpk4",
                   "type": EnrollmentModulus,
                   "mode": RsaModulus.MOD_NET },
-                { "name" : "fpk4",
-                  "type": HsmRsaModulus,
-                  "mode": RsaModulus.MOD_HSM },
                 { "name" : "fpk5",
                   "type": SigningModulus,
                   "mode": RsaModulus.MOD_NET },
@@ -40,7 +36,7 @@ class RsaModulus(object):
                   "mode": RsaModulus.MOD_HSM },
         ]
 
-        for c in list(filter(lambda el: el['name'] == name, config)):
+        for c in list(filter(lambda el: name.startswith(el['name']), config)):
             if (c["mode"] & mode) == c["mode"]:
                 return c["type"](name)
 
@@ -141,7 +137,9 @@ def app_fpk_process(func):
 def update_file(file, number, app, key, hsm = False, net = False):
     try:
         ret = app.update_key(number, key, hsm, net)
-        print("Key {} {}updated in {}".format(number, "not " if ret == 1 else "", file))
+        print("Key {} {}updated in {} with '{}' ({} {})".
+              format(number, "not " if ret == 1 else "", file, key,
+                     "hsm" if hsm else "", "net" if net else ""))
     except Exception as e:
         print("Key {} not found in {}:{}".format(number, file, e))
     return 0

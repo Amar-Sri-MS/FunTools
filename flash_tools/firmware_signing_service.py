@@ -39,9 +39,9 @@ class FirmwareSigningService(object):
 class HsmSigningService(FirmwareSigningService):
     @staticmethod
     def cert_gen(outfile, cert_key, cert_key_file, sign_key, serial_number,
-             serial_number_mask, debugger_flags, tamper_flags):
+             serial_number_mask, debugger_flags):
         return gfi.cert_gen(outfile, cert_key, cert_key_file, sign_key, serial_number,
-            serial_number_mask, debugger_flags, tamper_flags)
+            serial_number_mask, debugger_flags)
 
     @staticmethod
     def image_gen(outfile, infile, ftype, version, description, sign_key,
@@ -60,7 +60,7 @@ class HsmSigningService(FirmwareSigningService):
 class NetSigningService(FirmwareSigningService):
     @staticmethod
     def cert_gen(outfile, cert_key, cert_key_file, sign_key, serial_number,
-             serial_number_mask, debugger_flags, tamper_flags):
+             serial_number_mask, debugger_flags):
         print("WARNING: Using firmware signing service to provide a certificate.\n"
               "Currently the server does not generate certificates on the fly "
               "but only provides a pre-generated certificate associated with a given "
