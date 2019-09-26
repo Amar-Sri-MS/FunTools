@@ -75,7 +75,7 @@ def Parse(filename):
   #print "start done"
   return reg_list
 
-def Gen(base, filebase, reg_list):
+def Gen(base, filebase, dst, reg_list):
   this_dir = os.path.dirname(os.path.abspath(__file__))
   env = Environment(loader=FileSystemLoader(this_dir))
 
@@ -91,13 +91,13 @@ def Gen(base, filebase, reg_list):
     'year' : d.year
   }
 
-  outfn = 'hw_nu_' + base + '.h'
+  outfn = dst + '/' + 'hw_nu_' + base + '.h'
   f = open(outfn, "w")
   tmpl = env.get_template(h_tmpl)
   f.write(tmpl.render(jinja_docs))
   f.close()
 
-  outfn = 'hw_nu_' + base + '.c'
+  outfn = dst + '/' + 'hw_nu_' + base + '.c'
   f = open(outfn, "w")
   tmpl = env.get_template(c_tmpl)
   f.write(tmpl.render(jinja_docs))
@@ -115,6 +115,9 @@ def main():
   #print args.__dict__
 
   for filename in args.inputs:
+    if filename == args.inputs[0]:
+      dst = filename
+      continue
     print "Processing file", filename
     # extra filename -> output_base
     toklist = filename.split("/")
@@ -129,7 +132,7 @@ def main():
     #print "base ", base
     """
 
-    Gen(base[0], filebase, Parse(filename))
+    Gen(base[0], filebase, dst, Parse(filename))
 
 if __name__ == '__main__':
   main()
