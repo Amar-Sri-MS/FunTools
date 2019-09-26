@@ -1031,7 +1031,6 @@ static void _do_recv_cmd(struct dpcsock *funos_sock,
 		raw_output = output;
 	} else {
 		// printf("New style output, tid=%d\n", (int)tid);
-		fun_json_retain(raw_output);
 		raw_output = apply_pretty_printer(output);
 		fun_json_release(output);
 
