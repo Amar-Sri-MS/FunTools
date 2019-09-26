@@ -44,7 +44,7 @@ def main():
         help='Action to be performed on the input files')
     parser.add_argument('--sdkdir', required=True, help='SDK root directory')
     parser.add_argument('--destdir', required=True, help='Destination directory for output')
-    parser.add_argument('--key-name-suffix', help='Suffix for key name')
+    parser.add_argument('--key-name-suffix', default='', help='Suffix for key name')
     parser.add_argument('--force-version', type=int, help='Override firmware versions')
     parser.add_argument('--force-description', help='Override firmware description strings')
     parser.add_argument('--with-hsm', action='store_true', help='Use HSM for signing')
