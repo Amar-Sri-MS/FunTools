@@ -43,14 +43,8 @@ fi
 
 echo "Init CoSt Plane!!!"
 
-COUNT=0
-while [[ $COUNT -lt 120 && -z "$BDFID" ]]; do
-	BDFID=`lspci -d 1dad: | grep "Ethernet controller" | cut -d " " -f 1`
-	echo "Waiting for CoSt functions: BDFID=$BDFID"
-	sleep 1
-	let COUNT=COUNT+1
-done
-
+# Hot-plug not supported so no need to wait if F1 are not see upon boot-up
+BDFID=`lspci -d 1dad: | grep "Ethernet controller" | cut -d " " -f 1`
 if [[ -z "$BDFID" ]]; then
 	echo "F1 EP not found"
 	exit 1
@@ -65,5 +59,9 @@ export HOME="/home/fun"
 
 $FUN_ROOT/cclinux/cclinux_service.sh --start --ep --storage
 $FUN_ROOT/StorageController/etc/start_sc.sh start
+
+if [[ -f $FUN_ROOT/etc/DpuHealthMonitor.sh ]]; then
+	$FUN_ROOT/etc/DpuHealthMonitor.sh &
+fi
 
 echo "$0 DONE!!!"
