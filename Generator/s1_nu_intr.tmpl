@@ -55,7 +55,7 @@ void hw_nu_{{output_base}}_intr_stats_print(uint32_t i, struct fun_json *dict)
 // per interrupt register handlers
 //
 {% for reg in reg_list %}
-void hw_nu_{{reg.name}}_intr_hdlr(struct wiq_register_csr *reg, uint64_t *tatus_reg)
+void hw_nu_{{reg.name}}_intr_hdlr(struct wiq_register_csr *reg, uint64_t *status_reg)
 {
 	uint64_t rb = status_reg[0];
 	uint64_t base = WIQ_AN_BASE({{output_base}}, reg);
