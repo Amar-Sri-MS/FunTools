@@ -21,7 +21,7 @@ CFLAGS ?= -I $(SDKDIR)/FunSDK  \
 LDFLAGS_ASAN ?= -fsanitize=address
 ifeq ($(OS),Linux)
 #asan library linking does not work for Linux
-LDFLAGS += -L $(SDKDIR)/lib/$(OS)/noasan/$(ARCH) -lfunclient -lm
+LDFLAGS += -L $(SDKDIR)/lib/$(OS)/noasan/$(ARCH) -lfunclient -lm -ldl
 DARWIN_ASAN_FIXUP :=
 else
 LDFLAGS += -L $(SDKDIR)/lib/$(OS)/$(ARCH) -coverage -lfunclient -lm $(LDFLAGS_ASAN)
