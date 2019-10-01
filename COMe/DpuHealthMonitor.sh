@@ -5,8 +5,8 @@ if [[ "$EUID" -ne 0 ]]; then
         exit
 fi
 
+DPU0_HBM_DUMP_COLLECTED="0"
 DPU1_HBM_DUMP_COLLECTED="0"
-DPU2_HBM_DUMP_COLLECTED="0"
 USER_CTRL_C=0
 
 FILE_BLD_NUM="/opt/fungible/bld_props.json"
@@ -140,7 +140,6 @@ while true; do
 
 	if [[ -z "$DPU0_HEALTH" ]] ||
 	   [[ -z "$DPU1_HEALTH" ]]; then
-		printf "*** Unable to get DPU status from BMC ***\n"
 		continue
 	fi
 
