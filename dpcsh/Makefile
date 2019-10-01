@@ -9,8 +9,8 @@ SDK_INSTALL_DIR ?= $(SDKDIR)
 CFLAGS ?= -I $(SDKDIR) -I $(SDKDIR)/FunSDK  -g -Wall -Werror -Wno-multichar
 
 # XXX: compatibility with FunOS build parameters
-#LDFLAGS += -L $(SDKDIR)/lib/${OS}/x86_64 -lfunclient -ldl -fsanitize=address
-LDFLAGS += -lpthread -L $(SDKDIR)/lib/${OS}/noasan/x86_64 -lfunclient
+#LDFLAGS += -L $(SDKDIR)/lib/${OS}/x86_64 -lfunclient -fsanitize=address
+LDFLAGS += -lpthread -L $(SDKDIR)/lib/${OS}/noasan/x86_64 -lfunclient -ldl
 
 OBJS = dpcsh.o dpcsh_nvme.o dpcsh_macros.o csr_command.o web.o
 
