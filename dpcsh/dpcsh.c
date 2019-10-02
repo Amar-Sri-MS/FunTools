@@ -1065,10 +1065,11 @@ static void _do_recv_cmd(struct dpcsock *funos_sock,
 				raw_output);
 		size_t allocated_size = 0;
 		uint32_t flags = use_hex ? FUN_JSON_PRETTY_PRINT_USE_HEX_FOR_NUMBERS : 0;
-		char *pp = fun_json_pretty_print(raw_output, 0, "    ", 100, flags, &allocated_size);
+		char *pp = fun_json_pretty_print(raw_output, 0, "    ", 0, flags, &allocated_size);
 		if (pp) {
 			write(cmd_sock->fd, pp, strlen(pp));
 			write(cmd_sock->fd, "\n", 1);
+			printf("%s\n", pp);
 			fun_free_string(pp);
 		} else {
 			/* if we get here, we know that we got a

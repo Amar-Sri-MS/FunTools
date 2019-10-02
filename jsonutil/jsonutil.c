@@ -13,6 +13,12 @@
 #define PLATFORM_POSIX 1
 #include <FunSDK/utils/threaded/fun_json.h>
 
+#define NOMODE      (0)
+#define TEXT        (1)
+#define BINARY      (2)
+#define TEXTONELINE (3)
+
+
 static char *_read_input_file(int fd, size_t *outsize)
 {
 	char *buffer;
@@ -71,7 +77,7 @@ static struct fun_json *_read_json(int fd)
 	struct fun_json *input = NULL;
 	char *buf;
 	size_t size = 0;
-	size_t line = 0;
+	uint32_t line = 0;
 	size_t parsed = 0;
 
 	buf = _read_input_file(fd, &size);
@@ -98,12 +104,19 @@ static struct fun_json *_read_bjson(int fd)
 	return input;
 }
 	
-static int _write_json(int fd, struct fun_json *json)
+static int _write_json(int fd, struct fun_json *json, int mode)
 {
-	char *buf;
+	char *buf = NULL;
+	size_t dummy_size = 0;
 	int r;
-	
-	buf = fun_json_to_text(json);
+
+	if (mode == TEXT)
+		buf = fun_json_to_text(json);
+	else if (mode == TEXTONELINE)
+		// buf = fun_json_to_text_oneline(json, &dummy_size);
+		buf = fun_json_pretty_print(json, 0, "    ", 0,
+					    0, &dummy_size);
+		
 	if (!buf)
 		return -1;
 
@@ -128,10 +141,6 @@ static int _write_bjson(int fd, struct fun_json *json)
 }
 
 
-
-#define NOMODE (0)
-#define TEXT   (1)
-#define BINARY (2)
 
 static int
 _setmode(int curmode, int newmode)
@@ -168,12 +177,13 @@ main(int argc, char *argv[])
 		static struct option long_options[] = {
 			{"in",   required_argument, 0,  'i' },
 			{"out",  required_argument, 0,  'o' },
+			{"line", required_argument, 0,  'l' },
 			{"inb",  required_argument, 0,  'I' },
 			{"outb", required_argument, 0,  'O' },
 		};
 
 		
-		c = getopt_long(argc, argv, "i:o:I:O:",
+		c = getopt_long(argc, argv, "i:o:l:I:O:",
 				long_options, NULL);
 		if (c == -1)
 			break;
@@ -195,9 +205,12 @@ main(int argc, char *argv[])
 			outmode = _setmode(outmode, BINARY);
 			outfile = optarg;
 			break;
+		case 'l':
+			outmode = _setmode(outmode, TEXTONELINE);
+			outfile = optarg;
+			break;
 		case '?':
 		default:
-			printf("bad char?\n");
 			_usage(argv[0]);
 		}
 	}
@@ -250,10 +263,10 @@ main(int argc, char *argv[])
 	}
 
 	/* write out some json */
-	if (outmode == TEXT)
-		r = _write_json(outfd, input);
-	else
+	if (outmode == BINARY)
 		r = _write_bjson(outfd, input);
+	else
+		r = _write_json(outfd, input, outmode);
 
 	if (r) {
 		fprintf(stderr, "error writing json\n");
