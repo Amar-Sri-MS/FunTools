@@ -789,6 +789,11 @@ bool hbm_copy_to_file(ccu_info_t *ccu_info, uint64_t start_addr,
 		return false;
 	}
 
+	/* seek to the start address so readers see bytes relative to
+	 * HBM base
+	 */
+	fseek(f, start_addr, SEEK_SET);
+
         while(read_offset < read_size) {
 		uint8_t data[256] = {0};
 		bool status = hbm_read_aligned(ccu_info,

@@ -33,10 +33,10 @@ GDB_SIGNAL_TRAP = 5
 
 class FileCorpse:
 
-    def __init__(self, fname):
+    def __init__(self, fname, offset=0):
         self.fname = fname
         self.fl = open(fname)
-        self.memoffset = 0 # FIXME: remove
+        self.memoffset = offset
         self.threadid = 0
         self.threadcount = 0
         self.thread_list = []
@@ -93,7 +93,7 @@ class FileCorpse:
         bytes = self.fl.read(n)
         if (len(bytes) < n):
             # can't seek
-            print "short read"
+            print "Short read at offset 0x%x. Expected %d bytes, got %d" % (regaddr, n, len(bytes))
             return self.badread(n)
         return bytes
 
@@ -110,8 +110,8 @@ class FileCorpse:
             return b + o
         else:
             p = self.symbols["_vplocal_arr"]
-            n = self.ReadMemory64(self.symbols["PLATFORM_DEBUG_CONSTANT_vplocal_stride"], host=True)
-            o = self.ReadMemory64(self.symbols["PLATFORM_DEBUG_CONSTANT_debug_context_offset"], host=True)
+            n = self.rdsym("PLATFORM_DEBUG_CONSTANT_vplocal_stride")
+            o = self.rdsym("PLATFORM_DEBUG_CONSTANT_debug_context_offset")
 
             ptr = p + vpnum * n + o
             base = self.ReadMemory64(ptr, host=True)
@@ -204,15 +204,24 @@ class FileCorpse:
         else:
             return 0
 
+    def rdsym(self, symname):
+
+        p = self.symbols[symname]
+        if (p < 0x10000):
+            # XXX: temp hack for defaults
+            return p
+        else:
+            return self.ReadMemory64(self.symbols[symname], host=True)
+        
     def vpnum_IsRunning(self, tid):
         p = self.symbols["_topo_vp"]
-        n = self.ReadMemory64(self.symbols["PLATFORM_DEBUG_CONSTANT_topo_vp_stride"], host=True)
-        online = self.ReadMemory64(self.symbols["PLATFORM_DEBUG_CONSTANT_ccv_state_online"], host=True)
+        n = self.rdsym("PLATFORM_DEBUG_CONSTANT_topo_vp_stride")
+        online = self.rdsym("PLATFORM_DEBUG_CONSTANT_ccv_state_online")
 
         ptr = p + tid * n + 0 # FIXME: offset
         state = self.ReadMemory32(ptr, host=True)
 
-        # print "thread %s state = 0x%x + %d * %d = 0x%x -> 0x%x" % (tid, p, n, tid, ptr, state)
+        print "thread %s state = 0x%x + %d * %d = 0x%x -> 0x%x" % (tid, p, n, tid, ptr, state)
 
         if (state == online):
             return True
@@ -237,6 +246,7 @@ class FileCorpse:
                         self.thread_list.append(tid)
                         self.vpnumtab[tid] = self.ccv_vpnum(cl, co, vp)
         self.threadcount = len(self.thread_list)
+        print "FunOS has %d online threads" % self.threadcount
 
     def GetThreadInfo(self, tid):
         cl = int(tid / 100)
@@ -262,11 +272,14 @@ corpse = None
 
 def setup_corpse(opts, args):
 
+    global corpse
     if (opts.hbmfile is None):
         raise RuntimeError("Expected: -F /path/to/hbmdump.bin")
 
-    global corpse
-    corpse = FileCorpse(opts.hbmfile)
+    offset = 0
+    if (opts.offset_1mb):
+        offset = 1024 * 1024
+    corpse = FileCorpse(opts.hbmfile, offset)
 
 ###
 ##  helpers
@@ -375,6 +388,26 @@ def checksum(data):
     return checksum & 0xff
 
 
+DEF_SYMS = {
+    "PLATFORM_DEBUG_CONSTANT_vplocal_stride": 4160,
+    "PLATFORM_DEBUG_CONSTANT_debug_context_offset": 376,
+    "PLATFORM_DEBUG_CONSTANT_ccv_state_invalid": 0,
+    "PLATFORM_DEBUG_CONSTANT_ccv_state_offline": 1,
+    "PLATFORM_DEBUG_CONSTANT_ccv_state_online": 2,
+    "PLATFORM_DEBUG_CONSTANT_topo_vp_stride": 24,
+    }
+
+def _default_sym(symname):
+
+    if (symname in DEF_SYMS.keys()):
+        print "WARNING: gdb failed to return symbol %s, using default" % symname
+        return DEF_SYMS[symname]
+
+    # barf
+    print "Failed to find symbol '%s' in binary or defaults. Exiting" % symname
+    sys.exit(1)
+    
+
 SYMLIST = None
 SYMTAB = None
 def deal_withsymbols(obj, reply):
@@ -391,7 +424,11 @@ def deal_withsymbols(obj, reply):
     else:
         print reply
         toks = reply.split(":")
-        SYMTAB[SYMLIST.pop(0)] = int(toks[1], 16)
+        if (toks[1] == ''):
+            v = _default_sym(SYMLIST[0])
+        else:
+            v = int(toks[1], 16)
+        SYMTAB[SYMLIST.pop(0)] = v
 
 
     if (len(SYMLIST) == 0):
@@ -402,7 +439,7 @@ def deal_withsymbols(obj, reply):
         return
 
     s = "qSymbol:%s" % hexstr(SYMLIST[0])
-    print "asking for symbol: %s" % s
+    print "asking for symbol: %s [%s]" % (SYMLIST[0], s)
     obj.send(s)
 
 
@@ -609,6 +646,8 @@ def main():
     parser = optparse.OptionParser(usage="usage: %prog [options] ")
     parser.add_option("-F", "--hbmfile", action="store", default=None)
     parser.add_option("-P", "--port", action="store", type="int", default=1234)
+    parser.add_option("-O", "--offset-1mb", action="store_true",
+                      default=False)
 
     (opts, args) = parser.parse_args()
     setup_corpse(opts, args)
