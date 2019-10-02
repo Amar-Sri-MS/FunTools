@@ -5,9 +5,15 @@ if [[ "$EUID" -ne 0 ]]; then
         exit
 fi
 
-DPU0_HBM_DUMP_COLLECTED="0"
-DPU1_HBM_DUMP_COLLECTED="0"
+LOOP_INTERVAL=5
+DPU0_HBM_DUMP_COLLECTED=0
+DPU1_HBM_DUMP_COLLECTED=0
 USER_CTRL_C=0
+FS1600_RESET="/opt/fungible/etc/ResetFs1600.sh"
+NO_CONTINUOUS_REBOOT_TIME_MARK=1200
+CONTINUOUS_REBOOT_COUNTER="/var/log/fs1600_reboot_counter"
+STOP_REBOOTS=0
+MAX_CONTINUOUS_REBOOTS=3
 
 FILE_BLD_NUM="/opt/fungible/bld_props.json"
 DIR_HBM_LOGS="/var/log/hbm_dumps"
@@ -24,13 +30,30 @@ else
 	BLD_NUM="UNKNOWN"
 fi
 
+function DetectDpuPcieBus()
+{
+	for i in `lspci -d 1dad: | grep "Ethernet controller" | cut -d " " -f 1`; do
+		PHY_SLOT=`lspci -vvv -s $i | grep "Physical Slot" | cut -d ":" -f 2 | sed 's/^ //'`
+
+		if [[ "$PHY_SLOT" == "1" ]]; then
+			DPU_0_PCIE_BUS=`echo $i | cut -d ":" -f 1`
+		elif [[ "$PHY_SLOT" == "0-"* ]]; then
+			DPU_1_PCIE_BUS=`echo $i | cut -d ":" -f 1`
+		fi
+	done
+
+	echo "DPU_0_PCIE_BUS=$DPU_0_PCIE_BUS"
+	echo "DPU_1_PCIE_BUS=$DPU_1_PCIE_BUS"
+}
+
+
 function CleanUpPrevDumps()
 {
 	DPU_NUM=`echo "D"$1`
 	FILE=`echo "$HBM_FILE_NAME"_"$DPU_NUM"`
 	mkdir -p $DIR_HBM_LOGS
 
-	NUM_PREV_CORES=`ls $DIR_HBM_LOGS/$FILE* | wc -l`
+	NUM_PREV_CORES=`ls $DIR_HBM_LOGS/$FILE* > /dev/null 2>&1 | wc -l`
 
 	if ! [[ $NUM_PREV_CORES -lt $MAX_DUMPS_PER_DPU ]]; then
 		# Keep Newest; Delete All
@@ -42,7 +65,7 @@ function CleanUpPrevDumps()
 HBM_BIN="/opt/fungible/bin/hbm_dump_pcie"
 START_ADDR="0x100000"
 DUMP_MEM_SIZE="0x40000000" # 1GB
-DPU_BUS_STR1="/sys/bus/pci/devices/0000:0BUS:00.2/resource2"
+DPU_BUS_STR1="/sys/bus/pci/devices/0000:BUS:00.2/resource2"
 
 function CollectHbmDump()
 {
@@ -93,6 +116,8 @@ function ctrl_c()
 }
 
 
+# Start of script
+
 SSHPASS=`which sshpass`
 if [[ -z $SSHPASS ]]; then
 	apt-get install -y sshpass
@@ -113,17 +138,18 @@ printf "Poll BMC:  %s\n" $BMC_IP
 
 BMC="-P password: -p superuser scp -o StrictHostKeyChecking=no sysadmin@$BMC_IP:$DPU_STATUS"
 
-# On Failure
-#cat /tmp/F1_STATUS
-#STATUS: 0x00030000
-#F1_0: RUNNING
-#F1_1: FAILED
+# Eg: Status from output from BMC
+#--------------------+--------------------+
+#  On Failure        | On Success         |
+#--------------------+--------------------|
+# cat /tmp/F1_STATUS | cat /tmp/F1_STATUS |
+# STATUS: 0x00030000 | STATUS: 0x00000000 |
+# F1_0: RUNNING      | F1_0: RUNNING      |
+# F1_1: FAILED       | F1_1: RUNNING      |
+#--------------------+--------------------+
 
-# On Success
-#cat /tmp/F1_STATUS
-#STATUS: 0x00000000
-#F1_0: RUNNING
-#F1_1: RUNNING
+# Detect the DPU PCIe Bus number
+DetectDpuPcieBus
 
 while true; do
 
@@ -132,6 +158,8 @@ while true; do
 	fi
 
 	# Get the DPU status file from BMC
+	# TODO: Cleaner mechanism to get status from BMC
+	#       Currently using scp to get status from BMC
 	DPU_HEALTH=$(sshpass $BMC $DEST_DIR)
 
 	# scan the results
@@ -140,6 +168,7 @@ while true; do
 
 	if [[ -z "$DPU0_HEALTH" ]] ||
 	   [[ -z "$DPU1_HEALTH" ]]; then
+		sleep $LOOP_INTERVAL
 		continue
 	fi
 
@@ -148,19 +177,57 @@ while true; do
 		   [[ "$DPU0_HBM_DUMP_COLLECTED" == "0" ]]; then
 			echo "Collecting HBM dump on DPU 0"
 			CleanUpPrevDumps 0
-			CollectHbmDump 0 4
+			CollectHbmDump 0 $DPU_0_PCIE_BUS
 			DPU0_HBM_DUMP_COLLECTED=1
+			# Loop once more to check if the
+			# other DPU is in FAILED state
+			sleep $LOOP_INTERVAL
+			continue
 		fi
 
 		if [[ "$DPU1_HEALTH" == "FAILED" ]] &&	\
 		   [[ "$DPU1_HBM_DUMP_COLLECTED" == "0" ]]; then
 			echo "Collecting HBM dump on DPU 1"
 			CleanUpPrevDumps 1
-			CollectHbmDump 1 6
+			CollectHbmDump 1 $DPU_1_PCIE_BUS
 			DPU1_HBM_DUMP_COLLECTED=1
+			# Loop once more to check if the
+			# other DPU is in FAILED state
+			sleep $LOOP_INTERVAL
+			continue
+		fi
+
+		if [[ -f $CONTINUOUS_REBOOT_COUNTER ]]; then
+			VAL=`cat $CONTINUOUS_REBOOT_COUNTER`
+			if [[ $VAL -ge $MAX_CONTINUOUS_REBOOTS ]]; then
+				if [[ $STOP_REBOOTS -ne 1 ]]; then
+					echo "$MAX_CONTINUOUS_REBOOTS continuous reboots reached"
+					STOP_REBOOTS=1
+				fi
+			else
+				VAL=$(( $VAL + 1 ))
+				echo "$VAL" > $CONTINUOUS_REBOOT_COUNTER
+			fi
+		else
+			echo "1" > $CONTINUOUS_REBOOT_COUNTER
+		fi
+
+		# Trigger FS1600 reset
+		if [[ -f $FS1600_RESET ]] && [[ $STOP_REBOOTS -eq 0 ]]; then
+			sync
+			$FS1600_RESET
 		fi
 	fi
 
+	UPTIME=`cat /proc/uptime | cut -d " " -f 1 | cut -d "." -f 1`
+	if [[ $UPTIME -gt $NO_CONTINUOUS_REBOOT_TIME_MARK ]] && [[ $STOP_REBOOTS -eq 0 ]]; then
+		if [[ -f $CONTINUOUS_REBOOT_COUNTER ]]; then
+			echo "Deleting file $CONTINUOUS_REBOOT_COUNTER: count=`cat $CONTINUOUS_REBOOT_COUNTER`"
+			rm -f $CONTINUOUS_REBOOT_COUNTER
+		fi
+	fi
+
+	# Below 2 checks will work when DPU hot-plug is supported
 	if [[ "$DPU0_HEALTH" == "RUNNING" ]] && [[ "$DPU0_HBM_DUMP_COLLECTED" == "1" ]]; then
 		DPU0_HBM_DUMP_COLLECTED=0
 	fi
@@ -171,7 +238,6 @@ while true; do
 
 	rm -f $DPU_STATUS
 
-	# Check every 5 sec
-	sleep 5
+	sleep $LOOP_INTERVAL
 done
 

@@ -7,7 +7,7 @@ if [[ "$EUID" -ne 0 ]]; then
         exit
 fi
 
-echo "Running $0"
+echo "Running $0 (`date`)"
 
 SSHPASS=`which sshpass`
 if [[ -z $SSHPASS ]]; then
@@ -64,4 +64,4 @@ if [[ -f $FUN_ROOT/etc/DpuHealthMonitor.sh ]]; then
 	$FUN_ROOT/etc/DpuHealthMonitor.sh &
 fi
 
-echo "$0 DONE!!!"
+echo "$0 DONE!!! (`date`)"
