@@ -113,9 +113,7 @@ static int _write_json(int fd, struct fun_json *json, int mode)
 	if (mode == TEXT)
 		buf = fun_json_to_text(json);
 	else if (mode == TEXTONELINE)
-		// buf = fun_json_to_text_oneline(json, &dummy_size);
-		buf = fun_json_pretty_print(json, 0, "    ", 0,
-					    0, &dummy_size);
+		buf = fun_json_pretty_print(json, 0, "    ", 0, 0, &dummy_size);
 		
 	if (!buf)
 		return -1;
