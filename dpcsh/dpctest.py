@@ -55,6 +55,18 @@ def test_commands(client):
 
     if ((r1 != "first") or (r2 != "second") or (r3 != "third")):
         raise RuntimeError("async messages in wrong order")
+
+    print "### Testing jumbo async"
+    jumbo_message = "a" * 100000
+    client.async_send("echo", jumbo_message)
+    client.async_send("echo", jumbo_message)
+    client.async_send("echo", jumbo_message)
+    r1 = client.async_recv_any()
+    r2 = client.async_recv_any()
+    r3 = client.async_recv_any()
+
+    if ((r1 != r2) or (r2 != r3)):
+        raise RuntimeError("failed to dequeue three large messages!")
     
     print "All tests OK!"
 
