@@ -1069,7 +1069,6 @@ static void _do_recv_cmd(struct dpcsock *funos_sock,
 		if (pp) {
 			write(cmd_sock->fd, pp, strlen(pp));
 			write(cmd_sock->fd, "\n", 1);
-			printf("%s\n", pp);
 			fun_free_string(pp);
 		} else {
 			/* if we get here, we know that we got a
