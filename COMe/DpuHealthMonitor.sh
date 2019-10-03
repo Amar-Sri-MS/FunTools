@@ -22,7 +22,7 @@ MAX_DUMPS_PER_DPU=3
 
 # Get the build number
 if [[ -f $FILE_BLD_NUM ]]; then
-	BLD_NUM=`cat $FILE_BLD_NUM | grep bldNum | sed 's/^ *//' | cut -d " " -f 2`
+	BLD_NUM=`cat $FILE_BLD_NUM | grep bldNum | sed 's/^ *//' | cut -d " " -f 2 | sed 's/,.*//'`
 	if [[ -z $BLD_NUM ]]; then
 		BLD_NUM="UNKNOWN"
 	fi
