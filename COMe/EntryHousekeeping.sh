@@ -8,7 +8,7 @@ MAX_ARCHIVES=10
 
 
 if [[ -f $LOG_FILE ]]; then
-        NUM_ARCHIVES=`ls $LOG_STASH/$LOG_FILE_PREFIX* > /dev/null 2>&1 | wc -l`
+        NUM_ARCHIVES=`ls $LOG_STASH/$LOG_FILE_PREFIX* 2>/dev/null | wc -l`
         if [[ $NUM_ARCHIVES -ge $MAX_ARCHIVES ]]; then
                 # Keep Newest; Delete remaining all
                 FILE_LIST=`echo "$LOG_STASH"/"$LOG_FILE_PREFIX"*`

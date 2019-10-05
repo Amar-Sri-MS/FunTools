@@ -136,7 +136,7 @@ DEST_DIR="/tmp/."
 BMC_IP=$($IPMI_LAN | awk "$AWK_LAN")
 printf "Poll BMC:  %s\n" $BMC_IP
 
-BMC="-P password: -p superuser scp -o StrictHostKeyChecking=no sysadmin@$BMC_IP:$DPU_STATUS"
+BMC="-P password: -p superuser scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no sysadmin@$BMC_IP:$DPU_STATUS"
 
 # Eg: Status from output from BMC
 #--------------------+--------------------+
@@ -160,7 +160,7 @@ while true; do
 	# Get the DPU status file from BMC
 	# TODO: Cleaner mechanism to get status from BMC
 	#       Currently using scp to get status from BMC
-	DPU_HEALTH=$(sshpass $BMC $DEST_DIR)
+	DPU_HEALTH=$(sshpass $BMC $DEST_DIR > /dev/null 2>&1)
 
 	# scan the results
 	DPU0_HEALTH=`cat $DPU_STATUS | grep "F1_0" | cut -d " " -f 2`

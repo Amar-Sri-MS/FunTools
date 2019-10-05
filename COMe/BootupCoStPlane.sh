@@ -30,9 +30,9 @@ REBOOT_FILE="/tmp/host_reboot"
 BMC_IP=$($IPMI_LAN | awk "$AWK_LAN")
 printf "Poll BMC:  %s\n" $BMC_IP
 
-BMC="-P password: -p superuser ssh -o StrictHostKeyChecking=no sysadmin@$BMC_IP"
+BMC="-P password: -p superuser ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no sysadmin@$BMC_IP"
 
-REBOOT=$(sshpass $BMC "ls $REBOOT_FILE")
+REBOOT=$(sshpass $BMC "ls $REBOOT_FILE" > /dev/null 2>&1)
 if [ "$REBOOT" = "$REBOOT_FILE" ]; then
     printf "WARNING: BMC request to reboot host\n"
     sshpass $BMC "rm $REBOOT_FILE"
