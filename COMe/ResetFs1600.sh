@@ -32,7 +32,7 @@ REBOOT_FILE="/tmp/fpga_reset.sh"
 BMC_IP=$($IPMI_LAN | awk "$AWK_LAN")
 printf "Poll BMC:  %s\n" $BMC_IP
 
-BMC="-P password: -p superuser ssh -o StrictHostKeyChecking=no sysadmin@$BMC_IP"
+BMC="-P password: -p superuser ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no sysadmin@$BMC_IP"
 
 printf "WARNING: Sending BMC request to reboot host\n"
 printf "\n**********************************************\n"
@@ -41,7 +41,7 @@ printf "\n**********************************************\n"
 
 COUNT=0
 while [[ $COUNT -lt 120 ]]; do
-	REBOOT=$(sshpass $BMC "exec $REBOOT_FILE")
+	REBOOT=$(sshpass $BMC "exec $REBOOT_FILE" > /dev/null 2>&1)
         sleep 1
         let COUNT=COUNT+1
 done
