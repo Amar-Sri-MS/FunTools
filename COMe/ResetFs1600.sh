@@ -45,7 +45,7 @@ printf "Poll BMC:  %s\n" $BMC_IP
 
 BMC="-P password: -p superuser ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no sysadmin@$BMC_IP"
 
-printf "Shutdown the storage agent\n"
+printf "Shutdown the storage controller\n"
 $FUN_ROOT/StorageController/etc/start_sc.sh stop
 
 printf "\n**********************************************\n"
