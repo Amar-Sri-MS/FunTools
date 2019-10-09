@@ -1,6 +1,6 @@
 #!/bin/bash -e
 
-NOREBOOT="/tmp/NoCOMeReboot.sh"
+NOREBOOT="/tmp/SuspendCOMeRebootRequests"
 FUN_ROOT="/opt/fungible"
 
 if [[ "$EUID" -ne 0 ]]; then
@@ -45,8 +45,14 @@ printf "Poll BMC:  %s\n" $BMC_IP
 
 BMC="-P password: -p superuser ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no sysadmin@$BMC_IP"
 
+# Save unfinished work in FS before async reboot
+sync
+
 printf "Shutdown the storage controller\n"
 $FUN_ROOT/StorageController/etc/start_sc.sh stop
+
+# Save unfinished work in FS before async reboot
+sync
 
 printf "\n**********************************************\n"
 printf "\n!!! Hold on to the bars, we are going down !!!\n"
