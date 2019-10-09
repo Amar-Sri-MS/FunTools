@@ -110,7 +110,7 @@ class bpf:
     self.client = dpc_client.DpcClient(False)
     if 'elf' in kwargs:
       self.hook = extract_hook(kwargs['elf'])
-    self.hook['key'] = 1 if 'key' not in kwargs else kwargs['key']
+    self.hook['qid'] = 1 if 'qid' not in kwargs else kwargs['qid']
     self.hook['name'] = 'noname' if 'name' not in kwargs else kwargs['name']
     self.hook['section'] = 'xdp'
     result = self.client.execute('ebpf', ['attach', self.hook])
@@ -127,7 +127,7 @@ class bpf:
       raise Exception(json.dumps(result))
 
   def id(self):
-    return {k: self.hook[k] for k in ['bid', 'section', 'key']}
+    return {k: self.hook[k] for k in ['bid', 'section', 'qid']}
 
   def trace_print(self):
     while True:
