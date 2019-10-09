@@ -1,6 +1,6 @@
 #!/bin/bash -e
 
-NOREBOOT="/tmp/NoCOMeReboot.sh"
+NOREBOOT="/tmp/SuspendCOMeRebootRequests"
 FUN_ROOT="/opt/fungible"
 
 if [[ "$EUID" -ne 0 ]]; then
