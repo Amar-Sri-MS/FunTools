@@ -51,6 +51,10 @@ def dumphex(x):
 
     return R
 
+def arraypack(H):
+    BLOB = struct.pack('%sB'%len(H), *H)
+    return BLOB
+
 def bytepack(BYTES):
     H = map(lambda i: int(i, 16), map(lambda x: '0x'+x, BYTES.split()))
     BLOB = struct.pack('%sB'%len(H), *H)
@@ -145,6 +149,16 @@ class CMultiEnumField(MultiEnumField, object):
 class CBitEnumField(BitEnumField, object):
     def i2repr(self, pkt, v):
         return "[%s] %s" % (lhex(v), super(CBitEnumField, self).i2repr(pkt, v))
+
+class UBitEnumField(BitEnumField, object):
+    def i2repr(self, pkt, x):
+        d = dict(enumerate(self.names)) if type(self.names) is list else self.names
+        for (k, v) in d.iteritems():
+            v = v if type(v) is not list else v[0]
+            tf = '' if (x & (1<<k)) == 0 else 'on'
+            #flgs.append('%s=%s' % (v, tf))
+            flgs.append('{0:20} = {1:7}'.format(v, tf))
+        return "[%s]\n" % lhex(x) + "\n".join(flgs)
 
 class RsvBitField(BitField):
     def i2repr(self, pkt, v):
