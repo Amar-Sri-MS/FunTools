@@ -27,7 +27,12 @@ echo "Start collecting logs to stash $LOG_STASH (Date: `date`)"
 HBM_DUMP_DIR="/var/log/hbm_dumps"
 HBM_DUMP_FILES_PREFIX=`echo "$HBM_DUMP_DIR"/HBM_D*`
 
-/bin/cp $HBM_DUMP_FILES_PREFIX $LOG_STASH
+if [[ -d $HBM_DUMP_DIR ]]; then
+	# Check if atlest one file with that prefix exits
+	if ls $HBM_DUMP_FILES_PREFIX 1> /dev/null 2>&1; then
+		/bin/cp $HBM_DUMP_FILES_PREFIX $LOG_STASH
+	fi
+fi
 
 # ***********************************
 # * Copy the platform boot-up files *
@@ -37,8 +42,13 @@ COMe_BOOT_UP_DIR="/var/log"
 COMe_BOOT_UP_FILE=`echo "$COMe_BOOT_UP_DIR"/fs1600-come-boot-up.log`
 COMe_BOOT_UP_ARCHIVE_FILE_PREFIX=`echo "$COMe_BOOT_UP_DIR"/FS1600_*`
 
-/bin/cp $COMe_BOOT_UP_FILE $LOG_STASH
-/bin/cp $COMe_BOOT_UP_ARCHIVE_FILE_PREFIX $LOG_STASH
+if [[ -d $COMe_BOOT_UP_DIR ]]; then
+	# Check if atlest one file with that prefix exits
+	if ls $COMe_BOOT_UP_ARCHIVE_FILE_PREFIX 1> /dev/null 2>&1; then
+		/bin/cp $COMe_BOOT_UP_FILE $LOG_STASH
+		/bin/cp $COMe_BOOT_UP_ARCHIVE_FILE_PREFIX $LOG_STASH
+	fi
+fi
 
 # ***************************
 # * Get FunOs logs from BMC *
