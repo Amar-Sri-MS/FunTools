@@ -12,15 +12,155 @@
 #
 
 import argparse
+import json
 import os
 import platform
 import re
 import subprocess
-
+import select
 import tr_formats
 
 MAX_VPS_PER_CORE = 4
 MAX_VPS_PER_CLUSTER = 24
+
+###
+##  Module exports
+#
+
+# cache of addr2line processes, indexed by path name
+A2LPROC = {}
+
+def _run_addr2line(funos_binary_path):
+    """
+    Make an addr2line process we can talk to via stdin/stdout
+    """
+
+    current_os = platform.system()
+    if current_os == 'Darwin':
+        addr2line_tool = ('/Users/Shared/cross/mips64/binutils-2.31/bin/'
+                          'mips64-unknown-linux-addr2line')
+    else:
+        addr2line_tool = ('/opt/cross/mips64/bin/'
+                          'mips64-unknown-elf-addr2line')
+
+    cmd_array = [addr2line_tool,
+                 '-e',
+                 funos_binary_path,
+                 '-a',
+                 '-p',
+                 '-i',
+                 '-f']
+  
+    try:
+        proc = subprocess.Popen(cmd_array,
+                                stdin=subprocess.PIPE,
+                                stdout=subprocess.PIPE)
+    except subprocess.CalledProcessError as e:
+        print 'Failed to run addr2line: code %d msg %s' % (e.returncode,
+                                                           e.message)
+        proc = None
+
+    return proc
+
+DONEADDR = "0xabcdef"
+DONELINE = "0x0000000000abcdef: ?? ??:0\n"
+
+def do_addr2line(proc, addrs):
+
+    lines = []
+
+    for addr in addrs:
+        # drain any existing output
+        # print "selecting"
+        while (select.select([proc.stdout],[],[],0)[0]!=[]):
+            # print "reading"
+            s = proc.stdout.readline()
+            # print "read: %s" % s.strip()
+            lines.append(s)
+
+        # send more input
+        s = "0x%016x\n" % addr
+        # print "write: %s" % s.strip()
+        proc.stdin.write(s)
+
+    # send a finish token
+    proc.stdin.write("%s\n" % DONEADDR)
+    proc.stdin.flush()
+    
+    # drain everyting left
+    while True:
+        line = proc.stdout.readline()
+        # print "read: %s" % line.strip()
+        if (line == DONELINE):
+            break
+        lines.append(line)
+
+    return lines
+            
+def raw_addr2line(addrs, funos_binary_path):
+    """
+    Runs MIPS addr2line on the list of provided addresses and returns
+    the text output containing address and function names, and keep
+    the process lying around for more
+    """
+
+    if (A2LPROC.get(funos_binary_path) is None):
+        proc = _run_addr2line(funos_binary_path)
+        assert (proc is not None)
+        A2LPROC[funos_binary_path] = proc
+    
+    output = do_addr2line(A2LPROC[funos_binary_path], addrs)
+        
+    return output
+
+
+# Attempts to match lines that look like:
+#
+# 0xa800000000427658: /funos/platform/include/platform/lock.h:62
+# 0xa800000000427558: /funos/platform/mips64/bzero.c:58 (discriminator 1)
+START_RE = "(0x[0-9a-f]+):(.*:[0-9\?]+( \(discriminator \d+\))?\n)"
+NOINFO = " ?? ??:0\n"
+
+
+def parse_next_addr(lines, addrs):
+
+    line = lines.pop(0)
+    m = re.match(START_RE, line)
+    if (m is None):
+        raise RuntimeError("failed to match address line on '%s'" % line)
+    addr = int(m.group(1),16)
+    info = [m.group(2)]
+    
+    while (len(lines) > 0):
+        if (re.match(START_RE, line[0]) is not None):
+            break
+        line = lines.pop(0)
+        info.append(line)
+
+    if ((len(info) == 1) and(info[0] == NOINFO)):
+        # not a valid code address
+        addrs[addr] = None
+    else:
+        addrs[addr] = info
+    
+    return lines
+
+def parsed_addr2line(addrs, funos_binary):
+
+    ret = {}
+    
+    # get all the input
+    lines = raw_addr2line(addrs, funos_binary)
+
+    # parse it
+    while (len(lines)):
+        lines = parse_next_addr(lines, ret)
+    
+    return ret
+    
+###
+##  Classes
+#
 
 
 class PerfParser:
@@ -32,6 +172,8 @@ class PerfParser:
     """
 
     # Parser state identifiers. Python 2.7 does not have enum types.
+    TMOAS = 'tmoas'
+    TPC = 'tpc'
     WORD0 = 'word0'
     WORD1 = 'word1'
     WORD2 = 'word2'
@@ -46,9 +188,10 @@ class PerfParser:
         self.samples = []
         self.cluster = cluster
         self.core = core
-        self.fr_idx = 0
-        self.tf_idx = 0
-        self.fr_valid = True
+        self.overflow_frames = []
+        self.state = [PerfParser.WORD0] * MAX_VPS_PER_CORE
+        self.next_state = [PerfParser.WORD0] * MAX_VPS_PER_CORE
+        self.sample_builder = [None] * MAX_VPS_PER_CORE
 
     def parse_trace_messages(self, fh):
         self.frames = parse_and_group_trace_formats(fh)
@@ -64,99 +207,122 @@ class PerfParser:
         # TU1. This allows recovery from overflow frames where traces
         # are lost.
         #
-        # The sequence may not be contiguous: interleaving from multiple
-        # VPs may occur, and TMOAS messages which record processor state
-        # changes cannot be disabled.
-        #
         # This part of the code is written like a finite state automaton
-        # which processes each trace format in turn. State is maintained
-        # per-VP.
+        # which processes each trace format (tf) in turn. State is
+        # maintained per-VP. Here is a drawing of the state machine:
+        #
+        #                ------------------------------------------------
+        #               |                                                |
+        #               v                                                |
+        #    ---> (WORD0 - tu2) ---------------> (TMOAS) --> (TPC) ------
+        #   |           |          overflow         ^
+        #   |           v                           |
+        #   |     (WORD1 - tu1) --------------------
+        #   |           |          overflow         |
+        #   |           v                           |
+        #   |     (WORD2 - tu1) --------------------
+        #   |           |          overflow         |
+        #   |           v                           |
+        #   |     (WORD3 - tu1) --------------------
+        #   |           |          overflow         |
+        #   |           v                           |
+        #    ---- (WORD4 - tu1) --------------------
+        #                          overflow
+        #
 
-        state = [PerfParser.WORD0] * MAX_VPS_PER_CORE
-        next_state = [PerfParser.WORD0] * MAX_VPS_PER_CORE
-        sample_builder = [None] * MAX_VPS_PER_CORE
+        for fr_idx, frame in enumerate(self.frames):
+            for tf in frame.tfs:
 
-        while self.fr_idx != len(self.frames):
-            frame = self.frames[self.fr_idx]
-            tf = frame.tfs[self.tf_idx]
+                # If this frame has an overflow message we need to ignore all
+                # entries until we find a TMOAS-TPC pair, which indicates
+                # tracing has restarted (this is documented in MIPS PDTrace).
+                #
+                # Because overflow drops an unknown number of traces we reset
+                # all states: there is no way to recover partial perf samples.
+                if frame.overflow:
+                    self.next_state = [PerfParser.TMOAS] * MAX_VPS_PER_CORE
+                    if (not self.overflow_frames or
+                            self.overflow_frames[-1] != fr_idx):
+                        self.overflow_frames.append(fr_idx)
 
-            # If this frame has an overflow message we need to ignore all
-            # entries in it (this is documented in MIPS PDTrace).
+                # This block handles the recovery states after overflow.
+                #
+                # All VP states must agree that they're looking for TMOAS-TPC,
+                # so we only need to check VP 0
+                elif self.state[0] == PerfParser.TMOAS:
+                    if tr_formats.is_tmoas(tf):
+                        self.next_state = [PerfParser.TPC] * MAX_VPS_PER_CORE
+                elif self.state[0] == PerfParser.TPC:
+                    if tr_formats.is_tpc(tf):
+                        self.next_state = [PerfParser.WORD0] * MAX_VPS_PER_CORE
+
+                else:
+                    self.parse_regular_tf(tf)
+
+                self.state = self.next_state
+
+    def parse_regular_tf(self, tf):
+        """
+        Handles trace formats that are not overflow or overflow recovery
+        formats.
+
+        This is where we expect the parser to spend most of its time with TU2
+        and TU1 formats.
+        """
+
+        # If this is not a valid TU2 or TU1 format skip it. The most
+        # common reason for this is the TMOAS format, which shows
+        # up on processor mode changes.
+        if not tr_formats.is_tu1(tf) and not tr_formats.is_tu2(tf):
+            pass
+
+        else:
+            # The following code handles normal operation where we
+            # build up perf samples per-VP.
             #
-            # Also, TMOAS shows up every now and then to track processor state
-            # changes. The most common cause of TMOAS in FunOS appears
-            # to be exceptions. Once TMOAS appears, all subsequent traces in
-            # the frame seem to be bogus (this is undocumented).
-            #
-            # Because both drop an unknown number of traces we reset all
-            # states to start looking for the first word again.
-            if frame.overflow or tr_formats.is_tmoas(tf):
-                state = [PerfParser.WORD0] * MAX_VPS_PER_CORE
-                self.fr_valid = False
-
-            # Skip trace formats if the frame is marked as invalid. At the
-            # end of frame we reset the status to valid.
-            if not self.fr_valid:
-                self._advance_tf()
-                continue
-
-            # If this is not a valid TU2 or TU1 format skip it
-            if not tr_formats.is_tu1(tf) and not tr_formats.is_tu2(tf):
-                self._advance_tf()
-                continue
-
-            # Extract the VP from the data because pdtrace hardware seems
-            # to give bogus vpid values. Sigh.
+            # Extract the VP from the data because pdtrace hardware
+            # gives bogus vpid values for TF3 formats. Sigh.
             vp = tf.addr & self.VP_MASK
 
-            if state[vp] == PerfParser.WORD0:
+            if self.state[vp] == PerfParser.WORD0:
                 if tr_formats.is_tu2(tf):
-                    sample_builder[vp] = PerfSampleBuilder(vp)
-                    sample_builder[vp].add_tf(tf)
-                    next_state[vp] = PerfParser.WORD1
+                    self.sample_builder[vp] = PerfSampleBuilder(vp)
+                    self.sample_builder[vp].add_tf(tf)
+                    self.next_state[vp] = PerfParser.WORD1
                 else:
-                    next_state[vp] = PerfParser.WORD0
+                    self.next_state[vp] = PerfParser.WORD0
 
-            elif state[vp] == PerfParser.WORD1:
+            elif self.state[vp] == PerfParser.WORD1:
                 if tr_formats.is_tu1(tf):
-                    sample_builder[vp].add_tf(tf)
-                    next_state[vp] = PerfParser.WORD2
+                    self.sample_builder[vp].add_tf(tf)
+                    self.next_state[vp] = PerfParser.WORD2
                 else:
-                    next_state[vp] = PerfParser.WORD0
+                    self.next_state[vp] = PerfParser.WORD0
 
-            elif state[vp] == PerfParser.WORD2:
+            elif self.state[vp] == PerfParser.WORD2:
                 if tr_formats.is_tu1(tf):
-                    sample_builder[vp].add_tf(tf)
-                    next_state[vp] = PerfParser.WORD3
+                    self.sample_builder[vp].add_tf(tf)
+                    self.next_state[vp] = PerfParser.WORD3
                 else:
-                    next_state[vp] = PerfParser.WORD0
+                    self.next_state[vp] = PerfParser.WORD0
 
-            elif state[vp] == PerfParser.WORD3:
+            elif self.state[vp] == PerfParser.WORD3:
                 if tr_formats.is_tu1(tf):
-                    sample_builder[vp].add_tf(tf)
-                    next_state[vp] = PerfParser.WORD4
+                    self.sample_builder[vp].add_tf(tf)
+                    self.next_state[vp] = PerfParser.WORD4
                 else:
-                    next_state[vp] = PerfParser.WORD0
+                    self.next_state[vp] = PerfParser.WORD0
 
-            elif state[vp] == PerfParser.WORD4:
+            elif self.state[vp] == PerfParser.WORD4:
                 if tr_formats.is_tu1(tf):
-                    sample_builder[vp].add_tf(tf)
-                    sample = sample_builder[vp].process_tfs()
+                    self.sample_builder[vp].add_tf(tf)
+                    sample = self.sample_builder[vp].process_tfs()
                     self.samples.append(sample)
-                next_state[vp] = PerfParser.WORD0
+                self.next_state[vp] = PerfParser.WORD0
 
             else:
-                raise RuntimeError('illegal parser state %s' % state[vp])
-
-            state[vp] = next_state[vp]
-            self._advance_tf()
-
-    def _advance_tf(self):
-        self.tf_idx += 1
-        if self.tf_idx == len(self.frames[self.fr_idx].tfs):
-            self.tf_idx = 0
-            self.fr_idx += 1
-            self.fr_valid = True
+                raise RuntimeError('illegal parser state %s' %
+                                   self.state[vp])
 
     def get_perfmon_samples(self):
         """
@@ -179,6 +345,13 @@ class PerfParser:
             result.append(perfmon_sample)
 
         return result
+
+    def get_overflow_frames(self):
+        """ Returns a list of overflow frame indices """
+        return self.overflow_frames
+
+    def get_total_frame_count(self):
+        return len(self.frames)
 
 
 class PerfSampleBuilder:
@@ -432,9 +605,9 @@ class CacheMissParser(object):
         frames = parse_and_group_trace_formats(fh)
         for frame in frames:
             for tf in frame.tfs:
-                self.process_tf(tf)
+                self.process_tf(tf, frame.frame_index)
 
-    def process_tf(self, tf):
+    def process_tf(self, tf, frame_index):
         next_state = self.state
 
         if self.state == self.STATE_CM_TPC_OR_TMOAS:
@@ -453,8 +626,8 @@ class CacheMissParser(object):
             elif tr_formats.is_tsa(tf):
                 self.current_entry.set_store_addr(tf.addr)
             else:
-                raise RuntimeError('should have either TLA or TSA '
-                                   'after TPC: %s' % tf)
+                raise RuntimeError('frame %d: should have either TLA or TSA '
+                                   'after TPC: %s' % (frame_index, tf))
             self.entries.append(self.current_entry)
             next_state = self.STATE_CM_TPC_OR_TMOAS
 
@@ -465,33 +638,7 @@ class CacheMissParser(object):
 
     @staticmethod
     def _run_addr2line(addrs, funos_binary_path):
-        """
-        Runs MIPS addr2line on the list of provided addresses and
-        returns the text output containing address and function names.
-        """
-        current_os = platform.system()
-        if current_os == 'Darwin':
-            addr2line_tool = ('/Users/Shared/cross/mips64/binutils-2.31/bin/'
-                              'mips64-unknown-linux-addr2line')
-        else:
-            addr2line_tool = ('/opt/cross/mips64/bin/'
-                              'mips64-unknown-elf-addr2line')
-
-        cmd_array = [addr2line_tool,
-                     '-e',
-                     funos_binary_path,
-                     '-a',
-                     '-p',
-                     '-f']
-
-        cmd_array.extend(['%016x' % a for a in addrs])
-        try:
-            output = subprocess.check_output(cmd_array)
-        except subprocess.CalledProcessError as e:
-            print 'Failed to run addr2line: code %d msg %s' % (e.returncode,
-                                                               e.message)
-            return None
-        return output
+        return raw_addr2line(addrs, funos_binary_path)
 
 
 class PDTParser:
@@ -507,9 +654,10 @@ class Frame:
     A group of trace formats that belong to the same frame
     (i.e. the same 32-byte trace word).
     """
-    def __init__(self):
+    def __init__(self, frame_index):
         self.tfs = []
         self.overflow = False
+        self.frame_index = frame_index
 
     def add_tf(self, tf):
         self.tfs.append(tf)
@@ -555,6 +703,22 @@ def run_perf_parser(args):
             fh.write('\n'.join(sample))
             fh.write('\n')
 
+    report_overflow_frames(args, trace_parser)
+
+
+def report_overflow_frames(args, trace_parser):
+    overflow_frames = trace_parser.get_overflow_frames()
+    total_frames = trace_parser.get_total_frame_count()
+
+    if overflow_frames:
+        overflow_file = 'overflow_%s_%s.txt' % (str(args.cluster),
+                                                str(args.core))
+        overflow_path = os.path.join(args.output_dir, overflow_file)
+        with open(overflow_path, 'w') as fh:
+            info = {'total_frames': total_frames,
+                    'dropped_frames': overflow_frames}
+            fh.write(json.dumps(info))
+
 
 def run_cache_miss_parser(args):
     """
@@ -564,6 +728,7 @@ def run_cache_miss_parser(args):
     this was a load/store instruction.
     """
     parser = CacheMissParser()
+    print 'Running cache miss parser on %s' % args.input_file
     with open(args.input_file, 'r') as fh:
         parser.parse_trace_messages(fh)
 
@@ -604,7 +769,8 @@ def parse_and_group_trace_formats(fh):
             frame_index = match.group(1)
             tf_type = int(match.group(3))
             if frame_index != last_frame_index:
-                frames.append(Frame())
+                frame_index_int = int(frame_index)
+                frames.append(Frame(frame_index_int))
                 last_frame_index = frame_index
 
             tf = _parse_message(line, tf_type)

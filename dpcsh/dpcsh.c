@@ -67,6 +67,8 @@ static bool _do_device_init = true; /* if we have a device, init by default */
 static char *_baudrate = DEFAULT_BAUD; /* default BAUD rate */
 static bool _no_flow_control = false;  /* run without flow_control */
 static bool _legacy_b64 = false;
+static uint32_t dpcsh_session_id;
+static uint32_t cmd_seq_num;
 
 /* cmd timeout, use driver default timeout */
 #define DEFAULT_NVME_CMD_TIMEOUT_MS "0"
@@ -892,7 +894,7 @@ static void apply_command_locally(const struct fun_json *json)
 // We pass the sock INOUT in order to be able to reestablish a
 // connection if the server went down and up
 static bool _do_send_cmd(struct dpcsock *sock, char *line,
-			 ssize_t read)
+			 ssize_t read, uint32_t seq_num)
 {
 	if (read == 0)
 		return false; // skip blank lines
@@ -911,7 +913,7 @@ static bool _do_send_cmd(struct dpcsock *sock, char *line,
 	apply_command_locally(json);
         bool ok = false;
 		if(sock->mode == SOCKMODE_NVME) {
-			ok = _write_to_nvme(json, sock);
+			ok = _write_to_nvme(json, sock, dpcsh_session_id, seq_num);
 		}
 		else {
 			ok = _write_to_sock(json, sock);
@@ -927,7 +929,7 @@ static bool _do_send_cmd(struct dpcsock *sock, char *line,
 			return false;
 		}
 		if(sock->mode == SOCKMODE_NVME) {
-			ok = _write_to_nvme(json, sock);
+			ok = _write_to_nvme(json, sock, dpcsh_session_id, seq_num);
 		}
 		else {
 			ok = _write_to_sock(json, sock);
@@ -1001,12 +1003,12 @@ static bool _is_loopback_command(struct dpcsock *sock, char *line,
 #endif
 
 static void _do_recv_cmd(struct dpcsock *funos_sock,
-			 struct dpcsock *cmd_sock, bool retry)
+			 struct dpcsock *cmd_sock, bool retry, uint32_t seq_num)
 {
 	/* receive a reply */
         struct fun_json *output;
 		if(funos_sock->mode == SOCKMODE_NVME) {
-			output = _read_from_nvme(funos_sock);
+			output = _read_from_nvme(funos_sock, dpcsh_session_id, seq_num);
 		}
 		else {
 			output = _read_from_sock(funos_sock, retry);
@@ -1029,7 +1031,6 @@ static void _do_recv_cmd(struct dpcsock *funos_sock,
 		raw_output = output;
 	} else {
 		// printf("New style output, tid=%d\n", (int)tid);
-		fun_json_retain(raw_output);
 		raw_output = apply_pretty_printer(output);
 		fun_json_release(output);
 
@@ -1064,7 +1065,7 @@ static void _do_recv_cmd(struct dpcsock *funos_sock,
 				raw_output);
 		size_t allocated_size = 0;
 		uint32_t flags = use_hex ? FUN_JSON_PRETTY_PRINT_USE_HEX_FOR_NUMBERS : 0;
-		char *pp = fun_json_pretty_print(raw_output, 0, "    ", 100, flags, &allocated_size);
+		char *pp = fun_json_pretty_print(raw_output, 0, "    ", 0, flags, &allocated_size);
 		if (pp) {
 			write(cmd_sock->fd, pp, strlen(pp));
 			write(cmd_sock->fd, "\n", 1);
@@ -1115,7 +1116,6 @@ static void terminal_set_per_character(bool enable)
 static void _do_interactive(struct dpcsock *funos_sock,
 			    struct dpcsock *cmd_sock)
 {
-    char *line = NULL;
     ssize_t read;
     int r, nfds = 0;
     bool ok;
@@ -1165,9 +1165,11 @@ static void _do_interactive(struct dpcsock *funos_sock,
 		    exit(1);
 	    }
 
+	    uint32_t seq_num = cmd_seq_num;
+	    cmd_seq_num++;
 	    if (FD_ISSET(cmd_sock->fd, &fds)) {
 		    // printf("user input\n");
-		    line = _read_a_line(cmd_sock, &read);
+    		    char *line = _read_a_line(cmd_sock, &read);
 
 		    if (read == -1) /* user ^D */
 			    break;
@@ -1183,8 +1185,8 @@ static void _do_interactive(struct dpcsock *funos_sock,
 		    if (_is_loopback_command(funos_sock, line, read))
 			    continue;
 
-		    ok = _do_send_cmd(funos_sock, line, read);
-
+		    ok = _do_send_cmd(funos_sock, line, read, seq_num);
+		    free(line);
 		    if (!ok) {
 			    printf("error sending command\n");
 		    }
@@ -1198,14 +1200,13 @@ static void _do_interactive(struct dpcsock *funos_sock,
 	    if (FD_ISSET(funos_sock->fd, &fds)
 		&& (!funos_sock->loopback)) {
 		    // printf("funos input\n");
-		    _do_recv_cmd(funos_sock, cmd_sock, false);
+		    _do_recv_cmd(funos_sock, cmd_sock, false, seq_num);
 	    }
     }
     if (cmd_sock->mode == SOCKMODE_TERMINAL) {
 	    /* reset terminal */
 	    terminal_set_per_character(false);
     }
-    free(line);
 }
 
 static void _do_run_webserver(struct dpcsock *funos_sock,
@@ -1287,7 +1288,9 @@ static void _do_cli(int argc, char *argv[],
 	char *buf = malloc(LINE_MAX);
 	int n = 0;
 	bool ok;
+	uint32_t seq_num = cmd_seq_num;
 
+	cmd_seq_num++;
 	for (int i = startIndex; i < argc; i++) {
 		n += snprintf(buf + n, LINE_MAX - n, "%s ", argv[i]);
 		printf("buf=%s n=%d\n", buf, n);
@@ -1296,9 +1299,9 @@ static void _do_cli(int argc, char *argv[],
 	size_t len = strlen(buf);
 	buf[--len] = 0;	// trim the last space
 	printf(">> single cmd [%s] len=%zd\n", buf, len);
-	ok = _do_send_cmd(funos_sock, buf, len);
+	ok = _do_send_cmd(funos_sock, buf, len, seq_num);
 	if (ok) {
-		_do_recv_cmd(funos_sock, cmd_sock, true);
+		_do_recv_cmd(funos_sock, cmd_sock, true, seq_num);
 	}
 	free(buf);
 }
@@ -1404,6 +1407,7 @@ int main(int argc, char *argv[])
 	struct dpcsock cmd_sock;   /* connection to commanding agent */
 
 	dpcsh_path = argv[0];
+	dpcsh_session_id = getpid();
 	dpcsh_load_macros();
 	register_csr_macro();
 

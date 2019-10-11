@@ -24,11 +24,11 @@ struct fun_json *hex_macro(const struct fun_json *input)
 		use_hex = fun_json_to_bool(fun_json_array_at(arguments, 0), false) != false;
 	}
 	struct fun_json *output = fun_json_create_empty_dict();
-	fun_json_dict_add_other_dict(output, input, true);
+	fun_json_dict_add_other_dict(output, fun_json_retain(input), true);
 	struct fun_json *echo = fun_json_create_string("echo", fun_json_no_copy_no_own);
 	fun_json_dict_add(output, "verb", fun_json_no_copy_no_own, echo, true);
 	const struct fun_json *b = fun_json_create_bool(use_hex);
-	struct fun_json *new_arguments = fun_json_create_array(&b, 1);
+	struct fun_json *new_arguments = fun_json_create_array((void *)&b, 1);
 	fun_json_dict_add(output, "arguments", fun_json_no_copy_no_own, new_arguments, true);
 	return output;
 }
@@ -36,7 +36,7 @@ struct fun_json *hex_macro(const struct fun_json *input)
 static struct fun_json *test_macro1(const struct fun_json *input) 
 {
 	struct fun_json *output = fun_json_create_empty_dict();
-	fun_json_dict_add_other_dict(output, input, true);
+	fun_json_dict_add_other_dict(output, fun_json_retain(input), true);
 	struct fun_json *echo = fun_json_create_string("echo", fun_json_no_copy_no_own);
 	fun_json_dict_add(output, "verb", fun_json_no_copy_no_own, echo, true);
 	return output;
@@ -45,7 +45,7 @@ static struct fun_json *test_macro1(const struct fun_json *input)
 static struct fun_json *test_macro2(const struct fun_json *input) 
 {
 	struct fun_json *output = fun_json_create_empty_dict();
-	fun_json_dict_add_other_dict(output, input, true);
+	fun_json_dict_add_other_dict(output, fun_json_retain (input), true);
 	struct fun_json *same = fun_json_create_string("_macro2", fun_json_no_copy_no_own);
 	fun_json_dict_add(output, "verb", fun_json_no_copy_no_own, same, true);
 	return output;

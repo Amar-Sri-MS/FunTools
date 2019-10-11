@@ -129,6 +129,24 @@
             "customer_cert": "",
             "description": ""
         },
+        "eeprom_fs1600r2_0_packed.bin": {
+            "source": "eeprom_fs1600r2_0",
+            "version": 1,
+            "fourcc": "eepr",
+            "key": "fpk3",
+            "cert": "",
+            "customer_cert": "",
+            "description": ""
+        },
+        "eeprom_fs1600r2_1_packed.bin": {
+            "source": "eeprom_fs1600r2_1",
+            "version": 1,
+            "fourcc": "eepr",
+            "key": "fpk3",
+            "cert": "",
+            "customer_cert": "",
+            "description": ""
+        },
         "host_firmware_packed.bin": {
             "source": "",
             "version": 1,
@@ -153,14 +171,7 @@
         }
     },
     "certificates": {
-        "start_certificate.bin": {
-            "public": "fpk2",
-            "key": "fpk1",
-            "tamper_flags": "00000000",
-            "debugger_flags": "00000000",
-            "serial_number": "000000000000000000000000000000000000000000000000",
-            "serial_number_mask": "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF0000"
-        }
+        "start_certificate.bin" : {}
     },
     "key_injection": {
         "firmware_m5150.keys.bin": {

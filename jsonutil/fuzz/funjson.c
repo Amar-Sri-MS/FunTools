@@ -20,7 +20,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size) {
 #else
 	size_t line = 0;
 	size_t parsed = 0;
-	struct fun_json *input = fun_json_create_from_text_with_length((const char *)Data, Size, &line, &parsed);
+	struct fun_json *input = fun_json_create_from_text_with_options((const char *)Data, Size, 0, &line, &parsed);
 #endif
 	fun_json_release(input);
 	return 0;
