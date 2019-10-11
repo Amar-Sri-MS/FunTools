@@ -166,6 +166,16 @@ while true; do
 	DPU0_HEALTH=`cat $DPU_STATUS | grep "F1_0" | cut -d " " -f 2`
 	DPU1_HEALTH=`cat $DPU_STATUS | grep "F1_1" | cut -d " " -f 2`
 
+	# We might have to disable this is future
+	# This call is added to help flush the 
+	# file-system cache to the disk
+	# The over-ride is added so that we can
+	# disable this check on a running system
+	# if the performance deteriorates
+	if [[ ! -f /tmp/disableContinuousFsSync ]]; then
+		sync
+	fi
+
 	if [[ -z "$DPU0_HEALTH" ]] ||
 	   [[ -z "$DPU1_HEALTH" ]]; then
 		sleep $LOOP_INTERVAL
