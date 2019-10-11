@@ -1,16 +1,15 @@
-# Ebpf client framework
+# eBPF FunOS client
 
 ## Introduction
 
-This section represents the client side of the ebpf framework.
-The ebpf client framework is intended to function as a frontend
-to the ebpf service offered by FunOS.
+This section represents the client side of the eBPF framework.
+The eBPF client framework is intended to function as a frontend
+to the eBPF service offered by FunOS.
 
-It is API compatible with libbpf. libbpf is intricately tied to the
-linux kernel. Our attempt is to make this interface generic, and
-work across all OS environments.
+The intent is to provide functionality and usability level similar to BCC.
 
-The libbpf repository here is a mirror of the out-of-kernel bpf
-repository. We will try to remain compatible with all kernel changes.
+## Compiling Kernels
 
-
+```sh
+clang -I./ -O2 -target bpf -c kernels/counter.c -o kernels/counter.elf
+```

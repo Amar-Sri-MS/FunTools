@@ -789,6 +789,11 @@ bool hbm_copy_to_file(ccu_info_t *ccu_info, uint64_t start_addr,
 		return false;
 	}
 
+	/* seek to the start address so readers see bytes relative to
+	 * HBM base
+	 */
+	fseek(f, start_addr, SEEK_SET);
+
         while(read_offset < read_size) {
 		uint8_t data[256] = {0};
 		bool status = hbm_read_aligned(ccu_info,
@@ -854,13 +859,14 @@ void
 usage(void)
 {
 	fprintf(stderr,
-		"usage: %s [-d <debug level>] [-h] -a <rver Port> -s <size> -b <bar> -f <file>\n"
+		"usage: %s [-d <debug level>] [-h] -a <start addr> -s <size> -b <bar> -f -o <file>\n"
 		"    -h         help/this message\n"
 		"    -d         debug level: 0-ERROR, 1-NOTICE, 2-INFO, 3-DEBUG, 4-TRACE\n"
-		"    -a         address of hbm physical memory\n"
+		"    -a         hbm dump starting from address\n"
 		"    -s         size of memory to be dumped\n"
-		"    -b         bar info\n"
-		"    -f         dest file\n",
+		"    -b         pci bar info\n"
+		"    -f         freeze vps\n",
+		"    -o         output file name\n",
 		myname);
 }
 

@@ -139,6 +139,14 @@ class dbgsh(cmd2.Cmd):
         metavar=('raw_value'), dest='raw_value', type=str,
         help="csr value in big-endian 64-bit words")
 
+    parser_decode = subparsers.add_parser('decode',
+                help="Decode csr bits", formatter_class=ArgFormatter)
+    parser_decode.set_defaults(func=csr_decode)
+    parser_decode.add_argument('csr', nargs=1, type=str, help="csr name")
+    parser_decode.add_argument('-v', nargs='+',
+        metavar=('raw_value'), dest='raw_value', type=str,
+        help="csr value in big-endian 64-bit words")
+
     parser_list = subparsers.add_parser('list',
                 help="List maching csr instances", formatter_class=ArgFormatter)
     parser_list.set_defaults(func=csr_list)

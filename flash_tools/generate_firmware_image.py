@@ -45,7 +45,7 @@ def get_from_user(prompt):
     while True:
         res = input(prompt)
         ok = input("You entered '{0}'\nIs this correct? (Y/n) ".format(res))
-        if ok == '' or ok == 'Y' or ok == 'y':
+        if ok in ['', 'Y', 'y']:
             break
 
     return res
@@ -118,6 +118,20 @@ class Lock(object):
     def __del__(self):
         self.handle.close()
 
+
+def log_op(operation):
+    # log the operation -- python share files
+    log_name = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                            ".fungible_hsm.log")
+    with open(log_name, "a") as log_file:
+        log_file.write("%s: date = %s user = %s\n" %
+                       (operation,
+                        str(datetime.datetime.now()),
+                        getpass.getuser()))
+        traceback.print_stack(file=log_file)
+
+
+
 # libraries in order of preference -- second argument: prompt for password
 LIBSOFTHSM2_PATHS = [
     ("/usr/safenet/lunaclient/lib/libCryptoki2_64.so", True), # Safenet ubuntu 14
@@ -171,16 +185,27 @@ def get_token():
     return None, ''
 
 
-def log_op(operation):
-    # log the operation -- python share files
-    log_name = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                            ".fungible_hsm.log")
-    with open(log_name, "a") as log_file:
-        log_file.write("%s: date = %s user = %s\n" %
-                       (operation,
-                        str(datetime.datetime.now()),
-                        getpass.getuser()))
-        traceback.print_stack(file=log_file)
+### HSM  #############################
+
+class HSM(object):
+
+    __session = None
+
+    def __init__(self):
+        pass
+
+    def __del__(self):
+        pass
+
+    def __getattr__(self, name):
+        if name == 'session':
+            if not HSM.__session:
+                token, password = get_token()
+                # Open a session on our token -- use rw (singleton used all overwrite)
+                HSM.__session = token.open(user_pin=password, rw=True)
+
+            return HSM.__session
+        return None
 
 
 def get_private_key_with_label(ro_session, label):
@@ -230,31 +255,32 @@ def get_private_rsa_with_modulus(ro_session, modulus):
     return private
 
 
-def get_create_public_rsa_modulus(label, hash=None):
-
-    token, password = get_token()
-
+def get_create_public_rsa_modulus(label):
     public_modulus = None
-    # Open a session on our token
-    with token.open(user_pin=password, rw=False) as session:
-        try:
-            public = get_public_key_with_label(session, label)
-            public_modulus = get_modulus(public)
-            if hash is not None:
-                return session.digest(public_modulus, mechanism=hash)
 
-        except Exception as err:
-            print(err)
+    hsm = HSM()
+    try:
+        public = get_public_key_with_label(hsm.session, label)
+        public_modulus = get_modulus(public)
+
+    except Exception as err:
+        print(err)
 
     if public_modulus is None:
-        with token.open(user_pin=password, rw=True) as session:
             print("Generating key " + label)
-            public, _ = generate_rsa_key_pair(session, label)
+            public, _ = generate_rsa_key_pair(hsm.session, label)
             public_modulus = get_modulus(public)
-            if hash is not None:
-                return session.digest(public_modulus, mechanism=hash)
 
     return public_modulus
+
+
+def get_all_rsa_keys(session):
+    all_rsa_pubs = list(session.get_objects(
+        {pkcs11.Attribute.CLASS: pkcs11.ObjectClass.PUBLIC_KEY,
+         pkcs11.Attribute.KEY_TYPE: pkcs11.KeyType.RSA}))
+
+    return [[x, get_private_rsa_with_modulus(session, get_modulus(x))] for x in all_rsa_pubs]
+
 
 ## EC P256
 
@@ -280,51 +306,51 @@ def generate_ec_key_pair(rw_session, label):
 
 def get_create_public_ec(label, der_encoded):
 
-    token, password = get_token()
-
     public_pt = None
-    # Open a session on our token
-    with token.open(user_pin=password, rw=False) as session:
-        try:
-            public = get_public_key_with_label(session, label)
-            public_pt = get_pubkey(public, der_encoded)
 
-        except Exception as err:
-            print(err)
+    hsm = HSM()
+
+    try:
+        public = get_public_key_with_label(hsm.session, label)
+        public_pt = get_pubkey(public, der_encoded)
+
+    except Exception as err:
+        print(err)
 
     if public_pt is None:
-        with token.open(user_pin=password, rw=True) as session:
-            print("Generating EC key " + label)
-            public, _ = generate_ec_key_pair(session, label)
-            public_pt = get_pubkey(public, der_encoded)
+
+        print("Generating EC key " + label)
+        public, _ = generate_ec_key_pair(hsm.session, label)
+        public_pt = get_pubkey(public, der_encoded)
 
     return public_pt
+
+def get_all_ec_keys(session):
+    return list(session.get_objects({pkcs11.Attribute.KEY_TYPE: pkcs11.KeyType.EC}))
 
 
 def sign_with_key(label, data):
 
-    token, password = get_token()
+    hsm = HSM()
+    try:
+        private = get_private_key_with_label(hsm.session, label)
+    except Exception as err:
+        print(err)
+        print("Keys can be created  with the 'modulus' command")
+        raise
 
-    # Open a session on our token
-    with token.open(user_pin=password, rw=False) as session:
-        try:
-            private = get_private_key_with_label(session, label)
-        except Exception as err:
-            print(err)
-            print("Keys can be created  with the 'modulus' command")
-            raise
+    key_type = private[pkcs11.Attribute.KEY_TYPE]
+    if key_type == pkcs11.KeyType.RSA:
+        mechanism = pkcs11.Mechanism.SHA512_RSA_PKCS
+    elif key_type == pkcs11.KeyType.EC:
+        #most HSMs do not support ECDSA_SHAxyz
+        data = hsm.session.digest(data, mechanism=pkcs11.Mechanism.SHA256)
+        mechanism = pkcs11.Mechanism.ECDSA
+    else:
+        raise("Unsupported key type")
 
-        key_type = private[pkcs11.Attribute.KEY_TYPE]
-        if key_type == pkcs11.KeyType.RSA:
-            mechanism = pkcs11.Mechanism.SHA512_RSA_PKCS
-        elif key_type == pkcs11.KeyType.EC:
-            #softhsm2 does not support ECDSA_SHAxyz
-            data = session.digest(data, mechanism=pkcs11.Mechanism.SHA256)
-            mechanism = pkcs11.Mechanism.ECDSA
-        else:
-            raise("Unsupported key type")
+    return private.sign(data, mechanism=mechanism), key_type
 
-        return private.sign(data, mechanism=mechanism), key_type
 
 def get_cert_modulus(cert):
     cert_key_modulus_len = struct.unpack('<I',
@@ -334,18 +360,18 @@ def get_cert_modulus(cert):
     return cert[start:end]
 
 def sign_with_cert(cert, data):
-    token, password = get_token()
     modulus = get_cert_modulus(cert)
-    # Open a session on our token
-    with token.open(user_pin=password, rw=False) as session:
-        private = get_private_rsa_with_modulus(session, modulus)
-        if private is not None:
-            # when we sign with a cert, the certificate itself is included
-            # in the signature, to prevent mix and match if several certificates
-            # use the same key.
-            return private.sign(cert+data, mechanism=pkcs11.Mechanism.SHA512_RSA_PKCS)
+    hsm = HSM()
+    private = get_private_rsa_with_modulus(hsm.session, modulus)
+    if private is not None:
+        # when we sign with a cert, the certificate itself is included
+        # in the signature, to prevent mix and match if several certificates
+        # use the same key.
+        print("Signing with certificate key '{}'".format(private.label))
+        return private.sign(cert+data, mechanism=pkcs11.Mechanism.SHA512_RSA_PKCS)
 
-    return b''
+    # raise Error
+    raise ValueError("No corresponding private key found for the certificate public key")
 
 
 def append_signature_to_binary(binary, signature):
@@ -359,30 +385,21 @@ def append_modulus_to_binary(binary, modulus):
     # same structure as signature and MAX_SIGNATURE_SIZE == MAX_MODULUS_SIZE
     return append_signature_to_binary(binary, modulus)
 
+
 def list_all_keys():
     ''' list all the keys in the session '''
-    token, password = get_token()
+    hsm = HSM()
 
-    # Open a session on our token
-    with token.open(user_pin=password, rw=False) as session:
-        all_rsa_pubs = list(session.get_objects(
-            {pkcs11.Attribute.CLASS: pkcs11.ObjectClass.PUBLIC_KEY,
-             pkcs11.Attribute.KEY_TYPE: pkcs11.KeyType.RSA}))
+    for rsa_key in get_all_rsa_keys(hsm.session):
+        print(rsa_key[0])
+        if [rsa_key[1]]:
+            print("↳" + str(rsa_key[1]))
 
-        for rsa_pub in all_rsa_pubs:
-            print(rsa_pub)
-            priv_key = get_private_rsa_with_modulus(session,
-                                                    get_modulus(rsa_pub))
-            if priv_key:
-                print("|--> " + str(priv_key))
-
-        # for EC keys, the private key doesn't contain the point attribute
-        # so it's computationally intensive to find the private key
-        # corresponding to the public key -- just list all EC keys
-        all_ec_keys = list(session.get_objects(
-            {pkcs11.Attribute.KEY_TYPE: pkcs11.KeyType.EC}))
-        for ec_key in all_ec_keys:
-            print(ec_key)
+    # for EC keys, the private key doesn't contain the point attribute
+    # so it's computationally intensive to find the private key
+    # corresponding to the public key -- just list all EC keys
+    for ec_key in get_all_ec_keys(hsm.session):
+        print(ec_key)
 
 
 def remove_key_aux(session, label):
@@ -404,11 +421,8 @@ def remove_key_aux(session, label):
 
 def remove_key(label):
     ''' delete that key from the HSM '''
-    token, password = get_token()
-
-    # Open a session on our token
-    with token.open(user_pin=password, rw=True) as session:
-        remove_key_aux(session, label)
+    hsm = HSM()
+    remove_key_aux(hsm.session, label)
 
 
 def import_key(label, key_file):
@@ -422,42 +436,39 @@ def import_key(label, key_file):
         print("Unable to read key file " + key_file + " Error = " + ex)
         return
 
-    # Open a session on our token
-    token, password = get_token()
+    hsm = HSM()
+    try:
+        existing = get_public_key_with_label(hsm.session, label)
+        # compare
+        if get_modulus(existing) == get_modulus(priv_key) and get_exponent(existing) == get_exponent(priv_key):
+            print("Key already imported")
+            return
 
-    with token.open(user_pin=password, rw=True) as session:
-        try:
-            existing = get_public_key_with_label(session, label)
-            # compare
-            if get_modulus(existing) == get_modulus(priv_key) and get_exponent(existing) == get_exponent(priv_key):
-                print("Key already imported")
-                return
-            else:
-                print("Replacing existing key")
-                existing.destroy()
-                remove_key_aux(session, label)
-        except:
-            pass
+        print("Replacing existing key")
+        existing.destroy()
+        remove_key_aux(hsm.session, label)
+    except:
+        pass
 
-        # add the key pairs
-        priv_key[pkcs11.Attribute.LABEL] = label
-        priv_key[pkcs11.Attribute.ID] = binascii.hexlify(label.encode())
-        priv_key[pkcs11.Attribute.TOKEN] = True
-        session.create_object(priv_key)
+    # add the key pairs
+    priv_key[pkcs11.Attribute.LABEL] = label
+    priv_key[pkcs11.Attribute.ID] = binascii.hexlify(label.encode())
+    priv_key[pkcs11.Attribute.TOKEN] = True
+    hsm.session.create_object(priv_key)
 
-        #derive the public key
-        pub_key = {}
-        pub_key[pkcs11.Attribute.KEY_TYPE] = priv_key[pkcs11.Attribute.KEY_TYPE]
-        pub_key[pkcs11.Attribute.PUBLIC_EXPONENT] = priv_key[pkcs11.Attribute.PUBLIC_EXPONENT]
-        pub_key[pkcs11.Attribute.MODULUS] = priv_key[pkcs11.Attribute.MODULUS]
-        pub_key[pkcs11.Attribute.CLASS] = pkcs11.ObjectClass.PUBLIC_KEY
-        pub_key[pkcs11.Attribute.ENCRYPT] = True
-        pub_key[pkcs11.Attribute.VERIFY] = True
-        pub_key[pkcs11.Attribute.WRAP] = True
-        pub_key[pkcs11.Attribute.LABEL] = label
-        pub_key[pkcs11.Attribute.ID] = binascii.hexlify(label.encode())
-        pub_key[pkcs11.Attribute.TOKEN] = True
-        session.create_object(pub_key)
+    #derive the public key
+    pub_key = {}
+    pub_key[pkcs11.Attribute.KEY_TYPE] = priv_key[pkcs11.Attribute.KEY_TYPE]
+    pub_key[pkcs11.Attribute.PUBLIC_EXPONENT] = priv_key[pkcs11.Attribute.PUBLIC_EXPONENT]
+    pub_key[pkcs11.Attribute.MODULUS] = priv_key[pkcs11.Attribute.MODULUS]
+    pub_key[pkcs11.Attribute.CLASS] = pkcs11.ObjectClass.PUBLIC_KEY
+    pub_key[pkcs11.Attribute.ENCRYPT] = True
+    pub_key[pkcs11.Attribute.VERIFY] = True
+    pub_key[pkcs11.Attribute.WRAP] = True
+    pub_key[pkcs11.Attribute.LABEL] = label
+    pub_key[pkcs11.Attribute.ID] = binascii.hexlify(label.encode())
+    pub_key[pkcs11.Attribute.TOKEN] = True
+    hsm.session.create_object(pub_key)
 
 
 
@@ -493,21 +504,20 @@ def export_pub_key(outfile, label, c_source):
 def export_pub_key_hash(outfile, label, modulus=None):
     ''' hash of modulus of key; create the key if it does not exist '''
 
-    if modulus:
-        hash = hashlib.sha256(modulus).digest()
-    else:
-        hash = get_create_public_rsa_modulus(label, hash=pkcs11.Mechanism.SHA256)
+    if not modulus:
+        hsm = HSM()
+        modulus = hsm.session.get_create_public_rsa_modulus(label)
 
+    new_hash = hashlib.sha256(modulus).digest()
     # export the hash of the modulus of the public key
-
     old_hash = b''
     try:
         old_hash = read(outfile)
     except:
         pass
 
-    if old_hash != hash:
-        write(outfile, hash)
+    if old_hash != new_hash:
+        write(outfile, new_hash)
     else:
         print("No changes in hash")
 
@@ -525,7 +535,7 @@ def add_cert_and_signature_to_image(image, cert, signature):
 
 
 def image_gen(outfile, infile, ftype, version, description, sign_key,
-	      certfile, customer_certfile):
+              certfile, customer_certfile):
     ''' generate signed firmware image '''
     binary = read(infile)
     to_be_signed = struct.pack('<2I', len(binary), version)
@@ -534,8 +544,11 @@ def image_gen(outfile, infile, ftype, version, description, sign_key,
     if description:
         # Max allowed size is (block size - 1) to allow for terminating null
         if len(description) > SIGNED_DESCRIPTION_SIZE - 1:
-            raise Exception("Image description too long, max is {}".format(SIGNED_DESCRIPTION_SIZE-1))
-        to_be_signed += description.encode() + b'\x00' * (SIGNED_DESCRIPTION_SIZE - len(description))
+            raise Exception(
+                "Image description too long, max is {}".
+                format(SIGNED_DESCRIPTION_SIZE-1))
+        to_be_signed += description.encode() + b'\x00' * (SIGNED_DESCRIPTION_SIZE -
+                                                          len(description))
     else:
         to_be_signed += b'\x00' * SIGNED_DESCRIPTION_SIZE
 
@@ -586,14 +599,12 @@ def sign_binary(binary, sign_key, der_encoded=False, do_not_append=False):
 
 
 def cert_gen(outfile, cert_key, cert_key_file, sign_key, serial_number,
-             serial_number_mask, debugger_flags, tamper_flags, modulus=None):
+             serial_number_mask, debugger_flags, modulus=None):
 
     dflags = int(debugger_flags, 16)
-    tflags = int(tamper_flags, 16)
 
-    # MAGIC NUMBER, DEBUG FLAGS, 0, TAMPER FLAGS
-    to_be_signed = struct.pack('<4I', MAGIC_NUMBER_CERTIFICATE, dflags, 0,
-                               tflags)
+    # MAGIC NUMBER, DEBUG FLAGS, 0, TAMPER FLAGS=0
+    to_be_signed = struct.pack('<4I', MAGIC_NUMBER_CERTIFICATE, dflags, 0, 0)
 
     # SERIAL NUMBER
     s_num = binascii.unhexlify(serial_number)
@@ -696,9 +707,6 @@ def parse_and_execute():
                         action='store_true',
                         help="ouput key in C hexadecimal format (modulus)")
 
-    parser.add_argument("--serial_info_file", dest="serial_info_file",
-                        help="file with serial number and mask", metavar="FILE")
-
     parser.add_argument("-t", "--fwtype", dest="fw_type",
                         help="fw type (4 chars) (image, certified_image)")
 
@@ -710,10 +718,6 @@ def parse_and_execute():
 
     parser.add_argument("-v", "--fwver", dest="fw_ver",
                         help="fw version (image)")
-
-    parser.add_argument("--tamper_flags", dest="tamper_flags",
-                        default="00" * 4,
-                        help="tamper_flags  (hexadecimal, 4 bytes) (certificate)")
 
     options = parser.parse_args()
 
@@ -790,9 +794,8 @@ def parse_and_execute():
 
     elif options.command == 'certificate':
 
-        # 2 possibilities to specify the serial number: cmd line or in file
-        if options.serial_number is None and options.serial_info_file is None:
-            print('Serial number required for certificate (Use -h for full info).')
+        if options.serial_number is None or options.serial_number_mask is None:
+            print('Serial number and mask required for certificate (Use -h for full info).')
             sys.exit(1)
 
         # 2 options to specify the public key: in HSM or in file
@@ -800,31 +803,9 @@ def parse_and_execute():
             print('Public key required for certificate (use -h for full info).')
             sys.exit(1)
 
-        # parse options.serial_info_file and do some checks
-        # since this is what's used for real certificates
-        if options.serial_number is None:
-            with open(options.serial_info_file, 'r') as f:
-                data = '[a_section]\n' + f.read()
-            config = configparser.ConfigParser()
-            config.read_string(data)
-
-            options.serial_number = config.get('a_section', 'serial_number')
-            options.serial_number_mask = config.get('a_section', 'serial_number_mask')
-            sn = binascii.unhexlify(options.serial_number)
-            snm = binascii.unhexlify(options.serial_number_mask)
-
-            if len(sn) != SERIAL_INFO_NUMBER_SIZE:
-                print("Serial number is not completely specified in file  {0}".format(
-                    options.serial_info_file))
-                sys.exit(1)
-            if len(snm) != SERIAL_INFO_NUMBER_SIZE:
-                print("Serial number mask is not completely specified in file  {0}".format(
-                    options.serial_info_file))
-                sys.exit(1)
-
         cert_gen(options.out_path, options.public_key, options.public_key_file,
                  options.sign_key, options.serial_number, options.serial_number_mask,
-                 options.debugger_flags, options.tamper_flags)
+                 options.debugger_flags)
 
     elif options.command == 'sign':
 
