@@ -53,7 +53,7 @@ function CleanUpPrevDumps()
 	FILE=`echo "$HBM_FILE_NAME"_"$DPU_NUM"`
 	mkdir -p $DIR_HBM_LOGS
 
-	NUM_PREV_CORES=`ls $DIR_HBM_LOGS/$FILE* > /dev/null 2>&1 | wc -l`
+	NUM_PREV_CORES=`ls $DIR_HBM_LOGS/$FILE* 2>/dev/null 2>&1 | wc -l`
 
 	if ! [[ $NUM_PREV_CORES -lt $MAX_DUMPS_PER_DPU ]]; then
 		# Keep Newest; Delete All
