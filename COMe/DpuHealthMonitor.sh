@@ -15,14 +15,14 @@ CONTINUOUS_REBOOT_COUNTER="/var/log/fs1600_reboot_counter"
 STOP_REBOOTS=0
 MAX_CONTINUOUS_REBOOTS=3
 
-FILE_BLD_NUM="/opt/fungible/bld_props.json"
+FILE_BLD_NUM="/opt/fungible/.version"
 DIR_HBM_LOGS="/var/log/hbm_dumps"
 HBM_FILE_NAME="HBM"
 MAX_DUMPS_PER_DPU=3
 
 # Get the build number
 if [[ -f $FILE_BLD_NUM ]]; then
-	BLD_NUM=`cat $FILE_BLD_NUM | grep bldNum | sed 's/^ *//' | cut -d " " -f 2 | sed 's/,.*//'`
+	BLD_NUM=`cat $FILE_BLD_NUM | grep fs1600 | cut -d "=" -f 2`
 	if [[ -z $BLD_NUM ]]; then
 		BLD_NUM="UNKNOWN"
 	fi
