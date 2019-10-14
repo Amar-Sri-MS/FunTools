@@ -115,7 +115,7 @@ class dbgi2c(s1i2c):
                 self.decode_response_data(cmd, rdata)
                 return (True, rdata[4:])  # strip the header
             else:
-                self.decode_response_data(0, rdata)
+                HEADER(arraypack(rdata)).show2()
                 return (False, self.cmd_status_code_str(rdata))
         else:
             err_msg = "Dbg chal command 0x{0} error! {1}".format(hex(cmd), rdata)
@@ -376,7 +376,7 @@ class dbgi2c(s1i2c):
         msglen = 4 + dev_cert_size + 4 + signed_challenge_len
         print "msglen: {0}".format(msglen)
         (status, rdata) = self.challenge_cmd(CMD.GRANT_DBG_ACCESS, list(cert))
-        print "Grant Access: {0}".format([hex(x) for x in rdata] if rdata else None)
+        #print "Grant Access: {0}".format([hex(x) for x in rdata] if rdata else None)
         if status == True:
             #print "Status: {0}".format([hex(x) for x in rdata] if rdata else None)
             return (status, rdata)
