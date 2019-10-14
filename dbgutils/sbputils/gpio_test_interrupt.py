@@ -57,7 +57,7 @@ def test(name):
 
     status = aa_configure(h, 0)
     if status != 0:
-        status_msg = ('Error configuring I2C+GPIO mode:{0}({1})').format(aa_status_string(status), status)
+        status_msg = ('Error configuring GPIO only mode:{0}({1})').format(aa_status_string(status), status)
         logger.error(status_msg)
         return (False, status_msg)
 
@@ -66,20 +66,25 @@ def test(name):
     status = aa_gpio_direction(h, 0x00)
     print "Configuring GPIO direction as all INPUT. status: " + aa_status_string(status)
     
+    status = aa_gpio_pullup(h, 0xFF)
+    print "gpio pullup. status: " + aa_status_string(status)
     oldval = aa_gpio_get(h);
-    print oldval
-    print "READ old GPIO value: ", oldval #  + aa_status_string(oldval)
+    print hex(oldval)
+    print "READ old GPIO value: ", hex(oldval) #  + aa_status_string(oldval)
 
-    print "Listen for a change in GPIO direction ... " # + aa_status_string(status)
-    newval = aa_gpio_change(h, 5000);
-   
-    if (oldval != newval):
-        print "GPIO inputs changed ...", oldval, newval
-        if (newval & 0x04):
-            print "SBP v_PAD_SP_TEST2 asserted due to AUTH error ..."
-    else:
-        print "GPIO timeout occurred no changed ...", oldval, newval
-         
+    print "Listen for a change in GPIO level ... " # + aa_status_string(status)
+    while True:
+        newval = aa_gpio_change(h, 0xFFFF);
+        if ((newval ^ oldval) == 0x04):
+            print "SBP v_PAD_SP_TEST2 (newval=%s) asserted due to AUTH error ..." % hex(newval)
+            break
+    
+    print "GPIO inputs changed ...", hex(oldval), hex(newval)
+    #if (newval & 0x04):
+    #    print "SBP v_PAD_SP_TEST2 asserted due to AUTH error ..."
+    #else:
+    #    print "GPIO timeout occurred no changed ...", oldval, newval
+             
     aa_close(h)
     print "Done!"
 
