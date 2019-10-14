@@ -37,12 +37,8 @@ def csr_probe(dev_type, ip_addr):
     if (("SysProbe" not in status) or ("Firmware" not in status) or
         ("ECONNREFUSED" in status) or ("InvalidArgError" in status)):
         return (False, status)
-    #status = tckrate(10000000)
-    #logger.info('Set tackrate to 10 MHz! status: {0}'.format(status))
-    status = tckrate(250000)
-    logger.info('pufr - Set tckrate to 250 KHz! status: {0}'.format(status))
-    #status = tckrate(5000)
-    #logger.info('rom - Set tckrate to 5 KHz! status: {0}'.format(status))
+    status = tckrate(10000000)
+    logger.info('Set tackrate to 10 MHz! status: {0}'.format(status))
 
     logger.info('Connected to Codescape Jtag probe!\n{0}'.format(status))
     status = _ir_shiftin(constants.CSR_RING_TAP_SELECT_WIDTH,
