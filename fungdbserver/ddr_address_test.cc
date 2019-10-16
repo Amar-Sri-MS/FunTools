@@ -63,17 +63,28 @@ TEST(DecodeLine, Simple)
 
 	// decode_lines returns in little-endian format so value is written
 	// in correct byte order on write.
-	char buf1[] = "0f12345678\n01109abcde\nNEXT";
+	// NEXT is invalid, but lets us check cursor advanced.
+	char buf1[] = ("0f12345678\n"
+		       "01109abcde\n"
+		       "9999999999\n"
+		       "9999999999\n"); // Cursor should adv here.
 	const char *buf_ptr = buf1;
 	EXPECT_EQ(0xefcdab0978563412,
 		  ddr_decode_lines(&buf_ptr));
-	EXPECT_EQ(buf_ptr[0], 'N');
+	// Make sure advanced to next line.
+	EXPECT_EQ(buf_ptr[0], '9');
 
-	char buf2[] = "0700010203\n0000405060\n&";
+	// & is invalid, but lets us check cursor moved ahead.
+	char buf2[] = ("0700010203\n"
+		       "0000405060\n"
+		       "FFFFFFFFFF\n"
+		       "FFFFFFFFFF\n");
+
 	buf_ptr = buf2;
 	EXPECT_EQ(0x0706050403020100,
 		  ddr_decode_lines(&buf_ptr));
-	EXPECT_EQ(buf_ptr[0], '&');
+	// Make sure advanced to next line.
+	EXPECT_EQ(buf_ptr[0], 'F');
 }
 
 int main(int argc, char* argv[]) {
