@@ -17,4 +17,4 @@ ddr_unshard: ddr_unshard.o ddr_address.h ddr_address.o
 	$(CC) ${CFLAGS} -o ddr_unshard ddr_unshard.o ddr_address.o
 
 ddr_address_test: ddr_address_test.o ddr_address.h ddr_address.o ${SDK}/lib/gtest.a
-	$(CXX) ${CFLAGS} -o ddr_address_test ddr_address_test.o ddr_address.o ${SDK}/lib/gtest.a
+	$(CXX) ${CFLAGS} -o ddr_address_test ddr_address_test.o ddr_address.o ${SDK}/lib/gtest.a -lpthread
