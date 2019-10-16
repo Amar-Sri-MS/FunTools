@@ -1,4 +1,4 @@
-/* 
+/*
  * ddr_unshard.c: decode a DDR memory dump for S1 from Palladium.
  *
  * Copyright Fungible Inc. 2019.  All rights reserved.
@@ -22,17 +22,17 @@
 
 // Details on file containing sharded dump data.
 struct infile {
-        // Name of text hex dump.
+	// Name of text hex dump.
 	char *name;
-        // File descriptor for hex dump.
+	// File descriptor for hex dump.
 	int srcfd;
-        // Name of temporary file for binary data.
+	// Name of temporary file for binary data.
 	char *fname;
-        // File descriptor for binary data.
+	// File descriptor for binary data.
 	int binfd;
-        // Pointer to mmapped contents of binary data.
+	// Pointer to mmapped contents of binary data.
 	uint64_t *map;
-        // Size of binary file.
+	// Size of binary file.
 	uint64_t size;
 };
 
@@ -68,22 +68,22 @@ void open_shard_files(const char *prefix,
 			printf("failed to open shard %s\n",
 			       shards[i].name);
 			exit(1);
-                }
-                struct stat st;
+		}
+		struct stat st;
 
-                if (stat(shards[i].name, &st) != 0) {
-                        perror("stat");
-                        exit(1);
-                }
-                printf("file %s is %" PRId64 " bytes\n",
-                       shards[i].name, st.st_size);
-                if (st.st_size != shard_info->expected_file_size) {
-                        printf("Expected shard hex file to be %" PRId64
+		if (stat(shards[i].name, &st) != 0) {
+			perror("stat");
+			exit(1);
+		}
+		printf("file %s is %" PRId64 " bytes\n",
+		       shards[i].name, st.st_size);
+		if (st.st_size != shard_info->expected_file_size) {
+			printf("Expected shard hex file to be %" PRId64
 			       " bytes, got % " PRId64 " bytes\n",
-                               shard_info->expected_file_size, st.st_size);
-                        exit(1);
-                }
-        }
+			       shard_info->expected_file_size, st.st_size);
+			exit(1);
+		}
+	}
 }
 
 /* Cleanup shard data structures before exit. */
@@ -93,7 +93,7 @@ void close_shard_files(struct sharding_info *shard_info) {
 	for (i = 0; i < shard_info->num_channels; i++) {
 		free(shards[i].name);
 		free(shards[i].fname);
-			
+
 		close(shards[i].srcfd);
 	}
 }
@@ -106,7 +106,7 @@ static int create_bin_file(const char *outfile)
 	int fd = -1;
 
 	fd = open(outfile, O_CREAT | O_WRONLY | O_TRUNC, 0644);
-	
+
 	if (fd < 0) {
 		printf("failed to open output file %s\n", outfile);
 		exit(1);
@@ -160,9 +160,9 @@ static void decode_input(int shard_number, struct sharding_info *shard_info)
 			perror("read");
 			exit(1);
 		}
-		
+
 		if (n % file_read_chunk) {
-                        printf("read %" PRIx64 " bytes\n", n);
+			printf("read %" PRIx64 " bytes\n", n);
 			printf("failed to read complete lines - "
 			       "is %s corrupt?\n", f->fname);
 			exit(1);
@@ -177,7 +177,7 @@ static void decode_input(int shard_number, struct sharding_info *shard_info)
 			uint64_t value = ddr_decode_lines(&text_cursor);
 			output_buffer[i] = value;
 		}
-		
+
 		n = write(f->binfd, output_buffer,
 			  words_in_buf * sizeof(*output_buffer));
 		if (n <= 0) {
@@ -196,13 +196,13 @@ static void decode_input(int shard_number, struct sharding_info *shard_info)
 		perror("mmap: mapping binary shard into memory");
 		exit(1);
 	}
-        printf("Sharded binary file is 0x%" PRIx64 " bytes.\n", f->size);
+	printf("Sharded binary file is 0x%" PRIx64 " bytes.\n", f->size);
 	close(f->binfd);
 
 	// Unlink the binary version of the shard file so that it
 	// doesn't stick around after processing.
 	unlink(f->fname);
-		
+
 	f->binfd = -1;
 	free(input_buffer);
 }
@@ -233,50 +233,50 @@ static void unshard(int dump_fd, struct sharding_info *shard_info)
 	ssize_t n;
 	uint16_t file_shard;
 
-        printf("Unsharding\n");
+	printf("Unsharding\n");
 	for (addr = 0; addr < shard_info->memory_size;
 	     addr += shard_info->stride_size) {
 
 		/* compute where next memory line is found in files. */
-                struct offset_pair offset_loc = 
+		struct offset_pair offset_loc =
 			shard_info->addr_to_shard(addr);
-                if ((addr & 0xffffffff) == 0) {
-                        printf("addr %" PRIx64" at file %d "
+		if ((addr & 0xffffffff) == 0) {
+			printf("addr %" PRIx64" at file %d "
 			       "offset %" PRIx64 "\n",
-                               addr, offset_loc.file_shard, offset_loc.offset);
-                }
-                assert(offset_loc.file_shard < shard_info->num_channels);
+			       addr, offset_loc.file_shard, offset_loc.offset);
+		}
+		assert(offset_loc.file_shard < shard_info->num_channels);
 
-                file_shard = shard_info->channel_order[offset_loc.file_shard];
+		file_shard = shard_info->channel_order[offset_loc.file_shard];
 
-                f = &shards[file_shard];
+		f = &shards[file_shard];
 
-                if (offset_loc.offset >= f->size) {
-                        printf("0x%" PRIx64 " vs 0x%" PRIx64 "\n",
-                               offset_loc.offset, f->size);
-                        assert(offset_loc.offset < f->size);
-                }
+		if (offset_loc.offset >= f->size) {
+			printf("0x%" PRIx64 " vs 0x%" PRIx64 "\n",
+			       offset_loc.offset, f->size);
+			assert(offset_loc.offset < f->size);
+		}
 
-                const char *buf = ((const char*) f->map) + offset_loc.offset;
-                n = write(dump_fd, buf, shard_info->stride_size);
-                if (n != shard_info->stride_size) {
-                        perror("problems writing dump file");
-                        exit(1);
-                }
+		const char *buf = ((const char*) f->map) + offset_loc.offset;
+		n = write(dump_fd, buf, shard_info->stride_size);
+		if (n != shard_info->stride_size) {
+			perror("problems writing dump file");
+			exit(1);
+		}
 	}
 }
 
 int main(int argc, char *argv[])
 {
-        struct sharding_info ddr_info = ddr_shard_info();
+	struct sharding_info ddr_info = ddr_shard_info();
 
-        shards = malloc(sizeof(struct infile) * ddr_info.num_channels);
+	shards = malloc(sizeof(struct infile) * ddr_info.num_channels);
 
 	const char *prefix = NULL;
 	const char *outfile = NULL;
-        uint32_t i;
+	uint32_t i;
 	int dump_fd = -1;
-	
+
 	if (argc != 3) {
 		printf("usage: %s <outfile> <shard-prefix>\n", argv[0]);
 		exit(1);
@@ -298,8 +298,8 @@ int main(int argc, char *argv[])
 	/* do the actual assembly */
 	unshard(dump_fd, &ddr_info);
 
-        close(dump_fd);
-	close_shard_files(ddr_info);
-	
+	close(dump_fd);
+	close_shard_files(&ddr_info);
+
 	return 0;
 }

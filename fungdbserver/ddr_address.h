@@ -1,4 +1,7 @@
-/* Interfaces for unsharding code */
+/* Interfaces for unsharding code.
+ *
+ * Copyright Fungible Inc. 2019.  All rights reserved.
+ */
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -24,7 +27,7 @@ struct offset_pair {
  */
 struct sharding_info {
 	// Total number of bytes in final hex dump.
-        uint64_t memory_size;
+	uint64_t memory_size;
 
 	// Expected file size for each shard.
 	// Incorrect sizes cause us to fail immediately.
@@ -41,17 +44,17 @@ struct sharding_info {
 	// Based on size of memory lines in memory.
 	size_t stride_size;
 
-        // File extension with substitutions for channel/part.
-        const char *extension;
+	// File extension with substitutions for channel/part.
+	const char *extension;
 
-        // Function for calculating address to shard mapping.
-        struct offset_pair (*addr_to_shard)(uint64_t address);
+	// Function for calculating address to shard mapping.
+	struct offset_pair (*addr_to_shard)(uint64_t address);
 
 	/* How many bytes needed to decode 8 bytes. Used for
 	 * efficient reading of input text file.
 	 */
 	uint16_t file_read_chunk;
-};	
+};
 
 /* Returns offset, shard_file for specified address. */
 struct offset_pair s1_ddr_address_to_offset(uint64_t address);
