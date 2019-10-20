@@ -308,7 +308,7 @@ class dbgi2c(s1i2c):
             print err_msg
             return (False, err_msg)
 
-    def get_dbg_access(self, priv_key, dev_cert, grants=CONST.DBG_GRANTS, password=CONST.PRIVATE_KEY_PASSWORD, customer=False):
+    def get_dbg_access(self, priv_key, dev_cert, grants=CONST.DBG_GRANTS, password=CONST.PRIVATE_KEY_PASSWORD, customer=False, quicktest=None):
         print "Getting dbg access grant...! customer:{}".format(customer)
         dev_cert_path = os.path.abspath(dev_cert)
         if not os.path.exists(dev_cert_path):
@@ -339,7 +339,11 @@ class dbgi2c(s1i2c):
         challenge[0] = CMD.GRANT_DBG_ACCESS
         challenge[1] = grants
         challenge[2] = struct.unpack("I", array('B', rdata[0:4]))[0]
-        challenge[3] = struct.unpack("I", array('B', rdata[4:8]))[0]
+        if 'nonceflip' in quicktest :
+            print "quicktest to corrupt nonce returned ..."
+            challenge[3] = struct.unpack("I", array('B', rdata[0:4]))[0]
+        else:
+            challenge[3] = struct.unpack("I", array('B', rdata[4:8]))[0]
         challenge[4] = struct.unpack("I", array('B', rdata[8:12]))[0]
         challenge[5] = struct.unpack("I", array('B', rdata[12:16]))[0]
 
@@ -406,14 +410,14 @@ def main():
     cm_args.add_argument("--cm-grant", type=auto_int, help="Debug grant bits to unlock with --cm-unlock command")
     cm_args.add_argument("--cm-key", help="chipMfg developer's private key")
     cm_args.add_argument("--cm-cert", help="chipMfg developer's certificate signed with key for cm-key")
-    cm_args.add_argument("--cm-pass", help="chipMfg developer's password for cm-key")
+    cm_args.add_argument("--cm-pass", default=None, help="chipMfg developer's password for cm-key")
 
     parser.add_argument("--sm-unlock", action='store_true', help="Attempt to unlock debug interface in native chip mfg environments")
     sm_args = parser.add_argument_group("Customer Certificates", "Debug certificates, keys and credentials to unlock native customer/system environments")
     sm_args.add_argument("--sm-grant", type=auto_int, help="Debug grant bits to unlock with --sm-unlock command")
     sm_args.add_argument("--sm-key", help="sysMfg developer's private key")
     sm_args.add_argument("--sm-cert", help="sysMfg developer's certificate signed with key for sm-key")
-    sm_args.add_argument("--sm-pass", help="sysMfg developer's password for sm-key")
+    sm_args.add_argument("--sm-pass", default=None, help="sysMfg developer's password for sm-key")
 
     parser.add_argument("--flash", default=None, type=auto_int, help="perform flash test of erase, write, read at offset")
     parser.add_argument("--flash-read", default=None, type=auto_int, help="Perform flash read at offset provided")
@@ -428,13 +432,15 @@ def main():
     #parser.add_argument("--array", help="CSR qwords or flash words")
     parser.add_argument("--reboot", action='store_true', help="Attempt to perform reboot via CSR operation")
 
+    parser.add_argument('--quicktest', action='store', dest='quicktest', type=str, nargs='*', default=[], help="Examples: --quicktest nonceflip nopass xyz")
+
 
     args = parser.parse_args()
     ################### do some options integrity checking ################################
-    if args.cm_unlock and not all([args.cm_key, args.cm_cert, args.cm_grant, args.cm_pass]):
+    if args.cm_unlock and not all([args.cm_key, args.cm_cert, args.cm_grant]):
         parser.error("--unlock requires all CM keys and certificates to be specified")
 
-    if args.sm_unlock and not all([args.sm_key, args.sm_cert, args.sm_grant, args.sm_pass]):
+    if args.sm_unlock and not all([args.sm_key, args.sm_cert, args.sm_grant]):
         parser.error("--unlock requires all SM keys and certificates to be specified")
 
 
@@ -466,7 +472,7 @@ def main():
                 return False
             print('Injected cm certificate!')
 
-        (status, data) = dbgprobe.get_dbg_access(args.cm_key, args.cm_cert, grants=args.cm_grant, password=args.cm_pass, customer=False)
+        (status, data) = dbgprobe.get_dbg_access(args.cm_key, args.cm_cert, grants=args.cm_grant, password=args.cm_pass, customer=False, quicktest=args.quicktest)
         if status is False:
             print 'Failed to cm-grant debug access! Error: {0}'.format(data)
             return False
@@ -480,7 +486,8 @@ def main():
                 return False
             print('Injected sm certificate!')
 
-        (status, data) = dbgprobe.get_dbg_access(args.sm_key, args.sm_cert, grants=args.sm_grant, password=args.sm_pass, customer=True)
+        password = None if 'nopass' in quicktest else args.sm_password
+        (status, data) = dbgprobe.get_dbg_access(args.sm_key, args.sm_cert, grants=args.sm_grant, password=password, customer=True, quicktest=args.quicktest)
         if status is False:
             print 'Failed to sm-grant debug access! Error: {0}'.format(data)
             return False
