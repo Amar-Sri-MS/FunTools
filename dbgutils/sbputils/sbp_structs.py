@@ -215,6 +215,7 @@ commandEnum = {
     0xFE020001 : 'Diagnostic/ReadPubKeyBoot/SM',
     0xFE030000 : 'Diagnostic/SetUpgradeFlag/CM',
     0xFE030001 : 'Diagnostic/SetUpgradeFlag/SM',
+    0xFE0B0000 : 'Diagnostic/fetchOTP',
 
     0xFF000000 : 'Initialization/InitOTP/CM',
     0xFF000001 : 'Initialization/InitOTP/SM',
