@@ -14,7 +14,7 @@
 
 # Points to the root of the fungible sdk directory
 # Set this as necessary
-SDKDIR ?= ../../../../../sdk
+SDKDIR ?= ../../../../../FunSDK
 
 # Points to the root of Google Test, relative to where this file is.
 # Remember to tweak this if you move this file.
