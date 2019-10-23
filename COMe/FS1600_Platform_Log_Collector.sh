@@ -39,7 +39,7 @@ fi
 # ***********************************
 
 COMe_BOOT_UP_DIR="/var/log"
-COMe_BOOT_UP_FILE=`echo "$COMe_BOOT_UP_DIR"/fs1600-come-boot-up.log`
+COMe_BOOT_UP_FILE=`echo "$COMe_BOOT_UP_DIR"/COMe-boot-up.log`
 COMe_BOOT_UP_ARCHIVE_FILE_PREFIX=`echo "$COMe_BOOT_UP_DIR"/FS1600_*`
 
 if [[ -d $COMe_BOOT_UP_DIR ]]; then
