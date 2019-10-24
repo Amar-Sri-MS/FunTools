@@ -609,7 +609,9 @@ def probe_connect(name, ip, in_rom=None, flag=None):
     try:
         print "connecting to JTAG probe ip=%s force_disconnect=%s ..." % (ip, flag) 
         con.probe(name, ip, force_disconnect=flag)
-        JTAG_TCKRATE = 5000 if in_rom else 250000
+        #JTAG_TCKRATE = 5000 if in_rom else 250000
+        # RTL1008 at different speeds, hence reducing JTAG to 5000
+        JTAG_TCKRATE = 5000 if in_rom else 5000
         print "connecting to JTAG probe with TCKRATE(%s)..." % JTAG_TCKRATE 
         con.tckrate(JTAG_TCKRATE)
         con.scanonly()
