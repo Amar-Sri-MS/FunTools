@@ -1,0 +1,101 @@
+(True, 2238672347, u'10.1.20.69', 112)
+instantiating s1 dbg probe ...
+Getting status...!
+0x8
+Failed to get status! Error: reserved
+(True, 2238672347, u'10.1.20.69', 112)
+instantiating s1 dbg probe ...
+Getting OTP...!
+0x2
+Dbg chal command error! Authorization Error
+Failed to get OTP! Error: Dbg chal command error! Authorization Error
+(True, 2238672347, u'10.1.20.69', 112)
+instantiating s1 dbg probe ...
+Getting serial number...!
+Serial number: ['0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x12', '0x34']
+Serial Number: ['0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x12', '0x34']
+Invalid option: Namespace(cm_cert=None, cm_grant=None, cm_key=None, cm_pass=None, cm_unlock=False, csr=False, dut='T4', flash=None, flash_erase=None, flash_read=None, flash_write=None, in_rom=None, otp=False, reboot=False, serial=True, sm_cert=None, sm_grant=None, sm_key=None, sm_pass=None, sm_unlock=False, status=False)
+(True, 2238672347, u'10.1.20.69', 112)
+instantiating s1 dbg probe ...
+Getting dbg access grant...! customer:False
+Challange: ['0x84', '0x18', '0x2b', '0x2d', '0x69', '0x2', '0xd1', '0xae', '0xf', '0xb3', '0xb8', '0xa4', '0x1c', '0x3f', '0x7b', '0xe3']
+data to sign (command + param + challenge): 000001fdfe0e080084182b2d6902d1ae0fb3b8a41c3f7be3
+dev_cert_size: 1096
+signed_challenge_len: 256
+cert length: 1360
+msglen: 1360
+Grant Access: ['0x0', '0x0', '0x0', '0x4']
+Status: ['0x0', '0x0', '0x0', '0x4']
+STATUS:
+	Raw bytes:
+Debug access cm-granted!
+Getting OTP...!
+OTP: ['0x7', '0x2', '0x1f', '0x5', '0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x12', '0x34', '0x11', '0x44', '0x44', '0x41', '0x44', '0x11', '0x44', '0x14', '0x0', '0x0', '0x0', '0x0', '0x1', '0x0', '0x0', '0x40']
+0x2
+OTP: Authorization Error
+Invalid option: Namespace(cm_cert='paragm.cert', cm_grant=528126, cm_key='paragm.pem', cm_pass='fun123', cm_unlock=True, csr=False, dut='T4', flash=None, flash_erase=None, flash_read=None, flash_write=None, in_rom=None, otp=True, reboot=False, serial=False, sm_cert=None, sm_grant=None, sm_key=None, sm_pass=None, sm_unlock=False, status=False)
+(True, 2238672347, u'10.1.20.69', 112)
+instantiating s1 dbg probe ...
+Getting dbg access grant...! customer:False
+Challange: ['0xbd', '0x56', '0x98', '0x81', '0xb3', '0xcf', '0xfa', '0x4', '0x13', '0x2d', '0xdf', '0x56', '0xc1', '0xe6', '0x8d', '0xa']
+data to sign (command + param + challenge): 000001fdfe0e0800bd569881b3cffa04132ddf56c1e68d0a
+dev_cert_size: 1096
+signed_challenge_len: 256
+cert length: 1360
+msglen: 1360
+Grant Access: ['0x0', '0x0', '0x0', '0x4']
+Status: ['0x0', '0x0', '0x0', '0x4']
+STATUS:
+	Raw bytes:
+Debug access cm-granted!
+Getting OTP...!
+OTP: ['0x7', '0x2', '0x1f', '0x5', '0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x12', '0x34', '0x11', '0x44', '0x44', '0x41', '0x44', '0x11', '0x44', '0x14', '0x0', '0x0', '0x0', '0x0', '0x1', '0x0', '0x0', '0x40']
+0x2
+OTP: Authorization Error
+Invalid option: Namespace(cm_cert='paragm.cert', cm_grant=528126, cm_key='paragm.pem', cm_pass='fun123', cm_unlock=True, csr=False, dut='T4', flash=None, flash_erase=None, flash_read=None, flash_write=None, in_rom=None, otp=True, reboot=False, serial=False, sm_cert=None, sm_grant=None, sm_key=None, sm_pass=None, sm_unlock=False, status=False)
+(True, 2238672347, u'10.1.20.69', 112)
+instantiating s1 dbg probe ...
+Getting dbg access grant...! customer:False
+Challange: ['0x58', '0x3d', '0x85', '0x9', '0x3f', '0x39', '0xb5', '0xbb', '0xf5', '0x7', '0x70', '0xb4', '0xe', '0x79', '0x70', '0x14']
+data to sign (command + param + challenge): 000001fdfe0e0700583d85093f39b5bbf50770b40e797014
+dev_cert_size: 1096
+signed_challenge_len: 256
+cert length: 1360
+msglen: 1360
+Grant Access: ['0x0', '0x0', '0x0', '0x4']
+Status: ['0x0', '0x0', '0x0', '0x4']
+STATUS:
+	Raw bytes:
+Debug access cm-granted!
+Reading flash: 256 bytes at offset 0
+Read 256 bytes
+[255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255]
+Erasing flash at offset 0
+Read 4 bytes
+[0, 0, 0, 4]
+(True, 2238672347, u'10.1.20.69', 112)
+instantiating s1 dbg probe ...
+
+************POKE MIO SCRATCHPAD ***************
+True
+
+************PEEK MIO SCRATCHPAD ***************
+(True, 2238672347, u'10.1.20.69', 112)
+instantiating s1 dbg probe ...
+Getting dbg access grant...! customer:False
+Challange: ['0x5a', '0x4d', '0x33', '0x6d', '0x19', '0xc', '0x4a', '0x69', '0x81', '0x50', '0x33', '0xc7', '0xed', '0x74', '0x75', '0xbe']
+data to sign (command + param + challenge): 000001fdfe0e0f005a4d336d190c4a69815033c7ed7475be
+dev_cert_size: 1096
+signed_challenge_len: 256
+cert length: 1360
+msglen: 1360
+Grant Access: ['0x0', '0x0', '0x0', '0x4']
+Status: ['0x0', '0x0', '0x0', '0x4']
+STATUS:
+	Raw bytes:
+Debug access cm-granted!
+
+************POKE MIO SCRATCHPAD ***************
+True
+
+************PEEK MIO SCRATCHPAD ***************

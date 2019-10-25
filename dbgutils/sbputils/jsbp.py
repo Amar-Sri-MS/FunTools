@@ -1,6 +1,16 @@
 #!/usr/bin/env python
 
+# This file defines the base JTAG methods to initialize, read and write data to and from 
+# JTAG transport.
+# The user interface of options will be driver by another utility.
+
+# This actively used the code-scape8.6 python libraries.
+# Hence the CodeScape-8.6 need to be installed on the probe server.
+# This libraries, utilities and methods are imported via PYTHONPATH
+
+
 import sys, os
+# importing PYTHONPATH essential from installed area
 sys.path.append('/home/'+os.environ["USER"]+'/.local/opt/imgtec/Codescape-8.6/lib/python2.7/lib-dynload')
 sys.path.append('/home/'+os.environ["USER"]+'/.local/opt/imgtec/Codescape-8.6/lib/python2.7/site-packages')
 sys.path.append('/home/'+os.environ["USER"]+'/.local/opt/imgtec/Codescape-8.6/lib/python2.7/site-packages/sitepackages.zip')
@@ -8,8 +18,9 @@ sys.path.append('/home/'+os.environ["USER"]+'/.local/opt/imgtec/Codescape-8.6/li
 from imgtec.console.support import command
 from imgtec.console import *
 import logging
+import time
 
-logger = logging.getLogger('jtagutils')
+logger = logging.getLogger('jtagcsr')
 logger.setLevel(logging.DEBUG)
 
 class constants(object):
@@ -19,36 +30,47 @@ class constants(object):
 
 def _ir_shiftin(width, data):
     cmd = '%u 0x%04x'%(width, data)
-    logger.debug('shift-in cmd: \"{}\"'.format(cmd))
+    logger.debug('re-initialize the TAP with cmd: \"{}\"'.format(cmd))
     status = tapi(cmd)
-    logger.debug('shift-in cmd status: {}'.format(status))
+    logger.debug('tapi: shift-out status: {}'.format(status))
     status = status[0]
     if not status:
         logger.error('Failed to shiftin ir!')
         return False
     return True
 
+def csr_probe_init():
+    status = _ir_shiftin(constants.CSR_RING_TAP_SELECT_WIDTH, constants.CSR_RING_TAP_SELECT)
+    if not status:
+        status_msg = (('Failed select csr tap controller! Error:{}').format(hex(status)))
+        logger.error(status_msg)
+        return (False, status_msg)
+
+    logger.info('Connected to Codescape Jtag probe! status={0}'.format(status))
+    status_msg = 'jtag is connected and csr tap select is enabled!'
+    logger.info(status_msg)
+    return (True, status_msg)
+
 # Connects to Codescape jtag probe and enables csr tap select
 @command()
-def csr_probe(dev_type, ip_addr):
+def local_csr_probe(dev_type, ip_addr, in_rom=None, flag=None):
     '''Connects to Codescape jtag probe and enables csr tap select'''
-    status = probe(dev_type, ip_addr, force_disconnect=True, verbose=True)
+    logger.debug('Connect JTAG CSR ip={} with force_disconnect={} ...'.format(ip_addr, flag))
+    status = probe(dev_type, ip_addr, force_disconnect=flag, verbose=True)
     status = str(status)
     if (("SysProbe" not in status) or ("Firmware" not in status) or
         ("ECONNREFUSED" in status) or ("InvalidArgError" in status)):
         return (False, status)
-    status = tckrate(10000000)
-    logger.info('Set tackrate to 10 MHz! status: {0}'.format(status))
-
-    logger.info('Connected to Codescape Jtag probe!\n{0}'.format(status))
-    status = _ir_shiftin(constants.CSR_RING_TAP_SELECT_WIDTH,
-                constants.CSR_RING_TAP_SELECT)
+    JTAG_TCKRATE = 5000 if in_rom else 250000
+    status = tckrate(JTAG_TCKRATE)
+    logger.info('Set tckrate to {0}! status: {1}'.format(JTAG_TCKRATE, status))
+    status = _ir_shiftin(constants.CSR_RING_TAP_SELECT_WIDTH, constants.CSR_RING_TAP_SELECT)
     if not status:
-        status_msg = (('Failed select csr tap controller! Error:' +
-                ' {}').format(hex(status)))
+        status_msg = (('Failed select csr tap controller! Error:{}').format(hex(status)))
         logger.error(status_msg)
         return (False, status_msg)
 
+    logger.info('Connected to Codescape Jtag probe! status={0}'.format(status))
     status_msg = 'jtag is connected and csr tap select is enabled!'
     logger.info(status_msg)
     return (True, status_msg)
@@ -64,55 +86,59 @@ def disconnect():
 def _prepare_csr_acc_cmd(read, csr_addr, csr_width):
     assert(read != None)
     assert(csr_addr != None)
-    ring_sel = csr_addr >> 35
-    cmd = ((csr_addr & 0xffffffffff) |
-            (((0x2 if read is True else 0x3) << 60) |
-            ((csr_width & 0x3F) << 54) |
-            (ring_sel << 49)))
+    cmd =  ((0x2 if read is True else 0x3) << 44) | ((csr_width & 0x3F)<< 38) | (csr_addr & 0xffffffff)
 
+    logger.info("cmd=%016x" % cmd)
     return cmd
 
 # Shifts-in data into csr tap controller dr
 # Returns status and response data
 def _jtag_shift_in_csr_acc_bytes(bytes_hex_str):
+    logger.debug("_jtag_shift_in_csr_acc_bytes hex: {}".format(bytes_hex_str))
+
     length = len(bytes_hex_str)
+    logger.info(length)
     assert(length == (32 + 2)) #32 nibbles + length('0x')
     dr = '128 ' + bytes_hex_str
+    logger.debug('tapd: shift-in data: {}'.format(dr))
     status = tapd(dr)
-    jtag_resp = status[0] >> 124
-    jtag_status = (status[0] >> 96) & 0xFF
+    jtag_resp = (status[0] >> 96) & 0xffff 
+    jtag_status = (status[0] >> 112) & 0xF
     jtag_ack = (status[0] >> 64) & 0x1
     jtag_running = (status[0] >> 65) & 0x1
-    logger.debug('shift-in data: {} status: {}'.format(dr, status))
-
-    logger.debug("jtag response: {}".format(jtag_resp))
-    logger.debug("jtag status: {}".format(jtag_status))
-    logger.debug("jtag ack: {}".format(jtag_ack))
-    logger.debug("jtag running: {}".format(jtag_running))
+    logger.debug('tapd: shift-out data: {} status: {}'.format(dr, status))
+    logger.debug("tapd response: 0x{:0x}".format(jtag_resp))
+    logger.debug("tapd status: {}".format(jtag_status))
+    logger.debug("tapd ack: {}".format(jtag_ack))
+    logger.debug("tapd running: {}".format(jtag_running))
+    data = status[0] & 0xFFFFFFFFFFFFFFFF
+    logger.debug('tapd data: 0x{:0x}'.format(data))
     if jtag_status != 0:
         logger.error("jtag shift-in data error!: {}".format(jtag_status))
         return (False, None)
-    status = _ir_shiftin(constants.CSR_RING_TAP_SELECT_WIDTH,
-                constants.CSR_RING_TAP_SELECT)
+    status = _ir_shiftin(constants.CSR_RING_TAP_SELECT_WIDTH, constants.CSR_RING_TAP_SELECT)
     if not status:
         logger.error("Failed in shiftin IR\n")
         return (False, None)
 
-    logger.debug('shift-in zeros for respose data')
-    dr = "128 0x0"
-    status = tapd(dr)
-    jtag_resp = status[0] >> 124
-    jtag_status = (status[0] >> 96) & 0xFF
-    jtag_ack = (status[0] >> 64) & 0x1
-    jtag_running = (status[0] >> 65) & 0x1
-    data = status[0] & 0xFFFFFFFFFFFFFFFF
-    logger.debug('response data: {}'.format(status))
+    for i in range(1):
+        logger.debug('shift-in zeros [{}] for respose data'.format(i))
+        dr = "128 0x0"
+        status = tapd(dr)
+        jtag_resp = (status[0] >> 96) & 0xfff
+        jtag_status = (status[0] >> 112) & 0xF
+        jtag_ack = (status[0] >> 64) & 0x1
+        jtag_running = (status[0] >> 66) & 0x1
+        data = status[0] & 0xFFFFFFFFFFFFFFFF
+        logger.debug('response data: {}'.format(status))
+        logger.debug('response data: 0x{0:0{1}x}'.format(status[0], 32))
+        time.sleep(6)
 
-    logger.debug("jtag response: {}".format(jtag_resp))
-    logger.debug("jtag status: {}".format(jtag_status))
-    logger.debug("jtag ack: {}".format(jtag_ack))
-    logger.debug("jtag running: {}".format(jtag_running))
-    logger.debug("Data: {}".format(hex(data)))
+        logger.debug("jtag response: {}".format(jtag_resp))
+        logger.debug("jtag status: {}".format(jtag_status))
+        logger.debug("jtag ack: {}".format(jtag_ack))
+        logger.debug("jtag running: {}".format(jtag_running))
+        logger.debug("Data: {}".format(hex(data)))
     if jtag_ack != 1:
         logger.error("jtag cmd shift-in ack error!: {} bytes: {}".format(
             jtag_ack, bytes_hex_str))
@@ -128,7 +154,7 @@ def _jtag_shift_in_csr_acc_bytes(bytes_hex_str):
 
 # jtag csr read
 @command()
-def csr_peek(csr_addr, csr_width):
+def local_csr_peek(csr_addr, csr_width):
     '''Peek csr_width number of 64-bit words from csr_addr'''
     logger.info(('csr peek csr_addr:{0}'
            ' csr_width:{1}').format(hex(csr_addr), csr_width))
@@ -141,7 +167,8 @@ def csr_peek(csr_addr, csr_width):
 
     logger.debug("\nWriting read cmd...........:")
     cmd = _prepare_csr_acc_cmd(True, csr_addr, csr_width)
-    dr_byte_str = '0x' + '%016x'%((0x3 << 60) | (1 << 54)) + '%016x'%(cmd)
+    cmd_str = hex(cmd)[2:].zfill(16)
+    dr_byte_str = '0x' + cmd_str + '0'*16
     (status, data) = _jtag_shift_in_csr_acc_bytes(dr_byte_str)
     if not status:
         logger.error('peek csr cmd failed!')
@@ -149,9 +176,8 @@ def csr_peek(csr_addr, csr_width):
 
     word_array = list()
     for i in range(csr_width):
-        logger.debug("\nReading Data[{}/{}]...........:".format(i+1,
-                    csr_width))
-        csr_data_addr = (i+1) * 8
+        logger.debug("\nReading Data[{}/{}]...........:".format(i, csr_width))
+        csr_data_addr = csr_addr + (i * 8)
         cmd = _prepare_csr_acc_cmd(True, csr_data_addr, 1)
         cmd_str = hex(cmd)[2:].zfill(16)
         dr_byte_str = '0x' + cmd_str + '0'*16
@@ -167,7 +193,7 @@ def csr_peek(csr_addr, csr_width):
 
 # csr write
 @command()
-def csr_poke( csr_addr, word_array):
+def local_csr_poke( csr_addr, word_array):
     '''Poke word_array(an array of 64-bit words) at csr_addr'''
     logger.info(('csr poke addr:{0}'
                  ' words:{1}').format(hex(csr_addr),
@@ -187,7 +213,8 @@ def csr_poke( csr_addr, word_array):
     for i in range(csr_width):
         logger.debug("\nWriting Data[{}/{} = {}]...........:".format(i+1,
                        csr_width, hex(word_array[i])))
-        csr_data_addr = (i+1) * 8
+        #csr_data_addr = (i+1) * 8
+        csr_data_addr = csr_addr + (i * 8)
         cmd = _prepare_csr_acc_cmd(False, csr_data_addr, 1)
         cmd_str = hex(cmd)[2:].zfill(16)
         dr_byte_str = '0x' + cmd_str + "%016x"%word_array[i]
@@ -197,9 +224,10 @@ def csr_poke( csr_addr, word_array):
             logger.error("jtag csr poke data write failed!")
             return None
 
-    logger.debug("\nWriting write command....")
+    logger.debug("\nWriting write command.... done")
     cmd = _prepare_csr_acc_cmd(False, csr_addr, len(word_array))
-    dr_byte_str = '0x' + '%016x'%((0x3 << 60) | (1 << 54)) + '%016x'%(cmd)
+    cmd_str = hex(cmd)[2:].zfill(16)
+    dr_byte_str = '0x' + cmd_str + "%016x"%word_array[i]
     logger.debug('dr: {}'.format(dr_byte_str))
     (status, data) = _jtag_shift_in_csr_acc_bytes(dr_byte_str)
     if not status:
@@ -207,75 +235,26 @@ def csr_poke( csr_addr, word_array):
 
     return True
 
+# unittest-path keep it for debugging
 def csr_peek_poke_test():
-    print("Connecting to Probe")
-    csr_probe('sp55e', '10.1.40.84')
-    print('\n************POKE***************')
-    print csr_poke(0x4883160000, [0x1111111111111111, 0x2222222222222222,
-                                     0x3333333333333333, 0x4444444444444444,
-                                     0x5555555555555555, 0x6666666666666666,
-                                    ])
-    print csr_poke(0xb000000078, [0xabcdabcdabcdabcd])
-    print csr_poke(0xb800000078, [0xdeadbeefdeadbeef])
+    print("Connecting to Probe to S1")
+    local_csr_probe('sp55e', '10.1.20.115')
 
-    print('\n************PEEK***************')
-    word_array = csr_peek(0xb000000078, 1)
-    print("{}".format([hex(x) for x in word_array] if word_array else None))
-    word_array = csr_peek(0xb800000078, 1)
-    print("{}".format([hex(x) for x in word_array] if word_array else None))
-    word_array = csr_peek(0x4883160000, 6)
-    print("{}".format([hex(x) for x in word_array] if word_array else None))
+    print('\n************POKE MIO SCRATCHPAD ***************')
+    print local_csr_poke(0x1d00e170, [0xabcd112299885566])
+    print('\n************PEEK MIO SCRATCHPAD ***************')
+    word_array = local_csr_peek(0x1d00e170, 1)
+    #word_array = local_csr_peek(0x1d00e160, 1)
+    #word_array = local_csr_peek(0x1d00e0a0, 1)
+    #word_array = local_csr_peek(0x1d00e2c8, 1)
+    print("word_array: {}".format([hex(x) for x in word_array] if word_array else None))
 
-###########   JTAG    ##################################################################
-
-def jtag_probe(name, ip, in_rom=None):
-    try:
-        probe(name, ip)
-        JTAG_TCKRATE = 5000 if in_rom else 250000
-        logger.info("\nconnecting to JTAG probe with TCKRATE(%s)..." % JTAG_TCKRATE)
-        tckrate(JTAG_TCKRATE)
-        scanonly()
-    except Exception as e:
-        logger.error('Error connecting to probe: %s' % e)
-        raise StandardError("Error connecting to probe")
-
-def mdh_read_old(byte_address):
-    tapscan("5 %d" % IR_DEVICEADDR, "32 %d" % (byte_address & 0xf80) )
-    tapscan("5 %d" % IR_APBACCESS, "39 %d" % ((byte_address & 0x7c) | 0x3) )
-    result = tapd("39 %d" % ((byte_address & 0x7c) | 0x2) )
-    if (result[0] & 0x3) == 0x3:
-        return result[0] >> 7
-    raise RuntimeError("APB read failed try a lower TCK clock")
-
-def mdh_write_old(byte_address, word):
-    tapscan("5 %d" % IR_DEVICEADDR, "32 %d" % (byte_address & 0xf80) )
-    result = tapscan("5 %d" % IR_APBACCESS, "39 %d" % (word << 7|(byte_address & 0x7c)|0x1))
-
-    if (result[0] & 0x3) == 0x3:
-        return
-    raise RuntimeError("APB read failed try a lower TCK clock")
-
-mdh_read_ = mdh_read_old
-mdh_write_ = mdh_write_old
-
-def esecure_read():
-    """ internal only """
-    mdh_write_(CONTROL,RD_REQ)
-    timeout = 0
-    while (mdh_read_(CONTROL) & RD_REQ) == 0: #wait for RD_REQ=1
-        timeout+=1
-        if timeout == TIMEOUT:
-            raise RuntimeError("esecure_read: timeout waiting for RD_REQUEST to go high")
-    data = mdh_read_(RDATA)
-    mdh_write_(CONTROL,RD_ACK)
-    timeout = 0
-    while (mdh_read_(CONTROL) & RD_REQ) != 0: #wait for RD_REQ=0
-        timeout+=1
-        if timeout == TIMEOUT:
-            raise RuntimeError("esecure_read: timeout waiting for RD_REQUEST to go low")
-    mdh_write_(CONTROL,0)
-    return data
-
+    #print('\n************POKE MIO2 SCRATCHPAD ***************')
+    #print local_csr_poke(0x1e008408, [0xabcd112299885566])
+    #print('\n************PEEK MIO2 SCRATCHPAD ***************')
+    #word_array = local_csr_peek(0x1e008408, 1)
+    #print("{}".format([hex(x) for x in word_array] if word_array else None))
 
 if __name__== "__main__":
-    csr_peek_poke_test()
+    #csr_peek_poke_test()
+    pass
