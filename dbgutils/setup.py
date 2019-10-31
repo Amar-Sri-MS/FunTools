@@ -55,7 +55,7 @@ setup(
     install_requires = [
         'aardvark_py',
         'argparse',
-        'jsocket',
+        'jsocket==1.6',
         'logging',
         'cmd2==0.8.8',
         'argcomplete',
