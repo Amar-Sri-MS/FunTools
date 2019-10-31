@@ -57,7 +57,12 @@ echo "$F1COUNT F1 found"
 export USER="fun"
 export HOME="/home/fun"
 
-$FUN_ROOT/cclinux/cclinux_service.sh --start --ep --storage
+if [[ -f /opt/fungible/etc/funcontrolplane.d/configure_bond ]]; then
+	$FUN_ROOT/cclinux/cclinux_service.sh --start --ep --storage --autocreatebond
+else
+	$FUN_ROOT/cclinux/cclinux_service.sh --start --ep --storage
+fi
+
 $FUN_ROOT/StorageController/etc/start_sc.sh start
 
 if [[ -f $FUN_ROOT/etc/DpuHealthMonitor.sh ]]; then
