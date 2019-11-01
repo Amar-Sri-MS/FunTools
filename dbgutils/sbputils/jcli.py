@@ -18,6 +18,7 @@ sys.path.append('/home/'+os.environ["USER"]+'/.local/opt/imgtec/Codescape-8.6/li
 
 # dutdb.cfg + dututils.py has probe-details
 from dututils import dut
+from gpioutils import tap
 
 import sys
 import argparse
@@ -783,6 +784,7 @@ def main():
     #fl_args.add_argument("--write", help="Flash write at <offset> <infile>")
     #fl_args.add_argument("--ifile", type=argparse.FileType('r'), nargs="?", help="read from filename and write into flash")
 
+    parser.add_argument("--tap", action='store_true', help="Dynamically select CSR TAP and Attempt to perform CSR operation")
     parser.add_argument("--csr", action='store_true', help="Attempt to perform CSR operation")
     #rg_args = parser.add_argument_group("Register peek/poke APIs", "Options for csr peek/poke")
     #rg_args.add_argument("--address", type=auto_int, default=0, help="Perform operation at this offset")
@@ -881,9 +883,13 @@ def main():
     # Once unlocked proceed with CSR poke and peek as a !!!! SEPERATE !!!! command. 
     # Remember to run this command seperately without disconnecting the probe as we need t oconnnect probe to set CSR ring
     if args.csr:
-        print "Did you UNLOCK the chip and change the TAP to CSR ??? Now press character to access CSR probe ..."
-        mydata = raw_input('Prompt :')
-        print (mydata) 
+        if args.tap:
+            t = tap(args.dut)
+            t.setjcsr()
+        else:
+            print "Did you UNLOCK the chip and change the TAP to CSR ??? Now press character to access CSR probe ..."
+            mydata = raw_input('Prompt :')
+            print (mydata)
         csr_probe_init()
         print('\n************POKE MIO SCRATCHPAD ***************')
         print local_csr_poke(0x1d00e170, [0xabcd112299885566])
@@ -893,10 +899,23 @@ def main():
         #word_array = local_csr_peek(0x1d00e160, 1)
         #word_array = local_csr_peek(0x1d00e0a0, 1)
         #word_array = local_csr_peek(0x1d00e2c8, 1)
+        if args.tap:
+            t.setjdbg()
+            t.close()
 
     if args.reboot:
+        if args.tap:
+            t = tap(args.dut)
+            t.setjcsr()
+        else:
+            print "Did you UNLOCK the chip and change the TAP to CSR ??? Now press character to access CSR probe ..."
+            mydata = raw_input('Prompt :')
+            print (mydata)
         print('\n************POKE RESET REGISTER ***************')
         print local_csr_poke(0x1d00e0a0, [0x0000000000000010])
+        if args.tap:
+            t.setjdbg()
+            t.close()
 
 
 if __name__ == "__main__":

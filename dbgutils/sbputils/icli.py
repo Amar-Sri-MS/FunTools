@@ -424,6 +424,7 @@ def main():
     parser.add_argument("--flash-erase", default=None, type=auto_int, help="Perform flash erase at offset provided")
     parser.add_argument("--flash-write", default=None, type=auto_int, help="Perform flash write at offset provided")
     parser.add_argument("--csr", action='store_true', help="CSR peek poke test of a well defined scratch pad register")
+    parser.add_argument("--mioval", default=None, type=auto_int, help="CSR poke value to MIO scratch pad register")
     parser.add_argument("--disconnect", action='store_true', help="CSR challenege disconnect")
     #parser.add_argument("--csr-peek", help="CSR peek of a register with nqwords")
     #parser.add_argument("--csr-poke", help="CSR poke at register with given array of qwords")
@@ -542,7 +543,10 @@ def main():
 
     if args.csr:
         print('\n************POKE MIO SCRATCHPAD ***************')
-        print dbgprobe.local_csr_poke(0x1d00e170, [0xabcd112299885566])
+        if args.mioval:
+            print dbgprobe.local_csr_poke(0x1d00e170, [args.mioval])
+        else:
+            print dbgprobe.local_csr_poke(0x1d00e170, [0xabcd112299885566])
         print('\n************PEEK MIO SCRATCHPAD ***************')
         status, word_array = dbgprobe.local_csr_peek(0x1d00e170, 1)
         print("word_array: {}".format(map(hex, word_array) if word_array else None))
