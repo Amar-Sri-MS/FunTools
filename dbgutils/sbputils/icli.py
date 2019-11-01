@@ -426,11 +426,13 @@ def main():
     parser.add_argument("--csr", action='store_true', help="CSR peek poke test of a well defined scratch pad register")
     parser.add_argument("--mioval", default=None, type=auto_int, help="CSR poke value to MIO scratch pad register")
     parser.add_argument("--disconnect", action='store_true', help="CSR challenege disconnect")
-    #parser.add_argument("--csr-peek", help="CSR peek of a register with nqwords")
-    #parser.add_argument("--csr-poke", help="CSR poke at register with given array of qwords")
-    #parser.add_argument("--at", help="register address or or flash offset")
-    #parser.add_argument("--length", help="CSR qwords or flash words")
-    #parser.add_argument("--array", help="CSR qwords or flash words")
+
+    parser.add_argument("--csr-peek", action='store_true', help="CSR peek of a register with nqwords")
+    parser.add_argument("--csr-poke", action='store_true', help="CSR poke at register with given array of qwords")
+    parser.add_argument("--regadr", default=0x1d00e170, type=auto_int, help="CSR address or or flash offset")
+    parser.add_argument("--reglen", default=1, type=auto_int, help="CSR qwords to peek/poke or flash words")
+    parser.add_argument("--regval", action='store', dest='regval', type=auto_int, nargs='+', default=[0xaabbccdd11223344], help="CSR qwords to poke or flash words")
+
     parser.add_argument("--reboot", action='store_true', help="Attempt to perform reboot via CSR operation")
 
     parser.add_argument('--quicktest', action='store', dest='quicktest', type=str, nargs='*', default=[], help="Examples: --quicktest nonceflip nopass xyz")
@@ -553,6 +555,19 @@ def main():
         #word_array = local_csr_peek(0x1d00e160, 1)
         #word_array = local_csr_peek(0x1d00e0a0, 1)
         #word_array = local_csr_peek(0x1d00e2c8, 1)
+
+    if args.csr_peek:
+        print('\n************PEEK CSR2 ***************')
+        print('\nregadr={} reglen={}'.format(hex(args.regadr), hex(args.reglen)))
+        status, word_array = dbgprobe.local_csr_peek(args.regadr, args.reglen)
+        print("word_array: {}".format(map(hex, word_array) if word_array else None))
+
+    if args.csr_poke:
+        print('\n************POKE CSR2 ***************')
+        print('\nregadr={} regval={}'.format(hex(args.regadr), map(hex, args.regval)))
+        status = dbgprobe.local_csr_poke(args.regadr, [args.regval])
+        print("status: {}".format(status))
+
 
     if args.disconnect:
         print('\n************debug disconnect command ***************')
