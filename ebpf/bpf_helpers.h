@@ -106,7 +106,6 @@ enum socket_filter_action {
 //    However, for testing it doesn't make sense.
 // 4. Debug prints - for BPF it is done by calling helper, for linux just
 // regular printf()
-#ifdef __BPF__
 
 // Clang for eBPF missed static_assert declaration because programs are C, not
 // CPP
@@ -195,6 +194,7 @@ struct bpf_sysctl {
 				 */
 };
 
+#ifdef __BPF__
 // BPF helper functions supported on linux kernel 5.2+
 // clang-format off
 #define __BPF_FUNC_MAPPER(FN)       \
@@ -678,6 +678,43 @@ static int (*bpf_xdp_adjust_head)(const void *ctx, int delta) = (void *) // NOLI
 
 // clang-format on
 
+#else
+//// JIT ////
+
+// Lookup bpf map element by key.
+// Return: Map value or NULL
+void *bpf_map_lookup_elem(const void *map, const void *key);
+
+// Update bpf map element by key to value
+// Return: 0 on success or negative error
+int *bpf_map_update_elem(const void *map, const void *key,
+                                  const void *value, __u64 flags);
+
+// Delete element. Actually applicable on HASH maps
+// Return: 0 on success or negative error
+int *bpf_map_delete_elem(const void *map, void *key);
+
+int *bpf_probe_read(void *dst, __u64 size, const void *unsafe_ptr);
+
+__u64 *bpf_ktime_get_ns();
+__u32 *bpf_get_prandom_u32(void);
+
+// Like printf() for BPF
+// Return: length of buffer written or negative error
+int *bpf_trace_printk(const char *fmt, int fmt_size, ...);
+
+int *bpf_probe_read_str(void *dst, __u64 size, const void *unsafe_ptr);
+
+// Jump into another BPF program
+//     prog_array_map: pointer to map which type is BPF_MAP_TYPE_PROG_ARRAY
+//     index: 32-bit index inside array that selects specific program to run
+// Return: 0 on success or negative error
+void *bpf_tail_call(const void *ctx, void *map, int index);
+
+#endif
+
+///// end of __BPF__ /////
+
 // printk() - kernel trace mechanism, like printf()
 // To get trace (debug) messages:
 // - Add #define DEBUG into your eBPF program before includes
@@ -706,99 +743,6 @@ static int (*bpf_xdp_adjust_head)(const void *ctx, int delta) = (void *) // NOLI
 // Macro to define BPF Map
 #define BPF_MAP_DEF(name) struct bpf_map_def SEC("maps") name
 #define BPF_MAP_ADD(x)
-
-///// end of __BPF__ /////
-
-#else
-
-//// All other platforms ////
-
-// SEC() is useless for non eBPF - so just dummy
-#define SEC(NAME)
-// Functions must be inlined only for eBPF, so don't enforce it for *nix/mac.
-// Also disable "unused function" warning -
-// since eBPF programs define functions mostly in headers.
-#define INLINE static __attribute__((unused))
-
-// Disable warnings for "pragma unroll(all)"
-#pragma GCC diagnostic ignored "-Wunknown-pragmas"
-
-#include <assert.h>
-#include <stdio.h>
-#include <sys/queue.h>
-#include <string.h>
-
-// XDP metadata - defined twice because of real eBPF uses 32 bit pointers
-// which are not acceptable for cross platform compilation.
-struct xdp_md {
-  void *data;
-  void *data_end;
-  void *data_meta;
-};
-
-// Mock BPF map support:
-// In order to automatically find all defined BPF maps from GO program we need
-// to
-// maintain linked list of maps (to be able to iterate and create them all)
-// This could be easily and nicely done using __attribute__ ((constructor))
-// Which is logically close to func init() int GO.
-struct __create_map_def {
-  const char *name;
-  void *map_data;  // Mock version only: holds head to single linked list of map
-                   // items
-  struct bpf_map_def *map_def;
-  SLIST_ENTRY(__create_map_def) next;
-};
-
-// Declaration only. Definition held in mock_map package.
-SLIST_HEAD(__maps_head_def, __create_map_def);
-extern struct __maps_head_def *__maps_head;
-
-#define BPF_MAP_DEF(x) static struct bpf_map_def x
-
-#define BPF_MAP_ADD(x)                                          \
-  static __attribute__((constructor)) void __bpf_map_##x() {    \
-    static struct __create_map_def __bpf_map_entry_##x;         \
-    __bpf_map_entry_##x.name = #x;                              \
-    __bpf_map_entry_##x.map_data = NULL;                        \
-    __bpf_map_entry_##x.map_def = &x;                           \
-    SLIST_INSERT_HEAD(__maps_head, &__bpf_map_entry_##x, next); \
-  }
-
-// BPF helper prototypes - definition is up to mac/linux host program
-void *bpf_map_lookup_elem(const void *map, const void *key);
-int bpf_map_update_elem(const void *map, const void *key, const void *value,
-                        __u64 flags);
-int bpf_map_delete_elem(const void *map, const void *key);
-
-// bpf_printk() is just printf()
-#define bpf_printk(fmt, ...)  \
-  printf(fmt, ##__VA_ARGS__); \
-  fflush(stdout);
-
-// bpf_tail_call() is nothing: only relevant for BPF arch
-#define bpf_tail_call(ctx, map, index)
-
-// adjust_meta / ajdust_header are simple functions to move pointer
-
-UNUSED static int bpf_xdp_adjust_meta(struct xdp_md *ctx, int offset) {
-  // For unittests only - function returns error if data_meta points to data_end
-  // which never the case in real world
-  if (ctx->data_meta == ctx->data_end) {
-    return 1;
-  }
-  ctx->data_meta = (__u8 *)ctx->data_meta + offset;  // NOLINT
-
-  return 0;
-}
-
-UNUSED static int bpf_xdp_adjust_head(struct xdp_md *ctx, int offset) {
-  ctx->data = (__u8 *)ctx->data + offset;  // NOLINT
-
-  return 0;
-}
-
-#endif  // of other than __BPF__
 
 // Finally make sure that all types have expected size regardless of platform
 static_assert(sizeof(__u8) == 1, "wrong_u8_size");
