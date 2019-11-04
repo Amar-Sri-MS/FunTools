@@ -78,9 +78,9 @@ class VPacket(Packet):
         (f, v) = self.getfield_and_val(field)
         comparev = value if type(value) is unicode or str else hex(value)
         actualv = f.i2repr(self, v).replace( '\'', '') if type(value) is unicode or str else hex(v)
-        print "    compare ... %s (observed=%s, expected=%s) ..." % (m, actualv, comparev),
+        print ("    compare ... %s (observed=%s, expected=%s) ..." % (m, actualv, comparev)),
         status = True if actualv == comparev else False
-        print "ok" if status else "fail"
+        print ("ok" if status else "fail")
         return status
 
     def find_field(self, field, value, msg=""):
@@ -89,9 +89,9 @@ class VPacket(Packet):
         (f, v) = self.getfield_and_val(field)
         comparev = value
         actualv = str(f.i2repr(self, v).replace( '\'', '') if type(value) is unicode or str else hex(v))
-        print "    find ... %s (observed=%s, comparedto=%s) ..." % (m, actualv, comparev),
+        print ("    find ... %s (observed=%s, comparedto=%s) ..." % (m, actualv, comparev)),
         status = True if re.search(comparev, actualv) else False
-        print "ok" if status else "fail"
+        print ("ok" if status else "fail")
         return status
 
     def compare_value(self, field):
@@ -99,7 +99,7 @@ class VPacket(Packet):
         return f.i2repr(self, v)
 
     def verify(self, *args, **kwargs):
-        print "packet (%s) verification ... skipped" % self.__class__.__name__
+        print ("packet (%s) verification ... skipped" % self.__class__.__name__)
         return True
 
 class XStrLenField(StrFixedLenField):
