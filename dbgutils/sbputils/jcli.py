@@ -58,7 +58,7 @@ def run(main):
     try:
         main()
     except RunError as e:
-        print "ERROR: %s" % e
+        print ("ERROR: %s" % e)
         exit(1)
 
 
@@ -69,7 +69,7 @@ def run(main):
 def read(filename, nbytes=None):
     if filename==None:
         return ""
-    print "Reading %s" % filename
+    print ("Reading %s" % filename)
     try:
         txt = open(filename, "rb").read()
     except:
@@ -81,7 +81,7 @@ def read(filename, nbytes=None):
 def write(filename, content, overwrite=True, tohex=False, tobyte=False):
     if not filename:
         return
-    print "Writing %s" % filename
+    print ("Writing %s" % filename)
     # Overwrite
     if not overwrite and os.path.exists(filename):
         raise RunError("File '%s' already exists" % filename)
@@ -276,7 +276,7 @@ def esecure_write(data):
 
 def dump_id_regs():
     for k,v in ID_REGS.items():
-        print k + " " + hex(mdh_read_(v))
+        print (k + " " + hex(mdh_read_(v)))
 
 
 def char_repr(le_word):
@@ -294,9 +294,9 @@ def dump_return_data(status=None):
         status = esecure_read()
     if status >> 16 == 0:
         while (mdh_read_(CONTROL) & RD_REQ) != 0:
-            print hex(esecure_read())
+            print (hex(esecure_read()))
     else:
-        print decode_cmd_status(status)
+        print (decode_cmd_status(status))
 
 STATUS_STRS = [
     "Status at last tamper    : ",
@@ -316,13 +316,13 @@ def dump_status_data():
         if i < len(STATUS_STRS):
             if i == 4:
                 bs = esecure_read()
-                print STATUS_STRS[i]  + hex(bs) + " : "
-                print repr(BootInfo(bs))
+                print (STATUS_STRS[i]  + hex(bs) + " : ")
+                print (repr(BootInfo(bs)))
             else:
-                print STATUS_STRS[i] + hex(esecure_read())
+                print (STATUS_STRS[i] + hex(esecure_read()))
         else:
             word = esecure_read()
-            print "Extra data: " + hex(word) + " " + char_repr(word)
+            print ("Extra data: " + hex(word) + " " + char_repr(word))
         i+=1
     return bs
 
@@ -370,23 +370,23 @@ CMD_SET_PUF_CERT=0xFF060000
 CMD_OPTION_CUSTOMER=1
 
 def diag_set_upgrade_flag(imagetype):
-    print "\nRequest to set (imagetype=%s) UPGRADE flag ..." % imagetype
+    print ("\nRequest to set (imagetype=%s) UPGRADE flag ..." % imagetype)
     esecure_write(0xC)
     esecure_write(CMD_DIAG_SET_UPGRADE_FLAG)
     esecure_write(struct.unpack('>I', imagetype)[0])
-    print "\nResponse:"
+    print ("\nResponse:")
     dump_return_data()
 
 def read_otp():
     esecure_write(0x8)
     esecure_write(CMD_READ_OTP)
-    print "\nOTP contents:"
+    print ("\nOTP contents:")
     dump_return_data()
 
 def get_serial():
     esecure_write(0x8)
     esecure_write(CMD_GET_SERIAL_NUMBER)
-    print "\nSerial Number:"
+    print ("\nSerial Number:")
     dump_return_data()
 
 def dump_status():
@@ -396,7 +396,7 @@ def dump_status():
         esecure_write(index)
         status = esecure_read();
         if cmd_status_ok(status):
-            print "\nPublic Key - %s [%d]:" % (name, index)
+            print ("\nPublic Key - %s [%d]:" % (name, index))
             dump_return_data(status)
 
     # PUF-ROM keys
@@ -407,12 +407,12 @@ def dump_status():
 
     esecure_write(0x8)
     esecure_write(CMD_GET_STATUS)
-    print "\nStatus:"
+    print ("\nStatus:")
     dump_status_data()
 
     esecure_write(0x8)
     esecure_write(CMD_GET_SERIAL_NUMBER)
-    print "\nSerial Number:"
+    print ("\nSerial Number:")
     dump_return_data()
 
 def check_for_esecure():
@@ -424,10 +424,10 @@ def check_for_esecure():
     if ((cidr1 >> 4) & 0xf) == 0xe:
         devid = mdh_read_(ID_REGS["DEVID"])
         if devid == 8:
-            print "Found eSecure challenge interface"
+            print ("Found eSecure challenge interface")
             return
 
-    print "Failed to find eSecure Challenge Interface"
+    print ("Failed to find eSecure Challenge Interface")
     dump_id_regs()
 
 
@@ -440,7 +440,7 @@ def esecure_write_bytes(bytestr):
         words.append(struct.unpack('<I',bytestr[pos:pos+4])[0])
 
     for word in words:
-        if DEBUG: print "writing: "+ hex(word)
+        if DEBUG: print ("writing: "+ hex(word))
         esecure_write(word)
 
 def esecure_read_bytes():
@@ -467,7 +467,7 @@ def esecure_inject_certificate(certificate, customer=False):
     check_for_esecure()
     start_cert = read(certificate)
     if len( start_cert) != 1096:
-        print "This script is not able to use certificate with invalid length"
+        print ("This script is not able to use certificate with invalid length")
         return 7 # Invalid Param
 
     cmd = CMD_SET_START_CERT
@@ -477,15 +477,15 @@ def esecure_inject_certificate(certificate, customer=False):
     # total length = 4 /length/ + 4 /command/ + start_cert
     msglen = 4 + 4 + CERTIFICATE_LENGTH
 
-    if DEBUG: print "writing: " + hex(msglen)
+    if DEBUG: print ("writing: " + hex(msglen))
     esecure_write(msglen)
-    if DEBUG: print "writing: " + hex(cmd)
+    if DEBUG: print ("writing: " + hex(cmd))
     esecure_write(cmd)
     esecure_write_bytes(start_cert)
 
     status = esecure_read()
 
-    print "Status: " + decode_cmd_status(status)
+    print ("Status: " + decode_cmd_status(status))
 
     return status
 
@@ -509,18 +509,18 @@ def esecure_enable_debug(developer_key,developer_certificate,dbg_grant,
     #Read Challenge
     status = esecure_read()
     if status != 0x14:
-        print "Unexpected status from get challenge: " + hex(status)
+        print ("Unexpected status from get challenge: " + hex(status))
         dump_return_data()
         raise RuntimeError()
 
-    print "challenge_data:"
+    print ("challenge_data:")
     challenge = [0,0,0,0]
     for i in range(len(challenge)):
         challenge[i] = esecure_read()
-        print hex(challenge[i])
+        print (hex(challenge[i]))
 
     if (mdh_read_(CONTROL) & RD_REQ) != 0:
-        print "Warning Extra Read data still pending:"
+        print ("Warning Extra Read data still pending:")
         dump_return_data()
         #todo raise exception ??
 
@@ -535,12 +535,12 @@ def esecure_enable_debug(developer_key,developer_certificate,dbg_grant,
     for word in challenge:
         challenge_bs += struct.pack('<I',word)
 
-    if DEBUG: print "data to sign (command + param + challenge): " +  binascii.hexlify(challenge_bs)
+    if DEBUG: print ("data to sign (command + param + challenge): " +  binascii.hexlify(challenge_bs))
 
     #sign challenge
     developer_cert = read(developer_certificate)
-    if verbose: print "developer cert:"
-    if verbose: print binascii.hexlify(developer_cert)
+    if verbose: print ("developer cert:")
+    if verbose: print (binascii.hexlify(developer_cert))
     with open(developer_key, 'rb') as key_file:
         signing_key = serialization.load_pem_private_key(key_file.read(),
                                                          password=key_password,
@@ -549,29 +549,29 @@ def esecure_enable_debug(developer_key,developer_certificate,dbg_grant,
     signed_challenge = signing_key.sign(challenge_bs,
                                         padding.PKCS1v15(),
                                         hashes.SHA512())
-    if DEBUG: print "signed challenge:"
-    if DEBUG: print binascii.hexlify(signed_challenge)
+    if DEBUG: print ("signed challenge:")
+    if DEBUG: print (binascii.hexlify(signed_challenge))
     signed_challenge_len = len(signed_challenge)
 
     #Send Debug Access Request Command
-    print "Unlocking..."
+    print ("Unlocking...")
 
     # total length = 4 /length/ + 4 /command/ + 4 /dbg_grant/ + developer_cert + 4 /size/ + signed_challenge
     msglen = 4 + 4 + 4 + len(developer_cert) + 4 + signed_challenge_len
 
-    if DEBUG: print "writing: " + hex(msglen)
+    if DEBUG: print ("writing: " + hex(msglen))
     esecure_write(msglen)
-    if DEBUG: print "writing: " + hex(cmd)
+    if DEBUG: print ("writing: " + hex(cmd))
     esecure_write(cmd)
-    if DEBUG: print "writing: " + hex(dbg_grant)
+    if DEBUG: print ("writing: " + hex(dbg_grant))
     esecure_write(dbg_grant)
     esecure_write_bytes(developer_cert)
-    if DEBUG: print "writing: " + hex(signed_challenge_len)
+    if DEBUG: print ("writing: " + hex(signed_challenge_len))
     esecure_write(signed_challenge_len)
     esecure_write_bytes(signed_challenge)
 
     status = esecure_read()
-    print "Status: " + decode_cmd_status(status)
+    print ("Status: " + decode_cmd_status(status))
     return status
 
 
@@ -584,7 +584,7 @@ def send_info_cmd(cmd):
     #capture the return data
     status = esecure_read()
     if not cmd_status_ok(status):
-        print "Error " + decode_cmd_status(status) + " for command " + hex(cmd)
+        print ("Error " + decode_cmd_status(status) + " for command " + hex(cmd))
         return None
 
     # len = cmd_reply_length(status)
@@ -598,8 +598,8 @@ def check_boot_step(desired_boot_step):
 
     boot_step = BootInfo(bs).BootStep
 
-    if boot_step <> desired_boot_step:
-        print "Device is not in the proper state: {:02x}".format(boot_step)
+    if boot_step == desired_boot_step:
+        print ("Device is not in the proper state: {:02x}".format(boot_step))
         return False
 
     return True
@@ -608,16 +608,16 @@ def check_boot_step(desired_boot_step):
 # The probe is connected with different CLK speed when execution is in ROM (i.e 5K) and 250K in PUFR/HOST.
 def probe_connect(name, ip, in_rom=None, flag=None):
     try:
-        print "connecting to JTAG probe ip=%s force_disconnect=%s ..." % (ip, flag) 
+        print ("connecting to JTAG probe ip=%s force_disconnect=%s ..." % (ip, flag) )
         con.probe(name, ip, force_disconnect=flag)
         #JTAG_TCKRATE = 5000 if in_rom else 250000
         # RTL1008 at different speeds, hence reducing JTAG to 5000
         JTAG_TCKRATE = 5000 if in_rom else 5000
-        print "connecting to JTAG probe with TCKRATE(%s)..." % JTAG_TCKRATE 
+        print ("connecting to JTAG probe with TCKRATE(%s)..." % JTAG_TCKRATE )
         con.tckrate(JTAG_TCKRATE)
         con.scanonly()
     except Exception as e:
-        print "Error connecting to probe: %s" % e
+        print ("Error connecting to probe: %s" % e)
         raise StandardError("Error connecting to probe")
 
 # unlock secure device with native CHIP MFG firmwares
@@ -647,8 +647,8 @@ class DeviceFlash:
             self.page_size = 256
             self.rd_buf_size = 100
             self.wr_buf_size = 100
-            print "Flash device page: %d, read buffer size: %d" % (self.page_size, self.rd_buf_size)
-            print "Flash device page: %d, write buffer size: %d" % (self.page_size, self.wr_buf_size)
+            print ("Flash device page: %d, read buffer size: %d" % (self.page_size, self.rd_buf_size))
+            print ("Flash device page: %d, write buffer size: %d" % (self.page_size, self.wr_buf_size))
         else:
             cmd = [ self.READ | self.BUFFER_GET_SIZE ]
             self.__esec_write(cmd)
@@ -656,7 +656,7 @@ class DeviceFlash:
 
             self.page_size = self.__esec_read()
             self.rd_buf_size = self.__esec_read()
-            print "Flash device page: %d, read buffer size: %d" % (self.page_size, self.rd_buf_size)
+            print ("Flash device page: %d, read buffer size: %d" % (self.page_size, self.rd_buf_size))
 
             cmd = [ self.PROGRAM | self.BUFFER_GET_SIZE ]
             self.__esec_write(cmd)
@@ -667,7 +667,7 @@ class DeviceFlash:
             # only the one reported here is useful
             self.page_size = self.__esec_read()
             self.wr_buf_size = self.__esec_read()
-            print "Flash device page: %d, write buffer size: %d" % (self.page_size, self.wr_buf_size)
+            print ("Flash device page: %d, write buffer size: %d" % (self.page_size, self.wr_buf_size))
 
     def __esec_write(self, cmd):
         if self.dry:
@@ -683,7 +683,7 @@ class DeviceFlash:
     def __esec_read_status(self, err, val=None):
         status = self.__esec_read(val)
         if not cmd_status_ok(status):
-            print "{}: {}" % (err, decode_cmd_status(status))
+            print ("{}: {}" % (err, decode_cmd_status(status)))
             raise StandardError(decode_cmd_status(status))
         return status
 
@@ -692,7 +692,7 @@ class DeviceFlash:
         while size:
             s = min(size, self.rd_buf_size)
             cmd = [ self.READ | self.BUFFER_DATA, offset, s ]
-            print "Flash device read command: %s" % map(hex, cmd)
+            print ("Flash device read command: %s" % map(hex, cmd))
             self.__esec_write(cmd)
             status = self.__esec_read_status("Unable to access flash for reading", val=s)
 
@@ -709,7 +709,7 @@ class DeviceFlash:
     def erase_sector(self, offset):
         cmd = [ self.ERASE_SECTOR, offset ]
         self.__esec_write(cmd);
-        print "Flash device erase command: %s" % map(hex, cmd)
+        print ("Flash device erase command: %s" % map(hex, cmd))
         status = self.__esec_read_status("Unable to access flash for reading")
 
     def write(self, offset, data):
@@ -720,7 +720,7 @@ class DeviceFlash:
             page_offset = 0
             page_data = min(self.page_size, size - start)
             cmd = [ self.PROGRAM | self.BUFFER_CLEAR ]
-            print "Flash device write command: %s" % map(hex, cmd)
+            print ("Flash device write command: %s" % map(hex, cmd))
             self.__esec_write(cmd)
             status = self.__esec_read_status("Unable to clear write buffer")
 
@@ -729,7 +729,7 @@ class DeviceFlash:
                 cmd = [ self.PROGRAM | self.BUFFER_DATA, page_offset, this_write_size ]
                 cmd.extend(data[(start + page_offset)/4 : (start + page_offset + this_write_size)/4])
 
-                print "Flash device page-data write command: %s" % map(hex, cmd)
+                print ("Flash device page-data write command: %s" % map(hex, cmd))
                 self.__esec_write(cmd)
                 status = self.__esec_read_status("Unable to write data buffer")
 
@@ -737,7 +737,7 @@ class DeviceFlash:
                 page_data -= this_write_size
 
             cmd = [ self.PROGRAM | self.BUFFER_END, offset ]
-            print "cmd=%s Program buffer at 0x%08X" % (map(hex, cmd), offset)
+            print ("cmd=%s Program buffer at 0x%08X" % (map(hex, cmd), offset))
             self.__esec_write(cmd)
             status = self.__esec_read_status("Unable to clear write buffer")
 
@@ -859,18 +859,18 @@ def main():
 
         flash_ptrs = d.read(0, 4 * NUM_PTRS)
 
-        print "Flash data pointers: " + ' '.join(hex(x) for x in flash_ptrs)
+        print ("Flash data pointers: " + ' '.join(hex(x) for x in flash_ptrs))
         if any(p < 0x10000 and p != 0xffffffff for p in flash_ptrs):
-            print "This test expects no pointers to data in first flash sector ..."
+            print ("This test expects no pointers to data in first flash sector ...")
 
-        print "Attempting to erase first sector ..."
+        print ("Attempting to erase first sector ...")
         d.erase_sector(0)
 
         flash_data = d.read(0, d.page_size)
-        print "Reading flash pointers again: " + ' '.join(hex(x) for x in flash_data[0:NUM_PTRS])
+        print ("Reading flash pointers again: " + ' '.join(hex(x) for x in flash_data[0:NUM_PTRS]))
 
         if any(p != 0xffffffff for p in flash_data):
-            print "The data was not erased properly"
+            print ("The data was not erased properly")
 
         flash_data = flash_ptrs
         flash_data.extend([(x << 16) + x for x in range(500)])
@@ -878,7 +878,7 @@ def main():
         d.write(0, flash_data)
 
         flash_data_new = d.read(0, len(flash_data) * 4)
-        print "Flash data verified correctly: %s" % ("True" if flash_data_new == flash_data else "FALSE")
+        print ("Flash data verified correctly: %s" % ("True" if flash_data_new == flash_data else "FALSE"))
 
     # Once unlocked proceed with CSR poke and peek as a !!!! SEPERATE !!!! command. 
     # Remember to run this command seperately without disconnecting the probe as we need t oconnnect probe to set CSR ring
@@ -887,12 +887,12 @@ def main():
             t = tap(args.dut)
             t.setjcsr()
         else:
-            print "Did you UNLOCK the chip and change the TAP to CSR ??? Now press character to access CSR probe ..."
+            print ("Did you UNLOCK the chip and change the TAP to CSR ??? Now press character to access CSR probe ...")
             mydata = raw_input('Prompt :')
             print (mydata)
         csr_probe_init()
         print('\n************POKE MIO SCRATCHPAD ***************')
-        print local_csr_poke(0x1d00e170, [0xabcd112299885566])
+        print (local_csr_poke(0x1d00e170, [0xabcd112299885566]))
         print('\n************PEEK MIO SCRATCHPAD ***************')
         word_array = local_csr_peek(0x1d00e170, 1)
         print("word_array: {}".format([hex(x) for x in word_array] if word_array else None))
@@ -908,11 +908,11 @@ def main():
             t = tap(args.dut)
             t.setjcsr()
         else:
-            print "Did you UNLOCK the chip and change the TAP to CSR ??? Now press character to access CSR probe ..."
+            print ("Did you UNLOCK the chip and change the TAP to CSR ??? Now press character to access CSR probe ...")
             mydata = raw_input('Prompt :')
             print (mydata)
         print('\n************POKE RESET REGISTER ***************')
-        print local_csr_poke(0x1d00e0a0, [0x0000000000000010])
+        print (local_csr_poke(0x1d00e0a0, [0x0000000000000010]))
         if args.tap:
             t.setjdbg()
             t.close()
