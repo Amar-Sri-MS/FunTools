@@ -18,7 +18,8 @@ sys.path.append('/home/'+os.environ["USER"]+'/.local/opt/imgtec/Codescape-8.6/li
 
 # dutdb.cfg + dututils.py has probe-details
 from dututils import dut
-from gpioutils import tap
+from gpioutils import tap as gpiotap
+import time
 
 import sys
 import argparse
@@ -808,6 +809,10 @@ def main():
 
     # connect to probe configuration provided by user
     try:
+        if args.tap:
+            t = gpiotap(args.dut)
+            t.setjdb()
+            time.sleep(3)
         status, probe_id, probe_addr = dut().get_jtag_info(args.dut)
     except:
         raise RunError("name={} not in database ...".format(args.dut))
@@ -884,7 +889,6 @@ def main():
     # Remember to run this command seperately without disconnecting the probe as we need t oconnnect probe to set CSR ring
     if args.csr:
         if args.tap:
-            t = tap(args.dut)
             t.setjcsr()
         else:
             print ("Did you UNLOCK the chip and change the TAP to CSR ??? Now press character to access CSR probe ...")
@@ -905,7 +909,6 @@ def main():
 
     if args.reboot:
         if args.tap:
-            t = tap(args.dut)
             t.setjcsr()
         else:
             print ("Did you UNLOCK the chip and change the TAP to CSR ??? Now press character to access CSR probe ...")
