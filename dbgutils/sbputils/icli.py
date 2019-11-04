@@ -97,15 +97,15 @@ class dbgi2c(s1i2c):
 
     def decode_response_data(self, cmd, data):
         RDATA = arraypack(data)
-        print "#", "+"*80
-        print "# Response for command : %s (%s)" % (hex(cmd), commandEnum[cmd])
+        print ("#", "+"*80)
+        print ("# Response for command : %s (%s)" % (hex(cmd), commandEnum[cmd]))
         #hexdump(RDATA)
-        print "#", "="*80
+        print ("#", "="*80)
         if cmd in DBG_CMDRESP.keys():
             DBG_CMDRESP[cmd](RDATA).show2()
         else:
             HEADER(RDATA).show2() 
-        print '#', "-"*80
+        print ('#', "-"*80)
         return True #data
 
     def challenge_cmd(self, cmd, data=None):
@@ -119,17 +119,17 @@ class dbgi2c(s1i2c):
                 return (False, self.cmd_status_code_str(rdata))
         else:
             err_msg = "Dbg chal command 0x{0} error! {1}".format(hex(cmd), rdata)
-            print err_msg
+            print (err_msg)
             return (False, err_msg)
 
     def decode_status_bytes(self, data):
-        print 'STATUS:'
-        print '\tRaw bytes:'
+        print ('STATUS:')
+        print ('\tRaw bytes:')
         byte_str = ''
         for i in range(len(data)):
             byte_str += ' 0x%02x' % (data[i])
             if (i+1) % 8 == 0 or (i+1) == len(data):
-                print '\t  %04d: %s' % (i & ~0x7, byte_str)
+                print ('\t  %04d: %s' % (i & ~0x7, byte_str))
                 byte_str = ''
         i = 0
         status_size = len(data)
@@ -138,26 +138,26 @@ class dbgi2c(s1i2c):
             status_str_idx = i/4
             if status_str_idx < len(SBP_STATUS_STR):
                 status_value = socket.htonl(int(binascii.hexlify(array('B', data[i:i+4])), 16))
-                print '\t{0}: {1}'.format(SBP_STATUS_STR[status_str_idx], \
-                        hex(status_value).rstrip("L"))
+                print ('\t{0}: {1}'.format(SBP_STATUS_STR[status_str_idx], \
+                        hex(status_value).rstrip("L")))
                 if SBP_STATUS_STR[status_str_idx] == 'Boot Status':
-                    print '\t\t{0}: {1}'.format('BootStep',
-                                                hex(status_value & 0xff).rstrip("L"))
-                    print '\t\t{0}: {1}'.format('eSecureUpgradeFlag',
-                                                hex((status_value >> 8) & 0x1).rstrip("L"))
-                    print '\t\t{0}: {1}'.format('HostUpgradeFlag',
-                                                hex((status_value >> 12) & 0x1).rstrip("L"))
-                    print '\t\t{0}: {1}'.format('eSecureImage',
-                                                hex((status_value >> 16) & 0x1).rstrip("L"))
-                    print '\t\t{0}: {1}'.format('HostImage',
-                                                hex((status_value >> 20) & 0x1).rstrip("L"))
+                    print ('\t\t{0}: {1}'.format('BootStep',
+                                                hex(status_value & 0xff).rstrip("L")))
+                    print ('\t\t{0}: {1}'.format('eSecureUpgradeFlag',
+                                                hex((status_value >> 8) & 0x1).rstrip("L")))
+                    print ('\t\t{0}: {1}'.format('HostUpgradeFlag',
+                                                hex((status_value >> 12) & 0x1).rstrip("L")))
+                    print ('\t\t{0}: {1}'.format('eSecureImage',
+                                                hex((status_value >> 16) & 0x1).rstrip("L")))
+                    print ('\t\t{0}: {1}'.format('HostImage',
+                                                hex((status_value >> 20) & 0x1).rstrip("L")))
 
                 status_decoded[SBP_STATUS_STR[status_str_idx]] = hex(status_value).rstrip("L")
                 i+=4
             else:
                 extra_bytes = data[i-4:status_size]
                 r, a = repr(''.join(map(chr, extra_bytes))), map(hex, extra_bytes)
-                print '\tExtra Bytes:{}  raw:{}'.format(r, a)
+                print ('\tExtra Bytes:{}  raw:{}'.format(r, a))
                 #''.join([str(chr(x)) for x in extra_bytes]),
                 #status_decoded["Extra Bytes"] = [str(chr(x)) for x in data[i:status_size]]
                 #status_decoded["Extra Bytes"] = [str(x) for x in data[i:status_size]]
@@ -165,10 +165,10 @@ class dbgi2c(s1i2c):
         return status_decoded
 
     def int_to_bytes(self, val, num_bytes):
-            print "int_to_bytes"
-            print list(struct.unpack('BBBB', struct.pack('<I', val)))
+            print ("int_to_bytes")
+            print (list(struct.unpack('BBBB', struct.pack('<I', val))))
             byte_array = [(val & (0xff << pos*8)) >> pos*8 for pos in range(num_bytes)]
-            print byte_array
+            print (byte_array)
             return byte_array
 
 
@@ -185,27 +185,27 @@ class dbgi2c(s1i2c):
             return (status, rdata)
         else:
             err_msg = "Dbg chal command error! {0}".format(rdata)
-            print err_msg
+            print (err_msg)
             return (False, err_msg)
 
     def get_status(self):
-        print "Getting status...!"
+        print ("Getting status...!")
         (status, rdata)= self.challenge_cmd(cmd=CMD.GET_STATUS)
         if status == True:
             return (status, rdata)
         else:
             err_msg = "Dbg chal command error! {0}".format(rdata)
-            print err_msg
+            print (err_msg)
             return (False, err_msg)
 
     def read_otp(self):
-        print "Getting OTP...!"
+        print ("Getting OTP...!")
         (status, rdata)= self.challenge_cmd(CMD.GET_OTP)
         if status == True:
             return (status, rdata)
         else:
             err_msg = "Dbg chal command error! {0}".format(rdata)
-            print err_msg
+            print (err_msg)
             return (False, err_msg)
 
     def read_flash(self, num_bytes, offset):
@@ -284,12 +284,12 @@ class dbgi2c(s1i2c):
         return (True,b'')
 
     def inject_cert(self, cert_file, customer=False):
-        print "Injecting Certificate...! customer:{}".format(customer)
+        print ("Injecting Certificate...! customer:{}".format(customer))
         cert = array('B')
         cert_file_path = os.path.abspath(cert_file)
         if not os.path.exists(cert_file_path):
             err_msg = 'cert_file: {0} not found!'.format(cert_file_path)
-            print err_msg
+            print (err_msg)
             return (False, err_msg)
         cert_length = os.path.getsize(cert_file_path)
         print('cert_length: {0}'.format(cert_length))
@@ -301,24 +301,24 @@ class dbgi2c(s1i2c):
         (status, rdata)= self.challenge_cmd(CMD.INJECT_CERTIFICATE, list(cert))
         if status == True:
             #print('Injected certificate. Response rdata:{0}'.format([hex(x) for x in rdata] if rdata is not None else None))
-            print 'Succefully injected certificate!'
+            print ('Succefully injected certificate!')
             return (True, None)
         else:
             err_msg = "Dbg chal command error! {0}".format(rdata)
-            print err_msg
+            print (err_msg)
             return (False, err_msg)
 
     def get_dbg_access(self, priv_key, dev_cert, grants=CONST.DBG_GRANTS, password=CONST.PRIVATE_KEY_PASSWORD, customer=False, quicktest=None):
-        print "Getting dbg access grant...! customer:{}".format(customer)
+        print ("Getting dbg access grant...! customer:{}".format(customer))
         dev_cert_path = os.path.abspath(dev_cert)
         if not os.path.exists(dev_cert_path):
             err_msg = 'Dev certificate file: {0} not found!'.format(dev_cert_path)
-            print err_msg
+            print (err_msg)
             return (False, err_msg)
         priv_key_path = os.path.abspath(priv_key)
         if not os.path.exists(priv_key_path):
             err_msg = 'Private key file: {0} not found!'.format(priv_key_path)
-            print err_msg
+            print (err_msg)
             return (False, err_msg)
 
         (status, rdata)= self.challenge_cmd(CMD.GET_CHALLANGE)
@@ -326,12 +326,12 @@ class dbgi2c(s1i2c):
             #print "Challange: {0}".format([hex(x) for x in rdata] if rdata is not None else None)
             if not len(rdata) == 16 :
                 err_msg = 'Invalid challange! length:{0} data: {1}'.format(len(rdata), data)
-                print err_msg
+                print (err_msg)
                 return (False, err_msg)
-            print 'Succefully got Challenge bytes!'
+            print ('Succefully got Challenge bytes!')
         else:
             err_msg = 'Dbg chal command error! {0}'.format(rdata)
-            print err_msg
+            print (err_msg)
             return (False, err_msg)
 
         challenge = [0,0,0,0,0,0]
@@ -340,7 +340,7 @@ class dbgi2c(s1i2c):
         challenge[1] = grants
         challenge[2] = struct.unpack("I", array('B', rdata[0:4]))[0]
         if 'nonceflip' in quicktest :
-            print "quicktest to corrupt nonce returned ..."
+            print ("quicktest to corrupt nonce returned ...")
             challenge[3] = struct.unpack("I", array('B', rdata[0:4]))[0]
         else:
             challenge[3] = struct.unpack("I", array('B', rdata[4:8]))[0]
@@ -350,7 +350,7 @@ class dbgi2c(s1i2c):
         challenge_bs = ""
         for word in challenge:
             challenge_bs += struct.pack('<I',word)
-        print "data to sign (command + param + challenge): " +  binascii.hexlify(challenge_bs)
+        print ("data to sign (command + param + challenge): " +  binascii.hexlify(challenge_bs))
 
         s = struct.pack('<I', grants)
         dbg_grant_bytes = struct.unpack('BBBB',s)
@@ -358,7 +358,7 @@ class dbgi2c(s1i2c):
 
         developer_cert_bs = array('B')
         dev_cert_size = os.path.getsize(dev_cert)
-        print 'dev_cert_size: {0}'.format(dev_cert_size)
+        print ('dev_cert_size: {0}'.format(dev_cert_size))
         with open(dev_cert_path, 'rb') as f:
             developer_cert_bs.fromfile(f, dev_cert_size)
         cert.extend(developer_cert_bs)
@@ -371,14 +371,14 @@ class dbgi2c(s1i2c):
         signed_challenge_bs.fromstring(signed_challenge)
 
         signed_challenge_len = len(signed_challenge_bs)
-        print "signed_challenge_len: {0}".format(signed_challenge_len)
+        print ("signed_challenge_len: {0}".format(signed_challenge_len))
         cert.extend(list(struct.unpack('BBBB', struct.pack('<I', signed_challenge_len))))
         cert.extend(signed_challenge_bs)
-        print "cert length: {0}".format(len(cert))
+        print ("cert length: {0}".format(len(cert)))
         # total length including header = 4 /length/ + 4 /command/ +
         #        4 /dbg_grant/ + developer_cert + 4 /size/ + signed_challenge
         msglen = 4 + dev_cert_size + 4 + signed_challenge_len
-        print "msglen: {0}".format(msglen)
+        print ("msglen: {0}".format(msglen))
         (status, rdata) = self.challenge_cmd(CMD.GRANT_DBG_ACCESS, list(cert))
         #print "Grant Access: {0}".format([hex(x) for x in rdata] if rdata else None)
         if status == True:
@@ -386,7 +386,7 @@ class dbgi2c(s1i2c):
             return (status, rdata)
         else:
             err_msg = "Dbg chal command error! {0}".format(rdata)
-            print err_msg
+            print (err_msg)
             return (False, err_msg)
 
 def auto_int(x):
@@ -447,12 +447,12 @@ def main():
         parser.error("--unlock requires all SM keys and certificates to be specified")
 
 
-    print dut().get_i2c_info(args.dut)
+    print (dut().get_i2c_info(args.dut))
     status, serial, ip, addr = dut().get_i2c_info(args.dut)
     if not status:
         raise Exception("name={} not in database ...".format(args.dut))
 
-    print 'instantiating s1 dbg probe ...'
+    print ('instantiating s1 dbg probe ...')
     dbgprobe = dbgi2c(serial, addr)
     (status, status_msg) = dbgprobe.i2c_connect()
     if not status:
@@ -464,20 +464,20 @@ def main():
     if args.status:
         (status, data) = dbgprobe.get_status()
         if status is False:
-            print 'Failed to get status! Error: {0}'.format(data)
+            print ('Failed to get status! Error: {0}'.format(data))
             return False
 
     if args.cm_unlock:
         if args.in_rom:
             (status, data) = dbgprobe.inject_cert(args.in_rom, customer=False)
             if status is False:
-                print 'Failed to cm inject certificate! Error: {0}'.format(data)
+                print ('Failed to cm inject certificate! Error: {0}'.format(data))
                 return False
             print('Injected cm certificate!')
 
         (status, data) = dbgprobe.get_dbg_access(args.cm_key, args.cm_cert, grants=args.cm_grant, password=args.cm_pass, customer=False, quicktest=args.quicktest)
         if status is False:
-            print 'Failed to cm-grant debug access! Error: {0}'.format(data)
+            print ('Failed to cm-grant debug access! Error: {0}'.format(data))
             return False
         print('Debug access cm-granted!')
 
@@ -485,14 +485,14 @@ def main():
         if args.in_rom:
             (status, data) = dbgprobe.inject_cert(args.in_rom, customer=True)
             if status is False:
-                print 'Failed to sm inject certificate! Error: {0}'.format(data)
+                print ('Failed to sm inject certificate! Error: {0}'.format(data))
                 return False
             print('Injected sm certificate!')
 
         password = None if 'nopass' in quicktest else args.sm_password
         (status, data) = dbgprobe.get_dbg_access(args.sm_key, args.sm_cert, grants=args.sm_grant, password=password, customer=True, quicktest=args.quicktest)
         if status is False:
-            print 'Failed to sm-grant debug access! Error: {0}'.format(data)
+            print ('Failed to sm-grant debug access! Error: {0}'.format(data))
             return False
         print('Debug access sm-granted!')
 
@@ -500,55 +500,55 @@ def main():
     if args.otp:
         (status, data) = dbgprobe.read_otp()
         if status is False:
-            print 'Failed to get OTP! Error: {0}'.format(data)
+            print ('Failed to get OTP! Error: {0}'.format(data))
             return False
 
     if args.serial:
         (status, data) = dbgprobe.get_serial_number()
         if status is False:
-            print 'Failed to get serial number! Error: {0}'.format(data)
+            print ('Failed to get serial number! Error: {0}'.format(data))
             return False
 
     if args.flash_read is not None:
         (status, data) = dbgprobe.read_flash(256, args.flash_read)
         if status is False:
-            print 'Failed to read the flash! Error: {0}'.format(data)
+            print ('Failed to read the flash! Error: {0}'.format(data))
             return False
 
     if args.flash_erase is not None:
         (status, data) = dbgprobe.erase_flash_sector(args.flash_erase)
         if status is False:
-            print 'Failed to erase the flash! Error: {0}'.format(data)
+            print ('Failed to erase the flash! Error: {0}'.format(data))
             return False
 
     if args.flash_write is not None:
         (status, data) = dbgprobe.write_flash([0xA5]*256, args.flash_write)
         if status is False:
-            print 'Failed to write the flash! Error: {0}'.format(data)
+            print ('Failed to write the flash! Error: {0}'.format(data))
             return False
 
     if args.flash is not None:
         (status, data) = dbgprobe.erase_flash_sector(args.flash)
         if status is False:
-            print 'Failed to erase the flash! Error: {0}'.format(data)
+            print ('Failed to erase the flash! Error: {0}'.format(data))
             return False
 
         (status, data) = dbgprobe.write_flash([0xB7]*256, args.flash)
         if status is False:
-            print 'Failed to write the flash! Error: {0}'.format(data)
+            print ('Failed to write the flash! Error: {0}'.format(data))
             return False
 
         (status, data) = dbgprobe.read_flash(256, args.flash)
         if status is False:
-            print 'Failed to read the flash! Error: {0}'.format(data)
+            print ('Failed to read the flash! Error: {0}'.format(data))
             return False
 
     if args.csr:
         print('\n************POKE MIO SCRATCHPAD ***************')
         if args.mioval:
-            print dbgprobe.local_csr_poke(0x1d00e170, [args.mioval])
+            print (dbgprobe.local_csr_poke(0x1d00e170, [args.mioval]))
         else:
-            print dbgprobe.local_csr_poke(0x1d00e170, [0xabcd112299885566])
+            print (dbgprobe.local_csr_poke(0x1d00e170, [0xabcd112299885566]))
         print('\n************PEEK MIO SCRATCHPAD ***************')
         status, word_array = dbgprobe.local_csr_peek(0x1d00e170, 1)
         print("word_array: {}".format(map(hex, word_array) if word_array else None))
@@ -571,11 +571,11 @@ def main():
 
     if args.disconnect:
         print('\n************debug disconnect command ***************')
-        print dbgprobe.challenge_disconnect()
+        print (dbgprobe.challenge_disconnect())
 
     if args.reboot:
         print('\n************POKE RESET REGISTER ***************')
-        print dbgprobe.local_csr_poke(0x1d00e0a0, [0x0000000000000010])
+        print (dbgprobe.local_csr_poke(0x1d00e0a0, [0x0000000000000010]))
 
     #else:
     #    print('Invalid option: {0}'.format(args))

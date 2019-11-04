@@ -913,7 +913,7 @@ class s1i2c(i2c):
         return True
 
 def local_csr_i2c_probe(chip, name):
-    print dut().get_i2c_info(name)
+    print (dut().get_i2c_info(name))
     status, serial, ip, addr = dut().get_i2c_info(name)
     if not status:
         raise Exception("name={} not in database ...".format(name))
@@ -939,13 +939,13 @@ def csr_peek_poke_test(chip, name):
     dbgprobe = local_csr_i2c_probe(chip, name)
 
     print('\n************POKE MIO SCRATCHPAD ***************')
-    print dbgprobe.local_csr_poke(0x1d00e170, [0xabcd112299885566])
+    print (dbgprobe.local_csr_poke(0x1d00e170, [0xabcd112299885566]))
     print('\n************PEEK MIO SCRATCHPAD ***************')
     (status, qword_array) = dbgprobe.local_csr_peek(0x1d00e170, 1)
     print("qword_array: {}".format([hex(x) for x in qword_array] if qword_array else None))
 
     print('\n************MULTI POKE 0x1d00c000 tx buffer on CSR ***************')
-    print dbgprobe.local_csr_poke(0x1d00c000, [0xabcd112299885566, 0xf123456789abcde0, 0xddeeffaabb225566])
+    print (dbgprobe.local_csr_poke(0x1d00c000, [0xabcd112299885566, 0xf123456789abcde0, 0xddeeffaabb225566]))
     print('\n************MULTI PEEK 0x1d00c000 tx buffer on CSR ***************')
     (status, qword_array) = dbgprobe.local_csr_peek(0x1d00c000, 3)
     print("qword_array: {}".format([hex(x) for x in qword_array] if qword_array else None))
