@@ -811,7 +811,7 @@ def main():
     try:
         if args.tap:
             t = gpiotap(args.dut)
-            t.setjdb()
+            t.setjdbg()
             time.sleep(3)
         status, probe_id, probe_addr = dut().get_jtag_info(args.dut)
     except:
