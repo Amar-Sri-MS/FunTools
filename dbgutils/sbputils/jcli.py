@@ -18,7 +18,8 @@ sys.path.append('/home/'+os.environ["USER"]+'/.local/opt/imgtec/Codescape-8.6/li
 
 # dutdb.cfg + dututils.py has probe-details
 from dututils import dut
-from gpioutils import tap
+from gpioutils import tap as gpiotap
+import time
 
 import sys
 import argparse
@@ -794,6 +795,8 @@ def main():
     #rg_args.add_argument("--pokearray", type=auto_int, nargs='+', help="nargs=[qword array]")
     parser.add_argument("--reboot", action='store_true', help="Attempt to perform reboot via CSR operation")
 
+    parser.add_argument('--quicktest', action='store', dest='quicktest', type=str, nargs='*', default=[], help="Examples: --quicktest nopass")
+
     args = parser.parse_args()
     ################### do some options integrity checking ################################
 
@@ -808,6 +811,10 @@ def main():
 
     # connect to probe configuration provided by user
     try:
+        if args.tap:
+            t = gpiotap(args.dut)
+            t.setjdbg()
+            time.sleep(3)
         status, probe_id, probe_addr = dut().get_jtag_info(args.dut)
     except:
         raise RunError("name={} not in database ...".format(args.dut))
@@ -828,7 +835,8 @@ def main():
         if args.in_rom:
             # in_rom mode provide, so feed the inject_certificate with cert file provided by user.
             inject_certificate(args.in_rom, customer=True)
-        device_unlock_SM(args.sm_key, args.sm_cert, args.sm_grant, args.sm_pass)
+        password = None if 'nopass' in args.quicktest else args.sm_pass
+        device_unlock_SM(args.sm_key, args.sm_cert, args.sm_grant, password)
 
     # Once unlocked proceed with dump_status to verify if the grant are enabled as required.
     if args.status:
@@ -884,7 +892,6 @@ def main():
     # Remember to run this command seperately without disconnecting the probe as we need t oconnnect probe to set CSR ring
     if args.csr:
         if args.tap:
-            t = tap(args.dut)
             t.setjcsr()
         else:
             print ("Did you UNLOCK the chip and change the TAP to CSR ??? Now press character to access CSR probe ...")
@@ -905,7 +912,6 @@ def main():
 
     if args.reboot:
         if args.tap:
-            t = tap(args.dut)
             t.setjcsr()
         else:
             print ("Did you UNLOCK the chip and change the TAP to CSR ??? Now press character to access CSR probe ...")

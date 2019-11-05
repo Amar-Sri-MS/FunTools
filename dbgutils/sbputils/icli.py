@@ -489,7 +489,7 @@ def main():
                 return False
             print('Injected sm certificate!')
 
-        password = None if 'nopass' in quicktest else args.sm_password
+        password = None if 'nopass' in args.quicktest else args.sm_pass
         (status, data) = dbgprobe.get_dbg_access(args.sm_key, args.sm_cert, grants=args.sm_grant, password=password, customer=True, quicktest=args.quicktest)
         if status is False:
             print ('Failed to sm-grant debug access! Error: {0}'.format(data))
