@@ -4,6 +4,7 @@
 #define _GNU_SOURCE
 
 #include <stdio.h>	// for fprintf()
+#include <unistd.h>	// for STDOUT_FILENO
 #include <stdlib.h>	// for free()
 #include <getopt.h>	// for getopt_long()
 #include <fcntl.h>	// for open()
@@ -231,7 +232,7 @@ main(int argc, char *argv[])
 			fprintf(stderr, "not writing binary to stdout\n");
 			exit(1);
 		}
-		outfd = 0;
+		outfd = STDOUT_FILENO;
 	} else {
 		outfd = open(outfile, O_WRONLY | O_CREAT | O_TRUNC, 0644);
 		if (outfd < 0) {
