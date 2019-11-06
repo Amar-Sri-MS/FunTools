@@ -224,7 +224,7 @@ chain_bypass:
   print "\\n"
   print "boot.script: tftpftw"
   print "\\n"
-  send "tftpboot 0xffffffff91000000 {serverip}:{funos} ; unzip 0xFFFFFFFF91000000 0xa800000020000000 ; bootelf -p 0xa800000020000000"
+  send "tftpboot 0xffffffff91000000 {serverip}:{funos} ; unzip 0xFFFFFFFF91000000 0xa800000020000000 ; {auth_boot_cmd}"
   print "\\n"
 
   expect {{
@@ -297,6 +297,22 @@ out:
 """
 
 MAX_TIMEOUT = 45
+
+def get_file_mime_info(filename):
+    """returns mime-type for the provided file"""
+
+    cmd = ['file',
+           '-z', # assume compressed
+           '--mime-type', # get mime-type string
+           '-b', # brief output
+           filename]
+    try:
+        out = subprocess.check_output(cmd, stderr=subprocess.STDOUT)
+    except subprocess.CalledProcessError as e:
+        sys.stderr.write('Error: Failed to read file details %d %s\n' %
+                            (e.returncode, e.output))
+        return ''
+    return out.strip()
 
 def do_sleep(secs):
     secs = float(secs)
@@ -410,6 +426,8 @@ else:
         # maybe install the files
         krn = maybe_install_funos(krn)
 
+        filetype = get_file_mime_info(krn)
+
         # make a timeout
         timeout = options.timeout
         if (timeout > MAX_TIMEOUT):
@@ -425,6 +443,11 @@ else:
         d['bootargs'] = arg
         d['funos'] = krn
         d['minicom_pid'] = pid_name
+
+        if filetype == 'application/x-executable':
+            d['auth_boot_cmd'] = 'bootelf -p 0xa800000020000000'
+        elif filetype == 'application/octet-stream':
+            d['auth_boot_cmd'] = 'auth 0xa800000020000000; bootelf -p ${loadaddr}'
 
         board = boards[options.board]
         d['serverip'] = board['serverip']
