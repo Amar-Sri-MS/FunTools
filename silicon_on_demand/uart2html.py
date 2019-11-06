@@ -7,41 +7,15 @@ import optparse
 ANCHORS = {
     "welcome": ("Welcome to FunOS", "[kernel] Welcome to FunOS!"),
     "ready": ("System Ready Notification", "System event posted: system_event_ready_to_start"),
+    "soak": ("soaklib Results", 'System event posted: system_event_ready_to_start'),
     "freeze": ("crash started", ">>> FunOS entering bug_check handler <<<"),
     "bug_check": ("bug_check", ">>>>>> bug_check on vp 0x"),
-    "perf_done": ("perf stopped", "wdi_perf_disable_force"),
     "assert": ("assertion failure", "Assertion failed: "),
     "tlbl": ("Bad pointer exception (load)", "cause.ExcCode: 2 (0x2): TLB exception (load or instruction fetch)"),
     "tlbs": ("Bad pointer exception (store)", "cause.ExcCode: 3 (0x3): TLB exception (store)"),
     "idle_final": ("Exit Cleanup", 'INFO nucleus "Idle state = IDLE_STATE_FINAL"'),
     "platform_halt": ("Platform Halt", 'platform_halt: exit status '),
     }
-
-
-###
-##  option parsing
-#
-def get_options(cmd_args=sys.argv):
-
-    parser = optparse.OptionParser(usage="usage: %prog [options] [<input_filename>]")
-    parser.add_option("-P", "--partial", action="store_true", default=False)
-    parser.add_option("-v", "--verbose", action="store_true", default=False)
-    parser.add_option("-o", "--output", action="store", dest="out_fname", default="-")
-    parser.add_option("-p", "--prefix", action="store", default="")
-
-    (opts, args) = parser.parse_args(cmd_args)
-
-    if (len(args) == 0):
-        opts.in_fname = "-"
-    elif (len(args) == 1):
-        opts.in_fname = args[0]
-    elif (len(args) > 1):
-        parser.error("extraneous arguments")
-    
-    return opts
-
-def get_default_opts():
-    return get_options([])
 
 ###
 ##  actual work
@@ -61,6 +35,9 @@ def make_header(index, opts):
 
     if (not opts.partial):
         html += HTML_HEADER
+
+    if ("__ordered__" not in index):
+        return html
 
     # process index in order
     html += "Notable events<br />"
@@ -103,7 +80,7 @@ def mkanchor(ak, line, index, opts):
 
     return line
     
-def markup_line(line, index, opts=get_default_opts()):
+def markup_line(line, index, opts):
 
     # make an escaped copy
     htmlline = cgi.escape(line)
@@ -119,7 +96,7 @@ def markup_line(line, index, opts=get_default_opts()):
     return htmlline
 
 # process a list of lines
-def lines2html(lines, opts=get_default_opts()):
+def lines2html(lines, opts):
 
     log = ""
     index = {}
@@ -133,10 +110,31 @@ def lines2html(lines, opts=get_default_opts()):
     
     return hdr + log + ftr
         
-def str2html(s, opts=get_default_opts()):
+def str2html(s, opts):
     lines = s.split("\n")
     return lines2html(lines)
 
+###
+##  option parsing
+#
+def get_options():
+
+    parser = optparse.OptionParser(usage="usage: %prog [options] [<input_filename>]")
+    parser.add_option("-P", "--partial", action="store_true", default=False)
+    parser.add_option("-v", "--verbose", action="store_true", default=False)
+    parser.add_option("-o", "--output", action="store", dest="out_fname", default="-")
+    parser.add_option("-p", "--prefix", action="store", default="")
+
+    (opts, args) = parser.parse_args()
+
+    if (len(args) == 0):
+        opts.in_fname = "-"
+    elif (len(args) == 1):
+        opts.in_fname = args[0]
+    elif (len(args) > 1):
+        parser.error("extraneous arguments")
+    
+    return opts
 
 ###
 ##  handling args

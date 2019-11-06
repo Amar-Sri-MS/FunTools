@@ -38,6 +38,7 @@ SCRIPT_HDR = """
 SCRIPT_UBOOT = """
   expect {
   	 "f1 #"
+         "Autoboot" send "noboot"
   	 timeout 20 exit
   }
 
@@ -50,8 +51,10 @@ SCRIPT_FUNOS = """
 # now wait for new u-boot
   expect {
   	 "f1 #"
+         "Autoboot" send "noboot"
   	 timeout 20 goto no_uboot
   }
+
 
   timeout %s
   send "loadx"
@@ -141,10 +144,11 @@ SCRIPT_TFTP = """
   send ""
 
 # now wait for new u-boot
-#  expect {{
-#  	 "Type 'noautoboot' to disable autoboot"
-#  	 timeout 20 goto no_uboot
-#  }}
+expect {{
+	 "Autoboot"
+	 timeout 30 goto no_uboot
+}}
+  send "noboot"
 
   expect {{
   	 "f1 #"
@@ -223,6 +227,11 @@ chain_bypass:
   send "tftpboot 0xffffffff91000000 {serverip}:{funos} ; unzip 0xFFFFFFFF91000000 0xa800000020000000 ; bootelf -p 0xa800000020000000"
   print "\\n"
 
+  expect {{
+      "Starting application at" break
+      timeout 30 goto eep3
+  }}
+
   print "boot.script: waiting for FunOS to platform halt now"
 
   # if we see FunOS, expect bootstrap
@@ -233,7 +242,7 @@ chain_bypass:
 
   expect {{
       "sending bootstrap WU" break
-      timeout 30 goto no_boot
+      timeout 10 goto no_boot
   }}
 
 halt_wait:
@@ -364,7 +373,7 @@ else:
 
     # arg fixups
     arg = arg.replace("--test-exit-fast", "")
-    arg += " --skip-mem-zero"
+    # arg += " --skip-mem-zero"
     
     maybe_reset_target(options)
 
