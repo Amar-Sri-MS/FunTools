@@ -47,7 +47,6 @@ from jsbp import *
 logger = logging.getLogger('jcli')
 logger.setLevel(logging.DEBUG)
 
-
 ##############################################################################
 # Error handling
 ##############################################################################
@@ -745,6 +744,19 @@ class DeviceFlash:
             offset += self.page_size
             start += self.page_size
 
+def change_back_to_dbg_mode(tapmode=None, T=None):
+    if tapmode:
+        T.seti2c()
+        T.close()
+def change_to_csr_mode(tapmode=None, T=None):
+    if tapmode:
+        T.setjcsr()
+    else:
+        print ("Did you UNLOCK the chip and change the TAP to CSR ??? Now press character to access CSR probe ...")
+        mydata = raw_input('Prompt :')
+        print (mydata)
+    csr_probe_init()
+
 def auto_int(x):
     return int(x, 0)
 
@@ -787,12 +799,14 @@ def main():
 
     parser.add_argument("--tap", action='store_true', help="Dynamically select CSR TAP and Attempt to perform CSR operation")
     parser.add_argument("--csr", action='store_true', help="Attempt to perform CSR operation")
-    #rg_args = parser.add_argument_group("Register peek/poke APIs", "Options for csr peek/poke")
-    #rg_args.add_argument("--address", type=auto_int, default=0, help="Perform operation at this offset")
-    #rg_args.add_argument("--peek", help="CSR peek operation at address for nqwords")
-    #rg_args.add_argument("--nqwords", type=int, default=1, help="Perform operation of nwords")
-    #rg_args.add_argument("--poke", help="CSR poke operation at address to length of qword array")
-    #rg_args.add_argument("--pokearray", type=auto_int, nargs='+', help="nargs=[qword array]")
+
+    parser.add_argument("--csr-peek", action='store_true', help="CSR peek of a register with nqwords")
+    parser.add_argument("--csr-poke", action='store_true', help="CSR poke at register with given array of qwords")
+    parser.add_argument("--csr-verify", action='store_true', help="CSR poke and peek at register with given array of qwords")
+    parser.add_argument("--regadr", default=0x1d00e170, type=auto_int, help="CSR address or or flash offset")
+    parser.add_argument("--reglen", default=1, type=auto_int, help="CSR qwords to peek/poke or flash words")
+    parser.add_argument("--regval", action='store', dest='regval', type=auto_int, nargs='+', default=[0xaabbccdd11223344], help="CSR qwords to poke or flash words")
+
     parser.add_argument("--reboot", action='store_true', help="Attempt to perform reboot via CSR operation")
 
     parser.add_argument('--quicktest', action='store', dest='quicktest', type=str, nargs='*', default=[], help="Examples: --quicktest nopass")
@@ -815,6 +829,8 @@ def main():
             t = gpiotap(args.dut)
             t.setjdbg()
             time.sleep(3)
+        else:
+            t = None
         status, probe_id, probe_addr = dut().get_jtag_info(args.dut)
     except:
         raise RunError("name={} not in database ...".format(args.dut))
@@ -890,39 +906,52 @@ def main():
 
     # Once unlocked proceed with CSR poke and peek as a !!!! SEPERATE !!!! command. 
     # Remember to run this command seperately without disconnecting the probe as we need t oconnnect probe to set CSR ring
-    if args.csr:
-        if args.tap:
-            t.setjcsr()
-        else:
-            print ("Did you UNLOCK the chip and change the TAP to CSR ??? Now press character to access CSR probe ...")
-            mydata = raw_input('Prompt :')
-            print (mydata)
-        csr_probe_init()
-        print('\n************POKE MIO SCRATCHPAD ***************')
-        print (local_csr_poke(0x1d00e170, [0xabcd112299885566]))
-        print('\n************PEEK MIO SCRATCHPAD ***************')
-        word_array = local_csr_peek(0x1d00e170, 1)
-        print("word_array: {}".format([hex(x) for x in word_array] if word_array else None))
-        #word_array = local_csr_peek(0x1d00e160, 1)
-        #word_array = local_csr_peek(0x1d00e0a0, 1)
-        #word_array = local_csr_peek(0x1d00e2c8, 1)
-        if args.tap:
-            t.setjdbg()
-            t.close()
+    if args.csr or args.csr_peek or args.csr_poke or args.csr_verify :
+        change_to_csr_mode(args.tap, t)
+        if args.csr:
+            print('\n************POKE MIO SCRATCHPAD ***************')
+            print (local_csr_poke(0x1d00e170, [0xabcd112299885566]))
+            print('\n************PEEK MIO SCRATCHPAD ***************')
+            word_array = local_csr_peek(0x1d00e170, 1)
+            print("word_array: {}".format([hex(x) for x in word_array] if word_array else None))
+
+        if args.csr_peek:
+            print('\n************PEEK CSR2 ***************')
+            print('\nregadr={} reglen={}'.format(hex(args.regadr), hex(args.reglen)))
+            status, word_array = local_csr_peek(args.regadr, args.reglen)
+            print("word_array: {}".format(map(hex, word_array) if word_array else None))
+
+        if args.csr_poke:
+            print('\n************POKE CSR2 ***************')
+            print('\nregadr={} regval={}'.format(hex(args.regadr), map(hex, args.regval)))
+            status = local_csr_poke(args.regadr, args.regval)
+            print("status: {}".format(status))
+
+        if args.csr_verify:
+            print('\n************POKE PEEK and VERIFY CSR2 ***************')
+            print('\nregadr={} regval={}'.format(hex(args.regadr), map(hex, args.regval)))
+            pokestatus = local_csr_poke(args.regadr, args.regval)
+            print("pokestatus: {}".format(pokestatus))
+            if pokestatus:
+                print('\nregadr={} reglen={}'.format(hex(args.regadr), hex(args.reglen)))
+                word_array = local_csr_peek(args.regadr, args.reglen)
+                if (args.regval == word_array):
+                    print("Success")
+                    return True
+                else:
+                    print("Fail: word_array={} regval={}".format(map(hex, word_array) if word_array else None, map(hex, args.regval)))
+                    return False
+            else:
+                print("poke failed with status: {}".format(pokestatus))
+                return False
+
+        change_back_to_dbg_mode(args.tap, t)
 
     if args.reboot:
-        if args.tap:
-            t.setjcsr()
-        else:
-            print ("Did you UNLOCK the chip and change the TAP to CSR ??? Now press character to access CSR probe ...")
-            mydata = raw_input('Prompt :')
-            print (mydata)
+        change_to_csr_mode(args.tap, t)
         print('\n************POKE RESET REGISTER ***************')
         print (local_csr_poke(0x1d00e0a0, [0x0000000000000010]))
-        if args.tap:
-            t.setjdbg()
-            t.close()
-
+        change_back_to_dbg_mode(args.tap, t)
 
 if __name__ == "__main__":
     main()

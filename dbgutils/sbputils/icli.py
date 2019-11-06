@@ -429,6 +429,7 @@ def main():
 
     parser.add_argument("--csr-peek", action='store_true', help="CSR peek of a register with nqwords")
     parser.add_argument("--csr-poke", action='store_true', help="CSR poke at register with given array of qwords")
+    parser.add_argument("--csr-verify", action='store_true', help="CSR poke and peek at register with given array of qwords")
     parser.add_argument("--regadr", default=0x1d00e170, type=auto_int, help="CSR address or or flash offset")
     parser.add_argument("--reglen", default=1, type=auto_int, help="CSR qwords to peek/poke or flash words")
     parser.add_argument("--regval", action='store', dest='regval', type=auto_int, nargs='+', default=[0xaabbccdd11223344], help="CSR qwords to poke or flash words")
@@ -565,9 +566,31 @@ def main():
     if args.csr_poke:
         print('\n************POKE CSR2 ***************')
         print('\nregadr={} regval={}'.format(hex(args.regadr), map(hex, args.regval)))
-        status = dbgprobe.local_csr_poke(args.regadr, [args.regval])
+        status = dbgprobe.local_csr_poke(args.regadr, args.regval)
         print("status: {}".format(status))
 
+    if args.csr_verify:
+        print('\n************POKE PEEK and VERIFY CSR2 ***************')
+        print('\nregadr={} regval={}'.format(hex(args.regadr), map(hex, args.regval)))
+        pokestatus = dbgprobe.local_csr_poke(args.regadr, args.regval)
+        print("pokestatus: {}".format(pokestatus))
+        if pokestatus:
+            print('\nregadr={} reglen={}'.format(hex(args.regadr), hex(args.reglen)))
+            peekstatus, word_array = dbgprobe.local_csr_peek(args.regadr, args.reglen)
+            print("peekstatus={}, word_array: {}".format(peekstatus, map(hex, word_array) if word_array else None))
+            if peekstatus:
+                if (args.regval == word_array):
+                    print("Success")
+                    return True
+                else:
+                    print("Fail: word_array={} regval={}".format(map(hex, word_array) if word_array else None, map(hex, args.regval)))
+                    return False
+            else:
+                print("peek failed with status: {}".format(peekstatus))
+                return False
+        else:
+            print("poke failed with status: {}".format(pokestatus))
+            return False
 
     if args.disconnect:
         print('\n************debug disconnect command ***************')
