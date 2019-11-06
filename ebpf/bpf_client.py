@@ -11,17 +11,19 @@ from elftools.elf.sections import SymbolTableSection
 from elftools.elf.relocation import RelocationSection
 import dpc_client
 
-def unpack_le_u32(data):
-  return struct.unpack('<I', data)[0]
+def unpack_u32(data, big_endian):
+  query = '>I' if big_endian else "<I"
+  return struct.unpack(query, data)[0]
 
-def unpack_map(data):
+def unpack_map(data, big_endian):
   # data[20:40] contains some kind of a name which is all zeros in my case
+  unpack = lambda x: unpack_u32(x, big_endian)
   return {
-    'type': unpack_le_u32(data[:4]),
-    'key_size': unpack_le_u32(data[4:8]),
-    'value_size': unpack_le_u32(data[8:12]),
-    'max_entries': unpack_le_u32(data[12:16]),
-    'flags': unpack_le_u32(data[16:20])}
+    'type': unpack(data[:4]),
+    'key_size': unpack(data[4:8]),
+    'value_size': unpack(data[8:12]),
+    'max_entries': unpack(data[12:16]),
+    'flags': unpack(data[16:20])}
 
 def map_section_index(elffile):
   map_section = 'maps'
@@ -55,24 +57,30 @@ def copy_fields(d1, d2, fields):
   for f in fields:
     d2[f] = d1[f]
 
-def extract_maps(data, map_index):
+def extract_finals(data, map_index, big_endian):
+  external = []
   final_data = []
   maps = []
   for d in data:
     if d['section'] == map_index:
-      definition = unpack_map(d['value'])
+      definition = unpack_map(d['value'], big_endian)
       copy_fields(d, definition, ['name', 'locations'])
       maps.append(definition)
       continue
     if not d['name'] or len(d['locations']) == 0:
       continue
-    del d['section']
-    d['value'] = map(ord, list(d['value']))
-    final_data.append(d)
+    if d['section'] == 'SHN_UNDEF':
+      del d['section']
+      external.append(d)
+      continue
+    if 'value' in d:
+      del d['section']
+      d['value'] = map(ord, list(d['value']))
+      final_data.append(d)
 
-  return final_data, maps
+  return final_data, maps, external
 
-def extract_hook(filename):
+def extract_hook(filename, big_endian):
   code = None
   code_sections = ['xdp', 'socket_filter']
   section_name = None
@@ -85,7 +93,8 @@ def extract_hook(filename):
       idx += 1
       if isinstance(section, RelocationSection):
         for symbol in section.iter_relocations():
-          data[symbol['r_info_sym']]['locations'].append(symbol['r_offset'])
+          data[symbol['r_info_sym']]['locations'].append(
+            {'type': symbol['r_info_type'], 'offset': symbol['r_offset']})
       if section.name in code_sections:
         section_name = section.name
         code = map(ord, list(section.data()))
@@ -97,9 +106,8 @@ def extract_hook(filename):
           set_data(data, symbols[idx][p], section_data[p:])
           section_data = section_data[:p]
 
-    data, maps = extract_maps(data, map_section_index(elffile))
-
-  return {'maps': maps, 'code': code, 'section': section_name, 'data': data }
+    data, maps, external = extract_finals(data, map_section_index(elffile), big_endian)
+  return {'maps': maps, 'code': code, 'section': section_name, 'data': data, 'external': external, 'big_endian': big_endian }
 
 def list_bpf():
   client = dpc_client.DpcClient(False)
@@ -108,11 +116,16 @@ def list_bpf():
 class bpf:
   def __init__(self, **kwargs):
     self.client = dpc_client.DpcClient(False)
-    if 'elf' in kwargs:
-      self.hook = extract_hook(kwargs['elf'])
+    if 'elf' not in kwargs:
+      raise Exception('Non-elf mode is not supported')
+
+    filename = kwargs['elf']
+    big_endian = False if 'big_endian' not in kwargs else kwargs['big_endian']
+    self.hook = extract_hook(filename, big_endian)
+    self.hook['arch'] = 'bpf' if 'arch' not in kwargs else kwargs['arch']
     self.hook['qid'] = 1 if 'qid' not in kwargs else kwargs['qid']
     self.hook['name'] = 'noname' if 'name' not in kwargs else kwargs['name']
-    self.hook['section'] = 'xdp'
+    self.hook['section'] = 'xdp' if 'section' not in kwargs else kwargs['section']
     result = self.client.execute('ebpf', ['attach', self.hook])
     if 'bid' not in result:
       raise Exception(json.dumps(result))
