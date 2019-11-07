@@ -434,7 +434,7 @@ def main():
     global search_paths
 
     parser.add_argument('config', nargs='+', help='Configuration file(s)')
-    parser.add_argument('--config-type', choices={'json','ini'}, default='ini', help="Configuration file format")
+    parser.add_argument('--config-type', choices={'json','ini'}, default='json', help="Configuration file format")
     parser.add_argument('--source-dir', action='append', help='Location of source files to be used (can be specified multiple times)', default=[os.path.curdir])
     parser.add_argument('--action', choices={'all', 'sign', 'flash', 'key_hashes', 'certificates', 'key_injection'}, default='all', help='Action to be performed on the input files')
     parser.add_argument('--force-version', type=int, help='Override firmware versions')
