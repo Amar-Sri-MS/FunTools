@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python
 '''
 csr find/list/peek/poke utilities
@@ -16,12 +15,17 @@ import logging
 import traceback
 import urllib
 import tarfile
+import xmlrpclib
 from array import array
 from probeutils.dbgclient import *
 from probeutils.dut import *
 
 logger = logging.getLogger("csrutils")
 logger.setLevel(logging.INFO)
+
+I2CPROXY_SERVER = '10.1.20.69'
+I2CPROXY_PORT = 60444
+PROXY = None
 
 class constants(object):
     WORD_SIZE_BITS = 64
@@ -823,13 +827,13 @@ def server_connect(args):
         force_connect = True
         logger.info('Force connection: {0}'.format(force_connect))
 
-    probe = connect(dut_name, mode, force_connect)
+    probe = connect(dut_name, mode, force_connect, chip=args.chip[0])
     if probe is None:
         print('Failed to connect to dut: {0}'.format(dut_name, mode))
         return
 
-def connect(dut_name, mode, force_connect=False):
-    logger.debug('dut: {0} mode: {1}'.format(dut_name, mode))
+def connect(dut_name, mode, force_connect=False, chip="f1"):
+    logger.debug('dut: {0} mode: {1} chip: {2}'.format(dut_name, mode, chip))
     if mode == 'i2c':
         dut_i2c_info = dut().get_i2c_info(dut_name)
         if dut_i2c_info is None:
@@ -841,7 +845,27 @@ def connect(dut_name, mode, force_connect=False):
             i2c_probe_serial = dut_i2c_info[1]
             i2c_probe_ip = dut_i2c_info[2]
             i2c_slave_addr = dut_i2c_info[3]
-            status = dbgprobe().connect(mode='i2c', bmc_board=False,
+            if chip == 's1':
+                global PROXY
+                try:
+                    print ("A Connect to http://%s:%s/" % (i2c_probe_ip, I2CPROXY_PORT))
+                    PROXY = xmlrpclib.ServerProxy("http://%s:%s/" % (i2c_probe_ip, I2CPROXY_PORT))
+                    return True
+                except :
+                    print ("A Connect protocol error occurred. Check is XML server started ...")
+                    return None
+                try:
+                    status, data = PROXY.connect(str(i2c_probe_serial), i2c_probe_ip, i2c_slave_addr)
+                except xmlrpclib.ProtocolError as err:
+                    status, data = False, None
+                    print ("A Connect protocol error occurred")
+                    print ("URL: %s" % err.url)
+                    print ("HTTP/HTTPS headers: %s" % err.headers)
+                    print ("Error code: %d" % err.errcode)
+                    print ("Error message: %s" % err.errmsg)
+                return (status, data)
+            else:
+                status = dbgprobe().connect(mode='i2c', bmc_board=False,
                     probe_ip_addr=i2c_probe_ip,
                     probe_id=i2c_probe_serial,
                     slave_addr=i2c_slave_addr,
@@ -1679,3 +1703,25 @@ class csr_metadata:
         csr_list = self.get_csr_def(csr_name=csr_name)
 
 
+def csr_rawpeek(args):
+    print (args)
+    try:
+        print (PROXY.peek(args.regadr, args.reglen))
+    except xmlrpclib.ProtocolError as err:
+        print ("A Peek protocol error occurred")
+        print ("URL: %s" % err.url)
+        print ("HTTP/HTTPS headers: %s" % err.headers)
+        print ("Error code: %d" % err.errcode)
+        print ("Error message: %s" % err.errmsg)
+
+def csr_rawpoke(args):
+    print (args)
+    try:
+        #send a string
+        print (PROXY.poke(args.regadr, map(str, args.regval)))
+    except xmlrpclib.ProtocolError as err:
+        print ("A Poke protocol error occurred")
+        print ("URL: %s" % err.url)
+        print ("HTTP/HTTPS headers: %s" % err.headers)
+        print ("Error code: %d" % err.errcode)
+        print ("Error message: %s" % err.errmsg)
