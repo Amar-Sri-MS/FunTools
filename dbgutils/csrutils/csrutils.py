@@ -850,7 +850,6 @@ def connect(dut_name, mode, force_connect=False, chip="f1"):
                 try:
                     print ("A Connect to http://%s:%s/" % (i2c_probe_ip, I2CPROXY_PORT))
                     PROXY = xmlrpclib.ServerProxy("http://%s:%s/" % (i2c_probe_ip, I2CPROXY_PORT))
-                    return True
                 except :
                     print ("A Connect protocol error occurred. Check is XML server started ...")
                     return None
