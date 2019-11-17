@@ -97,7 +97,7 @@ class ArgFormatter(argparse.HelpFormatter):
 class dbgsh(cmd2.Cmd):
     intro = 'Welcome to the debug shell.   Type help or ? to list commands.\n'
 
-    chip = 's1'
+    chip = 'f1'
 
     parser = argparse.ArgumentParser(prog='csr', formatter_class=ArgFormatter)
     subparsers = parser.add_subparsers(help='csr sub-command help')
