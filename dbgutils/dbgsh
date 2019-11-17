@@ -4,8 +4,12 @@ import string, os
 import cmd2
 import logging
 import argcomplete
+
+import csrutils.csr2utils
+
 from cmd2 import with_argparser
 from csrutils.csrutils import *
+
 
 logger = logging.getLogger("dbgutils")
 logger.setLevel(logging.INFO)
@@ -93,13 +97,18 @@ class ArgFormatter(argparse.HelpFormatter):
 class dbgsh(cmd2.Cmd):
     intro = 'Welcome to the debug shell.   Type help or ? to list commands.\n'
 
+    chip = 's1'
+
     parser = argparse.ArgumentParser(prog='csr', formatter_class=ArgFormatter)
     subparsers = parser.add_subparsers(help='csr sub-command help')
 
     parser_peek = subparsers.add_parser('peek', help="CSR peek",
                                         formatter_class=ArgFormatter)
     parser_peek.add_argument('csr', nargs=1,help="csr name")
-    parser_peek.set_defaults(func=csr_peek)
+    if chip == 'f1':
+        parser_peek.set_defaults(func=csr_peek)
+    else:
+        parser_peek.set_defaults(func=csrutils.csr2utils.csr2_peek)
     parser_peek.add_argument('-i', nargs=1,
         metavar=('csr_inst'), dest='csr_inst', type=str, help="csr instance")
     parser_peek.add_argument('-e', nargs=1,
