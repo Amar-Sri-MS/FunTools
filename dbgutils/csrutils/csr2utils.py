@@ -12,6 +12,7 @@ import csr2api
 
 from csrutils import dbgprobe
 from csrutils import hex_word_dump
+from csrutils import str_to_int
 
 
 class CSR2DevTable(object):
@@ -171,7 +172,39 @@ def csr2_poke(args):
 
     For CSR2, we only allow specification of an unambiguous path or address.
     """
-    pass
+    csr_dev_table.lazy_populate()
+
+    csr_path = args.csr[0]
+    dimensionless_path, dims = extract_trailing_dimensions(csr_path)
+
+    reg = csr_dev_table.get_reg(dimensionless_path)
+    if reg is None:
+        print 'Error: cannot find register for %s' % csr_path
+        print_potential_paths(dimensionless_path)
+        return
+
+    addr = csr_dev_table.get_address(dimensionless_path, dims)
+    if addr is None:
+        print 'Error: cannot find address for %s' % csr_path
+        return
+
+    width = csr_dev_table.get_width(dimensionless_path)
+    csr_width_bytes = width >> 3
+    csr_width_words = csr_width_bytes >> 3
+
+    values = [str_to_int(v) for v in args.vals]
+    print '%s %s %d' % (csr_path, hex(addr), csr_width_words)
+    if len(values) != csr_width_words:
+        print ('Error: cannot write %d words for a register '
+               'which has %d words' % (len(values), csr_width_words))
+        return
+
+    (status, data) = dbgprobe().csr_poke(chip_inst=0,
+                                         csr_addr=addr,
+                                         word_array=values)
+    if not status:
+        print("Error: CSR poke failed! {0}".format(data))
+        return
 
 
 
