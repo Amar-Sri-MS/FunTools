@@ -126,27 +126,33 @@ class dbgsh(cmd2.Cmd):
 
     parser_poke = subparsers.add_parser('poke', help="CSR poke",
                                         formatter_class=ArgFormatter)
-    parser_poke.set_defaults(func=csr_poke)
-    parser_poke.add_argument('csr', nargs=1, type=str, help="csr name")
-    parser_poke.add_argument('-i', nargs=1,
-        metavar=('csr_inst'), dest='csr_inst', type=str, help="csr instance")
-    parser_poke.add_argument('-e', nargs=1,
-        metavar=('csr_entry'), dest='csr_entry', type=str, help="csr entry")
-    parser_poke.add_argument('-a', nargs=2,
-        metavar=('anode_name', 'anode_inst'), dest='anode', help="anode details")
-    parser_poke.add_argument('-c', nargs=1,
-        metavar=('chip_inst'), dest='chip_inst', type=str, help="chip(or asic) instance")
-    parser_poke.add_argument('-r', nargs=2,
-        metavar=('ring_name', 'ring_inst'), dest='ring', type=str, help="ring details")
-    parser_poke.add_argument('-p', nargs=1,
-        metavar=('anode_path'), dest='an_path', type=str, help="anode path")
-    group = parser_poke.add_mutually_exclusive_group(required=True)
-    group.add_argument('-f', nargs='+',
-        metavar=('csr_field'), dest='fields', type=str,
-        action=required_length_append(2), help="field_name")
-    group.add_argument('-v', nargs='+',
-        metavar=('raw_value'), dest='raw_value', type=str,
-        help="csr value in big-endian 64-bit words")
+    if chip == 'f1':
+        parser_poke.set_defaults(func=csr_poke)
+        parser_poke.add_argument('csr', nargs=1, type=str, help="csr name")
+        parser_poke.add_argument('-i', nargs=1,
+            metavar=('csr_inst'), dest='csr_inst', type=str, help="csr instance")
+        parser_poke.add_argument('-e', nargs=1,
+            metavar=('csr_entry'), dest='csr_entry', type=str, help="csr entry")
+        parser_poke.add_argument('-a', nargs=2,
+            metavar=('anode_name', 'anode_inst'), dest='anode', help="anode details")
+        parser_poke.add_argument('-c', nargs=1,
+            metavar=('chip_inst'), dest='chip_inst', type=str, help="chip(or asic) instance")
+        parser_poke.add_argument('-r', nargs=2,
+            metavar=('ring_name', 'ring_inst'), dest='ring', type=str, help="ring details")
+        parser_poke.add_argument('-p', nargs=1,
+            metavar=('anode_path'), dest='an_path', type=str, help="anode path")
+        group = parser_poke.add_mutually_exclusive_group(required=True)
+        group.add_argument('-f', nargs='+',
+            metavar=('csr_field'), dest='fields', type=str,
+            action=required_length_append(2), help="field_name")
+        group.add_argument('-v', nargs='+',
+            metavar=('raw_value'), dest='raw_value', type=str,
+            help="csr value in big-endian 64-bit words")
+    else:
+        parser_poke.set_defaults(func=csrutils.csr2utils.csr2_poke)
+        parser_poke.add_argument('csr', nargs=1, type=str, help="csr name")
+        parser_poke.add_argument('vals', nargs='*', type=str,
+                                 help="csr values in big-endian 64-bit words")
 
     parser_decode = subparsers.add_parser('decode',
                 help="Decode csr bits", formatter_class=ArgFormatter)
