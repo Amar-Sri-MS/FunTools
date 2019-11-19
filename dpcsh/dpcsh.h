@@ -13,29 +13,29 @@
 
 /* handy socket abstraction */
 enum sockmode {
-        SOCKMODE_TERMINAL,
-        SOCKMODE_IP,
-        SOCKMODE_UNIX,
-        SOCKMODE_DEV,
-        SOCKMODE_NVME
+	SOCKMODE_TERMINAL,
+	SOCKMODE_IP,
+	SOCKMODE_UNIX,
+	SOCKMODE_DEV,
+	SOCKMODE_NVME
 };
 
 struct dpcsock {
 
-        /* configuration */
-        enum sockmode mode;      /* whether & how this is used */
-        bool server;             /* listen/accept instead of connect */
-        bool base64;             /* talk base64 over this socket */
-        bool loopback;           /* if this socket is ignored */
-        const char *socket_name; /* unix socket name */
-        uint16_t port_num;       /* TCP port number */
-        uint32_t retries;        /* whether to retry connect on failure */
+	/* configuration */
+	enum sockmode mode;      /* whether & how this is used */
+	bool server;             /* listen/accept instead of connect */
+	bool base64;             /* talk base64 over this socket */
+	bool loopback;           /* if this socket is ignored */
+	const char *socket_name; /* unix socket name */
+	uint16_t port_num;       /* TCP port number */
+	uint32_t retries;        /* whether to retry connect on failure */
 	uint32_t cmd_timeout;    /* cmd timeout in ms */
 
-        /* runtime */
-        int fd;                  /* connected fd */
-        int listen_fd;           /* fd if this is a server */
-        bool nvme_write_done;    /* flag indicating whether write to nvme device
+	/* runtime */
+	int fd;                  /* connected fd */
+	int listen_fd;           /* fd if this is a server */
+	bool nvme_write_done;    /* flag indicating whether write to nvme device
                                     is successful so that we can read from it */
 };
 

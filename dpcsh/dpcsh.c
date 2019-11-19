@@ -79,11 +79,11 @@ const char *dpcsh_path;
 static inline void _setnosigpipe(int const fd)
 {
 #ifdef __APPLE__
-    int yes = 1;
-    (void)setsockopt(fd, SOL_SOCKET, SO_NOSIGPIPE, &yes, sizeof(yes));
+	int yes = 1;
+	(void)setsockopt(fd, SOL_SOCKET, SO_NOSIGPIPE, &yes, sizeof(yes));
 #else
-    /* unfortunately Linux does not support SO_NOSIGPIPE... */
-    signal(SIGPIPE, SIG_IGN);
+	/* unfortunately Linux does not support SO_NOSIGPIPE... */
+	signal(SIGPIPE, SIG_IGN);
 #endif
 }
 
@@ -95,56 +95,56 @@ static int history_count = 0;
 
 static void append_to_history(char *line)
 {
-    size_t l = strlen(line);
-    if (l == 0)
-	    return;
-    if (line[l-1] == '\n')
-	    l--; // exclude '\n'
-    if (l == 0)
-	    return;
-    history = realloc(history, (history_count+1) * sizeof(char *));
-    if (history_count != 0) {
-        char *last = history[history_count-1];
-	if (!strncmp(last, line, l) && !last[l])
-		return; // same - don't add
-    }
-    history[history_count++] = strdup(line);
-    // printf("History : %d\n", history_count);
+	size_t l = strlen(line);
+	if (l == 0)
+		return;
+	if (line[l-1] == '\n')
+		l--; // exclude '\n'
+	if (l == 0)
+		return;
+	history = realloc(history, (history_count+1) * sizeof(char *));
+	if (history_count != 0) {
+		char *last = history[history_count-1];
+		if (!strncmp(last, line, l) && !last[l])
+			return; // same - don't add
+	}
+	history[history_count++] = strdup(line);
+	// printf("History : %d\n", history_count);
 }
 
 static char *use_history(char *line, size_t len, int history_index)
 {
-    if (!history)
-	    return line; // no effect
-    if (history_index >= history_count)
-	    return line;
-    char *str = history[history_index];
+	if (!history)
+		return line; // no effect
+	if (history_index >= history_count)
+		return line;
+	char *str = history[history_index];
 
-    // erase current characters
-    for (int i = 0; i < len; i++)
-	    printf("%c[D", 27);
+	// erase current characters
+	for (int i = 0; i < len; i++)
+		printf("%c[D", 27);
 
-    // kill rest of line
-    printf("%c[K", 27);
-    printf("%s", str);
+	// kill rest of line
+	printf("%c[K", 27);
+	printf("%s", str);
 //		fflush(stdout);
 
-    free(line);
-    return strdup(str);
+	free(line);
+	return strdup(str);
 }
 
 static char *history_previous(char *line, size_t len, OUT int *history_index)
 {
-    if ((* history_index) > 0)
-	    (*history_index)--;
-    return use_history(line, len, *history_index);
+	if ((* history_index) > 0)
+		(*history_index)--;
+	return use_history(line, len, *history_index);
 
 }
 static char *history_next(char *line, size_t len, OUT int *history_index)
 {
-    if ((*history_index) + 1 < history_count)
-	    (*history_index )++;
-    return use_history(line, len, *history_index);
+	if ((*history_index) + 1 < history_count)
+		(*history_index )++;
+	return use_history(line, len, *history_index);
 }
 
 static char *getline_with_history(OUT ssize_t *nbytes)
@@ -222,8 +222,7 @@ static int _open_sock_inet(uint16_t port)
 	int sock = 0;
 	struct sockaddr_in serv_addr;
 
-	if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0)
-	{
+	if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
 		printf("\n Socket creation error \n");
 		return sock;
 	}
@@ -235,15 +234,13 @@ static int _open_sock_inet(uint16_t port)
 	serv_addr.sin_port = htons(port);
 
 	// Convert IPv4 and IPv6 addresses from text to binary form
-	if(inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr)<=0)
-	{
+	if(inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr)<=0) {
 		printf("\nInvalid address/ Address not supported \n");
 		return -1;
 	}
 
 	if (connect(sock, (struct sockaddr *)&serv_addr,
-		    sizeof(serv_addr)) < 0)
-	{
+		    sizeof(serv_addr)) < 0) {
 		printf("*** Can't connect\n");
 		perror("connect");
 		exit(1);
@@ -252,7 +249,8 @@ static int _open_sock_inet(uint16_t port)
 	return sock;
 }
 
-static int _open_sock_unix(const char *name) {
+static int _open_sock_unix(const char *name)
+{
 	int sock = socket(AF_UNIX, SOCK_STREAM, 0);
 	if (sock <= 0) return sock;
 	_setnosigpipe(sock);
@@ -310,7 +308,7 @@ static void _listen_sock_init(struct dpcsock *sock)
 		assert(sock->listen_fd > 0);
 
 		if (setsockopt(sock->listen_fd, SOL_SOCKET, SO_REUSEADDR,
-			       (const void *)&optval , sizeof(int)) < 0) {
+			       (const void *)&optval, sizeof(int)) < 0) {
 			perror("setsockopt(SO_REUSEADDR)");
 			exit(1);
 		}
@@ -461,8 +459,8 @@ struct fun_json *_buffer2json(const uint8_t *buffer, size_t max)
 	r = fun_json_binary_serialization_size(buffer, max);
 	if (r <= max) {
 		json = fun_json_create_from_parsing_binary_with_options(buffer,
-									r,
-									true);
+				r,
+				true);
 	}
 
 	return json;
@@ -643,8 +641,7 @@ int dpcsocket_connnect(struct dpcsock *sock)
 	} else if(sock->mode == SOCKMODE_NVME) {
 		sock->fd = open(sock->socket_name, O_RDWR);
 		sock->nvme_write_done = false;
-	} 
-	else {
+	} else {
 		printf("connecting client socket\n");
 		if (sock->mode == SOCKMODE_UNIX)
 			sock->fd = _open_sock_unix(sock->socket_name);
@@ -667,8 +664,8 @@ void _configure_device(struct dpcsock *sock)
 	 * by with a much simpler string. (sane -echo?)
 	 */
 	char *cmdfmt  = "stty -F %s %s sane -echo -onlcr -icrnl crtscts "
-		"-brkint -echoctl -echoe -echok -echoke -icanon -iexten "
-		"-imaxbel -isig -opost ignbrk time 5 cs8 hupcl -clocal";
+			"-brkint -echoctl -echoe -echok -echoke -icanon -iexten "
+			"-imaxbel -isig -opost ignbrk time 5 cs8 hupcl -clocal";
 	char cmd[strlen(cmdfmt) + FMT_PAD];
 	int r;
 
@@ -903,21 +900,20 @@ static bool _do_send_cmd(struct dpcsock *sock, char *line,
 
 	struct fun_json *json = line2json(line, &error);
 
-        if (!json) {
-            printf("could not parse: %s\n", error);
-            return false;
-        }
-        fun_json_printf(INPUT_COLORIZE "input => %s" NORMAL_COLORIZE "\n",
+	if (!json) {
+		printf("could not parse: %s\n", error);
+		return false;
+	}
+	fun_json_printf(INPUT_COLORIZE "input => %s" NORMAL_COLORIZE "\n",
 			json);
 	// Hack to list local commands if the command is 'help'
 	apply_command_locally(json);
-        bool ok = false;
-		if(sock->mode == SOCKMODE_NVME) {
-			ok = _write_to_nvme(json, sock, dpcsh_session_id, seq_num);
-		}
-		else {
-			ok = _write_to_sock(json, sock);
-		}
+	bool ok = false;
+	if(sock->mode == SOCKMODE_NVME) {
+		ok = _write_to_nvme(json, sock, dpcsh_session_id, seq_num);
+	} else {
+		ok = _write_to_sock(json, sock);
+	}
 	if (!ok) {
 		// try to reopen pipe
 		printf("Write to socket failed - reopening socket\n");
@@ -930,13 +926,12 @@ static bool _do_send_cmd(struct dpcsock *sock, char *line,
 		}
 		if(sock->mode == SOCKMODE_NVME) {
 			ok = _write_to_nvme(json, sock, dpcsh_session_id, seq_num);
-		}
-		else {
+		} else {
 			ok = _write_to_sock(json, sock);
 		}
 	}
-        fun_json_release(json);
-        if (!ok) {
+	fun_json_release(json);
+	if (!ok) {
 		printf("*** Write to socket failed\n");
 		return false;
 	}
@@ -1006,19 +1001,18 @@ static void _do_recv_cmd(struct dpcsock *funos_sock,
 			 struct dpcsock *cmd_sock, bool retry, uint32_t seq_num)
 {
 	/* receive a reply */
-        struct fun_json *output;
-		if(funos_sock->mode == SOCKMODE_NVME) {
-			output = _read_from_nvme(funos_sock, dpcsh_session_id, seq_num);
-		}
-		else {
-			output = _read_from_sock(funos_sock, retry);
-		}
-        if (!output) {
+	struct fun_json *output;
+	if(funos_sock->mode == SOCKMODE_NVME) {
+		output = _read_from_nvme(funos_sock, dpcsh_session_id, seq_num);
+	} else {
+		output = _read_from_sock(funos_sock, retry);
+	}
+	if (!output) {
 		if (retry)
 			printf("invalid json returned\n");
 		usleep(10*1000); // to avoid consuming all the CPU after funos quit
 		return;
-        }
+	}
 	// printf("output is of type %d\n", fun_json_get_type(output));
 	// Bertrand 2018-04-05: Gross hack to make sure we don't break dpcsh users who were not expected a tid
 	int64_t tid = 0;
@@ -1057,7 +1051,7 @@ static void _do_recv_cmd(struct dpcsock *funos_sock,
 			uint32_t flags = use_hex ? FUN_JSON_PRETTY_PRINT_USE_HEX_FOR_NUMBERS : 0;
 			char *pp = fun_json_pretty_print(raw_output, 0, "    ", 100, flags, &allocated_size);
 			printf(OUTPUT_COLORIZE "output => %s" NORMAL_COLORIZE "\n",
-				pp);
+			       pp);
 			free(pp);
 		}
 	} else {
@@ -1097,7 +1091,7 @@ static void _do_recv_cmd(struct dpcsock *funos_sock,
 		}
 	}
 
-        fun_json_release(raw_output);
+	fun_json_release(raw_output);
 }
 
 static void terminal_set_per_character(bool enable)
@@ -1116,97 +1110,97 @@ static void terminal_set_per_character(bool enable)
 static void _do_interactive(struct dpcsock *funos_sock,
 			    struct dpcsock *cmd_sock)
 {
-    ssize_t read;
-    int r, nfds = 0;
-    bool ok;
+	ssize_t read;
+	int r, nfds = 0;
+	bool ok;
 
-    if (cmd_sock->mode == SOCKMODE_TERMINAL) {
-	    /* enable per-character input for interactive input */
-	    terminal_set_per_character(true);
-    }
+	if (cmd_sock->mode == SOCKMODE_TERMINAL) {
+		/* enable per-character input for interactive input */
+		terminal_set_per_character(true);
+	}
 
 
-    fd_set fds;
-    while (1) {
+	fd_set fds;
+	while (1) {
 
-	    /* if a socket went away, try and reconnect */
-	    if ((funos_sock->fd == -1) && (funos_sock->retries-- > 0)) {
-		    dpcsocket_connnect(funos_sock);
-	    }
-
-	    if (cmd_sock->fd == -1) {
-		    if (cmd_sock->retries-- > 0) {
-			    printf("(re)-connect\n");
-			    dpcsocket_connnect(cmd_sock);
-			    printf("connected\n");
-		    } else {
-			    printf("out of re-connect attempts\n");
-			    break;
-		    }
-	    }
-
-	    /* configure the fd set */
-	    FD_ZERO(&fds);
-	    FD_SET(cmd_sock->fd, &fds);
-	    nfds = cmd_sock->fd;
-	    if (funos_sock->mode != SOCKMODE_TERMINAL) {
-		    FD_SET(funos_sock->fd, &fds);
-
-		    if (funos_sock->fd > nfds)
-			    nfds = funos_sock->fd;
-	    }
-
-	    /* wait on our input(s) */
-	    // printf("waiting on input\n");
-	    r = select(nfds+1, &fds, NULL, NULL, NULL);
-
-	    if (r <= 0) {
-		    perror("select");
-		    exit(1);
-	    }
-
-	    uint32_t seq_num = cmd_seq_num;
-	    cmd_seq_num++;
-	    if (FD_ISSET(cmd_sock->fd, &fds)) {
-		    // printf("user input\n");
-    		    char *line = _read_a_line(cmd_sock, &read);
-
-		    if (read == -1) /* user ^D */
-			    break;
-
-		    if (line == NULL) {
-			    // printf("error reading line\n");
-			    continue;
-		    }
-
-		    /* in loopback mode, check if this is output from
-		     * the other end & decode that & don't send it.
-		     */
-		    if (_is_loopback_command(funos_sock, line, read))
-			    continue;
-
-		    ok = _do_send_cmd(funos_sock, line, read, seq_num);
-		    free(line);
-		    if (!ok) {
-			    printf("error sending command\n");
-		    }
-	    }
-
-	    /* if it changed while in flight */
-	    if (funos_sock->fd == -1) {
-		    continue;
+		/* if a socket went away, try and reconnect */
+		if ((funos_sock->fd == -1) && (funos_sock->retries-- > 0)) {
+			dpcsocket_connnect(funos_sock);
 		}
 
-	    if (FD_ISSET(funos_sock->fd, &fds)
-		&& (!funos_sock->loopback)) {
-		    // printf("funos input\n");
-		    _do_recv_cmd(funos_sock, cmd_sock, false, seq_num);
-	    }
-    }
-    if (cmd_sock->mode == SOCKMODE_TERMINAL) {
-	    /* reset terminal */
-	    terminal_set_per_character(false);
-    }
+		if (cmd_sock->fd == -1) {
+			if (cmd_sock->retries-- > 0) {
+				printf("(re)-connect\n");
+				dpcsocket_connnect(cmd_sock);
+				printf("connected\n");
+			} else {
+				printf("out of re-connect attempts\n");
+				break;
+			}
+		}
+
+		/* configure the fd set */
+		FD_ZERO(&fds);
+		FD_SET(cmd_sock->fd, &fds);
+		nfds = cmd_sock->fd;
+		if (funos_sock->mode != SOCKMODE_TERMINAL) {
+			FD_SET(funos_sock->fd, &fds);
+
+			if (funos_sock->fd > nfds)
+				nfds = funos_sock->fd;
+		}
+
+		/* wait on our input(s) */
+		// printf("waiting on input\n");
+		r = select(nfds+1, &fds, NULL, NULL, NULL);
+
+		if (r <= 0) {
+			perror("select");
+			exit(1);
+		}
+
+		uint32_t seq_num = cmd_seq_num;
+		cmd_seq_num++;
+		if (FD_ISSET(cmd_sock->fd, &fds)) {
+			// printf("user input\n");
+			char *line = _read_a_line(cmd_sock, &read);
+
+			if (read == -1) /* user ^D */
+				break;
+
+			if (line == NULL) {
+				// printf("error reading line\n");
+				continue;
+			}
+
+			/* in loopback mode, check if this is output from
+			 * the other end & decode that & don't send it.
+			 */
+			if (_is_loopback_command(funos_sock, line, read))
+				continue;
+
+			ok = _do_send_cmd(funos_sock, line, read, seq_num);
+			free(line);
+			if (!ok) {
+				printf("error sending command\n");
+			}
+		}
+
+		/* if it changed while in flight */
+		if (funos_sock->fd == -1) {
+			continue;
+		}
+
+		if (FD_ISSET(funos_sock->fd, &fds)
+		    && (!funos_sock->loopback)) {
+			// printf("funos input\n");
+			_do_recv_cmd(funos_sock, cmd_sock, false, seq_num);
+		}
+	}
+	if (cmd_sock->mode == SOCKMODE_TERMINAL) {
+		/* reset terminal */
+		terminal_set_per_character(false);
+	}
 }
 
 static void _do_run_webserver(struct dpcsock *funos_sock,
@@ -1241,27 +1235,27 @@ int json_handle_req(struct dpcsock *jsock, const char *path,
 
 	snprintf(line, MAXLINE, "peek %s", path);
 	const char *error;
-        struct fun_json *json = line2json(line, &error);
-        if (!json) {
+	struct fun_json *json = line2json(line, &error);
+	if (!json) {
 		printf("could not parse '%s': %s\n", line, error);
 		return -1;
-        }
-        fun_json_printf("input => %s\n", json);
-        bool ok = _write_to_sock(json, jsock);
-        fun_json_release(json);
-        if (!ok)
+	}
+	fun_json_printf("input => %s\n", json);
+	bool ok = _write_to_sock(json, jsock);
+	fun_json_release(json);
+	if (!ok)
 		return -1;
 
-        /* receive a reply */
-        struct fun_json *output = _read_from_sock(jsock, true);
-        if (!output) {
-            printf("invalid json returned\n");
-            return -1;
-        }
+	/* receive a reply */
+	struct fun_json *output = _read_from_sock(jsock, true);
+	if (!output) {
+		printf("invalid json returned\n");
+		return -1;
+	}
 	size_t allocated_size = 0;
 	uint32_t flags = use_hex ? FUN_JSON_PRETTY_PRINT_USE_HEX_FOR_NUMBERS : 0;
 	char *pp2 = fun_json_pretty_print(output, 0, "    ", 100, flags, &allocated_size);
-        printf("output => %s\n", pp2);
+	printf("output => %s\n", pp2);
 
 	if (!pp2)
 		return -1;
@@ -1273,8 +1267,8 @@ int json_handle_req(struct dpcsock *jsock, const char *path,
 		r = 0;
 	}
 
-        free(pp2);
-        fun_json_release(output);
+	free(pp2);
+	fun_json_release(output);
 
 	return r;
 }
@@ -1394,7 +1388,7 @@ enum mode {
 	MODE_INTERACTIVE,  /* commmand-line (ish) */
 	MODE_PROXY,        /* proxy commands from a socket */
 	MODE_HTTP_PROXY,   /* http proxy */
-        MODE_NOCONNECT,    /* no connection to FunOS */
+	MODE_NOCONNECT,    /* no connection to FunOS */
 };
 
 /** entrypoint **/
@@ -1444,8 +1438,7 @@ int main(int argc, char *argv[])
 						sizeof(nvme_device_name));
 	memset(&funos_sock, 0, sizeof(funos_sock));
 	/* In Linux, use NVMe as default if present */
-	if (nvme_dpu_present)
-	{
+	if (nvme_dpu_present) {
 		funos_sock.mode = SOCKMODE_NVME;
 		funos_sock.socket_name = nvme_device_name;
 		funos_sock.server = false;
@@ -1454,8 +1447,7 @@ int main(int argc, char *argv[])
 		funos_sock.cmd_timeout = atoi(DEFAULT_NVME_CMD_TIMEOUT_MS);
 	}
 	/* Use libfunq otherwsie */
-	else
-	{
+	else {
 		/* default connection to FunOS posix simulator dpcsock */
 		funos_sock.mode = SOCKMODE_IP;
 		funos_sock.server = false;
@@ -1476,12 +1468,12 @@ int main(int argc, char *argv[])
 				 longopts, NULL)) != -1) {
 
 		switch(ch) {
-			/** help **/
+		/** help **/
 		case 'h':
 			usage(argv[0]);
 			exit(0);
 
-			/** mode parsing **/
+		/** mode parsing **/
 
 		case 'b':  /* base64 client */
 
@@ -1541,7 +1533,7 @@ int main(int argc, char *argv[])
 			cmd_sock.mode = SOCKMODE_IP;
 			cmd_sock.server = true;
 			cmd_sock.port_num = opt_portnum(optarg,
-							 HTTP_PORTNO);
+							HTTP_PORTNO);
 
 			mode = MODE_HTTP_PROXY;
 
@@ -1551,7 +1543,7 @@ int main(int argc, char *argv[])
 			cmd_sock.mode = SOCKMODE_IP;
 			cmd_sock.server = true;
 			cmd_sock.port_num = opt_portnum(optarg,
-							  DPC_PROXY_PORT);
+							DPC_PROXY_PORT);
 
 			mode = MODE_PROXY;
 			break;
@@ -1567,7 +1559,7 @@ int main(int argc, char *argv[])
 
 			break;
 
-			/** other options **/
+		/** other options **/
 
 		case 'n':  /* "nocli" -- run one command and exit */
 		case 'S':  /* "oneshot" -- run one connection and exit */
