@@ -1,9 +1,16 @@
 #!/usr/bin/env python
-import argparse, json
-import string, os
-import cmd2
-import logging
+
+#
+# Debug shell application.
+#
+
 import argcomplete
+import argparse
+import cmd2
+import json
+import logging
+import os
+import string
 
 import csrutils.csr2utils
 
@@ -13,6 +20,26 @@ from csrutils.csrutils import *
 
 logger = logging.getLogger("dbgutils")
 logger.setLevel(logging.INFO)
+
+
+#
+# Determine whether we are in CSR2 mode. This will eventually be the only
+# supported mode, once CSR1 is consigned to the historical graveyard. Then
+# we can get rid of this ugly code.
+#
+# This needs to run before the other code in this module, because a lot
+# of the argument parsing must be initialized at module load time, given
+# the way decorators are used in the cmd2 module.
+#
+csr2_parser = argparse.ArgumentParser()
+csr2_parser.add_argument('--csr2', action='store_true',
+                         help='use CSR2 instead of CSR1')
+csr2_args, csr2_remaining_args = csr2_parser.parse_known_args()
+sys.argv = [sys.argv[0]] + csr2_remaining_args
+
+# The magic boolean that determines if we are in CSR1 or CSR2 mode.
+csr2_mode = csr2_args.csr2
+
 
 # Returns action class for field argument min length check
 def required_length_append(nmin):
@@ -97,7 +124,7 @@ class ArgFormatter(argparse.HelpFormatter):
 class dbgsh(cmd2.Cmd):
     intro = 'Welcome to the debug shell.   Type help or ? to list commands.\n'
 
-    chip = 'f1'
+    global csr2_mode
 
     parser = argparse.ArgumentParser(prog='csr', formatter_class=ArgFormatter)
     subparsers = parser.add_subparsers(help='csr sub-command help')
@@ -105,7 +132,7 @@ class dbgsh(cmd2.Cmd):
     parser_peek = subparsers.add_parser('peek', help="CSR peek",
                                         formatter_class=ArgFormatter)
     parser_peek.add_argument('csr', nargs=1,help="csr name")
-    if chip == 'f1':
+    if not csr2_mode:
         parser_peek.set_defaults(func=csr_peek)
     else:
         parser_peek.set_defaults(func=csrutils.csr2utils.csr2_peek)
@@ -126,27 +153,33 @@ class dbgsh(cmd2.Cmd):
 
     parser_poke = subparsers.add_parser('poke', help="CSR poke",
                                         formatter_class=ArgFormatter)
-    parser_poke.set_defaults(func=csr_poke)
-    parser_poke.add_argument('csr', nargs=1, type=str, help="csr name")
-    parser_poke.add_argument('-i', nargs=1,
-        metavar=('csr_inst'), dest='csr_inst', type=str, help="csr instance")
-    parser_poke.add_argument('-e', nargs=1,
-        metavar=('csr_entry'), dest='csr_entry', type=str, help="csr entry")
-    parser_poke.add_argument('-a', nargs=2,
-        metavar=('anode_name', 'anode_inst'), dest='anode', help="anode details")
-    parser_poke.add_argument('-c', nargs=1,
-        metavar=('chip_inst'), dest='chip_inst', type=str, help="chip(or asic) instance")
-    parser_poke.add_argument('-r', nargs=2,
-        metavar=('ring_name', 'ring_inst'), dest='ring', type=str, help="ring details")
-    parser_poke.add_argument('-p', nargs=1,
-        metavar=('anode_path'), dest='an_path', type=str, help="anode path")
-    group = parser_poke.add_mutually_exclusive_group(required=True)
-    group.add_argument('-f', nargs='+',
-        metavar=('csr_field'), dest='fields', type=str,
-        action=required_length_append(2), help="field_name")
-    group.add_argument('-v', nargs='+',
-        metavar=('raw_value'), dest='raw_value', type=str,
-        help="csr value in big-endian 64-bit words")
+    if not csr2_mode:
+        parser_poke.set_defaults(func=csr_poke)
+        parser_poke.add_argument('csr', nargs=1, type=str, help="csr name")
+        parser_poke.add_argument('-i', nargs=1,
+            metavar=('csr_inst'), dest='csr_inst', type=str, help="csr instance")
+        parser_poke.add_argument('-e', nargs=1,
+            metavar=('csr_entry'), dest='csr_entry', type=str, help="csr entry")
+        parser_poke.add_argument('-a', nargs=2,
+            metavar=('anode_name', 'anode_inst'), dest='anode', help="anode details")
+        parser_poke.add_argument('-c', nargs=1,
+            metavar=('chip_inst'), dest='chip_inst', type=str, help="chip(or asic) instance")
+        parser_poke.add_argument('-r', nargs=2,
+            metavar=('ring_name', 'ring_inst'), dest='ring', type=str, help="ring details")
+        parser_poke.add_argument('-p', nargs=1,
+            metavar=('anode_path'), dest='an_path', type=str, help="anode path")
+        group = parser_poke.add_mutually_exclusive_group(required=True)
+        group.add_argument('-f', nargs='+',
+            metavar=('csr_field'), dest='fields', type=str,
+            action=required_length_append(2), help="field_name")
+        group.add_argument('-v', nargs='+',
+            metavar=('raw_value'), dest='raw_value', type=str,
+            help="csr value in big-endian 64-bit words")
+    else:
+        parser_poke.set_defaults(func=csrutils.csr2utils.csr2_poke)
+        parser_poke.add_argument('csr', nargs=1, type=str, help="csr name")
+        parser_poke.add_argument('vals', nargs='*', type=str,
+                                 help="csr values in big-endian 64-bit words")
 
     parser_decode = subparsers.add_parser('decode',
                 help="Decode csr bits", formatter_class=ArgFormatter)
@@ -243,6 +276,7 @@ class dbgsh(cmd2.Cmd):
         """Quits the program."""
         print("Quitting.")
         raise SystemExit
+
 
 if __name__ == '__main__':
     c = dbgsh()
