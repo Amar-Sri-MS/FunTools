@@ -11,6 +11,7 @@ import re
 import csr2api
 
 from csrutils import dbgprobe
+from csrutils import csr_get_field
 from csrutils import hex_word_dump
 from csrutils import str_to_int
 
@@ -132,7 +133,7 @@ def csr2_peek(args):
         if word_array is None or not word_array:
             print("Error in csr peek")
             return None
-        print_data(word_array)
+        print_data(word_array, reg)
     else:
         error_msg = data
         print("Error: {0}".format(error_msg))
@@ -162,8 +163,31 @@ def print_potential_paths(csr_path):
     print '\n'.join(potential_paths)
 
 
-def print_data(word_array):
-    print("csr raw: {0}".format(hex_word_dump(word_array)))
+def print_data(word_array, reg):
+    print("raw data: {0}".format(hex_word_dump(word_array)))
+
+    # TODO (jimmy): this is almost certainly wrong for some cases
+    if reg.is_composite:
+        for fld in reg.fields.enum():
+            fld_offset = fld.lsb
+            fld_width = fld.msb - fld.lsb + 1
+            val_array = csr_get_field(fld_offset, fld_width, word_array)
+            val = hex_word_dump(val_array)
+            print '%s: %s' % (fld.name, val)
+    elif reg.is_array:
+        for i in range(0, reg.fields.count):
+            fld_offset = 0
+            fld_width = reg.fields.field.size
+            val_array = csr_get_field(fld_offset, fld_width, word_array)
+            val = hex_word_dump(val_array)
+            print '%s[%d]: %s' % (reg.fields.field.name, i, val)
+    elif reg.is_implicit:
+        # no fields on implicit registers
+        pass
+
+
+def generate_mask(width):
+    return (1 << width) - 1
 
 
 def csr2_poke(args):
