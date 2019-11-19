@@ -955,12 +955,14 @@ static bool _is_loopback_command(struct dpcsock *sock, char *line,
 
 static const struct fun_json *_get_result_if_present(const struct fun_json *response) {
 	const struct fun_json *result = fun_json_lookup(response, "result");
+
 	return result == NULL ? response : result;
 }
 
 static void _print_response_info(const struct fun_json *response) {
 	const char *str;
 	int64_t tid = 0;
+
 	if (!fun_json_lookup(response, "result")) {
 		fun_json_printf("Old style output (NULL) - got %s\n", response);
 	} else if (!fun_json_lookup_int64(response, "tid", &tid)) {
@@ -1005,6 +1007,7 @@ static char *_wrap_proxy_message(struct fun_json *response) {
 	size_t allocated_size = 0;
 	uint32_t flags = use_hex ? FUN_JSON_PRETTY_PRINT_USE_HEX_FOR_NUMBERS : 0;
 	char *message = fun_json_pretty_print(result, 0, "    ", 0, flags, &allocated_size);
+
 	fun_json_release(result);
 	return message;
 }
