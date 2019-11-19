@@ -186,10 +186,6 @@ def print_data(word_array, reg):
         pass
 
 
-def generate_mask(width):
-    return (1 << width) - 1
-
-
 def csr2_poke(args):
     """
     Handles the csr poke comand.
