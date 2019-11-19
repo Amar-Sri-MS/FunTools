@@ -25,7 +25,11 @@ function prepare(input: any): JsonSchema {
 const verb = args[2];
 const client = new DPCClient();
 client.submit("schema", [verb]);
-client.onData((schema: any) => {
+client.onData((schema: any, error: boolean) => {
+  if (error) {
+    throw new Error("Can't get schema for command to fuzz");
+  }
+
   const preprocessed = prepare(schema);
   let request: any = {};
   const faker = () => {

@@ -17,14 +17,18 @@ export class DPCClient {
     this.transactionId = 0;
   }
 
-  public onData(callback: (d: any) => void, once?: boolean) {
+  public onData(callback: (d: any, error: boolean) => void, once?: boolean) {
     const internal = (s: string) => {
       this.buffer += s;
-      if (this.countBuf("[") === this.countBuf("]")
+      if (this.countBuf("{") > 0 && this.countBuf("[") === this.countBuf("]")
       && this.countBuf("{") === this.countBuf("}")) {
         const response = JSON.parse(this.buffer.replace(/\n/gm, ""));
         if (!response && this.error) this.error("No result");
-        callback(response["result"]);
+        if (!response["result"]) {
+          callback(response, true);
+        } else {
+          callback(response["result"], false);
+        }
         this.buffer = "";
         if (once && once === true) {
           this.socket.off("data", internal);
