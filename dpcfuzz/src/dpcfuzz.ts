@@ -9,15 +9,32 @@ if (args.length < 3) {
   process.exit(1);
 }
 
+function any_items(depth: number): JsonSchema {
+  const any = [
+    {"type": "number"},
+    {"type": "object", "minProperties": 2},
+    {"type": "string"},
+    {"type": "null"},
+    {"type": "boolean"}
+  ] as JsonSchema[];
+  if (depth > 0) {
+    any.push({"type": "array", "items": any_items(depth - 1)});
+  }
+  return {"anyOf": any} as JsonSchema;
+}
+
 function prepare(input: any): JsonSchema {
   if (typeof input === 'string') {
-    return {"type": input } as JsonSchema;
+    return prepare({"type": input});
   }
   if (Array.isArray(input)) {
     return input.map(prepare);
   }
   if (input['items']) {
     input['items'] = prepare(input['items']);
+  }
+  if (input['type'] == 'array' && !input['items']) {
+    input['items'] = any_items(3);
   }
   return input;
 }
