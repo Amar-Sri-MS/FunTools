@@ -824,42 +824,6 @@ void dpcsh_unregister_pretty_printer(uint64_t tid, void *context)
 	}
 }
 
-static CALLER_TO_RELEASE struct fun_json *apply_pretty_printer(struct fun_json *whole)
-{
-	if (!tid_to_pretty_printer) {
-		goto nope;
-	}
-	if (!fun_json_is_dict(whole)) {
-		printf("*** Malformed result: NULL or not a dictionary\n");
-		goto nope;
-	}
-	uint64_t tid;
-	if (!fun_json_lookup_uint64(whole, "tid", &tid)) {
-		printf("*** Malformed result: no transaction id\n");
-		goto nope;
-	}
-	struct fun_json *result = fun_json_lookup(whole, "result");
-	if (!result) {
-		printf("*** Malformed result: no key 'result'\n");
-		goto nope;
-	}
-	pretty_printer_f pretty_printer = (void *)fun_map_get(tid_to_pretty_printer, (fun_map_key_t)tid);
-	if (!pretty_printer) {
-		goto nope;
-	}
-	void *context = (void *)fun_map_get(tid_to_context, (fun_map_key_t)tid);
-	printf("Pretty-printing for tid=%d\n", (int)tid);
-	struct fun_json *new_result = pretty_printer(context, tid, result);
-	// fun_json_printf("Pretty printed result: %s\n", new_result);
-	struct fun_json *new_whole = fun_json_create_empty_dict();
-	fun_json_dict_add_other_dict(new_whole, whole, true);
-	fun_json_dict_add(new_whole, "result", fun_json_no_copy_no_own, new_result, true);
-	// fun_json_printf("new_whole: %s\n", new_whole);
-	return new_whole;
-nope:
-	return fun_json_retain(whole);
-}
-
 // ===============  RUN LOOP ===============
 
 // Somewhat of a hack: help needs to apply to both local (dpcsh-side) and remote (funos-side)
@@ -989,13 +953,64 @@ static bool _is_loopback_command(struct dpcsock *sock, char *line,
 	return true;
 }
 
+static const struct fun_json *_get_result_if_present(const struct fun_json *response) {
+	const struct fun_json *result = fun_json_lookup(response, "result");
 
-/* TID + error string */
-#ifdef NOT_YET
-#define PROXY_ERROR_TEMPLATE "{\"tid\": %" PRIu64 ", \"error\": \"error\"}\n"
-/* add room for a large TID and NUL */
-#define PROXY_ERROR_BUFLEN (strlen(PROXY_ERROR_TEMPLATE) + 16)
-#endif
+	return result == NULL ? response : result;
+}
+
+static void _print_response_info(const struct fun_json *response) {
+	const char *str;
+	int64_t tid = 0;
+
+	if (!fun_json_lookup(response, "result")) {
+		fun_json_printf("Old style output (NULL) - got %s\n", response);
+	} else if (!fun_json_lookup_int64(response, "tid", &tid)) {
+		printf("No tid\n");
+	}
+
+	if (fun_json_fill_error_message(_get_result_if_present(response), &str)) {
+		printf(PRELUDE BLUE POSTLUDE "output => *** error: '%s'" NORMAL_COLORIZE "\n", str);
+	} else {
+		size_t allocated_size = 0;
+		uint32_t flags = use_hex ? FUN_JSON_PRETTY_PRINT_USE_HEX_FOR_NUMBERS : 0;
+		char *pp = fun_json_pretty_print(response, 0, "    ", 100, flags, &allocated_size);
+		printf(OUTPUT_COLORIZE "output => %s" NORMAL_COLORIZE "\n",
+						pp);
+		free(pp);
+	}
+}
+
+static char *_wrap_proxy_message(struct fun_json *response) {
+	const char *error_message;
+	struct fun_json *result;
+
+	if (fun_json_fill_error_message(_get_result_if_present(response), &error_message)) {
+		result = fun_json_create_empty_dict();
+		int64_t tid;
+		if (!fun_json_lookup_int64(response, "tid", &tid)) {
+			tid = -1;
+		}
+
+		if (!fun_json_dict_add(result, "error", fun_json_no_copy_no_own,
+				fun_json_create_string(error_message, fun_json_no_copy_no_own), true)
+				|| !fun_json_dict_add(result, "tid", fun_json_no_copy_no_own,
+				fun_json_create_int64(tid), true)) {
+			printf("Can't form proxy message\n");
+			fun_json_release(result);
+			return NULL;
+		}
+	} else {
+		result = fun_json_retain(response);
+	}
+
+	size_t allocated_size = 0;
+	uint32_t flags = use_hex ? FUN_JSON_PRETTY_PRINT_USE_HEX_FOR_NUMBERS : 0;
+	char *message = fun_json_pretty_print(result, 0, "    ", 0, flags, &allocated_size);
+
+	fun_json_release(result);
+	return message;
+}
 
 static void _do_recv_cmd(struct dpcsock *funos_sock,
 			 struct dpcsock *cmd_sock, bool retry, uint32_t seq_num)
@@ -1013,85 +1028,17 @@ static void _do_recv_cmd(struct dpcsock *funos_sock,
 		usleep(10*1000); // to avoid consuming all the CPU after funos quit
 		return;
 	}
-	// printf("output is of type %d\n", fun_json_get_type(output));
-	// Bertrand 2018-04-05: Gross hack to make sure we don't break dpcsh users who were not expected a tid
-	int64_t tid = 0;
-	struct fun_json *raw_output = fun_json_lookup(output, "result");
-	if (!raw_output) {
-		fun_json_printf("Old style output (NULL) - got %s\n", output);
-		raw_output = output;
-	} else if (!fun_json_lookup_int64(output, "tid", &tid)) {
-		printf("No tid\n");
-		raw_output = output;
-	} else {
-		// printf("New style output, tid=%d\n", (int)tid);
-		raw_output = apply_pretty_printer(output);
-		fun_json_release(output);
 
-		struct fun_json *final_output = NULL;
+	_print_response_info(output);
 
-		// strip the tid for non-proxy sessions
-		if (_parse_mode == PARSE_TEXT)
-			final_output = fun_json_lookup(raw_output, "result");
-
-		if (final_output) {
-			struct fun_json *old = raw_output;
-			raw_output = fun_json_retain(final_output);
-			fun_json_release(old);
-		}
+	if (cmd_sock->mode != SOCKMODE_TERMINAL) {
+		char *proxy_message = _wrap_proxy_message(output);
+		write(cmd_sock->fd, proxy_message, strlen(proxy_message));
+		write(cmd_sock->fd, "\n", 1);
+		fun_free_string(proxy_message);
 	}
 
-	if (cmd_sock->mode == SOCKMODE_TERMINAL) {
-		const char *str;
-
-		if (fun_json_fill_error_message(raw_output, &str)) {
-			printf(PRELUDE BLUE POSTLUDE "output => *** error: '%s'" NORMAL_COLORIZE "\n", str);
-		} else {
-			size_t allocated_size = 0;
-			uint32_t flags = use_hex ? FUN_JSON_PRETTY_PRINT_USE_HEX_FOR_NUMBERS : 0;
-			char *pp = fun_json_pretty_print(raw_output, 0, "    ", 100, flags, &allocated_size);
-			printf(OUTPUT_COLORIZE "output => %s" NORMAL_COLORIZE "\n",
-			       pp);
-			free(pp);
-		}
-	} else {
-		fun_json_printf(OUTPUT_COLORIZE "output => %s" NORMAL_COLORIZE "\n",
-				raw_output);
-		size_t allocated_size = 0;
-		uint32_t flags = use_hex ? FUN_JSON_PRETTY_PRINT_USE_HEX_FOR_NUMBERS : 0;
-		char *pp = fun_json_pretty_print(raw_output, 0, "    ", 0, flags, &allocated_size);
-		if (pp) {
-			write(cmd_sock->fd, pp, strlen(pp));
-			write(cmd_sock->fd, "\n", 1);
-			fun_free_string(pp);
-		} else {
-			/* if we get here, we know that we got a
-			 * valid(-ish) JSON from the other side, but
-			 * the library refused to pretty-print it for
-			 * it. This is common if there's an error node
-			 * in the JSON because a verb returned
-			 * something bogus.  Make sure we send back
-			 * something for clients to kick them
-			 * along. Embed the TID in there for kicks.
-			 */
-			printf("JSON failed to pretty print, returning error template\n");
-#ifdef NOT_YET
-			char buf[PROXY_ERROR_BUFLEN];
-			snprintf(buf, PROXY_ERROR_BUFLEN,
-				 PROXY_ERROR_TEMPLATE, tid);
-			printf("%s", buf);
-#else
-			/* since we don't return the tid yet, just
-			 * return a "null" string that Python will
-			 * decode as "None"
-			 */
-			char *buf = "null\n";
-#endif
-			write(cmd_sock->fd, buf, strlen(buf));
-		}
-	}
-
-	fun_json_release(raw_output);
+	fun_json_release(output);
 }
 
 static void terminal_set_per_character(bool enable)
