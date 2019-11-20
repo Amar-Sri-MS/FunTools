@@ -25,13 +25,12 @@ export class DPCClient {
   public onData(callback: (d: any, error: boolean) => void, once?: boolean) {
     const internal = (s: string) => {
       this.buffer += s;
-      if (this.countBuf("{") > 0 && this.countBuf("[") === this.countBuf("]")
-      && this.countBuf("{") === this.countBuf("}")) {
+      try {
+        const response = JSON.parse(this.buffer);
         if (this.timeout) {
           clearTimeout(this.timeout);
           this.timeout = undefined;
         }
-        const response = JSON.parse(this.buffer);
         if (!response && this.error) this.error("No result");
         if (!response["result"]) {
           callback(response, true);
@@ -42,6 +41,8 @@ export class DPCClient {
         if (once && once === true) {
           this.socket.off("data", internal);
         }
+      } catch (e) {
+        // it means the json is incomplete, wait for more
       }
     };
     this.socket.on("data", internal);
