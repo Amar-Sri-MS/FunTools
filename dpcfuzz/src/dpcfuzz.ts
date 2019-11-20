@@ -27,6 +27,18 @@ function prepare(input: any): JsonSchema {
   if (typeof input === 'string') {
     return prepare({"type": input});
   }
+  if (input['oneOf']) {
+    input['oneOf'] = prepare(input['oneOf']);
+  }
+  if (input['anyOf']) {
+    input['anyOf'] = prepare(input['anyOf']);
+  }
+  if (input['allOf']) {
+    input['allOf'] = prepare(input['allOf']);
+  }
+  if (input['not']) {
+    input['not'] = prepare(input['not']);
+  }
   if (Array.isArray(input)) {
     return input.map(prepare);
   }
@@ -35,6 +47,9 @@ function prepare(input: any): JsonSchema {
   }
   if (input['type'] == 'array' && !input['items']) {
     input['items'] = any_items(3);
+  }
+  if (input['type'] == 'object' && !input['minProperties']) {
+    input['minProperties'] = 2;
   }
   return input;
 }
