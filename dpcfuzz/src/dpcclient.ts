@@ -31,7 +31,7 @@ export class DPCClient {
           clearTimeout(this.timeout);
           this.timeout = undefined;
         }
-        const response = JSON.parse(this.buffer.replace(/\n/gm, ""));
+        const response = JSON.parse(this.buffer);
         if (!response && this.error) this.error("No result");
         if (!response["result"]) {
           callback(response, true);
@@ -81,8 +81,9 @@ export class DPCClient {
     if (a instanceof Object) {
       const result: any = {}
       for (const k in a) {
-        result[k] = this.quote(a);
+        result[k] = this.quote(a[k]);
       }
+      return result;
     }
     return a;
   }
