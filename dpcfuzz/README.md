@@ -3,12 +3,11 @@
 ## Setup
 
 ```sh
-npm install
+npm install && tsc
 ```
 
 ## Run
 
 ```sh
-tsc
 node ./build/dpcfuzz.js <verb-to-fuzz>
 ```

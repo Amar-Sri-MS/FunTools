@@ -5,9 +5,9 @@ export class DPCClient {
   private socket: Net.Socket;
   private buffer: string;
   private error?: (e: any) => void;
-  private timeout_function?: () => void;
+  private timeoutFunction?: () => void;
   private timeout?: ReturnType<typeof setTimeout>;
-  private timeout_ms: number;
+  private msTimeout: number;
 
   constructor(host?: string, port?: number) {
     const h = host ? host : "127.0.0.1";
@@ -16,10 +16,10 @@ export class DPCClient {
     this.socket.connect({ port: p, host: h }, () => {
       process.stdout.write("DPC client connected\n");
     });
-    this.socket.on("close", () => {process.stdout.write("DPC client disconnected\n")});
+    this.socket.on("close", () => {process.stdout.write("DPC client disconnected\n"); });
     this.buffer = "";
     this.transactionId = 0;
-    this.timeout_ms = 0;
+    this.msTimeout = 0;
   }
 
   public onData(callback: (d: any, error: boolean) => void, once?: boolean) {
@@ -31,11 +31,11 @@ export class DPCClient {
           clearTimeout(this.timeout);
           this.timeout = undefined;
         }
-        if (!response && this.error) this.error("No result");
-        if (!response["result"]) {
+        if (!response && this.error) { this.error("No result"); }
+        if (!response.result) {
           callback(response, true);
         } else {
-          callback(response["result"], false);
+          callback(response.result, false);
         }
         this.buffer = "";
         if (once && once === true) {
@@ -54,17 +54,17 @@ export class DPCClient {
   }
 
   public onTimeout(ms: number, callback: () => void) {
-    this.timeout_ms = ms;
-    this.timeout_function = callback;
+    this.msTimeout = ms;
+    this.timeoutFunction = callback;
     this.socket.setTimeout(ms, callback);
   }
 
   public submit(command: string, args: any[], raw?: boolean): void {
-    if (this.timeout_ms != 0 && this.timeout_function) {
-      this.timeout = setTimeout(this.timeout_function, this.timeout_ms);
+    if (this.msTimeout !== 0 && this.timeoutFunction) {
+      this.timeout = setTimeout(this.timeoutFunction, this.msTimeout);
     }
-    const a : any[] = (raw && raw === true) ? args : args.map(this.quote, this);
-    this.socket.write(JSON.stringify({"verb": command, "tid": this.transactionId++, "arguments": a}) + "\n");
+    const a: any[] = (raw && raw === true) ? args : args.map(this.quote, this);
+    this.socket.write(JSON.stringify({verb: command, tid: this.transactionId++, arguments: a}) + "\n");
   }
 
   public end(): void {
@@ -80,8 +80,8 @@ export class DPCClient {
       return ["quote", a.map(this.quote, this)];
     }
     if (a instanceof Object) {
-      const result: any = {}
-      for (const k in a) {
+      const result: any = {};
+      for (const k of Object.keys(a)) {
         result[k] = this.quote(a[k]);
       }
       return result;
