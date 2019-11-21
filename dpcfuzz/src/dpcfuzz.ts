@@ -6,58 +6,58 @@ const args = process.argv;
 const error = (m: string) => {
   process.stdout.write(m + "\n");
   process.exit(1);
-}
+};
 
-if (args.length < 3) error("Please specify FunOS command to fuzz");
+if (args.length < 3) { error("Please specify FunOS command to fuzz"); }
 
 const timeout = (() => {
-  const timeout_index = args.indexOf("--timeout");
-  if (timeout_index === -1) return 3000;
-  if (!args[timeout_index + 1]) error("Please provide timeout value");
-  return Number(args[timeout_index + 1]);
+  const index = args.indexOf("--timeout");
+  if (index === -1) { return 3000; }
+  if (!args[index + 1]) { error("Please provide timeout value"); }
+  return Number(args[index + 1]);
 })();
 
 function any_items(depth: number): JsonSchema {
-  const any = [
-    {"type": "number"},
-    {"type": "object", "minProperties": 2},
-    {"type": "string"},
-    {"type": "null"},
-    {"type": "boolean"}
+  const options = [
+    {type: "number"},
+    {type: "object", minProperties: 2},
+    {type: "string"},
+    {type: "null"},
+    {type: "boolean"},
   ] as JsonSchema[];
   if (depth > 0) {
-    any.push({"type": "array", "items": any_items(depth - 1)});
+    options.push({type: "array", items: any_items(depth - 1)});
   }
-  return {"anyOf": any} as JsonSchema;
+  return {anyOf: options} as JsonSchema;
 }
 
 function prepare(input: any): JsonSchema {
-  if (typeof input === 'string') {
-    return prepare({"type": input});
+  if (typeof input === "string") {
+    return prepare({type: input});
   }
-  if (input['oneOf']) {
-    input['oneOf'] = prepare(input['oneOf']);
+  if (input.oneOf) {
+    input.oneOf = prepare(input.oneOf);
   }
-  if (input['anyOf']) {
-    input['anyOf'] = prepare(input['anyOf']);
+  if (input.anyOf) {
+    input.anyOf = prepare(input.anyOf);
   }
-  if (input['allOf']) {
-    input['allOf'] = prepare(input['allOf']);
+  if (input.allOf) {
+    input.allOf = prepare(input.allOf);
   }
-  if (input['not']) {
-    input['not'] = prepare(input['not']);
+  if (input.not) {
+    input.not = prepare(input.not);
   }
   if (Array.isArray(input)) {
     return input.map(prepare);
   }
-  if (input['items']) {
-    input['items'] = prepare(input['items']);
+  if (input.items) {
+    input.items = prepare(input.items);
   }
-  if (input['type'] == 'array' && !input['items']) {
-    input['items'] = any_items(3);
+  if (input.type === "array" && !input.items) {
+    input.items = any_items(3);
   }
-  if (input['type'] == 'object' && !input['minProperties']) {
-    input['minProperties'] = 2;
+  if (input.type === "object" && !input.minProperties) {
+    input.minProperties = 2;
   }
   return input;
 }
@@ -78,7 +78,7 @@ client.onData((schema: any, err: boolean) => {
   const faker = () => {
     request = fake(preprocessed);
     client.submit(verb, request);
-  }
+  };
   client.onData(faker);
   client.onError(() => {
     error("Crashed on " + JSON.stringify(request));
@@ -88,4 +88,3 @@ client.onData((schema: any, err: boolean) => {
   });
   faker();
 }, true);
-
