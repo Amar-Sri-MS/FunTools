@@ -109,7 +109,7 @@ class CodegenEndToEnd(unittest.TestCase):
     self.assertNotIn('#define FOO_RESERVED', out)
 
     # Did bitfield get initialized?'
-    self.assertIn('s->b_to_c = cpu_to_dpu8( FOO_B_P_NOSWAP(b) | '
+    self.assertIn('s->b_to_c = cpu_to_dpu8(FOO_B_P_NOSWAP(b) | '
                   'FOO_C_P_NOSWAP(c)', out)
 
     # Did full field get initialized?
@@ -337,9 +337,9 @@ class CodegenEndToEnd(unittest.TestCase):
     self.assertEqual(0, len(errors))
     out = RemoveWhitespace(out)
 
-    self.assertIn('const unsigned int A = 0x1;', out)
-    self.assertIn('const unsigned int AB = 0x3;', out)
-    self.assertIn('const unsigned int D = 0x10;', out)
+    self.assertIn('const int A = 0x1;', out)
+    self.assertIn('const int AB = 0x3;', out)
+    self.assertIn('const int D = 0x10;', out)
     self.assertIn('"A", /* 0x1 */', out)
     self.assertIn('"C", /* 0x4 */', out)
     self.assertIn('"D", /* 0x10 */', out)
