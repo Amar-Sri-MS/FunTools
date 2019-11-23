@@ -1,3 +1,4 @@
+#!/usr/bin/env python2.7
 # Unit tests for generator.py
 #
 # Robert Bowdidge, August 8, 2016.
@@ -246,6 +247,24 @@ class DocBuilderTest(unittest.TestCase):
                     
     self.assertEqual('BBBBBB', var_b.name)
     self.assertEqual(2, var_b.value)
+
+  def testConst(self):
+    gen_parser = parser.GenParser()
+    contents = ['CONST buffer_sizes', 'A = 0x1000', 'BBBBBB=99999', 'END']
+    
+    errors = gen_parser.Parse('filename', contents)
+    doc = gen_parser.current_document
+  
+    self.assertEqual(1, len(doc.Consts()))
+    my_const = doc.Consts()[0]
+    self.assertEqual(2, len(my_const.variables))
+    var_a = my_const.variables[0]
+    var_b = my_const.variables[1]
+    self.assertEqual('A', var_a.name)
+    self.assertEqual(0x1000, var_a.value)
+                    
+    self.assertEqual('BBBBBB', var_b.name)
+    self.assertEqual(99999, var_b.value)
 
   def disableTestEnumReference(self):
     # TODO(bowdidge): Should allow enum (and flag) declarations to be used as type names.
