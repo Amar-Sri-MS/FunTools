@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/python
 #
 # Unit tests for Generator's code generation.
 #
@@ -423,28 +423,6 @@ class TestComments(unittest.TestCase):
     self.assertIn('/* Enum key comment 2 */', out)
     self.assertIn('/* Tail comment */', out)
 
-  def testConstComments(self):
-    input = [
-      '// Maximum buffer lengths.',
-      'CONST max_buffer_len',
-      '// Enum body comment',
-      'MAX_BUF = 4000 // Enum key comment 1',
-      'MAX_BIG_BUF = 0x999999 // Enum key comment 2',
-      '// Tail comment',
-      'END']
-
-    (out, errors) = generator.GenerateFile(generator.OutputStyleHeader, None,
-                                           input, 'foo.gen', OPTIONS_PACK)
-    self.assertEqual(0, len(errors))
-    
-    out = RemoveWhitespace(out)
-    print out
-    # TODO(bowdidge): Check comments.
-    self.assertIn('enum max_buffer_len', out)
-    self.assertIn('MAX_BUF = 0xfa0,' ,out)
-    self.assertIn('MAX_BIG_BUF = 0x999999,' ,out)
-
-
   def testArrayOfStructs(self):
     contents = ['STRUCT Foo',
                 '0 63:32 uint64_t a',
@@ -574,4 +552,4 @@ class TestComments(unittest.TestCase):
 
     
 if __name__ == '__main__':
-    unittest.main(verbosity=2)
+    unittest.main()

@@ -49,23 +49,6 @@ static const unsigned int {{var.name}} = {{var.value|as_hex}};  {{var.key_commen
 extern const char *{{flagset.name|as_lower}}_names[];
 {%- endmacro %}
 
-{# How to render each CONST #}
-{% macro constDecl(const) %}
-/*
- * Declarations for constants {{const.name}}.
- *
- */
-{% if const.key_comment %}{{const.key_comment|as_comment}}{% endif %}
-{% if const.body_comment %}{{const.body_comment|as_comment}}{% endif %}
-enum {{const.name}} {
-{% for var in const.variables %}
-  {% if var.body_comment %}{{var.body_comment|as_comment}}{% endif %}
- {{var.name}} = {{var.value|as_hex}}, {{var.key_comment|as_comment}}
-{% endfor %}
-{{const.tail_comment|as_comment}}
-};
-{%- endmacro %}
-
 {#
 
 How to render each struct
@@ -228,9 +211,6 @@ The body of the header.
 {% endif %}
 {% if decl.is_flagset %}
   {{ flagsetDecl(decl) }}
-{% endif %}
-{% if decl.is_const %}
-  {{ constDecl(decl) }}
 {% endif %}
 {% if decl.is_struct and not decl.is_inline %}
   {{ structDecl(decl) }}

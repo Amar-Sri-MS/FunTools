@@ -29,24 +29,6 @@ class HTMLGeneratorTest(unittest.TestCase):
         self.assertIn('<dd>\nkey comment for A1\n<br>\n', out)
         self.assertIn('Body comment for ENUM A1\n</dd>', out)
 
-    def testConstVariablePrinting(self):
-        input = ['// Body comment for CONST',
-                 'CONST buffer_sizes // Key comment for buffer sizes',
-                 '// Body comment for constant A1',
-                 'A1 = 999999 // key comment for A1',
-                 '// Body comment for constant A2',
-                 'A2 = 0x4000 // key comment for A2',
-                 '// Tail comment for A',
-                 'END']
-
-        (out, errors) = generator.GenerateFile(generator.OutputStyleHTML, None,
-                                               input, 'foo.gen', OPTIONS_PACK)
-        self.assertEqual(0, len(errors))
-        self.assertIsNotNone(out)
-        self.assertIn('Key comment for buffer sizes', out)
-        self.assertIn('<p><b>A1</b>: 0xf423f: key comment for A1</p>', out)
-        self.assertIn('Body comment for constant A2', out)
-
     def testFieldPrinting(self):
         input = ['// Body comment for struct A.',
                  'STRUCT A // Key comment for struct A.',

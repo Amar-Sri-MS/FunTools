@@ -1,4 +1,3 @@
-#!/usr/bin/env python2.7
 # Unit tests for generator.py
 #
 # Robert Bowdidge, August 8, 2016.

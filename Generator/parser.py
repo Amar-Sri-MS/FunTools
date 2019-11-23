@@ -421,7 +421,6 @@ class Declaration:
 
     self.is_enum = False
     self.is_flagset = False
-    self.is_const = False
     self.is_struct = False
     self.is_function = False
     self.is_macro = False
@@ -876,40 +875,6 @@ class FlagSet(Declaration):
     return('<FlagSet %s:\n  %s\n>\n' % (self.name, self.variables))
 
 
-class Const(Declaration):
-  # Representation of an Const declaration indicating a group of related
-  # constant declarations.  The individual variables will be instantiated
-  # as separate global variables.  The declaration name should only appear
-  # in comments.
-
-  def __init__(self, name):
-    # Create an Const declaration.
-    # name is a string.
-    # variables holds the EnumVariables associated with the enum.
-    Declaration.__init__(self)
-    self.name = name
-    self.variables = []
-    self.is_const = True
-    self.max_value = sys.maxint
-
-  def AddVariable(self, var):
-    """Adds a new flagset variable to the flagset."""
-    self.variables.append(var)
-
-  def Name(self):
-    return self.name
-
-  def BitWidth(self):
-    return 0
-
-  def VariablesWithNames(self):
-    """Returns set of variables in this container."""
-    return self.variables
-
-  def __str__(self):
-    return('<FlagSet %s:\n  %s\n>\n' % (self.name, self.variables))
-
-
 class Struct(Declaration):
   # Representation of a structure.
 
@@ -1241,9 +1206,6 @@ class Document:
   def Flagsets(self):
     return [d for d in self.declarations_raw if d.is_flagset]
 
-  def Consts(self):
-    return [d for d in self.declarations_raw if d.is_const]
-
   def AddStruct(self, s):
     self.declarations_raw.append(s)
 
@@ -1252,9 +1214,6 @@ class Document:
 
   def AddFlagSet(self, f):
     self.declarations_raw.append(f)
-
-  def AddConst(self, c):
-    self.declarations_raw.append(c)
 
   def __str__(self):
     return('<Document>')
@@ -1351,7 +1310,6 @@ GenParserStateStruct = 1
 GenParserTopLevel = 3
 GenParserStateEnum = 4
 GenParserStateFlagSet = 5
-GenParserStateConst = 6
 
 
 class GenParser:
@@ -1513,34 +1471,6 @@ class GenParser:
     self.stack.append((GenParserStateFlagSet, current_flags))
     self.current_document.AddFlagSet(current_flags)
 
-  def ParseConstStart(self, line):
-    # Handle a CONST directive defining a set of global constants.
-    state, containing_struct = self.stack[len(self.stack)-1]
-    match = re.match('CONST\s+(\w+)(.*)$', line)
-    if match is None:
-      self.AddError('Invalid const start line: "%s"' % line)
-      return
-
-    name = match.group(1)
-    key_comment = match.group(2)
-
-    if not utils.IsValidCIdentifier(name):
-      self.AddError('"%s" is not a valid identifier name.' % name)
-
-    name = utils.RemoveWhitespace(name)
-    current_const = Const(name)
-    current_const.filename = self.current_document.filename
-    current_const.line_number = self.current_line
-    current_const.key_comment = self.StripKeyComment(key_comment)
-
-    if len(self.current_comment) > 0:
-      current_const.body_comment = self.current_comment
-    self.current_comment = ''
-
-    self.stack.append((GenParserStateConst, current_const))
-    self.current_document.AddConst(current_const)
-
-
   def ParseEnumLine(self, line):
     # Parse the line describing a new enum variable.
     # This regexp matches:
@@ -1591,8 +1521,7 @@ class GenParser:
       self.current_comment += self.StripKeyComment(line)
     elif state == GenParserTopLevel:
       return
-    elif state in [GenParserStateEnum, GenParserStateFlagSet,
-                   GenParserStateConst]:
+    elif state == GenParserStateEnum or state == GenParserStateFlagSet:
       enum = self.ParseEnumLine(line)
       if enum is not None:
         containing_decl.AddVariable(enum)
@@ -1957,8 +1886,6 @@ class GenParser:
         self.ParseEnumStart(line)
       elif line.startswith('FLAGS'):
         self.ParseFlagSetStart(line)
-      elif line.startswith('CONST'):
-        self.ParseConstStart(line)
       elif line.startswith('END'):
         self.ParseEnd(line)
       else:

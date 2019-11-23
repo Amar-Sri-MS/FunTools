@@ -313,8 +313,6 @@ dd {
         out += self.VisitEnum(d)
       elif d.is_flagset:
         out += self.VisitFlagset(d)
-      elif d.is_const:
-        out += self.VisitConst(d)
       elif d.is_struct:
         if not d.inline:
           out += self.VisitStruct(d)
@@ -355,7 +353,7 @@ dd {
     return out
 
   def VisitFlagset(self, flagset):
-    """Generates HTML documentation for set of bitfield flags."""
+    """Generates HTML documentation for set of variables representing possible bitfield flags."""
     out = ''
     out += '<h3>%s: flagset</h3>\n' % flagset.name
     if flagset.key_comment:
@@ -371,25 +369,6 @@ dd {
       
       out += '<tr><td>%s</td><td>0x%08x</td><td>%s</td></tr>\n' % (var.name, var.value, bit_pattern)
     out += '</table>'
-    return out
-
-  def VisitConst(self, const):
-    """Generates HTML documentation for set of constants."""
-    out = ''
-    out += '<h3>%s: constants</h3>\n' % const.name
-    if const.key_comment:
-      out += '<p><b>%s</b></p>\n' % utils.AsHTMLComment(const.key_comment)
-    if const.body_comment:
-      out += '<p>%s</p>\n' % utils.AsHTMLComment(const.body_comment)
-    out += '<p><b>Constants</b></p>\n'
-    for var in const.variables:
-      out += '<p><b>%s</b>: 0x%x' % (var.name, var.value)
-      if var.key_comment:
-        out += ': ' + utils.AsHTMLComment(var.key_comment)
-      out += '</p>\n'
-      if var.body_comment:
-        out += '<p>%s</p>\n' % var.body_comment
-
     return out
 
   def VisitRecordField(self, field, level, union_map):
