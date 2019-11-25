@@ -79,13 +79,6 @@ export class DPCClient {
     if (Array.isArray(a)) {
       return ["quote", a.map(this.quote, this)];
     }
-    if (a instanceof Object) {
-      const result: any = {};
-      for (const k of Object.keys(a)) {
-        result[k] = this.quote(a[k]);
-      }
-      return result;
-    }
     return a;
   }
 }

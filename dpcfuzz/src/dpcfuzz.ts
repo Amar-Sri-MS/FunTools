@@ -59,6 +59,13 @@ function prepare(input: any): JsonSchema {
   if (input.type === "object" && !input.minProperties) {
     input.minProperties = 2;
   }
+  if (input.type === "object" && input.properties) {
+    const result: any = {};
+    for (const k of Object.keys( input.properties)) {
+      result[k] = prepare(input.properties[k]);
+    }
+    input.properties = result;
+  }
   return input;
 }
 
