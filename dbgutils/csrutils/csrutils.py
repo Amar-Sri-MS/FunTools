@@ -15,17 +15,12 @@ import logging
 import traceback
 import urllib
 import tarfile
-import xmlrpclib
 from array import array
 from probeutils.dbgclient import *
 from probeutils.dut import *
 
 logger = logging.getLogger("csrutils")
 logger.setLevel(logging.INFO)
-
-I2CPROXY_SERVER = '10.1.20.69'
-I2CPROXY_PORT = 60444
-PROXY = None
 
 class constants(object):
     WORD_SIZE_BITS = 64
@@ -1681,26 +1676,3 @@ class csr_metadata:
     def csr_inst_verify(self, csr_name):
         csr_list = self.get_csr_def(csr_name=csr_name)
 
-
-def csr_rawpeek(args):
-    print (args)
-    try:
-        print (PROXY.peek(args.regadr, args.reglen))
-    except xmlrpclib.ProtocolError as err:
-        print ("A Peek protocol error occurred")
-        print ("URL: %s" % err.url)
-        print ("HTTP/HTTPS headers: %s" % err.headers)
-        print ("Error code: %d" % err.errcode)
-        print ("Error message: %s" % err.errmsg)
-
-def csr_rawpoke(args):
-    print (args)
-    try:
-        #send a string
-        print (PROXY.poke(args.regadr, map(str, args.regval)))
-    except xmlrpclib.ProtocolError as err:
-        print ("A Poke protocol error occurred")
-        print ("URL: %s" % err.url)
-        print ("HTTP/HTTPS headers: %s" % err.headers)
-        print ("Error code: %d" % err.errcode)
-        print ("Error message: %s" % err.errmsg)
