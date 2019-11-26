@@ -120,6 +120,8 @@ class ArgFormatter(argparse.HelpFormatter):
         # prefix with 'usage:'
         return '%s%s\n\n' % (prefix, usage)
 
+def auto_int(x):
+    return int(x, 0)
 
 class dbgsh(cmd2.Cmd):
     intro = 'Welcome to the debug shell.   Type help or ? to list commands.\n'
@@ -128,6 +130,16 @@ class dbgsh(cmd2.Cmd):
 
     parser = argparse.ArgumentParser(prog='csr', formatter_class=ArgFormatter)
     subparsers = parser.add_subparsers(help='csr sub-command help')
+
+    parser_rawpeek = subparsers.add_parser('rawpeek', help="CSR raw peek for s1", formatter_class=ArgFormatter)
+    parser_rawpeek.set_defaults(func=csr_rawpeek)
+    parser_rawpeek.add_argument('regadr', type=auto_int, help="csr register")
+    parser_rawpeek.add_argument('reglen', default=1, type=auto_int, help="csr register length in qwords")
+
+    parser_rawpoke = subparsers.add_parser('rawpoke', help="CSR raw poke for s1", formatter_class=ArgFormatter)
+    parser_rawpoke.set_defaults(func=csr_rawpoke)
+    parser_rawpoke.add_argument('regadr', type=auto_int, help="csr register")
+    parser_rawpoke.add_argument('regval', type=auto_int, nargs='+', default=[0xaabbccdd11223344], help="csr qwords to poke")
 
     parser_peek = subparsers.add_parser('peek', help="CSR peek",
                                         formatter_class=ArgFormatter)
@@ -239,6 +251,8 @@ class dbgsh(cmd2.Cmd):
     parser_connect.set_defaults(func=server_connect)
     parser_connect.add_argument('-m', nargs=1, metavar=('mode'), dest='mode',
 			choices=['i2c', 'jtag', 'pcie'], help="connection mode")
+    parser_connect.add_argument('-c', nargs=1, metavar=('chip'), dest='chip',
+			choices=['f1', 's1'], help="chip type")
     parser_connect.add_argument('dut', nargs=1, type=str,
             help="device id(hint:serial number is device id)")
     parser_connect.add_argument('-f', dest='force', action='store_true', help="force connection")

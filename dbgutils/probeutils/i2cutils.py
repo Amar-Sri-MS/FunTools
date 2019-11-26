@@ -832,3 +832,104 @@ class i2c:
         if self.bmc_board is False:
             self.master.gpio_sck_trigger()
         return True
+
+
+class s1i2c(i2c):
+    #------------------- csr2 addition ---------------------------------------------
+    def poke_qword(self, address, qword, chip_inst=None):
+        logger.debug(('s1 csr2 qword_poke csr2_addr:{0} qword={1}, chip_inst:{2}').format(hex(address), hex(qword), chip_inst))
+        cmd_data = array('B', [0x01])
+
+        csr_addr = struct.pack('>I', address)
+        csr_addr = list(struct.unpack('BBBB', csr_addr))
+        cmd_data.extend(csr_addr)
+
+        qword = struct.pack('>Q', qword)
+        qword = list(struct.unpack('BBBBBBBB', qword))
+        cmd_data.extend(qword)
+
+        logger.debug('s1 csr2 poking bytes: {0}'.format(map(hex, cmd_data)))
+        sent_bytes = self.master.i2c_write(write_data = cmd_data, chip_inst=chip_inst)
+        logger.debug('s1 csr2 sent_bytes: {0}'.format(sent_bytes))
+        if sent_bytes != len(cmd_data):
+            logger.error(('s1 csr2 Write Error! sent_bytes:{0} Expected: {1}').format(sent_bytes, len(cmd_data)))
+            return False
+        try:
+            time.sleep(constants.I2C_CSR_SLEEP_SEC)
+            status = array('B', [0x00])
+            num_status_bytes = self.master.i2c_read(read_data = status, chip_inst=chip_inst)
+            logger.debug('s1 csr2 poke num_status_bytes:{0} status:{1}'.format(num_status_bytes, hex(status[0])))
+            if num_status_bytes[0] != 1:
+                logger.error('s1 csr2 Read Error!  status_bytes:{0} Expected: {1}'.format(num_status_bytes, 1))
+                return False
+            if status[0] != 0x80:
+                logger.error('s1 csr2 Write status returned Error! {0}'.format(status[0]))
+                return False
+        except Exception as e:
+            logging.error(e)
+            logging.error(traceback.format_exc())
+            return False
+        return True
+    #--------------------------------------------------------------------------------
+    def peek_qword(self, address, chip_inst=None):
+        logger.debug(('s1 csr2 qword_peek csr2_addr:{0} chip_inst:{1}').format(hex(address), chip_inst))
+        csr_addr = struct.pack('>I', address)
+        csr_addr = list(struct.unpack('BBBB', csr_addr))
+        cmd_data = array('B', [0x00])
+        cmd_data.extend(csr_addr)
+        logger.debug('s1 csr2 cmd_data bytes: {0}'.format(map(hex, cmd_data)))
+        sent_bytes = self.master.i2c_write(write_data = cmd_data, chip_inst=chip_inst)
+        logger.debug('s1 csr2 sent_bytes: {0}'.format(sent_bytes))
+        if sent_bytes != len(cmd_data):
+            logger.error(('s1 csr2 Write Error! sent_bytes:{0} Expected: {1}').format(sent_bytes, len(cmd_data)))
+            return (False, None)
+        try:
+            time.sleep(constants.I2C_CSR_SLEEP_SEC)
+            read_data = array('B', [00]*(8 + 1))
+            read_bytes = self.master.i2c_read(read_data = read_data, chip_inst=chip_inst)
+            logger.debug(('s1 csr2 read_bytes: {0} read_data: {1}').format(read_bytes, map(hex, read_data)))
+            if read_bytes[0] != (8+1):
+                logger.error(('s1 csr2 Read Error! read_bytes:{0} Expected: {1}').format(read_bytes, (8 + 1)))
+                return (False, None)
+            if read_data[0] != 0x80:
+                logger.error(('s1 csr2 Read status returned Error! {0}').format(read_data[0]))
+                return (False, read_data[0]&0xf)
+
+            read_data = read_data[1:]
+            qword = struct.unpack('>Q', struct.pack('B'*8, *read_data))[0]
+            return (True, qword)
+        except Exception as e:
+            logging.error(traceback.format_exc())
+            return (False, None)
+        return (True, 0)
+    #--------------------------------------------------------------------------------
+    def local_csr_peek(self, csr_addr, n_qwords, chip_inst=None):
+        qwords = []
+        logger.info(('s1 csr2 I2C peek! chip_inst: {0} csr_addr: {1} n_qwords:{2}').format(chip_inst, hex(csr_addr), n_qwords))
+        if not n_qwords:
+            logger.error(('s1 csr2 peek n_qwords={}').format(n_qwords))
+            return (False, None)
+        for i in range(n_qwords):
+            at_csr_addr = csr_addr + (i * 8)
+            try:
+                (status, qword) = self.peek_qword(at_csr_addr, chip_inst)
+                if not status:
+                    raise Exception('peek operation failed ...')
+                #logger.info('status={}, qword={}'.format(status, qword))
+                qwords.append(qword)
+            except Exception as e:
+                logger.error(('s1 csr2 peek failed for at_csr_addr={}').format(at_csr_addr))
+                raise Exception('peek operation failed ...')
+        return (True, qwords)
+    #-------------------------------------------------------------------------------
+    def local_csr_poke(self, csr_addr, qword_array, chip_inst=None):
+        logger.info(('s1 csr2 I2C poke! chip_inst: {0} csr_addr: {1} poke_array:{2}').format(chip_inst, hex(csr_addr), map(hex, qword_array)))
+        if not qword_array:
+            logger.error('s1 csr2 poke array empty ...')
+            return False
+        for (i, qword) in enumerate(qword_array):
+            at_csr_addr = csr_addr + (i * 8)
+            logger.debug(('poke at_csr_addr={} qword={}').format(hex(at_csr_addr), hex(qword)))
+            self.poke_qword(at_csr_addr, qword, chip_inst)
+        return True
+    #-------------------------------------------------------------------------------
