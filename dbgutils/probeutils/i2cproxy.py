@@ -165,6 +165,8 @@ class I2CFactoryThread(jsocket.ServerFactoryThread):
                     self.send_obj({"STATUS":[False, ("Invalid connect args. slave_addr is missing!")]})
                     return
                 force_connect = connect_args.get("force_connect", None)
+                chip_type = connect_args.get("chip_type", 'f1')
+
                 logger.info('**** Connection request to dev_id: {0}'
                             ' slave_addr: {1} from user:"{2}"'.format(dev_id,
                                                     hex(slave_addr), user))
@@ -184,7 +186,7 @@ class I2CFactoryThread(jsocket.ServerFactoryThread):
                         logger.error(err_msg)
                         self.send_obj({"STATUS":[False, err_msg]})
                 try:
-                    i2c_conn = i2c(dev_id=dev_id, slave_addr=slave_addr)
+                    i2c_conn = self.create_i2c(chip_type, dev_id, slave_addr)
                     (status, status_msg) = i2c_conn.i2c_connect()
                     if status is True:
                         self.i2c_dev_id = dev_id
@@ -355,6 +357,14 @@ class I2CFactoryThread(jsocket.ServerFactoryThread):
             else:
                 logger.debug("Invalid msg!")
                 self.send_obj({"STATUS":[False, "Invalid message!"]})
+
+    def create_i2c(self, chip_type, id, addr):
+        """ Simple factory for i2c """
+        if chip_type == 'f1':
+            return i2c(dev_id=id, slave_addr=addr)
+        else:
+            return s1i2c(dev_id=id, slave_addr=addr)
+
 
 if __name__ == "__main__":
     server = None

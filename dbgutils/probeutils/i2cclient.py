@@ -33,7 +33,8 @@ class I2C_Client(object):
 
     # Opens tcp connection with i2c proxy server and
     # opens remote i2c device connection
-    def connect(self, ip_address, dev_id, slave_addr=None, force_connect=False):
+    def connect(self, ip_address, dev_id, slave_addr=None, force_connect=False,
+                chip_type='f1'):
         self.con_handle = jsocket.JsonClient(address = ip_address,
                                port = constants.SERVER_TCP_PORT)
         if self.con_handle is None:
@@ -45,9 +46,10 @@ class I2C_Client(object):
         connect_args["slave_addr"] = slave_addr
         connect_args["user"] = getpass.getuser()
         connect_args["force_connect"] = force_connect
+        connect_args["chip_type"] = chip_type
         time.sleep(0.5)
         self.con_handle.send_obj({"cmd": "CONNECT",
-                    "args": connect_args})
+                                  "args": connect_args})
         read_obj = self.con_handle.read_obj()
         status = read_obj.get("STATUS", None)
         if status is not None and status[0] == True:
@@ -74,7 +76,7 @@ class I2C_Client(object):
         csr_peek_args = dict()
         csr_peek_args["csr_addr"] = csr_addr
         csr_peek_args["csr_width"] = csr_width_words
-	retry_count = 0
+        retry_count = 0
         while retry_count < 10:
             self.con_handle.send_obj({"cmd": "CSR_PEEK",
                     "args": csr_peek_args})

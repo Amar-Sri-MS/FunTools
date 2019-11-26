@@ -845,34 +845,16 @@ def connect(dut_name, mode, force_connect=False, chip="f1"):
             i2c_probe_serial = dut_i2c_info[1]
             i2c_probe_ip = dut_i2c_info[2]
             i2c_slave_addr = dut_i2c_info[3]
-            if chip == 's1':
-                global PROXY
-                try:
-                    print ("A Connect to http://%s:%s/" % (i2c_probe_ip, I2CPROXY_PORT))
-                    PROXY = xmlrpclib.ServerProxy("http://%s:%s/" % (i2c_probe_ip, I2CPROXY_PORT))
-                except :
-                    print ("A Connect protocol error occurred. Check is XML server started ...")
-                    return None
-                try:
-                    status, data = PROXY.connect(str(i2c_probe_serial), i2c_probe_ip, i2c_slave_addr)
-                except xmlrpclib.ProtocolError as err:
-                    status, data = False, None
-                    print ("A Connect protocol error occurred")
-                    print ("URL: %s" % err.url)
-                    print ("HTTP/HTTPS headers: %s" % err.headers)
-                    print ("Error code: %d" % err.errcode)
-                    print ("Error message: %s" % err.errmsg)
-                return (status, data)
-            else:
-                status = dbgprobe().connect(mode='i2c', bmc_board=False,
-                    probe_ip_addr=i2c_probe_ip,
-                    probe_id=i2c_probe_serial,
-                    slave_addr=i2c_slave_addr,
-                    force=force_connect)
+            status = dbgprobe().connect(mode='i2c', bmc_board=False,
+                                        probe_ip_addr=i2c_probe_ip,
+                                        probe_id=i2c_probe_serial,
+                                        slave_addr=i2c_slave_addr,
+                                        force=force_connect,
+                                        chip_type=chip)
         else:
             bmc_ip = dut_i2c_info[1]
             status = dbgprobe().connect(mode='i2c', bmc_board=True,
-                    bmc_ip_address=bmc_ip)
+                                        bmc_ip_address=bmc_ip)
     elif mode == 'jtag':
         dut_jtag_info = dut().get_jtag_info(dut_name)
         if dut_jtag_info is None:
@@ -885,7 +867,7 @@ def connect(dut_name, mode, force_connect=False, chip="f1"):
                                         probe_ip_addr = jtag_probe_ip,
                                         probe_id = jtag_probe_id)
         else:
-            bmc_ip = dut_i2c_info[1]
+            bmc_ip = dut_jtag_info[1]
             jtag_probe_id = dut_jtag_info[2]
             jtag_probe_ip = dut_jtag_info[3]
             status = dbgprobe().connect(mode='jtag', bmc_board=True,
@@ -922,14 +904,12 @@ def connect(dut_name, mode, force_connect=False, chip="f1"):
         return None
 
 
-
-
 # disconnect handler for commandline interface.
 # Disconnects from remote server
 def server_disconnect(args):
     status = dbgprobe().disconnect()
     if status is not True:
-        looger.error("Probe disconnect failed!")
+        logger.error("Probe disconnect failed!")
     else:
         logger.info("Probe is disconnected!");
     return

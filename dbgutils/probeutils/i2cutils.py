@@ -18,10 +18,15 @@ class constants(object):
     IC_DEVICE_FEATURE_MASK = 0x1B
     IC_DEVICE_MODE_I2C = 0x2
     IC_DEVICE_MODE_GPIO = 0x0
+
+    # TODO (jimmy): this needs to be part of the config, because the rates
+    #               vary depending on whether we're running on real hardware
+    #               or palladium
     I2C_XFER_BIT_RATE = 500
     F1_I2C_ADDR_MODE = 0
     SBP_CMD_EXE_TIME_WAIT = 1
-    I2C_CSR_SLEEP_SEC    = 0.001
+    I2C_CSR_SLEEP_SEC = 0.001
+
 
 # Converts byte array to big-endian 64-bit words
 def byte_array_to_words_be(byte_array):
@@ -42,6 +47,7 @@ def byte_array_to_words_be(byte_array):
     logger.debug('word_array: {0}'.format([hex(x) for x in words]))
 
     return words
+
 
 class aardvark:
     def __init__(self, dev_id, slave_addr):
@@ -354,13 +360,19 @@ class i2c:
 
     # i2c csr read
     def i2c_csr_peek(self, csr_addr, csr_width_words, chip_inst=None):
+        """
+        Performs the peek operation over i2c.
+
+        Returns a tuple of (data_words, error_code). The error code is either
+        0 for success or -1 for failure.
+        """
         logger.debug(('I2C peek csr_addr:{0}'
-               ' csr_width_words:{1} chip_inst: {2}').format(
+                      ' csr_width_words:{1} chip_inst: {2}').format(
                hex(csr_addr), csr_width_words, chip_inst))
         if csr_width_words == 0:
             logger.error('csr width expected should be non-zero positive number')
             return (None, -1)
-        elif csr_width_words == 1: #Fast mode for single wide csr access
+        elif csr_width_words == 1: # Fast mode for single wide csr access
             csr_addr = struct.pack('>Q', csr_addr)
             csr_addr = list(struct.unpack('BBBBBBBB', csr_addr))
             csr_addr = csr_addr[3:]
@@ -460,6 +472,11 @@ class i2c:
 
     # i2c csr write
     def i2c_csr_poke(self, csr_addr, word_array, chip_inst=None):
+        """
+        Performs the poke operation over i2c.
+
+        Returns True if operation succeeded, else False.
+        """
         logger.info(('I2C poke! chip_inst: {0} csr_addr: {1} word_array:{2}').format(
             chip_inst, hex(csr_addr), [hex(x) for x in word_array]))
         csr_width_words = len(word_array)
@@ -835,9 +852,17 @@ class i2c:
 
 
 class s1i2c(i2c):
-    #------------------- csr2 addition ---------------------------------------------
-    def poke_qword(self, address, qword, chip_inst=None):
-        logger.debug(('s1 csr2 qword_poke csr2_addr:{0} qword={1}, chip_inst:{2}').format(hex(address), hex(qword), chip_inst))
+    """
+    i2c specialization for S1, because S1 i2c access is different.
+    """
+
+    def _poke_qword(self, address, qword, chip_inst=None):
+        """
+        Internal method for poking a single qword.
+
+        Returns True on success, False on failure.
+        """
+        logger.debug('s1 csr2 qword_poke csr2_addr:{0} qword={1}, chip_inst:{2}'.format(hex(address), hex(qword), chip_inst))
         cmd_data = array('B', [0x01])
 
         csr_addr = struct.pack('>I', address)
@@ -870,9 +895,14 @@ class s1i2c(i2c):
             logging.error(traceback.format_exc())
             return False
         return True
-    #--------------------------------------------------------------------------------
-    def peek_qword(self, address, chip_inst=None):
-        logger.debug(('s1 csr2 qword_peek csr2_addr:{0} chip_inst:{1}').format(hex(address), chip_inst))
+
+    def _peek_qword(self, address, chip_inst=None):
+        """
+        Internal method for peeking at a single qword.
+
+        Returns a tuple of (success, word) where success is a boolean.
+        """
+        logger.debug('s1 csr2 qword_peek csr2_addr:{0} chip_inst:{1}'.format(hex(address), chip_inst))
         csr_addr = struct.pack('>I', address)
         csr_addr = list(struct.unpack('BBBB', csr_addr))
         cmd_data = array('B', [0x00])
@@ -901,35 +931,44 @@ class s1i2c(i2c):
         except Exception as e:
             logging.error(traceback.format_exc())
             return (False, None)
-        return (True, 0)
-    #--------------------------------------------------------------------------------
-    def local_csr_peek(self, csr_addr, n_qwords, chip_inst=None):
+
+    def i2c_csr_peek(self, csr_addr, csr_width_words, chip_inst=None):
+        """
+        Overrides the method from the base i2c class to provide S1
+        functionality.
+        """
         qwords = []
-        logger.info(('s1 csr2 I2C peek! chip_inst: {0} csr_addr: {1} n_qwords:{2}').format(chip_inst, hex(csr_addr), n_qwords))
+        n_qwords = csr_width_words
+
+        logger.info('s1 csr2 I2C peek! chip_inst: {0} csr_addr: {1} n_qwords:{2}'.format(chip_inst, hex(csr_addr), n_qwords))
         if not n_qwords:
             logger.error(('s1 csr2 peek n_qwords={}').format(n_qwords))
-            return (False, None)
+            return None, -1
         for i in range(n_qwords):
             at_csr_addr = csr_addr + (i * 8)
             try:
-                (status, qword) = self.peek_qword(at_csr_addr, chip_inst)
+                (status, qword) = self._peek_qword(at_csr_addr, chip_inst)
                 if not status:
                     raise Exception('peek operation failed ...')
-                #logger.info('status={}, qword={}'.format(status, qword))
                 qwords.append(qword)
             except Exception as e:
-                logger.error(('s1 csr2 peek failed for at_csr_addr={}').format(at_csr_addr))
+                logger.error('s1 csr2 peek failed for at_csr_addr={}'.format(at_csr_addr))
                 raise Exception('peek operation failed ...')
-        return (True, qwords)
-    #-------------------------------------------------------------------------------
-    def local_csr_poke(self, csr_addr, qword_array, chip_inst=None):
-        logger.info(('s1 csr2 I2C poke! chip_inst: {0} csr_addr: {1} poke_array:{2}').format(chip_inst, hex(csr_addr), map(hex, qword_array)))
-        if not qword_array:
+        return qwords, 0
+
+    def i2c_csr_poke(self, csr_addr, word_array, chip_inst=None):
+        """
+        Overrides the method from the base i2c class to provide S1
+        functionality.
+        """
+        logger.info('s1 csr2 I2C poke! chip_inst: {0} csr_addr: {1} poke_array:{2}'.format(chip_inst,
+                                                                                           hex(csr_addr),
+                                                                                           map(hex, word_array)))
+        if not word_array:
             logger.error('s1 csr2 poke array empty ...')
             return False
-        for (i, qword) in enumerate(qword_array):
+        for (i, qword) in enumerate(word_array):
             at_csr_addr = csr_addr + (i * 8)
-            logger.debug(('poke at_csr_addr={} qword={}').format(hex(at_csr_addr), hex(qword)))
-            self.poke_qword(at_csr_addr, qword, chip_inst)
+            logger.debug('poke at_csr_addr={} qword={}'.format(hex(at_csr_addr), hex(qword)))
+            self._poke_qword(at_csr_addr, qword, chip_inst)
         return True
-    #-------------------------------------------------------------------------------
