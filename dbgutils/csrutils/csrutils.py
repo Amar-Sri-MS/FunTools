@@ -840,12 +840,14 @@ def connect(dut_name, mode, force_connect=False, chip="f1"):
             i2c_probe_serial = dut_i2c_info[1]
             i2c_probe_ip = dut_i2c_info[2]
             i2c_slave_addr = dut_i2c_info[3]
+            i2c_bitrate = dut_i2c_info[4]
             status = dbgprobe().connect(mode='i2c', bmc_board=False,
                                         probe_ip_addr=i2c_probe_ip,
                                         probe_id=i2c_probe_serial,
                                         slave_addr=i2c_slave_addr,
                                         force=force_connect,
-                                        chip_type=chip)
+                                        chip_type=chip,
+                                        i2c_bitrate=i2c_bitrate)
         else:
             bmc_ip = dut_i2c_info[1]
             status = dbgprobe().connect(mode='i2c', bmc_board=True,

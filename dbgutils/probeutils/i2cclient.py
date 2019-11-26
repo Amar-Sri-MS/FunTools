@@ -34,7 +34,7 @@ class I2C_Client(object):
     # Opens tcp connection with i2c proxy server and
     # opens remote i2c device connection
     def connect(self, ip_address, dev_id, slave_addr=None, force_connect=False,
-                chip_type='f1'):
+                chip_type='f1', i2c_bitrate=500):
         self.con_handle = jsocket.JsonClient(address = ip_address,
                                port = constants.SERVER_TCP_PORT)
         if self.con_handle is None:
@@ -47,6 +47,7 @@ class I2C_Client(object):
         connect_args["user"] = getpass.getuser()
         connect_args["force_connect"] = force_connect
         connect_args["chip_type"] = chip_type
+        connect_args["i2c_bitrate"] = i2c_bitrate
         time.sleep(0.5)
         self.con_handle.send_obj({"cmd": "CONNECT",
                                   "args": connect_args})
@@ -145,7 +146,7 @@ class I2C_Client(object):
         if fast_poke:
             csr_poke_args["fast_poke"] = word_array
 
-	retry_count = 0
+        retry_count = 0
         while retry_count < 10:
             self.con_handle.send_obj({"cmd": "CSR_POKE",
                                       "args": csr_poke_args})

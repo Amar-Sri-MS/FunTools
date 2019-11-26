@@ -19,10 +19,8 @@ class constants(object):
     IC_DEVICE_MODE_I2C = 0x2
     IC_DEVICE_MODE_GPIO = 0x0
 
-    # TODO (jimmy): this needs to be part of the config, because the rates
-    #               vary depending on whether we're running on real hardware
-    #               or palladium
-    I2C_XFER_BIT_RATE = 500
+    # Can be overriden from the dut.cfg file with i2c_bitrate settings
+    DEFAULT_I2C_XFER_BIT_RATE = 500
     F1_I2C_ADDR_MODE = 0
     SBP_CMD_EXE_TIME_WAIT = 1
     I2C_CSR_SLEEP_SEC = 0.001
@@ -50,9 +48,10 @@ def byte_array_to_words_be(byte_array):
 
 
 class aardvark:
-    def __init__(self, dev_id, slave_addr):
+    def __init__(self, dev_id, slave_addr, bitrate):
         self.dev_id = dev_id
         self.slave_addr = slave_addr
+        self.bitrate = bitrate
         self.handle = None
 
     # Check i2c device presence and open the device.
@@ -110,8 +109,8 @@ class aardvark:
             logger.error(status_msg)
             return (False, status_msg)
 
-        status = aa_i2c_bitrate(h, constants.I2C_XFER_BIT_RATE)
-        if status != constants.I2C_XFER_BIT_RATE:
+        status = aa_i2c_bitrate(h, self.bitrate)
+        if status != self.bitrate:
             status_msg = ('Error Configuring the bitrate!'
                     ' {0}({1})').format(aa_status_string(status), status)
             logger.error(status_msg)
@@ -340,13 +339,14 @@ class bmc:
 		return num_bytes_wrote
 
 class i2c:
-    def __init__(self, dev_id=None, slave_addr=None, bmc_ip_address=None):
+    def __init__(self, dev_id=None, slave_addr=None, bmc_ip_address=None,
+                 bitrate=constants.DEFAULT_I2C_XFER_BIT_RATE):
         self.bmc_board = False
         if bmc_ip_address:
             self.bmc_board = True
             self.master = bmc(bmc_ip_address)
         else:
-            self.master = aardvark(dev_id, slave_addr)
+            self.master = aardvark(dev_id, slave_addr, bitrate)
 
     # Check i2c device presence and open the device.
     # Returns the device handle

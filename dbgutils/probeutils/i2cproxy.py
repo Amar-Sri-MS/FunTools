@@ -166,6 +166,7 @@ class I2CFactoryThread(jsocket.ServerFactoryThread):
                     return
                 force_connect = connect_args.get("force_connect", None)
                 chip_type = connect_args.get("chip_type", 'f1')
+                bitrate = connect_args.get("i2c_bitrate", 500)
 
                 logger.info('**** Connection request to dev_id: {0}'
                             ' slave_addr: {1} from user:"{2}"'.format(dev_id,
@@ -186,7 +187,7 @@ class I2CFactoryThread(jsocket.ServerFactoryThread):
                         logger.error(err_msg)
                         self.send_obj({"STATUS":[False, err_msg]})
                 try:
-                    i2c_conn = self.create_i2c(chip_type, dev_id, slave_addr)
+                    i2c_conn = self.create_i2c(chip_type, dev_id, slave_addr, bitrate)
                     (status, status_msg) = i2c_conn.i2c_connect()
                     if status is True:
                         self.i2c_dev_id = dev_id
@@ -358,12 +359,12 @@ class I2CFactoryThread(jsocket.ServerFactoryThread):
                 logger.debug("Invalid msg!")
                 self.send_obj({"STATUS":[False, "Invalid message!"]})
 
-    def create_i2c(self, chip_type, id, addr):
+    def create_i2c(self, chip_type, id, addr, bitrate):
         """ Simple factory for i2c """
         if chip_type == 'f1':
-            return i2c(dev_id=id, slave_addr=addr)
+            return i2c(dev_id=id, slave_addr=addr, bitrate=bitrate)
         else:
-            return s1i2c(dev_id=id, slave_addr=addr)
+            return s1i2c(dev_id=id, slave_addr=addr, bitrate=bitrate)
 
 
 if __name__ == "__main__":
