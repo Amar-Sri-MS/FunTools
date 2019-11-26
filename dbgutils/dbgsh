@@ -120,8 +120,6 @@ class ArgFormatter(argparse.HelpFormatter):
         # prefix with 'usage:'
         return '%s%s\n\n' % (prefix, usage)
 
-def auto_int(x):
-    return int(x, 0)
 
 class dbgsh(cmd2.Cmd):
     intro = 'Welcome to the debug shell.   Type help or ? to list commands.\n'
