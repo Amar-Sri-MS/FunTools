@@ -859,11 +859,8 @@ class s1i2c(i2c):
             logger.debug(('poke at_csr_addr={} qword={}').format(hex(at_csr_addr), hex(qword)))
             self.poke_qword(at_csr_addr, qword, chip_inst)
         ######### using self direct poke for wide reg csrctl ##################
-        from wide_csrctl import WideCSRCTL
-        csr_data = WideCSRCTL(size=len(qwords), op=3, addr=address)
-        from array import array
+        qword = (((0x3F & len(qwords)) << 36) | ((0xF & 0x3) << 32) | address ) & 0xFFFFFFFFFFFFFFFF 
         CSRCTL_REGISTER = 0x00002158
-        qword = struct.unpack('>Q', struct.pack('BBBBBBBB', *map(ord, str(csr_data))))[0]
         logger.debug(('poke at_csr_addr={} qword={}').format(hex(CSRCTL_REGISTER), hex(qword)))
         self.poke_qword(CSRCTL_REGISTER, qword, chip_inst)
         return True
@@ -903,11 +900,8 @@ class s1i2c(i2c):
     def peek_wide_qword(self, address, wlen, chip_inst=None):
         logger.debug(('s1 csr2 qword_wide_peek csr2_addr:{0} length:{1} chip_inst:{2}').format(hex(address), hex(wlen), chip_inst))
         ######### using native direct poke for wide reg csrctl ##################
-        from wide_csrctl import WideCSRCTL
-        csr_data = WideCSRCTL(size=wlen, op=2, addr=address)
-        from array import array
+        qword = (((0x3F & wlen) << 36) | ((0xF & 0x2) << 32) | address ) & 0xFFFFFFFFFFFFFFFF
         CSRCTL_REGISTER = 0x00002158
-        qword = struct.unpack('>Q', struct.pack('BBBBBBBB', *map(ord, str(csr_data))))[0]
         logger.debug(('poke at_csr_addr={} qword={}').format(hex(CSRCTL_REGISTER), hex(qword)))
         self.poke_qword(CSRCTL_REGISTER, qword, chip_inst)
         ######### using self direct peek for wide reg csrctl data ##############
