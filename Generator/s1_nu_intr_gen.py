@@ -1,4 +1,8 @@
 #!/usr/bin/python
+#
+# python s1_nu_intr_gen.py <output dir> input_file.h
+# eg.
+#
 
 import argparse
 import os
@@ -11,6 +15,10 @@ from jinja2 import Template
 
 h_tmpl="s1_nu_intr_h.tmpl"
 c_tmpl="s1_nu_intr.tmpl"
+inst_line_begin="enum csr2dev_"
+inst_line_end="_instances {"
+inst_end=","
+inst_list_end="};"
 reg_line_begin="struct csr2fields_"
 reg_line_end="_status {"
 bit_line_end="};"
@@ -19,6 +27,27 @@ check_fatal="fatal"
 def Usage():
   sys.stderr.write("s1_nu_intr_gen.py: usage: <filename>\n")
   sys.stderr.write("  <filename>: input source (*.h) for code generation.\n")
+
+def IsInst(x):
+    match1 = x.find(inst_line_begin)
+    match2 = x.find(inst_line_end)
+    ret = match1 != -1 and match2 != -1
+    return ret
+
+def ParseInst(f, base):
+    #print "Instance found"
+    inst_list=list()
+    for y in f:
+        if y.find(inst_list_end) != -1:
+            #print "end of inst"
+            break
+        match1 = y.find(base.upper())
+        match2 = y.find(inst_end)
+        if (match1 != -1 and match2 != -1):
+            inst = y[match1:match2]
+            inst_list.append(inst)
+    #print inst_list
+    return inst_list
 
 def ParseReg(x):
     match1 = x.find(reg_line_begin)
@@ -41,7 +70,7 @@ def ParseBit(y):
     #print tok1
     return tok1[0]
 
-def Parse(filename):
+def Parse(filename, base):
   try:
     #print("file open ", filename)
     f = open(filename)
@@ -54,6 +83,8 @@ def Parse(filename):
   #print("loop start...")
   reg_list=list()
   for x in f:
+    if IsInst(x):
+      inst_list = ParseInst(f, base)
     if reg_bit == 0:
       reg = ParseReg(x)
       if reg:
@@ -70,12 +101,13 @@ def Parse(filename):
         continue
   f.close()
   #print "input done"
+  #print inst_list
   #print reg_list
   #print bit_list
   #print "start done"
-  return reg_list
+  return inst_list, reg_list
 
-def Gen(base, filebase, dst, reg_list):
+def Gen(base, filebase, dst, inst_list, reg_list):
   this_dir = os.path.dirname(os.path.abspath(__file__))
   env = Environment(loader=FileSystemLoader(this_dir))
 
@@ -86,6 +118,7 @@ def Gen(base, filebase, dst, reg_list):
   jinja_docs = {
     'output_base' : base,
     'filebase' : filebase,
+    'inst_list' : inst_list,
     'reg_list' : reg_list,
     'date' : d.strftime("%x"),
     'year' : d.year
@@ -107,6 +140,7 @@ def Gen(base, filebase, dst, reg_list):
   #  print i.name
   #  del i.bit_list
   del reg_list
+  del inst_list
 
 def main():
   pargs = argparse.ArgumentParser(description='Command-line example')
@@ -118,7 +152,7 @@ def main():
     if filename == args.inputs[0]:
       dst = filename
       continue
-    print "Processing file", filename
+    print "Processing file", filename, "output directory", dst
     # extra filename -> output_base
     toklist = filename.split("/")
     #print "tklist ", toklist[-1]
@@ -131,8 +165,8 @@ def main():
 	base = x.split("_nu")
     #print "base ", base
     """
-
-    Gen(base[0], filebase, dst, Parse(filename))
+    reg_list, inst_list = Parse(filename, base[0])
+    Gen(base[0], filebase, dst, reg_list, inst_list)
 
 if __name__ == '__main__':
   main()
