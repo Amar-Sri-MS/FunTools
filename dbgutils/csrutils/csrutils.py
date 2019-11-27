@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python
 '''
 csr find/list/peek/poke utilities
@@ -823,13 +822,13 @@ def server_connect(args):
         force_connect = True
         logger.info('Force connection: {0}'.format(force_connect))
 
-    probe = connect(dut_name, mode, force_connect)
+    probe = connect(dut_name, mode, force_connect, chip=args.chip[0])
     if probe is None:
         print('Failed to connect to dut: {0}'.format(dut_name, mode))
         return
 
-def connect(dut_name, mode, force_connect=False):
-    logger.debug('dut: {0} mode: {1}'.format(dut_name, mode))
+def connect(dut_name, mode, force_connect=False, chip="f1"):
+    logger.debug('dut: {0} mode: {1} chip: {2}'.format(dut_name, mode, chip))
     if mode == 'i2c':
         dut_i2c_info = dut().get_i2c_info(dut_name)
         if dut_i2c_info is None:
@@ -841,15 +840,18 @@ def connect(dut_name, mode, force_connect=False):
             i2c_probe_serial = dut_i2c_info[1]
             i2c_probe_ip = dut_i2c_info[2]
             i2c_slave_addr = dut_i2c_info[3]
+            i2c_bitrate = dut_i2c_info[4]
             status = dbgprobe().connect(mode='i2c', bmc_board=False,
-                    probe_ip_addr=i2c_probe_ip,
-                    probe_id=i2c_probe_serial,
-                    slave_addr=i2c_slave_addr,
-                    force=force_connect)
+                                        probe_ip_addr=i2c_probe_ip,
+                                        probe_id=i2c_probe_serial,
+                                        slave_addr=i2c_slave_addr,
+                                        force=force_connect,
+                                        chip_type=chip,
+                                        i2c_bitrate=i2c_bitrate)
         else:
             bmc_ip = dut_i2c_info[1]
             status = dbgprobe().connect(mode='i2c', bmc_board=True,
-                    bmc_ip_address=bmc_ip)
+                                        bmc_ip_address=bmc_ip)
     elif mode == 'jtag':
         dut_jtag_info = dut().get_jtag_info(dut_name)
         if dut_jtag_info is None:
@@ -862,7 +864,7 @@ def connect(dut_name, mode, force_connect=False):
                                         probe_ip_addr = jtag_probe_ip,
                                         probe_id = jtag_probe_id)
         else:
-            bmc_ip = dut_i2c_info[1]
+            bmc_ip = dut_jtag_info[1]
             jtag_probe_id = dut_jtag_info[2]
             jtag_probe_ip = dut_jtag_info[3]
             status = dbgprobe().connect(mode='jtag', bmc_board=True,
@@ -899,14 +901,12 @@ def connect(dut_name, mode, force_connect=False):
         return None
 
 
-
-
 # disconnect handler for commandline interface.
 # Disconnects from remote server
 def server_disconnect(args):
     status = dbgprobe().disconnect()
     if status is not True:
-        looger.error("Probe disconnect failed!")
+        logger.error("Probe disconnect failed!")
     else:
         logger.info("Probe is disconnected!");
     return
@@ -1677,5 +1677,4 @@ class csr_metadata:
 
     def csr_inst_verify(self, csr_name):
         csr_list = self.get_csr_def(csr_name=csr_name)
-
 
