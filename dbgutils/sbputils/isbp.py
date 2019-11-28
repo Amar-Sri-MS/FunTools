@@ -936,6 +936,7 @@ class s1i2c(i2c):
             except Exception as e:
                 logger.error(('s1 csr2 peek failed for at_csr_addr={}').format(at_csr_addr))
                 raise Exception('peek operation failed ...')
+            return (True, qwords)
         else:
             try:
                 (status, qwords) = self.peek_wide_qword(csr_addr, n_qwords, chip_inst)
@@ -953,6 +954,7 @@ class s1i2c(i2c):
             logger.error('s1 csr2 poke array empty ...')
             return False
         elif len(qword_array) == 1: #direct
+            qword = qword_array[0]
             at_csr_addr = csr_addr
             logger.debug(('poke at_csr_addr={} qword={}').format(hex(at_csr_addr), hex(qword)))
             self.poke_qword(at_csr_addr, qword, chip_inst)
