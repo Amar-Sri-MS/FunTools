@@ -854,6 +854,8 @@ class i2c:
 class s1i2c(i2c):
     """
     i2c specialization for S1, because S1 i2c access is different.
+
+    TODO: remove duplication with version in isbp
     """
 
     def _poke_qword(self, address, qword, chip_inst=None):
@@ -932,6 +934,54 @@ class s1i2c(i2c):
             logging.error(traceback.format_exc())
             return (False, None)
 
+    def _peek_wide_qword(self, address, wlen, chip_inst=None):
+        """
+        Internal method for peeking at a register that is > 1 qword in length.
+
+        Returns a tuple of (success, word) where success is a boolean.
+        """
+        logger.debug('s1 csr2 qword_wide_peek csr2_addr:{0} length:{1} chip_inst:{2}'.format(hex(address), hex(wlen),
+                                                                                             chip_inst))
+        ######### using native direct poke for wide reg csrctl ##################
+        qword = (((0x3F & wlen) << 36) | ((0xF & 0x2) << 32) | address) & 0xFFFFFFFFFFFFFFFF
+        CSRCTL_REGISTER = 0x00002158
+        logger.debug(('poke at_csr_addr={} qword={}').format(hex(CSRCTL_REGISTER), hex(qword)))
+        self._poke_qword(CSRCTL_REGISTER, qword, chip_inst)
+        ######### using self direct peek for wide reg csrctl data ##############
+        try:
+            CSRCTL_DATA_ADDR = 0x00002100
+            qwords = []
+            for i in range(wlen):
+                at_csr_addr = CSRCTL_DATA_ADDR + (i * 8)
+                (status, qword) = self._peek_qword(at_csr_addr, chip_inst)
+                if not status:
+                    raise Exception('wide peek operation failed ...')
+                qwords.append(qword)
+            return True, qwords
+        except Exception as e:
+            logging.error(traceback.format_exc())
+            return False, None
+
+    def _poke_wide_qword(self, address, qwords, chip_inst=None):
+        """
+        Internal method for poking values into a register that is > 1 qword
+        in length.
+        """
+        logger.debug('s1 wide csr2 qword_poke csr2_addr:{0} qwords={1}, chip_inst:{2}'.format(hex(address),
+                                                                                              qwords, chip_inst))
+        ######### using self direct poke for wide reg csrctl data ##############
+        CSRCTL_DATA_ADDR = 0x00002100
+        for (i, qword) in enumerate(qwords):
+            at_csr_addr = CSRCTL_DATA_ADDR + (i * 8)
+            logger.debug(('poke at_csr_addr={} qword={}').format(hex(at_csr_addr), hex(qword)))
+            self._poke_qword(at_csr_addr, qword, chip_inst)
+        ######### using self direct poke for wide reg csrctl ##################
+        qword = (((0x3F & len(qwords)) << 36) | ((0xF & 0x3) << 32) | address ) & 0xFFFFFFFFFFFFFFFF
+        CSRCTL_REGISTER = 0x00002158
+        logger.debug(('poke at_csr_addr={} qword={}').format(hex(CSRCTL_REGISTER), hex(qword)))
+        self._poke_qword(CSRCTL_REGISTER, qword, chip_inst)
+        return True
+
     def i2c_csr_peek(self, csr_addr, csr_width_words, chip_inst=None):
         """
         Overrides the method from the base i2c class to provide S1
@@ -941,11 +991,11 @@ class s1i2c(i2c):
         n_qwords = csr_width_words
 
         logger.info('s1 csr2 I2C peek! chip_inst: {0} csr_addr: {1} n_qwords:{2}'.format(chip_inst, hex(csr_addr), n_qwords))
-        if not n_qwords:
+        if not n_qwords or n_qwords == 0:
             logger.error(('s1 csr2 peek n_qwords={}').format(n_qwords))
             return None, -1
-        for i in range(n_qwords):
-            at_csr_addr = csr_addr + (i * 8)
+        elif n_qwords == 1:
+            at_csr_addr = csr_addr
             try:
                 (status, qword) = self._peek_qword(at_csr_addr, chip_inst)
                 if not status:
@@ -954,6 +1004,16 @@ class s1i2c(i2c):
             except Exception as e:
                 logger.error('s1 csr2 peek failed for at_csr_addr={}'.format(at_csr_addr))
                 raise Exception('peek operation failed ...')
+        else:
+            try:
+                (status, qwords) = self._peek_wide_qword(csr_addr, n_qwords, chip_inst)
+                if not status:
+                    raise Exception('wide peek operation failed ...')
+            except Exception as e:
+                logger.error('s1 csr2 wide peek failed for at_csr_addr={}'.format(csr_addr))
+                logging.error(traceback.format_exc())
+                raise Exception('wide peek api operation failed ...')
+
         return qwords, 0
 
     def i2c_csr_poke(self, csr_addr, word_array, chip_inst=None):
@@ -967,8 +1027,20 @@ class s1i2c(i2c):
         if not word_array:
             logger.error('s1 csr2 poke array empty ...')
             return False
-        for (i, qword) in enumerate(word_array):
-            at_csr_addr = csr_addr + (i * 8)
+        elif len(word_array) == 1: # direct
+            qword = word_array[0]
+            at_csr_addr = csr_addr
             logger.debug('poke at_csr_addr={} qword={}'.format(hex(at_csr_addr), hex(qword)))
-            self._poke_qword(at_csr_addr, qword, chip_inst)
+            status = self._poke_qword(at_csr_addr, qword, chip_inst)
+            if not status:
+                raise Exception('poke operation failed ...')
+        else:
+            try:
+                (status) = self._poke_wide_qword(csr_addr, word_array, chip_inst)
+                if not status:
+                    raise Exception('wide poke operation failed ...')
+            except Exception as e:
+                logger.error(('s1 csr2 wide poke failed for at_csr_addr={}').format(csr_addr))
+                logging.error(traceback.format_exc())
+                raise Exception('wide poke api operation failed ...')
         return True
