@@ -10,6 +10,8 @@ from sys import platform as _platform
 if _platform == "linux" or _platform == "linux2":
     from jtagclient import *
 
+from i2cutils import constants
+
 logger = logging.getLogger("dbgclient")
 logger.setLevel(logging.INFO)
 
@@ -26,7 +28,9 @@ class DBG_Client(object):
     def connect(self, mode, probe_ip_addr=None,
                 bmc_board=False, bmc_ip_address=None,
                 probe_id=None, slave_addr = None,
-                force = False):
+                force = False,
+                chip_type='f1',
+                i2c_bitrate=constants.DEFAULT_I2C_XFER_BIT_RATE):
         if self.connected is True:
             try:
                 self.disconnect()
@@ -39,7 +43,7 @@ class DBG_Client(object):
             if mode == 'i2c':
                 dbgclient = I2C_Client(mode)
                 status = dbgclient.connect(probe_ip_addr, probe_id,
-                                           slave_addr, force)
+                                           slave_addr, force, chip_type, i2c_bitrate)
             elif mode == 'jtag':
                 if (_platform == "linux" or _platform == "linux2"):
                     dbgclient = JTAG_Client()

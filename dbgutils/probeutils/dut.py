@@ -5,9 +5,12 @@ import json
 import logging
 import pkg_resources
 
+from i2cutils import constants
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("dut")
 logger.setLevel(logging.INFO)
+
 
 class dut(object):
     def __init__(self):
@@ -32,6 +35,7 @@ class dut(object):
             i2c_slave_addr = dut_cfg.get('i2c_slave_addr', None)
             i2c_slave_addr = int(i2c_slave_addr, 0)
             i2c_probe_serial = dut_cfg.get('i2c_probe_serial', None)
+            i2c_bitrate = dut_cfg.get('i2c_bitrate', constants.DEFAULT_I2C_XFER_BIT_RATE)
             if not i2c_probe_serial or not i2c_slave_addr or not i2c_proxy_ip:
                 logger.error('Invalid dut db for dut: {}'.format(dut))
                 return None
@@ -43,7 +47,7 @@ class dut(object):
         if bmc is True:
             return (True, bmc_ip)
         else:
-            return (False, i2c_probe_serial, i2c_proxy_ip, i2c_slave_addr)
+            return (False, i2c_probe_serial, i2c_proxy_ip, i2c_slave_addr, i2c_bitrate)
 
     def get_jtag_info(self, dut):
         if dut == None:

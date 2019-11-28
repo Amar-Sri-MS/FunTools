@@ -16,6 +16,21 @@ from dututils import dut
 logger = logging.getLogger('isbp')
 logger.setLevel(logging.DEBUG)
 
+enum_CSR_errorcodes = {
+    0x0: 'CSR_STATUS_OK: Success',
+    0x1: 'CSR_STATUS_EADDR: (RSU) address claimed, but could not be decoded',
+    0x2: 'CSR_STATUS_EPRIV: (RSU) insufficient privilege, or (CTL) WEN/REN enable not set',
+    0x3: 'CSR_STATUS_EACCESS: (RSU) reading write-only or writing read-only register',
+    0x4: 'CSR_STATUS_ESIZE: (RSU) size mismatch',
+    0x5: 'CSR_STATUS_ENACK: (RSU) user logic nack',
+    0x6: 'CSR_STATUS_ERESET: (RSU) csrdec in reset',
+    0x7: 'CSR_STATUS_EUNCLM: (CTL) address was unclaimed',
+    0x8: 'CSR_STATUS_BUSY: (CTL) operation busy - info status in wide ctrl reg (not in response code)',
+    0x9: 'CSR_STATUS_EBADOP: (CTL) op is not read/write req',
+    0xA: 'CSR_STATUS_EBADADD: (CTL) address did not decode to a ring',
+    0xB: 'CSR_STATUS_ETIMOUT: (CTL) response did not come after timeout and cancel',
+}
+
 def dumphexsane(x):
     r = ""
     for i in x:
@@ -842,7 +857,9 @@ class s1i2c(i2c):
                 logger.error('s1 csr2 Read Error!  status_bytes:{0} Expected: {1}'.format(num_status_bytes, 1))
                 return False
             if status[0] != 0x80:
-                logger.error('s1 csr2 Write status returned Error! {0}'.format(status[0]))
+                opcode = status[0]&0xf
+                opcode_string = enum_CSR_errorcodes.get(opcode, 'Alert !! Unknown error-code')
+                logger.error('s1 csr2 Write status returned Error! rc={0}: {1}'.format(status[0], opcode_string))
                 return False
         except Exception as e:
             logging.error(e)
@@ -886,7 +903,9 @@ class s1i2c(i2c):
                 logger.error(('s1 csr2 Read Error! read_bytes:{0} Expected: {1}').format(read_bytes, (8 + 1)))
                 return (False, None)
             if read_data[0] != 0x80:
-                logger.error(('s1 csr2 Read status returned Error! {0}').format(read_data[0]))
+                opcode = read_data[0]&0xf
+                opcode_string = enum_CSR_errorcodes.get(opcode, 'Alert !! Unknown error-code')
+                logger.error('s1 csr2 Read status returned Error! rc={0}: {1}'.format(read_data[0], opcode_string))
                 return (False, read_data[0]&0xf)
 
             read_data = read_data[1:]
@@ -957,7 +976,9 @@ class s1i2c(i2c):
             qword = qword_array[0]
             at_csr_addr = csr_addr
             logger.debug(('poke at_csr_addr={} qword={}').format(hex(at_csr_addr), hex(qword)))
-            self.poke_qword(at_csr_addr, qword, chip_inst)
+            status = self.poke_qword(at_csr_addr, qword, chip_inst)
+            if not status:
+                raise Exception('poke operation failed ...')
         else:
             try:
                 (status) = self.poke_wide_qword(csr_addr, qword_array, chip_inst)
@@ -967,7 +988,6 @@ class s1i2c(i2c):
                 logger.error(('s1 csr2 wide poke failed for at_csr_addr={}').format(csr_addr))
                 logging.error(traceback.format_exc())
                 raise Exception('wide poke api operation failed ...')
-
         return True
 
 def local_csr_i2c_probe(chip, name):
