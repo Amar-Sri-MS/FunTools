@@ -856,6 +856,8 @@ class s1i2c(i2c):
     i2c specialization for S1, because S1 i2c access is different.
 
     TODO: remove duplication with version in isbp
+    TODO: follow convention of not rethrowing exceptions, but returning error
+          codes instead.
     """
 
     def _poke_qword(self, address, qword, chip_inst=None):
