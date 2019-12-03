@@ -179,6 +179,7 @@ class HTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 class Message:
     def __init__(self):
         self.data = ''
+        self.file_id = None
 
 
 class RdsockHandler:
@@ -191,8 +192,8 @@ class RdsockHandler:
     """
 
     # Header length for messages that we receive. This is
-    # sizeof(rdsock_msghdr) in FunOS
-    HDR_LEN = 12
+    # sizeof(rdsock_msghdr) in FunOS, plus 2 bytes for file id
+    HDR_LEN = 14
 
     # Possible state values for message processing.
     STATE_HEADER = 0
@@ -279,10 +280,16 @@ class RdsockHandler:
         Processes a complete message header.
 
         The message header format is defined in the struct rdsock_msghdr.
-        One additional byte is added for the cluster index.
+        Two additional bytes (a short) are added for a file ID - hopefully
+        we never have more than 65535 .h and .c files in FunOS.
+
+        The file ID is required so that we can merge multiple messages for
+        the same file appropriately - rdsock has a 32KB limit on each message,
+        but some coverage files exceed that size.
         """
         self.current_message = Message()
         self.data_remaining = struct.unpack('>L', self.partial_header[8:12])[0]
+        self.current_message.file_id = struct.unpack('>H', self.partial_header[12:14])[0]
 
 
 class CoverageWriter:
@@ -293,7 +300,6 @@ class CoverageWriter:
         self.buf = buf
         self.output_dir = output_dir
         self.lock = threading.Lock()
-        self.idx = 0
 
     def __call__(self):
         """
@@ -328,10 +334,10 @@ class CoverageWriter:
         are processing.
         """
         if self.output_dir is None:
+            log('No output dir')
             return
 
-        cov_file = 'cov_data_%d' % self.idx
-        self.idx += 1
+        cov_file = 'cov_data_%d' % msg.file_id
         cov_file = os.path.join(self.output_dir, cov_file)
         try:
             with open(cov_file, 'ab') as fh:
