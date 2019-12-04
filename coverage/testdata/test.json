@@ -1,0 +1,333 @@
+{
+    "filename": "testoutput/services/malloc/fun_maheap.gcda", 
+    "functions": [
+        {
+            "cfg_chksum": 3635956734, 
+            "ctr_groups": [
+                {
+                    "idx": 0, 
+                    "vals": [
+                        0, 
+                        0, 
+                        0, 
+                        0, 
+                        0, 
+                        0, 
+                        0, 
+                        0, 
+                        0, 
+                        0, 
+                        0, 
+                        0, 
+                        0, 
+                        0, 
+                        0, 
+                        0, 
+                        0, 
+                        0, 
+                        0, 
+                        0, 
+                        0, 
+                        0, 
+                        0, 
+                        0, 
+                        0, 
+                        0, 
+                        0, 
+                        0, 
+                        0, 
+                        0
+                    ]
+                }, 
+                {"idx": 1, "vals": []}, 
+                {"idx": 2, "vals": []}, 
+                {"idx": 3, "vals": []}, 
+                {"idx": 4, "vals": []}, 
+                {"idx": 5, "vals": []}, 
+                {"idx": 6, "vals": []}, 
+                {"idx": 7, "vals": []}, 
+                {"idx": 8, "vals": []}
+            ], 
+            "ident": 626311392, 
+            "line_chksum": 3454888561
+        }, 
+        {
+            "cfg_chksum": 1631974238, 
+            "ctr_groups": [
+                {"idx": 0, "vals": [0, 0, 0, 0]}, 
+                {"idx": 1, "vals": []}, 
+                {"idx": 2, "vals": []}, 
+                {"idx": 3, "vals": []}, 
+                {"idx": 4, "vals": []}, 
+                {"idx": 5, "vals": []}, 
+                {"idx": 6, "vals": []}, 
+                {"idx": 7, "vals": []}, 
+                {"idx": 8, "vals": []}
+            ], 
+            "ident": 507506678, 
+            "line_chksum": 537332706
+        }, 
+        {
+            "cfg_chksum": 1990759581, 
+            "ctr_groups": [
+                {"idx": 0, "vals": [0, 0, 0, 0]}, 
+                {"idx": 1, "vals": []}, 
+                {"idx": 2, "vals": []}, 
+                {"idx": 3, "vals": []}, 
+                {"idx": 4, "vals": []}, 
+                {"idx": 5, "vals": []}, 
+                {"idx": 6, "vals": []}, 
+                {"idx": 7, "vals": []}, 
+                {"idx": 8, "vals": []}
+            ], 
+            "ident": 1606358388, 
+            "line_chksum": 4212446775
+        }, 
+        {
+            "cfg_chksum": 2754642872, 
+            "ctr_groups": [
+                {"idx": 0, "vals": [0]}, 
+                {"idx": 1, "vals": []}, 
+                {"idx": 2, "vals": []}, 
+                {"idx": 3, "vals": []}, 
+                {"idx": 4, "vals": []}, 
+                {"idx": 5, "vals": []}, 
+                {"idx": 6, "vals": []}, 
+                {"idx": 7, "vals": []}, 
+                {"idx": 8, "vals": []}
+            ], 
+            "ident": 1257496596, 
+            "line_chksum": 1376535593
+        }, 
+        {
+            "cfg_chksum": 1946099778, 
+            "ctr_groups": [
+                {"idx": 0, "vals": [0, 0, 0]}, 
+                {"idx": 1, "vals": []}, 
+                {"idx": 2, "vals": []}, 
+                {"idx": 3, "vals": []}, 
+                {"idx": 4, "vals": []}, 
+                {"idx": 5, "vals": []}, 
+                {"idx": 6, "vals": []}, 
+                {"idx": 7, "vals": []}, 
+                {"idx": 8, "vals": []}
+            ], 
+            "ident": 1205655207, 
+            "line_chksum": 3349359233
+        }, 
+        {
+            "cfg_chksum": 8307266, 
+            "ctr_groups": [
+                {"idx": 0, "vals": [0, 0, 0, 11, 0, 0, 0, 0, 10, 10, 13, 13]}, 
+                {"idx": 1, "vals": []}, 
+                {"idx": 2, "vals": []}, 
+                {"idx": 3, "vals": []}, 
+                {"idx": 4, "vals": []}, 
+                {"idx": 5, "vals": []}, 
+                {"idx": 6, "vals": []}, 
+                {"idx": 7, "vals": []}, 
+                {"idx": 8, "vals": []}
+            ], 
+            "ident": 421967207, 
+            "line_chksum": 1498115881
+        }, 
+        {
+            "cfg_chksum": 2641192395, 
+            "ctr_groups": [
+                {
+                    "idx": 0, 
+                    "vals": [
+                        14824, 
+                        0, 
+                        0, 
+                        0, 
+                        0, 
+                        14824, 
+                        0, 
+                        0, 
+                        14824, 
+                        0, 
+                        14824, 
+                        0, 
+                        0, 
+                        0, 
+                        203404, 
+                        14824, 
+                        14824, 
+                        0, 
+                        14824, 
+                        14824, 
+                        0, 
+                        0, 
+                        0, 
+                        0, 
+                        0, 
+                        0, 
+                        0
+                    ]
+                }, 
+                {"idx": 1, "vals": []}, 
+                {"idx": 2, "vals": []}, 
+                {"idx": 3, "vals": []}, 
+                {"idx": 4, "vals": []}, 
+                {"idx": 5, "vals": []}, 
+                {"idx": 6, "vals": []}, 
+                {"idx": 7, "vals": []}, 
+                {"idx": 8, "vals": []}
+            ], 
+            "ident": 577105615, 
+            "line_chksum": 1986947239
+        }, 
+        {
+            "cfg_chksum": 3233526334, 
+            "ctr_groups": [
+                {"idx": 0, "vals": [0, 0]}, 
+                {"idx": 1, "vals": []}, 
+                {"idx": 2, "vals": []}, 
+                {"idx": 3, "vals": []}, 
+                {"idx": 4, "vals": []}, 
+                {"idx": 5, "vals": []}, 
+                {"idx": 6, "vals": []}, 
+                {"idx": 7, "vals": []}, 
+                {"idx": 8, "vals": []}
+            ], 
+            "ident": 81606626, 
+            "line_chksum": 122921537
+        }, 
+        {
+            "cfg_chksum": 802369939, 
+            "ctr_groups": [
+                {"idx": 0, "vals": [14824, 14824, 14824, 0, 14824, 14824, 14824, 0, 0]}, 
+                {"idx": 1, "vals": []}, 
+                {"idx": 2, "vals": []}, 
+                {"idx": 3, "vals": []}, 
+                {"idx": 4, "vals": []}, 
+                {"idx": 5, "vals": []}, 
+                {"idx": 6, "vals": []}, 
+                {"idx": 7, "vals": []}, 
+                {"idx": 8, "vals": []}
+            ], 
+            "ident": 578858868, 
+            "line_chksum": 3580774460
+        }, 
+        {
+            "cfg_chksum": 2658192826, 
+            "ctr_groups": [
+                {
+                    "idx": 0, 
+                    "vals": [
+                        0, 
+                        0, 
+                        11, 
+                        8478, 
+                        0, 
+                        8598, 
+                        0, 
+                        0, 
+                        0, 
+                        0, 
+                        0, 
+                        0, 
+                        0, 
+                        0, 
+                        0, 
+                        0, 
+                        0, 
+                        0, 
+                        0, 
+                        0, 
+                        0, 
+                        0, 
+                        0, 
+                        0, 
+                        0, 
+                        0, 
+                        0, 
+                        0, 
+                        0, 
+                        0, 
+                        0, 
+                        0, 
+                        0, 
+                        0, 
+                        0, 
+                        0, 
+                        0, 
+                        0, 
+                        0, 
+                        0, 
+                        8518, 
+                        0, 
+                        0, 
+                        8495, 
+                        47, 
+                        47, 
+                        47, 
+                        0, 
+                        0, 
+                        0
+                    ]
+                }, 
+                {"idx": 1, "vals": []}, 
+                {"idx": 2, "vals": []}, 
+                {"idx": 3, "vals": []}, 
+                {"idx": 4, "vals": []}, 
+                {"idx": 5, "vals": []}, 
+                {"idx": 6, "vals": []}, 
+                {"idx": 7, "vals": []}, 
+                {"idx": 8, "vals": []}
+            ], 
+            "ident": 397672361, 
+            "line_chksum": 2873589777
+        }, 
+        {
+            "cfg_chksum": 2754642872, 
+            "ctr_groups": [
+                {"idx": 0, "vals": [8498]}, 
+                {"idx": 1, "vals": []}, 
+                {"idx": 2, "vals": []}, 
+                {"idx": 3, "vals": []}, 
+                {"idx": 4, "vals": []}, 
+                {"idx": 5, "vals": []}, 
+                {"idx": 6, "vals": []}, 
+                {"idx": 7, "vals": []}, 
+                {"idx": 8, "vals": []}
+            ], 
+            "ident": 458134560, 
+            "line_chksum": 3445248840
+        }, 
+        {
+            "cfg_chksum": 2218566722, 
+            "ctr_groups": [
+                {"idx": 0, "vals": [11, 0, 0]}, 
+                {"idx": 1, "vals": []}, 
+                {"idx": 2, "vals": []}, 
+                {"idx": 3, "vals": []}, 
+                {"idx": 4, "vals": []}, 
+                {"idx": 5, "vals": []}, 
+                {"idx": 6, "vals": []}, 
+                {"idx": 7, "vals": []}, 
+                {"idx": 8, "vals": []}
+            ], 
+            "ident": 1030551505, 
+            "line_chksum": 3448334983
+        }, 
+        {
+            "cfg_chksum": 1458096661, 
+            "ctr_groups": [
+                {"idx": 0, "vals": [0, 0, 0, 0, 0, 0]}, 
+                {"idx": 1, "vals": []}, 
+                {"idx": 2, "vals": []}, 
+                {"idx": 3, "vals": []}, 
+                {"idx": 4, "vals": []}, 
+                {"idx": 5, "vals": []}, 
+                {"idx": 6, "vals": []}, 
+                {"idx": 7, "vals": []}, 
+                {"idx": 8, "vals": []}
+            ], 
+            "ident": 730109846, 
+            "line_chksum": 1112912257
+        }
+    ], 
+    "stamp": 2927061476
+}
