@@ -55,7 +55,12 @@
             "A": "reserve(10000, 'hdat')",
             "B": "",
             "index": "3000"
-        }
+        },
+	"KEY_BAG" : {
+	     "A": "key_bag.bin",
+	     "B": "key_bag.bin",
+	     "index": "2500"
+	}
     },
     "signed_images": {
         "hu_sds.bin": {
@@ -155,7 +160,16 @@
             "cert": "",
             "customer_cert": "",
             "description": ""
-        }
+        },
+	"key_bag.bin": {
+	    "source": "key_bag.keys.bin",
+	    "version": 1,
+	    "fourcc": "kbag",
+	    "key": "fpk5",
+	    "cert": "",
+	    "customer_cert": "",
+	    "description": ""
+	}
     },
     "signed_meta_images": {
         "esecure_firmware_all.bin" : {
@@ -187,5 +201,25 @@
                 { "id": 4, "name" : "fpk4" }
             ]
         }
+    },
+    "key_bag_creation": {
+	"key_bag.keys.bin": {
+	    "keys": [
+		"hkey1",
+		"hkey2",
+		"hkey3",
+		"hkey4",
+		"hkey5",
+		"hkey6",
+		"hkey7",
+		"hkey8",
+		"hkey9",
+		"hkey10",
+		"hkey11",
+		"hkey12",
+		"hkey13",
+		"hkey14"
+	    ]
+	}
     }
 }
