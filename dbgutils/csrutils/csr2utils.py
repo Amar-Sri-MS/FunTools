@@ -6,6 +6,7 @@
 # Copyright (c) 2019 Fungible Inc.  All rights reserved.
 #
 
+import logging
 import os
 import re
 import sys
@@ -15,21 +16,27 @@ from csrutils import csr_get_field
 from csrutils import hex_word_dump
 from csrutils import str_to_int
 
+
+# Use the WORKSPACE environment variable to import the csr2 module.
 # TODO (jimmy): we need a better way to import our favourite modules
 WS = os.environ.get('WORKSPACE', None)
 if WS is None:
     print 'Need WORKSPACE environment variable'
     sys.exit(1)
-
-csr2_path = os.path.join(WS, 'FunHW/csr2api/v2')
-sys.path.append(csr2_path)
+sys.path.append(os.path.join(WS, 'FunHW/csr2api/v2'))
 
 import csr2
+
+#
+# Use a global logger to match the convention set by related modules.
+#
+logger = logging.getLogger("csr2utils")
+logger.setLevel(logging.INFO)
 
 
 class Register(object):
     """
-    A register.
+    Represents a register.
 
     The fields in this register have been "flattened" from the CSR2
     hierarchy, so array and struct groupings are no longer visible.
@@ -52,18 +59,19 @@ class Register(object):
         return '\n'.join(s)
 
     def print_data(self, word_array):
-        print("raw data: {0}".format(hex_word_dump(word_array)))
+        logger.info("Raw data: {0}".format(hex_word_dump(word_array)))
+        logger.info('------ Field values ------')
 
         for fld in self.fields:
             fld_offset = fld.lsb
             fld_width = fld.msb - fld.lsb + 1
             val_array = csr_get_field(fld_offset, fld_width, word_array)
             val = hex_word_dump(val_array)
-            print '%s: %s' % (fld.name, val)
+            logger.info('    {0}: {1}'.format(fld.name, val))
 
 
 class Field(object):
-    """ Field in a register """
+    """ Bitfield in a register """
     def __init__(self, name, lsb, msb):
         self.name = name
         self.lsb = lsb
@@ -258,6 +266,65 @@ class RegisterNames(object):
         return result
 
 
+class CSRAccessor(object):
+
+    def __init__(self, dbg_client, reg_finder):
+        """
+        Creates an accessor to peek and poke registers with the specified
+        debug client.
+        """
+        self.dbgprobe = dbg_client
+        self.reg_finder = reg_finder
+
+    def peek(self, path):
+        reg, error = self.reg_finder.find_reg(path)
+        if error:
+            print error
+            return
+
+        addr = reg.addr
+        csr_width_words = reg.width_bytes >> 3
+        logger.info('Peeking register at {0} '
+                    'with length {1}'.format(hex(addr), csr_width_words))
+
+        (status, data) = self.dbgprobe.csr_peek(chip_inst=0,
+                                                csr_addr=addr,
+                                                csr_width_words=csr_width_words)
+
+        if status:
+            word_array = data
+            if word_array is None or not word_array:
+                print("Error in csr peek")
+                return None
+            reg.print_data(word_array)
+        else:
+            error_msg = data
+            print("Error: CSR peek failed: {0}".format(error_msg))
+
+    def poke(self, path, values):
+        reg, error = self.reg_finder.find_reg(path)
+        if error:
+            print error
+            return
+
+        addr = reg.addr
+        csr_width_words = reg.width_bytes >> 3
+
+        if len(values) != csr_width_words:
+            print ('Error: cannot write %d words for a register '
+                   'which has %d words' % (len(values), csr_width_words))
+            return
+        logger.info('Poking register at {0} '
+                    'with values {1}'.format(hex(addr), csr_width_words))
+
+        (status, data) = dbgprobe().csr_poke(chip_inst=0,
+                                             csr_addr=addr,
+                                             word_array=values)
+        if not status:
+            print("Error: CSR poke failed! {0}".format(data))
+            return
+
+
 bundle_path = os.path.join(WS, 'FunHW/csr2api/v2/s1_bundle.json')
 bundle = csr2.load_bundle(bundle_path)
 csr_names = RegisterNames(bundle)
@@ -279,26 +346,8 @@ def csr2_peek(args):
         print_matching_regs(csr_path)
     else:
         finder = RegisterFinder(bundle)
-        reg, error = finder.find_reg(csr_path)
-        if error:
-            print error
-            return
-
-        addr = reg.addr
-        csr_width_words = reg.width_bytes >> 3
-        (status, data) = dbgprobe().csr_peek(chip_inst=0,
-                                             csr_addr=addr,
-                                             csr_width_words=csr_width_words)
-
-        if status:
-            word_array = data
-            if word_array is None or not word_array:
-                print("Error in csr peek")
-                return None
-            reg.print_data(word_array)
-        else:
-            error_msg = data
-            print("Error: CSR peek failed: {0}".format(error_msg))
+        accessor = CSRAccessor(dbgprobe(), finder)
+        accessor.peek(csr_path)
 
 
 def print_matching_regs(csr_path):
@@ -313,32 +362,19 @@ def csr2_poke(args):
     """
     Handles the csr poke comand.
 
-    For CSR2, we only allow specification of an unambiguous path or address.
+    For CSR2, we allow specification of a path. If a wildcard * is present,
+    we display a list of matching registers.
+
+    Paths correspond to the hierarchy as described in fundamental docs,
+    separated by dots, e.g. root.pc0.soc_clk_ring.cfg.pc_cfg_scratchpad.
     """
     csr_path = args.csr[0]
 
     if '*' in csr_path:
         print_matching_regs(csr_path)
     else:
-        finder = RegisterFinder(bundle)
-        reg, error = finder.find_reg(csr_path)
-        if error:
-            print error
-            return
-
-        addr = reg.addr
-        csr_width_words = reg.width_bytes >> 3
-
         values = [str_to_int(v) for v in args.vals]
-        if len(values) != csr_width_words:
-            print ('Error: cannot write %d words for a register '
-                   'which has %d words' % (len(values), csr_width_words))
-            return
-
-        (status, data) = dbgprobe().csr_poke(chip_inst=0,
-                                             csr_addr=addr,
-                                             word_array=values)
-        if not status:
-            print("Error: CSR poke failed! {0}".format(data))
-            return
+        finder = RegisterFinder(bundle)
+        accessor = CSRAccessor(dbgprobe(), finder)
+        accessor.poke(csr_path, values)
 
