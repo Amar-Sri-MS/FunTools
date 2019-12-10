@@ -578,11 +578,10 @@ def run(arg_action, arg_enroll_cert = None, arg_enroll_tbs = None, *args, **kwar
                                hsm=have_hsm, net=have_net)
 
     if wanted('key_injection') and config.get('key_bag_creation'):
-        keep_outfile = kwargs.get("keep_output", False)
+        # keybag is always created from scratch....
         for outfile, v in config['key_bag_creation'].items():
-            if not (os.path.exists(outfile) and keep_outfile):
-                # no source file, this is created de novo
-                kbc.create(outfile, v['keys'], hsm=have_hsm, net=have_net)
+            suffixed_keys = [k + key_name_suffix for k in v['keys']]
+            kbc.create(outfile, suffixed_keys, hsm=have_hsm, net=have_net)
 
     if wanted('flash') and config.get('output_format'):
         bin_infos = dict()
