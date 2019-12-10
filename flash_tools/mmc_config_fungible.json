@@ -7,7 +7,7 @@
             "fourcc": "fun1",
             "cert": "",
             "customer_cert": "",
-            "key": "fpk5",
+            "key_index": 0,
             "description": ""
         },
         "boot.img.signed": {
