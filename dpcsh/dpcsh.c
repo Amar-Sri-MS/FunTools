@@ -70,6 +70,9 @@ static bool _legacy_b64 = false;
 static uint32_t dpcsh_session_id;
 static uint32_t cmd_seq_num;
 
+/* whether to log all json */
+static bool _verbose_log = false;
+
 /* cmd timeout, use driver default timeout */
 #define DEFAULT_NVME_CMD_TIMEOUT_MS "0"
 
@@ -85,6 +88,47 @@ static inline void _setnosigpipe(int const fd)
 	/* unfortunately Linux does not support SO_NOSIGPIPE... */
 	signal(SIGPIPE, SIG_IGN);
 #endif
+}
+
+/* quiet logging -- just log events for proxy mode to avoid print
+ * sensitive information like crypto keys. For now ignore the json
+ * arg, but we could do something useful like trying to fish the
+ * verb out of it
+ */
+enum log_event {
+	LOG_RX,
+	LOG_TX,
+	LOG_RX_LOCAL,
+	LOG_RX_OLD,
+	LOG_RX_ERROR,
+};
+
+static void _quiet_log(enum log_event mode, const struct fun_json *json)
+{
+	const char *msg = NULL;
+
+	switch (mode) {
+	case LOG_RX:
+		msg = "RX";
+		break;
+	case LOG_TX:
+		msg = "TX";
+		break;
+	case LOG_RX_LOCAL:
+		msg = "RX local";
+		break;
+	case LOG_RX_OLD:
+		msg = "RX old";
+		break;
+	case LOG_RX_ERROR:
+		msg = "RX error";
+		break;
+	default:
+		msg = "unknown mystery";
+		break;
+	};
+
+	printf("dpc %s event\n", msg);
 }
 
 // ===============  HISTORY SUPPORT ===============
@@ -847,7 +891,11 @@ static void apply_command_locally(const struct fun_json *json)
 	}
 	struct fun_json *result = fun_json_lookup(j, "result");
 	if (result && !fun_json_fill_error_message(result, NULL)) {
-		fun_json_printf(PRELUDE BLUE POSTLUDE "Locally applied command: %s" NORMAL_COLORIZE "\n", result);
+		if (_verbose_log) {
+			fun_json_printf(PRELUDE BLUE POSTLUDE "Locally applied command: %s" NORMAL_COLORIZE "\n", result);
+		} else {
+			_quiet_log(LOG_RX_LOCAL, result);
+		}
 	}
 	fun_json_release(j);
 }
@@ -868,8 +916,14 @@ static bool _do_send_cmd(struct dpcsock *sock, char *line,
 		printf("could not parse: %s\n", error);
 		return false;
 	}
-	fun_json_printf(INPUT_COLORIZE "input => %s" NORMAL_COLORIZE "\n",
-			json);
+	if (_verbose_log) {
+		fun_json_printf(INPUT_COLORIZE "input => %s"
+				NORMAL_COLORIZE "\n",
+				json);
+	} else {
+		_quiet_log(LOG_TX, json);
+	}
+	
 	// Hack to list local commands if the command is 'help'
 	apply_command_locally(json);
 	bool ok = false;
@@ -964,20 +1018,38 @@ static void _print_response_info(const struct fun_json *response) {
 	int64_t tid = 0;
 
 	if (!fun_json_lookup(response, "result")) {
-		fun_json_printf("Old style output (NULL) - got %s\n", response);
+		if (_verbose_log) {
+			fun_json_printf("Old style output (NULL) - got %s\n",
+					response);
+		} else {
+			_quiet_log(LOG_RX_OLD, response);
+		}
 	} else if (!fun_json_lookup_int64(response, "tid", &tid)) {
 		printf("No tid\n");
 	}
 
-	if (fun_json_fill_error_message(_get_result_if_present(response), &str)) {
-		printf(PRELUDE BLUE POSTLUDE "output => *** error: '%s'" NORMAL_COLORIZE "\n", str);
+	if (fun_json_fill_error_message(_get_result_if_present(response),
+					&str)) {
+		if (_verbose_log) {
+			printf(PRELUDE BLUE POSTLUDE "output => *** error: '%s'"
+			       NORMAL_COLORIZE "\n", str);
+		} else {
+			_quiet_log(LOG_RX_ERROR, response);
+		}
 	} else {
-		size_t allocated_size = 0;
-		uint32_t flags = use_hex ? FUN_JSON_PRETTY_PRINT_USE_HEX_FOR_NUMBERS : 0;
-		char *pp = fun_json_pretty_print(response, 0, "    ", 100, flags, &allocated_size);
-		printf(OUTPUT_COLORIZE "output => %s" NORMAL_COLORIZE "\n",
-						pp);
-		free(pp);
+		if (_verbose_log) {
+			size_t allocated_size = 0;
+			uint32_t flags = use_hex ? FUN_JSON_PRETTY_PRINT_USE_HEX_FOR_NUMBERS : 0;
+			char *pp = fun_json_pretty_print(response, 0, "    ",
+							 100, flags,
+							 &allocated_size);
+			printf(OUTPUT_COLORIZE "output => %s"
+			       NORMAL_COLORIZE "\n",
+			       pp);
+			free(pp);
+		} else {
+			_quiet_log(LOG_RX, response);
+		}
 	}
 }
 
@@ -1006,7 +1078,8 @@ static char *_wrap_proxy_message(struct fun_json *response) {
 
 	size_t allocated_size = 0;
 	uint32_t flags = use_hex ? FUN_JSON_PRETTY_PRINT_USE_HEX_FOR_NUMBERS : 0;
-	char *message = fun_json_pretty_print(result, 0, "    ", 0, flags, &allocated_size);
+	char *message = fun_json_pretty_print(result, 0, "    ",
+					      0, flags, &allocated_size);
 
 	fun_json_release(result);
 	return message;
@@ -1187,7 +1260,11 @@ int json_handle_req(struct dpcsock *jsock, const char *path,
 		printf("could not parse '%s': %s\n", line, error);
 		return -1;
 	}
-	fun_json_printf("input => %s\n", json);
+	if (_verbose_log)
+		fun_json_printf("input => %s\n", json);
+	else
+		_quiet_log(LOG_TX, json);
+
 	bool ok = _write_to_sock(json, jsock);
 	fun_json_release(json);
 	if (!ok)
@@ -1199,10 +1276,15 @@ int json_handle_req(struct dpcsock *jsock, const char *path,
 		printf("invalid json returned\n");
 		return -1;
 	}
+
 	size_t allocated_size = 0;
 	uint32_t flags = use_hex ? FUN_JSON_PRETTY_PRINT_USE_HEX_FOR_NUMBERS : 0;
-	char *pp2 = fun_json_pretty_print(output, 0, "    ", 100, flags, &allocated_size);
-	printf("output => %s\n", pp2);
+	char *pp2 = fun_json_pretty_print(output, 0, "    ",
+					  100, flags, &allocated_size);
+	if (_verbose_log)
+		printf("output => %s\n", pp2);
+	else
+		_quiet_log(LOG_RX, output);
 
 	if (!pp2)
 		return -1;
@@ -1291,6 +1373,7 @@ static struct option longopts[] = {
 	{ "no_flow_control", no_argument,       NULL, 'F' },
 	{ "baud",            required_argument, NULL, 'R' },
 	{ "legacy_b64",      no_argument,       NULL, 'L' },
+	{ "verbose",         no_argument,       NULL, 'v' },
 #ifdef __linux__
 	{ "nvme_cmd_timeout", required_argument, NULL, 'W' },
 #endif //__linux__
@@ -1308,7 +1391,7 @@ static void usage(const char *argv0)
 	printf("       --dev[=device]          open device and read/write base64 to FunOS UART\n");
 	printf("       --no_flow_control       no flow control in uart. send char one by one with delay\n");
 	printf("       --base64_srv[=port]     listen as a server port on IP using base64 (dpcuart to qemu)\n");
-	printf("       --base64_sock[=port]    connec as a client port on IP using base64 (dpcuart to qemu)\n");
+	printf("       --base64_sock[=port]    connect as a client port on IP using base64 (dpcuart to qemu)\n");
 	printf("       --inet_sock[=port]      connect as a client port over IP\n");
 	printf("       --unix_sock[=sockname]  connect as a client port over unix sockets\n");
 // DPC over NVMe is needed only in Linux
@@ -1325,6 +1408,7 @@ static void usage(const char *argv0)
 	printf("       --no_dev_init           don't init the UART device, use as-is\n");
 	printf("       --baud=rate             specify non-standard baud rate (default=" DEFAULT_BAUD ")\n");
 	printf("       --legacy_b64            support old-style base64 encoding, despite issues\n");
+	printf("       --verbose               log all json transactions in proxy mode\n");
 #ifdef __linux__
 	printf("       --nvme_cmd_timeout=timeout specify cmd timeout in ms (default=" DEFAULT_NVME_CMD_TIMEOUT_MS ")\n");
 #endif //__linux__
@@ -1411,7 +1495,7 @@ int main(int argc, char *argv[])
 	cmd_sock.retries = UINT32_MAX;
 
 	while ((ch = getopt_long(argc, argv,
-				 "hs::i::u::H::T::t::D:nNFXR:",
+				 "hs::i::u::H::T::t::D:nNFXR:v",
 				 longopts, NULL)) != -1) {
 
 		switch(ch) {
@@ -1541,6 +1625,10 @@ int main(int argc, char *argv[])
 			_legacy_b64 = true;
 			break;
 
+		case 'v':  /* "verbose" -- log all json as it goes by */
+			_verbose_log = true;
+			break;
+			
 #ifdef __linux__
 		case 'W':  /* "timeout" -- set timeout for cmd */
 			funos_sock.cmd_timeout = atoi(optarg);
@@ -1567,6 +1655,7 @@ int main(int argc, char *argv[])
 	switch (mode) {
 	case MODE_INTERACTIVE:
 		/* do nothing */
+		_verbose_log = true;
 		break;
 	case MODE_PROXY:
 		printf(": socket proxy mode");
