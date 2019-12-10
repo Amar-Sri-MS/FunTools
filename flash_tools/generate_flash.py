@@ -95,6 +95,7 @@ def gen_fw_image(filename, attrs):
         'customer_cert':'customer_certfile',
         'fourcc':'ftype',
         'key':'sign_key',
+        'key_index':'key_index',
         'source':'infile',
         'version':'version',
         'description':'description'
@@ -136,6 +137,16 @@ def create_file(filename, section="signed_images", key_name_suffix=None):
     if config.get(section):
         image = config[section].get(filename)
         if image:
+            # process indirection to keybag
+            if 'key_index' in image:
+                # retrieve name of key from keybag specification
+                key_bag_spec = config.get('key_bag_creation')
+                if  not key_bag_spec:
+                    raise Exception("key_index used for image {0}, but no or empty key_bag_creation section".
+                                    format(filename))
+                # use the first element in spec -- there's only one key bag now.
+                key_list = next(iter(key_bag_spec.values()))
+                image['key'] = key_list['keys'][image['key_index']]
             if key_name_suffix and 'key' in image:
                 image['key'] += key_name_suffix
             return gen_fw_image(filename, image)

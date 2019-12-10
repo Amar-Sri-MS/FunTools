@@ -14,8 +14,14 @@
 # ecpubkey: export the public part of an EC key, in binary or DER encoded format
 
 
-import os, struct, binascii, argparse, sys
-import traceback, getpass, datetime, configparser
+import os
+import struct
+import binascii
+import argparse
+import sys
+import traceback
+import getpass
+import datetime
 import fcntl
 import hashlib
 
@@ -101,7 +107,7 @@ def write(filename, content, overwrite=True, tohex=False, tobyte=False,
         f.write(content)
 
 
-class Lock(object):
+class Lock:
 
     def __init__(self, filename):
         self.filename = filename
@@ -187,7 +193,7 @@ def get_token():
 
 ### HSM  #############################
 
-class HSM(object):
+class HSM:
 
     __session = None
 
@@ -267,9 +273,9 @@ def get_create_public_rsa_modulus(label):
         print(err)
 
     if public_modulus is None:
-            print("Generating key " + label)
-            public, _ = generate_rsa_key_pair(hsm.session, label)
-            public_modulus = get_modulus(public)
+        print("Generating key " + label)
+        public, _ = generate_rsa_key_pair(hsm.session, label)
+        public_modulus = get_modulus(public)
 
     return public_modulus
 
@@ -347,7 +353,7 @@ def sign_with_key(label, data):
         data = hsm.session.digest(data, mechanism=pkcs11.Mechanism.SHA256)
         mechanism = pkcs11.Mechanism.ECDSA
     else:
-        raise("Unsupported key type")
+        raise "Unsupported key type"
 
     return private.sign(data, mechanism=mechanism), key_type
 
@@ -535,7 +541,7 @@ def add_cert_and_signature_to_image(image, cert, signature):
 
 
 def image_gen(outfile, infile, ftype, version, description, sign_key,
-              certfile, customer_certfile):
+              certfile, customer_certfile, key_index):
     ''' generate signed firmware image '''
     binary = read(infile)
     to_be_signed = struct.pack('<2I', len(binary), version)
@@ -558,6 +564,8 @@ def image_gen(outfile, infile, ftype, version, description, sign_key,
     cert = b''
     # sign_key and cert_file are mutually exclusive
     if sign_key:
+        if key_index is not None:
+            cert = struct.pack("<I", (key_index | 0x80000000))
         signature, _ = sign_with_key(sign_key, to_be_signed)
     elif certfile:
         cert = read(certfile)
@@ -679,6 +687,9 @@ def parse_and_execute():
     parser.add_argument("-k", "--key", dest="sign_key",
                         help="signing key name (remove, import, image, certificate, modulus, ecpubkey)")
 
+    parser.add_argument("--key_index", dest="key_index",
+                        help="specify a key index to store in the header (image)")
+
     parser.add_argument("-m", "--serial_number_mask", dest="serial_number_mask",
                         default="FF" * SERIAL_INFO_NUMBER_SIZE,
                         help="serial number mask (hexadecimal, {0} bytes) (certificate)".format(SERIAL_INFO_NUMBER_SIZE))
@@ -770,7 +781,7 @@ def parse_and_execute():
         image_gen(options.out_path, options.fw_path, options.fw_type,
                   int(options.fw_ver, 0), options.fw_description,
                   options.sign_key, options.cert_path,
-                  options.customer_cert_path)
+                  options.customer_cert_path, int(options.key_index, 0))
 
         sys.exit(0)
 

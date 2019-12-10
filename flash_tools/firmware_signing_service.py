@@ -45,9 +45,9 @@ class HsmSigningService(FirmwareSigningService):
 
     @staticmethod
     def image_gen(outfile, infile, ftype, version, description, sign_key,
-          certfile, customer_certfile):
+                  certfile, customer_certfile, key_index):
         return gfi.image_gen(outfile, infile, ftype, version, description, sign_key,
-            certfile, customer_certfile)
+                             certfile, customer_certfile, key_index)
 
     @staticmethod
     def export_pub_key_hash(outfile, label):
@@ -76,7 +76,7 @@ class NetSigningService(FirmwareSigningService):
 
     @staticmethod
     def image_gen(outfile, infile, ftype, version, description, sign_key,
-          certfile, customer_certfile):
+                  certfile, customer_certfile, key_index):
 
         def create_binary_form_data( infile):
             with open(infile, 'rb') as input:
@@ -93,6 +93,7 @@ class NetSigningService(FirmwareSigningService):
             multipart_form_data['customer_cert'] = create_binary_form_data(customer_certfile)
 
         params = { 'key' : sign_key,
+                   'key_index' : key_index,
                    'type' : ftype,
                    'version': version,
                    'description': description }
