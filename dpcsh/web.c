@@ -157,7 +157,7 @@ void format_size(char* buf, struct stat *stat){
     } else {
         off_t size = stat->st_size;
         if(size < 1024){
-            sprintf(buf, "%" PRId64"", size);
+            sprintf(buf, "%jd", (intmax_t)size);
         } else if (size < 1024 * 1024){
             sprintf(buf, "%.1fK", (double)size / 1024);
         } else if (size < 1024 * 1024 * 1024){
@@ -173,7 +173,7 @@ void handle_json_request(int out_fd, char *jbuf, int jsize)
     char buf[MAXLINE];
     sprintf(buf, "HTTP/1.1 200 OK\r\n%s",
             "Content-Type: application/json\r\n\r\n");
-	
+
     writen(out_fd, buf, strlen(buf));
     writen(out_fd, jbuf, jsize);
 }
@@ -258,7 +258,7 @@ void parse_request(int fd, http_request *req){
     while(buf[0] != '\n' && buf[1] != '\n') { /* \n || \r\n */
         rio_readlineb(&rio, buf, MAXLINE);
         if(buf[0] == 'R' && buf[1] == 'a' && buf[2] == 'n'){
-            sscanf(buf, "Range: bytes=%" PRIu64 "-%lu", &req->offset, &req->end);
+            sscanf(buf, "Range: bytes=%jd-%zu", (intmax_t *)&req->offset, &req->end);
             // Range: [start, end]
             if( req->end != 0) req->end ++;
         }
@@ -291,7 +291,7 @@ void client_error(int fd, int status, char *msg, char *longmsg){
     char buf[MAXLINE];
     sprintf(buf, "HTTP/1.1 %d %s\r\n", status, msg);
     sprintf(buf + strlen(buf),
-            "Content-length: %lu\r\n\r\n", strlen(longmsg));
+            "Content-length: %zu\r\n\r\n", strlen(longmsg));
     sprintf(buf + strlen(buf), "%s", longmsg);
     writen(fd, buf, strlen(buf));
 }
@@ -311,7 +311,7 @@ void process(struct dpcsock *jsock, int out_fd, struct sockaddr_in *clientaddr)
     int size = JBUF_SIZE;
     r = json_handle_req(jsock, req.filename, json_buf, &size);
 
-    
+
     if(r < 0){
         status = 404;
         char *msg = "JSON RPC not found";
