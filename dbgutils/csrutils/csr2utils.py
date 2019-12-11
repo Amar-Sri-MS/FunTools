@@ -13,6 +13,7 @@ import sys
 
 from csrutils import dbgprobe
 from csrutils import csr_get_field
+from csrutils import csr_set_field
 from csrutils import hex_word_dump
 from csrutils import str_to_int
 
@@ -77,27 +78,46 @@ class RegisterValue(object):
     def __init__(self, register, word_array):
         self.reg = register
         self.word_array = word_array
-        self.fields_and_vals = []
 
-    def _populate_field_vals(self):
+    def set_field_val(self, fld_name, fld_word_array):
+        """
+        Sets the field with the specified value (as an array of 64-bit words).
+
+        Linear search through the fields, which is yuck, but probably not
+        performance critical.
+
+        Returns True on success, else False.
+        """
+        for fld in self.reg.fields:
+            if fld.name == fld_name:
+                fld_offset = fld.lsb
+                fld_width = fld.msb - fld.lsb + 1
+                csr_set_field(fld_offset, fld_width,
+                              self.word_array, fld_word_array)
+                return True
+
+        # Failed to find a field with the specified name
+        return False
+
+    def __str__(self):
+        s = list()
+        s.append("Raw data: {0}".format(hex_word_dump(self.word_array)))
+        s.append('------ Field values ------')
+
+        for fld, val in self._list_field_vals():
+            s.append('    {0}: {1}'.format(fld, val))
+        return '\n'.join(s)
+
+    def _list_field_vals(self):
+        fields_and_vals = []
         for fld in self.reg.fields:
             fld_offset = fld.lsb
             fld_width = fld.msb - fld.lsb + 1
             val_array = csr_get_field(fld_offset, fld_width, self.word_array)
             val = hex_word_dump(val_array)
-            self.fields_and_vals.append((fld.name, val))
+            fields_and_vals.append((fld.name, val))
 
-    def __str__(self):
-        if not self.fields_and_vals:
-            self._populate_field_vals()
-
-        s = list()
-        s.append("Raw data: {0}".format(hex_word_dump(self.word_array)))
-        s.append('------ Field values ------')
-
-        for fld, val in self.fields_and_vals:
-            s.append('    {0}: {1}'.format(fld, val))
-        return '\n'.join(s)
+        return fields_and_vals
 
 
 class RegisterFinder(object):
@@ -151,7 +171,7 @@ class RegisterFinder(object):
             # The cursor.child(key) method descends the graph until it finds a
             # named layer. At that point if the key matches a node it returns
             # a cursor to that child, otherwise it throws a KeyError.
-            child_cursor = cursor.child(remaining_parts[0])
+            child_cursor = cursor.child(remaining_parts[0]).skip()
         except KeyError as e:
             # TODO (jimmy): improve error by reporting the matching parts
             return None, 'Failed to match %s' % remaining_parts[0]

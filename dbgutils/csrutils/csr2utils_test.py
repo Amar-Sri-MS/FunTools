@@ -131,3 +131,43 @@ class CSR2AccessorTest(unittest.TestCase):
         self.assertEqual([0xdeadbeef], vals)
 
 
+class RegisterValueTest(unittest.TestCase):
+    """
+    Checks functionality of the register value object.
+    """
+    def setUp(self):
+        self.reg = csr2utils.Register('grand_poohbah', 0xa800, 8)
+        self.reg.add_field(csr2utils.Field('a', 0, 5))
+        self.reg.add_field(csr2utils.Field('b', 6, 20))
+        self.reg.add_field(csr2utils.Field('c', 21, 21))
+        self.reg.add_field(csr2utils.Field('d', 22, 31))
+
+    def test_register_value_print(self):
+        """
+        Admittedly a lame test with no assertions.
+        TODO (jimmy): expose field values for testing instead of hiding them
+                      in a print?
+        """
+        val = csr2utils.RegisterValue(self.reg, [0xcafebabe])
+        print val
+
+    def test_set_one_register_field(self):
+        val = csr2utils.RegisterValue(self.reg, [0xcafebabe])
+        val.set_field_val('a', [0x2a])
+
+        self.assertEqual([0xcafebaaa], val.word_array)
+
+    def test_set_multiple_register_fields(self):
+        val = csr2utils.RegisterValue(self.reg, [0x1ebabe])
+        val.set_field_val('a', [0x2a])
+        val.set_field_val('b', [0x7fff])
+        val.set_field_val('c', [0x0])
+
+        self.assertEqual([0x1fffea], val.word_array)
+
+    def test_set_field_return_values(self):
+        val = csr2utils.RegisterValue(self.reg, [0xcafebabe])
+        self.assertFalse(val.set_field_val('e', [0xfffffff]))
+        self.assertEqual([0xcafebabe], val.word_array)
+
+        self.assertTrue(val.set_field_val('d', [0x0]))
