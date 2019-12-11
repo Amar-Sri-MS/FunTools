@@ -6,9 +6,12 @@
   "dependencies": {
     "@types/node": "^12.12.9",
     "json-schema-faker": "^0.5.0-rc23",
-    "typescript-json-schema-faker": "0.0.10"
+    "typescript-json-schema-faker": "0.0.10",
+    "yargs": "^15.0.2"
   },
   "devDependencies": {
+    "@types/yargs": "^13.0.3",
+    "nexe": "^3.3.2",
     "ts-lint": "^4.5.1",
     "tslint": "^5.20.1",
     "typescript": "^3.7.2"

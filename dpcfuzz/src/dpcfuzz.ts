@@ -1,21 +1,37 @@
-import * as fs from "fs";
 import { fake, JsonSchema } from "typescript-json-schema-faker";
+import * as yargs from "yargs";
 import { DPCClient } from "./dpcclient";
 
-const args = process.argv;
 const error = (m: string) => {
   process.stdout.write(m + "\n");
   process.exit(1);
 };
+const success = (m: string) => {
+  process.stdout.write(m + "\n");
+  process.exit(0);
+};
 
-if (args.length < 3) { error("Please specify FunOS command to fuzz"); }
+const argParser = yargs.command("[verb]", "DPC verb to fuzz")
+.help("h").alias("h", "help").options({
+H: { alias: "host", default: "127.0.0.1",
+    describe: "DPC server to connect" , type: "string"},
+l: { alias: "limit", default: -1,
+    describe: "Limit the number of requests to run", type: "number" },
+p: { alias: "port", default: 40221,
+    describe: "DPC port to connect", type: "number" },
+r: { alias: "random", default: false,
+    describe: "Take random verb from help", type: "boolean" },
+t: { alias: "timeout", default: 3000,
+    describe: "Timeout for a single request", type: "number" }});
+const argv = argParser.argv;
 
-const timeout = (() => {
-  const index = args.indexOf("--timeout");
-  if (index === -1) { return 3000; }
-  if (!args[index + 1]) { error("Please provide timeout value"); }
-  return Number(args[index + 1]);
-})();
+if (argv._.length === 0 && !argv.r) {
+  argParser.showHelp();
+  process.exit(1);
+}
+
+const timeout = argv.t;
+const limit = argv.l;
 
 function any_items(depth: number): JsonSchema {
   const options = [
@@ -69,29 +85,52 @@ function prepare(input: any): JsonSchema {
   return input;
 }
 
-const verb = args[2];
-const client = new DPCClient();
-client.submit("schema", [verb]);
-client.onTimeout(timeout, () => {
-  error("Failed to get schema");
-});
-client.onData((schema: any, err: boolean) => {
-  if (err) {
-    error("Can't get schema for command to fuzz");
-  }
+const client = new DPCClient(argv.H, argv.p);
 
-  const preprocessed = prepare(schema);
-  let request: any = {};
-  const faker = () => {
-    request = fake(preprocessed);
-    client.submit(verb, request);
-  };
-  client.onData(faker);
-  client.onError(() => {
-    error("Crashed on " + JSON.stringify(request));
-  });
+function fuzzVerb(verb: string): void {
+  let iterationsPassed: number = 0;
+  client.submit("schema", [verb]);
   client.onTimeout(timeout, () => {
-    error("Hanged on " + JSON.stringify(request));
+    error("Failed to get schema");
   });
-  faker();
-}, true);
+  client.onData((schema: any, err: boolean) => {
+    if (err) {
+      error("Can't get schema for command to fuzz");
+    }
+
+    const preprocessed = prepare(schema);
+    let request: any = {};
+    const faker = () => {
+      if (limit !== -1 && iterationsPassed >= limit) {
+        success("Successfully ran " + String(iterationsPassed) + " requests");
+      }
+      request = fake(preprocessed);
+      client.submit(verb, request);
+      iterationsPassed++;
+    };
+    client.onData(faker);
+    client.onError(() => {
+      error("Crashed on " + JSON.stringify(request));
+    });
+    client.onTimeout(timeout, () => {
+      error("Hanged on " + JSON.stringify(request));
+    });
+    faker();
+  }, true);
+}
+
+if (argv._.length === 1) {
+  fuzzVerb(argv._[0]);
+} else {
+  client.submit("help", []);
+  client.onTimeout(timeout, () => {
+    error("Failed to get help");
+  });
+  client.onData((verbs: any, err: boolean) => {
+    if (err) {
+      error("Can't run help to list verbs");
+    }
+    const l = Object.keys(verbs);
+    fuzzVerb(l[Math.floor(Math.random() * l.length)]);
+  }, true);
+}
