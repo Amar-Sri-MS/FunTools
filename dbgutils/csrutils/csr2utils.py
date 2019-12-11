@@ -22,7 +22,7 @@ from csrutils import str_to_int
 # TODO (jimmy): we need a better way to import our favourite modules
 WS = os.environ.get('WORKSPACE', None)
 if WS is None:
-    print 'Need WORKSPACE environment variable'
+    print 'Need WORKSPACE environment variable to be set: exiting'
     sys.exit(1)
 sys.path.append(os.path.join(WS, 'FunHW/csr2api/v2'))
 
@@ -333,7 +333,7 @@ class CSRAccessor(object):
         if status:
             word_array = data
             if not word_array:
-                logger.error("Error in csr peek: returned data is empty")
+                logger.error("Peeked data is empty")
                 return None
 
             regval = RegisterValue(reg, word_array)
@@ -341,7 +341,7 @@ class CSRAccessor(object):
             return word_array
         else:
             error_msg = data
-            logger.error("Error: CSR peek failed: {0}".format(error_msg))
+            logger.error("Peek failed: {0}".format(error_msg))
             return None
 
     def poke(self, path, values):
@@ -354,7 +354,7 @@ class CSRAccessor(object):
         csr_width_words = reg.width_bytes >> 3
 
         if len(values) != csr_width_words:
-            logger.error('Error: cannot write %d words for a register '
+            logger.error('Cannot write %d words for a register '
                          'which has %d words' % (len(values), csr_width_words))
             return
         logger.info('Poking register at {0} '
@@ -364,7 +364,7 @@ class CSRAccessor(object):
                                                 csr_addr=addr,
                                                 word_array=values)
         if not status:
-            logger.error('Error: CSR poke failed! {0}'.format(data))
+            logger.error('Poke failed: {0}'.format(data))
             return
 
 
@@ -373,6 +373,7 @@ def load_bundle():
     return csr2.load_bundle(bundle_path)
 
 
+# TODO (jimmy): how to build a bundle if it is not there?
 bundle = load_bundle()
 csr_names = RegisterNames(bundle)
 
