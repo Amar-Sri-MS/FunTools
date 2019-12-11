@@ -100,6 +100,29 @@ class CSR2AccessorTest(unittest.TestCase):
 
         self.assertIsNone(result)
 
+    def test_peek_arrayed_register(self):
+        """
+        Ensure we can peek at a specific register in an array.
+        """
+        self.dbg_client.queue_peek_vals([0xcafebabe])
+        result = self.accessor.peek('chip_s1::root.ocm0.ocm.ocm_sna_rd_cntr[1]')
+
+        chip, addr, width = self.dbg_client.pop_peek_args()
+        self.assertEqual(0x190000d0, addr)
+        self.assertEqual(1, width)
+        self.assertEqual([0xcafebabe], result)
+
+    def test_peek_repeated_instance(self):
+        """
+        Ensure we can peek at a register within an array of module instances.
+        """
+        self.dbg_client.queue_peek_vals([0xf00baa])
+        result = self.accessor.peek('chip_s1::root.mud0.soc_clk_ring.qsys[1].mud_qsys_sch_cfg_0')
+
+        chip, addr, width = self.dbg_client.pop_peek_args()
+        self.assertEqual(0x1b0410d0, addr)
+        self.assertEqual([0xf00baa], result)
+
     def test_poke_arguments(self):
         self.accessor.poke('chip_s1::root.mio2.scratchpad', [0xdeadbeef])
 
