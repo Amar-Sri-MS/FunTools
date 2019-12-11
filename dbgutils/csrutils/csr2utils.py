@@ -58,17 +58,6 @@ class Register(object):
             s.append(str(f))
         return '\n'.join(s)
 
-    def print_data(self, word_array):
-        logger.info("Raw data: {0}".format(hex_word_dump(word_array)))
-        logger.info('------ Field values ------')
-
-        for fld in self.fields:
-            fld_offset = fld.lsb
-            fld_width = fld.msb - fld.lsb + 1
-            val_array = csr_get_field(fld_offset, fld_width, word_array)
-            val = hex_word_dump(val_array)
-            logger.info('    {0}: {1}'.format(fld.name, val))
-
 
 class Field(object):
     """ Bitfield in a register """
@@ -79,6 +68,36 @@ class Field(object):
 
     def __str__(self):
         return '%s [%d:%d]' % (self.name, self.msb, self.lsb)
+
+
+class RegisterValue(object):
+    """
+    Represents a value in a register.
+    """
+    def __init__(self, register, word_array):
+        self.reg = register
+        self.word_array = word_array
+        self.fields_and_vals = []
+
+    def _populate_field_vals(self):
+        for fld in self.reg.fields:
+            fld_offset = fld.lsb
+            fld_width = fld.msb - fld.lsb + 1
+            val_array = csr_get_field(fld_offset, fld_width, self.word_array)
+            val = hex_word_dump(val_array)
+            self.fields_and_vals.append((fld.name, val))
+
+    def __str__(self):
+        if not self.fields_and_vals:
+            self._populate_field_vals()
+
+        s = list()
+        s.append("Raw data: {0}".format(hex_word_dump(self.word_array)))
+        s.append('------ Field values ------')
+
+        for fld, val in self.fields_and_vals:
+            s.append('    {0}: {1}'.format(fld, val))
+        return '\n'.join(s)
 
 
 class RegisterFinder(object):
@@ -279,7 +298,7 @@ class CSRAccessor(object):
     def peek(self, path):
         reg, error = self.reg_finder.find_reg(path)
         if error:
-            print error
+            logger.error(error)
             return
 
         addr = reg.addr
@@ -293,28 +312,30 @@ class CSRAccessor(object):
 
         if status:
             word_array = data
-            if word_array is None or not word_array:
-                print("Error in csr peek")
+            if not word_array:
+                logger.error("Error in csr peek: returned data is empty")
                 return None
-            reg.print_data(word_array)
+
+            regval = RegisterValue(reg, word_array)
+            print str(regval)
             return word_array
         else:
             error_msg = data
-            print("Error: CSR peek failed: {0}".format(error_msg))
+            logger.error("Error: CSR peek failed: {0}".format(error_msg))
             return None
 
     def poke(self, path, values):
         reg, error = self.reg_finder.find_reg(path)
         if error:
-            print error
+            logger.error(error)
             return
 
         addr = reg.addr
         csr_width_words = reg.width_bytes >> 3
 
         if len(values) != csr_width_words:
-            print ('Error: cannot write %d words for a register '
-                   'which has %d words' % (len(values), csr_width_words))
+            logger.error('Error: cannot write %d words for a register '
+                         'which has %d words' % (len(values), csr_width_words))
             return
         logger.info('Poking register at {0} '
                     'with values {1}'.format(hex(addr), values))
@@ -323,7 +344,7 @@ class CSRAccessor(object):
                                                 csr_addr=addr,
                                                 word_array=values)
         if not status:
-            print("Error: CSR poke failed! {0}".format(data))
+            logger.error('Error: CSR poke failed! {0}'.format(data))
             return
 
 
