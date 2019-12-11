@@ -297,9 +297,11 @@ class CSRAccessor(object):
                 print("Error in csr peek")
                 return None
             reg.print_data(word_array)
+            return word_array
         else:
             error_msg = data
             print("Error: CSR peek failed: {0}".format(error_msg))
+            return None
 
     def poke(self, path, values):
         reg, error = self.reg_finder.find_reg(path)
@@ -315,18 +317,22 @@ class CSRAccessor(object):
                    'which has %d words' % (len(values), csr_width_words))
             return
         logger.info('Poking register at {0} '
-                    'with values {1}'.format(hex(addr), csr_width_words))
+                    'with values {1}'.format(hex(addr), values))
 
-        (status, data) = dbgprobe().csr_poke(chip_inst=0,
-                                             csr_addr=addr,
-                                             word_array=values)
+        (status, data) = self.dbgprobe.csr_poke(chip_inst=0,
+                                                csr_addr=addr,
+                                                word_array=values)
         if not status:
             print("Error: CSR poke failed! {0}".format(data))
             return
 
 
-bundle_path = os.path.join(WS, 'FunHW/csr2api/v2/s1_bundle.json')
-bundle = csr2.load_bundle(bundle_path)
+def load_bundle():
+    bundle_path = os.path.join(WS, 'FunHW/csr2api/v2/s1_bundle.json')
+    return csr2.load_bundle(bundle_path)
+
+
+bundle = load_bundle()
 csr_names = RegisterNames(bundle)
 
 
