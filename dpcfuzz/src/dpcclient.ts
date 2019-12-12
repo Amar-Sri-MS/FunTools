@@ -24,6 +24,7 @@ export class DPCClient {
 
   public onData(callback: (d: any, error: boolean) => void, once?: boolean) {
     const internal = (s: string) => {
+      process.stdout.write("Debug: got " + s + "\n");
       this.buffer += s;
       try {
         const response = JSON.parse(this.buffer);
@@ -68,10 +69,6 @@ export class DPCClient {
 
   public end(): void {
     this.socket.end();
-  }
-
-  private countBuf(char: string): number {
-    return this.buffer.split(char).length - 1;
   }
 
   private quote(a: any): any {
