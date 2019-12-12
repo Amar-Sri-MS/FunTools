@@ -63,7 +63,8 @@ class CSR2AccessorTest(unittest.TestCase):
         (immutable in practice).
         """
         global bundle
-        bundle = csr2utils.load_bundle()
+        csr2utils.init_bundle_lazily()
+        bundle = csr2utils.bundle
 
     def setUp(self):
         self.dbg_client = MockDebugProbe()

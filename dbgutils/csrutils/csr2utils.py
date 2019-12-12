@@ -9,6 +9,7 @@
 import logging
 import os
 import re
+import subprocess
 import sys
 
 from csrutils import dbgprobe
@@ -174,6 +175,7 @@ class RegisterFinder(object):
             child_cursor = cursor.child(remaining_parts[0]).skip()
         except KeyError as e:
             # TODO (jimmy): improve error by reporting the matching parts
+            #               or drawing squiggly lines under the unmatched part
             return None, 'Failed to match %s' % remaining_parts[0]
 
         return self._descend(child_cursor, remaining_parts[1:])
@@ -368,14 +370,47 @@ class CSRAccessor(object):
             return
 
 
-def load_bundle():
-    bundle_path = os.path.join(WS, 'FunHW/csr2api/v2/s1_bundle.json')
-    return csr2.load_bundle(bundle_path)
+#
+# Global csr2 json containing register spec information
+#
+bundle = None
+csr_names = None
 
 
-# TODO (jimmy): how to build a bundle if it is not there?
-bundle = load_bundle()
-csr_names = RegisterNames(bundle)
+def init_bundle_lazily():
+    """
+    Initialize a bundle.
+
+    This generates the bundle at the moment. At some point in the future,
+    a bundle will be part of the FunHW/FunSDK repo and should be consumed
+    from that location.
+    """
+    global bundle
+    global csr_names
+
+    if bundle is not None:
+        return True
+
+    csr2_dir = os.path.join(WS, 'FunHW', 'csr2api', 'v2')
+    bin_path = os.path.join(csr2_dir, 'csr2bundle.py')
+    bundle_path = os.path.join(csr2_dir, 's1_bundle.json')
+
+    logger.info('Creating CSR2 bundle at %s' % bundle_path)
+
+    json_dir = os.path.join(WS, 'FunHW', 'chip', 's1', 'csr2')
+    bundle_cmd = [bin_path, 'chip_s1::root',
+                  '-I', json_dir,
+                  '-o', bundle_path]
+    try:
+        subprocess.check_output(bundle_cmd)
+    except subprocess.CalledProcessError as e:
+        logger.error('Failed to create bundle: %s' % e.output)
+        return False
+
+    logger.info('Loading CSR2 bundle from %s' % bundle_path)
+    bundle = csr2.load_bundle(bundle_path)
+    csr_names = RegisterNames(bundle)
+    return True
 
 
 def csr2_peek(args):
@@ -388,6 +423,9 @@ def csr2_peek(args):
     Paths correspond to the hierarchy as described in fundamental docs,
     separated by dots, e.g. root.pc0.soc_clk_ring.cfg.pc_cfg_scratchpad.
     """
+    if not init_bundle_lazily():
+        return
+
     csr_path = args.csr[0]
 
     if '*' in csr_path:
@@ -416,6 +454,9 @@ def csr2_poke(args):
     Paths correspond to the hierarchy as described in fundamental docs,
     separated by dots, e.g. root.pc0.soc_clk_ring.cfg.pc_cfg_scratchpad.
     """
+    if not init_bundle_lazily():
+        return
+
     csr_path = args.csr[0]
 
     if '*' in csr_path:
