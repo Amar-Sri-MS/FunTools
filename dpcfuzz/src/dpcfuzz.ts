@@ -110,8 +110,8 @@ function fuzzVerb(verb: string): void {
       iterationsPassed++;
     };
     client.onData(faker);
-    client.onError(() => {
-      error("Crashed on " + JSON.stringify(request));
+    client.onError((e: any) => {
+      error("Crashed on " + JSON.stringify(request) + "\nSocket error " + JSON.stringify(e));
     });
     client.onTimeout(timeout, () => {
       error("Hanged on " + JSON.stringify(request));
