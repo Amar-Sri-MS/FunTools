@@ -31,7 +31,7 @@
 #include "dpcsh_nvme.h"
 #include "csr_command.h"
 
-#include <utils/threaded/fun_map.h>
+#include <utils/threaded/fun_map_threaded.h>
 #include <services/commander/fun_commander.h>
 #include <services/commander/fun_commander_basic_commands.h>
 #include <utils/threaded/fun_malloc_threaded.h>
