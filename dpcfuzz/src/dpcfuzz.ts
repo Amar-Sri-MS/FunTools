@@ -90,7 +90,6 @@ const client = new DPCClient(argv.H, argv.p);
 function fuzzVerb(verb: string): void {
   let iterationsPassed: number = 0;
   process.stdout.write("Starting to fuzz '" + verb + "'\n");
-  client.submit("schema", [verb]);
   client.onTimeout(timeout, () => {
     error("Failed to get schema");
   });
@@ -110,15 +109,20 @@ function fuzzVerb(verb: string): void {
       iterationsPassed++;
     };
     client.onData(faker);
-    client.onError((e: any) => {
-      error("Crashed on " + JSON.stringify(request) + "\nSocket error " + JSON.stringify(e));
+    client.onError(() => {
+      error("Crashed on " + JSON.stringify(request));
     });
     client.onTimeout(timeout, () => {
       error("Hanged on " + JSON.stringify(request));
     });
     faker();
   }, true);
+  client.submit("schema", [verb]);
 }
+
+client.onError((e: any) => {
+  process.stdout.write("Socket error " + JSON.stringify(e) + "\n");
+});
 
 if (argv._.length === 1) {
   fuzzVerb(argv._[0]);
