@@ -123,7 +123,6 @@ function fuzzVerb(verb: string): void {
 if (argv._.length === 1) {
   fuzzVerb(argv._[0]);
 } else {
-  client.submit("help", []);
   client.onTimeout(timeout, () => {
     error("Failed to get help");
   });
@@ -134,4 +133,5 @@ if (argv._.length === 1) {
     const l = Object.keys(verbs);
     fuzzVerb(l[Math.floor(Math.random() * l.length)]);
   }, true);
+  client.submit("help", []);
 }

@@ -31,12 +31,11 @@ export class DPCClient {
           clearTimeout(this.timeout);
           this.timeout = undefined;
         }
-        if (!response && this.error) { this.error("No result"); }
         this.buffer = "";
         if (once && once === true) {
           this.socket.off("data", internal);
         }
-        if (!response.result) {
+        if (!response || !response.result) {
           callback(response, true);
         } else {
           callback(response.result, false);
