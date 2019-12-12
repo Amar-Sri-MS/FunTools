@@ -4,7 +4,8 @@ export class DPCClient {
   private transactionId: number;
   private socket: Net.Socket;
   private buffer: string;
-  private error?: (e: any) => void;
+  private connected: boolean;
+  private send_buffer: string;
   private timeoutFunction?: () => void;
   private timeout?: ReturnType<typeof setTimeout>;
   private msTimeout: number;
@@ -12,9 +13,16 @@ export class DPCClient {
   constructor(host?: string, port?: number) {
     const h = host ? host : "127.0.0.1";
     const p = port ? port : 40221;
+    this.connected = false;
+    this.send_buffer = "";
     this.socket = new Net.Socket();
     this.socket.connect({ port: p, host: h }, () => {
       process.stdout.write("DPC client connected\n");
+      this.connected = true;
+      if (this.send_buffer.length > 0) {
+        this.socket.write(this.send_buffer);
+        this.send_buffer = "";
+      }
     });
     this.socket.on("close", () => {process.stdout.write("DPC client disconnected\n"); });
     this.buffer = "";
@@ -24,7 +32,6 @@ export class DPCClient {
 
   public onData(callback: (d: any, error: boolean) => void, once?: boolean) {
     const internal = (s: string) => {
-      process.stdout.write("Debug: got " + s + "\n");
       this.buffer += s;
       try {
         const response = JSON.parse(this.buffer);
@@ -49,7 +56,6 @@ export class DPCClient {
   }
 
   public onError(callback: (e: any) => void) {
-    this.error = callback;
     this.socket.on("error", callback);
   }
 
@@ -64,7 +70,12 @@ export class DPCClient {
       this.timeout = setTimeout(this.timeoutFunction, this.msTimeout);
     }
     const a: any[] = (raw && raw === true) ? args : args.map(this.quote, this);
-    this.socket.write(JSON.stringify({verb: command, tid: this.transactionId++, arguments: a}) + "\n");
+    const message = JSON.stringify({verb: command, tid: this.transactionId++, arguments: a}) + "\n";
+    if (this.connected) {
+      this.socket.write(message);
+    } else {
+      this.send_buffer += message;
+    }
   }
 
   public end(): void {
