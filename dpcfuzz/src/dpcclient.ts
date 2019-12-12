@@ -5,7 +5,7 @@ export class DPCClient {
   private socket: Net.Socket;
   private buffer: string;
   private connected: boolean;
-  private send_buffer: string;
+  private sendBuffer: string;
   private timeoutFunction?: () => void;
   private timeout?: ReturnType<typeof setTimeout>;
   private msTimeout: number;
@@ -14,14 +14,14 @@ export class DPCClient {
     const h = host ? host : "127.0.0.1";
     const p = port ? port : 40221;
     this.connected = false;
-    this.send_buffer = "";
+    this.sendBuffer = "";
     this.socket = new Net.Socket();
     this.socket.connect({ port: p, host: h }, () => {
       process.stdout.write("DPC client connected\n");
       this.connected = true;
-      if (this.send_buffer.length > 0) {
-        this.socket.write(this.send_buffer);
-        this.send_buffer = "";
+      if (this.sendBuffer.length > 0) {
+        this.socket.write(this.sendBuffer);
+        this.sendBuffer = "";
       }
     });
     this.socket.on("close", () => {process.stdout.write("DPC client disconnected\n"); });
@@ -74,7 +74,7 @@ export class DPCClient {
     if (this.connected) {
       this.socket.write(message);
     } else {
-      this.send_buffer += message;
+      this.sendBuffer += message;
     }
   }
 
