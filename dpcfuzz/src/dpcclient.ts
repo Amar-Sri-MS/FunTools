@@ -32,14 +32,14 @@ export class DPCClient {
           this.timeout = undefined;
         }
         if (!response && this.error) { this.error("No result"); }
+        this.buffer = "";
+        if (once && once === true) {
+          this.socket.off("data", internal);
+        }
         if (!response.result) {
           callback(response, true);
         } else {
           callback(response.result, false);
-        }
-        this.buffer = "";
-        if (once && once === true) {
-          this.socket.off("data", internal);
         }
       } catch (e) {
         // it means the json is incomplete, wait for more
