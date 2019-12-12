@@ -528,7 +528,7 @@ def run(arg_action, arg_enroll_cert = None, arg_enroll_tbs = None, *args, **kwar
                 with open(find_file_in_srcdirs(v['description'][len('@file:'):]), 'r') as f:
                     v['description'] = f.readline()
             except:
-                raise
+                raise Exception("Could not find file {0}".format(v['description'][len('@file:'):]))
 
     if config.get('output_format'):
         total_size = int(config['output_format']['size'], 0)

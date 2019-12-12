@@ -353,7 +353,7 @@ def sign_with_key(label, data):
         data = hsm.session.digest(data, mechanism=pkcs11.Mechanism.SHA256)
         mechanism = pkcs11.Mechanism.ECDSA
     else:
-        raise "Unsupported key type"
+        raise ValueError("Unsupported key type")
 
     return private.sign(data, mechanism=mechanism), key_type
 
