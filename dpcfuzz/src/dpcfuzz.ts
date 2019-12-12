@@ -89,6 +89,7 @@ const client = new DPCClient(argv.H, argv.p);
 
 function fuzzVerb(verb: string): void {
   let iterationsPassed: number = 0;
+  process.stdout.write("Starting to fuzz '" + verb + "'\n");
   client.submit("schema", [verb]);
   client.onTimeout(timeout, () => {
     error("Failed to get schema");
