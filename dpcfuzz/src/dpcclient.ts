@@ -35,7 +35,6 @@ export class DPCClient {
     const internal = (s: string) => {
       process.stdout.write("Got: " + s + "\n");
       this.buffer += s;
-      try {
         const response = JSON.parse(this.buffer);
         if (this.timeout) {
           clearTimeout(this.timeout);
@@ -50,10 +49,6 @@ export class DPCClient {
         } else {
           callback(response.result, false);
         }
-      } catch (e) {
-        process.stdout.write("Error: " + JSON.stringify(e) + "\n");
-        // it means the json is incomplete, wait for more
-      }
     };
     this.socket.on("data", internal);
   }
