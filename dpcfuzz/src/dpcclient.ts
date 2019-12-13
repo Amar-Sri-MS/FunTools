@@ -33,6 +33,7 @@ export class DPCClient {
 
   public onData(callback: (d: any, error: boolean) => void, once?: boolean) {
     const internal = (s: string) => {
+      process.stdout.write("Got: " + s + "\n");
       this.buffer += s;
       try {
         const response = JSON.parse(this.buffer);
