@@ -51,6 +51,7 @@ export class DPCClient {
           callback(response.result, false);
         }
       } catch (e) {
+        process.stdout.write("Error: " + JSON.stringify(e) + "\n");
         // it means the json is incomplete, wait for more
       }
     };
