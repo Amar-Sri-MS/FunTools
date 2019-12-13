@@ -35,20 +35,26 @@ export class DPCClient {
     const internal = (s: string) => {
       process.stdout.write("Got: " + s + "\n");
       this.buffer += s;
-        const response = JSON.parse(this.buffer);
-        if (this.timeout) {
-          clearTimeout(this.timeout);
-          this.timeout = undefined;
-        }
-        this.buffer = "";
-        if (once && once === true) {
-          this.socket.off("data", internal);
-        }
-        if (!response || !response.result) {
-          callback(response, true);
-        } else {
-          callback(response.result, false);
-        }
+      let response;
+      try {
+        response = JSON.parse(this.buffer);
+      } catch (e) {
+        return;
+        // it means the json is incomplete, wait for more
+      }
+      if (this.timeout) {
+        clearTimeout(this.timeout);
+        this.timeout = undefined;
+      }
+      this.buffer = "";
+      if (once && once === true) {
+        this.socket.off("data", internal);
+      }
+      if (!response || !response.result) {
+        callback(response, true);
+      } else {
+        callback(response.result, false);
+      }
     };
     this.socket.on("data", internal);
   }
