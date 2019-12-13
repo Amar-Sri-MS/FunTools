@@ -16,11 +16,13 @@ export class DPCClient {
     this.connected = false;
     this.sendBuffer = "";
     this.socket = new Net.Socket();
-    this.socket.connect({ port: p, host: h }, () => {
+    this.socket.connect({ port: p, host: h });
+    this.socket.on("ready", () => {
       process.stdout.write("DPC client connected\n");
       this.connected = true;
       if (this.sendBuffer.length > 0) {
         this.socket.write(this.sendBuffer);
+        process.stdout.write("Sending: " + this.sendBuffer + "\n");
         this.sendBuffer = "";
       }
     });
@@ -73,8 +75,10 @@ export class DPCClient {
     const message = JSON.stringify({verb: command, tid: this.transactionId++, arguments: a}) + "\n";
     if (this.connected) {
       this.socket.write(message);
+      process.stdout.write("Connected, wrote: " + message + "\n");
     } else {
       this.sendBuffer += message;
+      process.stdout.write("Not connected, saved: " + message + "\n");
     }
   }
 
