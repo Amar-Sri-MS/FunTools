@@ -16,8 +16,7 @@ export class DPCClient {
     this.connected = false;
     this.sendBuffer = "";
     this.socket = new Net.Socket();
-    this.socket.connect({ port: p, host: h });
-    this.socket.on("ready", () => {
+    this.socket.connect({ port: p, host: h }, () => {
       process.stdout.write("DPC client connected\n");
       this.connected = true;
       if (this.sendBuffer.length > 0) {
