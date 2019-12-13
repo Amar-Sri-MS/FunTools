@@ -7,25 +7,27 @@ export class DPCClient {
   private connected: boolean;
   private sendBuffer: string;
   private timeoutFunction?: () => void;
+  private loggerFunction: (s: string) => void;
   private timeout?: ReturnType<typeof setTimeout>;
   private msTimeout: number;
 
-  constructor(host?: string, port?: number) {
+  constructor(host?: string, port?: number, logger?: (s: string) => void) {
     const h = host ? host : "127.0.0.1";
     const p = port ? port : 40221;
+    this.loggerFunction = logger ? logger : () => undefined;
     this.connected = false;
     this.sendBuffer = "";
     this.socket = new Net.Socket();
     this.socket.connect({ port: p, host: h }, () => {
-      process.stdout.write("DPC client connected\n");
+      this.loggerFunction("DPC client connected");
       this.connected = true;
       if (this.sendBuffer.length > 0) {
         this.socket.write(this.sendBuffer);
-        process.stdout.write("Sending: " + this.sendBuffer + "\n");
+        this.loggerFunction("Sending: " + this.sendBuffer);
         this.sendBuffer = "";
       }
     });
-    this.socket.on("close", () => {process.stdout.write("DPC client disconnected\n"); });
+    this.socket.on("close", () => {this.loggerFunction("DPC client disconnected"); });
     this.buffer = "";
     this.transactionId = 0;
     this.msTimeout = 0;
@@ -33,12 +35,13 @@ export class DPCClient {
 
   public onData(callback: (d: any, error: boolean) => void, once?: boolean) {
     const internal = (s: string) => {
-      process.stdout.write("Got: " + s + "\n");
+      this.loggerFunction("Got: " + s);
       this.buffer += s;
       let response;
       try {
         response = JSON.parse(this.buffer);
       } catch (e) {
+        this.loggerFunction("Error: " + JSON.stringify(e));
         return;
         // it means the json is incomplete, wait for more
       }
@@ -77,10 +80,10 @@ export class DPCClient {
     const message = JSON.stringify({verb: command, tid: this.transactionId++, arguments: a}) + "\n";
     if (this.connected) {
       this.socket.write(message);
-      process.stdout.write("Connected, wrote: " + message + "\n");
+      this.loggerFunction("Connected, wrote: " + message);
     } else {
       this.sendBuffer += message;
-      process.stdout.write("Not connected, saved: " + message + "\n");
+      this.loggerFunction("Not connected, saved: " + message);
     }
   }
 
