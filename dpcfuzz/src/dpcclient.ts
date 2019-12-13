@@ -4,7 +4,8 @@ export class DPCClient {
   private transactionId: number;
   private socket: Net.Socket;
   private buffer: string;
-  private error?: (e: any) => void;
+  private connected: boolean;
+  private sendBuffer: string;
   private timeoutFunction?: () => void;
   private timeout?: ReturnType<typeof setTimeout>;
   private msTimeout: number;
@@ -12,9 +13,16 @@ export class DPCClient {
   constructor(host?: string, port?: number) {
     const h = host ? host : "127.0.0.1";
     const p = port ? port : 40221;
+    this.connected = false;
+    this.sendBuffer = "";
     this.socket = new Net.Socket();
     this.socket.connect({ port: p, host: h }, () => {
       process.stdout.write("DPC client connected\n");
+      this.connected = true;
+      if (this.sendBuffer.length > 0) {
+        this.socket.write(this.sendBuffer);
+        this.sendBuffer = "";
+      }
     });
     this.socket.on("close", () => {process.stdout.write("DPC client disconnected\n"); });
     this.buffer = "";
@@ -31,15 +39,14 @@ export class DPCClient {
           clearTimeout(this.timeout);
           this.timeout = undefined;
         }
-        if (!response && this.error) { this.error("No result"); }
-        if (!response.result) {
-          callback(response, true);
-        } else {
-          callback(response.result, false);
-        }
         this.buffer = "";
         if (once && once === true) {
           this.socket.off("data", internal);
+        }
+        if (!response || !response.result) {
+          callback(response, true);
+        } else {
+          callback(response.result, false);
         }
       } catch (e) {
         // it means the json is incomplete, wait for more
@@ -49,7 +56,6 @@ export class DPCClient {
   }
 
   public onError(callback: (e: any) => void) {
-    this.error = callback;
     this.socket.on("error", callback);
   }
 
@@ -64,15 +70,16 @@ export class DPCClient {
       this.timeout = setTimeout(this.timeoutFunction, this.msTimeout);
     }
     const a: any[] = (raw && raw === true) ? args : args.map(this.quote, this);
-    this.socket.write(JSON.stringify({verb: command, tid: this.transactionId++, arguments: a}) + "\n");
+    const message = JSON.stringify({verb: command, tid: this.transactionId++, arguments: a}) + "\n";
+    if (this.connected) {
+      this.socket.write(message);
+    } else {
+      this.sendBuffer += message;
+    }
   }
 
   public end(): void {
     this.socket.end();
-  }
-
-  private countBuf(char: string): number {
-    return this.buffer.split(char).length - 1;
   }
 
   private quote(a: any): any {
