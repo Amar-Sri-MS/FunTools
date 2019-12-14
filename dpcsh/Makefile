@@ -5,31 +5,54 @@ OS := $(shell uname)
 SDKDIR ?= ../../FunSDK
 SDK_INSTALL_DIR ?= $(SDKDIR)
 
+MACHINE ?= x86_64
+
+ifeq ($(MACHINE),x86_64)
+ TOOLCHAIN_PREFIX :=
+ SDK_LIB_SUBDIR := noasan
+ SDK_INSTALL_PREFIX :=
+else ifeq ($(MACHINE),arm)
+ TOOLCHAIN_PREFIX := arm-linux-gnueabi-
+ SDK_LIB_SUBDIR :=
+ SDK_INSTALL_PREFIX := arm
+else
+ $(error Unknown machine type $(MACHINE))
+endif
+
+BUILD_ROOT ?= build_$(MACHINE)
+
 # define header and library location in FunSDK
 CFLAGS ?= -I $(SDKDIR) -I $(SDKDIR)/FunSDK  -g -Wall -Werror -Wno-multichar
 
 # XXX: compatibility with FunOS build parameters
 #LDFLAGS += -L $(SDKDIR)/lib/${OS}/x86_64 -lfunclient -fsanitize=address
-LDFLAGS += -lpthread -L $(SDKDIR)/lib/${OS}/noasan/x86_64 -lfunclient -ldl
+LDFLAGS += -lpthread -L $(SDKDIR)/lib/$(OS)/$(SDK_LIB_SUBDIR)/$(MACHINE) -lfunclient -ldl
 
-OBJS = dpcsh.o dpcsh_nvme.o dpcsh_macros.o csr_command.o web.o
+SRCS = dpcsh.c dpcsh_nvme.c dpcsh_macros.c csr_command.c web.c
+OBJS = $(addprefix $(BUILD_ROOT)/,$(SRCS:.c=.o))
 
 # Deal with gcc versioning for ASAN
 ifeq ($(OS),Linux)
-CC := gcc$(GCC_SUFFIX)
+CC := $(TOOLCHAIN_PREFIX)gcc$(GCC_SUFFIX)
 endif
 
-%.o: %.c $(DEPS)
+$(BUILD_ROOT):
+	mkdir -p $@
+
+$(BUILD_ROOT)/%.o: %.c $(DEPS) | $(BUILD_ROOT)
 	$(CC) -c -o $@ $< $(CFLAGS)
 
-dpcsh: $(OBJS)
+.PHONY: dpcsh
+dpcsh: $(BUILD_ROOT)/dpcsh
+
+$(BUILD_ROOT)/dpcsh: $(OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
 install: dpcsh
-	mkdir -p $(SDK_INSTALL_DIR)/bin/$(OS)
-	# FIXME: remove OS versioning on dpc_client.py when
-	# integration tests are fixed
-	cp dpc_client.py dpcsh $(SDK_INSTALL_DIR)/bin/$(OS)
+	mkdir -p $(SDK_INSTALL_DIR)/bin/$(SDK_INSTALL_PREFIX)/$(OS)
+# FIXME: remove OS versioning on dpc_client.py when
+# integration tests are fixed
+	cp dpc_client.py $(BUILD_ROOT)/dpcsh $(SDK_INSTALL_DIR)/bin/$(SDK_INSTALL_PREFIX)/$(OS)
 
 clean:
-	rm -f dpcsh $(OBJS)
+	rm -f $(BUILD_ROOT)/dpcsh $(OBJS)

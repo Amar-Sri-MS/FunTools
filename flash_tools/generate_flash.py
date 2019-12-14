@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-""" Copyright (c) 2017 Fungible, Inc. All Rights reserved """
+""" Copyright (c) 2017-2019 Fungible, Inc. All Rights reserved """
 
 import struct
 import sys
@@ -13,6 +13,7 @@ import argparse
 import shutil
 import firmware_signing_service as fsi
 import key_replace as kr
+import key_bag_create as kbc
 import tempfile
 
 # image type is at 2 SIGNER_INFO size +  FW_SIZE + FW_VERSION
@@ -575,6 +576,12 @@ def run(arg_action, arg_enroll_cert = None, arg_enroll_tbs = None, *args, **kwar
             for key in v['keys']:
                 kr.update_file(outfile, key['id'], key=key['name'] + key_name_suffix,
                                hsm=have_hsm, net=have_net)
+
+    if wanted('key_injection') and config.get('key_bag_creation'):
+        # keybag is always created from scratch....
+        for outfile, v in config['key_bag_creation'].items():
+            suffixed_keys = [k + key_name_suffix for k in v['keys']]
+            kbc.create(outfile, suffixed_keys, hsm=have_hsm, net=have_net)
 
     if wanted('flash') and config.get('output_format'):
         bin_infos = dict()

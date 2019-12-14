@@ -103,6 +103,7 @@ def main():
                   "bin/flash_tools/make_emulation_emmc.py",
                   "bin/flash_tools/firmware_signing_service.py",
                   "bin/flash_tools/enrollment_service.py",
+                  "bin/flash_tools/key_bag_create.py",
                   "bin/flash_tools/key_replace.py",
                   "bin/flash_tools/flash_utils.py",
                   "bin/flash_tools/sign_release.sh",
