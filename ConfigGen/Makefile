@@ -52,8 +52,8 @@ test_cfggen:
 
 test_hucfggen:
 	$(QUIET)mkdir -p $(GEN_OUT_DIR)
-	@echo  "$(CFGGEN_PY) -i $(INPUT_DIR) -o $(OUTPUT_DIR) -s $(GEN_OUT_DIR) -c" >>$(CMD_LOG)
-	$(QUIET)$(CFGGEN_PY) -i $(INPUT_DIR) -o $(OUTPUT_DIR) -s $(GEN_OUT_DIR) -c
+	@echo  "$(CFGGEN_PY) -i $(INPUT_DIR) -o $(OUTPUT_DIR) -j -s $(GEN_OUT_DIR) -c" >>$(CMD_LOG)
+	$(QUIET)$(CFGGEN_PY) -i $(INPUT_DIR) -o $(OUTPUT_DIR) -j -s $(GEN_OUT_DIR) -c
 	@echo  "cd test; $(TEST_HU_CFG_SH)" >> $(CMD_LOG)
 	$(QUIET)cd test; $(TEST_HU_CFG_SH)
 
