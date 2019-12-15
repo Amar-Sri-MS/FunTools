@@ -80,8 +80,6 @@ static void print_atomic_json(struct word_parameters *wparams, NULLABLE struct f
         }
         case fun_json_string_type:
             return print_in_buf(wparams, fun_json_to_string(item, ""));
-        case fun_json_bjson_type:
-            return print_atomic_json(wparams, fun_json_expand_if_needed(item));
         default:
             return print_in_buf(wparams, "???");
     }
@@ -187,7 +185,7 @@ static CALLER_TO_RELEASE struct fun_json *sort_wu_stats_by_count(struct fun_json
     size_t c = fun_json_dict_count(wu_stats);
     const char **keys = calloc(c, sizeof(const char *));
     fun_json_dict_fill_and_sort_keys_with_comparator(wu_stats, keys, &con, compare_by_count);
-    const struct fun_json **items = calloc(c, sizeof(void *));
+    struct fun_json **items = calloc(c, sizeof(void *));
     for (size_t i = 0; i < c; i++) {
         const char *key = (void *)keys[i];
         int64_t count = fun_json_to_int64(fun_json_dict_at(wu_stats, key), 0);
