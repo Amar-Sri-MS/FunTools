@@ -55,13 +55,14 @@ section "Images" {
 	    bytes 1096 "signing info"
 	    bytes 436 "padding"
 	    bytes 516 "signature"
-	    uint32 "size"
+	    set image_size [uint32 "size"]
 	    uint32 "version"
 	    ascii 4 "type"
 	    section "attributes" {
 		ascii 32 "reserved"
 		ascii 32 "description"
 	    }
+	    entry "payload" bytes  $image_size
 	}
 	goto [lindex $image_info 2]
 	section [lindex $image_info 0] {
@@ -71,13 +72,14 @@ section "Images" {
 	    bytes 1096 "signing info"
 	    bytes 436 "padding"
 	    bytes 516 "signature"
-	    uint32 "size"
+	    set image_size [uint32 "size"]
 	    uint32 "version"
 	    ascii 4 "type"
 	    section "attributes" {
 		ascii 32 "reserved"
 		ascii 32 "description"
 	    }
+	    entry "payload" bytes  $image_size
 	}
     }
 }
