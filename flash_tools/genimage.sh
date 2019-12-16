@@ -140,6 +140,7 @@ if [ $EMULATION == 0 ]; then
 		--source-dir $SBP_INSTALL_DIR \
 		--source-dir $SBP_ROOT_DIR/software/eeprom \
 		$WORKSPACE/FunSDK/bin/flash_tools/qspi_config_fungible.json \
+		$WORKSPACE/FunSDK/bin/flash_tools/key_bag_config.json \
 		$CUSTOMER_CONFIG_JSON \
 		<(echo $HOST_FIRMWARE_DEF) \
 		<(echo $EEPROM_DEF)
@@ -156,6 +157,7 @@ else
 		--source-dir $SBP_ROOT_DIR/software/eeprom \
 		--enroll-tbs ${WORKSPACE}/enroll_tbs.bin \
 		$WORKSPACE/FunSDK/bin/flash_tools/qspi_config_fungible.json \
+		$WORKSPACE/FunSDK/bin/flash_tools/key_bag_config.json \
 		$CUSTOMER_CONFIG_JSON \
 		<(echo $HOST_FIRMWARE_DEF) \
 		<(echo $EEPROM_DEF) \

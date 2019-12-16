@@ -44,6 +44,7 @@ ${WORKSPACE}/FunTools/flash_tools/release.py --action prepare --force-version ${
 	    --force-description ${sdknum}'_'${buildts} \
 	    --sdkdir `pwd` --destdir ${WORKSPACE}/TO_BE_SIGNED \
 	    bin/flash_tools/qspi_config_fungible.json \
+	    bin/flash_tools/key_bag_config.json \
 	    bin/flash_tools/mmc_config_fungible.json
 echo
 echo "Done -- For signing a release, copy the start certificate (start_certificate.bin) to the directory "${WORKSPACE}"/TO_BE_SIGNED"

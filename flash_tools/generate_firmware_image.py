@@ -14,8 +14,14 @@
 # ecpubkey: export the public part of an EC key, in binary or DER encoded format
 
 
-import os, struct, binascii, argparse, sys
-import traceback, getpass, datetime, configparser
+import os
+import struct
+import binascii
+import argparse
+import sys
+import traceback
+import getpass
+import datetime
 import fcntl
 import hashlib
 
@@ -26,7 +32,7 @@ import pkcs11.util.rsa
 import pkcs11.util.ec
 
 
-# FIXME: this should be a shared constants file
+# FIXME: this should be a shared constants file with SBPFirmware
 RSA_KEY_SIZE_IN_BITS = 2048
 SIGNING_INFO_SIZE = 2048
 MAX_SIGNATURE_SIZE = 512
@@ -35,6 +41,7 @@ SIGNED_ATTRIBUTES_SIZE = 32
 SIGNED_DESCRIPTION_SIZE = 32
 SERIAL_INFO_NUMBER_SIZE = 24
 CERT_PUB_KEY_POS = 64
+MAX_KEYS_IN_KEYBAG = 96
 
 MAGIC_NUMBER_CERTIFICATE = 0xB1005EA5
 MAGIC_NUMBER_ENROLL_CERT = 0xB1005C1E
@@ -101,7 +108,7 @@ def write(filename, content, overwrite=True, tohex=False, tobyte=False,
         f.write(content)
 
 
-class Lock(object):
+class Lock:
 
     def __init__(self, filename):
         self.filename = filename
@@ -187,7 +194,7 @@ def get_token():
 
 ### HSM  #############################
 
-class HSM(object):
+class HSM:
 
     __session = None
 
@@ -267,9 +274,9 @@ def get_create_public_rsa_modulus(label):
         print(err)
 
     if public_modulus is None:
-            print("Generating key " + label)
-            public, _ = generate_rsa_key_pair(hsm.session, label)
-            public_modulus = get_modulus(public)
+        print("Generating key " + label)
+        public, _ = generate_rsa_key_pair(hsm.session, label)
+        public_modulus = get_modulus(public)
 
     return public_modulus
 
@@ -347,7 +354,7 @@ def sign_with_key(label, data):
         data = hsm.session.digest(data, mechanism=pkcs11.Mechanism.SHA256)
         mechanism = pkcs11.Mechanism.ECDSA
     else:
-        raise("Unsupported key type")
+        raise ValueError("Unsupported key type")
 
     return private.sign(data, mechanism=mechanism), key_type
 
@@ -535,7 +542,7 @@ def add_cert_and_signature_to_image(image, cert, signature):
 
 
 def image_gen(outfile, infile, ftype, version, description, sign_key,
-              certfile, customer_certfile):
+              certfile, customer_certfile, key_index):
     ''' generate signed firmware image '''
     binary = read(infile)
     to_be_signed = struct.pack('<2I', len(binary), version)
@@ -544,9 +551,8 @@ def image_gen(outfile, infile, ftype, version, description, sign_key,
     if description:
         # Max allowed size is (block size - 1) to allow for terminating null
         if len(description) > SIGNED_DESCRIPTION_SIZE - 1:
-            raise Exception(
-                "Image description too long, max is {}".
-                format(SIGNED_DESCRIPTION_SIZE-1))
+            raise ValueException( "Image description too long, max is {}".
+                                  format(SIGNED_DESCRIPTION_SIZE-1))
         to_be_signed += description.encode() + b'\x00' * (SIGNED_DESCRIPTION_SIZE -
                                                           len(description))
     else:
@@ -558,6 +564,12 @@ def image_gen(outfile, infile, ftype, version, description, sign_key,
     cert = b''
     # sign_key and cert_file are mutually exclusive
     if sign_key:
+        if key_index is not None:
+            if key_index < 0 or key_index >= MAX_KEYS_IN_KEYBAG:
+                raise ValueException("Key Index should between 0 and {0}".
+                                     format(MAX_KEYS_IN_KEYBAG))
+
+            cert = struct.pack("<I", (key_index | 0x80000000))
         signature, _ = sign_with_key(sign_key, to_be_signed)
     elif certfile:
         cert = read(certfile)
@@ -609,15 +621,15 @@ def cert_gen(outfile, cert_key, cert_key_file, sign_key, serial_number,
     # SERIAL NUMBER
     s_num = binascii.unhexlify(serial_number)
     if len(s_num) != SERIAL_INFO_NUMBER_SIZE:
-        raise Exception("Serial Number length must be exactly " +
-                        str(SERIAL_INFO_NUMBER_SIZE) + " bytes long")
+        raise ValueException("Serial Number length must be exactly " +
+                             str(SERIAL_INFO_NUMBER_SIZE) + " bytes long")
     to_be_signed += s_num
 
     # SERIAL NUMBER MASK
     s_num_mask = binascii.unhexlify(serial_number_mask)
     if len(s_num_mask) != SERIAL_INFO_NUMBER_SIZE:
-        raise Exception("Serial Number Mask length must be exactly " +
-                        str(SERIAL_INFO_NUMBER_SIZE) + " bytes long")
+        raise ValueException("Serial Number Mask length must be exactly " +
+                             str(SERIAL_INFO_NUMBER_SIZE) + " bytes long")
     to_be_signed += s_num_mask
 
     if modulus:
@@ -678,6 +690,9 @@ def parse_and_execute():
 
     parser.add_argument("-k", "--key", dest="sign_key",
                         help="signing key name (remove, import, image, certificate, modulus, ecpubkey)")
+
+    parser.add_argument("--key_index", dest="key_index",
+                        help="specify a key index to store in the header (image)")
 
     parser.add_argument("-m", "--serial_number_mask", dest="serial_number_mask",
                         default="FF" * SERIAL_INFO_NUMBER_SIZE,
@@ -770,7 +785,7 @@ def parse_and_execute():
         image_gen(options.out_path, options.fw_path, options.fw_type,
                   int(options.fw_ver, 0), options.fw_description,
                   options.sign_key, options.cert_path,
-                  options.customer_cert_path)
+                  options.customer_cert_path, int(options.key_index, 0))
 
         sys.exit(0)
 

@@ -9,18 +9,15 @@
 ##############################################################################
 
 import sys
-import binascii
 import struct
 import os
-import datetime
 import cgi
-import codecs
 
 import traceback
 
 from common import *
 
-RESTRICTED_PORT=4443
+RESTRICTED_PORT = 4443
 
 # FIXME: this should be a shared constants file
 RSA_KEY_SIZE_IN_BITS = 2048
@@ -34,6 +31,8 @@ SIGNED_DESCRIPTION_SIZE = 32
 SERIAL_INFO_NUMBER_SIZE = 24
 
 CERT_PUB_KEY_POS = 64
+
+MAX_KEYS_IN_KEYBAG = 96
 
 MAGIC_NUMBER_CERTIFICATE = 0xB1005EA5
 MAGIC_NUMBER_ENROLL_CERT = 0xB1005C1E
@@ -76,8 +75,8 @@ def process_query():
 
         # send in binary format by default for this application
         # to ease transition
-        format = safe_form_get(form, "format", "binary")
-        if format == "binary":
+        out_format = safe_form_get(form, "format", "binary")
+        if out_format == "binary":
             send_binary_modulus(form, key_label)
         else:
             print("Content-type: text/plain")
@@ -121,7 +120,7 @@ def hsm_sign_with_cert(cert, data):
 
 
 def image_gen(binary, ftype, version, description,
-              sign_key, cert, customer_cert):
+              sign_key, cert, customer_cert, key_index):
     ''' generate signed firmware image '''
 
     to_be_signed = struct.pack('<2I', len(binary), version)
@@ -139,8 +138,15 @@ def image_gen(binary, ftype, version, description,
 
     signature = b''
     # sign_key and cert_file are mutually exclusive with sign_key taking priority
+    # if there is a key_index, then encode it as a pseudo-certificate'
     if sign_key:
-        cert = b''
+        if key_index is not None:
+            if key_index < 0 or key_index >= MAX_KEYS_IN_KEYBAG:
+                raise ValueException("Key Index should between 0 and {0}".
+                                     format(MAX_KEYS_IN_KEYBAG))
+            cert = struct.pack("<I", (key_index | 0x80000000))
+        else:
+            cert = b''
         signature = hsm_sign_with_key(sign_key, to_be_signed)
     elif cert:
         signature = hsm_sign_with_cert(cert, to_be_signed)
@@ -199,10 +205,16 @@ def sign_image():
     # a customer certificate can be in addition to a key label or a certificate
     key_label = safe_form_get(form, "key", None)
 
+    #  key can be marked as index into key bag
+    key_index = None
+    if key_label is not None:
+        key_index_str = safe_form_get(form, "key_index", None)
+        if key_index_str is not None:
+            key_index = int(key_index_str, 0)
+
     certificate = get_binary_from_form(form, "cert")
 
     customer_certificate = get_binary_from_form(form, "customer_cert")
-
 
     # log the request
     log("Signing request version = %d type = %s description = %s " %
@@ -213,7 +225,8 @@ def sign_image():
          'Present' if customer_certificate else 'None'))
 
     signed_image = image_gen(image, image_type, image_version, description,
-                             key_label, certificate, customer_certificate)
+                             key_label, certificate, customer_certificate,
+                             key_index)
     send_binary(signed_image)
 
 
@@ -227,7 +240,7 @@ def main_program():
             raise ValueError("Attempt to access signing server from port %d" % port)
 
         method = os.environ["REQUEST_METHOD"]
-        if method != "GET" and method != "POST":
+        if method not in ("GET", "POST"):
             raise ValueError("Invalid request method %s" % method)
 
         if method == "GET":
