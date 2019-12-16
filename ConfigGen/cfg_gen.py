@@ -547,7 +547,7 @@ def main():
     
     print("Configfile Generation")
     try:
-        opts, args = getopt.getopt(sys.argv[1:], 'hci:o:s:j:g:')
+        opts, args = getopt.getopt(sys.argv[1:], 'hci:o:s:jg:')
 
     except getopt.GetoptError as err:
         print(str(err))
@@ -589,7 +589,6 @@ def main():
     if rc == False:
         print('Failed to parse config')
         sys.exit(1)
-
 
     if json_gen:
         print("Generating json config")
