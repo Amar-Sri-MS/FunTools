@@ -32,6 +32,8 @@ SERIAL_INFO_NUMBER_SIZE = 24
 
 CERT_PUB_KEY_POS = 64
 
+MAX_KEYS_IN_KEYBAG = 96
+
 MAGIC_NUMBER_CERTIFICATE = 0xB1005EA5
 MAGIC_NUMBER_ENROLL_CERT = 0xB1005C1E
 
@@ -139,6 +141,9 @@ def image_gen(binary, ftype, version, description,
     # if there is a key_index, then encode it as a pseudo-certificate'
     if sign_key:
         if key_index is not None:
+            if key_index < 0 or key_index >= MAX_KEYS_IN_KEYBAG:
+                raise ValueException("Key Index should between 0 and {0}".
+                                     format(MAX_KEYS_IN_KEYBAG))
             cert = struct.pack("<I", (key_index | 0x80000000))
         else:
             cert = b''
