@@ -32,7 +32,7 @@ import pkcs11.util.rsa
 import pkcs11.util.ec
 
 
-# FIXME: this should be a shared constants file
+# FIXME: this should be a shared constants file with SBPFirmware
 RSA_KEY_SIZE_IN_BITS = 2048
 SIGNING_INFO_SIZE = 2048
 MAX_SIGNATURE_SIZE = 512
@@ -41,6 +41,7 @@ SIGNED_ATTRIBUTES_SIZE = 32
 SIGNED_DESCRIPTION_SIZE = 32
 SERIAL_INFO_NUMBER_SIZE = 24
 CERT_PUB_KEY_POS = 64
+MAX_KEYS_IN_KEYBAG = 96
 
 MAGIC_NUMBER_CERTIFICATE = 0xB1005EA5
 MAGIC_NUMBER_ENROLL_CERT = 0xB1005C1E
@@ -550,9 +551,8 @@ def image_gen(outfile, infile, ftype, version, description, sign_key,
     if description:
         # Max allowed size is (block size - 1) to allow for terminating null
         if len(description) > SIGNED_DESCRIPTION_SIZE - 1:
-            raise Exception(
-                "Image description too long, max is {}".
-                format(SIGNED_DESCRIPTION_SIZE-1))
+            raise ValueException( "Image description too long, max is {}".
+                                  format(SIGNED_DESCRIPTION_SIZE-1))
         to_be_signed += description.encode() + b'\x00' * (SIGNED_DESCRIPTION_SIZE -
                                                           len(description))
     else:
@@ -565,6 +565,10 @@ def image_gen(outfile, infile, ftype, version, description, sign_key,
     # sign_key and cert_file are mutually exclusive
     if sign_key:
         if key_index is not None:
+            if key_index < 0 or key_index >= MAX_KEYS_IN_KEYBAG:
+                raise ValueException("Key Index should between 0 and {0}".
+                                     format(MAX_KEYS_IN_KEYBAG))
+
             cert = struct.pack("<I", (key_index | 0x80000000))
         signature, _ = sign_with_key(sign_key, to_be_signed)
     elif certfile:
@@ -617,15 +621,15 @@ def cert_gen(outfile, cert_key, cert_key_file, sign_key, serial_number,
     # SERIAL NUMBER
     s_num = binascii.unhexlify(serial_number)
     if len(s_num) != SERIAL_INFO_NUMBER_SIZE:
-        raise Exception("Serial Number length must be exactly " +
-                        str(SERIAL_INFO_NUMBER_SIZE) + " bytes long")
+        raise ValueException("Serial Number length must be exactly " +
+                             str(SERIAL_INFO_NUMBER_SIZE) + " bytes long")
     to_be_signed += s_num
 
     # SERIAL NUMBER MASK
     s_num_mask = binascii.unhexlify(serial_number_mask)
     if len(s_num_mask) != SERIAL_INFO_NUMBER_SIZE:
-        raise Exception("Serial Number Mask length must be exactly " +
-                        str(SERIAL_INFO_NUMBER_SIZE) + " bytes long")
+        raise ValueException("Serial Number Mask length must be exactly " +
+                             str(SERIAL_INFO_NUMBER_SIZE) + " bytes long")
     to_be_signed += s_num_mask
 
     if modulus:
