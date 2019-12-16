@@ -6,226 +6,464 @@
 # Copyright (c) 2019 Fungible Inc.  All rights reserved.
 #
 
+import logging
+import os
 import re
-
-import csr2api
+import subprocess
+import sys
 
 from csrutils import dbgprobe
 from csrutils import csr_get_field
+from csrutils import csr_set_field
 from csrutils import hex_word_dump
 from csrutils import str_to_int
 
 
-class CSR2DevTable(object):
+# Use the WORKSPACE environment variable to import the csr2 module.
+# TODO (jimmy): we need a better way to import our favourite modules
+WS = os.environ.get('WORKSPACE', None)
+if WS is None:
+    print 'Need WORKSPACE environment variable to be set: exiting'
+    sys.exit(1)
+sys.path.append(os.path.join(WS, 'FunHW/csr2api/v2'))
 
-    def __init__(self):
-        self.devtab = None
-        self.addr_by_path = dict()
-        self.reg_by_path = dict()
+import csr2
 
-    def lazy_populate(self):
-        if self.devtab is None:
-            self.devtab = csr2api.get_device_table()
-            if self.devtab is not None:
-                self.populate_maps()
+#
+# Use a global logger to match the convention set by related modules.
+#
+logger = logging.getLogger("csr2utils")
+logger.setLevel(logging.INFO)
 
-    def populate_maps(self):
-       for dev_name in self.devtab:
-            dev = self.devtab[dev_name]
-            for instance in dev['instances']:
-                inst_path = instance.get_dpath()
-                inst_addr = instance.get_address()
-                for reg in dev['regs']:
-                    # Ignore the dimensions here, we'll fix em up later
-                    reg_addr = int(reg.address, 16)
-                    reg_path = inst_path + '.' + reg.short_name
-                    self.addr_by_path[reg_path] = inst_addr + reg_addr
-                    self.reg_by_path[reg_path] = reg
 
-    def get_reg(self, csr_path):
-        reg = self.reg_by_path.get(csr_path, None)
-        return reg
+class Register(object):
+    """
+    Represents a register.
 
-    def get_address(self, dimensionless_path, dims):
-        addr = self.addr_by_path.get(dimensionless_path, None)
-        reg = self.reg_by_path.get(dimensionless_path)
+    The fields in this register have been "flattened" from the CSR2
+    hierarchy, so array and struct groupings are no longer visible.
+    """
+    def __init__(self, name, addr, width_bytes):
+        self.name = name
+        self.addr = addr
+        self.width_bytes = width_bytes
+        self.fields = []
 
-        if addr is None:
+    def add_field(self, field):
+        self.fields.append(field)
+
+    def __str__(self):
+        s = list()
+        s.append('%s @ %s' % (self.name, hex(self.addr)))
+        s.append('------ Fields ------')
+        for f in self.fields:
+            s.append(str(f))
+        return '\n'.join(s)
+
+
+class Field(object):
+    """ Bitfield in a register """
+    def __init__(self, name, lsb, msb):
+        self.name = name
+        self.lsb = lsb
+        self.msb = msb
+
+    def __str__(self):
+        return '%s [%d:%d]' % (self.name, self.msb, self.lsb)
+
+
+class RegisterValue(object):
+    """
+    Represents a value in a register.
+    """
+    def __init__(self, register, word_array):
+        self.reg = register
+        self.word_array = word_array
+
+    def set_field_val(self, fld_name, fld_word_array):
+        """
+        Sets the field with the specified value (as an array of 64-bit words).
+
+        Linear search through the fields, which is yuck, but probably not
+        performance critical.
+
+        Returns True on success, else False.
+        """
+        for fld in self.reg.fields:
+            if fld.name == fld_name:
+                fld_offset = fld.lsb
+                fld_width = fld.msb - fld.lsb + 1
+                csr_set_field(fld_offset, fld_width,
+                              self.word_array, fld_word_array)
+                return True
+
+        # Failed to find a field with the specified name
+        return False
+
+    def __str__(self):
+        s = list()
+        s.append("Raw data: {0}".format(hex_word_dump(self.word_array)))
+        s.append('------ Field values ------')
+
+        for fld, val in self._list_field_vals():
+            s.append('    {0}: {1}'.format(fld, val))
+        return '\n'.join(s)
+
+    def _list_field_vals(self):
+        fields_and_vals = []
+        for fld in self.reg.fields:
+            fld_offset = fld.lsb
+            fld_width = fld.msb - fld.lsb + 1
+            val_array = csr_get_field(fld_offset, fld_width, self.word_array)
+            val = hex_word_dump(val_array)
+            fields_and_vals.append((fld.name, val))
+
+        return fields_and_vals
+
+
+class RegisterFinder(object):
+    """
+    Finds a register given a path.
+    """
+    def __init__(self, bundle):
+        """
+        Initializes from a csr2 json bundle.
+        """
+        self.bundle = bundle
+
+    def find_reg(self, path):
+        """
+        Attempts to find the register at the specified path.
+
+        Returns a tuple of (register, error_string). If the error string
+        is not None then the register is invalid.
+        """
+        root_name = self.bundle.roots[0]
+
+        root_type = self.bundle.defs_dict[root_name]
+        root_cursor = root_type.cursor()
+
+        tokenizer = PathSplitter()
+        parts = tokenizer.split(path)
+
+        # strip the root name
+        parts = parts[1:]
+
+        reg_cursor, error = self._descend(root_cursor, parts)
+        if error:
+            return None, error
+
+        reg = Register(reg_cursor.prettyname(),
+                       reg_cursor.offset('addr'),
+                       reg_cursor.size('addr'))
+
+        self._add_reg_fields(reg, reg_cursor)
+        return reg, None
+
+    def _descend(self, cursor, remaining_parts):
+        if not remaining_parts:
+            # Found the target register if all parts have been matched and
+            # we landed on a register.
+            if isinstance(cursor.typ, csr2.Reg):
+                return cursor, None
+            return None, 'Failed to find register: possibly incomplete path?'
+
+        try:
+            # The cursor.child(key) method descends the graph until it finds a
+            # named layer. At that point if the key matches a node it returns
+            # a cursor to that child, otherwise it throws a KeyError.
+            child_cursor = cursor.child(remaining_parts[0]).skip()
+        except KeyError as e:
+            # TODO (jimmy): improve error by reporting the matching parts
+            #               or drawing squiggly lines under the unmatched part
+            return None, 'Failed to match %s' % remaining_parts[0]
+
+        return self._descend(child_cursor, remaining_parts[1:])
+
+    def _add_reg_fields(self, reg, reg_cursor):
+
+        # Get the size in bytes first, then multiply to turn into a bit width
+        reg_width = reg_cursor.size('addr') * 8
+
+        # Walk all children of the register, but only look at Logic and Union
+        # types which represent the lowest level (i.e. bitfields).
+        for child in reg_cursor.child().walk(explode=True):
+            if isinstance(child.typ, (csr2.Logic, csr2.Union)):
+                fname = child.crumb.name
+                msb = reg_width - child.offset('bit') - 1
+                lsb = reg_width - (child.offset('bit') + child.size('bit'))
+                field = Field(fname, lsb, msb)
+                reg.add_field(field)
+
+
+class PathSplitter(object):
+    """
+    Splits a path to a register.
+
+    A path may include indices, so foo.bar[1].baz[0] will turn into
+    a list containing strings and ints [ 'foo', 'bar', 1, 'baz', 0 ].
+
+    The split list is useful when walking the csr graph because each element
+    is a key into the next level of the graph when walking from the root.
+
+    TODO (jimmy): consider using Phil's idea of a class with "dunder" methods
+                  to implement . and [] instead.
+    """
+    def split(self, path):
+        """ Splits a path """
+        parts = path.split('.')
+
+        result = []
+        for p in parts:
+            result.extend(self._split_indices(p))
+
+        return result
+
+    def _split_indices(self, part):
+        """
+        Splits reg[0][3][4] into ['reg', 0, 3, 4].
+
+        The indices are always at the end of the path fragment.
+        """
+        result = []
+        start = 0
+
+        bra = part.find('[', start)
+        ket = part.find(']', start)
+        if bra < ket:
+            result.append(part[:bra])
+        else:
+            result.append(part)
+
+        while bra < ket:
+            dim_index_str = part[bra+1:ket]
+            dim_index = int(dim_index_str)
+            result.append(dim_index)
+
+            bra = part.find('[', ket+1)
+            ket = part.find(']', ket+1)
+
+        return result
+
+
+class RegisterNames(object):
+    """
+    A collection of register names.
+
+    To use, build(), then call find_matching() to locate matching
+    register names.
+    """
+    def __init__(self, bundle):
+        self.bundle = bundle
+        self.names = set()
+
+    def build(self):
+        """
+        Build the collection of names.
+
+        Subsequent calls will not rebuild the collection.
+        """
+        if self.names:
+            return
+
+        root_name = self.bundle.roots[0]
+
+        root_type = self.bundle.defs_dict[root_name]
+        root_cursor = root_type.cursor()
+
+        # Avoid exploding the graph: we typically do not need to expand
+        # arrays to search for a partial path.
+        for cursor in root_cursor.walk():
+            if isinstance(cursor.typ, csr2.Reg):
+                reg_name = ''
+                for precursor in cursor.trail():
+                    crumb = precursor.crumb
+                    reg_name = self._extend_regname(reg_name, crumb)
+
+                self.names.add(reg_name)
+
+    def _extend_regname(self, reg_name, crumb):
+        """
+        For a named crumb, add a dotted fragment. For an indexed crumb,
+        add the bounds [left..right].
+        """
+        if isinstance(crumb, csr2.NamedCrumb):
+            fragment = crumb.prettyname
+            if fragment:
+                if reg_name:
+                    reg_name += '.'
+                reg_name += fragment
+        elif isinstance(crumb, csr2.IndexedCrumb):
+            for left, right in crumb.arr.bounds:
+                reg_name += '[%d..%d]' % (left, right)
+        return reg_name
+
+    def find_matching(self, regex):
+        """ Find all names that match the regex """
+        result = []
+        for reg in self.names:
+            if re.match(regex, reg):
+                result.append(reg)
+        return result
+
+
+class CSRAccessor(object):
+
+    def __init__(self, dbg_client, reg_finder):
+        """
+        Creates an accessor to peek and poke registers with the specified
+        debug client.
+        """
+        self.dbgprobe = dbg_client
+        self.reg_finder = reg_finder
+
+    def peek(self, path):
+        reg, error = self.reg_finder.find_reg(path)
+        if error:
+            logger.error(error)
+            return
+
+        addr = reg.addr
+        csr_width_words = reg.width_bytes >> 3
+        logger.info('Peeking register at {0} '
+                    'with length {1}'.format(hex(addr), csr_width_words))
+
+        (status, data) = self.dbgprobe.csr_peek(chip_inst=0,
+                                                csr_addr=addr,
+                                                csr_width_words=csr_width_words)
+
+        if status:
+            word_array = data
+            if not word_array:
+                logger.error("Peeked data is empty")
+                return None
+
+            regval = RegisterValue(reg, word_array)
+            print str(regval)
+            return word_array
+        else:
+            error_msg = data
+            logger.error("Peek failed: {0}".format(error_msg))
             return None
 
-        # do the dimension offsets, if any
-        addr += self.calc_dim_offset(reg, dims)
+    def poke(self, path, values):
+        reg, error = self.reg_finder.find_reg(path)
+        if error:
+            logger.error(error)
+            return
 
-        return addr
+        addr = reg.addr
+        csr_width_words = reg.width_bytes >> 3
 
-    def get_width(self, csr_path):
-        reg = self.reg_by_path.get(csr_path, None)
-        return reg.padded_size
+        if len(values) != csr_width_words:
+            logger.error('Cannot write %d words for a register '
+                         'which has %d words' % (len(values), csr_width_words))
+            return
+        logger.info('Poking register at {0} '
+                    'with values {1}'.format(hex(addr), values))
 
-    def potential_paths(self, csr_path):
-        csr_regex = re.compile(csr_path)
-        paths = []
-        for path in self.reg_by_path:
-            if csr_regex.match(path):
-                potential_path = self.fixup_dimensions(path)
-                paths += [potential_path]
-        return paths
-
-    def fixup_dimensions(self, path):
-        reg = self.reg_by_path[path]
-        for dim in reg.rpt_dims:
-            # TODO (jimmy): this should look at bounds
-            path += '[%d..%d]' % (0, dim.count - 1)
-        return path
-
-    @staticmethod
-    def calc_dim_offset(reg, idx_list=None):
-        offset = 0
-        if not idx_list:
-            return offset
-
-        # if this is an array, add the index offsets
-        for i, dim in enumerate(reg.rpt_dims):
-            offset += dim.stride * idx_list[i]
-        return offset
+        (status, data) = self.dbgprobe.csr_poke(chip_inst=0,
+                                                csr_addr=addr,
+                                                word_array=values)
+        if not status:
+            logger.error('Poke failed: {0}'.format(data))
+            return
 
 
-csr_dev_table = CSR2DevTable()
+#
+# Global csr2 json containing register spec information
+#
+bundle = None
+csr_names = None
+
+
+def init_bundle_lazily():
+    """
+    Initialize a bundle.
+
+    This generates the bundle at the moment. At some point in the future,
+    a bundle will be part of the FunHW/FunSDK repo and should be consumed
+    from that location.
+    """
+    global bundle
+    global csr_names
+
+    if bundle is not None:
+        return True
+
+    csr2_dir = os.path.join(WS, 'FunHW', 'csr2api', 'v2')
+    bin_path = os.path.join(csr2_dir, 'csr2bundle.py')
+    bundle_path = os.path.join(csr2_dir, 's1_bundle.json')
+
+    logger.info('Creating CSR2 bundle at %s' % bundle_path)
+
+    json_dir = os.path.join(WS, 'FunHW', 'chip', 's1', 'csr2')
+    bundle_cmd = [bin_path, 'chip_s1::root',
+                  '-I', json_dir,
+                  '-o', bundle_path]
+    try:
+        subprocess.check_output(bundle_cmd)
+    except subprocess.CalledProcessError as e:
+        logger.error('Failed to create bundle: %s' % e.output)
+        return False
+
+    logger.info('Loading CSR2 bundle from %s' % bundle_path)
+    bundle = csr2.load_bundle(bundle_path)
+    csr_names = RegisterNames(bundle)
+    return True
 
 
 def csr2_peek(args):
     """
     Handles the csr peek comand.
 
-    For CSR2, we only allow specification of a unambiguous path.
+    For CSR2, we allow specification of a path. If a wildcard * is present,
+    we display a list of matching registers.
 
     Paths correspond to the hierarchy as described in fundamental docs,
     separated by dots, e.g. root.pc0.soc_clk_ring.cfg.pc_cfg_scratchpad.
     """
-    csr_dev_table.lazy_populate()
+    if not init_bundle_lazily():
+        return
 
     csr_path = args.csr[0]
 
-    # TODO (jimmy): need to handle dimensions anywhere
-    dimensionless_path, dims = extract_trailing_dimensions(csr_path)
-
-    reg = csr_dev_table.get_reg(dimensionless_path)
-    if reg is None:
-        print 'Cannot find register for %s' % csr_path
-        print_potential_paths(dimensionless_path)
-        return
-
-    addr = csr_dev_table.get_address(dimensionless_path, dims)
-    if addr is None:
-        print 'Cannot find address for %s' % csr_path
-        return
-
-    width = csr_dev_table.get_width(dimensionless_path)
-    csr_width_bytes = width >> 3
-    csr_width_words = csr_width_bytes >> 3
-    print '%s %s %d' % (csr_path, hex(addr), csr_width_words)
-    (status, data) = dbgprobe().csr_peek(chip_inst=0,
-                                         csr_addr=addr,
-                                         csr_width_words=csr_width_words)
-
-    if status is True:
-        word_array = data
-        if word_array is None or not word_array:
-            print("Error in csr peek")
-            return None
-        print_data(word_array, reg)
+    if '*' in csr_path:
+        print_matching_regs(csr_path)
     else:
-        error_msg = data
-        print("Error: {0}".format(error_msg))
+        finder = RegisterFinder(bundle)
+        accessor = CSRAccessor(dbgprobe(), finder)
+        accessor.peek(csr_path)
 
 
-def extract_trailing_dimensions(csr_path):
-    dims = []
-
-    bra = csr_path.rfind('[')
-    ket = csr_path.rfind(']')
-
-    while bra < ket and bra != -1 and ket != -1:
-        dim = int(csr_path[bra+1:ket])
-        dims.append(dim)
-        csr_path = csr_path[:bra]
-
-        bra = csr_path.rfind('[')
-        ket = csr_path.rfind(']')
-
-    return csr_path, dims
-
-
-def print_potential_paths(csr_path):
-    print 'Potential paths are:'
-    potential_paths = csr_dev_table.potential_paths(csr_path)
-    potential_paths.sort()
-    print '\n'.join(potential_paths)
-
-
-def print_data(word_array, reg):
-    print("raw data: {0}".format(hex_word_dump(word_array)))
-
-    # TODO (jimmy): this is almost certainly wrong for some cases
-    if reg.is_composite:
-        for fld in reg.fields.enum():
-            fld_offset = fld.lsb
-            fld_width = fld.msb - fld.lsb + 1
-            val_array = csr_get_field(fld_offset, fld_width, word_array)
-            val = hex_word_dump(val_array)
-            print '%s: %s' % (fld.name, val)
-    elif reg.is_array:
-        for i in range(0, reg.fields.count):
-            fld_offset = 0
-            fld_width = reg.fields.field.size
-            val_array = csr_get_field(fld_offset, fld_width, word_array)
-            val = hex_word_dump(val_array)
-            print '%s[%d]: %s' % (reg.fields.field.name, i, val)
-    elif reg.is_implicit:
-        # no fields on implicit registers
-        pass
+def print_matching_regs(csr_path):
+    regex = csr_path.replace('*', '.*')
+    csr_names.build()
+    result = csr_names.find_matching(regex)
+    result.sort()
+    print '\n'.join(result)
 
 
 def csr2_poke(args):
     """
     Handles the csr poke comand.
 
-    For CSR2, we only allow specification of an unambiguous path or address.
+    For CSR2, we allow specification of a path. If a wildcard * is present,
+    we display a list of matching registers.
+
+    Paths correspond to the hierarchy as described in fundamental docs,
+    separated by dots, e.g. root.pc0.soc_clk_ring.cfg.pc_cfg_scratchpad.
     """
-    csr_dev_table.lazy_populate()
+    if not init_bundle_lazily():
+        return
 
     csr_path = args.csr[0]
-    dimensionless_path, dims = extract_trailing_dimensions(csr_path)
 
-    reg = csr_dev_table.get_reg(dimensionless_path)
-    if reg is None:
-        print 'Error: cannot find register for %s' % csr_path
-        print_potential_paths(dimensionless_path)
-        return
-
-    addr = csr_dev_table.get_address(dimensionless_path, dims)
-    if addr is None:
-        print 'Error: cannot find address for %s' % csr_path
-        return
-
-    width = csr_dev_table.get_width(dimensionless_path)
-    csr_width_bytes = width >> 3
-    csr_width_words = csr_width_bytes >> 3
-
-    values = [str_to_int(v) for v in args.vals]
-    print '%s %s %d' % (csr_path, hex(addr), csr_width_words)
-    if len(values) != csr_width_words:
-        print ('Error: cannot write %d words for a register '
-               'which has %d words' % (len(values), csr_width_words))
-        return
-
-    (status, data) = dbgprobe().csr_poke(chip_inst=0,
-                                         csr_addr=addr,
-                                         word_array=values)
-    if not status:
-        print("Error: CSR poke failed! {0}".format(data))
-        return
-
-
-
+    if '*' in csr_path:
+        print_matching_regs(csr_path)
+    else:
+        values = [str_to_int(v) for v in args.vals]
+        finder = RegisterFinder(bundle)
+        accessor = CSRAccessor(dbgprobe(), finder)
+        accessor.poke(csr_path, values)
 
