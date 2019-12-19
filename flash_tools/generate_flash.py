@@ -117,11 +117,14 @@ def gen_fw_image(filename, attrs):
 
     if args['infile']:
         global firmware_sign
-        firmware_sign.image_gen(outfile=filename, **args)
+        try:
+            firmware_sign.image_gen(outfile=filename, **args)
+        except Exception as e:
+            raise RuntimeError("Failed to sign the image", e)
         if tmpfile:
             tmpfile.close()
-        print("Generated signed image with the following parameters: {}".
-              format(args))
+        print("Generated signed image {} with the following parameters: {}".
+              format(filename, args))
         return filename
     else:
         if attrs['source']:

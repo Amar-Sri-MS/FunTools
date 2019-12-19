@@ -8,6 +8,7 @@ import generate_firmware_image as gfi
 
 SIGNING_SERVICE_URL = "https://f1reg.fungible.com:4443/cgi-bin/signing_server.cgi"
 CERTIFICATE_SERVICE_URL = "https://f1reg.fungible.com:4443/"
+DEFAULT_HTTP_TIMEOUT = 10
 
 def GetModulus(name):
     params = {
@@ -16,7 +17,7 @@ def GetModulus(name):
         'key' : name
     }
 
-    response = requests.get(SIGNING_SERVICE_URL, params=params)
+    response = requests.get(SIGNING_SERVICE_URL, params=params, timeout=DEFAULT_HTTP_TIMEOUT)
     return response.content
 
 
@@ -67,7 +68,7 @@ class NetSigningService(FirmwareSigningService):
               "key name <{}>. This may not be desired so if a different certificate "
               "is required, a certificate must be generated using local hsm mode instead.".format(sign_key))
 
-        response = requests.get(CERTIFICATE_SERVICE_URL + sign_key + "_certificate.bin")
+        response = requests.get(CERTIFICATE_SERVICE_URL + sign_key + "_certificate.bin", timeout=DEFAULT_HTTP_TIMEOUT)
         if response.status_code == requests.codes.ok:
             gfi.write(outfile, response.content)
         else:
@@ -100,7 +101,8 @@ class NetSigningService(FirmwareSigningService):
 
         response = requests.post(SIGNING_SERVICE_URL,
                                 files=multipart_form_data,
-                                params=params)
+                                params=params,
+                                timeout=DEFAULT_HTTP_TIMEOUT)
 
         if response.status_code == requests.codes.ok:
             gfi.write(outfile, response.content)
