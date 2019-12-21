@@ -4,7 +4,7 @@ little_endian
 section "Dir of Dir 1" {
     hex 4 "CRC Dir of Dir"
     set directory_1_1 [uint32  "Directory 1"]
-    set directory_2_1 [uint32  "Directory 2"]
+    set directory_1_2 [uint32  "Directory 2"]
     goto 0x0200
 }
 
@@ -44,6 +44,23 @@ section "Directory 1" {
 	lappend images $image_info
     }
 }
+
+goto [expr $directory_1_2]
+
+section "Directory 2" {
+    hex 4 "CRC Fixed Directory"
+    set puf_rom1 [uint32 "PUF ROM 1"]
+    set puf_rom2 [uint32 "PUF ROM 2"]
+    hex 4 "CRC Variable Directory"
+
+    while 1 {
+	set addr1 [uint32 "Addr1"]
+	set addr2 [uint32 "Addr2"]
+	if {$addr1 == 0xFFFFFFFF} break
+	set image_type [ascii 4 "type"]
+    }
+}
+
 
 section "Images" {
     foreach image_info $images {
