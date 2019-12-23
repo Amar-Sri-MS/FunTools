@@ -155,7 +155,17 @@ _setmode(int curmode, int newmode)
 static void
 _usage(const char *fname)
 {
-	fprintf(stderr, "usage: %s <options>\n", fname);
+	fprintf(stderr, "usage: %s <input> [<output>]\n", fname);
+	fprintf(stderr, "    options\n");
+	fprintf(stderr, "        -i <file>      input <file> as text json\n");
+	fprintf(stderr, "        -I <file>      input <file> as binary json\n");
+	fprintf(stderr, "        -o <file>      output <file> as text json\n");
+	fprintf(stderr, "        -O <file>      output <file> as binary json\n");
+	fprintf(stderr, "        -l <file>      output <file> as single-line text json\n");
+	fprintf(stderr, "Default output is text to stdout\n");
+	fprintf(stderr, "Filename \"-\" can be used ot output single or");
+	fprintf(stderr, "multi-line text to stdout.\n");
+	
 	exit(1);
 }
 
