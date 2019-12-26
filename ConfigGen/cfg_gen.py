@@ -45,13 +45,6 @@ cfg_data_catalog = {}
 hwcap_cfg = {}
 
 input_base = ""
-output_base = ""
-# flag for generating hwcap
-hwcap_gen = False
-
-# flag for generating hu_cfg
-hu_cfg_gen = False
-
 cfg_code_gen_out_base = ""
 
 header = """
@@ -208,34 +201,20 @@ def generate_default_module(module_type):
         module_cfg = merge_dicts(module_cfg, cfg_j)
 
 # generate build override config.
-def generate_build_override_config(build):
+# FIXME: is this still necessary?
+def generate_build_override_config():
     global build_override_cfg
     global module_cfg
-    global input_base
+    
     build_override_cfg.clear()
-
-    #update build specific config
-    filedir = os.path.join(input_base, build)
-    if os.path.exists(filedir):
-        filename = os.path.join(input_base, build, "*.cfg")
-        print(filename)
-        for cfg in glob.glob(filename):
-            print("handling " + build + " cfg %s" % cfg)
-            f = tempfile.NamedTemporaryFile(mode="r")
-            standardize_json(cfg, f.name)
-            cfg_replace = json.load(f)
-            f.close() # auto-delete
-            build_override_cfg = merge_dicts(module_cfg,
-                                             cfg_replace)
-    else:
-        build_override_cfg = module_cfg.copy()
+    build_override_cfg = module_cfg.copy()
 
     #TODO FRED
     global final_cfg
     final_cfg = build_override_cfg.copy()
 
 # Generate all hw capabilities config
-def generate_hwcap_config(build):
+def generate_hwcap_config():
     global hwcap_cfg
     global input_base
     hwcap_cfg.clear()
@@ -250,7 +229,7 @@ def generate_hwcap_config(build):
         hwcap_cfg = merge_dicts(hwcap_cfg, cfg_j)
 
 # generate all sku specific json
-def generate_sku_config(build):
+def generate_sku_config():
     global final_cfg
     global build_override_cfg
     global hwcap_cfg
@@ -468,8 +447,12 @@ def generate_hwcap_config_code():
     header_file = "hw_cap_config.h"
 
     print("Generating config source code")
-    generate_hwcap_cfg_header_file("hwcap", cfg_data_catalog, cfg_code_gen_out_base, header_file, input_base)
-    generate_hwcap_cfg_c_file("hwcap", hwcap_cfg["skus"], cfg_code_gen_out_base, c_file, header_file, input_base)
+    generate_hwcap_cfg_header_file("hwcap", cfg_data_catalog,
+                                   cfg_code_gen_out_base, header_file,
+                                   input_base)
+    generate_hwcap_cfg_c_file("hwcap", hwcap_cfg["skus"],
+                              cfg_code_gen_out_base, c_file, header_file,
+                              input_base)
 
 
 def generate_hu_cfg(module_cfg, cfg_code_gen_out_base):
@@ -519,8 +502,7 @@ def output_cfg(fout):
     json.dump(final_cfg, fout, indent=4, sort_keys=True)
 
 #output the default.cfg file
-def output_default_config(build):
-    global output_base
+def output_default_config(output_base):
     global module_cfg
     global final_cfg
 
@@ -528,7 +510,7 @@ def output_default_config(build):
     if not os.path.exists(filepath):
         os.makedirs(filepath)
 
-    filename = os.path.join(output_base, "default_" + build + ".cfg")
+    filename = os.path.join(output_base, "default.cfg")
     print(filename)
     fout = open(filename, 'w')
 
@@ -536,52 +518,36 @@ def output_default_config(build):
     output_cfg(fout)
     fout.close()
 
-    #TODO fred fix with build based runtime override
-    # for now use posix as default.cfg
-    if build == "posix":
-        filename = os.path.join(output_base, "default.cfg")
-        print(filename)
-        fout = open(filename, 'w')
-        output_header(fout)
-        output_cfg(fout)
-        fout.close()
-
 
 # Standardize and combine multiple configuration files
 # into one config that will be used by FunOS
 # TBD: handle cases where different files refer to
 # the same keys
-def parse_output_config(build):
-    print("====" + build + "====")
+def parse_config():
+    print("==== Parsing Config ====")
     print("+ Generate cfg")
-    generate_build_override_config(build)
+    generate_build_override_config()
     generate_hwcap_data_catalog()
-    generate_hwcap_config(build)
-    generate_sku_config(build)
-    print("+ Output cfg")
-    output_default_config(build)
-    if hwcap_gen:
-        print("Generating hwcap config src code")
-        generate_hwcap_config_code()
-
-    if hu_cfg_gen:
-        print("Generating hu config src code")
-        generate_hu_cfg(module_cfg, cfg_code_gen_out_base)
+    generate_hwcap_config()
+    generate_sku_config()
 
 def Usage():
     sys.stderr.write('cfg_gen.py: usage: [-i [cfg input dir] [-o cfg output dir] [-s hwcap src code out dir] [-c: generate hu config]\n')
 
 def main():
-    global output_base
-    global input_base
     global cfg_code_gen_out_base
-    global hwcap_gen
-    global hu_cfg_gen
-    # global module_cfg
+    global input_base
+    
+    output_base = ""
 
+    # don't generate anything that isn't asked for
+    json_gen = False
+    hwcap_gen = False
+    hu_cfg_gen = False
+    
     print("Configfile Generation")
     try:
-        opts, args = getopt.getopt(sys.argv[1:], 'hci:o:s:j:g:')
+        opts, args = getopt.getopt(sys.argv[1:], 'hci:o:s:jg:')
 
     except getopt.GetoptError as err:
         print(str(err))
@@ -598,6 +564,9 @@ def main():
         elif o in ('-o', '--output'):
             output_base = a
             print("output dir: " + a)
+        elif o in ('-j', '--json'):
+            print("generating json")
+            json_gen = True
         elif o in ('-s', '--src'):
             cfg_code_gen_out_base = a
             hwcap_gen = True
@@ -616,16 +585,22 @@ def main():
     generate_default_module("cfg")
 
     #ouput cfg for each build type
-    rc = parse_output_config("posix")
+    rc = parse_config()
     if rc == False:
-        print('Failed to generate config')
+        print('Failed to parse config')
         sys.exit(1)
 
-    rc = parse_output_config("malta")
-    if rc == False:
-        print('Failed to generate malta config')
-        sys.exit(1)
+    if json_gen:
+        print("Generating json config")
+        output_default_config(output_base)
+        
+    if hwcap_gen:
+        print("Generating hwcap config src code")
+        generate_hwcap_config_code()
 
+    if hu_cfg_gen:
+        print("Generating hu config src code")
+        generate_hu_cfg(module_cfg, cfg_code_gen_out_base)
 
 
 if __name__ == "__main__":
