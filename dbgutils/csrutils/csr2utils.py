@@ -400,7 +400,8 @@ def init_bundle_lazily():
     json_dir = os.path.join(WS, 'FunHW', 'chip', 's1', 'csr2')
     bundle_cmd = [bin_path, 'chip_s1::root',
                   '-I', json_dir,
-                  '-o', bundle_path]
+                  '-o', bundle_path,
+                  '-n', 's1']
     try:
         subprocess.check_output(bundle_cmd)
     except subprocess.CalledProcessError as e:
