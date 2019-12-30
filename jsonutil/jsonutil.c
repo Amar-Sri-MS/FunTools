@@ -40,16 +40,20 @@ static char *_read_input_file(int fd, size_t *outsize)
 		oom();
 	pp = buffer;
 	
-	while ((n = read(fd, pp, alloc_size - (pp-buffer))) > 0) {
-		pp = buffer + n;
+	while ((n = read(fd, pp, alloc_size - size)) > 0) {
+		/* total json so far + just read */
 		size += n;
 
+		/* if it's full, up the buffer */
 		if (size == alloc_size) {
 			alloc_size *= 2;
 			buffer = realloc(buffer, alloc_size);
 			if (buffer == NULL)
 				oom();
 		}
+
+		/* next read pointer = buffer + existing json */
+		pp = buffer + size;
 	}
 
 	if (n < 0) {
