@@ -892,7 +892,8 @@ static void apply_command_locally(const struct fun_json *json)
 	struct fun_json *result = fun_json_lookup(j, "result");
 	if (result && !fun_json_fill_error_message(result, NULL)) {
 		if (_verbose_log) {
-			fun_json_printf(PRELUDE BLUE POSTLUDE "Locally applied command: %s" NORMAL_COLORIZE "\n", result);
+			fun_json_printf_with_options(PRELUDE BLUE POSTLUDE "Locally applied command: %s" NORMAL_COLORIZE "\n", result,
+				false, true);
 		} else {
 			_quiet_log(LOG_RX_LOCAL, result);
 		}
@@ -917,13 +918,13 @@ static bool _do_send_cmd(struct dpcsock *sock, char *line,
 		return false;
 	}
 	if (_verbose_log) {
-		fun_json_printf(INPUT_COLORIZE "input => %s"
+		fun_json_printf_with_options(INPUT_COLORIZE "input => %s"
 				NORMAL_COLORIZE "\n",
-				json);
+				json, false, true);
 	} else {
 		_quiet_log(LOG_TX, json);
 	}
-	
+
 	// Hack to list local commands if the command is 'help'
 	apply_command_locally(json);
 	bool ok = false;
@@ -1019,8 +1020,10 @@ static void _print_response_info(const struct fun_json *response) {
 
 	if (!fun_json_lookup(response, "result")) {
 		if (_verbose_log) {
-			fun_json_printf("Old style output (NULL) - got %s\n",
-					response);
+			fun_json_printf_with_options("Old style output (NULL) - got %s\n",
+					response,
+					false,
+					true);
 		} else {
 			_quiet_log(LOG_RX_OLD, response);
 		}
@@ -1039,7 +1042,8 @@ static void _print_response_info(const struct fun_json *response) {
 	} else {
 		if (_verbose_log) {
 			size_t allocated_size = 0;
-			uint32_t flags = use_hex ? FUN_JSON_PRETTY_PRINT_USE_HEX_FOR_NUMBERS : 0;
+			uint32_t flags = FUN_JSON_PRETTY_PRINT_HUMAN_READABLE_STRINGS |
+							(use_hex ? FUN_JSON_PRETTY_PRINT_USE_HEX_FOR_NUMBERS : 0);
 			char *pp = fun_json_pretty_print(response, 0, "    ",
 							 100, flags,
 							 &allocated_size);
@@ -1261,7 +1265,7 @@ int json_handle_req(struct dpcsock *jsock, const char *path,
 		return -1;
 	}
 	if (_verbose_log)
-		fun_json_printf("input => %s\n", json);
+		fun_json_printf_with_options("input => %s\n", json, false, true);
 	else
 		_quiet_log(LOG_TX, json);
 
@@ -1278,7 +1282,8 @@ int json_handle_req(struct dpcsock *jsock, const char *path,
 	}
 
 	size_t allocated_size = 0;
-	uint32_t flags = use_hex ? FUN_JSON_PRETTY_PRINT_USE_HEX_FOR_NUMBERS : 0;
+	uint32_t flags = FUN_JSON_PRETTY_PRINT_HUMAN_READABLE_STRINGS |
+					(use_hex ? FUN_JSON_PRETTY_PRINT_USE_HEX_FOR_NUMBERS : 0);
 	char *pp2 = fun_json_pretty_print(output, 0, "    ",
 					  100, flags, &allocated_size);
 	if (_verbose_log)
@@ -1628,7 +1633,7 @@ int main(int argc, char *argv[])
 		case 'v':  /* "verbose" -- log all json as it goes by */
 			_verbose_log = true;
 			break;
-			
+
 #ifdef __linux__
 		case 'W':  /* "timeout" -- set timeout for cmd */
 			funos_sock.cmd_timeout = atoi(optarg);
