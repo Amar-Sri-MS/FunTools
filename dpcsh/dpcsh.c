@@ -892,8 +892,8 @@ static void apply_command_locally(const struct fun_json *json)
 	struct fun_json *result = fun_json_lookup(j, "result");
 	if (result && !fun_json_fill_error_message(result, NULL)) {
 		if (_verbose_log) {
-			fun_json_printf_with_options(PRELUDE BLUE POSTLUDE "Locally applied command: %s" NORMAL_COLORIZE "\n", result,
-				false, true);
+			fun_json_printf_with_flags(PRELUDE BLUE POSTLUDE "Locally applied command: %s" NORMAL_COLORIZE "\n", result,
+				FUN_JSON_PRETTY_PRINT_HUMAN_READABLE_STRINGS);
 		} else {
 			_quiet_log(LOG_RX_LOCAL, result);
 		}
@@ -918,9 +918,9 @@ static bool _do_send_cmd(struct dpcsock *sock, char *line,
 		return false;
 	}
 	if (_verbose_log) {
-		fun_json_printf_with_options(INPUT_COLORIZE "input => %s"
+		fun_json_printf_with_flags(INPUT_COLORIZE "input => %s"
 				NORMAL_COLORIZE "\n",
-				json, false, true);
+				json, FUN_JSON_PRETTY_PRINT_HUMAN_READABLE_STRINGS);
 	} else {
 		_quiet_log(LOG_TX, json);
 	}
@@ -1020,10 +1020,9 @@ static void _print_response_info(const struct fun_json *response) {
 
 	if (!fun_json_lookup(response, "result")) {
 		if (_verbose_log) {
-			fun_json_printf_with_options("Old style output (NULL) - got %s\n",
+			fun_json_printf_with_flags("Old style output (NULL) - got %s\n",
 					response,
-					false,
-					true);
+					FUN_JSON_PRETTY_PRINT_HUMAN_READABLE_STRINGS);
 		} else {
 			_quiet_log(LOG_RX_OLD, response);
 		}
@@ -1265,7 +1264,7 @@ int json_handle_req(struct dpcsock *jsock, const char *path,
 		return -1;
 	}
 	if (_verbose_log)
-		fun_json_printf_with_options("input => %s\n", json, false, true);
+		fun_json_printf_with_flags("input => %s\n", json, FUN_JSON_PRETTY_PRINT_HUMAN_READABLE_STRINGS);
 	else
 		_quiet_log(LOG_TX, json);
 
