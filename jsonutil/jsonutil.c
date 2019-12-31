@@ -20,23 +20,40 @@
 #define TEXTONELINE (3)
 
 
+static void oom(void)
+{
+	printf("out of memory\n");
+	exit(-1);
+}
+
 static char *_read_input_file(int fd, size_t *outsize)
 {
 	char *buffer;
 	char *pp;
 	int r;
 	ssize_t n;
-	size_t file_size, size = 0;
+	size_t alloc_size, size = 0;
 
-	lseek(fd, 0L, SEEK_END);
-	file_size = lseek(fd, 0L, SEEK_CUR);
-	lseek(fd, 0L, SEEK_SET);
-	buffer = malloc(file_size);
+	alloc_size = (1024 * 1024);
+	buffer = malloc(alloc_size);
+	if (buffer == NULL)
+		oom();
 	pp = buffer;
 	
-	while ((n = read(fd, pp, file_size - (pp-buffer))) > 0) {
-		pp += n;
+	while ((n = read(fd, pp, alloc_size - size)) > 0) {
+		/* total json so far + just read */
 		size += n;
+
+		/* if it's full, up the buffer */
+		if (size == alloc_size) {
+			alloc_size *= 2;
+			buffer = realloc(buffer, alloc_size);
+			if (buffer == NULL)
+				oom();
+		}
+
+		/* next read pointer = buffer + existing json */
+		pp = buffer + size;
 	}
 
 	if (n < 0) {
@@ -231,10 +248,18 @@ main(int argc, char *argv[])
 		outmode = TEXT;
 	
 	/* open input file */
-	infd = open(infile, O_RDONLY);
-	if (infd < 0) {
-		perror("open input");
-		exit(1);
+	if (strcmp(infile, "-") == 0) {
+		if (inmode == BINARY) {
+			fprintf(stderr, "not reading binary from stdin\n");
+			exit(1);
+		}
+		infd = STDIN_FILENO;
+	} else {
+		infd = open(infile, O_RDONLY);
+		if (infd < 0) {
+			perror("open input");
+			exit(1);
+		}
 	}
 
 	if (strcmp(outfile, "-") == 0) {
