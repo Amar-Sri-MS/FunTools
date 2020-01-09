@@ -9,6 +9,11 @@ function show_help()
     echo ""
 }
 
+if [[ `uname` != "Linux" ]] ; then
+    echo "Sorry. This script can only be run on Linux"
+    exit 1
+fi
+
 if [[ ( $@ == "--help") ||  $@ == "-h" ]] ; then
     show_help
     exit 0
