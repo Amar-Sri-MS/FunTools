@@ -118,7 +118,7 @@ def gen_boot_script(filename, funos_start_blk, linux_start_blk=-1):
 
     def filesize(f):
         hdr = FUN_SIGNATURE_SIZE if g.signed else 0
-        return BLOCK_SIZE * (int((os.path.getsize(f) + hdr + BLOCK_SIZE - 1)) / BLOCK_SIZE)
+        return BLOCK_SIZE * int((os.path.getsize(f) + hdr + BLOCK_SIZE - 1) / BLOCK_SIZE)
 
     with open(filename, 'w') as outfile:
         outfile.write('if test -n "${mmcpart}"; then '\
@@ -138,7 +138,7 @@ def gen_boot_script(filename, funos_start_blk, linux_start_blk=-1):
             if g.signed:
                 outfile.write('authfw 0x{load_addr:x} {load_size:x};\n'.format(
                     load_addr=LINUX_LOAD_ADDR - load_offset,
-                    load_size=os.path.getsize(g.linux)))
+                    load_size=filesize(g.linux)))
 
         outfile.write('setexpr funos_mmcstart ${{mmcstart}} * 0x{offset:x}\n'.format(
                 offset=PARTITION_OFFSET/BLOCK_SIZE))
@@ -155,7 +155,7 @@ def gen_boot_script(filename, funos_start_blk, linux_start_blk=-1):
         if g.signed:
             outfile.write('authfw 0x{load_addr:x} {load_size:x};\n'.format(
                 load_addr=LOAD_ADDR,
-                load_size=os.path.getsize(g.appfile)))
+                load_size=filesize(g.appfile)))
             outfile.write('bootelf -p ${loadaddr};\n')
         else:
             outfile.write('bootelf -p 0x{load_addr:x};\n'.format(
