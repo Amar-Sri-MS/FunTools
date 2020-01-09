@@ -57,7 +57,9 @@ echo "$F1COUNT F1 found"
 export USER="fun"
 export HOME="/home/fun"
 
-if [[ -f /opt/fungible/etc/funcontrolplane.d/configure_bond ]]; then
+# Path: /opt/fungible/etc/funcontrolplane.d/configure_bond is depricated
+#       Checked here for interop
+if [[ -f /opt/fungible/etc/funcontrolplane.d/configure_bond ]] || [[ -f /var/log/configure_bond ]]; then
 	$FUN_ROOT/cclinux/cclinux_service.sh --start --ep --storage --autocreatebond
 else
 	$FUN_ROOT/cclinux/cclinux_service.sh --start --ep --storage
