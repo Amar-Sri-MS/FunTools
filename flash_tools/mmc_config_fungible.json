@@ -16,7 +16,7 @@
             "fourcc": "boot",
             "cert": "",
             "customer_cert": "",
-            "key": "fpk5",
+            "key_index": 0,
             "description": ""
         }
     }
