@@ -1,6 +1,7 @@
 #!/bin/bash
 
 FUN_ROOT="/opt/fungible"
+DIR_FUN_CONFIG="/var/opt/fungible/fs1600/configure_bond"
 
 if [[ "$EUID" -ne 0 ]]; then
         printf "Please run as ROOT EUID=$EUID\n"
@@ -57,7 +58,8 @@ echo "$F1COUNT F1 found"
 export USER="fun"
 export HOME="/home/fun"
 
-if [[ -f /opt/fungible/etc/funcontrolplane.d/configure_bond ]]; then
+mkdir -p $DIR_FUN_CONFIG
+if [[ -f $DIR_FUN_CONFIG/configure_bond ]]; then
 	$FUN_ROOT/cclinux/cclinux_service.sh --start --ep --storage --autocreatebond
 else
 	$FUN_ROOT/cclinux/cclinux_service.sh --start --ep --storage
