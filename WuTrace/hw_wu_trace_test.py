@@ -119,4 +119,4 @@ class WUFactoryTest(unittest.TestCase):
 
     def test_wu_has_trace_source(self):
         wu = self.factory.create(self.wu_data, self.metadata, self.wu_list)
-        self.assertEqual(1, wu.trace_src)
+        self.assertEqual(1, wu.trace_location)
