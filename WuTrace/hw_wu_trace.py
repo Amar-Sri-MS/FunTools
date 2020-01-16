@@ -80,7 +80,8 @@ def read_and_validate_wu_list(wu_json_file):
     Exits immediately if the list is empty, else returns the list.
     """
     with open(wu_json_file, 'r') as wu_fh:
-        wu_list = json.load(wu_fh)
+        json_contents = json.load(wu_fh)
+        wu_list = json_contents['wu_table']
 
     if not wu_list:
         print 'Error: empty WU list from %s' % wu_json_file
@@ -188,7 +189,8 @@ class NormalWU(WU):
         super(NormalWU, self).__init__(action, w0, w1, w2)
 
         self.wuid = self.action & 0xffff
-        self.wu_name = wu_list[self.wuid]
+        wu_entry = wu_list[self.wuid]
+        self.wu_name = wu_entry['name']
         self.sgid = (self.action >> 51) & 0x1f
         self.slid = (self.action >> 46) & 0x1f
         self.dgid = (self.action >> 41) & 0x1f
