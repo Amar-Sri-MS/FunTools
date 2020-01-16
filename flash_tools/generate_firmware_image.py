@@ -25,7 +25,7 @@ import datetime
 import fcntl
 import hashlib
 
-from asn1crypto import pem
+from asn1crypto import pem, core, keys
 
 import pkcs11
 import pkcs11.util.rsa
@@ -106,6 +106,21 @@ def write(filename, content, overwrite=True, tohex=False, tobyte=False,
             f.write("%s\n" % binascii.hexlify(content[pos]))
     else:
         f.write(content)
+
+
+#####################################################################
+# ASN1crypto
+
+def get_modulus_from_public_key_bytes(pub_info_der):
+    ''' extract the modulus from the ASN.1 structure '''
+    pub_key_info = keys.PublicKeyInfo.load(pub_info_der)
+    rsa_pub_key = pub_key_info.unwrap()
+    modulus_integer = rsa_pub_key['modulus']
+    raw_modulus = modulus_integer.contents
+    # the raw modulus might have an extra 0 (ASN.1 integer encoding)
+    if raw_modulus[0] == 0:
+        return raw_modulus[1:]
+    return raw_modulus
 
 
 class Lock:
@@ -640,6 +655,20 @@ def cert_gen(outfile, cert_key, cert_key_file, sign_key, serial_number,
     elif cert_key_file:
         # READ modulus from file
         modulus = read(cert_key_file)
+        # if PEM file, decode it
+        if pem.detect(modulus):
+            obj_name, _, der_bytes = pem.unarmor(modulus)
+            if obj_name == 'RSA PRIVATE KEY':
+                cert_rsa_key = pkcs11.util.rsa.decode_rsa_private_key(der_bytes)
+                modulus = get_modulus(cert_rsa_key)
+            elif obj_name == 'RSA PUBLIC KEY':
+                cert_rsa_key = pkcs11.util.rsa.decode_rsa_public_key(der_bytes)
+                modulus = get_modulus(cert_rsa_key)
+            elif obj_name == 'PUBLIC KEY':
+                modulus = get_modulus_from_public_key_bytes(der_bytes)
+            else:
+                raise RuntimeError("Cannot use PEM file with '{0}' as modulus source".
+                                   format(obj_name))
 
     assert len(to_be_signed) == CERT_PUB_KEY_POS
     to_be_signed = append_modulus_to_binary(to_be_signed, modulus)
