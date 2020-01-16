@@ -16,7 +16,7 @@ build_number_of_bundle_number ()
 {
     # retrieve the build properties file
     wget -O - "http://dochub.fungible.local/doc/jenkins/master/fs1600/"$1"/bld_props.json" | \
-	python3 -c "import sys,json; print(json.load(sys.stdin)['components']['funsdk_flash_images'])"
+	python3 -c "import sys,json; print(json.load(sys.stdin)['components']['funsdk'])"
 }
 
 
@@ -26,7 +26,7 @@ if [[ `uname` != "Linux" ]] ; then
 fi
 
 BUNDLE_FLAG=0
-while getopts "b" opt; do
+while getopts "hb" opt; do
     case "$opt" in
 	h) show_help
 	   exit 0
