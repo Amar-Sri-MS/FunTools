@@ -50,6 +50,15 @@ sync
 
 printf "Shutdown the storage controller\n"
 $FUN_ROOT/StorageController/etc/start_sc.sh stop
+sync
+
+# This is a blocking call -> Eddie
+$FUN_ROOT/cclinux/cclinux_service.sh --stop
+sync
+
+# Not that Fungible apps (dockers) are closed
+# Lets bring the system syslog down
+kill -HUP $(cat /var/run/rsyslogd.pid)
 
 # Save unfinished work in FS before async reboot
 sync
@@ -62,11 +71,31 @@ if [[ $FAST_REBOOT -eq 1 ]]; then
 	printf "Triggering fast reboot\n"
 	/sbin/reboot
 else
+	# Generate a simple script which will initiate
+	# reset sequence on the script
+	# This script is push to BMC and then executed
+	# in background on BMC
+	RESET_CONTROLLER="/tmp/FS1600_Reset_Controller.sh"
+	touch $RESET_CONTROLLER
+	echo "#!/bin/sh" > $RESET_CONTROLLER
+	echo "sleep 20" >> $RESET_CONTROLLER
+	echo "exec $REBOOT_FILE" >> $RESET_CONTROLLER
+	chmod 777 $RESET_CONTROLLER
+	# --- Script generated ---
+
 	printf "WARNING: Sending BMC request to reboot host\n"
 	COUNT=0
-	while [[ $COUNT -lt 120 ]]; do
-		REBOOT=$(sshpass $BMC "exec $REBOOT_FILE" > /dev/null 2>&1)
-		sleep 1
+	while [[ $COUNT -lt 1 ]]; do
+		BMC1="-P password: -p superuser scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $RESET_CONTROLLER sysadmin@$BMC_IP:/tmp"
+		echo "Transferring reset controller to BMC"
+		XFER=$(sshpass $BMC1 > /dev/null 2>&1)
+		echo "Transfer complete"
+		echo "Executing reset controller"
+		#CMD="( ( nohup $RESET_CONTROLLER &> /dev/null ) & )"
+		REBOOT=$(sshpass $BMC "exec $RESET_CONTROLLER > /dev/null 2>&1 &")
+		echo "Execution done"
+		/sbin/halt -f
+		sleep 60
 		let COUNT=COUNT+1
 	done
 
