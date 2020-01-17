@@ -46,9 +46,18 @@ class DpcClient(object):
             lines += buf
         return lines.rstrip('\n')
 
+    def __valid_json(self, str):
+        if not str:
+            return False
+        try:
+            json.loads(str)
+        except ValueError:
+            return False
+        return True
+
     def __recv_json(self):
         json = self.__recv_lines()
-        while (not json) or (json.count('{') != json.count('}')) or (json.count('[') != json.count(']')):
+        while not self.__valid_json(json):
             json += self.__recv_lines()
             if (not json) :
                 break
