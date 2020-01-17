@@ -86,9 +86,9 @@ else
 	printf "WARNING: Sending BMC request to reboot host\n"
 	COUNT=0
 	while [[ $COUNT -lt 1 ]]; do
-		BMC1="-P password: -p superuser scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $RESET_CONTROLLER sysadmin@$BMC_IP:/tmp"
+		BMC_XFER_RST_CTRL="-P password: -p superuser scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $RESET_CONTROLLER sysadmin@$BMC_IP:/tmp"
 		echo "Transferring reset controller to BMC"
-		XFER=$(sshpass $BMC1 > /dev/null 2>&1)
+		XFER=$(sshpass $BMC_XFER_RST_CTRL > /dev/null 2>&1)
 		echo "Transfer complete"
 		echo "Executing reset controller"
 		#CMD="( ( nohup $RESET_CONTROLLER &> /dev/null ) & )"
