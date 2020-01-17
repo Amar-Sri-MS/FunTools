@@ -58,7 +58,7 @@ setup(
         'jsocket==1.6',
         'logging',
         'cmd2==0.8.8',
-        'argcomplete',
+        'argcomplete==1.9.4',
         'pyusb',
         'paramiko',
         'urllib3'
