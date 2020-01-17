@@ -94,7 +94,7 @@ else
 		#CMD="( ( nohup $RESET_CONTROLLER &> /dev/null ) & )"
 		REBOOT=$(sshpass $BMC "exec $RESET_CONTROLLER > /dev/null 2>&1 &")
 		echo "Execution done"
-		/sbin/halt -f
+		/sbin/shutdown -h now
 		sleep 60
 		let COUNT=COUNT+1
 	done
