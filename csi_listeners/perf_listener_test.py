@@ -10,6 +10,7 @@ import os
 import shutil
 import struct
 import tempfile
+import threading
 import unittest
 
 import perf_listener
@@ -63,7 +64,9 @@ class TestRdsockHandler(unittest.TestCase):
     """
     def setUp(self):
         self.buf = perf_listener.Buffer()
-        self.handler = perf_listener.RdsockHandler(self.buf)
+        self.shutdown_event = threading.Event()
+        self.handler = perf_listener.RdsockHandler(self.buf,
+                                                   self.shutdown_event)
         self.sock = MockSocket()
 
     def test_process_complete_message(self):

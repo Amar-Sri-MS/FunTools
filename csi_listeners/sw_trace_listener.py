@@ -37,28 +37,25 @@
 #
 
 import argparse
-import BaseHTTPServer
 import glob
-import json
 import logging
 import os
-import re
 import select
 import signal
 import socket
-import SocketServer
 import struct
 import sys
 import threading
 import time
-import urlparse
 
 from functools import partial
 
 import listener_lib
 
 from listener_lib import Buffer
+from listener_lib import HTTPRequestHandler
 from listener_lib import RdsockServer
+from listener_lib import ThreadedHTTPServer
 
 # Time in seconds for select and polling intervals
 TIMEOUT_INTERVAL = 5.0
@@ -70,110 +67,7 @@ shutdown_threads = threading.Event()
 log_fh = None
 
 
-class ThreadedHTTPServer(SocketServer.ThreadingMixIn,
-                         BaseHTTPServer.HTTPServer):
-    """
-    Handles requests in a separate thread.
-    """
-    def __init__(self, server_address, RequestHandlerClass, trace_writer):
-        """
-        Allows the writer to be passed as an argument, so that
-        handlers can get at it.
-
-        One would think that the handler will accept parameters, but we
-        pass the handler class to the server and not an object. So it
-        is impossible to determine how the server will instantiate the
-        handler.
-        """
-        BaseHTTPServer.HTTPServer.__init__(self,
-                                           server_address,
-                                           RequestHandlerClass)
-        self.trace_writer = trace_writer
-
-
-class HTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
-    """
-    Handles requests that delineate the start and end of a wutrace
-    run.
-    """
-    def do_POST(self):
-        """
-        Respond to a POST request.
-
-        Valid URLS are:
-        /start?dir=<directory-for-data-dumps>
-        /end
-        """
-        url = urlparse.urlparse(self.path)
-        query_components = urlparse.parse_qs(url.query)
-
-        match = re.match('/start$', url.path)
-        if match:
-            self.handle_start_post(query_components)
-
-        match = re.match('/end$', url.path)
-        if match:
-            self.handle_end_post()
-
-    def handle_start_post(self, query_components):
-        """
-        For a start POST request tell the writer to start a new run
-        in the specified directory.
-        """
-        output_dirs = query_components.get('dir', None)
-        if not output_dirs:
-            self.send_response(404)
-            self.send_json_message('dir not specified')
-            return
-
-        output_dir = output_dirs[0]
-        if not os.path.isdir(output_dir):
-            self.send_response(404)
-            self.send_json_message('dir does not exist')
-            return
-
-        log('POST start request with dir=%s' % output_dir)
-        self.send_success_response_json()
-        self.server.trace_writer.start_new_run(output_dir)
-
-    def handle_end_post(self):
-        """
-        For an end POST request tell the writer to end the current
-        run.
-        """
-        log('POST end request')
-        self.send_success_response_json()
-        self.server.trace_writer.end_run()
-
-    def send_success_response_json(self):
-        self.send_response(200)
-        self.send_json_message('success')
-
-    def send_json_message(self, msg):
-        self.send_header('Access-Control-Allow-Origin', '*')
-        self.send_header('Content-type', 'text/json')
-        self.wfile.write(json.dumps({'msg': msg}))
-
-    def do_GET(self):
-        """
-        Respond to a GET request.
-
-        Valid URLs are:
-        /funhealth
-        """
-        url = urlparse.urlparse(self.path)
-        if url.path == '/funhealth':
-            self.handle_funhealth()
-
-    def handle_funhealth(self):
-        """ Standard, basic funhealth response """
-        self.send_response(200)
-        self.send_header('Content-type', 'text/html')
-        self.end_headers()
-        self.wfile.write('OK')
-
-
-class Message:
+class Message(object):
     """
     Raw data from wu tracing.
     """
@@ -181,7 +75,7 @@ class Message:
         self.data = ''
 
 
-class RdsockHandler:
+class RdsockHandler(object):
     """
     Handler for a connected rdsock client.
 
@@ -198,8 +92,9 @@ class RdsockHandler:
     STATE_HEADER = 0
     STATE_DATA = 1
 
-    def __init__(self, buf):
+    def __init__(self, buf, shutdown_event):
         self.buf = buf
+        self.shutdown_event = shutdown_event
 
         # Message processing state
         self.state = self.STATE_HEADER
@@ -213,12 +108,12 @@ class RdsockHandler:
         """
         total_timeout = 0
         try:
-            while not shutdown_threads.is_set():
+            while not self.shutdown_event.is_set():
                 ready_for_read, _, _ = select.select([sock], [], [], TIMEOUT_INTERVAL)
                 if ready_for_read:
                     alive = self.process_one_recv(sock)
                     if not alive:
-                        log('Client disconnection')
+                        logging.info('Client disconnection')
                         sock.close()
                         return
                     total_timeout = 0
@@ -233,13 +128,13 @@ class RdsockHandler:
                     # the latter here because it is easier.
                     total_timeout += TIMEOUT_INTERVAL
                     if total_timeout > 20 * TIMEOUT_INTERVAL:
-                        log('Failed to recv for %f seconds. '
-                            'Assuming catastrophic '
-                            'failure of client' % total_timeout)
+                        logging.info('Failed to recv for %f seconds. '
+                                     'Assuming catastrophic '
+                                     'failure of client' % total_timeout)
                         sock.close()
                         return
         except Exception as e:
-            log(str(e))
+            logging.error(str(e))
             sock.close()
             return
 
@@ -284,13 +179,12 @@ class RdsockHandler:
         self.data_remaining = struct.unpack('>L', self.partial_header[8:12])[0]
 
 
-class TraceWriter:
+class TraceWriter(listener_lib.BaseWriter):
     """
     The callable object responsible for writing data to disk.
     """
     def __init__(self, buf, output_dir):
-        self.buf = buf
-        self.output_dir = output_dir
+        super(TraceWriter, self).__init__(buf, output_dir)
         self.lock = threading.Lock()
 
     def __call__(self):
@@ -315,7 +209,7 @@ class TraceWriter:
                         self.process_message(msg)
 
         except Exception as e:
-            log(str(e))
+            logging.error(str(e))
 
     def process_message(self, msg):
         """
@@ -334,8 +228,8 @@ class TraceWriter:
             with open(trace_file, 'ab') as fh:
                 fh.write(msg.data)
         except Exception as e:
-            log('Failed to write to %s: exception was %s' % (trace_file,
-                                                             e.message))
+            logging.error('Failed to write to %s: '
+                          'exception was %s' % (trace_file, e.message))
 
     def start_new_run(self, new_dir):
         """
@@ -368,7 +262,7 @@ class TraceWriter:
             time.sleep(1)
 
         self.output_dir = None
-        log('Failed to write all data')
+        logging.error('Failed to write all data')
 
 
 def main():
