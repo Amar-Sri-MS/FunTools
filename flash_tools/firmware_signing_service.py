@@ -8,7 +8,7 @@ import generate_firmware_image as gfi
 
 SIGNING_SERVICE_URL = "https://f1reg.fungible.com:4443/cgi-bin/signing_server.cgi"
 CERTIFICATE_SERVICE_URL = "https://f1reg.fungible.com:4443/"
-DEFAULT_HTTP_TIMEOUT = 10
+DEFAULT_HTTP_TIMEOUT = 100
 
 def GetModulus(name):
     params = {
