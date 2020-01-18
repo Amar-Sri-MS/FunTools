@@ -63,8 +63,8 @@ function CleanUpPrevDumps()
 }
 
 HBM_BIN="/opt/fungible/bin/hbm_dump_pcie"
-START_ADDR="0x100000"
-DUMP_MEM_SIZE="0x40000000" # 1GB
+START_ADDR="0x0"
+DUMP_MEM_SIZE="0x200000000" # 8GB
 DPU_BUS_STR1="/sys/bus/pci/devices/0000:BUS:00.2/resource2"
 
 function CollectHbmDump()
