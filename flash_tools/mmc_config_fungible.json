@@ -10,6 +10,24 @@
             "key_index": 0,
             "description": ""
         },
+        "ccfg-10g.signed.bin": {
+            "source": "ccfg-10g.bjson",
+            "version": 1,
+            "fourcc": "ccfg",
+            "cert": "",
+            "customer_cert": "",
+            "key_index": 0,
+            "description": "10g ccfg"
+        },
+        "ccfg-100g.signed.bin": {
+            "source": "ccfg-100g.bjson",
+            "version": 1,
+            "fourcc": "ccfg",
+            "cert": "",
+            "customer_cert": "",
+            "key_index": 0,
+            "description": "100g ccfg"
+        },
         "boot.img.signed": {
             "source": "boot.img",
             "version": 1,
