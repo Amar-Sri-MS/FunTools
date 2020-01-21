@@ -1,98 +1,23 @@
 #!/usr/bin/env python2.7
 
-import collections
-import json
-
+import os, sys
+import json, argparse
+import logging, inspect
 from pprint import pprint
-import glob, os, sys, re, datetime
-import getopt, platform, tempfile
-import logging, sys
+
+
+current_dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+parent_dir = os.path.dirname(current_dir)
+sys.path.insert(0, parent_dir)
+from hu_cfg_gen import HUCfgGen
+
+logger = logging.getLogger("test_hu_cfg")
+logger.setLevel(logging.INFO)
 
 """ Test file that parse combined json file and print out
 hu config, and used for for comparing the output from c file using
 generated c,h struct
 """
-
-# Add quotes to keys, hex values, remove comments and remove trailing commas
-def standardize_json(in_cfg, out_cfg):
-    with open(in_cfg, 'r') as fh:
-        fixed_json = fh.read()
-
-        logging.debug("Removing Comments in %s"% (in_cfg))
-        fixed_json = remove_comments(fixed_json)
-
-        logging.debug("Add quotes to keys in %s"% (in_cfg))
-        #Match for the text before ":"(i.e. dict key) and add quotes if it does not have them already
-        fixed_json = re.sub( r'\n(\s*)(?!")(\S+)\s*:', r'\n\1"\2":', fixed_json)
-
-        logging.debug("Convert non-quoted hex values to decimals in %s"% (in_cfg))
-        #Match for the non-quoted hex values in dict(Hex prefix is "0x") and replace with equivalent decimal values
-        fixed_json = re.sub( r'[^"]0x([a-fA-F0-9]+)(,?|$)', lambda m: lambda_hextoint(m.groups()), fixed_json)
-
-        logging.debug("Strip empty lines and trailing spaces in %s"% (in_cfg))
-        #Remove empty lines(even if they have any kind of white spaces) and trailing white spaces
-        fixed_json = os.linesep.join([s.rstrip() for s in fixed_json.splitlines() if s.strip()])
-
-        logging.debug("Strip trailing commas in %s"% (in_cfg))
-        fixed_json = remove_trailing_commas(fixed_json)
-
-        f = open("%s" % out_cfg, 'w')
-        f.write(fixed_json)
-        f.close()
-
-def lambda_hextoint(x):
-    return str(int(x[0], 16))+x[1]
-
-#Remove comments in json file
-def remove_comments(json_like):
-    comments_re = re.compile(
-        r'//.*?$|/\*.*?\*/|\'(?:\\.|[^\\\'])*\'|"(?:\\.|[^\\"])*"',
-        re.DOTALL | re.MULTILINE
-    )
-    def replacer(match):
-        s = match.group(0)
-        if s[0] == '/': return ""
-        return s
-    return comments_re.sub(replacer, json_like)
-
-#Remove trailing commas in json file
-def remove_trailing_commas(json_like):
-    """
-    Removes trailing commas from *json_like* and returns the result.  Example::
-        >>> remove_trailing_commas('{"foo":"bar","baz":["blah",],}')
-        '{"foo":"bar","baz":["blah"]}'
-    """
-    pos = 0
-    while pos < len(json_like):
-        if json_like[pos] == '"':
-            pos = consume_string(json_like, pos)
-            assert json_like[pos-1] == '"'
-        elif json_like[pos] in "]}":
-            prev = pos-1
-            assert prev >= 0
-            while json_like[prev].isspace():
-                prev -= 1
-                assert prev >= 0
-            if json_like[prev] == ",":
-                json_like = json_like[:prev] + json_like[pos:]
-                assert json_like[prev] in "]}"
-                pos = prev + 1
-            else:
-                pos += 1
-        else:
-            pos += 1
-    return json_like
-
-def consume_string(json_like, pos):
-    assert json_like[pos] == '"'
-    pos += 1
-    while json_like[pos] != '"':
-        c = json_like[pos]
-        if c == "\\":
-            pos += 2
-        else:
-            pos += 1
-    return pos + 1
 
 def print_HostUnits(HostUnits):
     print("HostUnits: 0x%x" % HostUnits["hu_en"])
@@ -111,18 +36,11 @@ def print_HostUnit(HostUnit):
 
     print("")
 
-def load_cfg(cfgfile):
-    # read the file
-    try:
-        f = tempfile.NamedTemporaryFile(mode="r")
-        standardize_json(cfgfile, f.name)
-        cfg = json.load(f)
-    except Exception as e:
-        logging.error("error: %s", e)
-        RuntimeError("Error loading and parsing projectdb %s" % cfgfile)
-        raise e
+def _test_hu_cfg(input_dir, output_dir):
+    hu_cfg_gen = HUCfgGen(input_dir, output_dir)
+    hu_cfg_json = hu_cfg_gen.generate_config()
 
-    HuInterface = cfg["HuInterface"]
+    HuInterface = hu_cfg_json["HuInterface"]
     HostUnits = HuInterface.get("HostUnits")
     HostUnit = HuInterface.get("HostUnit")
 
@@ -136,30 +54,25 @@ def Usage():
     sys.stderr.write('test_hu_cfg.py: usage: [-c json cfg output file]')
 
 def main():
+    logger.debug("test hu_cfg")
+def _dir_path(path):
+    if os.path.isdir(path):
+        return path
+    else:
+        raise argparse.ArgumentTypeError('Directory: {} is not a valid path!'.format(path))
 
-    logging.basicConfig(stream=sys.stderr, level=logging.INFO)
-    print("test hu_cfg")
-    print("")
+def main():
+    arg_parser = argparse.ArgumentParser(
+        description="HU config file processing and auto generate code")
 
-    try:
-        opts, args = getopt.getopt(sys.argv[1:], 'hc:')
+    arg_parser.add_argument("--in-dir", required=True, nargs=1,
+                            type=_dir_path, help="input config source directory path")
 
-    except getopt.GetoptError as err:
-        print(str(err))
-        Usage()
-        sys.exit(2)
+    arg_parser.add_argument("--out-dir", required=True, nargs=1, type=_dir_path, help="output dir path")
 
-    for o, a in opts:
-        if o in ('-h', '--help'):
-            Usage()
-            sys.exit(1)
-        elif o in ('-c', '--cfgfile'):
-            cfgfile = a
-            logging.debug("cfg file: %s", a)
-        else:
-            assert False, 'Unhandled option %s' % o
+    args = arg_parser.parse_args()
 
-    load_cfg(cfgfile)
+    _test_hu_cfg(args.in_dir[0], args.out_dir[0])
 
 if __name__ == "__main__":
     main()

@@ -24,19 +24,28 @@ FUNOSDIR ?= ../../FunOS
 # Directory where we install the working version of the ConfigGen
 FUNSDK_INSTALL_DIR = $(SDK_INSTALL_DIR)/bin/ConfigGen
 
-# Directory where the *.cfg file is stored.
-INPUT_DIR = $(FUNOSDIR)/Configfiles
+# Root directory of *.cfg files
+INPUT_DIR = $(realpath $(FUNOSDIR)/configs)
 
-#Local output dir
-OUTPUT_DIR = out/
 
-#Generated hwcap files output dir
-HWCAP_OUT_DIR = $(OUTPUT_DIR)
+CHIP ?= f1
+TARGET_MACHINE ?= f1
 
 #json util dir
 JSONUTIL_DIR = $(SDKDIR)/bin/$(OS)/x86_64
 
-SRC = cfg_gen.py csr_db_gen.py hu_cfg_gen.py
+CFGGEN_SRC :=	cfg_gen.py        \
+		csr_db_gen.py     \
+		hu_cfg_gen.py     \
+		jsonutils.py      \
+		sku_cfg_gen.py    \
+		hwcap_cfg_gen.py  \
+		nu_cfg_gen.py     \
+		platform_sku_c.j2 \
+		platform_sku_h.j2 \
+		hwcap_config_c.j2 \
+		hwcap_config_h.j2
+
 CFGGEN_PY := ./cfg_gen.py
 TEST_HU_CFG_SH := ./test_hu_cfg.sh
 
@@ -44,23 +53,22 @@ QUIET=@
 CMD_LOG := cmd.log
 
 # Test Diretory for generated files
-GEN_OUT_DIR:= generated
+GEN_OUT_DIR := $(realpath ./generated)
 
-test_cfggen:
-	./$(SRC) -i $(INPUT_DIR) -o $(OUTPUT_DIR) -j $(JSONUTIL_DIR)
-	./$(SRC) -i $(INPUT_DIR) -o $(OUTPUT_DIR) -s $(HWCAP_OUT_DIR) -j $(JSONUTIL_DIR)
-
-test_hucfggen:
+.PHONY: test
+test:
 	$(QUIET)mkdir -p $(GEN_OUT_DIR)
-	@echo  "$(CFGGEN_PY) -i $(INPUT_DIR) -o $(OUTPUT_DIR) -j -s $(GEN_OUT_DIR) -c" >>$(CMD_LOG)
-	$(QUIET)$(CFGGEN_PY) -i $(INPUT_DIR) -o $(OUTPUT_DIR) -j -s $(GEN_OUT_DIR) -c
-	@echo  "cd test; $(TEST_HU_CFG_SH)" >> $(CMD_LOG)
-	$(QUIET)cd test; $(TEST_HU_CFG_SH)
+	$(QUIET)$(CFGGEN_PY) --in-dir $(INPUT_DIR) --out-dir $(GEN_OUT_DIR) --chip $(CHIP) --machine $(TARGET_MACHINE) --funoscfg
+	$(QUIET)$(CFGGEN_PY) --in-dir $(INPUT_DIR) --out-dir $(GEN_OUT_DIR) --chip $(CHIP) --machine $(TARGET_MACHINE) --skucfg
+	$(QUIET)$(CFGGEN_PY) --in-dir $(INPUT_DIR) --out-dir $(GEN_OUT_DIR) --chip $(CHIP) --machine $(TARGET_MACHINE) --eeprom
+	$(QUIET) $(CFGGEN_PY) --in-dir $(INPUT_DIR) --out-dir $(GEN_OUT_DIR) --chip $(CHIP) --machine $(TARGET_MACHINE) --hucfg
+	@echo "cd test; $(TEST_HU_CFG_SH) $(INPUT_DIR) $(GEN_OUT_DIR)" >> $(CMD_LOG)
+	$(QUIET)cd test; $(TEST_HU_CFG_SH) $(INPUT_DIR) $(GEN_OUT_DIR)
 
 # install to SDK
 install:
 	mkdir -p $(FUNSDK_INSTALL_DIR)
-	rsync -R $(SRC) $(FUNSDK_INSTALL_DIR)
+	rsync -R $(CFGGEN_SRC) $(FUNSDK_INSTALL_DIR)
 clean:
 	@rm -rf out
 	@rm -rf $(GEN_OUT_DIR)
