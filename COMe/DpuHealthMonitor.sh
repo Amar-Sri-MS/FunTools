@@ -53,6 +53,11 @@ function CleanUpPrevDumps()
 	FILE=`echo "$HBM_FILE_NAME"_"$DPU_NUM"`
 	mkdir -p $DIR_HBM_LOGS
 
+	# Delete all incomplete files
+	# This can happen if user is impatient and
+	# reboot the system before HBM dump cpmpletes
+	ls `echo $DIR_HBM_LOGS/*` | grep $FILE | grep -v `echo $FILE.*.bz2` | /usr/bin/xargs --no-run-if-empty rm
+
 	NUM_PREV_CORES=`ls $DIR_HBM_LOGS/$FILE* 2>/dev/null 2>&1 | wc -l`
 
 	if ! [[ $NUM_PREV_CORES -lt $MAX_DUMPS_PER_DPU ]]; then
@@ -63,8 +68,8 @@ function CleanUpPrevDumps()
 }
 
 HBM_BIN="/opt/fungible/bin/hbm_dump_pcie"
-START_ADDR="0x100000"
-DUMP_MEM_SIZE="0x40000000" # 1GB
+START_ADDR="0x0"
+DUMP_MEM_SIZE="0x200000000" # 8GB
 DPU_BUS_STR1="/sys/bus/pci/devices/0000:BUS:00.2/resource2"
 
 function CollectHbmDump()
@@ -104,7 +109,7 @@ function CollectHbmDump()
 	cat /proc/uptime
 	$HBM_BIN -a $START_ADDR -s $DUMP_MEM_SIZE -b $DPU_BDF -f -o $FILE_NAME
 	cat /proc/uptime
-	/bin/gzip -9 $FILE_NAME
+	/bin/tar -cjf `echo $FILE_NAME.bz2` $FILE_NAME --remove-files
 }
 
 # trap ctrl-c and call ctrl_c()
