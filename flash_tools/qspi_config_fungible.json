@@ -39,18 +39,12 @@
             "optional": true,
             "index": "100"
         },
-        "HU_SBUS_MASTER": {
-            "A": "hu_sbm.bin",
-            "B": "hu_sbm.bin",
-            "optional": true,
-            "index": "101"
-        },
-        "HU_SERDES": {
-            "A": "hu_sds.bin",
-            "B": "hu_sds.bin",
-            "optional": true,
-            "index": "102"
-        },
+	"HU_SBM_SERDES": {
+	    "A": "hu_sbm_serdes.bin",
+	    "B": "hu_sbm_serdes.bin",
+	    "optional": true,
+	    "index": "103"
+	},
         "HOST_DATA": {
             "A": "reserve(10000, 'hdat')",
             "B": "",
@@ -63,24 +57,15 @@
 	}
     },
     "signed_images": {
-        "hu_sds.bin": {
-            "source": "serdes.hu.conv.rom",
-            "version": 1,
-            "fourcc": "husd",
-            "cert": "",
-            "customer_cert": "",
-            "key": "fpk3",
-            "description": "@file:serdes.hu.conv.rom.version"
-        },
-        "hu_sbm.bin": {
-            "source": "sbus_master.hu.conv.rom",
-            "version": 1,
-            "fourcc": "husm",
-            "cert": "",
-            "customer_cert": "",
-            "key": "fpk3",
-            "description": "@file:sbus_master.hu.conv.rom.version"
-        },
+	"hu_sbm_serdes.bin": {
+	    "source": "sbm_serdes.hu.conv.rom",
+	    "version": 1,
+	    "fourcc": "husc",
+	    "cert": "",
+	    "customer_cert": "",
+	    "key": "fpk3",
+	    "description": "@file:sbm_serdes.hu.conv.rom.version"
+	},
         "hbm_sbus.bin": {
             "source": "sbus_master.hbm.conv.rom",
             "version": 1,
