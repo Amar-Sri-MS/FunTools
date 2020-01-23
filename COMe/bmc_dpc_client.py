@@ -132,19 +132,6 @@ class DpcClient(object):
         except Exception as ex:
             print "ERROR: %s" % str(ex)
 
-    def port_mtu(self, shape, portnum, mtu=None):
-        try:
-            cmd_arg_dict = {"portnum": portnum, "shape": shape}
-            if mtu is not None:
-                mtu_dict = {"mtu": mtu}
-                arg_list = ["mtuset", cmd_arg_dict, mtu_dict]
-            else:
-                arg_list = ["mtuget", cmd_arg_dict]
-            result = self.execute(verb="port", arg_list=arg_list)
-            return result
-        except Exception as ex:
-            print "ERROR: %s" % str(ex)
-
     def port_temperature(self, shape, portnum):
         try:
             cmd_arg_dict = {"portnum": portnum, "shape": shape}
