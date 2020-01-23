@@ -26,12 +26,15 @@ if [[ `uname` != "Linux" ]] ; then
 fi
 
 BUNDLE_FLAG=0
-while getopts "hb" opt; do
+USE_DEV_BRANCH=0
+while getopts "hbd" opt; do
     case "$opt" in
 	h) show_help
 	   exit 0
 	   ;;
 	b) BUNDLE_FLAG=1
+	   ;;
+	d) USE_DEV_BRANCH=1
 	   ;;
     esac
 done
@@ -57,12 +60,9 @@ ${WORKSPACE}/FunSDK/scripts/bob --sdkup -s ${WORKSPACE}/SDK_RELEASE -C ${WORKSPA
 	    --version=$BUILD_NUMBER release funos.posix-extra
 
 
-# if the current branch in FunTools is not master, then build flash_tools on top of the SDK
-# this is useful for development of flash_tools
-flash_tools_br=`cat ${WORKSPACE}/FunTools/.git/HEAD`
-if [[ ${flash_tools_br} !=  *refs/heads/master ]]; then
-    ## for testing our changes in the FunTools/flash_tools area
-    echo "WARNING: using the currently checked out branch of FunTools"
+if [ $USE_DEV_BRANCH -eq 1 ]; then
+    ## for testing current changes in the FunTools/flash_tools area
+    echo "WARNING: using the currently working directory version of FunTools"
     ${WORKSPACE}/FunSDK/scripts/bob --build -s ${WORKSPACE}/SDK_RELEASE --version=$BUILD_NUMBER flash_tools
 fi
 
