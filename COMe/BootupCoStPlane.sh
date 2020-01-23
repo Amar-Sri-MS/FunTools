@@ -71,4 +71,19 @@ if [[ -f $FUN_ROOT/etc/DpuHealthMonitor.sh ]]; then
 	$FUN_ROOT/etc/DpuHealthMonitor.sh &
 fi
 
+#Running DPCSH in TCP-PROXY Mode,
+#so that BMC can use this interface
+#to fetch F1s' data over NVME interfaces
+BMC_F1_0_DPC_PORT=43101
+BMC_F1_1_DPC_PORT=43102
+BMC_DPCSH_F1_0_LOGF="/var/log/bmc_dpcsh_f1_0.log"
+BMC_DPCSH_F1_1_LOGF="/var/log/bmc_dpcsh_f1_1.log"
+F1_0_NVME="/dev/nvme0"
+F1_1_NVME="/dev/nvme1"
+
+if [[ -f $FUN_ROOT/FunSDK/bin/Linux/dpcsh/dpcsh && -c $F1_0_NVME && -c $F1_1_NVME ]]; then
+	$FUN_ROOT/FunSDK/bin/Linux/dpcsh/dpcsh --pcie_nvme_sock=$F1_0_NVME --nvme_cmd_timeout=600000 --tcp_proxy=$BMC_F1_0_DPC_PORT > $BMC_DPCSH_F1_0_LOGF 2>&1 &
+	$FUN_ROOT/FunSDK/bin/Linux/dpcsh/dpcsh --pcie_nvme_sock=$F1_1_NVME --nvme_cmd_timeout=600000 --tcp_proxy=$BMC_F1_1_DPC_PORT > $BMC_DPCSH_F1_1_LOGF 2>&1 &
+fi
+
 echo "$0 DONE!!! (`date`)"
