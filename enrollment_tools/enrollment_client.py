@@ -78,27 +78,18 @@ def byte_str_to_int_list(s):
 
 class DBG_Chal(object):
     ''' i2c connection object '''
-    def __init__(self, dut_name, chip_inst=0):
-        logger.debug('dut: {0}'.format(dut_name))
-        self.probe_ip_addr = None
-        self.probe_id = None
-        self.i2c_slave_addr = None
+    def __init__(self, dut_file, chip_inst=0):
+
+        dut = json.load(open(dut_file, "rb"))
+        self.probe_ip_addr = dut.get("probe_ip_addr", None)
+        self.probe_id = dut.get("probe_id", None)
+        self.i2c_slave_addr = dut.get("i2c_slave_addr",None)
+        self.bmc_ip_addr = dut.get("bmc_ip_addr", None)
+
         self.connected = False
         self.dbgprobe = None
         self.chip_inst = chip_inst
-        dut_i2c_info = dut().get_i2c_info(dut_name)
-        if dut_i2c_info is None:
-            print('Failed to get i2c connection details!')
-            return None
 
-        # if not board with bmc (emulation and socketed test boards do not have bmc)
-        self.bmc_board = dut_i2c_info[0]
-        if self.bmc_board is False:
-            self.probe_id = dut_i2c_info[1]
-            self.probe_ip_addr = dut_i2c_info[2]
-            self.i2c_slave_addr = dut_i2c_info[3]
-        else:
-            self.bmc_ip_addr = dut_i2c_info[1]
 
     def __del__(self):
         print('Destroying the connection!')
@@ -111,7 +102,7 @@ class DBG_Chal(object):
             return True
 
         dbgprobe = DBG_Client()
-        if self.bmc_board is False:
+        if self.bmc_ip_addr is None:
             if self.probe_ip_addr is None:
                 print('Invalid ip addr: {0}'.format(self.probe_ip_addr))
                 return False
@@ -256,7 +247,7 @@ def main():
         description="Perform enrollment via I2C",
         epilog="Challenge Interface must be accessible via debug probe "\
         "prior to running this script, check the device documentation on how to do this")
-    parser.add_argument("--dut", help="Dut name")
+    parser.add_argument("--dut-file", required=True, help="Dut file (JSON)")
     parser.add_argument("--chip", type=int, default=0, choices=xrange(0, 2),
                         help="chip instance number")
     parser.add_argument("--tbs", type=argparse.FileType('r'),
@@ -281,7 +272,7 @@ def main():
 
     # get enrollment info
     # check for connection
-    dbgprobe = DBG_Chal(args.dut,args.chip)
+    dbgprobe = DBG_Chal(args.dut_file, args.chip)
     status = dbgprobe.connect()
     if status is False:
         print('Connection failed!')
