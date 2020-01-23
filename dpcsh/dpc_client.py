@@ -94,15 +94,18 @@ class DpcClient(object):
 
     @staticmethod
     def handle_response(r):
-        if (r is None):
+        """
+        the response returned by dpcsh should contain either an 'error' key, or
+        a 'result' key if the JSON is parsable.
+        """
+
+        if not r:
             return r
 
         if 'error' in r:
             raise DpcExecutionError(r['error'])
-        elif 'result' in r:
-            return r['result']
-        else:
-            return None
+
+        return r['result']
 
     def async_send(self, verb, arg_list, tid = None):
 
