@@ -8,15 +8,28 @@ from elftools.dwarf.die import DIE
 from elftools.elf.elffile import ELFFile
 
 
-def decode_function_pc(dwarfinfo, function_name):
-    for compile_unit in dwarfinfo.iter_CUs():
-      top_die = compile_unit.get_top_DIE()
-      for d in top_die.iter_children():
-        if d.tag == 'DW_TAG_subprogram' and 'DW_AT_name' in d.attributes and 'DW_AT_low_pc' in d.attributes:
-          if d.attributes['DW_AT_name'].value == function_name:
-            return [d.attributes['DW_AT_low_pc'].value]
+def get_pc_range(function):
+  low_pc = function.attributes['DW_AT_low_pc'].value
+  high_pc_attr = function.attributes['DW_AT_high_pc']
+  high_pc_attr_class = describe_form_class(high_pc_attr.form)
+  if high_pc_attr_class == 'address':
+    high_pc = high_pc_attr.value
+  elif high_pc_attr_class == 'constant':
+    high_pc = low_pc + high_pc_attr.value
+  else:
+    high_pc = low_pc
+  return (low_pc, high_pc)
 
-    return []
+
+def decode_function_pc(dwarfinfo, function_name):
+  for compile_unit in dwarfinfo.iter_CUs():
+    top_die = compile_unit.get_top_DIE()
+    for d in top_die.iter_children():
+      if d.tag == 'DW_TAG_subprogram' and 'DW_AT_name' in d.attributes and 'DW_AT_low_pc' in d.attributes:
+        if d.attributes['DW_AT_name'].value == function_name:
+          return get_pc_range(d)
+
+  return None
 
 
 def extract_function_ptr(filename, function_name):
@@ -29,13 +42,13 @@ def extract_function_ptr(filename, function_name):
         return
 
       dwarfinfo = elffile.get_dwarf_info()
-      addresses = decode_function_pc(dwarfinfo, function_name)
+      pc_range = decode_function_pc(dwarfinfo, function_name)
 
-      if len(addresses) == 0:
+      if pc_range is None:
         print('Function not found')
         return
 
-      print(addresses)
+      print(pc_range)
 
 
 if __name__ == '__main__':
