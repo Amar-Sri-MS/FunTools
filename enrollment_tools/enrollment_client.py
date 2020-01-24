@@ -78,9 +78,8 @@ def byte_str_to_int_list(s):
 
 class DBG_Chal(object):
     ''' i2c connection object '''
-    def __init__(self, dut_file, chip_inst=0):
+    def __init__(self, dut, chip_inst=0):
 
-        dut = json.load(open(dut_file, "rb"))
         self.probe_ip_addr = dut.get("probe_ip_addr", None)
         self.probe_id = dut.get("probe_id", None)
         self.i2c_slave_addr = dut.get("i2c_slave_addr",None)
@@ -247,32 +246,28 @@ def main():
         description="Perform enrollment via I2C",
         epilog="Challenge Interface must be accessible via debug probe "\
         "prior to running this script, check the device documentation on how to do this")
-    parser.add_argument("--dut-file", required=True, help="Dut file (JSON)")
+
+    # can either do enrollment using a dut-file or a bmc-ip_addr
+
+    conn_group = parser.add_mutually_exclusive_group()
+    conn_group.add_argument("--dut-file", help="Dut file (JSON)")
+    conn_group.add_argument("--bmc-ip-addr", help="BMC IP Address")
+
     parser.add_argument("--chip", type=int, default=0, choices=xrange(0, 2),
                         help="chip instance number")
-    parser.add_argument("--tbs", type=argparse.FileType('r'),
-                        help="Test: Read the enrollment tbs from the file")
-    parser.add_argument("--sn", type=argparse.FileType('r'),
-                        help="Test: Read the serial number from the file")
 
     args = parser.parse_args()
 
-    if args.tbs:
-        # read the tbs from file
-        tbs_cert = args.tbs.read()
-        # get enrollment certificate from enrollment server
-        cert = generate_enrollment_cert(tbs_cert, True)
-        return True
-    elif args.sn:
-        # read the sn from file
-        sn = args.sn.read()
-        # get enrollment certificate from enrollment server
-        cert = get_cert_of_serial_number(sn, True)
-        return True
+    if args.dut_file is not None:
+        dut = json.load(open(args.dut_file, "rb"))
+    else:
+        dut = { 'bmc_ip_addr' : args.bmc_ip_addr }
+
+    print(dut)
 
     # get enrollment info
     # check for connection
-    dbgprobe = DBG_Chal(args.dut_file, args.chip)
+    dbgprobe = DBG_Chal(dut, args.chip)
     status = dbgprobe.connect()
     if status is False:
         print('Connection failed!')
