@@ -16,6 +16,8 @@ import socket
 # $WORKSPACE/FunTools/dpcsh/dpcsh --text_proxy
 #
 # Example usage dpctest.py
+class DpcExecutionError(Exception):
+    pass
 
 class DpcClient(object):
     def __init__(self, legacy_ok = True, unix_sock = False, server_address = None):
@@ -90,6 +92,21 @@ class DpcClient(object):
         self.__print(jstr, ' -> ')
         self.__send_line(jstr)
 
+    @staticmethod
+    def handle_response(r):
+        """
+        the response returned by dpcsh should contain either an 'error' key, or
+        a 'result' key if the JSON is parsable.
+        """
+
+        if not r:
+            return r
+
+        if 'error' in r:
+            raise DpcExecutionError(r['error'])
+
+        return r['result']
+
     def async_send(self, verb, arg_list, tid = None):
 
         if (tid is None):
@@ -134,7 +151,7 @@ class DpcClient(object):
         return self.async_wait()
 
     def async_recv_any(self):
-        return self.async_recv_any_raw()['result']
+        return DpcClient.handle_response(self.async_recv_any_raw())
 
     def async_recv_wait_raw(self, tid = None):
         # see if it's already pending
@@ -155,9 +172,8 @@ class DpcClient(object):
 
     def async_recv_wait(self, tid = None):
         r = self.async_recv_wait_raw(tid)
-        if (r is None):
-            return r
-        return r['result']
+
+        return DpcClient.handle_response(r)
 
 
     # preferred interface
