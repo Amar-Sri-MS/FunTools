@@ -76,6 +76,11 @@ static bool _verbose_log = false;
 /* cmd timeout, use driver default timeout */
 #define DEFAULT_NVME_CMD_TIMEOUT_MS "0"
 
+/* socket connect retry parameters */
+#define RETRY_DEFAULT (0)   /* fail immediately */
+#define RETRY_NOARG   (15)  /* retry for 15 seconds */
+static uint16_t connect_retries = RETRY_DEFAULT;
+
 // We stash argv[0]
 const char *dpcsh_path;
 
@@ -264,27 +269,38 @@ static char *getline_with_history(OUT ssize_t *nbytes)
 static int _open_sock_inet(uint16_t port)
 {
 	int sock = 0;
+	int r, tries = 0;
 	struct sockaddr_in serv_addr;
 
-	if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-		printf("\n Socket creation error \n");
-		return sock;
-	}
-	_setnosigpipe(sock);
+	do {
+		if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+			printf("\n Socket creation error \n");
+			return sock;
+		}
+		_setnosigpipe(sock);
 
-	memset(&serv_addr, '0', sizeof(serv_addr));
+		memset(&serv_addr, '0', sizeof(serv_addr));
 
-	serv_addr.sin_family = AF_INET;
-	serv_addr.sin_port = htons(port);
+		serv_addr.sin_family = AF_INET;
+		serv_addr.sin_port = htons(port);
 
-	// Convert IPv4 and IPv6 addresses from text to binary form
-	if(inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr)<=0) {
-		printf("\nInvalid address/ Address not supported \n");
-		return -1;
-	}
+		// Convert IPv4 and IPv6 addresses from text to binary form
+		if(inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr)<=0) {
+			printf("\nInvalid address/ Address not supported \n");
+			return -1;
+		}
 
-	if (connect(sock, (struct sockaddr *)&serv_addr,
-		    sizeof(serv_addr)) < 0) {
+		if (tries > 0) {
+			printf("connect error, retry %d\n", tries);
+			sleep(1);
+		}
+		
+		r = connect(sock, (struct sockaddr *)&serv_addr,
+			    sizeof(serv_addr));
+		tries++;
+	} while ((r < 0) && (tries < connect_retries));
+	
+	if (r < 0) {
 		printf("*** Can't connect\n");
 		perror("connect");
 		exit(1);
@@ -295,12 +311,26 @@ static int _open_sock_inet(uint16_t port)
 
 static int _open_sock_unix(const char *name)
 {
+	int r = -1;
 	int sock = socket(AF_UNIX, SOCK_STREAM, 0);
-	if (sock <= 0) return sock;
+	int tries = 0;
+	
+	if (sock <= 0)
+		return sock;
+	
 	_setnosigpipe(sock);
 	struct sockaddr_un server = { .sun_family = AF_UNIX };
 	strcpy(server.sun_path, name);
-	int r = connect(sock, (struct sockaddr *)&server, sizeof(server));
+	do {
+		if (tries > 0) {
+			printf("connection fail, retry %d\n", tries);
+			sleep(1);
+		}
+		
+		r = connect(sock, (struct sockaddr *)&server, sizeof(server));
+		tries++;
+	} while(r && (tries < connect_retries));
+	
 	if (r) {
 		printf("*** Can't connect: %d\n", r);
 		perror("connect");
@@ -1335,13 +1365,18 @@ static void _do_cli(int argc, char *argv[],
 
 /** argument parsing **/
 
-/* help for port numbers*/
+/* help for port numbers */
 static uint16_t opt_portnum(char *optarg, uint16_t dflt)
 {
 	if (optarg == NULL)
 		return dflt;
 
 	return strtoul(optarg, NULL, 0);
+}
+
+static uint16_t opt_num(char *optarg, uint16_t dflt)
+{
+	return opt_portnum(optarg, dflt);
 }
 
 /* helper for socket file names */
@@ -1378,6 +1413,7 @@ static struct option longopts[] = {
 	{ "baud",            required_argument, NULL, 'R' },
 	{ "legacy_b64",      no_argument,       NULL, 'L' },
 	{ "verbose",         no_argument,       NULL, 'v' },
+	{ "retry",           optional_argument, NULL, 'Y' },
 #ifdef __linux__
 	{ "nvme_cmd_timeout", required_argument, NULL, 'W' },
 #endif //__linux__
@@ -1413,6 +1449,7 @@ static void usage(const char *argv0)
 	printf("       --baud=rate             specify non-standard baud rate (default=" DEFAULT_BAUD ")\n");
 	printf("       --legacy_b64            support old-style base64 encoding, despite issues\n");
 	printf("       --verbose               log all json transactions in proxy mode\n");
+	printf("       --retry[=N]             retry every seconds for N seconds for first socket connection\n");
 #ifdef __linux__
 	printf("       --nvme_cmd_timeout=timeout specify cmd timeout in ms (default=" DEFAULT_NVME_CMD_TIMEOUT_MS ")\n");
 #endif //__linux__
@@ -1434,7 +1471,7 @@ int main(int argc, char *argv[])
 	int ch, first_unknown = -1;
 	struct dpcsock funos_sock; /* connection to FunOS */
 	struct dpcsock cmd_sock;   /* connection to commanding agent */
-
+	
 	dpcsh_path = argv[0];
 	dpcsh_session_id = getpid();
 	dpcsh_load_macros();
@@ -1633,6 +1670,11 @@ int main(int argc, char *argv[])
 			_verbose_log = true;
 			break;
 
+		case 'Y':  /* retry=N */
+
+			connect_retries = opt_num(optarg, RETRY_NOARG);
+
+			break;
 #ifdef __linux__
 		case 'W':  /* "timeout" -- set timeout for cmd */
 			funos_sock.cmd_timeout = atoi(optarg);
