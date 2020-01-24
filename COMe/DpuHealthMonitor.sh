@@ -71,6 +71,7 @@ HBM_BIN="/opt/fungible/bin/hbm_dump_pcie"
 START_ADDR="0x0"
 DUMP_MEM_SIZE="0x200000000" # 8GB
 DPU_BUS_STR1="/sys/bus/pci/devices/0000:BUS:00.2/resource2"
+HBM_COLLECT_NOTIFY="/tmp/HBM_Dump_Collection_In_Progress"
 
 function CollectHbmDump()
 {
@@ -84,6 +85,10 @@ function CollectHbmDump()
 		echo "Incorrect DPU number: $DPU"
 		return 1
 	fi
+
+	# Touch a file so that user knows HBM dump collection
+	# is in progress
+	/usr/bin/touch $HBM_COLLECT_NOTIFY
 
 	DPU=`echo D$1`
 	PCIE_DEV=$2
