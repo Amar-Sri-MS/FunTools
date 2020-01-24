@@ -1,14 +1,7 @@
-// This file was copied from https://github.com/dropbox/goebpf
-// License could be found there, it is GPLv2
-
-// Copyright (c) 2019 Dropbox, Inc.
-// Full license can be found in the LICENSE file.
-
-// Very simple SocketFilter program to count packets.
-
+// This is generic conter probe
 #include "../bpf_helpers.h"
 
-// eBPF map to packet counter
+// eBPF map for the counter
 BPF_MAP_DEF(counter) = {
     .map_type = BPF_MAP_TYPE_PERCPU_ARRAY,
     .key_size = sizeof(__u32),
@@ -18,17 +11,13 @@ BPF_MAP_DEF(counter) = {
 BPF_MAP_ADD(counter);
 
 
-// Socket Filter program
-SEC("socket_filter")
-int packet_counter(struct __sk_buff *skb) {
-  // Simply increase counter
+SEC("probe")
+void generic_counter(void) {
   __u32 idx = 0;
   __u64 *value = bpf_map_lookup_elem(&counter, &idx);
   if (value) {
       *value += 1;
   }
-
-  return SOCKET_FILTER_ALLOW;
 }
 
 char _license[] SEC("license") = "GPLv2";
