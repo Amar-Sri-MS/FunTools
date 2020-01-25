@@ -36,6 +36,9 @@ ifeq ($(OS),Linux)
 CC := $(TOOLCHAIN_PREFIX)gcc$(GCC_SUFFIX)
 endif
 
+# default target goes first 
+all: dpcsh
+
 $(BUILD_ROOT):
 	mkdir -p $@
 
