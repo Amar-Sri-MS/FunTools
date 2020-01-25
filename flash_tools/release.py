@@ -81,7 +81,8 @@ def main():
     if wanted('prepare'):
         # paths to application binaries in SDK tree
         paths = [ "bin",
-                "FunSDK/u-boot",
+                "FunSDK/u-boot", # TODO delete me after a few new-style SDKs are generated
+                "FunSDK/u-boot/f1", # TODO ensure s1 is supported and the line above is deleted
                 "FunSDK/sbpfw/roms",
                 "FunSDK/sbpfw/eeproms",
                 "FunSDK/sbpfw/firmware/chip_f1_emu_0",
