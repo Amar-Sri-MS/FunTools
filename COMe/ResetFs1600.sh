@@ -53,7 +53,7 @@ $FUN_ROOT/StorageController/etc/start_sc.sh stop
 sync
 
 # This is a blocking call -> Eddie
-$FUN_ROOT/cclinux/cclinux_service.sh --stop
+$FUN_ROOT/cclinux/cclinux_service.sh --hardreset
 sync
 
 # Not that Fungible apps (dockers) are closed
