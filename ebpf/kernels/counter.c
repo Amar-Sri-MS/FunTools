@@ -11,7 +11,7 @@ BPF_MAP_DEF(counter) = {
 BPF_MAP_ADD(counter);
 
 
-SEC("probe")
+SEC("prehook")
 void generic_counter(void) {
   __u32 idx = 0;
   __u64 *value = bpf_map_lookup_elem(&counter, &idx);
