@@ -18,15 +18,134 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-# from ollyapi import *
+
+import os
 import sys
+import uuid
+import excat
+import struct
+import select
 import socket
 import logging
-import struct
-import optparse
+import argparse
 import binascii
+import platform
+import subprocess
+import uuid_extract
 
 GDB_SIGNAL_TRAP = 5
+
+opts = None
+
+###
+##  Logging
+#
+
+log_file = sys.stderr
+
+def LOG(msg, suffix = "\n"):
+    log_file.write(msg + suffix)
+
+def LOG_ALWAYS(msg):
+    msg += "\n"
+    prefix = ""
+    if (not opts.server_only):
+        prefix = "fungdbserver: "
+    sys.stderr.write(prefix + msg)
+    if (log_file != sys.stderr):
+        # echo it to the log
+        LOG(msg, "")
+
+def DEBUG(msg):
+    if (opts.verbose >= 2):
+        LOG(msg)
+
+def ERROR(msg):
+    LOG_ALWAYS(msg)
+
+###
+##  platform details
+#
+
+def get_default_gdb():
+    current_os = platform.system()
+    if current_os == 'Darwin':
+        gdb = '/Users/Shared/cross-el/bin/mips64-gdb'
+    else:
+        gdb = '/opt/cross/mips64/bin/mips64-unknown-elf-gdb'
+
+    return gdb
+
+def get_default_dir():
+
+    if (os.environ.get("FUNOS_SRC") is not None):
+        return os.environ.get("FUNOS_SRC")
+    
+    if (os.environ.get("WORKSPACE") is not None):
+        return os.path.join(os.environ.get("WORKSPACE"), "FunOS")
+
+    return None
+
+def get_sdkdir():
+
+    sdk = os.environ.get("SDKDIR")
+    if (sdk is not None):
+        return sdk
+
+    workspace = os.environ.get("WORKSPACE")
+    if (workspace is not None):
+        sdk = os.path.join(workspace, "FunSDK")
+        return sdk
+
+    # try relative to the script - "../.."
+    workspace = os.path.dirname(os.path.dirname(sys.argv[0]))
+    sdk = os.path.join(workspace, "FunSDK")
+    if (os.path.exists(sdk)):
+        return sdk
+        
+
+    # try relative to the dir - ".."
+    if (opts.dir is not None):
+        workspace = os.path.dirname(opts.dir)
+        sdk = os.path.join(workspace, "FunSDK")
+        if (os.path.exists(sdk)):
+            return sdk
+    
+    # no idea -- assume CWD
+    return "."
+
+    
+
+def get_script():
+
+    # handle user input
+    if (opts.script is not None):
+        if (os.path.isfile(opts.script)):
+            LOG_ALWAYS("using specified script %s" % opts.script)
+            return opts.script
+        else:
+            # they want/get nothing
+            LOG_ALWAYS("specified script %s invalid, ignoring" % opts.script)
+            return None
+
+    # default logic: get a file from FunSDK
+    # since it's hopefully the most recent
+    # otherwise, scrape FunOS which could be older
+    LOG_ALWAYS("sdkdir is %s" % get_sdkdir())
+    script = os.path.join(get_sdkdir(), "bin/scripts/funos_gdb.py")
+    if (os.path.isfile(script)):
+        LOG_ALWAYS("using script from FunSDK %s" % get_sdkdir())
+        return script
+
+    if (opts.dir is not None):
+        script = os.path.join(opts.dir, "scripts/funos_gdb.py")
+        if (os.path.isfile(script)):
+            LOG_ALWAYS("using script from --dir")
+            return script
+
+    # no idea
+    LOG_ALWAYS("could not find a script file")
+    return None
 
 ###
 ##  File Corpse
@@ -34,10 +153,10 @@ GDB_SIGNAL_TRAP = 5
 
 class FileCorpse:
 
-    def __init__(self, fname, offset=0):
+    def __init__(self, fname):
         self.fname = fname
         self.fl = open(fname)
-        self.memoffset = offset
+        self.memoffset = 0
         self.threadid = 0
         self.threadcount = 0
         self.thread_list = []
@@ -85,16 +204,16 @@ class FileCorpse:
     def readbytes(self, addr, n):
         addr = self.virt2phys(addr)
         if (addr is None):
-            print "zero read"
+            LOG("zero read")
             return self.badread(n)
 
         regaddr = addr - self.memoffset
-        # print "read at addr: 0x%x" % regaddr
+        DEBUG("read at addr: 0x%x" % regaddr)
         self.fl.seek(regaddr)
         bytes = self.fl.read(n)
         if (len(bytes) < n):
             # can't seek
-            print "Short read at offset 0x%x. Expected %d bytes, got %d" % (regaddr, n, len(bytes))
+            DEBUG("Short read at offset 0x%x. Expected %d bytes, got %d" % (regaddr, n, len(bytes)))
             return self.badread(n)
         return bytes
 
@@ -117,20 +236,20 @@ class FileCorpse:
             ptr = p + vpnum * n + o
             base = self.ReadMemory64(ptr, host=True)
 
-            # print "exception base = 0x%x + %d * %d + 0x%x = 0x%x -> 0x%x" % (p, vpnum, n, o, ptr, base)
+            DEBUG("exception base = 0x%x + %d * %d + 0x%x = 0x%x -> 0x%x" % (p, vpnum, n, o, ptr, base))
 
         return base
 
     def ReadMemory8(self, addr):
         bytes = self.readbytes(addr, 1)
         value = struct.unpack("<B", bytes)[0]
-        # print "value is 0x%0.2x" % value
+        DEBUG("value is 0x%0.2x" % value)
         return value
 
     def ReadMemory16(self, addr):
         bytes = self.readbytes(addr, 2)
         value = struct.unpack("<H", bytes)[0]
-        # print "value is 0x%0.4x" % value
+        DEBUG("value is 0x%0.4x" % value)
         return value
 
     def ReadMemory32(self, addr, host=False):
@@ -139,7 +258,7 @@ class FileCorpse:
             value = struct.unpack(">I", bytes)[0]
         else:
             value = struct.unpack("<I", bytes)[0]
-        # print "value is 0x%0.8x" % value
+        DEBUG("value is 0x%0.8x" % value)
         return value
 
     def ReadMemory64(self, addr, host=False):
@@ -149,7 +268,7 @@ class FileCorpse:
         else:
             value = struct.unpack("<Q", bytes)[0]
 
-        # print "value is 0x%0.16x" % value
+        DEBUG("value is 0x%0.16x" % value)
         return value
 
     def GetThreadCount(self):
@@ -186,7 +305,7 @@ class FileCorpse:
         regaddr = base + offset
 
         value = self.ReadMemory64(regaddr)
-        # print "thread %d reg %s: at 0x%x value 0x%x\n" % (self.threadid, name, regaddr, value)
+        DEBUG("thread %d reg %s: at 0x%x value 0x%x\n" % (self.threadid, name, regaddr, value))
 
         return value
 
@@ -222,7 +341,7 @@ class FileCorpse:
         ptr = p + tid * n + 0 # FIXME: offset
         state = self.ReadMemory32(ptr, host=True)
 
-        print "thread %s state = 0x%x + %d * %d = 0x%x -> 0x%x" % (tid, p, n, tid, ptr, state)
+        LOG("thread %s state = 0x%x + %d * %d = 0x%x -> 0x%x" % (tid, p, n, tid, ptr, state))
 
         if (state == online):
             return True
@@ -247,7 +366,7 @@ class FileCorpse:
                         self.thread_list.append(tid)
                         self.vpnumtab[tid] = self.ccv_vpnum(cl, co, vp)
         self.threadcount = len(self.thread_list)
-        print "FunOS has %d online threads" % self.threadcount
+        LOG("FunOS has %d online threads" % self.threadcount)
 
     def GetThreadInfo(self, tid):
         cl = int(tid / 100)
@@ -262,7 +381,7 @@ class FileCorpse:
         self.symbols = d
 
         self.setup_threadlist()
-
+        
 ###
 ## gdb crc
 ## GPL implemenation from gdb itself
@@ -345,21 +464,222 @@ def gnu_debuglink_crc32(crc, buf):
 
 
 ###
+##  corpse classification
+#
+
+UUID_LOCATOR = "ELFSHA1E"
+UUID_STRIDE = 8
+UUID_OFFSET = 32
+UUID_LEN = 16
+MAX_LOCATE = (32*1024*1024)
+def find_corpse_uuid(corpse):
+
+    if (opts.force_uuid is not None):
+        try:
+            uu = uuid.UUID(opts.force_uuid)
+        except:
+            uu = None
+
+        if (uu is None):
+            raise RuntimeError("invalid forced UUID: %s" % opts.force_uuid)
+        LOG_ALWAYS("FunOS UUID forced to %s" % str(uu))
+        return uu
+            
+    LOG_ALWAYS("Searching for FunOS UUID")
+    
+    # search for the locator token
+    offset = 0
+    found = None
+    while (offset < MAX_LOCATE):
+        s = corpse.readbytes(offset, len(UUID_LOCATOR))
+        if (s == UUID_LOCATOR):
+            found = offset
+            break
+        offset += UUID_STRIDE
+
+    if (found is None):
+        LOG_ALWAYS("No FunOS UUID indicator found. Invalid hbmdump")
+        return None
+
+    LOG_ALWAYS("Found FunOS UUID indicator at offset %s" % found)
+    buuid = corpse.readbytes(found - UUID_OFFSET, UUID_LEN)
+    u = uuid.UUID(bytes=buuid)
+    return u
+
+
+def auto_corpse_offset(corpse):
+
+    n0mb = corpse.ReadMemory64(0)
+    n1mb = corpse.ReadMemory64(1024*1024)
+    
+    if (n0mb != 0):
+        LOG("Detected 1mb memory offset")
+        return 1024 * 1024
+
+    if (n1mb == 0):
+        raise RuntimeError("Cannot find FunOS boot vector at 1mb")
+
+    LOG("detected corpse offset 0")
+    return 0
+        
+    
+def find_corpse_offset(corpse):
+
+    if (opts.offset == "0"):
+        LOG("corpse offset 0mb")
+        return 0
+    elif (opts.offset == "1"):
+        LOG("corpse offset 1mb")
+        return 1024 * 1024
+    elif (opts.offset == "auto"):
+        return auto_corpse_offset(corpse)
+    else:
+        raise RuntimeError("unknown offset '%s'" % opts.offset)
+
+###
+##  auto file unpacking
+#
+
+def filetype(fname):
+    cmd = ["file", "-0z", fname]
+    output = uuid_extract.output4command(cmd)
+    toks = output.split("\0")
+    s = toks[-1]
+    if (s[0] == ":"):
+        s = s[1:]
+    return s.strip()
+
+def file_is_bzip(hbmdump):
+    stype = filetype(hbmdump)
+    if (stype.startswith("bzip2 compressed data")):
+        return True
+    
+    return False
+
+def file_is_data(hbmdump):
+    stype = filetype(hbmdump)
+    if (stype == "data"):
+        return True
+    
+    return False
+
+def file_is_gzip(hbmdump):
+    stype = filetype(hbmdump)
+    if (stype.startswith("gzip compressed data")):
+        return True
+    
+    return False
+
+def file_is_tar(hbmdump):
+    stype = filetype(hbmdump)
+    if (stype.startswith("POSIX tar archive")):
+        return True
+    
+    return False
+
+def file_is_tgz(hbmdump):
+    stype = filetype(hbmdump)
+    if ((stype.startswith("POSIX tar archive") and
+         ("gzip compressed data" in stype))):
+        return True
+    
+    return False
+
+def file_is_tbz(hbmdump):
+    stype = filetype(hbmdump)
+    if ((stype.startswith("POSIX tar archive") and
+         ("bzip2 compressed data" in stype))):
+        return True
+    
+    return False
+
+
+def transform_file(xform, cmd, inname, outname=None):
+
+    if (outname is None):
+        # so you can rm *.fungdb_out*
+        outname = "%s.fungdb_out" % inname
+    
+    if (not os.path.exists(outname)):
+        # transform the args
+        y = {}
+        y["inname"] = inname
+        y["outname"] = outname
+        cmd = [x.format(**y) for x in cmd]
+        cmd = " ".join(cmd)
+        LOG_ALWAYS("%s %s -> %s" % (xform, inname, outname))
+        DEBUG(cmd)
+        os.system(cmd)
+    else:
+        LOG_ALWAYS("%s files exists: %s" % (xform, outname))
+
+    return outname
+
+
+def extract_bzip(bzname):
+    return transform_file("bunzip2",
+                          ["bunzip2", "-c", "{inname}", ">", "{outname}"],
+                          bzname)
+
+def extract_gzip(gzname):
+    return transform_file("gunzip",
+                          ["gunzip", "-c", "{inname}", ">", "{outname}"],
+                          gzname)
+
+def extract_tar(tarname):
+    return transform_file("untar",
+                          ["tar", "Oxf", "{inname}", ">", "{outname}"],
+                          tarname)
+    
+def extract_tgz(tarname):
+    return transform_file("untgz",
+                          ["tar", "Ozxf", "{inname}", ">", "{outname}"],
+                          tarname)
+
+def extract_tbz(tarname):
+    return transform_file("untbz",
+                          ["tar", "Ojxf", "{inname}", ">", "{outname}"],
+                          tarname)
+
+###
 ##  corpse management
 #
 
 corpse = None
 
-def setup_corpse(opts, args):
+def setup_corpse(hbmdump):
 
     global corpse
-    if (opts.hbmfile is None):
-        raise RuntimeError("Expected: -F /path/to/hbmdump.bin")
 
-    offset = 0
-    if (opts.offset_1mb):
-        offset = 1024 * 1024
-    corpse = FileCorpse(opts.hbmfile, offset)
+    # work out what kind of file it is
+    if (file_is_tgz(hbmdump)):
+        hbmdump = extract_tgz(hbmdump)
+        
+    if (file_is_tbz(hbmdump)):
+        hbmdump = extract_tbz(hbmdump)
+
+    if (file_is_bzip(hbmdump)):
+        hbmdump = extract_bzip(hbmdump)
+
+    if (file_is_gzip(hbmdump)):
+        hbmdump = extract_gzip(hbmdump)
+
+    if (file_is_tar(hbmdump)):
+        hbmdump = extract_tar(hbmdump)
+
+    if (not file_is_data(hbmdump)):
+        raise RuntimeError("hbmdump file is still not raw data")
+                
+    # setup the file object
+    corpse = FileCorpse(hbmdump)
+
+    # make sure it's FunOS
+    uuid = find_corpse_uuid(corpse)
+
+    # work out its offset
+    corpse.memoffset = find_corpse_offset(corpse)
+    
+    return uuid
 
 ###
 ##  helpers
@@ -446,7 +766,7 @@ REGS = gprs + sprs + fprs + fsps
 
 def jtag_GetReg(regno):
     r = REGS[regno]
-    # print "reading %s" % r
+    DEBUG("reading %s" % r)
     return jtag_ReadReg(r)
 
 def jtag_GetRegList():
@@ -480,31 +800,31 @@ DEF_SYMS = {
 def _default_sym(symname):
 
     if (symname in DEF_SYMS.keys()):
-        print "WARNING: gdb failed to return symbol %s, using default" % symname
+        ERROR("WARNING: gdb failed to return symbol %s, using default" % symname)
         return DEF_SYMS[symname]
 
     # barf
-    print "Failed to find symbol '%s' in binary or defaults. Exiting" % symname
+    ERROR("Failed to find symbol '%s' in binary or defaults. Exiting" % symname)
     sys.exit(1)
     
 
 def deal_withCRC(obj, cmd):
 
-    print "crc subcmd: %s" % cmd
+    LOG("crc subcmd: %s" % cmd)
     cmd = cmd[4:]
     toks = cmd.split(",")
 
     addr = int(toks[0], 16)
     leng = int(toks[1], 16)
 
-    print "%s, %s" % (addr, leng)
+    LOG("%s, %s" % (addr, leng))
 
     # send a reply
     data = jtag_ReadMemory(leng, addr)
     data = data[::-1] # reverse it
     s = gnu_debuglink_crc32(0xffffffff, reversed(data))
     s = "c%x" % s
-    print s
+    LOG(s)
     obj.send(s)
 
     
@@ -522,7 +842,7 @@ def deal_withsymbols(obj, reply):
         if (SYMLIST is not None):
             SYMTAB = {}
     else:
-        print reply
+        LOG(reply)
         toks = reply.split(":")
         if (toks[1] == ''):
             v = _default_sym(SYMLIST[0])
@@ -539,10 +859,11 @@ def deal_withsymbols(obj, reply):
         return
 
     s = "qSymbol:%s" % hexstr(SYMLIST[0])
-    print "asking for symbol: %s [%s]" % (SYMLIST[0], s)
+    LOG("asking for symbol: %s [%s]" % (SYMLIST[0], s))
     obj.send(s)
 
 
+IGNORE_Q = ["TfV", "TfP"]
 
 # Code a bit inspired from http://mspgcc.cvs.sourceforge.net/viewvc/mspgcc/msp430simu/gdbserver.py?revision=1.3&content-type=text%2Fplain
 class GDBClientHandler(object):
@@ -550,7 +871,6 @@ class GDBClientHandler(object):
         self.clientsocket = clientsocket
         self.netin = clientsocket.makefile('r')
         self.netout = clientsocket.makefile('w')
-        self.log = logging.getLogger('gdbclienthandler')
         self.last_pkt = None
 
     def close(self):
@@ -558,18 +878,17 @@ class GDBClientHandler(object):
         self.netin.close()
         self.netout.close()
         self.clientsocket.close()
-        self.log.info('closed')
+        LOG('closed')
 
     def run(self):
         '''Some doc about the available commands here:
             * http://www.embecosm.com/appnotes/ean4/embecosm-howto-rsp-server-ean4-issue-2.html#id3081722
             * http://git.qemu.org/?p=qemu.git;a=blob_plain;f=gdbstub.c;h=2b7f22b2d2b8c70af89954294fa069ebf23a5c54;hb=HEAD +
              http://git.qemu.org/?p=qemu.git;a=blob_plain;f=target-i386/gdbstub.c;hb=HEAD'''
-        self.log.info('client loop ready...')
+        LOG('client loop ready...')
         while self.receive() == 'Good':
             pkt = self.last_pkt
-            self.log.debug('receive(%r)' % pkt)
-            print 'receive(%r)' % pkt
+            DEBUG('receive(%r)' % pkt)
             # Each packet should be acknowledged with a single character. '+' to indicate satisfactory receipt
             self.send_raw('+')
 
@@ -579,10 +898,10 @@ class GDBClientHandler(object):
                 Report the features supported by the RSP server. As a minimum, just the packet size can be reported.
                 '''
                 if subcmd.startswith('Supported'):
-                    self.log.info('Received qSupported command')
+                    LOG('Received qSupported command')
                     self.send('PacketSize=%x' % 4096)
                 elif subcmd.startswith('Attached'):
-                    self.log.info('Received qAttached command')
+                    LOG('Received qAttached command')
                     # https://sourceware.org/gdb/onlinedocs/gdb/General-Query-Packets.html
                     self.send('1')
                 elif (subcmd.startswith('CRC')):
@@ -593,18 +912,17 @@ class GDBClientHandler(object):
                     # FIXME: make a thread list
                     tid = jtag_GetFirstThreadId()
                     s = "m%x" % tid
-                    print "sending first thread (%s)" % s
-                    print s
+                    LOG("sending first thread (%s)" % s)
                     self.send(s)
                 elif (subcmd == "sThreadInfo"):
                     # FIXME: make a thread list
                     tid = jtag_GetNextThreadId()
                     if (tid is not None):
                         s = "m%x" % tid
-                        print "sending next thread (%s)" % s
+                        DEBUG("sending next thread (%s)" % s)
                         self.send(s)
                     else:
-                        print "done sending threads"
+                        LOG("done sending threads")
                         self.send("l")
                 elif (subcmd == "TStatus"):
                     # just a stub
@@ -618,22 +936,25 @@ class GDBClientHandler(object):
                 elif (subcmd.startswith("Symbol:")):
                     deal_withsymbols(self, subcmd)
                 elif (subcmd.startswith("ThreadExtraInfo")):
-                    print subcmd
+                    DEBUG(subcmd)
                     tid = int(subcmd.split(",")[1], 16)
                     info = jtag_GetThreadInfo(tid)
                     self.send(hexstr(info))
+                elif (subcmd in IGNORE_Q):
+                    DEBUG('This subcommand %r is not implemented in q' % subcmd)
+                    self.send('')
                 else:
-                    self.log.error('This subcommand %r is not implemented in q' % subcmd)
+                    ERROR('This subcommand %r is not implemented in q' % subcmd)
                     self.send('')
 
             def handle_h(subcmd):
-                print subcmd
+                DEBUG(subcmd)
                 op = subcmd[0]
                 tid = int(subcmd[1:],16)
                 jtag_SetCpuThreadId(self, tid)
 
             def handle_v(subcmd):
-                print "v command %s" % subcmd
+                DEBUG("v command %s" % subcmd)
                 self.send('')
 
             def handle_qmark(subcmd):
@@ -644,39 +965,39 @@ class GDBClientHandler(object):
                     tid = jtag_GetCpuThreadId()
                     if (tid == 0):
                         self.send('E 37')
-                    print "register read request on %d" % tid
+                    DEBUG("register read request on %d" % tid)
                     # make all the registers
                     registers = jtag_GetRegList()
                     s = ''
                     for r in registers:
                         s += struct.pack('<Q', r).encode('hex')
-                    print "regfile: %s" % s
+                    DEBUG("regfile: %s" % s)
                     self.send(s)
                 else:
-                    print "unknown 'g' subcommand?"
+                    ERROR("unknown 'g' subcommand?")
 
             def handle_p(subcmd):
                 regno = int(subcmd)
                 r = jtag_GetReg(regno)
                 s = struct.pack('<I', r).encode('hex')
-                print "reg %s: %s" % (regno, s)
+                DEBUG("reg %s: %s" % (regno, s))
                 self.send(s)
 
             def handle_m(subcmd):
                 addr, size = subcmd.split(',')
                 addr = int(addr, 16)
                 size = int(size, 16)
-                self.log.info('Received a "read memory" command (@%#.8x : %d bytes)' % (addr, size))
+                LOG('Received a "read memory" command (@%#.8x : %d bytes)' % (addr, size))
                 self.send(jtag_ReadMemory(size, addr).encode('hex'))
 
             def handle_s(subcmd):
-                self.log.info('Received a "single step" command')
+                LOG('Received a "single step" command')
                 jtag_StepInto()
                 self.send('T%.2x' % GDB_SIGNAL_TRAP)
 
             def handle_T(subcmd):
                 n = int(subcmd, 16)
-                # print "checking thread %d" % n
+                DEBUG("checking thread %d" % n)
                 if (jtag_IsRunning(n)):
                     self.send('OK')
                 else:
@@ -699,7 +1020,7 @@ class GDBClientHandler(object):
                 break
 
             if cmd not in dispatchers:
-                self.log.info('%r command not handled' % pkt)
+                LOG('%r command not handled' % pkt)
                 self.send('')
                 continue
 
@@ -738,39 +1059,190 @@ class GDBClientHandler(object):
 
     def send(self, msg):
         '''Send a packet to the GDB client'''
-        self.log.debug('send(%r)' % msg)
+        DEBUG('send(%r)' % msg)
         self.send_raw('$%s#%.2x' % (msg, checksum(msg)))
 
     def send_raw(self, r):
         self.netout.write(r)
         self.netout.flush()
 
-def main():
-    parser = optparse.OptionParser(usage="usage: %prog [options] ")
-    parser.add_option("-F", "--hbmfile", action="store", default=None)
-    parser.add_option("-P", "--port", action="store", type="int", default=1234)
-    parser.add_option("-O", "--offset-1mb", action="store_true",
-                      default=False)
+###
+##  gdb server managemnt
+#
 
-    (opts, args) = parser.parse_args()
-    setup_corpse(opts, args)
-
-    logging.basicConfig(level = logging.WARN)
-    for logger in 'gdbclienthandler runner main'.split(' '):
-        logging.getLogger(logger).setLevel(level = logging.INFO)
-
-    log = logging.getLogger('main')
+def setup_server():
     port = opts.port
+    if (opts.server_only and (port == 0)):
+        port = 1234
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     sock.bind(('', port))
-    log.info('listening on :%d' % port)
+    return sock
+
+def poll_sock_and_gdb(sock):
+
+    DEBUG("going to select loop")
+    while True:
+
+        # check gdb is still alive
+        gdb_status = gdb_proc.poll()
+        if (gdb_status is not None):
+            ERROR("gdb terminated before connecting to TCP socket: %s" % gdb_status)
+            sys.exit(1)
+        
+        # wait a short while for a connection
+        DEBUG("selecting")
+        r, w, x = select.select([sock], [], [sock], 0.1)
+        if (len(r) > 0):
+            break
+
+        DEBUG("select timeout")
+
+
+def wait_for_connect(sock):
+
+    # wait for gdb to connect
+    # lest gdb barf on startup
+    if (opts.server_only):
+        return
+
+    poll_sock_and_gdb(sock)
+    
+
+def server_listen(sock):
+    port = sock.getsockname()[1]
+    LOG_ALWAYS('listening on :%d' % port)
     sock.listen(1)
+    wait_for_connect(sock)
     conn, addr = sock.accept()
-    log.info('connected')
+    LOG_ALWAYS('gdb connected')
 
     GDBClientHandler(conn).run()
     return 1
 
+###
+##  running a gdb client
+#
+
+gdb_proc = None
+
+def run_gdb_async(port, elffile):
+
+    global gdb_proc
+    cmd = [opts.gdb]
+
+    if (opts.dir is not None):
+        cmd += ["-ex", "dir %s" % opts.dir]
+
+    if (opts.debug_exit_gdb):
+        cmd += ["-ex", "quit"]
+        
+    if (not opts.confirm):
+        cmd += ["-ex", "set confirm off"]
+        
+    script = get_script()
+    if (script is not None):
+        cmd += ["-ex", "source %s" % script]
+    
+    cmd += ["-ex", "target remote :%s" % port,
+            "-ex", "compare-sections .note.gnu.build-id"]            
+
+    cmd += [elffile]
+    
+    LOG_ALWAYS("Running GDB: %s" % " ".join(cmd))
+    try:
+        gdb_proc = subprocess.Popen(cmd)
+    except:
+        ERROR("failed to execute GDB, exiting")
+        sys.exit(1)
+
+
+###
+##  entry & argument parsing
+#
+        
+def parse_args():
+    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+
+    parser.add_argument("-v", "--verbose", action="count",
+                        default=0)
+    parser.add_argument("-P", "--port", action="store",
+                        default=0, type=int,
+                        help="TCP port to listen on. 0=pick a random port, or 1234 for server-only mode")
+    parser.add_argument("--offset", action="store",
+                        default="auto",
+                        help="hbmdump file offset (default=auto, other values 0 or 1)")
+    parser.add_argument("--server-only", action="store_true",
+                        default=False)
+    parser.add_argument("-O", "--output", action="store",
+                        default="fungdbserver.log",
+                        help="filename to log to")
+    parser.add_argument("-A", "--always-log", action="store_true",
+                        default=False,
+                        help="force logging in server-only mode")
+    parser.add_argument("-G", "--gdb", action="store",
+                        default=get_default_gdb(),
+                        help="specify a specific GDB to execute")
+    parser.add_argument("-X", "--debug-exit-gdb", action="store_true",
+                        default=False,
+                        help="DEBUG: exit gdb before it connects")
+    parser.add_argument("-U", "--force-uuid", action="store",
+                        default=None,
+                        help="Force a specific FunOS UUID instead of discovering it")
+    parser.add_argument("-D", "--dir", action="store",
+                        default=get_default_dir(),
+                        metavar="dirname",
+                        help=("specify a FunOS source path\n"
+                              "(defaults to $FUNOS_SRC or $WORKSPACE/FunOS"))
+    parser.add_argument("-S", "--script", action="store",
+                        default=None,
+                        help=("specify a python gdb script to load\n"
+                              "(defaults to standard FunSDK or FunOS/scripts version"))
+    parser.add_argument("--confirm", action="store_true",
+                        default=False,
+                        help="Require gdb to confirm exit")
+
+    # final arg is the dump file
+    parser.add_argument("hbmdump", help="hbmdump file")
+
+    args = parser.parse_args()
+
+    return args
+    
+def main():
+
+    # parse the arge
+    global opts
+    opts = parse_args()
+
+    # setup logging
+    if ((not opts.server_only) or opts.always_log):
+        global log_file
+        LOG_ALWAYS("fungdbserver logging to %s" % opts.output)
+        log_file = open(opts.output, "w")
+        
+    # setup the file
+    uuid = setup_corpse(opts.hbmdump)
+
+    LOG_ALWAYS("uuid of FunOS is %s" % str(uuid))
+    
+    # setup the server
+    sock = setup_server()
+
+    # start gdb and give it control of the stdin/stdout
+    if (not opts.server_only):
+        # find us a binary
+        excat.parse_args(True)
+        elffile = excat.get_action(str(uuid))
+        
+        # run gdb
+        port = sock.getsockname()[1]
+        run_gdb_async(port, elffile)
+
+    # listen
+    server_listen(sock)
+
+    LOG_ALWAYS("exiting")
+    
 if __name__ == '__main__':
     main()
