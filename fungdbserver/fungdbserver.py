@@ -86,6 +86,67 @@ def get_default_dir():
 
     return None
 
+def get_sdkdir():
+
+    sdk = os.environ.get("SDKDIR")
+    if (sdk is not None):
+        return sdk
+
+    workspace = os.environ.get("WORKSPACE")
+    if (workspace is not None):
+        sdk = os.path.join(workspace, "FunSDK")
+        return sdk
+
+    # try relative to the script - "../.."
+    workspace = os.path.dirname(os.path.dirname(sys.argv[0]))
+    sdk = os.path.join(workspace, "FunSDK")
+    if (os.path.exists(sdk)):
+        return sdk
+        
+
+    # try relative to the dir - ".."
+    if (opts.dir is not None):
+        workspace = os.path.dirname(opts.dir)
+        sdk = os.path.join(workspace, "FunSDK")
+        if (os.path.exists(sdk)):
+            return sdk
+    
+    # no idea -- assume CWD
+    return "."
+
+    
+
+def get_script():
+
+    # handle user input
+    if (opts.script is not None):
+        if (os.path.isfile(opts.script)):
+            LOG_ALWAYS("using specified script %s" % opts.script)
+            return opts.script
+        else:
+            # they want/get nothing
+            LOG_ALWAYS("specified script %s invalid, ignoring" % opts.script)
+            return None
+
+    # default logic: get a file from FunSDK
+    # since it's hopefully the most recent
+    # otherwise, scrape FunOS which could be older
+    LOG_ALWAYS("sdkdir is %s" % get_sdkdir())
+    script = os.path.join(get_sdkdir(), "bin/scripts/funos_gdb.py")
+    if (os.path.isfile(script)):
+        LOG_ALWAYS("using script from FunSDK %s" % get_sdkdir())
+        return script
+
+    if (opts.dir is not None):
+        script = os.path.join(opts.dir, "scripts/funos_gdb.py")
+        if (os.path.isfile(script)):
+            LOG_ALWAYS("using script from --dir")
+            return script
+
+    # no idea
+    LOG_ALWAYS("could not find a script file")
+    return None
+
 ###
 ##  File Corpse
 #
@@ -1079,9 +1140,13 @@ def run_gdb_async(port, elffile):
     if (not opts.confirm):
         cmd += ["-ex", "set confirm off"]
         
+    script = get_script()
+    if (script is not None):
+        cmd += ["-ex", "source %s" % script]
+    
     cmd += ["-ex", "target remote :%s" % port,
             "-ex", "compare-sections .note.gnu.build-id"]            
-    
+
     cmd += [elffile]
     
     LOG_ALWAYS("Running GDB: %s" % " ".join(cmd))
@@ -1097,7 +1162,7 @@ def run_gdb_async(port, elffile):
 #
         
 def parse_args():
-    parser = argparse.ArgumentParser(add_help=False)
+    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     parser.add_argument("-v", "--verbose", action="count",
                         default=0)
@@ -1126,8 +1191,13 @@ def parse_args():
                         help="Force a specific FunOS UUID instead of discovering it")
     parser.add_argument("-D", "--dir", action="store",
                         default=get_default_dir(),
+                        metavar="dirname",
                         help=("specify a FunOS source path\n"
                               "(defaults to $FUNOS_SRC or $WORKSPACE/FunOS"))
+    parser.add_argument("-S", "--script", action="store",
+                        default=None,
+                        help=("specify a python gdb script to load\n"
+                              "(defaults to standard FunSDK or FunOS/scripts version"))
     parser.add_argument("--confirm", action="store_true",
                         default=False,
                         help="Require gdb to confirm exit")
