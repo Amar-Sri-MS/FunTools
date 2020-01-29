@@ -14,6 +14,10 @@ class GlobalVars(object):
 
 g = GlobalVars()
 
+KB = 1024
+MB = KB ** 2
+GB = KB ** 3
+
 # LOAD_ADDR specifies an address in RAM where the data from MMC should be loaded to
 # The exact location is not very important as long as it doesn't overlap with the
 # execution address that u-boot will relocate data to (this is important for elf files,
@@ -26,18 +30,21 @@ LOAD_ADDR = 0xffffffff91000000
 # so it is important to ensure data is correctly aligned
 BLOCK_SIZE = 512
 
+# Base offset of second software partition
+PARTITION_OFFSET = 1 * GB
+
 # When FunOS is stored as raw data, byte offset from the beginning of the eMMC memory
 # For dual partition image, this is the offset from the beginning of the second blob, ie.
 # the second partition table
-FUNOS_OFFSET = 33 * 1024 * 1024
+FUNOS_OFFSET = 33 * MB
 
 # Similarily to how FunOS is stored, linux is stored as raw data blob at an offset
 # from the beginning of eMMC memory (or second partition table).
-LINUX_OFFSET = 128 * 1024 * 1024
+LINUX_OFFSET = 128 * MB
 
 # Similarily to how FunOS is stored, config blob is stored as raw data blob at an offset
 # from the beginning of eMMC memory (or second partition table).
-CCFG_OFFSET = 1024 * 1024 * 1024 - 1024 * 1024
+CCFG_OFFSET = PARTITION_OFFSET - 1 * MB
 
 # LINUX_LOAD_ADDR specifies where the linux image should start in RAM. This memory
 # block will be mapped into the VZ Guest
@@ -52,8 +59,6 @@ LINUX_LOAD_ADDR = 0x9000000010100000
 #   .. fw_fun_auth_header_t (firmware header)
 FUN_SIGNATURE_SIZE = 4172
 
-# Base offset of second software partition
-PARTITION_OFFSET = 1024 * 1024 * 1024
 
 
 def pad_file(infile_name, outfile_name, size):
@@ -222,14 +227,14 @@ def gen_fs(files):
         # to contain both partitions requested from sfdisk - as sfdisk will
         # reject creating partition pointers to offsets greater than the
         # 'device' size (device in this context is the file that is being changed)
-        pad_file(output_fs, f.name, 1124 * 1024 * 1024)
+        pad_file(output_fs, f.name, 1124 * MB)
         cmd = ['sfdisk',
             '-X', 'dos',  # partition label
             f.name]
         p = subprocess.Popen(cmd, stdin=subprocess.PIPE)
         sfdiskcmds = ['start=4KiB, size=32MiB, type=83, bootable', #32MB@4KB
                       'start={part_offset}KiB, size=32MiB, type=83'.format(
-                          part_offset=(PARTITION_OFFSET/1024)+4)  #32MB@(base offset+4KB)
+                          part_offset=(PARTITION_OFFSET/KB)+4)  #32MB@(base offset+4KB)
                     ]
         p.communicate(input="\n".join(sfdiskcmds))
         trunc_file(f.name, output_fs, FUNOS_OFFSET)
