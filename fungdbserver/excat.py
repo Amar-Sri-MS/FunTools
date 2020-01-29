@@ -14,6 +14,7 @@ import uuid_extract
 import subprocess
 import argparse
 import datetime
+import tempfile
 import socket
 import json
 import sys
@@ -34,6 +35,10 @@ Options:
                     no:   always access via nfs mounts
                     auto: access network based on machine state [default] 
 -N <note>, --note   textual note to add to the metadata blob when publishing
+--ignore-source     don't return the source binary on get (force retrieval)
+--force-uuid        force uuid if a matching file exists
+--metadata          dump metadata blob on get
+
 Actions:
 
 get\t\tFind a file with symbole for executable <filename>
@@ -87,12 +92,122 @@ def mkrelpath(uuid):
 def choose_publication_method():
     return "nfs"
 
+def choose_get_method():
+    return "nfs"
+
+def parse_uuid(suuid):
+    try:
+        uuid = uuid.UUID(suuid)
+    except:
+        uuid = None
+
+    return uuid
+
+def uuid_from_file(fname):
+    try:
+        uuid = uuid_extract.uuid_extract(fname)
+    except:
+        uuid = None
+
+    return uuid
+
+def compress_file(source, dest):
+    cmd = ["bzip2", "-c", source, ">", dest]
+    cmd = " ".join(cmd)
+    LOG("compressing %s -> %s" % (source, dest))
+    os.system(cmd)
+    os.chmod(dest, FILEMASK)
+
+def uncompress_file(uuid, bzname):
+    
+    # make a destination filename
+    fname = os.path.join(opts.tmpdir, str(uuid)+".excat")
+
+    # if it's cached locally
+    if (os.path.exists(fname)):
+        return fname
+
+    # uncompress it 
+    cmd = ["bunzip2", "-c", bzname, ">", fname]
+    cmd = " ".join(cmd)
+    LOG("decompressing %s -> %s" % (bzname, fname))
+    os.system(cmd)
+
+    return fname
+
 ###
 ##  get
 #
 
-def get_action(fname):
+def nfs_get(uuid):
+
+    # just convert the uuid to an nfs filename
+    nfspath = os.path.join(NFS_ROOT, mkrelpath(uuid))
+    suuid = str(uuid)
+    
+    bzblob = os.path.join(nfspath, suuid + ".bz")
+    mdblob = os.path.join(nfspath, suuid + ".json")
+
+    if (not os.path.exists(bzblob)):
+        raise RuntimeError("file not found: %s" % bzblob)
+
+    if (opts.metadata):
+        if (not os.path.exists(mdblob)):
+            raise RuntimeError("file not found: %s" % bzblob)
+        LOG(open(mdblob).readlines())
+
+    return bzblob
+
+def scp_get(uuid):
     pass
+
+def http_get(uuid):
+    pass
+
+def do_get(uuid, fname):
+
+    # short circuit if the file has symbols
+    if ((not opts.ignore_source) and file_has_symbols(fname)):
+        return fname
+
+    # find how to retrieve it
+    method = choose_get_method()
+    if (method == "nfs"):
+        bzfname = nfs_get(uuid)
+    elif (method == "scp"):
+        bzfname = scp_get(uuid)
+    elif (method == "http"):
+        bzfname = http_get(uuid)
+    else:
+        raise RuntimeError("unknown get method: %s" % method)
+
+    # uncompress the bzip to make something useful
+    fname = uncompress_file(uuid, bzfname)
+
+    return fname
+
+def get_action(fname):
+
+    uuid = parse_uuid(fname)
+
+    if (os.path.exists(fname) and (not opts.force_uuid)):
+        # it's a file so query it
+        uuid = uuid_from_file(fname)
+        if (uuid is None):
+            LOG("cannot retrieve uuid from file %s" % fname)
+            sys.exit(1)
+    elif (uuid is not None):
+        # just use a raw uuid
+        LOG("parsed UUID %s" % str(uuid))
+        fname = none
+    else:
+        LOG("%s is neither a file nor a UUID" % fname)
+        sys.exit(1)
+      
+    fname = do_get(uuid, fname)
+
+    # output the actual filename
+    print("%s" % fname)
 
 ###
 ##  publish a binary
@@ -115,13 +230,6 @@ def mkmetadata(uuid, fname):
     d["note"] = opts.note
 
     return d
-
-def compress_file(source, dest):
-    cmd = ["bzip2", "-c", source, ">", dest]
-    cmd = " ".join(cmd)
-    LOG("compressing %s -> %s" % (source, dest))
-    os.system(cmd)
-    os.chmod(dest, FILEMASK)
 
 def save_metadata(metadata, fname):
 
@@ -171,10 +279,7 @@ def do_publish(uuid, fname):
 def pub_action(fname):
 
     # get the file UUID
-    try:
-        uuid = uuid_extract.uuid_extract(fname)
-    except:
-        uuid = None
+    uuid = uuid_from_file(fname)
 
     if (uuid is None):
         LOG("error: failed to get UUID for file %s" % fname)
@@ -209,6 +314,14 @@ def parse_args():
                         default="auto")
     parser.add_argument("-N", "--note", action="store",
                         default="")
+    parser.add_argument("--ignore-source", action="store_true",
+                        default=False)
+    parser.add_argument("--force-uuid", action="store_true",
+                        default=False)
+    parser.add_argument("--metadata", action="store_true",
+                        default=False)
+    parser.add_argument("--tmpdir", action="store",
+                        default="/tmp")
     parser.add_argument("-h", "--help", action="store_true")
 
     # Just parse everything else
