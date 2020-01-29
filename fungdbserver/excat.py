@@ -321,7 +321,7 @@ def parse_args():
     parser.add_argument("--metadata", action="store_true",
                         default=False)
     parser.add_argument("--tmpdir", action="store",
-                        default="/tmp")
+                        default=tempfile.gettempdir())
     parser.add_argument("-h", "--help", action="store_true")
 
     # Just parse everything else
