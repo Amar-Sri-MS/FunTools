@@ -290,6 +290,9 @@ def get_action(fname):
     return fname
     
 def get_action_stdout(fname):
+    # discover the UUID
+    fname = get_action(fname)
+    
     # output the actual filename
     print("%s" % fname)
 

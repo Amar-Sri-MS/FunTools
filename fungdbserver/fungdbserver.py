@@ -18,16 +18,20 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-# from ollyapi import *
+
+import os
 import sys
-import socket
-import logging
-import struct
-import argparse
-import binascii
-import uuid_extract
 import uuid
 import excat
+import struct
+import select
+import socket
+import logging
+import argparse
+import binascii
+import platform
+import subprocess
+import uuid_extract
 
 GDB_SIGNAL_TRAP = 5
 
@@ -37,14 +41,50 @@ opts = None
 ##  Logging
 #
 
+log_file = sys.stderr
+
 def LOG(msg):
-    print msg
+    log_file.write(msg + "\n")
+
+def LOG_ALWAYS(msg):
+    msg += "\n"
+    prefix = ""
+    if (not opts.server_only):
+        prefix = "fungdbserver: "
+    sys.stderr.write(prefix + msg)
+    if (log_file != sys.stderr):
+        # echo it to the log
+        LOG(msg)
 
 def DEBUG(msg):
-    print msg
+    if (opts.verbose >= 2):
+        LOG(msg)
 
 def ERROR(msg):
-    print error
+    LOG_ALWAYS(msg)
+
+###
+##  platform details
+#
+
+def get_default_gdb():
+    current_os = platform.system()
+    if current_os == 'Darwin':
+        gdb = '/Users/Shared/cross-el/bin/mips64-gdb'
+    else:
+        gdb = '/opt/cross/mips64/bin/mips64-unknown-elf-gdb'
+
+    return gdb
+
+def get_default_dir():
+
+    if (os.environ.get("FUNOS_SRC") is not None):
+        return os.environ.get("FUNOS_SRC")
+    
+    if (os.environ.get("WORKSPACE") is not None):
+        return os.path.join(os.environ.get("WORKSPACE"), "FunOS")
+
+    return None
 
 ###
 ##  File Corpse
@@ -373,7 +413,18 @@ UUID_LEN = 16
 MAX_LOCATE = (32*1024*1024)
 def find_corpse_uuid(corpse):
 
-    LOG("Searching for FunOS UUID")
+    if (opts.force_uuid is not None):
+        try:
+            uu = uuid.UUID(opts.force_uuid)
+        except:
+            uu = None
+
+        if (uu is None):
+            raise RuntimeError("invalid forced UUID: %s" % opts.force_uuid)
+        LOG_ALWAYS("FunOS UUID forced to %s" % str(uu))
+        return uu
+            
+    LOG_ALWAYS("Searching for FunOS UUID")
     
     # search for the locator token
     offset = 0
@@ -386,10 +437,10 @@ def find_corpse_uuid(corpse):
         offset += UUID_STRIDE
 
     if (found is None):
-        LOG("No FunOS UUID indicator found")
+        LOG_ALWAYS("No FunOS UUID indicator found. Invalid hbmdump")
         return None
 
-    LOG("Found FunOS UUID indicator at offset %s" % found)
+    LOG_ALWAYS("Found FunOS UUID indicator at offset %s" % found)
     buuid = corpse.readbytes(found - UUID_OFFSET, UUID_LEN)
     u = uuid.UUID(bytes=buuid)
     return u
@@ -696,6 +747,7 @@ def deal_withsymbols(obj, reply):
     obj.send(s)
 
 
+IGNORE_Q = ["TfV", "TfP"]
 
 # Code a bit inspired from http://mspgcc.cvs.sourceforge.net/viewvc/mspgcc/msp430simu/gdbserver.py?revision=1.3&content-type=text%2Fplain
 class GDBClientHandler(object):
@@ -772,6 +824,9 @@ class GDBClientHandler(object):
                     tid = int(subcmd.split(",")[1], 16)
                     info = jtag_GetThreadInfo(tid)
                     self.send(hexstr(info))
+                elif (subcmd in IGNORE_Q):
+                    DEBUG('This subcommand %r is not implemented in q' % subcmd)
+                    self.send('')
                 else:
                     ERROR('This subcommand %r is not implemented in q' % subcmd)
                     self.send('')
@@ -908,12 +963,43 @@ def setup_server():
     sock.bind(('', port))
     return sock
 
-def server_listen():
+def poll_sock_and_gdb(sock):
+
+    DEBUG("going to select loop")
+    while True:
+
+        # check gdb is still alive
+        gdb_status = gdb_proc.poll()
+        if (gdb_status is not None):
+            ERROR("gdb terminated before connecting to TCP socket: %s" % gdb_status)
+            sys.exit(1)
+        
+        # wait a short while for a connection
+        DEBUG("selecting")
+        r, w, x = select.select([sock], [], [sock], 0.1)
+        if (len(r) > 0):
+            break
+
+        DEBUG("select timeout")
+
+
+def wait_for_connect(sock):
+
+    # wait for gdb to connect
+    # lest gdb barf on startup
+    if (opts.server_only):
+        return
+
+    poll_sock_and_gdb(sock)
+    
+
+def server_listen(sock):
     port = sock.getsockname()[1]
-    LOG('listening on :%d' % port)
+    LOG_ALWAYS('listening on :%d' % port)
     sock.listen(1)
+    wait_for_connect(sock)
     conn, addr = sock.accept()
-    LOG('connected')
+    LOG_ALWAYS('gdb connected')
 
     GDBClientHandler(conn).run()
     return 1
@@ -922,10 +1008,34 @@ def server_listen():
 ##  running a gdb client
 #
 
-def run_gdb(port, elffile):
+gdb_proc = None
 
-    LOG("FIXME: %s" % elffile)
-    pass
+def run_gdb_async(port, elffile):
+
+    global gdb_proc
+    cmd = [opts.gdb]
+
+    if (opts.dir is not None):
+        cmd += ["-ex", "dir %s" % opts.dir]
+
+    if (opts.debug_exit_gdb):
+        cmd += ["-ex", "quit"]
+        
+    if (not opts.confirm):
+        cmd += ["-ex", "set confirm off"]
+        
+    cmd += ["-ex", "target remote :%s" % port,
+            "-ex", "compare-sections .note.gnu.build-id"]            
+    
+    cmd += [elffile]
+    
+    LOG_ALWAYS("Running GDB: %s" % " ".join(cmd))
+    try:
+        gdb_proc = subprocess.Popen(cmd)
+    except:
+        ERROR("failed to execute GDB, exiting")
+        sys.exit(1)
+
 
 ###
 ##  entry & argument parsing
@@ -944,6 +1054,28 @@ def parse_args():
                         help="hbmdump file offset (default=auto, other values 0 or 1)")
     parser.add_argument("--server-only", action="store_true",
                         default=False)
+    parser.add_argument("-O", "--output", action="store",
+                        default="fungdbserver.log",
+                        help="filename to log to")
+    parser.add_argument("-A", "--always-log", action="store_true",
+                        default=False,
+                        help="force logging in server-only mode")
+    parser.add_argument("-G", "--gdb", action="store",
+                        default=get_default_gdb(),
+                        help="specify a specific GDB to execute")
+    parser.add_argument("-X", "--debug-exit-gdb", action="store_true",
+                        default=False,
+                        help="DEBUG: exit gdb before it connects")
+    parser.add_argument("-U", "--force-uuid", action="store",
+                        default=None,
+                        help="Force a specific FunOS UUID instead of discovering it")
+    parser.add_argument("-D", "--dir", action="store",
+                        default=get_default_dir(),
+                        help=("specify a FunOS source path\n"
+                              "(defaults to $FUNOS_SRC or $WORKSPACE/FunOS"))
+    parser.add_argument("--confirm", action="store_true",
+                        default=False,
+                        help="Require gdb to confirm exit")
 
     # final arg is the dump file
     parser.add_argument("hbmdump", help="hbmdump file")
@@ -958,15 +1090,21 @@ def main():
     global opts
     opts = parse_args()
 
+    # setup logging
+    if ((not opts.server_only) or opts.always_log):
+        global log_file
+        LOG_ALWAYS("fungdbserver logging to %s" % opts.output)
+        log_file = open(opts.output, "w")
+        
     # setup the file
     uuid = setup_corpse(opts.hbmdump)
 
-    LOG("uuid of FunOS is %s" % str(uuid))
+    LOG_ALWAYS("uuid of FunOS is %s" % str(uuid))
     
     # setup the server
     sock = setup_server()
 
-    # start gdb
+    # start gdb and give it control of the stdin/stdout
     if (not opts.server_only):
         # find us a binary
         excat.parse_args(True)
@@ -974,10 +1112,12 @@ def main():
         
         # run gdb
         port = sock.getsockname()[1]
-        run_gdb(port, elffile)
+        run_gdb_async(port, elffile)
 
     # listen
     server_listen(sock)
 
+    LOG_ALWAYS("exiting")
+    
 if __name__ == '__main__':
     main()
