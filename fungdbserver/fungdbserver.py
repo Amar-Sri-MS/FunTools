@@ -43,8 +43,8 @@ opts = None
 
 log_file = sys.stderr
 
-def LOG(msg):
-    log_file.write(msg + "\n")
+def LOG(msg, suffix = "\n"):
+    log_file.write(msg + suffix)
 
 def LOG_ALWAYS(msg):
     msg += "\n"
@@ -54,7 +54,7 @@ def LOG_ALWAYS(msg):
     sys.stderr.write(prefix + msg)
     if (log_file != sys.stderr):
         # echo it to the log
-        LOG(msg)
+        LOG(msg, "")
 
 def DEBUG(msg):
     if (opts.verbose >= 2):
@@ -147,7 +147,7 @@ class FileCorpse:
             return self.badread(n)
 
         regaddr = addr - self.memoffset
-        # DEBUG("read at addr: 0x%x" % regaddr)
+        DEBUG("read at addr: 0x%x" % regaddr)
         self.fl.seek(regaddr)
         bytes = self.fl.read(n)
         if (len(bytes) < n):
@@ -175,20 +175,20 @@ class FileCorpse:
             ptr = p + vpnum * n + o
             base = self.ReadMemory64(ptr, host=True)
 
-            # DEBUG("exception base = 0x%x + %d * %d + 0x%x = 0x%x -> 0x%x" % (p, vpnum, n, o, ptr, base))
+            DEBUG("exception base = 0x%x + %d * %d + 0x%x = 0x%x -> 0x%x" % (p, vpnum, n, o, ptr, base))
 
         return base
 
     def ReadMemory8(self, addr):
         bytes = self.readbytes(addr, 1)
         value = struct.unpack("<B", bytes)[0]
-        # DEBUG("value is 0x%0.2x" % value)
+        DEBUG("value is 0x%0.2x" % value)
         return value
 
     def ReadMemory16(self, addr):
         bytes = self.readbytes(addr, 2)
         value = struct.unpack("<H", bytes)[0]
-        # DEBUG("value is 0x%0.4x" % value)
+        DEBUG("value is 0x%0.4x" % value)
         return value
 
     def ReadMemory32(self, addr, host=False):
@@ -197,7 +197,7 @@ class FileCorpse:
             value = struct.unpack(">I", bytes)[0]
         else:
             value = struct.unpack("<I", bytes)[0]
-        # DEBUG("value is 0x%0.8x" % value)
+        DEBUG("value is 0x%0.8x" % value)
         return value
 
     def ReadMemory64(self, addr, host=False):
@@ -207,7 +207,7 @@ class FileCorpse:
         else:
             value = struct.unpack("<Q", bytes)[0]
 
-        # DEBUG("value is 0x%0.16x" % value)
+        DEBUG("value is 0x%0.16x" % value)
         return value
 
     def GetThreadCount(self):
@@ -244,7 +244,7 @@ class FileCorpse:
         regaddr = base + offset
 
         value = self.ReadMemory64(regaddr)
-        # DEBUG("thread %d reg %s: at 0x%x value 0x%x\n" % (self.threadid, name, regaddr, value))
+        DEBUG("thread %d reg %s: at 0x%x value 0x%x\n" % (self.threadid, name, regaddr, value))
 
         return value
 
@@ -480,10 +480,13 @@ def find_corpse_offset(corpse):
 #
 
 def filetype(fname):
-    cmd = ["file", fname]
+    cmd = ["file", "-0z", fname]
     output = uuid_extract.output4command(cmd)
-    toks = output.split(":")
-    return toks[-1].strip()
+    toks = output.split("\0")
+    s = toks[-1]
+    if (s[0] == ":"):
+        s = s[1:]
+    return s.strip()
 
 def file_is_bzip(hbmdump):
     stype = filetype(hbmdump)
@@ -499,6 +502,13 @@ def file_is_data(hbmdump):
     
     return False
 
+def file_is_gzip(hbmdump):
+    stype = filetype(hbmdump)
+    if (stype.startswith("gzip compressed data")):
+        return True
+    
+    return False
+
 def file_is_tar(hbmdump):
     stype = filetype(hbmdump)
     if (stype.startswith("POSIX tar archive")):
@@ -506,33 +516,69 @@ def file_is_tar(hbmdump):
     
     return False
 
-def extract_bzip(bzmame):
+def file_is_tgz(hbmdump):
+    stype = filetype(hbmdump)
+    if ((stype.startswith("POSIX tar archive") and
+         ("gzip compressed data" in stype))):
+        return True
+    
+    return False
 
-    # foo -> foo.out
-    fname = "%s.out" % bzname
+def file_is_tbz(hbmdump):
+    stype = filetype(hbmdump)
+    if ((stype.startswith("POSIX tar archive") and
+         ("bzip2 compressed data" in stype))):
+        return True
+    
+    return False
 
-    if (not os.path.exists(fname)):
-        cmd = ["bunzip2", "-c", bzname, ">", fname]
+
+def transform_file(xform, cmd, inname, outname=None):
+
+    if (outname is None):
+        # so you can rm *.fungdb_out*
+        outname = "%s.fungdb_out" % inname
+    
+    if (not os.path.exists(outname)):
+        # transform the args
+        y = {}
+        y["inname"] = inname
+        y["outname"] = outname
+        cmd = [x.format(**y) for x in cmd]
         cmd = " ".join(cmd)
-        LOG("decompressing %s -> %s" % (bzname, fname))
+        LOG_ALWAYS("%s %s -> %s" % (xform, inname, outname))
+        DEBUG(cmd)
         os.system(cmd)
+    else:
+        LOG_ALWAYS("%s files exists: %s" % (xform, outname))
 
-    return fname
+    return outname
+
+
+def extract_bzip(bzname):
+    return transform_file("bunzip2",
+                          ["bunzip2", "-c", "{inname}", ">", "{outname}"],
+                          bzname)
+
+def extract_gzip(gzname):
+    return transform_file("gunzip",
+                          ["gunzip", "-c", "{inname}", ">", "{outname}"],
+                          gzname)
 
 def extract_tar(tarname):
-
-    # foo -> foo.out
-    fname = "%s.out" % tarname
-
-    if (not os.path.exists(fname)):
-        # extract to standard out so we can control the output name
-        cmd = ["tar", "Oxf", bzname, ">", fname]
-        cmd = " ".join(cmd)
-        LOG("decompressing %s -> %s" % (tarname, fname))
-        os.system(cmd)
-
-    return fname
+    return transform_file("untar",
+                          ["tar", "Oxf", "{inname}", ">", "{outname}"],
+                          tarname)
     
+def extract_tgz(tarname):
+    return transform_file("untgz",
+                          ["tar", "Ozxf", "{inname}", ">", "{outname}"],
+                          tarname)
+
+def extract_tbz(tarname):
+    return transform_file("untbz",
+                          ["tar", "Ojxf", "{inname}", ">", "{outname}"],
+                          tarname)
 
 ###
 ##  corpse management
@@ -545,8 +591,17 @@ def setup_corpse(hbmdump):
     global corpse
 
     # work out what kind of file it is
+    if (file_is_tgz(hbmdump)):
+        hbmdump = extract_tgz(hbmdump)
+        
+    if (file_is_tbz(hbmdump)):
+        hbmdump = extract_tbz(hbmdump)
+
     if (file_is_bzip(hbmdump)):
         hbmdump = extract_bzip(hbmdump)
+
+    if (file_is_gzip(hbmdump)):
+        hbmdump = extract_gzip(hbmdump)
 
     if (file_is_tar(hbmdump)):
         hbmdump = extract_tar(hbmdump)
@@ -650,7 +705,7 @@ REGS = gprs + sprs + fprs + fsps
 
 def jtag_GetReg(regno):
     r = REGS[regno]
-    # DEBUG("reading %s" % r)
+    DEBUG("reading %s" % r)
     return jtag_ReadReg(r)
 
 def jtag_GetRegList():
@@ -803,7 +858,7 @@ class GDBClientHandler(object):
                     tid = jtag_GetNextThreadId()
                     if (tid is not None):
                         s = "m%x" % tid
-                        LOG("sending next thread (%s)" % s)
+                        DEBUG("sending next thread (%s)" % s)
                         self.send(s)
                     else:
                         LOG("done sending threads")
@@ -820,7 +875,7 @@ class GDBClientHandler(object):
                 elif (subcmd.startswith("Symbol:")):
                     deal_withsymbols(self, subcmd)
                 elif (subcmd.startswith("ThreadExtraInfo")):
-                    LOG(subcmd)
+                    DEBUG(subcmd)
                     tid = int(subcmd.split(",")[1], 16)
                     info = jtag_GetThreadInfo(tid)
                     self.send(hexstr(info))
@@ -832,13 +887,13 @@ class GDBClientHandler(object):
                     self.send('')
 
             def handle_h(subcmd):
-                LOG(subcmd)
+                DEBUG(subcmd)
                 op = subcmd[0]
                 tid = int(subcmd[1:],16)
                 jtag_SetCpuThreadId(self, tid)
 
             def handle_v(subcmd):
-                LOG("v command %s" % subcmd)
+                DEBUG("v command %s" % subcmd)
                 self.send('')
 
             def handle_qmark(subcmd):
@@ -849,13 +904,13 @@ class GDBClientHandler(object):
                     tid = jtag_GetCpuThreadId()
                     if (tid == 0):
                         self.send('E 37')
-                    LOG("register read request on %d" % tid)
+                    DEBUG("register read request on %d" % tid)
                     # make all the registers
                     registers = jtag_GetRegList()
                     s = ''
                     for r in registers:
                         s += struct.pack('<Q', r).encode('hex')
-                    LOG("regfile: %s" % s)
+                    DEBUG("regfile: %s" % s)
                     self.send(s)
                 else:
                     ERROR("unknown 'g' subcommand?")
@@ -864,7 +919,7 @@ class GDBClientHandler(object):
                 regno = int(subcmd)
                 r = jtag_GetReg(regno)
                 s = struct.pack('<I', r).encode('hex')
-                LOG("reg %s: %s" % (regno, s))
+                DEBUG("reg %s: %s" % (regno, s))
                 self.send(s)
 
             def handle_m(subcmd):
@@ -881,7 +936,7 @@ class GDBClientHandler(object):
 
             def handle_T(subcmd):
                 n = int(subcmd, 16)
-                # DEBUG("checking thread %d" % n)
+                DEBUG("checking thread %d" % n)
                 if (jtag_IsRunning(n)):
                     self.send('OK')
                 else:
