@@ -1,7 +1,7 @@
 #!/usr/bin/env python2.7
 
 #
-# Listener for rdsock messages from SW WU tracing.
+# Listener for rdsock messages from hardware WU tracing.
 #
 # There are two ways to use this receiver.
 #    1. Start it on an attached network host before booting FunOS. Shut it
@@ -31,12 +31,13 @@
 # accept data from a new run of FunOS, and where to write the data to.
 # An "end" POST request tells the listener to stop writing data.
 #
-# Usage: -h for help on usage
+# Usage: hw_trace_listener.py -h for help on usage
 #
 # Copyright (c) 2019 Fungible Inc. All rights reserved.
 #
 
 import argparse
+import binascii
 import glob
 import logging
 import os
@@ -53,25 +54,29 @@ from functools import partial
 import listener_lib
 
 from listener_lib import Buffer
-from listener_lib import HTTPRequestHandler
 from listener_lib import RdsockServer
 from listener_lib import ThreadedHTTPServer
 
 # Time in seconds for select and polling intervals
 TIMEOUT_INTERVAL = 5.0
 
+# Time in seconds for a connected client to remain quiet before we assume it has
+# failed.
+catastrophic_timeout = 100
+
 # Shutdown event, used to end threads gracefully
 shutdown_threads = threading.Event()
-
-# Logging file handle
-log_fh = None
 
 
 class Message(object):
     """
-    Raw data from wu tracing.
+    Cluster identifier and message data for that cluster.
+
+    The cluster identifier is binary-encoded and is not ascii. Data
+    is also binary and not text.
     """
     def __init__(self):
+        self.cluster = None
         self.data = ''
 
 
@@ -85,8 +90,9 @@ class RdsockHandler(object):
     """
 
     # Header length for messages that we receive. This is
-    # sizeof(rdsock_msghdr) in FunOS
-    HDR_LEN = 12
+    # sizeof(rdsock_msghdr) in FunOS, plus one byte for the
+    # cluster index.
+    HDR_LEN = 13
 
     # Possible state values for message processing.
     STATE_HEADER = 0
@@ -106,6 +112,7 @@ class RdsockHandler(object):
         """
         Reads from a socket, writes to a shared buffer.
         """
+        global catastrophic_timeout
         total_timeout = 0
         try:
             while not self.shutdown_event.is_set():
@@ -127,7 +134,7 @@ class RdsockHandler(object):
                     # assumed if the client is silent for too long. We choose
                     # the latter here because it is easier.
                     total_timeout += TIMEOUT_INTERVAL
-                    if total_timeout > 20 * TIMEOUT_INTERVAL:
+                    if total_timeout > catastrophic_timeout:
                         logging.info('Failed to recv for %f seconds. '
                                      'Assuming catastrophic '
                                      'failure of client' % total_timeout)
@@ -177,6 +184,7 @@ class RdsockHandler(object):
         """
         self.current_message = Message()
         self.data_remaining = struct.unpack('>L', self.partial_header[8:12])[0]
+        self.current_message.cluster = self.partial_header[12]
 
 
 class TraceWriter(listener_lib.BaseWriter):
@@ -215,6 +223,9 @@ class TraceWriter(listener_lib.BaseWriter):
         """
         Processes a message.
 
+        We write the cluster id once to the per-cluster trace log.
+        All subsequent message data is appended to the log.
+
         This must be protected with self.lock when called to protect against
         the possibility of ill-timed POST requests changing state while we
         are processing.
@@ -222,7 +233,9 @@ class TraceWriter(listener_lib.BaseWriter):
         if self.output_dir is None:
             return
 
-        trace_file = 'sw_wu_raw.trace'
+        cluster_hex = binascii.b2a_hex(msg.cluster)
+
+        trace_file = 'trace_dump_%s' % cluster_hex
         trace_file = os.path.join(self.output_dir, trace_file)
         try:
             with open(trace_file, 'ab') as fh:
@@ -233,7 +246,8 @@ class TraceWriter(listener_lib.BaseWriter):
 
     def start_new_run(self, new_dir):
         """
-        Tells the writer to write data to the specified directory.
+        Tells the writer to restart its internal count
+        and to write data to the specified directory.
 
         In theory, this may be called while the writer is dumping data
         so we'll take precautions. In practice, the request should come
@@ -272,10 +286,15 @@ def main():
                         default='60.1.1.1')
     parser.add_argument('--trace-port', type=int,
                         help='Port to listen on for FunOS traffic',
-                        default=52000)
+                        default=52001)
     parser.add_argument('--http-port', type=int,
                         help='Port to listen on for HTTP requests',
-                        default=52333)
+                        default=52336)
+    parser.add_argument('--idle-timeout', type=int,
+                        help='Time in seconds that an already-connected '
+                             'socket can be silent before we assume it has'
+                             'dropped the connection',
+                        default=100)
 
     # If we're running on a standard fun-on-demand setup then the FPG
     # setup process is handled by the startup scripts.
@@ -284,9 +303,12 @@ def main():
                         help='Run the FPG setup process',
                         default=False)
     args = parser.parse_args()
-    logging.basicConfig(filename='sw_trace_listener_%d.log' % args.http_port,
+    logging.basicConfig(filename='hw_trace_listener_%d.log' % args.http_port,
                         level=logging.INFO,
                         format='%(asctime)s %(message)s')
+
+    global catastrophic_timeout
+    catastrophic_timeout = args.idle_timeout
 
     # The source directory where all the trace logs are written to.
     trace_dir = '.'
@@ -300,13 +322,13 @@ def main():
     log('Listening on IP %s and port %d' % (args.trace_ip, args.trace_port))
 
     buf = Buffer()
-    rdsock_serv = RdsockServer(tcp_serv_socket, buf,
-                               RdsockHandler, shutdown_threads)
+    rdsock_serv = RdsockServer(tcp_serv_socket, buf, RdsockHandler,
+                               shutdown_threads)
     trace_writer = TraceWriter(buf, trace_dir)
     writer_thread = threading.Thread(target=trace_writer)
 
     http_serv = ThreadedHTTPServer(('', args.http_port),
-                                   HTTPRequestHandler,
+                                   listener_lib.HTTPRequestHandler,
                                    trace_writer)
 
     register_signal_handler(http_serv, args.do_fpg_setup)
@@ -324,12 +346,12 @@ def quit_if_trace_dumps_exist(source_dir):
     This prevents the tool from appending to existing trace dumps, and
     lets users know that they will destroy existing dumps.
     """
-    path = os.path.join(source_dir, 'sw_wu_raw.trace')
+    path = os.path.join(source_dir, 'trace_dump_*')
     files = glob.glob(path)
     if files:
-        print ('ERROR: Trace dumps already exist in %s\n'
+        print ('ERROR: Trace cluster dumps already exist in %s\n'
                'Exiting to prevent overwriting of trace data. '
-               'Remove the .trace files if you want to '
+               'Remove the trace_dump_* files if you want to '
                'start a new run.\n' % source_dir)
         sys.exit(1)
 
@@ -376,11 +398,10 @@ def shutdown_handler(http_serv, do_fpg_setup, sig, frame):
     log('Writer and rdsock down')
 
     log('Shutdown complete')
-    log_fh.close()
 
 
 def log(msg):
-    """ Logs a message at the INFO level """
+    """ Simple wrapper around logging.info """
     logging.info(msg)
 
 
