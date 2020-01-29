@@ -15,7 +15,9 @@ import subprocess
 import argparse
 import datetime
 import tempfile
+import urllib2
 import socket
+import uuid
 import json
 import sys
 import os
@@ -48,8 +50,9 @@ pub[lish]\tPublish an executable to the executable catalog
 opts = None
 
 NFS_ROOT = "/dogfood/users/cgray/excat"
-HTTP_ROOT = "http://dochub.fungible.local/doc/dogfood/cgray/excat/"
+HTTP_ROOT = "http://dochub.fungible.local/doc/dogfood/cgray/excat"
 FILEMASK = 0o666
+BLOCK_SIZE = 128 * 1024 # decent size payload
 
 ###
 ##  logging 
@@ -93,15 +96,26 @@ def choose_publication_method():
     return "nfs"
 
 def choose_get_method():
-    return "nfs"
+
+    if (opts.network == "yes"):
+        return "http"
+    elif (opts.network == "no"):
+        return "nfs"
+    elif (opts.network != "auto"):
+        raise RuntimeError("unknown network setting %s" % opts.network)
+
+    if (os.path.exists(NFS_ROOT)):
+        return "nfs"
+
+    return "http"
 
 def parse_uuid(suuid):
     try:
-        uuid = uuid.UUID(suuid)
-    except:
-        uuid = None
+        uuuid = uuid.UUID(suuid)
+    except ValueError:
+        uuuid = None
 
-    return uuid
+    return uuuid
 
 def uuid_from_file(fname):
     try:
@@ -135,6 +149,49 @@ def uncompress_file(uuid, bzname):
 
     return fname
 
+def read_web_file(url):
+    LOG("Reading text URL %s" % url)
+
+    s = ""
+    u = urllib2.urlopen(url)
+    while True:
+        buf = u.read(BLOCK_SIZE)
+        if (not buf):
+            break
+
+        s += buf
+
+    LOG("Read %d bytes from remote" % len(s))
+    return s
+
+def download_file(url, dest):
+
+    LOG("Downloading file %s" % url)
+
+    try:
+        u = urllib2.urlopen(url)
+    except Exception as e:
+        msg = "Failed to download file: %s" % e
+        raise RuntimeError(msg)
+
+    f = open(dest, "wb")
+
+    total_bytes = 0
+    while True:
+        buf = u.read(BLOCK_SIZE)
+        if (not buf):
+            break
+
+        total_bytes += len(buf)
+        f.write(buf)
+        if (opts.verbose):
+            sys.stderr.write("#")
+            sys.stderr.flush()
+
+    LOG(" Downloaded %dkB" % (total_bytes / 1024))
+
+    return True
+
 ###
 ##  get
 #
@@ -162,12 +219,36 @@ def scp_get(uuid):
     pass
 
 def http_get(uuid):
-    pass
+
+    # construct a URL
+    urlpath = "%s/%s" % (HTTP_ROOT, mkrelpath(uuid))
+    suuid = str(uuid)
+    
+    LOG("urlpath is %s" % urlpath)
+
+    if (opts.metadata):
+        mdurl = "%s%s.json" % (urlpath, uuid)
+        s = read_web_file(mdurl)
+        LOG(s)
+
+    bzfile = os.path.join(opts.tmpdir, suuid + ".bz")
+
+    # download the file if it's not local already
+    if (not os.path.exists(bzfile)):
+        bzurl = "%s%s.bz" % (urlpath, suuid)
+        download_file(bzurl, bzfile)
+
+    # uncompress it, if it's not already
+    fname = uncompress_file(uuid, bzfile)
+
+    return fname
 
 def do_get(uuid, fname):
 
     # short circuit if the file has symbols
-    if ((not opts.ignore_source) and file_has_symbols(fname)):
+    if ((not opts.ignore_source) and
+        (fname is not None) and
+        file_has_symbols(fname)):
         return fname
 
     # find how to retrieve it
@@ -199,7 +280,7 @@ def get_action(fname):
     elif (uuid is not None):
         # just use a raw uuid
         LOG("parsed UUID %s" % str(uuid))
-        fname = none
+        fname = None
     else:
         LOG("%s is neither a file nor a UUID" % fname)
         sys.exit(1)

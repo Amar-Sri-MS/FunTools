@@ -27,7 +27,7 @@ def VPRINT(msg, minlevel=1):
 
 READELF_PATHS = [
     "/opt/cross/mips64/bin/mips64-unknown-elf-readelf",
-    "/Users/Shared/cross/mips64/bin/mips64-unknown-elf-gdb",
+    "/Users/Shared/cross/mips64/bin/mips64-unknown-elf-readelf",
     "/project/tools/cross/mips64/bin/mips64-unknown-elf-readelf",
     "/usr/bin/readelf",
 ]
