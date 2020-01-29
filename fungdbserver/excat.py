@@ -287,8 +287,13 @@ def get_action(fname):
       
     fname = do_get(uuid, fname)
 
+    return fname
+    
+def get_action_stdout(fname):
     # output the actual filename
     print("%s" % fname)
+
+    return 0
 
 ###
 ##  publish a binary
@@ -385,7 +390,7 @@ def usage():
     LOG(ARGS_HELP.format(sys.argv[0]))
     sys.exit(1)
 
-def parse_args():
+def parse_args(dummy=False):
     parser = argparse.ArgumentParser(add_help=False)
 
     # Optional verbosity counter (eg. -v, -vv, -vvv, etc.)
@@ -409,14 +414,18 @@ def parse_args():
     parser.add_argument('args', nargs='*',
                         help=ARGS_HELP)
 
-    args = parser.parse_args()
+    if (not dummy):
+        args = parser.parse_args()
+        if (args.help or (len(args.args) == 0)):
+            usage()
+    else:
+        args = parser.parse_args([])
 
-    if (args.help or (len(args.args) == 0)):
-        usage()
 
     uuid_extract.VERBOSITY = args.verbose
 
-    return args
+    global opts
+    opts = args
 
 GET_ACTIONS = ["get", "find"]
 PUB_ACTIONS = ["pub", "publish", "put"]
@@ -424,8 +433,7 @@ PUB_ACTIONS = ["pub", "publish", "put"]
 VALID_ACTIONS = GET_ACTIONS + PUB_ACTIONS
 
 def main():
-    global opts
-    opts = parse_args()
+    parse_args()
 
     arglist = opts.args
     assert(len(arglist) > 0)
@@ -434,7 +442,7 @@ def main():
     if (action not in VALID_ACTIONS):
         if (len(arglist) == 0):
             usage()
-        r = get_action(arglist[0])
+        r = get_action_stdout(arglist[0])
         sys.exit(r)
 
 
@@ -446,7 +454,7 @@ def main():
     if (action in GET_ACTIONS):
         if (len(arglist) > 1):
             usage();
-        r = get_action(arglist[0])
+        r = get_action_stdout(arglist[0])
     elif (action in PUB_ACTIONS):
         if (len(arglist) > 1):
             usage();
