@@ -7,8 +7,11 @@ from __future__ import print_function
 import argparse
 import tempfile
 import shutil
+import json
 import sys
 import os
+
+opts = None
 
 ###
 ##  publish
@@ -88,6 +91,23 @@ def publish_sdk(i):
     publish_os_path(sdkpath, "Darwin")
 
 ###
+##  bundle searching
+#
+
+BUNDLE_ROOT = "/project/users/doc/jenkins/master"
+PROPS_FILE = "bld_props.json"
+
+def check_bundle(i):
+    path = os.path.join(BUNDLE_ROOT, opts.flavour, str(i), PROPS_FILE)
+
+    if (not os.path.exists(path)):
+        return None
+
+    d = json.loads(open(path).read())
+
+    return d["components"]["funsdk"]
+
+###
 ##  main
 #
 
@@ -102,6 +122,9 @@ def parse_args():
     parser.add_argument("--min", help="Minimum SDK number", type=int, default=0)
     parser.add_argument("--max", help="Maximum SDK number", type=int, default=None)
     parser.add_argument("--dir", help="A specific directory", action="store", default=None)
+    parser.add_argument("--min-bundle", help="Minimum bundle number", type=int, default=0)
+    parser.add_argument("--max-bundle", help="Maximum bundle number", type=int, default=None)
+    parser.add_argument("-f", "--flavour", help="Bundle flavour", default="fs1600")
 
     args = parser.parse_args()
 
@@ -124,8 +147,28 @@ def main():
 
         for i in range(mn, mx+1):
             publish_sdk(i)
+    elif (opts.max_bundle is not None):
+        mx = opts.max_bundle
+        if (opts.min_bundle >0):
+            mn = opts.min_bundle
+        else:
+            mn = mx - opts.count + 1
+
+        assert(mn > 0)
+
+        s = set([])
+        for i in range(mn, mx+1):
+            s.add(check_bundle(i))
+        if (None in s):
+            s.remove(None)
+        es = list(s)
+        es.sort()
+        for e in es:
+            print(e)
+
+        sys.exit(0)
     else:
-        print("Need either SDK max or a directory to process")
+        print("Need SDK max, bundle max or a directory to process")
         sys.exit(1)
 
     print("done")
