@@ -205,6 +205,8 @@ struct bpf_sysctl {
      FN(probe_read),                \
      FN(ktime_get_ns),              \
      FN(trace_printk),              \
+     FN(histogram_inc),         \
+     FN(histogram_log_inc),     \
      FN(get_prandom_u32),           \
      FN(get_smp_processor_id),      \
      FN(skb_store_bytes),           \
@@ -347,6 +349,12 @@ static int (*bpf_probe_read)(void *dst, __u64 size, const void *unsafe_ptr) = (v
 
 static __u64 (*bpf_ktime_get_ns)(void) = (void *) // NOLINT
     BPF_FUNC_ktime_get_ns;
+
+static void (*bpf_histogram_inc)(void *map, __u64 key) = (void *) // NOLINT
+    BPF_FUNC_histogram_inc;
+
+static void (*bpf_histogram_log_inc)(void *map, __u64 key) = (void *) // NOLINT
+    BPF_FUNC_histogram_log_inc;
 
 static __u32 (*bpf_get_prandom_u32)(void) = (void *) // NOLINT
     BPF_FUNC_get_prandom_u32;
@@ -696,20 +704,18 @@ int *bpf_map_delete_elem(const void *map, void *key);
 
 int *bpf_probe_read(void *dst, __u64 size, const void *unsafe_ptr);
 
-__u64 *bpf_ktime_get_ns();
-__u32 *bpf_get_prandom_u32(void);
+__u64 bpf_ktime_get_ns();
 
 // Like printf() for BPF
 // Return: length of buffer written or negative error
 int *bpf_trace_printk(const char *fmt, int fmt_size, ...);
 
-int *bpf_probe_read_str(void *dst, __u64 size, const void *unsafe_ptr);
+// Increase an element in an array defined with bpf_histogram
+// a value may be out of bounds, in this case, the last one will be increased
+void bpf_histogram_inc(void *map, __u64 key);
 
-// Jump into another BPF program
-//     prog_array_map: pointer to map which type is BPF_MAP_TYPE_PROG_ARRAY
-//     index: 32-bit index inside array that selects specific program to run
-// Return: 0 on success or negative error
-void *bpf_tail_call(const void *ctx, void *map, int index);
+// Same as bpf_histogram_inc with additional log(x) before increase
+void bpf_histogram_log_inc(void *map, __u64 key);
 
 #endif
 
@@ -743,6 +749,13 @@ void *bpf_tail_call(const void *ctx, void *map, int index);
 // Macro to define BPF Map
 #define BPF_MAP_DEF(name) struct bpf_map_def SEC("maps") name
 #define BPF_MAP_ADD(x)
+
+#define BPF_HISTOGRAM(name) struct bpf_map_def SEC("maps") name = {\
+    .map_type = BPF_MAP_TYPE_PERCPU_ARRAY,\
+    .key_size = sizeof(__u32),\
+    .value_size = sizeof(__u64),\
+    .max_entries = 64,\
+};
 
 // Finally make sure that all types have expected size regardless of platform
 static_assert(sizeof(__u8) == 1, "wrong_u8_size");
