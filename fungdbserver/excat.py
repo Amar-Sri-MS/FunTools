@@ -17,6 +17,7 @@ import datetime
 import tempfile
 import urllib2
 import socket
+import time
 import uuid
 import json
 import sys
@@ -92,13 +93,9 @@ def mkrelpath(uuid):
 
     return path
 
-def choose_publication_method():
-    return "nfs"
-
-def choose_get_method():
-
+def choose_method(network):
     if (opts.network == "yes"):
-        return "http"
+        return network
     elif (opts.network == "no"):
         return "nfs"
     elif (opts.network != "auto"):
@@ -107,7 +104,13 @@ def choose_get_method():
     if (os.path.exists(NFS_ROOT)):
         return "nfs"
 
-    return "http"
+    return network
+
+def choose_publication_method():
+    return choose_method("scp")
+
+def choose_get_method():
+    return choose_method("http")
 
 def parse_uuid(suuid):
     try:
@@ -320,9 +323,11 @@ def mkmetadata(uuid, fname):
 
     return d
 
-def save_metadata(metadata, fname):
+def metadata2str(metadata):
+    return json.dumps(metadata, indent=4)
 
-    s = json.dumps(metadata, indent=4)
+def save_metadata(metadata, fname):
+    s = metadata2str(metadata2str)
     open(fname, "w").write(s)
     os.chmod(fname, FILEMASK)
 
@@ -351,6 +356,39 @@ def nfs_publish(metadata, fname):
 
     LOG("published to %s" % metadata["nfspath"])
     
+# publish over scp via excat-scp-proxy
+def scp_publish(metadata, fname):
+
+    # FIXME: run a binary
+    cmd = ["./excat-pub-proxy.py", "--version=0", "--port=20000", "-U", str(metadata["uuid"])]
+    exp = subprocess.Popen(cmd)
+    if (exp is None):
+        raise Runtimeerror("excat proxy fail")
+
+    # send it the json file
+    s = metadata2str(metadata)
+    time.sleep(1)
+    cmd = ["nc", "localhost", "20000"]
+    p = subprocess.Popen(cmd, stdin=subprocess.PIPE)
+    if (p is None):
+        raise RuntimeError("can't send metadata")
+    LOG("sending metadata")
+    p.stdin.write(s)
+    p.stdin.close()
+    r = p.wait()
+    LOG("metadata returned %d" % r)
+
+    # send it the bzfile
+    LOG("sending large file")
+    time.sleep(1)
+    binfl = open(fname)
+    cmd = ["nc", "localhost", "20000"]
+    p = subprocess.Popen(cmd, stdin=binfl)
+    r = p.wait()
+    LOG("bzfile returned %d" % r)
+
+    LOG("waiting for proxy to terminate")
+    exp.wait()
 
 def do_publish(uuid, fname):
 
