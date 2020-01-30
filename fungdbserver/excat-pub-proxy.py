@@ -14,6 +14,7 @@ import tempfile
 import excat
 import uuid
 import json
+import time
 import sys
 import os
 
@@ -45,13 +46,18 @@ def do_proxy_v0():
     sjson = "%s.json" % str(opts.uuid)
     sbzfile = "%s.bz" % str(opts.uuid)
 
+    sjson = os.path.join(tempfile.gettempdir(), sjson)
+    sbzfile = os.path.join(tempfile.gettempdir(), sbzfile)
+
     # get the json metadata
     cmd = ["nc", "-l", "localhost", sport]
     fljson = open(sjson, "w")
     LOG("receive metadata: %s" % sjson)
     LOG(" ".join(cmd))
     p = subprocess.Popen(cmd, stdout=fljson)
+    LOG("rx ready") # important signal to the other side
     r = p.wait()
+    fljson.close()
     if (r != 0):
         raise RuntimeError("json download failed")
 
@@ -61,12 +67,31 @@ def do_proxy_v0():
     flbzfile = open(sbzfile, "w")
     LOG(" ".join(cmd))
     p = subprocess.Popen(cmd, stdout=flbzfile)
+    LOG("rx ready")  # important signal to the other side
     r = p.wait()
     if (r != 0):
         raise RuntimeError("bzblob download failed")
 
     # call it done for now
-    LOG("receive binary")
+    LOG("files received, validating")
+    metadata = json.load(open(sjson))
+
+    # if the other end just silently didn't send the whole file,
+    # we don't want to publish it
+    md5 = excat.filemd5(sbzfile)
+    if (md5 != metadata["bzmd5"]):
+        raise RuntimeException("executable file transfer error")
+    else:
+        LOG("executable md5 OK: %s" % md5)
+
+    LOG("publishing file")
+    excat.nfs_publish(metadata, sbzfile, compress=False)
+
+    # clean up
+    LOG("cleaning up...")
+    os.remove(sjson)
+    os.remove(sbzfile)
+    LOG("done")
 
 def do_proxy():
 

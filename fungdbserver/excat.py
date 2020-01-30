@@ -15,7 +15,10 @@ import subprocess
 import argparse
 import datetime
 import tempfile
+import hashlib
 import urllib2
+import random
+import shutil
 import socket
 import time
 import uuid
@@ -61,7 +64,7 @@ BLOCK_SIZE = 128 * 1024 # decent size payload
 
 def LOG(msg):
 
-    sys.stderr.write(msg + "\n")
+    sys.stderr.write(str(msg) + "\n")
 
 def VERBOSE(msg, level=1):
 
@@ -195,6 +198,19 @@ def download_file(url, dest):
 
     return True
 
+def filemd5(fname):
+
+    md5 = hashlib.md5()
+    fl = open(fname)
+
+    while (True):
+        bytes = fl.read(16*1024)
+        if (len(bytes) == 0):
+            break
+        md5.update(bytes)
+
+    return md5.hexdigest()
+
 ###
 ##  get
 #
@@ -327,12 +343,11 @@ def metadata2str(metadata):
     return json.dumps(metadata, indent=4)
 
 def save_metadata(metadata, fname):
-    s = metadata2str(metadata2str)
+    s = metadata2str(metadata)
     open(fname, "w").write(s)
     os.chmod(fname, FILEMASK)
 
-
-def nfs_publish(metadata, fname):
+def nfs_publish(metadata, fname, compress=True):
 
     # create the path, compress it in-place
     # and make it world readable
@@ -343,9 +358,19 @@ def nfs_publish(metadata, fname):
         os.makedirs(metadata["nfspath"])
     
     # compress the file into it
-    absblob = os.path.join(metadata["nfspath"],
-                           metadata["bzblob"])
-    compress_file(fname, absblob)
+    if (compress):
+        absblob = os.path.join(metadata["nfspath"],
+                               metadata["bzblob"])
+        compress_file(fname, absblob)
+
+        # update the metadat with the md5
+        # for recipients
+        metadata["bzmd5"] = filemd5(absblob)
+    else:
+        absblob = os.path.join(metadata["nfspath"],
+                               os.path.basename(fname))
+        shutil.copyfile(fname, absblob)
+        os.chmod(fname, FILEMASK)
 
     # stash the metadata
     mdfile = os.path.join(metadata["nfspath"],
@@ -355,39 +380,70 @@ def nfs_publish(metadata, fname):
     os.umask(omask)
 
     LOG("published to %s" % metadata["nfspath"])
-    
+
+def wait_for_rx_ready(p):
+    LOG("waitin for rx ready")
+    while True:
+        s = p.readline()
+        if (s == ""):
+            raise RuntimeError("EOF waiting for TX ready")
+        LOG(s.strip())
+        if ("excat-pub-proxy: rx ready" in s):
+            break
+
+def drain_rx(p):
+    while True:
+        s = p.readline()
+        if (s == ""):
+            break
+        LOG(s.strip())
+
 # publish over scp via excat-scp-proxy
 def scp_publish(metadata, fname):
 
-    # FIXME: run a binary
-    cmd = ["./excat-pub-proxy.py", "--version=0", "--port=20000", "-U", str(metadata["uuid"])]
-    exp = subprocess.Popen(cmd)
+    # make sure we don't lose bits on the wire
+    metadata["bzmd5"] = filemd5(fname)
+
+    # pick a port in a 1k range -- use two so localhost works
+    random.seed()
+    iport = random.randint(20000, 21000)
+    srcport  = str(iport)
+    destport = str(iport+1)
+
+    # run an ssh connection to get to the proxy. -R because we connect nc backwards
+    cmd = ["ssh",
+           "-L localhost:%s:localhost:%s" % (srcport, destport),
+           "vnc-shared-06", "~cgray/fundev/FunTools/fungdbserver/excat-pub-proxy.py",
+           "--version=0", "--port=%s" % destport, "-U", str(metadata["uuid"])]
+    exp = subprocess.Popen(cmd, stderr=subprocess.PIPE)
     if (exp is None):
         raise Runtimeerror("excat proxy fail")
 
+    wait_for_rx_ready(exp.stderr)
+
     # send it the json file
     s = metadata2str(metadata)
-    time.sleep(1)
-    cmd = ["nc", "localhost", "20000"]
+    cmd = ["nc", "-w", "1", "localhost", srcport]
     p = subprocess.Popen(cmd, stdin=subprocess.PIPE)
     if (p is None):
         raise RuntimeError("can't send metadata")
-    LOG("sending metadata")
+    LOG("sending metadata" )
     p.stdin.write(s)
     p.stdin.close()
     r = p.wait()
     LOG("metadata returned %d" % r)
 
     # send it the bzfile
+    wait_for_rx_ready(exp.stderr)
     LOG("sending large file")
-    time.sleep(1)
     binfl = open(fname)
-    cmd = ["nc", "localhost", "20000"]
+    cmd = ["nc", "-w", "1", "localhost", srcport]
     p = subprocess.Popen(cmd, stdin=binfl)
     r = p.wait()
     LOG("bzfile returned %d" % r)
 
     LOG("waiting for proxy to terminate")
+    drain_rx(exp.stderr)
     exp.wait()
 
 def do_publish(uuid, fname):
