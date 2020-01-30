@@ -262,6 +262,62 @@ def http_get(uuid):
 
     return fname
 
+
+def do_search(uuid, path):
+    if (path is None):
+        return None
+    if (not os.path.isdir(path)):
+        return None
+
+    LOG("Searching path %s" % path)
+
+    fnames = os.listdir(path)
+    for fname in fnames:
+        fs = os.path.join(path, fname)
+        if (not os.path.isfile(fs)):
+            continue
+        uu = uuid_extract.uuid_extract(fs, silent=True)
+        if (uu is None):
+            continue
+        if (uu != uuid):
+            continue
+        # check it has symbols
+        if (not file_has_symbols(fs)):
+            continue
+
+        # this file matches!
+        LOG("Local file %s matches" % fs)
+        return fs
+
+    return None
+    
+# search local build paths etc.
+def local_search_uuid(uuid):
+
+    # see if there's something explicit
+    fname = do_search(uuid, os.environ.get("FUNOS_SRC"))
+    if (fname is not None):
+        return fname
+
+    if (os.environ.get("WORKSPACE") is not None):
+        fname = do_search(uuid,
+                          os.path.join(os.environ.get("WORKSPACE"),
+                                       "FunOS/build"))
+        if (fname is not None):
+            return fname
+
+    if (os.environ.get("EXCAT_SEARCH_PATH") is not None):
+        toks = os.environ.get("EXCAT_SEARCH_PATH").split(":")
+        for tok in toks:
+            fname = do_search(uuid,
+                              os.path.join(os.environ.get("WORKSPACE"),
+                                           "FunOS/build"))
+            if (fname is not None):
+                return fname
+            
+    return None
+
+
 def do_get(uuid, fname):
 
     # short circuit if the file has symbols
@@ -270,6 +326,11 @@ def do_get(uuid, fname):
         file_has_symbols(fname)):
         return fname
 
+    # local search
+    fname = local_search_uuid(uuid)
+    if (fname is not None):
+        return fname
+    
     # find how to retrieve it
     method = choose_get_method()
     if (method == "nfs"):
@@ -382,7 +443,7 @@ def nfs_publish(metadata, fname, compress=True):
     LOG("published to %s" % metadata["nfspath"])
 
 def wait_for_rx_ready(p):
-    LOG("waitin for rx ready")
+    LOG("waiting for remote rx ready")
     while True:
         s = p.readline()
         if (s == ""):
@@ -401,9 +462,15 @@ def drain_rx(p):
 # publish over scp via excat-scp-proxy
 def scp_publish(metadata, fname):
 
-    # make sure we don't lose bits on the wire
-    metadata["bzmd5"] = filemd5(fname)
+    # original md5
+    metadata["md5"] = filemd5(fname)
 
+    tmpbz = os.path.join(tempfile.gettempdir(), metadata["bzblob"])
+    compress_file(fname, tmpbz)
+
+    # new md5
+    metadata["bzmd5"] = filemd5(tmpbz)
+       
     # pick a port in a 1k range -- use two so localhost works
     random.seed()
     iport = random.randint(20000, 21000)
@@ -436,12 +503,14 @@ def scp_publish(metadata, fname):
     # send it the bzfile
     wait_for_rx_ready(exp.stderr)
     LOG("sending large file")
-    binfl = open(fname)
+    binfl = open(tmpbz)
     cmd = ["nc", "-w", "1", "localhost", srcport]
     p = subprocess.Popen(cmd, stdin=binfl)
     r = p.wait()
     LOG("bzfile returned %d" % r)
 
+    os.remove(tmpbz)
+    
     LOG("waiting for proxy to terminate")
     drain_rx(exp.stderr)
     exp.wait()

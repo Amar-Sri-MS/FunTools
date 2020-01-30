@@ -80,7 +80,7 @@ def do_proxy_v0():
     # we don't want to publish it
     md5 = excat.filemd5(sbzfile)
     if (md5 != metadata["bzmd5"]):
-        raise RuntimeException("executable file transfer error")
+        raise RuntimeException("executable file transfer error - bad md5")
     else:
         LOG("executable md5 OK: %s" % md5)
 

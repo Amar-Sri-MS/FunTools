@@ -82,11 +82,12 @@ def extract_readelf_uuid(output):
     return extract_regex(output, "Build ID: ([a-fA-F0-9\-]+)", " Check linker settings?")
 
 # attempt to extract the UUID from a macho file
-def extract_macho_uuid(fname, output):
+def extract_macho_uuid(fname, output, silent=False):
 
     # don't try the macho tools unless it looks like a macho
     if (": Mach-O " not in output):
-        print("File does not appear to be ELF or Mach-O")
+        if (not silent):
+            print("File does not appear to be ELF or Mach-O")
         return None
 
     # run another command
@@ -96,7 +97,7 @@ def extract_macho_uuid(fname, output):
     return extract_regex(output, "UUID: ([a-fA-F0-9\-]+) ")
 
 # top-level function
-def uuid_extract(fname, readelf=None):
+def uuid_extract(fname, readelf=None, silent=False):
 
     # our final result
     u = None
@@ -119,9 +120,10 @@ def uuid_extract(fname, readelf=None):
     else:
         # only try to extract macho on darwin
         if (os.uname()[0] == "Darwin"):
-            u = extract_macho_uuid(fname, output)
+            u = extract_macho_uuid(fname, output, silent=silent)
         else:
-            print("File does not appear to be ELF")
+            if (not silent):
+                print("File does not appear to be ELF")
 
     return u
 
