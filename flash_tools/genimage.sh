@@ -139,6 +139,7 @@ if [ $EMULATION == 0 ]; then
 	python3 $WORKSPACE/FunSDK/bin/flash_tools/generate_flash.py --config-type json \
 		--source-dir $SBP_INSTALL_DIR \
 		--source-dir $SBP_ROOT_DIR/software/eeprom \
+		--fail-on-error \
 		$WORKSPACE/FunSDK/bin/flash_tools/qspi_config_fungible.json \
 		$WORKSPACE/FunSDK/bin/flash_tools/key_bag_config.json \
 		$CUSTOMER_CONFIG_JSON \
@@ -156,6 +157,7 @@ else
 		--source-dir $SBP_INSTALL_DIR \
 		--source-dir $SBP_ROOT_DIR/software/eeprom \
 		--enroll-tbs ${WORKSPACE}/enroll_tbs.bin \
+		--fail-on-error \
 		$WORKSPACE/FunSDK/bin/flash_tools/qspi_config_fungible.json \
 		$WORKSPACE/FunSDK/bin/flash_tools/key_bag_config.json \
 		$CUSTOMER_CONFIG_JSON \
