@@ -14,6 +14,10 @@ class GlobalVars(object):
 
 g = GlobalVars()
 
+KB = 1024
+MB = KB ** 2
+GB = KB ** 3
+
 # LOAD_ADDR specifies an address in RAM where the data from MMC should be loaded to
 # The exact location is not very important as long as it doesn't overlap with the
 # execution address that u-boot will relocate data to (this is important for elf files,
@@ -26,14 +30,21 @@ LOAD_ADDR = 0xffffffff91000000
 # so it is important to ensure data is correctly aligned
 BLOCK_SIZE = 512
 
+# Base offset of second software partition
+PARTITION_OFFSET = 1 * GB
+
 # When FunOS is stored as raw data, byte offset from the beginning of the eMMC memory
 # For dual partition image, this is the offset from the beginning of the second blob, ie.
 # the second partition table
-FUNOS_OFFSET = 33 * 1024 * 1024
+FUNOS_OFFSET = 33 * MB
 
 # Similarily to how FunOS is stored, linux is stored as raw data blob at an offset
 # from the beginning of eMMC memory (or second partition table).
-LINUX_OFFSET = 128 * 1024 * 1024
+LINUX_OFFSET = 128 * MB
+
+# Similarily to how FunOS is stored, config blob is stored as raw data blob at an offset
+# from the beginning of eMMC memory (or second partition table).
+CCFG_OFFSET = PARTITION_OFFSET - 1 * MB
 
 # LINUX_LOAD_ADDR specifies where the linux image should start in RAM. This memory
 # block will be mapped into the VZ Guest
@@ -48,8 +59,6 @@ LINUX_LOAD_ADDR = 0x9000000010100000
 #   .. fw_fun_auth_header_t (firmware header)
 FUN_SIGNATURE_SIZE = 4172
 
-# Base offset of second software partition
-PARTITION_OFFSET = 1024 * 1024 * 1024
 
 
 def pad_file(infile_name, outfile_name, size):
@@ -102,7 +111,7 @@ def crc32(filename):
     return res & 0xffffffff
 
 
-def gen_boot_script(filename, funos_start_blk, linux_start_blk=-1):
+def gen_boot_script(filename, funos_start_blk, ccfg_start_blk, linux_start_blk=-1):
     """Generate a u-boot boot script
 
     This is the default boot script to be loaded by u-boot.
@@ -142,6 +151,8 @@ def gen_boot_script(filename, funos_start_blk, linux_start_blk=-1):
 
         outfile.write('setexpr funos_mmcstart ${{mmcstart}} * 0x{offset:x}\n'.format(
                 offset=PARTITION_OFFSET/BLOCK_SIZE))
+        outfile.write('setexpr ccfg_mmcstart ${{funos_mmcstart}} + 0x{ccfg_start_blk:x}\n'.format(
+                ccfg_start_blk=ccfg_start_blk))
         outfile.write('setexpr funos_mmcstart ${{funos_mmcstart}} + 0x{mmc_start_blk:x}\n'.format(
                 mmc_start_blk=funos_start_blk))
         outfile.write('mmc read 0x{load_addr:x} ${{funos_mmcstart}} 0x{load_size_blk:x};\n'.format(
@@ -156,10 +167,10 @@ def gen_boot_script(filename, funos_start_blk, linux_start_blk=-1):
             outfile.write('authfw 0x{load_addr:x} {load_size:x};\n'.format(
                 load_addr=LOAD_ADDR,
                 load_size=filesize(g.appfile)))
-            outfile.write('bootelf -p ${loadaddr};\n')
-        else:
-            outfile.write('bootelf -p 0x{load_addr:x};\n'.format(
-                load_addr=LOAD_ADDR))
+        outfile.write('elf_get_extent ${loadaddr};\n')
+        outfile.write('mmc dev; mmc read ${elf_extent} ${ccfg_mmcstart} 0; loadblob ${elf_extent};\n')
+
+        outfile.write('bootelf -p ${loadaddr};\n')
 
     # default location in full Fungible workspace
     mkimage_path = os.path.join(g.workspace, 'u-boot', 'tools', 'mkimage')
@@ -216,14 +227,14 @@ def gen_fs(files):
         # to contain both partitions requested from sfdisk - as sfdisk will
         # reject creating partition pointers to offsets greater than the
         # 'device' size (device in this context is the file that is being changed)
-        pad_file(output_fs, f.name, 1124 * 1024 * 1024)
+        pad_file(output_fs, f.name, 1124 * MB)
         cmd = ['sfdisk',
             '-X', 'dos',  # partition label
             f.name]
         p = subprocess.Popen(cmd, stdin=subprocess.PIPE)
         sfdiskcmds = ['start=4KiB, size=32MiB, type=83, bootable', #32MB@4KB
                       'start={part_offset}KiB, size=32MiB, type=83'.format(
-                          part_offset=(PARTITION_OFFSET/1024)+4)  #32MB@(base offset+4KB)
+                          part_offset=(PARTITION_OFFSET/KB)+4)  #32MB@(base offset+4KB)
                     ]
         p.communicate(input="\n".join(sfdiskcmds))
         trunc_file(f.name, output_fs, FUNOS_OFFSET)
@@ -257,6 +268,7 @@ def run():
 
     linux_start_blk = (LINUX_OFFSET / BLOCK_SIZE) if g.linux else -1
     gen_boot_script(os.path.join(g.outdir, 'bootloader.scr'), FUNOS_OFFSET / BLOCK_SIZE,
+                    CCFG_OFFSET / BLOCK_SIZE,
                     linux_start_blk)
 
     if g.bootscript_only:
