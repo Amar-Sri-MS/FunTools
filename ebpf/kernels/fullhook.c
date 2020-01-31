@@ -60,7 +60,7 @@ LEAF(__pre_hook_function)
 	dsll	$1, $1, 16
 	daddiu	$1, $1, 0 // %hi(posthook)
 	dsll	$1, $1, 16
-	daddiu	$ra, $1, // %lo(posthook)
+	daddiu	$ra, $1, 0 // %lo(posthook)
 
 	move $fp, $sp
 
