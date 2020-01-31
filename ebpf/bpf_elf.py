@@ -7,20 +7,35 @@ from elftools.elf.sections import SymbolTableSection
 from elftools.elf.relocation import RelocationSection
 from elftools.dwarf.descriptions import describe_form_class, describe_attr_value
 
-# extracted from kernels/hook.c
-central_hook = {
+# extracted from kernels/prehook.c
+prehook_wrapper = {
   'code': {'name': u'probe',
-    'value': [103, 189, 255, 192, 255, 191, 0, 24, 255, 190, 0, 16, 3, 160, 240, 37, 255, 164, 0, 32, 255, 165, 0, 40, 255, 166, 0, 48, 255, 167, 0, 56, 0, 0, 0, 0, 223, 164, 0, 32, 223, 165, 0, 40, 223, 166, 0, 48, 223, 167, 0, 56, 0, 0, 0, 0, 255, 162, 0, 32, 255, 163, 0, 40, 0, 0, 0, 0, 223, 162, 0, 32, 223, 163, 0, 40, 3, 192, 232, 37, 223, 191, 0, 24, 223, 190, 0, 16, 103, 189, 0, 64, 3, 224, 0, 8, 0, 0, 0, 0]},
+    'value': [103, 189, 255, 168, 255, 191, 0, 8, 255, 190, 0, 0, 255, 188, 0, 16, 255, 164, 0, 24, 255, 165, 0, 32, 255, 166, 0, 40, 255, 167, 0, 48, 255, 168, 0, 56, 255, 169, 0, 64, 255, 170, 0, 72, 255, 171, 0, 80, 3, 160, 240, 37, 12, 0, 0, 0, 0, 0, 0, 0, 3, 192, 232, 37, 223, 164, 0, 24, 223, 165, 0, 32, 223, 166, 0, 40, 223, 167, 0, 48, 223, 168, 0, 56, 223, 169, 0, 64, 223, 170, 0, 72, 223, 171, 0, 80, 223, 188, 0, 16, 223, 190, 0, 0, 223, 191, 0, 8, 103, 189, 0, 88, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]},
   'relocations': [
-    {'source': {'kind': 'code', 'name': u'prehook'},
+   {'source': {'index': 1, 'kind': 'code', 'name': u'prehook'},
      'target': {'index': 0, 'kind': 'code', 'name': u'probe'},
-     'offset': 8, 'type': 4},
-    {'source': {'kind': 'original'},
+     'offset': 52, 'type': 4}]}
+
+# extracted from kernels/fullhook.c
+full_wrapper = {
+  'code': [{'name': u'probe',
+    'value': [103, 189, 255, 168, 255, 191, 0, 8, 255, 190, 0, 0, 255, 188, 0, 16, 255, 164, 0, 24, 255, 165, 0, 32, 255, 166, 0, 40, 255, 167, 0, 48, 255, 168, 0, 56, 255, 169, 0, 64, 255, 170, 0, 72, 255, 171, 0, 80, 3, 160, 240, 37, 12, 0, 0, 0, 0, 0, 0, 0, 3, 192, 232, 37, 223, 164, 0, 24, 223, 165, 0, 32, 223, 166, 0, 40, 223, 167, 0, 48, 223, 168, 0, 56, 223, 169, 0, 64, 223, 170, 0, 72, 223, 171, 0, 80, 223, 188, 0, 16, 223, 190, 0, 0, 223, 191, 0, 8, 103, 189, 0, 88, 103, 189, 255, 224, 255, 191, 0, 8, 255, 162, 0, 0, 60, 1, 0, 0, 100, 33, 0, 0, 0, 1, 12, 56, 100, 33, 0, 0, 0, 1, 12, 56, 100, 63, 0, 0, 3, 160, 240, 37, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]},
+    {'name': u'probe_posthook',
+    'value': [223, 164, 0, 0, 255, 162, 0, 16, 255, 163, 0, 24, 255, 190, 0, 0, 3, 160, 240, 37, 12, 0, 0, 0, 0, 0, 0, 0, 3, 192, 232, 37, 223, 190, 0, 0, 223, 162, 0, 16, 223, 163, 0, 24, 223, 191, 0, 8, 103, 189, 0, 32, 3, 224, 0, 9]}],
+  'relocations': [
+   {'source': {'index': 2, 'kind': 'code', 'name': u'prehook'},
      'target': {'index': 0, 'kind': 'code', 'name': u'probe'},
-     'offset': 13, 'type': 4},
-    {'source': {'kind': 'code', 'name': u'posthook'},
-     'target': {'index': 0, 'kind': 'code', 'name': u'probe'},
-     'offset': 16, 'type': 4}]}
+     'offset': 52, 'type': 4},
+
+   {'source': {'index': 1, 'kind': 'code', 'name': u'probe_posthook'}, 'type': 29, 'target': {'index': 0, 'kind': 'code', 'name': u'probe'}, 'offset': 124},
+   {'source': {'index': 1, 'kind': 'code', 'name': u'probe_posthook'}, 'type': 28, 'target': {'index': 0, 'kind': 'code', 'name': u'probe'}, 'offset': 128},
+   {'source': {'index': 1, 'kind': 'code', 'name': u'probe_posthook'}, 'type': 5, 'target': {'index': 0, 'kind': 'code', 'name': u'probe'}, 'offset': 136},
+   {'source': {'index': 1, 'kind': 'code', 'name': u'probe_posthook'}, 'type': 6, 'target': {'index': 0, 'kind': 'code', 'name': u'probe'}, 'offset': 144},
+
+   {'source': {'index': 3, 'kind': 'code', 'name': u'posthook'},
+     'target': {'index': 1, 'kind': 'code', 'name': u'probe_posthook'},
+     'offset': 20, 'type': 4}
+]}
 
 
 def unpack_map(data, big_endian):
@@ -121,15 +136,10 @@ def read_relocations(data, code, elffile):
         data[symbol['r_info_sym']]['locations'].append(
           {'type': symbol['r_info_type'], 'offset': symbol['r_offset'], 'target': target})
 
-    if 'probe' in code_indexes:
-      for r in central_hook['relocations']:
-        if 'name' in r['source'] and r['source']['name'] in code_indexes:
-          r['source']['index'] = code_indexes[r['source']['name']]
-
 
 def extract_hook(filename):
   code = []
-  code_sections = ['xdp', 'socket_filter', 'prehook', 'posthook', '.text'] # '.text' to extract central
+  code_sections = ['xdp', 'socket_filter', 'prehook', 'posthook'] # '.text' to extract central
   with open(filename, 'rb') as f:
     elffile = ELFFile(f)
     big_endian = not elffile.little_endian
@@ -149,16 +159,26 @@ def extract_hook(filename):
           set_data(data, symbols[idx][p], section_data[p:])
           section_data = section_data[:p]
 
-    section_name = 'probe' if section_name in ['prehook', 'posthook'] else section_name
+    if section_name == 'prehook' and len(code) == 1:
+      section_name = 'probe'
+      code.insert(0, prehook_wrapper['code'])
 
-    if section_name == 'probe':
-      code.insert(0, central_hook['code'])
-    read_relocations(data, code, elffile)
+      read_relocations(data, code, elffile)
+      data, maps, relocations = extract_finals(data, get_map_section_index(elffile), big_endian)
 
-    data, maps, relocations = extract_finals(data, get_map_section_index(elffile), big_endian)
+      relocations += prehook_wrapper['relocations']
+    elif section_name in ['prehook', 'posthook'] and len(code) == 2:
+      section_name = 'probe'
+      code.insert(0, full_wrapper['code'][1])
+      code.insert(0, full_wrapper['code'][0])
 
-    if section_name == 'probe':
-      relocations += central_hook['relocations']
+      read_relocations(data, code, elffile)
+      data, maps, relocations = extract_finals(data, get_map_section_index(elffile), big_endian)
+
+      relocations += full_wrapper['relocations']
+    else:
+      read_relocations(data, code, elffile)
+      data, maps, relocations = extract_finals(data, get_map_section_index(elffile), big_endian)
 
   return {'maps': maps, 'section': section_name, 'code': code, 'data': data, 'relocations': relocations, 'big_endian': big_endian }
 

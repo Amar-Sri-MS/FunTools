@@ -42,7 +42,7 @@ if __name__ == '__main__':
       error("Incorrect list after attach")
 
     r = b.map_get_uints(bid, 0, 0)
-    if r != 0:
+    if r != [0]:
       error("Incorrect initial value")
 
     b.map_set_uints(bid, 0, 0, 4242)
@@ -50,5 +50,5 @@ if __name__ == '__main__':
     r = b.map_get_uints(bid, 0, 0)
     print("Got " + str(r))
 
-    if r != 4242:
+    if r != [4242]:
       error("Incorrect updated value")
