@@ -16,6 +16,27 @@ prehook_wrapper = {
      'target': {'index': 0, 'kind': 'code', 'name': u'probe'},
      'offset': 52, 'type': 4}]}
 
+# extracted from kernels/fullhook.c
+full_wrapper = {
+  'code': [{'name': u'probe',
+    'value': [103, 189, 255, 168, 255, 191, 0, 8, 255, 190, 0, 0, 255, 188, 0, 16, 255, 164, 0, 24, 255, 165, 0, 32, 255, 166, 0, 40, 255, 167, 0, 48, 255, 168, 0, 56, 255, 169, 0, 64, 255, 170, 0, 72, 255, 171, 0, 80, 3, 160, 240, 37, 12, 0, 0, 0, 0, 0, 0, 0, 3, 192, 232, 37, 223, 164, 0, 24, 223, 165, 0, 32, 223, 166, 0, 40, 223, 167, 0, 48, 223, 168, 0, 56, 223, 169, 0, 64, 223, 170, 0, 72, 223, 171, 0, 80, 223, 188, 0, 16, 223, 190, 0, 0, 223, 191, 0, 8, 103, 189, 0, 88, 103, 189, 255, 224, 255, 191, 0, 8, 255, 162, 0, 0, 60, 1, 0, 0, 100, 33, 0, 0, 0, 1, 12, 56, 100, 33, 0, 0, 0, 1, 12, 56, 100, 63, 0, 0, 3, 160, 240, 37, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]},
+    {'name': u'probe_posthook',
+    'value': [255, 162, 0, 16, 255, 163, 0, 24, 223, 164, 0, 0, 3, 160, 240, 37, 12, 0, 0, 0, 0, 0, 0, 0, 3, 192, 232, 37, 223, 191, 0, 8, 103, 189, 0, 32, 3, 224, 0, 9]}],
+  'relocations': [
+   {'source': {'index': 2, 'kind': 'code', 'name': u'prehook'},
+     'target': {'index': 0, 'kind': 'code', 'name': u'probe'},
+     'offset': 52, 'type': 4},
+
+   {'source': {'index': 1, 'kind': 'code', 'name': u'probe_posthook'}, 'type': 29, 'target': {'index': 2, 'kind': 'code', 'name': u'prehook'}, 'offset': 124},
+   {'source': {'index': 1, 'kind': 'code', 'name': u'probe_posthook'}, 'type': 28, 'target': {'index': 2, 'kind': 'code', 'name': u'prehook'}, 'offset': 128},
+   {'source': {'index': 1, 'kind': 'code', 'name': u'probe_posthook'}, 'type': 5, 'target': {'index': 2, 'kind': 'code', 'name': u'prehook'}, 'offset': 136},
+   {'source': {'index': 1, 'kind': 'code', 'name': u'probe_posthook'}, 'type': 6, 'target': {'index': 2, 'kind': 'code', 'name': u'prehook'}, 'offset': 144},
+
+   {'source': {'index': 3, 'kind': 'code', 'name': u'posthook'},
+     'target': {'index': 1, 'kind': 'code', 'name': u'probe_posthook'},
+     'offset': 16, 'type': 4}
+]}
+
 
 def unpack_map(data, big_endian):
   # data[20:40] contains some kind of a name which is all zeros in my case
@@ -146,6 +167,15 @@ def extract_hook(filename):
       data, maps, relocations = extract_finals(data, get_map_section_index(elffile), big_endian)
 
       relocations += prehook_wrapper['relocations']
+    elif section_name in ['prehook', 'posthook'] and len(code) == 2:
+      section_name = 'probe'
+      code.insert(0, full_wrapper['code'][1])
+      code.insert(0, full_wrapper['code'][0])
+
+      read_relocations(data, code, elffile)
+      data, maps, relocations = extract_finals(data, get_map_section_index(elffile), big_endian)
+
+      relocations += full_wrapper['relocations']
     else:
       read_relocations(data, code, elffile)
       data, maps, relocations = extract_finals(data, get_map_section_index(elffile), big_endian)
