@@ -24,7 +24,7 @@ FUNOSDIR ?= ../../FunOS
 # Directory where we install the working version of the ConfigGen
 FUNSDK_INSTALL_DIR = $(SDK_INSTALL_DIR)/bin/ConfigGen
 
-# Root directory of *.cfg files
+# Root directory of config files
 INPUT_DIR = $(realpath $(FUNOSDIR)/configs)
 
 
