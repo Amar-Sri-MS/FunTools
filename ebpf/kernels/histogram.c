@@ -1,4 +1,8 @@
-// This is generic conter probe
+// This is generic histogram probe
+// to compile:
+// $ clang -I./ -O2 -target mips64r6 -c kernels/histogram.c -v -emit-llvm
+// $ llc histogram.bc -filetype=obj
+
 #include "../bpf_helpers.h"
 
 BPF_HISTOGRAM(hist);
