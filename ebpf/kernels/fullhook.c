@@ -62,8 +62,6 @@ LEAF(__pre_hook_function)
 	dsll	$1, $1, 16
 	daddiu	$ra, $1, 0 // %lo(posthook)
 
-	move $fp, $sp
-
 	// placeholder for two original commands
 	nop
 	nop
@@ -81,12 +79,13 @@ LEAF(__post_hook_function)
 	.set noreorder
 	.set nomacro
 
+	ld $4, 0($sp)
+
 	// Save v0 and v1
 	sd $2, 16($sp)
 	sd $3, 24($sp)
 
-	ld $4, 0($sp)
-
+	sd $fp, 0($sp)
 	move $fp, $sp
 
 	// placeholder for posthook call
@@ -94,6 +93,11 @@ LEAF(__post_hook_function)
 	nop
 
 	move $sp, $fp
+	ld $fp, 0($sp)
+
+	// Restore v0 and v1
+	ld $2, 16($sp)
+	ld $3, 24($sp)
 
 	ld $ra, 8($sp)
 	daddiu $sp,$sp,32
