@@ -44,13 +44,14 @@ if __name__ == '__main__':
     print(l)
 
     r = b.map_get(bid, 0, [0, 0, 0, 0])
+    print("Raw bytes:")
+    print(r)
+
+    r = b.map_get_uints(bid, 0, 0)
     print("Counts:")
     print(r)
 
-    r = b.map_get(bid, 0, [0, 0, 0, 0])
-    print("Counts:")
-    print(r)
-
-    r = b.map_get(bid, 0, [0, 0, 0, 0])
-    print("Counts:")
+    dpc_client.execute('test', ['malloc'])
+    r = b.map_get_uints(bid, 0, 0)
+    print("Counts after the test:")
     print(r)
