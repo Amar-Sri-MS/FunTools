@@ -387,6 +387,12 @@ static void _listen_sock_init(struct dpcsock *sock)
 			exit(1);
 		}
 
+		if (sock->eth_name && (setsockopt(sock->listen_fd, SOL_SOCKET, SO_BINDTODEVICE,
+				sock->eth_name, strlen(sock->eth_name)) < 0)) {
+			perror("setsockopt(SO_BINDTODEVICE)");
+			exit(1);
+		}
+
 		/* set socket parameters */
 
 		printf("Publishing on port %d\n", sock->port_num);
@@ -1405,6 +1411,7 @@ static struct option longopts[] = {
 	{ "tcp_proxy",       optional_argument, NULL, 'T' },
 	{ "text_proxy",      optional_argument, NULL, 'T' },
 	{ "unix_proxy",      optional_argument, NULL, 't' },
+	{ "inet_interface",  required_argument, NULL, 'I' },
 	{ "nocli",           no_argument,       NULL, 'n' },
 	{ "oneshot",         no_argument,       NULL, 'S' },
 	{ "manual_base64",   no_argument,       NULL, 'N' },
@@ -1442,6 +1449,7 @@ static void usage(const char *argv0)
 	printf("       --tcp_proxy[=port]      listen as a tcp proxy\n");
 	printf("       --text_proxy[=port]     same as \"--tcp_proxy\"\n");
 	printf("       --unix_proxy[=port]     listen as a unix proxy\n");
+	printf("       --inet_interface=name   listen only on <name> interface\n");
 	printf("       --nocli                 issue request from command-line arguments and terminate\n");
 	printf("       --oneshot               don't reconnect after command side disconnect\n");
 	printf("       --manual_base64         just translate base64 back and forward\n");
@@ -1531,12 +1539,11 @@ int main(int argc, char *argv[])
 	/* default command connection is console (so socket disabled) */
 	memset(&cmd_sock, 0, sizeof(cmd_sock));
 	cmd_sock.mode = SOCKMODE_TERMINAL;
-	cmd_sock.socket_name = NULL; /* safety */
 	cmd_sock.fd = -1;
 	cmd_sock.retries = UINT32_MAX;
 
 	while ((ch = getopt_long(argc, argv,
-				 "hs::i::u::H::T::t::D:nNFXR:v",
+				 "hs::i::u::H::T::I:t::D:nNFXR:v",
 				 longopts, NULL)) != -1) {
 
 		switch(ch) {
@@ -1632,7 +1639,9 @@ int main(int argc, char *argv[])
 			break;
 
 		/** other options **/
-
+		case 'I':
+			cmd_sock.eth_name = optarg;
+			break;
 		case 'n':  /* "nocli" -- run one command and exit */
 		case 'S':  /* "oneshot" -- run one connection and exit */
 			one_shot = true;
@@ -1693,6 +1702,12 @@ int main(int argc, char *argv[])
 
 		if (first_unknown != -1)
 			break;
+	}
+
+	/* sanity check */
+	if (cmd_sock.eth_name && cmd_sock.mode != SOCKMODE_IP) {
+		printf("Interface name is valid for IP proxy modes only\n");
+		exit(1);
 	}
 
 	/* make an announcement as to what we are */
