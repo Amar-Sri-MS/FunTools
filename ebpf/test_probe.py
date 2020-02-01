@@ -82,10 +82,7 @@ if __name__ == '__main__':
 
     if testcase != 'counter':
       print("Counts after the test:")
-      for i in range(0, 64):
-        r = b.map_get_uints(bid, 0, i)
-        print("Values less than " + str(2 ** (i + 1)))
-        print(r)
+      b.histogram_dump(bid, 0)
     else:
       r = b.map_get_uints(bid, 0, 0)
       print("Counts after the test:")

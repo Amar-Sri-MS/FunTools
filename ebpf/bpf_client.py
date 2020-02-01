@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import os
 import json
+import math
 import os.path
 import time
 import subprocess32
@@ -93,6 +94,29 @@ class bpf:
       key = self.map_next(bid, map_idx, key)
       if key is None:
         break
+
+  def histogram_dump(self, bid, map_idx):
+    prefix = lambda x, y: (' ' * (y - len(x))) + x
+    values = []
+    for i in range(0, 64):
+      r = self.map_get_uints(bid, map_idx, i)
+      values.append(sum(r))
+
+    while values[len(values) - 1] == 0:
+      values.pop()
+
+    if len(values) == 0:
+      print("Histogram is empty")
+
+    max_val = max(values)
+    max_len = int(math.log10(max_val)) + 1
+    low = 0
+    high = 2
+
+    for v in values:
+      print(prefix(str(low) + " -> " + str(high - 1) + ": ", 40) + prefix(str(v), max_len) + " | " + ('*' * (v * 40 / max_val)))
+      low = high
+      high *= 2
 
   def trace_print(self):
     while True:
