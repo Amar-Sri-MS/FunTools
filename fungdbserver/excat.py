@@ -15,8 +15,12 @@ import subprocess
 import argparse
 import datetime
 import tempfile
+import hashlib
 import urllib2
+import random
+import shutil
 import socket
+import time
 import uuid
 import json
 import sys
@@ -60,7 +64,7 @@ BLOCK_SIZE = 128 * 1024 # decent size payload
 
 def LOG(msg):
 
-    sys.stderr.write(msg + "\n")
+    sys.stderr.write(str(msg) + "\n")
 
 def VERBOSE(msg, level=1):
 
@@ -92,13 +96,9 @@ def mkrelpath(uuid):
 
     return path
 
-def choose_publication_method():
-    return "nfs"
-
-def choose_get_method():
-
+def choose_method(network):
     if (opts.network == "yes"):
-        return "http"
+        return network
     elif (opts.network == "no"):
         return "nfs"
     elif (opts.network != "auto"):
@@ -107,7 +107,13 @@ def choose_get_method():
     if (os.path.exists(NFS_ROOT)):
         return "nfs"
 
-    return "http"
+    return network
+
+def choose_publication_method():
+    return choose_method("scp")
+
+def choose_get_method():
+    return choose_method("http")
 
 def parse_uuid(suuid):
     try:
@@ -192,6 +198,19 @@ def download_file(url, dest):
 
     return True
 
+def filemd5(fname):
+
+    md5 = hashlib.md5()
+    fl = open(fname)
+
+    while (True):
+        bytes = fl.read(16*1024)
+        if (len(bytes) == 0):
+            break
+        md5.update(bytes)
+
+    return md5.hexdigest()
+
 ###
 ##  get
 #
@@ -243,6 +262,62 @@ def http_get(uuid):
 
     return fname
 
+
+def do_search(uuid, path):
+    if (path is None):
+        return None
+    if (not os.path.isdir(path)):
+        return None
+
+    LOG("Searching path %s" % path)
+
+    fnames = os.listdir(path)
+    for fname in fnames:
+        fs = os.path.join(path, fname)
+        if (not os.path.isfile(fs)):
+            continue
+        uu = uuid_extract.uuid_extract(fs, silent=True)
+        if (uu is None):
+            continue
+        if (uu != uuid):
+            continue
+        # check it has symbols
+        if (not file_has_symbols(fs)):
+            continue
+
+        # this file matches!
+        LOG("Local file %s matches" % fs)
+        return fs
+
+    return None
+    
+# search local build paths etc.
+def local_search_uuid(uuid):
+
+    # see if there's something explicit
+    fname = do_search(uuid, os.environ.get("FUNOS_SRC"))
+    if (fname is not None):
+        return fname
+
+    if (os.environ.get("WORKSPACE") is not None):
+        fname = do_search(uuid,
+                          os.path.join(os.environ.get("WORKSPACE"),
+                                       "FunOS/build"))
+        if (fname is not None):
+            return fname
+
+    if (os.environ.get("EXCAT_SEARCH_PATH") is not None):
+        toks = os.environ.get("EXCAT_SEARCH_PATH").split(":")
+        for tok in toks:
+            fname = do_search(uuid,
+                              os.path.join(os.environ.get("WORKSPACE"),
+                                           "FunOS/build"))
+            if (fname is not None):
+                return fname
+            
+    return None
+
+
 def do_get(uuid, fname):
 
     # short circuit if the file has symbols
@@ -251,6 +326,11 @@ def do_get(uuid, fname):
         file_has_symbols(fname)):
         return fname
 
+    # local search
+    fname = local_search_uuid(uuid)
+    if (fname is not None):
+        return fname
+    
     # find how to retrieve it
     method = choose_get_method()
     if (method == "nfs"):
@@ -320,14 +400,15 @@ def mkmetadata(uuid, fname):
 
     return d
 
-def save_metadata(metadata, fname):
+def metadata2str(metadata):
+    return json.dumps(metadata, indent=4)
 
-    s = json.dumps(metadata, indent=4)
+def save_metadata(metadata, fname):
+    s = metadata2str(metadata)
     open(fname, "w").write(s)
     os.chmod(fname, FILEMASK)
 
-
-def nfs_publish(metadata, fname):
+def nfs_publish(metadata, fname, compress=True):
 
     # create the path, compress it in-place
     # and make it world readable
@@ -338,9 +419,19 @@ def nfs_publish(metadata, fname):
         os.makedirs(metadata["nfspath"])
     
     # compress the file into it
-    absblob = os.path.join(metadata["nfspath"],
-                           metadata["bzblob"])
-    compress_file(fname, absblob)
+    if (compress):
+        absblob = os.path.join(metadata["nfspath"],
+                               metadata["bzblob"])
+        compress_file(fname, absblob)
+
+        # update the metadat with the md5
+        # for recipients
+        metadata["bzmd5"] = filemd5(absblob)
+    else:
+        absblob = os.path.join(metadata["nfspath"],
+                               os.path.basename(fname))
+        shutil.copyfile(fname, absblob)
+        os.chmod(fname, FILEMASK)
 
     # stash the metadata
     mdfile = os.path.join(metadata["nfspath"],
@@ -350,7 +441,79 @@ def nfs_publish(metadata, fname):
     os.umask(omask)
 
     LOG("published to %s" % metadata["nfspath"])
+
+def wait_for_rx_ready(p):
+    LOG("waiting for remote rx ready")
+    while True:
+        s = p.readline()
+        if (s == ""):
+            raise RuntimeError("EOF waiting for TX ready")
+        LOG(s.strip())
+        if ("excat-pub-proxy: rx ready" in s):
+            break
+
+def drain_rx(p):
+    while True:
+        s = p.readline()
+        if (s == ""):
+            break
+        LOG(s.strip())
+
+# publish over scp via excat-scp-proxy
+def scp_publish(metadata, fname):
+
+    # original md5
+    metadata["md5"] = filemd5(fname)
+
+    tmpbz = os.path.join(tempfile.gettempdir(), metadata["bzblob"])
+    compress_file(fname, tmpbz)
+
+    # new md5
+    metadata["bzmd5"] = filemd5(tmpbz)
+       
+    # pick a port in a 1k range -- use two so localhost works
+    random.seed()
+    iport = random.randint(20000, 21000)
+    srcport  = str(iport)
+    destport = str(iport+1)
+
+    # run an ssh connection to get to the proxy. -R because we connect nc backwards
+    cmd = ["ssh",
+           "-L localhost:%s:localhost:%s" % (srcport, destport),
+           "vnc-shared-06", "~cgray/fundev/FunTools/fungdbserver/excat-pub-proxy.py",
+           "--version=0", "--port=%s" % destport, "-U", str(metadata["uuid"])]
+    exp = subprocess.Popen(cmd, stderr=subprocess.PIPE)
+    if (exp is None):
+        raise Runtimeerror("excat proxy fail")
+
+    wait_for_rx_ready(exp.stderr)
+
+    # send it the json file
+    s = metadata2str(metadata)
+    cmd = ["nc", "-w", "1", "localhost", srcport]
+    p = subprocess.Popen(cmd, stdin=subprocess.PIPE)
+    if (p is None):
+        raise RuntimeError("can't send metadata")
+    LOG("sending metadata" )
+    p.stdin.write(s)
+    p.stdin.close()
+    r = p.wait()
+    LOG("metadata returned %d" % r)
+
+    # send it the bzfile
+    wait_for_rx_ready(exp.stderr)
+    LOG("sending large file")
+    binfl = open(tmpbz)
+    cmd = ["nc", "-w", "1", "localhost", srcport]
+    p = subprocess.Popen(cmd, stdin=binfl)
+    r = p.wait()
+    LOG("bzfile returned %d" % r)
+
+    os.remove(tmpbz)
     
+    LOG("waiting for proxy to terminate")
+    drain_rx(exp.stderr)
+    exp.wait()
 
 def do_publish(uuid, fname):
 
