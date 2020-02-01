@@ -53,14 +53,20 @@ QUIET=@
 CMD_LOG := cmd.log
 
 # Test Diretory for generated files
-GEN_OUT_DIR := $(realpath ./generated)
+THIS_DIR := $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
+GEN_OUT_DIR := $(THIS_DIR)/generated
 
 .PHONY: test
 test:
+	@echo "mkdir -p $(GEN_OUT_DIR)" >> $(CMD_LOG)
 	$(QUIET)mkdir -p $(GEN_OUT_DIR)
+	@echo "$(CFGGEN_PY) --in-dir $(INPUT_DIR) --out-dir $(GEN_OUT_DIR) --chip $(CHIP) --machine $(TARGET_MACHINE) --funoscfg" >> $(CMD_LOG)
 	$(QUIET)$(CFGGEN_PY) --in-dir $(INPUT_DIR) --out-dir $(GEN_OUT_DIR) --chip $(CHIP) --machine $(TARGET_MACHINE) --funoscfg
+	@echo "$(CFGGEN_PY) --in-dir $(INPUT_DIR) --out-dir $(GEN_OUT_DIR) --chip $(CHIP) --machine $(TARGET_MACHINE) --funoscfg" >> $(CMD_LOG)
 	$(QUIET)$(CFGGEN_PY) --in-dir $(INPUT_DIR) --out-dir $(GEN_OUT_DIR) --chip $(CHIP) --machine $(TARGET_MACHINE) --skucfg
+	@echo "$(CFGGEN_PY) --in-dir $(INPUT_DIR) --out-dir $(GEN_OUT_DIR) --chip $(CHIP) --machine $(TARGET_MACHINE) --eeprom" >> $(CMD_LOG)
 	$(QUIET)$(CFGGEN_PY) --in-dir $(INPUT_DIR) --out-dir $(GEN_OUT_DIR) --chip $(CHIP) --machine $(TARGET_MACHINE) --eeprom
+	@echo "$(CFGGEN_PY) --in-dir $(INPUT_DIR) --out-dir $(GEN_OUT_DIR) --chip $(CHIP) --machine $(TARGET_MACHINE) --hucfg" >> $(CMD_LOG)
 	$(QUIET) $(CFGGEN_PY) --in-dir $(INPUT_DIR) --out-dir $(GEN_OUT_DIR) --chip $(CHIP) --machine $(TARGET_MACHINE) --hucfg
 	@echo "cd test; $(TEST_HU_CFG_SH) $(INPUT_DIR) $(GEN_OUT_DIR)" >> $(CMD_LOG)
 	$(QUIET)cd test; $(TEST_HU_CFG_SH) $(INPUT_DIR) $(GEN_OUT_DIR)
