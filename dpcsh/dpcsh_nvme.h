@@ -19,6 +19,7 @@
 
 #define NVME_VS_API_SEND	0xc1	/* Vendor specific admin command opcode for host to dpu data transfer */
 #define NVME_VS_API_RECV	0xc2	/* Vendor specific admin command opcode for dpu to host data transfer */
+#define NVME_VS_API_FWDL_START  0xc5
 #define NVME_DPC_CMD_HNDLR_SELECTION	0x20000	/* 2 in MSB selects dpc_cmd_handler in FunOS */
 #define NVME_IDENTIFY_COMMAND_OPCODE 0x06 /* opcode for identify controller command */
 #define FUNGIBLE_DPU_VID	0x1dad

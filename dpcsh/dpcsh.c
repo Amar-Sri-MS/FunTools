@@ -18,14 +18,15 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/un.h>
-#include <termios.h>           	// termios, TCSANOW, ECHO, ICANON
+#include <termios.h>          	// termios, TCSANOW, ECHO, ICANON
 #include <sys/types.h>
-#include <signal.h>           	// termios, TCSANOW, ECHO, ICANON
+#include <signal.h>          	// termios, TCSANOW, ECHO, ICANON
 #include <pthread.h>
 #include <netinet/in.h>		// TCP socket
 #include <arpa/inet.h>
 #include <sys/select.h>
 #include <sys/stat.h>
+#include <time.h> 
 
 #include "dpcsh.h"
 #include "dpcsh_nvme.h"
@@ -1488,6 +1489,7 @@ int main(int argc, char *argv[])
 	struct dpcsock funos_sock; /* connection to FunOS */
 	struct dpcsock cmd_sock;   /* connection to commanding agent */
 
+	srand (time(NULL));
 	dpcsh_path = argv[0];
 	dpcsh_session_id = getpid();
 	dpcsh_load_macros();
