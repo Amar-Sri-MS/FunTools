@@ -294,12 +294,12 @@ static int _open_sock_inet(uint16_t port)
 			printf("connect error, retry %d\n", tries);
 			sleep(1);
 		}
-		
+
 		r = connect(sock, (struct sockaddr *)&serv_addr,
 			    sizeof(serv_addr));
 		tries++;
 	} while ((r < 0) && (tries < connect_retries));
-	
+
 	if (r < 0) {
 		printf("*** Can't connect\n");
 		perror("connect");
@@ -314,10 +314,10 @@ static int _open_sock_unix(const char *name)
 	int r = -1;
 	int sock = socket(AF_UNIX, SOCK_STREAM, 0);
 	int tries = 0;
-	
+
 	if (sock <= 0)
 		return sock;
-	
+
 	_setnosigpipe(sock);
 	struct sockaddr_un server = { .sun_family = AF_UNIX };
 	strcpy(server.sun_path, name);
@@ -326,11 +326,11 @@ static int _open_sock_unix(const char *name)
 			printf("connection fail, retry %d\n", tries);
 			sleep(1);
 		}
-		
+
 		r = connect(sock, (struct sockaddr *)&server, sizeof(server));
 		tries++;
 	} while(r && (tries < connect_retries));
-	
+
 	if (r) {
 		printf("*** Can't connect: %d\n", r);
 		perror("connect");
@@ -387,11 +387,13 @@ static void _listen_sock_init(struct dpcsock *sock)
 			exit(1);
 		}
 
+#ifdef __linux__
 		if (sock->eth_name && (setsockopt(sock->listen_fd, SOL_SOCKET, SO_BINDTODEVICE,
 				sock->eth_name, strlen(sock->eth_name)) < 0)) {
 			perror("setsockopt(SO_BINDTODEVICE)");
 			exit(1);
 		}
+#endif // __linux__
 
 		/* set socket parameters */
 
@@ -1411,7 +1413,11 @@ static struct option longopts[] = {
 	{ "tcp_proxy",       optional_argument, NULL, 'T' },
 	{ "text_proxy",      optional_argument, NULL, 'T' },
 	{ "unix_proxy",      optional_argument, NULL, 't' },
+// inet interface restriction needed only in Linux,
+// current implementation doesn't work on Mac
+#ifdef __linux__
 	{ "inet_interface",  required_argument, NULL, 'I' },
+#endif //__linux_
 	{ "nocli",           no_argument,       NULL, 'n' },
 	{ "oneshot",         no_argument,       NULL, 'S' },
 	{ "manual_base64",   no_argument,       NULL, 'N' },
@@ -1449,7 +1455,9 @@ static void usage(const char *argv0)
 	printf("       --tcp_proxy[=port]      listen as a tcp proxy\n");
 	printf("       --text_proxy[=port]     same as \"--tcp_proxy\"\n");
 	printf("       --unix_proxy[=port]     listen as a unix proxy\n");
+#ifdef __linux__
 	printf("       --inet_interface=name   listen only on <name> interface\n");
+#endif // __linux__
 	printf("       --nocli                 issue request from command-line arguments and terminate\n");
 	printf("       --oneshot               don't reconnect after command side disconnect\n");
 	printf("       --manual_base64         just translate base64 back and forward\n");
@@ -1479,7 +1487,7 @@ int main(int argc, char *argv[])
 	int ch, first_unknown = -1;
 	struct dpcsock funos_sock; /* connection to FunOS */
 	struct dpcsock cmd_sock;   /* connection to commanding agent */
-	
+
 	dpcsh_path = argv[0];
 	dpcsh_session_id = getpid();
 	dpcsh_load_macros();
@@ -1639,9 +1647,11 @@ int main(int argc, char *argv[])
 			break;
 
 		/** other options **/
+#ifdef __linux__
 		case 'I':
 			cmd_sock.eth_name = optarg;
 			break;
+#endif // __linux__
 		case 'n':  /* "nocli" -- run one command and exit */
 		case 'S':  /* "oneshot" -- run one connection and exit */
 			one_shot = true;
