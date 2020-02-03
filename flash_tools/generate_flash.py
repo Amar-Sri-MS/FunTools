@@ -33,7 +33,7 @@ DEFAULT_PADDING_LENGTH = "128"
 config = {}
 search_paths = []
 firmware_sign = None
-
+fail_on_err = False
 
 # example: reserve( 0x1234, 'nrol') reserve(256 ,    ' rsr') etc...
 RESERVE_REGEX = re.compile(r"reserve\(\s*(0x[0-9A-Fa-f]+|\d+)\s*,\s*'(.{4})'\s*\)")
@@ -90,6 +90,7 @@ def map_method_args(argmap, attrs):
     return args
 
 def gen_fw_image(filename, attrs):
+    global fail_on_err
     argmap = {
         'cert':'certfile',
         'customer_cert':'customer_certfile',
@@ -131,6 +132,8 @@ def gen_fw_image(filename, attrs):
             print("Skipping generation of {}, input {} not found".format(filename, attrs['source']))
         else:
             print("Skipping generation of {}, no input specified".format(filename))
+        if fail_on_err:
+            raise RuntimeError("Failed to find input images")
 
     return None
 
@@ -447,6 +450,7 @@ def main():
     flash_content = None
     global config
     global search_paths
+    global fail_on_err
 
     parser.add_argument('config', nargs='+', help='Configuration file(s)')
     parser.add_argument('--config-type', choices={'json','ini'}, default='json', help="Configuration file format")
@@ -454,12 +458,14 @@ def main():
     parser.add_argument('--action', choices={'all', 'sign', 'flash', 'key_hashes', 'certificates', 'key_injection'}, default='all', help='Action to be performed on the input files')
     parser.add_argument('--force-version', type=int, help='Override firmware versions')
     parser.add_argument('--use-hsm', action='store_true', help='Use HSM for signing/keys')
+    parser.add_argument('--fail-on-error', action='store_true', help='Always fail when encountering errors')
     group = parser.add_mutually_exclusive_group()
     group.add_argument('--enroll-cert', metavar = 'FILE', help='Enrollment certificate')
     group.add_argument('--enroll-tbs', metavar = 'FILE', help='Enrollment tbs')
     args = parser.parse_args()
 
     search_paths = args.source_dir
+    fail_on_err = args.fail_on_error
 
     # read the configuration
     if args.config_type == 'ini':
