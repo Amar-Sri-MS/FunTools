@@ -85,6 +85,10 @@ popd
 
 validate_process_input
 
+if [! -f $SBP_ROOT_DIR/software/production/fpk1_modulus.c ]; then
+    exit 1
+fi
+
 export WORKSPACE # scripts invoked from here expect it to be set
 
 # ---- ROM ----
@@ -92,9 +96,7 @@ cp $SBP_INSTALL_DIR/bootloader_m5150.mif ${WORKSPACE}/sbpimage/SysROM
 
 mkdir -p artifacts_$ARTIFACT_STYLE && cd artifacts_$ARTIFACT_STYLE
 
-if [ -f $SBP_ROOT_DIR/software/production/fpk1_modulus.c ]; then
-    cp $SBP_ROOT_DIR/software/production/development_start_certificate.bin ./start_certificate.bin
-fi
+cp $SBP_ROOT_DIR/software/production/development_start_certificate.bin ./start_certificate.bin
 
 HOST_FIRMWARE_DEF=$(cat <<-JSON
 { "signed_images": {
