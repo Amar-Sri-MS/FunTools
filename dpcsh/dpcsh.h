@@ -28,6 +28,7 @@ struct dpcsock {
 	bool base64;             /* talk base64 over this socket */
 	bool loopback;           /* if this socket is ignored */
 	const char *socket_name; /* unix socket name */
+	const char *eth_name;    /* eth interface to listen on */
 	uint16_t port_num;       /* TCP port number */
 	uint32_t retries;        /* whether to retry connect on failure */
 	uint32_t cmd_timeout;    /* cmd timeout in ms */
