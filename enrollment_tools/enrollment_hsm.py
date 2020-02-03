@@ -9,14 +9,14 @@
 # remove: remove the key from the HSM
 # modulus: print the modulus of the key
 # import: import a key into the hsm
+# x509: generate a self signed X509 certificate
 
-
-import os, struct, binascii, argparse, sys
+import os, struct, binascii, argparse, sys, datetime
 import getpass
 
 import pkcs11
 import pkcs11.util.rsa
-from asn1crypto import pem
+from asn1crypto import core, pem, keys, x509
 
 # FIXME: this should be a shared constants file
 RSA_KEY_SIZE_IN_BITS = 2048
@@ -123,6 +123,8 @@ def get_token(token_label):
         token = slot.get_token()
         if token.label == token_label:
             return token, password
+    print("No such token")
+    sys.exit(1)
 
 def get_modulus(pub):
     return pub[pkcs11.Attribute.MODULUS]
@@ -316,15 +318,161 @@ def export_pub_key(token_name, outfile, label, c_source):
     write(outfile, modulus)
 
 
+def prompt_for_values(prefix, values):
+
+    responses = {}
+    once_again = True
+    while once_again:
+        for value in values:
+            res = input(prefix + " " + value["prompt"] + " (" + value["default"] + "): ")
+            if res == "":
+                res = value["default"]
+            responses[value["key"]] = res
+
+        print("\nYou entered the following for " + prefix + ":\n")
+        for value in values:
+            print("%s: %s" % (prefix + " " + value["prompt"], responses[value["key"]]))
+        ok = input("\nIs this correct? (Y/n)")
+        if ok in ['','Y','y']:
+            break
+
+    return responses
+
+
+def get_x509_name(prefix):
+
+    COUNTRY = { "key": "country_name", "prompt":"Country", "default":"US"}
+    STATE = { "key": "state_or_province_name", "prompt" : "State Or Province", "default": ""}
+    LOCALITY = { "key": "locality_name", "prompt":"Locality", "default":""}
+    ORGANIZATION = { "key": "organization_name", "prompt" : "Organization", "default": "Fungible,Inc."}
+    CN = { "key": "common_name", "prompt" : "Common Name", "default": ""}
+    NAME_PARTS = [COUNTRY, STATE, LOCALITY, ORGANIZATION, CN]
+
+    responses = prompt_for_values(prefix, NAME_PARTS)
+    filled_responses = {k : v for k,v in responses.items() if v}
+    return x509.Name.build(filled_responses)
+
+
+def get_x509_validity():
+    VALIDITY = [{ "key": "days", "prompt" : "Days valid", "default": "90" }]
+
+    responses = prompt_for_values("", VALIDITY)
+    not_before = x509.UTCTime()
+    not_before.set(datetime.datetime.utcnow())
+    not_after = x509.UTCTime()
+    not_after.set(datetime.datetime.utcnow()+datetime.timedelta(days=int(responses["days"],0)))
+
+    validity = x509.Validity()
+    validity['not_before'] = not_before
+    validity['not_after'] = not_after
+    return validity
+
+def gen_rsa_pub_key_info(modulus, exponent=0x10001):
+    rsa = keys.RSAPublicKey()
+    rsa['modulus'] = int.from_bytes(modulus, byteorder='big')
+    rsa['public_exponent'] = exponent
+    return keys.PublicKeyInfo.wrap(rsa, "rsa")
+
+def gen_basic_constraints(critical, ca, path_len=None):
+
+    basic_constraints = x509.BasicConstraints()
+    basic_constraints['ca'] = ca
+    if path_len:
+        basic_constraints['path_len_contraint'] = path_len
+    bc_extension = x509.Extension()
+    bc_extension['extn_id'] = 'basic_constraints'
+    bc_extension['critical'] = critical
+    bc_extension['extn_value'] = basic_constraints
+    return bc_extension
+
+def gen_key_usage(critical, key_usages):
+    key_usage = x509.KeyUsage()
+    key_usage.set(key_usages)
+    ku_extension = x509.Extension()
+    ku_extension['extn_id'] = 'key_usage'
+    ku_extension['critical'] = critical
+    ku_extension['extn_value'] = key_usage
+    return ku_extension
+
+def gen_key_identifier(pub_key_info):
+    key_id = core.OctetString()
+    key_id.set(pub_key_info.sha1)
+    ki_extension = x509.Extension()
+    ki_extension['extn_id'] = 'key_identifier'
+    ki_extension['critical'] = False
+    ki_extension['extn_value'] = key_id
+    return ki_extension
+
+
+def create_x509(token_name, out_path, out_format, key_label):
+
+    cert = x509.Certificate()
+    tbs = x509.TbsCertificate()
+
+    tbs['version'] = 2
+    tbs['serial_number'] = 1
+
+    # build signature
+    signature = x509.SignedDigestAlgorithm()
+    signature['algorithm'] = 'sha512_rsa'
+    tbs['signature'] = signature
+
+    # cert signature algorithm
+    cert['signature_algorithm'] = signature
+
+    tbs['issuer'] = get_x509_name("")
+    tbs['subject'] = tbs['issuer']
+
+    # build the validity
+    tbs['validity']= get_x509_validity()
+
+    # extensions: basic constraints, key usage (key_cert_sign, crl_sign), subject key id
+    extensions = x509.Extensions()
+    extensions.append(gen_basic_constraints(True, True))
+    extensions.append(gen_key_usage(True, set(['key_cert_sign', 'crl_sign'])))
+    tbs['extensions'] = extensions
+
+    # rest requires the HSM
+    token, password = get_token(token_name)
+
+    # Open a session on our token
+    with token.open(user_pin=password, rw=False) as session:
+        the_key = get_private_rsa_with_label(session, key_label)
+        subject_pub_key_info = gen_rsa_pub_key_info(get_modulus(the_key))
+        tbs['subject_public_key_info'] = subject_pub_key_info
+        tbs['extensions'].append(gen_key_identifier(subject_pub_key_info))
+        cert['tbs_certificate'] = tbs
+        raw_signature = the_key.sign( tbs.dump(), mechanism=pkcs11.Mechanism.SHA512_RSA_PKCS)
+
+    bit_str = core.OctetBitString()
+    bit_str.set(raw_signature)
+    cert['signature_value'] = bit_str
+
+    der_bytes = cert.dump()
+
+    if out_format == 'DER':
+        out_bytes = der_bytes
+    else:
+        out_bytes = pem.armor('CERTIFICATE', der_bytes)
+
+    with open(out_path, 'wb') as f:
+        num_bytes = f.write(out_bytes)
+
+    print("Certificate written in %s format: %s (%d bytes)" %
+          (out_format, out_path, num_bytes))
 
 def parse_and_execute():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("command",
-                        help="command to execute: list, create, import, remove, modulus")
+                        help="command to execute: list, create, import, remove, modulus, x509")
 
     parser.add_argument("-k", "--key", dest="key_label",
                         help="key label (create, remove, modulus)")
+
+    parser.add_argument("-f", "--format", dest="out_format",
+                        choices=["PEM,DER"], default="PEM",
+                        help="X509 output format: PEM (Default), DER")
 
     parser.add_argument("-i", "--input",  dest="in_path",
                         help="input file name", metavar="FILE")
@@ -363,6 +511,10 @@ def parse_and_execute():
         create_rsa(options.token, options.key_label)
     elif options.command == 'import':
         import_key(options.token, options.in_path, options.key_label)
+    elif options.command == 'x509':
+        create_x509(options.token, options.out_path, options.out_format,
+                    options.key_label)
+
 
 
 if __name__ == "__main__":
