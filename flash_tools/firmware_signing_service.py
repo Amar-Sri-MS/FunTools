@@ -2,6 +2,7 @@ import os
 import requests
 import struct
 import sys
+import hashlib
 
 import enrollment_service as es
 import generate_firmware_image as gfi
@@ -79,36 +80,48 @@ class NetSigningService(FirmwareSigningService):
     def image_gen(outfile, infile, ftype, version, description, sign_key,
                   certfile, customer_certfile, key_index):
 
+        def pack_binary_form_data(title, bin_data):
+            return (title, bin_data, 'application/octet-stream',
+                    {"Content-Length" : str(len(bin_data)) })
+
+
         def create_binary_form_data( infile):
             with open(infile, 'rb') as input:
                 bin_data = input.read()
-                return (infile, bin_data, 'application/octet-stream',
-                    {"Content-Length" : str(len(bin_data)) })
+                return pack_binary_form_data(infile, bin_data)
 
-        multipart_form_data = { 'img' : create_binary_form_data(infile) }
+        def hash_sign(digest, sign_key=None, modulus=None):
+            ''' send a POST sign request new API with only digest sent '''
+            multipart_form_data = { 'digest' : pack_binary_form_data("sha512", digest) }
+            if modulus:
+                multipart_form_data['modulus'] = pack_binary_form_data("modulus", modulus)
+            params = {}
+            if sign_key:
+                params['key'] = sign_key
 
-        if certfile:
-            multipart_form_data['cert'] = create_binary_form_data(certfile)
+            response = requests.post(SIGNING_SERVICE_URL,
+                                     files=multipart_form_data,
+                                     params=params,
+                                     timeout=DEFAULT_HTTP_TIMEOUT)
+            return response.content
 
-        if customer_certfile:
-            multipart_form_data['customer_cert'] = create_binary_form_data(customer_certfile)
 
-        params = { 'key' : sign_key,
-                   'key_index' : key_index,
-                   'type' : ftype,
-                   'version': version,
-                   'description': description }
+        def server_sign_with_key(label, data):
+            ''' for speed, only pass the SHA512 hash of the data to the server to generate a signature '''
+            digest = hashlib.sha512(data).digest()
+            return hash_sign(digest, sign_key=label),gfi.pkcs11.KeyType.RSA
 
-        response = requests.post(SIGNING_SERVICE_URL,
-                                files=multipart_form_data,
-                                params=params,
-                                timeout=DEFAULT_HTTP_TIMEOUT)
 
-        if response.status_code == requests.codes.ok:
-            gfi.write(outfile, response.content)
-        else:
-            raise(Exception("Failed to sign image {}, err {}: {}".format(
-                                    infile, response.status_code, response.content)))
+        def server_sign_with_cert(cert, data):
+            digest = hashlib.sha512(data).digest()
+            modulus = gfi.get_cert_modulus(cert)
+            return hash_sign(digest, modulus=modulus)
+
+        return gfi.image_gen(outfile, infile, ftype, version, description, sign_key,
+                             certfile, customer_certfile, key_index,
+                             sign_with_key_func=server_sign_with_key,
+                             sign_with_cert_func=server_sign_with_cert)
+
 
     @staticmethod
     def export_pub_key_hash(outfile, label):

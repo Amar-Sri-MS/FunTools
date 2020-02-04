@@ -409,39 +409,57 @@ obvlAOTOVRM5V0PK7ruZCKfvBdPuFnPvUbC1OteB6ojOS2vG7nAuh7Qhw
 
 <h2 id="toc_6">POST</h2>
 
-<p>The post request is used to sign an image. There is no &quot;cmd&quot; argument.</p>
+<p>The post request is used to sign a single SHA-512 digest or an image (deprecated). There is no &quot;cmd&quot; argument.</p>
 
-<h4 id="toc_7">Arguments:</h4>
+<h3 id="toc_7">Hash signing</h3>
 
-<h5 id="toc_8">img (required)</h5>
+<h4 id="toc_8">Arguments:</h4>
 
-<p>the image to sign</p>
+<h5 id="toc_9">digest (required)</h5>
 
-<h5 id="toc_9">cert (optional)</h5>
+<p>The SHA512 digest to package as a PKCS v1.5 signature.</p>
 
-<p>A certificate with the public key to use for signing. The certificate will be added to the sign image and the corresponding private key will be used to sign the image.</p>
+<h5 id="toc_10">modulus (optional)</h5>
 
-<p>This correponding private key MUST have been imported into the Server HSM.</p>
-
-<h5 id="toc_10">customer_cert (optional)</h5>
-
-<p>A customer certificate with the public key to use for signing. This is similar to the cert argument but a customer certificate is placed in the different place in the signed image.</p>
+<p>The modulus of the RSA key used for signing.</p>
 
 <h5 id="toc_11">key (optional)</h5>
 
 <p>Label identifying the key used for signing.</p>
 
+<p><em>NOTE: The two arguments modulus and key are optional but at least one of them must be provided.</em></p>
+
+<h3 id="toc_12">Image signing (deprecated)</h3>
+
+<h5 id="toc_13">img (required)</h5>
+
+<p>the image to sign</p>
+
+<h5 id="toc_14">cert (optional)</h5>
+
+<p>A certificate with the public key to use for signing. The certificate will be added to the sign image and the corresponding private key will be used to sign the image.</p>
+
+<p>This correponding private key MUST have been imported into the Server HSM.</p>
+
+<h5 id="toc_15">customer_cert (optional)</h5>
+
+<p>A customer certificate with the public key to use for signing. This is similar to the cert argument but a customer certificate is placed in the different place in the signed image.</p>
+
+<h5 id="toc_16">key (optional)</h5>
+
+<p>Label identifying the key used for signing.</p>
+
 <p><em>NOTE: All three arguments, cert, customer_cert and key are optional but at least one of them must be provided.</em></p>
 
-<h5 id="toc_12">type (required)</h5>
+<h5 id="toc_17">type (required)</h5>
 
 <p>the image type. This is a four letter string identifying the type of the image. For example, &#39;pufr&#39; for PUF-ROM, &#39;frmw&#39; for Firmware.</p>
 
-<h5 id="toc_13">version (required)</h5>
+<h5 id="toc_18">version (required)</h5>
 
 <p>the image version. This is an number in decimal format.</p>
 
-<h5 id="toc_14">description (optional)</h5>
+<h5 id="toc_19">description (optional)</h5>
 
 <p>a description for the image; this is a string limited to 31 characters at most.</p>
 
