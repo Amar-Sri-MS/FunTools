@@ -1,19 +1,22 @@
 #! /usr/bin/env python3
 
 ##############################################################################
-#  enrollment_server.py
+#  signing_server.py
 #
 #
-#  Copyright (c) 2018-2019. Fungible, inc. All Rights Reserved.
+#  Copyright (c) 2018-2020. Fungible, inc. All Rights Reserved.
 #
 ##############################################################################
 
 import sys
 import struct
 import os
+import hashlib
 import cgi
 
 import traceback
+
+from asn1crypto import core,algos
 
 from common import *
 
@@ -59,18 +62,47 @@ def send_binary(binary_buffer):
 ########################################################################
 
 def send_binary_modulus(form, key_label):
-
-
     # get modulus from HSM
     with get_ro_session() as session:
         modulus = get_modulus(get_public_rsa_with_label(session, key_label))
         send_binary(modulus)
+
+def gen_sha512_digest_info(sha512_hash):
+    digest = core.OctetString()
+    digest.set(sha512_hash)
+    digest_algorithm = algos.DigestAlgorithm()
+    digest_algorithm['algorithm'] = 'sha512'
+    digest_info = algos.DigestInfo()
+    digest_info['digest_algorithm'] = digest_algorithm
+    digest_info['digest'] = digest
+    return digest_info.dump()
+
+def hsm_sign_hash_with_key(label, sha512_hash):
+    digest_info_der = gen_sha512_digest_info(sha512_hash)
+    with get_ro_session() as session:
+        private = get_private_rsa_with_label(session, label)
+        return private.sign(digest_info_der, mechanism=pkcs11.Mechanism.RSA_PKCS)
+
+def hsm_sign_hash_with_modulus(modulus, sha512_hash):
+    digest_info_der = gen_sha512_digest_info(sha512_hash)
+    with get_ro_session() as session:
+        private = get_private_rsa_with_modulus(session, modulus)
+        return private.sign(digest_info_der, mechanism=pkcs11.Mechanism.RSA_PKCS)
+
+
+# retrieving binary form content can be problematic.
+# create a function for this as a bottleneck for debugging/logging
+def get_binary_from_form(form, name):
+    ret = form.getfirst(name, default=b'')
+    return ret
+
 
 def process_query():
 
     form = cgi.FieldStorage()
     cmd = safe_form_get(form, "cmd", "modulus")
     if cmd == "modulus":
+
         key_label = safe_form_get(form, "key", "fpk4")
 
         # send in binary format by default for this application
@@ -81,13 +113,15 @@ def process_query():
         else:
             print("Content-type: text/plain")
             send_modulus(form, key_label)
+
     else:
         raise ValueError("Invalid command")
 
 
+
 ########################################################################
 #
-# sign images
+# sign images -- deprecated --- kept for backward compatibility
 #
 ########################################################################
 
@@ -176,8 +210,7 @@ def get_binary_from_form(form, name):
     return ret
 
 
-def sign_image():
-    form = cgi.FieldStorage()
+def sign_image(form):
 
     # we need a type ...
     image_type = safe_form_get(form, "type", None)
@@ -229,6 +262,37 @@ def sign_image():
                              key_index)
     send_binary(signed_image)
 
+############ END DEPRECATED SECTION ################################
+
+
+def sign():
+    form = cgi.FieldStorage()
+
+    # is there a hash provided?
+    sha512_hash = get_binary_from_form(form, "digest")
+
+    # if not old API request
+    if len(sha512_hash) == 0:
+        sign_image(form)
+        return
+
+    if len(sha512_hash) != hashlib.sha512().digest_size:
+        raise ValueError("Digest is %d bytes, expected %d" %
+                        (len(sha512_hash), hashlib.sha512.digest_size))
+
+    key_label = safe_form_get(form, "key", None)
+    if key_label:
+        signature = hsm_sign_hash_with_key(key_label, sha512_hash)
+    else:
+        modulus = get_binary_from_form(form, "modulus")
+        if len(modulus) == 0:
+            raise ValueError("No key or modulus specified for sign command")
+        signature = hsm_sign_hash_with_modulus(modulus, sha512_hash)
+
+    # send binary signature back
+    send_binary(signature)
+
+
 
 def main_program():
 
@@ -246,7 +310,7 @@ def main_program():
         if method == "GET":
             process_query()
         else:
-            sign_image()
+            sign()
 
     # key errors (missing form entries) as well as
     # value errors are translated as 400 Bad Request

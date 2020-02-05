@@ -9,6 +9,7 @@ show_help ()
     echo ""
     echo "-h help: show this message"
     echo "-b bundle: number is a bundle number"
+    echo "-d development: use the current working directory of funtools "
 
 }
 

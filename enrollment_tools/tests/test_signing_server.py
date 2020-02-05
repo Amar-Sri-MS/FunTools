@@ -6,17 +6,34 @@
 #
 ########################################################
 
+import binascii
+import struct
+import hashlib
 import argparse
 import requests
-import binascii
 
 
-def create_binary_form_data( infile):
+
+
+def pack_binary_form_data(title, bin_data):
+
+    return (title, bin_data, 'application/octet-stream',
+                {"Content-Length" : str(len(bin_data)) })
+
+
+def create_binary_form_data(infile):
 
     with open(infile, 'rb') as input:
         bin_data = input.read()
-        return (infile, bin_data, 'application/octet-stream',
-                {"Content-Length" : str(len(bin_data)) })
+        return pack_binary_form_data(infile, bin_data)
+
+
+def content(response):
+    if response.status_code != requests.codes.ok:
+        print("Request error: {0}".format(response.content))
+    # always return the response content
+    return response.content
+
 
 def image_gen(server, tls_verify, infile,
               ftype, version, description,
@@ -38,8 +55,28 @@ def image_gen(server, tls_verify, infile,
                              files=multipart_form_data,
                              params=params,
                              verify=tls_verify)
+    return content(response)
 
-    return response.content
+
+def hash_sign(server, tls_verify, digest, sign_key=None, modulus=None):
+
+    url_str = "https://" + server + ":4443/cgi-bin/signing_server.cgi"
+
+    multipart_form_data = { 'digest' : pack_binary_form_data("sha512", digest) }
+
+    if modulus:
+        multipart_form_data['modulus'] = pack_binary_form_data("modulus", modulus)
+
+    params = {}
+
+    if sign_key:
+        params['key'] = sign_key
+
+    response = requests.post(url_str,
+                             files=multipart_form_data,
+                             params=params,
+                             verify=tls_verify)
+    return content(response)
 
 
 def get_key(server, tls_verify, key_label):
@@ -50,7 +87,8 @@ def get_key(server, tls_verify, key_label):
 
     response = requests.get(url_str, params=params, verify=tls_verify)
 
-    return response.content
+    return content(response)
+
 
 def get_customer_cert(server, tls_verify, key_label):
 
@@ -58,7 +96,7 @@ def get_customer_cert(server, tls_verify, key_label):
 
     response = requests.get(url_str, verify=tls_verify)
 
-    return response.content
+    return content(response)
 
 
 ####### tests
@@ -106,6 +144,7 @@ def test_image_gen_with_cert(server, tls_verify):
     return 1
 
 
+
 def test_image_gen_with_customer_cert(server, tls_verify):
 
     signed_image = image_gen(server, tls_verify,
@@ -134,6 +173,44 @@ def test_get_customer_cert(server, tls_verify):
     return 1
 
 
+def test_hash_sign(server, tls_verify):
+    # for the signature tests, we use the enrollment and tbs_enrollment
+    # of the enrollment tests: difference is signature by fpk4
+
+    tbs_enroll64 = open('tbs_enrollment_cert.txt', 'r').read()
+    enroll64 = open('enrollment_cert.txt', 'r').read()
+    modulus_hex = open('fpk4_hex.txt', 'r').read().rstrip()
+
+    tbs_enroll = binascii.a2b_base64(tbs_enroll64)
+    enroll = binascii.a2b_base64(enroll64)
+    modulus = binascii.a2b_hex(modulus_hex)
+
+    whole_signature = enroll[len(tbs_enroll):]
+    sig_len = struct.unpack('<I', whole_signature[:4])[0]
+    signature = whole_signature[4:4+sig_len]
+    digest = hashlib.sha512(tbs_enroll).digest()
+
+    err = 0
+    # test 1: sign with key
+    server_signature = hash_sign(server, tls_verify, digest, sign_key='fpk4')
+
+    if server_signature != signature:
+        print("Hash sign with key error:\n{0}\n{1}".
+              format(binascii.b2a_hex(signature), binascii.b2a_hex(server_signature)))
+        err += 1
+
+    # test 2 : sign with modulus
+    server_signature = hash_sign(server, tls_verify, digest, modulus=modulus)
+
+    if server_signature != signature:
+        print("Hash sign with modulus error:\n{0}\n{1}".
+              format(binascii.b2a_hex(signature), binascii.b2a_hex(server_signature)))
+        err += 1
+
+    return err
+
+
+
 def main_program():
     errors = 0
 
@@ -153,6 +230,9 @@ def main_program():
         errors += test_image_gen_with_cert(options.server, tls_verify)
         errors += test_image_gen_with_customer_cert(options.server, tls_verify)
         errors += test_get_customer_cert(options.server, tls_verify)
+        errors += test_hash_sign(options.server, tls_verify)
+
+
 
     except Exception as ex:
         print("Exception occurred %s" % str(ex))

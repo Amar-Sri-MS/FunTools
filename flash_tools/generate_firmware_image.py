@@ -557,7 +557,9 @@ def add_cert_and_signature_to_image(image, cert, signature):
 
 
 def image_gen(outfile, infile, ftype, version, description, sign_key,
-              certfile, customer_certfile, key_index):
+              certfile, customer_certfile, key_index,
+              sign_with_key_func=sign_with_key,
+              sign_with_cert_func=sign_with_cert):
     ''' generate signed firmware image '''
     binary = read(infile)
     to_be_signed = struct.pack('<2I', len(binary), version)
@@ -585,10 +587,10 @@ def image_gen(outfile, infile, ftype, version, description, sign_key,
                                      format(MAX_KEYS_IN_KEYBAG))
 
             cert = struct.pack("<I", (key_index | 0x80000000))
-        signature, _ = sign_with_key(sign_key, to_be_signed)
+        signature, _ = sign_with_key_func(sign_key, to_be_signed)
     elif certfile:
         cert = read(certfile)
-        signature = sign_with_cert(cert, to_be_signed)
+        signature = sign_with_cert_func(cert, to_be_signed)
     elif not customer_certfile:
         print("A certificate ( customer or fungible) or a label is needed "+
               "to identify the key used to sign a firmware image")
@@ -599,7 +601,7 @@ def image_gen(outfile, infile, ftype, version, description, sign_key,
 
     if customer_certfile:
         customer_cert = read(customer_certfile)
-        customer_signature = sign_with_cert(customer_cert,
+        customer_signature = sign_with_cert_func(customer_cert,
                                             customer_to_be_signed)
     else:
         customer_cert = b''
