@@ -1,7 +1,7 @@
 #! /usr/bin/env python3
 
 ##############################################################################
-#  enrollment_server.py
+#  signing_server.py
 #
 #
 #  Copyright (c) 2018-2020. Fungible, inc. All Rights Reserved.
