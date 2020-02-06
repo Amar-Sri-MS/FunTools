@@ -113,7 +113,12 @@ class NetSigningService(FirmwareSigningService):
 
 
         def server_sign_with_cert(cert, data):
-            digest = hashlib.sha512(data).digest()
+            ''' when signing with certificate, the certificate is part of the digest
+            to keep things simple, this is done here and not on the server '''
+            m = hashlib.sha512()
+            m.update(cert)
+            m.update(data)
+            digest = m.digest()
             modulus = gfi.get_cert_modulus(cert)
             return hash_sign(digest, modulus=modulus)
 
