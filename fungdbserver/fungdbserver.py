@@ -97,12 +97,16 @@ def get_sdkdir():
         sdk = os.path.join(workspace, "FunSDK")
         return sdk
 
-    # try relative to the script - "../.."
-    workspace = os.path.dirname(os.path.dirname(sys.argv[0]))
-    sdk = os.path.join(workspace, "FunSDK")
-    if (os.path.exists(sdk)):
-        return sdk
-        
+    # try relative to the script - a few levels of "../"
+    for i in range (1,6):
+        workspace = sys.argv[0]
+        for j in range(i):
+            workspace = os.path.dirname(workspace)
+        LOG_DEBUG("workspace search: %s" % workspace)
+        sdk = os.path.join(workspace, "FunSDK")
+        sdk2 = os.path.join(sdk, "FunSDK")
+        if (os.path.exists(sdk) and os.path.exists(sdk2)):
+            return sdk
 
     # try relative to the dir - ".."
     if (opts.dir is not None):
