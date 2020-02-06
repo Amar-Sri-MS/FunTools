@@ -1,10 +1,17 @@
 #!/bin/bash
+#
+# File: FS1600_Factory_Reset.sh
+# Created by David Peet (david.peet@fungible.com)
+# Copyright © 2020 Fungible. All rights reserved.
+#
 # Return the FS1600 COMEe to 'factory' state ready to
 # install a new software version.
 # 1. Make sure the services are stopped.
 #    Storage Controller and CC Linux service
 # 2. Unload funeth driver
 # 3. Move logs to save location. 
+
+FUNGIBLE_ROOT=${FUNGIBLE_ROOT:-/opt/fungible}
 
 if [[ "${EUID}" -ne 0 ]]; then
   echo "Please run as ROOT (CurrentEUID=$EUID)"
@@ -14,19 +21,19 @@ fi
 #############################################################
 # Step 1. Make sure the services are stopped.
 # Stop StorageController service
-if [ ! -f /opt/fungible/StorageController/etc/start_sc.sh ] ; then
+if [ ! -f ${FUNGIBLE_ROOT}/StorageController/etc/start_sc.sh ] ; then
   echo StorageController not installed.
 else
   echo Stopping Storage Controller
-  /opt/fungible/StorageController/etc/start_sc.sh stop
-  /opt/fungible/StorageController/etc/start_sc.sh -c
+  ${FUNGIBLE_ROOT}/StorageController/etc/start_sc.sh stop
+  ${FUNGIBLE_ROOT}/StorageController/etc/start_sc.sh -c
 fi
 # Stop CCLinux service
-if [ ! -f /opt/fungible/cclinux/cclinux_service.sh ] ; then
+if [ ! -f ${FUNGIBLE_ROOT}/cclinux/cclinux_service.sh ] ; then
   echo cclinux not installed
 else
   echo Stopping cclinux service
-  /opt/fungible/cclinux/cclinux_service.sh --stop
+  ${FUNGIBLE_ROOT}/cclinux/cclinux_service.sh --stop
 fi
 
 #############################################################
