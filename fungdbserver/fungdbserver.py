@@ -102,7 +102,7 @@ def get_sdkdir():
         workspace = sys.argv[0]
         for j in range(i):
             workspace = os.path.dirname(workspace)
-        LOG_DEBUG("workspace search: %s" % workspace)
+        DEBUG("workspace search: %s" % workspace)
         sdk = os.path.join(workspace, "FunSDK")
         sdk2 = os.path.join(sdk, "FunSDK")
         if (os.path.exists(sdk) and os.path.exists(sdk2)):
