@@ -1483,7 +1483,7 @@ enum mode {
 int main(int argc, char *argv[])
 {
 	enum mode mode = MODE_INTERACTIVE; /* default user control */
-	bool one_shot;  /* run a single command and terminate */
+	bool one_shot = false;  /* run a single command and terminate */
 	int ch, first_unknown = -1;
 	struct dpcsock funos_sock; /* connection to FunOS */
 	struct dpcsock cmd_sock;   /* connection to commanding agent */
