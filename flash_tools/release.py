@@ -98,15 +98,18 @@ def main():
     if wanted('prepare'):
         # paths to application binaries in SDK tree
         paths = [ "bin",
-                "FunSDK/u-boot", # TODO delete me after a few new-style SDKs are generated
-                "FunSDK/u-boot/f1", # TODO ensure s1 is supported and the line above is deleted
                 "FunSDK/sbpfw/roms",
                 "FunSDK/sbpfw/eeproms",
-                "FunSDK/sbpfw/firmware/chip_f1_emu_0",
-                "FunSDK/sbpfw/pufrom/chip_f1_emu_0",
                 "bundle_configs",
                 ]
         sdkpaths = [os.path.join(args.sdkdir, path) for path in paths]
+
+        paths_chip_specific = [ "FunSDK/u-boot/{chip}",
+                "FunSDK/sbpfw/firmware/chip_{chip}_emu_0",
+                "FunSDK/sbpfw/pufrom/chip_{chip}_emu_0",
+                ]
+        sdkpaths.extend(
+            [os.path.join(args.sdkdir, path.format(chip=args.chip)) for path in paths_chip_specific])
 
         # temporary as gf.run() doesn't support configurable target location
         if not os.path.exists(args.destdir):
