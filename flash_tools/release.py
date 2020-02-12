@@ -35,7 +35,6 @@ EEPROM_CONFIG_OVERRIDE="""
 FUNOS_CONFIG_OVERRIDE="""
 {{ "signed_images": {{
      "funos.signed.bin": {{
-         "origin":"",
          "source":"{funos_appname}"
          }}
      }}
