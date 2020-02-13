@@ -10,8 +10,6 @@ import sys
 import argparse
 import firmware_signing_service as fsi
 
-opts = None
-
 ###
 ## four-cc defaults
 #
@@ -43,6 +41,13 @@ def check_update(opts, the_opt, idx):
 ###
 ## main
 #
+
+def check_len_4(s):
+    if (len(s) == 4):
+        return s
+
+    raise argparse.ArgumentTypeError("fourcc must be of length 4")
+
 def parse_args():
     parser = argparse.ArgumentParser()
  
@@ -60,7 +65,8 @@ def parse_args():
 
     # Required arguments
     parser.add_argument("--fourcc", action="store", dest="ftype",
-                        help="fourcc/ftype of blob")
+                        type=check_len_4,
+                        help="required: fourcc/ftype of blob", required=True)
     parser.add_argument("--sign_key", action="store",
                         help="identifier of key to use, eg. hkey1")
     
@@ -74,12 +80,8 @@ def parse_args():
     opts.key_index = check_update(opts, opts.key_index, IDX_KEY_INDEX)
     
     # sanitise inputs
-    if (opts.ftype is None):
-        raise RuntimeError("fourcc must be specified")
-    if (len(opts.ftype) != 4):
-        raise RuntimeError("fourcc must be of length 4")
     if (opts.sign_key is None):
-        raise RuntimeError("sign_key must be specified")
+        parser.error("sign_key must be specified")
 
     if (opts.outfile is None):
         opts.outfile = opts.infile + ".signed"
@@ -87,7 +89,6 @@ def parse_args():
     return opts
  
 def main():
-    global opts
     opts = parse_args()
 
     # construct the net sign
