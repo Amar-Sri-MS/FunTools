@@ -93,5 +93,35 @@ bool {{struct.name}}_json_init(struct fun_json *j,
 	return true;
 }
 
+/*
+ * Returns JSON schema for {{struct.name}} structure.
+ */
+{# TODO: move data manipulation code outside of template #}
+const char *{{struct.name}}_json_schema()
+{
+  {% set schema_parts = [] %}
+{% for field in struct.fields %}
+ {% if field.is_reserved == false %}
+  {% if field.type.IsArray() %}
+    {% if field.type.ArraySize() > 0 %}
+      {{ schema_parts.append(field.name + ": {type: array, maxItems: " + field.type.ArraySize()|string + ", items: integer}") or ""}}
+    {% endif %}
+  {% elif field.type.IsRecord() %}
+    {% if field.type.base_type.node.is_union %}
+
+  /* TBD - Union - {{field.name}} */
+    {% else %}
+  /* TBD - Struct - {{field.name}} */
+
+    {% endif %}
+  {% else %}
+    {{ schema_parts.append(field.name + ": integer") or "" }}
+  {% endif %}
+ {% endif %}
+{% endfor %}
+	return "{type: object, properties:{ {{ schema_parts|join(", ") }} } }";
+}
+
+
 {% endfor %}
 {% endif %}
