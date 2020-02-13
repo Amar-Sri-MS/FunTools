@@ -178,7 +178,7 @@ def download_file(url, dest):
         u = urllib2.urlopen(url)
     except Exception as e:
         msg = "Failed to download file: %s" % e
-        raise RuntimeError(msg)
+        raise e
 
     f = open(dest, "wb")
 
@@ -194,7 +194,7 @@ def download_file(url, dest):
             sys.stderr.write("#")
             sys.stderr.flush()
 
-    LOG(" Downloaded %dkB" % (total_bytes / 1024))
+    LOG("Downloaded %dkB" % (total_bytes / 1024))
 
     return True
 
@@ -251,11 +251,17 @@ def http_get(uuid):
         LOG(s)
 
     bzfile = os.path.join(opts.tmpdir, suuid + ".bz")
-
+    
     # download the file if it's not local already
     if (not os.path.exists(bzfile)):
         bzurl = "%s%s.bz" % (urlpath, suuid)
-        download_file(bzurl, bzfile)
+        try:
+            download_file(bzurl, bzfile)
+        except urllib2.HTTPError, e:
+            if (e.code == 404):
+                LOG("Download error: 404 not found")
+                return None
+            raise e
 
     # uncompress it, if it's not already
     fname = uncompress_file(uuid, bzfile)
@@ -311,7 +317,7 @@ def local_search_uuid(uuid):
         for tok in toks:
             fname = do_search(uuid,
                               os.path.join(os.environ.get("WORKSPACE"),
-                                           "FunOS/build"))
+                                           tok))
             if (fname is not None):
                 return fname
             
@@ -342,8 +348,10 @@ def do_get(uuid, fname):
     else:
         raise RuntimeError("unknown get method: %s" % method)
 
-    # uncompress the bzip to make something useful
-    fname = uncompress_file(uuid, bzfname)
+    fname = bzfname
+    if (fname is not None):
+        # uncompress the bzip to make something useful
+        fname = uncompress_file(uuid, fname)
 
     return fname
 
@@ -367,12 +375,15 @@ def get_action(fname):
       
     fname = do_get(uuid, fname)
 
+    if (fname is None):
+        print("Could not find local or published binary for uuid: %s" % uuid)
+    
     return fname
     
 def get_action_stdout(fname):
     # discover the UUID
     fname = get_action(fname)
-    
+
     # output the actual filename
     print("%s" % fname)
 

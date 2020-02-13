@@ -49,9 +49,12 @@ def LOG(msg, suffix = "\n"):
 def LOG_ALWAYS(msg):
     msg += "\n"
     prefix = ""
-    if (not opts.server_only):
+    if (not opts.server_only):        
         prefix = "fungdbserver: "
-    sys.stderr.write(prefix + msg)
+    fl = sys.stderr
+    if (opts.crashlog):
+        fl = sys.stdout
+    fl.write(prefix + msg)
     if (log_file != sys.stderr):
         # echo it to the log
         LOG(msg, "")
@@ -99,12 +102,13 @@ def get_sdkdir():
 
     # try relative to the script - a few levels of "../"
     for i in range (1,6):
-        workspace = sys.argv[0]
+        workspace = os.path.dirname(os.path.realpath(__file__))
         for j in range(i):
             workspace = os.path.dirname(workspace)
         DEBUG("workspace search: %s" % workspace)
         sdk = os.path.join(workspace, "FunSDK")
         sdk2 = os.path.join(sdk, "FunSDK")
+        print("Trying %s" % sdk)
         if (os.path.exists(sdk) and os.path.exists(sdk2)):
             return sdk
 
@@ -1151,6 +1155,10 @@ def run_gdb_async(port, elffile):
     cmd += ["-ex", "target remote :%s" % port,
             "-ex", "compare-sections .note.gnu.build-id"]            
 
+    if (opts.crashlog):
+        cmd += ["-ex", "crashlog",
+                "-ex", "quit"]
+        
     cmd += [elffile]
     
     LOG_ALWAYS("Running GDB: %s" % " ".join(cmd))
@@ -1205,6 +1213,9 @@ def parse_args():
     parser.add_argument("--confirm", action="store_true",
                         default=False,
                         help="Require gdb to confirm exit")
+    parser.add_argument("--crashlog", action="store_true",
+                        default=False,
+                        help="Just execute the script to generate a crashlog and exit")
 
     # final arg is the dump file
     parser.add_argument("hbmdump", help="hbmdump file")
@@ -1238,7 +1249,11 @@ def main():
         # find us a binary
         excat.parse_args(True)
         elffile = excat.get_action(str(uuid))
-        
+
+        if (elffile is None):
+            LOG_ALWAYS("Cannot continue without symbols")
+            sys.exit(1)
+
         # run gdb
         port = sock.getsockname()[1]
         run_gdb_async(port, elffile)
