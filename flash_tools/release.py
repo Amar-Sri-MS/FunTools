@@ -87,7 +87,7 @@ def main():
                 "FunSDK/sbpfw/eeproms",
                 "FunSDK/sbpfw/firmware/chip_f1_emu_0",
                 "FunSDK/sbpfw/pufrom/chip_f1_emu_0",
-                "bundle_configs",
+                "feature_sets",
                 ]
         sdkpaths = [os.path.join(args.sdkdir, path) for path in paths]
 
