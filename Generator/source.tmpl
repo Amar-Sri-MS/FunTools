@@ -96,6 +96,7 @@ bool {{struct.name}}_json_init(struct fun_json *j,
 /*
  * Returns JSON schema for {{struct.name}} structure.
  */
+{# TODO: move data manipulation code outside of template #}
 const char *{{struct.name}}_json_schema()
 {
   {% set schema_parts = [] %}
