@@ -93,5 +93,34 @@ bool {{struct.name}}_json_init(struct fun_json *j,
 	return true;
 }
 
+/*
+ * Returns JSON schema for {{struct.name}} structure.
+ */
+const char *{{struct.name}}_json_schema()
+{
+	return "{type: object, properties:{"
+{% for field in struct.fields %}
+ {% if field.is_reserved == false %}
+  {% if field.type.IsArray() %}
+    {% if field.type.ArraySize() > 0 %}
+      "{{field.name}}: {type: array, maxItems: {{field.type.ArraySize()}}, items: integer},"
+    {% endif %}
+  {% elif field.type.IsRecord() %}
+    {% if field.type.base_type.node.is_union %}
+
+	/* TBD - Union - {{field.name}} */
+    {% else %}
+	/* TBD - Struct - {{field.name}} */
+
+    {% endif %}
+  {% else %}
+    "{{field.name}}: integer,"
+  {% endif %}
+ {% endif %}
+{% endfor %}
+	"}";
+}
+
+
 {% endfor %}
 {% endif %}
