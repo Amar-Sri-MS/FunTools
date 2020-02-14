@@ -165,6 +165,11 @@ extern "C" {
  */
 extern bool {{struct.name}}_json_init(struct fun_json *j, {{struct.DeclarationString()}} *s);
 
+/*
+ * Returns JSON schema for {{struct.name}} structure.
+ */
+extern const char *{{struct.name}}_json_schema();
+
 #ifdef __cplusplus
 }
 #endif

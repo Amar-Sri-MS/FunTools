@@ -32,9 +32,17 @@ EEPROM_CONFIG_OVERRIDE="""
 }
 """
 
+FUNOS_CONFIG_OVERRIDE="""
+{{ "signed_images": {{
+     "funos.signed.bin": {{
+         "source":"{funos_appname}"
+         }}
+     }}
+}}
+"""
+
 def main():
     parser = argparse.ArgumentParser()
-    flash_content = None
     config = {}
 
     parser.add_argument('config', nargs='+', help='Configuration file(s)')
@@ -48,6 +56,8 @@ def main():
     parser.add_argument('--force-version', type=int, help='Override firmware versions')
     parser.add_argument('--force-description', help='Override firmware description strings')
     parser.add_argument('--with-hsm', action='store_true', help='Use HSM for signing')
+    parser.add_argument('--chip', choices=['f1', 's1'], default='f1', help='Target chip')
+    parser.add_argument('--debug-build', dest='release', action='store_false', help='Use debug application binary')
     group_fs1600 = parser.add_mutually_exclusive_group()
     group_fs1600.add_argument('--generate-fs1600', dest='fs1600', action='store_const', const=1, help='Generate FS1600 flash images')
     group_fs1600.add_argument('--generate-fs1600r2', dest='fs1600', action='store_const', const=2, help='Generate FS1600r2 flash images')
@@ -56,6 +66,12 @@ def main():
 
     use_hsm = args.with_hsm
     use_net = not use_hsm
+
+    funos_suffixes = ['', args.chip]
+    if args.release:
+        funos_suffixes.append('release')
+
+    funos_appname = "funos{}.stripped".format('-'.join(funos_suffixes))
 
     wanted = lambda action : args.action in ['all', action]
 
@@ -68,6 +84,7 @@ def main():
 
     gf.merge_configs(config, json.loads(EEPROM_CONFIG_OVERRIDE))
     gf.merge_configs(config, json.loads(HOST_FIRMWARE_CONFIG_OVERRIDE))
+    gf.merge_configs(config, json.loads(FUNOS_CONFIG_OVERRIDE.format(funos_appname=funos_appname)))
     gf.set_config(config)
 
     if args.force_version:
@@ -81,15 +98,18 @@ def main():
     if wanted('prepare'):
         # paths to application binaries in SDK tree
         paths = [ "bin",
-                "FunSDK/u-boot", # TODO delete me after a few new-style SDKs are generated
-                "FunSDK/u-boot/f1", # TODO ensure s1 is supported and the line above is deleted
                 "FunSDK/sbpfw/roms",
                 "FunSDK/sbpfw/eeproms",
-                "FunSDK/sbpfw/firmware/chip_f1_emu_0",
-                "FunSDK/sbpfw/pufrom/chip_f1_emu_0",
                 "feature_sets",
                 ]
         sdkpaths = [os.path.join(args.sdkdir, path) for path in paths]
+
+        paths_chip_specific = [ "FunSDK/u-boot/{chip}",
+                "FunSDK/sbpfw/firmware/chip_{chip}_emu_0",
+                "FunSDK/sbpfw/pufrom/chip_{chip}_emu_0",
+                ]
+        sdkpaths.extend(
+            [os.path.join(args.sdkdir, path.format(chip=args.chip)) for path in paths_chip_specific])
 
         # temporary as gf.run() doesn't support configurable target location
         if not os.path.exists(args.destdir):
@@ -119,7 +139,7 @@ def main():
         cmd = [ 'python', 'make_emulation_emmc.py',
                 '-w', '.',
                 '-o', '.',
-                '--appfile', 'funos-f1.stripped',
+                '--appfile', funos_appname,
                 '--filesystem',
                 '--signed',
                 '--bootscript-only']
