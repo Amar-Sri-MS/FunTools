@@ -2,7 +2,8 @@
 
 """
 This script is for searching through Fun-on-Demand jobs. It must be run on a
-machine that has the Fun-on-Demand FS mounted.
+machine that has the /demand/demand mounted. Fun-on-Demand keeps its job files
+there.
 
 By default, the script waits until the search completes and outputs results
 ordered by date. To output in realtime, use the --unordered option. There are
@@ -31,7 +32,8 @@ import shutil
 import sys
 import os
 
-FILE_GLOB = "/demand/demand/Jobs/*/odp/uart*.txt"
+DEMAND_FS_ROOT = "/demand/demand"
+FILE_GLOB = DEMAND_FS_ROOT + "/Jobs/*/odp/uart*.txt"
 FOND_URL = "http://palladium-jobs.fungible.local:8080/job/"
 
 
@@ -193,7 +195,10 @@ def set_arg(arg):
 
 
 def handle_args():
-    parser = argparse.ArgumentParser(description="Search Fun-on-Demand jobs")
+    description = "Search Fun-on-Demand jobs. Fun-on-Demand filesystem must be mounted at {demand_fs_root}."
+    parser = argparse.ArgumentParser(
+        description=description.format(demand_fs_root=DEMAND_FS_ROOT)
+    )
 
     parser.add_argument(
         "--branches",
@@ -211,8 +216,17 @@ def handle_args():
         "--unordered", action="store_true", help="Don't sort results, print in realtime"
     )
     parser.add_argument("pattern", help="Grep compatible search pattern")
+    args = parser.parse_args()
 
-    return parser.parse_args()
+    # Sanity check to print a more helpful error message if the Fun-on-Demand
+    # filesystem is not mounted.
+    if not os.path.isdir(DEMAND_FS_ROOT):
+        msg = "error: Fun-on-Demand filesystem is not mounted at {demand_fs_root}.\n\n"
+        sys.stderr.write(msg.format(demand_fs_root=DEMAND_FS_ROOT))
+        parser.print_help(file=sys.stderr)
+        sys.exit(1)
+
+    return args
 
 
 if __name__ == "__main__":
