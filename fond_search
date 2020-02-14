@@ -1,0 +1,225 @@
+#!/usr/bin/env python3
+
+"""
+This script is for searching through Fun-on-Demand jobs. It must be run on a
+machine that has the Fun-on-Demand FS mounted.
+
+By default, the script waits until the search completes and outputs results
+ordered by date. To output in realtime, use the --unordered option. There are
+also options for filtering based on branch (--branches), or tag (--tags). These
+accept a comma separated list of branches or tags. It does not find the
+intersection of the CSV, it finds jobs matching any of the given values.
+
+The script uses grep, or rg (ripgrep) underneath, so the search pattern is a
+grep or rg compatible regex.
+
+Output looks like this:
+
+bturrubiates at qa-ubuntu-02 :: fond_search --tags nightly "Welcome" | head
+* 0019-05-30 07:17:00: team-regression@fungible: : crash
+  5923620: pke,palladium,pke_teramark,teramark,nightly: master: Nightly TeraMark PKE runs
+  http://palladium-jobs.fungible.local:8080/job/5923620
+  /demand/demand/Jobs/db2ecf30f7591451-19-05-30-07-17/odp/uartout0.txt
+"""
+
+import subprocess
+import datetime
+import argparse
+import pathlib
+import signal
+import shutil
+import sys
+import os
+
+FILE_GLOB = "/demand/demand/Jobs/*/odp/uart*.txt"
+FOND_URL = "http://palladium-jobs.fungible.local:8080/job/"
+
+
+class JobMatch:
+    def __init__(self, logfile):
+        self.logfile = logfile
+        self.jobdir = str(pathlib.Path(logfile).parents[1])
+        self.jobinfo = {}
+
+        for f in os.listdir(self.jobdir):
+            if "jobid" in f:
+                self.jobfile = os.path.join(self.jobdir, f)
+                with open(self.jobfile, "r") as f:
+                    for line in f:
+                        line = line.strip()
+                        if line:
+                            k, v = line.split(":", 1)
+                            self.jobinfo[k.strip()] = v.strip()
+
+        self.jobid = self.jobfile.split("_")[1]
+
+        parts = [int(part) for part in self.jobdir.split("-")[1:]]
+        self._datetime = datetime.datetime(*parts)
+
+    @property
+    def branch(self):
+        # Sometimes there is no branch_funos field in the jobfile.
+        return self.jobinfo.get("branch_funos", "?")
+
+    @property
+    def machines(self):
+        # Some jobs don't have a machine entry in the jobfile.
+        return self.jobinfo.get("machines", "?")
+
+    @property
+    def tags(self):
+        taginfo = self.jobinfo.get("tags", "")
+
+        tags = []
+        for tag in taginfo.split(","):
+            tag = tag.strip()
+
+            # Sometimes, a job with no tags has the word 'null', and at other
+            # times it has an empty string.
+            if tag and tag != "null":
+                tags.append(tag)
+
+        return set(tags)
+
+    @property
+    def email(self):
+        return self.jobinfo["email"]
+
+    @property
+    def return_code_msg(self):
+        return self.jobinfo["return_code_msg"]
+
+    @property
+    def note(self):
+        return self.jobinfo["s/w note"]
+
+    @property
+    def datetime(self):
+        return self._datetime
+
+    def __str__(self):
+        url = FOND_URL + self.jobid
+
+        return "* {date}: {email}: {machines}: {msg}\n  {jobid}: {tags}: {branch}: {note}\n  {url}\n  {path}".format(
+            date=self.datetime,
+            machines=self.machines,
+            email=self.email,
+            msg=self.return_code_msg,
+            jobid=self.jobid,
+            tags=",".join(self.tags),
+            branch=self.branch,
+            note=self.note,
+            url=url,
+            path=str(self.logfile),
+        )
+
+
+def process_results(results):
+    first = True
+
+    results.sort(key=lambda x: x.datetime)
+    for result in results:
+        if not first:
+            print()
+
+        print(result)
+        first = False
+
+
+def apply_job_filter(job, args):
+    if args.branches and job.branch not in args.branches:
+        return False
+
+    if args.tags and args.tags.isdisjoint(job.tags):
+        return False
+
+    return True
+
+
+def get_command():
+    # Ripgrep is a bit faster, https://github.com/BurntSushi/ripgrep.
+    if shutil.which("rg"):
+        cmd = 'rg --no-messages -l "{pattern}" -j 8 {glob}'
+    else:
+        cmd = 'grep --no-messages -l "{pattern}" {glob}'
+
+    return cmd.format(pattern=args.pattern, glob=FILE_GLOB)
+
+
+def run(args):
+    p = subprocess.Popen(
+        get_command(), stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
+    )
+
+    found = False
+    first = True
+    results = []
+
+    while True:
+        match = p.stdout.readline()
+        if not match:
+            # Check if process has finished
+            if p.poll() != None:
+                break
+
+            continue
+
+        match = match.decode("utf-8").strip()
+        try:
+            job = JobMatch(match)
+        except PermissionError:
+            continue
+
+        if apply_job_filter(job, args):
+            if args.unordered:
+                if not first:
+                    print()
+
+                print(job)
+            else:
+                results.append(job)
+
+            found = True
+            first = False
+
+    if not args.unordered:
+        process_results(results)
+
+    return 0 if found else 1
+
+
+def set_arg(arg):
+    return set(arg.split(","))
+
+
+def handle_args():
+    parser = argparse.ArgumentParser(description="Search Fun-on-Demand jobs")
+
+    parser.add_argument(
+        "--branches",
+        default=None,
+        type=set_arg,
+        help="Only search on specific branches, comma separated",
+    )
+    parser.add_argument(
+        "--tags",
+        default=None,
+        type=set_arg,
+        help="Only search specific tags, comma separated",
+    )
+    parser.add_argument(
+        "--unordered", action="store_true", help="Don't sort results, print in realtime"
+    )
+    parser.add_argument("pattern", help="Grep compatible search pattern")
+
+    return parser.parse_args()
+
+
+if __name__ == "__main__":
+    args = handle_args()
+
+    # Install default handler for SIGPIPE.
+    signal.signal(signal.SIGPIPE, signal.SIG_DFL)
+
+    # Like grep, return non-zero exit code if nothing was found.
+    sys.exit(run(args))
