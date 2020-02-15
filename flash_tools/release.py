@@ -100,7 +100,7 @@ def main():
         paths = [ "bin",
                 "FunSDK/sbpfw/roms",
                 "FunSDK/sbpfw/eeproms",
-                "bundle_configs",
+                "feature_sets",
                 ]
         sdkpaths = [os.path.join(args.sdkdir, path) for path in paths]
 
