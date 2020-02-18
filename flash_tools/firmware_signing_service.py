@@ -85,11 +85,6 @@ class NetSigningService(FirmwareSigningService):
                     {"Content-Length" : str(len(bin_data)) })
 
 
-        def create_binary_form_data( infile):
-            with open(infile, 'rb') as input:
-                bin_data = input.read()
-                return pack_binary_form_data(infile, bin_data)
-
         def hash_sign(digest, sign_key=None, modulus=None):
             ''' send a POST sign request new API with only digest sent '''
             multipart_form_data = { 'digest' : pack_binary_form_data("sha512", digest) }
