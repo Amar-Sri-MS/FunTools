@@ -45,13 +45,21 @@ latency_probe = {'code': [{'name': u'probe', 'value': [103, 189, 255, 168, 255, 
   {'source': {'index': 1, 'kind': 'code', 'name': u'probe_posthook'}, 'type': 6, 'target': {'index': 0, 'kind': 'code', 'name': u'probe'}, 'offset': 144},
   {'source': {'index': 3, 'kind': 'code', 'name': u'posthook'}, 'type': 4, 'target': {'index': 1, 'kind': 'code', 'name': u'probe_posthook'}, 'offset': 20}]}
 
+def funos_image_search():
+  path = ['funos-f1', '../../FunOS/build/funos-f1-qemu']
+  while p in path:
+    if os.path.isfile(p):
+      return p
+  print('Cant locate FunOS image')
+  sys.exit(1)
+
 def error(message):
-    print(message)
-    sys.exit(1)
+  print(message)
+  sys.exit(1)
 
 if __name__ == '__main__':
   dpc_client = init_dpc()
-  funos_image = '../../FunOS/build/funos-f1-qemu'
+  funos_image = funos_image_search()
   target_function = 'fun_malloc_threaded'
   cases = {'histogram': histogram_probe, 'counter': counter_probe, 'latency': latency_probe }
   testcase = 'latency'
