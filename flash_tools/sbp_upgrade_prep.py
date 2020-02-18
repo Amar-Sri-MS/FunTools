@@ -154,12 +154,6 @@ def get_signing_keys(sftp, build_id):
 
     return signing_keys(image_spec)
 
-
-def binary_form_data(file_name, bin_data):
-    return (file_name, bin_data, 'application/octet-stream',
-            {"Content-Length" : str(len(bin_data)) })
-
-
 def save_signed_image(firmware_sign, image, version, ftype, sign_key, cert, description):
 
     # save the image to a file
