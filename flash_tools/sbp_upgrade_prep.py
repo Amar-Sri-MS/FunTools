@@ -146,7 +146,7 @@ def get_signing_keys(sftp, build_id):
         funtools_sha1 = 'bld_' + bld_props["sdks"]["funsdk"]
 
     # make sure repo is up to date
-    git_pull_cmd = "git fetch origin master:master"
+    git_pull_cmd = "git fetch origin master:master --update-head-ok"
     subprocess.check_output(git_pull_cmd.split())
 
     git_show_cmd = GIT_SHOW_CMD_FMT.format(funtools_sha1)
