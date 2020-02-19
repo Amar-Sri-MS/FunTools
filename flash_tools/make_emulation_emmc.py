@@ -79,6 +79,15 @@ def trunc_file(infile_name, outfile_name, size):
            'iflag=count_bytes']
     subprocess.call(cmd)
 
+def trunc_head_file(infile_name, outfile_name, size):
+    """Remove @size bytes from beginning of file"""
+    cmd = ['dd',
+           'if={}'.format(infile_name),
+           'of={}'.format(outfile_name),
+           'skip={:d}'.format(size),
+           'iflag=skip_bytes']
+    subprocess.call(cmd)
+
 def merge_file(infile_name, outfile_name):
     """Append infile file to the end of outfile file"""
     cmd = ['dd',
@@ -297,6 +306,11 @@ def run():
     else:
         files.append(os.path.join(g.outdir, 'boot.pad.img'))
         files.append(g.work_file)
+
+    outfile_mmc0 = os.path.join(g.outdir, 'mmc0_image.bin')
+    outfile_mmc1 = os.path.join(g.outdir, 'mmc1_image.bin')
+    trunc_file(outfile_bin, outfile_mmc0, 4 * KB)
+    trunc_head_file(outfile_bin, outfile_mmc1, 4 * KB)
 
     if g.hex:
         for f in enumerate(files):
