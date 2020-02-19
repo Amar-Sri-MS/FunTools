@@ -17,7 +17,7 @@ import firmware_signing_service as fsi
 
 # fourcc: (sign_key, key_index)
 FOURCC_DEFAULTS = {
-    'fun1': ('hkey1', 0, 512),
+    'fun1': ('hkey1', 0, 1),
     'ccfg': ('hkey1', 0, 512),
 }
 

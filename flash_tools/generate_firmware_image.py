@@ -618,7 +618,7 @@ def image_gen(outfile, infile, ftype, version, description, sign_key,
     n = len(image) % pad
     if (n > 0):
         m = pad - n
-        padbytes = b"\0" * n
+        padbytes = b"\0" * m
         image += padbytes
 
     write(outfile, image)
