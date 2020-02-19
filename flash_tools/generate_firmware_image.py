@@ -562,7 +562,7 @@ def image_gen(outfile, infile, ftype, version, description, sign_key,
               sign_with_cert_func=sign_with_cert,
               pad=1):
     ''' generate signed firmware image '''
-    if (pad == 0):
+    if ((pad == 0) or (pad is None)):
         pad = 1 # make the lazy thing work
     binary = read(infile)
     to_be_signed = struct.pack('<2I', len(binary), version)
