@@ -47,9 +47,9 @@ class HsmSigningService(FirmwareSigningService):
 
     @staticmethod
     def image_gen(outfile, infile, ftype, version, description, sign_key,
-                  certfile, customer_certfile, key_index):
+                  certfile, customer_certfile, key_index, pad):
         return gfi.image_gen(outfile, infile, ftype, version, description, sign_key,
-                             certfile, customer_certfile, key_index)
+                             certfile, customer_certfile, key_index, pad=pad)
 
     @staticmethod
     def export_pub_key_hash(outfile, label):
@@ -78,7 +78,7 @@ class NetSigningService(FirmwareSigningService):
 
     @staticmethod
     def image_gen(outfile, infile, ftype, version, description, sign_key,
-                  certfile, customer_certfile, key_index):
+                  certfile, customer_certfile, key_index, pad):
 
         def pack_binary_form_data(title, bin_data):
             return (title, bin_data, 'application/octet-stream',
@@ -119,7 +119,8 @@ class NetSigningService(FirmwareSigningService):
         return gfi.image_gen(outfile, infile, ftype, version, description, sign_key,
                              certfile, customer_certfile, key_index,
                              sign_with_key_func=server_sign_with_key,
-                             sign_with_cert_func=server_sign_with_cert)
+                             sign_with_cert_func=server_sign_with_cert,
+                             pad=pad)
 
 
     @staticmethod

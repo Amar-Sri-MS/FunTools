@@ -16,6 +16,7 @@
             "cert": "",
             "customer_cert": "",
             "key_index": 0,
+            "pad": 512,
             "description": "10g feature-set"
         },
         "ccfg-100g.signed.bin": {
@@ -25,6 +26,7 @@
             "cert": "",
             "customer_cert": "",
             "key_index": 0,
+            "pad": 512,
             "description": "100g feature-set"
         },
         "ccfg-bmv.signed.bin": {
@@ -34,6 +36,7 @@
             "cert": "",
             "customer_cert": "",
             "key_index": 0,
+            "pad": 512,
             "description": "BMV feature-set"
         },
         "boot.img.signed": {

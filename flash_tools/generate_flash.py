@@ -99,6 +99,7 @@ def gen_fw_image(filename, attrs):
         'key_index':'key_index',
         'source':'infile',
         'version':'version',
+        'pad':'pad',
         'description':'description'
     }
 

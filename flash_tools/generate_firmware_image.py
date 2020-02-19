@@ -559,8 +559,11 @@ def add_cert_and_signature_to_image(image, cert, signature):
 def image_gen(outfile, infile, ftype, version, description, sign_key,
               certfile, customer_certfile, key_index,
               sign_with_key_func=sign_with_key,
-              sign_with_cert_func=sign_with_cert):
+              sign_with_cert_func=sign_with_cert,
+              pad=1):
     ''' generate signed firmware image '''
+    if ((pad == 0) or (pad is None)):
+        pad = 1 # make the lazy thing work
     binary = read(infile)
     to_be_signed = struct.pack('<2I', len(binary), version)
     to_be_signed += struct.pack('4s', ftype.encode())
@@ -610,6 +613,13 @@ def image_gen(outfile, infile, ftype, version, description, sign_key,
     image = add_cert_and_signature_to_image(b'', customer_cert,
                                             customer_signature)
     image += customer_to_be_signed
+
+    # pad the image to the requested length
+    n = len(image) % pad
+    if (n > 0):
+        m = pad - n
+        padbytes = b"\0" * m
+        image += padbytes
 
     write(outfile, image)
 
