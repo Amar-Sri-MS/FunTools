@@ -186,7 +186,8 @@ def get_certificate(header):
         return cert
     return None
 
-def explode_disk_image(nor_image_file, signing_keys, version_nr, description):
+def explode_disk_image(nor_image_file, signing_keys, version_nr, description,
+                       override_cert):
     directory = nor_image_file.read_dir()
     images = {}
     #create instance of signing service
@@ -196,6 +197,8 @@ def explode_disk_image(nor_image_file, signing_keys, version_nr, description):
         header,image = nor_image_file.read_image(addrs[0])
         if image is not None:
             cert = get_certificate(header)
+            if cert and override_cert:
+                cert = override_cert
             key = signing_keys.get(fourcc)
             save_signed_image(firmware_sign, image, version_nr, fourcc,
                               key, cert, description)
@@ -264,9 +267,16 @@ def main():
     arg_parser.add_argument("-j", "--json-spec", action='store',
                             help='''(Optional) JSON file used for key signing specification''')
 
+    arg_parser.add_argument("-c", "--certificate", action='store',
+                            help='''(Optional) Start Certificate''')
     args = arg_parser.parse_args()
 
     version_nr = int(args.version, 0)
+
+    if args.certificate:
+        override_cert = open(args.certificate, 'rb').read()
+    else:
+        override_cert = None
 
     ssh_client = get_ssh_client(args.username, args.servername)
     sftp = ssh_client.open_sftp()
@@ -275,7 +285,8 @@ def main():
         signing_keys = get_signing_keys_from_file(args.json_spec)
     else:
         signing_keys = get_signing_keys(sftp, args.build)
-    images = explode_disk_image(disk_image, signing_keys, version_nr, args.description)
+    images = explode_disk_image(disk_image, signing_keys, version_nr,
+                                args.description, override_cert)
     store_images(ssh_client, sftp, images, version_nr, args.username)
 
 
