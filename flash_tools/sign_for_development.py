@@ -17,13 +17,14 @@ import firmware_signing_service as fsi
 
 # fourcc: (sign_key, key_index)
 FOURCC_DEFAULTS = {
-    'fun1': ('hkey1', 0),
-    'ccfg': ('hkey1', 0),
+    'fun1': ('hkey1', 0, 512),
+    'ccfg': ('hkey1', 0, 512),
 }
 
 # match above tuple entries
 IDX_SIGN_KEY = 0
 IDX_KEY_INDEX = 1
+IDX_PAD = 2
 
 def check_update(opts, the_opt, idx):
     # user can always override
@@ -57,6 +58,10 @@ def parse_args():
     parser.add_argument("--description", action="store", default=None)
     parser.add_argument("-o", "--outfile", action="store", default=None,
                         help="output filename. defaults to $infile.signed")
+    parser.add_argument("-p", "--pad", action="store", default=None,
+                        type=int,
+                        metavar="SIZE",
+                        help="pad outfile to be a multiple of SIZE bytes")
  
     # Optional arguments with meaningful defaults (but rarely changed)
     parser.add_argument("--version", action="store", type=int, default=1)
@@ -78,6 +83,7 @@ def parse_args():
     # check for defaults
     opts.sign_key = check_update(opts, opts.sign_key, IDX_SIGN_KEY)
     opts.key_index = check_update(opts, opts.key_index, IDX_KEY_INDEX)
+    opts.pad = check_update(opts, opts.pad, IDX_PAD)
     
     # sanitise inputs
     if (opts.sign_key is None):
@@ -85,7 +91,10 @@ def parse_args():
 
     if (opts.outfile is None):
         opts.outfile = opts.infile + ".signed"
-    
+
+    if (opts.pad is None):
+        opts.pad = 1
+        
     return opts
  
 def main():
