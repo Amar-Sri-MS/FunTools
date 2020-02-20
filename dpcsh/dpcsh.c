@@ -1439,33 +1439,33 @@ static struct option longopts[] = {
 static void usage(const char *argv0)
 {
 	printf("usage: %s [<mode> [option]]", argv0);
-	printf("       by default connect as a --tcp_sock\n");
-	printf("       --help                  this text\n");
-	printf("       --dev[=device]          open device and read/write base64 to FunOS UART\n");
-	printf("       --no_flow_control       no flow control in uart. send char one by one with delay\n");
-	printf("       --base64_srv[=port]     listen as a server port on IP using base64 (dpcuart to qemu)\n");
-	printf("       --base64_sock[=port]    connect as a client port on IP using base64 (dpcuart to qemu)\n");
-	printf("       --inet_sock[=port]      connect as a client port over IP\n");
-	printf("       --unix_sock[=sockname]  connect as a client port over unix sockets\n");
+	printf("       by default connect over TCP\n");
+	printf("       -h, --help                  this text\n");
+	printf("       -D, --dev[=device]          open device and read/write base64 to FunOS UART\n");
+	printf("       -F, --no_flow_control       no flow control in uart. send char one by one with delay\n");
+	printf("       -B, --base64_srv[=port]     listen as a server port on IP using base64 (dpcuart to qemu)\n");
+	printf("       -b, --base64_sock[=port]    connect as a client port on IP using base64 (dpcuart to qemu)\n");
+	printf("       -i, --inet_sock[=port]      connect as a client port over IP\n");
+	printf("       -u, --unix_sock[=sockname]  connect as a client port over unix sockets\n");
 // DPC over NVMe is needed only in Linux
 #ifdef __linux__
-	printf("       --pcie_nvme_sock[=sockname]  connect as a client port over nvme pcie device\n");
+	printf("       -p, --pcie_nvme_sock[=sockname]  connect as a client port over nvme pcie device\n");
 #endif //__linux__
-	printf("       --http_proxy[=port]     listen as an http proxy\n");
-	printf("       --tcp_proxy[=port]      listen as a tcp proxy\n");
-	printf("       --text_proxy[=port]     same as \"--tcp_proxy\"\n");
-	printf("       --unix_proxy[=port]     listen as a unix proxy\n");
+	printf("       -H, --http_proxy[=port]     listen as an http proxy\n");
+	printf("       -T, --tcp_proxy[=port]      listen as a tcp proxy\n");
+	printf("       -T, --text_proxy[=port]     same as \"--tcp_proxy\"\n");
+	printf("       -t, --unix_proxy[=port]     listen as a unix proxy\n");
 #ifdef __linux__
-	printf("       --inet_interface=name   listen only on <name> interface\n");
+	printf("       -I, --inet_interface=name   listen only on <name> interface\n");
 #endif // __linux__
-	printf("       --nocli                 issue request from command-line arguments and terminate\n");
-	printf("       --oneshot               don't reconnect after command side disconnect\n");
-	printf("       --manual_base64         just translate base64 back and forward\n");
-	printf("       --no_dev_init           don't init the UART device, use as-is\n");
-	printf("       --baud=rate             specify non-standard baud rate (default=" DEFAULT_BAUD ")\n");
-	printf("       --legacy_b64            support old-style base64 encoding, despite issues\n");
-	printf("       --verbose               log all json transactions in proxy mode\n");
-	printf("       --retry[=N]             retry every seconds for N seconds for first socket connection\n");
+	printf("       -n, --nocli                 issue request from command-line arguments and terminate\n");
+	printf("       -S, --oneshot               don't reconnect after command side disconnect\n");
+	printf("       -N, --manual_base64         just translate base64 back and forward\n");
+	printf("       -X, --no_dev_init           don't init the UART device, use as-is\n");
+	printf("       -R, --baud=rate             specify non-standard baud rate (default=" DEFAULT_BAUD ")\n");
+	printf("       -L, --legacy_b64            support old-style base64 encoding, despite issues\n");
+	printf("       -v, --verbose               log all json transactions in proxy mode\n");
+	printf("       -Y, --retry[=N]             retry every seconds for N seconds for first socket connection\n");
 #ifdef __linux__
 	printf("       --nvme_cmd_timeout=timeout specify cmd timeout in ms (default=" DEFAULT_NVME_CMD_TIMEOUT_MS ")\n");
 #endif //__linux__
@@ -1635,7 +1635,7 @@ int main(int argc, char *argv[])
 			mode = MODE_PROXY;
 			break;
 
-		case 't':  /* text proxy */
+		case 't':  /* unix proxy */
 
 			cmd_sock.mode = SOCKMODE_UNIX;
 			cmd_sock.server = true;
