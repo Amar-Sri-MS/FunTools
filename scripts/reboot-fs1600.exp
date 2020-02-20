@@ -1,0 +1,100 @@
+#!/usr/bin/expect --
+
+# You will want to customize these variables to your FS-1600 and boot parameters
+# This script will connect to the BMC and connect minicom to your F1.  Pressing
+# CTRL-R will reboot the F1 with the specified boot parameters.  The script
+# terminates when minicom exits.
+
+# IP address of BMC
+set BMC 10.1.21.2
+
+# IP address of COMe
+set COMe 10.1.20.39
+
+# IP address of gateway
+set gateway 10.1.20.1
+
+# Which F1 to connect to (0 or 1)
+set console 0
+
+# The name of the boot image on the COMe
+set bootimg funos-f1.signed.$env(USER)
+
+# The boot arguments
+set bootargs "app=nullptr_crash --hbmdump --mgmt --all_100g"
+
+proc lremove {listVariable value} {
+    upvar 1 $listVariable var
+    set idx [lsearch -exact $var $value]
+    set var [lreplace $var $idx $idx]
+}
+
+set timeout -1
+
+log_user 0
+
+puts "Logging in to BMC $BMC..."
+
+# spawn both ssh's at the same time
+spawn -noecho ssh sysadmin@$BMC; set reset_id $spawn_id
+spawn -noecho ssh -t sysadmin@$BMC minicom -T F1_CON$console
+
+# associate a name with each spawn id
+set id_names($reset_id) "Reset shell"
+set id_names($spawn_id) "Console shell"
+
+# log in to both ssh's in parallel
+# create a list of spawn ids that are waiting
+set ids [array names id_names]
+while { [llength $ids] != 0 } {
+    expect {
+        -i ids
+        "password:" {
+            send -i $expect_out(spawn_id) "superuser\r"
+            lremove ids $expect_out(spawn_id)
+            puts "Logged in to $id_names($expect_out(spawn_id))"
+        }
+    }
+}
+
+puts "Waiting for minicom..."
+
+log_user 1
+
+expect {
+    "Press CTRL-A Z for help on special keys" {}
+    eof { exit 1 }
+}
+
+interact {
+    # CTRL-R
+    \022 {
+        # send clear-screen command to minicom so the user knows something is happening
+        send "\001C"
+
+        # send reset to f1 via BMC
+        log_user 0
+        expect -i $reset_id "~ # "
+        send -i $reset_id "/mnt/sdmmc0p1/scripts/f1_reset.sh ${console}\r"
+        log_user 1
+
+        # stop uboot, and boot our image
+        expect "Autoboot in 5 seconds. Type 'noboot' to disable autoboot."
+        send "noboot\r"
+        expect "f1 # "
+        send "lfw; lmpg; ltrain; lstatus\r"
+        expect "f1 # "
+        send "setenv autoload no\r"
+        expect "f1 # "
+        send "setenv gatewayip $gateway\r"
+        expect "f1 # "
+        send "setenv serverip $COMe\r"
+        expect "f1 # "
+        send "dhcp\r"
+        expect "f1 # "
+        send "setenv bootargs $bootargs\r"
+        expect "f1 # "
+        send "tftpboot 0xffffffff99000000 $COMe:$bootimg; authfw 0xffffffff99000000; bootelf -p \${loadaddr}\r"
+    }
+}
+
