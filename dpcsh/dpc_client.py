@@ -137,8 +137,8 @@ class DpcClient(object):
         try:
             decoded_results = json.loads(result)
         except:
-            print("ERROR: Unable to parse to JSON. data: %s" % result)
-            decoded_results = {"result" : None, "tid" : "-1"} # "an error happened"
+            raise DpcExecutionError("ERROR: Unable to parse to JSON. data: %s" % result)
+
         return decoded_results
 
     def async_recv_any_raw(self):
