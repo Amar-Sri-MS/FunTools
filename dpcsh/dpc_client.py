@@ -137,7 +137,7 @@ class DpcClient(object):
         try:
             decoded_results = json.loads(result)
         except:
-            raise DpcExecutionError("ERROR: Unable to parse to JSON. data: %s" % result)
+            raise DpcExecutionError("Unable to parse to JSON. data: %s" % result)
 
         return decoded_results
 
