@@ -331,6 +331,7 @@ parser.add_option("-N", "--no-boot", action="store_true", default=False)
 parser.add_option("-P", "--postscript", action="store", default=None)
 parser.add_option("-F", "--tftp", action="store_true", default=False)
 parser.add_option("-b", "--board", action="store", default=None)
+parser.add_option("--bootscript-only", action="store_true", help="Generate bootscript and terminate")
 
 (options, args) = parser.parse_args()
 
@@ -447,10 +448,14 @@ else:
 
         script = SCRIPT_TFTP
 
-    if not options.no_bootscript:
+    if not options.no_bootscript or options.bootscript_only:
         fl = open(script_name, "w")
         fl.write(script.format(**d))
         fl.close()
+
+    if options.bootscript_only:
+        print("Done generating bootscript, saving to {}".format(script_name))
+        exit(0)
 
     # make our own process group for easier clean-up
     print "Making our own process group"
