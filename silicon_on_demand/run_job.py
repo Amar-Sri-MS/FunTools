@@ -12,13 +12,15 @@ SB_01 = { "uart": "/dev/ttyUSB4",
           "baud": "1000000",
           "serverip": "172.17.1.1",
           "boardip": "172.17.1.2",
-          "iface": "enp1s0f1"}
+          "iface": "enp1s0f1",
+          "chip": "f1" }
 
 SB_02 = { "uart": "/dev/ttyUSB0",
           "baud": "1000000",
           "serverip": "172.16.1.1",
           "boardip": "172.16.1.2",
-          "iface": "enp1s0f0"}
+          "iface": "enp1s0f0",
+          "chip": "f1" }
 
 boards = {"sb-01": SB_01,
           "sb-02": SB_02 }
@@ -34,7 +36,7 @@ SCRIPT_HDR = """
 
 SCRIPT_UBOOT = """
   expect {{
-    "f1 #"
+    "{uboot_prompt}"
     "Autoboot" send "noboot"
     timeout 20 exit
   }}
@@ -49,7 +51,7 @@ SCRIPT_UBOOT = """
 SCRIPT_FUNOS = """
 # now wait for new u-boot
   expect {{
-    "f1 #"
+    "{uboot_prompt}"
     "Autoboot" send "noboot"
     timeout 20 goto no_uboot
   }}
@@ -113,7 +115,7 @@ expect {{
   send "noboot"
 
   expect {{
-     "f1 #"
+     "{uboot_prompt}"
      timeout 20 exit
   }}
 
@@ -352,6 +354,7 @@ else:
 
     krn = args[0]
     arg = " ".join(args[1:])
+    board = boards[options.board]
 
     # arg fixups
     arg = arg.replace("--test-exit-fast", "")
@@ -397,6 +400,7 @@ else:
 
     d['bootargs'] = arg
     d['minicom_pid'] = pid_name
+    d['uboot_prompt'] = "{} #".format(board['chip'])
 
     script = SCRIPT_HDR
     if not options.tftp:
@@ -428,7 +432,6 @@ else:
         d['global_timeout'] = global_timeout
         d['exit_timeout'] = exit_timeout
 
-        board = boards[options.board]
         d['serverip'] = board['serverip']
         d['boardip'] = board['boardip']
         d['iface'] = board['iface']
