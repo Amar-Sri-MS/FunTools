@@ -12,7 +12,12 @@ import json
 import tempfile
 import shutil
 
+import paramiko
+
 EEPROM_PREFIX="eeprom_"
+
+# do not change this: hardcoded in upgrade script
+CONFIG_JSON="image.json"
 
 # arguments are always:
 # 0: _machine, 1: _debug or '', 2 sbp directory, 3: build base directory
@@ -59,11 +64,14 @@ def generate_nor_image(script_directory, sbp_directory, images_directory,
     config_files = [os.path.join(script_directory, f) for f in
                     ["qspi_config_fungible.json", "key_bag_config.json"]]
 
-    options_fmt = "--fail-on-error --config-type json --source-dir {0} --source-dir {1}"
+    options_args = "--fail-on-error --config-type json"
 
-    options_args = options_fmt.format(images_directory,
+    options_fmt = " --source-dir {0} --source-dir {1} --out-config {2}"
+
+    options_args += options_fmt.format(images_directory,
                                       os.path.join(sbp_directory,
-                                                   "software/eeprom"))
+                                                   "software/eeprom"),
+                                      CONFIG_JSON)
     if version:
         options_args += " --force-version {0}".format(int(version,0))
 
@@ -76,6 +84,63 @@ def generate_nor_image(script_directory, sbp_directory, images_directory,
 
     result = subprocess.run(run_args, input=extra_config, cwd=images_directory,
                             stdout=sys.stdout, stderr=sys.stderr)
+
+
+def get_ssh_client(username, servername):
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    ssh_client.connect(hostname=servername, username=username)
+    return ssh_client
+
+
+def save_update_images_to_server(username, version, images_directory):
+
+    DOCHUB_REPO_DIR_USER_FMT = '/project/users/doc/sbp_images/{0}/master/funsdk_flash_images/{1}'
+    repo_dir = DOCHUB_REPO_DIR_USER_FMT.format(username, version)
+
+    print("Copying images to ", repo_dir)
+
+    ssh_client = get_ssh_client(username, "server1")
+    sftp = ssh_client.open_sftp()
+
+    # make sure the directory exists
+    _, stdout, _ = ssh_client.exec_command('mkdir -p ' + repo_dir +  ' 2>&1')
+    for line in iter(stdout.readline, ""):
+        print(line, end="")
+
+    # change current remote directory
+    sftp.chdir(repo_dir)
+
+    # read the config: figure out what to copy
+    config_file = os.path.join(images_directory, CONFIG_JSON)
+    with open(config_file, "r") as f:
+        config = json.load(f)
+
+    # copy all the images
+    images = config["signed_images"]
+    for f in images.keys():
+        # only some were created
+        try:
+            sftp.put(os.path.join(images_directory, f), f)
+        except FileNotFoundError:
+            pass
+
+    images = config["signed_meta_images"]
+    for f in images.keys():
+        # only some were created
+        try:
+            sftp.put(os.path.join(images_directory, f), f)
+        except FileNotFoundError:
+            pass
+
+    # config
+    sftp.put(config_file, CONFIG_JSON)
+
+    # dummy eemmc_image.bin required by upgrade script
+    with sftp.file("emmc_image.bin", "w") as dummy_emmc:
+        dummy_emmc.write("Place holder for eemmc_image.bin needed by upgrade script")
+        dummy_emmc.write("Replace with real version if emmc upgrade is desired")
+
 
 
 
@@ -100,6 +165,8 @@ def main():
                              help="Production build")
     arg_parser.add_argument("-s", "--sbp", action='store',
                             help="SBP Firmware directory")
+    arg_parser.add_argument("-u", "--username", action='store',
+                            help="User name to store images for update")
     arg_parser.add_argument("-v", "--version", action='store',
                             help="Force version for image -- useful for update")
 
@@ -154,6 +221,12 @@ def main():
     # now generate a NOR image -- fungible signed by default for the moment
     generate_nor_image(script_dir, args.sbp, built_images_dir, extra_config,
                        args.version, args.enrollment_certificate)
+
+    if args.username:
+        if args.version:
+            save_update_images_to_server(args.username, args.version, built_images_dir)
+        else:
+            print("Warning: no version specified. Images were not stored on dochub")
 
 
 if __name__ == '__main__':
