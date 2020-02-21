@@ -10,7 +10,6 @@ import signal
 
 SB_01 = { "uart": "/dev/ttyUSB4",
           "baud": "1000000",
-#          "chain_uboot": "/home/cgray/uboot-tftp.mpg.gz",
           "serverip": "172.17.1.1",
           "boardip": "172.17.1.2",
           "iface": "enp1s0f1"}
@@ -30,20 +29,18 @@ SCRIPT_HDR = """
   send ""
   sleep 1
   send ""
-  sleep 1
-  send ""
   print "Waiting for u-boot..."
 """
 
 SCRIPT_UBOOT = """
-  expect {
+  expect {{
     "f1 #"
     "Autoboot" send "noboot"
     timeout 20 exit
-  }
+  }}
 
   send "loadx"
-  ! sx -k %s
+  ! sx -k {chain_uboot}
   print "Download complete, auth & boot"
   sleep 1
   send "auth; bootelf_u -p"
@@ -51,42 +48,29 @@ SCRIPT_UBOOT = """
 
 SCRIPT_FUNOS = """
 # now wait for new u-boot
-  expect {
+  expect {{
     "f1 #"
     "Autoboot" send "noboot"
     timeout 20 goto no_uboot
-  }
+  }}
 
   sleep 1
-  timeout %s
+  timeout {global_timeout}
   send "loadx"
-  ! sx -k %s
+  ! sx -k {funos}
 
   print "Download complete, unzip time"
   sleep 2
   send ""
-  send ""
-  send "unzip 0xFFFFFFFF91000000 0xFFFFFFFF99000000"
-
-  # kick it again
-  print "Unzip done, waiting for u-boot prompt"
+  send "setenv bootargs {bootargs}"
   sleep 1
-  send ""
+  send "unzip 0xFFFFFFFF91000000 0xa800000020000000 ; {auth_boot_cmd}"
 
-  expect {
-     "f1 #"
-     timeout 20 goto no_unzip
-  }
-
-# save some command to nvram
-  send "setenv bootargs %s"
-  send "bootelf -p 0xFFFFFFFF99000000"
-
-  expect {
+  expect {{
       "platform_halt:"
       ">>>>>> bug_check on vp 0x" goto funos_crashing
-      timeout %s goto halt_timeout
-  }
+      timeout {exit_timeout} goto halt_timeout
+  }}
 
 funos_halted
   sleep 1
@@ -94,18 +78,14 @@ funos_halted
   goto out
 
 funos_crashing:
-  expect {
+  expect {{
       "platform_halt:" goto funos_halted
       timeout 20 break
-  }
+  }}
   print "FunOS crashed, but didn't see platform_halt"
 
 halt_timeout:
   print "Timeout waiting for FunOS to platform halt"
-  goto out
-
-no_unzip:
-  print "FunOS failed to unzip. Exiting"
   goto out
 
 no_uboot:
@@ -116,28 +96,8 @@ no_uboot:
 out:
   sleep 1
   print "boot.script: killing minicom"
-  ! cat %s | xargs kill -HUP
+  ! cat {minicom_pid} | xargs kill -HUP
 """
-
-SCRIPT_CHAIN = """
-  send ""
-  expect {{
-     "f1 #" break
-     timeout 40  goto no_uboot
-  }}
-
-  send "loadx"
-  ! sx -k {chain_uboot}
-
-  print "Download complete, unzip time"
-  sleep 2
-  send ""
-  send ""
-  send "unzip 0xFFFFFFFF91000000 0xFFFFFFFF99000000 ; bootelf -p 0xFFFFFFFF99000000"
-
-  goto chain_bypass
-"""
-
 
 SCRIPT_TFTP = """
 
@@ -355,7 +315,6 @@ def maybe_install_funos(funos):
     funos = "%s/%s" % (uname, binname)
 
     os.system("cp %s /home/mboksanyi/tftpboot/%s" % (ofunos, funos))
-
     return funos
 
 parser = optparse.OptionParser(usage="usage: %prog [options] funos-stripped.gz [-- bootargs]")
@@ -425,20 +384,38 @@ else:
 
     assert_file_is_signed(krn)
 
-    if (not options.tftp):
-        script = SCRIPT_HDR
-        if (options.uboot is not None):
-            script += SCRIPT_UBOOT % options.uboot
+    d = {} # options directory for the bootscript
+
+    filetype = get_file_mime_info(krn)
+    # we've already checked that it is not an executable file so this
+    # if below is obsolete, but currently left for reference ... to be removed
+    # in the future
+    if filetype == 'application/x-executable':
+        d['auth_boot_cmd'] = 'bootelf -p 0xa800000020000000'
+    elif filetype == 'application/octet-stream':
+        d['auth_boot_cmd'] = 'auth 0xa800000020000000; bootelf -p ${loadaddr}'
+
+    d['bootargs'] = arg
+    d['minicom_pid'] = pid_name
+
+    script = SCRIPT_HDR
+    if not options.tftp:
+        if options.uboot:
+            d['chain_uboot'] = options.uboot
+            script += SCRIPT_UBOOT
+
+        script += SCRIPT_FUNOS
 
         # 15 mins max download + other timeout
         global_timeout = 900 + options.timeout * 60
         exit_timeout = options.timeout * 60
-        script += SCRIPT_FUNOS % (global_timeout, krn, arg, exit_timeout, pid_name)
+
+        d['funos'] = krn
+        d['global_timeout'] = global_timeout
+        d['exit_timeout'] = exit_timeout
     else:
         # maybe install the files
-        krn = maybe_install_funos(krn)
-
-        filetype = get_file_mime_info(krn)
+        d['funos'] = maybe_install_funos(krn)
 
         # make a timeout
         timeout = options.timeout
@@ -448,39 +425,28 @@ else:
         exit_timeout = timeout * 60
         global_timeout = 120 + exit_timeout
 
-        # make the args
-        d = {}
         d['global_timeout'] = global_timeout
         d['exit_timeout'] = exit_timeout
-        d['bootargs'] = arg
-        d['funos'] = krn
-        d['minicom_pid'] = pid_name
-
-        if filetype == 'application/x-executable':
-            d['auth_boot_cmd'] = 'bootelf -p 0xa800000020000000'
-        elif filetype == 'application/octet-stream':
-            d['auth_boot_cmd'] = 'auth 0xa800000020000000; bootelf -p ${loadaddr}'
 
         board = boards[options.board]
         d['serverip'] = board['serverip']
         d['boardip'] = board['boardip']
         d['iface'] = board['iface']
 
-        if (board.get("chain_uboot") is not None):
+        if board.get("chain_uboot"):
             d['chain_uboot'] = board["chain_uboot"]
 
-        if (options.uboot is not None):
+        if options.uboot:
             d['chain_uboot'] = options.uboot
 
-        if (d.get("chain_uboot") is not None):
-            script = SCRIPT_CHAIN.format(**d)
-            script += SCRIPT_TFTP.format(**d)
-        else:
-            script = SCRIPT_TFTP.format(**d)
+        if d.get("chain_uboot"):
+            script += SCRIPT_UBOOT
 
-    if (not options.no_bootscript):
+        script = SCRIPT_TFTP
+
+    if not options.no_bootscript:
         fl = open(script_name, "w")
-        fl.write(script)
+        fl.write(script.format(**d))
         fl.close()
 
     # make our own process group for easier clean-up
