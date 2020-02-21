@@ -48,7 +48,7 @@ SCRIPT_UBOOT = """
   send "auth; bootelf_u -p"
 """
 
-SCRIPT_FUNOS = """
+SCRIPT_FUNOS_UART = """
 # now wait for new u-boot
   expect {{
     "{uboot_prompt}"
@@ -101,26 +101,18 @@ out:
   ! cat {minicom_pid} | xargs kill -HUP
 """
 
-SCRIPT_TFTP = """
+SCRIPT_FUNOS_TFTP = """
 
 # TFTP BOOT FTW
   print "boot.script: Waiting for u-boot"
-  send ""
 
 # now wait for new u-boot
-expect {{
-   "Autoboot"
-   timeout 30 goto no_uboot
-}}
-  send "noboot"
-
   expect {{
-     "{uboot_prompt}"
-     timeout 20 exit
+    "{uboot_prompt}"
+    "Autoboot" send "noboot"
+    timeout 20 goto no_uboot
   }}
-
-chain_bypass:
-
+  send ""
   timeout {global_timeout}
 
   print "\\nboot.script: bringing up the network"
@@ -407,9 +399,6 @@ else:
     if not options.tftp:
         if options.uboot:
             d['chain_uboot'] = options.uboot
-            script += SCRIPT_UBOOT
-
-        script += SCRIPT_FUNOS
 
         # 15 mins max download + other timeout
         global_timeout = 900 + options.timeout * 60
@@ -443,10 +432,13 @@ else:
         if options.uboot:
             d['chain_uboot'] = options.uboot
 
-        if d.get("chain_uboot"):
-            script += SCRIPT_UBOOT
+    if d.get("chain_uboot"):
+        script += SCRIPT_UBOOT
 
-        script = SCRIPT_TFTP
+    if options.tftp:
+        script += SCRIPT_FUNOS_TFTP
+    else:
+        script += SCRIPT_FUNOS_UART
 
     if not options.no_bootscript or options.bootscript_only:
         fl = open(script_name, "w")
