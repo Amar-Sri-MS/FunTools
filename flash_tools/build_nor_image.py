@@ -45,7 +45,7 @@ def generate_dynamic_config( chip, eeprom):
     return json.dumps(top_dir, indent=4).encode('ascii')
 
 
-def generate_nor_image(script_directory, sbp_directory, images_directory, extra_config):
+def generate_nor_image(script_directory, sbp_directory, images_directory, extra_config, version):
 
     # copy the start certificate to the images directory
     shutil.copy2(os.path.join(sbp_directory,
@@ -63,6 +63,8 @@ def generate_nor_image(script_directory, sbp_directory, images_directory, extra_
     options_args = options_fmt.format(images_directory,
                                       os.path.join(sbp_directory,
                                                    "software/eeprom"))
+    if version is not None:
+        options_args += " --force-version {0}".format(int(version,0))
 
     run_args = ['python3', flash_script, *(options_args.split()), *config_files, "-"]
 
@@ -91,6 +93,8 @@ def main():
                              help="Production build")
     arg_parser.add_argument("-s", "--sbp", action='store',
                             help="SBP Firmware directory")
+    arg_parser.add_argument("-v", "--version", action='store',
+                            help="Force version for image -- useful for update")
 
     args = arg_parser.parse_args()
 
@@ -133,7 +137,7 @@ def main():
                                   stdout=sys.stdout, stderr=sys.stderr)
 
     # now generate a NOR image -- fungible signed by default for the moment
-    generate_nor_image(script_dir, args.sbp, built_images_dir, extra_config)
+    generate_nor_image(script_dir, args.sbp, built_images_dir, extra_config, args.version)
 
 
 if __name__ == '__main__':
