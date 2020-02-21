@@ -455,6 +455,7 @@ def main():
 
     parser.add_argument('config', nargs='+', help='Configuration file(s)')
     parser.add_argument('--config-type', choices={'json','ini'}, default='json', help="Configuration file format")
+    parser.add_argument('--out-config', help="Write merged configuration file")
     parser.add_argument('--source-dir', action='append', help='Location of source files to be used (can be specified multiple times)', default=[os.path.curdir])
     parser.add_argument('--action', choices={'all', 'sign', 'flash', 'key_hashes', 'certificates', 'key_injection'}, default='all', help='Action to be performed on the input files')
     parser.add_argument('--force-version', type=int, help='Override firmware versions')
@@ -498,6 +499,10 @@ def main():
         set_versions(args.force_version)
 
     run(args.action, args.enroll_cert, hsm=args.use_hsm, net=(not args.use_hsm))
+
+    if args.out_config:
+        with open(args.out_config, "w") as f:
+            json.dump(config, f, indent=4)
 
 #TODO(mnowakowski) get rid of globals
 def set_config(cfg):
