@@ -47,7 +47,7 @@ latency_probe = {'code': [{'name': u'probe', 'value': [103, 189, 255, 168, 255, 
 
 def funos_image_search():
   path = ['funos-f1.stripped', '../../FunOS/build/funos-f1-qemu']
-  while p in path:
+  for p in path:
     if os.path.isfile(p):
       return p
   print('Cant locate FunOS image')
