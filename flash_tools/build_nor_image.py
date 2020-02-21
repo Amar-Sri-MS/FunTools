@@ -93,7 +93,7 @@ def get_ssh_client(username, servername):
     return ssh_client
 
 
-def save_update_images_to_server(username, version, images_directory):
+def save_update_images_to_server(username, version, remote_cmd, images_directory):
 
     DOCHUB_REPO_DIR_USER_FMT = '/project/users/doc/sbp_images/{0}/master/funsdk_flash_images/{1}'
     repo_dir = DOCHUB_REPO_DIR_USER_FMT.format(username, version)
@@ -119,7 +119,7 @@ def save_update_images_to_server(username, version, images_directory):
     # copy all the images
     images = config["signed_images"]
     for f in images.keys():
-        # only some were created
+        # only some were created for the NOR image
         try:
             sftp.put(os.path.join(images_directory, f), f)
         except FileNotFoundError:
@@ -141,8 +141,17 @@ def save_update_images_to_server(username, version, images_directory):
         dummy_emmc.write("Place holder for eemmc_image.bin needed by upgrade script")
         dummy_emmc.write("Replace with real version if emmc upgrade is desired")
 
+    # copy the NOR image too for use with NOR Programmer (PROMIRA)
+    nor_image = config["output_format"]["output"] + ".bin"
+    sftp.put(os.path.join(images_directory, nor_image), nor_image)
 
-
+    # if there is a command to run, do it pass version as argument
+    if remote_cmd:
+        full_cmd = "{0} {1}".format(remote_cmd, version)
+        print("Executing command {0}".format(full_cmd))
+        _, stdout, stderr = ssh_client.exec_command(full_cmd)
+        for line in iter(stdout.readline, ""):
+            print(line, end="")
 
 def main():
 
@@ -163,6 +172,9 @@ def main():
                             help="enrollment certificate to add to the image")
     arg_parser.add_argument("-p", "--production", action='store_true',
                              help="Production build")
+    arg_parser.add_argument("-r", "--run", action='store',
+                            help="command to run on the server after images are stored.\n"+
+                            "version is passed as first argument")
     arg_parser.add_argument("-s", "--sbp", action='store',
                             help="SBP Firmware directory")
     arg_parser.add_argument("-u", "--username", action='store',
@@ -224,7 +236,7 @@ def main():
 
     if args.username:
         if args.version:
-            save_update_images_to_server(args.username, args.version, built_images_dir)
+            save_update_images_to_server(args.username, args.version, args.run, built_images_dir)
         else:
             print("Warning: no version specified. Images were not stored on dochub")
 
