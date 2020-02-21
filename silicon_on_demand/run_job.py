@@ -37,9 +37,9 @@ SCRIPT_HDR = """
 
 SCRIPT_UBOOT = """
   expect {
-  	 "f1 #"
-         "Autoboot" send "noboot"
-  	 timeout 20 exit
+    "f1 #"
+    "Autoboot" send "noboot"
+    timeout 20 exit
   }
 
   send "loadx"
@@ -52,9 +52,9 @@ SCRIPT_UBOOT = """
 SCRIPT_FUNOS = """
 # now wait for new u-boot
   expect {
-  	 "f1 #"
-         "Autoboot" send "noboot"
-  	 timeout 20 goto no_uboot
+    "f1 #"
+    "Autoboot" send "noboot"
+    timeout 20 goto no_uboot
   }
 
   sleep 1
@@ -74,8 +74,8 @@ SCRIPT_FUNOS = """
   send ""
 
   expect {
-  	 "f1 #"
-  	 timeout 20 goto no_unzip
+     "f1 #"
+     timeout 20 goto no_unzip
   }
 
 # save some command to nvram
@@ -116,14 +116,14 @@ no_uboot:
 out:
   sleep 1
   print "boot.script: killing minicom"
-  ! cat %s | xargs kill -HUP 
+  ! cat %s | xargs kill -HUP
 """
 
 SCRIPT_CHAIN = """
   send ""
   expect {{
-  	 "f1 #" break
-  	 timeout 40  goto no_uboot
+     "f1 #" break
+     timeout 40  goto no_uboot
   }}
 
   send "loadx"
@@ -147,75 +147,72 @@ SCRIPT_TFTP = """
 
 # now wait for new u-boot
 expect {{
-	 "Autoboot"
-	 timeout 30 goto no_uboot
+   "Autoboot"
+   timeout 30 goto no_uboot
 }}
   send "noboot"
 
   expect {{
-  	 "f1 #"
-  	 timeout 20 exit
+     "f1 #"
+     timeout 20 exit
   }}
 
 chain_bypass:
 
   timeout {global_timeout}
-#  send "noautoboot"
-
-#  print "\\nboot.script: autoboot cancelled"
 
   print "\\nboot.script: bringing up the network"
   send "lfw"
   send "echo lfw_done"
   print ""
   expect {{
-  	 "lfw_done"
-  	 timeout 30 goto eep3
+     "lfw_done"
+     timeout 30 goto eep3
   }}
-  
+
   send "lmpg"
   send "echo lmpg_done"
   print ""
   expect {{
-  	 "lmpg_done"
-  	 timeout 30 goto eep3
+     "lmpg_done"
+     timeout 30 goto eep3
   }}
-  
+
   send "ltrain"
   send "echo ltrain_done"
   print ""
   expect {{
-  	 "ltrain_done"
-  	 timeout 30 goto eep3
+     "ltrain_done"
+     timeout 30 goto eep3
   }}
-  
+
   send "lstatus"
   send "echo lstatus_done"
   print ""
   expect {{
-  	 "lstatus_done"
-  	 timeout 30 goto eep3
+     "lstatus_done"
+     timeout 30 goto eep3
   }}
-  
+
   print "boot.script: configuring IP"
   send "setenv serverip {serverip}"
   send "echo serverip_done"
   print ""
   expect {{
-  	 "serverip_done"  break
-  	 timeout 30 goto eep3
+     "serverip_done"  break
+     timeout 30 goto eep3
   }}
 
   send "setenv ipaddr {boardip}"
   send "echo ipaddr_done"
   print ""
   expect {{
-  	 "ipaddr_done"   break
-  	 timeout 30 goto eep3
+     "ipaddr_done"   break
+     timeout 30 goto eep3
   }}
-  
+
   print "\\nChecking link status..."
-  ! cat {minicom_pid} | xargs /home/cgray/bin/check-i40e-link.py {iface} restart.fail 
+  ! cat {minicom_pid} | xargs /home/cgray/bin/check-i40e-link.py {iface} restart.fail
   print "\\nLink status checked"
 
   print "\\n"
@@ -332,7 +329,7 @@ def do_sleep(secs):
     while (waited < secs):
         time.sleep(delta)
         waited += delta
-    
+
 
 def sighup_handler(signal, frame):
     # this method defines the handler i.e. what to do
@@ -358,7 +355,7 @@ def maybe_install_funos(funos):
     funos = "%s/%s" % (uname, binname)
 
     os.system("cp %s /home/mboksanyi/tftpboot/%s" % (ofunos, funos))
-    
+
     return funos
 
 parser = optparse.OptionParser(usage="usage: %prog [options] funos-stripped.gz [-- bootargs]")
@@ -386,7 +383,7 @@ else:
     path = "."
 
 global_timeout = None
-    
+
 if (options.no_boot):
     maybe_reset_target(options)
 else:
@@ -394,13 +391,13 @@ else:
         parser.error("wrong number of arguments")
         sys.exit(1)
 
-    krn = args[0] 
+    krn = args[0]
     arg = " ".join(args[1:])
 
     # arg fixups
     arg = arg.replace("--test-exit-fast", "")
     # arg += " --skip-mem-zero"
-    
+
     maybe_reset_target(options)
 
     # make sure the kernel exists
@@ -450,7 +447,7 @@ else:
 
         exit_timeout = timeout * 60
         global_timeout = 120 + exit_timeout
-            
+
         # make the args
         d = {}
         d['global_timeout'] = global_timeout
@@ -468,19 +465,19 @@ else:
         d['serverip'] = board['serverip']
         d['boardip'] = board['boardip']
         d['iface'] = board['iface']
-        
+
         if (board.get("chain_uboot") is not None):
             d['chain_uboot'] = board["chain_uboot"]
-            
+
         if (options.uboot is not None):
             d['chain_uboot'] = options.uboot
-            
+
         if (d.get("chain_uboot") is not None):
             script = SCRIPT_CHAIN.format(**d)
             script += SCRIPT_TFTP.format(**d)
         else:
             script = SCRIPT_TFTP.format(**d)
-    
+
     if (not options.no_bootscript):
         fl = open(script_name, "w")
         fl.write(script)
@@ -525,15 +522,15 @@ else:
             do_kill = True
 
         # double check for platform_halt because runscript is terrible
-        out = subprocess.Popen(['tail', '-3', log_name], 
-                               stdout=subprocess.PIPE, 
+        out = subprocess.Popen(['tail', '-3', log_name],
+                               stdout=subprocess.PIPE,
                                stderr=subprocess.STDOUT)
         stdout,stderr = out.communicate()
         if "platform_halt" in stdout:
             print "platform halt detected, killing minicom"
             os.system("echo 'run_job: platform halt detected' >> %s" % (exit_name))
             do_kill = True
-            
+
         if (do_kill):
             killcmd = "kill -HUP %s" % p.pid
             print "killing with '%s'" % killcmd
@@ -541,7 +538,7 @@ else:
             print "waiting for its demise"
             p.wait()
             break
-            
+
     if (p.returncode is not None):
         print "run_job: minicom exited"
         cmd = "echo 'run_job: minicom died of natural causes (%s)' >> %s" % (p.returncode, exit_name)
@@ -556,7 +553,7 @@ else:
     #for i in range(30):
     #    print "run_job: pause"
     #    do_sleep(1)
-        
+
     print "Minicom is dead. long live minicom, but fixing its terminal settings..."
     do_sleep(2)
     if (not options.no_terminal_reset):
@@ -579,7 +576,7 @@ else:
     print "run_job exiting"
 
     do_sleep(2)
-    
+
 # if there's a restart fail, we don't want to run the postscript
 job_ok = not os.path.exists("restart.fail")
 
@@ -597,7 +594,7 @@ if (job_ok and (options.postscript is not None)):
     # now append it to the full log
     log2name = "%s/minicom-log.txt" % path
     os.system("cat %s >> %s" % (logname, log2name))
-    
+
 
 # exit cleanly
 sys.exit(0)
