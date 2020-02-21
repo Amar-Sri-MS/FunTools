@@ -460,9 +460,7 @@ def main():
     parser.add_argument('--force-version', type=int, help='Override firmware versions')
     parser.add_argument('--use-hsm', action='store_true', help='Use HSM for signing/keys')
     parser.add_argument('--fail-on-error', action='store_true', help='Always fail when encountering errors')
-    group = parser.add_mutually_exclusive_group()
-    group.add_argument('--enroll-cert', metavar = 'FILE', help='Enrollment certificate')
-    group.add_argument('--enroll-tbs', metavar = 'FILE', help='Enrollment tbs')
+    parser.add_argument('--enroll-cert', metavar = 'FILE', help='Enrollment certificate')
     args = parser.parse_args()
 
     search_paths = args.source_dir
@@ -499,8 +497,7 @@ def main():
     if args.force_version:
         set_versions(args.force_version)
 
-    run(args.action, args.enroll_cert, args.enroll_tbs,
-                hsm=args.use_hsm, net=(not args.use_hsm))
+    run(args.action, args.enroll_cert, hsm=args.use_hsm, net=(not args.use_hsm))
 
 #TODO(mnowakowski) get rid of globals
 def set_config(cfg):
@@ -512,7 +509,7 @@ def set_search_paths(paths):
     global search_paths
     search_paths = paths
 
-def run(arg_action, arg_enroll_cert = None, arg_enroll_tbs = None, *args, **kwargs):
+def run(arg_action, arg_enroll_cert = None, *args, **kwargs):
     global config
     global search_paths
     global firmware_sign
@@ -625,9 +622,6 @@ def run(arg_action, arg_enroll_cert = None, arg_enroll_tbs = None, *args, **kwar
         # enrollment certificate argument?
         enroll_cert = None
 
-        if arg_enroll_tbs:
-            enroll_cert = firmware_sign.raw_sign(arg_enroll_tbs)
-
         if arg_enroll_cert:
             try:
                 with open(arg_enroll_cert, "rb") as f:
@@ -636,7 +630,9 @@ def run(arg_action, arg_enroll_cert = None, arg_enroll_tbs = None, *args, **kwar
                 enroll_cert = None
 
         if enroll_cert:
-            flash_content = add_enrollment_certificate(flash_content, bin_infos, enroll_cert)
+            flash_content = add_enrollment_certificate(flash_content,
+                                                       bin_infos,
+                                                       enroll_cert)
 
         print_flash_map(bin_infos)
 
