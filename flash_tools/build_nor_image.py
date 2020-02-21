@@ -45,7 +45,8 @@ def generate_dynamic_config( chip, eeprom):
     return json.dumps(top_dir, indent=4).encode('ascii')
 
 
-def generate_nor_image(script_directory, sbp_directory, images_directory, extra_config, version):
+def generate_nor_image(script_directory, sbp_directory, images_directory,
+                       extra_config, version, enrollment_cert):
 
     # copy the start certificate to the images directory
     shutil.copy2(os.path.join(sbp_directory,
@@ -63,8 +64,11 @@ def generate_nor_image(script_directory, sbp_directory, images_directory, extra_
     options_args = options_fmt.format(images_directory,
                                       os.path.join(sbp_directory,
                                                    "software/eeprom"))
-    if version is not None:
+    if version:
         options_args += " --force-version {0}".format(int(version,0))
+
+    if enrollment_cert:
+        options_args += " --enroll-cert {0}".format(enrollment_cert)
 
     run_args = ['python3', flash_script, *(options_args.split()), *config_files, "-"]
 
@@ -89,6 +93,9 @@ def main():
                             help="Machine (f1,s1), default = f1")
     arg_parser.add_argument("-e", "--eeprom", action='store',
                             help="eeprom type")
+    arg_parser.add_argument("-n", "--enrollment-certificate", action='store',
+                            metavar = 'FILE',
+                            help="enrollment certificate to add to the image")
     arg_parser.add_argument("-p", "--production", action='store_true',
                              help="Production build")
     arg_parser.add_argument("-s", "--sbp", action='store',
@@ -110,9 +117,17 @@ def main():
     if args.eeprom is None:
         args.eeprom = EEPROM_PREFIX + args.chip
     else:
+        # Jenkins or other legacy users might specify the eeprom in
+        # a weird way...be nice
         args.eeprom = remove_prefix(args.eeprom, "fungible_")
         if not args.eeprom.startswith(EEPROM_PREFIX):
             args.eeprom = EEPROM_PREFIX + args.eeprom
+
+
+    # enrollment certificate
+    if args.enrollment_certificate:
+        args.enrollment_certificate = os.path.abspath(
+            args.enrollment_certificate)
 
     # build the argument list for the FMT strings
     fmt_args = ["_" + args.chip]
@@ -137,7 +152,8 @@ def main():
                                   stdout=sys.stdout, stderr=sys.stderr)
 
     # now generate a NOR image -- fungible signed by default for the moment
-    generate_nor_image(script_dir, args.sbp, built_images_dir, extra_config, args.version)
+    generate_nor_image(script_dir, args.sbp, built_images_dir, extra_config,
+                       args.version, args.enrollment_certificate)
 
 
 if __name__ == '__main__':
