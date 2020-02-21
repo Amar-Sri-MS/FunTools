@@ -25,7 +25,7 @@ boards = {"sb-01": SB_01,
           "sb-02": SB_02 }
 
 SCRIPT_HDR = """
-# blah
+  verbose on
   print Prodding u-boot
   send ""
   sleep 1
@@ -44,7 +44,9 @@ SCRIPT_UBOOT = """
 
   send "loadx"
   ! sx -k %s
-  send "bootelf -p 0xFFFFFFFF91000000"
+  print "Download complete, auth & boot"
+  sleep 1
+  send "auth; bootelf_u -p"
 """
 
 SCRIPT_FUNOS = """
@@ -55,7 +57,7 @@ SCRIPT_FUNOS = """
   	 timeout 20 goto no_uboot
   }
 
-
+  sleep 1
   timeout %s
   send "loadx"
   ! sx -k %s
@@ -314,6 +316,14 @@ def get_file_mime_info(filename):
         return ''
     return out.strip()
 
+def assert_file_is_signed(filename):
+    filetype = get_file_mime_info(filename)
+    if filetype == 'application/x-executable':
+        raise Exception("File is not signed")
+    elif filetype == 'application/octet-stream':
+        return
+
+
 def do_sleep(secs):
     secs = float(secs)
     delta = 0.3
@@ -412,6 +422,11 @@ else:
     exit_name = "%s/exitlog" % path
     pid_name = "%s/minicom.pid" % path
     dun_name = "%s/job.done" % path
+
+    if options.uboot:
+        assert_file_is_signed(options.uboot)
+
+    assert_file_is_signed(krn)
 
     if (not options.tftp):
         script = SCRIPT_HDR
