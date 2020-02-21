@@ -487,9 +487,9 @@ def connect_dbgprobe(tpod,tpod_jtag,tpod_pcie,tpod_force):
           (bmc,bmc_ip)=i2c_info
           status = dbgprobe().connect(bmc_board=bmc,mode='i2c', bmc_ip_address=bmc_ip)
        else:
-          (bmc,i2c_probe_serial, i2c_proxy_ip, i2c_slave_addr)=i2c_info
+          (bmc,i2c_probe_serial, i2c_proxy_ip, i2c_slave_addr, this_i2c_bitrate)=i2c_info
           print "connecting to I2C Proxy "+i2c_proxy_ip
-          status = dbgprobe().connect(bmc_board=bmc,mode='i2c', probe_ip_addr=i2c_proxy_ip , probe_id=i2c_probe_serial , slave_addr=i2c_slave_addr,force=tpod_force)
+          status = dbgprobe().connect(bmc_board=bmc,mode='i2c', probe_ip_addr=i2c_proxy_ip , probe_id=i2c_probe_serial , slave_addr=i2c_slave_addr,force=tpod_force, i2c_bitrate=this_i2c_bitrate)
        if status is True:
           print("I2C Server Connection Successful!")
        else:
