@@ -1,7 +1,8 @@
 #! /usr/bin/env python3
 #
-# Use this script to build a NOR image from scratch
+# Use this script to build a NOR image from scratch and perform more steps after.
 #
+
 
 import os
 import sys
@@ -13,6 +14,47 @@ import tempfile
 import shutil
 
 import paramiko
+
+
+DESCRIPTION='''Use this script to build the NOR image from sources, and
+optionally perform more tasks afterwards. The host image is copied from
+the FunSDK.
+'''
+
+EPILOG='''
+Examples:
+
+* Simple build of the current SBPFirmware branch:
+
+python3 build_nor_image.py
+
+* Simple build of the current SBPFirmware branch for s1:
+
+python3 build_nor_image.py -c s1
+
+* Production build of the current SBPFirmware branch for s1:
+
+python3 build_nor_image.py -c s1 -p
+
+* Simple build of the current SBPFirmware branch for s1 and
+store the image on DocHub for use with PROMIRA NOR programmer
+
+python3 build_nor_image.py -c s1 -u insop
+
+* Simple build of the current SBPFirmware branch for s1 and
+store the image on DocHub for use with PROMIRA NOR programmer.
+Image includes an enrollment certificate (secure boot)
+
+python3 build_nor_image.py -c s1 -u insop -n ~/mac/Downloads/1234_enrollment_cert.bin
+
+* Build for updating an existing F1: all jobs are scheduled.
+The run_fw_upgrade.sh is a script on the server that will schedule an upgrade job
+
+python3 build_nor_image.py -u ferino -v 9600 -r ./run_fw_upgrade.sh
+
+---
+'''
+
 
 EEPROM_PREFIX="eeprom_"
 
@@ -28,7 +70,6 @@ BUILD_DIR_FORMAT="{2}/{3}{0}_0{1}"
 # the target is like "build_debug_target_f1_0" or "build_target_s1_0"
 # The final 0 means it is not an emulation build
 MAKE_CMD_FORMAT='BUILD_BASE_DIR={3} make -C {2} build{1}_target{0}_0'
-
 
 def remove_prefix(s, prefix):
     if s.startswith(prefix):
@@ -96,6 +137,11 @@ def get_ssh_client(username, servername):
 def save_update_images_to_server(username, version, remote_cmd, images_directory):
 
     DOCHUB_REPO_DIR_USER_FMT = '/project/users/doc/sbp_images/{0}/master/funsdk_flash_images/{1}'
+
+    # no version provided -> place in directory 0: used for PROMIRA
+    if not version:
+        version = "0"
+
     repo_dir = DOCHUB_REPO_DIR_USER_FMT.format(username, version)
 
     print("Copying images to ", repo_dir)
@@ -157,11 +203,14 @@ def main():
 
     script_dir = os.path.dirname(os.path.realpath(sys.argv[0]))
 
-    arg_parser = argparse.ArgumentParser()
+    arg_parser = argparse.ArgumentParser(description=DESCRIPTION,
+                                         epilog=EPILOG,
+                                         formatter_class=argparse.RawDescriptionHelpFormatter)
 
     arg_parser.add_argument("-b", "--build-dir", action='store',
                             default="image_build",
-                            help="root for name of sub directory in which SPB will be built")
+                            help='''root for name of sub directory in which SPB will be built
+                            default is "image_build" ''')
     arg_parser.add_argument("-c", "--chip", action='store',
                             default='f1', choices=['f1','s1'],
                             help="Machine (f1,s1), default = f1")
@@ -171,12 +220,12 @@ def main():
                             metavar = 'FILE',
                             help="enrollment certificate to add to the image")
     arg_parser.add_argument("-p", "--production", action='store_true',
-                             help="Production build")
+                             help="Production build: very few log messages")
     arg_parser.add_argument("-r", "--run", action='store',
-                            help="command to run on the server after images are stored.\n"+
-                            "version is passed as first argument")
+                            help='''command to run on the server after images are stored.
+                            version is passed as first argument to this command''')
     arg_parser.add_argument("-s", "--sbp", action='store',
-                            help="SBP Firmware directory")
+                            help="SBP Firmware directory, default is $WORKSPACE/SBPFirmware")
     arg_parser.add_argument("-u", "--username", action='store',
                             help="User name to store images for update")
     arg_parser.add_argument("-v", "--version", action='store',
@@ -194,19 +243,31 @@ def main():
 
     # eeprom
     if args.eeprom is None:
-        args.eeprom = EEPROM_PREFIX + args.chip
+        if args.chip == 'f1':
+            args.eeprom = "eeprom_f1"
+        elif args.chip == 's1':
+            args.eeprom = "eeprom_s1_dev_board_r1"
     else:
         # Jenkins or other legacy users might specify the eeprom in
         # a weird way...be nice
-        args.eeprom = remove_prefix(args.eeprom, "fungible_")
-        if not args.eeprom.startswith(EEPROM_PREFIX):
-            args.eeprom = EEPROM_PREFIX + args.eeprom
+        sane_eeprom = remove_prefix(args.eeprom, "fungible_")
+        if not sane_eeprom.startswith(EEPROM_PREFIX):
+            sane_eeprom = EEPROM_PREFIX + sane_eeprom
+
+        # verify the file exists; if not show the list
+        eeprom_files = [f for f in os.listdir(os.path.join(args.sbp, "software/eeprom"))]
+        if not sane_eeprom in eeprom_files:
+            print("eeprom name entered ws not found: \"{0}\"".format(args.eeprom))
+            print("Available eeproms are:")
+            print("\n".join(eeprom_files))
+            sys.exit(1)
+
+        args.eeprom = sane_eeprom
 
 
     # enrollment certificate
     if args.enrollment_certificate:
-        args.enrollment_certificate = os.path.abspath(
-            args.enrollment_certificate)
+        args.enrollment_certificate = os.path.abspath(args.enrollment_certificate)
 
     # build the argument list for the FMT strings
     fmt_args = ["_" + args.chip]
@@ -234,12 +295,10 @@ def main():
     generate_nor_image(script_dir, args.sbp, built_images_dir, extra_config,
                        args.version, args.enrollment_certificate)
 
-    if args.username:
-        if args.version:
-            save_update_images_to_server(args.username, args.version, args.run, built_images_dir)
-        else:
-            print("Warning: no version specified. Images were not stored on dochub")
+    print("Images are all in {0}".format(built_images_dir))
 
+    if args.username:
+        save_update_images_to_server(args.username, args.version, args.run, built_images_dir)
 
 if __name__ == '__main__':
     main()
