@@ -101,8 +101,8 @@
             "customer_cert": "",
             "description": ""
         },
-        "eeprom_fs1600_0_packed.bin": {
-            "source": "eeprom_fs1600_0",
+        "eeprom_fs1600_rev1_0_packed.bin": {
+            "source": "eeprom_fs1600_rev1_0",
             "version": 1,
             "fourcc": "eepr",
             "key": "fpk3",
@@ -110,8 +110,8 @@
             "customer_cert": "",
             "description": ""
         },
-        "eeprom_fs1600_1_packed.bin": {
-            "source": "eeprom_fs1600_1",
+        "eeprom_fs1600_rev1_1_packed.bin": {
+            "source": "eeprom_fs1600_rev1_1",
             "version": 1,
             "fourcc": "eepr",
             "key": "fpk3",
@@ -119,8 +119,8 @@
             "customer_cert": "",
             "description": ""
         },
-        "eeprom_fs1600r2_0_packed.bin": {
-            "source": "eeprom_fs1600r2_0",
+        "eeprom_fs1600_rev2_0_packed.bin": {
+            "source": "eeprom_fs1600_rev2_0",
             "version": 1,
             "fourcc": "eepr",
             "key": "fpk3",
@@ -128,8 +128,8 @@
             "customer_cert": "",
             "description": ""
         },
-        "eeprom_fs1600r2_1_packed.bin": {
-            "source": "eeprom_fs1600r2_1",
+        "eeprom_fs1600_rev2_1_packed.bin": {
+            "source": "eeprom_fs1600_rev2_1",
             "version": 1,
             "fourcc": "eepr",
             "key": "fpk3",
