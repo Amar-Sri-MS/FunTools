@@ -61,16 +61,6 @@ EEPROM_PREFIX="eeprom_"
 # do not change this: hardcoded in upgrade script
 CONFIG_JSON="image.json"
 
-# arguments are always:
-# 0: _machine, 1: _debug or '', 2 sbp directory, 3: build base directory
-
-# the build directory is SBPDirectory/BUILD_BASE_DIR_f1_0_debug or SBPDirectory/BUILD_BASE_DIR_s1_0
-BUILD_DIR_FORMAT="{2}/{3}{0}_0{1}"
-
-# the target is like "build_debug_target_f1_0" or "build_target_s1_0"
-# The final 0 means it is not an emulation build
-MAKE_CMD_FORMAT='BUILD_BASE_DIR={3} make -C {2} build{1}_target{0}_0'
-
 def remove_prefix(s, prefix):
     if s.startswith(prefix):
         return s[len(prefix):]
@@ -78,7 +68,7 @@ def remove_prefix(s, prefix):
 
 
 def generate_dynamic_config( chip, eeprom):
-
+    ''' generate on the fly a config string specifying the eeprom and the host '''
     uboot_rel_dir = "FunSDK/FunSDK/u-boot/" + chip + "/u-boot.bin"
     host_location = os.path.join(os.environ["WORKSPACE"], uboot_rel_dir)
 
@@ -99,27 +89,29 @@ def generate_nor_image(script_directory, sbp_directory, images_directory,
                               "software/production/development_start_certificate.bin"),
                  os.path.join(images_directory,
                               "start_certificate.bin"))
+    #  fixed arguments
+    run_args = ["python3",
+                os.path.join(script_directory, "generate_flash.py"),
+                "--fail-on-error",
+                "--config-type", "json",
+                "--source-dir", images_directory,
+                "--source-dir", os.path.join(sbp_directory,
+                                             "software/eeprom"),
+                "--out-config", CONFIG_JSON]
 
-    flash_script = os.path.join(script_directory, "generate_flash.py")
-
-    config_files = [os.path.join(script_directory, f) for f in
-                    ["qspi_config_fungible.json", "key_bag_config.json"]]
-
-    options_args = "--fail-on-error --config-type json"
-
-    options_fmt = " --source-dir {0} --source-dir {1} --out-config {2}"
-
-    options_args += options_fmt.format(images_directory,
-                                      os.path.join(sbp_directory,
-                                                   "software/eeprom"),
-                                      CONFIG_JSON)
+    # optional arguments
     if version:
-        options_args += " --force-version {0}".format(int(version,0))
+        run_args.extend(["--force-version", version])
 
     if enrollment_cert:
-        options_args += " --enroll-cert {0}".format(enrollment_cert)
+        run_args.extend(["--enroll-cert", enrollment_cert])
 
-    run_args = ['python3', flash_script, *(options_args.split()), *config_files, "-"]
+    # config files
+    run_args.extend([os.path.join(script_directory, f) for f in
+                    ["qspi_config_fungible.json", "key_bag_config.json"]])
+
+    # stdin input will be used to send the config that was generated on the fly
+    run_args.append("-")
 
     print(run_args)
 
@@ -136,13 +128,13 @@ def get_ssh_client(username, servername):
 
 def save_update_images_to_server(username, version, remote_cmd, images_directory):
 
-    DOCHUB_REPO_DIR_USER_FMT = '/project/users/doc/sbp_images/{0}/master/funsdk_flash_images/{1}'
+    DOCHUB_REPO_DIR_USER_FMT = '/project/users/doc/sbp_images/{user}/master/funsdk_flash_images/{version}'
 
     # no version provided -> place in directory 0: used for PROMIRA
     if not version:
         version = "0"
 
-    repo_dir = DOCHUB_REPO_DIR_USER_FMT.format(username, version)
+    repo_dir = DOCHUB_REPO_DIR_USER_FMT.format(user=username, version=version)
 
     print("Copying images to ", repo_dir)
 
@@ -264,32 +256,32 @@ def main():
 
         args.eeprom = sane_eeprom
 
-
     # enrollment certificate
     if args.enrollment_certificate:
         args.enrollment_certificate = os.path.abspath(args.enrollment_certificate)
 
-    # build the argument list for the FMT strings
-    fmt_args = ["_" + args.chip]
-    if args.production:
-        fmt_args.append("")
-    else:
-        fmt_args.append("_debug")
+    # the build directory is SBPDirectory/BUILD_BASE_DIR_f1_0_debug or SBPDirectory/BUILD_BASE_DIR_s1_0
+    BUILD_DIR_FORMAT="{sbp}/{build_dir}_{chip}_0{_debug}"
 
-    fmt_args.append(args.sbp)
-    fmt_args.append(args.build_dir)
+    # the target is like "build_debug_target_f1_0" or "build_target_s1_0"
+    # The final 0 means it is not an emulation build
+    MAKE_CMD_FORMAT='BUILD_BASE_DIR={build_dir} make -C {sbp} build{_debug}_target_{chip}_0'
 
-    extra_config = generate_dynamic_config(args.chip, args.eeprom)
+    # args.production translate to a _debug
+    args._debug = "" if args.production else "_debug"
 
-    build_dir = BUILD_DIR_FORMAT.format(*fmt_args)
-    # images will be in build_dir/install
-    built_images_dir = os.path.join(build_dir, "install")
-
-    make_cmd = MAKE_CMD_FORMAT.format(*fmt_args)
+    build_dir = BUILD_DIR_FORMAT.format(**vars(args))
+    make_cmd = MAKE_CMD_FORMAT.format(**vars(args))
 
     # build the images in the build_dir
     build_result = subprocess.run(make_cmd, shell=True,
                                   stdout=sys.stdout, stderr=sys.stderr)
+
+    # images will be in build_dir/install
+    built_images_dir = os.path.join(build_dir, "install")
+
+    # generate a config string on the fly: host for the chip, eeprom
+    extra_config = generate_dynamic_config(args.chip, args.eeprom)
 
     # now generate a NOR image -- fungible signed by default for the moment
     generate_nor_image(script_dir, args.sbp, built_images_dir, extra_config,
@@ -297,6 +289,7 @@ def main():
 
     print("Images are all in {0}".format(built_images_dir))
 
+    # if user name specified, do remote work: copy and maybe run
     if args.username:
         save_update_images_to_server(args.username, args.version, args.run, built_images_dir)
 
