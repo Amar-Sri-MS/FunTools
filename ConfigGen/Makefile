@@ -34,16 +34,17 @@ TARGET_MACHINE ?= f1
 #json util dir
 JSONUTIL_DIR = $(SDKDIR)/bin/$(OS)/x86_64
 
-CFGGEN_SRC :=	cfg_gen.py        \
-		csr_db_gen.py     \
-		hu_cfg_gen.py     \
-		jsonutils.py      \
-		sku_cfg_gen.py    \
-		hwcap_cfg_gen.py  \
-		nu_cfg_gen.py     \
-		platform_sku_c.j2 \
-		platform_sku_h.j2 \
-		hwcap_config_c.j2 \
+CFGGEN_SRC :=	cfg_gen.py         \
+		csr_db_gen.py      \
+		hu_cfg_gen.py      \
+		storage_cfg_gen.py \
+		jsonutils.py       \
+		sku_cfg_gen.py     \
+		hwcap_cfg_gen.py   \
+		nu_cfg_gen.py      \
+		platform_sku_c.j2  \
+		platform_sku_h.j2  \
+		hwcap_config_c.j2  \
 		hwcap_config_h.j2
 
 CFGGEN_PY := ./cfg_gen.py

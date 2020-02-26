@@ -24,6 +24,7 @@ from hu_cfg_gen import HUCfgGen
 from sku_cfg_gen import SKUCfgGen
 from hwcap_cfg_gen import HWCAPCodeGen
 from nu_cfg_gen import NUCfgGen
+from storage_cfg_gen import StorageCfgGen
 
 logger = logging.getLogger("cfg_gen")
 logging.basicConfig(level=logging.INFO)
@@ -79,6 +80,17 @@ def _generate_stats_config(config_root_dir):
             stats_cfg = jsonutils.merge_dicts(stats_cfg, cfg_json)
     return stats_cfg
 
+# Creates storage config
+def _generate_storage_config(config_root_dir, output_dir,
+                             target_chip, target_machine):
+    logger.info('Processing storage config')
+
+    storage_cfg_gen = StorageCfgGen(config_root_dir, output_dir,
+                                    target_chip, target_machine)
+    storage_cfg = storage_cfg_gen.generate_config()
+
+    return storage_cfg 
+
 def build_target_is_posix(target_machine):
     if 'posix' in target_machine:
         return True
@@ -105,6 +117,10 @@ def _generate_funos_default_config(config_root_dir, output_dir,
 
     hu_cfg = _generate_hu_config(config_root_dir, output_dir)
     funos_default_config = jsonutils.merge_dicts(funos_default_config, hu_cfg)
+
+    storage_cfg = _generate_storage_config(config_root_dir, output_dir,
+                                           target_chip, target_machine)
+    funos_default_config = jsonutils.merge_dicts(funos_default_config, storage_cfg)
 
     sku_cfg = _generate_sku_config(config_root_dir, output_dir, target_chip, target_machine)
     funos_default_config = jsonutils.merge_dicts(funos_default_config, sku_cfg)
