@@ -85,7 +85,7 @@ popd
 
 validate_process_input
 
-if [! -f $SBP_ROOT_DIR/software/production/fpk1_modulus.c ]; then
+if [ ! -f $SBP_ROOT_DIR/software/production/fpk1_modulus.c ]; then
     exit 1
 fi
 
@@ -160,7 +160,7 @@ else
 	python3 $WORKSPACE/FunSDK/bin/flash_tools/generate_flash.py --config-type json \
 		--source-dir $SBP_INSTALL_DIR \
 		--source-dir $WORKSPACE/FunSDK/FunSDK/sbpfw/eeproms \
-		--enroll-tbs ${WORKSPACE}/enroll_tbs.bin \
+		--enroll-cert ${WORKSPACE}/enroll_cert.bin \
 		--fail-on-error \
 		$WORKSPACE/FunSDK/bin/flash_tools/qspi_config_fungible.json \
 		$WORKSPACE/FunSDK/bin/flash_tools/key_bag_config.json \
