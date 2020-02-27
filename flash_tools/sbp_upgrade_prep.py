@@ -221,7 +221,7 @@ def explode_disk_image(nor_image_file, signing_keys, version_nr, description,
     return { 'signed_images' : images }
 
 
-def store_images(ssh_client, sftp, images, version, username):
+def store_images(ssh_client, sftp, images, version, username, remote_cmd):
     """
     Store image on the dochub
     """
@@ -246,6 +246,15 @@ def store_images(ssh_client, sftp, images, version, username):
     with sftp.open(os.path.join(repo_dir, 'image.json'), 'w') as f:
         json.dump(images, f)
 
+    # if there is a command to run, do it pass version as argument
+    if remote_cmd:
+        full_cmd = "{0} {1}".format(remote_cmd, version)
+        print("Executing command {0}".format(full_cmd))
+        _, stdout, stderr = ssh_client.exec_command(full_cmd)
+        for line in iter(stdout.readline, ""):
+            print(line, end="")
+
+
 
 def main():
     arg_parser = argparse.ArgumentParser()
@@ -269,6 +278,11 @@ def main():
 
     arg_parser.add_argument("-c", "--certificate", action='store',
                             help='''(Optional) Start Certificate''')
+
+    arg_parser.add_argument("-r", "--run", action='store',
+                            help='''command to run on the server after images are stored.
+                            version is passed as first argument to this command''')
+
     args = arg_parser.parse_args()
 
     version_nr = int(args.version, 0)
@@ -287,7 +301,7 @@ def main():
         signing_keys = get_signing_keys(sftp, args.build)
     images = explode_disk_image(disk_image, signing_keys, version_nr,
                                 args.description, override_cert)
-    store_images(ssh_client, sftp, images, version_nr, args.username)
+    store_images(ssh_client, sftp, images, version_nr, args.username, args.run)
 
 
 
