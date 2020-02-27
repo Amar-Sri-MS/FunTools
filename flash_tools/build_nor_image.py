@@ -81,7 +81,8 @@ def generate_dynamic_config( chip, eeprom):
     return json.dumps(top_dir, indent=4).encode('ascii')
 
 
-def generate_nor_image(script_directory, sbp_directory, images_directory,
+def generate_nor_image(script_directory, sbp_directory,
+                       images_directory, eeprom_directory,
                        extra_config, version, enrollment_cert):
 
     # copy the start certificate to the images directory
@@ -95,8 +96,7 @@ def generate_nor_image(script_directory, sbp_directory, images_directory,
                 "--fail-on-error",
                 "--config-type", "json",
                 "--source-dir", images_directory,
-                "--source-dir", os.path.join(sbp_directory,
-                                             "software/eeprom"),
+                "--source-dir", eeprom_directory,
                 "--out-config", CONFIG_JSON]
 
     # optional arguments
@@ -226,6 +226,8 @@ def main():
     args = arg_parser.parse_args()
 
     # defaults and arguments sanitization
+    eeproms_dir = os.path.join(os.environ['WORKSPACE'],
+                               'FunSDK/FunSDK/sbpfw/eeproms')
 
     # sbp firmware directory
     if args.sbp is None:
@@ -236,9 +238,9 @@ def main():
     # eeprom
     if args.eeprom is None:
         if args.chip == 'f1':
-            args.eeprom = "eeprom_f1"
+            args.eeprom = "eeprom_f1_dev_board"
         elif args.chip == 's1':
-            args.eeprom = "eeprom_s1_dev_board_r1"
+            args.eeprom = "eeprom_s1_dev_board"
     else:
         # Jenkins or other legacy users might specify the eeprom in
         # a weird way...be nice
@@ -247,7 +249,7 @@ def main():
             sane_eeprom = EEPROM_PREFIX + sane_eeprom
 
         # verify the file exists; if not show the list
-        eeprom_files = [f for f in os.listdir(os.path.join(args.sbp, "software/eeprom"))]
+        eeprom_files = [f for f in os.listdir(eeproms_dir)]
         if not sane_eeprom in eeprom_files:
             print("eeprom name entered ws not found: \"{0}\"".format(args.eeprom))
             print("Available eeproms are:")
@@ -284,8 +286,8 @@ def main():
     extra_config = generate_dynamic_config(args.chip, args.eeprom)
 
     # now generate a NOR image -- fungible signed by default for the moment
-    generate_nor_image(script_dir, args.sbp, built_images_dir, extra_config,
-                       args.version, args.enrollment_certificate)
+    generate_nor_image(script_dir, args.sbp, built_images_dir, eeproms_dir,
+                       extra_config, args.version, args.enrollment_certificate)
 
     print("Images are all in {0}".format(built_images_dir))
 
