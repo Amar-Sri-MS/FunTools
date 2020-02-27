@@ -142,7 +142,7 @@ if [ $EMULATION == 0 ]; then
 	# generate flash image for real chip
 	python3 $WORKSPACE/FunSDK/bin/flash_tools/generate_flash.py --config-type json \
 		--source-dir $SBP_INSTALL_DIR \
-		--source-dir $SBP_ROOT_DIR/software/eeprom \
+		--source-dir $WORKSPACE/FunSDK/FunSDK/sbpfw/eeproms \
 		--fail-on-error \
 		$WORKSPACE/FunSDK/bin/flash_tools/qspi_config_fungible.json \
 		$WORKSPACE/FunSDK/bin/flash_tools/key_bag_config.json \
@@ -159,7 +159,7 @@ else
 	# generate flash image for emulation
 	python3 $WORKSPACE/FunSDK/bin/flash_tools/generate_flash.py --config-type json \
 		--source-dir $SBP_INSTALL_DIR \
-		--source-dir $SBP_ROOT_DIR/software/eeprom \
+		--source-dir $WORKSPACE/FunSDK/FunSDK/sbpfw/eeproms \
 		--enroll-tbs ${WORKSPACE}/enroll_tbs.bin \
 		--fail-on-error \
 		$WORKSPACE/FunSDK/bin/flash_tools/qspi_config_fungible.json \

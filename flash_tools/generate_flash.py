@@ -41,7 +41,9 @@ RESERVE_REGEX = re.compile(r"reserve\(\s*(0x[0-9A-Fa-f]+|\d+)\s*,\s*'(.{4})'\s*\
 def find_file_in_srcdirs(filename):
     global search_paths
     if filename:
+        print('---> {} {}'.format(filename,search_paths))
         for dir in search_paths:
+            print('dir: {} filename: {}'.format(dir, filename))
             file = os.path.join(dir, filename)
             if os.path.isfile(file):
                 return file
@@ -130,7 +132,8 @@ def gen_fw_image(filename, attrs):
         return filename
     else:
         if attrs['source']:
-            print("Skipping generation of {}, input {} not found".format(filename, attrs['source']))
+            print("Skipping generation of {}, input {} not found!  parameters: {}".format(filename, attrs['source'], args))
+
         else:
             print("Skipping generation of {}, no input specified".format(filename))
         if fail_on_err:
@@ -172,6 +175,7 @@ def read_file_and_pad(filename, padding, optional, minsize, create):
     if create:
         flash_file = create_file(filename)
     else:
+        print('filename: {}'.format(filename))
         flash_file = find_file_in_srcdirs(filename)
 
     try:

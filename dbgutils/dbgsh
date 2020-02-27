@@ -17,10 +17,8 @@ import csrutils.csr2utils
 from cmd2 import with_argparser
 from csrutils.csrutils import *
 
-
 logger = logging.getLogger("dbgutils")
 logger.setLevel(logging.INFO)
-
 
 #
 # Determine whether we are in CSR2 mode. This will eventually be the only

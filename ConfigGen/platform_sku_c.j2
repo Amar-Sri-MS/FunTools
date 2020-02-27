@@ -1,0 +1,27 @@
+/*
+ *  {{meta_data.filename_prefix}}.c
+ *
+ *  !!!! AUTO-GENERATED FILE. DO NOT EDIT !!!!
+ *  Created by {{meta_data.generator}} on {{meta_data.date}}.
+ *
+ *  Copyright {{meta_data.year}} Fungible Inc. All rights reserved.
+ */
+#include "{{meta_data.filename_prefix}}.h"
+
+struct platform_sku_t platform_sku_db[{{(emu_sku_list|length) + (fun_board_sku_list|length)}}] = {
+	/* sku list of emulation builds */
+	{% for sku_name,sku_id in emu_sku_list.items() -%}
+	{
+		.sku_id = SKU__{{sku_name.lower()}},
+		.sku_name = "{{sku_name.lower()}}",
+	},
+	{% endfor %}
+
+	/* sku list of fungible boards */
+	{% for sku_name,sku_id in fun_board_sku_list.items() -%}
+	{
+		.sku_id = SKU__{{sku_name.lower()}},
+		.sku_name = "{{sku_name.lower()}}",
+	},
+	{% endfor %}
+};

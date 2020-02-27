@@ -58,8 +58,6 @@ void print_HostUnitFunction(void)
 
 int main(void)
 {
-	printf("test hu_cfg\n\n");
-
 	print_HostUnits();
 	print_HostUnit();
 	//print_HostUnitController();

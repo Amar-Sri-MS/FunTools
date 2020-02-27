@@ -1,0 +1,45 @@
+/*
+ *  {{metadata.filename_prefix}}.h
+ *
+ *  !!!! AUTO-GENERATED FILE. DO NOT EDIT !!!!
+ *  Created by {{metadata.generator}} on {{metadata.date}}.
+ *
+ *  Copyright {{metadata.year}} Fungible Inc. All rights reserved.
+ */
+
+#pragma once
+
+{% for file in include_files %}
+#include "{{file}}"
+{% endfor %}
+
+enum hw_block_status {
+	{% for status, value in hw_block_status_list.items() -%}
+		{{status}} = {{value}},
+	{% endfor -%}
+};
+
+{%- macro struct_def(info) %}
+	{%- for field,size in info.items() -%}
+	unsigned int {{field}}:{{size}};
+	{% endfor -%}
+{% endmacro %}
+
+{% for hw_block,info in hw_block_defs.items() %}
+struct __attribute__ ((packed)) {{hw_block}}_cfg {
+	{{ struct_def(info) }}
+};
+{% endfor %}
+
+struct __attribute__ ((packed)) hwcap_cfg {
+{% for hw_block,inst_count in hw_block_inst_cnts.items() -%}
+	{%- if inst_count > 1 %}
+	struct {{hw_block}}_cfg {{hw_block}}[{{inst_count}}];
+	{%- else %}
+	struct {{hw_block}}_cfg {{hw_block}};
+	{%- endif %}
+{%- endfor %}
+};
+
+extern struct hwcap_cfg *hwcap[{{hwcap_max_entries+1}}];
+

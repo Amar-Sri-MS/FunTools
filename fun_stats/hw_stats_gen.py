@@ -246,7 +246,7 @@ class StatsGen(object):
         #self.cfg_objs = dict()
 
     def __arg_process(self, cmd_parser, other_args):
-        def_dir = os.path.join(self.cwd, "Configfiles/stats")
+        def_dir = os.path.join(self.cwd, "configs/stats_config")
         cmd_parser.add_argument("-c", "--cfg-dir", help="Dir for config files",
                 default=def_dir, required=False, type=str)
 

@@ -1,0 +1,60 @@
+/*
+ *  {{metadata.filename_prefix}}.c
+ *
+ *  !!!! AUTO-GENERATED FILE. DO NOT EDIT !!!!
+ *  Created by {{metadata.generator}} on {{metadata.date}}.
+ *
+ *  Copyright {{metadata.year}} Fungible Inc. All rights reserved.
+ */
+
+#include "{{metadata.filename_prefix}}.h"
+
+{%- macro hwcap_block_field_init(block_data) -%}
+	{%- for member,value in block_data.info.items() %}
+		.{{member}} = {{value}},
+	{%- endfor %}
+{% endmacro %}
+
+{%- macro block_inst_init(block_name, inst, list_entry) %}
+	.{{block_name}}[{{inst}}] = {
+		{{ hwcap_block_field_init(list_entry) }}
+	},
+{% endmacro %}
+
+{%- macro block_init(block_name, list_entry) %}
+	.{{block_name}} = {
+		{{ hwcap_block_field_init(list_entry) }}
+	},
+{% endmacro %}
+
+{%- macro hwcap_block_inst_init(block_name, block_data) %}
+	{%- for list_entry in block_data -%}
+		{%- if 'id' in list_entry -%}
+			{%- for inst in list_entry.id -%}
+				{{ block_inst_init(block_name, inst, list_entry) }}
+			{%- endfor -%}
+		{%- else -%}
+			{{ block_init(block_name, list_entry) }}
+		{%- endif -%}
+	{%- endfor -%}
+{% endmacro %}
+
+{%- macro hwcap_sku_cfg_init(hwcap_sku_cfg) %}
+	{%- for block,block_data in hwcap_sku_cfg.items() -%}
+		{{ hwcap_block_inst_init(block_name=block,block_data=block_data) }}
+	{%- endfor -%}
+{% endmacro %}
+
+{% for sku,hwcap_sku_cfg in hwcap_cfg.items() %}
+static struct hwcap_cfg _hwcap_sku_{{sku.lower()}}_cfg = {
+	{{ hwcap_sku_cfg_init(hwcap_sku_cfg) }}
+};
+{% endfor %}
+
+struct hwcap_cfg *hwcap[] = {
+{% for sku in hwcap_cfg %}
+	[SKU__{{sku.lower()}}] = &_hwcap_sku_{{sku.lower()}}_cfg,
+{% endfor %}
+};
+
+_Static_assert(((sizeof(hwcap) / sizeof(*(hwcap))) < 255), "Too many num of hwcap entries!");
