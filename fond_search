@@ -97,7 +97,7 @@ class JobMatch:
 
     @property
     def return_code_msg(self):
-        return self.jobinfo["return_code_msg"]
+        return self.jobinfo.get("return_code_msg", "?")
 
     @property
     def note(self):
@@ -151,19 +151,27 @@ def apply_job_filter(job, args):
     return True
 
 
-def get_command():
+def get_command(args):
+    match_spec = "-l"
+
     # Ripgrep is a bit faster, https://github.com/BurntSushi/ripgrep.
     if shutil.which("rg"):
-        cmd = 'rg --no-messages -l "{pattern}" -j 8 {glob}'
-    else:
-        cmd = 'grep --no-messages -l "{pattern}" {glob}'
+        if args.invert_match:
+            match_spec = "--files-without-match"
 
-    return cmd.format(pattern=args.pattern, glob=FILE_GLOB)
+        cmd = 'rg --no-messages {match_spec} "{pattern}" -j 8 {glob}'
+    else:
+        if args.invert_match:
+            match_spec = "-L"
+
+        cmd = 'grep --no-messages {match_spec} "{pattern}" {glob}'
+
+    return cmd.format(match_spec=match_spec, pattern=args.pattern, glob=args.glob)
 
 
 def run(args):
     p = subprocess.Popen(
-        get_command(), stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
+        get_command(args), stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
     )
 
     found = False
@@ -254,6 +262,12 @@ def handle_args():
         "--unordered",
         action="store_true",
         help="Don't sort results, print in realtime",
+    )
+    parser.add_argument(
+        "-i",
+        "--invert-match",
+        action="store_true",
+        help="Show jobs that don't match the given pattern",
     )
     parser.add_argument("pattern", help="Grep compatible search pattern")
     args = parser.parse_args()
