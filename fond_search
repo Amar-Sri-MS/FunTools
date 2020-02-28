@@ -33,6 +33,7 @@ import sys
 import os
 
 DEMAND_FS_ROOT = "/demand/demand"
+DEMAND_FS_JOB_PREFIX = DEMAND_FS_ROOT + "/Jobs"
 FILE_GLOB = DEMAND_FS_ROOT + "/Jobs/*/odp/uart*.txt"
 FOND_URL = "http://palladium-jobs.fungible.local:8080/job/"
 
@@ -40,7 +41,7 @@ FOND_URL = "http://palladium-jobs.fungible.local:8080/job/"
 class JobMatch:
     def __init__(self, logfile):
         self.logfile = logfile
-        self.jobdir = str(pathlib.Path(logfile).parents[1])
+        self.jobdir = self._get_jobdir_from_logfile(logfile)
         self.jobinfo = {}
 
         for f in os.listdir(self.jobdir):
@@ -57,6 +58,13 @@ class JobMatch:
 
         parts = [int(part) for part in self.jobdir.split("-")[1:]]
         self._datetime = datetime.datetime(*parts)
+
+    @staticmethod
+    def _get_jobdir_from_logfile(logfile):
+        path = pathlib.Path(logfile)
+        relative = path.relative_to(DEMAND_FS_JOB_PREFIX)
+
+        return os.path.join(DEMAND_FS_JOB_PREFIX, relative.parts[0])
 
     @property
     def branch(self):
@@ -135,6 +143,11 @@ def apply_job_filter(job, args):
     if args.tags and args.tags.isdisjoint(job.tags):
         return False
 
+    if args.file_size_upper_bound:
+        size = os.path.getsize(job.logfile)
+        if size > args.file_size_upper_bound:
+            return False
+
     return True
 
 
@@ -171,6 +184,15 @@ def run(args):
             job = JobMatch(match)
         except PermissionError:
             continue
+        except ValueError:
+            # File does not match Fun-on-Demand FS path. We expect the filepath
+            # to have /demand/demand/Jobs/* form.
+            sys.sterr.write(
+                "Match {match} is not relative to {prefix}".format(
+                    match=match, prefix=DEMAND_FS_JOB_PREFIX
+                )
+            )
+            continue
 
         if apply_job_filter(job, args):
             if args.unordered:
@@ -201,19 +223,37 @@ def handle_args():
     )
 
     parser.add_argument(
+        "-b",
         "--branches",
         default=None,
         type=set_arg,
         help="Only search on specific branches, comma separated",
     )
     parser.add_argument(
+        "-t",
         "--tags",
         default=None,
         type=set_arg,
         help="Only search specific tags, comma separated",
     )
     parser.add_argument(
-        "--unordered", action="store_true", help="Don't sort results, print in realtime"
+        "--file-size-upper-bound",
+        default=None,
+        type=int,
+        help="Upper bound on file size",
+    )
+    parser.add_argument(
+        "-g",
+        "--glob",
+        default=FILE_GLOB,
+        type=str,
+        help="Glob for file search under demand FS",
+    )
+    parser.add_argument(
+        "-u",
+        "--unordered",
+        action="store_true",
+        help="Don't sort results, print in realtime",
     )
     parser.add_argument("pattern", help="Grep compatible search pattern")
     args = parser.parse_args()
@@ -223,6 +263,15 @@ def handle_args():
     if not os.path.isdir(DEMAND_FS_ROOT):
         msg = "error: Fun-on-Demand filesystem is not mounted at {demand_fs_root}.\n\n"
         sys.stderr.write(msg.format(demand_fs_root=DEMAND_FS_ROOT))
+        parser.print_help(file=sys.stderr)
+        sys.exit(1)
+
+    path = pathlib.Path(args.glob)
+    try:
+        path.relative_to(DEMAND_FS_JOB_PREFIX)
+    except ValueError:
+        msg = "error: Glob {glob} not relative to demand FS job prefix {prefix}\n\n"
+        sys.stderr.write(msg.format(glob=args.glob, prefix=DEMAND_FS_JOB_PREFIX))
         parser.print_help(file=sys.stderr)
         sys.exit(1)
 
