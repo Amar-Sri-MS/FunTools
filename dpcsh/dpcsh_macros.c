@@ -59,19 +59,25 @@ void dpcsh_load_macros(void)
 			.short_description = "switch display to hex/decimal",
 			.long_description = "hex { true / false }",
 			.is_macro = true,
-			. macro = hex_macro,
+			.privilege_needed = fun_privilege_guest,
+			.arguments_schema = "{type: array, items: boolean, maxItems: 1}",
+			.macro = hex_macro,
 		},
 		// Next 2 are test macros
 		{
 			.verb = "_macro1",
 			.short_description = "test macro that expands to 'echo'",
 			.is_macro = true,
+			.privilege_needed = fun_privilege_guest,
+			.arguments_schema = "{}",
 			.macro = test_macro1,
 		},
 		{
 			.verb = "_macro2",
 			.short_description = "test macro that expands to itself, i.e. loops",
 			.is_macro = true,
+			.privilege_needed = fun_privilege_guest,
+			.arguments_schema = "{}",
 			.macro = test_macro2,
 		},
 	};

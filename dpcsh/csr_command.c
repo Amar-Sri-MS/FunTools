@@ -222,7 +222,7 @@ static CALLER_TO_RELEASE struct fun_json *csr_macro(const struct fun_json *input
 
 void register_csr_macro(void)
 {
-	static const struct fun_commander_reg_info info = {
+	const struct fun_commander_reg_info info = {
 		.verb = "csr",
 		.short_description = "csr peek|poke|find <csr_spec> ...",
 		.long_description = "  csr peek <csr_addr> <width_in_64b_words>\n"
@@ -231,6 +231,8 @@ void register_csr_macro(void)
 			"    <csr_addr> is a string or a query dictionary\n"
 			"    <value> is a 64b-word or an array of 64b ints\n",
 		.is_macro = true,
+		.privilege_needed = fun_privilege_guest,
+		.arguments_schema = "{}",
 		.macro = csr_macro,
 	};
 	fun_commander_register(&info);
