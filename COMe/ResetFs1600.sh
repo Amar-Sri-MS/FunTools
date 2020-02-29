@@ -53,12 +53,8 @@ $FUN_ROOT/StorageController/etc/start_sc.sh stop
 sync
 
 # This is a blocking call -> Eddie
-$FUN_ROOT/cclinux/cclinux_service.sh --hardreset
+$FUN_ROOT/cclinux/cclinux_service.sh --stop
 sync
-
-# Not that Fungible apps (dockers) are closed
-# Lets bring the system syslog down
-kill -HUP $(cat /var/run/rsyslogd.pid)
 
 # Save unfinished work in FS before async reboot
 sync
