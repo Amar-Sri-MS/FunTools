@@ -13,7 +13,6 @@ import generate_flash as gf
 import flash_utils
 
 
-#TODO (make configurable for S1 and other)
 HOST_FIRMWARE_CONFIG_OVERRIDE="""
 { "signed_images": {
      "host_firmware_packed.bin": {
@@ -27,7 +26,7 @@ HOST_FIRMWARE_CONFIG_OVERRIDE="""
 EEPROM_CONFIG_OVERRIDE="""
 { "signed_images": {
      "eeprom_packed.bin": {
-         "source":"eeprom_f1"
+         "source":"eeprom_f1_dev_board"
          }
      }
 }
