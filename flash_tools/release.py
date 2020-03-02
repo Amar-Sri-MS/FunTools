@@ -8,6 +8,7 @@ import json
 import argparse
 import shutil
 import subprocess
+import tarfile
 import generate_flash as gf
 import flash_utils
 
@@ -47,7 +48,7 @@ def main():
 
     parser.add_argument('config', nargs='+', help='Configuration file(s)')
     parser.add_argument('--action',
-        choices={'all', 'prepare', 'certificate', 'sign', 'image'},
+        choices={'all', 'prepare', 'certificate', 'sign', 'image', 'tarball'},
         default='all',
         help='Action to be performed on the input files')
     parser.add_argument('--sdkdir', required=True, help='SDK root directory')
@@ -210,6 +211,29 @@ def main():
                 '--filesystem',
                 '--signed' ]
         subprocess.call(cmd)
+
+        os.chdir(curdir)
+
+    if wanted('tarball'):
+        os.chdir(args.destdir)
+        tarfiles = []
+        exported = lambda el: not el[1].get("internal", False)
+
+        with open("image.json") as f:
+            images = json.load(f)
+            tarfiles.extend(dict(filter(exported, images['signed_images'].items())).keys())
+            tarfiles.extend(dict(filter(exported, images['signed_meta_images'].items())).keys())
+
+        with open("mmc_image.json") as f:
+            images = json.load(f)
+            tarfiles.extend(dict(filter(exported, images['generated_images'].items())).keys())
+
+        tarfiles.append('image.json')
+        tarfiles.append('mmc_image.json')
+
+        with tarfile.open('sdk_signed_release.tar.gz', mode='w:gz') as tar:
+            for f in tarfiles:
+                tar.add(f)
 
         os.chdir(curdir)
 
