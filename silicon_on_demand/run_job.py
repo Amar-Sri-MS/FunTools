@@ -10,25 +10,24 @@ import signal
 
 SB_01 = { "uart": "/dev/ttyUSB4",
           "baud": "1000000",
-#          "chain_uboot": "/home/cgray/uboot-tftp.mpg.gz",
           "serverip": "172.17.1.1",
           "boardip": "172.17.1.2",
-          "iface": "enp1s0f1"}
+          "iface": "enp1s0f1",
+          "chip": "f1" }
 
 SB_02 = { "uart": "/dev/ttyUSB0",
           "baud": "1000000",
           "serverip": "172.16.1.1",
           "boardip": "172.16.1.2",
-          "iface": "enp1s0f0"}
+          "iface": "enp1s0f0",
+          "chip": "f1" }
 
 boards = {"sb-01": SB_01,
           "sb-02": SB_02 }
 
 SCRIPT_HDR = """
-# blah
+  verbose on
   print Prodding u-boot
-  send ""
-  sleep 1
   send ""
   sleep 1
   send ""
@@ -36,55 +35,44 @@ SCRIPT_HDR = """
 """
 
 SCRIPT_UBOOT = """
-  expect {
-  	 "f1 #"
-         "Autoboot" send "noboot"
-  	 timeout 20 exit
-  }
+  expect {{
+    "{uboot_prompt}"
+    "Autoboot" send "noboot"
+    timeout 20 exit
+  }}
 
   send "loadx"
-  ! sx -k %s
-  send "bootelf -p 0xFFFFFFFF91000000"
+  ! sx -k {chain_uboot}
+  print "Download complete, auth & boot"
+  sleep 1
+  send "auth; bootelf_u -p"
 """
 
-SCRIPT_FUNOS = """
+SCRIPT_FUNOS_UART = """
 # now wait for new u-boot
-  expect {
-  	 "f1 #"
-         "Autoboot" send "noboot"
-  	 timeout 20 goto no_uboot
-  }
+  expect {{
+    "{uboot_prompt}"
+    "Autoboot" send "noboot"
+    timeout 20 goto no_uboot
+  }}
 
-
-  timeout %s
+  sleep 1
+  timeout {global_timeout}
   send "loadx"
-  ! sx -k %s
+  ! sx -k {funos}
 
   print "Download complete, unzip time"
   sleep 2
   send ""
-  send ""
-  send "unzip 0xFFFFFFFF91000000 0xFFFFFFFF99000000"
-
-  # kick it again
-  print "Unzip done, waiting for u-boot prompt"
+  send "setenv bootargs {bootargs}"
   sleep 1
-  send ""
+  send "unzip 0xFFFFFFFF91000000 0xa800000020000000 ; {auth_boot_cmd}"
 
-  expect {
-  	 "f1 #"
-  	 timeout 20 goto no_unzip
-  }
-
-# save some command to nvram
-  send "setenv bootargs %s"
-  send "bootelf -p 0xFFFFFFFF99000000"
-
-  expect {
+  expect {{
       "platform_halt:"
       ">>>>>> bug_check on vp 0x" goto funos_crashing
-      timeout %s goto halt_timeout
-  }
+      timeout {exit_timeout} goto halt_timeout
+  }}
 
 funos_halted
   sleep 1
@@ -92,18 +80,14 @@ funos_halted
   goto out
 
 funos_crashing:
-  expect {
+  expect {{
       "platform_halt:" goto funos_halted
       timeout 20 break
-  }
+  }}
   print "FunOS crashed, but didn't see platform_halt"
 
 halt_timeout:
   print "Timeout waiting for FunOS to platform halt"
-  goto out
-
-no_unzip:
-  print "FunOS failed to unzip. Exiting"
   goto out
 
 no_uboot:
@@ -114,106 +98,75 @@ no_uboot:
 out:
   sleep 1
   print "boot.script: killing minicom"
-  ! cat %s | xargs kill -HUP 
+  ! cat {minicom_pid} | xargs kill -HUP
 """
 
-SCRIPT_CHAIN = """
-  send ""
-  expect {{
-  	 "f1 #" break
-  	 timeout 40  goto no_uboot
-  }}
-
-  send "loadx"
-  ! sx -k {chain_uboot}
-
-  print "Download complete, unzip time"
-  sleep 2
-  send ""
-  send ""
-  send "unzip 0xFFFFFFFF91000000 0xFFFFFFFF99000000 ; bootelf -p 0xFFFFFFFF99000000"
-
-  goto chain_bypass
-"""
-
-
-SCRIPT_TFTP = """
+SCRIPT_FUNOS_TFTP = """
 
 # TFTP BOOT FTW
   print "boot.script: Waiting for u-boot"
-  send ""
 
 # now wait for new u-boot
-expect {{
-	 "Autoboot"
-	 timeout 30 goto no_uboot
-}}
-  send "noboot"
-
   expect {{
-  	 "f1 #"
-  	 timeout 20 exit
+    "{uboot_prompt}"
+    "Autoboot" send "noboot"
+    timeout 20 goto no_uboot
   }}
-
-chain_bypass:
-
+  send ""
   timeout {global_timeout}
-#  send "noautoboot"
-
-#  print "\\nboot.script: autoboot cancelled"
 
   print "\\nboot.script: bringing up the network"
   send "lfw"
   send "echo lfw_done"
   print ""
   expect {{
-  	 "lfw_done"
-  	 timeout 30 goto eep3
+     "lfw_done"
+     timeout 30 goto eep3
   }}
-  
+
   send "lmpg"
   send "echo lmpg_done"
   print ""
   expect {{
-  	 "lmpg_done"
-  	 timeout 30 goto eep3
+     "lmpg_done"
+     timeout 30 goto eep3
   }}
-  
+
   send "ltrain"
   send "echo ltrain_done"
   print ""
   expect {{
-  	 "ltrain_done"
-  	 timeout 30 goto eep3
+     "ltrain_done"
+     timeout 30 goto eep3
   }}
-  
+
   send "lstatus"
   send "echo lstatus_done"
   print ""
   expect {{
-  	 "lstatus_done"
-  	 timeout 30 goto eep3
+     "lstatus_done"
+     timeout 30 goto eep3
   }}
-  
+
   print "boot.script: configuring IP"
   send "setenv serverip {serverip}"
   send "echo serverip_done"
   print ""
   expect {{
-  	 "serverip_done"  break
-  	 timeout 30 goto eep3
+     "serverip_done"  break
+     timeout 30 goto eep3
   }}
 
   send "setenv ipaddr {boardip}"
   send "echo ipaddr_done"
   print ""
   expect {{
-  	 "ipaddr_done"   break
-  	 timeout 30 goto eep3
+     "ipaddr_done"   break
+     timeout 30 goto eep3
   }}
-  
+
   print "\\nChecking link status..."
-  ! cat {minicom_pid} | xargs /home/cgray/bin/check-i40e-link.py {iface} restart.fail 
+  ! cat {minicom_pid} | xargs /home/cgray/bin/check-i40e-link.py {iface} restart.fail
   print "\\nLink status checked"
 
   print "\\n"
@@ -314,6 +267,14 @@ def get_file_mime_info(filename):
         return ''
     return out.strip()
 
+def assert_file_is_signed(filename):
+    filetype = get_file_mime_info(filename)
+    if filetype == 'application/x-executable':
+        raise Exception("File is not signed")
+    elif filetype == 'application/octet-stream':
+        return
+
+
 def do_sleep(secs):
     secs = float(secs)
     delta = 0.3
@@ -322,7 +283,7 @@ def do_sleep(secs):
     while (waited < secs):
         time.sleep(delta)
         waited += delta
-    
+
 
 def sighup_handler(signal, frame):
     # this method defines the handler i.e. what to do
@@ -348,7 +309,6 @@ def maybe_install_funos(funos):
     funos = "%s/%s" % (uname, binname)
 
     os.system("cp %s /home/mboksanyi/tftpboot/%s" % (ofunos, funos))
-    
     return funos
 
 parser = optparse.OptionParser(usage="usage: %prog [options] funos-stripped.gz [-- bootargs]")
@@ -363,6 +323,7 @@ parser.add_option("-N", "--no-boot", action="store_true", default=False)
 parser.add_option("-P", "--postscript", action="store", default=None)
 parser.add_option("-F", "--tftp", action="store_true", default=False)
 parser.add_option("-b", "--board", action="store", default=None)
+parser.add_option("--bootscript-only", action="store_true", help="Generate bootscript and terminate")
 
 (options, args) = parser.parse_args()
 
@@ -376,7 +337,7 @@ else:
     path = "."
 
 global_timeout = None
-    
+
 if (options.no_boot):
     maybe_reset_target(options)
 else:
@@ -384,13 +345,14 @@ else:
         parser.error("wrong number of arguments")
         sys.exit(1)
 
-    krn = args[0] 
+    krn = args[0]
     arg = " ".join(args[1:])
+    board = boards[options.board]
 
     # arg fixups
     arg = arg.replace("--test-exit-fast", "")
     # arg += " --skip-mem-zero"
-    
+
     maybe_reset_target(options)
 
     # make sure the kernel exists
@@ -413,20 +375,41 @@ else:
     pid_name = "%s/minicom.pid" % path
     dun_name = "%s/job.done" % path
 
-    if (not options.tftp):
-        script = SCRIPT_HDR
-        if (options.uboot is not None):
-            script += SCRIPT_UBOOT % options.uboot
+    if options.uboot:
+        assert_file_is_signed(options.uboot)
+
+    assert_file_is_signed(krn)
+
+    d = {} # options directory for the bootscript
+
+    filetype = get_file_mime_info(krn)
+    # we've already checked that it is not an executable file so this
+    # if below is obsolete, but currently left for reference ... to be removed
+    # in the future
+    if filetype == 'application/x-executable':
+        d['auth_boot_cmd'] = 'bootelf -p 0xa800000020000000'
+    elif filetype == 'application/octet-stream':
+        d['auth_boot_cmd'] = 'auth 0xa800000020000000; bootelf -p ${loadaddr}'
+
+    d['bootargs'] = arg
+    d['minicom_pid'] = pid_name
+    d['uboot_prompt'] = "{} #".format(board['chip'])
+
+    script = SCRIPT_HDR
+    if not options.tftp:
+        if options.uboot:
+            d['chain_uboot'] = options.uboot
 
         # 15 mins max download + other timeout
         global_timeout = 900 + options.timeout * 60
         exit_timeout = options.timeout * 60
-        script += SCRIPT_FUNOS % (global_timeout, krn, arg, exit_timeout, pid_name)
+
+        d['funos'] = krn
+        d['global_timeout'] = global_timeout
+        d['exit_timeout'] = exit_timeout
     else:
         # maybe install the files
-        krn = maybe_install_funos(krn)
-
-        filetype = get_file_mime_info(krn)
+        d['funos'] = maybe_install_funos(krn)
 
         # make a timeout
         timeout = options.timeout
@@ -435,41 +418,36 @@ else:
 
         exit_timeout = timeout * 60
         global_timeout = 120 + exit_timeout
-            
-        # make the args
-        d = {}
+
         d['global_timeout'] = global_timeout
         d['exit_timeout'] = exit_timeout
-        d['bootargs'] = arg
-        d['funos'] = krn
-        d['minicom_pid'] = pid_name
 
-        if filetype == 'application/x-executable':
-            d['auth_boot_cmd'] = 'bootelf -p 0xa800000020000000'
-        elif filetype == 'application/octet-stream':
-            d['auth_boot_cmd'] = 'auth 0xa800000020000000; bootelf -p ${loadaddr}'
-
-        board = boards[options.board]
         d['serverip'] = board['serverip']
         d['boardip'] = board['boardip']
         d['iface'] = board['iface']
-        
-        if (board.get("chain_uboot") is not None):
+
+        if board.get("chain_uboot"):
             d['chain_uboot'] = board["chain_uboot"]
-            
-        if (options.uboot is not None):
+
+        if options.uboot:
             d['chain_uboot'] = options.uboot
-            
-        if (d.get("chain_uboot") is not None):
-            script = SCRIPT_CHAIN.format(**d)
-            script += SCRIPT_TFTP.format(**d)
-        else:
-            script = SCRIPT_TFTP.format(**d)
-    
-    if (not options.no_bootscript):
+
+    if d.get("chain_uboot"):
+        script += SCRIPT_UBOOT
+
+    if options.tftp:
+        script += SCRIPT_FUNOS_TFTP
+    else:
+        script += SCRIPT_FUNOS_UART
+
+    if not options.no_bootscript or options.bootscript_only:
         fl = open(script_name, "w")
-        fl.write(script)
+        fl.write(script.format(**d))
         fl.close()
+
+    if options.bootscript_only:
+        print("Done generating bootscript, saving to {}".format(script_name))
+        exit(0)
 
     # make our own process group for easier clean-up
     print "Making our own process group"
@@ -510,15 +488,15 @@ else:
             do_kill = True
 
         # double check for platform_halt because runscript is terrible
-        out = subprocess.Popen(['tail', '-3', log_name], 
-                               stdout=subprocess.PIPE, 
+        out = subprocess.Popen(['tail', '-3', log_name],
+                               stdout=subprocess.PIPE,
                                stderr=subprocess.STDOUT)
         stdout,stderr = out.communicate()
         if "platform_halt" in stdout:
             print "platform halt detected, killing minicom"
             os.system("echo 'run_job: platform halt detected' >> %s" % (exit_name))
             do_kill = True
-            
+
         if (do_kill):
             killcmd = "kill -HUP %s" % p.pid
             print "killing with '%s'" % killcmd
@@ -526,7 +504,7 @@ else:
             print "waiting for its demise"
             p.wait()
             break
-            
+
     if (p.returncode is not None):
         print "run_job: minicom exited"
         cmd = "echo 'run_job: minicom died of natural causes (%s)' >> %s" % (p.returncode, exit_name)
@@ -541,7 +519,7 @@ else:
     #for i in range(30):
     #    print "run_job: pause"
     #    do_sleep(1)
-        
+
     print "Minicom is dead. long live minicom, but fixing its terminal settings..."
     do_sleep(2)
     if (not options.no_terminal_reset):
@@ -564,7 +542,7 @@ else:
     print "run_job exiting"
 
     do_sleep(2)
-    
+
 # if there's a restart fail, we don't want to run the postscript
 job_ok = not os.path.exists("restart.fail")
 
@@ -582,7 +560,7 @@ if (job_ok and (options.postscript is not None)):
     # now append it to the full log
     log2name = "%s/minicom-log.txt" % path
     os.system("cat %s >> %s" % (logname, log2name))
-    
+
 
 # exit cleanly
 sys.exit(0)
