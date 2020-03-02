@@ -217,16 +217,18 @@ def main():
     if wanted('tarball'):
         os.chdir(args.destdir)
         tarfiles = []
-        exported = lambda el: not el[1].get("internal", False)
 
         with open("image.json") as f:
             images = json.load(f)
-            tarfiles.extend(dict(filter(exported, images['signed_images'].items())).keys())
-            tarfiles.extend(dict(filter(exported, images['signed_meta_images'].items())).keys())
+            tarfiles.extend([key for key,value in images['signed_images'].items()
+                                if not value.get("no_export", False)])
+            tarfiles.extend([key for key,value in images['signed_meta_images'].items()
+                                if not value.get("no_export", False)])
 
         with open("mmc_image.json") as f:
             images = json.load(f)
-            tarfiles.extend(dict(filter(exported, images['generated_images'].items())).keys())
+            tarfiles.extend([key for key,value in images['generated_images'].items()
+                                if not value.get("no_export", False)])
 
         tarfiles.append('image.json')
         tarfiles.append('mmc_image.json')
