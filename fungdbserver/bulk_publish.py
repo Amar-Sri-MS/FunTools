@@ -119,8 +119,8 @@ def parse_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--count", help="Number of SDKs to scrape (default=1)", type=int, default=1)
-    parser.add_argument("--min", help="Minimum SDK number", type=int, default=0)
-    parser.add_argument("--max", help="Maximum SDK number", type=int, default=None)
+    parser.add_argument("--min-sdk", help="Minimum SDK number", type=int, default=0)
+    parser.add_argument("--max-sdk", help="Maximum SDK number", type=int, default=None)
     parser.add_argument("--dir", help="A specific directory", action="store", default=None)
     parser.add_argument("--min-bundle", help="Minimum bundle number", type=int, default=0)
     parser.add_argument("--max-bundle", help="Maximum bundle number", type=int, default=None)
@@ -136,10 +136,10 @@ def main():
 
     if (opts.dir is not None):
         publish_path(opts.dir)
-    elif (opts.max is not None):
-        mx = opts.max
-        if (opts.min >0):
-            mn = opts.min
+    elif (opts.max_sdk is not None):
+        mx = opts.max_sdk
+        if (opts.min_sdk >0):
+            mn = opts.min_sdk
         else:
             mn = mx - opts.count + 1
 
@@ -162,9 +162,9 @@ def main():
         if (None in s):
             s.remove(None)
         es = list(s)
-        es.sort()
+        es.sort(reverse=True)
         for e in es:
-            print(e)
+            publish_sdk(e)
 
         sys.exit(0)
     else:
