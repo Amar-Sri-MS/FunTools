@@ -2,6 +2,7 @@
 
 import argparse
 import binascii
+import json
 import os
 import shutil
 import subprocess
@@ -316,6 +317,17 @@ def run():
         for f in enumerate(files):
             gen_hex_file(f[1], outfile_hex, bool(f[0]))
 
+    output_descr = {
+        'emmc_image.bin' : 'complete eMMC image',
+        'mmc0_image.bin' : 'eMMC partition table',
+        'mmc1_image.bin' : 'eMMC boot partition and FunOS'
+    }
+
+    with open("mmc_image.json", "w") as f:
+        config = { 'generated_images' : {}}
+        for k,v in output_descr.items():
+            config['generated_images'][k] = { 'description' : v }
+        json.dump(config, f, indent=4)
 
 if __name__ == '__main__':
     run()

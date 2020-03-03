@@ -8,11 +8,11 @@ import json
 import argparse
 import shutil
 import subprocess
+import tarfile
 import generate_flash as gf
 import flash_utils
 
 
-#TODO (make configurable for S1 and other)
 HOST_FIRMWARE_CONFIG_OVERRIDE="""
 { "signed_images": {
      "host_firmware_packed.bin": {
@@ -26,7 +26,7 @@ HOST_FIRMWARE_CONFIG_OVERRIDE="""
 EEPROM_CONFIG_OVERRIDE="""
 { "signed_images": {
      "eeprom_packed.bin": {
-         "source":"eeprom_f1"
+         "source":"eeprom_f1_dev_board"
          }
      }
 }
@@ -47,7 +47,7 @@ def main():
 
     parser.add_argument('config', nargs='+', help='Configuration file(s)')
     parser.add_argument('--action',
-        choices={'all', 'prepare', 'certificate', 'sign', 'image'},
+        choices={'all', 'prepare', 'certificate', 'sign', 'image', 'tarball'},
         default='all',
         help='Action to be performed on the input files')
     parser.add_argument('--sdkdir', required=True, help='SDK root directory')
@@ -210,6 +210,31 @@ def main():
                 '--filesystem',
                 '--signed' ]
         subprocess.call(cmd)
+
+        os.chdir(curdir)
+
+    if wanted('tarball'):
+        os.chdir(args.destdir)
+        tarfiles = []
+
+        with open("image.json") as f:
+            images = json.load(f)
+            tarfiles.extend([key for key,value in images['signed_images'].items()
+                                if not value.get("no_export", False)])
+            tarfiles.extend([key for key,value in images['signed_meta_images'].items()
+                                if not value.get("no_export", False)])
+
+        with open("mmc_image.json") as f:
+            images = json.load(f)
+            tarfiles.extend([key for key,value in images['generated_images'].items()
+                                if not value.get("no_export", False)])
+
+        tarfiles.append('image.json')
+        tarfiles.append('mmc_image.json')
+
+        with tarfile.open('sdk_signed_release.tgz', mode='w:gz') as tar:
+            for f in tarfiles:
+                tar.add(f)
 
         os.chdir(curdir)
 

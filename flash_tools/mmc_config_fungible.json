@@ -7,7 +7,8 @@
             "cert": "",
             "customer_cert": "",
             "key_index": 0,
-            "description": ""
+            "description": "",
+            "no_export": true
         },
         "ccfg-10g.signed.bin": {
             "source": "ccfg-10g.bjson",
@@ -56,7 +57,8 @@
             "cert": "",
             "customer_cert": "",
             "key_index": 0,
-            "description": ""
+            "description": "",
+            "no_export": true
         }
     }
 }
