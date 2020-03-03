@@ -4,7 +4,8 @@
 This script tries to help a consumer of a FunOS log understand it better. It
 provides options to split a single FunOS log into multiple files. The currently
 supported keys to split on are ccv, resource type, flow ID, and flow faddr. By
-default it will split on ccv.
+default it will split on ccv. This can be configured using the --split
+argument.
 
 Given an input logfile, the script will create a directory of files given by
 the argument --directory. If this argument is not provided, then the default
@@ -14,15 +15,68 @@ as the prefix and -processed as the suffix.
 This is very useful for seeing the logs serialized in terms of a flow or a
 specific VP.
 
-There is also an option specific to FunTCP, --rtf, that reorders TCP fast trace
-buffer output so that both the data and control fast trace buffer are in
-sequential order. This only affects runs where FunTCP dumps the fast trace
-buffer which is usually in case of aborts.
+There is also an option specific to FunTCP, --reorder-funtcp-ftr, that reorders
+TCP fast trace buffer output so that both the data and control fast trace
+buffer are in sequential order. This only affects runs where FunTCP dumps the
+fast trace buffer which is usually in case of aborts.
+
+To split by ccv and output to a directory called out_ccv:
+
+benturrubiates at vodex :: $WK/FunTools/split_funos_log --directory out_ccv --split ccv uartout0.0.txt
+benturrubiates at vodex :: ls -1 out_ccv | head -n 5
+0.0.0
+0.0.3
+0.1.3
+0.5.3
+1.0.0
+
+To split by res type and output to a directory called out_res:
+
+benturrubiates at vodex :: $WK/FunTools/split_funos_log --directory out_res --split res_type uartout0.0.txt
+benturrubiates at vodex :: ls -1 out_res | head -n 5
+device_interface
+epcq
+epsq
+hu_fn
+rcnvme
+
+Without --reorder-funtcp-ftr:
+
+[1919.209618 4.1.2] ftr - tcp control, ts 806164011666 (diff 0) control tracebuffer allocated for tcp id 3
+[1919.209668 4.1.2] ftr - tcp control, ts 806164491154 (diff 479488) tcp[0x3]: state TCP_FSM_STATE_ACCEPT tcp_host_accept_rsp
+[1919.209721 4.1.2] ftr - tcp control, ts 806164556711 (diff 65557) tcp[0x3]: state TCP_FSM_STATE_ACCEPT tcp_host_accept_rsp
+[1919.209800 4.1.2] ftr - tcp control, ts 806164617311 (diff 60600) tcp[0x3]: state TCP_FSM_STATE_ACCEPT tcp_host_accept_rsp_done
+[1919.209898 4.1.2] ftr - tcp control, ts 806164681591 (diff 64280) tcp[0x3]: state TCP_FSM_STATE_SYNRCVD tcp_netw_acceptmsg, ret 0
+[1919.209973 4.1.2] ftr - tcp control, ts 1919209600864 (diff 1113044919273) tcp[0x3]: state TCP_FSM_STATE_CLOSED tcp_netw_abortmsg, ret 163
+[1919.210023 4.1.2] ftr - tcp data..., ts 806164011697 (diff 0) data tracebuffer allocated for tcp id 3
+[1919.210071 4.1.2] ftr - tcp data..., ts 806164691100 (diff 679403) tcp[0x3]: state TCP_FSM_STATE_ESTABLISHED tcp_netw_recvmsg, delivering rcvnxt | nsge 0x3984790400000001 plen 128
+[1919.210132 4.1.2] ftr - tcp data..., ts 806164786051 (diff 94951) tcp[0x3]: state TCP_FSM_STATE_ESTABLISHED tcp_host_sendmsg: sndnxt 0x336d89f2 nsgl | payload_len 0x100000080
+[1919.210203 4.1.2] ftr - tcp data..., ts 806164819541 (diff 33490) tcp[0x3]: state TCP_FSM_STATE_ESTABLISHED tcp_netw_sendupdmsg, credits16 1
+[1919.210305 4.1.2] ftr - tcp data..., ts 806175973592 (diff 11154051) tcp[0x3]: state TCP_FSM_STATE_ESTABLISHED tcp_netw_recvmsg, delivering rcvnxt | nsge 0x3984798400000001 plen 1096
+[1919.210424 4.1.2] ftr - tcp data..., ts 806176262177 (diff 288585) tcp[0x3]: state TCP_FSM_STATE_ESTABLISHED tcp_host_sendmsg: sndnxt 0x336d8a72 nsgl | payload_len 0x100000018
+[1919.210481 4.1.2] ftr - tcp data..., ts 806176281109 (diff 18932) tcp[0x3]: state TCP_FSM_STATE_ESTABLISHED tcp_netw_sendupdmsg, credits16 1
+
+With --reorder-funtcp-ftr:
+
+[1919.209618 4.1.2] ftr - tcp control, ts 806164011666 (diff 0) control tracebuffer allocated for tcp id 3
+[1919.210023 4.1.2] ftr - tcp data..., ts 806164011697 (diff 0) data tracebuffer allocated for tcp id 3
+[1919.209668 4.1.2] ftr - tcp control, ts 806164491154 (diff 479488) tcp[0x3]: state TCP_FSM_STATE_ACCEPT tcp_host_accept_rsp
+[1919.209721 4.1.2] ftr - tcp control, ts 806164556711 (diff 65557) tcp[0x3]: state TCP_FSM_STATE_ACCEPT tcp_host_accept_rsp
+[1919.209800 4.1.2] ftr - tcp control, ts 806164617311 (diff 60600) tcp[0x3]: state TCP_FSM_STATE_ACCEPT tcp_host_accept_rsp_done
+[1919.209898 4.1.2] ftr - tcp control, ts 806164681591 (diff 64280) tcp[0x3]: state TCP_FSM_STATE_SYNRCVD tcp_netw_acceptmsg, ret 0
+[1919.210071 4.1.2] ftr - tcp data..., ts 806164691100 (diff 679403) tcp[0x3]: state TCP_FSM_STATE_ESTABLISHED tcp_netw_recvmsg, delivering rcvnxt | nsge 0x3984790400000001 plen 128
+[1919.210132 4.1.2] ftr - tcp data..., ts 806164786051 (diff 94951) tcp[0x3]: state TCP_FSM_STATE_ESTABLISHED tcp_host_sendmsg: sndnxt 0x336d89f2 nsgl | payload_len 0x100000080
+[1919.210203 4.1.2] ftr - tcp data..., ts 806164819541 (diff 33490) tcp[0x3]: state TCP_FSM_STATE_ESTABLISHED tcp_netw_sendupdmsg, credits16 1
+[1919.210305 4.1.2] ftr - tcp data..., ts 806175973592 (diff 11154051) tcp[0x3]: state TCP_FSM_STATE_ESTABLISHED tcp_netw_recvmsg, delivering rcvnxt | nsge 0x3984798400000001 plen 1096
+[1919.210424 4.1.2] ftr - tcp data..., ts 806176262177 (diff 288585) tcp[0x3]: state TCP_FSM_STATE_ESTABLISHED tcp_host_sendmsg: sndnxt 0x336d8a72 nsgl | payload_len 0x100000018
+[1919.210481 4.1.2] ftr - tcp data..., ts 806176281109 (diff 18932) tcp[0x3]: state TCP_FSM_STATE_ESTABLISHED tcp_netw_sendupdmsg, credits16 1
+[1919.209973 4.1.2] ftr - tcp control, ts 1919209600864 (diff 1113044919273) tcp[0x3]: state TCP_FSM_STATE_CLOSED tcp_netw_abortmsg, ret 163
 """
 
 import argparse
 import pathlib
 import enum
+import sys
 import re
 import os
 
@@ -37,31 +91,104 @@ def create_directory(filename, directory):
     return directory
 
 
+class FunTCPFTRSorter:
+    """
+    In abort situations, FunTCP will dump the trace buffers for each socket.
+    FunTCP maintains two trace buffers, a data trace buffer, and a control
+    trace buffer. These are printed separately, but sometimes it is useful to
+    view them in chronological order for context. This plugin will take those
+    and buffer them until it has gotten all of the entries before outputting
+    them in the sorted order.
+
+    This plugin only works correctly with the ccv selector. The reason for that
+    is the output for the trace buffer is in generic code and will not print
+    using syslog_flow on the TCP flow. All the other key functions (res type,
+    flow id, flow faddr), rely on extracting the info from the output of
+    syslog_flow that prepends the message.
+    """
+
+    # match lines like:
+    # ftr - tcp control, ts 367641465126 (diff 0) control tracebuffer allocated for tcp id 1
+    ftr_timestamp_re = r"^.*ftr - tcp.*, ts (\d+)"
+
+    def __init__(self):
+        self.ftr_timestamp_matcher = re.compile(self.ftr_timestamp_re)
+
+    def state_initialize(self, state):
+        state.tcp_ftr_buffer = []
+        state.reorder_in_progress = False
+
+    def state_finalize(self, state):
+        self._trace_buffer_flush(state)
+
+    def line_process(self, state, line):
+        match = self.ftr_timestamp_matcher.search(line)
+        if not match:
+            if state.reorder_in_progress:
+                self._trace_buffer_flush(state)
+
+            return False
+
+        timestamp = int(match.group(1))
+        self._trace_buffer_start(state, timestamp, line)
+
+        return True
+
+    def _trace_buffer_start(self, state, timestamp, line):
+        state.tcp_ftr_buffer.append((timestamp, line))
+        state.reorder_in_progress = True
+
+    def _trace_buffer_flush(self, state):
+        if not state.tcp_ftr_buffer:
+            return
+
+        state.tcp_ftr_buffer.sort(key=lambda x: x[0])
+        for _, line in state.tcp_ftr_buffer:
+            state.handle.write(line)
+
+        state.reorder_in_progress = False
+        state.tcp_ftr_buffer = []
+
+
 class Splitter:
+    """
+    Object to handle splitting a FunOS log by the given split parameter.
+
+    Args:
+        directory (str): Output directory containing files log is split into.
+        selector (Selector(enum.Enum)): Split policy. Can be one of:
+                                        Selector.ccv, Selector.res_type,
+                                        Selector.flow_id, Selector.flow_faddr.
+
+    Supports a simple plugin system. Plugins must define three functions:
+    * state_initialize
+      * Passed the state for specific split instance. I.e. if splitting by CCV,
+        then each CCV will have a state object. The plugin can get a chance to
+        store some state on the passed in object.
+
+        Accepts a State object as a parameter, returns nothing.
+    * state_finalize
+      * Passed the state for specific split instance. This is the finalization,
+        i.e. done with the split and about to close file handle.
+
+        Accepts a State object as a parameter, returns nothing.
+    * line_process
+      * Passed the state for a specific split instance, and the line that is
+        being processed. Can manipulate the state object, or output to the file
+        handle.
+
+        Accepts a State object, and the line being processed. Returns True if
+        processing should stop on the line (i.e. it has been handled by the
+        plugin), or False otherwise.
+    """
+
     class State:
-        def __init__(self, f):
-            self.f = f
-
-            self.ftr_buffer = []
-            self.tracing = False
-
-        def trace_buffer_start(self, timestamp, line):
-            self.ftr_buffer.append((timestamp, line))
-            self.tracing = True
-
-        def trace_buffer_flush(self):
-            if not self.ftr_buffer:
-                return
-
-            self.ftr_buffer.sort(key=lambda x: x[0])
-            for _, line in self.ftr_buffer:
-                self.f.write(line)
-
-            self.tracing = False
-            self.ftr_buffer = []
+        def __init__(self, key, handle):
+            self.key = key
+            self.handle = handle
 
         def close(self):
-            self.f.close()
+            self.handle.close()
 
     class Selector(enum.Enum):
         ccv = 0
@@ -76,21 +203,24 @@ class Splitter:
         Selector.flow_faddr: r"flow.*FA(\d+:\d+:\d+)",
     }
 
-    ftr_timestamp_re = r"^.*ftr - tcp.*, ts (\d+)"
     unsorted_key = "unsorted"
 
-    def __init__(self, directory, selector, rtf):
+    def __init__(self, directory, selector):
         self.directory = directory
         self.matcher = re.compile(self.extractors[selector])
+        self.plugins = []
         self.mappings = {}
 
-        self.rtf = rtf
-        self.ftr_timestamp_matcher = re.compile(self.ftr_timestamp_re)
+    def plugin_register(self, plugin):
+        self.plugins.append(plugin)
 
     def mapping_create(self, key):
-        f = open(os.path.join(self.directory, key), "w")
-        state = Splitter.State(f)
+        handle = open(os.path.join(self.directory, key), "w")
+        state = Splitter.State(key, handle)
         self.mappings[key] = state
+
+        for plugin in self.plugins:
+            plugin.state_initialize(state)
 
         return state
 
@@ -101,33 +231,22 @@ class Splitter:
 
         return state
 
-    def reorder_rtf(self, state, line):
-        match = self.ftr_timestamp_matcher.match(line)
-        if not match:
-            if state.tracing:
-                state.trace_buffer_flush()
-
-            return False
-
-        timestamp = int(match.group(1))
-        state.trace_buffer_start(timestamp, line)
-
-        return True
-
-    def process_line(self, line):
+    def line_process(self, line):
         match = self.matcher.search(line)
         key = match.group(1) if match else self.unsorted_key
         state = self.mapping_get(key)
 
-        if self.rtf and key != self.unsorted_key:
-            if self.reorder_rtf(state, line):
+        for plugin in self.plugins:
+            if plugin.line_process(state, line):
                 return
 
-        state.f.write(line)
+        state.handle.write(line)
 
     def close(self):
         for _, state in self.mappings.items():
-            state.trace_buffer_flush()
+            for plugin in self.plugins:
+                plugin.state_finalize(state)
+
             state.close()
 
     def __enter__(self):
@@ -143,7 +262,7 @@ def handle_args():
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument("log", help="Logfile filename")
     parser.add_argument(
-        "--by",
+        "--split",
         help="What to split by",
         choices=["ccv", "res_type", "flow_id", "flow_faddr"],
         default="ccv",
@@ -152,7 +271,9 @@ def handle_args():
         "--directory", help="Out directory for processed files", default=None
     )
     parser.add_argument(
-        "--rtf", help="Reorder TCP fast trace buffer", action="store_true"
+        "--reorder-funtcp-ftr",
+        help="Reorder TCP fast trace buffer, only works with --split=ccv",
+        action="store_true",
     )
     args = parser.parse_args()
 
@@ -161,11 +282,20 @@ def handle_args():
 
 if __name__ == "__main__":
     args = handle_args()
+    selector = Splitter.Selector[args.split]
     directory = create_directory(args.log, args.directory)
 
     with open(args.log, "rb") as logfile:
         text = logfile.read().decode(errors="replace")
 
-        with Splitter(directory, Splitter.Selector[args.by], args.rtf) as s:
+        with Splitter(directory, selector) as splitter:
+            if args.reorder_funtcp_ftr:
+                if selector == Splitter.Selector.ccv:
+                    splitter.plugin_register(FunTCPFTRSorter())
+                else:
+                    sys.stderr.write(
+                        "Reorder TCP FTR plugin only works for ccv split, ignoring.\n"
+                    )
+
             for line in text.split("\n"):
-                s.process_line(line + "\n")
+                splitter.line_process(line + "\n")
