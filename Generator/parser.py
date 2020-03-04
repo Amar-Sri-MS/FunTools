@@ -132,21 +132,14 @@ no_endian_map = {
   'uint64_t' : '__u64'
 }
 
-# Type names to use on Linux when a field is known to be big-endian.
-big_endian_map = {
+# Type names to use on Linux for DPU-endian fields.
+dpu_endian_map = {
   'uint8_t' : '__u8',
-  'uint16_t' : '__be16',
-  'uint32_t' : '__be32',
-  'uint64_t' : '__be64'
+  'uint16_t' : '__dpu16',
+  'uint32_t' : '__dpu32',
+  'uint64_t' : '__dpu64'
 }
 
-# Type names to use on Linux when a field is known to be little-endian.
-little_endian_map = {
-  'uint8_t' : '__u8',
-  'uint16_t' : '__le16',
-  'uint32_t' : '__le32',
-  'uint64_t' : '__le64'
-}
 
 def NoStraddle(width, offset, bound):
   """Returns true if a field at (offset, offset+width) doesn't cross
@@ -282,11 +275,11 @@ class Type:
       # TODO(bowdidge): Revisit and match ABIs.
       self.bit_width = self.alignment
 
-  def CastString(self, linux_type=False, big_endian=None):
+  def CastString(self, linux_type=False, dpu_endian=False):
     """Returns a string casting something to this type.
     Used in templates with {{x.type|as_cast}}
     """
-    return '(%s)' % self.ParameterTypeName(linux_type, big_endian)
+    return '(%s)' % self.ParameterTypeName(linux_type, dpu_endian)
 
   def IsArray(self):
     """Returns true if the type is an array type."""
@@ -315,26 +308,24 @@ class Type:
     """Returns base type name without array and other modifiers."""
     return self.base_type.Name()
 
-  def DeclarationName(self, linux_type=False, big_endian=False):
+  def DeclarationName(self, linux_type=False, dpu_endian=False):
     """Returns a string for the declaration.
 
     If linux_type is true, use Linux's preferred type names.
-    If big_endian is None, use an endian-agnostic type.  If big_endian is
-    False, use a little-endian type.  If big-endian is True, use a big-endian
-    type.
+    If dpu_endian is False, use an endian-agnostic type, i.e., host-endian.
+    If dpu-endian is True, use a DPU-endian type.
     """
     if self.base_type.node:
       return self.base_type.node.Tag() + ' ' + self.base_type.name
 
     if linux_type:
-      if big_endian is None:
+      if dpu_endian is False:
         return no_endian_map[self.base_type.name]
-      elif big_endian is True:
-        if self.base_type.name in big_endian_map:
-          return big_endian_map[self.base_type.name]
+      elif dpu_endian is True:
+        if self.base_type.name in dpu_endian_map:
+          return dpu_endian_map[self.base_type.name]
       else:
-        if self.base_type.name in little_endian_map:
-          return little_endian_map[self.base_type.name]
+        raise ValueError('bad dpu_endian value')
 
     return self.base_type.Name()
 
@@ -433,7 +424,7 @@ class Declaration:
     """
     return '/* DefinitionString unimplemented for %s. */' % self
 
-  def DeclarationString(self, linux_type=False, big_endian=None):
+  def DeclarationString(self, linux_type=False, dpu_endian=False):
     """Returns text string that is valid parameter declaration for decl."""
     return '/* DeclarationString unimplemented for %s. */' % self
 
@@ -679,19 +670,19 @@ class Field(Declaration):
     return (not self.is_reserved and not self.type.IsRecord() 
             and not self.type.IsArray())
 
-  def DeclarationString(self, linux_type=False, big_endian=None):
+  def DeclarationString(self, linux_type=False, dpu_endian=False):
     """Returns a string representing the declaration for variable to set field."""
     if self.type.IsRecord() and self.type.base_type.node.inline:
       return '%s {\n} %s;' % (self.type.DeclarationName(linux_type,
-                                                        big_endian),
+                                                        dpu_endian),
                                  self.name)
 
     if self.type.IsArray():
       return "%s %s[%d]" % (self.type.DeclarationName(linux_type,
-                                                      big_endian), self.name,
+                                                      dpu_endian), self.name,
                             self.type.array_size)
     return "%s %s" % (self.type.ParameterTypeName(linux_type,
-                                                  big_endian), self.name)
+                                                  dpu_endian), self.name)
 
   def CreateSubfields(self):
     """Inserts sub-fields into this field based on the its type.
@@ -733,16 +724,16 @@ class Field(Declaration):
         new_subfield.CreateSubfields()
 
 
-  def DefinitionString(self, linux_type=False, big_endian=None):
+  def DefinitionString(self, linux_type=False, dpu_endian=False):
     """Pretty-print a field in a structure or union.  Returns string."""
     str = ''
     field_type = self.Type()
-    type_name = field_type.DeclarationName(linux_type, big_endian);
+    type_name = field_type.DeclarationName(linux_type, dpu_endian);
 
     if field_type.IsRecord():
       struct = field_type.base_type.node
       if struct.inline:
-        type_name = struct.DefinitionString(linux_type, big_endian)
+        type_name = struct.DefinitionString(linux_type, dpu_endian)
 
     if self.generator_comment is not None:
       str += utils.AsComment(self.generator_comment) + '\n'
@@ -1094,7 +1085,7 @@ class Struct(Declaration):
   def DeclarationString(self):
     return self.Tag() + ' ' + self.name
 
-  def DefinitionString(self, linux_type=False, big_endian=None):
+  def DefinitionString(self, linux_type=False, dpu_endian=False):
     """Generate a structure without the semicolon.
 
     This routine lets us have one way to print inline and standalone structs.
@@ -1114,7 +1105,7 @@ class Struct(Declaration):
       if field.StartFlit() != flit_for_last_field:
         str += '\n'
 
-      str += utils.Indent(field.DefinitionString(linux_type, big_endian), 2)
+      str += utils.Indent(field.DefinitionString(linux_type, dpu_endian), 2)
 
       flit_for_last_field = field.StartFlit()
 
