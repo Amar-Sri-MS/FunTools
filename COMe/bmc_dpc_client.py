@@ -12,14 +12,6 @@ import os, sys
 import sys, getopt
 import subprocess
 
-sdkdir = "/bin/" + os.uname()[0]
-if ("SDKDIR" in os.environ):
-    sys.path.append(os.environ["SDKDIR"] + sdkdir)
-elif ("WORKSPACE" in os.environ):
-    sys.path.append(os.environ["WORKSPACE"] + "/FunSDK/" + sdkdir)
-else:
-    raise RuntimeError("Please specify WORKSPACE or SDKDIR environment variable")
-
 from dpc_client import DpcClient
 
 def main(argv):
@@ -58,6 +50,8 @@ def main(argv):
     if len(dpcsh_cmd_args) > 1:
         cmd_arg_dict = json.loads(dpcsh_cmd_args[1])
         arg_list = [dpcsh_cmd_args[0], cmd_arg_dict]
+    else:
+        arg_list = dpcsh_cmd_args
 
     out = dpc_obj.execute(dpcsh_cmd_verb, arg_list)
     print json.dumps(out)
