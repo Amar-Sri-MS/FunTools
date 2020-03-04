@@ -16,6 +16,12 @@
 #include <dirent.h>
 #endif //__linux__
 
+#include <sys/mman.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <fcntl.h>
+
 #include "dpcsh_nvme.h"
 #include <utils/threaded/fun_malloc_threaded.h>
 
@@ -85,6 +91,95 @@ static bool is_fungible_dpu(char *devname)
         }
         return retVal;
 }
+
+static void
+_process_fwdl(struct fun_json *json, struct dpcsock *sock)
+{
+	const char *verb = NULL;
+	if (!fun_json_lookup_string(json, "verb", &verb) || (!verb)
+	    || strcmp(verb, "storage"))
+		return;
+
+	struct fun_json *args = fun_json_lookup(json, "arguments");
+	struct fun_json *j = fun_json_array_at(args, 0);
+	const char *class_str = NULL;
+	if (!fun_json_lookup_string(j, "class", &class_str) || (!class_str)
+			|| strcmp(class_str, "device"))
+		return;
+	const char *opcode_str = NULL;
+	if (!fun_json_lookup_string(j, "opcode", &opcode_str) || (!opcode_str)
+	    || strcmp(opcode_str, "FWDL"))
+		return;
+
+	struct fun_json *params = fun_json_lookup(j, "params");
+	const char *fwfile_str = NULL;
+	if (!params || !fun_json_lookup_string(params, "fwfile", &fwfile_str))
+		return;
+	int fd = open(fwfile_str, O_RDONLY);
+	if(-1 == fd) {
+		perror("Failed to open FW image file");
+		return;
+	}
+
+	struct stat st;
+	int retval = stat(fwfile_str, &st);
+	if(retval) {
+		perror("Failed to read FW image size");
+		close(fd);
+		return;
+	}
+
+	size_t fwfile_size = st.st_size;
+
+	if(fwfile_size == 0) {
+		perror("FW image size is 0");
+		close(fd);
+		return;
+	}
+
+	size_t remaining = fwfile_size;
+	uint32_t fwfile_key = rand();
+	uint32_t offset = 0;
+	uint8_t *buffer = malloc(NVME_ADMIN_CMD_DATA_LEN);
+	while (remaining) {
+		uint32_t to_copy = MIN(NVME_ADMIN_CMD_DATA_LEN, remaining);
+		retval = read(fd, buffer, to_copy);
+		if (retval != to_copy) {
+			printf("%s: Insufficient data read %d(Exp %d)\n", __func__, retval, to_copy);
+			break;
+		}
+		struct nvme_admin_cmd cmd = {
+			.opcode = NVME_VS_API_FWDL_START,
+			.nsid = 0,
+			.addr = (__u64)(uintptr_t)(buffer),
+			.data_len = NVME_ADMIN_CMD_DATA_LEN,
+			.cdw2 = NVME_DPC_CMD_HNDLR_SELECTION,
+			.cdw3 = offset,
+			.cdw10 = fwfile_size,
+			.cdw11 = fwfile_key,
+			.timeout_ms = sock->cmd_timeout
+		};
+		retval = ioctl(sock->fd, NVME_IOCTL_ADMIN_CMD, &cmd);
+		if (retval) {
+			printf("NVME_IOCTL_ADMIN_CMD %x failed %d\n",
+			       NVME_VS_API_FWDL_START, retval);
+			break;
+		}
+
+		remaining -= to_copy;
+		offset += to_copy;
+	}
+	if (retval == 0) {
+		fun_json_dict_add_int64(params, "fwfile_key", fun_json_no_copy_no_own,
+				fwfile_key, true);
+	}
+	free(buffer);
+	// fun_json_printf("new json -> %s\n", json);
+	if(fd != -1)
+		close(fd);
+
+	return;
+}
 #endif //__linux__
 
 /* Execute vendor specific admin command for writing data to NVMe device */
@@ -93,15 +188,18 @@ static bool is_fungible_dpu(char *devname)
 bool _write_to_nvme(struct fun_json *json, struct dpcsock *sock,
 		    uint32_t sess_id, uint32_t seq_num)
 {
-    bool ok = false;
+	bool ok = false;
 #ifdef __linux__
+	// Copy file to F1 if its FW download request
+	_process_fwdl(json, sock);
 	uint8_t *addr = malloc(NVME_ADMIN_CMD_DATA_LEN);
 	if(addr) {
 		memset(addr, 0, NVME_ADMIN_CMD_DATA_LEN);
 
 		// Convert to binary JSON
 		size_t allocated_size;
-		struct fun_ptr_and_size pas = fun_json_serialize(json, &allocated_size);
+		struct fun_ptr_and_size pas = fun_json_serialize(json,
+								 &allocated_size);
 
 		if(pas.size <= NVME_ADMIN_CMD_DATA_LEN - sizeof(struct nvme_vs_api_hdr)) {
 			// Build header
@@ -129,18 +227,20 @@ bool _write_to_nvme(struct fun_json *json, struct dpcsock *sock,
 				sock->nvme_write_done = true;
 			}
 			else {
-				printf("NVME_IOCTL_ADMIN_CMD %x failed %d\n",NVME_VS_API_SEND,ret);
+				printf("NVME_IOCTL_ADMIN_CMD %x failed %d\n",
+				       NVME_VS_API_SEND, ret);
 			}
 		}
 		else {
-			printf("Input is bigger than maximum supported size (%zu)\n", NVME_ADMIN_CMD_DATA_LEN - sizeof(struct nvme_vs_api_hdr));
+			printf("Input is bigger than maximum supported size (%zu)\n",
+			       NVME_ADMIN_CMD_DATA_LEN - sizeof(struct nvme_vs_api_hdr));
 		}
 
 		fun_free_threaded(pas.ptr, allocated_size);
 		free(addr);
 	}
 #endif //__linux__
-    return ok;
+	return ok;
 }
 
 /* Execute vendor specific admin command for reading data from NVMe device */
@@ -162,7 +262,12 @@ struct fun_json* _read_from_nvme(struct dpcsock *sock, uint32_t sess_id,
 			do {
 				readSuccess = _read_from_nvme_helper(sock,
 								     addr + offset,
-								     &data_len, &remaining, offset, sock->cmd_timeout, sess_id, seq_num);
+								     &data_len,
+								     &remaining,
+								     offset,
+								     sock->cmd_timeout,
+								     sess_id,
+								     seq_num);
 				offset += NVME_ADMIN_CMD_DATA_LEN;
 			} while(readSuccess && (remaining > 0));
 
