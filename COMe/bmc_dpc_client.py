@@ -54,7 +54,7 @@ def main(argv):
         arg_list = dpcsh_cmd_args
 
     out = dpc_obj.execute(dpcsh_cmd_verb, arg_list)
-    print json.dumps(out)
+    print json.dumps(out, indent=4)
 
 if __name__ == "__main__":
     main(sys.argv[1:])
