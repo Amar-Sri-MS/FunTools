@@ -158,7 +158,7 @@ class DpcClient(object):
         for r in self.__async_queue:
             if (tid is None or r['tid'] == tid):
                 self.__async_queue.remove(r)
-            return r
+                return r
 
         # wait and dequeue until we find the one we want
         while (True):
