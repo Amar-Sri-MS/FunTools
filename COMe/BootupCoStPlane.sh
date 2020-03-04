@@ -20,6 +20,25 @@ if [[ -z $IPMITOOL ]]; then
 	apt-get install -y ipmitool
 fi
 
+if [[ ! -f /usr/sbin/in.tftpd ]]; then
+	sudo apt-get install -y tftpd-hpa
+	# Restrict the tftpserver to serve
+	# requests only on the internal interface
+	if [[ -f /usr/sbin/in.tftpd ]]; then
+		TFTP_SERVER_CONFIG_FILE="/etc/default/tftpd-hpa"
+		grep "192" $TFTP_SERVER_CONFIG_FILE > /dev/null 2>&1
+		RC=$?
+		if [[ $RC -ne 0 ]]; then
+			sed -i 's/TFTP_ADDRESS="/TFTP_ADDRESS="192.168.127.4/g' $TFTP_SERVER_CONFIG_FILE
+		fi
+		grep "create" $TFTP_SERVER_CONFIG_FILE > /dev/null 2>&1
+		RC=$?
+		if [[ $RC -ne 0 ]]; then
+			sed -i 's/secure/-secure --create/g' $TFTP_SERVER_CONFIG_FILE
+		fi
+	fi
+fi
+
 if [[ -f $FUN_ROOT/StorageController/etc/start_splash_screen.sh ]]; then
 	$FUN_ROOT/StorageController/etc/start_splash_screen.sh start &
 fi
