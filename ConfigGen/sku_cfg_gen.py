@@ -56,10 +56,10 @@ class SKUCfgGen():
             _path = _path + 'posix/*.cfg'
         elif 'emu' in (self.target_machine):
             _path = _path + 'emulation/*.cfg'
-        elif 'emu' in (self.target_machine):
+        elif 'qemu' in (self.target_machine):
             _path = _path + 'qemu/*.cfg'
         else:
-            _path = _path + '*.cfg'
+            _path = _path + 'boards/*.cfg'
 
         file_patterns = [_path]
 
