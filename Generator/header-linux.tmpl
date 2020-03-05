@@ -77,13 +77,9 @@ How to render each struct
    to generate in templates, so do that work in code instead.
 #}
 {% if not struct.inline %}
-{# Generate the structure definition twice, once for big-endian, once
-  for little-endian.  For development only. #}
-#ifdef __DPU_BYTEORDER_BIG
+{# Generate structure definitions with DPU types. Their endianness is resolved later
+   at compile time. #}
 {{ struct.DefinitionString(True, True)}}{% if generate_cpacked %} __attribute__((packed)){% endif %};
-#else
-{{ struct.DefinitionString(True, False)}}{% if generate_cpacked %} __attribute__((packed)){% endif %};
-#endif
 {% endif %}
 
 {# Generate macros for packed fields. #}
@@ -226,6 +222,10 @@ extern "C" {
  */
 
 #ifdef __DPU_BYTEORDER_BIG
+#define __dpu16 __be16
+#define __dpu32 __be32
+#define __dpu64 __be64
+
 #define cpu_to_dpu8(x) (x)
 #define cpu_to_dpu16(x) (cpu_to_be16(x))
 #define cpu_to_dpu32(x) (cpu_to_be32(x))
@@ -236,6 +236,10 @@ extern "C" {
 #define dpu_to_cpu32(x) (be32_to_cpu(x))
 #define dpu_to_cpu64(x) (be64_to_cpu(x))
 #else
+#define __dpu16 __le16
+#define __dpu32 __le32
+#define __dpu64 __le64
+
 #define cpu_to_dpu8(x) (x)
 #define cpu_to_dpu16(x) (cpu_to_le16(x))
 #define cpu_to_dpu32(x) (cpu_to_le32(x))
