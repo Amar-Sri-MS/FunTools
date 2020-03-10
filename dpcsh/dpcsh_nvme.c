@@ -275,7 +275,8 @@ struct fun_json* _read_from_nvme(struct dpcsock *sock, uint32_t sess_id,
 				       data_len);
 			}
 			if (remaining > 0) {
-				data_buf = malloc(sizeof(struct nvme_vs_api_hdr) + data_len);
+				uint32_t alloc_len = sizeof(struct nvme_vs_api_hdr) + data_len;
+				data_buf = malloc(alloc_len);
 				if (data_buf) {
 					memcpy(data_buf, addr, NVME_ADMIN_CMD_DATA_LEN);
 					free(addr);
@@ -292,10 +293,9 @@ struct fun_json* _read_from_nvme(struct dpcsock *sock, uint32_t sess_id,
 						offset += NVME_ADMIN_CMD_DATA_LEN;
 					} while(readSuccess && (remaining > 0));
 				} else {
-					printf("%s:%d  sess %u/%u Unable to alloc %lu bytes",
+					printf("%s:%d  sess %u/%u Unable to alloc %u bytes",
 					       __func__, __LINE__, sess_id,
-					       seq_num,
-					       sizeof(struct nvme_vs_api_hdr) + data_len);
+					       seq_num, alloc_len);
 					readSuccess = 0;
 				}
 			}
@@ -306,7 +306,7 @@ struct fun_json* _read_from_nvme(struct dpcsock *sock, uint32_t sess_id,
 			}
 			free(addr);
 		} else {
-			printf("%s:%d sess %u/%u Unable to alloc %d bytes",
+			printf("%s:%d sess %u/%u Unable to alloc %u bytes",
 			       __func__, __LINE__, sess_id, seq_num,
 			       NVME_ADMIN_CMD_DATA_LEN);
 		}
