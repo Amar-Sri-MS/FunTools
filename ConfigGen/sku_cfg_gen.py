@@ -70,7 +70,11 @@ class SKUCfgGen():
                 with open(cfg, 'r') as f:
                     cfg_json = f.read()
                     cfg_json = jsonutils.standardize_json(cfg_json)
-                    cfg_json = json.loads(cfg_json)
+                    try:
+                        cfg_json = json.loads(cfg_json)
+                    except:
+                        logger.error("Failed to load config file: {}".format(cfg))
+                        raise
                     board_cfg = jsonutils.merge_dicts(board_cfg, cfg_json)
 
         return board_cfg
@@ -180,7 +184,7 @@ class SKUCfgGen():
         tmpl = env.get_template(self.sku_h_tmpl)
         header_file = self.sku_file_prefix + '.h'
         output_file = os.path.join(self.output_dir, header_file)
-	board_id_start = 0x0001 << 0x8
+        board_id_start = 0x0001 << 0x8
         with open (output_file, 'w') as file_handle:
             file_handle.write(tmpl.render(
                 emu_sku_list=all_emu_skus,
