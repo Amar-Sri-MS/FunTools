@@ -232,7 +232,7 @@ def main():
         tarfiles.append('image.json')
         tarfiles.append('mmc_image.json')
 
-        with tarfile.open('sdk_signed_release.tgz', mode='w:gz') as tar:
+        with tarfile.open('{chip}_sdk_signed_release.tgz'.format(chip=args.chip), mode='w:gz') as tar:
             for f in tarfiles:
                 tar.add(f)
 
