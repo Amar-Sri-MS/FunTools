@@ -21,8 +21,23 @@ endif
 
 BUILD_ROOT ?= build_$(MACHINE)
 
+# To track version, see if there's a build info in the workspace
+# (ie. in Jenkins) otherwise, pull it out of FunSDK. If that doesn't
+# owrk, make it up
+ifneq (,$(wildcard $(BUILD_INFO_SDK)))
+version := bld_$(shell cat $(BUILD_INFO_SDK))
+else ifneq (,$(wildcard $(BUILD_INFO_WORKSPACE)))
+version := bld_$(shell cat $(BUILD_INFO_WORKSPACE))
+else
+version := $(shell git describe --always --dirty=*)
+endif
+branch := $(shell git rev-parse --short HEAD)
+
+VER     = -DVER=$(version)
+BRANCH  = -DBRANCH=$(branch)
+
 # define header and library location in FunSDK
-CFLAGS ?= -I $(SDKDIR) -I $(SDKDIR)/FunSDK  -g -Wall -Werror -Wno-multichar
+CFLAGS ?= -I $(SDKDIR) -I $(SDKDIR)/FunSDK -g -Wall -Werror -Wno-multichar $(BRANCH) $(VER)
 
 # XXX: compatibility with FunOS build parameters
 #LDFLAGS += -L $(SDKDIR)/lib/${OS}/x86_64 -lfunclient -fsanitize=address

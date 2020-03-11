@@ -9,7 +9,7 @@
 
 #define PLATFORM_POSIX	1
 
-#include <utils/threaded/fun_json.h>
+#include <FunSDK/utils/threaded/fun_json.h>
 
 /* handy socket abstraction */
 enum sockmode {
