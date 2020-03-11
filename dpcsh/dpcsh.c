@@ -32,11 +32,12 @@
 #include "dpcsh_nvme.h"
 #include "csr_command.h"
 
-#include <utils/threaded/fun_map_threaded.h>
-#include <services/commander/fun_commander.h>
-#include <services/commander/fun_commander_basic_commands.h>
-#include <utils/threaded/fun_malloc_threaded.h>
-#include <utils/common/base64.h>
+#include <FunSDK/utils/threaded/fun_map_threaded.h>
+#include <FunSDK/services/commander/fun_commander.h>
+#include <FunSDK/services/commander/fun_commander_basic_commands.h>
+#include <FunSDK/utils/threaded/fun_malloc_threaded.h>
+#include <FunSDK/utils/common/base64.h>
+#include <FunSDK/platform/include/platform/utils_platform.h>
 
 #define SOCK_NAME	"/tmp/funos-dpc.sock"      /* default FunOS socket */
 #define PROXY_NAME      "/tmp/funos-dpc-text.sock" /* default unix proxy name */
@@ -54,6 +55,10 @@ enum parsingmode {
 };
 
 static enum parsingmode _parse_mode = PARSE_UNKNOWN;
+
+/* for debug */
+static const USED char *FunSDK_version = XSTRINGIFY(VER);
+static const USED char *branch_version = XSTRINGIFY(BRANCH);
 
 /* Force user input mode */
 #define OVERRIDE_TEXT  "#!sh "
@@ -94,6 +99,19 @@ static inline void _setnosigpipe(int const fd)
 	/* unfortunately Linux does not support SO_NOSIGPIPE... */
 	signal(SIGPIPE, SIG_IGN);
 #endif
+}
+
+static void _print_version(void)
+{
+	/* single line version when everything matches up */
+	printf("FunSDK version %s, branch: %s\n",
+	       FunSDK_version, branch_version);
+
+	/* extra logging when things are built a little weird */
+	if (strcmp(FunSDK_version, platform_SDK_version) != 0) {
+		printf("libfunclient FunSDK version %s, branch: %s\n",
+		       platform_SDK_version, platform_branch_version);
+	}
 }
 
 /* quiet logging -- just log events for proxy mode to avoid print
@@ -1427,6 +1445,7 @@ static struct option longopts[] = {
 	{ "baud",            required_argument, NULL, 'R' },
 	{ "legacy_b64",      no_argument,       NULL, 'L' },
 	{ "verbose",         no_argument,       NULL, 'v' },
+	{ "version",         no_argument,       NULL, 'V' },
 	{ "retry",           optional_argument, NULL, 'Y' },
 #ifdef __linux__
 	{ "nvme_cmd_timeout", required_argument, NULL, 'W' },
@@ -1691,6 +1710,11 @@ int main(int argc, char *argv[])
 			_verbose_log = true;
 			break;
 
+		case 'V':  /* "version" -- print version and quit */
+			_print_version();
+			exit(0);
+			break;
+
 		case 'Y':  /* retry=N */
 
 			connect_retries = opt_num(optarg, RETRY_NOARG);
@@ -1724,7 +1748,7 @@ int main(int argc, char *argv[])
 
 	/* make an announcement as to what we are */
 	printf("FunOS Dataplane Control Shell");
-
+	
 	switch (mode) {
 	case MODE_INTERACTIVE:
 		/* do nothing */
@@ -1743,6 +1767,7 @@ int main(int argc, char *argv[])
 
 	printf("\n");
 
+	_print_version(); /* always print this for the logs */
 
 	/* if we're running a device, make sure we configure it */
 	if (funos_sock.mode == SOCKMODE_DEV)
