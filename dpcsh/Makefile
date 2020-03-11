@@ -23,7 +23,7 @@ BUILD_ROOT ?= build_$(MACHINE)
 
 # To track version, see if there's a build info in the workspace
 # (ie. in Jenkins) otherwise, pull it out of FunSDK. If that doesn't
-# owrk, make it up
+# work, make it up
 ifneq (,$(wildcard $(BUILD_INFO_SDK)))
 version := bld_$(shell cat $(BUILD_INFO_SDK))
 else ifneq (,$(wildcard $(BUILD_INFO_WORKSPACE)))
