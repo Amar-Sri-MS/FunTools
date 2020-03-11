@@ -231,6 +231,7 @@ def main():
 
         tarfiles.append('image.json')
         tarfiles.append('mmc_image.json')
+        tarfiles.append('qspi_image_hw.bin')
 
         with tarfile.open('{chip}_sdk_signed_release.tgz'.format(chip=args.chip), mode='w:gz') as tar:
             for f in tarfiles:
