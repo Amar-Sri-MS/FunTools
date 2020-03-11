@@ -1710,7 +1710,7 @@ int main(int argc, char *argv[])
 			_verbose_log = true;
 			break;
 
-		case 'V':  /* "version" -- print version and quite */
+		case 'V':  /* "version" -- print version and quit */
 			_print_version();
 			exit(0);
 			break;
