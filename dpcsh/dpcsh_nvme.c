@@ -270,12 +270,14 @@ struct fun_json* _read_from_nvme(struct dpcsock *sock, uint32_t sess_id,
 							     seq_num);
 			offset += NVME_ADMIN_CMD_DATA_LEN;
 			if ((sizeof(struct nvme_vs_api_hdr) + data_len) > NVME_DPC_MAX_RESPONSE_LEN) {
-				printf("%s:%d: sess %u/%u: Data len = %d",
+				printf("%s:%d: sess %u/%u: Data len = %d\n",
 				       __func__, __LINE__, sess_id, seq_num,
 				       data_len);
 			}
 			if (remaining > 0) {
 				uint32_t alloc_len = sizeof(struct nvme_vs_api_hdr) + data_len;
+				if (alloc_len % NVME_ADMIN_CMD_DATA_LEN)
+					alloc_len = ((alloc_len / NVME_ADMIN_CMD_DATA_LEN) + 1) * NVME_ADMIN_CMD_DATA_LEN;
 				data_buf = malloc(alloc_len);
 				if (data_buf) {
 					memcpy(data_buf, addr, NVME_ADMIN_CMD_DATA_LEN);
