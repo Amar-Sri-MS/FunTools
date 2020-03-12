@@ -252,29 +252,65 @@ struct fun_json* _read_from_nvme(struct dpcsock *sock, uint32_t sess_id,
 	struct fun_json *json = NULL;
 #ifdef __linux__
 	if(sock->nvme_write_done) {
-		uint8_t *addr = malloc(NVME_DPC_MAX_RESPONSE_LEN);
+		uint8_t *addr = malloc(NVME_ADMIN_CMD_DATA_LEN);
+		uint8_t *data_buf = NULL;
 		if(addr) {
 			uint32_t remaining = 0;
 			uint32_t offset = 0;
 			uint32_t data_len = 0;
 			bool readSuccess = false;
 
-			do {
-				readSuccess = _read_from_nvme_helper(sock,
-								     addr + offset,
-								     &data_len,
-								     &remaining,
-								     offset,
-								     sock->cmd_timeout,
-								     sess_id,
-								     seq_num);
-				offset += NVME_ADMIN_CMD_DATA_LEN;
-			} while(readSuccess && (remaining > 0));
+			readSuccess = _read_from_nvme_helper(sock,
+							     addr + offset,
+							     &data_len,
+							     &remaining,
+							     offset,
+							     sock->cmd_timeout,
+							     sess_id,
+							     seq_num);
+			offset += NVME_ADMIN_CMD_DATA_LEN;
+			if ((sizeof(struct nvme_vs_api_hdr) + data_len) > NVME_DPC_MAX_RESPONSE_LEN) {
+				printf("%s:%d: sess %u/%u: Data len = %d\n",
+				       __func__, __LINE__, sess_id, seq_num,
+				       data_len);
+			}
+			if (remaining > 0) {
+				uint32_t alloc_len = sizeof(struct nvme_vs_api_hdr) + data_len;
+				if (alloc_len % NVME_ADMIN_CMD_DATA_LEN)
+					alloc_len = ((alloc_len / NVME_ADMIN_CMD_DATA_LEN) + 1) * NVME_ADMIN_CMD_DATA_LEN;
+				data_buf = malloc(alloc_len);
+				if (data_buf) {
+					memcpy(data_buf, addr, NVME_ADMIN_CMD_DATA_LEN);
+					free(addr);
+					addr = data_buf;
+					do {
+						readSuccess = _read_from_nvme_helper(sock,
+										     addr + offset,
+										     &data_len,
+										     &remaining,
+										     offset,
+										     sock->cmd_timeout,
+										     sess_id,
+										     seq_num);
+						offset += NVME_ADMIN_CMD_DATA_LEN;
+					} while(readSuccess && (remaining > 0));
+				} else {
+					printf("%s:%d  sess %u/%u Unable to alloc %u bytes",
+					       __func__, __LINE__, sess_id,
+					       seq_num, alloc_len);
+					readSuccess = 0;
+				}
+			}
 
 			if(readSuccess) {
-				json = _buffer2json((uint8_t *)(addr + sizeof(struct nvme_vs_api_hdr)), data_len);
+				json = _buffer2json((uint8_t *)(addr + sizeof(struct nvme_vs_api_hdr)),
+						    data_len);
 			}
 			free(addr);
+		} else {
+			printf("%s:%d sess %u/%u Unable to alloc %u bytes",
+			       __func__, __LINE__, sess_id, seq_num,
+			       NVME_ADMIN_CMD_DATA_LEN);
 		}
 		sock->nvme_write_done = false;
 	}
