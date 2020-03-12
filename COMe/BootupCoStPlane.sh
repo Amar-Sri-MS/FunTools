@@ -48,6 +48,12 @@ AWK_LAN='/IP Address[ ]+:/ {print $4}'
 REBOOT_FILE="/tmp/host_reboot"
 
 BMC_IP=$($IPMI_LAN | awk "$AWK_LAN")
+printf "BMC eth0 IP: %s\n" $BMC_IP
+
+if [[ -d /sys/class/net/enp3s0f0.2 ]]; then
+	BMC_IP="192.168.127.2"
+fi
+
 printf "Poll BMC:  %s\n" $BMC_IP
 
 BMC="-P password: -p superuser ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no sysadmin@$BMC_IP"

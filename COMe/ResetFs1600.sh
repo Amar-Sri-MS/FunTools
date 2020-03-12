@@ -36,11 +36,16 @@ if [[ -z $IPMITOOL ]]; then
 	apt-get install -y ipmitool
 fi
 
-IPMI_LAN="ipmitool -U admin -P admin lan print 1"
-AWK_LAN='/IP Address[ ]+:/ {print $4}'
 REBOOT_FILE="/tmp/fpga_reset.sh"
 
-BMC_IP=$($IPMI_LAN | awk "$AWK_LAN")
+if [[ -d /sys/class/net/enp3s0f0.2 ]]; then
+	BMC_IP="192.168.127.2"
+else
+	IPMI_LAN="ipmitool -U admin -P admin lan print 1"
+	AWK_LAN='/IP Address[ ]+:/ {print $4}'
+	BMC_IP=$($IPMI_LAN | awk "$AWK_LAN")
+fi
+
 printf "Poll BMC:  %s\n" $BMC_IP
 
 BMC="-P password: -p superuser ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no sysadmin@$BMC_IP"
