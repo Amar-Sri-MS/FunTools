@@ -6,6 +6,7 @@
 ##  Copyright (C) 2018 Fungible. All rights reserved.
 ##
 
+import json
 import os
 import sys
 import subprocess
@@ -84,7 +85,22 @@ def run_dpc_test(args, legacy_ok, delay):
     time.sleep(delay)
     
     test_commands(client)
+
+def run_using_env():
+    f = open('./env.json', 'r')
+    env_dict = json.load(f)
     
+    if len(env_dict['dpc_hosts']) != 1:
+        raise RuntimeError("configuration error")
+
+    dpc_host = env_dict['dpc_hosts'][0]
+    host = dpc_host['host']
+    port = dpc_host['tcp_port']
+    print 'Connecting to dpc host at %s:%s' % (host, port)
+    client = dpc_client.DpcClient(server_address=(host, port))
+
+    test_commands(client)
+
 ###
 ## main
 #
@@ -104,7 +120,7 @@ def run_style(manual, style):
         print "Skipping '%s'" % style
 
 def usage():
-    print "usage: %s [tcp, unix, qemu]" % sys.argv[0]
+    print "usage: %s [tcp, unix, qemu, fun-on-demand]" % sys.argv[0]
     sys.exit(1)
         
 def main():
@@ -115,6 +131,10 @@ def main():
     style = None
     if (len(sys.argv) == 2):
         style = sys.argv[1]
+
+    if style == "fun-on-demand":
+        run_using_env()
+        return
 
     if (style is not None):
         run_style(True, style)
