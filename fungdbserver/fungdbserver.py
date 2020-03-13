@@ -226,6 +226,13 @@ class FileCorpse:
         return bytes
 
 
+    def find_context_from_stack(self):
+        vpnum = self.vpnumtab[self.threadid]
+        b = self.symbols["exception_stack_memory"]
+        o = (vpnum + 1) * 4096 - (32*8)
+        return b + o
+      
+    
     def find_exception_base(self):
         if (self.symbols is None):
             return None
@@ -233,9 +240,7 @@ class FileCorpse:
         vpnum = self.vpnumtab[self.threadid]
 
         if (False):
-            b = self.symbols["exception_stack_memory"]
-            o = (vpnum + 1) * 4096 - (32*8)
-            return b + o
+            return self.find_context_from_stack()
         else:
             p = self.symbols["_vplocal_arr"]
             n = self.rdsym("PLATFORM_DEBUG_CONSTANT_vplocal_stride")
@@ -246,6 +251,10 @@ class FileCorpse:
 
             DEBUG("exception base = 0x%x + %d * %d + 0x%x = 0x%x -> 0x%x" % (p, vpnum, n, o, ptr, base))
 
+        if (base == 0):
+            DEBUG("NULL exception base, going straight to stack memory")
+            return self.find_context_from_stack()
+            
         return base
 
     def ReadMemory8(self, addr):
