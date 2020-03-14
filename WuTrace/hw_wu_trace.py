@@ -205,7 +205,7 @@ class NormalWU(WU):
 
         self.wuid = self.action & NormalWU.WUID_MASK
         if self.wuid >= len(wu_list):
-            self.wu_name = 'off-the-scales'
+            self.wu_name = 'unrecognized WU'
         else:
             wu_entry = wu_list[self.wuid]
             self.wu_name = wu_entry['name']
