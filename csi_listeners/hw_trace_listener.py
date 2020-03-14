@@ -286,7 +286,7 @@ def main():
                         default='60.1.1.1')
     parser.add_argument('--trace-port', type=int,
                         help='Port to listen on for FunOS traffic',
-                        default=52001)
+                        default=53000)
     parser.add_argument('--http-port', type=int,
                         help='Port to listen on for HTTP requests',
                         default=52336)
