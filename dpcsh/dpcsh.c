@@ -1776,12 +1776,13 @@ int main(int argc, char *argv[])
 
 	/* start by opening the socket to FunOS */
 	int r = dpcsocket_connnect(&funos_sock);
-	printf("FunOS is connected!\n");
 
 	if (r != 0) {
-		printf("*** Can't open socket\n");
+		printf("*** Can't connect FunOS\n");
 		exit(1);
 	}
+
+	printf("FunOS is connected!\n");
 
 	switch(mode) {
 	case MODE_HTTP_PROXY:
