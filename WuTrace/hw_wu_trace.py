@@ -204,8 +204,11 @@ class NormalWU(WU):
         super(NormalWU, self).__init__(action, w0, w1, w2)
 
         self.wuid = self.action & NormalWU.WUID_MASK
-        wu_entry = wu_list[self.wuid]
-        self.wu_name = wu_entry['name']
+        if self.wuid >= len(wu_list):
+            self.wu_name = 'unrecognized WU'
+        else:
+            wu_entry = wu_list[self.wuid]
+            self.wu_name = wu_entry['name']
         self.sgid = (self.action >> WU.SGID_SHIFT) & WU.GID_MASK
         self.slid = (self.action >> WU.SLID_SHIFT) & WU.LID_MASK
         self.dgid = (self.action >> WU.DGID_SHIFT) & WU.GID_MASK
