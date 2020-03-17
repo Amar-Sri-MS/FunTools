@@ -15,6 +15,7 @@ import firmware_signing_service as fsi
 import key_replace as kr
 import key_bag_create as kbc
 import tempfile
+import copy
 
 # image type is at 2 SIGNER_INFO size +  FW_SIZE + FW_VERSION
 IMAGE_TYPE_OFFSET = 2048 + 2048 + 8
@@ -541,6 +542,9 @@ def run(arg_action, arg_enroll_cert = None, arg_enroll_tbs = None, *args, **kwar
     wanted = lambda action : arg_action in ['all', action]
     flash_content = None
 
+    new_entries = {}
+    delete_entries = []
+
     for k,v in config['signed_images'].items():
         if v.get('description','').startswith('@file:'):
             try:
@@ -548,6 +552,26 @@ def run(arg_action, arg_enroll_cert = None, arg_enroll_tbs = None, *args, **kwar
                     v['description'] = f.readline()
             except:
                 raise Exception("Could not find file {0}".format(v['description'][len('@file:'):]))
+
+        if v.get('source','').startswith('@file:'):
+            try:
+                with open(find_file_in_srcdirs(v['source'][len('@file:'):]), 'r') as f:
+                    files = json.load(f)
+                    for vv in files.values():
+                        fname = '{}.bin'.format(vv['filename'])
+                        new_v = copy.deepcopy(v)
+                        new_v['source'] = vv['filename']
+                        new_entries[fname] = new_v
+                delete_entries.append(k)
+            except:
+                raise Exception("Could not find file {0}".format(v['source'][len('@file:'):]))
+
+    # python3 doesn't allow changing dict size during iteration
+    # so perform any updates after the loop
+    for k in delete_entries:
+        config['signed_images'].pop(k)
+
+    config['signed_images'].update(new_entries)
 
     if config.get('output_format'):
         total_size = int(config['output_format']['size'], 0)
