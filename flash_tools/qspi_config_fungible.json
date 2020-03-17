@@ -39,33 +39,33 @@
             "optional": true,
             "index": "100"
         },
-	"HU_SBM_SERDES": {
-	    "A": "hu_sbm_serdes.bin",
-	    "B": "hu_sbm_serdes.bin",
-	    "optional": true,
-	    "index": "103"
-	},
+        "HU_SBM_SERDES": {
+            "A": "hu_sbm_serdes.bin",
+            "B": "hu_sbm_serdes.bin",
+            "optional": true,
+            "index": "103"
+        },
         "HOST_DATA": {
             "A": "reserve(10000, 'hdat')",
             "B": "",
             "index": "3000"
         },
-	"KEY_BAG" : {
-	     "A": "key_bag.bin",
-	     "B": "key_bag.bin",
-	     "index": "2500"
-	}
+        "KEY_BAG" : {
+            "A": "key_bag.bin",
+            "B": "key_bag.bin",
+            "index": "2500"
+        }
     },
     "signed_images": {
-	"hu_sbm_serdes.bin": {
-	    "source": "sbm_serdes.hu.conv.rom",
-	    "version": 1,
-	    "fourcc": "husc",
-	    "cert": "",
-	    "customer_cert": "",
-	    "key": "fpk3",
-	    "description": "@file:sbm_serdes.hu.conv.rom.version"
-	},
+        "hu_sbm_serdes.bin": {
+            "source": "sbm_serdes.hu.conv.rom",
+            "version": 1,
+            "fourcc": "husc",
+            "cert": "",
+            "customer_cert": "",
+            "key": "fpk3",
+            "description": "@file:sbm_serdes.hu.conv.rom.version"
+        },
         "hbm_sbus.bin": {
             "source": "sbus_master.hbm.conv.rom",
             "version": 1,
@@ -146,15 +146,15 @@
             "customer_cert": "",
             "description": ""
         },
-	"key_bag.bin": {
-	    "source": "key_bag.keys.bin",
-	    "version": 1,
-	    "fourcc": "kbag",
-	    "key": "fpk5",
-	    "cert": "",
-	    "customer_cert": "",
-	    "description": ""
-	}
+        "key_bag.bin": {
+            "source": "key_bag.keys.bin",
+            "version": 1,
+            "fourcc": "kbag",
+            "key": "fpk5",
+            "cert": "",
+            "customer_cert": "",
+            "description": ""
+        }
     },
     "signed_meta_images": {
         "esecure_firmware_all.bin" : {
