@@ -185,31 +185,28 @@ class SKUCfgGen():
         header_file = self.sku_file_prefix + '.h'
         output_file = os.path.join(self.output_dir, header_file)
         board_id_start = 0x0001 << 0x8
-        with open (output_file, 'w') as file_handle:
-            file_handle.write(tmpl.render(
+        with open (output_file, 'w') as f:
+            f.write(tmpl.render(
                 emu_sku_list=all_emu_skus,
                 fun_board_sku_list=all_fungible_board_skus,
                 fun_board_list=fun_board_list,
                 board_id_start=board_id_start,
                 meta_data=meta_data))
-        file_handle.close()
 
         tmpl = env.get_template(self.sku_c_tmpl)
         c_file = self.sku_file_prefix + '.c'
         output_file = os.path.join(self.output_dir, c_file)
-        with open (output_file, 'w') as file_handle:
-            file_handle.write(tmpl.render(
+        with open (output_file, 'w') as f:
+            f.write(tmpl.render(
                 emu_sku_list=all_emu_skus,
                 fun_board_sku_list=all_fungible_board_skus,
                 meta_data=meta_data))
-        file_handle.close()
 
     # Creates binary file with skuid
     def _create_binary_file(self, file_path, four_byte_data):
-         _file = open(file_path, "wb")
-         byte_array = struct.pack('<I', four_byte_data)
-         _file.write(byte_array)
-         _file.close
+         with open(file_path, "wb") as f:
+            byte_array = struct.pack('<I', four_byte_data)
+            f.write(byte_array)
 
     # Generates eeprom files for the emulation builds with SBP and fungible boards
     def generate_eeprom(self):
@@ -221,7 +218,7 @@ class SKUCfgGen():
                 hwcap_code_gen.get_emu_sku_ids_with_sbp(all_target_chips=True)
         all_skus_with_sbp.update(emu_skus_with_sbp)
 
-        for sku_name,sku_id in all_skus_with_sbp.iteritems():
+        for sku_name, sku_id in all_skus_with_sbp.iteritems():
             eeprom_filename = 'eeprom_' + sku_name
             abs_eeprom_file_path = os.path.join(self.output_dir, eeprom_filename)
             self._create_binary_file(abs_eeprom_file_path, sku_id)
