@@ -210,16 +210,26 @@ class SKUCfgGen():
 
     # Generates eeprom files for the emulation builds with SBP and fungible boards
     def generate_eeprom(self):
-        all_skus_with_sbp = \
+        eeprom_filename = lambda sku_name: 'eeprom_{}'.format(sku_name)
+
+        all_board_skus_with_sbp = \
                 self.get_fungible_board_sku_ids(all_target_chips=True)
         hwcap_code_gen = HWCAPCodeGen(self.input_dir, self.output_dir,
                                       self.target_chip, self.target_machine)
         emu_skus_with_sbp = \
                 hwcap_code_gen.get_emu_sku_ids_with_sbp(all_target_chips=True)
+
+        all_skus_with_sbp = dict(all_board_skus_with_sbp)
         all_skus_with_sbp.update(emu_skus_with_sbp)
 
+        eeprom_list = {}
+        for sku_name, sku_id in all_board_skus_with_sbp.iteritems():
+            eeprom_list[sku_name] = { 'filename' : eeprom_filename(sku_name) }
+
+        with open(os.path.join(self.output_dir, 'eeprom_list.json'), "wb") as f:
+            json.dump(eeprom_list, f, indent=4)
+
         for sku_name, sku_id in all_skus_with_sbp.iteritems():
-            eeprom_filename = 'eeprom_' + sku_name
-            abs_eeprom_file_path = os.path.join(self.output_dir, eeprom_filename)
+            abs_eeprom_file_path = os.path.join(self.output_dir, eeprom_filename(sku_name))
             self._create_binary_file(abs_eeprom_file_path, sku_id)
 
