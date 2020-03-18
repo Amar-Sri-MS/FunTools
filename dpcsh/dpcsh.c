@@ -613,7 +613,9 @@ static char *_read_a_line(struct dpcsock *sock, ssize_t *nbytes)
 			printf("**** remote hung up / error: %d %d %s\n",
 			       r, errno, strerror(errno));
 			free(buf);
-			close(sock->fd);
+			if (sock->mode != SOCKMODE_NVME) {
+				close(sock->fd);
+			}
 			*nbytes = 0;
 			sock->fd = -1;
 			return NULL;
@@ -740,7 +742,7 @@ int dpcsocket_connnect(struct dpcsock *sock)
 		/* wait for someone to connect */
 		_listen_sock_accept(sock);
 	} else if(sock->mode == SOCKMODE_NVME) {
-		sock->fd = open(sock->socket_name, O_RDWR);
+		sock->fd = -1;
 		sock->nvme_write_done = false;
 	} else {
 		printf("connecting client socket\n");
@@ -751,7 +753,7 @@ int dpcsocket_connnect(struct dpcsock *sock)
 	}
 
 	/* return non-zero on failure */
-	return (sock->fd < 0);
+	return (sock->mode == SOCKMODE_NVME) ? 0 : (sock->fd < 0);
 }
 
 #define FMT_PAD (256)
@@ -1267,12 +1269,12 @@ static void _do_interactive(struct dpcsock *funos_sock,
 		}
 
 		/* if it changed while in flight */
-		if (funos_sock->fd == -1) {
+		if ((funos_sock->mode != SOCKMODE_NVME) && (funos_sock->fd == -1)) {
 			continue;
 		}
 
-		if (FD_ISSET(funos_sock->fd, &fds)
-		    && (!funos_sock->loopback)) {
+		if ((funos_sock->mode == SOCKMODE_NVME) || (FD_ISSET(funos_sock->fd, &fds)
+		    && (!funos_sock->loopback))) {
 			// printf("funos input\n");
 			_do_recv_cmd(funos_sock, cmd_sock, false, seq_num);
 		}
