@@ -131,6 +131,22 @@ class CSR2AccessorTest(unittest.TestCase):
         self.assertEqual(0x1e008408, addr)
         self.assertEqual([0xdeadbeef], vals)
 
+    def test_raw_peek(self):
+        mock_vals = [0xf00baa]
+
+        self.dbg_client.queue_peek_vals(mock_vals)
+        result = self.accessor.raw_peek(0xcafe, 1)
+        self.assertEqual(mock_vals, result)
+
+    def test_raw_poke(self):
+        mock_addr = 0xbabe
+        mock_vals = [0x0, 0x1, 0x2]
+
+        self.accessor.raw_poke(mock_addr, mock_vals)
+        _, addr, vals = self.dbg_client.pop_poke_args()
+        self.assertEqual(mock_addr, addr)
+        self.assertEqual(mock_vals, vals)
+
 
 class RegisterValueTest(unittest.TestCase):
     """
