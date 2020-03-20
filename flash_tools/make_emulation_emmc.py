@@ -277,11 +277,10 @@ def run():
     parser.parse_args(namespace=g)
 
     linux_start_blk = (LINUX_OFFSET / BLOCK_SIZE) if g.linux else -1
-    gen_boot_script(os.path.join(g.outdir, 'bootloader.scr'), FUNOS_OFFSET / BLOCK_SIZE,
+    if g.bootscript_only or (g.fsfile is None and not g.filesystem):
+        gen_boot_script(os.path.join(g.outdir, 'bootloader.scr'), FUNOS_OFFSET / BLOCK_SIZE,
                     CCFG_OFFSET / BLOCK_SIZE,
                     linux_start_blk)
-
-    if g.bootscript_only:
         return
 
     g.work_file = os.path.join(g.outdir, os.path.basename(g.appfile) + '.pad')
