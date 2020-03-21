@@ -323,11 +323,14 @@ class CSRAccessor(object):
     def peek(self, path):
         """
         Peek at the register with the specified path.
+
+        Returns a RegisterValue object on success, else returns None and
+        logs an error.
         """
         reg, error = self.reg_finder.find_reg(path)
         if error:
             logger.error(error)
-            return
+            return None
 
         addr = reg.addr
         csr_width_words = reg.width_bytes >> 3
@@ -345,8 +348,7 @@ class CSRAccessor(object):
                 return None
 
             regval = RegisterValue(reg, word_array)
-            print str(regval)
-            return word_array
+            return regval
         else:
             error_msg = data
             logger.error('Peek failed: {0}'.format(error_msg))
@@ -358,12 +360,13 @@ class CSRAccessor(object):
         (in 64-bit words).
 
         This is a fallback for when all else fails.
+
+        Returns the data as an array of 64-bit words on success, else None.
         """
         (status, data) = self.dbgprobe.csr_peek(chip_inst=0,
                                                 csr_addr=addr,
                                                 csr_width_words=length)
         if status:
-            print data
             return data
         else:
             logger.error('Raw peek failed: {0}'.format(data))
@@ -373,11 +376,13 @@ class CSRAccessor(object):
         """
         Poke the values into the register with the specified path.
         Values should be an array of 64-bit words.
+
+        Returns True on successful completion, False on errors.
         """
         reg, error = self.reg_finder.find_reg(path)
         if error:
             logger.error(error)
-            return
+            return False
 
         addr = reg.addr
         csr_width_words = reg.width_bytes >> 3
@@ -385,7 +390,7 @@ class CSRAccessor(object):
         if len(values) != csr_width_words:
             logger.error('Cannot write %d words for a register '
                          'which has %d words' % (len(values), csr_width_words))
-            return
+            return False
         logger.info('Poking register at {0} '
                     'with values {1}'.format(hex(addr), values))
 
@@ -394,7 +399,9 @@ class CSRAccessor(object):
                                                 word_array=values)
         if not status:
             logger.error('Poke failed: {0}'.format(data))
-            return
+            return False
+
+        return True
 
     def raw_poke(self, addr, values):
         """
@@ -403,13 +410,46 @@ class CSRAccessor(object):
         the register length.
 
         The fallback version of poke, when the path lookup fails.
+
+        Returns True on successful completion, False on errors.
         """
         (status, data) = self.dbgprobe.csr_poke(chip_inst=0,
                                                 csr_addr=addr,
                                                 word_array=values)
         if not status:
             logger.error('Raw poke failed: {0}'.format(data))
-            return
+            return False
+        return True
+
+
+class RawValuesFormatter(object):
+    """
+    Formats raw values from a register as best as it can.
+    """
+    def __init__(self):
+        pass
+
+    def format(self, data):
+        """
+        data is an array of 64-bit values from the register.
+        (ordered left to right).
+
+        Returns a string.
+        """
+        dump = hex_word_dump(data)
+
+        # Oh quantum mechanics, how I miss thee
+        bra = dump.find('[')
+        ket = dump.rfind(']')
+        empty_spaces = ket - bra
+
+        msb = len(data) * 64 - 1
+        lsb = 0
+
+        # account for the space taken up by the msb
+        empty_spaces = empty_spaces - len(str(msb))
+        header = str(msb) + ' ' * empty_spaces + str(lsb) + '\n'
+        return header + dump
 
 
 #
@@ -476,7 +516,9 @@ def csr2_peek(args):
     else:
         finder = RegisterFinder(bundle)
         accessor = CSRAccessor(dbgprobe(), finder)
-        accessor.peek(csr_path)
+        regval = accessor.peek(csr_path)
+        if regval is not None:
+            print str(regval)
 
 
 def print_matching_regs(csr_path):
@@ -494,8 +536,12 @@ def csr2_raw_peek(args):
     This version of peek takes an address and length (64-bit words).
     """
     accessor = CSRAccessor(dbgprobe(), None)
-    accessor.raw_peek(str_to_int(args.addr),
-                      str_to_int(args.length))
+    data = accessor.raw_peek(str_to_int(args.addr),
+                             str_to_int(args.length))
+
+    if data is not None:
+        formatter = RawValuesFormatter()
+        print formatter.format(data)
 
 
 def csr2_poke(args):
