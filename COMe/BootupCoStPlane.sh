@@ -39,6 +39,25 @@ if [[ ! -f /usr/sbin/in.tftpd ]]; then
 	fi
 fi
 
+BIN_NETWORKMANAGER_FILE="/usr/sbin/NetworkManager"
+if [[ ! -f $BIN_NETWORKMANAGER_FILE ]]; then
+	apt-get install -y network-manager
+	# If the previous command succeeded then update netplan
+	# I am not replying on $? because there a lot of packages
+	# which get updated
+	FUN_NETPLAN_YAML="/etc/netplan/fungible-netcfg.yaml"
+	if [[ -f $BIN_NETWORKMANAGER_FILE ]]; then
+		if [[ -f $FUN_NETPLAN_YAML ]]; then
+			grep NetworkManager $FUN_NETPLAN_YAML > /dev/null
+			RC=$?
+			if [[ $RC -ne 0 ]]; then
+				sed -i 's/networkd/NetworkManager/g' $FUN_NETPLAN_YAML
+				netplan apply
+			fi
+		fi
+	fi
+fi
+
 if [[ -f $FUN_ROOT/StorageController/etc/start_splash_screen.sh ]]; then
 	$FUN_ROOT/StorageController/etc/start_splash_screen.sh start &
 fi
