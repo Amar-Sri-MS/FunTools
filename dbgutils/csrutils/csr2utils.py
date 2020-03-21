@@ -438,9 +438,13 @@ class RawValuesFormatter(object):
         """
         dump = hex_word_dump(data)
 
-        # Oh quantum mechanics, how I miss thee
+        # oh quantum mechanics, how I miss thee
         bra = dump.find('[')
         ket = dump.rfind(']')
+
+        if bra == -1 or ket == -1:
+            return dump
+
         empty_spaces = ket - bra
 
         msb = len(data) * 64 - 1
