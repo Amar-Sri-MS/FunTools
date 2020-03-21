@@ -42,18 +42,16 @@ fi
 BIN_NETWORKMANAGER_FILE="/usr/sbin/NetworkManager"
 if [[ ! -f $BIN_NETWORKMANAGER_FILE ]]; then
 	apt-get install -y network-manager
-	# If the previous command succeeded then update netplan
-	# I am not replying on $? because there a lot of packages
-	# which get updated
-	FUN_NETPLAN_YAML="/etc/netplan/fungible-netcfg.yaml"
-	if [[ -f $BIN_NETWORKMANAGER_FILE ]]; then
-		if [[ -f $FUN_NETPLAN_YAML ]]; then
-			grep NetworkManager $FUN_NETPLAN_YAML > /dev/null
-			RC=$?
-			if [[ $RC -ne 0 ]]; then
-				sed -i 's/networkd/NetworkManager/g' $FUN_NETPLAN_YAML
-				netplan apply
-			fi
+fi
+
+FUN_NETPLAN_YAML="/etc/netplan/fungible-netcfg.yaml"
+if [[ -f $FUN_NETPLAN_YAML ]]; then
+	grep NetworkManager $FUN_NETPLAN_YAML > /dev/null
+	RC=$?
+       	if [[ $RC -ne 0 ]]; then
+		if [[ -f $BIN_NETWORKMANAGER_FILE ]]; then
+			sed -i 's/networkd/NetworkManager/g' $FUN_NETPLAN_YAML
+			netplan apply
 		fi
 	fi
 fi
