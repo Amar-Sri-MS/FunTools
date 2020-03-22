@@ -20,22 +20,24 @@ if [[ -z $IPMITOOL ]]; then
 	apt-get install -y ipmitool
 fi
 
-if [[ ! -f /usr/sbin/in.tftpd ]]; then
+BIN_TFTPD_HPA="/usr/sbin/in.tftpd"
+if [[ ! -f $BIN_TFTPD_HPA ]]; then
 	sudo apt-get install -y tftpd-hpa
+fi
+
+if [[ -f $BIN_TFTPD_HPA ]]; then
 	# Restrict the tftpserver to serve
 	# requests only on the internal interface
-	if [[ -f /usr/sbin/in.tftpd ]]; then
-		TFTP_SERVER_CONFIG_FILE="/etc/default/tftpd-hpa"
-		grep "192" $TFTP_SERVER_CONFIG_FILE > /dev/null 2>&1
-		RC=$?
-		if [[ $RC -ne 0 ]]; then
-			sed -i 's/TFTP_ADDRESS="/TFTP_ADDRESS="192.168.127.4/g' $TFTP_SERVER_CONFIG_FILE
-		fi
-		grep "create" $TFTP_SERVER_CONFIG_FILE > /dev/null 2>&1
-		RC=$?
-		if [[ $RC -ne 0 ]]; then
-			sed -i 's/secure/-secure --create/g' $TFTP_SERVER_CONFIG_FILE
-		fi
+	TFTP_SERVER_CONFIG_FILE="/etc/default/tftpd-hpa"
+	grep "192" $TFTP_SERVER_CONFIG_FILE > /dev/null 2>&1
+	RC=$?
+	if [[ $RC -ne 0 ]]; then
+		/bin/sed -i 's/TFTP_ADDRESS="/TFTP_ADDRESS="192.168.127.4/g' $TFTP_SERVER_CONFIG_FILE
+	fi
+	grep "create" $TFTP_SERVER_CONFIG_FILE > /dev/null 2>&1
+	RC=$?
+	if [[ $RC -ne 0 ]]; then
+		/bin/sed -i 's/secure/-secure --create/g' $TFTP_SERVER_CONFIG_FILE
 	fi
 fi
 
@@ -45,15 +47,62 @@ if [[ ! -f $BIN_NETWORKMANAGER_FILE ]]; then
 fi
 
 FUN_NETPLAN_YAML="/etc/netplan/fungible-netcfg.yaml"
-if [[ -f $FUN_NETPLAN_YAML ]]; then
+if [[ -f $BIN_NETWORKMANAGER_FILE ]] && [[ -f $FUN_NETPLAN_YAML ]]; then
 	grep NetworkManager $FUN_NETPLAN_YAML > /dev/null
 	RC=$?
-       	if [[ $RC -ne 0 ]]; then
-		if [[ -f $BIN_NETWORKMANAGER_FILE ]]; then
-			sed -i 's/networkd/NetworkManager/g' $FUN_NETPLAN_YAML
-			netplan apply
-		fi
+	if [[ $RC -ne 0 ]]; then
+		/bin/sed -i 's/networkd/NetworkManager/g' $FUN_NETPLAN_YAML
+		netplan apply
 	fi
+fi
+
+CONFIG_DHCLIENT="/etc/dhcp/dhclient.conf"
+if [[ -f $BIN_NETWORKMANAGER_FILE ]] && [[ -f $CONFIG_DHCLIENT ]]; then
+	grep bootfile-name $CONFIG_DHCLIENT > /dev/null
+	RC=$?
+	if [[ $RC -ne 0 ]]; then
+		sed -i 's/ntp-servers;/ntp-servers, bootfile-name;/g' $CONFIG_DHCLIENT
+		# Restart netplan so that a DHCP request is triggered
+		netplan apply
+	fi
+fi
+
+UPDATE_GRUB=0
+GRUB_FILE="/etc/default/grub"
+if [[ -f $GRUB_FILE ]]; then
+        # Check if iommu is enabled
+        grep "GRUB_CMDLINE_LINUX" $GRUB_FILE | grep "iommu" > /dev/null
+        RC=$?
+
+        if [[ $RC -ne 0 ]]; then
+                echo "Upgrade grub config file to enable iommu"
+                /bin/sed -i '/GRUB_CMDLINE_LINUX.*115200n8/ s?115200n8?115200n8 intel_iommu=on iommu=pt?' $GRUB_FILE
+                grep "GRUB_CMDLINE_LINUX" $GRUB_FILE | grep "iommu" > /dev/null
+                RC=$?
+                if [[ $RC -eq 0 ]]; then
+                        echo "iommu configured in grub"
+                        UPDATE_GRUB=1
+                fi
+        fi
+
+        # Check if fsck is enabled
+        grep "GRUB_CMDLINE_LINUX" $GRUB_FILE | grep "iommu" | grep "fsck" > /dev/null
+        RC=$?
+
+        if [[ $RC -ne 0 ]]; then
+                echo "Upgrade grub config file to enable fsck upon every COMe boot-up"
+                /bin/sed -i '/GRUB_CMDLINE_LINUX.*iommu=pt/ s?iommu=pt?iommu=pt fsck\.repair=yes fsck\.mode=force?' $GRUB_FILE
+                grep "GRUB_CMDLINE_LINUX" $GRUB_FILE | grep "iommu" | grep "fsck" > /dev/null
+                if [[ $RC -eq 0 ]]; then
+                        echo "fsck configured in grub"
+                        UPDATE_GRUB=1
+                fi
+        fi
+        # *** THIS IS A CRITICAL WINDOW ***
+        if [[ $UPDATE_GRUB -eq 1 ]]; then
+                update-grub
+                sync
+        fi
 fi
 
 if [[ -f $FUN_ROOT/StorageController/etc/start_splash_screen.sh ]]; then
