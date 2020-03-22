@@ -22,7 +22,7 @@ fi
 
 BIN_TFTPD_HPA="/usr/sbin/in.tftpd"
 if [[ ! -f $BIN_TFTPD_HPA ]]; then
-	sudo apt-get install -y tftpd-hpa
+	apt-get install -y tftpd-hpa
 fi
 
 if [[ -f $BIN_TFTPD_HPA ]]; then
