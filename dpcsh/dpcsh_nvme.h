@@ -11,7 +11,7 @@
 
 // DPC over NVMe is needed only in Linux
 #ifdef __linux__
-#define NVME_DEV_NAME   "/dev/nvme0"  /* default nvme device used for sending dpc commands as 
+#define NVME_DEV_NAME   "/dev/nvme0"  /* default nvme device used for sending dpc commands as
 										 NVME vendor specific admin commands */
 #define NVME_ADMIN_CMD_DATA_LEN 4096   /* data length for the NVMe admin command
 											 used for executing DPC command over NVMe admin queue */
@@ -24,9 +24,17 @@
 #define NVME_IDENTIFY_COMMAND_OPCODE 0x06 /* opcode for identify controller command */
 #define FUNGIBLE_DPU_VID	0x1dad
 
+#define WRITE_IN_PROGRESS 1
+#define WRITE_COMPLETE 2
+
+#define DPCSH_NVME_VER_LEGACY		(0)
+#define DPCSH_NVME_VER_2020_03_22	(1)
+#define DPCSH_NVME_VER		DPCSH_NVME_VER_2020_03_22
+
 struct nvme_vs_api_hdr {
-	uint8_t version;
-	uint8_t rsvd1[7];
+	uint32_t version;
+	uint16_t json_cmd_status;
+	uint16_t rsvd1;
 	uint32_t data_len;
 	uint32_t rsvd2;
 };
