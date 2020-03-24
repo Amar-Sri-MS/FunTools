@@ -139,9 +139,9 @@ def run_using_env():
     run_tests_client(client)
 
 
-STYLES = {"tcp": (True, ["--tcp_proxy"], False, 0),
-          "unix": (True, ["--unix_proxy"], True, 0),
-          "qemu": (False, ["--tcp_proxy", "--base64_sock"], False, 10)}
+STYLES = {"tcp": (True, ["--verbose", "--tcp_proxy"], False, 0),
+          "unix": (True, ["--verbose", "--unix_proxy"], True, 0),
+          "qemu": (False, ["--verbose", "--tcp_proxy", "--base64_sock"], False, 10)}
 
 
 def run_style(manual, style):
