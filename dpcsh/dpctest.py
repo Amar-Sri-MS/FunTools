@@ -160,7 +160,7 @@ def run_style(manual, style):
 
 
 def usage():
-    print "usage: %s [tcp, unix, qemu, fun-on-demand]" % sys.argv[0]
+    print "usage: %s [tcp, unix, qemu, fun-on-demand, fun-on-demand-reduced]" % sys.argv[0]
     sys.exit(1)
 
 
