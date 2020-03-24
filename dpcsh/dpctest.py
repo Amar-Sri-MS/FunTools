@@ -44,13 +44,15 @@ class TestDPCCommands(unittest.TestCase):
         print 'dpc.execute returned %s' % ret
         self.assertEquals(label, ret)
 
+    def checkEchoMessage(self, message):
+        result = self.client.execute('echo', [message])
+        self.assertIsNotNone(result)
+        self.assertEquals(message, result.strip())
+
     def testSeveralEcho(self):
         """Tests the echo command returns the string passed in."""
         for i in range(0, 10):
-            label = 'foo %d' % i
-            ret = self.client.execute('echo', [label])
-            print 'dpc.execute returned %s' % ret
-            self.assertEquals(label, ret)
+            self.checkEchoMessage('foo %d' % i)
 
     def testMath(self):
         ret = self.client.execute('math', ['+', 2, 3, 4, 5, 6])
@@ -63,15 +65,16 @@ class TestDPCCommands(unittest.TestCase):
 
     def testLargeCommands(self):
         """Tests that long messages don't get truncated or corrupted."""
-        # TODO(bowdidge): Why doesn't 10000, 100000 work?
         for i in (10, 100, 1000):
             print 'Attempting message of length %d' % i
-            message = "a" * i
-            result = self.client.execute('echo', message)
-            self.assertIsNotNone(result)
-            self.assertEquals(message, result.strip())
+            self.checkEchoMessage('a' * i)
 
-    # TODO(bowdidge): async appears to be blocking.
+    def testVeryLargeCommands(self):
+        """Tests that long messages don't get truncated or corrupted."""
+        for i in (10000, 100000):
+            print 'Attempting message of length %d' % i
+            self.checkEchoMessage('b' * i)
+
     def testAsync(self):
         """Test asynchronous events return in expected order."""
         self.client.async_send("delay", [3, "echo", "third"])
@@ -100,10 +103,11 @@ class TestDPCCommands(unittest.TestCase):
         self.assertEqual(r3, r1)
 
 
-def run_tests_client(client):
+def run_tests_client(client, exclude):
     suite = unittest.TestSuite()
     for func in dir(TestDPCCommands):
-        if callable(getattr(TestDPCCommands, func)) and func.startswith('test'):
+        if callable(getattr(TestDPCCommands, func)) and func.startswith('test') \
+            and (func not in exclude):
             suite.addTest(TestDPCCommands(client, func))
     unittest.TextTestRunner().run(suite)
 
@@ -119,10 +123,10 @@ def run_dpc_test(args, legacy_ok, delay):
     client = dpc_client.DpcClient(False, legacy_ok)
 
     time.sleep(delay)
-    run_tests_client(client)
+    run_tests_client(client, [])
 
 
-def run_using_env():
+def run_using_env(exclude):
     """ Initializes DPC client from env.json, runs standard tests """
     f = open('./env.json', 'r')
     env_dict = json.load(f)
@@ -136,7 +140,7 @@ def run_using_env():
     print 'Connecting to dpc host at %s:%s' % (host, port)
     client = dpc_client.DpcClient(server_address=(host, port))
 
-    run_tests_client(client)
+    run_tests_client(client, exclude)
 
 
 STYLES = {"tcp": (True, ["--verbose", "--tcp_proxy"], False, 0),
@@ -169,8 +173,10 @@ def main():
     if (len(sys.argv) == 2):
         style = sys.argv[1]
 
-    if style == "fun-on-demand":
-        run_using_env()
+    if style == 'fun-on-demand' or style == 'fun-on-demand-reduced':
+        exclude = ['testVeryLargeCommands', 'testAsync', 'testJumbo'] \
+            if style == 'fun-on-demand-reduced' else []
+        run_using_env(exclude)
         return
 
     if (style is not None):
