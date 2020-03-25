@@ -616,51 +616,51 @@ class HUCfgGen():
     def generate_config(self):
         """ Generate merged hu config from all global hu configs"""
 
-	logger.debug('Generating merged hu config from all global configs')
-	hu_cfg = dict()
-	file_pattern_list = ['hu_config/*.cfg']
+        logger.debug('Generating merged hu config from all global configs')
+        hu_cfg = dict()
+        file_pattern_list = ['hu_config/*.cfg']
 
-	for file_pattern in file_pattern_list:
-	    for cfg in glob.glob(os.path.join(self.input_dir, file_pattern)):
-		logger.debug('Processing {}'.format(cfg))
+        for file_pattern in file_pattern_list:
+            for cfg in glob.glob(os.path.join(self.input_dir, file_pattern)):
+                logger.debug('Processing {}'.format(cfg))
                 with open(cfg, 'r') as f:
                     cfg_json = f.read()
-		    cfg_json = jsonutils.standardize_json(cfg_json)
+                    cfg_json = jsonutils.standardize_json(cfg_json)
                     cfg_json = json.loads(cfg_json)
-		    hu_cfg = jsonutils.merge_dicts(hu_cfg, cfg_json)
-	logger.debug("DONE: Generating HU C code: generate_hu_cfg")
+                    hu_cfg = jsonutils.merge_dicts(hu_cfg, cfg_json)
+        logger.debug("DONE: Generating HU C code: generate_hu_cfg")
         return hu_cfg
 
     def generate_code(self):
         """ Generate c header and source"""
 
-	logger.debug("Generating HU C code: generate_hu_cfg")
-	hu_cfg = dict()
-	file_pattern_list = ['hu_config/*.cfg', 'hu_config/*.schema']
+        logger.debug("Generating HU C code: generate_hu_cfg")
+        hu_cfg = dict()
+        file_pattern_list = ['hu_config/*.cfg', 'hu_config/*.schema']
 
-	for file_pattern in file_pattern_list:
-	    for cfg in glob.glob(os.path.join(self.input_dir, file_pattern)):
-		logger.debug('Processing {}'.format(cfg))
+        for file_pattern in file_pattern_list:
+            for cfg in glob.glob(os.path.join(self.input_dir, file_pattern)):
+                logger.debug('Processing {}'.format(cfg))
                 with open(cfg, 'r') as f:
                     cfg_json = f.read()
-		    cfg_json = jsonutils.standardize_json(cfg_json)
+                    cfg_json = jsonutils.standardize_json(cfg_json)
                     cfg_json = json.loads(cfg_json)
-		    hu_cfg = jsonutils.merge_dicts(hu_cfg, cfg_json)
+                    hu_cfg = jsonutils.merge_dicts(hu_cfg, cfg_json)
 
-	# get the schema dict
-	self.schema_dict = hu_cfg["Schema"]
+        # get the schema dict
+        self.schema_dict = hu_cfg["Schema"]
 
-	# keys to generate HU CONFIG C code
-	key_to_gen = [
-	    'HostUnits',
-	    'HostUnit',
-	    'HostUnitController',
-	    'HostUnitFunction',
-	]
+        # keys to generate HU CONFIG C code
+        key_to_gen = [
+            'HostUnits',
+            'HostUnit',
+            'HostUnitController',
+            'HostUnitFunction',
+        ]
 
-	self.config_dict = hu_cfg['HuInterface']
+        self.config_dict = hu_cfg['HuInterface']
 
-	# generate C code
-	cfg_name = "hu_cfg"
-	self._generate_header(cfg_name, key_to_gen)
-	self._generate_c(cfg_name, key_to_gen)
+        # generate C code
+        cfg_name = "hu_cfg"
+        self._generate_header(cfg_name, key_to_gen)
+        self._generate_c(cfg_name, key_to_gen)

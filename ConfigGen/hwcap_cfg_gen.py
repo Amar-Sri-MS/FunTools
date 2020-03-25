@@ -101,8 +101,8 @@ class HWCAPCodeGen():
         hw_block_inst_cnts = self.hwcap_catalog._get_hw_block_inst_cnts()
         hw_block_defs = self.hwcap_catalog._get_hw_block_defs()
         hw_block_status_list = self.hwcap_catalog._get_valid_block_status_list()
-	date = datetime.datetime.now()
-	this_dir = os.path.dirname(os.path.abspath(__file__))
+        date = datetime.datetime.now()
+        this_dir = os.path.dirname(os.path.abspath(__file__))
         metadata = {
             'date' : date.strftime("%x"),
             'year' : date.year,
@@ -114,15 +114,14 @@ class HWCAPCodeGen():
         tmpl = env.get_template(self.hwcap_h_tmpl)
         header_file = self.gen_file_prefix + '.h'
         output_file = os.path.join(self.output_dir, header_file)
-        with open (output_file, 'w') as file_handle:
-            file_handle.write(tmpl.render(
+        with open (output_file, 'w') as f:
+            f.write(tmpl.render(
                 hw_block_status_list=hw_block_status_list,
                 hw_block_inst_cnts=hw_block_inst_cnts,
                 hw_block_defs=hw_block_defs,
                 include_files=include_files,
                 hwcap_max_entries=self.hwcap_catalog.get_max_emu_sku_id(),
                 metadata=metadata))
-        file_handle.close()
 
     # Returns all hw capabilities config
     def _get_hwcap_config(self, all_target_chips=False):
@@ -250,11 +249,10 @@ class HWCAPCodeGen():
         tmpl = env.get_template(self.hwcap_c_tmpl)
         header_file = self.gen_file_prefix + '.h'
         output_file = os.path.join(self.output_dir, c_file)
-        with open (output_file, 'w') as file_handle:
-            file_handle.write(tmpl.render(
+        with open (output_file, 'w') as f:
+            f.write(tmpl.render(
                 hwcap_cfg=finalised_cfg,
                 metadata=metadata))
-        file_handle.close()
 
     # Returns the emulation sku ids of the target chip
     def get_emu_sku_ids(self, all_target_chips = False):
