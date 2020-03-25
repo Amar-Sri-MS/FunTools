@@ -5,6 +5,16 @@ if [[ "$EUID" -ne 0 ]]; then
         exit
 fi
 
+#SWSYS-604
+INTERNAL_VLAN_VIRT_INTF="/sys/class/net/enp3s0f0.2"
+if [[ -d $INTERNAL_VLAN_VIRT_INTF/operstate ]]; then
+        UP_STATE=`cat $INTERNAL_VLAN_VIRT_INTF/operstate`
+        if [[ $UP_STATE == "down" ]]; then
+                echo "Interface $INTERNAL_VLAN_VIRT_INTF is in down state"
+                netplan apply
+        fi
+fi
+
 LOOP_INTERVAL=5
 DPU0_HBM_DUMP_COLLECTED=0
 DPU1_HBM_DUMP_COLLECTED=0
