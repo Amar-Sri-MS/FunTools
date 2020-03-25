@@ -156,10 +156,22 @@ else
 	$FUN_ROOT/cclinux/cclinux_service.sh --start --ep --storage
 fi
 
-$FUN_ROOT/StorageController/etc/start_sc.sh start
+if [[ -f $FUN_ROOT/StorageController/etc/start_sc.sh ]]; then
+	$FUN_ROOT/StorageController/etc/start_sc.sh start
+fi
 
 if [[ -f $FUN_ROOT/etc/DpuHealthMonitor.sh ]]; then
 	$FUN_ROOT/etc/DpuHealthMonitor.sh &
+fi
+
+#SWSYS-604
+INTERNAL_VLAN_VIRT_INTF="/sys/class/net/enp3s0f0.2"
+if [[ -d $INTERNAL_VLAN_VIRT_INTF ]]; then
+	UP_STATE=`cat $INTERNAL_VLAN_VIRT_INTF/operstate`
+	if [[ $UP_STATE == "down" ]]; then
+		echo "Interface $INTERNAL_VLAN_VIRT_INTF is in down state"
+		netplan apply
+	fi
 fi
 
 #Running DPCSH in TCP-PROXY Mode,
