@@ -179,6 +179,20 @@ class dbgsh(cmd2.Cmd):
         parser_poke.add_argument('vals', nargs='*', type=str,
                                  help="csr values in big-endian 64-bit words")
 
+    if csr2_mode:
+        raw_peek = subparsers.add_parser('raw_peek', help="CSR raw peek",
+                                         formatter_class=ArgFormatter)
+        raw_peek.add_argument('addr', help="csr address")
+        raw_peek.add_argument('length', help="csr length (64-bit words)")
+        raw_peek.set_defaults(func=csrutils.csr2utils.csr2_raw_peek)
+
+        raw_poke = subparsers.add_parser('raw_poke', help="CSR raw poke",
+                                         formatter_class=ArgFormatter)
+        raw_poke.add_argument('addr', help="csr address")
+        raw_poke.add_argument('vals', nargs='*', help="64-bit words to poke: "
+                                                      "(must equal register length)")
+        raw_poke.set_defaults(func=csrutils.csr2utils.csr2_raw_poke)
+
     parser_decode = subparsers.add_parser('decode',
                 help="Decode csr bits", formatter_class=ArgFormatter)
     parser_decode.set_defaults(func=csr_decode)
