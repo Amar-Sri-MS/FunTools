@@ -46,7 +46,7 @@ class DBG_Client(object):
                                            slave_addr, force, chip_type, i2c_bitrate)
             elif mode == 'jtag':
                 if (_platform == "linux" or _platform == "linux2"):
-                    dbgclient = JTAG_Client()
+                    dbgclient = JTAG_Client(chip_type)
                     status = dbgclient.connect(probe_ip_addr, probe_id)
                 else:
                     raise ValueError('Mode: "{0}" is not supported on this platform!'.format(mode))

@@ -8,7 +8,11 @@ logger = logging.getLogger("jtagclient")
 logger.setLevel(logging.INFO)
 
 class JTAG_Client(object):
-    def __init__(self):
+    def __init__(self, chip_type):
+        """
+        chip_type is one of ['f1', 's1']
+        """
+        self.chip = chip_type
         self.connected = False
 
     def __del__(self):
@@ -41,7 +45,7 @@ class JTAG_Client(object):
                     ''.format(self.connected, csr_addr, csr_width_words))
             logger.error(error_msg)
             return (False, error_msg)
-        word_array = jtagutils.csr_peek(csr_addr, csr_width_words)
+        word_array = jtagutils.csr_peek(csr_addr, csr_width_words, self.chip)
         if word_array:
             return (True, word_array)
         else:
@@ -63,7 +67,7 @@ class JTAG_Client(object):
             error_msg = "Invalid poke arguments!"
             logger.error(error_msg)
             return (False, error_msg)
-        status = jtagutils.csr_poke(csr_addr, word_array)
+        status = jtagutils.csr_poke(csr_addr, word_array, self.chip)
         if status is True:
             return (True, "poke success!")
         else:
