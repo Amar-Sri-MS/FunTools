@@ -166,7 +166,7 @@ fi
 
 #SWSYS-604
 INTERNAL_VLAN_VIRT_INTF="/sys/class/net/enp3s0f0.2"
-if [[ -d $INTERNAL_VLAN_VIRT_INTF/operstate ]]; then
+if [[ -d $INTERNAL_VLAN_VIRT_INTF ]]; then
 	UP_STATE=`cat $INTERNAL_VLAN_VIRT_INTF/operstate`
 	if [[ $UP_STATE == "down" ]]; then
 		echo "Interface $INTERNAL_VLAN_VIRT_INTF is in down state"
