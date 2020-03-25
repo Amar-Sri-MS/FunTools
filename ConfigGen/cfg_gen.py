@@ -18,6 +18,7 @@ import logging
 from itertools import chain
 from string import Template
 from pprint import pprint
+import fnmatch
 
 import jsonutils
 from hu_cfg_gen import HUCfgGen
@@ -80,6 +81,81 @@ def _generate_stats_config(config_root_dir):
             stats_cfg = jsonutils.merge_dicts(stats_cfg, cfg_json)
     return stats_cfg
 
+# creates module specific configs. from the config root dir, modules can
+# specify their own configurations by putting it in the path:
+#
+#   modules/<module_name>/x/y/z.cfg
+#
+# the directory names are used as the path to the dictionary, the actual
+# configuration file name is not used.
+#
+# for example, the following two files:
+#
+#   benturrubiates at vodex :: cat modules/tcp/tcp.cfg
+#   {
+#           max_rxmt_count: 3,
+#   }
+#   benturrubiates at vodex :: cat modules/tcp/x/tcp.cfg
+#   {
+#           y: 3,
+#   }
+#
+# will eventually generate:
+#
+#   "modules":{
+#      "tcp":{
+#         "x":{
+#            "y":3
+#         },
+#         "max_rxmt_count":3
+#      }
+#   }
+#
+# in the final config.
+def _generate_modules_config(config_root_dir):
+    # Python 2.7 glob does not support a recursive glob. We want to allow
+    # nesting within the modules path. So, search using os.walk.
+    def _find_modules_configs():
+        modules_path = os.path.join(config_root_dir, 'modules')
+
+        matches = []
+        for root, dirs, files in os.walk(modules_path):
+            for match in fnmatch.filter(files, '*.cfg'):
+                matches.append(os.path.join(root, match))
+
+        return matches
+
+    logger.info('Processing modules config')
+    out_cfg = dict()
+
+    for cfg in _find_modules_configs():
+        logger.info('Processing {}'.format(cfg))
+
+        with open(cfg, 'r') as f:
+            cfg_json = f.read()
+            cfg_json = jsonutils.standardize_json(cfg_json)
+            cfg_json = json.loads(cfg_json)
+
+        # Gets the path relative to the config root, e.g.
+        #   'modules/tcp/tcp.cfg'
+        cfg_path = os.path.relpath(cfg, config_root_dir)
+
+        # Gets the parent paths as a list, e.g.
+        #   ['modules', 'tcp']
+        parents = cfg_path.split(os.path.sep)[:-1]
+
+        # Builds the heirarchy outwards from the inside, returns something
+        # like:
+        #   {'modules': {'tcp': {cfg_json}}}
+        for parent in reversed(parents):
+            cfg_json = {parent: cfg_json}
+
+        # Merge recursively. Merges subpaths so hierarchies are possible.
+        out_cfg = jsonutils.merge_dicts_recursive(out_cfg, cfg_json)
+
+    # Return a single config for everything under config_root_dir/modules
+    return out_cfg
+
 # Creates storage config
 def _generate_storage_config(config_root_dir, output_dir,
                              target_chip, target_machine):
@@ -127,6 +203,9 @@ def _generate_funos_default_config(config_root_dir, output_dir,
 
     stats_cfg = _generate_stats_config(config_root_dir)
     funos_default_config = jsonutils.merge_dicts(funos_default_config, stats_cfg)
+
+    modules_cfg = _generate_modules_config(config_root_dir)
+    funos_default_config = jsonutils.merge_dicts(funos_default_config, modules_cfg)
 
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
