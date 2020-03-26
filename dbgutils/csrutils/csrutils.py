@@ -545,7 +545,7 @@ class DDRWriter(object):
         ddr_addr = phys_addr // len(self.sna_addrs)
 
         # And then we divide again to turn bytes into words
-        ddr_addr = ddr_addr // 64
+        ddr_addr = ddr_addr // self.line_width
         csr_val = ddr_addr & 0xbfffffff   # set bit 30 to 0 for write request
         (status, data) = dbgprobe().csr_fast_poke(0, csr_addr, [csr_val])
         if status:
