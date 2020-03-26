@@ -559,7 +559,7 @@ struct fun_json *_buffer2json(const uint8_t *buffer, size_t max)
 
 	r = fun_json_binary_serialization_size(buffer, max);
 	if (r <= max) {
-		json = fun_json_create_from_parsing_binary_with_options(buffer,
+		json = fun_json_create_from_binary_with_options(buffer,
 				r,
 				true);
 	}
