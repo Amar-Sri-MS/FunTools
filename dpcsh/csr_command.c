@@ -113,7 +113,7 @@ static bool verify_value_has_proper_width(const struct fun_json *value, size_t n
 		return false;
 	}
 	if (num_words != fun_json_array_count(value)) {
-		printf("*** Expecting an array of %zd 64b-words, array has %zd items\n", num_words, fun_json_array_count(value));
+		printf("*** Expecting an array of %zd 64b-words, array has %d items\n", num_words, (fun_json_index_t)fun_json_array_count(value));
 		return false;
 	}
 	return true;
