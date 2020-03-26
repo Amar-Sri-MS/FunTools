@@ -85,7 +85,7 @@ popd
 
 validate_process_input
 
-if [! -f $SBP_ROOT_DIR/software/production/fpk1_modulus.c ]; then
+if [ ! -f $SBP_ROOT_DIR/software/production/fpk1_modulus.c ]; then
     exit 1
 fi
 
@@ -156,11 +156,14 @@ if [ $EMULATION == 0 ]; then
 	cp qspi_image_hw.byte ${WORKSPACE}/sbpimage/flash_image.byte
 	cp qspi_image_hw.bin ${WORKSPACE}/sbpimage/flash_image.bin
 else
+        # get the well-known enrollment certificate for emulation
+        wget 'https://f1reg.fungible.com/cgi-bin/enrollment_server.cgi/?cmd=cert&sn=AAAAAAAAAAAAAAAAAAAAAAAAAAAAABI0' -O - \
+	       | base64 -d - > ${WORKSPACE}/enroll_cert.bin
 	# generate flash image for emulation
 	python3 $WORKSPACE/FunSDK/bin/flash_tools/generate_flash.py --config-type json \
 		--source-dir $SBP_INSTALL_DIR \
 		--source-dir $WORKSPACE/FunSDK/FunSDK/sbpfw/eeproms \
-		--enroll-tbs ${WORKSPACE}/enroll_tbs.bin \
+		--enroll-cert ${WORKSPACE}/enroll_cert.bin \
 		--fail-on-error \
 		$WORKSPACE/FunSDK/bin/flash_tools/qspi_config_fungible.json \
 		$WORKSPACE/FunSDK/bin/flash_tools/key_bag_config.json \
