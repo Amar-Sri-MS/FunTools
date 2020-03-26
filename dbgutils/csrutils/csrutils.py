@@ -9,8 +9,6 @@ import string, os
 import collections
 import binascii
 import socket
-from hotshot import log
-
 import jsocket
 import time
 import logging
