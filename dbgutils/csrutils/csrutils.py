@@ -482,7 +482,7 @@ def load_srec_image(chip_inst, input_file):
     return
 
 
-class DDRWriter(object):
+class DDR(object):
     """
     Sole purpose in life: write to DDR in S1.
 
@@ -500,7 +500,8 @@ class DDRWriter(object):
     STATUS_REG_OFFSET = 0x200
     DATA_REG_OFFSET = 0x208
 
-    def __init__(self):
+    def __init__(self, dbg_probe):
+        self.probe = dbg_probe
         self.log2_line_width = 6
         self.sna_addrs = [self.MUD0_SNA, self.MUD1_SNA]
         self.line_width = 1 << self.log2_line_width
@@ -508,7 +509,7 @@ class DDRWriter(object):
     def write(self, phys_addr, data):
         res = self._write_data(phys_addr, data)
         if res:
-            res = self._write_command(phys_addr)
+            res = self._issue_write_command(phys_addr)
         if res:
             res = self._check_success(phys_addr)
         self._clear_status_reg(phys_addr)
@@ -520,7 +521,7 @@ class DDRWriter(object):
         for i in range(8):
             csr_addr = sna_addr + self.DATA_REG_OFFSET + (i * 8)
             csr_val = data[i]
-            (status, data) = dbgprobe().csr_fast_poke(0, csr_addr, [csr_val])
+            (status, data) = self.probe.csr_fast_poke(0, csr_addr, [csr_val])
             if status:
                 logger.debug('Wrote data value: {0}'.format(hex(csr_val)))
             else:
@@ -535,7 +536,7 @@ class DDRWriter(object):
         mud = (phys_addr & self.line_width) >> self.log2_line_width
         return self.sna_addrs[mud]
 
-    def _write_command(self, phys_addr):
+    def _issue_write_command(self, phys_addr):
         sna_addr = self._get_sna_addr(phys_addr)
 
         csr_addr = sna_addr + self.CMD_REG_OFFSET
@@ -547,7 +548,7 @@ class DDRWriter(object):
         # And then we divide again to turn bytes into words
         ddr_addr = ddr_addr // self.line_width
         csr_val = ddr_addr & 0xbfffffff   # set bit 30 to 0 for write request
-        (status, data) = dbgprobe().csr_fast_poke(0, csr_addr, [csr_val])
+        (status, data) = self.probe.csr_fast_poke(0, csr_addr, [csr_val])
         if status:
             logger.info('Wrote address: {0} as {1}'.format(hex(phys_addr), hex(ddr_addr)))
         else:
@@ -561,7 +562,7 @@ class DDRWriter(object):
         sna_addr = self._get_sna_addr(phys_addr)
 
         csr_addr = sna_addr + self.STATUS_REG_OFFSET
-        (status, data) = dbgprobe().csr_peek(chip_inst=0,
+        (status, data) = self.probe.csr_peek(chip_inst=0,
                                              csr_addr=csr_addr,
                                              csr_width_words=1)
         if status:
@@ -587,7 +588,7 @@ class DDRWriter(object):
         sna_addr = self._get_sna_addr(phys_addr)
         csr_addr = sna_addr + self.STATUS_REG_OFFSET
 
-        (status, data) = dbgprobe().csr_fast_poke(0, csr_addr, [0x0])
+        (status, data) = self.probe.csr_fast_poke(0, csr_addr, [0x0])
         if status:
             logger.debug('Status cleared')
         else:
@@ -608,7 +609,7 @@ def load_image_s1(input_file):
     TODO (jimmy): merge the F1 code with this when we have time
     """
     num_lines = 0
-    ddr = DDRWriter()
+    ddr = DDR(dbgprobe())
 
     with open(input_file) as fp:
         # This loads the lines one at a time: the file handle is a generator,
