@@ -500,6 +500,8 @@ class DDR(object):
     STATUS_REG_OFFSET = 0x200
     DATA_REG_OFFSET = 0x208
 
+    STATUS_BIT_SHIFT = 1
+
     def __init__(self, dbg_probe):
         self.probe = dbg_probe
         self.log2_line_width = 6
@@ -515,17 +517,17 @@ class DDR(object):
         self._clear_status_reg(phys_addr)
         return res
 
-    def _write_data(self, phys_addr, data):
+    def _write_data(self, phys_addr, wdata):
         sna_addr = self._get_sna_addr(phys_addr)
 
         for i in range(8):
             csr_addr = sna_addr + self.DATA_REG_OFFSET + (i * 8)
-            csr_val = data[i]
-            (status, data) = self.probe.csr_fast_poke(0, csr_addr, [csr_val])
+            csr_val = wdata[i]
+            (status, ret_data) = self.probe.csr_fast_poke(csr_addr, [csr_val])
             if status:
                 logger.debug('Wrote data value: {0}'.format(hex(csr_val)))
             else:
-                error_msg = data
+                error_msg = ret_data
                 logger.error('Error writing data value: {0}'.format(error_msg))
                 return False
 
@@ -548,7 +550,7 @@ class DDR(object):
         # And then we divide again to turn bytes into words
         ddr_addr = ddr_addr // self.line_width
         csr_val = ddr_addr & 0xbfffffff   # set bit 30 to 0 for write request
-        (status, data) = self.probe.csr_fast_poke(0, csr_addr, [csr_val])
+        (status, data) = self.probe.csr_fast_poke(csr_addr, [csr_val])
         if status:
             logger.info('Wrote address: {0} as {1}'.format(hex(phys_addr), hex(ddr_addr)))
         else:
@@ -572,7 +574,7 @@ class DDR(object):
                 return False
 
             cmd_status = word_array[0]
-            cmd_status_done = cmd_status >> 1
+            cmd_status_done = cmd_status >> self.STATUS_BIT_SHIFT
             if cmd_status_done != 1:
                 logger.error('Failed to issue write: command status not done')
                 return False
@@ -588,7 +590,7 @@ class DDR(object):
         sna_addr = self._get_sna_addr(phys_addr)
         csr_addr = sna_addr + self.STATUS_REG_OFFSET
 
-        (status, data) = self.probe.csr_fast_poke(0, csr_addr, [0x0])
+        (status, data) = self.probe.csr_fast_poke(csr_addr, [0x0])
         if status:
             logger.debug('Status cleared')
         else:
