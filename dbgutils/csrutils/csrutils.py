@@ -639,7 +639,7 @@ def load_image_s1(input_file):
                 break
 
     if num_lines > 0:
-        logger.info('Succesfully wrote {0} lines!'.format(num_lines))
+        logger.info('Successfully wrote {0} lines!'.format(num_lines))
     else:
         logger.error('No valid lines found in {}').format(input_file)
         return False
