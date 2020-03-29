@@ -16,6 +16,7 @@ struct platform_sku_t {
 	const char *sku_name;
 };
 
+#define FUN_BOARD_EMU_ID_MAX {{(emu_sku_list.values()|max)}}
 #define FUN_BOARD_ID_START {{"0x%06x" | format(board_id_start|int)}}
 
 typedef enum fun_sku_id {
