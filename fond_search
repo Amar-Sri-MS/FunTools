@@ -204,12 +204,17 @@ def get_command(args):
 
         cmd = 'grep --no-messages {match_spec} "{pattern}" {glob}'
 
-    return cmd.format(match_spec=match_spec, pattern=args.pattern, glob=args.glob)
+    return cmd.format(
+        match_spec=match_spec, pattern=args.pattern, glob=args.glob
+    )
 
 
 def run(args):
     p = subprocess.Popen(
-        get_command(args), stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
+        get_command(args),
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        shell=True,
     )
 
     found = False
@@ -339,7 +344,9 @@ def handle_args():
         path.relative_to(DEMAND_FS_JOB_PREFIX)
     except ValueError:
         msg = "error: Glob {glob} not relative to demand FS job prefix {prefix}\n\n"
-        sys.stderr.write(msg.format(glob=args.glob, prefix=DEMAND_FS_JOB_PREFIX))
+        sys.stderr.write(
+            msg.format(glob=args.glob, prefix=DEMAND_FS_JOB_PREFIX)
+        )
         parser.print_help(file=sys.stderr)
         sys.exit(1)
 
