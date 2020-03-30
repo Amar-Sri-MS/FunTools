@@ -38,12 +38,17 @@ FILE_GLOB = DEMAND_FS_ROOT + "/Jobs/*/odp/uart*.txt"
 FOND_URL = "http://palladium-jobs.fungible.local:8080/job/"
 
 
+class InvalidJobError(Exception):
+    pass
+
+
 class JobMatch:
     def __init__(self, logfile):
         self.logfile = logfile
         self.jobdir = self._get_jobdir_from_logfile(logfile)
         self.jobinfo = {}
 
+        self.jobfile = None
         for f in os.listdir(self.jobdir):
             if "jobid" in f:
                 self.jobfile = os.path.join(self.jobdir, f)
@@ -60,7 +65,14 @@ class JobMatch:
 
                             self.jobinfo[k.strip()] = v.strip()
 
-        self.jobid = self.jobfile.split("_")[1]
+                self.jobid = self.jobfile.split("_")[1]
+
+        if not self.jobfile:
+            raise InvalidJobError(
+                "No jobfile present for job with logfile {logfile}".format(
+                    logfile=logfile
+                )
+            )
 
         parts = [int(part) for part in self.jobdir.split("-")[1:]]
         self._datetime = datetime.datetime(*parts)
@@ -196,6 +208,8 @@ def run(args):
         match = match.decode("utf-8").strip()
         try:
             job = JobMatch(match)
+        except InvalidJobError:
+            continue
         except PermissionError:
             continue
         except ValueError:
