@@ -51,7 +51,13 @@ class JobMatch:
                     for line in f:
                         line = line.strip()
                         if line:
-                            k, v = line.split(":", 1)
+                            try:
+                                k, v = line.split(":", 1)
+                            except:
+                                # Sometimes, the line is not properly separated
+                                # by a colon. Just ignore these lines.
+                                continue
+
                             self.jobinfo[k.strip()] = v.strip()
 
         self.jobid = self.jobfile.split("_")[1]
