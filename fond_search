@@ -201,7 +201,7 @@ def run(args):
         except ValueError:
             # File does not match Fun-on-Demand FS path. We expect the filepath
             # to have /demand/demand/Jobs/* form.
-            sys.sterr.write(
+            sys.stderr.write(
                 "Match {match} is not relative to {prefix}".format(
                     match=match, prefix=DEMAND_FS_JOB_PREFIX
                 )
