@@ -35,7 +35,7 @@ import os
 
 DEMAND_FS_ROOT = "/demand/demand"
 DEMAND_FS_JOB_PREFIX = DEMAND_FS_ROOT + "/Jobs"
-FILE_GLOB = DEMAND_FS_ROOT + "/Jobs/*/odp/uart*.txt"
+FILE_GLOB = DEMAND_FS_ROOT + "/Jobs/*/odp/*uart*.txt"
 FOND_URL = "http://palladium-jobs.fungible.local:8080/job/"
 
 
