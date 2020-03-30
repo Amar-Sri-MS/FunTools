@@ -119,7 +119,7 @@ class JobMatch:
 
     @property
     def note(self):
-        return self.jobinfo["s/w note"]
+        return self.jobinfo.get("s/w note", "?")
 
     @property
     def datetime(self):
