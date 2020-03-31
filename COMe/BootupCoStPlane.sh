@@ -192,6 +192,6 @@ if [[ -f $FUN_ROOT/FunSDK/bin/Linux/dpcsh/dpcsh && -c $F1_0_NVME && -c $F1_1_NVM
 	$FUN_ROOT/FunSDK/bin/Linux/dpcsh/dpcsh --pcie_nvme_sock=$F1_1_NVME --nvme_cmd_timeout=$DPCSH_TIMEOUT --tcp_proxy=$BMC_F1_1_DPC_PORT > $BMC_DPCSH_F1_1_LOGF 2>&1 &
 fi
 # Configure the management stack on the F1s
-[ -f $FUN_ROOT/bin/come_config_mgmt.sh ] && $FUN_ROOT/bin/come_config_mgmt.sh
+[ -f $FUN_ROOT/etc/come_config_mgmt.sh ] && $FUN_ROOT/etc/come_config_mgmt.sh
 
 echo "$0 DONE!!! (`date`)"
