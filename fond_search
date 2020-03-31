@@ -16,11 +16,12 @@ grep or rg compatible regex.
 
 Output looks like this:
 
-bturrubiates at qa-ubuntu-02 :: fond_search --tags nightly "Welcome" | head
-* 0019-05-30 07:17:00: team-regression@fungible: : crash
-  5923620: pke,palladium,pke_teramark,teramark,nightly: master: Nightly TeraMark PKE runs
-  http://palladium-jobs.fungible.local:8080/job/5923620
-  /demand/demand/Jobs/db2ecf30f7591451-19-05-30-07-17/odp/uartout0.txt
+bturrubiates at qa-ubuntu-02 :: $WORKSPACE/FunTools/fond_search -u --tags nightly "Welcome" | head
+* 0020-03-01 11:38:00: robert.bowdidge@fungible.com: fail
+  F1: F1Endpoint: demand-008-bmc.fungible.local:11000:f1_0
+  1897962: F1,smoke_test,nightly: ?: Test DPC commands work correctly.- old binary.
+  http://palladium-jobs.fungible.local:8080/job/1897962
+  /demand/demand/Jobs/00000069480-20-03-01-11-38/odp/uartout0.0.txt
 """
 
 import subprocess
@@ -34,8 +35,12 @@ import os
 
 DEMAND_FS_ROOT = "/demand/demand"
 DEMAND_FS_JOB_PREFIX = DEMAND_FS_ROOT + "/Jobs"
-FILE_GLOB = DEMAND_FS_ROOT + "/Jobs/*/odp/uart*.txt"
+FILE_GLOB = DEMAND_FS_ROOT + "/Jobs/*/odp/*uart*.txt"
 FOND_URL = "http://palladium-jobs.fungible.local:8080/job/"
+
+
+class InvalidJobError(Exception):
+    pass
 
 
 class JobMatch:
@@ -44,6 +49,7 @@ class JobMatch:
         self.jobdir = self._get_jobdir_from_logfile(logfile)
         self.jobinfo = {}
 
+        self.jobfile = None
         for f in os.listdir(self.jobdir):
             if "jobid" in f:
                 self.jobfile = os.path.join(self.jobdir, f)
@@ -51,10 +57,23 @@ class JobMatch:
                     for line in f:
                         line = line.strip()
                         if line:
-                            k, v = line.split(":", 1)
+                            try:
+                                k, v = line.split(":", 1)
+                            except:
+                                # Sometimes, the line is not properly separated
+                                # by a colon. Just ignore these lines.
+                                continue
+
                             self.jobinfo[k.strip()] = v.strip()
 
-        self.jobid = self.jobfile.split("_")[1]
+                self.jobid = self.jobfile.split("_")[1]
+
+        if not self.jobfile:
+            raise InvalidJobError(
+                "No jobfile present for job with logfile {logfile}".format(
+                    logfile=logfile
+                )
+            )
 
         parts = [int(part) for part in self.jobdir.split("-")[1:]]
         self._datetime = datetime.datetime(*parts)
@@ -65,6 +84,14 @@ class JobMatch:
         relative = path.relative_to(DEMAND_FS_JOB_PREFIX)
 
         return os.path.join(DEMAND_FS_JOB_PREFIX, relative.parts[0])
+
+    @property
+    def emulation_target(self):
+        return self.jobinfo.get("emulation_target", "?")
+
+    @property
+    def model(self):
+        return self.jobinfo.get("hardware_model", "?")
 
     @property
     def branch(self):
@@ -101,7 +128,7 @@ class JobMatch:
 
     @property
     def note(self):
-        return self.jobinfo["s/w note"]
+        return self.jobinfo.get("s/w note", "?")
 
     @property
     def datetime(self):
@@ -110,11 +137,13 @@ class JobMatch:
     def __str__(self):
         url = FOND_URL + self.jobid
 
-        return "* {date}: {email}: {machines}: {msg}\n  {jobid}: {tags}: {branch}: {note}\n  {url}\n  {path}".format(
+        return "* {date}: {email}: {msg}\n  {emulation_target}: {model}: {machines}\n  {jobid}: {tags}: {branch}: {note}\n  {url}\n  {path}".format(
             date=self.datetime,
-            machines=self.machines,
             email=self.email,
             msg=self.return_code_msg,
+            emulation_target=self.emulation_target,
+            model=self.model,
+            machines=self.machines,
             jobid=self.jobid,
             tags=",".join(self.tags),
             branch=self.branch,
@@ -143,6 +172,15 @@ def apply_job_filter(job, args):
     if args.tags and args.tags.isdisjoint(job.tags):
         return False
 
+    if args.models and job.model not in args.models:
+        return False
+
+    if (
+        args.emulation_targets
+        and job.emulation_target not in args.emulation_targets
+    ):
+        return False
+
     if args.file_size_upper_bound:
         size = os.path.getsize(job.logfile)
         if size > args.file_size_upper_bound:
@@ -166,12 +204,17 @@ def get_command(args):
 
         cmd = 'grep --no-messages {match_spec} "{pattern}" {glob}'
 
-    return cmd.format(match_spec=match_spec, pattern=args.pattern, glob=args.glob)
+    return cmd.format(
+        match_spec=match_spec, pattern=args.pattern, glob=args.glob
+    )
 
 
 def run(args):
     p = subprocess.Popen(
-        get_command(args), stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
+        get_command(args),
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        shell=True,
     )
 
     found = False
@@ -190,12 +233,14 @@ def run(args):
         match = match.decode("utf-8").strip()
         try:
             job = JobMatch(match)
+        except InvalidJobError:
+            continue
         except PermissionError:
             continue
         except ValueError:
             # File does not match Fun-on-Demand FS path. We expect the filepath
             # to have /demand/demand/Jobs/* form.
-            sys.sterr.write(
+            sys.stderr.write(
                 "Match {match} is not relative to {prefix}".format(
                     match=match, prefix=DEMAND_FS_JOB_PREFIX
                 )
@@ -236,6 +281,20 @@ def handle_args():
         default=None,
         type=set_arg,
         help="Only search on specific branches, comma separated",
+    )
+    parser.add_argument(
+        "-m",
+        "--models",
+        default=None,
+        type=set_arg,
+        help="Only search on specific hardware models, comma separated",
+    )
+    parser.add_argument(
+        "-e",
+        "--emulation_targets",
+        default=None,
+        type=set_arg,
+        help="Only search on specific emulation targets, comma separated",
     )
     parser.add_argument(
         "-t",
@@ -285,7 +344,9 @@ def handle_args():
         path.relative_to(DEMAND_FS_JOB_PREFIX)
     except ValueError:
         msg = "error: Glob {glob} not relative to demand FS job prefix {prefix}\n\n"
-        sys.stderr.write(msg.format(glob=args.glob, prefix=DEMAND_FS_JOB_PREFIX))
+        sys.stderr.write(
+            msg.format(glob=args.glob, prefix=DEMAND_FS_JOB_PREFIX)
+        )
         parser.print_help(file=sys.stderr)
         sys.exit(1)
 
