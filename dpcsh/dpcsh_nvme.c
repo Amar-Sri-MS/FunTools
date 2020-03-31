@@ -25,7 +25,7 @@
 #include "dpcsh_nvme.h"
 #include <utils/threaded/fun_malloc_threaded.h>
 
-#define READ_RETRY_DELAY	(500) // in microsecs
+#define READ_RETRY_DELAY_IN_US	(500) // in microsecs
 #define RETRY_DELAY_SCALE	(5)
 
 /* DPC over NVMe will work only in Linux */
@@ -62,7 +62,7 @@ static bool _read_from_nvme_helper(struct dpcsock *sock, uint8_t *buffer,
 			if((*data_len) == 0) {
 				struct nvme_vs_api_hdr *hdr = (struct nvme_vs_api_hdr *)buffer;
 				if (le16toh(hdr->json_cmd_status) != WRITE_COMPLETE) {
-					usleep(READ_RETRY_DELAY * ((retry_count/RETRY_DELAY_SCALE) + 1));
+					usleep(READ_RETRY_DELAY_IN_US * ((retry_count/RETRY_DELAY_SCALE) + 1));
 					retry_count++;
 					close(fd);
 					continue;
