@@ -19,19 +19,31 @@ if [[ "${EUID}" -ne 0 ]]; then
   exit 1
 fi
 
-BMC_KEY_PUB="ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDlbQy9N8gi4ruzFgENd7T6eNVa3m2OPHuzBD65tpD/0uviCwuL8NKUH+7UZPpbVDrpeE3iaP+a7MqZxplfS55U0S5ZjfX0n2cDtw9xi0PsQ+kdJdz4txyjo1Xbh+jGq2+FJgg4tH6jnx3RbEcIC9ng9xFuE4gywnXe0Bk5dVSJeS/qV4nKDAMPtjThjs7TKG8iXjsadq0h4PujXqXke4dI8VesStf4zzrP4tXAAkCXgqYD+VdPSqHqKbjUtW3Jn/sbEkBphpJStm7URBK0qwdMJBaldWm7y4DNZiyg1R5VvZ2b2xFjUwuLY76ph+W7s385V3UPcHGvDyf15LI4VoYv BMC"
+FACTORY_BMC_KEY_PUB="ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDlbQy9N8gi4ruzFgENd7T6eNVa3m2OPHuzBD65tpD/0uviCwuL8NKUH+7UZPpbVDrpeE3iaP+a7MqZxplfS55U0S5ZjfX0n2cDtw9xi0PsQ+kdJdz4txyjo1Xbh+jGq2+FJgg4tH6jnx3RbEcIC9ng9xFuE4gywnXe0Bk5dVSJeS/qV4nKDAMPtjThjs7TKG8iXjsadq0h4PujXqXke4dI8VesStf4zzrP4tXAAkCXgqYD+VdPSqHqKbjUtW3Jn/sbEkBphpJStm7URBK0qwdMJBaldWm7y4DNZiyg1R5VvZ2b2xFjUwuLY76ph+W7s385V3UPcHGvDyf15LI4VoYv BMC"
 
+# Make sure a BMC public key is in /home/fun/.ssh/authorized_keys.
+# When none, add from either /opt/firmware/ssh/bmc_id_rsa.pub
+# or the factory default.
 Update_fun_user_ssh()
 {
-  if [[ -f /home/fun/.ssh/authorized_keys ]] ; then
-    grep -q "${BMC_KEY_PUB}" /home/fun/.ssh/authorized_keys
-    [ ${?} -eq 0 ] && return
-  fi
   sudo -u fun mkdir -p /home/fun/.ssh 
-  chmod 700         /home/fun/.ssh
-  sudo -u fun touch /home/fun/.ssh/authorized_keys
-  chmod 644      /home/fun/.ssh/authorized_keys
-  echo "${BMC_KEY_PUB}" >> /home/fun/.ssh/authorized_keys
+  chmod 700 /home/fun/.ssh
+  if [ ! -f /home/fun/.ssh/authorized_keys ] ; then
+    sudo -u fun touch /home/fun/.ssh/authorized_keys
+  fi
+  chmod 644 /home/fun/.ssh/authorized_keys
+  cat /home/fun/.ssh/authorized_keys | awk '{print $3}' | grep -q '^BMC'
+  HAS_BMC=${?}
+  [ ${HAS_BMC} -eq 0 ] && return
+  if [ -f /opt/firmware/ssh/bmc_id_rsa.pub ] ; then
+    cat /opt/firmware/ssh/bmc_id_rsa.pub >> /home/fun/.ssh/authorized_keys
+  else
+    echo "${FACTORY_BMC_KEY_PUB}" >> /home/fun/.ssh/authorized_keys
+  fi
+}
+
+Ensure_come_rsa_id()
+{
   if [ ! -f /home/fun/.ssh/id_rsa ] ; then
     sudo -u fun ssh-keygen -t rsa -f /home/fun/.ssh/id_rsa -P '' 2> /dev/null > /dev/null
   fi
@@ -50,5 +62,6 @@ EOF
 chmod 644 /etc/cron.d/sys_mgmt
 
 Update_fun_user_ssh
+Ensure_come_rsa_id
 Update_sudoer
 exit 0
