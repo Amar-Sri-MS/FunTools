@@ -44,8 +44,8 @@ do
   docker ps -f NAME=F1-${N} | grep -q F1-${N}
   if [ ${?} -eq 0 ] ; then
     echo Set for F1-${N}
-    echo DO: docker exec -t F1-${N} /opt/fungible/FunSDK/bin/Linux/dpcsh/dpcsh --nocli forwarding_mgmt configure \"${MGMT_IP}\" \"${GATEWAY_MAC}\"
-    docker exec -t F1-${N} /opt/fungible/FunSDK/bin/Linux/dpcsh/dpcsh --nocli forwarding_mgmt configure \"${MGMT_IP}\" \"${GATEWAY_MAC}\"
+    echo DO: docker exec -t F1-${N} /opt/fungible/FunSDK/bin/Linux/dpcsh --nocli forwarding_mgmt configure \"${MGMT_IP}\" \"${GATEWAY_MAC}\"
+    docker exec -t F1-${N} /opt/fungible/FunSDK/bin/Linux/dpcsh --nocli forwarding_mgmt configure \"${MGMT_IP}\" \"${GATEWAY_MAC}\"
   else
     echo Warning: Not running: F1-${N}
   fi

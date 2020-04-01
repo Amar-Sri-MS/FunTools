@@ -179,9 +179,9 @@ F1_1_NVME="/dev/nvme1"
 # 10 seconds SWSYS-465
 DPCSH_TIMEOUT="10000"
 
-if [[ -f $FUN_ROOT/FunSDK/bin/Linux/dpcsh/dpcsh && -c $F1_0_NVME && -c $F1_1_NVME ]]; then
-	$FUN_ROOT/FunSDK/bin/Linux/dpcsh/dpcsh --pcie_nvme_sock=$F1_0_NVME --nvme_cmd_timeout=$DPCSH_TIMEOUT --tcp_proxy=$BMC_F1_0_DPC_PORT > $BMC_DPCSH_F1_0_LOGF 2>&1 &
-	$FUN_ROOT/FunSDK/bin/Linux/dpcsh/dpcsh --pcie_nvme_sock=$F1_1_NVME --nvme_cmd_timeout=$DPCSH_TIMEOUT --tcp_proxy=$BMC_F1_1_DPC_PORT > $BMC_DPCSH_F1_1_LOGF 2>&1 &
+if [[ -f $FUN_ROOT/FunSDK/bin/Linux/dpcsh && -c $F1_0_NVME && -c $F1_1_NVME ]]; then
+	$FUN_ROOT/FunSDK/bin/Linux/dpcsh --pcie_nvme_sock=$F1_0_NVME --nvme_cmd_timeout=$DPCSH_TIMEOUT --tcp_proxy=$BMC_F1_0_DPC_PORT > $BMC_DPCSH_F1_0_LOGF 2>&1 &
+	$FUN_ROOT/FunSDK/bin/Linux/dpcsh --pcie_nvme_sock=$F1_1_NVME --nvme_cmd_timeout=$DPCSH_TIMEOUT --tcp_proxy=$BMC_F1_1_DPC_PORT > $BMC_DPCSH_F1_1_LOGF 2>&1 &
 fi
 # Configure the management stack on the F1s
 [ -f $FUN_ROOT/etc/come_config_mgmt.sh ] && $FUN_ROOT/etc/come_config_mgmt.sh
