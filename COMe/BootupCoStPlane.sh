@@ -105,10 +105,6 @@ if [[ -f $GRUB_FILE ]]; then
         fi
 fi
 
-if [[ -f $FUN_ROOT/StorageController/etc/start_splash_screen.sh ]]; then
-	$FUN_ROOT/StorageController/etc/start_splash_screen.sh start &
-fi
-
 IPMI_LAN="ipmitool -U admin -P admin lan print 1"
 AWK_LAN='/IP Address[ ]+:/ {print $4}'
 REBOOT_FILE="/tmp/host_reboot"
@@ -154,10 +150,6 @@ if [[ -f $DIR_FUN_CONFIG/configure_bond ]]; then
 	$FUN_ROOT/cclinux/cclinux_service.sh --start --ep --storage --autocreatebond
 else
 	$FUN_ROOT/cclinux/cclinux_service.sh --start --ep --storage
-fi
-
-if [[ -f $FUN_ROOT/StorageController/etc/start_sc.sh ]]; then
-	$FUN_ROOT/StorageController/etc/start_sc.sh start
 fi
 
 if [[ -f $FUN_ROOT/etc/DpuHealthMonitor.sh ]]; then

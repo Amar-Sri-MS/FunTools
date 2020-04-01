@@ -63,12 +63,6 @@ BMC="-P password: -p superuser ssh -o UserKnownHostsFile=/dev/null -o StrictHost
 # Save unfinished work in FS before async reboot
 sync
 
-if [[ -f $FUN_ROOT/StorageController/etc/start_sc.sh ]]; then
-	printf "Shutdown the storage controller\n"
-	$FUN_ROOT/StorageController/etc/start_sc.sh stop
-	sync
-fi
-
 # This is a blocking call -> Eddie
 $FUN_ROOT/cclinux/cclinux_service.sh --stop
 sync
