@@ -165,7 +165,7 @@ def _generate_storage_config(config_root_dir, output_dir,
                                     target_chip, target_machine)
     storage_cfg = storage_cfg_gen.generate_config()
 
-    return storage_cfg 
+    return storage_cfg
 
 def build_target_is_posix(target_machine):
     if 'posix' in target_machine:
@@ -266,7 +266,17 @@ def main():
     arg_parser = argparse.ArgumentParser(
         description="Config file processing and auto generate code for funos"
         " default config, hu config, hwcap, sku id's and eeprom sku-id files")
-    
+
+    arg_parser.add_argument("--print-build-deps", action='store_true',
+                            help="Print build dependencies")
+
+    # Check print-build-deps arg initially, so that it can be used
+    # without the other mandatory arguments added later on
+    args, _ = arg_parser.parse_known_args()
+    if args.print_build_deps:
+        print (' '.join(SKUCfgGen.get_build_deplist() + HWCAPCodeGen.get_build_deplist()))
+        return 0
+
     arg_parser.add_argument("--in-dir", required=True, nargs=1,
                             type=dir_path, help="input config source directory path")
 
@@ -296,6 +306,7 @@ def main():
                       help=("Generate eeprom sku id files from board config"
                       " json files & hwcap json config files"))
 
+    # Now parse all args once again
     args = arg_parser.parse_args()
     logger.debug('Command line args: {}'.format(args))
 
