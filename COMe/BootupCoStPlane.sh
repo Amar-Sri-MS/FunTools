@@ -173,6 +173,12 @@ BMC_F1_0_DPC_PORT=43101
 BMC_F1_1_DPC_PORT=43102
 BMC_DPCSH_F1_0_LOGF="/var/log/bmc_dpcsh_f1_0.log"
 BMC_DPCSH_F1_1_LOGF="/var/log/bmc_dpcsh_f1_1.log"
+
+BMC_F1_0_DPC_PORT2=43103
+BMC_F1_1_DPC_PORT2=43104
+BMC_DPCSH_F1_0_LOGF2="/var/log/bmc_dpcsh_f1_0_inst2.log"
+BMC_DPCSH_F1_1_LOGF2="/var/log/bmc_dpcsh_f1_1_inst2.log"
+
 F1_0_NVME="/dev/nvme0"
 F1_1_NVME="/dev/nvme1"
 
@@ -182,6 +188,10 @@ DPCSH_TIMEOUT="10000"
 if [[ -f $FUN_ROOT/FunSDK/bin/Linux/dpcsh && -c $F1_0_NVME && -c $F1_1_NVME ]]; then
 	$FUN_ROOT/FunSDK/bin/Linux/dpcsh --pcie_nvme_sock=$F1_0_NVME --nvme_cmd_timeout=$DPCSH_TIMEOUT --tcp_proxy=$BMC_F1_0_DPC_PORT > $BMC_DPCSH_F1_0_LOGF 2>&1 &
 	$FUN_ROOT/FunSDK/bin/Linux/dpcsh --pcie_nvme_sock=$F1_1_NVME --nvme_cmd_timeout=$DPCSH_TIMEOUT --tcp_proxy=$BMC_F1_1_DPC_PORT > $BMC_DPCSH_F1_1_LOGF 2>&1 &
+
+	# SWTOOLS-1540
+	$FUN_ROOT/FunSDK/bin/Linux/dpcsh --pcie_nvme_sock=$F1_0_NVME --nvme_cmd_timeout=$DPCSH_TIMEOUT --tcp_proxy=$BMC_F1_0_DPC_PORT2 > $BMC_DPCSH_F1_0_LOGF2 2>&1 &
+	$FUN_ROOT/FunSDK/bin/Linux/dpcsh --pcie_nvme_sock=$F1_1_NVME --nvme_cmd_timeout=$DPCSH_TIMEOUT --tcp_proxy=$BMC_F1_1_DPC_PORT2 > $BMC_DPCSH_F1_1_LOGF2 2>&1 &
 fi
 # Configure the management stack on the F1s
 [ -f $FUN_ROOT/etc/come_config_mgmt.sh ] && $FUN_ROOT/etc/come_config_mgmt.sh
