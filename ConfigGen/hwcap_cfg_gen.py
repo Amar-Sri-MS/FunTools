@@ -162,7 +162,7 @@ class HWCAPCodeGen():
                     'hw block: {} entry: {} is not valid! valid list: {}'.format(
                         hw_block_name, entry, sub_blocks.keys()))
             entry_size = sub_blocks.get(entry, 0)
-            entry_max_plus_1 = 0;
+            entry_max_plus_1 = 0
             if entry_size:
                 entry_max_plus_1 = 0x1 << entry_size
             if entry == 'status':
@@ -287,3 +287,9 @@ class HWCAPCodeGen():
     def generate_code(self, include_files):
         self._generate_hwcap_cfg_header_file(include_files)
         self._generate_hwcap_cfg_c_file()
+
+    @staticmethod
+    def get_build_deplist():
+        this_dir = os.path.dirname(os.path.abspath(__file__))
+        templates = (HWCAPCodeGen.hwcap_h_tmpl, HWCAPCodeGen.hwcap_c_tmpl)
+        return [os.path.join(this_dir, tmpl) for tmpl in templates]
