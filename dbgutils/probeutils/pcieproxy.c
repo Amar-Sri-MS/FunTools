@@ -38,7 +38,7 @@
  *   DUMPCCU
  *     -- Dump the Control Status Register Control Unit.  Note, at least
  *     -- one READ or WRITE command should be done first to cause the
- *     -- CCU to get initialized, including the EEC Memory backing the CCU
+ *     -- CCU to get initialized, including the ECC Memory backing the CCU
  *     -- Indirect Register File.  We do not check for this however because
  *     -- this is purely for debugging.
  *
