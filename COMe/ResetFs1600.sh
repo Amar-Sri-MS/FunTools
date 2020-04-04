@@ -10,6 +10,16 @@ fi
 
 echo "Running $0"
 
+#SWSYS-604
+INTERNAL_VLAN_VIRT_INTF="/sys/class/net/enp3s0f0.2"
+if [[ -d $INTERNAL_VLAN_VIRT_INTF ]]; then
+        UP_STATE=`cat $INTERNAL_VLAN_VIRT_INTF/operstate`
+        if [[ $UP_STATE == "down" ]]; then
+                echo "Interface $INTERNAL_VLAN_VIRT_INTF is in down state"
+                netplan apply
+        fi
+fi
+
 if [[ -f $NOREBOOT ]]; then
 	printf "Aborting reboot request"
 	printf "Please remove file $NOREBOOT"
@@ -51,10 +61,6 @@ printf "Poll BMC:  %s\n" $BMC_IP
 BMC="-P password: -p superuser ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no sysadmin@$BMC_IP"
 
 # Save unfinished work in FS before async reboot
-sync
-
-printf "Shutdown the storage controller\n"
-$FUN_ROOT/StorageController/etc/start_sc.sh stop
 sync
 
 # This is a blocking call -> Eddie

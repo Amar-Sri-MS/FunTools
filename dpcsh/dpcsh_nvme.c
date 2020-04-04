@@ -25,6 +25,9 @@
 #include "dpcsh_nvme.h"
 #include <utils/threaded/fun_malloc_threaded.h>
 
+#define READ_RETRY_DELAY_IN_US	(500) // in microsecs
+#define RETRY_DELAY_SCALE	(5)
+
 /* DPC over NVMe will work only in Linux */
 #ifdef __linux__
 static bool _read_from_nvme_helper(struct dpcsock *sock, uint8_t *buffer,
@@ -33,31 +36,48 @@ static bool _read_from_nvme_helper(struct dpcsock *sock, uint8_t *buffer,
 				   uint32_t sess_id, uint32_t seq_num)
 {
         bool retVal = false;
+	bool writeDone = false;
         memset(buffer, 0, NVME_ADMIN_CMD_DATA_LEN);
-        struct nvme_admin_cmd cmd = {
-                .opcode = NVME_VS_API_RECV,
-                .nsid = 0,
-                .addr = (__u64)(uintptr_t)(buffer),
-                .data_len = NVME_ADMIN_CMD_DATA_LEN,
-                .cdw2 = NVME_DPC_CMD_HNDLR_SELECTION,
-                .cdw3 = offset,
-		.cdw10 = sess_id,
-		.cdw11 = seq_num,
-		.timeout_ms = timeout
-        };
-        int ret = ioctl(sock->fd, NVME_IOCTL_ADMIN_CMD, &cmd);
-        if(ret == 0) {
-                if((*data_len) == 0) {
-                        struct nvme_vs_api_hdr *hdr = (struct nvme_vs_api_hdr *)buffer;
-                        (*data_len) = le32toh(hdr->data_len);
-                        (*remaining) = sizeof(struct nvme_vs_api_hdr) + (*data_len);
-                }
-                (*remaining) -= MIN(*remaining, NVME_ADMIN_CMD_DATA_LEN);
-                retVal = true;
-        }
-        else {
-                printf("NVME_IOCTL_ADMIN_CMD %x failed %d\n",NVME_VS_API_RECV,ret);
-        }
+	int retry_count = 0;
+	while (!writeDone) {
+		struct nvme_admin_cmd cmd = {
+			.opcode = NVME_VS_API_RECV,
+			.nsid = 0,
+			.addr = (__u64)(uintptr_t)(buffer),
+			.data_len = NVME_ADMIN_CMD_DATA_LEN,
+			.cdw2 = NVME_DPC_CMD_HNDLR_SELECTION,
+			.cdw3 = offset,
+			.cdw10 = sess_id,
+			.cdw11 = seq_num,
+			.timeout_ms = timeout
+		};
+		int fd = open(sock->socket_name, O_RDWR);
+		if (fd < 0) {
+			printf("%s: Failed to open %s\n", __func__,
+			       sock->socket_name);
+			break;
+		}
+		int ret = ioctl(fd, NVME_IOCTL_ADMIN_CMD, &cmd);
+		if(ret == 0) {
+			if((*data_len) == 0) {
+				struct nvme_vs_api_hdr *hdr = (struct nvme_vs_api_hdr *)buffer;
+				if (le16toh(hdr->json_cmd_status) != WRITE_COMPLETE) {
+					usleep(READ_RETRY_DELAY_IN_US * ((retry_count/RETRY_DELAY_SCALE) + 1));
+					retry_count++;
+					close(fd);
+					continue;
+				}
+				(*data_len) = le32toh(hdr->data_len);
+				(*remaining) = sizeof(struct nvme_vs_api_hdr) + (*data_len);
+			}
+			(*remaining) -= MIN(*remaining, NVME_ADMIN_CMD_DATA_LEN);
+			retVal = true;
+		} else {
+			printf("NVME_IOCTL_ADMIN_CMD %x failed %d\n",NVME_VS_API_RECV,ret);
+		}
+		close(fd);
+		writeDone = true;
+	}
         return retVal;
 }
 // Returns true if the nvme device is a Fungible DPU
@@ -145,7 +165,8 @@ _process_fwdl(struct fun_json *json, struct dpcsock *sock)
 		uint32_t to_copy = MIN(NVME_ADMIN_CMD_DATA_LEN, remaining);
 		retval = read(fd, buffer, to_copy);
 		if (retval != to_copy) {
-			printf("%s: Insufficient data read %d(Exp %d)\n", __func__, retval, to_copy);
+			printf("%s: Insufficient data read %d(Exp %d)\n",
+			       __func__, retval, to_copy);
 			break;
 		}
 		struct nvme_admin_cmd cmd = {
@@ -159,19 +180,27 @@ _process_fwdl(struct fun_json *json, struct dpcsock *sock)
 			.cdw11 = fwfile_key,
 			.timeout_ms = sock->cmd_timeout
 		};
-		retval = ioctl(sock->fd, NVME_IOCTL_ADMIN_CMD, &cmd);
+		int fd = open(sock->socket_name, O_RDWR);
+		if (fd < 0) {
+			printf("%s: Failed to open %s\n", __func__,
+			       sock->socket_name);
+			break;
+		}
+		retval = ioctl(fd, NVME_IOCTL_ADMIN_CMD, &cmd);
 		if (retval) {
 			printf("NVME_IOCTL_ADMIN_CMD %x failed %d\n",
 			       NVME_VS_API_FWDL_START, retval);
 			break;
 		}
+		close(fd);
 
 		remaining -= to_copy;
 		offset += to_copy;
 	}
 	if (retval == 0) {
-		fun_json_dict_add_int64(params, "fwfile_key", fun_json_no_copy_no_own,
-				fwfile_key, true);
+		fun_json_dict_add_int64(params, "fwfile_key",
+					fun_json_no_copy_no_own, fwfile_key,
+					true);
 	}
 	free(buffer);
 	// fun_json_printf("new json -> %s\n", json);
@@ -204,7 +233,8 @@ bool _write_to_nvme(struct fun_json *json, struct dpcsock *sock,
 		if(pas.size <= NVME_ADMIN_CMD_DATA_LEN - sizeof(struct nvme_vs_api_hdr)) {
 			// Build header
 			struct nvme_vs_api_hdr *hdr = (struct nvme_vs_api_hdr *)addr;
-			hdr->data_len = pas.size; // Setting data_len to length of binary JSON
+			hdr->data_len = htole32(pas.size); // Setting data_len to length of binary JSON
+			hdr->version = htole32(DPCSH_NVME_VER);
 
 			// Copy binary JSON
 			memcpy((hdr + 1), pas.ptr, pas.size);
@@ -220,18 +250,23 @@ bool _write_to_nvme(struct fun_json *json, struct dpcsock *sock,
 				.cdw11 = seq_num,
 				.timeout_ms = sock->cmd_timeout
 			};
-			int ret = ioctl(sock->fd, NVME_IOCTL_ADMIN_CMD, &cmd);
+			int fd = open(sock->socket_name, O_RDWR);
+			if (fd >= 0) {
+				int ret = ioctl(fd, NVME_IOCTL_ADMIN_CMD, &cmd);
 
-			if(ret == 0) {
-				ok = true;
-				sock->nvme_write_done = true;
+				if(ret == 0) {
+					ok = true;
+					sock->nvme_write_done = true;
+				} else {
+					printf("NVME_IOCTL_ADMIN_CMD %x failed %d\n",
+							NVME_VS_API_SEND, ret);
+				}
+				close(fd);
+			} else {
+				printf("%s: Failed to open %s\n", __func__,
+				       sock->socket_name);
 			}
-			else {
-				printf("NVME_IOCTL_ADMIN_CMD %x failed %d\n",
-				       NVME_VS_API_SEND, ret);
-			}
-		}
-		else {
+		} else {
 			printf("Input is bigger than maximum supported size (%zu)\n",
 			       NVME_ADMIN_CMD_DATA_LEN - sizeof(struct nvme_vs_api_hdr));
 		}

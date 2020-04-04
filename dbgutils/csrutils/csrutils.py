@@ -880,8 +880,8 @@ def csr_replay(args):
                     'word_array:{2}'.format(csr_address,
                         csr_width_words, csr_val_words))
             (status, status_msg) = dbgprobe().csr_poke(chip_inst=chip_inst,
-                                                       csr_address=csr_address,
-                                                       csr_val_words=csr_val_words)
+                                                       csr_addr=csr_address,
+                                                       word_array=csr_val_words)
             if status == True:
                 print('Replay count:{0} data:"{1}"!'.format(cnt, x))
                 cnt += 1
@@ -950,7 +950,7 @@ def csr_replay(args):
 
 def csr_poll_status(chip_inst, csr_address, csr_width_words, value_mask):
     (status, data) = dbgprobe().csr_peek(chip_inst=chip_inst,
-                                         csr_address=csr_address,
+                                         csr_addr=csr_address,
                                          csr_width_words=csr_width_words)
     if status == False:
         logger.error('csr_peek failed!')

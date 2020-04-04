@@ -4,7 +4,6 @@
 # Copyright (c) 2019 Fungible Inc.  All rights reserved.
 #
 
-import os
 import unittest
 
 import csr2utils
@@ -81,19 +80,21 @@ class CSR2AccessorTest(unittest.TestCase):
         self.assertEqual(1, width)
 
     def test_peek_returns_correct_value(self):
-        self.dbg_client.queue_peek_vals([0xdeadbeefcafebabe])
+        vals = [0xdeadbeefcafebabe]
+        self.dbg_client.queue_peek_vals(vals)
         result = self.accessor.peek('chip_s1::root.mio2.scratchpad')
 
-        self.assertEqual([0xdeadbeefcafebabe], result)
+        self.assertEqual(vals, result.word_array)
 
     def test_peek_multi_word_access(self):
-        self.dbg_client.queue_peek_vals([0xaabbccdd, 0x11223344])
+        vals = [0xaabbccdd, 0x11223344]
+        self.dbg_client.queue_peek_vals(vals)
         result = self.accessor.peek('chip_s1::root.pc1.fep_ring.fep.ldn_unknown_dest_log')
 
         chip, addr, width = self.dbg_client.pop_peek_args()
         self.assertEqual(0x80002b8, addr)
-        self.assertEqual(2, width)
-        self.assertEqual([0xaabbccdd, 0x11223344], result)
+        self.assertEqual(len(vals), width)
+        self.assertEqual(vals, result.word_array)
 
     def test_peek_nonexistent_register(self):
         self.dbg_client.queue_peek_vals([0x3456])
@@ -105,31 +106,57 @@ class CSR2AccessorTest(unittest.TestCase):
         """
         Ensure we can peek at a specific register in an array.
         """
-        self.dbg_client.queue_peek_vals([0xcafebabe])
+        vals = [0xcafebabe]
+        self.dbg_client.queue_peek_vals(vals)
         result = self.accessor.peek('chip_s1::root.ocm0.ocm.ocm_sna_rd_cntr[1]')
 
         chip, addr, width = self.dbg_client.pop_peek_args()
         self.assertEqual(0x190000d0, addr)
-        self.assertEqual(1, width)
-        self.assertEqual([0xcafebabe], result)
+        self.assertEqual(len(vals), width)
+        self.assertEqual(vals, result.word_array)
 
     def test_peek_repeated_instance(self):
         """
         Ensure we can peek at a register within an array of module instances.
         """
-        self.dbg_client.queue_peek_vals([0xf00baa])
+        vals = [0xf00baa]
+        self.dbg_client.queue_peek_vals(vals)
         result = self.accessor.peek('chip_s1::root.mud0.soc_clk_ring.qsys[1].mud_qsys_sch_cfg_0')
 
         chip, addr, width = self.dbg_client.pop_peek_args()
         self.assertEqual(0x1b0410d0, addr)
-        self.assertEqual([0xf00baa], result)
+        self.assertEqual(vals, result.word_array)
 
     def test_poke_arguments(self):
-        self.accessor.poke('chip_s1::root.mio2.scratchpad', [0xdeadbeef])
+        vals = [0xdeadbeef]
+        self.accessor.poke('chip_s1::root.mio2.scratchpad', vals)
 
-        chip, addr, vals = self.dbg_client.pop_poke_args()
+        chip, addr, seen_vals = self.dbg_client.pop_poke_args()
         self.assertEqual(0x1e008408, addr)
-        self.assertEqual([0xdeadbeef], vals)
+        self.assertEqual(vals, seen_vals)
+
+    def test_poke_return_values(self):
+        ret = self.accessor.poke('chip_s1::root.mio2.scratchpad', [0x0])
+        self.assertTrue(ret)
+
+        ret = self.accessor.poke('chip_s1::root.mio2.does_not_exist', [0x0])
+        self.assertFalse(ret)
+
+    def test_raw_peek(self):
+        mock_vals = [0xf00baa]
+
+        self.dbg_client.queue_peek_vals(mock_vals)
+        result = self.accessor.raw_peek(0xcafe, 1)
+        self.assertEqual(mock_vals, result)
+
+    def test_raw_poke(self):
+        mock_addr = 0xbabe
+        mock_vals = [0x0, 0x1, 0x2]
+
+        self.accessor.raw_poke(mock_addr, mock_vals)
+        _, addr, vals = self.dbg_client.pop_poke_args()
+        self.assertEqual(mock_addr, addr)
+        self.assertEqual(mock_vals, vals)
 
 
 class RegisterValueTest(unittest.TestCase):
@@ -172,3 +199,19 @@ class RegisterValueTest(unittest.TestCase):
         self.assertEqual([0xcafebabe], val.word_array)
 
         self.assertTrue(val.set_field_val('d', [0x0]))
+
+
+class RawFormatterTest(unittest.TestCase):
+
+    def setUp(self):
+        self.formatter = csr2utils.RawValuesFormatter()
+
+    def test_format_one_element(self):
+        print self.formatter.format([0xdeadbeef])
+
+    def test_format_multiple_elements(self):
+        vals = [0xdeadbeef]
+
+        for i in range(0, 5):
+            vals.append(0xcafebabe)
+            print self.formatter.format(vals)

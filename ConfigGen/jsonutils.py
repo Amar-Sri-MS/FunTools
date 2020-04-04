@@ -119,3 +119,16 @@ def merge_dicts(cfg1, cfg2):
             new_cfg[key] = cfg2[key]
 
     return new_cfg
+
+# Merge two dictionaries
+# Like merge_dicts above, but recursively merges dictionaries too
+def merge_dicts_recursive(cfg1, cfg2):
+    for k, v in cfg1.items():
+        if isinstance(v, dict):
+            merge_dicts_recursive(v, cfg2.setdefault(k, {}))
+        elif isinstance(v, list) and k in cfg2:
+            cfg2[k].extend(v)
+        else:
+            cfg2[k] = v
+
+    return cfg2

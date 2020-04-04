@@ -277,12 +277,19 @@ def run():
     parser.parse_args(namespace=g)
 
     linux_start_blk = (LINUX_OFFSET / BLOCK_SIZE) if g.linux else -1
-    gen_boot_script(os.path.join(g.outdir, 'bootloader.scr'), FUNOS_OFFSET / BLOCK_SIZE,
+    # there are 2 code paths when we want to generate bootscript
+    # 1) with bootscript-only the bootscript is generated, it is later signed
+    #    and passed to this script as fsfile together with filesystem flag
+    # 2) when we don't need a signed bootloader, then the script is
+    #    invoked only once and the boot.img is immediately embedded in the
+    #    filesystem (see gen_fs()), so in this scenario generate the script
+    #    and continue execution
+    if g.bootscript_only or (g.fsfile is None and not g.filesystem):
+        gen_boot_script(os.path.join(g.outdir, 'bootloader.scr'), FUNOS_OFFSET / BLOCK_SIZE,
                     CCFG_OFFSET / BLOCK_SIZE,
                     linux_start_blk)
-
-    if g.bootscript_only:
-        return
+        if g.bootscript_only:
+            return
 
     g.work_file = os.path.join(g.outdir, os.path.basename(g.appfile) + '.pad')
 

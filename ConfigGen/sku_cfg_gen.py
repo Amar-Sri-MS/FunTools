@@ -233,3 +233,8 @@ class SKUCfgGen():
             abs_eeprom_file_path = os.path.join(self.output_dir, eeprom_filename(sku_name))
             self._create_binary_file(abs_eeprom_file_path, sku_id)
 
+    @staticmethod
+    def get_build_deplist():
+        this_dir = os.path.dirname(os.path.abspath(__file__))
+        templates = (SKUCfgGen.sku_h_tmpl, SKUCfgGen.sku_c_tmpl)
+        return [os.path.join(this_dir, tmpl) for tmpl in templates]

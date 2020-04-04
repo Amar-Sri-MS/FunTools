@@ -16,6 +16,7 @@ import key_replace as kr
 import key_bag_create as kbc
 import tempfile
 import copy
+import pprint
 
 # image type is at 2 SIGNER_INFO size +  FW_SIZE + FW_VERSION
 IMAGE_TYPE_OFFSET = 2048 + 2048 + 8
@@ -42,12 +43,15 @@ RESERVE_REGEX = re.compile(r"reserve\(\s*(0x[0-9A-Fa-f]+|\d+)\s*,\s*'(.{4})'\s*\
 def find_file_in_srcdirs(filename):
     global search_paths
     if filename:
-        print('---> {} {}'.format(filename,search_paths))
+        pp = pprint.PrettyPrinter(indent=2)
+        print('Searching for {} in: {}'.format(filename,pp.pformat(search_paths)))
         for dir in search_paths:
-            print('dir: {} filename: {}'.format(dir, filename))
             file = os.path.join(dir, filename)
             if os.path.isfile(file):
+                print('--> {} found in: {}'.format(filename,dir))
                 return file
+        print('--> {} not found'.format(filename))
+
     return None
 
 
@@ -176,7 +180,6 @@ def read_file_and_pad(filename, padding, optional, minsize, create):
     if create:
         flash_file = create_file(filename)
     else:
-        print('filename: {}'.format(filename))
         flash_file = find_file_in_srcdirs(filename)
 
     try:
@@ -466,9 +469,7 @@ def main():
     parser.add_argument('--force-version', type=int, help='Override firmware versions')
     parser.add_argument('--use-hsm', action='store_true', help='Use HSM for signing/keys')
     parser.add_argument('--fail-on-error', action='store_true', help='Always fail when encountering errors')
-    group = parser.add_mutually_exclusive_group()
-    group.add_argument('--enroll-cert', metavar = 'FILE', help='Enrollment certificate')
-    group.add_argument('--enroll-tbs', metavar = 'FILE', help='Enrollment tbs')
+    parser.add_argument('--enroll-cert', metavar = 'FILE', help='Enrollment certificate')
     args = parser.parse_args()
 
     search_paths = args.source_dir
@@ -505,8 +506,7 @@ def main():
     if args.force_version:
         set_versions(args.force_version)
 
-    run(args.action, args.enroll_cert, args.enroll_tbs,
-                hsm=args.use_hsm, net=(not args.use_hsm))
+    run(args.action, args.enroll_cert, hsm=args.use_hsm, net=(not args.use_hsm))
 
     if args.out_config:
         with open(args.out_config, "w") as f:
@@ -522,7 +522,7 @@ def set_search_paths(paths):
     global search_paths
     search_paths = paths
 
-def run(arg_action, arg_enroll_cert = None, arg_enroll_tbs = None, *args, **kwargs):
+def run(arg_action, arg_enroll_cert = None, *args, **kwargs):
     global config
     global search_paths
     global firmware_sign
@@ -657,9 +657,6 @@ def run(arg_action, arg_enroll_cert = None, arg_enroll_tbs = None, *args, **kwar
 
         # enrollment certificate argument?
         enroll_cert = None
-
-        if arg_enroll_tbs:
-            enroll_cert = firmware_sign.raw_sign(arg_enroll_tbs)
 
         if arg_enroll_cert:
             try:
