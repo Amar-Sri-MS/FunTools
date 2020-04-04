@@ -224,6 +224,8 @@ class dbgsh(cmd2.Cmd):
                 help="Relative or absolute path to funos/u-boot srec format image")
     parser_replay.add_argument('-c', nargs=1,
         metavar=('chip_inst'), dest='chip_inst', type=str, help="chip(or asic) instance")
+    parser_replay.add_argument('--chip_type', type=str, choices=['f1', 's1'],
+                               help='Type of chip for replay')
 
     argcomplete.autocomplete(parser)
 

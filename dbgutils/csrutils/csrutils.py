@@ -933,7 +933,11 @@ def csr_replay(args):
                 sys.exit(1)
             cnt += 1
         elif x.get('action') == actions.CUT_RESET:
-            status = load_srec_image(chip_inst, srec_file)
+            if args.chip_type == 'f1':
+                status = load_srec_image(chip_inst, srec_file)
+            elif args.chip_type == 's1':
+                image_64big = srec_file
+                status = load_image_s1(image_64big)
             if status == False:
                 logger.error('Failed to copy FunOS/u-boot image!')
                 sys.exit(1)
