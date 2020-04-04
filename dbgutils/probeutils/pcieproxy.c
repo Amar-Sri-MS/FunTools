@@ -35,6 +35,13 @@
  *     -- (<Register Size> + 63)/64 <Values>.
  *     -- Response is "OKAY WRITE" or an Error Message.
  *
+ *   DUMPCCU
+ *     -- Dump the Control Status Register Control Unit.  Note, at least
+ *     -- one READ or WRITE command should be done first to cause the
+ *     -- CCU to get initialized, including the ECC Memory backing the CCU
+ *     -- Indirect Register File.  We do not check for this however because
+ *     -- this is purely for debugging.
+ *
  *   The <Register Address>, <Register Size>, and WRITE <Values> may be in
  *   any numeric format.
  *
@@ -722,8 +729,6 @@ server(int client_fd)
 
 			ccu_info.spinlock_token = getpid();
 			ccu_info.spinlock = ccu_spinlock(&ccu_info);
-			if (debug)
-				ccu_dump(&ccu_info);
 
 			response(client_fd, LOG_DEBUG, "OKAY CONNECT %s\n",
 				 argv[1]);
@@ -837,6 +842,22 @@ server(int client_fd)
 
 			csr_write(&ccu_info, 0, csr_addr, csr_buf, csr_size);
 			response(client_fd, LOG_DEBUG, "OKAY WRITE\n");
+			continue;
+		}
+
+		if (strcmp(argv[0], "DUMPCCU") == 0) {
+			/*
+			 * DUMPCCU (ignore any extra arguments)
+			 */
+
+			if (!ccu_info.mmap) {
+				response(client_fd, LOG_DEBUG,
+					 "Not Connected!\n");
+				continue;
+			}
+
+			ccu_dump(&ccu_info);
+			response(client_fd, LOG_DEBUG, "OKAY DUMPCCU\n");
 			continue;
 		}
 
