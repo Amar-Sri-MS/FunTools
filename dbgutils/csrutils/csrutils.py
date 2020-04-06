@@ -573,7 +573,7 @@ def csr_replay_config(csr_replay_input_file, srec_file = None):
                     return
                 csr_width_words = (csr_width + 63) / 64
                 csr_poll_data = csr_tokens[4:]
-                if csr_width_words != len(csr_val_words):
+                if csr_width_words != len(csr_poll_data):
                     logger.error('CSR width and poll data mismatch in line{0}: "{1}"'.format(line_num, line))
                     return
                 csr_val_mask_list = list()
@@ -584,7 +584,7 @@ def csr_replay_config(csr_replay_input_file, srec_file = None):
                         return
                     csr_val_mask[0] = str_to_int(csr_val_mask[0])
                     csr_val_mask[1] = str_to_int(csr_val_mask[1])
-                    csr_val_mask_list.append(tuple(csr_val_mask));
+                    csr_val_mask_list.append(tuple(csr_val_mask))
 
                 logger.debug('CSR POLL csr_address: {0} csr_width: {1} timeout: {2}'
                         ' csr_val_mask_list:{3}'.format(csr_address,
