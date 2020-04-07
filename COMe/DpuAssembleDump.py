@@ -12,6 +12,7 @@ INPUT_DUMP_DIR = '/var/lib/tftpboot/'
 OUTPUT_DUMP_DIR = '/var/log/hbm_dumps/'
 DUMP_PREFIX = 'HBM'
 DUMPS_TO_KEEP = 3
+FIRST_PIECE_TIMEOUT = 120
 PIECES_TOTAL = 12
 DUMP_TIMEOUT = (PIECES_TOTAL + 5) * 50 # 50 seconds per part
 
@@ -26,6 +27,13 @@ def eval_f1_mac(bmc_mac, dpu_num):
   offsets = [8, 52]
   f1_mac = int(bmc_mac.replace(':', '').strip(), 16) + offsets[dpu_num]
   return hex(f1_mac)
+
+def wait_for(wildcard, num_parts, timeout):
+  for _ in range(0, timeout):
+    if len(glob.glob(wildcard)) >= num_parts:
+      return True
+    time.sleep(1)
+  return False
 
 if len(sys.argv) < 4:
   print('Usage ' + sys.argv[0] + ' <BMC_MAC> <DPU_NUMBER> <BUILD>')
@@ -42,13 +50,10 @@ ensure_dir(OUTPUT_DUMP_DIR)
 dump_wildcard = OUTPUT_DUMP_DIR + DUMP_PREFIX + "_" + str(dpu_num) + '*.bz2'
 map(os.unlink, sorted(glob.glob(dump_wildcard), reverse = True)[3:])
 
-# Fetch new one with timeout
+# Wait for pieces with timeout
 dump_parts_wildcard = INPUT_DUMP_DIR + f1_mac + '*'
-while len(glob.glob(dump_parts_wildcard)) < PIECES_TOTAL:
-  time.sleep(1)
-
-# Timeout the dump is partial
-if len(glob.glob(dump_parts_wildcard)) < PIECES_TOTAL:
+if not wait_for(dump_parts_wildcard, 1, FIRST_PIECE_TIMEOUT) or \
+   not wait_for(dump_parts_wildcard, PIECES_TOTAL, DUMP_TIMEOUT):
   print('Timeout')
   sys.exit(2)
 
