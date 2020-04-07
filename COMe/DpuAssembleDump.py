@@ -47,11 +47,12 @@ dump_parts_wildcard = INPUT_DUMP_DIR + f1_mac + '*'
 while len(glob.glob(dump_parts_wildcard)) < PIECES_TOTAL:
   time.sleep(1)
 
+# Timeout the dump is partial
 if len(glob.glob(dump_parts_wildcard)) < PIECES_TOTAL:
   print('Timeout')
   sys.exit(2)
 
-# Assemble, reboot if not present
+# Assemble
 output_file_name = OUTPUT_DUMP_DIR + DUMP_PREFIX + "_" + str(dpu_num) + \
       datetime.datetime.now().strftime('%m-%d-%Y-%H-%M-%S') + '_BLD' + build + '.core'
 
