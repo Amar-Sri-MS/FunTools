@@ -26,9 +26,6 @@ STOP_REBOOTS=0
 MAX_CONTINUOUS_REBOOTS=3
 
 FILE_BLD_NUM="/opt/fungible/.version"
-DIR_HBM_LOGS="/var/log/hbm_dumps"
-HBM_FILE_NAME="HBM"
-MAX_DUMPS_PER_DPU=3
 
 # Get the build number
 if [[ -f $FILE_BLD_NUM ]]; then
@@ -56,36 +53,11 @@ function DetectDpuPcieBus()
 	echo "DPU_1_PCIE_BUS=$DPU_1_PCIE_BUS"
 }
 
-
-function CleanUpPrevDumps()
-{
-	DPU_NUM=`echo "D"$1`
-	FILE=`echo "$HBM_FILE_NAME"_"$DPU_NUM"`
-	mkdir -p $DIR_HBM_LOGS
-
-	# Delete all incomplete files
-	# This can happen if user is impatient and
-	# reboot the system before HBM dump cpmpletes
-	ls `echo $DIR_HBM_LOGS/*` | grep $FILE | grep -v `echo $FILE.*.bz2` | /usr/bin/xargs --no-run-if-empty rm
-
-	NUM_PREV_CORES=`ls $DIR_HBM_LOGS/$FILE* 2>/dev/null 2>&1 | wc -l`
-
-	if ! [[ $NUM_PREV_CORES -lt $MAX_DUMPS_PER_DPU ]]; then
-		# Keep Newest; Delete All
-		FILE_LIST=`echo "$DIR_HBM_LOGS"/"$FILE"*`
-		ls $FILE_LIST | sort | uniq -u | /usr/bin/head -n -$MAX_DUMPS_PER_DPU | /usr/bin/xargs --no-run-if-empty rm
-	fi
-}
-
-HBM_BIN="/opt/fungible/bin/hbm_dump_pcie"
-START_ADDR="0x0"
-DUMP_MEM_SIZE="0x200000000" # 8GB
-DPU_BUS_STR1="/sys/bus/pci/devices/0000:BUS:00.2/resource2"
-HBM_COLLECT_NOTIFY="/tmp/HBM_Dump_Collection_In_Progress"
+BMC_MAC = `ipmitool -U admin -P admin lan print 1 | awk '/MAC Address[ ]+:/ {print $4}'`
 
 function CollectHbmDump()
 {
-	if [[ $# -ne 2 ]]; then
+	if [[ $# -ne 1 ]]; then
 		echo "Insufficiant args"
 		return 1
 	fi
@@ -96,35 +68,14 @@ function CollectHbmDump()
 		return 1
 	fi
 
-	# Touch a file so that user knows HBM dump collection
-	# is in progress
-	/usr/bin/touch $HBM_COLLECT_NOTIFY
+	set +e
+	./DpuAssemblyDump.py $BMC_MAC $DPU $BLD_NUM
 
-	DPU=`echo D$1`
-	PCIE_DEV=$2
-
-	SED_STR=`echo s/BUS/"$PCIE_DEV"/`
-	DPU_BDF=`echo $DPU_BUS_STR1 | sed $SED_STR`
-	# check if above device file exists
-	if [[ ! -f $DPU_BDF ]]; then
-		echo "Device file $DPU_BDF for DPU $DPU not found"
-		return 1
+	if [ $? -eq 2 ]
+		sync
+		$FS1600_RESET
 	fi
-
-	DATE=`date +%m-%d-%Y-%H-%M-%S`
-	FILE_NAME=`echo "$DIR_HBM_LOGS"/"$HBM_FILE_NAME"_"$DPU"_"$DATE"_BLD"$BLD_NUM".core`
-
-	# This sleep is added because it was observed from
-	# FunOS console logs that it takes some time for the
-	# backtrace messages to complete whereas the watchdog
-	# triggers immediately.
-	sleep 30
-	echo "$HBM_BIN -a $START_ADDR -s $DUMP_MEM_SIZE -b $DPU_BDF -f -o $FILE_NAME"
-	# This commands take 268 secs for 1GB of core dump
-	cat /proc/uptime
-	$HBM_BIN -a $START_ADDR -s $DUMP_MEM_SIZE -b $DPU_BDF -f -o $FILE_NAME
-	cat /proc/uptime
-	/bin/tar -cjf `echo $FILE_NAME.bz2` $FILE_NAME --remove-files
+	set -e
 }
 
 # trap ctrl-c and call ctrl_c()
@@ -210,8 +161,7 @@ while true; do
 		if [[ "$DPU0_HEALTH" == "FAILED" ]] &&	\
 		   [[ "$DPU0_HBM_DUMP_COLLECTED" == "0" ]]; then
 			echo "Collecting HBM dump on DPU 0"
-			CleanUpPrevDumps 0
-			CollectHbmDump 0 $DPU_0_PCIE_BUS
+			CollectHbmDump 0
 			DPU0_HBM_DUMP_COLLECTED=1
 			# Loop once more to check if the
 			# other DPU is in FAILED state
@@ -222,8 +172,7 @@ while true; do
 		if [[ "$DPU1_HEALTH" == "FAILED" ]] &&	\
 		   [[ "$DPU1_HBM_DUMP_COLLECTED" == "0" ]]; then
 			echo "Collecting HBM dump on DPU 1"
-			CleanUpPrevDumps 1
-			CollectHbmDump 1 $DPU_1_PCIE_BUS
+			CollectHbmDump 1
 			DPU1_HBM_DUMP_COLLECTED=1
 			# Loop once more to check if the
 			# other DPU is in FAILED state
