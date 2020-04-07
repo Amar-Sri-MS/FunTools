@@ -20,6 +20,7 @@ DPU0_HBM_DUMP_COLLECTED=0
 DPU1_HBM_DUMP_COLLECTED=0
 USER_CTRL_C=0
 FS1600_RESET="/opt/fungible/etc/ResetFs1600.sh"
+DUMP_ASSEMBLY="/opt/fungible/etc/DpuAssemblyDump.py"
 NO_CONTINUOUS_REBOOT_TIME_MARK=1200
 CONTINUOUS_REBOOT_COUNTER="/var/log/fs1600_reboot_counter"
 STOP_REBOOTS=0
@@ -53,7 +54,7 @@ function DetectDpuPcieBus()
 	echo "DPU_1_PCIE_BUS=$DPU_1_PCIE_BUS"
 }
 
-BMC_MAC = `ipmitool -U admin -P admin lan print 1 | awk '/MAC Address[ ]+:/ {print $4}'`
+BMC_MAC=`ipmitool -U admin -P admin lan print 1 | awk '/MAC Address[ ]+:/ {print $4}'`
 
 function CollectHbmDump()
 {
@@ -69,12 +70,13 @@ function CollectHbmDump()
 	fi
 
 	set +e
-	./DpuAssemblyDump.py $BMC_MAC $DPU $BLD_NUM
+	$DUMP_ASSEMBLY $BMC_MAC $DPU $BLD_NUM
 
-	if [ $? -eq 2 ]
+	if [ $? -eq 2 ]; then
 		sync
 		$FS1600_RESET
 	fi
+
 	set -e
 }
 
