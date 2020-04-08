@@ -725,7 +725,7 @@ def csr_replay_config(csr_replay_input_file, srec_file = None):
                     logger.error('Invalid CSR_POLL tokens in line {0}: "{1}"'.format(line_num, line))
                     return
 
-                for count, token in enumerate(csr_tokens[1:3], start=1):
+                for count, token in enumerate(csr_tokens[1:4], start=1):
                     csr_tokens[count] =  str_to_int(csr_tokens[count])
                     if csr_tokens[count] is None:
                         logger.error('Invalid csr poll data! line {0}: "{1}"'.format(line_num, line))
@@ -740,7 +740,7 @@ def csr_replay_config(csr_replay_input_file, srec_file = None):
                     return
                 csr_width_words = (csr_width + 63) / 64
                 csr_poll_data = csr_tokens[4:]
-                if csr_width_words != len(csr_val_words):
+                if csr_width_words != len(csr_poll_data):
                     logger.error('CSR width and poll data mismatch in line{0}: "{1}"'.format(line_num, line))
                     return
                 csr_val_mask_list = list()
@@ -853,6 +853,7 @@ def csr_replay(args):
         return
 
     chip_inst = int(args.chip_inst[0], 10) if args.chip_inst else None
+    chip_type = args.chip_type
 
     replay_config = csr_replay_config(input_file)
     if replay_config is None:
@@ -898,31 +899,46 @@ def csr_replay(args):
 
             csr_width = x.get("csr_width", None)
             if not csr_width:
-                print("Invalid in csr_width in input data! csr_width: {0}".format(csr_width))
+                print("Invalid in csr_width in input data! csr_width: {0} @{1}".format(csr_width, csr_address))
                 #return False
                 sys.exit(1)
 
             timeout = x.get("timeout", None)
             if not timeout:
-                print("Invalid in timeout in input data! csr_width: {0}".format(timeout))
+                print("Invalid in timeout in input data! timeout: {0} @{1}".format(timeout, csr_address))
                 #return False
                 sys.exit(1)
 
             csr_val_words = x.get("csr_val_words", None)
             if not csr_val_words or len(csr_val_words) < 1:
-                print("Invalid in csr_val_words in input data! csr_val_words: {0}".format(csr_val_words))
+                print("Invalid in csr_val_words in input data! "
+                      "csr_val_words: {0} @{1}".format(csr_val_words, csr_address))
                 sys.exit(1)
             csr_width_words = (csr_width + 63 ) >> 6
             logger.debug('csr_address: {0} csr_width_words: {1}'
                     ' word_array:{2} timeout:{3}'.format(csr_address,
                         csr_width_words, csr_val_words, timeout))
+
             retry = 0
             poll_status = False
+            start_time = time.time()
+
+            # For F1, the timeout is the number of retries.
+            # For S1, the timeout is number of microseconds. This needs to
+            # be scaled for emulation. 1ms of S1 emulation time is ~ 10s, so
+            # 1us should be ~ 10ms. This does not work in practice: 1us ~ 10s
+            # works better.
+            time_scale = 10 if args.emulation else 1e-6
+            if chip_type == 's1':
+                timeout = timeout * time_scale
+
             while ((retry < timeout) or (timeout == 0)):
                 status = csr_poll_status(chip_inst, csr_address,
                                          csr_width_words, csr_val_words)
                 if status == False:
                     retry += 1
+                    if chip_type == 's1':
+                        retry = (time.time() - start_time)
                     print('Retrying csr status poll "{0}"!'.format(retry))
                 else:
                     print('csr status poll done! cnt: {0} data:"{1}"!'.format(cnt, retry))
@@ -933,9 +949,9 @@ def csr_replay(args):
                 sys.exit(1)
             cnt += 1
         elif x.get('action') == actions.CUT_RESET:
-            if args.chip_type == 'f1':
+            if chip_type == 'f1':
                 status = load_srec_image(chip_inst, srec_file)
-            elif args.chip_type == 's1':
+            elif chip_type == 's1':
                 image_64big = srec_file
                 status = load_image_s1(image_64big)
             if status == False:
