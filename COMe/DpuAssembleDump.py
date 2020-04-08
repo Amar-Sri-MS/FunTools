@@ -8,13 +8,15 @@ import subprocess
 import sys
 import time
 
-INPUT_DUMP_DIR = '/var/lib/tftpboot/'
+INPUT_DUMP_PREFIX = '/var/lib/tftpboot/hbmdump_'
 OUTPUT_DUMP_DIR = '/var/log/hbm_dumps/'
 DUMP_PREFIX = 'HBM'
 DUMPS_TO_KEEP = 3
-FIRST_PIECE_TIMEOUT = 120
-PIECES_TOTAL = 12
-DUMP_TIMEOUT = (PIECES_TOTAL + 5) * 50 # 50 seconds per part
+PART_COMPLETE_SIZE = 536805376
+TIME_PER_PART = 50
+FIRST_PIECE_TIMEOUT = TIME_PER_PART * 2
+PIECES_TOTAL = 16
+DUMP_TIMEOUT = (PIECES_TOTAL + 5) * TIME_PER_PART # 50 seconds per part
 
 def ensure_dir(path):
   try:
@@ -26,11 +28,13 @@ def ensure_dir(path):
 def eval_f1_mac(bmc_mac, dpu_num):
   offsets = [8, 52]
   f1_mac = int(bmc_mac.replace(':', '').strip(), 16) + offsets[dpu_num]
-  return hex(f1_mac)
+  return hex(f1_mac)[2:]
 
-def wait_for(wildcard, num_parts, timeout):
+def wait_for(wildcard, num_parts, timeout, min_size):
   for _ in range(0, timeout):
-    if len(glob.glob(wildcard)) >= num_parts:
+    files = glob.glob(wildcard)
+    if len(files) >= num_parts and \
+        all(map(lambda x: os.path.getsize(x) >= min_size, files)):
       return True
     time.sleep(1)
   return False
@@ -51,20 +55,21 @@ dump_wildcard = OUTPUT_DUMP_DIR + DUMP_PREFIX + "_" + str(dpu_num) + '*.bz2'
 map(os.unlink, sorted(glob.glob(dump_wildcard), reverse = True)[3:])
 
 # Wait for pieces with timeout
-dump_parts_wildcard = INPUT_DUMP_DIR + f1_mac + '*'
-if not wait_for(dump_parts_wildcard, 1, FIRST_PIECE_TIMEOUT) or \
-   not wait_for(dump_parts_wildcard, PIECES_TOTAL, DUMP_TIMEOUT):
+dump_parts_wildcard = INPUT_DUMP_PREFIX + f1_mac + '*'
+if not wait_for(dump_parts_wildcard, 1, FIRST_PIECE_TIMEOUT, 0) or \
+   not wait_for(dump_parts_wildcard, PIECES_TOTAL, DUMP_TIMEOUT, PART_COMPLETE_SIZE):
   print('Timeout')
   sys.exit(2)
 
 # Assemble
-output_file_name = OUTPUT_DUMP_DIR + DUMP_PREFIX + "_" + str(dpu_num) + \
+output_file_name = OUTPUT_DUMP_DIR + DUMP_PREFIX + '_D' + str(dpu_num) + '_' + \
       datetime.datetime.now().strftime('%m-%d-%Y-%H-%M-%S') + '_BLD' + build + '.core'
 
 with open(output_file_name, 'wb') as out:
   for input_file_name in sorted(glob.glob(dump_parts_wildcard)):
     with open(input_file_name, 'rb') as input_file:
       out.write(input_file.read())
+    os.unlink(input_file_name)
 
-subprocess.call(['/bin/tar' '-cjf',
-  output_file_name + '.bz2', output_file_name, '--remove-files'], shell=True)
+subprocess.call('/bin/tar -cjf ' + \
+  output_file_name + '.bz2 --remove-files ' + output_file_name, shell=True)
