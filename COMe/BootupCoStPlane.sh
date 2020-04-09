@@ -152,8 +152,12 @@ else
 	$FUN_ROOT/cclinux/cclinux_service.sh --start --ep --storage
 fi
 
-if [[ -f $FUN_ROOT/etc/DpuHealthMonitor.sh ]]; then
-	$FUN_ROOT/etc/DpuHealthMonitor.sh &
+if [[ -f $DIR_FUN_CONFIG/new_hbm_dump ]] && [[ -f $FUN_ROOT/etc/DpuHealthMonitorNew.sh ]]; then
+	$FUN_ROOT/etc/DpuHealthMonitorNew.sh &
+else
+	if [[ -f $FUN_ROOT/etc/DpuHealthMonitor.sh ]]; then
+		$FUN_ROOT/etc/DpuHealthMonitor.sh &
+	fi
 fi
 
 #SWSYS-604
