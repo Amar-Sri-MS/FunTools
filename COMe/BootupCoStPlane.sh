@@ -152,7 +152,7 @@ else
 	$FUN_ROOT/cclinux/cclinux_service.sh --start --ep --storage
 fi
 
-if [[ -f $DIR_FUN_CONFIG/new_hbm_dump ]] && [[ -f $FUN_ROOT/etc/DpuHealthMonitorNew.sh ]]; then
+if [[ -f /var/log/new_hbm_dump ]] && [[ -f $FUN_ROOT/etc/DpuHealthMonitorNew.sh ]]; then
 	$FUN_ROOT/etc/DpuHealthMonitorNew.sh &
 else
 	if [[ -f $FUN_ROOT/etc/DpuHealthMonitor.sh ]]; then
