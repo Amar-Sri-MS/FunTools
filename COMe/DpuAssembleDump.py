@@ -26,7 +26,7 @@ def ensure_dir(path):
           raise
 
 def eval_f1_mac(bmc_mac, dpu_num):
-  offsets = [8, 52]
+  offsets = [8 + 24, 52 + 24]
   f1_mac = int(bmc_mac.replace(':', '').strip(), 16) + offsets[dpu_num]
   return hex(f1_mac)[2:]
 
@@ -70,6 +70,7 @@ with open(output_file_name, 'wb') as out:
     with open(input_file_name, 'rb') as input_file:
       out.write(input_file.read())
     os.unlink(input_file_name)
+  out.flush()
 
 subprocess.call('/bin/tar -cjf ' + \
   output_file_name + '.bz2 --remove-files ' + output_file_name, shell=True)
