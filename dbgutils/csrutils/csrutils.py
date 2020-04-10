@@ -34,6 +34,7 @@ class constants(object):
     MUH_RING_SKIP_ADDR = 0x800000000
     MUH_SNA_ANODE_SKIP_ADDR = 0x10000
     MUH_SNA_CMD_ADDR_START = 0x1000
+    IMAGE_START_PHYS_ADDR = 1024 * 1024
     UPLOAD_FULL_IMAGE = True
 
 class actions(object):
@@ -478,7 +479,173 @@ def load_srec_image(chip_inst, input_file):
     else:
         logger.error('No valid lines found in {}').format(input_file)
         sys.exit(1)
-	return
+    return
+
+
+class DDR(object):
+    """
+    Sole purpose in life: write to DDR in S1.
+
+    Assumes DDR is in spray mode: the target MUD is swapped for each 64-byte
+    line.
+
+    If you need to extend this for future chips, and the SNA registers have
+    not changed, consider a configuration parameter in the constructor that
+    sets the SNA register addresses and offsets.
+    """
+
+    MUD0_SNA = 0x1b0411c0
+    MUD1_SNA = 0x1c0411c0
+    CMD_REG_OFFSET = 0x1f8
+    STATUS_REG_OFFSET = 0x200
+    DATA_REG_OFFSET = 0x208
+
+    STATUS_BIT_SHIFT = 1
+
+    def __init__(self, dbg_probe):
+        self.probe = dbg_probe
+        self.log2_line_width = 6
+        self.sna_addrs = [self.MUD0_SNA, self.MUD1_SNA]
+        self.line_width = 1 << self.log2_line_width
+
+    def write(self, phys_addr, data):
+        res = self._write_data(phys_addr, data)
+        if res:
+            res = self._issue_write_command(phys_addr)
+        if res:
+            res = self._check_success(phys_addr)
+        self._clear_status_reg(phys_addr)
+        return res
+
+    def _write_data(self, phys_addr, wdata):
+        sna_addr = self._get_sna_addr(phys_addr)
+
+        for i in range(8):
+            csr_addr = sna_addr + self.DATA_REG_OFFSET + (i * 8)
+            csr_val = wdata[i]
+            (status, ret_data) = self.probe.csr_fast_poke(csr_addr, [csr_val])
+            if status:
+                logger.debug('Wrote data value: {0}'.format(hex(csr_val)))
+            else:
+                error_msg = ret_data
+                logger.error('Error writing data value: {0}'.format(error_msg))
+                return False
+
+        return True
+
+    def _get_sna_addr(self, phys_addr):
+        """ Which SNA address to write to for the specified phys address """
+        mud = (phys_addr & self.line_width) >> self.log2_line_width
+        return self.sna_addrs[mud]
+
+    def _issue_write_command(self, phys_addr):
+        sna_addr = self._get_sna_addr(phys_addr)
+
+        csr_addr = sna_addr + self.CMD_REG_OFFSET
+
+        # The addresses are divided across the MUDs, so we divide the
+        # physical address by the number of MUDs to get the DDR address.
+        ddr_addr = phys_addr // len(self.sna_addrs)
+
+        # And then we divide again to turn bytes into words
+        ddr_addr = ddr_addr // self.line_width
+        csr_val = ddr_addr & 0xbfffffff   # set bit 30 to 0 for write request
+        (status, data) = self.probe.csr_fast_poke(csr_addr, [csr_val])
+        if status:
+            logger.info('Wrote address: {0} as {1}'.format(hex(phys_addr), hex(ddr_addr)))
+        else:
+            error_msg = data
+            logger.error('Error writing address: {0}'.format(hex(csr_addr), error_msg))
+            return False
+
+        return True
+
+    def _check_success(self, phys_addr):
+        sna_addr = self._get_sna_addr(phys_addr)
+
+        csr_addr = sna_addr + self.STATUS_REG_OFFSET
+        (status, data) = self.probe.csr_peek(chip_inst=0,
+                                             csr_addr=csr_addr,
+                                             csr_width_words=1)
+        if status:
+            word_array = data
+            if not word_array:
+                logger.error('Error reading command status: empty data')
+                return False
+
+            cmd_status = word_array[0]
+            cmd_status_done = cmd_status >> self.STATUS_BIT_SHIFT
+            if cmd_status_done != 1:
+                logger.error('Failed to issue write: command status not done')
+                return False
+            else:
+                logger.debug('Write issued')
+                return True
+        else:
+            error_msg = data
+            logger.error('Error reading command status: {0}'.format(error_msg))
+            return False
+
+    def _clear_status_reg(self, phys_addr):
+        sna_addr = self._get_sna_addr(phys_addr)
+        csr_addr = sna_addr + self.STATUS_REG_OFFSET
+
+        (status, data) = self.probe.csr_fast_poke(csr_addr, [0x0])
+        if status:
+            logger.debug('Status cleared')
+        else:
+            logger.error('Error clearing status: {0}'.format(data))
+
+
+def load_image_s1(input_file):
+    """
+    Loads the data into DDR memory of S1, starting from physical address 1MB.
+
+    The input file format is a "64-big" format file with address and
+    data fields for each record. Fields are separated with a space.
+
+    @<address> <512-bit data as ASCII hex>
+
+    Returns True on success, False on failure.
+
+    TODO (jimmy): merge the F1 code with this when we have time
+    """
+    num_lines = 0
+    ddr = DDR(dbgprobe())
+
+    with open(input_file) as fp:
+        # This loads the lines one at a time: the file handle is a generator,
+        # as is the enumerate function.
+        for line_idx, line in enumerate(fp):
+            line = line.rstrip()
+
+            csr_tokens = line.split(' ')
+            if len(csr_tokens) != 2:
+                logger.error('Invalid line: "{0}"'.format(line))
+                return False
+
+            data = []
+            for i in range(8):
+                data.append(int(csr_tokens[1][i*16:(i+1)*16], 16))
+
+            phys_addr = constants.IMAGE_START_PHYS_ADDR + (line_idx * 64)
+            ret = ddr.write(phys_addr, data)
+            if not ret:
+                logger.error('Failed to write phys addr {0}'.format(hex(phys_addr)))
+                return False
+
+            num_lines = line_idx + 1
+            if not constants.UPLOAD_FULL_IMAGE and num_lines == 16:
+                break
+
+    if num_lines > 0:
+        logger.info('Successfully wrote {0} lines!'.format(num_lines))
+    else:
+        logger.error('No valid lines found in {}').format(input_file)
+        return False
+
+    return True
+
 
 # Process each line in the <csr_replay_input_file> statrting with string "CSRWR" and creates list all the CSRs
 # Expected valid line format:  CSRWR:<csr_address>:<csr_width>:[<list of csr values in 64 bit big endian words>]
@@ -558,7 +725,7 @@ def csr_replay_config(csr_replay_input_file, srec_file = None):
                     logger.error('Invalid CSR_POLL tokens in line {0}: "{1}"'.format(line_num, line))
                     return
 
-                for count, token in enumerate(csr_tokens[1:3], start=1):
+                for count, token in enumerate(csr_tokens[1:4], start=1):
                     csr_tokens[count] =  str_to_int(csr_tokens[count])
                     if csr_tokens[count] is None:
                         logger.error('Invalid csr poll data! line {0}: "{1}"'.format(line_num, line))
@@ -686,6 +853,7 @@ def csr_replay(args):
         return
 
     chip_inst = int(args.chip_inst[0], 10) if args.chip_inst else None
+    chip_type = args.chip_type
 
     replay_config = csr_replay_config(input_file)
     if replay_config is None:
@@ -731,31 +899,46 @@ def csr_replay(args):
 
             csr_width = x.get("csr_width", None)
             if not csr_width:
-                print("Invalid in csr_width in input data! csr_width: {0}".format(csr_width))
+                print("Invalid in csr_width in input data! csr_width: {0} @{1}".format(csr_width, csr_address))
                 #return False
                 sys.exit(1)
 
             timeout = x.get("timeout", None)
             if not timeout:
-                print("Invalid in timeout in input data! csr_width: {0}".format(timeout))
+                print("Invalid in timeout in input data! timeout: {0} @{1}".format(timeout, csr_address))
                 #return False
                 sys.exit(1)
 
             csr_val_words = x.get("csr_val_words", None)
             if not csr_val_words or len(csr_val_words) < 1:
-                print("Invalid in csr_val_words in input data! csr_val_words: {0}".format(csr_val_words))
+                print("Invalid in csr_val_words in input data! "
+                      "csr_val_words: {0} @{1}".format(csr_val_words, csr_address))
                 sys.exit(1)
             csr_width_words = (csr_width + 63 ) >> 6
             logger.debug('csr_address: {0} csr_width_words: {1}'
                     ' word_array:{2} timeout:{3}'.format(csr_address,
                         csr_width_words, csr_val_words, timeout))
+
             retry = 0
             poll_status = False
+            start_time = time.time()
+
+            # For F1, the timeout is the number of retries.
+            # For S1, the timeout is number of microseconds. This needs to
+            # be scaled for emulation. 1ms of S1 emulation time is ~ 10s, so
+            # 1us should be ~ 10ms. This does not work in practice: 1us ~ 10s
+            # works better.
+            time_scale = 10 if args.emulation else 1e-6
+            if chip_type == 's1':
+                timeout = timeout * time_scale
+
             while ((retry < timeout) or (timeout == 0)):
                 status = csr_poll_status(chip_inst, csr_address,
                                          csr_width_words, csr_val_words)
                 if status == False:
                     retry += 1
+                    if chip_type == 's1':
+                        retry = (time.time() - start_time)
                     print('Retrying csr status poll "{0}"!'.format(retry))
                 else:
                     print('csr status poll done! cnt: {0} data:"{1}"!'.format(cnt, retry))
@@ -766,7 +949,11 @@ def csr_replay(args):
                 sys.exit(1)
             cnt += 1
         elif x.get('action') == actions.CUT_RESET:
-            status = load_srec_image(chip_inst, srec_file)
+            if chip_type == 'f1':
+                status = load_srec_image(chip_inst, srec_file)
+            elif chip_type == 's1':
+                image_64big = srec_file
+                status = load_image_s1(image_64big)
             if status == False:
                 logger.error('Failed to copy FunOS/u-boot image!')
                 sys.exit(1)
