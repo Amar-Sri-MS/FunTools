@@ -16,6 +16,125 @@ class constants(object):
     CSR_RING_TAP_SELECT = 0x01C1
     CSR_RING_TAP_SELECT_WIDTH = 10
 
+    # Note: for emulation, reduce this to 25000
+    TCKRATE = 10000000
+
+
+class ChipJTAG(object):
+    """ Base class for all chips with JTAG """
+    def __init__(self):
+        """
+        Subclasses should set values for the member variables
+        """
+        self.wide_reg_ctrl_addr = None
+        self.wide_reg_data_addr = None
+
+    def prepare_csr_acc_cmd(self, read, csr_addr, csr_width):
+        """
+        Prepares the access command part of the JTAG DR value.
+
+        This, for F1 and S1, is the upper 64-bit word of the 128-bit DR
+        shift value.
+        """
+        pass
+
+    def prepare_csr_ctrl(self, read, csr_addr, csr_width):
+        """
+        Prepares the control value for an indirect register access through the
+        wide registers (e.g. on S1 this prepares the value for the csrctl.ctrl
+        register).
+
+        For JTAG we do not do direct access i.e. fast mode. Use I2C for that.
+        """
+        pass
+
+    def decode_status(self, status):
+        """
+        Decodes the 128-bit status response from the DR shift.
+        Returns a tuple of (ack, resp, running, status) values.
+        """
+        pass
+
+
+class F1JTAG(ChipJTAG):
+    def __init__(self):
+        super(F1JTAG, self).__init__()
+
+        # Pick the wide register at 0x0 on F1 (probably maps to the JTAG
+        # master's wide register)
+        self.wide_reg_ctrl_addr = 0x0
+        self.wide_reg_data_addr = 0x8
+
+    def prepare_csr_acc_cmd(self, read, csr_addr, csr_width):
+        assert read is not None
+        assert csr_addr is not None
+
+        ring_sel = csr_addr >> 35
+        cmd = ((csr_addr & 0xffffffffff) |
+                (((0x2 if read is True else 0x3) << 60) |
+                ((csr_width & 0x3F) << 54) |
+                (ring_sel << 49)))
+        return cmd
+
+    def prepare_csr_ctrl(self, read, csr_addr, csr_width):
+        assert read is not None
+        assert csr_addr is not None
+
+        # F1's control register layout is the same as its access command layout
+        val = self.prepare_csr_acc_cmd(read, csr_addr, csr_width)
+        return val
+
+    def decode_status(self, status):
+        jtag_resp = status[0] >> 124
+        jtag_status = (status[0] >> 96) & 0xFF
+        jtag_ack = (status[0] >> 64) & 0x1
+        jtag_running = (status[0] >> 65) & 0x1
+        return jtag_ack, jtag_resp, jtag_running, jtag_status
+
+
+class S1JTAG(ChipJTAG):
+    def __init__(self):
+        super(S1JTAG, self).__init__()
+
+        # On S1, pick the first wide register (apparently they are all
+        # accessible by any master).
+        self.wide_reg_ctrl_addr = 0x58
+        self.wide_reg_data_addr = 0x0
+
+    def prepare_csr_acc_cmd(self, read, csr_addr, csr_width):
+        assert read is not None
+        assert csr_addr is not None
+
+        cmd = (((0x2 if read is True else 0x3) << 44) |
+               ((csr_width & 0x3F) << 38) |
+               (csr_addr & 0xffffffff))
+        return cmd
+
+    def prepare_csr_ctrl(self, read, csr_addr, csr_width):
+        assert read is not None
+        assert csr_addr is not None
+
+        val = (((csr_width & 0x3F) << 36) |
+               ((0x2 if read is True else 0x3) << 32) |
+               (csr_addr & 0xffffffff))
+        return val
+
+    def decode_status(self, status):
+        jtag_resp = (status[0] >> 96) & 0xFFFF
+        jtag_status = (status[0] >> 124) & 0xF
+        jtag_ack = (status[0] >> 64) & 0x1
+        jtag_running = (status[0] >> 65) & 0x1
+        return jtag_ack, jtag_resp, jtag_running, jtag_status
+
+
+def _get_chip_jtag(chip):
+    if chip == 'f1':
+        return F1JTAG()
+    elif chip == 's1':
+        return S1JTAG()
+    else:
+        raise NotImplementedError('no JTAG support for chip {}'.format(chip))
+
 
 def _ir_shiftin(width, data):
     cmd = '%u 0x%04x'%(width, data)
@@ -37,8 +156,8 @@ def csr_probe(dev_type, ip_addr):
     if (("SysProbe" not in status) or ("Firmware" not in status) or
         ("ECONNREFUSED" in status) or ("InvalidArgError" in status)):
         return (False, status)
-    status = tckrate(10000000)
-    logger.info('Set tackrate to 10 MHz! status: {0}'.format(status))
+    status = tckrate(constants.TCKRATE)
+    logger.info('Set tckrate to 10 MHz! status: {0}'.format(status))
 
     logger.info('Connected to Codescape Jtag probe!\n{0}'.format(status))
     status = _ir_shiftin(constants.CSR_RING_TAP_SELECT_WIDTH,
@@ -60,51 +179,40 @@ def disconnect():
    # Right now, there is no default tap select to write
    pass
 
-# prepares csr access command bytes
-def _prepare_csr_acc_cmd(read, csr_addr, csr_width):
-    assert(read != None)
-    assert(csr_addr != None)
-    ring_sel = csr_addr >> 35
-    cmd = ((csr_addr & 0xffffffffff) |
-            (((0x2 if read is True else 0x3) << 60) |
-            ((csr_width & 0x3F) << 54) |
-            (ring_sel << 49)))
 
-    return cmd
-
-# Shifts-in data into csr tap controller dr
-# Returns status and response data
-def _jtag_shift_in_csr_acc_bytes(bytes_hex_str):
+def _jtag_shift_in_csr_acc_bytes(bytes_hex_str, chip_jtag):
+    """
+    Shifts-in data into csr tap controller dr.
+    Returns status and response data.
+    """
     length = len(bytes_hex_str)
-    assert(length == (32 + 2)) #32 nibbles + length('0x')
+    assert(length == (32 + 2)) # 32 nibbles + length('0x')
     dr = '128 ' + bytes_hex_str
-    status = tapd(dr)
-    jtag_resp = status[0] >> 124
-    jtag_status = (status[0] >> 96) & 0xFF
-    jtag_ack = (status[0] >> 64) & 0x1
-    jtag_running = (status[0] >> 65) & 0x1
-    logger.debug('shift-in data: {} status: {}'.format(dr, status))
 
+    status = tapd(dr)
+    jtag_ack, jtag_resp, jtag_running, jtag_status = chip_jtag.decode_status(status)
+
+    logger.debug('shift-in data: {} status: {}'.format(dr, status))
     logger.debug("jtag response: {}".format(jtag_resp))
     logger.debug("jtag status: {}".format(jtag_status))
     logger.debug("jtag ack: {}".format(jtag_ack))
     logger.debug("jtag running: {}".format(jtag_running))
+
     if jtag_status != 0:
         logger.error("jtag shift-in data error!: {}".format(jtag_status))
         return (False, None)
+
     status = _ir_shiftin(constants.CSR_RING_TAP_SELECT_WIDTH,
                 constants.CSR_RING_TAP_SELECT)
     if not status:
         logger.error("Failed in shiftin IR\n")
         return (False, None)
 
-    logger.debug('shift-in zeros for respose data')
+    logger.debug('shift-in zeros for response data')
     dr = "128 0x0"
     status = tapd(dr)
-    jtag_resp = status[0] >> 124
-    jtag_status = (status[0] >> 96) & 0xFF
-    jtag_ack = (status[0] >> 64) & 0x1
-    jtag_running = (status[0] >> 65) & 0x1
+    jtag_ack, jtag_resp, jtag_running, jtag_status = chip_jtag.decode_status(status)
+
     data = status[0] & 0xFFFFFFFFFFFFFFFF
     logger.debug('response data: {}'.format(status))
 
@@ -113,6 +221,7 @@ def _jtag_shift_in_csr_acc_bytes(bytes_hex_str):
     logger.debug("jtag ack: {}".format(jtag_ack))
     logger.debug("jtag running: {}".format(jtag_running))
     logger.debug("Data: {}".format(hex(data)))
+
     if jtag_ack != 1:
         logger.error("jtag cmd shift-in ack error!: {} bytes: {}".format(
             jtag_ack, bytes_hex_str))
@@ -126,12 +235,16 @@ def _jtag_shift_in_csr_acc_bytes(bytes_hex_str):
 
     return (True, data)
 
+
 # jtag csr read
 @command()
-def csr_peek(csr_addr, csr_width):
-    '''Peek csr_width number of 64-bit words from csr_addr'''
+def csr_peek(csr_addr, csr_width, chip='f1'):
+    '''Peek csr_width number of 64-bit words from csr_addr.
+
+    The chip argument allows selection between ['f1', 's1'].
+    '''
     logger.info(('csr peek csr_addr:{0}'
-           ' csr_width:{1}').format(hex(csr_addr), csr_width))
+                 ' csr_width:{1}').format(hex(csr_addr), csr_width))
 
     if csr_width == 0 or csr_width > 8:
         logger.error(('Invalid csr width:'
@@ -139,10 +252,17 @@ def csr_peek(csr_addr, csr_width):
                      'Csr width(64-bit words) should be in the range 1-8!')
         return None
 
+    # Indirect wide register access:
+    #     Perform a write to the control register, followed by reads from the
+    #     data registers.
     logger.debug("\nWriting read cmd...........:")
-    cmd = _prepare_csr_acc_cmd(True, csr_addr, csr_width)
-    dr_byte_str = '0x' + '%016x'%((0x3 << 60) | (1 << 54)) + '%016x'%(cmd)
-    (status, data) = _jtag_shift_in_csr_acc_bytes(dr_byte_str)
+
+    chip_jtag = _get_chip_jtag(chip)
+    cmd = chip_jtag.prepare_csr_acc_cmd(False, chip_jtag.wide_reg_ctrl_addr, 1)
+    ctrl = chip_jtag.prepare_csr_ctrl(True, csr_addr, csr_width)
+
+    dr_byte_str = '0x' + '%016x' % cmd + '%016x' % ctrl
+    (status, data) = _jtag_shift_in_csr_acc_bytes(dr_byte_str, chip_jtag)
     if not status:
         logger.error('peek csr cmd failed!')
         return None
@@ -151,12 +271,13 @@ def csr_peek(csr_addr, csr_width):
     for i in range(csr_width):
         logger.debug("\nReading Data[{}/{}]...........:".format(i+1,
                     csr_width))
-        csr_data_addr = (i+1) * 8
-        cmd = _prepare_csr_acc_cmd(True, csr_data_addr, 1)
+        csr_data_addr = chip_jtag.wide_reg_data_addr + i * 8
+        cmd = chip_jtag.prepare_csr_acc_cmd(True, csr_data_addr, 1)
+
         cmd_str = hex(cmd)[2:].zfill(16)
         dr_byte_str = '0x' + cmd_str + '0'*16
         logger.debug('dr: {}'.format(dr_byte_str))
-        (status, data) = _jtag_shift_in_csr_acc_bytes(dr_byte_str)
+        (status, data) = _jtag_shift_in_csr_acc_bytes(dr_byte_str, chip_jtag)
 
         if not status:
             logger.error('peek: csr data read failed!')
@@ -167,8 +288,10 @@ def csr_peek(csr_addr, csr_width):
 
 # csr write
 @command()
-def csr_poke( csr_addr, word_array):
+def csr_poke(csr_addr, word_array, chip='f1'):
     '''Poke word_array(an array of 64-bit words) at csr_addr'''
+    chip_jtag = _get_chip_jtag(chip)
+
     logger.info(('csr poke addr:{0}'
                  ' words:{1}').format(hex(csr_addr),
                    [hex(x) for x in word_array]))
@@ -177,6 +300,7 @@ def csr_poke( csr_addr, word_array):
         logger.error(('Invalid csr poke arguments! csr_addr: {0} word_array:'
                      '{1}').format(csr_addr, word_array))
         return False
+
     csr_width = len(word_array)
     if csr_width == 0 or csr_width > 8:
         logger.error(('Invalid data width:'
@@ -187,21 +311,23 @@ def csr_poke( csr_addr, word_array):
     for i in range(csr_width):
         logger.debug("\nWriting Data[{}/{} = {}]...........:".format(i+1,
                        csr_width, hex(word_array[i])))
-        csr_data_addr = (i+1) * 8
-        cmd = _prepare_csr_acc_cmd(False, csr_data_addr, 1)
+        csr_data_addr = chip_jtag.wide_reg_data_addr + i * 8
+        cmd = chip_jtag.prepare_csr_acc_cmd(False, csr_data_addr, 1)
+
         cmd_str = hex(cmd)[2:].zfill(16)
-        dr_byte_str = '0x' + cmd_str + "%016x"%word_array[i]
+        dr_byte_str = '0x' + cmd_str + "%016x" % word_array[i]
         logger.debug('dr: {}'.format(dr_byte_str))
-        (status, data) = _jtag_shift_in_csr_acc_bytes(dr_byte_str)
+        (status, data) = _jtag_shift_in_csr_acc_bytes(dr_byte_str, chip_jtag)
         if not status:
             logger.error("jtag csr poke data write failed!")
             return None
 
     logger.debug("\nWriting write command....")
-    cmd = _prepare_csr_acc_cmd(False, csr_addr, len(word_array))
-    dr_byte_str = '0x' + '%016x'%((0x3 << 60) | (1 << 54)) + '%016x'%(cmd)
+    cmd = chip_jtag.prepare_csr_acc_cmd(False, chip_jtag.wide_reg_ctrl_addr, 1)
+    ctrl = chip_jtag.prepare_csr_ctrl(False, csr_addr, len(word_array))
+    dr_byte_str = '0x' + '%016x' % cmd + '%016x' % ctrl
     logger.debug('dr: {}'.format(dr_byte_str))
-    (status, data) = _jtag_shift_in_csr_acc_bytes(dr_byte_str)
+    (status, data) = _jtag_shift_in_csr_acc_bytes(dr_byte_str, chip_jtag)
     if not status:
         logger.error('peek csr cmd failed!')
 
