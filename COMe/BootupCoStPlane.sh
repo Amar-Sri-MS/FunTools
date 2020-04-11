@@ -93,11 +93,28 @@ if [[ -f $GRUB_FILE ]]; then
                 echo "Upgrade grub config file to enable fsck upon every COMe boot-up"
                 /bin/sed -i '/GRUB_CMDLINE_LINUX.*iommu=pt/ s?iommu=pt?iommu=pt fsck\.repair=yes fsck\.mode=force?' $GRUB_FILE
                 grep "GRUB_CMDLINE_LINUX" $GRUB_FILE | grep "iommu" | grep "fsck" > /dev/null
+                RC=$?
                 if [[ $RC -eq 0 ]]; then
                         echo "fsck configured in grub"
                         UPDATE_GRUB=1
                 fi
         fi
+
+        # Check if debug is enabled
+        grep "GRUB_CMDLINE_LINUX" $GRUB_FILE | grep "iommu" | grep "fsck" | grep "debug" > /dev/null
+        RC=$?
+
+        if [[ $RC -ne 0 ]]; then
+                echo "Upgrade grub config file to enable debug upon every COMe boot-up"
+                /bin/sed -i '/GRUB_CMDLINE_LINUX.*console=tty0/ s?console=tty0?debug console=tty0?' $GRUB_FILE
+                grep "GRUB_CMDLINE_LINUX" $GRUB_FILE | grep "iommu" | grep "fsck" | grep "debug" > /dev/null
+                RC=$?
+                if [[ $RC -eq 0 ]]; then
+                        echo "debug configured in grub"
+                        UPDATE_GRUB=1
+                fi
+        fi
+
         # *** THIS IS A CRITICAL WINDOW ***
         if [[ $UPDATE_GRUB -eq 1 ]]; then
                 update-grub
