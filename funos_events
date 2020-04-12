@@ -1,0 +1,348 @@
+#!/usr/bin/env python3
+
+"""
+This script serves three purposes:
+
+1. Point out interesting events in FunOS logs by using one or more "anchors"
+   files to match against interesting events.
+2. Generate shell alises to jump to events that were listed using this program.
+3. Help understand multiple FunOS logs by sorting matches based on their
+   timestamp and colorizing them. If there are too many logs, the output will
+   not be colorized. Right now, this limitation is 7 logs.
+
+I recommend using this with a shell alias similar to this:
+
+ffe() {
+        if [[ $# -lt 1 ]]; then
+                echo "usage: ffe [--anchors <anchors>] [--logs <logs>]" 1<&2
+                return 1
+        fi
+
+        funos_events "$@"
+        if [[ $? -ne 0 ]]; then
+                return $?
+        fi
+        source "/tmp/funos-event-aliases" 2>/dev/null
+}
+
+This will automatically source the generated file.
+
+An example invocation:
+
+benturrubiates at vodex :: ffe --anchors ~/anchors.json --logs **/*funos.txt | head
+[1]: 158/system_current/chassis_current/F1_1_funos.txt: 38: [5.565679]: Welcome to FunOS
+[2]: 158/system_current/chassis_current/F1_0_funos.txt: 38: [5.566685]: Welcome to FunOS
+[3]: 129/system_current/chassis_current/F1_1_funos.txt: 38: [5.591705]: Welcome to FunOS
+[4]: 158/system_current/chassis_current/F1_1_funos.txt: 68: [5.617112]: Starting VPs
+[5]: 158/system_current/chassis_current/F1_0_funos.txt: 68: [5.618102]: Starting VPs
+[6]: 129/system_current/chassis_current/F1_0_funos.txt: 38: [5.623808]: Welcome to FunOS
+[7]: 106/system_current/chassis_current/F1_1_funos.txt: 38: [5.643092]: Welcome to FunOS
+[8]: 129/system_current/chassis_current/F1_1_funos.txt: 68: [5.643141]: Starting VPs
+[9]: 106/system_current/chassis_current/F1_0_funos.txt: 38: [5.643948]: Welcome to FunOS
+[10]: 129/system_current/chassis_current/F1_0_funos.txt: 68: [5.675254]: Starting VPs
+
+After this, if the alias file is sourced, you can use `fe4` to jump to the
+entry in your editor. If multiple files are given, this output will be
+colorized with each file being a different color. This can be enabled or
+disabled using arguments. See the help for the command.
+
+See the anchors.json file in FunOS/docs/anchors.json for an example of what an
+anchors file should look like. This is the default anchors file that will be
+used if none are specified.
+"""
+
+import argparse
+import signal
+import heapq
+import json
+import sys
+import re
+import os
+
+
+class Colors:
+    """
+    Small wrapper around ANSI color codes.
+    """
+
+    CSI = "\033["
+    RED = CSI + "31m"
+    GREEN = CSI + "32m"
+    YELLOW = CSI + "33m"
+    BLUE = CSI + "34m"
+    MAGENTA = CSI + "35m"
+    CYAN = CSI + "36m"
+    WHITE = CSI + "37m"
+    RESET = CSI + "0m"
+
+    Colors = [GREEN, BLUE, YELLOW, MAGENTA, CYAN, RED, WHITE]
+
+
+class AnchorMatch:
+    # Matches a timestamp of the form [1586033961.440905]
+    time_re = re.compile(r"^\[(\d+\.\d+).*\]")
+
+    def __init__(self, log, line_no, anchor, match):
+        """Construct a new AnchorMatch instance.
+
+        Args:
+            log (str): Filename of the log that this match was found in.
+            line_no (int): Line on which match was found within log.
+            anchor (dict): The JSON dictionary that represents the anchor that
+                           the line matched. Expected to have the key "short".
+            match (RE match): The match object.
+        """
+
+        self.log = log
+        self.line_no = line_no
+
+        # If this is a regular expression anchor, fill all the values in the
+        # short representation with the matchgroups.
+        short = anchor["short"]
+        if "rematch" in anchor:
+            for key, value in match.groupdict().items():
+                short = re.sub(f"<{key}>", value, short)
+        self.short = short
+
+        # Parse the timestamp and store a float version of it, if it's
+        # available.
+        time_match = AnchorMatch.time_re.search(match.string)
+        if time_match:
+            self.matchtime = time_match.group(1)
+            self.matchtime_f = float(self.matchtime)
+        else:
+            self.matchtime = None
+            self.matchtime_f = None
+
+    # Need this for use with heapq.merge, sort match objects based on float
+    # representation of their timestamp.
+    def __lt__(self, other):
+        return self.matchtime_f < other.matchtime_f
+
+    def __str__(self):
+        logline = f"{self.line_no}"
+        if self.matchtime:
+            logline += f": [{self.matchtime}]"
+
+        return logline + f": {self.short}"
+
+
+class AnchorMatcher:
+    def __init__(self, anchor_files, timestamped_only=False):
+        """Construct an AnchorMatcher object. This provides an interface that
+        can return AnchorMatch objects given a filename for a log.
+
+        Args:
+            anchor_files (str list): List of strings that represent filenames
+                                     of files that contain JSON anchors.
+            timestamped_only (bool): Limit to only matches that have a
+                                     timestamp associated with them.
+        """
+
+        self.timestamped_only = timestamped_only
+        anchors = self._load_anchors(anchor_files)
+        self.compiled, self.uber_compiled = self._generate_matchers(anchors)
+
+    def _load_anchors(self, anchor_files):
+        """Generate a list of dictionaries representing the anchors in the
+        given files. Each line in the anchor file will be treated as a separate
+        valid JSON anchor. If the line starts with a '#' character, it will be
+        skipped.
+        """
+
+        anchors = []
+        for anchor_file in anchor_files:
+            with open(os.path.expandvars(anchor_file)) as f:
+                for line in f:
+                    line = line.strip()
+
+                    # Each anchor is it's own valid piece of JSON. The anchors
+                    # file as a whole is not valid JSON.
+                    if line and not line.startswith("#"):
+                        anchors.append(json.loads(line))
+
+        return anchors
+
+    def _generate_matchers(self, anchors):
+        """ Generate the two regular expression matchers. This returns a tuple
+        of (compiled, uber_compiled).
+
+        The compiled list is a list of (anchor, regular expression). This will
+        be used later to narrow down a match after the uber regex has matched.
+
+        The uber_compiled is a single regular expression that is comprised of
+        all of the regular expressions in the compiled list.
+        """
+
+        compiled = []
+        uber_matchers = []
+        for anchor in anchors:
+            if "rematch" in anchor:
+                pattern = anchor["rematch"]
+
+                # Remove the grouping tags of the form ?P<KEY>
+                uber_pattern = re.sub(r"\(\?P<[^>]+>", "(", pattern)
+            else:
+                pattern = anchor["match"]
+                pattern = re.escape(pattern)
+                uber_pattern = pattern
+
+            uber_matchers.append(uber_pattern)
+            compiled.append((anchor, re.compile(pattern)))
+
+        uber_re = "|".join(uber_matchers)
+        uber_compiled = re.compile(uber_re)
+
+        return compiled, uber_compiled
+
+    def _generate_match_entry(self, log, line_no, line):
+        """
+        Find the anchor that generated the match, and create a new AnchorMatch
+        object with the associated info.
+        """
+
+        for anchor, matcher in self.compiled:
+            match = matcher.search(line)
+            if match:
+                return AnchorMatch(log, line_no, anchor, match)
+
+        return None
+
+    def _filter_entry(self, entry):
+        """
+        We have a match entry, now do we want it?
+        """
+
+        return not self.timestamped_only or entry.matchtime
+
+    def generate_matches(self, log):
+        """
+        Given a log file, read it in as a binary file, and search line-by-line
+        for matches against the given anchors.
+        """
+
+        with open(os.path.expandvars(log), "rb") as logfile:
+            text = logfile.read().decode(errors="replace").split("\n")
+
+        matches = []
+        for line_no, line in enumerate(text, start=1):
+            if self.uber_compiled.search(line):
+                entry = self._generate_match_entry(log, line_no, line)
+                if entry and self._filter_entry(entry):
+                    matches.append(entry)
+
+        return matches
+
+
+def generate_alias_file(alias_file, matches):
+    with open(alias_file, "w+") as f:
+        for i, match in enumerate(matches, start=1):
+            fname = os.path.abspath(match.log)
+
+            # Alias template only supports vim.
+            f.write(f"alias fe{i}='vim +{match.line_no} \"{fname}\"'\n")
+
+
+def colorize(args, multimode):
+    if args.color == "always":
+        return True
+
+    if args.color == "never":
+        return False
+
+    if not multimode:
+        return False
+
+    if not sys.stdout.isatty():
+        return False
+
+    return len(args.logs) < len(Colors.Colors)
+
+
+def generate_color_map(args):
+    return dict(zip(args.logs, Colors.Colors))
+
+
+def print_results(args, matches, multimode):
+    use_colors = colorize(args, multimode)
+    if use_colors:
+        color_map = generate_color_map(args)
+
+    for i, match in enumerate(matches, start=1):
+        result = ""
+        if not args.no_aliases:
+            result += "[{i}]: ".format(i=i)
+        if multimode:
+            result += "{log}: ".format(log=match.log)
+        result += str(match)
+
+        if use_colors:
+            result = color_map[match.log] + result + Colors.RESET
+
+        print(result)
+
+
+def process_logs(args, multimode):
+    matcher = AnchorMatcher(args.anchors, timestamped_only=multimode)
+    if not multimode:
+        return matcher.generate_matches(args.logs[0])
+
+    # We're in multimode. Each individual set of matches is sorted. Merge them
+    # using heapq to produce a time sorted event log.
+    matches = [matcher.generate_matches(log) for log in args.logs]
+    return list(heapq.merge(*matches))
+
+
+def main(args):
+    signal.signal(signal.SIGPIPE, signal.SIG_DFL)
+
+    multimode = len(args.logs) > 1
+    matches = process_logs(args, multimode)
+
+    # Write out alias file before printing, let default SIGPIPE handler handle
+    # if piped to less or head. Make sure aliases are always written.
+    if not args.no_aliases:
+        generate_alias_file(args.alias_file, matches)
+
+    print_results(args, matches, multimode)
+
+
+def handle_args():
+    description = "Search FunOS logs for interesting events"
+
+    parser = argparse.ArgumentParser(
+        description=description,
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+
+    parser.add_argument("--logs", nargs="+", required=True, help="Log file(s)")
+    parser.add_argument(
+        "--anchors",
+        nargs="*",
+        default=["$WORKSPACE/FunOS/docs/anchors.json"],
+        help="Anchors file",
+    )
+    parser.add_argument(
+        "--color",
+        default="auto",
+        choices=["never", "auto", "always"],
+        help="Colorize output when processing multiple files",
+    )
+    parser.add_argument(
+        "--no-aliases",
+        default=False,
+        action="store_true",
+        help="Disable writing jump aliases to file",
+    )
+    parser.add_argument(
+        "--alias-file",
+        default="/tmp/funos-event-aliases",
+        help="File to write jump aliases to",
+    )
+
+    return parser.parse_args()
+
+
+if __name__ == "__main__":
+    args = handle_args()
+    main(args)
