@@ -37,16 +37,10 @@ class DpcClient(object):
             self.__sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
         self.__sock.connect(server_address)
+        self.__sock_file = self.__sock.makefile(mode='rb')
 
     def __recv_lines(self):
-        recv_size = 1024
-        lines = ""
-        while lines.find('\n') == -1:
-            buf = self.__sock.recv(recv_size)
-            if not buf:
-                break
-            lines += buf
-        return lines.rstrip('\n')
+        return self.__sock_file.readline().rstrip()
 
     def __valid_json(self, str):
         if not str:
