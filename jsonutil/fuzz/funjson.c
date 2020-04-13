@@ -18,7 +18,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size) {
 #ifdef BINARY_FUZZ
 	struct fun_json *input = fun_json_create_from_parsing_binary(Data, Size);
 #else
-	size_t line = 0;
+	uint32_t line = 0;
 	size_t parsed = 0;
 	struct fun_json *input = fun_json_create_from_text_with_options((const char *)Data, Size, 0, &line, &parsed);
 #endif
