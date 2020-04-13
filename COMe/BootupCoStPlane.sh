@@ -37,8 +37,12 @@ if [[ -f $BIN_TFTPD_HPA ]]; then
 	grep "create" $TFTP_SERVER_CONFIG_FILE > /dev/null 2>&1
 	RC=$?
 	if [[ $RC -ne 0 ]]; then
-		/bin/sed -i 's/secure/-secure --create/g' $TFTP_SERVER_CONFIG_FILE
+		/bin/sed -i 's/secure/secure --create/g' $TFTP_SERVER_CONFIG_FILE
 	fi
+
+	chown tftp:tftp /var/lib/tftpboot
+	/bin/sed -i '/---secure/ s?---secure?--secure?' $TFTP_SERVER_CONFIG_FILE
+
 fi
 
 BIN_NETWORKMANAGER_FILE="/usr/sbin/NetworkManager"
