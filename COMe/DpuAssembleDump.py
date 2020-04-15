@@ -51,6 +51,7 @@ if len(sys.argv) < 4:
 dpu_num = int(sys.argv[2])
 f1_mac = eval_f1_mac(sys.argv[1], dpu_num)
 build = sys.argv[3]
+start_time = time.time()
 print('Assembling for DPU#' + str(dpu_num) + ' MAC: ' + f1_mac)
 
 ensure_dir(OUTPUT_DUMP_DIR)
@@ -80,3 +81,5 @@ with open(output_file_name, 'wb') as out:
 
 subprocess.call('/bin/tar -cjf ' + \
   output_file_name + '.bz2 --remove-files ' + output_file_name, shell=True)
+
+print('Elapsed time: ' + str(time.time() - start_time) + ' seconds')
