@@ -1819,7 +1819,7 @@ int main(int argc, char *argv[])
 		if (one_shot) {
 			bool ok = _do_cli(argc, argv, &funos_sock, &cmd_sock, optind);
 			if (!ok) {
-				// We got a JSON error back, let's return a negative error code
+				// We got a JSON error back, let's return an error code
 				exit(EINVAL);
 			}
 		} else {
