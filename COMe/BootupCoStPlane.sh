@@ -42,7 +42,6 @@ if [[ -f $BIN_TFTPD_HPA ]]; then
 
 	chown tftp:tftp /var/lib/tftpboot
 	/bin/sed -i '/---secure/ s?---secure?--secure?' $TFTP_SERVER_CONFIG_FILE
-
 fi
 
 BIN_NETWORKMANAGER_FILE="/usr/sbin/NetworkManager"
@@ -126,6 +125,68 @@ if [[ -f $GRUB_FILE ]]; then
         fi
 fi
 
+function Is_Interface_Created()
+{
+        INTF=$1
+        COUNT=30
+        while [[ $COUNT -ne 0 ]]; do
+                if [[ -d $INTF ]]; then
+                        echo "Interface ($INTF) is created"
+                        return 0;
+                fi
+
+                COUNT=$((COUNT - 1))
+                sleep 1
+        done
+
+        echo "Interface ($INTF) is NOT created"
+
+        return 1
+}
+
+function Is_Interface_Up()
+{
+        INTF=$1
+        COUNT=10
+        while [[ $COUNT -ne 0 ]]; do
+                if [[ -f $INTF/operstate ]]; then
+                        INTF_OPER_ST=`cat $INTF/operstate`
+                        if [[ $INTF_OPER_ST == "up" ]]; then
+                                echo "Interface ($INTF) is up"
+                                return 0;
+                        fi
+                fi
+
+                COUNT=$((COUNT - 1))
+                sleep 1
+        done
+
+        echo "Interface ($INTF) is down"
+
+        return 1
+}
+
+# Systemd starts the below 2 services simulataneously
+# NetworkManager.service
+# init-fs1600.service
+# We have seen inconsistencies with NetworkManager
+# bringing up interfaces and hence the blow checks
+
+# Verify that the interface is created & operational
+INTERNAL_VLAN_VIRT_INTF="/sys/class/net/enp3s0f0.2"
+
+Is_Interface_Created $INTERNAL_VLAN_VIRT_INTF
+
+# SWSYS-604 SWSYS-740
+Is_Interface_Up $INTERNAL_VLAN_VIRT_INTF
+RC=$?
+if [[ $RC -ne 0 ]]; then
+	echo "Retry to bring up $INTERNAL_VLAN_VIRT_INTF"
+	netplan apply
+	# check once more
+	Is_Interface_Up $INTERNAL_VLAN_VIRT_INTF
+fi
+
 IPMI_LAN="ipmitool -U admin -P admin lan print 1"
 AWK_LAN='/IP Address[ ]+:/ {print $4}'
 REBOOT_FILE="/tmp/host_reboot"
@@ -178,16 +239,6 @@ if [[ -f /var/log/old_hbm_dump ]] && [[ -f $FUN_ROOT/etc/DpuHealthMonitor.sh ]];
 else
 	if [[ -f $FUN_ROOT/etc/DpuHealthMonitorNew.sh ]]; then
 		$FUN_ROOT/etc/DpuHealthMonitorNew.sh &
-	fi
-fi
-
-#SWSYS-604
-INTERNAL_VLAN_VIRT_INTF="/sys/class/net/enp3s0f0.2"
-if [[ -d $INTERNAL_VLAN_VIRT_INTF ]]; then
-	UP_STATE=`cat $INTERNAL_VLAN_VIRT_INTF/operstate`
-	if [[ $UP_STATE == "down" ]]; then
-		echo "Interface $INTERNAL_VLAN_VIRT_INTF is in down state"
-		netplan apply
 	fi
 fi
 
