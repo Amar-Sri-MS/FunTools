@@ -39,6 +39,10 @@ def wait_for(wildcard, num_parts, timeout, min_size):
     time.sleep(1)
   return False
 
+def unlink_verbose(filename):
+  print('Unlink: ' + filename)
+  os.unlink(filename)
+
 if len(sys.argv) < 4:
   print('Usage ' + sys.argv[0] + ' <BMC_MAC> <DPU_NUMBER> <BUILD>')
   print('Example: ' + sys.argv[0] + ' aa:bb:cc:dd:ee:ff 0 UNKNOWN')
@@ -47,17 +51,19 @@ if len(sys.argv) < 4:
 dpu_num = int(sys.argv[2])
 f1_mac = eval_f1_mac(sys.argv[1], dpu_num)
 build = sys.argv[3]
+start_time = time.time()
 print('Assembling for DPU#' + str(dpu_num) + ' MAC: ' + f1_mac)
 
 ensure_dir(OUTPUT_DUMP_DIR)
 # Delete old dumps
 dump_wildcard = OUTPUT_DUMP_DIR + DUMP_PREFIX + "_" + str(dpu_num) + '*.bz2'
-map(os.unlink, sorted(glob.glob(dump_wildcard), reverse = True)[3:])
+map(unlink_verbose, sorted(glob.glob(dump_wildcard), reverse = True)[3:])
 
 # Wait for pieces with timeout
 dump_parts_wildcard = INPUT_DUMP_PREFIX + f1_mac + '*'
 if not wait_for(dump_parts_wildcard, 1, FIRST_PIECE_TIMEOUT, 0) or \
    not wait_for(dump_parts_wildcard, PIECES_TOTAL, DUMP_TIMEOUT, PART_COMPLETE_SIZE):
+  map(unlink_verbose, sorted(glob.glob(dump_parts_wildcard)))
   print('Timeout')
   sys.exit(2)
 
@@ -69,8 +75,11 @@ with open(output_file_name, 'wb') as out:
   for input_file_name in sorted(glob.glob(dump_parts_wildcard)):
     with open(input_file_name, 'rb') as input_file:
       out.write(input_file.read())
-    os.unlink(input_file_name)
+      print('Consumed: ' + input_file_name)
+    unlink_verbose(input_file_name)
   out.flush()
 
 subprocess.call('/bin/tar -cjf ' + \
   output_file_name + '.bz2 --remove-files ' + output_file_name, shell=True)
+
+print('Elapsed time: ' + str(time.time() - start_time) + ' seconds')
