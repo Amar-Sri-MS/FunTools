@@ -4,8 +4,6 @@
  *  Copyright © 2017-2018 Fungible. All rights reserved.
  */
 
-/* test dpcsock functionality */
-
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
