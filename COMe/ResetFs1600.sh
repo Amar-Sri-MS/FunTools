@@ -33,6 +33,14 @@ fi
 
 echo "Running $0"
 
+echo "*************************************************************************"
+echo "*                                                                       *"
+echo "*                        THIS SCRIPT IS DEPRICATED                      *"
+echo "*             PLEASE USE THE BMC CLI TO RESET COMe (cclinux)            *"
+echo "*                        CLI: fun_reboot_system.sh                      *"
+echo "*                                                                       *"
+echo "*************************************************************************"
+
 #SWSYS-604
 INTERNAL_VLAN_VIRT_INTF="/sys/class/net/enp3s0f0.2"
 Is_Interface_Up $INTERNAL_VLAN_VIRT_INTF
