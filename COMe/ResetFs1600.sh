@@ -1,5 +1,28 @@
 #!/bin/bash -e
 
+# SWSYS-740
+# Poll the operational state of the interface for
+# 10 seconds to check if the interface is 'up'
+function Is_Interface_Up()
+{
+	INTF=$1
+	COUNT=10
+	while [[ $COUNT -ne 0 ]]; do
+		INTF_OPER_ST=`cat $INTF/operstate` > /dev/null 2>&1
+		if [[ $INTF_OPER_ST == "up" ]]; then
+			echo "Interface ($INTF) is up"
+			return 0;
+		fi
+
+		COUNT=$((COUNT - 1))
+		sleep 1
+	done
+
+	echo "Interface ($INTF) is down"
+
+	return 1
+}
+
 NOREBOOT="/tmp/SuspendCOMeRebootRequests"
 FUN_ROOT="/opt/fungible"
 
@@ -10,14 +33,23 @@ fi
 
 echo "Running $0"
 
+echo "*************************************************************************"
+echo "*                                                                       *"
+echo "*                        THIS SCRIPT IS DEPRICATED                      *"
+echo "*             PLEASE USE THE BMC CLI TO RESET COMe (cclinux)            *"
+echo "*                        CLI: fun_reboot_system.sh                      *"
+echo "*                                                                       *"
+echo "*************************************************************************"
+
 #SWSYS-604
 INTERNAL_VLAN_VIRT_INTF="/sys/class/net/enp3s0f0.2"
-if [[ -d $INTERNAL_VLAN_VIRT_INTF ]]; then
-        UP_STATE=`cat $INTERNAL_VLAN_VIRT_INTF/operstate`
-        if [[ $UP_STATE == "down" ]]; then
-                echo "Interface $INTERNAL_VLAN_VIRT_INTF is in down state"
-                netplan apply
-        fi
+Is_Interface_Up $INTERNAL_VLAN_VIRT_INTF
+RC=$?
+if [[ $RC -ne 0 ]]; then
+	echo "Interface $INTERNAL_VLAN_VIRT_INTF is in down state"
+	netplan apply
+	# check once more if the interface is up
+	Is_Interface_Up $INTERNAL_VLAN_VIRT_INTF
 fi
 
 if [[ -f $NOREBOOT ]]; then
