@@ -1071,9 +1071,11 @@ static const struct fun_json *_get_result_if_present(const struct fun_json *resp
 	return result == NULL ? response : result;
 }
 
-static void _print_response_info(const struct fun_json *response) {
+// Return true if normal output, false if an error
+static bool _print_response_info(const struct fun_json *response) {
 	const char *str;
 	int64_t tid = 0;
+	bool ok = true;
 
 	if (!fun_json_lookup(response, "result")) {
 		if (_verbose_log) {
@@ -1089,6 +1091,7 @@ static void _print_response_info(const struct fun_json *response) {
 
 	if (fun_json_fill_error_message(_get_result_if_present(response),
 					&str)) {
+		ok = false;
 		if (_verbose_log) {
 			printf(PRELUDE BLUE POSTLUDE "output => *** error: '%s'"
 			       NORMAL_COLORIZE "\n", str);
@@ -1111,6 +1114,7 @@ static void _print_response_info(const struct fun_json *response) {
 			_quiet_log(LOG_RX, response);
 		}
 	}
+	return ok;
 }
 
 static char *_wrap_proxy_message(struct fun_json *response) {
@@ -1175,7 +1179,7 @@ static bool _do_recv_cmd(struct dpcsock *funos_sock,
 		}
 	}
 
-	_print_response_info(output);
+	bool ok = _print_response_info(output);
 
 	if (cmd_sock->mode != SOCKMODE_TERMINAL) {
 		char *proxy_message = _wrap_proxy_message(output);
@@ -1184,10 +1188,8 @@ static bool _do_recv_cmd(struct dpcsock *funos_sock,
 		fun_free_string(proxy_message);
 	}
 	
-	bool is_error = fun_json_is_error_message(output);
-
 	fun_json_release(output);
-	return !is_error;
+	return ok;
 }
 
 static void terminal_set_per_character(bool enable)
@@ -1818,6 +1820,7 @@ int main(int argc, char *argv[])
 		_parse_mode = PARSE_TEXT;
 		if (one_shot) {
 			bool ok = _do_cli(argc, argv, &funos_sock, &cmd_sock, optind);
+
 			if (!ok) {
 				// We got a JSON error back, let's return an error code
 				exit(EINVAL);
