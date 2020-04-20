@@ -187,6 +187,41 @@ if [[ $RC -ne 0 ]]; then
 	Is_Interface_Up $INTERNAL_VLAN_VIRT_INTF
 fi
 
+function Check_TftpdHpa()
+{
+	# Check if the tftpd-hpa server has started
+	TFTPD_HPA_STATUS=`systemctl is-failed tftpd-hpa`
+	echo "tftpd-hpa status: ${TFTPD_HPA_STATUS}"
+	COUNT=30
+	while [[ $COUNT -ne 0 ]]; do
+		if [ ${TFTPD_HPA_STATUS} == "inactive" ]; then
+			COUNT=$((COUNT - 1))
+			sleep 1
+		else
+			break
+		fi
+	done
+	TFTPD_HPA_STATUS=`systemctl is-failed tftpd-hpa`
+	echo "tftpd-hpa status: ${TFTPD_HPA_STATUS}"
+	# If the tftpd-hpa server is in failed state then restart
+	if [ ${TFTPD_HPA_STATUS} == "failed" ]; then
+		echo "Restarting tftpd-hpa server"
+		systemctl restart tftpd-hpa
+		TFTPD_HPA_STATUS=`systemctl is-failed tftpd-hpa`
+		echo "tftpd-hpa status: ${TFTPD_HPA_STATUS}"
+	fi
+}
+
+# SWSYS-741
+/lib/systemd/systemd-sysv-install is-enabled tftpd-hpa
+RC=$?
+if [ ${RC} -eq 0 ]; then
+	echo "tftpd-hpa server is enabled"
+	Check_TftpdHpa
+else
+	echo "tftpd-hpa server is disabled"
+fi
+
 IPMI_LAN="ipmitool -U admin -P admin lan print 1"
 AWK_LAN='/IP Address[ ]+:/ {print $4}'
 REBOOT_FILE="/tmp/host_reboot"
