@@ -208,6 +208,8 @@ def main():
                             help="Machine (f1,s1), default = f1")
     arg_parser.add_argument("-e", "--eeprom", action='store',
                             help="eeprom type")
+    arg_parser.add_argument("--emulation", action='store_true',
+                            help="emulation_build")
     arg_parser.add_argument("-n", "--enrollment-certificate", action='store',
                             metavar = 'FILE',
                             help="enrollment certificate to add to the image")
@@ -238,9 +240,15 @@ def main():
     # eeprom
     if args.eeprom is None:
         if args.chip == 'f1':
-            args.eeprom = "eeprom_f1_dev_board"
+            if args.emulation:
+                args.eeprom = "eeprom_emu_f1"
+            else:
+                args.eeprom = "eeprom_f1_dev_board"
         elif args.chip == 's1':
-            args.eeprom = "eeprom_s1_dev_board"
+            if args.emulation:
+                args.eeprom = "eeprom_emu_s1_full"
+            else:
+                args.eeprom = "eeprom_s1_dev_board"
     else:
         # Jenkins or other legacy users might specify the eeprom in
         # a weird way...be nice
@@ -266,11 +274,14 @@ def main():
     BUILD_DIR_FORMAT="{sbp}/{build_dir}_{chip}_0{_debug}"
 
     # the target is like "build_debug_target_f1_0" or "build_target_s1_0"
-    # The final 0 means it is not an emulation build
-    MAKE_CMD_FORMAT='BUILD_BASE_DIR={build_dir} make -C {sbp} build{_debug}_target_{chip}_0'
+    # the final 0 is for normal builds, 1 for emulation builds
+    MAKE_CMD_FORMAT='BUILD_BASE_DIR={build_dir} make -C {sbp} build{_debug}_target_{chip}_{emulation}'
 
-    # args.production translate to a _debug
+    # args.production translates to a _debug
     args._debug = "" if args.production else "_debug"
+
+    # args.emulation -> 0 or 1
+    args.emulation = 1 if args.emulation else 0
 
     build_dir = BUILD_DIR_FORMAT.format(**vars(args))
     make_cmd = MAKE_CMD_FORMAT.format(**vars(args))
