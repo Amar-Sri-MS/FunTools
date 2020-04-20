@@ -8,10 +8,12 @@ import os
 import sys
 import struct
 import argparse
+import binascii
 import subprocess
 import json
-import tempfile
+from tempfile import mkstemp
 import shutil
+import requests
 
 import paramiko
 
@@ -269,6 +271,20 @@ def main():
     # enrollment certificate
     if args.enrollment_certificate:
         args.enrollment_certificate = os.path.abspath(args.enrollment_certificate)
+    elif args.emulation:
+        # as a convenience, get the canonical start certificate from server and use it
+        ENROLL_CERT_URL = "https://f1reg.fungible.com/cgi-bin/enrollment_server.cgi"
+        EMULATION_SN = b'\0' * 22 + b'\x12\x34'
+        sn = binascii.b2a_base64(EMULATION_SN)
+
+        server_response = requests.get(ENROLL_CERT_URL,
+                                       params={ 'cmd':'cert',
+                                                'sn': sn})
+        enrollment_cert = binascii.a2b_base64(server_response.text)
+        fd, args.enrollment_certificate = mkstemp()
+        os.write(fd, enrollment_cert)
+        os.close(fd)
+
 
     # the build directory is SBPDirectory/BUILD_BASE_DIR_f1_0_debug or SBPDirectory/BUILD_BASE_DIR_s1_0
     BUILD_DIR_FORMAT="{sbp}/{build_dir}_{chip}_0{_debug}"
