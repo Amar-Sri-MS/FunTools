@@ -56,6 +56,7 @@ function DetectDpuPcieBus()
 
 BMC_MAC=`ipmitool -U admin -P admin lan print 1 | awk '/MAC Address[ ]+:/ {print $4}'`
 
+HBM_COLLECT_NOTIFY="/tmp/HBM_Dump_Collection_In_Progress"
 function CollectHbmDump()
 {
 	if [[ $# -ne 1 ]]; then
@@ -68,6 +69,10 @@ function CollectHbmDump()
 		echo "Incorrect DPU number: $DPU"
 		return 1
 	fi
+
+	# Touch a file so that user knows HBM dump collection
+	# is in progress
+	/usr/bin/touch $HBM_COLLECT_NOTIFY
 
 	set +e
 	$DUMP_ASSEMBLY $BMC_MAC $DPU $BLD_NUM
