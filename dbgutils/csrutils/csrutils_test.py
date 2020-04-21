@@ -68,8 +68,8 @@ class DDRTest(unittest.TestCase):
         poke = self.probe.pokes.pop(0)
         self.assertEqual(expected_addr, poke[0])
 
-        # the magic address should be // 128 (see comments in source for reasoning)
-        self.assertEqual([csrutils.constants.IMAGE_START_PHYS_ADDR // 128],
+        # the magic address should be // 256 (see comments in source for reasoning)
+        self.assertEqual([csrutils.constants.IMAGE_START_PHYS_ADDR // 256],
                          poke[1])
 
         self.assertEqual(1, len(self.probe.peeks))
@@ -102,8 +102,35 @@ class DDRTest(unittest.TestCase):
         self.probe.clear()
 
     def _check_shard(self, mud_addr):
-        addr_poke_index = 8
+        addr_poke_index = 8   # flaky, depends on number of pokes
         poke = self.probe.pokes[addr_poke_index]
         expected_addr = mud_addr + csrutils.DDR.CMD_REG_OFFSET
         self.assertEqual(expected_addr, poke[0])
+
+    def test_channel_sharding(self):
+        """
+        Ensures we shard data to the correct channel within a MUD.
+        """
+        test_data = [0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7]
+
+        base_addr = csrutils.constants.IMAGE_START_PHYS_ADDR
+        test_addrs = [base_addr + (i * self.ddr.line_width) for i in range(8)]
+
+        for phys_addr in test_addrs:
+            self.ddr.write(phys_addr, test_data)
+            self._check_ddr_shard_address(phys_addr)
+            self.probe.clear()
+
+    def _check_ddr_shard_address(self, phys_addr):
+        addr_poke_index = 8   # flaky, depends on number of pokes
+        poke = self.probe.pokes[addr_poke_index]
+
+        # this sort of matches how the SNA RTL does it
+        expected_shard = phys_addr >> 7
+        expected_channel = expected_shard & 0x1
+        expected_csr_val = (phys_addr >> 8) | (expected_channel << 28)
+
+        actual_vals = poke[1]
+        self.assertEqual(expected_csr_val, actual_vals[0],
+                         'phys addr {}'.format(phys_addr))
 

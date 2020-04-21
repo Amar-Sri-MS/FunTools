@@ -487,7 +487,18 @@ class DDR(object):
     Sole purpose in life: write to DDR in S1.
 
     Assumes DDR is in spray mode: the target MUD is swapped for each 64-byte
-    line.
+    line. Also assumes lines written to a MUD are hashed between two channels.
+    This means that bit 7 of the physical address determines the channel, and
+    is mapped to bit 28 (the QSN bit).
+
+    Those assumptions will change if the DDR CSR config values are changed.
+
+    Example:
+        0x100000 - MUD0, channel 0, addr 0x00001000
+        0x100040 - MUD1, channel 0, addr 0x00001000
+        0x100080 - MUD0, channel 1, addr 0x10001000
+        0x1000c0 - MUD1, channel 1, addr 0x10001000
+        0x100100 - MUD0, channel 0, addr 0x00001001
 
     If you need to extend this for future chips, and the SNA registers have
     not changed, consider a configuration parameter in the constructor that
@@ -544,11 +555,22 @@ class DDR(object):
         csr_addr = sna_addr + self.CMD_REG_OFFSET
 
         # The addresses are divided across the MUDs, so we divide the
-        # physical address by the number of MUDs to get the DDR address.
+        # physical address by the number of MUDs to get the DDR shard address.
         ddr_addr = phys_addr // len(self.sna_addrs)
+
+        # Divide by 2, which is the number of channels per MUD
+        ddr_addr = ddr_addr // 2
 
         # And then we divide again to turn bytes into words
         ddr_addr = ddr_addr // self.line_width
+
+        # Within each MUD, a hash function sets bit 28 on the shard address to
+        # determine which channel is used. This is simply bit 7 of the physical
+        # address or equivalently, bit 0 of the shard address before we divide
+        # by the number of channels (bit notation is 0-indexed).
+        qsn_bit = (phys_addr >> 7) & 0x1
+        ddr_addr = ddr_addr | (qsn_bit << 28)
+
         csr_val = ddr_addr & 0xbfffffff   # set bit 30 to 0 for write request
         (status, data) = self.probe.csr_fast_poke(csr_addr, [csr_val])
         if status:
