@@ -26,7 +26,7 @@
 #include <arpa/inet.h>
 #include <sys/select.h>
 #include <sys/stat.h>
-#include <time.h> 
+#include <time.h>
 
 #include "dpcsh.h"
 #include "dpcsh_nvme.h"
@@ -1160,8 +1160,20 @@ static void _do_recv_cmd(struct dpcsock *funos_sock,
 	if (!output) {
 		if (retry)
 			printf("invalid json returned\n");
-		usleep(10*1000); // to avoid consuming all the CPU after funos quit
-		return;
+
+		if ((cmd_sock->mode != SOCKMODE_TERMINAL) &&
+			(funos_sock->mode == SOCKMODE_NVME) &&
+			(funos_sock->nvme_write_done == false)) {
+			output = fun_json_create_empty_dict();
+			fun_json_dict_add_string(output, "error", fun_json_no_copy_no_own,
+				"Command failed", fun_json_no_copy_no_own, false);
+			fun_json_dict_add_int64(output, "tid", fun_json_no_copy_no_own, -1, false);
+			fun_json_dict_add_string(output, "proxy-msg", fun_json_no_copy_no_own,
+				"Cannot connect to DPU", fun_json_no_copy_no_own, false);
+		} else {
+			usleep(10*1000); // to avoid consuming all the CPU after funos quit
+			return;
+		}
 	}
 
 	_print_response_info(output);
@@ -1750,7 +1762,7 @@ int main(int argc, char *argv[])
 
 	/* make an announcement as to what we are */
 	printf("FunOS Dataplane Control Shell");
-	
+
 	switch (mode) {
 	case MODE_INTERACTIVE:
 		/* do nothing */

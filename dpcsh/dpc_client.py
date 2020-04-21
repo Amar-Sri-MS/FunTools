@@ -19,6 +19,9 @@ import socket
 class DpcExecutionError(Exception):
     pass
 
+class DpcProxyError(Exception):
+    pass
+
 class DpcClient(object):
     def __init__(self, legacy_ok = True, unix_sock = False, server_address = None):
         self.__legacy_ok = legacy_ok
@@ -96,6 +99,9 @@ class DpcClient(object):
         if not r:
             return r
 
+        if 'proxy-msg' in r:
+            raise DpcProxyError(r['proxy-msg'])
+
         if 'error' in r:
             raise DpcExecutionError(r['error'])
 
@@ -150,7 +156,7 @@ class DpcClient(object):
     def async_recv_wait_raw(self, tid = None):
         # see if it's already pending
         for r in self.__async_queue:
-            if (tid is None or r['tid'] == tid):
+            if (tid is None or r['tid'] == tid or r['tid'] == -1):
                 self.__async_queue.remove(r)
                 return r
 
@@ -159,7 +165,7 @@ class DpcClient(object):
             r = self.async_wait()
             if (r is None):
                 return r
-            if (tid is None or r['tid'] == tid):
+            if (tid is None or r['tid'] == tid or r['tid'] == -1):
                 return r
 
             self.__async_queue.append(r)
