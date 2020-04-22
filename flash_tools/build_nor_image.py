@@ -210,7 +210,7 @@ def main():
                             help="Machine (f1,s1), default = f1")
     arg_parser.add_argument("-e", "--eeprom", action='store',
                             help="eeprom type")
-    arg_parser.add_argument("--emulation", action='store_true',
+    arg_parser.add_argument("--emulation", action='store_const', const=1, default=0,
                             help="emulation_build")
     arg_parser.add_argument("-n", "--enrollment-certificate", action='store',
                             metavar = 'FILE',
@@ -295,9 +295,6 @@ def main():
 
     # args.production translates to a _debug
     args._debug = "" if args.production else "_debug"
-
-    # args.emulation -> 0 or 1
-    args.emulation = 1 if args.emulation else 0
 
     build_dir = BUILD_DIR_FORMAT.format(**vars(args))
     make_cmd = MAKE_CMD_FORMAT.format(**vars(args))
