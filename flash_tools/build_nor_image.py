@@ -287,7 +287,7 @@ def main():
 
 
     # the build directory is SBPDirectory/BUILD_BASE_DIR_f1_0_debug or SBPDirectory/BUILD_BASE_DIR_s1_0
-    BUILD_DIR_FORMAT="{sbp}/{build_dir}_{chip}_0{_debug}"
+    BUILD_DIR_FORMAT="{sbp}/{build_dir}_{chip}_{emulation}{_debug}"
 
     # the target is like "build_debug_target_f1_0" or "build_target_s1_0"
     # the final 0 is for normal builds, 1 for emulation builds
