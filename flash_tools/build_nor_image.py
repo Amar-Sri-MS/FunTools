@@ -210,7 +210,7 @@ def main():
                             help="Machine (f1,s1), default = f1")
     arg_parser.add_argument("-e", "--eeprom", action='store',
                             help="eeprom type")
-    arg_parser.add_argument("--emulation", action='store_true',
+    arg_parser.add_argument("--emulation", action='store_const', const=1, default=0,
                             help="emulation_build")
     arg_parser.add_argument("-n", "--enrollment-certificate", action='store',
                             metavar = 'FILE',
@@ -259,7 +259,7 @@ def main():
             sane_eeprom = EEPROM_PREFIX + sane_eeprom
 
         # verify the file exists; if not show the list
-        eeprom_files = [f for f in os.listdir(eeproms_dir)]
+        eeprom_files = os.listdir(eeproms_dir)
         if not sane_eeprom in eeprom_files:
             print("eeprom name entered ws not found: \"{0}\"".format(args.eeprom))
             print("Available eeproms are:")
@@ -287,17 +287,14 @@ def main():
 
 
     # the build directory is SBPDirectory/BUILD_BASE_DIR_f1_0_debug or SBPDirectory/BUILD_BASE_DIR_s1_0
-    BUILD_DIR_FORMAT="{sbp}/{build_dir}_{chip}_0{_debug}"
+    BUILD_DIR_FORMAT = "{sbp}/{build_dir}_{chip}_{emulation}{_debug}"
 
     # the target is like "build_debug_target_f1_0" or "build_target_s1_0"
     # the final 0 is for normal builds, 1 for emulation builds
-    MAKE_CMD_FORMAT='BUILD_BASE_DIR={build_dir} make -C {sbp} build{_debug}_target_{chip}_{emulation}'
+    MAKE_CMD_FORMAT = 'BUILD_BASE_DIR={build_dir} make -C {sbp} build{_debug}_target_{chip}_{emulation}'
 
     # args.production translates to a _debug
     args._debug = "" if args.production else "_debug"
-
-    # args.emulation -> 0 or 1
-    args.emulation = 1 if args.emulation else 0
 
     build_dir = BUILD_DIR_FORMAT.format(**vars(args))
     make_cmd = MAKE_CMD_FORMAT.format(**vars(args))
