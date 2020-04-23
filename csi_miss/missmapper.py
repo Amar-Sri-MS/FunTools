@@ -69,7 +69,7 @@ def mkcountlist(d, info_field):
     
     return ret
 
-def do_rekey(misslist, rkfunc, info_field):
+def do_rekey(misslist, rkfunc, info_field, max_rows):
 
     # refactor by new key
     d = {}
@@ -82,6 +82,10 @@ def do_rekey(misslist, rkfunc, info_field):
     l = mkcountlist(d, info_field)
     l.sort(reverse=True)
 
+    # trim it if requested
+    if (max_rows > 0):
+        l = l[:max_rows]
+    
     return l
 
 ###
@@ -303,7 +307,7 @@ def mkmisses(raw_misses, lineinfo, regioninfo, gdbinfo):
 ##  do the work
 #
 
-def do_missmap(misses_raw, lineinfo, regioninfo, gdbinfo, mode, out_fname):
+def do_missmap(misses_raw, lineinfo, regioninfo, gdbinfo, mode, out_fname, max_rows=0):
     
     # process misses accoriding to available info
     print "%d misses in input" % len(misses_raw)
@@ -317,7 +321,7 @@ def do_missmap(misses_raw, lineinfo, regioninfo, gdbinfo, mode, out_fname):
 
         for (name, info_field, func) in REKEY_LIST:
 
-            by_key = do_rekey(misses, func, info_field)
+            by_key = do_rekey(misses, func, info_field, max_rows)
             tup = (name, by_key)
             sections.append(tup)
     

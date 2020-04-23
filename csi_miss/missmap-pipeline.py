@@ -13,6 +13,8 @@ import missmapper
 
 FUNOS_BINARY = gdb_ident.FUNOS_BINARY
 
+MAX_ROWS = 10000
+
 ###
 ##  main routine
 #
@@ -54,7 +56,8 @@ def do_missmap():
     out_fname = missmapper.OUTFILE_HTML
     print "Generating HTML output %s" % out_fname
     missmapper.do_missmap(misslist, lineinfo,
-                          regions, gdbinfo, "html", out_fname)
+                          regions, gdbinfo, "html", out_fname,
+                          max_rows=MAX_ROWS)
     
     out_fname = missmapper.OUTFILE_CSV
     print "Generating CVS output %s" % out_fname
