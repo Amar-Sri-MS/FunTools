@@ -47,7 +47,7 @@ def main():
           }
       ], None)
 
-  print("Total time: " + str(time.time() - start_time) + " for " + str(n_iterations) + " iterations")
+  print("Total time: " + str(time.time() - start_time) + " secs. for " + str(n_iterations) + " iterations")
 
 if (__name__ == "__main__"):
     main()
