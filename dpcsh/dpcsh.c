@@ -1147,7 +1147,8 @@ static char *_wrap_proxy_message(struct fun_json *response) {
 	return message;
 }
 
-static void _do_recv_cmd(struct dpcsock *funos_sock,
+// Return true if all went well, and false if a JSON error was returned
+static bool _do_recv_cmd(struct dpcsock *funos_sock,
 			 struct dpcsock *cmd_sock, bool retry, uint32_t seq_num)
 {
 	/* receive a reply */
@@ -1172,7 +1173,7 @@ static void _do_recv_cmd(struct dpcsock *funos_sock,
 				"Cannot connect to DPU", fun_json_no_copy_no_own, false);
 		} else {
 			usleep(10*1000); // to avoid consuming all the CPU after funos quit
-			return;
+			return false;
 		}
 	}
 
@@ -1184,8 +1185,11 @@ static void _do_recv_cmd(struct dpcsock *funos_sock,
 		write(cmd_sock->fd, "\n", 1);
 		fun_free_string(proxy_message);
 	}
+	
+	bool is_error = fun_json_is_error_message(output);
 
 	fun_json_release(output);
+	return !is_error;
 }
 
 static void terminal_set_per_character(bool enable)
@@ -1379,7 +1383,8 @@ int json_handle_req(struct dpcsock *jsock, const char *path,
 
 #define LINE_MAX	(100 * 1024)
 
-static void _do_cli(int argc, char *argv[],
+// Return true if execution proceeded normally, false on any error
+static bool _do_cli(int argc, char *argv[],
 		    struct dpcsock *funos_sock,
 		    struct dpcsock *cmd_sock, int startIndex)
 {
@@ -1399,9 +1404,10 @@ static void _do_cli(int argc, char *argv[],
 	printf(">> single cmd [%s] len=%zd\n", buf, len);
 	ok = _do_send_cmd(funos_sock, buf, len, seq_num);
 	if (ok) {
-		_do_recv_cmd(funos_sock, cmd_sock, true, seq_num);
+		ok = _do_recv_cmd(funos_sock, cmd_sock, true, seq_num);
 	}
 	free(buf);
+	return ok;
 }
 
 /** argument parsing **/
@@ -1812,10 +1818,15 @@ int main(int argc, char *argv[])
 	case MODE_INTERACTIVE:
 	case MODE_NOCONNECT: {
 		_parse_mode = PARSE_TEXT;
-		if (one_shot)
-			_do_cli(argc, argv, &funos_sock, &cmd_sock, optind);
-		else
+		if (one_shot) {
+			bool ok = _do_cli(argc, argv, &funos_sock, &cmd_sock, optind);
+			if (!ok) {
+				// We got a JSON error back, let's return a negative error code
+				exit(EINVAL);
+			}
+		} else {
 			_do_interactive(&funos_sock, &cmd_sock);
+		}
 	}
 
 	}
