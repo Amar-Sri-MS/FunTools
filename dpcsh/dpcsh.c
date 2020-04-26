@@ -4,8 +4,6 @@
  *  Copyright © 2017-2018 Fungible. All rights reserved.
  */
 
-/* test dpcsock functionality */
-
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -1073,9 +1071,11 @@ static const struct fun_json *_get_result_if_present(const struct fun_json *resp
 	return result == NULL ? response : result;
 }
 
-static void _print_response_info(const struct fun_json *response) {
+// Return true if normal output, false if an error
+static bool _print_response_info(const struct fun_json *response) {
 	const char *str;
 	int64_t tid = 0;
+	bool ok = true;
 
 	if (!fun_json_lookup(response, "result")) {
 		if (_verbose_log) {
@@ -1091,6 +1091,7 @@ static void _print_response_info(const struct fun_json *response) {
 
 	if (fun_json_fill_error_message(_get_result_if_present(response),
 					&str)) {
+		ok = false;
 		if (_verbose_log) {
 			printf(PRELUDE BLUE POSTLUDE "output => *** error: '%s'"
 			       NORMAL_COLORIZE "\n", str);
@@ -1113,6 +1114,7 @@ static void _print_response_info(const struct fun_json *response) {
 			_quiet_log(LOG_RX, response);
 		}
 	}
+	return ok;
 }
 
 static char *_wrap_proxy_message(struct fun_json *response) {
@@ -1147,7 +1149,8 @@ static char *_wrap_proxy_message(struct fun_json *response) {
 	return message;
 }
 
-static void _do_recv_cmd(struct dpcsock *funos_sock,
+// Return true if all went well, and false if a JSON error was returned
+static bool _do_recv_cmd(struct dpcsock *funos_sock,
 			 struct dpcsock *cmd_sock, bool retry, uint32_t seq_num)
 {
 	/* receive a reply */
@@ -1172,11 +1175,11 @@ static void _do_recv_cmd(struct dpcsock *funos_sock,
 				"Cannot connect to DPU", fun_json_no_copy_no_own, false);
 		} else {
 			usleep(10*1000); // to avoid consuming all the CPU after funos quit
-			return;
+			return false;
 		}
 	}
 
-	_print_response_info(output);
+	bool ok = _print_response_info(output);
 
 	if (cmd_sock->mode != SOCKMODE_TERMINAL) {
 		char *proxy_message = _wrap_proxy_message(output);
@@ -1184,8 +1187,9 @@ static void _do_recv_cmd(struct dpcsock *funos_sock,
 		write(cmd_sock->fd, "\n", 1);
 		fun_free_string(proxy_message);
 	}
-
+	
 	fun_json_release(output);
+	return ok;
 }
 
 static void terminal_set_per_character(bool enable)
@@ -1379,7 +1383,8 @@ int json_handle_req(struct dpcsock *jsock, const char *path,
 
 #define LINE_MAX	(100 * 1024)
 
-static void _do_cli(int argc, char *argv[],
+// Return true if execution proceeded normally, false on any error
+static bool _do_cli(int argc, char *argv[],
 		    struct dpcsock *funos_sock,
 		    struct dpcsock *cmd_sock, int startIndex)
 {
@@ -1399,9 +1404,10 @@ static void _do_cli(int argc, char *argv[],
 	printf(">> single cmd [%s] len=%zd\n", buf, len);
 	ok = _do_send_cmd(funos_sock, buf, len, seq_num);
 	if (ok) {
-		_do_recv_cmd(funos_sock, cmd_sock, true, seq_num);
+		ok = _do_recv_cmd(funos_sock, cmd_sock, true, seq_num);
 	}
 	free(buf);
+	return ok;
 }
 
 /** argument parsing **/
@@ -1812,10 +1818,16 @@ int main(int argc, char *argv[])
 	case MODE_INTERACTIVE:
 	case MODE_NOCONNECT: {
 		_parse_mode = PARSE_TEXT;
-		if (one_shot)
-			_do_cli(argc, argv, &funos_sock, &cmd_sock, optind);
-		else
+		if (one_shot) {
+			bool ok = _do_cli(argc, argv, &funos_sock, &cmd_sock, optind);
+
+			if (!ok) {
+				// We got a JSON error back, let's return an error code
+				exit(EINVAL);
+			}
+		} else {
 			_do_interactive(&funos_sock, &cmd_sock);
+		}
 	}
 
 	}
