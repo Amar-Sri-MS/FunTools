@@ -19,10 +19,6 @@ error() {
 	exit 1
 }
 
-# Download library sources for static linking
-./contrib/download_prerequisites
-
-
 SRC_DIR=${SCRIPT_DIR}
 
 if [[ ! -f ./configure ]]; then
@@ -78,12 +74,16 @@ ${SRC_DIR}/configure			\
     --with-arch-64=mips64r6		\
     --with-abi=64			\
     --disable-multilib			\
-    --enable-targets=64			\
-    --enable-checking=release		\
+    --enable-64-bit-bfd			\
+    --enable-targets=all		\
     --without-headers			\
+    --enable-lto			\
+    --enable-ld=yes			\
+    --enable-gold=yes			\
+    --enable-checking
 
 
-make -j 8
+make -j8 
 
 ${SUDO} make install
 
