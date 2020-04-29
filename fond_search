@@ -126,6 +126,12 @@ class JobMatch:
         return self._construct_set_from_jobinfo_key("email")
 
     @property
+    def hbmdump(self):
+        hbmdump = self.jobinfo.get("hbm_dump_generated", "0")
+
+        return bool(int(hbmdump))
+
+    @property
     def return_code_msg(self):
         return self.jobinfo.get("return_code_msg", "?")
 
@@ -179,6 +185,12 @@ def apply_job_filter(job, args):
         return False
 
     if args.emails and args.emails.isdisjoint(job.email):
+        return False
+
+    hbmdump = job.hbmdump
+    if args.hbmdump == "skip" and hbmdump:
+        return False
+    elif args.hbmdump == "only" and not hbmdump:
         return False
 
     if (
@@ -281,6 +293,12 @@ def handle_args():
         description=description.format(demand_fs_root=DEMAND_FS_ROOT)
     )
 
+    parser.add_argument(
+        "--hbmdump",
+        default="all",
+        choices=["all", "skip", "only"],
+        help="Search 'all' jobs, 'only' with hbmdump, 'skip' jobs with hbmdump",
+    )
     parser.add_argument(
         "--emails",
         default=None,
