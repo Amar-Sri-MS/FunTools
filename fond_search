@@ -85,6 +85,20 @@ class JobMatch:
 
         return os.path.join(DEMAND_FS_JOB_PREFIX, relative.parts[0])
 
+    def _construct_set_from_jobinfo_key(self, key):
+        info = self.jobinfo.get(key, "")
+
+        items = []
+        for item in info.split(","):
+            item = item.strip()
+
+            # Sometimes, a job key with no items has the word 'null', and at
+            # other times it has an empty string.
+            if item and item != "null":
+                items.append(item)
+
+        return set(items)
+
     @property
     def emulation_target(self):
         return self.jobinfo.get("emulation_target", "?")
@@ -105,22 +119,11 @@ class JobMatch:
 
     @property
     def tags(self):
-        taginfo = self.jobinfo.get("tags", "")
-
-        tags = []
-        for tag in taginfo.split(","):
-            tag = tag.strip()
-
-            # Sometimes, a job with no tags has the word 'null', and at other
-            # times it has an empty string.
-            if tag and tag != "null":
-                tags.append(tag)
-
-        return set(tags)
+        return self._construct_set_from_jobinfo_key("tags")
 
     @property
     def email(self):
-        return self.jobinfo["email"]
+        return self._construct_set_from_jobinfo_key("email")
 
     @property
     def return_code_msg(self):
@@ -139,7 +142,7 @@ class JobMatch:
 
         return "* {date}: {email}: {msg}\n  {emulation_target}: {model}: {machines}\n  {jobid}: {tags}: {branch}: {note}\n  {url}\n  {path}".format(
             date=self.datetime,
-            email=self.email,
+            email=",".join(self.email),
             msg=self.return_code_msg,
             emulation_target=self.emulation_target,
             model=self.model,
@@ -173,6 +176,9 @@ def apply_job_filter(job, args):
         return False
 
     if args.models and job.model not in args.models:
+        return False
+
+    if args.emails and args.emails.isdisjoint(job.email):
         return False
 
     if (
@@ -275,6 +281,12 @@ def handle_args():
         description=description.format(demand_fs_root=DEMAND_FS_ROOT)
     )
 
+    parser.add_argument(
+        "--emails",
+        default=None,
+        type=set_arg,
+        help="Only search for jobs with configured email(s), comma separated",
+    )
     parser.add_argument(
         "-b",
         "--branches",
