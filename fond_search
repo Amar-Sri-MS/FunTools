@@ -86,6 +86,19 @@ class JobMatch:
         return os.path.join(DEMAND_FS_JOB_PREFIX, relative.parts[0])
 
     def _construct_set_from_jobinfo_key(self, key):
+        """
+        Some keys in the Fun-on-Demand jobfiles have comma separated lists as
+        their value. This includes keys like email and tags. This is a helper
+        function to take those lists and construct a set. This takes care of
+        dealing with keys that have empty values, or values where an element is
+        the word 'null'.
+
+        :param key: The key to lookup in the jobfile.
+        :return: A set of the values associated with the key. If the key was
+                 not present, or the key did not have an associated value, an
+                 empty set is returned.
+        """
+
         info = self.jobinfo.get(key, "")
 
         items = []
