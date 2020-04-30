@@ -35,6 +35,32 @@ Update_grub_cmdline()
   fi
 }
 
+Update_Fungible_systemd_services()
+{
+  # All or none
+  if [ ! -f ${FUNGIBLE_ROOT}/etc/come_heartbeat_server.py ]       ||
+     [ ! -f ${FUNGIBLE_ROOT}/etc/come_heartbeat_server.socket ]   ||
+     [ ! -f ${FUNGIBLE_ROOT}/etc/come_heartbeat_server@.service ] ||
+     [ ! -f ${FUNGIBLE_ROOT}/etc/come_start_heartbeat_server.service ]; then
+    return
+  fi
+
+  cp ${FUNGIBLE_ROOT}/etc/come_heartbeat_server.socket /lib/systemd/system/
+  cp ${FUNGIBLE_ROOT}/etc/come_heartbeat_server@.service /lib/systemd/system/
+  cp ${FUNGIBLE_ROOT}/etc/come_start_heartbeat_server.service /lib/systemd/system/
+
+  SERVICE_STATUS=`systemctl is-enabled come_start_heartbeat_server.service`
+  if [ "${SERVICE_STATUS}" != "enabled" ]; then
+    systemctl enable come_start_heartbeat_server.service
+    RC=$?
+    if [ ${RC} -ne 0 ]; then
+      echo "Failed to enable COMe heartbeat server (${RC})"
+    fi
+  fi
+}
+
 Update_grub_cmdline
+
+Update_Fungible_systemd_services
 
 exit 0

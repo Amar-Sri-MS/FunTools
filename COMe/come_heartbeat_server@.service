@@ -1,0 +1,6 @@
+[Unit]
+Description=COMe Heartbeat Server
+
+[Service]
+ExecStart=/opt/fungible/etc/come_heartbeat_server.py
+StandardInput=socket
