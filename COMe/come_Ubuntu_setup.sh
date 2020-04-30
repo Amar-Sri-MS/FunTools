@@ -42,7 +42,7 @@ Update_Fungible_systemd_services()
      [ ! -f ${FUNGIBLE_ROOT}/etc/come_heartbeat_server.socket ]   ||
      [ ! -f ${FUNGIBLE_ROOT}/etc/come_heartbeat_server@.service ] ||
      [ ! -f ${FUNGIBLE_ROOT}/etc/come_start_heartbeat_server.service ]; then
-    return 1
+    return
   fi
 
   cp ${FUNGIBLE_ROOT}/etc/come_heartbeat_server.socket /lib/systemd/system/
@@ -54,12 +54,9 @@ Update_Fungible_systemd_services()
     systemctl enable come_start_heartbeat_server.service
     RC=$?
     if [ ${RC} -ne 0 ]; then
-      echo "Failed to enable COMe heartbeat server"
-      return 1
+      echo "Failed to enable COMe heartbeat server (${RC})"
     fi
   fi
-
-  return 0
 }
 
 Update_grub_cmdline
