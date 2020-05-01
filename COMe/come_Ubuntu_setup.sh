@@ -25,7 +25,7 @@ Update_systemd_journal_cfg()
   fi
   sed -i 's/^#Storage=.*/Storage=none/g' journald.conf
   if [ -d /var/log/journal ]; then
-    DATE=`date +%m-%d-%Y-%H-%M-%S`
+    DATE=`date +%Y-%m-%d_%H-%M-%S`
     mv /var/log/journal /var/log/journal_${DATE}_FUN_BKP
   fi
 }
