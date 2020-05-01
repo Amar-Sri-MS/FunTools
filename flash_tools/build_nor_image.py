@@ -12,6 +12,7 @@ import subprocess
 import fnmatch
 import tarfile
 import json
+import gzip
 from tempfile import mkstemp
 import shutil
 import requests
@@ -52,6 +53,8 @@ EEPROM_PREFIX = "eeprom_"
 
 CONFIG_JSON = "image.json"
 
+NOR_IMAGE_FILE_NAME = "qspi_image_hw.bin"
+
 BMC_INSTALL_DIR = "/mnt/sdmmc0p1/scripts"
 
 def remove_prefix(a_str, prefix):
@@ -60,6 +63,10 @@ def remove_prefix(a_str, prefix):
         return a_str[len(prefix):]
     return a_str
 
+def compress_file(src_path):
+    with open(src_path, 'rb') as f_in:
+        with gzip.open(src_path + '.gz', 'wb') as f_out:
+            shutil.copyfileobj(f_in, f_out)
 
 def generate_dynamic_config(chip, eeprom):
     ''' generate on the fly a config string specifying the eeprom and the host '''
@@ -113,6 +120,11 @@ def generate_nor_image(args, script_directory,
 
     subprocess.run(run_args, input=extra_config, cwd=images_directory,
                    check=True, stdout=sys.stdout, stderr=sys.stderr)
+
+    # compress the Nor image file preemptively
+    full_nor_image_path = os.path.join(images_directory, NOR_IMAGE_FILE_NAME)
+    compress_file(full_nor_image_path)
+
 
 def generate_eeprom_signed_images(script_directory, images_directory,
                                   eeprom_directory, version):
@@ -172,7 +184,7 @@ def generate_tar_file(args, built_images_dir):
         if fnmatch.fnmatch(base_name, 'eeprom_*.bin'):
             return tar_info
 
-        if base_name == 'qspi_image_hw.bin':
+        if base_name == NOR_IMAGE_FILE_NAME:
             return tar_info
 
         return None
