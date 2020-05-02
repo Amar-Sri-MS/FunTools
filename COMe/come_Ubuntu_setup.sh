@@ -15,6 +15,21 @@ if [[ "${EUID}" -ne 0 ]]; then
   exit 1
 fi
 
+# SWSYS-845: Disabling use of journal logs
+# Logging in /var/log/syslog etc will still work
+Update_systemd_journal_cfg()
+{
+  JRNL_CFG=/etc/systemd/journal.conf
+  if [ ! -f ${JRNL_CFG} ]; then
+    return
+  fi
+  sed -i 's/^#Storage=.*/Storage=none/g' journald.conf
+  if [ -d /var/log/journal ]; then
+    DATE=`date +%Y-%m-%d_%H-%M-%S`
+    mv /var/log/journal /var/log/journal_${DATE}_FUN_BKP
+  fi
+}
+
 Update_grub_cmdline()
 {
   # debug                  = SWSYS-725
@@ -58,6 +73,8 @@ Update_Fungible_systemd_services()
     fi
   fi
 }
+
+Update_systemd_journal_cfg
 
 Update_grub_cmdline
 
