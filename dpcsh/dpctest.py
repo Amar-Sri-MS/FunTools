@@ -119,11 +119,15 @@ def run_dpc_test(args, unix_sock, delay):
     print "### pid is %s" % pid
     time.sleep(1)
 
-    # connect to it
-    client = dpc_client.DpcClient(legacy_ok = False, unix_sock = unix_sock)
+    try:
+        # connect to it
+        client = dpc_client.DpcClient(legacy_ok = False, unix_sock = unix_sock)
 
-    time.sleep(delay)
-    run_tests_client(client, [])
+        time.sleep(delay)
+        run_tests_client(client, [])
+    finally:
+        if pid.returncode is None:
+            pid.terminate()
 
 
 def run_using_env(exclude):
