@@ -6,6 +6,7 @@
 
 #define PLATFORM_POSIX	1
 
+#include <stdio.h>
 #include <services/commander/fun_commander.h>
 #include <utils/threaded/fun_malloc_threaded.h>
 #include <utils/threaded/csr_utils.h>
