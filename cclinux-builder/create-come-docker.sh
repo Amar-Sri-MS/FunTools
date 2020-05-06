@@ -28,21 +28,67 @@ if [[ ! -d $SDKDIR ]] ; then
     exit 1
 fi
 
-if [[ ! -n "$BUILD_NUMBER" ]] ; then
-    if [[ -f $WORKSPACE/build_info.txt ]] ; then
-	read BUILD_NUMBER < $WORKSPACE/build_info.txt
+if [[ ! -n "$DEV_LINE" ]] ; then
+    DEV_LINE=master
+    if [[ -f $WORKSPACE/dev_line.txt ]] ; then
+	source $WORKSPACE/dev_line.txt
+    fi
+fi
+
+DOCHUB='http://dochub.fungible.local/doc/jenkins'
+
+function fetch_dochub
+{
+    local fetch_dev_line=$1
+    local dev_line_path=$2
+    local target_file=$3
+    local src_url=$DOCHUB/$fetch_dev_line/$dev_line_path
+
+    echo "Fetching $src_url to $target_file..."
+
+    if curl -s -f $DOCHUB/$fetch_dev_line/$dev_line_path -o $target_file ; then
+	: # All good.
     else
-	BUILD_NUMBER='test_build'
+	if [[ ($? -eq 22) && ($fetch_dev_line != "master") ]] ; then
+	    echo "Not found, trying master..."
+	    fetch_dev_line=master
+	    src_url=$DOCHUB/$fetch_dev_line/$dev_line_path
+	    echo "Fetching $src_url to $target_file..."
+	    curl -s -f $DOCHUB/$fetch_dev_line/$dev_line_path -o $target_file
+	else
+	    exit 1
+	fi
+    fi
+}
+
+if [[ ! -n "$DKR_IMG_TAG" ]] ; then
+    if [[ -f $WORKSPACE/build_info.txt ]] ; then
+	read DKR_IMG_TAG < $WORKSPACE/build_info.txt
+    else
+	DKR_IMG_TAG='test_build'
     fi
 fi
 
 DOCKER_BUILD_DIR=$PWD/docker-build
 mkdir -p $DOCKER_BUILD_DIR
 
+# Get the proper Dockerfile. If a Dockerfile already exists in the
+# docker-build directory, just use it.
+
+DOC_IMG="docker.fungible.com/come_yocto:$DKR_IMG_TAG"
+DOC_TAR="docker.fungible.com-come_yocto-$DKR_IMG_TAG.tar.xz"
+DOCKERFILE="Dockerfile.come-yocto"
+
+if [[ ! -f $DOCKER_BUILD_DIR/$DOCKERFILE ]] ; then
+    echo "Copying $DOCKERFILE from $THIS_DIR..."
+    cp $THIS_DIR/$DOCKERFILE $DOCKER_BUILD_DIR/$DOCKERFILE
+fi
+
 CC_LINUX_YOCTO_DIR=$WORKSPACE/cc-linux-yocto
 
+# Fetch the base root filesystem image.
+
 FUN_ARCH=x86_64
-FUN_BRANCH=master
 YOCTO_BASE_FILE=fun-image-x86-64dkr-qemux86-64.tar.xz
 
 if [[ ! -f $DOCKER_BUILD_DIR/$YOCTO_BASE_FILE ]] ; then
@@ -51,19 +97,15 @@ if [[ ! -f $DOCKER_BUILD_DIR/$YOCTO_BASE_FILE ]] ; then
 	cp $CC_LINUX_YOCTO_DIR/$YOCTO_BASE_FILE $DOCKER_BUILD_DIR/$YOCTO_BASE_FILE
     else
 	echo "Fetching $YOCTO_BASE_FILE from dochub..."
-	FILE_URL="http://dochub.fungible.local/doc/jenkins/$FUN_BRANCH/cc-linux-yocto/latest/$FUN_ARCH/$YOCTO_BASE_FILE"
-	curl -s --output $DOCKER_BUILD_DIR/$YOCTO_BASE_FILE $FILE_URL
+	fetch_dochub $DEV_LINE cc-linux-yocto/latest/$FUN_ARCH/$YOCTO_BASE_FILE $DOCKER_BUILD_DIR/$YOCTO_BASE_FILE
     fi
 fi
 
-DOC_IMG="docker.fungible.com/come_yocto:$BUILD_NUMBER"
-DOC_TAR="docker.fungible.com-come_yocto-$BUILD_NUMBER.tar.xz"
-DOCKERFILE="Dockerfile.come-yocto"
+# LIBFUNQ_FILE is an example of how to add tar files to docker context
+# and Dockerfile so that they are installed into docker image when
+# image is built. Please follow similar steps for other component
+# install tar balls.
 
-if [[ ! -f $DOCKER_BUILD_DIR/$DOCKERFILE ]] ; then
-    echo "Copying $DOCKERFILE from $THIS_DIR..."
-    cp $THIS_DIR/$DOCKERFILE $DOCKER_BUILD_DIR/$DOCKERFILE
-fi
 
 LIBFUNQ_FILE=libfunq.tgz
 if [[ ! -f $DOCKER_BUILD_DIR/$LIBFUNQ_FILE ]] ; then
