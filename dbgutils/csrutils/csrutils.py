@@ -372,7 +372,7 @@ def csr_find(args):
         return
 
 def csr_metadata_dochub():
-    url = 'http://dochub.fungible.local/doc/jenkins/funsdk/latest/Linux/csr-cfg.tgz'
+    url = 'http://dochub.fungible.local/doc/jenkins/master/funsdk/latest/Linux/csr-cfg.tgz'
     file_tmp = urllib.urlretrieve(url, filename=None)[0]
     base_name = os.path.basename(url)
     file_name, file_extension = os.path.splitext(base_name)

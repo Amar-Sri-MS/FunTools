@@ -17,7 +17,8 @@ class constants(object):
     CSR_RING_TAP_SELECT_WIDTH = 10
 
     # Note: for emulation, reduce this to 25000
-    TCKRATE = 10000000
+    #TCKRATE = 10000000
+    TCKRATE = 25000
 
 
 class ChipJTAG(object):
