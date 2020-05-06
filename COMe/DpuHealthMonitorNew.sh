@@ -79,7 +79,7 @@ function CollectHbmDump()
 
 	if [ $? -eq 2 ]; then
 		sync
-		$FS1600_RESET
+		echo "Single DPU collection timed out"
 	fi
 
 	set -e

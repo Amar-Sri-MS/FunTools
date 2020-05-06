@@ -63,6 +63,7 @@ map(unlink_verbose, sorted(glob.glob(dump_wildcard), reverse = True)[3:])
 dump_parts_wildcard = INPUT_DUMP_PREFIX + f1_mac + '*'
 if not wait_for(dump_parts_wildcard, 1, FIRST_PIECE_TIMEOUT, 0) or \
    not wait_for(dump_parts_wildcard, PIECES_TOTAL, DUMP_TIMEOUT, PART_COMPLETE_SIZE):
+  subprocess.call('ls -l ' + dump_parts_wildcard, shell=True)
   map(unlink_verbose, sorted(glob.glob(dump_parts_wildcard)))
   print('Timeout')
   sys.exit(2)
