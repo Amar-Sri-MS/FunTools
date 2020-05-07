@@ -8,6 +8,7 @@ sys.path.append('/home/'+os.environ["USER"]+'/.local/opt/imgtec/Codescape-8.6/li
 from imgtec.console.support import command
 from imgtec.console import *
 import logging
+import time
 
 logger = logging.getLogger('jtagutils')
 logger.setLevel(logging.DEBUG)
@@ -15,10 +16,10 @@ logger.setLevel(logging.DEBUG)
 class constants(object):
     CSR_RING_TAP_SELECT = 0x01C1
     CSR_RING_TAP_SELECT_WIDTH = 10
+    #Note: for emulation, reduce this to 25000
+    #TCKRATE = 25000
+    TCKRATE = 10000000
 
-    # Note: for emulation, reduce this to 25000
-    #TCKRATE = 10000000
-    TCKRATE = 25000
 
 
 class ChipJTAG(object):
@@ -199,15 +200,17 @@ def _jtag_shift_in_csr_acc_bytes(bytes_hex_str, chip_jtag):
     logger.debug("jtag ack: {}".format(jtag_ack))
     logger.debug("jtag running: {}".format(jtag_running))
 
-    if jtag_status != 0:
-        logger.error("jtag shift-in data error!: {}".format(jtag_status))
-        return (False, None)
+    #if jtag_status != 0:
+    #    logger.error("jtag shift-in data error!: {}".format(jtag_status))
+    #    return (False, None)
 
     status = _ir_shiftin(constants.CSR_RING_TAP_SELECT_WIDTH,
                 constants.CSR_RING_TAP_SELECT)
     if not status:
         logger.error("Failed in shiftin IR\n")
         return (False, None)
+
+    time.sleep(2)
 
     logger.debug('shift-in zeros for response data')
     dr = "128 0x0"
@@ -245,7 +248,7 @@ def csr_peek(csr_addr, csr_width, chip='f1'):
     The chip argument allows selection between ['f1', 's1'].
     '''
     logger.info(('csr peek csr_addr:{0}'
-                 ' csr_width:{1}').format(hex(csr_addr), csr_width))
+                 ' csr_width:{1} {2}').format(hex(csr_addr), csr_width, chip))
 
     if csr_width == 0 or csr_width > 8:
         logger.error(('Invalid csr width:'
@@ -267,6 +270,8 @@ def csr_peek(csr_addr, csr_width, chip='f1'):
     if not status:
         logger.error('peek csr cmd failed!')
         return None
+
+    time.sleep(2)
 
     word_array = list()
     for i in range(csr_width):
@@ -309,6 +314,7 @@ def csr_poke(csr_addr, word_array, chip='f1'):
                      'Data size(in 64-bit words) should be in the range 1-8!')
         return False
 
+
     for i in range(csr_width):
         logger.debug("\nWriting Data[{}/{} = {}]...........:".format(i+1,
                        csr_width, hex(word_array[i])))
@@ -323,6 +329,7 @@ def csr_poke(csr_addr, word_array, chip='f1'):
             logger.error("jtag csr poke data write failed!")
             return None
 
+    time.sleep(6)
     logger.debug("\nWriting write command....")
     cmd = chip_jtag.prepare_csr_acc_cmd(False, chip_jtag.wide_reg_ctrl_addr, 1)
     ctrl = chip_jtag.prepare_csr_ctrl(False, csr_addr, len(word_array))
@@ -406,3 +413,4 @@ def esecure_read():
 
 if __name__== "__main__":
     csr_peek_poke_test()
+
