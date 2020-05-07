@@ -200,9 +200,9 @@ def _jtag_shift_in_csr_acc_bytes(bytes_hex_str, chip_jtag):
     logger.debug("jtag ack: {}".format(jtag_ack))
     logger.debug("jtag running: {}".format(jtag_running))
 
-    #if jtag_status != 0:
-    #    logger.error("jtag shift-in data error!: {}".format(jtag_status))
-    #    return (False, None)
+    if jtag_status != 0:
+        logger.error("jtag shift-in data error!: {}".format(jtag_status))
+        return (False, None)
 
     status = _ir_shiftin(constants.CSR_RING_TAP_SELECT_WIDTH,
                 constants.CSR_RING_TAP_SELECT)
