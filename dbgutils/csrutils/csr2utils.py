@@ -146,9 +146,6 @@ class RegisterFinder(object):
         tokenizer = PathSplitter()
         parts = tokenizer.split(path)
 
-        # strip the root name
-        parts = parts[1:]
-
         reg_cursor, error = self._descend(root_cursor, parts)
         if error:
             return None, error
@@ -162,6 +159,13 @@ class RegisterFinder(object):
 
     def _descend(self, cursor, remaining_parts):
         if not remaining_parts:
+            if isinstance(cursor.typ, csr2.Arrayed):
+                logger.debug("bounds: {0}".format(cursor.typ.bounds[0]))
+                logger.debug("count_stride: {0}".format(cursor.typ.count_stride))
+                logger.debug("count: {0}".format(cursor.typ.count))
+                logger.debug("strides: {0}".format(cursor.typ.strides))
+                logger.debug("offset: {0}".format(cursor.offset('addr')))
+                logger.debug("width: {0}".format(cursor.size('addr')))
             # Found the target register if all parts have been matched and
             # we landed on a register.
             if isinstance(cursor.typ, csr2.Reg):
@@ -280,7 +284,13 @@ class RegisterNames(object):
                     crumb = precursor.crumb
                     reg_name = self._extend_regname(reg_name, crumb)
 
-                self.names.add(reg_name)
+                prefix_pattern = re.compile(r'^chip_(.*)::root.(.*)')
+                name_groups = re.search(prefix_pattern, reg_name)
+                if name_groups.lastindex == 2:
+                    self.names.add(name_groups.group(2))
+                else:
+                    logger.error("Unexpected reg name:{0}".reg_name)
+                    self.names.add(reg_name)
 
     def _extend_regname(self, reg_name, crumb):
         """
@@ -500,6 +510,13 @@ def init_bundle_lazily():
     return True
 
 
+def csr2_peek_internal(csr_path):
+    finder = RegisterFinder(bundle)
+    accessor = CSRAccessor(dbgprobe(), finder)
+    regval = accessor.peek(csr_path)
+    if regval is not None:
+        print str(regval)
+
 def csr2_peek(args):
     """
     Handles the csr peek comand.
@@ -516,14 +533,15 @@ def csr2_peek(args):
     csr_path = args.csr[0]
 
     if '*' in csr_path:
-        print_matching_regs(csr_path)
+        regex = csr_path.replace('*', '.*')
+        csr_names.build()
+        matched_csrs = csr_names.find_matching(regex)
+        matched_csrs.sort()
+        print '\n'.join(matched_csrs)
+        for csr in matched_csrs:
+            csr2_peek_internal(csr)
     else:
-        finder = RegisterFinder(bundle)
-        accessor = CSRAccessor(dbgprobe(), finder)
-        regval = accessor.peek(csr_path)
-        if regval is not None:
-            print str(regval)
-
+        csr2_peek_internal(csr_path)
 
 def print_matching_regs(csr_path):
     regex = csr_path.replace('*', '.*')
@@ -531,7 +549,6 @@ def print_matching_regs(csr_path):
     result = csr_names.find_matching(regex)
     result.sort()
     print '\n'.join(result)
-
 
 def csr2_raw_peek(args):
     """
@@ -571,7 +588,6 @@ def csr2_poke(args):
         accessor = CSRAccessor(dbgprobe(), finder)
         accessor.poke(csr_path, values)
 
-
 def csr2_raw_poke(args):
     """
     Handles the raw poke command.
@@ -581,3 +597,36 @@ def csr2_raw_poke(args):
     values = [str_to_int(v) for v in args.vals]
     accessor.raw_poke(addr, values)
 
+def csr2_find_by_name(csr_path):
+    if '*' in csr_path:
+        regex = csr_path.replace('*', '.*')
+    else:
+        regex = '.*' + csr_path + '.*'
+
+    csr_names.build()
+    matched_csrs = csr_names.find_matching(regex)
+    matched_csrs.sort()
+    print '\n'.join(matched_csrs)
+
+def csr2_find(args):
+    """
+    Handles the csr find comand.
+
+    For CSR2, we allow specification of a path. If a wildcard * is present,
+    we display a list of matching registers.
+    If wildcard is not there, any register with matcing substring are
+    displayed.
+
+    Paths correspond to the hierarchy as described in fundamental docs,
+    separated by dots, e.g. root.pc0.soc_clk_ring.cfg.pc_cfg_scratchpad.
+    """
+    if not init_bundle_lazily():
+        return
+
+    csr_path = args.substring[0] if args.substring else None
+
+    if csr_path:
+        csr2_find_by_name(csr_path)
+    else:
+        print('Invalid argument! args:{0}'.format(args))
+        return

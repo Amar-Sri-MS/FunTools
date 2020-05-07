@@ -210,15 +210,23 @@ class dbgsh(cmd2.Cmd):
     parser_list.add_argument('-r', nargs=1,
                 metavar=('ring_name'), dest='ring', type=str, help="ring name")
 
-    parser_find = subparsers.add_parser('find',
+    if not csr2_mode:
+        parser_find = subparsers.add_parser('find',
                 help="Find csrs maching sub-string", formatter_class=ArgFormatter)
-    parser_find.set_defaults(func=csr_find)
-    group = parser_find.add_mutually_exclusive_group(required=True)
-    group.add_argument('-s', nargs=1,  metavar=('substring'), dest='substring',
+        parser_find.set_defaults(func=csr_find)
+        group = parser_find.add_mutually_exclusive_group(required=True)
+        group.add_argument('-s', nargs=1,  metavar=('substring'), dest='substring',
                         type=str, help="substring of csr name")
-    group.add_argument('-a ', nargs=1, metavar=('csr_address'),
+        group.add_argument('-a ', nargs=1, metavar=('csr_address'),
                         dest='csr_address', type=str,
                         help="CSR address either in decimal or hex")
+    else:
+        parser_find = subparsers.add_parser('find',
+                help="Find csrs maching string", formatter_class=ArgFormatter)
+        parser_find.set_defaults(func=csrutils.csr2utils.csr2_find)
+        group = parser_find.add_mutually_exclusive_group(required=True)
+        group.add_argument('-s', nargs=1,  metavar=('substring'), dest='substring',
+                        type=str, help="regex for matching csr name")
 
     parser_metadata = subparsers.add_parser('metadata',
                 help="Load metadata", formatter_class=ArgFormatter)

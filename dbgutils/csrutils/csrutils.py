@@ -74,8 +74,9 @@ def csr_peek(args):
 
     csr_width_bytes = csr_get_width_bytes(csr_data)
     csr_width_words = csr_width_bytes >> 3
-    (status, data) = dbgprobe().csr_peek(chip_inst=chip_inst, csr_addr=csr_addr,
-                                         csr_width_words=csr_width_words)
+    (status, data) = dbgprobe().csr_peek(
+            chip_inst=chip_inst, csr_addr=csr_addr,
+            csr_width_words=csr_width_words)
     if status is True:
         word_array = data
         if word_array is None or not word_array:
@@ -372,7 +373,7 @@ def csr_find(args):
         return
 
 def csr_metadata_dochub():
-    url = 'http://dochub.fungible.local/doc/jenkins/funsdk/latest/Linux/csr-cfg.tgz'
+    url = 'http://dochub.fungible.local/doc/jenkins/master/funsdk/latest/Linux/csr-cfg.tgz'
     file_tmp = urllib.urlretrieve(url, filename=None)[0]
     base_name = os.path.basename(url)
     file_name, file_extension = os.path.splitext(base_name)
@@ -1071,7 +1072,8 @@ def connect(dut_name, mode, force_connect=False, chip="f1"):
             jtag_probe_ip = dut_jtag_info[2]
             status = dbgprobe().connect(mode='jtag', bmc_board=False,
                                         probe_ip_addr = jtag_probe_ip,
-                                        probe_id = jtag_probe_id)
+                                        probe_id = jtag_probe_id,
+                                        chip_type=chip)
         else:
             bmc_ip = dut_jtag_info[1]
             jtag_probe_id = dut_jtag_info[2]
@@ -1079,7 +1081,8 @@ def connect(dut_name, mode, force_connect=False, chip="f1"):
             status = dbgprobe().connect(mode='jtag', bmc_board=True,
                                         bmc_ip_address=bmc_ip,
                                         probe_ip_addr=jtag_probe_ip,
-                                        probe_id = jtag_probe_id)
+                                        probe_id = jtag_probe_id,
+                                        chip_type=chip)
     elif mode == 'pcie':
         dut_pcie_info = dut().get_pcie_info(dut_name)
         if dut_pcie_info is None:
