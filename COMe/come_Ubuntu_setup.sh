@@ -15,6 +15,20 @@ if [[ "${EUID}" -ne 0 ]]; then
   exit 1
 fi
 
+# SWSYS-874:
+Update_resolv_conf_smlink()
+{
+  PREFERRED_RESOLV_CONF=/run/systemd/resolve/resolv.conf
+  RESOLV_CONF=/etc/resolv.conf
+  if [ "$(realpath $RESOLV_CONF)" != "$PREFERRED_RESOLV_CONF" ]; then
+    rm $RESOLV_CONF
+    ln -sf /run/systemd/resolve/resolv.conf /etc/resolv.conf
+    # Is below step required?
+    # Because after install user will reboot
+    systemctl restart systemd-resolved
+  fi
+}
+
 # SWSYS-845: Disabling use of journal logs
 # Logging in /var/log/syslog etc will still work
 Update_systemd_journal_cfg()
@@ -79,5 +93,7 @@ Update_systemd_journal_cfg
 Update_grub_cmdline
 
 Update_Fungible_systemd_services
+
+Update_resolv_conf_smlink
 
 exit 0
