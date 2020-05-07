@@ -13,8 +13,6 @@ import time
 logger = logging.getLogger('jtagutils')
 logger.setLevel(logging.INFO)
 
-
-
 class constants(object):
     CSR_RING_TAP_SELECT = 0x01C1
     CSR_RING_TAP_SELECT_WIDTH = 10

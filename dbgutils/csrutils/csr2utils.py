@@ -292,7 +292,6 @@ class RegisterNames(object):
                     logger.error("Unexpected reg name:{0}".reg_name)
                     self.names.add(reg_name)
 
-
     def _extend_regname(self, reg_name, crumb):
         """
         For a named crumb, add a dotted fragment. For an indexed crumb,
@@ -518,7 +517,6 @@ def csr2_peek_internal(csr_path):
     if regval is not None:
         print str(regval)
 
-
 def csr2_peek(args):
     """
     Handles the csr peek comand.
@@ -598,7 +596,6 @@ def csr2_raw_poke(args):
     addr = str_to_int(args.addr)
     values = [str_to_int(v) for v in args.vals]
     accessor.raw_poke(addr, values)
-
 
 def csr2_find_by_name(csr_path):
     if '*' in csr_path:
