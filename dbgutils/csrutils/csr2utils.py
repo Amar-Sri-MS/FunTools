@@ -613,10 +613,12 @@ def csr2_find_by_name(csr_path):
 
 def csr2_find(args):
     """
-    Handles the csr peek comand.
+    Handles the csr find comand.
 
     For CSR2, we allow specification of a path. If a wildcard * is present,
     we display a list of matching registers.
+    If wildcard is not there, any register with matcing substring are
+    displayed.
 
     Paths correspond to the hierarchy as described in fundamental docs,
     separated by dots, e.g. root.pc0.soc_clk_ring.cfg.pc_cfg_scratchpad.
