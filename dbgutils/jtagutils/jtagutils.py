@@ -11,16 +11,17 @@ import logging
 import time
 
 logger = logging.getLogger('jtagutils')
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
+
+
 
 class constants(object):
     CSR_RING_TAP_SELECT = 0x01C1
     CSR_RING_TAP_SELECT_WIDTH = 10
-    #Note: for emulation, reduce this to 25000
-    #TCKRATE = 25000
     TCKRATE = 10000000
-
-
+    EMULATION = True
+    #Note: for emulation, reduce this to 25000
+    EMU_TCKRATE = 25000
 
 class ChipJTAG(object):
     """ Base class for all chips with JTAG """
@@ -158,10 +159,11 @@ def csr_probe(dev_type, ip_addr):
     if (("SysProbe" not in status) or ("Firmware" not in status) or
         ("ECONNREFUSED" in status) or ("InvalidArgError" in status)):
         return (False, status)
-    status = tckrate(constants.TCKRATE)
-    logger.info('Set tckrate to 10 MHz! status: {0}'.format(status))
-
-    logger.info('Connected to Codescape Jtag probe!\n{0}'.format(status))
+    jtag_tckrate = constants.EMU_TCKRATE if constants.EMULATION == True \
+            else constants.TCKRATE
+    status = tckrate(jtag_tckrate)
+    logger.info('Connecting to Codescape jtag probe'
+            ' (tckrate: {0})! statu: {1}'.format(jtag_tckrate, status))
     status = _ir_shiftin(constants.CSR_RING_TAP_SELECT_WIDTH,
                 constants.CSR_RING_TAP_SELECT)
     if not status:
@@ -210,7 +212,8 @@ def _jtag_shift_in_csr_acc_bytes(bytes_hex_str, chip_jtag):
         logger.error("Failed in shiftin IR\n")
         return (False, None)
 
-    time.sleep(2)
+    # Enable if needed in emulation
+    # time.sleep(1)
 
     logger.debug('shift-in zeros for response data')
     dr = "128 0x0"
@@ -247,8 +250,9 @@ def csr_peek(csr_addr, csr_width, chip='f1'):
 
     The chip argument allows selection between ['f1', 's1'].
     '''
-    logger.info(('csr peek csr_addr:{0}'
-                 ' csr_width:{1} {2}').format(hex(csr_addr), csr_width, chip))
+    logger.debug(('csr peek csr_addr:{0}'
+        ' csr_width:{1} chip:{2}').format(
+            hex(csr_addr), csr_width, chip))
 
     if csr_width == 0 or csr_width > 8:
         logger.error(('Invalid csr width:'
@@ -271,7 +275,8 @@ def csr_peek(csr_addr, csr_width, chip='f1'):
         logger.error('peek csr cmd failed!')
         return None
 
-    time.sleep(2)
+    # Enable if needed in emulation
+    # time.sleep(1)
 
     word_array = list()
     for i in range(csr_width):
@@ -329,7 +334,9 @@ def csr_poke(csr_addr, word_array, chip='f1'):
             logger.error("jtag csr poke data write failed!")
             return None
 
-    time.sleep(6)
+    # Enable if needed in emulation
+    # time.sleep(6)
+
     logger.debug("\nWriting write command....")
     cmd = chip_jtag.prepare_csr_acc_cmd(False, chip_jtag.wide_reg_ctrl_addr, 1)
     ctrl = chip_jtag.prepare_csr_ctrl(False, csr_addr, len(word_array))
@@ -365,7 +372,9 @@ def csr_peek_poke_test():
 def jtag_probe(name, ip, in_rom=None):
     try:
         probe(name, ip)
-        JTAG_TCKRATE = 5000 if in_rom else 250000
+        JTAG_TCKRATE = constants.EMU_TCKRATE if constants.EMULATION == True \
+            else constants.TCKRATE
+        JTAG_TCKRATE = JTAG_TCKRATE / 5 if in_rom else JTAG_TCKRATE
         logger.info("\nconnecting to JTAG probe with TCKRATE(%s)..." % JTAG_TCKRATE)
         tckrate(JTAG_TCKRATE)
         scanonly()
