@@ -3,14 +3,8 @@
 """
 DDR read/write/copy utilities
 
-Usage from python shell:
------------------------
->>> from dbgmacros.ddrutils import *
->>> connect('TPOD0', 'i2c')
->>> ddr_dump(0x4000, 0x100)
-
-Usage as a standalone script:
-----------------------------
+Usage:
+------
 python ddrutils.py --dut TPOD0 --mode jtag  dump  --start 0x100000 --size 0x200
 python ddrutils.py --dut TPOD0 --mode jtag  write --start 0x100100 --data 0x11 0x22 0x33 0x44 0x1234567812345678 0x6 0x77 0x88
 python ddrutils.py --dut TPOD0 --mode i2c  dump  --start 0x100000 --size 0x200
@@ -22,7 +16,6 @@ import time
 
 logger = logging.getLogger("ddrutils")
 logger.setLevel(logging.INFO)
-
 
 class DDR(object):
     """
