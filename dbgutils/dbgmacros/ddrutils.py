@@ -25,7 +25,7 @@ logger.setLevel(logging.INFO)
 
 
 class DDR(object):
-    """  
+    """
     Sole purpose in life: write to DDR in S1.
 
     Assumes DDR is in spray mode: the target MUD is swapped for each 64-byte
@@ -63,9 +63,9 @@ class DDR(object):
 
     def write(self, phys_addr, data):
         res = self._write_data(phys_addr, data)
-        if res: 
+        if res:
             res = self._issue_write_command(phys_addr)
-        if res: 
+        if res:
             time.sleep(1)
             res = self._check_success(phys_addr)
         self._clear_status_reg(phys_addr)
@@ -75,7 +75,7 @@ class DDR(object):
         sna_addr = self._get_sna_addr(phys_addr)
 
         for i in range(8):
-            csr_addr = sna_addr + self.DATA_REG_OFFSET + (i * 8) 
+            csr_addr = sna_addr + self.DATA_REG_OFFSET + (i * 8)
             csr_val = wdata[i]
             (status, ret_data) = self.probe.csr_fast_poke(csr_addr, [csr_val])
             if status:
@@ -85,7 +85,7 @@ class DDR(object):
                 logger.error('Error writing data value: {0}'.format(error_msg))
                 return False
 
-        return True 
+        return True
 
     def dump(self, start_addr, size):
             #start_offset and end_offset are within 256 byte arrays
@@ -160,22 +160,22 @@ class DDR(object):
 
     def read(self, phys_addr):
         res = self._issue_read_command(phys_addr)
-	if res: 
+	if res:
 	    res = self._check_success(phys_addr)
 	if res:
 	    (res, data) = self._read_data(phys_addr)
         self._clear_status_reg(phys_addr)
 	if res:
 	    return data
-	
-        return None 
+
+        return None
 
     def _read_data(self, phys_addr):
 	sna_addr = self._get_sna_addr(phys_addr)
-	read_data_words = [None] * 8 
+	read_data_words = [None] * 8
 
         for i in range(8):
-            csr_addr = sna_addr + self.DATA_REG_OFFSET + (i * 8) 
+            csr_addr = sna_addr + self.DATA_REG_OFFSET + (i * 8)
 	    (status, ret_data) = self.probe.csr_peek(
 		    csr_addr = csr_addr, csr_width_words = 1)
             if status:
@@ -186,7 +186,7 @@ class DDR(object):
                 logger.error('Error writing data value: {0}'.format(error_msg))
                 return (False, None)
 
-        return (True, read_data_words) 
+        return (True, read_data_words)
 
     def _get_sna_addr(self, phys_addr):
         """ Which SNA address to write to for the specified phys address """
