@@ -8,6 +8,9 @@ all: install
 
 install: install-logtools
 
+clean:
+	echo nothing to clean
+
 ### Python script install targets for projectdb targets
 
 install-logtools:
