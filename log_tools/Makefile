@@ -2,7 +2,7 @@ WORKSPACE ?= ../..
 SDKDIR ?= $(WORKSPACE)/FunSDK
 SDK_INSTALL_DIR ?= $(SDKDIR)
 
-### Default to C targets for buildling locally 
+### Just install the scripts
 
 all: install
 
