@@ -1032,13 +1032,13 @@ def server_connect(args):
         force_connect = True
         logger.info('Force connection: {0}'.format(force_connect))
 
-    probe = connect(dut_name, mode, force_connect, chip=args.chip[0])
+    probe = connect(dut_name, mode, force_connect)
     if probe is None:
         print('Failed to connect to dut: {0}'.format(dut_name, mode))
         return
 
-def connect(dut_name, mode, force_connect=False, chip="f1"):
-    logger.debug('dut: {0} mode: {1} chip: {2}'.format(dut_name, mode, chip))
+def connect(dut_name, mode, force_connect=False):
+    logger.debug('dut: {0} mode: {1}'.format(dut_name, mode))
     if mode == 'i2c':
         dut_i2c_info = dut().get_i2c_info(dut_name)
         if dut_i2c_info is None:
@@ -1051,17 +1051,20 @@ def connect(dut_name, mode, force_connect=False, chip="f1"):
             i2c_probe_ip = dut_i2c_info[2]
             i2c_slave_addr = dut_i2c_info[3]
             i2c_bitrate = dut_i2c_info[4]
+            chip_type = dut_i2c_info[5]
             status = dbgprobe().connect(mode='i2c', bmc_board=False,
                                         probe_ip_addr=i2c_probe_ip,
                                         probe_id=i2c_probe_serial,
                                         slave_addr=i2c_slave_addr,
                                         force=force_connect,
-                                        chip_type=chip,
+                                        chip_type=chip_type,
                                         i2c_bitrate=i2c_bitrate)
         else:
             bmc_ip = dut_i2c_info[1]
+            chip_type = dut_i2c_info[2]
             status = dbgprobe().connect(mode='i2c', bmc_board=True,
-                                        bmc_ip_address=bmc_ip)
+                                        bmc_ip_address=bmc_ip,
+                                        chip_type=chip_type)
     elif mode == 'jtag':
         dut_jtag_info = dut().get_jtag_info(dut_name)
         if dut_jtag_info is None:
@@ -1070,19 +1073,21 @@ def connect(dut_name, mode, force_connect=False, chip="f1"):
         if dut_jtag_info[0] is False:
             jtag_probe_id = dut_jtag_info[1]
             jtag_probe_ip = dut_jtag_info[2]
+            chip_type = dut_jtag_info[3]
             status = dbgprobe().connect(mode='jtag', bmc_board=False,
                                         probe_ip_addr = jtag_probe_ip,
                                         probe_id = jtag_probe_id,
-                                        chip_type=chip)
+                                        chip_type=chip_type)
         else:
             bmc_ip = dut_jtag_info[1]
             jtag_probe_id = dut_jtag_info[2]
             jtag_probe_ip = dut_jtag_info[3]
+            chip_type = dut_jtag_info[4]
             status = dbgprobe().connect(mode='jtag', bmc_board=True,
                                         bmc_ip_address=bmc_ip,
                                         probe_ip_addr=jtag_probe_ip,
                                         probe_id = jtag_probe_id,
-                                        chip_type=chip)
+                                        chip_type=chip_type)
     elif mode == 'pcie':
         dut_pcie_info = dut().get_pcie_info(dut_name)
         if dut_pcie_info is None:
@@ -1093,14 +1098,16 @@ def connect(dut_name, mode, force_connect=False, chip="f1"):
             pcie_probe_ip = dut_pcie_info[2]
             status = dbgprobe().connect(mode='pcie', bmc_board=False,
                                         probe_ip_addr = pcie_probe_ip,
-                                        probe_id = pcie_ccu_bar)
+                                        probe_id = pcie_ccu_bar,
+                                        chip_type=chip_type)
         else:
             bmc_ip = dut_pcie_info[1]
             pcie_ccu_bar = dut_pcie_info[2]
             pcie_probe_ip = dut_pcie_info[3]
             status = dbgprobe().connect(mode='pcie', bmc_board=False,
                                         probe_ip_addr=pcie_probe_ip,
-                                        probe_id = pcie_ccu_bar)
+                                        probe_id = pcie_ccu_bar,
+                                        chip_type=chip_type)
 
     else:
         print('Mode: {} is not yet supported!'.format(mode))
