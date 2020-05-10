@@ -53,14 +53,15 @@ setup(
     package_data = {'probeutils': ["probeutils/dut.cfg"]},
     cmdclass={'jtaginstall': JtagExtCommands},
     install_requires = [
-        'aardvark_py',
-        'argparse',
+        'aardvark-py==5.40',
+        'argcomplete==1.9.4',
         'jsocket==1.6',
-        'logging',
+        'logging==0.4.9.6',
         'cmd2==0.8.8',
         'argcomplete==1.9.4',
-        'pyusb',
-        'paramiko',
-        'urllib3'
+        'pyparsing==2.4.7',
+        'pyusb==1.0.2',
+        'paramiko==2.7.1',
+        'urllib3==1.22'
     ],
 )
