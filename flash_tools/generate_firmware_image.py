@@ -31,7 +31,6 @@ import pkcs11
 import pkcs11.util.rsa
 import pkcs11.util.ec
 
-
 # FIXME: this should be a shared constants file with SBPFirmware
 RSA_KEY_SIZE_IN_BITS = 2048
 SIGNING_INFO_SIZE = 2048
@@ -637,6 +636,18 @@ def sign_binary(binary, sign_key, der_encoded=False, do_not_append=False):
     return append_signature_to_binary(binary, signature)
 
 
+
+
+def hexstr_to_bytes(s):
+    ''' remove delimiting characters that can be useful to a user specifying long hex values
+    the user can enter something like 0000_0000_0000_1234 instead of 0000000000001234
+    which is easier to read and enter for most people '''
+    if s is not None:
+        DELIMITER_SET = set(':_-.') # other possible delimiters like quote and pipe are awkward with shells
+        pure_hex = ''.join(c for c in s if c not in DELIMITER_SET)
+        return binascii.a2b_hex(pure_hex)
+    return None
+
 def cert_gen(outfile, cert_key, cert_key_file, sign_key, serial_number,
              serial_number_mask, dflags, modulus=None):
 
@@ -644,14 +655,14 @@ def cert_gen(outfile, cert_key, cert_key_file, sign_key, serial_number,
     to_be_signed = struct.pack('<4I', MAGIC_NUMBER_CERTIFICATE, dflags, 0, 0)
 
     # SERIAL NUMBER
-    s_num = binascii.unhexlify(serial_number)
+    s_num = hexstr_to_bytes(serial_number)
     if len(s_num) != SERIAL_INFO_NUMBER_SIZE:
         raise ValueError("Serial Number length must be exactly " +
                              str(SERIAL_INFO_NUMBER_SIZE) + " bytes long")
     to_be_signed += s_num
 
     # SERIAL NUMBER MASK
-    s_num_mask = binascii.unhexlify(serial_number_mask)
+    s_num_mask = hexstr_to_bytes(serial_number_mask)
     if len(s_num_mask) != SERIAL_INFO_NUMBER_SIZE:
         raise ValueError("Serial Number Mask length must be exactly " +
                              str(SERIAL_INFO_NUMBER_SIZE) + " bytes long")
