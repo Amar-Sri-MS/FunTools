@@ -571,7 +571,7 @@ def image_gen(outfile, infile, ftype, version, description, sign_key,
     if description:
         # Max allowed size is (block size - 1) to allow for terminating null
         if len(description) > SIGNED_DESCRIPTION_SIZE - 1:
-            raise ValueException( "Image description too long, max is {}".
+            raise ValueError( "Image description too long, max is {}".
                                   format(SIGNED_DESCRIPTION_SIZE-1))
         to_be_signed += description.encode() + b'\x00' * (SIGNED_DESCRIPTION_SIZE -
                                                           len(description))
@@ -586,7 +586,7 @@ def image_gen(outfile, infile, ftype, version, description, sign_key,
     if sign_key:
         if key_index is not None:
             if key_index < 0 or key_index >= MAX_KEYS_IN_KEYBAG:
-                raise ValueException("Key Index should between 0 and {0}".
+                raise ValueError("Key Index should between 0 and {0}".
                                      format(MAX_KEYS_IN_KEYBAG))
 
             cert = struct.pack("<I", (key_index | 0x80000000))
@@ -638,9 +638,7 @@ def sign_binary(binary, sign_key, der_encoded=False, do_not_append=False):
 
 
 def cert_gen(outfile, cert_key, cert_key_file, sign_key, serial_number,
-             serial_number_mask, debugger_flags, modulus=None):
-
-    dflags = int(debugger_flags, 16)
+             serial_number_mask, dflags, modulus=None):
 
     # MAGIC NUMBER, DEBUG FLAGS, 0, TAMPER FLAGS=0
     to_be_signed = struct.pack('<4I', MAGIC_NUMBER_CERTIFICATE, dflags, 0, 0)
@@ -648,14 +646,14 @@ def cert_gen(outfile, cert_key, cert_key_file, sign_key, serial_number,
     # SERIAL NUMBER
     s_num = binascii.unhexlify(serial_number)
     if len(s_num) != SERIAL_INFO_NUMBER_SIZE:
-        raise ValueException("Serial Number length must be exactly " +
+        raise ValueError("Serial Number length must be exactly " +
                              str(SERIAL_INFO_NUMBER_SIZE) + " bytes long")
     to_be_signed += s_num
 
     # SERIAL NUMBER MASK
     s_num_mask = binascii.unhexlify(serial_number_mask)
     if len(s_num_mask) != SERIAL_INFO_NUMBER_SIZE:
-        raise ValueException("Serial Number Mask length must be exactly " +
+        raise ValueError("Serial Number Mask length must be exactly " +
                              str(SERIAL_INFO_NUMBER_SIZE) + " bytes long")
     to_be_signed += s_num_mask
 
@@ -718,8 +716,8 @@ def parse_and_execute():
                         metavar="FILE")
 
     parser.add_argument("-d", "--debugger_flags", dest="debugger_flags",
-                        default="00" * 4,
-                        help="debugger_flags (hexadecimal, 4 bytes) (certificate)")
+                        default="0",
+                        help="debugger_flags (32 bit number) (certificate)")
 
     parser.add_argument("-e", "--encode", dest="der_encoded",
                         action='store_true',
@@ -861,7 +859,7 @@ def parse_and_execute():
 
         cert_gen(options.out_path, options.public_key, options.public_key_file,
                  options.sign_key, options.serial_number, options.serial_number_mask,
-                 options.debugger_flags)
+                 int(options.debugger_flags, 0))
 
     elif options.command == 'sign':
 
