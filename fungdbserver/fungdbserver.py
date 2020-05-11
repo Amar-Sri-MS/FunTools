@@ -782,6 +782,8 @@ fsps = [ "fsr", "fir", "fp" ]
 REGS = gprs + sprs + fprs + fsps
 
 def jtag_GetReg(regno):
+    if (regno >= len(REGS)):
+        return 0xdeadbeef
     r = REGS[regno]
     DEBUG("reading %s" % r)
     return jtag_ReadReg(r)
@@ -994,7 +996,7 @@ class GDBClientHandler(object):
                     ERROR("unknown 'g' subcommand?")
 
             def handle_p(subcmd):
-                regno = int(subcmd)
+                regno = int(subcmd, 16)
                 r = jtag_GetReg(regno)
                 s = struct.pack('<I', r).encode('hex')
                 DEBUG("reg %s: %s" % (regno, s))
