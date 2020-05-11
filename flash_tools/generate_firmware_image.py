@@ -850,8 +850,8 @@ def parse_and_execute():
 
     elif options.command == 'certificate':
 
-        if options.serial_number is None or options.serial_number_mask is None:
-            print('Serial number and mask required for certificate (Use -h for full info).')
+        if options.serial_number is None:
+            print('Serial number required for certificate (Use -h for full info).')
             sys.exit(1)
 
         # 2 options to specify the public key: in HSM or in file
