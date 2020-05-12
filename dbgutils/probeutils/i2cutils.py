@@ -109,6 +109,8 @@ class aardvark:
             logger.error(status_msg)
             return (False, status_msg)
 
+        logger.info('Connecting to slave: {0} bitrate:{1}'.format(
+            hex(self.slave_addr), self.bitrate))
         status = aa_i2c_bitrate(h, self.bitrate)
         if status != self.bitrate:
             status_msg = ('Error Configuring the bitrate!'

@@ -35,6 +35,8 @@ class I2C_Client(object):
     # opens remote i2c device connection
     def connect(self, ip_address, dev_id, slave_addr=None, force_connect=False,
                 chip_type='f1', i2c_bitrate=500):
+        logger.info('i2c proxy ip: {} chip_type: {} i2c_bitrate: {}'.format(
+            ip_address, chip_type, i2c_bitrate))
         self.con_handle = jsocket.JsonClient(address = ip_address,
                                port = constants.SERVER_TCP_PORT)
         if self.con_handle is None:

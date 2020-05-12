@@ -3,6 +3,7 @@
 import sys
 import json
 import logging
+import socket
 import pkg_resources
 
 from i2cutils import constants
@@ -37,6 +38,11 @@ class dut(object):
             i2c_slave_addr = int(i2c_slave_addr, 0)
             i2c_probe_serial = dut_cfg.get('i2c_probe_serial', None)
             i2c_bitrate = dut_cfg.get('i2c_bitrate', constants.DEFAULT_I2C_XFER_BIT_RATE)
+            try:
+                i2c_proxy_ip = socket.gethostbyname(i2c_proxy_ip)
+            except socket.error:
+                logger.error('Invalid i2c proxy: {}'.format(i2c_proxy_ip))
+                i2c_proxy_ip = None
             if not i2c_probe_serial or not i2c_slave_addr or not i2c_proxy_ip:
                 logger.error('Invalid dut db for dut: {}'.format(dut))
                 return None
@@ -46,6 +52,10 @@ class dut(object):
                          ' Specify bmc ip address!').format(dut))
             return None
         if bmc is True:
+            try:
+                bmc_ip = socket.gethostbyname(bmc_ip)
+            except socket.error:
+                return None
             return (True, bmc_ip, chip_type)
         else:
             return (False, i2c_probe_serial, i2c_proxy_ip,
@@ -64,6 +74,11 @@ class dut(object):
         jtag_probe_id = dut_cfg.get('jtag_probe_id', None)
         jtag_probe_ip = dut_cfg.get('jtag_probe_ip', None)
         jtag_bitrate = dut_cfg.get('jtag_bitrate', None)
+        try:
+            jtag_probe_ip = socket.gethostbyname(jtag_probe_ip)
+        except socket.error:
+            logger.error('Invalid jtag probe ip: {}'.format(jtag_probe_ip))
+            jtag_probe_ip = None
         if not jtag_probe_id or not jtag_probe_ip or not jtag_bitrate:
             logger.error('Invalid dut db for dut: {}'.format(dut))
             return None

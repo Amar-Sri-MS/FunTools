@@ -152,6 +152,8 @@ def _ir_shiftin(width, data):
 @command()
 def csr_probe(dev_type, ip_addr, jtag_bitrate):
     '''Connects to Codescape jtag probe and enables csr tap select'''
+    logger.info('Connecting to SysProbe:{}[{}] jtag_bitrate:{}'.format(
+        ip_addr, dev_type, jtag_bitrate))
     status = probe(dev_type, ip_addr, force_disconnect=True, verbose=True)
     status = str(status)
     if (("SysProbe" not in status) or ("Firmware" not in status) or
