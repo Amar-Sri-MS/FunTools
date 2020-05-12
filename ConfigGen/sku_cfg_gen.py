@@ -41,28 +41,17 @@ class SKUCfgGen():
 
         return board_id_cfg.get('fungible_boards', None)
 
-    def _get_sku_config(self):
-        board_cfg = dict()
-
+    def get_posix_or_emu_configs(self, board_cfg):
+        """Get the configuration for all the posix or emulations that
+        use the target chip.
+        """
         _path = 'sku_config/'
-        if self.target_chip == 'f1':
-            _path = _path + 'f1_skus/'
-        elif self.target_chip == 's1':
-            _path = _path + 's1_skus/'
-        else:
-            raise argparse.ArgumentTypeError('Target chip: {} is not valid!'.format(self.target_chip))
-
         if 'posix' in (self.target_machine):
-            _path = _path + 'posix/*.cfg'
-        elif 'emu' in (self.target_machine):
-            _path = _path + 'emulation/*.cfg'
-        elif 'qemu' in (self.target_machine):
-            _path = _path + 'qemu/*.cfg'
+            _path = _path + 'posix/%s_*.cfg' % self.target_chip
         else:
-            _path = _path + 'boards/*.cfg'
+            _path = _path + 'emulation/%s_*.cfg' % self.target_chip
 
         file_patterns = [_path]
-
         logger.debug('board config paths: {}'.format(file_patterns))
         for file_pat in file_patterns:
             for cfg in glob.glob(os.path.join(self.input_dir, file_pat)):
@@ -76,6 +65,103 @@ class SKUCfgGen():
                         logger.error("Failed to load config file: {}".format(cfg))
                         raise
                     board_cfg = jsonutils.merge_dicts(board_cfg, cfg_json)
+
+        return board_cfg
+
+    def is_cfg_target_board(self, cfg_json):
+        """Check if the configuration file is for the target
+        being built.
+        """
+        for key in list(cfg_json['skus'].keys()):
+            # First check the target chip
+            if 'chip' not in cfg_json['skus'].get(key, {}).get('PlatformInfo', {}):
+                continue
+            chip = cfg_json['skus'][key]['PlatformInfo']['chip']
+            if chip not in self.target_chip:
+                return False
+            # Next check the configuration file is for a board
+            if 'machine' not in cfg_json['skus'].get(key, {}).get('PlatformInfo', {}):
+                return False
+            machine = cfg_json['skus'][key]['PlatformInfo']['machine']
+            if machine != 'board':
+                return False
+            # Don't add the chip and machine keys to the output.
+            del cfg_json['skus'][key]['PlatformInfo']['chip']
+            del cfg_json['skus'][key]['PlatformInfo']['machine']
+            return True
+
+        return False
+
+    def get_board_configs(self, board_cfg):
+        """Get the configuration for all the boards that use the target
+        chip.
+        """
+        _path = 'sku_config/*/*.cfg'
+        file_patterns = [_path]
+        for file_pat in file_patterns:
+            for cfg in glob.glob(os.path.join(self.input_dir, file_pat)):
+                logger.debug('Processing per sku config: {}'.format(cfg))
+                with open(cfg, 'r') as f:
+                    cfg_json = f.read()
+                    cfg_json = jsonutils.standardize_json(cfg_json)
+                    try:
+                        cfg_json = json.loads(cfg_json)
+                    except:
+                        logger.error("Failed to load config file: {}".format(cfg))
+                        raise
+
+                    if not self.is_cfg_target_board(cfg_json):
+                        continue
+
+                    board_cfg = jsonutils.merge_dicts(board_cfg, cfg_json)
+        return board_cfg
+
+    def get_additions(self, board_cfg, addition_machine):
+        """Add addtional configuration if needed."""
+        _path = 'sku_config/additions/%s/*.cfg' % self.target_chip
+        file_patterns = [_path]
+        logger.debug('Additional config paths: {}'.format(file_patterns))
+        for file_pat in file_patterns:
+            for cfg in glob.glob(os.path.join(self.input_dir, file_pat)):
+                logger.debug('Processing per sku config: {}'.format(cfg))
+                with open(cfg, 'r') as f:
+                    cfg_json = f.read()
+                    cfg_json = jsonutils.standardize_json(cfg_json)
+                    try:
+                        cfg_json = json.loads(cfg_json)
+                    except:
+                        logger.error("Failed to load config file: {}".format(cfg))
+                        raise
+
+                    # Check the additional file is for the machine being built
+                    if 'machine' not in cfg_json['PlatformInfo'].keys():
+                        continue
+                    machine = cfg_json['PlatformInfo']['machine']
+                    if machine != addition_machine:
+                        continue;
+
+                    # Remove the PlatformInfo key
+                    del cfg_json['PlatformInfo']
+
+                    board_cfg = jsonutils.merge_dicts(board_cfg, cfg_json)
+
+        return board_cfg
+
+    def _get_sku_config(self):
+        board_cfg = dict()
+
+        if 'posix' in (self.target_machine):
+            board_cfg = self.get_posix_or_emu_configs(board_cfg)
+            addition_machine = 'posix'
+        elif 'emu' in (self.target_machine):
+            board_cfg = self.get_posix_or_emu_configs(board_cfg)
+            addition_machine = 'emulation'
+        else:
+            board_cfg = self.get_board_configs(board_cfg)
+            addition_machine = 'board'
+
+        # Process additional configuration files
+        board_cfg = self.get_additions(board_cfg, addition_machine)
 
         return board_cfg
 
