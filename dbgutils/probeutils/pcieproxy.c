@@ -328,8 +328,8 @@ swab16(uint16_t u16)
 #define CCU_ID_CSRTYPE_PUT(x)	((x) << CCU_ID_CSRTYPE_SHF)
 #define CCU_ID_CSRTYPE_GET(x)	(((x) >> CCU_ID_CSRTYPE_SHF) & CCU_ID_CSRTYPE_MSK)
 
-#define CCU_ID_CHIPID_SHF	(21)
-#define CCU_ID_CHIPID_MSK	(0x3ff)
+#define CCU_ID_CHIPID_SHF	(23)
+#define CCU_ID_CHIPID_MSK	(0xff)
 #define CCU_ID_CHIPID_PUT(x)	((x) << CCU_ID_CHIPID_SHF)
 #define CCU_ID_CHIPID_GET(x)	(((x) >> CCU_ID_CHIPID_SHF) & CCU_ID_CHIPID_MSK)
 
