@@ -34,7 +34,8 @@ def eval_f1_mac(bmc_mac, dpu_num):
 
 
 def wait_for(wildcard, num_parts, timeout, min_size):
-  for _ in range(0, timeout):
+  start_time = time.time()
+  while time.time() < start_time + timeout:
     files = glob.glob(wildcard)
     if len(files) >= num_parts and \
         all(map(lambda x: os.path.getsize(x) >= min_size, files)):
@@ -52,6 +53,8 @@ def dump_parts_all_wildcard(f1_mac):
   return INPUT_DUMP_PREFIX + f1_mac + '*'
 
 
+# This function normally returns prefixed dump name:
+# dir/hbmdump_c82c2b00346c_e90924*
 def dump_parts_latest_wildcard(f1_mac):
   all_parts = glob.glob(dump_parts_all_wildcard(f1_mac))
   if len(all_parts) == 0:
