@@ -15,6 +15,13 @@ if [[ "${EUID}" -ne 0 ]]; then
   exit 1
 fi
 
+# SWSYS-890: Disable the redis-server on COMe host OS
+# cclinux is having it's own copy inside the docker
+Update_disable_redis_server
+{
+  systemctl disable redis-server > /dev/null 2>&1
+}
+
 # SWSYS-874:
 Update_resolv_conf_smlink()
 {
@@ -95,5 +102,7 @@ Update_grub_cmdline
 Update_Fungible_systemd_services
 
 Update_resolv_conf_smlink
+
+Update_disable_redis_server
 
 exit 0
