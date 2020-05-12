@@ -61,6 +61,7 @@ def dump_parts_latest_wildcard(f1_mac):
 
   return "_".join(ts_part[0][1].split('_')[:-1]) + '*'
 
+
 if len(sys.argv) < 4:
   print('Usage ' + sys.argv[0] + ' <BMC_MAC> <DPU_NUMBER> <BUILD>')
   print('Example: ' + sys.argv[0] + ' aa:bb:cc:dd:ee:ff 0 UNKNOWN')
