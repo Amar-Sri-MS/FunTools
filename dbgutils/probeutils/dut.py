@@ -63,11 +63,12 @@ class dut(object):
         chip_type = dut_cfg.get('chip_type', None)
         jtag_probe_id = dut_cfg.get('jtag_probe_id', None)
         jtag_probe_ip = dut_cfg.get('jtag_probe_ip', None)
-        if not jtag_probe_id or not jtag_probe_ip:
+        jtag_bitrate = dut_cfg.get('jtag_bitrate', None)
+        if not jtag_probe_id or not jtag_probe_ip or not jtag_bitrate:
             logger.error('Invalid dut db for dut: {}'.format(dut))
             return None
 
-        return (False, jtag_probe_id, jtag_probe_ip, chip_type)
+        return (False, jtag_probe_id, jtag_probe_ip, chip_type, jtag_bitrate)
 
     def get_pcie_info(self, dut):
         if dut == None:

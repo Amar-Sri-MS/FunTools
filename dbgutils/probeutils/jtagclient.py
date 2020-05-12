@@ -20,8 +20,8 @@ class JTAG_Client(object):
             self.disconnect()
 
     # Connects to Codescape probe
-    def connect(self, ip_address, dev_type):
-        (status, status_msg) = jtagutils.csr_probe(dev_type, ip_address)
+    def connect(self, ip_address, dev_type, jtag_bitrate):
+        (status, status_msg) = jtagutils.csr_probe(dev_type, ip_address, jtag_bitrate)
         if status is True:
             self.connected = True
             logger.info("Connection Successful!")
