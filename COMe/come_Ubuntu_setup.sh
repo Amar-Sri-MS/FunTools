@@ -40,11 +40,11 @@ Update_resolv_conf_smlink()
 # Logging in /var/log/syslog etc will still work
 Update_systemd_journal_cfg()
 {
-  JRNL_CFG=/etc/systemd/journal.conf
-  if [ ! -f ${JRNL_CFG} ]; then
+  JRNLD_CFG=/etc/systemd/journald.conf
+  if [ ! -f ${JRNLD_CFG} ]; then
     return
   fi
-  sed -i 's/^#Storage=.*/Storage=none/g' journald.conf
+  sed -i 's/^#Storage=.*/Storage=none/g' ${JRNLD_CFG}
   if [ -d /var/log/journal ]; then
     DATE=`date +%Y-%m-%d_%H-%M-%S`
     mv /var/log/journal /var/log/journal_${DATE}_FUN_BKP
