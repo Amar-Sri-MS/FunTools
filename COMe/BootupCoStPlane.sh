@@ -222,6 +222,29 @@ else
 	echo "tftpd-hpa server is disabled"
 fi
 
+TFTPBOOT_DIR=/var/lib/tftpboot
+if [[ -d $TFTPBOOT_DIR ]]; then
+	HBM_SHARD_PREFIX=hbmdump_
+	# Look for only the HBM shard files
+	FILES=`ls $TFTPBOOT_DIR/hbmdump_* 2>/dev/null`
+	if [[ ! -z "$FILES" ]]; then
+		UPTIME=`cut -f1 -d. /proc/uptime`
+		UPTIME_EPOCH=`date --utc -d "$UPTIME seconds ago" +"%s"`
+		echo "COMe UPTIME since epoch $UPTIME_EPOCH"
+		for F in $FILES; do
+			# Time of last access of the file
+			FILE_LAST_ACCESS_TIME=`stat -c %x $F`
+			FILE_LAST_ACCESS_TIME_EPOCH=`date --utc -d "$FILE_LAST_ACCESS_TIME" +"%s"`
+			if [[ "$UPTIME_EPOCH" > "$FTIME" ]]; then
+				echo "Deleting file $F last accessed time since epoch $FILE_LAST_ACCESS_TIME_EPOCH"
+				rm -f "$F"
+			fi
+		done
+
+		sync
+	fi
+fi
+
 IPMI_LAN="ipmitool -U admin -P admin lan print 1"
 AWK_LAN='/IP Address[ ]+:/ {print $4}'
 REBOOT_FILE="/tmp/host_reboot"
