@@ -78,7 +78,7 @@ print('Assembling for DPU#' + str(dpu_num) + ' MAC: ' + f1_mac)
 
 ensure_dir(OUTPUT_DUMP_DIR)
 # Delete old dumps
-dump_wildcard = OUTPUT_DUMP_DIR + DUMP_PREFIX + "_" + str(dpu_num) + '*.bz2'
+dump_wildcard = OUTPUT_DUMP_DIR + DUMP_PREFIX + "_D" + str(dpu_num) + '*.bz2'
 map(unlink_verbose, sorted(glob.glob(dump_wildcard), reverse = True)[3:])
 
 # Wait for pieces with timeout
@@ -107,3 +107,4 @@ subprocess.call('/bin/tar -cjf ' + \
   output_file_name + '.bz2 --remove-files ' + output_file_name, shell=True)
 
 print('Elapsed time: ' + str(time.time() - start_time) + ' seconds')
+
