@@ -112,47 +112,6 @@ static void _print_version(void)
 	}
 }
 
-/* quiet logging -- just log events for proxy mode to avoid print
- * sensitive information like crypto keys. For now ignore the json
- * arg, but we could do something useful like trying to fish the
- * verb out of it
- */
-enum log_event {
-	LOG_RX,
-	LOG_TX,
-	LOG_RX_LOCAL,
-	LOG_RX_OLD,
-	LOG_RX_ERROR,
-};
-
-static void _quiet_log(enum log_event mode, const struct fun_json *json)
-{
-	const char *msg = NULL;
-
-	switch (mode) {
-	case LOG_RX:
-		msg = "RX";
-		break;
-	case LOG_TX:
-		msg = "TX";
-		break;
-	case LOG_RX_LOCAL:
-		msg = "RX local";
-		break;
-	case LOG_RX_OLD:
-		msg = "RX old";
-		break;
-	case LOG_RX_ERROR:
-		msg = "RX error";
-		break;
-	default:
-		msg = "unknown mystery";
-		break;
-	};
-
-	printf("dpc %s event\n", msg);
-}
-
 // ===============  HISTORY SUPPORT ===============
 
 /* simple readline support */
@@ -951,8 +910,6 @@ static void apply_command_locally(const struct fun_json *json)
 		if (_verbose_log) {
 			fun_json_printf_with_flags(PRELUDE BLUE POSTLUDE "Locally applied command: %s" NORMAL_COLORIZE "\n", result,
 				FUN_JSON_PRETTY_PRINT_HUMAN_READABLE_STRINGS);
-		} else {
-			_quiet_log(LOG_RX_LOCAL, result);
 		}
 	}
 	fun_json_release(j);
@@ -978,8 +935,6 @@ static bool _do_send_cmd(struct dpcsock *sock, char *line,
 		fun_json_printf_with_flags(INPUT_COLORIZE "input => %s"
 				NORMAL_COLORIZE "\n",
 				json, FUN_JSON_PRETTY_PRINT_HUMAN_READABLE_STRINGS);
-	} else {
-		_quiet_log(LOG_TX, json);
 	}
 
 	// Hack to list local commands if the command is 'help'
@@ -1082,8 +1037,6 @@ static bool _print_response_info(const struct fun_json *response) {
 			fun_json_printf_with_flags("Old style output (NULL) - got %s\n",
 					response,
 					FUN_JSON_PRETTY_PRINT_HUMAN_READABLE_STRINGS);
-		} else {
-			_quiet_log(LOG_RX_OLD, response);
 		}
 	} else if (!fun_json_lookup_int64(response, "tid", &tid)) {
 		printf("No tid\n");
@@ -1095,8 +1048,6 @@ static bool _print_response_info(const struct fun_json *response) {
 		if (_verbose_log) {
 			printf(PRELUDE BLUE POSTLUDE "output => *** error: '%s'"
 			       NORMAL_COLORIZE "\n", str);
-		} else {
-			_quiet_log(LOG_RX_ERROR, response);
 		}
 	} else {
 		if (_verbose_log) {
@@ -1110,8 +1061,6 @@ static bool _print_response_info(const struct fun_json *response) {
 			       NORMAL_COLORIZE "\n",
 			       pp);
 			free(pp);
-		} else {
-			_quiet_log(LOG_RX, response);
 		}
 	}
 	return ok;
@@ -1340,8 +1289,6 @@ int json_handle_req(struct dpcsock *jsock, const char *path,
 	}
 	if (_verbose_log)
 		fun_json_printf_with_flags("input => %s\n", json, FUN_JSON_PRETTY_PRINT_HUMAN_READABLE_STRINGS);
-	else
-		_quiet_log(LOG_TX, json);
 
 	bool ok = _write_to_sock(json, jsock);
 	fun_json_release(json);
@@ -1362,8 +1309,6 @@ int json_handle_req(struct dpcsock *jsock, const char *path,
 					  100, flags, &allocated_size);
 	if (_verbose_log)
 		printf("output => %s\n", pp2);
-	else
-		_quiet_log(LOG_RX, output);
 
 	if (!pp2)
 		return -1;
