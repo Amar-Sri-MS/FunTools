@@ -13,8 +13,10 @@ import jsocket
 import time
 import logging
 import traceback
+import tempfile
 import urllib
 import tarfile
+import shutil
 from array import array
 from probeutils.dbgclient import *
 from probeutils.dut import *
@@ -373,13 +375,17 @@ def csr_find(args):
         return
 
 def csr_metadata_dochub():
-    url = 'http://dochub.fungible.local/doc/jenkins/master/funsdk/latest/Linux/csr-cfg.tgz'
+    url = 'http://dochub/doc/jenkins/master/funsdk/latest/Linux/csr-cfg.tgz'
     file_tmp = urllib.urlretrieve(url, filename=None)[0]
     base_name = os.path.basename(url)
     file_name, file_extension = os.path.splitext(base_name)
     tar = tarfile.open(file_tmp)
-    tar.extract('./'+ constants.CSR_CFG_DIR + constants.CSR_METADATA_FILE, '/tmp')
-    return True
+    temp_dir = tempfile.mkdtemp()
+    output_dir = os.path.join(temp_dir, constants.CSR_CFG_DIR)
+    tar.extract('./'+ constants.CSR_CFG_DIR + constants.CSR_METADATA_FILE, temp_dir)
+    metadata_file = os.path.join(output_dir, constants.CSR_METADATA_FILE)
+
+    return metadata_file
 
 def csr_load_metadata(args):
     if args.default:
@@ -1074,9 +1080,11 @@ def connect(dut_name, mode, force_connect=False):
             jtag_probe_id = dut_jtag_info[1]
             jtag_probe_ip = dut_jtag_info[2]
             chip_type = dut_jtag_info[3]
+            jtag_bitrate = dut_jtag_info[4]
             status = dbgprobe().connect(mode='jtag', bmc_board=False,
                                         probe_ip_addr = jtag_probe_ip,
                                         probe_id = jtag_probe_id,
+                                        jtag_bitrate = jtag_bitrate,
                                         chip_type=chip_type)
         else:
             bmc_ip = dut_jtag_info[1]
@@ -1816,11 +1824,9 @@ class csr_metadata:
         return True
 
     def download_metadata_from_dochub(self):
-        metadata_file = os.path.join(constants.TMP_DIR,
-                    constants.CSR_CFG_DIR, constants.CSR_METADATA_FILE)
-        if os.path.exists(metadata_file): os.remove(metadata_file)
+        metadata_file = None
         try:
-            csr_metadata_dochub()
+            metadata_file = csr_metadata_dochub()
         except Exception as e:
             logging.error(traceback.format_exc())
             print('Failed to get csr metadata from dochub!'
@@ -1832,16 +1838,19 @@ class csr_metadata:
         return metadata_file
 
     def load_metadata_from_dochub(self):
-        status = self.download_metadata_from_dochub()
-        if not status:
+        metadata_file = self.download_metadata_from_dochub()
+        if not metadata_file:
              print('Failed to download csr metadata!')
              return False
-        metadata_file = os.path.join(constants.TMP_DIR,
-                    constants.CSR_CFG_DIR, constants.CSR_METADATA_FILE)
         if not os.path.exists(metadata_file):
             print "Failed to find matadata file: {} after download!".format(metadata_file)
             return None
         status = self._load_metadata_file(metadata_file)
+        tmp_dir_path =  os.path.join('/', *(metadata_file.split(os.path.sep)[:3]))
+        if tmp_dir_path.startswith("/tmp/"):
+            shutil.rmtree(tmp_dir_path)
+        else:
+            logger.error('Invalid temp dir path: {}'.format(tmp_dir_path))
         if not status:
             return False
         return True

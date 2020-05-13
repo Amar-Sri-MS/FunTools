@@ -29,8 +29,9 @@ class DBG_Client(object):
                 bmc_board=False, bmc_ip_address=None,
                 probe_id=None, slave_addr = None,
                 force = False,
-                chip_type='f1',
-                i2c_bitrate=constants.DEFAULT_I2C_XFER_BIT_RATE):
+                chip_type=None,
+                i2c_bitrate=None,
+                jtag_bitrate=None):
         logger.debug("DBG_Client connect {0}".format(chip_type));
         if self.connected is True:
             try:
@@ -48,7 +49,7 @@ class DBG_Client(object):
             elif mode == 'jtag':
                 if (_platform == "linux" or _platform == "linux2"):
                     dbgclient = JTAG_Client(chip_type)
-                    status = dbgclient.connect(probe_ip_addr, probe_id)
+                    status = dbgclient.connect(probe_ip_addr, probe_id, jtag_bitrate)
                 else:
                     raise ValueError('Mode: "{0}" is not supported on this platform!'.format(mode))
             elif mode == 'pcie':

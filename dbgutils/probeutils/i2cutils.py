@@ -109,6 +109,8 @@ class aardvark:
             logger.error(status_msg)
             return (False, status_msg)
 
+        logger.info('Connecting to slave: {0} bitrate:{1}'.format(
+            hex(self.slave_addr), self.bitrate))
         status = aa_i2c_bitrate(h, self.bitrate)
         if status != self.bitrate:
             status_msg = ('Error Configuring the bitrate!'
@@ -339,14 +341,20 @@ class bmc:
 		return num_bytes_wrote
 
 class i2c:
-    def __init__(self, dev_id=None, slave_addr=None, bmc_ip_address=None,
-                 bitrate=constants.DEFAULT_I2C_XFER_BIT_RATE):
+    def __init__(self, dev_id=None, slave_addr=None,
+            bmc_ip_address=None, bitrate=None):
         self.bmc_board = False
+        self.bitrate = None
         if bmc_ip_address:
             self.bmc_board = True
             self.master = bmc(bmc_ip_address)
         else:
-            self.master = aardvark(dev_id, slave_addr, bitrate)
+            self.bitrate = bitrate
+            if not self.bitrate:
+                self.bitrate = constants.DEFAULT_I2C_XFER_BIT_RATE
+                logger.error('Invalid bitrate!'
+                    ' using default {}'.format(self.bitrate))
+            self.master = aardvark(dev_id, slave_addr, self.bitrate)
 
     # Check i2c device presence and open the device.
     # Returns the device handle

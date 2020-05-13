@@ -150,15 +150,21 @@ def _ir_shiftin(width, data):
 
 # Connects to Codescape jtag probe and enables csr tap select
 @command()
-def csr_probe(dev_type, ip_addr):
+def csr_probe(dev_type, ip_addr, jtag_bitrate):
     '''Connects to Codescape jtag probe and enables csr tap select'''
+    logger.info('Connecting to SysProbe:{}[{}] jtag_bitrate:{}'.format(
+        ip_addr, dev_type, jtag_bitrate))
     status = probe(dev_type, ip_addr, force_disconnect=True, verbose=True)
     status = str(status)
     if (("SysProbe" not in status) or ("Firmware" not in status) or
         ("ECONNREFUSED" in status) or ("InvalidArgError" in status)):
         return (False, status)
-    jtag_tckrate = constants.EMU_TCKRATE if constants.EMULATION == True \
-            else constants.TCKRATE
+    if jtag_bitrate:
+        jtag_tckrate = jtag_bitrate
+    else:
+        jtag_tckrate = constants.EMU_TCKRATE \
+                if constants.EMULATION == True \
+                else constants.TCKRATE
     status = tckrate(jtag_tckrate)
     logger.info('Connecting to Codescape jtag probe'
             ' (tckrate: {0})! statu: {1}'.format(jtag_tckrate, status))
