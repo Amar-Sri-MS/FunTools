@@ -1,7 +1,7 @@
 #!/bin/bash
 
 set -e
-#set -x
+set -x
 
 THIS_DIR=$(dirname $(realpath $0))
 
@@ -63,7 +63,7 @@ function fetch_dochub
 
 if [[ ! -n "$DKR_IMG_TAG" ]] ; then
     if [[ -f $WORKSPACE/build_info.txt ]] ; then
-	read DKR_IMG_TAG < $WORKSPACE/build_info.txt
+	DKR_IMG_TAG=$(cat $WORKSPACE/build_info.txt)
     else
 	DKR_IMG_TAG='test_build'
     fi
@@ -76,7 +76,7 @@ mkdir -p $DOCKER_BUILD_DIR
 # docker-build directory, just use it.
 
 DOC_IMG="docker.fungible.com/come_yocto:$DKR_IMG_TAG"
-DOC_TAR="docker.fungible.com-come_yocto-$DKR_IMG_TAG.tar.xz"
+DOC_TAR="docker.fungible.com-come_yocto-$DKR_IMG_TAG.tar.gz"
 DOCKERFILE="Dockerfile.come-yocto"
 
 if [[ ! -f $DOCKER_BUILD_DIR/$DOCKERFILE ]] ; then
@@ -118,4 +118,4 @@ echo "Building docker image..."
 docker build -t $DOC_IMG -f $DOCKER_BUILD_DIR/$DOCKERFILE $DOCKER_BUILD_DIR
 
 echo "Saving docker image to $DOC_TAR ..."
-docker save $DOC_IMG | xz -c > $DOC_TAR
+docker save $DOC_IMG | gzip -c > $DOC_TAR
