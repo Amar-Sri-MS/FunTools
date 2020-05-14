@@ -19,6 +19,9 @@ import socket
 class DpcExecutionError(Exception):
     pass
 
+class DpcExecutionException(Exception):
+    pass
+
 class DpcProxyError(Exception):
     pass
 
@@ -104,6 +107,9 @@ class DpcClient(object):
 
         if 'error' in r:
             raise DpcExecutionError(r['error'])
+
+        if 'exception' in r:
+            raise DpcExecutionException(r['exception'])
 
         return r['result']
 
