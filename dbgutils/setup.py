@@ -38,9 +38,9 @@ class JtagExtCommands(install):
 
 
 if _platform == "linux" or _platform == "linux2":
-    packages_list = ['probeutils', 'csrutils', 'dbgmacros', 'jtagutils']
+    packages_list = ['probeutils', 'csrutils', 'csr2utils', 'dbgmacros', 'jtagutils']
 else:
-    packages_list = ['probeutils', 'csrutils', 'dbgmacros']
+    packages_list = ['probeutils', 'csrutils', 'csr2utils', 'dbgmacros']
 
 setup(
     name = 'dbgutils',
