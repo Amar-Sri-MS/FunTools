@@ -12,11 +12,11 @@ import re
 import subprocess
 import sys
 
-from csrutils import dbgprobe
-from csrutils import csr_get_field
-from csrutils import csr_set_field
-from csrutils import hex_word_dump
-from csrutils import str_to_int
+from csrutils.csrutils import dbgprobe
+from csrutils.csrutils import csr_get_field
+from csrutils.csrutils import csr_set_field
+from csrutils.csrutils import hex_word_dump
+from csrutils.csrutils import str_to_int
 
 
 # Use the WORKSPACE environment variable to import the csr2 module.

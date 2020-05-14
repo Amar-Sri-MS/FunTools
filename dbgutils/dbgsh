@@ -12,8 +12,6 @@ import logging
 import os
 import string
 
-import csrutils.csr2utils
-
 from cmd2 import with_argparser
 from csrutils.csrutils import *
 
@@ -38,6 +36,9 @@ sys.argv = [sys.argv[0]] + csr2_remaining_args
 # The magic boolean that determines if we are in CSR1 or CSR2 mode.
 csr2_mode = csr2_args.csr2
 
+# csr2 has dependency on FunHW repo, So, for simplicity of usage don't import csr2utils
+if csr2_mode:
+    from csr2utils import *
 
 # Returns action class for field argument min length check
 def required_length_append(nmin):
@@ -120,9 +121,10 @@ class ArgFormatter(argparse.HelpFormatter):
 
 
 class dbgsh(cmd2.Cmd):
-    intro = 'Welcome to the debug shell.   Type help or ? to list commands.\n'
-
     global csr2_mode
+
+    intro = ('Welcome to the debug shell. Type help or ? to list commands.\n'
+            '\n\t********* MODE: CSR{} **********\n').format(2 if csr2_mode else 1)
 
     parser = argparse.ArgumentParser(prog='csr', formatter_class=ArgFormatter)
     subparsers = parser.add_subparsers(help='csr sub-command help')
@@ -133,7 +135,7 @@ class dbgsh(cmd2.Cmd):
     if not csr2_mode:
         parser_peek.set_defaults(func=csr_peek)
     else:
-        parser_peek.set_defaults(func=csrutils.csr2utils.csr2_peek)
+        parser_peek.set_defaults(func=csr2utils.csr2_peek)
     parser_peek.add_argument('-i', nargs=1,
         metavar=('csr_inst'), dest='csr_inst', type=str, help="csr instance")
     parser_peek.add_argument('-e', nargs=1,
@@ -174,7 +176,7 @@ class dbgsh(cmd2.Cmd):
             metavar=('raw_value'), dest='raw_value', type=str,
             help="csr value in big-endian 64-bit words")
     else:
-        parser_poke.set_defaults(func=csrutils.csr2utils.csr2_poke)
+        parser_poke.set_defaults(func=csr2utils.csr2_poke)
         parser_poke.add_argument('csr', nargs=1, type=str, help="csr name")
         parser_poke.add_argument('vals', nargs='*', type=str,
                                  help="csr values in big-endian 64-bit words")
@@ -184,14 +186,14 @@ class dbgsh(cmd2.Cmd):
                                          formatter_class=ArgFormatter)
         raw_peek.add_argument('addr', help="csr address")
         raw_peek.add_argument('length', help="csr length (64-bit words)")
-        raw_peek.set_defaults(func=csrutils.csr2utils.csr2_raw_peek)
+        raw_peek.set_defaults(func=csr2utils.csr2_raw_peek)
 
         raw_poke = subparsers.add_parser('raw_poke', help="CSR raw poke",
                                          formatter_class=ArgFormatter)
         raw_poke.add_argument('addr', help="csr address")
         raw_poke.add_argument('vals', nargs='*', help="64-bit words to poke: "
                                                       "(must equal register length)")
-        raw_poke.set_defaults(func=csrutils.csr2utils.csr2_raw_poke)
+        raw_poke.set_defaults(func=csr2utils.csr2_raw_poke)
 
     parser_decode = subparsers.add_parser('decode',
                 help="Decode csr bits", formatter_class=ArgFormatter)
@@ -223,7 +225,7 @@ class dbgsh(cmd2.Cmd):
     else:
         parser_find = subparsers.add_parser('find',
                 help="Find csrs maching string", formatter_class=ArgFormatter)
-        parser_find.set_defaults(func=csrutils.csr2utils.csr2_find)
+        parser_find.set_defaults(func=csr2utils.csr2_find)
         group = parser_find.add_mutually_exclusive_group(required=True)
         group.add_argument('-s', nargs=1,  metavar=('substring'), dest='substring',
                         type=str, help="regex for matching csr name")
