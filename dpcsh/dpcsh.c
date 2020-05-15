@@ -1470,13 +1470,12 @@ int main(int argc, char *argv[])
 	enum mode mode = MODE_INTERACTIVE; /* default user control */
 	bool one_shot = false;  /* run a single command and terminate */
 	int ch, first_unknown = -1;
-	struct dpcsock funos_sock; /* connection to FunOS */
+	struct dpcsock funos_sock = {0}; /* connection to FunOS */
 	struct dpcsock cmd_sock;   /* connection to commanding agent */
 	bool autodetect_input_device = true;
 	bool cmd_timeout_is_set = false;
 	char detected_nvme_device_name[64]; /* when no input device is specified */
 
-	memset(&funos_sock, 0, sizeof(funos_sock));
 	srand(time(NULL));
 	dpcsh_path = argv[0];
 	dpcsh_session_id = getpid();
