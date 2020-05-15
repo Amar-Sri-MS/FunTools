@@ -116,7 +116,7 @@ static struct fun_json *_read_bjson(int fd)
 	buf = _read_input_file(fd, &size);
 	assert(buf);
 	
-	input = fun_json_create_from_parsing_binary((uint8_t*)buf, size);
+	input = fun_json_create_from_binary((uint8_t*)buf, size);
 
 	free(buf);
 	return input;

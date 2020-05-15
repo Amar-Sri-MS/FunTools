@@ -13,8 +13,10 @@ import jsocket
 import time
 import logging
 import traceback
+import tempfile
 import urllib
 import tarfile
+import shutil
 from array import array
 from probeutils.dbgclient import *
 from probeutils.dut import *
@@ -74,8 +76,9 @@ def csr_peek(args):
 
     csr_width_bytes = csr_get_width_bytes(csr_data)
     csr_width_words = csr_width_bytes >> 3
-    (status, data) = dbgprobe().csr_peek(chip_inst=chip_inst, csr_addr=csr_addr,
-                                         csr_width_words=csr_width_words)
+    (status, data) = dbgprobe().csr_peek(
+            chip_inst=chip_inst, csr_addr=csr_addr,
+            csr_width_words=csr_width_words)
     if status is True:
         word_array = data
         if word_array is None or not word_array:
@@ -372,13 +375,17 @@ def csr_find(args):
         return
 
 def csr_metadata_dochub():
-    url = 'http://dochub.fungible.local/doc/jenkins/funsdk/latest/Linux/csr-cfg.tgz'
+    url = 'http://dochub/doc/jenkins/master/funsdk/latest/Linux/csr-cfg.tgz'
     file_tmp = urllib.urlretrieve(url, filename=None)[0]
     base_name = os.path.basename(url)
     file_name, file_extension = os.path.splitext(base_name)
     tar = tarfile.open(file_tmp)
-    tar.extract('./'+ constants.CSR_CFG_DIR + constants.CSR_METADATA_FILE, '/tmp')
-    return True
+    temp_dir = tempfile.mkdtemp()
+    output_dir = os.path.join(temp_dir, constants.CSR_CFG_DIR)
+    tar.extract('./'+ constants.CSR_CFG_DIR + constants.CSR_METADATA_FILE, temp_dir)
+    metadata_file = os.path.join(output_dir, constants.CSR_METADATA_FILE)
+
+    return metadata_file
 
 def csr_load_metadata(args):
     if args.default:
@@ -1031,13 +1038,13 @@ def server_connect(args):
         force_connect = True
         logger.info('Force connection: {0}'.format(force_connect))
 
-    probe = connect(dut_name, mode, force_connect, chip=args.chip[0])
+    probe = connect(dut_name, mode, force_connect)
     if probe is None:
         print('Failed to connect to dut: {0}'.format(dut_name, mode))
         return
 
-def connect(dut_name, mode, force_connect=False, chip="f1"):
-    logger.debug('dut: {0} mode: {1} chip: {2}'.format(dut_name, mode, chip))
+def connect(dut_name, mode, force_connect=False):
+    logger.debug('dut: {0} mode: {1}'.format(dut_name, mode))
     if mode == 'i2c':
         dut_i2c_info = dut().get_i2c_info(dut_name)
         if dut_i2c_info is None:
@@ -1050,17 +1057,20 @@ def connect(dut_name, mode, force_connect=False, chip="f1"):
             i2c_probe_ip = dut_i2c_info[2]
             i2c_slave_addr = dut_i2c_info[3]
             i2c_bitrate = dut_i2c_info[4]
+            chip_type = dut_i2c_info[5]
             status = dbgprobe().connect(mode='i2c', bmc_board=False,
                                         probe_ip_addr=i2c_probe_ip,
                                         probe_id=i2c_probe_serial,
                                         slave_addr=i2c_slave_addr,
                                         force=force_connect,
-                                        chip_type=chip,
+                                        chip_type=chip_type,
                                         i2c_bitrate=i2c_bitrate)
         else:
             bmc_ip = dut_i2c_info[1]
+            chip_type = dut_i2c_info[2]
             status = dbgprobe().connect(mode='i2c', bmc_board=True,
-                                        bmc_ip_address=bmc_ip)
+                                        bmc_ip_address=bmc_ip,
+                                        chip_type=chip_type)
     elif mode == 'jtag':
         dut_jtag_info = dut().get_jtag_info(dut_name)
         if dut_jtag_info is None:
@@ -1069,17 +1079,23 @@ def connect(dut_name, mode, force_connect=False, chip="f1"):
         if dut_jtag_info[0] is False:
             jtag_probe_id = dut_jtag_info[1]
             jtag_probe_ip = dut_jtag_info[2]
+            chip_type = dut_jtag_info[3]
+            jtag_bitrate = dut_jtag_info[4]
             status = dbgprobe().connect(mode='jtag', bmc_board=False,
                                         probe_ip_addr = jtag_probe_ip,
-                                        probe_id = jtag_probe_id)
+                                        probe_id = jtag_probe_id,
+                                        jtag_bitrate = jtag_bitrate,
+                                        chip_type=chip_type)
         else:
             bmc_ip = dut_jtag_info[1]
             jtag_probe_id = dut_jtag_info[2]
             jtag_probe_ip = dut_jtag_info[3]
+            chip_type = dut_jtag_info[4]
             status = dbgprobe().connect(mode='jtag', bmc_board=True,
                                         bmc_ip_address=bmc_ip,
                                         probe_ip_addr=jtag_probe_ip,
-                                        probe_id = jtag_probe_id)
+                                        probe_id = jtag_probe_id,
+                                        chip_type=chip_type)
     elif mode == 'pcie':
         dut_pcie_info = dut().get_pcie_info(dut_name)
         if dut_pcie_info is None:
@@ -1090,14 +1106,16 @@ def connect(dut_name, mode, force_connect=False, chip="f1"):
             pcie_probe_ip = dut_pcie_info[2]
             status = dbgprobe().connect(mode='pcie', bmc_board=False,
                                         probe_ip_addr = pcie_probe_ip,
-                                        probe_id = pcie_ccu_bar)
+                                        probe_id = pcie_ccu_bar,
+                                        chip_type=chip_type)
         else:
             bmc_ip = dut_pcie_info[1]
             pcie_ccu_bar = dut_pcie_info[2]
             pcie_probe_ip = dut_pcie_info[3]
             status = dbgprobe().connect(mode='pcie', bmc_board=False,
                                         probe_ip_addr=pcie_probe_ip,
-                                        probe_id = pcie_ccu_bar)
+                                        probe_id = pcie_ccu_bar,
+                                        chip_type=chip_type)
 
     else:
         print('Mode: {} is not yet supported!'.format(mode))
@@ -1806,11 +1824,9 @@ class csr_metadata:
         return True
 
     def download_metadata_from_dochub(self):
-        metadata_file = os.path.join(constants.TMP_DIR,
-                    constants.CSR_CFG_DIR, constants.CSR_METADATA_FILE)
-        if os.path.exists(metadata_file): os.remove(metadata_file)
+        metadata_file = None
         try:
-            csr_metadata_dochub()
+            metadata_file = csr_metadata_dochub()
         except Exception as e:
             logging.error(traceback.format_exc())
             print('Failed to get csr metadata from dochub!'
@@ -1822,16 +1838,19 @@ class csr_metadata:
         return metadata_file
 
     def load_metadata_from_dochub(self):
-        status = self.download_metadata_from_dochub()
-        if not status:
+        metadata_file = self.download_metadata_from_dochub()
+        if not metadata_file:
              print('Failed to download csr metadata!')
              return False
-        metadata_file = os.path.join(constants.TMP_DIR,
-                    constants.CSR_CFG_DIR, constants.CSR_METADATA_FILE)
         if not os.path.exists(metadata_file):
             print "Failed to find matadata file: {} after download!".format(metadata_file)
             return None
         status = self._load_metadata_file(metadata_file)
+        tmp_dir_path =  os.path.join('/', *(metadata_file.split(os.path.sep)[:3]))
+        if tmp_dir_path.startswith("/tmp/"):
+            shutil.rmtree(tmp_dir_path)
+        else:
+            logger.error('Invalid temp dir path: {}'.format(tmp_dir_path))
         if not status:
             return False
         return True

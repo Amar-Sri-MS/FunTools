@@ -111,7 +111,7 @@ def run_tests_client(client, exclude):
             suite.addTest(TestDPCCommands(client, func))
     unittest.TextTestRunner().run(suite)
 
-def run_dpc_test(args, legacy_ok, delay):
+def run_dpc_test(args, unix_sock, delay):
     """ Load up a dpcsh tcp socket """
     print "### Running dpcsh as text proxy"
     pid = subprocess.Popen(["./dpcsh", "--oneshot"] + args)
@@ -119,11 +119,15 @@ def run_dpc_test(args, legacy_ok, delay):
     print "### pid is %s" % pid
     time.sleep(1)
 
-    # connect to it
-    client = dpc_client.DpcClient(False, legacy_ok)
+    try:
+        # connect to it
+        client = dpc_client.DpcClient(legacy_ok = False, unix_sock = unix_sock)
 
-    time.sleep(delay)
-    run_tests_client(client, [])
+        time.sleep(delay)
+        run_tests_client(client, [])
+    finally:
+        if pid.returncode is None:
+            pid.terminate()
 
 
 def run_using_env(exclude):
@@ -150,11 +154,11 @@ STYLES = {"tcp": (True, ["--verbose", "--tcp_proxy"], False, 0),
 
 def run_style(manual, style):
 
-    (auto, args, legacy_ok, delay) = STYLES[style]
+    (auto, args, unix_sock, delay) = STYLES[style]
 
     if (manual or auto):
         print "Running tests for '%s'" % style
-        run_dpc_test(args, legacy_ok, delay)
+        run_dpc_test(args, unix_sock, delay)
     else:
         print "Skipping '%s'" % style
 

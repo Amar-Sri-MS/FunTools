@@ -15,6 +15,42 @@ if [[ "${EUID}" -ne 0 ]]; then
   exit 1
 fi
 
+# SWSYS-890: Disable the redis-server on COMe host OS
+# cclinux is having it's own copy inside the docker
+Update_disable_redis_server
+{
+  systemctl disable redis-server > /dev/null 2>&1
+}
+
+# SWSYS-874:
+Update_resolv_conf_smlink()
+{
+  PREFERRED_RESOLV_CONF=/run/systemd/resolve/resolv.conf
+  RESOLV_CONF=/etc/resolv.conf
+  if [ "$(realpath $RESOLV_CONF)" != "$PREFERRED_RESOLV_CONF" ]; then
+    rm $RESOLV_CONF
+    ln -sf /run/systemd/resolve/resolv.conf /etc/resolv.conf
+    # Is below step required?
+    # Because after install user will reboot
+    systemctl restart systemd-resolved
+  fi
+}
+
+# SWSYS-845: Disabling use of journal logs
+# Logging in /var/log/syslog etc will still work
+Update_systemd_journal_cfg()
+{
+  JRNLD_CFG=/etc/systemd/journald.conf
+  if [ ! -f ${JRNLD_CFG} ]; then
+    return
+  fi
+  sed -i 's/^#Storage=.*/Storage=none/g' ${JRNLD_CFG}
+  if [ -d /var/log/journal ]; then
+    DATE=`date +%Y-%m-%d_%H-%M-%S`
+    mv /var/log/journal /var/log/journal_${DATE}_FUN_BKP
+  fi
+}
+
 Update_grub_cmdline()
 {
   # debug                  = SWSYS-725
@@ -59,8 +95,14 @@ Update_Fungible_systemd_services()
   fi
 }
 
+Update_systemd_journal_cfg
+
 Update_grub_cmdline
 
 Update_Fungible_systemd_services
+
+Update_resolv_conf_smlink
+
+Update_disable_redis_server
 
 exit 0

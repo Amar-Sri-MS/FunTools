@@ -1,0 +1,7 @@
+FROM scratch
+ADD fun-image-x86-64dkr-qemux86-64.tar.xz /
+
+ADD libfunq.tgz /usr
+
+
+CMD /bin/bash

@@ -575,7 +575,6 @@ ccu_info_t *pcie_connect(const char *bar)
 		goto error;
 	}
 
-	ccu_dump(ccu_info);
 	LOG(NOTICE, "PCIE CONNECTION SUCCESSFUL!");
 
 	return ccu_info;
@@ -669,12 +668,12 @@ bool hbm_read_aligned(ccu_info_t *ccu_info, uint64_t start_addr,
 	assert(ccu_info);
 	assert(num_bytes);
 
-	if (num_bytes & 0xFF != 0) {
+	if ((num_bytes & 0xFF) != 0) {
 		LOG(ERROR, "num_bytes should be multiples of 256");
 		return false;
 	}
 
-	if (start_addr & 0xFF != 0) {
+	if ((start_addr & 0xFF) != 0) {
 		LOG(ERROR, "start_addr should be 256 byte aligned");
 		return false;
 	}
@@ -847,7 +846,7 @@ bool hbm_dump(ccu_info_t *ccu_info, uint64_t start_addr, uint32_t size)
 		for (uint32_t i = 0; i < (256/8); i++) {
 			printf("Address:0x%016"PRIx64" data:0x%016"PRIx64 "\n",
 			       (start_addr + read_offset + (i*8)),
-			       be64toh(*(uint64_t *)(data + (i * 8))));
+			       (uint64_t)be64toh(*(uint64_t *)(data + (i * 8))));
 		}
 		read_offset += 256;
 	}
@@ -865,7 +864,7 @@ usage(void)
 		"    -a         hbm dump starting from address\n"
 		"    -s         size of memory to be dumped\n"
 		"    -b         pci bar info\n"
-		"    -f         freeze vps\n",
+		"    -f         freeze vps\n"
 		"    -o         output file name\n",
 		myname);
 }

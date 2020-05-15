@@ -31,3 +31,4 @@ install-fungdbserver:
 	install excat.py $(SDK_INSTALL_DIR)/bin/scripts
 	install uuid_extract.py $(SDK_INSTALL_DIR)/bin/scripts
 	install fungdbserver.py $(SDK_INSTALL_DIR)/bin/scripts
+	install bulk_publish.py $(SDK_INSTALL_DIR)/bin/scripts

@@ -26,6 +26,10 @@
  *     -- munmap() the PCIe BAR.
  *     -- Response is "OKAY DISCONNECT" or an Error Message.
  *
+ *   CHIPINFO
+ *     -- Returns "OKAY CHIPINFO <CSR> <Chip>", where "<CSR>" is "CSR1" or
+ *     -- "CSR2" and "<Chip>" is "F1", "S1", "F1.1", etc.
+ *
  *   READ <Register Address> <Register Size (in bits)>
  *     -- Returns "OKAY READ" and a sequence of 64-bit hexadecimal values
  *     -- representing the register value, or an error message.
@@ -316,21 +320,46 @@ swab16(uint16_t u16)
 #define CCU_SPINLOCK_LOCK_PUT(x) ((uint64_t)(x) << CCU_SPINLOCK_LOCK_SHF)
 #define CCU_SPINLOCK_LOCK_GET(x) ((uint32_t)(((x) >> CCU_SPINLOCK_LOCK_SHF) & \
 					     CCU_SPINLOCK_LOCK_MSK))
+/*
+ * Decoding the CCU ID register ...
+ */
+#define CCU_ID_CSRTYPE_SHF	(31)
+#define CCU_ID_CSRTYPE_MSK	(0x1)
+#define CCU_ID_CSRTYPE_PUT(x)	((x) << CCU_ID_CSRTYPE_SHF)
+#define CCU_ID_CSRTYPE_GET(x)	(((x) >> CCU_ID_CSRTYPE_SHF) & CCU_ID_CSRTYPE_MSK)
 
-#define CCU_ID_HUT_SHF		(4)
+#define CCU_ID_CHIPID_SHF	(23)
+#define CCU_ID_CHIPID_MSK	(0xff)
+#define CCU_ID_CHIPID_PUT(x)	((x) << CCU_ID_CHIPID_SHF)
+#define CCU_ID_CHIPID_GET(x)	(((x) >> CCU_ID_CHIPID_SHF) & CCU_ID_CHIPID_MSK)
+
+#define CCU_ID_HUT_SHF		(20)
 #define CCU_ID_HUT_MSK		(0x1)
 #define CCU_ID_HUT_PUT(x)	((x) << CCU_ID_HUT_SHF)
 #define CCU_ID_HUT_GET(x)	(((x) >> CCU_ID_HUT_SHF) & CCU_ID_HUT_MSK)
 
-#define CCU_ID_SLICE_SHF	(2)
+#define CCU_ID_SLICE_SHF	(18)
 #define CCU_ID_SLICE_MSK	(0x3)
 #define CCU_ID_SLICE_PUT(x)	((x) << CCU_ID_SLICE_SHF)
 #define CCU_ID_SLICE_GET(x)	(((x) >> CCU_ID_SLICE_SHF) & CCU_ID_SLICE_MSK)
 
-#define CCU_ID_CID_SHF		(0)
+#define CCU_ID_CID_SHF		(16)
 #define CCU_ID_CID_MSK		(0x3)
 #define CCU_ID_CID_PUT(x)	((x) << CCU_ID_CID_SHF)
 #define CCU_ID_CID_GET(x)	(((x) >> CCU_ID_CID_SHF) & CCU_ID_CID_MSK)
+
+/*
+ * The CCU ID CSR Type field (bit 31) defines whether we're dealing with a
+ * CSR1 Chip (F1) or a CSR2 Chip (S1 and later).  The CCU ID Chip ID field
+ * ([30:21]) can be used to determine which Chip we're talking to.
+ */
+#define CSRTYPE_CHIPID(_csrtype, _chipid) \
+				(((_csrtype) << 16) | (_chipid))
+
+#define CSR1_F1			CSRTYPE_CHIPID(1, 0)
+
+#define CSR2_S1			CSRTYPE_CHIPID(2, 0)
+#define CSR2_F1D1		CSRTYPE_CHIPID(2, 1)
 
 /*
  * Convert bit-length into number of 64-bit units.
@@ -387,6 +416,14 @@ ccu_dump(ccu_info_t *ccu_info)
 	printf("%4d         %#010x\n",
 	       CCU_ID,
 	       be32_to_cpu(ccu32[CCU_ID/sizeof(*ccu32)]));
+}
+
+uint32_t
+ccu_read_id(ccu_info_t *ccu_info)
+{
+	uint32_t *ccu32 = (uint32_t *)ccu_info->mmap;;
+
+	return be32_to_cpu(ccu32[CCU_ID/sizeof(*ccu32)]);
 }
 
 /*
@@ -742,6 +779,53 @@ server(int client_fd)
 
 			response(client_fd, LOG_DEBUG, "OKAY DISCONNECT\n");
 			break;
+		}
+
+		if (strcmp(argv[0], "CHIPINFO") == 0) {
+			/*
+			 * CHIPINFO (ignore any extra arguments)
+			 */
+			uint32_t ccu_id;
+			unsigned int csrtype, chipid;
+			const char *chip;
+
+			if (!ccu_info.mmap) {
+				response(client_fd, LOG_DEBUG,
+					 "Not Connected!\n");
+				continue;
+			}
+
+			/*
+			 * Read and decode the CCU ID.
+			 */
+			ccu_id = ccu_read_id(&ccu_info);
+			csrtype = CCU_ID_CSRTYPE_GET(ccu_id) == 0 ? 1 : 2;
+			chipid = CCU_ID_CHIPID_GET(ccu_id);
+
+			switch (CSRTYPE_CHIPID(csrtype, chipid)) {
+			case CSR1_F1:
+				chip = "F1";
+				break;
+
+			case CSR2_S1:
+				chip = "S1";
+				break;
+
+			case CSR2_F1D1:
+				chip = "F1.1";
+				break;
+
+			default:
+				response(client_fd, LOG_DEBUG,
+					 "CSR%d bad Chip ID %u\n",
+					 csrtype, chipid);
+				continue;
+			}
+
+			response(client_fd, LOG_DEBUG,
+				 "OKAY CHIPINFO CSR%u %s\n",
+				 csrtype, chip);
+			continue;
 		}
 
 		if (strcmp(argv[0], "READ") == 0) {

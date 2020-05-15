@@ -38,9 +38,9 @@ class JtagExtCommands(install):
 
 
 if _platform == "linux" or _platform == "linux2":
-    packages_list = ['probeutils', 'csrutils', 'dbgmacros', 'jtagutils']
+    packages_list = ['probeutils', 'csrutils', 'csr2utils', 'dbgmacros', 'jtagutils']
 else:
-    packages_list = ['probeutils', 'csrutils', 'dbgmacros']
+    packages_list = ['probeutils', 'csrutils', 'csr2utils', 'dbgmacros']
 
 setup(
     name = 'dbgutils',
@@ -53,14 +53,17 @@ setup(
     package_data = {'probeutils': ["probeutils/dut.cfg"]},
     cmdclass={'jtaginstall': JtagExtCommands},
     install_requires = [
-        'aardvark_py',
-        'argparse',
+        'pyperclip',
+        'contextlib2',
         'jsocket==1.6',
-        'logging',
+        'logging==0.4.9.6',
         'cmd2==0.8.8',
-        'argcomplete==1.9.4',
-        'pyusb',
-        'paramiko',
-        'urllib3'
+        'argcomplete',
+        'pyparsing==2.4.7',
+        'pyusb==1.0.2',
+        'paramiko==2.7.1',
+        'urllib3==1.22',
+        'aardvark-py',
+        'pynacl'
     ],
 )

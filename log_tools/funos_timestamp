@@ -1,0 +1,60 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+"""
+Convert FunOS timestamps from epoch to Linux syslog style:
+
+% funos_timstamp.py [-o output] [input]
+"""
+
+from __future__ import print_function
+import argparse
+import datetime as d, re, sys
+
+###
+##  in case you want to import & call yourself
+# 
+def fix_timestamp(line):
+    g = re.match("^\[(\d{9,})\.(\d+) (\d\.\d\.\d)\] (.*)", line)
+    if (g is not None):
+        g = g.group
+        line = "[%s %s] %s\n" % (d.datetime.fromtimestamp(int(g(1)) + float(g(2)) * 1e-6).strftime("%b %d %H:%M:%S.%f"), g(3), g(4))
+    return line
+
+###
+##  log processing
+# 
+def do_timestamps(infl, outfl):
+    for line in infl.readlines():
+        line = fix_timestamp(line)
+        outfl.write(line)
+
+
+###
+##  work out input and output
+#
+def main():
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-o", "--output", action="store", default="-")
+    parser.add_argument("input", nargs='?', action="store", default="-")
+
+    args = parser.parse_args()
+
+    if (args.input == "-"):
+        infl = sys.stdin
+    else:
+        infl = open(args.input, "r")
+
+    if (args.output == "-"):
+        outfl = sys.stdout
+    else:
+        outfl = open(args.output, "w")
+
+    do_timestamps(infl, outfl)
+        
+    
+###
+##  entrypoint
+#
+if (__name__ == "__main__"):
+    main()
