@@ -37,6 +37,18 @@ FUNOS_BINARIES = [
 "funos-s1-qemu-release"
 ]
 
+PATHS = [ "./",
+          os.path.dirname(os.path.abspath(__file__))
+]
+
+def excat_py():
+    for path in PATHS:
+        excat = os.path.join(path, "excat.py")
+        if (os.path.exists(excat)):
+            return excat
+
+    raise RuntimeError("could not find excat.py")
+
 def publish_path(binpath):
 
     # check it exists
@@ -49,7 +61,7 @@ def publish_path(binpath):
         if (not os.path.exists(p)):
             continue
         print("Publishing file %s" % p)
-        cmd = ["./excat.py", "pub", p]
+        cmd = [excat_py(), "pub", p]
         cmd = " ".join(cmd)
         os.system(cmd)
         print("Done publishing file %s" % p)
