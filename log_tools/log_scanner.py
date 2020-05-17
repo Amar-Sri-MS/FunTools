@@ -18,8 +18,8 @@
 #     saw ARP timeout <- did not see management port enabled message
 #
 # It should be possible to simplify the creation of the decision graphs with
-# some type of DSL. At the moment, specifying the JSON can be painful and
-# error-prone.
+# some type of DSL, maybe even python fragments. At the moment, specifying
+# the JSON can be painful and error-prone.
 #
 # Usage: scan_log.py -h
 #
@@ -84,10 +84,14 @@ class DecisionGraph(object):
                     return
 
     def get_report(self):
-        """ Gets the report, or None if the node isn't interesting """
+        """
+        Gets the report, or None if the node isn't interesting.
+
+        Returns a tuple of (graph_id, report)
+        """
         if self.report_by_node.get(self.state):
-            return '{}: {}'.format(self.id, self.report_by_node[self.state])
-        return None
+            return self.id, self.report_by_node[self.state]
+        return self.id, None
 
     @staticmethod
     def from_json(json_graph):
@@ -106,7 +110,7 @@ class DecisionGraph(object):
 
 class LogScanner(object):
     """
-    Traverses the decision graphs and prints a report at the end.
+    Traverses the decision graphs and returns reports at the end.
     """
     def __init__(self):
         self.graphs = []
@@ -116,14 +120,19 @@ class LogScanner(object):
         self.graphs.append(g)
 
     def scan(self, fh):
+        """ Walks through all lines in fh and returns any reports """
+        reports = []
+
         for line in fh:
             for graph in self.graphs:
                 graph.try_advance_state(line)
 
         for graph in self.graphs:
             report = graph.get_report()
-            if report:
-                print report
+            if report[1]:
+                reports.append(report)
+
+        return reports
 
 
 def main():
@@ -140,7 +149,10 @@ def main():
             scanner.add_graph(g)
 
     with open(args.log, 'r') as fh:
-        scanner.scan(fh)
+        reports = scanner.scan(fh)
+
+        for r in reports:
+            print '{}: {}'.format(r[0], r[1])
 
 
 if __name__ == '__main__':
