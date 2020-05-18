@@ -15,6 +15,9 @@ else ifeq ($(MACHINE),arm)
  TOOLCHAIN_PREFIX := arm-linux-gnueabi-
  SDK_LIB_SUBDIR :=
  SDK_INSTALL_PREFIX := arm
+else ifeq ($(MACHINE),mips64)
+ SDK_LIB_SUBDIR :=
+ SDK_INSTALL_PREFIX := mips64
 else
  $(error Unknown machine type $(MACHINE))
 endif
@@ -47,7 +50,7 @@ SRCS = dpcsh.c dpcsh_nvme.c dpcsh_macros.c csr_command.c web.c
 OBJS = $(addprefix $(BUILD_ROOT)/,$(SRCS:.c=.o))
 
 # Deal with gcc versioning for ASAN
-ifeq ($(OS),Linux)
+ifneq ($(TOOLCHAIN_PREFIX),)
 CC := $(TOOLCHAIN_PREFIX)gcc$(GCC_SUFFIX)
 endif
 
