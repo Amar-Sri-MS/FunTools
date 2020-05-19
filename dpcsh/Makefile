@@ -40,7 +40,7 @@ VER     = -DVER=$(version)
 BRANCH  = -DBRANCH=$(branch)
 
 # define header and library location in FunSDK
-CFLAGS ?= -I $(SDKDIR) -I $(SDKDIR)/FunSDK -g -Wall -Werror -Wno-multichar $(BRANCH) $(VER)
+CFLAGS += -I $(SDKDIR) -I $(SDKDIR)/FunSDK -g -Wall -Werror -Wno-multichar $(BRANCH) $(VER)
 
 # XXX: compatibility with FunOS build parameters
 #LDFLAGS += -L $(SDKDIR)/lib/${OS}/x86_64 -lfunclient -fsanitize=address
