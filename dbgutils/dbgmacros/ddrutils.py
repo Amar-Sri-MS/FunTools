@@ -336,7 +336,7 @@ def main():
 
     args = parser.parse_args()
 
-    probe = connect(dut_name=args.dut, mode=args.mode, force_connect=True, chip="s1")
+    probe = connect(dut_name=args.dut, mode=args.mode, force_connect=True)
     if not probe:
         logger.error('Failed to connect to dut:{0}'.format(args.dut))
         return

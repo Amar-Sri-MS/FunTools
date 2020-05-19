@@ -241,14 +241,14 @@ def process_cmd_csr_write (msg_len):
   #get 8B addr
   buf = recv_str(8)
   (addr,) = struct.unpack(">Q", buf[:8])
-  logger.debug('in process_cmd_csr_write cnt=%0d, address = 0x%x '%(glb_wr_cnt,addr))
+  #logger.debug('in process_cmd_csr_write cnt=%0d, address = 0x%x '%(glb_wr_cnt,addr))
 #  print 'address is 0x%x' % (addr)
 
   #now get the csr write data
   data_len = msg_len - 2 - 1 - 8 #msg_len - MSGLEN_SIZE - CMD_SIZE - ADDR_SIZE
   data_str = recv_str(data_len)
   data_list_bytes = [ord(i) for i in list(data_str)]
-  logger.debug("{0}".format(data_list_bytes))
+  #logger.debug("{0}".format(data_list_bytes))
   data_words_list = byte_array_to_words_be(array('B', data_list_bytes))
   #print "csr_poke data:"
   #print data_words_list
@@ -384,7 +384,7 @@ def process_cmd_csr_read (msg_len):
       (status,result) = (True,[random.randint(0,0x10000000000000000)]*dword_len)
   else:
       (status, result) = dbgprobe().csr_peek(addr, dword_len, chip_inst=bmc_chip_inst)
-  logger.debug("result={0}".format(result))
+  #logger.debug("result={0}".format(result))
 
   if status is False:
       logger.error("csr_peek returned false")
@@ -396,7 +396,7 @@ def process_cmd_csr_read (msg_len):
   else:
     read_data_hex_str = 'deadbeefdeadbeef' #make up a dummy result
 
-  logger.debug("read: addr=0x%0x data=%s,gbl_rd_cnt=%0d"%(addr,read_data_hex_str,glb_rd_cnt))
+  #logger.debug("read: addr=0x%0x data=%s,gbl_rd_cnt=%0d"%(addr,read_data_hex_str,glb_rd_cnt))
 
   #finally send reply
   reply_len = 2 + 1 + 8*dword_len #msg_size + command + Bytes of data
@@ -443,12 +443,13 @@ def connect_dbgprobe(tpod,tpod_jtag,tpod_pcie,tpod_force):
 
     if tpod_jtag:
        jtag_info=duts.get_jtag_info(tpod)
-       (bmc,jtag_probe_id, jtag_probe_ip,chip_type)=jtag_info
+       (bmc,jtag_probe_id, jtag_probe_ip,chip_type,jtag_bitrate)=jtag_info
        print "connecting to JTAG Proxy "+jtag_probe_ip
        status = dbgprobe().connect(mode='jtag',
                                    probe_ip_addr=jtag_probe_ip,
                                    probe_id=jtag_probe_id,
-                                   chip_type=chip_type)
+                                   chip_type=chip_type,
+                                   jtag_bitrate=jtag_bitrate)
        if status is True:
           print("JTAG Server Connection Successful!")
        else:
