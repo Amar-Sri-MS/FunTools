@@ -73,11 +73,17 @@ def ERROR(msg):
 def get_default_gdb():
     current_os = platform.system()
     if current_os == 'Darwin':
-        gdb = '/Users/Shared/cross-el/bin/mips64-gdb'
+        gdbs = ['/Users/Shared/cross/mips64/bin/mips64-unknown-elf-gdb',
+                '/Users/Shared/cross-el/bin/mips64-gdb']
     else:
-        gdb = '/opt/cross/mips64/bin/mips64-unknown-elf-gdb'
+        gdbs = ['/opt/cross/mips64/bin/mips64-unknown-elf-gdb']
 
-    return gdb
+    for gdb in gdbs:
+        if (os.path.exists(gdb)):
+            return gdb
+
+    # return something so the user can override it
+    return "mips64-gdb"
 
 def get_default_dir():
 
