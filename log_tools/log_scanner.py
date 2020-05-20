@@ -44,8 +44,8 @@ class Edge(object):
         self.conditions = conditions
 
     @staticmethod
-    def from_json(json):
-        return Edge(json['dst'], json['conditions'])
+    def from_json(js):
+        return Edge(js['next_state'], js['conditions'])
 
 
 class DecisionGraph(object):
@@ -99,11 +99,11 @@ class DecisionGraph(object):
         g = DecisionGraph(json_graph['id'])
 
         for json_report in json_graph['reports']:
-            g.add_report(json_report['node'], json_report['report'])
+            g.add_report(json_report['state'], json_report['report'])
 
-        for json_edge in json_graph['edges']:
+        for json_edge in json_graph['transitions']:
             edge = Edge.from_json(json_edge)
-            g.add_edge(json_edge['src'], edge)
+            g.add_edge(json_edge['state'], edge)
 
         return g
 
