@@ -5,20 +5,17 @@ echo "*                                                                       *"
 echo "*             INTERNAL TESTING USE ONLY                                 *"
 echo "*                                                                       *"
 echo "*             THIS SCRIPT WILL NOT WORK AT A CUSTOMER SITE              *"
-sleep 2
 echo "*                                                                       *"
 echo "*             THIS SCRIPT IS DEPRICATED                                 *"
 echo "*                                                                       *"
 echo "*             PLEASE USE THE BMC CLI TO RESET COMe (cclinux)            *"
 echo "*             CLI: fun_reboot_system.sh                                 *"
-sleep 3
 echo "*                                                                       *"
 echo "*             THIS SCRIPT WILL NOT WORK AT A CUSTOMER SITE              *" >&2
 echo "*                                                                       *" >&2
 echo "*             INTERNAL TESTING USE ONLY                                 *" >&2
 echo "*                                                                       *" >&2
 echo "*************************************************************************" >&2
-sleep 5
 
 # SWSYS-740
 # Poll the operational state of the interface for

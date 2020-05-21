@@ -6,13 +6,11 @@ echo "*             INTERNAL TESTING USE ONLY                                 *"
 echo "*                                                                       *"
 echo "*             THIS SCRIPT WILL NOT WORK AT A CUSTOMER SITE              *"
 echo "*                                                                       *"
-sleep 5
 echo "*             THIS SCRIPT WILL NOT WORK AT A CUSTOMER SITE              *" >&2
 echo "*                                                                       *" >&2
 echo "*             INTERNAL TESTING USE ONLY                                 *" >&2
 echo "*                                                                       *" >&2
 echo "*************************************************************************" >&2
-sleep 5
 
 FUN_ROOT="/opt/fungible"
 DIR_FUN_CONFIG="/var/opt/fungible/fs1600/configure_bond"

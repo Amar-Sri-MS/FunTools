@@ -6,13 +6,11 @@ echo "*             INTERNAL TESTING USE ONLY                                 *"
 echo "*                                                                       *"
 echo "*             THIS SCRIPT WILL NOT WORK AT A CUSTOMER SITE              *"
 echo "*                                                                       *"
-sleep 5
 echo "*             THIS SCRIPT WILL NOT WORK AT A CUSTOMER SITE              *" >&2
 echo "*                                                                       *" >&2
 echo "*             INTERNAL TESTING USE ONLY                                 *" >&2
 echo "*                                                                       *" >&2
 echo "*************************************************************************" >&2
-sleep 5
 
 if [[ "$EUID" -ne 0 ]]; then
         printf "Please run as ROOT EUID=$EUID\n"
@@ -68,7 +66,6 @@ function DetectDpuPcieBus()
 	echo "DPU_1_PCIE_BUS=$DPU_1_PCIE_BUS"
 }
 
-BMC_MAC=`ipmitool lan print 1 | awk '/MAC Address[ ]+:/ {print $4}'`
 
 HBM_COLLECT_NOTIFY="/tmp/HBM_Dump_Collection_In_Progress"
 function CollectHbmDump()
@@ -118,6 +115,11 @@ fi
 
 DPU_STATUS="/tmp/F1_STATUS"
 DEST_DIR="/tmp/."
+IPMITOOL=`which ipmitool`
+if [[ -z $IPMITOOL ]]; then
+        echo ERROR: ipmitool is not installed!!!!!!!!!!
+        apt-get install -y ipmitool
+fi
 if [[ -d /sys/class/net/enp3s0f0.2 ]]; then
         BMC_IP="192.168.127.2"
 else
@@ -125,6 +127,7 @@ else
 	AWK_LAN='/IP Address[ ]+:/ {print $4}'
 	BMC_IP=$($IPMI_LAN | awk "$AWK_LAN")
 fi
+BMC_MAC=`ipmitool lan print 1 | awk '/MAC Address[ ]+:/ {print $4}'`
 
 printf "Poll BMC:  %s\n" $BMC_IP
 

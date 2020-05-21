@@ -6,13 +6,11 @@ echo "*             INTERNAL TESTING USE ONLY                                 *"
 echo "*                                                                       *"
 echo "*             THIS SCRIPT WILL NOT WORK AT A CUSTOMER SITE              *"
 echo "*                                                                       *"
-sleep 5
 echo "*             THIS SCRIPT WILL NOT WORK AT A CUSTOMER SITE              *" >&2
 echo "*                                                                       *" >&2
 echo "*             INTERNAL TESTING USE ONLY                                 *" >&2
 echo "*                                                                       *" >&2
 echo "*************************************************************************" >&2
-sleep 5
 
 if [[ "$EUID" -ne 0 ]]; then
         printf "Please run as ROOT EUID=$EUID\n"
@@ -163,6 +161,11 @@ DEST_DIR="/tmp/."
 if [[ -d /sys/class/net/enp3s0f0.2 ]]; then
         BMC_IP="192.168.127.2"
 else
+        IPMITOOL=`which ipmitool`
+        if [[ -z $IPMITOOL ]]; then
+                echo ERROR: ipmitool is not installed!!!!!!!!!!
+	        apt-get install -y ipmitool
+        fi
 	IPMI_LAN="ipmitool lan print 1"
 	AWK_LAN='/IP Address[ ]+:/ {print $4}'
 	BMC_IP=$($IPMI_LAN | awk "$AWK_LAN")
