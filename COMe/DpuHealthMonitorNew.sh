@@ -1,5 +1,17 @@
 #!/bin/bash -e
 
+echo "*************************************************************************"
+echo "*                                                                       *"
+echo "*             INTERNAL TESTING USE ONLY                                 *"
+echo "*                                                                       *"
+echo "*             THIS SCRIPT WILL NOT WORK AT A CUSTOMER SITE              *"
+echo "*                                                                       *"
+echo "*             THIS SCRIPT WILL NOT WORK AT A CUSTOMER SITE              *" >&2
+echo "*                                                                       *" >&2
+echo "*             INTERNAL TESTING USE ONLY                                 *" >&2
+echo "*                                                                       *" >&2
+echo "*************************************************************************" >&2
+
 if [[ "$EUID" -ne 0 ]]; then
         printf "Please run as ROOT EUID=$EUID\n"
         exit
@@ -54,7 +66,6 @@ function DetectDpuPcieBus()
 	echo "DPU_1_PCIE_BUS=$DPU_1_PCIE_BUS"
 }
 
-BMC_MAC=`ipmitool -U admin -P admin lan print 1 | awk '/MAC Address[ ]+:/ {print $4}'`
 
 HBM_COLLECT_NOTIFY="/tmp/HBM_Dump_Collection_In_Progress"
 function CollectHbmDump()
@@ -98,23 +109,25 @@ function ctrl_c()
 
 SSHPASS=`which sshpass`
 if [[ -z $SSHPASS ]]; then
+        echo ERROR: sshpass is not installed!!!!!!!!!!
 	apt-get install -y sshpass
-fi
-
-IPMITOOL=`which ipmitool`
-if [[ -z $IPMITOOL ]]; then
-	apt-get install -y ipmitool
 fi
 
 DPU_STATUS="/tmp/F1_STATUS"
 DEST_DIR="/tmp/."
+IPMITOOL=`which ipmitool`
+if [[ -z $IPMITOOL ]]; then
+        echo ERROR: ipmitool is not installed!!!!!!!!!!
+        apt-get install -y ipmitool
+fi
 if [[ -d /sys/class/net/enp3s0f0.2 ]]; then
         BMC_IP="192.168.127.2"
 else
-	IPMI_LAN="ipmitool -U admin -P admin lan print 1"
+	IPMI_LAN="ipmitool lan print 1"
 	AWK_LAN='/IP Address[ ]+:/ {print $4}'
 	BMC_IP=$($IPMI_LAN | awk "$AWK_LAN")
 fi
+BMC_MAC=`ipmitool lan print 1 | awk '/MAC Address[ ]+:/ {print $4}'`
 
 printf "Poll BMC:  %s\n" $BMC_IP
 

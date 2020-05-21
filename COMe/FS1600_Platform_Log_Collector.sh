@@ -1,5 +1,17 @@
 #!/bin/bash -e
 
+echo "*************************************************************************"
+echo "*                                                                       *"
+echo "*             INTERNAL TESTING USE ONLY                                 *"
+echo "*                                                                       *"
+echo "*             THIS SCRIPT WILL NOT WORK AT A CUSTOMER SITE              *"
+echo "*                                                                       *"
+echo "*             THIS SCRIPT WILL NOT WORK AT A CUSTOMER SITE              *" >&2
+echo "*                                                                       *" >&2
+echo "*             INTERNAL TESTING USE ONLY                                 *" >&2
+echo "*                                                                       *" >&2
+echo "*************************************************************************" >&2
+
 if [[ "$EUID" -ne 0 ]]; then
         printf "Please run as ROOT EUID=$EUID\n"
         exit
@@ -56,19 +68,20 @@ fi
 
 SSHPASS=`which sshpass`
 if [[ -z $SSHPASS ]]; then
+        echo ERROR: sshpass is not installed!!!!!!!!!!
         apt-get install -y sshpass
-fi
-
-IPMITOOL=`which ipmitool`
-if [[ -z $IPMITOOL ]]; then
-        apt-get install -y ipmitool
 fi
 
 FUNOS_LOGS="/mnt/sdmmc0p1/log/*"
 if [[ -d /sys/class/net/enp3s0f0.2 ]]; then
         BMC_IP="192.168.127.2"
 else
-	IPMI_LAN="ipmitool -U admin -P admin lan print 1"
+        IPMITOOL=`which ipmitool`
+        if [[ -z $IPMITOOL ]]; then
+                echo ERROR: ipmitool is not installed!!!!!!!!!!
+	        apt-get install -y ipmitool
+        fi
+	IPMI_LAN="ipmitool lan print 1"
 	AWK_LAN='/IP Address[ ]+:/ {print $4}'
 	BMC_IP=$($IPMI_LAN | awk "$AWK_LAN")
 fi

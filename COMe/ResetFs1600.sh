@@ -1,5 +1,22 @@
 #!/bin/bash -e
 
+echo "*************************************************************************"
+echo "*                                                                       *"
+echo "*             INTERNAL TESTING USE ONLY                                 *"
+echo "*                                                                       *"
+echo "*             THIS SCRIPT WILL NOT WORK AT A CUSTOMER SITE              *"
+echo "*                                                                       *"
+echo "*             THIS SCRIPT IS DEPRICATED                                 *"
+echo "*                                                                       *"
+echo "*             PLEASE USE THE BMC CLI TO RESET COMe (cclinux)            *"
+echo "*             CLI: fun_reboot_system.sh                                 *"
+echo "*                                                                       *"
+echo "*             THIS SCRIPT WILL NOT WORK AT A CUSTOMER SITE              *" >&2
+echo "*                                                                       *" >&2
+echo "*             INTERNAL TESTING USE ONLY                                 *" >&2
+echo "*                                                                       *" >&2
+echo "*************************************************************************" >&2
+
 # SWSYS-740
 # Poll the operational state of the interface for
 # 10 seconds to check if the interface is 'up'
@@ -33,14 +50,6 @@ fi
 
 echo "Running $0"
 
-echo "*************************************************************************"
-echo "*                                                                       *"
-echo "*                        THIS SCRIPT IS DEPRICATED                      *"
-echo "*             PLEASE USE THE BMC CLI TO RESET COMe (cclinux)            *"
-echo "*                        CLI: fun_reboot_system.sh                      *"
-echo "*                                                                       *"
-echo "*************************************************************************"
-
 #SWSYS-604
 INTERNAL_VLAN_VIRT_INTF="/sys/class/net/enp3s0f0.2"
 Is_Interface_Up $INTERNAL_VLAN_VIRT_INTF
@@ -70,12 +79,8 @@ fi
 
 SSHPASS=`which sshpass`
 if [[ -z $SSHPASS ]]; then
+        echo ERROR: sshpass is not installed!!!!!!!!!!
 	apt-get install -y sshpass
-fi
-
-IPMITOOL=`which ipmitool`
-if [[ -z $IPMITOOL ]]; then
-	apt-get install -y ipmitool
 fi
 
 REBOOT_FILE="/tmp/fpga_reset.sh"
@@ -83,7 +88,12 @@ REBOOT_FILE="/tmp/fpga_reset.sh"
 if [[ -d /sys/class/net/enp3s0f0.2 ]]; then
 	BMC_IP="192.168.127.2"
 else
-	IPMI_LAN="ipmitool -U admin -P admin lan print 1"
+        IPMITOOL=`which ipmitool`
+        if [[ -z $IPMITOOL ]]; then
+                echo ERROR: ipmitool is not installed!!!!!!!!!!
+	        apt-get install -y ipmitool
+        fi
+	IPMI_LAN="ipmitool lan print 1"
 	AWK_LAN='/IP Address[ ]+:/ {print $4}'
 	BMC_IP=$($IPMI_LAN | awk "$AWK_LAN")
 fi

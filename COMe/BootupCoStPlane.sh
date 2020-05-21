@@ -1,5 +1,17 @@
 #!/bin/bash
 
+echo "*************************************************************************"
+echo "*                                                                       *"
+echo "*             INTERNAL TESTING USE ONLY                                 *"
+echo "*                                                                       *"
+echo "*             THIS SCRIPT WILL NOT WORK AT A CUSTOMER SITE              *"
+echo "*                                                                       *"
+echo "*             THIS SCRIPT WILL NOT WORK AT A CUSTOMER SITE              *" >&2
+echo "*                                                                       *" >&2
+echo "*             INTERNAL TESTING USE ONLY                                 *" >&2
+echo "*                                                                       *" >&2
+echo "*************************************************************************" >&2
+
 FUN_ROOT="/opt/fungible"
 DIR_FUN_CONFIG="/var/opt/fungible/fs1600/configure_bond"
 
@@ -12,12 +24,8 @@ echo "Running $0 (`date`)"
 
 SSHPASS=`which sshpass`
 if [[ -z $SSHPASS ]]; then
+        echo ERROR: sshpass is not installed!!!!!!!!!!
 	apt-get install -y sshpass
-fi
-
-IPMITOOL=`which ipmitool`
-if [[ -z $IPMITOOL ]]; then
-	apt-get install -y ipmitool
 fi
 
 BIN_TFTPD_HPA="/usr/sbin/in.tftpd"
@@ -245,15 +253,19 @@ if [[ -d $TFTPBOOT_DIR ]]; then
 	fi
 fi
 
-IPMI_LAN="ipmitool -U admin -P admin lan print 1"
-AWK_LAN='/IP Address[ ]+:/ {print $4}'
 REBOOT_FILE="/tmp/host_reboot"
-
-BMC_IP=$($IPMI_LAN | awk "$AWK_LAN")
-printf "BMC eth0 IP: %s\n" $BMC_IP
 
 if [[ -d /sys/class/net/enp3s0f0.2 ]]; then
 	BMC_IP="192.168.127.2"
+else
+        IPMITOOL=`which ipmitool`
+        if [[ -z $IPMITOOL ]]; then
+                echo ERROR: ipmitool is not installed!!!!!!!!!!
+	        apt-get install -y ipmitool
+        fi
+	IPMI_LAN="ipmitool lan print 1"
+	AWK_LAN='/IP Address[ ]+:/ {print $4}'
+	BMC_IP=$($IPMI_LAN | awk "$AWK_LAN")
 fi
 
 printf "Poll BMC:  %s\n" $BMC_IP
