@@ -1,0 +1,28 @@
+[
+  {
+    "id": "ARP timeout",
+    "reports": [
+      {"state": "pre_shutdown_timeout", "report": "unknown reason for stuck management port during HBM dump"},
+      {"state": "post_shutdown_timeout", "report": "stuck management port post shutdown"}
+    ],
+    "transitions": [
+      {"state": "start", "next_state": "shutdown", "conditions": ["platform_halt", "shutdown mgmt port"]},
+      {"state": "start", "next_state": "pre_shutdown_timeout", "conditions": ["MGMT MEMDUMP ARP timeout: tx packets 0"]},
+      {"state": "pre_shutdown_timeout", "next_state": "dump_complete", "conditions": ["MGMT MEMDUMP All Clients Complete"]},
+      {"state": "shutdown", "next_state": "post_shutdown_timeout", "conditions": ["MGMT MEMDUMP ARP timeout: tx packets 0"]}
+      ]
+  },
+  {
+    "id": "COMe stuck",
+    "reports": [
+      {"state":  "bug_check_from_perst", "report": "stuck COMe because FunOS crashed"}
+    ],
+    "transitions": [
+      {"state": "start", "next_state": "perst_low", "conditions": ["hw_hsu_perst.* PCIE perst 1 -> 0"]},
+      {"state": "perst_low", "next_state": "perst_high", "conditions": ["hw_hsu_perst.* PCIE perst 0 -> 1"]},
+      {"state": "perst_high", "next_state": "enumerated", "conditions": ["hw_hu.* unhandled misc cmd 7, HSU_MISC_RWU_CMD_FMASK"]},
+      {"state": "perst_high", "next_state": "bug_check_from_perst", "conditions": ["bug_check"]
+      }
+    ]
+  }
+]
