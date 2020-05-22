@@ -8,7 +8,8 @@ from verif_server import *
 from ctypes import *
 
 logger = logging.getLogger("csr_api_wrapper")
-logger.setLevel(logging.INFO)
+#logger.setLevel(logging.INFO)
+logger.setLevel(logging.ERROR)
 
 verif_svr_port=0
 
@@ -21,6 +22,7 @@ def load_lib():
 
 def setup_verif_socket_client():
    f1_csr_lib.csr_socket_set_dbg_level(0)
+   #f1_csr_lib.csr_socket_set_dbg_level(0)
 
 def connect_verif_server():
    f1_csr_lib.open_socket_port(verif_svr_port,args.verif_svr_hostname)
@@ -36,7 +38,7 @@ def run_verif_server():
    csrthread.start()
    if args.verif_svr_verbose:
       logger2 = logging.getLogger("verif_server")
-      logger2.setLevel(logging.DEBUG)
+      logger2.setLevel(logging.ERROR)
 
 def csr_wr(addr,data):
     status=[0]

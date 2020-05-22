@@ -33,7 +33,7 @@ import csr2
 # Use a global logger to match the convention set by related modules.
 #
 logger = logging.getLogger("csr2utils")
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.ERROR)
 
 
 class Register(object):
@@ -344,7 +344,7 @@ class CSRAccessor(object):
 
         addr = reg.addr
         csr_width_words = reg.width_bytes >> 3
-        logger.info('Peeking register at {0} '
+        logger.debug('Peeking register at {0} '
                     'with length {1}'.format(hex(addr), csr_width_words))
 
         (status, data) = self.dbgprobe.csr_peek(chip_inst=0,
@@ -401,7 +401,7 @@ class CSRAccessor(object):
             logger.error('Cannot write %d words for a register '
                          'which has %d words' % (len(values), csr_width_words))
             return False
-        logger.info('Poking register at {0} '
+        logger.debug('Poking register at {0} '
                     'with values {1}'.format(hex(addr), values))
 
         (status, data) = self.dbgprobe.csr_poke(chip_inst=0,

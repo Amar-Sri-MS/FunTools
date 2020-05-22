@@ -7,7 +7,7 @@ import pkg_resources
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("dut")
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.ERROR)
 
 class dut(object):
     def __init__(self):

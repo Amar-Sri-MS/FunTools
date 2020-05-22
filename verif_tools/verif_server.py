@@ -43,7 +43,8 @@ glb_rd_cnt=0
 glb_wr_cnt=0
 hnu_port_base=37
 logger = logging.getLogger("verif_server")
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.ERROR)
+#logger.setLevel(logging.INFO)
 verif_socket_port=0
 bmc_chip_inst=0
 

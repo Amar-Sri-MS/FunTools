@@ -5,7 +5,7 @@ import logging
 from jtagutils import jtagutils
 
 logger = logging.getLogger("jtagclient")
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.ERROR)
 
 class JTAG_Client(object):
     def __init__(self, chip_type):
