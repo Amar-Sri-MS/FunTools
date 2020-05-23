@@ -40,6 +40,16 @@
             "pad": 512,
             "description": "BMV feature-set"
         },
+        "ccfg-bmv-bm-multi-host.signed.bin": {
+            "source": "ccfg-bmv-bm-multihost.bjson",
+            "version": 1,
+            "fourcc": "ccfg",
+            "cert": "",
+            "customer_cert": "",
+            "key_index": 0,
+            "pad": 512,
+            "description": "BMV bm-multihost feature-set"
+        },
         "ccfg-null.signed.bin": {
             "source": "ccfg-null.bjson",
             "version": 1,
