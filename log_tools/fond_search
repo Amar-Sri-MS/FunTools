@@ -197,6 +197,9 @@ def apply_job_filter(job, args):
     if args.models and job.model not in args.models:
         return False
 
+    if args.machines and job.machines not in args.machines:
+        return False
+
     if args.emails and args.emails.isdisjoint(job.email):
         return False
 
@@ -331,6 +334,12 @@ def handle_args():
         default=None,
         type=set_arg,
         help="Only search on specific hardware models, comma separated",
+    )
+    parser.add_argument(
+        "--machines",
+        default=None,
+        type=set_arg,
+        help="Only search on specific machines, comma separated",
     )
     parser.add_argument(
         "-e",
