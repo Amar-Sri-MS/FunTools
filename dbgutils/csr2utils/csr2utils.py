@@ -537,8 +537,10 @@ def csr2_peek(args):
         csr_names.build()
         matched_csrs = csr_names.find_matching(regex)
         matched_csrs.sort()
-        print '\n'.join(matched_csrs)
+
+        print('\nTotal matched csrs:{}\n'.format(len(matched_csrs)))
         for csr in matched_csrs:
+            print('\n{}'.format(csr))
             csr2_peek_internal(csr)
     else:
         csr2_peek_internal(csr_path)

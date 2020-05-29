@@ -229,7 +229,11 @@ class DDR(object):
         ddr_addr = phys_addr // len(self.sna_addrs)
 
         # Divide by 2, which is the number of channels per MUD
+        channel = ddr_addr & 1
         ddr_addr = ddr_addr // 2
+
+        mud = (phys_addr & self.line_width) >> self.log2_line_width
+        logger.debug('phys_addr: {} mud:{} channel:{}'.format(hex(phys_addr), mud, channel))
 
         # And then we divide again to turn bytes into words
         ddr_addr = ddr_addr // self.line_width
