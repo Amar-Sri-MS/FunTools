@@ -81,8 +81,8 @@ static bool _verbose_log = false;
 #define DEFAULT_NVME_CMD_TIMEOUT_MS "0"
 
 /* socket connect retry parameters */
-#define RETRY_DEFAULT (40)  /* retry for 40 seconds */
-#define RETRY_NOARG   (40)
+#define RETRY_DEFAULT (60)  /* retry for 60 seconds; 40 is not enough sometimes */
+#define RETRY_NOARG   (RETRY_DEFAULT)
 static uint16_t connect_retries = RETRY_DEFAULT;
 
 // We stash argv[0]
