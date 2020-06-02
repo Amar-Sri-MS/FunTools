@@ -337,6 +337,7 @@ class CSRAccessor(object):
         Returns a RegisterValue object on success, else returns None and
         logs an error.
         """
+        logger.info('csr: {}'.format(path))
         reg, error = self.reg_finder.find_reg(path)
         if error:
             logger.error(error)
@@ -511,6 +512,8 @@ def init_bundle_lazily():
 
 
 def csr2_peek_internal(csr_path):
+    if not init_bundle_lazily():
+        return
     finder = RegisterFinder(bundle)
     accessor = CSRAccessor(dbgprobe(), finder)
     regval = accessor.peek(csr_path)
