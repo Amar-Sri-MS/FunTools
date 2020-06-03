@@ -128,22 +128,23 @@ class AnchorMatch:
 
 
 class AnchorMatcher:
-    def __init__(self, anchor_files, timestamped_only=False):
+    def __init__(self, anchor_files, anchor_keys, timestamped_only=False):
         """Construct an AnchorMatcher object. This provides an interface that
         can return AnchorMatch objects given a filename for a log.
 
         Args:
             anchor_files (str list): List of strings that represent filenames
                                      of files that contain JSON anchors.
+            anchor_keys (set):       List of keys to use from anchors file.
             timestamped_only (bool): Limit to only matches that have a
                                      timestamp associated with them.
         """
 
         self.timestamped_only = timestamped_only
-        anchors = self._load_anchors(anchor_files)
+        anchors = self._load_anchors(anchor_files, anchor_keys)
         self.compiled, self.uber_compiled = self._generate_matchers(anchors)
 
-    def _load_anchors(self, anchor_files):
+    def _load_anchors(self, anchor_files, anchor_keys):
         """Generate a list of dictionaries representing the anchors in the
         given files. Each line in the anchor file will be treated as a separate
         valid JSON anchor. If the line starts with a '#' character, it will be
@@ -159,7 +160,9 @@ class AnchorMatcher:
                     # Each anchor is it's own valid piece of JSON. The anchors
                     # file as a whole is not valid JSON.
                     if line and not line.startswith("#"):
-                        anchors.append(json.loads(line))
+                        anchor = json.loads(line)
+                        if anchor_keys == None or anchor["key"] in anchor_keys:
+                            anchors.append(anchor)
 
         return anchors
 
@@ -283,7 +286,8 @@ def print_results(args, matches, multimode):
 
 
 def process_logs(args, multimode):
-    matcher = AnchorMatcher(args.anchors, timestamped_only=multimode)
+    matcher = AnchorMatcher(args.anchors, args.anchor_keys,
+                            timestamped_only=multimode)
     if not multimode:
         return matcher.generate_matches(args.logs[0])
 
@@ -307,6 +311,10 @@ def main(args):
     print_results(args, matches, multimode)
 
 
+def set_arg(arg):
+    return set(arg.split(","))
+
+
 def handle_args():
     description = "Search FunOS logs for interesting events"
 
@@ -321,6 +329,12 @@ def handle_args():
         nargs="*",
         default=["$WORKSPACE/FunOS/docs/anchors.json"],
         help="Anchors file",
+    )
+    parser.add_argument(
+        "--anchor-keys",
+        default=None,
+        type=set_arg,
+        help="Filter to anchors with specific keys",
     )
     parser.add_argument(
         "--color",
