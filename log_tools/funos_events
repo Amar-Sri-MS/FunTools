@@ -334,7 +334,7 @@ def handle_args():
         "--anchor-keys",
         default=None,
         type=set_arg,
-        help="Filter to anchors with specific keys",
+        help="Show only provided comma-separated anchors",
     )
     parser.add_argument(
         "--color",
