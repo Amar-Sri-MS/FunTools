@@ -202,6 +202,18 @@ if [[ -d $TFTPBOOT_DIR ]]; then
 	fi
 fi
 
+# SWLINUX-1283:
+# No user of this database at this point
+# becasue cclinux is not started
+if [[ -d /var/opt/fungible/F1-0/lib/redis ]]; then
+  echo "Removing /var/opt/fungible/F1-0/lib/redis"
+  /bin/rm -rf /var/opt/fungible/F1-0/lib/redis
+fi
+if [[ -d /var/opt/fungible/F1-1/lib/redis ]]; then
+  echo "Removing /var/opt/fungible/F1-1/lib/redis"
+  /bin/rm -rf /var/opt/fungible/F1-1/lib/redis
+fi
+
 IPMITOOL=`which ipmitool`
 if [[ -z "$IPMITOOL" ]]; then
 	echo ERROR: ipmitool is not installed!!!!!!!!!!
