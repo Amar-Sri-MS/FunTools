@@ -19,44 +19,47 @@ def _hu_csr2_dump():
     csr_name = 'hu0.fmr.switch_stat_cnt_0'
     for i in range(82):
         csr_name_full = csr_name + '[{}]'.format(i)
-        logger.info('csr: {}'.format(csr_name_full))
+        print('csr: {}'.format(csr_name_full))
         csr2utils.csr2_peek_internal(csr_name_full)
 
     csr_name = 'hu0.fmr.switch_stat_cnt_1'
     for i in range(8):
         csr_name_full = csr_name + '[{}]'.format(i)
-        logger.info('csr: {}'.format(csr_name_full))
+        print('\ncsr: {}'.format(csr_name_full))
         csr2utils.csr2_peek_internal(csr_name_full)
 
     csr_name = 'hu0.fmr.switch_stat_cnt_2'
     for i in range(56):
         csr_name_full = csr_name + '[{}]'.format(i)
-        logger.info('csr: {}'.format(csr_name_full))
+        print('\ncsr: {}'.format(csr_name_full))
         csr2utils.csr2_peek_internal(csr_name_full)
 
     csr_name = 'hu1.fmr.switch_stat_cnt_0'
     for i in range(82):
         csr_name_full = csr_name + '[{}]'.format(i)
-        logger.info('csr: {}'.format(csr_name_full))
+        print('\ncsr: {}'.format(csr_name_full))
         csr2utils.csr2_peek_internal(csr_name_full)
 
     csr_name = 'hu1.fmr.switch_stat_cnt_1'
     for i in range(8):
         csr_name_full = csr_name + '[{}]'.format(i)
-        logger.info('csr: {}'.format(csr_name_full))
+        print('\ncsr: {}'.format(csr_name_full))
         csr2utils.csr2_peek_internal(csr_name_full)
 
     csr_name = 'hu1.fmr.switch_stat_cnt_2'
     for i in range(56):
         csr_name_full = csr_name + '[{}]'.format(i)
-        logger.info('csr: {}'.format(csr_name_full))
+        print('\ncsr: {}'.format(csr_name_full))
         csr2utils.csr2_peek_internal(csr_name_full)
 
 def hu_csr2_dump(perioc_interval=0):
     if perioc_interval > 0:
+        iter_cnt = 0
         while True:
+            print('\n\nhu_csr_dump: iteration: {}'.format(iter_cnt))
             _hu_csr2_dump()
             time.sleep(perioc_interval)
+            iter_cnt += 1
     else:
         _hu_csr2_dump()
 
@@ -67,14 +70,17 @@ mio2_csr_list = ['mio2.i2c_m0_pad_cfg',
 
 def _mio2_csr_dump():
     for num,csr in enumerate(mio2_csr_list):
-        logger.info('csr: [{}/{}] {}'.format(num+1, len(mio2_csr_list), csr))
+        print('csr: [{}/{}] {}'.format(num+1, len(mio2_csr_list), csr))
         csr2utils.csr2_peek_internal(csr);
 
 def mio2_csr_dump(perioc_interval=0):
     if perioc_interval > 0:
+        iter_cnt = 0
         while True:
+            print('\n\nmio2_csr_dump: iteration: {}'.format(iter_cnt))
             _mio2_csr_dump()
             time.sleep(perioc_interval)
+            iter_cnt += 1
     else:
         _mio2_csr_dump()
 
