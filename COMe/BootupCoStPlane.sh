@@ -10,6 +10,44 @@ fi
 
 echo "Running $0 (`date`)"
 
+Check_NM_Status()
+{
+  COUNT=0
+  while [[ ${COUNT} -ne 30 ]]; do
+    NM_STATE=`nmcli -t -f STATE general 2>/dev/null`
+    echo "NM_STATE=${NM_STATE}"
+    if [[ ${NM_STATE} == "connected" ]]; then
+      return 0
+    fi
+    COUNT=$((COUNT + 1))
+    sleep 1
+  done
+
+  return 1
+}
+
+RETRY_CNT=2
+while [[ ${RETRY_CNT} -ne 0 ]]; do
+  # Wait for NM to be in a connected state
+  Check_NM_Status
+  RC=${?}
+  if [[ ${RC} -ne 0 ]]; then
+    # SWSYS-1026
+    echo "Restarting networking"
+    netplan apply
+  else
+    echo "NM is connected (Waited for ${COUNT} secs)"
+    break
+  fi
+  RETRY_CNT=$((RETRY_CNT - 1))
+done
+
+echo "Show status of devices controlled by NM"
+nmcli device status
+echo "List all nmcli connections:"
+nmcli connection show
+echo "Check-point: `date`"
+
 SSHPASS=`which sshpass`
 if [[ -z $SSHPASS ]]; then
         echo ERROR: sshpass is not installed!!!!!!!!!!
