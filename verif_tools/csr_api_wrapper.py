@@ -38,7 +38,7 @@ def run_verif_server():
    csrthread.start()
    if args.verif_svr_verbose:
       logger2 = logging.getLogger("verif_server")
-      logger2.setLevel(logging.ERROR)
+      logger2.setLevel(logging.DEBUG)
 
 def csr_wr(addr,data):
     status=[0]
