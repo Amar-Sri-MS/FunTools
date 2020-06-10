@@ -1,17 +1,17 @@
 #!/usr/bin/env python
 
 """
-DDR read/write/copy utilities
+Sample s1 debug utility functions for convenient debugging
 
 Usage:
 ------
-python csr2dump.py --dut S1DB-4 --mode jtag <options>
+python s1_debug.py --dut S1DB-4 --mode jtag <options>
 """
 from csrutils.csrutils import *
 from csr2utils import *
 import time
 
-logger = logging.getLogger("csr2dump")
+logger = logging.getLogger("s1_debug")
 logger.setLevel(logging.INFO)
 
 # HSU csr dump
@@ -96,7 +96,7 @@ def mio2_cfg():
 # Main
 def main():
     parser = argparse.ArgumentParser(
-        description="csr read/write utilities")
+        description="s1 debug utilities")
 
     parser.add_argument("--dut", required=True, type=str, help="Dut name")
     parser.add_argument("--mode", required=True, type=str, help="Dut name")
