@@ -92,11 +92,11 @@ class SKUCfgGen():
                 del cfg_json[key]
                 cfg_json.update(entry)
                 continue
-	    if type(val) is dict:
+            if type(val) is dict:
                 self.apply_defaults_to_board_config(val, def_cfg)
             elif type(val) is list:
                 for item in val:
-	            if type(item) is dict:
+                    if type(item) is dict:
                         self.apply_defaults_to_board_config(item, def_cfg)
 
     def get_posix_or_emu_configs(self, board_cfg):

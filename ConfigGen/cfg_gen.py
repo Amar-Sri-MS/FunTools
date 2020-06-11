@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2.7
 
 # cfg_gen.py
 # The config generator is intended to simplify configuration file maintenance,
