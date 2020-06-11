@@ -195,9 +195,9 @@ def local_csr_peek(csr_addr, csr_width):
 @command()
 def local_csr_poke( csr_addr, word_array):
     '''Poke word_array(an array of 64-bit words) at csr_addr'''
-    logger.info(('csr poke addr:{0}'
-                 ' words:{1}').format(hex(csr_addr),
-                   [hex(x) for x in word_array]))
+    #logger.error(('csr poke addr:{0}'
+    #             ' words:{1}').format(hex(csr_addr),
+    #               [hex(x) for x in word_array]))
 
     if csr_addr is None or word_array is None:
         logger.error(('Invalid csr poke arguments! csr_addr: {0} word_array:'

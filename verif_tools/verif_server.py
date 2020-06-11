@@ -43,7 +43,8 @@ glb_rd_cnt=0
 glb_wr_cnt=0
 hnu_port_base=37
 logger = logging.getLogger("verif_server")
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.ERROR)
+#logger.setLevel(logging.INFO)
 verif_socket_port=0
 bmc_chip_inst=0
 
@@ -241,14 +242,14 @@ def process_cmd_csr_write (msg_len):
   #get 8B addr
   buf = recv_str(8)
   (addr,) = struct.unpack(">Q", buf[:8])
-  logger.debug('in process_cmd_csr_write cnt=%0d, address = 0x%x '%(glb_wr_cnt,addr))
+  #logger.debug('in process_cmd_csr_write cnt=%0d, address = 0x%x '%(glb_wr_cnt,addr))
 #  print 'address is 0x%x' % (addr)
 
   #now get the csr write data
   data_len = msg_len - 2 - 1 - 8 #msg_len - MSGLEN_SIZE - CMD_SIZE - ADDR_SIZE
   data_str = recv_str(data_len)
   data_list_bytes = [ord(i) for i in list(data_str)]
-  logger.debug("{0}".format(data_list_bytes))
+  #logger.debug("{0}".format(data_list_bytes))
   data_words_list = byte_array_to_words_be(array('B', data_list_bytes))
   #print "csr_poke data:"
   #print data_words_list
@@ -384,7 +385,7 @@ def process_cmd_csr_read (msg_len):
       (status,result) = (True,[random.randint(0,0x10000000000000000)]*dword_len)
   else:
       (status, result) = dbgprobe().csr_peek(addr, dword_len, chip_inst=bmc_chip_inst)
-  logger.debug("result={0}".format(result))
+  #logger.debug("result={0}".format(result))
 
   if status is False:
       logger.error("csr_peek returned false")
@@ -396,7 +397,7 @@ def process_cmd_csr_read (msg_len):
   else:
     read_data_hex_str = 'deadbeefdeadbeef' #make up a dummy result
 
-  logger.debug("read: addr=0x%0x data=%s,gbl_rd_cnt=%0d"%(addr,read_data_hex_str,glb_rd_cnt))
+  #logger.debug("read: addr=0x%0x data=%s,gbl_rd_cnt=%0d"%(addr,read_data_hex_str,glb_rd_cnt))
 
   #finally send reply
   reply_len = 2 + 1 + 8*dword_len #msg_size + command + Bytes of data
@@ -443,12 +444,13 @@ def connect_dbgprobe(tpod,tpod_jtag,tpod_pcie,tpod_force):
 
     if tpod_jtag:
        jtag_info=duts.get_jtag_info(tpod)
-       if jtag_info[0]:
-          (bmc,bmc_ip,jtag_probe_id, jtag_probe_ip)=jtag_info
-       else:
-          (bmc,jtag_probe_id, jtag_probe_ip)=jtag_info
+       (bmc,jtag_probe_id, jtag_probe_ip,chip_type,jtag_bitrate)=jtag_info
        print "connecting to JTAG Proxy "+jtag_probe_ip
-       status = dbgprobe().connect(mode='jtag',probe_ip_addr=jtag_probe_ip,probe_id=jtag_probe_id)
+       status = dbgprobe().connect(mode='jtag',
+                                   probe_ip_addr=jtag_probe_ip,
+                                   probe_id=jtag_probe_id,
+                                   chip_type=chip_type,
+                                   jtag_bitrate=jtag_bitrate)
        if status is True:
           print("JTAG Server Connection Successful!")
        else:
@@ -470,26 +472,31 @@ def connect_dbgprobe(tpod,tpod_jtag,tpod_pcie,tpod_force):
           pcie_ccu_bar = dut_pcie_info[2]
           pcie_probe_ip = dut_pcie_info[3]
           print("connecting to PCIE bar={0} ip={1}".format(pcie_ccu_bar,pcie_probe_ip))
-#          print("connecting to PCIE bar={0} ip={1} bmc_ip={2}".format(pcie_ccu_bar,pcie_probe_ip,bmc_ip))
           status = dbgprobe().connect(mode='pcie', bmc_board=False,
                                       probe_ip_addr=pcie_probe_ip,
                                       probe_id = pcie_ccu_bar)
-#          status = dbgprobe().connect(mode='pcie', bmc_board=True,
-#                                      bmc_ip_address=bmc_ip,
-#                                      probe_ip_addr=pcie_probe_ip,
-#                                      probe_id = pcie_ccu_bar)
        print("connecting to PCIE bar={0} ip={1} status={2}".format(pcie_ccu_bar,pcie_probe_ip,status))
        if status is False:
           sys.exit(1)
     else:
        i2c_info = duts.get_i2c_info(tpod)
        if i2c_info[0] is True:
-          (bmc,bmc_ip)=i2c_info
-          status = dbgprobe().connect(bmc_board=bmc,mode='i2c', bmc_ip_address=bmc_ip)
+          (bmc,bmc_ip,chip_type)=i2c_info
+          status = dbgprobe().connect(bmc_board=bmc,
+                                      mode='i2c',
+                                      bmc_ip_address=bmc_ip,
+                                      chip_type=chip_type)
        else:
-          (bmc,i2c_probe_serial, i2c_proxy_ip, i2c_slave_addr, this_i2c_bitrate)=i2c_info
+          (bmc,i2c_probe_serial, i2c_proxy_ip, i2c_slave_addr, this_i2c_bitrate,chip_type)=i2c_info
           print "connecting to I2C Proxy "+i2c_proxy_ip
-          status = dbgprobe().connect(bmc_board=bmc,mode='i2c', probe_ip_addr=i2c_proxy_ip , probe_id=i2c_probe_serial , slave_addr=i2c_slave_addr,force=tpod_force, i2c_bitrate=this_i2c_bitrate)
+          status = dbgprobe().connect(bmc_board=bmc,
+                                      mode='i2c',
+                                      probe_ip_addr=i2c_proxy_ip,
+                                      probe_id=i2c_probe_serial,
+                                      slave_addr=i2c_slave_addr,
+                                      force=tpod_force,
+                                      i2c_bitrate=this_i2c_bitrate,
+                                      chip_type=chip_type)
        if status is True:
           print("I2C Server Connection Successful!")
        else:

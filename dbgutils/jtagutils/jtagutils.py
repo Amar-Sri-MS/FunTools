@@ -11,7 +11,8 @@ import logging
 import time
 
 logger = logging.getLogger('jtagutils')
-logger.setLevel(logging.INFO)
+#logger.setLevel(logging.INFO)
+logger.setLevel(logging.ERROR)
 
 class constants(object):
     CSR_RING_TAP_SELECT = 0x01C1
@@ -307,7 +308,7 @@ def csr_poke(csr_addr, word_array, chip='f1'):
     '''Poke word_array(an array of 64-bit words) at csr_addr'''
     chip_jtag = _get_chip_jtag(chip)
 
-    logger.info(('csr poke addr:{0}'
+    logger.debug(('csr poke addr:{0}'
                  ' words:{1}').format(hex(csr_addr),
                    [hex(x) for x in word_array]))
 
