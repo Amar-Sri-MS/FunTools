@@ -45,25 +45,11 @@ class DpcClient(object):
         self.__sock.connect(server_address)
         self.__sock_file = self.__sock.makefile(mode='rb')
 
-    def __recv_lines(self):
+    def __recv_one_line(self):
         return self.__sock_file.readline().rstrip()
 
-    def __valid_json(self, str):
-        if not str:
-            return False
-        try:
-            json.loads(str)
-        except ValueError:
-            return False
-        return True
-
     def __recv_json(self):
-        json = self.__recv_lines()
-        while not self.__valid_json(json):
-            json += self.__recv_lines()
-            if (not json) :
-                break
-        return json
+        return self.__recv_one_line()
 
     def __send_line(self, line):
         self.__sock.sendall(line + '\n')
