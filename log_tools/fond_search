@@ -32,6 +32,7 @@ import signal
 import shutil
 import sys
 import os
+import re
 
 DEMAND_FS_ROOT = "/demand/demand"
 DEMAND_FS_JOB_PREFIX = DEMAND_FS_ROOT + "/Jobs"
@@ -220,6 +221,9 @@ def apply_job_filter(job, args):
         if size > args.file_size_upper_bound:
             return False
 
+    if args.description and not args.description.search(job.note):
+        return False
+
     return True
 
 
@@ -303,12 +307,22 @@ def set_arg(arg):
     return set(arg.split(","))
 
 
+def re_arg(arg):
+    return re.compile(arg)
+
+
 def handle_args():
     description = "Search Fun-on-Demand jobs. Fun-on-Demand filesystem must be mounted at {demand_fs_root}."
     parser = argparse.ArgumentParser(
         description=description.format(demand_fs_root=DEMAND_FS_ROOT)
     )
 
+    parser.add_argument(
+        "--description",
+        default=None,
+        help="Only search for jobs with description matching given pattern",
+        type=re_arg,
+    )
     parser.add_argument(
         "--hbmdump",
         default="all",
