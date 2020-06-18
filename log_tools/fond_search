@@ -146,6 +146,10 @@ class JobMatch:
         return bool(int(hbmdump))
 
     @property
+    def return_code(self):
+        return self.jobinfo.get("return_code", None)
+
+    @property
     def return_code_msg(self):
         return self.jobinfo.get("return_code_msg", "?")
 
@@ -223,6 +227,13 @@ def apply_job_filter(job, args):
 
     if args.description and not args.description.search(job.note):
         return False
+
+    if args.failed_only:
+        return_code = job.return_code
+        if return_code:
+            return_code = int(return_code)
+            if return_code == 0:
+                return False
 
     return True
 
@@ -322,6 +333,11 @@ def handle_args():
         default=None,
         help="Only search for jobs with description matching given pattern",
         type=re_arg,
+    )
+    parser.add_argument(
+        "--failed-only",
+        action="store_true",
+        help="Only search for failed jobs",
     )
     parser.add_argument(
         "--hbmdump",
