@@ -18,3 +18,5 @@ install-logtools:
 	install fond_search $(SDK_INSTALL_DIR)/bin/scripts
 	install funos_events $(SDK_INSTALL_DIR)/bin/scripts
 	install funos_timestamp $(SDK_INSTALL_DIR)/bin/scripts
+	install funos_log_splitter $(SDK_INSTALL_DIR)/bin/scripts
+	install funos_log_merger $(SDK_INSTALL_DIR)/bin/scripts

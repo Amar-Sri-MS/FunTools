@@ -22,7 +22,7 @@ fast trace buffer which is usually in case of aborts.
 
 To split by ccv and output to a directory called out_ccv:
 
-benturrubiates at vodex :: $WK/FunTools/split_funos_log --directory out_ccv --split ccv uartout0.0.txt
+benturrubiates at vodex :: $WK/FunTools/log_tools/funos_log_splitter --directory out_ccv --split ccv uartout0.0.txt
 benturrubiates at vodex :: ls -1 out_ccv | head -n 5
 0.0.0
 0.0.3
@@ -32,7 +32,7 @@ benturrubiates at vodex :: ls -1 out_ccv | head -n 5
 
 To split by res type and output to a directory called out_res:
 
-benturrubiates at vodex :: $WK/FunTools/split_funos_log --directory out_res --split res_type uartout0.0.txt
+benturrubiates at vodex :: $WK/FunTools/log_tools/funos_log_splitter --directory out_res --split res_type uartout0.0.txt
 benturrubiates at vodex :: ls -1 out_res | head -n 5
 device_interface
 epcq
