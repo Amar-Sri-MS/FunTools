@@ -15,6 +15,7 @@ import jsonutils
 from itertools import chain
 import argparse
 from hwcap_cfg_gen import HWCAPCodeGen
+import collections
 
 logger = logging.getLogger('sku_cfg_gen')
 logger.setLevel(logging.INFO)
@@ -79,25 +80,43 @@ class SKUCfgGen():
 
                 self.build_default_config(def_json, def_cfg)
 
+    def merge_entry(self, entry, cfg_json):
+        """Modifies entry in place to contain values from cfg_json. If any value
+        in entry is a dictionary, and the corresponding value in cfg_json is
+        also a dictionary, then merge them in place.
+        """
+        for key, val_json in cfg_json.items():
+            val_entry = entry.get(key)
+            if (isinstance(val_entry, collections.Mapping) and
+                 isinstance(val_json, collections.Mapping)):
+                self.merge_entry(val_entry, val_json)
+            else:
+                entry[key] = val_json
+
+    def update_entry(self, key, cfg_json, def_cfg):
+        """Applies the defaults to an entry.
+        """
+        entry = {}
+        entry.update(def_cfg[key])
+        self.merge_entry(entry, cfg_json[key])
+        del cfg_json[key]
+        cfg_json.update(entry)
+
     def apply_defaults_to_board_config(self, cfg_json, def_cfg):
         """Traverse the board configuration recursevely looking for entries to
         apply default configuration to.
         """
         for key, val in cfg_json.items():
-            if key in list(def_cfg.keys()):
-                # Apply defaults to this entry
-                entry = {}
-                entry.update(def_cfg[key])
-                entry.update(cfg_json[key])
-                del cfg_json[key]
-                cfg_json.update(entry)
-                continue
             if type(val) is dict:
                 self.apply_defaults_to_board_config(val, def_cfg)
+                if key in list(def_cfg.keys()):
+                    self.update_entry(key, cfg_json, def_cfg)
             elif type(val) is list:
                 for item in val:
                     if type(item) is dict:
                         self.apply_defaults_to_board_config(item, def_cfg)
+                        if key in list(def_cfg.keys()):
+                            self.update_entry(key, cfg_json, def_cfg)
 
     def get_posix_or_emu_configs(self, board_cfg):
         """Get the configuration for all the posix or emulations that
