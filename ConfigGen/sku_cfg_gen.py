@@ -16,6 +16,7 @@ from itertools import chain
 import argparse
 from hwcap_cfg_gen import HWCAPCodeGen
 import collections
+import copy
 
 logger = logging.getLogger('sku_cfg_gen')
 logger.setLevel(logging.INFO)
@@ -198,8 +199,7 @@ class SKUCfgGen():
 
                     # Apply defaults to the board configuration
                     self.apply_defaults_to_board_config(cfg_json, def_cfg)
-
-                    board_cfg = jsonutils.merge_dicts(board_cfg, cfg_json)
+                    board_cfg = jsonutils.merge_dicts(board_cfg, copy.deepcopy(cfg_json))
         return board_cfg
 
     def get_additions(self, board_cfg, addition_machine):
