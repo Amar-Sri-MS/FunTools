@@ -51,19 +51,19 @@ class DpcClient(object):
         self.__sock_file = self.__sock.makefile(mode='rb')
 
     # main interface for running DPC commands
-    def execute(self, verb, arg_list, tid = None):
+    def execute(self, verb, arg_list, tid = None, custom_timeout = False, timeout_seconds = None):
 
         # make sure verb is just a verb
         if (" " in verb):
             raise RuntimeError("no spaces allowed in verbs")
         # make it a string and send it & get results
-        tid = self.async_send(verb, arg_list, tid)
-        results = self.async_recv_wait(tid)
+        tid = self.async_send(verb, arg_list, tid, custom_timeout, timeout_seconds)
+        results = self.async_recv_wait(tid, custom_timeout, timeout_seconds)
 
         return results
 
     # XXX: legacy interface. Avoid using this
-    def execute_command(self, command, args):
+    def execute_command(self, command, args, custom_timeout = False, timeout_seconds = None):
 
         if (not self.__legacy_ok):
             raise RuntimeError("Attempted legacy command on non-legacy client instance")
@@ -74,7 +74,7 @@ class DpcClient(object):
         cmd_line = "#!sh " + command + ' ' + encoded_args
 
         # send the request
-        self.__send_raw(cmd_line)
+        self.__send_raw(cmd_line, custom_timeout, timeout_seconds)
 
         # XXX: we know what dpcsh will always stuff a zero tid for
         # legacy commands
@@ -100,7 +100,7 @@ class DpcClient(object):
         self.__execute_timeout_seconds = timeout_seconds
         self.__sock.settimeout(timeout_seconds)
 
-    def async_send(self, verb, arg_list, tid = None):
+    def async_send(self, verb, arg_list, tid = None, custom_timeout = False, timeout_seconds = None):
 
         if (tid is None):
             tid = self.__get_next_tid()
@@ -114,13 +114,13 @@ class DpcClient(object):
 
         # stringify and send it
         json_str = json.dumps(json_dict)
-        self.__send_raw(json_str)
+        self.__send_raw(json_str, custom_timeout, timeout_seconds)
 
         return tid
 
-    def async_wait(self):
+    def async_wait(self, custom_timeout = False, timeout_seconds = None):
         # just pull the first thing off the wire and return it
-        result = self.__recv_json()
+        result = self.__recv_json(custom_timeout, timeout_seconds)
         self.__print(result)
 
         if ((result is None) or (result == "")):
@@ -134,33 +134,34 @@ class DpcClient(object):
 
         return decoded_results
 
-    def async_recv_any_raw(self):
+    def async_recv_any_raw(self, custom_timeout = False, timeout_seconds = None):
         # try and dequeue the first queued
         if (len(self.__async_queue) > 0):
             r = self.__async_queue.pop(0)
             return r
 
         # wait for something else
-        return self.async_wait()
+        return self.async_wait(custom_timeout, timeout_seconds)
 
     def async_recv_any(self):
         return DpcClient.__handle_response(self.async_recv_any_raw())
 
-    def async_recv_wait_raw(self, tid = None):
+    def async_recv_wait_raw(self, tid = None, custom_timeout = False, timeout_seconds = None):
         # see if it's already pending
         for r in self.__async_queue:
             if (tid is None or r['tid'] == tid or r['tid'] == -1):
                 self.__async_queue.remove(r)
                 return r
 
-        start_time = time.time() if self.__execute_timeout_seconds is not None else None
+        effective_timeout = self.__execute_timeout_seconds if custom_timeout == False else timeout_seconds
+        start_time = time.time() if effective_timeout is not None else None
 
         # wait and dequeue until we find the one we want
         while True:
-            if start_time is not None and time.time() - start_time > self.__execute_timeout_seconds:
+            if start_time is not None and time.time() - start_time > effective_timeout:
                 raise DpcTimeoutError('async_recv_wait_raw() timeout')
 
-            r = self.async_wait()
+            r = self.async_wait(custom_timeout, timeout_seconds)
             if r is None:
                 return r
             if tid is None or r['tid'] == tid or r['tid'] == -1:
@@ -168,25 +169,37 @@ class DpcClient(object):
 
             self.__async_queue.append(r)
 
-    def async_recv_wait(self, tid = None):
-        r = self.async_recv_wait_raw(tid)
+    def async_recv_wait(self, tid = None, custom_timeout = False, timeout_seconds = None):
+        r = self.async_recv_wait_raw(tid, custom_timeout, timeout_seconds)
 
         return DpcClient.__handle_response(r)
 
-    def __recv_one_line(self):
+    def __recv_one_line(self, custom_timeout, timeout_seconds):
+        old_timeout = self.__sock.gettimeout()
+        if custom_timeout:
+            self.__sock.settimeout(timeout_seconds)
         try:
             return self.__sock_file.readline().rstrip()
         except socket.timeout:
             raise DpcTimeoutError('readline() timeout')
+        finally:
+            if custom_timeout:
+                self.__sock.settimeout(old_timeout)
 
-    def __recv_json(self):
-        return self.__recv_one_line()
+    def __recv_json(self, custom_timeout, timeout_seconds):
+        return self.__recv_one_line(custom_timeout, timeout_seconds)
 
-    def __send_line(self, line):
+    def __send_line(self, line, custom_timeout, timeout_seconds):
+        old_timeout = self.__sock.gettimeout()
+        if custom_timeout:
+            self.__sock.settimeout(timeout_seconds)
         try:
             self.__sock.sendall(line + '\n')
         except socket.timeout:
             raise DpcTimeoutError('sendall() timeout')
+        finally:
+            if custom_timeout:
+                self.__sock.settimeout(old_timeout)
 
     def __print(self, text, end = '\n'):
         if self.__verbose != True:
@@ -201,9 +214,9 @@ class DpcClient(object):
         self.__next_tid += 1
         return tid
 
-    def __send_raw(self, jstr):
-        self.__print(jstr, ' -> ')
-        self.__send_line(jstr)
+    def __send_raw(self, json_str, custom_timeout, timeout_seconds):
+        self.__print(json_str, ' -> ')
+        self.__send_line(json_str, custom_timeout, timeout_seconds)
 
     @staticmethod
     def __handle_response(r):
