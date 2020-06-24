@@ -45,14 +45,40 @@ class DpcClient(object):
         self.__sock.connect(server_address)
         self.__sock_file = self.__sock.makefile(mode='rb')
 
-    def __recv_one_line(self):
-        return self.__sock_file.readline().rstrip()
+    # main interface for running DPC commands
+    def execute(self, verb, arg_list, tid = None):
 
-    def __recv_json(self):
-        return self.__recv_one_line()
+        # make sure verb is just a verb
+        if (" " in verb):
+            raise RuntimeError("no spaces allowed in verbs")
+        # make it a string and send it & get results
+        tid = self.async_send(verb, arg_list, tid)
+        results = self.async_recv_wait(tid)
 
-    def __send_line(self, line):
-        self.__sock.sendall(line + '\n')
+        return results
+
+    # XXX: legacy interface. Avoid using this
+    def execute_command(self, command, args):
+
+        if (not self.__legacy_ok):
+            raise RuntimeError("Attempted legacy command on non-legacy client instance")
+
+        encoded_args = json.dumps(args)
+
+        # #!sh prefix to ensure it's parsed as legacy input
+        cmd_line = "#!sh " + command + ' ' + encoded_args
+
+        # send the request
+        self.__send_raw(cmd_line)
+
+        # XXX: we know what dpcsh will always stuff a zero tid for
+        # legacy commands
+        results = self.async_recv_wait()
+
+        if (command == 'execute'):
+            # XXX: flatten it back down for legacy clients
+            return json.dumps(results)
+        return results
 
     # Whether to print each command line and its result
     def set_verbose(self, verbose = True):
@@ -61,48 +87,10 @@ class DpcClient(object):
     def set_truncate_long_lines(self, truncate = True):
         self.__truncate_long_lines = truncate
 
-    def __print(self, text, end = '\n'):
-        if self.__verbose != True:
-            return
-        if self.__truncate_long_lines and len(text) > 255:
-            print(text[:252] + '...', end=end)
-        else:
-            print(text, end=end)
-
-    def next_tid(self):
-        tid = self.__next_tid
-        self.__next_tid += 1
-        return tid
-
-    def send_raw(self, jstr):
-        self.__print(jstr, ' -> ')
-        self.__send_line(jstr)
-
-    @staticmethod
-    def handle_response(r):
-        """
-        the response returned by dpcsh should contain either an 'error' key, or
-        a 'result' key if the JSON is parsable.
-        """
-
-        if not r:
-            return r
-
-        if 'proxy-msg' in r:
-            raise DpcProxyError(r['proxy-msg'])
-
-        if 'error' in r:
-            raise DpcExecutionError(r['error'])
-
-        if 'exception' in r:
-            raise DpcExecutionException(r['exception'])
-
-        return r['result']
-
     def async_send(self, verb, arg_list, tid = None):
 
         if (tid is None):
-            tid = self.next_tid()
+            tid = self.__get_next_tid()
 
         # make the args a list if it's just a dict or int or something
         if (type(arg_list) is not list):
@@ -113,7 +101,7 @@ class DpcClient(object):
 
         # stringify and send it
         jstr = json.dumps(jdict)
-        self.send_raw(jstr)
+        self.__send_raw(jstr)
 
         return tid
 
@@ -143,7 +131,7 @@ class DpcClient(object):
         return self.async_wait()
 
     def async_recv_any(self):
-        return DpcClient.handle_response(self.async_recv_any_raw())
+        return DpcClient.__handle_response(self.async_recv_any_raw())
 
     def async_recv_wait_raw(self, tid = None):
         # see if it's already pending
@@ -165,40 +153,51 @@ class DpcClient(object):
     def async_recv_wait(self, tid = None):
         r = self.async_recv_wait_raw(tid)
 
-        return DpcClient.handle_response(r)
+        return DpcClient.__handle_response(r)
 
+    def __recv_one_line(self):
+        return self.__sock_file.readline().rstrip()
 
-    # preferred interface
-    def execute(self, verb, arg_list, tid = None):
+    def __recv_json(self):
+        return self.__recv_one_line()
 
-        # make sure verb is just a verb
-        if (" " in verb):
-            raise RuntimeError("no spaces allowed in verbs")
-        # make it a string and send it & get results
-        tid = self.async_send(verb, arg_list, tid)
-        results = self.async_recv_wait(tid)
+    def __send_line(self, line):
+        self.__sock.sendall(line + '\n')
 
-        return results
+    def __print(self, text, end = '\n'):
+        if self.__verbose != True:
+            return
+        if self.__truncate_long_lines and len(text) > 255:
+            print(text[:252] + '...', end=end)
+        else:
+            print(text, end=end)
 
-    # XXX: legacy interface. Avoid using this
-    def execute_command(self, command, args):
+    def __get_next_tid(self):
+        tid = self.__next_tid
+        self.__next_tid += 1
+        return tid
 
-        if (not self.__legacy_ok):
-            raise RuntimeError("Attempted legacy command on non-legacy client instance")
+    def __send_raw(self, jstr):
+        self.__print(jstr, ' -> ')
+        self.__send_line(jstr)
 
-        encoded_args = json.dumps(args)
+    @staticmethod
+    def __handle_response(r):
+        """
+        the response returned by dpcsh should contain either an 'error' key, or
+        a 'result' key if the JSON is parsable.
+        """
 
-        # #!sh prefix to ensure it's parsed as legacy input
-        cmd_line = "#!sh " + command + ' ' + encoded_args
+        if not r:
+            return r
 
-        # send the request
-        self.send_raw(cmd_line)
+        if 'proxy-msg' in r:
+            raise DpcProxyError(r['proxy-msg'])
 
-        # XXX: we know what dpcsh will always stuff a zero tid for
-        # legacy commands
-        results = self.async_recv_wait()
+        if 'error' in r:
+            raise DpcExecutionError(r['error'])
 
-        if (command == 'execute'):
-            # XXX: flatten it back down for legacy clients
-            return json.dumps(results)
-        return results
+        if 'exception' in r:
+            raise DpcExecutionException(r['exception'])
+
+        return r['result']
