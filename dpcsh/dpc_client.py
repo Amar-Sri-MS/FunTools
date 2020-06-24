@@ -8,6 +8,7 @@
 from __future__ import print_function
 import json
 import socket
+import time
 
 
 # N.B. The user must start a dpcsh in text proxy mode before
@@ -25,6 +26,9 @@ class DpcExecutionException(Exception):
 class DpcProxyError(Exception):
     pass
 
+class DpcTimeoutError(Exception):
+    pass
+
 class DpcClient(object):
     def __init__(self, legacy_ok = True, unix_sock = False, server_address = None):
         self.__legacy_ok = legacy_ok
@@ -32,6 +36,7 @@ class DpcClient(object):
         self.__truncate_long_lines = False
         self.__async_queue = []
         self.__next_tid = 1
+        self.__execute_timeout_seconds = None
 
         if (unix_sock):
             if (server_address is None):
@@ -87,6 +92,14 @@ class DpcClient(object):
     def set_truncate_long_lines(self, truncate = True):
         self.__truncate_long_lines = truncate
 
+    # passing None disables timeout
+    # passing 0 makes socket Non-blocking and not supported
+    # complete time spend in execute may be 2x higher
+    # because send and receive timeouts add
+    def set_timeout(self, timeout_seconds):
+        self.__execute_timeout_seconds = timeout_seconds
+        self.__sock.settimeout(timeout_seconds)
+
     def async_send(self, verb, arg_list, tid = None):
 
         if (tid is None):
@@ -97,11 +110,11 @@ class DpcClient(object):
             arg_list = [arg_list]
 
         # make a json request in dict from
-        jdict = { "verb": verb, "arguments": arg_list, "tid": tid }
+        json_dict = { "verb": verb, "arguments": arg_list, "tid": tid }
 
         # stringify and send it
-        jstr = json.dumps(jdict)
-        self.__send_raw(jstr)
+        json_str = json.dumps(json_dict)
+        self.__send_raw(json_str)
 
         return tid
 
@@ -140,12 +153,17 @@ class DpcClient(object):
                 self.__async_queue.remove(r)
                 return r
 
+        start_time = time.time() if self.__execute_timeout_seconds is not None else None
+
         # wait and dequeue until we find the one we want
-        while (True):
+        while True:
+            if start_time is not None and time.time() - start_time > self.__execute_timeout_seconds:
+                raise DpcTimeoutError('async_recv_wait_raw() timeout')
+
             r = self.async_wait()
-            if (r is None):
+            if r is None:
                 return r
-            if (tid is None or r['tid'] == tid or r['tid'] == -1):
+            if tid is None or r['tid'] == tid or r['tid'] == -1:
                 return r
 
             self.__async_queue.append(r)
@@ -156,13 +174,19 @@ class DpcClient(object):
         return DpcClient.__handle_response(r)
 
     def __recv_one_line(self):
-        return self.__sock_file.readline().rstrip()
+        try:
+            return self.__sock_file.readline().rstrip()
+        except socket.timeout:
+            raise DpcTimeoutError('readline() timeout')
 
     def __recv_json(self):
         return self.__recv_one_line()
 
     def __send_line(self, line):
-        self.__sock.sendall(line + '\n')
+        try:
+            self.__sock.sendall(line + '\n')
+        except socket.timeout:
+            raise DpcTimeoutError('sendall() timeout')
 
     def __print(self, text, end = '\n'):
         if self.__verbose != True:
