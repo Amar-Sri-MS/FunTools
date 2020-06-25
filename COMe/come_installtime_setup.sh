@@ -5,9 +5,8 @@
 # Copyright © 2020 Fungible. All rights reserved.
 #
 # Do install time setup
-# 1. Add to cron: run come_config_mgmt.sh once an hour
-# 2. Set up fun user authorized_keys so BMC can ssh in.
-# 3. Set up fun user passwordless sudo.
+# 1. Set up fun user authorized_keys so BMC can ssh in.
+# 2. Set up fun user passwordless sudo.
 #
 # Macros
 FUN_ENV='/etc/fungible.env' # env file with the system information
@@ -55,11 +54,12 @@ Update_sudoer()
     chmod 600 /etc/sudoers.d/fun
 }
 
-cat << EOF > /etc/cron.d/sys_mgmt
-# Run 14 minutes after every hour
-14 * * * *   root    test -x /opt/fungible/etc/come_config_mgmt.sh && /opt/fungible/etc/come_config_mgmt.sh
-EOF
-chmod 644 /etc/cron.d/sys_mgmt
+# SWLINUX-1346: 
+# Remove the cron job which will set the F1 management port IP
+# Setting the IP is now done by cclinux
+# The cron job is configured during system bundle install which
+# is already addresses. Removing previously configured cron jobs
+rm -f /etc/cron.d/sys_mgmt
 
 Update_fun_user_ssh
 Ensure_come_rsa_id
