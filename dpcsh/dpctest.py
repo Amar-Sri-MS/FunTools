@@ -63,6 +63,16 @@ class TestDPCCommands(unittest.TestCase):
         ret = self.client.execute('debug', ['fibo', 10])
         print 'testApp returned %s' % ret
 
+    def testTimeout(self):
+        self.client.set_timeout(0.5)
+        try:
+            self.client.execute('sleep', [2])
+            self.assertTrue(False)
+        except dpc_client.DpcTimeoutError:
+            print 'timeout works'
+            self.client.set_timeout(None)
+            self.client.async_recv_any()
+
     def testLargeCommands(self):
         """Tests that long messages don't get truncated or corrupted."""
         for i in (10, 100, 1000):
