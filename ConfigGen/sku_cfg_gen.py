@@ -123,7 +123,11 @@ class SKUCfgGen():
         """Get the configuration for all the posix or emulations that
         use the target chip.
         """
+        def_cfg = dict()
+        self.get_default_config(def_cfg)
+
         _path = 'sku_config/'
+
         if 'posix' in (self.target_machine):
             _path = _path + 'posix/%s_*.cfg' % self.target_chip
         else:
@@ -142,7 +146,9 @@ class SKUCfgGen():
                     except:
                         logger.error("Failed to load config file: {}".format(cfg))
                         raise
-                    board_cfg = jsonutils.merge_dicts(board_cfg, cfg_json)
+
+                    self.apply_defaults_to_board_config(cfg_json, def_cfg)
+                    board_cfg = jsonutils.merge_dicts(board_cfg, copy.deepcopy(cfg_json))
 
         return board_cfg
 
