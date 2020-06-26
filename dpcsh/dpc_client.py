@@ -194,7 +194,7 @@ class DpcClient(object):
         if custom_timeout:
             self.__sock.settimeout(timeout_seconds)
         try:
-            self.__sock.sendall(line + '\n')
+            self.__sock.sendall((line + '\n').encode())
         except socket.timeout:
             raise DpcTimeoutError('sendall() timeout')
         finally:
