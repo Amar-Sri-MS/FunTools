@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/bash
 
 echo "*************************************************************************"
 echo "*                                                                       *"
@@ -40,7 +40,7 @@ function Is_Interface_Up()
 	return 1
 }
 
-NOREBOOT="/tmp/SuspendCOMeRebootRequests"
+SUSPEND_REBOOT_REQ="/tmp/SuspendCOMeRebootRequests"
 FUN_ROOT="/opt/fungible"
 
 if [[ "$EUID" -ne 0 ]]; then
@@ -61,11 +61,12 @@ if [[ $RC -ne 0 ]]; then
 	Is_Interface_Up $INTERNAL_VLAN_VIRT_INTF
 fi
 
-if [[ -f $NOREBOOT ]]; then
-	printf "Aborting reboot request"
-	printf "Please remove file $NOREBOOT"
+if [[ -f $SUSPEND_REBOOT_REQ ]]; then
+	printf "Reboot request and is in progress ..."
 	exit
 fi
+# Suspend more reboot requests
+touch ${SUSPEND_REBOOT_REQ}
 
 FAST_REBOOT=0
 if [[ $# -eq 1 ]]; then
@@ -100,6 +101,42 @@ fi
 
 printf "Poll BMC:  %s\n" $BMC_IP
 
+# SWSYS-916
+# Send a reset request via internal private port to BMC
+# If BMC acknowledges the request then exit so that
+# BMC can gracefully bring down the COMe
+# If the request is not acknowledged then proceed and
+# use legacy method
+# The legacy method will be required till the time BMC
+# gets the chassis bundle which supports this feature
+# tracked under SWSYS-916
+# This is true for all revisions of FS1600
+RETRY=5
+while [[ ${RETRY} -ne 0 ]]; do
+	#         Reboot request cmd            BMC IP        port
+	ACK=`echo RebootRequestFromCOMe | nc -4 192.168.127.2 6672`
+	if [[ ! -z "${ACK}" ]] && [[ "${ACK}" == "AckRebootRequestFromCOMe" ]]; then
+		echo "Reboot request sent to BMC and ACK received (${ACK})"
+		# Keep spinning till BMC reboots COMe
+		while true; do
+			sync
+			sleep 10
+		done
+	fi
+	RETRY=$((RETRY - 1))
+	sleep 1
+done
+
+echo "Using legacy method to issue system reboot request to BMC"
+
+# **********************************************************
+# * SWSYS-916 (IMPORTANT)                                  *
+# * This method of using direct password is depricated     *
+# * but is used by Rev1/Rev1+ systems.                     *
+# * Do not delete below code+logic as it will brick        *
+# * the working model for Rev1/Rev1+ and Rev2 systems      *
+# * which do not have corrosponding chassis bundle support *
+# **********************************************************
 BMC="-P password: -p superuser ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no sysadmin@$BMC_IP"
 
 # Save unfinished work in FS before async reboot
@@ -135,6 +172,14 @@ else
 	printf "WARNING: Sending BMC request to reboot host\n"
 	COUNT=0
 	while [[ $COUNT -lt 1 ]]; do
+# **********************************************************
+# * SWSYS-916 (IMPORTANT)                                  *
+# * This method of using direct password is depricated     *
+# * but is used by Rev1/Rev1+ systems.                     *
+# * Do not delete below code+logic as it will brick        *
+# * the working model for Rev1/Rev1+ and Rev2 systems      *
+# * which do not have corrosponding chassis bundle support *
+# **********************************************************
 		BMC_XFER_RST_CTRL="-P password: -p superuser scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $RESET_CONTROLLER sysadmin@$BMC_IP:/tmp"
 		echo "Transferring reset controller to BMC"
 		XFER=$(sshpass $BMC_XFER_RST_CTRL > /dev/null 2>&1)
