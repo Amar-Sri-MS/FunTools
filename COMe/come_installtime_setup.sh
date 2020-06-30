@@ -54,6 +54,13 @@ Update_sudoer()
     chmod 600 /etc/sudoers.d/fun
 }
 
+Update_netplan()
+{
+  [ ! -f /opt/fungible/third_party/ubuntu/update_netplan.sh ] && return
+  cd /opt/fungible/third_party/ubuntu
+  bash ./update_netplan.sh
+}
+
 # SWLINUX-1346: 
 # Remove the cron job which will set the F1 management port IP
 # Setting the IP is now done by cclinux
@@ -64,4 +71,5 @@ rm -f /etc/cron.d/sys_mgmt
 Update_fun_user_ssh
 Ensure_come_rsa_id
 Update_sudoer
+Update_netplan
 exit 0
