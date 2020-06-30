@@ -225,12 +225,13 @@ if [[ -d $TFTPBOOT_DIR ]]; then
 	if [[ ! -z "$FILES" ]]; then
 		UPTIME=`cut -f1 -d. /proc/uptime`
 		UPTIME_EPOCH=`date --utc -d "$UPTIME seconds ago" +"%s"`
-		echo "COMe UPTIME since epoch $UPTIME_EPOCH"
+		COMe_UPTIME_EPOCH=$((UPTIME_EPOCH - UPTIME))
+		echo "COMe UPTIME since epoch $COMe_UPTIME_EPOCH"
 		for F in $FILES; do
 			# Time of last access of the file
 			FILE_LAST_ACCESS_TIME=`stat -c %x $F`
 			FILE_LAST_ACCESS_TIME_EPOCH=`date --utc -d "$FILE_LAST_ACCESS_TIME" +"%s"`
-			if [[ "$UPTIME_EPOCH" > "$FTIME" ]]; then
+			if [[ ${COMe_UPTIME_EPOCH} -gt ${FTIME} ]]; then
 				echo "Deleting file $F last accessed time since epoch $FILE_LAST_ACCESS_TIME_EPOCH"
 				rm -f "$F"
 			fi

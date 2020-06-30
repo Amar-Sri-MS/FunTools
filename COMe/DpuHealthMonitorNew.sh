@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/bash
 
 echo "*************************************************************************"
 echo "*                                                                       *"
@@ -107,6 +107,28 @@ function ctrl_c()
 
 # Start of script
 
+MINARGS=0
+MAXARGS=1
+
+MONOSHOT_MODE=0
+if [[ ${#} -eq ${MAXARGS} ]]; then
+	FAILED_DPU_MASK=${1}
+	MONOSHOT_MODE=1
+fi
+
+# Don't allow second instance
+ME="${0}"
+PROG=$(/usr/bin/basename "${ME}")
+
+PROG_RUNNING_INDICATOR="/tmp/.${PROG}.running"
+
+if [[ -f ${PROG_RUNNING_INDICATOR} ]]; then
+	echo "${0}: Cannot start second instance"
+	exit 1
+fi
+
+touch ${PROG_RUNNING_INDICATOR}
+
 SSHPASS=`which sshpass`
 if [[ -z $SSHPASS ]]; then
         echo ERROR: sshpass is not installed!!!!!!!!!!
@@ -129,7 +151,9 @@ else
 fi
 BMC_MAC=`ipmitool lan print 1 | awk '/MAC Address[ ]+:/ {print $4}'`
 
-printf "Poll BMC:  %s\n" $BMC_IP
+if [[ ${MONOSHOT_MODE} -eq 0 ]]; then
+	printf "Poll BMC:  %s\n" $BMC_IP
+fi
 
 BMC="-P password: -p superuser scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no sysadmin@$BMC_IP:$DPU_STATUS"
 
@@ -143,6 +167,12 @@ BMC="-P password: -p superuser scp -o UserKnownHostsFile=/dev/null -o StrictHost
 # F1_1: FAILED       | F1_1: RUNNING      |
 #--------------------+--------------------+
 
+# This file is set once BMC-COMe heartbeat monitoring is
+# established. This feature is not availabe on Rev1/Rev1+
+# system (legacy) and hence on those systems we resort to
+# legacy HBM dump processing wherein this script loops
+SUSPEND_DPU_HEALTH_MONITORING_FLAG="/tmp/.SuspendDpuHealthMonitoring"
+
 # Detect the DPU PCIe Bus number
 DetectDpuPcieBus
 
@@ -152,29 +182,65 @@ while true; do
 		break
 	fi
 
-	# Get the DPU status file from BMC
-	# TODO: Cleaner mechanism to get status from BMC
-	#       Currently using scp to get status from BMC
-	DPU_HEALTH=$(sshpass $BMC $DEST_DIR > /dev/null 2>&1)
+	# If BMC has asked to suspend DPU health monitoring
+	# then exit from this script with a message
+	# The next time this sctipt gets called (from BMC)
+	# It will perform the same way it will work in normal
+	# polling mode however it's a monoshot operation
+	if [[ -f ${SUSPEND_DPU_HEALTH_MONITORING_FLAG} ]]; then
+		if [[ ${MONOSHOT_MODE} -eq 0 ]]; then
+			echo "Exit ${0} because switching to monoshot mode for HBM processing"
+			echo "BMC will trigger this script upon F1 failure"
+			rm -f ${PROG_RUNNING_INDICATOR}
+			rm -f ${CONTINUOUS_REBOOT_COUNTER}
+			exit 0
+		fi
 
-	# scan the results
-	DPU0_HEALTH=`cat $DPU_STATUS | grep "F1_0" | cut -d " " -f 2`
-	DPU1_HEALTH=`cat $DPU_STATUS | grep "F1_1" | cut -d " " -f 2`
+		if [[ -z "${FAILED_DPU_MASK}" ]]; then
+			echo "Expects which DPU# to process HBM"
+			exit 1
+		fi
 
-	# We might have to disable this is future
-	# This call is added to help flush the 
-	# file-system cache to the disk
-	# The over-ride is added so that we can
-	# disable this check on a running system
-	# if the performance deteriorates
-	if [[ ! -f /tmp/disableContinuousFsSync ]]; then
+		if [[ ${FAILED_DPU_MASK} -eq 1 ]]; then
+			DPU0_HEALTH="FAILED"
+		elif [[ ${FAILED_DPU_MASK} -eq 2 ]]; then
+			DPU1_HEALTH="FAILED"
+		elif [[ ${FAILED_DPU_MASK} -eq 3 ]]; then
+			DPU0_HEALTH="FAILED"
+			DPU1_HEALTH="FAILED"
+		else
+			echo "Incorrect DPU mask ${FAILED_DPU_MASK}"
+			exit 1
+		fi
+
 		sync
-	fi
+	else
+		# Below code is for legacy support
+		# This code will still be used by Rev1/Rev1+ systems
+		# running older BMC firmware
 
-	if [[ -z "$DPU0_HEALTH" ]] ||
-	   [[ -z "$DPU1_HEALTH" ]]; then
-		sleep $LOOP_INTERVAL
-		continue
+		# Get the DPU status file from BMC
+		DPU_HEALTH=$(sshpass $BMC $DEST_DIR > /dev/null 2>&1)
+
+		# scan the results
+		DPU0_HEALTH=`cat $DPU_STATUS | grep "F1_0" | cut -d " " -f 2`
+		DPU1_HEALTH=`cat $DPU_STATUS | grep "F1_1" | cut -d " " -f 2`
+
+		# We might have to disable this is future
+		# This call is added to help flush the
+		# file-system cache to the disk
+		# The over-ride is added so that we can
+		# disable this check on a running system
+		# if the performance deteriorates
+		if [[ ! -f /tmp/disableContinuousFsSync ]]; then
+			sync
+		fi
+
+		if [[ -z "$DPU0_HEALTH" ]] ||
+		   [[ -z "$DPU1_HEALTH" ]]; then
+			sleep $LOOP_INTERVAL
+			continue
+		fi
 	fi
 
 	if [[ "$DPU0_HEALTH" == "FAILED" ]] || [[ "$DPU1_HEALTH" == "FAILED" ]]; then
@@ -198,6 +264,15 @@ while true; do
 			# other DPU is in FAILED state
 			sleep $LOOP_INTERVAL
 			continue
+		fi
+
+		# When this script is running in a monoshot mode
+		# it is indirectly being driven from BMC
+		# The system reboot request after completion of
+		# HBM processing is left to the BMC and hence we
+		# return from this script at this point
+		if [[ ${MONOSHOT_MODE} -eq 1 ]]; then
+			exit 0
 		fi
 
 		if [[ -f $CONTINUOUS_REBOOT_COUNTER ]]; then
