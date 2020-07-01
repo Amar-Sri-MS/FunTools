@@ -1,21 +1,19 @@
 #!/bin/bash
 
-echo "*************************************************************************"
-echo "*                                                                       *"
-echo "*             INTERNAL TESTING USE ONLY                                 *"
-echo "*                                                                       *"
-echo "*             THIS SCRIPT WILL NOT WORK AT A CUSTOMER SITE              *"
-echo "*                                                                       *"
-echo "*             THIS SCRIPT IS DEPRICATED                                 *"
-echo "*                                                                       *"
-echo "*             PLEASE USE THE BMC CLI TO RESET COMe (cclinux)            *"
-echo "*             CLI: fun_reboot_system.sh                                 *"
-echo "*                                                                       *"
-echo "*             THIS SCRIPT WILL NOT WORK AT A CUSTOMER SITE              *" >&2
-echo "*                                                                       *" >&2
-echo "*             INTERNAL TESTING USE ONLY                                 *" >&2
-echo "*                                                                       *" >&2
-echo "*************************************************************************" >&2
+function Unsupported_Config_Banner()
+{
+	echo "*************************************************************************"
+	echo "*                                                                       *"
+	echo "*             INTERNAL TESTING USE ONLY (Usage fine on Rev1/Rev1+)      *"
+	echo "*                                                                       *"
+	echo "*             THIS MODE WILL NOT WORK AT A CUSTOMER SITE                *"
+	echo "*                                                                       *"
+	echo "*             INTERNAL TESTING USE ONLY (Usage fine on Rev1/Rev1+)      *" >&2
+	echo "*                                                                       *" >&2
+	echo "*             THIS MODE WILL NOT WORK AT A CUSTOMER SITE                *" >&2
+	echo "*                                                                       *" >&2
+	echo "*************************************************************************" >&2
+}
 
 # SWSYS-740
 # Poll the operational state of the interface for
@@ -40,13 +38,20 @@ function Is_Interface_Up()
 	return 1
 }
 
-SUSPEND_REBOOT_REQ="/tmp/SuspendCOMeRebootRequests"
 FUN_ROOT="/opt/fungible"
 
 if [[ "$EUID" -ne 0 ]]; then
 	printf "Please run as ROOT EUID=$EUID\n"
 	exit
 fi
+
+SUSPEND_REBOOT_REQ="/tmp/SuspendCOMeRebootRequests"
+if [[ -f $SUSPEND_REBOOT_REQ ]]; then
+	printf "Reboot request and is in progress ..."
+	exit
+fi
+# Suspend more reboot requests
+touch ${SUSPEND_REBOOT_REQ}
 
 echo "Running $0"
 
@@ -60,46 +65,6 @@ if [[ $RC -ne 0 ]]; then
 	# check once more if the interface is up
 	Is_Interface_Up $INTERNAL_VLAN_VIRT_INTF
 fi
-
-if [[ -f $SUSPEND_REBOOT_REQ ]]; then
-	printf "Reboot request and is in progress ..."
-	exit
-fi
-# Suspend more reboot requests
-touch ${SUSPEND_REBOOT_REQ}
-
-FAST_REBOOT=0
-if [[ $# -eq 1 ]]; then
-	ARG=$1
-	if [[ $ARG == "-f" ]] || [[ $ARG == "--fast" ]]; then
-		FAST_REBOOT=1
-	else
-		printf "Unsupported option %s\n" $ARG
-	fi
-fi
-
-SSHPASS=`which sshpass`
-if [[ -z $SSHPASS ]]; then
-        echo ERROR: sshpass is not installed!!!!!!!!!!
-	apt-get install -y sshpass
-fi
-
-REBOOT_FILE="/tmp/fpga_reset.sh"
-
-if [[ -d /sys/class/net/enp3s0f0.2 ]]; then
-	BMC_IP="192.168.127.2"
-else
-        IPMITOOL=`which ipmitool`
-        if [[ -z $IPMITOOL ]]; then
-                echo ERROR: ipmitool is not installed!!!!!!!!!!
-	        apt-get install -y ipmitool
-        fi
-	IPMI_LAN="ipmitool lan print 1"
-	AWK_LAN='/IP Address[ ]+:/ {print $4}'
-	BMC_IP=$($IPMI_LAN | awk "$AWK_LAN")
-fi
-
-printf "Poll BMC:  %s\n" $BMC_IP
 
 # SWSYS-916
 # Send a reset request via internal private port to BMC
@@ -127,8 +92,6 @@ while [[ ${RETRY} -ne 0 ]]; do
 	sleep 1
 done
 
-echo "Using legacy method to issue system reboot request to BMC"
-
 # **********************************************************
 # * SWSYS-916 (IMPORTANT)                                  *
 # * This method of using direct password is depricated     *
@@ -137,6 +100,34 @@ echo "Using legacy method to issue system reboot request to BMC"
 # * the working model for Rev1/Rev1+ and Rev2 systems      *
 # * which do not have corrosponding chassis bundle support *
 # **********************************************************
+echo "Using legacy method to issue system reboot request to BMC"
+
+Unsupported_Config_Banner
+
+FAST_REBOOT=0
+if [[ $# -eq 1 ]]; then
+	ARG=$1
+	if [[ $ARG == "-f" ]] || [[ $ARG == "--fast" ]]; then
+		FAST_REBOOT=1
+	else
+		printf "Unsupported option %s\n" $ARG
+	fi
+fi
+
+REBOOT_FILE="/tmp/fpga_reset.sh"
+
+if [[ -d /sys/class/net/enp3s0f0.2 ]]; then
+	BMC_IP="192.168.127.2"
+else
+	IPMI_LAN="ipmitool lan print 1"
+	AWK_LAN='/IP Address[ ]+:/ {print $4}'
+	BMC_IP=$($IPMI_LAN | awk "$AWK_LAN")
+fi
+
+printf "Poll BMC:  %s\n" $BMC_IP
+
+
+
 BMC="-P password: -p superuser ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no sysadmin@$BMC_IP"
 
 # Save unfinished work in FS before async reboot

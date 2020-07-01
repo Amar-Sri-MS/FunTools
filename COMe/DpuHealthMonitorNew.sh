@@ -1,16 +1,19 @@
 #!/bin/bash
 
-echo "*************************************************************************"
-echo "*                                                                       *"
-echo "*             INTERNAL TESTING USE ONLY                                 *"
-echo "*                                                                       *"
-echo "*             THIS SCRIPT WILL NOT WORK AT A CUSTOMER SITE              *"
-echo "*                                                                       *"
-echo "*             THIS SCRIPT WILL NOT WORK AT A CUSTOMER SITE              *" >&2
-echo "*                                                                       *" >&2
-echo "*             INTERNAL TESTING USE ONLY                                 *" >&2
-echo "*                                                                       *" >&2
-echo "*************************************************************************" >&2
+function Unsupported_Config_Banner()
+{
+        echo "*************************************************************************"
+        echo "*                                                                       *"
+        echo "*             INTERNAL TESTING USE ONLY (Usage fine on Rev1/Rev1+)      *"
+        echo "*                                                                       *"
+        echo "*             THIS MODE WILL NOT WORK AT A CUSTOMER SITE                *"
+        echo "*                                                                       *"
+        echo "*             INTERNAL TESTING USE ONLY (Usage fine on Rev1/Rev1+)      *" >&2
+        echo "*                                                                       *" >&2
+        echo "*             THIS MODE WILL NOT WORK AT A CUSTOMER SITE                *" >&2
+        echo "*                                                                       *" >&2
+        echo "*************************************************************************" >&2
+}
 
 if [[ "$EUID" -ne 0 ]]; then
         printf "Please run as ROOT EUID=$EUID\n"
@@ -129,19 +132,9 @@ fi
 
 touch ${PROG_RUNNING_INDICATOR}
 
-SSHPASS=`which sshpass`
-if [[ -z $SSHPASS ]]; then
-        echo ERROR: sshpass is not installed!!!!!!!!!!
-	apt-get install -y sshpass
-fi
-
 DPU_STATUS="/tmp/F1_STATUS"
 DEST_DIR="/tmp/."
-IPMITOOL=`which ipmitool`
-if [[ -z $IPMITOOL ]]; then
-        echo ERROR: ipmitool is not installed!!!!!!!!!!
-        apt-get install -y ipmitool
-fi
+
 if [[ -d /sys/class/net/enp3s0f0.2 ]]; then
         BMC_IP="192.168.127.2"
 else
@@ -241,6 +234,11 @@ while true; do
 			sleep $LOOP_INTERVAL
 			continue
 		fi
+
+		# SWSYS-950: Print a banner to notify user that
+		# unsupported config of chassis+system bundle is
+		# installed on the system. (Fine for Rev1/Rev1+)
+		Unsupported_Config_Banner
 	fi
 
 	if [[ "$DPU0_HEALTH" == "FAILED" ]] || [[ "$DPU1_HEALTH" == "FAILED" ]]; then
