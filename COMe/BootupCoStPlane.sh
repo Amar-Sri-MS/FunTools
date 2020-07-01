@@ -48,15 +48,10 @@ echo "List all nmcli connections:"
 nmcli connection show
 echo "Check-point: `date`"
 
-SSHPASS=`which sshpass`
-if [[ -z $SSHPASS ]]; then
-        echo ERROR: sshpass is not installed!!!!!!!!!!
-	apt-get install -y sshpass
-fi
-
 BIN_TFTPD_HPA="/usr/sbin/in.tftpd"
 if [[ ! -f $BIN_TFTPD_HPA ]]; then
-	apt-get install -y tftpd-hpa
+	echo "tftp server not installed, aborting ..."
+	exit 1
 fi
 
 if [[ -f $BIN_TFTPD_HPA ]]; then
@@ -80,7 +75,8 @@ fi
 
 BIN_NETWORKMANAGER_FILE="/usr/sbin/NetworkManager"
 if [[ ! -f $BIN_NETWORKMANAGER_FILE ]]; then
-	apt-get install -y network-manager
+	echo "NetworkManager package not installed, aborting ..."
+	exit 1
 fi
 
 FUN_NETPLAN_YAML="/etc/netplan/fungible-netcfg.yaml"
@@ -253,12 +249,6 @@ if [[ -d /var/opt/fungible/F1-1/lib/redis ]]; then
   /bin/rm -rf /var/opt/fungible/F1-1/lib/redis
 fi
 
-IPMITOOL=`which ipmitool`
-if [[ -z "$IPMITOOL" ]]; then
-	echo ERROR: ipmitool is not installed!!!!!!!!!!
-	apt-get install -y ipmitool
-fi
-
 IPMI_LAN="ipmitool lan print 1"
 AWK_LAN='/IP Address[ ]+:/ {print $4}'
 BMC_IP=$($IPMI_LAN | awk "$AWK_LAN")
@@ -288,12 +278,8 @@ else
 	$FUN_ROOT/cclinux/cclinux_service.sh --start --ep --storage
 fi
 
-if [[ -f /var/log/old_hbm_dump ]] && [[ -f $FUN_ROOT/etc/DpuHealthMonitor.sh ]]; then
-	$FUN_ROOT/etc/DpuHealthMonitor.sh &
-else
-	if [[ -f $FUN_ROOT/etc/DpuHealthMonitorNew.sh ]]; then
-		$FUN_ROOT/etc/DpuHealthMonitorNew.sh &
-	fi
+if [[ -f $FUN_ROOT/etc/DpuHealthMonitorNew.sh ]]; then
+	$FUN_ROOT/etc/DpuHealthMonitorNew.sh &
 fi
 
 #Running DPCSH in TCP-PROXY Mode,
