@@ -82,8 +82,11 @@ Update_Fungible_systemd_services()
   fi
 
   cp ${FUNGIBLE_ROOT}/etc/come_heartbeat_server.socket /lib/systemd/system/
+  chmod 644 /lib/systemd/system/come_heartbeat_server.socket
   cp ${FUNGIBLE_ROOT}/etc/come_heartbeat_server@.service /lib/systemd/system/
+  chmod 644 /lib/systemd/system/come_heartbeat_server@.service
   cp ${FUNGIBLE_ROOT}/etc/come_start_heartbeat_server.service /lib/systemd/system/
+  chmod 644 /lib/systemd/system/come_start_heartbeat_server.service
 
   SERVICE_STATUS=`systemctl is-enabled come_start_heartbeat_server.service`
   if [ "${SERVICE_STATUS}" != "enabled" ]; then
