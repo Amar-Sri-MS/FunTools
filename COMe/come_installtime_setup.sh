@@ -8,15 +8,19 @@
 # 1. Set up fun user authorized_keys so BMC can ssh in.
 # 2. Set up fun user passwordless sudo.
 #
-# Macros
-FUN_ENV='/etc/fungible.env' # env file with the system information
-[ -f ${FUN_ENV} ] && source ${FUN_ENV}
-FUNGIBLE_ROOT=${FUNGIBLE_ROOT:-/opt/fungible}
+ME="${0}"
+PROG=$(/usr/bin/basename "${ME}")
+MY_DIR=$(cd $(/usr/bin/dirname "${ME}") ; pwd)
 
 if [[ "${EUID}" -ne 0 ]]; then
   echo "Please run as ROOT (CurrentEUID=$EUID)"
   exit 1
 fi
+
+# Macros
+FUN_ENV='/etc/fungible.env' # env file with the system information
+[ -f ${FUN_ENV} ] && source ${FUN_ENV}
+FUNGIBLE_ROOT=${FUNGIBLE_ROOT:-/opt/fungible}
 
 FACTORY_BMC_KEY_PUB="ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDlbQy9N8gi4ruzFgENd7T6eNVa3m2OPHuzBD65tpD/0uviCwuL8NKUH+7UZPpbVDrpeE3iaP+a7MqZxplfS55U0S5ZjfX0n2cDtw9xi0PsQ+kdJdz4txyjo1Xbh+jGq2+FJgg4tH6jnx3RbEcIC9ng9xFuE4gywnXe0Bk5dVSJeS/qV4nKDAMPtjThjs7TKG8iXjsadq0h4PujXqXke4dI8VesStf4zzrP4tXAAkCXgqYD+VdPSqHqKbjUtW3Jn/sbEkBphpJStm7URBK0qwdMJBaldWm7y4DNZiyg1R5VvZ2b2xFjUwuLY76ph+W7s385V3UPcHGvDyf15LI4VoYv BMC"
 
@@ -56,9 +60,7 @@ Update_sudoer()
 
 Update_ubuntu()
 {
-  [ ! -f /opt/fungible/third_party/ubuntu/update_ubuntu.sh ] && return
-  cd /opt/fungible/third_party/ubuntu
-  bash ./update_ubuntu.sh
+  bash ${MY_DIR}/update_ubuntu.sh
 }
 
 # SWLINUX-1346: 
