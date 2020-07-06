@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# File: update_netplan.sh
+# File: update_ubuntu.sh
 # Created by David Peet (david.peet@fungible.com)
 # Copyright © 2020 Fungible. All rights reserved.
 #
