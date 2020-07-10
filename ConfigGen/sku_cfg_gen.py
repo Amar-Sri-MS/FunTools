@@ -97,8 +97,7 @@ class SKUCfgGen():
     def update_entry(self, key, cfg_json, def_cfg):
         """Applies the defaults to an entry.
         """
-        entry = {}
-        entry.update(def_cfg[key])
+        entry = copy.deepcopy(def_cfg[key])
         self.merge_entry(entry, cfg_json[key])
         del cfg_json[key]
         cfg_json.update(entry)
