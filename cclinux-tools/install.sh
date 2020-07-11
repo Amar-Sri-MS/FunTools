@@ -1,7 +1,7 @@
 #!/bin/bash -e
 
-if [ ! -e "$SDK_INSTALL_DIR" ] ; then
-    echo "Error: SDK_INSTALL_DIR \"$SDK_INSTALL_DIR\" does not exist."
+if [ -z "$SDK_INSTALL_DIR" ] ; then
+    echo "Error: SDK_INSTALL_DIR not set."
     exit 1
 fi
 
