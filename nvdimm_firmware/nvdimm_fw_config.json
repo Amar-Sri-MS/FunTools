@@ -1,0 +1,22 @@
+{
+    "signed_images": {
+        "nvdimm_fw": {
+            "source": "AGIGA-SRI-RAM4PA.RIVER16-V2.50-UPGRADE_ALL-signed.img",
+            "version": 1,
+            "fourcc": "nvdm",
+            "cert": "",
+            "customer_cert": "",
+            "key_index": 0,
+            "description": "@file:nvdimm.version"
+        },
+        "nvdimm_scap_fw": {
+            "source": "AGIGA-SRI-PGM5XX.AMBER4X-V1.40-UPGRADE_signed.img",
+            "version": 1,
+            "fourcc": "scap",
+            "cert": "",
+            "customer_cert": "",
+            "key_index": 0,
+            "description": "@file:nvdimm.scap.version"
+        }
+    }
+}
