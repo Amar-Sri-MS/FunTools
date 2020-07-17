@@ -98,6 +98,18 @@ Update_Fungible_systemd_services()
   fi
 }
 
+Update_timesyncd()
+{
+  TIMESYNCD_CONF=/etc/systemd/timesyncd.conf
+  if [[ -f ${TIMESYNCD_CONF} ]]; then
+    cat ${TIMESYNCD_CONF} | grep "^FallbackNTP" | grep -q "192.168.127.2"
+    if [[ ${?} -ne 0 ]]; then
+      /bin/sed -i '/.*FallbackNTP.*/d' ${TIMESYNCD_CONF}
+      echo "FallbackNTP=192.168.127.2" >> ${TIMESYNCD_CONF}
+    fi
+  fi
+}
+
 Update_systemd_journal_cfg
 
 Update_grub_cmdline
@@ -107,5 +119,7 @@ Update_Fungible_systemd_services
 Update_resolv_conf_smlink
 
 Update_disable_redis_server
+
+Update_timesyncd
 
 exit 0
