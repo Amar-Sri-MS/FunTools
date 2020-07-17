@@ -73,6 +73,17 @@ if [[ -f $BIN_TFTPD_HPA ]]; then
 	/bin/sed -i '/---secure/ s?---secure?--secure?' $TFTP_SERVER_CONFIG_FILE
 fi
 
+TIMESYNCD_CONF=/etc/systemd/timesyncd.conf
+if [[ -f ${TIMESYNCD_CONF} ]]; then
+	cat ${TIMESYNCD_CONF} | grep "^FallbackNTP" | grep -q "192.168.127.2"
+	if [[ ${?} -ne 0 ]]; then
+		/bin/sed -i '/.*FallbackNTP.*/d' ${TIMESYNCD_CONF}
+		echo "FallbackNTP=192.168.127.2" >> ${TIMESYNCD_CONF}
+		systemctl restart systemd-timesyncd
+		echo "Restarted systemd-timesyncd with correct NTP server config"
+	fi
+fi
+
 BIN_NETWORKMANAGER_FILE="/usr/sbin/NetworkManager"
 if [[ ! -f $BIN_NETWORKMANAGER_FILE ]]; then
 	echo "NetworkManager package not installed, aborting ..."
