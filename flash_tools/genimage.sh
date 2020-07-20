@@ -111,7 +111,7 @@ JSON
 EEPROM_DEF=$(cat <<-JSON
 { "signed_images": {
      "eeprom_packed.bin": {
-         "source":"${VARIANT:9}"
+         "source":"${VARIANT}"
          }
      }
 }
