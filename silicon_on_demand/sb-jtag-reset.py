@@ -27,6 +27,7 @@ if (__name__ == "__main__"):
     try:
         main()
         sys.exit(0)
-    except:
+    except Exception as e:
+        print e
         sys.exit(1)
         
