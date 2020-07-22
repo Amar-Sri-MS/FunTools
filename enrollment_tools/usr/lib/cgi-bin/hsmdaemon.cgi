@@ -9,16 +9,15 @@
 #  Copyright (c) 2018-2020. Fungible, inc. All Rights Reserved.
 #
 ##############################################################################
-import struct
-import socket
-import traceback
-import os
 
-from common import *
+import os
+import sys
+import traceback
+
+from common import log
+from hsmd_common import hsmd_rpc_call
 
 RESTRICTED_PORT = 4443
-
-SERVER_ADDRESS = '/var/lib/hsmdaemon/com.fungible.hsmdaemon.socket'
 
 ########################################################################
 #
@@ -33,49 +32,12 @@ def send_json(json):
     print(json)
 
 
-########################################################################
-#
-# process POST
-#
-########################################################################
-
-def make_daemon_msg(s):
-    return struct.pack('!H', len(s)) + s
-
-
-def recv_daemon_msg(sock):
-
-    data = sock.recv(2)
-    if len(data) != 2:
-        return None
-
-    msg_size = struct.unpack('!H', data)[0]
-
-    recv_size = 0
-    data = b''
-    while recv_size < msg_size:
-        new_data = sock.recv(msg_size - recv_size)
-        recv_size += len(new_data)
-        data += new_data
-
-    return data
-
-def call_rpc():
+def handle_post():
     ''' just package the content into a RPC message '''
     len = int(os.environ['CONTENT_LENGTH'])
-    to_send = sys.stdin.read(len).encode('utf-8')
-
-    log("Connecting to %s " % SERVER_ADDRESS)
-
-    sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-    sock.connect(SERVER_ADDRESS)
-
-    sock.sendall(make_daemon_msg(to_send))
-
-    received = recv_daemon_msg(sock)
-    if received is None:
-        raise ConnectionError("Server did not send a response")
-    send_json(received.decode('utf-8'))
+    request = sys.stdin.read(len)
+    response = hsmd_rpc_call(request)
+    send_json(response)
 
 
 def main_program():
@@ -91,7 +53,7 @@ def main_program():
         if method not in ("POST"):
             raise ValueError("Invalid request method %s" % method)
 
-        call_rpc()
+        handle_post()
 
     # key errors (missing form entries) as well as
     # value errors are translated as 400 Bad Request
@@ -109,7 +71,7 @@ def main_program():
         log("Exception: %s" % err)
         traceback.print_exc()
         # Response
-        print("Status: 503 Service Unavalaible")
+        print("Status: 503 Service Unavailable")
         err_msg = str(err) + "\n" + traceback.format_exc()
         print("Content-Length: %d\n" % len(err_msg))
         print(err_msg)
