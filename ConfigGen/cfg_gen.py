@@ -248,6 +248,7 @@ def _generate_sku_eeprom_files(config_root_dir,
     sku_cfg_gen = SKUCfgGen(config_root_dir, output_dir,
                             target_chip, target_machine)
     sku_cfg_gen.generate_eeprom()
+    sku_cfg_gen.generate_chip_eeprom_lists()
 
 #Generates hu config source code
 def _generate_hu_config_code(config_root_dir, output_dir):
