@@ -330,6 +330,8 @@ def run():
         'mmc1_image.bin' : 'eMMC boot partition and FunOS'
     }
 
+    os.remove(g.work_file)
+
     with open("mmc_image.json", "w") as f:
         config = { 'generated_images' : {}}
         for k,v in output_descr.items():
