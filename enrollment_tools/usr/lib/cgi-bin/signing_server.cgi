@@ -12,6 +12,8 @@ import sys
 import struct
 import os
 import hashlib
+import json
+import binascii
 import cgi
 
 import traceback
@@ -19,6 +21,8 @@ import traceback
 from asn1crypto import core,algos
 
 from common import *
+from hsmd_common import hsmd_rpc_call
+
 
 RESTRICTED_PORT = 4443
 
@@ -57,7 +61,7 @@ def send_binary(binary_buffer):
 
 ########################################################################
 #
-# Return some information: key modulus
+# Operations with local HSM
 #
 ########################################################################
 
@@ -90,6 +94,102 @@ def hsm_sign_hash_with_modulus(modulus, sha512_hash):
         return private.sign(digest_info_der, mechanism=pkcs11.Mechanism.RSA_PKCS)
 
 
+def hsm_send_modulus(form, key_label):
+
+    # send in binary format by default for this application
+    # to ease transition
+    out_format = safe_form_get(form, "format", "binary")
+    if out_format == "binary":
+        send_binary_modulus(form, key_label)
+    else:
+        print("Content-type: text/plain")
+        send_modulus(form, key_label)
+
+
+
+########################################################################
+#
+# Operations with remote HSM
+#
+########################################################################
+
+def make_json_rpc_call(cmd, params=None, **kwargs):
+
+    if not params:
+        params=kwargs
+    json_cmd = {'jsonrpc': '2.0', 'method': cmd, 'params': params, 'id': 1 }
+    return json.dumps(json_cmd)
+
+def get_result(json_rpc_return):
+    response = json.loads(json_rpc_return)
+    # look for an error
+    if "error" in response:
+        err = response["error"]
+        raise ValueError("HSM returned error %d: %s" %
+                         (err.get("code", 0), err.get("message", "")))
+    return response["result"]
+
+
+def remote_hsm_send_modulus(form, key_label):
+
+    # package the request into json
+    json_rpc_call = make_json_rpc_call("pubkey", key=key_label)
+    json_rpc_return = hsmd_rpc_call(json_rpc_call)
+
+    modulus_b64 = get_result(json_rpc_return)
+    if modulus_b64 is None:
+        raise ValueError("Key \"%s\" not found on remote HSM" %
+                         key_label)
+
+    modulus = binascii.a2b_base64(modulus_b64)
+
+    out_format = safe_form_get(form, "format", "binary")
+    if out_format == "binary":
+        send_binary(modulus)
+    else:
+        print("Content-type: text/plain")
+        send_binary_buffer(modulus, form)
+
+
+def to_b64(bytes):
+    return binascii.b2a_base64(bytes).rstrip().decode('utf-8')
+
+
+def process_sign_return(json_rpc_sign_return):
+
+    signature_b64 = get_result(json_rpc_sign_return)
+    if signature_b64 is None:
+        raise ValueError("Signature operation failed on remote HSM")
+    return binascii.a2b_base64(signature_b64)
+
+
+def remote_hsm_sign_hash_with_key(key_label, sha512_hash):
+
+    # package the request into json
+    dgst_b64 = to_b64(sha512_hash)
+    json_rpc_call = make_json_rpc_call("sign", key=key_label, digest=dgst_b64)
+    json_rpc_return = hsmd_rpc_call(json_rpc_call)
+    return process_sign_return(json_rpc_return)
+
+
+def remote_hsm_sign_hash_with_modulus(modulus, sha512_hash):
+
+    # package the request into json
+    modulus_b64 = to_b64(modulus)
+    dgst_b64 = to_b64(sha512_hash)
+    json_rpc_call = make_json_rpc_call("sign", modulus=modulus_b64, digest=dgst_b64)
+    json_rpc_return = hsmd_rpc_call(json_rpc_call)
+    return process_sign_return(json_rpc_return)
+
+
+
+########################################################################
+#
+# HTTP request handling
+#
+########################################################################
+
+
 # retrieving binary form content can be problematic.
 # create a function for this as a bottleneck for debugging/logging
 def get_binary_from_form(form, name):
@@ -100,26 +200,41 @@ def get_binary_from_form(form, name):
 def process_query():
 
     form = cgi.FieldStorage()
+
+    production = int(safe_form_get(form, "production", 0))
     cmd = safe_form_get(form, "cmd", "modulus")
+
     if cmd == "modulus":
 
         key_label = safe_form_get(form, "key", "fpk4")
 
-        # send in binary format by default for this application
-        # to ease transition
-        out_format = safe_form_get(form, "format", "binary")
-        if out_format == "binary":
-            send_binary_modulus(form, key_label)
+        if production and key_label != "fpk4":
+            remote_hsm_send_modulus(form, key_label)
         else:
-            print("Content-type: text/plain")
-            send_modulus(form, key_label)
+            hsm_send_modulus(form, key_label)
 
     else:
         raise ValueError("Invalid command")
 
 
+def sign_hash_with_key(production, label, sha512_hash):
+    if production:
+        return remote_hsm_sign_hash_with_key(label, sha512_hash)
+
+    return hsm_sign_hash_with_key(label, sha512_hash)
+
+
+def sign_hash_with_modulus(production, modulus, sha512_hash):
+    if production:
+        return remote_hsm_sign_hash_with_modulus(modulus, sha512_hash)
+
+    return hsm_sign_hash_with_modulus(modulus, sha512_hash)
+
+
 def sign():
     form = cgi.FieldStorage()
+
+    production = int(safe_form_get(form, "production", 0))
 
     # is there a hash provided?
     sha512_hash = get_binary_from_form(form, "digest")
@@ -130,12 +245,12 @@ def sign():
 
     key_label = safe_form_get(form, "key", None)
     if key_label:
-        signature = hsm_sign_hash_with_key(key_label, sha512_hash)
+        signature = sign_hash_with_key(production, key_label, sha512_hash)
     else:
         modulus = get_binary_from_form(form, "modulus")
         if len(modulus) == 0:
             raise ValueError("No key or modulus specified for sign command")
-        signature = hsm_sign_hash_with_modulus(modulus, sha512_hash)
+        signature = sign_hash_with_modulus(production, modulus, sha512_hash)
 
     # send binary signature back
     send_binary(signature)
@@ -169,6 +284,17 @@ def main_program():
         err_msg = str(err)
         print("Content-Length: %d\n" % len(err_msg))
         print(err_msg)
+
+    except ConnectionError as err:
+    # also include ConnectionRefused etc...
+        # Log
+        log("Exception: %s" % err)
+        # Response
+        print("Status: 503 Service Unavailable")
+        err_msg = str(err)
+        print("Content-Length: %d\n" % len(err_msg))
+        print(err_msg)
+
 
         # all other errors are reported as 500 Internal Server Error
     except Exception as err:
