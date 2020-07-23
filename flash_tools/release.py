@@ -58,9 +58,6 @@ def main():
     parser.add_argument('--with-hsm', action='store_true', help='Use HSM for signing')
     parser.add_argument('--chip', choices=['f1', 's1'], default='f1', help='Target chip')
     parser.add_argument('--debug-build', dest='release', action='store_false', help='Use debug application binary')
-    group_fs1600 = parser.add_mutually_exclusive_group()
-    group_fs1600.add_argument('--generate-fs1600', dest='fs1600', action='store_const', const=1, help='Generate FS1600 flash images')
-    group_fs1600.add_argument('--generate-fs1600r2', dest='fs1600', action='store_const', const=2, help='Generate FS1600r2 flash images')
 
     args = parser.parse_args()
 
@@ -176,30 +173,6 @@ def main():
         gf.set_search_paths(sdkpaths)
         os.chdir(args.destdir)
         gf.run('flash')
-
-        if args.fs1600:
-            image_base = config['output_format']['output']
-            image = image_base + '.bin'
-            parts = list(filter(lambda f: f[0] == 'eepr', flash_utils.get_entries(image)))
-            eeprlist = ()
-            if args.fs1600 == 1:
-                eeprlist = ('fs1600_0', 'fs1600_1')
-            elif args.fs1600 == 2:
-                eeprlist = ('fs1600r2_0', 'fs1600r2_1')
-
-            for e in eeprlist:
-                destfile = image_base + '_' + e + '.bin'
-                shutil.copy2(image, destfile)
-                for p in parts:
-                    cmd = ['dd',
-                           'if=eeprom_{}_packed.bin'.format(e),
-                           'of={}'.format(destfile),
-                           'conv=notrunc',
-                           'obs=1',
-                           'seek={}'.format(p[1])]
-                    subprocess.call(cmd)
-
-
 
         #TODO(mnowakowski)
         #     skip direct invocation and import make_emulation_emmc
