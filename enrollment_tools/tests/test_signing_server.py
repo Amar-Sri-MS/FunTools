@@ -35,28 +35,6 @@ def content(response):
     return response.content
 
 
-def image_gen(server, tls_verify, infile,
-              ftype, version, description,
-              sign_key, certfile, customer_certfile):
-
-    url_str = "https://" + server + ":4443/cgi-bin/signing_server.cgi"
-
-    multipart_form_data = { 'img' : create_binary_form_data(infile) }
-
-    if certfile:
-        multipart_form_data['cert'] = create_binary_form_data(certfile)
-
-    if customer_certfile:
-        multipart_form_data['customer_cert'] = create_binary_form_data(customer_certfile)
-
-    params = { 'key' : sign_key, 'type': ftype, 'version' : version, 'description': description }
-
-    response = requests.post(url_str,
-                             files=multipart_form_data,
-                             params=params,
-                             verify=tls_verify)
-    return content(response)
-
 
 def hash_sign(server, tls_verify, digest, sign_key=None, modulus=None):
 
@@ -109,53 +87,6 @@ def test_get_binary_fpk4(server, tls_verify):
     fpk4_exp = binascii.unhexlify(fpk4_text)
 
     if fpk4 == fpk4_exp:
-        return 0
-
-    return 1
-
-
-def test_image_gen_with_key(server, tls_verify):
-
-    signed_image = image_gen(server, tls_verify,
-                             './firmware_m5150.bin',
-                             'frmw', 1, 'eSecure Firmware',
-                             'fpk3', None, None)
-
-    signed_image_exp = open('./signed_firmware_m5150.bin', 'rb').read()
-
-    if signed_image == signed_image_exp:
-        return 0
-
-    return 1
-
-
-def test_image_gen_with_cert(server, tls_verify):
-
-    signed_image = image_gen(server, tls_verify,
-                             './puf_rom_m5150.bin',
-                             'pufr', 1, 'eSecure PUF-ROM',
-                             None, '../development_start_certificate.bin', None)
-
-    signed_image_exp = open('./signed_puf_rom_m5150.bin', 'rb').read()
-
-    if signed_image == signed_image_exp:
-        return 0
-
-    return 1
-
-
-
-def test_image_gen_with_customer_cert(server, tls_verify):
-
-    signed_image = image_gen(server, tls_verify,
-                             './puf_rom_m5150.bin',
-                             'pufr', 1, 'eSecure PUF-ROM',
-                             None, '../development_start_certificate.bin',
-                             '../customer_certificate.bin')
-
-    signed_image_exp = open('./customer_signed_puf_rom_m5150.bin', 'rb').read()
-
-    if signed_image == signed_image_exp:
         return 0
 
     return 1
@@ -226,13 +157,8 @@ def main_program():
 
     try:
         errors += test_get_binary_fpk4(options.server, tls_verify)
-        errors += test_image_gen_with_key(options.server, tls_verify)
-        errors += test_image_gen_with_cert(options.server, tls_verify)
-        errors += test_image_gen_with_customer_cert(options.server, tls_verify)
         errors += test_get_customer_cert(options.server, tls_verify)
         errors += test_hash_sign(options.server, tls_verify)
-
-
 
     except Exception as ex:
         print("Exception occurred %s" % str(ex))
