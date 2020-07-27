@@ -33,7 +33,7 @@ import csr2
 # Use a global logger to match the convention set by related modules.
 #
 logger = logging.getLogger("csr2utils")
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.ERROR)
 
 
 class Register(object):
@@ -102,8 +102,8 @@ class RegisterValue(object):
 
     def __str__(self):
         s = list()
-        s.append("Raw data: {0}".format(hex_word_dump(self.word_array)))
-        s.append('------ Field values ------')
+        s.append("  Raw data: {0}".format(hex_word_dump(self.word_array)))
+        s.append('  Fields:')
 
         for fld, val in self._list_field_vals():
             s.append('    {0}: {1}'.format(fld, val))
@@ -170,7 +170,7 @@ class RegisterFinder(object):
             # we landed on a register.
             if isinstance(cursor.typ, csr2.Reg):
                 return cursor, None
-            return None, 'Failed to find register: possibly incomplete path?'
+            return None, 'Failed to find the register(possibly incomplete path?)'
 
         try:
             # The cursor.child(key) method descends the graph until it finds a
@@ -337,15 +337,16 @@ class CSRAccessor(object):
         Returns a RegisterValue object on success, else returns None and
         logs an error.
         """
+        logger.info('csr: {}'.format(path))
         reg, error = self.reg_finder.find_reg(path)
         if error:
-            logger.error(error)
+            logger.error('csr_path: {0} Error: {1}'.format(path, error))
             return None
 
         addr = reg.addr
         csr_width_words = reg.width_bytes >> 3
-        logger.info('Peeking register at {0} '
-                    'with length {1}'.format(hex(addr), csr_width_words))
+        logger.info('Peeking register Addr: {0}'
+                ' Width: {1}'.format(hex(addr), csr_width_words))
 
         (status, data) = self.dbgprobe.csr_peek(chip_inst=0,
                                                 csr_addr=addr,
@@ -401,7 +402,7 @@ class CSRAccessor(object):
             logger.error('Cannot write %d words for a register '
                          'which has %d words' % (len(values), csr_width_words))
             return False
-        logger.info('Poking register at {0} '
+        logger.debug('Poking register at {0} '
                     'with values {1}'.format(hex(addr), values))
 
         (status, data) = self.dbgprobe.csr_poke(chip_inst=0,
@@ -510,22 +511,36 @@ def init_bundle_lazily():
     return True
 
 
-def csr2_peek_internal(csr_path):
+def csr2_peek(csr_path):
+    """
+    Handles the csr peek comand.
+
+    Paths correspond to the hierarchy as described in fundamental docs,
+    separated by dots, e.g. pc0.soc_clk_ring.cfg.pc_cfg_scratchpad.
+    """
+
+    if not init_bundle_lazily():
+        return
+
+    if not csr_path:
+        logger.err('Invalid(Null) csr path argument!')
+        return
+
     finder = RegisterFinder(bundle)
     accessor = CSRAccessor(dbgprobe(), finder)
     regval = accessor.peek(csr_path)
     if regval is not None:
         print str(regval)
 
-def csr2_peek(args):
+def csr2_peek_args(args):
     """
-    Handles the csr peek comand.
+    Handles the csr peek comand with args dict.
 
     For CSR2, we allow specification of a path. If a wildcard * is present,
     we display a list of matching registers.
 
     Paths correspond to the hierarchy as described in fundamental docs,
-    separated by dots, e.g. root.pc0.soc_clk_ring.cfg.pc_cfg_scratchpad.
+    separated by dots, e.g. pc0.soc_clk_ring.cfg.pc_cfg_scratchpad.
     """
     if not init_bundle_lazily():
         return
@@ -537,11 +552,13 @@ def csr2_peek(args):
         csr_names.build()
         matched_csrs = csr_names.find_matching(regex)
         matched_csrs.sort()
-        print '\n'.join(matched_csrs)
+
+        print('\nTotal matched csrs:{}\n'.format(len(matched_csrs)))
         for csr in matched_csrs:
-            csr2_peek_internal(csr)
+            print('\n{}'.format(csr))
+            csr2_peek(csr)
     else:
-        csr2_peek_internal(csr_path)
+        csr2_peek(csr_path)
 
 def print_matching_regs(csr_path):
     regex = csr_path.replace('*', '.*')
@@ -550,7 +567,7 @@ def print_matching_regs(csr_path):
     result.sort()
     print '\n'.join(result)
 
-def csr2_raw_peek(args):
+def csr2_raw_peek_args(args):
     """
     Handles the raw peek command.
 
@@ -564,10 +581,32 @@ def csr2_raw_peek(args):
         formatter = RawValuesFormatter()
         print formatter.format(data)
 
-
-def csr2_poke(args):
+def csr2_poke(csr_path, values):
     """
     Handles the csr poke comand.
+
+    Paths correspond to the hierarchy as described in fundamental docs,
+    separated by dots, e.g. root.pc0.soc_clk_ring.cfg.pc_cfg_scratchpad.
+    """
+
+    if not csr_path:
+        logger.err('Invalid(Null) csr path argument!')
+        return
+
+    if not values or len(values) == 0:
+        logger.err('Invalid(Null or empty list) csr value argument argument!')
+        return
+
+    if not init_bundle_lazily():
+        return
+
+    finder = RegisterFinder(bundle)
+    accessor = CSRAccessor(dbgprobe(), finder)
+    accessor.poke(csr_path, values)
+
+def csr2_poke_args(args):
+    """
+    Handles the csr poke comand with args dict input.
 
     For CSR2, we allow specification of a path. If a wildcard * is present,
     we display a list of matching registers.
@@ -575,6 +614,7 @@ def csr2_poke(args):
     Paths correspond to the hierarchy as described in fundamental docs,
     separated by dots, e.g. root.pc0.soc_clk_ring.cfg.pc_cfg_scratchpad.
     """
+
     if not init_bundle_lazily():
         return
 
@@ -584,11 +624,10 @@ def csr2_poke(args):
         print_matching_regs(csr_path)
     else:
         values = [str_to_int(v) for v in args.vals]
-        finder = RegisterFinder(bundle)
-        accessor = CSRAccessor(dbgprobe(), finder)
-        accessor.poke(csr_path, values)
 
-def csr2_raw_poke(args):
+    csr2_poke(csr_path, values)
+
+def csr2_raw_poke_args(args):
     """
     Handles the raw poke command.
     """

@@ -57,6 +57,11 @@ NOR_IMAGE_FILE_NAME = "qspi_image_hw.bin"
 
 BMC_INSTALL_DIR = "/mnt/sdmmc0p1/scripts"
 
+#destination
+DOCHUB_REPO_DIR_USER_FMT = '/project/users/doc/sbp_images/{0}/{1}'
+
+
+
 def remove_prefix(a_str, prefix):
     ''' remove a prefix from string if it is there '''
     if a_str.startswith(prefix):
@@ -171,6 +176,53 @@ def get_ssh_client(username, servername, password=None):
     ssh_client.connect(hostname=servername, username=username, password=password)
     return ssh_client
 
+def scp_file(ssh_client, target_dir, file_name):
+
+    def progress(filename, size, sent):
+        sys.stdout.write("copying file to %s progress: %.2f%%   \r" %
+                         (filename.decode('utf-8'), float(sent)/float(size)*100))
+
+    target_file_name = os.path.join(target_dir, os.path.basename(file_name))
+    with SCPClient(ssh_client.get_transport(), progress=progress) as scp:
+        scp.put(file_name, target_file_name)
+
+
+def generate_update_tar_file(args, built_images_dir):
+    ''' generate the TAR file used for update and upload it to dochub '''
+    def tar_filter(tar_info):
+        if tar_info.isdir():
+            return tar_info
+
+        base_name = os.path.basename(tar_info.name)
+
+        if fnmatch.fnmatch(base_name, '*.bin'):
+            return tar_info
+
+        if fnmatch.fnmatch(base_name, '*.json'):
+            return tar_info
+
+        return None
+
+    tar_root = "{}_dev_signed".format(args.chip)
+    tar_file_name = os.path.join(built_images_dir, tar_root) + ".tgz"
+
+    with tarfile.open(tar_file_name, mode='w:gz') as f:
+        f.add(built_images_dir, arcname=tar_root, filter=tar_filter)
+
+    ssh_client = get_ssh_client(args.user, 'server1')
+
+    repo_dir = DOCHUB_REPO_DIR_USER_FMT.format(args.user, args.version)
+
+    print("upgrade file will be stored at", repo_dir)
+
+    # make sure the directory exists
+    _, stdout, _ = ssh_client.exec_command('mkdir -p ' + repo_dir +  ' 2>&1')
+    for line in iter(stdout.readline, ""):
+        print(line, end="")
+
+    scp_file(ssh_client, repo_dir, tar_file_name)
+
+
 
 def generate_tar_file(args, built_images_dir):
     ''' package the NOR image and the signed eeproms '''
@@ -206,9 +258,7 @@ def extract_tar_to_bmc(ssh_client, tar_file_name):
         sys.stdout.write("copying tar file to %s progress: %.2f%%   \r" %
                          (filename.decode('utf-8'), float(sent)/float(size)*100))
 
-    target_file_name = os.path.join(BMC_INSTALL_DIR, os.path.basename(tar_file_name))
-    with SCPClient(ssh_client.get_transport(), progress=progress) as scp:
-        scp.put(tar_file_name, target_file_name)
+    scp_file(ssh_client, BMC_INSTALL_DIR, tar_file_name)
 
     # now extract it
     print("extracting tar file {0}".format(target_file_name))
@@ -244,6 +294,9 @@ def parse_args():
                             help="SBP Firmware directory, default is $WORKSPACE/SBPFirmware")
     arg_parser.add_argument("-v", "--version", action='store',
                             help="Force version for image -- useful for update")
+    arg_parser.add_argument("-u", "--user", action='store', metavar='USERNAME',
+                            help='''create a tgz file on dochub for use with run_fwupgrade.py
+                            as dochub.fungible.local/doc/<username>/<version>/''')
     arg_parser.add_argument("--tar", action='store_true',
                             default='--bmc' in sys.argv,
                             help="generate tgz file with the image and all eeproms")
@@ -347,6 +400,10 @@ def main():
     generate_nor_image(args, script_dir, built_images_dir, eeproms_dir)
 
     print("*** Images in {0} ***".format(built_images_dir))
+
+    # generate the tgz file for update
+    if args.user:
+        generate_update_tar_file(args, built_images_dir)
 
     if args.tar:
         tar_file, tar_dir = generate_tar_file(args, built_images_dir)

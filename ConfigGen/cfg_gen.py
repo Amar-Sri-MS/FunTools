@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2.7
 
 # cfg_gen.py
 # The config generator is intended to simplify configuration file maintenance,
@@ -205,6 +205,12 @@ def _generate_funos_default_config(config_root_dir, output_dir,
     funos_default_config = jsonutils.merge_dicts(funos_default_config, stats_cfg)
 
     modules_cfg = _generate_modules_config(config_root_dir)
+
+    config_chip_dir = os.path.join(config_root_dir, target_chip)
+    if os.path.exists(config_chip_dir):
+        chip_modules_cfg = _generate_modules_config(config_chip_dir)
+        modules_cfg = jsonutils.merge_dicts_recursive(modules_cfg, chip_modules_cfg)
+
     funos_default_config = jsonutils.merge_dicts(funos_default_config, modules_cfg)
 
     if not os.path.exists(output_dir):
@@ -248,6 +254,7 @@ def _generate_sku_eeprom_files(config_root_dir,
     sku_cfg_gen = SKUCfgGen(config_root_dir, output_dir,
                             target_chip, target_machine)
     sku_cfg_gen.generate_eeprom()
+    sku_cfg_gen.generate_chip_eeprom_lists()
 
 #Generates hu config source code
 def _generate_hu_config_code(config_root_dir, output_dir):

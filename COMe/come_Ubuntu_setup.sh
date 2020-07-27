@@ -82,8 +82,11 @@ Update_Fungible_systemd_services()
   fi
 
   cp ${FUNGIBLE_ROOT}/etc/come_heartbeat_server.socket /lib/systemd/system/
+  chmod 644 /lib/systemd/system/come_heartbeat_server.socket
   cp ${FUNGIBLE_ROOT}/etc/come_heartbeat_server@.service /lib/systemd/system/
+  chmod 644 /lib/systemd/system/come_heartbeat_server@.service
   cp ${FUNGIBLE_ROOT}/etc/come_start_heartbeat_server.service /lib/systemd/system/
+  chmod 644 /lib/systemd/system/come_start_heartbeat_server.service
 
   SERVICE_STATUS=`systemctl is-enabled come_start_heartbeat_server.service`
   if [ "${SERVICE_STATUS}" != "enabled" ]; then
@@ -91,6 +94,18 @@ Update_Fungible_systemd_services()
     RC=$?
     if [ ${RC} -ne 0 ]; then
       echo "Failed to enable COMe heartbeat server (${RC})"
+    fi
+  fi
+}
+
+Update_timesyncd()
+{
+  TIMESYNCD_CONF=/etc/systemd/timesyncd.conf
+  if [[ -f ${TIMESYNCD_CONF} ]]; then
+    cat ${TIMESYNCD_CONF} | grep "^FallbackNTP" | grep -q "192.168.127.2"
+    if [[ ${?} -ne 0 ]]; then
+      /bin/sed -i '/.*FallbackNTP.*/d' ${TIMESYNCD_CONF}
+      echo "FallbackNTP=192.168.127.2" >> ${TIMESYNCD_CONF}
     fi
   fi
 }
@@ -104,5 +119,7 @@ Update_Fungible_systemd_services
 Update_resolv_conf_smlink
 
 Update_disable_redis_server
+
+Update_timesyncd
 
 exit 0

@@ -15,6 +15,8 @@ import jsonutils
 from itertools import chain
 import argparse
 from hwcap_cfg_gen import HWCAPCodeGen
+import collections
+import copy
 
 logger = logging.getLogger('sku_cfg_gen')
 logger.setLevel(logging.INFO)
@@ -41,11 +43,90 @@ class SKUCfgGen():
 
         return board_id_cfg.get('fungible_boards', None)
 
+    def build_default_config(self, def_json, def_cfg):
+        for def_key, val in def_json.items():
+            # Only keys prefixed with "DEFAULT_" are imported by board config
+            # files. These must be expanded and saved in def_cfg.
+            if 'DEFAULT_' in def_key:
+                # Build the entry.
+                entry = {}
+                entry.update(def_json[def_key])
+                for sub_key in list(val.keys()):
+                    if def_json.has_key(sub_key):
+                        sub_entry = {}
+                        sub_entry.update(def_json[sub_key])
+                        sub_entry.update(def_json[def_key][sub_key])
+                        del entry[sub_key]
+                        entry.update(sub_entry)
+                # Save the entry
+                new_key = def_key.replace('DEFAULT_', '')
+                def_cfg[new_key] = entry
+
+    def get_default_config(self, def_cfg):
+        """Build a dictionary containing the default entries exported to board
+        configuration files.
+        """
+        _path = 'sku_config/defaults/%s_*.cfg' % self.target_chip
+        file_patterns = [_path]
+        for file_pat in file_patterns:
+            for def_file in glob.glob(os.path.join(self.input_dir, file_pat)):
+                with open(def_file, 'r') as f:
+                    def_json = f.read()
+                    def_json = jsonutils.standardize_json(def_json)
+                    try:
+                        def_json = json.loads(def_json)
+                    except:
+                        logger.error("Failed to load defaults file: {}".format(def_file))
+                        raise
+
+                self.build_default_config(def_json, def_cfg)
+
+    def merge_entry(self, entry, cfg_json):
+        """Modifies entry in place to contain values from cfg_json. If any value
+        in entry is a dictionary, and the corresponding value in cfg_json is
+        also a dictionary, then merge them in place.
+        """
+        for key, val_json in cfg_json.items():
+            val_entry = entry.get(key)
+            if (isinstance(val_entry, collections.Mapping) and
+                 isinstance(val_json, collections.Mapping)):
+                self.merge_entry(val_entry, val_json)
+            else:
+                entry[key] = val_json
+
+    def update_entry(self, key, cfg_json, def_cfg):
+        """Applies the defaults to an entry.
+        """
+        entry = copy.deepcopy(def_cfg[key])
+        self.merge_entry(entry, cfg_json[key])
+        del cfg_json[key]
+        cfg_json.update(entry)
+
+    def apply_defaults_to_board_config(self, cfg_json, def_cfg):
+        """Traverse the board configuration recursevely looking for entries to
+        apply default configuration to.
+        """
+        for key, val in cfg_json.items():
+            if type(val) is dict:
+                self.apply_defaults_to_board_config(val, def_cfg)
+                if key in list(def_cfg.keys()):
+                    self.update_entry(key, cfg_json, def_cfg)
+            elif type(val) is list:
+                for item in val:
+                    if type(item) is dict:
+                        self.apply_defaults_to_board_config(item, def_cfg)
+                        if key in list(def_cfg.keys()):
+                            self.update_entry(key, cfg_json, def_cfg)
+
     def get_posix_or_emu_configs(self, board_cfg):
         """Get the configuration for all the posix or emulations that
         use the target chip.
         """
+        def_cfg = dict()
+        self.get_default_config(def_cfg)
+
         _path = 'sku_config/'
+
         if 'posix' in (self.target_machine):
             _path = _path + 'posix/%s_*.cfg' % self.target_chip
         else:
@@ -64,7 +145,9 @@ class SKUCfgGen():
                     except:
                         logger.error("Failed to load config file: {}".format(cfg))
                         raise
-                    board_cfg = jsonutils.merge_dicts(board_cfg, cfg_json)
+
+                    self.apply_defaults_to_board_config(cfg_json, def_cfg)
+                    board_cfg = jsonutils.merge_dicts(board_cfg, copy.deepcopy(cfg_json))
 
         return board_cfg
 
@@ -96,10 +179,16 @@ class SKUCfgGen():
         """Get the configuration for all the boards that use the target
         chip.
         """
+        def_cfg = dict()
+        self.get_default_config(def_cfg)
+
         _path = 'sku_config/*/*.cfg'
         file_patterns = [_path]
         for file_pat in file_patterns:
             for cfg in glob.glob(os.path.join(self.input_dir, file_pat)):
+                # Skip default configuration files
+                if 'sku_config/defaults' in cfg:
+                    continue
                 logger.debug('Processing per sku config: {}'.format(cfg))
                 with open(cfg, 'r') as f:
                     cfg_json = f.read()
@@ -113,7 +202,9 @@ class SKUCfgGen():
                     if not self.is_cfg_target_board(cfg_json):
                         continue
 
-                    board_cfg = jsonutils.merge_dicts(board_cfg, cfg_json)
+                    # Apply defaults to the board configuration
+                    self.apply_defaults_to_board_config(cfg_json, def_cfg)
+                    board_cfg = jsonutils.merge_dicts(board_cfg, copy.deepcopy(cfg_json))
         return board_cfg
 
     def get_additions(self, board_cfg, addition_machine):
@@ -318,6 +409,28 @@ class SKUCfgGen():
         for sku_name, sku_id in all_skus_with_sbp.iteritems():
             abs_eeprom_file_path = os.path.join(self.output_dir, eeprom_filename(sku_name))
             self._create_binary_file(abs_eeprom_file_path, sku_id)
+
+    # Generates json lists of eeprom files for each chip
+    def generate_chip_eeprom_lists(self):
+        chips_seen = []
+        fun_board_config = self._get_fungible_board_id_config()
+        for board in fun_board_config:
+            chip_type = board.get('asic', None)
+            if chip_type not in chips_seen:
+                chips_seen.append(chip_type)
+                self.target_chip = chip_type
+
+                eeprom_filename = lambda sku_name: 'eeprom_{}'.format(sku_name)
+
+                all_board_skus_with_sbp = \
+                        self.get_fungible_board_sku_ids(all_target_chips=False)
+
+                eeprom_list = {}
+                for sku_name, sku_id in all_board_skus_with_sbp.iteritems():
+                    eeprom_list[sku_name] = { 'filename' : eeprom_filename(sku_name) }
+
+                with open(os.path.join(self.output_dir, '{}_eeprom_list.json'.format(chip_type)), "wb") as f:
+                    json.dump(eeprom_list, f, indent=4)
 
     @staticmethod
     def get_build_deplist():

@@ -1,21 +1,19 @@
-#!/bin/bash -e
+#!/bin/bash
 
-echo "*************************************************************************"
-echo "*                                                                       *"
-echo "*             INTERNAL TESTING USE ONLY                                 *"
-echo "*                                                                       *"
-echo "*             THIS SCRIPT WILL NOT WORK AT A CUSTOMER SITE              *"
-echo "*                                                                       *"
-echo "*             THIS SCRIPT IS DEPRICATED                                 *"
-echo "*                                                                       *"
-echo "*             PLEASE USE THE BMC CLI TO RESET COMe (cclinux)            *"
-echo "*             CLI: fun_reboot_system.sh                                 *"
-echo "*                                                                       *"
-echo "*             THIS SCRIPT WILL NOT WORK AT A CUSTOMER SITE              *" >&2
-echo "*                                                                       *" >&2
-echo "*             INTERNAL TESTING USE ONLY                                 *" >&2
-echo "*                                                                       *" >&2
-echo "*************************************************************************" >&2
+function Unsupported_Config_Banner()
+{
+	echo "*************************************************************************"
+	echo "*                                                                       *"
+	echo "*             INTERNAL TESTING USE ONLY (Usage fine on Rev1/Rev1+)      *"
+	echo "*                                                                       *"
+	echo "*             THIS MODE WILL NOT WORK AT A CUSTOMER SITE                *"
+	echo "*                                                                       *"
+	echo "*             INTERNAL TESTING USE ONLY (Usage fine on Rev1/Rev1+)      *" >&2
+	echo "*                                                                       *" >&2
+	echo "*             THIS MODE WILL NOT WORK AT A CUSTOMER SITE                *" >&2
+	echo "*                                                                       *" >&2
+	echo "*************************************************************************" >&2
+}
 
 # SWSYS-740
 # Poll the operational state of the interface for
@@ -40,13 +38,20 @@ function Is_Interface_Up()
 	return 1
 }
 
-NOREBOOT="/tmp/SuspendCOMeRebootRequests"
 FUN_ROOT="/opt/fungible"
 
 if [[ "$EUID" -ne 0 ]]; then
 	printf "Please run as ROOT EUID=$EUID\n"
 	exit
 fi
+
+SUSPEND_REBOOT_REQ="/tmp/SuspendCOMeRebootRequests"
+if [[ -f $SUSPEND_REBOOT_REQ ]]; then
+	printf "Reboot request and is in progress ..."
+	exit
+fi
+# Suspend more reboot requests
+touch ${SUSPEND_REBOOT_REQ}
 
 echo "Running $0"
 
@@ -61,11 +66,43 @@ if [[ $RC -ne 0 ]]; then
 	Is_Interface_Up $INTERNAL_VLAN_VIRT_INTF
 fi
 
-if [[ -f $NOREBOOT ]]; then
-	printf "Aborting reboot request"
-	printf "Please remove file $NOREBOOT"
-	exit
-fi
+# SWSYS-916
+# Send a reset request via internal private port to BMC
+# If BMC acknowledges the request then exit so that
+# BMC can gracefully bring down the COMe
+# If the request is not acknowledged then proceed and
+# use legacy method
+# The legacy method will be required till the time BMC
+# gets the chassis bundle which supports this feature
+# tracked under SWSYS-916
+# This is true for all revisions of FS1600
+RETRY=5
+while [[ ${RETRY} -ne 0 ]]; do
+	#         Reboot request cmd            BMC IP        port
+	ACK=`echo RebootRequestFromCOMe | nc -4 192.168.127.2 6672`
+	if [[ ! -z "${ACK}" ]] && [[ "${ACK}" == "AckRebootRequestFromCOMe" ]]; then
+		echo "Reboot request sent to BMC and ACK received (${ACK})"
+		# Keep spinning till BMC reboots COMe
+		while true; do
+			sync
+			sleep 10
+		done
+	fi
+	RETRY=$((RETRY - 1))
+	sleep 1
+done
+
+# **********************************************************
+# * SWSYS-916 (IMPORTANT)                                  *
+# * This method of using direct password is depricated     *
+# * but is used by Rev1/Rev1+ systems.                     *
+# * Do not delete below code+logic as it will brick        *
+# * the working model for Rev1/Rev1+ and Rev2 systems      *
+# * which do not have corrosponding chassis bundle support *
+# **********************************************************
+echo "Using legacy method to issue system reboot request to BMC"
+
+Unsupported_Config_Banner
 
 FAST_REBOOT=0
 if [[ $# -eq 1 ]]; then
@@ -77,28 +114,19 @@ if [[ $# -eq 1 ]]; then
 	fi
 fi
 
-SSHPASS=`which sshpass`
-if [[ -z $SSHPASS ]]; then
-        echo ERROR: sshpass is not installed!!!!!!!!!!
-	apt-get install -y sshpass
-fi
-
 REBOOT_FILE="/tmp/fpga_reset.sh"
 
 if [[ -d /sys/class/net/enp3s0f0.2 ]]; then
 	BMC_IP="192.168.127.2"
 else
-        IPMITOOL=`which ipmitool`
-        if [[ -z $IPMITOOL ]]; then
-                echo ERROR: ipmitool is not installed!!!!!!!!!!
-	        apt-get install -y ipmitool
-        fi
 	IPMI_LAN="ipmitool lan print 1"
 	AWK_LAN='/IP Address[ ]+:/ {print $4}'
 	BMC_IP=$($IPMI_LAN | awk "$AWK_LAN")
 fi
 
 printf "Poll BMC:  %s\n" $BMC_IP
+
+
 
 BMC="-P password: -p superuser ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no sysadmin@$BMC_IP"
 
@@ -135,6 +163,14 @@ else
 	printf "WARNING: Sending BMC request to reboot host\n"
 	COUNT=0
 	while [[ $COUNT -lt 1 ]]; do
+# **********************************************************
+# * SWSYS-916 (IMPORTANT)                                  *
+# * This method of using direct password is depricated     *
+# * but is used by Rev1/Rev1+ systems.                     *
+# * Do not delete below code+logic as it will brick        *
+# * the working model for Rev1/Rev1+ and Rev2 systems      *
+# * which do not have corrosponding chassis bundle support *
+# **********************************************************
 		BMC_XFER_RST_CTRL="-P password: -p superuser scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $RESET_CONTROLLER sysadmin@$BMC_IP:/tmp"
 		echo "Transferring reset controller to BMC"
 		XFER=$(sshpass $BMC_XFER_RST_CTRL > /dev/null 2>&1)

@@ -135,7 +135,7 @@ class dbgsh(cmd2.Cmd):
     if not csr2_mode:
         parser_peek.set_defaults(func=csr_peek)
     else:
-        parser_peek.set_defaults(func=csr2utils.csr2_peek)
+        parser_peek.set_defaults(func=csr2utils.csr2_peek_args)
     parser_peek.add_argument('-i', nargs=1,
         metavar=('csr_inst'), dest='csr_inst', type=str, help="csr instance")
     parser_peek.add_argument('-e', nargs=1,
@@ -176,7 +176,7 @@ class dbgsh(cmd2.Cmd):
             metavar=('raw_value'), dest='raw_value', type=str,
             help="csr value in big-endian 64-bit words")
     else:
-        parser_poke.set_defaults(func=csr2utils.csr2_poke)
+        parser_poke.set_defaults(func=csr2utils.csr2_poke_args)
         parser_poke.add_argument('csr', nargs=1, type=str, help="csr name")
         parser_poke.add_argument('vals', nargs='*', type=str,
                                  help="csr values in big-endian 64-bit words")
@@ -186,14 +186,14 @@ class dbgsh(cmd2.Cmd):
                                          formatter_class=ArgFormatter)
         raw_peek.add_argument('addr', help="csr address")
         raw_peek.add_argument('length', help="csr length (64-bit words)")
-        raw_peek.set_defaults(func=csr2utils.csr2_raw_peek)
+        raw_peek.set_defaults(func=csr2utils.csr2_raw_peek_args)
 
         raw_poke = subparsers.add_parser('raw_poke', help="CSR raw poke",
                                          formatter_class=ArgFormatter)
         raw_poke.add_argument('addr', help="csr address")
         raw_poke.add_argument('vals', nargs='*', help="64-bit words to poke: "
                                                       "(must equal register length)")
-        raw_poke.set_defaults(func=csr2utils.csr2_raw_poke)
+        raw_poke.set_defaults(func=csr2utils.csr2_raw_poke_args)
 
     parser_decode = subparsers.add_parser('decode',
                 help="Decode csr bits", formatter_class=ArgFormatter)

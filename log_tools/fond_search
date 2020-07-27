@@ -32,6 +32,7 @@ import signal
 import shutil
 import sys
 import os
+import re
 
 DEMAND_FS_ROOT = "/demand/demand"
 DEMAND_FS_JOB_PREFIX = DEMAND_FS_ROOT + "/Jobs"
@@ -145,6 +146,10 @@ class JobMatch:
         return bool(int(hbmdump))
 
     @property
+    def return_code(self):
+        return self.jobinfo.get("return_code", None)
+
+    @property
     def return_code_msg(self):
         return self.jobinfo.get("return_code_msg", "?")
 
@@ -197,6 +202,9 @@ def apply_job_filter(job, args):
     if args.models and job.model not in args.models:
         return False
 
+    if args.machines and job.machines not in args.machines:
+        return False
+
     if args.emails and args.emails.isdisjoint(job.email):
         return False
 
@@ -216,6 +224,16 @@ def apply_job_filter(job, args):
         size = os.path.getsize(job.logfile)
         if size > args.file_size_upper_bound:
             return False
+
+    if args.description and not args.description.search(job.note):
+        return False
+
+    if args.failed_only:
+        return_code = job.return_code
+        if return_code:
+            return_code = int(return_code)
+            if return_code == 0:
+                return False
 
     return True
 
@@ -300,12 +318,27 @@ def set_arg(arg):
     return set(arg.split(","))
 
 
+def re_arg(arg):
+    return re.compile(arg)
+
+
 def handle_args():
     description = "Search Fun-on-Demand jobs. Fun-on-Demand filesystem must be mounted at {demand_fs_root}."
     parser = argparse.ArgumentParser(
         description=description.format(demand_fs_root=DEMAND_FS_ROOT)
     )
 
+    parser.add_argument(
+        "--description",
+        default=None,
+        help="Only search for jobs with description matching given pattern",
+        type=re_arg,
+    )
+    parser.add_argument(
+        "--failed-only",
+        action="store_true",
+        help="Only search for failed jobs",
+    )
     parser.add_argument(
         "--hbmdump",
         default="all",
@@ -331,6 +364,12 @@ def handle_args():
         default=None,
         type=set_arg,
         help="Only search on specific hardware models, comma separated",
+    )
+    parser.add_argument(
+        "--machines",
+        default=None,
+        type=set_arg,
+        help="Only search on specific machines, comma separated",
     )
     parser.add_argument(
         "-e",

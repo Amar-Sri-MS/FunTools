@@ -4,6 +4,7 @@ import struct
 import sys
 import os
 import configparser
+import glob
 import json
 import argparse
 import shutil
@@ -11,6 +12,7 @@ import subprocess
 import tarfile
 import generate_flash as gf
 import flash_utils
+import eeprom_replace as er
 
 
 HOST_FIRMWARE_CONFIG_OVERRIDE="""
@@ -41,6 +43,15 @@ FUNOS_CONFIG_OVERRIDE="""
 }}
 """
 
+EEPROM_LIST_CONFIG_OVERRIDE="""
+{{ "signed_images": {{
+     "eeprom_list": {{
+         "source":"@file:{eeprom_list}"
+         }}
+     }}
+}}
+"""
+
 def main():
     parser = argparse.ArgumentParser()
     config = {}
@@ -56,11 +67,8 @@ def main():
     parser.add_argument('--force-version', type=int, help='Override firmware versions')
     parser.add_argument('--force-description', help='Override firmware description strings')
     parser.add_argument('--with-hsm', action='store_true', help='Use HSM for signing')
-    parser.add_argument('--chip', choices=['f1', 's1'], default='f1', help='Target chip')
+    parser.add_argument('--chip', choices=['f1', 's1', 'f1d1'], default='f1', help='Target chip')
     parser.add_argument('--debug-build', dest='release', action='store_false', help='Use debug application binary')
-    group_fs1600 = parser.add_mutually_exclusive_group()
-    group_fs1600.add_argument('--generate-fs1600', dest='fs1600', action='store_const', const=1, help='Generate FS1600 flash images')
-    group_fs1600.add_argument('--generate-fs1600r2', dest='fs1600', action='store_const', const=2, help='Generate FS1600r2 flash images')
 
     args = parser.parse_args()
 
@@ -82,9 +90,14 @@ def main():
             with open(config_file, 'r') as f:
                 gf.merge_configs(config, json.load(f,encoding='ascii'))
 
-    gf.merge_configs(config, json.loads(EEPROM_CONFIG_OVERRIDE))
-    gf.merge_configs(config, json.loads(HOST_FIRMWARE_CONFIG_OVERRIDE))
-    gf.merge_configs(config, json.loads(FUNOS_CONFIG_OVERRIDE.format(funos_appname=funos_appname)))
+    eeprom_list = '{}_eeprom_list.json'.format(args.chip)
+
+    if wanted('prepare'):
+        gf.merge_configs(config, json.loads(EEPROM_CONFIG_OVERRIDE))
+        gf.merge_configs(config, json.loads(HOST_FIRMWARE_CONFIG_OVERRIDE))
+        gf.merge_configs(config, json.loads(FUNOS_CONFIG_OVERRIDE.format(funos_appname=funos_appname)))
+        gf.merge_configs(config, json.loads(EEPROM_LIST_CONFIG_OVERRIDE.format(eeprom_list=eeprom_list)))
+
     gf.set_config(config)
 
     if args.force_version:
@@ -100,6 +113,7 @@ def main():
         paths = [ "bin",
                 "FunSDK/sbpfw/roms",
                 "FunSDK/sbpfw/eeproms",
+                "FunSDK/nvdimm_fw",
                 "feature_sets",
                 ]
         sdkpaths = [os.path.join(args.sdkdir, path) for path in paths]
@@ -127,10 +141,13 @@ def main():
                   "bin/flash_tools/enrollment_service.py",
                   "bin/flash_tools/key_bag_create.py",
                   "bin/flash_tools/key_replace.py",
+                  "bin/flash_tools/eeprom_replace.py",
                   "bin/flash_tools/flash_utils.py",
                   "bin/flash_tools/sign_release.sh",
                   "bin/flash_tools/" + os.path.basename(__file__),
                   "bin/Linux/x86_64/mkimage" ]
+        utils.append(os.path.join('FunSDK/sbpfw/eeproms', eeprom_list))
+
         for app in utils:
             shutil.copy2(os.path.join(args.sdkdir, app), os.path.basename(app))
 
@@ -176,30 +193,6 @@ def main():
         os.chdir(args.destdir)
         gf.run('flash')
 
-        if args.fs1600:
-            image_base = config['output_format']['output']
-            image = image_base + '.bin'
-            parts = list(filter(lambda f: f[0] == 'eepr', flash_utils.get_entries(image)))
-            eeprlist = ()
-            if args.fs1600 == 1:
-                eeprlist = ('fs1600_0', 'fs1600_1')
-            elif args.fs1600 == 2:
-                eeprlist = ('fs1600r2_0', 'fs1600r2_1')
-
-            for e in eeprlist:
-                destfile = image_base + '_' + e + '.bin'
-                shutil.copy2(image, destfile)
-                for p in parts:
-                    cmd = ['dd',
-                           'if=eeprom_{}_packed.bin'.format(e),
-                           'of={}'.format(destfile),
-                           'conv=notrunc',
-                           'obs=1',
-                           'seek={}'.format(p[1])]
-                    subprocess.call(cmd)
-
-
-
         #TODO(mnowakowski)
         #     skip direct invocation and import make_emulation_emmc
         cmd = [ 'python', 'make_emulation_emmc.py',
@@ -210,6 +203,12 @@ def main():
                 '--filesystem',
                 '--signed' ]
         subprocess.call(cmd)
+
+        with open(eeprom_list) as f:
+            eeproms = json.load(f)
+            for skuid, value in eeproms.items():
+                er.replace('qspi_image_hw.bin',
+                    'qspi_image_hw.bin.{}'.format(skuid), value['filename'])
 
         os.chdir(curdir)
 
@@ -231,7 +230,7 @@ def main():
 
         tarfiles.append('image.json')
         tarfiles.append('mmc_image.json')
-        tarfiles.append('qspi_image_hw.bin')
+        tarfiles.extend(glob.glob('qspi_image_hw.bin*'))
 
         with tarfile.open('{chip}_sdk_signed_release.tgz'.format(chip=args.chip), mode='w:gz') as tar:
             for f in tarfiles:

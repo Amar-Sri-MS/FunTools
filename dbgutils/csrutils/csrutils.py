@@ -22,7 +22,7 @@ from probeutils.dbgclient import *
 from probeutils.dut import *
 
 logger = logging.getLogger("csrutils")
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.ERROR)
 
 class constants(object):
     WORD_SIZE_BITS = 64
@@ -738,7 +738,7 @@ def csr_replay_config(csr_replay_input_file, srec_file = None):
                 if csr_width_words != len(csr_val_words):
                     print 'Mismatch in csr width and value. "{0}"'.format(line)
                     return
-                logger.info('csr_address: {0} csr_width: {1}'
+                logger.debug('csr_address: {0} csr_width: {1}'
                         ' word_array:{2}'.format(csr_address,
                             csr_width, [hex(x) for x in csr_val_words]))
 

@@ -55,34 +55,32 @@ static inline void print_in_buf(struct word_parameters *wparams, const char *str
 
 // Fill buf with exactly buf_max characters (NOT zero terminated), defaulted to space
 static void print_atomic_json(struct word_parameters *wparams, NULLABLE struct fun_json *item) {
-    memset(wparams->buf, ' ', wparams->buf_max);
-    if (!item) return;
-    switch (fun_json_get_type(item)) {
-        case fun_json_error_type:
-            return print_in_buf(wparams, "***");
-        case fun_json_null_type:
-            return print_in_buf(wparams, "null");
-        case fun_json_bool_type:
-            return print_in_buf(wparams, fun_json_to_bool(item, false) ? "true" : "false");
-        case fun_json_int_type: {
-            char temp[100];
-            sprintf(temp, "%" PRId64 "", fun_json_to_int64(item, 0));
-            return print_in_buf(wparams, temp);
-        }
-        case fun_json_double_type: {
-            char temp[100];
-            sprintf(temp, "%.2f", fun_json_to_double(item, 0.0));
-            if (!index(temp, 'e') && !index(temp, 'E') && !index(temp, '.') && (isdigit(temp[0]) || (temp[0] == '-'))) {
-                // For round numbers, without exponent, and avoiding specials like 'NaN', we append .0 to make sure they are read back as double rather than int
-                strcat(temp, ".0");
-            }
-            return print_in_buf(wparams, temp);
-        }
-        case fun_json_string_type:
-            return print_in_buf(wparams, fun_json_to_string(item, ""));
-        default:
-            return print_in_buf(wparams, "???");
-    }
+	memset(wparams->buf, ' ', wparams->buf_max);
+	if (!item) return;
+
+	if (fun_json_is_error_message(item)) {
+		return print_in_buf(wparams, "***");
+	} else if (fun_json_is_null(item)) {
+		return print_in_buf(wparams, "null");
+	} else if (fun_json_is_bool(item)) {
+		return print_in_buf(wparams, fun_json_to_bool(item, false) ? "true" : "false");
+	} else if (fun_json_is_int(item)) {
+		char temp[100];
+		sprintf(temp, "%" PRId64 "", fun_json_to_int64(item, 0));
+		return print_in_buf(wparams, temp);
+	} else if (fun_json_is_double(item)) {
+		char temp[100];
+		sprintf(temp, "%.2f", fun_json_to_double(item, 0.0));
+		if (!index(temp, 'e') && !index(temp, 'E') && !index(temp, '.') && (isdigit(temp[0]) || (temp[0] == '-'))) {
+			// For round numbers, without exponent, and avoiding specials like 'NaN', we append .0 to make sure they are read back as double rather than int
+			strcat(temp, ".0");
+		}
+		return print_in_buf(wparams, temp);
+	} else if (fun_json_is_string(item)) {
+		return print_in_buf(wparams, fun_json_to_string(item, ""));
+	} else {
+		return print_in_buf(wparams, "???");
+	}
 }
 
 struct parameters {

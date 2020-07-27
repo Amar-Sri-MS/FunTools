@@ -1,0 +1,91 @@
+#!/usr/bin/env python3
+
+"""
+This script is for merging FunOS logs that have epoch based timestamps.
+
+By default, this will output a different color for every log. There are only 7
+available colors, and the last one is white (might conflict with backgrounds),
+if you pass more than 7 logs, colorization will be disabled.
+
+Example:
+
+funos_log_merger --log F1_0_funos.txt.16 F1_1_funos.txt.15 | less
+"""
+
+import argparse
+import codecs
+import signal
+import heapq
+import sys
+import os
+
+
+class Colors:
+    """
+    Small wrapper around ANSI color codes.
+    """
+
+    CSI = "\033["
+    RED = CSI + "31m"
+    GREEN = CSI + "32m"
+    YELLOW = CSI + "33m"
+    BLUE = CSI + "34m"
+    MAGENTA = CSI + "35m"
+    CYAN = CSI + "36m"
+    WHITE = CSI + "37m"
+    RESET = CSI + "0m"
+
+    Colors = [GREEN, BLUE, YELLOW, MAGENTA, CYAN, RED, WHITE]
+
+
+def handle_args():
+    description = "A script to merge FunOS logs"
+
+    parser = argparse.ArgumentParser(description=description)
+    parser.add_argument("--log", nargs="+", required=True, help="Log file(s)")
+    parser.add_argument(
+        "--nocolor", action="store_true", help="Disable colorization on output"
+    )
+    args = parser.parse_args()
+
+    return args
+
+
+def line2tuple(fname, f, color):
+    for line in f:
+        line = line.strip()
+        if not line or not line.startswith("["):
+            continue
+
+        index = line.find(" ")
+        ts = float(line[1:index])
+        formatted = f"{fname}: {line}"
+        if color is not None:
+            formatted = f"{color}{formatted}{Colors.RESET}"
+
+        yield (ts, formatted)
+
+
+if __name__ == "__main__":
+    signal.signal(signal.SIGPIPE, signal.SIG_DFL)
+    args = handle_args()
+
+    colorize = args.nocolor == False
+    if len(args.log) > len(Colors.Colors):
+        sys.stderr.write(
+            "WARNING: Logs outnumber colors, disabling colorization\n"
+        )
+        colorize = False
+
+    colors = iter(Colors.Colors)
+    iters = []
+    for fname in args.log:
+        f = codecs.open(
+            os.path.expandvars(fname), "rb", encoding="ascii", errors="replace"
+        )
+        color = next(colors) if colorize else None
+        iters.append(line2tuple(fname, f, color))
+
+    merged = heapq.merge(*iters)
+    for _, line in merged:
+        print(line)

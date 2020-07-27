@@ -10,9 +10,9 @@ except KeyError:
    print "Please set the environment variable WORKSPACE"
    sys.exit(1)
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.ERROR)
 logger = logging.getLogger("address_manager")
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.ERROR)
 
 ################################################################################
 # read in predefined cfg values from addr_cfg.txt

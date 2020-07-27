@@ -1,17 +1,5 @@
 #!/bin/bash
 
-echo "*************************************************************************"
-echo "*                                                                       *"
-echo "*             INTERNAL TESTING USE ONLY                                 *"
-echo "*                                                                       *"
-echo "*             THIS SCRIPT WILL NOT WORK AT A CUSTOMER SITE              *"
-echo "*                                                                       *"
-echo "*             THIS SCRIPT WILL NOT WORK AT A CUSTOMER SITE              *" >&2
-echo "*                                                                       *" >&2
-echo "*             INTERNAL TESTING USE ONLY                                 *" >&2
-echo "*                                                                       *" >&2
-echo "*************************************************************************" >&2
-
 FUN_ROOT="/opt/fungible"
 DIR_FUN_CONFIG="/var/opt/fungible/fs1600/configure_bond"
 
@@ -22,15 +10,48 @@ fi
 
 echo "Running $0 (`date`)"
 
-SSHPASS=`which sshpass`
-if [[ -z $SSHPASS ]]; then
-        echo ERROR: sshpass is not installed!!!!!!!!!!
-	apt-get install -y sshpass
-fi
+Check_NM_Status()
+{
+  COUNT=0
+  while [[ ${COUNT} -ne 30 ]]; do
+    NM_STATE=`nmcli -t -f STATE general 2>/dev/null`
+    echo "NM_STATE=${NM_STATE}"
+    if [[ ${NM_STATE} == "connected" ]]; then
+      return 0
+    fi
+    COUNT=$((COUNT + 1))
+    sleep 1
+  done
+
+  return 1
+}
+
+RETRY_CNT=2
+while [[ ${RETRY_CNT} -ne 0 ]]; do
+  # Wait for NM to be in a connected state
+  Check_NM_Status
+  RC=${?}
+  if [[ ${RC} -ne 0 ]]; then
+    # SWSYS-1026
+    echo "Restarting networking"
+    netplan apply
+  else
+    echo "NM is connected (Waited for ${COUNT} secs)"
+    break
+  fi
+  RETRY_CNT=$((RETRY_CNT - 1))
+done
+
+echo "Show status of devices controlled by NM"
+nmcli device status
+echo "List all nmcli connections:"
+nmcli connection show
+echo "Check-point: `date`"
 
 BIN_TFTPD_HPA="/usr/sbin/in.tftpd"
 if [[ ! -f $BIN_TFTPD_HPA ]]; then
-	apt-get install -y tftpd-hpa
+	echo "tftp server not installed, aborting ..."
+	exit 1
 fi
 
 if [[ -f $BIN_TFTPD_HPA ]]; then
@@ -52,9 +73,21 @@ if [[ -f $BIN_TFTPD_HPA ]]; then
 	/bin/sed -i '/---secure/ s?---secure?--secure?' $TFTP_SERVER_CONFIG_FILE
 fi
 
+TIMESYNCD_CONF=/etc/systemd/timesyncd.conf
+if [[ -f ${TIMESYNCD_CONF} ]]; then
+	cat ${TIMESYNCD_CONF} | grep "^FallbackNTP" | grep -q "192.168.127.2"
+	if [[ ${?} -ne 0 ]]; then
+		/bin/sed -i '/.*FallbackNTP.*/d' ${TIMESYNCD_CONF}
+		echo "FallbackNTP=192.168.127.2" >> ${TIMESYNCD_CONF}
+		systemctl restart systemd-timesyncd
+		echo "Restarted systemd-timesyncd with correct NTP server config"
+	fi
+fi
+
 BIN_NETWORKMANAGER_FILE="/usr/sbin/NetworkManager"
 if [[ ! -f $BIN_NETWORKMANAGER_FILE ]]; then
-	apt-get install -y network-manager
+	echo "NetworkManager package not installed, aborting ..."
+	exit 1
 fi
 
 FUN_NETPLAN_YAML="/etc/netplan/fungible-netcfg.yaml"
@@ -78,59 +111,22 @@ if [[ -f $BIN_NETWORKMANAGER_FILE ]] && [[ -f $CONFIG_DHCLIENT ]]; then
 	fi
 fi
 
-UPDATE_GRUB=0
-GRUB_FILE="/etc/default/grub"
-if [[ -f $GRUB_FILE ]]; then
-        # Check if iommu is enabled
-        grep "GRUB_CMDLINE_LINUX" $GRUB_FILE | grep "iommu" > /dev/null
-        RC=$?
-
-        if [[ $RC -ne 0 ]]; then
-                echo "Upgrade grub config file to enable iommu"
-                /bin/sed -i '/GRUB_CMDLINE_LINUX.*115200n8/ s?115200n8?115200n8 intel_iommu=on iommu=pt?' $GRUB_FILE
-                grep "GRUB_CMDLINE_LINUX" $GRUB_FILE | grep "iommu" > /dev/null
-                RC=$?
-                if [[ $RC -eq 0 ]]; then
-                        echo "iommu configured in grub"
-                        UPDATE_GRUB=1
-                fi
-        fi
-
-        # Check if fsck is enabled
-        grep "GRUB_CMDLINE_LINUX" $GRUB_FILE | grep "iommu" | grep "fsck" > /dev/null
-        RC=$?
-
-        if [[ $RC -ne 0 ]]; then
-                echo "Upgrade grub config file to enable fsck upon every COMe boot-up"
-                /bin/sed -i '/GRUB_CMDLINE_LINUX.*iommu=pt/ s?iommu=pt?iommu=pt fsck\.repair=yes fsck\.mode=force?' $GRUB_FILE
-                grep "GRUB_CMDLINE_LINUX" $GRUB_FILE | grep "iommu" | grep "fsck" > /dev/null
-                RC=$?
-                if [[ $RC -eq 0 ]]; then
-                        echo "fsck configured in grub"
-                        UPDATE_GRUB=1
-                fi
-        fi
-
-        # Check if debug is enabled
-        grep "GRUB_CMDLINE_LINUX" $GRUB_FILE | grep "iommu" | grep "fsck" | grep "debug" > /dev/null
-        RC=$?
-
-        if [[ $RC -ne 0 ]]; then
-                echo "Upgrade grub config file to enable debug upon every COMe boot-up"
-                /bin/sed -i '/GRUB_CMDLINE_LINUX.*console=tty0/ s?console=tty0?debug console=tty0?' $GRUB_FILE
-                grep "GRUB_CMDLINE_LINUX" $GRUB_FILE | grep "iommu" | grep "fsck" | grep "debug" > /dev/null
-                RC=$?
-                if [[ $RC -eq 0 ]]; then
-                        echo "debug configured in grub"
-                        UPDATE_GRUB=1
-                fi
-        fi
-
-        # *** THIS IS A CRITICAL WINDOW ***
-        if [[ $UPDATE_GRUB -eq 1 ]]; then
-                update-grub
-                sync
-        fi
+# debug                  = SWSYS-725
+# iommu                  = vfio support
+# fsck                   = Ubuntu FS corruption issues
+# systemd.log_level=info = SWSYS-754
+FUN_GRUB_CMD="debug console=tty0 console=ttyS0,115200n8 intel_iommu=on iommu=pt fsck.repair=yes fsck.mode=force systemd.log_level=info"
+GRUB_CONF=/etc/default/grub
+PATTERN="GRUB_CMDLINE_LINUX="
+if [ -f ${GRUB_CONF} ]; then
+	grep ${PATTERN} ${GRUB_CONF} | grep iommu | grep fsck | grep debug | grep log_level > /dev/null
+	RC=$?
+	if [ ${RC} -ne 0  ]; then
+		echo "Updating grub command line to $FUN_GRUB_CMD"
+		/bin/sed -i "s/${PATTERN}.*/${PATTERN}\"${FUN_GRUB_CMD}\"/" ${GRUB_CONF}
+		/usr/sbin/update-grub
+		sync
+	fi
 fi
 
 function Is_Interface_Created()
@@ -198,18 +194,16 @@ fi
 function Check_TftpdHpa()
 {
 	# Check if the tftpd-hpa server has started
-	TFTPD_HPA_STATUS=`systemctl is-failed tftpd-hpa`
-	echo "tftpd-hpa status: ${TFTPD_HPA_STATUS}"
 	COUNT=30
 	while [[ $COUNT -ne 0 ]]; do
-		if [ ${TFTPD_HPA_STATUS} == "inactive" ]; then
+		TFTPD_HPA_STATUS=`systemctl is-failed tftpd-hpa`
+		if [ "${TFTPD_HPA_STATUS}" == "inactive" ]; then
 			COUNT=$((COUNT - 1))
 			sleep 1
 		else
 			break
 		fi
 	done
-	TFTPD_HPA_STATUS=`systemctl is-failed tftpd-hpa`
 	echo "tftpd-hpa status: ${TFTPD_HPA_STATUS}"
 	# If the tftpd-hpa server is in failed state then restart
 	if [ ${TFTPD_HPA_STATUS} == "failed" ]; then
@@ -238,12 +232,13 @@ if [[ -d $TFTPBOOT_DIR ]]; then
 	if [[ ! -z "$FILES" ]]; then
 		UPTIME=`cut -f1 -d. /proc/uptime`
 		UPTIME_EPOCH=`date --utc -d "$UPTIME seconds ago" +"%s"`
-		echo "COMe UPTIME since epoch $UPTIME_EPOCH"
+		COMe_UPTIME_EPOCH=$((UPTIME_EPOCH - UPTIME))
+		echo "COMe UPTIME since epoch $COMe_UPTIME_EPOCH"
 		for F in $FILES; do
 			# Time of last access of the file
 			FILE_LAST_ACCESS_TIME=`stat -c %x $F`
 			FILE_LAST_ACCESS_TIME_EPOCH=`date --utc -d "$FILE_LAST_ACCESS_TIME" +"%s"`
-			if [[ "$UPTIME_EPOCH" > "$FTIME" ]]; then
+			if [[ ${COMe_UPTIME_EPOCH} -gt ${FTIME} ]]; then
 				echo "Deleting file $F last accessed time since epoch $FILE_LAST_ACCESS_TIME_EPOCH"
 				rm -f "$F"
 			fi
@@ -253,33 +248,23 @@ if [[ -d $TFTPBOOT_DIR ]]; then
 	fi
 fi
 
-REBOOT_FILE="/tmp/host_reboot"
-
-if [[ -d /sys/class/net/enp3s0f0.2 ]]; then
-	BMC_IP="192.168.127.2"
-else
-        IPMITOOL=`which ipmitool`
-        if [[ -z $IPMITOOL ]]; then
-                echo ERROR: ipmitool is not installed!!!!!!!!!!
-	        apt-get install -y ipmitool
-        fi
-	IPMI_LAN="ipmitool lan print 1"
-	AWK_LAN='/IP Address[ ]+:/ {print $4}'
-	BMC_IP=$($IPMI_LAN | awk "$AWK_LAN")
+# SWLINUX-1283:
+# No user of this database at this point
+# becasue cclinux is not started
+if [[ -d /var/opt/fungible/F1-0/lib/redis ]]; then
+  echo "Removing /var/opt/fungible/F1-0/lib/redis"
+  /bin/rm -rf /var/opt/fungible/F1-0/lib/redis
+fi
+if [[ -d /var/opt/fungible/F1-1/lib/redis ]]; then
+  echo "Removing /var/opt/fungible/F1-1/lib/redis"
+  /bin/rm -rf /var/opt/fungible/F1-1/lib/redis
 fi
 
-printf "Poll BMC:  %s\n" $BMC_IP
-
-BMC="-P password: -p superuser ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no sysadmin@$BMC_IP"
-
-REBOOT=$(sshpass $BMC "ls $REBOOT_FILE" > /dev/null 2>&1)
-if [ "$REBOOT" = "$REBOOT_FILE" ]; then
-    printf "WARNING: BMC request to reboot host\n"
-    sshpass $BMC "rm $REBOOT_FILE"
-    reboot
-else
-	echo "Reboot from BMC not required. Continuing..."
-fi
+IPMI_LAN="ipmitool lan print 1"
+AWK_LAN='/IP Address[ ]+:/ {print $4}'
+BMC_IP=$($IPMI_LAN | awk "$AWK_LAN")
+# This helps in debugging
+printf "BMC mgmt IP:  %s\n" $BMC_IP
 
 echo "Init CoSt Plane!!!"
 
@@ -304,12 +289,8 @@ else
 	$FUN_ROOT/cclinux/cclinux_service.sh --start --ep --storage
 fi
 
-if [[ -f /var/log/old_hbm_dump ]] && [[ -f $FUN_ROOT/etc/DpuHealthMonitor.sh ]]; then
-	$FUN_ROOT/etc/DpuHealthMonitor.sh &
-else
-	if [[ -f $FUN_ROOT/etc/DpuHealthMonitorNew.sh ]]; then
-		$FUN_ROOT/etc/DpuHealthMonitorNew.sh &
-	fi
+if [[ -f $FUN_ROOT/etc/DpuHealthMonitorNew.sh ]]; then
+	$FUN_ROOT/etc/DpuHealthMonitorNew.sh &
 fi
 
 #Running DPCSH in TCP-PROXY Mode,
@@ -339,7 +320,5 @@ if [[ -f $FUN_ROOT/FunSDK/bin/Linux/dpcsh && -c $F1_0_NVME && -c $F1_1_NVME ]]; 
 	$FUN_ROOT/FunSDK/bin/Linux/dpcsh --pcie_nvme_sock=$F1_0_NVME --nvme_cmd_timeout=$DPCSH_TIMEOUT --tcp_proxy=$BMC_F1_0_DPC_PORT2 > $BMC_DPCSH_F1_0_LOGF2 2>&1 &
 	$FUN_ROOT/FunSDK/bin/Linux/dpcsh --pcie_nvme_sock=$F1_1_NVME --nvme_cmd_timeout=$DPCSH_TIMEOUT --tcp_proxy=$BMC_F1_1_DPC_PORT2 > $BMC_DPCSH_F1_1_LOGF2 2>&1 &
 fi
-# Configure the management stack on the F1s
-[ -f $FUN_ROOT/etc/come_config_mgmt.sh ] && $FUN_ROOT/etc/come_config_mgmt.sh
 
 echo "$0 DONE!!! (`date`)"

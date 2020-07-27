@@ -132,6 +132,8 @@ class HWCAPCodeGen():
             patterns.append('hwcap_config/f1_emu_skus/*.cfg')
         if self.target_chip == 's1' or all_target_chips:
             patterns.append('hwcap_config/s1_emu_skus/*.cfg')
+        if self.target_chip == 'f1d1' or all_target_chips:
+            patterns.append('hwcap_config/f1d1_emu_skus/*.cfg')
 
         if len(patterns) == 0:
             raise argparse.ArgumentTypeError(

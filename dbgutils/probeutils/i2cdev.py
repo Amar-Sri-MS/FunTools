@@ -66,7 +66,7 @@ def aardvark_i2c_spi_dev_index_from_serial(serial):
 
 if __name__== "__main__":
     dev_list = aardvark_i2c_spi_dev_list()
-    if len(dev_list) == 0:
+    if not dev_list or len(dev_list) == 0:
         logger.error('No aardvark i2c spi devices found!')
     else:
         logger.info('Found {0} Aardvark i2c spi device(s)!'.format(len(dev_list)))

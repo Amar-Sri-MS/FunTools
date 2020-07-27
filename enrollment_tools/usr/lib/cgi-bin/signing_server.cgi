@@ -12,6 +12,8 @@ import sys
 import struct
 import os
 import hashlib
+import json
+import binascii
 import cgi
 
 import traceback
@@ -19,6 +21,8 @@ import traceback
 from asn1crypto import core,algos
 
 from common import *
+from hsmd_common import hsmd_rpc_call
+
 
 RESTRICTED_PORT = 4443
 
@@ -57,7 +61,7 @@ def send_binary(binary_buffer):
 
 ########################################################################
 #
-# Return some information: key modulus
+# Operations with local HSM
 #
 ########################################################################
 
@@ -90,6 +94,102 @@ def hsm_sign_hash_with_modulus(modulus, sha512_hash):
         return private.sign(digest_info_der, mechanism=pkcs11.Mechanism.RSA_PKCS)
 
 
+def hsm_send_modulus(form, key_label):
+
+    # send in binary format by default for this application
+    # to ease transition
+    out_format = safe_form_get(form, "format", "binary")
+    if out_format == "binary":
+        send_binary_modulus(form, key_label)
+    else:
+        print("Content-type: text/plain")
+        send_modulus(form, key_label)
+
+
+
+########################################################################
+#
+# Operations with remote HSM
+#
+########################################################################
+
+def make_json_rpc_call(cmd, params=None, **kwargs):
+
+    if not params:
+        params=kwargs
+    json_cmd = {'jsonrpc': '2.0', 'method': cmd, 'params': params, 'id': 1 }
+    return json.dumps(json_cmd)
+
+def get_result(json_rpc_return):
+    response = json.loads(json_rpc_return)
+    # look for an error
+    if "error" in response:
+        err = response["error"]
+        raise ValueError("HSM returned error %d: %s" %
+                         (err.get("code", 0), err.get("message", "")))
+    return response["result"]
+
+
+def remote_hsm_send_modulus(form, key_label):
+
+    # package the request into json
+    json_rpc_call = make_json_rpc_call("pubkey", key=key_label)
+    json_rpc_return = hsmd_rpc_call(json_rpc_call)
+
+    modulus_b64 = get_result(json_rpc_return)
+    if modulus_b64 is None:
+        raise ValueError("Key \"%s\" not found on remote HSM" %
+                         key_label)
+
+    modulus = binascii.a2b_base64(modulus_b64)
+
+    out_format = safe_form_get(form, "format", "binary")
+    if out_format == "binary":
+        send_binary(modulus)
+    else:
+        print("Content-type: text/plain")
+        send_binary_buffer(modulus, form)
+
+
+def to_b64(bytes):
+    return binascii.b2a_base64(bytes).rstrip().decode('utf-8')
+
+
+def process_sign_return(json_rpc_sign_return):
+
+    signature_b64 = get_result(json_rpc_sign_return)
+    if signature_b64 is None:
+        raise ValueError("Signature operation failed on remote HSM")
+    return binascii.a2b_base64(signature_b64)
+
+
+def remote_hsm_sign_hash_with_key(key_label, sha512_hash):
+
+    # package the request into json
+    dgst_b64 = to_b64(sha512_hash)
+    json_rpc_call = make_json_rpc_call("sign", key=key_label, digest=dgst_b64)
+    json_rpc_return = hsmd_rpc_call(json_rpc_call)
+    return process_sign_return(json_rpc_return)
+
+
+def remote_hsm_sign_hash_with_modulus(modulus, sha512_hash):
+
+    # package the request into json
+    modulus_b64 = to_b64(modulus)
+    dgst_b64 = to_b64(sha512_hash)
+    json_rpc_call = make_json_rpc_call("sign", modulus=modulus_b64, digest=dgst_b64)
+    json_rpc_return = hsmd_rpc_call(json_rpc_call)
+    return process_sign_return(json_rpc_return)
+
+
+
+########################################################################
+#
+# HTTP request handling
+#
+########################################################################
+
+
 # retrieving binary form content can be problematic.
 # create a function for this as a bottleneck for debugging/logging
 def get_binary_from_form(form, name):
@@ -100,181 +200,44 @@ def get_binary_from_form(form, name):
 def process_query():
 
     form = cgi.FieldStorage()
+
+    production = int(safe_form_get(form, "production", 0))
     cmd = safe_form_get(form, "cmd", "modulus")
+
     if cmd == "modulus":
 
         key_label = safe_form_get(form, "key", "fpk4")
 
-        # send in binary format by default for this application
-        # to ease transition
-        out_format = safe_form_get(form, "format", "binary")
-        if out_format == "binary":
-            send_binary_modulus(form, key_label)
+        if production and key_label != "fpk4":
+            remote_hsm_send_modulus(form, key_label)
         else:
-            print("Content-type: text/plain")
-            send_modulus(form, key_label)
+            hsm_send_modulus(form, key_label)
 
     else:
         raise ValueError("Invalid command")
 
 
+def sign_hash_with_key(production, label, sha512_hash):
+    if production:
+        return remote_hsm_sign_hash_with_key(label, sha512_hash)
 
-########################################################################
-#
-# sign images -- deprecated --- kept for backward compatibility
-#
-########################################################################
-
-def add_cert_and_signature_to_binary(binary, cert, signature):
-    ''' add certificate and signature to a buffer '''
-    binary += cert
-    binary += b'\x00' * (HEADER_RESERVED_SIZE - len(cert))
-    return append_signature_to_binary(binary, signature)
-
-def get_cert_modulus(cert):
-    ''' get the modulus from a certificate '''
-    cert_key_modulus_len = struct.unpack('<I',
-                                         cert[CERT_PUB_KEY_POS:CERT_PUB_KEY_POS+4])
-    start = CERT_PUB_KEY_POS+4
-    end = start + cert_key_modulus_len[0]
-    return cert[start:end]
+    return hsm_sign_hash_with_key(label, sha512_hash)
 
 
-def hsm_sign_with_key(label, data):
-    with get_ro_session() as session:
-        private = get_private_rsa_with_label(session, label)
-        return private.sign(data, mechanism=pkcs11.Mechanism.SHA512_RSA_PKCS)
+def sign_hash_with_modulus(production, modulus, sha512_hash):
+    if production:
+        return remote_hsm_sign_hash_with_modulus(modulus, sha512_hash)
 
-
-def hsm_sign_with_cert(cert, data):
-    modulus = get_cert_modulus(cert)
-    with get_ro_session() as session:
-        private = get_private_rsa_with_modulus(session, modulus)
-        return private.sign(cert+data, mechanism=pkcs11.Mechanism.SHA512_RSA_PKCS)
-
-
-def image_gen(binary, ftype, version, description,
-              sign_key, cert, customer_cert, key_index):
-    ''' generate signed firmware image '''
-
-    to_be_signed = struct.pack('<2I', len(binary), version)
-    to_be_signed += struct.pack('4s', ftype.encode())
-    to_be_signed += b'\x00' * SIGNED_ATTRIBUTES_SIZE
-    if description:
-        # Max allowed size is (block size - 1) to allow for terminating null
-        if len(description) > SIGNED_DESCRIPTION_SIZE - 1:
-            raise ValueError("Image description too long, max is {}".format(SIGNED_DESCRIPTION_SIZE-1))
-        to_be_signed += description.encode() + b'\x00' * (SIGNED_DESCRIPTION_SIZE - len(description))
-    else:
-        to_be_signed += b'\x00' * SIGNED_DESCRIPTION_SIZE
-
-    to_be_signed += binary
-
-    signature = b''
-    # sign_key and cert_file are mutually exclusive with sign_key taking priority
-    # if there is a key_index, then encode it as a pseudo-certificate'
-    if sign_key:
-        if key_index is not None:
-            if key_index < 0 or key_index >= MAX_KEYS_IN_KEYBAG:
-                raise ValueException("Key Index should between 0 and {0}".
-                                     format(MAX_KEYS_IN_KEYBAG))
-            cert = struct.pack("<I", (key_index | 0x80000000))
-        else:
-            cert = b''
-        signature = hsm_sign_with_key(sign_key, to_be_signed)
-    elif cert:
-        signature = hsm_sign_with_cert(cert, to_be_signed)
-    elif not customer_cert:
-        raise ValueError("A certificate (customer or fungible) or a key label is needed "+
-                         "to identify the key used to sign a firmware image")
-
-    customer_to_be_signed = add_cert_and_signature_to_binary(b'', cert, signature)
-    customer_to_be_signed += to_be_signed
-
-    if customer_cert:
-        customer_signature = hsm_sign_with_cert(customer_cert,
-                                                customer_to_be_signed)
-    else:
-        customer_cert = b''
-        customer_signature = b''
-
-    image = add_cert_and_signature_to_binary(b'', customer_cert,
-                                             customer_signature)
-    image += customer_to_be_signed
-    return image
-
-# retrieving binary form content can be problematic.
-# create a function for this as a bottleneck for debugging/logging
-def get_binary_from_form(form, name):
-    ret = form.getfirst(name, default=b'')
-    return ret
-
-
-def sign_image(form):
-
-    # we need a type ...
-    image_type = safe_form_get(form, "type", None)
-    if not image_type:
-        raise ValueError("No type specified")
-
-    if len(image_type) != 4:
-        raise ValueError("Invalid type '" + image_type + "' specified")
-
-    # ... and a version ...
-    image_version = safe_form_get(form, "version", None)
-    if not image_version:
-        raise ValueError("No version specified")
-
-    # convert to number
-    image_version = int(image_version, 0)
-
-    # ...and optionally a description
-    description = safe_form_get(form, "description", '')
-
-    # image
-    image = get_binary_from_form(form, "img")
-
-    # we need a key label, a certificate or a customer certificate
-    # a customer certificate can be in addition to a key label or a certificate
-    key_label = safe_form_get(form, "key", None)
-
-    #  key can be marked as index into key bag
-    key_index = None
-    if key_label is not None:
-        key_index_str = safe_form_get(form, "key_index", None)
-        if key_index_str is not None:
-            key_index = int(key_index_str, 0)
-
-    certificate = get_binary_from_form(form, "cert")
-
-    customer_certificate = get_binary_from_form(form, "customer_cert")
-
-    # log the request
-    log("Signing request version = %d type = %s description = %s " %
-        (image_version, image_type, description))
-    log("Key = %s Certificate = %s Customer Certificate = %s " %
-        (key_label if key_label else 'None',
-         'Present' if certificate else 'None',
-         'Present' if customer_certificate else 'None'))
-
-    signed_image = image_gen(image, image_type, image_version, description,
-                             key_label, certificate, customer_certificate,
-                             key_index)
-    send_binary(signed_image)
-
-############ END DEPRECATED SECTION ################################
+    return hsm_sign_hash_with_modulus(modulus, sha512_hash)
 
 
 def sign():
     form = cgi.FieldStorage()
 
+    production = int(safe_form_get(form, "production", 0))
+
     # is there a hash provided?
     sha512_hash = get_binary_from_form(form, "digest")
-
-    # if not old API request
-    if len(sha512_hash) == 0:
-        sign_image(form)
-        return
 
     if len(sha512_hash) != hashlib.sha512().digest_size:
         raise ValueError("Digest is %d bytes, expected %d" %
@@ -282,16 +245,15 @@ def sign():
 
     key_label = safe_form_get(form, "key", None)
     if key_label:
-        signature = hsm_sign_hash_with_key(key_label, sha512_hash)
+        signature = sign_hash_with_key(production, key_label, sha512_hash)
     else:
         modulus = get_binary_from_form(form, "modulus")
         if len(modulus) == 0:
             raise ValueError("No key or modulus specified for sign command")
-        signature = hsm_sign_hash_with_modulus(modulus, sha512_hash)
+        signature = sign_hash_with_modulus(production, modulus, sha512_hash)
 
     # send binary signature back
     send_binary(signature)
-
 
 
 def main_program():
@@ -322,6 +284,17 @@ def main_program():
         err_msg = str(err)
         print("Content-Length: %d\n" % len(err_msg))
         print(err_msg)
+
+    except ConnectionError as err:
+    # also include ConnectionRefused etc...
+        # Log
+        log("Exception: %s" % err)
+        # Response
+        print("Status: 503 Service Unavailable")
+        err_msg = str(err)
+        print("Content-Length: %d\n" % len(err_msg))
+        print(err_msg)
+
 
         # all other errors are reported as 500 Internal Server Error
     except Exception as err:
