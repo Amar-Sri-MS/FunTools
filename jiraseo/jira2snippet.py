@@ -101,6 +101,7 @@ end_next = end_next_d.isoformat()
 #   b. scan for activity by me >= START_DATE
 
 print("JIRA activity for dates %s -> %s" % (start_date, end_date))
+print("") # Blank line for markdown formatting
 
 ### Issues I created in the last week
 
