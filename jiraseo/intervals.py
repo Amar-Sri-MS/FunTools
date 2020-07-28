@@ -43,6 +43,7 @@ class QueryError(Exception):
 SPRINT0 = 80
 SPRINT0_DATE = datetime.date(2020, 5, 25)
 SPRINT_LEN = datetime.timedelta(days=14)
+SPRINT_WD_LEN = datetime.timedelta(days=10)
 SPRINT_FMT = "SW Sprint {sprint} [{start.month}/{start.day} - {end.month}/{end.day}]"
 SPRINT_OFFSET = 11
 
@@ -171,10 +172,16 @@ def main() -> None:
 
 
     ### Print out the distribution and totals
+    tjiras = sum(jvector)
+    nsprints =len(jvector) - 1
+    jsprint = float(tjiras) / nsprints
+    jday = jsprint / SPRINT_WD_LEN.days
+    
     print("\n== Summary ==")
     print("Distribution by count: %s" % jvector)
-    print("Total jira commitment: %d" % sum(jvector))
-    print("Ideal jiras/sprint:    %.1f" % (sum(jvector) / (len(jvector) - 1.0)))
+    print("Total jira commitment: %d" % tjiras)
+    print("Ideal jiras/sprint:    %.1f" % jsprint)
+    print("Goal jiras/wkday:      %.1f" % jday)
 
 
 ###
