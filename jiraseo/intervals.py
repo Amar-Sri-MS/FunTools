@@ -19,6 +19,7 @@ import getpass
 # TODO: argparse
 uname = None
 NSPRINTS = 8
+JIRA_SERVER = "http://jira.fungible.local:80"
 
 # list of milestones that _don't_ need sprints assigned
 UNSCHEDULED_MILESTONES = ["release 1.2","release 2.0", "later"]
@@ -74,8 +75,8 @@ def sprint_as_str(sprint: int) -> str:
 ##  printing
 #
 
-def pri(issue):
-    url = "http://jira.fungible.local:80/browse/%s" % issue.key
+def print_issue(issue):
+    url = "%s/browse/%s" % (JIRA_SERVER, issue.key)
     # print("* [%s](%s): %s" % (str(issue.key).lower(), url, issue.fields.summary))
     print("%s: %s (%s)" % (str(issue.key).lower(), issue.fields.summary, url))
 
@@ -116,49 +117,68 @@ def find_jira_list_without_sprint() -> List[Any]:
 ##  Main code
 #
 
-# read a line of stdin
-sys.stdout.write("Jira Username: ");
-sys.stdout.flush()
-uname = sys.stdin.readline().strip()
-passwd = getpass.getpass("Password for %s:" % uname) 
+def main() -> None:
 
-# do the authentication
-print("connecting")
-try:
-    jconn = jira.JIRA('http://jira.fungible.local:80',
-                      auth=(uname, passwd))
-except:
-    print("Failed to authenticate to jira")
-    sys.exit(1)
+    global jconn
     
-print("connected")
+    # read a line of stdin
+    sys.stdout.write("Jira Username: ");
+    sys.stdout.flush()
+    uname = sys.stdin.readline().strip()
+    passwd = getpass.getpass("Password for %s:" % uname) 
 
-
-### Print out all the upcoming sprints
-cur = current_sprint()
-for sprint in range(cur, cur+NSPRINTS):
-
-    error = None
+    # do the authentication
+    print("connecting")
     try:
-        jlist = jira_list_for_sprint(sprint)
-    except QueryError as err:
-        error = err
+        jconn = jira.JIRA(JIRA_SERVER, auth=(uname, passwd))
+    except:
+        print("Failed to authenticate to jira")
+        sys.exit(1)
 
-    if (error is None):
-        print("\n== %s [%d] ==" % (sprint_as_str(sprint), len(jlist)))
+    print("connected")
+
+    jvector = []
+
+    ### Print out all the upcoming sprints
+    cur = current_sprint()
+    for sprint in range(cur, cur+NSPRINTS):
+
+        error = None
+        try:
+            jlist = jira_list_for_sprint(sprint)
+        except QueryError as err:
+            error = err
+
+        if (error is None):
+            jvector.append(len(jlist))
+            print("\n== %s [%d] ==" % (sprint_as_str(sprint), len(jlist)))
     
-        for issue in jlist:
-            pri(issue)
-    else:
-        print("\n== %s [error] ==" % sprint_as_str(sprint))
-        print(error)
+            for issue in jlist:
+                print_issue(issue)
+        else:
+            print("\n== %s [error] ==" % sprint_as_str(sprint))
+            print(error)
             
-    print
+        print
     
-### Print out all the jiras that don't have sprints
-jlist = find_jira_list_without_sprint()
-print("\n= %s [%d] ==" % ("Jiras that need a sprint assigned", len(jlist)))
-for issue in jlist:
-    pri(issue)
-print
+    ### Print out all the jiras that don't have sprints
+    jlist = find_jira_list_without_sprint()
+    print("\n= %s [%d] ==" % ("Jiras that need a sprint assigned", len(jlist)))
+    jvector.append(len(jlist))
+    for issue in jlist:
+        print_issue(issue)
+    print
 
+
+    ### Print out the distribution and totals
+    print("\n== Summary ==")
+    print("Distribution by count: %s" % jvector)
+    print("Total jira commitment: %d" % sum(jvector))
+    print("Ideal jiras/sprint:    %.1f" % (sum(jvector) / (len(jvector) - 1.0)))
+
+
+###
+##  entrypoint
+#
+if (__name__ == "__main__"):
+    main()
