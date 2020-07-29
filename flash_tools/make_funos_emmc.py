@@ -38,7 +38,7 @@ def run():
 
         # temporary until we have better handling of various filenames
         # inside the json file
-        os.link(appfile, os.path.join(tmpdir, 'funos-f1.stripped'))
+        os.symlink(appfile, os.path.join(tmpdir, 'funos-f1.stripped'))
 
         sign_cmd = [os.path.join(rootdir, 'generate_flash.py'),
             '--source-dir', tmpdir,
