@@ -198,7 +198,7 @@ class Splitter:
 
     extractors = {
         Selector.ccv: r"^\[\d+\.\d+ (.*?)\]",
-        Selector.res_type: r"flow\[.*?:(.*?):",
+        Selector.res_type: r"\] [A-Z]+ (\w+) \"",
         Selector.flow_id: r"flow.*?\:.*?\:.*?\/(.*?)\/",
         Selector.flow_faddr: r"flow.*FA(\d+:\d+:\d+)",
     }
