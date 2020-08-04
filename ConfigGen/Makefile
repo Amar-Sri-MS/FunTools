@@ -18,6 +18,7 @@ CFGGEN_SRC :=	cfg_gen.py         \
 		storage_cfg_gen.py \
 		jsonutils.py       \
 		sku_cfg_gen.py     \
+		sku_board_layer_cfg_gen.py \
 		hwcap_cfg_gen.py   \
 		nu_cfg_gen.py      \
 		platform_sku_c.j2  \

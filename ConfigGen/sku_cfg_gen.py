@@ -17,6 +17,7 @@ import argparse
 from hwcap_cfg_gen import HWCAPCodeGen
 import collections
 import copy
+from sku_board_layer_cfg_gen import BoardLayer
 
 logger = logging.getLogger('sku_cfg_gen')
 logger.setLevel(logging.INFO)
@@ -186,7 +187,7 @@ class SKUCfgGen():
         file_patterns = [_path]
         for file_pat in file_patterns:
             for cfg in glob.glob(os.path.join(self.input_dir, file_pat)):
-                # Skip default configuration files
+                # Skip board layer files and defaults files
                 if 'sku_config/defaults' in cfg:
                     continue
                 logger.debug('Processing per sku config: {}'.format(cfg))
@@ -204,6 +205,11 @@ class SKUCfgGen():
 
                     # Apply defaults to the board configuration
                     self.apply_defaults_to_board_config(cfg_json, def_cfg)
+
+                    # Apply board layer configuration
+                    board_layer = BoardLayer(self.input_dir, self.target_chip)
+                    board_layer.apply_board_layer(cfg_json)
+
                     board_cfg = jsonutils.merge_dicts(board_cfg, copy.deepcopy(cfg_json))
         return board_cfg
 
