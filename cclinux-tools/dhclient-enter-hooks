@@ -1,0 +1,1 @@
+echo "$reason : $new_ip_address" > /dev/console

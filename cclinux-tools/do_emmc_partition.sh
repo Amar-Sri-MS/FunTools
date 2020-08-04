@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 #
 # Funvisor access to eMMC is offset by 2GiB (which is reserved for
 # other things).
@@ -12,5 +12,14 @@
 #
 # Total size is 14GiB (16Gib - 2 GiB reserved region)
 #
-parted -s /dev/vda -- mklabel gpt mkpart bxdata ext2 8192s 65535s mkpart root ext2 65536s 14GiB
+set -e
+
+if [ $# -ge 1 ] ; then
+    DEV=$1
+else
+    DEV=/dev/vda
+fi
+
+parted -s $DEV -- mklabel gpt mkpart bxdata ext2 8192s 65535s mkpart root ext2 65536s -1MB
+
 
