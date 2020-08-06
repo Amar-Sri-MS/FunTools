@@ -208,7 +208,7 @@ def main():
             eeproms = json.load(f)
             for skuid, value in eeproms.items():
                 er.replace('qspi_image_hw.bin',
-                    'qspi_image_hw.bin.{}'.format(skuid), value['filename'])
+                    'qspi_image_hw.bin.{}'.format(skuid), value['filename'] + '.bin')
 
         os.chdir(curdir)
 
