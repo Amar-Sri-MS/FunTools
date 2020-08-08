@@ -32,6 +32,7 @@ import binascii
 import platform
 import subprocess
 import uuid_extract
+import signal
 
 GDB_SIGNAL_TRAP = 5
 
@@ -1242,6 +1243,10 @@ def parse_args():
     return args
     
 def main():
+    # In the parent process, we want to ignore SIGINT, this will get sent to
+    # GDB and GDB will stop executing whatever is currently consuming the main
+    # thread.
+    signal.signal(signal.SIGINT, signal.SIG_IGN)
 
     # parse the arge
     global opts
@@ -1279,6 +1284,6 @@ def main():
     server_listen(sock)
 
     LOG_ALWAYS("exiting")
-    
+
 if __name__ == '__main__':
     main()
