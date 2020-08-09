@@ -1,0 +1,34 @@
+{
+  "pipeline": [
+    {
+      "id": "f1_0",
+      "block": "FunOSInput",
+      "cfg": {
+        "file": "${logdir}/dpu_logs_lines/F1_0_funos.txt"
+      },
+      "out": "merge"
+    },
+    {
+      "id": "f1_1",
+      "block": "FunOSInput",
+      "cfg": {
+        "file": "${logdir}/dpu_logs_lines/F1_1_funos.txt"
+      },
+      "out": "merge"
+    },
+    {
+      "id": "merge",
+      "block": "Merge",
+      "out": "dt"
+    },
+    {
+      "id": "dt",
+      "block": "HumanDateTime",
+      "out": "stdout"
+    },
+    {
+      "id": "stdout",
+      "block": "StdOutput"
+    }
+  ]
+}
