@@ -20,41 +20,74 @@ def main():
     parser.add_argument("cfg", help="Config file")
     args = parser.parse_args()
 
-    plugins = register_plugins()
-
     with open(args.cfg, 'r') as f:
         cfg = json.load(f)
 
     env = {}
     env['logdir'] = args.dir
 
-    blocks_by_id = get_block_mapping(cfg)
-    order = topsort(blocks_by_id)
-
-    process(blocks_by_id, plugins, order, env)
+    pipeline = Pipeline(cfg, env)
+    pipeline.process()
 
 
-def register_plugins():
-    """
-    Utterly lame, but I'm scared of exec. Should figure out something
-    better.
-    """
-    plugins = {}
-    plugins['FunOSInput'] = file_input.FunOSInput
-    plugins['HumanDateTime'] = display_time.HumanDateTime
-    plugins['Merge'] = merge.Merge
-    plugins['StdOutput'] = stdout_output.StdOutput
+class BlockFactory(object):
+    """ A factory for blocks """
 
-    return plugins
+    def __init__(self):
+        self.plugins = {}
+        self._register_block_types()
+
+    def _register_block_types(self):
+        """
+        Utterly lame, but I'm scared of exec. Should figure out something
+        better.
+        """
+        self.plugins['FunOSInput'] = file_input.FunOSInput
+        self.plugins['HumanDateTime'] = display_time.HumanDateTime
+        self.plugins['Merge'] = merge.Merge
+        self.plugins['StdOutput'] = stdout_output.StdOutput
+
+    def create_block(self, block_name):
+        """ Create an instance of the block """
+        cls = self.plugins[block_name]
+        return cls()
 
 
-def get_block_mapping(cfg):
-    blocks_by_id = {}
-    for item in cfg['pipeline']:
-        uid = item['id']
-        blocks_by_id[uid] = item
+class Pipeline(object):
 
-    return blocks_by_id
+    def __init__(self, cfg, env):
+        self.block_factory = BlockFactory()
+        self.cfg = cfg
+        self.env = env
+
+    def process(self):
+        blocks_by_id = self.get_block_mapping()
+        block_order = topsort(blocks_by_id)
+
+        input_iters_by_uid = collections.defaultdict(list)
+
+        for id in block_order:
+            block = blocks_by_id[id]
+            out = block.get('out')
+            obj = self.block_factory.create_block(block['block'])
+
+            cfg = block.get('cfg', dict())
+            cfg['env'] = self.env
+            cfg['uid'] = id
+            obj.set_config(cfg)
+
+            input_inters = input_iters_by_uid[id]
+            out_iter = obj.process(input_inters)
+            if out_iter is not None:
+                input_iters_by_uid[out].append(out_iter)
+
+    def get_block_mapping(self):
+        blocks_by_id = {}
+        for item in self.cfg['pipeline']:
+            uid = item['id']
+            blocks_by_id[uid] = item
+
+        return blocks_by_id
 
 
 def topsort(blocks_by_id):
@@ -66,7 +99,6 @@ def topsort(blocks_by_id):
 
     completed.reverse()
     return completed
-
 
 def dfs(curr, blocks_by_id, visited, completed):
     if curr in visited:
@@ -84,26 +116,6 @@ def dfs(curr, blocks_by_id, visited, completed):
         dfs(next, blocks_by_id, visited, completed)
 
     completed.append(curr)
-
-
-def process(blocks_by_uid, plugins, order, env):
-    input_iters_by_uid = collections.defaultdict(list)
-
-    for id in order:
-        block = blocks_by_uid[id]
-        out = block.get('out')
-        cls = plugins[block['block']]
-        obj = cls()
-
-        cfg = block.get('cfg', dict())
-        cfg['env'] = env
-        cfg['uid'] = id
-        obj.set_config(cfg)
-
-        input_inters = input_iters_by_uid[id]
-        out_iter = obj.process(input_inters)
-        if out_iter is not None:
-            input_iters_by_uid[out].append(out_iter)
 
 
 if __name__ == '__main__':
