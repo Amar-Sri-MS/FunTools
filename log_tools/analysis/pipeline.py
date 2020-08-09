@@ -15,6 +15,7 @@ from blocks import display_time
 from blocks import merge
 
 # Output blocks
+from blocks import html_output
 from blocks import stdout_output
 
 
@@ -53,6 +54,7 @@ class BlockFactory(object):
         self.plugins['MsecInput'] = file_input.MsecInput
         self.plugins['HumanDateTime'] = display_time.HumanDateTime
         self.plugins['Merge'] = merge.Merge
+        self.plugins['HTMLOutput'] = html_output.HTMLOutput
         self.plugins['StdOutput'] = stdout_output.StdOutput
 
     def create_block(self, block_name):
