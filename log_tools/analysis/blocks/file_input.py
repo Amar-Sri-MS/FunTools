@@ -9,7 +9,9 @@
 # But till then... we have to play its role.
 #
 
+import datetime
 import io
+import math
 import os
 
 from blocks.block import Block
@@ -55,6 +57,8 @@ class FunOSInput(FileInput):
                 else:
                     uboot_done = True
 
+                    # Example:
+                    # [23.855474 1.5.2] NOTICE nvdimm ...
                     ts_vp_sep = line.find(']')
 
                     # Empty or malformed line ewwwww
@@ -98,3 +102,37 @@ class FunOSInput(FileInput):
         usecs = ts[dot_idx+1:]
 
         return int(secs), int(usecs)
+
+
+class ISOFormatInput(FileInput):
+    """ Handles logs with ISO format timestamps """
+
+    def __init__(self):
+        super().__init__()
+
+    def process(self, iters):
+        logdir = self.env['logdir']
+        path = self.file.replace('${logdir}', logdir)
+
+        with io.open(
+                os.path.expandvars(path), 'r', encoding='ascii', errors='replace'
+        ) as f:
+            for line in f:
+                line = line.strip()
+
+                # Example:
+                # 2020-07-09 16:37:59.240281 Start probing thread
+                parts = line.split(' ', 2)
+
+                iso_format_datetime = parts[0] + ' ' + parts[1]
+                d = datetime.datetime.fromisoformat(iso_format_datetime)
+
+                ts = d.timestamp()
+                secs, usecs = self.normalize_ts(ts)
+
+                yield (secs, usecs, self.uid, None, parts[2])
+
+    @staticmethod
+    def normalize_ts(ts):
+        useconds, seconds = math.modf(ts)
+        return int(seconds), int(useconds * 1e6)

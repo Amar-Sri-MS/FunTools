@@ -1,3 +1,7 @@
+#
+# Log analysis pipeline.
+#
+
 import argparse
 import collections
 import json
@@ -17,8 +21,10 @@ from blocks import stdout_output
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("dir", help="Log directory")
-    parser.add_argument("cfg", help="Config file")
+    parser.add_argument("cfg", help="Pipeline config file")
     args = parser.parse_args()
+
+    block_factory = BlockFactory()
 
     with open(args.cfg, 'r') as f:
         cfg = json.load(f)
@@ -26,7 +32,7 @@ def main():
     env = {}
     env['logdir'] = args.dir
 
-    pipeline = Pipeline(cfg, env)
+    pipeline = Pipeline(block_factory, cfg, env)
     pipeline.process()
 
 
@@ -43,6 +49,7 @@ class BlockFactory(object):
         better.
         """
         self.plugins['FunOSInput'] = file_input.FunOSInput
+        self.plugins['ISOFormatInput'] = file_input.ISOFormatInput
         self.plugins['HumanDateTime'] = display_time.HumanDateTime
         self.plugins['Merge'] = merge.Merge
         self.plugins['StdOutput'] = stdout_output.StdOutput
@@ -54,66 +61,85 @@ class BlockFactory(object):
 
 
 class Pipeline(object):
+    """ A processing pipeline for logs. """
 
-    def __init__(self, cfg, env):
-        self.block_factory = BlockFactory()
-        self.cfg = cfg
+    def __init__(self, block_factory, pipeline_cfg, env):
+        """
+        Creates a pipeline.
+
+        block_factory is a factory that can return instances of processing
+        blocks.
+        pipeline_cfg describes the processing pipeline structure (assumed to be
+        a DAG)
+        env contains our "version" of environment variables that can be
+        used in the pipeline_cfg.
+        """
+        self.block_factory = block_factory
+        self.pipeline_cfg = pipeline_cfg
         self.env = env
 
     def process(self):
-        blocks_by_id = self.get_block_mapping()
-        block_order = topsort(blocks_by_id)
+        """ Runs the pipeline """
+        pipeline_node_by_id = self._get_pipeline_nodes()
+
+        processing_order = _topsort(pipeline_node_by_id)
 
         input_iters_by_uid = collections.defaultdict(list)
 
-        for id in block_order:
-            block = blocks_by_id[id]
-            out = block.get('out')
-            obj = self.block_factory.create_block(block['block'])
+        for id in processing_order:
+            pipeline_node = pipeline_node_by_id[id]
+            block = self.block_factory.create_block(pipeline_node['block'])
 
-            cfg = block.get('cfg', dict())
+            cfg = pipeline_node.get('cfg', dict())
             cfg['env'] = self.env
             cfg['uid'] = id
-            obj.set_config(cfg)
+            block.set_config(cfg)
 
             input_inters = input_iters_by_uid[id]
-            out_iter = obj.process(input_inters)
+            out_iter = block.process(input_inters)
+
             if out_iter is not None:
+                out = pipeline_node.get('out')
                 input_iters_by_uid[out].append(out_iter)
 
-    def get_block_mapping(self):
-        blocks_by_id = {}
-        for item in self.cfg['pipeline']:
-            uid = item['id']
-            blocks_by_id[uid] = item
+    def _get_pipeline_nodes(self):
+        """
+        Extracts all entries (nodes in the graph) from the pipeline
+        config.
+        """
+        entries_by_id = {}
+        for entry in self.pipeline_cfg['pipeline']:
+            uid = entry['id']
+            entries_by_id[uid] = entry
 
-        return blocks_by_id
+        return entries_by_id
 
 
-def topsort(blocks_by_id):
+def _topsort(pipeline_node_by_id):
+    """ Standard topsort based on recursive dfs """
     visited = {}
     completed = []
 
-    for id in blocks_by_id:
-        dfs(id, blocks_by_id, visited, completed)
+    for id in pipeline_node_by_id:
+        _dfs(id, pipeline_node_by_id, visited, completed)
 
     completed.reverse()
     return completed
 
-def dfs(curr, blocks_by_id, visited, completed):
+def _dfs(curr, pipeline_node_by_id, visited, completed):
     if curr in visited:
         return
 
     visited[curr] = True
 
     # our blocks only have one output (or none for the output block)
-    block = blocks_by_id[curr]
+    block = pipeline_node_by_id[curr]
     next = block.get('out')
 
     # recursion... okay for this purpose as the graph shouldn't be deep
     # and this is the easiest way to get a topsort
     if next is not None:
-        dfs(next, blocks_by_id, visited, completed)
+        _dfs(next, pipeline_node_by_id, visited, completed)
 
     completed.append(curr)
 

@@ -17,6 +17,22 @@
       "out": "merge"
     },
     {
+      "id": "health_cc0",
+      "block": "ISOFormatInput",
+      "cfg": {
+        "file": "${logdir}/come_optfungible_log/fungible/logs/CC_docker_cpu_mem_F1-0.log"
+      },
+      "out": "merge"
+    },
+    {
+      "id": "health_cc1",
+      "block": "ISOFormatInput",
+      "cfg": {
+        "file": "${logdir}/come_optfungible_log/fungible/logs/CC_docker_cpu_mem_F1-1.log"
+      },
+      "out": "merge"
+    },
+    {
       "id": "merge",
       "block": "Merge",
       "out": "dt"
