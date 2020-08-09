@@ -3,8 +3,8 @@
 #
 # The hope is that at some point, once we have a real log ingestion scheme
 # that uses flume, syslog-ng, the ELK stack or something else, that this
-# will simplify into reading the output data (or maybe even a search
-# query) from that ingestion scheme.
+# will simplify into reading the structured output data (or maybe even a
+# search query) from that ingestion scheme.
 #
 # But till then... we have to play its role.
 #
@@ -13,6 +13,7 @@ import datetime
 import io
 import math
 import os
+import re
 
 from blocks.block import Block
 
@@ -30,6 +31,10 @@ class FileInput(Block):
         self.file = cfg['file']
         self.uid = cfg['uid']
 
+    def replace_file_vars(self):
+        logdir = self.env['logdir']
+        return self.file.replace('${logdir}', logdir)
+
 
 class FunOSInput(FileInput):
     """ Handles FunOS log files """
@@ -37,8 +42,7 @@ class FunOSInput(FileInput):
         super().__init__()
 
     def process(self, iters):
-        logdir = self.env['logdir']
-        path = self.file.replace('${logdir}', logdir)
+        path = self.replace_file_vars()
 
         return self.lines2tuples(path)
 
@@ -111,8 +115,7 @@ class ISOFormatInput(FileInput):
         super().__init__()
 
     def process(self, iters):
-        logdir = self.env['logdir']
-        path = self.file.replace('${logdir}', logdir)
+        path = self.replace_file_vars()
 
         with io.open(
                 os.path.expandvars(path), 'r', encoding='ascii', errors='replace'
@@ -136,3 +139,47 @@ class ISOFormatInput(FileInput):
     def normalize_ts(ts):
         useconds, seconds = math.modf(ts)
         return int(seconds), int(useconds * 1e6)
+
+
+class MsecInput(FileInput):
+    """
+    Handles logs with millisecond timestamp granularity as emitted by
+    python's default logger (and various go microservices in the controller)
+    """
+    def __init__(self):
+        super().__init__()
+
+    def process(self, iters):
+        path = self.replace_file_vars()
+
+        with io.open(
+                os.path.expandvars(path), 'r', encoding='ascii', errors='replace'
+        ) as f:
+            for line in f:
+                line = line.strip()
+
+                # 2020-08-03 14:13:04,086 INFO XXX
+                m = re.match('([-0-9]+)\s+([:0-9]+),([0-9]+)\s+(.*)', line)
+
+                if not m:
+                    # 2020/08/05 02:48:10.850 INFO    tracer
+                    m = re.match('([/0-9]+)\s+([:0-9]+)\.([0-9]+)\s+(.*)', line)
+
+                if m:
+                    secs, usecs = self.extract_timestamp(m.group(1), m.group(2),
+                                                         m.group(3))
+                    yield (secs, usecs, self.uid, None, m.group(4))
+
+    @staticmethod
+    def extract_timestamp(day_str, time_str, msecs_str):
+        # this approximation could be bad
+        usecs_str = str(int(msecs_str) * 1000)
+
+        day_str = day_str.replace('-', '/')
+        log_time = day_str + ' ' + time_str + '.' + usecs_str
+        d = datetime.datetime.strptime(log_time, '%Y/%m/%d %H:%M:%S.%f')
+        ts = d.timestamp()
+
+        usecs, secs = math.modf(ts)
+        usecs = usecs * 1e6
+        return int(secs), int(usecs)

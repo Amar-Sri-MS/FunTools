@@ -50,6 +50,7 @@ class BlockFactory(object):
         """
         self.plugins['FunOSInput'] = file_input.FunOSInput
         self.plugins['ISOFormatInput'] = file_input.ISOFormatInput
+        self.plugins['MsecInput'] = file_input.MsecInput
         self.plugins['HumanDateTime'] = display_time.HumanDateTime
         self.plugins['Merge'] = merge.Merge
         self.plugins['StdOutput'] = stdout_output.StdOutput

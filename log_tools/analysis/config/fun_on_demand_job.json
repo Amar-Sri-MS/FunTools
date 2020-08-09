@@ -1,0 +1,34 @@
+{
+  "pipeline": [
+    {
+      "id": "waiter",
+      "block": "MsecInput",
+      "cfg": {
+        "file": "${logdir}/waiter.out"
+      },
+      "out": "merge"
+    },
+    {
+      "id": "shutdown",
+      "block": "MsecInput",
+      "cfg": {
+        "file": "${logdir}/odp/server_shutdown.txt"
+      },
+      "out": "merge"
+    },
+    {
+      "id": "merge",
+      "block": "Merge",
+      "out": "dt"
+    },
+    {
+      "id": "dt",
+      "block": "HumanDateTime",
+      "out": "stdout"
+    },
+    {
+      "id": "stdout",
+      "block": "StdOutput"
+    }
+  ]
+}
