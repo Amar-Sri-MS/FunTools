@@ -1,0 +1,74 @@
+{
+  "pipeline": [
+    {
+      "id": "fs139_f1_0",
+      "block": "TextFileInput",
+      "cfg": {
+        "file_pattern": "${logdir}/fs139/system_current/F1_0_funos.txt"
+      },
+      "out": "fs139_f1_0_parse"
+    },
+    {
+      "id": "fs139_f1_0_parse",
+      "block": "FunOSInput",
+      "out": "merge"
+    },
+    {
+      "id": "fs139_f1_1",
+      "block": "TextFileInput",
+      "cfg": {
+        "file_pattern": "${logdir}/fs139/system_current/F1_1_funos.txt"
+      },
+      "out": "fs139_f1_1_parse"
+    },
+    {
+      "id": "fs139_f1_1_parse",
+      "block": "FunOSInput",
+      "out": "merge"
+    },
+    {
+      "id": "kafka_cons",
+      "block": "TextFileInput",
+      "cfg": {
+        "file_pattern": "${logdir}/fc/sclogs/start_kafka_consumer/info*"
+      },
+      "out": "kafka_cons_parse"
+    },
+    {
+      "id": "kafka_cons_parse",
+      "block": "MsecInput",
+      "out": "merge"
+    },
+    {
+      "id": "apigw",
+      "block": "TextFileInput",
+      "cfg": {
+        "file_pattern": "${logdir}/fc/apigateway/info*"
+      },
+      "out": "apigw_parse"
+    },
+    {
+      "id": "apigw_parse",
+      "block": "MsecInput",
+      "out": "merge"
+    },
+    {
+      "id": "merge",
+      "block": "Merge",
+      "out": "dt"
+    },
+    {
+      "id": "dt",
+      "block": "HumanDateTime",
+      "out": "html"
+    },
+    {
+      "id": "html",
+      "block": "HTMLOutput",
+      "cfg": {
+        "dir": "testoutput",
+        "lines_per_page": 10000
+      }
+    }
+  ]
+}

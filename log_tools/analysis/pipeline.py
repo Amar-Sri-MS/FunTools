@@ -12,6 +12,7 @@ from blocks import file_input
 
 # Filters
 from blocks import display_time
+from blocks import log_parsers
 from blocks import merge
 
 # Output blocks
@@ -49,9 +50,10 @@ class BlockFactory(object):
         Utterly lame, but I'm scared of exec. Should figure out something
         better.
         """
-        self.plugins['FunOSInput'] = file_input.FunOSInput
-        self.plugins['ISOFormatInput'] = file_input.ISOFormatInput
-        self.plugins['MsecInput'] = file_input.MsecInput
+        self.plugins['TextFileInput'] = file_input.TextFileInput
+        self.plugins['FunOSInput'] = log_parsers.FunOSInput
+        self.plugins['ISOFormatInput'] = log_parsers.ISOFormatInput
+        self.plugins['MsecInput'] = log_parsers.MsecInput
         self.plugins['HumanDateTime'] = display_time.HumanDateTime
         self.plugins['Merge'] = merge.Merge
         self.plugins['HTMLOutput'] = html_output.HTMLOutput
