@@ -4,60 +4,10 @@
 
 import argparse
 import mmap
-import generate_firmware_image as GFI
+import firmware_signing_service as fss
 import struct
 import sys
 
-class RsaModulus(object):
-    MOD_HSM = 1 << 0
-    MOD_NET = 1 << 1
-
-    def __init__(self, name, modulus):
-        self.modulus = modulus
-        self.name = name
-
-    @staticmethod
-    def create(name, mode):
-        config = [
-                { "name" : "fpk3",
-                  "type": SigningModulus,
-                  "mode": RsaModulus.MOD_NET },
-                { "name" : "fpk3",
-                  "type": HsmRsaModulus,
-                  "mode": RsaModulus.MOD_HSM },
-                { "name" : "fpk4",
-                  "type": EnrollmentModulus,
-                  "mode": RsaModulus.MOD_NET },
-                { "name" : "fpk5",
-                  "type": SigningModulus,
-                  "mode": RsaModulus.MOD_NET },
-                { "name" : "fpk5",
-                  "type": HsmRsaModulus,
-                  "mode": RsaModulus.MOD_HSM },
-        ]
-
-        for c in list(filter(lambda el: name.startswith(el['name']), config)):
-            if (c["mode"] & mode) == c["mode"]:
-                return c["type"](name)
-
-        raise TypeError("Key {} mode {} not available".format(name, mode))
-
-class EnrollmentModulus(RsaModulus):
-    def __init__(self, name):
-        import enrollment_service as es
-        m = es.GetModulus()
-        super().__init__(name, m)
-
-class SigningModulus(RsaModulus):
-    def __init__(self, name):
-        import firmware_signing_service as fss
-        m = fss.GetModulus(name)
-        super().__init__(name, m)
-
-class HsmRsaModulus(RsaModulus):
-    def __init__(self, name):
-        m = GFI.get_create_public_rsa_modulus(name)
-        super().__init__(name, m)
 
 class AppFpk(mmap.mmap):
     def __find_key_loc(self, n):
@@ -92,7 +42,7 @@ class AppFpk(mmap.mmap):
                         "Modulus length unset, data placeholder missing")
         return 0
 
-    def update_key(self, n, key, hsm, net):
+    def update_key(self, n, key):
         ret = 0
         pos = self.__find_key_loc(n)
         self.seek(pos+4)
@@ -100,12 +50,7 @@ class AppFpk(mmap.mmap):
             key = "fpk" + str(n)
 
         try:
-            mode = 0
-            if hsm:
-                mode |= RsaModulus.MOD_HSM
-            if net:
-                mode |= RsaModulus.MOD_NET
-            modulus = RsaModulus.create(key, mode).modulus
+            modulus = fss.get_modulus(key)
         except TypeError as e:
             print(str(e))
             return 1
@@ -134,12 +79,11 @@ def app_fpk_process(func):
 
 
 @app_fpk_process
-def update_file(file, number, app, key, hsm = False, net = False):
+def update_file(file, number, app, key):
     try:
-        ret = app.update_key(number, key, hsm, net)
-        print("Key {} {}updated in {} with '{}' ({} {})".
-              format(number, "not " if ret == 1 else "", file, key,
-                     "hsm" if hsm else "", "net" if net else ""))
+        ret = app.update_key(number, key)
+        print("Key {} {}updated in {} with '{}' (net)".
+              format(number, "not " if ret == 1 else "", file, key))
     except Exception as e:
         print("Key {} not found in {}:{}".format(number, file, e))
     return 0
@@ -156,6 +100,7 @@ def check_file(file, number, app):
         print("Key {} not found in {}. Error: {}".format(number, file, e))
         return 1
 
+
 def main():
     parser = argparse.ArgumentParser(
         description="Process app binaries to modify FPKs")
@@ -164,21 +109,18 @@ def main():
                         choices=[3, 4, 5],
                         type=int,
                         required=True)
-    parser.add_argument("--key", help="Key name (in HSM) to be used")
+    parser.add_argument("--key", help="Key name to be used")
     parser.add_argument("file", help="file to update",
                         metavar="FILE")
-    parser.add_argument("--have-hsm", action='store_true', help='Script can access an HSM')
-    parser.add_argument("--have-net", action='store_true', help='Script can access network')
 
     cmd = parser.add_mutually_exclusive_group(required=True)
     cmd.add_argument("--verify", action='store_true')
     cmd.add_argument("--update", action='store_true')
 
-
     args = parser.parse_args()
 
     if args.update:
-        return update_file(args.file, args.number, key=args.key, hsm=args.have_hsm, net=args.have_net)
+        return update_file(args.file, args.number, key=args.key)
     elif args.verify:
         return check_file(args.file, args.number)
 
