@@ -16,7 +16,3 @@ class Merge(Block):
     """
     def process(self, iters):
         return heapq.merge(*iters)
-
-
-if __name__ == '__main__':
-    main()
