@@ -613,14 +613,14 @@ def run(arg_action, arg_enroll_cert = None, *args, **kwargs):
                 infile = find_file_in_srcdirs(v['source'])
                 shutil.copy2(infile, outfile)
             for key in v['keys']:
-                kr.update_file(outfile, key['id'], key=key['name'] + key_name_suffix,
-                               hsm=have_hsm, net=have_net)
+                kr.update_file(outfile, key['id'],
+                               key=key['name'] + key_name_suffix)
 
     if wanted('key_injection') and config.get('key_bag_creation'):
         # keybag is always created from scratch....
         for outfile, v in config['key_bag_creation'].items():
             suffixed_keys = [k + key_name_suffix for k in v['keys']]
-            kbc.create(outfile, suffixed_keys, hsm=have_hsm, net=have_net)
+            kbc.create(outfile, suffixed_keys)
 
     if wanted('flash') and config.get('output_format'):
         bin_infos = dict()
