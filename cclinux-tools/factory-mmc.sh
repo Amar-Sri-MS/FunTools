@@ -42,6 +42,14 @@ install_to /dev/vda
 
 install_to /dev/vdb
 
+funq_dev=$(lspci -d 1dad::ff00 -mmn | cut -d ' ' -f1)
+
+echo "Using funq on: ${funq_dev}"
+
+/usr/bin/funq-setup bind vfio $funq_dev
+
+fwupgrade -d $funq_dev -i emmc_image.bin -f emmc
+fwupgrade -d $funq_dev -i emmc_image.bin -f emmc --active
 
 echo "Provisioning complete"
 
