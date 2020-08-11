@@ -364,7 +364,7 @@ class I2CFactoryThread(jsocket.ServerFactoryThread):
         if chip_type == 'f1':
             return i2c(dev_id=id, slave_addr=addr, bitrate=bitrate)
         else:
-            return s1i2c(dev_id=id, slave_addr=addr, bitrate=bitrate)
+            return csr2i2c(dev_id=id, slave_addr=addr, bitrate=bitrate)
 
 
 if __name__ == "__main__":

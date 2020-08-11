@@ -12,7 +12,7 @@ import paramiko
 from i2cdev import *
 
 logger = logging.getLogger('i2cutils')
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 class constants(object):
     IC_DEVICE_FEATURE_MASK = 0x1B
@@ -859,9 +859,9 @@ class i2c:
         return True
 
 
-class s1i2c(i2c):
+class csr2i2c(i2c):
     """
-    i2c specialization for S1, because S1 i2c access is different.
+    i2c specialization for CSR2, because csr2 i2c access is different.
 
     TODO: remove duplication with version in isbp
     TODO: follow convention of not rethrowing exceptions, but returning error
