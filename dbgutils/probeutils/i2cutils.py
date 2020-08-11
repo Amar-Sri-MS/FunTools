@@ -12,7 +12,7 @@ import paramiko
 from i2cdev import *
 
 logger = logging.getLogger('i2cutils')
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 class constants(object):
     IC_DEVICE_FEATURE_MASK = 0x1B
@@ -1001,7 +1001,7 @@ class csr2i2c(i2c):
         qwords = []
         n_qwords = csr_width_words
 
-        logger.info('csr2 I2C peek! chip_inst: {0} csr_addr: {1} n_qwords:{2}'.format(chip_inst, hex(csr_addr), n_qwords))
+        logger.debug('csr2 I2C peek! chip_inst: {0} csr_addr: {1} n_qwords:{2}'.format(chip_inst, hex(csr_addr), n_qwords))
         if not n_qwords or n_qwords == 0:
             logger.error(('csr2 peek n_qwords={0}').format(n_qwords))
             return None, -1
@@ -1032,7 +1032,7 @@ class csr2i2c(i2c):
         Overrides the method from the base i2c class to provide S1
         functionality.
         """
-        logger.info('csr2 I2C poke! chip_inst: {0} csr_addr: {1} poke_array:{2}'.format(chip_inst,
+        logger.debug('csr2 I2C poke! chip_inst: {0} csr_addr: {1} poke_array:{2}'.format(chip_inst,
                                                                                            hex(csr_addr),
                                                                                            map(hex, word_array)))
         if not word_array:
