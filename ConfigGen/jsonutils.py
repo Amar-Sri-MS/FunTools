@@ -128,7 +128,7 @@ def merge_dicts_recursive(cfg1, cfg2):
             merge_dicts_recursive(v, cfg2.setdefault(k, {}))
         elif isinstance(v, list) and k in cfg2:
             cfg2[k].extend(v)
-        else:
+        elif not k in cfg2:
             cfg2[k] = v
 
     return cfg2
