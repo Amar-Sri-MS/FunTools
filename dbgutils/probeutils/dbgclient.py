@@ -62,7 +62,7 @@ class DBG_Client(object):
                 raise ValueError('Invalid client connection mode: "{0}"'.format(mode))
         else:
             dbgclient = BMC_Client(bmc_ip_address=bmc_ip_address,
-                                   mode=mode)
+                                   chip_type=chip_type, mode=mode)
             status = dbgclient.connect()
 
         if status is True:

@@ -9,13 +9,17 @@ logger = logging.getLogger("bmcclient")
 logger.setLevel(logging.INFO)
 
 class BMC_Client(object):
-    def __init__(self, bmc_ip_address, mode='i2c'):
+    def __init__(self, bmc_ip_address, mode='i2c', chip_type='f1'):
         assert(bmc_ip_address)
         self.connected = False
         self.bmc_ip_address = bmc_ip_address
         self.mode = mode
+        self.chip_type = chip_type 
         if self.bmc_ip_address and self.mode == "i2c":
-            self.probe = i2c(bmc_ip_address=bmc_ip_address)
+            if chip_type=='f1':
+                self.probe = i2c(bmc_ip_address=bmc_ip_address, chip_type=chip_type)
+            else:
+                self.probe = csr2i2c(bmc_ip_address=bmc_ip_address, chip_type=chip_type)
         #elif self.bmc_ip_address and self.mode == "jtag":
         else:
             assert(0)
