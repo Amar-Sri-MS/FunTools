@@ -110,6 +110,10 @@ def generate_nor_image(args, script_directory,
     run_args.extend([os.path.join(script_directory, f) for f in
                      ["qspi_config_fungible.json", "key_bag_config.json"]])
 
+    if args.customer:
+        run_args.extend([os.path.join(script_directory,
+                                      "qspi_config_customer.json")])
+
     # stdin input will be used to send the config that was generated on the fly
     run_args.append("-")
 
@@ -285,6 +289,8 @@ def parse_args():
                             help="enrollment certificate to add to the image")
     arg_parser.add_argument("-p", "--production", action='store_true',
                             help="Production build: very few log messages")
+    arg_parser.add_argument("--customer", action='store_true',
+                            help="Customer build: sign with customer keys")
     arg_parser.add_argument("-s", "--sbp", action='store',
                             help="SBP Firmware directory, default is $WORKSPACE/SBPFirmware")
     arg_parser.add_argument("-v", "--version", action='store',
