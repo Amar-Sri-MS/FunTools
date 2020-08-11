@@ -125,9 +125,8 @@ def gen_fw_image(filename, attrs):
     args['customer_certfile'] = find_file_in_srcdirs(args['customer_certfile'])
 
     if args['infile']:
-        global firmware_sign
         try:
-            firmware_sign.image_gen(outfile=filename, **args)
+            fsi.image_gen(outfile=filename, **args)
         except Exception as e:
             raise RuntimeError("Failed to sign the image", e)
         if tmpfile:
@@ -525,19 +524,8 @@ def set_search_paths(paths):
 def run(arg_action, arg_enroll_cert = None, *args, **kwargs):
     global config
     global search_paths
-    global firmware_sign
-
-    have_net = kwargs.get("net", True)
-    have_hsm = kwargs.get("hsm", True)
 
     key_name_suffix = kwargs.get("key_name_suffix", "")
-
-    mode = 0
-    if have_hsm:
-        mode |= fsi.FirmwareSigningService.MOD_HSM
-    if have_net:
-        mode |= fsi.FirmwareSigningService.MOD_NET
-    firmware_sign = fsi.FirmwareSigningService.create(mode)
 
     wanted = lambda action : arg_action in ['all', action]
     flash_content = None
@@ -596,7 +584,7 @@ def run(arg_action, arg_enroll_cert = None, *args, **kwargs):
     # Generate keys (if required)
     if wanted('key_hashes') and 'key_hashes' in config:
         for k,v in config['key_hashes'].items():
-            firmware_sign.export_pub_key_hash(k, v['name'])
+            fsi.export_pub_key_hash(k, v['name'])
 
     # Generate certificates (if required)
     if wanted('certificates') and 'certificates' in config:
@@ -616,7 +604,7 @@ def run(arg_action, arg_enroll_cert = None, *args, **kwargs):
                  }
 
                 cert_args = map_method_args(argmap, v)
-                firmware_sign.cert_gen(outfile=k, **cert_args)
+                fsi.cert_gen(outfile=k, **cert_args)
 
     if wanted('key_injection') and config.get('key_injection'):
         keep_outfile = kwargs.get("keep_output", False)
@@ -625,14 +613,14 @@ def run(arg_action, arg_enroll_cert = None, *args, **kwargs):
                 infile = find_file_in_srcdirs(v['source'])
                 shutil.copy2(infile, outfile)
             for key in v['keys']:
-                kr.update_file(outfile, key['id'], key=key['name'] + key_name_suffix,
-                               hsm=have_hsm, net=have_net)
+                kr.update_file(outfile, key['id'],
+                               key=key['name'] + key_name_suffix)
 
     if wanted('key_injection') and config.get('key_bag_creation'):
         # keybag is always created from scratch....
         for outfile, v in config['key_bag_creation'].items():
             suffixed_keys = [k + key_name_suffix for k in v['keys']]
-            kbc.create(outfile, suffixed_keys, hsm=have_hsm, net=have_net)
+            kbc.create(outfile, suffixed_keys)
 
     if wanted('flash') and config.get('output_format'):
         bin_infos = dict()

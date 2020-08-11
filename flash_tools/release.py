@@ -133,17 +133,13 @@ def main():
 
         gf.run('sources')
 
-        utils = [ "bin/flash_tools/generate_firmware_image.py",
-                  "bin/flash_tools/generate_flash.py",
-                  "bin/flash_tools/gen_start_cert.sh",
+        utils = [ "bin/flash_tools/generate_flash.py",
                   "bin/flash_tools/make_emulation_emmc.py",
                   "bin/flash_tools/firmware_signing_service.py",
-                  "bin/flash_tools/enrollment_service.py",
                   "bin/flash_tools/key_bag_create.py",
                   "bin/flash_tools/key_replace.py",
                   "bin/flash_tools/eeprom_replace.py",
                   "bin/flash_tools/flash_utils.py",
-                  "bin/flash_tools/sign_release.sh",
                   "bin/flash_tools/" + os.path.basename(__file__),
                   "bin/Linux/x86_64/mkimage" ]
         utils.append(os.path.join('FunSDK/sbpfw/eeproms', eeprom_list))
