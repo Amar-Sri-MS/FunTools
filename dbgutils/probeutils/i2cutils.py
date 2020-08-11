@@ -346,7 +346,6 @@ class i2c:
         self.bmc_board = False
         self.bitrate = None
         self.addr_width = 5 if chip_type == 'f1' else 4 
-        print("*************** addr_width: {}**********".format(self.addr_width))
         if bmc_ip_address:
             self.bmc_board = True
             self.master = bmc(bmc_ip_address)
