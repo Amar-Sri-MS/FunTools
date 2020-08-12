@@ -90,11 +90,6 @@ def generate_dynamic_config(chip, eeprom):
 def generate_nor_image(args, script_directory,
                        images_directory, eeprom_directory):
     ''' create the NOR image in images_directory with the arguments supplied '''
-    # copy the start certificate to the images directory
-    shutil.copy2(os.path.join(args.sbp,
-                              "software/production/development_start_certificate.bin"),
-                 os.path.join(images_directory,
-                              "start_certificate.bin"))
     #  fixed arguments
     run_args = ["python3",
                 os.path.join(script_directory, "generate_flash.py"),

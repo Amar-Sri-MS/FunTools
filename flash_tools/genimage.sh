@@ -96,8 +96,6 @@ cp $SBP_INSTALL_DIR/bootloader_m5150.mif ${WORKSPACE}/sbpimage/SysROM
 
 mkdir -p artifacts_$ARTIFACT_STYLE && cd artifacts_$ARTIFACT_STYLE
 
-cp $SBP_ROOT_DIR/software/production/development_start_certificate.bin ./start_certificate.bin
-
 HOST_FIRMWARE_DEF=$(cat <<-JSON
 { "signed_images": {
      "host_firmware_packed.bin": {

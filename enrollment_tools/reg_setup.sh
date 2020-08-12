@@ -58,6 +58,8 @@ sudo a2dissite 000-default.conf
 sudo a2enmod ssl
 sudo a2enmod cgid
 sudo tar xzvf install.tgz -C /
+# copy the certificates
+sudo cp *_certificate.bin /var/www/api/
 #verify permission of installed files
 
 #enable the registration (main) site
