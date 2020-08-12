@@ -1,0 +1,57 @@
+{
+  "pipeline": [
+    {
+      "id": "waiter",
+      "block": "TextFileInput",
+      "cfg": {
+        "file_pattern": "${logdir}/waiter.out"
+      },
+      "out": "waiter_parse"
+    },
+    {
+      "id": "waiter_parse",
+      "block": "MsecInput",
+      "out": "merge"
+    },
+    {
+      "id": "shutdown",
+      "block": "TextFileInput",
+      "cfg": {
+        "file_pattern": "${logdir}/odp/server_shutdown.txt"
+      },
+      "out": "shutdown_parse"
+    },
+    {
+      "id": "shutdown_parse",
+      "block": "MsecInput",
+      "out": "merge"
+    },
+    {
+      "id": "pci_script",
+      "block": "TextFileInput",
+      "cfg": {
+        "file_pattern": "${logdir}/script_out.pci.0.demand-*-come.fungible.local.txt"
+      },
+      "out": "pci_parse"
+    },
+    {
+      "id": "pci_parse",
+      "block": "MsecInput",
+      "out": "merge"
+    },
+    {
+      "id": "merge",
+      "block": "Merge",
+      "out": "dt"
+    },
+    {
+      "id": "dt",
+      "block": "HumanDateTime",
+      "out": "stdout"
+    },
+    {
+      "id": "stdout",
+      "block": "StdOutput"
+    }
+  ]
+}

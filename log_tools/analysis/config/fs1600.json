@@ -1,0 +1,70 @@
+{
+  "pipeline": [
+    {
+      "id": "f1_0",
+      "block": "TextFileInput",
+      "cfg": {
+        "file_pattern": "${logdir}/dpu_logs_lines/F1_0_funos.txt"
+      },
+      "out": "f1_0_parse"
+    },
+    {
+      "id": "f1_0_parse",
+      "block": "FunOSInput",
+      "out": "merge"
+    },
+    {
+      "id": "f1_1",
+      "block": "TextFileInput",
+      "cfg": {
+        "file_pattern": "${logdir}/dpu_logs_lines/F1_1_funos.txt"
+      },
+      "out": "f1_1_parse"
+    },
+    {
+      "id": "f1_1_parse",
+      "block": "FunOSInput",
+      "out": "merge"
+    },
+    {
+      "id": "health_cc0",
+      "block": "TextFileInput",
+      "cfg": {
+        "file_pattern": "${logdir}/come_optfungible_log/fungible/logs/CC_docker_cpu_mem_F1-0.log"
+      },
+      "out": "health_cc0_parse"
+    },
+    {
+      "id": "health_cc0_parse",
+      "block": "ISOFormatInput",
+      "out": "merge"
+    },
+    {
+      "id": "health_cc1",
+      "block": "TextFileInput",
+      "cfg": {
+        "file_pattern": "${logdir}/come_optfungible_log/fungible/logs/CC_docker_cpu_mem_F1-1.log"
+      },
+      "out": "health_cc1_parse"
+    },
+    {
+      "id": "health_cc1_parse",
+      "block": "ISOFormatInput",
+      "out": "merge"
+    },
+    {
+      "id": "merge",
+      "block": "Merge",
+      "out": "dt"
+    },
+    {
+      "id": "dt",
+      "block": "HumanDateTime",
+      "out": "stdout"
+    },
+    {
+      "id": "stdout",
+      "block": "StdOutput"
+    }
+  ]
+}
