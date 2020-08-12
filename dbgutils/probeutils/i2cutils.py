@@ -24,8 +24,6 @@ class constants(object):
     F1_I2C_ADDR_MODE = 0
     SBP_CMD_EXE_TIME_WAIT = 1
     I2C_CSR_SLEEP_SEC = 0.001
-    CSR1_ADDR_WIDTH_BYTES = 5
-    CSR2_ADDR_WIDTH_BYTES = 4
 
 # Converts byte array to big-endian 64-bit words
 def byte_array_to_words_be(byte_array):
@@ -341,12 +339,15 @@ class bmc:
 			return (False, err_msg)
 		return num_bytes_wrote
 
-class i2c:
+class i2c(object):
+    CSR1_ADDR_WIDTH_BYTES = 5
+
     def __init__(self, dev_id=None, slave_addr=None,
-            bmc_ip_address=None, bitrate=None, chip_type='f1'):
+            bmc_ip_address=None, bitrate=None, chip_type='f1',
+            addr_width=CSR1_ADDR_WIDTH_BYTES):
         self.bmc_board = False
         self.bitrate = None
-        self.addr_width = constants.CSR1_ADDR_WIDTH_BYTES if chip_type == 'f1' else constants.CSR2_ADDR_WIDTH_BYTES
+        self.addr_width = addr_width
         if bmc_ip_address:
             self.bmc_board = True
             self.master = bmc(bmc_ip_address)
@@ -869,6 +870,15 @@ class csr2i2c(i2c):
     TODO: follow convention of not rethrowing exceptions, but returning error
           codes instead.
     """
+
+    CSR2_ADDR_WIDTH_BYTES = 4
+
+    def __init__(self, dev_id=None, slave_addr=None,
+            bmc_ip_address=None, bitrate=None, chip_type='s1'):
+        super(csr2i2c, self).__init__(dev_id=dev_id, slave_addr=slave_addr,
+                bmc_ip_address=bmc_ip_address, bitrate=bitrate,
+                chip_type=chip_type,
+                addr_width=csr2i2c.CSR2_ADDR_WIDTH_BYTES)
 
     def _poke_qword(self, address, qword, chip_inst=None):
         """
