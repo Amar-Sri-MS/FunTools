@@ -25,7 +25,6 @@ class constants(object):
     SBP_CMD_EXE_TIME_WAIT = 1
     I2C_CSR_SLEEP_SEC = 0.001
 
-
 # Converts byte array to big-endian 64-bit words
 def byte_array_to_words_be(byte_array):
     #logger.debug('byte_array: {0}'.format(byte_array))
@@ -340,11 +339,15 @@ class bmc:
 			return (False, err_msg)
 		return num_bytes_wrote
 
-class i2c:
+class i2c(object):
+    CSR1_ADDR_WIDTH_BYTES = 5
+
     def __init__(self, dev_id=None, slave_addr=None,
-            bmc_ip_address=None, bitrate=None):
+            bmc_ip_address=None, bitrate=None, chip_type='f1',
+            addr_width=CSR1_ADDR_WIDTH_BYTES):
         self.bmc_board = False
         self.bitrate = None
+        self.addr_width = addr_width
         if bmc_ip_address:
             self.bmc_board = True
             self.master = bmc(bmc_ip_address)
@@ -383,7 +386,7 @@ class i2c:
         elif csr_width_words == 1: # Fast mode for single wide csr access
             csr_addr = struct.pack('>Q', csr_addr)
             csr_addr = list(struct.unpack('BBBBBBBB', csr_addr))
-            csr_addr = csr_addr[3:]
+            csr_addr = csr_addr[(8-self.addr_width):]
             cmd = array('B', [0x00])
             cmd.extend(csr_addr)
             logger.debug(cmd)
@@ -423,7 +426,7 @@ class i2c:
             cmd_data = array('B', [0x01])
             csr_data_addr = struct.pack('>Q', 0)
             csr_data_addr = list(struct.unpack('BBBBBBBB', csr_data_addr))
-            csr_data_addr = csr_data_addr[3:]
+            csr_data_addr = csr_data_addr[(8-self.addr_width):]
             cmd_data.extend(csr_data_addr)
             cmd_data.extend(csr_addr)
             logger.debug('poking bytes: {0}'.format([hex(x) for x in cmd_data]))
@@ -452,7 +455,7 @@ class i2c:
             for i in range(csr_width_words):
                 csr_data_addr = struct.pack('>Q', (i+1) * 8)
                 csr_data_addr = list(struct.unpack('BBBBBBBB', csr_data_addr))
-                csr_data_addr = csr_data_addr[3:]
+                csr_data_addr = csr_data_addr[(8-self.addr_width):]
                 cmd_data = array('B', [0x00])
                 cmd_data.extend(csr_data_addr)
                 sent_bytes = self.master.i2c_write(write_data = cmd_data, chip_inst=chip_inst)
@@ -494,7 +497,7 @@ class i2c:
         elif csr_width_words == 1: #Fast mode for single wide csr access
             csr_addr = struct.pack('>Q', csr_addr)
             csr_addr = list(struct.unpack('BBBBBBBB', csr_addr))
-            csr_addr = csr_addr[3:] #Assuming csr address is always 6 bytes
+            csr_addr = csr_addr[(8-self.addr_width):] #Assuming csr address is always 6 bytes
             cmd_data = array('B', [0x01])
             cmd_data.extend(csr_addr)
             for word in word_array:
@@ -537,7 +540,7 @@ class i2c:
             for i in range(csr_width_words):
                 csr_data_addr = struct.pack('>Q', (i+1) * 8)
                 csr_data_addr = list(struct.unpack('BBBBBBBB', csr_data_addr))
-                csr_data_addr = csr_data_addr[3:]
+                csr_data_addr = csr_data_addr[(8-self.addr_width):]
                 cmd_data = array('B', [0x01])
                 cmd_data.extend(csr_data_addr)
                 word = struct.pack('>Q', word_array[i])
@@ -569,7 +572,7 @@ class i2c:
             cmd_data = array('B', [0x01])
             csr_data_addr = struct.pack('>Q', 0)
             csr_data_addr = list(struct.unpack('BBBBBBBB', csr_data_addr))
-            csr_data_addr = csr_data_addr[3:]
+            csr_data_addr = csr_data_addr[(8-self.addr_width):]
             cmd_data.extend(csr_data_addr)
             cmd_data.extend(csr_addr)
             logger.debug('poking bytes: {0}'.format([hex(x) for x in cmd_data]))
@@ -859,14 +862,23 @@ class i2c:
         return True
 
 
-class s1i2c(i2c):
+class csr2i2c(i2c):
     """
-    i2c specialization for S1, because S1 i2c access is different.
+    i2c specialization for CSR2, because csr2 i2c access is different.
 
     TODO: remove duplication with version in isbp
     TODO: follow convention of not rethrowing exceptions, but returning error
           codes instead.
     """
+
+    CSR2_ADDR_WIDTH_BYTES = 4
+
+    def __init__(self, dev_id=None, slave_addr=None,
+            bmc_ip_address=None, bitrate=None, chip_type='s1'):
+        super(csr2i2c, self).__init__(dev_id=dev_id, slave_addr=slave_addr,
+                bmc_ip_address=bmc_ip_address, bitrate=bitrate,
+                chip_type=chip_type,
+                addr_width=csr2i2c.CSR2_ADDR_WIDTH_BYTES)
 
     def _poke_qword(self, address, qword, chip_inst=None):
         """
@@ -874,7 +886,7 @@ class s1i2c(i2c):
 
         Returns True on success, False on failure.
         """
-        logger.debug('s1 csr2 qword_poke csr2_addr:{0} qword={1}, chip_inst:{2}'.format(hex(address), hex(qword), chip_inst))
+        logger.debug('csr2 qword_poke csr2_addr:{0} qword={1}, chip_inst:{2}'.format(hex(address), hex(qword), chip_inst))
         cmd_data = array('B', [0x01])
 
         csr_addr = struct.pack('>I', address)
@@ -885,22 +897,22 @@ class s1i2c(i2c):
         qword = list(struct.unpack('BBBBBBBB', qword))
         cmd_data.extend(qword)
 
-        logger.debug('s1 csr2 poking bytes: {0}'.format(map(hex, cmd_data)))
+        logger.debug('csr2 poking bytes: {0}'.format(map(hex, cmd_data)))
         sent_bytes = self.master.i2c_write(write_data = cmd_data, chip_inst=chip_inst)
-        logger.debug('s1 csr2 sent_bytes: {0}'.format(sent_bytes))
+        logger.debug('csr2 sent_bytes: {0}'.format(sent_bytes))
         if sent_bytes != len(cmd_data):
-            logger.error(('s1 csr2 Write Error! sent_bytes:{0} Expected: {1}').format(sent_bytes, len(cmd_data)))
+            logger.error(('csr2 Write Error! sent_bytes:{0} Expected: {1}').format(sent_bytes, len(cmd_data)))
             return False
         try:
             time.sleep(constants.I2C_CSR_SLEEP_SEC)
             status = array('B', [0x00])
             num_status_bytes = self.master.i2c_read(read_data = status, chip_inst=chip_inst)
-            logger.debug('s1 csr2 poke num_status_bytes:{0} status:{1}'.format(num_status_bytes, hex(status[0])))
+            logger.debug('csr2 poke num_status_bytes:{0} status:{1}'.format(num_status_bytes, hex(status[0])))
             if num_status_bytes[0] != 1:
-                logger.error('s1 csr2 Read Error!  status_bytes:{0} Expected: {1}'.format(num_status_bytes, 1))
+                logger.error('csr2 Read Error!  status_bytes:{0} Expected: {1}'.format(num_status_bytes, 1))
                 return False
             if status[0] != 0x80:
-                logger.error('s1 csr2 Write status returned Error! {0}'.format(status[0]))
+                logger.error('csr2 Write status returned Error! {0}'.format(status[0]))
                 return False
         except Exception as e:
             logging.error(e)
@@ -914,27 +926,27 @@ class s1i2c(i2c):
 
         Returns a tuple of (success, word) where success is a boolean.
         """
-        logger.debug('s1 csr2 qword_peek csr2_addr:{0} chip_inst:{1}'.format(hex(address), chip_inst))
+        logger.debug('csr2 qword_peek csr2_addr:{0} chip_inst:{1}'.format(hex(address), chip_inst))
         csr_addr = struct.pack('>I', address)
         csr_addr = list(struct.unpack('BBBB', csr_addr))
         cmd_data = array('B', [0x00])
         cmd_data.extend(csr_addr)
-        logger.debug('s1 csr2 cmd_data bytes: {0}'.format(map(hex, cmd_data)))
+        logger.debug('csr2 cmd_data bytes: {0}'.format(map(hex, cmd_data)))
         sent_bytes = self.master.i2c_write(write_data = cmd_data, chip_inst=chip_inst)
-        logger.debug('s1 csr2 sent_bytes: {0}'.format(sent_bytes))
+        logger.debug('csr2 sent_bytes: {0}'.format(sent_bytes))
         if sent_bytes != len(cmd_data):
-            logger.error(('s1 csr2 Write Error! sent_bytes:{0} Expected: {1}').format(sent_bytes, len(cmd_data)))
+            logger.error(('csr2 Write Error! sent_bytes:{0} Expected: {1}').format(sent_bytes, len(cmd_data)))
             return (False, None)
         try:
             time.sleep(constants.I2C_CSR_SLEEP_SEC)
             read_data = array('B', [00]*(8 + 1))
             read_bytes = self.master.i2c_read(read_data = read_data, chip_inst=chip_inst)
-            logger.debug(('s1 csr2 read_bytes: {0} read_data: {1}').format(read_bytes, map(hex, read_data)))
+            logger.debug(('csr2 read_bytes: {0} read_data: {1}').format(read_bytes, map(hex, read_data)))
             if read_bytes[0] != (8+1):
-                logger.error(('s1 csr2 Read Error! read_bytes:{0} Expected: {1}').format(read_bytes, (8 + 1)))
+                logger.error(('csr2 Read Error! read_bytes:{0} Expected: {1}').format(read_bytes, (8 + 1)))
                 return (False, None)
             if read_data[0] != 0x80:
-                logger.error(('s1 csr2 Read status returned Error! {0}').format(read_data[0]))
+                logger.error(('csr2 Read status returned Error! {0}').format(read_data[0]))
                 return (False, read_data[0]&0xf)
 
             read_data = read_data[1:]
@@ -950,7 +962,7 @@ class s1i2c(i2c):
 
         Returns a tuple of (success, word) where success is a boolean.
         """
-        logger.debug('s1 csr2 qword_wide_peek csr2_addr:{0} length:{1} chip_inst:{2}'.format(hex(address), hex(wlen),
+        logger.debug('csr2 qword_wide_peek csr2_addr:{0} length:{1} chip_inst:{2}'.format(hex(address), hex(wlen),
                                                                                              chip_inst))
         ######### using native direct poke for wide reg csrctl ##################
         qword = (((0x3F & wlen) << 36) | ((0xF & 0x2) << 32) | address) & 0xFFFFFFFFFFFFFFFF
@@ -977,7 +989,7 @@ class s1i2c(i2c):
         Internal method for poking values into a register that is > 1 qword
         in length.
         """
-        logger.debug('s1 wide csr2 qword_poke csr2_addr:{0} qwords={1}, chip_inst:{2}'.format(hex(address),
+        logger.debug('wide csr2 qword_poke csr2_addr:{0} qwords={1}, chip_inst:{2}'.format(hex(address),
                                                                                               qwords, chip_inst))
         ######### using self direct poke for wide reg csrctl data ##############
         CSRCTL_DATA_ADDR = 0x00002100
@@ -1000,9 +1012,9 @@ class s1i2c(i2c):
         qwords = []
         n_qwords = csr_width_words
 
-        logger.info('s1 csr2 I2C peek! chip_inst: {0} csr_addr: {1} n_qwords:{2}'.format(chip_inst, hex(csr_addr), n_qwords))
+        logger.debug('csr2 I2C peek! chip_inst: {0} csr_addr: {1} n_qwords:{2}'.format(chip_inst, hex(csr_addr), n_qwords))
         if not n_qwords or n_qwords == 0:
-            logger.error(('s1 csr2 peek n_qwords={0}').format(n_qwords))
+            logger.error(('csr2 peek n_qwords={0}').format(n_qwords))
             return None, -1
         elif n_qwords == 1:
             at_csr_addr = csr_addr
@@ -1012,7 +1024,7 @@ class s1i2c(i2c):
                     raise Exception('peek operation failed ...')
                 qwords.append(qword)
             except Exception as e:
-                logger.error('s1 csr2 peek failed for at_csr_addr={0}'.format(at_csr_addr))
+                logger.error('csr2 peek failed for at_csr_addr={0}'.format(at_csr_addr))
                 raise Exception('peek operation failed ...')
         else:
             try:
@@ -1020,7 +1032,7 @@ class s1i2c(i2c):
                 if not status:
                     raise Exception('wide peek operation failed ...')
             except Exception as e:
-                logger.error('s1 csr2 wide peek failed for at_csr_addr={0}'.format(csr_addr))
+                logger.error('csr2 wide peek failed for at_csr_addr={0}'.format(csr_addr))
                 logging.error(traceback.format_exc())
                 raise Exception('wide peek api operation failed ...')
 
@@ -1031,11 +1043,11 @@ class s1i2c(i2c):
         Overrides the method from the base i2c class to provide S1
         functionality.
         """
-        logger.info('s1 csr2 I2C poke! chip_inst: {0} csr_addr: {1} poke_array:{2}'.format(chip_inst,
+        logger.debug('csr2 I2C poke! chip_inst: {0} csr_addr: {1} poke_array:{2}'.format(chip_inst,
                                                                                            hex(csr_addr),
                                                                                            map(hex, word_array)))
         if not word_array:
-            logger.error('s1 csr2 poke array empty ...')
+            logger.error('csr2 poke array empty ...')
             return False
         elif len(word_array) == 1: # direct
             qword = word_array[0]
@@ -1050,7 +1062,7 @@ class s1i2c(i2c):
                 if not status:
                     raise Exception('wide poke operation failed ...')
             except Exception as e:
-                logger.error(('s1 csr2 wide poke failed for at_csr_addr={0}').format(csr_addr))
+                logger.error(('csr2 wide poke failed for at_csr_addr={0}').format(csr_addr))
                 logging.error(traceback.format_exc())
                 raise Exception('wide poke api operation failed ...')
         return True

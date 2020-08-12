@@ -51,7 +51,7 @@ class DBG_Client(object):
                     dbgclient = JTAG_Client(chip_type)
                     status = dbgclient.connect(probe_ip_addr, probe_id, jtag_bitrate)
                 else:
-                    raise ValueError('Mode: "{0}" is not supported on this platform!'.format(mode))
+                    raise ValueError('Mode: "{0}" is supported on only linux platform!'.format(mode))
             elif mode == 'pcie':
                 dbgclient = PCIE_Client(mode)
                 status = dbgclient.connect(probe_ip_addr, probe_id)
@@ -62,7 +62,7 @@ class DBG_Client(object):
                 raise ValueError('Invalid client connection mode: "{0}"'.format(mode))
         else:
             dbgclient = BMC_Client(bmc_ip_address=bmc_ip_address,
-                                   mode=mode)
+                                   chip_type=chip_type, mode=mode)
             status = dbgclient.connect()
 
         if status is True:

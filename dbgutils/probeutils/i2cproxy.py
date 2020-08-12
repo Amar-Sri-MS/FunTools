@@ -362,9 +362,9 @@ class I2CFactoryThread(jsocket.ServerFactoryThread):
     def create_i2c(self, chip_type, id, addr, bitrate):
         """ Simple factory for i2c """
         if chip_type == 'f1':
-            return i2c(dev_id=id, slave_addr=addr, bitrate=bitrate)
+            return i2c(dev_id=id, slave_addr=addr, bitrate=bitrate, chip_type=chip_type)
         else:
-            return s1i2c(dev_id=id, slave_addr=addr, bitrate=bitrate)
+            return csr2i2c(dev_id=id, slave_addr=addr, bitrate=bitrate, chip_type=chip_type)
 
 
 if __name__ == "__main__":
