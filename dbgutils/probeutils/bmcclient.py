@@ -14,7 +14,7 @@ class BMC_Client(object):
         self.connected = False
         self.bmc_ip_address = bmc_ip_address
         self.mode = mode
-        self.chip_type = chip_type 
+        self.chip_type = chip_type
         if self.bmc_ip_address and self.mode == "i2c":
             if chip_type=='f1':
                 self.probe = i2c(bmc_ip_address=bmc_ip_address, chip_type=chip_type)

@@ -24,7 +24,8 @@ class constants(object):
     F1_I2C_ADDR_MODE = 0
     SBP_CMD_EXE_TIME_WAIT = 1
     I2C_CSR_SLEEP_SEC = 0.001
-
+    CSR1_ADDR_WIDTH_BYTES = 5
+    CSR2_ADDR_WIDTH_BYTES = 4
 
 # Converts byte array to big-endian 64-bit words
 def byte_array_to_words_be(byte_array):
@@ -345,7 +346,7 @@ class i2c:
             bmc_ip_address=None, bitrate=None, chip_type='f1'):
         self.bmc_board = False
         self.bitrate = None
-        self.addr_width = 5 if chip_type == 'f1' else 4 
+        self.addr_width = constants.CSR1_ADDR_WIDTH_BYTES if chip_type == 'f1' else constants.CSR2_ADDR_WIDTH_BYTES
         if bmc_ip_address:
             self.bmc_board = True
             self.master = bmc(bmc_ip_address)
