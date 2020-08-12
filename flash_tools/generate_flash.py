@@ -34,7 +34,6 @@ DEFAULT_PADDING_LENGTH = "128"
 
 config = {}
 search_paths = []
-firmware_sign = None
 fail_on_err = False
 
 # example: reserve( 0x1234, 'nrol') reserve(256 ,    ' rsr') etc...
