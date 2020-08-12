@@ -34,10 +34,10 @@ def check_update(opts, the_opt, idx):
     # check if the four-cc has defaults
     if (opts.ftype not in FOURCC_DEFAULTS):
         return the_opt
-        
+
     # override it
     return FOURCC_DEFAULTS[opts.ftype][idx]
-    
+
 
 ###
 ## main
@@ -51,7 +51,7 @@ def check_len_4(s):
 
 def parse_args():
     parser = argparse.ArgumentParser()
- 
+
     # Optional argument flag which defaults to None. Can be ignored
     parser.add_argument("--certfile", action="store", default=None)
     parser.add_argument("--customer_certfile", action="store", default=None)
@@ -62,7 +62,7 @@ def parse_args():
                         type=int,
                         metavar="SIZE",
                         help="pad outfile to be a multiple of SIZE bytes")
- 
+
     # Optional arguments with meaningful defaults (but rarely changed)
     parser.add_argument("--version", action="store", type=int, default=1)
     parser.add_argument("--key_index", action="store", type=int, default=0,
@@ -74,17 +74,17 @@ def parse_args():
                         help="required: fourcc/ftype of blob", required=True)
     parser.add_argument("--sign_key", action="store",
                         help="identifier of key to use, eg. hkey1")
-    
+
     # Required positional argument
     parser.add_argument("infile", help="file to be signed")
- 
+
     opts = parser.parse_args()
 
     # check for defaults
     opts.sign_key = check_update(opts, opts.sign_key, IDX_SIGN_KEY)
     opts.key_index = check_update(opts, opts.key_index, IDX_KEY_INDEX)
     opts.pad = check_update(opts, opts.pad, IDX_PAD)
-    
+
     # sanitise inputs
     if (opts.sign_key is None):
         parser.error("sign_key must be specified")
@@ -94,25 +94,21 @@ def parse_args():
 
     if (opts.pad is None):
         opts.pad = 1
-        
+
     return opts
- 
+
 def main():
     opts = parse_args()
 
-    # construct the net sign
-    mode = fsi.FirmwareSigningService.MOD_NET
-    firmware_sign = fsi.FirmwareSigningService.create(mode)
-
     # do the signature
     try:
-        firmware_sign.image_gen(**vars(opts))
+        fsi.image_gen(**vars(opts))
     except Exception as e:
         raise RuntimeError("Failed to sign the image", e)
 
     print("signed")
     sys.exit(0)
-    
+
 ###
 ## entrypoint
 #

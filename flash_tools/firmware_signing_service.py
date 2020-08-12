@@ -216,20 +216,20 @@ def image_gen(outfile, infile, ftype, version, description, sign_key,
 
 
 def cert_gen(outfile, cert_key, cert_key_file, sign_key, serial_number,
-         serial_number_mask, debugger_flags):
+             serial_number_mask, debugger_flags):
     print("WARNING: Using firmware signing service to provide a certificate.\n"
           "Currently the server does not generate certificates on the fly "
           "but only provides a pre-generated certificate associated with a given "
           "key name <{}>. This may not be desired so if a different certificate "
-          "is required, a certificate must be generated using local hsm mode instead.".format(sign_key))
+          "is required, a certificate must be generated using local hsm mode instead.".format(cert_key))
 
-    response = requests.get(CERTIFICATE_SERVICE_URL + sign_key + "_certificate.bin",
+    response = requests.get(CERTIFICATE_SERVICE_URL + cert_key + "_certificate.bin",
                             timeout=DEFAULT_HTTP_TIMEOUT)
     if response.status_code == requests.codes.ok:
         write(outfile, response.content)
     else:
-        raise(Exception("Failed to obtain certificate for key {}, err {}".format(
-                                sign_key, response.status_code)))
+        raise(Exception("Failed to obtain certificate for key {}, err {}".
+                        format(cert_key, response.status_code)))
 
 
 def export_pub_key_hash(outfile, label):
