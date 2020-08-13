@@ -143,7 +143,9 @@
         }
     },
     "certificates": {
-        "start_certificate.bin" : {}
+        "start_certificate.bin" : {
+	    "public": "fpk2"
+	}
     },
     "key_injection": {
         "firmware_m5150.keys.bin": {
