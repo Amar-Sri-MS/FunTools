@@ -60,6 +60,26 @@
             "pad": 512,
             "description": "BMV-all feature-set"
         },
+        "ccfg-s1-demo-1g.signed.bin": {
+            "source": "ccfg-s1-demo-1g_mpg.bjson",
+            "version": 1,
+            "fourcc": "ccfg",
+            "cert": "",
+            "customer_cert": "",
+            "key_index": 0,
+            "pad": 512,
+            "description": "S1 demo MPG 1G"
+        },
+        "ccfg-s1-demo-10g_mpg.signed.bin": {
+            "source": "ccfg-s1-demo-10g_mpg.bjson",
+            "version": 1,
+            "fourcc": "ccfg",
+            "cert": "",
+            "customer_cert": "",
+            "key_index": 0,
+            "pad": 512,
+            "description": "S1 demo MPG 10G"
+        },
         "ccfg-null.signed.bin": {
             "source": "ccfg-null.bjson",
             "version": 1,
