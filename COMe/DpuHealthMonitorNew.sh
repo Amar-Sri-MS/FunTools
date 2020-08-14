@@ -272,6 +272,7 @@ while true; do
 		# HBM processing is left to the BMC and hence we
 		# return from this script at this point
 		if [[ ${MONOSHOT_MODE} -eq 1 ]]; then
+			sync
 			exit 0
 		fi
 
