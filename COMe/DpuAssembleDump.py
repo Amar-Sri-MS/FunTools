@@ -68,6 +68,7 @@ def dump_parts_latest_wildcard(f1_mac):
 if len(sys.argv) < 4:
   print('Usage ' + sys.argv[0] + ' <BMC_MAC> <DPU_NUMBER> <BUILD>')
   print('Example: ' + sys.argv[0] + ' aa:bb:cc:dd:ee:ff 0 UNKNOWN')
+  print('Args received: ' + str(sys.argv))
   sys.exit(1)
 
 dpu_num = int(sys.argv[2])
