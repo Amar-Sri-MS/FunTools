@@ -89,6 +89,7 @@ function CollectHbmDump()
 	/usr/bin/touch $HBM_COLLECT_NOTIFY
 
 	set +e
+	echo "$DUMP_ASSEMBLY $BMC_MAC $DPU $BLD_NUM"
 	$DUMP_ASSEMBLY $BMC_MAC $DPU $BLD_NUM
 
 	if [ $? -eq 2 ]; then
@@ -143,6 +144,7 @@ else
 	BMC_IP=$($IPMI_LAN | awk "$AWK_LAN")
 fi
 BMC_MAC=`ipmitool lan print 1 | awk '/MAC Address[ ]+:/ {print $4}'`
+echo "BMC_IP=${BMC_IP} BMC_MAC=${BMC_MAC}"
 
 if [[ ${MONOSHOT_MODE} -eq 0 ]]; then
 	printf "Poll BMC:  %s\n" $BMC_IP
@@ -270,6 +272,7 @@ while true; do
 		# HBM processing is left to the BMC and hence we
 		# return from this script at this point
 		if [[ ${MONOSHOT_MODE} -eq 1 ]]; then
+			sync
 			exit 0
 		fi
 
