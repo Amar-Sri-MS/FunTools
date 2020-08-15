@@ -4,3 +4,4 @@ ConfigGen/test/test_hu_cfg
 jsonutil/jsonutil
 *.o
 *.pyc
+*~
