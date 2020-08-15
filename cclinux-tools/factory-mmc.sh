@@ -1,8 +1,8 @@
 #!/bin/sh
 set -e
 
-fs_archive=fs.tar.xz
-kernel_blob=linux.blob
+fs_archive=root-image.tar.xz
+kernel_blob=fv.xdata.blob
 
 if [ ! -e $fs_archive ] ; then
     echo "Error: Missing $fs_archive"
@@ -13,8 +13,32 @@ if [ ! -e $kernel_blob ] ; then
     exit 1
 fi
 
+funq_dev=$(lspci -d 1dad::ff00 -mmn | cut -d ' ' -f1)
+
+echo "Using funq on: ${funq_dev}"
+/usr/bin/funq-setup bind vfio $funq_dev
+
+usage() {
+    echo "Usage: factory-mmc.sh {active, inactive, both}"
+    exit 1
+}
+
 install_to() {
-    base_dev=$1
+    case $1 in
+	inactive)
+	    base_dev=/dev/vdb
+	    fwupgrade_flag=
+	    ;;
+	active)
+	    base_dev=/dev/vda
+	    fwupgrade_flag='--active'
+	    ;;
+	*)
+	    echo "Bad install destination $1"
+	    exit 1
+	    ;;
+    esac
+
     vmlinux_part=${base_dev}1
     fs_part=${base_dev}2
     echo "Partitioning eMMC ${base_dev} ..."
@@ -36,23 +60,34 @@ install_to() {
     echo "Unmounting ${fs_part} ..."
     umount /mnt
     echo "  ... Done unmounting ${fs_part}"
+
+    echo "fwupgrade emmc"
+    fwupgrade -d $funq_dev -i emmc_image.bin -f emmc $fwupgrade_flag
+    if [ -e ccfg.bjson.signed ] ; then
+	echo "fwupgrade ccfg"
+	fwupgrade -d $funq_dev -i ccfg.bjson.signed -f ccfg $fwupgrade_flag
+    fi
+    echo "fwupgrade done"
 }
 
-install_to /dev/vda
+if [ $# -lt 1 ] ; then
+    usage
+fi
 
-install_to /dev/vdb
-
-funq_dev=$(lspci -d 1dad::ff00 -mmn | cut -d ' ' -f1)
-
-echo "Using funq on: ${funq_dev}"
-
-/usr/bin/funq-setup bind vfio $funq_dev
-
-fwupgrade -d $funq_dev -i emmc_image.bin -f emmc
-fwupgrade -d $funq_dev -i ccfg-s1-demo-10g_mpg.bjson.signed -f ccfg
-
-fwupgrade -d $funq_dev -i emmc_image.bin -f emmc --active
-fwupgrade -d $funq_dev -i ccfg-s1-demo-10g_mpg.bjson.signed -f ccfg --active
+case $1 in
+    active)
+	install_to active
+	;;
+    inactive)
+	install_to inactive
+	;;
+    both)
+	install_to inactive
+	install_to active
+	;;
+    *)
+	usage
+	;;
+esac
 
 echo "Provisioning complete"
-

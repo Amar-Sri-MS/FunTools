@@ -5,7 +5,7 @@ export PATH="/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin"
 case "$1" in
     start)
 	cd /home/root
-	./factory-mmc.sh
+	./factory-mmc.sh both
 	;;
     stop)
 	:
