@@ -17,6 +17,7 @@ import argparse
 import sys
 import getpass
 import json
+import string
 
 from asn1crypto import pem, keys
 
@@ -365,6 +366,8 @@ def cert_gen(outfile, sign_key, cert_key_file,
         else:
             raise RuntimeError("Cannot use PEM file with '%s' as modulus source" %
                                obj_name)
+    elif all(chr(c) in string.hexdigits for c in modulus.strip()):
+        modulus = binascii.a2b_hex(modulus.strip())
     else:
         raise RuntimeError("Not a valid PEM file: %s" % cert_key_file)
 
@@ -396,8 +399,8 @@ def parse_and_execute():
     parser.add_argument("-o", "--output", dest="out_path", metavar="FILE",
                         help="location to output to (modulus, certificate)")
 
-    parser.add_argument("-p", "--public-key-file", metavar="PEM_FILE",
-                        help="public key file in PEM format (certificate)")
+    parser.add_argument("-p", "--public-key-file", metavar="FILE",
+                        help="public key file in PEM or binary format (certificate)")
 
     parser.add_argument("-s", "--source", dest="c_source",
                         action='store_true',
