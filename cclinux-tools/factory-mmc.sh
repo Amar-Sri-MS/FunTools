@@ -13,6 +13,13 @@ if [ ! -e $kernel_blob ] ; then
     exit 1
 fi
 
+if grep -q provision-10g /proc/cmdline
+then
+    ccfg_image=ccfg-s1-demo-10g_mpg.signed.bin
+else
+    ccfg_image=ccfg-s1-demo-1g.signed.bin
+fi
+
 funq_dev=$(lspci -d 1dad::ff00 -mmn | cut -d ' ' -f1)
 
 echo "Using funq on: ${funq_dev}"
@@ -63,9 +70,25 @@ install_to() {
 
     echo "fwupgrade emmc"
     fwupgrade -d $funq_dev -i emmc_image.bin -f emmc $fwupgrade_flag
-    if [ -e ccfg.bjson.signed ] ; then
-	echo "fwupgrade ccfg"
-	fwupgrade -d $funq_dev -i ccfg.bjson.signed -f ccfg $fwupgrade_flag
+    if [ -e $ccfg_image ] ; then
+	echo "fwupgrade ccfg to $ccfg_image"
+	fwupgrade -d $funq_dev -i $ccfg_image -f ccfg $fwupgrade_flag
+    fi
+    if [ -e host_firmware_packed.bin ] ; then
+	echo "fwupgrade host"
+	fwupgrade -d $funq_dev -i host_firmware_packed.bin -f host $fwupgrade_flag
+    fi
+    if [ -e esecure_firmware_all.bin ] ; then
+	echo "fwupgrade sbpf"
+	fwupgrade -d $funq_dev -i esecure_firmware_all.bin -f sbpf $fwupgrade_flag
+    fi
+    if [ -e key_bag.bin ] ; then
+	echo "fwupgrade kbag"
+	fwupgrade -d $funq_dev -i key_bag.bin -f kbag $fwupgrade_flag
+    fi
+    if [ -e hu_sbm_serdes.bin ] ; then
+	echo "fwupgrade husc"
+	fwupgrade -d $funq_dev -i hu_sbm_serdes.bin -f husc $fwupgrade_flag
     fi
     echo "fwupgrade done"
 }

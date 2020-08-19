@@ -20,10 +20,15 @@ else
     fw_version=1
 fi
 
+exit 0
+
+#
+#  Get the following from s1_dev_signed.tgz
+#
 bin/flash_tools/make_funos_emmc.py -v $fw_version -d $DEPLOY_ROOT/home/root bin/funos-s1.stripped
 
+bin/flash_tools/sign_for_development.py --fourcc ccfg feature_sets/ccfg-s1-demo-1g_mpg.bjson -o $DEPLOY_ROOT/home/root/ccfg-s1-demo-1g_mpg.bjson.signed
 bin/flash_tools/sign_for_development.py --fourcc ccfg feature_sets/ccfg-s1-demo-10g_mpg.bjson -o $DEPLOY_ROOT/home/root/ccfg-s1-demo-10g_mpg.bjson.signed
-ln -s ccfg-s1-demo-10g_mpg.bjson.signed $DEPLOY_ROOT/home/root/ccfg.bjson.signed
 
 rm -f $DEPLOY_ROOT/home/root/emmc.ext4 $DEPLOY_ROOT/home/root/mmc0_image.bin $DEPLOY_ROOT/home/root/mmc1_image.bin
 rm -f $DEPLOY_ROOT/home/root/boot.img $DEPLOY_ROOT/home/root/boot.pad.img $DEPLOY_ROOT/home/root/bootloader.scr
