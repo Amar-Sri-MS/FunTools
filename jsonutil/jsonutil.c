@@ -95,13 +95,17 @@ static struct fun_json *_read_json(int fd)
 	struct fun_json *input = NULL;
 	char *buf;
 	size_t size = 0;
-	uint32_t line = 0;
-	size_t parsed = 0;
+	bool parsed_all;
 
 	buf = _read_input_file(fd, &size);
 	assert(buf);
 	
-	input = fun_json_create_from_text_with_options(buf, size, 0, &line, &parsed);
+	input = fun_json_create_from_text_with_status(buf, &parsed_all);
+
+	if (!parsed_all || size != strlen(buf)) {
+		fun_json_release(input);
+		input = fun_json_create_error("JSON terminated earlier than the end of file", fun_json_no_copy_no_own);
+	}
 
 	free(buf);
 	return input;
