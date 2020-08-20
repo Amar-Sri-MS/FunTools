@@ -545,7 +545,9 @@ def run(arg_action, arg_enroll_cert = None, *args, **kwargs):
                 with open(find_file_in_srcdirs(v['source'][len('@file:'):]), 'r') as f:
                     files = json.load(f)
                     for vv in files.values():
-                        fname = '{}.bin'.format(vv['filename'])
+                        fname = vv.get('target')
+                        if not fname:
+                            fname = '{}.bin'.format(vv['filename'])
                         new_v = copy.deepcopy(v)
                         new_v['source'] = vv['filename']
                         new_entries[fname] = new_v
