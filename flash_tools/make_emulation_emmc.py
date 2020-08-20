@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 
 import argparse
 import binascii
@@ -160,14 +160,14 @@ def gen_boot_script(filename, funos_start_blk, ccfg_start_blk, linux_start_blk=-
                     load_size=filesize(g.linux)))
 
         outfile.write('setexpr funos_mmcstart ${{mmcstart}} * 0x{offset:x}\n'.format(
-                offset=PARTITION_OFFSET/BLOCK_SIZE))
+                offset=int(PARTITION_OFFSET/BLOCK_SIZE)))
         outfile.write('setexpr ccfg_mmcstart ${{funos_mmcstart}} + 0x{ccfg_start_blk:x}\n'.format(
                 ccfg_start_blk=ccfg_start_blk))
         outfile.write('setexpr funos_mmcstart ${{funos_mmcstart}} + 0x{mmc_start_blk:x}\n'.format(
                 mmc_start_blk=funos_start_blk))
         outfile.write('mmc read 0x{load_addr:x} ${{funos_mmcstart}} 0x{load_size_blk:x};\n'.format(
             load_addr=LOAD_ADDR,
-            load_size_blk=filesize(g.appfile) / BLOCK_SIZE))
+            load_size_blk=int(filesize(g.appfile) / BLOCK_SIZE)))
         if g.crc:
             outfile.write('crc32 -v 0x{load_addr:x} {load_size:x} {crc:x};'.format(
                 load_addr=LOAD_ADDR,
@@ -244,9 +244,9 @@ def gen_fs(files):
         p = subprocess.Popen(cmd, stdin=subprocess.PIPE)
         sfdiskcmds = ['start=4KiB, size=32MiB, type=83, bootable', #32MB@4KB
                       'start={part_offset}KiB, size=32MiB, type=83'.format(
-                          part_offset=(PARTITION_OFFSET/KB)+4)  #32MB@(base offset+4KB)
+                          part_offset=int(PARTITION_OFFSET/KB)+4)  #32MB@(base offset+4KB)
                     ]
-        p.communicate(input="\n".join(sfdiskcmds))
+        p.communicate(input="\n".join(sfdiskcmds).encode())
         trunc_file(f.name, output_fs, FUNOS_OFFSET)
     return output_fs
 
@@ -285,8 +285,8 @@ def run():
     #    filesystem (see gen_fs()), so in this scenario generate the script
     #    and continue execution
     if g.bootscript_only or (g.fsfile is None and not g.filesystem):
-        gen_boot_script(os.path.join(g.outdir, 'bootloader.scr'), FUNOS_OFFSET / BLOCK_SIZE,
-                    CCFG_OFFSET / BLOCK_SIZE,
+        gen_boot_script(os.path.join(g.outdir, 'bootloader.scr'), int(FUNOS_OFFSET / BLOCK_SIZE),
+                    int(CCFG_OFFSET / BLOCK_SIZE),
                     linux_start_blk)
         if g.bootscript_only:
             return
