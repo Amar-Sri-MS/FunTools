@@ -28,6 +28,7 @@ snaplen: int = 65535
 
 class Packet:
     total_len: int
+    data_len: int
     sec: int
     micro: int
     data: bytearray
@@ -38,6 +39,7 @@ class Packet:
         self.sec = sec
         self.micro = micro
         self.data = bytearray(total_len)
+        self.data_len = 0
 
     def add_bytes(self, index: int, byte_string: str) -> None:
         elts = self.string_splitter.split(byte_string)
@@ -45,13 +47,14 @@ class Packet:
             elt = elts.pop(0)
             self.data[index] = int(elt, 16)
             index += 1
+        self.data_len = index
 
     def write_pcap(self, f: BinaryIO) -> None:
         f.write(struct.pack('<I', self.sec))
         f.write(struct.pack('<I', self.micro))
+        f.write(struct.pack('<I', self.data_len))
         f.write(struct.pack('<I', self.total_len))
-        f.write(struct.pack('<I', self.total_len))
-        f.write(self.data)
+        f.write(self.data[0:self.data_len])
 
 def main() -> int:
     parser = argparse.ArgumentParser()
@@ -59,7 +62,7 @@ def main() -> int:
     parser.add_argument("out_file", type=argparse.FileType('wb'), help="output pcap file")
     args = parser.parse_args()
 
-    matcher = re.compile(r'^\[(\d+)\.(\d+) \d\.\d\.\d\].*(RX|TX|Send)\((\d+),(\d+)\): (.*)')
+    matcher = re.compile(r'^\[(\d+)\.(\d+) \d\.\d\.\d\].*(RX|TX|Send)\((\d+)[,/](\d+)\): ([^"]*)')
 
     src = args.in_file
     dst = args.out_file
