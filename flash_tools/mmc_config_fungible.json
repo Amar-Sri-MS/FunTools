@@ -10,7 +10,7 @@
             "description": "",
             "no_export": true
         },
-        "ccfg-10g.signed.bin": {
+        "ccfg.signed.bin": {
             "source": "@file:ccfg_list.json",
             "version": 1,
             "fourcc": "ccfg",
