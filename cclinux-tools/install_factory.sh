@@ -17,3 +17,8 @@ install -t $runtime_target_dir do_emmc_partition.sh
 install -t $runtime_target_dir factory-mmc.sh
 install -t $runtime_target_dir S99do-provision
 install -t $runtime_target_dir -m 0644 dhclient-enter-hooks
+
+#
+# Read only rootfs tools.
+#
+install -t $runtime_target_dir -m 0644 fstab-ro
