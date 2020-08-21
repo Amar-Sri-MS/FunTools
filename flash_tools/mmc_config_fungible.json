@@ -10,85 +10,15 @@
             "description": "",
             "no_export": true
         },
-        "ccfg-10g.signed.bin": {
-            "source": "ccfg-10g.bjson",
+        "ccfg.signed.bin": {
+            "source": "@file:ccfg_list.json",
             "version": 1,
             "fourcc": "ccfg",
             "cert": "",
             "customer_cert": "",
             "key_index": 0,
             "pad": 512,
-            "description": "10g feature-set"
-        },
-        "ccfg-100g.signed.bin": {
-            "source": "ccfg-100g.bjson",
-            "version": 1,
-            "fourcc": "ccfg",
-            "cert": "",
-            "customer_cert": "",
-            "key_index": 0,
-            "pad": 512,
-            "description": "100g feature-set"
-        },
-        "ccfg-bmv.signed.bin": {
-            "source": "ccfg-bmv.bjson",
-            "version": 1,
-            "fourcc": "ccfg",
-            "cert": "",
-            "customer_cert": "",
-            "key_index": 0,
-            "pad": 512,
-            "description": "BMV feature-set"
-        },
-        "ccfg-bmv-bm-multi-host.signed.bin": {
-            "source": "ccfg-bmv-bm-multihost.bjson",
-            "version": 1,
-            "fourcc": "ccfg",
-            "cert": "",
-            "customer_cert": "",
-            "key_index": 0,
-            "pad": 512,
-            "description": "BMV bm-multihost feature-set"
-        },
-        "ccfg-bmv-all.signed.bin": {
-            "source": "ccfg-bmv-all.bjson",
-            "version": 1,
-            "fourcc": "ccfg",
-            "cert": "",
-            "customer_cert": "",
-            "key_index": 0,
-            "pad": 512,
-            "description": "BMV-all feature-set"
-        },
-        "ccfg-s1-demo-1g.signed.bin": {
-            "source": "ccfg-s1-demo-1g_mpg.bjson",
-            "version": 1,
-            "fourcc": "ccfg",
-            "cert": "",
-            "customer_cert": "",
-            "key_index": 0,
-            "pad": 512,
-            "description": "S1 demo MPG 1G"
-        },
-        "ccfg-s1-demo-10g_mpg.signed.bin": {
-            "source": "ccfg-s1-demo-10g_mpg.bjson",
-            "version": 1,
-            "fourcc": "ccfg",
-            "cert": "",
-            "customer_cert": "",
-            "key_index": 0,
-            "pad": 512,
-            "description": "S1 demo MPG 10G"
-        },
-        "ccfg-null.signed.bin": {
-            "source": "ccfg-null.bjson",
-            "version": 1,
-            "fourcc": "ccfg",
-            "cert": "",
-            "customer_cert": "",
-            "key_index": 0,
-            "pad": 512,
-            "description": "NULL feature-set"
+            "description": ""
         },
         "boot.img.signed": {
             "source": "boot.img",

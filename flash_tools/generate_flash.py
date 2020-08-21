@@ -545,13 +545,17 @@ def run(arg_action, arg_enroll_cert = None, *args, **kwargs):
                 with open(find_file_in_srcdirs(v['source'][len('@file:'):]), 'r') as f:
                     files = json.load(f)
                     for vv in files.values():
-                        fname = '{}.bin'.format(vv['filename'])
+                        fname = vv.get('target')
+                        if not fname:
+                            fname = '{}.bin'.format(vv['filename'])
                         new_v = copy.deepcopy(v)
                         new_v['source'] = vv['filename']
                         new_entries[fname] = new_v
-                delete_entries.append(k)
             except:
-                raise Exception("Could not find file {0}".format(v['source'][len('@file:'):]))
+                print("Skipping generation of {}, input file {} not found".format(
+                        k, v['source'][len('@file:'):]))
+
+            delete_entries.append(k)
 
     # python3 doesn't allow changing dict size during iteration
     # so perform any updates after the loop
