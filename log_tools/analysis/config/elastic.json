@@ -1,0 +1,24 @@
+{
+  "pipeline": [
+    {
+      "id": "pci_script",
+      "block": "TextFileInput",
+      "cfg": {
+        "file_pattern": "${logdir}/script_out.pci.0.demand-*-come.fungible.local.txt"
+      },
+      "out": "pci_parse"
+    },
+    {
+      "id": "pci_parse",
+      "block": "MsecInput",
+      "out": "es"
+    },
+    {
+      "id": "es",
+      "cfg": {
+        "index": "bug_000"
+      },
+      "block": "ElasticOutput"
+    }
+  ]
+}

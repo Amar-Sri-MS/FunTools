@@ -18,6 +18,7 @@ from blocks import log_parsers
 from blocks import merge
 
 # Output blocks
+from blocks import elastic_output
 from blocks import html_output
 from blocks import stdout_output
 
@@ -59,6 +60,7 @@ class BlockFactory(object):
         self.plugins['HumanDateTime'] = display_time.HumanDateTime
         self.plugins['Merge'] = merge.Merge
         self.plugins['HTMLOutput'] = html_output.HTMLOutput
+        self.plugins['ElasticOutput'] = elastic_output.ElasticsearchOutput
         self.plugins['StdOutput'] = stdout_output.StdOutput
 
     def create_block(self, block_name):
