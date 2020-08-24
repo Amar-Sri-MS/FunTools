@@ -4,6 +4,7 @@
 import datetime
 
 from elasticsearch7 import Elasticsearch
+from elasticsearch7.helpers import bulk
 
 from blocks.block import Block
 
@@ -18,23 +19,29 @@ class ElasticsearchOutput(Block):
         self.index = cfg['index']
 
     def process(self, iters):
-        iter = iters[0]
+        it = iters[0]
+        bulk(self.es, self.generate_es_doc(it))
 
-        for tuple in iter:
-            self.index_in_es(tuple)
+    def generate_es_doc(self, it):
+        for tuple in it:
+            # Elasticsearch with date_nanos as a timestamp type requires
+            # ISO timestamps.
+            #
+            # We use date_nanos instead of the standard date because the latter
+            # is limited to millisecond granularity, and a lot of our timestamps
+            # are at the microsecond granularity.
+            #
+            # TODO (jimmy): use datetime as the object in the tuple to avoid all
+            # these repeated conversions.
+            dt = datetime.datetime.fromtimestamp(tuple[0] + tuple[1] * 1e-6)
+            iso_ts = datetime.datetime.isoformat(dt)
 
-    def index_in_es(self, tuple):
-        """ Indexes the tuple in elasticsearch """
+            doc = {
+                '_index': self.index,
+                '@timestamp': iso_ts,
+                'src': tuple[2],
+                'msg': tuple[4]
+            }
 
-        # Elasticsearch with date_nanos as a timestamp type requires
-        # ISO timestamps.
-        dt = datetime.datetime.fromtimestamp(tuple[0] + tuple[1] * 1e-6)
-        iso_ts = datetime.datetime.isoformat(dt)
+            yield doc
 
-        doc = {
-            '@timestamp': iso_ts,
-            'src': tuple[2],
-            'msg': tuple[4]
-        }
-
-        res = self.es.index(index=self.index, body=doc)
