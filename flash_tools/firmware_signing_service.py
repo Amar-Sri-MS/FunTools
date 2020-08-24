@@ -86,6 +86,10 @@ def get_modulus(name):
     }
 
     response = requests.get(SIGNING_SERVICE_URL, params=params, timeout=DEFAULT_HTTP_TIMEOUT)
+    if response.status_code != requests.codes.ok:
+        raise RuntimeError("Server responded with [{}]:\n{}\n".format(
+            response.status_code, response.content).replace("\\n","\n"))
+
     return response.content
 
 def pack_binary_form_data(title, bin_data):
@@ -106,6 +110,10 @@ def hash_sign(digest, sign_key=None, modulus=None):
                              files=multipart_form_data,
                              params=params,
                              timeout=DEFAULT_HTTP_TIMEOUT)
+    if response.status_code != requests.codes.ok:
+        raise RuntimeError("Server responded with [{}]:\n{}\n".format(
+            response.status_code, response.content).replace("\\n","\n"))
+
     return response.content
 
 
