@@ -71,10 +71,14 @@ def search(bug):
     for hit in hits:
         s = hit['_source']
         links.append(('<a href="/bug/{}?'
-                      'before={}&after={}">{}</a>').format(bug,
-                                                           hit['sort'][0],
-                                                           hit['sort'][0],
-                                                           s['msg']))
+                      'before={}&'
+                      'after={}&'
+                      'include={}#0">{} {}</a>').format(bug,
+                                                        hit['sort'][0],
+                                                        hit['sort'][0],
+                                                        hit['_id'],
+                                                        s['@timestamp'],
+                                                        s['msg']))
     return {'html': '<br>'.join(links)}
 
 
@@ -87,8 +91,17 @@ def show_logs(bug):
 
     search_before = request.args.get('before', None)
     search_after = request.args.get('after', None)
+    include = request.args.get('include', None)
 
-    result = get_temporally_close_hits(es, bug, search_before, search_after)
+    before, after = get_temporally_close_hits(es, bug, 1000,
+                                              search_before, 
+                                              search_after)
+    centre = []
+    if include is not None:
+        doc = get_document(es, bug, include)
+        doc['anchor_link'] = '0'
+        centre = [doc]
+    result = before + centre + after
 
     # Assume our template is right next door to us.
     MODULE_PATH = os.path.realpath(__file__)
@@ -106,67 +119,94 @@ def show_logs(bug):
     # This quirky magic is how we get paging in search queries. We determine
     # the sort value for the first and last entry in this query.
     for hit in result:
+        sort_vals = hit.get('sort')
+
+        if first_sort_val is None and sort_vals is not None:
+            first_sort_val = sort_vals[0]
+        if sort_vals is not None:
+            last_sort_val = sort_vals[0]
+
         s = hit['_source']
-
-        if first_sort_val is None:
-            first_sort_val = hit['sort'][0]
-        last_sort_val = hit['sort'][0]
-
         # The log lines are organized as table rows in the template
-        page_body.append('<tr><td>{}</td> <td>{}</td> <td>{}</td></tr>'.format(s['src'], s['@timestamp'], s['msg']))
+        line = '<tr>'
+        if hit.get('anchor_link'):
+            line = '<tr id={}>'.format(hit.get('anchor_link'))
+        line += '<td>{}</td> <td>{}</td> <td>{}</td>'.format(s['src'],
+                                                             s['@timestamp'],
+                                                             s['msg'])
+        line += '</tr>'
+        page_body.append(line)
 
     return render_page(page_body, first_sort_val, last_sort_val, bug,
                        jinja_env, template)
 
 
-def get_temporally_close_hits(es, bug_id,
-                              search_before=None,
-                              search_after=None):
+def get_temporally_close_hits(es, bug_id, size,
+                              search_before_val=None,
+                              search_after_val=None):
     """
     Obtains a list of search hits that have timestamp sort values before
-    search_before and after search_after.
+    and/or after the sort value.
 
-    If both search_before and search_after are None (the default) we return
-    hits from the beginning of the index.
+    If all search_* arguments are None we return hits from the beginning of 
+    the index.
 
-    Note that the timestamp sort value used as arguments to search_before and
-    search_after is returned by elasticsearch, and does not correspond to the
+    Note that the timestamp sort value used as argument to search_* 
+    parameters is returned by elasticsearch, and does not correspond to the
     actual timestamp value. It can be obtained by looking up the 'sort' key
     in the returned list elements.
 
-    The returned list of hits is ordered by timestamp.
+    The returned tuple is (before_list, after_list). Both lists are ordered
+    by timestamp. We only return empty lists, never None.
     """
-    size = 1000
-    if search_before is not None and search_after is not None:
-        size = size // 2
     index='bug_{}'.format(bug_id)
 
+    before = []
+    after = []
+
+    if search_after_val is not None:
+        after = search_after(es, index, size, search_after_val)
+    if search_before_val is not None:
+        before = search_before(es, index, size, search_before_val)
+
+    if search_after_val is None and search_before_val is None:
+        after = search_after(es, index, size, None)
+
+    return before, after
+
+
+def search_after(es, index, size, sort_val):
     body = {}
-    result = []
+    if sort_val is not None:
+        body['search_after'] = [sort_val]
+    sort_direction = 'asc'
+    result = es.search(body=body,
+                       index=index,
+                       size=size,
+                       sort='@timestamp:{}'.format(sort_direction))
+    return result['hits']['hits']
 
-    if search_after is not None or search_before is None:
-        if search_after is not None:
-            body['search_after'] = [search_after]
-        sort_direction = 'asc'
-        result.extend(es.search(body=body,
-                                index=index
-                                size=size,
-                                sort='@timestamp:{}'.format(sort_direction)))
 
-    if search_before is not None:
-        body['search_after'] = [search_before]
-        sort_direction = 'desc'
+def search_before(es, index, size, sort_val):
+    body = {}
+    body['search_after'] = [sort_val]
+    sort_direction = 'desc'
 
-        # The recipe for search_before is to do a search_after in descending
-        # sort order, and then reverse the list of results. Quirky.
-        reversed = es.search(body=body,
-                             index=index
-                             size=size,
-                             sort='@timestamp:{}'.format(sort_direction))
-        result.extend(reversed.reverse())
+    # The recipe for search_before is to do a search_after in descending
+    # sort order, and then reverse the list of results. Quirky.
+    result = es.search(body=body,
+                       index=index,
+                       size=size,
+                       sort='@timestamp:{}'.format(sort_direction))
+    result = result['hits']['hits']
+    result.reverse()
+    return result
 
-    hits = result['hits']['hits']
-    return hits
+
+def get_document(es, bug, doc_id):
+    index = 'bug_{}'.format(bug)
+    result = es.get(index=index, id=doc_id)
+    return result
 
 
 def render_page(page_body, first, last, bug, jinja_env, template):
