@@ -104,7 +104,9 @@ def main():
     try:
         fsi.image_gen(**vars(opts))
     except Exception as e:
-        raise RuntimeError("Failed to sign the image", e)
+        print("Failed to sign the image: {}".format(e))
+        sys.exit(1)
+
 
     print("signed")
     sys.exit(0)
