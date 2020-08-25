@@ -1,0 +1,27 @@
+<html>
+<head>
+    <link rel="stylesheet" type="text/css" href="/static/fun.css">
+    <style>
+    .file-contents {
+        display: block;
+        font-family: monospace;
+        white-space: pre;
+    }
+    td {
+        white-space: nowrap;
+        border-collapse: collapse;
+        padding-right: 5px
+    }
+    </style>
+</head>
+<body>
+    <div class="file-contents">
+        <table>
+{{body}}
+        </table>
+
+        <a href="/bug/{{bug}}?before={{first}}">Previous</a>
+        <a href="/bug/{{bug}}?after={{last}}">Next</a>
+    </div>
+</body>
+</html>
