@@ -13,8 +13,38 @@
         padding-right: 5px
     }
     </style>
+
+    <script>
+
+    function handleSearch(search) {
+        var xhttp = new XMLHttpRequest();
+        xhttp.onreadystatechange = function() {
+            if (this.readyState == 4 && this.status == 200) {
+                var searchData = JSON.parse(xhttp.responseText);
+                if (searchData) {
+                    updateSearchNav(searchData);
+                }
+            }
+        }
+
+        xhttp.open('POST', '/bug/{{bug}}/search?query=' + search);
+        xhttp.send();
+    }
+
+    function updateSearchNav(searchData) {
+        var nav = document.getElementById("search_nav");
+        nav.innerHTML = searchData["html"]
+    }
+        
+    </script>
 </head>
 <body>
+    <div class="search_box">
+        <input type="search" placeholder="Search..." onchange="handleSearch(this.value)">
+    </div>
+    <div class="search_nav" id="search_nav">
+        Empty<br>
+    </div>
     <div class="file-contents">
         <table>
 {{body}}

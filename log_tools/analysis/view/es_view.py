@@ -49,6 +49,29 @@ def render_root(indices, jinja_env, template):
     return result
 
 
+@app.route('/bug/<bug>/search', methods=['POST'])
+def search(bug):
+    term = request.args.get('query')
+    es = Elasticsearch([{'host': 'localhost', 'port': 9200}])
+
+    body = {}
+    body['query'] = {'query_string': {'query': term}}
+    result = es.search(body=body,
+                       index='bug_{}'.format(bug),
+                       size=10,
+                       sort='@timestamp:asc')
+
+    links = []
+    hits = result['hits']['hits']
+    for hit in hits:
+        s = hit['_source']
+        links.append('<a href="/bug/{}?after={}">{}</a>'.format(bug,
+                                                                hit['sort'][0],
+                                                                s['msg']))
+
+    return {'html': '<br>'.join(links)}
+
+
 @app.route('/bug/<bug>', methods=['GET'])
 def show_logs(bug):
     """ Serves a page full of log messages """
