@@ -16,14 +16,54 @@ import time
 import json
 
 ###
-## main
+##  custom log names
+#
+
+FUNTAIL_HDR = "##funtail "
+def parse_loginfo(line):
+
+    # check for the header
+    if (not line.startswith(FUNTAIL_HDR)):
+        return None
+    
+    rest = line[len(FUNTAIL_HDR):]
+
+    try:
+        j = json.loads(rest)
+    except:
+        return None
+
+    return j
+        
+def logname_from_info(args, loginfo):
+
+    # there was no loginfo
+    if (loginfo is None):
+        return None
+
+    # there was no custom name
+    if ("logname" not in loginfo):
+        return None
+    
+    # don't support log paths if there's no named path
+    if (args.namedpath is None):
+        sys.stderr.write("Custom log path rejected\n")
+        return None
+
+    # return whatever is there, or none
+    return os.path.join(args.namedpath,loginfo.get('logname'))
+    
+
+###
+##  main
 #
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
   
     parser.add_argument("logpath", help="where to save logs")
-    parser.add_argument("-t", "--timeout", action="store", default=600)
+    parser.add_argument("-t", "--timeout", action="store", default=None, type=float)
     parser.add_argument("-e", "--echo", action="store_true")
+    parser.add_argument("-N", "--namedpath", action="store", default=None)
 
     args: argparse.Namespace = parser.parse_args()
     return args
@@ -40,15 +80,36 @@ def main() -> int:
     if (not os.path.exists(args.logpath)):
         sys.stderr.write("Log directory does not exist: %s\n" % args.logpath)
         sys.exit(1)
-    
-    # make a name
-    filename = "funtail-%s.log" % remote
-    logname = os.path.join(args.logpath, filename)
-    
-    # open an output logfile
-    fl = open(logname, "w")
-    
+
     # read the first line
+    firstline = sys.stdin.readline()
+
+    # see if we can parse it & extract a name
+    loginfo = parse_loginfo(firstline)
+    logname = logname_from_info(args, loginfo)
+
+    # regular path -- just a default logname
+    if (logname is None):
+        # make a name
+        filename = "funtail-%s.log" % remote
+        logname = os.path.join(args.logpath, filename)
+
+    # try and create the path
+    dirname = os.path.dirname(logname)
+    if ((dirname != '')
+        and (not os.path.exists(dirname))):
+        os.makedirs(dirname)
+
+    # open an output logfile
+    sys.stderr.write("Opening logfile %s\n"% logname)
+    sys.stderr.flush()
+    fl = open(logname, "w")
+
+    # write the first
+    fl.write(firstline)
+    fl.flush()
+
+    # process the rest of the file
     while (True):
         line = sys.stdin.readline()
         if (line == ""): # eof
