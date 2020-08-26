@@ -19,8 +19,8 @@ class ElasticsearchOutput(Block):
         self.index = cfg['index']
 
     def process(self, iters):
-        it = iters[0]
-        bulk(self.es, self.generate_es_doc(it))
+        for it in iters:
+            bulk(self.es, self.generate_es_doc(it))
 
     def generate_es_doc(self, it):
         for tuple in it:
