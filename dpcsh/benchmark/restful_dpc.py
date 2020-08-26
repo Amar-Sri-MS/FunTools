@@ -1,11 +1,10 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 """Usage: restful_dpc.py [-h] [--unix_socket=<file>]
           [--tcp_port=<port>]
 
 Provides restful DPC-echo service via Flask.
 """
 
-from __future__ import print_function
 from docopt import docopt
 import flask
 from dpc_client import DpcClient

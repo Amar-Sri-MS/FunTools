@@ -1,11 +1,10 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 """Usage: dpc_restful_bench.py [-h] [--iterations=<N>]
           [--url=<string>]
 
 Benchmarks restful DPC with given number of iterations.
 """
 
-from __future__ import print_function
 from docopt import docopt
 import sys
 import time
