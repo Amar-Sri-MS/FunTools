@@ -15,7 +15,7 @@ case "$1" in
   start)
 	echo "Starting FunOS log streamer: funtail"
 	start-stop-daemon -S -b -p $PID_DPC -x /usr/bin/dpcsh -- --unix_proxy
-	start-stop-daemon -S -b -p $PID_FUNTAIL -- -u /tmp/funos-dpc-text.sock -f -s0
+	start-stop-daemon -S -b -p $PID_FUNTAIL -x /usr/bin/funtail -- -u /tmp/funos-dpc-text.sock -f -s0
 	echo "done."
 	;;
   stop)
