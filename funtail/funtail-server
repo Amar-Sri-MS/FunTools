@@ -14,6 +14,7 @@ import sys
 import argparse
 import time
 import json
+import datetime
 
 ###
 ##  custom log names
@@ -91,7 +92,8 @@ def main() -> int:
     # regular path -- just a default logname
     if (logname is None):
         # make a name
-        filename = "funtail-%s.log" % remote
+        timestamp = datetime.datetime.now().replace(microsecond=0).isoformat()
+        filename = "funtail-%s-%s.log" % (remote, timestamp)
         logname = os.path.join(args.logpath, filename)
 
     # try and create the path
