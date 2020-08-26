@@ -8,6 +8,7 @@ import argparse
 import collections
 import json
 import os
+import time
 
 # Input blocks
 from blocks import file_input
@@ -37,8 +38,12 @@ def main():
     env = {}
     env['logdir'] = args.dir
 
+    start = time.time()
     pipeline = Pipeline(block_factory, cfg, env)
     pipeline.process()
+    end = time.time()
+
+    print('Time spent processing: {}s'.format(end - start))
 
 
 class BlockFactory(object):
