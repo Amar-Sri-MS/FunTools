@@ -1,0 +1,67 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Server-side component of funtail. Expected to be run by
+tcpserver/[x]inetd/faucet or some other connection manager.
+Decodes header information from funtail and streams to 
+the appropriate log file.
+
+static check:
+% mypy funtail-server
+"""
+import os
+import sys
+import argparse
+import time
+import json
+
+###
+## main
+#
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser()
+  
+    parser.add_argument("logpath", help="where to save logs")
+    parser.add_argument("-t", "--timeout", action="store", default=600)
+    parser.add_argument("-e", "--echo", action="store_true")
+
+    args: argparse.Namespace = parser.parse_args()
+    return args
+  
+def main() -> int:
+
+    # parse command-line args
+    args: argparse.Namespace = parse_args()
+
+    # read environment variables
+    remote = os.environ.get("SOCAT_PEERADDR", "unknown")
+
+    # sanity check
+    if (not os.path.exists(args.logpath)):
+        sys.stderr.write("Log directory does not exist: %s\n" % args.logpath)
+        sys.exit(1)
+    
+    # make a name
+    filename = "funtail-%s.log" % remote
+    logname = os.path.join(args.logpath, filename)
+    
+    # open an output logfile
+    fl = open(logname, "w")
+    
+    # read the first line
+    while (True):
+        line = sys.stdin.readline()
+        if (line == ""): # eof
+            break
+        fl.write(line)
+        fl.flush()
+        if (args.echo):
+            sys.stderr.write(line)
+    
+    return 0
+ 
+###
+## entrypoint
+#
+if __name__ == "__main__":
+    main()
