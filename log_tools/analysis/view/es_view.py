@@ -50,40 +50,36 @@ def render_root(indices, jinja_env, template):
     return result
 
 
-@app.route('/bug/<bug>/search', methods=['POST'])
-def search(bug):
+@app.route('/bug/<bug>', methods=['GET'])
+def get_log_root(bug):
     """
-    Returns an HTML snippet containing links to log entries matching
-    the search term.
+    Serves a page of log messages.
     """
-    search_term = request.args.get('query')
-    es = Elasticsearch([{'host': 'localhost', 'port': 9200}])
+    first_sort_val, last_sort_val, page_body = get_page_body(bug)
 
-    body = {}
-    body['query'] = {'query_string': {'query': search_term}}
-    result = es.search(body=body,
-                       index='bug_{}'.format(bug),
-                       size=25,
-                       sort='@timestamp:asc')
+    # Assume our template is right next door to us.
+    MODULE_PATH = os.path.realpath(__file__)
+    MODULE_DIR = os.path.dirname(MODULE_PATH)
 
-    links = []
-    hits = result['hits']['hits']
-    for hit in hits:
-        s = hit['_source']
-        links.append(('<a href="/bug/{}?'
-                      'before={}&'
-                      'after={}&'
-                      'include={}#0">{} {}</a>').format(bug,
-                                                        hit['sort'][0],
-                                                        hit['sort'][0],
-                                                        hit['_id'],
-                                                        s['@timestamp'],
-                                                        s['msg']))
-    return {'html': '<br>'.join(links)}
+    jinja_env = jinja2.Environment(loader=jinja2.FileSystemLoader(MODULE_DIR),
+                             trim_blocks=True,
+                             lstrip_blocks=True)
+    template = jinja_env.get_template('log_template.html')
+
+    return render_page(page_body, first_sort_val, last_sort_val, bug,
+                       jinja_env, template)
 
 
 @app.route('/bug/<bug>/logs', methods=['POST'])
-def get_logs(bug):
+def get_log_contents(bug):
+    first_sort_val, last_sort_val, page_body = get_page_body(bug)
+
+    return {'logs': ''.join(page_body),
+            'before': first_sort_val, 
+            'after': last_sort_val}
+
+
+def get_page_body(bug):
     es = Elasticsearch([{'host': 'localhost', 'port': 9200}])
 
     search_before = request.args.get('before', None)
@@ -93,13 +89,15 @@ def get_logs(bug):
 
     before, after = get_temporally_close_hits(es, bug, 1000,
                                               search_term,
-                                              search_before, 
+                                              search_before,
                                               search_after)
+
     centre = []
     if include is not None:
         doc = get_document(es, bug, include)
         doc['anchor_link'] = '0'
         centre = [doc]
+
     result = before + centre + after
 
     page_body = []
@@ -121,76 +119,14 @@ def get_logs(bug):
         line = '<tr>'
         if hit.get('anchor_link'):
             line = '<tr id={}>'.format(hit.get('anchor_link'))
+
         line += '<td>{}</td> <td>{}</td> <td>{}</td>'.format(s['src'],
                                                              s['@timestamp'],
                                                              s['msg'])
         line += '</tr>'
         page_body.append(line)
 
-    return {'logs': ''.join(page_body), 
-            'before': first_sort_val, 
-            'after': last_sort_val}
-
-
-@app.route('/bug/<bug>', methods=['GET'])
-def show_logs(bug):
-    """
-    Serves a page of log messages.
-    """
-    es = Elasticsearch([{'host': 'localhost', 'port': 9200}])
-
-    search_before = request.args.get('before', None)
-    search_after = request.args.get('after', None)
-    include = request.args.get('include', None)
-    search_term = request.args.get('filter', None)
-
-    before, after = get_temporally_close_hits(es, bug, 1000,
-                                              search_term,
-                                              search_before, 
-                                              search_after)
-    centre = []
-    if include is not None:
-        doc = get_document(es, bug, include)
-        doc['anchor_link'] = '0'
-        centre = [doc]
-    result = before + centre + after
-
-    # Assume our template is right next door to us.
-    MODULE_PATH = os.path.realpath(__file__)
-    MODULE_DIR = os.path.dirname(MODULE_PATH)
-
-    jinja_env = jinja2.Environment(loader=jinja2.FileSystemLoader(MODULE_DIR),
-                             trim_blocks=True,
-                             lstrip_blocks=True)
-    template = jinja_env.get_template('log_template.html')
-
-    page_body = []
-    first_sort_val = None
-    last_sort_val = None
-
-    # This quirky magic is how we get paging in search queries. We determine
-    # the sort value for the first and last entry in this query.
-    for hit in result:
-        sort_vals = hit.get('sort')
-
-        if first_sort_val is None and sort_vals is not None:
-            first_sort_val = sort_vals[0]
-        if sort_vals is not None:
-            last_sort_val = sort_vals[0]
-
-        s = hit['_source']
-        # The log lines are organized as table rows in the template
-        line = '<tr>'
-        if hit.get('anchor_link'):
-            line = '<tr id={}>'.format(hit.get('anchor_link'))
-        line += '<td>{}</td> <td>{}</td> <td>{}</td>'.format(s['src'],
-                                                             s['@timestamp'],
-                                                             s['msg'])
-        line += '</tr>'
-        page_body.append(line)
-
-    return render_page(page_body, first_sort_val, last_sort_val, bug,
-                       jinja_env, template)
+    return first_sort_val, last_sort_val, page_body
 
 
 def get_temporally_close_hits(es, bug_id, size,
@@ -275,6 +211,38 @@ def render_page(page_body, first, last, bug, jinja_env, template):
 
     result = template.render(template_dict, env=jinja_env)
     return result
+
+
+@app.route('/bug/<bug>/search', methods=['POST'])
+def search(bug):
+    """
+    Returns an HTML snippet containing links to log entries matching
+    the search term.
+    """
+    search_term = request.args.get('query')
+    es = Elasticsearch([{'host': 'localhost', 'port': 9200}])
+
+    body = {}
+    body['query'] = {'query_string': {'query': search_term}}
+    result = es.search(body=body,
+                       index='bug_{}'.format(bug),
+                       size=25,
+                       sort='@timestamp:asc')
+
+    links = []
+    hits = result['hits']['hits']
+    for hit in hits:
+        s = hit['_source']
+        links.append(('<a href="/bug/{}?'
+                      'before={}&'
+                      'after={}&'
+                      'include={}#0">{} {}</a>').format(bug,
+                                                        hit['sort'][0],
+                                                        hit['sort'][0],
+                                                        hit['_id'],
+                                                        s['@timestamp'],
+                                                        s['msg']))
+    return {'html': '<br>'.join(links)}
 
 
 if __name__ == '__main__':
