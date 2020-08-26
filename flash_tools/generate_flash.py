@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-""" Copyright (c) 2017-2019 Fungible, Inc. All Rights reserved """
+""" Copyright (c) 2017-2020 Fungible, Inc. All Rights reserved """
 
 import struct
 import sys
@@ -144,7 +144,7 @@ def gen_fw_image(filename, attrs):
 
     return None
 
-def create_file(filename, section="signed_images", key_name_suffix=None):
+def create_file(filename, section="signed_images"):
     global config
 
     if config.get(section):
@@ -160,8 +160,6 @@ def create_file(filename, section="signed_images", key_name_suffix=None):
                 # use the first element in spec -- there's only one key bag now.
                 key_list = next(iter(key_bag_spec.values()))
                 image['key'] = key_list['keys'][image['key_index']]
-            if key_name_suffix and 'key' in image:
-                image['key'] += key_name_suffix
             return gen_fw_image(filename, image)
     return None
 
@@ -460,14 +458,19 @@ def main():
     global fail_on_err
 
     parser.add_argument('config', nargs='+', help='Configuration file(s)')
-    parser.add_argument('--config-type', choices={'json','ini'}, default='json', help="Configuration file format")
+    parser.add_argument('--config-type', default='json', choices={'json','ini'},
+                        help="Configuration file format")
     parser.add_argument('--out-config', help="Write merged configuration file")
-    parser.add_argument('--source-dir', action='append', help='Location of source files to be used (can be specified multiple times)', default=[os.path.curdir])
-    parser.add_argument('--action', choices={'all', 'sign', 'flash', 'key_hashes', 'certificates', 'key_injection'}, default='all', help='Action to be performed on the input files')
+    parser.add_argument('--source-dir', action='append', default=[os.path.curdir],
+                        help='Location of source files to be used (can be specified multiple times)')
+    parser.add_argument('--action', default='all',
+                        choices={'all', 'sign', 'flash', 'key_hashes', 'certificates', 'key_injection'},
+                        help='Action to be performed on the input files')
     parser.add_argument('--force-version', type=int, help='Override firmware versions')
-    parser.add_argument('--use-hsm', action='store_true', help='Use HSM for signing/keys')
-    parser.add_argument('--fail-on-error', action='store_true', help='Always fail when encountering errors')
+    parser.add_argument('--fail-on-error', action='store_true',
+                        help='Always fail when encountering errors')
     parser.add_argument('--enroll-cert', metavar = 'FILE', help='Enrollment certificate')
+
     args = parser.parse_args()
 
     search_paths = args.source_dir
@@ -504,7 +507,7 @@ def main():
     if args.force_version:
         set_versions(args.force_version)
 
-    run(args.action, args.enroll_cert, hsm=args.use_hsm, net=(not args.use_hsm))
+    run(args.action, args.enroll_cert)
 
     if args.out_config:
         with open(args.out_config, "w") as f:
@@ -523,8 +526,6 @@ def set_search_paths(paths):
 def run(arg_action, arg_enroll_cert = None, *args, **kwargs):
     global config
     global search_paths
-
-    key_name_suffix = kwargs.get("key_name_suffix", "")
 
     wanted = lambda action : arg_action in ['all', action]
     flash_content = None
@@ -616,14 +617,12 @@ def run(arg_action, arg_enroll_cert = None, *args, **kwargs):
                 infile = find_file_in_srcdirs(v['source'])
                 shutil.copy2(infile, outfile)
             for key in v['keys']:
-                kr.update_file(outfile, key['id'],
-                               key=key['name'] + key_name_suffix)
+                kr.update_file(outfile, key['id'], key=key['name'])
 
     if wanted('key_injection') and config.get('key_bag_creation'):
         # keybag is always created from scratch....
         for outfile, v in config['key_bag_creation'].items():
-            suffixed_keys = [k + key_name_suffix for k in v['keys']]
-            kbc.create(outfile, suffixed_keys)
+            kbc.create(outfile, v['keys'])
 
     if wanted('flash') and config.get('output_format'):
         bin_infos = dict()
@@ -674,9 +673,9 @@ def run(arg_action, arg_enroll_cert = None, *args, **kwargs):
     else:
         if wanted('sign'):
             for file in config.get("signed_images", {}):
-                create_file(file, key_name_suffix=key_name_suffix)
+                create_file(file)
             for file in config.get("signed_meta_images", {}):
-                create_file(file, "signed_meta_images", key_name_suffix=key_name_suffix)
+                create_file(file, "signed_meta_images")
 
     # For non-empty flash, generate map file
     if wanted('flash') and len(config.get('output_sections', {})) > 0:
