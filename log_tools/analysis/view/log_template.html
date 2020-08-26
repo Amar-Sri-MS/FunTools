@@ -1,8 +1,10 @@
+<!DOCTYPE html>
 <html>
 <head>
-    <link rel="stylesheet" type="text/css" href="/static/fun.css">
     <style>
-    .file-contents {
+    .navbar {
+    }
+    .file_contents {
         display: block;
         font-family: monospace;
         white-space: pre;
@@ -15,6 +17,22 @@
     </style>
 
     <script>
+    /*
+     * If you're reading this, Fungible is interested in talking to you
+     * because you have skills that we might want. 
+     *
+     * But if you're reading this, you're already an esteemed colleague so
+     * never mind.... 
+     */
+
+    /*
+     * Client state.
+     *
+     * TODO (jimmy): consider making some state opaque to the client
+     */
+    var before = -1;
+    var after = -1;
+    var currentFilters = "";
 
     function handleSearch(search) {
         var xhttp = new XMLHttpRequest();
@@ -32,24 +50,94 @@
     }
 
     function updateSearchNav(searchData) {
-        var nav = document.getElementById("search_nav");
-        nav.innerHTML = searchData["html"]
+        var res = document.getElementById("search_results");
+        res.innerHTML = searchData["html"];
+    }
+
+    function handleFilter(filter) {
+        currentFilters = filter;
+
+        var xhttp = new XMLHttpRequest();
+        xhttp.onreadystatechange = function() {
+            if (this.readyState == 4 && this.status == 200) {
+                var data = JSON.parse(xhttp.responseText);
+                if (data) {
+                    updateMessageTable(data);
+                    updatePagination(data);
+                }
+            }
+        }
+
+        var uri = "/bug/{{bug}}/logs";
+        var args = [];
+        if (filter != "") {
+            args.push("?filter=" + currentFilters);
+        }
+
+        uri = uri + args.join("&");
+        xhttp.open('POST', uri);
+        xhttp.send();
+    }
+
+    function updateMessageTable(filterData) {
+        var table = document.getElementById("line_table");
+        table.innerHTML = filterData["logs"];
+    }
+
+    function updatePagination(filterData) {
+        var pageLinks = "";
+
+        if (filterData["before"] != -1) {
+            var uri = "/bug/{{bug}}";
+            var args = [];
+            args.push("?before=" + filterData["before"]);
+            if (currentFilters != "") {
+                args.push("filter=" + currentFilters);
+            }
+            uri = uri + args.join("&");
+            pageLinks += '<a href="' + uri + '">Previous</a>';
+            pageLinks += "<br>"
+        }
+
+        if (filterData["after"] != -1) {
+            var uri = "/bug/{{bug}}";
+            var args = [];
+            args.push("?after=" + filterData["after"]);
+            if (currentFilters != "") {
+                args.push("filter=" + currentFilters);
+            }
+            uri = uri + args.join("&");
+            pageLinks += '<a href="' + uri + '">Next</a>';
+        }
+
+        document.getElementById("pagination_links").innerHTML = pageLinks;
     }
         
     </script>
 </head>
 <body>
-    <div class="search_box">
-        <input type="search" placeholder="Search..." onchange="handleSearch(this.value)">
+    <div class="navbar">
+        <div class="search_box">
+            <input id="search" type="search" placeholder="Search..."/>
+            <button onclick="handleSearch(document.getElementById('search').value)">Search</button>
+        </div>
+        <div class="search_results" id="search_results">
+        </div>
+    
+        <div class="filter_box">
+            <input id="filter" type="search" placeholder="Filter..."/>
+            <button onclick="handleFilter(document.getElementById('filter').value)">Filter</button>
+        </div>
     </div>
-    <div class="search_nav" id="search_nav">
-    </div>
-    <div class="file-contents">
-        <table>
+
+    <div class="file_contents">
+        <table id="line_table">
 {{body}}
         </table>
+    </div>
 
-        <a href="/bug/{{bug}}?before={{first}}">Previous</a>
+    <div class="pagination" id="pagination_links">
+        <a href="/bug/{{bug}}?before={{first}}">Previous</a><br>
         <a href="/bug/{{bug}}?after={{last}}">Next</a>
     </div>
 </body>

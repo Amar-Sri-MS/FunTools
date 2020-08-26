@@ -82,6 +82,56 @@ def search(bug):
     return {'html': '<br>'.join(links)}
 
 
+@app.route('/bug/<bug>/logs', methods=['POST'])
+def get_logs(bug):
+    es = Elasticsearch([{'host': 'localhost', 'port': 9200}])
+
+    search_before = request.args.get('before', None)
+    search_after = request.args.get('after', None)
+    include = request.args.get('include', None)
+    search_term = request.args.get('filter', None)
+
+    before, after = get_temporally_close_hits(es, bug, 1000,
+                                              search_term,
+                                              search_before, 
+                                              search_after)
+    centre = []
+    if include is not None:
+        doc = get_document(es, bug, include)
+        doc['anchor_link'] = '0'
+        centre = [doc]
+    result = before + centre + after
+
+    page_body = []
+    first_sort_val = -1
+    last_sort_val = -1
+
+    # This quirky magic is how we get paging in search queries. We determine
+    # the sort value for the first and last entry in this query.
+    for hit in result:
+        sort_vals = hit.get('sort')
+
+        if first_sort_val == -1 and sort_vals is not None:
+            first_sort_val = sort_vals[0]
+        if sort_vals is not None:
+            last_sort_val = sort_vals[0]
+
+        s = hit['_source']
+        # The log lines are organized as table rows in the template
+        line = '<tr>'
+        if hit.get('anchor_link'):
+            line = '<tr id={}>'.format(hit.get('anchor_link'))
+        line += '<td>{}</td> <td>{}</td> <td>{}</td>'.format(s['src'],
+                                                             s['@timestamp'],
+                                                             s['msg'])
+        line += '</tr>'
+        page_body.append(line)
+
+    return {'logs': ''.join(page_body), 
+            'before': first_sort_val, 
+            'after': last_sort_val}
+
+
 @app.route('/bug/<bug>', methods=['GET'])
 def show_logs(bug):
     """
@@ -92,8 +142,10 @@ def show_logs(bug):
     search_before = request.args.get('before', None)
     search_after = request.args.get('after', None)
     include = request.args.get('include', None)
+    search_term = request.args.get('filter', None)
 
     before, after = get_temporally_close_hits(es, bug, 1000,
+                                              search_term,
                                               search_before, 
                                               search_after)
     centre = []
@@ -142,6 +194,7 @@ def show_logs(bug):
 
 
 def get_temporally_close_hits(es, bug_id, size,
+                              search_term,
                               search_before_val=None,
                               search_after_val=None):
     """
@@ -165,18 +218,20 @@ def get_temporally_close_hits(es, bug_id, size,
     after = []
 
     if search_after_val is not None:
-        after = search_after(es, index, size, search_after_val)
+        after = search_after(es, index, size, search_term, search_after_val)
     if search_before_val is not None:
-        before = search_before(es, index, size, search_before_val)
+        before = search_before(es, index, size, search_term, search_before_val)
 
     if search_after_val is None and search_before_val is None:
-        after = search_after(es, index, size, None)
+        after = search_after(es, index, size, search_term, None)
 
     return before, after
 
 
-def search_after(es, index, size, sort_val):
+def search_after(es, index, size, term, sort_val):
     body = {}
+    if term is not None:
+        body['query'] = {'query_string': {'query': term}}
     if sort_val is not None:
         body['search_after'] = [sort_val]
     sort_direction = 'asc'
@@ -187,8 +242,10 @@ def search_after(es, index, size, sort_val):
     return result['hits']['hits']
 
 
-def search_before(es, index, size, sort_val):
+def search_before(es, index, size, term, sort_val):
     body = {}
+    if term is not None:
+        body['query'] = {'query_string': {'query': term}}
     body['search_after'] = [sort_val]
     sort_direction = 'desc'
 
