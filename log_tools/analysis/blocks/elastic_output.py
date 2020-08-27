@@ -19,10 +19,12 @@ class ElasticsearchOutput(Block):
         self.index = cfg['index']
 
     def process(self, iters):
+        """ Writes contents from all iterables to elasticsearch """
         for it in iters:
             bulk(self.es, self.generate_es_doc(it))
 
     def generate_es_doc(self, it):
+        """ Maps iterable contents to elasticsearch document """
         for tuple in it:
             # Elasticsearch with date_nanos as a timestamp type requires
             # ISO timestamps.

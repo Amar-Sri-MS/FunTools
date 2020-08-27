@@ -27,6 +27,7 @@ def main():
 
 
 def build_pipeline(machines):
+    """ Constructs a pipeline for all the specified machines """
 
     cfg = {}
     pipeline_cfg = []
