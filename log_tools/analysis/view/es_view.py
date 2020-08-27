@@ -24,63 +24,84 @@ def main():
 
 @app.route('/')
 def root():
-    """ Serves the root page """
+    """ Serves the root page, which shows a list of bugs """
     es = Elasticsearch([{'host': 'localhost', 'port': 9200}])
 
     indices = es.indices.get('bug_*')
-    indices = [s.replace('bug_', '', 1) for s in indices]
+    bug_ids = [i.replace('bug_', '', 1) for i in indices]
 
     # Assume our template is right next door to us.
-    MODULE_PATH = os.path.realpath(__file__)
-    MODULE_DIR = os.path.dirname(MODULE_PATH)
+    dir = _get_script_dir()
 
-    jinja_env = jinja2.Environment(loader=jinja2.FileSystemLoader(MODULE_DIR),
+    jinja_env = jinja2.Environment(loader=jinja2.FileSystemLoader(dir),
                              trim_blocks=True,
                              lstrip_blocks=True)
     template = jinja_env.get_template('root_template.html')
 
-    return render_root(indices, jinja_env, template)
+    return _render_root_page(bug_ids, jinja_env, template)
 
 
-def render_root(indices, jinja_env, template):
+def _get_script_dir():
+    """ Obtains the directory where this script resides """
+    module_path = os.path.realpath(__file__)
+    return os.path.dirname(module_path)
+
+
+def _render_root_page(bug_ids, jinja_env, template):
+    """ Renders the root page from a template """
     template_dict = {}
-    template_dict['bugs'] = indices
+    template_dict['bugs'] = bug_ids
 
     result = template.render(template_dict, env=jinja_env)
     return result
 
 
 @app.route('/bug/<bug>', methods=['GET'])
-def get_log_root(bug):
+def get_log_page(bug):
     """
-    Serves a page of log messages.
+    Displays a log page for a particular bug.
+
+    Subsequent updates to the page are handled via POST requests.
     """
-    first_sort_val, last_sort_val, page_body = get_page_body(bug)
+    first_sort_val, last_sort_val, table_body = _get_requested_log_lines(bug)
     filter_term = request.args.get('filter', '')
 
     # Assume our template is right next door to us.
-    MODULE_PATH = os.path.realpath(__file__)
-    MODULE_DIR = os.path.dirname(MODULE_PATH)
+    dir = _get_script_dir()
 
-    jinja_env = jinja2.Environment(loader=jinja2.FileSystemLoader(MODULE_DIR),
+    jinja_env = jinja2.Environment(loader=jinja2.FileSystemLoader(dir),
                              trim_blocks=True,
                              lstrip_blocks=True)
     template = jinja_env.get_template('log_template.html')
 
-    return render_page(page_body, first_sort_val, last_sort_val, filter_term,
-                       bug, jinja_env, template)
+    return _render_log_page(table_body, first_sort_val, last_sort_val, filter_term,
+                            bug, jinja_env, template)
 
 
 @app.route('/bug/<bug>/logs', methods=['POST'])
 def get_log_contents(bug):
-    first_sort_val, last_sort_val, page_body = get_page_body(bug)
+    """
+    Obtains log contents which can be used to update a page.
+    """
+    first_sort_val, last_sort_val, page_body = _get_requested_log_lines(bug)
 
     return {'logs': ''.join(page_body),
             'before': first_sort_val, 
             'after': last_sort_val}
 
 
-def get_page_body(bug):
+def _get_requested_log_lines(bug):
+    """
+    Obtains the requested log lines.
+
+    The request can include before and after sort values to show logs before
+    and/or after a particular sort value. Filter terms are also accepted.
+
+    Returns a tuple containing:
+    (sort_value of first item,
+     sort value of last item,
+     log lines as HTML table body)
+    """
     es = Elasticsearch([{'host': 'localhost', 'port': 9200}])
 
     search_before = request.args.get('before', None)
@@ -88,14 +109,23 @@ def get_page_body(bug):
     include = request.args.get('include', None)
     search_term = request.args.get('filter', None)
 
-    before, after = get_temporally_close_hits(es, bug, 1000,
+    # Elasticsearch has a limit of 10K results, so pagination is required
+    size = 1000
+    before, after = get_temporally_close_hits(es, bug, size,
                                               search_term,
                                               search_before,
                                               search_after)
 
+    # Before and after are not inclusive searches, so we have to include
+    # the actual search result here via a direct document lookup. Very sad.
+    #
+    # TODO (jimmy): find another way around this kludge.
     centre = []
     if include is not None:
-        doc = get_document(es, bug, include)
+        doc = _get_document_by_id(es, bug, include)
+
+        # Stash an anchor id in here so we can jump straight to the line
+        # that we searched for.
         doc['anchor_link'] = '0'
         centre = [doc]
 
@@ -159,6 +189,7 @@ def get_temporally_close_hits(es, bug_id, size,
     if search_before_val is not None:
         before = search_before(es, index, size, search_term, search_before_val)
 
+    # Default condition: do a search after
     if search_after_val is None and search_before_val is None:
         after = search_after(es, index, size, search_term, None)
 
@@ -166,6 +197,7 @@ def get_temporally_close_hits(es, bug_id, size,
 
 
 def search_after(es, index, size, term, sort_val):
+    """ Issues a search after query """
     body = {}
     if term is not None:
         body['query'] = {'query_string': {'query': term}}
@@ -180,6 +212,7 @@ def search_after(es, index, size, term, sort_val):
 
 
 def search_before(es, index, size, term, sort_val):
+    """ Issues a search before query """
     body = {}
     if term is not None:
         body['query'] = {'query_string': {'query': term}}
@@ -197,15 +230,17 @@ def search_before(es, index, size, term, sort_val):
     return result
 
 
-def get_document(es, bug, doc_id):
+def _get_document_by_id(es, bug, doc_id):
+    """ Look up a specific log line by document id """
     index = 'bug_{}'.format(bug)
     result = es.get(index=index, id=doc_id)
     return result
 
 
-def render_page(page_body, first, last, text_filter, bug, jinja_env, template):
+def _render_log_page(table_body, first, last, text_filter, bug, jinja_env, template):
+    """ Renders the log page """
     template_dict = {}
-    template_dict['body'] = ''.join(page_body)
+    template_dict['body'] = ''.join(table_body)
     template_dict['bug'] = bug
     template_dict['first'] = first
     template_dict['last'] = last
@@ -235,6 +270,9 @@ def search(bug):
     hits = result['hits']['hits']
     for hit in hits:
         s = hit['_source']
+
+        # The #0 anchor is how we jump to the searched-for line when the link
+        # is selected.
         links.append(('<a href="/bug/{}?'
                       'before={}&'
                       'after={}&'
