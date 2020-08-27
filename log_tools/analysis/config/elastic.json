@@ -1,0 +1,24 @@
+{
+  "pipeline": [
+    {
+      "id": "fs139_f1_0",
+      "block": "TextFileInput",
+      "cfg": {
+        "file_pattern": "${logdir}/fs139/system_current/F1_0_funos.txt"
+      },
+      "out": "fs139_f1_0_parse"
+    },
+    {
+      "id": "fs139_f1_0_parse",
+      "block": "FunOSInput",
+      "out": "es"
+    },
+    {
+      "id": "es",
+      "block": "ElasticOutput",
+      "cfg": {
+        "index": "bug_000"
+      }
+    }
+  ]
+}

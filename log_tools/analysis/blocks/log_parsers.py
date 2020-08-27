@@ -88,6 +88,12 @@ class ISOFormatInput(Block):
             iso_format_datetime = parts[0] + ' ' + parts[1]
             d = datetime.datetime.fromisoformat(iso_format_datetime)
 
+            # TODO (jimmy): this is wrong in two ways:
+            #    First, timestamp() on a naive datetime object assumes local
+            #    time. If our data comes from a different time zone, ooops.
+            #    Second, timestamp() returns a float. At microsecond
+            #    granularity this will be a problem at some point (but my
+            #    floating point error analysis is too rusty).
             ts = d.timestamp()
             secs, usecs = self.normalize_ts(ts)
 

@@ -45,6 +45,10 @@ class HTMLOutput(Block):
                 self.write_page(page_name, page_body, jinja_env, template)
                 page_body = []
 
+        # Write the final fragment if necessary
+        if len(page_body) < self.cfg['lines_per_page']:
+            self.write_page(page_name, page_body, jinja_env, template)
+
         self.write_index(pages, jinja_env)
 
     def write_page(self, page_name, page_body, jinja_env, template):
