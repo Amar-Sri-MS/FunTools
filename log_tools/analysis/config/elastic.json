@@ -14,10 +14,49 @@
       "out": "es"
     },
     {
+      "id": "fs139_f1_1",
+      "block": "TextFileInput",
+      "cfg": {
+        "file_pattern": "${logdir}/fs139/system_current/F1_1_funos.txt"
+      },
+      "out": "fs139_f1_1_parse"
+    },
+    {
+      "id": "fs139_f1_1_parse",
+      "block": "FunOSInput",
+      "out": "es"
+    },
+    {
+      "id": "apigw",
+      "block": "TextFileInput",
+      "cfg": {
+        "file_pattern": "${logdir}/fc/apigateway/info*"
+      },
+      "out": "apigw_parse"
+    },
+    {
+      "id": "apigw_parse",
+      "block": "MsecInput",
+      "out": "es"
+    },
+    {
+      "id": "kafka_cons",
+      "block": "TextFileInput",
+      "cfg": {
+        "file_pattern": "${logdir}/fc/sclogs/start_kafka_consumer/info*"
+      },
+      "out": "kafka_cons_parse"
+    },
+    {
+      "id": "kafka_cons_parse",
+      "block": "MsecInput",
+      "out": "es"
+    },
+    {
       "id": "es",
       "block": "ElasticOutput",
       "cfg": {
-        "index": "bug_000"
+        "index": "bug_001"
       }
     }
   ]

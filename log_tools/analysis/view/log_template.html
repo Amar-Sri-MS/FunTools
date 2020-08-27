@@ -4,6 +4,10 @@
     <style>
     .navbar {
     }
+    .pagination {
+        margin: auto;
+        text-align: center;
+    }
     .file_contents {
         display: block;
         font-family: monospace;
@@ -28,11 +32,15 @@
     /*
      * Client state.
      *
-     * TODO (jimmy): consider making some state opaque to the client
+     * TODO (jimmy): consider making some state opaque to the client. In
+     * particular, the before and after page markers could be hidden in
+     * a state dictionary, and the post requests could say "next" or "prev"
+     * while sending the state object. This would allow easier changes if
+     * we decide to change our storage/search layer.
      */
-    var before = -1;
-    var after = -1;
-    var currentFilters = "";
+    var before = {{first}};
+    var after = {{last}};
+    var currentFilters = "{{filter}}";
 
     function handleSearch(search) {
         var xhttp = new XMLHttpRequest();
@@ -62,57 +70,80 @@
             if (this.readyState == 4 && this.status == 200) {
                 var data = JSON.parse(xhttp.responseText);
                 if (data) {
-                    updateMessageTable(data);
-                    updatePagination(data);
+                    clearMessageTable();
+                    updateMessageTable(data, true);
+
+                    before = data["before"];
+                    after = data["after"];
                 }
             }
         }
 
         var uri = "/bug/{{bug}}/logs";
-        var args = [];
         if (filter != "") {
-            args.push("?filter=" + currentFilters);
+            uri += "?filter=" + currentFilters;
         }
 
-        uri = uri + args.join("&");
         xhttp.open('POST', uri);
         xhttp.send();
     }
 
-    function updateMessageTable(filterData) {
+    function clearMessageTable() {
         var table = document.getElementById("line_table");
-        table.innerHTML = filterData["logs"];
+        table.innerHTML = ""
     }
 
-    function updatePagination(filterData) {
-        var pageLinks = "";
-
-        if (filterData["before"] != -1) {
-            var uri = "/bug/{{bug}}";
-            var args = [];
-            args.push("?before=" + filterData["before"]);
-            if (currentFilters != "") {
-                args.push("filter=" + currentFilters);
-            }
-            uri = uri + args.join("&");
-            pageLinks += '<a href="' + uri + '">Previous</a>';
-            pageLinks += "<br>"
+    function updateMessageTable(filterData, isAppend) {
+        var table = document.getElementById("line_table");
+        if (isAppend) {
+            table.innerHTML = table.innerHTML + filterData["logs"];
+        } else {
+            table.innerHTML = filterData["logs"] + table.innerHTML;
         }
-
-        if (filterData["after"] != -1) {
-            var uri = "/bug/{{bug}}";
-            var args = [];
-            args.push("?after=" + filterData["after"]);
-            if (currentFilters != "") {
-                args.push("filter=" + currentFilters);
-            }
-            uri = uri + args.join("&");
-            pageLinks += '<a href="' + uri + '">Next</a>';
-        }
-
-        document.getElementById("pagination_links").innerHTML = pageLinks;
     }
-        
+
+    function loadNext() {
+        var xhttp = new XMLHttpRequest();
+        xhttp.onreadystatechange = function() {
+            if (this.readyState == 4 && this.status == 200) {
+                var data = JSON.parse(xhttp.responseText);
+                if (data) {
+                    updateMessageTable(data, true);
+                    after = data["after"]
+                }
+            }
+        }
+
+        var uri = "/bug/{{bug}}/logs?after=" + after;
+        if (currentFilters != "") {
+            uri += "&filter=" + currentFilters;
+        }
+
+        xhttp.open('POST', uri);
+        xhttp.send();
+    }
+
+    function loadPrev() {
+        var xhttp = new XMLHttpRequest();
+        xhttp.onreadystatechange = function() {
+            if (this.readyState == 4 && this.status == 200) {
+                var data = JSON.parse(xhttp.responseText);
+                if (data) {
+                    updateMessageTable(data, false);
+                    before = data["before"]
+                }
+            }
+        }
+
+        var uri = "/bug/{{bug}}/logs?before=" + before;
+        if (currentFilters != "") {
+            uri += "&filter=" + currentFilters;
+        }
+
+        xhttp.open('POST', uri);
+        xhttp.send();
+    }
+
     </script>
 </head>
 <body>
@@ -131,12 +162,18 @@
     </div>
 
     <div class="file_contents">
+        <div class="pagination">
+            <button id="prev_button" onclick="loadPrev()">Load previous</button>
+        </div>
         <table id="line_table">
 {{body}}
         </table>
+        <div class="pagination">
+            <button id="next_button" onclick="loadNext()">Load next</button>
+        </div>
     </div>
 
-    <div class="pagination" id="pagination_links">
+    <div id=pagination_links>
         <a href="/bug/{{bug}}?before={{first}}">Previous</a><br>
         <a href="/bug/{{bug}}?after={{last}}">Next</a>
     </div>

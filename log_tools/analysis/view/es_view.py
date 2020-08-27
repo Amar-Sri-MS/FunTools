@@ -56,6 +56,7 @@ def get_log_root(bug):
     Serves a page of log messages.
     """
     first_sort_val, last_sort_val, page_body = get_page_body(bug)
+    filter_term = request.args.get('filter', '')
 
     # Assume our template is right next door to us.
     MODULE_PATH = os.path.realpath(__file__)
@@ -66,8 +67,8 @@ def get_log_root(bug):
                              lstrip_blocks=True)
     template = jinja_env.get_template('log_template.html')
 
-    return render_page(page_body, first_sort_val, last_sort_val, bug,
-                       jinja_env, template)
+    return render_page(page_body, first_sort_val, last_sort_val, filter_term,
+                       bug, jinja_env, template)
 
 
 @app.route('/bug/<bug>/logs', methods=['POST'])
@@ -202,12 +203,13 @@ def get_document(es, bug, doc_id):
     return result
 
 
-def render_page(page_body, first, last, bug, jinja_env, template):
+def render_page(page_body, first, last, text_filter, bug, jinja_env, template):
     template_dict = {}
     template_dict['body'] = ''.join(page_body)
     template_dict['bug'] = bug
     template_dict['first'] = first
     template_dict['last'] = last
+    template_dict['filter'] = text_filter
 
     result = template.render(template_dict, env=jinja_env)
     return result
