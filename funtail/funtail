@@ -1,0 +1,256 @@
+#!/usr/bin/env python3.7
+# -*- coding: utf-8 -*-
+"""
+tail(1)-like command to stream logs off FunOS
+
+static check:
+% mypy funtail
+"""
+import os
+import sys
+import argparse
+import dpc_client
+import time
+import json
+import socket
+
+DEFAULT_PORT=6666
+
+###
+##  host configuration
+#
+
+def split_host_string(s, nmax, host_idx, port_idx, port_optional):
+
+    toks = s.split(":")
+
+    if (len(toks) == nmax):
+        host = toks[host_idx]
+        port = toks[port_idx]
+    elif (port_optional and (len(toks) == (nmax -1))):
+        host = toks[host_idx]
+        port = None
+    else:
+        return None
+
+    # convert a port string to an int
+    if (port is not None):
+        try:
+            port = int(port)
+        except:
+            # garbage port? you get nothing
+            return None
+    
+    return (host, port)
+        
+def find_arg(pairs, key, default = None):
+
+    for pair in pairs:
+        if (pair[0] == key):
+            return pair[1]
+
+    return default
+
+def find_funtail(args, pairs):
+
+    s = find_arg(pairs, "funtail/server")
+    if (s is None):
+        return None
+
+    return split_host_string(s, 2, 0, 1, True)
+
+def find_netconsole(args, pairs):
+
+    s = find_arg(pairs, "network_cfg/netconsole")
+    if (s is None):
+        return None
+
+    return split_host_string(s, 3, 1, 2, False)
+
+def find_startup_cfg(args, pairs):
+
+    cfg_file = args.cfg_file
+    if (not os.path.exists(cfg_file)):
+        return None
+
+    try:
+        js = json.loads(" ".join(open(cfg_file).readlines()))
+    except:
+        print("funtail: failed to parse %s" % cfg_file)
+        return None
+
+    # if it exists, just return it as hostname
+    if ("controllers" in js):
+        return (js["controllers"], None)
+
+    return None
+
+HOST_FINDERS = [find_funtail,
+                find_netconsole,
+                find_startup_cfg]
+
+def find_server(args, conn, pairs):
+
+    # first see if we're disabled
+    if (not find_arg(pairs, "funtail/enabled", True)):
+        print("funtail: disabled by FunOS config-args. Ignoring other config.")
+        return (None, None)
+
+    # check all the config finders
+    for finder in HOST_FINDERS:
+        server_address = finder(args, pairs)
+        if (server_address is not None):
+            break
+        
+    # if we didn't find one, make a dummy empty one
+    if (server_address is None):
+        server_address = (None, None)
+        
+    # default port if none was chosen
+    if (server_address[1] is None):
+        server_address = (server_address[0], DEFAULT_PORT)
+        
+    # command-line overrides
+    if (args.host is not None):
+        server_address = (args.host, server_address[1])
+    if (args.port is not None):
+        server_address = (server_address[0], args.port)
+
+    return server_address
+
+###
+##  write functions
+#
+
+def filewrite(fl, s):
+
+    fl.write(s)
+    fl.flush()
+
+def sockwrite(sock, s):
+
+    sock.write(s.encode())
+    sock.flush()
+
+###
+##  main
+#
+DEFAULT_CFG="/opt/fungible/cclinux/startup_cfg.json"
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser()
+  
+    # Required positional argument
+    parser.add_argument("address", help="dpc proxy hostname")
+  
+    # Optional argument flag which defaults to False
+    parser.add_argument("-f", "--follow", action="store_true", default=False)
+  
+    # start linear byte position
+    parser.add_argument("-s", "--start", action="store", type=int,
+                        default=-128*12024)
+  
+    # config file path, if it exists
+    parser.add_argument("-C", "--cfg-file", action="store", type=str,
+                        default=DEFAULT_CFG)
+    
+    # dpc TCP port
+    parser.add_argument("-D", "--dpcport", action="store", type=int)
+
+    # use a unix socket
+    parser.add_argument("-u", "--unix", action="store_true", default=False)
+
+    # hostname & port
+    parser.add_argument("-H", "--host", action="store", type=str, default=None)
+    parser.add_argument("-p", "--port", action="store", type=int, default=None)
+
+    # don't send it, echo it
+    parser.add_argument("-e", "--echo", action="store_true")
+    
+    args: argparse.Namespace = parser.parse_args()
+    return args
+  
+def main() -> int:
+    args: argparse.Namespace = parse_args()
+
+    # work out the args
+    if (args.unix):
+        addr = args.address
+    else:
+        addr = (args.address, args.port)      
+
+    # construct the dpc client
+    conn = dpc_client.DpcClient(legacy_ok=False,
+                                unix_sock = args.unix,
+                                server_address = addr)
+
+    # get the FunOS config-args from the props tree
+    pairs = conn.execute("peek", ["config/boot_defaults/config-args/_argpairs"])
+
+    logname = find_arg(pairs, "funtail/logname")
+    
+    # construct an output pipe
+    if (not args.echo):
+        # work out our server address
+        server_address = find_server(args, conn, pairs)
+
+        # check if we lack config
+        if (server_address[0] is None):
+            print("funtail: no host specified, shutting down")
+            sys.exit(1)
+            
+        # connect to the logging server via TCP
+        print("connecting to server: %s:%s" % server_address)
+        output = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        output.connect(server_address)
+
+        output = output.makefile(mode='wb')
+        writefunc = sockwrite
+    else:
+        output = sys.stdout
+        writefunc = filewrite
+
+
+    # write out a json header
+    d = conn.execute("peek", ["config/chip_info"])
+    if (d is not None):
+        serial = d.get("serial_number", "unknown_serial")
+    else:
+        serial = "no_chipinfo"
+    j = {"serial": serial}
+    if (logname is not None):
+        j["logname"] = logname
+    s = json.dumps(j)
+
+    writefunc(output, "##funtail %s\n" % s)
+
+    # start issuing commands
+    offset = args.start
+    follow = args.follow
+
+    while (True):
+        d = conn.execute("debug", ["log_read", {"start": offset}])
+
+        if ((d["bytes"] == 0) and (not follow)):
+            writefunc(output, "\n\nLog Complete")
+            break
+
+        if (d["bytes"] == 0):
+            time.sleep(0.5)
+            continue
+
+        if (offset < 0):
+            writefunc(output, "Log starts at byte %d...\n" % d["start"])
+        elif (d["start"] != offset):
+            writefunc(output, "...\n[funtail] dropped %s bytes\n..." % (d["start"] - offset))
+            
+        writefunc(output, d["log"])
+        offset = d["start"] + d["bytes"]
+        
+    return 0
+ 
+###
+## entrypoint
+#
+if __name__ == "__main__":
+    main()
