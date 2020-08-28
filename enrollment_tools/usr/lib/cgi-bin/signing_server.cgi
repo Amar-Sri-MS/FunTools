@@ -109,7 +109,7 @@ def hsm_send_modulus(form, key_label):
 
 ########################################################################
 #
-# Operations with remote HSM
+# Operation with remote HSM
 #
 ########################################################################
 
@@ -150,39 +150,6 @@ def remote_hsm_send_modulus(form, key_label):
         print("Content-type: text/plain")
         send_binary_buffer(modulus, form)
 
-
-def to_b64(bytes):
-    return binascii.b2a_base64(bytes).rstrip().decode('utf-8')
-
-
-def process_sign_return(json_rpc_sign_return):
-
-    signature_b64 = get_result(json_rpc_sign_return)
-    if signature_b64 is None:
-        raise ValueError("Signature operation failed on remote HSM")
-    return binascii.a2b_base64(signature_b64)
-
-
-def remote_hsm_sign_hash_with_key(key_label, sha512_hash):
-
-    # package the request into json
-    dgst_b64 = to_b64(sha512_hash)
-    json_rpc_call = make_json_rpc_call("sign", key=key_label, digest=dgst_b64)
-    json_rpc_return = hsmd_rpc_call(json_rpc_call)
-    return process_sign_return(json_rpc_return)
-
-
-def remote_hsm_sign_hash_with_modulus(modulus, sha512_hash):
-
-    # package the request into json
-    modulus_b64 = to_b64(modulus)
-    dgst_b64 = to_b64(sha512_hash)
-    json_rpc_call = make_json_rpc_call("sign", modulus=modulus_b64, digest=dgst_b64)
-    json_rpc_return = hsmd_rpc_call(json_rpc_call)
-    return process_sign_return(json_rpc_return)
-
-
-
 ########################################################################
 #
 # HTTP request handling
@@ -217,24 +184,8 @@ def process_query():
         raise ValueError("Invalid command")
 
 
-def sign_hash_with_key(production, label, sha512_hash):
-    if production:
-        return remote_hsm_sign_hash_with_key(label, sha512_hash)
-
-    return hsm_sign_hash_with_key(label, sha512_hash)
-
-
-def sign_hash_with_modulus(production, modulus, sha512_hash):
-    if production:
-        return remote_hsm_sign_hash_with_modulus(modulus, sha512_hash)
-
-    return hsm_sign_hash_with_modulus(modulus, sha512_hash)
-
-
 def sign():
     form = cgi.FieldStorage()
-
-    production = int(safe_form_get(form, "production", 0))
 
     # is there a hash provided?
     sha512_hash = get_binary_from_form(form, "digest")
@@ -245,15 +196,16 @@ def sign():
 
     key_label = safe_form_get(form, "key", None)
     if key_label:
-        signature = sign_hash_with_key(production, key_label, sha512_hash)
+        signature = hsm_sign_hash_with_key(key_label, sha512_hash)
     else:
         modulus = get_binary_from_form(form, "modulus")
         if len(modulus) == 0:
             raise ValueError("No key or modulus specified for sign command")
-        signature = sign_hash_with_modulus(production, modulus, sha512_hash)
+        signature = hsm_sign_hash_with_modulus(modulus, sha512_hash)
 
     # send binary signature back
     send_binary(signature)
+
 
 
 def main_program():

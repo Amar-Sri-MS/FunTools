@@ -88,17 +88,13 @@ Possible values are:
 
 The post request is used to sign a single SHA-512 digest or an image (deprecated). There is no "cmd" argument.
 
-### Hash signing
+### Hash signing (development builds only)
 
 #### Arguments:
 
 ##### digest (required)
 
 The SHA512 digest to package as a PKCS v1.5 signature.
-
-##### production (optional argument, default value: 0)
-
-Use the production HSM if the value is not zero.
 
 ##### modulus (optional)
 

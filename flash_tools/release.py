@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
 
+'''
+Copyright (c) 2019-2020 Fungible, inc.
+All Rights Reserved.
+'''
+
 import struct
 import sys
 import os
@@ -66,14 +71,10 @@ def main():
     parser.add_argument('--key-name-suffix', default='', help='Suffix for key name')
     parser.add_argument('--force-version', type=int, help='Override firmware versions')
     parser.add_argument('--force-description', help='Override firmware description strings')
-    parser.add_argument('--with-hsm', action='store_true', help='Use HSM for signing')
     parser.add_argument('--chip', choices=['f1', 's1', 'f1d1'], default='f1', help='Target chip')
     parser.add_argument('--debug-build', dest='release', action='store_false', help='Use debug application binary')
 
     args = parser.parse_args()
-
-    use_hsm = args.with_hsm
-    use_net = not use_hsm
 
     funos_suffixes = ['', args.chip]
     if args.release:
@@ -161,7 +162,7 @@ def main():
         with open("image.json", "w") as f:
             json.dump(config, f, indent=4)
 
-        gf.run('key_injection', net=use_net, hsm=use_hsm)
+        gf.run('key_injection')
         os.chdir(curdir)
 
     if wanted('certificate'):
@@ -169,7 +170,7 @@ def main():
         sdkpaths.append(os.path.abspath(args.destdir))
         gf.set_search_paths(sdkpaths)
         os.chdir(args.destdir)
-        gf.run('certificates', net=use_net, hsm=use_hsm)
+        gf.run('certificates')
         os.chdir(curdir)
 
     if wanted('sign'):
@@ -177,9 +178,9 @@ def main():
         sdkpaths.append(os.path.abspath(args.destdir))
         gf.set_search_paths(sdkpaths)
         os.chdir(args.destdir)
-        gf.run('key_injection', net=use_net, hsm=use_hsm, keep_output=True, key_name_suffix=args.key_name_suffix)
-        gf.run('certificates', net=use_net, hsm=use_hsm)
-        gf.run('sign', net=use_net, hsm=use_hsm, key_name_suffix=args.key_name_suffix)
+        gf.run('key_injection', keep_output=True)
+        gf.run('certificates')
+        gf.run('sign')
         os.chdir(curdir)
 
     if wanted('image'):
