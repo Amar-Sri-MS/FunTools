@@ -15,6 +15,7 @@ import json
 import socket
 
 DEFAULT_PORT=6666
+LOG_DEBUG = 8
 
 ###
 ##  host configuration
@@ -210,6 +211,8 @@ def main() -> int:
         output = sys.stdout
         writefunc = filewrite
 
+    # quieten down the epnvme logging
+    conn.execute("modcfg", ["set", "epnvme/loglevel", LOG_DEBUG])
 
     # write out a json header
     d = conn.execute("peek", ["config/chip_info"])
