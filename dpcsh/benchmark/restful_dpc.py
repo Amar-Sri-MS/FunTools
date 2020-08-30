@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Usage: restful_dpc.py [-h] [--unix_socket=<file>]
-          [--tcp_port=<port>]
+          [--tcp_port=<port>] [--https]
 
 Provides restful DPC-echo service via Flask.
 """
@@ -54,7 +54,10 @@ def main():
 
   print("Connected")
 
-  app.run(host="0.0.0.0")
+  if arguments['--https']:
+    app.run(host="0.0.0.0", ssl_context = ('cert.pem', 'key.pem'))
+  else:
+    app.run(host="0.0.0.0")
 
 if __name__ == "__main__":
     main()

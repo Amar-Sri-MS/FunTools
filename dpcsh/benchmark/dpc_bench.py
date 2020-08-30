@@ -31,7 +31,7 @@ def main():
   print("Connected")
 
   start_time = time.time()
-  for i in range(1, n_iterations + 1):
+  for _ in range(1, n_iterations + 1):
     client.execute('echo', [
           {
               "class": "volume", 
