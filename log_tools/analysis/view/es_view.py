@@ -230,7 +230,11 @@ def search_before(es, index, size, term, sort_val):
 
 
 def _get_document_by_id(es, log_id, doc_id):
-    """ Look up a specific log line by document id """
+    """ 
+    Look up a specific log line by document id.
+
+    The doc_id is specified by elasticsearch, and is unique per index.
+    """
     index = log_id
     result = es.get(index=index, id=doc_id)
     return result
