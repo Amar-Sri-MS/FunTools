@@ -24,11 +24,10 @@ def main():
 
 @app.route('/')
 def root():
-    """ Serves the root page, which shows a list of bugs """
+    """ Serves the root page, which shows a list of logs """
     es = Elasticsearch([{'host': 'localhost', 'port': 9200}])
 
-    indices = es.indices.get('bug_*')
-    bug_ids = [i.replace('bug_', '', 1) for i in indices]
+    indices = es.indices.get('log_*')
 
     # Assume our template is right next door to us.
     dir = _get_script_dir()
@@ -38,7 +37,7 @@ def root():
                              lstrip_blocks=True)
     template = jinja_env.get_template('root_template.html')
 
-    return _render_root_page(bug_ids, jinja_env, template)
+    return _render_root_page(indices, jinja_env, template)
 
 
 def _get_script_dir():
@@ -47,23 +46,23 @@ def _get_script_dir():
     return os.path.dirname(module_path)
 
 
-def _render_root_page(bug_ids, jinja_env, template):
+def _render_root_page(log_ids, jinja_env, template):
     """ Renders the root page from a template """
     template_dict = {}
-    template_dict['bugs'] = bug_ids
+    template_dict['logs'] = log_ids
 
     result = template.render(template_dict, env=jinja_env)
     return result
 
 
-@app.route('/bug/<bug>', methods=['GET'])
-def get_log_page(bug):
+@app.route('/log/<log_id>', methods=['GET'])
+def get_log_page(log_id):
     """
-    Displays a log page for a particular bug.
+    Displays a log page for a particular log_id.
 
     Subsequent updates to the page are handled via POST requests.
     """
-    first_sort_val, last_sort_val, table_body = _get_requested_log_lines(bug)
+    first_sort_val, last_sort_val, table_body = _get_requested_log_lines(log_id)
     filter_term = request.args.get('filter', '')
 
     # Assume our template is right next door to us.
@@ -75,22 +74,22 @@ def get_log_page(bug):
     template = jinja_env.get_template('log_template.html')
 
     return _render_log_page(table_body, first_sort_val, last_sort_val, filter_term,
-                            bug, jinja_env, template)
+                            log_id, jinja_env, template)
 
 
-@app.route('/bug/<bug>/logs', methods=['POST'])
-def get_log_contents(bug):
+@app.route('/log/<log_id>/content', methods=['POST'])
+def get_log_contents(log_id):
     """
     Obtains log contents which can be used to update a page.
     """
-    first_sort_val, last_sort_val, page_body = _get_requested_log_lines(bug)
+    first_sort_val, last_sort_val, page_body = _get_requested_log_lines(log_id)
 
-    return {'logs': ''.join(page_body),
+    return {'content': ''.join(page_body),
             'before': first_sort_val, 
             'after': last_sort_val}
 
 
-def _get_requested_log_lines(bug):
+def _get_requested_log_lines(log_id):
     """
     Obtains the requested log lines.
 
@@ -111,7 +110,7 @@ def _get_requested_log_lines(bug):
 
     # Elasticsearch has a limit of 10K results, so pagination is required
     size = 1000
-    before, after = get_temporally_close_hits(es, bug, size,
+    before, after = get_temporally_close_hits(es, log_id, size,
                                               search_term,
                                               search_before,
                                               search_after)
@@ -122,7 +121,7 @@ def _get_requested_log_lines(bug):
     # TODO (jimmy): find another way around this kludge.
     centre = []
     if include is not None:
-        doc = _get_document_by_id(es, bug, include)
+        doc = _get_document_by_id(es, log_id, include)
 
         # Stash an anchor id in here so we can jump straight to the line
         # that we searched for.
@@ -160,7 +159,7 @@ def _get_requested_log_lines(bug):
     return first_sort_val, last_sort_val, page_body
 
 
-def get_temporally_close_hits(es, bug_id, size,
+def get_temporally_close_hits(es, log_id, size,
                               search_term,
                               search_before_val=None,
                               search_after_val=None):
@@ -179,7 +178,7 @@ def get_temporally_close_hits(es, bug_id, size,
     The returned tuple is (before_list, after_list). Both lists are ordered
     by timestamp. We only return empty lists, never None.
     """
-    index='bug_{}'.format(bug_id)
+    index = log_id
 
     before = []
     after = []
@@ -230,18 +229,18 @@ def search_before(es, index, size, term, sort_val):
     return result
 
 
-def _get_document_by_id(es, bug, doc_id):
+def _get_document_by_id(es, log_id, doc_id):
     """ Look up a specific log line by document id """
-    index = 'bug_{}'.format(bug)
+    index = log_id
     result = es.get(index=index, id=doc_id)
     return result
 
 
-def _render_log_page(table_body, first, last, text_filter, bug, jinja_env, template):
+def _render_log_page(table_body, first, last, text_filter, log_id, jinja_env, template):
     """ Renders the log page """
     template_dict = {}
     template_dict['body'] = ''.join(table_body)
-    template_dict['bug'] = bug
+    template_dict['log_id'] = log_id
     template_dict['first'] = first
     template_dict['last'] = last
     template_dict['filter'] = text_filter
@@ -250,8 +249,8 @@ def _render_log_page(table_body, first, last, text_filter, bug, jinja_env, templ
     return result
 
 
-@app.route('/bug/<bug>/search', methods=['POST'])
-def search(bug):
+@app.route('/log/<log_id>/search', methods=['POST'])
+def search(log_id):
     """
     Returns an HTML snippet containing links to log entries matching
     the search term.
@@ -262,7 +261,7 @@ def search(bug):
     body = {}
     body['query'] = {'query_string': {'query': search_term}}
     result = es.search(body=body,
-                       index='bug_{}'.format(bug),
+                       index=log_id,
                        size=25,
                        sort='@timestamp:asc')
 
@@ -273,10 +272,10 @@ def search(bug):
 
         # The #0 anchor is how we jump to the searched-for line when the link
         # is selected.
-        links.append(('<a href="/bug/{}?'
+        links.append(('<a href="/log/{}?'
                       'before={}&'
                       'after={}&'
-                      'include={}#0">{} {}</a>').format(bug,
+                      'include={}#0">{} {}</a>').format(log_id,
                                                         hit['sort'][0],
                                                         hit['sort'][0],
                                                         hit['_id'],

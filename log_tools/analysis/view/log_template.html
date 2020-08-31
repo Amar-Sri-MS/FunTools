@@ -37,6 +37,11 @@
      * a state dictionary, and the post requests could say "next" or "prev"
      * while sending the state object. This would allow easier changes if
      * we decide to change our storage/search layer.
+     *
+     * The "before" and "after" variables hold the sort values of the first
+     * and last document on the page. These sort values are determined by
+     * elasticsearch, and are single integers at the moment because we only
+     * sort by timestamp.
      */
     var before = {{first}};
     var after = {{last}};
@@ -53,7 +58,7 @@
             }
         }
 
-        xhttp.open('POST', '/bug/{{bug}}/search?query=' + search);
+        xhttp.open('POST', '/log/{{log_id}}/search?query=' + search);
         xhttp.send();
     }
 
@@ -79,7 +84,7 @@
             }
         }
 
-        var uri = "/bug/{{bug}}/logs";
+        var uri = "/log/{{log_id}}/content";
         if (filter != "") {
             uri += "?filter=" + currentFilters;
         }
@@ -96,9 +101,9 @@
     function updateMessageTable(filterData, isAppend) {
         var table = document.getElementById("line_table");
         if (isAppend) {
-            table.innerHTML = table.innerHTML + filterData["logs"];
+            table.innerHTML = table.innerHTML + filterData["content"];
         } else {
-            table.innerHTML = filterData["logs"] + table.innerHTML;
+            table.innerHTML = filterData["content"] + table.innerHTML;
         }
     }
 
@@ -114,7 +119,7 @@
             }
         }
 
-        var uri = "/bug/{{bug}}/logs?after=" + after;
+        var uri = "/log/{{log_id}}/content?after=" + after;
         if (currentFilters != "") {
             uri += "&filter=" + currentFilters;
         }
@@ -135,7 +140,7 @@
             }
         }
 
-        var uri = "/bug/{{bug}}/logs?before=" + before;
+        var uri = "/log/{{log_id}}/content?before=" + before;
         if (currentFilters != "") {
             uri += "&filter=" + currentFilters;
         }
@@ -173,9 +178,5 @@
         </div>
     </div>
 
-    <div id=pagination_links>
-        <a href="/bug/{{bug}}?before={{first}}">Previous</a><br>
-        <a href="/bug/{{bug}}?after={{last}}">Next</a>
-    </div>
 </body>
 </html>

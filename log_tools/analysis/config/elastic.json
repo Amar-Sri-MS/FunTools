@@ -56,7 +56,7 @@
       "id": "es",
       "block": "ElasticOutput",
       "cfg": {
-        "index": "bug_001"
+        "index": "log_swctl_proto"
       }
     }
   ]

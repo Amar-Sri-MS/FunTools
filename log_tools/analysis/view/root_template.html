@@ -4,12 +4,12 @@
     <link rel="stylesheet" type="text/css" href="/static/fun.css">
     <style>
     </style>
-    <title>Bug list</title>
+    <title>Log list</title>
 </head>
 <body>
     <div class="index">
-        {% for bug in bugs %}
-        <a href="/bug/{{bug}}">Bug {{bug}}</a><br>
+        {% for log in logs %}
+        <a href="/log/{{log}}">{{log}}</a><br>
         {% endfor %}
     </div>
 </body>
