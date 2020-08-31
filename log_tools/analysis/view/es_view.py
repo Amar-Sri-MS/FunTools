@@ -253,26 +253,37 @@ def _render_log_page(table_body, first, last, text_filter, log_id, jinja_env, te
     return result
 
 
-@app.route('/log/<log_id>/search', methods=['POST'])
+@app.route('/log/<log_id>/search', methods=['GET'])
 def search(log_id):
     """
     Returns an HTML snippet containing links to log entries matching
     the search term.
     """
     search_term = request.args.get('query')
+    search_before = request.args.get('before')
+    search_after = request.args.get('after')
     es = Elasticsearch([{'host': 'localhost', 'port': 9200}])
 
     body = {}
     body['query'] = {'query_string': {'query': search_term}}
-    result = es.search(body=body,
-                       index=log_id,
-                       size=25,
-                       sort='@timestamp:asc')
+
+    before, after = get_temporally_close_hits(es, log_id, 25,
+                                              search_term,
+                                              search_before,
+                                              search_after)
 
     links = []
-    hits = result['hits']['hits']
-    for hit in hits:
+    first_sort_val = -1
+    last_sort_val = -1
+
+    for hit in after:
         s = hit['_source']
+
+        sort_vals = hit.get('sort')
+        if first_sort_val == -1 and sort_vals is not None:
+            first_sort_val = sort_vals[0]
+        if sort_vals is not None:
+            last_sort_val = sort_vals[0]
 
         # The #0 anchor is how we jump to the searched-for line when the link
         # is selected.
@@ -285,7 +296,28 @@ def search(log_id):
                                                         hit['_id'],
                                                         s['@timestamp'],
                                                         s['msg']))
-    return {'html': '<br>'.join(links)}
+    return _render_search_page(links, log_id, search_term, 
+                               first_sort_val, last_sort_val)
+
+
+def _render_search_page(search_results, log_id, search_term,
+                        before_val, after_val):
+    """ Renders the search results page """
+    template_dict = {}
+    template_dict['body'] = '<br><br>'.join(search_results)
+    template_dict['log_id'] = log_id
+    template_dict['query'] = search_term
+    template_dict['first'] = before_val
+    template_dict['last'] = after_val
+
+    dir = _get_script_dir()
+    jinja_env = jinja2.Environment(loader=jinja2.FileSystemLoader(dir),
+                             trim_blocks=True,
+                             lstrip_blocks=True)
+    template = jinja_env.get_template('search_template.html')
+
+    result = template.render(template_dict, env=jinja_env)
+    return result
 
 
 if __name__ == '__main__':

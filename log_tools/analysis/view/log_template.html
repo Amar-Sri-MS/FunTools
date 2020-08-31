@@ -48,23 +48,7 @@
     var currentFilters = "{{filter}}";
 
     function handleSearch(search) {
-        var xhttp = new XMLHttpRequest();
-        xhttp.onreadystatechange = function() {
-            if (this.readyState == 4 && this.status == 200) {
-                var searchData = JSON.parse(xhttp.responseText);
-                if (searchData) {
-                    updateSearchNav(searchData);
-                }
-            }
-        }
-
-        xhttp.open('POST', '/log/{{log_id}}/search?query=' + search);
-        xhttp.send();
-    }
-
-    function updateSearchNav(searchData) {
-        var res = document.getElementById("search_results");
-        res.innerHTML = searchData["html"];
+        window.location.href = '/log/{{log_id}}/search?query=' + search
     }
 
     function handleFilter(filter) {
@@ -114,7 +98,7 @@
                 var data = JSON.parse(xhttp.responseText);
                 if (data) {
                     updateMessageTable(data, true);
-                    after = data["after"]
+                    after = data["after"];
                 }
             }
         }
@@ -135,7 +119,7 @@
                 var data = JSON.parse(xhttp.responseText);
                 if (data) {
                     updateMessageTable(data, false);
-                    before = data["before"]
+                    before = data["before"];
                 }
             }
         }
