@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+    .navbar {
+    }
+    .pagination {
+        margin: auto;
+        text-align: center;
+    }
+    .search_contents {
+        display: block;
+        font-family: monospace;
+        white-space: pre;
+    }
+    td {
+        white-space: nowrap;
+        border-collapse: collapse;
+        padding-right: 5px
+    }
+    </style>
+
+    <script>
+    </script>
+</head>
+<body>
+    <div class="search_contents">
+{{body}}
+    </div>
+
+    <div class="pagination">
+        <a href="/log/{{log_id}}/search?query={{query}}&after={{last}}">Next</a>
+    </div>
+</body>
+</html>
