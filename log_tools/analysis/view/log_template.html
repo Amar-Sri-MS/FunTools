@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+    .navbar {
+    }
+    .pagination {
+        margin: auto;
+        text-align: center;
+    }
+    .file_contents {
+        display: block;
+        font-family: monospace;
+        white-space: pre;
+    }
+    td {
+        white-space: nowrap;
+        border-collapse: collapse;
+        padding-right: 5px
+    }
+    </style>
+
+    <script>
+    /*
+     * If you're reading this, Fungible is interested in talking to you
+     * because you have skills that we might want. 
+     *
+     * But if you're reading this, you're already an esteemed colleague so
+     * never mind.... 
+     */
+
+    /*
+     * Client state.
+     *
+     * TODO (jimmy): consider making some state opaque to the client. In
+     * particular, the before and after page markers could be hidden in
+     * a state dictionary, and the post requests could say "next" or "prev"
+     * while sending the state object. This would allow easier changes if
+     * we decide to change our storage/search layer.
+     *
+     * The "before" and "after" variables hold the sort values of the first
+     * and last document on the page. These sort values are determined by
+     * elasticsearch, and are single integers at the moment because we only
+     * sort by timestamp.
+     */
+    var before = {{first}};
+    var after = {{last}};
+    var currentFilters = "{{filter}}";
+
+    function handleSearch(search) {
+        var xhttp = new XMLHttpRequest();
+        xhttp.onreadystatechange = function() {
+            if (this.readyState == 4 && this.status == 200) {
+                var searchData = JSON.parse(xhttp.responseText);
+                if (searchData) {
+                    updateSearchNav(searchData);
+                }
+            }
+        }
+
+        xhttp.open('POST', '/log/{{log_id}}/search?query=' + search);
+        xhttp.send();
+    }
+
+    function updateSearchNav(searchData) {
+        var res = document.getElementById("search_results");
+        res.innerHTML = searchData["html"];
+    }
+
+    function handleFilter(filter) {
+        currentFilters = filter;
+
+        var xhttp = new XMLHttpRequest();
+        xhttp.onreadystatechange = function() {
+            if (this.readyState == 4 && this.status == 200) {
+                var data = JSON.parse(xhttp.responseText);
+                if (data) {
+                    clearMessageTable();
+                    updateMessageTable(data, true);
+
+                    before = data["before"];
+                    after = data["after"];
+                }
+            }
+        }
+
+        var uri = "/log/{{log_id}}/content";
+        if (filter != "") {
+            uri += "?filter=" + currentFilters;
+        }
+
+        xhttp.open('POST', uri);
+        xhttp.send();
+    }
+
+    function clearMessageTable() {
+        var table = document.getElementById("line_table");
+        table.innerHTML = ""
+    }
+
+    function updateMessageTable(filterData, isAppend) {
+        var table = document.getElementById("line_table");
+        if (isAppend) {
+            table.innerHTML = table.innerHTML + filterData["content"];
+        } else {
+            table.innerHTML = filterData["content"] + table.innerHTML;
+        }
+    }
+
+    function loadNext() {
+        var xhttp = new XMLHttpRequest();
+        xhttp.onreadystatechange = function() {
+            if (this.readyState == 4 && this.status == 200) {
+                var data = JSON.parse(xhttp.responseText);
+                if (data) {
+                    updateMessageTable(data, true);
+                    after = data["after"]
+                }
+            }
+        }
+
+        var uri = "/log/{{log_id}}/content?after=" + after;
+        if (currentFilters != "") {
+            uri += "&filter=" + currentFilters;
+        }
+
+        xhttp.open('POST', uri);
+        xhttp.send();
+    }
+
+    function loadPrev() {
+        var xhttp = new XMLHttpRequest();
+        xhttp.onreadystatechange = function() {
+            if (this.readyState == 4 && this.status == 200) {
+                var data = JSON.parse(xhttp.responseText);
+                if (data) {
+                    updateMessageTable(data, false);
+                    before = data["before"]
+                }
+            }
+        }
+
+        var uri = "/log/{{log_id}}/content?before=" + before;
+        if (currentFilters != "") {
+            uri += "&filter=" + currentFilters;
+        }
+
+        xhttp.open('POST', uri);
+        xhttp.send();
+    }
+
+    </script>
+</head>
+<body>
+    <div class="navbar">
+        <div class="search_box">
+            <input id="search" type="search" placeholder="Search..."/>
+            <button onclick="handleSearch(document.getElementById('search').value)">Search</button>
+        </div>
+        <div class="search_results" id="search_results">
+        </div>
+    
+        <div class="filter_box">
+            <input id="filter" type="search" placeholder="Filter..."/>
+            <button onclick="handleFilter(document.getElementById('filter').value)">Filter</button>
+        </div>
+    </div>
+
+    <div class="file_contents">
+        <div class="pagination">
+            <button id="prev_button" onclick="loadPrev()">Load previous</button>
+        </div>
+        <table id="line_table">
+{{body}}
+        </table>
+        <div class="pagination">
+            <button id="next_button" onclick="loadNext()">Load next</button>
+        </div>
+    </div>
+
+</body>
+</html>
