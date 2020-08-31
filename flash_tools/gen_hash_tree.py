@@ -2,6 +2,30 @@
 # -*- coding: utf-8 -*-
 """Generate SHA512 hash tree file for use with FunVisor
 
+For a SHA512 hash, the size is 64 bytes (512 bits / 8 bits per byte ==
+64 bytes), which allows 64 hashes to be stored in a 4096 byte
+block. The format of the tree is at the Nth level (the leaves) we have
+hashes of each file block.  At level N-1 we have hashes over a block
+of hashes from Level N. At the root we have a single hash over the
+block of 64 1st level hashes. With a tree of depth N we can cover a
+file of size (4096 * 64^N). The number of hashes at each level are
+then: 64, 4096, 262114, 16777216, ...
+
+A request to read a block from the underlying file is authenticated by
+first calculating its hash, and then comparing it to the hash stored
+in the table, this is iterated until the root of the tree is
+reached. For a file of size smaller than 1GiB, any block can be
+authenticated with four block reads and a hash calculation (four
+hashes) at each level. The hash blocks closer to the root may be
+cached to reduce the authentication effort.
+
+To guard against file contents being changed after authentication, we
+must authenticate on each block read. Without the use of a hash tree,
+the entire 1GiB file would have to be read and hashed each time it
+needed to be authenticated. For a file backing a long lived file
+system, the number of block reads done in the life of the system make
+this authentication technique impractical.
+
 File format for the hash tree is (in 4096 byte blocks):
 
 0..1:   Fungible signature over:
