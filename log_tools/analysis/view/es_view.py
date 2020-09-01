@@ -77,15 +77,23 @@ class ElasticLogState(object):
         s.after_sort_val = state.after_sort_val
         return s
 
-    def to_json(self):
+    def to_dict(self):
+        """ Returns the state as a dict """
         return {
             'before': self.before_sort_val,
             'after': self.after_sort_val
         }
 
-    def from_json(self, js):
-        self.before_sort_val = js['before']
-        self.after_sort_val = js['after']
+    def to_json_str(self):
+        """ Serializes state as json """
+        return json.dumps(self.to_dict(), separators=(',', ':'))
+
+    def from_json_str(self, js_str):
+        """ Deserializes the state from json """
+        if js_str:
+            js = json.loads(js_str)
+            self.before_sort_val = js['before']
+            self.after_sort_val = js['after']
 
 
 class ElasticLogSearcher(object):
@@ -94,10 +102,12 @@ class ElasticLogSearcher(object):
     log search interface.
 
     This object must remain stateless. It will be reconstructed on every
-    query. Any state must be provided as arguments to its public methods.
+    client request. Any state must be provided as arguments to its public
+    methods.
     """
 
     def __init__(self, index):
+        """ New searcher, looking at a specific index """
         self.es = Elasticsearch([{'host': 'localhost', 'port': 9200}])
         self.index = index
 
@@ -114,16 +124,19 @@ class ElasticLogSearcher(object):
         log entry.
 
         Returns a list with the following entry dicts:
-            {
+        {
+            "hits": [
                 "sort": [sort values from search engine],
                 "_source": {
                     "@timestamp": value,
                     "src": log source,
                     "msg": log content
                 }, ...
-            }
+            ],
+            "state" { opaque state object holding search state }
+        }
 
-        All results are returned in sorted timestamp order, ascending.
+        All results are returned in ascending timestamp order.
 
         TODO (jimmy): hide elastic specific stuff in return value?
         """
@@ -230,31 +243,36 @@ def get_log_contents(log_id):
     state, page_body = _get_requested_log_lines(log_id)
 
     return {'content': ''.join(page_body),
-            'state': state.to_json()}
+            'state': state.to_dict()}
 
 
 def _get_requested_log_lines(log_id):
     """
     Obtains the requested log lines.
 
-    The request can include before and after sort values to show logs before
-    and/or after a particular sort value. Filter terms are also accepted.
+    Parameters on the flask request object control which lines are returned.
+    Request parameters include:
 
-    Returns a tuple containing:
-    (sort_value of first item,
-     sort value of last item,
-     log lines as HTML table body)
+        next=true: Get up to 1000 log lines with timestamps greater than the
+                   current state.
+        prev=true: Get up to 1000 log lines with timestamps smaller than the
+                   current state.
+        include=id: Include a specific log line with the given id
+        filter=term: Only include log lines that match the filter.
+
+    Returns a tuple containing: (
+        state: next state object for future searches
+        body: log lines formatted as HTML table body
+    )
     """
-    include = request.args.get('include', None)
-    search_term = request.args.get('filter', None)
     next = request.args.get('next', False) == 'true'
     prev = request.args.get('prev', False) == 'true'
+    include = request.args.get('include', None)
+    search_term = request.args.get('filter', None)
 
     state_str = request.args.get('state', None)
     state = ElasticLogState()
-    if state_str:
-        state_js = json.loads(state_str)
-        state.from_json(state_js)
+    state.from_json_str(state_str)
 
     # Elasticsearch has a limit of 10K results, so pagination is required
     size = 1000
@@ -278,39 +296,39 @@ def _get_requested_log_lines(log_id):
     result = before + centre + after
 
     page_body = []
-    first_sort_val = state.before_sort_val
-    last_sort_val = state.after_sort_val
 
     # This quirky magic is how we get paging in search queries. We determine
     # the sort value for the first and last entry in this query.
     for hit in result:
-        s = hit['_source']
-        # The log lines are organized as table rows in the template
-        line = '<tr>'
-        if hit.get('anchor_link'):
-            line = '<tr id={}>'.format(hit.get('anchor_link'))
-
-        line += '<td>{}</td> <td>{}</td> <td>{}</td>'.format(s['src'],
-                                                             s['@timestamp'],
-                                                             s['msg'])
-        line += '</tr>'
+        line = _convert_to_table_row(hit)
         page_body.append(line)
 
     return state, page_body
 
 
+def _convert_to_table_row(hit):
+    """ Converts a search hit into an HTML table row """
+    s = hit['_source']
+
+    # The log lines are organized as table rows in the template
+    line = '<tr>'
+    if hit.get('anchor_link'):
+        line = '<tr class={} id={}>'.format('search_highlight',
+                                            hit.get('anchor_link'))
+
+    line += '<td>{}</td> <td>{}</td> <td>{}</td>'.format(s['src'],
+                                                         s['@timestamp'],
+                                                         s['msg'])
+    line += '</tr>'
+    return line
+
+
 def get_temporally_close_hits(es, state, size, search_term, next, prev):
     """
-    Obtains a list of search hits that have timestamp sort values before
-    and/or after the sort value.
+    Obtains a list of search hits that have timestamps before
+    and/or after the current state.
 
-    If all search_* arguments are None we return hits from the beginning of
-    the index.
-
-    Note that the timestamp sort value used as argument to search_*
-    parameters is returned by elasticsearch, and does not correspond to the
-    actual timestamp value. It can be obtained by looking up the 'sort' key
-    in the returned list elements.
+    The prev and next booleans control whether to return before, after or both.
 
     The returned tuple is (before_list, after_list, next_state).
     Both lists are ordered by timestamp. We only return empty lists, never None.
@@ -318,6 +336,7 @@ def get_temporally_close_hits(es, state, size, search_term, next, prev):
     before = []
     after = []
 
+    # The default is to return "next" results if both are unspecified
     if next or (not next and not prev):
         results = es.search(state, search_term, size)
         after = results['hits']
@@ -336,7 +355,7 @@ def _render_log_page(table_body, state, text_filter,
     template_dict = {}
     template_dict['body'] = ''.join(table_body)
     template_dict['log_id'] = log_id
-    template_dict['state'] = json.dumps(state.to_json(), separators=(',', ':'))
+    template_dict['state'] = state.to_json_str()
     template_dict['filter'] = text_filter
 
     result = template.render(template_dict, env=jinja_env)
@@ -358,9 +377,7 @@ def search(log_id):
 
     state_str = request.args.get('state', None)
     state = ElasticLogState()
-    if state_str:
-        state_js = json.loads(state_str)
-        state.from_json(state_js)
+    state.from_json_str(state_str)
 
     es = ElasticLogSearcher(log_id)
     size = 20
@@ -384,7 +401,7 @@ def search(log_id):
         # Also note that we use a double quotes here in python and single quotes
         # in the link HTML to avoid escape magic because of the state JSON
         # string.
-        hit_state_str = json.dumps(hit_state.to_json(), separators=(',', ':'))
+        hit_state_str = hit_state.to_json_str()
         link = ("<a href='/log/{}?"
                 "state={}&"
                 "next=true&"
@@ -417,7 +434,7 @@ def _render_search_page(search_results, log_id, search_term, state, page,
     template_dict['body'] = '<br><br>'.join(search_results)
     template_dict['log_id'] = log_id
     template_dict['query'] = search_term
-    template_dict['state'] = json.dumps(state.to_json(), separators=(',', ':'))
+    template_dict['state'] = state.to_json_str()
     template_dict['page'] = page
     template_dict['page_entry_count'] = len(search_results)
     template_dict['search_hits'] = total_search_hits

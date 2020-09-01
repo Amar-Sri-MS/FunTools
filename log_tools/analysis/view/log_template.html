@@ -13,6 +13,9 @@
         font-family: monospace;
         white-space: pre;
     }
+    .search_highlight {
+        background-color: yellow;
+    }
     td {
         white-space: nowrap;
         border-collapse: collapse;
@@ -32,16 +35,15 @@
     /*
      * Client state.
      *
-     * TODO (jimmy): consider making some state opaque to the client. In
-     * particular, the before and after page markers could be hidden in
-     * a state dictionary, and the post requests could say "next" or "prev"
-     * while sending the state object. This would allow easier changes if
-     * we decide to change our storage/search layer.
+     * The state is opaque to the client. The before and after page markers
+     * are hidden in a state object, and the post requests say
+     * "next" or "prev" while sending the state object. This allows easier
+     * changes if we decide to change our storage/search layer.
      *
-     * The "before" and "after" variables hold the sort values of the first
-     * and last document on the page. These sort values are determined by
-     * elasticsearch, and are single integers at the moment because we only
-     * sort by timestamp.
+     * The internal "before" and "after" variables hold the sort values of
+     * the first and last document on the page. These sort values are
+     * determined by elasticsearch, and are single integers at the moment
+     * because we only sort by timestamp.
      */
     var state = {{state}};
     var currentFilters = "{{filter}}";
