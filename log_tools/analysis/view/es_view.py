@@ -321,7 +321,6 @@ def search(log_id):
 
     es = ElasticLogSearcher(log_id)
     state = ElasticLogState()
-    state.before_sort_val = search_before
     state.after_sort_val = search_after
     size = 25
 
