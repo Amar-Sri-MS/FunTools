@@ -67,9 +67,13 @@ class ElasticLogState(object):
         self.before_sort_val = -1
         self.after_sort_val = -1
 
-    def clone(self, state):
-        self.before_sort_val = state.before_sort_val
-        self.after_sort_val = state.after_sort_val
+    @classmethod
+    def clone(cls, state):
+        """ Clone from an existing state """
+        s = ElasticLogState()
+        s.before_sort_val = state.before_sort_val
+        s.after_sort_val = state.after_sort_val
+        return s
 
     def to_json(self):
         pass
@@ -101,12 +105,13 @@ class ElasticLogSearcher(object):
         log entry.
 
         Returns a list with the following entry dicts:
-            { "sort": [sort values from search engine],
-                      "_source": {
-                          "@timestamp": value,
-                          "src": log source,
-                          "msg": log content
-                      }
+            {
+                "sort": [sort values from search engine],
+                "_source": {
+                    "@timestamp": value,
+                    "src": log source,
+                    "msg": log content
+                }, ...
             }
 
         All results are returned in sorted timestamp order, ascending.
@@ -124,7 +129,13 @@ class ElasticLogSearcher(object):
                                 index=self.index,
                                 size=query_size,
                                 sort='@timestamp:asc')
-        return result['hits']['hits']
+        result = result['hits']['hits']
+
+        new_state = ElasticLogState.clone(state)
+        _, new_state.after_sort_val = self._get_delimiting_sort_values(result)
+
+        return {'hits': result, 'state': new_state}
+
 
     def search_backwards(self, state, query_term=None, query_size=1000):
         """
@@ -132,8 +143,8 @@ class ElasticLogSearcher(object):
         have lower values than the "before_sort_val" in the state argument.
         """
         body = {}
-        if term is not None:
-            body['query'] = {'query_string': {'query': term}}
+        if query_term is not None:
+            body['query'] = {'query_string': {'query': query_term}}
 
         body['search_after'] = [state.before_sort_val]
 
@@ -145,7 +156,39 @@ class ElasticLogSearcher(object):
                                 sort='@timestamp:desc')
         result = result['hits']['hits']
         result.reverse()
-        return result
+
+        new_state = ElasticLogState.clone(state)
+        new_state.before_sort_val, _ = self._get_delimiting_sort_values(result)
+
+        return {'hits': result, 'state': new_state}
+
+    @staticmethod
+    def _get_delimiting_sort_values(result):
+        """
+        Obtains the sort values for the first and last entries in the
+        result list, returning a tuple of (first_val, last_val).
+        """
+        first = None
+        last = None
+
+        if result:
+            vals = result[0].get('sort')
+            if vals:
+                first = vals[0]
+            vals = result[-1].get('sort')
+            if vals:
+                last = vals[0]
+
+        return (first, last)
+
+    def get_document_by_id(self, doc_id):
+        """
+        Look up a specific log line by document id.
+
+        The doc_id is specified by elasticsearch, and is unique per index.
+        TODO (jimmy): spoils our agnostic API
+        """
+        return self.es.get(index=self.index, id=doc_id)
 
 
 @app.route('/log/<log_id>', methods=['GET'])
@@ -202,8 +245,9 @@ def _get_requested_log_lines(log_id):
     # Elasticsearch has a limit of 10K results, so pagination is required
     size = 1000
     es = ElasticLogSearcher(log_id)
-    before, after = get_temporally_close_hits(es, size, search_term,
-                                              search_before, search_after)
+    before, after, state = get_temporally_close_hits(es, size, search_term,
+                                                     search_before,
+                                                     search_after)
 
     # Before and after are not inclusive searches, so we have to include
     # the actual search result here via a direct document lookup. Very sad.
@@ -211,7 +255,7 @@ def _get_requested_log_lines(log_id):
     # TODO (jimmy): find another way around this kludge.
     centre = []
     if include is not None:
-        doc = _get_document_by_id(es, log_id, include)
+        doc = es.get_document_by_id(include)
 
         # Stash an anchor id in here so we can jump straight to the line
         # that we searched for.
@@ -221,19 +265,12 @@ def _get_requested_log_lines(log_id):
     result = before + centre + after
 
     page_body = []
-    first_sort_val = -1
-    last_sort_val = -1
+    first_sort_val = state.before_sort_val
+    last_sort_val = state.after_sort_val
 
     # This quirky magic is how we get paging in search queries. We determine
     # the sort value for the first and last entry in this query.
     for hit in result:
-        sort_vals = hit.get('sort')
-
-        if first_sort_val == -1 and sort_vals is not None:
-            first_sort_val = sort_vals[0]
-        if sort_vals is not None:
-            last_sort_val = sort_vals[0]
-
         s = hit['_source']
         # The log lines are organized as table rows in the template
         line = '<tr>'
@@ -264,8 +301,8 @@ def get_temporally_close_hits(es, size, search_term,
     actual timestamp value. It can be obtained by looking up the 'sort' key
     in the returned list elements.
 
-    The returned tuple is (before_list, after_list). Both lists are ordered
-    by timestamp. We only return empty lists, never None.
+    The returned tuple is (before_list, after_list, next_state).
+    Both lists are ordered by timestamp. We only return empty lists, never None.
     """
     before = []
     after = []
@@ -274,27 +311,17 @@ def get_temporally_close_hits(es, size, search_term,
     state.before_sort_val = search_before_val
     state.after_sort_val = search_after_val
 
-    if search_after_val is not None:
-        after = es.search(state, search_term, size)
+    if search_after_val is not None or (search_after_val is None and
+                                        search_before_val is None):
+        results = es.search(state, search_term, size)
+        after = results['hits']
+        state = results['state']
     if search_before_val is not None:
-        before = es.search_backwards(state, search_term, size)
+        results = es.search_backwards(state, search_term, size)
+        before = results['hits']
+        state = results['state']
 
-    # Default condition: do a search after
-    if search_after_val is None and search_before_val is None:
-        after = es.search(state, search_term, size)
-
-    return before, after
-
-
-def _get_document_by_id(es, log_id, doc_id):
-    """ 
-    Look up a specific log line by document id.
-
-    The doc_id is specified by elasticsearch, and is unique per index.
-    """
-    index = log_id
-    result = es.get(index=index, id=doc_id)
-    return result
+    return before, after, state
 
 
 def _render_log_page(table_body, first, last, text_filter, log_id, jinja_env, template):
@@ -324,20 +351,16 @@ def search(log_id):
     state.after_sort_val = search_after
     size = 25
 
-    after = es.search(state, search_term, size)
+    results = es.search(state, search_term, size)
+    hits = results['hits']
+    state = results['state']
 
     links = []
-    first_sort_val = -1
-    last_sort_val = -1
+    first_sort_val = state.before_sort_val
+    last_sort_val = state.after_sort_val
 
-    for hit in after:
+    for hit in hits:
         s = hit['_source']
-
-        sort_vals = hit.get('sort')
-        if first_sort_val == -1 and sort_vals is not None:
-            first_sort_val = sort_vals[0]
-        if sort_vals is not None:
-            last_sort_val = sort_vals[0]
 
         # The #0 anchor is how we jump to the searched-for line when the link
         # is selected.
