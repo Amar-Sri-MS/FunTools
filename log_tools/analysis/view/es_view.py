@@ -6,6 +6,8 @@
 # Performs elasticsearch queries to obtain logs and to allow back and forth
 # navigation. Still a work in progress.
 #
+
+import json
 import os
 
 import jinja2
@@ -76,10 +78,14 @@ class ElasticLogState(object):
         return s
 
     def to_json(self):
-        pass
+        return {
+            'before': self.before_sort_val,
+            'after': self.after_sort_val
+        }
 
     def from_json(self, js):
-        pass
+        self.before_sort_val = js['before']
+        self.after_sort_val = js['after']
 
 
 class ElasticLogSearcher(object):
@@ -168,8 +174,8 @@ class ElasticLogSearcher(object):
         Obtains the sort values for the first and last entries in the
         result list, returning a tuple of (first_val, last_val).
         """
-        first = None
-        last = None
+        first = -1
+        last = -1
 
         if result:
             vals = result[0].get('sort')
@@ -198,7 +204,7 @@ def get_log_page(log_id):
 
     Subsequent updates to the page are handled via POST requests.
     """
-    first_sort_val, last_sort_val, table_body = _get_requested_log_lines(log_id)
+    state, table_body = _get_requested_log_lines(log_id)
     filter_term = request.args.get('filter', '')
 
     # Assume our template is right next door to us.
@@ -209,7 +215,7 @@ def get_log_page(log_id):
                              lstrip_blocks=True)
     template = jinja_env.get_template('log_template.html')
 
-    return _render_log_page(table_body, first_sort_val, last_sort_val, filter_term,
+    return _render_log_page(table_body, state, filter_term,
                             log_id, jinja_env, template)
 
 
@@ -218,11 +224,10 @@ def get_log_contents(log_id):
     """
     Obtains log contents which can be used to update a page.
     """
-    first_sort_val, last_sort_val, page_body = _get_requested_log_lines(log_id)
+    state, page_body = _get_requested_log_lines(log_id)
 
     return {'content': ''.join(page_body),
-            'before': first_sort_val, 
-            'after': last_sort_val}
+            'state': state.to_json()}
 
 
 def _get_requested_log_lines(log_id):
@@ -237,17 +242,22 @@ def _get_requested_log_lines(log_id):
      sort value of last item,
      log lines as HTML table body)
     """
-    search_before = request.args.get('before', None)
-    search_after = request.args.get('after', None)
     include = request.args.get('include', None)
     search_term = request.args.get('filter', None)
+    next = request.args.get('next', False) == 'true'
+    prev = request.args.get('prev', False) == 'true'
+
+    state_str = request.args.get('state', None)
+    state = ElasticLogState()
+    if state_str:
+        state_js = json.loads(state_str)
+        state.from_json(state_js)
 
     # Elasticsearch has a limit of 10K results, so pagination is required
     size = 1000
     es = ElasticLogSearcher(log_id)
-    before, after, state = get_temporally_close_hits(es, size, search_term,
-                                                     search_before,
-                                                     search_after)
+    before, after, state = get_temporally_close_hits(es, state, size,
+                                                     search_term, next, prev)
 
     # Before and after are not inclusive searches, so we have to include
     # the actual search result here via a direct document lookup. Very sad.
@@ -283,12 +293,10 @@ def _get_requested_log_lines(log_id):
         line += '</tr>'
         page_body.append(line)
 
-    return first_sort_val, last_sort_val, page_body
+    return state, page_body
 
 
-def get_temporally_close_hits(es, size, search_term,
-                              search_before_val=None,
-                              search_after_val=None):
+def get_temporally_close_hits(es, state, size, search_term, next, prev):
     """
     Obtains a list of search hits that have timestamp sort values before
     and/or after the sort value.
@@ -307,16 +315,11 @@ def get_temporally_close_hits(es, size, search_term,
     before = []
     after = []
 
-    state = ElasticLogState()
-    state.before_sort_val = search_before_val
-    state.after_sort_val = search_after_val
-
-    if search_after_val is not None or (search_after_val is None and
-                                        search_before_val is None):
+    if next or (not next and not prev):
         results = es.search(state, search_term, size)
         after = results['hits']
         state = results['state']
-    if search_before_val is not None:
+    if prev:
         results = es.search_backwards(state, search_term, size)
         before = results['hits']
         state = results['state']
@@ -324,13 +327,13 @@ def get_temporally_close_hits(es, size, search_term,
     return before, after, state
 
 
-def _render_log_page(table_body, first, last, text_filter, log_id, jinja_env, template):
+def _render_log_page(table_body, state, text_filter,
+                     log_id, jinja_env, template):
     """ Renders the log page """
     template_dict = {}
     template_dict['body'] = ''.join(table_body)
     template_dict['log_id'] = log_id
-    template_dict['first'] = first
-    template_dict['last'] = last
+    template_dict['state'] = json.dumps(state.to_json(), separators=(',', ':'))
     template_dict['filter'] = text_filter
 
     result = template.render(template_dict, env=jinja_env)
@@ -344,11 +347,13 @@ def search(log_id):
     the search term.
     """
     search_term = request.args.get('query')
-    search_after = request.args.get('after')
+    state_str = request.args.get('state', None)
+    state = ElasticLogState()
+    if state_str:
+        state_js = json.loads(state_str)
+        state.from_json(state_js)
 
     es = ElasticLogSearcher(log_id)
-    state = ElasticLogState()
-    state.after_sort_val = search_after
     size = 25
 
     results = es.search(state, search_term, size)
@@ -356,36 +361,42 @@ def search(log_id):
     state = results['state']
 
     links = []
-    first_sort_val = state.before_sort_val
-    last_sort_val = state.after_sort_val
-
     for hit in hits:
         s = hit['_source']
 
+        # TODO (jimmy): urgh, we exposed the elastic state here.
+        hit_state = ElasticLogState()
+        hit_state.before_sort_val = hit['sort'][0]
+        hit_state.after_sort_val = hit['sort'][0]
+
         # The #0 anchor is how we jump to the searched-for line when the link
         # is selected.
-        links.append(('<a href="/log/{}?'
-                      'before={}&'
-                      'after={}&'
-                      'include={}#0">{} {}</a>').format(log_id,
-                                                        hit['sort'][0],
-                                                        hit['sort'][0],
-                                                        hit['_id'],
-                                                        s['@timestamp'],
-                                                        s['msg']))
-    return _render_search_page(links, log_id, search_term, 
-                               first_sort_val, last_sort_val)
+        #
+        # Also note that we use a double quotes here in python and single quotes
+        # in the link HTML to avoid escape magic because of the state JSON
+        # string.
+        hit_state_str = json.dumps(hit_state.to_json(), separators=(',', ':'))
+        link = ("<a href='/log/{}?"
+                "state={}&"
+                "next=true&"
+                "prev=true&"
+                "include={}#0'>{} {}</a>".format(log_id,
+                                                 hit_state_str,
+                                                 hit['_id'],
+                                                 s['@timestamp'],
+                                                 s['msg']))
+        links.append(link)
+
+    return _render_search_page(links, log_id, search_term, state)
 
 
-def _render_search_page(search_results, log_id, search_term,
-                        before_val, after_val):
+def _render_search_page(search_results, log_id, search_term, state):
     """ Renders the search results page """
     template_dict = {}
     template_dict['body'] = '<br><br>'.join(search_results)
     template_dict['log_id'] = log_id
     template_dict['query'] = search_term
-    template_dict['first'] = before_val
-    template_dict['last'] = after_val
+    template_dict['state'] = json.dumps(state.to_json(), separators=(',', ':'))
 
     dir = _get_script_dir()
     jinja_env = jinja2.Environment(loader=jinja2.FileSystemLoader(dir),

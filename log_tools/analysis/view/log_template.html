@@ -43,8 +43,7 @@
      * elasticsearch, and are single integers at the moment because we only
      * sort by timestamp.
      */
-    var before = {{first}};
-    var after = {{last}};
+    var state = {{state}};
     var currentFilters = "{{filter}}";
 
     function handleSearch(search) {
@@ -62,8 +61,7 @@
                     clearMessageTable();
                     updateMessageTable(data, true);
 
-                    before = data["before"];
-                    after = data["after"];
+                    state = data["state"];
                 }
             }
         }
@@ -98,12 +96,12 @@
                 var data = JSON.parse(xhttp.responseText);
                 if (data) {
                     updateMessageTable(data, true);
-                    after = data["after"];
+                    state = data["state"];
                 }
             }
         }
 
-        var uri = "/log/{{log_id}}/content?after=" + after;
+        var uri = "/log/{{log_id}}/content?next=true&state=" + JSON.stringify(state);
         if (currentFilters != "") {
             uri += "&filter=" + currentFilters;
         }
@@ -119,12 +117,12 @@
                 var data = JSON.parse(xhttp.responseText);
                 if (data) {
                     updateMessageTable(data, false);
-                    before = data["before"];
+                    state = data["state"];
                 }
             }
         }
 
-        var uri = "/log/{{log_id}}/content?before=" + before;
+        var uri = "/log/{{log_id}}/content?prev=true&state=" + JSON.stringify(state);
         if (currentFilters != "") {
             uri += "&filter=" + currentFilters;
         }
