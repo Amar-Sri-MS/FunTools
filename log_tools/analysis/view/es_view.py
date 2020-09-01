@@ -55,6 +55,99 @@ def _render_root_page(log_ids, jinja_env, template):
     return result
 
 
+class ElasticLogState(object):
+    """
+    Holds state for an elastic log search query so we can resume searching
+    from earlier results.
+
+    The intention is that this is an opaque object that is held by the client.
+    Only the ElasticLogSearcher looks at its innards.
+    """
+    def __init__(self):
+        self.before_sort_val = -1
+        self.after_sort_val = -1
+
+    def clone(self, state):
+        self.before_sort_val = state.before_sort_val
+        self.after_sort_val = state.after_sort_val
+
+    def to_json(self):
+        pass
+
+    def from_json(self, js):
+        pass
+
+
+class ElasticLogSearcher(object):
+    """
+    Hides some elasticsearch specific queries behind a (hopefully) generic
+    log search interface.
+    """
+
+    def __init__(self, index):
+        self.es = Elasticsearch([{'host': 'localhost', 'port': 9200}])
+        self.index = index
+
+    def search(self, state, query_term=None, query_size=1000):
+        """
+        Returns up to query_size logs that match the query_term.
+
+        The starting point of the search is dictated by the "after_sort_val" in
+        the state argument (see ElasticLogState). The search only considers
+        entries with timestamp sort values that are greater than the state's
+        "after_sort_val".
+
+        If the query_term is unspecified (None), this will match against any
+        log entry.
+
+        Returns a list with the following entry dicts:
+            { "sort": [sort values from search engine],
+                      "_source": {
+                          "@timestamp": value,
+                          "src": log source,
+                          "msg": log content
+                      }
+            }
+
+        All results are returned in sorted timestamp order, ascending.
+
+        TODO (jimmy): hide elastic specific stuff in return value?
+        """
+        body = {}
+        if query_term is not None:
+            body['query'] = {'query_string': {'query': query_term}}
+
+        if state.after_sort_val is not None:
+            body['search_after'] = [state.after_sort_val]
+
+        result = self.es.search(body=body,
+                                index=self.index,
+                                size=query_size,
+                                sort='@timestamp:asc')
+        return result['hits']['hits']
+
+    def search_backwards(self, state, query_term=None, query_size=1000):
+        """
+        The same as search, but only considers entries with timestamps that
+        have lower values than the "before_sort_val" in the state argument.
+        """
+        body = {}
+        if term is not None:
+            body['query'] = {'query_string': {'query': term}}
+
+        body['search_after'] = [state.before_sort_val]
+
+        # The recipe for search_before is to do a search_after in descending
+        # sort order, and then reverse the list of results. Quirky.
+        result = self.es.search(body=body,
+                                index=self.index,
+                                size=query_size,
+                                sort='@timestamp:desc')
+        result = result['hits']['hits']
+        result.reverse()
+        return result
+
+
 @app.route('/log/<log_id>', methods=['GET'])
 def get_log_page(log_id):
     """
@@ -101,8 +194,6 @@ def _get_requested_log_lines(log_id):
      sort value of last item,
      log lines as HTML table body)
     """
-    es = Elasticsearch([{'host': 'localhost', 'port': 9200}])
-
     search_before = request.args.get('before', None)
     search_after = request.args.get('after', None)
     include = request.args.get('include', None)
@@ -110,10 +201,9 @@ def _get_requested_log_lines(log_id):
 
     # Elasticsearch has a limit of 10K results, so pagination is required
     size = 1000
-    before, after = get_temporally_close_hits(es, log_id, size,
-                                              search_term,
-                                              search_before,
-                                              search_after)
+    es = ElasticLogSearcher(log_id)
+    before, after = get_temporally_close_hits(es, size, search_term,
+                                              search_before, search_after)
 
     # Before and after are not inclusive searches, so we have to include
     # the actual search result here via a direct document lookup. Very sad.
@@ -159,18 +249,17 @@ def _get_requested_log_lines(log_id):
     return first_sort_val, last_sort_val, page_body
 
 
-def get_temporally_close_hits(es, log_id, size,
-                              search_term,
+def get_temporally_close_hits(es, size, search_term,
                               search_before_val=None,
                               search_after_val=None):
     """
     Obtains a list of search hits that have timestamp sort values before
     and/or after the sort value.
 
-    If all search_* arguments are None we return hits from the beginning of 
+    If all search_* arguments are None we return hits from the beginning of
     the index.
 
-    Note that the timestamp sort value used as argument to search_* 
+    Note that the timestamp sort value used as argument to search_*
     parameters is returned by elasticsearch, and does not correspond to the
     actual timestamp value. It can be obtained by looking up the 'sort' key
     in the returned list elements.
@@ -178,55 +267,23 @@ def get_temporally_close_hits(es, log_id, size,
     The returned tuple is (before_list, after_list). Both lists are ordered
     by timestamp. We only return empty lists, never None.
     """
-    index = log_id
-
     before = []
     after = []
 
+    state = ElasticLogState()
+    state.before_sort_val = search_before_val
+    state.after_sort_val = search_after_val
+
     if search_after_val is not None:
-        after = search_after(es, index, size, search_term, search_after_val)
+        after = es.search(state, search_term, size)
     if search_before_val is not None:
-        before = search_before(es, index, size, search_term, search_before_val)
+        before = es.search_backwards(state, search_term, size)
 
     # Default condition: do a search after
     if search_after_val is None and search_before_val is None:
-        after = search_after(es, index, size, search_term, None)
+        after = es.search(state, search_term, size)
 
     return before, after
-
-
-def search_after(es, index, size, term, sort_val):
-    """ Issues a search after query """
-    body = {}
-    if term is not None:
-        body['query'] = {'query_string': {'query': term}}
-    if sort_val is not None:
-        body['search_after'] = [sort_val]
-    sort_direction = 'asc'
-    result = es.search(body=body,
-                       index=index,
-                       size=size,
-                       sort='@timestamp:{}'.format(sort_direction))
-    return result['hits']['hits']
-
-
-def search_before(es, index, size, term, sort_val):
-    """ Issues a search before query """
-    body = {}
-    if term is not None:
-        body['query'] = {'query_string': {'query': term}}
-    body['search_after'] = [sort_val]
-    sort_direction = 'desc'
-
-    # The recipe for search_before is to do a search_after in descending
-    # sort order, and then reverse the list of results. Quirky.
-    result = es.search(body=body,
-                       index=index,
-                       size=size,
-                       sort='@timestamp:{}'.format(sort_direction))
-    result = result['hits']['hits']
-    result.reverse()
-    return result
 
 
 def _get_document_by_id(es, log_id, doc_id):
@@ -260,17 +317,15 @@ def search(log_id):
     the search term.
     """
     search_term = request.args.get('query')
-    search_before = request.args.get('before')
     search_after = request.args.get('after')
-    es = Elasticsearch([{'host': 'localhost', 'port': 9200}])
 
-    body = {}
-    body['query'] = {'query_string': {'query': search_term}}
+    es = ElasticLogSearcher(log_id)
+    state = ElasticLogState()
+    state.before_sort_val = search_before
+    state.after_sort_val = search_after
+    size = 25
 
-    before, after = get_temporally_close_hits(es, log_id, 25,
-                                              search_term,
-                                              search_before,
-                                              search_after)
+    after = es.search(state, search_term, size)
 
     links = []
     first_sort_val = -1
