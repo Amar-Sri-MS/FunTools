@@ -47,7 +47,7 @@
     var currentFilters = "{{filter}}";
 
     function handleSearch(search) {
-        window.location.href = '/log/{{log_id}}/search?query=' + search
+        window.location.href = '/log/{{log_id}}/search?query=' + search;
     }
 
     function handleFilter(filter) {
@@ -134,6 +134,7 @@
     </script>
 </head>
 <body>
+    <h2>Logs for {{log_id}}</h2>
     <div class="navbar">
         <div class="search_box">
             <input id="search" type="search" placeholder="Search..."/>

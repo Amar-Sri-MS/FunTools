@@ -92,6 +92,9 @@ class ElasticLogSearcher(object):
     """
     Hides some elasticsearch specific queries behind a (hopefully) generic
     log search interface.
+
+    This object must remain stateless. It will be reconstructed on every
+    query. Any state must be provided as arguments to its public methods.
     """
 
     def __init__(self, index):
@@ -347,6 +350,12 @@ def search(log_id):
     the search term.
     """
     search_term = request.args.get('query')
+    page = request.args.get('page', 1)
+    page = int(page)
+
+    # TODO (jimmy): we ought to do this only once
+    total_search_hits = _get_total_hit_count(log_id, search_term)
+
     state_str = request.args.get('state', None)
     state = ElasticLogState()
     if state_str:
@@ -354,7 +363,7 @@ def search(log_id):
         state.from_json(state_js)
 
     es = ElasticLogSearcher(log_id)
-    size = 25
+    size = 20
 
     results = es.search(state, search_term, size)
     hits = results['hits']
@@ -387,16 +396,31 @@ def search(log_id):
                                                  s['msg']))
         links.append(link)
 
-    return _render_search_page(links, log_id, search_term, state)
+    return _render_search_page(links, log_id, search_term, state, page,
+                               total_search_hits)
 
 
-def _render_search_page(search_results, log_id, search_term, state):
+def _get_total_hit_count(log_id, search_term):
+    """ Obtains the search hit count, up to a maximum of 1000 """
+    es = ElasticLogSearcher(log_id)
+    state = ElasticLogState()
+    size = 1000
+
+    results = es.search(state, search_term, size)
+    return len(results['hits'])
+
+
+def _render_search_page(search_results, log_id, search_term, state, page,
+                        total_search_hits):
     """ Renders the search results page """
     template_dict = {}
     template_dict['body'] = '<br><br>'.join(search_results)
     template_dict['log_id'] = log_id
     template_dict['query'] = search_term
     template_dict['state'] = json.dumps(state.to_json(), separators=(',', ':'))
+    template_dict['page'] = page
+    template_dict['page_entry_count'] = len(search_results)
+    template_dict['search_hits'] = total_search_hits
 
     dir = _get_script_dir()
     jinja_env = jinja2.Environment(loader=jinja2.FileSystemLoader(dir),
