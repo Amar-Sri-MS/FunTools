@@ -78,7 +78,8 @@ class FunOSInput(Block):
         #               and our timestamps are 16 digits, so we are on the
         #               limit.
         #
-        #               Also, the resulting object is timezone-naive.
+        #               Also, the resulting object is timezone-naive. This
+        #               is a general question for logs: should we use UTC?
         dt = datetime.datetime.fromtimestamp(secs + float(usecs) * 1e-6)
         return dt, usecs
 
@@ -95,13 +96,6 @@ class ISOFormatInput(Block):
 
             iso_format_datetime = parts[0] + ' ' + parts[1]
             d = datetime.datetime.fromisoformat(iso_format_datetime)
-
-            # TODO (jimmy): this is wrong in two ways:
-            #    First, timestamp() on a naive datetime object assumes local
-            #    time. If our data comes from a different time zone, ooops.
-            #    Second, timestamp() returns a float. At microsecond
-            #    granularity this will be a problem at some point (but my
-            #    floating point error analysis is too rusty).
 
             yield (d, d.microsecond, uid, None, parts[2])
 
