@@ -8,7 +8,7 @@ class Block(object):
         Takes input iterables, produces output iterable.
 
         Iterable elements must be a standard 5-tuple:
-        (time_secs, time_usecs, source_uid, display_time, message)
+        (datetime object, time_usecs, source_uid, display_time, message)
 
         The tuple is our poor man's version of a structured log.
 

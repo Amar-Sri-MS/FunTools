@@ -32,11 +32,8 @@ class ElasticsearchOutput(Block):
             # We use date_nanos instead of the standard date because the latter
             # is limited to millisecond granularity, and a lot of our timestamps
             # are at the microsecond granularity.
-            #
-            # TODO (jimmy): use datetime as the object in the tuple to avoid all
-            # these repeated conversions.
-            dt = datetime.datetime.fromtimestamp(tuple[0] + tuple[1] * 1e-6)
-            iso_ts = datetime.datetime.isoformat(dt)
+            date_time = tuple[0]
+            iso_ts = datetime.datetime.isoformat(date_time)
 
             doc = {
                 '_index': self.index,

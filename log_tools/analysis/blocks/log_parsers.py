@@ -39,10 +39,10 @@ class FunOSInput(Block):
                 ts_vp = line[1:ts_vp_sep]
                 ts, vp = self.split_ts_vp(ts_vp)
 
-                secs, usecs = self.normalize_ts(ts)
+                date_time, usecs = self.normalize_ts(ts)
                 line = '[{}] {}'.format(vp, line[ts_vp_sep + 1:])
 
-                yield (secs, usecs, uid, None, line)
+                yield (date_time, usecs, uid, None, line)
 
     @staticmethod
     def is_uboot(line):
@@ -65,14 +65,22 @@ class FunOSInput(Block):
     @staticmethod
     def normalize_ts(ts):
         """
-        Split the timestamp into seconds and microseconds.
+        Turn the timestamp into a datetime object
         """
         dot_idx = ts.find('.')
 
-        secs = ts[:dot_idx]
-        usecs = ts[dot_idx+1:]
+        secs = int(ts[:dot_idx])
+        usecs = int(ts[dot_idx+1:])
 
-        return int(secs), int(usecs)
+        # TODO (jimmy): There is potential precision loss here, but my floating
+        #               point error analysis is too rusty. Conventional
+        #               wisdom on the WWW suggests 15-17 significant digits
+        #               and our timestamps are 16 digits, so we are on the
+        #               limit.
+        #
+        #               Also, the resulting object is timezone-naive.
+        dt = datetime.datetime.fromtimestamp(secs + float(usecs) * 1e-6)
+        return dt, usecs
 
 
 class ISOFormatInput(Block):
@@ -94,15 +102,8 @@ class ISOFormatInput(Block):
             #    Second, timestamp() returns a float. At microsecond
             #    granularity this will be a problem at some point (but my
             #    floating point error analysis is too rusty).
-            ts = d.timestamp()
-            secs, usecs = self.normalize_ts(ts)
 
-            yield (secs, usecs, uid, None, parts[2])
-
-    @staticmethod
-    def normalize_ts(ts):
-        useconds, seconds = math.modf(ts)
-        return int(seconds), int(useconds * 1e6)
+            yield (d, d.microsecond, uid, None, parts[2])
 
 
 class MsecInput(Block):
@@ -122,9 +123,10 @@ class MsecInput(Block):
                 m = re.match('^([/0-9]+)\s+([:0-9]+)\.([0-9]+)\s+(.*)', line)
 
             if m:
-                secs, usecs = self.extract_timestamp(m.group(1), m.group(2),
-                                                     m.group(3))
-                yield (secs, usecs, uid, None, m.group(4))
+                date_time, usecs = self.extract_timestamp(m.group(1),
+                                                          m.group(2),
+                                                          m.group(3))
+                yield (date_time, usecs, uid, None, m.group(4))
 
     @staticmethod
     def extract_timestamp(day_str, time_str, msecs_str):
@@ -134,8 +136,5 @@ class MsecInput(Block):
         day_str = day_str.replace('-', '/')
         log_time = day_str + ' ' + time_str + '.' + usecs_str
         d = datetime.datetime.strptime(log_time, '%Y/%m/%d %H:%M:%S.%f')
-        ts = d.timestamp()
 
-        usecs, secs = math.modf(ts)
-        usecs = usecs * 1e6
-        return int(secs), int(usecs)
+        return d, d.microsecond
