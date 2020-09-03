@@ -31,8 +31,9 @@ File format for the hash tree is (in 4096 byte blocks):
 0..1:   Fungible signature over:
            [8 bytes: little-endian input file size]
            [64 bytes: SHA512 of tree root block (in block 2)]
+           [72 bytes: 36 UTF-16LE code units target partition name]
 
-        This structure is duplicated at offset 8192 - 72 (very end of
+        This structure is duplicated at offset 8192 - 144 (very end of
         the 2nd block)
 
 2:      1st level hashes, SHA512 hashes of the 64 2nd level hash blocks
@@ -166,9 +167,15 @@ def hash_file_pos_for_level(level: int) -> int:
 def main() -> int:
     """Entrypoint"""
     parser = argparse.ArgumentParser(description = 'File hash tree builder')
+    parser.add_argument('--name', '-N', dest = 'partition_name', help = 'Target partition name', required = True)
+    parser.add_argument('--to-sign', '-S', type=argparse.FileType('wb'),  help = 'Output hash contents to be signed')
     parser.add_argument('in_file', type=argparse.FileType('rb'), help = 'Input file')
     parser.add_argument('hash_file', type=argparse.FileType('wb'), help = 'Output hash file')
     opts = parser.parse_args()
+
+    if (len(opts.partition_name) > 36):
+        print("Error: Partition name exceeds 36")
+        return 1
 
     in_file = opts.in_file
     hash_file = opts.hash_file
@@ -206,11 +213,23 @@ def main() -> int:
             break
         hn.add_data(block_data)
 
-    hash_file.seek(2 * BLOCK_SIZE - 8 - HASH_SIZE, io.SEEK_SET)
+    partition_name_blob = bytearray(72)
+    partition_name_bytes = opts.partition_name.encode("utf-16le")
+    partition_name_blob[0:len(partition_name_bytes)] = partition_name_bytes
+
+    hash_file.seek(2 * BLOCK_SIZE - 8 - HASH_SIZE - len(partition_name_blob))
     hash_file.write(struct.pack('<Q', in_len)) # 8 bytes LE file size
     hash_file.write(hr.hash.digest()) # The root hash
+    hash_file.write(partition_name_blob)
     hash_file.close()
     in_file.close()
+
+    if (opts.to_sign):
+        opts.to_sign.write(bytes(4))                  # 4 bytes zero padding
+        opts.to_sign.write(struct.pack('<Q', in_len)) # LE length
+        opts.to_sign.write(hr.hash.digest())          # SHA512 root hash
+        opts.to_sign.write(partition_name_blob)       # UTF-16LE patition name
+        opts.to_sign.close()
 
     return 0
 
