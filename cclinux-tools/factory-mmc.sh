@@ -1,6 +1,12 @@
 #!/bin/sh
 set -e
 
+# Force eMMC partition start blocks
+if [ "$1" = "both" ] ; then
+    dpcsh -n modcfg set fw_upgrade/active_sector 0
+    dpcsh -n modcfg set fw_upgrade/inactive_sector 2097152
+fi
+
 fs_archive=root-image.tar.xz
 kernel_blob=fv.xdata.blob
 
