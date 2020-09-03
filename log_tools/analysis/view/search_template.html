@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+    .navbar {
+    }
+    .pagination {
+        margin: auto;
+        text-align: center;
+        font-size: 1.1em;
+    }
+    .search_contents {
+        display: block;
+        font-family: monospace;
+        white-space: pre;
+    }
+    td {
+        white-space: nowrap;
+        border-collapse: collapse;
+        padding-right: 5px
+    }
+    </style>
+
+    <script>
+    </script>
+</head>
+<body>
+    <h2>Search results for "{{query}}"</h2>
+    {% set max_page_entries = 20 %}
+    {% set low = (page - 1) * max_page_entries + 1 %}
+    {% set high = low + page_entry_count - 1 %}
+    {% if search_hits == 1000 %}
+        {% set display_hits = '1000+' %}
+    {% else %}
+        {% set display_hits = search_hits|string %}
+    {% endif %}
+    <p>Showing entries {{low}} to {{high}} (out of {{display_hits}} entries) from {{log_id}}</p>
+    <div class="search_contents">
+{{body}}
+    </div>
+
+    <br>
+    <br>
+    <div class="pagination">
+        {% if page_entry_count == max_page_entries %}
+        {% set next_page = (page + 1) %}
+        <a href='/log/{{log_id}}/search?query={{query}}&next=true&page={{next_page}}&state={{state}}')>Next</a>
+        {% endif %}
+    </div>
+</body>
+</html>
