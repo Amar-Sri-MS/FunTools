@@ -66,7 +66,15 @@ class ElasticLogState(object):
     Only the ElasticLogSearcher looks at its innards.
     """
     def __init__(self):
+        # Holds the sort value (an integer) of the first result in the current
+        # search.
+        #
+        # The sort value is an elasticsearch-computed value for each document
+        # for a particular search ordering. In our case, it is based on the
+        # timestamp.
         self.before_sort_val = -1
+
+        # Holds the sort value of the last result in the current search.
         self.after_sort_val = -1
 
     @classmethod
