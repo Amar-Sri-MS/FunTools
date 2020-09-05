@@ -144,7 +144,8 @@
     },
     "certificates": {
         "start_certificate.bin" : {
-	    "public": "fpk2"
+	    "public": "fpk2",
+	    "serial_number": "000000000000000000000000000000000000000000000000"
 	}
     },
     "key_injection": {
