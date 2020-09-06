@@ -211,6 +211,34 @@ class ElasticLogSearcher(object):
 
         return (first, last)
 
+    def get_unique_entries(self, field):
+        """
+        Obtains a list of unique values for the given field.
+
+        The field can be thought of as a column in a table, or a key in a
+        structured log.
+        """
+        max_unique_entries = 100
+
+        # Construct a search query that does a term-aggregation to determine
+        # unique values. Anything prefixed with dontcare is really just a
+        # user-determined identifier.
+        body = {}
+        body['aggs'] = {
+            'unique_vals': {
+                'terms': {
+                    'field': field,
+                    'size': max_unique_entries
+                }
+            }
+        }
+
+        result = self.es.search(body=body,
+                                index=self.index,
+                                size=1)  # we're not really searching
+        buckets = result['aggregations']['unique_vals']['buckets']
+        return [bucket['key'] for bucket in buckets]
+
     def get_document_by_id(self, doc_id):
         """
         Look up a specific log line by document id.
@@ -229,7 +257,9 @@ def get_log_page(log_id):
     Subsequent updates to the page are handled via POST requests.
     """
     state, table_body = _get_requested_log_lines(log_id)
-    filter_term = request.args.get('filter', '')
+
+    es = ElasticLogSearcher(log_id)
+    sources = es.get_unique_entries('src')
 
     # Assume our template is right next door to us.
     dir = _get_script_dir()
@@ -239,7 +269,7 @@ def get_log_page(log_id):
                              lstrip_blocks=True)
     template = jinja_env.get_template('log_template.html')
 
-    return _render_log_page(table_body, state, filter_term,
+    return _render_log_page(table_body, sources, state,
                             log_id, jinja_env, template)
 
 
@@ -357,14 +387,14 @@ def get_temporally_close_hits(es, state, size, search_term, next, prev):
     return before, after, state
 
 
-def _render_log_page(table_body, state, text_filter,
+def _render_log_page(table_body, sources, state,
                      log_id, jinja_env, template):
     """ Renders the log page """
     template_dict = {}
     template_dict['body'] = ''.join(table_body)
     template_dict['log_id'] = log_id
+    template_dict['sources'] = sources
     template_dict['state'] = state.to_json_str()
-    template_dict['filter'] = text_filter
 
     result = template.render(template_dict, env=jinja_env)
     return result
@@ -406,7 +436,7 @@ def search(log_id):
         # The #0 anchor is how we jump to the searched-for line when the link
         # is selected.
         #
-        # Also note that we use a double quotes here in python and single quotes
+        # Also note that we use double quotes here in python and single quotes
         # in the link HTML to avoid escape magic because of the state JSON
         # string.
         hit_state_str = hit_state.to_json_str()

@@ -16,6 +16,9 @@
     .search_highlight {
         background-color: yellow;
     }
+    .checkbox_label {
+        padding-right: 15px;
+    }
     td {
         white-space: nowrap;
         border-collapse: collapse;
@@ -46,14 +49,26 @@
      * because we only sort by timestamp.
      */
     var state = {{state}};
-    var currentFilters = "{{filter}}";
+
+    /*
+     * Current message text filter.
+     *
+     * Value is used as a filter of message contents.
+     */
+    var textFilter = "";
+
+    /*
+     * Holds current message sources
+     */
+    var allSources = {{sources}};
+    var currentSources = {{sources}};
 
     function handleSearch(search) {
         window.location.href = '/log/{{log_id}}/search?query=' + search;
     }
 
-    function handleFilter(filter) {
-        currentFilters = filter;
+    function handleMessageFilter(filter) {
+        textFilter = filter;
 
         var xhttp = new XMLHttpRequest();
         xhttp.onreadystatechange = function() {
@@ -70,7 +85,7 @@
 
         var uri = "/log/{{log_id}}/content";
         if (filter != "") {
-            uri += "?filter=" + currentFilters;
+            uri += "?filter=" + textFilter;
         }
 
         xhttp.open('POST', uri);
@@ -91,6 +106,37 @@
         }
     }
 
+    function handleSourceFilters() {
+        currentSources = [];
+        allSources.forEach(function(source, index) {
+            var elementId = "src_" + source;
+            var element = document.getElementById(elementId);
+            if (element.checked) {
+                currentSources.push(element.value);
+            }
+        });
+
+        var xhttp = new XMLHttpRequest();
+        xhttp.onreadystatechange = function() {
+            if (this.readyState == 4 && this.status == 200) {
+                var data = JSON.parse(xhttp.responseText);
+                if (data) {
+                    clearMessageTable();
+                    updateMessageTable(data, true);
+
+                    state = data["state"];
+                }
+            }
+        }
+
+        var filterString = buildFilterOption();
+
+        var uri = "/log/{{log_id}}/content";
+        uri += "?filter=" + filterString;
+        xhttp.open('POST', uri);
+        xhttp.send();
+    }
+
     function loadNext() {
         var xhttp = new XMLHttpRequest();
         xhttp.onreadystatechange = function() {
@@ -103,13 +149,45 @@
             }
         }
 
-        var uri = "/log/{{log_id}}/content?next=true&state=" + JSON.stringify(state);
-        if (currentFilters != "") {
-            uri += "&filter=" + currentFilters;
-        }
-
+        var uri = buildContentRequest("next");
         xhttp.open('POST', uri);
         xhttp.send();
+    }
+
+    /*
+     * Constructs a POST request to fetch more content.
+     *
+     * direction is either "next" to fetch content after the last message
+     * on the page, or "prev" to fetch content before the first message.
+     */
+    function buildContentRequest(direction) {
+        var uri = "/log/{{log_id}}/content?" + direction + "=true&state=" + JSON.stringify(state);
+
+        var filterString = buildFilterOption();
+
+        if (filterString != "") {
+            uri += "&filter=" + filterString;
+        }
+
+        return uri;
+    }
+
+    /*
+     * Constructs a filter string, for use in a request,
+     * from current filter values.
+     */
+    function buildFilterOption() {
+        var allFilters = [];
+        if (textFilter != "") {
+            allFilters.push(textFilter);
+        }
+        allFilters = allFilters.concat(currentSources);
+
+        if (allFilters.length != 0) {
+            var filterString = allFilters.join(" OR ");
+            return filterString;
+        }
+        return ""
     }
 
     function loadPrev() {
@@ -124,11 +202,7 @@
             }
         }
 
-        var uri = "/log/{{log_id}}/content?prev=true&state=" + JSON.stringify(state);
-        if (currentFilters != "") {
-            uri += "&filter=" + currentFilters;
-        }
-
+        var uri = buildContentRequest("prev");
         xhttp.open('POST', uri);
         xhttp.send();
     }
@@ -145,9 +219,17 @@
         <div class="search_results" id="search_results">
         </div>
     
-        <div class="filter_box">
-            <input id="filter" type="search" placeholder="Filter..."/>
-            <button onclick="handleFilter(document.getElementById('filter').value)">Filter</button>
+        <div class="filters">
+            <input id="text_filter" type="search" placeholder="Filter..."/>
+            <button onclick="handleMessageFilter(document.getElementById('text_filter').value)">Filter Message</button>
+        </div>
+
+        <div class="filters">
+            {% for source in sources %}
+            <input type="checkbox" id="src_{{source}}" value="{{source}}" checked/>
+            <label class="checkbox_label" for="src_{{source}}">{{source}}</label>
+            {% endfor %}
+            <button onclick="handleSourceFilters()">Filter Sources</button>
         </div>
     </div>
 
