@@ -119,9 +119,12 @@ class ElasticLogSearcher(object):
         self.es = Elasticsearch([{'host': 'localhost', 'port': 9200}])
         self.index = index
 
-    def search(self, state, query_term=None, query_size=1000):
+    def search(self, state,
+               query_term=None, filters=None,
+               query_size=1000):
         """
-        Returns up to query_size logs that match the query_term.
+        Returns up to query_size logs that match the query_term and the
+        filters.
 
         The starting point of the search is dictated by the "after_sort_val" in
         the state argument (see ElasticLogState). The search only considers
@@ -130,6 +133,10 @@ class ElasticLogSearcher(object):
 
         If the query_term is unspecified (None), this will match against any
         log entry.
+
+        The filters parameter is a dict where keys are message fields and
+        values are a list of values to filter on. If the field in a message
+        does not match any of the values in the list it will be omitted.
 
         Returns a list with the following entry dicts:
         {
@@ -148,10 +155,7 @@ class ElasticLogSearcher(object):
 
         TODO (jimmy): hide elastic specific stuff in return value?
         """
-        body = {}
-        if query_term is not None:
-            body['query'] = {'query_string': {'query': query_term}}
-
+        body = self._build_query_body(query_term, filters)
         if state.after_sort_val is not None:
             body['search_after'] = [state.after_sort_val]
 
@@ -166,16 +170,47 @@ class ElasticLogSearcher(object):
 
         return {'hits': result, 'state': new_state}
 
+    def _build_query_body(self, query_term, filters):
+        """
+        Constructs a query body from the specified query term
+        (which is treated as an elasticsearch query string) and
+        the filters.
+        """
+        must_queries = []
+        if query_term is not None:
+            must_queries.append({'query_string': {
+                'query': query_term
+            }})
 
-    def search_backwards(self, state, query_term=None, query_size=1000):
+        if filters is None:
+            filters = []
+
+        filter_queries = []
+        for key in filters:
+            value = filters[key]
+            if value:
+                term = {'terms': {
+                    key: value
+                }}
+                filter_queries.append(term)
+
+        compound_query = {}
+        compound_query['must'] = must_queries
+        compound_query['filter'] = filter_queries
+
+        body = {}
+        body['query'] = {}
+        body['query']['bool'] = compound_query
+        return body
+
+    def search_backwards(self, state,
+                         query_term=None, filters=None,
+                         query_size=1000):
         """
         The same as search, but only considers entries with timestamps that
         have lower values than the "before_sort_val" in the state argument.
         """
-        body = {}
-        if query_term is not None:
-            body['query'] = {'query_string': {'query': query_term}}
-
+        body = self._build_query_body(query_term, filters)
         body['search_after'] = [state.before_sort_val]
 
         # The recipe for search_before is to do a search_after in descending
@@ -306,7 +341,11 @@ def _get_requested_log_lines(log_id):
     next = request.args.get('next', False) == 'true'
     prev = request.args.get('prev', False) == 'true'
     include = request.args.get('include', None)
-    search_term = request.args.get('filter', None)
+
+    filters = {}
+    filter_str = request.args.get('filter', None)
+    if filter_str:
+        filters = json.loads(filter_str)
 
     state_str = request.args.get('state', None)
     state = ElasticLogState()
@@ -316,7 +355,7 @@ def _get_requested_log_lines(log_id):
     size = 1000
     es = ElasticLogSearcher(log_id)
     before, after, state = get_temporally_close_hits(es, state, size,
-                                                     search_term, next, prev)
+                                                     filters, next, prev)
 
     # Before and after are not inclusive searches, so we have to include
     # the actual search result here via a direct document lookup. Very sad.
@@ -361,7 +400,7 @@ def _convert_to_table_row(hit):
     return line
 
 
-def get_temporally_close_hits(es, state, size, search_term, next, prev):
+def get_temporally_close_hits(es, state, size, filters, next, prev):
     """
     Obtains a list of search hits that have timestamps before
     and/or after the current state.
@@ -374,13 +413,16 @@ def get_temporally_close_hits(es, state, size, search_term, next, prev):
     before = []
     after = []
 
+    query_string = filters.get('text')
+    filter_dict = {'src': filters.get('sources', [])}
+
     # The default is to return "next" results if both are unspecified
     if next or (not next and not prev):
-        results = es.search(state, search_term, size)
+        results = es.search(state, query_string, filter_dict, query_size=size)
         after = results['hits']
         state = results['state']
     if prev:
-        results = es.search_backwards(state, search_term, size)
+        results = es.search_backwards(state, query_string, filter_dict, query_size=size)
         before = results['hits']
         state = results['state']
 
@@ -420,7 +462,7 @@ def search(log_id):
     es = ElasticLogSearcher(log_id)
     size = 20
 
-    results = es.search(state, search_term, size)
+    results = es.search(state, search_term, query_size=size)
     hits = results['hits']
     state = results['state']
 
@@ -461,7 +503,7 @@ def _get_total_hit_count(log_id, search_term):
     state = ElasticLogState()
     size = 1000
 
-    results = es.search(state, search_term, size)
+    results = es.search(state, search_term, query_size=size)
     return len(results['hits'])
 
 

@@ -84,8 +84,10 @@
         }
 
         var uri = "/log/{{log_id}}/content";
-        if (filter != "") {
-            uri += "?filter=" + textFilter;
+
+        var filterString = buildFilterOption();
+        if (filterString != "") {
+            uri += "?filter=" + filterString;
         }
 
         xhttp.open('POST', uri);
@@ -177,17 +179,14 @@
      * from current filter values.
      */
     function buildFilterOption() {
-        var allFilters = [];
+        var allFilters = {};
         if (textFilter != "") {
-            allFilters.push(textFilter);
+            allFilters["text"] = textFilter;
         }
-        allFilters = allFilters.concat(currentSources);
 
-        if (allFilters.length != 0) {
-            var filterString = allFilters.join(" OR ");
-            return filterString;
-        }
-        return ""
+        allFilters["sources"] = currentSources;
+
+        return JSON.stringify(allFilters);
     }
 
     function loadPrev() {
