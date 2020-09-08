@@ -120,7 +120,7 @@ class ElasticLogSearcher(object):
         self.index = index
 
     def search(self, state,
-               query_term=None, filters=None,
+               query_term=None, source_filters=None, time_filters=None,
                query_size=1000):
         """
         Returns up to query_size logs that match the query_term and the
@@ -134,9 +134,15 @@ class ElasticLogSearcher(object):
         If the query_term is unspecified (None), this will match against any
         log entry.
 
-        The filters parameter is a dict where keys are message fields and
-        values are a list of values to filter on. If the field in a message
-        does not match any of the values in the list it will be omitted.
+        The source_filters parameter is a list of sources to filter on. If a
+        message source does not match any of the values in the list then
+        the message will be omitted.
+
+        The time_filters parameter is a two-element list containing a lower and
+        upper bound (both inclusive). Time is specified in ISO8601 format
+        e.g. 2015-01-01T12:10:30.123456Z.
+        If the timestamp of a message does not lie within the range then it
+        will be omitted.
 
         Returns a list with the following entry dicts:
         {
@@ -154,8 +160,9 @@ class ElasticLogSearcher(object):
         All results are returned in ascending timestamp order.
 
         TODO (jimmy): hide elastic specific stuff in return value?
+        :param time_filters:
         """
-        body = self._build_query_body(query_term, filters)
+        body = self._build_query_body(query_term, source_filters, time_filters)
         if state.after_sort_val is not None:
             body['search_after'] = [state.after_sort_val]
 
@@ -170,7 +177,8 @@ class ElasticLogSearcher(object):
 
         return {'hits': result, 'state': new_state}
 
-    def _build_query_body(self, query_term, filters):
+    def _build_query_body(self, query_term,
+                          source_filters, time_filters):
         """
         Constructs a query body from the specified query term
         (which is treated as an elasticsearch query string) and
@@ -182,17 +190,25 @@ class ElasticLogSearcher(object):
                 'query': query_term
             }})
 
-        if filters is None:
-            filters = []
-
         filter_queries = []
-        for key in filters:
-            value = filters[key]
-            if value:
-                term = {'terms': {
-                    key: value
-                }}
-                filter_queries.append(term)
+        if source_filters:
+            term = {'terms': {
+                'src': source_filters
+            }}
+            filter_queries.append(term)
+
+        if time_filters:
+            start = time_filters[0]
+            end = time_filters[1]
+            time_range = {}
+            if start:
+                time_range['gte'] = start
+            if end:
+                time_range['lte'] = end
+            range = {'range': {
+                '@timestamp': time_range
+            }}
+            filter_queries.append(range)
 
         compound_query = {}
         compound_query['must'] = must_queries
@@ -204,13 +220,14 @@ class ElasticLogSearcher(object):
         return body
 
     def search_backwards(self, state,
-                         query_term=None, filters=None,
+                         query_term=None,
+                         source_filters=None, time_filters=None,
                          query_size=1000):
         """
         The same as search, but only considers entries with timestamps that
         have lower values than the "before_sort_val" in the state argument.
         """
-        body = self._build_query_body(query_term, filters)
+        body = self._build_query_body(query_term, source_filters, time_filters)
         body['search_after'] = [state.before_sort_val]
 
         # The recipe for search_before is to do a search_after in descending
@@ -414,15 +431,19 @@ def get_temporally_close_hits(es, state, size, filters, next, prev):
     after = []
 
     query_string = filters.get('text')
-    filter_dict = {'src': filters.get('sources', [])}
+    source_filters = filters.get('sources', [])
+    time_filters = filters.get('time')
 
     # The default is to return "next" results if both are unspecified
     if next or (not next and not prev):
-        results = es.search(state, query_string, filter_dict, query_size=size)
+        results = es.search(state, query_string,
+                            source_filters, time_filters, query_size=size)
         after = results['hits']
         state = results['state']
     if prev:
-        results = es.search_backwards(state, query_string, filter_dict, query_size=size)
+        results = es.search_backwards(state, query_string,
+                                      source_filters, time_filters,
+                                      query_size=size)
         before = results['hits']
         state = results['state']
 

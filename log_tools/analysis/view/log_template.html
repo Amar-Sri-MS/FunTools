@@ -58,10 +58,16 @@
     var textFilter = "";
 
     /*
-     * Holds current message sources
+     * Holds current message sources.
      */
     var allSources = {{sources}};
     var currentSources = {{sources}};
+
+    /*
+     * Holds current time filters.
+     */
+    var startTime = "";
+    var endTime = "";
 
     function handleSearch(search) {
         window.location.href = '/log/{{log_id}}/search?query=' + search;
@@ -69,7 +75,10 @@
 
     function handleMessageFilter(filter) {
         textFilter = filter;
+        handleMessageTableFilterUpdates();
+    }
 
+    function handleMessageTableFilterUpdates() {
         var xhttp = new XMLHttpRequest();
         xhttp.onreadystatechange = function() {
             if (this.readyState == 4 && this.status == 200) {
@@ -118,25 +127,14 @@
             }
         });
 
-        var xhttp = new XMLHttpRequest();
-        xhttp.onreadystatechange = function() {
-            if (this.readyState == 4 && this.status == 200) {
-                var data = JSON.parse(xhttp.responseText);
-                if (data) {
-                    clearMessageTable();
-                    updateMessageTable(data, true);
+        handleMessageTableFilterUpdates();
+    }
 
-                    state = data["state"];
-                }
-            }
-        }
+    function handleTimeFilters() {
+        startTime = document.getElementById("dt_start").value;
+        endTime = document.getElementById("dt_end").value;
 
-        var filterString = buildFilterOption();
-
-        var uri = "/log/{{log_id}}/content";
-        uri += "?filter=" + filterString;
-        xhttp.open('POST', uri);
-        xhttp.send();
+        handleMessageTableFilterUpdates();
     }
 
     function loadNext() {
@@ -186,6 +184,11 @@
 
         allFilters["sources"] = currentSources;
 
+        datetimeFilters = [];
+        datetimeFilters.push(startTime);
+        datetimeFilters.push(endTime);
+        allFilters["time"] = datetimeFilters;
+
         return JSON.stringify(allFilters);
     }
 
@@ -229,6 +232,12 @@
             <label class="checkbox_label" for="src_{{source}}">{{source}}</label>
             {% endfor %}
             <button onclick="handleSourceFilters()">Filter Sources</button>
+        </div>
+
+        <div class="filters">
+            <input type="datetime-local" id="dt_start"/>
+            <input type="datetime-local" id="dt_end"/>
+            <button onclick="handleTimeFilters()">Filter Time</button>
         </div>
     </div>
 
