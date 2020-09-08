@@ -160,7 +160,6 @@ class ElasticLogSearcher(object):
         All results are returned in ascending timestamp order.
 
         TODO (jimmy): hide elastic specific stuff in return value?
-        :param time_filters:
         """
         body = self._build_query_body(query_term, source_filters, time_filters)
         if state.after_sort_val is not None:
@@ -184,12 +183,18 @@ class ElasticLogSearcher(object):
         (which is treated as an elasticsearch query string) and
         the filters.
         """
+
+        # We treat the text filter as a query string, which is Lucerne
+        # query DSL. The text filter is capable of complex filtering and
+        # search (this will double up as our "advanced" search function)
         must_queries = []
         if query_term is not None:
             must_queries.append({'query_string': {
                 'query': query_term
             }})
 
+        # Source filters are treated as "terms" queries, which try to
+        # match exactly against all provided values.
         filter_queries = []
         if source_filters:
             term = {'terms': {
@@ -197,6 +202,7 @@ class ElasticLogSearcher(object):
             }}
             filter_queries.append(term)
 
+        # Time filters are range filters
         if time_filters:
             start = time_filters[0]
             end = time_filters[1]
@@ -216,6 +222,8 @@ class ElasticLogSearcher(object):
 
         body = {}
         body['query'] = {}
+        # The "bool" key is essentially an "AND" of all the search and filter
+        # terms. Elasticsearch DSL is weird in that way.
         body['query']['bool'] = compound_query
         return body
 
