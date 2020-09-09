@@ -29,12 +29,12 @@ def main():
 
   if not arguments['--keep-alive']:
     for _ in range(1, n_iterations + 1):
-      requests.get(url)
+      requests.get(url, verify=False)
   else:
     print('Keep-alive')
     s = requests.session()
     for _ in range(1, n_iterations + 1):
-      s.get(url, stream = False)
+      s.get(url, stream = False, verify=False)
 
   print("Total time: " + str(time.time() - start_time) + " secs. for " + str(n_iterations) + " iterations")
 
