@@ -3,9 +3,11 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"flag"
 	"log"
+	"math"
 	"net/http"
 )
 
@@ -15,6 +17,7 @@ var (
 	dpcAddr                   = flag.String("dpc_addr", "localhost:40221", "DPC proxy address")
 	certFile                  = flag.String("cert_file", "cert.pem", "TLS certificate")
 	keyFile                   = flag.String("key_file", "key.pem", "TLS key")
+	responseSize              = flag.Int("response_size", 207, "Response size in bytes")
 	tlsEnable                 = flag.Bool("tls_enable", false, "Enable TLS")
 	client         *DpcClient = nil
 	requestsServed            = 0
@@ -53,7 +56,7 @@ func serveHome(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
-	w.Write(jsonStr)
+	w.Write(bytes.Repeat(jsonStr, int(math.Ceil(float64(*responseSize)/float64(len(jsonStr)))))[:*responseSize])
 	requestsServed++
 	if requestsServed%1000 == 0 {
 		log.Println(r.URL)

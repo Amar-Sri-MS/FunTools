@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Usage: restful_dpc.py [-h] [--unix_socket=<file>]
+"""Usage: restful_dpc.py [-h] [--unix_socket=<file>] [--response-size=<bytes>]
           [--tcp_port=<port>] [--https] [--enforce-http11]
 
 Provides restful DPC-echo service via Flask.
@@ -9,13 +9,15 @@ from docopt import docopt
 import flask
 from dpc_client import DpcClient
 import json
+import math
 import sys
 from werkzeug.serving import WSGIRequestHandler
 
 app = flask.Flask(__name__)
 client = None
+response_size = None
 
-@app.route('/', methods=["GET"])
+@app.route('/', methods=["GET", "POST"])
 def echo():
   global client
 #  if not flask.request.json:
@@ -36,15 +38,18 @@ def echo():
             }
         }
     ], None)
-  return json.dumps(result)
+  s = json.dumps(result)
+  return s * (int(response_size / len(s))) + s[:(response_size % len(s))]
 
 def main():
-  global client
+  global client, response_size
   arguments = docopt(__doc__)
   if arguments['--tcp_port'] is None and arguments['--unix_socket'] is None:
     print('tcp_port or unix_socket is required')
     print(__doc__)
     sys.exit(1)
+
+  response_size = 207 if arguments['--response-size'] is None else int(arguments['--response-size'])
 
   if arguments['--tcp_port'] is None:
     print('Running on Unix Socket', arguments['--unix_socket'])
