@@ -29,11 +29,12 @@ this authentication technique impractical.
 File format for the hash tree is (in 4096 byte blocks):
 
 0..1:   Fungible signature over:
+           [4 bytes: zero fill to achieve 8 byte alignement]
            [8 bytes: little-endian input file size]
            [64 bytes: SHA512 of tree root block (in block 2)]
            [72 bytes: 36 UTF-16LE code units target partition name]
 
-        This structure is duplicated at offset 8192 - 144 (very end of
+        This structure is duplicated at offset 8192 - 148 (very end of
         the 2nd block)
 
 2:      1st level hashes, SHA512 hashes of the 64 2nd level hash blocks
@@ -54,6 +55,7 @@ import io
 import math
 import struct
 
+from argparse import ArgumentParser, Namespace
 from typing import BinaryIO
 
 BLOCK_BITS: int = 12
@@ -63,6 +65,9 @@ HASH_BITS: int = 6
 HASH_SIZE: int = pow(2, HASH_BITS)
 
 HASH_PER_BLOCK: int = pow(2, BLOCK_BITS - HASH_BITS)
+
+TO_SIGN_SIZE: int = 148
+SIGNED_SIZE: int = TO_SIGN_SIZE + 0x104c
 
 ###
 ## HashSink
@@ -176,25 +181,18 @@ def hash_file_pos_for_level(level: int) -> int:
     return  BLOCK_SIZE * (start_block + block_offset)
 
 ###
-## main
+## do_gen_tree
 #
-def main() -> int:
-    """Entrypoint"""
-    parser = argparse.ArgumentParser(description = 'File hash tree builder')
-    parser.add_argument('--name', '-N', dest = 'partition_name',
-                        help = 'Target partition name', required = True)
-    parser.add_argument('--to-sign', '-S', type=argparse.FileType('wb'),
-                        help = 'Output hash contents to be signed')
-    parser.add_argument('in_file', type=argparse.FileType('rb'), help = 'Input file')
-    parser.add_argument('hash_file', type=argparse.FileType('wb'), help = 'Output hash file')
-    opts = parser.parse_args()
+def do_gen_tree(opts: Namespace) -> int:
 
-    if (len(opts.partition_name) > 36):
-        print("Error: Partition name exceeds 36")
+    # GPT allows up to 36 characters, but we limit to 35 to allow for null termination.
+    if (len(opts.partition_name) > 35):
+        print("Error: Partition name exceeds 35")
         return 1
 
-    in_file = opts.in_file
-    hash_file = opts.hash_file
+    in_file = open(opts.in_file, mode = 'rb')
+    hash_file = open(opts.hash_file, mode = 'wb')
+    to_sign_file = open(opts.to_sign, mode = 'wb')
 
     in_file.seek(0, io.SEEK_END)
     in_len = in_file.tell()
@@ -205,7 +203,7 @@ def main() -> int:
         return 1
 
     bits_needed = math.ceil(math.log2(in_len))
-    levels_needed = math.ceil((bits_needed - BLOCK_BITS) / HASH_BITS)
+    levels_needed = math.ceil((bits_needed - BLOCK_BITS) / (BLOCK_BITS - HASH_BITS))
 
     print("Input file len: %d, bits needed: %d, levels: %d" % (in_len, bits_needed, levels_needed))
 
@@ -240,14 +238,70 @@ def main() -> int:
     hash_file.close()
     in_file.close()
 
-    if (opts.to_sign):
-        opts.to_sign.write(bytes(4))                  # 4 bytes zero padding
-        opts.to_sign.write(struct.pack('<Q', in_len)) # LE length
-        opts.to_sign.write(hr.hash.digest())          # SHA512 root hash
-        opts.to_sign.write(partition_name_blob)       # UTF-16LE patition name
-        opts.to_sign.close()
+    to_sign_file.write(bytes(4))                  # 4 bytes zero padding
+    to_sign_file.write(struct.pack('<Q', in_len)) # LE length
+    to_sign_file.write(hr.hash.digest())          # SHA512 root hash
+    to_sign_file.write(partition_name_blob)       # UTF-16LE patition name
+    current_pos = to_sign_file.tell()
+    assert (current_pos == TO_SIGN_SIZE)
+    to_sign_file.close()
 
     return 0
+
+###
+##
+#
+def do_insert(opts: Namespace) -> int:
+    hash_file = open(opts.hash_file, mode = 'r+b')
+    signed_file = open(opts.signed, mode = 'rb')
+
+    # Put the signed blob in the beginning of the hash file.
+    signed_blob = signed_file.read(SIGNED_SIZE)
+    hash_file.write(signed_blob)
+    hash_file.seek(2 * BLOCK_SIZE - TO_SIGN_SIZE)
+    duplicate_hashinfo = hash_file.read(TO_SIGN_SIZE)
+    hash_file.close()
+    signed_file.close()
+
+    hashinfo = signed_blob[-TO_SIGN_SIZE:len(signed_blob)]
+
+    assert(duplicate_hashinfo == hashinfo)
+    return 0
+
+###
+## main
+#
+def main() -> int:
+    """Entrypoint"""
+    parser = ArgumentParser(description = "File hash tree builder")
+    parser.add_argument('-O', dest = 'hash_file',
+                        help = 'Output hash file', required = True)
+    subparsers = parser.add_subparsers(dest='command', help = "command")
+    hash_parser = subparsers.add_parser('hash', help = 'Generate hash tree and file to sign')
+    hash_parser.add_argument('--name', '-N', dest = 'partition_name',
+                             help = 'Target partition name', required = True)
+    hash_parser.add_argument('--to-sign', '-S',
+                             help = 'File of output hash contents to be signed',
+                             required = True)
+    hash_parser.add_argument('-I', dest = 'in_file', metavar = 'FILE_TO_HASH',
+                             help = 'Input file to hash', required = True)
+
+    insert_parser = subparsers.add_parser('insert',
+                                          help = 'Insert signed hash into hash tree file')
+    insert_parser.add_argument('--signed', '-s',
+                               help = 'File of signed hash contents to be inserted to the hash file',
+                               required = True)
+
+    opts = parser.parse_args()
+
+    if (opts.command == 'hash'):
+        return do_gen_tree(opts)
+    if (opts.command == 'insert'):
+        return do_insert(opts)
+    else:
+        print("Error: Unrecognized command \"%s\"" % opts.command)
+        parser.print_help()
+        return 1
 
 ###
 ## entrypoint
