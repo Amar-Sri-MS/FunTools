@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 #
@@ -33,6 +33,13 @@ import platform
 import subprocess
 import uuid_extract
 import signal
+
+try:
+    import idzip
+    have_idzip = True
+except:
+    print("Failed to import idzip decompressor, doing without")
+    have_idzip = False
 
 GDB_SIGNAL_TRAP = 5
 
@@ -166,11 +173,16 @@ def get_script():
 ##  File Corpse
 #
 
+def open_idzip(fname):
+    idzip.decompressor.SELECTED_CACHE = idzip.caching.LuckyCache    
+    dzfile = idzip.decompressor.IdzipFile(fname)
+    return dzfile
+    
 class FileCorpse:
 
-    def __init__(self, fname):
+    def __init__(self, fname, use_idzip = False):
         self.fname = fname
-        self.fl = open(fname)
+        self.idzip = use_idzip
         self.memoffset = 0
         self.threadid = 0
         self.threadcount = 0
@@ -190,8 +202,14 @@ class FileCorpse:
         ]
         self.symbols = None
 
+        if (use_idzip):
+            self.fl = open_idzip(fname)
+        else:
+            self.fl = open(fname, "rb")
+
+        
     def badread(self, n):
-        return "\xde\xad\xbe\xef\xde\xad\xbe\xef"[:n]
+        return b"\xde\xad\xbe\xef\xde\xad\xbe\xef"[:n]
 
     def virt2phys(self, addr):
 
@@ -481,7 +499,6 @@ CRCTAB = [
 
 def gnu_debuglink_crc32(crc, buf):
     for b in buf:
-        b = ord(b)
         crc = (crc << 8) ^ CRCTAB[((crc >> 24) ^ b) & 255]
         crc &= 0xffffffff
     return crc
@@ -491,7 +508,7 @@ def gnu_debuglink_crc32(crc, buf):
 ##  corpse classification
 #
 
-UUID_LOCATOR = "ELFSHA1E"
+UUID_LOCATOR = b"ELFSHA1E"
 UUID_STRIDE = 8
 UUID_OFFSET = 32
 UUID_LEN = 16
@@ -528,6 +545,10 @@ def find_corpse_uuid(corpse):
     LOG_ALWAYS("Found FunOS UUID indicator at offset %s" % found)
     buuid = corpse.readbytes(found - UUID_OFFSET, UUID_LEN)
     u = uuid.UUID(bytes=buuid)
+
+    if (u is None):
+        raise RuntimeError("Could not locate FunOS UUID")
+        
     return u
 
 
@@ -591,6 +612,9 @@ def file_is_gzip(hbmdump):
     stype = filetype(hbmdump)
     if (stype.startswith("gzip compressed data")):
         return True
+
+    if (stype.startswith("data (gzip compressed data")):
+        return True
     
     return False
 
@@ -613,6 +637,18 @@ def file_is_tbz(hbmdump):
     stype = filetype(hbmdump)
     if ((stype.startswith("POSIX tar archive") and
          ("bzip2 compressed data" in stype))):
+        return True
+    
+    return False
+
+# indexed gzip (idzip)
+def file_is_idgz(hbmdump):
+    # ignore it if we don't have/want the library
+    if (not have_idzip):
+        return False
+
+    stype = filetype(hbmdump)
+    if (stype.startswith("data (gzip compressed data, extra field")):
         return True
     
     return False
@@ -674,28 +710,34 @@ corpse = None
 def setup_corpse(hbmdump):
 
     global corpse
-
-    # work out what kind of file it is
-    if (file_is_tgz(hbmdump)):
-        hbmdump = extract_tgz(hbmdump)
+    use_idzip = False
         
-    if (file_is_tbz(hbmdump)):
-        hbmdump = extract_tbz(hbmdump)
+    # work out what kind of file it is
+    if (file_is_idgz(hbmdump)):
+        # same file, different file object
+        print("File is indexed gzip, using in-place")
+        use_idzip = True
+    else:
+        if (file_is_tgz(hbmdump)):
+            hbmdump = extract_tgz(hbmdump)
+        
+        if (file_is_tbz(hbmdump)):
+            hbmdump = extract_tbz(hbmdump)
 
-    if (file_is_bzip(hbmdump)):
-        hbmdump = extract_bzip(hbmdump)
+        if (file_is_bzip(hbmdump)):
+            hbmdump = extract_bzip(hbmdump)
 
-    if (file_is_gzip(hbmdump)):
-        hbmdump = extract_gzip(hbmdump)
+        if (file_is_gzip(hbmdump)):
+            hbmdump = extract_gzip(hbmdump)
 
-    if (file_is_tar(hbmdump)):
-        hbmdump = extract_tar(hbmdump)
+        if (file_is_tar(hbmdump)):
+            hbmdump = extract_tar(hbmdump)
 
-    if (not file_is_data(hbmdump)):
-        raise RuntimeError("hbmdump file is still not raw data")
+        if (not file_is_data(hbmdump)):
+            raise RuntimeError("hbmdump file is still not raw data")
                 
     # setup the file object
-    corpse = FileCorpse(hbmdump)
+    corpse = FileCorpse(hbmdump, use_idzip)
 
     # make sure it's FunOS
     uuid = find_corpse_uuid(corpse)
@@ -735,7 +777,7 @@ def jtag_ReadMemory(size, addr):
         r = struct.pack('<Q', corpse.ReadMemory64(addr))
     else:
         # else make a byte-by-byte read
-        r = ""
+        r = b""
         for i in range(size):
             r += struct.pack('<B', corpse.ReadMemory8(addr + i))
 
@@ -996,7 +1038,7 @@ class GDBClientHandler(object):
                     registers = jtag_GetRegList()
                     s = ''
                     for r in registers:
-                        s += struct.pack('<Q', r).encode('hex')
+                        s += struct.pack('<Q', r).hex()
                     DEBUG("regfile: %s" % s)
                     self.send(s)
                 else:
@@ -1005,7 +1047,7 @@ class GDBClientHandler(object):
             def handle_p(subcmd):
                 regno = int(subcmd, 16)
                 r = jtag_GetReg(regno)
-                s = struct.pack('<I', r).encode('hex')
+                s = struct.pack('<I', r).hex()
                 DEBUG("reg %s: %s" % (regno, s))
                 self.send(s)
 
@@ -1014,7 +1056,7 @@ class GDBClientHandler(object):
                 addr = int(addr, 16)
                 size = int(size, 16)
                 LOG('Received a "read memory" command (@%#.8x : %d bytes)' % (addr, size))
-                self.send(jtag_ReadMemory(size, addr).encode('hex'))
+                self.send(jtag_ReadMemory(size, addr).hex())
 
             def handle_s(subcmd):
                 LOG('Received a "single step" command')
