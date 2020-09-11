@@ -136,7 +136,21 @@ class HashNode(HashSink):
         return
 
     def source_eof(self) -> None:
-        # complete the level corresponding to positions beyound
+        # For the last level, the last block of hashes may be
+        # partially filled if the underlying file is smaller than what
+        # would fill the entire block. Write out zeros to a block
+        # boundary so entire hash file is a multiple of the block size
+        # to facilitate writing to underlying storage.  These hashes
+        # correspond to blocks beyond the end of the underlying file,
+        # so we can fill them in with zero as they will never be
+        # hashed.
+        partial_fill = self.file_offset & (BLOCK_SIZE - 1)
+        if (partial_fill != 0):
+            padding = BLOCK_SIZE - partial_fill
+            self.file.seek(self.file_offset)
+            self.file.write(bytes(padding))
+
+        # complete the level corresponding to positions beyond
         # the end of the input file with valid data so parent
         # hashes can be calculated.
         fill_digest = hashlib.sha512().digest()
@@ -167,8 +181,10 @@ def hash_file_pos_for_level(level: int) -> int:
 def main() -> int:
     """Entrypoint"""
     parser = argparse.ArgumentParser(description = 'File hash tree builder')
-    parser.add_argument('--name', '-N', dest = 'partition_name', help = 'Target partition name', required = True)
-    parser.add_argument('--to-sign', '-S', type=argparse.FileType('wb'),  help = 'Output hash contents to be signed')
+    parser.add_argument('--name', '-N', dest = 'partition_name',
+                        help = 'Target partition name', required = True)
+    parser.add_argument('--to-sign', '-S', type=argparse.FileType('wb'),
+                        help = 'Output hash contents to be signed')
     parser.add_argument('in_file', type=argparse.FileType('rb'), help = 'Input file')
     parser.add_argument('hash_file', type=argparse.FileType('wb'), help = 'Output hash file')
     opts = parser.parse_args()
