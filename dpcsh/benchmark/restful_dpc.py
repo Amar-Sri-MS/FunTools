@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Usage: restful_dpc.py [-h] [--unix_socket=<file>] [--response-size=<bytes>]
-          [--tcp_port=<port>] [--https] [--enforce-http11]
+          [--tcp_port=<port>] [--https]
 
 Provides restful DPC-echo service via Flask.
 """
@@ -11,7 +11,7 @@ from dpc_client import DpcClient
 import json
 import math
 import sys
-from werkzeug.serving import WSGIRequestHandler
+from gevent.pywsgi import WSGIServer
 
 app = flask.Flask(__name__)
 client = None
@@ -60,13 +60,22 @@ def main():
 
   print("Connected")
 
-  if arguments['--enforce-http11']:
-    WSGIRequestHandler.protocol_version = "HTTP/1.1"
-
   if arguments['--https']:
-    app.run(host="0.0.0.0", ssl_context = ('cert.pem', 'key.pem'))
+    server = WSGIServer(
+            ('0.0.0.0', 5000),
+            app,
+            log='default',
+            keyfile='key.pem',
+            certfile='cert.pem'
+        )
+    server.serve_forever()
   else:
-    app.run(host="0.0.0.0")
+    server = WSGIServer(
+            ('0.0.0.0', 5000),
+            app,
+            log='default'
+        )
+    server.serve_forever()
 
 if __name__ == "__main__":
     main()
