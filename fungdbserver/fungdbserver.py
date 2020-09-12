@@ -1180,6 +1180,10 @@ def setup_server():
         port = 1234
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+
+    # GDB does a lot of very small socket IO.
+    sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+
     sock.bind(('', port))
     return sock
 
