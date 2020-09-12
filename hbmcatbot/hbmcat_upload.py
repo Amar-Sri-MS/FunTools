@@ -25,8 +25,13 @@ BUCKET = "hbmdumps"
 ##  upload a file
 #
 def upload_file(filename):
+    # upload the file
     s3util.upload_file(filename, HOST, BUCKET)
 
+    # remove the file
+    print("File uploaded, removing %s" % filename)
+    os.remove(filename)
+    
 ###
 ##  upload a progress report json
 #

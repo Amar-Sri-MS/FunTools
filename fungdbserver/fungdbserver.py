@@ -173,14 +173,23 @@ def get_script():
 ##  File Corpse
 #
 
-def open_idzip(fname):
-    idzip.decompressor.SELECTED_CACHE = idzip.caching.LuckyCache    
-    dzfile = idzip.decompressor.IdzipFile(fname)
+def open_idzip(fname, use_http):
+    idzip.decompressor.SELECTED_CACHE = idzip.caching.LuckyCache
+    if (use_http):
+        # just hand over the file directly
+        fl = httpfile.HttpFile(fname)
+        dzfile = idzip.decompressor.IdzipFile(None, fl)
+
+        # default if the not specified
+        if (opts.gdb_timeout is None):
+            opts.gdb_timeout = 20
+    else:
+        dzfile = idzip.decompressor.IdzipFile(fname)
     return dzfile
     
 class FileCorpse:
 
-    def __init__(self, fname, use_idzip = False):
+    def __init__(self, fname, use_idzip = False, use_http = False):
         self.fname = fname
         self.idzip = use_idzip
         self.memoffset = 0
@@ -203,7 +212,7 @@ class FileCorpse:
         self.symbols = None
 
         if (use_idzip):
-            self.fl = open_idzip(fname)
+            self.fl = open_idzip(fname, use_http)
         else:
             self.fl = open(fname, "rb")
 
@@ -653,6 +662,24 @@ def file_is_idgz(hbmdump):
     
     return False
 
+# http remote indexed gzip
+def file_is_http(hbmdump):
+
+    # just check the name
+    if ((not hbmdump.startswith("http://"))
+        and (not hbmdump.startswith("https://"))):
+        return False
+
+    # try to load the http file module on demand
+    SCRIPTDIR = os.path.dirname(sys.argv[0])
+    sys.path.append(os.path.join(SCRIPTDIR, "../scripts"))
+    sys.path.append(os.path.join(get_sdkdir(), "bin/scripts"))
+
+    # blow up if we can't
+    global httpfile
+    import httpfile
+
+    return True
 
 def transform_file(xform, cmd, inname, outname=None):
 
@@ -713,11 +740,20 @@ def setup_corpse(hbmdump):
     use_idzip = False
         
     # work out what kind of file it is
-    if (file_is_idgz(hbmdump)):
+    if (file_is_http(hbmdump)):
+        # remote compressed file
+        print("File is http, using remote")
+        
+        # setup the file object
+        corpse = FileCorpse(hbmdump, True, True)
+    elif (file_is_idgz(hbmdump)):
         # same file, different file object
         print("File is indexed gzip, using in-place")
-        use_idzip = True
+        
+        # setup the file object
+        corpse = FileCorpse(hbmdump, True)
     else:
+        print("Regular old file")
         if (file_is_tgz(hbmdump)):
             hbmdump = extract_tgz(hbmdump)
         
@@ -736,8 +772,8 @@ def setup_corpse(hbmdump):
         if (not file_is_data(hbmdump)):
             raise RuntimeError("hbmdump file is still not raw data")
                 
-    # setup the file object
-    corpse = FileCorpse(hbmdump, use_idzip)
+        # setup the file object
+        corpse = FileCorpse(hbmdump, False)
 
     # make sure it's FunOS
     uuid = find_corpse_uuid(corpse)
@@ -1211,7 +1247,15 @@ def run_gdb_async(port, elffile):
     script = get_script()
     if (script is not None):
         cmd += ["-ex", "source %s" % script]
-    
+
+    if (opts.gdb_debug):
+        cmd += ["-ex", "set debug remote 1"]
+        
+    if (opts.gdb_timeout is not None):
+        # avoid gdb packet timeout errors due to
+        # wire latency
+        cmd += ["-ex", "set remotetimeout %s" % opts.gdb_timeout]
+            
     cmd += ["-ex", "target remote :%s" % port,
             "-ex", "compare-sections .note.gnu.build-id"]            
 
@@ -1276,6 +1320,12 @@ def parse_args():
     parser.add_argument("--crashlog", action="store_true",
                         default=False,
                         help="Just execute the script to generate a crashlog and exit")
+    parser.add_argument("--gdb-debug", action="store_true",
+                        default=False,
+                        help="Enable gdb packet debugging")
+    parser.add_argument("--gdb-timeout", action="store",
+                        default=None, type=int,
+                        help="Set gdb packet timeout")
 
     # final arg is the dump file
     parser.add_argument("hbmdump", help="hbmdump file")

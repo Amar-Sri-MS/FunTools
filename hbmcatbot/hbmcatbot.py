@@ -165,7 +165,7 @@ def compress_dump(dump: HBMDump, incomplete: bool = False) -> None:
     # clean up
     for shard in dump.shards:
         if (shard is not None):
-            print("Would remove %s" % shard.fullname)
+            print("Removing %s" % shard.fullname)
             os.remove(shard.fullname)
     
     # invoke the handler
@@ -233,8 +233,8 @@ def process_dump(verbose, dump):
             # progress % with the prefix
             pct = dump.incomplete_pct()
             cmd = args.exec_progress + " %s" % dump.prefix
-            d = {pct: pct}
-            cmd.format(cmd, **d)
+            d = {"pct": pct}
+            cmd = cmd.format(cmd, **d)
             os.system(cmd)
         
 
