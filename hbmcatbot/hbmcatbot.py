@@ -34,7 +34,6 @@ DUMPSIZE = 8 * 1024 * 1024 * 1024
 ZSKIP = (1024 * 1024) # bothersome 1mb hole
 SHARDSIZE = int((DUMPSIZE-ZSKIP) / NSHARDS)
 assert(((DUMPSIZE-ZSKIP) % NSHARDS) == 0)
-print("%s" % SHARDSIZE)
 
 class HBMShard:
     def __init__(self, fullname):
@@ -74,7 +73,7 @@ class HBMDump:
                 # not complete if a shard is incomplete
                 return False
 
-        # everythign was there and big enough
+        # everything was there and big enough
         return True
        
     def incomplete_pct(self):
@@ -99,7 +98,7 @@ class HBMDump:
             ctime = datetime.datetime.fromtimestamp(shard.stat.st_ctime)
             delta = datetime.datetime.now() - ctime
             if (delta < datetime.timedelta(seconds=60*10)):
-                # any shard modified than 10min ago means
+                # any shard modified less than 10min ago means
                 # we're not timing out yet
                 return False
         
