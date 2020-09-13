@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 
 ###
 ##  Generic utility for reading UUID of binaries on macOS or Linux.
@@ -18,6 +18,7 @@ import os
 VERBOSITY = 0
 
 def VPRINT(msg, minlevel=1):
+    global VERBOSITY
     if (VERBOSITY >= minlevel):
         print(msg)
 
@@ -45,7 +46,7 @@ READELF = find_default_readelf()
 def output4command(cmd):
     VPRINT("running command '%s'" % cmd)
     # use Popen because python2.6
-    output = str(subprocess.Popen(cmd, stdout=subprocess.PIPE).communicate()[0]).strip()
+    output = subprocess.Popen(cmd, stdout=subprocess.PIPE).communicate()[0].decode().strip()
     VPRINT("results are '%s'" % output)
 
     return output
@@ -141,7 +142,7 @@ def parse_args():
                                    usage=usage)
 
     parser.add_option("-V", "--verbose", action="count", dest="verbosity",
-                      help="Extra debug output")
+                      help="Extra debug output", default=0)
 
     parser.add_option("-r", "--readelf", action="store", default=READELF,
                       help="Location of a modern 64b compatible readelf binary")

@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 excat (Executable Catalogue) -- publish and retreieve ELF files
@@ -16,7 +16,9 @@ import argparse
 import datetime
 import tempfile
 import hashlib
-import urllib2
+import urllib
+import urllib.request
+import urllib.error
 import random
 import shutil
 import socket
@@ -92,7 +94,7 @@ def mkrelpath(uuid):
 
     path = ""
     for i in range(PREFIX_BYTES):
-        path = path + "%02x/" % (ord(uuid.bytes[i]))
+        path = path + "%02x/" % (uuid.bytes[i])
 
     return path
 
@@ -159,7 +161,7 @@ def read_web_file(url):
     LOG("Reading text URL %s" % url)
 
     s = ""
-    u = urllib2.urlopen(url)
+    u = urllib.request.urlopen(url)
     while True:
         buf = u.read(BLOCK_SIZE)
         if (not buf):
@@ -175,7 +177,7 @@ def download_file(url, dest):
     LOG("Downloading file %s" % url)
 
     try:
-        u = urllib2.urlopen(url)
+        u = urllib.request.urlopen(url)
     except Exception as e:
         msg = "Failed to download file: %s" % e
         raise e
@@ -201,7 +203,7 @@ def download_file(url, dest):
 def filemd5(fname):
 
     md5 = hashlib.md5()
-    fl = open(fname)
+    fl = open(fname, "rb")
 
     while (True):
         bytes = fl.read(16*1024)
@@ -257,7 +259,7 @@ def http_get(uuid):
         bzurl = "%s%s.bz" % (urlpath, suuid)
         try:
             download_file(bzurl, bzfile)
-        except urllib2.HTTPError, e:
+        except urllib.error.HTTPError as e:
             if (e.code == 404):
                 LOG("Download error: 404 not found")
                 return None
@@ -315,9 +317,7 @@ def local_search_uuid(uuid):
     if (os.environ.get("EXCAT_SEARCH_PATH") is not None):
         toks = os.environ.get("EXCAT_SEARCH_PATH").split(":")
         for tok in toks:
-            fname = do_search(uuid,
-                              os.path.join(os.environ.get("WORKSPACE"),
-                                           tok))
+            fname = do_search(uuid, tok)
             if (fname is not None):
                 return fname
             
@@ -460,13 +460,13 @@ def wait_for_rx_ready(p):
         if (s == ""):
             raise RuntimeError("EOF waiting for TX ready")
         LOG(s.strip())
-        if ("excat-pub-proxy: rx ready" in s):
+        if (b"excat-pub-proxy: rx ready" in s):
             break
 
 def drain_rx(p):
     while True:
         s = p.readline()
-        if (s == ""):
+        if (s == b""):
             break
         LOG(s.strip())
 
@@ -506,7 +506,7 @@ def scp_publish(metadata, fname):
     if (p is None):
         raise RuntimeError("can't send metadata")
     LOG("sending metadata" )
-    p.stdin.write(s)
+    p.stdin.write(s.encode())
     p.stdin.close()
     r = p.wait()
     LOG("metadata returned %d" % r)
