@@ -142,9 +142,6 @@ DEFAULT_CFG="/opt/fungible/cclinux/startup_cfg.json"
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
   
-    # Required positional argument
-    parser.add_argument("address", help="dpc proxy hostname")
-  
     # Optional argument flag which defaults to False
     parser.add_argument("-f", "--follow", action="store_true", default=False)
   
@@ -156,6 +153,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("-C", "--cfg-file", action="store", type=str,
                         default=DEFAULT_CFG)
     
+    # dpc host / socket name
+    parser.add_argument("-a", "--dpcaddress", help="dpc proxy hostname")
+  
     # dpc TCP port
     parser.add_argument("-D", "--dpcport", action="store", type=int)
 
@@ -184,9 +184,9 @@ def main() -> int:
 
     # work out the args
     if (args.unix):
-        addr = args.address
+        addr = args.dpcaddress
     else:
-        addr = (args.address, args.dpcport)      
+        addr = (args.dpcaddress, args.dpcport)      
 
     # construct the dpc client
     conn = dpc_client.DpcClient(legacy_ok=False,
@@ -245,7 +245,7 @@ def main() -> int:
         d = conn.execute("debug", ["log_read", {"start": offset}])
 
         if ((d["bytes"] == 0) and (not follow)):
-            writefunc(output, "\n\nLog Complete")
+            writefunc(output, "\n\nLog Complete\n")
             break
 
         if (d["bytes"] == 0):

@@ -79,8 +79,8 @@ def main() -> int:
 
     # sanity check
     if (not os.path.exists(args.logpath)):
-        sys.stderr.write("Log directory does not exist: %s\n" % args.logpath)
-        sys.exit(1)
+        sys.stderr.write("Log directory does not exist, creating %s\n" % args.logpath)
+        os.makedirs(args.logpath)
 
     # read the first line
     firstline = sys.stdin.readline()
