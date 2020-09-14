@@ -172,6 +172,10 @@ def parse_args() -> argparse.Namespace:
     # force enable without a FunOS boot-arg
     parser.add_argument("-F", "--force-auto", action="store_true")
 
+    # force a named log
+    parser.add_argument("-N", "--named", action="store", type=str, default=None)
+
+    
     args: argparse.Namespace = parser.parse_args()
     return args
   
@@ -193,6 +197,8 @@ def main() -> int:
     pairs = conn.execute("peek", ["config/boot_defaults/config-args/_argpairs"])
 
     logname = find_arg(pairs, "funtail/logname")
+    if (args.named is not None):
+        logname = args.named
     
     # construct an output pipe
     if (not args.echo):

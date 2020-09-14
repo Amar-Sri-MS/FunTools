@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 Server-side component of funtail. Expected to be run by
-tcpserver/[x]inetd/faucet or some other connection manager.
+socat (or tcpserver/[x]inetd/faucet) or some other connection manager.
 Decodes header information from funtail and streams to 
 the appropriate log file.
 
