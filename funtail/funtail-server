@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 Server-side component of funtail. Expected to be run by
-tcpserver/[x]inetd/faucet or some other connection manager.
+socat (or tcpserver/[x]inetd/faucet) or some other connection manager.
 Decodes header information from funtail and streams to 
 the appropriate log file.
 
@@ -79,8 +79,8 @@ def main() -> int:
 
     # sanity check
     if (not os.path.exists(args.logpath)):
-        sys.stderr.write("Log directory does not exist: %s\n" % args.logpath)
-        sys.exit(1)
+        sys.stderr.write("Log directory does not exist, creating %s\n" % args.logpath)
+        os.makedirs(args.logpath)
 
     # read the first line
     firstline = sys.stdin.readline()
