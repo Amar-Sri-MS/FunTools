@@ -93,15 +93,16 @@ HOST_FINDERS = [find_funtail,
 def find_server(args, conn, pairs):
 
     # first see if we're disabled
-    if (not find_arg(pairs, "funtail/enabled", True)):
+    if ((not find_arg(pairs, "funtail/enabled", True))
+        and (not args.force_auto)):
         print("funtail: disabled by FunOS config-args. Ignoring other config.")
-        return (None, None)
-
-    # check all the config finders
-    for finder in HOST_FINDERS:
-        server_address = finder(args, pairs)
-        if (server_address is not None):
-            break
+        server_address = None
+    else:
+        # check all the config finders
+        for finder in HOST_FINDERS:
+            server_address = finder(args, pairs)
+            if (server_address is not None):
+                break
         
     # if we didn't find one, make a dummy empty one
     if (server_address is None):
@@ -149,7 +150,7 @@ def parse_args() -> argparse.Namespace:
   
     # start linear byte position
     parser.add_argument("-s", "--start", action="store", type=int,
-                        default=-128*12024)
+                        default=-128*1024)
   
     # config file path, if it exists
     parser.add_argument("-C", "--cfg-file", action="store", type=str,
@@ -167,7 +168,10 @@ def parse_args() -> argparse.Namespace:
 
     # don't send it, echo it
     parser.add_argument("-e", "--echo", action="store_true")
-    
+
+    # force enable without a FunOS boot-arg
+    parser.add_argument("-F", "--force-auto", action="store_true")
+
     args: argparse.Namespace = parser.parse_args()
     return args
   
@@ -178,7 +182,7 @@ def main() -> int:
     if (args.unix):
         addr = args.address
     else:
-        addr = (args.address, args.port)      
+        addr = (args.address, args.dpcport)      
 
     # construct the dpc client
     conn = dpc_client.DpcClient(legacy_ok=False,
