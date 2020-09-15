@@ -22,7 +22,7 @@ NSPRINTS = 8
 JIRA_SERVER = "http://jira.fungible.local:80"
 
 # list of milestones that _don't_ need sprints assigned
-UNSCHEDULED_MILESTONES = ["release 1.2","release 2.0", "later"]
+UNSCHEDULED_MILESTONES = ["release 3.0", "later"]
 
 # master jira object
 jconn : Any = None
