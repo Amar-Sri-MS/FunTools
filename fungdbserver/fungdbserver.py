@@ -41,6 +41,15 @@ except:
     print("Failed to import idzip decompressor, doing without")
     have_idzip = False
 
+
+try:
+    from elftools.elf.elffile import ELFFile
+    have_elftools = True
+except:
+    print("Failed to import pyelftools, will not handle ELF core dumps")
+    have_elftools = False
+
+
 GDB_SIGNAL_TRAP = 5
 
 opts = None
@@ -211,12 +220,35 @@ class FileCorpse:
         ]
         self.symbols = None
 
-        if (use_idzip):
-            self.fl = open_idzip(fname, use_http)
-        else:
-            self.fl = open(fname, "rb")
+        self.fl = self.open_file(use_idzip, use_http)
 
-        
+        # ELFFile object or None if this is not elf
+        self.elf = None
+        if self.is_elf_corpse():
+            if not have_elftools:
+                raise RuntimeError("need pyelftools to open ELF file: "
+                                   "try pip3 install pyelftools")
+            self.elf = ELFFile(self.open_file(use_idzip, use_http))
+
+        # ELF segment headers in memory, faster than reading from file
+        self.elf_segments = []
+
+    def open_file(self, use_idzip, use_http):
+        if (use_idzip):
+            return open_idzip(self.fname, use_http)
+        else:
+            return open(self.fname, "rb")
+
+    def is_elf_corpse(self):
+        """ Whether this corpse is an ELF core file """
+        magic_len = 4
+        magic = self.fl.read(magic_len)
+        if len(magic) == magic_len:
+            # binary mode means the type should be bytes, so look for 0x7'ELF'
+            return (magic[0] == 0x7f and magic[1] == 0x45 and
+                    magic[2] == 0x4c and magic[3] == 0x46)
+        return False
+
     def badread(self, n):
         return b"\xde\xad\xbe\xef\xde\xad\xbe\xef"[:n]
 
@@ -243,8 +275,28 @@ class FileCorpse:
 
         return addr
 
+    def elf_offset(self, addr):
+        phys = self.virt2phys(addr)
+
+        if not self.elf_segments:
+            self.elf_segments.extend(self.elf.iter_segments())
+
+        # Look up the file offset in the ELF segments
+        # We can do better than this linear search, really
+        for seg in self.elf_segments:
+            seg_paddr = seg["p_paddr"]
+            if (phys >= seg_paddr and phys < seg_paddr + seg["p_filesz"]):
+                return seg["p_offset"] + phys - seg_paddr
+
+        # Houston, we have a problem
+        return None
+
     def readbytes(self, addr, n):
-        addr = self.virt2phys(addr)
+        if self.elf is None:
+            addr = self.virt2phys(addr)
+        else:
+            addr = self.elf_offset(addr)
+
         if (addr is None):
             LOG("zero read")
             return self.badread(n)
@@ -432,7 +484,7 @@ class FileCorpse:
         self.symbols = d
 
         self.setup_threadlist()
-        
+
 ###
 ## gdb crc
 ## GPL implemenation from gdb itself
@@ -565,6 +617,10 @@ def auto_corpse_offset(corpse):
 
     n0mb = corpse.ReadMemory64(0)
     n1mb = corpse.ReadMemory64(1024*1024)
+
+    # ELF files have no offset
+    if corpse.elf is not None:
+        return 0
     
     if (n0mb != 0):
         LOG("Detected 1mb memory offset")
@@ -681,6 +737,10 @@ def file_is_http(hbmdump):
 
     return True
 
+def file_is_elf(hbmdump):
+    stype = filetype(hbmdump)
+    return stype.startswith("ELF")
+
 def transform_file(xform, cmd, inname, outname=None):
 
     if (outname is None):
@@ -769,8 +829,8 @@ def setup_corpse(hbmdump):
         if (file_is_tar(hbmdump)):
             hbmdump = extract_tar(hbmdump)
 
-        if (not file_is_data(hbmdump)):
-            raise RuntimeError("hbmdump file is still not raw data")
+        if (not file_is_data(hbmdump) and not file_is_elf(hbmdump)):
+            raise RuntimeError("hbmdump file is still not raw data or elf")
                 
         # setup the file object
         corpse = FileCorpse(hbmdump, False)
