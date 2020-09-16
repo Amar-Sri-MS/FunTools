@@ -19,6 +19,8 @@ class TestDPCCommands(unittest.TestCase):
     """Tests that standard DPC commands.
     """
 
+    # TODO(bowdidge): Don't use non-standard init because it breaks standard
+    # unit test framework calls.
     def __init__(self, client, method):
         self.client = client
         self._testMethodName = method
@@ -114,12 +116,17 @@ class TestDPCCommands(unittest.TestCase):
 
 
 def run_tests_client(client, exclude):
+    """Run the unit tests with extra args for global client and exclude list.
+
+    Returns True if all tests passed.
+    """
     suite = unittest.TestSuite()
     for func in dir(TestDPCCommands):
         if callable(getattr(TestDPCCommands, func)) and func.startswith('test') \
             and (func not in exclude):
             suite.addTest(TestDPCCommands(client, func))
-    unittest.TextTestRunner().run(suite)
+    results = unittest.TextTestRunner().run(suite)
+    return len(results.failures) == 0
 
 def run_dpc_test(args, unix_sock, delay):
     """ Load up a dpcsh tcp socket """
@@ -134,7 +141,7 @@ def run_dpc_test(args, unix_sock, delay):
         client = dpc_client.DpcClient(legacy_ok = False, unix_sock = unix_sock)
 
         time.sleep(delay)
-        run_tests_client(client, [])
+        return run_tests_client(client, [])
     finally:
         if pid.returncode is None:
             pid.terminate()
@@ -154,7 +161,7 @@ def run_using_env(exclude):
     print 'Connecting to dpc host at %s:%s' % (host, port)
     client = dpc_client.DpcClient(server_address=(host, port))
 
-    run_tests_client(client, exclude)
+    return run_tests_client(client, exclude)
 
 
 STYLES = {"tcp": (True, ["--verbose", "--tcp_proxy"], False, 0),
@@ -168,9 +175,11 @@ def run_style(manual, style):
 
     if (manual or auto):
         print "Running tests for '%s'" % style
-        run_dpc_test(args, unix_sock, delay)
+        return run_dpc_test(args, unix_sock, delay)
     else:
         print "Skipping '%s'" % style
+        # Pretend all tests passed.
+        return True
 
 
 def usage():
@@ -187,17 +196,27 @@ def main():
     if (len(sys.argv) == 2):
         style = sys.argv[1]
 
+    tests_passed = True
+
     if style == 'fun-on-demand' or style == 'fun-on-demand-reduced':
         exclude = ['testVeryLargeCommands', 'testAsync', 'testJumbo'] \
             if style == 'fun-on-demand-reduced' else []
-        run_using_env(exclude)
-        return
+        tests_passed = run_using_env(exclude)
 
-    if (style is not None):
-        run_style(True, style)
+    elif style is not None:
+        tests_passed = run_style(True, style)
+
     else:
         for style in STYLES:
-            run_style(False, style)
+            ret = run_style(False, style)
+            if not ret:
+                tests_passed = False
+                # Keep going just for coverage.
+
+    if not tests_passed:
+        sys.exit(1)
+    else:
+        sys.exit(0)
 
 
 ###
