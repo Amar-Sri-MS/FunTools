@@ -3,16 +3,22 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"flag"
 	"log"
+	"math"
 	"net/http"
 )
 
 var (
-	serviceAddr               = flag.String("service_addr", "localhost:8080", "http service address")
+	serviceAddr               = flag.String("service_addr", ":5000", "http service address")
 	dpcProto                  = flag.String("dpc_protocol", "tcp", "DPC proxy protocol")
 	dpcAddr                   = flag.String("dpc_addr", "localhost:40221", "DPC proxy address")
+	certFile                  = flag.String("cert_file", "cert.pem", "TLS certificate")
+	keyFile                   = flag.String("key_file", "key.pem", "TLS key")
+	responseSize              = flag.Int("response_size", 207, "Response size in bytes")
+	tlsEnable                 = flag.Bool("tls_enable", false, "Enable TLS")
 	client         *DpcClient = nil
 	requestsServed            = 0
 )
@@ -33,7 +39,7 @@ type storageCommand struct {
 }
 
 func serveHome(w http.ResponseWriter, r *http.Request) {
-	if r.Method != "GET" {
+	if r.Method != "GET" && r.Method != "POST" {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
@@ -50,7 +56,7 @@ func serveHome(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
-	w.Write(jsonStr)
+	w.Write(bytes.Repeat(jsonStr, int(math.Ceil(float64(*responseSize)/float64(len(jsonStr)))))[:*responseSize])
 	requestsServed++
 	if requestsServed%1000 == 0 {
 		log.Println(r.URL)
@@ -68,5 +74,9 @@ func main() {
 		return
 	}
 	http.HandleFunc("/", serveHome)
-	log.Fatal(http.ListenAndServe(*serviceAddr, nil))
+	if *tlsEnable {
+		log.Fatal(http.ListenAndServeTLS(*serviceAddr, *certFile, *keyFile, nil))
+	} else {
+		log.Fatal(http.ListenAndServe(*serviceAddr, nil))
+	}
 }
