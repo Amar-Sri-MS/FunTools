@@ -11,16 +11,26 @@ PID_FUNTAIL=/var/run/funtail.pid
 
 export PATH="${PATH:+$PATH:}/usr/sbin:/sbin:/usr/bin"
 
+DPCSH=/usr/bin/dpcsh
+FUNTAIL=/usr/bin/funtail
+
+if [! -e $DPCSH ]; then
+    DPCSH=/opt/fungible/FunSDK/bin/Linux/dpcsh
+fi
+if [! -e $FUNTAIL]; then
+    FUNTAIL=/opt/fungible/FunSDK/bin/Linux/funtail
+fi
+    
 case "$1" in
   start)
 	echo "Starting FunOS log streamer: funtail"
-	start-stop-daemon -S -b -p $PID_DPC -x /usr/bin/dpcsh -- --unix_proxy
-	start-stop-daemon -S -b -p $PID_FUNTAIL -x /usr/bin/funtail -- -u /tmp/funos-dpc-text.sock -f -s0
+	start-stop-daemon -S -b -p $PID_DPC -x $DPCSH -- --unix_proxy
+	start-stop-daemon -S -b -p $PID_FUNTAIL -x $FUNTAIL -- -u /tmp/funos-dpc-text.sock -f -s0
 	echo "done."
 	;;
   stop)
 	echo "Stopping FunOS log streamer: funtail"
-	start-stop-daemon -K -p $PID_DPC -x /usr/bin/dpcsh
+	start-stop-daemon -K -p $PID_DPC -x $DPCSH
 	start-stop-daemon -K -p $PID_FUNTAIL
 	echo "."
 	;;
