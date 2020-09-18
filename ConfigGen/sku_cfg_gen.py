@@ -67,8 +67,10 @@ class SKUCfgGen():
         """Build a dictionary containing the default entries exported to board
         configuration files.
         """
-        _path = 'sku_config/defaults/%s_*.cfg' % self.target_chip
-        file_patterns = [_path]
+        file_patterns = [
+            'sku_config/defaults/all_*.cfg',
+            'sku_config/defaults/%s_*.cfg' % self.target_chip
+        ]
         for file_pat in file_patterns:
             for def_file in glob.glob(os.path.join(self.input_dir, file_pat)):
                 with open(def_file, 'r') as f:
