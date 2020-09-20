@@ -231,7 +231,7 @@ class FileCorpse:
             self.elf = ELFFile(self.open_file(use_idzip, use_http))
 
         # ELF segment headers in memory, faster than reading from file
-        self.elf_segments = []
+        self.elf_phdrs = []
 
     def open_file(self, use_idzip, use_http):
         if (use_idzip):
@@ -275,15 +275,20 @@ class FileCorpse:
 
         return addr
 
+    def elf_load_phdrs(self):
+        for seg in self.elf.iter_segments():
+            if seg['p_type'] == 'PT_LOAD':
+                self.elf_phdrs.append(seg)
+
     def elf_offset(self, addr):
         phys = self.virt2phys(addr)
 
-        if not self.elf_segments:
-            self.elf_segments.extend(self.elf.iter_segments())
+        if not self.elf_phdrs:
+            self.elf_load_phdrs()
 
         # Look up the file offset in the ELF segments
         # We can do better than this linear search, really
-        for seg in self.elf_segments:
+        for seg in self.elf_phdrs:
             seg_paddr = seg["p_paddr"]
             if (phys >= seg_paddr and phys < seg_paddr + seg["p_filesz"]):
                 return seg["p_offset"] + phys - seg_paddr
