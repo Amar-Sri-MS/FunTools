@@ -1,4 +1,5 @@
 #!/usr/bin/python
+import io
 import os
 import re
 import cgi
@@ -696,7 +697,7 @@ def do_all_bench_stats(jobsdir, style, opts):
     s = bottle.template("wuprof.tpl", style=style, benches=benches)
 
     fname = os.path.join(jobsdir, check_default_output(opts.output))
-    fl = open(fname, "w")
+    fl = io.open(fname, "w", encoding="utf-8")
     fl.write(s)
     fl.close()
 
@@ -1129,9 +1130,13 @@ def html_uart_log(opts):
         import uart2html
         s = uart2html.str2html(s)
 
+        # deal with potentially corrupt chars
+        s = unicode(s, errors="replace")
         opts.uart_log = s
-    except:
-        print "Error processing UART to HTML"
+    except Exception as e:
+        print "Error processing UART to HTML: " + str(e)
+
+        s = unicode(s, errors="replace")
         opts.uart_log = "<pre>\n" + cgi.escape(s) + "\n</pre>\n"
 
 
