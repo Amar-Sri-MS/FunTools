@@ -143,25 +143,19 @@ class HashNode(HashSink):
     def source_eof(self) -> None:
         # For the last level, the last block of hashes may be
         # partially filled if the underlying file is smaller than what
-        # would fill the entire block. Write out zeros to a block
-        # boundary so entire hash file is a multiple of the block size
-        # to facilitate writing to underlying storage.  These hashes
-        # correspond to blocks beyond the end of the underlying file,
-        # so we can fill them in with zero as they will never be
-        # hashed.
-        partial_fill = self.file_offset & (BLOCK_SIZE - 1)
-        if (partial_fill != 0):
-            padding = BLOCK_SIZE - partial_fill
-            self.file.seek(self.file_offset)
-            self.file.write(bytes(padding))
+        # would fill the entire block. Emit hashes as if the
+        # underlying file were padded out with zeros to the hash block
+        # boundary.
+        while ((self.file_offset & (BLOCK_SIZE - 1)) != 0):
+            self.add_data(bytes(self.expected_data_size))
 
         # complete the level corresponding to positions beyond
         # the end of the input file with valid data so parent
         # hashes can be calculated.
-        fill_digest = hashlib.sha512().digest()
+        fill = bytes(HASH_SIZE)
         while (self.file_offset < self.max_file_offset):
-            self.parent.add_data(fill_digest)
-            self.file_offset += len(fill_digest)
+            self.parent.add_data(fill)
+            self.file_offset += len(fill)
 
         self.parent.source_eof()
         return
