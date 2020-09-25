@@ -27,6 +27,32 @@
       "out": "es"
     },
     {
+      "id": "fs145_f1_0",
+      "block": "TextFileInput",
+      "cfg": {
+        "file_pattern": "${logdir}/fs145/system_current/F1_0_funos.txt"
+      },
+      "out": "fs145_f1_0_parse"
+    },
+    {
+      "id": "fs145_f1_0_parse",
+      "block": "FunOSInput",
+      "out": "es"
+    },
+    {
+      "id": "fs145_f1_1",
+      "block": "TextFileInput",
+      "cfg": {
+        "file_pattern": "${logdir}/fs145/system_current/F1_1_funos.txt"
+      },
+      "out": "fs145_f1_1_parse"
+    },
+    {
+      "id": "fs145_f1_1_parse",
+      "block": "FunOSInput",
+      "out": "es"
+    },
+    {
       "id": "apigw",
       "block": "TextFileInput",
       "cfg": {
@@ -40,7 +66,7 @@
       "out": "es"
     },
     {
-      "id": "kafka_cons",
+      "id": "storage_cons",
       "block": "TextFileInput",
       "cfg": {
         "file_pattern": "${logdir}/fc/sclogs/start_kafka_consumer/info*"
@@ -56,7 +82,7 @@
       "id": "es",
       "block": "ElasticOutput",
       "cfg": {
-        "index": "log_swctl_proto"
+        "index": "log_swctl_1788"
       }
     }
   ]
