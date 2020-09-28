@@ -150,7 +150,7 @@ static inline void {{struct.name}}_init(struct {{struct.init_struct().name}} *s{
 	{{f.parent_struct.name|as_macro}}_{{f.name|as_macro}}_P_NOSWAP({{f.name}}) {{" | " if not loop.last }}
       {% endfor %});
     {% else %}
-      {% if field.is_natural_width %}
+      {% if field.is_natural_width and field.type.bit_width != 8 %}
         s->{{field.init_accessor()}}{{field.name}} = {{toDpuWrapper(field)}}({{field.name}});
       {% else %}
         s->{{field.init_accessor()}}{{field.name}} = {{field.name}};
