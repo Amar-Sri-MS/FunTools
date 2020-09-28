@@ -63,7 +63,7 @@ def main():
 
     parser.add_argument('config', nargs='*', help='Configuration file(s)')
     parser.add_argument('--action',
-        choices={'all', 'prepare', 'certificate', 'sign', 'image', 'tarball'},
+        choices={'all', 'prepare', 'release', 'certificate', 'sign', 'image', 'tarball'},
         default='all',
         help='Action to be performed on the input files')
     parser.add_argument('--sdkdir', default=os.getcwd(), help='SDK root directory')
@@ -85,7 +85,13 @@ def main():
 
     funos_appname = "funos{}.stripped".format('-'.join(funos_suffixes))
 
-    wanted = lambda action : args.action in ['all', action]
+    def wanted(action):
+        if args.action == 'all':
+            return True
+        elif args.action == 'release':
+            return action in ['sign', 'image', 'tarball']
+        else:
+            return action == args.action
 
     if args.default_cfg:
         if wanted('prepare'):
