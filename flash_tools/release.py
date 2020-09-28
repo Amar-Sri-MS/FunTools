@@ -61,7 +61,7 @@ def main():
     parser = argparse.ArgumentParser()
     config = {}
 
-    parser.add_argument('config', nargs='+', help='Configuration file(s)')
+    parser.add_argument('config', nargs='*', help='Configuration file(s)')
     parser.add_argument('--action',
         choices={'all', 'prepare', 'certificate', 'sign', 'image', 'tarball'},
         default='all',
@@ -72,8 +72,12 @@ def main():
     parser.add_argument('--force-description', help='Override firmware description strings')
     parser.add_argument('--chip', choices=['f1', 's1', 'f1d1'], default='f1', help='Target chip')
     parser.add_argument('--debug-build', dest='release', action='store_false', help='Use debug application binary')
+    parser.add_argument('--default-config-files', dest='default_cfg', action='store_true')
 
     args = parser.parse_args()
+
+    if args.default_cfg == False and len(args.config) == 0:
+        parser.error("One of '--default-config-files' or a list of config files is required")
 
     funos_suffixes = ['', args.chip]
     if args.release:
@@ -82,6 +86,16 @@ def main():
     funos_appname = "funos{}.stripped".format('-'.join(funos_suffixes))
 
     wanted = lambda action : args.action in ['all', action]
+
+    if args.default_cfg:
+        if wanted('prepare'):
+            args.config = [
+                'bin/flash_tools/qspi_config_fungible.json',
+                'bin/flash_tools/mmc_config_fungible.json',
+                'bin/flash_tools/key_bag_config.json',
+                'FunSDK/nvdimm_fw/nvdimm_fw_config.json' ]
+        else:
+            args.config = [ 'image.json' ]
 
     for config_file in args.config:
         if config_file == '-':
