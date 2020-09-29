@@ -59,13 +59,33 @@ enum {{const.name}} {
 {%- endmacro %}
 
 {# Macros for hiding which size macro to use. #}
+{% if generate_be %}
 {% macro toDpuWrapper(field) %}
-{% if generate_swap %}cpu_to_dpu{{field.type.bit_width}}{% endif %}
+{% if generate_swap and field.type.bit_width != 8 %}cpu_to_be{{field.type.bit_width}}{% endif %}
 {%- endmacro %}
+{% elif generate_le %}
+{% macro toDpuWrapper(field) %}
+{% if generate_swap and field.type.bit_width != 8 %}cpu_to_le{{field.type.bit_width}}{% endif %}
+{%- endmacro %}
+{% else %}
+{% macro toDpuWrapper(field) %}
+{% if generate_swap and field.type.bit_width != 8 %}cpu_to_dpu{{field.type.bit_width}}{% endif %}
+{%- endmacro %}
+{% endif %}
 
+{% if generate_be %}
 {% macro fromDpuWrapper(field) %}
-{% if generate_swap %}dpu_to_cpu{{field.type.bit_width}}{% endif %}
+{% if generate_swap and field.type.bit_width != 8 %}be{{field.type.bit_width}}_to_cpu{% endif %}
 {%- endmacro %}
+{% elif generate_le %}
+{% macro fromDpuWrapper(field) %}
+{% if generate_swap and field.type.bit_width != 8 %}le{{field.type.bit_width}}_to_cpu{% endif %}
+{%- endmacro %}
+{% else %}
+{% macro fromDpuWrapper(field) %}
+{% if generate_swap and field.type.bit_width != 8 %}dpu_to_cpu{{field.type.bit_width}}{% endif %}
+{%- endmacro %}
+{% endif %}
 
 {#
 
@@ -145,7 +165,7 @@ static inline void {{struct.name}}_init(struct {{struct.init_struct().name}} *s{
 
   {% for field in struct.init_fields() %}
     {% if field.packed_fields %}
-      s->{{field.init_accessor()}}{{field.name}} = cpu_to_dpu{{field.type.bit_width}}(	
+      s->{{field.init_accessor()}}{{field.name}} = {{toDpuWrapper(field)}}(
       {% for f in field.fields_to_set() %}
 	{{f.parent_struct.name|as_macro}}_{{f.name|as_macro}}_P_NOSWAP({{f.name}}) {{" | " if not loop.last }}
       {% endfor %});
@@ -221,35 +241,41 @@ extern "C" {
  * going in and coming out.
  */
 
+{% if not generate_be and not generate_le %}
 #ifdef __DPU_BYTEORDER_BIG
+{% endif %}
+{% if not generate_le %}
 #define __dpu16 __be16
 #define __dpu32 __be32
 #define __dpu64 __be64
 
-#define cpu_to_dpu8(x) (x)
 #define cpu_to_dpu16(x) (cpu_to_be16(x))
 #define cpu_to_dpu32(x) (cpu_to_be32(x))
 #define cpu_to_dpu64(x) (cpu_to_be64(x))
 
-#define dpu_to_cpu8(x) (x)
 #define dpu_to_cpu16(x) (be16_to_cpu(x))
 #define dpu_to_cpu32(x) (be32_to_cpu(x))
 #define dpu_to_cpu64(x) (be64_to_cpu(x))
+{% endif %}
+{% if not generate_be and not generate_le %}
 #else
+{% endif %}
+{% if not generate_be %}
 #define __dpu16 __le16
 #define __dpu32 __le32
 #define __dpu64 __le64
 
-#define cpu_to_dpu8(x) (x)
 #define cpu_to_dpu16(x) (cpu_to_le16(x))
 #define cpu_to_dpu32(x) (cpu_to_le32(x))
 #define cpu_to_dpu64(x) (cpu_to_le64(x))
 
-#define dpu_to_cpu8(x) (x)
 #define dpu_to_cpu16(x) (le16_to_cpu(x))
 #define dpu_to_cpu32(x) (le32_to_cpu(x))
 #define dpu_to_cpu64(x) (le64_to_cpu(x))
+{% endif %}
+{% if not generate_be and not generate_le %}
 #endif // __DPU_BYTEORDER_BIG
+{% endif %}
 {% endif %}
 
 // TODO(bowdidge): Consider removing init functions with no arguments.
