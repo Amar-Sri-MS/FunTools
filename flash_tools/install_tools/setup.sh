@@ -14,7 +14,7 @@ setup_err() {
 		rm -f $PROGRESS
 	else
 		log_msg "Install/Upgrade successful."
-		echo 100 > $PROGRESS
+		echo "done" >> $PROGRESS
 	fi
 	sync
 	exit $trap_code
@@ -77,42 +77,34 @@ fi
 # install the trap handler _after_ the initial in-progress check
 trap "setup_err" HUP INT QUIT TERM ABRT EXIT
 
-echo 1 > $PROGRESS
-
 [[ $(id -u) != 0 ]] && log_msg "You need to be root to run the installer" && exit 1
 
-log_msg "Installing ..."
-set -x
-
-echo 10 > $PROGRESS
+echo "started" > $PROGRESS
 
 log_msg "Installing and configuring cclinux software and DPU firmware"
 pwd=$PWD
 
-echo 25 > $PROGRESS
-
 #funos_sdk_version=$(sed -ne 's/^funsdk=\(.*\)/\1/p' .version || echo latest)
 
 log_msg "Upgrading DPU firmware"
-log_msg "*** NOT IMPLEMENTED YET ***"
 
-#if [[ $downgrade ]]; then
-#	./opt/fungible/bin/run_fwupgrade.py --offline --offline-root $PWD/opt/fungible -U --ws ./opt/fungible/funos --version latest --force --downgrade
-#	./opt/fungible/bin/run_fwupgrade.py --offline --offline-root $PWD/opt/fungible -U --ws ./opt/fungible/funos --version latest --force --downgrade --active
-#else
-#	./opt/fungible/bin/run_fwupgrade.py --offline --offline-root $PWD/opt/fungible -U --ws ./opt/fungible/funos --version $funos_sdk_version
-#fi
-#if [[ $ccfg_install ]]; then
-#	./opt/fungible/bin/run_fwupgrade.py --offline --offline-root $PWD/opt/fungible --upgrade-file ccfg=$ccfg_install --ws ./opt/fungible/funos
-#	./opt/fungible/bin/run_fwupgrade.py --offline --offline-root $PWD/opt/fungible --upgrade-file ccfg=$ccfg_install --ws ./opt/fungible/funos --active
-#fi
+FW_UPGRADE_ARGS="--offline --ws ./funos"
 
-echo 50 > $PROGRESS
+if [[ $downgrade ]]; then
+	./run_fwupgrade.py ${FW_UPGRADE_ARGS} -U --version latest --force --downgrade
+	./run_fwupgrade.py ${FW_UPGRADE_ARGS} -U --version latest --force --downgrade --active
+else
+	./run_fwupgrade.py ${FW_UPGRADE_ARGS} -U --version $funos_sdk_version
+fi
+if [[ $ccfg_install ]]; then
+	./run_fwupgrade.py ${FW_UPGRADE_ARGS} --upgrade-file ccfg=$ccfg_install
+	./run_fwupgrade.py ${FW_UPGRADE_ARGS} --upgrade-file ccfg=$ccfg_install --active
+fi
+
+echo "DPU done" >> $PROGRESS
 
 log_msg "Upgrading CCLinux"
 log_msg "*** NOT IMPLEMENTED YET ***"
-
-echo 100 > $PROGRESS
 
 sync
 exit 0
