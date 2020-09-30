@@ -9,6 +9,7 @@ import unittest
 
 from blocks.log_parsers import FunOSInput
 from blocks.log_parsers import MsecInput
+from blocks.log_parsers import KeyValueInput
 from blocks_test.common import msg_tuple_to_dict
 from blocks_test.common import process
 
@@ -87,3 +88,39 @@ class MsecInputTest(unittest.TestCase):
         expected = datetime.datetime.strptime('2020/08/05 03:37:00.607',
                                               '%Y/%m/%d %H:%M:%S.%f')
         self.assertEqual(expected, timestamp)
+
+
+class KeyValueInputTest(unittest.TestCase):
+    """ Unit tests for Key Value input parser """
+    def setUp(self):
+        self.block = KeyValueInput()
+
+    def test_can_convert_nsecs(self):
+        """ check if nanoseconds are converted to microseconds """
+        lines = ['time="2020-08-04T23:09:14.705144973-07:00" level=info msg="Relay for module: dataplane_interface key openconfig-fun-global:fun-global"']
+        output = process(self.block, _lines_to_iterable(lines))
+
+        timestamp = msg_tuple_to_dict(output[0])['usecs']
+        expected = 705144
+
+        self.assertEqual(expected, timestamp)
+
+    def test_can_convert_to_utc(self):
+        """ check if timestamp is converted to UTC based on the timezone offset """
+        lines = ['time="2020-08-04T23:09:14.705144973-07:00" level=info msg="Relay for module: dataplane_interface key openconfig-fun-global:fun-global"']
+        output = process(self.block, _lines_to_iterable(lines))
+
+        timestamp = msg_tuple_to_dict(output[0])['datetime']
+        expected = datetime.datetime.strptime('2020-08-04T16:09:14.705144', '%Y-%m-%dT%H:%M:%S.%f')
+
+        self.assertEqual(expected, timestamp)
+
+    def test_can_combine_level_with_msg(self):
+        """ check if the log level is prepended to the log msg """
+        lines = ['time="2020-08-04T23:09:14.705144973-07:00" level=info msg="Relay for module: dataplane_interface key openconfig-fun-global:fun-global"']
+        output = process(self.block, _lines_to_iterable(lines))
+
+        msg = msg_tuple_to_dict(output[0])['line']
+        expected = "info Relay for module: dataplane_interface key openconfig-fun-global:fun-global"
+
+        self.assertEqual(expected, msg)
