@@ -89,4 +89,4 @@ find $DEPLOY_ROOT/lib/modules/$kernel_version -name modules.\* | (
     done
 )
 
-depmod -b $DEPLOY_ROOT -C $DEPLOY_ROOT/etc/depmod.d -F bin/cc-linux-yocto/mips64hv/System.map $kernel_version
+depmod -b $DEPLOY_ROOT -C $DEPLOY_ROOT/etc/depmod.d -e -F bin/cc-linux-yocto/mips64hv/System.map $kernel_version
