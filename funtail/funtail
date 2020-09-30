@@ -9,10 +9,21 @@ static check:
 import os
 import sys
 import argparse
-import dpc_client
 import time
 import json
 import socket
+
+## add some default locations to find dpc_client
+OSNAME = os.uname()[0]
+SCRIPTDIR = os.path.dirname(sys.argv[0])
+SDKDIR = os.environ.get("SDKDIR",
+                        os.environ.get("WORKSPACE",
+                                       SCRIPTDIR + "/../..") + "/FunSDK")
+sys.path.append(os.path.join(SCRIPTDIR, "../dcpsh"))
+sys.path.append(os.path.join(SDKDIR, "bin", OSNAME))
+sys.path.append("/opt/fungible/FunSDK/bin/Linux/") ## demo rootfs
+
+import dpc_client
 
 DEFAULT_PORT=6666
 LOG_DEBUG = 8
@@ -92,9 +103,9 @@ HOST_FINDERS = [find_funtail,
 
 def find_server(args, conn, pairs):
 
-    # first see if we're disabled
-    if ((not find_arg(pairs, "funtail/enabled", True))
-        and (not args.force_auto)):
+    # first see if we're disabled. default to auto detection
+    # unless a FunOS boot-arg says so.
+    if (not find_arg(pairs, "funtail/enabled", True)):
         print("funtail: disabled by FunOS config-args. Ignoring other config.")
         server_address = None
     else:
@@ -169,9 +180,6 @@ def parse_args() -> argparse.Namespace:
     # don't send it, echo it
     parser.add_argument("-e", "--echo", action="store_true")
 
-    # force enable without a FunOS boot-arg
-    parser.add_argument("-F", "--force-auto", action="store_true")
-
     # force a named log
     parser.add_argument("-N", "--named", action="store", type=str, default=None)
 
@@ -185,8 +193,11 @@ def main() -> int:
     # work out the args
     if (args.unix):
         addr = args.dpcaddress
+    elif (args.dpcaddress is not None):
+        addr = (args.dpcaddress, args.dpcport)
     else:
-        addr = (args.dpcaddress, args.dpcport)      
+        raise RuntimeError("unspecified dpc connection")
+    
 
     # construct the dpc client
     conn = dpc_client.DpcClient(legacy_ok=False,
@@ -212,10 +223,10 @@ def main() -> int:
             
         # connect to the logging server via TCP
         print("connecting to server: %s:%s" % server_address)
-        output = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        output.connect(server_address)
+        outsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        outsock.connect(server_address)
 
-        output = output.makefile(mode='wb')
+        output = outsock.makefile(mode='wb')
         writefunc = sockwrite
     else:
         output = sys.stdout
