@@ -21,5 +21,7 @@ target_dir=$SDK_INSTALL_DIR/bin/cc-linux-yocto/mips64hv
 mkdir -p $target_dir
 
 cp $src_dir/vmlinux.bin $target_dir
+tar xJf $src_dir/fun-image-kernel-dev-mips64r6.tar.xz -C $target_dir --strip-components=5 --wildcards '*System.map*'
+
 cp $src_dir/fun-image-mips64r6hv-mips64r6.tar.xz $target_dir
 cp $src_dir/fun-s1-factory-image-mips64r6.cpio.gz $target_dir
