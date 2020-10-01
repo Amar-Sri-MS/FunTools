@@ -71,6 +71,8 @@
 #include <arpa/inet.h>
 #include <syslog.h>
 
+#include "platform/mips64/ccu.h"
+
 /*
  * CCU Server TCP Port.
  */
@@ -182,110 +184,6 @@ swab16(uint16_t u16)
 
 
 /*
- * =======================================================
- * START: Code extracted from FunOS: platform/mips64/ccu.h
- * =======================================================
- */
-
-#define CCU_RING_SHF	(35)
-#define CCU_RING_MSK	(0x1f)
-
-// Slave Ring Number (5-bits)
-
-#define CCU_RING_SHF	(35)
-#define CCU_RING_MSK	(0x1f)
-
-#define CCU_RING_WIDE	(0)
-#define CCU_RING_PUT(n) (1 + (n))	// n = 0..7
-#define CCU_RING_CUT	(9)
-#define CCU_RING_NUT(n) (10 + (n))	// n = 0..1
-#define CCU_RING_HSU(n) (12 + (n))	// n = 0..5
-#define CCU_RING_MUH(n) (18 + (n))	// n = 0..1
-#define CCU_RING_MUD(n) (20 + (n))	// n = 0..1
-#define CCU_RING_MIO(n) (22 + (n))	// n = 0..1
-
-// registers index
-
-#define CCU_CMD_REG		(0)
-#define CCU_DATA_REG_CNT	(11)
-#define CCU_DATA(n)		(1 + (n))	// n = 0..(CCU_DATA_REG_CNT - 1)
-#define CCU_DATA_ADDR(n)	(CCU_DATA(n) * sizeof(uint64_t))
-#define CCU_REG_SPACE		(16)
-#define CCU_REG_EMUID		(0x78)
-#define CCU_REG_ECC_STATUS	(0x78)
-#define CCU_WID_MAX		(CCU_DATA_REG_CNT * CCU_REG_WID)
-
-// transaction type
-
-#define CCU_CMD_TYPE_REQ	0
-#define CCU_CMD_TYPE_GRANT	1
-#define CCU_CMD_TYPE_RD_T       2
-#define CCU_CMD_TYPE_WR_T       3
-#define CCU_CMD_TYPE_RD_RSP	4
-#define CCU_CMD_TYPE_WR_RSP     5
-
-// command init field
-
-#define CCU_CMD_INIT_DIS	0
-#define CCU_CMD_INIT_ENB        1       // send init pattern
-
-// command register bit masks - command 24-bits (write)
-
-#define CCU_CMD_TYPE_MSK	(0x0fULL)
-#define CCU_CMD_TYPE_SHF	(60)
-#define CCU_CMD_SIZE_MSK	(0x3fULL)
-#define CCU_CMD_SIZE_SHF	(54)
-#define CCU_CMD_RING_MSK	(0x1fULL)
-#define CCU_CMD_RING_SHF	(49)
-#define CCU_CMD_INIT_MSK	(0x01ULL)
-#define CCU_CMD_INIT_SHF        (48)
-#define CCU_CMD_CRSV_MSK	(0x03ULL)
-#define CCU_CMD_CRSV_SHF	(45)
-#define CCU_CMD_TAG_MSK		(0x1fULL)
-#define CCU_CMD_TAG_SHF		(40)
-
-// command register bit masks - status 8-bits (read)
-
-#define CCU_CMD_BUSY_MSK        (0x01ULL)		// read only
-#define CCU_CMD_BUSY_SHF	(47)			// read only
-#define CCU_CMD_SRSV_MSK        (0x03ULL)		// read only
-#define CCU_CMD_SRSV_SHF        (44)                    // read only
-#define CCU_CMD_CLM_MSK         (0x01ULL)               // read only
-#define CCU_CMD_CLM_SHF         (43)			// read only
-#define CCU_CMD_RSP_MSK		(0x07ULL)		// read only
-#define CCU_CMD_RSP_SHF         (40)			// read only
-
-// command register bit masks - address 40-bits
-
-#define CCU_CMD_ADDR_MSK        (0x0ffffffffffULL)      // 40-bit
-#define CCU_CMD_ADDR_SHF        (0)
-
-/*
- * constructing the command register value
- *
- * ty - type - transaction type
- * sz - size - see above
- * rn - ring - wide register access always use ring 0
- * init - initialize the ring - should be 0 for wide reg access
- * tag - destination buffer address (for tracking purpose)
- * adr - address - wide register address (40-bit)
- */
-#define CCU_CMD(ty, sz, rn, init, tag, adr)	\
-	((((uint64_t)(ty)   & CCU_CMD_TYPE_MSK) << CCU_CMD_TYPE_SHF) | \
-	  (((uint64_t)(sz)   & CCU_CMD_SIZE_MSK) << CCU_CMD_SIZE_SHF) | \
-	  (((uint64_t)(rn)   & CCU_CMD_RING_MSK) << CCU_CMD_RING_SHF) | \
-	  (((uint64_t)(init) & CCU_CMD_INIT_MSK) << CCU_CMD_INIT_SHF) | \
-	  (((uint64_t)(tag)  & CCU_CMD_TAG_MSK)	<< CCU_CMD_TAG_SHF) | \
-	  (((uint64_t)(adr)  & CCU_CMD_ADDR_MSK) << CCU_CMD_ADDR_SHF))
-
-/*
- * =====================================================
- * END: Code extracted from FunOS: platform/mips64/ccu.h
- * =====================================================
- */
-
-
-/*
  * ==============================================
  * Fundamentals of accesses the CSR Control Unit.
  * ==============================================
@@ -302,7 +200,7 @@ swab16(uint16_t u16)
  * The PCIe Remote Access mapping in the End Point MMU is 4KB.  All of this
  * should really be in a FunHW or FunOS include file ...
  */
-#define CCU_SIZE		4096
+#define CCU_MAP_SIZE		4096
 
 #define CCU_SPINLOCK0		4072
 #define CCU_SPINLOCK1		4080
@@ -437,7 +335,7 @@ ccu_read_dump(ccu_info_t *ccu_info,
 	uint64_t *ccu64 = (uint64_t *)ccu_info->mmap;
 	uint32_t size64 = SIZE64(size);
 	int reg_idx;
-	
+
 	printf("dumping CCU Read of %s\n", name);
 	decode_ccucmd(be64_to_cpu(ccu64[CCU_CMD_REG]), "rsp");
 	for (reg_idx = 0; reg_idx < size64; reg_idx++)
@@ -650,7 +548,7 @@ response(int fd, int priority, const char *format, ...)
 		vdprintf(fd, format, args);
 		va_end(args);
 	}
-		
+
 	if (debug) {
 		va_start(args, format);
 		vfprintf(stderr, format, args);
@@ -692,7 +590,7 @@ server(int client_fd)
 			continue;
 		}
 		command[cc] = '\0';
-		
+
 		cp = command;
 		argc = 0;
 		inword = 0;
@@ -713,7 +611,7 @@ server(int client_fd)
 			argc++;
 			inword = 0;
 		}
-		
+
 		/*
 		 * Blank commands aren't accepted.
 		 */
@@ -750,7 +648,7 @@ server(int client_fd)
 					 argv[1], strerror(errno));
 				continue;
 			}
-			ccu_info.mmap = mmap(NULL, CCU_SIZE,
+			ccu_info.mmap = mmap(NULL, CCU_MAP_SIZE,
 					     PROT_READ|PROT_WRITE,
 					     MAP_SHARED|MAP_LOCKED,
 					     ccu_info.fd, 0);
@@ -950,7 +848,7 @@ server(int client_fd)
 	}
 
 	if (ccu_info.mmap) {
-		munmap(ccu_info.mmap, CCU_SIZE);
+		munmap(ccu_info.mmap, CCU_MAP_SIZE);
 		close(ccu_info.fd);
 	}
 
