@@ -132,3 +132,59 @@ class MsecInput(Block):
         d = datetime.datetime.strptime(log_time, '%Y/%m/%d %H:%M:%S.%f')
 
         return d, d.microsecond
+
+class KeyValueInput(Block):
+    """
+    Handles logs with key value log format
+    """
+    def process(self, iters):
+        for (_, _, uid, _, line) in iters[0]:
+            line = line.strip()
+
+            # Matches the line into a list of key value tuple
+            # Example:
+            # time="2020-09-26T03:04:51.267809475-07:00" level=info msg="Previous key not present"
+            log_field_tuples = re.findall(r'([\w.-]+)=("(?:[^\s]*|[^\n]*)"|\w+)', line)
+
+            log_fields = dict()
+            for key, value in log_field_tuples:
+                # Removing quotations at the start & end if any
+                value = value.lstrip('\"')
+                value = value.rstrip('\"')
+                log_fields[key] = value
+
+            time_str = log_fields['time']
+            date_time, usecs = self.extract_timestamp(time_str)
+
+            # Extract the log message's level either from the log or from the name of the log file
+            # This field then can be indexed to the log storage and be used for filtering out the
+            # logs. TODO (Sourabh): Need to standardize the names of log message levels
+            msg = log_fields.get('level', 'info') + ' ' + log_fields.get('msg', '')
+
+            yield (date_time, usecs, uid, None, msg)
+
+    @staticmethod
+    def extract_timestamp(time_str):
+
+        # 2020-08-04T23:09:14.705144973-07:00 OR 2020-08-04 23:09:14.705144973-07:00
+        # OR 2020/08/04 23:09:14.705144973
+        m = re.match('^([(-0-9|/0-9)]+)+(?:T|\s)([:0-9]+).([0-9]+)(.*)', time_str)
+        day_str, time_str, secs_str, tz_offset = m.group(1), m.group(2), m.group(3), m.group(4)
+
+        # Converting nanoseconds to microseconds because Python datetime only supports upto microseconds
+        # TODO (Sourabh): Precision loss due to conversion microseconds
+        usecs_str = secs_str[0:6] if len(secs_str) > 6 else secs_str
+
+        day_str = day_str.replace('-', '/')
+        log_time = f"{day_str} {time_str}.{usecs_str}"
+        log_time_format = '%Y/%m/%d %H:%M:%S.%f'
+
+        d = datetime.datetime.strptime(log_time, log_time_format)
+
+        # adding if timezone offset is present, converting to UTC
+        # if tz_offset:
+        #     tz_d = datetime.datetime.strptime(tz_offset, '%z')
+        #     time_delta = tz_d.tzinfo.utcoffset(None)
+        #     d = d + time_delta
+
+        return d, d.microsecond
