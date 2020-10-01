@@ -6,6 +6,7 @@
 
 #include "platform/mips64/ccu.h"
 #include "pcieproxy.h"
+#include "endian.h"
 
 /*
  * Decode a CCU Indirect CSR Access Command.
@@ -42,11 +43,11 @@ ccu_dump(ccu_info_t *ccu_info)
 	 * The first portion of the mmap contains the CCU Command Register
 	 * and CCU_DATA_REG_CNT Scratch Buffer Registers; all uint64_t.
 	 */
-	decode_ccucmd(be64_to_cpu(ccu64[CCU_CMD_REG]), "Cmd Decode");
+	decode_ccucmd(be64toh(ccu64[CCU_CMD_REG]), "Cmd Decode");
 	for (addr = CCU_DATA(0); addr < CCU_DATA(CCU_DATA_REG_CNT); addr++)
 		printf("%4d %#018lx\n",
 		       addr * (unsigned int)sizeof(*ccu64),
-		       be64_to_cpu(ccu64[addr]));
+		       be64toh(ccu64[addr]));
 
 	/*
 	 * At the very end of the 4KB mmap() we find a couple of Spinlocks and
@@ -54,13 +55,13 @@ ccu_dump(ccu_info_t *ccu_info)
 	 */
 	printf("%4d %#018lx\n",
 	       CCU_SPINLOCK0,
-	       be64_to_cpu(ccu64[CCU_SPINLOCK0/sizeof(*ccu64)]));
+	       be64toh(ccu64[CCU_SPINLOCK0/sizeof(*ccu64)]));
 	printf("%4d %#018lx\n",
 	       CCU_SPINLOCK1,
-	       be64_to_cpu(ccu64[CCU_SPINLOCK1/sizeof(*ccu64)]));
+	       be64toh(ccu64[CCU_SPINLOCK1/sizeof(*ccu64)]));
 	printf("%4d         %#010x\n",
 	       CCU_ID,
-	       be32_to_cpu(ccu32[CCU_ID/sizeof(*ccu32)]));
+	       be32toh(ccu32[CCU_ID/sizeof(*ccu32)]));
 }
 
 /*
@@ -94,9 +95,9 @@ csr_wide_read(ccu_info_t *ccu_info,
 	 * the caller's buffer.
 	 */
 	ccu_lock(ccu_info);
-	ccu64[CCU_CMD_REG] = cpu_to_be64(cmd);
+	ccu64[CCU_CMD_REG] = htobe64(cmd);
 	for (reg_idx = 0; reg_idx < size64; reg_idx++)
-		data[reg_idx] = be64_to_cpu(ccu64[CCU_DATA(reg_idx)]);
+		data[reg_idx] = be64toh(ccu64[CCU_DATA(reg_idx)]);
 	ccu_unlock(ccu_info);
 }
 
@@ -132,8 +133,8 @@ csr_wide_write(ccu_info_t *ccu_info,
 	 */
 	ccu_lock(ccu_info);
 	for (reg_idx = 0; reg_idx < size64; reg_idx++)
-		ccu64[CCU_DATA(reg_idx)] = cpu_to_be64(data[reg_idx]);
-	ccu64[CCU_CMD_REG] = cpu_to_be64(cmd);
+		ccu64[CCU_DATA(reg_idx)] = htobe64(data[reg_idx]);
+	ccu64[CCU_CMD_REG] = htobe64(cmd);
 	ccu_unlock(ccu_info);
 }
 

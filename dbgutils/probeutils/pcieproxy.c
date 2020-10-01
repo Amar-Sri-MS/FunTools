@@ -72,6 +72,7 @@
 #include <syslog.h>
 
 #include "platform/mips64/ccu.h"
+#include "endian.h"
 #include "pcieproxy.h"
 
 /*
@@ -111,7 +112,7 @@ ccu_read_id(ccu_info_t *ccu_info)
 {
 	uint32_t *ccu32 = (uint32_t *)ccu_info->mmap;;
 
-	return be32_to_cpu(ccu32[CCU_ID/sizeof(*ccu32)]);
+	return be32toh(ccu32[CCU_ID/sizeof(*ccu32)]);
 }
 
 /*
@@ -121,7 +122,7 @@ uint64_t *
 ccu_spinlock(ccu_info_t *ccu_info)
 {
 	uint64_t *ccu64 = (uint64_t *)ccu_info->mmap;
-	uint64_t null_token = cpu_to_be64(CCU_SPINLOCK_ID_PUT(CCU_SPINLOCK_NULL_ID) |
+	uint64_t null_token = htobe64(CCU_SPINLOCK_ID_PUT(CCU_SPINLOCK_NULL_ID) |
 					  CCU_SPINLOCK_LOCK_PUT(0));
 	uint64_t *spinlock;
 
@@ -160,9 +161,9 @@ ccu_lock(ccu_info_t *ccu_info)
 
 	do {
 		*ccu_info->spinlock =
-			cpu_to_be64(CCU_SPINLOCK_ID_PUT(ccu_info->spinlock_token) |
+			htobe64(CCU_SPINLOCK_ID_PUT(ccu_info->spinlock_token) |
 				    CCU_SPINLOCK_LOCK_PUT(1));
-	} while (CCU_SPINLOCK_ID_GET(be64_to_cpu(*ccu_info->spinlock)) !=
+	} while (CCU_SPINLOCK_ID_GET(be64toh(*ccu_info->spinlock)) !=
 		 ccu_info->spinlock_token);
 }
 
@@ -173,7 +174,7 @@ ccu_unlock(ccu_info_t *ccu_info)
 		return;
 
 	*ccu_info->spinlock =
-		cpu_to_be64(CCU_SPINLOCK_ID_PUT(CCU_SPINLOCK_NULL_ID) |
+		htobe64(CCU_SPINLOCK_ID_PUT(CCU_SPINLOCK_NULL_ID) |
 			    CCU_SPINLOCK_LOCK_PUT(0));
 }
 
@@ -663,8 +664,8 @@ main(int argc, char *const argv[])
 
 	memset(&server_inaddr, 0, sizeof server_inaddr);
 	server_inaddr.sin_family = AF_INET;
-	server_inaddr.sin_port = cpu_to_be16(CCU_SERVER_TCP_PORT);
-	server_inaddr.sin_addr.s_addr = cpu_to_be32(INADDR_ANY);
+	server_inaddr.sin_port = htobe16(CCU_SERVER_TCP_PORT);
+	server_inaddr.sin_addr.s_addr = htobe32(INADDR_ANY);
 	if (bind(server_fd, (struct sockaddr *)&server_inaddr,
 		 sizeof server_inaddr) != 0) {
 		fprintf(stderr, "%s: unable to bind address to Server Socket: %s\n",
@@ -741,7 +742,7 @@ main(int argc, char *const argv[])
 		if (client_pid) {
 			debuglog(LOG_DEBUG, "Forked client server for client %s:%d\n",
 				 inet_ntoa(client_inaddr.sin_addr),
-				 be16_to_cpu(client_inaddr.sin_port));
+				 be16toh(client_inaddr.sin_port));
 			continue;
 		}
 
@@ -752,12 +753,12 @@ main(int argc, char *const argv[])
 		if (err)
 			debuglog(LOG_ERR, "Server for client %s:%d returned error: %s\n",
 				 inet_ntoa(client_inaddr.sin_addr),
-				 be16_to_cpu(client_inaddr.sin_port),
+				 be16toh(client_inaddr.sin_port),
 				 strerror(errno));
 		else
 			debuglog(LOG_DEBUG, "Server for client %s:%d completed successfully\n",
 				 inet_ntoa(client_inaddr.sin_addr),
-				 be16_to_cpu(client_inaddr.sin_port));
+				 be16toh(client_inaddr.sin_port));
 
 		shutdown(client_fd, SHUT_RDWR);
 		close(client_fd);
