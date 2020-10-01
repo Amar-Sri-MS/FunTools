@@ -182,9 +182,9 @@ class KeyValueInput(Block):
         d = datetime.datetime.strptime(log_time, log_time_format)
 
         # adding if timezone offset is present, converting to UTC
-        if tz_offset:
-            tz_d = datetime.datetime.strptime(tz_offset, '%z')
-            time_delta = tz_d.tzinfo.utcoffset(None)
-            d = d + time_delta
+        # if tz_offset:
+        #     tz_d = datetime.datetime.strptime(tz_offset, '%z')
+        #     time_delta = tz_d.tzinfo.utcoffset(None)
+        #     d = d + time_delta
 
         return d, d.microsecond
