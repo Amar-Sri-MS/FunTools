@@ -105,6 +105,18 @@ class KeyValueInputTest(unittest.TestCase):
 
         self.assertEqual(expected, timestamp)
 
+    def test_can_convert_to_datetime(self):
+        """ check if log time is converted to python datetime """
+        lines = [
+            'time="2020-08-04T23:09:14.705144973-07:00" level=info msg="Relay for module: dataplane_interface key openconfig-fun-global:fun-global"'
+        ]
+        output = process(self.block, _lines_to_iterable(lines))
+
+        timestamp = msg_tuple_to_dict(output[0])['datetime']
+        expected = datetime.datetime.strptime('2020-08-04T23:09:14.705144', '%Y-%m-%dT%H:%M:%S.%f')
+
+        self.assertEqual(expected, timestamp)
+
     # def test_can_convert_to_utc(self):
     #     """ check if timestamp is converted to UTC based on the timezone offset """
     #     lines = ['time="2020-08-04T23:09:14.705144973-07:00" level=info msg="Relay for module: dataplane_interface key openconfig-fun-global:fun-global"']
