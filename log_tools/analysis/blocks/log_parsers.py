@@ -142,24 +142,32 @@ class KeyValueInput(Block):
             line = line.strip()
 
             # Matches the line into a list of key value tuple
-            key_value_tuples = re.findall(r'([\w.-]+)=("(?:[^\s]*|[^\n]*)"|\w+)', line)
+            # Example:
+            # time="2020-09-26T03:04:51.267809475-07:00" level=info msg="Previous key not present"
+            log_field_tuples = re.findall(r'([\w.-]+)=("(?:[^\s]*|[^\n]*)"|\w+)', line)
 
-            key_value = dict()
-            for key, value in key_value_tuples:
+            log_fields = dict()
+            for key, value in log_field_tuples:
                 # Removing quotations at the start & end if any
                 value = value.lstrip('\"')
                 value = value.rstrip('\"')
-                key_value[key] = value
+                log_fields[key] = value
 
-            time_str = key_value['time']
+            time_str = log_fields['time']
             date_time, usecs = self.extract_timestamp(time_str)
-            msg = key_value.get('level', 'info') + ' ' + key_value.get('msg', '')
+
+            # Extract the log message's level either from the log or from the name of the log file
+            # This field then can be indexed to the log storage and be used for filtering out the
+            # logs. TODO (Sourabh): Need to standardize the names of log message levels
+            msg = log_fields.get('level', 'info') + ' ' + log_fields.get('msg', '')
 
             yield (date_time, usecs, uid, None, msg)
 
     @staticmethod
     def extract_timestamp(time_str):
-        # 2020-08-04T23:09:14.705144973-07:00 OR 2020-08-04 23:09:14.705144973-07:00 OR 2020/08/04 23:09:14.705144973
+
+        # 2020-08-04T23:09:14.705144973-07:00 OR 2020-08-04 23:09:14.705144973-07:00
+        # OR 2020/08/04 23:09:14.705144973
         m = re.match('^([(-0-9|/0-9)]+)+(?:T|\s)([:0-9]+).([0-9]+)(.*)', time_str)
         day_str, time_str, secs_str, tz_offset = m.group(1), m.group(2), m.group(3), m.group(4)
 
