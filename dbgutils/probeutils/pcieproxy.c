@@ -72,6 +72,7 @@
 #include <syslog.h>
 
 #include "platform/mips64/ccu.h"
+#include "pcieproxy.h"
 
 /*
  * CCU Server TCP Port.
@@ -84,167 +85,7 @@
 const char *myname;
 int debug = 0;
 int port = CCU_SERVER_TCP_PORT;
-
-/*
- * Client Global Variables and Types.
- */
-typedef struct {
-	int		fd;
-	void		*mmap;
-	pid_t		spinlock_token;
-	uint64_t	*spinlock;
-} ccu_info_t;
-
-
-/*
- * =================
- * Endian utilities.
- * =================
- */
-
-/*
- * Swap the endianess of a 64-bit (8-byte) argument and return the result.
- */
-uint64_t
-swab64(uint64_t u64)
-{
-	return ((((u64 >> 56) & 0xff) <<  0) |
-		(((u64 >> 48) & 0xff) <<  8) |
-		(((u64 >> 40) & 0xff) << 16) |
-		(((u64 >> 32) & 0xff) << 24) |
-		(((u64 >> 24) & 0xff) << 32) |
-		(((u64 >> 16) & 0xff) << 40) |
-		(((u64 >>  8) & 0xff) << 48) |
-		(((u64 >>  0) & 0xff) << 56));
-}
-
-/*
- * Swap the endianess of a 32-bit (4-byte) argument and return the result.
- */
-uint32_t
-swab32(uint32_t u32)
-{
-	return ((((u32 >> 24) & 0xff) <<  0) |
-		(((u32 >> 16) & 0xff) <<  8) |
-		(((u32 >>  8) & 0xff) << 16) |
-		(((u32 >>  0) & 0xff) << 24));
-}
-
-/*
- * Swap the endianess of a 16-bit (2-byte) argument and return the result.
- */
-uint16_t
-swab16(uint16_t u16)
-{
-	return ((((u16 >> 8) & 0xff) << 0) |
-		(((u16 >> 0) & 0xff) << 8));
-}
-
-#if __BYTE_ORDER == __BIG_ENDIAN
-
-#define cpu_to_be64(x) ((uint64_t)(x))
-#define cpu_to_be32(x) ((uint32_t)(x))
-#define cpu_to_be16(x) ((uint16_t)(x))
-
-#define be64_to_cpu(x) ((uint64_t)(x))
-#define be32_to_cpu(x) ((uint32_t)(x))
-#define be16_to_cpu(x) ((uint16_t)(x))
-
-#define cpu_to_le64(x) swab64(x)
-#define cpu_to_le32(x) swab32(x)
-#define cpu_to_le16(x) swab16(x)
-
-#define le64_to_cpu(x) swab64(x)
-#define le32_to_cpu(x) swab32(x)
-#define le16_to_cpu(x) swab16(x)
-
-#elif __BYTE_ORDER == __LITTLE_ENDIAN
-
-#define cpu_to_be64(x) swab64(x)
-#define cpu_to_be32(x) swab32(x)
-#define cpu_to_be16(x) swab16(x)
-
-#define be64_to_cpu(x) swab64(x)
-#define be32_to_cpu(x) swab32(x)
-#define be16_to_cpu(x) swab16(x)
-
-#define cpu_to_le64(x) ((uint64_t)(x))
-#define cpu_to_le32(x) ((uint32_t)(x))
-#define cpu_to_le16(x) ((uint16_t)(x))
-
-#define le64_to_cpu(x) ((uint64_t)(x))
-#define le32_to_cpu(x) ((uint32_t)(x))
-#define le16_to_cpu(x) ((uint16_t)(x))
-
-#else
-
-#error Unknown Endianess!
-
-#endif
-
-
-/*
- * ==============================================
- * Fundamentals of accesses the CSR Control Unit.
- * ==============================================
- */
-
-/*
- * Registers are read and written via the CCU's Indirect Access commands.
- * Registers have an Address within the Fungible Chip's Address Space, and
- * a Size (in bits).  The Caller provides a Data Buffer of 64-bit words to
- * read register values into or write new register values.
- */
-
-/*
- * The PCIe Remote Access mapping in the End Point MMU is 4KB.  All of this
- * should really be in a FunHW or FunOS include file ...
- */
-#define CCU_MAP_SIZE		4096
-
-#define CCU_SPINLOCK0		4072
-#define CCU_SPINLOCK1		4080
-#define CCU_ID			4092
-
-#define CCU_SPINLOCK_ID_SHF	(32)
-#define CCU_SPINLOCK_ID_MSK	(0x7fffffffUL)
-#define CCU_SPINLOCK_ID_PUT(x)	((uint64_t)(x) << CCU_SPINLOCK_ID_SHF)
-#define CCU_SPINLOCK_ID_GET(x)	((uint32_t)(((x) >> CCU_SPINLOCK_ID_SHF) & \
-					    CCU_SPINLOCK_ID_MSK))
-#define CCU_SPINLOCK_NULL_ID	0x7fffffffUL
-
-#define CCU_SPINLOCK_LOCK_SHF	(63)
-#define CCU_SPINLOCK_LOCK_MSK	(0x1UL)
-#define CCU_SPINLOCK_LOCK_PUT(x) ((uint64_t)(x) << CCU_SPINLOCK_LOCK_SHF)
-#define CCU_SPINLOCK_LOCK_GET(x) ((uint32_t)(((x) >> CCU_SPINLOCK_LOCK_SHF) & \
-					     CCU_SPINLOCK_LOCK_MSK))
-/*
- * Decoding the CCU ID register ...
- */
-#define CCU_ID_CSRTYPE_SHF	(31)
-#define CCU_ID_CSRTYPE_MSK	(0x1)
-#define CCU_ID_CSRTYPE_PUT(x)	((x) << CCU_ID_CSRTYPE_SHF)
-#define CCU_ID_CSRTYPE_GET(x)	(((x) >> CCU_ID_CSRTYPE_SHF) & CCU_ID_CSRTYPE_MSK)
-
-#define CCU_ID_CHIPID_SHF	(23)
-#define CCU_ID_CHIPID_MSK	(0xff)
-#define CCU_ID_CHIPID_PUT(x)	((x) << CCU_ID_CHIPID_SHF)
-#define CCU_ID_CHIPID_GET(x)	(((x) >> CCU_ID_CHIPID_SHF) & CCU_ID_CHIPID_MSK)
-
-#define CCU_ID_HUT_SHF		(20)
-#define CCU_ID_HUT_MSK		(0x1)
-#define CCU_ID_HUT_PUT(x)	((x) << CCU_ID_HUT_SHF)
-#define CCU_ID_HUT_GET(x)	(((x) >> CCU_ID_HUT_SHF) & CCU_ID_HUT_MSK)
-
-#define CCU_ID_SLICE_SHF	(18)
-#define CCU_ID_SLICE_MSK	(0x3)
-#define CCU_ID_SLICE_PUT(x)	((x) << CCU_ID_SLICE_SHF)
-#define CCU_ID_SLICE_GET(x)	(((x) >> CCU_ID_SLICE_SHF) & CCU_ID_SLICE_MSK)
-
-#define CCU_ID_CID_SHF		(16)
-#define CCU_ID_CID_MSK		(0x3)
-#define CCU_ID_CID_PUT(x)	((x) << CCU_ID_CID_SHF)
-#define CCU_ID_CID_GET(x)	(((x) >> CCU_ID_CID_SHF) & CCU_ID_CID_MSK)
+static struct ccu_ops *ccu;
 
 /*
  * The CCU ID CSR Type field (bit 31) defines whether we're dealing with a
@@ -264,57 +105,6 @@ swab16(uint16_t u16)
  */
 #define SIZE64(x)	(((x) + 63) / 64)
 
-/*
- * Decode a CCU Indirect CSR Access Command.
- */
-void
-decode_ccucmd(uint64_t cmd, const char *description)
-{
-	printf("%s: type=%lld, size64=%lld, ring=%lld, init=%lld, crsv=%lld, tag=%lld, addr=%#llx\n",
-	       description,
-	       (cmd >> CCU_CMD_TYPE_SHF) & CCU_CMD_TYPE_MSK,
-	       (cmd >> CCU_CMD_SIZE_SHF) & CCU_CMD_SIZE_MSK,
-	       (cmd >> CCU_CMD_RING_SHF) & CCU_CMD_RING_MSK,
-	       (cmd >> CCU_CMD_INIT_SHF) & CCU_CMD_INIT_MSK,
-	       (cmd >> CCU_CMD_CRSV_SHF) & CCU_CMD_CRSV_MSK,
-	       (cmd >> CCU_CMD_TAG_SHF) & CCU_CMD_TAG_MSK,
-	       (cmd >> 0) & ((1ULL << 40) - 1));
-}
-
-/*
- * Dump relevant portions of the CCU.
- */
-void
-ccu_dump(ccu_info_t *ccu_info)
-{
-	uint64_t *ccu64 = (uint64_t *)ccu_info->mmap;
-	uint32_t *ccu32 = (uint32_t *)ccu_info->mmap;
-	unsigned int addr;
-
-	/*
-	 * The first portion of the mmap contains the CCU Command Register
-	 * and CCU_DATA_REG_CNT Scratch Buffer Registers; all uint64_t.
-	 */
-	decode_ccucmd(be64_to_cpu(ccu64[CCU_CMD_REG]), "Cmd Decode");
-	for (addr = CCU_CMD_REG; addr < CCU_DATA(CCU_DATA_REG_CNT); addr++)
-		printf("%4d %#018lx\n",
-		       addr * (unsigned int)sizeof(*ccu64),
-		       be64_to_cpu(ccu64[addr]));
-
-	/*
-	 * At the very end of the 4KB mmap() we find a couple of Spinlocks and
-	 * an ID register.
-	 */
-	printf("%4d %#018lx\n",
-	       CCU_SPINLOCK0,
-	       be64_to_cpu(ccu64[CCU_SPINLOCK0/sizeof(*ccu64)]));
-	printf("%4d %#018lx\n",
-	       CCU_SPINLOCK1,
-	       be64_to_cpu(ccu64[CCU_SPINLOCK1/sizeof(*ccu64)]));
-	printf("%4d         %#010x\n",
-	       CCU_ID,
-	       be32_to_cpu(ccu32[CCU_ID/sizeof(*ccu32)]));
-}
 
 uint32_t
 ccu_read_id(ccu_info_t *ccu_info)
@@ -322,26 +112,6 @@ ccu_read_id(ccu_info_t *ccu_info)
 	uint32_t *ccu32 = (uint32_t *)ccu_info->mmap;;
 
 	return be32_to_cpu(ccu32[CCU_ID/sizeof(*ccu32)]);
-}
-
-/*
- * Dump out the result of a register read via the CCU.
- */
-void
-ccu_read_dump(ccu_info_t *ccu_info,
-	      uint32_t size,
-	      const char *name)
-{
-	uint64_t *ccu64 = (uint64_t *)ccu_info->mmap;
-	uint32_t size64 = SIZE64(size);
-	int reg_idx;
-
-	printf("dumping CCU Read of %s\n", name);
-	decode_ccucmd(be64_to_cpu(ccu64[CCU_CMD_REG]), "rsp");
-	for (reg_idx = 0; reg_idx < size64; reg_idx++)
-		   printf("%4d %#018lx\n",
-			  reg_idx * (unsigned int)sizeof(*ccu64),
-			  be64_to_cpu(ccu64[CCU_DATA(reg_idx)]));
 }
 
 /*
@@ -408,43 +178,6 @@ ccu_unlock(ccu_info_t *ccu_info)
 }
 
 /*
- * Read a specified register into a provided buffer using the CCU to issue an
- * Indirect Register Read.
- */
-void
-csr_wide_read(ccu_info_t *ccu_info,
-	      uint64_t addr,
-	      uint64_t *data,
-	      uint32_t size)
-{
-	uint64_t *ccu64 = (uint64_t *)ccu_info->mmap;
-	uint64_t cmd, size64;
-	uint32_t ring_sel;
-	int reg_idx;
-
-	size64 = SIZE64(size);
-	ring_sel = ((addr >> CCU_RING_SHF) & CCU_RING_MSK);
-	cmd = CCU_CMD(CCU_CMD_TYPE_RD_T, size64, ring_sel,
-			CCU_CMD_INIT_DIS, data, addr);
-
-	if (debug) {
-		fprintf(stderr, "Initiating CSR Read of addr=%#lx, size=%d\n",
-			addr, size);
-		decode_ccucmd(cmd, "cmd");
-	}
-
-	/*
-	 * Issue the CCU Read Command and then copy the CCU Data Buffer into
-	 * the caller's buffer.
-	 */
-	ccu_lock(ccu_info);
-	ccu64[CCU_CMD_REG] = cpu_to_be64(cmd);
-	for (reg_idx = 0; reg_idx < size64; reg_idx++)
-		data[reg_idx] = be64_to_cpu(ccu64[CCU_DATA(reg_idx)]);
-	ccu_unlock(ccu_info);
-}
-
-/*
  * Read a specified register into a provided buffer.
  */
 int
@@ -456,45 +189,8 @@ csr_read(ccu_info_t *ccu_info,
 {
 	uint64_t addr = base_addr + csr_addr;
 
-	csr_wide_read(ccu_info, addr, data, size);
+	ccu->csr_wide_read(ccu_info, addr, data, size);
 	return 0;
-}
-
-/*
- * Write a specified register from a provided buffer using the CCU to issue an
- * Indirect Register Write.
- */
-void
-csr_wide_write(ccu_info_t *ccu_info,
-	       uint64_t addr,
-	       uint64_t *data,
-	       uint32_t size)
-{
-	uint64_t *ccu64 = (uint64_t *)ccu_info->mmap;
-	uint64_t cmd, size64;
-	uint32_t ring_sel;
-	int reg_idx;
-
-	size64 = SIZE64(size);
-	ring_sel = ((addr >> CCU_RING_SHF) & CCU_RING_MSK);
-	cmd = CCU_CMD(CCU_CMD_TYPE_WR_T, size64, ring_sel,
-			CCU_CMD_INIT_DIS, data, addr);
-
-	if (debug) {
-		fprintf(stderr, "Initiating CSR Write of addr=%#lx, size=%d\n",
-			addr, size);
-			decode_ccucmd(cmd, "cmd");
-	}
-
-	/*
-	 * Copy the caller's buffer into the CCU Data Buffer and then issue
-	 * the CCU Write Command.
-	 */
-	ccu_lock(ccu_info);
-	for (reg_idx = 0; reg_idx < size64; reg_idx++)
-		ccu64[CCU_DATA(reg_idx)] = cpu_to_be64(data[reg_idx]);
-	ccu64[CCU_CMD_REG] = cpu_to_be64(cmd);
-	ccu_unlock(ccu_info);
 }
 
 /*
@@ -509,7 +205,7 @@ csr_write(ccu_info_t *ccu_info,
 {
 	uint64_t addr = base_addr + csr_addr;
 
-	csr_wide_write(ccu_info, addr, data, size);
+	ccu->csr_wide_write(ccu_info, addr, data, size);
 	return 0;
 }
 
@@ -564,6 +260,7 @@ server(int client_fd)
 
 	ccu_info.fd = -1;
 	ccu_info.mmap = NULL;
+	ccu = csr1_ops;
 
 	while (1) {
 		char command[MAX_COMMAND_LINE];
@@ -838,7 +535,7 @@ server(int client_fd)
 				continue;
 			}
 
-			ccu_dump(&ccu_info);
+			ccu->ccu_dump(&ccu_info);
 			response(client_fd, LOG_DEBUG, "OKAY DUMPCCU\n");
 			continue;
 		}
