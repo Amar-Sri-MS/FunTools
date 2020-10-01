@@ -260,7 +260,6 @@ server(int client_fd)
 
 	ccu_info.fd = -1;
 	ccu_info.mmap = NULL;
-	ccu = csr1_ops;
 
 	while (1) {
 		char command[MAX_COMMAND_LINE];
@@ -361,6 +360,9 @@ server(int client_fd)
 
 			ccu_info.spinlock_token = getpid();
 			ccu_info.spinlock = ccu_spinlock(&ccu_info);
+			uint32_t ccu_id = ccu_read_id(&ccu_info);
+			ccu = CCU_ID_CSRTYPE_GET(ccu_id) == 0 ?
+				&csr1_ops : &csr2_ops;
 
 			response(client_fd, LOG_DEBUG, "OKAY CONNECT %s\n",
 				 argv[1]);

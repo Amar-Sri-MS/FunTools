@@ -169,3 +169,4 @@ struct ccu_ops {
 };
 
 extern struct ccu_ops csr1_ops;
+extern struct ccu_ops csr2_ops;

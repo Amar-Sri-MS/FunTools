@@ -18,10 +18,14 @@ decode_ccucmd(uint64_t cmd, const char *description)
 	       (cmd >> CCU_CMD_TYPE_SHF) & CCU_CMD_TYPE_MSK,
 	       (cmd >> CCU_CMD_SIZE_SHF) & CCU_CMD_SIZE_MSK,
 	       (cmd >> CCU_CMD_RING_SHF) & CCU_CMD_RING_MSK,
+#ifndef CONFIG_CSR_VERSION_2
 	       (cmd >> CCU_CMD_INIT_SHF) & CCU_CMD_INIT_MSK,
 	       (cmd >> CCU_CMD_CRSV_SHF) & CCU_CMD_CRSV_MSK,
 	       (cmd >> CCU_CMD_TAG_SHF) & CCU_CMD_TAG_MSK,
-	       (cmd >> 0) & ((1ULL << 40) - 1));
+#else
+	       0, 0, 0,  /* these fields are not valid for CSRv2 */
+#endif
+	       (cmd >> CCU_CMD_ADDR_SHF) & CCU_CMD_ADDR_MSK);
 }
 
 /*
@@ -133,7 +137,13 @@ csr_wide_write(ccu_info_t *ccu_info,
 	ccu_unlock(ccu_info);
 }
 
-struct ccu_ops csr1_ops = {
+#ifdef CONFIG_CSR_VERSION_2
+#define CCU_OPS_NAME csr2_ops
+#else
+#define CCU_OPS_NAME csr1_ops
+#endif
+
+struct ccu_ops CCU_OPS_NAME = {
 	.csr_wide_write = csr_wide_write,
 	.csr_wide_read = csr_wide_read,
 	.ccu_dump = ccu_dump,
