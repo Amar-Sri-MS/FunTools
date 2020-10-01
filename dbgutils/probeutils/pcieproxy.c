@@ -321,6 +321,7 @@ server(int client_fd)
 		 * See what the remote user wants ...
 		 */
 		if (strcmp(argv[0], "CONNECT") == 0) {
+			unsigned long long offset = 0;
 			/*
 			 * CONNECT <PCIe BAR in SysFS>
 			 */
@@ -331,9 +332,9 @@ server(int client_fd)
 				continue;
 			}
 
-			if (argc != 2) {
+			if (argc < 2 || argc > 3) {
 				response(client_fd, LOG_DEBUG,
-					 "Usage: CONNECT <BAR>\n");
+					 "Usage: CONNECT <BAR> <offset>\n");
 				continue;
 			}
 
@@ -344,10 +345,15 @@ server(int client_fd)
 					 argv[1], strerror(errno));
 				continue;
 			}
+
+			if (argc == 3) {
+				offset = strtoull(argv[2], NULL, 0);
+			}
+
 			ccu_info.mmap = mmap(NULL, CCU_MAP_SIZE,
 					     PROT_READ|PROT_WRITE,
 					     MAP_SHARED|MAP_LOCKED,
-					     ccu_info.fd, 0);
+					     ccu_info.fd, offset);
 			if (ccu_info.mmap == MAP_FAILED) {
 				response(client_fd, LOG_DEBUG,
 					 "Can't mmap %s: %s\n",
