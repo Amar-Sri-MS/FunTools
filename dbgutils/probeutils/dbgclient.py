@@ -54,7 +54,7 @@ class DBG_Client(object):
                     raise ValueError('Mode: "{0}" is supported on only linux platform!'.format(mode))
             elif mode == 'pcie':
                 dbgclient = PCIE_Client(mode)
-                status = dbgclient.connect(probe_ip_addr, probe_id)
+                status = dbgclient.connect(probe_ip_addr, probe_id, slave_addr)
             elif mode == 'dpc':
                 raise ValueError('Mode: "{0}" is not supported yet!'.format(mode))
                 #self.client = DPC_Client()

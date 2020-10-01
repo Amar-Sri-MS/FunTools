@@ -14,9 +14,9 @@ import code, rlcompleter, readline
 import logging
 
 from threading import Thread
-try:  
+try:
    os.environ["WORKSPACE"]
-except KeyError: 
+except KeyError:
    print "Please set the environment variable WORKSPACE"
    sys.exit(1)
 sys.path.append(os.environ["WORKSPACE"]+"/FunTools/dbgutils")
@@ -72,7 +72,7 @@ def connect_verif_client_socket(port,chip_inst=0):
     except socket.error as msg:
         logger.error('Bind failed. Error Code : ' + str(msg[0]) + ' Message ' + msg[1])
         sys.exit()
-        
+
     logger.debug('Client Socket bind complete')
     verif_socket_port=verif_sock.getsockname()[1]
     #Start listening on socket
@@ -183,19 +183,19 @@ CMD_PKT_REQ       = 7
 def print_command(data):
   if (data == CMD_ACK_NOP) :
      print "ACK_NOP"
-  elif (data == CMD_RESETA) : 
+  elif (data == CMD_RESETA) :
      print "CMD_RESETA"
-  elif (data == CMD_RESETD) : 
+  elif (data == CMD_RESETD) :
      print "CMD_RESETD"
-  elif (data == CMD_CSR_WRITE) : 
+  elif (data == CMD_CSR_WRITE) :
      print "CMD_CSR_WRITE"
-  elif (data == CMD_CSR_READ) : 
+  elif (data == CMD_CSR_READ) :
      print "CMD_CSR_READ"
-  elif (data == CMD_CSR_READ_RSP) : 
+  elif (data == CMD_CSR_READ_RSP) :
      print "CMD_CSR_READ_RSP"
-  elif (data == CMD_PKT) : 
+  elif (data == CMD_PKT) :
      print "CMD_PKT"
-  elif (data == CMD_PKT_REQ) : 
+  elif (data == CMD_PKT_REQ) :
      print "CMD_PKT_REQ"
   else :
      print "unknown command!"
@@ -322,7 +322,7 @@ def process_cmd_pkt (msg_len):
 ###################################################
 ##########process_cmd_pkt_req######################
 def process_cmd_pkt_req (msg_len):
-  global req_cnt;   
+  global req_cnt;
   req_cnt += 1
 
 #  print 'in process_cmd_pkt_req'
@@ -333,7 +333,7 @@ def process_cmd_pkt_req (msg_len):
       (pkt_port, pkt_bytes) = rcv_pkt_list.pop(0)
       if(len(pkt_bytes) > 127 ) :
           exit_loop = 1
-      else: 
+      else:
           print "dropping pkt < 100 bytes  mostly icmp discovery pkts"
           exit_loop = 0
     else :
@@ -463,18 +463,22 @@ def connect_dbgprobe(tpod,tpod_jtag,tpod_pcie,tpod_force):
        if dut_pcie_info[0] is False:
           pcie_ccu_bar = dut_pcie_info[1]
           pcie_probe_ip = dut_pcie_info[2]
+          pcie_mem_offset = dut_pcie_info[3]
           print("connecting to PCIE bar={0} ip={1}".format(pcie_ccu_bar,pcie_probe_ip))
           status = dbgprobe().connect(mode='pcie', bmc_board=False,
                                       probe_ip_addr = pcie_probe_ip,
-                                      probe_id = pcie_ccu_bar)
+                                      probe_id = pcie_ccu_bar,
+                                      slave_addr = pcie_mem_offset)
        else:
           bmc_ip = dut_pcie_info[1]
           pcie_ccu_bar = dut_pcie_info[2]
           pcie_probe_ip = dut_pcie_info[3]
+          pcie_mem_offset = dut_pcie_info[4]
           print("connecting to PCIE bar={0} ip={1}".format(pcie_ccu_bar,pcie_probe_ip))
           status = dbgprobe().connect(mode='pcie', bmc_board=False,
                                       probe_ip_addr=pcie_probe_ip,
-                                      probe_id = pcie_ccu_bar)
+                                      probe_id = pcie_ccu_bar,
+                                      slave_addr = pcie_mem_offset)
        print("connecting to PCIE bar={0} ip={1} status={2}".format(pcie_ccu_bar,pcie_probe_ip,status))
        if status is False:
           sys.exit(1)
