@@ -110,11 +110,11 @@ class MsecInput(Block):
             line = line.strip()
 
             # 2020-08-03 14:13:04,086 INFO XXX
-            m = re.match('^([-0-9]+)\s+([:0-9]+),([0-9]+)\s+(.*)', line)
+            m = re.match('^([-0-9]+)\s+([:0-9]+),([0-9]+)\s+([\s\S]*)', line)
 
             if not m:
                 # 2020/08/05 02:48:10.850 INFO    tracer
-                m = re.match('^([/0-9]+)\s+([:0-9]+)\.([0-9]+)\s+(.*)', line)
+                m = re.match('^([/0-9]+)\s+([:0-9]+)\.([0-9]+)\s+([\s\S]*)', line)
 
             if m:
                 date_time, usecs = self.extract_timestamp(m.group(1),
@@ -213,7 +213,7 @@ class KeyValueInput(Block):
 
         # 2020-08-04T23:09:14.705144973-07:00 OR 2020-08-04 23:09:14.705144973-07:00
         # OR 2020/08/04 23:09:14.705144973
-        m = re.match('^([(-0-9|/0-9)]+)+(?:T|\s)([:0-9]+).([0-9]+)(.*)', time_str)
+        m = re.match(r'^([(-0-9|/0-9)]+)+(?:T|\s)([:0-9]+).([0-9]+)([\s\S]*)', time_str)
         day_str, time_str, secs_str, tz_offset = m.group(1), m.group(2), m.group(3), m.group(4)
 
         # Converting nanoseconds to microseconds because Python datetime only supports upto microseconds
