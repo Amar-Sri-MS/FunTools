@@ -59,6 +59,7 @@ class BlockFactory(object):
         better.
         """
         self.plugins['TextFileInput'] = file_input.TextFileInput
+        self.plugins['MultilineTextFileInput'] = file_input.MultilineTextFileInput
         self.plugins['FunOSInput'] = log_parsers.FunOSInput
         self.plugins['ISOFormatInput'] = log_parsers.ISOFormatInput
         self.plugins['MsecInput'] = log_parsers.MsecInput
