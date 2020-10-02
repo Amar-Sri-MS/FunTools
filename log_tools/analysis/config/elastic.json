@@ -79,10 +79,65 @@
       "out": "es"
     },
     {
+      "id": "dataplacement",
+      "block": "MultilineTextFileInput",
+      "cfg": {
+        "file_pattern": "${logdir}/fc/sclogs/dataplacement/info*",
+        "pattern": "(\\[.*\\])\\s+([(-0-9|/0-9)]+)+(?:T|\\s)([:0-9]+).([0-9]+)\\s?((?:\\-|\\+)[0-9]{4})"
+      },
+      "out": "dataplacement_parse"
+    },
+    {
+      "id": "dataplacement_parse",
+      "block": "GenericInput",
+      "out": "es"
+    },
+    {
+      "id": "sns",
+      "block": "TextFileInput",
+      "cfg": {
+        "file_pattern": "${logdir}/fc/sns/sns*"
+      },
+      "out": "sns_parse"
+    },
+    {
+      "id": "sns_parse",
+      "block": "KeyValueInput",
+      "out": "es"
+    },
+    {
+      "id": "storage_agent_0",
+      "block": "MultilineTextFileInput",
+      "cfg": {
+        "file_pattern": "${logdir}/logs/storage_agent_0/storage_agent/info*",
+        "pattern": "([(-0-9|/0-9)]+)+(?:T|\\s)([:0-9]+)(?:.|,)([0-9]{3,9})"
+      },
+      "out": "storage_agent_0_parse"
+    },
+    {
+      "id": "storage_agent_0_parse",
+      "block": "MsecInput",
+      "out": "es"
+    },
+    {
+      "id": "storage_agent_1",
+      "block": "MultilineTextFileInput",
+      "cfg": {
+        "file_pattern": "${logdir}/logs/storage_agent_1/storage_agent/info*",
+        "pattern": "([(-0-9|/0-9)]+)+(?:T|\\s)([:0-9]+)(?:.|,)([0-9]{3,9})"
+      },
+      "out": "storage_agent_1_parse"
+    },
+    {
+      "id": "storage_agent_1_parse",
+      "block": "MsecInput",
+      "out": "es"
+    },
+    {
       "id": "es",
       "block": "ElasticOutput",
       "cfg": {
-        "index": "log_swctl_1788"
+        "index": "log_test"
       }
     }
   ]
