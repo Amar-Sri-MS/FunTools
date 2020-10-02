@@ -22,11 +22,11 @@ class PCIE_Client(object):
 
 
     def __del__(self):
-	if self.con_handle is not None:
+        if self.con_handle is not None:
             self.disconnect()
 
 
-    def connect(self, ip_address, pcie_ccu_bar):
+    def connect(self, ip_address, pcie_ccu_bar, pcie_mem_offset):
         if pcie_ccu_bar is None:
             logger.error('pcie_ccu_bar must be specified!')
             return None
@@ -44,8 +44,8 @@ class PCIE_Client(object):
             con_handle.close()
             return None
 
-        con_handle.sendall('CONNECT ' + pcie_ccu_bar + '\n')
-	connect_rsp = str(con_handle.recv(1024))
+        con_handle.sendall('CONNECT {} {}\n'.format(pcie_ccu_bar, pcie_mem_offset))
+        connect_rsp = str(con_handle.recv(1024))
 
         # Successful response: OKAY CONNECT
         connect_rsp_words = connect_rsp.split()
@@ -73,7 +73,7 @@ class PCIE_Client(object):
         # Successful response: OKAY DISCONNECT
         disconnect_rsp_words = disconnect_rsp.split()
         disconnect_success = disconnect_rsp_words[0] == 'OKAY'
-	if disconnect_success:
+        if disconnect_success:
             disconnect_msg = 'Disconnect successful'
             logger.info(disconnect_msg)
         else:
@@ -102,7 +102,7 @@ class PCIE_Client(object):
             logger.error(error_msg)
             return (False, error_msg)
 
-	self.con_handle.sendall('READ '
+        self.con_handle.sendall('READ '
                                 + str(csr_addr)
                                 + ' '
                                 + str(csr_width_words * 64)
@@ -134,7 +134,7 @@ class PCIE_Client(object):
             logger.error(error_msg)
             return (False, error_msg)
 
-	self.con_handle.sendall('WRITE '
+        self.con_handle.sendall('WRITE '
                                 + str(csr_addr)
                                 + ' '
                                 + str(len(word_array) * 64)
