@@ -154,14 +154,15 @@ class KeyValueInput(Block):
                 log_fields[key] = value
 
             time_str = log_fields['time']
-            date_time, usecs = self.extract_timestamp(time_str)
+            if time_str:
+                date_time, usecs = self.extract_timestamp(time_str)
 
-            # Extract the log message's level either from the log or from the name of the log file
-            # This field then can be indexed to the log storage and be used for filtering out the
-            # logs. TODO (Sourabh): Need to standardize the names of log message levels
-            msg = log_fields.get('level', 'info') + ' ' + log_fields.get('msg', '')
+                # Extract the log message's level either from the log or from the name of the log file
+                # This field then can be indexed to the log storage and be used for filtering out the
+                # logs. TODO (Sourabh): Need to standardize the names of log message levels
+                msg = log_fields.get('level', 'info') + ' ' + log_fields.get('msg', '')
 
-            yield (date_time, usecs, uid, None, msg)
+                yield (date_time, usecs, uid, None, msg)
 
     @staticmethod
     def extract_timestamp(time_str):
