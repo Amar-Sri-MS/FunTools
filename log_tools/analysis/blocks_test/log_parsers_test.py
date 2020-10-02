@@ -9,6 +9,7 @@ import unittest
 
 from blocks.log_parsers import FunOSInput
 from blocks.log_parsers import MsecInput
+from blocks.log_parsers import GenericInput
 from blocks.log_parsers import KeyValueInput
 from blocks_test.common import msg_tuple_to_dict
 from blocks_test.common import process
@@ -89,6 +90,42 @@ class MsecInputTest(unittest.TestCase):
                                               '%Y/%m/%d %H:%M:%S.%f')
         self.assertEqual(expected, timestamp)
 
+class GenericInputTest(unittest.TestCase):
+    """ Unit tests for the generic input parser """
+    def setUp(self):
+        self.block = GenericInput()
+
+    def test_can_convert_to_datetime(self):
+        """ check if the date and time strings are converted to datetime """
+        lines = ['2020-08-05 03:14:56,774 - Dpu(c8:2c:2b:00:33:c8):execute_command']
+        output = process(self.block, _lines_to_iterable(lines))
+
+        timestamp = msg_tuple_to_dict(output[0])['datetime']
+        expected = datetime.datetime.strptime('2020-08-05 03:14:56,774',
+                                              '%Y-%m-%d %H:%M:%S,%f')
+        self.assertEqual(expected, timestamp)
+
+    def test_can_read_msg(self):
+        """ check if the log message is read and datetime string is removed from it """
+        lines = ['2020-08-05 03:14:56,774 - Dpu(c8:2c:2b:00:33:c8):execute_command']
+        output = process(self.block, _lines_to_iterable(lines))
+
+        msg = msg_tuple_to_dict(output[0])['line']
+        expected = '- Dpu(c8:2c:2b:00:33:c8):execute_command'
+
+        self.assertEqual(expected, msg)
+
+    def test_can_read_file_name(self):
+        """ check if the file name is extracted from the log and added in the msg """
+        lines = [
+            '[physical_resources.go:1771] 2020-09-27 08:33:59.131131012 -0700 PDT m=+606939.398355152 eror c8:2c:2b:00:18:94'
+        ]
+        output = process(self.block, _lines_to_iterable(lines))
+
+        msg = msg_tuple_to_dict(output[0])['line']
+        expected = '[physical_resources.go:1771] PDT m=+606939.398355152 eror c8:2c:2b:00:18:94'
+
+        self.assertEqual(expected, msg)
 
 class KeyValueInputTest(unittest.TestCase):
     """ Unit tests for Key Value input parser """

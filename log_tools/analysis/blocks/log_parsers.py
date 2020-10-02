@@ -133,6 +133,50 @@ class MsecInput(Block):
 
         return d, d.microsecond
 
+class GenericInput(Block):
+    """
+    Handles logs with generic pattern: <FILE_NAME|EMPTY> <DATE> <TIMESTAMP>
+    <MILLISECONDS|MICROSECONDS|EMPTY> <TIMEZONE_OFFSET|EMPTY> <MESSAGE>
+    """
+    def process(self, iters):
+        for (_, _, uid, _, line) in iters[0]:
+            line = line.strip()
+
+            # Match order <FILE_NAME|EMPTY> <DATE> <TIMESTAMP> <MILLISECONDS|MICROSECONDS|EMPTY>
+            # <TIMEZONE_OFFSET|EMPTY> <MESSAGE>
+            # The log message at the end also includes newline characters to support multiline logs
+            # Examples:
+            # 2020-08-03 14:13:04,086085 INFO XXX
+            # 2020/08/05 02:48:10.850085 INFO    tracer
+            # 2020-08-05 02:20:16.863085 -0700 PDT XXX
+            # [simple_ctx_scheduler.go:128] 2020-08-05 02:20:16.863085 -0700 PDT XXX
+            # simple_ctx_scheduler.go:128 2020-08-05 02:20:16.863085 XXX
+            m = re.match(
+                r'^(\[[\S]+\]\s|[\S]+\s|)([(-0-9|/0-9)]+)+(?:T|\s)([:0-9]+).([0-9]+)\s?((?:-|\+|)[0-9]{4}|)([\s\S]*)',
+                line)
+
+            if m:
+                date_time, usecs = self.extract_timestamp(m.group(2),
+                                                          m.group(3),
+                                                          m.group(4))
+                msg = m.group(6)
+                # Prepending filename if present to the log message
+                if m.group(1):
+                    msg = m.group(1).strip() + ' ' + msg.strip()
+                yield (date_time, usecs, uid, None, msg)
+
+    @staticmethod
+    def extract_timestamp(day_str, time_str, secs_str):
+        # Converting nanoseconds to microseconds because Python datetime only supports upto microseconds
+        # TODO (Sourabh): Precision loss due to conversion microseconds
+        usecs_str = secs_str[0:6] if len(secs_str) > 6 else secs_str
+
+        day_str = day_str.replace('-', '/')
+        log_time = day_str + ' ' + time_str + '.' + usecs_str
+        d = datetime.datetime.strptime(log_time, '%Y/%m/%d %H:%M:%S.%f')
+
+        return d, d.microsecond
+
 class KeyValueInput(Block):
     """
     Handles logs with key value log format
