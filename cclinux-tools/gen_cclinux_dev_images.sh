@@ -12,11 +12,17 @@
 # environment.
 #
 if [ $# -lt 1 ] ; then
-    echo "Usage: gen_cclinux_dev_images.sh rootfs-file"
+    echo "Usage: gen_cclinux_dev_images.sh rootfs-file [vmlinux.bin]"
     exit 1
 fi
 
 rootfs_file=$1
+
+if [ $# -lt 2 ] ; then
+    vmlinux_file=$WORKSPACE/FunSDK/bin/cc-linux-yocto/mips64hv/vmlinux.bin
+else
+    vmlinux_file=$2
+fi
 
 if [ -z "$WORKSPACE" ] ; then
     echo "Error: WORKSPACE not set."
@@ -39,9 +45,10 @@ rm fgpt.tosign
 
 # Generate fvos.signed
 rm -f fvos.tosign
-$scripts_dir/xdata.py -r --data-offset=4096 --data-alignment=512 -P 4 fvos.tosign add $WORKSPACE/FunSDK/bin/cc-linux-yocto/mips64hv/vmlinux.bin
+echo "vmlinux.bin ${vmlinux_file}" > fvos.filelist
+$scripts_dir/xdata.py -r --data-offset=4096 --data-alignment=512 -P 4 fvos.tosign add-file-lists fvos.filelist
 $flash_tools/sign_for_development.py --fourcc fvos fvos.tosign -o fvos.signed --sign_key hkey1 --version 1 --key_index 0
-rm fvos.tosign
+rm fvos.tosign fvos.filelist
 
 # Generate fvht.bin
 
