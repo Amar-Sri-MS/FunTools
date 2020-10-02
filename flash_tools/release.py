@@ -63,7 +63,7 @@ def main():
 
     parser.add_argument('config', nargs='*', help='Configuration file(s)')
     parser.add_argument('--action',
-        choices={'all', 'prepare', 'release', 'certificate', 'sign', 'image', 'tarball'},
+        choices={'all', 'prepare', 'release', 'certificate', 'sign', 'image', 'tarball', 'bundle'},
         default='all',
         help='Action to be performed on the input files')
     parser.add_argument('--sdkdir', default=os.getcwd(), help='SDK root directory')
@@ -89,7 +89,7 @@ def main():
         if args.action == 'all':
             return True
         elif args.action == 'release':
-            return action in ['sign', 'image', 'tarball']
+            return action in ['sign', 'image', 'tarball', 'bundle']
         else:
             return action == args.action
 
@@ -166,6 +166,10 @@ def main():
 
         for app in utils:
             shutil.copy2(os.path.join(args.sdkdir, app), os.path.basename(app))
+
+        shutil.rmtree('install_tools', ignore_errors=True)
+        shutil.copytree(os.path.join(args.sdkdir, 'bin/flash_tools/install_tools'),
+            'install_tools')
 
         #TODO(mnowakowski)
         #     skip direct invocation and import make_emulation_emmc
@@ -251,6 +255,45 @@ def main():
         with tarfile.open('{chip}_sdk_signed_release.tgz'.format(chip=args.chip), mode='w:gz') as tar:
             for f in tarfiles:
                 tar.add(f)
+
+        os.chdir(curdir)
+
+    if wanted('bundle'):
+        os.chdir(args.destdir)
+        shutil.rmtree('bundle_installer', ignore_errors=True)
+        os.mkdir('bundle_installer')
+        bundle_images = []
+
+        with open("image.json") as f:
+            images = json.load(f)
+            bundle_images.extend([key for key,value in images['signed_images'].items()
+                                if not value.get("no_export", False)])
+            bundle_images.extend([key for key,value in images['signed_meta_images'].items()
+                                if not value.get("no_export", False)])
+
+        with open("mmc_image.json") as f:
+            images = json.load(f)
+            bundle_images.extend([key for key,value in images['generated_images'].items()
+                                if not value.get("no_export", False)])
+
+        bundle_images.extend([
+            'install_tools/run_fwupgrade.py',
+            'install_tools/setup.sh'
+        ])
+
+        for f in bundle_images:
+            os.symlink(os.path.join(args.destdir, f), os.path.join('bundle_installer', os.path.basename(f)))
+
+        makeself = [
+            'makeself',
+            '--follow',
+            'bundle_installer',
+            'setup_bundle.sh',
+            'CCLinux/FunOS installer',
+            './setup.sh'
+        ]
+
+        subprocess.call(makeself)
 
         os.chdir(curdir)
 
