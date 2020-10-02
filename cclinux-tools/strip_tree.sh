@@ -72,3 +72,21 @@ find $DEPLOY_ROOT -type f | (
 	fi
     done
 )
+
+# Run depmod
+kernel_version=$(ls bin/cc-linux-yocto/mips64hv/System.map-* | sed -e 's/.*System.map-//')
+
+find $DEPLOY_ROOT/lib/modules/$kernel_version -name modules.\* | (
+    while read fname ; do
+	case $fname in
+	    *modules.order | *modules.builtin)
+		: # Keep it
+		;;
+	    *)
+		rm -f $fname # Remove it.
+		;;
+	esac
+    done
+)
+
+depmod -b $DEPLOY_ROOT -C $DEPLOY_ROOT/etc/depmod.d -e -F bin/cc-linux-yocto/mips64hv/System.map $kernel_version

@@ -774,6 +774,12 @@ def main():
   codegen_cpacked = SetFromArgs('cpacked', codegen_args, False)
   codegen_swap = SetFromArgs('swap', codegen_args, False)
   codegen_linux = SetFromArgs('linux', codegen_args, False)
+  codegen_be = SetFromArgs('be', codegen_args, False)
+  codegen_le = SetFromArgs('le', codegen_args, False)
+
+  if codegen_be and codegen_le:
+    sys.stderr.write('\'be\' and \'le\' codegen options are mutually exclusive\n')
+    sys.exit(2)
 
   codegen_options = []
 
@@ -789,6 +795,10 @@ def main():
     codegen_options.append('cpacked')
   if codegen_swap:
     codegen_options.append('swap')
+  if codegen_be:
+    codegen_options.append('be')
+  if codegen_le:
+    codegen_options.append('le')
 
   if len(args) == 0:
       sys.stderr.write('No genfile named.\n')
