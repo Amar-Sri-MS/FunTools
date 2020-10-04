@@ -133,6 +133,7 @@ class MsecInput(Block):
 
         return d, d.microsecond
 
+
 class GenericInput(Block):
     """
     Handles logs with generic pattern: <FILE_NAME|EMPTY> <DATE> <TIMESTAMP>
@@ -156,13 +157,15 @@ class GenericInput(Block):
                 line)
 
             if m:
-                date_time, usecs = self.extract_timestamp(m.group(2),
-                                                          m.group(3),
-                                                          m.group(4))
-                msg = m.group(6)
+                filename, date_str, time_str = m.group(1), m.group(2), m.group(3)
+                secs_str, tz_offset_str, msg = m.group(4), m.group(5), m.group(6)
+
+                date_time, usecs = self.extract_timestamp(date_str,
+                                                          time_str,
+                                                          secs_str)
                 # Prepending filename if present to the log message
-                if m.group(1):
-                    msg = m.group(1).strip() + ' ' + msg.strip()
+                if filename:
+                    msg = filename.strip() + ' ' + msg.strip()
                 yield (date_time, usecs, uid, None, msg)
 
     @staticmethod
@@ -176,6 +179,7 @@ class GenericInput(Block):
         d = datetime.datetime.strptime(log_time, '%Y/%m/%d %H:%M:%S.%f')
 
         return d, d.microsecond
+
 
 class KeyValueInput(Block):
     """
