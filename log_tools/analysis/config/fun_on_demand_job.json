@@ -10,7 +10,7 @@
     },
     {
       "id": "waiter_parse",
-      "block": "MsecInput",
+      "block": "GenericInput",
       "out": "merge"
     },
     {
@@ -23,7 +23,7 @@
     },
     {
       "id": "shutdown_parse",
-      "block": "MsecInput",
+      "block": "GenericInput",
       "out": "merge"
     },
     {
@@ -36,7 +36,7 @@
     },
     {
       "id": "pci_parse",
-      "block": "MsecInput",
+      "block": "GenericInput",
       "out": "merge"
     },
     {

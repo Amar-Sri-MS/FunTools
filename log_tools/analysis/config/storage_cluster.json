@@ -36,7 +36,7 @@
     },
     {
       "id": "kafka_cons_parse",
-      "block": "MsecInput",
+      "block": "GenericInput",
       "out": "merge"
     },
     {
@@ -49,7 +49,7 @@
     },
     {
       "id": "apigw_parse",
-      "block": "MsecInput",
+      "block": "GenericInput",
       "out": "merge"
     },
     {

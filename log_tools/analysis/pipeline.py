@@ -61,7 +61,6 @@ class BlockFactory(object):
         self.plugins['TextFileInput'] = file_input.TextFileInput
         self.plugins['FunOSInput'] = log_parsers.FunOSInput
         self.plugins['ISOFormatInput'] = log_parsers.ISOFormatInput
-        self.plugins['MsecInput'] = log_parsers.MsecInput
         self.plugins['GenericInput'] = log_parsers.GenericInput
         self.plugins['KeyValueInput'] = log_parsers.KeyValueInput
         self.plugins['HumanDateTime'] = display_time.HumanDateTime

@@ -100,40 +100,6 @@ class ISOFormatInput(Block):
             yield (d, d.microsecond, uid, None, parts[2])
 
 
-class MsecInput(Block):
-    """
-    Handles logs with millisecond timestamp granularity as emitted by
-    python's default logger (and various go microservices in the controller)
-    """
-    def process(self, iters):
-        for (_, _, uid, _, line) in iters[0]:
-            line = line.strip()
-
-            # 2020-08-03 14:13:04,086 INFO XXX
-            m = re.match('^([-0-9]+)\s+([:0-9]+),([0-9]+)\s+([\s\S]*)', line)
-
-            if not m:
-                # 2020/08/05 02:48:10.850 INFO    tracer
-                m = re.match('^([/0-9]+)\s+([:0-9]+)\.([0-9]+)\s+([\s\S]*)', line)
-
-            if m:
-                date_time, usecs = self.extract_timestamp(m.group(1),
-                                                          m.group(2),
-                                                          m.group(3))
-                yield (date_time, usecs, uid, None, m.group(4))
-
-    @staticmethod
-    def extract_timestamp(day_str, time_str, msecs_str):
-        # this approximation could be bad
-        usecs_str = str(int(msecs_str) * 1000)
-
-        day_str = day_str.replace('-', '/')
-        log_time = day_str + ' ' + time_str + '.' + usecs_str
-        d = datetime.datetime.strptime(log_time, '%Y/%m/%d %H:%M:%S.%f')
-
-        return d, d.microsecond
-
-
 class GenericInput(Block):
     """
     Handles logs with generic pattern: <FILE_NAME|EMPTY> <DATE> <TIMESTAMP>
