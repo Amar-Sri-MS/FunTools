@@ -201,7 +201,7 @@ class KeyValueInput(Block):
                 value = value.rstrip('\"')
                 log_fields[key] = value
 
-            time_str = log_fields['time']
+            time_str = log_fields.get('time', None)
             if time_str:
                 date_time, usecs = self.extract_timestamp(time_str)
 
