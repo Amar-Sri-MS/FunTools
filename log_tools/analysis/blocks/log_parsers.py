@@ -100,38 +100,52 @@ class ISOFormatInput(Block):
             yield (d, d.microsecond, uid, None, parts[2])
 
 
-class MsecInput(Block):
+class GenericInput(Block):
     """
-    Handles logs with millisecond timestamp granularity as emitted by
-    python's default logger (and various go microservices in the controller)
+    Handles logs with generic pattern: <FILE_NAME|EMPTY> <DATE> <TIMESTAMP>
+    <MILLISECONDS|MICROSECONDS|EMPTY> <TIMEZONE_OFFSET|EMPTY> <MESSAGE>
     """
     def process(self, iters):
         for (_, _, uid, _, line) in iters[0]:
             line = line.strip()
 
-            # 2020-08-03 14:13:04,086 INFO XXX
-            m = re.match('^([-0-9]+)\s+([:0-9]+),([0-9]+)\s+(.*)', line)
-
-            if not m:
-                # 2020/08/05 02:48:10.850 INFO    tracer
-                m = re.match('^([/0-9]+)\s+([:0-9]+)\.([0-9]+)\s+(.*)', line)
+            # Match order <FILE_NAME|EMPTY> <DATE> <TIMESTAMP> <MILLISECONDS|MICROSECONDS|EMPTY>
+            # <TIMEZONE_OFFSET|EMPTY> <MESSAGE>
+            # The log message at the end also includes newline characters to support multiline logs
+            # Examples:
+            # 2020-08-03 14:13:04,086085 INFO XXX
+            # 2020/08/05 02:48:10.850085 INFO    tracer
+            # 2020-08-05 02:20:16.863085 -0700 PDT XXX
+            # [simple_ctx_scheduler.go:128] 2020-08-05 02:20:16.863085 -0700 PDT XXX
+            # simple_ctx_scheduler.go:128 2020-08-05 02:20:16.863085 XXX
+            m = re.match(
+                r'^(\[[\S]+\]\s|[\S]+\s|)([(-0-9|/0-9)]+)+(?:T|\s)([:0-9]+).([0-9]+)\s?((?:-|\+|)[0-9]{4}|)([\s\S]*)',
+                line)
 
             if m:
-                date_time, usecs = self.extract_timestamp(m.group(1),
-                                                          m.group(2),
-                                                          m.group(3))
-                yield (date_time, usecs, uid, None, m.group(4))
+                filename, date_str, time_str = m.group(1), m.group(2), m.group(3)
+                secs_str, tz_offset_str, msg = m.group(4), m.group(5), m.group(6)
+
+                date_time, usecs = self.extract_timestamp(date_str,
+                                                          time_str,
+                                                          secs_str)
+                # Prepending filename if present to the log message
+                if filename:
+                    msg = filename.strip() + ' ' + msg.strip()
+                yield (date_time, usecs, uid, None, msg)
 
     @staticmethod
-    def extract_timestamp(day_str, time_str, msecs_str):
-        # this approximation could be bad
-        usecs_str = str(int(msecs_str) * 1000)
+    def extract_timestamp(day_str, time_str, secs_str):
+        # Converting nanoseconds to microseconds because Python datetime only supports upto microseconds
+        # TODO (Sourabh): Precision loss due to conversion microseconds
+        usecs_str = secs_str[0:6] if len(secs_str) > 6 else secs_str
 
         day_str = day_str.replace('-', '/')
         log_time = day_str + ' ' + time_str + '.' + usecs_str
         d = datetime.datetime.strptime(log_time, '%Y/%m/%d %H:%M:%S.%f')
 
         return d, d.microsecond
+
 
 class KeyValueInput(Block):
     """
@@ -153,22 +167,23 @@ class KeyValueInput(Block):
                 value = value.rstrip('\"')
                 log_fields[key] = value
 
-            time_str = log_fields['time']
-            date_time, usecs = self.extract_timestamp(time_str)
+            time_str = log_fields.get('time', None)
+            if time_str:
+                date_time, usecs = self.extract_timestamp(time_str)
 
-            # Extract the log message's level either from the log or from the name of the log file
-            # This field then can be indexed to the log storage and be used for filtering out the
-            # logs. TODO (Sourabh): Need to standardize the names of log message levels
-            msg = log_fields.get('level', 'info') + ' ' + log_fields.get('msg', '')
+                # Extract the log message's level either from the log or from the name of the log file
+                # This field then can be indexed to the log storage and be used for filtering out the
+                # logs. TODO (Sourabh): Need to standardize the names of log message levels
+                msg = log_fields.get('level', 'info') + ' ' + log_fields.get('msg', '')
 
-            yield (date_time, usecs, uid, None, msg)
+                yield (date_time, usecs, uid, None, msg)
 
     @staticmethod
     def extract_timestamp(time_str):
 
         # 2020-08-04T23:09:14.705144973-07:00 OR 2020-08-04 23:09:14.705144973-07:00
         # OR 2020/08/04 23:09:14.705144973
-        m = re.match('^([(-0-9|/0-9)]+)+(?:T|\s)([:0-9]+).([0-9]+)(.*)', time_str)
+        m = re.match(r'^([(-0-9|/0-9)]+)+(?:T|\s)([:0-9]+).([0-9]+)([\s\S]*)', time_str)
         day_str, time_str, secs_str, tz_offset = m.group(1), m.group(2), m.group(3), m.group(4)
 
         # Converting nanoseconds to microseconds because Python datetime only supports upto microseconds

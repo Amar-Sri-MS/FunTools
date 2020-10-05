@@ -62,7 +62,7 @@ def controller_input_pipeline(id, file_pattern):
 
     parse = {
         'id': parse_id,
-        'block': 'MsecInput',
+        'block': 'GenericInput',
         'out': 'merge'
     }
 
