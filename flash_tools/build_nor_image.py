@@ -208,7 +208,7 @@ def generate_update_tar_file(args, built_images_dir):
     with tarfile.open(tar_file_name, mode='w:gz') as f:
         f.add(built_images_dir, arcname=tar_root, filter=tar_filter)
 
-    ssh_client = get_ssh_client(args.user, 'server1')
+    ssh_client = get_ssh_client(args.user, 'server1.fungible.local')
 
     repo_dir = DOCHUB_REPO_DIR_USER_FMT.format(args.user, args.version)
 
