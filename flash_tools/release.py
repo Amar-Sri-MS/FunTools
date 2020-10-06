@@ -57,6 +57,9 @@ EEPROM_LIST_CONFIG_OVERRIDE="""
 }}
 """
 
+# TODO make configurable
+ROOTFS_FILE='fs1600-rootfs-ro.squashfs'
+
 def main():
     parser = argparse.ArgumentParser()
     config = {}
@@ -160,8 +163,11 @@ def main():
                   "bin/flash_tools/key_replace.py",
                   "bin/flash_tools/eeprom_replace.py",
                   "bin/flash_tools/flash_utils.py",
+                  "bin/flash_tools/gen_hash_tree.py",
                   "bin/flash_tools/" + os.path.basename(__file__),
-                  "bin/Linux/x86_64/mkimage" ]
+                  "bin/Linux/x86_64/mkimage",
+                  "bin/scripts/gen_fgpt.py",
+                  "bin/scripts/xdata.py" ]
         utils.append(os.path.join('FunSDK/sbpfw/eeproms', eeprom_list))
 
         for app in utils:
@@ -170,6 +176,7 @@ def main():
         shutil.rmtree('install_tools', ignore_errors=True)
         shutil.copytree(os.path.join(args.sdkdir, 'bin/flash_tools/install_tools'),
             'install_tools')
+        shutil.copy2(os.path.join(args.sdkdir, 'deployments', ROOTFS_FILE), ROOTFS_FILE)
 
         #TODO(mnowakowski)
         #     skip direct invocation and import make_emulation_emmc
@@ -180,6 +187,28 @@ def main():
                 '--filesystem',
                 '--signed',
                 '--bootscript-only']
+        subprocess.call(cmd)
+
+        cmd = [ 'python3', 'gen_fgpt.py', 'fgpt.unsigned' ]
+        subprocess.call(cmd)
+
+        cmd = [ 'python3', 'xdata.py',
+                '-r',
+                '--data-offset=4096',
+                '--data-alignment=512',
+                '--padding=4',
+                'fvos.unsigned',
+                'add',
+                os.path.join(args.sdkdir,
+                    'bin/cc-linux-yocto/mips64hv/vmlinux.bin') ]
+        subprocess.call(cmd)
+
+        cmd = [ 'python3', 'gen_hash_tree.py',
+                '-O', 'fvht.bin',
+                'hash',
+                '-N', 'rootfs.hashtree',
+                '--to-sign', 'fvht.unsigned',
+                '-I', ROOTFS_FILE ]
         subprocess.call(cmd)
 
         with open("image.json", "w") as f:
@@ -224,6 +253,12 @@ def main():
                 '--signed' ]
         subprocess.call(cmd)
 
+        cmd = [ 'python3', 'gen_hash_tree.py',
+                '-O', 'fvht.bin',
+                'insert',
+                '--signed', 'fvht.signed' ]
+        subprocess.call(cmd)
+
         with open(eeprom_list) as f:
             eeproms = json.load(f)
             for skuid, value in eeproms.items():
@@ -250,6 +285,8 @@ def main():
 
         tarfiles.append('image.json')
         tarfiles.append('mmc_image.json')
+        tarfiles.append('fvht.bin')
+        tarfiles.append(ROOTFS_FILE)
         tarfiles.extend(glob.glob('qspi_image_hw.bin*'))
 
         with tarfile.open('{chip}_sdk_signed_release.tgz'.format(chip=args.chip), mode='w:gz') as tar:
@@ -278,7 +315,9 @@ def main():
 
         bundle_images.extend([
             'install_tools/run_fwupgrade.py',
-            'install_tools/setup.sh'
+            'install_tools/setup.sh',
+            'fvht.bin',
+            ROOTFS_FILE
         ])
 
         for f in bundle_images:
