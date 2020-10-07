@@ -48,8 +48,8 @@
             "key_index": 0,
             "description": ""
         },
-        "fvht.signed": {
-            "source": "fvht.unsigned",
+        "FVHT": {
+            "source": "INVALID_TO_BE_OVERWRITTEN",
             "version": 1,
             "fourcc": "fvht",
             "cert": "",
