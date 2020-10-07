@@ -5,6 +5,7 @@
 #
 
 import argparse
+import time
 
 import pipeline
 
@@ -13,20 +14,30 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("dir", help="Log directory")
     parser.add_argument('machines', nargs='+', help='FS1600 machines')
+    parser.add_argument('output', help='Output block type', default='ElasticOutput')
 
     args = parser.parse_args()
 
     env = {}
     env['logdir'] = args.dir
-    cfg = build_pipeline(args.machines)
+    # Unique Build ID based on time in nanoseconds since Epoch
+    # Will be used to track pipeline output
+    env['build_id'] = str(time.time_ns())
+    print('Build ID:', env['build_id'])
+
+    cfg = build_pipeline(args.machines, args.output)
 
     block_factory = pipeline.BlockFactory()
 
+    start = time.time()
     p = pipeline.Pipeline(block_factory, cfg, env)
     p.process()
+    end = time.time()
+
+    print('Time spent processing: {}s'.format(end - start))
 
 
-def build_pipeline(machines):
+def build_pipeline(machines, output_block):
     """ Constructs a pipeline for all the specified machines """
 
     cfg = {}
@@ -37,32 +48,45 @@ def build_pipeline(machines):
 
     pipeline_cfg.extend(
         controller_input_pipeline('kafka',
-                                  '${logdir}/fc/sclogs/start_kafka_consumer/info*'))
+                                  '${logdir}/cs/sclogs/start_kafka_consumer/info*'))
     pipeline_cfg.extend(
         controller_input_pipeline('apigw',
-                                  '${logdir}/fc/apigateway/info*'))
+                                  '${logdir}/cs/apigateway/info*'))
 
-    pipeline_cfg.extend(common_pipeline())
+    pipeline_cfg.extend(
+        controller_input_pipeline('sns',
+                                  '${logdir}/cs/sns/sns*',
+                                  parse_block='KeyValueInput'))
+
+    pipeline_cfg.extend(
+        controller_input_pipeline('dataplacement',
+                                  '${logdir}/cs/sclogs/dataplacement/info*',
+                                  multiline_settings={
+                                      'pattern': r'(\[.*\])\s+([(-0-9|/0-9)]+)+(?:T|\s)([:0-9]+).([0-9]+)\s?((?:\-|\+)[0-9]{4})'
+                                  }))
+
+    pipeline_cfg.extend(output_pipeline(output_block))
 
     cfg['pipeline'] = pipeline_cfg
     return cfg
 
 
-def controller_input_pipeline(id, file_pattern):
+def controller_input_pipeline(id, file_pattern, multiline_settings={}, parse_block='GenericInput'):
     parse_id = id + '_parse'
 
     input = {
         'id': id,
         'block': 'TextFileInput',
         'cfg': {
-            'file_pattern': file_pattern
+            'file_pattern': file_pattern,
+            **multiline_settings
         },
         'out': parse_id
     }
 
     parse = {
         'id': parse_id,
-        'block': 'GenericInput',
+        'block': parse_block,
         'out': 'merge'
     }
 
@@ -77,7 +101,7 @@ def funos_input_pipeline(machine):
         'id': input_id,
         'block': 'TextFileInput',
         'cfg': {
-            'file_pattern': '${{logdir}}/{}/system_current/F1_0_funos.txt'.format(machine)
+            'file_pattern': '${{logdir}}/devices/{}/system_current/F1_0_funos.txt'.format(machine)
         },
         'out': parse_id
     }
@@ -91,30 +115,40 @@ def funos_input_pipeline(machine):
     return [input, parse]
 
 
-def common_pipeline():
-    merge = {
-        'id': 'merge',
-        'block': 'Merge',
-        'out': 'dt'
-    }
-
-    dt = {
-        'id': 'dt',
-        'block': 'HumanDateTime',
-        'out': 'html'
-    }
-
-    html = {
-        'id': 'html',
-        'block': 'HTMLOutput',
-        'cfg': {
-            'dir': 'testoutput',
-            'lines_per_page': 10000
+def output_pipeline(output_block):
+    if output_block == 'HTMLOutput':
+        merge = {
+            'id': 'merge',
+            'block': 'Merge',
+            'out': 'dt'
         }
-    }
 
-    return [merge, dt, html]
+        dt = {
+            'id': 'dt',
+            'block': 'HumanDateTime',
+            'out': 'html'
+        }
 
+        html = {
+            'id': 'html',
+            'block': 'HTMLOutput',
+            'cfg': {
+                'dir': 'log_${build_id}',
+                'lines_per_page': 10000
+            }
+        }
+
+        return [merge, dt, html]
+    elif output_block == 'ElasticOutput':
+        output = {
+            "id": "merge",
+            "block": "ElasticOutput",
+            "cfg": {
+                "index": "log_${build_id}"
+            }
+        }
+
+        return [output]
 
 if __name__ == '__main__':
     main()

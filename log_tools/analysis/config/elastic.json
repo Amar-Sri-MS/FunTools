@@ -56,33 +56,33 @@
       "id": "apigw",
       "block": "TextFileInput",
       "cfg": {
-        "file_pattern": "${logdir}/fc/apigateway/info*"
+        "file_pattern": "${logdir}/cs/apigateway/info*"
       },
       "out": "apigw_parse"
     },
     {
       "id": "apigw_parse",
-      "block": "MsecInput",
+      "block": "GenericInput",
       "out": "es"
     },
     {
       "id": "storage_cons",
       "block": "TextFileInput",
       "cfg": {
-        "file_pattern": "${logdir}/fc/sclogs/start_kafka_consumer/info*"
+        "file_pattern": "${logdir}/cs/sclogs/start_kafka_consumer/info*"
       },
       "out": "kafka_cons_parse"
     },
     {
       "id": "kafka_cons_parse",
-      "block": "MsecInput",
+      "block": "GenericInput",
       "out": "es"
     },
     {
       "id": "dataplacement",
       "block": "TextFileInput",
       "cfg": {
-        "file_pattern": "${logdir}/fc/sclogs/dataplacement/info*",
+        "file_pattern": "${logdir}/cs/sclogs/dataplacement/info*",
         "pattern": "(\\[.*\\])\\s+([(-0-9|/0-9)]+)+(?:T|\\s)([:0-9]+).([0-9]+)\\s?((?:\\-|\\+)[0-9]{4})"
       },
       "out": "dataplacement_parse"
@@ -96,7 +96,7 @@
       "id": "sns",
       "block": "TextFileInput",
       "cfg": {
-        "file_pattern": "${logdir}/fc/sns/sns*"
+        "file_pattern": "${logdir}/cs/sns/sns*"
       },
       "out": "sns_parse"
     },
@@ -116,7 +116,7 @@
     },
     {
       "id": "storage_agent_0_parse",
-      "block": "MsecInput",
+      "block": "GenericInput",
       "out": "es"
     },
     {
@@ -130,14 +130,14 @@
     },
     {
       "id": "storage_agent_1_parse",
-      "block": "MsecInput",
+      "block": "GenericInput",
       "out": "es"
     },
     {
       "id": "es",
       "block": "ElasticOutput",
       "cfg": {
-        "index": "log_test"
+        "index": "log_${build_id}"
       }
     }
   ]

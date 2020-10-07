@@ -15,9 +15,13 @@ class HTMLOutput(Block):
     def __init__(self):
         super().__init__()
         self.cfg = None
+        self.env = {}
+        self.dir = None
 
     def set_config(self, cfg):
         self.cfg = cfg
+        build_id = cfg['env'].get('build_id')
+        self.dir = cfg['dir'].replace('${build_id}', build_id)
 
     def process(self, iters):
 
@@ -56,7 +60,7 @@ class HTMLOutput(Block):
         template_dict['body'] = ''.join(page_body)
         result = template.render(template_dict, env=jinja_env)
 
-        page_path = os.path.join(self.cfg['dir'], page_name)
+        page_path = os.path.join(self.dir, page_name)
         with open(page_path, 'w') as f:
             f.write(result)
 
@@ -68,7 +72,7 @@ class HTMLOutput(Block):
         template_dict['pages'] = pages
         result = template.render(template_dict, env=jinja_env)
 
-        index_file = os.path.join(self.cfg['dir'], 'index.html')
+        index_file = os.path.join(self.dir, 'index.html')
         with open(index_file, 'w') as f:
             f.write(result)
 

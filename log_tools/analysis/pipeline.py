@@ -37,6 +37,7 @@ def main():
 
     env = {}
     env['logdir'] = args.dir
+    env['build_id'] = time.time_ns()
 
     start = time.time()
     pipeline = Pipeline(block_factory, cfg, env)

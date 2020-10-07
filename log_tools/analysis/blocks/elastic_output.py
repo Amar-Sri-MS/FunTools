@@ -14,6 +14,7 @@ class ElasticsearchOutput(Block):
 
     def __init__(self):
         self.es = Elasticsearch([{'host': 'localhost', 'port': 9200}])
+        self.env = {}
 
         # We use the date_nanos type in elasticsearch, which limits us to
         # the epoch in UTC as a lower limit.
@@ -29,7 +30,9 @@ class ElasticsearchOutput(Block):
         self.datetime_boost = datetime.timedelta(days=1)
 
     def set_config(self, cfg):
-        self.index = cfg['index']
+        self.env = cfg['env']
+        build_id = self.env['build_id']
+        self.index = cfg['index'].replace('${build_id}', build_id)
 
     def process(self, iters):
         """ Writes contents from all iterables to elasticsearch """
