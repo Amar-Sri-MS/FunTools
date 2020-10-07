@@ -353,12 +353,16 @@ def main():
             bundle_images.extend([
                 'install_tools/run_fwupgrade.py',
                 'install_tools/setup.sh',
+                'image.json',
                 _rootfs('fvht.bin', rootfs),
                 rootfs
             ])
 
             for f in bundle_images:
                 os.symlink(os.path.join(args.destdir, f), os.path.join('bundle_installer', os.path.basename(f)))
+
+            with open(os.path.join('bundle_installer', '.setup'), "w") as cfg:
+                cfg.write('ROOTFS_NAME="{}"'.format(rootfs))
 
             makeself = [
                 'makeself',
