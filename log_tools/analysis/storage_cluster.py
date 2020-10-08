@@ -12,6 +12,7 @@ import pipeline
 
 def main():
     parser = argparse.ArgumentParser()
+    parser.add_argument('build_id', help="Unique build ID")
     parser.add_argument("dir", help="Log directory")
     parser.add_argument('machines', nargs='+', help='FS1600 machines')
     parser.add_argument('output', help='Output block type', default='ElasticOutput')
@@ -20,10 +21,7 @@ def main():
 
     env = {}
     env['logdir'] = args.dir
-    # Unique Build ID based on time in nanoseconds since Epoch
-    # Will be used to track pipeline output
-    env['build_id'] = str(time.time_ns())
-    print('Build ID:', env['build_id'])
+    env['build_id'] = args.build_id
 
     cfg = build_pipeline(args.machines, args.output)
 

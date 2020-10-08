@@ -15,6 +15,7 @@ class ElasticsearchOutput(Block):
     def __init__(self):
         self.es = Elasticsearch([{'host': 'localhost', 'port': 9200}])
         self.env = {}
+        self.index = None
 
         # We use the date_nanos type in elasticsearch, which limits us to
         # the epoch in UTC as a lower limit.
