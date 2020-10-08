@@ -13,7 +13,7 @@ class ElasticsearchOutput(Block):
     """ Adds all messages as documents in an elasticsearch index. """
 
     def __init__(self):
-        self.es = Elasticsearch([{'host': 'localhost', 'port': 9200}])
+        self.es = Elasticsearch([{'host': '10.1.80.95', 'port': 9200}], timeout=20, max_retries=3, retry_on_timeout=True)
         self.env = {}
         self.index = None
 
