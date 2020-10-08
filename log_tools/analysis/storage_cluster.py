@@ -46,7 +46,7 @@ def build_pipeline(machines, output_block):
 
     pipeline_cfg.extend(
         controller_input_pipeline('kafka',
-                                  '${logdir}/cs/sclogs/start_kafka_consumer/info*'))
+                                  '${logdir}/cs/sclogs/storage_consumer/info*'))
     pipeline_cfg.extend(
         controller_input_pipeline('apigw',
                                   '${logdir}/cs/apigateway/info*'))
@@ -92,25 +92,50 @@ def controller_input_pipeline(id, file_pattern, multiline_settings={}, parse_blo
 
 
 def funos_input_pipeline(machine):
-    input_id = machine + '_f1_0'
-    parse_id = input_id + '_parse'
+    blocks = []
+    # 2 DPUs in FS1600 machine
+    # TODO: (Sourabh) Unnecessary blocks for FS800
+    for i in range(0, 2):
+        input_id = f'{machine}_f1_{i}'
+        parse_id = f'{input_id}_parse'
 
-    input = {
-        'id': input_id,
-        'block': 'TextFileInput',
-        'cfg': {
-            'file_pattern': '${{logdir}}/devices/{}/system_current/F1_0_funos.txt'.format(machine)
-        },
-        'out': parse_id
-    }
+        input = {
+            'id': input_id,
+            'block': 'TextFileInput',
+            'cfg': {
+                'file_pattern': '${{logdir}}/devices/{}/system_current/F1_{}_funos.txt'.format(machine, i)
+            },
+            'out': parse_id
+        }
 
-    parse = {
-        'id': parse_id,
-        'block': 'FunOSInput',
-        'out': 'merge'
-    }
+        parse = {
+            'id': parse_id,
+            'block': 'FunOSInput',
+            'out': 'merge'
+        }
 
-    return [input, parse]
+        storage_agent_id = f'{input_id}_storage_agent'
+        storage_agent_parse_id = f'{storage_agent_id}_parse'
+
+        storage_agent = {
+            'id': storage_agent_id,
+            'block': 'TextFileInput',
+            'cfg': {
+                'file_pattern': '${{logdir}}/devices/{}/storage_agent_{}/storage_agent/info*'.format(machine, i),
+                'pattern': r'([(-0-9|/0-9)]+)+(?:T|\s)([:0-9]+)(?:.|,)([0-9]{3,9})'
+            },
+            'out': storage_agent_parse_id
+        }
+
+        storage_agent_parse = {
+            'id': storage_agent_parse_id,
+            'block': 'GenericInput',
+            'out': 'merge'
+        }
+
+        blocks.extend([input, parse, storage_agent, storage_agent_parse])
+
+    return blocks
 
 
 def output_pipeline(output_block):
