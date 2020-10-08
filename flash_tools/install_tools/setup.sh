@@ -2,7 +2,8 @@
 
 # .setup is generated as part of bundle generation to contain
 # bundle-specific config variables
-source .setup
+# note: busybox bash doesn't like 'source .setup'
+source ./.setup
 
 setup_err() {
 	trap_code=$?
@@ -92,7 +93,7 @@ funos_sdk_version=$(sed -ne 's/^funsdk=\(.*\)/\1/p' .version || echo latest)
 
 log_msg "Upgrading DPU firmware"
 
-FW_UPGRADE_ARGS="--offline --ws ./funos"
+FW_UPGRADE_ARGS="--offline --ws `pwd`"
 
 if [[ $downgrade ]]; then
 	# downgrades are disabled because cclinux downgrade isn't supported
@@ -119,11 +120,11 @@ log_msg "Upgrading CCLinux"
 # Update partition information
 partprobe
 # Install OS image
-dd if=fvos.signed of=/dev/sdb1
+dd if=fvos.signed of=/dev/vdb1
 # Install rootfs image
-dd if=${ROOTFS_NAME} of=/dev/sdb2 bs=4096
+dd if=${ROOTFS_NAME} of=/dev/vdb2 bs=4096
 # Install rootfs hashtable
-dd if=${ROOTFS_NAME}.fvht.signed of=/dev/sdb4
+dd if=${ROOTFS_NAME}.fvht.bin of=/dev/vdb4
 
 echo "CCLinux done" >> $PROGRESS
 

@@ -359,7 +359,7 @@ def main():
             ])
 
             for f in bundle_images:
-                os.symlink(os.path.join(args.destdir, f), os.path.join('bundle_installer', os.path.basename(f)))
+                os.symlink(os.path.join(os.path.abspath(os.curdir), f), os.path.join('bundle_installer', os.path.basename(f)))
 
             with open(os.path.join('bundle_installer', '.setup'), "w") as cfg:
                 cfg.write('ROOTFS_NAME="{}"'.format(rootfs))
