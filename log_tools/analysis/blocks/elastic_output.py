@@ -4,7 +4,7 @@
 import datetime
 
 from elasticsearch7 import Elasticsearch
-from elasticsearch7.helpers import bulk
+from elasticsearch7.helpers import parallel_bulk
 
 from blocks.block import Block
 
@@ -38,7 +38,11 @@ class ElasticsearchOutput(Block):
     def process(self, iters):
         """ Writes contents from all iterables to elasticsearch """
         for it in iters:
-            bulk(self.es, self.generate_es_doc(it))
+            # parallel_bulk is a wrapper around bulk to provide threading
+            # default thread_count is 4 and it returns a generator with indexing result
+            for success, info in parallel_bulk(self.es, self.generate_es_doc(it)):
+                if not success:
+                    print('Failed to index a document', info)
 
     def generate_es_doc(self, it):
         """ Maps iterable contents to elasticsearch document """
