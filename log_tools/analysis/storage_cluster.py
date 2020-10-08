@@ -15,7 +15,7 @@ def main():
     parser.add_argument('build_id', help="Unique build ID")
     parser.add_argument("dir", help="Log directory")
     parser.add_argument('machines', nargs='+', help='FS1600 machines')
-    parser.add_argument('output', help='Output block type', default='ElasticOutput')
+    parser.add_argument('--output', help='Output block type', default='ElasticOutput')
 
     args = parser.parse_args()
 
