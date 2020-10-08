@@ -209,6 +209,21 @@ def main():
         for rootfs in rootfs_files:
             shutil.copy2(os.path.join(args.sdkdir, 'deployments', rootfs), rootfs)
 
+        bld_info = os.path.join(args.sdkdir, 'build_info.txt')
+        v = args.force_version
+        sdk_v = v
+
+        if os.path.exists(bld_info):
+            with open(bld_info, 'r') as f:
+                sdk_v = int(f.readline())
+                if not args.force_version:
+                    v = sdk_v
+                    gf.set_versions(v)
+
+        with open('.version', 'w') as version_file:
+            version_file.write('funsdk={}\n'.format(v))
+            version_file.write('funsdk_version={}\n'.format(sdk_v))
+
         #TODO(mnowakowski)
         #     skip direct invocation and import make_emulation_emmc
         cmd = [ 'python', 'make_emulation_emmc.py',
@@ -325,6 +340,9 @@ def main():
             tarfiles.append(rootfs)
         tarfiles.extend(glob.glob('qspi_image_hw.bin*'))
 
+        if os.path.exists('.version'):
+            tarfiles.append('.version')
+
         with tarfile.open('{chip}_sdk_signed_release.tgz'.format(chip=args.chip), mode='w:gz') as tar:
             for f in tarfiles:
                 tar.add(f)
@@ -357,6 +375,9 @@ def main():
                 _rootfs('fvht.bin', rootfs),
                 rootfs
             ])
+
+            if os.path.exists('.version'):
+                bundle_images.append('.version')
 
             for f in bundle_images:
                 os.symlink(os.path.join(os.path.abspath(os.curdir), f), os.path.join('bundle_installer', os.path.basename(f)))
