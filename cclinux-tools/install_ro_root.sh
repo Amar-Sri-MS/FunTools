@@ -12,13 +12,14 @@ target_dir=$SDK_INSTALL_DIR/bin/scripts
 
 mkdir -p $target_dir
 
-install -t $target_dir deploy_factory.sh
+install -t $target_dir deploy_ro_root.sh
 
 runtime_target_dir=$SDK_INSTALL_DIR/bin/mips64/Linux
 
 mkdir -p $runtime_target_dir
 
-install -t $runtime_target_dir do_emmc_partition.sh
-install -t $runtime_target_dir factory-mmc.sh
-install -t $runtime_target_dir S99do-provision
-install -t $runtime_target_dir -m 0644 dhclient-enter-hooks
+#
+# Read only rootfs tools.
+#
+install -t $runtime_target_dir -m 0644 fstab-ro
+install -t $runtime_target_dir -m 0644 vfio.conf
