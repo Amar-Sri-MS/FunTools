@@ -19,6 +19,7 @@ import tempfile
 import generate_flash as gf
 import flash_utils
 import eeprom_replace as er
+import os_utils
 
 
 HOST_FIRMWARE_CONFIG_OVERRIDE="""
@@ -194,6 +195,7 @@ def main():
                   "bin/flash_tools/eeprom_replace.py",
                   "bin/flash_tools/flash_utils.py",
                   "bin/flash_tools/gen_hash_tree.py",
+                  "bin/flash_tools/os_utils.py",
                   "bin/flash_tools/" + os.path.basename(__file__),
                   "bin/Linux/x86_64/mkimage",
                   "bin/scripts/gen_fgpt.py",
@@ -233,7 +235,7 @@ def main():
                 '--filesystem',
                 '--signed',
                 '--bootscript-only']
-        subprocess.call(cmd)
+        subprocess.check_call(cmd)
 
         cmd = [ 'python3', 'gen_fgpt.py', 'fgpt.unsigned' ]
         subprocess.call(cmd)
@@ -300,7 +302,7 @@ def main():
                 '--fsfile', 'boot.img.signed',
                 '--filesystem',
                 '--signed' ]
-        subprocess.call(cmd)
+        subprocess.check_call(cmd)
 
         for rootfs in rootfs_files:
             cmd = [ 'python3', 'gen_hash_tree.py',
@@ -386,7 +388,7 @@ def main():
                 cfg.write('ROOTFS_NAME="{}"'.format(rootfs))
 
             makeself = [
-                'makeself',
+                os_utils.path_fixup('makeself'),
                 '--follow',
                 'bundle_installer',
                 'setup_bundle_{}.sh'.format(rootfs),

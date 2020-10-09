@@ -1,13 +1,20 @@
 #!/usr/bin/env python3
 
+'''
+Copyright (c) 2019-2020 Fungible, inc.
+All Rights Reserved.
+'''
+
 import argparse
 import binascii
 import json
 import os
+import platform
 import shutil
 import subprocess
 import tempfile
 
+import os_utils
 
 class GlobalVars(object):
     pass
@@ -75,28 +82,44 @@ def trunc_file(infile_name, outfile_name, size):
     """Remove bytes from end of file to truncate its size to @size"""
     cmd = ['dd',
            'if={}'.format(infile_name),
-           'of={}'.format(outfile_name),
+           'of={}'.format(outfile_name) ]
+    if platform.system() == 'Linux':
+        cmd.extend([
            'count={:d}'.format(size),
-           'iflag=count_bytes']
+           'iflag=count_bytes'])
+    else:
+        # MacOS dd is dumb ...
+        cmd.extend([
+            'count=1',
+            'bs={:d}'.format(size)
+        ])
     subprocess.call(cmd)
 
 def trunc_head_file(infile_name, outfile_name, size):
     """Remove @size bytes from beginning of file"""
-    cmd = ['dd',
-           'if={}'.format(infile_name),
-           'of={}'.format(outfile_name),
-           'skip={:d}'.format(size),
-           'iflag=skip_bytes']
-    subprocess.call(cmd)
+    with open(outfile_name, 'wb') as outfile:
+        with open(infile_name) as infile:
+            infile.seek(size, 0)
+            while True:
+                data = infile.read(4096)
+                if data:
+                    outfile.write(data)
+                else:
+                    break
+
 
 def merge_file(infile_name, outfile_name):
     """Append infile file to the end of outfile file"""
-    cmd = ['dd',
-           'if={}'.format(infile_name),
-           'of={}'.format(outfile_name),
-           'oflag=append',
-           'conv=notrunc']
-    subprocess.call(cmd)
+    with open(outfile_name, 'ab') as outfile:
+        with open(infile_name) as infile:
+            outfile.seek(0, 2)
+            while True:
+                data = infile.read(4096)
+                if data:
+                    outfile.write(data)
+                else:
+                    break
+
 
 def gen_hex_file(infile_name, outfile_name, append):
     mode = 'ab' if append else 'wb'
@@ -222,7 +245,7 @@ def gen_fs(files):
             shutil.copy(f, tempdir)
     else:
         shutil.copy(os.path.join(g.outdir, 'boot.img'), tempdir)
-    cmd = ['mkfs.ext4',
+    cmd = [ os_utils.path_fixup('mkfs.ext4'),
            '-E', 'offset=4096',  # partition offset
            '-d', tempdir,  # filesystem contents
            '-F',  # force output
@@ -230,6 +253,7 @@ def gen_fs(files):
            output_fs,  # destination filename
            '30M'  # filesystem size
            ]
+
     subprocess.call(cmd)
     shutil.rmtree(tempdir)
     with tempfile.NamedTemporaryFile() as f:
@@ -238,7 +262,7 @@ def gen_fs(files):
         # reject creating partition pointers to offsets greater than the
         # 'device' size (device in this context is the file that is being changed)
         pad_file(output_fs, f.name, 1124 * MB)
-        cmd = ['sfdisk',
+        cmd = [ os_utils.path_fixup('sfdisk'),
             '-X', 'dos',  # partition label
             f.name]
         p = subprocess.Popen(cmd, stdin=subprocess.PIPE)
