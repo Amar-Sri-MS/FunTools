@@ -55,7 +55,7 @@ class CodegenEndToEnd(unittest.TestCase):
     self.assertNotIn('#define FOO_RESERVED', out)
 
     # Did bitfield get initialized?'
-    self.assertIn('s->b_to_c = FOO_B_P(b) | FOO_C_P(c)', out)
+    self.assertIn('s->b_to_c = FOO_B_P(b) | FOO_C_P(c);', out)
 
   def testLinuxBadTypeNames(self):
     """Linux mode limits type names to only uint8, uint16_t, uint32_t, and
@@ -95,7 +95,7 @@ class CodegenEndToEnd(unittest.TestCase):
     self.assertIn('__u8 b_to_c;', out)
     # Did array get included?
     self.assertIn('__u8 d[6];', out)
-    self.assertIn('__be32 e;', out)
+    self.assertIn('__dpu32 e;', out)
     # Did constructor get created?
     # Test individually because of odd whitespace around the commas.
     self.assertIn('void Foo_init(struct Foo *s, __u8 a', out)
@@ -109,9 +109,8 @@ class CodegenEndToEnd(unittest.TestCase):
     self.assertNotIn('#define FOO_RESERVED', out)
 
     # Did bitfield get initialized?'
-    self.assertIn('s->b_to_c = cpu_to_dpu8( FOO_B_P_NOSWAP(b) | '
-                  'FOO_C_P_NOSWAP(c)', out)
-
+    self.assertIn('s->b_to_c = ( FOO_B_P_NOSWAP(b) | FOO_C_P_NOSWAP(c) );',
+                  out)
     # Did full field get initialized?
     self.assertIn('s->e = cpu_to_dpu32(e)', out)
 
