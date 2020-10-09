@@ -1,5 +1,10 @@
 #!/bin/bash -e
 
+# .setup is generated as part of bundle generation to contain
+# bundle-specific config variables
+# note: busybox bash doesn't like 'source .setup'
+source ./.setup
+
 setup_err() {
 	trap_code=$?
 	set +x
@@ -84,18 +89,23 @@ echo "started" > $PROGRESS
 log_msg "Installing and configuring cclinux software and DPU firmware"
 pwd=$PWD
 
-#funos_sdk_version=$(sed -ne 's/^funsdk=\(.*\)/\1/p' .version || echo latest)
+funos_sdk_version=$(sed -ne 's/^funsdk=\(.*\)/\1/p' .version || echo latest)
 
 log_msg "Upgrading DPU firmware"
 
-FW_UPGRADE_ARGS="--offline --ws ./funos"
+FW_UPGRADE_ARGS="--offline --ws `pwd`"
 
 if [[ $downgrade ]]; then
-	./run_fwupgrade.py ${FW_UPGRADE_ARGS} -U --version latest --force --downgrade
-	./run_fwupgrade.py ${FW_UPGRADE_ARGS} -U --version latest --force --downgrade --active
+	# downgrades are disabled because cclinux downgrade isn't supported
+	# and they must always be kept in sync ...
+	log_msg "Downgrade currently not supported"
+	exit 1
+	#./run_fwupgrade.py ${FW_UPGRADE_ARGS} -U --version latest --force --downgrade
+	#./run_fwupgrade.py ${FW_UPGRADE_ARGS} -U --version latest --force --downgrade --active
 else
 	./run_fwupgrade.py ${FW_UPGRADE_ARGS} -U --version $funos_sdk_version
 fi
+
 if [[ $ccfg_install ]]; then
 	./run_fwupgrade.py ${FW_UPGRADE_ARGS} --upgrade-file ccfg=$ccfg_install
 	./run_fwupgrade.py ${FW_UPGRADE_ARGS} --upgrade-file ccfg=$ccfg_install --active
@@ -104,7 +114,19 @@ fi
 echo "DPU done" >> $PROGRESS
 
 log_msg "Upgrading CCLinux"
-log_msg "*** NOT IMPLEMENTED YET ***"
+
+# Install partition table
+./run_fwupgrade.py ${FW_UPGRADE_ARGS} --upgrade-file fgpt=fgpt.signed
+# Update partition information
+partprobe
+# Install OS image
+dd if=fvos.signed of=/dev/vdb1
+# Install rootfs image
+dd if=${ROOTFS_NAME} of=/dev/vdb2 bs=4096
+# Install rootfs hashtable
+dd if=${ROOTFS_NAME}.fvht.bin of=/dev/vdb4
+
+echo "CCLinux done" >> $PROGRESS
 
 sync
 exit 0

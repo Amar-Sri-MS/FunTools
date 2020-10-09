@@ -42,13 +42,16 @@ RESERVE_REGEX = re.compile(r"reserve\(\s*(0x[0-9A-Fa-f]+|\d+)\s*,\s*'(.{4})'\s*\
 def find_file_in_srcdirs(filename):
     global search_paths
     if filename:
+        if os.path.isabs(filename) and os.path.isfile(filename):
+            return filename
+
         pp = pprint.PrettyPrinter(indent=2)
-        print('Searching for {} in: {}'.format(filename,pp.pformat(search_paths)))
         for dir in search_paths:
             file = os.path.join(dir, filename)
             if os.path.isfile(file):
                 print('--> {} found in: {}'.format(filename,dir))
                 return file
+        print('Searching for {} in: {}'.format(filename,pp.pformat(search_paths)))
         print('--> {} not found'.format(filename))
 
     return None
