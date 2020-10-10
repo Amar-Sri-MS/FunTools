@@ -1,3 +1,4 @@
+#!/usr/bin/env python2.7
 import unittest
 
 import generator
@@ -112,7 +113,7 @@ class HTMLGeneratorTest(unittest.TestCase):
         self.assertIn('Key comment for array.', out)
         self.assertIn('Body comment for array.', out)
         self.assertIn('Tail comment for A', out)
-        self.assertIn('element[0]', out)
+        self.assertIn('element[]', out)
         self.assertIn('<td>array</td>', out)
 
     def testPrintSubfields(self):
@@ -236,7 +237,7 @@ class FieldTableTest(unittest.TestCase):
         # TODO(bowdidge): Why 63-0?
         self.assertIn('<td class="structBits">63-0</td>', out)
         self.assertIn('<td>foo</td>', out)
-        self.assertIn('<td>struct Bar[0]</td>', out)
+        self.assertIn('<td>struct Bar[]</td>', out)
         self.assertIn('Key comment<br>', out)
         
 

@@ -345,8 +345,11 @@ class Type:
   def ParameterTypeName(self, linux_type=False, endian=True):
     """Returns type name as function parameter type."""
     if self.is_array:
-      return '%s[%d]' % (self.DeclarationName(linux_type, endian),
-                         self.array_size)
+      array_dim = ''
+      if self.array_size != 0:
+        array_dim = str(self.array_size)
+      return '%s[%s]' % (self.DeclarationName(linux_type, endian),
+                         array_dim)
     elif self.base_type.node:
       return '%s' % self.DeclarationName(linux_type, endian)
     else:
@@ -678,9 +681,14 @@ class Field(Declaration):
                                  self.name)
 
     if self.type.IsArray():
-      return "%s %s[%d]" % (self.type.DeclarationName(linux_type,
-                                                      dpu_endian), self.name,
-                            self.type.array_size)
+      array_dim = ''
+      if self.type.array_size != 0:
+        array_dim = str(self.type.array_size)
+      return "%s %s[%s]" % (self.type.DeclarationName(linux_type,
+                                                      dpu_endian),
+                            self.name,
+                            array_dim)
+
     return "%s %s" % (self.type.ParameterTypeName(linux_type,
                                                   dpu_endian), self.name)
 
@@ -747,10 +755,13 @@ class Field(Declaration):
       key_comment = ' ' + utils.AsComment(self.key_comment)
 
     if self.type.IsArray():
-      str += '%s %s[%d];%s\n' % (type_name,
-                                     self.name,
-                                     self.type.ArraySize(),
-                                     key_comment)
+      array_dim = ''
+      if self.type.ArraySize() != 0:
+        array_dim = '%d' % self.type.ArraySize()
+      str += '%s %s[%s];%s\n' % (type_name,
+                                 self.name,
+                                 array_dim,
+                                 key_comment)
     else:
       var_width = self.BitWidth()
       type_width = self.type.BitWidth()
