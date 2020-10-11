@@ -776,6 +776,7 @@ def main():
   codegen_linux = SetFromArgs('linux', codegen_args, False)
   codegen_be = SetFromArgs('be', codegen_args, False)
   codegen_le = SetFromArgs('le', codegen_args, False)
+  codegen_init_macros = SetFromArgs('init_macros', codegen_args, False)
 
   if codegen_be and codegen_le:
     sys.stderr.write('\'be\' and \'le\' codegen options are mutually exclusive\n')
@@ -799,6 +800,8 @@ def main():
     codegen_options.append('be')
   if codegen_le:
     codegen_options.append('le')
+  if codegen_init_macros:
+    codegen_options.append('init_macros')
 
   if len(args) == 0:
       sys.stderr.write('No genfile named.\n')
