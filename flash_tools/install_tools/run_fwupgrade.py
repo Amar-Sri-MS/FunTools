@@ -24,7 +24,8 @@ BASE_URL = 'http://dochub.fungible.local/doc/jenkins'
 # as eepr
 KNOWN_IMAGES = {'husd', 'husm', 'husc', 'hbsb',
                 'sbpf', 'kbag', 'host', 'emmc',
-                'mmc1', 'nvdm', 'scap'}
+                'mmc1', 'nvdm', 'scap', 'pufr',
+                'frmw'}
 # these images require async upgrade
 ASYNC_ONLY_IMAGES = {'nvdm', 'scap'}
 # these images do not report sdk version correctly, so ignore
@@ -304,6 +305,13 @@ def run_upgrade(args, release_images):
                     dev_upgrade_fourccs.append('kbag')
                 except ValueError:
                     pass
+
+                # Remove frmw and pufr individual upgrades - there should be no
+                # units with firmware that still accept it. They may have been added
+                # to the list as these fourccs are reported by the DPU, but
+                # they are upgraded via 'sbpf' fourcc
+                release_images_fourccs.discard('frmw')
+                release_images_fourccs.discard('pufr')
 
         else:
             for fourcc in set(args.upgrade):
