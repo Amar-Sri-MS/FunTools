@@ -4,7 +4,7 @@
 import datetime
 
 from elasticsearch7 import Elasticsearch
-from elasticsearch7.helpers import bulk
+from elasticsearch7.helpers import parallel_bulk
 
 from blocks.block import Block
 
@@ -13,7 +13,9 @@ class ElasticsearchOutput(Block):
     """ Adds all messages as documents in an elasticsearch index. """
 
     def __init__(self):
-        self.es = Elasticsearch([{'host': 'localhost', 'port': 9200}])
+        self.es = Elasticsearch([{'host': '10.1.80.95', 'port': 9200}], timeout=20, max_retries=3, retry_on_timeout=True)
+        self.env = {}
+        self.index = None
 
         # We use the date_nanos type in elasticsearch, which limits us to
         # the epoch in UTC as a lower limit.
@@ -29,12 +31,18 @@ class ElasticsearchOutput(Block):
         self.datetime_boost = datetime.timedelta(days=1)
 
     def set_config(self, cfg):
-        self.index = cfg['index']
+        self.env = cfg['env']
+        build_id = self.env['build_id']
+        self.index = cfg['index'].replace('${build_id}', build_id)
 
     def process(self, iters):
         """ Writes contents from all iterables to elasticsearch """
         for it in iters:
-            bulk(self.es, self.generate_es_doc(it))
+            # parallel_bulk is a wrapper around bulk to provide threading
+            # default thread_count is 4 and it returns a generator with indexing result
+            for success, info in parallel_bulk(self.es, self.generate_es_doc(it)):
+                if not success:
+                    print('Failed to index a document', info)
 
     def generate_es_doc(self, it):
         """ Maps iterable contents to elasticsearch document """

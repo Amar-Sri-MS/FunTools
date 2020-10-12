@@ -26,6 +26,7 @@ from blocks import stdout_output
 
 def main():
     parser = argparse.ArgumentParser()
+    parser.add_argument('build_id', help='Unique build ID')
     parser.add_argument("dir", help="Log directory")
     parser.add_argument("cfg", help="Pipeline config file")
     args = parser.parse_args()
@@ -37,6 +38,7 @@ def main():
 
     env = {}
     env['logdir'] = args.dir
+    env['build_id'] = args.build_id
 
     start = time.time()
     pipeline = Pipeline(block_factory, cfg, env)
