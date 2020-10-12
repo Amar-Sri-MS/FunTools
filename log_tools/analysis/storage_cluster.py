@@ -103,7 +103,7 @@ def funos_input_pipeline(machine):
             'id': input_id,
             'block': 'TextFileInput',
             'cfg': {
-                'file_pattern': '${{logdir}}/devices/{}/system_current/F1_{}_funos.txt'.format(machine, i)
+                'file_pattern': '${{logdir}}/devices/{}/dpu_logs_lines_c_s{}_0/dpu_funos.txt'.format(machine, i)
             },
             'out': parse_id
         }
@@ -121,7 +121,7 @@ def funos_input_pipeline(machine):
             'id': storage_agent_id,
             'block': 'TextFileInput',
             'cfg': {
-                'file_pattern': '${{logdir}}/devices/{}/storage_agent_{}/storage_agent/info*'.format(machine, i),
+                'file_pattern': '${{logdir}}/devices/{}/come_optfungible_log/fungible/logs/storage_agent_{}/storage_agent/info*'.format(machine, i),
                 'pattern': r'([(-0-9|/0-9)]+)+(?:T|\s)([:0-9]+)(?:.|,)([0-9]{3,9})'
             },
             'out': storage_agent_parse_id
