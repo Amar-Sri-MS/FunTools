@@ -38,8 +38,11 @@ static const unsigned int {{var.name}} = {{var.value|as_hex}};{{var.key_comment|
 /* String names for all power-of-two flags in {{flagset.name}}. */
 extern const char *{{flagset.name|as_lower}}_names[];
 {%- endmacro %}
+{#
 
-{# How to render each CONST #}
+How to render each CONST
+
+#}
 {% macro constDecl(const) %}
 /* Declarations for constants {{const.name}}. */
 {% if const.key_comment %}{{const.key_comment|as_comment}}{% endif %}
@@ -52,8 +55,11 @@ enum {{const.name}} {
 {% if const.tail_comment %}{{const.tail_comment|as_comment}}{% endif %}
 };
 {%- endmacro %}
+{#
 
-{# Macros for hiding which size macro to use. #}
+Macros for hiding which size macro to use.
+
+#}
 {% if generate_be %}
 {% macro toDpuWrapper(field) %}
 {% if generate_swap and field.type.bit_width != 8 %}cpu_to_be{{field.type.bit_width}}{% endif %}
@@ -67,7 +73,7 @@ enum {{const.name}} {
 {% if generate_swap and field.type.bit_width != 8 %}cpu_to_dpu{{field.type.bit_width}}{% endif %}
 {%- endmacro %}
 {% endif %}
-
+{# #}
 {% if generate_be %}
 {% macro fromDpuWrapper(field) %}
 {% if generate_swap and field.type.bit_width != 8 %}be{{field.type.bit_width}}_to_cpu{% endif %}
@@ -81,7 +87,6 @@ enum {{const.name}} {
 {% if generate_swap and field.type.bit_width != 8 %}dpu_to_cpu{{field.type.bit_width}}{% endif %}
 {%- endmacro %}
 {% endif %}
-
 {#
 
 How to render each struct
@@ -95,15 +100,15 @@ How to render each struct
 {# Generate structure definitions with DPU types. Their endianness is resolved later
    at compile time. #}
 {{ struct.DefinitionString(True, True)}}{% if generate_cpacked %} __attribute__((packed)){% endif %};
-{% endif %}
 
+{% endif %}
 {# Generate macros for packed fields. #}
 {% for field in struct.fields %}
    {% if field.packed_fields %}
      {% for f in field.packed_fields %}
        {% if f.is_reserved == false %}
 /* Offset of field "{{f.name}}" in packed field "{{field.name}}" */
-#define {{struct.name|as_macro}}_{{f.name|as_macro}}_S {{f.shift()}}
+#define {{struct.name|as_macro}}_{{f.name|as_macro}}_S {{f.shift()}}U
 
 /* Mask of field "{{f.name}}" in packed field "{{field.name}}" 
  * after shift.
@@ -135,11 +140,16 @@ How to render each struct
 #define {{struct.name|as_macro}}_{{f.name|as_macro}}_Z \
 	(~(({{f.type|as_cast}} {{struct.name|as_macro}}_{{f.name|as_macro}}_M) \
        << {{struct.name|as_macro}}_{{f.name|as_macro}}_S))
+
       {% endif %}
     {% endfor %}
   {% endif %}
 {% endfor %}
+{#
 
+The initializer
+
+#}
 {% if struct.arg_fields() %}
 {% if generate_init_macros %}
 #define {{struct.name|as_macro}}_INIT({% for field in struct.arg_fields() %}{{field.name}}{{ ", " if not loop.last }}{% endfor %}) \
@@ -193,8 +203,8 @@ static inline void {{struct.name}}_init(struct {{struct.init_struct().name}} *s{
   {% endfor %}
 }
 {% endif %}
-{% endif %}
 
+{% endif %}
 {% if generate_dump %}
 #ifndef __KERNEL__
 
