@@ -310,8 +310,13 @@ def run_upgrade(args, release_images):
                 # units with firmware that still accept it. They may have been added
                 # to the list as these fourccs are reported by the DPU, but
                 # they are upgraded via 'sbpf' fourcc
-                release_images_fourccs.discard('frmw')
-                release_images_fourccs.discard('pufr')
+                try:
+                    dev_upgrade_fourccs.remove('frmw')
+                    dev_upgrade_fourccs.remove('pufr')
+                    dev_downgrade_fourccs.remove('frmw')
+                    dev_downgrade_fourccs.remove('pufr')
+                except:
+                    pass
 
         else:
             for fourcc in set(args.upgrade):
