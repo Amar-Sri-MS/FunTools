@@ -25,3 +25,5 @@ tar xJf $src_dir/fun-image-kernel-dev-mips64r6.tar.xz -C $target_dir --strip-com
 
 cp $src_dir/fun-image-mips64r6hv-mips64r6.tar.xz $target_dir
 cp $src_dir/fun-s1-factory-image-mips64r6.cpio.gz $target_dir
+
+cp $src_dir/../build_info.txt $target_dir
