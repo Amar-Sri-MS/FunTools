@@ -532,7 +532,25 @@ class TestComments(unittest.TestCase):
 
     out = RemoveWhitespace(out);
 
-    self.assertIn('char array[]; };', out)
+    self.assertIn('char array[0]; };', out)
+
+  def testLinuxVariableLengthArray(self):
+    contents = [
+      'STRUCT foo',
+      '0 63:56 uint8_t initial',
+      '_ _:_ uint8_t array[0]',
+      'END'
+      ]
+
+    (out, errors) = generator.GenerateFile(generator.OutputStyleLinux, None,
+                                           contents, 'foo.gen', OPTIONS_PACK)
+    print errors
+    self.assertEqual(0, len(errors))
+
+    out = RemoveWhitespace(out);
+
+    # Linux uses C99 style variable args, not gcc style.
+    self.assertIn('__u8 array[]; };', out)
 
   # Disable until we can run the generator without errors on funhci.
   def disable_testPackedError(self):
