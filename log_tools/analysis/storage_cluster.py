@@ -103,7 +103,7 @@ def funos_input_pipeline(machine):
             'id': input_id,
             'block': 'TextFileInput',
             'cfg': {
-                'file_pattern': '${{logdir}}/devices/{}/dpu_logs_lines_c_s{}_0/dpu_funos.txt'.format(machine, i)
+                'file_pattern': '${{logdir}}/devices/{}/dpu_logs_lines_c_s{}_0/*funos.txt*'.format(machine, i)
             },
             'out': parse_id
         }
