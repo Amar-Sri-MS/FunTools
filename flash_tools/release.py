@@ -217,7 +217,7 @@ def main():
 
         if os.path.exists(bld_info):
             with open(bld_info, 'r') as f:
-                sdk_v = int(f.readline())
+                sdk_v = int(eval(f.readline()))
                 if not args.force_version:
                     v = sdk_v
                     gf.set_versions(v)
