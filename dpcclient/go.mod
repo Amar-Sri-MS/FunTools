@@ -1,3 +1,3 @@
-module github.com/fungible-inc/FunTools/dpc_client
+module github.com/fungible-inc/FunTools/dpcclient
 
 go 1.14
