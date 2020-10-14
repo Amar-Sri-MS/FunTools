@@ -669,7 +669,7 @@ def file_is_bzip(hbmdump):
     if (stype.startswith("bzip2 compressed data")):
         return True
     
-    return False
+    return stype.startswith("ELF") and "bzip2 compressed data" in stype
 
 def file_is_data(hbmdump):
     stype = filetype(hbmdump)
@@ -685,8 +685,8 @@ def file_is_gzip(hbmdump):
 
     if (stype.startswith("data (gzip compressed data")):
         return True
-    
-    return False
+
+    return stype.startswith("ELF") and "gzip compressed data" in stype
 
 def file_is_tar(hbmdump):
     stype = filetype(hbmdump)
