@@ -1331,6 +1331,9 @@ def run_gdb_async(port, elffile):
     if (opts.crashlog):
         cmd += ["-ex", "crashlog",
                 "-ex", "quit"]
+
+    for command in opts.ex:
+        cmd += ["-ex", command]
         
     cmd += [elffile]
     
@@ -1395,6 +1398,8 @@ def parse_args():
     parser.add_argument("--gdb-timeout", action="store",
                         default=None, type=int,
                         help="Set gdb packet timeout")
+    parser.add_argument("--ex", action="append", metavar="command", default=[],
+                        help="GDB ex command to run")
 
     # final arg is the dump file
     parser.add_argument("hbmdump", help="hbmdump file")
