@@ -57,6 +57,25 @@ class CodegenEndToEnd(unittest.TestCase):
     # Did bitfield get initialized?'
     self.assertIn('s->b_to_c = FOO_B_P(b) | FOO_C_P(c);', out)
 
+  def testZeroDimensionArray(self):
+    input = ['STRUCT Foo',
+             '0 63:56 uint8_t a',
+             '_ _:_ uint8_t chars[0]',
+             'END']
+    out, errors = generator.GenerateFile(generator.OutputStyleLinux, None,
+                                         input, 'foo.gen',
+                                         ['pack', 'json', 'swap'])
+    print errors
+    self.assertEqual(0, len(errors))
+    self.assertIsNotNone(out)
+
+    out = RemoveWhitespace(out)
+
+    # Check for C99 style of flex arrays, not gcc style.
+    self.assertIn('[]', out)
+    self.assertNotIn('[0]', out)
+
+
   def testLinuxBadTypeNames(self):
     """Linux mode limits type names to only uint8, uint16_t, uint32_t, and
     uint64_t.
@@ -435,7 +454,7 @@ class TestComments(unittest.TestCase):
     (out, errors) = generator.GenerateFile(generator.OutputStyleHeader, None,
                                            input, 'foo.gen', OPTIONS_PACK)
     self.assertEqual(0, len(errors))
-    
+
     out = RemoveWhitespace(out)
     print out
     # TODO(bowdidge): Check comments.
@@ -515,6 +534,24 @@ class TestComments(unittest.TestCase):
 
     self.assertIn('char array[0]; };', out)
 
+  def testLinuxVariableLengthArray(self):
+    contents = [
+      'STRUCT foo',
+      '0 63:56 uint8_t initial',
+      '_ _:_ uint8_t array[0]',
+      'END'
+      ]
+
+    (out, errors) = generator.GenerateFile(generator.OutputStyleLinux, None,
+                                           contents, 'foo.gen', OPTIONS_PACK)
+    print errors
+    self.assertEqual(0, len(errors))
+
+    out = RemoveWhitespace(out);
+
+    # Linux uses C99 style variable args, not gcc style.
+    self.assertIn('__u8 array[]; };', out)
+
   # Disable until we can run the generator without errors on funhci.
   def disable_testPackedError(self):
     contents = [
@@ -560,7 +597,7 @@ class TestComments(unittest.TestCase):
 	'END',
         'END'
 	]
-    
+
     (out, errors) = generator.GenerateFile(generator.OutputStyleHeader, None,
                                            contents, 'foo.gen', ['pack', 'json'])
     self.assertEqual(0, len(errors))
@@ -571,6 +608,6 @@ class TestComments(unittest.TestCase):
     self.assertIn('outer_struct_init(s, ', out)
     self.assertIn('inner_struct_init(&inner_var, ', out)
 
-    
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)

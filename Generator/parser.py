@@ -180,7 +180,7 @@ def DefaultTypeMap(linux_type=False):
   """Returns the default type map to use for the given header file.
 
   The type map allows us to replace standard C types (uint64_t, uint32_t, ...)
-  with system-specific types. 
+  with system-specific types.
 
   linux_type is true if the header wants to generate Linux kernel's fixed
   size types. (__u16, ...)
@@ -212,7 +212,7 @@ def TypeForName(name, linux_type=False):
   type_map = builtin_type_widths
   if linux_type:
     type_map = builtin_linux_type_widths
-  
+
   if name not in type_map:
     return None
   return Type(BaseType(name, type_map[name]))
@@ -240,7 +240,7 @@ def RecordArrayTypeForStruct(the_struct, element_count):
   """Returns a type for a field that would hold a single struct."""
   base_type = BaseType(the_struct.name, 0, the_struct)
   return Type(base_type, element_count)
-  
+
 
 class Type:
   """Represents C type for a field."""
@@ -345,8 +345,11 @@ class Type:
   def ParameterTypeName(self, linux_type=False, endian=True):
     """Returns type name as function parameter type."""
     if self.is_array:
-      return '%s[%d]' % (self.DeclarationName(linux_type, endian),
-                         self.array_size)
+      if self.array_size == 0 and linux_type:
+        return '%s[]' % self.DeclarationName(linux_type, endian)
+      else:
+        return '%s[%d]' % (self.DeclarationName(linux_type, endian),
+                           self.array_size)
     elif self.base_type.node:
       return '%s' % self.DeclarationName(linux_type, endian)
     else:
@@ -434,7 +437,7 @@ class Declaration:
       if macro.name == name:
         return macro
     return None
- 
+
 
 class Macro(Declaration):
   """Representation of a generated macro.
@@ -459,7 +462,7 @@ class Function(Declaration):
     self.definition = defn
     self.body_comment = comment
     self.is_function = True
-    
+
 class Field(Declaration):
   # Representation of a field in a structure or union.
   #
@@ -542,7 +545,7 @@ class Field(Declaration):
     self.packed_field = None
     self.parent_struct = None
 
-    self.is_reserved = (name.startswith('reserved') or 
+    self.is_reserved = (name.startswith('reserved') or
                         name.startswith('rsvd') or
                         name.startswith('unused'))
 
@@ -655,7 +658,7 @@ class Field(Declaration):
     """String to access a field from the likely initial struct argument."""
     if not self.parent_struct or not self.parent_struct.inline:
       return ''
-    
+
     container_base_type = RecordTypeForStruct(self.parent_struct).base_type
     struct_field = self.parent_struct.parent_struct.FieldWithBaseType(container_base_type)
 
@@ -667,7 +670,7 @@ class Field(Declaration):
     """Returns true if the field should be an argument to an init function,
     or should be initialized in an init function.
     """
-    return (not self.is_reserved and not self.type.IsRecord() 
+    return (not self.is_reserved and not self.type.IsRecord()
             and not self.type.IsArray())
 
   def DeclarationString(self, linux_type=False, dpu_endian=False):
@@ -678,9 +681,14 @@ class Field(Declaration):
                                  self.name)
 
     if self.type.IsArray():
-      return "%s %s[%d]" % (self.type.DeclarationName(linux_type,
-                                                      dpu_endian), self.name,
-                            self.type.array_size)
+      if self.type.array_size == 0 and linux_type:
+        return '%s %s[]' % (self.type.DeclarationName(linux_type, dpu_endian))
+      else:
+        return "%s %s[%d]" % (self.type.DeclarationName(linux_type,
+                                                        dpu_endian),
+                              self.name,
+                              self.type.array_size)
+
     return "%s %s" % (self.type.ParameterTypeName(linux_type,
                                                   dpu_endian), self.name)
 
@@ -747,10 +755,15 @@ class Field(Declaration):
       key_comment = ' ' + utils.AsComment(self.key_comment)
 
     if self.type.IsArray():
-      str += '%s %s[%d];%s\n' % (type_name,
-                                     self.name,
-                                     self.type.ArraySize(),
-                                     key_comment)
+      if self.type.ArraySize() == 0 and linux_type:
+        str += '%s %s[];%s\n' % (type_name,
+                                 self.name,
+                                 key_comment)
+      else:
+        str += '%s %s[%d];%s\n' % (type_name,
+                                   self.name,
+                                   self.type.ArraySize(),
+                                   key_comment)
     else:
       var_width = self.BitWidth()
       type_width = self.type.BitWidth()
@@ -803,7 +816,7 @@ class Enum(Declaration):
 
   def VariablesWithPlaceholders(self):
     return ''
-    
+
   def Name(self):
     return self.name
 
@@ -1114,7 +1127,7 @@ class Struct(Declaration):
 
     str += '}'
     return str
-  
+
   #
   # Helpers for templates.
   #
@@ -1132,7 +1145,7 @@ class Struct(Declaration):
   #   from an enclosing structure.  May not include fields that can't be
   #   passed easily to a function such as sub-structures or arrays, or
   #   reserved fields.
-  #   
+  #
   # * fields that need to be initialized in an initializer.  Every field
   #   to be initialized maps to one or more arguments to the initializer.
   #   Ignores arrays, sub-structures, and reserved fields.
@@ -1141,7 +1154,7 @@ class Struct(Declaration):
   #   printing out what won't be done.
   def init_fields(self):
     """Returns the list of fields that should be set in an init routine.
-    
+
     This should include all packed fields, and may include fields inside
     nested structures.
     """
@@ -1150,7 +1163,7 @@ class Struct(Declaration):
       arg_list += [x for x in self.init_struct().fields if x.IsInitable()]
     arg_list += [f for f in self.fields if f.IsInitable()]
     return arg_list
-      
+
   def arg_fields(self):
     """Returns list of fields that should be arguments to an init function.
 
@@ -1159,7 +1172,7 @@ class Struct(Declaration):
     function, such as arrays or nested structures.
     """
     arg_list = []
-    
+
     if self.inline:
       arg_list += [x for x in self.init_struct().FieldsBeforePacking()
                    if x.IsInitable()]
