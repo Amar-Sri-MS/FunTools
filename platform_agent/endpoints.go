@@ -56,6 +56,25 @@ func serveLinkStatus(state *agentState, w http.ResponseWriter, r *http.Request) 
 	serveSingleFunction(state, w, r, func() (interface{}, error) { return state.dpc.Execute("port", []interface{}{"linkstatus"}) })
 }
 
+func serveMgmtPortInfo(state *agentState, w http.ResponseWriter, r *http.Request) {
+	data, err := state.dpc.Execute("port", []interface{}{"mgmt", "macaddrget"})
+	if err != nil {
+		internalServerError(w)
+		return
+	}
+
+	macaddrStr, err := normalizeMac(data)
+	if err != nil {
+		log.Println(err)
+		internalServerError(w)
+		return
+	}
+
+	response := make(map[string]interface{})
+	response["macaddr"] = macaddrStr
+	dataResponse(w, response)
+}
+
 func servePort(state *agentState, w http.ResponseWriter, r *http.Request) {
 	if r.Method != "GET" {
 		log.Println("Unknown method")
@@ -71,12 +90,7 @@ func servePort(state *agentState, w http.ResponseWriter, r *http.Request) {
 	}
 
 	if parts[2] == "mgmt" {
-		data, err := state.dpc.Execute("port", []interface{}{"mgmt", "macaddrget"})
-		if err != nil {
-			internalServerError(w)
-			return
-		}
-		serveResponse(w)(normalizeMac(data))
+		serveMgmtPortInfo(state, w, r)
 		return
 	}
 

@@ -97,7 +97,7 @@ func normalizeMac(data interface{}) (string, error) {
 		parts[i] = intData % 256
 		intData = intData / 256
 	}
-	return strings.Join(mapFunc(parts, func(a int64) string { return fmt.Sprintf("%X", a) }), ":"), nil
+	return strings.Join(mapFunc(parts, func(a int64) string { return fmt.Sprintf("%02X", a) }), ":"), nil
 }
 
 func servePeek(path string) httpHandlerWithState {
