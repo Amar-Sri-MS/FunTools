@@ -385,7 +385,10 @@ def main():
                 os.symlink(os.path.join(os.path.abspath(os.curdir), f), os.path.join('bundle_installer', os.path.basename(f)))
 
             with open(os.path.join('bundle_installer', '.setup'), "w") as cfg:
-                cfg.write('ROOTFS_NAME="{}"'.format(rootfs))
+                cfg.writelines([
+                    'ROOTFS_NAME="{}"\n'.format(rootfs),
+                    'CHIP_NAME="{}"\n'.format(args.chip.upper())
+                ])
 
             makeself = [
                 os_utils.path_fixup('makeself'),
