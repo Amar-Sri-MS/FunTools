@@ -3,8 +3,11 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
+	"strconv"
+	"strings"
 
 	"github.com/fungible-inc/FunTools/dpcclient"
 )
@@ -53,6 +56,72 @@ func dataResponse(w http.ResponseWriter, d interface{}) {
 	if err != nil {
 		log.Println("write:", err)
 	}
+}
+
+func serveResponse(w http.ResponseWriter) func(interface{}, error) {
+	return func(d interface{}, err error) {
+		if err != nil {
+			internalServerError(w)
+			return
+		}
+		dataResponse(w, d)
+	}
+}
+
+func serveSingleFunction(state *agentState, w http.ResponseWriter, r *http.Request, f func() (interface{}, error)) {
+	if r.Method != "GET" {
+		log.Println("Unknown method")
+		http.Error(w, "Bad Request", http.StatusBadRequest)
+		return
+	}
+
+	serveResponse(w)(f())
+}
+
+func mapFunc(vs []int64, f func(int64) string) []string {
+	vsm := make([]string, len(vs))
+	for i, v := range vs {
+		vsm[i] = f(v)
+	}
+	return vsm
+}
+
+func normalizeMac(data interface{}) (string, error) {
+	floatData, ok := data.(float64)
+	if !ok {
+		return "", fmt.Errorf("Incorrect datatype")
+	}
+	intData := int64(floatData)
+	parts := make([]int64, 6)
+	for i := 0; i < len(parts); i++ {
+		parts[i] = intData % 256
+		intData = intData / 256
+	}
+	return strings.Join(mapFunc(parts, func(a int64) string { return fmt.Sprintf("%X", a) }), ":"), nil
+}
+
+func servePeek(path string) httpHandlerWithState {
+	return func(state *agentState, w http.ResponseWriter, r *http.Request) {
+		serveSingleFunction(state, w, r, func() (interface{}, error) { return peekDPC(state.dpc, path) })
+	}
+}
+
+func validateGetWithNumber(r *http.Request) (int, error) {
+	if r.Method != "GET" {
+		return 0, fmt.Errorf("Unknown method")
+	}
+
+	parts := strings.Split(r.URL.Path, "/")
+
+	if len(parts) != 3 {
+		return 0, fmt.Errorf("Unknown path")
+	}
+
+	number, err := strconv.Atoi(parts[2])
+	if err != nil {
+		return 0, fmt.Errorf("Unknown path")
+	}
+	return number, nil
 }
 
 func peekDPC(client *dpcclient.DpcClient, path string) (interface{}, error) {

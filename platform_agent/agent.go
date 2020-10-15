@@ -57,6 +57,15 @@ func main() {
 	http.HandleFunc("/", serveDefault)
 
 	http.HandleFunc("/temperature/", state.With(serveTemperature))
+	http.HandleFunc("/images", state.With(servePeek("config/chip_info/images")))
+	http.HandleFunc("/link_status", state.With(serveLinkStatus))
+	http.HandleFunc("/port/", state.With(servePort))
+	http.HandleFunc("/memory_info/", state.With(serveMemoryInfo))
+	http.HandleFunc("/processor_info", state.With(servePeek("config/processor_info")))
+	http.HandleFunc("/chip_info", state.With(servePeek("config/chip_info")))
+	http.HandleFunc("/version", state.With(servePeek("config/version")))
+	http.HandleFunc("/boot_defaults", state.With(servePeek("config/boot_defaults")))
+	http.HandleFunc("/ssd/", state.With(serveSSD))
 
 	if *tlsEnable {
 		log.Fatal(http.ListenAndServeTLS(*serviceAddr, *certFile, *keyFile, nil))
