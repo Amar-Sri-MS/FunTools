@@ -22,23 +22,28 @@ func serveTemperature(state *agentState, w http.ResponseWriter, r *http.Request)
 		http.Error(w, "Bad Request", http.StatusBadRequest)
 	}
 
-	if parts[2] == "ssd" || parts[2] == "optics" || parts[2] == "dpu" {
+	if parts[2] == "ssd" || parts[2] == "optics" || parts[2] == "dpu" || parts[2] == "dimm" {
 		response := make(map[string]interface{})
+		allIds := allDeviceIds(parts[2])
 		var deviceIds []int
 
 		if len(parts) == 4 && parts[3] != "" {
 			number, err := strconv.Atoi(parts[3])
-			if err != nil {
-				log.Println("Number is not an integer", parts[3])
+			if err != nil || !contains(allIds, number) {
+				log.Println("Invalid ID", parts[3])
 				http.Error(w, "Bad Request", http.StatusBadRequest)
 				return
 			}
 			deviceIds = []int{number}
 		} else {
-			deviceIds = allDeviceIds(parts[2])
+			deviceIds = allIds
 		}
 		for _, id := range deviceIds {
-			data, err := temperatureDPC(state.dpc, parts[2], []int{id})
+			params := []int{id}
+			if parts[2] == "dimm" {
+				params = []int{id / 2, id % 2}
+			}
+			data, err := temperatureDPC(state.dpc, parts[2], params)
 			if err != nil {
 				internalServerError(w)
 				return

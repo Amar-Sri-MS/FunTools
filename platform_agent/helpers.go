@@ -78,6 +78,15 @@ func serveSingleFunction(state *agentState, w http.ResponseWriter, r *http.Reque
 	serveResponse(w)(f())
 }
 
+func contains(s []int, e int) bool {
+	for _, a := range s {
+		if a == e {
+			return true
+		}
+	}
+	return false
+}
+
 func mapFunc(vs []int64, f func(int64) string) []string {
 	vsm := make([]string, len(vs))
 	for i, v := range vs {
@@ -154,11 +163,13 @@ func addValue(data *map[string]interface{}, category string, sub string, value i
 func allDeviceIds(kind string) []int {
 	switch kind {
 	case "ssd":
-		return []int{1, 2, 3, 4, 5, 6, 7, 8}
+		return []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11}
 	case "dpu":
-		return []int{0}
+		return []int{0, 1, 2, 3, 4, 5, 6, 7, 8}
 	case "optics":
-		return []int{1, 2}
+		return []int{0, 4, 8, 12, 16, 20}
+	case "dimm":
+		return []int{0, 1, 2, 3}
 	default:
 		return nil
 	}
