@@ -44,6 +44,7 @@ class TextFileInput(Block):
         input_files.sort(key=os.path.getmtime)
 
         for file in input_files:
+            print('Parsing', file)
             if file.endswith('.gz'):
                 with gzip.open(file, mode='rt', encoding='ascii', errors='replace') as f:
                     yield from self.read_logs(f)
