@@ -10,7 +10,7 @@ An Example of FunOS dumping the DMA command list can be seen in flow/eqsq.c
                         sizeof(dma_wu), "SQ DMA WU");
 
 
-WARNING is printed if any of the following conditons are ecnountered:
+WARNING is printed if any of the following conditions are encountered.
 1) Total number of Gather bytes does not match total number of Scatter bytes.
 2) Scatter F1 zero-byte commands exist.
 3) A mix of Scatter F1 and PCIe commands exist.
