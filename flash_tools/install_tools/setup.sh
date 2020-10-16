@@ -39,6 +39,14 @@ LAST_ERROR=/tmp/cclinux_upgrade_error # a reboot will clean up this tmpfs file.
 ccfg_install=''
 downgrade=''
 
+host_dpu=$(tr -d '\0' < /proc/device-tree/fungible,dpu || true)
+
+if [ -n "$host_dpu" ] && [ "$host_dpu" != "$CHIP_NAME" ]; then
+	echo "This upgrade bundle is incompatible with the host DPU"
+	echo "Bundle target: $CHIP_NAME, host DPU: $host_dpu"
+	exit 20
+fi
+
 if [[ $# -ne 0 ]]
 then
 	while [[ $# -gt 0 ]]
