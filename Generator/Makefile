@@ -6,8 +6,7 @@ SDK_INSTALL_DIR ?= $(SDKDIR)
 
 # Directory where the fun_hci.gen file is stored.
 # Used for testing generator on real example.
-#FUN_HCI_DIR = $(SDK_INSTALL_DIR)/FunSDK/hci
-FUN_HCI_DIR = ~/Code/CleanWorkspace1/FunOS/hci
+FUN_HCI_DIR = $(SDK_INSTALL_DIR)/FunSDK/hci
 
 # Directory where we install the working version of the generator.
 GENERATOR_INSTALL_DIR = $(SDK_INSTALL_DIR)/bin/Generator
