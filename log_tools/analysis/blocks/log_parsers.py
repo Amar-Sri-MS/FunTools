@@ -33,7 +33,7 @@ class FunOSInput(Block):
                 ts_vp_sep = line.find(']')
 
                 # Empty or malformed line ewwwww
-                if ts_vp_sep == -1:
+                if not line.startswith('[') or ts_vp_sep == -1:
                     continue
 
                 ts_vp = line[1:ts_vp_sep]

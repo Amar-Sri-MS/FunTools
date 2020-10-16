@@ -418,7 +418,7 @@ def _convert_to_table_row(hit):
         line = '<tr class={} id={}>'.format('search_highlight',
                                             hit.get('anchor_link'))
 
-    line += '<td>{}</td> <td>{}</td> <td style="white-space: pre">{}</td>'.format(s['src'],
+    line += '<td>{}</td> <td>{}</td> <td>{}</td>'.format(s['src'],
                                                          s['@timestamp'],
                                                          s['msg'])
     line += '</tr>'
