@@ -1379,7 +1379,10 @@ class Checker:
       last_field_name = field.name
 
   def VisitField(self, the_field):
-    pass
+    if the_field.SmallerThanType() and the_field.type.IsNoSwap():
+      self.AddError(the_field,
+                    'field with endian-specific type %s '
+                    'cannot be a bitfield' % the_field.type.BaseName())
 
 
 # Enums used to indicate the kind of object being processed.
