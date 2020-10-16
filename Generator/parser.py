@@ -22,14 +22,20 @@ class BaseType:
 
   The base type only contains a scalar type, struct, or union.
   Arrays, const, etc. would be represented in the Type class.
+
+  has_endianness is true if base type represents a type that has a fixed
+  endianness.  Fields with the base_type alone shouldn't be swapped.
   """
-  def __init__(self, name, bit_width=0, node=None):
+  def __init__(self, name, bit_width=0, node=None, has_endianness=False):
     # Short name used in file.
     self.name = name
     # Number of bits.
     self.bit_width = bit_width
     # Parsed struct or union, or None if built-in.
     self.node = node
+
+    # True if type represents a fixed endianness and shouldn't be swapped.
+    self.has_endianness = has_endianness
 
   def PrintFormat(self):
     """Returns format string for printf appropriate for the value.
@@ -90,6 +96,19 @@ class BaseType:
     return 0
 
 
+# Types for fields with preferred endianness.
+# these fields are used to mark fields that should be kept in their
+# preferred orientation.
+# Available both in Linux and FunOS.
+builtin_endian_type_widths = {
+  '__le16': 16,
+  '__le32': 32,
+  '__le64': 64,
+  '__be16': 16,
+  '__be32': 32,
+  '__be64': 64
+}
+
 # Width of all known types.  Structures are added to this
 # dictionary during execution.
 # Only these types are allowed in gen files.
@@ -125,6 +144,7 @@ builtin_linux_type_widths = {
 
 # Type names to use on Linux when endianness is unspecified.
 # Used for function arguments.
+# Endian-specific type names will remain unchanged.
 no_endian_map = {
   'uint8_t' : '__u8',
   'uint16_t' : '__u16',
@@ -149,6 +169,7 @@ def NoStraddle(width, offset, bound):
   boundaries.
   """
   return offset / bound == (offset + width - 1) / bound
+
 
 def DefaultTypeForWidth(width, offset):
   """Chooses a default type for a field based on the width and current offset.
@@ -184,11 +205,14 @@ def DefaultTypeMap(linux_type=False):
 
   linux_type is true if the header wants to generate Linux kernel's fixed
   size types. (__u16, ...)
+
   """
   if linux_type:
-    return builtin_linux_type_widths
+    type_map = dict(builtin_linux_type_widths)
   else:
-    return builtin_type_widths
+    type_map = dict(builtin_type_widths)
+  type_map.update(builtin_endian_type_widths)
+  return type_map
 
 def BaseTypeForName(name,linux_type=False):
   """Returns a BaseType for the builtin type with the provided name.
@@ -196,26 +220,25 @@ def BaseTypeForName(name,linux_type=False):
   If linux_type is true, then substitute Linux type names for appropriate
   C unsigned types.
   """
-  type_map = builtin_type_widths
-  if linux_type:
-      type_map = builtin_linux_type_widths
+  type_map = DefaultTypeMap(linux_type)
 
   if name not in type_map:
     return None
-  return BaseType(name, type_map[name])
+
+  has_endianness = name in builtin_endian_type_widths
+
+  return BaseType(name, type_map[name], has_endianness=has_endianness)
 
 def TypeForName(name, linux_type=False):
   """Returns a type for the builtin type with the provided name.
 
   If linux_type is true, substitute linux types.
   """
-  type_map = builtin_type_widths
-  if linux_type:
-    type_map = builtin_linux_type_widths
+  type_map = DefaultTypeMap(linux_type=linux_type)
 
   if name not in type_map:
     return None
-  return Type(BaseType(name, type_map[name]))
+  return Type(BaseTypeForName(name))
 
 def ArrayTypeForName(name, element_count, linux_type=False):
   """Returns a type for the builtin type with the provided name and size.
@@ -223,13 +246,11 @@ def ArrayTypeForName(name, element_count, linux_type=False):
   name is the string name of the type name.
   element_count is the size of the array.
   linux_type is true if the type should use a """
-  type_map = builtin_type_widths
-  if linux_type:
-    type_map = builtin_linux_type_widths
+  type_map = DefaultTypeMap(linux_type)
 
   if name not in type_map:
     return None
-  return Type(BaseType(name, type_map[name]), element_count)
+  return Type(BaseTypeForName(name), element_count)
 
 def RecordTypeForStruct(the_struct):
   """Returns a type for a field that would hold a single struct."""
@@ -281,6 +302,11 @@ class Type:
     """
     return '(%s)' % self.ParameterTypeName(linux_type, dpu_endian)
 
+  def IsNoSwap(self):
+      """Returns true if type has endianness and shouldn't be swapped."""
+      # TODO(bowdidge): If we supported pointers, this would get interesting.
+      return self.base_type.has_endianness
+
   def IsArray(self):
     """Returns true if the type is an array type."""
     return self.is_array
@@ -319,7 +345,10 @@ class Type:
       return self.base_type.node.Tag() + ' ' + self.base_type.name
 
     if linux_type:
-      if dpu_endian is False:
+      if self.IsNoSwap():
+        # Already have an endianness?  Use the existing type name.
+        return self.base_type.name
+      elif dpu_endian is False:
         return no_endian_map[self.base_type.name]
       elif dpu_endian is True:
         if self.base_type.name in dpu_endian_map:
@@ -1291,9 +1320,12 @@ class Checker:
     last_field_name = None
 
     for field in the_struct.fields:
-      if field.IsNoOffset():
-        if field != the_struct.fields[-1]:
+      self.VisitField(field)
+
+      if field != the_struct.fields[-1]:
+        if field.IsNoOffset():
           self.AddError(field, 'field "%s" is an array of zero size, but is not the last field.')
+
 
     fields_with_offsets = [f for f in the_struct.fields if not f.IsNoOffset()]
 
@@ -1349,6 +1381,7 @@ class Checker:
   def VisitField(self, the_field):
     pass
 
+
 # Enums used to indicate the kind of object being processed.
 # Used on the stack.
 GenParserStateStruct = 1
@@ -1386,7 +1419,9 @@ class GenParser:
     self.base_types = {}
     type_map = DefaultTypeMap(linux_type)
     for name in type_map:
-      self.base_types[name] = BaseType(name, type_map[name])
+      has_endianness = name in builtin_endian_type_widths
+      self.base_types[name] = BaseType(name, type_map[name],
+                                       has_endianness=has_endianness)
 
   def AddError(self, msg):
     if self.current_document.filename:

@@ -70,21 +70,21 @@ Macros for hiding which size macro to use.
 {%- endmacro %}
 {% else %}
 {% macro toDpuWrapper(field) %}
-{% if generate_swap and field.type.bit_width != 8 %}cpu_to_dpu{{field.type.bit_width}}{% endif %}
+{% if generate_swap and field.type.bit_width != 8 and not field.type.IsNoSwap() %}cpu_to_dpu{{field.type.bit_width}}{% endif %}
 {%- endmacro %}
 {% endif %}
 {# #}
 {% if generate_be %}
 {% macro fromDpuWrapper(field) %}
-{% if generate_swap and field.type.bit_width != 8 %}be{{field.type.bit_width}}_to_cpu{% endif %}
+{% if generate_swap and field.type.bit_width != 8 and not field.type.base_type.has_endianness %}be{{field.type.bit_width}}_to_cpu{% endif %}
 {%- endmacro %}
 {% elif generate_le %}
 {% macro fromDpuWrapper(field) %}
-{% if generate_swap and field.type.bit_width != 8 %}le{{field.type.bit_width}}_to_cpu{% endif %}
+{% if generate_swap and field.type.bit_width != 8 and not field.type.base_type.has_endianness %}le{{field.type.bit_width}}_to_cpu{% endif %}
 {%- endmacro %}
 {% else %}
 {% macro fromDpuWrapper(field) %}
-{% if generate_swap and field.type.bit_width != 8 %}dpu_to_cpu{{field.type.bit_width}}{% endif %}
+{% if generate_swap and field.type.bit_width != 8 and not field.type.base_type.has_endianness %}dpu_to_cpu{{field.type.bit_width}}{% endif %}
 {%- endmacro %}
 {% endif %}
 {#
@@ -161,7 +161,7 @@ The initializer
 	{{f.parent_struct.name|as_macro}}_{{f.name|as_macro}}_P_NOSWAP({{f.name}}){{" |" if not loop.last }} \
       {% endfor %}), \
     {% else %}
-      {% if field.is_natural_width and field.type.bit_width != 8 %}
+      {% if field.is_natural_width and field.type.bit_width != 8 and not field.typeIsNoSwap() %}
 		.{{field.name}} = {{toDpuWrapper(field)}}({{field.name}}), \
       {% else %}
 		.{{field.name}} = {{field.name}}, \

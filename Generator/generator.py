@@ -660,7 +660,8 @@ def GenerateFile(output_style, output_base, input_stream, input_filename,
       return ("", [])
 
     else:
-      return (header, [])
+      # For testing, combine source and headers.
+      return (header + source, [])
 
 
   elif output_style is OutputStyleHeader:
