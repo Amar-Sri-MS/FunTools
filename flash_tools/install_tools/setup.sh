@@ -54,9 +54,9 @@ then
 			;;
 		*)
 			echo "
-	Usage: sudo ./${PROG}.sh
-		${PROG}.sh install [ccfg=config_name]
-		${PROG}.sh install-downgrade
+	Usage: sudo ${PROG}
+		${PROG} install [ccfg=config_name]
+		${PROG} install-downgrade
 
 	Where,
 		Option install is to flash the DPU and install CCLinux software
