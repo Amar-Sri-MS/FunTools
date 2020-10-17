@@ -719,7 +719,6 @@ def file_is_idgz(hbmdump):
         return False
 
     stype = filetype(hbmdump)
-    print(stype)
     if ("(gzip compressed data, extra field" in stype):
         return True
     
