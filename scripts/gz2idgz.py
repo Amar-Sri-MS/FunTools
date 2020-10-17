@@ -13,34 +13,34 @@ from typing import List, Optional, Type, Dict, Any, Tuple
 import argparse
 import locale
 import gzip
-import idzip # type: ignore
+import idzip  # type: ignore
 import sys
 import os
- 
+
 ###
 ##  main
 #
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
- 
+
     # two simple arguments
     parser.add_argument("src", help="Source gzip")
-    parser.add_argument("dest", nargs="?", help="Dest idgzip [optional]",
-                        default=None)
- 
+    parser.add_argument("dest", nargs="?", help="Dest idgzip [optional]", default=None)
+
     args: argparse.Namespace = parser.parse_args()
     return args
- 
+
+
 def main() -> int:
     args: argparse.Namespace = parse_args()
 
-    if (args.dest is None):
+    if args.dest is None:
         args.dest = args.src + ".idgz"
 
-    if (os.path.exists(args.dest)):
+    if os.path.exists(args.dest):
         print("Error: destination file %s exists" % args.dest)
         sys.exit(1)
-        
+
     print("Convert %s -> %s" % (args.src, args.dest))
 
     # open src and dest
@@ -50,17 +50,18 @@ def main() -> int:
 
     # add all the data
     nbytes = 0
-    while (True):
-        data = src.read(10*1024*1024)
-        if (len(data) == 0):
+    while True:
+        data = src.read(10 * 1024 * 1024)
+        if len(data) == 0:
             break
         dest.write(data)
         nbytes += len(data)
 
     print("Converted {:,} bytes".format(nbytes))
-    
+
     return 0
- 
+
+
 ###
 ##  entrypoint
 #
