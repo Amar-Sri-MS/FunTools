@@ -228,6 +228,7 @@ class FileCorpse:
             if not have_elftools:
                 raise RuntimeError("need pyelftools to open ELF file: "
                                    "try pip3 install pyelftools")
+            print("Opening file as ELF corpse...")
             self.elf = ELFFile(self.open_file(use_idzip, use_http))
 
         # ELF segment headers in memory, faster than reading from file
@@ -721,7 +722,7 @@ def file_is_idgz(hbmdump):
         return False
 
     stype = filetype(hbmdump)
-    if (stype.startswith("data (gzip compressed data, extra field")):
+    if ("(gzip compressed data, extra field" in stype):
         return True
     
     return False
