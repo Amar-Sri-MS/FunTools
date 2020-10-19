@@ -608,6 +608,121 @@ class TestComments(unittest.TestCase):
     self.assertIn('outer_struct_init(s, ', out)
     self.assertIn('inner_struct_init(&inner_var, ', out)
 
+  def testEndiannessWhenGeneratingLittleEndian(self):
+    contents = [
+        'STRUCT foo',
+        '0 63:48 uint16_t foo',
+        '0 47:32 __le16 bar',
+        '0 31:16 __be16 baz',
+        '0 15:0 uint16_t beep',
+        'END']
+    (out, errors) = generator.GenerateFile(generator.OutputStyleLinux,
+                                           None, contents, 'foo.gen',
+                                           ['pack', 'swap', 'le'])
+    self.assertEqual(0, len(errors))
+    self.assertIsNotNone(out)
+
+    out = RemoveWhitespace(out)
+
+    # Native types get swapped.
+    self.assertIn('cpu_to_le16(foo)', out)
+    self.assertIn('cpu_to_le16(beep)', out)
+
+    # types with endianness don't get swapped.
+    self.assertIn('s->bar = (bar)', out)
+    self.assertIn('s->baz = (baz)', out)
+
+  def testEndiannessWhenGeneratingBigEndian(self):
+    contents = [
+        'STRUCT foo',
+        '0 63:48 uint16_t foo',
+        '0 47:32 __le16 bar',
+        '0 31:16 __be16 baz',
+        '0 15:0 uint16_t beep',
+        'END']
+    (out, errors) = generator.GenerateFile(generator.OutputStyleLinux,
+                                           None, contents, 'foo.gen',
+                                           ['pack', 'swap', 'be'])
+    self.assertEqual(0, len(errors))
+    self.assertIsNotNone(out)
+
+    out = RemoveWhitespace(out)
+
+    # Native types get swapped.
+    self.assertIn('cpu_to_be16(foo)', out)
+    self.assertIn('cpu_to_be16(beep)', out)
+
+    # types with endianness don't get swapped.
+    self.assertIn('s->bar = (bar)', out)
+    self.assertIn('s->baz = (baz)', out)
+
+  def testEndianFieldsInPackedMode(self):
+    contents = [
+        'STRUCT foo',
+        '0 63:52 uint16_t foo',
+        '0 51:40 __le16 bar',
+        '0 39:28 __be16 baz',
+        '0 27:16 uint16_t beep',
+        'END']
+    (out, errors) = generator.GenerateFile(generator.OutputStyleHeader,
+                                           None, contents, 'foo.gen',
+                                           ['pack', 'swap', 'le'])
+    self.assertEqual(2, len(errors))
+    self.assertIn('field with endian-specific type __le16 cannot '
+                     'be a bitfield', errors[0])
+    self.assertIn('field with endian-specific type __be16 cannot '
+                     'be a bitfield', errors[1])
+
+  def testEndianFieldsInPackedModeLinux(self):
+    contents = [
+        'STRUCT foo',
+        '0 63:52 __be32 foo',
+        '0 51:40 __be32 bar',
+        '0 39:32 __be32 baz',
+        '0 31:27 uint32_t beep',
+        '0 26:19 uint32_t bop',
+        '0 18:0 uint32_t beet',
+        'END']
+    (out, errors) = generator.GenerateFile(generator.OutputStyleLinux,
+                                           None, contents, 'foo.gen',
+                                           ['pack', 'swap', 'le'])
+    self.assertEqual(3, len(errors))
+
+    self.assertIn('field with endian-specific type __be32 cannot '
+                     'be a bitfield', errors[0])
+    self.assertIn('field with endian-specific type __be32 cannot '
+                     'be a bitfield', errors[1])
+    self.assertIn('field with endian-specific type __be32 cannot '
+                     'be a bitfield', errors[2])
+
+  def testEndiannessInSoloPackedFields(self):
+    contents = [
+        'STRUCT foo',
+        '0 63:61 __le16 foo',
+        'END']
+    (out, errors) = generator.GenerateFile(generator.OutputStyleLinux,
+                                           None, contents, 'foo.gen',
+                                           ['pack', 'swap', 'le'])
+
+    self.assertEqual(1, len(errors))
+    self.assertIn('field with endian-specific type __le16 cannot '
+                  'be a bitfield', errors[0])
+
+  def testEndiannessIfPulledIntoPackedField(self):
+    contents = [
+        'STRUCT foo',
+        # foo requires a bitfield.
+        '0 63:48 uint64_t foo',
+        # We shouldn't pack the fields - different types.
+        '0 47:32 __le64 bar',
+        'END']
+    (out, errors) = generator.GenerateFile(generator.OutputStyleLinux,
+                                           None, contents, 'foo.gen',
+                                           ['pack', 'swap', 'le'])
+    print errors
+    self.assertEqual(1, len(errors))
+    self.assertIn('field with endian-specific type __le64 cannot '
+                  'be a bitfield', errors[0])
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
