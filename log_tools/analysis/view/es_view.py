@@ -488,9 +488,12 @@ def search(log_id):
     search_term = request.args.get('query')
     page = request.args.get('page', 1)
     page = int(page)
+    time_start = request.args.get('time_start', '')
+    time_end = request.args.get('time_end', '')
+    time_filters = [time_start, time_end]
 
     # TODO (jimmy): we ought to do this only once
-    total_search_hits = _get_total_hit_count(log_id, search_term)
+    total_search_hits = _get_total_hit_count(log_id, search_term, time_filters)
 
     state_str = request.args.get('state', None)
     state = ElasticLogState()
@@ -499,7 +502,7 @@ def search(log_id):
     es = ElasticLogSearcher(log_id)
     size = 20
 
-    results = es.search(state, search_term, query_size=size)
+    results = es.search(state, search_term, time_filters=time_filters, query_size=size)
     hits = results['hits']
     state = results['state']
 
@@ -534,13 +537,13 @@ def search(log_id):
                                total_search_hits)
 
 
-def _get_total_hit_count(log_id, search_term):
+def _get_total_hit_count(log_id, search_term, time_filters):
     """ Obtains the search hit count, up to a maximum of 1000 """
     es = ElasticLogSearcher(log_id)
     state = ElasticLogState()
     size = 1000
 
-    results = es.search(state, search_term, query_size=size)
+    results = es.search(state, search_term, time_filters=time_filters, query_size=size)
     return len(results['hits'])
 
 
