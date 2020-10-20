@@ -50,7 +50,7 @@ class ElasticsearchOutput(Block):
         for it in iters:
             # parallel_bulk is a wrapper around bulk to provide threading
             # default thread_count is 4 and it returns a generator with indexing result
-            for success, info in parallel_bulk(self.es, self.generate_es_doc(it)):
+            for success, info in parallel_bulk(self.es, self.generate_es_doc(it), chunk_size=10000):
                 if not success:
                     print('Failed to index a document', info)
 
