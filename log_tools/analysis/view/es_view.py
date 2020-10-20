@@ -53,8 +53,13 @@ def _get_script_dir():
 
 def _render_root_page(log_ids, jinja_env, template):
     """ Renders the root page from a template """
+    kibana_url = f'{config.KIBANA.get("host")}:{config.KIBANA.get("port")}/app/discover#/'
     template_dict = {}
-    template_dict['logs'] = log_ids
+    # Default Kibana View with logs from last 90 days to now
+    template_dict['logs'] = [{
+        'name': id,
+        'link': f'http://{kibana_url}?_g=(time:(from:now-90d,to:now))&_a=(columns:!(src,msg),index:{id})'
+    } for id in log_ids]
 
     result = template.render(template_dict, env=jinja_env)
     return result
