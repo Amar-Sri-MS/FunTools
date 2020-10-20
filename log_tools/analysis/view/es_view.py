@@ -9,6 +9,7 @@
 
 import json
 import os
+import sys
 
 import jinja2
 
@@ -16,6 +17,8 @@ from elasticsearch7 import Elasticsearch
 from flask import Flask
 from flask import request
 
+sys.path.append('../')
+import config
 
 app = Flask(__name__)
 
@@ -27,7 +30,7 @@ def main():
 @app.route('/')
 def root():
     """ Serves the root page, which shows a list of logs """
-    es = Elasticsearch([{'host': 'localhost', 'port': 9200}])
+    es = Elasticsearch(config.ELASTICSEARCH.get('hosts'))
 
     indices = es.indices.get('log_*')
 
@@ -116,7 +119,7 @@ class ElasticLogSearcher(object):
 
     def __init__(self, index):
         """ New searcher, looking at a specific index """
-        self.es = Elasticsearch([{'host': 'localhost', 'port': 9200}])
+        self.es = Elasticsearch(config.ELASTICSEARCH.get('hosts'))
         self.index = index
 
     def search(self, state,

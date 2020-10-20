@@ -2,18 +2,24 @@
 # Elasticsearch output.
 #
 import datetime
+import sys
 
 from elasticsearch7 import Elasticsearch
 from elasticsearch7.helpers import parallel_bulk
 
 from blocks.block import Block
 
+sys.path.append('../')
+import config
 
 class ElasticsearchOutput(Block):
     """ Adds all messages as documents in an elasticsearch index. """
 
     def __init__(self):
-        self.es = Elasticsearch([{'host': '10.1.80.95', 'port': 9200}], timeout=20, max_retries=3, retry_on_timeout=True)
+        self.es = Elasticsearch(config.ELASTICSEARCH.get('hosts'),
+                                timeout=config.ELASTICSEARCH.get('timeout'),
+                                max_retries=config.ELASTICSEARCH.get('max_retries'),
+                                retry_on_timeout=True)
         self.env = {}
         self.index = None
 
