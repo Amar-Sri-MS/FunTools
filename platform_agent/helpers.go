@@ -3,8 +3,11 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
+	"strconv"
+	"strings"
 
 	"github.com/fungible-inc/FunTools/dpcclient"
 )
@@ -55,6 +58,81 @@ func dataResponse(w http.ResponseWriter, d interface{}) {
 	}
 }
 
+func serveResponse(w http.ResponseWriter) func(interface{}, error) {
+	return func(d interface{}, err error) {
+		if err != nil {
+			internalServerError(w)
+			return
+		}
+		dataResponse(w, d)
+	}
+}
+
+func serveSingleFunction(state *agentState, w http.ResponseWriter, r *http.Request, f func() (interface{}, error)) {
+	if r.Method != "GET" {
+		log.Println("Unknown method")
+		http.Error(w, "Bad Request", http.StatusBadRequest)
+		return
+	}
+
+	serveResponse(w)(f())
+}
+
+func contains(s []int, e int) bool {
+	for _, a := range s {
+		if a == e {
+			return true
+		}
+	}
+	return false
+}
+
+func mapFunc(vs []int64, f func(int64) string) []string {
+	vsm := make([]string, len(vs))
+	for i, v := range vs {
+		vsm[i] = f(v)
+	}
+	return vsm
+}
+
+func normalizeMac(data interface{}) (string, error) {
+	floatData, ok := data.(float64)
+	if !ok {
+		return "", fmt.Errorf("Incorrect datatype")
+	}
+	intData := int64(floatData)
+	parts := make([]int64, 6)
+	for i := 0; i < len(parts); i++ {
+		parts[i] = intData % 256
+		intData = intData / 256
+	}
+	return strings.Join(mapFunc(parts, func(a int64) string { return fmt.Sprintf("%02X", a) }), ":"), nil
+}
+
+func servePeek(path string) httpHandlerWithState {
+	return func(state *agentState, w http.ResponseWriter, r *http.Request) {
+		serveSingleFunction(state, w, r, func() (interface{}, error) { return peekDPC(state.dpc, path) })
+	}
+}
+
+func validateGetWithNumber(r *http.Request) (int, error) {
+	if r.Method != "GET" {
+		return 0, fmt.Errorf("Unknown method")
+	}
+
+	parts := strings.Split(r.URL.Path, "/")
+
+	if len(parts) != 3 {
+		return 0, fmt.Errorf("Unknown path")
+	}
+
+	number, err := strconv.Atoi(parts[2])
+	if err != nil {
+		return 0, fmt.Errorf("Unknown path")
+	}
+	return number, nil
+}
+
 func peekDPC(client *dpcclient.DpcClient, path string) (interface{}, error) {
 	p := make([]interface{}, 1)
 	p[0] = path
@@ -85,11 +163,13 @@ func addValue(data *map[string]interface{}, category string, sub string, value i
 func allDeviceIds(kind string) []int {
 	switch kind {
 	case "ssd":
-		return []int{1, 2, 3, 4, 5, 6, 7, 8}
+		return []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11}
 	case "dpu":
-		return []int{0}
+		return []int{0, 1, 2, 3, 4, 5, 6, 7, 8}
 	case "optics":
-		return []int{1, 2}
+		return []int{0, 4, 8, 12, 16, 20}
+	case "dimm":
+		return []int{0, 1, 2, 3}
 	default:
 		return nil
 	}

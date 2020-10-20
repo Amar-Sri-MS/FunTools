@@ -3,46 +3,63 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 )
 
 func TestTemperature(t *testing.T) {
-	response, err := http.Get("http://localhost:9332/temperature/dpu/")
+	data, err := checkHealthy("temperature/dpu/")
 	if err != nil {
-		t.Errorf("Unexpected error %v\n", err)
-		return
+		t.Errorf("%v\n", err)
 	}
-	checkResponseCode(t, http.StatusOK, response.StatusCode)
 
-	buf := new(bytes.Buffer)
-	buf.ReadFrom(response.Body)
+	dataMap, ok := data.(map[string]interface{})
 
-	var data map[string]interface{}
-	if err = json.Unmarshal(buf.Bytes(), &data); err != nil {
-		t.Errorf("Invalid JSON returned %v\n", err)
+	if !ok {
+		t.Errorf("Response type is incorrect: %v\n", data)
 		return
 	}
 
-	if _, ok := data["dpu"]; !ok {
-		t.Errorf("Response has no \"dpu\" field: %v\n", data)
+	if _, ok := dataMap["dpu"]; !ok {
+		t.Errorf("Response has no \"dpu\" field: %v\n", dataMap)
 		return
 	}
 
-	if _, ok := data["dpu"].(map[string]interface{}); !ok {
+	if _, ok := dataMap["dpu"].(map[string]interface{}); !ok {
 		t.Errorf("Response \"dpu\" field is not a dictionary: %v\n", data)
 		return
 	}
 }
 
-func executeRequest(req *http.Request) *httptest.ResponseRecorder {
-	rr := httptest.NewRecorder()
-	return rr
+func checkHealthy(endpoint string) (interface{}, error) {
+	response, err := http.Get("http://localhost:9332/" + endpoint)
+	if err != nil {
+		return nil, fmt.Errorf("unexpected error %v", err)
+	}
+	if http.StatusOK != response.StatusCode {
+		return nil, fmt.Errorf("expected response code %d, got %d", http.StatusOK, response.StatusCode)
+	}
+
+	buf := new(bytes.Buffer)
+	buf.ReadFrom(response.Body)
+
+	var data interface{}
+	if err = json.Unmarshal(buf.Bytes(), &data); err != nil {
+		return nil, fmt.Errorf("invalid JSON returned %v", err)
+	}
+	return data, nil
 }
 
-func checkResponseCode(t *testing.T, expected, actual int) {
-	if expected != actual {
-		t.Errorf("Expected response code %d. Got %d\n", expected, actual)
+func TestAllHealthy(t *testing.T) {
+	healthylist := []string{"temperature/dpu/", "images", "link_status",
+		"port/mgmt", "port/0", "memory_info/0", "processor_info", "chip_info",
+		"version", "boot_defaults", "ssd/0"}
+
+	for _, path := range healthylist {
+		_, err := checkHealthy(path)
+		if err != nil {
+			t.Errorf("While checking %s, error %v\n", path, err)
+		}
 	}
 }
