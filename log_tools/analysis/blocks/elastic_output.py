@@ -2,6 +2,7 @@
 # Elasticsearch output.
 #
 import datetime
+import requests
 import sys
 
 from elasticsearch7 import Elasticsearch
@@ -43,6 +44,9 @@ class ElasticsearchOutput(Block):
 
     def process(self, iters):
         """ Writes contents from all iterables to elasticsearch """
+        # Creating an index pattern for Kibana
+        self.create_index_pattern()
+
         for it in iters:
             # parallel_bulk is a wrapper around bulk to provide threading
             # default thread_count is 4 and it returns a generator with indexing result
@@ -76,3 +80,20 @@ class ElasticsearchOutput(Block):
 
             yield doc
 
+    def create_index_pattern(self):
+        """ Creates an index pattern based on Elasticsearch index for Kibana """
+        kibana_url = f'http://{config.KIBANA.get("host")}:{config.KIBANA.get("port")}/api/saved_objects/index-pattern/{self.index}'
+        headers = {
+            'kbn-xsrf': 'true'
+        }
+
+        data = {
+            "attributes": {
+                "title": self.index,
+                "timeFieldName": "@timestamp"
+            }
+        }
+        response = requests.post(kibana_url, headers=headers, json=data)
+        # TODO(Sourabh): Error handling if index pattern creation fails
+        if (response.status_code != 200):
+            print(response.json())
