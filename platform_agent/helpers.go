@@ -2,9 +2,11 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"log"
+	"math"
 	"net/http"
 	"strconv"
 	"strings"
@@ -16,6 +18,11 @@ type errorStatusResponse struct {
 	ErrorMessage string `json:"error"`
 }
 
+func isTextRequested(r *http.Request) bool {
+	_, ok := r.URL.Query()["text"]
+	return ok
+}
+
 func internalServerError(w http.ResponseWriter) {
 	http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 	log.Println(http.StatusText(http.StatusInternalServerError))
@@ -23,7 +30,7 @@ func internalServerError(w http.ResponseWriter) {
 
 func errorResponse(w http.ResponseWriter, message string) {
 	d := errorStatusResponse{message}
-	respBody, err := json.MarshalIndent(d, "", "  ")
+	respBody, err := json.Marshal(d)
 	if err != nil {
 		log.Println("marshal:", err)
 		log.Println(d)
@@ -40,8 +47,42 @@ func errorResponse(w http.ResponseWriter, message string) {
 	}
 }
 
-func dataResponse(w http.ResponseWriter, d interface{}) {
-	respBody, err := json.MarshalIndent(d, "", "  ")
+func textMarshalInterface(b *bytes.Buffer, d interface{}, path string) {
+	switch d.(type) {
+	case map[string]interface{}:
+		for key, val := range d.(map[string]interface{}) {
+			textMarshalInterface(b, val, path+"/"+key)
+		}
+	case []interface{}:
+		for i, val := range d.([]interface{}) {
+			textMarshalInterface(b, val, path+"/"+strconv.Itoa(i))
+		}
+	case float64:
+		floatVal := d.(float64)
+		if floatVal == math.Trunc(floatVal) {
+			b.WriteString(fmt.Sprintf("%s=%d\n", path, int64(floatVal)))
+			return
+		}
+		b.WriteString(fmt.Sprintf("%s=%v\n", path, floatVal))
+	default:
+		b.WriteString(fmt.Sprintf("%s=%v\n", path, d))
+	}
+}
+
+func textMarshal(d interface{}) ([]byte, error) {
+	b := bytes.NewBuffer(nil)
+	textMarshalInterface(b, d, "")
+	return b.Bytes(), nil
+}
+
+func dataResponse(w http.ResponseWriter, d interface{}, asText bool) {
+	marshal := json.Marshal
+
+	if asText {
+		marshal = textMarshal
+	}
+
+	respBody, err := marshal(d)
 	if err != nil {
 		log.Println("marshal:", err)
 		log.Println(d)
@@ -58,13 +99,13 @@ func dataResponse(w http.ResponseWriter, d interface{}) {
 	}
 }
 
-func serveResponse(w http.ResponseWriter) func(interface{}, error) {
+func serveResponse(w http.ResponseWriter, r *http.Request) func(interface{}, error) {
 	return func(d interface{}, err error) {
 		if err != nil {
 			internalServerError(w)
 			return
 		}
-		dataResponse(w, d)
+		dataResponse(w, d, isTextRequested(r))
 	}
 }
 
@@ -75,7 +116,7 @@ func serveSingleFunction(state *agentState, w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	serveResponse(w)(f())
+	serveResponse(w, r)(f())
 }
 
 func contains(s []int, e int) bool {
