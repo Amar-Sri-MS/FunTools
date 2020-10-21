@@ -50,7 +50,7 @@ func serveTemperature(state *agentState, w http.ResponseWriter, r *http.Request)
 			}
 			addValue(&response, parts[2], strconv.Itoa(id), data)
 		}
-		dataResponse(w, response)
+		dataResponse(w, response, isTextRequested(r))
 		return
 	}
 	log.Println("Unknown path")
@@ -77,7 +77,7 @@ func serveMgmtPortInfo(state *agentState, w http.ResponseWriter, r *http.Request
 
 	response := make(map[string]interface{})
 	response["macaddr"] = macaddrStr
-	dataResponse(w, response)
+	dataResponse(w, response, isTextRequested(r))
 }
 
 func servePort(state *agentState, w http.ResponseWriter, r *http.Request) {
@@ -132,7 +132,7 @@ func servePort(state *agentState, w http.ResponseWriter, r *http.Request) {
 	response := make(map[string]interface{})
 	response["macaddr"] = macaddrStr
 	response["mtu"] = mtu
-	dataResponse(w, response)
+	dataResponse(w, response, isTextRequested(r))
 }
 
 func serveMemoryInfo(state *agentState, w http.ResponseWriter, r *http.Request) {
@@ -143,7 +143,7 @@ func serveMemoryInfo(state *agentState, w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	serveResponse(w)(peekDPC(state.dpc, fmt.Sprintf("config/memory_info/Memory/%d", number)))
+	serveResponse(w, r)(peekDPC(state.dpc, fmt.Sprintf("config/memory_info/Memory/%d", number)))
 }
 
 func serveSSD(state *agentState, w http.ResponseWriter, r *http.Request) {
@@ -166,5 +166,5 @@ func serveSSD(state *agentState, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	dataResponse(w, []interface{}{data1, data2})
+	dataResponse(w, []interface{}{data1, data2}, isTextRequested(r))
 }
