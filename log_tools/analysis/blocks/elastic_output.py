@@ -4,22 +4,39 @@
 import datetime
 import requests
 import sys
+import json
 
 from elasticsearch7 import Elasticsearch
 from elasticsearch7.helpers import parallel_bulk
 
 from blocks.block import Block
 
-sys.path.append('../')
-import config
+config = {}
+
+try:
+    with open('./config.json', 'r') as f:
+        config = json.load(f)
+except IOError:
+    print('Config file not found! Checking for default config file..')
+
+try:
+    with open('./default_config.json', 'r') as f:
+        default_config = json.load(f)
+    # Overriding default config with custom config
+    config = { **default_config, **config }
+except IOError:
+    sys.exit('Default config file not found! Exiting..')
 
 class ElasticsearchOutput(Block):
     """ Adds all messages as documents in an elasticsearch index. """
 
     def __init__(self):
-        self.es = Elasticsearch(config.ELASTICSEARCH.get('hosts'),
-                                timeout=config.ELASTICSEARCH.get('timeout'),
-                                max_retries=config.ELASTICSEARCH.get('max_retries'),
+        ELASTICSEARCH_HOSTS = config['ELASTICSEARCH']['hosts']
+        ELASTICSEARCH_TIMEOUT = config['ELASTICSEARCH']['timeout']
+        ELASTICSEARCH_MAX_RETRIES = config['ELASTICSEARCH']['max_retries']
+        self.es = Elasticsearch(ELASTICSEARCH_HOSTS,
+                                timeout=ELASTICSEARCH_TIMEOUT,
+                                max_retries=ELASTICSEARCH_MAX_RETRIES,
                                 retry_on_timeout=True)
         self.env = {}
         self.index = None
@@ -82,7 +99,9 @@ class ElasticsearchOutput(Block):
 
     def create_index_pattern(self):
         """ Creates an index pattern based on Elasticsearch index for Kibana """
-        kibana_url = f'http://{config.KIBANA.get("host")}:{config.KIBANA.get("port")}/api/saved_objects/index-pattern/{self.index}'
+        KIBANA_HOST = config['KIBANA']['host']
+        KIBANA_PORT = config['KIBANA']['port']
+        kibana_url = f'http://{KIBANA_HOST}:{KIBANA_PORT}/api/saved_objects/index-pattern/{self.index}'
         headers = {
             'kbn-xsrf': 'true'
         }
