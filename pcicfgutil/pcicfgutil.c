@@ -49,49 +49,114 @@ static const char *_tabs(uint32_t depth)
 
 /** value conversion **/
 #define FLAG_MAX (63)
-static struct {
+struct flagtab {
 	const char *str;
 	uint64_t flag;
-} _flagtab[] = {
-	{"NO_PHYS", HW_HSU_API_LINK_CONFIG_FLAGS_NO_PHYS},
 };
+
+/* global flags */
+static struct flagtab _global_flagtab[] = {
+	{"NO_PHYS", HW_HSU_API_LINK_CONFIG_FLAGS_NO_PHYS},
+
+	/* must be last */
+	{NULL, 0}
+};
+
+static struct flagtab _ring_flagtab[] = {
+	{"ENABLED", HW_HSU_API_LINK_CONFIG_RING_FLAGS_RING_ENABLED},
+
+	/* must be last */
+	{NULL, 0}
+};
+
+static struct flagtab _cid_flagtab[] = {
+	{"CID_ENABLED", HW_HSU_API_LINK_CONFIG_CID_FLAGS_CID_ENABLED},
+	{"LINK_ENABLED", HW_HSU_API_LINK_CONFIG_CID_FLAGS_LINK_ENABLE},
+	{"SRIS_ENABLED", HW_HSU_API_LINK_CONFIG_CID_FLAGS_SRIS_ENABLE},
+
+	/* must be last */
+	{NULL, 0}
+};
+
+static uint64_t __str2flag(struct flagtab *tab, const char *str)
+{
+	int i = 0;
+
+	while (tab[i].str != NULL) {
+		if(strcmp(str, tab[i].str) == 0) {
+			/* found the flag */
+			return tab[i].flag;
+		}
+
+		/* next */
+		i++;
+	}
+	
+	die("unknown flag: %s\n", str);
+}
 
 static uint64_t _str2flag(const char *str)
 {
-	int i;
-
-	for (i = 0; i < ARRAY_SIZE(_flagtab); i++) {
-		if(strcmp(str, _flagtab[i].str) != 0)
-			continue;
-
-		/* found the flag */
-		return _flagtab[i].flag;
-	}
-	
-	die("unknown flag in sku: %s\n", str);
+	return __str2flag(_global_flagtab, str);
 }
 
-static const char *_flag2str(uint64_t flag)
+static void __pretty_print_flags(struct flagtab *tab, uint64_t flags)
 {
-	int i;
+	uint64_t remflags = flags;
+	bool sep = false;
+	bool not = false;
+	int i = 0;
 
-	for (i = 0; i < ARRAY_SIZE(_flagtab); i++) {
-		if(_flagtab[i].flag != flag)
-			continue;
+	while (tab[i].str != NULL) {
+		not = true;
+		if((flags & tab[i].flag) == tab[i].flag) {
+			/* found the flag */
+			not = false;
+			remflags ^= tab[i].flag;
+		}
 
-		/* found the flag */
-		return _flagtab[i].str;
+		/* print the flag */
+		printf("%s%s%s",
+		       sep ? " | " : "",
+		       not ? "~" : "",
+		       tab[i].str);
+		
+		/* next */
+		sep = true;
+		i++;
 	}
-	
-	return "<unknown>";
+
+	if (remflags != 0) {
+		printf("  (unknown flags: 0x%" PRIx64 ")", remflags);
+	}
+}
+
+static void _pretty_print_flags(uint64_t flags)
+{
+	__pretty_print_flags(_global_flagtab, flags);
+}
+
+static void _pretty_print_cid_flags(uint64_t flags)
+{
+	__pretty_print_flags(_cid_flagtab, flags);
+}
+
+static void _pretty_print_ring_flags(uint64_t flags)
+{
+	__pretty_print_flags(_ring_flagtab, flags);
 }
 
 /** config pretty-printer **/
 
 void _pretty_print_cid(uint32_t depth, struct hw_hsu_cid_config *cid)
 {
-	printf("%scid_flags: 0x%" PRIx64 "\n",
+	/* flags */
+	printf("%scid_flags: 0x%" PRIx64 " = ",
 	       _tabs(depth), be64toh(cid->cid_flags));
+	_pretty_print_cid_flags(be64toh(cid->cid_flags));
+	printf("\n");
+
+	/* pci values */
 	printf("%spcie_gen: %u\n", _tabs(depth), be32toh(cid->pcie_gen));
 	printf("%spcie_width: %u\n", _tabs(depth), be32toh(cid->pcie_width));
 }
@@ -101,8 +166,13 @@ void _pretty_print_ring(uint32_t depth, struct hw_hsu_ring_config *ring)
 	uint32_t cid = 0;
 	
 	printf("%sbif: %u\n", _tabs(depth), be32toh(ring->bif));
-	printf("%sring_flags: 0x%" PRIx64 "\n",
+
+	/* flags */
+	printf("%sring_flags: 0x%" PRIx64 " = ",
 	       _tabs(depth), be64toh(ring->ring_flags));
+	_pretty_print_ring_flags(be64toh(ring->ring_flags));
+	printf("\n");
+	
 
 	for (cid = 0; cid < HW_HSU_API_LINK_CONFIG_V0_MAX_CIDS; cid++) {
 		printf("%scid_config[%d]:\n", _tabs(depth), cid);
@@ -123,24 +193,6 @@ bool _cfg_valid(struct hw_hsu_api_link_config *cfg)
 
 	/* magic and version OK */
 	return true;
-}
-
-static void _pretty_print_flags(uint64_t flags)
-{
-	uint64_t i;
-	bool sep = false;
-
-	if (flags == 0) {
-		printf("(none)");
-		return;
-	}
-
-	for (i = 0; i <= FLAG_MAX; i++) {
-		if ((flags & (1ULL<<i)) == 0)
-			continue;
-
-		printf("%s%s", sep ? "| " : "", _flag2str(1ULL<<i));
-	}
 }
 
 void _magic2printable(char str[sizeof(uint64_t)+1], uint64_t magic)
