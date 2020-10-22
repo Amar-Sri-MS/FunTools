@@ -18,7 +18,7 @@ all: pcicfgutil
 
 # define header and library location in FunSDK
 CFLAGS ?= -I $(SDKDIR)/FunSDK  \
-	  -I $(SDKDIR)
+	  -I $(SDKDIR) -Wall -Werror
 
 # XXX: compatibility with FunOS build parameters
 LDFLAGS_ASAN ?= -fsanitize=address
@@ -27,7 +27,7 @@ ifeq ($(OS),Linux)
 LDFLAGS += -L $(SDKDIR)/lib/$(OS)/noasan/$(ARCH) -lfunclient -lm -ldl
 DARWIN_ASAN_FIXUP :=
 else
-LDFLAGS += -L $(SDKDIR)/lib/$(OS)/$(ARCH) -coverage -lfunclient -lm $(LDFLAGS_ASAN)
+LDFLAGS += -L $(SDKDIR)/lib/$(OS)/$(ARCH) -lfunclient -lm $(LDFLAGS_ASAN)
 endif
 
 SRC += pcicfgutil.c

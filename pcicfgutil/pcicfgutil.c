@@ -10,12 +10,17 @@
 #define _XOPEN_SOURCE
 #define _GNU_SOURCE
 
+#include <ctype.h>	// for fprintf()
 #include <stdio.h>	// for fprintf()
 #include <unistd.h>	// for STDOUT_FILENO
 #include <stdlib.h>	// for free()
 #include <getopt.h>	// for getopt_long()
 #include <fcntl.h>	// for open()
 #include <string.h>	// for strcmp()
+
+#include <platform/mips64/include/endian.h> // this could be in a better location...
+
+#include <FunSDK/config/include/boot_config.h>
 
 // We must define PLATFORM_POSIX to get fun_json_write_to_fd()
 #define PLATFORM_POSIX 1
@@ -26,18 +31,251 @@
 #define BINARY      (2)
 #define TEXTONELINE (3)
 
+#define eprintf(...) fprintf (stderr, __VA_ARGS__)
+#define die(...) do { fprintf (stderr, __VA_ARGS__); exit(1); } while (0)
 
+/** utility **/
 static void oom(void)
 {
 	printf("out of memory\n");
 	exit(-1);
 }
 
+#define TABS "\t\t\t\t\t\t\t\t\t\t\t\t\t\t"
+static const char *_tabs(uint32_t depth)
+{
+	return &TABS[strlen(TABS)-depth];
+}
+
+/** value conversion **/
+#define FLAG_MAX (63)
+static struct {
+	const char *str;
+	uint64_t flag;
+} _flagtab[] = {
+	{"NO_PHYS", HW_HSU_API_LINK_CONFIG_FLAGS_NO_PHYS},
+};
+
+static uint64_t _str2flag(const char *str)
+{
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(_flagtab); i++) {
+		if(strcmp(str, _flagtab[i].str) != 0)
+			continue;
+
+		/* found the flag */
+		return _flagtab[i].flag;
+	}
+	
+	die("unknown flag in sku: %s\n", str);
+}
+
+static const char *_flag2str(uint64_t flag)
+{
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(_flagtab); i++) {
+		if(_flagtab[i].flag != flag)
+			continue;
+
+		/* found the flag */
+		return _flagtab[i].str;
+	}
+	
+	return "<unknown>";
+}
+
+/** config pretty-printer **/
+
+void _pretty_print_cid(uint32_t depth, struct hw_hsu_cid_config *cid)
+{
+	printf("%scid_flags: 0x%" PRIx64 "\n",
+	       _tabs(depth), be64toh(cid->cid_flags));
+	printf("%spcie_gen: %u\n", _tabs(depth), be32toh(cid->pcie_gen));
+	printf("%spcie_width: %u\n", _tabs(depth), be32toh(cid->pcie_width));
+}
+
+void _pretty_print_ring(uint32_t depth, struct hw_hsu_ring_config *ring)
+{
+	uint32_t cid = 0;
+	
+	printf("%sbif: %u\n", _tabs(depth), be32toh(ring->bif));
+	printf("%sring_flags: 0x%" PRIx64 "\n",
+	       _tabs(depth), be64toh(ring->ring_flags));
+
+	for (cid = 0; cid < HW_HSU_API_LINK_CONFIG_V0_MAX_CIDS; cid++) {
+		printf("%scid_config[%d]:\n", _tabs(depth), cid);
+		_pretty_print_cid(depth+1, &ring->cid_config[cid]);
+	}
+}
+
+
+bool _cfg_valid(struct hw_hsu_api_link_config *cfg)
+{
+	assert(cfg != NULL);
+
+	if (cfg->magic != htobe64(HW_HSU_API_LINK_CONFIG_MAGIC))
+		return false;
+
+	if (cfg->version != htobe32(HW_HSU_API_LINK_CONFIG_VERSION_V0))
+		return false;
+
+	/* magic and version OK */
+	return true;
+}
+
+static void _pretty_print_flags(uint64_t flags)
+{
+	uint64_t i;
+	bool sep = false;
+
+	if (flags == 0) {
+		printf("(none)");
+		return;
+	}
+
+	for (i = 0; i <= FLAG_MAX; i++) {
+		if ((flags & (1ULL<<i)) == 0)
+			continue;
+
+		printf("%s%s", sep ? "| " : "", _flag2str(1ULL<<i));
+	}
+}
+
+void _magic2printable(char str[sizeof(uint64_t)+1], uint64_t magic)
+{
+	int i;
+
+	/* copy the bytes as-is */
+	memcpy(str, &magic, sizeof(uint64_t));
+	str[sizeof(uint64_t)] = '\0';
+
+	/* replace anything unprintable like hexdump -C */
+	for (i = 0; i < sizeof(uint64_t); i++) {
+		if (!isprint(str[i]))
+			str[i] = '.';
+	}
+}
+
+void _pretty_print_cfg(uint32_t depth, struct hw_hsu_api_link_config *cfg)
+{
+	int ring = 0;
+	char mstr[sizeof(uint64_t)+1];
+
+	assert(cfg != NULL);
+
+	/* magic */
+	_magic2printable(mstr, cfg->magic);
+	printf("%smagic  : 0x%" PRIx64" [%s]\n",
+	       _tabs(depth), be64toh(cfg->magic), mstr);
+
+	/* version */
+	printf("%sversion: %d [unsigned=%u]\n",
+	       _tabs(depth), be32toh(cfg->version), be32toh(cfg->version));
+
+	/* validity check */
+	printf("%sconfig blob is%s valid\n",
+	       _tabs(depth), _cfg_valid(cfg) ? "" : " NOT");
+	
+	/* IDs */
+	printf("\n");
+	printf("%ssku_id    : %u\n", _tabs(depth), be32toh(cfg->sku_id));
+	printf("%sid        : %u\n", _tabs(depth), be32toh(cfg->id));
+	printf("%sid_version: %u\n", _tabs(depth), be32toh(cfg->id_version));
+
+	/* flags */
+	printf("\n");
+	printf("%sflags     : 0x%" PRIx64" = ",
+	       _tabs(depth), be64toh(cfg->flags));
+	_pretty_print_flags(cfg->flags);
+	printf("\n");
+
+	/* recurse into the rings */
+	printf("\n");
+	for (ring = 0; ring < HW_HSU_API_LINK_CONFIG_V0_MAX_RINGS; ring++) {
+		printf("%sring_config[%d]:\n", _tabs(depth), ring);
+		_pretty_print_ring(depth+1, &cfg->ring_config[ring]);
+	}
+}
+
+
+/** json -> config conversion **/
+static uint64_t _sku2flags(const struct fun_json *sku)
+{
+	struct fun_json *jsflags = NULL, *jsstr = NULL;
+	uint64_t flags = 0;
+	fun_json_index_t i = 0, max = 0;
+
+	assert(fun_json_is_dict(sku));
+	
+	/* find the sku */
+	jsflags = fun_json_lookup(sku, "HuInterface/flags");
+	if (!fun_json_is_array(jsflags)) {
+		printf("\tsku is missing HU flags, setting to 0\n");
+		return 0;
+	}
+
+	/* search all the flags */
+	max = fun_json_array_count(jsflags);
+	for (i = 0; i < max; i++) {
+		jsstr = fun_json_array_at(jsflags, i);
+		if (!fun_json_is_string(jsstr))
+			die("unexpected non-string in HU flags");
+
+		/* append the flag, or die trying */
+		flags |= _str2flag(fun_json_to_string(jsstr, NULL));
+	}
+
+	return flags;
+}
+
+static bool _sku2cfg(struct hw_hsu_api_link_config *cfg,
+		     const struct fun_json *sku)
+{
+	const struct fun_json *hu = NULL;
+
+	assert(cfg != NULL);
+	assert(sku != NULL);
+
+	/* clear the config */
+	bzero(cfg, sizeof(*cfg));
+	
+	/* check the input is at least semi-valid */
+	if (!fun_json_is_dict(sku))
+		return false;	
+
+	/* boilerplate */
+	cfg->magic = htobe64(HW_HSU_API_LINK_CONFIG_MAGIC);
+	cfg->version = htobe32(HW_HSU_API_LINK_CONFIG_VERSION_V0);
+
+	/* this is redundant since it's implicit at install time. keep
+	 * it zero
+	 */
+	cfg->sku_id = htobe32(0);
+	
+	/* nominally zero */
+	cfg->id = htobe32(0);
+	cfg->id_version = htobe32(0);
+
+	/* scrape flags from the json */
+	cfg->flags = htobe64(_sku2flags(sku));
+	
+	/* start by clearing the cfg */
+	hu = fun_json_lookup(sku, "HuInterface/HostUnit");
+	if (!fun_json_is_array(hu)) {
+		eprintf("failed to find HostUnit table\n");
+		return false;
+	}
+
+	return true;
+}
+
+/** json reading **/
 static char *_read_input_file(int fd, size_t *outsize)
 {
 	char *buffer;
 	char *pp;
-	int r;
 	ssize_t n;
 	size_t alloc_size, size = 0;
 
@@ -71,30 +309,6 @@ static char *_read_input_file(int fd, size_t *outsize)
 	if (outsize)
 		*outsize = size;
 	return buffer;
-}
-
-static int _write_output_file(int fd, char *buf, ssize_t len)
-{
-	ssize_t delta = 0;
-	ssize_t offset = 0;
-	
-	do {
-		delta = write(fd, &buf[offset], len-offset);
-		if (delta > 0)
-			offset += delta;
-	} while(delta > 0);
-
-	if (delta < 0) {
-		perror("write");
-		return -1;
-	}
-	
-	if (offset != len) {
-		fprintf(stderr, "truncated output\n");
-		return -1;
-	}
-
-	return 0;
 }
 
 static struct fun_json *_read_json(int fd)
@@ -133,41 +347,6 @@ static struct fun_json *_read_bjson(int fd)
 	return input;
 }
 	
-static int _write_json(int fd, struct fun_json *json, int mode)
-{
-	char *buf = NULL;
-	size_t dummy_size = 0;
-	int r;
-
-	if (mode == TEXT)
-		buf = fun_json_to_text(json);
-	else if (mode == TEXTONELINE)
-		buf = fun_json_pretty_print(json, 0, "    ", 0, 0, &dummy_size);
-		
-	if (!buf)
-		return -1;
-
-	r = _write_output_file(fd, buf, strlen(buf));
-	free(buf);
-
-	/* be nice and print a newline if it's stdout */
-	if ((r == 0) && (fd == 0))
-		printf("\n");
-	
-	return r;
-}
-
-static int _write_bjson(int fd, struct fun_json *json)
-{
-	bool r;
-
-	r = fun_json_write_to_fd(json, fd);
-
-	/* true on success -> 0 on success  */
-	return (r != true);
-}
-
-
 
 static int
 _setmode(int curmode, int newmode)
@@ -195,16 +374,15 @@ _usage(const char *fname)
 int
 main(int argc, char *argv[])
 {
-	int r;
+	int r = 0;
 	int c;
 	
 	int inmode = NOMODE;
 	char *infile = NULL;	
 	char *outdir = NULL;
-	int infd, outfd;
+	int infd;
 	
 	while (1) {
-		int option_index = 0;
 		static struct option long_options[] = {
 			{"in",   required_argument, 0,  'i' },
 			{"out",  required_argument, 0,  'o' },
@@ -254,22 +432,6 @@ main(int argc, char *argv[])
 		}
 	}
 
-#if 0
-	if (strcmp(outfile, "-") == 0) {
-		if (outmode == BINARY) {
-			fprintf(stderr, "not writing binary to stdout\n");
-			exit(1);
-		}
-		outfd = STDOUT_FILENO;
-	} else {
-		outfd = open(outfile, O_WRONLY | O_CREAT | O_TRUNC, 0644);
-		if (outfd < 0) {
-			perror("open output");
-			exit(1);
-		}
-	}
-#endif
-
 	/* read in some json */
 	struct fun_json *input = NULL;
 	if (inmode == TEXT)
@@ -291,18 +453,39 @@ main(int argc, char *argv[])
 	}
 
 	/* iterate over the SKUs */
-	
-#if 0
-	/* write out some json */
-	if (outmode == BINARY)
-		r = _write_bjson(outfd, input);
-	else
-		r = _write_json(outfd, input, outmode);
+	const struct fun_json *skus = NULL, *sku = NULL;
+	const char *key = NULL;
+	uint64_t iter;
+	struct hw_hsu_api_link_config cfg;
+	bool b;
 
-	if (r) {
-		fprintf(stderr, "error writing json\n");
+	/* 1) lookup SKUs */
+	skus = fun_json_lookup(input, "skus");
+	if (!fun_json_is_dict(skus)) {
+		fprintf(stderr, "failed to find skus table in input json\n");
+		exit(1);
 	}
-#endif
+	
+	/* 2) iterate over SKUs */
+	iter = fun_json_dict_iterator(skus);
+
+	while (fun_json_dict_iterate(skus, &iter, &key, &sku)) {
+		printf("found sku %s\n", key);
+		b = _sku2cfg(&cfg, sku);
+
+		if (!b) {
+			eprintf("\tFailed to parse sku correctly, ignoring\n");
+		}
+
+		/* dump it */
+		printf("\tEncoded SKU config:\n");
+		_pretty_print_cfg(1, &cfg);
+	}
+
+	/* 3) extract HuInterface */
+
+	/* 4) process HuInterface! */
+	
 
 	fun_json_release(input);
 	
