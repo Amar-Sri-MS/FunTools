@@ -5,7 +5,10 @@
  *  Copyright © 2020 Fungible. All rights reserved.
  */
 
-/* utility to convert json config to SBP hw_hsu_api_link_config blobs */
+/* utility to convert json config to SBP hw_hsu_api_link_config blobs.
+ * specs for the entirety of this logic is from this jira:
+ *    http://jira/browse/SWOS-11291
+ */
 
 #define _XOPEN_SOURCE
 #define _GNU_SOURCE
@@ -49,27 +52,27 @@ static const char *_tabs(uint32_t depth)
 
 /** value conversion **/
 #define FLAG_MAX (63)
-struct flagtab {
+struct valtab {
 	const char *str;
-	uint64_t flag;
+	uint64_t val;
 };
 
 /* global flags */
-static struct flagtab _global_flagtab[] = {
+static struct valtab _global_flagtab[] = {
 	{"NO_PHYS", HW_HSU_API_LINK_CONFIG_FLAGS_NO_PHYS},
 
 	/* must be last */
 	{NULL, 0}
 };
 
-static struct flagtab _ring_flagtab[] = {
+static struct valtab _ring_flagtab[] = {
 	{"ENABLED", HW_HSU_API_LINK_CONFIG_RING_FLAGS_RING_ENABLED},
 
 	/* must be last */
 	{NULL, 0}
 };
 
-static struct flagtab _cid_flagtab[] = {
+static struct valtab _cid_flagtab[] = {
 	{"CID_ENABLED", HW_HSU_API_LINK_CONFIG_CID_FLAGS_CID_ENABLED},
 	{"LINK_ENABLED", HW_HSU_API_LINK_CONFIG_CID_FLAGS_LINK_ENABLE},
 	{"SRIS_ENABLED", HW_HSU_API_LINK_CONFIG_CID_FLAGS_SRIS_ENABLE},
@@ -78,29 +81,87 @@ static struct flagtab _cid_flagtab[] = {
 	{NULL, 0}
 };
 
-static uint64_t __str2flag(struct flagtab *tab, const char *str)
+static struct valtab _bif_valtab[] = {
+	{"BIF_ONE_16", 0},
+	{"BIF_TWO_8", 1},
+	{"BIF_FOUR_4", 2},
+	{"BIF_HYBRID", 3},
+
+	/* must be last */
+	{NULL, 0}
+};
+
+static struct valtab _gen_valtab[] = {
+	{"GEN1", 0},
+	{"GEN2", 1},
+	{"GEN3", 2},
+	{"GEN4", 3},
+	{"DEFAULT", HW_HSU_API_LINK_CONFIG_PCIE_GEN_DEFAULT},
+
+	/* must be last */
+	{NULL, 0}
+};
+
+static struct valtab _width_valtab[] = {
+	{"x1",  0},
+	{"x2",  1},
+	{"x4",  2},
+	{"x8",  3},
+	{"x16", 4},
+	{"x32", 5},
+	{"DEFAULT", HW_HSU_API_LINK_CONFIG_PCIE_WIDTH_DEFAULT},
+
+	/* must be last */
+	{NULL, 0}
+};
+
+
+static bool __str2val(struct valtab *tab, const char *str, uint64_t *val)
 {
 	int i = 0;
 
 	while (tab[i].str != NULL) {
 		if(strcmp(str, tab[i].str) == 0) {
 			/* found the flag */
-			return tab[i].flag;
+			*val = tab[i].val;
+			return true;
 		}
 
 		/* next */
 		i++;
 	}
-	
-	die("unknown flag: %s\n", str);
+
+	return false;
+}
+
+static const char *__val2str(struct valtab *tab, uint64_t val)
+{
+	int i = 0;
+
+	while (tab[i].str != NULL) {
+		if(tab[i].val == val) {
+			/* found the value */
+			return tab[i].str;
+		}
+
+		/* next */
+		i++;
+	}
+
+	return "<unknown>";
 }
 
 static uint64_t _str2flag(const char *str)
 {
-	return __str2flag(_global_flagtab, str);
+	uint64_t flag;
+
+	if (!__str2val(_global_flagtab, str, &flag))
+		die("unknown flag: %s\n", str);
+
+	return flag;
 }
 
-static void __pretty_print_flags(struct flagtab *tab, uint64_t flags)
+static void __pretty_print_flags(struct valtab *tab, uint64_t flags)
 {
 	uint64_t remflags = flags;
 	bool sep = false;
@@ -109,10 +170,10 @@ static void __pretty_print_flags(struct flagtab *tab, uint64_t flags)
 
 	while (tab[i].str != NULL) {
 		not = true;
-		if((flags & tab[i].flag) == tab[i].flag) {
+		if((flags & tab[i].val) == tab[i].val) {
 			/* found the flag */
 			not = false;
-			remflags ^= tab[i].flag;
+			remflags ^= tab[i].val;
 		}
 
 		/* print the flag */
@@ -157,15 +218,21 @@ void _pretty_print_cid(uint32_t depth, struct hw_hsu_cid_config *cid)
 	printf("\n");
 
 	/* pci values */
-	printf("%spcie_gen: %u\n", _tabs(depth), be32toh(cid->pcie_gen));
-	printf("%spcie_width: %u\n", _tabs(depth), be32toh(cid->pcie_width));
+	printf("%spcie_gen: %s [%u]\n", _tabs(depth),
+	       __val2str(_gen_valtab, be32toh(cid->pcie_gen)),
+	       be32toh(cid->pcie_gen));
+	printf("%spcie_width: %s [%u]\n", _tabs(depth),
+	       __val2str(_width_valtab, be32toh(cid->pcie_width)),
+	       be32toh(cid->pcie_width));
 }
 
 void _pretty_print_ring(uint32_t depth, struct hw_hsu_ring_config *ring)
 {
 	uint32_t cid = 0;
 	
-	printf("%sbif: %u\n", _tabs(depth), be32toh(ring->bif));
+	printf("%sbif: %s [%u]\n", _tabs(depth),
+	       __val2str(_bif_valtab, be32toh(ring->bif)),
+	       be32toh(ring->bif));
 
 	/* flags */
 	printf("%sring_flags: 0x%" PRIx64 " = ",
@@ -257,7 +324,7 @@ static uint64_t _sku2flags(const struct fun_json *sku)
 {
 	struct fun_json *jsflags = NULL, *jsstr = NULL;
 	uint64_t flags = 0;
-	fun_json_index_t i = 0, max = 0;
+	fun_json_index_t i = 0, count = 0;
 
 	assert(fun_json_is_dict(sku));
 	
@@ -269,8 +336,8 @@ static uint64_t _sku2flags(const struct fun_json *sku)
 	}
 
 	/* search all the flags */
-	max = fun_json_array_count(jsflags);
-	for (i = 0; i < max; i++) {
+	count = fun_json_array_count(jsflags);
+	for (i = 0; i < count; i++) {
 		jsstr = fun_json_array_at(jsflags, i);
 		if (!fun_json_is_string(jsstr))
 			die("unexpected non-string in HU flags");
@@ -282,11 +349,222 @@ static uint64_t _sku2flags(const struct fun_json *sku)
 	return flags;
 }
 
+static uint32_t _args_as_ring(const struct fun_json *chu)
+{
+	int64_t value = 0;
+	
+	assert(fun_json_is_dict(chu));
+
+	if (!fun_json_lookup_int64(chu, "_args/0", &value)) {
+		printf("lookup fail\n");
+		return HW_HSU_API_LINK_CONFIG_V0_MAX_RINGS;
+	}
+
+	if (value > HW_HSU_API_LINK_CONFIG_V0_MAX_RINGS) {
+		value = HW_HSU_API_LINK_CONFIG_V0_MAX_RINGS;
+	}
+
+	return value;
+}
+
+static bool _args_as_ring_pair(const struct fun_json *chu,
+			       uint32_t *ring, uint32_t *cid)
+{
+	int64_t value = 0;
+
+	assert(fun_json_is_dict(chu));
+	assert(ring != NULL);
+	assert(cid != NULL);
+
+	if (!fun_json_lookup_int64(chu, "_args/0", &value)) {
+		return false;
+	}
+
+	if (value >= HW_HSU_API_LINK_CONFIG_V0_MAX_RINGS) {
+		return false;
+	}
+
+	*ring = value;
+
+	if (!fun_json_lookup_int64(chu, "_args/1", &value)) {
+		return false;
+	}
+
+	if (value >= HW_HSU_API_LINK_CONFIG_V0_MAX_CIDS) {
+		return false;
+	}
+
+	*cid = value;
+	
+	return true;
+}
+
+static bool _parse_hostunits(struct hw_hsu_api_link_config *cfg,
+			     const struct fun_json *sku)
+{
+	int64_t hu_en = 0;
+	uint64_t en = 0;
+	int i = 0;
+
+	/* just extract the one value */
+	if (!fun_json_lookup_int64(sku,
+				   "HuInterface/HostUnits/hu_en", &hu_en)) {
+		return false;
+	}
+
+	/* set any rings as appropriate */
+	en = htobe64(HW_HSU_API_LINK_CONFIG_RING_FLAGS_RING_ENABLED);
+
+	for (i = 0; i < HW_HSU_API_LINK_CONFIG_V0_MAX_RINGS; i++) {
+		if ((hu_en & (1ULL<<i)) == 0)
+			continue;
+		cfg->ring_config[1ULL<<i].ring_flags |= en;
+	}
+	
+	return true;
+}
+
+static bool _parse_hostunit(struct hw_hsu_api_link_config *cfg,
+			    const struct fun_json *sku)
+{
+	const struct fun_json *hu = NULL, *chu = NULL;
+	fun_json_index_t i = 0, count = 0;
+	uint32_t ring = 0, cid = 0;
+	int64_t ctl_en = 0;
+	uint64_t en = 0, bif = 0;
+	const char *bif_mode = NULL;
+	
+	
+	assert(fun_json_is_dict(sku));
+	
+	hu = fun_json_lookup(sku, "HuInterface/HostUnit");
+	if (!fun_json_is_array(hu)) {
+		eprintf("failed to find HostUnit table\n");
+		return false;
+	}
+
+	/* iterate over each item */
+	count = fun_json_array_count(hu);
+	for (i = 0; i < count; i++) {
+		/* lookup the item */
+		chu = fun_json_array_at(hu, i);
+		if (!fun_json_is_dict(chu)) {
+			eprintf("invalid HostUnit array\n");
+			return false;
+		}
+
+		/* extract the ring from _args array */
+		ring = _args_as_ring(chu);
+		if (ring >= HW_HSU_API_LINK_CONFIG_V0_MAX_RINGS) {
+			/* most likely posix */
+			continue;			
+		}
+
+		/* get the bif and en bits */
+		if (!fun_json_lookup_string(chu, "bif_mode", &bif_mode)) {
+			eprintf("bad bif mode\n");
+			return false;
+		}
+
+		if (!__str2val(_bif_valtab, bif_mode, &bif)) {
+			eprintf("bad bif value\n");
+			return false;
+		}
+		
+		if (!fun_json_lookup_int64(chu, "ctl_en", &ctl_en)) {
+			eprintf("bad ctl_en\n");
+			return false;
+		}
+
+		/* now we've extracted something from the json, we can 
+		 * patch up the cfg
+		 */
+		cfg->ring_config[ring].bif = htobe32(bif);
+
+		en = htobe64(HW_HSU_API_LINK_CONFIG_RING_FLAGS_RING_ENABLED);
+		for (cid = 0; cid < HW_HSU_API_LINK_CONFIG_V0_MAX_CIDS; cid++) {
+			if ((ctl_en & (1ULL << cid)) == 0)
+				continue;
+			cfg->ring_config[ring].cid_config[cid].cid_flags |= en;
+		}
+	}
+	
+	return true;
+}
+
+static bool _parse_hostunitcontroller(struct hw_hsu_api_link_config *cfg,
+				      const struct fun_json *sku)
+{
+	const struct fun_json *huc = NULL, *chu = NULL;
+	fun_json_index_t i = 0, count = 0;
+	uint32_t ring = 0, cid = 0, pcie_gen = 0, pcie_width = 0;
+	bool r = false, link_en = false;
+	const char *str = NULL;
+	uint64_t u64 = 0, en = 0;
+	
+	assert(fun_json_is_dict(sku));
+	
+	huc = fun_json_lookup(sku, "HuInterface/HostUnitController");
+	if (!fun_json_is_array(huc)) {
+		eprintf("failed to find HostUnitController table\n");
+		return false;
+	}
+
+	/* iterate over each item */
+	count = fun_json_array_count(huc);
+	for (i = 0; i < count; i++) {
+		/* lookup the item */
+		chu = fun_json_array_at(huc, i);
+		if (!fun_json_is_dict(chu)) {
+			eprintf("invalid HostUnitController array\n");
+			return false;
+		}
+
+		/* extract the ring from _args array */
+		r = _args_as_ring_pair(chu, &ring, &cid);
+		if (!r) {
+			/* most likely posix, ignore it */
+			continue;		
+		}
+		
+		/* check for link_en */
+		link_en = fun_json_lookup_bool_default(chu, "link_en", false);
+
+		if (link_en) {
+			en = HW_HSU_API_LINK_CONFIG_CID_FLAGS_LINK_ENABLE;
+			en = htobe64(en);
+			cfg->ring_config[ring].cid_config[cid].cid_flags |= en;
+		}
+
+		/* pcie_gen */
+		pcie_gen = HW_HSU_API_LINK_CONFIG_PCIE_GEN_DEFAULT;
+		if (fun_json_lookup_string(chu, "pcie_gen", &str)) {
+			if (!__str2val(_gen_valtab, str, &u64)) {
+				eprintf("bad pcie_gen value\n");
+				return false;
+			}
+			pcie_gen = u64;
+		}
+		cfg->ring_config[ring].cid_config[cid].pcie_gen = htobe32(pcie_gen);
+
+		/* pcie_width */
+		pcie_width = HW_HSU_API_LINK_CONFIG_PCIE_WIDTH_DEFAULT;
+		if (fun_json_lookup_string(chu, "pcie_width", &str)) {
+			if (!__str2val(_width_valtab, str, &u64)) {
+				eprintf("bad pcie_width value\n");
+				return false;
+			}
+			pcie_width = u64;
+		}
+		cfg->ring_config[ring].cid_config[cid].pcie_width = htobe32(pcie_width);		
+	}
+
+	return true;
+}
+
 static bool _sku2cfg(struct hw_hsu_api_link_config *cfg,
 		     const struct fun_json *sku)
 {
-	const struct fun_json *hu = NULL;
-
 	assert(cfg != NULL);
 	assert(sku != NULL);
 
@@ -312,13 +590,18 @@ static bool _sku2cfg(struct hw_hsu_api_link_config *cfg,
 
 	/* scrape flags from the json */
 	cfg->flags = htobe64(_sku2flags(sku));
-	
-	/* start by clearing the cfg */
-	hu = fun_json_lookup(sku, "HuInterface/HostUnit");
-	if (!fun_json_is_array(hu)) {
-		eprintf("failed to find HostUnit table\n");
+
+	/* process the host units (hu_en) */
+	if (!_parse_hostunits(cfg, sku))
 		return false;
-	}
+
+	/* process the host unit */
+	if (!_parse_hostunit(cfg, sku))
+		return false;
+
+	/* process the host unit controller */
+	if (!_parse_hostunitcontroller(cfg, sku))
+		return false;
 
 	return true;
 }
@@ -527,17 +810,13 @@ main(int argc, char *argv[])
 
 		if (!b) {
 			eprintf("\tFailed to parse sku correctly, ignoring\n");
+			continue;
 		}
 
 		/* dump it */
 		printf("\tEncoded SKU config:\n");
 		_pretty_print_cfg(1, &cfg);
 	}
-
-	/* 3) extract HuInterface */
-
-	/* 4) process HuInterface! */
-	
 
 	fun_json_release(input);
 	
