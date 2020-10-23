@@ -1,14 +1,10 @@
 package main
 
 import (
-	"bytes"
-	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
-	"os/exec"
 	"strconv"
 	"strings"
 )
@@ -28,18 +24,6 @@ type messageResponse struct {
 
 type statusResponse struct {
 	Status string `json:"status"`
-}
-
-func bundleName(processID int) string {
-	return tempFolderPath(processID) + "/bundle"
-}
-
-func errorName(processID int) string {
-	return tempFolderPath(processID) + "/error"
-}
-
-func outputName(processID int) string {
-	return tempFolderPath(processID) + "/output"
 }
 
 func serveInitUpgrade(state *agentState, w http.ResponseWriter, r *http.Request) {
@@ -75,33 +59,6 @@ func serveInitUpgrade(state *agentState, w http.ResponseWriter, r *http.Request)
 	}
 
 	dataResponse(w, initResponse{processID}, isTextRequested(r))
-}
-
-func setUpgradeState(state *agentState, number int, newState int) {
-	state.upgrade.Lock()
-	defer state.upgrade.Unlock()
-	state.upgradeStatus[number] = newState
-}
-
-func emitOutput(state *agentState, number int, fileName string, message string, newState int) {
-	setUpgradeState(state, number, newState)
-	err := ioutil.WriteFile(fileName, []byte(message), 0644)
-	if err != nil {
-		log.Println("Failed to write output", err)
-	}
-}
-
-func upgrade(state *agentState, number int) {
-	cmd := exec.Command(bundleName(number))
-	var out bytes.Buffer
-	cmd.Stdout = &out
-	err := cmd.Run()
-	if err != nil {
-		log.Println("error running upgrade", err)
-		emitOutput(state, number, errorName(number), fmt.Sprint(err), upgradeFinishedFailure)
-		return
-	}
-	emitOutput(state, number, outputName(number), out.String(), upgradeFinishedSuccess)
 }
 
 func serveUpgradeStart(state *agentState, w http.ResponseWriter, r *http.Request, number int) {

@@ -9,7 +9,6 @@ import (
 	"io"
 	"log"
 	"math"
-	"math/rand"
 	"net/http"
 	"os"
 	"strconv"
@@ -135,41 +134,6 @@ func serveFile(w http.ResponseWriter, folder string, fileName string) {
 
 	f.Seek(0, 0)
 	io.Copy(w, f)
-}
-
-func tempFolderPath(number int) string {
-	return upgradeFolder + strconv.Itoa(number)
-}
-
-func allocateID(state *agentState) int {
-	state.upgrade.Lock()
-	defer state.upgrade.Unlock()
-	for {
-		number := rand.Intn(9999999)
-		path := tempFolderPath(number)
-		if _, err := os.Stat(path); err != nil {
-			if os.IsNotExist(err) {
-				os.Mkdir(path, 0755)
-				state.upgradeStatus[number] = upgradeInitialized
-				return number
-			}
-		}
-	}
-}
-
-func upgradeStatusToString(status int) string {
-	switch status {
-	case upgradeInitialized:
-		return "initialized"
-	case upgradeStarted:
-		return "started"
-	case upgradeFinishedFailure:
-		return "failed"
-	case upgradeFinishedSuccess:
-		return "done"
-	default:
-		return "unknown"
-	}
 }
 
 func isTextRequested(r *http.Request) bool {
