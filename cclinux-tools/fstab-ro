@@ -3,4 +3,4 @@ devpts               /dev/pts             devpts     mode=0620,gid=5       0  0
 tmpfs                /run                 tmpfs      mode=0755,nodev,nosuid,strictatime 0  0
 tmpfs                /var/volatile        tmpfs      defaults              0  0
 tmpfs                /tmp                 tmpfs      mode=01777,nodev      0  0
-
+/dev/vda3            /persist             ext4       noauto,rw,relatime    0  0
