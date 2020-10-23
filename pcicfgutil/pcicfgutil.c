@@ -13,13 +13,15 @@
 #define _XOPEN_SOURCE
 #define _GNU_SOURCE
 
-#include <ctype.h>	// for fprintf()
+#include <limits.h>     // for PATH_MAX
+#include <ctype.h>	// for isprint()
 #include <stdio.h>	// for fprintf()
 #include <unistd.h>	// for STDOUT_FILENO
 #include <stdlib.h>	// for free()
 #include <getopt.h>	// for getopt_long()
 #include <fcntl.h>	// for open()
 #include <string.h>	// for strcmp()
+#include <sys/stat.h>   // for fstat()
 
 #include <platform/mips64/include/endian.h> // this could be in a better location...
 
@@ -36,6 +38,8 @@
 
 #define eprintf(...) fprintf (stderr, __VA_ARGS__)
 #define die(...) do { fprintf (stderr, __VA_ARGS__); exit(1); } while (0)
+
+static int _verbose = 0;
 
 /** utility **/
 static void oom(void)
@@ -211,6 +215,12 @@ static void _pretty_print_ring_flags(uint64_t flags)
 
 void _pretty_print_cid(uint32_t depth, struct hw_hsu_cid_config *cid)
 {
+	if ((_verbose < 2)
+	    && ((be64toh(cid->cid_flags) & HW_HSU_API_LINK_CONFIG_CID_FLAGS_CID_ENABLED) == 0)) {
+		printf("%s<disabled>\n", _tabs(depth));
+		return;
+	}
+
 	/* flags */
 	printf("%scid_flags: 0x%" PRIx64 " = ",
 	       _tabs(depth), be64toh(cid->cid_flags));
@@ -229,6 +239,12 @@ void _pretty_print_cid(uint32_t depth, struct hw_hsu_cid_config *cid)
 void _pretty_print_ring(uint32_t depth, struct hw_hsu_ring_config *ring)
 {
 	uint32_t cid = 0;
+
+	if ((_verbose < 2)
+	    && ((be64toh(ring->ring_flags) & HW_HSU_API_LINK_CONFIG_RING_FLAGS_RING_ENABLED) == 0)) {
+		printf("%s<disabled>\n", _tabs(depth));
+		return;
+	}
 	
 	printf("%sbif: %s [%u]\n", _tabs(depth),
 	       __val2str(_bif_valtab, be32toh(ring->bif)),
@@ -331,7 +347,6 @@ static uint64_t _sku2flags(const struct fun_json *sku)
 	/* find the sku */
 	jsflags = fun_json_lookup(sku, "HuInterface/flags");
 	if (!fun_json_is_array(jsflags)) {
-		printf("\tsku is missing HU flags, setting to 0\n");
 		return 0;
 	}
 
@@ -501,6 +516,7 @@ static bool _parse_hostunitcontroller(struct hw_hsu_api_link_config *cfg,
 	bool r = false, link_en = false;
 	const char *str = NULL;
 	uint64_t u64 = 0, en = 0;
+	struct hw_hsu_cid_config *pcid = NULL;
 	
 	assert(fun_json_is_dict(sku));
 	
@@ -526,6 +542,9 @@ static bool _parse_hostunitcontroller(struct hw_hsu_api_link_config *cfg,
 			/* most likely posix, ignore it */
 			continue;		
 		}
+
+		/* take a direct pointer */
+		pcid = &cfg->ring_config[ring].cid_config[cid];
 		
 		/* check for link_en */
 		link_en = fun_json_lookup_bool_default(chu, "link_en", false);
@@ -533,9 +552,18 @@ static bool _parse_hostunitcontroller(struct hw_hsu_api_link_config *cfg,
 		if (link_en) {
 			en = HW_HSU_API_LINK_CONFIG_CID_FLAGS_LINK_ENABLE;
 			en = htobe64(en);
-			cfg->ring_config[ring].cid_config[cid].cid_flags |= en;
+			pcid->cid_flags |= en;
 		}
 
+		/* check for sris on/off */
+		if (fun_json_lookup_string(chu, "sris", &str)) {
+			en = HW_HSU_API_LINK_CONFIG_CID_FLAGS_SRIS_ENABLE;
+			en = htobe64(en);
+			if (strcmp(str, "ON") == 0) {
+				pcid->cid_flags |= en;
+			}
+		}
+		
 		/* pcie_gen */
 		pcie_gen = HW_HSU_API_LINK_CONFIG_PCIE_GEN_DEFAULT;
 		if (fun_json_lookup_string(chu, "pcie_gen", &str)) {
@@ -545,7 +573,7 @@ static bool _parse_hostunitcontroller(struct hw_hsu_api_link_config *cfg,
 			}
 			pcie_gen = u64;
 		}
-		cfg->ring_config[ring].cid_config[cid].pcie_gen = htobe32(pcie_gen);
+		pcid->pcie_gen = htobe32(pcie_gen);
 
 		/* pcie_width */
 		pcie_width = HW_HSU_API_LINK_CONFIG_PCIE_WIDTH_DEFAULT;
@@ -556,7 +584,7 @@ static bool _parse_hostunitcontroller(struct hw_hsu_api_link_config *cfg,
 			}
 			pcie_width = u64;
 		}
-		cfg->ring_config[ring].cid_config[cid].pcie_width = htobe32(pcie_width);		
+		pcid->pcie_width = htobe32(pcie_width);		
 	}
 
 	return true;
@@ -568,8 +596,8 @@ static bool _sku2cfg(struct hw_hsu_api_link_config *cfg,
 	assert(cfg != NULL);
 	assert(sku != NULL);
 
-	/* clear the config */
-	bzero(cfg, sizeof(*cfg));
+	/* clear the config with junk so we don't  */
+	memset(cfg, 0, sizeof(*cfg));
 	
 	/* check the input is at least semi-valid */
 	if (!fun_json_is_dict(sku))
@@ -605,6 +633,79 @@ static bool _sku2cfg(struct hw_hsu_api_link_config *cfg,
 
 	return true;
 }
+
+/** config file reading and writing **/
+static void _write_cfg_to_file(const char *outdir, const char *sku,
+			       struct hw_hsu_api_link_config *cfg)
+{
+	int fd;
+	ssize_t n;
+	char fname[PATH_MAX+1];
+	
+	assert(outdir != NULL);
+	assert(sku != NULL);
+	assert(cfg != NULL);
+
+	n = snprintf(fname, sizeof(fname), "%s/pcicfg-%s.bin", outdir, sku) < 0;
+	if ((n < 0) || (n > sizeof(fname)))
+		die("path name error");
+
+	fd = open(fname, O_WRONLY|O_CREAT, 0644);
+	if (fd < 0) {
+		perror("open");
+		exit(1);
+	}
+
+	n = write(fd, cfg, sizeof(*cfg));
+	if (n != sizeof(*cfg))
+		die("truncated write");
+	close(fd);
+	
+	printf("\twritten to file %s\n", fname);
+}
+
+static void _handle_bin_input(const char *binfile)
+{
+	int fd = -1;
+	ssize_t n = 0;
+	struct hw_hsu_api_link_config cfg;
+	struct stat sbuf;
+	
+	assert(binfile != NULL);
+	
+	/* this makes no sense without verbosity>0 */
+	_verbose++;
+
+	/* open, read and dump the file */
+	fd = open(binfile, O_RDONLY);
+	if (fd < 0) {
+		perror("open");
+		exit(1);
+	}
+
+	printf("%s:\n", binfile);
+
+	if (fstat(fd, &sbuf) != 0) {
+		perror("fstat");
+		exit(1);
+	}
+
+	if (sbuf.st_size != sizeof(cfg)) {
+		eprintf("WARNING: file is incorrect size (%zu != %zu)\n",
+			(size_t) sbuf.st_size, sizeof(cfg));
+	}
+	
+	n = read(fd, &cfg, sizeof(cfg));
+	if (n < sizeof(cfg))
+		die("short read");
+	close(fd);
+
+	_pretty_print_cfg(1, &cfg);
+	
+	/* return to previous value */
+	_verbose--;
+}
+
 
 /** json reading **/
 static char *_read_input_file(int fd, size_t *outsize)
@@ -683,74 +784,16 @@ static struct fun_json *_read_bjson(int fd)
 }
 	
 
-static int
-_setmode(int curmode, int newmode)
+static void _handle_json_input(int inmode, const char *infile,
+			       const char *outdir, const char *sku_filter)
 {
-	if (curmode != NOMODE) {
-		fprintf(stderr, "can only specify one input or output file\n");
-		exit(1);
-	}
-
-	return newmode;
-}
-
-static void
-_usage(const char *fname)
-{
-	fprintf(stderr, "usage: %s <input> [<output>]\n", fname);
-	fprintf(stderr, "    options\n");
-	fprintf(stderr, "        -i <file>      input <file> as text json\n");
-	fprintf(stderr, "        -I <file>      input <file> as binary json\n");
-	fprintf(stderr, "        -o <dir>       output files to <dir>\n");
-	
-	exit(1);
-}
-
-int
-main(int argc, char *argv[])
-{
-	int r = 0;
-	int c;
-	
-	int inmode = NOMODE;
-	char *infile = NULL;	
-	char *outdir = NULL;
+	/* iterate over the SKUs */
+	const struct fun_json *skus = NULL, *sku = NULL;
+	const char *key = NULL;
+	uint64_t iter;
+	struct hw_hsu_api_link_config cfg;
+	bool b;
 	int infd;
-	
-	while (1) {
-		static struct option long_options[] = {
-			{"in",   required_argument, 0,  'i' },
-			{"out",  required_argument, 0,  'o' },
-			{"inb",  required_argument, 0,  'I' },
-			{"outb", required_argument, 0,  'O' },
-		};
-
-		
-		c = getopt_long(argc, argv, "i:o:l:I:O:",
-				long_options, NULL);
-		if (c == -1)
-			break;
-
-		switch (c) {
-		case 'i':
-			inmode = _setmode(inmode, TEXT);
-			infile = optarg;
-			break;
-		case 'o':
-			outdir = optarg;
-			break;
-		case 'I':
-			inmode = _setmode(inmode, BINARY);
-			infile = optarg;
-			break;
-		case '?':
-		default:
-			_usage(argv[0]);
-		}
-	}
-
-	if (infile == NULL)
-		_usage(argv[0]);
 
 	/* open input file */
 	if (strcmp(infile, "-") == 0) {
@@ -777,8 +820,7 @@ main(int argc, char *argv[])
 	if (!input) {
 		fprintf(stderr, "failed to read a JSON\n");
 		exit(1);
-	} else
-		fprintf(stderr, "read ok\n");
+	}
 
 	if (fun_json_is_error_message(input)) {
 		const char *message;
@@ -786,13 +828,6 @@ main(int argc, char *argv[])
 		fprintf(stderr, "%s\n", message);
 		exit(1);
 	}
-
-	/* iterate over the SKUs */
-	const struct fun_json *skus = NULL, *sku = NULL;
-	const char *key = NULL;
-	uint64_t iter;
-	struct hw_hsu_api_link_config cfg;
-	bool b;
 
 	/* 1) lookup SKUs */
 	skus = fun_json_lookup(input, "skus");
@@ -805,6 +840,11 @@ main(int argc, char *argv[])
 	iter = fun_json_dict_iterator(skus);
 
 	while (fun_json_dict_iterate(skus, &iter, &key, &sku)) {
+		if ((sku_filter != NULL)
+		    && (strcmp(sku_filter, key) != 0)) {
+			printf("igoring sku %s\n", key);
+			continue;
+		}
 		printf("found sku %s\n", key);
 		b = _sku2cfg(&cfg, sku);
 
@@ -814,11 +854,120 @@ main(int argc, char *argv[])
 		}
 
 		/* dump it */
-		printf("\tEncoded SKU config:\n");
-		_pretty_print_cfg(1, &cfg);
+		if (_verbose > 0) {
+			printf("\tEncoded SKU config:\n");
+			_pretty_print_cfg(1, &cfg);
+		}
+
+		/* write to a path if it exists */
+		if (outdir != NULL) {
+			_write_cfg_to_file(outdir, key, &cfg);
+		}
 	}
 
 	fun_json_release(input);
+}
+
+static int
+_setmode(int curmode, int newmode)
+{
+	if (curmode != NOMODE) {
+		fprintf(stderr, "can only specify one input or output file\n");
+		exit(1);
+	}
+
+	return newmode;
+}
+
+static void
+_usage(const char *fname)
+{
+	fprintf(stderr, "usage: %s -i <input.json> [-o <outdir>] [-s <sku>] [-v[v]]\n",
+		fname);
+	fprintf(stderr, "usage: %s -I <input.bjson> [-o <outdir>] [-s <sku>] [-v[v]]\n",
+		fname);
+	fprintf(stderr, "usage: %s -p <input.bin> [-v]\n",
+		fname);
+	fprintf(stderr, "    options\n");
+	fprintf(stderr, "        -i <file>      input <file> as text json\n");
+	fprintf(stderr, "        -I <file>      input <file> as binary json\n");
+	fprintf(stderr, "        -p <file>      pretty print  <file> from raw pcicfg.bin format\n");
+	fprintf(stderr, "        -o <dir>       output files to <dir>\n");
+	fprintf(stderr, "        -s <sku_name>  filter input to <sku_name> only\n");
+	fprintf(stderr, "        -v[v]          verbose/very verbose\n");
+	
+	exit(1);
+}
+
+int
+main(int argc, char *argv[])
+{
+	int r = 0;
+	int c;
+	
+	int inmode = NOMODE;
+	char *infile = NULL;	
+	char *outdir = NULL;
+	char *binfile = NULL;
+	char *sku_filter = NULL;
+	
+	while (1) {
+		static struct option long_options[] = {
+			{"in",    required_argument, 0,  'i' },
+			{"out",   required_argument, 0,  'o' },
+			{"inb",   required_argument, 0,  'I' },
+			{"outb",  required_argument, 0,  'O' },
+			{"sku",   required_argument, 0,  's' },
+			{"print", required_argument, 0,  'p' },
+			{NULL,    no_argument,       0,  'v' },
+		};
+
+		
+		c = getopt_long(argc, argv, "i:o:l:I:O:vs:p:",
+				long_options, NULL);
+		if (c == -1)
+			break;
+
+		switch (c) {
+		case 'i':
+			inmode = _setmode(inmode, TEXT);
+			infile = optarg;
+			break;
+		case 'o':
+			outdir = optarg;
+			break;
+		case 'I':
+			inmode = _setmode(inmode, BINARY);
+			infile = optarg;
+			break;
+		case 'p':
+			binfile = optarg;
+			break;
+		case 'v':
+			_verbose++;
+			break;
+		case 's':
+			sku_filter = optarg;
+			_verbose++;
+			break;
+		case '?':
+		default:
+			_usage(argv[0]);
+		}
+	}
+
+	if ((infile == NULL) && (binfile == NULL))
+		_usage(argv[0]);
+
+	if (infile != NULL) {
+		_handle_json_input(inmode, infile, outdir, sku_filter);
+		
+	}
+	
+	if (binfile != NULL) {
+		_handle_bin_input(binfile);	
+	}
 	
 	return r;
 }
+
