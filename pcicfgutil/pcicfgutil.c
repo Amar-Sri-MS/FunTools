@@ -22,6 +22,8 @@
 #include <fcntl.h>	// for open()
 #include <string.h>	// for strcmp()
 #include <sys/stat.h>   // for fstat()
+#include <inttypes.h>
+#include <stdint.h>
 
 #ifndef __linux__
 /* get the nice linux macros on other platforms */
