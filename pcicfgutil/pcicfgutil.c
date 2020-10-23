@@ -23,7 +23,10 @@
 #include <string.h>	// for strcmp()
 #include <sys/stat.h>   // for fstat()
 
+#ifndef __linux__
+/* get the nice linux macros on other platforms */
 #include <platform/mips64/include/endian.h> // this could be in a better location...
+#endif
 
 #include <FunSDK/config/include/boot_config.h>
 
