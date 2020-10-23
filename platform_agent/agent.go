@@ -4,10 +4,22 @@ package main
 
 import (
 	"flag"
+	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
+	"strconv"
+	"sync"
 
 	"github.com/fungible-inc/FunTools/dpcclient"
+)
+
+const (
+	upgradeFolder          = "/tmp/upgrades/"
+	upgradeInitialized     = iota
+	upgradeStarted         = iota
+	upgradeFinishedSuccess = iota
+	upgradeFinishedFailure = iota
 )
 
 var (
@@ -22,6 +34,8 @@ var (
 
 type agentState struct {
 	dpc            *dpcclient.DpcClient
+	upgrade        sync.Mutex
+	upgradeStatus  map[int]int
 	requestsServed int
 }
 
@@ -37,6 +51,33 @@ func (state *agentState) With(handler httpHandlerWithState) httpHandler {
 	}
 }
 
+func newAgentState() *agentState {
+	s := new(agentState)
+	s.upgradeStatus = make(map[int]int)
+	files, err := ioutil.ReadDir(upgradeFolder)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, f := range files {
+		number, err := strconv.Atoi(f.Name())
+		if err != nil {
+			continue
+		}
+		if _, err := os.Stat(outputName(number)); err == nil {
+			s.upgradeStatus[number] = upgradeFinishedSuccess
+			continue
+		}
+		if _, err := os.Stat(errorName(number)); err == nil {
+			s.upgradeStatus[number] = upgradeFinishedFailure
+			continue
+		}
+		s.upgradeStatus[number] = upgradeInitialized
+	}
+
+	return s
+}
+
 func serveDefault(w http.ResponseWriter, r *http.Request) {
 	log.Println("Unknown method is called", r.URL.Path, r.Method)
 	http.Error(w, "Forbidden", http.StatusNotFound)
@@ -46,7 +87,7 @@ func main() {
 	flag.Parse()
 	log.SetFlags(log.Ltime | log.Lmicroseconds | log.Lshortfile)
 	var err error
-	state := new(agentState)
+	state := newAgentState()
 	state.dpc, err = dpcclient.NewNetDpcExecutor(*dpcProto, *dpcAddr)
 	if err != nil {
 		log.Fatal(err)
@@ -66,6 +107,7 @@ func main() {
 	http.HandleFunc("/version", state.With(servePeek("config/version")))
 	http.HandleFunc("/boot_defaults", state.With(servePeek("config/boot_defaults")))
 	http.HandleFunc("/ssd/", state.With(serveSSD))
+	http.HandleFunc("/upgrade/", state.With(serveUpgrade))
 
 	if *tlsEnable {
 		log.Fatal(http.ListenAndServeTLS(*serviceAddr, *certFile, *keyFile, nil))
