@@ -2,9 +2,9 @@
 # Elasticsearch output.
 #
 import datetime
+import json
 import requests
 import sys
-import json
 
 from elasticsearch7 import Elasticsearch
 from elasticsearch7.helpers import parallel_bulk
