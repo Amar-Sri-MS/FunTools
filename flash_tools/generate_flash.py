@@ -35,6 +35,7 @@ DEFAULT_PADDING_LENGTH = "128"
 config = {}
 search_paths = []
 fail_on_err = False
+chip_type = None
 
 # example: reserve( 0x1234, 'nrol') reserve(256 ,    ' rsr') etc...
 RESERVE_REGEX = re.compile(r"reserve\(\s*(0x[0-9A-Fa-f]+|\d+)\s*,\s*'(.{4})'\s*\)")
@@ -100,6 +101,7 @@ def map_method_args(argmap, attrs):
 
 def gen_fw_image(filename, attrs):
     global fail_on_err
+    global chip_type
     argmap = {
         'cert':'certfile',
         'customer_cert':'customer_certfile',
@@ -125,6 +127,7 @@ def gen_fw_image(filename, attrs):
         args['infile'] = find_file_in_srcdirs(args['infile'])
     args['certfile'] = find_file_in_srcdirs(args['certfile'])
     args['customer_certfile'] = find_file_in_srcdirs(args['customer_certfile'])
+    args['chip_type'] = chip_type
 
     if args['infile']:
         try:
@@ -459,6 +462,7 @@ def main():
     global config
     global search_paths
     global fail_on_err
+    global chip_type
 
     parser.add_argument('config', nargs='+', help='Configuration file(s)')
     parser.add_argument('--config-type', default='json', choices={'json','ini'},
@@ -474,11 +478,13 @@ def main():
     parser.add_argument('--fail-on-error', action='store_true',
                         help='Always fail when encountering errors')
     parser.add_argument('--enroll-cert', metavar = 'FILE', help='Enrollment certificate')
+    parser.add_argument('--chip', choices=['f1', 's1', 'f1d1'], help='Target chip')
 
     args = parser.parse_args()
 
     search_paths = args.source_dir
     fail_on_err = args.fail_on_error
+    chip_type = args.chip
 
     # read the configuration
     if args.config_type == 'ini':
@@ -529,6 +535,10 @@ def set_config(cfg):
 def set_search_paths(paths):
     global search_paths
     search_paths = paths
+
+def set_chip_type(chip):
+    global chip_type
+    chip_type = chip
 
 def run(arg_action, arg_enroll_cert = None, *args, **kwargs):
     global config

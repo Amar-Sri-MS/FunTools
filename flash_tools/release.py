@@ -153,6 +153,7 @@ def main():
         gf.merge_configs(config, json.loads(FVHT_LIST_CONFIG_OVERRIDE.format(fvht_list=fvht_list_file.name)))
 
     gf.set_config(config)
+    gf.set_chip_type(args.chip)
 
     if args.force_version:
         gf.set_versions(args.force_version)

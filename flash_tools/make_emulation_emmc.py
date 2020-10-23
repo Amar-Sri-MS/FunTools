@@ -98,7 +98,7 @@ def trunc_file(infile_name, outfile_name, size):
 def trunc_head_file(infile_name, outfile_name, size):
     """Remove @size bytes from beginning of file"""
     with open(outfile_name, 'wb') as outfile:
-        with open(infile_name) as infile:
+        with open(infile_name, 'rb') as infile:
             infile.seek(size, 0)
             while True:
                 data = infile.read(4096)
@@ -111,7 +111,7 @@ def trunc_head_file(infile_name, outfile_name, size):
 def merge_file(infile_name, outfile_name):
     """Append infile file to the end of outfile file"""
     with open(outfile_name, 'ab') as outfile:
-        with open(infile_name) as infile:
+        with open(infile_name, 'rb') as infile:
             outfile.seek(0, 2)
             while True:
                 data = infile.read(4096)
@@ -128,7 +128,7 @@ def gen_hex_file(infile_name, outfile_name, append):
            '-e', '64/1 "%02X"',
            '-e', '"\n"']
     with open(outfile_name, mode) as outfile:
-        with open(infile_name) as infile:
+        with open(infile_name, 'rb') as infile:
             subprocess.call(cmd, stdin=infile, stdout=outfile)
 
 
