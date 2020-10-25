@@ -24,8 +24,17 @@ WARNING: Any issues that could lead to side effects, such as the STR non-fatal i
 
 
 
-to run the script:
+To run the script:
 ./parse_hdma_cmds.pl uartout0.0.txt
+
+Arguments:
+  ./parse_hdma_cmds.pl [-wu|cmdlist] [input_file]
+
+  -wu         The input file only contains a hexdump of a WU. Parse that WU.
+  -cmdlist    The input file only contains a hexdump of a command list. Parse that command list.
+  input_file  If the input file is not specified as an argument, STDIN is used instead.
+
+  Note: If neither -wu nor -cmdlist arguments are specified, the input file is assumed to be a valid FunOS dump of a DMA command list and WU as described above.
 
 Sample script output:
 [HDMA_LOG_DUMP] Detected start of command list and HDMA WU

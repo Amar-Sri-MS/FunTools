@@ -95,95 +95,182 @@ sub decode_pcie_info {
 }
 
 my $numArgs = $#ARGV + 1;
-if ($numArgs > 1) {
+my $mode = "logfile";
+if ($numArgs > 2) {
     die "Too many arguments.";
 } elsif ($numArgs == 0) {
     open(LOG, '-');
 } else {
-    open(LOG, "< ${ARGV[0]}") || die("Can't open logfile: $!");
+    my $arg1 = $ARGV[0];
+    my $dasharg = 0;
+    if ($arg1 eq "-cmdlist") {
+        $mode = "cmdlist";
+        $dasharg = 1;
+    } elsif ($arg1 eq "-wu") {
+        $mode = "wu";
+        $dasharg = 1;
+    } elsif ($numArgs == 2) {
+        die "Invalid first argument: ${arg1}"
+    }
+    if ($dasharg) {
+        if ($numArgs == 2) {
+            open(LOG, "< ${ARGV[1]}") || die("Can't open logfile: $!");
+        } else {
+            open(LOG, '-');
+        }
+    } else {
+        open(LOG, "< ${ARGV[0]}") || die("Can't open logfile: $!");
+    }
 }
 
-while (<LOG>) {
+while (1) {
+    my $letter;
+    my $cmdlist_bytes;
+
+    @cmdlist_qword = ();
+    @dma_wu_qword = ();
+
     # ----------------------------------------
-    # First, get command list bytes
+    # Logfile mode: Look for CMDLIST header
     # ----------------------------------------
-    if (/\[([SC])Q DMA CMDLIST\]: dump of (\d+) bytes starting from/) {
-        my $letter = $1;
-        my $cmdlist_bytes = $2;
-        @cmdlist_qword = ();
-        @dma_wu_qword = ();
-        print "\n";
-        print "[HDMA_LOG_DUMP] Detected start of command list and HDMA WU\n";
-        print "Log file dump:\n";
-        print "$_";
+    my $eof = 0;
+    if ($mode eq "logfile") {
+        $eof = 1;
+        while (<LOG>) {
+            if (/\[([SC])Q DMA CMDLIST\]: dump of (\d+) bytes starting from/) {
+                $eof = 0;
+                $letter = $1;
+                $cmdlist_bytes = $2;
+                print "\n";
+                print "[HDMA_LOG_DUMP] Detected start of command list and HDMA WU\n";
+                print "Log file dump:\n";
+                print "$_";
+                last;
+            }
+        }
         if ($cmdlist_bytes % 8 != 0) {
             die "Number of bytes dumped out in command list is not divisible by 8";
         }
-        for (my $i = 0; $i < $cmdlist_bytes; $i += 16) {
-            if ($cmdlist_bytes - $i == 8) {
-                $_ = <LOG> or die "Premature end to command list";
+    }
+    last if $eof;
+
+    # ----------------------------------------
+    # Get command list bytes
+    # ----------------------------------------
+    if ($mode ne "wu") {
+        my $bytecnt = 0;
+        my $startflag = 0;
+        while (<LOG>) {
+            if ($mode eq "logfile") {
                 print "$_";
-                if (/(\w+): (\w{16})/) {
-                    if (hex($1) != $i) {
-                        die "Bad byte number";
+            }
+            if (/(\w+): (\w{16}) (\w{16})/) {
+                if (hex($1) != $bytecnt) {
+                    if ($mode eq "logfile") {
+                        die "Bad byte number";                        
+                    } elsif ($startflag) {
+                        last;
                     }
-                    push @cmdlist_qword, $2;
-                } else {
-                    die "Could not parse line";
                 }
-            } else {
-                $_ = <LOG> or die "Premature end to command list";
-                print "$_";
-                if (/(\w+): (\w{16}) (\w{16})/) {
-                    if (hex($1) != $i) {
-                        die "Bad byte number";
+                $startflag = 1;
+                $bytecnt += 16;
+                push @cmdlist_qword, $2;
+                push @cmdlist_qword, $3;
+            } elsif (/(\w+): (\w{16})/) {
+                if (hex($1) != $bytecnt) {
+                    if ($mode eq "logfile") {
+                        die "Bad byte number";                        
+                    } elsif ($startflag) {
+                        last;
                     }
-                    push @cmdlist_qword, $2;
-                    push @cmdlist_qword, $3;
-                } else {
-                    die "Could not parse line";
+                }
+                $startflag = 1;
+                $bytecnt += 8;
+                push @cmdlist_qword, $2;
+            } else {
+                if ($mode eq "logfile" && !$startflag) {
+                    die "Could not parse line";                    
+                } elsif ($startflag) {
+                    last;
                 }
             }
         }
-        #print "Saw command list:\n";
-        #for (my $i = 0; $i < scalar @cmdlist_qword; $i++) {
-        #    print "${i}: ${cmdlist_qword[$i]}\n";
-        #}
+        if (!$startflag) {
+            die "Premature end-of-file reached while looking for command list hexdump"
+        }
+    }
 
-        # ----------------------------------------
-        # Then get DMA WU bytes
-        # ----------------------------------------
-        $_ = <LOG> or die "EOF seen before start of DMA WU";
-        print "$_";
+    #print "Saw command list:\n";
+    #for (my $i = 0; $i < scalar @cmdlist_qword; $i++) {
+    #    print "${i}: ${cmdlist_qword[$i]}\n";
+    #}
+
+    # ----------------------------------------
+    # Logfile mode: Look for WU header
+    # ----------------------------------------
+    if ($mode eq "logfile") {
         if (/\[([SC])Q DMA WU\]: dump of 32 bytes starting from/) {
             if ($letter ne $1) {
                 die "Expected ${letter}Q DMA WU but got ${1}Q DMA WU";
             }
-            for (my $i = 0; $i < 32; $i += 16) {
-                $_ = <LOG> or die "Premature end to DMA WU byte list";
-                print "$_";
-                if (/(\w+): (\w{16}) (\w{16})/) {
-                    if (hex($1) != $i) {
-                        die "Bad byte number";
-                    }
-                    push @dma_wu_qword, $2;
-                    push @dma_wu_qword, $3;
-                } else {
-                    die "Could not parse line";
-                }
-            }
         } else {
             die "Expected DMA WU immediately following command list";
         }
-        #print "Saw DMA WU:\n";
-        #for (my $i = 0; $i < scalar @dma_wu_qword; $i++) {
-        #    print "${i}: ${dma_wu_qword[$i]}\n";
-        #}
+    }
 
-        # ----------------------------------------
-        # Parse DMA WU
-        # ----------------------------------------
-        
+    # ----------------------------------------
+    # Then get DMA WU bytes
+    # ----------------------------------------
+    if ($mode ne "cmdlist") {
+        my $bytecnt = 0;
+        my $startflag = 0;
+        while (<LOG>) {
+            if ($mode eq "logfile") {
+                print "$_";
+            }
+            if (/(\w+): (\w{16}) (\w{16})/) {
+                if (hex($1) != $bytecnt) {
+                    if ($mode eq "logfile") {
+                        die "Bad byte number";
+                    } elsif ($startflag) {
+                        last;
+                    }
+                }
+                $startflag = 1;
+                $bytecnt += 16;
+                push @dma_wu_qword, $2;
+                push @dma_wu_qword, $3;
+            } else {
+                if ($mode eq "logfile" && !$startflag) {
+                    die "Could not parse line";                    
+                } elsif ($startflag) {
+                    last;
+                }
+            }
+            if ($bytecnt == 32) {
+                last;
+            } elsif ($bytecnt > 32) {
+                die "Too many WU bytes"                
+            }
+        }
+        if (!$startflag) {
+            die "Premature end-of-file reached while looking for command list hexdump"
+        } elsif ($bytecnt != 32) {
+            die "Expected 32 bytes in WU hexdump but only saw ${bytecnt}"
+        }
+    }
+
+    #print "Saw DMA WU:\n";
+    #for (my $i = 0; $i < scalar @dma_wu_qword; $i++) {
+    #    print "${i}: ${dma_wu_qword[$i]}\n";
+    #}
+
+    # ----------------------------------------
+    # Parse DMA WU
+    # ----------------------------------------
+    my $wu_flags_cwu;
+    my $opr_flags_type;
+    if ($mode ne "cmdlist") {
         # Check that the DMA WU opcode is correct.
         my $qword = hex($dma_wu_qword[0]);
         my $wu_opcode = $qword >> 59;
@@ -206,19 +293,21 @@ while (<LOG>) {
         my $wu_flags_free = bit_slice(2, 27, 1, @dma_wu_qword);
         my $wu_flags_ro = bit_slice(2, 26, 1, @dma_wu_qword);
         my $wu_flags_so = bit_slice(2, 25, 1, @dma_wu_qword);
-        my $wu_flags_cwu = bit_slice(2, 24, 1, @dma_wu_qword);
+        $wu_flags_cwu = bit_slice(2, 24, 1, @dma_wu_qword);
         my $wu_cmdlist_size = bit_slice(2, 16, 8, @dma_wu_qword);
         my $wu_cmdlist_ptr = (bit_slice(2, 0, 16, @dma_wu_qword) << 32) + (bit_slice(3, 0, 32, @dma_wu_qword));
         my $opr_opc = bit_slice(4, 30, 2, @dma_wu_qword);
         my $opr_pipe = bit_slice(4, 24, 6, @dma_wu_qword);
-        my $opr_flags_type = bit_slice(4, 16, 3, @dma_wu_qword);
+        $opr_flags_type = bit_slice(4, 16, 3, @dma_wu_qword);
         my $opr_flags_chk = bit_slice(4, 19, 1, @dma_wu_qword);
         my $opr_flags_seed = bit_slice(4, 21, 1, @dma_wu_qword);
         my $opr_flags_pi = bit_slice(4, 22, 1, @dma_wu_qword);
         my $opr_len = bit_slice(4, 0, 16, @dma_wu_qword);
 
-        print "\n";
-        print "[HDMA_PARSE] Starting to parse HDMA WU fields and command list\n";
+        if ($mode eq "logfile") {
+            print "\n";
+            print "[HDMA_PARSE] Starting to parse HDMA WU fields and command list\n";
+        }
         printf("WU fields:\n");
         printf("  CMDLIST_SIZE: %0d, CMDLIST_PTR: 0x%0x\n", $wu_cmdlist_size, $wu_cmdlist_ptr);
         printf("  CMD = 0x%0x, SO = %0d, VC = %0d, SGID = 0x%0x, SLID = 0x%0x, DGID = 0x%0x, QID = 0x%0x, SW_OPCODE = 0x%0x\n",
@@ -230,19 +319,38 @@ while (<LOG>) {
 
         # Do some checks on the WU fields
         if ($wu_cmd != 0x10) {
-            printf("[ERROR]: Invalid WU opcode 0x%0x", $wu_cmd);
+            printf("[ERROR]: Invalid WU opcode 0x%0x\n", $wu_cmd);
         }
         my $exp_wu_cmdlist_size = scalar(@cmdlist_qword) + $wu_flags_cwu * 4;
-        if ($wu_cmdlist_size != $exp_wu_cmdlist_size) {
+        if ($mode eq "logfile" && $wu_cmdlist_size != $exp_wu_cmdlist_size) {
             printf("[ERROR]: Command list size mismatch, expected %0d\n", $exp_wu_cmdlist_size);
         }
         if ($opr_opc != 0x1) {
             printf("[ERROR]: Invalid OPR OPC field, expected 1 but saw %0d\n", $opr_opc);
         }
+    }
 
-        # ----------------------------------------
-        # Parse the command list
-        # ----------------------------------------
+    # ----------------------------------------
+    # Parse the command list
+    # ----------------------------------------
+    if ($mode ne "wu") {
+        # Figure out if the command list starts with a CWU or a Gather command
+        my $cmd_opc = bit_slice(0, 30, 2, @cmdlist_qword);
+        my $wu_opcode = bit_slice(0, 27, 5, @cmdlist_qword);
+        if ($wu_opcode & 0x1e == 0x10) {
+            if ($mode eq "logfile" && !$wu_flags_cwu) {
+                printf("[ERROR]: Command list seems to start with continuation WU, but CWU flag was not set in DMA WU\n");
+            }
+            $wu_flags_cwu = 1;
+        } elsif ($cmd_opc == 0) {
+            if ($mode eq "logfile" && $wu_flags_cwu) {
+                printf("[ERROR]: Expected command list to start with continuation WU, but CWU opcode was incorrect: 0x%0x\n", $wu_opcode);
+            }
+            $wu_flags_cwu = 0;
+        } else {
+            printf("[ERROR]: Command list did not start with either continuation WU or gather command\n");
+            $wu_flags_cwu = 0;
+        }
 
         # First, strip off the continuation WU, if it exists.
         # TODO: Parse the CWU fields
@@ -264,6 +372,7 @@ while (<LOG>) {
         my $warn_str_0b = 0;
         my $warn_str_f1 = 0;
         my $warn_str_pcie = 0;
+        my $qword;
         while (scalar(@cmdlist_qword) > 0) {
             my $cmd_opc = bit_slice(0, 30, 2, @cmdlist_qword);
             my $cmd_tgt = bit_slice(0, 28, 2, @cmdlist_qword);
@@ -349,6 +458,17 @@ while (<LOG>) {
                     printf("[ERROR] while parsing GTR command\n");
                     last;
                 }
+            }
+
+            # ----------------------------------------
+            # Should not see operator commands in command list
+            # ----------------------------------------
+            elsif ($cmd_opc == 1) {
+                printf("[ERROR] Should not see OPR command in command list\n");
+                # This is not likely to be a valid OPR command.
+                # But just pull the typical size of an OPR command just for the heck of it.
+                $qword = shift(@cmdlist_qword);
+                $qword = shift(@cmdlist_qword);                
             }
 
             # ----------------------------------------
@@ -490,9 +610,9 @@ while (<LOG>) {
         printf("Sum of GTR bytes: %0d\n", $gtr_sum);
         printf("Sum of STR bytes: %0d\n", $str_sum);
 
-        # Check if GTR and STR byte sums match. (Only for COPY OPR.)
+        # Check if GTR and STR byte sums match. (Only for COPY OPR, and only in logfile mode)
         # TODO: Add checks for other operator types.
-        if ($opr_flags_type == 0 && $gtr_sum != $str_sum) {
+        if ($mode eq "logfile" && $opr_flags_type == 0 && $gtr_sum != $str_sum) {
             printf("[WARNING]: GTR and STR data byte sums mismatch! Will see STR non-fatal interrupts!\n");
         }
         if ($warn_str_0b) {
@@ -501,6 +621,10 @@ while (<LOG>) {
         if ($warn_str_f1 && $warn_str_pcie) {
             printf("[WARNING]: Mix of F1 and PCIe STR commands seen! May see STR non-fatal interrupts!\n");
         }
+    }
+
+    if ($mode ne "logfile") {
+        last;
     }
 }
 
