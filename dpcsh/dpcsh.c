@@ -865,11 +865,11 @@ static struct fun_map *tid_to_pretty_printer;
 void dpcsh_register_pretty_printer(uint64_t tid, void *context, pretty_printer_f pretty_printer)
 {
 	if (!tid_to_context) {
-		tid_to_context = fun_map(NULL, NULL, NULL, (fun_map_key_t)(uint64_t)(-1));
+		tid_to_context = fun_map_create(NULL, 0, FUN_MAP_RAW64_NEG_OUTSIDER_CALLBACKS);
 	}
 	fun_map_add(tid_to_context, (fun_map_key_t)tid, (fun_map_value_t)context, true);
 	if (!tid_to_pretty_printer) {
-		tid_to_pretty_printer = fun_map(NULL, NULL, NULL, (fun_map_key_t)(uint64_t)(-1));
+		tid_to_pretty_printer = fun_map_create(NULL, 0, FUN_MAP_RAW64_NEG_OUTSIDER_CALLBACKS);
 	}
 	fun_map_add(tid_to_pretty_printer, (fun_map_key_t)tid, (fun_map_value_t)pretty_printer, true);
 }
