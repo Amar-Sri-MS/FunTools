@@ -92,7 +92,7 @@ static struct valtab _cid_flagtab[] = {
 
 static struct valtab _bif_valtab[] = {
 	{"BIF_ONE_16", 0},
-	{"BIF_TWO_8", 1},
+	{"BIF_TWO_8",  1},
 	{"BIF_FOUR_4", 2},
 	{"BIF_HYBRID", 3},
 
@@ -160,16 +160,7 @@ static const char *__val2str(struct valtab *tab, uint64_t val)
 	return "<unknown>";
 }
 
-static uint64_t _str2flag(const char *str)
-{
-	uint64_t flag;
-
-	if (!__str2val(_global_flagtab, str, &flag))
-		die("unknown flag: %s\n", str);
-
-	return flag;
-}
-
+/* flags are expected to be in host endian already */
 static void __pretty_print_flags(struct valtab *tab, uint64_t flags)
 {
 	uint64_t remflags = flags;
@@ -328,7 +319,7 @@ void _pretty_print_cfg(uint32_t depth, struct hw_hsu_api_link_config *cfg)
 	printf("\n");
 	printf("%sflags     : 0x%" PRIx64" = ",
 	       _tabs(depth), be64toh(cfg->flags));
-	_pretty_print_flags(cfg->flags);
+	_pretty_print_flags(be64toh(cfg->flags));
 	printf("\n");
 
 	/* recurse into the rings */
@@ -343,29 +334,18 @@ void _pretty_print_cfg(uint32_t depth, struct hw_hsu_api_link_config *cfg)
 /** json -> config conversion **/
 static uint64_t _sku2flags(const struct fun_json *sku)
 {
-	struct fun_json *jsflags = NULL, *jsstr = NULL;
 	uint64_t flags = 0;
-	fun_json_index_t i = 0, count = 0;
+	bool no_phys = false;
 
 	assert(fun_json_is_dict(sku));
 	
-	/* find the sku */
-	jsflags = fun_json_lookup(sku, "HuInterface/flags");
-	if (!fun_json_is_array(jsflags)) {
-		return 0;
-	}
+	/* check for no_phys */
+	no_phys = fun_json_lookup_bool_default(sku, "no_phys", false);
 
-	/* search all the flags */
-	count = fun_json_array_count(jsflags);
-	for (i = 0; i < count; i++) {
-		jsstr = fun_json_array_at(jsflags, i);
-		if (!fun_json_is_string(jsstr))
-			die("unexpected non-string in HU flags");
-
-		/* append the flag, or die trying */
-		flags |= _str2flag(fun_json_to_string(jsstr, NULL));
-	}
-
+	if (no_phys)
+		flags |= HW_HSU_API_LINK_CONFIG_FLAGS_NO_PHYS;
+	
+	/* host order*/
 	return flags;
 }
 
@@ -438,7 +418,7 @@ static bool _parse_hostunits(struct hw_hsu_api_link_config *cfg,
 	for (i = 0; i < HW_HSU_API_LINK_CONFIG_V0_MAX_RINGS; i++) {
 		if ((hu_en & (1ULL<<i)) == 0)
 			continue;
-		cfg->ring_config[1ULL<<i].ring_flags |= en;
+		cfg->ring_config[i].ring_flags |= en;
 	}
 	
 	return true;
