@@ -2,7 +2,8 @@
 
 PATH="/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin"
 
-INTERFACES_DIR=/persist/config/interfaces
+CONFIG_DIR=/persist/config
+INTERFACES_DIR=$CONFIG_DIR/interfaces
 
 case "$1" in
     start)
@@ -27,6 +28,16 @@ case "$1" in
         if [ -e $INTERFACES_DIR/resolv.conf ] ; then
             ln -f -s $INTERFACES_DIR/resolv.conf /tmp/resolv.conf
         fi
+	if [ -e $CONFIG_DIR/timezone ] ; then
+	    ln -f -s $CONFIG_DIR/timezone /tmp/timezone
+	else
+	    echo 'Universal' > /tmp/timezone
+	fi
+	if [ -e $CONFIG_DIR/localtime ] ; then
+	    ln -f -s $CONFIG_DIR/localtime /tmp/localtime
+	else
+	    ln -f -s /usr/share/zoneinfo/Universal /tmp/localtime
+	fi
         ;;
     *)
         :
