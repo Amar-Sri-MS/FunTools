@@ -33,6 +33,12 @@
     .filters {
         padding: 10px 0px;
     }
+    .filters_button {
+        display: flex;
+        width: 100%;
+        justify-content: center;
+        margin-bottom: 20px;
+    }
     input[type="search"] {
         width: 400px;
     }
@@ -47,6 +53,13 @@
     #selectedFilters {
         white-space: pre;
         display: none;
+    }
+    #top_button {
+        position: fixed;
+        bottom: 50px;
+        right: 50px;
+        background-color: rgba(0, 0, 0, 0.15);
+        padding: 5px;
     }
     </style>
 
@@ -103,12 +116,11 @@
     }
 
     function handleSearch(search) {
-        window.location.href = '/log/{{log_id}}/search?query=' + search;
+        window.location.href = `/log/{{log_id}}/search?query=${search}&time_start=${startTime}&time_end=${endTime}`;
     }
 
-    function handleMessageFilter(filter) {
-        textFilter = filter;
-        handleMessageTableFilterUpdates();
+    function handleMessageFilter(element) {
+        textFilter = element.value;
     }
 
     function handleMessageTableFilterUpdates() {
@@ -157,24 +169,22 @@
         toggleElementDisplay(next_button, showNextButton);
     }
 
-    function handleSourceFilters() {
-        currentSources = [];
-        allSources.forEach(function(source, index) {
-            var elementId = "src_" + source;
-            var element = document.getElementById(elementId);
-            if (element.checked) {
-                currentSources.push(element.value);
-            }
-        });
-
-        handleMessageTableFilterUpdates();
+    function handleSourceFilters(element) {
+        if (element.checked) {
+            currentSources.push(element.value);
+        }
+        else {
+            currentSources = currentSources.filter(source => source !== element.value);
+        }
     }
 
-    function handleTimeFilters() {
-        startTime = document.getElementById("dt_start").value;
-        endTime = document.getElementById("dt_end").value;
-
-        handleMessageTableFilterUpdates();
+    function handleTimeFilters(element, type="start") {
+        if (type === "start") {
+            startTime = element.value;
+        }
+        else {
+            endTime = element.value;
+        }
     }
 
     function loadNext() {
@@ -276,7 +286,7 @@
     </script>
 </head>
 <body>
-    <h2>Logs for {{log_id}}</h2>
+    <h2 id="top">Logs for {{log_id}}</h2>
     <div class="navbar">
         <div class="search_box">
             <input id="search" type="search" placeholder="Search..."/>
@@ -286,22 +296,25 @@
         </div>
     
         <div class="filters">
-            <input id="text_filter" type="search" placeholder="Filter..."/>
-            <button onclick="handleMessageFilter(document.getElementById('text_filter').value)">Filter Message</button>
+            <label for="text_filter">Enter text to filter logs</label>
+            <input id="text_filter" type="search" placeholder="Filter..." onkeypress="handleMessageFilter(this)" />
         </div>
 
         <div class="filters">
             {% for source in sources %}
-            <input type="checkbox" id="src_{{source}}" value="{{source}}" checked/>
+            <input type="checkbox" id="src_{{source}}" value="{{source}}" checked onchange="handleSourceFilters(this)"/>
             <label class="checkbox_label" for="src_{{source}}">{{source}}</label>
             {% endfor %}
-            <button onclick="handleSourceFilters()">Filter Sources</button>
         </div>
 
         <div class="filters">
-            <input type="datetime-local" id="dt_start"/>
-            <input type="datetime-local" id="dt_end"/>
-            <button onclick="handleTimeFilters()">Filter Time</button>
+            <label for="dt_start">Enter start time</label>
+            <input type="datetime-local" id="dt_start" onchange="handleTimeFilters(this, 'start')"/>
+            <label for="dt_end">Enter end time</label>
+            <input type="datetime-local" id="dt_end" onchange="handleTimeFilters(this, 'end')"/>
+        </div>
+        <div class="filters_button">
+            <button onclick="handleMessageTableFilterUpdates()">Filter logs</button>
         </div>
     </div>
 
@@ -327,6 +340,9 @@
         <div class="pagination" id="next_button">
             <button onclick="loadNext()">Load next logs</button>
         </div>
+    </div>
+    <div id="top_button">
+        <a href="#top">Jump to top of page</a>
     </div>
     <div id="loader">
         <svg version="1.1" id="L6" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"

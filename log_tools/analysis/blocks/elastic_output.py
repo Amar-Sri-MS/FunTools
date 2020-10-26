@@ -2,18 +2,42 @@
 # Elasticsearch output.
 #
 import datetime
+import requests
+import sys
+import json
 
 from elasticsearch7 import Elasticsearch
 from elasticsearch7.helpers import parallel_bulk
 
 from blocks.block import Block
 
+config = {}
+
+try:
+    with open('./config.json', 'r') as f:
+        config = json.load(f)
+except IOError:
+    print('Config file not found! Checking for default config file..')
+
+try:
+    with open('./default_config.json', 'r') as f:
+        default_config = json.load(f)
+    # Overriding default config with custom config
+    config = { **default_config, **config }
+except IOError:
+    sys.exit('Default config file not found! Exiting..')
 
 class ElasticsearchOutput(Block):
     """ Adds all messages as documents in an elasticsearch index. """
 
     def __init__(self):
-        self.es = Elasticsearch([{'host': '10.1.80.95', 'port': 9200}], timeout=20, max_retries=3, retry_on_timeout=True)
+        ELASTICSEARCH_HOSTS = config['ELASTICSEARCH']['hosts']
+        ELASTICSEARCH_TIMEOUT = config['ELASTICSEARCH']['timeout']
+        ELASTICSEARCH_MAX_RETRIES = config['ELASTICSEARCH']['max_retries']
+        self.es = Elasticsearch(ELASTICSEARCH_HOSTS,
+                                timeout=ELASTICSEARCH_TIMEOUT,
+                                max_retries=ELASTICSEARCH_MAX_RETRIES,
+                                retry_on_timeout=True)
         self.env = {}
         self.index = None
 
@@ -37,10 +61,16 @@ class ElasticsearchOutput(Block):
 
     def process(self, iters):
         """ Writes contents from all iterables to elasticsearch """
+        # Creating an index pattern for Kibana
+        self.create_kibana_index_pattern()
+
         for it in iters:
-            # parallel_bulk is a wrapper around bulk to provide threading
-            # default thread_count is 4 and it returns a generator with indexing result
-            for success, info in parallel_bulk(self.es, self.generate_es_doc(it)):
+            # parallel_bulk is a wrapper around bulk to provide threading.
+            # default thread_count is 4 and it returns a generator with indexing result.
+            # chunk_size of 10k works best based on tests on existing logs on single ES node
+            # running with 4GB heap.
+            # TODO(Sourabh): Need to test again if there's any change in resources of the ES node
+            for success, info in parallel_bulk(self.es, self.generate_es_doc(it), chunk_size=10000):
                 if not success:
                     print('Failed to index a document', info)
 
@@ -70,3 +100,22 @@ class ElasticsearchOutput(Block):
 
             yield doc
 
+    def create_kibana_index_pattern(self):
+        """ Creates an index pattern based on Elasticsearch index for Kibana """
+        KIBANA_HOST = config['KIBANA']['host']
+        KIBANA_PORT = config['KIBANA']['port']
+        kibana_url = f'http://{KIBANA_HOST}:{KIBANA_PORT}/api/saved_objects/index-pattern/{self.index}'
+        headers = {
+            'kbn-xsrf': 'true'
+        }
+
+        data = {
+            "attributes": {
+                "title": self.index,
+                "timeFieldName": "@timestamp"
+            }
+        }
+        response = requests.post(kibana_url, headers=headers, json=data)
+        # TODO(Sourabh): Error handling if index pattern creation fails
+        if response.status_code != 200:
+            print(response.json())

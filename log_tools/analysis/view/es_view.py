@@ -9,6 +9,7 @@
 
 import json
 import os
+import sys
 
 import jinja2
 
@@ -19,6 +20,20 @@ from flask import request
 
 app = Flask(__name__)
 
+try:
+    with open('../config.json', 'r') as f:
+        config = json.load(f)
+except IOError:
+    print('Config file not found! Checking for default config file..')
+
+try:
+    with open('../default_config.json', 'r') as f:
+        default_config = json.load(f)
+    # Overriding default config with custom config
+    config = { **default_config, **config }
+except IOError:
+    sys.exit('Default config file not found! Exiting..')
+
 
 def main():
     app.run(host='0.0.0.0')
@@ -27,7 +42,8 @@ def main():
 @app.route('/')
 def root():
     """ Serves the root page, which shows a list of logs """
-    es = Elasticsearch([{'host': 'localhost', 'port': 9200}])
+    ELASTICSEARCH_HOSTS = config['ELASTICSEARCH']['hosts']
+    es = Elasticsearch(ELASTICSEARCH_HOSTS)
 
     indices = es.indices.get('log_*')
 
@@ -50,8 +66,15 @@ def _get_script_dir():
 
 def _render_root_page(log_ids, jinja_env, template):
     """ Renders the root page from a template """
+    KIBANA_HOST = config['KIBANA']['host']
+    KIBANA_PORT = config['KIBANA']['port']
+    kibana_url = f'{KIBANA_HOST}:{KIBANA_PORT}/app/kibana#/discover'
     template_dict = {}
-    template_dict['logs'] = log_ids
+    # Default Kibana View with logs from last 90 days to now
+    template_dict['logs'] = [{
+        'name': id,
+        'link': f'http://{kibana_url}?_g=(time:(from:now-90d,to:now))&_a=(columns:!(src,msg),index:{id})'
+    } for id in log_ids]
 
     result = template.render(template_dict, env=jinja_env)
     return result
@@ -116,7 +139,8 @@ class ElasticLogSearcher(object):
 
     def __init__(self, index):
         """ New searcher, looking at a specific index """
-        self.es = Elasticsearch([{'host': 'localhost', 'port': 9200}])
+        ELASTICSEARCH_HOSTS = config['ELASTICSEARCH']['hosts']
+        self.es = Elasticsearch(ELASTICSEARCH_HOSTS)
         self.index = index
 
     def search(self, state,
@@ -480,9 +504,12 @@ def search(log_id):
     search_term = request.args.get('query')
     page = request.args.get('page', 1)
     page = int(page)
+    time_start = request.args.get('time_start', '')
+    time_end = request.args.get('time_end', '')
+    time_filters = [time_start, time_end]
 
     # TODO (jimmy): we ought to do this only once
-    total_search_hits = _get_total_hit_count(log_id, search_term)
+    total_search_hits = _get_total_hit_count(log_id, search_term, time_filters)
 
     state_str = request.args.get('state', None)
     state = ElasticLogState()
@@ -491,7 +518,7 @@ def search(log_id):
     es = ElasticLogSearcher(log_id)
     size = 20
 
-    results = es.search(state, search_term, query_size=size)
+    results = es.search(state, search_term, time_filters=time_filters, query_size=size)
     hits = results['hits']
     state = results['state']
 
@@ -526,13 +553,13 @@ def search(log_id):
                                total_search_hits)
 
 
-def _get_total_hit_count(log_id, search_term):
+def _get_total_hit_count(log_id, search_term, time_filters):
     """ Obtains the search hit count, up to a maximum of 1000 """
     es = ElasticLogSearcher(log_id)
     state = ElasticLogState()
     size = 1000
 
-    results = es.search(state, search_term, query_size=size)
+    results = es.search(state, search_term, time_filters=time_filters, query_size=size)
     return len(results['hits'])
 
 

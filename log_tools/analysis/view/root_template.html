@@ -8,10 +8,22 @@
 </head>
 <body>
     <h2>Available logs</h2>
-    <div class="index">
+    <table class="index">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>View</th>
+            </tr>
+        </thead>
+        <tbody>
         {% for log in logs %}
-        <a href="/log/{{log}}">{{log}}</a><br>
+            <tr>
+                <td>{{log.name}}</td>
+                <td><a href={{log.link}}>Default</a></td>
+                <td><a href="/log/{{log.name}}">Simple</a></td>
+            </tr>
         {% endfor %}
-    </div>
+        </tbody>
+    </table>
 </body>
 </html>
