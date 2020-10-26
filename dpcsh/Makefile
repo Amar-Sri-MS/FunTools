@@ -73,7 +73,7 @@ install: dpcsh
 	mkdir -p $(SDK_INSTALL_DIR)/bin/$(SDK_INSTALL_PREFIX)/$(OS)
 # FIXME: remove OS versioning on dpc_client.py when
 # integration tests are fixed
-	cp dpc_client.py dpctest.py $(BUILD_ROOT)/dpcsh $(SDK_INSTALL_DIR)/bin/$(SDK_INSTALL_PREFIX)/$(OS)
+	cp dpc_client.py dpctest.py dpc_uboot_env.py $(BUILD_ROOT)/dpcsh $(SDK_INSTALL_DIR)/bin/$(SDK_INSTALL_PREFIX)/$(OS)
 
 clean:
 	rm -f $(BUILD_ROOT)/dpcsh $(OBJS)

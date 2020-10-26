@@ -153,6 +153,7 @@ def main():
         gf.merge_configs(config, json.loads(FVHT_LIST_CONFIG_OVERRIDE.format(fvht_list=fvht_list_file.name)))
 
     gf.set_config(config)
+    gf.set_chip_type(args.chip)
 
     if args.force_version:
         gf.set_versions(args.force_version)
@@ -217,7 +218,7 @@ def main():
 
         if os.path.exists(bld_info):
             with open(bld_info, 'r') as f:
-                sdk_v = int(f.readline())
+                sdk_v = int(eval(f.readline()))
                 if not args.force_version:
                     v = sdk_v
                     gf.set_versions(v)
@@ -385,7 +386,10 @@ def main():
                 os.symlink(os.path.join(os.path.abspath(os.curdir), f), os.path.join('bundle_installer', os.path.basename(f)))
 
             with open(os.path.join('bundle_installer', '.setup'), "w") as cfg:
-                cfg.write('ROOTFS_NAME="{}"'.format(rootfs))
+                cfg.writelines([
+                    'ROOTFS_NAME="{}"\n'.format(rootfs),
+                    'CHIP_NAME="{}"\n'.format(args.chip.upper())
+                ])
 
             makeself = [
                 os_utils.path_fixup('makeself'),

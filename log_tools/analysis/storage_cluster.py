@@ -14,7 +14,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('build_id', help="Unique build ID")
     parser.add_argument("dir", help="Log directory")
-    parser.add_argument('machines', nargs='+', help='FS1600 machines')
+    parser.add_argument('machines', nargs='*', help='FS1600 machines')
     parser.add_argument('--output', help='Output block type', default='ElasticOutput')
 
     args = parser.parse_args()
@@ -96,6 +96,27 @@ def funos_input_pipeline(machine):
     # 2 DPUs in FS1600 machine
     # TODO: (Sourabh) Unnecessary blocks for FS800
     for i in range(0, 2):
+
+        # Support for v1.x directory structure
+        input_id_v1 = f'{machine}_f1_{i}_v1'
+        parse_id_v1 = f'{input_id_v1}_parse'
+
+        input_v1 = {
+            'id': input_id_v1,
+            'block': 'TextFileInput',
+            'cfg': {
+                'file_pattern': '${{logdir}}/devices/{}/F1_{}_funos.txt*'.format(machine, i)
+            },
+            'out': parse_id_v1
+        }
+
+        parse_v1 = {
+            'id': parse_id_v1,
+            'block': 'FunOSInput',
+            'out': 'merge'
+        }
+
+        # Support for v2.0 directory structure
         input_id = f'{machine}_f1_{i}'
         parse_id = f'{input_id}_parse'
 
@@ -103,7 +124,7 @@ def funos_input_pipeline(machine):
             'id': input_id,
             'block': 'TextFileInput',
             'cfg': {
-                'file_pattern': '${{logdir}}/devices/{}/dpu_logs_lines_c_s{}_0/dpu_funos.txt'.format(machine, i)
+                'file_pattern': '${{logdir}}/devices/{}/dpu_logs_lines_c_s{}_0/*funos.txt*'.format(machine, i)
             },
             'out': parse_id
         }
@@ -133,7 +154,7 @@ def funos_input_pipeline(machine):
             'out': 'merge'
         }
 
-        blocks.extend([input, parse, storage_agent, storage_agent_parse])
+        blocks.extend([input_v1, parse_v1, input, parse, storage_agent, storage_agent_parse])
 
     return blocks
 

@@ -413,7 +413,7 @@ def _convert_to_table_row(hit):
     s = hit['_source']
 
     # The log lines are organized as table rows in the template
-    line = '<tr>'
+    line = '<tr style="vertical-align: baseline">'
     if hit.get('anchor_link'):
         line = '<tr class={} id={}>'.format('search_highlight',
                                             hit.get('anchor_link'))

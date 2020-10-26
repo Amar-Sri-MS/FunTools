@@ -28,6 +28,19 @@ class TestTypes(unittest.TestCase):
     self.assertFalse(parser.TypeForName("double").IsArray())
     self.assertFalse(parser.TypeForName("int").IsArray())
 
+  def testHasEndianness(self):
+      self.assertTrue(parser.TypeForName("__be32", linux_type=True).IsNoSwap())
+      self.assertFalse(parser.TypeForName("uint32_t",
+                                          linux_type=True).IsNoSwap())
+      self.assertTrue(parser.TypeForName("__le16", linux_type=True).IsNoSwap())
+      self.assertFalse(parser.TypeForName("uint8_t",
+                                          linux_type=True).IsNoSwap())
+
+      self.assertTrue(parser.ArrayTypeForName("__be32", 10,
+                                              linux_type=True).IsNoSwap())
+      self.assertFalse(parser.ArrayTypeForName("uint64_t", 10,
+                                               linux_type=True).IsNoSwap())
+
   def testBaseName(self):
     self.assertEqual("uint32_t", 
                      parser.TypeForName("uint32_t").BaseName())
@@ -68,6 +81,12 @@ class PrintingTest(unittest.TestCase):
     s = parser.Struct('Bar', False)
     struct_array_type = parser.RecordArrayTypeForStruct(s, 0)
     self.assertEqual('struct Bar[0]', struct_array_type.ParameterTypeName())
+
+  def testZeroLengthStructArrayType(self):
+    s = parser.Struct('Bar', False)
+    struct_array_type = parser.RecordArrayTypeForStruct(s, 0)
+    self.assertEqual('struct Bar[]',
+                     struct_array_type.ParameterTypeName(linux_type=True))
 
 
 

@@ -34,7 +34,8 @@ section "Serial Number" {
     hex 1 "Foundry + Fab"
     hex 1 "Year"
     uint8 "Week"
-    hex 6 "Reserved (Zero)"
+    hex 2 "Security Group"
+    hex 4 "Reserved (Zero)"
     hex 4 "S/N"
 }
 

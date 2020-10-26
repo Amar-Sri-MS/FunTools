@@ -16,11 +16,16 @@ import socket
 
 import requests
 
+
+# image file format description
+# https://docs.google.com/document/d/1wb34TuVJmPlikeVjvE0tdCQxP8ZgzLc0RSMbyd1prwM
+
 RSA_KEY_SIZE_IN_BITS = 2048
 SIGNING_INFO_SIZE = 2048
 MAX_SIGNATURE_SIZE = 512
 HEADER_RESERVED_SIZE = SIGNING_INFO_SIZE - (4 + MAX_SIGNATURE_SIZE)
-SIGNED_ATTRIBUTES_SIZE = 32
+SIGNED_ATTRIBUTES_CHIP_ID = 3
+SIGNED_ATTRIBUTES_SIZE = 29 # currently undefined/unused
 SIGNED_DESCRIPTION_SIZE = 32
 SERIAL_INFO_NUMBER_SIZE = 24
 CERT_PUB_KEY_POS = 64
@@ -407,15 +412,27 @@ def add_cert_and_signature_to_image(image, cert, signature):
     image += b'\x00' * (HEADER_RESERVED_SIZE - len(cert))
     return append_signature_to_binary(image, signature)
 
-
 def image_gen(outfile, infile, ftype, version, description, sign_key,
-              certfile, customer_certfile, key_index, pad=1):
+              certfile, customer_certfile, key_index, chip_type=None, pad=1):
     ''' generate signed firmware image '''
+
+    chip_type_map = {
+        # chip name : [ family, device, revision ]
+        # see https://docs.google.com/document/d/1qojY63VZvkhmbDenbl6J2j51yeA_9FfhU8s_aTUhvJs
+        'f1'   : [1, 1, 0],
+        's1'   : [2, 1, 0],
+        'f1d1' : [1, 1, 1]
+    }
+
     if ((pad == 0) or (pad is None)):
         pad = 1 # make the lazy thing work
     binary = read(infile)
     to_be_signed = struct.pack('<2I', len(binary), version)
     to_be_signed += struct.pack('4s', ftype.encode())
+    if chip_type:
+        to_be_signed += struct.pack('3B', *chip_type_map[chip_type])
+    else:
+        to_be_signed += b'\x00' * SIGNED_ATTRIBUTES_CHIP_ID
     to_be_signed += b'\x00' * SIGNED_ATTRIBUTES_SIZE
     if description:
         # Max allowed size is (block size - 1) to allow for terminating null

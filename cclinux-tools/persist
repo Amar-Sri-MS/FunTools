@@ -1,0 +1,36 @@
+#!/bin/sh -e
+
+PATH="/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin"
+
+INTERFACES_DIR=/persist/config/interfaces
+
+case "$1" in
+    start)
+        mkdir -p /tmp/interfaces.d
+        ln -s /etc/network/eth0-dhcp.iface /tmp/interfaces.d/eth0.iface
+
+        fsck_code=0
+        e2fsck -y /dev/vda3 || fsck_code=$?
+        if [ $fsck_code -ge 4 ] ; then
+            echo 'Filesystem on /dev/vda3 unusable, reformatting...'
+            mkfs.ext4 -q -F /dev/vda3
+        fi
+        mount /persist
+        mkdir -p $INTERFACES_DIR
+        (  cd $INTERFACES_DIR
+           for file in *iface ; do
+               if [ -e $file ] ; then
+                   ln -f -s $INTERFACES_DIR/$file /tmp/interfaces.d/$file
+               fi
+           done
+        )
+        if [ -e $INTERFACES_DIR/resolv.conf ] ; then
+            ln -f -s $INTERFACES_DIR/resolv.conf /tmp/resolv.conf
+        fi
+        ;;
+    *)
+        :
+        ;;
+esac
+
+exit 0

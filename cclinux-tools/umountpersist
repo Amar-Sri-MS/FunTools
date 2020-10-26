@@ -1,0 +1,16 @@
+#!/bin/sh -e
+
+PATH="/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin"
+
+INTERFACES_DIR=/persist/config/interfaces
+
+case "$1" in
+    start)
+        umount /persist || echo "umount /persist failes $?"
+        ;;
+    *)
+        :
+        ;;
+esac
+
+exit 0

@@ -228,6 +228,7 @@ class FileCorpse:
             if not have_elftools:
                 raise RuntimeError("need pyelftools to open ELF file: "
                                    "try pip3 install pyelftools")
+            print("Opening file as ELF corpse...")
             self.elf = ELFFile(self.open_file(use_idzip, use_http))
 
         # ELF segment headers in memory, faster than reading from file
@@ -668,8 +669,11 @@ def file_is_bzip(hbmdump):
     stype = filetype(hbmdump)
     if (stype.startswith("bzip2 compressed data")):
         return True
-    
-    return False
+
+    if (stype.startswith("data (bzip2 compressed data")):
+        return True
+
+    return stype.startswith("ELF") and "bzip2 compressed data" in stype
 
 def file_is_data(hbmdump):
     stype = filetype(hbmdump)
@@ -685,8 +689,8 @@ def file_is_gzip(hbmdump):
 
     if (stype.startswith("data (gzip compressed data")):
         return True
-    
-    return False
+
+    return stype.startswith("ELF") and "gzip compressed data" in stype
 
 def file_is_tar(hbmdump):
     stype = filetype(hbmdump)
@@ -718,7 +722,7 @@ def file_is_idgz(hbmdump):
         return False
 
     stype = filetype(hbmdump)
-    if (stype.startswith("data (gzip compressed data, extra field")):
+    if ("(gzip compressed data, extra field" in stype):
         return True
     
     return False
@@ -1331,6 +1335,9 @@ def run_gdb_async(port, elffile):
     if (opts.crashlog):
         cmd += ["-ex", "crashlog",
                 "-ex", "quit"]
+
+    for command in opts.ex:
+        cmd += ["-ex", command]
         
     cmd += [elffile]
     
@@ -1395,6 +1402,8 @@ def parse_args():
     parser.add_argument("--gdb-timeout", action="store",
                         default=None, type=int,
                         help="Set gdb packet timeout")
+    parser.add_argument("--ex", action="append", metavar="command", default=[],
+                        help="GDB ex command to run")
 
     # final arg is the dump file
     parser.add_argument("hbmdump", help="hbmdump file")

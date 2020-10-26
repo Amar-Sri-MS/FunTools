@@ -27,7 +27,7 @@ GENERATOR_SRC = generator.py \
 
 test: generator-test test_rdma_packed test_rdma_packed_html
 test: test_simple_validation test_packed_validation test_swap
-test: test_fun_hci test_fun_hci_linux
+test: test_fun_hci test_fun_hci_linux_le test_fun_hci_linux_be
 
 # Test new generator with actual fun-hci file in the future.  For now,
 # it complicates configuring Jenkins.
@@ -47,9 +47,13 @@ test_fun_hci: $(BUILD)
 	./generator.py -g code -c pack,json -o $(BUILD)/fun_hci_pack $(FUN_HCI_DIR)/fun_hci.gen
 	./generator.py -g html -c pack,json -o $(BUILD)/fun_hci_pack $(FUN_HCI_DIR)/fun_hci.gen
 
-# Tests building the current fun_hci.gen file on Linux.
-test_fun_hci_linux: $(BUILD)
-	./generator.py -g linux -c pack,swap -o $(BUILD)/fun_hci_linux $(FUN_HCI_DIR)/fun_hci.gen
+# Tests building the current fun_hci.gen file on Linux for little-endian hosts.
+test_fun_hci_linux_le: $(BUILD)
+	./generator.py -g linux -c pack,swap,le -o $(BUILD)/fun_hci_linux_be $(FUN_HCI_DIR)/fun_hci.gen
+
+# Tests building the current fun_hci.gen file on Linux for big-endian hosts.
+test_fun_hci_linux_be: $(BUILD)
+	./generator.py -g linux -c pack,swap,be -o $(BUILD)/fun_hci_linux_le $(FUN_HCI_DIR)/fun_hci.gen
 
 # Tests building the current fun_port.gen file to make sure generator
 # handles it well.

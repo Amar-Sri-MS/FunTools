@@ -17,4 +17,5 @@ install-scripts:
 	mkdir -p $(SDK_INSTALL_DIR)/bin/scripts
 	install s3util.py $(SDK_INSTALL_DIR)/bin/scripts
 	install httpfile.py $(SDK_INSTALL_DIR)/bin/scripts
+	install gz2idgz.py $(SDK_INSTALL_DIR)/bin/scripts
 

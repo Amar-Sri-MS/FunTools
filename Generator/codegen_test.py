@@ -55,7 +55,26 @@ class CodegenEndToEnd(unittest.TestCase):
     self.assertNotIn('#define FOO_RESERVED', out)
 
     # Did bitfield get initialized?'
-    self.assertIn('s->b_to_c = FOO_B_P(b) | FOO_C_P(c)', out)
+    self.assertIn('s->b_to_c = FOO_B_P(b) | FOO_C_P(c);', out)
+
+  def testZeroDimensionArray(self):
+    input = ['STRUCT Foo',
+             '0 63:56 uint8_t a',
+             '_ _:_ uint8_t chars[0]',
+             'END']
+    out, errors = generator.GenerateFile(generator.OutputStyleLinux, None,
+                                         input, 'foo.gen',
+                                         ['pack', 'json', 'swap'])
+    print errors
+    self.assertEqual(0, len(errors))
+    self.assertIsNotNone(out)
+
+    out = RemoveWhitespace(out)
+
+    # Check for C99 style of flex arrays, not gcc style.
+    self.assertIn('[]', out)
+    self.assertNotIn('[0]', out)
+
 
   def testLinuxBadTypeNames(self):
     """Linux mode limits type names to only uint8, uint16_t, uint32_t, and
@@ -95,7 +114,7 @@ class CodegenEndToEnd(unittest.TestCase):
     self.assertIn('__u8 b_to_c;', out)
     # Did array get included?
     self.assertIn('__u8 d[6];', out)
-    self.assertIn('__be32 e;', out)
+    self.assertIn('__dpu32 e;', out)
     # Did constructor get created?
     # Test individually because of odd whitespace around the commas.
     self.assertIn('void Foo_init(struct Foo *s, __u8 a', out)
@@ -109,9 +128,8 @@ class CodegenEndToEnd(unittest.TestCase):
     self.assertNotIn('#define FOO_RESERVED', out)
 
     # Did bitfield get initialized?'
-    self.assertIn('s->b_to_c = cpu_to_dpu8( FOO_B_P_NOSWAP(b) | '
-                  'FOO_C_P_NOSWAP(c)', out)
-
+    self.assertIn('s->b_to_c = ( FOO_B_P_NOSWAP(b) | FOO_C_P_NOSWAP(c) );',
+                  out)
     # Did full field get initialized?
     self.assertIn('s->e = cpu_to_dpu32(e)', out)
 
@@ -436,7 +454,7 @@ class TestComments(unittest.TestCase):
     (out, errors) = generator.GenerateFile(generator.OutputStyleHeader, None,
                                            input, 'foo.gen', OPTIONS_PACK)
     self.assertEqual(0, len(errors))
-    
+
     out = RemoveWhitespace(out)
     print out
     # TODO(bowdidge): Check comments.
@@ -516,6 +534,24 @@ class TestComments(unittest.TestCase):
 
     self.assertIn('char array[0]; };', out)
 
+  def testLinuxVariableLengthArray(self):
+    contents = [
+      'STRUCT foo',
+      '0 63:56 uint8_t initial',
+      '_ _:_ uint8_t array[0]',
+      'END'
+      ]
+
+    (out, errors) = generator.GenerateFile(generator.OutputStyleLinux, None,
+                                           contents, 'foo.gen', OPTIONS_PACK)
+    print errors
+    self.assertEqual(0, len(errors))
+
+    out = RemoveWhitespace(out);
+
+    # Linux uses C99 style variable args, not gcc style.
+    self.assertIn('__u8 array[]; };', out)
+
   # Disable until we can run the generator without errors on funhci.
   def disable_testPackedError(self):
     contents = [
@@ -561,7 +597,7 @@ class TestComments(unittest.TestCase):
 	'END',
         'END'
 	]
-    
+
     (out, errors) = generator.GenerateFile(generator.OutputStyleHeader, None,
                                            contents, 'foo.gen', ['pack', 'json'])
     self.assertEqual(0, len(errors))
@@ -572,6 +608,121 @@ class TestComments(unittest.TestCase):
     self.assertIn('outer_struct_init(s, ', out)
     self.assertIn('inner_struct_init(&inner_var, ', out)
 
-    
+  def testEndiannessWhenGeneratingLittleEndian(self):
+    contents = [
+        'STRUCT foo',
+        '0 63:48 uint16_t foo',
+        '0 47:32 __le16 bar',
+        '0 31:16 __be16 baz',
+        '0 15:0 uint16_t beep',
+        'END']
+    (out, errors) = generator.GenerateFile(generator.OutputStyleLinux,
+                                           None, contents, 'foo.gen',
+                                           ['pack', 'swap', 'le'])
+    self.assertEqual(0, len(errors))
+    self.assertIsNotNone(out)
+
+    out = RemoveWhitespace(out)
+
+    # Native types get swapped.
+    self.assertIn('cpu_to_le16(foo)', out)
+    self.assertIn('cpu_to_le16(beep)', out)
+
+    # types with endianness don't get swapped.
+    self.assertIn('s->bar = (bar)', out)
+    self.assertIn('s->baz = (baz)', out)
+
+  def testEndiannessWhenGeneratingBigEndian(self):
+    contents = [
+        'STRUCT foo',
+        '0 63:48 uint16_t foo',
+        '0 47:32 __le16 bar',
+        '0 31:16 __be16 baz',
+        '0 15:0 uint16_t beep',
+        'END']
+    (out, errors) = generator.GenerateFile(generator.OutputStyleLinux,
+                                           None, contents, 'foo.gen',
+                                           ['pack', 'swap', 'be'])
+    self.assertEqual(0, len(errors))
+    self.assertIsNotNone(out)
+
+    out = RemoveWhitespace(out)
+
+    # Native types get swapped.
+    self.assertIn('cpu_to_be16(foo)', out)
+    self.assertIn('cpu_to_be16(beep)', out)
+
+    # types with endianness don't get swapped.
+    self.assertIn('s->bar = (bar)', out)
+    self.assertIn('s->baz = (baz)', out)
+
+  def testEndianFieldsInPackedMode(self):
+    contents = [
+        'STRUCT foo',
+        '0 63:52 uint16_t foo',
+        '0 51:40 __le16 bar',
+        '0 39:28 __be16 baz',
+        '0 27:16 uint16_t beep',
+        'END']
+    (out, errors) = generator.GenerateFile(generator.OutputStyleHeader,
+                                           None, contents, 'foo.gen',
+                                           ['pack', 'swap', 'le'])
+    self.assertEqual(2, len(errors))
+    self.assertIn('field with endian-specific type __le16 cannot '
+                     'be a bitfield', errors[0])
+    self.assertIn('field with endian-specific type __be16 cannot '
+                     'be a bitfield', errors[1])
+
+  def testEndianFieldsInPackedModeLinux(self):
+    contents = [
+        'STRUCT foo',
+        '0 63:52 __be32 foo',
+        '0 51:40 __be32 bar',
+        '0 39:32 __be32 baz',
+        '0 31:27 uint32_t beep',
+        '0 26:19 uint32_t bop',
+        '0 18:0 uint32_t beet',
+        'END']
+    (out, errors) = generator.GenerateFile(generator.OutputStyleLinux,
+                                           None, contents, 'foo.gen',
+                                           ['pack', 'swap', 'le'])
+    self.assertEqual(3, len(errors))
+
+    self.assertIn('field with endian-specific type __be32 cannot '
+                     'be a bitfield', errors[0])
+    self.assertIn('field with endian-specific type __be32 cannot '
+                     'be a bitfield', errors[1])
+    self.assertIn('field with endian-specific type __be32 cannot '
+                     'be a bitfield', errors[2])
+
+  def testEndiannessInSoloPackedFields(self):
+    contents = [
+        'STRUCT foo',
+        '0 63:61 __le16 foo',
+        'END']
+    (out, errors) = generator.GenerateFile(generator.OutputStyleLinux,
+                                           None, contents, 'foo.gen',
+                                           ['pack', 'swap', 'le'])
+
+    self.assertEqual(1, len(errors))
+    self.assertIn('field with endian-specific type __le16 cannot '
+                  'be a bitfield', errors[0])
+
+  def testEndiannessIfPulledIntoPackedField(self):
+    contents = [
+        'STRUCT foo',
+        # foo requires a bitfield.
+        '0 63:48 uint64_t foo',
+        # We shouldn't pack the fields - different types.
+        '0 47:32 __le64 bar',
+        'END']
+    (out, errors) = generator.GenerateFile(generator.OutputStyleLinux,
+                                           None, contents, 'foo.gen',
+                                           ['pack', 'swap', 'le'])
+    print errors
+    self.assertEqual(1, len(errors))
+    self.assertIn('field with endian-specific type __le64 cannot '
+                  'be a bitfield', errors[0])
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)

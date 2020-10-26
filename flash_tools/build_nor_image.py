@@ -103,6 +103,9 @@ def generate_nor_image(args, script_directory,
     if args.version:
         run_args.extend(["--force-version", args.version])
 
+    if args.description:
+        run_args.extend(["--force-description", args.description])
+
     if args.enrollment_certificate:
         run_args.extend(["--enroll-cert", args.enrollment_certificate])
 
@@ -295,6 +298,8 @@ def parse_args():
                             help="SBP Firmware directory, default is $WORKSPACE/SBPFirmware")
     arg_parser.add_argument("-v", "--version", action='store',
                             help="Force version for image -- useful for update")
+    arg_parser.add_argument("--description", action='store',
+                            help="Force description for image")
     arg_parser.add_argument("-u", "--user", action='store', metavar='USERNAME',
                             help='''create a tgz file on dochub for use with run_fwupgrade.py
                             as dochub.fungible.local/doc/<username>/<version>/''')

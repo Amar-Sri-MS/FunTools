@@ -39,6 +39,14 @@ LAST_ERROR=/tmp/cclinux_upgrade_error # a reboot will clean up this tmpfs file.
 ccfg_install=''
 downgrade=''
 
+host_dpu=$(tr -d '\0' < /proc/device-tree/fungible,dpu || true)
+
+if [ -n "$host_dpu" ] && [ "$host_dpu" != "$CHIP_NAME" ]; then
+	echo "This upgrade bundle is incompatible with the host DPU"
+	echo "Bundle target: $CHIP_NAME, host DPU: $host_dpu"
+	exit 20
+fi
+
 if [[ $# -ne 0 ]]
 then
 	while [[ $# -gt 0 ]]
@@ -54,9 +62,9 @@ then
 			;;
 		*)
 			echo "
-	Usage: sudo ./${PROG}.sh
-		${PROG}.sh install [ccfg=config_name]
-		${PROG}.sh install-downgrade
+	Usage: sudo ${PROG}
+		${PROG} install [ccfg=config_name]
+		${PROG} install-downgrade
 
 	Where,
 		Option install is to flash the DPU and install CCLinux software
