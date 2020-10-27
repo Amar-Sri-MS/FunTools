@@ -111,6 +111,15 @@ def db_retrieve_cert(conn, values_dict):
             return cur.fetchone()[0]
     return None
 
+def db_print_summary(conn):
+    print("[")
+    with conn.cursor('summary') as cur:
+        cur.execute('''select row_to_json(t) from (
+        select serial_info, serial_nr, puf_key, timestamp from enrollment ) t ''')
+        for row in cur:
+            print(row[0], end=",\n")
+    print("]")
+
 
 ###########################################################################
 #
@@ -422,6 +431,13 @@ def send_certificate(form_values, x509_format=False):
     else:
         send_certificate_response(cert)
 
+def send_summary(form_values):
+
+    print("Status: 200 OK")
+    print("Content-Type: application/json\n")
+    with closing(psycopg2.connect("dbname=enrollment_db")) as db_conn:
+        db_print_summary(db_conn)
+    print("\n")
 
 
 def process_query():
@@ -434,6 +450,8 @@ def process_query():
         send_certificate(form)
     elif cmd == "x509":
         send_certificate(form, x509_format=True)
+    elif cmd == "summary":
+        send_summary(form)
     else:
         raise ValueError("Invalid command")
 
