@@ -27,3 +27,8 @@ cp $src_dir/fun-image-mips64r6hv-mips64r6.tar.xz $target_dir
 cp $src_dir/fun-s1-factory-image-mips64r6.cpio.gz $target_dir
 
 cp $src_dir/../build_info.txt $target_dir
+
+scripts_dir=$SDK_INSTALL_DIR/bin/scripts
+mkdir -p $scripts_dir
+
+install -t $scripts_dir deploy_yocto.sh
