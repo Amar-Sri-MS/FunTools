@@ -341,9 +341,7 @@ func validateGetWithNumber(r *http.Request) (int, error) {
 }
 
 func peekDPC(client *dpcclient.DpcClient, path string) (interface{}, error) {
-	p := make([]interface{}, 1)
-	p[0] = path
-	return client.Execute("peek", p)
+	return client.Execute("peek", []interface{}{path})
 }
 
 func temperatureDPC(client *dpcclient.DpcClient, kind string, numbers []int) (interface{}, error) {

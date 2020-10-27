@@ -17,8 +17,5 @@ func TestMarshallText(t *testing.T) {
 	testMarshalSingle(t, initRequest{"123"}, "/url=123\n")
 	testMarshalSingle(t, messageResponse{true, ""}, "/success=true\n")
 	testMarshalSingle(t, messageResponse{false, "abcd"}, "/success=false\n/message=abcd\n")
-	m := make(map[string]interface{})
-	m["a"] = "b"
-	m["c"] = "d"
-	testMarshalSingle(t, m, "/a=b\n/c=d\n")
+	testMarshalSingle(t, map[string]interface{}{"a": "b", "c": "d"}, "/a=b\n/c=d\n")
 }
