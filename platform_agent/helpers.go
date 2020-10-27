@@ -316,9 +316,40 @@ func normalizeMac(data interface{}) (string, error) {
 	return strings.Join(mapFunc(parts, func(a int64) string { return fmt.Sprintf("%02X", a) }), ":"), nil
 }
 
-func servePeek(path string) httpHandlerWithState {
+func applyFilter(filter map[string]interface{}, data interface{}) interface{} {
+	if filter == nil {
+		return data
+	}
+	dataMap, ok := data.(map[string]interface{})
+	if !ok {
+		return nil
+	}
+	for k, v := range dataMap {
+		if fv, ok := filter[k]; ok {
+			fvMap, ok := fv.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			dataMap[k] = applyFilter(fvMap, v)
+			continue
+		}
+		delete(dataMap, k)
+	}
+	return dataMap
+}
+
+func makeFilter(filter map[string]interface{}) func(interface{}, error) (interface{}, error) {
+	return func(data interface{}, err error) (interface{}, error) {
+		if err != nil {
+			return nil, err
+		}
+		return applyFilter(filter, data), nil
+	}
+}
+
+func servePeek(path string, filter map[string]interface{}) httpHandlerWithState {
 	return func(state *agentState, w http.ResponseWriter, r *http.Request) {
-		serveSingleFunction(state, w, r, func() (interface{}, error) { return peekDPC(state.dpc, path) })
+		serveSingleFunction(state, w, r, func() (interface{}, error) { return makeFilter(filter)(peekDPC(state.dpc, path)) })
 	}
 }
 
