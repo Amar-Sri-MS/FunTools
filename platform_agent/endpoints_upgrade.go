@@ -41,6 +41,13 @@ func serveInitUpgrade(state *agentState, w http.ResponseWriter, r *http.Request)
 		internalServerError(w)
 		return
 	}
+
+	if response.StatusCode != http.StatusOK {
+		log.Println("http error downloading bundle", response.Status)
+		dataResponse(w, messageResponse{false, "Can't download, http code: " + response.Status}, isTextRequested(r))
+		return
+	}
+
 	defer response.Body.Close()
 
 	file, err := os.OpenFile(bundleName(processID), os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0744)

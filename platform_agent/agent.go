@@ -54,6 +54,8 @@ func (state *agentState) With(handler httpHandlerWithState) httpHandler {
 func newAgentState() *agentState {
 	s := new(agentState)
 	s.upgradeStatus = make(map[int]int)
+
+	_ = os.Mkdir(upgradeFolder, 0744)
 	files, err := ioutil.ReadDir(upgradeFolder)
 	if err != nil {
 		log.Fatal(err)
