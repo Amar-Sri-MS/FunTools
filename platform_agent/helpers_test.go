@@ -15,6 +15,8 @@ func testMarshalSingle(t *testing.T, input interface{}, expected string) {
 func TestMarshallText(t *testing.T) {
 	testMarshalSingle(t, "temperature/dpu", "=temperature/dpu\n")
 	testMarshalSingle(t, initRequest{"123"}, "/url=123\n")
+	testMarshalSingle(t, messageResponse{true, ""}, "/success=true\n")
+	testMarshalSingle(t, messageResponse{false, "abcd"}, "/success=false\n/message=abcd\n")
 	m := make(map[string]interface{})
 	m["a"] = "b"
 	m["c"] = "d"

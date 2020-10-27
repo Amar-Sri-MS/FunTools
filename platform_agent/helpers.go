@@ -166,6 +166,15 @@ func errorResponse(w http.ResponseWriter, message string) {
 	}
 }
 
+func hasOmitEmpty(tags []string) bool {
+	for _, v := range tags {
+		if v == "omitempty" {
+			return true
+		}
+	}
+	return false
+}
+
 func structToMap(item interface{}) map[string]interface{} {
 	res := map[string]interface{}{}
 	if item == nil {
@@ -179,13 +188,20 @@ func structToMap(item interface{}) map[string]interface{} {
 		v = v.Elem()
 	}
 	for i := 0; i < v.NumField(); i++ {
-		tag := v.Field(i).Tag.Get("json")
-		field := reflectValue.Field(i).Interface()
-		if tag != "" && tag != "-" {
+		tagParts := strings.Split(v.Field(i).Tag.Get("json"), ",")
+		name := tagParts[0]
+		if name != "" && name != "-" {
+			field := reflectValue.Field(i).Interface()
+
+			if hasOmitEmpty(tagParts) &&
+				field == reflect.Zero(reflect.TypeOf(field)).Interface() {
+				continue
+			}
+
 			if v.Field(i).Type.Kind() == reflect.Struct {
-				res[tag] = structToMap(field)
+				res[name] = structToMap(field)
 			} else {
-				res[tag] = field
+				res[name] = field
 			}
 		}
 	}
