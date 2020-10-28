@@ -498,7 +498,7 @@ static bool _parse_hostunitcontroller(struct hw_hsu_api_link_config *cfg,
 	const struct fun_json *huc = NULL, *chu = NULL;
 	fun_json_index_t i = 0, count = 0;
 	uint32_t ring = 0, cid = 0, pcie_gen = 0, pcie_width = 0;
-	bool r = false, link_en = false;
+	bool r = false;
 	const char *str = NULL;
 	uint64_t u64 = 0, en = 0;
 	struct hw_hsu_cid_config *pcid = NULL;
@@ -531,13 +531,13 @@ static bool _parse_hostunitcontroller(struct hw_hsu_api_link_config *cfg,
 		/* take a direct pointer */
 		pcid = &cfg->ring_config[ring].cid_config[cid];
 		
-		/* check for link_en */
-		link_en = fun_json_lookup_bool_default(chu, "link_en", false);
-
-		if (link_en) {
+		/* check for link on/off */
+		if (fun_json_lookup_string(chu, "link", &str)) {
 			en = HW_HSU_API_LINK_CONFIG_CID_FLAGS_LINK_ENABLE;
 			en = htobe64(en);
-			pcid->cid_flags |= en;
+			if (strcmp(str, "ON") == 0) {
+				pcid->cid_flags |= en;
+			}
 		}
 
 		/* check for sris on/off */
