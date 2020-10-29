@@ -217,3 +217,10 @@ func TestUpgradeFailure(t *testing.T) {
 	response, err = postJSON("upgrade/"+strconv.Itoa(intPid)+"/complete", "")
 	checkSuccess(t, err, response)
 }
+
+func TestDownloadFailure(t *testing.T) {
+	_, err := initUpgrade("this_bundle_does_not_exist_for_sure")
+	if err == nil {
+		t.Errorf("successfully downloaded nonexistent bundle")
+	}
+}

@@ -11,6 +11,7 @@ import (
 	"math"
 	"net/http"
 	"os"
+	"reflect"
 	"strconv"
 	"strings"
 
@@ -165,7 +166,54 @@ func errorResponse(w http.ResponseWriter, message string) {
 	}
 }
 
+func hasOmitEmpty(tags []string) bool {
+	for _, v := range tags {
+		if v == "omitempty" {
+			return true
+		}
+	}
+	return false
+}
+
+func structToMap(item interface{}) map[string]interface{} {
+	res := map[string]interface{}{}
+	if item == nil {
+		return res
+	}
+	v := reflect.TypeOf(item)
+	reflectValue := reflect.ValueOf(item)
+	reflectValue = reflect.Indirect(reflectValue)
+
+	if v.Kind() == reflect.Ptr {
+		v = v.Elem()
+	}
+	for i := 0; i < v.NumField(); i++ {
+		tagParts := strings.Split(v.Field(i).Tag.Get("json"), ",")
+		name := tagParts[0]
+		if name != "" && name != "-" {
+			field := reflectValue.Field(i).Interface()
+
+			if hasOmitEmpty(tagParts) &&
+				field == reflect.Zero(reflect.TypeOf(field)).Interface() {
+				continue
+			}
+
+			if v.Field(i).Type.Kind() == reflect.Struct {
+				res[name] = structToMap(field)
+			} else {
+				res[name] = field
+			}
+		}
+	}
+	return res
+}
+
 func textMarshalInterface(b *bytes.Buffer, d interface{}, path string) {
+	if v := reflect.ValueOf(d); v.Kind() == reflect.Struct {
+		textMarshalInterface(b, structToMap(d), path)
+		return
+	}
+
 	switch d.(type) {
 	case map[string]interface{}:
 		for key, val := range d.(map[string]interface{}) {
@@ -268,9 +316,40 @@ func normalizeMac(data interface{}) (string, error) {
 	return strings.Join(mapFunc(parts, func(a int64) string { return fmt.Sprintf("%02X", a) }), ":"), nil
 }
 
-func servePeek(path string) httpHandlerWithState {
+func applyFilter(filter map[string]interface{}, data interface{}) interface{} {
+	if filter == nil {
+		return data
+	}
+	dataMap, ok := data.(map[string]interface{})
+	if !ok {
+		return nil
+	}
+	for k, v := range dataMap {
+		if fv, ok := filter[k]; ok {
+			fvMap, ok := fv.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			dataMap[k] = applyFilter(fvMap, v)
+			continue
+		}
+		delete(dataMap, k)
+	}
+	return dataMap
+}
+
+func makeFilter(filter map[string]interface{}) func(interface{}, error) (interface{}, error) {
+	return func(data interface{}, err error) (interface{}, error) {
+		if err != nil {
+			return nil, err
+		}
+		return applyFilter(filter, data), nil
+	}
+}
+
+func servePeek(path string, filter map[string]interface{}) httpHandlerWithState {
 	return func(state *agentState, w http.ResponseWriter, r *http.Request) {
-		serveSingleFunction(state, w, r, func() (interface{}, error) { return peekDPC(state.dpc, path) })
+		serveSingleFunction(state, w, r, func() (interface{}, error) { return makeFilter(filter)(peekDPC(state.dpc, path)) })
 	}
 }
 
@@ -293,9 +372,7 @@ func validateGetWithNumber(r *http.Request) (int, error) {
 }
 
 func peekDPC(client *dpcclient.DpcClient, path string) (interface{}, error) {
-	p := make([]interface{}, 1)
-	p[0] = path
-	return client.Execute("peek", p)
+	return client.Execute("peek", []interface{}{path})
 }
 
 func temperatureDPC(client *dpcclient.DpcClient, kind string, numbers []int) (interface{}, error) {

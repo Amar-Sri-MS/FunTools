@@ -54,6 +54,8 @@ func (state *agentState) With(handler httpHandlerWithState) httpHandler {
 func newAgentState() *agentState {
 	s := new(agentState)
 	s.upgradeStatus = make(map[int]int)
+
+	_ = os.Mkdir(upgradeFolder, 0744)
 	files, err := ioutil.ReadDir(upgradeFolder)
 	if err != nil {
 		log.Fatal(err)
@@ -98,14 +100,14 @@ func main() {
 	http.HandleFunc("/", serveDefault)
 
 	http.HandleFunc("/temperature/", state.With(serveTemperature))
-	http.HandleFunc("/images", state.With(servePeek("config/chip_info/images")))
+	http.HandleFunc("/images", state.With(servePeek("config/chip_info/images", nil)))
 	http.HandleFunc("/link_status", state.With(serveLinkStatus))
 	http.HandleFunc("/port/", state.With(servePort))
 	http.HandleFunc("/memory_info/", state.With(serveMemoryInfo))
-	http.HandleFunc("/processor_info", state.With(servePeek("config/processor_info")))
-	http.HandleFunc("/chip_info", state.With(servePeek("config/chip_info")))
-	http.HandleFunc("/version", state.With(servePeek("config/version")))
-	http.HandleFunc("/boot_defaults", state.With(servePeek("config/boot_defaults")))
+	http.HandleFunc("/processor_info", state.With(servePeek("config/processor_info", nil)))
+	http.HandleFunc("/chip_info", state.With(servePeek("config/chip_info", nil)))
+	http.HandleFunc("/version", state.With(servePeek("config/version", nil)))
+	http.HandleFunc("/boot_defaults", state.With(servePeek("config/boot_defaults", map[string]interface{}{"config-args": nil, "feature_set": nil})))
 	http.HandleFunc("/ssd/", state.With(serveSSD))
 	http.HandleFunc("/upgrade/", state.With(serveUpgrade))
 

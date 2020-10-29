@@ -35,17 +35,24 @@ func serveInitUpgrade(state *agentState, w http.ResponseWriter, r *http.Request)
 	}
 	processID := allocateID(state)
 
-	response, e := http.Get(params.URL)
+	response, err := http.Get(params.URL)
 	if err != nil {
 		log.Println("error downloading bundle", err)
-		internalServerError(w)
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
+
+	if response.StatusCode != http.StatusOK {
+		log.Println("http error downloading bundle", response.Status)
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
 	defer response.Body.Close()
 
 	file, err := os.OpenFile(bundleName(processID), os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0744)
 	if err != nil {
-		log.Println("error creating a file", e)
+		log.Println("error creating a file", err)
 		internalServerError(w)
 		return
 	}
@@ -53,7 +60,7 @@ func serveInitUpgrade(state *agentState, w http.ResponseWriter, r *http.Request)
 
 	_, err = io.Copy(file, response.Body)
 	if err != nil {
-		log.Println("error piping out file contents", e)
+		log.Println("error piping out file contents", err)
 		internalServerError(w)
 		return
 	}
