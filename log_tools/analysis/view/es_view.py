@@ -300,7 +300,7 @@ class ElasticLogSearcher(object):
 
     def get_unique_entries(self, field):
         """
-        Obtains a list of unique values for the given field.
+        Obtains a dict of unique values along with the count of documents for the given field.
 
         The field can be thought of as a column in a table, or a key in a
         structured log.
@@ -324,7 +324,7 @@ class ElasticLogSearcher(object):
                                 index=self.index,
                                 size=1)  # we're not really searching
         buckets = result['aggregations']['unique_vals']['buckets']
-        return [bucket['key'] for bucket in buckets]
+        return {bucket['key']:bucket['doc_count'] for bucket in buckets}
 
     def get_document_by_id(self, doc_id):
         """
