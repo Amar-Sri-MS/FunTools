@@ -6,8 +6,8 @@ chmod 0444 $DEPLOY_ROOT/etc/fstab
 cp bin/mips64/Linux/interfaces-ro $DEPLOY_ROOT/etc/network/interfaces
 chmod 0444 $DEPLOY_ROOT/etc/network/interfaces
 
-cp bin/mips64/Linux/eth0-dhcp.iface $DEPLOY_ROOT/etc/network/eth0-dhcp.iface
-chmod 0444 $DEPLOY_ROOT/etc/network/eth0-dhcp.iface
+cp bin/mips64/Linux/eth0_0-dhcp.iface $DEPLOY_ROOT/etc/network/eth0_0-dhcp.iface
+chmod 0444 $DEPLOY_ROOT/etc/network/eth0_0-dhcp.iface
 
 mkdir -p $DEPLOY_ROOT/etc/modprobe.d/
 cp bin/mips64/Linux/vfio.conf $DEPLOY_ROOT/etc/modprobe.d/vfio.conf

@@ -8,7 +8,7 @@ INTERFACES_DIR=$CONFIG_DIR/interfaces
 case "$1" in
     start)
         mkdir -p /tmp/interfaces.d
-        ln -s /etc/network/eth0-dhcp.iface /tmp/interfaces.d/eth0.iface
+        ln -s /etc/network/eth0_0-dhcp.iface /tmp/interfaces.d/eth0_0
 
         fsck_code=0
         e2fsck -y /dev/vda3 || fsck_code=$?
@@ -19,9 +19,10 @@ case "$1" in
         mount /persist
         mkdir -p $INTERFACES_DIR
         (  cd $INTERFACES_DIR
-           for file in *iface ; do
+           for file in *.iface ; do
                if [ -e $file ] ; then
-                   ln -f -s $INTERFACES_DIR/$file /tmp/interfaces.d/$file
+		   link_name=$(echo $file | sed -e 's/\.iface$//')
+                   ln -f -s $INTERFACES_DIR/$file /tmp/interfaces.d/$link_name
                fi
            done
         )
