@@ -44,6 +44,20 @@ class SKUCfgGen():
 
         return board_id_cfg.get('fungible_boards', None)
 
+    def build_default_entry(self, def_json, entry):
+        for key in entry.copy():
+            # Walk all the dictionaries in the DEFAUL_* entries recursevely
+            # updating them with defaults as needed.
+            if type(entry[key]) is dict:
+                self.build_default_entry(def_json, entry[key])
+                if key in list(def_json.keys()):
+                    sub_entry = {}
+                    sub_entry.update(def_json[key])
+                    sub_entry.update(entry[key])
+                    self.build_default_entry(def_json, sub_entry)
+                    del entry[key]
+                    entry.update(sub_entry)
+
     def build_default_config(self, def_json, def_cfg):
         for def_key, val in def_json.items():
             # Only keys prefixed with "DEFAULT_" are imported by board config
@@ -51,14 +65,8 @@ class SKUCfgGen():
             if 'DEFAULT_' in def_key:
                 # Build the entry.
                 entry = {}
-                entry.update(def_json[def_key])
-                for sub_key in list(val.keys()):
-                    if def_json.has_key(sub_key):
-                        sub_entry = {}
-                        sub_entry.update(def_json[sub_key])
-                        sub_entry.update(def_json[def_key][sub_key])
-                        del entry[sub_key]
-                        entry.update(sub_entry)
+                entry = copy.deepcopy(def_json[def_key])
+                self.build_default_entry(def_json, entry)
                 # Save the entry
                 new_key = def_key.replace('DEFAULT_', '')
                 def_cfg[new_key] = entry
@@ -109,13 +117,13 @@ class SKUCfgGen():
         """Traverse the board configuration recursevely looking for entries to
         apply default configuration to.
         """
-        for key, val in cfg_json.items():
-            if type(val) is dict:
-                self.apply_defaults_to_board_config(val, def_cfg)
+        for key in cfg_json.copy():
+            if type(cfg_json[key]) is dict:
+                self.apply_defaults_to_board_config(cfg_json[key], def_cfg)
                 if key in list(def_cfg.keys()):
                     self.update_entry(key, cfg_json, def_cfg)
-            elif type(val) is list:
-                for item in val:
+            elif type(cfg_json[key]) is list:
+                for item in cfg_json[key]:
                     if type(item) is dict:
                         self.apply_defaults_to_board_config(item, def_cfg)
                         if key in list(def_cfg.keys()):
