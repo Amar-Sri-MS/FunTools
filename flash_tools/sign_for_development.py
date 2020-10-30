@@ -74,7 +74,8 @@ def parse_args():
                         help="required: fourcc/ftype of blob", required=True)
     parser.add_argument("--sign_key", action="store",
                         help="identifier of key to use, eg. hkey1")
-    parser.add_argument('--chip', choices=['f1', 's1', 'f1d1'], required=True, help='Target chip')
+    parser.add_argument('--chip', dest='chip_type', choices=['f1', 's1', 'f1d1'],
+                        required=True, help='Target chip')
 
 
     # Required positional argument
@@ -86,7 +87,6 @@ def parse_args():
     opts.sign_key = check_update(opts, opts.sign_key, IDX_SIGN_KEY)
     opts.key_index = check_update(opts, opts.key_index, IDX_KEY_INDEX)
     opts.pad = check_update(opts, opts.pad, IDX_PAD)
-    opts.chip_type = opts.chip
 
     # sanitise inputs
     if (opts.sign_key is None):
