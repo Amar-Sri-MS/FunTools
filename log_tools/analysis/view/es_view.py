@@ -324,7 +324,7 @@ class ElasticLogSearcher(object):
                                 index=self.index,
                                 size=1)  # we're not really searching
         buckets = result['aggregations']['unique_vals']['buckets']
-        return {bucket['key']:bucket['doc_count'] for bucket in buckets}
+        return {bucket['key']: bucket['doc_count'] for bucket in buckets}
 
     def get_document_by_id(self, doc_id):
         """

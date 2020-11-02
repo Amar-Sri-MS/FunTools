@@ -286,6 +286,7 @@
     </script>
 </head>
 <body>
+    <!-- Calculating total log entries -->
     {% set totalEntries = sources.values()|sum() %}
     <h2 id="top">Logs for {{log_id}} ({{totalEntries}} log entries)</h2>
     <div class="navbar">
@@ -304,6 +305,7 @@
         <div class="filters">
             {% for source in sources %}
             <input type="checkbox" id="src_{{source}}" value="{{source}}" checked onchange="handleSourceFilters(this)"/>
+            <!-- Displaying log entries (along with the name of source) in % with rounded off to 2 decimals -->
             <label class="checkbox_label" for="src_{{source}}">{{source}} ({{((sources[source]/totalEntries)*100)|round(2)}}% entries)</label>
             {% endfor %}
         </div>
