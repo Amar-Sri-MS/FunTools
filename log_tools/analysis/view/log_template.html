@@ -98,7 +98,7 @@
      * Holds current message sources.
      */
     var allSources = {{sources}};
-    var currentSources = {{sources}};
+    var currentSources = Object.keys({{sources}});
 
     /*
      * Holds current time filters.
@@ -286,7 +286,9 @@
     </script>
 </head>
 <body>
-    <h2 id="top">Logs for {{log_id}}</h2>
+    <!-- Calculating total log entries -->
+    {% set totalEntries = sources.values()|sum() %}
+    <h2 id="top">Logs for {{log_id}} ({{totalEntries}} log entries)</h2>
     <div class="navbar">
         <div class="search_box">
             <input id="search" type="search" placeholder="Search..."/>
@@ -303,7 +305,8 @@
         <div class="filters">
             {% for source in sources %}
             <input type="checkbox" id="src_{{source}}" value="{{source}}" checked onchange="handleSourceFilters(this)"/>
-            <label class="checkbox_label" for="src_{{source}}">{{source}}</label>
+            <!-- Displaying log entries (along with the name of source) in % with rounded off to 2 decimals -->
+            <label class="checkbox_label" for="src_{{source}}">{{source}} ({{((sources[source]/totalEntries)*100)|round(2)}}% entries)</label>
             {% endfor %}
         </div>
 

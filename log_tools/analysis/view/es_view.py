@@ -20,29 +20,32 @@ from flask import request
 
 app = Flask(__name__)
 
-try:
-    with open('../config.json', 'r') as f:
-        config = json.load(f)
-except IOError:
-    print('Config file not found! Checking for default config file..')
-
-try:
-    with open('../default_config.json', 'r') as f:
-        default_config = json.load(f)
-    # Overriding default config with custom config
-    config = { **default_config, **config }
-except IOError:
-    sys.exit('Default config file not found! Exiting..')
-
 
 def main():
+    config = {}
+    try:
+        with open('../config.json', 'r') as f:
+            config = json.load(f)
+    except IOError:
+        print('Config file not found! Checking for default config file..')
+
+    try:
+        with open('../default_config.json', 'r') as f:
+            default_config = json.load(f)
+        # Overriding default config with custom config
+        config = { **default_config, **config }
+    except IOError:
+        sys.exit('Default config file not found! Exiting..')
+
+    # Updating Flask's config with the configs from file
+    app.config.update(config)
     app.run(host='0.0.0.0')
 
 
 @app.route('/')
 def root():
     """ Serves the root page, which shows a list of logs """
-    ELASTICSEARCH_HOSTS = config['ELASTICSEARCH']['hosts']
+    ELASTICSEARCH_HOSTS = app.config['ELASTICSEARCH']['hosts']
     es = Elasticsearch(ELASTICSEARCH_HOSTS)
 
     indices = es.indices.get('log_*')
@@ -66,8 +69,8 @@ def _get_script_dir():
 
 def _render_root_page(log_ids, jinja_env, template):
     """ Renders the root page from a template """
-    KIBANA_HOST = config['KIBANA']['host']
-    KIBANA_PORT = config['KIBANA']['port']
+    KIBANA_HOST = app.config['KIBANA']['host']
+    KIBANA_PORT = app.config['KIBANA']['port']
     kibana_url = f'{KIBANA_HOST}:{KIBANA_PORT}/app/kibana#/discover'
     template_dict = {}
     # Default Kibana View with logs from last 90 days to now
@@ -139,7 +142,7 @@ class ElasticLogSearcher(object):
 
     def __init__(self, index):
         """ New searcher, looking at a specific index """
-        ELASTICSEARCH_HOSTS = config['ELASTICSEARCH']['hosts']
+        ELASTICSEARCH_HOSTS = app.config['ELASTICSEARCH']['hosts']
         self.es = Elasticsearch(ELASTICSEARCH_HOSTS)
         self.index = index
 
@@ -297,7 +300,7 @@ class ElasticLogSearcher(object):
 
     def get_unique_entries(self, field):
         """
-        Obtains a list of unique values for the given field.
+        Obtains a dict of unique values along with the count of documents for the given field.
 
         The field can be thought of as a column in a table, or a key in a
         structured log.
@@ -321,7 +324,7 @@ class ElasticLogSearcher(object):
                                 index=self.index,
                                 size=1)  # we're not really searching
         buckets = result['aggregations']['unique_vals']['buckets']
-        return [bucket['key'] for bucket in buckets]
+        return {bucket['key']: bucket['doc_count'] for bucket in buckets}
 
     def get_document_by_id(self, doc_id):
         """
