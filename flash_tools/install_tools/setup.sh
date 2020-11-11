@@ -16,11 +16,10 @@ setup_err() {
 		cat $PROGRESS >> $LAST_ERROR
 		echo "Last stderr output:" >> $LAST_ERROR
 		[ -s stderr.txt ] && cat stderr.txt >> $LAST_ERROR
-		rm -f $PROGRESS
 	else
 		log_msg "Install/Upgrade successful."
-		echo "done" >> $PROGRESS
 	fi
+	rm -f $PROGRESS
 	sync
 	exit $trap_code
 }
@@ -82,7 +81,6 @@ fi
 if [ -f $PROGRESS ]
 then
 	log_msg "Previous upgrade in progress... Aborting..."
-	log_msg "System should be rebooted to complete."
 	log_msg "You may recover by removing $PROGRESS."
 	exit 1
 fi
