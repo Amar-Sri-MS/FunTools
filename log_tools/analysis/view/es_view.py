@@ -588,5 +588,30 @@ def _render_search_page(search_results, log_id, search_term, state, page,
     return result
 
 
+@app.route('/log/<log_id>/analytics', methods=['GET'])
+def analytics(log_id):
+    """ Renders the analytics page for a particular log_id """
+    # Assume our template is right next door to us.
+    dir = _get_script_dir()
+
+    jinja_env = jinja2.Environment(loader=jinja2.FileSystemLoader(dir),
+                             trim_blocks=True,
+                             lstrip_blocks=True)
+    template = jinja_env.get_template('analytics_template.html')
+
+    return _render_analytics_page(log_id, jinja_env, template)
+
+def _render_analytics_page(log_id, jinja_env, template):
+
+    es = ElasticLogSearcher(log_id)
+    sources = es.get_unique_entries('src')
+
+    template_dict = {}
+    template_dict['log_id'] = log_id
+    template_dict['sources'] = sources
+
+    result = template.render(template_dict, env=jinja_env)
+    return result
+
 if __name__ == '__main__':
     main()
