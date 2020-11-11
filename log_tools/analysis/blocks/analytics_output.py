@@ -108,7 +108,7 @@ class AnalyticsOutput(Block):
             # TODO(Sourabh): Better approach for handling special characters
             query = '"{}"'.format(msg['line'].replace('\\','').replace('"',' ').replace('\'', '!\''))
 
-            kibana_url = ("http://{}:{}/app/discover#/?_g=(time:(from:now-90d,to:now))"
+            kibana_url = ("http://{}:{}/app/kibana#/discover/?_g=(time:(from:now-90d,to:now))"
                           "&_a=(columns:!(src,msg),filters:!(),index:log_{},interval:auto,"
                           "query:(language:kuery,query:'{}'),sort:!())").format(KIBANA_HOST,
                                                                                 KIBANA_PORT,
