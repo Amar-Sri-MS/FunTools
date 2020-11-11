@@ -129,7 +129,14 @@ def run_upgrade(args, release_images):
     """
         Perform firmware upgrade
     """
-    pcidevs_string = subprocess.check_output(['lspci', '-d', args.pci_devid, '-mmn'])
+    if isinstance(args.pci_devid, list):
+        for pci_devid in args.pci_devid:
+            pcidevs_string = subprocess.check_output(['lspci', '-d', pci_devid, '-mmn'])
+            if pcidevs_string:
+                break
+    else:
+        pcidevs_string = subprocess.check_output(['lspci', '-d', args.pci_devid, '-mmn'])
+
     sudo = [] if platform.machine() == 'mips64' else ['sudo']
     if args.offline:
         if platform.machine() == 'mips64':
@@ -515,7 +522,7 @@ def main():
     arg_parser.add_argument('--chip', choices=['f1', 's1'],
             default='f1', help='Target chip')
 
-    arg_parser.add_argument('--pci-devid', default='1dad::1000',
+    arg_parser.add_argument('--pci-devid', default=['1dad:0005:', '1dad::1000'],
             help='PCI device ID to use for upgrades')
 
     arg_parser.add_argument('--force', action='store_true',
