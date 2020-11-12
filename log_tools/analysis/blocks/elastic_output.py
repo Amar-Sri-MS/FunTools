@@ -8,6 +8,7 @@ import sys
 
 from elasticsearch7 import Elasticsearch
 from elasticsearch7.helpers import parallel_bulk
+from itertools import tee
 
 from blocks.block import Block
 
@@ -67,6 +68,11 @@ class ElasticsearchOutput(Block):
         self.create_kibana_index_pattern()
 
         for it in iters:
+            # Copying the iterator to send to the next output block.
+            # Might have performance implications because of copying.
+            # TODO(Sourabh): Need to check alternative solutions
+            # to share data between the output blocks.
+            it, it_copy = tee(it)
             # parallel_bulk is a wrapper around bulk to provide threading.
             # default thread_count is 4 and it returns a generator with indexing result.
             # chunk_size of 10k works best based on tests on existing logs on single ES node
@@ -75,6 +81,7 @@ class ElasticsearchOutput(Block):
             for success, info in parallel_bulk(self.es, self.generate_es_doc(it), chunk_size=10000):
                 if not success:
                     print('Failed to index a document', info)
+            yield from it_copy
 
     def generate_es_doc(self, it):
         """ Maps iterable contents to elasticsearch document """

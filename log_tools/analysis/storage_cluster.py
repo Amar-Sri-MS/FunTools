@@ -189,10 +189,18 @@ def output_pipeline(output_block):
             "block": "ElasticOutput",
             "cfg": {
                 "index": "log_${build_id}"
+            },
+            "out": "analytics"
+        }
+        output_analytics = {
+            "id": "analytics",
+            "block": "AnalyticsOutput",
+            "cfg": {
+                "dir": "view/analytics/log_${build_id}/duplicates.html"
             }
         }
 
-        return [output]
+        return [output, output_analytics]
 
 if __name__ == '__main__':
     main()

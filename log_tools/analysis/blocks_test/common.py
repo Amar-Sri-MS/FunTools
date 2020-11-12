@@ -22,3 +22,7 @@ def msg_tuple_to_dict(msg_tuple):
             'display_time': msg_tuple[3],
             'line': msg_tuple[4]
             }
+
+def lines_to_iterable(lines):
+    iter = [(None, None, 'uid', None, line) for line in lines]
+    return iter
