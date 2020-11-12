@@ -23,6 +23,8 @@ class AnalyticsOutput(Block):
     def __init__(self):
         self.cfg = None
         self.dir = None
+        # Maintains hash of unique log entry for detecting duplicates.
+        # This might take up memory as the log entries increase.
         self.duplicate_entries = {}
         self.config = {}
         # Reading config file if available.
@@ -77,15 +79,19 @@ class AnalyticsOutput(Block):
                 }
             self.duplicate_entries[hashval]['count'] += 1
 
+    def get_most_duplicated_entries(self, entries=10):
+        # Sorting by count and picking up the top entries
+        most_duplicated_entries = sorted(self.duplicate_entries.values(),
+                                key=lambda entry: entry['count'],
+                                reverse=True)[:entries]
+        return most_duplicated_entries
+
     def generate_most_duplicates_entries(self):
         """
         Get the top 10 most duplicated log entries.
         Generate HTML page with analyzed data for the build_id.
         """
-        # Sorting by count and picking up the top 10 entries
-        most_duplicated_entries = sorted(self.duplicate_entries.items(),
-                                key=lambda entry: entry[1]['count'],
-                                reverse=True)[:10]
+        most_duplicated_entries = self.get_most_duplicated_entries()
 
         MODULE_PATH = Path(__file__)
         # This is equivalent to path.parent.parent
@@ -102,7 +108,7 @@ class AnalyticsOutput(Block):
         table_head = ['Duplicates', 'Source', 'Timestamp', 'Log Message']
         table_body = []
         for entry in most_duplicated_entries:
-            msg = entry[1]['msg']
+            msg = entry['msg']
             # Kibana query should be enclosed within quotations for exact match
             # Removing special characters
             # TODO(Sourabh): Better approach for handling special characters
@@ -116,7 +122,7 @@ class AnalyticsOutput(Block):
                                                                                 quote_plus(query))
 
             table_body.append(
-                '<tr><td>{}</td><td>{}</td><td>{}</td><td><a href="{}">{}</a></td></tr>'.format(entry[1]['count'],
+                '<tr><td>{}</td><td>{}</td><td>{}</td><td><a href="{}">{}</a></td></tr>'.format(entry['count'],
                                                                                               msg['uid'],
                                                                                               msg['datetime'],
                                                                                               kibana_url,
