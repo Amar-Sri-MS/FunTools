@@ -31,7 +31,7 @@ GB = KB ** 3
 # execution address that u-boot will relocate data to (this is important for elf files,
 # and might not be relevant if file format is changed and the data is loaded directly
 # into the execution address)
-LOAD_ADDR = 0xffffffff91000000
+LOAD_ADDR = 0xa800000021000000
 
 # Block size used by u-boot when operating on a raw MMC device. Unless a filesystem
 # is used on top of the MMC, u-boot will only perform block-aligned block-size accesses,
@@ -202,7 +202,7 @@ def gen_boot_script(filename, funos_start_blk, ccfg_start_blk, linux_start_blk=-
                 load_size=filesize(g.appfile)))
         outfile.write('elf_get_extent ${loadaddr};\n')
         outfile.write('mmc dev; mmc read ${elf_extent} ${ccfg_mmcstart} 0; loadblob ${elf_extent};\n')
-
+        outfile.write('setenv bss_clear 0;\n')
         outfile.write('bootelf -p ${loadaddr};\n')
 
     # default location in full Fungible workspace
