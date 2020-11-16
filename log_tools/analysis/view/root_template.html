@@ -7,24 +7,26 @@
 </head>
 <body>
     {% include 'templates/nav_bar.html' ignore missing %}
-    <h3>Available logs</h3>
-    <table class="index">
-        <thead>
-            <tr>
-                <th>Name</th>
-                <th>View</th>
-            </tr>
-        </thead>
-        <tbody>
-        {% for log in logs %}
-            <tr>
-                <td>{{log.name}}</td>
-                <td><a href="/log/{{log.name}}/dashboard">Dashboard</a></td>
-                <td><a href={{log.link}}>Explore Logs</a></td>
-                <td><a href="/log/{{log.name}}">Simple</a></td>
-            </tr>
-        {% endfor %}
-        </tbody>
-    </table>
+    <div class="content">
+        <h3>Available logs</h3>
+        <table class="index">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>View</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for log in logs %}
+                <tr>
+                    <td>{{log.name}}</td>
+                    <td><a href="/log/{{log.name}}/dashboard">Dashboard</a></td>
+                    <td><a href={{log.link}}>Explore Logs</a></td>
+                    <td><a href="/log/{{log.name}}">Simple</a></td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </body>
 </html>
