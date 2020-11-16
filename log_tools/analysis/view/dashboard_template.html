@@ -7,24 +7,82 @@
 </head>
 <body>
     {% include 'templates/nav_bar.html' ignore missing %}
-    <div>
-        <h3>Source wise log distribution</h3>
-        <!-- Calculating total log entries -->
-        {% set totalEntries = sources.values()|sum() %}
-        <div>Total log entries: <b>{{totalEntries}}</b></div>
-        <div class="sources">
-            <!-- Displaying log entries (along with the name of source) in % with rounded off to 2 decimals -->
-            {% for source in sources %}
-                <div class="source">{{source}} ({{((sources[source]/totalEntries)*100)|round(2)}}% entries)</div>
-                <div class="separator"></div>
-            {% endfor %}
+    <div class="content">
+        <h2 class="center-align">Dashboard for <b>{{log_id}}</b></h2>
+        <div class="container">
+            <h3>Source wise log distribution</h3>
+            <!-- Calculating total log entries -->
+            {% set total_entries = sources.values()|sum() %}
+            <div>Total log entries: <b>{{total_entries}}</b></div>
+            <div class="sources_container">
+                <div>
+                    <span>Select:</span>
+                    <span class="filter_button" onclick="onToggleSelectAllSources()">All</span>
+                    <span class="separator"></span>
+                    <span class="filter_button" onclick="onToggleSelectAllSources(false)">None</span>
+                </div>
+                <div class="sources">
+                    <!-- Displaying log entries (along with the name of source) in % with rounded off to 2 decimals -->
+                    {% for source in sources %}
+                    {% set source_distribution = ((sources[source]/total_entries)*100)|round(2) %}
+                    <div class="source">
+                        <input type="checkbox" id="{{source}}" name="source" value="{{source}}" checked />
+                        <label for="{{source}}">{{source}} ({{source_distribution}}% entries)</label>
+                    </div>
+                {% endfor %}
+                </div>
+                <div id="explore_button">
+                    <button class="btn" onclick="onClickExploreLogs()">Explore Logs <span class="arrow right"></span></button>
+                </div>
+            </div>
         </div>
-    </div>
-    <div class="container">
-        <h3>Most duplicated logs</h3>
-        <div class="log_entries">
-            {% include 'analytics/'+log_id+'/duplicates.html' ignore missing %}
+        <div class="container row">
+            <div class="distribution_stats">
+                <h3>Log Distribution for All source(s)</h3>
+                <div class="content">
+                </div>
+            </div>
+            <div class="separator"></div>
+            <div>
+                <h3>Most duplicated for All source(s)</h3>
+                <div class="log_entries">
+                    {% include 'analytics/'+log_id+'/duplicates.html' ignore missing %}
+                </div>
+            </div>
+        </div>
+        <div class="container">
+            <h3>Recent Error logs for All source(s)</h3>
+            <div class="content">
+
+            </div>
         </div>
     </div>
 </body>
+<script type="text/javascript">
+    const KIBANA_BASE_URL = "{{kibana_base_url}}";
+    const sourceInputElements = Array.from(document.getElementsByName('source'));
+
+    function onClickExploreLogs() {
+        // Redirects to Kibana with the selected source as query
+
+        const selectedSources = sourceInputElements.filter(source => source.checked);
+        if (selectedSources.length === 0) {
+            // Show error message that no source is being selected
+            alert("Select a source to explore logs");
+            return;
+        }
+
+        const sources = selectedSources.map(source => source.value);
+        const query = encodeURI(`src:(${sources.join(" or ")})`);
+        const kibana_url = KIBANA_BASE_URL.replace("KIBANA_QUERY", query);
+        window.open(kibana_url, "_blank");
+    }
+
+    function onToggleSelectAllSources(flag = true) {
+        // Toggles All/None selection of sources to explore in Kibana
+        // Defaults to True which selects all the sources
+
+        sourceInputElements.forEach(source => (source.checked = flag));
+    }
+</script>
 </html>

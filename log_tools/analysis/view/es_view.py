@@ -604,11 +604,26 @@ def dashboard(log_id):
 def _render_dashboard_page(log_id, jinja_env, template):
 
     es = ElasticLogSearcher(log_id)
+
+    KIBANA_HOST = app.config['KIBANA']['host']
+    KIBANA_PORT = app.config['KIBANA']['port']
+    # KIBANA defaults.
+    # TODO(Sourabh): Would be better to have this in config files
+    kibana_time_filter = 'from:now-90d,to:now'
+    kibana_selected_columns = 'src,msg'
+    kibana_base_url = ("http://{}:{}/app/kibana#/discover/?_g=(time:({}))&_a=(columns:!({}),index:{},"
+                  "query:(language:kuery,query:'KIBANA_QUERY'))").format(KIBANA_HOST,
+                                                                         KIBANA_PORT,
+                                                                         kibana_time_filter,
+                                                                         kibana_selected_columns,
+                                                                         log_id)
+
     sources = es.get_unique_entries('src')
 
     template_dict = {}
     template_dict['log_id'] = log_id
     template_dict['sources'] = sources
+    template_dict['kibana_base_url'] = kibana_base_url
 
     result = template.render(template_dict, env=jinja_env)
     return result

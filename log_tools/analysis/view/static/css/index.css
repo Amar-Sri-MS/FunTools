@@ -6,6 +6,7 @@ nav {
     display: flex;
     justify-content: center;
     padding: 10px;
+    margin-bottom: 25px;
     box-shadow: 0 0 10px #d6dae0;
 }
 img {
@@ -32,4 +33,40 @@ th {
 h3 {
     text-decoration: underline;
     margin-bottom: 5px;
+}
+.center-align {
+    text-align: center;
+}
+.content {
+    margin: 0px 10px;
+}
+.container {
+    border-bottom: 1px solid #4d4d4d80;
+    padding: 10px 0px;
+}
+.row {
+    display: flex;
+}
+.btn {
+    border: 2px solid #3B7FC4;
+    border-radius: 5px;
+    padding: 5px 10px;
+    background-color: white;
+    cursor: pointer;
+    font-size: 16px;
+    color: #3B7FC4;
+    outline: none;
+}
+.btn:hover {
+    background-color: #3B7FC440;
+}
+.arrow {
+    border: solid;
+    border-width: 0 3px 3px 0;
+    display: inline-block;
+    padding: 3px;
+}
+.right {
+    transform: rotate(-45deg);
+    -webkit-transform: rotate(-45deg);
 }
