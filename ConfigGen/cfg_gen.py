@@ -206,7 +206,8 @@ def _generate_funos_default_config(config_root_dir, output_dir,
 
     modules_cfg = _generate_modules_config(config_root_dir)
 
-    config_chip_dir = os.path.join(config_root_dir, "chip", target_chip)
+    config_chip_dir = os.path.join(config_root_dir,
+                                   "modules", "chip", target_chip)
     if os.path.exists(config_chip_dir):
         chip_modules_cfg = _generate_modules_config(config_chip_dir)
         modules_cfg = jsonutils.merge_dicts_recursive(modules_cfg, chip_modules_cfg)
