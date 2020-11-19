@@ -395,12 +395,6 @@ class SKUCfgGen():
                 fun_board_sku_list=all_fungible_board_skus,
                 meta_data=meta_data))
 
-    # Creates binary file with skuid
-    def _create_binary_file(self, file_path, four_byte_data):
-         with open(file_path, "wb") as f:
-            byte_array = struct.pack('<I', four_byte_data)
-            f.write(byte_array)
-
     # generate the version 1 data, most of which is a PCI config
     def _get_version1_data(self, pci_cfg_dir, sku_name):
         if not pci_cfg_dir:
