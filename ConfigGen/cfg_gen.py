@@ -116,10 +116,8 @@ def _generate_modules_config(config_root_dir):
     # Python 2.7 glob does not support a recursive glob. We want to allow
     # nesting within the modules path. So, search using os.walk.
     def _find_modules_configs():
-        modules_path = os.path.join(config_root_dir, 'modules')
-
         matches = []
-        for root, dirs, files in os.walk(modules_path):
+        for root, dirs, files in os.walk(config_root_dir):
             for match in fnmatch.filter(files, '*.cfg'):
                 matches.append(os.path.join(root, match))
 
@@ -137,11 +135,11 @@ def _generate_modules_config(config_root_dir):
             cfg_json = json.loads(cfg_json)
 
         # Gets the path relative to the config root, e.g.
-        #   'modules/tcp/tcp.cfg'
+        #   'tcp/tcp.cfg'
         cfg_path = os.path.relpath(cfg, config_root_dir)
 
         # Gets the parent paths as a list, e.g.
-        #   ['modules', 'tcp']
+        #   ['tcp']
         parents = cfg_path.split(os.path.sep)[:-1]
 
         # Builds the heirarchy outwards from the inside, returns something
@@ -149,6 +147,7 @@ def _generate_modules_config(config_root_dir):
         #   {'modules': {'tcp': {cfg_json}}}
         for parent in reversed(parents):
             cfg_json = {parent: cfg_json}
+        cfg_json = {"modules": cfg_json}
 
         # Merge recursively. Merges subpaths so hierarchies are possible.
         out_cfg = jsonutils.merge_dicts_recursive(out_cfg, cfg_json)
@@ -204,14 +203,21 @@ def _generate_funos_default_config(config_root_dir, output_dir,
     stats_cfg = _generate_stats_config(config_root_dir)
     funos_default_config = jsonutils.merge_dicts(funos_default_config, stats_cfg)
 
-    modules_cfg = _generate_modules_config(config_root_dir)
+    ## process module config -- global and per-chip
+    config_module_dir = os.path.join(config_root_dir,
+                                     "modules_config", "modules")
+    modules_cfg = _generate_modules_config(config_module_dir)
 
-    config_chip_dir = os.path.join(config_root_dir, target_chip)
+    config_chip_dir = os.path.join(config_root_dir,
+                                   "modules_config", "chip", target_chip)
     if os.path.exists(config_chip_dir):
         chip_modules_cfg = _generate_modules_config(config_chip_dir)
-        modules_cfg = jsonutils.merge_dicts_recursive(modules_cfg, chip_modules_cfg)
+        modules_cfg = jsonutils.merge_dicts_recursive(modules_cfg,
+                                                      chip_modules_cfg)
 
-    funos_default_config = jsonutils.merge_dicts(funos_default_config, modules_cfg)
+    ## assemble final config
+    funos_default_config = jsonutils.merge_dicts(funos_default_config,
+                                                 modules_cfg)
 
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
