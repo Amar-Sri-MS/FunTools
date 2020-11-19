@@ -135,11 +135,11 @@ def _generate_modules_config(config_root_dir):
             cfg_json = json.loads(cfg_json)
 
         # Gets the path relative to the config root, e.g.
-        #   'modules/tcp/tcp.cfg'
+        #   'tcp/tcp.cfg'
         cfg_path = os.path.relpath(cfg, config_root_dir)
 
         # Gets the parent paths as a list, e.g.
-        #   ['modules', 'tcp']
+        #   ['tcp']
         parents = cfg_path.split(os.path.sep)[:-1]
 
         # Builds the heirarchy outwards from the inside, returns something
@@ -147,6 +147,7 @@ def _generate_modules_config(config_root_dir):
         #   {'modules': {'tcp': {cfg_json}}}
         for parent in reversed(parents):
             cfg_json = {parent: cfg_json}
+        cfg_json = {"modules": cfg_json}
 
         # Merge recursively. Merges subpaths so hierarchies are possible.
         out_cfg = jsonutils.merge_dicts_recursive(out_cfg, cfg_json)
