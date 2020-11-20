@@ -35,7 +35,7 @@ static char *_read_input_file(int fd, size_t *outsize)
 	size_t alloc_size, size = 0;
 
 	alloc_size = (1024 * 1024);
-	buffer = malloc(alloc_size);
+	buffer = malloc(alloc_size+1);
 	if (buffer == NULL)
 		oom();
 	pp = buffer;
@@ -47,7 +47,7 @@ static char *_read_input_file(int fd, size_t *outsize)
 		/* if it's full, up the buffer */
 		if (size == alloc_size) {
 			alloc_size *= 2;
-			buffer = realloc(buffer, alloc_size);
+			buffer = realloc(buffer, alloc_size+1);
 			if (buffer == NULL)
 				oom();
 		}
@@ -63,6 +63,8 @@ static char *_read_input_file(int fd, size_t *outsize)
 
 	if (outsize)
 		*outsize = size;
+	// append a null for strings?
+	buffer[size] = '\0';
 	return buffer;
 }
 
@@ -99,7 +101,8 @@ static struct fun_json *_read_json(int fd)
 
 	buf = _read_input_file(fd, &size);
 	assert(buf);
-	
+
+	printf("%zu\n%s", size, buf);
 	input = fun_json_create_from_text_with_status(buf, &parsed_all);
 
 	if (!parsed_all || size != strlen(buf)) {
