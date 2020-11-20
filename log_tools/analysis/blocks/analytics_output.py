@@ -112,7 +112,7 @@ class AnalyticsOutput(Block):
             # Kibana query should be enclosed within quotations for exact match
             # Removing special characters
             # TODO(Sourabh): Better approach for handling special characters
-            query = '"{}"'.format(msg['line'].replace('\\','').replace('"',' ').replace('\'', '!\''))
+            query = '"{}"'.format(msg['line'].replace('\\','').replace('"',' ').replace('\'', '!\'')).replace('!', '!!')
 
             kibana_url = ("http://{}:{}/app/kibana#/discover/?_g=(time:(from:now-90d,to:now))"
                           "&_a=(columns:!(src,msg),filters:!(),index:log_{},interval:auto,"
