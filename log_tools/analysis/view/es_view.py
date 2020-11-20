@@ -16,6 +16,8 @@ import jinja2
 from elasticsearch7 import Elasticsearch
 from flask import Flask
 from flask import request
+from pathlib import Path
+from urllib.parse import quote_plus
 
 
 app = Flask(__name__)
@@ -263,7 +265,8 @@ class ElasticLogSearcher(object):
         have lower values than the "before_sort_val" in the state argument.
         """
         body = self._build_query_body(query_term, source_filters, time_filters)
-        body['search_after'] = [state.before_sort_val]
+        if state.before_sort_val != -1:
+            body['search_after'] = [state.before_sort_val]
 
         # The recipe for search_before is to do a search_after in descending
         # sort order, and then reverse the list of results. Quirky.
@@ -444,6 +447,13 @@ def _get_requested_log_lines(log_id):
 def _convert_to_table_row(hit):
     """ Converts a search hit into an HTML table row """
     s = hit['_source']
+    log_id = hit['_index']
+    kibana_base_url = _get_kibana_base_url(log_id)
+
+    msg = s['msg']
+    query = '"{}"'.format(msg.replace('\\','').replace('"',' ').replace('\'', '!\'')).replace('!', '!!')
+    # This will be used to link Kibana dashboard from the log message
+    kibana_url = kibana_base_url.replace('KIBANA_QUERY', quote_plus(query))
 
     # The log lines are organized as table rows in the template
     line = '<tr style="vertical-align: baseline">'
@@ -451,8 +461,9 @@ def _convert_to_table_row(hit):
         line = '<tr class={} id={}>'.format('search_highlight',
                                             hit.get('anchor_link'))
 
-    line += '<td>{}</td> <td>{}</td> <td>{}</td>'.format(s['src'],
+    line += '<td>{}</td> <td>{}</td> <td><a href="{}">{}</a></td>'.format(s['src'],
                                                          s['@timestamp'],
+                                                         kibana_url,
                                                          s['msg'])
     line += '</tr>'
     return line
@@ -637,12 +648,14 @@ def _render_dashboard_page(log_id, jinja_env, template):
     kibana_base_url = _get_kibana_base_url(log_id)
 
     sources = es.get_unique_entries('src')
+    recent_logs = _get_recent_logs(log_id, 50, log_levels=['error'])
 
     template_dict = {}
     template_dict['log_id'] = log_id
     template_dict['sources'] = sources
     template_dict['kibana_base_url'] = kibana_base_url
     template_dict['log_level_stats'] = _get_log_level_stats(log_id)
+    template_dict['recent_logs'] = _render_log_entries(recent_logs)
 
     result = template.render(template_dict, env=jinja_env)
     return result
@@ -677,5 +690,74 @@ def _get_log_level_stats(log_id, sources=[], log_levels=None, time_filters=None)
         }
 
     return document_counts
+
+@app.route('/log/<log_id>/dashboard/recent', methods=['GET'])
+def recent_logs(log_id):
+    sources = request.args.getlist('source')
+    levels = request.args.getlist('level')
+    # Number of log entries. Defaults to 50
+    size = request.args.get('size', 50)
+
+    recent_logs = _get_recent_logs(log_id, size, sources, levels)
+    result = _render_log_entries(recent_logs)
+    return result
+
+def _get_recent_logs(log_id, size, sources=[], log_levels=None, time_filters=None):
+    """
+    Returns table body of recent log entries.
+
+    size parameter determines the number of log entries.
+    log_levels parameter is of list type which contains log level
+    """
+    es = ElasticLogSearcher(log_id)
+    state = ElasticLogState()
+
+    keyword_for_level = app.config.get('LEVEL_KEYWORDS')
+
+    level_keywords = []
+    query_string = ''
+    if log_levels:
+        for level in log_levels:
+            level_keywords.append(keyword_for_level[level])
+
+        query_string = f'msg:({" OR ".join(level_keywords)})'
+
+    results = es.search_backwards(state, query_string,
+                                      sources, time_filters,
+                                      query_size=size)
+    hits = results['hits']
+    # search_backwards returns the result in reverse order
+    hits.reverse()
+
+    page_body = []
+    for hit in hits:
+        line = _convert_to_table_row(hit)
+        page_body.append(line)
+
+    return page_body
+
+def _render_log_entries(entries):
+    """
+    Returns an html table generated using the list of log entries
+    """
+
+    MODULE_PATH = Path(__file__)
+    # This is equivalent to path.parent.parent
+    MODULE_DIR = MODULE_PATH.resolve().parents[1] / 'view' / 'templates'
+
+    jinja_env = jinja2.Environment(loader=jinja2.FileSystemLoader(MODULE_DIR),
+                                trim_blocks=True,
+                                lstrip_blocks=True)
+    template = jinja_env.get_template('log_entries.html')
+
+    header = ['Source', 'Timestamp', 'Log Message']
+    template_dict = {}
+    template_dict['head'] = header
+    template_dict['body'] = '\n'.join(entries)
+
+    result = template.render(template_dict, env=jinja_env)
+    return result
+
+
 if __name__ == '__main__':
     main()

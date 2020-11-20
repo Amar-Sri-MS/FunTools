@@ -64,9 +64,23 @@
             </div>
         </div>
         <div class="container">
-            <h3>Recent Error logs for All source(s)</h3>
+            <h3>Recent
+                <select name="level" id="level" onchange="onSelectLevelForRecentLogs(this)">
+                    <option value="error" selected>Error</option>
+                    <option value="warn">Warning</option>
+                    <option value="info">Info</option>
+                </select>
+                logs for
+                <select name="sources" id="recent_source" onchange="onSelectSourceForRecentLogs(this)">
+                    <option value="all" selected>All</option>
+                    {% for source in sources %}
+                        <option value="{{source}}">{{source}}</option>
+                    {% endfor %}
+                </select> source(s)</h3>
             <div class="content">
-
+                <div class="log_entries" id="recent_logs">
+                    {{recent_logs}}
+                </div>
             </div>
         </div>
     </div>
@@ -78,6 +92,7 @@
     const KIBANA_BASE_URL = "{{kibana_base_url}}";
     const sourceInputElements = Array.from(document.getElementsByName('source'));
     const logLevelStatsElement = document.getElementById('log_level_stats');
+    const recentLogsElement = document.getElementById('recent_logs');
 
     const logId = "{{log_id}}";
     const sources = {{sources}};
@@ -85,6 +100,7 @@
     const totalEntries = Object.keys(sources).reduce((total, source) => (total + sources[source]), 0);
     let logLevelStats = {{log_level_stats}};
     let selectedSourceForLogLevelStats = "all";
+    let selectedSourceForRecentLogs = "all", selectedLevelForRecentLogs = "error";
 
     function onClickExploreLogs() {
         // Redirects to Kibana with the selected source as query
@@ -145,6 +161,41 @@
             divs.push(`<div class="level_stat"><a href="${stat.kibana_url}">${level}</a>: ${stat.count}(${logDistribution}%)</div>`);
         }
         logLevelStatsElement.innerHTML = divs.join('\n');
+    }
+
+    function onSelectLevelForRecentLogs(levelElement) {
+        selectedLevelForRecentLogs = levelElement.value;
+        fetchRecentLogs();
+    }
+
+    function onSelectSourceForRecentLogs(sourceElement) {
+        selectedSourceForRecentLogs = sourceElement.value;
+        fetchRecentLogs();
+    }
+
+    function fetchRecentLogs() {
+        // Fetch recent logs for the selected level source
+        let xhttp = new XMLHttpRequest();
+        xhttp.onreadystatechange = function() {
+            if (this.readyState == 4 && this.status == 200) {
+                const data = xhttp.responseText;
+                if (data) {
+                    updateRecentLogs(data);
+                }
+            }
+        }
+
+        let uri = `${window.location.href}/recent?level=${selectedLevelForRecentLogs}`;
+        if (selectedSourceForRecentLogs !== 'all') {
+            uri = `${uri}&source=${selectedSourceForRecentLogs}`;
+        }
+
+        xhttp.open('GET', uri);
+        xhttp.send();
+    }
+
+    function updateRecentLogs(logs) {
+        recentLogsElement.innerHTML = logs;
     }
 
     function getKibanaURLForSources(sources) {
