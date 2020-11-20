@@ -38,8 +38,21 @@
         </div>
         <div class="container row">
             <div class="distribution_stats">
-                <h3>Log Distribution for All source(s)</h3>
+                <h3>Log Distribution for <select name="sources" id="sources" onchange="onSelectSourceForLogLevelStats(this)">
+                    <option value="all" selected>All</option>
+                    {% for source in sources %}
+                        <option value="{{source}}">{{source}}</option>
+                    {% endfor %}
+                </select> source(s)</h3>
                 <div class="content">
+                    <div id="log_level_stats">
+                        <div class="level_stat">Total: {{total_entries}}(100%)</div>
+                        <!-- Displaying log entries for a source and each log levels in % with rounded off to 2 decimals -->
+                        {% for level, stat in log_level_stats.items() %}
+                            {% set log_distribution = ((stat.count/total_entries)*100)|round(2) %}
+                            <div class="level_stat"><a href="{{stat.kibana_url}}">{{level}}</a>: {{stat.count}}({{log_distribution}}%)</div>
+                        {% endfor %}
+                    </div>
                 </div>
             </div>
             <div class="separator"></div>
@@ -59,8 +72,19 @@
     </div>
 </body>
 <script type="text/javascript">
+    // Kibana URL for redirecting to Kibana with given query.
+    // URL String contains a term 'KIBANA_QUERY' which should be replaced
+    // with a given query
     const KIBANA_BASE_URL = "{{kibana_base_url}}";
     const sourceInputElements = Array.from(document.getElementsByName('source'));
+    const logLevelStatsElement = document.getElementById('log_level_stats');
+
+    const logId = "{{log_id}}";
+    const sources = {{sources}};
+    // Total log entries indexed in ES
+    const totalEntries = Object.keys(sources).reduce((total, source) => (total + sources[source]), 0);
+    let logLevelStats = {{log_level_stats}};
+    let selectedSourceForLogLevelStats = "all";
 
     function onClickExploreLogs() {
         // Redirects to Kibana with the selected source as query
@@ -73,8 +97,7 @@
         }
 
         const sources = selectedSources.map(source => source.value);
-        const query = encodeURI(`src:(${sources.join(" or ")})`);
-        const kibana_url = KIBANA_BASE_URL.replace("KIBANA_QUERY", query);
+        const kibana_url = getKibanaURLForSources(sources);
         window.open(kibana_url, "_blank");
     }
 
@@ -84,5 +107,54 @@
 
         sourceInputElements.forEach(source => (source.checked = flag));
     }
+
+    function onSelectSourceForLogLevelStats(sourceElement) {
+        // Fetch log level stats for the selected source
+        let xhttp = new XMLHttpRequest();
+        xhttp.onreadystatechange = function() {
+            if (this.readyState == 4 && this.status == 200) {
+                let data = JSON.parse(xhttp.responseText);
+                if (data) {
+                    selectedSourceForLogLevelStats = sourceElement.value;
+                    updateLogLevelStats(data);
+                }
+            }
+        }
+
+        let uri = `${window.location.href}/level-stats`;
+        if (sourceElement.value !== 'all') {
+            source = sourceElement.value;
+            uri = `${uri}?source=${source}`;
+        }
+
+        xhttp.open('GET', uri);
+        xhttp.send();
+    }
+
+    function updateLogLevelStats(stats) {
+        // Updates the Log Level distribution
+        let totalEntriesForSource = selectedSourceForLogLevelStats === "all" ?
+                                    totalEntries :
+                                    sources[selectedSourceForLogLevelStats];
+        const kibanaUrlForSource = getKibanaURLForSources([selectedSourceForLogLevelStats]);
+
+        let divs = [`<div class="level_stat"><a href="${kibanaUrlForSource}">Total</a>: ${totalEntriesForSource}(${Math.round((totalEntriesForSource/totalEntries)*100)}%)</div>`];
+        for (let [level, stat] of Object.entries(stats)) {
+            // let logDistribution = Math.round((stat.count/totalEntriesForSource)*100);
+            let logDistribution = ((stat.count/totalEntriesForSource)*100).toFixed(2);
+            divs.push(`<div class="level_stat"><a href="${stat.kibana_url}">${level}</a>: ${stat.count}(${logDistribution}%)</div>`);
+        }
+        logLevelStatsElement.innerHTML = divs.join('\n');
+    }
+
+    function getKibanaURLForSources(sources) {
+        // Creates a Kibana URL for the given sources
+        let query = '';
+        if (!sources.includes("all"))
+            query = encodeURI(`src:(${sources.join(" or ")})`);
+        const kibana_url = KIBANA_BASE_URL.replace("KIBANA_QUERY", query);
+        return kibana_url;
+    }
+
 </script>
 </html>

@@ -335,6 +335,12 @@ class ElasticLogSearcher(object):
         """
         return self.es.get(index=self.index, id=doc_id)
 
+    def get_document_count(self, query_terms=None, source_filters=None, time_filters=None):
+        """ Returns count of documents for the given search query and filters """
+        body = self._build_query_body(query_terms, source_filters, time_filters)
+        result = self.es.count(index=self.index, body=body)
+        count = result['count']
+        return count
 
 @app.route('/log/<log_id>', methods=['GET'])
 def get_log_page(log_id):
@@ -601,9 +607,15 @@ def dashboard(log_id):
 
     return _render_dashboard_page(log_id, jinja_env, template)
 
-def _render_dashboard_page(log_id, jinja_env, template):
-
-    es = ElasticLogSearcher(log_id)
+def _get_kibana_base_url(log_id):
+    """
+    Creates a Kibana Base URL which could be used to create kibana urls
+    with any given query.
+    URL contains a term 'KIBANA_QUERY' which should be replaced with
+    the given search query.
+    URL contains defaults for selected columns to show in Kibana dashboard
+    and time filter to be within last 90 days.
+    """
 
     KIBANA_HOST = app.config['KIBANA']['host']
     KIBANA_PORT = app.config['KIBANA']['port']
@@ -617,6 +629,12 @@ def _render_dashboard_page(log_id, jinja_env, template):
                                                                          kibana_time_filter,
                                                                          kibana_selected_columns,
                                                                          log_id)
+    return kibana_base_url
+
+def _render_dashboard_page(log_id, jinja_env, template):
+
+    es = ElasticLogSearcher(log_id)
+    kibana_base_url = _get_kibana_base_url(log_id)
 
     sources = es.get_unique_entries('src')
 
@@ -624,9 +642,40 @@ def _render_dashboard_page(log_id, jinja_env, template):
     template_dict['log_id'] = log_id
     template_dict['sources'] = sources
     template_dict['kibana_base_url'] = kibana_base_url
+    template_dict['log_level_stats'] = _get_log_level_stats(log_id)
 
     result = template.render(template_dict, env=jinja_env)
     return result
 
+
+@app.route('/log/<log_id>/dashboard/level-stats', methods=['GET'])
+def log_level_stats(log_id):
+    sources = request.args.getlist('source')
+    result = _get_log_level_stats(log_id, sources)
+    return result
+
+def _get_log_level_stats(log_id, sources=[], log_levels=None, time_filters=None):
+    es = ElasticLogSearcher(log_id)
+    kibana_base_url = _get_kibana_base_url(log_id)
+    query = ''
+    if len(sources) > 0:
+        query = f'src:({" OR ".join(sources)}) AND'
+
+    keyword_for_level = app.config.get('LEVEL_KEYWORDS')
+
+    default_log_levels = keyword_for_level.keys()
+    if log_levels is None:
+        log_levels = default_log_levels
+
+    document_counts = {}
+    for level in log_levels:
+        kibana_query = f'{query} msg:({keyword_for_level[level]})'
+        document_counts[level] = {
+            'count': es.get_document_count(keyword_for_level[level], sources, time_filters),
+            'kibana_url': kibana_base_url.replace('KIBANA_QUERY', kibana_query),
+            'keywords': keyword_for_level[level]
+        }
+
+    return document_counts
 if __name__ == '__main__':
     main()
