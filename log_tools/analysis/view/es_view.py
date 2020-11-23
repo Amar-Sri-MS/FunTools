@@ -618,6 +618,7 @@ def dashboard(log_id):
 
     return _render_dashboard_page(log_id, jinja_env, template)
 
+
 def _get_kibana_base_url(log_id):
     """
     Creates a Kibana Base URL which could be used to create kibana urls
@@ -641,6 +642,7 @@ def _get_kibana_base_url(log_id):
                                                                          kibana_selected_columns,
                                                                          log_id)
     return kibana_base_url
+
 
 def _render_dashboard_page(log_id, jinja_env, template):
 
@@ -667,6 +669,7 @@ def log_level_stats(log_id):
     result = _get_log_level_stats(log_id, sources)
     return result
 
+
 def _get_log_level_stats(log_id, sources=[], log_levels=None, time_filters=None):
     es = ElasticLogSearcher(log_id)
     kibana_base_url = _get_kibana_base_url(log_id)
@@ -691,6 +694,7 @@ def _get_log_level_stats(log_id, sources=[], log_levels=None, time_filters=None)
 
     return document_counts
 
+
 @app.route('/log/<log_id>/dashboard/recent', methods=['GET'])
 def recent_logs(log_id):
     sources = request.args.getlist('source')
@@ -701,6 +705,7 @@ def recent_logs(log_id):
     recent_logs = _get_recent_logs(log_id, size, sources, levels)
     result = _render_log_entries(recent_logs)
     return result
+
 
 def _get_recent_logs(log_id, size, sources=[], log_levels=None, time_filters=None):
     """
@@ -735,6 +740,7 @@ def _get_recent_logs(log_id, size, sources=[], log_levels=None, time_filters=Non
         page_body.append(line)
 
     return page_body
+
 
 def _render_log_entries(entries):
     """

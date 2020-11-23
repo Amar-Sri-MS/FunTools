@@ -27,7 +27,8 @@
 }
 td {
     border-collapse: collapse;
-    padding-right: 5px
+    padding-right: 5px;
+    white-space: pre;
 }
 #explore_button {
     display: flex;
