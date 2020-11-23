@@ -7,9 +7,9 @@
 </head>
 <body>
     {% include 'templates/nav_bar.html' ignore missing %}
-    <!-- Macro for calculating log distribution and rounding it off to a given precision -->
-    {% macro log_distribution(count, total_entries, precision=2) -%}
-        {{((count/total_entries)*100)|round(precision)}}%
+    <!-- Macro for calculating percentage and rounding it off to a given precision -->
+    {% macro calculatePercentage(count, total, precision=2) -%}
+        {{((count/total)*100)|round(precision)}}%
     {%- endmacro %}
     <div class="content">
         <h2 class="center-align">Dashboard for <b>{{log_id}}</b></h2>
@@ -28,7 +28,7 @@
                 <div class="sources">
                     <!-- Displaying log entries (along with the name of source) in % with rounded off to 2 decimals -->
                     {% for source in sources %}
-                    {% set source_distribution = log_distribution(sources[source], total_entries) %}
+                    {% set source_distribution = calculatePercentage(sources[source], total_entries) %}
                     <div class="source">
                         <input type="checkbox" id="{{source}}" name="source" value="{{source}}" checked />
                         <label for="{{source}}">{{source}} ({{source_distribution}} entries)</label>
@@ -53,8 +53,8 @@
                         <div class="level_stat">Total: {{total_entries}}(100%)</div>
                         <!-- Displaying log entries for a source and each log levels in % with rounded off to 2 decimals -->
                         {% for level, stat in log_level_stats.items() %}
-                            {% set distribution = log_distribution(stat.count, total_entries) %}
-                            <div class="level_stat"><a href="{{stat.kibana_url}}">{{level}}</a>: {{stat.count}}({{distribution}})</div>
+                            {% set log_distribution = calculatePercentage(stat.count, total_entries) %}
+                            <div class="level_stat"><a href="{{stat.kibana_url}}">{{level}}</a>: {{stat.count}}({{log_distribution}})</div>
                         {% endfor %}
                     </div>
                 </div>
