@@ -78,6 +78,13 @@ ALL_ROOTFS_FILES = {
 def _rootfs(f, rootfs):
     return '{}.{}'.format(rootfs, f)
 
+def _mfg(f, signed=False):
+    if signed:
+        return '{}.{}.{}'.format(f, 'mfginstall','signed')
+    else:
+        return '{}.{}'.format(f, 'mfginstall')
+
+
 def main():
     parser = argparse.ArgumentParser()
     config = {}
@@ -197,7 +204,6 @@ def main():
                   "bin/flash_tools/flash_utils.py",
                   "bin/flash_tools/gen_hash_tree.py",
                   "bin/flash_tools/os_utils.py",
-                  "bin/flash_tools/sign_for_development.py",  # temporary, shouldn't use it in release process
                   "bin/flash_tools/" + os.path.basename(__file__),
                   "bin/Linux/x86_64/mkimage",
                   "bin/scripts/gen_fgpt.py",
@@ -449,19 +455,21 @@ def main():
                 f.write("{} {}\n".format(fname, os.path.join(os.getcwd(), fname)))
 
         cmd = [ 'python3', 'xdata.py',
-                funos_appname + ".mfginstall",
+                _mfg(funos_appname),
                 'add-file-lists',
                 'fw_upgrade_xdata' ]
         subprocess.call(cmd)
 
-        # temporary hack, shouldn't use sign_for_development script here
-        cmd = [ 'python3', 'sign_for_development.py',
-                '--fourcc', 'fun1',
-                '--version', str(args.force_version if args.force_version else 1),
-                '--chip', args.chip,
-                funos_appname + ".mfginstall"
-        ]
-        subprocess.call(cmd)
+        # take a copy of all funos default settings for signing
+        # and only override filenames used
+        mfg_app_config = config['signed_images'].get('funos.signed.bin').copy()
+        mfg_app_config['source'] = _mfg(funos_appname)
+        config['signed_mfg_images'] = {
+            _mfg(funos_appname, signed=True) : mfg_app_config
+        }
+        gf.set_search_paths([os.getcwd()])
+        gf.create_file(_mfg(funos_appname, signed=True), section='signed_mfg_images')
+
         os.chdir(curdir)
 
 
