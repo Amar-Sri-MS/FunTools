@@ -1,3 +1,7 @@
+{% if body == '' %}
+    <!-- There are no logs to show  -->
+    <div>No logs</div>
+{% else %}
 <table>
     <thead>
         <tr>
@@ -10,3 +14,4 @@
        {{body}}
     </tbody>
 </table>
+{% endif %}

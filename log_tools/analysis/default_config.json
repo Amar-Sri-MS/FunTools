@@ -9,5 +9,10 @@
     "KIBANA": {
         "host": "10.1.22.206",
         "port": 5601
+    },
+    "LEVEL_KEYWORDS": {
+        "error": "error err",
+        "warn": "warning warn",
+        "info": "info"
     }
 }

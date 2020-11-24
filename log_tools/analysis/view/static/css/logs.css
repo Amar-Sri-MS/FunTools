@@ -1,0 +1,53 @@
+.navbar {
+}
+.pagination {
+    margin: auto;
+    text-align: center;
+}
+.file_contents {
+    display: block;
+    font-family: monospace;
+    white-space: pre;
+}
+.search_highlight {
+    background-color: yellow;
+}
+.checkbox_label {
+    padding-right: 15px;
+}
+td {
+    white-space: pre;
+    border-collapse: collapse;
+    padding-right: 5px
+}
+.filters {
+    padding: 10px 0px;
+}
+.filters_button {
+    display: flex;
+    width: 100%;
+    justify-content: center;
+    margin-bottom: 20px;
+}
+input[type="search"] {
+    width: 400px;
+}
+#loader {
+    display: none;
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    width: 100px;
+    height: 100px;
+}
+#selectedFilters {
+    white-space: pre;
+    display: none;
+}
+#top_button {
+    position: fixed;
+    bottom: 50px;
+    right: 50px;
+    background-color: rgba(0, 0, 0, 0.15);
+    padding: 5px;
+}

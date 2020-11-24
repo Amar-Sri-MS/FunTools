@@ -1,0 +1,43 @@
+.sources_container {
+    padding: 10px;
+}
+.sources {
+    display: flex;
+    flex-wrap: wrap;
+}
+.source {
+    width: 250px;
+    padding: 5px 0px;
+}
+.filter_button {
+    cursor: pointer;
+    text-decoration: underline;
+}
+.filter_button:hover {
+    color: #3B7FC4;
+}
+.separator {
+    border: 1px dashed #a2a2a2;
+    margin: 0px 10px;
+    font-weight: bold;
+}
+.log_entries {
+    display: block;
+    font-family: monospace;
+}
+td {
+    border-collapse: collapse;
+    padding-right: 5px;
+    white-space: pre;
+}
+#explore_button {
+    display: flex;
+    justify-content: flex-end;
+}
+.distribution_stats {
+    min-width: 15%;
+}
+.level_stat {
+    padding: 5px 0px;
+    border-bottom: 0.8px solid #a2a2a270;
+}
