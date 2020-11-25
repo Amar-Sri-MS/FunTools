@@ -166,21 +166,6 @@ def _generate_storage_config(config_root_dir, output_dir,
 
     return storage_cfg
 
-def build_target_is_posix(target_machine):
-    if 'posix' in target_machine:
-        return True
-    return False
-
-def build_target_is_emulation(target_machine):
-    if 'emu' in target_machine:
-        return True
-    return False
-
-def build_target_is_qemu(target_machine):
-    if 'qemu' in target_machine:
-        return True
-    return False
-
 # Generate funos config
 def _generate_funos_default_config(config_root_dir, sdk_dir, output_dir,
                                    target_chip, target_machine):
