@@ -58,7 +58,15 @@ def line2tuple(fname, f, color):
             continue
 
         index = line.find(" ")
-        ts = float(line[1:index])
+
+        # Sometimes, FunOS will truncate the line with ... to signify that some
+        # output was dropped. If we cannot even reconstruct the timestamp from
+        # the line, then just drop the line.
+        try:
+            ts = float(line[1:index])
+        except:
+            continue
+
         formatted = f"{fname}: {line}"
         if color is not None:
             formatted = f"{color}{formatted}{Colors.RESET}"
