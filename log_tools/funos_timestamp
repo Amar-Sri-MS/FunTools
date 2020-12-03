@@ -10,24 +10,52 @@ from __future__ import print_function
 import argparse
 import datetime as d, re, sys
 
-###
-##  in case you want to import & call yourself
-# 
-def fix_timestamp(line):
-    g = re.match("^\[(\d{9,})\.(\d+) (\d\.\d\.\d)\] (.*)", line)
-    if (g is not None):
-        g = g.group
-        line = "[%s %s] %s\n" % (d.datetime.fromtimestamp(int(g(1)) + float(g(2)) * 1e-6).strftime("%b %d %H:%M:%S.%f"), g(3), g(4))
-    return line
+class TSConverter:
+    """
+    Given output from FunOS, convert timestamps. For example:
 
-###
-##  log processing
-# 
-def do_timestamps(infl, outfl):
-    for line in infl.readlines():
-        line = fix_timestamp(line)
-        outfl.write(line)
+    1606763826.634203 => Nov 30 11:17:06.634203
 
+    Methods
+    -------
+    fix_line(line):
+        Fix the timestamp for the provided line.
+    fix_file(infile, outfile):
+        Given open file handles, infile and outfile, fix the timestamps on
+        lines in infile, and write to outfile.
+    """
+
+    def __init__(self):
+        # 3 match groups, before the timestamp, the timestamp, and after the
+        # timestamp. Only match timestamps starting with 9 digits, this avoids
+        # converting the timestamps at the beginning of FunOS logs before they
+        # have established an initial time reference.
+        self.matcher = re.compile("^(.*\[)(\d{9,}\.\d+)( \d.\d.\d\])")
+
+    @staticmethod
+    def _fix_match(match):
+        before, ts_str, after = match.groups()
+        ts = float(ts_str)
+
+        converted = d.datetime.fromtimestamp(ts).strftime("%b %d %H:%M:%S.%f")
+
+        return "{}{}{}".format(before, converted, after)
+
+    def fix_line(self, line):
+        """
+        Fix the timestamp for the provided line.
+        """
+
+        return self.matcher.sub(TSConverter._fix_match, line)
+
+    def fix_file(self, infile, outfile):
+        """
+        Given open file handles, infile and outfile, fix the timestamps on
+        lines in infile, and write to outfile.
+        """
+
+        for line in infile:
+            outfile.write(self.fix_line(line))
 
 ###
 ##  work out input and output
@@ -50,7 +78,8 @@ def main():
     else:
         outfl = open(args.output, "w")
 
-    do_timestamps(infl, outfl)
+    converter = TSConverter()
+    converter.fix_file(infl, outfl)
         
     
 ###
