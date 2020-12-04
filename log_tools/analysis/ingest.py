@@ -18,24 +18,24 @@ from utils import manifest_parser
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('build_id', help='Unique build ID')
-    parser.add_argument('dir', help='Path to the logs directory')
+    parser.add_argument('path', help='Path to the logs directory')
     parser.add_argument('--output', help='Output block type', default='ElasticOutput')
 
     args = parser.parse_args()
 
-    env = dict()
-    env['logdir'] = args.dir
-    env['build_id'] = args.build_id
-
     start = time.time()
 
-    base_path = args.dir
+    base_path = args.path
 
-    # If the log directory is an archive then extract it
+    # If the base_path is an archive then extract it
     if archive_extractor.is_archive(base_path):
         archive_extractor.extract(base_path)
         # Remove the extension from the base path
         base_path = os.path.splitext(base_path)[0]
+
+    env = dict()
+    env['logdir'] = base_path
+    env['build_id'] = args.build_id
 
     cfg = build_pipeline(base_path, args.output)
 
@@ -51,7 +51,7 @@ def main():
 def build_pipeline(path, output_block):
     """ Constructs pipeline and metadata based on the manifest file """
     cfg = dict()
-    pipeline_cfg, metadata = build_input_pipeline(path)
+    pipeline_cfg, metadata = parse_manifest(path)
 
     # Adding output pipeline
     pipeline_cfg.extend(output_pipeline(output_block))
@@ -63,8 +63,8 @@ def build_pipeline(path, output_block):
     return cfg
 
 
-def build_input_pipeline(path):
-    """ Building input pipeline based on reading the manifest file """
+def parse_manifest(path):
+    """ Parses manifest file """
     pipeline_cfg = list()
 
     manifest = manifest_parser.parse(path)
@@ -76,118 +76,107 @@ def build_input_pipeline(path):
         if type(content) == str and content.startswith('frn'):
             frn_info = manifest_parser.parse_FRN(content)
 
-            if frn_info['resource_type'] != '':
-                content_path = os.path.join(path, frn_info['prefix_path'], frn_info['sub_path'])
+            # Ignore if the resource_type is not present in the FRN
+            if frn_info['resource_type'] == '':
+                continue
 
-                # Extract archive and check for manifest file
-                if frn_info['resource_type'] == 'archive' or frn_info['resource_type'] == 'compressed':
-                    archive_path = os.path.splitext(content_path)[0]
-                    archive_extractor.extract(content_path)
+            # Path to the content in the FRN
+            content_path = os.path.join(path, frn_info['prefix_path'], frn_info['sub_path'])
 
-                    # Build input pipeline by parsing the manifest file in the archive
-                    content_pipeline_cfg, content_metadata = build_input_pipeline(archive_path)
+            # Extract archive and check for manifest file
+            if frn_info['resource_type'] == 'archive' or frn_info['resource_type'] == 'compressed':
+                archive_path = os.path.splitext(content_path)[0]
+                archive_extractor.extract(content_path)
 
-                    pipeline_cfg.extend(content_pipeline_cfg)
-                    # TODO(Sourabh): Need to store metadata properly based on each archive.
-                    # Attempting to create a unique key so that the metadata from
-                    # different manifest files do not get overridden.
-                    metadata_key = '{}_{}_{}_{}_{}'.format(frn_info['namespace'],
-                                                        frn_info['system_type'],
-                                                        frn_info['system_id'],
-                                                        frn_info['component'],
-                                                        frn_info['source'])
-                    metadata = {
-                        **metadata,
-                        metadata_key: content_metadata
-                    }
+                # Build input pipeline by parsing the manifest file in the archive
+                content_pipeline_cfg, content_metadata = parse_manifest(archive_path)
 
-                # Check for logs in the folder based on the source
-                if frn_info['resource_type'] == 'folder':
-                    print('Checking for logs in', content_path)
-                    if os.path.exists(content_path):
-                        # TODO(Sourabh): Have multiple source keywords to check for a source
-                        # Ex: apigateway could also be apigw
-                        if frn_info['source'] == 'funos':
-                            pipeline_cfg.extend(
-                                funos_input_pipeline(frn_info['system_type'], content_path)
-                            )
+                pipeline_cfg.extend(content_pipeline_cfg)
+                # TODO(Sourabh): Need to store metadata properly based on each archive.
+                # Attempting to create a unique key so that the metadata from
+                # different manifest files do not get overridden.
+                metadata_key = '{}_{}_{}_{}_{}'.format(frn_info['namespace'],
+                                                    frn_info['system_type'],
+                                                    frn_info['system_id'],
+                                                    frn_info['component'],
+                                                    frn_info['source'])
+                metadata = {
+                    **metadata,
+                    metadata_key: content_metadata
+                }
 
-                        elif 'storage_agent' in frn_info['source']:
-                            pipeline_cfg.extend(
-                                storage_agent_input_pipeline(frn_info['source'], f'{content_path}/info*')
-                            )
-
-                        elif frn_info['source'] == 'apigateway':
-                            pipeline_cfg.extend(
-                                controller_input_pipeline(frn_info['source'], f'{content_path}/info*')
-                            )
-
-                        elif frn_info['source'] == 'dataplacement':
-                            pipeline_cfg.extend(
-                                controller_input_pipeline(frn_info['source'], f'{content_path}/info*',
-                                    multiline_settings={
-                                        'pattern': r'(\[.*\])\s+([(-0-9|/0-9)]+)+(?:T|\s)([:0-9]+).([0-9]+)\s?((?:\-|\+)[0-9]{4})'
-                                    })
-                            )
-
-                        elif frn_info['source'] == 'kafka' or frn_info['source'] == 'storage_consumer':
-                            pipeline_cfg.extend(
-                                controller_input_pipeline(frn_info['source'], f'{content_path}/info*')
-                            )
-
-                        elif frn_info['source'] == 'sns':
-                            pipeline_cfg.extend(
-                                controller_input_pipeline(frn_info['source'], f'{content_path}/sns*',
-                                    parse_block='KeyValueInput')
-                            )
-
-                        else:
-                            print('Unknown source!')
-                    else:
-                        print('Could not find logs!')
-
-                if frn_info['resource_type'] == 'textfile':
-                    print('Checking for logs in', content_path)
-                    if frn_info['source'] == 'funos':
-                        pipeline_cfg.extend(
-                            funos_input(frn_info['source'], content_path)
-                        )
-
-                    elif 'storage_agent' in frn_info['source']:
-                        pipeline_cfg.extend(
-                            storage_agent_input_pipeline(frn_info['source'], content_path)
-                        )
-
-                    elif frn_info['source'] == 'apigateway':
-                        pipeline_cfg.extend(
-                            controller_input_pipeline(frn_info['source'], content_path)
-                        )
-
-                    elif frn_info['source'] == 'dataplacement':
-                        pipeline_cfg.extend(
-                            controller_input_pipeline(frn_info['source'], content_path,
-                                multiline_settings={
-                                    'pattern': r'(\[.*\])\s+([(-0-9|/0-9)]+)+(?:T|\s)([:0-9]+).([0-9]+)\s?((?:\-|\+)[0-9]{4})'
-                                })
-                        )
-
-                    elif frn_info['source'] == 'kafka' or frn_info['source'] == 'storage_consumer':
-                        pipeline_cfg.extend(
-                            controller_input_pipeline(frn_info['source'], content_path)
-                        )
-
-                    elif frn_info['source'] == 'sns':
-                        pipeline_cfg.extend(
-                            controller_input_pipeline(frn_info['source'], content_path,
-                                parse_block='KeyValueInput')
-                        )
-                    else:
-                        print('Unknown source!')
+            # Check for logs in the folder or textfile based on the source
+            if frn_info['resource_type'] == 'folder' or frn_info['resource_type'] == 'textfile':
+                print('Checking for logs in', content_path)
+                pipeline_cfg.extend(build_input_pipeline(content_path, frn_info))
 
         else:
             print('Unknown FRN', content)
 
     return pipeline_cfg, metadata
+
+
+def build_input_pipeline(path, frn_info):
+    """ Building input pipeline based on reading the manifest file """
+    blocks = list()
+    resource_type = frn_info['resource_type']
+    source = frn_info['source']
+
+    # If the folder does not exist
+    if resource_type == 'folder' and not os.path.exists(path):
+        return blocks
+
+    # TODO(Sourabh): Have multiple source keywords to check for a source
+    # Ex: apigateway could also be apigw
+    if source == 'funos':
+        # TODO(Sourabh): Fix for creating blocks based on system type(fs1600, fs800)
+        if resource_type == 'folder':
+            blocks.extend(
+                funos_input_pipeline(frn_info['system_type'], path)
+            )
+        else:
+            blocks.extend(
+                funos_input(source, path)
+            )
+
+    elif 'storage_agent' in source:
+        file_pattern = f'{path}/info*' if resource_type == 'folder' else path
+        blocks.extend(
+            storage_agent_input_pipeline(source, file_pattern)
+        )
+
+    elif source == 'apigateway':
+        file_pattern = f'{path}/info*' if resource_type == 'folder' else path
+        blocks.extend(
+            controller_input_pipeline(source, file_pattern)
+        )
+
+    elif source == 'dataplacement':
+        file_pattern = f'{path}/info*' if resource_type == 'folder' else path
+        blocks.extend(
+            controller_input_pipeline(source, file_pattern,
+                multiline_settings={
+                    'pattern': r'(\[.*\])\s+([(-0-9|/0-9)]+)+(?:T|\s)([:0-9]+).([0-9]+)\s?((?:\-|\+)[0-9]{4})'
+                })
+        )
+
+    elif source == 'kafka' or source == 'storage_consumer':
+        file_pattern = f'{path}/info*' if resource_type == 'folder' else path
+        blocks.extend(
+            controller_input_pipeline(source, file_pattern)
+        )
+
+    elif source == 'sns':
+        file_pattern = f'{path}/sns*' if resource_type == 'folder' else path
+        blocks.extend(
+            controller_input_pipeline(source, file_pattern,
+                parse_block='KeyValueInput')
+        )
+
+    else:
+        print('Unknown source!')
+
+    return blocks
 
 
 def funos_input_pipeline(system_type, path):
