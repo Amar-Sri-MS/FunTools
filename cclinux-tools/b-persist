@@ -1,0 +1,31 @@
+#!/bin/sh -e
+
+PATH="/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin"
+
+CONFIG_DIR=/b-persist/config
+
+case "$1" in
+    mount-rw)
+        umount /b-persist
+
+        fsck_code=0
+        e2fsck -y /dev/vdb3 || fsck_code=$?
+        if [ $fsck_code -ge 4 ] ; then
+            echo 'Filesystem on /dev/vdb3 unusable, reformatting...'
+            mkfs.ext4 -q -F /dev/vdb3
+        fi
+
+        mount -o rw /b-persist
+        mkdir -p $CONFIG_DIR
+        chmod 0777 $CONFIG_DIR
+        ;;
+    sync)
+        # TODO: add data sync routines here
+        ;;
+    *)
+        echo "Unhandled argument: [$1]"
+        exit 1
+        ;;
+esac
+
+exit 0

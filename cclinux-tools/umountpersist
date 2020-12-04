@@ -6,7 +6,8 @@ INTERFACES_DIR=/persist/config/interfaces
 
 case "$1" in
     start)
-        umount /persist || echo "umount /persist failes $?"
+        umount /persist || echo "umount /persist failed $?"
+        umount /b-persist || echo "umount /b-persist failed $?"
         ;;
     *)
         :
