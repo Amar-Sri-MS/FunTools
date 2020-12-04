@@ -21,11 +21,11 @@ def parse(dir):
             manifest = yaml.safe_load(manifest_file)
         manifest = _format_manifest(manifest)
     except yaml.YAMLError as e:
-        print ('Could not parse the manifest file. Error:', e)
+        print('Could not parse the manifest file. Error:', e)
     except FileNotFoundError as e:
         print('Could not find the manifest file.')
-
     return manifest
+
 
 def _format_manifest(manifest):
     contents = list()

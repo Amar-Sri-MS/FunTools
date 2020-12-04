@@ -40,26 +40,12 @@ def extract(path):
     try:
         archive = opener(path, mode)
 
-        # List of contents in the archive
-        contents = list()
-        # Whether the archive already contains a top level directory
-        # with same name as the archive.
-        # Need to create a folder if the archive does not have a top
-        # level directory.
-        dir_exists = False
-        if type(archive) == zipfile.ZipFile:
-            print('Type of archive: zip')
-            contents = archive.infolist()
-            dir_exists = len(contents) > 0 and contents[0].is_dir() and contents[0].filename == archive_name
-        elif type(archive) == tarfile.TarFile:
-            print('Type of archive: tar')
-            contents = archive.getmembers()
-            dir_exists = len(contents) > 0 and contents[0].isdir() and contents[0].name == archive_name
-
+        # Check if the archive has a top level directory
+        dir_exists = archive_has_top_level_directory(archive, archive_name)
         if dir_exists:
             parent_path = Path(archive_path).parent
             os.chdir(parent_path)
-            print('Extracting archive at parent', parent_path)
+            print('Extracting archive at parent directory', parent_path)
         else:
             # Change to the directory where the archive needs to be extracted
             os.makedirs(archive_path, exist_ok=True)
@@ -75,6 +61,26 @@ def extract(path):
             archive.close()
         # Change back to the working directory
         os.chdir(cwd)
+
+
+def archive_has_top_level_directory(archive, archive_name):
+    """ Check if the archive has a top level directory """
+    # List of contents in the archive
+    contents = list()
+    # Whether the archive already contains a top level directory
+    # with same name as the archive.
+    # Need to create a folder if the archive does not have a top
+    # level directory.
+    dir_exists = False
+    if type(archive) == zipfile.ZipFile:
+        print('Type of archive: zip')
+        contents = archive.infolist()
+        dir_exists = len(contents) > 0 and contents[0].is_dir() and contents[0].filename == archive_name
+    elif type(archive) == tarfile.TarFile:
+        print('Type of archive: tar')
+        contents = archive.getmembers()
+        dir_exists = len(contents) > 0 and contents[0].isdir() and contents[0].name == archive_name
+    return dir_exists
 
 
 def is_archive(path):
