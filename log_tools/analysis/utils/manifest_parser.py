@@ -36,7 +36,7 @@ def _format_manifest(manifest):
         # In case the last element of the FRN is empty, pyyaml
         # considers it a dict since the last character is :
         if type(content) == dict:
-            frn = content.keys()[0]
+            frn = list(content.keys())[0]
             contents.append(f'{frn}:')
 
     manifest['contents'] = contents
