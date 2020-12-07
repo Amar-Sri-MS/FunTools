@@ -132,6 +132,24 @@ dd if=${ROOTFS_NAME} of=/dev/vdb2 bs=4096
 # Install rootfs hashtable
 dd if=${ROOTFS_NAME}.fvht.bin of=/dev/vdb4
 
+log_msg "Update config partition"
+
+grep -q vdb3 /proc/mounts
+if [[ $? -eq 0 ]]; then
+	grep -q "b-persist.*ro," /proc/mounts
+	if [[ $? -eq 0 ]]; then
+		log_msg "Remounting b-persist in rw mode"
+		/usr/bin/b-persist mount-rw
+	fi
+	grep -q "b-persist.*rw," /proc/mounts
+	if [[ $? -eq 0 ]]; then
+		log_msg "Sync configs"
+		/usr/bin/b-persist sync
+	fi
+else
+	log_msg "No b-persist mountpoint found. Skipping ..."
+fi
+
 echo "CCLinux done" >> $PROGRESS
 
 sync
