@@ -9,6 +9,7 @@ Convert FunOS timestamps from epoch to Linux syslog style:
 from __future__ import print_function
 import argparse
 import datetime as d, re, sys
+import signal
 
 class TSConverter:
     """
@@ -86,4 +87,5 @@ def main():
 ##  entrypoint
 #
 if (__name__ == "__main__"):
+    signal.signal(signal.SIGPIPE, signal.SIG_DFL)
     main()
