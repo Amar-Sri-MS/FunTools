@@ -3,6 +3,7 @@
 PATH="/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin"
 
 CONFIG_DIR=/b-persist/config
+UPGRADE_DIR=/b-persist/upgrades
 
 case "$1" in
     mount-rw)
@@ -18,9 +19,12 @@ case "$1" in
         mount -o rw /b-persist
         mkdir -p $CONFIG_DIR
         chmod 0777 $CONFIG_DIR
+        mkdir -p $UPGRADE_DIR
+        chmod 0777 $UPGRADE_DIR
         ;;
     sync)
-        # TODO: add data sync routines here
+        rsync -ac --ignore-missing-args /persist/config/ $CONFIG_DIR
+        rsync -ac --ignore-missing-args /persist/upgrades/ $UPGRADE_DIR
         ;;
     *)
         echo "Unhandled argument: [$1]"
