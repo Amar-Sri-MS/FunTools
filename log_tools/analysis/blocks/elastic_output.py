@@ -103,8 +103,11 @@ class ElasticsearchOutput(Block):
             doc = {
                 '_index': self.index,
                 '@timestamp': iso_ts,
-                'src': tuple[2],
-                'msg': tuple[4]
+                'system_type': tuple[2],
+                'system_id': tuple[3],
+                'src': tuple[4],
+                'level': tuple[6],
+                'msg': tuple[7]
             }
 
             yield doc

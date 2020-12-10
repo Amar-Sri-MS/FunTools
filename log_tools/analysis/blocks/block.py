@@ -7,8 +7,8 @@ class Block(object):
         """
         Takes input iterables, produces output iterable.
 
-        Iterable elements must be a standard 5-tuple:
-        (datetime object, time_usecs, source_uid, display_time, message)
+        Iterable elements must be a standard 8-tuple:
+        (datetime object, time_usecs, system_type, system_id, source_uid, display_time, level, message)
 
         The tuple is our poor man's version of a structured log.
 
@@ -27,7 +27,10 @@ class Block(object):
         """
         return {'datetime': tuple[0],
                 'usecs': tuple[1],
-                'uid': tuple[2],
-                'display_time': tuple[3],
-                'line': tuple[4]
+                'system_type': tuple[2],
+                'system_id': tuple[3],
+                'uid': tuple[4],
+                'display_time': tuple[5],
+                'level': tuple[6],
+                'line': tuple[7]
                 }

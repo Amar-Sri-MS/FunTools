@@ -11,14 +11,24 @@ curl -X PUT "localhost:9200/_index_template/log_template" -H 'Content-Type: appl
     "index_patterns": ["log*"],
     "template": {
         "settings": {
-            "number_of_shards": 1
+            "number_of_shards": 1,
+            "number_of_replicas": 0
         },
         "mappings": {
             "properties": {
                 "@timestamp": {
                     "type": "date_nanos"
                 },
+                "system_type": {
+                    "type": "keyword"
+                },
+                "system_id": {
+                    "type": "keyword"
+                },
                 "src": {
+                    "type": "keyword"
+                },
+                "level": {
                     "type": "keyword"
                 },
                 "msg": {

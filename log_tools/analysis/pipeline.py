@@ -111,7 +111,7 @@ class Pipeline(object):
 
             cfg = pipeline_node.get('cfg', dict())
             cfg['env'] = self.env
-            cfg['uid'] = id
+            cfg['uid'] = cfg.get('src', id)
             block.set_config(cfg)
 
             input_inters = input_iters_by_uid[id]

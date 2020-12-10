@@ -19,7 +19,7 @@ class FunOSInput(Block):
     def lines2tuples(self, iter):
         uboot_done = False
 
-        for (_, _, uid, _, line) in iter:
+        for (_, _, system_type, system_id, uid, _, _, line) in iter:
             line = line.strip()
 
             if not uboot_done and self.is_uboot(line):
@@ -42,7 +42,7 @@ class FunOSInput(Block):
                 date_time, usecs = self.normalize_ts(ts)
                 line = '[{}] {}'.format(vp, line[ts_vp_sep + 1:])
 
-                yield (date_time, usecs, uid, None, line)
+                yield (date_time, usecs, system_type, system_id, uid, None, None, line)
 
     @staticmethod
     def is_uboot(line):
@@ -87,7 +87,7 @@ class FunOSInput(Block):
 class ISOFormatInput(Block):
     """ Handles logs with ISO format timestamps """
     def process(self, iters):
-        for (_, _, uid, _, line) in iters[0]:
+        for (_, _, system_type, system_id, uid, _, _, line) in iters[0]:
             line = line.strip()
 
             # Example:
@@ -97,7 +97,7 @@ class ISOFormatInput(Block):
             iso_format_datetime = parts[0] + ' ' + parts[1]
             d = datetime.datetime.fromisoformat(iso_format_datetime)
 
-            yield (d, d.microsecond, uid, None, parts[2])
+            yield (d, d.microsecond, system_type, system_id, uid, None, None, parts[2])
 
 
 class GenericInput(Block):
@@ -106,7 +106,7 @@ class GenericInput(Block):
     <MILLISECONDS|MICROSECONDS|EMPTY> <TIMEZONE_OFFSET|EMPTY> <MESSAGE>
     """
     def process(self, iters):
-        for (_, _, uid, _, line) in iters[0]:
+        for (_, _, system_type, system_id, uid, _, _, line) in iters[0]:
             line = line.strip()
 
             # Match order <FILE_NAME|EMPTY> <DATE> <TIMESTAMP> <MILLISECONDS|MICROSECONDS|EMPTY>
@@ -132,7 +132,7 @@ class GenericInput(Block):
                 # Prepending filename if present to the log message
                 if filename:
                     msg = filename.strip() + ' ' + msg.strip()
-                yield (date_time, usecs, uid, None, msg)
+                yield (date_time, usecs, system_type, system_id, uid, None, None, msg)
 
     @staticmethod
     def extract_timestamp(day_str, time_str, secs_str):
@@ -152,7 +152,7 @@ class KeyValueInput(Block):
     Handles logs with key value log format
     """
     def process(self, iters):
-        for (_, _, uid, _, line) in iters[0]:
+        for (_, _, system_type, system_id, uid, _, _, line) in iters[0]:
             line = line.strip()
 
             # Matches the line into a list of key value tuple
@@ -174,9 +174,9 @@ class KeyValueInput(Block):
                 # Extract the log message's level either from the log or from the name of the log file
                 # This field then can be indexed to the log storage and be used for filtering out the
                 # logs. TODO (Sourabh): Need to standardize the names of log message levels
-                msg = log_fields.get('level', 'info') + ' ' + log_fields.get('msg', '')
+                msg = log_fields.get('msg', '')
 
-                yield (date_time, usecs, uid, None, msg)
+                yield (date_time, usecs, system_type, system_id, uid, None, log_fields.get('level'), msg)
 
     @staticmethod
     def extract_timestamp(time_str):

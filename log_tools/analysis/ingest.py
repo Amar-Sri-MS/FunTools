@@ -89,6 +89,7 @@ def parse_manifest(path):
                 archive_extractor.extract(content_path)
 
                 # Build input pipeline by parsing the manifest file in the archive
+                # TODO(Sourabh): Need to pass the frn_info to the child archives
                 content_pipeline_cfg, content_metadata = parse_manifest(archive_path)
 
                 pipeline_cfg.extend(content_pipeline_cfg)
@@ -132,29 +133,29 @@ def build_input_pipeline(path, frn_info):
         # TODO(Sourabh): Fix for creating blocks based on system type(fs1600, fs800)
         if resource_type == 'folder':
             blocks.extend(
-                funos_input_pipeline(frn_info['system_type'], path)
+                funos_input_pipeline(frn_info, path)
             )
         else:
             blocks.extend(
-                funos_input(source, path)
+                funos_input(frn_info, source, path)
             )
 
     elif 'storage_agent' in source:
         file_pattern = f'{path}/info*' if resource_type == 'folder' else path
         blocks.extend(
-            storage_agent_input_pipeline(source, file_pattern)
+            storage_agent_input_pipeline(frn_info, source, file_pattern)
         )
 
     elif source == 'apigateway':
         file_pattern = f'{path}/info*' if resource_type == 'folder' else path
         blocks.extend(
-            controller_input_pipeline(source, file_pattern)
+            controller_input_pipeline(frn_info, source, file_pattern)
         )
 
     elif source == 'dataplacement':
         file_pattern = f'{path}/info*' if resource_type == 'folder' else path
         blocks.extend(
-            controller_input_pipeline(source, file_pattern,
+            controller_input_pipeline(frn_info, source, file_pattern,
                 multiline_settings={
                     'pattern': r'(\[.*\])\s+([(-0-9|/0-9)]+)+(?:T|\s)([:0-9]+).([0-9]+)\s?((?:\-|\+)[0-9]{4})'
                 })
@@ -163,13 +164,13 @@ def build_input_pipeline(path, frn_info):
     elif source == 'kafka' or source == 'storage_consumer':
         file_pattern = f'{path}/info*' if resource_type == 'folder' else path
         blocks.extend(
-            controller_input_pipeline(source, file_pattern)
+            controller_input_pipeline(frn_info, source, file_pattern)
         )
 
     elif source == 'sns':
         file_pattern = f'{path}/sns*' if resource_type == 'folder' else path
         blocks.extend(
-            controller_input_pipeline(source, file_pattern,
+            controller_input_pipeline(frn_info, source, file_pattern,
                 parse_block='KeyValueInput')
         )
 
@@ -179,32 +180,47 @@ def build_input_pipeline(path, frn_info):
     return blocks
 
 
-def funos_input_pipeline(system_type, path):
+def _get_cfg_from_frn(frn_info):
+    """ Returns cfg of type dict from frn_info """
+    return {
+        'system_type': frn_info.get('system_type'),
+        'system_id': frn_info.get('system_id'),
+    }
+
+
+def funos_input_pipeline(frn_info, path):
     """ Input pipeline for FunOS source """
     blocks = list()
+    system_type = frn_info.get('system_type', 'fs1600')
     dpu_count = 2 if system_type == 'fs1600' else 1
     for dpu in range(0, dpu_count):
         # Support for v1.x directory structure
         input_id_v1 = f'{system_type}_f1_{dpu}_v1'
 
-        blocks.extend(funos_input(input_id_v1, '{}/F1_{}_funos.txt*'.format(path, dpu)))
+        blocks.extend(
+            funos_input(
+                frn_info, input_id_v1, f'{path}/F1_{dpu}_funos.txt*'
+            )
+        )
 
     # TODO(Sourabh): Add blocks based on system_type
     # Support for v2.0 directory structure
     input_id = f'{system_type}_f1'
 
-    blocks.extend(funos_input(input_id, '{}/*funos.txt*'.format(path)))
+    blocks.extend(funos_input(frn_info, input_id, '{}/*funos.txt*'.format(path)))
 
     return blocks
 
 
-def funos_input(source, file_pattern):
+def funos_input(frn_info, source, file_pattern):
     parse_id = f'{source}_parse'
 
+    cfg = _get_cfg_from_frn(frn_info)
     input = {
         'id': source,
         'block': 'TextFileInput',
         'cfg': {
+            **cfg,
             'file_pattern': file_pattern,
             'src': 'funos'
         },
@@ -220,14 +236,16 @@ def funos_input(source, file_pattern):
     return [input, parse]
 
 
-def controller_input_pipeline(source, file_pattern, multiline_settings={}, parse_block='GenericInput'):
+def controller_input_pipeline(frn_info, source, file_pattern, multiline_settings={}, parse_block='GenericInput'):
     """ Input pipeline for Controller services source """
     parse_id = source + '_parse'
 
+    cfg = _get_cfg_from_frn(frn_info)
     input = {
         'id': source,
         'block': 'TextFileInput',
         'cfg': {
+            **cfg,
             'file_pattern': file_pattern,
             'src': source,
             **multiline_settings
@@ -244,14 +262,16 @@ def controller_input_pipeline(source, file_pattern, multiline_settings={}, parse
     return [input, parse]
 
 
-def storage_agent_input_pipeline(source, file_pattern):
+def storage_agent_input_pipeline(frn_info, source, file_pattern):
     """ Input pipeline for Storage agent source """
     storage_agent_parse_id = f'{source}_parse'
 
+    cfg = _get_cfg_from_frn(frn_info)
     storage_agent = {
         'id': source,
         'block': 'TextFileInput',
         'cfg': {
+            **cfg,
             'file_pattern': file_pattern,
             'src': source,
             'pattern': r'([(-0-9|/0-9)]+)+(?:T|\s)([:0-9]+)(?:.|,)([0-9]{3,9})'
