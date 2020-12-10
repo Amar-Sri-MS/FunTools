@@ -13,3 +13,9 @@ rm -f $DEPLOY_ROOT/etc/ntp.conf
 #
 
 echo 'options bonding max_bonds=0' > $DEPLOY_ROOT/etc/modprobe.d/bonding.conf
+
+#
+# Allow DHCP to change hostname away from mips64r6
+#
+
+sed -i -E "/current_hostname\" = 'localhost' ] \|\|\$/a\\           [ \"\$current_hostname\" = 'mips64r6' ] \|\|" $DEPLOY_ROOT/sbin/dhclient-script
