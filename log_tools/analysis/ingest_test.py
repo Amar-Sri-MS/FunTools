@@ -23,6 +23,7 @@ def _parse_contents(contents):
 class IngestTest(unittest.TestCase):
     """ Unit tests for Ingest module """
     def test_building_textfile_input_pipeline(self):
+        """ Check if the input pipleine is built for single input """
         contents = [
             ('', {'resource_type': 'textfile', 'source': 'apigateway'})
         ]
@@ -37,8 +38,8 @@ class IngestTest(unittest.TestCase):
         self.assertEqual('apigateway_parse', blocks[0]['out'])
         self.assertEqual('apigateway_parse', blocks[1]['id'])
 
-
     def test_building_multiple_textfile_input_pipeline(self):
+        """ Check if the input pipleine is built for multiple inputs """
         contents = [
             ('', {'resource_type': 'textfile', 'source': 'apigateway'}),
             ('', {'resource_type': 'textfile', 'source': 'storage_agent_0'})
@@ -50,8 +51,8 @@ class IngestTest(unittest.TestCase):
         self.assertEqual('apigateway', input_blocks[0][0]['id'])
         self.assertEqual('storage_agent_0', input_blocks[1][0]['id'])
 
-
     def test_building_funos_input_pipeline(self):
+        """ Check if the input pipleine is built for funos source """
         contents = [
             ('', {'system_type': 'fs1600', 'resource_type': 'textfile', 'source': 'funos'})
         ]
@@ -65,8 +66,8 @@ class IngestTest(unittest.TestCase):
         self.assertEqual('funos', blocks[0]['id'])
         self.assertEqual('FunOSInput', blocks[1]['block'])
 
-
     def test_building_controller_input_pipeline(self):
+        """ Check if the input pipleine is built for controller services source """
         contents = [
             ('', {'resource_type': 'textfile', 'source': 'apigateway'}),
             ('', {'resource_type': 'textfile', 'source': 'sns'}),
@@ -83,8 +84,8 @@ class IngestTest(unittest.TestCase):
         self.assertEqual('dataplacement', input_blocks[2][0]['id'])
         self.assertIn('pattern', input_blocks[2][0]['cfg'])
 
-
     def test_building_storage_agent_input_pipeline(self):
+        """ Check if the input pipleine is built for storage_agent source """
         contents = [
             ('', {'resource_type': 'textfile', 'source': 'storage_agent_0'})
         ]
@@ -97,3 +98,17 @@ class IngestTest(unittest.TestCase):
         self.assertEqual('storage_agent_0', blocks[0]['id'])
         self.assertIn('pattern', blocks[0]['cfg'])
         self.assertEqual('GenericInput', blocks[1]['block'])
+
+    def test_can_parse_cfg_from_frn(self):
+        """ Check if the cfg is being parsed from the FRN """
+        contents = [
+            ('', {'resource_type': 'textfile', 'source': 'storage_agent_0', 'system_type': 'host', 'system_id': 'cab22-qa-01'})
+        ]
+
+        input_blocks = _parse_contents(contents)
+        blocks = input_blocks[0]
+
+        self.assertIn('system_type', blocks[0]['cfg'])
+        self.assertIn('system_id', blocks[0]['cfg'])
+        self.assertEqual('host', blocks[0]['cfg']['system_type'])
+        self.assertEqual('cab22-qa-01', blocks[0]['cfg']['system_id'])
