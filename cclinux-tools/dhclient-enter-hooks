@@ -1,1 +1,5 @@
-echo "$reason : $new_ip_address" > /dev/console
+echo "DHCP: $interface - $reason : $new_ip_address" > /dev/console
+if [ "$reason" = FAIL ] ; then
+    ifconfig -a > /dev/console
+    true
+fi
