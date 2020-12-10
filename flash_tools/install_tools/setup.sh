@@ -134,15 +134,13 @@ dd if=${ROOTFS_NAME}.fvht.bin of=/dev/vdb4
 
 log_msg "Update config partition"
 
-grep -q vdb3 /proc/mounts
-if [[ $? -eq 0 ]]; then
-	grep -q "b-persist.*ro," /proc/mounts
-	if [[ $? -eq 0 ]]; then
+if grep -q vdb3 /proc/mounts; then
+	if grep -q "b-persist.*ro," /proc/mounts; then
 		log_msg "Remounting b-persist in rw mode"
 		/usr/bin/b-persist mount-rw
 	fi
-	grep -q "b-persist.*rw," /proc/mounts
-	if [[ $? -eq 0 ]]; then
+
+	if grep -q "b-persist.*rw," /proc/mounts; then
 		log_msg "Sync configs"
 		/usr/bin/b-persist sync
 	fi
