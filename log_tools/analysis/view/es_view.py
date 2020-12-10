@@ -461,10 +461,11 @@ def _convert_to_table_row(hit):
         line = '<tr class={} id={}>'.format('search_highlight',
                                             hit.get('anchor_link'))
 
-    line += '<td>{}</td> <td>{}</td> <td><a href="{}">{}</a></td>'.format(s['src'],
+    line += '<td>{}</td> <td>{}</td> <td>{}</td>'.format(s['src'],
                                                          s['@timestamp'],
-                                                         kibana_url,
-                                                         s['msg'])
+                                                         s['level'])
+    line += '<td><a href="{}">{}</a></td>'.format(kibana_url,
+                                                  s['msg'])
     line += '</tr>'
     return line
 
@@ -634,7 +635,7 @@ def _get_kibana_base_url(log_id):
     # KIBANA defaults.
     # TODO(Sourabh): Would be better to have this in config files
     kibana_time_filter = 'from:now-90d,to:now'
-    kibana_selected_columns = 'src,msg'
+    kibana_selected_columns = 'src,level,msg'
     kibana_base_url = ("http://{}:{}/app/kibana#/discover/?_g=(time:({}))&_a=(columns:!({}),index:{},"
                   "query:(language:kuery,query:'KIBANA_QUERY'))").format(KIBANA_HOST,
                                                                          KIBANA_PORT,
@@ -650,11 +651,15 @@ def _render_dashboard_page(log_id, jinja_env, template):
     kibana_base_url = _get_kibana_base_url(log_id)
 
     sources = es.get_unique_entries('src')
+    system_types = es.get_unique_entries('system_type')
+    system_ids = es.get_unique_entries('system_id')
     recent_logs = _get_recent_logs(log_id, 50, log_levels=['error'])
 
     template_dict = {}
     template_dict['log_id'] = log_id
     template_dict['sources'] = sources
+    template_dict['system_types'] = system_types
+    template_dict['system_ids'] = system_ids
     template_dict['kibana_base_url'] = kibana_base_url
     template_dict['log_level_stats'] = _get_log_level_stats(log_id)
     template_dict['recent_logs'] = _render_log_entries(recent_logs)
@@ -725,7 +730,8 @@ def _get_recent_logs(log_id, size, sources=[], log_levels=None, time_filters=Non
         for level in log_levels:
             level_keywords.append(keyword_for_level[level])
 
-        query_string = f'msg:({" OR ".join(level_keywords)})'
+        # Check for the log level in either the level field or the msg field
+        query_string = f'level:({" OR ".join(level_keywords)}) OR msg:({" OR ".join(level_keywords)})'
 
     results = es.search_backwards(state, query_string,
                                       sources, time_filters,
@@ -756,7 +762,7 @@ def _render_log_entries(entries):
                                 lstrip_blocks=True)
     template = jinja_env.get_template('log_entries.html')
 
-    header = ['Source', 'Timestamp', 'Log Message']
+    header = ['Source', 'Timestamp', 'Level', 'Log Message']
     template_dict = {}
     template_dict['head'] = header
     template_dict['body'] = '\n'.join(entries)

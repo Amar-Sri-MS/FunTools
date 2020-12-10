@@ -1,11 +1,22 @@
-.sources_container {
+.filters_container {
     padding: 10px;
 }
-.sources {
+.filter_container {
+    margin-bottom: 15px;
+}
+.filter_header {
+    font-weight: bold;
+}
+.filter_header::before {
+    content: " >> ";
+    font-family: 'Times';
+    color: #3B7FC4;
+}
+.filters {
     display: flex;
     flex-wrap: wrap;
 }
-.source {
+.filter {
     width: 250px;
     padding: 5px 0px;
 }

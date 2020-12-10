@@ -18,22 +18,66 @@
             <!-- Calculating total log entries -->
             {% set total_entries = sources.values()|sum() %}
             <div>Total log entries: <b>{{total_entries}}</b></div>
-            <div class="sources_container">
-                <div>
-                    <span>Select:</span>
-                    <span class="filter_button" onclick="onToggleSelectAllSources()">All</span>
-                    <span class="separator"></span>
-                    <span class="filter_button" onclick="onToggleSelectAllSources(false)">None</span>
-                </div>
-                <div class="sources">
-                    <!-- Displaying log entries (along with the name of source) in % with rounded off to 2 decimals -->
-                    {% for source in sources %}
-                    {% set source_distribution = calculatePercentage(sources[source], total_entries) %}
-                    <div class="source">
-                        <input type="checkbox" id="{{source}}" name="source" value="{{source}}" checked />
-                        <label for="{{source}}">{{source}} ({{source_distribution}} entries)</label>
+            <div class="filters_container">
+                {% if system_types|length > 0 %}
+                    <div class="filter_container">
+                        <div>
+                            <span class="filter_header">Select System Type:</span>
+                            <span class="filter_button" onclick="onToggleSelectAllSystemTypes()">All</span>
+                            <span class="separator"></span>
+                            <span class="filter_button" onclick="onToggleSelectAllSystemTypes(false)">None</span>
+                        </div>
+                        <div class="filters">
+                            <!-- Displaying count of log entries (along with the name of system_type) in % with rounded off to 2 decimals -->
+                            {% for system_type in system_types %}
+                            {% set system_type_distribution = calculatePercentage(system_types[system_type], total_entries) %}
+                            <div class="filter">
+                                <input type="checkbox" id="{{system_type}}" name="system_type" value="{{system_type}}" checked />
+                                <label for="{{system_type}}">{{system_type}} ({{system_type_distribution}} entries)</label>
+                            </div>
+                        {% endfor %}
+                        </div>
                     </div>
-                {% endfor %}
+                {% endif %}
+
+                {% if system_ids|length > 0 %}
+                    <div class="filter_container">
+                        <div>
+                            <span class="filter_header">Select System ID:</span>
+                            <span class="filter_button" onclick="onToggleSelectAllSystemIDs()">All</span>
+                            <span class="separator"></span>
+                            <span class="filter_button" onclick="onToggleSelectAllSystemIDs(false)">None</span>
+                        </div>
+                        <div class="filters">
+                            <!-- Displaying count of log entries (along with the name of system_id) in % with rounded off to 2 decimals -->
+                            {% for system_id in system_ids %}
+                            {% set system_id_distribution = calculatePercentage(system_ids[system_id], total_entries) %}
+                            <div class="filter">
+                                <input type="checkbox" id="{{system_id}}" name="system_id" value="{{system_id}}" checked />
+                                <label for="{{system_id}}">{{system_id}} ({{system_id_distribution}} entries)</label>
+                            </div>
+                        {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+
+                <div class="filter_container">
+                    <div>
+                        <span class="filter_header">Select source:</span>
+                        <span class="filter_button" onclick="onToggleSelectAllSources()">All</span>
+                        <span class="separator"></span>
+                        <span class="filter_button" onclick="onToggleSelectAllSources(false)">None</span>
+                    </div>
+                    <div class="filters">
+                        <!-- Displaying count of log entries (along with the name of source) in % with rounded off to 2 decimals -->
+                        {% for source in sources %}
+                        {% set source_distribution = calculatePercentage(sources[source], total_entries) %}
+                        <div class="filter">
+                            <input type="checkbox" id="{{source}}" name="source" value="{{source}}" checked />
+                            <label for="{{source}}">{{source}} ({{source_distribution}} entries)</label>
+                        </div>
+                    {% endfor %}
+                    </div>
                 </div>
                 <div id="explore_button">
                     <button class="btn" onclick="onClickExploreLogs()">Explore Logs <span class="arrow right"></span></button>
@@ -94,6 +138,8 @@
     // URL String contains a term 'KIBANA_QUERY' which should be replaced
     // with a given query
     const KIBANA_BASE_URL = "{{kibana_base_url}}";
+    const systemTypeInputElements = Array.from(document.getElementsByName('system_type'));
+    const systemIDInputElements = Array.from(document.getElementsByName('system_id'));
     const sourceInputElements = Array.from(document.getElementsByName('source'));
     const logLevelStatsElement = document.getElementById('log_level_stats');
     const recentLogsElement = document.getElementById('recent_logs');
@@ -109,16 +155,41 @@
     function onClickExploreLogs() {
         // Redirects to Kibana with the selected source as query
 
+        const selectedSystemTypes = systemTypeInputElements.filter(systemType => systemType.checked);
+        const selectedSystemIDs = systemIDInputElements.filter(systemID => systemID.checked);
         const selectedSources = sourceInputElements.filter(source => source.checked);
-        if (selectedSources.length === 0) {
+        if (selectedSystemTypes.length === 0 && selectedSystemIDs.length === 0 && selectedSources.length === 0) {
             // Show error message that no source is being selected
-            alert("Select a source to explore logs");
+            alert("Select any filter to explore logs");
             return;
         }
 
+        const systemTypes = selectedSystemTypes.map(systemType => systemType.value);
+        const systemIDs = selectedSystemIDs.map(systemID => systemID.value);
         const sources = selectedSources.map(source => source.value);
-        const kibana_url = getKibanaURLForSources(sources);
+
+        // Build query based on the selected filters
+        let query = "";
+        query = appendQueryForFilter(query, "system_type", systemTypes);
+        query = appendQueryForFilter(query, "system_id", systemIDs);
+        query = appendQueryForFilter(query, "src", sources);
+
+        const kibana_url = KIBANA_BASE_URL.replace("KIBANA_QUERY", query);
         window.open(kibana_url, "_blank");
+    }
+
+    function onToggleSelectAllSystemTypes(flag = true) {
+        // Toggles All/None selection of sources to explore in Kibana
+        // Defaults to True which selects all the sources
+
+        systemTypeInputElements.forEach(systemType => (systemType.checked = flag));
+    }
+
+    function onToggleSelectAllSystemIDs(flag = true) {
+        // Toggles All/None selection of sources to explore in Kibana
+        // Defaults to True which selects all the sources
+
+        systemIDInputElements.forEach(systemID => (systemID.checked = flag));
     }
 
     function onToggleSelectAllSources(flag = true) {
@@ -209,6 +280,30 @@
             query = encodeURI(`src:(${sources.join(" or ")})`);
         const kibana_url = KIBANA_BASE_URL.replace("KIBANA_QUERY", query);
         return kibana_url;
+    }
+
+    function appendQueryForFilter(query, filterKey, filters=[], operation="and") {
+        // Form a query and append to an existing query
+
+        // If no filters are present
+        if (filters.length === 0) {
+            return query;
+        }
+
+        // If all the filters are included
+        if (filters.includes("all")) {
+            return query;
+        }
+
+        // If it is not the first query then it needs to be
+        // appended with an operation either OR or AND.
+        if (query !== "") {
+            query = `${query} ${operation}`;
+        }
+
+        encodedQuery = encodeURI(`${filterKey}:(${filters.join(" or ")})`);
+        query = `${query} ${encodedQuery}`;
+        return query;
     }
 
 </script>
