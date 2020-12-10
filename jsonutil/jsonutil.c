@@ -102,7 +102,6 @@ static struct fun_json *_read_json(int fd)
 	buf = _read_input_file(fd, &size);
 	assert(buf);
 
-	printf("%zu\n%s", size, buf);
 	input = fun_json_create_from_text_with_status(buf, &parsed_all);
 
 	if (!parsed_all || size != strlen(buf)) {
