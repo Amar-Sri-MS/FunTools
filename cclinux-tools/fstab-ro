@@ -4,3 +4,4 @@ tmpfs                /run                 tmpfs      mode=0755,nodev,nosuid,stri
 tmpfs                /var/volatile        tmpfs      defaults              0  0
 tmpfs                /tmp                 tmpfs      mode=01777,nodev      0  0
 /dev/vda3            /persist             ext4       noauto,rw,relatime    0  0
+/dev/vdb3            /b-persist           ext4       noauto,ro,relatime    0  0

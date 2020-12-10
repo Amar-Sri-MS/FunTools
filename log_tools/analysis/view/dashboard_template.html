@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" type="text/css" href="/static/css/index.css">
+    <link rel="stylesheet" type="text/css" href="/static/css/dashboard.css">
+    <title>Log Analyzer Dashboard: {{log_id}}</title>
+</head>
+<body>
+    {% include 'templates/nav_bar.html' ignore missing %}
+    <!-- Macro for calculating percentage and rounding it off to a given precision -->
+    {% macro calculatePercentage(count, total, precision=2) -%}
+        {{((count/total)*100)|round(precision)}}%
+    {%- endmacro %}
+    <div class="content">
+        <h2 class="center-align">Dashboard for <b>{{log_id}}</b></h2>
+        <div class="container">
+            <h3>Source wise log distribution</h3>
+            <!-- Calculating total log entries -->
+            {% set total_entries = sources.values()|sum() %}
+            <div>Total log entries: <b>{{total_entries}}</b></div>
+            <div class="sources_container">
+                <div>
+                    <span>Select:</span>
+                    <span class="filter_button" onclick="onToggleSelectAllSources()">All</span>
+                    <span class="separator"></span>
+                    <span class="filter_button" onclick="onToggleSelectAllSources(false)">None</span>
+                </div>
+                <div class="sources">
+                    <!-- Displaying log entries (along with the name of source) in % with rounded off to 2 decimals -->
+                    {% for source in sources %}
+                    {% set source_distribution = calculatePercentage(sources[source], total_entries) %}
+                    <div class="source">
+                        <input type="checkbox" id="{{source}}" name="source" value="{{source}}" checked />
+                        <label for="{{source}}">{{source}} ({{source_distribution}} entries)</label>
+                    </div>
+                {% endfor %}
+                </div>
+                <div id="explore_button">
+                    <button class="btn" onclick="onClickExploreLogs()">Explore Logs <span class="arrow right"></span></button>
+                </div>
+            </div>
+        </div>
+        <div class="container row">
+            <div class="distribution_stats">
+                <h3>Log Distribution for <select name="sources" id="sources" onchange="onSelectSourceForLogLevelStats(this)">
+                    <option value="all" selected>All</option>
+                    {% for source in sources %}
+                        <option value="{{source}}">{{source}}</option>
+                    {% endfor %}
+                </select> source(s)</h3>
+                <div class="content">
+                    <div id="log_level_stats">
+                        <div class="level_stat">Total: {{total_entries}}(100%)</div>
+                        <!-- Displaying log entries for a source and each log levels in % with rounded off to 2 decimals -->
+                        {% for level, stat in log_level_stats.items() %}
+                            {% set log_distribution = calculatePercentage(stat.count, total_entries) %}
+                            <div class="level_stat"><a href="{{stat.kibana_url}}">{{level}}</a>: {{stat.count}}({{log_distribution}})</div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            <div class="separator"></div>
+            <div>
+                <h3>Most duplicated for All source(s)</h3>
+                <div class="log_entries">
+                    {% include 'analytics/'+log_id+'/duplicates.html' ignore missing %}
+                </div>
+            </div>
+        </div>
+        <div class="container">
+            <h3>Recent
+                <select name="level" id="level" onchange="onSelectLevelForRecentLogs(this)">
+                    <option value="error" selected>Error</option>
+                    <option value="warn">Warning</option>
+                    <option value="info">Info</option>
+                </select>
+                logs for
+                <select name="sources" id="recent_source" onchange="onSelectSourceForRecentLogs(this)">
+                    <option value="all" selected>All</option>
+                    {% for source in sources %}
+                        <option value="{{source}}">{{source}}</option>
+                    {% endfor %}
+                </select> source(s)</h3>
+            <div class="content">
+                <div class="log_entries" id="recent_logs">
+                    {{recent_logs}}
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+<script type="text/javascript">
+    // Kibana URL for redirecting to Kibana with given query.
+    // URL String contains a term 'KIBANA_QUERY' which should be replaced
+    // with a given query
+    const KIBANA_BASE_URL = "{{kibana_base_url}}";
+    const sourceInputElements = Array.from(document.getElementsByName('source'));
+    const logLevelStatsElement = document.getElementById('log_level_stats');
+    const recentLogsElement = document.getElementById('recent_logs');
+
+    const logId = "{{log_id}}";
+    const sources = {{sources}};
+    // Total log entries indexed in ES
+    const totalEntries = Object.keys(sources).reduce((total, source) => (total + sources[source]), 0);
+    let logLevelStats = {{log_level_stats}};
+    let selectedSourceForLogLevelStats = "all";
+    let selectedSourceForRecentLogs = "all", selectedLevelForRecentLogs = "error";
+
+    function onClickExploreLogs() {
+        // Redirects to Kibana with the selected source as query
+
+        const selectedSources = sourceInputElements.filter(source => source.checked);
+        if (selectedSources.length === 0) {
+            // Show error message that no source is being selected
+            alert("Select a source to explore logs");
+            return;
+        }
+
+        const sources = selectedSources.map(source => source.value);
+        const kibana_url = getKibanaURLForSources(sources);
+        window.open(kibana_url, "_blank");
+    }
+
+    function onToggleSelectAllSources(flag = true) {
+        // Toggles All/None selection of sources to explore in Kibana
+        // Defaults to True which selects all the sources
+
+        sourceInputElements.forEach(source => (source.checked = flag));
+    }
+
+    function onSelectSourceForLogLevelStats(sourceElement) {
+        // Fetch log level stats for the selected source
+        let xhttp = new XMLHttpRequest();
+        xhttp.onreadystatechange = function() {
+            if (this.readyState == 4 && this.status == 200) {
+                let data = JSON.parse(xhttp.responseText);
+                if (data) {
+                    selectedSourceForLogLevelStats = sourceElement.value;
+                    updateLogLevelStats(data);
+                }
+            }
+        }
+
+        let uri = `${window.location.href}/level-stats`;
+        if (sourceElement.value !== 'all') {
+            source = sourceElement.value;
+            uri = `${uri}?source=${source}`;
+        }
+
+        xhttp.open('GET', uri);
+        xhttp.send();
+    }
+
+    function updateLogLevelStats(stats) {
+        // Updates the Log Level distribution
+        let totalEntriesForSource = selectedSourceForLogLevelStats === "all" ?
+                                    totalEntries :
+                                    sources[selectedSourceForLogLevelStats];
+        const kibanaUrlForSource = getKibanaURLForSources([selectedSourceForLogLevelStats]);
+
+        let divs = [`<div class="level_stat"><a href="${kibanaUrlForSource}">Total</a>: ${totalEntriesForSource}(${Math.round((totalEntriesForSource/totalEntries)*100)}%)</div>`];
+        for (let [level, stat] of Object.entries(stats)) {
+            // let logDistribution = Math.round((stat.count/totalEntriesForSource)*100);
+            let logDistribution = ((stat.count/totalEntriesForSource)*100).toFixed(2);
+            divs.push(`<div class="level_stat"><a href="${stat.kibana_url}">${level}</a>: ${stat.count}(${logDistribution}%)</div>`);
+        }
+        logLevelStatsElement.innerHTML = divs.join('\n');
+    }
+
+    function onSelectLevelForRecentLogs(levelElement) {
+        selectedLevelForRecentLogs = levelElement.value;
+        fetchRecentLogs();
+    }
+
+    function onSelectSourceForRecentLogs(sourceElement) {
+        selectedSourceForRecentLogs = sourceElement.value;
+        fetchRecentLogs();
+    }
+
+    function fetchRecentLogs() {
+        // Fetch recent logs for the selected level source
+        let xhttp = new XMLHttpRequest();
+        xhttp.onreadystatechange = function() {
+            if (this.readyState == 4 && this.status == 200) {
+                const data = xhttp.responseText;
+                if (data) {
+                    updateRecentLogs(data);
+                }
+            }
+        }
+
+        let uri = `${window.location.href}/recent?level=${selectedLevelForRecentLogs}`;
+        if (selectedSourceForRecentLogs !== 'all') {
+            uri = `${uri}&source=${selectedSourceForRecentLogs}`;
+        }
+
+        xhttp.open('GET', uri);
+        xhttp.send();
+    }
+
+    function updateRecentLogs(logs) {
+        recentLogsElement.innerHTML = logs;
+    }
+
+    function getKibanaURLForSources(sources) {
+        // Creates a Kibana URL for the given sources
+        let query = "";
+        if (!sources.includes("all"))
+            query = encodeURI(`src:(${sources.join(" or ")})`);
+        const kibana_url = KIBANA_BASE_URL.replace("KIBANA_QUERY", query);
+        return kibana_url;
+    }
+
+</script>
+</html>

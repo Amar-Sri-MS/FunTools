@@ -78,13 +78,20 @@ ALL_ROOTFS_FILES = {
 def _rootfs(f, rootfs):
     return '{}.{}'.format(rootfs, f)
 
+def _mfg(f, signed=False):
+    if signed:
+        return '{}.{}.{}'.format(f, 'mfginstall','signed')
+    else:
+        return '{}.{}'.format(f, 'mfginstall')
+
+
 def main():
     parser = argparse.ArgumentParser()
     config = {}
 
     parser.add_argument('config', nargs='*', help='Configuration file(s)')
     parser.add_argument('--action',
-        choices={'all', 'prepare', 'release', 'certificate', 'sign', 'image', 'tarball', 'bundle'},
+        choices={'all', 'prepare', 'release', 'certificate', 'sign', 'image', 'tarball', 'bundle', 'mfginstall'},
         default='all',
         help='Action to be performed on the input files')
     parser.add_argument('--sdkdir', default=os.getcwd(), help='SDK root directory')
@@ -111,7 +118,7 @@ def main():
         if args.action == 'all':
             return True
         elif args.action == 'release':
-            return action in ['sign', 'image', 'tarball', 'bundle']
+            return action in ['sign', 'image', 'tarball', 'bundle', 'mfginstall']
         else:
             return action == args.action
 
@@ -211,6 +218,8 @@ def main():
             'install_tools')
         for rootfs in rootfs_files:
             shutil.copy2(os.path.join(args.sdkdir, 'deployments', rootfs), rootfs)
+
+        shutil.copy2(funos_appname, funos_appname + ".mfginstall")
 
         bld_info = os.path.join(args.sdkdir, 'build_info.txt')
         v = args.force_version
@@ -403,6 +412,67 @@ def main():
             subprocess.call(makeself)
 
         os.chdir(curdir)
+
+    if wanted('mfginstall'):
+        os.chdir(args.destdir)
+
+        rootfs = rootfs_files[0]
+        mfgxdata = {
+            'host' : ('nor', 'host_firmware_packed.bin'),
+            'sbpf' : ('nor', 'esecure_firmware_all.bin'),
+            'fgpt' : ('mmc', 'fgpt.signed'),
+            'fvp1' : ('mmc', 'fvos.signed'),
+            'fvp2' : ('mmc', rootfs),
+            'fvp4' : ('mmc', _rootfs('fvht.bin', rootfs)),
+            'emmc' : ('mmc', 'emmc_image.bin'),
+        }
+
+        # that's a bit hacky ... need something better here
+        if args.chip == 'f1':
+            mfgxdata['ccfg'] = ('mmc', 'ccfg-no-come.signed.bin')
+        elif args.chip == 's1':
+            mfgxdata['ccfg'] = ('mmc', 'ccfg-s1-demo-10g_mpg.signed.bin')
+
+        mfgxdata_lists = {
+            'fw_upgrade_all': 'all',
+            'fw_upgrade_nor': 'nor',
+            'fw_upgrade_mmc': 'mmc'
+        }
+
+        for fname, target in mfgxdata_lists.items():
+            # generate upgrade lists to be embedded in xdata
+            with open(fname, 'w') as f:
+                for key, (imgtarget, imgfile) in mfgxdata.items():
+                    if target == imgtarget or target == 'all':
+                        f.write("{}\n".format(key))
+
+        with open('fw_upgrade_xdata', 'w') as f:
+            # generate complete xdata list
+            for key, (imgtarget, imgfile) in mfgxdata.items():
+                f.write("{} {}\n".format(key, os.path.join(os.getcwd(), imgfile)))
+
+            for fname in mfgxdata_lists:
+                f.write("{} {}\n".format(fname, os.path.join(os.getcwd(), fname)))
+
+        cmd = [ 'python3', 'xdata.py',
+                _mfg(funos_appname),
+                'add-file-lists',
+                'fw_upgrade_xdata' ]
+        subprocess.call(cmd)
+
+        # take a copy of all funos default settings for signing
+        # and only override filenames used
+        mfg_app_config = config['signed_images'].get('funos.signed.bin').copy()
+        mfg_app_config['source'] = _mfg(funos_appname)
+        config['signed_mfg_images'] = {
+            _mfg(funos_appname, signed=True) : mfg_app_config
+        }
+        gf.set_search_paths([os.getcwd()])
+        gf.create_file(_mfg(funos_appname, signed=True), section='signed_mfg_images')
+
+        os.chdir(curdir)
+
+
 
 if __name__=="__main__":
     main()

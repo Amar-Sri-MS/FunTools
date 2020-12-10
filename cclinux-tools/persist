@@ -17,6 +17,8 @@ case "$1" in
             mkfs.ext4 -q -F /dev/vda3
         fi
         mount /persist
+        mount /b-persist
+
         mkdir -p $INTERFACES_DIR
         (
             cd $INTERFACES_DIR
@@ -27,6 +29,9 @@ case "$1" in
                 fi
             done
         )
+        # $CONFIG_DIR is parent of $INTERFACES_DIR, make sure non-root
+        # users can create files there (e.g. NTP)
+        chmod 0777 $CONFIG_DIR
         if [ -e $INTERFACES_DIR/resolv.conf ] ; then
             ln -f -s $INTERFACES_DIR/resolv.conf /tmp/resolv.conf
         fi
