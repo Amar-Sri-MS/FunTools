@@ -1462,6 +1462,7 @@ static void usage(const char *argv0)
 	printf("       -v, --verbose               log all json transactions in proxy mode\n");
 	printf("       -d, --debug                 print debugging information\n");
 	printf("       -Y, --retry[=N]             retry every seconds for N seconds for first socket connection\n");
+	printf("       -V, --version               display version info and exit\n");
 #ifdef __linux__
 	printf("       --nvme_cmd_timeout=timeout specify cmd timeout in ms (default=" DEFAULT_NVME_CMD_TIMEOUT_MS ")\n");
 #endif //__linux__
@@ -1523,7 +1524,11 @@ int main(int argc, char *argv[])
 	cmd_sock.retries = UINT32_MAX;
 
 	while ((ch = getopt_long(argc, argv,
-				 "hs::i::u::H::T::I:t::D:nNFXR:v",
+#ifdef __linux__
+				 "hB::b::D:i::u::p::H::T::t::I:nSNXFR:LvdVYW",
+#else
+				 "hB::b::D:i::u::H::T::t::nSNXFR:LvdVY",
+#endif
 				 longopts, NULL)) != -1) {
 
 		switch(ch) {
