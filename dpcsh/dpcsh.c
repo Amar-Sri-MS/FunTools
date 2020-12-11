@@ -77,6 +77,15 @@ static uint32_t cmd_seq_num;
 /* whether to log all json */
 static bool _verbose_log = false;
 
+/* whether to print various debugging messages */
+static bool _debug_log = false;
+
+#define dprintf(...) \
+	do { \
+		if(_debug_log) \
+			printf(__VA_ARGS__);\
+	} while(0)
+
 /* cmd timeout, use driver default timeout */
 #define DEFAULT_NVME_CMD_TIMEOUT_MS "0"
 
@@ -1136,7 +1145,7 @@ static bool _do_recv_cmd(struct dpcsock *funos_sock,
 		write(cmd_sock->fd, "\n", 1);
 		fun_free_string(proxy_message);
 	}
-	
+
 	fun_json_release(output);
 	return ok;
 }
@@ -1341,12 +1350,12 @@ static bool _do_cli(int argc, char *argv[],
 	cmd_seq_num++;
 	for (int i = startIndex; i < argc; i++) {
 		n += snprintf(buf + n, LINE_MAX - n, "%s ", argv[i]);
-		printf("buf=%s n=%d\n", buf, n);
+		dprintf("buf=%s n=%d\n", buf, n);
 	}
 
 	size_t len = strlen(buf);
 	buf[--len] = 0;	// trim the last space
-	printf(">> single cmd [%s] len=%zd\n", buf, len);
+	dprintf(">> single cmd [%s] len=%zd\n", buf, len);
 	ok = _do_send_cmd(funos_sock, buf, len, seq_num);
 	if (ok) {
 		ok = _do_recv_cmd(funos_sock, cmd_sock, true, seq_num);
@@ -1410,6 +1419,7 @@ static struct option longopts[] = {
 	{ "baud",            required_argument, NULL, 'R' },
 	{ "legacy_b64",      no_argument,       NULL, 'L' },
 	{ "verbose",         no_argument,       NULL, 'v' },
+	{ "debug",           no_argument,       NULL, 'd' },
 	{ "version",         no_argument,       NULL, 'V' },
 	{ "retry",           optional_argument, NULL, 'Y' },
 #ifdef __linux__
@@ -1450,7 +1460,9 @@ static void usage(const char *argv0)
 	printf("       -R, --baud=rate             specify non-standard baud rate (default=" DEFAULT_BAUD ")\n");
 	printf("       -L, --legacy_b64            support old-style base64 encoding, despite issues\n");
 	printf("       -v, --verbose               log all json transactions in proxy mode\n");
+	printf("       -d, --debug                 print debugging information\n");
 	printf("       -Y, --retry[=N]             retry every seconds for N seconds for first socket connection\n");
+	printf("       -V, --version               display version info and exit\n");
 #ifdef __linux__
 	printf("       --nvme_cmd_timeout=timeout specify cmd timeout in ms (default=" DEFAULT_NVME_CMD_TIMEOUT_MS ")\n");
 #endif //__linux__
@@ -1512,7 +1524,11 @@ int main(int argc, char *argv[])
 	cmd_sock.retries = UINT32_MAX;
 
 	while ((ch = getopt_long(argc, argv,
-				 "hs::i::u::H::T::I:t::D:nNFXR:v",
+#ifdef __linux__
+				 "hB::b::D:i::u::p::H::T::t::I:nSNXFR:LvdVYW",
+#else
+				 "hB::b::D:i::u::H::T::t::nSNXFR:LvdVY",
+#endif
 				 longopts, NULL)) != -1) {
 
 		switch(ch) {
@@ -1659,6 +1675,10 @@ int main(int argc, char *argv[])
 			exit(0);
 			break;
 
+		case 'd':
+			_debug_log = true;
+			break;
+
 		case 'Y':  /* retry=N */
 
 			connect_retries = opt_num(optarg, RETRY_NOARG);
@@ -1689,11 +1709,11 @@ int main(int argc, char *argv[])
 		/* check whether NVMe connection to DPU is available */
 		/* DPC over NVMe will work only in Linux */
 		/* In macOS, libfunq is used */
-		
+
 		/* In macOS, always returns false */
 		bool nvme_dpu_found = find_nvme_dpu_device(detected_nvme_device_name,
 							sizeof(detected_nvme_device_name));
-		
+
 		/* In Linux, use NVMe as default if present */
 		if (nvme_dpu_found) {
 			funos_sock.mode = SOCKMODE_NVME;
@@ -1758,7 +1778,7 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
-	printf("FunOS is connected!\n");
+	dprintf("FunOS is connected!\n");
 
 	switch(mode) {
 	case MODE_HTTP_PROXY:
