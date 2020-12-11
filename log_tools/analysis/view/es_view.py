@@ -10,6 +10,7 @@
 import json
 import os
 import sys
+import time
 
 import jinja2
 
@@ -71,15 +72,26 @@ def _get_script_dir():
 
 def _render_root_page(log_ids, jinja_env, template):
     """ Renders the root page from a template """
-    KIBANA_HOST = app.config['KIBANA']['host']
-    KIBANA_PORT = app.config['KIBANA']['port']
-    kibana_url = f'{KIBANA_HOST}:{KIBANA_PORT}/app/kibana#/discover'
     template_dict = {}
-    # Default Kibana View with logs from last 90 days to now
-    template_dict['logs'] = [{
-        'name': id,
-        'link': f'http://{kibana_url}?_g=(time:(from:now-90d,to:now))&_a=(columns:!(src,msg),index:{id})'
-    } for id in log_ids]
+    template_dict['logs'] = list()
+
+    for id, log in log_ids.items():
+        kibana_base_url = _get_kibana_base_url(id)
+        # Replacing KIBANA_QUERY with empty string since we do not
+        # want to query and want only the URL to the Kibana Dashboard
+        kibana_url = kibana_base_url.replace('KIBANA_QUERY', '')
+        creation_date_epoch = int(log.get('settings').get('index').get('creation_date'))
+        # Separting out seconds and milliseconds from epoch
+        creation_date_s, creation_date_ms = divmod(creation_date_epoch, 1000)
+        creation_date = '{}.{:03d}'.format(
+                                    time.strftime('%B %d, %Y %H:%M:%S', time.gmtime(creation_date_s)),
+                                    creation_date_ms)
+
+        template_dict['logs'].append({
+            'name': id,
+            'link': kibana_url,
+            'creation_date': creation_date
+        })
 
     result = template.render(template_dict, env=jinja_env)
     return result

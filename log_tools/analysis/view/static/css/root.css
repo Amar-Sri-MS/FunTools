@@ -1,0 +1,20 @@
+.content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.index {
+    margin: auto;
+    margin-top: 10px;
+}
+
+.index {
+    border-collapse: collapse;
+    border: 2px solid #4d4d4d;
+}
+
+.index td, .index th {
+    padding: 5px;
+    border: 2px solid #4d4d4d;
+}
