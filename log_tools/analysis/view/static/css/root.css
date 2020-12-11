@@ -11,10 +11,15 @@
 
 .index {
     border-collapse: collapse;
-    border: 2px solid #4d4d4d;
+    border: 1px solid #4d4d4d;
 }
 
 .index td, .index th {
-    padding: 5px;
-    border: 2px solid #4d4d4d;
+    padding: 5px 10px;
+    border: 1px solid #4d4d4d;
+}
+
+.index th {
+    text-align: center;
+    background-color: beige;
 }
