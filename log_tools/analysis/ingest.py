@@ -45,7 +45,7 @@ def main():
     p.process()
 
     end = time.time()
-    print('Time spent processing: {}s'.format(end - start))
+    print('COMPLETED: Time spent processing: {}s'.format(end - start))
 
 
 def build_pipeline(path, output_block):
@@ -112,7 +112,7 @@ def parse_manifest(path):
                 pipeline_cfg.extend(build_input_pipeline(content_path, frn_info))
 
         else:
-            print('Unknown FRN', content)
+            print('WARNING: Unknown FRN', content)
 
     return pipeline_cfg, metadata
 
@@ -175,7 +175,7 @@ def build_input_pipeline(path, frn_info):
         )
 
     else:
-        print('Unknown source!')
+        print(f'WARNING: Unknown source: {source}!')
 
     return blocks
 
