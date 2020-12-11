@@ -1,5 +1,8 @@
 #!/bin/bash -e
-
+#
+# Catch-all for things needed on systems with BMC, NTP configuration
+# was first use and gave this file its name.
+#
 if [ -z "$SDK_INSTALL_DIR" ] ; then
     echo "Error: SDK_INSTALL_DIR not set."
     exit 1
@@ -22,3 +25,9 @@ mkdir -p $runtime_target_dir
 # NTP configuration file.
 #
 install -t $runtime_target_dir -m 0644 ntp-fs1600.conf
+
+#
+# VLAN interface config generator
+#
+
+install -t $runtime_target_dir -m 0644 vlan-bmc
