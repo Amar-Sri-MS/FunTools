@@ -134,18 +134,25 @@ dd if=${ROOTFS_NAME}.fvht.bin of=/dev/vdb4
 
 log_msg "Update config partition"
 
-if grep -q vdb3 /proc/mounts; then
-	if grep -q "b-persist.*ro," /proc/mounts; then
-		log_msg "Remounting b-persist in rw mode"
+# special case for systems with unformatted/seriously corrupt b-persist
+if ! grep -q b-persist /proc/mounts; then
+	log_msg "No b-persist mountpoint found. Trying to mount ..."
+	if ! mount /b-persist; then
+		log_msg "Default mount failed, try remount/fixup"
 		/usr/bin/b-persist mount-rw
 	fi
+fi
 
-	if grep -q "b-persist.*rw," /proc/mounts; then
-		log_msg "Sync configs"
-		/usr/bin/b-persist sync
-	fi
-else
-	log_msg "No b-persist mountpoint found. Skipping ..."
+# standard setup with a read-only mounted b-persist
+if grep -q "b-persist.*ro," /proc/mounts; then
+	log_msg "Remounting b-persist in rw mode"
+	/usr/bin/b-persist mount-rw
+fi
+
+# should be writable by now
+if grep -q "b-persist.*rw," /proc/mounts; then
+	log_msg "Sync configs"
+	/usr/bin/b-persist sync
 fi
 
 echo "CCLinux done" >> $PROGRESS
