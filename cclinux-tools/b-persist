@@ -7,7 +7,8 @@ UPGRADE_DIR=/b-persist/upgrades
 
 case "$1" in
     mount-rw)
-        umount /b-persist
+        # ignore errors - umount may fail if not yet mounted
+        umount /b-persist || true
 
         fsck_code=0
         e2fsck -y /dev/vdb3 || fsck_code=$?
