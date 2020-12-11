@@ -337,9 +337,61 @@ class ElasticLogSearcher(object):
 
         result = self.es.search(body=body,
                                 index=self.index,
-                                size=1)  # we're not really searching
+                                size=0)  # we're not really searching
+
         buckets = result['aggregations']['unique_vals']['buckets']
         return {bucket['key']: bucket['doc_count'] for bucket in buckets}
+
+    def get_aggregated_unique_entries(self, parent_fields, child_fields=[]):
+        """
+        Obtains aggregated unique entries based on the a list of parent & child fields.
+
+        Parent fields define multi level aggregations. For ex: ['system_type', 'system_id']
+        will have unique entries of field 'system_id' for each unique entry of field 'system_type'
+
+        Child fields define single level aggregations.
+        """
+        max_unique_entries = 100
+        def generate_aggs_body(parent_fields, child_fields=[]):
+            body = dict()
+            if len(parent_fields) == 0:
+                return body
+
+            field = parent_fields.pop()
+            has_more_fields = len(parent_fields) > 0
+            body['aggs'] = {
+                field: {
+                    'terms': { 'field': field, 'size': max_unique_entries },
+                }
+            }
+
+            if has_more_fields:
+                body['aggs'][field] = {
+                    **body['aggs'][field],
+                    **generate_aggs_body(parent_fields, child_fields)
+                }
+            elif len(child_fields) > 0:
+                aggs = dict()
+                for child_field in child_fields:
+                    aggs[child_field] = {
+                        'terms': {'field': child_field, 'size': max_unique_entries}
+                    }
+
+                body['aggs'][field] = {
+                    **body['aggs'][field],
+                    'aggs': aggs
+                }
+
+            return body
+
+        body = generate_aggs_body(list(parent_fields[::-1]), child_fields)
+
+        result = self.es.search(body=body,
+                                index=self.index,
+                                size=0)  # we're not really searching
+
+        buckets = result['aggregations'][parent_fields[0]]['buckets']
+        return buckets
 
     def get_document_by_id(self, doc_id):
         """
@@ -475,7 +527,7 @@ def _convert_to_table_row(hit):
 
     line += '<td>{}</td> <td>{}</td> <td>{}</td>'.format(s['src'],
                                                          s['@timestamp'],
-                                                         s['level'])
+                                                         s.get('level'))
     line += '<td><a href="{}">{}</a></td>'.format(kibana_url,
                                                   s['msg'])
     line += '</tr>'
@@ -665,6 +717,7 @@ def _render_dashboard_page(log_id, jinja_env, template):
     sources = es.get_unique_entries('src')
     system_types = es.get_unique_entries('system_type')
     system_ids = es.get_unique_entries('system_id')
+    unique_entries = es.get_aggregated_unique_entries(['system_type', 'system_id'], ['src'])
     recent_logs = _get_recent_logs(log_id, 50, log_levels=['error'])
 
     template_dict = {}
@@ -672,6 +725,7 @@ def _render_dashboard_page(log_id, jinja_env, template):
     template_dict['sources'] = sources
     template_dict['system_types'] = system_types
     template_dict['system_ids'] = system_ids
+    template_dict['unique_entries'] = unique_entries
     template_dict['kibana_base_url'] = kibana_base_url
     template_dict['log_level_stats'] = _get_log_level_stats(log_id)
     template_dict['recent_logs'] = _render_log_entries(recent_logs)

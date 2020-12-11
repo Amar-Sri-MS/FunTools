@@ -14,6 +14,63 @@
     <div class="content">
         <h2 class="center-align">Dashboard for <b>{{log_id}}</b></h2>
         <div class="container">
+            <h3>Explore logs by source</h3>
+            <div class="filters_container">
+                <div class="filter_box_container">
+                    {% for system_type in unique_entries %}
+                        {% set total_entries = system_type['doc_count'] %}
+                        <div class="filter_box">
+                            <div class="filter_box_header">
+                                <input type="checkbox" id="{{system_type['key']}}" name="system_type" value="{{system_type['key']}}" checked />
+                                <label for="{{system_type['key']}}">
+                                    System Type: {{system_type['key']}} ({{total_entries}})
+                                </label>
+                            </div>
+                            <div class="filter_box_content">
+                                <!-- <div>
+                                    <span class="filter_header">System ID:</span>
+                                    <span class="filter_button" onclick="onToggleSelectAllSystemIDs()">All</span>
+                                    <span class="separator"></span>
+                                    <span class="filter_button" onclick="onToggleSelectAllSystemIDs(false)">None</span>
+                                </div> -->
+                                <ul>
+                                {% for system_id in system_type['system_id']['buckets'] %}
+                                    {% set system_id_distribution = calculatePercentage(system_id['doc_count'], total_entries) %}
+                                    <li>
+                                        <div class="filter_header">
+                                            <input type="checkbox" id="{{system_id['key']}}" name="system_type" value="{{system_id['key']}}" checked />
+                                            <label for="{{system_id['key']}}">System ID: {{system_id['key']}} ({{system_id_distribution}})</label>
+                                        </div>
+                                    <!-- </li>
+                                    <li>
+                                        <div>
+                                            <span class="filter_header">Select System Source:</span>
+                                            <span class="filter_button" onclick="onToggleSelectAllSources()">All</span>
+                                            <span class="separator"></span>
+                                            <span class="filter_button" onclick="onToggleSelectAllSources(false)">None</span>
+                                        </div> -->
+                                    <ul>
+                                    {% for source in system_id['src']['buckets'] %}
+                                        {% set source_distribution = calculatePercentage(source['doc_count'], total_entries) %}
+                                        <li class="filter_box_item">
+                                            <input type="checkbox" id="{{source['key']}}" name="system_type" value="{{source['key']}}" checked />
+                                            <label for="{{source['key']}}">{{source['key']}} ({{source_distribution}})</label>
+                                        </li>
+                                    {% endfor %}
+                                    </ul>
+                                    </li>
+                                {% endfor %}
+                                </ul>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+                <div id="explore_button">
+                    <button class="btn" onclick="onClickExploreLogs()">Explore Logs <span class="arrow right"></span></button>
+                </div>
+            </div>
+        </div>
+        <div class="container">
             <h3>Source wise log distribution</h3>
             <!-- Calculating total log entries -->
             {% set total_entries = sources.values()|sum() %}
@@ -22,7 +79,7 @@
                 {% if system_types|length > 0 %}
                     <div class="filter_container">
                         <div>
-                            <span class="filter_header">Select System Type:</span>
+                            <span class="filter_header left-arrow">Select System Type:</span>
                             <span class="filter_button" onclick="onToggleSelectAllSystemTypes()">All</span>
                             <span class="separator"></span>
                             <span class="filter_button" onclick="onToggleSelectAllSystemTypes(false)">None</span>
@@ -43,7 +100,7 @@
                 {% if system_ids|length > 0 %}
                     <div class="filter_container">
                         <div>
-                            <span class="filter_header">Select System ID:</span>
+                            <span class="filter_header left-arrow">Select System ID:</span>
                             <span class="filter_button" onclick="onToggleSelectAllSystemIDs()">All</span>
                             <span class="separator"></span>
                             <span class="filter_button" onclick="onToggleSelectAllSystemIDs(false)">None</span>
@@ -63,7 +120,7 @@
 
                 <div class="filter_container">
                     <div>
-                        <span class="filter_header">Select source:</span>
+                        <span class="filter_header left-arrow">Select source:</span>
                         <span class="filter_button" onclick="onToggleSelectAllSources()">All</span>
                         <span class="separator"></span>
                         <span class="filter_button" onclick="onToggleSelectAllSources(false)">None</span>

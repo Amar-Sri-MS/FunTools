@@ -7,7 +7,7 @@
 .filter_header {
     font-weight: bold;
 }
-.filter_header::before {
+.left-arrow::before {
     content: " >> ";
     font-family: 'Times';
     color: #3B7FC4;
@@ -27,6 +27,27 @@
 .filter_button:hover {
     color: #3B7FC4;
 }
+.filter_box_container {
+    display: flex;
+}
+.filter_box {
+    min-width: 350px;
+    max-width: 500px;
+    margin: 10px;
+    border: 1px solid black;
+}
+.filter_box_header {
+    border-bottom: 1px solid black;
+    padding: 5px;
+    background-color: beige;
+    font-weight: bold;
+}
+.filter_box_content {
+    padding: 5px;
+}
+.filter_box_item {
+    padding: 5px 0px;
+}
 .separator {
     border: 1px dashed #a2a2a2;
     margin: 0px 10px;
@@ -43,7 +64,7 @@ td {
 }
 #explore_button {
     display: flex;
-    justify-content: flex-end;
+    justify-content: center;
 }
 .distribution_stats {
     min-width: 15%;
@@ -51,4 +72,8 @@ td {
 .level_stat {
     padding: 5px 0px;
     border-bottom: 0.8px solid #a2a2a270;
+}
+ul {
+    list-style: none;
+    padding-inline-start: 25px;
 }
