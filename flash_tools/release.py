@@ -217,7 +217,12 @@ def main():
         shutil.copytree(os.path.join(args.sdkdir, 'bin/flash_tools/install_tools'),
             'install_tools')
         for rootfs in rootfs_files:
-            shutil.copy2(os.path.join(args.sdkdir, 'deployments', rootfs), rootfs)
+            root_file = os.path.join(args.sdkdir, 'deployments', rootfs)
+            shutil.copy2(root_file, rootfs)
+            try:
+                shutil.copy2(root_file + '.version', rootfs + '.version')
+            except FileNotFoundError:
+                pass
 
         shutil.copy2(funos_appname, funos_appname + ".mfginstall")
 
@@ -390,6 +395,9 @@ def main():
 
             if os.path.exists('.version'):
                 bundle_images.append('.version')
+
+            if os.path.exists(rootfs + '.version'):
+                bundle_images.append(rootfs + '.version')
 
             for f in bundle_images:
                 os.symlink(os.path.join(os.path.abspath(os.curdir), f), os.path.join('bundle_installer', os.path.basename(f)))
