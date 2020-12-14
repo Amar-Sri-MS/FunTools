@@ -98,9 +98,9 @@
         <div class="container">
             <h3>Recent
                 <select name="level" id="level" onchange="onSelectLevelForRecentLogs(this)">
-                    <option value="error" selected>Error</option>
-                    <option value="warn">Warning</option>
-                    <option value="info">Info</option>
+                    {% for level, stat in log_level_stats.items() %}
+                        <option value="{{level}}">{{level}}</option>
+                    {% endfor %}
                 </select>
                 logs for
                 <select name="sources" id="recent_source" onchange="onSelectSourceForRecentLogs(this)">
