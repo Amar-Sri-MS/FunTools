@@ -528,8 +528,8 @@ def _convert_to_table_row(hit):
     line += '<td>{}</td> <td>{}</td> <td>{}</td>'.format(s['src'],
                                                          s['@timestamp'],
                                                          s.get('level'))
-    line += '<td><a href="{}">{}</a></td>'.format(kibana_url,
-                                                  s['msg'])
+    line += '<td><a href="{}" target="_blank">{}</a></td>'.format(kibana_url,
+                                                                  s['msg'])
     line += '</tr>'
     return line
 

@@ -122,11 +122,11 @@ class AnalyticsOutput(Block):
                                                                                 quote_plus(query))
 
             table_body.append(
-                '<tr><td>{}</td><td>{}</td><td>{}</td><td><a href="{}">{}</a></td></tr>'.format(entry['count'],
-                                                                                              msg['uid'],
-                                                                                              msg['datetime'],
-                                                                                              kibana_url,
-                                                                                              msg['line'])
+                '<tr><td>{}</td><td>{}</td><td>{}</td><td><a href="{}" target="_blank">{}</a></td></tr>'.format(entry['count'],
+                                                                                                                msg['uid'],
+                                                                                                                msg['datetime'],
+                                                                                                                kibana_url,
+                                                                                                                msg['line'])
             )
 
         template_dict = {}

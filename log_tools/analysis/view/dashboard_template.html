@@ -64,26 +64,32 @@
         </div>
         <div class="container row">
             <div class="distribution_stats">
-                <h3>Log Distribution for <select name="sources" id="sources" onchange="onSelectSourceForLogLevelStats(this)">
-                    <option value="all" selected>All</option>
-                    {% for source in sources %}
-                        <option value="{{source}}">{{source}}</option>
-                    {% endfor %}
-                </select> source(s)</h3>
+                <h3>Log Distribution</h3>
+                <div>
+                    Sources:
+                    <select name="sources" id="sources" onchange="onSelectSourceForLogLevelStats(this)">
+                        <option value="all" selected>All</option>
+                        {% for source in sources %}
+                            <option value="{{source}}">{{source}}</option>
+                        {% endfor %}
+                    </select>
+                </div>
                 <div class="content">
                     <div id="log_level_stats">
                         <div class="level_stat">Total: {{total_entries}}(100%)</div>
                         <!-- Displaying log entries for a source and each log levels in % with rounded off to 2 decimals -->
                         {% for level, stat in log_level_stats.items() %}
                             {% set log_distribution = calculatePercentage(stat.count, total_entries) %}
-                            <div class="level_stat"><a href="{{stat.kibana_url}}">{{level}}</a>: {{stat.count}}({{log_distribution}})</div>
+                            <div class="level_stat" title="{{stat.keywords}}">
+                                <a href="{{stat.kibana_url}}" target="_blank">{{level}}</a>: {{stat.count}}({{log_distribution}})
+                            </div>
                         {% endfor %}
                     </div>
                 </div>
             </div>
             <div class="separator"></div>
             <div>
-                <h3>Most duplicated for All source(s)</h3>
+                <h3>Top 10 duplicated logs (all sources)</h3>
                 <div class="log_entries">
                     {% include 'analytics/'+log_id+'/duplicates.html' ignore missing %}
                 </div>
@@ -326,11 +332,11 @@
                                     sources[selectedSourceForLogLevelStats];
         const kibanaUrlForSource = getKibanaURLForSources([selectedSourceForLogLevelStats]);
 
-        let divs = [`<div class="level_stat"><a href="${kibanaUrlForSource}">Total</a>: ${totalEntriesForSource}(${Math.round((totalEntriesForSource/totalEntries)*100)}%)</div>`];
+        let divs = [`<div class="level_stat"><a href="${kibanaUrlForSource}" target="_blank">Total</a>: ${totalEntriesForSource}(${Math.round((totalEntriesForSource/totalEntries)*100)}%)</div>`];
         for (let [level, stat] of Object.entries(stats)) {
             // let logDistribution = Math.round((stat.count/totalEntriesForSource)*100);
             let logDistribution = ((stat.count/totalEntriesForSource)*100).toFixed(2);
-            divs.push(`<div class="level_stat"><a href="${stat.kibana_url}">${level}</a>: ${stat.count}(${logDistribution}%)</div>`);
+            divs.push(`<div class="level_stat" title="${stat.keywords}"><a href="${stat.kibana_url}" target="_blank">${level}</a>: ${stat.count}(${logDistribution}%)</div>`);
         }
         logLevelStatsElement.innerHTML = divs.join('\n');
     }
