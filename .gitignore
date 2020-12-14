@@ -2,6 +2,7 @@ Generator/*.pyc
 ConfigGen/out/
 ConfigGen/test/test_hu_cfg
 jsonutil/jsonutil
+*.gcno
 *.o
 *.pyc
 *~
