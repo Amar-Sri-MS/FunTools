@@ -20,16 +20,19 @@ curl -X PUT "localhost:9200/_index_template/log_template" -H 'Content-Type: appl
                     "type": "date_nanos"
                 },
                 "system_type": {
-                    "type": "keyword"
+                    "type": "keyword",
+                    "null_value": "N/A"
                 },
                 "system_id": {
-                    "type": "keyword"
+                    "type": "keyword",
+                    "null_value": "N/A"
                 },
                 "src": {
                     "type": "keyword"
                 },
                 "level": {
-                    "type": "keyword"
+                    "type": "keyword",
+                    "null_value": "INFO"
                 },
                 "msg": {
                     "type": "text"
