@@ -17,7 +17,7 @@ case "$1" in
             mkfs.ext4 -q -F /dev/vda3
         fi
         mount /persist
-        mount /b-persist
+        mount /b-persist || true
 
         mkdir -p $INTERFACES_DIR
         (
