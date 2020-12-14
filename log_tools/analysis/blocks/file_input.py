@@ -44,15 +44,21 @@ class TextFileInput(Block):
         # if it proves too difficult to enforce copying files with their
         # original timestamp.
         input_files.sort(key=os.path.getmtime)
+        file_size = 0
 
         for file in input_files:
             print('Parsing', file)
             if file.endswith('.gz'):
                 with gzip.open(file, mode='rt', encoding='ascii', errors='replace') as f:
                     yield from self.read_logs(f)
+                    f.seek(0,2)
+                    file_size += f.tell()
             else:
                 with open(file, 'r', encoding='ascii', errors='replace') as f:
                     yield from self.read_logs(f)
+                    f.seek(0,2)
+                    file_size += f.tell()
+        print('INFO: Uncompressed file size (in bytes):', file_size)
 
     def read_logs(self, f):
         multiline_logs = []
