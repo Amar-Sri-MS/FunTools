@@ -20,7 +20,7 @@ import copy
 from sku_board_layer_cfg_gen import BoardLayer
 
 logger = logging.getLogger('sku_cfg_gen')
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 class SKUCfgGen():
     sku_h_tmpl = 'platform_sku_h.j2'
@@ -148,7 +148,7 @@ class SKUCfgGen():
         logger.debug('board config paths: {}'.format(file_patterns))
         for file_pat in file_patterns:
             for cfg in glob.glob(os.path.join(self.input_dir, file_pat)):
-                logger.debug('Processing per sku config: {}'.format(cfg))
+                logger.debug('Processing posix or emu per sku config: {}'.format(cfg))
                 with open(cfg, 'r') as f:
                     cfg_json = f.read()
                     cfg_json = jsonutils.standardize_json(cfg_json)
@@ -180,9 +180,6 @@ class SKUCfgGen():
             machine = cfg_json['skus'][key]['PlatformInfo']['machine']
             if machine != 'board':
                 return False
-            # Don't add the chip and machine keys to the output.
-            del cfg_json['skus'][key]['PlatformInfo']['chip']
-            del cfg_json['skus'][key]['PlatformInfo']['machine']
             return True
 
         return False
@@ -201,7 +198,7 @@ class SKUCfgGen():
                 # Skip board layer files and defaults files
                 if 'sku_config/defaults' in cfg:
                     continue
-                logger.debug('Processing per sku config: {}'.format(cfg))
+                logger.debug('Processing board per sku config: {}'.format(cfg))
                 with open(cfg, 'r') as f:
                     cfg_json = f.read()
                     cfg_json = jsonutils.standardize_json(cfg_json)
@@ -222,6 +219,7 @@ class SKUCfgGen():
                     board_layer.apply_board_layer(cfg_json)
 
                     board_cfg = jsonutils.merge_dicts(board_cfg, copy.deepcopy(cfg_json))
+
         return board_cfg
 
     def get_additions(self, board_cfg, addition_machine):
@@ -231,7 +229,7 @@ class SKUCfgGen():
         logger.debug('Additional config paths: {}'.format(file_patterns))
         for file_pat in file_patterns:
             for cfg in glob.glob(os.path.join(self.input_dir, file_pat)):
-                logger.debug('Processing per sku config: {}'.format(cfg))
+                logger.debug('Processing additions for per sku config: {}'.format(cfg))
                 with open(cfg, 'r') as f:
                     cfg_json = f.read()
                     cfg_json = jsonutils.standardize_json(cfg_json)
@@ -247,9 +245,6 @@ class SKUCfgGen():
                     machine = cfg_json['PlatformInfo']['machine']
                     if machine != addition_machine:
                         continue;
-
-                    # Remove the PlatformInfo key
-                    del cfg_json['PlatformInfo']
 
                     board_cfg = jsonutils.merge_dicts(board_cfg, cfg_json)
 
