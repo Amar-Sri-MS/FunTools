@@ -17,6 +17,7 @@ import argparse
 from hwcap_cfg_gen import HWCAPCodeGen
 import collections
 import copy
+from default_cfg_gen import DefaultCfgGen
 from sku_board_layer_cfg_gen import BoardLayer
 
 logger = logging.getLogger('sku_cfg_gen')
@@ -44,54 +45,6 @@ class SKUCfgGen():
             board_id_cfg = json.loads(cfg_json)
 
         return board_id_cfg.get('fungible_boards', None)
-
-    def build_default_entry(self, def_json, entry):
-        for key in entry.copy():
-            # Walk all the dictionaries in the DEFAUL_* entries recursevely
-            # updating them with defaults as needed.
-            if type(entry[key]) is dict:
-                self.build_default_entry(def_json, entry[key])
-                if key in list(def_json.keys()):
-                    sub_entry = {}
-                    sub_entry.update(def_json[key])
-                    sub_entry.update(entry[key])
-                    self.build_default_entry(def_json, sub_entry)
-                    del entry[key]
-                    entry.update(sub_entry)
-
-    def build_default_config(self, def_json, def_cfg):
-        for def_key, val in def_json.items():
-            # Only keys prefixed with "DEFAULT_" are imported by board config
-            # files. These must be expanded and saved in def_cfg.
-            if 'DEFAULT_' in def_key:
-                # Build the entry.
-                entry = {}
-                entry = copy.deepcopy(def_json[def_key])
-                self.build_default_entry(def_json, entry)
-                # Save the entry
-                new_key = def_key.replace('DEFAULT_', '')
-                def_cfg[new_key] = entry
-
-    def get_default_config(self, def_cfg):
-        """Build a dictionary containing the default entries exported to board
-        configuration files.
-        """
-        file_patterns = [
-            'sku_config/defaults/all_*.cfg',
-            'sku_config/defaults/%s_*.cfg' % self.target_chip
-        ]
-        for file_pat in file_patterns:
-            for def_file in glob.glob(os.path.join(self.input_dir, file_pat)):
-                with open(def_file, 'r') as f:
-                    def_json = f.read()
-                    def_json = jsonutils.standardize_json(def_json)
-                    try:
-                        def_json = json.loads(def_json)
-                    except:
-                        logger.error("Failed to load defaults file: {}".format(def_file))
-                        raise
-
-                self.build_default_config(def_json, def_cfg)
 
     def merge_entry(self, entry, cfg_json):
         """Modifies entry in place to contain values from cfg_json. If any value
@@ -130,12 +83,18 @@ class SKUCfgGen():
                         if key in list(def_cfg.keys()):
                             self.update_entry(key, cfg_json, def_cfg)
 
+    def get_default_config(self):
+        """Get the default configuration values
+        """
+        default_cfg_gen = DefaultCfgGen(self.input_dir, self.target_chip)
+        return default_cfg_gen.get_defaults()
+
     def get_posix_or_emu_configs(self, board_cfg):
         """Get the configuration for all the posix or emulations that
         use the target chip.
         """
         def_cfg = dict()
-        self.get_default_config(def_cfg)
+        def_cfg = self.get_default_config()
 
         _path = 'sku_config/'
 
@@ -189,7 +148,7 @@ class SKUCfgGen():
         chip.
         """
         def_cfg = dict()
-        self.get_default_config(def_cfg)
+        def_cfg = self.get_default_config()
 
         _path = 'sku_config/*/*.cfg'
         file_patterns = [_path]
