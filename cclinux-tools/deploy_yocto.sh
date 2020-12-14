@@ -19,3 +19,10 @@ echo 'options bonding max_bonds=0' > $DEPLOY_ROOT/etc/modprobe.d/bonding.conf
 #
 
 sed -i -E "/current_hostname\" = 'localhost' ] \|\|\$/a\\           [ \"\$current_hostname\" = 'mips64r6' ] \|\|" $DEPLOY_ROOT/sbin/dhclient-script
+
+#
+# Some tools expect ip to be at /bin/ip, create a link if needed.
+#
+if [ ! -e $DEPLOY_ROOT/bin/ip ] ; then
+    ln -s ../sbin/ip $DEPLOY_ROOT/bin/ip
+fi
