@@ -24,8 +24,9 @@ case "$1" in
 	esac
 	echo 'auto eth0.2' > $if_file
 	echo 'iface eth0.2 inet static' >> $if_file
-	echo "    address ${my_dpu_ip}"  >> $if_file
-	echo '    netmask 255.255.255.0'  >> $if_file
+	echo "    address ${my_dpu_ip}/24"  >> $if_file
+	echo '    broadcast +'  >> $if_file
+	echo '    vlan-raw-device eth0'  >> $if_file
 
         ;;
     *)
