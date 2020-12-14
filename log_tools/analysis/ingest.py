@@ -35,7 +35,7 @@ def main():
 
     env = dict()
     env['logdir'] = base_path
-    env['build_id'] = args.build_id
+    env['build_id'] = args.build_id.lower()
 
     cfg = build_pipeline(base_path, args.output)
 
@@ -63,7 +63,7 @@ def build_pipeline(path, output_block):
     return cfg
 
 
-def parse_manifest(path):
+def parse_manifest(path, parent_frn={}):
     """ Parses manifest file """
     pipeline_cfg = list()
 
@@ -75,6 +75,7 @@ def parse_manifest(path):
         # Validating if the content is FRN string
         if type(content) == str and content.startswith('frn'):
             frn_info = manifest_parser.parse_FRN(content)
+            frn_info = manifest_parser.merge_frn(parent_frn, frn_info)
 
             # Ignore if the resource_type is not present in the FRN
             if frn_info['resource_type'] == '':
@@ -89,8 +90,7 @@ def parse_manifest(path):
                 archive_extractor.extract(content_path)
 
                 # Build input pipeline by parsing the manifest file in the archive
-                # TODO(Sourabh): Need to pass the frn_info to the child archives
-                content_pipeline_cfg, content_metadata = parse_manifest(archive_path)
+                content_pipeline_cfg, content_metadata = parse_manifest(archive_path, frn_info)
 
                 pipeline_cfg.extend(content_pipeline_cfg)
                 # TODO(Sourabh): Need to store metadata properly based on each archive.

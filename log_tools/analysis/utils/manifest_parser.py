@@ -56,3 +56,20 @@ def parse_FRN(frn_str):
         'prefix_path': frn[7],
         'sub_path': frn[8]
     }
+
+
+def merge_frn(parent_frn_info, frn_info):
+    """ Merges parent's frn_info with the existing frn_info """
+    def get_frn_value(value, parent_value):
+        return parent_value if value == '' or value == None else value
+
+    return {
+        'namespace': get_frn_value(frn_info.get('namespace'), parent_frn_info.get('namespace')),
+        'system_type': get_frn_value(frn_info.get('system_type'), parent_frn_info.get('system_type')),
+        'system_id': get_frn_value(frn_info.get('system_id'), parent_frn_info.get('system_id')),
+        'component': get_frn_value(frn_info.get('component'), parent_frn_info.get('component')),
+        'source': get_frn_value(frn_info.get('source'), parent_frn_info.get('source')),
+        'resource_type': frn_info.get('resource_type'),
+        'prefix_path': frn_info.get('prefix_path'),
+        'sub_path': frn_info.get('sub_path')
+    }
