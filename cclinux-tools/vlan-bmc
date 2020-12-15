@@ -9,7 +9,8 @@ CONFIG_DIR=/persist/config
 case "$1" in
 	start)
 		mkdir -p /tmp/interfaces.d
-		if_file=/tmp/interfaces.d/eth0.2
+		# ifup source-directory only matches files on pattern ^[a-zA-Z0-9_-]+$
+		if_file=/tmp/interfaces.d/eth0-2
 		my_sku=unknown
 		if [ -e /sys/firmware/devicetree/base/fungible,sku ] ; then
 			read -d $'\0' my_sku rest_of_line < /sys/firmware/devicetree/base/fungible,sku
