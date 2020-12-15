@@ -134,10 +134,10 @@ def main():
 
     for config_file in args.config:
         if config_file == '-':
-            gf.merge_configs(config, json.load(sys.stdin,encoding='ascii'))
+            gf.merge_configs(config, json.load(sys.stdin))
         else:
             with open(config_file, 'r') as f:
-                gf.merge_configs(config, json.load(f,encoding='ascii'))
+                gf.merge_configs(config, json.load(f))
 
     eeprom_list = '{}_eeprom_list.json'.format(args.chip)
     fvht_list_file = None
