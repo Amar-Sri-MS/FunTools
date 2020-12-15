@@ -115,6 +115,12 @@ fi
 if [[ $ccfg_install ]]; then
 	./run_fwupgrade.py ${FW_UPGRADE_ARGS} --upgrade-file ccfg=$ccfg_install
 	./run_fwupgrade.py ${FW_UPGRADE_ARGS} --upgrade-file ccfg=$ccfg_install --active
+else
+	feature_set=`dpcsh -nQ peek "config/boot_defaults/feature_set" | jq -Mr '.result' || true`
+	if [ ! -z "$feature_set" ]; then
+		log_msg "Updating ccfg \"$feature_set\""
+		./run_fwupgrade.py ${FW_UPGRADE_ARGS} -u ccfg --select-by-image-type "$feature_set"
+	fi
 fi
 
 echo "DPU done" >> $PROGRESS
