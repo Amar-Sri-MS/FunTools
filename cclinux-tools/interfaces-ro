@@ -2,10 +2,4 @@
 auto lo
 iface lo inet loopback
 
-# base eth0 always up but with no addresses
-# Use eth0:0 for inet or eth0.1 for VLAN
-auto eth0
-iface eth0 inet manual
-	up ip link set up dev eth0
-
 source-directory /tmp/interfaces.d

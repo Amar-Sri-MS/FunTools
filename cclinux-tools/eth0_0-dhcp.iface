@@ -1,4 +1,0 @@
-# Default: eth0:0 is DHCP
-auto eth0:0
-iface eth0:0 inet dhcp
-

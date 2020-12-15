@@ -1,0 +1,37 @@
+#!/bin/sh
+#
+# Request that VLAN 2 be configured for BMC communications
+#
+PATH="/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin"
+
+CONFIG_DIR=/persist/config
+
+case "$1" in
+    start)
+        mkdir -p /tmp/interfaces.d
+	if_file=/tmp/interfaces.d/eth0.2
+	my_sku=unknown
+	if [ -e /sys/firmware/devicetree/base/fungible,sku ] ; then
+	    read -d $'\0' my_sku rest_of_line < /sys/firmware/devicetree/base/fungible,sku
+	fi
+	case "${my_sku}" in
+	    *_1)
+		my_dpu_ip=192.168.127.6
+		;;
+	    *)
+		my_dpu_ip=192.168.127.5
+		;;
+	esac
+	echo 'auto eth0.2' > $if_file
+	echo 'iface eth0.2 inet static' >> $if_file
+	echo "    address ${my_dpu_ip}/24"  >> $if_file
+	echo '    broadcast +'  >> $if_file
+	echo '    vlan-raw-device eth0'  >> $if_file
+
+        ;;
+    *)
+        :
+        ;;
+esac
+
+exit 0
