@@ -13,6 +13,7 @@ import subprocess
 import dpc_client
 import time
 import unittest
+import xmlrunner
 
 
 class TestDPCCommands(unittest.TestCase):
@@ -125,7 +126,8 @@ def run_tests_client(client, exclude):
         if callable(getattr(TestDPCCommands, func)) and func.startswith('test') \
             and (func not in exclude):
             suite.addTest(TestDPCCommands(client, func))
-    results = unittest.TextTestRunner().run(suite)
+    test_runner = xmlrunner.XMLTestRunner(output="logs/")
+    results=test_runner.run(suite)
     return len(results.failures) == 0
 
 def run_dpc_test(args, unix_sock, delay):
