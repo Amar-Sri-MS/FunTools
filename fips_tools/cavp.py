@@ -5,13 +5,7 @@
 # Copyright (c) 2020. Fungible, Inc. All rights reserved.
 #
 
-''' Rationale: CAVP test files follow the same overall syntax,
-which is really a variation of the ConfigFile format.
-https://docs.python.org/3/library/configparser.html
-
-This module follows some simple syntax rule to extract the
-tests from different types of CAVP tests.
-
+''' Rationale: CAVP test files follow the same overall syntax
 This module reads a CAVP test file, extract the tests from it based on
 the syntax, calls the proper method to execute the tests and writes
 the results to the CAVP response file
@@ -44,7 +38,7 @@ class AbsCAVPTestRunner:
 class TestTester(AbsCAVPTestRunner):
     ''' dummy tester class '''
     def test(self, request):
-        print(request)
+        print(request["test"]["full_type"])
         return {'md' : 'daa1e4c446d9c7f34bb8547b1339b901f536a7e4' }
 
 
@@ -123,8 +117,11 @@ class CAVPTest:
             test_group_params = {k:v for (k,v) in test_group.items() if k != "tests" }
             tests = []
 
+            full_type = file_params["algorithm"] + "." + test_group_params["testType"]
+
             for test in test_group["tests"]:
                 # generate a test request
+                test["full_type"] = full_type # dispatch on this
                 test_request = { "file_params" : file_params,
                                  "test_group" : test_group_params,
                                  "test" : test }
