@@ -27,6 +27,9 @@ import json
 
 import dpc_client
 
+def rreplace(s, old, new, maxreplace):
+    return new.join(s.rsplit(old, maxreplace))
+
 ######
 # Tester classes
 #
@@ -34,14 +37,15 @@ import dpc_client
 
 class AbsCAVPTestRunner:
     ''' abstract tester class '''
-    def test(self, test_no, request):
+    def test(self, request):
         raise RuntimeError("abstract class called")
 
 
 class TestTester(AbsCAVPTestRunner):
     ''' dummy tester class '''
-    def test(self, test_no, request):
-        return ['Result = FAIL']
+    def test(self, request):
+        print(request)
+        return {'md' : 'daa1e4c446d9c7f34bb8547b1339b901f536a7e4' }
 
 
 class DPCCAVP(AbsCAVPTestRunner):
@@ -64,15 +68,15 @@ class DPCCAVP(AbsCAVPTestRunner):
             self.dpc_client = dpc_client.DpcClient()
             # no file try default
 
-    def test(self, test_no, request):
+    def test(self, request):
         # package the request as JSON and send to FunOS
         execute_args = ['cavp', request]
         results = self.dpc_client.execute('execute', execute_args)
         print("Result = %s" % str(results))
         # result is a dictionary with either a key 'error' or a key 'result'
         if 'error' in results:
-            raise RuntimeError("error returned by test #%d: %s" %
-                               (test_no, results['error']))
+            raise RuntimeError("error returned by test %s: %s" %
+                               (request, results['error']))
         elif 'result' in results:
             return results['result']
 
@@ -87,12 +91,9 @@ class DPCCAVP(AbsCAVPTestRunner):
 #
 class CAVPTest:
 
-    HEADERS = '[headers]'
-
-    def __init__(self, name, file_path, tester):
-        self.name = name
+    def __init__(self, file_path, tester):
         self.req_file = os.path.abspath(file_path)
-        self.rsp_file = os.path.splitext(self.req_file)[0] + '.rsp'
+        self.rsp_file = rreplace(self.req_file, '.req', '.rsp', 1)
         self.tester = tester
 
 
@@ -100,85 +101,47 @@ class CAVPTest:
         return self.rsp_file
 
     def run(self):
-        meta_params = {self.HEADERS: '',
-                       'req_file': self.name} # global params for the file
+        meta_params = {} # global params for the file
+
+        # load the whole file
         with open(self.req_file, 'r') as reqf:
-            with open(self.rsp_file, 'w') as rspf:
-                test_no = 1
-                while True:
-                    request = self._read_request(reqf, rspf, meta_params)
-                    if request is None:
-                        return # EOF
-                    response = self.tester.test(test_no, request)
-                    self._write_response(rspf, response)
-                    test_no = test_no + 1
+            request = json.load(reqf)
+
+        # hierarchy is [ {} {file_params, testGroups:[] } ]
+        # each testGroup is { group_param, tests:[] }
+        # each test is a dictionary with a field "tcId"
+
+        # create response: first element of request
+        response = [ request[0] ]
+
+        # the file keys but without testGroups items
+        file_params = {k:v for (k,v) in request[1].items() if k != "testGroups"}
+        test_groups = []
+
+        for test_group in request[1]["testGroups"]:
+            # add the test group keys but without tests items
+            test_group_params = {k:v for (k,v) in test_group.items() if k != "tests" }
+            tests = []
+
+            for test in test_group["tests"]:
+                # generate a test request
+                test_request = { "file_params" : file_params,
+                                 "test_group" : test_group_params,
+                                 "test" : test }
+                full_response = { "tcId" : test["tcId"] }
+                test_response = self.tester.test(test_request)
+                full_response.update(test_response)
+                tests.append(full_response)
 
 
-    def _read_request(self, in_fp, out_fp, params):
-        ''' read a test from the rsp file; also write the test to the out file '''
-        test_input = {}
-        in_test = False
+            test_group_params["tests"] = tests
+            test_groups.append(test_group_params)
 
-        l = in_fp.readline()
+        file_params["testGroups"] = test_groups
+        response.append(file_params)
 
-        while l:
-
-            l = l.strip()
-
-            if len(l)==0:
-                if in_test:
-                    # no more test value and do not write line
-                    # since the response needs to be appended
-                    break
-            elif l[0] == '#':
-                # comment -> headers
-                params[self.HEADERS] += l[1:]
-            elif l[0] == '[':
-                # meta parameters
-                end_pos = l.rfind(']')
-                if end_pos >= 0:
-                    spec = l[1:end_pos]
-                else:
-                    spec = l[1:]
-                self._parse_kv(params, spec)
-            else:
-                self._parse_kv(test_input, l)
-                in_test = True # still collect test values
-
-            # always input to response file
-            print(l, file=out_fp)
-            l = in_fp.readline()
-
-
-        # test is read: something to do?
-        if bool(test_input) == 0:
-            return None # done
-
-        # return the test parameters
-        test_input['params'] = params
-        return test_input
-
-    def _write_response(self, out_fp, reply):
-        # write the reply which can be None, a single line or
-        # an array of lines in the correct order
-        if reply is None:
-            pass
-        elif isinstance(reply, str):
-            print(reply, file=out_fp)
-        else :
-            for t in reply:
-                print(t, file=out_fp)
-
-        # print the empty line test separator
-        print(file=out_fp)
-
-
-    def _parse_kv(self, d, kv):
-        vals = kv.split(' = ')
-        if len(vals) == 2:
-            d[vals[0]] = vals[1]
-        else:
-            d[len(d)] = vals
+        with open(self.rsp_file, "w",) as respf:
+            json.dump(response, respf, indent=4)
 
 
 
@@ -320,7 +283,7 @@ def parse_args():
 
 def execute_all_tests(args):
 
-    LOCAL_FILE_NAME = 'curr_test.req'
+    LOCAL_FILE_NAME = 'curr_test.req.json'
 
     tester = globals()[args.tester]()
     if args.remote:
@@ -328,15 +291,16 @@ def execute_all_tests(args):
         webclient = WebDavClient(args.remote, args.user, args.password)
         for arg in args.inputs:
             webclient.download(arg, LOCAL_FILE_NAME)
-            curr_cavp = CAVPTest(os.path.basename(arg), LOCAL_FILE_NAME, tester)
+            curr_cavp = CAVPTest(LOCAL_FILE_NAME, tester)
             curr_cavp.run()
             webclient.upload(curr_cavp.result_path(),
-                             os.path.splitext(arg)[0] + '.rsp')
+                             rreplace(arg, '.req', '.rsp', 1))
+
 
     else:
         # local case
         for arg in args.inputs:
-            curr_cavp = CAVPTest(os.path.basename(arg), arg, tester)
+            curr_cavp = CAVPTest(arg, tester)
             curr_cavp.run()
 
 def main():
