@@ -568,6 +568,7 @@ def run(arg_action, arg_enroll_cert = None, *args, **kwargs):
                             fname = '{}.bin'.format(vv['filename'])
                         new_v = copy.deepcopy(v)
                         new_v['source'] = vv['filename']
+                        new_v['image_type'] = vv.get('image_type', "")
                         new_entries[fname] = new_v
             except:
                 print("Skipping generation of {}, input file {} not found".format(

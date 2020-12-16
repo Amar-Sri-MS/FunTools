@@ -80,6 +80,9 @@ static bool _verbose_log = false;
 /* whether to print various debugging messages */
 static bool _debug_log = false;
 
+/* nocli mode for script integration, by default keep quiet */
+static bool _nocli_script_mode = false;
+
 #define dprintf(...) \
 	do { \
 		if(_debug_log) \
@@ -110,6 +113,9 @@ static inline void _setnosigpipe(int const fd)
 
 static void _print_version(void)
 {
+	if (_nocli_script_mode && !_debug_log)
+		return;
+
 	/* single line version when everything matches up */
 	printf("FunSDK version %s, branch: %s\n",
 	       FunSDK_version, branch_version);
@@ -1054,21 +1060,22 @@ static bool _print_response_info(const struct fun_json *response) {
 	if (fun_json_fill_error_message(_get_result_if_present(response),
 					&str)) {
 		ok = false;
-		if (_verbose_log) {
+		if (_verbose_log || _nocli_script_mode) {
 			printf(PRELUDE BLUE POSTLUDE "output => *** error: '%s'"
 			       NORMAL_COLORIZE "\n", str);
 		}
 	} else {
-		if (_verbose_log) {
+		if (_verbose_log || _nocli_script_mode) {
 			size_t allocated_size = 0;
 			uint32_t flags = FUN_JSON_PRETTY_PRINT_HUMAN_READABLE_STRINGS |
 							(use_hex ? FUN_JSON_PRETTY_PRINT_USE_HEX_FOR_NUMBERS : 0);
 			char *pp = fun_json_pretty_print(response, 0, "    ",
 							 100, flags,
 							 &allocated_size);
-			printf(OUTPUT_COLORIZE "output => %s"
-			       NORMAL_COLORIZE "\n",
-			       pp);
+			const char *pattern = _verbose_log ?
+				 OUTPUT_COLORIZE "output => %s" NORMAL_COLORIZE "\n" :
+				 "%s\n";
+			printf(pattern, pp);
 			free(pp);
 		}
 	}
@@ -1412,6 +1419,7 @@ static struct option longopts[] = {
 	{ "inet_interface",  required_argument, NULL, 'I' },
 #endif //__linux_
 	{ "nocli",           no_argument,       NULL, 'n' },
+	{ "nocli-quiet",     no_argument,       NULL, 'Q' },
 	{ "oneshot",         no_argument,       NULL, 'S' },
 	{ "manual_base64",   no_argument,       NULL, 'N' },
 	{ "no_dev_init",     no_argument,       NULL, 'X' },
@@ -1454,6 +1462,7 @@ static void usage(const char *argv0)
 	printf("       -I, --inet_interface=name   listen only on <name> interface\n");
 #endif // __linux__
 	printf("       -n, --nocli                 issue request from command-line arguments and terminate\n");
+	printf("       -Q, --nocli-quiet           issue request from command-line arguments and terminate, only print response\n");
 	printf("       -S, --oneshot               don't reconnect after command side disconnect\n");
 	printf("       -N, --manual_base64         just translate base64 back and forward\n");
 	printf("       -X, --no_dev_init           don't init the UART device, use as-is\n");
@@ -1525,9 +1534,9 @@ int main(int argc, char *argv[])
 
 	while ((ch = getopt_long(argc, argv,
 #ifdef __linux__
-				 "hB::b::D:i::u::p::H::T::t::I:nSNXFR:LvdVYW",
+				 "hB::b::D:i::u::p::H::T::t::I:nQSNXFR:LvdVYW",
 #else
-				 "hB::b::D:i::u::H::T::t::nSNXFR:LvdVY",
+				 "hB::b::D:i::u::H::T::t::nQSNXFR:LvdVY",
 #endif
 				 longopts, NULL)) != -1) {
 
@@ -1633,6 +1642,8 @@ int main(int argc, char *argv[])
 			cmd_sock.eth_name = optarg;
 			break;
 #endif // __linux__
+		case 'Q':  /* "nocli-quiet" -- run one command and exit */
+			_nocli_script_mode = true;
 		case 'n':  /* "nocli" -- run one command and exit */
 		case 'S':  /* "oneshot" -- run one connection and exit */
 			one_shot = true;
@@ -1743,12 +1754,14 @@ int main(int argc, char *argv[])
 	}
 
 	/* make an announcement as to what we are */
-	printf("FunOS Dataplane Control Shell");
+	if (!_nocli_script_mode || _debug_log)
+		printf("FunOS Dataplane Control Shell");
 
 	switch (mode) {
 	case MODE_INTERACTIVE:
 		/* do nothing */
-		_verbose_log = true;
+		if (!_nocli_script_mode)
+			_verbose_log = true;
 		break;
 	case MODE_PROXY:
 		printf(": socket proxy mode");

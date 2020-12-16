@@ -73,13 +73,20 @@ def prepare_offline(args, path='', select=None):
         release = json.load(f,encoding='ascii')
 
         if not select:
-            select=lambda k,v: rel(k)
+            if args.image_type:
+                select=lambda k,v: rel(k) if v.get('image_type') == args.image_type else None
+            else:
+                select=lambda k,v: rel(k)
 
         for outfile, v in release['signed_images'].items():
-            images[v['fourcc']] = select(outfile, v)
+            value = select(outfile, v)
+            if not images.get(v['fourcc']) and value:
+                images[v['fourcc']] = value
 
         for outfile, v in release.get('signed_meta_images',{}).items():
-            images[v['fourcc']] = select(outfile, v)
+            value = select(outfile, v)
+            if not images.get(v['fourcc']) and value:
+                images[v['fourcc']] = value
 
         images['emmc'] = select('emmc_image.bin', release['signed_images']['boot.img.signed'])
         images['mmc0'] = select('mmc0_image.bin', release['signed_images']['boot.img.signed'])
@@ -527,6 +534,9 @@ def main():
 
     arg_parser.add_argument('--force', action='store_true',
             help='Force upgrade, do not ask any questions')
+
+    arg_parser.add_argument('--select-by-image-type', dest='image_type',
+            help='Select image by image_type')
 
     arg_parser.add_argument('--no-version-check', action='store_false',
             dest='version_check',
