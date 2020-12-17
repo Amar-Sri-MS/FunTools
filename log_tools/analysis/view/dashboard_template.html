@@ -295,7 +295,7 @@
             alert("Select any filter to explore logs");
             return;
         }
-        let query = queries.join(' or ');
+        let query = encodeURI(queries.join(' or '));
 
         const kibana_url = KIBANA_BASE_URL.replace("KIBANA_QUERY", query);
         window.open(kibana_url, "_blank");
