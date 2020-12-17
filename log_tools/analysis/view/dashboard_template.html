@@ -285,7 +285,7 @@
         let queries = [];
         for (const [systemType, systemIDs] of Object.entries(selectedFilters)) {
             for (const [systemID, sources] of Object.entries(systemIDs)) {
-                const systemTypeQuery = `system_type:"${systemType} and`;
+                const systemTypeQuery = `system_type:"${systemType}" and`;
                 const systemIDQuery =`system_id:"${systemID}" and`;
                 queries.push(`(${systemTypeQuery} ${systemIDQuery} src:(${sources.join(' or ')}))`);
             }
