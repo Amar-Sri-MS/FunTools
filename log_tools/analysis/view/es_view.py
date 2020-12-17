@@ -10,6 +10,7 @@
 import json
 import os
 import sys
+import time
 
 import jinja2
 
@@ -71,15 +72,26 @@ def _get_script_dir():
 
 def _render_root_page(log_ids, jinja_env, template):
     """ Renders the root page from a template """
-    KIBANA_HOST = app.config['KIBANA']['host']
-    KIBANA_PORT = app.config['KIBANA']['port']
-    kibana_url = f'{KIBANA_HOST}:{KIBANA_PORT}/app/kibana#/discover'
     template_dict = {}
-    # Default Kibana View with logs from last 90 days to now
-    template_dict['logs'] = [{
-        'name': id,
-        'link': f'http://{kibana_url}?_g=(time:(from:now-90d,to:now))&_a=(columns:!(src,msg),index:{id})'
-    } for id in log_ids]
+    template_dict['logs'] = list()
+
+    for id, log in log_ids.items():
+        kibana_base_url = _get_kibana_base_url(id)
+        # Replacing KIBANA_QUERY with empty string since we do not
+        # want to query and want only the URL to the Kibana Dashboard
+        kibana_url = kibana_base_url.replace('KIBANA_QUERY', '')
+        creation_date_epoch = int(log.get('settings').get('index').get('creation_date'))
+        # Separting out seconds and milliseconds from epoch
+        creation_date_s, creation_date_ms = divmod(creation_date_epoch, 1000)
+        creation_date = '{}.{:03d}'.format(
+                                    time.strftime('%B %d, %Y %H:%M:%S', time.gmtime(creation_date_s)),
+                                    creation_date_ms)
+
+        template_dict['logs'].append({
+            'name': id,
+            'link': kibana_url,
+            'creation_date': creation_date
+        })
 
     result = template.render(template_dict, env=jinja_env)
     return result
@@ -325,9 +337,61 @@ class ElasticLogSearcher(object):
 
         result = self.es.search(body=body,
                                 index=self.index,
-                                size=1)  # we're not really searching
+                                size=0)  # we're not really searching
+
         buckets = result['aggregations']['unique_vals']['buckets']
         return {bucket['key']: bucket['doc_count'] for bucket in buckets}
+
+    def get_aggregated_unique_entries(self, parent_fields, child_fields=[]):
+        """
+        Obtains aggregated unique entries based on the a list of parent & child fields.
+
+        Parent fields define multi level aggregations. For ex: ['system_type', 'system_id']
+        will have unique entries of field 'system_id' for each unique entry of field 'system_type'
+
+        Child fields define single level aggregations.
+        """
+        max_unique_entries = 100
+        def generate_aggs_body(parent_fields, child_fields=[]):
+            body = dict()
+            if len(parent_fields) == 0:
+                return body
+
+            field = parent_fields.pop()
+            has_more_fields = len(parent_fields) > 0
+            body['aggs'] = {
+                field: {
+                    'terms': { 'field': field, 'size': max_unique_entries },
+                }
+            }
+
+            if has_more_fields:
+                body['aggs'][field] = {
+                    **body['aggs'][field],
+                    **generate_aggs_body(parent_fields, child_fields)
+                }
+            elif len(child_fields) > 0:
+                aggs = dict()
+                for child_field in child_fields:
+                    aggs[child_field] = {
+                        'terms': {'field': child_field, 'size': max_unique_entries}
+                    }
+
+                body['aggs'][field] = {
+                    **body['aggs'][field],
+                    'aggs': aggs
+                }
+
+            return body
+
+        body = generate_aggs_body(list(parent_fields[::-1]), child_fields)
+
+        result = self.es.search(body=body,
+                                index=self.index,
+                                size=0)  # we're not really searching
+
+        buckets = result['aggregations'][parent_fields[0]]['buckets']
+        return buckets
 
     def get_document_by_id(self, doc_id):
         """
@@ -461,10 +525,11 @@ def _convert_to_table_row(hit):
         line = '<tr class={} id={}>'.format('search_highlight',
                                             hit.get('anchor_link'))
 
-    line += '<td>{}</td> <td>{}</td> <td><a href="{}">{}</a></td>'.format(s['src'],
+    line += '<td>{}</td> <td>{}</td> <td>{}</td>'.format(s['src'],
                                                          s['@timestamp'],
-                                                         kibana_url,
-                                                         s['msg'])
+                                                         s.get('level'))
+    line += '<td><a href="{}" target="_blank">{}</a></td>'.format(kibana_url,
+                                                                  s['msg'])
     line += '</tr>'
     return line
 
@@ -634,7 +699,7 @@ def _get_kibana_base_url(log_id):
     # KIBANA defaults.
     # TODO(Sourabh): Would be better to have this in config files
     kibana_time_filter = 'from:now-90d,to:now'
-    kibana_selected_columns = 'src,msg'
+    kibana_selected_columns = 'src,level,msg'
     kibana_base_url = ("http://{}:{}/app/kibana#/discover/?_g=(time:({}))&_a=(columns:!({}),index:{},"
                   "query:(language:kuery,query:'KIBANA_QUERY'))").format(KIBANA_HOST,
                                                                          KIBANA_PORT,
@@ -650,11 +715,17 @@ def _render_dashboard_page(log_id, jinja_env, template):
     kibana_base_url = _get_kibana_base_url(log_id)
 
     sources = es.get_unique_entries('src')
+    system_types = es.get_unique_entries('system_type')
+    system_ids = es.get_unique_entries('system_id')
+    unique_entries = es.get_aggregated_unique_entries(['system_type', 'system_id'], ['src'])
     recent_logs = _get_recent_logs(log_id, 50, log_levels=['error'])
 
     template_dict = {}
     template_dict['log_id'] = log_id
     template_dict['sources'] = sources
+    template_dict['system_types'] = system_types
+    template_dict['system_ids'] = system_ids
+    template_dict['unique_entries'] = unique_entries
     template_dict['kibana_base_url'] = kibana_base_url
     template_dict['log_level_stats'] = _get_log_level_stats(log_id)
     template_dict['recent_logs'] = _render_log_entries(recent_logs)
@@ -725,7 +796,8 @@ def _get_recent_logs(log_id, size, sources=[], log_levels=None, time_filters=Non
         for level in log_levels:
             level_keywords.append(keyword_for_level[level])
 
-        query_string = f'msg:({" OR ".join(level_keywords)})'
+        # Check for the log level in either the level field or the msg field
+        query_string = f'level:({" OR ".join(level_keywords)}) OR msg:({" OR ".join(level_keywords)})'
 
     results = es.search_backwards(state, query_string,
                                       sources, time_filters,
@@ -756,7 +828,7 @@ def _render_log_entries(entries):
                                 lstrip_blocks=True)
     template = jinja_env.get_template('log_entries.html')
 
-    header = ['Source', 'Timestamp', 'Log Message']
+    header = ['Source', 'Timestamp', 'Level', 'Log Message']
     template_dict = {}
     template_dict['head'] = header
     template_dict['body'] = '\n'.join(entries)

@@ -19,7 +19,7 @@ class HumanDateTimeTest(unittest.TestCase):
 
     def test_display_time_is_set(self):
         """ Ensures the tuple element for display time is set """
-        input = [(datetime.datetime.now(), 100, 'my-uid', None, 'my-log-line')]
+        input = [(datetime.datetime.now(), 100, 'system_type', 'system_id', 'my-uid', None, 'info', 'my-log-line')]
 
         output = process(self.dt, input)
 
@@ -32,15 +32,21 @@ class HumanDateTimeTest(unittest.TestCase):
         """ Ensures tuple elements are propagated from in to out """
         now = datetime.datetime.now()
         usecs = 100
+        system_type = 'system_type'
+        system_id = 'system_id'
         uid = 'my-uid'
+        level = 'info'
         log = 'my-log-line'
 
-        input = [(now, usecs, uid, None, log)]
+        input = [(now, usecs, system_type, system_id, uid, None, level, log)]
         output = process(self.dt, input)
 
         tuple = output[0]
 
         self.assertEqual(now, tuple[0])
         self.assertEqual(usecs, tuple[1])
-        self.assertEqual(uid, tuple[2])
-        self.assertEqual(log, tuple[4])
+        self.assertEqual(system_type, tuple[2])
+        self.assertEqual(system_id, tuple[3])
+        self.assertEqual(uid, tuple[4])
+        self.assertEqual(level, tuple[6])
+        self.assertEqual(log, tuple[7])

@@ -18,11 +18,14 @@ def msg_tuple_to_dict(msg_tuple):
     """
     return {'datetime': msg_tuple[0],
             'usecs': msg_tuple[1],
-            'uid': msg_tuple[2],
-            'display_time': msg_tuple[3],
-            'line': msg_tuple[4]
+            'system_type': msg_tuple[2],
+            'system_id': msg_tuple[3],
+            'uid': msg_tuple[4],
+            'display_time': msg_tuple[5],
+            'level': msg_tuple[6],
+            'line': msg_tuple[7]
             }
 
 def lines_to_iterable(lines):
-    iter = [(None, None, 'uid', None, line) for line in lines]
+    iter = [(None, None, None, None, 'uid', None, None, line) for line in lines]
     return iter

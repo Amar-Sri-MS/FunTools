@@ -13,6 +13,8 @@
     "LEVEL_KEYWORDS": {
         "error": "error err",
         "warn": "warning warn",
-        "info": "info"
+        "info": "info",
+        "critical": "crit",
+        "assert": "assert"
     }
 }

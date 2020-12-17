@@ -8,21 +8,19 @@
 <body>
     {% include 'templates/nav_bar.html' ignore missing %}
     <div class="content">
-        <h3>Available logs</h3>
+        <h3>Ingested Logs</h3>
         <table class="index">
             <thead>
                 <tr>
                     <th>Name</th>
-                    <th>View</th>
+                    <th>Ingested Date</th>
                 </tr>
             </thead>
             <tbody>
             {% for log in logs %}
                 <tr>
-                    <td>{{log.name}}</td>
-                    <td><a href="/log/{{log.name}}/dashboard">Dashboard</a></td>
-                    <td><a href={{log.link}}>Explore Logs</a></td>
-                    <td><a href="/log/{{log.name}}">Simple</a></td>
+                    <td><a href="/log/{{log.name}}/dashboard">{{log.name}}</a></td>
+                    <td>{{log.creation_date}}</td>
                 </tr>
             {% endfor %}
             </tbody>

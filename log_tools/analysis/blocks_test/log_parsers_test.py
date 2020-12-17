@@ -145,12 +145,12 @@ class KeyValueInputTest(unittest.TestCase):
 
     #     self.assertEqual(expected, timestamp)
 
-    def test_can_combine_level_with_msg(self):
-        """ check if the log level is prepended to the log msg """
+    def test_can_parse_log_level(self):
+        """ check if the log level can be parsed from the log line """
         lines = ['time="2020-08-04T23:09:14.705144973-07:00" level=info msg="Relay for module: dataplane_interface key openconfig-fun-global:fun-global"']
         output = process(self.block, lines_to_iterable(lines))
 
-        msg = msg_tuple_to_dict(output[0])['line']
-        expected = "info Relay for module: dataplane_interface key openconfig-fun-global:fun-global"
+        level = msg_tuple_to_dict(output[0])['level']
+        expected = "info"
 
-        self.assertEqual(expected, msg)
+        self.assertEqual(expected, level)

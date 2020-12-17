@@ -7,8 +7,17 @@ class Block(object):
         """
         Takes input iterables, produces output iterable.
 
-        Iterable elements must be a standard 5-tuple:
-        (datetime object, time_usecs, source_uid, display_time, message)
+        Iterable elements must be a standard 8-tuple:
+        (datetime object, time_usecs, system_type, system_id, source_uid, display_time, level, message)
+
+        system_type: Type of system that generated the log lines.
+        (Possible values: fs1600, controller, cluster)
+
+        system_id: Unique identifer of the system that generated the logs.
+        (Possible values: MAC address for fs1600 system, Node ID in case of cluster)
+
+        source_uid: Refers to the software element that generated the logs.
+        (Possible values: apigateway, dataplacement, funos, storage_agent)
 
         The tuple is our poor man's version of a structured log.
 
@@ -27,7 +36,10 @@ class Block(object):
         """
         return {'datetime': tuple[0],
                 'usecs': tuple[1],
-                'uid': tuple[2],
-                'display_time': tuple[3],
-                'line': tuple[4]
+                'system_type': tuple[2],
+                'system_id': tuple[3],
+                'uid': tuple[4],
+                'display_time': tuple[5],
+                'level': tuple[6],
+                'line': tuple[7]
                 }

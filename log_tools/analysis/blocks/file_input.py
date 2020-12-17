@@ -25,12 +25,14 @@ class TextFileInput(Block):
         self.file_pattern = None
         self.env = {}
         self.uid = None
+        self.cfg = {}
 
     def set_config(self, cfg):
         self.env = cfg['env']
         self.file_pattern = cfg['file_pattern']
         self.uid = cfg['uid']
         self.pattern = cfg.get('pattern', None)
+        self.cfg = cfg
 
     def process(self, iters):
         pattern = self._replace_file_vars()
@@ -42,15 +44,21 @@ class TextFileInput(Block):
         # if it proves too difficult to enforce copying files with their
         # original timestamp.
         input_files.sort(key=os.path.getmtime)
+        file_size = 0
 
         for file in input_files:
             print('Parsing', file)
             if file.endswith('.gz'):
                 with gzip.open(file, mode='rt', encoding='ascii', errors='replace') as f:
                     yield from self.read_logs(f)
+                    f.seek(0,2)
+                    file_size += f.tell()
             else:
                 with open(file, 'r', encoding='ascii', errors='replace') as f:
                     yield from self.read_logs(f)
+                    f.seek(0,2)
+                    file_size += f.tell()
+        print('INFO: Uncompressed file size (in bytes):', file_size)
 
     def read_logs(self, f):
         multiline_logs = []
@@ -72,7 +80,14 @@ class TextFileInput(Block):
         yield from self._format_iters(''.join(multiline_logs))
 
     def _format_iters(self, log):
-        yield (None, None, self.uid, None, log)
+        yield (None,
+               None,
+               self.cfg.get('system_type'),
+               self.cfg.get('system_id'),
+               self.uid,
+               None,
+               None,
+               log)
 
     def _check_for_match(self, line):
         m = re.match(self.pattern, line)
