@@ -85,3 +85,7 @@ And then start the job:
 ```sh
  ~robotpal/bin/run_f1.py --params ../run_upgrade/cavp_test_short_sha1.params funos-f1.signed
 ```
+
+## Other options	
+
+`cavp.py` has a `-s, --suffix-test-type` option that can be used to pass more information to the tester so that the test can be dispatched to the proper implementation.

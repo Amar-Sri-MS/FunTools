@@ -85,10 +85,11 @@ class DPCCAVP(AbsCAVPTestRunner):
 #
 class CAVPTest:
 
-    def __init__(self, file_path, tester):
+    def __init__(self, file_path, tester, suffix):
         self.req_file = os.path.abspath(file_path)
         self.rsp_file = rreplace(self.req_file, '.req', '.rsp', 1)
         self.tester = tester
+        self.suffix = suffix
 
 
     def result_path(self):
@@ -118,6 +119,8 @@ class CAVPTest:
             tests = []
 
             full_type = file_params["algorithm"] + "." + test_group_params["testType"]
+            if self.suffix:
+                full_type += "." + self.suffix
 
             for test in test_group["tests"]:
                 # generate a test request
@@ -273,6 +276,8 @@ def parse_args():
                         help='password (remote)')
     parser.add_argument('-r', '--remote',
                         help='HTTP URL where the files can be found')
+    parser.add_argument('-s', '--suffix-test-type',
+                        help='Suffix added to the testType field in the test spec')
     parser.add_argument('-t', '--tester', default='TestTester',
                         help='tester class')
     return parser.parse_args()
@@ -288,7 +293,7 @@ def execute_all_tests(args):
         webclient = WebDavClient(args.remote, args.user, args.password)
         for arg in args.inputs:
             webclient.download(arg, LOCAL_FILE_NAME)
-            curr_cavp = CAVPTest(LOCAL_FILE_NAME, tester)
+            curr_cavp = CAVPTest(LOCAL_FILE_NAME, tester, args.suffix_test_type)
             curr_cavp.run()
             webclient.upload(curr_cavp.result_path(),
                              rreplace(arg, '.req', '.rsp', 1))
@@ -297,7 +302,7 @@ def execute_all_tests(args):
     else:
         # local case
         for arg in args.inputs:
-            curr_cavp = CAVPTest(arg, tester)
+            curr_cavp = CAVPTest(arg, tester, args.suffix_test_type)
             curr_cavp.run()
 
 def main():
