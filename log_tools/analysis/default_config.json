@@ -11,10 +11,10 @@
         "port": 5601
     },
     "LEVEL_KEYWORDS": {
-        "error": "error err",
-        "warn": "warning warn",
-        "info": "info",
         "critical": "crit",
-        "assert": "assert"
+        "error": "error err",
+        "assert": "assert",
+        "warning": "warning warn",
+        "info": "info"
     }
 }

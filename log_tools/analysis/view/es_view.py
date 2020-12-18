@@ -755,9 +755,10 @@ def _get_log_level_stats(log_id, sources=[], log_levels=None, time_filters=None)
         log_levels = default_log_levels
 
     document_counts = {}
-    for level in log_levels:
+    for idx, level in enumerate(log_levels):
         kibana_query = f'{query} msg:({keyword_for_level[level]})'
         document_counts[level] = {
+            'order': idx,
             'count': es.get_document_count(keyword_for_level[level], sources, time_filters),
             'kibana_url': kibana_base_url.replace('KIBANA_QUERY', kibana_query),
             'keywords': keyword_for_level[level]
