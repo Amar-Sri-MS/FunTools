@@ -509,10 +509,10 @@ def main():
     else:
         for config_file in args.config:
             if config_file == '-':
-                merge_configs(config, json.load(sys.stdin,encoding='ascii'))
+                merge_configs(config, json.load(sys.stdin))
             else:
                 with open(config_file, 'r') as f:
-                    merge_configs(config, json.load(f,encoding='ascii'))
+                    merge_configs(config, json.load(f))
 
     if args.force_version:
         set_versions(args.force_version)
