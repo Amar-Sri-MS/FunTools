@@ -26,3 +26,6 @@ sed -i -E "/current_hostname\" = 'localhost' ] \|\|\$/a\\           [ \"\$curren
 if [ ! -e $DEPLOY_ROOT/bin/ip ] ; then
     ln -s ../sbin/ip $DEPLOY_ROOT/bin/ip
 fi
+
+# start sshd early
+for f in `find $DEPLOY_ROOT/etc -regex ".*\/[KS]96sshd"`;  do mv $f ${f//96/20}; done
