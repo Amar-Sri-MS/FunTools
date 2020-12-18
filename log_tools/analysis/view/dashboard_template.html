@@ -150,8 +150,9 @@
     // Total log entries indexed in ES
     const totalEntries = Object.keys(sources).reduce((total, source) => (total + sources[source]), 0);
     let logLevelStats = {{log_level_stats}};
+    const sortedLogLevel = Object.keys(logLevelStats).sort((level1, level2) => logLevelStats[level1]['order'] - logLevelStats[level2]['order']);
     let selectedSourceForLogLevelStats = "all";
-    let selectedSourceForRecentLogs = "all", selectedLevelForRecentLogs = "error";
+    let selectedSourceForRecentLogs = "all", selectedLevelForRecentLogs = sortedLogLevel[0];
 
 
     function toggleSystemTypeSelection(systemTypeElement) {

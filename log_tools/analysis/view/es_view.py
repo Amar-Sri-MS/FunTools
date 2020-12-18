@@ -713,12 +713,17 @@ def _render_dashboard_page(log_id, jinja_env, template):
 
     es = ElasticLogSearcher(log_id)
     kibana_base_url = _get_kibana_base_url(log_id)
+    keyword_for_level = app.config.get('LEVEL_KEYWORDS')
+
+    default_log_levels = list(keyword_for_level.keys())
+    # Number of documents to fetch for most recent logs
+    RECENT_LOGS_SIZE = 50
 
     sources = es.get_unique_entries('src')
     system_types = es.get_unique_entries('system_type')
     system_ids = es.get_unique_entries('system_id')
     unique_entries = es.get_aggregated_unique_entries(['system_type', 'system_id'], ['src'])
-    recent_logs = _get_recent_logs(log_id, 50, log_levels=['error'])
+    recent_logs = _get_recent_logs(log_id, RECENT_LOGS_SIZE, log_levels=default_log_levels[0:1])
 
     template_dict = {}
     template_dict['log_id'] = log_id
@@ -756,12 +761,14 @@ def _get_log_level_stats(log_id, sources=[], log_levels=None, time_filters=None)
 
     document_counts = {}
     for idx, level in enumerate(log_levels):
-        kibana_query = f'{query} msg:({keyword_for_level[level]})'
+        keywords = [f'"{keyword}"' for keyword in keyword_for_level[level]]
+        keyword_query_terms = ' OR '.join(keywords)
+        kibana_query = f'{query} (level:({keyword_query_terms}) OR msg:({keyword_query_terms}))'
         document_counts[level] = {
             'order': idx,
-            'count': es.get_document_count(keyword_for_level[level], sources, time_filters),
+            'count': es.get_document_count(keyword_query_terms, sources, time_filters),
             'kibana_url': kibana_base_url.replace('KIBANA_QUERY', kibana_query),
-            'keywords': keyword_for_level[level]
+            'keywords': ', '.join(keyword_for_level[level])
         }
 
     return document_counts
@@ -795,10 +802,11 @@ def _get_recent_logs(log_id, size, sources=[], log_levels=None, time_filters=Non
     query_string = ''
     if log_levels:
         for level in log_levels:
-            level_keywords.append(keyword_for_level[level])
+            level_keywords.extend([f'"{keyword}"' for keyword in keyword_for_level[level]])
 
+        keyword_query_terms = ' OR '.join(level_keywords)
         # Check for the log level in either the level field or the msg field
-        query_string = f'level:({" OR ".join(level_keywords)}) OR msg:({" OR ".join(level_keywords)})'
+        query_string = f'level:({keyword_query_terms}) OR msg:({keyword_query_terms})'
 
     results = es.search_backwards(state, query_string,
                                       sources, time_filters,
