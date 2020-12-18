@@ -113,12 +113,17 @@ class CAVPTest:
         file_params = {k:v for (k,v) in request[1].items() if k != "testGroups"}
         test_groups = []
 
+        algorithm_mode = file_params["algorithm"]
+        if file_params.get("mode"):
+            algorithm_mode += "." + file_params.get("mode")
+
         for test_group in request[1]["testGroups"]:
             # add the test group keys but without tests items
             test_group_params = {k:v for (k,v) in test_group.items() if k != "tests" }
             tests = []
 
-            full_type = file_params["algorithm"] + "." + test_group_params["testType"]
+            # create a synthetic key "full_type" for ease of dispatching in FunOS
+            full_type = algorithm_mode + "." + test_group_params["testType"]
             if self.suffix:
                 full_type += "." + self.suffix
 
