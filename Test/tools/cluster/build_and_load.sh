@@ -111,12 +111,40 @@ run() {
 	fi
 }
 
-test() {
+demo_setup() {
 	if [ ! -d $WORKSPACE/Integration ]
 	then
 		echo "Integration directory does not exist"
 		exit -1
 	fi
+	cd $WORKSPACE/Integration/tools/platform/utils/myFabCmds
+
+	dpc_cmd="storage { \"class\": \"controller\", \"opcode\": \"CREATE\", \"params\": { \"ctrlr_id\": 1, \"ctrlr_type\": \"BLOCK\", \"ctrlr_uuid\": \"rem-ctrlrc0000p0\", \"subsys_nqn\":\"nqn.2015-09.com.fungible:c8:2c:2b:00:4d:d8\", \"host_nqn\":\"nqn.2015-09.com.fungible:15.127.1.5\", \"port\": 1099, \"qos\": { \"max_read_only_iops\": 800000, \"max_write_iops\": 200000, \"min_read_only_iops\": 800000, \"min_write_iops\": 200000 }, \"remote_ip\": \"15.127.1.5\", \"transport\": \"TCP\" } }"
+	fab -f flib.py setupS:FS242 dpcshF:index=0,cmd=$dpc_cmd
+
+	dpc_cmd="storage { \"class\": \"volume\", \"opcode\": \"VOL_ADMIN_OPCODE_CREATE\", \"params\": { \"block_size\": 4096, \"capacity\": 412316860416, \"name\": \"thin-block1\", \"type\": \"VOL_TYPE_BLK_LOCAL_THIN\", \"uuid\": \"blt-c000000v0000\" } }"
+	fab -f flib.py setupS:FS242 dpcshF:index=0,cmd=$dpc_cmd
+
+	dpc_cmd="storage { \"class\": \"volume\", \"opcode\": \"VOL_ADMIN_OPCODE_CREATE\", \"params\": { \"block_size\": 512, \"capacity\": 2098688, \"name\": \"nvvol1\", \"type\": \"VOL_TYPE_BLK_NV_MEMORY\", \"uuid\": \"jvol-00000000000\" } }"
+	fab -f flib.py setupS:FS242 dpcshF:index=0,cmd=$dpc_cmd
+
+	dpc_cmd="storage { \"class\": \"volume\", \"opcode\": \"VOL_ADMIN_OPCODE_CREATE\", \"params\": { \"block_size\": 4096, \"capacity\": 274877906944, \"group\": 4, \"jvol_uuid\": \"jvol-00000000000\", \"name\": \"lsv1\", \"pvol_id\": [\"blt-c000000v0000\"], \"type\": \"VOL_TYPE_BLK_LSV\", \"uuid\": \"lsv-000000000000\" } }"
+	fab -f flib.py setupS:FS242 dpcshF:index=0,cmd=$dpc_cmd
+
+	dpc_cmd="storage { \"class\": \"controller\", \"opcode\": \"ATTACH\", \"params\": { \"ana_state\": \"optimized\", \"ctrlr_uuid\": \"rem-ctrlrc0000p0\", \"enable_connection\": true, \"nsid\": 1, \"vol_uuid\": \"lsv-000000000000\" } }"
+	fab -f flib.py setupS:FS242 dpcshF:index=0,cmd=$dpc_cmd
+
+	dpc_cmd="storage { \"class\": \"controller\", \"opcode\": \"IPCFG\", \"params\": {\"ip\": \"15.127.1.5\" } }"
+	fab -f flib.py cluster_setup:storage-dev-1 dpcshS:cmd=$dpc_cmd
+
+	dpc_cmd="storage { \"class\": \"controller\", \"opcode\": \"CREATE\", \"params\": {\"ctrlr_uuid\": \"ctrlr-0000000001\", \"transport\": \"PCI\", \"huid\":1, \"ctlid\":0, \"fnid\":3 } }"
+	fab -f flib.py cluster_setup:storage-dev-1 dpcshS:cmd=$dpc_cmd
+
+	dpc_cmd="storage { \"class\": \"volume\", \"opcode\": \"VOL_ADMIN_OPCODE_CREATE\", \"params\": {\"capacity\": 214748364800, \"block_size\": 4096, \"type\": \"VOL_TYPE_BLK_RDS\", \"uuid\": \"rds-000000000001\", \"name\": \"rds1\", \"transport\":\"TCP\", \"remote_nsid\":1, \"remote_ip\":\"15.242.1.2\", \"subsys_nqn\":\"nqn.2015-09.com.fungible:c8:2c:2b:00:4d:d8\", \"host_nqn\":\"nqn.2015-09.com.fungible:15.127.1.5\", \"encrypt\": true, \"key\": \"1e0dc872b9e01c670111dacb0633570834dd4f1736ebcafe2498732d6bc96377\", \"xtweak\": \"8e14735a7e9d4693\", \"compress\": true, \"zip_filter\": \"FILTER_TYPE_DEFLATE\", \"zip_effort\": \"ZIP_EFFORT_15Gbps\", \"port\": 1099 } }"
+	fab -f flib.py cluster_setup:storage-dev-1 dpcshS:cmd=$dpc_cmd
+
+	dpc_cmd="storage { \"class\": \"controller\", \"opcode\":\"ATTACH\", \"params\": { \"ctrlr_uuid\": \"ctrlr-0000000001\", \"nsid\":1, \"vol_uuid\": \"rds-000000000001\" } }"
+	fab -f flib.py cluster_setup:storage-dev-1 dpcshS:cmd=$dpc_cmd
 }
 
 fetch_workspace() {
@@ -168,6 +196,10 @@ main() {
 		run $1 $2
 		shift # past value
 		shift # past second value
+		;;
+		--demo-setup)
+		demo_setup
+		shift # past argument
 		;;
 		*) # unknown option
 		echo "Wrong command" $1
