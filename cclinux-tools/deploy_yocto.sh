@@ -28,4 +28,6 @@ if [ ! -e $DEPLOY_ROOT/bin/ip ] ; then
 fi
 
 # start sshd early
-for f in `find $DEPLOY_ROOT/etc -regex ".*\/[KS]96sshd"`;  do mv $f ${f//96/20}; done
+pushd $DEPLOY_ROOT/etc
+for f in `find -regex ".*\/[KS]96sshd"`;  do mv $f ${f//96/20}; done
+popd
