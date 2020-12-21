@@ -42,6 +42,7 @@ funos-s1-release.signed.gz from version latest at Sat Dec 12 00:25:33 PST 2020
 ### Usage
 ```
 Usage :
+Update Latest S1 ROOTFS to a given NFS LOC for vswtich:        ./update_nfs.sh --nfsroot /tmp/nfs-mount --nfs eruan-ds200-2 --controller 10.1.80.51 --vswitch
 Update Latest S1 ROOTFS to a given NFS LOC :        ./update_nfs.sh --nfsroot /tmp/nfs-mount --nfs eruan-ds200-2 --controller 10.1.80.51
 Update Latest F1 ROOTFS to a given NFS LOC :        ./update_nfs.sh --nfsroot /tmp/nfs-mount --nfs eruan-fs4-0 --chip f1 --controller 10.1.80.51
 Update version 13220 F1 ROOTFS to a given NFS LOC : ./update_nfs.sh --nfsroot /tmp/nfs-mount --nfs eruan-fs4-0 --ver 13220 --chip f1 --controller 10.1.80.51
