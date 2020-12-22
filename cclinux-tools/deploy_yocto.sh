@@ -1,4 +1,5 @@
 #!/bin/bash -e
+MYDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
 tar Jxf bin/cc-linux-yocto/mips64hv/fun-image-mips64r6hv-mips64r6.tar.xz -C $DEPLOY_ROOT
 
@@ -31,3 +32,5 @@ fi
 pushd $DEPLOY_ROOT/etc
 for f in `find -regex ".*\/[KS]96sshd"`;  do mv $f ${f/%96sshd/20sshd}; done
 popd
+
+patch -p0 -d $DEPLOY_ROOT < $MYDIR/rc.patch

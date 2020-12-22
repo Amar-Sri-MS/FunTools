@@ -32,3 +32,4 @@ scripts_dir=$SDK_INSTALL_DIR/bin/scripts
 mkdir -p $scripts_dir
 
 install -t $scripts_dir deploy_yocto.sh
+install -t $scripts_dir rc.patch
