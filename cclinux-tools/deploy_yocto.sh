@@ -29,5 +29,5 @@ fi
 
 # start sshd early
 pushd $DEPLOY_ROOT/etc
-for f in `find -regex ".*\/[KS]96sshd"`;  do mv $f ${f//96/20}; done
+for f in `find -regex ".*\/[KS]96sshd"`;  do mv $f ${f/%96sshd/20sshd}; done
 popd
