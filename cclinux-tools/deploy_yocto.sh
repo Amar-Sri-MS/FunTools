@@ -33,4 +33,4 @@ pushd $DEPLOY_ROOT/etc
 for f in `find -regex ".*\/[KS]96sshd"`;  do mv $f ${f/%96sshd/20sshd}; done
 popd
 
-patch -p0 -d $DEPLOY_ROOT < $MYDIR/rc.patch
+patch -p0 -d $DEPLOY_ROOT < $MYDIR/patches/rc.patch
