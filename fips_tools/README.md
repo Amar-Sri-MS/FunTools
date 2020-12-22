@@ -1,6 +1,6 @@
 # CAVP Testing
 
-`cavp.py` is the main script used for running CAVP tests. It takes a 'request' file (extension `'.req.json'`), parses it, sends individual tests to a Tester class, and writes the results into a 'response' file (extension `'.rsp.json'`).
+`cavp.py` is the main script used for running CAVP tests. It takes a 'request' file (extension `'.req.json'`), parses it, sends individual tests to a Tester class, and writes the results into a 'response' file (extension `'.rsp.json'`) in the same directory as the request file.
 
 2 Tester classes are provided: 
 
