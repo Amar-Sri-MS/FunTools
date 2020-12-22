@@ -9,4 +9,4 @@ cp bin/mips64/Linux/vlan-bmc $DEPLOY_ROOT/etc/init.d
 chmod 0755 $DEPLOY_ROOT/etc/init.d/vlan-bmc
 ln -s ../init.d/vlan-bmc $DEPLOY_ROOT/etc/rc5.d/S00vlan-bmc
 
-patch -p0 -d $DEPLOY_ROOT < $MYDIR/ntpd.patch
+patch -p0 -d $DEPLOY_ROOT < $MYDIR/patches/ntpd.patch

@@ -1,0 +1,17 @@
+--- etc/init.d/rc.old	2020-12-22 10:57:24.863375382 +0100
++++ etc/init.d/rc	2020-12-22 10:58:36.045499560 +0100
+@@ -41,6 +41,14 @@
+ startup() {
+   # Handle verbosity
+   [ "$VERBOSE" = very ] && echo "INIT: Running $@..."
++  case "$2" in
++  	start)
++		# poke boot progress status indicator
++		devmem 0xff500000 32 0xb007aa01
++		;;
++	*)
++		: ;;
++  esac
+ 
+   case "$1" in
+ 	*.sh)

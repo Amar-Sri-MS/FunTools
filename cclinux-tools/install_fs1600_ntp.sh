@@ -12,11 +12,13 @@ fi
 # Tools copied to the deloyment.
 #
 target_dir=$SDK_INSTALL_DIR/bin/scripts
-
 mkdir -p $target_dir
 
+patches_dir=$target_dir/patches
+mkdir -p $patches_dir
+
 install -t $target_dir deploy_fs1600_ntp.sh
-install -t $target_dir ntpd.patch
+install -t $patches_dir patches/ntpd.patch
 
 runtime_target_dir=$SDK_INSTALL_DIR/bin/mips64/Linux
 

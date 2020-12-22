@@ -31,4 +31,8 @@ cp $src_dir/../build_info.txt $target_dir
 scripts_dir=$SDK_INSTALL_DIR/bin/scripts
 mkdir -p $scripts_dir
 
+patches_dir=$scripts_dir/patches
+mkdir -p $patches_dir
+
 install -t $scripts_dir deploy_yocto.sh
+install -t $patches_dir patches/rc.patch
