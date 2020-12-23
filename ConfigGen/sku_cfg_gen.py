@@ -15,7 +15,6 @@ import jsonutils
 from itertools import chain
 import argparse
 from hwcap_cfg_gen import HWCAPCodeGen
-import collections
 import copy
 from default_cfg_gen import DefaultCfgGen
 from sku_board_layer_cfg_gen import BoardLayer
@@ -46,55 +45,15 @@ class SKUCfgGen():
 
         return board_id_cfg.get('fungible_boards', None)
 
-    def merge_entry(self, entry, cfg_json):
-        """Modifies entry in place to contain values from cfg_json. If any value
-        in entry is a dictionary, and the corresponding value in cfg_json is
-        also a dictionary, then merge them in place.
-        """
-        for key, val_json in cfg_json.items():
-            val_entry = entry.get(key)
-            if (isinstance(val_entry, collections.Mapping) and
-                 isinstance(val_json, collections.Mapping)):
-                self.merge_entry(val_entry, val_json)
-            else:
-                entry[key] = val_json
-
-    def update_entry(self, key, cfg_json, def_cfg):
-        """Applies the defaults to an entry.
-        """
-        entry = copy.deepcopy(def_cfg[key])
-        self.merge_entry(entry, cfg_json[key])
-        del cfg_json[key]
-        cfg_json.update(entry)
-
-    def apply_defaults_to_board_config(self, cfg_json, def_cfg):
-        """Traverse the board configuration recursevely looking for entries to
-        apply default configuration to.
-        """
-        for key in cfg_json.copy():
-            if type(cfg_json[key]) is dict:
-                self.apply_defaults_to_board_config(cfg_json[key], def_cfg)
-                if key in list(def_cfg.keys()):
-                    self.update_entry(key, cfg_json, def_cfg)
-            elif type(cfg_json[key]) is list:
-                for item in cfg_json[key]:
-                    if type(item) is dict:
-                        self.apply_defaults_to_board_config(item, def_cfg)
-                        if key in list(def_cfg.keys()):
-                            self.update_entry(key, cfg_json, def_cfg)
-
-    def get_default_config(self):
-        """Get the default configuration values
-        """
-        default_cfg_gen = DefaultCfgGen(self.input_dir, self.target_chip)
-        return default_cfg_gen.get_defaults()
-
     def get_posix_or_emu_configs(self, board_cfg):
         """Get the configuration for all the posix or emulations that
         use the target chip.
         """
         def_cfg = dict()
-        def_cfg = self.get_default_config()
+        default_cfg_gen = DefaultCfgGen(self.input_dir, self.target_chip)
+
+        # Get the default configuration
+        def_cfg = default_cfg_gen.get_defaults()
 
         _path = 'sku_config/'
 
@@ -109,34 +68,34 @@ class SKUCfgGen():
             for cfg in glob.glob(os.path.join(self.input_dir, file_pat)):
                 logger.debug('Processing posix or emu per sku config: {}'.format(cfg))
                 with open(cfg, 'r') as f:
-                    cfg_json = f.read()
-                    cfg_json = jsonutils.standardize_json(cfg_json)
+                    sku_json = f.read()
+                    sku_json = jsonutils.standardize_json(sku_json)
                     try:
-                        cfg_json = json.loads(cfg_json)
+                        sku_json = json.loads(sku_json)
                     except:
                         logger.error("Failed to load config file: {}".format(cfg))
                         raise
 
-                    self.apply_defaults_to_board_config(cfg_json, def_cfg)
-                    board_cfg = jsonutils.merge_dicts(board_cfg, copy.deepcopy(cfg_json))
+                    default_cfg_gen.apply_defaults(sku_json, def_cfg)
+                    board_cfg = jsonutils.merge_dicts(board_cfg, copy.deepcopy(sku_json))
 
         return board_cfg
 
-    def is_cfg_target_board(self, cfg_json):
+    def is_cfg_target_board(self, sku_json):
         """Check if the configuration file is for the target
         being built.
         """
-        for key in list(cfg_json['skus'].keys()):
+        for key in list(sku_json['skus'].keys()):
             # First check the target chip
-            if 'chip' not in cfg_json['skus'].get(key, {}).get('PlatformInfo', {}):
+            if 'chip' not in sku_json['skus'].get(key, {}).get('PlatformInfo', {}):
                 continue
-            chip = cfg_json['skus'][key]['PlatformInfo']['chip']
+            chip = sku_json['skus'][key]['PlatformInfo']['chip']
             if chip not in self.target_chip:
                 return False
             # Next check the configuration file is for a board
-            if 'machine' not in cfg_json['skus'].get(key, {}).get('PlatformInfo', {}):
+            if 'machine' not in sku_json['skus'].get(key, {}).get('PlatformInfo', {}):
                 return False
-            machine = cfg_json['skus'][key]['PlatformInfo']['machine']
+            machine = sku_json['skus'][key]['PlatformInfo']['machine']
             if machine != 'board':
                 return False
             return True
@@ -148,7 +107,10 @@ class SKUCfgGen():
         chip.
         """
         def_cfg = dict()
-        def_cfg = self.get_default_config()
+        default_cfg_gen = DefaultCfgGen(self.input_dir, self.target_chip)
+
+        # Get the default configuration
+        def_cfg = default_cfg_gen.get_defaults()
 
         _path = 'sku_config/*/*.cfg'
         file_patterns = [_path]
@@ -159,25 +121,25 @@ class SKUCfgGen():
                     continue
                 logger.debug('Processing board per sku config: {}'.format(cfg))
                 with open(cfg, 'r') as f:
-                    cfg_json = f.read()
-                    cfg_json = jsonutils.standardize_json(cfg_json)
+                    sku_json = f.read()
+                    sku_json = jsonutils.standardize_json(sku_json)
                     try:
-                        cfg_json = json.loads(cfg_json)
+                        sku_json = json.loads(sku_json)
                     except:
                         logger.error("Failed to load config file: {}".format(cfg))
                         raise
 
-                    if not self.is_cfg_target_board(cfg_json):
+                    if not self.is_cfg_target_board(sku_json):
                         continue
 
-                    # Apply defaults to the board configuration
-                    self.apply_defaults_to_board_config(cfg_json, def_cfg)
+                    # Apply defaults to the SKU file
+                    default_cfg_gen.apply_defaults(sku_json, def_cfg)
 
-                    # Apply board layer configuration
+                    # Apply the board layer configuration to the SKU file
                     board_layer = BoardLayer(self.input_dir, self.target_chip)
-                    board_layer.apply_board_layer(cfg_json)
+                    board_layer.apply_board_layer(sku_json, def_cfg)
 
-                    board_cfg = jsonutils.merge_dicts(board_cfg, copy.deepcopy(cfg_json))
+                    board_cfg = jsonutils.merge_dicts(board_cfg, copy.deepcopy(sku_json))
 
         return board_cfg
 
@@ -190,22 +152,22 @@ class SKUCfgGen():
             for cfg in glob.glob(os.path.join(self.input_dir, file_pat)):
                 logger.debug('Processing additions for per sku config: {}'.format(cfg))
                 with open(cfg, 'r') as f:
-                    cfg_json = f.read()
-                    cfg_json = jsonutils.standardize_json(cfg_json)
+                    sku_json = f.read()
+                    sku_json = jsonutils.standardize_json(sku_json)
                     try:
-                        cfg_json = json.loads(cfg_json)
+                        sku_json = json.loads(sku_json)
                     except:
                         logger.error("Failed to load config file: {}".format(cfg))
                         raise
 
                     # Check the additional file is for the machine being built
-                    if 'machine' not in cfg_json['PlatformInfo'].keys():
+                    if 'machine' not in sku_json['PlatformInfo'].keys():
                         continue
-                    machine = cfg_json['PlatformInfo']['machine']
+                    machine = sku_json['PlatformInfo']['machine']
                     if machine != addition_machine:
                         continue;
 
-                    board_cfg = jsonutils.merge_dicts(board_cfg, cfg_json)
+                    board_cfg = jsonutils.merge_dicts(board_cfg, sku_json)
 
         return board_cfg
 
