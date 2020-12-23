@@ -127,7 +127,7 @@ def run_tests_client(client, exclude):
             and (func not in exclude):
             suite.addTest(TestDPCCommands(client, func))
     test_runner = xmlrunner.XMLTestRunner(output="logs/")
-    results=test_runner.run(suite)
+    results = test_runner.run(suite)
     return len(results.failures) == 0
 
 def run_dpc_test(args, unix_sock, delay):
