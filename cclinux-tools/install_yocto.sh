@@ -35,4 +35,5 @@ patches_dir=$scripts_dir/patches
 mkdir -p $patches_dir
 
 install -t $scripts_dir deploy_yocto.sh
-install -t $patches_dir patches/rc.patch
+install -m 0644 -t $patches_dir patches/rc.patch
+install -m 0644 -t $patches_dir patches/dhclient-script.patch
