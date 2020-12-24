@@ -19,10 +19,21 @@ import argparse
 import requests
 import json
 
+# need to generate some RSA keys for RSA sig gen tests
+from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.backends import default_backend
+
 import dpc_client
 
 def rreplace(s, old, new, maxreplace):
+    ''' replace at most maxreplace occurences of old with new in s '''
     return new.join(s.rsplit(old, maxreplace))
+
+
+def int_to_hex(x):
+    ''' integer to hex big endian representation '''
+    x_bytes = x.to_bytes((x.bit_length() + 7) // 8, byteorder='big')
+    return x_bytes.hex()
 
 ######
 # Tester classes
@@ -38,7 +49,7 @@ class AbsCAVPTestRunner:
 class TestTester(AbsCAVPTestRunner):
     ''' dummy tester class '''
     def test(self, request):
-        print(request["test"]["full_type"])
+        #print(request)
         return {'md' : 'daa1e4c446d9c7f34bb8547b1339b901f536a7e4' }
 
 
@@ -122,6 +133,11 @@ class CAVPTest:
             test_group_params = {k:v for (k,v) in test_group.items() if k != "tests" }
             tests = []
 
+            # add more info if necessary:
+            # req -> sent to tester, rsp -> written to response file
+            test_group_params_req, test_group_params_rsp = self.augment_test_group(file_params,
+                                                                                   test_group_params)
+
             # create a synthetic key "full_type" for ease of dispatching in FunOS
             full_type = algorithm_mode + "." + test_group_params["testType"]
             if self.suffix:
@@ -131,7 +147,7 @@ class CAVPTest:
                 # generate a test request
                 test["full_type"] = full_type # dispatch on this
                 test_request = { "file_params" : file_params,
-                                 "test_group" : test_group_params,
+                                 "test_group" : test_group_params_req,
                                  "test" : test }
                 full_response = { "tcId" : test["tcId"] }
                 test_response = self.tester.test(test_request)
@@ -139,8 +155,8 @@ class CAVPTest:
                 tests.append(full_response)
 
 
-            test_group_params["tests"] = tests
-            test_groups.append(test_group_params)
+            test_group_params_rsp["tests"] = tests
+            test_groups.append(test_group_params_rsp)
 
         file_params["testGroups"] = test_groups
         response.append(file_params)
@@ -148,6 +164,38 @@ class CAVPTest:
         with open(self.rsp_file, "w",) as respf:
             json.dump(response, respf, indent=4)
 
+
+    def augment_test_group(self, file_props, test_group):
+        ''' generate a test group dictionary for input to the test,
+        and a test group dictionary for the response.'''
+
+        if file_props["algorithm"] == "RSA" and file_props["mode"] == "sigGen":
+            return self.augment_rsa_sig_gen_test_group(test_group)
+
+        # default: return same
+        return test_group, test_group
+
+
+    def augment_rsa_sig_gen_test_group(self, test_group):
+        # need to generate a private key
+        private_key = rsa.generate_private_key(public_exponent=65537,
+                                               key_size=test_group["modulo"],
+                                               backend=default_backend())
+        # private components -> input
+        # public components -> output
+        test_group_resp = test_group.copy()
+
+        private_numbers = private_key.private_numbers()
+        public_numbers = private_numbers.public_numbers
+
+        for priv_attr in ("p", "q", "dmp1", "dmq1", "iqmp"):
+            test_group[priv_attr] = int_to_hex(getattr(private_numbers, priv_attr))
+        test_group["n"] = int_to_hex(public_numbers.n)
+
+        for pub_attr in ("n", "e"):
+            test_group_resp[pub_attr] = int_to_hex(getattr(public_numbers, pub_attr))
+
+        return test_group, test_group_resp
 
 
 class WebDavClient:
