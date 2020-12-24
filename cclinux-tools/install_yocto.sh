@@ -4,6 +4,17 @@
 # deployment images
 #
 #
+
+fun_image="fun-image-mips64r6hv-mips64r6.tar.xz"
+
+for i in "$@" ; do
+    if [ "$i" = "--developer" ]; then
+        fun_image="fun-image-mips64r6hv-developer-mips64r6.tar.xz"
+        break
+    fi
+done
+
+
 if [ -z "$SDK_INSTALL_DIR" ] ; then
     echo "Error: SDK_INSTALL_DIR not set."
     exit 1
@@ -23,7 +34,7 @@ mkdir -p $target_dir
 cp $src_dir/vmlinux.bin $target_dir
 tar xJf $src_dir/fun-image-kernel-dev-mips64r6.tar.xz -C $target_dir --strip-components=5 --wildcards '*System.map*'
 
-cp $src_dir/fun-image-mips64r6hv-mips64r6.tar.xz $target_dir
+cp $src_dir/$fun_image $target_dir
 cp $src_dir/fun-s1-factory-image-mips64r6.cpio.gz $target_dir
 
 cp $src_dir/../build_info.txt $target_dir
