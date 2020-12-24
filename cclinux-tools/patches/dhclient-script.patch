@@ -1,0 +1,13 @@
+--- sbin/dhclient-script.orig	2020-12-24 09:30:28.046006041 -0800
++++ sbin/dhclient-script	2020-12-24 09:33:23.783812474 -0800
+@@ -152,8 +152,8 @@
+     dir="$1"
+ 
+     if [ -d "$dir" ]; then
+-        for script in $(run-parts --list $dir); do
+-            run_hook $script || true
++        for script in $(ls -1 $dir); do
++            run_hook ${dir}/${script} || true
+             exit_status=$?
+         done
+     fi
