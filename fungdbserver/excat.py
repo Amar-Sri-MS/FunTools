@@ -15,6 +15,7 @@ import subprocess
 import argparse
 import datetime
 import tempfile
+import requests
 import hashlib
 import urllib
 import urllib.request
@@ -38,10 +39,6 @@ via their uniquie build-id.
 
 Options:
 -v, --verbose       extra logging information
--n N, --network=N   specify network access:
-                    yes:  also go via scp/http
-                    no:   always access via nfs mounts
-                    auto: access network based on machine state [default] 
 -N <note>, --note   textual note to add to the metadata blob when publishing
 --ignore-source     don't return the source binary on get (force retrieval)
 --force-uuid        force uuid if a matching file exists
@@ -56,7 +53,8 @@ pub[lish]\tPublish an executable to the executable catalog
 opts = None
 
 NFS_ROOT = "/dogfood/users/cgray/excat"
-HTTP_ROOT = "http://dochub.fungible.local/doc/dogfood/cgray/excat"
+HTTP_ROOT = "http://cgray-vm0/dkv/buckets/excat"
+DOCHUB_ROOT = "http://dochub.fungible.local/doc/dogfood/cgray/excat"
 FILEMASK = 0o666
 BLOCK_SIZE = 128 * 1024 # decent size payload
 
@@ -98,24 +96,17 @@ def mkrelpath(uuid):
 
     return path
 
-def choose_method(network):
-    if (opts.network == "yes"):
-        return network
-    elif (opts.network == "no"):
-        return "nfs"
-    elif (opts.network != "auto"):
-        raise RuntimeError("unknown network setting %s" % opts.network)
+def choose_get_method():
 
+    if (opts.getmethod != "auto"):
+        return opts.getmethod
+
+    # use file without a copy preferably
     if (os.path.exists(NFS_ROOT)):
         return "nfs"
 
-    return network
-
-def choose_publication_method():
-    return choose_method("scp")
-
-def choose_get_method():
-    return choose_method("http")
+    return "http"
+    
 
 def parse_uuid(suuid):
     try:
@@ -167,7 +158,7 @@ def read_web_file(url):
         if (not buf):
             break
 
-        s += buf
+        s += buf.decode()
 
     LOG("Read %d bytes from remote" % len(s))
     return s
@@ -236,13 +227,11 @@ def nfs_get(uuid):
 
     return bzblob
 
-def scp_get(uuid):
-    pass
 
-def http_get(uuid):
+def http_get(uuid, root):
 
     # construct a URL
-    urlpath = "%s/%s" % (HTTP_ROOT, mkrelpath(uuid))
+    urlpath = "%s/%s" % (root, mkrelpath(uuid))
     suuid = str(uuid)
     
     LOG("urlpath is %s" % urlpath)
@@ -257,6 +246,7 @@ def http_get(uuid):
     # download the file if it's not local already
     if (not os.path.exists(bzfile)):
         bzurl = "%s%s.bz" % (urlpath, suuid)
+        LOG("url: %s" % bzurl)
         try:
             download_file(bzurl, bzfile)
         except urllib.error.HTTPError as e:
@@ -341,10 +331,10 @@ def do_get(uuid, fname):
     method = choose_get_method()
     if (method == "nfs"):
         bzfname = nfs_get(uuid)
-    elif (method == "scp"):
-        bzfname = scp_get(uuid)
     elif (method == "http"):
-        bzfname = http_get(uuid)
+        bzfname = http_get(uuid, HTTP_ROOT)
+    elif (method == "dochub"):
+        bzfname = http_get(uuid, DOCHUB_ROOT)
     else:
         raise RuntimeError("unknown get method: %s" % method)
 
@@ -419,59 +409,9 @@ def save_metadata(metadata, fname):
     open(fname, "w").write(s)
     os.chmod(fname, FILEMASK)
 
-def nfs_publish(metadata, fname, compress=True):
 
-    # create the path, compress it in-place
-    # and make it world readable
-
-    omask = os.umask(0)
-    if (not os.path.exists(metadata["nfspath"])):
-        LOG("making path %s" % metadata["nfspath"])
-        os.makedirs(metadata["nfspath"])
-    
-    # compress the file into it
-    if (compress):
-        absblob = os.path.join(metadata["nfspath"],
-                               metadata["bzblob"])
-        compress_file(fname, absblob)
-
-        # update the metadat with the md5
-        # for recipients
-        metadata["bzmd5"] = filemd5(absblob)
-    else:
-        absblob = os.path.join(metadata["nfspath"],
-                               os.path.basename(fname))
-        shutil.copyfile(fname, absblob)
-        os.chmod(fname, FILEMASK)
-
-    # stash the metadata
-    mdfile = os.path.join(metadata["nfspath"],
-                          metadata["mdblob"])
-    save_metadata(metadata, mdfile)
-
-    os.umask(omask)
-
-    LOG("published to %s" % metadata["nfspath"])
-
-def wait_for_rx_ready(p):
-    LOG("waiting for remote rx ready")
-    while True:
-        s = p.readline()
-        if (s == ""):
-            raise RuntimeError("EOF waiting for TX ready")
-        LOG(s.strip())
-        if (b"excat-pub-proxy: rx ready" in s):
-            break
-
-def drain_rx(p):
-    while True:
-        s = p.readline()
-        if (s == b""):
-            break
-        LOG(s.strip())
-
-# publish over scp via excat-scp-proxy
-def scp_publish(metadata, fname):
+# publish over http via dkv
+def http_publish(metadata, fname):
 
     # original md5
     metadata["md5"] = filemd5(fname)
@@ -481,63 +421,42 @@ def scp_publish(metadata, fname):
 
     # new md5
     metadata["bzmd5"] = filemd5(tmpbz)
-       
-    # pick a port in a 1k range -- use two so localhost works
-    random.seed()
-    iport = random.randint(20000, 21000)
-    srcport  = str(iport)
-    destport = str(iport+1)
 
-    # run an ssh connection to get to the proxy. -R because we connect nc backwards
-    cmd = ["ssh",
-           "-L localhost:%s:localhost:%s" % (srcport, destport),
-           "vnc-shared-06", "~cgray/fundev/FunTools/fungdbserver/excat-pub-proxy.py",
-           "--version=0", "--port=%s" % destport, "-U", str(metadata["uuid"])]
-    exp = subprocess.Popen(cmd, stderr=subprocess.PIPE)
-    if (exp is None):
-        raise Runtimeerror("excat proxy fail")
-
-    wait_for_rx_ready(exp.stderr)
-
-    # send it the json file
+    # metadata -> str
     s = metadata2str(metadata)
-    cmd = ["nc", "-w", "1", "localhost", srcport]
-    p = subprocess.Popen(cmd, stdin=subprocess.PIPE)
-    if (p is None):
-        raise RuntimeError("can't send metadata")
-    LOG("sending metadata" )
-    p.stdin.write(s.encode())
-    p.stdin.close()
-    r = p.wait()
-    LOG("metadata returned %d" % r)
 
-    # send it the bzfile
-    wait_for_rx_ready(exp.stderr)
-    LOG("sending large file")
-    binfl = open(tmpbz)
-    cmd = ["nc", "-w", "1", "localhost", srcport]
-    p = subprocess.Popen(cmd, stdin=binfl)
-    r = p.wait()
-    LOG("bzfile returned %d" % r)
-
-    os.remove(tmpbz)
+    # setup the URLx
+    url = 'http://cgray-vm0/dkv/buckets/excat/'
+    # xx/yy/zz portion
+    url += metadata['relpath']
     
-    LOG("waiting for proxy to terminate")
-    drain_rx(exp.stderr)
-    exp.wait()
+    # send it the json file
+    blobname = metadata["mdblob"]
+    files = {'file': (blobname, s)}
+    LOG("publishing json via http")
+    r = requests.post(url, files=files)
+    if (r.status_code != requests.codes.ok):
+        raise(RuntimeError(r.text))
+
+    # bz file
+    blobname = metadata["bzblob"]
+    fl = open(tmpbz, "rb")
+    os.unlink(tmpbz)
+    files = {'file': (blobname, fl)}
+    LOG("publishing bz via http")
+    r = requests.post(url, files=files)
+    if (r.status_code != requests.codes.ok):
+        raise(RuntimeError(r.text))
+
+    LOG("published")
+    
 
 def do_publish(uuid, fname):
 
     metadata = mkmetadata(uuid, fname)
 
     # decide which kind of publication
-    method = choose_publication_method()
-    if (method == "nfs"):
-        nfs_publish(metadata, fname)
-    elif (method == "scp"):
-        scp_publish(metadata, fname)
-    else:
-        raise RuntimeError("unknown publication method: %s" % method)
+    http_publish(metadata, fname)
 
 def pub_action(fname):
 
@@ -573,8 +492,6 @@ def parse_args(dummy=False):
     # Optional verbosity counter (eg. -v, -vv, -vvv, etc.)
     parser.add_argument("-v", "--verbose", action="count",
                         default=0)
-    parser.add_argument("-n", "--network", action="store",
-                        default="auto")
     parser.add_argument("-N", "--note", action="store",
                         default="")
     parser.add_argument("--ignore-source", action="store_true",
@@ -585,6 +502,8 @@ def parse_args(dummy=False):
                         default=False)
     parser.add_argument("--tmpdir", action="store",
                         default=tempfile.gettempdir())
+    parser.add_argument("-M", "--getmethod", action="store",
+                        default="auto")
     parser.add_argument("-h", "--help", action="store_true")
 
     # Just parse everything else
