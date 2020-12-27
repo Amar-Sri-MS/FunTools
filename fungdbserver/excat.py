@@ -234,7 +234,7 @@ def http_get(uuid, root):
     urlpath = "%s/%s" % (root, mkrelpath(uuid))
     suuid = str(uuid)
     
-    LOG("urlpath is %s" % urlpath)
+    # LOG("urlpath is %s" % urlpath)
 
     if (opts.metadata):
         mdurl = "%s%s.json" % (urlpath, uuid)
@@ -333,6 +333,10 @@ def do_get(uuid, fname):
         bzfname = nfs_get(uuid)
     elif (method == "http"):
         bzfname = http_get(uuid, HTTP_ROOT)
+
+        # fall back to dochub if it's not found
+        if (bzfname is None):
+            bzfname = http_get(uuid, DOCHUB_ROOT)
     elif (method == "dochub"):
         bzfname = http_get(uuid, DOCHUB_ROOT)
     else:
@@ -366,7 +370,7 @@ def get_action(fname):
     fname = do_get(uuid, fname)
 
     if (fname is None):
-        print("Could not find local or published binary for uuid: %s" % uuid)
+        LOG("Could not find local or published binary for uuid: %s" % uuid)
     
     return fname
     
@@ -375,7 +379,11 @@ def get_action_stdout(fname):
     fname = get_action(fname)
 
     # output the actual filename
-    print("%s" % fname)
+    if (fname is not None):
+        print("%s" % fname)
+    else:
+        # hope this doesn't exist :P 
+        print("/file_not_found")
 
     return 0
 
