@@ -1,0 +1,9 @@
+#!/bin/sh
+
+GZIP=/bin/gzip
+
+if [ ! -x $GZIP ] ; then
+    GZIP=/usr/bin/gzip
+fi
+
+exec $GZIP -c - > $1
