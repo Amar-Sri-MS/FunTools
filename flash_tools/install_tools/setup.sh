@@ -102,12 +102,13 @@ log_msg "Upgrading DPU firmware"
 FW_UPGRADE_ARGS="--offline --ws `pwd`"
 
 if [[ $downgrade ]]; then
-	# downgrades are disabled because cclinux downgrade isn't supported
-	# and they must always be kept in sync ...
-	log_msg "Downgrade currently not supported"
-	exit 1
-	#./run_fwupgrade.py ${FW_UPGRADE_ARGS} -U --version latest --force --downgrade
-	#./run_fwupgrade.py ${FW_UPGRADE_ARGS} -U --version latest --force --downgrade --active
+	./run_fwupgrade.py ${FW_UPGRADE_ARGS} -U --version latest --force --downgrade
+	./run_fwupgrade.py ${FW_UPGRADE_ARGS} -U --version latest --force --downgrade --active
+	# a small hack until proper downgrade is supported; as we're only going to update
+	# the inactive partition of funvisor data, erase enough of active funos image to make
+	# it unbootable from uboot's perspective to force booing into (current) inactive.
+	dd if=/dev/zero of=emmc_wipe.bin bs=1024 count=1024
+	./run_fwupgrade.py ${FW_UPGRADE_ARGS} --upgrade-file mmc1=emmc_wipe.bin --active
 else
 	./run_fwupgrade.py ${FW_UPGRADE_ARGS} -U --version $funos_sdk_version
 fi
