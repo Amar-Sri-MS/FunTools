@@ -35,3 +35,13 @@ popd
 
 patch -p0 -d $DEPLOY_ROOT < $MYDIR/patches/rc.patch
 patch -p0 -d $DEPLOY_ROOT < $MYDIR/patches/dhclient-script.patch
+
+# Core file processing
+cp bin/scripts/gzip-stdin $DEPLOY_ROOT/usr/bin
+chmod 0755 $DEPLOY_ROOT/usr/bin/gzip-stdin
+echo 'kernel.core_pattern = |/usr/bin/gzip-stdin /persist/cores/core.%h.%e.%t.%p.gz' >> $DEPLOY_ROOT/etc/sysctl.conf
+echo 'CORE_SIZE=unlimited' >> $DEPLOY_ROOT/etc/default/rcS
+
+# Don't start these by default
+rm -f $DEPLOY_ROOT/etc/rc5.d/S21avahi-daemon
+rm -f $DEPLOY_ROOT/etc/rc5.d/S87redis-server

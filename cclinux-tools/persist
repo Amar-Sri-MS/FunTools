@@ -45,6 +45,11 @@ case "$1" in
         else
             ln -f -s /usr/share/zoneinfo/Universal /tmp/localtime
         fi
+	# Allow any user to leave core files
+	if [ ! -d /persist/cores ] ; then
+	    mkdir -p /persist/cores
+	    chmod 0777 /persist/cores
+	fi
         ;;
     *)
         :
