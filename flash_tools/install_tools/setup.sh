@@ -76,6 +76,7 @@ then
 		Option install-downgrade should be used when installing an older bundle to attempt
 			DPU's firmware downgrade. This is not guaranteed to always work.
 		If ccfg is specified, a file called ccfg-<config_name>.signed.bin will be programmed as ccfg.
+		Option ccfg-only is to update ccfg only without performing a full system update
 	"
 			exit 1;
 			;;
@@ -177,6 +178,14 @@ if grep -q "b-persist.*rw," /proc/mounts; then
 fi
 
 echo "CCLinux done" >> $PROGRESS
+
+# when executing via platform agent, STATUS_DIR will be set
+# to a folder where the bundle can store data persistently
+if [[ -n "$STATUS_DIR" ]]; then
+	cp -a image.json "$STATUS_DIR"/firmware.json
+	cp -a ${ROOTFS_NAME}.version "$STATUS_DIR"/version.sdk
+	cp -a run_fwupgrade.py "$STATUS_DIR"/
+fi
 
 sync
 exit 0
