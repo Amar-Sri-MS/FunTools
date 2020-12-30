@@ -183,6 +183,12 @@ def get_script():
 #
 
 def open_idzip(fname, use_http):
+
+    if (not have_idzip):
+        print("cannot open this file without idzip package")
+        print("% pip3 install python-idzip")
+        sys.exit(1)
+    
     idzip.decompressor.SELECTED_CACHE = idzip.caching.LuckyCache
     if (use_http):
         # just hand over the file directly
