@@ -45,6 +45,13 @@ case "$1" in
         else
             ln -f -s /usr/share/zoneinfo/Universal /tmp/localtime
         fi
+	#
+	# If persistent NTP config, install a link to it
+	#
+	if [ -e $CONFIG_DIR/ntp.conf ] ; then
+	    ln -f -s $CONFIG_DIR/ntp.conf /tmp/ntp.conf
+	fi
+
 	# Allow any user to leave core files
 	if [ ! -d /persist/cores ] ; then
 	    mkdir -p /persist/cores

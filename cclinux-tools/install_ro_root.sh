@@ -9,13 +9,11 @@ fi
 # Tools copied to the deloyment.
 #
 target_dir=$SDK_INSTALL_DIR/bin/scripts
-
 mkdir -p $target_dir
 
 install -t $target_dir deploy_ro_root.sh
 
 runtime_target_dir=$SDK_INSTALL_DIR/bin/mips64/Linux
-
 mkdir -p $runtime_target_dir
 
 #
@@ -28,3 +26,9 @@ install -t $runtime_target_dir -m 0644 vfio.conf
 install -t $runtime_target_dir -m 0644 persist
 install -t $runtime_target_dir -m 0644 umountpersist
 install -t $runtime_target_dir -m 0644 b-persist
+
+
+patches_dir=$target_dir/patches
+mkdir -p $patches_dir
+
+install -t $patches_dir -m 0644 patches/ntpd.patch
