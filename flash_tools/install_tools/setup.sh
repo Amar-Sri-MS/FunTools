@@ -182,7 +182,7 @@ echo "CCLinux done" >> $PROGRESS
 # when executing via platform agent, STATUS_DIR will be set
 # to a folder where the bundle can store data persistently
 if [[ -n "$STATUS_DIR" ]]; then
-	cp -a image.json "$STATUS_DIR"/firmware.json
+	cp -a image.json "$STATUS_DIR"/image.json
 	cp -a ${ROOTFS_NAME}.version "$STATUS_DIR"/version.sdk
 	cp -a run_fwupgrade.py "$STATUS_DIR"/
 fi
