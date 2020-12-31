@@ -154,6 +154,16 @@ dd if=${ROOTFS_NAME} of=/dev/vdb2 bs=4096
 # Install rootfs hashtable
 dd if=${ROOTFS_NAME}.fvht.bin of=/dev/vdb4
 
+# when executing via platform agent, STATUS_DIR will be set
+# to a folder where the bundle can store data persistently
+# store files before performing b-persist sync so that they
+# are accessible after reboot into new fw
+if [[ -n "$STATUS_DIR" ]]; then
+	cp -a image.json "$STATUS_DIR"/image.json
+	cp -a ${ROOTFS_NAME}.version "$STATUS_DIR"/version.sdk
+	cp -a run_fwupgrade.py "$STATUS_DIR"/
+fi
+
 log_msg "Update config partition"
 
 # special case for systems with unformatted/seriously corrupt b-persist
@@ -178,14 +188,6 @@ if grep -q "b-persist.*rw," /proc/mounts; then
 fi
 
 echo "CCLinux done" >> $PROGRESS
-
-# when executing via platform agent, STATUS_DIR will be set
-# to a folder where the bundle can store data persistently
-if [[ -n "$STATUS_DIR" ]]; then
-	cp -a image.json "$STATUS_DIR"/image.json
-	cp -a ${ROOTFS_NAME}.version "$STATUS_DIR"/version.sdk
-	cp -a run_fwupgrade.py "$STATUS_DIR"/
-fi
 
 sync
 exit 0
