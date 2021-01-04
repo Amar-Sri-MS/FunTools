@@ -1,32 +1,36 @@
---- etc/init.d/ntpd.orig	2020-12-18 18:06:29.971682107 +0100
-+++ etc/init.d/ntpd	2020-12-18 18:13:28.291814436 +0100
-@@ -14,6 +14,10 @@
- DAEMON=/usr/sbin/ntpd
- PIDFILE=/var/run/ntpd.pid
- 
-+read -d $'\0' dpusku rest_of_line < /sys/firmware/devicetree/base/fungible,sku
-+# currently only FS1600 provides an NTP server available at initial boot
-+expr match "${dpusku}" "fs1600.*" >/dev/null || exit 0
-+
- # ntpd	init.d script for ntpdc from ntp.isc.org
- test -x $DAEMON -a -r /etc/ntp.conf || exit 0
- 
-@@ -24,6 +28,10 @@
+--- etc/init.d/ntpd.orig	2020-12-31 14:48:15.834565671 -0800
++++ etc/init.d/ntpd	2020-12-31 14:57:31.709429824 -0800
+@@ -24,6 +24,11 @@
  . /etc/init.d/functions
  
  # Functions to do individual actions
 +firstsync(){
-+	$DAEMON -u ntp:ntp -p $PIDFILE -g -q
++	# Wait for upto 10 seconds to jump to NTP reference time
++	timeout 10s $DAEMON -u ntp:ntp -g -q
 +}
 +
  settick(){
    	# If TICKADJ is set we *must* adjust it before we start, because the
  	# driftfile relies on the correct setting
-@@ -50,6 +58,7 @@
- 
+@@ -51,6 +56,7 @@
  case "$1" in
    start)
-+	firstsync
    	settick
++	firstsync
  	startdaemon -g
  	;;
+   stop)
+@@ -59,11 +65,13 @@
+   force-reload)
+   	stopdaemon
+   	settick
++	firstsync
+ 	startdaemon -g
+ 	;;
+   restart)
+   	# Don't reset the tick here
+ 	stopdaemon
++	firstsync
+ 	startdaemon -g
+ 	;;
+   reload)

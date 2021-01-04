@@ -1,4 +1,5 @@
 #!/bin/bash -e
+MYDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
 cp bin/mips64/Linux/fstab-ro $DEPLOY_ROOT/etc/fstab
 chmod 0444 $DEPLOY_ROOT/etc/fstab
@@ -41,3 +42,9 @@ chmod 0555 $DEPLOY_ROOT/usr/bin/b-persist
 
 ln -f -s /tmp/timezone $DEPLOY_ROOT/etc/timezone
 ln -f -s /tmp/localtime $DEPLOY_ROOT/etc/localtime
+
+#
+# NTP things
+#
+patch -p0 -d $DEPLOY_ROOT < $MYDIR/patches/ntpd.patch
+ln -s /tmp/ntp.conf $DEPLOY_ROOT/etc/ntp.conf

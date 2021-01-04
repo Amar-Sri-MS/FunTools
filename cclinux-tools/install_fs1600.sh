@@ -13,7 +13,7 @@ fi
 target_dir=$SDK_INSTALL_DIR/bin/scripts
 mkdir -p $target_dir
 
-install -t $target_dir deploy_fs1600_ntp.sh
+install -t $target_dir deploy_fs1600.sh
 
 runtime_target_dir=$SDK_INSTALL_DIR/bin/mips64/Linux
 
