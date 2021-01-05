@@ -35,12 +35,7 @@ class NUCfgGen():
         new_cfg = cfg1
         for key in list(cfg2.keys()):
             if key in list(new_cfg.keys()):
-                keyword1 = "pipeline"
-                keyword2 = 'PARSER'
-                if keyword1 == key and keyword2 in list(new_cfg[key].keys()) and keyword2 in list(cfg2[key].keys()):
-                    self._nu_parser_handling(keyword1, keyword2, new_cfg, cfg2)
-                else:
-                    new_cfg[key].update(cfg2[key])
+                new_cfg[key].update(cfg2[key])
             else:
                 new_cfg[key] = cfg2[key]
 
