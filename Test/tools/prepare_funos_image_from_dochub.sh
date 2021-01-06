@@ -57,7 +57,7 @@ create_funos_image() {
     $WORKSPACE/FunSDK/bin/scripts/xdata.py $TMPLOC/bin/funos-$CHIP-release.stripped add $WORKSPACE/FunSDK/bin/cc-linux-yocto/mips64hv/vmlinux.bin
     $WORKSPACE/FunSDK/bin/flash_tools/sign_for_development.py --fourcc fun1 --chip $CHIP -o $TMPLOC/funos-$CHIP-release.signed $TMPLOC/bin/funos-$CHIP-release.stripped
     gzip $TMPLOC/funos-$CHIP-release.signed
-    filename=funos-$CHIP.signed.gz.${VER}
+    filename=funos-$CHIP.signed.${VER}.gz
     cp $TMPLOC/funos-$CHIP-release.signed.gz $FINALLOC/$filename
 
     echo "Built $filename from FunSDK  $VER at $(date)" >  ${FINALLOC}/funos_image_${VER}.txt
