@@ -11,11 +11,13 @@ mkdir -p $TMPLOC
 FINALLOC=$WORKSPACE
 
 VERSION="latest"
+CHIP="s1"
 
 usage() {
     echo ""
     echo "Usage :"
-    echo "Prepare from latest :          ./prepare_funos_image_from_dochub.sh"
+    echo "Prepare S1 image from latest :          ./prepare_funos_image_from_dochub.sh"
+    echo "Prepare F1 image from latest :          ./prepare_funos_image_from_dochub.sh --f1"
     echo "Prepare from a given version : ./prepare_funos_image_from_dochub.sh --ver 13225"
     echo ""
 }
@@ -26,6 +28,10 @@ do
             IMAGEVER=$2
 	    shift
             ;;
+	--chip )
+	    CHIP=$2
+	    shift
+	    ;;
         *)
             usage
 	    exit 1
@@ -48,11 +54,11 @@ create_funos_image() {
     touch $VER.txt    
     tar xf funos.mips64-extra.tgz
 
-    $WORKSPACE/FunSDK/bin/scripts/xdata.py $TMPLOC/bin/funos-s1-release.stripped add $WORKSPACE/FunSDK/bin/cc-linux-yocto/mips64hv/vmlinux.bin
-    $WORKSPACE/FunSDK/bin/flash_tools/sign_for_development.py --fourcc fun1 --chip s1 -o $TMPLOC/funos-s1-release.signed $TMPLOC/bin/funos-s1-release.stripped
-    gzip $TMPLOC/funos-s1-release.signed
-    filename=funos-s1.signed.gz.${VER}
-    cp $TMPLOC/funos-s1-release.signed.gz $FINALLOC/$filename
+    $WORKSPACE/FunSDK/bin/scripts/xdata.py $TMPLOC/bin/funos-$CHIP-release.stripped add $WORKSPACE/FunSDK/bin/cc-linux-yocto/mips64hv/vmlinux.bin
+    $WORKSPACE/FunSDK/bin/flash_tools/sign_for_development.py --fourcc fun1 --chip $CHIP -o $TMPLOC/funos-$CHIP-release.signed $TMPLOC/bin/funos-$CHIP-release.stripped
+    gzip $TMPLOC/funos-$CHIP-release.signed
+    filename=funos-$CHIP.signed.gz.${VER}
+    cp $TMPLOC/funos-$CHIP-release.signed.gz $FINALLOC/$filename
 
     echo "Built $filename from FunSDK  $VER at $(date)" >  ${FINALLOC}/funos_image_${VER}.txt
     echo ""
