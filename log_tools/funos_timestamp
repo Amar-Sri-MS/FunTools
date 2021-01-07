@@ -27,20 +27,21 @@ class TSConverter:
     """
 
     def __init__(self):
-        # 3 match groups, before the timestamp, the timestamp, and after the
-        # timestamp. Only match timestamps starting with 9 digits, this avoids
-        # converting the timestamps at the beginning of FunOS logs before they
-        # have established an initial time reference.
-        self.matcher = re.compile("^(.*\[)(\d{9,}\.\d+)( \d.\d.\d\])")
+        # Match anything with an opening bracket, a 9-digit floating point
+        # timestamp, any number of characters, then a closing bracket, for
+        # example:
+        #
+        # [1608773471.123284.*]
+        #
+        # Since the sub function replaces the entire match, use
+        # lookbehind/lookahead assertions.
+        self.matcher = re.compile("(?<=\[)(\d{9,}\.\d+)(?=.*\])")
 
     @staticmethod
     def _fix_match(match):
-        before, ts_str, after = match.groups()
-        ts = float(ts_str)
+        ts = float(match.group(0))
 
-        converted = d.datetime.fromtimestamp(ts).strftime("%b %d %H:%M:%S.%f")
-
-        return "{}{}{}".format(before, converted, after)
+        return d.datetime.fromtimestamp(ts).strftime("%b %d %H:%M:%S.%f")
 
     def fix_line(self, line):
         """
