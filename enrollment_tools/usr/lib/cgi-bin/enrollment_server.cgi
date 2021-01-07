@@ -14,6 +14,7 @@ import struct
 import os
 import datetime
 import hashlib
+import json
 
 from contextlib import closing
 import cgi
@@ -116,9 +117,14 @@ def db_print_summary(conn):
     with conn.cursor('summary') as cur:
         cur.execute('''select row_to_json(t) from (
         select serial_info, serial_nr, puf_key, timestamp from enrollment ) t ''')
+        first = True
         for row in cur:
-            print(row[0], end=",\n")
-    print("]")
+            if first:
+                first = False
+            else:
+                print(",")
+            print(json.dumps(row[0]), end="")
+    print("\n]")
 
 
 ###########################################################################
