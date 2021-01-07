@@ -20,7 +20,7 @@ import requests
 import json
 
 # need to generate some RSA keys for RSA sig gen tests
-from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.primitives.asymmetric import rsa, dsa
 from cryptography.hazmat.backends import default_backend
 
 import dpc_client
@@ -50,7 +50,8 @@ class TestTester(AbsCAVPTestRunner):
     ''' dummy tester class '''
     def test(self, request):
         #print(request)
-        return {'md' : 'daa1e4c446d9c7f34bb8547b1339b901f536a7e4' }
+        return {'r' : 'daa1e4c446d9c7f34bb8547b1339b901f536a7e4',
+                's':  'daa1e4c446d9c7f34bb8547b1339b901f536a7e4'}
 
 
 class DPCCAVP(AbsCAVPTestRunner):
@@ -107,7 +108,6 @@ class CAVPTest:
         return self.rsp_file
 
     def run(self):
-        meta_params = {} # global params for the file
 
         # load the whole file
         with open(self.req_file, 'r') as reqf:
@@ -137,6 +137,10 @@ class CAVPTest:
             # req -> sent to tester, rsp -> written to response file
             test_group_params_req, test_group_params_rsp = self.augment_test_group(file_params,
                                                                                    test_group_params)
+
+            # if one of the group returned is None, omit that group
+            if test_group_params_rsp is None or test_group_params_req is None:
+                continue
 
             # create a synthetic key "full_type" for ease of dispatching in FunOS
             full_type = algorithm_mode + "." + test_group_params["testType"]
@@ -172,6 +176,9 @@ class CAVPTest:
         if file_props["algorithm"] == "RSA" and file_props["mode"] == "sigGen":
             return self.augment_rsa_sig_gen_test_group(test_group)
 
+        if file_props["algorithm"] == "DSA" and file_props["mode"] == "sigGen":
+            return self.augment_dsa_sig_gen_test_group(test_group)
+
         # default: return same
         return test_group, test_group
 
@@ -197,6 +204,38 @@ class CAVPTest:
 
         return test_group, test_group_resp
 
+
+    def augment_dsa_sig_gen_test_group(self, test_group):
+        # need to generate a private key
+
+        l = test_group["l"]
+        n = test_group["n"]
+
+        # most crypto libraries can not generate n (= q bit length) = 224
+        if l == 2048 and n == 224:
+            return None, None
+
+        # others combination, 1024/160, 2048/256, 3072/256 are supported
+        # by python3 crypto aka openssl
+        private_key = dsa.generate_private_key(l, backend=default_backend())
+
+        dsa_pqg = private_key.parameters().parameter_numbers()
+        dsa_numbers = private_key.private_numbers()
+        dsa_x = dsa_numbers.x
+        dsa_y = dsa_numbers.public_numbers.y
+
+        # private components -> input
+        # public components -> output
+        test_group_resp = test_group.copy()
+
+        for priv_attr in ("p", "q", "g"):
+            test_group[priv_attr] = int_to_hex(getattr(dsa_pqg, priv_attr))
+            test_group_resp[priv_attr] = test_group[priv_attr]
+
+        test_group["x"] = int_to_hex(dsa_x)
+        test_group_resp["y"] = int_to_hex(dsa_y)
+
+        return test_group, test_group_resp
 
 class WebDavClient:
 
