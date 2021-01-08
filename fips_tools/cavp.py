@@ -20,7 +20,7 @@ import requests
 import json
 
 # need to generate some RSA keys for RSA sig gen tests
-from cryptography.hazmat.primitives.asymmetric import rsa, dsa
+from cryptography.hazmat.primitives.asymmetric import rsa, dsa, ec
 from cryptography.hazmat.backends import default_backend
 
 import dpc_client
@@ -96,6 +96,12 @@ class DPCCAVP(AbsCAVPTestRunner):
 # CAVP File Parser
 #
 class CAVPTest:
+
+    CURVE_MAPPING = { 'P-192' : ec.SECP192R1,
+                      'P-224' : ec.SECP224R1,
+                      'P-256' : ec.SECP256R1,
+                      'P-384' : ec.SECP384R1,
+                      'P-521' : ec.SECP521R1 }
 
     def __init__(self, file_path, tester, suffix):
         self.req_file = os.path.abspath(file_path)
@@ -173,14 +179,41 @@ class CAVPTest:
         ''' generate a test group dictionary for input to the test,
         and a test group dictionary for the response.'''
 
-        if file_props["algorithm"] == "RSA" and file_props["mode"] == "sigGen":
-            return self.augment_rsa_sig_gen_test_group(test_group)
+        if file_props["mode"] == "sigGen":
 
-        if file_props["algorithm"] == "DSA" and file_props["mode"] == "sigGen":
-            return self.augment_dsa_sig_gen_test_group(test_group)
+            alg = file_props["algorithm"]
+
+            if alg == "RSA":
+                return self.augment_rsa_sig_gen_test_group(test_group)
+
+            if alg == "DSA":
+                return self.augment_dsa_sig_gen_test_group(test_group)
+
+            if alg == "ECDSA":
+                return self.augment_ecdsa_sig_gen_test_group(test_group)
 
         # default: return same
         return test_group, test_group
+
+    def augment_ecdsa_sig_gen_test_group(self, test_group):
+        # need to generate a private key
+        curve_name = test_group["curve"]
+
+        private_key = ec.generate_private_key(self.CURVE_MAPPING[curve_name]())
+
+        # private components -> input
+        # public components -> output
+        test_group_resp = test_group.copy()
+
+        private_numbers = private_key.private_numbers()
+        public_numbers = private_numbers.public_numbers
+
+        test_group["d"] = int_to_hex(private_numbers.private_value)
+
+        for pub_attr in ("x", "y"):
+            test_group_resp["q" + pub_attr] = int_to_hex(getattr(public_numbers, pub_attr))
+
+        return test_group, test_group_resp
 
 
     def augment_rsa_sig_gen_test_group(self, test_group):
