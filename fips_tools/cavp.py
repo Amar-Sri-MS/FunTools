@@ -33,7 +33,7 @@ def rreplace(s, old, new, maxreplace):
 def int_to_hex(x):
     ''' integer to hex big endian representation '''
     x_bytes = x.to_bytes((x.bit_length() + 7) // 8, byteorder='big')
-    return x_bytes.hex()
+    return x_bytes.hex().upper()
 
 ######
 # Tester classes
