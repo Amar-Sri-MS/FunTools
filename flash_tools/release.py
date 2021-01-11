@@ -84,6 +84,11 @@ def _mfg(f, signed=False):
     else:
         return '{}.{}'.format(f, 'mfginstall')
 
+def _nor(f, signed=False):
+    if signed:
+        return '{}.{}.{}'.format(f, 'norinstall','signed')
+    else:
+        return '{}.{}'.format(f, 'norinstall')
 
 def main():
     parser = argparse.ArgumentParser()
@@ -225,6 +230,7 @@ def main():
                 pass
 
         shutil.copy2(funos_appname, funos_appname + ".mfginstall")
+        shutil.copy2(funos_appname, funos_appname + ".norinstall")
 
         bld_info = os.path.join(args.sdkdir, 'build_info.txt')
         v = args.force_version
@@ -426,6 +432,9 @@ def main():
 
         rootfs = rootfs_files[0]
         mfgxdata = {
+            'husc' : ('nor', 'hu_sbm_serdes.bin'),
+            'hbsb' : ('nor', 'hbm_sbus.bin'),
+            'kbag' : ('nor', 'key_bag.bin'),
             'host' : ('nor', 'host_firmware_packed.bin'),
             'sbpf' : ('nor', 'esecure_firmware_all.bin'),
             'fgpt' : ('mmc', 'fgpt.signed'),
@@ -454,19 +463,24 @@ def main():
                     if target == imgtarget or target == 'all':
                         f.write("{}\n".format(key))
 
-        with open('fw_upgrade_xdata', 'w') as f:
-            # generate complete xdata list
-            for key, (imgtarget, imgfile) in mfgxdata.items():
-                f.write("{} {}\n".format(key, os.path.join(os.getcwd(), imgfile)))
+        def _gen_xdata_funos(outname_modifier, target=None):
+            with open('fw_upgrade_xdata', 'w') as f:
+                # generate complete xdata list
+                for key, (imgtarget, imgfile) in mfgxdata.items():
+                    if not target or imgtarget == target:
+                        f.write("{} {}\n".format(key, os.path.join(os.getcwd(), imgfile)))
 
-            for fname in mfgxdata_lists:
-                f.write("{} {}\n".format(fname, os.path.join(os.getcwd(), fname)))
+                for fname in mfgxdata_lists:
+                    f.write("{} {}\n".format(fname, os.path.join(os.getcwd(), fname)))
 
-        cmd = [ 'python3', 'xdata.py',
-                _mfg(funos_appname),
-                'add-file-lists',
-                'fw_upgrade_xdata' ]
-        subprocess.call(cmd)
+            cmd = [ 'python3', 'xdata.py',
+                    outname_modifier(funos_appname),
+                    'add-file-lists',
+                    'fw_upgrade_xdata' ]
+            subprocess.call(cmd)
+
+        _gen_xdata_funos(_mfg)
+        _gen_xdata_funos(_nor, 'nor')
 
         # take a copy of all funos default settings for signing
         # and only override filenames used
@@ -477,6 +491,13 @@ def main():
         }
         gf.set_search_paths([os.getcwd()])
         gf.create_file(_mfg(funos_appname, signed=True), section='signed_mfg_images')
+
+        mfg_app_config['source'] = _nor(funos_appname)
+        config['signed_mfg_images'] = {
+            _nor(funos_appname, signed=True) : mfg_app_config
+        }
+        gf.set_search_paths([os.getcwd()])
+        gf.create_file(_nor(funos_appname, signed=True), section='signed_mfg_images')
 
         os.chdir(curdir)
 
