@@ -16,11 +16,11 @@ sub bit_slice {
         die "Sanity check, bit_slice() called with bad start_bit of ${start_bit}";
     }
     my $num_bits = $_[2];
-    if ($num_bits + $start_bit > 32) {
+    if (($num_bits + $start_bit) > 32) {
         die "Sanity check, bit_slice() called with bad start_bit ${start_bit} and num_bits ${num_bits}";
     }
-    my $qword_num = $dword_num / 2;
-    if ($qword_num > $num_arg - 4) {
+    my $qword_num = $dword_num >> 1;
+    if ($qword_num > ($num_arg - 4)) {
         die "Sanity check, bit_slice() called with out of range dword_num = ${dword_num}";
     }
     my $qword_start_bit = $start_bit + (($dword_num % 2) ? 0 : 32);
@@ -337,7 +337,7 @@ while (1) {
         # Figure out if the command list starts with a CWU or a Gather command
         my $cmd_opc = bit_slice(0, 30, 2, @cmdlist_qword);
         my $wu_opcode = bit_slice(0, 27, 5, @cmdlist_qword);
-        if ($wu_opcode & 0x1e == 0x10) {
+        if (($wu_opcode & 0x1e) == 0x10) {
             if ($mode eq "logfile" && !$wu_flags_cwu) {
                 printf("[ERROR]: Command list seems to start with continuation WU, but CWU flag was not set in DMA WU\n");
             }
@@ -542,6 +542,10 @@ while (1) {
                     printf("CMD %0d: CMP F1 memory write", $cmd_num);
                     printf("  ADDR = 0x%0x, LEN = %0d, FLAGS = 0x%0x, INS = %0s, COND = %0s\n",
                         $addr, $len, $flags, $ins_str, $cond_str);
+                    if ($len > 256) {
+                        printf("[ERROR] Length of CMP command with immediate data cannot exceed 256B\n");
+                        $len = 256;
+                    }
                     for (my $i = 0; $i < $len; $i += 4) {
                         $dword = (hex($cmdlist_qword[$i / 8 + 2]) >> (32 - ($i % 8 * 8))) & 0xffffffff;
                         printf("  Data: 0x%08x\n", $dword);
@@ -610,9 +614,9 @@ while (1) {
         printf("Sum of GTR bytes: %0d\n", $gtr_sum);
         printf("Sum of STR bytes: %0d\n", $str_sum);
 
-        # Check if GTR and STR byte sums match. (Only for COPY OPR, and only in logfile mode)
+        # Check if GTR and STR byte sums match. (Only for COPY OPR, and only in logfile or cmdlist mode)
         # TODO: Add checks for other operator types.
-        if ($mode eq "logfile" && $opr_flags_type == 0 && $gtr_sum != $str_sum) {
+        if ($mode ne "wu" && $opr_flags_type == 0 && $gtr_sum != $str_sum) {
             printf("[WARNING]: GTR and STR data byte sums mismatch! Will see STR non-fatal interrupts!\n");
         }
         if ($warn_str_0b) {
