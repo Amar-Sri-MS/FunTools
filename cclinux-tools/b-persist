@@ -24,8 +24,8 @@ case "$1" in
         chmod 0777 $UPGRADE_DIR
         ;;
     sync)
-        rsync -ac --ignore-missing-args /persist/config/ $CONFIG_DIR
-        rsync -ac --ignore-missing-args /persist/upgrades/ $UPGRADE_DIR
+        rsync -ac --ignore-missing-args --delete /persist/config/ $CONFIG_DIR
+        rsync -ac --ignore-missing-args --delete /persist/upgrades/ $UPGRADE_DIR
         ;;
     *)
         echo "Unhandled argument: [$1]"
