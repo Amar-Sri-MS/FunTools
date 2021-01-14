@@ -179,7 +179,7 @@ class CAVPTest:
         ''' generate a test group dictionary for input to the test,
         and a test group dictionary for the response.'''
 
-        if file_props["mode"] == "sigGen":
+        if file_props.get("mode") == "sigGen":
 
             alg = file_props["algorithm"]
 
