@@ -39,12 +39,12 @@ class BoardLayer():
         return cl_json
 
 
-    def get_board_layer_config(self):
+    def get_board_layer_config(self, board):
         """Returns the board layer configuration in json format
         """
         # Read the board layer config and convert it to json
         file_name = self.input_dir + '/sku_config/defaults'
-        file_name += '/board_layer_%s.cfg' % self.board_layer_name
+        file_name += '/board_layer_%s.cfg' % board
         with open(file_name, 'r') as f:
             bl_json = f.read()
             bl_json = jsonutils.standardize_json(bl_json)
@@ -78,6 +78,10 @@ class BoardLayer():
     def apply_perst(self, sku_json, bl_json, cl_json):
         """Assign the PERST parameters to each PCIe controller
         """
+        # Skip processing if perst config is not available
+        if not 'perst' in bl_json:
+            return sku_json
+
         # Get the list of PCIe controllers
         controllers = sku_json['skus'][self.board_name]['HuInterface']['HostUnitController']
 
@@ -128,7 +132,8 @@ class BoardLayer():
         tmp_bl_json = bl_json
 
         # Perst is processed elsewhere so remove it
-        del tmp_bl_json['perst']
+        if 'perst' in tmp_bl_json:
+            del tmp_bl_json['perst']
 
         # Nothing to do if the board layer is empty
         if not bool(tmp_bl_json):
@@ -163,15 +168,19 @@ class BoardLayer():
         if not self.board_layer_name:
             return
 
-        # Get the board layer config
-        logger.info('Processing {}'.format(self.board_name))
-        bl_json = self.get_board_layer_config()
+        if not isinstance(self.board_layer_name, list):
+            self.board_layer_name = [ self.board_layer_name ]
 
-        # Get the chip layer config
-        cl_json = self.get_chip_layer_config()
+        for board in self.board_layer_name:
+            # Get the board layer config
+            logger.info('Processing {}'.format(board))
+            bl_json = self.get_board_layer_config(board)
 
-        # Apply the perst board values to the SKU config file
-        self.apply_perst(sku_json, bl_json, cl_json)
+            # Get the chip layer config
+            cl_json = self.get_chip_layer_config()
 
-        # Apply the rest of the board values to the SKU config file
-        self.apply_rest(sku_json, bl_json, def_cfg)
+            # Apply the perst board values to the SKU config file
+            self.apply_perst(sku_json, bl_json, cl_json)
+
+            # Apply the rest of the board values to the SKU config file
+            self.apply_rest(sku_json, bl_json, def_cfg)
