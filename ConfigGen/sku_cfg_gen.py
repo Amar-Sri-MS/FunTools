@@ -132,6 +132,10 @@ class SKUCfgGen():
                     if not self.is_cfg_target_board(sku_json):
                         continue
 
+                    if len(sku_json['skus']) > 1:
+                        logger.error("Only single sku per file supported")
+                        raise
+
                     # Apply defaults to the SKU file
                     default_cfg_gen.apply_defaults(sku_json, def_cfg)
 
