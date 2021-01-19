@@ -102,6 +102,9 @@ class SKUCfgGen():
 
         return False
 
+    def get_board_config_parent(self, sku_json):
+        return sku_json['skus'].values()[0].get('PlatformInfo', {}).get('inherit')
+
     def get_board_configs(self, board_cfg):
         """Get the configuration for all the boards that use the target
         chip.
@@ -114,6 +117,8 @@ class SKUCfgGen():
 
         _path = 'sku_config/*/*.cfg'
         file_patterns = [_path]
+        remaining_board_configs = list()
+        raw_board_configs = dict()
         for file_pat in file_patterns:
             for cfg in glob.glob(os.path.join(self.input_dir, file_pat)):
                 # Skip board layer files and defaults files
@@ -136,6 +141,15 @@ class SKUCfgGen():
                         logger.error("Only single sku per file supported")
                         raise
 
+                    # stash this board config for processing inherited configs
+                    raw_board_configs[sku_json['skus'].keys()[0]] = copy.deepcopy(sku_json)
+
+                    if self.get_board_config_parent(sku_json):
+                        # add this config to the list for processing later, as the parent
+                        # configuration might not be available at this time
+                        remaining_board_configs.append(sku_json)
+                        continue
+
                     # Apply defaults to the SKU file
                     default_cfg_gen.apply_defaults(sku_json, def_cfg)
 
@@ -144,6 +158,24 @@ class SKUCfgGen():
                     board_layer.apply_board_layer(sku_json, def_cfg)
 
                     board_cfg = jsonutils.merge_dicts(board_cfg, copy.deepcopy(sku_json))
+
+        for sku_json in remaining_board_configs:
+            sku = sku_json['skus'].keys()[0]
+            parent = self.get_board_config_parent(sku_json)
+
+            # Create new sku based on the parent sku but retain original PlatformInfo
+            sku_json['skus'][sku] = jsonutils.merge_dicts_recursive(
+                dict(filter(lambda e: e[0] != 'PlatformInfo', raw_board_configs[parent]['skus'][parent].items())),
+                sku_json['skus'][sku])
+
+            # Apply defaults to the SKU file
+            default_cfg_gen.apply_defaults(sku_json, def_cfg)
+
+            # Apply the board layer configuration to the SKU file
+            board_layer = BoardLayer(self.input_dir, self.target_chip)
+            board_layer.apply_board_layer(sku_json, def_cfg)
+
+            board_cfg = jsonutils.merge_dicts(board_cfg, copy.deepcopy(sku_json))
 
         return board_cfg
 
