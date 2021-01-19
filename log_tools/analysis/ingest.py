@@ -327,7 +327,12 @@ def output_pipeline(output_block = 'ElasticOutput'):
             'id': 'analytics',
             'block': 'AnalyticsOutput',
             'cfg': {
-                'dir': 'view/analytics/log_${build_id}/duplicates.html'
+                'dir': 'view/analytics/log_${build_id}',
+                'anchor_files': [
+                    # TODO(Sourabh) Need to include anchors from each module
+                    'config/anchors.json'
+                ],
+                'anchor_keys': None
             }
         }
 
