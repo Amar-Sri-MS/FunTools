@@ -2,6 +2,8 @@
 # Common utilities across test code.
 #
 
+import datetime
+
 def process(block, iter):
     """
     Wraps the process function to assume single input iterable and
@@ -27,5 +29,5 @@ def msg_tuple_to_dict(msg_tuple):
             }
 
 def lines_to_iterable(lines):
-    iter = [(None, None, None, None, 'uid', None, None, line) for line in lines]
+    iter = [(datetime.datetime.now(), None, None, None, 'uid', None, None, line) for line in lines]
     return iter
