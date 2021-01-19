@@ -89,9 +89,24 @@
             </div>
             <div class="separator"></div>
             <div>
-                <h3>Top 10 duplicated logs (all sources)</h3>
-                <div class="log_entries">
-                    {% include 'analytics/'+log_id+'/duplicates.html' ignore missing %}
+                <h3>Interesting events</h3>
+                <div>
+                    <input type="checkbox" id="failedAnchors" value="showFailedAnchors" onchange="toggleShowOnlyFailedAnchors(this)" checked>
+                    <label for="failedAnchors">Show only failed events?</label><br>
+                </div>
+                <div class="log_entries scrollable">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="text-align: left">Source</th>
+                                <th style="text-align: left">System ID</th>
+                                <th style="text-align: left">Timestamp</th>
+                                <th style="text-align: left">Description</th>
+                            </tr>
+                        </thead>
+                        <tbody id="anchors">
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -113,6 +128,12 @@
                 <div class="log_entries" id="recent_logs">
                     {{recent_logs}}
                 </div>
+            </div>
+        </div>
+        <div class="container">
+            <h3>Top 10 duplicated logs (all sources)</h3>
+            <div class="log_entries">
+                {% include 'analytics/'+log_id+'/duplicates.html' ignore missing %}
             </div>
         </div>
     </div>
@@ -153,6 +174,16 @@
     const sortedLogLevel = Object.keys(logLevelStats).sort((level1, level2) => logLevelStats[level1]['order'] - logLevelStats[level2]['order']);
     let selectedSourceForLogLevelStats = "all";
     let selectedSourceForRecentLogs = "all", selectedLevelForRecentLogs = sortedLogLevel[0];
+
+    const anchors = {{anchors}};
+    let selectedSourceForAnchors = "all", showOnlyFailedAnchors = true;
+    const anchorTableBodyElement = document.getElementById('anchors');
+
+    // Self invocation function
+    (function () {
+        // Update anchors when the DOM is available
+        updateAnchors();
+    })();
 
 
     function toggleSystemTypeSelection(systemTypeElement) {
@@ -379,6 +410,31 @@
 
     function updateRecentLogs(logs) {
         recentLogsElement.innerHTML = logs;
+    }
+
+    function toggleShowOnlyFailedAnchors(element) {
+        showOnlyFailedAnchors = element.checked;
+        updateAnchors();
+    }
+
+    function updateAnchors() {
+        let tableRows = [];
+        for (const anchor of anchors) {
+            if ((showOnlyFailedAnchors && !anchor['is_failure'])
+                || (selectedSourceForAnchors !== "all" && anchor['source'] !== selectedSourceForAnchors)) {
+                continue;
+            }
+
+            tableRows.push(
+                `<tr>
+                    <td>${anchor['source']}</td>
+                    <td>${anchor['system_id']}</td>
+                    <td>${anchor['datetime']}</td>
+                    <td><a href="${anchor['link']}">${anchor['description']}</a></td>
+                </tr>`
+            );
+        }
+        anchorTableBodyElement.innerHTML = tableRows.join('\n');
     }
 
     function getKibanaURLForSources(sources) {

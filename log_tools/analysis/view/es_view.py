@@ -698,7 +698,7 @@ def _get_kibana_base_url(log_id):
     KIBANA_PORT = app.config['KIBANA']['port']
     # KIBANA defaults.
     # TODO(Sourabh): Would be better to have this in config files
-    kibana_time_filter = 'from:now-90d,to:now'
+    kibana_time_filter = "from:'1970-01-01T00:00:00.000Z',to:now"
     kibana_selected_columns = 'src,level,msg'
     kibana_base_url = ("http://{}:{}/app/kibana#/discover/?_g=(time:({}))&_a=(columns:!({}),index:{},"
                   "query:(language:kuery,query:'KIBANA_QUERY'))").format(KIBANA_HOST,
@@ -725,6 +725,15 @@ def _render_dashboard_page(log_id, jinja_env, template):
     unique_entries = es.get_aggregated_unique_entries(['system_type', 'system_id'], ['src'])
     recent_logs = _get_recent_logs(log_id, RECENT_LOGS_SIZE, log_levels=default_log_levels[0:1])
 
+    anchors = []
+    anchors_file = f'{_get_script_dir()}/analytics/{log_id}/anchors.json'
+
+    try:
+        with open(anchors_file) as json_file:
+            anchors = json.load(json_file)
+    except:
+        print('Could not find stored anchors.json')
+
     template_dict = {}
     template_dict['log_id'] = log_id
     template_dict['sources'] = sources
@@ -734,6 +743,7 @@ def _render_dashboard_page(log_id, jinja_env, template):
     template_dict['kibana_base_url'] = kibana_base_url
     template_dict['log_level_stats'] = _get_log_level_stats(log_id)
     template_dict['recent_logs'] = _render_log_entries(recent_logs)
+    template_dict['anchors'] = json.dumps(anchors)
 
     result = template.render(template_dict, env=jinja_env)
     return result
