@@ -509,10 +509,10 @@ def main():
     else:
         for config_file in args.config:
             if config_file == '-':
-                merge_configs(config, json.load(sys.stdin,encoding='ascii'))
+                merge_configs(config, json.load(sys.stdin))
             else:
                 with open(config_file, 'r') as f:
-                    merge_configs(config, json.load(f,encoding='ascii'))
+                    merge_configs(config, json.load(f))
 
     if args.force_version:
         set_versions(args.force_version)
@@ -568,6 +568,7 @@ def run(arg_action, arg_enroll_cert = None, *args, **kwargs):
                             fname = '{}.bin'.format(vv['filename'])
                         new_v = copy.deepcopy(v)
                         new_v['source'] = vv['filename']
+                        new_v['image_type'] = vv.get('image_type', "")
                         new_entries[fname] = new_v
             except:
                 print("Skipping generation of {}, input file {} not found".format(

@@ -1,0 +1,28 @@
+--- etc/network/if-pre-up.d/nfsroot.old	2021-01-15 07:34:47.029028819 +0100
++++ etc/network/if-pre-up.d/nfsroot	2021-01-15 07:38:48.850590674 +0100
+@@ -33,6 +33,8 @@
+ 
+ if test "x$IFACE" = "x$nfs_iface" ; then
+     echo "ifup skipped for nfsroot interface $nfs_iface"
++    echo "Using kernel-provided resolv.conf"
++    cat /proc/net/pnp | tee /etc/resolv.conf
+     exit 1
+ fi
+ 
+--- etc/init.d/hostname.sh.old	2021-01-15 10:07:30.685717600 +0100
++++ etc/init.d/hostname.sh	2021-01-15 10:07:45.333332606 +0100
+@@ -9,6 +9,14 @@
+ ### END INIT INFO
+ HOSTNAME=$(/bin/hostname)
+ 
++# there should normally be no ip address set at this point unless
++# system was booted with ip= cmdline
++EARLY_IP=$(ip address show scope global | awk '/inet / {split($2,var,"/"); print var[1]}')
++
++if [ "$HOSTNAME" != "(none)" -a "$EARLY_IP" != "$HOSTNAME" ]; then
++	exit
++fi
++
+ hostname -b -F /etc/hostname 2> /dev/null
+ if [ $? -eq 0 ]; then
+ 	exit

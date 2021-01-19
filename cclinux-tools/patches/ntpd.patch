@@ -1,0 +1,36 @@
+--- etc/init.d/ntpd.orig	2020-12-31 14:48:15.834565671 -0800
++++ etc/init.d/ntpd	2020-12-31 14:57:31.709429824 -0800
+@@ -24,6 +24,11 @@
+ . /etc/init.d/functions
+ 
+ # Functions to do individual actions
++firstsync(){
++	# Wait for upto 10 seconds to jump to NTP reference time
++	timeout 10s $DAEMON -u ntp:ntp -g -q
++}
++
+ settick(){
+   	# If TICKADJ is set we *must* adjust it before we start, because the
+ 	# driftfile relies on the correct setting
+@@ -51,6 +56,7 @@
+ case "$1" in
+   start)
+   	settick
++	firstsync
+ 	startdaemon -g
+ 	;;
+   stop)
+@@ -59,11 +65,13 @@
+   force-reload)
+   	stopdaemon
+   	settick
++	firstsync
+ 	startdaemon -g
+ 	;;
+   restart)
+   	# Don't reset the tick here
+ 	stopdaemon
++	firstsync
+ 	startdaemon -g
+ 	;;
+   reload)

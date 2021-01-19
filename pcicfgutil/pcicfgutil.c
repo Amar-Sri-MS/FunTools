@@ -575,6 +575,43 @@ static bool _parse_hostunitcontroller(struct hw_hsu_api_link_config *cfg,
 	return true;
 }
 
+static bool _parse_boardinit(struct hw_hsu_api_link_config *cfg,
+			    const struct fun_json *sku)
+{
+	const struct fun_json *board = NULL;
+
+	assert(fun_json_is_dict(sku));
+
+	memset(&cfg->board_config, 0xff, sizeof(cfg->board_config));
+
+	board = fun_json_lookup(sku, "HuInterface/BoardInit");
+	if (!fun_json_is_dict(board)) {
+		/* no board init, it's optional so it's ok */
+		return true;
+	}
+
+	/* Currently our chips have a maximum of 16 gpios (0..15) */
+	if (!fun_json_lookup_uint8_default(board, "gpio", &cfg->board_config.gpio_id, 0xff) ||
+		(cfg->board_config.gpio_id > 15)) {
+		eprintf("Invalid BoardInit/gpio value\n");
+		return false;
+	}
+
+	if (!fun_json_lookup_uint8_default(board, "pre-link-init", &cfg->board_config.gpio_pre_init_val, 0xff) ||
+		(cfg->board_config.gpio_pre_init_val > 1)) {
+		eprintf("Invalid BoardInit/pre-link-init value\n");
+		return false;
+	}
+
+	if (!fun_json_lookup_uint8_default(board, "post-link-init", &cfg->board_config.gpio_post_init_val, 0xff) ||
+		(cfg->board_config.gpio_post_init_val > 1)) {
+		eprintf("Invalid BoardInit/post-link-init value\n");
+		return false;
+	}
+
+	return true;
+}
+
 static bool _sku2cfg(struct hw_hsu_api_link_config *cfg,
 		     const struct fun_json *sku)
 {
@@ -590,7 +627,7 @@ static bool _sku2cfg(struct hw_hsu_api_link_config *cfg,
 
 	/* boilerplate */
 	cfg->magic = htobe64(HW_HSU_API_LINK_CONFIG_MAGIC);
-	cfg->version = htobe32(HW_HSU_API_LINK_CONFIG_VERSION_V0);
+	cfg->version = htobe32(HW_HSU_API_LINK_CONFIG_VERSION_V1);
 
 	/* this is redundant since it's implicit at install time. keep
 	 * it zero
@@ -614,6 +651,9 @@ static bool _sku2cfg(struct hw_hsu_api_link_config *cfg,
 
 	/* process the host unit controller */
 	if (!_parse_hostunitcontroller(cfg, sku))
+		return false;
+
+	if (!_parse_boardinit(cfg, sku))
 		return false;
 
 	return true;

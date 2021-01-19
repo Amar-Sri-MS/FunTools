@@ -37,6 +37,7 @@ LAST_ERROR=/tmp/cclinux_upgrade_error # a reboot will clean up this tmpfs file.
 
 ccfg_install=''
 downgrade=''
+ccfg_only=''
 
 host_dpu=$(tr -d '\0' < /proc/device-tree/fungible,dpu || true)
 
@@ -59,17 +60,23 @@ then
 		ccfg=*)
 			ccfg_install="ccfg-${1/ccfg=/}.signed.bin"
 			;;
+		ccfg-only=*)
+			ccfg_install="ccfg-${1/ccfg-only=/}.signed.bin"
+			ccfg_only='true'
+			;;
 		*)
 			echo "
 	Usage: sudo ${PROG}
 		${PROG} install [ccfg=config_name]
-		${PROG} install-downgrade
+		${PROG} install-downgrade [ccfg=config_name]
+		${PROG} ccfg-only=config_name
 
 	Where,
 		Option install is to flash the DPU and install CCLinux software
 		Option install-downgrade should be used when installing an older bundle to attempt
 			DPU's firmware downgrade. This is not guaranteed to always work.
 		If ccfg is specified, a file called ccfg-<config_name>.signed.bin will be programmed as ccfg.
+		Option ccfg-only is to update ccfg only without performing a full system update
 	"
 			exit 1;
 			;;
@@ -101,23 +108,38 @@ log_msg "Upgrading DPU firmware"
 
 FW_UPGRADE_ARGS="--offline --ws `pwd`"
 
-if [[ $downgrade ]]; then
-	# downgrades are disabled because cclinux downgrade isn't supported
-	# and they must always be kept in sync ...
-	log_msg "Downgrade currently not supported"
-	exit 1
-	#./run_fwupgrade.py ${FW_UPGRADE_ARGS} -U --version latest --force --downgrade
-	#./run_fwupgrade.py ${FW_UPGRADE_ARGS} -U --version latest --force --downgrade --active
+if [[ $ccfg_only != 'true' ]]; then
+	if [[ $downgrade == 'true' ]]; then
+		./run_fwupgrade.py ${FW_UPGRADE_ARGS} -U --version latest --force --downgrade
+		./run_fwupgrade.py ${FW_UPGRADE_ARGS} -U --version latest --force --downgrade --active
+		# a small hack until proper downgrade is supported; as we're only going to update
+		# the inactive partition of funvisor data, erase enough of active funos image to make
+		# it unbootable from uboot's perspective to force booing into (current) inactive.
+		dd if=/dev/zero of=emmc_wipe.bin bs=1024 count=1024
+		./run_fwupgrade.py ${FW_UPGRADE_ARGS} --upgrade-file mmc1=emmc_wipe.bin --active
+	else
+		./run_fwupgrade.py ${FW_UPGRADE_ARGS} -U --version $funos_sdk_version
+	fi
 else
-	./run_fwupgrade.py ${FW_UPGRADE_ARGS} -U --version $funos_sdk_version
-fi
+	echo "CCFG update only!"
+fi # ccfg_only
 
 if [[ $ccfg_install ]]; then
 	./run_fwupgrade.py ${FW_UPGRADE_ARGS} --upgrade-file ccfg=$ccfg_install
 	./run_fwupgrade.py ${FW_UPGRADE_ARGS} --upgrade-file ccfg=$ccfg_install --active
+else
+	feature_set=`dpcsh -nQ peek "config/boot_defaults/feature_set" | jq -Mr '.result' || true`
+	if [ ! -z "$feature_set" ]; then
+		log_msg "Updating ccfg \"$feature_set\""
+		./run_fwupgrade.py ${FW_UPGRADE_ARGS} -u ccfg --select-by-image-type "$feature_set"
+	fi
 fi
 
 echo "DPU done" >> $PROGRESS
+
+if [[ $ccfg_only == 'true' ]]; then
+	exit 0
+fi
 
 log_msg "Upgrading CCLinux"
 
@@ -131,6 +153,39 @@ dd if=fvos.signed of=/dev/vdb1
 dd if=${ROOTFS_NAME} of=/dev/vdb2 bs=4096
 # Install rootfs hashtable
 dd if=${ROOTFS_NAME}.fvht.bin of=/dev/vdb4
+
+# when executing via platform agent, STATUS_DIR will be set
+# to a folder where the bundle can store data persistently
+# store files before performing b-persist sync so that they
+# are accessible after reboot into new fw
+if [[ -n "$STATUS_DIR" ]]; then
+	cp -a image.json "$STATUS_DIR"/image.json
+	cp -a ${ROOTFS_NAME}.version "$STATUS_DIR"/version.sdk
+	cp -a run_fwupgrade.py "$STATUS_DIR"/
+fi
+
+log_msg "Update config partition"
+
+# special case for systems with unformatted/seriously corrupt b-persist
+if ! grep -q b-persist /proc/mounts; then
+	log_msg "No b-persist mountpoint found. Trying to mount ..."
+	if ! mount /b-persist; then
+		log_msg "Default mount failed, try remount/fixup"
+		/usr/bin/b-persist mount-rw
+	fi
+fi
+
+# standard setup with a read-only mounted b-persist
+if grep -q "b-persist.*ro," /proc/mounts; then
+	log_msg "Remounting b-persist in rw mode"
+	/usr/bin/b-persist mount-rw
+fi
+
+# should be writable by now
+if grep -q "b-persist.*rw," /proc/mounts; then
+	log_msg "Sync configs"
+	/usr/bin/b-persist sync
+fi
 
 echo "CCLinux done" >> $PROGRESS
 

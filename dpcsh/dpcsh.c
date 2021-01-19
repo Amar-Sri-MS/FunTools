@@ -77,6 +77,18 @@ static uint32_t cmd_seq_num;
 /* whether to log all json */
 static bool _verbose_log = false;
 
+/* whether to print various debugging messages */
+static bool _debug_log = false;
+
+/* nocli mode for script integration, by default keep quiet */
+static bool _nocli_script_mode = false;
+
+#define dprintf(...) \
+	do { \
+		if(_debug_log) \
+			printf(__VA_ARGS__);\
+	} while(0)
+
 /* cmd timeout, use driver default timeout */
 #define DEFAULT_NVME_CMD_TIMEOUT_MS "0"
 
@@ -101,6 +113,9 @@ static inline void _setnosigpipe(int const fd)
 
 static void _print_version(void)
 {
+	if (_nocli_script_mode && !_debug_log)
+		return;
+
 	/* single line version when everything matches up */
 	printf("FunSDK version %s, branch: %s\n",
 	       FunSDK_version, branch_version);
@@ -1045,21 +1060,22 @@ static bool _print_response_info(const struct fun_json *response) {
 	if (fun_json_fill_error_message(_get_result_if_present(response),
 					&str)) {
 		ok = false;
-		if (_verbose_log) {
+		if (_verbose_log || _nocli_script_mode) {
 			printf(PRELUDE BLUE POSTLUDE "output => *** error: '%s'"
 			       NORMAL_COLORIZE "\n", str);
 		}
 	} else {
-		if (_verbose_log) {
+		if (_verbose_log || _nocli_script_mode) {
 			size_t allocated_size = 0;
 			uint32_t flags = FUN_JSON_PRETTY_PRINT_HUMAN_READABLE_STRINGS |
 							(use_hex ? FUN_JSON_PRETTY_PRINT_USE_HEX_FOR_NUMBERS : 0);
 			char *pp = fun_json_pretty_print(response, 0, "    ",
 							 100, flags,
 							 &allocated_size);
-			printf(OUTPUT_COLORIZE "output => %s"
-			       NORMAL_COLORIZE "\n",
-			       pp);
+			const char *pattern = _verbose_log ?
+				 OUTPUT_COLORIZE "output => %s" NORMAL_COLORIZE "\n" :
+				 "%s\n";
+			printf(pattern, pp);
 			free(pp);
 		}
 	}
@@ -1136,7 +1152,7 @@ static bool _do_recv_cmd(struct dpcsock *funos_sock,
 		write(cmd_sock->fd, "\n", 1);
 		fun_free_string(proxy_message);
 	}
-	
+
 	fun_json_release(output);
 	return ok;
 }
@@ -1341,12 +1357,12 @@ static bool _do_cli(int argc, char *argv[],
 	cmd_seq_num++;
 	for (int i = startIndex; i < argc; i++) {
 		n += snprintf(buf + n, LINE_MAX - n, "%s ", argv[i]);
-		printf("buf=%s n=%d\n", buf, n);
+		dprintf("buf=%s n=%d\n", buf, n);
 	}
 
 	size_t len = strlen(buf);
 	buf[--len] = 0;	// trim the last space
-	printf(">> single cmd [%s] len=%zd\n", buf, len);
+	dprintf(">> single cmd [%s] len=%zd\n", buf, len);
 	ok = _do_send_cmd(funos_sock, buf, len, seq_num);
 	if (ok) {
 		ok = _do_recv_cmd(funos_sock, cmd_sock, true, seq_num);
@@ -1403,6 +1419,7 @@ static struct option longopts[] = {
 	{ "inet_interface",  required_argument, NULL, 'I' },
 #endif //__linux_
 	{ "nocli",           no_argument,       NULL, 'n' },
+	{ "nocli-quiet",     no_argument,       NULL, 'Q' },
 	{ "oneshot",         no_argument,       NULL, 'S' },
 	{ "manual_base64",   no_argument,       NULL, 'N' },
 	{ "no_dev_init",     no_argument,       NULL, 'X' },
@@ -1410,6 +1427,7 @@ static struct option longopts[] = {
 	{ "baud",            required_argument, NULL, 'R' },
 	{ "legacy_b64",      no_argument,       NULL, 'L' },
 	{ "verbose",         no_argument,       NULL, 'v' },
+	{ "debug",           no_argument,       NULL, 'd' },
 	{ "version",         no_argument,       NULL, 'V' },
 	{ "retry",           optional_argument, NULL, 'Y' },
 #ifdef __linux__
@@ -1444,13 +1462,16 @@ static void usage(const char *argv0)
 	printf("       -I, --inet_interface=name   listen only on <name> interface\n");
 #endif // __linux__
 	printf("       -n, --nocli                 issue request from command-line arguments and terminate\n");
+	printf("       -Q, --nocli-quiet           issue request from command-line arguments and terminate, only print response\n");
 	printf("       -S, --oneshot               don't reconnect after command side disconnect\n");
 	printf("       -N, --manual_base64         just translate base64 back and forward\n");
 	printf("       -X, --no_dev_init           don't init the UART device, use as-is\n");
 	printf("       -R, --baud=rate             specify non-standard baud rate (default=" DEFAULT_BAUD ")\n");
 	printf("       -L, --legacy_b64            support old-style base64 encoding, despite issues\n");
 	printf("       -v, --verbose               log all json transactions in proxy mode\n");
+	printf("       -d, --debug                 print debugging information\n");
 	printf("       -Y, --retry[=N]             retry every seconds for N seconds for first socket connection\n");
+	printf("       -V, --version               display version info and exit\n");
 #ifdef __linux__
 	printf("       --nvme_cmd_timeout=timeout specify cmd timeout in ms (default=" DEFAULT_NVME_CMD_TIMEOUT_MS ")\n");
 #endif //__linux__
@@ -1512,7 +1533,11 @@ int main(int argc, char *argv[])
 	cmd_sock.retries = UINT32_MAX;
 
 	while ((ch = getopt_long(argc, argv,
-				 "hs::i::u::H::T::I:t::D:nNFXR:v",
+#ifdef __linux__
+				 "hB::b::D:i::u::p::H::T::t::I:nQSNXFR:LvdVYW",
+#else
+				 "hB::b::D:i::u::H::T::t::nQSNXFR:LvdVY",
+#endif
 				 longopts, NULL)) != -1) {
 
 		switch(ch) {
@@ -1617,6 +1642,8 @@ int main(int argc, char *argv[])
 			cmd_sock.eth_name = optarg;
 			break;
 #endif // __linux__
+		case 'Q':  /* "nocli-quiet" -- run one command and exit */
+			_nocli_script_mode = true;
 		case 'n':  /* "nocli" -- run one command and exit */
 		case 'S':  /* "oneshot" -- run one connection and exit */
 			one_shot = true;
@@ -1659,6 +1686,10 @@ int main(int argc, char *argv[])
 			exit(0);
 			break;
 
+		case 'd':
+			_debug_log = true;
+			break;
+
 		case 'Y':  /* retry=N */
 
 			connect_retries = opt_num(optarg, RETRY_NOARG);
@@ -1689,11 +1720,11 @@ int main(int argc, char *argv[])
 		/* check whether NVMe connection to DPU is available */
 		/* DPC over NVMe will work only in Linux */
 		/* In macOS, libfunq is used */
-		
+
 		/* In macOS, always returns false */
 		bool nvme_dpu_found = find_nvme_dpu_device(detected_nvme_device_name,
 							sizeof(detected_nvme_device_name));
-		
+
 		/* In Linux, use NVMe as default if present */
 		if (nvme_dpu_found) {
 			funos_sock.mode = SOCKMODE_NVME;
@@ -1723,12 +1754,14 @@ int main(int argc, char *argv[])
 	}
 
 	/* make an announcement as to what we are */
-	printf("FunOS Dataplane Control Shell");
+	if (!_nocli_script_mode || _debug_log)
+		printf("FunOS Dataplane Control Shell");
 
 	switch (mode) {
 	case MODE_INTERACTIVE:
 		/* do nothing */
-		_verbose_log = true;
+		if (!_nocli_script_mode)
+			_verbose_log = true;
 		break;
 	case MODE_PROXY:
 		printf(": socket proxy mode");
@@ -1758,7 +1791,7 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
-	printf("FunOS is connected!\n");
+	dprintf("FunOS is connected!\n");
 
 	switch(mode) {
 	case MODE_HTTP_PROXY:

@@ -66,7 +66,7 @@ find $DEPLOY_ROOT -type f | (
 		    ;;
 		*)
 		    #echo "Stripping $fname"
-		    ${STRIP} $fname
+		    ${STRIP} -R.pdr -R.go_export $fname
 		    ;;
 	    esac
 	fi

@@ -3,15 +3,23 @@
 """
 This script is for merging FunOS logs that have epoch based timestamps.
 
-By default, this will output a different color for every log. There are only 7
-available colors, and the last one is white (might conflict with backgrounds),
-if you pass more than 7 logs, colorization will be disabled.
+This will output a different color for every log. It will initially use black
+background with different foreground colors. Once it exceeds the 6 or so
+foreground combinations with the black background it will use other background
+color combinations. There are 56 available combinations. This works best with
+black backgrounds. If you pass more than 56 logs, colorization will be
+disabled.
+
+Note, this is not clever with colorization. It does not detect the background
+of the terminal used, and it does not have any special logic to avoid low
+contrast combinations.
 
 Example:
 
 funos_log_merger --log F1_0_funos.txt.16 F1_1_funos.txt.15 | less
 """
 
+import itertools
 import argparse
 import codecs
 import signal
@@ -26,17 +34,41 @@ class Colors:
     """
 
     CSI = "\033["
-    RED = CSI + "31m"
-    GREEN = CSI + "32m"
-    YELLOW = CSI + "33m"
-    BLUE = CSI + "34m"
-    MAGENTA = CSI + "35m"
-    CYAN = CSI + "36m"
-    WHITE = CSI + "37m"
     RESET = CSI + "0m"
 
-    Colors = [GREEN, BLUE, YELLOW, MAGENTA, CYAN, RED, WHITE]
+    BLACK_FG = CSI + "30m"
+    RED_FG = CSI + "31m"
+    GREEN_FG = CSI + "32m"
+    YELLOW_FG = CSI + "33m"
+    BLUE_FG = CSI + "34m"
+    MAGENTA_FG = CSI + "35m"
+    CYAN_FG = CSI + "36m"
+    WHITE_FG = CSI + "37m"
 
+    BLACK_BG = CSI + "40m"
+    RED_BG = CSI + "41m"
+    GREEN_BG = CSI + "42m"
+    YELLOW_BG = CSI + "43m"
+    BLUE_BG = CSI + "44m"
+    MAGENTA_BG = CSI + "45m"
+    CYAN_BG = CSI + "46m"
+    WHITE_BG = CSI + "47m"
+
+    ColorsFG = [BLACK_FG, WHITE_FG, CYAN_FG, YELLOW_FG, GREEN_FG, BLUE_FG,
+                MAGENTA_FG, RED_FG]
+    ColorsBG = [BLACK_BG, WHITE_BG, YELLOW_BG, BLUE_BG, GREEN_BG, MAGENTA_BG,
+                CYAN_BG, RED_BG]
+
+    colors_product = itertools.product(ColorsBG, ColorsFG)
+
+    # Make sure the colors are not the same by comparing the digits index of
+    # the color code.
+    colors_filtered = filter(lambda x: x[0][-2:] != x[1][-2:],
+                             colors_product)
+
+    colors = []
+    for fg, bg in colors_filtered:
+        colors.append(fg + bg)
 
 def handle_args():
     description = "A script to merge FunOS logs"
@@ -58,7 +90,15 @@ def line2tuple(fname, f, color):
             continue
 
         index = line.find(" ")
-        ts = float(line[1:index])
+
+        # Sometimes, FunOS will truncate the line with ... to signify that some
+        # output was dropped. If we cannot even reconstruct the timestamp from
+        # the line, then just drop the line.
+        try:
+            ts = float(line[1:index])
+        except:
+            continue
+
         formatted = f"{fname}: {line}"
         if color is not None:
             formatted = f"{color}{formatted}{Colors.RESET}"
@@ -71,19 +111,19 @@ if __name__ == "__main__":
     args = handle_args()
 
     colorize = args.nocolor == False
-    if len(args.log) > len(Colors.Colors):
+    if colorize and len(args.log) > len(Colors.colors):
         sys.stderr.write(
             "WARNING: Logs outnumber colors, disabling colorization\n"
         )
         colorize = False
 
-    colors = iter(Colors.Colors)
+    color_iter = iter(Colors.colors)
     iters = []
     for fname in args.log:
         f = codecs.open(
             os.path.expandvars(fname), "rb", encoding="ascii", errors="replace"
         )
-        color = next(colors) if colorize else None
+        color = next(color_iter) if colorize else None
         iters.append(line2tuple(fname, f, color))
 
     merged = heapq.merge(*iters)

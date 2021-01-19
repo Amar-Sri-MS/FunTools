@@ -8,7 +8,7 @@ INTERFACES_DIR=$CONFIG_DIR/interfaces
 case "$1" in
     start)
         mkdir -p /tmp/interfaces.d
-        ln -s /etc/network/eth0_0-dhcp.iface /tmp/interfaces.d/eth0_0
+        ln -s /etc/network/eth0-dhcp.iface /tmp/interfaces.d/eth0
 
         fsck_code=0
         e2fsck -y /dev/vda3 || fsck_code=$?
@@ -17,6 +17,8 @@ case "$1" in
             mkfs.ext4 -q -F /dev/vda3
         fi
         mount /persist
+        mount /b-persist || true
+
         mkdir -p $INTERFACES_DIR
         (
             cd $INTERFACES_DIR
@@ -27,6 +29,9 @@ case "$1" in
                 fi
             done
         )
+        # $CONFIG_DIR is parent of $INTERFACES_DIR, make sure non-root
+        # users can create files there (e.g. NTP)
+        chmod 0777 $CONFIG_DIR
         if [ -e $INTERFACES_DIR/resolv.conf ] ; then
             ln -f -s $INTERFACES_DIR/resolv.conf /tmp/resolv.conf
         fi
@@ -40,6 +45,18 @@ case "$1" in
         else
             ln -f -s /usr/share/zoneinfo/Universal /tmp/localtime
         fi
+	#
+	# If persistent NTP config, install a link to it
+	#
+	if [ -e $CONFIG_DIR/ntp.conf ] ; then
+	    ln -f -s $CONFIG_DIR/ntp.conf /tmp/ntp.conf
+	fi
+
+	# Allow any user to leave core files
+	if [ ! -d /persist/cores ] ; then
+	    mkdir -p /persist/cores
+	    chmod 0777 /persist/cores
+	fi
         ;;
     *)
         :

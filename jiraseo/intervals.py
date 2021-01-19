@@ -45,7 +45,7 @@ SPRINT0_DATE = datetime.date(2020, 5, 25)
 SPRINT_LEN = datetime.timedelta(days=14)
 SPRINT_WD_LEN = datetime.timedelta(days=10)
 SPRINT_FMT = "SW Sprint {sprint} [{start.month}/{start.day} - {end.month}/{end.day}]"
-SPRINT_OFFSET = 11
+SPRINT_OFFSET = 12
 
 def sprint_for_date(date: datetime.date) -> int:
     assert(date >= SPRINT0_DATE)
@@ -142,6 +142,7 @@ def main() -> None:
 
     ### Print out all the upcoming sprints
     cur = current_sprint()
+    print(cur)
     for sprint in range(cur, cur+NSPRINTS):
 
         error = None

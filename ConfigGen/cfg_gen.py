@@ -166,6 +166,222 @@ def _generate_storage_config(config_root_dir, output_dir,
 
     return storage_cfg
 
+# filename -> arbitrary json
+def _read_json_file(fname):
+    try:
+        sjs=None
+        fl = open(fname)
+        fls = fl.read()
+        sjs = jsonutils.standardize_json(fls)
+        js = json.loads(sjs)
+    except:
+        print("Exception occurred reading/parsing json file %s" % fname)
+        print(sjs)
+        raise
+
+    return js
+
+# filename -> dict, or die trying
+def _read_json_file_as_dict(fname):
+    js = _read_json_file(fname)
+    try:
+        assert(isinstance(js, dict))
+    except:
+        print("JSON file %s is not a dict" % fname)
+        raise
+
+    return js
+
+# TODO: add more validations as necessary
+def _validate_profile_cfg(fname, js):
+    assert(isinstance(js, dict))
+    if ("subprofiles" not in js):
+        raise RuntimeError("subprofile %s is missing subprofiles key" % fname)
+    assert(isinstance(js["subprofiles"], dict))
+
+
+# TODO: add more validations as necessary
+def _validate_subprofile_cfg(fname, js):
+
+    assert(isinstance(js, dict))
+    if ("key_path" not in js):
+        raise RuntimeError("subprofile %s is missing key_path" % fname)
+    print(js)
+    print(js["key_path"])
+    print(type(js["key_path"]))
+    
+    assert(isinstance(js["key_path"], basestring))
+
+    if ("weight" in js):
+        assert(isinstance(js["weight"], int))
+    if ("replace" in js):
+        assert(isinstance(js["replace"], bool))
+
+# load all the .cfg options for a subprofile from a directory.  called
+# for global, chip and board paths. "global_path" is True if we expect
+# to skip the "subprofile-xyz.cfg" file when we encounter it. If this
+# is not the global_path, that file should not exist.
+def _load_subprofile_fragments(subdir, global_path):
+    
+    fragments = {}
+    
+    cfgglob = os.path.join(subdir, "*.cfg")
+    for fname in glob.glob(cfgglob):
+
+        # base filename and subprofile fragment name used, eg:
+        # foo_profile = fragment
+        bname = os.path.basename(fname)
+        pname = os.path.splitext(bname)[0]
+
+        # remove "-foo" suffix
+        if ("-" in pname):
+            pname = pname.split("-")[0]
+        assert(len(pname) > 0) # "-foo.cfg" is nonsense
+        
+        # see if this is a subprofile descriptor
+        if (fnmatch.fnmatch(bname, "subprofile-*.cfg")):
+            if (not global_path):
+                raise RuntimeError("Found subprofile descriptor found outside subprofile global path: %s" % fname)
+
+            # otherwise, ignore it
+            continue
+
+        # read the json file -- any json is valid
+        js = _read_json_file(fname)
+
+        # append it to the list
+        if (pname in fragments):
+            raise RuntimeError("Error: duplicate json fragment: %s (%s)" % (pname, fname))
+        fragments[pname] = js
+
+    return fragments
+        
+def _load_subprofiles_and_fragments(spglob, subprofiles, stype, sval):
+
+    sglob = os.path.join(spglob, "*_profile")
+    for subprof in glob.glob(sglob):
+        if (not os.path.isdir(subprof)):
+            print("WARNING: %s is not a directory, ignoring" % subprof)
+            continue
+        
+        # get the name
+        subname = os.path.basename(subprof)
+
+        # make sure it's valid
+        assert(subname in subprofiles)
+        
+        sub_fragments = _load_subprofile_fragments(subprof, False)
+        subprofiles[subname][stype][sval] = sub_fragments
+    
+# boot-time configuration profiles. see profiles_config/HOWTO.md
+def _generate_profiles_config(config_root_dir, target_chip, target_boards):
+ 
+    ## root of the profile configs
+    pdir = os.path.join(config_root_dir, "profiles_config")
+
+    ## read the subprofile descriptions
+    
+    # subprofiles are described in  "subprofiles/foo_subprofile" directories
+    subprofiles = {}
+    sglob = os.path.join(pdir, "subprofiles", "*_profile")
+    for subdir in glob.glob(sglob):
+        if (not os.path.isdir(subdir)):
+            print("WARNING: %s is not a directory, ignoring" % subdir)
+            continue
+
+        # get the name
+        subname = os.path.basename(subdir)
+        
+        # the definition of a subprofile is in
+        # "subprofile-whatever.cfg" in the "foo_subprofile" directory.
+        # the "whatever" is ignored, just there to disambiguate many
+        # files otherwise named "subprofile.cfg".
+        cfgglob = os.path.join(subdir, "subprofile-*.cfg")
+        cfgs = glob.glob(cfgglob)
+
+        if (len(cfgs) == 0):
+            # no descriptor fail
+            raise RuntimeError("error: subprofile %s is missing a subprofile-XYZ.cfg descriptor" % subdir)
+
+        if (len(cfgs) > 1):
+            # multi descriptor fail
+            raise RuntimeError("error: subprofile %s has multiple descriptor files: %s" %s (subdir, cfgs))
+
+        descfilename = cfgs[0]
+        print("subprofile %s using descriptor %s" % (subdir, descfilename))
+
+        # parse it
+        js = _read_json_file_as_dict(descfilename)
+
+        # make sure it meets static minimum requirements. other
+        # validations come later
+        _validate_subprofile_cfg(descfilename, js)
+
+        # setup the skeleton dict with the descriptor
+        subprofiles[subname] = {"descriptor": js,
+                                "global":{},
+                                "chip":{},
+                                "board":{}}
+
+        # load all the global fragments, if any, and append to the descriptor
+        sub_fragments = _load_subprofile_fragments(subdir, True)
+        subprofiles[subname]["global"] = sub_fragments
+
+    # read all the fragments for the chip
+    chipdir = os.path.join(pdir, "chip", target_chip)
+    _load_subprofiles_and_fragments(chipdir, subprofiles, "chip", target_chip)
+        
+    # read all the fragments for all the boards
+    bglob = os.path.join(pdir, "board", "*")
+    for boarddir in glob.glob(bglob):
+        if (not os.path.isdir(boarddir)):
+            print("WARNING: %s is not a directory, ignoring" % boarddir)
+            continue
+        
+        # get the name
+        boardname = os.path.basename(boarddir)
+
+        # FIXME: only include the ones we know we need
+        # if (boardname not in target_boards):
+        #      continue
+
+        _load_subprofiles_and_fragments(boarddir, subprofiles,
+                                        "board", boardname)
+        
+    # parse the list of profiles
+    profiles = {}
+    pglob = os.path.join(pdir, "profiles", "*.cfg")
+    for cfg in glob.glob(pglob):
+        # extract the name
+        bname = os.path.basename(cfg)
+        pname = os.path.splitext(bname)[0]
+
+        # read it
+        js = _read_json_file_as_dict(cfg)
+
+        # make sure all the subprofiles exist
+        subs = js.get("subprofiles")
+        if (subs is None):
+            raise RuntimeError("profiles %s missing required subprofiles" % pname)
+
+        # validate all the keys & values that we can do statically
+        print("found profile %s" % pname)
+        _validate_profile_cfg(pname, js)
+        
+        # add it to the list
+        profiles[pname] = js
+    
+
+    # make the big dict and return that
+    profiles_config = {"profiles_config":
+                       {
+                           "profiles": profiles,
+                           "subprofiles": subprofiles,
+                       }
+    }
+
+    return profiles_config
+        
 def build_target_is_posix(target_machine):
     if 'posix' in target_machine:
         return True
@@ -215,10 +431,22 @@ def _generate_funos_default_config(config_root_dir, sdk_dir, output_dir,
         modules_cfg = jsonutils.merge_dicts_recursive(modules_cfg,
                                                       chip_modules_cfg)
 
-    ## assemble final config
+    ## assemble into main config
     funos_default_config = jsonutils.merge_dicts(funos_default_config,
                                                  modules_cfg)
 
+    ## process profile configs
+    
+    ## FIXME: generate the list of valid boards from the existing
+    ## config and pass them through
+    target_boards = []
+    profiles_cfg = _generate_profiles_config(config_root_dir,
+                                             target_chip, target_boards)
+    
+    ## assemble into main config
+    funos_default_config = jsonutils.merge_dicts(funos_default_config,
+                                                 profiles_cfg)
+    
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 

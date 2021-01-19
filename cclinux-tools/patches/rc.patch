@@ -1,0 +1,27 @@
+--- etc/init.d/rc.old	2020-12-28 14:23:39.771571714 -0800
++++ etc/init.d/rc	2020-12-28 14:21:11.777037388 -0800
+@@ -41,6 +41,14 @@
+ startup() {
+   # Handle verbosity
+   [ "$VERBOSE" = very ] && echo "INIT: Running $@..."
++  case "$2" in
++  	start)
++		# poke boot progress status indicator
++		devmem 0xff500000 32 0xb007aa01
++		;;
++	*)
++		: ;;
++  esac
+ 
+   case "$1" in
+ 	*.sh)
+@@ -68,6 +76,9 @@
+   # Limit stack size for startup scripts
+   [ "$STACK_SIZE" == "" ] || ulimit -S -s $STACK_SIZE
+ 
++  # Limit core size for startup scripts and their children
++  [ "$CORE_SIZE" == "" ] || ulimit -c $CORE_SIZE
++
+   # Now find out what the current and what the previous runlevel are.
+ 
+   runlevel=$RUNLEVEL
