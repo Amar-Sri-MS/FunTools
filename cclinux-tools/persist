@@ -61,7 +61,7 @@ case "$1" in
 	# Default S1 to allow unauthenticated SSH access
 	my_dpu=unknown
 	if [ -e /sys/firmware/devicetree/base/fungible,dpu ] ; then
-	    read -d $'\0' my_sku rest_of_line < /sys/firmware/devicetree/base/fungible,dpu
+	    read -d $'\0' my_dpu rest_of_line < /sys/firmware/devicetree/base/fungible,dpu
 	fi
 	if [ "$my_dpu" = "S1" ] ; then
 		mkdir -p /tmp/sshd_config.d
