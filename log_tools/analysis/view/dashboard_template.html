@@ -434,6 +434,10 @@
                 </tr>`
             );
         }
+        if (tableRows.length === 0) {
+            anchorTableBodyElement.innerHTML = `<div>No results</div>`;
+            return;
+        }
         anchorTableBodyElement.innerHTML = tableRows.join('\n');
     }
 
