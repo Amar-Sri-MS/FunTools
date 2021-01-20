@@ -213,11 +213,13 @@ def funos_input_pipeline(frn_info, path):
 
 
 def funos_input(frn_info, source, file_pattern):
-    parse_id = f'{source}_parse'
-
     cfg = _get_cfg_from_frn(frn_info)
+
+    id = f'{source}_{cfg["system_id"]}'
+    parse_id = f'{id}_parse'
+
     input = {
-        'id': source,
+        'id': id,
         'block': 'TextFileInput',
         'cfg': {
             **cfg,
@@ -238,11 +240,13 @@ def funos_input(frn_info, source, file_pattern):
 
 def controller_input_pipeline(frn_info, source, file_pattern, multiline_settings={}, parse_block='GenericInput'):
     """ Input pipeline for Controller services source """
-    parse_id = source + '_parse'
-
     cfg = _get_cfg_from_frn(frn_info)
+
+    id = f'{source}_{cfg["system_id"]}'
+    parse_id = f'{id}_parse'
+
     input = {
-        'id': source,
+        'id': id,
         'block': 'TextFileInput',
         'cfg': {
             **cfg,
@@ -264,11 +268,13 @@ def controller_input_pipeline(frn_info, source, file_pattern, multiline_settings
 
 def storage_agent_input_pipeline(frn_info, source, file_pattern):
     """ Input pipeline for Storage agent source """
-    storage_agent_parse_id = f'{source}_parse'
-
     cfg = _get_cfg_from_frn(frn_info)
+
+    id = f'{source}_{cfg["system_id"]}'
+    storage_agent_parse_id = f'{id}_parse'
+
     storage_agent = {
-        'id': source,
+        'id': id,
         'block': 'TextFileInput',
         'cfg': {
             **cfg,
