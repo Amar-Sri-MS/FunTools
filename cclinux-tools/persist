@@ -72,6 +72,11 @@ case "$1" in
 		echo '   PermitEmptyPasswords yes' >> $sshd_file
 		chmod 0400 $sshd_file
 	fi
+	#
+	# Place to keep transient keys.  Must be mode 0700.
+	#
+	mkdir -p /tmp/ssh
+	chmod 0700 /tmp/ssh
 
         ;;
     *)

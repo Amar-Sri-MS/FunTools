@@ -110,4 +110,4 @@ HostKey /persist/config/ssh_host_ed25519_key
 Include /tmp/sshd_config.d/*.conf
 
 Match User root
-   AuthorizedKeysFile  /tmp/root.authorized_keys
+   AuthorizedKeysFile  /tmp/ssh/root.authorized_keys
