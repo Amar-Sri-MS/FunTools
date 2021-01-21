@@ -74,9 +74,10 @@ case "$1" in
 	fi
 	#
 	# Place to keep transient keys.  Must be mode 0700.
+	# All path components must not set mode bit 0002, so /tmp can't be used
 	#
-	mkdir -p /tmp/ssh
-	chmod 0700 /tmp/ssh
+	mkdir -p /run/ssh
+	chmod 0700 /run/ssh
 
         ;;
     *)
