@@ -65,6 +65,7 @@ IMAGENAME="${CHIP}-rootfs.tar.xz"
 download_image() {
     mkdir -p $TMPLOC
     cd $TMPLOC
+    rm -f build_info.txt
     rm -f $IMAGENAME
     wget http://dochub.fungible.local/doc/jenkins/master/funsdk/$IMAGEVER/Linux/$IMAGENAME -q --show-progress
     wget http://dochub.fungible.local/doc/jenkins/master/funsdk/$IMAGEVER/build_info.txt -q
