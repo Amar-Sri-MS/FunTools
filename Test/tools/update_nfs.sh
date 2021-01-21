@@ -72,6 +72,7 @@ download_image() {
 }
 
 update_nfs_rootfs() {
+    mkdir -p $DIR/$1
     cd $DIR/$1
     sudo rm -rf *
     sudo tar xf $TMPLOC/$IMAGENAME -C $DIR/$1
