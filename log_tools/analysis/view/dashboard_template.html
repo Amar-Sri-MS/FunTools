@@ -21,9 +21,11 @@
                 <div class="filter_box_container">
                     {% for system_type in unique_entries %}
                         {% set total_entries = system_type['doc_count'] %}
+                        {% set system_type_index = loop.index0 %}
                         <div class="filter_box">
                             <div class="filter_box_header">
-                                <input type="checkbox" id="{{system_type['key']}}" name="system_type" value="{{system_type['key']}}" onclick="toggleSystemTypeSelection(this)" checked />
+                                <input type="checkbox" id="{{system_type['key']}}" name="system_type" data-system_type_index="{{system_type_index}}"
+                                    value="{{system_type['key']}}" onclick="toggleSystemTypeSelection(this)" checked />
                                 <label for="{{system_type['key']}}">
                                     System Type: {{system_type['key']}} ({{total_entries}})
                                 </label>
@@ -32,21 +34,23 @@
                                 <ul>
                                 {% for system_id in system_type['system_id']['buckets'] %}
                                     {% set system_id_distribution = calculatePercentage(system_id['doc_count'], total_entries) %}
+                                    <!-- Unique system id using system type and system id to handle same systemID names -->
+                                    {% set unique_system_id = system_type_index ~ system_type['key'] ~ system_id['key'] %}
                                     <li>
                                         <div class="filter_header">
-                                            <input type="checkbox" id="{{system_id['key']}}" name="system_id" value="{{system_id['key']}}"
+                                            <input type="checkbox" id="{{unique_system_id}}" name="system_id" value="{{system_id['key']}}"
                                                 data-system_type="{{system_type['key']}}" onclick="toggleSystemIDSelection(this)" checked
                                             />
-                                            <label for="{{system_id['key']}}">System ID: {{system_id['key']}} ({{system_id_distribution}})</label>
+                                            <label for="{{unique_system_id}}">System ID: {{system_id['key']}} ({{system_id_distribution}})</label>
                                         </div>
                                         <ul>
                                         {% for source in system_id['src']['buckets'] %}
                                             {% set source_distribution = calculatePercentage(source['doc_count'], total_entries) %}
                                             <li class="filter_box_item">
-                                                <input type="checkbox" id="{{system_id['key']}}_{{source['key']}}" name="source" value="{{source['key']}}"
+                                                <input type="checkbox" id="{{unique_system_id}}_{{source['key']}}" name="source" value="{{source['key']}}"
                                                     data-system_id="{{system_id['key']}}" data-system_type="{{system_type['key']}}" onclick="toggleSourceSelection(this)" checked
                                                 />
-                                                <label for="{{system_id['key']}}_{{source['key']}}">{{source['key']}} ({{source_distribution}})</label>
+                                                <label for="{{unique_system_id}}_{{source['key']}}">{{source['key']}} ({{source_distribution}})</label>
                                             </li>
                                         {% endfor %}
                                         </ul>
@@ -152,15 +156,16 @@
     const uniqueEntries = {{unique_entries}};
     let selectedFilters = {};
 
-    const filterComponents = uniqueEntries.reduce((filterComponents, entries) => {
+    const filterComponents = uniqueEntries.reduce((filterComponents, entries, systemTypeIndex) => {
         const systemType = entries['key'];
         selectedFilters[systemType] = {};
         const systemTypeElements = Array.from(document.querySelectorAll(`input[name="system_id"][data-system_type="${systemType}"]`));
 
         entries['system_id']['buckets'].forEach(systemIDEntry => {
             const systemID = systemIDEntry["key"];
+            const uniqueKeyForSystemID = `${systemTypeIndex}_${systemType}_${systemID}`;
             const systemIDElements = Array.from(document.querySelectorAll(`[data-system_type="${systemType}"][data-system_id="${systemID}"]`));
-            filterComponents["system_id"][systemID] = systemIDElements;
+            filterComponents["system_id"][uniqueKeyForSystemID] = systemIDElements;
             selectedFilters[systemType][systemID] = systemIDElements.map(element => element.value);
         });
 
@@ -212,7 +217,9 @@
         const systemType = dataset.system_type;
 
         const systemTypeElement = systemTypeInputElements.find(type => type.value === systemType);
-        const systemIDElements = filterComponents["system_id"][systemID];
+        const systemTypeIndex = systemTypeElement.dataset.system_type_index;
+        const uniqueKeyForSystemID = `${systemTypeIndex}_${systemType}_${systemID}`;
+        const systemIDElements = filterComponents["system_id"][uniqueKeyForSystemID];
 
         systemIDElements.forEach(component => {
             // Selects all the sources within the system_id
@@ -251,9 +258,12 @@
         const systemID = dataset.system_id;
 
         const systemTypeElement = systemTypeInputElements.find(type => type.value === systemType);
+        const systemTypeIndex = systemTypeElement.dataset.system_type_index;
+        const uniqueKeyForSystemID = `${systemTypeIndex}_${systemType}_${systemID}`;
+
         const systemIDElement = filterComponents["system_type"][systemType].find(ids => ids.value === systemID);
         const totalSystemIDs = filterComponents["system_type"][systemType].length;
-        const totalSources = filterComponents["system_id"][systemID].length;
+        const totalSources = filterComponents["system_id"][uniqueKeyForSystemID].length;
 
         if (isChecked) {
             // Adding the source to the selected filters
@@ -303,6 +313,7 @@
             const selectedSystemIDs = Object.keys(selectedFilters[systemType]);
             if (selectedSystemIDs.length === 0) {
                 // All the system_ids unchecked within the system_type
+                systemTypeElement.indeterminate = false;
                 systemTypeElement.checked = false;
             }
             else {
