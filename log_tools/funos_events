@@ -51,6 +51,7 @@ anchors file should look like. This is the default anchors file that will be
 used if none are specified.
 """
 
+import itertools
 import argparse
 import signal
 import heapq
@@ -66,16 +67,56 @@ class Colors:
     """
 
     CSI = "\033["
-    RED = CSI + "31m"
-    GREEN = CSI + "32m"
-    YELLOW = CSI + "33m"
-    BLUE = CSI + "34m"
-    MAGENTA = CSI + "35m"
-    CYAN = CSI + "36m"
-    WHITE = CSI + "37m"
     RESET = CSI + "0m"
 
-    Colors = [GREEN, BLUE, YELLOW, MAGENTA, CYAN, RED, WHITE]
+    BLACK_FG = CSI + "30m"
+    RED_FG = CSI + "31m"
+    GREEN_FG = CSI + "32m"
+    YELLOW_FG = CSI + "33m"
+    BLUE_FG = CSI + "34m"
+    MAGENTA_FG = CSI + "35m"
+    CYAN_FG = CSI + "36m"
+    WHITE_FG = CSI + "37m"
+
+    BLACK_BG = CSI + "40m"
+    RED_BG = CSI + "41m"
+    GREEN_BG = CSI + "42m"
+    YELLOW_BG = CSI + "43m"
+    BLUE_BG = CSI + "44m"
+    MAGENTA_BG = CSI + "45m"
+    CYAN_BG = CSI + "46m"
+    WHITE_BG = CSI + "47m"
+
+    ColorsFG = [
+        BLACK_FG,
+        WHITE_FG,
+        CYAN_FG,
+        YELLOW_FG,
+        GREEN_FG,
+        BLUE_FG,
+        MAGENTA_FG,
+        RED_FG,
+    ]
+    ColorsBG = [
+        BLACK_BG,
+        WHITE_BG,
+        YELLOW_BG,
+        BLUE_BG,
+        GREEN_BG,
+        MAGENTA_BG,
+        CYAN_BG,
+        RED_BG,
+    ]
+
+    colors_product = itertools.product(ColorsBG, ColorsFG)
+
+    # Make sure the colors are not the same by comparing the digits index of
+    # the color code.
+    colors_filtered = filter(lambda x: x[0][-2:] != x[1][-2:], colors_product)
+
+    colors = []
+    for fg, bg in colors_filtered:
+        colors.append(fg + bg)
 
 
 class AnchorMatch:
@@ -262,11 +303,11 @@ def colorize(args, multimode):
     if not sys.stdout.isatty():
         return False
 
-    return len(args.logs) < len(Colors.Colors)
+    return len(args.logs) < len(Colors.colors)
 
 
 def generate_color_map(args):
-    return dict(zip(args.logs, Colors.Colors))
+    return dict(zip(args.logs, Colors.colors))
 
 
 def print_results(args, matches, multimode):
@@ -289,8 +330,9 @@ def print_results(args, matches, multimode):
 
 
 def process_logs(args, multimode):
-    matcher = AnchorMatcher(args.anchors, args.anchor_keys,
-                            timestamped_only=multimode)
+    matcher = AnchorMatcher(
+        args.anchors, args.anchor_keys, timestamped_only=multimode
+    )
     if not multimode:
         return matcher.generate_matches(args.logs[0])
 
