@@ -5,6 +5,7 @@
 #
 
 import argparse
+import datetime
 import os
 import time
 
@@ -188,6 +189,13 @@ def _get_cfg_from_frn(frn_info):
     }
 
 
+def _generate_unique_id(source, system_id):
+    """ Generating unique ID using source, system_id and current time """
+    time = datetime.datetime.now().timestamp()
+    unique_id = f'{source}_{system_id}_{time}'
+    return unique_id
+
+
 def funos_input_pipeline(frn_info, path):
     """ Input pipeline for FunOS source """
     blocks = list()
@@ -214,8 +222,8 @@ def funos_input_pipeline(frn_info, path):
 
 def funos_input(frn_info, source, file_pattern):
     cfg = _get_cfg_from_frn(frn_info)
+    id = _generate_unique_id(source, cfg['system_id'])
 
-    id = f'{source}_{cfg["system_id"]}'
     parse_id = f'{id}_parse'
 
     input = {
@@ -241,8 +249,8 @@ def funos_input(frn_info, source, file_pattern):
 def controller_input_pipeline(frn_info, source, file_pattern, multiline_settings={}, parse_block='GenericInput'):
     """ Input pipeline for Controller services source """
     cfg = _get_cfg_from_frn(frn_info)
+    id = _generate_unique_id(source, cfg['system_id'])
 
-    id = f'{source}_{cfg["system_id"]}'
     parse_id = f'{id}_parse'
 
     input = {
@@ -269,8 +277,8 @@ def controller_input_pipeline(frn_info, source, file_pattern, multiline_settings
 def storage_agent_input_pipeline(frn_info, source, file_pattern):
     """ Input pipeline for Storage agent source """
     cfg = _get_cfg_from_frn(frn_info)
+    id = _generate_unique_id(source, cfg['system_id'])
 
-    id = f'{source}_{cfg["system_id"]}'
     storage_agent_parse_id = f'{id}_parse'
 
     storage_agent = {
