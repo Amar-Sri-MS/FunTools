@@ -330,8 +330,9 @@ def print_results(args, matches, multimode):
 
 
 def process_logs(args, multimode):
-    matcher = AnchorMatcher(args.anchors, args.anchor_keys,
-                            timestamped_only=multimode)
+    matcher = AnchorMatcher(
+        args.anchors, args.anchor_keys, timestamped_only=multimode
+    )
     if not multimode:
         return matcher.generate_matches(args.logs[0])
 
