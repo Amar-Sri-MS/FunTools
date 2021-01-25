@@ -169,23 +169,26 @@ class AnchorMatch:
 
 
 class AnchorMatcher:
-    def __init__(self, anchor_files, anchor_keys, timestamped_only=False):
+    def __init__(
+        self, anchor_files, include_keys, exclude_keys, timestamped_only=False
+    ):
         """Construct an AnchorMatcher object. This provides an interface that
         can return AnchorMatch objects given a filename for a log.
 
         Args:
             anchor_files (str list): List of strings that represent filenames
                                      of files that contain JSON anchors.
-            anchor_keys (set):       List of keys to use from anchors file.
+            include_keys (set):       List of keys to use from anchors file.
+            exclude_keys (set):       List of keys to skip from anchors file.
             timestamped_only (bool): Limit to only matches that have a
                                      timestamp associated with them.
         """
 
         self.timestamped_only = timestamped_only
-        anchors = self._load_anchors(anchor_files, anchor_keys)
+        anchors = self._load_anchors(anchor_files, include_keys, exclude_keys)
         self.compiled, self.uber_compiled = self._generate_matchers(anchors)
 
-    def _load_anchors(self, anchor_files, anchor_keys):
+    def _load_anchors(self, anchor_files, include_keys, exclude_keys):
         """Generate a list of dictionaries representing the anchors in the
         given files. Each line in the anchor file will be treated as a separate
         valid JSON anchor. If the line starts with a '#' character, it will be
@@ -202,8 +205,13 @@ class AnchorMatcher:
                     # file as a whole is not valid JSON.
                     if line and not line.startswith("#"):
                         anchor = json.loads(line)
-                        if anchor_keys == None or anchor["key"] in anchor_keys:
-                            anchors.append(anchor)
+                        if include_keys and anchor["key"] not in include_keys:
+                            continue
+
+                        if exclude_keys and anchor["key"] in exclude_keys:
+                            continue
+
+                        anchors.append(anchor)
 
         return anchors
 
@@ -331,7 +339,10 @@ def print_results(args, matches, multimode):
 
 def process_logs(args, multimode):
     matcher = AnchorMatcher(
-        args.anchors, args.anchor_keys, timestamped_only=multimode
+        args.anchors,
+        args.include_keys,
+        args.exclude_keys,
+        timestamped_only=multimode,
     )
     if not multimode:
         return matcher.generate_matches(args.logs[0])
@@ -376,10 +387,16 @@ def handle_args():
         help="Anchors file",
     )
     parser.add_argument(
-        "--anchor-keys",
+        "--include-keys",
         default=None,
         type=set_arg,
         help="Show only provided comma-separated anchors",
+    )
+    parser.add_argument(
+        "--exclude-keys",
+        default=None,
+        type=set_arg,
+        help="Exclude provided comma-separated anchors",
     )
     parser.add_argument(
         "--color",
