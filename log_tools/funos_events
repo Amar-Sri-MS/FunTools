@@ -123,7 +123,7 @@ class AnchorMatch:
     # Matches a timestamp of the form [1586033961.440905]
     time_re = re.compile(r"^\[(\d+\.\d+).*\]")
 
-    def __init__(self, log, line_no, anchor, match):
+    def __init__(self, log, line_no, anchor, match, show_key):
         """Construct a new AnchorMatch instance.
 
         Args:
@@ -139,6 +139,7 @@ class AnchorMatch:
 
         # If this is a regular expression anchor, fill all the values in the
         # short representation with the matchgroups.
+        self.anchor = anchor
         short = anchor["short"]
         if "rematch" in anchor:
             for key, value in match.groupdict().items():
@@ -155,6 +156,8 @@ class AnchorMatch:
             self.matchtime = None
             self.matchtime_f = None
 
+        self.show_key = show_key
+
     # Need this for use with heapq.merge, sort match objects based on float
     # representation of their timestamp.
     def __lt__(self, other):
@@ -164,28 +167,40 @@ class AnchorMatch:
         logline = f"{self.line_no}"
         if self.matchtime:
             logline += f": [{self.matchtime}]"
+        if self.show_key:
+            logline += ": [key={}]".format(self.anchor["key"])
 
         return logline + f": {self.short}"
 
 
 class AnchorMatcher:
-    def __init__(self, anchor_files, anchor_keys, timestamped_only=False):
+    def __init__(
+        self,
+        anchor_files,
+        include_keys,
+        exclude_keys,
+        show_key,
+        timestamped_only=False,
+    ):
         """Construct an AnchorMatcher object. This provides an interface that
         can return AnchorMatch objects given a filename for a log.
 
         Args:
             anchor_files (str list): List of strings that represent filenames
                                      of files that contain JSON anchors.
-            anchor_keys (set):       List of keys to use from anchors file.
+            include_keys (set):       List of keys to use from anchors file.
+            exclude_keys (set):       List of keys to skip from anchors file.
+            show_key (bool): Show key for anchor in output.
             timestamped_only (bool): Limit to only matches that have a
                                      timestamp associated with them.
         """
 
         self.timestamped_only = timestamped_only
-        anchors = self._load_anchors(anchor_files, anchor_keys)
+        anchors = self._load_anchors(anchor_files, include_keys, exclude_keys)
         self.compiled, self.uber_compiled = self._generate_matchers(anchors)
+        self.show_key = show_key
 
-    def _load_anchors(self, anchor_files, anchor_keys):
+    def _load_anchors(self, anchor_files, include_keys, exclude_keys):
         """Generate a list of dictionaries representing the anchors in the
         given files. Each line in the anchor file will be treated as a separate
         valid JSON anchor. If the line starts with a '#' character, it will be
@@ -202,8 +217,13 @@ class AnchorMatcher:
                     # file as a whole is not valid JSON.
                     if line and not line.startswith("#"):
                         anchor = json.loads(line)
-                        if anchor_keys == None or anchor["key"] in anchor_keys:
-                            anchors.append(anchor)
+                        if include_keys and anchor["key"] not in include_keys:
+                            continue
+
+                        if exclude_keys and anchor["key"] in exclude_keys:
+                            continue
+
+                        anchors.append(anchor)
 
         return anchors
 
@@ -248,7 +268,7 @@ class AnchorMatcher:
         for anchor, matcher in self.compiled:
             match = matcher.search(line)
             if match:
-                return AnchorMatch(log, line_no, anchor, match)
+                return AnchorMatch(log, line_no, anchor, match, self.show_key)
 
         return None
 
@@ -329,9 +349,13 @@ def print_results(args, matches, multimode):
         print(result)
 
 
-def process_logs(args, multimode):
+def process_logs(args, multimode, show_key):
     matcher = AnchorMatcher(
-        args.anchors, args.anchor_keys, timestamped_only=multimode
+        args.anchors,
+        args.include_keys,
+        args.exclude_keys,
+        show_key,
+        timestamped_only=multimode,
     )
     if not multimode:
         return matcher.generate_matches(args.logs[0])
@@ -346,7 +370,7 @@ def main(args):
     signal.signal(signal.SIGPIPE, signal.SIG_DFL)
 
     multimode = len(args.logs) > 1
-    matches = process_logs(args, multimode)
+    matches = process_logs(args, multimode, args.show_key)
 
     # Write out alias file before printing, let default SIGPIPE handler handle
     # if piped to less or head. Make sure aliases are always written.
@@ -376,10 +400,22 @@ def handle_args():
         help="Anchors file",
     )
     parser.add_argument(
-        "--anchor-keys",
+        "--include-keys",
         default=None,
         type=set_arg,
         help="Show only provided comma-separated anchors",
+    )
+    parser.add_argument(
+        "--exclude-keys",
+        default=None,
+        type=set_arg,
+        help="Exclude provided comma-separated anchors",
+    )
+    parser.add_argument(
+        "--show-key",
+        default=False,
+        action="store_true",
+        help="Show the keys for each entry in the output. Helps with include/exclude",
     )
     parser.add_argument(
         "--color",
