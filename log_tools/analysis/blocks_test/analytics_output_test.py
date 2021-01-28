@@ -79,7 +79,7 @@ class AnalyticsOutputTest(unittest.TestCase):
             msg_block = msg_tuple_to_dict(it)
             self.block.check_for_anchor_match(msg_block)
 
-        anchor_descriptions = [anchor_match.short for anchor_match in self.block.anchor_matches]
+        anchor_descriptions = [anchor_match.short_desc for anchor_match in self.block.anchor_matches]
 
         self.assertEqual(expected_count, len(self.block.anchor_matches))
         self.assertListEqual(expected_descriptions, anchor_descriptions)

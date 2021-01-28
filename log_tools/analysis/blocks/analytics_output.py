@@ -19,46 +19,30 @@ from blocks.block import Block
 class AnchorMatch:
     """ Anchor Match to hold data required for a match """
 
-    def __init__(self, anchor, match, msg_block):
+    def __init__(self, anchor, match, msg_dict):
         """Construct a new AnchorMatch instance.
 
         Args:
             anchor (dict): The JSON dictionary that represents the anchor that
                            the line matched. Expected to have the key "short".
             match (RE match): The match object.
-            msg_block (dict): The message block which is convereted to dict. Expected
+            msg_dict (dict): The message block which is convereted to dict. Expected
                         to have the key "datetime"
         """
         self.anchor = anchor
-        self.msg_block = msg_block
+        self.msg_dict = msg_dict
 
         # If this is a regular expression anchor, fill all the values in the
         # short representation with the matchgroups.
-        short = anchor["short"]
-        if "rematch" in anchor:
+        short_desc = anchor['short']
+        if 'rematch' in anchor:
             for key, value in match.groupdict().items():
-                short = re.sub(f"<{key}>", value, short)
-        self.short = short
+                short_desc = re.sub(f'<{key}>', value, short_desc)
+        self.short_desc = short_desc
 
-        # Parse the timestamp and store a float version of it, if it's
-        # available.
-        self.matchtime = msg_block['datetime']
-        if self.matchtime:
-            self.matchtime_f = self.matchtime.timestamp()
-        else:
-            self.matchtime_f = None
-
-    # Need this to sort match objects based on float representation of
-    # their timestamp.
+    # Need this to sort match objects based on their timestamp.
     def __lt__(self, other):
-        return self.matchtime_f < other.matchtime_f
-
-    def __str__(self):
-        logline = ''
-        if self.matchtime:
-            logline += f": [{self.matchtime}]"
-
-        return logline + f": {self.short}"
+        return self.msg_dict['datetime'] < other.msg_dict['datetime']
 
 
 class AnchorMatcher:
@@ -87,7 +71,7 @@ class AnchorMatcher:
 
         anchors = []
         for anchor_file in anchor_files:
-            print('Reading Anchor file from: ', anchor_file)
+            print('INFO: Reading Anchor file from:', anchor_file)
 
             with open(os.path.expandvars(anchor_file)) as f:
                 for line in f:
@@ -95,9 +79,9 @@ class AnchorMatcher:
 
                     # Each anchor is it's own valid piece of JSON. The anchors
                     # file as a whole is not valid JSON.
-                    if line and not line.startswith("#"):
+                    if line and not line.startswith('#'):
                         anchor = json.loads(line)
-                        if anchor_keys == None or anchor["key"] in anchor_keys:
+                        if anchor_keys == None or anchor['key'] in anchor_keys:
                             anchors.append(anchor)
 
         return anchors
@@ -116,35 +100,35 @@ class AnchorMatcher:
         compiled = []
         uber_matchers = []
         for anchor in anchors:
-            if "rematch" in anchor:
-                pattern = anchor["rematch"]
+            if 'rematch' in anchor:
+                pattern = anchor['rematch']
 
                 # Remove the grouping tags of the form ?P<KEY>
-                uber_pattern = re.sub(r"\(\?P<[^>]+>", "(", pattern)
+                uber_pattern = re.sub(r'\(\?P<[^>]+>', '(', pattern)
             else:
-                pattern = anchor["match"]
+                pattern = anchor['match']
                 pattern = re.escape(pattern)
                 uber_pattern = pattern
 
             uber_matchers.append(uber_pattern)
             compiled.append((anchor, re.compile(pattern)))
 
-        uber_re = "|".join(uber_matchers)
+        uber_re = '|'.join(uber_matchers)
         uber_compiled = re.compile(uber_re)
 
         return compiled, uber_compiled
 
-    def _generate_match_entry(self, msg_block):
+    def _generate_match_entry(self, msg_dict):
         """
         Find the anchor that generated the match, and create a new AnchorMatch
-        object with the associated message block.
+        object with the associated message dict.
         """
 
-        line = msg_block['line']
+        line = msg_dict['line']
         for anchor, matcher in self.compiled:
             match = matcher.search(line)
             if match:
-                return AnchorMatch(anchor, match, msg_block)
+                return AnchorMatch(anchor, match, msg_dict)
 
         return None
 
@@ -153,15 +137,15 @@ class AnchorMatcher:
         We have a match entry, now do we want it?
         """
 
-        return not self.timestamped_only or entry.matchtime
+        return not self.timestamped_only or entry.msg_dict['datetime']
 
-    def generate_match(self, msg_block):
+    def generate_match(self, msg_dict):
         """
         Given a message block, search for match against the given anchors.
         """
-        line = msg_block['line']
+        line = msg_dict['line']
         if self.uber_compiled.search(line):
-            entry = self._generate_match_entry(msg_block)
+            entry = self._generate_match_entry(msg_dict)
             if entry and self._filter_entry(entry):
                 return entry
 
@@ -225,19 +209,19 @@ class AnalyticsOutput(Block):
 
         for it in iters:
             for tuple in it:
-                msg_block = self.tuple_to_dict(tuple)
+                msg_dict = self.tuple_to_dict(tuple)
 
-                self.check_for_duplicate_entry(msg_block)
-                self.check_for_anchor_match(msg_block)
+                self.check_for_duplicate_entry(msg_dict)
+                self.check_for_anchor_match(msg_dict)
 
         # Most duplicated logs
         self.generate_most_duplicates_entries()
         # Anchors
         self.store_anchor_matches()
 
-    def check_for_duplicate_entry(self, msg_block):
+    def check_for_duplicate_entry(self, msg_dict):
         """ Hashing the current log message to check if exists already """
-        msg = msg_block['line']
+        msg = msg_dict['line']
 
         # Creates a hash from the log line to compare with
         # other log lines
@@ -250,7 +234,7 @@ class AnalyticsOutput(Block):
         # increment the count
         if hashval not in self.duplicate_entries:
             self.duplicate_entries[hashval] = {
-                'msg': msg_block,
+                'msg': msg_dict,
                 'count': 0
             }
         self.duplicate_entries[hashval]['count'] += 1
@@ -294,8 +278,9 @@ class AnalyticsOutput(Block):
         path = os.path.join(self.dir, 'duplicates.html')
         self._create_template(path, template_dict)
 
-    def check_for_anchor_match(self, msg_block):
-        match = self.anchor_matcher.generate_match(msg_block)
+
+    def check_for_anchor_match(self, msg_dict):
+        match = self.anchor_matcher.generate_match(msg_dict)
         if match:
             self.anchor_matches.append(match)
 
@@ -306,10 +291,10 @@ class AnalyticsOutput(Block):
 
         for match in matches:
             is_failure = match.anchor.get('is_failure', False)
-            source = match.msg_block.get('uid', 'N/A')
-            system_id = match.msg_block.get('system_id', 'N/A')
-            msg = match.msg_block['line']
-            datetime = match.msg_block['datetime']
+            source = match.msg_dict.get('uid', 'N/A')
+            system_id = match.msg_dict.get('system_id', 'N/A')
+            msg = match.msg_dict['line']
+            datetime = match.msg_dict['datetime']
             # Kibana query should be enclosed within quotations for exact match
             # Removing special characters
             # TODO(Sourabh): Better approach for handling special characters
@@ -322,9 +307,9 @@ class AnalyticsOutput(Block):
                 'is_failure': is_failure,
                 'link': kibana_url,
                 'datetime': str(datetime),
-                'level': match.msg_block['level'],
-                'msg': match.msg_block['line'],
-                'description': match.short
+                'level': match.msg_dict['level'],
+                'msg': match.msg_dict['line'],
+                'description': match.short_desc
             })
 
         path = os.path.join(self.dir, 'anchors.json')
@@ -354,4 +339,4 @@ class AnalyticsOutput(Block):
             with open(path, 'w+') as f:
                 f.write(result)
         except IOError as e:
-            print("I/O error", e)
+            print('I/O error', e)
