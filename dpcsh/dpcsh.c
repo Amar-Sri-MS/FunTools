@@ -29,6 +29,7 @@
 #include "dpcsh.h"
 #include "dpcsh_nvme.h"
 #include "csr_command.h"
+#include "dpcsh_libfunq.h"
 
 #include <FunSDK/utils/threaded/fun_map_threaded.h>
 #include <FunSDK/services/commander/fun_commander.h>
@@ -585,7 +586,7 @@ static char *_read_a_line(struct dpcsock *sock, ssize_t *nbytes)
 			printf("**** remote hung up / error: %d %d %s\n",
 			       r, errno, strerror(errno));
 			free(buf);
-			if (sock->mode != SOCKMODE_NVME) {
+			if (sock->mode != SOCKMODE_NVME && sock->mode != SOCKMODE_FUNQ) {
 				close(sock->fd);
 			}
 			*nbytes = 0;
@@ -689,23 +690,25 @@ do_retry:
 	return binbuf;
 }
 
-/* dpcsocket abstraction */
 
-int dpcsocket_connnect(struct dpcsock *sock)
+bool dpcsocket_connect(struct dpcsock *sock)
 {
 	assert(sock != 0);
 
 	/* unused == no-op */
 	if (sock->mode == SOCKMODE_TERMINAL) {
 		sock->fd = STDIN_FILENO; /* give it a real FD */
-		return 0;
+		return true;
 	}
 
 	if (sock->mode == SOCKMODE_DEV) {
 		sock->fd = open(sock->socket_name, O_RDWR | O_NOCTTY);
 		if (sock->fd < 0)
 			perror("open");
-	} else if (sock->server) {
+		return sock->fd >= 0;
+	}
+	
+	if (sock->server) {
 		/* setup the server socket*/
 		printf("connecting server socket\n");
 		if (sock->listen_fd <= 0)
@@ -713,19 +716,53 @@ int dpcsocket_connnect(struct dpcsock *sock)
 
 		/* wait for someone to connect */
 		_listen_sock_accept(sock);
-	} else if(sock->mode == SOCKMODE_NVME) {
+		return sock->fd >= 0;
+	} 
+
+	if(sock->mode == SOCKMODE_NVME) {
 		sock->fd = -1;
 		sock->nvme_write_done = false;
-	} else {
-		printf("connecting client socket\n");
-		if (sock->mode == SOCKMODE_UNIX)
-			sock->fd = _open_sock_unix(sock->socket_name);
-		else
-			sock->fd = _open_sock_inet(sock->port_num);
+		return true;
 	}
 
-	/* return non-zero on failure */
-	return (sock->mode == SOCKMODE_NVME) ? 0 : (sock->fd < 0);
+	if(sock->mode == SOCKMODE_FUNQ) {
+		sock->fd = -1;
+		sock->funq_connection = malloc(sizeof(struct dpc_funq_connection));
+		return dpc_funq_init(sock->funq_connection, sock->socket_name);
+	}
+	
+	printf("connecting client socket\n");
+	if (sock->mode == SOCKMODE_UNIX)
+		sock->fd = _open_sock_unix(sock->socket_name);
+	else
+		sock->fd = _open_sock_inet(sock->port_num);
+
+	/* return zero on failure */
+	return sock->fd >= 0;
+}
+
+bool dpcsocket_is_connected(struct dpcsock *sock)
+{
+	if (sock->mode == SOCKMODE_NVME) return true;
+	if (sock->mode == SOCKMODE_FUNQ) return sock->funq_connection != NULL;
+
+	return sock->fd >= 0;
+}
+
+bool dpcsocket_ensure_connected(struct dpcsock *sock)
+{
+	if (dpcsocket_is_connected(sock)) return true;
+
+	while (sock->retries-- > 0) {
+		printf("trying to (re)-connect\n");
+		if (dpcsocket_connect(sock)) {
+			printf("connected\n");
+			return true;
+		}
+	}
+
+	printf("out of (re)-connect attempts\n");
+	return false;
 }
 
 #define FMT_PAD (256)
@@ -772,18 +809,25 @@ void _configure_device(struct dpcsock *sock)
 	}
 }
 
-/* disambiguate json */
-static bool _write_to_sock(struct fun_json *json, struct dpcsock *sock)
+static bool _write_to_sock(struct fun_json *json,
+			struct dpcsock *funos_sock, uint32_t seq_num)
 {
-	if (!sock->base64) {
+	if (!funos_sock->base64 && funos_sock->mode != SOCKMODE_NVME && funos_sock->mode != SOCKMODE_FUNQ) {
 		/* easy case */
-		return fun_json_write_to_fd(json, sock->fd);
+		return fun_json_write_to_fd(json, funos_sock->fd);
 	}
 
-	/* base64 case */
 	size_t allocated_size;
 	struct fun_ptr_and_size pas = fun_json_serialize(json, &allocated_size);
-	bool ok = _base64_write(sock, pas.ptr, pas.size);
+	bool ok = false;
+	if (funos_sock->mode == SOCKMODE_NVME) {
+		ok = _write_to_nvme(pas, funos_sock, dpcsh_session_id, seq_num);
+	} else if (funos_sock->mode == SOCKMODE_FUNQ) {
+		ok = dpc_funq_send(pas, funos_sock->funq_connection);
+	} else {
+		/* base64 case */
+		ok = _base64_write(funos_sock, pas.ptr, pas.size);
+	}
 
 	fun_free_threaded(pas.ptr, allocated_size);
 
@@ -796,19 +840,28 @@ static bool _write_to_sock(struct fun_json *json, struct dpcsock *sock)
 
 
 /* take input from a socket and make a json */
-static struct fun_json *_read_from_sock(struct dpcsock *sock, bool retry)
+static struct fun_json *_read_from_sock(struct dpcsock *sock, bool retry, uint32_t seq_num)
 {
-	uint8_t *buffer = NULL;
+	uint8_t *data = NULL;
+	ssize_t data_size;
+	uint8_t *deallocate_ptr = NULL;
 	struct fun_json *json = NULL;
 
-	if (!sock->base64) {
-		json = fun_json_read_from_fd(sock->fd);
-	} else {
-		ssize_t max;
-		buffer = _base64_get_buffer(sock, &max, retry);
-		json = _buffer2json(buffer, max); /* ignores NULL */
-		free(buffer);
+	if (!sock->base64 && sock->mode != SOCKMODE_NVME) {
+		return fun_json_read_from_fd(sock->fd);
 	}
+
+	if (sock->mode == SOCKMODE_NVME) {
+		data_size = _read_from_nvme(&data, &deallocate_ptr, sock, dpcsh_session_id, seq_num);
+	} else if (sock->base64) {		
+		data = _base64_get_buffer(sock, &data_size, retry);
+		deallocate_ptr = data;
+	} else {
+		return NULL;
+	}
+
+	json = _buffer2json(data, data_size); /* ignores NULL */
+	free(deallocate_ptr);
 
 	return json;
 }
@@ -932,8 +985,8 @@ static void apply_command_locally(const struct fun_json *json)
 
 // We pass the sock INOUT in order to be able to reestablish a
 // connection if the server went down and up
-static bool _do_send_cmd(struct dpcsock *sock, char *line,
-			 ssize_t read, uint32_t seq_num)
+static bool _do_send_cmd(struct dpcsock *funos_sock,
+			 char *line, ssize_t read, uint32_t seq_num)
 {
 	if (read == 0)
 		return false; // skip blank lines
@@ -954,27 +1007,17 @@ static bool _do_send_cmd(struct dpcsock *sock, char *line,
 
 	// Hack to list local commands if the command is 'help'
 	apply_command_locally(json);
-	bool ok = false;
-	if(sock->mode == SOCKMODE_NVME) {
-		ok = _write_to_nvme(json, sock, dpcsh_session_id, seq_num);
-	} else {
-		ok = _write_to_sock(json, sock);
-	}
+	bool ok = _write_to_sock(json, funos_sock, seq_num);
 	if (!ok) {
 		// try to reopen pipe
 		printf("Write to socket failed - reopening socket\n");
-		dpcsocket_connnect(sock);
 
-		if (sock->fd <= 0) {
+		if (!dpcsocket_connect(funos_sock)) {
 			printf("*** Can't reopen socket\n");
 			fun_json_release(json);
 			return false;
 		}
-		if(sock->mode == SOCKMODE_NVME) {
-			ok = _write_to_nvme(json, sock, dpcsh_session_id, seq_num);
-		} else {
-			ok = _write_to_sock(json, sock);
-		}
+		ok = _write_to_sock(json, funos_sock, seq_num);
 	}
 	fun_json_release(json);
 	if (!ok) {
@@ -1114,24 +1157,11 @@ static char *_wrap_proxy_message(struct fun_json *response) {
 	return message;
 }
 
-// Return true if all went well, and false if a JSON error was returned
-static bool _do_recv_cmd(struct dpcsock *funos_sock,
-			 struct dpcsock *cmd_sock, bool retry, uint32_t seq_num)
+static struct fun_json *_post_process_output(struct fun_json *output,
+			bool nvme_write_incomplete)
 {
-	/* receive a reply */
-	struct fun_json *output;
-	if(funos_sock->mode == SOCKMODE_NVME) {
-		output = _read_from_nvme(funos_sock, dpcsh_session_id, seq_num);
-	} else {
-		output = _read_from_sock(funos_sock, retry);
-	}
 	if (!output) {
-		if (retry)
-			printf("invalid json returned\n");
-
-		if ((cmd_sock->mode != SOCKMODE_TERMINAL) &&
-			(funos_sock->mode == SOCKMODE_NVME) &&
-			(funos_sock->nvme_write_done == false)) {
+		if (nvme_write_incomplete) {
 			output = fun_json_create_empty_dict();
 			fun_json_dict_add_string(output, "error", fun_json_no_copy_no_own,
 				"Command failed", fun_json_no_copy_no_own, false);
@@ -1140,10 +1170,14 @@ static bool _do_recv_cmd(struct dpcsock *funos_sock,
 				"Cannot connect to DPU", fun_json_no_copy_no_own, false);
 		} else {
 			usleep(10*1000); // to avoid consuming all the CPU after funos quit
-			return false;
+			return NULL;
 		}
 	}
+	return output;
+}
 
+static bool _write_response(struct fun_json *output, struct dpcsock *cmd_sock)
+{
 	bool ok = _print_response_info(output);
 
 	if (cmd_sock->mode != SOCKMODE_TERMINAL) {
@@ -1152,6 +1186,32 @@ static bool _do_recv_cmd(struct dpcsock *funos_sock,
 		write(cmd_sock->fd, "\n", 1);
 		fun_free_string(proxy_message);
 	}
+
+	return ok;
+}
+
+static void _recv_callback(struct fun_ptr_and_size response, void *context)
+{
+	struct dpcsock *cmd_sock = (struct dpcsock *)context;
+	struct fun_json *output = _buffer2json(response.ptr, response.size);
+	_write_response(output, cmd_sock);
+	fun_json_release(output);
+}
+
+// Return true if all went well, and false if a JSON error was returned
+static bool _do_recv_cmd(struct dpcsock *funos_sock,
+			 struct dpcsock *cmd_sock, bool retry, uint32_t seq_num)
+{
+	/* receive a reply */
+	struct fun_json *output = _read_from_sock(funos_sock, retry, seq_num);
+
+	if (!output && retry) {
+			printf("invalid json returned\n");
+	}
+
+	bool nvme_write_incomplete = (funos_sock->mode == SOCKMODE_NVME) &&
+			(funos_sock->nvme_write_done == false);
+	bool ok = _write_response(_post_process_output(output, nvme_write_incomplete), cmd_sock);
 
 	fun_json_release(output);
 	return ok;
@@ -1187,19 +1247,10 @@ static void _do_interactive(struct dpcsock *funos_sock,
 	while (1) {
 
 		/* if a socket went away, try and reconnect */
-		if ((funos_sock->fd == -1) && (funos_sock->retries-- > 0)) {
-			dpcsocket_connnect(funos_sock);
-		}
-
-		if (cmd_sock->fd == -1) {
-			if (cmd_sock->retries-- > 0) {
-				printf("(re)-connect\n");
-				dpcsocket_connnect(cmd_sock);
-				printf("connected\n");
-			} else {
-				printf("out of re-connect attempts\n");
-				break;
-			}
+		if (!dpcsocket_ensure_connected(funos_sock) ||
+			!dpcsocket_ensure_connected(cmd_sock)) {
+			printf("out of re-connect attempts\n");
+			break;
 		}
 
 		/* configure the fd set */
@@ -1250,13 +1301,13 @@ static void _do_interactive(struct dpcsock *funos_sock,
 		}
 
 		/* if it changed while in flight */
-		if ((funos_sock->mode != SOCKMODE_NVME) && (funos_sock->fd == -1)) {
+		/* SOCKMODE_FUNQ is handled asynchronously  */
+		if (!dpcsocket_is_connected(funos_sock) || funos_sock->mode == SOCKMODE_FUNQ) {
 			continue;
 		}
 
-		if ((funos_sock->mode == SOCKMODE_NVME) || (FD_ISSET(funos_sock->fd, &fds)
+		if (funos_sock->mode == SOCKMODE_NVME || (FD_ISSET(funos_sock->fd, &fds)
 		    && (!funos_sock->loopback))) {
-			// printf("funos input\n");
 			_do_recv_cmd(funos_sock, cmd_sock, false, seq_num);
 		}
 	}
@@ -1306,13 +1357,13 @@ int json_handle_req(struct dpcsock *jsock, const char *path,
 	if (_verbose_log)
 		fun_json_printf_with_flags("input => %s\n", json, FUN_JSON_PRETTY_PRINT_HUMAN_READABLE_STRINGS);
 
-	bool ok = _write_to_sock(json, jsock);
+	bool ok = _write_to_sock(json, jsock, 0);
 	fun_json_release(json);
 	if (!ok)
 		return -1;
 
 	/* receive a reply */
-	struct fun_json *output = _read_from_sock(jsock, true);
+	struct fun_json *output = _read_from_sock(jsock, true, 0);
 	if (!output) {
 		printf("invalid json returned\n");
 		return -1;
@@ -1342,21 +1393,21 @@ int json_handle_req(struct dpcsock *jsock, const char *path,
 	return r;
 }
 
-#define LINE_MAX	(100 * 1024)
+#define LINE_MAX_DPC_CLI	(100 * 1024)
 
 // Return true if execution proceeded normally, false on any error
 static bool _do_cli(int argc, char *argv[],
 		    struct dpcsock *funos_sock,
 		    struct dpcsock *cmd_sock, int startIndex)
 {
-	char *buf = malloc(LINE_MAX);
+	char *buf = malloc(LINE_MAX_DPC_CLI);
 	int n = 0;
 	bool ok;
 	uint32_t seq_num = cmd_seq_num;
 
 	cmd_seq_num++;
 	for (int i = startIndex; i < argc; i++) {
-		n += snprintf(buf + n, LINE_MAX - n, "%s ", argv[i]);
+		n += snprintf(buf + n, LINE_MAX_DPC_CLI - n, "%s ", argv[i]);
 		dprintf("buf=%s n=%d\n", buf, n);
 	}
 
@@ -1408,6 +1459,7 @@ static struct option longopts[] = {
 // DPC over NVMe is needed only in Linux
 #ifdef __linux__
 	{ "pcie_nvme_sock",  optional_argument, NULL, 'p' },
+	{ "libfunq_sock",    optional_argument, NULL, 'q' },
 #endif //__linux__
 	{ "http_proxy",      optional_argument, NULL, 'H' },
 	{ "tcp_proxy",       optional_argument, NULL, 'T' },
@@ -1453,6 +1505,7 @@ static void usage(const char *argv0)
 // DPC over NVMe is needed only in Linux
 #ifdef __linux__
 	printf("       -p, --pcie_nvme_sock[=sockname]  connect as a client port over nvme pcie device\n");
+	printf("       -q, --libfunq_sock[=sockname]  connect as a client port over libfunq pcie device, put \"auto\" for auto-discover\n");
 #endif //__linux__
 	printf("       -H, --http_proxy[=port]     listen as an http proxy\n");
 	printf("       -T, --tcp_proxy[=port]      listen as a tcp proxy\n");
@@ -1492,7 +1545,7 @@ int main(int argc, char *argv[])
 	bool one_shot = false;  /* run a single command and terminate */
 	int ch, first_unknown = -1;
 	struct dpcsock funos_sock = {0}; /* connection to FunOS */
-	struct dpcsock cmd_sock;   /* connection to commanding agent */
+	struct dpcsock cmd_sock = {0};   /* connection to commanding agent */
 	bool autodetect_input_device = true;
 	bool cmd_timeout_is_set = false;
 	char detected_nvme_device_name[64]; /* when no input device is specified */
@@ -1527,14 +1580,13 @@ int main(int argc, char *argv[])
 	 */
 
 	/* default command connection is console (so socket disabled) */
-	memset(&cmd_sock, 0, sizeof(cmd_sock));
 	cmd_sock.mode = SOCKMODE_TERMINAL;
 	cmd_sock.fd = -1;
 	cmd_sock.retries = UINT32_MAX;
 
 	while ((ch = getopt_long(argc, argv,
 #ifdef __linux__
-				 "hB::b::D:i::u::p::H::T::t::I:nQSNXFR:LvdVYW",
+				 "hB::b::D:i::u::p::q::H::T::t::I:nQSNXFR:LvdVYW",
 #else
 				 "hB::b::D:i::u::H::T::t::nQSNXFR:LvdVY",
 #endif
@@ -1602,6 +1654,13 @@ int main(int argc, char *argv[])
 			cmd_sock.server = false;
 			funos_sock.socket_name = opt_sockname(optarg,
 							      NVME_DEV_NAME);
+			autodetect_input_device = false;
+			break;
+		case 'q':
+			funos_sock.mode = SOCKMODE_FUNQ;
+			cmd_sock.server = false;
+			funos_sock.socket_name = opt_sockname(optarg,
+							      FUNQ_DEV_NAME);
 			autodetect_input_device = false;
 			break;
 #endif //__linux__
@@ -1784,11 +1843,13 @@ int main(int argc, char *argv[])
 
 
 	/* start by opening the socket to FunOS */
-	int r = dpcsocket_connnect(&funos_sock);
-
-	if (r != 0) {
+	if (!dpcsocket_connect(&funos_sock)) {
 		printf("*** Can't connect FunOS\n");
 		exit(1);
+	}
+
+	if (funos_sock.mode == SOCKMODE_FUNQ) {
+		dpc_funq_register_callback(funos_sock.funq_connection, _recv_callback, &cmd_sock);
 	}
 
 	dprintf("FunOS is connected!\n");

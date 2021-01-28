@@ -17,7 +17,8 @@ enum sockmode {
 	SOCKMODE_IP,
 	SOCKMODE_UNIX,
 	SOCKMODE_DEV,
-	SOCKMODE_NVME
+	SOCKMODE_NVME,
+	SOCKMODE_FUNQ
 };
 
 struct dpcsock {
@@ -34,6 +35,7 @@ struct dpcsock {
 	uint32_t cmd_timeout;    /* cmd timeout in ms */
 
 	/* runtime */
+	void *funq_connection;       /* handle for libfunq connection */
 	int fd;                  /* connected fd */
 	int listen_fd;           /* fd if this is a server */
 	bool nvme_write_done;    /* flag indicating whether write to nvme device
