@@ -48,3 +48,15 @@ ln -f -s /tmp/localtime $DEPLOY_ROOT/etc/localtime
 #
 patch -p0 -d $DEPLOY_ROOT < $MYDIR/patches/ntpd.patch
 ln -s /tmp/ntp.conf $DEPLOY_ROOT/etc/ntp.conf
+
+#
+# cron & logrotate
+#
+
+mkdir -p $DEPLOY_ROOT/etc/cron/crontabs
+# cron.daily is automatically created but it's not used anywhere
+# so delete it from rootfs to avoid confusion
+rm -rf $DEPLOY_ROOT/etc/cron.daily
+ln -s ../init.d/busybox-cron $DEPLOY_ROOT/etc/rc5.d/S30cron
+cp bin/mips64/Linux/crontab.root $DEPLOY_ROOT/etc/cron/crontabs/root
+chmod 0444 $DEPLOY_ROOT/etc/cron/crontabs/root
