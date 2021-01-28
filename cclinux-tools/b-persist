@@ -26,6 +26,8 @@ case "$1" in
     sync)
         rsync -ac --ignore-missing-args --delete /persist/config/ $CONFIG_DIR
         rsync -ac --ignore-missing-args --delete /persist/upgrades/ $UPGRADE_DIR
+        rm -rf /b-persist/logs/*
+        rm -rf /b-persist/log-prev*
         ;;
     *)
         echo "Unhandled argument: [$1]"
