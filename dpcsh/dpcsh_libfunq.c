@@ -86,17 +86,11 @@ static struct fun_ptr_and_size dpc_get_response_data(size_t size,
 	p.size = size;
 	p.ptr = (uint8_t *)malloc(p.size);
 
-	printf("got response with size %zu\n", p.size);
-	printf("nsgl %zu\n", nsgl);
-
 	for (size_t i = out_sgl_n; i < out_sgl_n + nsgl && position < p.size; i++) {
 		memcpy(p.ptr + position, dma_addr_local[i],
 			min((size_t)DMA_BUFSIZE_BYTES, p.size - position));
 		position += DMA_BUFSIZE_BYTES;
 	}
-	printf("result position %zu\n", position);
-	printf("first byte %" PRIu8 "\n", p.ptr[0]);
-
 	return p;
 }
 
