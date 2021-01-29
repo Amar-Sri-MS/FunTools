@@ -20,6 +20,7 @@ mkdir -p $runtime_target_dir
 # Read only rootfs tools.
 #
 install -t $runtime_target_dir -m 0644 fstab-ro
+install -t $runtime_target_dir -m 0644 sshd_config-ro
 install -t $runtime_target_dir -m 0644 interfaces-ro
 install -t $runtime_target_dir -m 0644 eth0-dhcp.iface
 install -t $runtime_target_dir -m 0644 vfio.conf

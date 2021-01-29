@@ -16,7 +16,10 @@ chmod 0444 $DEPLOY_ROOT/etc/modprobe.d/vfio.conf
 
 ln -s /tmp/resolv.conf $DEPLOY_ROOT/etc/resolv.conf
 
-mv -f $DEPLOY_ROOT/etc/ssh/sshd_config_readonly $DEPLOY_ROOT/etc/ssh/sshd_config
+mkdir -p $DEPLOY_ROOT/etc/ssh/
+rm -f $DEPLOY_ROOT/etc/ssh/sshd_config*
+cp bin/mips64/Linux/sshd_config-ro $DEPLOY_ROOT/etc/ssh/sshd_config
+chmod 0400 $DEPLOY_ROOT/etc/ssh/sshd_config
 
 sed -i -e 's^/etc/resolv.conf^/tmp/resolv.conf^' $DEPLOY_ROOT/sbin/dhclient-script
 
