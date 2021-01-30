@@ -21,9 +21,11 @@
                 <div class="filter_box_container">
                     {% for system_type in unique_entries %}
                         {% set total_entries = system_type['doc_count'] %}
+                        {% set system_type_index = loop.index0 %}
                         <div class="filter_box">
                             <div class="filter_box_header">
-                                <input type="checkbox" id="{{system_type['key']}}" name="system_type" value="{{system_type['key']}}" onclick="toggleSystemTypeSelection(this)" checked />
+                                <input type="checkbox" id="{{system_type['key']}}" name="system_type" data-system_type_index="{{system_type_index}}"
+                                    value="{{system_type['key']}}" onclick="toggleSystemTypeSelection(this)" checked />
                                 <label for="{{system_type['key']}}">
                                     System Type: {{system_type['key']}} ({{total_entries}})
                                 </label>
@@ -32,21 +34,23 @@
                                 <ul>
                                 {% for system_id in system_type['system_id']['buckets'] %}
                                     {% set system_id_distribution = calculatePercentage(system_id['doc_count'], total_entries) %}
+                                    <!-- Unique system id using system type and system id to handle same systemID names -->
+                                    {% set unique_system_id = system_type_index ~ system_type['key'] ~ system_id['key'] %}
                                     <li>
                                         <div class="filter_header">
-                                            <input type="checkbox" id="{{system_id['key']}}" name="system_id" value="{{system_id['key']}}"
+                                            <input type="checkbox" id="{{unique_system_id}}" name="system_id" value="{{system_id['key']}}"
                                                 data-system_type="{{system_type['key']}}" onclick="toggleSystemIDSelection(this)" checked
                                             />
-                                            <label for="{{system_id['key']}}">System ID: {{system_id['key']}} ({{system_id_distribution}})</label>
+                                            <label for="{{unique_system_id}}">System ID: {{system_id['key']}} ({{system_id_distribution}})</label>
                                         </div>
                                         <ul>
                                         {% for source in system_id['src']['buckets'] %}
                                             {% set source_distribution = calculatePercentage(source['doc_count'], total_entries) %}
                                             <li class="filter_box_item">
-                                                <input type="checkbox" id="{{system_id['key']}}_{{source['key']}}" name="source" value="{{source['key']}}"
+                                                <input type="checkbox" id="{{unique_system_id}}_{{source['key']}}" name="source" value="{{source['key']}}"
                                                     data-system_id="{{system_id['key']}}" data-system_type="{{system_type['key']}}" onclick="toggleSourceSelection(this)" checked
                                                 />
-                                                <label for="{{system_id['key']}}_{{source['key']}}">{{source['key']}} ({{source_distribution}})</label>
+                                                <label for="{{unique_system_id}}_{{source['key']}}">{{source['key']}} ({{source_distribution}})</label>
                                             </li>
                                         {% endfor %}
                                         </ul>
@@ -89,9 +93,24 @@
             </div>
             <div class="separator"></div>
             <div>
-                <h3>Top 10 duplicated logs (all sources)</h3>
-                <div class="log_entries">
-                    {% include 'analytics/'+log_id+'/duplicates.html' ignore missing %}
+                <h3>Interesting events</h3>
+                <div>
+                    <input type="checkbox" id="failedAnchors" value="showFailedAnchors" onchange="toggleShowOnlyFailedAnchors(this)" checked>
+                    <label for="failedAnchors">Show only failed events?</label><br>
+                </div>
+                <div class="log_entries scrollable">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="text-align: left">Source</th>
+                                <th style="text-align: left">System ID</th>
+                                <th style="text-align: left">Timestamp</th>
+                                <th style="text-align: left">Description</th>
+                            </tr>
+                        </thead>
+                        <tbody id="anchors">
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -115,6 +134,12 @@
                 </div>
             </div>
         </div>
+        <div class="container">
+            <h3>Top 10 duplicated logs (all sources)</h3>
+            <div class="log_entries">
+                {% include 'analytics/'+log_id+'/duplicates.html' ignore missing %}
+            </div>
+        </div>
     </div>
 </body>
 <script type="text/javascript">
@@ -131,15 +156,16 @@
     const uniqueEntries = {{unique_entries}};
     let selectedFilters = {};
 
-    const filterComponents = uniqueEntries.reduce((filterComponents, entries) => {
+    const filterComponents = uniqueEntries.reduce((filterComponents, entries, systemTypeIndex) => {
         const systemType = entries['key'];
         selectedFilters[systemType] = {};
         const systemTypeElements = Array.from(document.querySelectorAll(`input[name="system_id"][data-system_type="${systemType}"]`));
 
         entries['system_id']['buckets'].forEach(systemIDEntry => {
             const systemID = systemIDEntry["key"];
+            const uniqueKeyForSystemID = `${systemTypeIndex}_${systemType}_${systemID}`;
             const systemIDElements = Array.from(document.querySelectorAll(`[data-system_type="${systemType}"][data-system_id="${systemID}"]`));
-            filterComponents["system_id"][systemID] = systemIDElements;
+            filterComponents["system_id"][uniqueKeyForSystemID] = systemIDElements;
             selectedFilters[systemType][systemID] = systemIDElements.map(element => element.value);
         });
 
@@ -150,8 +176,19 @@
     // Total log entries indexed in ES
     const totalEntries = Object.keys(sources).reduce((total, source) => (total + sources[source]), 0);
     let logLevelStats = {{log_level_stats}};
+    const sortedLogLevel = Object.keys(logLevelStats).sort((level1, level2) => logLevelStats[level1]['order'] - logLevelStats[level2]['order']);
     let selectedSourceForLogLevelStats = "all";
-    let selectedSourceForRecentLogs = "all", selectedLevelForRecentLogs = "error";
+    let selectedSourceForRecentLogs = "all", selectedLevelForRecentLogs = sortedLogLevel[0];
+
+    const anchors = {{anchors}};
+    let selectedSourceForAnchors = "all", showOnlyFailedAnchors = true;
+    const anchorTableBodyElement = document.getElementById('anchors');
+
+    // Self invocation function
+    (function () {
+        // Update anchors when the DOM is available
+        updateAnchors();
+    })();
 
 
     function toggleSystemTypeSelection(systemTypeElement) {
@@ -180,7 +217,9 @@
         const systemType = dataset.system_type;
 
         const systemTypeElement = systemTypeInputElements.find(type => type.value === systemType);
-        const systemIDElements = filterComponents["system_id"][systemID];
+        const systemTypeIndex = systemTypeElement.dataset.system_type_index;
+        const uniqueKeyForSystemID = `${systemTypeIndex}_${systemType}_${systemID}`;
+        const systemIDElements = filterComponents["system_id"][uniqueKeyForSystemID];
 
         systemIDElements.forEach(component => {
             // Selects all the sources within the system_id
@@ -219,9 +258,12 @@
         const systemID = dataset.system_id;
 
         const systemTypeElement = systemTypeInputElements.find(type => type.value === systemType);
+        const systemTypeIndex = systemTypeElement.dataset.system_type_index;
+        const uniqueKeyForSystemID = `${systemTypeIndex}_${systemType}_${systemID}`;
+
         const systemIDElement = filterComponents["system_type"][systemType].find(ids => ids.value === systemID);
         const totalSystemIDs = filterComponents["system_type"][systemType].length;
-        const totalSources = filterComponents["system_id"][systemID].length;
+        const totalSources = filterComponents["system_id"][uniqueKeyForSystemID].length;
 
         if (isChecked) {
             // Adding the source to the selected filters
@@ -271,6 +313,7 @@
             const selectedSystemIDs = Object.keys(selectedFilters[systemType]);
             if (selectedSystemIDs.length === 0) {
                 // All the system_ids unchecked within the system_type
+                systemTypeElement.indeterminate = false;
                 systemTypeElement.checked = false;
             }
             else {
@@ -285,7 +328,7 @@
         let queries = [];
         for (const [systemType, systemIDs] of Object.entries(selectedFilters)) {
             for (const [systemID, sources] of Object.entries(systemIDs)) {
-                const systemTypeQuery = `system_type:"${systemType} and`;
+                const systemTypeQuery = `system_type:"${systemType}" and`;
                 const systemIDQuery =`system_id:"${systemID}" and`;
                 queries.push(`(${systemTypeQuery} ${systemIDQuery} src:(${sources.join(' or ')}))`);
             }
@@ -332,8 +375,12 @@
                                     sources[selectedSourceForLogLevelStats];
         const kibanaUrlForSource = getKibanaURLForSources([selectedSourceForLogLevelStats]);
 
+        // Sorting log levels by severity order
+        const logLevels = Object.keys(stats).sort((level1, level2) => stats[level1]['order'] - stats[level2]['order']);
+
         let divs = [`<div class="level_stat"><a href="${kibanaUrlForSource}" target="_blank">Total</a>: ${totalEntriesForSource}(${Math.round((totalEntriesForSource/totalEntries)*100)}%)</div>`];
-        for (let [level, stat] of Object.entries(stats)) {
+        for (const level of logLevels) {
+            const stat = stats[level];
             // let logDistribution = Math.round((stat.count/totalEntriesForSource)*100);
             let logDistribution = ((stat.count/totalEntriesForSource)*100).toFixed(2);
             divs.push(`<div class="level_stat" title="${stat.keywords}"><a href="${stat.kibana_url}" target="_blank">${level}</a>: ${stat.count}(${logDistribution}%)</div>`);
@@ -374,6 +421,35 @@
 
     function updateRecentLogs(logs) {
         recentLogsElement.innerHTML = logs;
+    }
+
+    function toggleShowOnlyFailedAnchors(element) {
+        showOnlyFailedAnchors = element.checked;
+        updateAnchors();
+    }
+
+    function updateAnchors() {
+        let tableRows = [];
+        for (const anchor of anchors) {
+            if ((showOnlyFailedAnchors && !anchor['is_failure'])
+                || (selectedSourceForAnchors !== "all" && anchor['source'] !== selectedSourceForAnchors)) {
+                continue;
+            }
+
+            tableRows.push(
+                `<tr>
+                    <td>${anchor['source']}</td>
+                    <td>${anchor['system_id']}</td>
+                    <td>${anchor['datetime']}</td>
+                    <td><a href="${anchor['link']}">${anchor['description']}</a></td>
+                </tr>`
+            );
+        }
+        if (tableRows.length === 0) {
+            anchorTableBodyElement.innerHTML = `<div>No results</div>`;
+            return;
+        }
+        anchorTableBodyElement.innerHTML = tableRows.join('\n');
     }
 
     function getKibanaURLForSources(sources) {

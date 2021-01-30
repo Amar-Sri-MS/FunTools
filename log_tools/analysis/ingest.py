@@ -5,6 +5,7 @@
 #
 
 import argparse
+import datetime
 import os
 import time
 
@@ -188,6 +189,13 @@ def _get_cfg_from_frn(frn_info):
     }
 
 
+def _generate_unique_id(source, system_id):
+    """ Generating unique ID using source, system_id and current time """
+    time = datetime.datetime.now().timestamp()
+    unique_id = f'{source}_{system_id}_{time}'
+    return unique_id
+
+
 def funos_input_pipeline(frn_info, path):
     """ Input pipeline for FunOS source """
     blocks = list()
@@ -213,11 +221,13 @@ def funos_input_pipeline(frn_info, path):
 
 
 def funos_input(frn_info, source, file_pattern):
-    parse_id = f'{source}_parse'
-
     cfg = _get_cfg_from_frn(frn_info)
+    id = _generate_unique_id(source, cfg['system_id'])
+
+    parse_id = f'{id}_parse'
+
     input = {
-        'id': source,
+        'id': id,
         'block': 'TextFileInput',
         'cfg': {
             **cfg,
@@ -238,11 +248,13 @@ def funos_input(frn_info, source, file_pattern):
 
 def controller_input_pipeline(frn_info, source, file_pattern, multiline_settings={}, parse_block='GenericInput'):
     """ Input pipeline for Controller services source """
-    parse_id = source + '_parse'
-
     cfg = _get_cfg_from_frn(frn_info)
+    id = _generate_unique_id(source, cfg['system_id'])
+
+    parse_id = f'{id}_parse'
+
     input = {
-        'id': source,
+        'id': id,
         'block': 'TextFileInput',
         'cfg': {
             **cfg,
@@ -264,11 +276,13 @@ def controller_input_pipeline(frn_info, source, file_pattern, multiline_settings
 
 def storage_agent_input_pipeline(frn_info, source, file_pattern):
     """ Input pipeline for Storage agent source """
-    storage_agent_parse_id = f'{source}_parse'
-
     cfg = _get_cfg_from_frn(frn_info)
+    id = _generate_unique_id(source, cfg['system_id'])
+
+    storage_agent_parse_id = f'{id}_parse'
+
     storage_agent = {
-        'id': source,
+        'id': id,
         'block': 'TextFileInput',
         'cfg': {
             **cfg,
@@ -327,7 +341,12 @@ def output_pipeline(output_block = 'ElasticOutput'):
             'id': 'analytics',
             'block': 'AnalyticsOutput',
             'cfg': {
-                'dir': 'view/analytics/log_${build_id}/duplicates.html'
+                'dir': 'view/analytics/log_${build_id}',
+                'anchor_files': [
+                    # TODO(Sourabh) Need to include anchors from each module
+                    'config/anchors.json'
+                ],
+                'anchor_keys': None
             }
         }
 

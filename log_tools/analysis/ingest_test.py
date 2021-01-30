@@ -34,9 +34,9 @@ class IngestTest(unittest.TestCase):
 
         self.assertEqual(1, len(input_blocks))
         self.assertEqual(2, len(blocks))
-        self.assertEqual('apigateway', blocks[0]['id'])
-        self.assertEqual('apigateway_parse', blocks[0]['out'])
-        self.assertEqual('apigateway_parse', blocks[1]['id'])
+        self.assertEqual('apigateway', blocks[0]['cfg']['src'])
+        self.assertRegex(blocks[0]['out'], r'apigateway_None_[\d.]+_parse')
+        self.assertEqual(blocks[0]['out'], blocks[1]['id'])
 
     def test_building_multiple_textfile_input_pipeline(self):
         """ Check if the input pipleine is built for multiple inputs """
@@ -48,8 +48,8 @@ class IngestTest(unittest.TestCase):
         input_blocks = _parse_contents(contents)
 
         self.assertEqual(2, len(input_blocks))
-        self.assertEqual('apigateway', input_blocks[0][0]['id'])
-        self.assertEqual('storage_agent_0', input_blocks[1][0]['id'])
+        self.assertEqual('apigateway', input_blocks[0][0]['cfg']['src'])
+        self.assertEqual('storage_agent_0', input_blocks[1][0]['cfg']['src'])
 
     def test_building_funos_input_pipeline(self):
         """ Check if the input pipleine is built for funos source """
@@ -63,7 +63,7 @@ class IngestTest(unittest.TestCase):
 
         self.assertEqual(1, len(input_blocks))
         self.assertEqual(2, len(blocks))
-        self.assertEqual('funos', blocks[0]['id'])
+        self.assertEqual('funos', blocks[0]['cfg']['src'])
         self.assertEqual('FunOSInput', blocks[1]['block'])
 
     def test_building_controller_input_pipeline(self):
@@ -77,11 +77,11 @@ class IngestTest(unittest.TestCase):
         input_blocks = _parse_contents(contents)
 
         self.assertEqual(3, len(input_blocks))
-        self.assertEqual('apigateway', input_blocks[0][0]['id'])
+        self.assertEqual('apigateway', input_blocks[0][0]['cfg']['src'])
         self.assertEqual('GenericInput', input_blocks[0][1]['block'])
-        self.assertEqual('sns', input_blocks[1][0]['id'])
+        self.assertEqual('sns', input_blocks[1][0]['cfg']['src'])
         self.assertEqual('KeyValueInput', input_blocks[1][1]['block'])
-        self.assertEqual('dataplacement', input_blocks[2][0]['id'])
+        self.assertEqual('dataplacement', input_blocks[2][0]['cfg']['src'])
         self.assertIn('pattern', input_blocks[2][0]['cfg'])
 
     def test_building_storage_agent_input_pipeline(self):
@@ -95,7 +95,7 @@ class IngestTest(unittest.TestCase):
         blocks = input_blocks[0]
         self.assertEqual(1, len(input_blocks))
         self.assertEqual(2, len(blocks))
-        self.assertEqual('storage_agent_0', blocks[0]['id'])
+        self.assertEqual('storage_agent_0', blocks[0]['cfg']['src'])
         self.assertIn('pattern', blocks[0]['cfg'])
         self.assertEqual('GenericInput', blocks[1]['block'])
 
