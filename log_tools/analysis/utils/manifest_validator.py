@@ -1,8 +1,17 @@
 #!/usr/bin/env python3
 
+# This script is to validate the FUNLOG_MANIFEST file based on
+# Log Archives Proposal. The script requires the directory path
+# where the manifest file is located and prints validation messages
+# and final status whether the validation succeeded or not.
 #
-# Manifest file validations.
+# An example run:
+# (.venv) ✗ python manifest_validator.py ~/techsupport
+# Parsing manifest file at /Users/sourabhjain/techsupport/FUNLOG_MANIFEST
+# VALIDATION STATUS: SUCCESS
 #
+# Owner: Sourabh Jain (sourabh.jain@fungible.com)
+# Copyright (c) 2021 Fungible Inc.  All rights reserved.
 
 import argparse
 
@@ -24,7 +33,7 @@ def main():
 
 
 def validate(path):
-    """ Validates a manifest file """
+    """ Validates a manifest file within the given directory path """
     manifest = manifest_parser.parse(path)
     is_valid = True
 
