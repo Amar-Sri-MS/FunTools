@@ -130,7 +130,7 @@ def build_input_pipeline(path, frn_info):
 
     # TODO(Sourabh): Have multiple source keywords to check for a source
     # Ex: apigateway could also be apigw
-    if source == 'funos':
+    if 'funos' in source or 'dpu' in source:
         # TODO(Sourabh): Fix for creating blocks based on system type(fs1600, fs800)
         if resource_type == 'folder':
             blocks.extend(
@@ -200,10 +200,11 @@ def funos_input_pipeline(frn_info, path):
     """ Input pipeline for FunOS source """
     blocks = list()
     system_type = frn_info.get('system_type', 'fs1600')
+    source = frn_info['source']
     dpu_count = 2 if system_type == 'fs1600' else 1
     for dpu in range(0, dpu_count):
         # Support for v1.x directory structure
-        input_id_v1 = f'{system_type}_f1_{dpu}_v1'
+        input_id_v1 = f'funos_f1_{dpu}'
 
         blocks.extend(
             funos_input(
@@ -212,10 +213,8 @@ def funos_input_pipeline(frn_info, path):
         )
 
     # TODO(Sourabh): Add blocks based on system_type
-    # Support for v2.0 directory structure
-    input_id = f'{system_type}_f1'
-
-    blocks.extend(funos_input(frn_info, input_id, '{}/*funos.txt*'.format(path)))
+    # Support for v2.0 directory structures
+    blocks.extend(funos_input(frn_info, source, f'{path}/dpu_funos.txt*'))
 
     return blocks
 
@@ -232,7 +231,7 @@ def funos_input(frn_info, source, file_pattern):
         'cfg': {
             **cfg,
             'file_pattern': file_pattern,
-            'src': 'funos'
+            'src': source
         },
         'out': parse_id
     }
