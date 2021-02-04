@@ -58,3 +58,23 @@ echo 'CORE_SIZE=unlimited' >> $DEPLOY_ROOT/etc/default/rcS
 # Don't start these by default
 rm -f $DEPLOY_ROOT/etc/rc5.d/S21avahi-daemon
 rm -f $DEPLOY_ROOT/etc/rc5.d/S87redis-server
+
+# if we are building inside Jenkins, then store some build
+# details in the rootfs
+
+if [ ! -z ${JENKINS_URL} -a ! -z ${JOB_NAME} ]; then
+    if [ -z ${BLD_NUM} ]; then
+        echo "Build running in Jenkins node but BLD_NUM wasn't set. Does this script need fixing?"
+        exit 1
+    fi
+    if [ -z ${DEV_LINE} ]; then
+        echo "Build running in Jenkins node but DEV_LINE wasn't set. Does this script need fixing?"
+        exit 1
+    fi
+else
+    BLD_NUM="non-Jenkins"
+    DEV_LINE="unknown"
+fi
+
+echo """devline=${DEV_LINE}
+bldnum=${BLD_NUM}""" > $DEPLOY_ROOT/etc/version.build
