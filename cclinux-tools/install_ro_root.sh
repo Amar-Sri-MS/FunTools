@@ -23,7 +23,6 @@ install -t $runtime_target_dir -m 0644 fstab-ro
 install -t $runtime_target_dir -m 0644 sshd_config-ro
 install -t $runtime_target_dir -m 0644 interfaces-ro
 install -t $runtime_target_dir -m 0644 eth0-dhcp.iface
-install -t $runtime_target_dir -m 0644 vfio.conf
 install -t $runtime_target_dir -m 0644 persist
 install -t $runtime_target_dir -m 0644 umountpersist
 install -t $runtime_target_dir -m 0644 b-persist

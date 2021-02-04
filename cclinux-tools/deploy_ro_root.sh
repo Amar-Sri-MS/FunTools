@@ -10,10 +10,6 @@ chmod 0444 $DEPLOY_ROOT/etc/network/interfaces
 cp bin/mips64/Linux/eth0-dhcp.iface $DEPLOY_ROOT/etc/network/eth0-dhcp.iface
 chmod 0444 $DEPLOY_ROOT/etc/network/eth0-dhcp.iface
 
-mkdir -p $DEPLOY_ROOT/etc/modprobe.d/
-cp bin/mips64/Linux/vfio.conf $DEPLOY_ROOT/etc/modprobe.d/vfio.conf
-chmod 0444 $DEPLOY_ROOT/etc/modprobe.d/vfio.conf
-
 ln -s /tmp/resolv.conf $DEPLOY_ROOT/etc/resolv.conf
 
 mkdir -p $DEPLOY_ROOT/etc/ssh/
