@@ -59,6 +59,11 @@ echo 'CORE_SIZE=unlimited' >> $DEPLOY_ROOT/etc/default/rcS
 rm -f $DEPLOY_ROOT/etc/rc5.d/S21avahi-daemon
 rm -f $DEPLOY_ROOT/etc/rc5.d/S87redis-server
 
+# Allow VFIO to work
+mkdir -p $DEPLOY_ROOT/etc/modprobe.d/
+cp bin/mips64/Linux/vfio.conf $DEPLOY_ROOT/etc/modprobe.d/vfio.conf
+chmod 0444 $DEPLOY_ROOT/etc/modprobe.d/vfio.conf
+
 # if we are building inside Jenkins, then store some build
 # details in the rootfs
 
