@@ -19,7 +19,8 @@ import argparse
 import requests
 import json
 
-# need to generate some RSA keys for RSA sig gen tests
+
+from cryptography import exceptions
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import rsa, dsa, ec, utils
 from cryptography.hazmat.backends import default_backend
@@ -96,7 +97,7 @@ def DSA_sigGen(resp, req):
             try:
                 grp_public_key.verify(signature, data, grp_hash_algo())
                 print("%d: Pass" % test["tcId"])
-            except dsa.InvalidSignature:
+            except exceptions.InvalidSignature:
                 print("%d: Error: Invalid signature" % test["tcId"])
 
 
@@ -105,7 +106,45 @@ def RSA_sigGen(resp, req):
 
 
 def ECDSA_sigGen(resp, req):
-    pass
+    print("ECDSA Signature Generation")
+    req_tests = collect_request_tests(req)
+
+    groups = resp["testGroups"]
+
+    for group in groups:
+
+        print("Group %d" % group["tgId"])
+
+        grp_hash_algo = HASH_ALGO_MAPPING.get(group["hashAlg"])
+        grp_curve = CURVE_MAPPING.get(group["curve"])
+
+        qx = hex_to_int(group["qx"])
+        qy = hex_to_int(group["qy"])
+
+        grp_public_key = ec.EllipticCurvePublicNumbers(qx,qy,grp_curve()).public_key()
+        prehashed = group["componentTest"]
+
+        for test in group["tests"]:
+
+            req_test = req_tests[test["tcId"]]
+            data = bytes.fromhex(req_test["message"])
+            signature = utils.encode_dss_signature(hex_to_int(test["r"]),
+                                                   hex_to_int(test["s"]))
+
+            try:
+                if prehashed:
+                    grp_public_key.verify(signature,
+                                          data,
+                                          ec.ECDSA(utils.Prehashed(grp_hash_algo())))
+                else:
+                    grp_public_key.verify(signature,
+                                          data,
+                                          ec.ECDSA(grp_hash_algo()))
+
+                print("%d: Pass" % test["tcId"])
+            except exceptions.InvalidSignature as exc:
+                print("%d: Error: Invalid signature: %s" % (test["tcId"], exc))
+
 
 
 
