@@ -22,7 +22,7 @@ import json
 
 from cryptography import exceptions
 from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.asymmetric import rsa, dsa, ec, utils
+from cryptography.hazmat.primitives.asymmetric import rsa, dsa, ec, utils, padding
 from cryptography.hazmat.backends import default_backend
 
 
@@ -38,6 +38,8 @@ HASH_ALGO_MAPPING = { 'SHA1' : hashes.SHA1,
                       'SHA2-384' : hashes.SHA384,
                       'SHA2-512' : hashes.SHA512 }
 
+SIG_TYPE_MAPPING = { 'pkcs1v1.5' : padding.PKCS1v15,
+                     'pss': padding.PSS }
 
 
 def rreplace(s, old, new, maxreplace):
@@ -102,7 +104,50 @@ def DSA_sigGen(resp, req):
 
 
 def RSA_sigGen(resp, req):
-    pass
+
+    print("RSA Signature Generation")
+    req_tests = collect_request_tests(req)
+
+    groups = resp["testGroups"]
+
+    for group in groups:
+
+        print("Group %d" % group["tgId"])
+
+        grp_hash_algo = HASH_ALGO_MAPPING.get(group["hashAlg"])
+        grp_sig_type = SIG_TYPE_MAPPING.get(group["sigType"])
+        grp_salt_len = group["saltLen"]
+
+        n = hex_to_int(group["n"])
+        e = hex_to_int(group["e"])
+
+        grp_public_key = rsa.RSAPublicNumbers(e,n).public_key()
+
+        for test in group["tests"]:
+
+            req_test = req_tests[test["tcId"]]
+            data = bytes.fromhex(req_test["message"])
+            signature = bytes.fromhex(test["signature"])
+
+            try:
+                if grp_sig_type == padding.PSS:
+                    grp_public_key.verify(signature,
+                                          data,
+                                          padding.PSS(
+                                              mgf=padding.MGF1(grp_hash_algo()),
+                                              salt_length=grp_salt_len),
+                                          grp_hash_algo())
+                else:
+                    grp_public_key.verify(signature,
+                                          data,
+                                          grp_sig_type(),
+                                          grp_hash_algo())
+
+                print("%d: Pass" % test["tcId"])
+
+            except exceptions.InvalidSignature:
+
+                print("%d: Error: Invalid signature" % test["tcId"])
 
 
 def ECDSA_sigGen(resp, req):
