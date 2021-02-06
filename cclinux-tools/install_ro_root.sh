@@ -27,6 +27,7 @@ install -t $runtime_target_dir -m 0644 persist
 install -t $runtime_target_dir -m 0644 umountpersist
 install -t $runtime_target_dir -m 0644 b-persist
 install -t $runtime_target_dir -m 0644 crontab.root
+install -t $runtime_target_dir -m 0755 uboot_mpg_update.sh
 
 patches_dir=$target_dir/patches
 mkdir -p $patches_dir
