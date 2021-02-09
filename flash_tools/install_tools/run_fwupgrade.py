@@ -529,7 +529,7 @@ def main():
     arg_parser.add_argument('--chip', choices=['f1', 's1'],
             default='f1', help='Target chip')
 
-    arg_parser.add_argument('--pci-devid', default=['1dad:0005:', '1dad::1000'],
+    arg_parser.add_argument('--pci-devid', default=['1dad:0105:', '1dad:0005:', '1dad::1000'],
             help='PCI device ID to use for upgrades')
 
     arg_parser.add_argument('--force', action='store_true',
