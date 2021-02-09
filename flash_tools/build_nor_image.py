@@ -340,6 +340,9 @@ def sanitize_args(args, eeproms_dir):
         args.sbp = os.path.abspath(args.sbp)
 
     # eeprom
+    # verify the file exists; if not show the list
+    eeprom_files = os.listdir(eeproms_dir)
+
     if args.eeprom is None:
         if args.chip == 'f1':
             if args.emulation:
@@ -351,6 +354,19 @@ def sanitize_args(args, eeproms_dir):
                 args.eeprom = "eeprom_emu_s1_full"
             else:
                 args.eeprom = "eeprom_s1_dev_board"
+
+        # verify somebody did not remove the default
+        if not args.eeprom in eeprom_files:
+            # select a matching one....
+            matches = [e for e in eeprom_files if e.startswith(args.eeprom)]
+            if len(matches):
+                args.eeprom = matches[0]
+            else:
+                print("*** could not find suitable default; please report as bug. ***")
+                print("in the meantime, select one of the available eeproms (-e optional):")
+                print("\n".join(eeprom_files))
+                sys.exit(1)
+
     else:
         # Jenkins or other legacy users might specify the eeprom in
         # a weird way...be nice
@@ -358,10 +374,7 @@ def sanitize_args(args, eeproms_dir):
         if not sane_eeprom.startswith(EEPROM_PREFIX):
             sane_eeprom = EEPROM_PREFIX + sane_eeprom
 
-        # the list of all eeproms files
-        eeprom_files = os.listdir(eeproms_dir)
         # verify the file exists; if not show the list
-        eeprom_files = os.listdir(eeproms_dir)
         if not sane_eeprom in eeprom_files:
             print("eeprom name entered ws not found: \"{0}\"".format(args.eeprom))
             print("Available eeproms are:")
