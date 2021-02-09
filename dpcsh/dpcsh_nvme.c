@@ -30,10 +30,9 @@
 
 /* DPC over NVMe will work only in Linux */
 #ifdef __linux__
-static bool _read_from_nvme_helper(struct dpcsock *sock, uint8_t *buffer,
+static bool _read_from_nvme_helper(struct dpcsock_connection *connection, uint8_t *buffer,
 				   uint32_t *data_len, uint32_t *remaining,
-				   uint32_t offset, uint32_t timeout,
-				   uint32_t sess_id, uint32_t seq_num)
+				   uint32_t offset, uint32_t timeout)
 {
         bool retVal = false;
 	bool writeDone = false;
@@ -47,14 +46,14 @@ static bool _read_from_nvme_helper(struct dpcsock *sock, uint8_t *buffer,
 			.data_len = NVME_ADMIN_CMD_DATA_LEN,
 			.cdw2 = NVME_DPC_CMD_HNDLR_SELECTION,
 			.cdw3 = offset,
-			.cdw10 = sess_id,
-			.cdw11 = seq_num,
+			.cdw10 = connection->nvme_session_id,
+			.cdw11 = connection->nvme_seq_num,
 			.timeout_ms = timeout
 		};
-		int fd = open(sock->socket_name, O_RDWR);
+		int fd = open(connection->socket->socket_name, O_RDWR);
 		if (fd < 0) {
 			printf("%s: Failed to open %s\n", __func__,
-			       sock->socket_name);
+			       connection->socket->socket_name);
 			break;
 		}
 		int ret = ioctl(fd, NVME_IOCTL_ADMIN_CMD, &cmd);
@@ -116,8 +115,7 @@ static bool is_fungible_dpu(char *devname)
 /* Execute vendor specific admin command for writing data to NVMe device */
 /* DPC over NVMe will work only in Linux */
 /* In macOS, always returns false */
-bool _write_to_nvme(struct fun_ptr_and_size data, struct dpcsock *sock,
-		    uint32_t sess_id, uint32_t seq_num)
+bool _write_to_nvme(struct fun_ptr_and_size data, struct dpcsock_connection *connection)
 {
 	bool ok = false;
 #ifdef __linux__
@@ -142,17 +140,17 @@ bool _write_to_nvme(struct fun_ptr_and_size data, struct dpcsock *sock,
 				.data_len = NVME_ADMIN_CMD_DATA_LEN,
 				.cdw2 = NVME_DPC_CMD_HNDLR_SELECTION,
 				.cdw3 = data.size,
-				.cdw10 = sess_id,
-				.cdw11 = seq_num,
-				.timeout_ms = sock->cmd_timeout
+				.cdw10 = connection->nvme_session_id,
+				.cdw11 = connection->nvme_seq_num,
+				.timeout_ms = connection->socket->cmd_timeout
 			};
-			int fd = open(sock->socket_name, O_RDWR);
+			int fd = open(connection->socket->socket_name, O_RDWR);
 			if (fd >= 0) {
 				int ret = ioctl(fd, NVME_IOCTL_ADMIN_CMD, &cmd);
 
 				if(ret == 0) {
 					ok = true;
-					sock->nvme_write_done = true;
+					connection->nvme_write_done = true;
 				} else {
 					printf("NVME_IOCTL_ADMIN_CMD %x failed %d\n",
 							NVME_VS_API_SEND, ret);
@@ -160,7 +158,7 @@ bool _write_to_nvme(struct fun_ptr_and_size data, struct dpcsock *sock,
 				close(fd);
 			} else {
 				printf("%s: Failed to open %s\n", __func__,
-				       sock->socket_name);
+				       connection->socket->socket_name);
 			}
 		} else {
 			printf("Input is bigger than maximum supported size (%zu)\n",
@@ -175,13 +173,12 @@ bool _write_to_nvme(struct fun_ptr_and_size data, struct dpcsock *sock,
 /* Execute vendor specific admin command for reading data from NVMe device */
 /* DPC over NVMe will work only in Linux */
 /* In macOS, always returns 0 */
-uint32_t _read_from_nvme(uint8_t **data, uint8_t **deallocate_ptr, struct dpcsock *sock, uint32_t sess_id,
-				 uint32_t seq_num)
+uint32_t _read_from_nvme(uint8_t **data, uint8_t **deallocate_ptr, struct dpcsock_connection *connection)
 {
 	*data = NULL;
 	*deallocate_ptr = NULL;
 #ifdef __linux__
-	if(sock->nvme_write_done) {
+	if(connection->nvme_write_done) {
 		uint8_t *addr = malloc(NVME_ADMIN_CMD_DATA_LEN);
 		uint8_t *data_buf = NULL;
 		if(addr) {
@@ -190,18 +187,16 @@ uint32_t _read_from_nvme(uint8_t **data, uint8_t **deallocate_ptr, struct dpcsoc
 			uint32_t data_len = 0;
 			bool readSuccess = false;
 
-			readSuccess = _read_from_nvme_helper(sock,
+			readSuccess = _read_from_nvme_helper(connection,
 							     addr + offset,
 							     &data_len,
 							     &remaining,
 							     offset,
-							     sock->cmd_timeout,
-							     sess_id,
-							     seq_num);
+							     connection->socket->cmd_timeout);
 			offset += NVME_ADMIN_CMD_DATA_LEN;
 			if ((sizeof(struct nvme_vs_api_hdr) + data_len) > NVME_DPC_MAX_RESPONSE_LEN) {
 				printf("%s:%d: sess %u/%u: Data len = %d\n",
-				       __func__, __LINE__, sess_id, seq_num,
+				       __func__, __LINE__, connection->nvme_session_id, connection->nvme_seq_num,
 				       data_len);
 			}
 			if (remaining > 0) {
@@ -214,20 +209,18 @@ uint32_t _read_from_nvme(uint8_t **data, uint8_t **deallocate_ptr, struct dpcsoc
 					free(addr);
 					addr = data_buf;
 					do {
-						readSuccess = _read_from_nvme_helper(sock,
+						readSuccess = _read_from_nvme_helper(connection,
 										     addr + offset,
 										     &data_len,
 										     &remaining,
 										     offset,
-										     sock->cmd_timeout,
-										     sess_id,
-										     seq_num);
+										     connection->socket->cmd_timeout);
 						offset += NVME_ADMIN_CMD_DATA_LEN;
 					} while(readSuccess && (remaining > 0));
 				} else {
 					printf("%s:%d  sess %u/%u Unable to alloc %u bytes",
-					       __func__, __LINE__, sess_id,
-					       seq_num, alloc_len);
+					       __func__, __LINE__, connection->nvme_session_id,
+					       connection->nvme_seq_num, alloc_len);
 					readSuccess = 0;
 				}
 			}
@@ -235,16 +228,16 @@ uint32_t _read_from_nvme(uint8_t **data, uint8_t **deallocate_ptr, struct dpcsoc
 			if(readSuccess) {
 				*data = addr + sizeof(struct nvme_vs_api_hdr);
 				*deallocate_ptr = addr;
-				sock->nvme_write_done = false;
+				connection->nvme_write_done = false;
 				return data_len;
 			}
 			free(addr);
 		} else {
 			printf("%s:%d sess %u/%u Unable to alloc %u bytes",
-			       __func__, __LINE__, sess_id, seq_num,
+			       __func__, __LINE__, connection->nvme_session_id, connection->nvme_seq_num,
 			       NVME_ADMIN_CMD_DATA_LEN);
 		}
-		sock->nvme_write_done = false;
+		connection->nvme_write_done = false;
 	}
 #endif //__linux__
     return 0;

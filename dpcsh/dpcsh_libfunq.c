@@ -32,8 +32,11 @@ static_assert(DMA_BUFSIZE_BYTES / sizeof(struct fun_subop_sgl) * FIRST_LEVEL_SGL
 struct dpc_direct_context {
 	struct dpc_funq_connection *connection;
 	struct fun_admin_dpc_req *c;
-	size_t out_sgl_n;
 
+	dpc_funq_callback_t callback;
+	void *callback_context;
+
+	size_t out_sgl_n;
 	void *dma_addr_local[FIRST_LEVEL_SGL_N];
 	dma_addr_t dma_addr_dpu[FIRST_LEVEL_SGL_N];
 };
@@ -120,7 +123,7 @@ static void dpc_process_direct_response(void *response, void *ctx)
 	p = dpc_get_response_data(r->u.issue_cmd.resp_size, context->dma_addr_local, nsgl, context->out_sgl_n);
 
 	pthread_mutex_lock(&context->connection->lock);
-	context->connection->callback(p, context->connection->callback_context);
+	context->callback(p, context->callback_context);
 
 	dpc_process_release_direct_context(context);
 	free(p.ptr);
@@ -157,7 +160,7 @@ static void dpc_process_2level_response(void *response, void *ctx)
 
 	pthread_mutex_lock(&context->first_level->connection->lock);
 
-	context->first_level->connection->callback(p, context->first_level->connection->callback_context);
+	context->first_level->callback(p, context->first_level->callback_context);
 	free(p.ptr);
 
 	dpc_deallocate_2level_context(context);
@@ -317,8 +320,11 @@ static int dpc_issue_2level_get_last(struct dpc_2level_context *context, uint8_t
 			&context->first_level->c->common, dpc_process_2level_response, sizeof(struct fun_admin_dpc_rsp), context);
 }
 
-static int dpc_issue_cmd(struct dpc_direct_context *context, struct fun_ptr_and_size data)
+static int dpc_issue_cmd(struct dpc_direct_context *context, struct fun_ptr_and_size data,
+	dpc_funq_callback_t callback, void *callback_context)
 {
+	context->callback = callback;
+	context->callback_context = callback_context;
 	if (data.size > (FIRST_LEVEL_SGL_N - 1) * DMA_BUFSIZE_BYTES) {
 		struct dpc_2level_context *c = dpc_allocate_2level_context(context, data.size, 1);
 		return dpc_issue_2level_cmd(c, data);
@@ -424,7 +430,8 @@ bool dpc_funq_destroy(struct dpc_funq_connection *c)
 	return result;
 }
 
-bool dpc_funq_send(struct fun_ptr_and_size data, struct dpc_funq_connection *c)
+bool dpc_funq_send(struct fun_ptr_and_size data, struct dpc_funq_connection *c,
+	dpc_funq_callback_t callback, void *context)
 {
 	pthread_mutex_lock(&c->lock);
 	int index = -1;
@@ -445,9 +452,10 @@ bool dpc_funq_send(struct fun_ptr_and_size data, struct dpc_funq_connection *c)
 		return false;
 	}
 
-	c->available[(size_t)index] = false;
-	bool result = dpc_issue_cmd(c->allocated[(size_t)index], data) == 0;
-	if (!result) c->available[(size_t)index] = true;
+	size_t good_index = (size_t)index;
+	c->available[good_index] = false;
+	bool result = dpc_issue_cmd(c->allocated[good_index], data, callback, context) == 0;
+	if (!result) c->available[good_index] = true;
 	pthread_mutex_unlock(&c->lock);
 	return result;
 }
@@ -464,16 +472,10 @@ bool dpc_funq_destroy(struct dpc_funq_connection *c)
 	return false;
 }
 
-bool dpc_funq_send(struct fun_ptr_and_size data, struct dpc_funq_connection *c)
+bool dpc_funq_send(struct fun_ptr_and_size data, struct dpc_funq_connection *c,
+	dpc_funq_callback_t callback, void *context)
 {
 	return false;
 }
 
 #endif
-
-void dpc_funq_register_callback(struct dpc_funq_connection *c,
-	dpc_funq_callback_t callback, void *context)
-{
-	c->callback = callback;
-	c->callback_context = context;
-}

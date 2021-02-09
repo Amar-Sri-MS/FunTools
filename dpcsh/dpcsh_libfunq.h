@@ -20,13 +20,11 @@ struct dpc_funq_connection {
 	void *handle;
 	bool available[FUNQ_ASYNC_DEPTH];
 	void *allocated[FUNQ_ASYNC_DEPTH];
-	dpc_funq_callback_t callback;
-	void *callback_context;
 	pthread_mutex_t lock;
 };
 
 extern bool dpc_funq_init(struct dpc_funq_connection *c, const char *devname);
 extern bool dpc_funq_destroy(struct dpc_funq_connection *c);
 
-extern bool dpc_funq_send(struct fun_ptr_and_size data, struct dpc_funq_connection *c);
-extern void dpc_funq_register_callback(struct dpc_funq_connection *c, dpc_funq_callback_t callback, void *context);
+extern bool dpc_funq_send(struct fun_ptr_and_size data, struct dpc_funq_connection *c,
+	dpc_funq_callback_t callback, void *context);
