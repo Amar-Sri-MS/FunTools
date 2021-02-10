@@ -21,9 +21,10 @@ struct dpc_funq_connection {
 	bool available[FUNQ_ASYNC_DEPTH];
 	void *allocated[FUNQ_ASYNC_DEPTH];
 	pthread_mutex_t lock;
+	bool debug;
 };
 
-extern bool dpc_funq_init(struct dpc_funq_connection *c, const char *devname);
+extern bool dpc_funq_init(struct dpc_funq_connection *c, const char *devname, bool debug);
 extern bool dpc_funq_destroy(struct dpc_funq_connection *c);
 
 extern bool dpc_funq_send(struct fun_ptr_and_size data, struct dpc_funq_connection *c,

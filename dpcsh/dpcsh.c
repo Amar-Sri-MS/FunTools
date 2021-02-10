@@ -740,7 +740,7 @@ bool dpcsocket_init(struct dpcsock *sock)
 
 	if(sock->mode == SOCKMODE_FUNQ) {
 		sock->funq_connection = malloc(sizeof(struct dpc_funq_connection));
-		return dpc_funq_init(sock->funq_connection, sock->socket_name);
+		return dpc_funq_init(sock->funq_connection, sock->socket_name, _debug_log);
 	}
 
 	return true;

@@ -13,11 +13,11 @@
 #ifdef __linux__
 #include "libfunq.h"
 
+#define DMA_BUFSIZE_BYTES 	(16384)
 #define ASQE_SIZE			(256)
 #define ACQE_SIZE			(256)
-#define ASQ_DEPTH			(16)
-#define ACQ_DEPTH			(32)
-#define DMA_BUFSIZE_BYTES 	(16384)
+#define ASQ_DEPTH			(DMA_BUFSIZE_BYTES / ASQE_SIZE)
+#define ACQ_DEPTH			(DMA_BUFSIZE_BYTES / ACQE_SIZE)
 #define FIRST_LEVEL_SGL_N			(12)
 
 #define RET_NEED_BUFFER	(3)
@@ -25,6 +25,7 @@
 #define RET_OK	(0)
 
 static_assert(DMA_BUFSIZE_BYTES / sizeof(struct fun_subop_sgl) * FIRST_LEVEL_SGL_N * DMA_BUFSIZE_BYTES > FUNQ_MAX_DATA_BYTES, "Must be enough space for buffer descriptors");
+static_assert((FUNQ_ASYNC_DEPTH <= ASQ_DEPTH) && (FUNQ_ASYNC_DEPTH <= ACQ_DEPTH), "Queue must be deep enough to support all the context");
 
 #define CEILING(x,y) (((x) + (y) - 1) / (y))
 #define SECOND_LEVEL_SGL_N (CEILING(FUNQ_MAX_DATA_BYTES, DMA_BUFSIZE_BYTES))
@@ -101,6 +102,9 @@ static void dpc_process_release_direct_context(struct dpc_direct_context *contex
 {
 	for (size_t i = 0; i < FUNQ_ASYNC_DEPTH; i++) {
 		if (context->connection->allocated[i] == context) {
+			if (context->connection->debug) {
+				printf("Releasing libfunq request context #%zu\n", i);
+			}
 			context->connection->available[i] = true;
 			break;
 		}
@@ -146,27 +150,28 @@ static void dpc_deallocate_2level_context(struct dpc_2level_context *context)
 static void dpc_process_2level_response(void *response, void *ctx)
 {
 	struct dpc_2level_context *context = ctx;
+	struct dpc_direct_context *direct = context->first_level;
 	struct fun_admin_dpc_rsp *r = response;
 	struct fun_ptr_and_size p;
 
 	if (r->u.issue_cmd.code == RET_NEED_BUFFER) {
-		dpc_get_last(context->first_level, r->u.issue_cmd.resp_size, r->u.issue_cmd.result_id);
 		dpc_deallocate_2level_context(context);
+		dpc_get_last(direct, r->u.issue_cmd.resp_size, r->u.issue_cmd.result_id);
 		return;
 	}
 
 	p = dpc_get_response_data(r->u.issue_cmd.resp_size, context->dma_addr_local,
 		context->sgl_n - context->out_sgl_n, context->out_sgl_n);
 
-	pthread_mutex_lock(&context->first_level->connection->lock);
+	pthread_mutex_lock(&direct->connection->lock);
 
-	context->first_level->callback(p, context->first_level->callback_context);
+	direct->callback(p, direct->callback_context);
 	free(p.ptr);
 
 	dpc_deallocate_2level_context(context);
-	dpc_process_release_direct_context(context->first_level);
+	dpc_process_release_direct_context(direct);
 
-	pthread_mutex_unlock(&context->first_level->connection->lock);
+	pthread_mutex_unlock(&direct->connection->lock);
 }
 
 static void dpc_deallocate_context(struct dpc_direct_context *context)
@@ -403,9 +408,10 @@ funq_handle_t *dpc_admin_queue_init(const char *devname)
 	return handle;
 }
 
-bool dpc_funq_init(struct dpc_funq_connection *c, const char *devname)
+bool dpc_funq_init(struct dpc_funq_connection *c, const char *devname, bool debug)
 {
 	bzero(c, sizeof(struct dpc_funq_connection));
+	c->debug = debug;
 
 	if (pthread_mutex_init(&c->lock, NULL) != 0) {
 		printf("err: failed to initialize pthread mutex\n");
@@ -442,6 +448,7 @@ bool dpc_funq_send(struct fun_ptr_and_size data, struct dpc_funq_connection *c,
 		}
 		if (c->allocated[i] == NULL) {
 			index = (int)i;
+			printf("Allocating libfunq request context #%zu\n", i);
 			dpc_allocate_direct_context(c, i);
 			break;
 		}
@@ -453,16 +460,26 @@ bool dpc_funq_send(struct fun_ptr_and_size data, struct dpc_funq_connection *c,
 	}
 
 	size_t good_index = (size_t)index;
+
+	if (c->debug) {
+		printf("Using libfunq request context #%zu\n", good_index);
+	}
+
 	c->available[good_index] = false;
 	bool result = dpc_issue_cmd(c->allocated[good_index], data, callback, context) == 0;
-	if (!result) c->available[good_index] = true;
+	if (!result) {
+		if (c->debug) {
+			printf("Releasing libfunq request context #%zu\n", good_index);
+		}
+		c->available[good_index] = true;
+	}
 	pthread_mutex_unlock(&c->lock);
 	return result;
 }
 
 #else
 
-bool dpc_funq_init(struct dpc_funq_connection *c, const char *devname)
+bool dpc_funq_init(struct dpc_funq_connection *c, const char *devname, bool debug)
 {
 	return false;
 }
