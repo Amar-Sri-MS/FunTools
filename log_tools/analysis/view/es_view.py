@@ -719,7 +719,7 @@ def _read_file(log_id, file_name, default={}):
     url = f'{FILE_SERVER_URL}/{log_id}/file/{file_name}'
     data = default
     try:
-        response = requests.get(url, params)
+        response = requests.get(url)
          # If the response was successful, no Exception will be raised
         response.raise_for_status()
         data = response.json()
