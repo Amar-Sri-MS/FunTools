@@ -109,6 +109,7 @@ log_msg "Upgrading DPU firmware"
 FW_UPGRADE_ARGS="--offline --ws `pwd`"
 
 if [[ $ccfg_only != 'true' ]]; then
+	eepr_type=`dpcsh -nQ peek "config/version/sku" | jq -Mr '.result' || true`
 	if [[ $downgrade == 'true' ]]; then
 		./run_fwupgrade.py ${FW_UPGRADE_ARGS} -U --version latest --force --downgrade
 		./run_fwupgrade.py ${FW_UPGRADE_ARGS} -U --version latest --force --downgrade --active
@@ -117,8 +118,19 @@ if [[ $ccfg_only != 'true' ]]; then
 		# it unbootable from uboot's perspective to force booing into (current) inactive.
 		dd if=/dev/zero of=emmc_wipe.bin bs=1024 count=1024
 		./run_fwupgrade.py ${FW_UPGRADE_ARGS} --upgrade-file mmc1=emmc_wipe.bin --active
+
+		if [ ! -z "$eepr_type" ]; then
+			log_msg "Downgrading eepr \"$eepr_type\""
+			./run_fwupgrade.py ${FW_UPGRADE_ARGS} -u eepr --version latest --force --downgrade --select-by-image-type "$eepr_type"
+			./run_fwupgrade.py ${FW_UPGRADE_ARGS} -u eepr --version latest --force --downgrade --active --select-by-image-type "$eepr_type"
+		fi
 	else
 		./run_fwupgrade.py ${FW_UPGRADE_ARGS} -U --version $funos_sdk_version
+		if [ ! -z "$eepr_type" ]; then
+			log_msg "Updating eepr \"$eepr_type\""
+			./run_fwupgrade.py ${FW_UPGRADE_ARGS} -u eepr --select-by-image-type "$eepr_type"
+		fi
+
 	fi
 else
 	echo "CCFG update only!"
