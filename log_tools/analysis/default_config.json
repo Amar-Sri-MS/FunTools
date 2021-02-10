@@ -16,5 +16,6 @@
         "assert": ["Assertion failed:"],
         "warning": ["warning", "warn"],
         "info": ["info"]
-    }
+    },
+    "FILE_SERVER_URL": "http://10.1.22.206:11000"
 }

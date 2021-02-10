@@ -1,0 +1,154 @@
+#!/usr/bin/env python3
+
+#
+# Flask app for serving files.
+#
+# APIs to store files generated during log ingestion and fetch them
+# to show it in the dashboard
+#
+# Run with
+# server.py [--port 11000] [--dir]
+#
+# Get or save files using GET/POST to
+# http://SERVER:11000/LOG_ID/file
+#
+# Owner: Sourabh Jain (sourabh.jain@fungible.com)
+# Copyright (c) 2021 Fungible Inc.  All rights reserved.
+
+import argparse
+import json
+import os
+import shutil
+
+from flask import Flask
+from flask import request, jsonify, send_file
+from pathlib import Path
+from werkzeug.utils import secure_filename
+
+
+ALLOWED_EXTENSIONS = {'txt', 'json', 'xml', 'html'}
+
+app = Flask(__name__)
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-p', '--port', type=int, default=11000,
+                        help='port for HTTP file server')
+
+    parser.add_argument('--dir', type=str, default='files/analytics',
+                        help='path to upload directory')
+
+    args = parser.parse_args()
+    port = args.port
+
+    app.config.update({
+        'UPLOAD_DIRECTORY': args.dir
+    })
+    app.run(host='0.0.0.0', port=port)
+
+
+def _allowed_file(filename):
+    """ Check if the file extension is allowed """
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+@app.route('/<log_id>/file/<file_name>', methods=['GET'])
+def get_file(log_id, file_name):
+    """ Fetches file with 'file_name' within the 'log_id' directory """
+    path = os.path.join(app.config['UPLOAD_DIRECTORY'], log_id, file_name)
+
+    try:
+        return send_file(path, as_attachment=False)
+    except Exception as e:
+        print('ERROR: Could not find file:', e)
+        return jsonify({
+            'success': False,
+            'error': 'Could not find file'
+        }), 404
+
+
+@app.route('/<log_id>/file', methods=['POST'])
+def save_file(log_id):
+    """ Saves within the 'log_id' directory """
+    if len(request.files) == 0:
+        return jsonify({
+            'success': False,
+            'error': 'No files uploaded'
+        }), 404
+
+    BASE_PATH = os.path.join(app.config['UPLOAD_DIRECTORY'], log_id)
+    errors = list()
+
+    for file in request.files.values():
+        try:
+            # if filename not present
+            if file.filename == '':
+                errors.append('File name not set')
+                continue
+
+            if not (file and _allowed_file(file.filename)):
+                errors.append(f'Unsupported file format: {file.filename}')
+                continue
+
+            filename = secure_filename(file.filename)
+            # Creating the directory if it does not exist
+            os.makedirs(BASE_PATH, exist_ok=True)
+            path = os.path.join(BASE_PATH, filename)
+
+            file.save(path)
+            print('INFO: File saved at ', path)
+        except Exception as e:
+            print('ERROR:', e)
+            errors.append(f'error while saving file: {file.filename} - {str(e)}')
+
+    if len(errors) != 0:
+        return jsonify({
+            'success': False,
+            'errors': errors
+        }), 500
+
+    return jsonify({'success': True})
+
+
+@app.route('/<log_id>/file/<file_name>', methods=['DELETE'])
+def delete_file(log_id, file_name):
+    """ Delete file with 'file_name' within the 'log_id' directory """
+    file_type = request.args.get('type', 'json')
+    file_name = f'{file_name}.{file_type}'
+    path = os.path.join(app.config['UPLOAD_DIRECTORY'], log_id, file_name)
+
+    try:
+        os.remove(path)
+        print('INFO: File deleted at ', path)
+    except Exception as e:
+        print(f'ERROR: Deleting file: {file_name} - {e}')
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+    return jsonify({'success': True})
+
+
+@app.route('/<log_id>', methods=['DELETE'])
+def delete_dir(log_id):
+    """ Delete all the files within the 'log_id' directory """
+    path = os.path.join(app.config['UPLOAD_DIRECTORY'], log_id)
+
+    try:
+        shutil.rmtree(path)
+        print('INFO: All files deleted under directory: ', log_id)
+    except Exception as e:
+        print(f'ERROR: Deleting directory: {log_id} - {e}')
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+    return jsonify({'success': True})
+
+
+if __name__ == '__main__':
+    main()
