@@ -137,7 +137,20 @@
         <div class="container">
             <h3>Top 10 duplicated logs (all sources)</h3>
             <div class="log_entries">
-                {% include 'analytics/'+log_id+'/duplicates.html' ignore missing %}
+                <!-- {% include 'analytics/'+log_id+'/duplicates.html' ignore missing %} -->
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="text-align: left">Duplicates</th>
+                            <th style="text-align: left">Source</th>
+                            <th style="text-align: left">System ID</th>
+                            <th style="text-align: left">Timestamp</th>
+                            <th style="text-align: left">Description</th>
+                        </tr>
+                    </thead>
+                    <tbody id="duplicates">
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
@@ -180,14 +193,16 @@
     let selectedSourceForLogLevelStats = "all";
     let selectedSourceForRecentLogs = "all", selectedLevelForRecentLogs = sortedLogLevel[0];
 
-    const anchors = {{anchors}};
+    const analyticsData = {{analytics_data}};
     let selectedSourceForAnchors = "all", showOnlyFailedAnchors = true;
     const anchorTableBodyElement = document.getElementById('anchors');
+    const duplicateTableBodyElement = document.getElementById('duplicates');
 
     // Self invocation function
     (function () {
         // Update anchors when the DOM is available
         updateAnchors();
+        updateDuplicates();
     })();
 
 
@@ -430,7 +445,7 @@
 
     function updateAnchors() {
         let tableRows = [];
-        for (const anchor of anchors) {
+        for (const anchor of analyticsData['anchors']) {
             if ((showOnlyFailedAnchors && !anchor['is_failure'])
                 || (selectedSourceForAnchors !== "all" && anchor['source'] !== selectedSourceForAnchors)) {
                 continue;
@@ -441,7 +456,7 @@
                     <td>${anchor['source']}</td>
                     <td>${anchor['system_id']}</td>
                     <td>${anchor['datetime']}</td>
-                    <td><a href="${anchor['link']}">${anchor['description']}</a></td>
+                    <td><a href="${anchor['link']}" target="_blank">${anchor['description']}</a></td>
                 </tr>`
             );
         }
@@ -450,6 +465,26 @@
             return;
         }
         anchorTableBodyElement.innerHTML = tableRows.join('\n');
+    }
+
+    function updateDuplicates() {
+        let tableRows = [];
+        for (const duplicate of analyticsData['duplicates']) {
+            tableRows.push(
+                `<tr>
+                    <td>${duplicate['count']}</td>
+                    <td>${duplicate['source']}</td>
+                    <td>${duplicate['system_id']}</td>
+                    <td>${duplicate['datetime']}</td>
+                    <td><a href="${duplicate['link']}" target="_blank">${duplicate['msg']}</a></td>
+                </tr>`
+            );
+        }
+        if (tableRows.length === 0) {
+            duplicateTableBodyElement.innerHTML = `<div>No results</div>`;
+            return;
+        }
+        duplicateTableBodyElement.innerHTML = tableRows.join('\n');
     }
 
     function getKibanaURLForSources(sources) {

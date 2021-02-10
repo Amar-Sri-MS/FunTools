@@ -9,6 +9,7 @@
 
 import json
 import os
+import requests
 import sys
 import time
 
@@ -18,6 +19,7 @@ from elasticsearch7 import Elasticsearch
 from flask import Flask
 from flask import request
 from pathlib import Path
+from requests.exceptions import HTTPError
 from urllib.parse import quote_plus
 
 
@@ -708,6 +710,45 @@ def _get_kibana_base_url(log_id):
                                                                          log_id)
     return kibana_base_url
 
+def _read_file(log_id, file_name, default={}):
+    """
+    Gets file from file server
+    Returns 'default' if no file found or errored out
+    """
+    FILE_SERVER_URL = app.config['FILE_SERVER_URL']
+    url = f'{FILE_SERVER_URL}/{log_id}/file/{file_name}'
+    data = default
+    try:
+        response = requests.get(url, params)
+         # If the response was successful, no Exception will be raised
+        response.raise_for_status()
+        data = response.json()
+
+    except HTTPError as http_err:
+        print(f'HTTP error occurred: {http_err}')  # Python 3.6
+    except Exception as err:
+        print(f'Other error occurred: {err}')  # Python 3.6
+    except Exception as e:
+        print('Could not find file', e)
+
+    return data
+
+def _get_analytics_data(log_id):
+    """
+    Get all the analytics data
+    Returns a dict containing duplicates and anchors
+    """
+
+    # Reading detected anchors from the JSON file
+    anchors = _read_file(log_id, 'anchors.json', default=[])
+
+    # Reading detected duplicates from the JSON file
+    duplicates = _read_file(log_id, 'duplicates.json', default=[])
+
+    return {
+        'anchors': anchors,
+        'duplicates': duplicates
+    }
 
 def _render_dashboard_page(log_id, jinja_env, template):
 
@@ -725,14 +766,7 @@ def _render_dashboard_page(log_id, jinja_env, template):
     unique_entries = es.get_aggregated_unique_entries(['system_type', 'system_id'], ['src'])
     recent_logs = _get_recent_logs(log_id, RECENT_LOGS_SIZE, log_levels=default_log_levels[0:1])
 
-    anchors = []
-    anchors_file = f'{_get_script_dir()}/analytics/{log_id}/anchors.json'
-
-    try:
-        with open(anchors_file) as json_file:
-            anchors = json.load(json_file)
-    except:
-        print('Could not find stored anchors.json')
+    analytics_data = _get_analytics_data(log_id)
 
     template_dict = {}
     template_dict['log_id'] = log_id
@@ -743,7 +777,7 @@ def _render_dashboard_page(log_id, jinja_env, template):
     template_dict['kibana_base_url'] = kibana_base_url
     template_dict['log_level_stats'] = _get_log_level_stats(log_id)
     template_dict['recent_logs'] = _render_log_entries(recent_logs)
-    template_dict['anchors'] = json.dumps(anchors)
+    template_dict['analytics_data'] = json.dumps(analytics_data)
 
     result = template.render(template_dict, env=jinja_env)
     return result
