@@ -8,6 +8,7 @@ import jinja2
 import json
 import os
 import re
+import requests
 import sys
 
 from pathlib import Path
@@ -157,7 +158,6 @@ class AnalyticsOutput(Block):
 
     def __init__(self):
         self.cfg = None
-        self.dir = None
         # Maintains hash of unique log entry for detecting duplicates.
         # This might take up memory as the log entries increase.
         self.duplicate_entries = {}
@@ -182,7 +182,7 @@ class AnalyticsOutput(Block):
     def set_config(self, cfg):
         self.cfg = cfg
         build_id = cfg['env'].get('build_id')
-        self.dir = cfg['dir'].replace('${build_id}', build_id)
+        self.log_id = f'log_{build_id}'
 
         KIBANA_HOST = self.config['KIBANA']['host']
         KIBANA_PORT = self.config['KIBANA']['port']
@@ -252,9 +252,8 @@ class AnalyticsOutput(Block):
         Generate HTML page with analyzed data for the build_id.
         """
         most_duplicated_entries = self.get_most_duplicated_entries()
+        most_duplicated_entries_list = []
 
-        table_head = ['Duplicates', 'Source', 'Timestamp', 'Log Message']
-        table_body = []
         for entry in most_duplicated_entries:
             msg = entry['msg']
             # Kibana query should be enclosed within quotations for exact match
@@ -263,21 +262,17 @@ class AnalyticsOutput(Block):
             query = '"{}"'.format(msg['line'].replace('\\','').replace('"',' ').replace('\'', '!\'')).replace('!', '!!')
             kibana_url = self.kibana_base_url.replace('KIBANA_QUERY', quote_plus(query))
 
-            table_body.append(
-                '<tr><td>{}</td><td>{}</td><td>{}</td><td><a href="{}" target="_blank">{}</a></td></tr>'.format(entry['count'],
-                                                                                                                msg['uid'],
-                                                                                                                msg['datetime'],
-                                                                                                                kibana_url,
-                                                                                                                msg['line'])
-            )
+            most_duplicated_entries_list.append({
+                'count': entry['count'],
+                'system_id': msg.get('system_id', 'N/A'),
+                'link': kibana_url,
+                'datetime': str(msg['datetime']),
+                'source': msg.get('uid', 'N/A'),
+                'level': msg.get('level'),
+                'msg': msg.get('line')
+            })
 
-        template_dict = {}
-        template_dict['head'] = table_head
-        template_dict['body'] = '\n'.join(table_body)
-
-        path = os.path.join(self.dir, 'duplicates.html')
-        self._create_template(path, template_dict)
-
+        self._save_json('duplicates.json', most_duplicated_entries_list)
 
     def check_for_anchor_match(self, msg_dict):
         match = self.anchor_matcher.generate_match(msg_dict)
@@ -312,14 +307,7 @@ class AnalyticsOutput(Block):
                 'description': match.short_desc
             })
 
-        path = os.path.join(self.dir, 'anchors.json')
-        try:
-            # Creating the directory if it does not exist
-            os.makedirs(os.path.dirname(path), exist_ok=True)
-            with open(path, 'w+') as f:
-                json.dump(anchors_list, f)
-        except IOError as e:
-            print("I/O error", e)
+        self._save_json('anchors.json', anchors_list)
 
     def _create_template(self, path, template_dict):
         """ Creates a template in the specified path using the template_dict """
@@ -340,3 +328,19 @@ class AnalyticsOutput(Block):
                 f.write(result)
         except IOError as e:
             print('I/O error', e)
+
+    def _save_json(self, filename, data):
+        """ Sends the file to the file server """
+        try:
+            FILE_SERVER_URL = self.config['FILE_SERVER_URL']
+            url = f'{FILE_SERVER_URL}/{self.log_id}/file'
+
+            files = [
+                ('file', (filename, json.dumps(data), 'application/json'))
+            ]
+
+            response = requests.post(url, files=files)
+            response.raise_for_status()
+            print(f'INFO: File {filename} uploaded!')
+        except Exception as e:
+            print(f'ERROR: Uploading file {filename} - {str(e)}')
