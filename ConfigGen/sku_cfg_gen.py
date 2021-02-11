@@ -381,7 +381,10 @@ class SKUCfgGen():
 
         eeprom_list = {}
         for sku_name, sku_id in all_board_skus_with_sbp.iteritems():
-            eeprom_list[sku_name] = { 'filename' : eeprom_filename(sku_name) }
+            eeprom_list[sku_name] = {
+                'filename' : eeprom_filename(sku_name),
+                'image_type' : sku_name
+            }
 
         with open(os.path.join(self.output_dir, 'eeprom_list.json'), "wb") as f:
             json.dump(eeprom_list, f, indent=4)
@@ -418,7 +421,10 @@ class SKUCfgGen():
 
                 eeprom_list = {}
                 for sku_name, sku_id in all_board_skus_with_sbp.iteritems():
-                    eeprom_list[sku_name] = { 'filename' : eeprom_filename(sku_name) }
+                    eeprom_list[sku_name] = {
+                        'filename' : eeprom_filename(sku_name),
+                        'image_type' : sku_name
+                    }
 
                 with open(os.path.join(self.output_dir, '{}_eeprom_list.json'.format(chip_type)), "wb") as f:
                     json.dump(eeprom_list, f, indent=4)
