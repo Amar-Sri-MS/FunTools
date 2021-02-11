@@ -26,7 +26,7 @@ from pathlib import Path
 from werkzeug.utils import secure_filename
 
 
-ALLOWED_EXTENSIONS = {'txt', 'json', 'xml', 'html'}
+ALLOWED_EXTENSIONS = {'json'}
 
 app = Flask(__name__)
 
@@ -111,44 +111,44 @@ def save_file(log_id):
 
     return jsonify({'success': True})
 
+#
+# @app.route('/<log_id>/file/<file_name>', methods=['DELETE'])
+# def delete_file(log_id, file_name):
+#     """ Delete file with 'file_name' within the 'log_id' directory """
+#     file_type = request.args.get('type', 'json')
+#     file_name = f'{file_name}.{file_type}'
+#     path = os.path.join(app.config['UPLOAD_DIRECTORY'], log_id, file_name)
 
-@app.route('/<log_id>/file/<file_name>', methods=['DELETE'])
-def delete_file(log_id, file_name):
-    """ Delete file with 'file_name' within the 'log_id' directory """
-    file_type = request.args.get('type', 'json')
-    file_name = f'{file_name}.{file_type}'
-    path = os.path.join(app.config['UPLOAD_DIRECTORY'], log_id, file_name)
+#     try:
+#         os.remove(path)
+#         print('INFO: File deleted at ', path)
+#     except Exception as e:
+#         print(f'ERROR: Deleting file: {file_name} - {e}')
+#         return jsonify({
+#             'success': False,
+#             'error': str(e)
+#         }), 500
 
-    try:
-        os.remove(path)
-        print('INFO: File deleted at ', path)
-    except Exception as e:
-        print(f'ERROR: Deleting file: {file_name} - {e}')
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
-
-    return jsonify({'success': True})
+#     return jsonify({'success': True})
 
 
-@app.route('/<log_id>', methods=['DELETE'])
-def delete_dir(log_id):
-    """ Delete all the files within the 'log_id' directory """
-    path = os.path.join(app.config['UPLOAD_DIRECTORY'], log_id)
+# @app.route('/<log_id>', methods=['DELETE'])
+# def delete_dir(log_id):
+#     """ Delete all the files within the 'log_id' directory """
+#     path = os.path.join(app.config['UPLOAD_DIRECTORY'], log_id)
 
-    try:
-        shutil.rmtree(path)
-        print('INFO: All files deleted under directory: ', log_id)
-    except Exception as e:
-        print(f'ERROR: Deleting directory: {log_id} - {e}')
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
+#     try:
+#         shutil.rmtree(path)
+#         print('INFO: All files deleted under directory: ', log_id)
+#     except Exception as e:
+#         print(f'ERROR: Deleting directory: {log_id} - {e}')
+#         return jsonify({
+#             'success': False,
+#             'error': str(e)
+#         }), 500
 
-    return jsonify({'success': True})
-
+#     return jsonify({'success': True})
+#
 
 if __name__ == '__main__':
     main()
