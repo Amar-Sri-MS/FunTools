@@ -119,14 +119,14 @@ if [[ $ccfg_only != 'true' ]]; then
 		dd if=/dev/zero of=emmc_wipe.bin bs=1024 count=1024
 		./run_fwupgrade.py ${FW_UPGRADE_ARGS} --upgrade-file mmc1=emmc_wipe.bin --active
 
-		if [ ! -z "$eepr_type" ]; then
+		if [ ! -z "$eepr_type" -a "$eepr_type" != "null" ]; then
 			log_msg "Downgrading eepr \"$eepr_type\""
 			./run_fwupgrade.py ${FW_UPGRADE_ARGS} -u eepr --version latest --force --downgrade --select-by-image-type "$eepr_type"
 			./run_fwupgrade.py ${FW_UPGRADE_ARGS} -u eepr --version latest --force --downgrade --active --select-by-image-type "$eepr_type"
 		fi
 	else
 		./run_fwupgrade.py ${FW_UPGRADE_ARGS} -U --version $funos_sdk_version
-		if [ ! -z "$eepr_type" ]; then
+		if [ ! -z "$eepr_type" -a "$eepr_type" != "null" ]; then
 			log_msg "Updating eepr \"$eepr_type\""
 			./run_fwupgrade.py ${FW_UPGRADE_ARGS} -u eepr --select-by-image-type "$eepr_type"
 		fi
