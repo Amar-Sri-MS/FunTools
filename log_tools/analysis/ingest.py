@@ -216,6 +216,9 @@ def funos_input_pipeline(frn_info, path):
     # Support for v2.0 directory structures
     blocks.extend(funos_input(frn_info, source, f'{path}/dpu_funos.txt*'))
 
+    # For the funos logs within nms directory
+    blocks.extend(funos_input(frn_info, source, f'{path}/FOS*-funos.log*'))
+
     return blocks
 
 

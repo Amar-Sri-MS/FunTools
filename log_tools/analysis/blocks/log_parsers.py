@@ -26,23 +26,27 @@ class FunOSInput(Block):
                 # TODO (jimmy): deal with u-boot lines
                 continue
             else:
-                uboot_done = True
+                try:
+                    uboot_done = True
 
-                # Example:
-                # [23.855474 1.5.2] NOTICE nvdimm ...
-                ts_vp_sep = line.find(']')
+                    # Example:
+                    # [23.855474 1.5.2] NOTICE nvdimm ...
+                    ts_vp_sep = line.find(']')
 
-                # Empty or malformed line ewwwww
-                if not line.startswith('[') or ts_vp_sep == -1:
+                    # Empty or malformed line ewwwww
+                    if not line.startswith('[') or ts_vp_sep == -1:
+                        continue
+
+                    ts_vp = line[1:ts_vp_sep]
+                    ts, vp = self.split_ts_vp(ts_vp)
+
+                    date_time, usecs = self.normalize_ts(ts)
+                    line = '[{}] {}'.format(vp, line[ts_vp_sep + 1:])
+
+                    yield (date_time, usecs, system_type, system_id, uid, None, None, line)
+                except:
+                    print(f'Warning: Malformed line in FUNOS logs: {line}')
                     continue
-
-                ts_vp = line[1:ts_vp_sep]
-                ts, vp = self.split_ts_vp(ts_vp)
-
-                date_time, usecs = self.normalize_ts(ts)
-                line = '[{}] {}'.format(vp, line[ts_vp_sep + 1:])
-
-                yield (date_time, usecs, system_type, system_id, uid, None, None, line)
 
     @staticmethod
     def is_uboot(line):
