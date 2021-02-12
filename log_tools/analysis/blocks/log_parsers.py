@@ -45,7 +45,7 @@ class FunOSInput(Block):
 
                     yield (date_time, usecs, system_type, system_id, uid, None, None, line)
                 except:
-                    print(f'Warning: Malformed line in FUNOS logs: {line}')
+                    print(f'WARNING: Malformed line in FUNOS logs: {line}')
                     continue
 
     @staticmethod
@@ -112,6 +112,9 @@ class GenericInput(Block):
     def process(self, iters):
         for (_, _, system_type, system_id, uid, _, _, line) in iters[0]:
             line = line.strip()
+            # Ignore if the line is empty
+            if line == '':
+                continue
 
             # Match order <FILE_NAME|EMPTY> <DATE> <TIMESTAMP> <MILLISECONDS|MICROSECONDS|EMPTY>
             # <TIMEZONE_OFFSET|EMPTY> <MESSAGE>

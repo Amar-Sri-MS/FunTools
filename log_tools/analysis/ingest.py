@@ -141,14 +141,14 @@ def build_input_pipeline(path, frn_info):
                 funos_input(frn_info, source, path)
             )
 
-    elif 'storage-agent' in source or 'storage_agent' in source:
+    elif source in ['storage-agent', 'storage_agent']:
         # nms contains SA<MAC_ID>-storageagent.log whereas system log archive contains storage-agent.log
         file_pattern = f'{path}/*storage?agent.log*' if resource_type == 'folder' else path
         blocks.extend(
             fun_agent_input_pipeline(frn_info, source, file_pattern)
         )
 
-    elif 'platform-agent' in source  or 'platform_agent' in source:
+    elif source in ['platform-agent', 'platform_agent']:
         # nms contains PA<MAC_ID>-platformagent.log whereas system log archive contains platform-agent.log
         file_pattern = f'{path}/*platform?agent.log*' if resource_type == 'folder' else path
         blocks.extend(
@@ -170,7 +170,22 @@ def build_input_pipeline(path, frn_info):
                 })
         )
 
-    elif source == 'kafka' or source == 'storage_consumer':
+    elif source in ['discovery', 'metrics_manager']:
+        file_pattern = f'{path}/info*' if resource_type == 'folder' else path
+        blocks.extend(
+            controller_input_pipeline(frn_info, source, file_pattern)
+        )
+
+    elif source == 'scmscv':
+        file_pattern = f'{path}/info*' if resource_type == 'folder' else path
+        blocks.extend(
+            controller_input_pipeline(frn_info, source, file_pattern,
+                multiline_settings={
+                    'pattern': r'(\[.*\])\s+([(-0-9|/0-9)]+)+(?:T|\s)([:0-9]+).([0-9]+)\s?((?:\-|\+)[0-9]{4})'
+                })
+        )
+
+    elif source in ['kafka', 'storage_consumer', 'lrm_consumer', 'setup_db', 'metrics_server']:
         file_pattern = f'{path}/info*' if resource_type == 'folder' else path
         blocks.extend(
             controller_input_pipeline(frn_info, source, file_pattern)
