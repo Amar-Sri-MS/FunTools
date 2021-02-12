@@ -47,7 +47,7 @@ class TextFileInput(Block):
         file_size = 0
 
         for file in input_files:
-            print('Parsing', file)
+            print('INFO: Parsing', file)
             if file.endswith('.gz'):
                 with gzip.open(file, mode='rt', encoding='ascii', errors='replace') as f:
                     yield from self.read_logs(f)

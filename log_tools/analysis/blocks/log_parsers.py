@@ -122,8 +122,9 @@ class GenericInput(Block):
             # 2020-08-05 02:20:16.863085 -0700 PDT XXX
             # [simple_ctx_scheduler.go:128] 2020-08-05 02:20:16.863085 -0700 PDT XXX
             # simple_ctx_scheduler.go:128 2020-08-05 02:20:16.863085 XXX
+            # 2021-02-11T12:08:00.951926Z DBG XXX
             m = re.match(
-                r'^(\[[\S]+\]\s|[\S]+\s|)([(-0-9|/0-9)]+)+(?:T|\s)([:0-9]+).([0-9]+)\s?((?:-|\+|)[0-9]{4}|)([\s\S]*)',
+                r'^(\[[\S]+\]\s|[\S]+\s|)([(-0-9|/0-9)]+)+(?:T|\s)([:0-9]+).([0-9]+)\s?((?:-|\+|)[0-9]{4}|Z|)([\s\S]*)',
                 line)
 
             if m:
@@ -137,6 +138,8 @@ class GenericInput(Block):
                 if filename:
                     msg = filename.strip() + ' ' + msg.strip()
                 yield (date_time, usecs, system_type, system_id, uid, None, None, msg)
+            else:
+                print(f'WARNING: Malformed line in {uid}: {line}')
 
     @staticmethod
     def extract_timestamp(day_str, time_str, secs_str):
