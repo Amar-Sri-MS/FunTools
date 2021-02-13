@@ -42,14 +42,14 @@ class IngestTest(unittest.TestCase):
         """ Check if the input pipleine is built for multiple inputs """
         contents = [
             ('', {'resource_type': 'textfile', 'source': 'apigateway'}),
-            ('', {'resource_type': 'textfile', 'source': 'storage_agent_0'})
+            ('', {'resource_type': 'textfile', 'source': 'storage_agent'})
         ]
 
         input_blocks = _parse_contents(contents)
 
         self.assertEqual(2, len(input_blocks))
         self.assertEqual('apigateway', input_blocks[0][0]['cfg']['src'])
-        self.assertEqual('storage_agent_0', input_blocks[1][0]['cfg']['src'])
+        self.assertEqual('storage_agent', input_blocks[1][0]['cfg']['src'])
 
     def test_building_funos_input_pipeline(self):
         """ Check if the input pipleine is built for funos source """
@@ -87,7 +87,7 @@ class IngestTest(unittest.TestCase):
     def test_building_storage_agent_input_pipeline(self):
         """ Check if the input pipleine is built for storage_agent source """
         contents = [
-            ('', {'resource_type': 'textfile', 'source': 'storage_agent_0'})
+            ('', {'resource_type': 'textfile', 'source': 'storage_agent'})
         ]
 
         input_blocks = _parse_contents(contents)
@@ -95,14 +95,14 @@ class IngestTest(unittest.TestCase):
         blocks = input_blocks[0]
         self.assertEqual(1, len(input_blocks))
         self.assertEqual(2, len(blocks))
-        self.assertEqual('storage_agent_0', blocks[0]['cfg']['src'])
+        self.assertEqual('storage_agent', blocks[0]['cfg']['src'])
         self.assertIn('pattern', blocks[0]['cfg'])
         self.assertEqual('GenericInput', blocks[1]['block'])
 
     def test_can_parse_cfg_from_frn(self):
         """ Check if the cfg is being parsed from the FRN """
         contents = [
-            ('', {'resource_type': 'textfile', 'source': 'storage_agent_0', 'system_type': 'host', 'system_id': 'cab22-qa-01'})
+            ('', {'resource_type': 'textfile', 'source': 'storage_agent', 'system_type': 'host', 'system_id': 'cab22-qa-01'})
         ]
 
         input_blocks = _parse_contents(contents)

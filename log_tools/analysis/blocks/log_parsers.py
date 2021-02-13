@@ -26,23 +26,27 @@ class FunOSInput(Block):
                 # TODO (jimmy): deal with u-boot lines
                 continue
             else:
-                uboot_done = True
+                try:
+                    uboot_done = True
 
-                # Example:
-                # [23.855474 1.5.2] NOTICE nvdimm ...
-                ts_vp_sep = line.find(']')
+                    # Example:
+                    # [23.855474 1.5.2] NOTICE nvdimm ...
+                    ts_vp_sep = line.find(']')
 
-                # Empty or malformed line ewwwww
-                if not line.startswith('[') or ts_vp_sep == -1:
+                    # Empty or malformed line ewwwww
+                    if not line.startswith('[') or ts_vp_sep == -1:
+                        continue
+
+                    ts_vp = line[1:ts_vp_sep]
+                    ts, vp = self.split_ts_vp(ts_vp)
+
+                    date_time, usecs = self.normalize_ts(ts)
+                    line = '[{}] {}'.format(vp, line[ts_vp_sep + 1:])
+
+                    yield (date_time, usecs, system_type, system_id, uid, None, None, line)
+                except:
+                    print(f'WARNING: Malformed line in FUNOS logs: {line}')
                     continue
-
-                ts_vp = line[1:ts_vp_sep]
-                ts, vp = self.split_ts_vp(ts_vp)
-
-                date_time, usecs = self.normalize_ts(ts)
-                line = '[{}] {}'.format(vp, line[ts_vp_sep + 1:])
-
-                yield (date_time, usecs, system_type, system_id, uid, None, None, line)
 
     @staticmethod
     def is_uboot(line):
@@ -108,6 +112,9 @@ class GenericInput(Block):
     def process(self, iters):
         for (_, _, system_type, system_id, uid, _, _, line) in iters[0]:
             line = line.strip()
+            # Ignore if the line is empty
+            if line == '':
+                continue
 
             # Match order <FILE_NAME|EMPTY> <DATE> <TIMESTAMP> <MILLISECONDS|MICROSECONDS|EMPTY>
             # <TIMEZONE_OFFSET|EMPTY> <MESSAGE>
@@ -118,8 +125,9 @@ class GenericInput(Block):
             # 2020-08-05 02:20:16.863085 -0700 PDT XXX
             # [simple_ctx_scheduler.go:128] 2020-08-05 02:20:16.863085 -0700 PDT XXX
             # simple_ctx_scheduler.go:128 2020-08-05 02:20:16.863085 XXX
+            # 2021-02-11T12:08:00.951926Z DBG XXX
             m = re.match(
-                r'^(\[[\S]+\]\s|[\S]+\s|)([(-0-9|/0-9)]+)+(?:T|\s)([:0-9]+).([0-9]+)\s?((?:-|\+|)[0-9]{4}|)([\s\S]*)',
+                r'^(\[[\S]+\]\s|[\S]+\s|)([(-0-9|/0-9)]+)+(?:T|\s)([:0-9]+).([0-9]+)\s?((?:-|\+|)[0-9]{4}|Z|)([\s\S]*)',
                 line)
 
             if m:
@@ -133,6 +141,8 @@ class GenericInput(Block):
                 if filename:
                     msg = filename.strip() + ' ' + msg.strip()
                 yield (date_time, usecs, system_type, system_id, uid, None, None, msg)
+            else:
+                print(f'WARNING: Malformed line in {uid}: {line}')
 
     @staticmethod
     def extract_timestamp(day_str, time_str, secs_str):

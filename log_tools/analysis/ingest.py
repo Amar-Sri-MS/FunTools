@@ -109,7 +109,7 @@ def parse_manifest(path, parent_frn={}):
 
             # Check for logs in the folder or textfile based on the source
             if frn_info['resource_type'] == 'folder' or frn_info['resource_type'] == 'textfile':
-                print('Checking for logs in', content_path)
+                print('INFO: Checking for logs in', content_path)
                 pipeline_cfg.extend(build_input_pipeline(content_path, frn_info))
 
         else:
@@ -141,10 +141,18 @@ def build_input_pipeline(path, frn_info):
                 funos_input(frn_info, source, path)
             )
 
-    elif 'storage_agent' in source:
-        file_pattern = f'{path}/info*' if resource_type == 'folder' else path
+    elif source in ['storage-agent', 'storage_agent']:
+        # nms contains SA<MAC_ID>-storageagent.log whereas system log archive contains storage-agent.log
+        file_pattern = f'{path}/*storage?agent.log*' if resource_type == 'folder' else path
         blocks.extend(
-            storage_agent_input_pipeline(frn_info, source, file_pattern)
+            fun_agent_input_pipeline(frn_info, source, file_pattern)
+        )
+
+    elif source in ['platform-agent', 'platform_agent']:
+        # nms contains PA<MAC_ID>-platformagent.log whereas system log archive contains platform-agent.log
+        file_pattern = f'{path}/*platform?agent.log*' if resource_type == 'folder' else path
+        blocks.extend(
+            fun_agent_input_pipeline(frn_info, source, file_pattern)
         )
 
     elif source == 'apigateway':
@@ -162,7 +170,22 @@ def build_input_pipeline(path, frn_info):
                 })
         )
 
-    elif source == 'kafka' or source == 'storage_consumer':
+    elif source in ['discovery', 'metrics_manager']:
+        file_pattern = f'{path}/info*' if resource_type == 'folder' else path
+        blocks.extend(
+            controller_input_pipeline(frn_info, source, file_pattern)
+        )
+
+    elif source == 'scmscv':
+        file_pattern = f'{path}/info*' if resource_type == 'folder' else path
+        blocks.extend(
+            controller_input_pipeline(frn_info, source, file_pattern,
+                multiline_settings={
+                    'pattern': r'(\[.*\])\s+([(-0-9|/0-9)]+)+(?:T|\s)([:0-9]+).([0-9]+)\s?((?:\-|\+)[0-9]{4})'
+                })
+        )
+
+    elif source in ['kafka', 'storage_consumer', 'lrm_consumer', 'setup_db', 'metrics_server']:
         file_pattern = f'{path}/info*' if resource_type == 'folder' else path
         blocks.extend(
             controller_input_pipeline(frn_info, source, file_pattern)
@@ -215,6 +238,9 @@ def funos_input_pipeline(frn_info, path):
     # TODO(Sourabh): Add blocks based on system_type
     # Support for v2.0 directory structures
     blocks.extend(funos_input(frn_info, source, f'{path}/dpu_funos.txt*'))
+
+    # For the funos logs within nms directory
+    blocks.extend(funos_input(frn_info, source, f'{path}/FOS*-funos.log*'))
 
     return blocks
 
@@ -273,14 +299,14 @@ def controller_input_pipeline(frn_info, source, file_pattern, multiline_settings
     return [input, parse]
 
 
-def storage_agent_input_pipeline(frn_info, source, file_pattern):
-    """ Input pipeline for Storage agent source """
+def fun_agent_input_pipeline(frn_info, source, file_pattern):
+    """ Input pipeline for Fun agent source """
     cfg = _get_cfg_from_frn(frn_info)
     id = _generate_unique_id(source, cfg['system_id'])
 
-    storage_agent_parse_id = f'{id}_parse'
+    fun_agent_parse_id = f'{id}_parse'
 
-    storage_agent = {
+    fun_agent = {
         'id': id,
         'block': 'TextFileInput',
         'cfg': {
@@ -289,16 +315,16 @@ def storage_agent_input_pipeline(frn_info, source, file_pattern):
             'src': source,
             'pattern': r'([(-0-9|/0-9)]+)+(?:T|\s)([:0-9]+)(?:.|,)([0-9]{3,9})'
         },
-        'out': storage_agent_parse_id
+        'out': fun_agent_parse_id
     }
 
-    storage_agent_parse = {
-        'id': storage_agent_parse_id,
+    fun_agent_parse = {
+        'id': fun_agent_parse_id,
         'block': 'GenericInput',
         'out': 'merge'
     }
 
-    return [storage_agent, storage_agent_parse]
+    return [fun_agent, fun_agent_parse]
 
 
 def output_pipeline(output_block = 'ElasticOutput'):
