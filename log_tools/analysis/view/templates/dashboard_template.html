@@ -6,7 +6,7 @@
     <title>Log Analyzer Dashboard: {{log_id}}</title>
 </head>
 <body>
-    {% include 'templates/nav_bar.html' ignore missing %}
+    {% include 'nav_bar.html' ignore missing %}
     <!-- Macro for calculating percentage and rounding it off to a given precision -->
     {% macro calculatePercentage(count, total, precision=2) -%}
         {{((count/total)*100)|round(precision)}}%

@@ -226,7 +226,7 @@
     </script>
 </head>
 <body>
-    {% include 'templates/nav_bar.html' ignore missing %}
+    {% include 'nav_bar.html' ignore missing %}
     <!-- Calculating total log entries -->
     {% set totalEntries = sources.values()|sum() %}
     <h2 id="top">Logs for {{log_id}} ({{totalEntries}} log entries)</h2>
