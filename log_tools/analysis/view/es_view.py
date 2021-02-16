@@ -16,6 +16,7 @@ import time
 import jinja2
 
 from elasticsearch7 import Elasticsearch
+from ingester import ingester_page
 from flask import Flask
 from flask import request
 from pathlib import Path
@@ -24,18 +25,19 @@ from urllib.parse import quote_plus
 
 
 app = Flask(__name__)
+app.register_blueprint(ingester_page)
 
 
 def main():
     config = {}
     try:
-        with open('../config.json', 'r') as f:
+        with open('config.json', 'r') as f:
             config = json.load(f)
     except IOError:
         print('Config file not found! Checking for default config file..')
 
     try:
-        with open('../default_config.json', 'r') as f:
+        with open('default_config.json', 'r') as f:
             default_config = json.load(f)
         # Overriding default config with custom config
         config = { **default_config, **config }
