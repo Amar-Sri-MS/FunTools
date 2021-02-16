@@ -10,6 +10,9 @@
 import os
 import requests
 import shutil
+import sys
+
+sys.path.insert(0, '..')
 
 from flask import Blueprint, jsonify, request, render_template
 from analysis.utils import archive_extractor
