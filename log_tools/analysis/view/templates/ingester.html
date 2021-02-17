@@ -6,27 +6,36 @@
     <body>
         {% include "nav_bar.html" ignore missing %}
         <div class="center-align">
-            <form action="/ingest" method="POST">
-                <div class="form-group">
-                    <label>QA Job ID</label>
-                    <input type="text" class="form-control" id="job_id" name="job_id" placeholder="Enter the JOB ID">
-                </div>
-                <button type="submit" class="btn btn-primary" onclick="onSubmit()">Ingest</button>
-            </form>
-            <div id="status"></div>
-            <div id="feedback">
-                {% if feedback %}
-                    {% if feedback.success %}
-                        <p>SUCCESS! <a href="{{feedback.dashboard_link}}">Click to explore the logs</a></p>
-                        <p>Time taken: {{feedback.time_taken|round(2)}}s</p>
-                    {% else %}
-                        <p class="text-danger float-right">ERROR: {{ feedback.msg }}</p>
+            <h3>Ingest logs from QA dashboard</h3>
+            <div class="container">
+                <form action="/ingest" method="POST">
+                    <div class="form-group">
+                        <label>QA Job ID</label>
+                        <input type="text" class="form-control" id="job_id" name="job_id" placeholder="Enter the JOB ID">
+                    </div>
+                    <button type="submit" class="btn btn-primary" onclick="onSubmit()">Ingest</button>
+                </form>
+                <div id="status"></div>
+                <div id="feedback">
+                    {% if feedback %}
+                        {% if feedback.success %}
+                            <p>SUCCESS! <a href="{{feedback.dashboard_link}}">Click to explore the logs</a></p>
+                            <p>Time taken: {{feedback.time_taken|round(2)}}s</p>
+                        {% else %}
+                            <p class="text-danger float-right">ERROR: {{ feedback.msg }}</p>
+                        {% endif %}
                     {% endif %}
-                {% endif %}
+                </div>
             </div>
         </div>
     </body>
     <script type="text/javascript">
+
+        // Avoid resubmitting POST from form on refresh or page navigation
+        if (window.history.replaceState) {
+            window.history.replaceState(null, null, window.location.href);
+        }
+
         const feedback = "{{feedback}}";
         const statusElement = document.getElementById("status");
         const feedbackElement = document.getElementById("feedback");

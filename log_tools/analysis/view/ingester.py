@@ -42,7 +42,7 @@ def ingest():
         if not job_id:
             return render_template('ingester.html', feedback={
                 'success': False,
-                'error': 'Missing JOB ID'
+                'msg': 'Missing JOB ID'
             })
         job_info = fetch_qa_job_info(job_id)
 
