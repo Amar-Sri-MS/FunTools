@@ -1444,8 +1444,10 @@ static struct option longopts[] = {
 // DPC over NVMe is needed only in Linux
 #ifdef __linux__
 	{ "pcie_nvme_sock",  optional_argument, NULL, 'p' },
-	{ "libfunq_sock",    optional_argument, NULL, 'q' },
 #endif //__linux__
+#ifdef WITH_LIBFUNQ
+	{ "libfunq_sock",    optional_argument, NULL, 'q' },
+#endif
 	{ "tcp_proxy",       optional_argument, NULL, 'T' },
 	{ "text_proxy",      optional_argument, NULL, 'T' },
 	{ "unix_proxy",      optional_argument, NULL, 't' },
@@ -1489,8 +1491,10 @@ static void usage(const char *argv0)
 // DPC over NVMe is needed only in Linux
 #ifdef __linux__
 	printf("       -p, --pcie_nvme_sock[=sockname]  connect as a client port over nvme pcie device\n");
-	printf("       -q, --libfunq_sock[=sockname]  connect as a client port over libfunq pcie device, put \"auto\" for auto-discover\n");
 #endif //__linux__
+#ifdef WITH_LIBFUNQ
+	printf("       -q, --libfunq_sock[=sockname]  connect as a client port over libfunq pcie device, put \"auto\" for auto-discover\n");
+#endif
 	printf("       -H, --http_proxy[=port]     listen as an http proxy\n");
 	printf("       -T, --tcp_proxy[=port]      listen as a tcp proxy\n");
 	printf("       -T, --text_proxy[=port]     same as \"--tcp_proxy\"\n");
@@ -1637,6 +1641,8 @@ int main(int argc, char *argv[])
 							      NVME_DEV_NAME);
 			autodetect_input_device = false;
 			break;
+#endif //__linux__
+#ifdef WITH_LIBFUNQ
 		case 'q':
 			funos_sock.mode = SOCKMODE_FUNQ;
 			funos_sock.server = false;
@@ -1644,7 +1650,7 @@ int main(int argc, char *argv[])
 							      FUNQ_DEV_NAME);
 			autodetect_input_device = false;
 			break;
-#endif //__linux__
+#endif
 		case 'T':  /* TCP proxy */
 
 			cmd_sock.mode = SOCKMODE_IP;

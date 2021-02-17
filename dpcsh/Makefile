@@ -40,6 +40,7 @@ VER     = -DVER=$(version)
 BRANCH  = -DBRANCH=$(branch)
 
 ifeq ($(OS),Linux)
+ifneq ($(MACHINE),arm)
 
 ifeq ($(MACHINE),x86_64)
 LFUNQ_PATH = $(SDKDIR)/FunSDK/host-drivers/$(MACHINE)/user/posix
@@ -47,8 +48,9 @@ else
 LFUNQ_PATH = $(SDKDIR)/FunSDK/host-drivers/$(MACHINE)/user/native
 endif
 
-CFLAGS += -I $(LFUNQ_PATH)/include
+CFLAGS += -I $(LFUNQ_PATH)/include -DWITH_LIBFUNQ
 LDFLAGS += -L $(LFUNQ_PATH)/lib -lfunq
+endif
 endif
 
 # define header and library location in FunSDK

@@ -10,7 +10,7 @@
 #include "dpcsh_libfunq.h"
 
 // libfunq is supported only for Linux
-#ifdef __linux__
+#ifdef WITH_LIBFUNQ
 #include "libfunq.h"
 
 #define DMA_BUFSIZE_BYTES 	(16384)
