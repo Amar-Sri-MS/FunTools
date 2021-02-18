@@ -61,7 +61,7 @@ def start_pipeline(base_path, build_id, output_block='ElasticOutput'):
         p.process()
 
     except Exception as e:
-        print(f'ERROR: Ingestion for {job_id} - {str(e)}')
+        print(f'ERROR: Ingestion for {build_id} - {str(e)}')
         is_successful = False
     finally:
         end = time.time()
