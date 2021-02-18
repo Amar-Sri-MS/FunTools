@@ -20,13 +20,13 @@ def extract(path):
     if path.endswith('.zip'):
         opener, mode = zipfile.ZipFile, 'r'
     elif path.endswith('.tar'):
-        opener, mode = tarfile.open, 'r:'
+        opener, mode = tarfile.open, 'r'
     elif path.endswith(('.tar.gz', '.tgz')):
-        opener, mode = tarfile.open, 'r:gz'
+        opener, mode = tarfile.open, 'r'
     elif path.endswith(('.tar.bz2', '.tbz', '.tbz2', '.tz2', '.tb2', '.bz2')):
-        opener, mode = tarfile.open, 'r:bz2'
+        opener, mode = tarfile.open, 'r'
     elif path.endswith(('.tar.lzma', '.tlz')):
-        opener, mode = tarfile.open, 'r:xz'
+        opener, mode = tarfile.open, 'r'
     else:
         print(f'ERROR: Unsupported format archive: {path}')
         return

@@ -59,7 +59,9 @@ class ElasticsearchOutput(Block):
 
     def set_config(self, cfg):
         self.env = cfg['env']
-        build_id = self.env['build_id']
+        # Limitation with ES that it only supports lowercase
+        # index names.
+        build_id = self.env['build_id'].lower()
         self.index = cfg['index'].replace('${build_id}', build_id)
 
     def process(self, iters):

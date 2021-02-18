@@ -16,6 +16,7 @@ import time
 import jinja2
 
 from elasticsearch7 import Elasticsearch
+from ingester import ingester_page
 from flask import Flask
 from flask import request
 from pathlib import Path
@@ -24,18 +25,19 @@ from urllib.parse import quote_plus
 
 
 app = Flask(__name__)
+app.register_blueprint(ingester_page)
 
 
 def main():
     config = {}
     try:
-        with open('../config.json', 'r') as f:
+        with open('config.json', 'r') as f:
             config = json.load(f)
     except IOError:
         print('Config file not found! Checking for default config file..')
 
     try:
-        with open('../default_config.json', 'r') as f:
+        with open('default_config.json', 'r') as f:
             default_config = json.load(f)
         # Overriding default config with custom config
         config = { **default_config, **config }
@@ -56,7 +58,7 @@ def root():
     indices = es.indices.get('log_*')
 
     # Assume our template is right next door to us.
-    dir = _get_script_dir()
+    dir = os.path.join(_get_script_dir(), 'templates')
 
     jinja_env = jinja2.Environment(loader=jinja2.FileSystemLoader(dir),
                              trim_blocks=True,
@@ -424,7 +426,7 @@ def get_log_page(log_id):
     sources = es.get_unique_entries('src')
 
     # Assume our template is right next door to us.
-    dir = _get_script_dir()
+    dir = os.path.join(_get_script_dir(), 'templates')
 
     jinja_env = jinja2.Environment(loader=jinja2.FileSystemLoader(dir),
                              trim_blocks=True,
@@ -662,7 +664,7 @@ def _render_search_page(search_results, log_id, search_term, state, page,
     template_dict['page_entry_count'] = len(search_results)
     template_dict['search_hits'] = total_search_hits
 
-    dir = _get_script_dir()
+    dir = os.path.join(_get_script_dir(), 'templates')
     jinja_env = jinja2.Environment(loader=jinja2.FileSystemLoader(dir),
                              trim_blocks=True,
                              lstrip_blocks=True)
@@ -676,7 +678,7 @@ def _render_search_page(search_results, log_id, search_term, state, page,
 def dashboard(log_id):
     """ Renders the dashboard page for a particular log_id """
     # Assume our template is right next door to us.
-    dir = _get_script_dir()
+    dir = os.path.join(_get_script_dir(), 'templates')
 
     jinja_env = jinja2.Environment(loader=jinja2.FileSystemLoader(dir),
                              trim_blocks=True,

@@ -19,37 +19,62 @@ from utils import manifest_parser
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('build_id', help='Unique build ID')
-    parser.add_argument('path', help='Path to the logs directory')
+    parser.add_argument('path', help='Path to the logs directory or the log archive')
     parser.add_argument('--output', help='Output block type', default='ElasticOutput')
 
     args = parser.parse_args()
 
+    # TODO(Sourabh): Check if the build_id is valid
+    # based on the Elasticsearch rules.
+    # Limitation with ES that it only supports lowercase
+    # index names.
+    build_id = args.build_id.lower()
+
+    start_pipeline(args.path, build_id, args.output)
+
+
+def start_pipeline(base_path, build_id, output_block='ElasticOutput'):
+    """
+    Start ingestion pipeline.
+    base_path - path to the log directory/archive
+    build_id - Unique identfier for the ingestion
+    output_block (defaults to ES)
+    """
+    is_successful = True
     start = time.time()
+    try:
+        # If the base_path is an archive then extract it
+        if archive_extractor.is_archive(base_path):
+            archive_extractor.extract(base_path)
+            # Remove the extension from the base path
+            base_path = os.path.splitext(base_path)[0]
 
-    base_path = args.path
+        env = dict()
+        env['logdir'] = base_path
+        env['build_id'] = build_id
 
-    # If the base_path is an archive then extract it
-    if archive_extractor.is_archive(base_path):
-        archive_extractor.extract(base_path)
-        # Remove the extension from the base path
-        base_path = os.path.splitext(base_path)[0]
+        cfg = build_pipeline_cfg(base_path, output_block)
 
-    env = dict()
-    env['logdir'] = base_path
-    env['build_id'] = args.build_id.lower()
+        block_factory = pipeline.BlockFactory()
 
-    cfg = build_pipeline(base_path, args.output)
+        p = pipeline.Pipeline(block_factory, cfg, env)
+        p.process()
 
-    block_factory = pipeline.BlockFactory()
+    except Exception as e:
+        print(f'ERROR: Ingestion for {job_id} - {str(e)}')
+        is_successful = False
+    finally:
+        end = time.time()
+        time_taken = end - start
+        print(f'COMPLETED: Time spent processing: {time_taken}s')
 
-    p = pipeline.Pipeline(block_factory, cfg, env)
-    p.process()
+    return {
+        'success': is_successful,
+        'time_taken': time_taken
+    }
 
-    end = time.time()
-    print('COMPLETED: Time spent processing: {}s'.format(end - start))
 
-
-def build_pipeline(path, output_block):
+def build_pipeline_cfg(path, output_block):
     """ Constructs pipeline and metadata based on the manifest file """
     cfg = dict()
     pipeline_cfg, metadata = parse_manifest(path)

@@ -6,7 +6,7 @@
     <title>Log Analyzer Dashboard: {{log_id}}</title>
 </head>
 <body>
-    {% include 'templates/nav_bar.html' ignore missing %}
+    {% include 'nav_bar.html' ignore missing %}
     <!-- Macro for calculating percentage and rounding it off to a given precision -->
     {% macro calculatePercentage(count, total, precision=2) -%}
         {{((count/total)*100)|round(precision)}}%
@@ -93,7 +93,7 @@
             </div>
             <div class="separator"></div>
             <div>
-                <h3>Interesting events</h3>
+                <h3>Interesting events from FunOS logs</h3>
                 <div>
                     <input type="checkbox" id="failedAnchors" value="showFailedAnchors" onchange="toggleShowOnlyFailedAnchors(this)" checked>
                     <label for="failedAnchors">Show only failed events?</label><br>
