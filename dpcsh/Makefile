@@ -39,8 +39,11 @@ branch := $(shell git rev-parse --short HEAD)
 VER     = -DVER=$(version)
 BRANCH  = -DBRANCH=$(branch)
 
-ifeq ($(OS),Linux)
-ifneq ($(MACHINE),arm)
+ifeq ($(MACHINE),mips64)
+WITH_LIBFUNQ = 1
+endif
+
+ifneq ($(WITH_LIBFUNQ),)
 
 ifeq ($(MACHINE),x86_64)
 LFUNQ_PATH = $(SDKDIR)/FunSDK/host-drivers/$(MACHINE)/user/posix
@@ -50,7 +53,6 @@ endif
 
 CFLAGS += -I $(LFUNQ_PATH)/include -DWITH_LIBFUNQ
 LDFLAGS += -L $(LFUNQ_PATH)/lib -lfunq
-endif
 endif
 
 # define header and library location in FunSDK
