@@ -19,7 +19,7 @@ from utils import manifest_parser
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('build_id', help='Unique build ID')
-    parser.add_argument('path', help='Path to the logs directory')
+    parser.add_argument('path', help='Path to the logs directory or the log archive')
     parser.add_argument('--output', help='Output block type', default='ElasticOutput')
 
     args = parser.parse_args()
