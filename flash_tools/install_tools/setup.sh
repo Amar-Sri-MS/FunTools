@@ -154,6 +154,15 @@ else
 	fi
 fi
 
+# sku-specific upgrades
+case "${host_sku}" in
+	fc50* | fc100* | fc200* )
+		./run_fwupgrade.py ${FW_UPGRADE_ARGS} --upgrade-file dcc0=composer-boot-services-emmc.img --active
+		;;
+
+	*) : ;; # nothing to do
+esac
+
 echo "DPU done" >> $PROGRESS
 
 if [[ $ccfg_only == 'true' ]]; then
