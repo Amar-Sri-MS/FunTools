@@ -813,7 +813,7 @@ def _get_log_level_stats(log_id, sources=[], log_levels=None, time_filters=None)
         document_counts[level] = {
             'order': idx,
             'count': es.get_document_count(keyword_query_terms, sources, time_filters),
-            'kibana_url': kibana_base_url.replace('KIBANA_QUERY', kibana_query),
+            'kibana_url': kibana_base_url.replace('KIBANA_QUERY', quote_plus(kibana_query)),
             'keywords': ', '.join(keyword_for_level[level])
         }
 
