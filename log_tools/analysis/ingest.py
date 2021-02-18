@@ -379,6 +379,8 @@ def output_pipeline(output_block = 'ElasticOutput'):
         return [merge, dt, html]
 
     elif output_block == 'ElasticOutput':
+        file_path = os.path.abspath(os.path.dirname(__file__))
+        anchors_path = os.path.join(file_path, 'config/anchors.json')
         output = {
             'id': 'merge',
             'block': 'ElasticOutput',
@@ -393,7 +395,7 @@ def output_pipeline(output_block = 'ElasticOutput'):
             'cfg': {
                 'anchor_files': [
                     # TODO(Sourabh) Need to include anchors from each module
-                    'config/anchors.json'
+                    anchors_path
                 ],
                 'anchor_keys': None
             }

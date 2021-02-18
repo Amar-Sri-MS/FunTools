@@ -165,14 +165,17 @@ class AnalyticsOutput(Block):
         self.config = {}
         # Reading config file if available.
         try:
-            with open('./config.json', 'r') as f:
+            file_path = os.path.abspath(os.path.dirname(__file__))
+            config_path = os.path.join(file_path, '../config.json')
+            with open(config_path, 'r') as f:
                 self.config = json.load(f)
         except IOError:
             print('Config file not found! Checking for default config file..')
 
         # Reading default config file if available.
         try:
-            with open('./default_config.json', 'r') as f:
+            default_config_path = os.path.join(file_path, '../default_config.json')
+            with open(default_config_path, 'r') as f:
                 default_config = json.load(f)
             # Overriding default config with custom config
             self.config = { **default_config, **self.config }
