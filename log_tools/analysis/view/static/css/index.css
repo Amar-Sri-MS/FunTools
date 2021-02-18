@@ -70,6 +70,14 @@ h3 {
     transform: rotate(-45deg);
     -webkit-transform: rotate(-45deg);
 }
+.up {
+    transform: rotate(-135deg);
+    -webkit-transform: rotate(-135deg);
+}
+.down {
+    transform: rotate(45deg);
+    -webkit-transform: rotate(45deg);
+}
 
 .form-group {
     margin: 10px 0px;

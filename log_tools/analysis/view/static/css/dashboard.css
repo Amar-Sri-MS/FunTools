@@ -35,18 +35,23 @@
     max-width: 500px;
     margin: 10px;
     border: 1px solid black;
+    align-self: flex-start;
 }
 .filter_box_header {
     border-bottom: 1px solid black;
     padding: 5px;
     background-color: beige;
     font-weight: bold;
+    display: flex;
+    justify-content: space-between;
 }
 .filter_box_content {
     padding: 5px;
+    display: none;
 }
 .filter_box_item {
-    padding: 5px 0px;
+    padding: 2px 0px;
+    font-size: 14px;
 }
 .separator {
     border: 1px dashed #a2a2a2;

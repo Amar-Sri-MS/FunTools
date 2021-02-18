@@ -24,13 +24,18 @@
                         {% set system_type_index = loop.index0 %}
                         <div class="filter_box">
                             <div class="filter_box_header">
-                                <input type="checkbox" id="{{system_type['key']}}" name="system_type" data-system_type_index="{{system_type_index}}"
+                                <div>
+                                    <input type="checkbox" id="{{system_type['key']}}" name="system_type" data-system_type_index="{{system_type_index}}"
                                     value="{{system_type['key']}}" onclick="toggleSystemTypeSelection(this)" checked />
-                                <label for="{{system_type['key']}}">
-                                    System Type: {{system_type['key']}} ({{total_entries}})
-                                </label>
+                                    <label for="{{system_type['key']}}">
+                                        System Type: {{system_type['key']}} ({{total_entries}})
+                                    </label>
+                                </div>
+                                <div style="padding: 0px 5px; cursor: pointer;" onclick="toggleShowFilterBox(this, `filter-box-content-{{system_type['key']}}`)">
+                                    <span class="arrow down"></span>
+                                </div>
                             </div>
-                            <div class="filter_box_content">
+                            <div class="filter_box_content" id="filter-box-content-{{system_type['key']}}">
                                 <ul>
                                 {% for system_id in system_type['system_id']['buckets'] %}
                                     {% set system_id_distribution = calculatePercentage(system_id['doc_count'], total_entries) %}
@@ -518,6 +523,21 @@
         encodedQuery = encodeURI(`${filterKey}:(${filters.join(" or ")})`);
         query = `${query} ${encodedQuery}`;
         return query;
+    }
+
+    function toggleShowFilterBox(arrowElement, filterBoxId) {
+        // Toggling the display of filter box
+        const filterBoxElement = document.getElementById(filterBoxId);
+        if (filterBoxElement.style.display === "none" || filterBoxElement.style.display === "") {
+            filterBoxElement.style.display = "block";
+            arrowElement.firstElementChild.classList.remove('down');
+            arrowElement.firstElementChild.classList.add('up');
+        }
+        else {
+            filterBoxElement.style.display = "none";
+            arrowElement.firstElementChild.classList.remove('up');
+            arrowElement.firstElementChild.classList.add('down');
+        }
     }
 
 </script>
