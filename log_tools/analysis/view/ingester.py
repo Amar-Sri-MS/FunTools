@@ -128,7 +128,7 @@ def ingest_logs(job_id, test_case_exec_id, job_info):
         # Path to the extracted log files
         LOG_DIR = f'{path}/{archive_name}'
 
-        if release_train in ('master', '2.0'):
+        if release_train in ('master', '2.0', '2.0.1'):
             # Copying FUNLOG_MANIFEST file
             shutil.copy('config/templates/fc/FUNLOG_MANIFEST', LOG_DIR)
 
@@ -160,7 +160,7 @@ def ingest_logs(job_id, test_case_exec_id, job_info):
 
             # Start the ingestion
             return ingest_handler.start_pipeline(ingest_path, f'qa-{job_id}')
-        elif release_train == '2.0':
+        elif release_train == '2.0' or release_train == '2.0.1':
             folders = next(os.walk(os.path.join(LOG_DIR,'.')))[1]
 
             # TODO(Sourabh): This is an assumption that there will not be
