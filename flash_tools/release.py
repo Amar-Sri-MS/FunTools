@@ -75,6 +75,10 @@ ALL_ROOTFS_FILES = {
     "f1d1" : [ 'fs1600-rootfs-ro.squashfs' ]
 }
 
+CHIP_SPECIFIC_FILES = {
+    "s1" : [ 'fdc_cbs/composer-boot-services-emmc.img' ]
+}
+
 def _rootfs(f, rootfs):
     return '{}.{}'.format(rootfs, f)
 
@@ -118,6 +122,7 @@ def main():
 
     funos_appname = "funos{}.stripped".format('-'.join(funos_suffixes))
     rootfs_files = ALL_ROOTFS_FILES[args.chip]
+    chip_specific_files = CHIP_SPECIFIC_FILES.get(args.chip, ())
 
     def wanted(action):
         if args.action == 'all':
@@ -231,6 +236,9 @@ def main():
 
         shutil.copy2(funos_appname, funos_appname + ".mfginstall")
         shutil.copy2(funos_appname, funos_appname + ".norinstall")
+
+        for chip_file in chip_specific_files:
+            shutil.copy2(os.path.join(args.sdkdir, chip_file), os.path.basename(chip_file))
 
         bld_info = os.path.join(args.sdkdir, 'build_info.txt')
         v = args.force_version
@@ -363,6 +371,9 @@ def main():
             tarfiles.append(rootfs)
         tarfiles.extend(glob.glob('qspi_image_hw.bin*'))
 
+        for chip_file in chip_specific_files:
+            tarfiles.append(os.path.basename(chip_file))
+
         if os.path.exists('.version'):
             tarfiles.append('.version')
 
@@ -398,6 +409,9 @@ def main():
                 _rootfs('fvht.bin', rootfs),
                 rootfs
             ])
+
+            for chip_file in chip_specific_files:
+                bundle_images.append(os.path.basename(chip_file))
 
             if os.path.exists('.version'):
                 bundle_images.append('.version')
@@ -449,6 +463,7 @@ def main():
             mfgxdata['ccfg'] = ('mmc', 'ccfg-no-come.signed.bin')
         elif args.chip == 's1':
             mfgxdata['ccfg'] = ('mmc', 'ccfg-s1-demo-10g_mpg.signed.bin')
+            mfgxdata['dcc0'] = ('mmc', 'composer-boot-services-emmc.img')
 
         mfgxdata_lists = {
             'fw_upgrade_all': 'all',

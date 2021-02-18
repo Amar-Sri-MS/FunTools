@@ -38,8 +38,16 @@ LAST_ERROR=/tmp/cclinux_upgrade_error # a reboot will clean up this tmpfs file.
 ccfg_install=''
 downgrade=''
 ccfg_only=''
+host_dpu=''
+host_sku=''
 
-host_dpu=$(tr -d '\0' < /proc/device-tree/fungible,dpu || true)
+if [ -e /sys/firmware/devicetree/base/fungible,dpu ] ; then
+    read -d $'\0' host_dpu rest_of_line < /sys/firmware/devicetree/base/fungible,dpu
+fi
+
+if [ -e /sys/firmware/devicetree/base/fungible,sku ] ; then
+    read -d $'\0' host_sku rest_of_line < /sys/firmware/devicetree/base/fungible,sku
+fi
 
 if [ -n "$host_dpu" ] && [ "$host_dpu" != "$CHIP_NAME" ]; then
 	echo "This upgrade bundle is incompatible with the host DPU"
@@ -109,7 +117,6 @@ log_msg "Upgrading DPU firmware"
 FW_UPGRADE_ARGS="--offline --ws `pwd`"
 
 if [[ $ccfg_only != 'true' ]]; then
-	eepr_type=`dpcsh -nQ peek "config/version/sku" | jq -Mr '.result' || true`
 	if [[ $downgrade == 'true' ]]; then
 		./run_fwupgrade.py ${FW_UPGRADE_ARGS} -U --version latest --force --downgrade
 		./run_fwupgrade.py ${FW_UPGRADE_ARGS} -U --version latest --force --downgrade --active
@@ -119,16 +126,16 @@ if [[ $ccfg_only != 'true' ]]; then
 		dd if=/dev/zero of=emmc_wipe.bin bs=1024 count=1024
 		./run_fwupgrade.py ${FW_UPGRADE_ARGS} --upgrade-file mmc1=emmc_wipe.bin --active
 
-		if [ ! -z "$eepr_type" -a "$eepr_type" != "null" ]; then
-			log_msg "Downgrading eepr \"$eepr_type\""
-			./run_fwupgrade.py ${FW_UPGRADE_ARGS} -u eepr --version latest --force --downgrade --select-by-image-type "$eepr_type"
-			./run_fwupgrade.py ${FW_UPGRADE_ARGS} -u eepr --version latest --force --downgrade --active --select-by-image-type "$eepr_type"
+		if [ -n "$host_sku" ]; then
+			log_msg "Downgrading eepr \"$host_sku\""
+			./run_fwupgrade.py ${FW_UPGRADE_ARGS} -u eepr --version latest --force --downgrade --select-by-image-type "$host_sku"
+			./run_fwupgrade.py ${FW_UPGRADE_ARGS} -u eepr --version latest --force --downgrade --active --select-by-image-type "$host_sku"
 		fi
 	else
 		./run_fwupgrade.py ${FW_UPGRADE_ARGS} -U --version $funos_sdk_version
-		if [ ! -z "$eepr_type" -a "$eepr_type" != "null" ]; then
-			log_msg "Updating eepr \"$eepr_type\""
-			./run_fwupgrade.py ${FW_UPGRADE_ARGS} -u eepr --select-by-image-type "$eepr_type"
+		if [ -n "$host_sku" ]; then
+			log_msg "Updating eepr \"$host_sku\""
+			./run_fwupgrade.py ${FW_UPGRADE_ARGS} -u eepr --select-by-image-type "$host_sku"
 		fi
 
 	fi
@@ -146,6 +153,15 @@ else
 		./run_fwupgrade.py ${FW_UPGRADE_ARGS} -u ccfg --select-by-image-type "$feature_set"
 	fi
 fi
+
+# sku-specific upgrades
+case "${host_sku}" in
+	fc50* | fc100* | fc200* )
+		./run_fwupgrade.py ${FW_UPGRADE_ARGS} --upgrade-file dcc0=composer-boot-services-emmc.img --active
+		;;
+
+	*) : ;; # nothing to do
+esac
 
 echo "DPU done" >> $PROGRESS
 
