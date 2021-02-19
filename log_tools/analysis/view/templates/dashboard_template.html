@@ -85,12 +85,12 @@
                 </div>
                 <div class="content">
                     <div id="log_level_stats">
-                        <div class="level_stat">Total: {{total_entries}}(100%)</div>
+                        <div class="level_stat"><div>Total:</div> {{total_entries}}(100%)</div>
                         <!-- Displaying log entries for a source and each log levels in % with rounded off to 2 decimals -->
                         {% for level, stat in log_level_stats.items() %}
                             {% set log_distribution = calculatePercentage(stat.count, total_entries) %}
                             <div class="level_stat" title="{{stat.keywords}}">
-                                <a href="{{stat.kibana_url}}" target="_blank">{{level}}</a>: {{stat.count}}({{log_distribution}})
+                                <div><a href="{{stat.kibana_url}}" target="_blank">{{level}}</a>:</div> {{stat.count}}({{log_distribution}})
                             </div>
                         {% endfor %}
                     </div>
@@ -123,7 +123,11 @@
             <h3>Recent
                 <select name="level" id="level" onchange="onSelectLevelForRecentLogs(this)">
                     {% for level, stat in log_level_stats.items() %}
-                        <option value="{{level}}">{{level}}</option>
+                        {% if level == log_level_for_recent_logs %}
+                            <option value="{{level}}" selected>{{level}}</option>
+                        {% else %}
+                            <option value="{{level}}">{{level}}</option>
+                        {% endif %}
                     {% endfor %}
                 </select>
                 logs for
@@ -196,7 +200,7 @@
     let logLevelStats = {{log_level_stats}};
     const sortedLogLevel = Object.keys(logLevelStats).sort((level1, level2) => logLevelStats[level1]['order'] - logLevelStats[level2]['order']);
     let selectedSourceForLogLevelStats = "all";
-    let selectedSourceForRecentLogs = "all", selectedLevelForRecentLogs = sortedLogLevel[0];
+    let selectedSourceForRecentLogs = "all", selectedLevelForRecentLogs = "{{log_level_for_recent_logs}}";
 
     const analyticsData = {{analytics_data}};
     let selectedSourceForAnchors = "all", showOnlyFailedAnchors = true;
@@ -398,12 +402,12 @@
         // Sorting log levels by severity order
         const logLevels = Object.keys(stats).sort((level1, level2) => stats[level1]['order'] - stats[level2]['order']);
 
-        let divs = [`<div class="level_stat"><a href="${kibanaUrlForSource}" target="_blank">Total</a>: ${totalEntriesForSource}(${Math.round((totalEntriesForSource/totalEntries)*100)}%)</div>`];
+        let divs = [`<div class="level_stat"><div><a href="${kibanaUrlForSource}" target="_blank">Total</a>:</div> ${totalEntriesForSource}(${Math.round((totalEntriesForSource/totalEntries)*100)}%)</div>`];
         for (const level of logLevels) {
             const stat = stats[level];
             // let logDistribution = Math.round((stat.count/totalEntriesForSource)*100);
             let logDistribution = ((stat.count/totalEntriesForSource)*100).toFixed(2);
-            divs.push(`<div class="level_stat" title="${stat.keywords}"><a href="${stat.kibana_url}" target="_blank">${level}</a>: ${stat.count}(${logDistribution}%)</div>`);
+            divs.push(`<div class="level_stat" title="${stat.keywords}"><div><a href="${stat.kibana_url}" target="_blank">${level}</a>:</div> ${stat.count}(${logDistribution}%)</div>`);
         }
         logLevelStatsElement.innerHTML = divs.join('\n');
     }

@@ -766,7 +766,12 @@ def _render_dashboard_page(log_id, jinja_env, template):
     system_types = es.get_unique_entries('system_type')
     system_ids = es.get_unique_entries('system_id')
     unique_entries = es.get_aggregated_unique_entries(['system_type', 'system_id'], ['src'])
-    recent_logs = _get_recent_logs(log_id, RECENT_LOGS_SIZE, log_levels=default_log_levels[0:1])
+    log_level_stats = _get_log_level_stats(log_id)
+
+    # Fetch the first non zero log level
+    nonzero_log_levels = [level for level in default_log_levels if log_level_stats[level]['count'] > 0]
+
+    recent_logs = _get_recent_logs(log_id, RECENT_LOGS_SIZE, log_levels=nonzero_log_levels[0:1])
 
     analytics_data = _get_analytics_data(log_id)
 
@@ -777,7 +782,8 @@ def _render_dashboard_page(log_id, jinja_env, template):
     template_dict['system_ids'] = system_ids
     template_dict['unique_entries'] = unique_entries
     template_dict['kibana_base_url'] = kibana_base_url
-    template_dict['log_level_stats'] = _get_log_level_stats(log_id)
+    template_dict['log_level_stats'] = log_level_stats
+    template_dict['log_level_for_recent_logs'] = nonzero_log_levels[0]
     template_dict['recent_logs'] = _render_log_entries(recent_logs)
     template_dict['analytics_data'] = json.dumps(analytics_data)
 

@@ -77,6 +77,12 @@ td {
 .level_stat {
     padding: 5px 0px;
     border-bottom: 0.8px solid #a2a2a270;
+    display: flex;
+    flex-wrap: wrap;
+}
+.level_stat > div {
+    min-width: 35%;
+    max-width: 35%;
 }
 ul {
     list-style: none;
