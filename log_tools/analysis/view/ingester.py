@@ -108,6 +108,7 @@ def ingest_logs(job_id, test_case_exec_id, job_info):
     and then if not found checks in HA.
     """
     path = f'{DOWNLOAD_DIRECTORY}/{job_id}'
+    file_path = os.path.abspath(os.path.dirname(__file__))
     release_train = job_info['data']['primary_release_train']
 
     # Format of FC log archive which is stored in QA
@@ -130,7 +131,8 @@ def ingest_logs(job_id, test_case_exec_id, job_info):
 
         if release_train in ('master', '2.0', '2.0.1'):
             # Copying FUNLOG_MANIFEST file
-            shutil.copy('config/templates/fc/FUNLOG_MANIFEST', LOG_DIR)
+            template_path = os.path.join(file_path, '../config/templates/fc/FUNLOG_MANIFEST')
+            shutil.copy(template_path, LOG_DIR)
 
             # Start the ingestion
             return ingest_handler.start_pipeline(LOG_DIR, f'qa-{job_id}')
@@ -170,7 +172,8 @@ def ingest_logs(job_id, test_case_exec_id, job_info):
             LOG_DIR = os.path.join(LOG_DIR, log_folder_name)
 
             # Creating FUNLOG_MANIFEST file by replacing timestamp folder name
-            with open('config/templates/ha/FUNLOG_MANIFEST', 'rt') as fin:
+            template_path = os.path.join(file_path, '../config/templates/ha/FUNLOG_MANIFEST')
+            with open(template_path, 'rt') as fin:
                 with open(f'{LOG_DIR}/FUNLOG_MANIFEST', 'wt') as fout:
                     for line in fin:
                         fout.write(line.replace('<TIMESTAMP>', log_folder_name))
