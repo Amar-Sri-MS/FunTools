@@ -15,6 +15,7 @@ from pathlib import Path
 from urllib.parse import quote_plus
 
 from blocks.block import Block
+from analysis import config_loader
 
 
 class AnchorMatch:
@@ -162,25 +163,7 @@ class AnalyticsOutput(Block):
         # This might take up memory as the log entries increase.
         self.duplicate_entries = {}
         self.anchor_matches = list()
-        self.config = {}
-        # Reading config file if available.
-        try:
-            file_path = os.path.abspath(os.path.dirname(__file__))
-            config_path = os.path.join(file_path, '../config.json')
-            with open(config_path, 'r') as f:
-                self.config = json.load(f)
-        except IOError:
-            print('Config file not found! Checking for default config file..')
-
-        # Reading default config file if available.
-        try:
-            default_config_path = os.path.join(file_path, '../default_config.json')
-            with open(default_config_path, 'r') as f:
-                default_config = json.load(f)
-            # Overriding default config with custom config
-            self.config = { **default_config, **self.config }
-        except IOError:
-            sys.exit('Default config file not found! Exiting..')
+        self.config = config_loader.get_config()
 
     def set_config(self, cfg):
         self.cfg = cfg
