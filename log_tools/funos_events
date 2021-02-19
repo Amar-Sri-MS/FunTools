@@ -120,10 +120,9 @@ class Colors:
 
 
 class AnchorMatch:
-    # Matches a timestamp of the form [1586033961.440905]
-    time_re = re.compile(r"^\[(\d+\.\d+).*\]")
-
-    def __init__(self, log, line_no, anchor, match, show_key):
+    def __init__(
+        self, log, line_no, anchor, match, matchtime, show_key, show_source_line
+    ):
         """Construct a new AnchorMatch instance.
 
         Args:
@@ -132,6 +131,11 @@ class AnchorMatch:
             anchor (dict): The JSON dictionary that represents the anchor that
                            the line matched. Expected to have the key "short".
             match (RE match): The match object.
+            matchtime (float/None): Floating point time, or None if no time is
+                                    available for this match.
+            show_key (bool): Whether to show anchor key name in output.
+            show_source_line (bool): Whether to show source line in output
+                                     insted of short line.
         """
 
         self.log = log
@@ -144,61 +148,66 @@ class AnchorMatch:
         if "rematch" in anchor:
             for key, value in match.groupdict().items():
                 short = re.sub(f"<{key}>", value, short)
+
         self.short = short
-
-        # Parse the timestamp and store a float version of it, if it's
-        # available.
-        time_match = AnchorMatch.time_re.search(match.string)
-        if time_match:
-            self.matchtime = time_match.group(1)
-            self.matchtime_f = float(self.matchtime)
-        else:
-            self.matchtime = None
-            self.matchtime_f = None
-
+        self.match = match
+        self.matchtime = matchtime
         self.show_key = show_key
+        self.show_source_line = show_source_line
 
     # Need this for use with heapq.merge, sort match objects based on float
     # representation of their timestamp.
     def __lt__(self, other):
-        return self.matchtime_f < other.matchtime_f
+        return self.matchtime < other.matchtime
 
     def __str__(self):
         logline = f"{self.line_no}"
-        if self.matchtime:
+        if not self.show_source_line and self.matchtime:
             logline += f": [{self.matchtime}]"
         if self.show_key:
             logline += ": [key={}]".format(self.anchor["key"])
 
-        return logline + f": {self.short}"
+        if self.show_source_line:
+            logline += f": {self.match.string}"
+        else:
+            logline += f": {self.short}"
+
+        return logline
 
 
 class AnchorMatcher:
+    # Matches a timestamp of the form [1586033961.440905]
+    time_re = re.compile(r"^\[(\d+\.\d+).*\]")
+
     def __init__(
         self,
         anchor_files,
         include_keys,
         exclude_keys,
         show_key,
+        show_source_line,
         timestamped_only=False,
     ):
         """Construct an AnchorMatcher object. This provides an interface that
         can return AnchorMatch objects given a filename for a log.
 
         Args:
-            anchor_files (str list): List of strings that represent filenames
-                                     of files that contain JSON anchors.
+            anchor_files (str list):  List of strings that represent filenames
+                                      of files that contain JSON anchors.
             include_keys (set):       List of keys to use from anchors file.
             exclude_keys (set):       List of keys to skip from anchors file.
-            show_key (bool): Show key for anchor in output.
-            timestamped_only (bool): Limit to only matches that have a
-                                     timestamp associated with them.
+            show_key (bool):          Show key for anchor in output.
+            show_source_line (bool):  Show source line instead of short
+                                      description.
+            timestamped_only (bool):  Limit to only matches that have a
+                                      timestamp associated with them.
         """
 
         self.timestamped_only = timestamped_only
         anchors = self._load_anchors(anchor_files, include_keys, exclude_keys)
         self.compiled, self.uber_compiled = self._generate_matchers(anchors)
         self.show_key = show_key
+        self.show_source_line = show_source_line
 
     def _load_anchors(self, anchor_files, include_keys, exclude_keys):
         """Generate a list of dictionaries representing the anchors in the
@@ -268,16 +277,28 @@ class AnchorMatcher:
         for anchor, matcher in self.compiled:
             match = matcher.search(line)
             if match:
-                return AnchorMatch(log, line_no, anchor, match, self.show_key)
+                matchtime = self.time_re.search(line)
+                if matchtime:
+                    matchtime = float(matchtime.group(1))
+
+                return AnchorMatch(
+                    log,
+                    line_no,
+                    anchor,
+                    match,
+                    matchtime,
+                    self.show_key,
+                    self.show_source_line,
+                )
 
         return None
 
-    def _filter_entry(self, entry):
+    def _filter_entry(self, matchtime):
         """
         We have a match entry, now do we want it?
         """
 
-        return not self.timestamped_only or entry.matchtime
+        return not self.timestamped_only or matchtime
 
     def generate_matches(self, log):
         """
@@ -295,10 +316,34 @@ class AnchorMatcher:
         for line_no, line in enumerate(text, start=1):
             if self.uber_compiled.search(line):
                 entry = self._generate_match_entry(log, line_no, line)
-                if entry and self._filter_entry(entry):
+                if entry and self._filter_entry(entry.matchtime):
                     matches.append(entry)
 
         return matches
+
+    def generate_inverse_matches(self, log):
+        """
+        Given a log file, read it in as a binary file, and search line-by-line
+        for lines that do not match against provided anchor file.
+        """
+
+        if log == "-":
+            text = sys.stdin.read().split("\n")
+        else:
+            with open(os.path.expandvars(log), "rb") as logfile:
+                text = logfile.read().decode(errors="replace").split("\n")
+
+        inverse_matches = []
+        for line in text:
+            if line and not self.uber_compiled.search(line):
+                matchtime = self.time_re.search(line)
+                if matchtime:
+                    matchtime = float(matchtime.group(1))
+
+                if self._filter_entry(matchtime):
+                    inverse_matches.append((matchtime, log, line))
+
+        return inverse_matches
 
 
 def generate_alias_file(alias_file, matches):
@@ -335,34 +380,53 @@ def print_results(args, matches, multimode):
     if use_colors:
         color_map = generate_color_map(args)
 
-    for i, match in enumerate(matches, start=1):
-        result = ""
-        if not args.no_aliases:
-            result += "[{i}]: ".format(i=i)
-        if multimode:
-            result += "{log}: ".format(log=match.log)
-        result += str(match)
+    if args.invert:
+        for matchtime, log, line in matches:
+            result = ""
+            if multimode:
+                result += f"{log}: "
 
-        if use_colors:
-            result = color_map[match.log] + result + Colors.RESET
+            result += f"{line}"
 
-        print(result)
+            if use_colors:
+                result = color_map[log] + result + Colors.RESET
+
+            print(result)
+    else:
+        for i, match in enumerate(matches, start=1):
+            result = ""
+            if not args.no_aliases and not args.invert:
+                result += "[{i}]: ".format(i=i)
+            if multimode:
+                result += "{log}: ".format(log=match.log)
+            result += str(match)
+
+            if use_colors:
+                result = color_map[match.log] + result + Colors.RESET
+
+            print(result)
 
 
-def process_logs(args, multimode, show_key):
+def process_logs(args, multimode):
     matcher = AnchorMatcher(
         args.anchors,
         args.include_keys,
         args.exclude_keys,
-        show_key,
+        args.show_key,
+        args.show_source_line,
         timestamped_only=multimode,
     )
+    if args.invert:
+        generator = matcher.generate_inverse_matches
+    else:
+        generator = matcher.generate_matches
+
     if not multimode:
-        return matcher.generate_matches(args.logs[0])
+        return generator(args.logs[0])
 
     # We're in multimode. Each individual set of matches is sorted. Merge them
     # using heapq to produce a time sorted event log.
-    matches = [matcher.generate_matches(log) for log in args.logs]
+    matches = [generator(log) for log in args.logs]
     return list(heapq.merge(*matches))
 
 
@@ -370,11 +434,11 @@ def main(args):
     signal.signal(signal.SIGPIPE, signal.SIG_DFL)
 
     multimode = len(args.logs) > 1
-    matches = process_logs(args, multimode, args.show_key)
+    matches = process_logs(args, multimode)
 
     # Write out alias file before printing, let default SIGPIPE handler handle
     # if piped to less or head. Make sure aliases are always written.
-    if not args.no_aliases:
+    if not args.no_aliases and not args.invert:
         generate_alias_file(args.alias_file, matches)
 
     print_results(args, matches, multimode)
@@ -418,6 +482,12 @@ def handle_args():
         help="Show the keys for each entry in the output. Helps with include/exclude",
     )
     parser.add_argument(
+        "--show-source-line",
+        default=False,
+        action="store_true",
+        help="Show the source line instead of the short anchor description",
+    )
+    parser.add_argument(
         "--color",
         default="auto",
         choices=["never", "auto", "always"],
@@ -433,6 +503,12 @@ def handle_args():
         "--alias-file",
         default="/tmp/funos-event-aliases",
         help="File to write jump aliases to",
+    )
+    parser.add_argument(
+        "--invert",
+        default=False,
+        action="store_true",
+        help="Filter out active anchors",
     )
 
     return parser.parse_args()
