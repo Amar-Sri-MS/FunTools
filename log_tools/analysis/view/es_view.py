@@ -44,7 +44,14 @@ def root():
     ELASTICSEARCH_HOSTS = app.config['ELASTICSEARCH']['hosts']
     es = Elasticsearch(ELASTICSEARCH_HOSTS)
 
-    indices = es.indices.get('log_*')
+    # Using the ES CAT API to get indices
+    # CAT API supports sorting and returns more data
+    indices = es.cat.indices(
+        index='log_*',
+        h='health,index,id,docs.count,store.size,creation.date',
+        format='json',
+        s='creation.date:desc'
+    )
 
     # Assume our template is right next door to us.
     dir = os.path.join(_get_script_dir(), 'templates')
@@ -68,12 +75,13 @@ def _render_root_page(log_ids, jinja_env, template):
     template_dict = {}
     template_dict['logs'] = list()
 
-    for id, log in log_ids.items():
+    for log in log_ids:
+        id = log['index']
         kibana_base_url = _get_kibana_base_url(id)
         # Replacing KIBANA_QUERY with empty string since we do not
         # want to query and want only the URL to the Kibana Dashboard
         kibana_url = kibana_base_url.replace('KIBANA_QUERY', '')
-        creation_date_epoch = int(log.get('settings').get('index').get('creation_date'))
+        creation_date_epoch = int(log['creation.date'])
         # Separting out seconds and milliseconds from epoch
         creation_date_s, creation_date_ms = divmod(creation_date_epoch, 1000)
         creation_date = '{}.{:03d}'.format(
@@ -83,7 +91,10 @@ def _render_root_page(log_ids, jinja_env, template):
         template_dict['logs'].append({
             'name': id,
             'link': kibana_url,
-            'creation_date': creation_date
+            'creation_date': creation_date,
+            'health': log['health'],
+            'doc_count': log['docs.count'],
+            'es_size': log['store.size']
         })
 
     result = template.render(template_dict, env=jinja_env)
