@@ -1,0 +1,251 @@
+cc -c -DUNIX -DUNIX_SYS5  -D_DEFAULT_SOURCE hit.c
+In file included from hit.c:16:
+rogue.h:425:8: error: redefinition of ‘struct _win_st’
+  425 | struct _win_st {
+      |        ^~~~~~~
+In file included from hit.c:14:
+/usr/include/curses.h:435:8: note: originally defined here
+  435 | struct _win_st
+      |        ^~~~~~~
+In file included from hit.c:16:
+rogue.h:430:24: error: conflicting types for ‘WINDOW’
+  430 | typedef struct _win_st WINDOW;
+      |                        ^~~~~~
+In file included from hit.c:14:
+/usr/include/curses.h:386:24: note: previous declaration of ‘WINDOW’ was here
+  386 | typedef struct _win_st WINDOW;
+      |                        ^~~~~~
+In file included from hit.c:16:
+rogue.h:433:16: error: conflicting types for ‘curscr’
+  433 | extern WINDOW *curscr;
+      |                ^~~~~~
+In file included from hit.c:14:
+/usr/include/curses.h:1471:37: note: previous declaration of ‘curscr’ was here
+ 1471 | extern NCURSES_EXPORT_VAR(WINDOW *) curscr;
+      |                                     ^~~~~~
+In file included from hit.c:16:
+rogue.h:438:8: warning: extra tokens at end of #endif directive [-Wendif-labels]
+  438 | #endif CURSES
+      |        ^~~~~~
+hit.c:26:1: warning: return type defaults to ‘int’ [-Wimplicit-int]
+   26 | mon_hit(monster, other, flame)
+      | ^~~~~~~
+hit.c: In function ‘mon_hit’:
+hit.c:57:7: warning: implicit declaration of function ‘rand_percent’; did you mean ‘drop_percent’? [-Wimplicit-function-declaration]
+   57 |  if (!rand_percent(hit_chance)) {
+      |       ^~~~~~~~~~~~
+      |       drop_percent
+hit.c:59:26: warning: implicit declaration of function ‘strlen’ [-Wimplicit-function-declaration]
+   59 |    sprintf(hit_message + strlen(hit_message),
+      |                          ^~~~~~
+hit.c:59:26: warning: incompatible implicit declaration of built-in function ‘strlen’
+hit.c:17:1: note: include ‘<string.h>’ or provide a declaration of ‘strlen’
+   16 | #include "rogue.h"
+  +++ |+#include <string.h>
+   17 | 
+hit.c:61:4: warning: implicit declaration of function ‘message’ [-Wimplicit-function-declaration]
+   61 |    message(hit_message, 1);
+      |    ^~~~~~~
+hit.c:64:3: warning: ‘return’ with no value, in function returning non-void
+   64 |   return;
+      |   ^~~~~~
+hit.c:26:1: note: declared here
+   26 | mon_hit(monster, other, flame)
+      | ^~~~~~~
+hit.c:67:25: warning: incompatible implicit declaration of built-in function ‘strlen’
+   67 |   sprintf(hit_message + strlen(hit_message), "the %s hit",
+      |                         ^~~~~~
+hit.c:67:25: note: include ‘<string.h>’ or provide a declaration of ‘strlen’
+hit.c:73:12: warning: implicit declaration of function ‘get_damage’; did you mean ‘m_damage’? [-Wimplicit-function-declaration]
+   73 |   damage = get_damage(monster->m_damage, 1);
+      |            ^~~~~~~~~~
+      |            m_damage
+hit.c:76:20: warning: implicit declaration of function ‘get_armor_class’ [-Wimplicit-function-declaration]
+   76 |     if ((damage -= get_armor_class(rogue.armor)) < 0) {
+      |                    ^~~~~~~~~~~~~~~
+hit.c:95:3: warning: implicit declaration of function ‘rogue_damage’ [-Wimplicit-function-declaration]
+   95 |   rogue_damage(damage, monster);
+      |   ^~~~~~~~~~~~
+hit.c:98:3: warning: implicit declaration of function ‘special_hit’ [-Wimplicit-function-declaration]
+   98 |   special_hit(monster);
+      |   ^~~~~~~~~~~
+hit.c: At top level:
+hit.c:102:1: warning: return type defaults to ‘int’ [-Wimplicit-int]
+  102 | rogue_hit(monster, force_hit)
+      | ^~~~~~~~~
+hit.c: In function ‘rogue_hit’:
+hit.c:109:7: warning: implicit declaration of function ‘check_imitator’ [-Wimplicit-function-declaration]
+  109 |   if (check_imitator(monster)) {
+      |       ^~~~~~~~~~~~~~
+hit.c:110:4: warning: ‘return’ with no value, in function returning non-void
+  110 |    return;
+      |    ^~~~~~
+hit.c:102:1: note: declared here
+  102 | rogue_hit(monster, force_hit)
+      | ^~~~~~~~~
+hit.c:112:34: warning: implicit declaration of function ‘get_hit_chance’; did you mean ‘m_hit_chance’? [-Wimplicit-function-declaration]
+  112 |   hit_chance = force_hit ? 100 : get_hit_chance(rogue.weapon);
+      |                                  ^~~~~~~~~~~~~~
+      |                                  m_hit_chance
+hit.c:123:12: warning: implicit declaration of function ‘get_weapon_damage’ [-Wimplicit-function-declaration]
+  123 |   damage = get_weapon_damage(rogue.weapon);
+      |            ^~~~~~~~~~~~~~~~~
+hit.c:127:7: warning: implicit declaration of function ‘mon_damage’; did you mean ‘m_damage’? [-Wimplicit-function-declaration]
+  127 |   if (mon_damage(monster, damage)) { /* still alive? */
+      |       ^~~~~~~~~~
+      |       m_damage
+hit.c:132:6: warning: implicit declaration of function ‘check_gold_seeker’ [-Wimplicit-function-declaration]
+  132 | RET: check_gold_seeker(monster);
+      |      ^~~~~~~~~~~~~~~~~
+hit.c:133:3: warning: implicit declaration of function ‘wake_up’ [-Wimplicit-function-declaration]
+  133 |   wake_up(monster);
+      |   ^~~~~~~
+hit.c: At top level:
+hit.c:137:1: warning: return type defaults to ‘int’ [-Wimplicit-int]
+  137 | rogue_damage(d, monster)
+      | ^~~~~~~~~~~~
+hit.c: In function ‘rogue_damage’:
+hit.c:143:3: warning: implicit declaration of function ‘print_stats’ [-Wimplicit-function-declaration]
+  143 |   print_stats(STAT_HP);
+      |   ^~~~~~~~~~~
+hit.c:144:3: warning: implicit declaration of function ‘killed_by’ [-Wimplicit-function-declaration]
+  144 |   killed_by(monster, 0);
+      |   ^~~~~~~~~
+hit.c: At top level:
+hit.c:150:1: warning: return type defaults to ‘int’ [-Wimplicit-int]
+  150 | get_damage(ds, r)
+      | ^~~~~~~~~~
+hit.c: In function ‘get_damage’:
+hit.c:154:11: warning: type defaults to ‘int’ in declaration of ‘i’ [-Wimplicit-int]
+  154 |  register i = 0, j, n, d, total = 0;
+      |           ^
+hit.c:154:18: warning: type defaults to ‘int’ in declaration of ‘j’ [-Wimplicit-int]
+  154 |  register i = 0, j, n, d, total = 0;
+      |                  ^
+hit.c:154:21: warning: type defaults to ‘int’ in declaration of ‘n’ [-Wimplicit-int]
+  154 |  register i = 0, j, n, d, total = 0;
+      |                     ^
+hit.c:154:24: warning: type defaults to ‘int’ in declaration of ‘d’ [-Wimplicit-int]
+  154 |  register i = 0, j, n, d, total = 0;
+      |                        ^
+hit.c:154:27: warning: type defaults to ‘int’ in declaration of ‘total’ [-Wimplicit-int]
+  154 |  register i = 0, j, n, d, total = 0;
+      |                           ^~~~~
+hit.c:157:7: warning: implicit declaration of function ‘get_number’; did you mean ‘lget_number’? [-Wimplicit-function-declaration]
+  157 |   n = get_number(ds+i);
+      |       ^~~~~~~~~~
+      |       lget_number
+hit.c:164:14: warning: implicit declaration of function ‘get_rand’ [-Wimplicit-function-declaration]
+  164 |     total += get_rand(1, d);
+      |              ^~~~~~~~
+hit.c: At top level:
+hit.c:176:1: warning: return type defaults to ‘int’ [-Wimplicit-int]
+  176 | get_w_damage(obj)
+      | ^~~~~~~~~~~~
+hit.c: In function ‘get_w_damage’:
+hit.c:180:11: warning: type defaults to ‘int’ in declaration of ‘to_hit’ [-Wimplicit-int]
+  180 |  register to_hit, damage;
+      |           ^~~~~~
+hit.c:180:19: warning: type defaults to ‘int’ in declaration of ‘damage’ [-Wimplicit-int]
+  180 |  register to_hit, damage;
+      |                   ^~~~~~
+hit.c:181:11: warning: type defaults to ‘int’ in declaration of ‘i’ [-Wimplicit-int]
+  181 |  register i = 0;
+      |           ^
+hit.c: At top level:
+hit.c:195:1: warning: return type defaults to ‘int’ [-Wimplicit-int]
+  195 | get_number(s)
+      | ^~~~~~~~~~
+hit.c: In function ‘get_number’:
+hit.c:198:11: warning: type defaults to ‘int’ in declaration of ‘i’ [-Wimplicit-int]
+  198 |  register i = 0;
+      |           ^
+hit.c:199:11: warning: type defaults to ‘int’ in declaration of ‘total’ [-Wimplicit-int]
+  199 |  register total = 0;
+      |           ^~~~~
+hit.c: At top level:
+hit.c:222:1: warning: return type defaults to ‘int’ [-Wimplicit-int]
+  222 | to_hit(obj)
+      | ^~~~~~
+hit.c:231:1: warning: return type defaults to ‘int’ [-Wimplicit-int]
+  231 | damage_for_strength()
+      | ^~~~~~~~~~~~~~~~~~~
+hit.c:261:1: warning: return type defaults to ‘int’ [-Wimplicit-int]
+  261 | mon_damage(monster, damage)
+      | ^~~~~~~~~~
+hit.c: In function ‘mon_damage’:
+hit.c:261:1: warning: type of ‘damage’ defaults to ‘int’ [-Wimplicit-int]
+In file included from hit.c:14:
+hit.c:273:27: warning: implicit declaration of function ‘get_dungeon_char’ [-Wimplicit-function-declaration]
+  273 |   mvaddch(row, col, (int) get_dungeon_char(row, col));
+      |                           ^~~~~~~~~~~~~~~~
+hit.c:276:3: warning: implicit declaration of function ‘cough_up’ [-Wimplicit-function-declaration]
+  276 |   cough_up(monster);
+      |   ^~~~~~~~
+hit.c:278:23: warning: incompatible implicit declaration of built-in function ‘strlen’
+  278 |   sprintf(hit_message+strlen(hit_message), "defeated the %s", mn);
+      |                       ^~~~~~
+hit.c:278:23: note: include ‘<string.h>’ or provide a declaration of ‘strlen’
+hit.c:281:3: warning: implicit declaration of function ‘add_exp’ [-Wimplicit-function-declaration]
+  281 |   add_exp(monster->kill_exp, 1);
+      |   ^~~~~~~
+hit.c:282:3: warning: implicit declaration of function ‘take_from_pack’ [-Wimplicit-function-declaration]
+  282 |   take_from_pack(monster, &level_monsters);
+      |   ^~~~~~~~~~~~~~
+hit.c:287:3: warning: implicit declaration of function ‘free_object’; did you mean ‘gr_object’? [-Wimplicit-function-declaration]
+  287 |   free_object(monster);
+      |   ^~~~~~~~~~~
+      |   gr_object
+hit.c: At top level:
+hit.c:293:1: warning: return type defaults to ‘int’ [-Wimplicit-int]
+  293 | fight(to_the_death)
+      | ^~~~~
+hit.c: In function ‘fight’:
+hit.c:302:28: warning: implicit declaration of function ‘rgetchar’; did you mean ‘getchar’? [-Wimplicit-function-declaration]
+  302 |  while (!is_direction(ch = rgetchar())) {
+      |                            ^~~~~~~~
+      |                            getchar
+hit.c:303:3: warning: implicit declaration of function ‘sound_bell’ [-Wimplicit-function-declaration]
+  303 |   sound_bell();
+      |   ^~~~~~~~~~
+hit.c:309:2: warning: implicit declaration of function ‘check_message’ [-Wimplicit-function-declaration]
+  309 |  check_message();
+      |  ^~~~~~~~~~~~~
+hit.c:311:3: warning: ‘return’ with no value, in function returning non-void
+  311 |   return;
+      |   ^~~~~~
+hit.c:293:1: note: declared here
+  293 | fight(to_the_death)
+      | ^~~~~
+hit.c:314:2: warning: implicit declaration of function ‘get_dir_rc’ [-Wimplicit-function-declaration]
+  314 |  get_dir_rc(ch, &row, &col, 0);
+      |  ^~~~~~~~~~
+hit.c:318:5: warning: implicit declaration of function ‘can_move’ [-Wimplicit-function-declaration]
+  318 |   (!can_move(rogue.row, rogue.col, row, col))) {
+      |     ^~~~~~~~
+hit.c:320:3: warning: ‘return’ with no value, in function returning non-void
+  320 |   return;
+      |   ^~~~~~
+hit.c:293:1: note: declared here
+  293 | fight(to_the_death)
+      | ^~~~~
+hit.c:323:3: warning: ‘return’ with no value, in function returning non-void
+  323 |   return;
+      |   ^~~~~~
+hit.c:293:1: note: declared here
+  293 | fight(to_the_death)
+      | ^~~~~
+hit.c:331:10: warning: implicit declaration of function ‘one_move_rogue’ [-Wimplicit-function-declaration]
+  331 |   (void) one_move_rogue(ch, 0);
+      |          ^~~~~~~~~~~~~~
+hit.c: At top level:
+hit.c:344:1: warning: return type defaults to ‘int’ [-Wimplicit-int]
+  344 | get_dir_rc(dir, row, col, allow_off_screen)
+      | ^~~~~~~~~~
+hit.c:397:1: warning: return type defaults to ‘int’ [-Wimplicit-int]
+  397 | get_hit_chance(weapon)
+      | ^~~~~~~~~~~~~~
+hit.c:408:1: warning: return type defaults to ‘int’ [-Wimplicit-int]
+  408 | get_weapon_damage(weapon)
+      | ^~~~~~~~~~~~~~~~~
+make: *** [Makefile:22: hit.o] Error 1
