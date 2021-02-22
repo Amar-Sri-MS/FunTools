@@ -30,6 +30,18 @@ app = Flask(__name__)
 app.register_blueprint(ingester_page)
 
 
+@app.errorhandler(Exception)
+def handle_exception(error):
+    """
+    Handling exceptions by sending only the error message.
+    This function is called whenever an unhandled Exception
+    is raised.
+    """
+    # TODO(Sourabh): Maybe redirect to a template with an error message instead
+    # of just displaying a message
+    return str(error)
+
+
 def main():
     config = config_loader.get_config()
 
@@ -163,6 +175,10 @@ class ElasticLogSearcher(object):
         ELASTICSEARCH_HOSTS = app.config['ELASTICSEARCH']['hosts']
         self.es = Elasticsearch(ELASTICSEARCH_HOSTS)
         self.index = index
+
+        # Check if index does not exist
+        if not self.es.indices.exists(index):
+            raise Exception(f'Logs not found for {index}')
 
     def search(self, state,
                query_term=None, source_filters=None, time_filters=None,
