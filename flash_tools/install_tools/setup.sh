@@ -147,10 +147,15 @@ if [[ $ccfg_install ]]; then
 	./run_fwupgrade.py ${FW_UPGRADE_ARGS} --upgrade-file ccfg=$ccfg_install
 	./run_fwupgrade.py ${FW_UPGRADE_ARGS} --upgrade-file ccfg=$ccfg_install --active
 else
-	feature_set=`dpcsh -nQ peek "config/boot_defaults/feature_set" | jq -Mr '.result' || true`
-	if [ ! -z "$feature_set" ]; then
-		log_msg "Updating ccfg \"$feature_set\""
-		./run_fwupgrade.py ${FW_UPGRADE_ARGS} -u ccfg --select-by-image-type "$feature_set"
+	feature_set_resp=`dpcsh -nQ peek "config/boot_defaults/feature_set" || true`
+	if echo -n "$feature_set_resp" | jq -Mre .result; then
+		feature_set=`echo -n "$feature_set_resp" | jq -Mr .result`
+		if [ ! -z "$feature_set" ]; then
+			log_msg "Updating ccfg \"$feature_set\""
+			./run_fwupgrade.py ${FW_UPGRADE_ARGS} -u ccfg --select-by-image-type "$feature_set"
+		fi
+	else
+		log_msg "Missing feature set"
 	fi
 fi
 
