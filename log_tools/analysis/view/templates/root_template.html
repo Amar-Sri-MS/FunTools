@@ -17,17 +17,17 @@
                 <tr>
                     <th>Job ID</th>
                     <th>Ingested Date</th>
-                    <th>Log lines</th>
-                    <th>Size taken by Log Analyzer</th>
+                    <th>Log Lines</th>
+                    <th>Log Analyzer Storage</th>
                 </tr>
             </thead>
             <tbody>
             {% for log in logs %}
                 <tr>
                     <td><a href="/log/{{log.name}}/dashboard">{{log.name}}</a></td>
-                    <td>{{log.creation_date}}</td>
-                    <td>{{log.doc_count}}</td>
-                    <td class="center-align">{{log.es_size}}</td>
+                    <td class="fixed-font">{{log.creation_date}}</td>
+                    <td class="right-align fixed-font">{{log.doc_count}}</td>
+                    <td class="right-align fixed-font caps">{{log.es_size}}</td>
                 </tr>
             {% endfor %}
             </tbody>

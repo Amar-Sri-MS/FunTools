@@ -22,4 +22,5 @@
 .index th {
     text-align: center;
     background-color: beige;
+    max-width: 150px;
 }

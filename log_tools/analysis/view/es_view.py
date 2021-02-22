@@ -96,9 +96,9 @@ def _render_root_page(log_ids, jinja_env, template):
         creation_date_epoch = int(log['creation.date'])
         # Separting out seconds and milliseconds from epoch
         creation_date_s, creation_date_ms = divmod(creation_date_epoch, 1000)
-        creation_date = '{}.{:03d}'.format(
-                                    time.strftime('%B %d, %Y %H:%M:%S', time.gmtime(creation_date_s)),
-                                    creation_date_ms)
+        creation_date = '{}'.format(
+                            time.strftime('%B %d, %Y %H:%M:%S', time.gmtime(creation_date_s)),
+                            )
 
         template_dict['logs'].append({
             'name': id,

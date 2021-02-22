@@ -37,6 +37,9 @@ h3 {
 .center-align {
     text-align: center;
 }
+.right-align {
+    text-align: right;
+}
 .content {
     margin: 10px;
 }
@@ -81,4 +84,10 @@ h3 {
 
 .form-group {
     margin: 10px 0px;
+}
+.caps {
+    text-transform: uppercase;
+}
+.fixed-font {
+    font-family: monospace;
 }
