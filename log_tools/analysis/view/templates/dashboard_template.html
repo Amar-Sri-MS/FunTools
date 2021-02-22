@@ -85,12 +85,13 @@
                 </div>
                 <div class="content">
                     <div id="log_level_stats">
-                        <div class="level_stat"><div>Total:</div> {{total_entries}}(100%)</div>
+                        <div class="level_stat"><div>Total</div>: <div class="fixed-font">{{total_entries}}(100%)</div></div>
                         <!-- Displaying log entries for a source and each log levels in % with rounded off to 2 decimals -->
                         {% for level, stat in log_level_stats.items() %}
                             {% set log_distribution = calculatePercentage(stat.count, total_entries) %}
                             <div class="level_stat" title="{{stat.keywords}}">
-                                <div><a href="{{stat.kibana_url}}" target="_blank">{{level}}</a>:</div> {{stat.count}}({{log_distribution}})
+                                <div><a href="{{stat.kibana_url}}" target="_blank">{{level}}</a></div>:
+                                <div class="fixed-font">{{stat.count}}({{log_distribution}})</div>
                             </div>
                         {% endfor %}
                     </div>
@@ -402,12 +403,12 @@
         // Sorting log levels by severity order
         const logLevels = Object.keys(stats).sort((level1, level2) => stats[level1]['order'] - stats[level2]['order']);
 
-        let divs = [`<div class="level_stat"><div><a href="${kibanaUrlForSource}" target="_blank">Total</a>:</div> ${totalEntriesForSource}(${Math.round((totalEntriesForSource/totalEntries)*100)}%)</div>`];
+        let divs = [`<div class="level_stat"><div><a href="${kibanaUrlForSource}" target="_blank">Total</a></div>: <div class="fixed-font">${totalEntriesForSource}(${Math.round((totalEntriesForSource/totalEntries)*100)}%)</div></div>`];
         for (const level of logLevels) {
             const stat = stats[level];
             // let logDistribution = Math.round((stat.count/totalEntriesForSource)*100);
             let logDistribution = ((stat.count/totalEntriesForSource)*100).toFixed(2);
-            divs.push(`<div class="level_stat" title="${stat.keywords}"><div><a href="${stat.kibana_url}" target="_blank">${level}</a>:</div> ${stat.count}(${logDistribution}%)</div>`);
+            divs.push(`<div class="level_stat" title="${stat.keywords}"><div><a href="${stat.kibana_url}" target="_blank">${level}</a></div>: <div class="fixed-font">${stat.count}(${logDistribution}%)</div></div>`);
         }
         logLevelStatsElement.innerHTML = divs.join('\n');
     }
