@@ -1,0 +1,16 @@
+#!/bin/sh
+
+PATH="/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin"
+
+case "$1" in
+	start)
+		mkdir -p /tmp/init
+		# (DEBUG) delay system booting after platform agent is started
+		echo 15 > /tmp/init/platform_agent.sleep.post
+		;;
+	*)
+		:
+		;;
+esac
+
+exit 0
