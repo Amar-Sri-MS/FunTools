@@ -10,7 +10,7 @@ ROGUE_OBJS = curses.o hit.o init.o instruct.o inventory.o level.o machdep.o main
 # -DCURSES enables a self-contained curses emulation package.  See notes
 # in curses.c for more info.
 
-CFLAGS = -c -DUNIX -DUNIX_SYS5  -D_DEFAULT_SOURCE
+CFLAGS = -c -g -w -DUNIX -DUNIX_SYS5  -D_DEFAULT_SOURCE
 
 rogue: $(ROGUE_OBJS)
 	$(CC) $(ROGUE_OBJS) -o rogue -lcurses
