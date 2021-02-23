@@ -7,6 +7,8 @@ case "$1" in
 		mkdir -p /tmp/init
 		# (DEBUG) delay system booting after platform agent is started
 		echo 15 > /tmp/init/platform_agent.sleep.post
+		# (DEBUG) delay declaring boot success
+		echo 30 > /tmp/init/FunInit.sleep.pre
 		;;
 	*)
 		:
