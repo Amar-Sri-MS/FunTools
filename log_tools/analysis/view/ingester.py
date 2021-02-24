@@ -11,6 +11,7 @@ import os
 import requests
 import shutil
 import sys
+import yaml
 
 sys.path.insert(0, '..')
 
@@ -21,7 +22,9 @@ from analysis import ingest as ingest_handler
 ingester_page = Blueprint('ingester_page', __name__)
 
 DOWNLOAD_DIRECTORY = 'downloads'
-QA_JOB_INFO_ENDPOINT = 'http://integration.fungible.local/api/v1/regression/suite_executions'
+QA_REGRESSION_BASE_ENDPOINT = 'http://integration.fungible.local/api/v1/regression'
+QA_JOB_INFO_ENDPOINT = f'{QA_REGRESSION_BASE_ENDPOINT}/suite_executions'
+QA_LOGS_ENDPOINT = f'{QA_REGRESSION_BASE_ENDPOINT}/test_case_time_series'
 QA_STATIC_ENDPOINT = 'http://integration.fungible.local/static/logs'
 
 
@@ -45,16 +48,10 @@ def ingest():
                 'msg': 'Missing JOB ID'
             })
         job_info = fetch_qa_job_info(job_id)
-
-        # We want the "Script cleanup" test case
-        # test_case_exec_ids is a stringified list of IDs
-        # Assumption that the last id is always the one we want
-        test_case_exec_ids = job_info['data']['test_case_execution_ids'][1:-1].split(', ')
+        log_files = fetch_qa_logs(job_id)
 
         # Start ingestion
-        ingestion_status = ingest_logs(job_id, test_case_exec_ids[-1], job_info)
-        # Clean up the downloaded files
-        clean_up(job_id)
+        ingestion_status = ingest_logs(job_id, job_info, log_files)
 
         if not ingestion_status['success']:
             return render_template('ingester.html', feedback={
@@ -73,6 +70,9 @@ def ingest():
             'success': False,
             'msg': str(e)
         })
+    finally:
+        # Clean up the downloaded files
+        clean_up(job_id)
 
 
 def fetch_qa_job_info(job_id):
@@ -89,6 +89,46 @@ def fetch_qa_job_info(job_id):
     return job_info
 
 
+def fetch_qa_logs(job_id):
+    """
+    Fetches a list of QA log filenames
+    QA API returns a list of log info containing data
+    in the format:
+    {
+        description: "CS logs tgz",
+        filename: "/regression/Integration/fun_test/web/static/logs/s_170427/_0script_helper.py_170427_1783447_fc_log.tgz",
+        asset_type: "Fungible-controller",
+        asset_id: "FungibleController: mpoc-server06",
+        category: "Diagnostics",
+        sub_category: "general"
+    }
+    """
+    url = f'{QA_LOGS_ENDPOINT}/{job_id}?type=200'
+    response = requests.get(url)
+    job_logs = response.json()
+    if not (job_logs and job_logs['data']):
+        raise Exception('Logs not found')
+    return _filter_qa_log_files(job_logs)
+
+
+def _filter_qa_log_files(job_logs):
+    """ Filters out only required QA log files """
+    # FC log archives for single node and HA
+    log_filenames_to_ingest = ('fc_log.tgz', 'fcs_log.tgz')
+    log_files = list()
+    for job_log in job_logs['data']:
+        log = job_log['data']
+
+        # We are not interested in other logs
+        if log['category'] != 'Diagnostics':
+            continue
+
+        if log['filename'].endswith(log_filenames_to_ingest):
+            log_files.append(log['filename'])
+
+    return log_files
+
+
 def _get_valid_files(path):
     """ Listing valid files in a given "path" """
     return [file for file in os.listdir(path)
@@ -97,93 +137,126 @@ def _get_valid_files(path):
             ]
 
 
-def ingest_logs(job_id, test_case_exec_id, job_info):
+def ingest_logs(job_id, job_info, log_files):
     """
-    Ingesting logs using "job_id" and "test_case_exec_id"
+    Ingesting logs using "job_id" and "log_files"
 
     Required job_info to get the release train info and
     ingest logs accordingly.
 
-    This function first checks for logs in single node FC
-    and then if not found checks in HA.
+    This function downloads the log file and ingest
+    it to the Log Analyzer.
     """
     path = f'{DOWNLOAD_DIRECTORY}/{job_id}'
     file_path = os.path.abspath(os.path.dirname(__file__))
     release_train = job_info['data']['primary_release_train']
+    QA_LOGS_DIRECTORY = '/regression/Integration/fun_test/web/static/logs'
+    found_logs = False
 
-    # Format of FC log archive which is stored in QA
-    FC_LOG_ENDPOINT = f'{QA_STATIC_ENDPOINT}/s_{job_id}/_0fc_bundle_sanity.py_{job_id}_{test_case_exec_id}_fc_log.tgz'
-    # Format of FCS log archive which is stored in QA
-    FCS_LOG_ENDPOINT = f'{QA_STATIC_ENDPOINT}/s_{job_id}/_0fc_bundle_sanity.py_{job_id}_{test_case_exec_id}_fcs_log.tgz'
+    manifest_contents = list()
 
-    # TODO(Sourabh): A way to differentiate between single FC and HA jobs
-    # using the job_info.
+    for log_file in log_files:
+        log_dir = log_file.split(QA_LOGS_DIRECTORY)[1]
+        url = f'{QA_STATIC_ENDPOINT}{log_dir}'
+        if check_and_download_logs(url, path):
+            found_logs = True
+            # single node FC
+            if log_file.endswith('_fc_log.tgz'):
+                filename = log_file.split('/')[-1].replace(' ', '_')
+                archive_path = f'{path}/{filename}'
+                archive_extractor.extract(archive_path)
 
-    # single node FC
-    if check_and_download_logs(FC_LOG_ENDPOINT, path):
-        filename = FC_LOG_ENDPOINT.split('/')[-1].replace(' ', '_')
-        archive_path = f'{path}/{filename}'
-        archive_extractor.extract(archive_path)
+                archive_name = os.path.splitext(filename)[0]
+                # Path to the extracted log files
+                LOG_DIR = f'{path}/{archive_name}'
 
-        archive_name = os.path.splitext(filename)[0]
-        # Path to the extracted log files
-        LOG_DIR = f'{path}/{archive_name}'
+                if release_train in ('master', '2.0', '2.0.1'):
+                    # Copying FUNLOG_MANIFEST file
+                    template_path = os.path.join(file_path, '../config/templates/fc/FUNLOG_MANIFEST')
+                    shutil.copy(template_path, LOG_DIR)
+                else:
+                    raise Exception('Unsupported release train')
 
-        if release_train in ('master', '2.0', '2.0.1'):
-            # Copying FUNLOG_MANIFEST file
-            template_path = os.path.join(file_path, '../config/templates/fc/FUNLOG_MANIFEST')
-            shutil.copy(template_path, LOG_DIR)
+                manifest_contents.append(f'frn::::::bundle::{archive_name}')
 
-            # Start the ingestion
-            return ingest_handler.start_pipeline(LOG_DIR, f'qa-{job_id}')
-        else:
-            raise Exception('Unsupported release train')
+            # HA FC
+            elif log_file.endswith('_fcs_log.tgz'):
+                filename = log_file.split('/')[-1].replace(' ', '_')
+                archive_path = f'{path}/{filename}'
+                # Extracting the archive
+                archive_extractor.extract(archive_path)
 
-    # HA FC
-    elif check_and_download_logs(FCS_LOG_ENDPOINT, path):
-        filename = FCS_LOG_ENDPOINT.split('/')[-1].replace(' ', '_')
-        archive_path = f'{path}/{filename}'
-        # Extracting the archive
-        archive_extractor.extract(archive_path)
+                archive_name = os.path.splitext(filename)[0]
+                # Path to the extracted log files
+                LOG_DIR = f'{path}/{archive_name}/tmp/debug_logs'
 
-        archive_name = os.path.splitext(filename)[0]
-        # Path to the extracted log files
-        LOG_DIR = f'{path}/{archive_name}/tmp/debug_logs'
+                # master release
+                if release_train == 'master':
+                    files = _get_valid_files(LOG_DIR)
+                    # TODO(Sourabh): This is an assumption that there will not be
+                    # other files in this directory
 
-        # master release
-        if release_train == 'master':
-            files = _get_valid_files(LOG_DIR)
-            # TODO(Sourabh): This is an assumption that there will not be
-            # other files in this directory
+                    # The path contains only a tar file, with a FUNLOG_MANIFEST
+                    # file, which needs to be ingested
+                    ingest_path = f'{LOG_DIR}/{files[0]}'
 
-            # The path contains only a tar file, with a FUNLOG_MANIFEST
-            # file, which needs to be ingested
-            ingest_path = f'{LOG_DIR}/{files[0]}'
+                    manifest_contents.append(f'frn::::::archive:{archive_name}/tmp/debug_logs:{files[0]}')
+                elif release_train == '2.0' or release_train == '2.0.1':
+                    folders = next(os.walk(os.path.join(LOG_DIR,'.')))[1]
 
-            # Start the ingestion
-            return ingest_handler.start_pipeline(ingest_path, f'qa-{job_id}')
-        elif release_train == '2.0' or release_train == '2.0.1':
-            folders = next(os.walk(os.path.join(LOG_DIR,'.')))[1]
+                    # TODO(Sourabh): This is an assumption that there will not be
+                    # other folders in this directory
+                    log_folder_name = folders[0]
+                    # Path to the extracted log files
+                    LOG_DIR = os.path.join(LOG_DIR, log_folder_name)
 
-            # TODO(Sourabh): This is an assumption that there will not be
-            # other folders in this directory
-            log_folder_name = folders[0]
-            # Path to the extracted log files
-            LOG_DIR = os.path.join(LOG_DIR, log_folder_name)
+                    # Creating FUNLOG_MANIFEST file by replacing timestamp folder name
+                    template_path = os.path.join(file_path, '../config/templates/ha/FUNLOG_MANIFEST')
+                    with open(template_path, 'rt') as fin:
+                        with open(f'{LOG_DIR}/FUNLOG_MANIFEST', 'wt') as fout:
+                            for line in fin:
+                                fout.write(line.replace('<TIMESTAMP>', log_folder_name))
 
-            # Creating FUNLOG_MANIFEST file by replacing timestamp folder name
-            template_path = os.path.join(file_path, '../config/templates/ha/FUNLOG_MANIFEST')
-            with open(template_path, 'rt') as fin:
-                with open(f'{LOG_DIR}/FUNLOG_MANIFEST', 'wt') as fout:
-                    for line in fin:
-                        fout.write(line.replace('<TIMESTAMP>', log_folder_name))
+                    manifest_contents.append(f'frn::::::bundle:{archive_name}/tmp/debug_logs:{log_folder_name}')
+                else:
+                    raise Exception('Unsupported release train')
 
-            # Start the ingestion
-            return ingest_handler.start_pipeline(LOG_DIR, f'qa-{job_id}')
-        else:
-            raise Exception('Unsupported release train')
-    else:
+            # system logs
+            elif log_file.endswith('system_log.tar'):
+                filename = log_file.split('/')[-1].replace(' ', '_')
+                archive_path = f'{path}/{filename}'
+                archive_extractor.extract(archive_path)
+
+                archive_name = os.path.splitext(filename)[0]
+                # Path to the extracted log files
+                LOG_DIR = f'{path}/{archive_name}'
+
+                if release_train in ('master', '2.0', '2.0.1'):
+                    # Copying FUNLOG_MANIFEST file
+                    template_path = os.path.join(file_path, '../config/templates/system/FUNLOG_MANIFEST')
+                    shutil.copy(template_path, LOG_DIR)
+
+                    manifest_contents.append(f'frn::::::bundle::{archive_name}')
+                else:
+                    raise Exception('Unsupported release train')
+
+    if not found_logs:
         raise Exception('Logs not found')
+
+    _create_manifest(path, contents=manifest_contents)
+    # Start the ingestion
+    return ingest_handler.start_pipeline(path, f'qa-{job_id}')
+
+
+def _create_manifest(path, metadata={}, contents=[]):
+    """ Creates manifest file at the given path """
+    manifest = {
+        'metadata': metadata,
+        'contents': contents
+    }
+
+    with open(f'{path}/FUNLOG_MANIFEST', 'w') as file:
+        yaml.dump(manifest, file)
 
 
 def check_and_download_logs(url, path):
