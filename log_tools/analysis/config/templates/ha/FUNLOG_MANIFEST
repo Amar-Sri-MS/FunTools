@@ -15,9 +15,6 @@ contents:
   - frn:composer:cluster:node_1:vm:kafka:folder:node1:var/opt/fungible/fc/deploy_dir/logs/logs-<TIMESTAMP>/fungible_app_logs/fungible/fc/kafka
   - frn:composer:cluster:node_1:vm:kafka-metadata:folder:node1:var/opt/fungible/fc/deploy_dir/logs/logs-<TIMESTAMP>/fungible_app_logs/fungible/fc/kafka-metadata
   - frn:composer:cluster:node_1:vm:node-service:folder:node1:var/opt/fungible/fc/deploy_dir/logs/logs-<TIMESTAMP>/fungible_app_logs/fungible/fc/nms
-  - frn:composer:DPU::vm:platform-agent:textfile:node1:var/opt/fungible/fc/deploy_dir/logs/logs-<TIMESTAMP>/fungible_app_logs/fungible/fc/nms/archives/other/PA*-platformagent.log*
-  - frn:composer:DPU::vm:storage-agent:textfile:node1:var/opt/fungible/fc/deploy_dir/logs/logs-<TIMESTAMP>/fungible_app_logs/fungible/fc/nms/archives/other/PA*-storageagent.log*
-  - frn:composer:DPU::vm:funos:textfile:node1:var/opt/fungible/fc/deploy_dir/logs/logs-<TIMESTAMP>/fungible_app_logs/fungible/fc/nms/archives/other/FOS*-funos.log*
   - frn:composer:cluster:node_1:vm:dataplacement:folder:node1:var/opt/fungible/fc/deploy_dir/logs/logs-<TIMESTAMP>/fungible_app_logs/fungible/fc/sc/dataplacement
   - frn:composer:cluster:node_1:vm:discovery:folder:node1:var/opt/fungible/fc/deploy_dir/logs/logs-<TIMESTAMP>/fungible_app_logs/fungible/fc/sc/discovery
   - frn:composer:cluster:node_1:vm:storage_consumer:folder:node1:var/opt/fungible/fc/deploy_dir/logs/logs-<TIMESTAMP>/fungible_app_logs/fungible/fc/sc/lrm_consumer
@@ -46,9 +43,6 @@ contents:
   - frn:composer:cluster:node_2:vm:kafka:folder:node2:var/opt/fungible/fc/deploy_dir/logs/logs-<TIMESTAMP>/fungible_app_logs/fungible/fc/kafka
   - frn:composer:cluster:node_2:vm:kafka-metadata:folder:node2:var/opt/fungible/fc/deploy_dir/logs/logs-<TIMESTAMP>/fungible_app_logs/fungible/fc/kafka-metadata
   - frn:composer:cluster:node_2:vm:node-service:folder:node2:var/opt/fungible/fc/deploy_dir/logs/logs-<TIMESTAMP>/fungible_app_logs/fungible/fc/nms
-  - frn:composer:DPU::vm:platform-agent:textfile:node2:var/opt/fungible/fc/deploy_dir/logs/logs-<TIMESTAMP>/fungible_app_logs/fungible/fc/nms/archives/other/PA*-platformagent.log*
-  - frn:composer:DPU::vm:storage-agent:textfile:node2:var/opt/fungible/fc/deploy_dir/logs/logs-<TIMESTAMP>/fungible_app_logs/fungible/fc/nms/archives/other/PA*-storageagent.log*
-  - frn:composer:DPU::vm:funos:textfile:node2:var/opt/fungible/fc/deploy_dir/logs/logs-<TIMESTAMP>/fungible_app_logs/fungible/fc/nms/archives/other/FOS*-funos.log*
   - frn:composer:cluster:node_2:vm:dataplacement:folder:node2:var/opt/fungible/fc/deploy_dir/logs/logs-<TIMESTAMP>/fungible_app_logs/fungible/fc/sc/dataplacement
   - frn:composer:cluster:node_2:vm:discovery:folder:node2:var/opt/fungible/fc/deploy_dir/logs/logs-<TIMESTAMP>/fungible_app_logs/fungible/fc/sc/discovery
   - frn:composer:cluster:node_2:vm:storage_consumer:folder:node2:var/opt/fungible/fc/deploy_dir/logs/logs-<TIMESTAMP>/fungible_app_logs/fungible/fc/sc/lrm_consumer
@@ -77,9 +71,6 @@ contents:
   - frn:composer:cluster:node_3:vm:kafka:folder:node3:var/opt/fungible/fc/deploy_dir/logs/logs-<TIMESTAMP>/fungible_app_logs/fungible/fc/kafka
   - frn:composer:cluster:node_3:vm:kafka-metadata:folder:node3:var/opt/fungible/fc/deploy_dir/logs/logs-<TIMESTAMP>/fungible_app_logs/fungible/fc/kafka-metadata
   - frn:composer:cluster:node_3:vm:node-service:folder:node3:var/opt/fungible/fc/deploy_dir/logs/logs-<TIMESTAMP>/fungible_app_logs/fungible/fc/nms
-  - frn:composer:DPU::vm:platform-agent:textfile:node3:var/opt/fungible/fc/deploy_dir/logs/logs-<TIMESTAMP>/fungible_app_logs/fungible/fc/nms/archives/other/PA*-platformagent.log*
-  - frn:composer:DPU::vm:storage-agent:textfile:node3:var/opt/fungible/fc/deploy_dir/logs/logs-<TIMESTAMP>/fungible_app_logs/fungible/fc/nms/archives/other/PA*-storageagent.log*
-  - frn:composer:DPU::vm:funos:textfile:node3:var/opt/fungible/fc/deploy_dir/logs/logs-<TIMESTAMP>/fungible_app_logs/fungible/fc/nms/archives/other/FOS*-funos.log*
   - frn:composer:cluster:node_3:vm:dataplacement:folder:node3:var/opt/fungible/fc/deploy_dir/logs/logs-<TIMESTAMP>/fungible_app_logs/fungible/fc/sc/dataplacement
   - frn:composer:cluster:node_3:vm:discovery:folder:node3:var/opt/fungible/fc/deploy_dir/logs/logs-<TIMESTAMP>/fungible_app_logs/fungible/fc/sc/discovery
   - frn:composer:cluster:node_3:vm:storage_consumer:folder:node3:var/opt/fungible/fc/deploy_dir/logs/logs-<TIMESTAMP>/fungible_app_logs/fungible/fc/sc/lrm_consumer

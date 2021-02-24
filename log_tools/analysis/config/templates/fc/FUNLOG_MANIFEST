@@ -5,9 +5,6 @@ contents:
   - frn:composer:controller::host:cassandra:folder:var/log/fungible/fc:cassandra
   - frn:composer:controller::host:kafka:folder:var/log/fungible/fc:kafka
   - frn:composer:controller::host:node-service:folder:var/log/fungible/fc:nms
-  - frn:platform:DPU::system:platform-agent:textfile:var/log/fungible/fc/nms:archives/other/*platformagent.log*
-  - frn:platform:DPU::system:storage-agent:textfile:var/log/fungible/fc/nms:archives/other/*storageagent.log*
-  - frn:platform:DPU::system:funos:textfile:var/log/fungible/fc/nms:archives/other/*funos.log*
   - frn:composer:controller::host:telemetry-service:folder:var/log/fungible/fc:tms
   - frn:composer:controller::host:dataplacement:folder:var/log/fungible/fc/sclogs:dataplacement
   - frn:composer:controller::host:discovery:folder:var/log/fungible/fc/sclogs:discovery
