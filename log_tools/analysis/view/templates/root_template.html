@@ -7,7 +7,7 @@
 </head>
 <body>
     {% include 'nav_bar.html' ignore missing %}
-    <div class="content" style="align-items: flex-end;">
+    <div class="content">
         <a href="/ingest">Click here to ingest logs from QA dashboard</a>
     </div>
     <div class="content">
@@ -17,13 +17,17 @@
                 <tr>
                     <th>Job ID</th>
                     <th>Ingested Date</th>
+                    <th>Log Lines</th>
+                    <th>Log Analyzer Storage</th>
                 </tr>
             </thead>
             <tbody>
             {% for log in logs %}
                 <tr>
                     <td><a href="/log/{{log.name}}/dashboard">{{log.name}}</a></td>
-                    <td>{{log.creation_date}}</td>
+                    <td class="fixed-font">{{log.creation_date}}</td>
+                    <td class="right-align fixed-font">{{log.doc_count}}</td>
+                    <td class="right-align fixed-font caps">{{log.es_size}}</td>
                 </tr>
             {% endfor %}
             </tbody>

@@ -37,6 +37,9 @@ h3 {
 .center-align {
     text-align: center;
 }
+.right-align {
+    text-align: right;
+}
 .content {
     margin: 10px;
 }
@@ -70,7 +73,22 @@ h3 {
     transform: rotate(-45deg);
     -webkit-transform: rotate(-45deg);
 }
+.up {
+    transform: rotate(-135deg);
+    -webkit-transform: rotate(-135deg);
+}
+.down {
+    transform: rotate(45deg);
+    -webkit-transform: rotate(45deg);
+}
 
 .form-group {
     margin: 10px 0px;
+}
+.caps {
+    text-transform: uppercase;
+}
+.fixed-font {
+    font-family: monospace;
+    font-size: 14px;
 }

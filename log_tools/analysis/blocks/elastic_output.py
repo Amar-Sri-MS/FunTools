@@ -3,6 +3,7 @@
 #
 import datetime
 import json
+import os
 import requests
 import sys
 
@@ -11,28 +12,14 @@ from elasticsearch7.helpers import parallel_bulk
 from itertools import tee
 
 from blocks.block import Block
+from analysis import config_loader
+
 
 class ElasticsearchOutput(Block):
     """ Adds all messages as documents in an elasticsearch index. """
 
     def __init__(self):
-        self.config = {}
-
-        # Reading config file if available.
-        try:
-            with open('./config.json', 'r') as f:
-                self.config = json.load(f)
-        except IOError:
-            print('Config file not found! Checking for default config file..')
-
-        # Reading default config file if available.
-        try:
-            with open('./default_config.json', 'r') as f:
-                default_config = json.load(f)
-            # Overriding default config with custom config
-            self.config = { **default_config, **self.config }
-        except IOError:
-            sys.exit('Default config file not found! Exiting..')
+        self.config = config_loader.get_config()
 
         ELASTICSEARCH_HOSTS = self.config['ELASTICSEARCH']['hosts']
         ELASTICSEARCH_TIMEOUT = self.config['ELASTICSEARCH']['timeout']

@@ -40,7 +40,6 @@ def start_pipeline(base_path, build_id, output_block='ElasticOutput'):
     build_id - Unique identfier for the ingestion
     output_block (defaults to ES)
     """
-    is_successful = True
     start = time.time()
     try:
         # If the base_path is an archive then extract it
@@ -48,6 +47,9 @@ def start_pipeline(base_path, build_id, output_block='ElasticOutput'):
             archive_extractor.extract(base_path)
             # Remove the extension from the base path
             base_path = os.path.splitext(base_path)[0]
+
+        if not os.path.exists(os.path.join(base_path, 'FUNLOG_MANIFEST')):
+            raise Exception('Could not find manifest file')
 
         env = dict()
         env['logdir'] = base_path
@@ -61,15 +63,18 @@ def start_pipeline(base_path, build_id, output_block='ElasticOutput'):
         p.process()
 
     except Exception as e:
-        print(f'ERROR: Ingestion for {job_id} - {str(e)}')
-        is_successful = False
-    finally:
-        end = time.time()
-        time_taken = end - start
-        print(f'COMPLETED: Time spent processing: {time_taken}s')
+        print(f'ERROR: Ingestion for {build_id} - {str(e)}')
+        return {
+            'success': False,
+            'msg': str(e)
+        }
+
+    end = time.time()
+    time_taken = end - start
+    print(f'COMPLETED: Time spent processing: {time_taken}s')
 
     return {
-        'success': is_successful,
+        'success': True,
         'time_taken': time_taken
     }
 
@@ -78,6 +83,9 @@ def build_pipeline_cfg(path, output_block):
     """ Constructs pipeline and metadata based on the manifest file """
     cfg = dict()
     pipeline_cfg, metadata = parse_manifest(path)
+
+    if not pipeline_cfg:
+        raise Exception('Could not parse the manifest file')
 
     # Adding output pipeline
     pipeline_cfg.extend(output_pipeline(output_block))
@@ -379,6 +387,8 @@ def output_pipeline(output_block = 'ElasticOutput'):
         return [merge, dt, html]
 
     elif output_block == 'ElasticOutput':
+        file_path = os.path.abspath(os.path.dirname(__file__))
+        anchors_path = os.path.join(file_path, 'config/anchors.json')
         output = {
             'id': 'merge',
             'block': 'ElasticOutput',
@@ -393,7 +403,7 @@ def output_pipeline(output_block = 'ElasticOutput'):
             'cfg': {
                 'anchor_files': [
                     # TODO(Sourabh) Need to include anchors from each module
-                    'config/anchors.json'
+                    anchors_path
                 ],
                 'anchor_keys': None
             }

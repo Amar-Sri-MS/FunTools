@@ -23,26 +23,27 @@ from pathlib import Path
 from requests.exceptions import HTTPError
 from urllib.parse import quote_plus
 
+from analysis import config_loader
+
 
 app = Flask(__name__)
 app.register_blueprint(ingester_page)
 
 
-def main():
-    config = {}
-    try:
-        with open('config.json', 'r') as f:
-            config = json.load(f)
-    except IOError:
-        print('Config file not found! Checking for default config file..')
+@app.errorhandler(Exception)
+def handle_exception(error):
+    """
+    Handling exceptions by sending only the error message.
+    This function is called whenever an unhandled Exception
+    is raised.
+    """
+    # TODO(Sourabh): Maybe redirect to a template with an error message instead
+    # of just displaying a message
+    return str(error)
 
-    try:
-        with open('default_config.json', 'r') as f:
-            default_config = json.load(f)
-        # Overriding default config with custom config
-        config = { **default_config, **config }
-    except IOError:
-        sys.exit('Default config file not found! Exiting..')
+
+def main():
+    config = config_loader.get_config()
 
     # Updating Flask's config with the configs from file
     app.config.update(config)
@@ -55,7 +56,14 @@ def root():
     ELASTICSEARCH_HOSTS = app.config['ELASTICSEARCH']['hosts']
     es = Elasticsearch(ELASTICSEARCH_HOSTS)
 
-    indices = es.indices.get('log_*')
+    # Using the ES CAT API to get indices
+    # CAT API supports sorting and returns more data
+    indices = es.cat.indices(
+        index='log_*',
+        h='health,index,id,docs.count,store.size,creation.date',
+        format='json',
+        s='creation.date:desc'
+    )
 
     # Assume our template is right next door to us.
     dir = os.path.join(_get_script_dir(), 'templates')
@@ -79,22 +87,26 @@ def _render_root_page(log_ids, jinja_env, template):
     template_dict = {}
     template_dict['logs'] = list()
 
-    for id, log in log_ids.items():
+    for log in log_ids:
+        id = log['index']
         kibana_base_url = _get_kibana_base_url(id)
         # Replacing KIBANA_QUERY with empty string since we do not
         # want to query and want only the URL to the Kibana Dashboard
         kibana_url = kibana_base_url.replace('KIBANA_QUERY', '')
-        creation_date_epoch = int(log.get('settings').get('index').get('creation_date'))
+        creation_date_epoch = int(log['creation.date'])
         # Separting out seconds and milliseconds from epoch
         creation_date_s, creation_date_ms = divmod(creation_date_epoch, 1000)
-        creation_date = '{}.{:03d}'.format(
-                                    time.strftime('%B %d, %Y %H:%M:%S', time.gmtime(creation_date_s)),
-                                    creation_date_ms)
+        creation_date = '{}'.format(
+                            time.strftime('%B %d, %Y %H:%M:%S', time.gmtime(creation_date_s)),
+                            )
 
         template_dict['logs'].append({
             'name': id,
             'link': kibana_url,
-            'creation_date': creation_date
+            'creation_date': creation_date,
+            'health': log['health'],
+            'doc_count': log['docs.count'],
+            'es_size': log['store.size']
         })
 
     result = template.render(template_dict, env=jinja_env)
@@ -163,6 +175,10 @@ class ElasticLogSearcher(object):
         ELASTICSEARCH_HOSTS = app.config['ELASTICSEARCH']['hosts']
         self.es = Elasticsearch(ELASTICSEARCH_HOSTS)
         self.index = index
+
+        # Check if index does not exist
+        if not self.es.indices.exists(index):
+            raise Exception(f'Logs not found for {index}')
 
     def search(self, state,
                query_term=None, source_filters=None, time_filters=None,
@@ -766,7 +782,12 @@ def _render_dashboard_page(log_id, jinja_env, template):
     system_types = es.get_unique_entries('system_type')
     system_ids = es.get_unique_entries('system_id')
     unique_entries = es.get_aggregated_unique_entries(['system_type', 'system_id'], ['src'])
-    recent_logs = _get_recent_logs(log_id, RECENT_LOGS_SIZE, log_levels=default_log_levels[0:1])
+    log_level_stats = _get_log_level_stats(log_id)
+
+    # Fetch the first non zero log level
+    nonzero_log_levels = [level for level in default_log_levels if log_level_stats[level]['count'] > 0]
+
+    recent_logs = _get_recent_logs(log_id, RECENT_LOGS_SIZE, log_levels=nonzero_log_levels[0:1])
 
     analytics_data = _get_analytics_data(log_id)
 
@@ -777,7 +798,8 @@ def _render_dashboard_page(log_id, jinja_env, template):
     template_dict['system_ids'] = system_ids
     template_dict['unique_entries'] = unique_entries
     template_dict['kibana_base_url'] = kibana_base_url
-    template_dict['log_level_stats'] = _get_log_level_stats(log_id)
+    template_dict['log_level_stats'] = log_level_stats
+    template_dict['log_level_for_recent_logs'] = nonzero_log_levels[0]
     template_dict['recent_logs'] = _render_log_entries(recent_logs)
     template_dict['analytics_data'] = json.dumps(analytics_data)
 
@@ -813,7 +835,7 @@ def _get_log_level_stats(log_id, sources=[], log_levels=None, time_filters=None)
         document_counts[level] = {
             'order': idx,
             'count': es.get_document_count(keyword_query_terms, sources, time_filters),
-            'kibana_url': kibana_base_url.replace('KIBANA_QUERY', kibana_query),
+            'kibana_url': kibana_base_url.replace('KIBANA_QUERY', quote_plus(kibana_query)),
             'keywords': ', '.join(keyword_for_level[level])
         }
 

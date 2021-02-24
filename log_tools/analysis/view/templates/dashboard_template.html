@@ -24,13 +24,18 @@
                         {% set system_type_index = loop.index0 %}
                         <div class="filter_box">
                             <div class="filter_box_header">
-                                <input type="checkbox" id="{{system_type['key']}}" name="system_type" data-system_type_index="{{system_type_index}}"
+                                <div>
+                                    <input type="checkbox" id="{{system_type['key']}}" name="system_type" data-system_type_index="{{system_type_index}}"
                                     value="{{system_type['key']}}" onclick="toggleSystemTypeSelection(this)" checked />
-                                <label for="{{system_type['key']}}">
-                                    System Type: {{system_type['key']}} ({{total_entries}})
-                                </label>
+                                    <label for="{{system_type['key']}}">
+                                        System Type: {{system_type['key']}} ({{total_entries}})
+                                    </label>
+                                </div>
+                                <div style="padding: 0px 5px; cursor: pointer;" onclick="toggleShowFilterBox(this, `filter-box-content-{{system_type['key']}}`)">
+                                    <span class="arrow down"></span>
+                                </div>
                             </div>
-                            <div class="filter_box_content">
+                            <div class="filter_box_content" id="filter-box-content-{{system_type['key']}}">
                                 <ul>
                                 {% for system_id in system_type['system_id']['buckets'] %}
                                     {% set system_id_distribution = calculatePercentage(system_id['doc_count'], total_entries) %}
@@ -80,12 +85,13 @@
                 </div>
                 <div class="content">
                     <div id="log_level_stats">
-                        <div class="level_stat">Total: {{total_entries}}(100%)</div>
+                        <div class="level_stat"><div>Total</div>: <div class="fixed-font">{{total_entries}}(100%)</div></div>
                         <!-- Displaying log entries for a source and each log levels in % with rounded off to 2 decimals -->
                         {% for level, stat in log_level_stats.items() %}
                             {% set log_distribution = calculatePercentage(stat.count, total_entries) %}
                             <div class="level_stat" title="{{stat.keywords}}">
-                                <a href="{{stat.kibana_url}}" target="_blank">{{level}}</a>: {{stat.count}}({{log_distribution}})
+                                <div><a href="{{stat.kibana_url}}" target="_blank">{{level}}</a></div>:
+                                <div class="fixed-font">{{stat.count}}({{log_distribution}})</div>
                             </div>
                         {% endfor %}
                     </div>
@@ -118,7 +124,11 @@
             <h3>Recent
                 <select name="level" id="level" onchange="onSelectLevelForRecentLogs(this)">
                     {% for level, stat in log_level_stats.items() %}
-                        <option value="{{level}}">{{level}}</option>
+                        {% if level == log_level_for_recent_logs %}
+                            <option value="{{level}}" selected>{{level}}</option>
+                        {% else %}
+                            <option value="{{level}}">{{level}}</option>
+                        {% endif %}
                     {% endfor %}
                 </select>
                 logs for
@@ -191,7 +201,7 @@
     let logLevelStats = {{log_level_stats}};
     const sortedLogLevel = Object.keys(logLevelStats).sort((level1, level2) => logLevelStats[level1]['order'] - logLevelStats[level2]['order']);
     let selectedSourceForLogLevelStats = "all";
-    let selectedSourceForRecentLogs = "all", selectedLevelForRecentLogs = sortedLogLevel[0];
+    let selectedSourceForRecentLogs = "all", selectedLevelForRecentLogs = "{{log_level_for_recent_logs}}";
 
     const analyticsData = {{analytics_data}};
     let selectedSourceForAnchors = "all", showOnlyFailedAnchors = true;
@@ -393,12 +403,12 @@
         // Sorting log levels by severity order
         const logLevels = Object.keys(stats).sort((level1, level2) => stats[level1]['order'] - stats[level2]['order']);
 
-        let divs = [`<div class="level_stat"><a href="${kibanaUrlForSource}" target="_blank">Total</a>: ${totalEntriesForSource}(${Math.round((totalEntriesForSource/totalEntries)*100)}%)</div>`];
+        let divs = [`<div class="level_stat"><div><a href="${kibanaUrlForSource}" target="_blank">Total</a></div>: <div class="fixed-font">${totalEntriesForSource}(${Math.round((totalEntriesForSource/totalEntries)*100)}%)</div></div>`];
         for (const level of logLevels) {
             const stat = stats[level];
             // let logDistribution = Math.round((stat.count/totalEntriesForSource)*100);
             let logDistribution = ((stat.count/totalEntriesForSource)*100).toFixed(2);
-            divs.push(`<div class="level_stat" title="${stat.keywords}"><a href="${stat.kibana_url}" target="_blank">${level}</a>: ${stat.count}(${logDistribution}%)</div>`);
+            divs.push(`<div class="level_stat" title="${stat.keywords}"><div><a href="${stat.kibana_url}" target="_blank">${level}</a></div>: <div class="fixed-font">${stat.count}(${logDistribution}%)</div></div>`);
         }
         logLevelStatsElement.innerHTML = divs.join('\n');
     }
@@ -518,6 +528,21 @@
         encodedQuery = encodeURI(`${filterKey}:(${filters.join(" or ")})`);
         query = `${query} ${encodedQuery}`;
         return query;
+    }
+
+    function toggleShowFilterBox(arrowElement, filterBoxId) {
+        // Toggling the display of filter box
+        const filterBoxElement = document.getElementById(filterBoxId);
+        if (filterBoxElement.style.display === "none" || filterBoxElement.style.display === "") {
+            filterBoxElement.style.display = "block";
+            arrowElement.firstElementChild.classList.remove('down');
+            arrowElement.firstElementChild.classList.add('up');
+        }
+        else {
+            filterBoxElement.style.display = "none";
+            arrowElement.firstElementChild.classList.remove('up');
+            arrowElement.firstElementChild.classList.add('down');
+        }
     }
 
 </script>
