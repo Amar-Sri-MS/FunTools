@@ -1,0 +1,13 @@
+metadata:
+  source: System logs
+contents:
+  - frn:platform:fs1600::system:cclinux:archive::cntrlplane_s0_c_log_lines.tgz
+  - frn:platform:fs1600:DPU:system:storage_agent_0:textfile:cntrlplane_s0_c_log_lines:storage_agent.log
+  - frn:platform:fs1600:DPU:system:platform_agent_0:textfile:cntrlplane_s0_c_log_lines:platform_agent.log
+  - frn:platform:fs1600::system:cclinux:archive::cntrlplane_s1_c_log_lines.tgz
+  - frn:platform:fs1600:DPU:system:storage_agent_1:textfile:cntrlplane_s1_c_log_lines:storage_agent.log
+  - frn:platform:fs1600:DPU:system:platform_agent_1:textfile:cntrlplane_s1_c_log_lines:platform_agent.log
+  - frn:platform:fs1600::system:dpu:archive::dpu_logs_lines_c_s0_0.tar
+  - frn:platform:fs1600:DPU:system:funos_0:textfile:dpu_logs_lines_c_s0_0:dpu_funos.txt
+  - frn:platform:fs1600::system:dpu:archive::dpu_logs_lines_c_s1_0.tar
+  - frn:platform:fs1600:DPU:system:funos_1:textfile:dpu_logs_lines_c_s1_0:dpu_funos.txt
