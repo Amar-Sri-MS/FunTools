@@ -50,6 +50,7 @@ install -m 0644 -t $patches_dir patches/rc.patch
 install -m 0644 -t $patches_dir patches/dhclient-script.patch
 install -m 0644 -t $patches_dir patches/nfsroot.patch
 install -t $scripts_dir gzip-stdin
+install -t $scripts_dir miscinit
 
 runtime_target_dir=$SDK_INSTALL_DIR/bin/mips64/Linux
 mkdir -p $runtime_target_dir
