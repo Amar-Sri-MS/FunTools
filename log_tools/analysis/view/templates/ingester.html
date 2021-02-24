@@ -11,7 +11,7 @@
                 <form action="/ingest" method="POST">
                     <div class="form-group">
                         <label>QA Job ID</label>
-                        <input type="text" class="form-control" id="job_id" name="job_id" placeholder="Enter the JOB ID">
+                        <input type="text" class="form-control" id="job_id" name="job_id" placeholder="Enter the JOB ID" value="{{feedback.job_id if feedback else null}}">
                     </div>
                     <button type="submit" class="btn btn-primary" onclick="onSubmit()">Ingest</button>
                 </form>

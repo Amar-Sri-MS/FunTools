@@ -45,8 +45,12 @@ def ingest():
         if not job_id:
             return render_template('ingester.html', feedback={
                 'success': False,
+                'job_id': job_id,
                 'msg': 'Missing JOB ID'
             })
+
+        job_id = job_id.strip()
+
         job_info = fetch_qa_job_info(job_id)
         log_files = fetch_qa_logs(job_id)
 
@@ -61,6 +65,7 @@ def ingest():
 
         return render_template('ingester.html', feedback={
             'success': True,
+            'job_id': job_id,
             'dashboard_link': f'{request.host_url}log/log_qa-{job_id}/dashboard',
             'time_taken': ingestion_status['time_taken']
         })
@@ -68,6 +73,7 @@ def ingest():
         print('ERROR:', e)
         return render_template('ingester.html', feedback={
             'success': False,
+            'job_id': job_id,
             'msg': str(e)
         })
     finally:
