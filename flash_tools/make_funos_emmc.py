@@ -12,6 +12,7 @@ def run():
     parser = argparse.ArgumentParser(description='Generate an emmc image')
 
     parser.add_argument('-v', '--version', type=int, default=1, help='Image version')
+    parser.add_argument('-D', '--description', default='(unknown)', help='Image description')
     parser.add_argument('-d', '--destination', help='Emmc image location', required=True)
     parser.add_argument('funos', nargs=1, help='Path to FunOS application')
 
@@ -45,6 +46,7 @@ def run():
             '--source-dir', destdir,
             '--action', 'sign',
             '--force-version', str(args.version),
+            '--force-description', str(args.description),
             os.path.join(rootdir, 'mmc_config_fungible.json'),
             os.path.join(rootdir, 'key_bag_config.json')]
 

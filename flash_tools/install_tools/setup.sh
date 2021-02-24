@@ -38,8 +38,16 @@ LAST_ERROR=/tmp/cclinux_upgrade_error # a reboot will clean up this tmpfs file.
 ccfg_install=''
 downgrade=''
 ccfg_only=''
+host_dpu=''
+host_sku=''
 
-host_dpu=$(tr -d '\0' < /proc/device-tree/fungible,dpu || true)
+if [ -e /sys/firmware/devicetree/base/fungible,dpu ] ; then
+    read -d $'\0' host_dpu rest_of_line < /sys/firmware/devicetree/base/fungible,dpu
+fi
+
+if [ -e /sys/firmware/devicetree/base/fungible,sku ] ; then
+    read -d $'\0' host_sku rest_of_line < /sys/firmware/devicetree/base/fungible,sku
+fi
 
 if [ -n "$host_dpu" ] && [ "$host_dpu" != "$CHIP_NAME" ]; then
 	echo "This upgrade bundle is incompatible with the host DPU"
@@ -117,8 +125,19 @@ if [[ $ccfg_only != 'true' ]]; then
 		# it unbootable from uboot's perspective to force booing into (current) inactive.
 		dd if=/dev/zero of=emmc_wipe.bin bs=1024 count=1024
 		./run_fwupgrade.py ${FW_UPGRADE_ARGS} --upgrade-file mmc1=emmc_wipe.bin --active
+
+		if [ -n "$host_sku" ]; then
+			log_msg "Downgrading eepr \"$host_sku\""
+			./run_fwupgrade.py ${FW_UPGRADE_ARGS} -u eepr --version latest --force --downgrade --select-by-image-type "$host_sku"
+			./run_fwupgrade.py ${FW_UPGRADE_ARGS} -u eepr --version latest --force --downgrade --active --select-by-image-type "$host_sku"
+		fi
 	else
 		./run_fwupgrade.py ${FW_UPGRADE_ARGS} -U --version $funos_sdk_version
+		if [ -n "$host_sku" ]; then
+			log_msg "Updating eepr \"$host_sku\""
+			./run_fwupgrade.py ${FW_UPGRADE_ARGS} -u eepr --select-by-image-type "$host_sku"
+		fi
+
 	fi
 else
 	echo "CCFG update only!"
@@ -128,12 +147,26 @@ if [[ $ccfg_install ]]; then
 	./run_fwupgrade.py ${FW_UPGRADE_ARGS} --upgrade-file ccfg=$ccfg_install
 	./run_fwupgrade.py ${FW_UPGRADE_ARGS} --upgrade-file ccfg=$ccfg_install --active
 else
-	feature_set=`dpcsh -nQ peek "config/boot_defaults/feature_set" | jq -Mr '.result' || true`
-	if [ ! -z "$feature_set" ]; then
-		log_msg "Updating ccfg \"$feature_set\""
-		./run_fwupgrade.py ${FW_UPGRADE_ARGS} -u ccfg --select-by-image-type "$feature_set"
+	feature_set_resp=`dpcsh -nQ peek "config/boot_defaults/feature_set" || true`
+	if echo -n "$feature_set_resp" | jq -Mre .result; then
+		feature_set=`echo -n "$feature_set_resp" | jq -Mr .result`
+		if [ ! -z "$feature_set" ]; then
+			log_msg "Updating ccfg \"$feature_set\""
+			./run_fwupgrade.py ${FW_UPGRADE_ARGS} -u ccfg --select-by-image-type "$feature_set"
+		fi
+	else
+		log_msg "Missing feature set"
 	fi
 fi
+
+# sku-specific upgrades
+case "${host_sku}" in
+	fc50* | fc100* | fc200* )
+		./run_fwupgrade.py ${FW_UPGRADE_ARGS} --upgrade-file dcc0=composer-boot-services-emmc.img --active
+		;;
+
+	*) : ;; # nothing to do
+esac
 
 echo "DPU done" >> $PROGRESS
 

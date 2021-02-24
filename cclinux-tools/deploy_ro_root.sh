@@ -10,10 +10,6 @@ chmod 0444 $DEPLOY_ROOT/etc/network/interfaces
 cp bin/mips64/Linux/eth0-dhcp.iface $DEPLOY_ROOT/etc/network/eth0-dhcp.iface
 chmod 0444 $DEPLOY_ROOT/etc/network/eth0-dhcp.iface
 
-mkdir -p $DEPLOY_ROOT/etc/modprobe.d/
-cp bin/mips64/Linux/vfio.conf $DEPLOY_ROOT/etc/modprobe.d/vfio.conf
-chmod 0444 $DEPLOY_ROOT/etc/modprobe.d/vfio.conf
-
 ln -s /tmp/resolv.conf $DEPLOY_ROOT/etc/resolv.conf
 
 mkdir -p $DEPLOY_ROOT/etc/ssh/
@@ -63,3 +59,6 @@ rm -rf $DEPLOY_ROOT/etc/cron.daily
 ln -s ../init.d/busybox-cron $DEPLOY_ROOT/etc/rc5.d/S30cron
 cp bin/mips64/Linux/crontab.root $DEPLOY_ROOT/etc/cron/crontabs/root
 chmod 0444 $DEPLOY_ROOT/etc/cron/crontabs/root
+
+cp bin/mips64/Linux/uboot_mpg_update.sh $DEPLOY_ROOT/usr/bin/uboot_mpg_update
+chmod 0555 $DEPLOY_ROOT/usr/bin/uboot_mpg_update
