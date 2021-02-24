@@ -347,10 +347,6 @@ static void _listen_sock_init(struct dpcsock *sock)
 	assert((sock->mode == SOCKMODE_UNIX) || (sock->mode == SOCKMODE_IP));
 	assert(sock->server);
 
-	/* if we already have a listen sock, just return */
-	if (sock->listen_fd > 0)
-		return;
-
 	if (sock->mode == SOCKMODE_UNIX) {
 		/* create a server socket */
 		sock->listen_fd = socket(AF_UNIX, SOCK_STREAM, 0);
@@ -734,8 +730,7 @@ bool dpcsocket_init(struct dpcsock *sock)
 	if (sock->server) {
 		/* setup the server socket*/
 		printf("connecting server socket\n");
-		if (sock->listen_fd <= 0)
-			_listen_sock_init(sock);
+		_listen_sock_init(sock);
 	} 
 
 	if(sock->mode == SOCKMODE_FUNQ) {
@@ -760,6 +755,11 @@ struct dpcsock_connection *dpcsocket_connect(struct dpcsock *sock)
 	assert(sock != NULL);
 	struct dpcsock_connection *connection =
 		(struct dpcsock_connection *)calloc(1, sizeof(struct dpcsock_connection));
+
+	if (!connection) {
+		return NULL;
+	}
+
 	connection->socket = sock;
 
 	if (sock->server) {
@@ -795,7 +795,7 @@ struct dpcsock_connection *dpcsocket_connect(struct dpcsock *sock)
 		connection->fd = _open_sock_inet(sock->port_num);
 	}
 
-	/* return zero on failure */
+	/* connection->fd < 0 in the case of failure*/
 	return connection;
 }
 
@@ -1386,9 +1386,14 @@ static bool _do_cli(int argc, char *argv[],
 {
 	char *buf = malloc(LINE_MAX_DPC_CLI);
 	int n = 0;
-	bool ok;
+	bool ok = false;
 	struct dpcsock_connection *funos, *cmd;
 	open_connections(funos_socket, cmd_socket, &funos, &cmd);
+
+	if (!funos || !cmd || cmd->fd < 0) {
+		printf("Can't open connections\n");
+		goto fail;
+	}
 
 	for (int i = startIndex; i < argc; i++) {
 		n += snprintf(buf + n, LINE_MAX_DPC_CLI - n, "%s ", argv[i]);
@@ -1402,6 +1407,8 @@ static bool _do_cli(int argc, char *argv[],
 	if (ok) {
 		ok = _do_recv_cmd(funos, cmd, true);
 	}
+
+fail:
 	free(buf);
 	close_connections(funos, cmd);
 	return ok;

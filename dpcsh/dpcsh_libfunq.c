@@ -20,10 +20,6 @@
 #define ACQ_DEPTH			(DMA_BUFSIZE_BYTES / ACQE_SIZE)
 #define FIRST_LEVEL_SGL_N			(12)
 
-#define RET_NEED_BUFFER	(3)
-#define RET_FAIL	(1)
-#define RET_OK	(0)
-
 static_assert(DMA_BUFSIZE_BYTES / sizeof(struct fun_subop_sgl) * FIRST_LEVEL_SGL_N * DMA_BUFSIZE_BYTES > FUNQ_MAX_DATA_BYTES, "Must be enough space for buffer descriptors");
 static_assert((FUNQ_ASYNC_DEPTH <= ASQ_DEPTH) && (FUNQ_ASYNC_DEPTH <= ACQ_DEPTH), "Queue must be deep enough to support all the context");
 
@@ -55,30 +51,16 @@ static int dpc_get_last(struct dpc_direct_context *context, size_t size, uint8_t
 
 static int dpc_create_cmd(funq_handle_t *handle)
 {
-	struct fun_admin_dpc_req *c = NULL;
-	struct fun_admin_dpc_rsp *r = NULL;
-	int rc = -ENOMEM;
+	struct fun_admin_dpc_req c = {};
+	struct fun_admin_dpc_rsp r = {};
 
-	c = calloc(1, sizeof(*c));
-	r = calloc(1, sizeof(*r));
-
-	if (!c || !r) {
-		rc = -ENOMEM;
-		goto done;
-	}
-
-	fun_admin_req_common_init(&c->common, FUN_ADMIN_OP_DPC,
-			sizeof (*c) >> 3, 0 /* flags */, 0 /* suboff8 */, 0 /* cid */);
-	fun_admin_dpc_create_req_init(c, FUN_ADMIN_SUBOP_CREATE,
+	fun_admin_req_common_init(&c.common, FUN_ADMIN_OP_DPC,
+			sizeof (c) >> 3, 0 /* flags */, 0 /* suboff8 */, 0 /* cid */);
+	fun_admin_dpc_create_req_init(&c, FUN_ADMIN_SUBOP_CREATE,
 			FUN_ADMIN_RES_CREATE_FLAG_ALLOCATOR /* flag */, 0 /* id */);
 
-	rc = funq_admin_submit_sync_cmd(*handle,
-			&c->common, &r->common, sizeof(*r), 0);
-
-done:
-	free(r);
-	free(c);
-	return rc;
+	return funq_admin_submit_sync_cmd(*handle,
+			&c.common, &r.common, sizeof(r), 0);
 }
 
 static struct fun_ptr_and_size dpc_get_response_data(size_t size,
@@ -117,7 +99,7 @@ static void dpc_process_direct_response(void *response, void *ctx)
 	struct fun_admin_dpc_rsp *r = response;
 	struct fun_ptr_and_size p;
 
-	if (r->u.issue_cmd.code == RET_NEED_BUFFER) {
+	if (r->u.issue_cmd.code == FUN_ADMIN_DPC_ISSUE_CMD_RESP_NEED_BUFFER) {
 		dpc_get_last(context, r->u.issue_cmd.resp_size, r->u.issue_cmd.result_id);
 		return;
 	}
@@ -154,7 +136,7 @@ static void dpc_process_2level_response(void *response, void *ctx)
 	struct fun_admin_dpc_rsp *r = response;
 	struct fun_ptr_and_size p;
 
-	if (r->u.issue_cmd.code == RET_NEED_BUFFER) {
+	if (r->u.issue_cmd.code == FUN_ADMIN_DPC_ISSUE_CMD_RESP_NEED_BUFFER) {
 		dpc_deallocate_2level_context(context);
 		dpc_get_last(direct, r->u.issue_cmd.resp_size, r->u.issue_cmd.result_id);
 		return;
@@ -348,39 +330,25 @@ static int dpc_get_last(struct dpc_direct_context *context, size_t size, uint8_t
 
 int dpc_destroy_cmd(funq_handle_t *handle)
 {
-	struct fun_admin_dpc_req *c = NULL;
-	struct fun_admin_dpc_rsp *r = NULL;
-	int rc = -ENOMEM;
-
-	c = calloc(1, sizeof(*c));
-	r = calloc(1, sizeof(*r));
-
-	if (!r || !c) {
-		rc = -ENOMEM;
-		goto done;
-	}
-
-	fun_admin_req_common_init(&c->common, FUN_ADMIN_OP_DPC,
-			sizeof (*c) >> 3, 0 /* flags */, 0 /* suboff8 */, 0 /* cid */);
-	fun_admin_dpc_destroy_req_init(c, FUN_ADMIN_SUBOP_DESTROY,
+	struct fun_admin_dpc_req c = {};
+	struct fun_admin_dpc_rsp r = {};
+	fun_admin_req_common_init(&c.common, FUN_ADMIN_OP_DPC,
+			sizeof (c) >> 3, 0 /* flags */, 0 /* suboff8 */, 0 /* cid */);
+	fun_admin_dpc_destroy_req_init(&c, FUN_ADMIN_SUBOP_DESTROY,
 			0 /* flag */, 0 /* id */);
 
-	rc = funq_admin_submit_sync_cmd(*handle,
-			&c->common, &r->common, sizeof(*r), 0);
-
-done:
-	free(r);
-	free(c);
-	return rc;
+	return funq_admin_submit_sync_cmd(*handle,
+			&c.common, &r.common, sizeof(r), 0);
 }
 
 funq_handle_t *dpc_admin_queue_init(const char *devname)
 {
-	funq_handle_t *handle;
+	funq_handle_t *handle = (funq_handle_t *)malloc(sizeof(funq_handle_t));
 	int rc;
 
-	handle = (funq_handle_t *)malloc(sizeof(funq_handle_t));
-
+	if (!handle) {
+		return NULL;
+	}
 
 	/* Admin Q Req */
 	struct fun_admin_queue_req aqreq = {
