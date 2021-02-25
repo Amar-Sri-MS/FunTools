@@ -119,12 +119,30 @@ def parse_manifest(path, parent_frn={}):
             content_path = os.path.join(path, frn_info['prefix_path'], frn_info['sub_path'])
 
             # Extract archive and check for manifest file
-            if frn_info['resource_type'] == 'archive' or frn_info['resource_type'] == 'compressed':
+            if frn_info['resource_type'] in ['archive', 'compressed']:
                 archive_path = os.path.splitext(content_path)[0]
                 archive_extractor.extract(content_path)
 
                 # Build input pipeline by parsing the manifest file in the archive
                 content_pipeline_cfg, content_metadata = parse_manifest(archive_path, frn_info)
+
+                pipeline_cfg.extend(content_pipeline_cfg)
+                # TODO(Sourabh): Need to store metadata properly based on each archive.
+                # Attempting to create a unique key so that the metadata from
+                # different manifest files do not get overridden.
+                metadata_key = '{}_{}_{}_{}_{}'.format(frn_info['namespace'],
+                                                    frn_info['system_type'],
+                                                    frn_info['system_id'],
+                                                    frn_info['component'],
+                                                    frn_info['source'])
+                metadata = {
+                    **metadata,
+                    metadata_key: content_metadata
+                }
+
+            if frn_info['resource_type'] == 'bundle':
+                # Build input pipeline by parsing the manifest file in the bundle
+                content_pipeline_cfg, content_metadata = parse_manifest(content_path, frn_info)
 
                 pipeline_cfg.extend(content_pipeline_cfg)
                 # TODO(Sourabh): Need to store metadata properly based on each archive.
@@ -230,6 +248,29 @@ def build_input_pipeline(path, frn_info):
             controller_input_pipeline(frn_info, source, file_pattern,
                 parse_block='KeyValueInput')
         )
+
+    elif source == 'node-service':
+        # nms folder contains funos and agent logs
+        if resource_type == 'folder':
+            frn_info['system_type'] = 'DPU'
+            frn_info['system_id'] = None
+            # platform agent logs
+            file_pattern = f'{path}/archives/other/*platformagent.log*'
+            blocks.extend(
+                fun_agent_input_pipeline(frn_info, 'platform_agent', file_pattern)
+            )
+
+            # storage agent logs
+            file_pattern = f'{path}/archives/other/*storageagent.log*'
+            blocks.extend(
+                fun_agent_input_pipeline(frn_info, 'storage_agent', file_pattern)
+            )
+
+            # funos logs
+            file_pattern = f'{path}/archives/other/*funos.log*'
+            blocks.extend(
+                funos_input(frn_info, 'funos', file_pattern)
+            )
 
     else:
         print(f'WARNING: Unknown source: {source}!')

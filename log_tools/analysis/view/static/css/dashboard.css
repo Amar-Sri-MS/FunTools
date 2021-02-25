@@ -81,9 +81,13 @@ td {
     flex-wrap: wrap;
     justify-content: space-evenly;
 }
-.level_stat > div {
-    min-width: 45%;
-    max-width: 45%;
+.level_stat > div:first-child {
+    min-width: 65px;
+    max-width: 65px;
+}
+.level_stat > div:last-child {
+    min-width: calc(100% - 90px);
+    max-width: calc(100% - 90px);
 }
 ul {
     list-style: none;
