@@ -217,12 +217,19 @@ class FileCorpse:
             "_vplocal_arr",
             "_topo_vp",
             "exception_stack_memory",
+            "stack_memory",
             "PLATFORM_DEBUG_CONSTANT_vplocal_stride",
             "PLATFORM_DEBUG_CONSTANT_debug_context_offset",
             "PLATFORM_DEBUG_CONSTANT_ccv_state_invalid",
             "PLATFORM_DEBUG_CONSTANT_ccv_state_offline",
             "PLATFORM_DEBUG_CONSTANT_ccv_state_online",
             "PLATFORM_DEBUG_CONSTANT_topo_vp_stride",
+            "PLATFORM_DEBUG_CONSTANT_DISPATCH_STACK_TOKEN_SHIFT",
+            "PLATFORM_DEBUG_CONSTANT_DISPATCH_STACK_CLUSTER_SHIFT",
+            "PLATFORM_DEBUG_CONSTANT_DISPATCH_STACK_CORE_SHIFT"
+            "PLATFORM_DEBUG_CONSTANT_DISPATCH_STACK_VP_SHIFT",
+            "PLATFORM_DEBUG_CONSTANT_DISPATCH_STACK_SIZE",
+            "PLATFORM_DEBUG_CONSTANT_DISPATCH_BAD_MASK",
         ]
         self.symbols = None
 
@@ -259,11 +266,36 @@ class FileCorpse:
     def badread(self, n):
         return b"\xde\xad\xbe\xef\xde\xad\xbe\xef"[:n]
 
+    def decode_dispatch_stack_addr(self, addr):
+
+        # filter out bogus
+        if (addr & self.rdsym["PLATFORM_DEBUG_CONSTANT_DISPATCH_STACK_BAD_MASK"]):
+            return None
+        
+        cluster = addr >> self.rdsym["PLATFORM_DEBUG_CONSTANT_DISPATCH_STACK_CLUSTER_SHIFT"])
+        core = addr >> self.rdsym["PLATFORM_DEBUG_CONSTANT_DISPATCH_STACK_CORE_SHIFT"])
+        vp = addr >> self.rdsym["PLATFORM_DEBUG_CONSTANT_DISPATCH_STACK_VP_SHIFT"])        
+
+        vpnum = self.ccv_vpnum(cluster, core, vp)
+
+        ss = self.rdsym["PLATFORM_DEBUG_CONSTANT_DISPATCH_STACK_SIZE"]
+        
+        va = u64(self.symbols["exception_stack_memory"])
+        va |= vpnum * ss
+        va += addr & (ss-1)
+
+        return va
+        
     def virt2phys(self, addr):
 
         # check the top bit for TLB VA
         kseg = addr >> 56
         if (kseg == 0xc0):
+            ## dispatch stack
+            if (((addr >> self.rdsym["PLATFORM_DEBUG_CONSTANT_DISPATCH_STACK_TOKEN_SHIFT"]) & 0xf) >= 0xe):
+                return self.decode_dispatch_stack_addr(addr)
+            
+            ## guard page
             # magic expander section
             if (addr & (1<<47)):
                 addr &= ~(1<<47);
@@ -974,6 +1006,12 @@ DEF_SYMS = {
     "PLATFORM_DEBUG_CONSTANT_ccv_state_offline": 1,
     "PLATFORM_DEBUG_CONSTANT_ccv_state_online": 2,
     "PLATFORM_DEBUG_CONSTANT_topo_vp_stride": 24,
+    "PLATFORM_DEBUG_CONSTANT_DISPATCH_STACK_TOKEN_SHIFT": 44,
+    "PLATFORM_DEBUG_CONSTANT_DISPATCH_STACK_CLUSTER_SHIFT": 40,
+    "PLATFORM_DEBUG_CONSTANT_DISPATCH_STACK_CORE_SHIFT": 36,
+    "PLATFORM_DEBUG_CONSTANT_DISPATCH_STACK_VP_SHIFT": 32,
+    "PLATFORM_DEBUG_CONSTANT_DISPATCH_STACK_SIZE": 4096,
+    "PLATFORM_DEBUG_CONSTANT_DISPATCH_STACK_BAD_MASK": ~0,
     }
 
 def _default_sym(symname):
