@@ -226,10 +226,10 @@ class FileCorpse:
             "PLATFORM_DEBUG_CONSTANT_topo_vp_stride",
             "PLATFORM_DEBUG_CONSTANT_DISPATCH_STACK_TOKEN_SHIFT",
             "PLATFORM_DEBUG_CONSTANT_DISPATCH_STACK_CLUSTER_SHIFT",
-            "PLATFORM_DEBUG_CONSTANT_DISPATCH_STACK_CORE_SHIFT"
+            "PLATFORM_DEBUG_CONSTANT_DISPATCH_STACK_CORE_SHIFT",
             "PLATFORM_DEBUG_CONSTANT_DISPATCH_STACK_VP_SHIFT",
             "PLATFORM_DEBUG_CONSTANT_DISPATCH_STACK_SIZE",
-            "PLATFORM_DEBUG_CONSTANT_DISPATCH_BAD_MASK",
+            "PLATFORM_DEBUG_CONSTANT_DISPATCH_STACK_BAD_MASK",
         ]
         self.symbols = None
 
@@ -266,25 +266,33 @@ class FileCorpse:
     def badread(self, n):
         return b"\xde\xad\xbe\xef\xde\xad\xbe\xef"[:n]
 
+    def va_clean(self, addr):
+        # truncate remaining bits to 8gb
+        addr &= (8<<30)-1
+        if (addr < self.memoffset):
+            return None
+
+        return addr
+
     def decode_dispatch_stack_addr(self, addr):
 
         # filter out bogus
-        if (addr & self.rdsym["PLATFORM_DEBUG_CONSTANT_DISPATCH_STACK_BAD_MASK"]):
+        if (addr & self.rdsym("PLATFORM_DEBUG_CONSTANT_DISPATCH_STACK_BAD_MASK")):
             return None
         
-        cluster = addr >> self.rdsym["PLATFORM_DEBUG_CONSTANT_DISPATCH_STACK_CLUSTER_SHIFT"])
-        core = addr >> self.rdsym["PLATFORM_DEBUG_CONSTANT_DISPATCH_STACK_CORE_SHIFT"])
-        vp = addr >> self.rdsym["PLATFORM_DEBUG_CONSTANT_DISPATCH_STACK_VP_SHIFT"])        
+        cluster = (addr >> self.rdsym("PLATFORM_DEBUG_CONSTANT_DISPATCH_STACK_CLUSTER_SHIFT")) & 0xf
+        core = (addr >> self.rdsym("PLATFORM_DEBUG_CONSTANT_DISPATCH_STACK_CORE_SHIFT")) & 0xf
+        vp = (addr >> self.rdsym("PLATFORM_DEBUG_CONSTANT_DISPATCH_STACK_VP_SHIFT")) & 0xf
 
         vpnum = self.ccv_vpnum(cluster, core, vp)
 
-        ss = self.rdsym["PLATFORM_DEBUG_CONSTANT_DISPATCH_STACK_SIZE"]
+        ss = self.rdsym("PLATFORM_DEBUG_CONSTANT_DISPATCH_STACK_SIZE")
         
-        va = u64(self.symbols["exception_stack_memory"])
-        va |= vpnum * ss
+        va = self.symbols["stack_memory"]
+        va += vpnum * ss
         va += addr & (ss-1)
 
-        return va
+        return self.va_clean(va)
         
     def virt2phys(self, addr):
 
@@ -292,7 +300,7 @@ class FileCorpse:
         kseg = addr >> 56
         if (kseg == 0xc0):
             ## dispatch stack
-            if (((addr >> self.rdsym["PLATFORM_DEBUG_CONSTANT_DISPATCH_STACK_TOKEN_SHIFT"]) & 0xf) >= 0xe):
+            if (((addr >> self.rdsym("PLATFORM_DEBUG_CONSTANT_DISPATCH_STACK_TOKEN_SHIFT")) & 0xf) >= 0xe):
                 return self.decode_dispatch_stack_addr(addr)
             
             ## guard page
@@ -307,10 +315,7 @@ class FileCorpse:
         elif (kseg == 0xff):
             addr = addr & 0x1fffffff
 
-        # truncate remaining bits to 8gb
-        addr &= (8<<30)-1
-        if (addr < self.memoffset):
-            return None
+        addr = self.va_clean(addr)
 
         return addr
 
@@ -321,6 +326,9 @@ class FileCorpse:
 
     def elf_offset(self, addr):
         phys = self.virt2phys(addr)
+
+        if (phys is None):
+            return None
 
         if not self.elf_phdrs:
             self.elf_load_phdrs()
