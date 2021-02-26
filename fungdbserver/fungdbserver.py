@@ -1388,6 +1388,9 @@ def run_gdb_async(port, elffile):
     cmd += ["-ex", "target remote :%s" % port,
             "-ex", "compare-sections .note.gnu.build-id"]            
 
+    # make sure we discard gdb's bootstrap register state
+    cmd += ["-ex", "flushregs"]
+
     if (opts.crashlog):
         cmd += ["-ex", "crashlog",
                 "-ex", "quit"]
