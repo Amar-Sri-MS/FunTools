@@ -17,7 +17,8 @@ enum sockmode {
 	SOCKMODE_IP,
 	SOCKMODE_UNIX,
 	SOCKMODE_DEV,
-	SOCKMODE_NVME
+	SOCKMODE_NVME,
+	SOCKMODE_FUNQ
 };
 
 struct dpcsock {
@@ -34,10 +35,18 @@ struct dpcsock {
 	uint32_t cmd_timeout;    /* cmd timeout in ms */
 
 	/* runtime */
-	int fd;                  /* connected fd */
+	void *funq_connection;       /* handle for libfunq connection */
 	int listen_fd;           /* fd if this is a server */
+};
+
+struct dpcsock_connection {
+	struct dpcsock *socket;
+	int fd;                  /* connected fd */
 	bool nvme_write_done;    /* flag indicating whether write to nvme device
                                     is successful so that we can read from it */
+	uint32_t nvme_session_id;
+	uint32_t nvme_seq_num;
+	void *funq_callback_context;
 };
 
 // Flag that controls how JSON is printed

@@ -39,6 +39,22 @@ branch := $(shell git rev-parse --short HEAD)
 VER     = -DVER=$(version)
 BRANCH  = -DBRANCH=$(branch)
 
+ifeq ($(MACHINE),mips64)
+WITH_LIBFUNQ = 1
+endif
+
+ifneq ($(WITH_LIBFUNQ),)
+
+ifeq ($(MACHINE),x86_64)
+LFUNQ_PATH = $(SDKDIR)/FunSDK/host-drivers/$(MACHINE)/user/posix
+else
+LFUNQ_PATH = $(SDKDIR)/FunSDK/host-drivers/$(MACHINE)/user/native
+endif
+
+CFLAGS += -I $(LFUNQ_PATH)/include -DWITH_LIBFUNQ
+LDFLAGS += -L $(LFUNQ_PATH)/lib -lfunq
+endif
+
 # define header and library location in FunSDK
 CFLAGS += -I $(SDKDIR) -I $(SDKDIR)/FunSDK -g -Wall -Werror -Wno-multichar $(BRANCH) $(VER)
 
@@ -46,7 +62,7 @@ CFLAGS += -I $(SDKDIR) -I $(SDKDIR)/FunSDK -g -Wall -Werror -Wno-multichar $(BRA
 #LDFLAGS += -L $(SDKDIR)/lib/${OS}/x86_64 -lfunclient -fsanitize=address
 LDFLAGS += -lpthread -L $(SDKDIR)/lib/$(OS)/$(SDK_LIB_SUBDIR)/$(MACHINE) -lfunclient -ldl
 
-SRCS = dpcsh.c dpcsh_nvme.c dpcsh_macros.c csr_command.c web.c
+SRCS = dpcsh.c dpcsh_nvme.c dpcsh_libfunq.c dpcsh_macros.c csr_command.c
 OBJS = $(addprefix $(BUILD_ROOT)/,$(SRCS:.c=.o))
 
 # Deal with gcc versioning for ASAN
@@ -76,4 +92,4 @@ install: dpcsh
 	cp dpc_client.py dpctest.py dpc_uboot_env.py auth_firmware.py $(BUILD_ROOT)/dpcsh $(SDK_INSTALL_DIR)/bin/$(SDK_INSTALL_PREFIX)/$(OS)
 
 clean:
-	rm -f $(BUILD_ROOT)/dpcsh $(OBJS)
+	-rm -rf $(BUILD_ROOT) build_*

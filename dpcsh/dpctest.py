@@ -84,7 +84,7 @@ class TestDPCCommands(unittest.TestCase):
 
     def testVeryLargeCommands(self):
         """Tests that long messages don't get truncated or corrupted."""
-        for i in (10000, 100000):
+        for i in (10000, 50000, 100000, 1000000):
             print 'Attempting message of length %d' % i
             self.checkEchoMessage('b' * i)
 
