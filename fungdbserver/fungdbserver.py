@@ -466,6 +466,8 @@ class FileCorpse:
 
 
     def GetNextThreadId(self):
+        if (len(self.thread_list) == 0):
+            return None
         if (self.thread_enumerator >= self.threadcount):
             return None
         tid = self.thread_list[self.thread_enumerator]
@@ -475,9 +477,9 @@ class FileCorpse:
     def GetFirstThreadId(self):
         if (len(self.thread_list) > 0):
             self.thread_enumerator = 0
-            return self.GetNextThreadId()
+            return self.thread_list[0]
         else:
-            return 0
+            return None
 
     def rdsym(self, symname):
 
@@ -936,12 +938,14 @@ def jtag_ReadMemory(size, addr):
     return r
 
 def jtag_SetCpuThreadId(obj, tid):
-    if (tid > 0):
+    if (tid >= 1000):
         tid -= 1000
         corpse.SetThreadId(tid)
     obj.send("OK")
 
 def jtag_GetCpuThreadId():
+    if (corpse.symbols is None):
+        return 0 # nonsense
     return 1000 + corpse.GetThreadId()
 
 def jtag_ReadReg(name):
@@ -949,8 +953,10 @@ def jtag_ReadReg(name):
 
 def jtag_GetFirstThreadId():
     tid = corpse.GetFirstThreadId()
-    if (tid != 0):
+    if (tid != None):
         tid += 1000
+    else:
+        tid = 0
     return tid
 
 def jtag_GetNextThreadId():
@@ -960,13 +966,13 @@ def jtag_GetNextThreadId():
     return 1000 + tid
 
 def jtag_IsRunning(tid):
-    if (tid == 0):
+    if (tid < 1000):
         return False
     tid -= 1000
     return corpse.IsRunning(tid)
 
 def jtag_GetThreadInfo(tid):
-    if (tid == 0):
+    if (tid < 1000):
         return False
     tid -= 1000
     return corpse.GetThreadInfo(tid)
@@ -1188,8 +1194,6 @@ class GDBClientHandler(object):
             def handle_g(subcmd):
                 if subcmd == '':
                     tid = jtag_GetCpuThreadId()
-                    if (tid == 0):
-                        self.send('E 37')
                     DEBUG("register read request on %d" % tid)
                     # make all the registers
                     registers = jtag_GetRegList()
