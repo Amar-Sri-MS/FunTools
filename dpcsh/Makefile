@@ -5,9 +5,13 @@ OS := $(shell uname)
 SDKDIR ?= ../../FunSDK
 SDK_INSTALL_DIR ?= $(SDKDIR)
 
-MACHINE ?= x86_64
+MACHINE ?= $(shell uname -m)
 
 ifeq ($(MACHINE),x86_64)
+ TOOLCHAIN_PREFIX :=
+ SDK_LIB_SUBDIR := noasan
+ SDK_INSTALL_PREFIX :=
+else ifeq ($(MACHINE),arm64)
  TOOLCHAIN_PREFIX :=
  SDK_LIB_SUBDIR := noasan
  SDK_INSTALL_PREFIX :=
