@@ -1244,7 +1244,7 @@ static void _do_session(struct dpcsock_connection *funos,
 		FD_ZERO(&fds);
 		FD_SET(cmd->fd, &fds);
 		nfds = cmd->fd;
-		if (funos->socket->mode != SOCKMODE_TERMINAL) {
+		if (funos->socket->mode != SOCKMODE_TERMINAL && funos->socket->mode != SOCKMODE_NVME) {
 			FD_SET(funos->fd, &fds);
 
 			if (funos->fd > nfds)
