@@ -58,6 +58,24 @@ def send_binary(binary_buffer):
     sys.stdout.flush()
     sys.stdout.buffer.write(binary_buffer)
 
+#######################################################################
+#
+# DER operations: digest_info
+#
+#######################################################################
+
+def gen_digest_info(algo_name, algo_digest):
+    digest = core.OctetString()
+    digest.set(algo_digest)
+    digest_algorithm = algos.DigestAlgorithm()
+    digest_algorithm['algorithm'] = algo_name
+    digest_info = algos.DigestInfo()
+    digest_info['digest_algorithm'] = digest_algorithm
+    digest_info['digest'] = digest
+    return digest_info.dump()
+
+def gen_sha512_digest_info(sha512_hash):
+    return gen_digest_info('sha512', sha512_hash)
 
 ########################################################################
 #
@@ -71,16 +89,6 @@ def send_binary_modulus(form, key_label):
         modulus = get_modulus(get_public_rsa_with_label(session, key_label))
         send_binary(modulus)
 
-def gen_sha512_digest_info(sha512_hash):
-    digest = core.OctetString()
-    digest.set(sha512_hash)
-    digest_algorithm = algos.DigestAlgorithm()
-    digest_algorithm['algorithm'] = 'sha512'
-    digest_info = algos.DigestInfo()
-    digest_info['digest_algorithm'] = digest_algorithm
-    digest_info['digest'] = digest
-    return digest_info.dump()
-
 def hsm_sign_hash_with_key(label, sha512_hash):
     digest_info_der = gen_sha512_digest_info(sha512_hash)
     with get_ro_session() as session:
@@ -93,7 +101,6 @@ def hsm_sign_hash_with_modulus(modulus, sha512_hash):
         private = get_private_rsa_with_modulus(session, modulus)
         return private.sign(digest_info_der, mechanism=pkcs11.Mechanism.RSA_PKCS)
 
-
 def hsm_send_modulus(form, key_label):
 
     # send in binary format by default for this application
@@ -104,7 +111,6 @@ def hsm_send_modulus(form, key_label):
     else:
         print("Content-type: text/plain")
         send_modulus(form, key_label)
-
 
 
 ########################################################################
