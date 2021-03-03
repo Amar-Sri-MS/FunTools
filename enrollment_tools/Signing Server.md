@@ -86,7 +86,7 @@ Possible values are:
 
 ## POST
 
-The post request is used to sign a single SHA-512 digest.
+The post request is used to sign a single digest.
 
 ### Hash signing (development builds only)
 
@@ -94,7 +94,11 @@ The post request is used to sign a single SHA-512 digest.
 
 ##### digest (required)
 
-The SHA512 digest to package as a PKCS v1.5 signature.
+The digest to package as a PKCS v1.5 signature.
+
+##### algo (optional, default = 'sha512')
+
+The hash algorithm that generated the digest. 
 
 ##### modulus (optional)
 
