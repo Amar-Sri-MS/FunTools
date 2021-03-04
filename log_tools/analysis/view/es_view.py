@@ -23,7 +23,9 @@ from pathlib import Path
 from requests.exceptions import HTTPError
 from urllib.parse import quote_plus
 
-from analysis import config_loader
+sys.path.append('..')
+
+import config_loader
 
 
 app = Flask(__name__)

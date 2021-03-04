@@ -13,11 +13,11 @@ import shutil
 import sys
 import yaml
 
-sys.path.insert(0, '..')
+sys.path.insert(0, '.')
 
 from flask import Blueprint, jsonify, request, render_template
-from analysis.utils import archive_extractor
-from analysis import ingest as ingest_handler
+from utils import archive_extractor
+import ingest as ingest_handler
 
 ingester_page = Blueprint('ingester_page', __name__)
 
