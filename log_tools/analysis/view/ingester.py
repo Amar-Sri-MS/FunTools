@@ -60,6 +60,7 @@ def ingest():
         if not ingestion_status['success']:
             return render_template('ingester.html', feedback={
                 'success': False,
+                'job_id': job_id,
                 'msg': ingestion_status['msg'] if 'msg' in ingestion_status else 'Ingestion failed.'
             })
 
