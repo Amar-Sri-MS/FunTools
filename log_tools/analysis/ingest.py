@@ -121,6 +121,11 @@ def parse_manifest(path, parent_frn={}):
             # Path to the content in the FRN
             content_path = os.path.join(path, frn_info['prefix_path'], frn_info['sub_path'])
 
+            # The content path does not exist
+            if not os.path.exists(content_path):
+                print('WARNING: Path does not exist:', content_path)
+                continue
+
             # Extract archive and check for manifest file
             if frn_info['resource_type'] in ['archive', 'compressed', 'bundle']:
                 resource_path = content_path
