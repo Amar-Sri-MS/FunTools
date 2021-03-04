@@ -55,9 +55,15 @@ chmod 0755 $DEPLOY_ROOT/usr/bin/gzip-stdin
 echo 'kernel.core_pattern = |/usr/bin/gzip-stdin /persist/cores/core.%h.%e.%t.%p.gz' >> $DEPLOY_ROOT/etc/sysctl.conf
 echo 'CORE_SIZE=unlimited' >> $DEPLOY_ROOT/etc/default/rcS
 
+cp bin/scripts/miscinit $DEPLOY_ROOT/etc/init.d
+chmod 0755 $DEPLOY_ROOT/etc/init.d/miscinit
+ln -s ../init.d/miscinit $DEPLOY_ROOT/etc/rc5.d/S49miscinit
+
 # Don't start these by default
 rm -f $DEPLOY_ROOT/etc/rc5.d/S21avahi-daemon
 rm -f $DEPLOY_ROOT/etc/rc5.d/S87redis-server
+# This is only useful when any package manager exists
+rm -f $DEPLOY_ROOT/etc/rcS.d/S99run-postinsts
 
 # Allow VFIO to work
 mkdir -p $DEPLOY_ROOT/etc/modprobe.d/
@@ -67,7 +73,7 @@ chmod 0444 $DEPLOY_ROOT/etc/modprobe.d/vfio.conf
 # if we are building inside Jenkins, then store some build
 # details in the rootfs
 
-if [ ! -z ${JENKINS_URL} -a ! -z ${JOB_NAME} ]; then
+if [ ! -z "${JENKINS_URL}" -a ! -z "${JOB_NAME}" ]; then
     if [ -z ${BLD_NUM} ]; then
         echo "Build running in Jenkins node but BLD_NUM wasn't set. Does this script need fixing?"
         exit 1

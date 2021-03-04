@@ -2,7 +2,7 @@
 #
 # cavp.py
 # CAVP file parser
-# Copyright (c) 2020. Fungible, Inc. All rights reserved.
+# Copyright (c) 2020-2021. Fungible, Inc. All rights reserved.
 #
 
 ''' Rationale: CAVP test files follow the same overall syntax
@@ -34,6 +34,13 @@ def int_to_hex(x):
     ''' integer to hex big endian representation '''
     x_bytes = x.to_bytes((x.bit_length() + 7) // 8, byteorder='big')
     return x_bytes.hex().upper()
+
+def response_file_name(req_file_name):
+    # if file is '*.req.*' replace the '.req' with '.rsp'
+    # other wise just append '.rsp'
+    if '.req' in req_file_name:
+        return rreplace(req_file_name, '.req', '.rsp', 1)
+    return req_file_name + '.rsp'
 
 ######
 # Tester classes
@@ -105,7 +112,7 @@ class CAVPTest:
 
     def __init__(self, file_path, tester, suffix):
         self.req_file = os.path.abspath(file_path)
-        self.rsp_file = rreplace(self.req_file, '.req', '.rsp', 1)
+        self.rsp_file = response_file_name(self.req_file)
         self.tester = tester
         self.suffix = suffix
 
@@ -119,22 +126,30 @@ class CAVPTest:
         with open(self.req_file, 'r') as reqf:
             request = json.load(reqf)
 
-        # hierarchy is [ {} {file_params, testGroups:[] } ]
+        # hierarchy is [ {} {file_params, testGroups:[] } ] i.e. an  array
+        # BUT can also be {file_params, testGroups:[] } i.e. a dictionary
         # each testGroup is { group_param, tests:[] }
         # each test is a dictionary with a field "tcId"
 
-        # create response: first element of request
-        response = [ request[0] ]
+        if 'keys' in dir(request):
+            # a dictionary
+            response = None
+            test_dict = request
+        else:
+            # an array
+            response = [request[0]] # response is an array to
+            test_dict = request[1]
+
 
         # the file keys but without testGroups items
-        file_params = {k:v for (k,v) in request[1].items() if k != "testGroups"}
+        file_params = {k:v for (k,v) in test_dict.items() if k != "testGroups"}
         test_groups = []
 
         algorithm_mode = file_params["algorithm"]
         if file_params.get("mode"):
             algorithm_mode += "." + file_params.get("mode")
 
-        for test_group in request[1]["testGroups"]:
+        for test_group in test_dict["testGroups"]:
             # add the test group keys but without tests items
             test_group_params = {k:v for (k,v) in test_group.items() if k != "tests" }
             tests = []
@@ -169,7 +184,12 @@ class CAVPTest:
             test_groups.append(test_group_params_rsp)
 
         file_params["testGroups"] = test_groups
-        response.append(file_params)
+
+        # if response (is an array)
+        if response:
+            response.append(file_params)
+        else:
+            response = file_params
 
         with open(self.rsp_file, "w",) as respf:
             json.dump(response, respf, indent=4)
@@ -421,8 +441,7 @@ def execute_all_tests(args):
             curr_cavp = CAVPTest(LOCAL_FILE_NAME, tester, args.suffix_test_type)
             curr_cavp.run()
             webclient.upload(curr_cavp.result_path(),
-                             rreplace(arg, '.req', '.rsp', 1))
-
+                             response_file_name(arg))
 
     else:
         # local case

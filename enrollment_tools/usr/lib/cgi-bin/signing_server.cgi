@@ -9,7 +9,6 @@
 ##############################################################################
 
 import sys
-import struct
 import os
 import hashlib
 import json
@@ -58,6 +57,22 @@ def send_binary(binary_buffer):
     sys.stdout.flush()
     sys.stdout.buffer.write(binary_buffer)
 
+#######################################################################
+#
+# DER operations: digest_info
+#
+#######################################################################
+
+def gen_digest_info(algo_name, algo_digest):
+    digest = core.OctetString()
+    digest.set(algo_digest)
+    digest_algorithm = algos.DigestAlgorithm()
+    digest_algorithm['algorithm'] = algo_name
+    digest_info = algos.DigestInfo()
+    digest_info['digest_algorithm'] = digest_algorithm
+    digest_info['digest'] = digest
+    return digest_info.dump()
+
 
 ########################################################################
 #
@@ -71,28 +86,15 @@ def send_binary_modulus(form, key_label):
         modulus = get_modulus(get_public_rsa_with_label(session, key_label))
         send_binary(modulus)
 
-def gen_sha512_digest_info(sha512_hash):
-    digest = core.OctetString()
-    digest.set(sha512_hash)
-    digest_algorithm = algos.DigestAlgorithm()
-    digest_algorithm['algorithm'] = 'sha512'
-    digest_info = algos.DigestInfo()
-    digest_info['digest_algorithm'] = digest_algorithm
-    digest_info['digest'] = digest
-    return digest_info.dump()
-
-def hsm_sign_hash_with_key(label, sha512_hash):
-    digest_info_der = gen_sha512_digest_info(sha512_hash)
+def hsm_sign_hash_with_key(label, digest_info):
     with get_ro_session() as session:
         private = get_private_rsa_with_label(session, label)
-        return private.sign(digest_info_der, mechanism=pkcs11.Mechanism.RSA_PKCS)
+        return private.sign(digest_info, mechanism=pkcs11.Mechanism.RSA_PKCS)
 
-def hsm_sign_hash_with_modulus(modulus, sha512_hash):
-    digest_info_der = gen_sha512_digest_info(sha512_hash)
+def hsm_sign_hash_with_modulus(modulus, digest_info):
     with get_ro_session() as session:
         private = get_private_rsa_with_modulus(session, modulus)
-        return private.sign(digest_info_der, mechanism=pkcs11.Mechanism.RSA_PKCS)
-
+        return private.sign(digest_info, mechanism=pkcs11.Mechanism.RSA_PKCS)
 
 def hsm_send_modulus(form, key_label):
 
@@ -104,7 +106,6 @@ def hsm_send_modulus(form, key_label):
     else:
         print("Content-type: text/plain")
         send_modulus(form, key_label)
-
 
 
 ########################################################################
@@ -188,20 +189,25 @@ def sign():
     form = cgi.FieldStorage()
 
     # is there a hash provided?
-    sha512_hash = get_binary_from_form(form, "digest")
+    algo_digest = get_binary_from_form(form, "digest")
+    algo_name = safe_form_get(form, "algo", "sha512") # default and back ward compatible
 
-    if len(sha512_hash) != hashlib.sha512().digest_size:
-        raise ValueError("Digest is %d bytes, expected %d" %
-                        (len(sha512_hash), hashlib.sha512.digest_size))
+    if algo_name in hashlib.algorithms_available:
+        algo = hashlib.new(algo_name)
+        if len(algo_digest) != algo.digest_size:
+            raise ValueError("Digest is %d bytes, expected %d bytes for %s" %
+                             (len(algo_digest), algo.digest_size, algo_name))
+
+    digest_info = gen_digest_info(algo_name, algo_digest)
 
     key_label = safe_form_get(form, "key", None)
     if key_label:
-        signature = hsm_sign_hash_with_key(key_label, sha512_hash)
+        signature = hsm_sign_hash_with_key(key_label, digest_info)
     else:
         modulus = get_binary_from_form(form, "modulus")
         if len(modulus) == 0:
             raise ValueError("No key or modulus specified for sign command")
-        signature = hsm_sign_hash_with_modulus(modulus, sha512_hash)
+        signature = hsm_sign_hash_with_modulus(modulus, digest_info)
 
     # send binary signature back
     send_binary(signature)
