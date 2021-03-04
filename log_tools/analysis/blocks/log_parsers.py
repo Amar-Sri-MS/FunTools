@@ -84,7 +84,7 @@ class FunOSInput(Block):
         #
         #               Also, the resulting object is timezone-naive. This
         #               is a general question for logs: should we use UTC?
-        dt = datetime.datetime.fromtimestamp(secs + float(usecs) * 1e-6)
+        dt = datetime.datetime.utcfromtimestamp(secs + float(usecs) * 1e-6)
         return dt, usecs
 
 
