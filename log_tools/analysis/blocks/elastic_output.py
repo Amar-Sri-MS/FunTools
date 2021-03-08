@@ -12,7 +12,7 @@ from elasticsearch7.helpers import parallel_bulk
 from itertools import tee
 
 from blocks.block import Block
-from analysis import config_loader
+import config_loader
 
 
 class ElasticsearchOutput(Block):

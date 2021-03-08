@@ -7,7 +7,10 @@
 import argparse
 import datetime
 import os
+import sys
 import time
+
+sys.path.append('.')
 
 from pathlib import Path
 
@@ -118,31 +121,21 @@ def parse_manifest(path, parent_frn={}):
             # Path to the content in the FRN
             content_path = os.path.join(path, frn_info['prefix_path'], frn_info['sub_path'])
 
+            # The content path does not exist
+            if not os.path.exists(content_path):
+                print('WARNING: Path does not exist:', content_path)
+                continue
+
             # Extract archive and check for manifest file
-            if frn_info['resource_type'] in ['archive', 'compressed']:
-                archive_path = os.path.splitext(content_path)[0]
-                archive_extractor.extract(content_path)
+            if frn_info['resource_type'] in ['archive', 'compressed', 'bundle']:
+                resource_path = content_path
+                # Extract if the file is an archive
+                if archive_extractor.is_archive(content_path):
+                    resource_path = os.path.splitext(content_path)[0]
+                    archive_extractor.extract(content_path)
 
                 # Build input pipeline by parsing the manifest file in the archive
-                content_pipeline_cfg, content_metadata = parse_manifest(archive_path, frn_info)
-
-                pipeline_cfg.extend(content_pipeline_cfg)
-                # TODO(Sourabh): Need to store metadata properly based on each archive.
-                # Attempting to create a unique key so that the metadata from
-                # different manifest files do not get overridden.
-                metadata_key = '{}_{}_{}_{}_{}'.format(frn_info['namespace'],
-                                                    frn_info['system_type'],
-                                                    frn_info['system_id'],
-                                                    frn_info['component'],
-                                                    frn_info['source'])
-                metadata = {
-                    **metadata,
-                    metadata_key: content_metadata
-                }
-
-            if frn_info['resource_type'] == 'bundle':
-                # Build input pipeline by parsing the manifest file in the bundle
-                content_pipeline_cfg, content_metadata = parse_manifest(content_path, frn_info)
+                content_pipeline_cfg, content_metadata = parse_manifest(resource_path, frn_info)
 
                 pipeline_cfg.extend(content_pipeline_cfg)
                 # TODO(Sourabh): Need to store metadata properly based on each archive.

@@ -15,7 +15,7 @@ from pathlib import Path
 from urllib.parse import quote_plus
 
 from blocks.block import Block
-from analysis import config_loader
+import config_loader
 
 
 class AnchorMatch:

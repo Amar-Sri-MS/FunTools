@@ -13,11 +13,11 @@ import shutil
 import sys
 import yaml
 
-sys.path.insert(0, '..')
+sys.path.insert(0, '.')
 
 from flask import Blueprint, jsonify, request, render_template
-from analysis.utils import archive_extractor
-from analysis import ingest as ingest_handler
+from utils import archive_extractor
+import ingest as ingest_handler
 
 ingester_page = Blueprint('ingester_page', __name__)
 
@@ -60,6 +60,7 @@ def ingest():
         if not ingestion_status['success']:
             return render_template('ingester.html', feedback={
                 'success': False,
+                'job_id': job_id,
                 'msg': ingestion_status['msg'] if 'msg' in ingestion_status else 'Ingestion failed.'
             })
 
