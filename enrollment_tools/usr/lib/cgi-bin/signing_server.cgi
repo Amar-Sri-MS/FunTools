@@ -114,6 +114,15 @@ def hsm_send_modulus(form, key_label):
 #
 ########################################################################
 
+################################################################
+# Base64 helpers
+def to_b64(some_bytes):
+    return binascii.b2a_base64(some_bytes).rstrip().decode('utf-8')
+
+def from_b64(b64):
+    return binascii.a2b_base64(b64)
+
+
 def make_json_rpc_call(cmd, params=None, **kwargs):
 
     if not params:
@@ -142,7 +151,7 @@ def remote_hsm_send_modulus(form, key_label):
         raise ValueError("Key \"%s\" not found on remote HSM" %
                          key_label)
 
-    modulus = binascii.a2b_base64(modulus_b64)
+    modulus = from_b64(modulus_b64)
 
     out_format = safe_form_get(form, "format", "binary")
     if out_format == "binary":
@@ -150,6 +159,29 @@ def remote_hsm_send_modulus(form, key_label):
     else:
         print("Content-type: text/plain")
         send_binary_buffer(modulus, form)
+
+
+def remote_hsm_sign_hash_with_key(key_label, digest_info, auth_token):
+    # package the request into json
+    json_rpc_call = make_json_rpc_call("sign", auth_token=auth_token,
+                                       digest_info=to_b64(digest_info),
+                                       key=key_label)
+    json_rpc_return = hsmd_rpc_call(json_rpc_call)
+
+    signature_b64 = get_result(json_rpc_return)
+    return from_b64(signature_b64)
+
+
+def remote_hsm_sign_hash_with_modulus(modulus, digest_info, auth_token):
+    # package the request into json
+    json_rpc_call = make_json_rpc_call("sign", auth_token=auth_token,
+                                       digest_info=to_b64(digest_info),
+                                       modulus=to_b64(modulus))
+    json_rpc_return = hsmd_rpc_call(json_rpc_call)
+
+    signature_b64 = get_result(json_rpc_return)
+    return from_b64(signature_b64)
+
 
 ########################################################################
 #
@@ -198,16 +230,28 @@ def sign():
             raise ValueError("Digest is %d bytes, expected %d bytes for %s" %
                              (len(algo_digest), algo.digest_size, algo_name))
 
+    auth_token = safe_form_get(form, "auth_token", None)
+
     digest_info = gen_digest_info(algo_name, algo_digest)
 
     key_label = safe_form_get(form, "key", None)
     if key_label:
-        signature = hsm_sign_hash_with_key(key_label, digest_info)
+        if auth_token:
+            signature = remote_hsm_sign_hash_with_key(key_label,
+                                                      digest_info,
+                                                      auth_token)
+        else:
+            signature = hsm_sign_hash_with_key(key_label, digest_info)
     else:
         modulus = get_binary_from_form(form, "modulus")
         if len(modulus) == 0:
             raise ValueError("No key or modulus specified for sign command")
-        signature = hsm_sign_hash_with_modulus(modulus, digest_info)
+        if auth_token:
+            signature = remote_hsm_sign_hash_with_modulus(modulus,
+                                                          digest_info,
+                                                          auth_token)
+        else:
+            signature = hsm_sign_hash_with_modulus(modulus, digest_info)
 
     # send binary signature back
     send_binary(signature)
