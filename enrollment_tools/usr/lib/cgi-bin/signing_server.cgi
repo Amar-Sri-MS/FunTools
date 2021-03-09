@@ -220,6 +220,8 @@ def process_query():
 def sign():
     form = cgi.FieldStorage()
 
+
+    
     # is there a hash provided?
     algo_digest = get_binary_from_form(form, "digest")
     algo_name = safe_form_get(form, "algo", "sha512") # default and back ward compatible
@@ -230,8 +232,13 @@ def sign():
             raise ValueError("Digest is %d bytes, expected %d bytes for %s" %
                              (len(algo_digest), algo.digest_size, algo_name))
 
-    auth_token = safe_form_get(form, "auth_token", None)
+    auth_token_str = safe_form_get(form, "auth_token", None)
 
+    auth_token = None
+    if auth_token_str:
+        auth_token_dict = json.loads(auth_token_str)
+        auth_token = auth_token_dict['auth_token']
+       
     digest_info = gen_digest_info(algo_name, algo_digest)
 
     key_label = safe_form_get(form, "key", None)
