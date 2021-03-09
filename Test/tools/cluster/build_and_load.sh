@@ -111,6 +111,87 @@ run() {
 	fi
 }
 
+format_drives() {
+	if [ ! -d $WORKSPACE/Integration ]
+	then
+		echo "Integration directory does not exist"
+		exit -1
+	fi
+	cd $WORKSPACE/Integration/tools/platform/utils/myFabCmds
+
+	setup=$1
+	fab -f flib.py cluster_setup:$1 format_drives
+}
+
+create_raw_volumes() {
+	if [ ! -d $WORKSPACE/Integration ]
+	then
+		echo "Integration directory does not exist"
+		exit -1
+	fi
+	cd $WORKSPACE/Integration/tools/platform/utils/myFabCmds
+
+	setup=$1
+	numvols=$2
+	for i in $(seq 1 $numvols);
+	do
+		fab -f flib.py cluster_setup:"$setup" create_raw_vol:vol_name="raw-vol-${i}",size=$3,encryption=$4
+	done
+}
+
+create_ec_volumes() {
+	if [ ! -d $WORKSPACE/Integration ]
+	then
+		echo "Integration directory does not exist"
+		exit -1
+	fi
+	cd $WORKSPACE/Integration/tools/platform/utils/myFabCmds
+
+	setup=$1
+	numvols=$2
+	for i in $(seq 1 $numvols);
+	do
+		fab -f flib.py cluster_setup:"$setup" create_durable_vol:vol_name="durable-vol-${i}",size=$3,encryption=$4,compress=$5
+	done
+}
+
+attach_volumes() {
+	if [ ! -d $WORKSPACE/Integration ]
+	then
+		echo "Integration directory does not exist"
+		exit -1
+	fi
+	cd $WORKSPACE/Integration/tools/platform/utils/myFabCmds
+
+	setup=$1
+	numvols=$2
+	voltype=$3
+	for i in $(seq 1 $numvols);
+	do
+		volname="$voltype-vol-$i"
+		fab -f flib.py cluster_setup:"$setup" attach_vol_to_host:vol_name="$volname",host_name="cab08-qa-03",via="rds",rno=$i,cno=1,nsid=$i,encrypt=$4,compress=$5
+	done
+}
+
+detach_volumes() {
+	if [ ! -d $WORKSPACE/Integration ]
+	then
+		echo "Integration directory does not exist"
+		exit -1
+	fi
+	cd $WORKSPACE/Integration/tools/platform/utils/myFabCmds
+
+	setup=$1
+	numvols=$2
+	voltype=$3
+	for i in $(seq 1 $numvols);
+	do
+		volname="$voltype-vol-$i"
+		fab -f flib.py cluster_setup:"$setup" detach_vol_to_host:vol_name="$volname",host_name="ccab08-qa-03",via="rds",rno=$i,cno=1,nsid=$i
+	done
+	fab -f flib.py cluster_setup:"$setup" rds_delete_controller:cno=1
+}
+
 demo_setup() {
 	if [ ! -d $WORKSPACE/Integration ]
 	then
@@ -160,7 +241,12 @@ help_menu() {
 	echo -e "--compile s1/f1           Build s1/f1 FunOS image"
 	echo -e "--clean                   Clean up FunOS image"
 	echo -e "--upload s1/f1            Upload FunOS image to tftp server"
-	echo -e "--run s1/f1 setup_name    Run the FunOS image on s1/f1 setup"
+	echo -e "--run s1/f1 <setup_name>  Run the FunOS image on s1/f1 setup"
+	echo -e "--format-drives <setup_name> Formats all drives in the setup"
+	echo -e "--create-raw <setup_name> <numvols> <volsize> <encrypt> Creates raw volumes"
+	echo -e "--create-ec <setup_name> <numvols> <volsize> <encrypt> <compress> Creates ec volumes"
+	echo -e "--attach-volumes <setup_name> <numvols> <voltype> <encrypt> <compress> Attach volumes of type voltype to host"
+	echo -e "--detach-volumes <setup_name> <numvols> <voltype> Detach volumes of type voltype from host"
 	echo -e "--test <numvols> <encryption> <volsize> Runs a multi-vol test"
 }
 
@@ -196,6 +282,49 @@ main() {
 		run $1 $2
 		shift # past value
 		shift # past second value
+		;;
+		--format-drives)
+		fetch_workspace
+		shift # past argument
+		format_drives $1
+		shift # past value
+		;;
+		--create-raw)
+		fetch_workspace
+		shift # past argument
+		create_raw_volumes $1 $2 $3 $4
+		shift # past value
+		shift # past second value
+		shift # past third value
+		shift # past forth value
+		;;
+		--create-ec)
+		fetch_workspace
+		shift # past argument
+		create_ec_volumes $1 $2 $3 $4 $5
+		shift # past value
+		shift # past second value
+		shift # past third value
+		shift # past forth value
+		shift # past fifth value
+		;;
+		--attach-volumes)
+		fetch_workspace
+		shift # past argument
+		attach_volumes $1 $2 $3 $4 $5
+		shift # past value
+		shift # past second value
+		shift # past third value
+		shift # past forth value
+		shift # past fifth value
+		;;
+		--detach-volumes)
+		fetch_workspace
+		shift # past argument
+		detach_volumes $1 $2 $3
+		shift # past value
+		shift # past second value
+		shift # past third value
 		;;
 		--demo-setup)
 		demo_setup
