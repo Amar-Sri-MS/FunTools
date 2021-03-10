@@ -40,6 +40,7 @@ orig_ld_preload=$LD_PRELOAD
 unset LD_LIBRARY_PATH LD_PRELOAD
 
 source $yocto_env
+STRIP=eu-strip
 
 if [ -n "$orig_ld_library_path" ] ; then
     if [ -n "$LD_LIBRARY_PATH" ] ; then
@@ -63,6 +64,9 @@ find $DEPLOY_ROOT -type f | (
 		*.ko)
 		    #echo "Stripping $fname as module"
 		    ${STRIP} --strip-debug $fname
+		    ;;
+		*storage_agent)
+		    ${STRIP} -R=.go_export -R=.pdr --keep-section=.debug_line --keep-section=.debug_info --keep-section=.debug_abbrev --keep-section=.debug_str --keep-section=.debug_ranges $fname
 		    ;;
 		*)
 		    #echo "Stripping $fname"
