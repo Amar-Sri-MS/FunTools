@@ -89,11 +89,19 @@ dpcsh: $(BUILD_ROOT)/dpcsh
 $(BUILD_ROOT)/dpcsh: $(OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
+.PHONY: install
 install: dpcsh
 	mkdir -p $(SDK_INSTALL_DIR)/bin/$(SDK_INSTALL_PREFIX)/$(OS)
 # FIXME: remove OS versioning on dpc_client.py when
 # integration tests are fixed
 	cp dpc_client.py dpctest.py dpc_uboot_env.py auth_firmware.py $(BUILD_ROOT)/dpcsh $(SDK_INSTALL_DIR)/bin/$(SDK_INSTALL_PREFIX)/$(OS)
+
+.PHONY: install-init.d
+install-init.d:
+	mkdir -p $(SDK_INSTALL_DIR)/bin/$(SDK_INSTALL_PREFIX)/$(OS)
+# FIXME: remove OS versioning on dpc_client.py when
+# integration tests are fixed
+	cp -R init.d $(SDK_INSTALL_DIR)/bin/$(SDK_INSTALL_PREFIX)/$(OS)
 
 clean:
 	-rm -rf $(BUILD_ROOT) build_*
