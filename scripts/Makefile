@@ -18,4 +18,5 @@ install-scripts:
 	install s3util.py $(SDK_INSTALL_DIR)/bin/scripts
 	install httpfile.py $(SDK_INSTALL_DIR)/bin/scripts
 	install gz2idgz.py $(SDK_INSTALL_DIR)/bin/scripts
+	install rdsstat.py $(SDK_INSTALL_DIR)/bin/scripts
 
