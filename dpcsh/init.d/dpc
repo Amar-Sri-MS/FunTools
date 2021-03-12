@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/sh
 
 BIN_PATH="/usr/bin"
 ST_STP_D=/sbin/start-stop-daemon

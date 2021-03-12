@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/sh
 
 # This service opens DPC for external clients
 # Use only for debugging purposes!
